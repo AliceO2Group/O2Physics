@@ -51,27 +51,35 @@ struct NonLinProducer {
   Produces<aod::NonLinEmcClusters> tableNonLinClusters;
 
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3)"};
+  Configurable<int> emcIteration{"emcIteration", 0, "iteration number of the non lin correction for EMCal. 0 means first iteration 1 means second and so on!"};
+  Configurable<int> pcmIteration{"pcmIteration", 0, "iteration number of the non lin correction for PCM. 0 means first iteration 1 means second and so on!"};
 
   HistogramRegistry historeg{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
   using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::MinClusters>;
   using PcmPhotons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 
-  using Colls = soa::Join<aod::EMEvents, aod::EMEventsCent>;
+  using Colls = soa::Join<aod::EMEvents_004, aod::EMEventsCent_000>;
 
   EMNonLin emNonLinEMC;
   EMNonLin emNonLinPCM;
 
+  EMNonLin::Context emNonLinContextEMC;
+  EMNonLin::Context emNonLinContextPCM;
+
   void init(o2::framework::InitContext&)
   {
-    historeg.add("QA/EMC/EIn", "Energy of clusters before cuts", gHistoSpecClusterE);
-    historeg.add("QA/EMC/EOut", "Energy of clusters after cuts", gHistoSpecClusterE);
+    historeg.add("QA/EMC/EIn", "Energy of EMC clusters before NonLin correction", gHistoSpecClusterE);
+    historeg.add("QA/EMC/EOut", "Energy of EMC clusters after NonLin correction", gHistoSpecClusterE);
 
-    historeg.add("QA/EMC/PtIn", "Energy of clusters before cuts", gHistoSpecPt);
-    historeg.add("QA/EMC/PtOut", "Energy of clusters after cuts", gHistoSpecPt);
+    historeg.add("QA/EMC/PtIn", "Pt of EMC clusters before NonLin correction", gHistoSpecPt);
+    historeg.add("QA/EMC/PtOut", "Pt of EMC clusters after NonLin correction", gHistoSpecPt);
 
-    historeg.add("QA/PCM/PtIn", "Energy of clusters before cuts", gHistoSpecPt);
-    historeg.add("QA/PCM/PtOut", "Energy of clusters after cuts", gHistoSpecPt);
+    historeg.add("QA/PCM/PtIn", "Pt of PCM photon before NonLin correction", gHistoSpecPt);
+    historeg.add("QA/PCM/PtOut", "Pt of PCM photon after NonLin correction", gHistoSpecPt);
+
+    emNonLinContextEMC.setIter(emcIteration);
+    emNonLinContextPCM.setIter(pcmIteration);
   }
 
   /// Get the centrality
@@ -101,18 +109,19 @@ struct NonLinProducer {
   template <o2::soa::is_table TClusters, o2::soa::is_iterator TCollisio>
   void runEMC(TClusters const& clusters, TCollisio& collision)
   {
-    float nonLinE = 0.f;
-    float nonLinPt = 0.f;
-
-    float nonLinFactor = 1.f;
 
     int32_t collIndex = collision.globalIndex();
+    float cent = getCentrality(collision);
+    emNonLinContextEMC.setParams(emNonLinEMC.resolveParams(o2::pwgem::nonlin::EMNonLin::PhotonType::kEMC, cent));
+
     for (const auto& cluster : clusters) {
 
       // check that we are at the correct collision
-      if (cluster.emeventId() != collIndex) {
-        collIndex = cluster.emeventId();
+      if (cluster.emphotoneventId() != collIndex) {
+        collIndex = cluster.emphotoneventId();
         collision.setCursor(collIndex);
+        cent = getCentrality(collision);
+        emNonLinContextEMC.setParams(emNonLinEMC.resolveParams(o2::pwgem::nonlin::EMNonLin::PhotonType::kEMC, cent));
       }
 
       // fill before non lin histograms
@@ -120,14 +129,14 @@ struct NonLinProducer {
       historeg.fill(HIST("QA/EMC/PtIn"), cluster.pt());
 
       // get NonLin factor from class dependent on the centrality
-      nonLinFactor = emNonLinEMC.getCorrectionFactor(cluster.e(), o2::pwgem::nonlin::EMNonLin::PhotonType::kEMC, getCentrality(collision));
+      float nonLinFactor = emNonLinEMC.getCorrectionFactor(cluster.e(), emNonLinContextEMC);
 
-      nonLinE = nonLinFactor * cluster.e();
-      nonLinPt = nonLinFactor * cluster.pt();
+      float nonLinE = nonLinFactor * cluster.e();
+      float nonLinPt = nonLinFactor * cluster.pt();
 
       // fill after non lin histograms
-      historeg.fill(HIST("QA/EMC/EIn"), nonLinE);
-      historeg.fill(HIST("QA/EMC/PtIn"), nonLinPt);
+      historeg.fill(HIST("QA/EMC/EOut"), nonLinE);
+      historeg.fill(HIST("QA/EMC/PtOut"), nonLinPt);
 
       tableNonLinClusters(nonLinE, nonLinPt);
     }
@@ -136,29 +145,30 @@ struct NonLinProducer {
   template <o2::soa::is_table TV0, o2::soa::is_iterator TCollisio>
   void runPCM(TV0 const& v0s, TCollisio& collision)
   {
-    float nonLinPt = 0.f;
-
-    float nonLinFactor = 1.f;
 
     int32_t collIndex = collision.globalIndex();
+    float cent = getCentrality(collision);
+    emNonLinContextPCM.setParams(emNonLinPCM.resolveParams(o2::pwgem::nonlin::EMNonLin::PhotonType::kPCM, cent));
     for (const auto& v0 : v0s) {
 
       // check that we are at the correct collision
-      if (v0.emeventId() != collIndex) {
-        collIndex = v0.emeventId();
+      if (v0.emphotoneventId() != collIndex) {
+        collIndex = v0.emphotoneventId();
         collision.setCursor(collIndex);
+        cent = getCentrality(collision);
+        emNonLinContextPCM.setParams(emNonLinPCM.resolveParams(o2::pwgem::nonlin::EMNonLin::PhotonType::kPCM, cent));
       }
 
       // fill before non lin histograms
       historeg.fill(HIST("QA/PCM/PtIn"), v0.pt());
 
       // get NonLin factor from class dependent on the centrality
-      nonLinFactor = emNonLinEMC.getCorrectionFactor(v0.pt(), o2::pwgem::nonlin::EMNonLin::PhotonType::kPCM, getCentrality(collision));
+      float nonLinFactor = emNonLinEMC.getCorrectionFactor(v0.pt(), emNonLinContextPCM);
 
-      nonLinPt = nonLinFactor * v0.pt();
+      float nonLinPt = nonLinFactor * v0.pt();
 
       // fill after non lin histograms
-      historeg.fill(HIST("QA/PCM/PtIn"), nonLinPt);
+      historeg.fill(HIST("QA/PCM/PtOut"), nonLinPt);
 
       tableNonLinV0s(nonLinPt);
     }

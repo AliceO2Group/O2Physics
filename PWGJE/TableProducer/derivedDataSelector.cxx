@@ -362,7 +362,7 @@ struct JetDerivedDataSelector {
         }
       } else {
         if constexpr (std::is_same_v<std::decay_t<T>, aod::JTracks>) {
-          if (config.performTrackSelection && !(selectionObject.trackSel() & ~(1 << jetderiveddatautilities::JTrackSel::trackSign))) {
+          if (config.performTrackSelection && !(selectionObject.trackSel() & ~((1ULL << jetderiveddatautilities::JTrackSel::trackSign) | (1ULL << jetderiveddatautilities::JTrackSel::notBadMcTrack)))) {
             continue;
           }
           if (selectionObject.pt() < config.trackPtSelectionMin || std::abs(selectionObject.eta()) > config.trackEtaSelectionMax) {

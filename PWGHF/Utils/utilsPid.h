@@ -21,6 +21,8 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 
 #include <CommonConstants/PhysicsConstants.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
 #include <Framework/Logger.h>
 #include <MathUtils/BetheBlochAleph.h>
 

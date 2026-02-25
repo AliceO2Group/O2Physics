@@ -123,6 +123,7 @@ DECLARE_SOA_COLUMN(MultNTracksGlobal, multNTracksGlobal, int);
 DECLARE_SOA_COLUMN(ToiMask, toiMask, uint32_t);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(NoSameBunchPileup, noSameBunchPileup, bool);
+DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);
 
 } // namespace NPCascadeTable
 DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
@@ -447,7 +448,13 @@ DECLARE_SOA_TABLE(NPCascTableGen, "AOD", "NPCASCTABLEGen",
                   NPCascadeTable::IsFromBeauty,
                   NPCascadeTable::IsFromCharm,
                   NPCascadeTable::MotherDecayDaughters)
-
+DECLARE_SOA_TABLE(NPPileUpTable, "AOD", "NPPileUpTABLE",
+                  NPCascadeTable::RunNumber,
+                  NPCascadeTable::GlobalBC,
+                  aod::collision::NumContrib,
+                  NPCascadeTable::MultNTracksGlobal,
+                  NPCascadeTable::CentFT0M,
+                  NPCascadeTable::MultFT0M);
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFNONPROMPTCASCADETABLES_H_
