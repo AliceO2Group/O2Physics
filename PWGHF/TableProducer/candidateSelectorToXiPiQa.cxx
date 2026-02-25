@@ -359,7 +359,7 @@ struct HfCandidateSelectorToXiPiQa {
 
     // pT: Bachelor
     double ptPiFromCasc = RecoDecay::sqrtSumOfSquares(candidate.pxBachFromCasc(), candidate.pyBachFromCasc());
-    if (ptPiFromCasc < ptPiFromCascMin) {
+    if (std::abs(ptPiFromCasc) < ptPiFromCascMin) {
       return false;
     }
     registry.fill(HIST("hSelStatusLf"), 11.0);
@@ -446,7 +446,7 @@ struct HfCandidateSelectorToXiPiQa {
     registry.fill(HIST("hSelStatusHf"), 0.0);
 
     // eta selection on charm bayron bachelor
-    if (candidate.etaBachFromCharmBaryon() > etaTrackCharmBachMax) {
+    if (std::abs(candidate.etaBachFromCharmBaryon()) > etaTrackCharmBachMax) {
       return false;
     }
     registry.fill(HIST("hSelStatusHf"), 1.0);
@@ -458,7 +458,7 @@ struct HfCandidateSelectorToXiPiQa {
 
     // pT: Charm Bachelor
     double ptPiFromCharmBaryon = RecoDecay::pt(candidate.pxBachFromCharmBaryon(), candidate.pyBachFromCharmBaryon());
-    if (ptPiFromCharmBaryon < cuts->get("ptPiFromCharmBaryon")) {
+    if (std::abs(ptPiFromCharmBaryon) < ptPiFromCharmBaryonMin) {
       return false;
     }
     registry.fill(HIST("hSelStatusHf"), 3.0);
@@ -504,11 +504,11 @@ struct HfCandidateSelectorToXiPiQa {
       registry.fill(HIST("hSelStatusHf"), 10.0);
     } else {
       // Impact parameter(DCA?)
-      if (std::abs(candidate.impactParBachFromCharmBaryonXY()) < impactParXYPiFromCharmBaryonMin || std::abs(candidate.impactParBachFromCharmBaryonXY()) > impactParXYPiFromCharmBaryonMax) {
+      if ((std::abs(candidate.impactParBachFromCharmBaryonXY()) < impactParXYPiFromCharmBaryonMin) || (std::abs(candidate.impactParBachFromCharmBaryonXY()) > impactParXYPiFromCharmBaryonMax)) {
         return false;
       }
       registry.fill(HIST("hSelStatusHf"), 4.0);
-      if (std::abs(candidate.impactParBachFromCharmBaryonZ()) < impactParZPiFromCharmBaryonMin || std::abs(candidate.impactParBachFromCharmBaryonZ()) > impactParZPiFromCharmBaryonMax) {
+      if ((std::abs(candidate.impactParBachFromCharmBaryonZ()) < impactParZPiFromCharmBaryonMin) || (std::abs(candidate.impactParBachFromCharmBaryonZ()) > impactParZPiFromCharmBaryonMax)) {
         return false;
       }
       registry.fill(HIST("hSelStatusHf"), 5.0);
@@ -683,13 +683,13 @@ struct HfCandidateSelectorToXiPiQa {
       double invMassCascade = candidate.invMassCascade();
       double invMassCharmBaryon = candidate.invMassCharmBaryon();
 
-      if ((invMassLambda - o2::constants::physics::MassLambda0) < v0MassWindow) {
+      if (std::abs(invMassLambda - o2::constants::physics::MassLambda0) < v0MassWindow) {
         statusInvMassLambda = true;
       }
-      if ((invMassCascade - o2::constants::physics::MassXiMinus) < cascMassWindow) {
+      if (std::abs(invMassCascade - o2::constants::physics::MassXiMinus) < cascMassWindow) {
         statusInvMassCascade = true;
       }
-      if ((invMassCharmBaryon > invMassCharmBaryonMin) && (invMassCharmBaryon < invMassCharmBaryonMax)) {
+      if ((invMassCharmBaryon >= invMassCharmBaryonMin) && (invMassCharmBaryon <= invMassCharmBaryonMax)) {
         statusInvMassCharmBaryon = true;
       }
 
