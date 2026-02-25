@@ -674,9 +674,9 @@ struct DptDptFilter {
       fhVertexZA = new TH1F("VertexZA", "Vertex Z; z_{vtx}", zvtxbins, zvtxlow, zvtxup);
 
 /* helpers for the multiplicity/centrality axes definition */
-#define DPTDPTCENTRALITYAXIS 105, -0.5f, 104.5f
+#define DPTDPTCENTRALITYAXIS 105, 0.f, 105.0f
 #define DPTDPTFWMULTIPLICITYAXIS(est) 1000, 0.0f, cfgEventSelection.multiplicityUpperLimit->getData()[fSystem][est]
-#define DPTDPTMULTIPLICITYAXIS(est) cfgEventSelection.multiplicityUpperLimit->getData()[fSystem][est] + 1, -0.5f, cfgEventSelection.multiplicityUpperLimit->getData()[fSystem][est] + 0.5f
+#define DPTDPTMULTIPLICITYAXIS(est) cfgEventSelection.multiplicityUpperLimit->getData()[fSystem][est] + 1, 0.0f, cfgEventSelection.multiplicityUpperLimit->getData()[fSystem][est] + 1.0f
 
       std::string_view multestimator = getCentMultEstimatorName(fCentMultEstimator);
       fhCentMultB = new TH1F("CentralityB", "Centrality before cut; centrality (%)", DPTDPTCENTRALITYAXIS);

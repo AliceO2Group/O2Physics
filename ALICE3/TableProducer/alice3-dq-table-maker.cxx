@@ -21,43 +21,27 @@
 #include "PWGDQ/Core/HistogramsLibrary.h"
 #include "PWGDQ/Core/MCSignal.h"
 #include "PWGDQ/Core/MCSignalLibrary.h"
-#include "PWGDQ/Core/MuonMatchingMlResponse.h"
 #include "PWGDQ/Core/VarManager.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "PWGDQ/DataModel/ReducedTablesAlice3.h"
 
-#include "ALICE3/DataModel/OTFPIDTrk.h"
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/OTFTOF.h"
 #include "ALICE3/DataModel/collisionAlice3.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 #include "Common/CCDB/TriggerAliases.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonDataFormat/InteractionRecord.h"
-#include "DataFormatsGlobalTracking/RecoContainer.h"
-#include "DataFormatsGlobalTracking/RecoContainerCreateTracksVariadic.h"
-#include "DataFormatsITSMFT/ROFRecord.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsVertexing/PVertexerParams.h"
-#include "DetectorsVertexing/VertexTrackMatcher.h"
 #include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/DataTypes.h"
 #include "Framework/runDataProcessing.h"
-#include "MathUtils/Primitive2D.h"
-#include "ReconstructionDataFormats/PrimaryVertex.h"
-#include "ReconstructionDataFormats/VtxTrackIndex.h"
-#include "ReconstructionDataFormats/VtxTrackRef.h"
 
 #include "THashList.h"
 #include "TList.h"
@@ -77,7 +61,6 @@ using namespace o2::aod;
 using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                                  aod::TracksCov, aod::TracksAlice3, aod::TracksExtraA3,
                                  aod::UpgradeTofs, aod::UpgradeRichs, aod::UpgradeRichSignals,
-                                 aod::UpgradeTrkPids, aod::UpgradeTrkPidSignals,
                                  aod::McTrackLabels>;
 
 using MyEvents = soa::Join<aod::Collisions, aod::CollisionsAlice3, aod::McCollisionLabels>;
@@ -108,7 +91,6 @@ struct Alice3DQTableMaker {
   Produces<ReducedA3PIDTOF> trackPIDTOF;
   Produces<ReducedA3PIDRich> trackPIDRich;
   Produces<ReducedA3PIDRichSignals> trackPIDRichSig;
-  Produces<ReducedA3PIDOT> trackPIDOT;
 
   OutputObj<THashList> fOutputList{"output"};
   OutputObj<TList> fStatsList{"Statistics"}; //! skimming statistics
@@ -133,7 +115,6 @@ struct Alice3DQTableMaker {
     Configurable<bool> fConfigDetailedQA{"cfgDetailedQA", false, "If true, include more QA histograms (BeforeCuts classes)"};
     Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
     Configurable<std::string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
-    Configurable<std::string> fConfigAddMuonHistogram{"cfgAddMuonHistogram", "", "Comma separated list of histograms"};
     Configurable<std::string> fConfigAddMCTruthHistogram{"cfgAddMCTruthHistogram", "", "Comma separated list of histograms"};
     Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
   } fConfigHistOutput;
@@ -163,7 +144,7 @@ struct Alice3DQTableMaker {
     DefineCuts();
 
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
-    fHistMan->SetUseDefaultVariableNames(kTRUE);
+    fHistMan->SetUseDefaultVariableNames(true);
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
 
     if (fConfigHistOutput.fConfigQA && fConfigHistOutput.fConfigDetailedQA) {
@@ -187,7 +168,7 @@ struct Alice3DQTableMaker {
       }
 
       if (fConfigHistOutput.fConfigQA) {
-        for (auto& cut : fTrackCuts) {
+        for (const auto& cut : fTrackCuts) {
           histClasses += Form("TrackBarrel_%s;", cut->GetName());
         }
       }
@@ -210,20 +191,20 @@ struct Alice3DQTableMaker {
     if (addMCSignalsStr != "") {
       std::vector<MCSignal*> addMCSignals = dqmcsignals::GetMCSignalsFromJSON(addMCSignalsStr.Data());
 
-      for (auto& mcIt : addMCSignals) {
+      for (const auto& mcIt : addMCSignals) {
         if (mcIt) {
           fMCSignals.push_back(mcIt);
         }
       }
     }
 
-    for (auto& mcIt : fMCSignals) {
+    for (const auto& mcIt : fMCSignals) {
       if (fConfigHistOutput.fConfigQA) {
         histClasses += Form("MCTruth_%s;", mcIt->GetName());
       }
       if (fDoDetailedQA) {
         if (isProcessSkimmingEnabled) {
-          for (auto& cut : fTrackCuts) {
+          for (const auto& cut : fTrackCuts) {
             histClasses += Form("TrackBarrel_%s_%s;", cut->GetName(), mcIt->GetName());
           }
         }
@@ -250,7 +231,7 @@ struct Alice3DQTableMaker {
     TString addEvCutsStr = fConfigCuts.fConfigEventCutsJSON.value;
     if (addEvCutsStr != "") {
       std::vector<AnalysisCut*> addEvCuts = dqcuts::GetCutsFromJSON(addEvCutsStr.Data());
-      for (auto& cutIt : addEvCuts) {
+      for (const auto& cutIt : addEvCuts) {
         fEventCut->AddCut(cutIt);
       }
     }
@@ -267,7 +248,7 @@ struct Alice3DQTableMaker {
     TString addTrackCutsStr = fConfigCuts.fConfigTrackCutsJSON.value;
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
-      for (auto& t : addTrackCuts) {
+      for (const auto& t : addTrackCuts) {
         fTrackCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
       }
     }
@@ -310,7 +291,7 @@ struct Alice3DQTableMaker {
 
     // create statistics histograms (event, tracks, muons, MCsignals)
     fStatsList.setObject(new TList());
-    fStatsList->SetOwner(kTRUE);
+    fStatsList->SetOwner(true);
     std::vector<TString> eventLabels{"Collisions before filtering", "Before cuts", "After cuts"};
     TH2I* histEvents = new TH2I("EventStats", "Event statistics", eventLabels.size(), -0.5, eventLabels.size() - 0.5, o2::aod::evsel::kNsel + 1, -0.5, (float)o2::aod::evsel::kNsel + 0.5);
     int ib = 1;
@@ -329,8 +310,9 @@ struct Alice3DQTableMaker {
     for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, ib++) {
       histTracks->GetXaxis()->SetBinLabel(ib, (*cut)->GetName());
     }
-    const char* v0TagNames[5] = {"Photon conversion", "K^{0}_{s}", "#Lambda", "#bar{#Lambda}", "#Omega"};
-    for (int ib = 0; ib < 5; ib++) {
+    constexpr int nV0Tags = 5;
+    const char* v0TagNames[nV0Tags] = {"Photon conversion", "K^{0}_{s}", "#Lambda", "#bar{#Lambda}", "#Omega"};
+    for (int ib = 0; ib < nV0Tags; ib++) {
       histTracks->GetXaxis()->SetBinLabel(fTrackCuts.size() + 1 + ib, v0TagNames[ib]);
     }
     fStatsList->Add(histTracks);
@@ -353,7 +335,7 @@ struct Alice3DQTableMaker {
     //       one has to do a mapping of the old vs new indices so that the skimmed labels are properly updated.
     VarManager::ResetValues(0, VarManager::kNVars);
 
-    for (auto& mcCollision : mcCollisions) {
+    for (const auto& mcCollision : mcCollisions) {
       VarManager::FillEventAlice3<gkEventMcFillMap>(mcCollision);
 
       fHistMan->FillHistClass("Event_MCTruth", VarManager::fgValues);
@@ -377,11 +359,11 @@ struct Alice3DQTableMaker {
     uint16_t mcflags = static_cast<uint16_t>(0); // flags which will hold the decisions for each MC signal
     int trackCounter = 0;
 
-    for (auto& mctrack : mcTracks) {
+    for (const auto& mctrack : mcTracks) {
       // check all the requested MC signals and fill the decision bit map
       mcflags = 0;
       int i = 0;
-      for (auto& sig : fMCSignals) {
+      for (const auto& sig : fMCSignals) {
         bool checked = false;
         if constexpr (soa::is_soa_filtered_v<aod::McParticles>) {
           auto mctrack_raw = mcTracks.rawIteratorAt(mctrack.globalIndex());
@@ -565,11 +547,6 @@ struct Alice3DQTableMaker {
                         track.hasSigEl(), track.hasSigMu(), track.hasSigPi(),
                         track.hasSigKa(), track.hasSigPr(), track.hasSigDe(),
                         track.hasSigTr(), track.hasSigHe3(), track.hasSigAl());
-
-        trackPIDOT(track.timeOverThresholdBarrel(),
-                   track.nSigmaTrkEl(), track.nSigmaTrkMu(), track.nSigmaTrkPi(),
-                   track.nSigmaTrkKa(), track.nSigmaTrkPr(), track.nSigmaTrkDe(),
-                   track.nSigmaTrkTr(), track.nSigmaTrkHe(), track.nSigmaTrkAl());
       }
 
       fTrackIndexMap[track.globalIndex()] = trackBasic.lastIndex();
@@ -581,18 +558,19 @@ struct Alice3DQTableMaker {
       } else {
         auto mctrack = track.template mcParticle_as<aod::McParticles>();
         VarManager::FillTrackMC(mcTracks, mctrack);
+        VarManager::FillResolutions(mctrack, track);
 
         mcflags = 0;
         int i = 0; // runs over the MC signals
         int j = 0; // runs over the track cuts
         // check all the specified signals and fill histograms for MC truth matched tracks
-        for (auto& sig : fMCSignals) {
+        for (const auto& sig : fMCSignals) {
           if (sig->CheckSignal(true, mctrack)) {
             mcflags |= (static_cast<uint16_t>(1) << i);
             // If detailed QA is on, fill histograms for each MC signal and track cut combination
             if (fDoDetailedQA) {
               j = 0;
-              for (auto& cut : fTrackCuts) {
+              for (const auto& cut : fTrackCuts) {
                 if (trackTempFilterMap & (uint8_t(1) << j)) {
                   fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", cut->GetName(), sig->GetName()), VarManager::fgValues); // fill the reconstructed truth
                 }
@@ -650,7 +628,6 @@ struct Alice3DQTableMaker {
       trackPIDTOF.reserve(tracksBarrel.size());
       trackPIDRich.reserve(tracksBarrel.size());
       trackPIDRichSig.reserve(tracksBarrel.size());
-      trackPIDOT.reserve(tracksBarrel.size());
       trackBarrelAssoc.reserve(tracksBarrel.size());
       trackBarrelLabels.reserve(tracksBarrel.size());
     }
@@ -675,7 +652,7 @@ struct Alice3DQTableMaker {
 
       std::vector<int> mothers;
       if (mctrack.has_mothers()) {
-        for (auto& m : mctrack.mothersIds()) {
+        for (const auto& m : mctrack.mothersIds()) {
           if (m < mcParticles.size()) { // protect against bad mother indices
             if (fLabelsMap.find(m) != fLabelsMap.end()) {
               mothers.push_back(fLabelsMap.find(m)->second);

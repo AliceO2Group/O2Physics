@@ -164,8 +164,10 @@ struct JetDerivedDataSelector {
 
   void processSelectCollisionsPerMcCollision(soa::Join<aod::JCollisions, aod::JMcCollisionLbs>::iterator const& collision)
   {
-    if (McCollisionFlag[collision.mcCollisionId()]) {
-      collisionFlag[collision.globalIndex()] = true;
+    if (collision.has_mcCollision()) {
+      if (McCollisionFlag[collision.mcCollisionId()]) {
+        collisionFlag[collision.globalIndex()] = true;
+      }
     }
   }
 
@@ -236,7 +238,7 @@ struct JetDerivedDataSelector {
   }
 
   template <typename T>
-  void processSelectionObjects(T& selectionObjects)
+  void processSelectionObjects(T const& selectionObjects)
   {
     float selectionObjectPtMin = 0.0;
     if constexpr (std::is_same_v<std::decay_t<T>, aod::ChargedJets> || std::is_same_v<std::decay_t<T>, aod::ChargedMCDetectorLevelJets>) {
@@ -360,7 +362,7 @@ struct JetDerivedDataSelector {
         }
       } else {
         if constexpr (std::is_same_v<std::decay_t<T>, aod::JTracks>) {
-          if (config.performTrackSelection && !(selectionObject.trackSel() & ~(1 << jetderiveddatautilities::JTrackSel::trackSign))) {
+          if (config.performTrackSelection && !(selectionObject.trackSel() & ~((1ULL << jetderiveddatautilities::JTrackSel::trackSign) | (1ULL << jetderiveddatautilities::JTrackSel::notBadMcTrack)))) {
             continue;
           }
           if (selectionObject.pt() < config.trackPtSelectionMin || std::abs(selectionObject.eta()) > config.trackEtaSelectionMax) {

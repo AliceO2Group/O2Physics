@@ -54,7 +54,7 @@ struct OTFParticle {
 
   // Getters
   int pdgCode() const { return mPdgCode; }
-  int isAlive() const { return mIsAlive; }
+  bool isAlive() const { return mIsAlive; }
   float vx() const { return mVx; }
   float vy() const { return mVy; }
   float vz() const { return mVz; }

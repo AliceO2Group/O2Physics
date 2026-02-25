@@ -37,10 +37,10 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
-using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent>;
+using MyCollisions = soa::Join<aod::EMEvents_004, aod::EMEventsMult_000, aod::EMEventsCent_000>;
 using MyCollision = MyCollisions::iterator;
 
-using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsCov, aod::EMPrimaryElectronEMEventIds>;
+using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsCov, aod::EMPrimaryElectronDaEMEventIds>;
 using MyTrack = MyTracks::iterator;
 
 using MyTracksCEFP = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsCov>;
@@ -54,7 +54,7 @@ struct skimmerDalitzEE {
   };
 
   SliceCache cache;
-  Preslice<MyTracks> perCol = o2::aod::emprimaryelectron::emeventId;
+  Preslice<MyTracks> perCol = o2::aod::emprimaryelectronda::emphotoneventId;
 
   SliceCache cache_cefp;
   PresliceUnsorted<MyTracksCEFP> perCol_cefp = o2::aod::emprimaryelectron::collisionId;
@@ -337,8 +337,8 @@ struct skimmerDalitzEE {
         continue;
       }
 
-      auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
-      auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
+      auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimaryelectronda::emphotoneventId, collision.globalIndex(), cache);
+      auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimaryelectronda::emphotoneventId, collision.globalIndex(), cache);
       fRegistry.fill(HIST("hNpos"), collision.centFT0C(), posTracks_per_coll.size());
       fRegistry.fill(HIST("hNele"), collision.centFT0C(), negTracks_per_coll.size());
       // LOGF(info, "collision.centFT0C() = %f, posTracks_per_coll.size() = %d, negTracks_per_coll.size() = %d", collision.centFT0C() , posTracks_per_coll.size(), negTracks_per_coll.size());
@@ -375,7 +375,7 @@ struct skimmerDalitzEE {
   }
   PROCESS_SWITCH(skimmerDalitzEE, processCEFP, "Process dalitz ee for CEFP", false); // for central event filter processing
 
-  void processOnlyNee(soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent> const& collisions)
+  void processOnlyNee(soa::Join<aod::EMEvents_004, aod::EMEventsMult_000, aod::EMEventsCent_000> const& collisions)
   {
     for (auto& collision : collisions) {
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};

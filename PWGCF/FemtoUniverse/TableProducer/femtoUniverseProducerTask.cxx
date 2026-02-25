@@ -135,6 +135,8 @@ struct FemtoUniverseProducerTask {
   Configurable<bool> confStoreMCmothers{"confStoreMCmothers", false, "MC truth: Fill with not only primary particles and store mothers' PDG in tempFitVar."};
   Configurable<bool> confFillCollExt{"confFillCollExt", false, "Option to fill collision extended table"};
 
+  Configurable<bool> confCollMCTruthOnlyReco{"confCollMCTruthOnlyReco", false, "Fill only MC truth collisions that were reconstructed and selected"};
+
   /// Event filtering (used for v0-cascade analysis)
   Configurable<std::string> zorroMask{"zorroMask", "", "zorro trigger class to select on (empty: none)"};
 
@@ -241,23 +243,20 @@ struct FemtoUniverseProducerTask {
     Configurable<float> confPtLowFilterCut{"confPtLowFilterCut", 0.14, "Lower limit for Pt for the global track"};   // pT low
     Configurable<float> confPtHighFilterCut{"confPtHighFilterCut", 5.0, "Higher limit for Pt for the global track"}; // pT high
     Configurable<float> confEtaFilterCut{"confEtaFilterCut", 0.8, "Eta cut for the global track"};                   // eta
-    Configurable<bool> confDxaXYCustom0Cut{"confDxaXYCustom0Cut", false, "Enable Custom Dcaxy < [0] cut."};
-    Configurable<float> confDcaXYFilterCut{"confDcaXYFilterCut", 2.4, "Value for DCA_XY for the global track"}; // max dca to vertex XY
-    Configurable<float> confDcaZFilterCut{"confDcaZFilterCut", 3.2, "Value for DCA_Z for the global track"};    // max dca to vertex Z
-    Configurable<bool> confDcaXYCustom1Cut{"confDcaXYCustom1Cut", true, "Enable Custom |DCAxy| < [1] + [2]/pt cut."};
-    Configurable<float> confDcaXYCustom11FilterCut{"confDcaXYCustom11FilterCut", 0.004, "Value for [1] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
-    Configurable<float> confDcaXYCustom12FilterCut{"confDcaXYCustom12FilterCut", 0.013, "Value for [2] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
+    Configurable<float> confDcaXYCustom1FilterCut{"confDcaXYCustom1FilterCut", 0.0105, "Value for [1] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
+    Configurable<float> confDcaXYCustom2FilterCut{"confDcaXYCustom2FilterCut", 0.035, "Value for [2] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
+    Configurable<float> confDcaZCustom1FilterCut{"confDcaZCustom1FilterCut", 0.02, "Value for [1] custom cut on DCAz -> |DCAz| < [1] + [2]/pT"};
+    Configurable<float> confDcaZCustom2FilterCut{"confDcaZCustom2FilterCut", 0.0, "Value for [2] custom cut on DCAz -> |DCAz| < [1] + [2]/pT"};
     Configurable<bool> confIsApplyTrkCutMCTruth{"confIsApplyTrkCutMCTruth", false, "Apply eta, pT selection cut on MCTruth tracks "};
     Configurable<bool> confIsOnlyPrimary{"confIsOnlyPrimary", false, "Select only primaries"};
   } ConfFilterCuts;
 
-  Filter globalCutFilter = requireGlobalTrackInFilter();
+  Filter globalCutFilter = requireGlobalTrackWoDCAInFilter();
   Filter customTrackFilter = (aod::track::pt > ConfFilterCuts.confPtLowFilterCut) &&
                              (aod::track::pt < ConfFilterCuts.confPtHighFilterCut) &&
                              (nabs(aod::track::eta) < ConfFilterCuts.confEtaFilterCut) &&
-                             (!ConfFilterCuts.confDxaXYCustom0Cut || (aod::track::dcaXY < ConfFilterCuts.confDcaXYFilterCut)) && // true if configurable set to false or if configurable is true and it passes the selection
-                             (aod::track::dcaZ < ConfFilterCuts.confDcaZFilterCut) &&
-                             (!ConfFilterCuts.confDcaXYCustom1Cut || (nabs(aod::track::dcaXY) < ConfFilterCuts.confDcaXYCustom11FilterCut + ConfFilterCuts.confDcaXYCustom12FilterCut / aod::track::pt)); // same logic here
+                             (nabs(aod::track::dcaZ) < (ConfFilterCuts.confDcaZCustom1FilterCut + ConfFilterCuts.confDcaZCustom2FilterCut / aod::track::pt)) &&
+                             (nabs(aod::track::dcaXY) < (ConfFilterCuts.confDcaXYCustom1FilterCut + ConfFilterCuts.confDcaXYCustom2FilterCut / aod::track::pt));
 
   // CASCADE
   FemtoUniverseCascadeSelection cascadeCuts;
@@ -1234,8 +1233,9 @@ struct FemtoUniverseProducerTask {
                   confIsUseCutculator ? cutContainer.at(
                                           femto_universe_track_selection::TrackContainerPosition::kPID)
                                       : PIDBitmask(track),
-                  track.dcaXY(), childIDs, 0,
-                  track.sign()); // sign getter is mAntiLambda()
+                  track.dcaXY(), childIDs,
+                  track.hasTOF(), // hasTOF getter is mLambda()
+                  track.sign());  // sign getter is mAntiLambda()
 
       tmpIDtrack.push_back(track.globalIndex());
       if (confIsDebug) {
@@ -1422,7 +1422,7 @@ struct FemtoUniverseProducerTask {
 
       if (ConfFilterCuts.confIsOnlyPrimary) {
         if (!mc.isPhysicalPrimary()) {
-          return;
+          continue;
         }
       }
 
@@ -2564,7 +2564,11 @@ struct FemtoUniverseProducerTask {
     Preslice<StrangePartType>& ps)
   {
     // recos
-    std::set<int> recoMcIds;
+    static std::set<int> recoMcIds;
+    static std::set<int> mcColIds;
+    recoMcIds.clear();
+    mcColIds.clear();
+
     for (const auto& col : collisions) {
       auto groupedTracks = tracks.sliceBy(perCollisionTracks, col.globalIndex());
       auto groupedStrageParts = strangeParts.sliceBy(ps, col.globalIndex());
@@ -2572,10 +2576,12 @@ struct FemtoUniverseProducerTask {
       if constexpr (std::experimental::is_detected<HasBachelor, typename StrangePartType::iterator>::value) {
         const auto colcheck = fillCollisions<true>(col, groupedTracks);
         if (colcheck) {
+          mcColIds.insert(col.mcCollisionId());
           fillTracks<true>(groupedTracks);
           fillCascade<true>(col, groupedStrageParts, groupedTracks);
         }
       } else {
+        mcColIds.insert(col.mcCollisionId());
         fillCollisionsAndTracksAndV0AndPhi<true>(col, groupedTracks, groupedStrageParts);
       }
       for (const auto& track : groupedTracks) {
@@ -2587,6 +2593,9 @@ struct FemtoUniverseProducerTask {
     // truth
     for (const auto& mccol : mccols) {
       auto groupedMCParticles = mcParticles.sliceBy(perMCCollision, mccol.globalIndex());
+      if (confCollMCTruthOnlyReco && !mcColIds.contains(mccol.globalIndex())) {
+        continue;
+      }
       auto groupedCollisions = collisions.sliceBy(recoCollsPerMCColl, mccol.globalIndex());
       fillMCTruthCollisions(groupedCollisions, groupedMCParticles);                           // fills the reco collisions for mc collision
       fillParticles<decltype(groupedMCParticles), true, true>(groupedMCParticles, recoMcIds); // fills mc particles
@@ -2601,6 +2610,7 @@ struct FemtoUniverseProducerTask {
   {
     // recos
     std::set<int> recoMcIds;
+    std::set<int> mcCollisions;
     for (const auto& col : collisions) {
       auto groupedTracks = tracks.sliceBy(perCollisionTracks, col.globalIndex());
       auto bc = col.bc_as<aod::BCsWithTimestamps>();
@@ -2616,6 +2626,7 @@ struct FemtoUniverseProducerTask {
       }
 
       if (colcheck) {
+        mcCollisions.insert(col.mcCollisionId());
         fillCollisionsCentRun3ColExtra<true>(col, ir);
         fillTracks<true>(groupedTracks);
       }
@@ -2627,6 +2638,9 @@ struct FemtoUniverseProducerTask {
 
     // truth
     for (const auto& mccol : mccols) {
+      if (confCollMCTruthOnlyReco && !mcCollisions.contains(mccol.globalIndex())) {
+        continue;
+      }
       auto groupedCollisions = collisions.sliceBy(recoCollsPerMCCollCentPbPb, mccol.globalIndex());
       for (const auto& col : groupedCollisions) {
         const auto colcheck = fillMCTruthCollisionsCentRun3(col); // fills the reco collisions for mc collision
@@ -2871,12 +2885,14 @@ struct FemtoUniverseProducerTask {
 
     // MCReco
     std::set<int> recoMcIds;
+    std::set<int> mcCollisions;
     for (const auto& col : collisions) {                                          // loop over collisions
       auto groupedTracks = tracks.sliceBy(perCollisionTracks, col.globalIndex()); // slicing for tracks
       auto groupedV0Parts = fullV0s.sliceBy(perCollisionV0s, col.globalIndex());  // slicing for V0
       getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
       const auto colcheck = fillCollisionsCentRun3<false>(col);
       if (colcheck) {
+        mcCollisions.insert(col.mcCollisionId());
         fillTracks<true>(groupedTracks);
         fillV0<true>(col, groupedV0Parts, groupedTracks);
       }
@@ -2888,6 +2904,9 @@ struct FemtoUniverseProducerTask {
 
     // MCTruth
     for (const auto& mccol : mccols) {
+      if (confCollMCTruthOnlyReco && !mcCollisions.contains(mccol.globalIndex())) {
+        continue;
+      }
       auto groupedCollisions = collisions.sliceBy(recoCollsPerMCCollCentPbPb, mccol.globalIndex()); // slicing for MC collisions
       auto groupedMCParticles = mcParticles.sliceBy(perMCCollision, mccol.globalIndex());           // slicing for MC particles
       for (const auto& col : groupedCollisions) {

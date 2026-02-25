@@ -170,12 +170,12 @@ struct ueCharged {
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T}^{assoc} (GeV/#it{c})"};
 
     fEff.setObject(new TF1("fpara",
-                           "(x<0.3)*((0.315318)+x*(2.38596)+x*x*(-4.388)) +"
-                           "(x>=0.3&&x<1.8)*((0.604051)+(0.154763)*x+(-0.103004)*"
-                           "x*x+(0.0266487)*x*x*x) +"
-                           "(x>=1.8&&x<14.)*((0.700444)+(-0.00115506)*x+(0."
-                           "000667608)*x*x+(-3.82915e-05)*x*x*x) +"
-                           "(x>=14)*((0.731778)+(-0.000994634)*x)",
+                           "(x<0.3)*((0.402353)+x*(1.90824)+x*x*(-3.37295)) +"
+                           "(x>=0.3&&x<1.8)*((0.603846)+(0.30189)*x+(-0.240649)*"
+                           "x*x+(0.0635382)*x*x*x) +"
+                           "(x>=1.8&&x<14.)*((0.75982)+(-0.0241023)*x+"
+                           "(0.00560107)*x*x+(-0.00048451)*x*x*x+"
+                           "(1.43868e-05)*x*x*x*x)+(x>=14)*((0.755339)+(-0.000986326)*x)",
                            0., 1e5));
 
     if (doprocessMC || doprocessMCTrue) {
@@ -290,6 +290,9 @@ struct ueCharged {
       ue.add("postselection_track/hvtxXY", "vtxXY after track selection", HistType::kTH1D, {{121, -3.025, 3.025, "#it{DCA}_{xy} (cm)"}});
       ue.add("postselection_track/htracks", "tracks after track selection", HistType::kTH1D, {{100, 0., 100., "N_{tracks}"}});
     }
+
+    ue.add("hPtAssoc_True", "pT mc True; pT; ", HistType::kTH1D, {ptAxis});
+    ue.add("hPtAssoc_Rec", "pT mc Rec; pT; ", HistType::kTH1D, {ptAxis});
   }
 
   float deltaPhi(float phia, float phib,
@@ -679,6 +682,7 @@ struct ueCharged {
         flPhiTrue = particle.phi();
         flIndexTrue = particle.globalIndex();
       }
+      ue.fill(HIST("hPtAssoc_True"), particle.pt());
     }
 
     ue.fill(HIST("hPtLeadingTrue"), flPtTrue);
@@ -807,6 +811,7 @@ struct ueCharged {
         flPhi = track.phi();
         flIndex = track.globalIndex();
       }
+      ue.fill(HIST("hPtAssoc_Rec"), track.pt());
     }
 
     ue.fill(HIST("hPtLeadingVsTracks"), flPt, track_multiplicity);

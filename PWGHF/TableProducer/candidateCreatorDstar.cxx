@@ -105,15 +105,14 @@ struct HfCandidateCreatorDstar {
   Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
 
-  HfEventSelection hfEvSel;                 // event selection and monitoring
-  Service<o2::ccdb::BasicCCDBManager> ccdb; // From utilsBfieldCCDB.h
+  HfEventSelection hfEvSel;                   // event selection and monitoring
+  Service<o2::ccdb::BasicCCDBManager> ccdb{}; // From utilsBfieldCCDB.h
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   // D0-prong vertex fitter
   o2::vertexing::DCAFitterN<2> df;
   int runNumber{};
   double bz{};
   static constexpr float CmToMicrometers = 10000.; // from cm to µm
-  double massPi{}, massK{}, massD0{};
 
   using TracksWCovExtraPidPiKa = soa::Join<aod::TracksWCovExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
@@ -177,9 +176,6 @@ struct HfCandidateCreatorDstar {
     hfEvSel.init(registry, &zorroSummary);
 
     // LOG(info) << "Init Function Invoked";
-    massPi = MassPiPlus;
-    massK = MassKPlus;
-    massD0 = MassD0;
 
     df.setPropagateToPCA(propagateToPCA);
     df.setMaxR(maxR);
@@ -335,7 +331,7 @@ struct HfCandidateCreatorDstar {
       registry.fill(HIST("QA/hDCAZPi"), trackPi.pt(), impactParameterPi.getZ() * CmToMicrometers);
 
       // get uncertainty of the decay length
-      double phi, theta;
+      double phi{}, theta{};
       getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
       // Calculates the XX element of a XYZ covariance matrix after rotation of the coordinate system by phi around the z-axis and by minus theta around the new y-axis.
       auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));

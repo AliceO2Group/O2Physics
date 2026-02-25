@@ -78,14 +78,12 @@ struct SingleTrackQC {
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
 
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
-  Configurable<float> cfgCentMin{"cfgCentMin", -1, "min. centrality"};
-  Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
   Configurable<std::string> cfg_swt_name{"cfg_swt_name", "fHighTrackMult", "desired software trigger name"}; // 1 trigger name per 1 task. fHighTrackMult, fHighFt0Mult
-  Configurable<uint16_t> cfgNumContribMin{"cfgNumContribMin", 0, "min. numContrib"};
-  Configurable<uint16_t> cfgNumContribMax{"cfgNumContribMax", 65000, "max. numContrib"};
   Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", false, "flag to apply weighting by 1/N"};
 
   ConfigurableAxis ConfPtlBins{"ConfPtlBins", {VARIABLE_WIDTH, 0.00, 0.05, 0.10, 0.15, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.00}, "pTl bins for output histograms"};
+  ConfigurableAxis ConfEtaBins{"ConfEtaBins", {20, -1, 1}, "eta bins for output histograms"};
+  ConfigurableAxis ConfPhiBins{"ConfPhiBins", {36, 0, 2 * M_PI}, "phi bins for output histograms"};
   ConfigurableAxis ConfDCA3DBins{"ConfDCA3DBins", {VARIABLE_WIDTH, 0.0, 10.0}, "DCA3d bins in sigma for output histograms"};
   ConfigurableAxis ConfDCAXYBins{"ConfDCAXYBins", {VARIABLE_WIDTH, -10.0, 10.0}, "DCAxy bins in sigma for output histograms"};
   ConfigurableAxis ConfDCAZBins{"ConfDCAZBins", {VARIABLE_WIDTH, -10.0, 10.0}, "DCAz bins in sigma for output histograms"};
@@ -120,6 +118,11 @@ struct SingleTrackQC {
     Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
     Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "set ZDC flag for PbPb"};
     Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
+
+    Configurable<float> cfgCentMin{"cfgCentMin", -1, "min. centrality"};
+    Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
+    Configurable<uint16_t> cfgNumContribMin{"cfgNumContribMin", 0, "min. numContrib"};
+    Configurable<uint16_t> cfgNumContribMax{"cfgNumContribMax", 65000, "max. numContrib"};
   } eventcuts;
 
   DielectronCut fDielectronCut;
@@ -214,15 +217,21 @@ struct SingleTrackQC {
 
   struct : ConfigurableGroup {
     std::string prefix = "zorroGroup";
-    Configurable<std::string> cfg_swt_name{"cfg_swt_name", "fLMeeIMR", "desired software trigger name"}; // 1 trigger per 1 task
+    Configurable<std::string> cfg_swt_name{"cfg_swt_name", "fLMeeIMR", "desired software trigger name. 1 trigger per 1 task."}; // 1 trigger per 1 task
     o2::framework::Configurable<std::string> ccdbPathSoftwareTrigger{"ccdbPathSoftwareTrigger", "EventFiltering/Zorro/", "ccdb path for ZORRO objects"};
     Configurable<uint64_t> bcMarginForSoftwareTrigger{"bcMarginForSoftwareTrigger", 100, "Number of BCs of margin for software triggers"};
   } zorroGroup;
 
-  o2::aod::rctsel::RCTFlagsChecker rctChecker;
-  o2::ccdb::CcdbApi ccdbApi;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
   Zorro zorro;
+  int mToIidx = 0;
+  int mTOICounter = 0;
+  int mATCounter = 0;
+
+  o2::aod::rctsel::RCTFlagsChecker rctChecker;
+  // o2::ccdb::CcdbApi ccdbApi;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  int mRunNumber = 0;
+  float d_bz = 0;
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false}; // 1 HistogramRegistry can keep up to 512 histograms
   static constexpr std::string_view event_cut_types[2] = {"before/", "after/"};
@@ -236,8 +245,8 @@ struct SingleTrackQC {
 
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       const AxisSpec axis_pt{ConfPtlBins, "p_{T,e} (GeV/c)"};
-      const AxisSpec axis_eta{20, -1.0, +1.0, "#eta_{e}"};
-      const AxisSpec axis_phi{36, 0.0, 2 * M_PI, "#varphi_{e} (rad.)"};
+      const AxisSpec axis_eta{ConfEtaBins, "#eta_{e}"};
+      const AxisSpec axis_phi{ConfPhiBins, "#varphi_{e} (rad.)"};
       const AxisSpec axis_phiposition{36, 0.0, 2 * M_PI, "#varphi_{e}^{*} (rad.)"};
       const AxisSpec axis_dca3D{ConfDCA3DBins, "DCA_{e}^{3D} (#sigma)"};
       const AxisSpec axis_dcaXY{ConfDCAXYBins, "DCA_{e}^{XY} (#sigma)"};
@@ -286,13 +295,13 @@ struct SingleTrackQC {
       fRegistry.addClone("Track/positive/", "Track/negative/");
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       const AxisSpec axis_pt{ConfPtlBins, "p_{T,#mu} (GeV/c)"};
-      const AxisSpec axis_eta{50, -6, -1, "#eta_{#mu}"};
-      const AxisSpec axis_phi{36, 0, 2 * M_PI, "#varphi_{#mu} (rad.)"};
+      const AxisSpec axis_eta{ConfEtaBins, "#eta_{#mu}"};
+      const AxisSpec axis_phi{ConfPhiBins, "#varphi_{#mu} (rad.)"};
       const AxisSpec axis_dca{ConfDCAXYBins, "DCA_{#mu}^{XY} (#sigma)"};
 
       // track info
       fRegistry.add("Track/positive/hs", "rec. single muon", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_dca}, true);
-      fRegistry.add("Track/positive/hEtaPhi_MatchMCHMID", "#eta vs. #varphi of matched MCHMID", kTH2F, {{180, 0, 2.f * M_PI}, {100, -6, -1}}, false);
+      fRegistry.add("Track/positive/hEtaPhi_MatchMCHMID", "#eta vs. #varphi of matched MCHMID", kTH2F, {{180, 0, 2.f * M_PI}, {80, -4, -2}}, false);
       fRegistry.add("Track/positive/hsDelta", "diff. between GL and associated SA;p_{T}^{gl} (GeV/c);(p_{T}^{sa} - p_{T}^{gl})/p_{T}^{gl};#Delta#eta;#Delta#varphi (rad.);", kTHnSparseF, {axis_pt, {100, -0.5, +0.5}, {100, -0.5, +0.5}, {90, -M_PI / 4, M_PI / 4}}, false);
       fRegistry.add("Track/positive/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{1000, -5, 5}}, false);
       fRegistry.add("Track/positive/hTrackType", "track type", kTH1F, {{6, -0.5f, 5.5}}, false);
@@ -308,17 +317,16 @@ struct SingleTrackQC {
       fRegistry.add("Track/positive/hNclsMCH", "number of MCH clusters", kTH1F, {{21, -0.5, 20.5}}, false);
       fRegistry.add("Track/positive/hNclsMFT", "number of MFT clusters", kTH1F, {{11, -0.5, 10.5}}, false);
       fRegistry.add("Track/positive/hPDCA", "pDCA;R at absorber end (cm);p #times DCA (GeV/c #upoint cm)", kTH2F, {{100, 0, 100}, {100, 0.0f, 1000}}, false);
-      fRegistry.add("Track/positive/hChi2", "chi2;chi2/ndf", kTH1F, {{100, 0.0f, 10}}, false);
-      fRegistry.add("Track/positive/hChi2MFT", "chi2MFT;chi2/ndf", kTH1F, {{100, 0.0f, 10}}, false);
-      fRegistry.add("Track/positive/hChi2MatchMCHMID", "chi2 match MCH-MID;chi2", kTH1F, {{100, 0.0f, 100}}, false);
-      fRegistry.add("Track/positive/hChi2MatchMCHMFT", "chi2 match MCH-MFT;chi2", kTH1F, {{100, 0.0f, 100}}, false);
+      fRegistry.add("Track/positive/hChi2_Pt", "chi2;p_{T,#mu} (GeV/c);chi2/ndf", kTH2F, {{100, 0, 10}, {100, 0.0f, 10}}, false);
+      fRegistry.add("Track/positive/hChi2MFT_Pt", "chi2MFT;p_{T,#mu} (GeV/c);chi2/ndf", kTH2F, {{100, 0, 10}, {100, 0.0f, 10}}, false);
+      fRegistry.add("Track/positive/hChi2MatchMCHMID_Pt", "chi2 match MCH-MID;p_{T,#mu} (GeV/c);chi2/ndf", kTH2F, {{100, 0, 10}, {200, 0.0f, 20}}, false);
+      fRegistry.add("Track/positive/hChi2MatchMCHMFT_Pt", "chi2 match MCH-MFT;p_{T,#mu} (GeV/c);chi2/ndf", kTH2F, {{100, 0, 10}, {100, 0.0f, 50}}, false);
       fRegistry.add("Track/positive/hMFTClusterMap", "MFT cluster map", kTH1F, {{1024, -0.5, 1023.5}}, false);
+      fRegistry.add("Track/positive/hdR_Chi2MatchMCHMFT", "dr vs. matching chi2 MCH-MFT;chi2 match MCH-MFT;#DeltaR;", kTH2F, {{200, 0, 50}, {200, 0, 0.5}}, false);
       fRegistry.addClone("Track/positive/", "Track/negative/");
     }
   }
 
-  int mRunNumber;
-  float d_bz;
   void init(InitContext&)
   {
     ccdb->setURL(ccdburl);
@@ -333,6 +341,18 @@ struct SingleTrackQC {
     addhistograms();
     mRunNumber = 0;
     d_bz = 0;
+    mToIidx = 0;
+    mTOICounter = 0;
+    mATCounter = 0;
+
+    if (doprocessQC_TriggeredData) {
+      LOGF(info, "Trigger analysis is enabled. Desired trigger name = %s", zorroGroup.cfg_swt_name.value.data());
+      fRegistry.add("Event/trigger/hInspectedTVX", "inspected TVX;run number;N_{TVX}", kTProfile, {{100000, 500000.5, 600000.5}}, true);                                                  // extend X range in Run 4/5
+      fRegistry.add("Event/trigger/hScaler", "trigger counter before DS;run number;counter", kTProfile, {{100000, 500000.5, 600000.5}}, true);                                            // extend X range in Run 4/5
+      fRegistry.add("Event/trigger/hSelection", "trigger counter after DS;run number;counter", kTProfile, {{100000, 500000.5, 600000.5}}, true);                                          // extend X range in Run 4/5
+      fRegistry.add("Event/trigger/hAnalysedTrigger", Form("analysed trigger %s;run number;counter", zorroGroup.cfg_swt_name.value.data()), kTH1D, {{100000, 500000.5, 600000.5}}, true); // extend X range in Run 4/5
+      fRegistry.add("Event/trigger/hAnalysedToI", Form("analysed ToI %s;run number;counter", zorroGroup.cfg_swt_name.value.data()), kTH1D, {{100000, 500000.5, 600000.5}}, true);         // extend X range in Run 4/5
+    }
 
     if (doprocessNorm) {
       fRegistry.addClone("Event/before/hCollisionCounter", "Event/norm/hCollisionCounter");
@@ -393,8 +413,17 @@ struct SingleTrackQC {
     if constexpr (isTriggerAnalysis) {
       zorro.setCCDBpath(zorroGroup.ccdbPathSoftwareTrigger);
       zorro.setBCtolerance(zorroGroup.bcMarginForSoftwareTrigger); // this does nothing.
-      zorro.initCCDB(ccdb.service, collision.runNumber(), collision.timestamp(), zorroGroup.cfg_swt_name.value);
+      mToIidx = zorro.initCCDB(ccdb.service, collision.runNumber(), collision.timestamp(), zorroGroup.cfg_swt_name.value)[0];
       zorro.populateHistRegistry(fRegistry, collision.runNumber());
+
+      uint64_t nInspectedTVX = zorro.getInspectedTVX()->GetBinContent(1);
+      uint64_t nScalers = zorro.getScalers()->GetBinContent(zorro.getScalers()->GetXaxis()->FindBin(zorroGroup.cfg_swt_name.value.data()));
+      uint64_t nSelections = zorro.getSelections()->GetBinContent(zorro.getSelections()->GetXaxis()->FindBin(zorroGroup.cfg_swt_name.value.data()));
+      LOGF(info, "run number %d: total inspected TVX events = %llu, scalers = %llu, selections = %llu", collision.runNumber(), nInspectedTVX, nScalers, nSelections);
+
+      fRegistry.fill(HIST("Event/trigger/hInspectedTVX"), collision.runNumber(), nInspectedTVX);
+      fRegistry.fill(HIST("Event/trigger/hScaler"), collision.runNumber(), nScalers);
+      fRegistry.fill(HIST("Event/trigger/hSelection"), collision.runNumber(), nSelections);
     }
   }
 
@@ -644,11 +673,12 @@ struct SingleTrackQC {
       fRegistry.fill(HIST("Track/positive/hNclsMCH"), track.nClusters());
       fRegistry.fill(HIST("Track/positive/hNclsMFT"), track.nClustersMFT());
       fRegistry.fill(HIST("Track/positive/hPDCA"), track.rAtAbsorberEnd(), track.pDca());
-      fRegistry.fill(HIST("Track/positive/hChi2"), track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2() / (2.f * (track.nClusters() + track.nClustersMFT()) - 5.f) : track.chi2());
-      fRegistry.fill(HIST("Track/positive/hChi2MFT"), track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2MFT() / (2.f * track.nClustersMFT() - 5.f) : 0);
-      fRegistry.fill(HIST("Track/positive/hChi2MatchMCHMID"), track.chi2MatchMCHMID());
-      fRegistry.fill(HIST("Track/positive/hChi2MatchMCHMFT"), track.chi2MatchMCHMFT());
+      fRegistry.fill(HIST("Track/positive/hChi2_Pt"), track.pt(), track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2() / (2.f * (track.nClusters() + track.nClustersMFT()) - 5.f) : track.chi2());
+      fRegistry.fill(HIST("Track/positive/hChi2MFT_Pt"), track.pt(), track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2MFT() / (2.f * track.nClustersMFT() - 5.f) : 0);
+      fRegistry.fill(HIST("Track/positive/hChi2MatchMCHMID_Pt"), track.pt(), track.chi2MatchMCHMID());
+      fRegistry.fill(HIST("Track/positive/hChi2MatchMCHMFT_Pt"), track.pt(), track.chi2MatchMCHMFT());
       fRegistry.fill(HIST("Track/positive/hMFTClusterMap"), track.mftClusterMap());
+      fRegistry.fill(HIST("Track/positive/hdR_Chi2MatchMCHMFT"), track.chi2MatchMCHMFT(), std::sqrt(deta * deta + dphi * dphi));
     } else {
       fRegistry.fill(HIST("Track/negative/hs"), track.pt(), track.eta(), track.phi(), dca_xy, weight);
       fRegistry.fill(HIST("Track/negative/hEtaPhi_MatchMCHMID"), track.phiMatchedMCHMID(), track.etaMatchedMCHMID(), weight);
@@ -667,11 +697,12 @@ struct SingleTrackQC {
       fRegistry.fill(HIST("Track/negative/hNclsMCH"), track.nClusters());
       fRegistry.fill(HIST("Track/negative/hNclsMFT"), track.nClustersMFT());
       fRegistry.fill(HIST("Track/negative/hPDCA"), track.rAtAbsorberEnd(), track.pDca());
-      fRegistry.fill(HIST("Track/negative/hChi2"), track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2() / (2.f * (track.nClusters() + track.nClustersMFT()) - 5.f) : track.chi2());
-      fRegistry.fill(HIST("Track/negative/hChi2MFT"), track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2MFT() / (2.f * track.nClustersMFT() - 5.f) : 0);
-      fRegistry.fill(HIST("Track/negative/hChi2MatchMCHMID"), track.chi2MatchMCHMID());
-      fRegistry.fill(HIST("Track/negative/hChi2MatchMCHMFT"), track.chi2MatchMCHMFT());
+      fRegistry.fill(HIST("Track/negative/hChi2_Pt"), track.pt(), track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2() / (2.f * (track.nClusters() + track.nClustersMFT()) - 5.f) : track.chi2());
+      fRegistry.fill(HIST("Track/negative/hChi2MFT_Pt"), track.pt(), track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2MFT() / (2.f * track.nClustersMFT() - 5.f) : 0);
+      fRegistry.fill(HIST("Track/negative/hChi2MatchMCHMID_Pt"), track.pt(), track.chi2MatchMCHMID());
+      fRegistry.fill(HIST("Track/negative/hChi2MatchMCHMFT_Pt"), track.pt(), track.chi2MatchMCHMFT());
       fRegistry.fill(HIST("Track/negative/hMFTClusterMap"), track.mftClusterMap());
+      fRegistry.fill(HIST("Track/negative/hdR_Chi2MatchMCHMFT"), track.chi2MatchMCHMFT(), std::sqrt(deta * deta + dphi * dphi));
     }
   }
 
@@ -681,7 +712,7 @@ struct SingleTrackQC {
     for (const auto& collision : collisions) {
       initCCDB<isTriggerAnalysis>(collision);
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
-      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+      if (centralities[cfgCentEstimator] < eventcuts.cfgCentMin || eventcuts.cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
 
@@ -696,6 +727,23 @@ struct SingleTrackQC {
       if constexpr (isTriggerAnalysis) {
         if (!zorro.isSelected(collision.globalBC(), zorroGroup.bcMarginForSoftwareTrigger)) { // triggered event
           continue;
+        }
+
+        auto swt_bitset = zorro.getLastResult();         // this has to be called after zorro::isSelected
+        auto TOIcounter = zorro.getTOIcounters()[0];     // this has to be called after zorro::isSelected
+        auto ATcounter = zorro.getATcounters()[mToIidx]; // this has to be called after zorro::isSelected
+
+        if (swt_bitset.test(mToIidx)) {
+          while (ATcounter > mATCounter) {
+            mATCounter++;
+            fRegistry.fill(HIST("Event/trigger/hAnalysedTrigger"), collision.runNumber());
+          }
+
+          while (TOIcounter > mTOICounter) {
+            fRegistry.fill(HIST("Event/trigger/hAnalysedToI"), collision.runNumber());
+            mTOICounter++; // always incremented by 1 in zorro!!
+          }
+          // LOGF(info, "collision.globalIndex() = %d, collision.globalBC() = %llu, mTOICounter = %d, mATcounter = %d", collision.globalIndex(), collision.globalBC(), mTOICounter, mATCounter);
         }
       }
 
@@ -742,7 +790,7 @@ struct SingleTrackQC {
     for (const auto& collision : collisions) {
       initCCDB<isTriggerAnalysis>(collision);
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
-      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+      if (centralities[cfgCentEstimator] < eventcuts.cfgCentMin || eventcuts.cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
 
@@ -827,8 +875,8 @@ struct SingleTrackQC {
   Filter trackFilter_muon = o2::aod::fwdtrack::trackType == dimuoncuts.cfg_track_type && dimuoncuts.cfg_min_pt_track < o2::aod::fwdtrack::pt && o2::aod::fwdtrack::pt < dimuoncuts.cfg_max_pt_track && dimuoncuts.cfg_min_eta_track < o2::aod::fwdtrack::eta && o2::aod::fwdtrack::eta < dimuoncuts.cfg_max_eta_track && dimuoncuts.cfg_min_phi_track < o2::aod::fwdtrack::phi && o2::aod::fwdtrack::phi < dimuoncuts.cfg_max_phi_track;
   Filter ttcaFilter_muon = ifnode(dimuoncuts.enableTTCA.node(), o2::aod::emprimarymuon::isAssociatedToMPC == true || o2::aod::emprimarymuon::isAssociatedToMPC == false, o2::aod::emprimarymuon::isAssociatedToMPC == true);
 
-  Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
-  Filter collisionFilter_numContrib = cfgNumContribMin <= o2::aod::collision::numContrib && o2::aod::collision::numContrib < cfgNumContribMax;
+  Filter collisionFilter_centrality = (eventcuts.cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < eventcuts.cfgCentMax) || (eventcuts.cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < eventcuts.cfgCentMax) || (eventcuts.cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < eventcuts.cfgCentMax);
+  Filter collisionFilter_numContrib = eventcuts.cfgNumContribMin <= o2::aod::collision::numContrib && o2::aod::collision::numContrib < eventcuts.cfgNumContribMax;
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
@@ -876,28 +924,28 @@ struct SingleTrackQC {
   {
     for (const auto& collision : collisions) {
       fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 1.0);
-      if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+      if (collision.selection_bit(o2::aod::emevsel::kIsTriggerTVX)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 2.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      if (collision.selection_bit(o2::aod::emevsel::kNoTimeFrameBorder)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 3.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      if (collision.selection_bit(o2::aod::emevsel::kNoITSROFrameBorder)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 4.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      if (collision.selection_bit(o2::aod::emevsel::kNoSameBunchPileup)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 5.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      if (collision.selection_bit(o2::aod::emevsel::kIsGoodZvtxFT0vsPV)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 6.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+      if (collision.selection_bit(o2::aod::emevsel::kIsVertexITSTPC)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 7.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+      if (collision.selection_bit(o2::aod::emevsel::kIsVertexTRDmatched)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 8.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+      if (collision.selection_bit(o2::aod::emevsel::kIsVertexTOFmatched)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 9.0);
       }
       if (collision.sel8()) {
@@ -906,28 +954,28 @@ struct SingleTrackQC {
       if (std::fabs(collision.posZ()) < 10.0) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 11.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      if (collision.selection_bit(o2::aod::emevsel::kNoCollInTimeRangeStandard)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 12.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+      if (collision.selection_bit(o2::aod::emevsel::kNoCollInTimeRangeStrict)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 13.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+      if (collision.selection_bit(o2::aod::emevsel::kNoCollInRofStandard)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 14.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+      if (collision.selection_bit(o2::aod::emevsel::kNoCollInRofStrict)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 15.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+      if (collision.selection_bit(o2::aod::emevsel::kNoHighMultCollInPrevRof)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 16.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer3)) {
+      if (collision.selection_bit(o2::aod::emevsel::kIsGoodITSLayer3)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 17.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
+      if (collision.selection_bit(o2::aod::emevsel::kIsGoodITSLayer0123)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 18.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      if (collision.selection_bit(o2::aod::emevsel::kIsGoodITSLayersAll)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 19.0);
       }
       if (!fEMEventCut.IsSelected(collision)) {
@@ -944,22 +992,22 @@ struct SingleTrackQC {
   void processBC(aod::EMBCs const& bcs)
   {
     for (const auto& bc : bcs) {
-      if (bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+      if (bc.selection_bit(o2::aod::emevsel::kIsTriggerTVX)) {
         fRegistry.fill(HIST("BC/hTVXCounter"), 0.f);
 
-        if (bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+        if (bc.selection_bit(o2::aod::emevsel::kNoTimeFrameBorder)) {
           fRegistry.fill(HIST("BC/hTVXCounter"), 1.f);
         }
-        if (bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+        if (bc.selection_bit(o2::aod::emevsel::kNoITSROFrameBorder)) {
           fRegistry.fill(HIST("BC/hTVXCounter"), 2.f);
         }
         if (rctChecker(bc)) {
           fRegistry.fill(HIST("BC/hTVXCounter"), 3.f);
         }
-        if (bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+        if (bc.selection_bit(o2::aod::emevsel::kNoTimeFrameBorder) && bc.selection_bit(o2::aod::emevsel::kNoITSROFrameBorder)) {
           fRegistry.fill(HIST("BC/hTVXCounter"), 4.f);
         }
-        if (bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) && rctChecker(bc)) {
+        if (bc.selection_bit(o2::aod::emevsel::kNoTimeFrameBorder) && bc.selection_bit(o2::aod::emevsel::kNoITSROFrameBorder) && rctChecker(bc)) {
           fRegistry.fill(HIST("BC/hTVXCounter"), 5.f);
         }
       }

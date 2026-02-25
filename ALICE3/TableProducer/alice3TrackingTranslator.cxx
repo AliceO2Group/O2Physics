@@ -16,7 +16,7 @@
 /// \author Nicolò Jacazio, Universita del Piemonte Orientale (IT)
 ///
 
-#include "ALICE3/DataModel/OTFTracks.h"
+#include "ALICE3/DataModel/OTFCollision.h"
 #include "ALICE3/DataModel/collisionAlice3.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -42,11 +42,6 @@
 #include <string>
 #include <vector>
 
-#ifdef __CLING__
-#pragma link C++ class std::vector < std::vector < unsigned int>> + ;
-#pragma link C++ class std::vector < std::vector < std::uint32_t>> + ;
-#endif
-
 TString inputPath;
 
 struct Alice3TrackingTranslator {
@@ -61,7 +56,9 @@ struct Alice3TrackingTranslator {
   o2::framework::Produces<o2::aod::TracksDCACov> tableTracksDCACov;
   o2::framework::Produces<o2::aod::CollisionsAlice3> tableCollisionsAlice3;
   o2::framework::Produces<o2::aod::TracksAlice3> tableTracksAlice3;
+  o2::framework::Produces<o2::aod::TracksAlice3Pdg> tableTracksAlice3Pdg;
   o2::framework::Produces<o2::aod::TracksExtraA3> tableTracksExtraA3;
+  o2::framework::Produces<o2::aod::MCParticlesExtraA3> tableMCParticlesExtraA3;
 
   o2::framework::Produces<o2::aod::StoredTracksExtra_002> tableStoredTracksExtra;
   o2::framework::Produces<o2::aod::TrackSelection> tableTrackSelection;
@@ -70,14 +67,13 @@ struct Alice3TrackingTranslator {
   o2::framework::Produces<o2::aod::McCollisions> tableMcCollisions;
   o2::framework::Produces<o2::aod::OTFLUTConfigId> tableOTFLUTConfigId;
 
-  o2::framework::Configurable<int> maxCollisions{"maxCollisions", 1000, "Nsigma for TOF PID (if enabled)"};
+  o2::framework::Configurable<int> maxCollisions{"maxCollisions", -1000, "Maximum number of collisions translated"};
+  o2::framework::Configurable<bool> addDaughterInfo{"addDaughterInfo", false, "Add daughter particle information to the MC truth output tables"};
 
   void init(o2::framework::InitContext&)
   {
     // Initialization if needed
     LOG(info) << "Alice3TrackingTranslator init called";
-    // Load dictionary for nested vector
-    gInterpreter->GenerateDictionary("vector<vector<unsigned int>>", "vector");
   }
 
 #define SETADDRESS(branchname, branchvar)                            \
@@ -123,6 +119,12 @@ struct Alice3TrackingTranslator {
       SETADDRESS("pz", m_pz);
       SETADDRESS("m", m_m);
       SETADDRESS("p", m_p);
+      SETADDRESS("q", m_q);
+      SETADDRESS("number_of_hits", m_number_of_hits);
+      SETADDRESS("particle_id", m_particleId);
+      if (mTree->GetBranchStatus("mother_particle_id")) {
+        SETADDRESS("mother_particle_id", m_motherId);
+      }
     }
     std::vector<int>* m_particle_type = nullptr;
     std::vector<float>* m_vx = nullptr;
@@ -134,6 +136,10 @@ struct Alice3TrackingTranslator {
     std::vector<float>* m_pz = nullptr;
     std::vector<float>* m_m = nullptr;
     std::vector<float>* m_p = nullptr;
+    std::vector<int>* m_number_of_hits = nullptr;
+    std::vector<ULong64_t>* m_particleId = nullptr;
+    std::vector<float>* m_q = nullptr;
+    std::vector<ULong64_t>* m_motherId = nullptr;
   };
 
   struct TrackStruct : public FileStruct {
@@ -155,8 +161,8 @@ struct Alice3TrackingTranslator {
       SETADDRESS("eQOP_fit", m_eQOP_fit);
       SETADDRESS("eT_fit", m_eT_fit);
       SETADDRESS("nMajorityHits", m_nMajorityHits);
-      // SETADDRESS("majorityParticleId", m_majorityParticleId);
-      mTree->SetBranchAddress("majorityParticleId", &m_majorityParticleId);
+      SETADDRESS("majorityParticleId", m_majorityParticleId);
+      // mTree->SetBranchAddress("majorityParticleId", &m_majorityParticleId);
       SETADDRESS("t_charge", m_t_charge);
       SETADDRESS("t_vx", m_t_vx);
       SETADDRESS("t_vy", m_t_vy);
@@ -187,20 +193,20 @@ struct Alice3TrackingTranslator {
     std::vector<float>* m_eT_fit = nullptr;     // time
 
     // The majority truth particle info
-    std::vector<unsigned int>* m_nMajorityHits = nullptr;                    /// The number of hits from majority particle
-    std::vector<std::vector<std::uint32_t>>* m_majorityParticleId = nullptr; /// The particle Id of the majority particle
-    std::vector<int>* m_t_charge = nullptr;                                  /// Charge of majority particle
-    std::vector<float>* m_t_time = nullptr;                                  /// Time of majority particle
-    std::vector<float>* m_t_vx = nullptr;                                    /// Vertex x positions of majority particle
-    std::vector<float>* m_t_vy = nullptr;                                    /// Vertex y positions of majority particle
-    std::vector<float>* m_t_vz = nullptr;                                    /// Vertex z positions of majority particle
-    std::vector<float>* m_t_px = nullptr;                                    /// Initial momenta m_px of majority particle
-    std::vector<float>* m_t_py = nullptr;                                    /// Initial momenta m_py of majority particle
-    std::vector<float>* m_t_pz = nullptr;                                    /// Initial momenta m_pz of majority particle
-    std::vector<float>* m_t_theta = nullptr;                                 /// Initial momenta theta of majority particle
-    std::vector<float>* m_t_phi = nullptr;                                   /// Initial momenta phi of majority particle
-    std::vector<float>* m_t_pT = nullptr;                                    /// Initial momenta pT of majority particle
-    std::vector<float>* m_t_eta = nullptr;                                   /// Initial momenta eta of majority particle
+    std::vector<unsigned int>* m_nMajorityHits = nullptr;   /// The number of hits from majority particle
+    std::vector<ULong64_t>* m_majorityParticleId = nullptr; /// The particle Id of the majority particle
+    std::vector<int>* m_t_charge = nullptr;                 /// Charge of majority particle
+    std::vector<float>* m_t_time = nullptr;                 /// Time of majority particle
+    std::vector<float>* m_t_vx = nullptr;                   /// Vertex x positions of majority particle
+    std::vector<float>* m_t_vy = nullptr;                   /// Vertex y positions of majority particle
+    std::vector<float>* m_t_vz = nullptr;                   /// Vertex z positions of majority particle
+    std::vector<float>* m_t_px = nullptr;                   /// Initial momenta m_px of majority particle
+    std::vector<float>* m_t_py = nullptr;                   /// Initial momenta m_py of majority particle
+    std::vector<float>* m_t_pz = nullptr;                   /// Initial momenta m_pz of majority particle
+    std::vector<float>* m_t_theta = nullptr;                /// Initial momenta theta of majority particle
+    std::vector<float>* m_t_phi = nullptr;                  /// Initial momenta phi of majority particle
+    std::vector<float>* m_t_pT = nullptr;                   /// Initial momenta pT of majority particle
+    std::vector<float>* m_t_eta = nullptr;                  /// Initial momenta eta of majority particle
 
     std::vector<int>* m_majorityParticlePDG = nullptr; // IA
   };
@@ -212,6 +218,28 @@ struct Alice3TrackingTranslator {
       SETADDRESS("barcode", barcode);
     }
     std::vector<unsigned int>* barcode = nullptr;
+  };
+  void addMCParticle(int collIndex, ParticleStruct& fileParticles, int iParticle, uint8_t flags, int firstMother, int firstDaughter, int numberOfHits)
+  {
+    int mothers[2] = {firstMother, -1};
+    int daughters[2] = {firstDaughter, -1};
+    tableStoredMcParticles(collIndex,                                                                      // mcCollisionId
+                           fileParticles.m_particle_type->at(iParticle),                                   // pdgCode
+                           0,                                                                              // statusCode
+                           flags,                                                                          // flags
+                           mothers,                                                                        // mothersIds
+                           daughters,                                                                      // daughtersIdSlice
+                           1.0f,                                                                           // weight
+                           fileParticles.m_px->at(iParticle),                                              // m_px
+                           fileParticles.m_py->at(iParticle),                                              // m_py
+                           fileParticles.m_pz->at(iParticle),                                              // m_pz
+                           std::hypot(fileParticles.m_p->at(iParticle), fileParticles.m_m->at(iParticle)), // e
+                           fileParticles.m_vx->at(iParticle),                                              // m_vx
+                           fileParticles.m_vy->at(iParticle),                                              // m_vy
+                           fileParticles.m_vz->at(iParticle),                                              // m_vz
+                           fileParticles.m_vt->at(iParticle));                                             // m_vt
+    tableMCParticlesExtraA3(numberOfHits,                                                                  // number_of_hits
+                            fileParticles.m_q->at(iParticle));                                             // charge
   };
 
   void process(o2::aod::BCs const&)
@@ -248,23 +276,34 @@ struct Alice3TrackingTranslator {
       LOG(info) << "Processing file: " << justFilename.Data();
       files[justFilename.Data()] = filename;
     }
-
+    LOG(info) << "All files loaded successfully";
     // Now open the files to translate and read the trees
-    ParticleStruct fileParticles(files["particles_simulation.root"], "particles");
+    ParticleStruct fileParticles(files["particles.root"], "particles");
+    LOG(info) << "Particles loaded successfully";
+    ParticleStruct fileParticlesSim(files["particles_simulation.root"], "particles");
+    LOG(info) << "Particles Sim loaded successfully";
+    std::string daughterFileName = addDaughterInfo ? "particles_decay.root" : "particles_simulation.root";
+    ParticleStruct fileDaughterParticles(files[daughterFileName], "particles");
+    LOG(info) << "Daughter particles loaded successfully from file " << daughterFileName;
     // FileStruct fileVertices(files["performance_vertexing.root"], "vertexing");
     TrackStruct fileTracksummary(files["tracksummary_ambi.root"], "tracksummary");
     // HitsStruct fileHits(files["hits.root"], "hits");
 
+    LOG(info) << "Tracks loaded successfully";
     const Long64_t kEvents = fileParticles.getEntries();
+    int indexOfLastParticleAfterEvent = -1;
     for (Long64_t iEvent = 0; iEvent < kEvents; ++iEvent) {
-      if (iEvent > 0 && iEvent % maxCollisions) {
-        LOG(info) << "Processing event " << iEvent << "/" << kEvents;
+      if (iEvent > 0 && maxCollisions.value > 0 && (iEvent % maxCollisions) == 0) {
+        LOG(info) << "Stopping at event " << iEvent << "/" << kEvents;
         break;
       }
       fileParticles.setEventEntry(iEvent);
       // fileVertices.setEventEntry(iEvent);
       fileTracksummary.setEventEntry(iEvent);
       // fileHits.setEventEntry(iEvent);
+      if (addDaughterInfo)
+        fileDaughterParticles.setEventEntry(iEvent);
+      fileParticlesSim.setEventEntry(iEvent);
 
       LOG(info) << "Processing event " << iEvent << "/" << kEvents;
 
@@ -275,6 +314,12 @@ struct Alice3TrackingTranslator {
       float collisionZ = 0.0f;
 
       tableOTFLUTConfigId(0);     // dummy for the moment
+
+      // Determine the collision ID for the new entry.
+      // If the table is empty, lastIndex() returns -1, so we start at 0.
+      // If it has entries, lastIndex() returns the index of the last element, so we use lastIndex() + 1.
+      int collisionId = tableCollisions.lastIndex() + 1;
+
       tableCollisions(0,          // bcId
                       collisionX, // posX
                       collisionY, // posY
@@ -296,10 +341,6 @@ struct Alice3TrackingTranslator {
 
       tableCollisionsAlice3(0.f); // multDensity
 
-      // Fill MC particles
-      int mothers[2] = {-1, -1};
-      int daughters[2] = {-1, -1};
-
       struct addedParticle {
         float px;
         float py;
@@ -308,51 +349,92 @@ struct Alice3TrackingTranslator {
         float vy;
         float vz;
       };
-      std::map<int, std::vector<addedParticle>> addedParticles;
       // Convert tracks from ACTS to ALICE format
       const size_t nParticlesGen = fileParticles.m_vx->size();
-      const size_t nParticles = fileTracksummary.m_t_vx->size();
+      const size_t nParticlesSim = fileParticlesSim.m_vx->size();
+      const size_t nDaughterParticles = fileDaughterParticles.m_vx->size();
       const size_t nTracks = fileTracksummary.m_eLOC0_fit->size();
+      std::vector<size_t> idMCparticles;
+
       for (size_t iTrack = 0; iTrack < nTracks; ++iTrack) {
-        LOG(info) << "Processing track " << iTrack << "/" << nTracks << " (nParticles=" << nParticles << ") nParticlesGen=" << nParticlesGen;
+        LOG(info) << "Processing track " << iTrack << "/" << nTracks << " (nParticlesSim=" << nParticlesSim << ") nParticlesGen=" << nParticlesGen;
         const size_t iParticle = iTrack;
+
         if (iParticle == 0) {
-          tableMcCollisions(0,                                        // mccollision::BCId,
-                            0,                                        // mccollision::GeneratorsID,
-                            fileTracksummary.m_t_vx->at(iParticle),   // mccollision::PosX,
-                            fileTracksummary.m_t_vy->at(iParticle),   // mccollision::PosY,
-                            fileTracksummary.m_t_vz->at(iParticle),   // mccollision::PosZ
-                            fileTracksummary.m_t_time->at(iParticle), // mccollision::T
-                            1.0f,                                     // mccollision::Weight
-                            0.0f,                                     // mccollision::ImpactParameter,
-                            0.f);                                     // mccollision::EventPlaneAngle,
+          tableMcCollisions(0,                                 // mccollision::BCId,
+                            0,                                 // mccollision::GeneratorsID,
+                            fileParticles.m_vx->at(iParticle), // mccollision::PosX,
+                            fileParticles.m_vy->at(iParticle), // mccollision::PosY,
+                            fileParticles.m_vz->at(iParticle), // mccollision::PosZ
+                            fileParticles.m_vt->at(iParticle), // mccollision::T
+                            1.0f,                              // mccollision::Weight
+                            0.0f,                              // mccollision::ImpactParameter,
+                            0.f);                              // mccollision::EventPlaneAngle,
         }
         uint8_t flags = 0;
-        flags |= o2::aod::mcparticle::enums::PhysicalPrimary;
 
-        addedParticles[fileTracksummary.m_majorityParticlePDG->at(iParticle)].push_back({fileTracksummary.m_t_px->at(iParticle),
-                                                                                         fileTracksummary.m_t_py->at(iParticle),
-                                                                                         fileTracksummary.m_t_pz->at(iParticle),
-                                                                                         fileTracksummary.m_t_vx->at(iParticle),
-                                                                                         fileTracksummary.m_t_vy->at(iParticle),
-                                                                                         fileTracksummary.m_t_vz->at(iParticle)});
+        ULong64_t idMCTrueParticle = fileTracksummary.m_majorityParticleId->at(iParticle);
+        int32_t mcParticleId = -1;
+        int pdgCode = -1;
 
-        tableStoredMcParticles(tableMcCollisions.lastIndex(),                         // mcCollisionId
-                               fileTracksummary.m_majorityParticlePDG->at(iParticle), // pdgCode
-                               0,                                                     // statusCode
-                               flags,                                                 // flags
-                               mothers,                                               // mothersIds
-                               daughters,                                             // daughtersIdSlice
-                               1.0f,                                                  // weight
-                               fileTracksummary.m_t_px->at(iParticle),                // m_px
-                               fileTracksummary.m_t_py->at(iParticle),                // m_py
-                               fileTracksummary.m_t_pz->at(iParticle),                // m_pz
-                               0,                                                     // e
-                               fileTracksummary.m_t_vx->at(iParticle),                // m_vx
-                               fileTracksummary.m_t_vy->at(iParticle),                // m_vy
-                               fileTracksummary.m_t_vz->at(iParticle),                // m_vz
-                               fileTracksummary.m_t_time->at(iParticle));             // m_vt
+        for (size_t iMC = 0; iMC < nParticlesGen; ++iMC) {
+          if (fileParticles.m_particleId->at(iMC) == idMCTrueParticle) {
+            if (count(idMCparticles.begin(), idMCparticles.end(), fileParticles.m_particleId->at(iMC)) > 0) {
+              continue;
+            }
+            idMCparticles.push_back(fileParticles.m_particleId->at(iMC));
+            flags |= o2::aod::mcparticle::enums::PhysicalPrimary;
+            int nHits = 0;
+            for (size_t iPartSim = 0; iPartSim < nParticlesSim; ++iPartSim) {
+              if (fileParticlesSim.m_particleId->at(iPartSim) == fileParticles.m_particleId->at(iMC)) {
+                nHits = fileParticlesSim.m_number_of_hits->at(iPartSim);
+                break;
+              }
+            }
+            addMCParticle(tableMcCollisions.lastIndex(), fileParticles, iMC, flags, -1, -1, nHits);
+            mcParticleId = tableStoredMcParticles.lastIndex();
+            pdgCode = fileParticles.m_particle_type->at(iMC);
+            break;
+          }
+        }
+        if (addDaughterInfo) {
+          for (size_t iMC = 0; iMC < nDaughterParticles; ++iMC) {
+            if (fileDaughterParticles.m_particleId->at(iMC) == idMCTrueParticle) {
+              if (count(idMCparticles.begin(), idMCparticles.end(), fileDaughterParticles.m_particleId->at(iMC)) > 0) {
+                break;
+              }
 
+              int nHits = 0;
+              for (size_t iPartSim = 0; iPartSim < nParticlesSim; ++iPartSim) {
+                if (fileParticlesSim.m_particleId->at(iPartSim) == fileDaughterParticles.m_particleId->at(iMC)) {
+                  nHits = fileParticlesSim.m_number_of_hits->at(iPartSim);
+                  break;
+                }
+              }
+              for (size_t iMother = 0; iMother < nParticlesGen; ++iMother) {
+                if (fileDaughterParticles.m_motherId->at(iMC) == fileParticles.m_particleId->at(iMother)) {
+                  if (count(idMCparticles.begin(), idMCparticles.end(), fileParticles.m_particleId->at(iMother)) > 0) {
+                    break;
+                  }
+                  idMCparticles.push_back(fileParticles.m_particleId->at(iMother));
+                  uint8_t flagsMother = o2::aod::mcparticle::enums::PhysicalPrimary;
+                  addMCParticle(tableMcCollisions.lastIndex(), fileParticles, iMother, flagsMother, -1, tableStoredMcParticles.lastIndex() + 2, 0);
+                  break;
+                }
+              }
+              int motherId = -1;
+              if (count(idMCparticles.begin(), idMCparticles.end(), fileDaughterParticles.m_motherId->at(iMC)) > 0) {
+                auto it = find(idMCparticles.begin(), idMCparticles.end(), fileDaughterParticles.m_motherId->at(iMC));
+                motherId = it - idMCparticles.begin() + indexOfLastParticleAfterEvent + 1;
+              }
+              idMCparticles.push_back(fileDaughterParticles.m_particleId->at(iMC));
+              addMCParticle(tableMcCollisions.lastIndex(), fileDaughterParticles, iMC, flags, motherId, -1, nHits);
+              mcParticleId = tableStoredMcParticles.lastIndex();
+              pdgCode = fileDaughterParticles.m_particle_type->at(iMC);
+              break;
+            }
+          }
+        }
         // Extract ACTS track parameters
         const float phi = fileTracksummary.m_ePHI_fit->at(iTrack);
         const float theta = fileTracksummary.m_eTHETA_fit->at(iTrack);
@@ -409,7 +491,7 @@ struct Alice3TrackingTranslator {
         o2::track::TrackParCov trackParCov(x, alpha, trackParams, trackCov, charge);
 
         // Fill StoredTracks table (basic track parameters)
-        tableStoredTracks(tableCollisions.lastIndex(),          // collisionId
+        tableStoredTracks(collisionId,                          // collisionId
                           o2::aod::track::TrackTypeEnum::Track, // trackType
                           trackParCov.getX(),                   // x
                           trackParCov.getAlpha(),               // alpha
@@ -460,8 +542,6 @@ struct Alice3TrackingTranslator {
 
         // Fill MC track labels
         // Get particle linkage from hits using the majority hit index
-        int32_t mcParticleId = -1;                         // Default to invalid particle ID
-        mcParticleId = tableStoredMcParticles.lastIndex(); // Temporary: link all tracks to the last added MC particle
         // if (fileTracksummary.nMajorityHits && iTrack < fileTracksummary.nMajorityHits->size()) {
         //   unsigned int hitIndex = fileTracksummary.nMajorityHits->at(iTrack);
         //   if (fileHits.barcode && hitIndex < fileHits.barcode->size()) {
@@ -489,7 +569,8 @@ struct Alice3TrackingTranslator {
                           0.0f); // sigmaDcaZ2
 
         // Fill ALICE3 specific tables
-        tableTracksAlice3(true); // isReconstructed
+        tableTracksAlice3(true);       // isReconstructed
+        tableTracksAlice3Pdg(pdgCode); // PdgCode to the linked MC truth particle
 
         tableTracksExtraA3(m_nMeasurements, // nSiliconHits (using m_nMeasurements as proxy)
                            0);              // nTPCHits
@@ -546,43 +627,64 @@ struct Alice3TrackingTranslator {
       }
 
       for (size_t iParticle = 0; iParticle < nParticlesGen; ++iParticle) {
-
+        if (iParticle == 0 && nTracks == 0) {
+          tableMcCollisions(0,                                 // mccollision::BCId,
+                            0,                                 // mccollision::GeneratorsID,
+                            fileParticles.m_vx->at(iParticle), // mccollision::PosX,
+                            fileParticles.m_vy->at(iParticle), // mccollision::PosY,
+                            fileParticles.m_vz->at(iParticle), // mccollision::PosZ
+                            fileParticles.m_vt->at(iParticle), // mccollision::T
+                            1.0f,                              // mccollision::Weight
+                            0.0f,                              // mccollision::ImpactParameter,
+                            0.f);                              // mccollision::EventPlaneAngle,
+        }
+        if (idMCparticles.end() != std::find(idMCparticles.begin(), idMCparticles.end(), fileParticles.m_particleId->at(iParticle))) {
+          // Already added via track
+          continue;
+        }
         uint8_t flags = 0;
         flags |= o2::aod::mcparticle::enums::PhysicalPrimary;
-        bool alreadyAdded = false;
-        for (const auto& ap : addedParticles[fileParticles.m_particle_type->at(iParticle)]) {
-          if (std::abs(ap.px - fileParticles.m_px->at(iParticle)) <= 1.e-5 &&
-              std::abs(ap.py - fileParticles.m_py->at(iParticle)) <= 1.e-5 &&
-              std::abs(ap.pz - fileParticles.m_pz->at(iParticle)) <= 1.e-5 &&
-              std::abs(ap.vx - fileParticles.m_vx->at(iParticle)) <= 1.e-5 &&
-              std::abs(ap.vy - fileParticles.m_vy->at(iParticle)) <= 1.e-5 &&
-              std::abs(ap.vz - fileParticles.m_vz->at(iParticle)) <= 1.e-5) {
-            alreadyAdded = true;
+
+        int nHits = 0;
+        for (size_t iPartSim = 0; iPartSim < nParticlesSim; ++iPartSim) {
+          if (fileParticlesSim.m_particleId->at(iPartSim) == fileParticles.m_particleId->at(iParticle)) {
+            nHits = fileParticlesSim.m_number_of_hits->at(iPartSim);
             break;
           }
         }
-        if (alreadyAdded) {
-          continue;
+        addMCParticle(tableMcCollisions.lastIndex(), fileParticles, iParticle, flags, -1, -1, nHits);
+        idMCparticles.push_back(fileParticles.m_particleId->at(iParticle));
+      }
+      if (addDaughterInfo) {
+        for (size_t iParticle = 0; iParticle < nDaughterParticles; ++iParticle) {
+          if (idMCparticles.end() != std::find(idMCparticles.begin(), idMCparticles.end(), fileDaughterParticles.m_particleId->at(iParticle))) {
+            // Already added via track
+            continue;
+          }
+          uint8_t flags = 0;
+          int nHits = 0;
+          for (size_t iPartSim = 0; iPartSim < nParticlesSim; ++iPartSim) {
+            if (fileParticlesSim.m_particleId->at(iPartSim) == fileDaughterParticles.m_particleId->at(iParticle)) {
+              nHits = fileParticlesSim.m_number_of_hits->at(iPartSim);
+              break;
+            }
+          }
+          int motherId = -1;
+          for (size_t iMother = 0; iMother < nParticlesGen; ++iMother) {
+            if (fileDaughterParticles.m_motherId->at(iParticle) == fileParticles.m_particleId->at(iMother)) {
+              if (count(idMCparticles.begin(), idMCparticles.end(), fileDaughterParticles.m_motherId->at(iParticle)) > 0) {
+                auto it = find(idMCparticles.begin(), idMCparticles.end(), fileDaughterParticles.m_motherId->at(iParticle));
+                motherId = it - idMCparticles.begin() + indexOfLastParticleAfterEvent + 1;
+              }
+            }
+          }
+          addMCParticle(tableMcCollisions.lastIndex(), fileDaughterParticles, iParticle, flags, motherId, -1, nHits);
         }
-
-        tableStoredMcParticles(tableMcCollisions.lastIndex(),                                                  // mcCollisionId
-                               fileParticles.m_particle_type->at(iParticle),                                   // pdgCode
-                               0,                                                                              // statusCode
-                               flags,                                                                          // flags
-                               mothers,                                                                        // mothersIds
-                               daughters,                                                                      // daughtersIdSlice
-                               1.0f,                                                                           // weight
-                               fileParticles.m_px->at(iParticle),                                              // m_px
-                               fileParticles.m_py->at(iParticle),                                              // m_py
-                               fileParticles.m_pz->at(iParticle),                                              // m_pz
-                               std::hypot(fileParticles.m_p->at(iParticle), fileParticles.m_m->at(iParticle)), // e
-                               fileParticles.m_vx->at(iParticle),                                              // m_vx
-                               fileParticles.m_vy->at(iParticle),                                              // m_vy
-                               fileParticles.m_vz->at(iParticle),                                              // m_vz
-                               fileParticles.m_vt->at(iParticle));                                             // m_vt
       }
 
-      LOG(info) << "Event " << iEvent << ": has " << nTracks << " tracks and " << nParticles << " particles.";
+      LOG(info) << "Event " << iEvent << ": has " << nTracks << " tracks, " << nParticlesGen << " particles " << nDaughterParticles << " daughter particles, " << nParticlesSim << " propagated particles.";
+      LOG(info) << "Total numbers of stored MC particles: " << tableStoredMcParticles.lastIndex() + 1;
+      indexOfLastParticleAfterEvent = tableStoredMcParticles.lastIndex();
     }
   }
 };
