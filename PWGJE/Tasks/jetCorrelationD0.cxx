@@ -48,7 +48,7 @@ DECLARE_SOA_TABLE(CollisionTables, "AOD", "COLLISIONINFOTABLE",
 namespace collisionInfo
 {
 DECLARE_SOA_INDEX_COLUMN(CollisionTable, collisionTable);
-} // namespace indexColumns
+} // namespace collisionInfo
 namespace d0Info
 {
 // D0
