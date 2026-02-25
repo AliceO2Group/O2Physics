@@ -1408,7 +1408,7 @@ struct StrangenessInJetsIons {
 
       // Require vertex position within the allowed z range
       if (std::fabs(collision.posZ()) > zVtx)
-        return;
+        continue;
 
       // Fill event counter after selection on z-vertex
       registryMC.fill(HIST("number_of_events_mc_gen"), 1.5);
