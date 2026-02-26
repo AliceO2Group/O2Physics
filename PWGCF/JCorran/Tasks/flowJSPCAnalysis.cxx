@@ -15,7 +15,6 @@
 
 // Standard headers.
 #include <TFormula.h>
-#include <THnSparse.h>
 #include <TRandom3.h>
 
 #include <chrono>
@@ -70,8 +69,6 @@ struct flowJSPCAnalysis {
   using HasWeightEff = decltype(std::declval<T&>().weightEff());
   template <class T>
   using HasTrackType = decltype(std::declval<T&>().trackType());
-  template <class T>
-  using HasMultSet = decltype(std::declval<T&>().multiplicities());
 
   HistogramRegistry qaHistRegistry{"qaHistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   FlowJHistManager histManager;
@@ -99,10 +96,6 @@ struct flowJSPCAnalysis {
   O2_DEFINE_CONFIGURABLE(cfgMultCorrelationsMask, uint16_t, 0, "Selection bitmask for the multiplicity correlations. This should match the filter selection cfgEstimatorBitMask.")
   O2_DEFINE_CONFIGURABLE(cfgMultCutFormula, std::string, "", "Multiplicity correlations cut formula. A result greater than zero results in accepted event. Parameters: [cFT0C] FT0C centrality, [mFV0A] V0A multiplicity, [mGlob] global track multiplicity, [mPV] PV track multiplicity, [cFT0M] FT0M centrality")
 
-  ConfigurableAxis axisMultCorrCent{"axisMultCorrCent", {100, 0, 100}, "multiplicity correlation axis for centralities"};
-  ConfigurableAxis axisMultCorrV0{"axisMultCorrV0", {1000, 0, 100000}, "multiplicity correlation axis for V0 multiplicities"};
-  ConfigurableAxis axisMultCorrMult{"axisMultCorrMult", {1000, 0, 1000}, "multiplicity correlation axis for track multiplicities"};
-
   // // Filters to be applied to the received data.
   // // The analysis assumes the data has been subjected to a QA of its selection,
   // // and thus only the final distributions of the data for analysis are saved.
@@ -127,22 +120,6 @@ struct flowJSPCAnalysis {
     histManager.setDebugLog(false);
     histManager.createHistQA();
 
-    if (doprocessCFDerivedMultSetCorrected) {
-      if (cfgMultCorrelationsMask == 0)
-        LOGF(fatal, "cfgMultCorrelationsMask can not be 0 when MultSet process functions are in use.");
-      std::vector<AxisSpec> multAxes;
-      if (cfgMultCorrelationsMask & aod::cfmultset::CentFT0C)
-        multAxes.emplace_back(axisMultCorrCent, "FT0C centrality");
-      if (cfgMultCorrelationsMask & aod::cfmultset::MultFV0A)
-        multAxes.emplace_back(axisMultCorrV0, "V0A multiplicity");
-      if (cfgMultCorrelationsMask & aod::cfmultset::MultNTracksPV)
-        multAxes.emplace_back(axisMultCorrMult, "Nch PV");
-      if (cfgMultCorrelationsMask & aod::cfmultset::MultNTracksGlobal)
-        multAxes.emplace_back(axisMultCorrMult, "Nch Global");
-      if (cfgMultCorrelationsMask & aod::cfmultset::CentFT0M)
-        multAxes.emplace_back(axisMultCorrCent, "FT0M centrality");
-      qaHistRegistry.add("multCorrelations", "Multiplicity correlations", {HistType::kTHnSparseF, multAxes});
-    }
 
     if (!cfgMultCutFormula.value.empty()) {
       multCutFormula = std::make_unique<TFormula>("multCutFormula", cfgMultCutFormula.value.c_str());
@@ -179,13 +156,6 @@ struct flowJSPCAnalysis {
     int cBin = histManager.getCentBin(cent);
     spcHistograms.fill(HIST("FullCentrality"), cent);
     int nTracks = tracks.size();
-
-    if (cfgFillQA) {
-      if constexpr (std::experimental::is_detected<HasMultSet, CollisionT>::value) {
-        std::vector<double> v(collision.multiplicities().begin(), collision.multiplicities().end());
-        qaHistRegistry.get<THnSparse>(HIST("multCorrelations")).get()->Fill(v.data());
-      }
-    }
 
     double wNUA = 1.0;
     double wEff = 1.0;
@@ -260,7 +230,7 @@ struct flowJSPCAnalysis {
   void processCFDerivedMultSetCorrected(soa::Filtered<soa::Join<aod::CFCollisions, aod::CFMultSets>>::iterator const& collision, soa::Filtered<soa::Join<aod::CFTracks, aod::JWeights>> const& tracks)
   {
     if (std::popcount(static_cast<uint32_t>(cfgMultCorrelationsMask.value)) != static_cast<int>(collision.multiplicities().size()))
-      LOGF(fatal, "Multiplicity selections (cfgMultCorrelationsMask = 0x%x) do not match the size of the table column (%ld). The histogram filling relies on the preservation of order.", cfgMultCorrelationsMask.value, collision.multiplicities().size());
+      LOGF(fatal, "Multiplicity selections (cfgMultCorrelationsMask = 0x%x) do not match the size of the table column (%ld).", cfgMultCorrelationsMask.value, collision.multiplicities().size());
     if (!passOutlier(collision))
       return;
     analyze(collision, tracks);
