@@ -13,12 +13,13 @@
 // \author  Maxim Virta (maxim.virta@cern.ch), Cindy Mordasini (cindy.mordasini@cern.ch)
 
 // Standard headers.
+#include <TFormula.h>
+#include <THnSparse.h>
+#include <TRandom3.h>
+
 #include <chrono>
 #include <string>
 #include <vector>
-#include <TRandom3.h>
-#include <THnSparse.h>
-#include <TFormula.h>
 
 // O2 headers. //
 // The first two are mandatory.
@@ -104,7 +105,7 @@ struct flowJSPCAnalysis {
   // // The analysis assumes the data has been subjected to a QA of its selection,
   // // and thus only the final distributions of the data for analysis are saved.
   Filter collFilter = (nabs(aod::collision::posZ) < cfgEventCuts.cfgZvtxMax);
-  
+
   Filter trackFilter = (aod::track::pt > cfgTrackCuts.cfgPtMin) && (aod::track::pt < cfgTrackCuts.cfgPtMax) && (nabs(aod::track::eta) < cfgTrackCuts.cfgEtaMax);
   Filter cftrackFilter = (nabs(aod::cftrack::eta) < cfgTrackCuts.cfgEtaMax) && (aod::cftrack::pt > cfgTrackCuts.cfgPtMin) && (aod::cftrack::pt < cfgTrackCuts.cfgPtMax) && ncheckbit(aod::track::trackType, as<uint8_t>(cfgTrackBitMask));
 
