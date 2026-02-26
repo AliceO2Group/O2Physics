@@ -369,6 +369,14 @@ struct JetDerivedDataSelector {
             continue;
           }
         }
+        if constexpr (std::is_same_v<std::decay_t<T>, aod::JMcParticles>) {
+          if (!selectionObject.isPhysicalPrimary()) {
+            continue;
+          }
+          if (selectionObject.pt() < config.trackPtSelectionMin || std::abs(selectionObject.eta()) > config.trackEtaSelectionMax) {
+            continue;
+          }
+        }
         if (selectionObject.pt() >= selectionObjectPtMin) {
           isTriggerObject = true;
         }
