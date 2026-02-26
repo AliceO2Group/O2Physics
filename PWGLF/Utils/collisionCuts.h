@@ -112,9 +112,9 @@ class CollisonCuts
     mHistogramRegistry->add("Event/posZ", "; vtx_{z} (cm); Entries", o2::framework::kTH1F, {{250, -12.5, 12.5}});       // z-vertex histogram after event selections
     mHistogramRegistry->add("Event/posZ_noCut", "; vtx_{z} (cm); Entries", o2::framework::kTH1F, {{250, -12.5, 12.5}}); // z-vertex histogram before all selections
     if (mCheckIsRun3) {
-      mHistogramRegistry->add("Event/CentFT0M", "; vCentT0M; Entries", o2::framework::kTH1F, {{110, 0, 110}});
-      mHistogramRegistry->add("Event/CentFT0C", "; vCentT0C; Entries", o2::framework::kTH1F, {{110, 0, 110}});
-      mHistogramRegistry->add("Event/CentFT0A", "; vCentT0A; Entries", o2::framework::kTH1F, {{110, 0, 110}});
+      mHistogramRegistry->add("Event/CentFT0M", "; FT0M Percentile; Entries", o2::framework::kTH1F, {{110, 0, 110}});
+      mHistogramRegistry->add("Event/CentFT0C", "; FT0C Percentile; Entries", o2::framework::kTH1F, {{110, 0, 110}});
+      mHistogramRegistry->add("Event/CentFT0A", "; FT0A Percentile; Entries", o2::framework::kTH1F, {{110, 0, 110}});
       mHistogramRegistry->add("Event/posZ_ITSOnly", "; vtx_{z} (cm); Entries", o2::framework::kTH1F, {{250, -12.5, 12.5}});
       mHistogramRegistry->add("Event/posZ_ITSTPC", "; vtx_{z} (cm); Entries", o2::framework::kTH1F, {{250, -12.5, 12.5}});
       mHistogramRegistry->add("Event/trackOccupancyInTimeRange_noCut", "; Occupancy; Entries", o2::framework::kTH1F, {{500, 0., 20000.}});
