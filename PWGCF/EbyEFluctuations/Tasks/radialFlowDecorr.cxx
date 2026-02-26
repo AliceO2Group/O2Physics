@@ -3456,7 +3456,6 @@ struct RadialFlowDecorr {
     if (coll.has_foundFT0()) {
       const auto& ft0 = coll.foundFT0();
       for (std::size_t iCh = 0; iCh < ft0.channelA().size(); iCh++) {
-        auto chanelid = ft0.channelA()[iCh];
         float ampl = ft0.amplitudeA()[iCh];
         amplFT0A += ampl;
       }
@@ -3464,7 +3463,6 @@ struct RadialFlowDecorr {
         auto chanelid = ft0.channelC()[iCh];
         auto globalId = chanelid + KnFt0cCell;
         float ampl = ft0.amplitudeC()[iCh];
-        auto eta = getEtaFT0(globalId, 1);
         amplFT0C += ampl;
       }
     }
@@ -3562,10 +3560,10 @@ struct RadialFlowDecorr {
               histos.fill(HIST("Prof_Cov_Cent_etabin_ptbin"), cent, ietaA, ipt, covAC);
               histos.fill(HIST("Prof_Cov_Mult_etabin_ptbin"), coll.multNTracksPV(), ietaA, ipt, covAC);
             }
-            // if (std::isfinite(covCA)) {
-            //   histos.fill(HIST("Prof_Cov_Cent_etabin_ptbin"), cent, ietaA, ipt, covCA);
-            //   histos.fill(HIST("Prof_Cov_Mult_etabin_ptbin"), coll.multNTracksPV(), ietaA, ipt, covCA);
-            // }
+            if (std::isfinite(covCA)) {
+              histos.fill(HIST("Prof_Cov_Cent_etabin_ptbin"), cent, ietaA, ipt, covCA);
+              histos.fill(HIST("Prof_Cov_Mult_etabin_ptbin"), coll.multNTracksPV(), ietaA, ipt, covCA);
+            }
 
             if (std::isfinite(covFT0A)) {
               histos.fill(HIST("Prof_CovFT0A_Cent_etabin_ptbin"), cent, ietaA, ipt, covFT0A);
@@ -3585,10 +3583,10 @@ struct RadialFlowDecorr {
               histos.fill(HIST("Prof_Cov_Cent_etabin_ptbin_Pi"), cent, ietaA, ipt, covAC);
               histos.fill(HIST("Prof_Cov_Mult_etabin_ptbin_Pi"), coll.multNTracksPV(), ietaA, ipt, covAC);
             }
-            // if (std::isfinite(covCA)) {
-            //   histos.fill(HIST("Prof_Cov_Cent_etabin_ptbin_Pi"), cent, ietaA, ipt, covCA);
-            //   histos.fill(HIST("Prof_Cov_Mult_etabin_ptbin_Pi"), coll.multNTracksPV(), ietaA, ipt, covCA);
-            // }
+            if (std::isfinite(covCA)) {
+              histos.fill(HIST("Prof_Cov_Cent_etabin_ptbin_Pi"), cent, ietaA, ipt, covCA);
+              histos.fill(HIST("Prof_Cov_Mult_etabin_ptbin_Pi"), coll.multNTracksPV(), ietaA, ipt, covCA);
+            }
             if (std::isfinite(covFT0A)) {
               histos.fill(HIST("Prof_CovFT0A_Cent_etabin_ptbin_Pi"), cent, ietaA, ipt, covFT0A);
               histos.fill(HIST("Prof_CovFT0A_Mult_etabin_ptbin_Pi"), coll.multNTracksPV(), ietaA, ipt, covFT0A);
@@ -3607,10 +3605,10 @@ struct RadialFlowDecorr {
               histos.fill(HIST("Prof_Cov_Cent_etabin_ptbin_Ka"), cent, ietaA, ipt, covAC);
               histos.fill(HIST("Prof_Cov_Mult_etabin_ptbin_Ka"), coll.multNTracksPV(), ietaA, ipt, covAC);
             }
-            // if (std::isfinite(covCA)) {
-            //   histos.fill(HIST("Prof_Cov_Cent_etabin_ptbin_Ka"), cent, ietaA, ipt, covCA);
-            //   histos.fill(HIST("Prof_Cov_Mult_etabin_ptbin_Ka"), coll.multNTracksPV(), ietaA, ipt, covCA);
-            // }
+            if (std::isfinite(covCA)) {
+              histos.fill(HIST("Prof_Cov_Cent_etabin_ptbin_Ka"), cent, ietaA, ipt, covCA);
+              histos.fill(HIST("Prof_Cov_Mult_etabin_ptbin_Ka"), coll.multNTracksPV(), ietaA, ipt, covCA);
+            }
             if (std::isfinite(covFT0A)) {
               histos.fill(HIST("Prof_CovFT0A_Cent_etabin_ptbin_Ka"), cent, ietaA, ipt, covFT0A);
               histos.fill(HIST("Prof_CovFT0A_Mult_etabin_ptbin_Ka"), coll.multNTracksPV(), ietaA, ipt, covFT0A);
@@ -3629,10 +3627,10 @@ struct RadialFlowDecorr {
               histos.fill(HIST("Prof_Cov_Cent_etabin_ptbin_Pr"), cent, ietaA, ipt, covAC);
               histos.fill(HIST("Prof_Cov_Mult_etabin_ptbin_Pr"), coll.multNTracksPV(), ietaA, ipt, covAC);
             }
-            // if (std::isfinite(covCA)) {
-            //   histos.fill(HIST("Prof_Cov_Cent_etabin_ptbin_Pr"), cent, ietaA, ipt, covCA);
-            //   histos.fill(HIST("Prof_Cov_Mult_etabin_ptbin_Pr"), coll.multNTracksPV(), ietaA, ipt, covCA);
-            // }
+            if (std::isfinite(covCA)) {
+              histos.fill(HIST("Prof_Cov_Cent_etabin_ptbin_Pr"), cent, ietaA, ipt, covCA);
+              histos.fill(HIST("Prof_Cov_Mult_etabin_ptbin_Pr"), coll.multNTracksPV(), ietaA, ipt, covCA);
+            }
             if (std::isfinite(covFT0A)) {
               histos.fill(HIST("Prof_CovFT0A_Cent_etabin_ptbin_Pr"), cent, ietaA, ipt, covFT0A);
               histos.fill(HIST("Prof_CovFT0A_Mult_etabin_ptbin_Pr"), coll.multNTracksPV(), ietaA, ipt, covFT0A);
