@@ -46,11 +46,11 @@ class CollisonCuts
     kFlagTrigerTVX,
     kFlagTimeFrameBorder,
     kFlagITSROFrameBorder,
-    kFlagSel8,
     kFlagVertexITSTPC,
-    kFlagBunchPileup,
     kFlagZvtxFT0vsPV,
-    kFlagOccupancy,
+    kFlagVertexTOFmatched,
+    kFlagVertexTRDmatched,
+    kFlagBunchPileup,
     kNoCollInTimeRangeStandard,
     kNoCollInTimeRangeNarrow,
     kNoCollInTimeRangeStrict,
@@ -60,9 +60,10 @@ class CollisonCuts
     kIsGoodITSLayersAll,
     kIsGoodITSLayer3,
     kIsGoodITSLayer0123,
-    kFlagVertexTRDmatched,
     kFlagBBT0A,
     kFlagBBT0C,
+    kFlagSel8,
+    kFlagOccupancy,
     kAllpassed
   };
 
@@ -131,6 +132,7 @@ class CollisonCuts
 
     mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagSel8), "sel8");
     mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagOccupancy), "LowOccupancy");
+    mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagVertexTOFmatched), "VertexTOFmatched");
     mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kAllpassed), "Allpassed");
   }
 
@@ -266,6 +268,13 @@ class CollisonCuts
   {
     mApplyHighMultCollInPrevRof = apply;
     setSelection(EvtSel::kNoHighMultCollInPrevRof, apply);
+  }
+
+  /// Set the VertexTOFmatched cut
+  void setApplyVertexTOFmatched(bool apply)
+  {
+    mApplyVertexTOFmatched = apply;
+    setSelection(EvtSel::kFlagVertexTOFmatched, apply);
   }
 
   /// Set the VertexTRDmatched cut
@@ -531,6 +540,7 @@ class CollisonCuts
   bool mApplyCollInRofStandard = false;       ///< Apply NoCollInRofStandard selection
   bool mApplyCollInRofStrict = false;         ///< Apply NoCollInRofStrict selection
   bool mApplyHighMultCollInPrevRof = false;   ///< Apply NoHighMultCollInPrevRof selection
+  bool mApplyVertexTOFmatched = false;        ///< Apply vertex TOF matched selection
   bool mApplyVertexTRDmatched = false;        ///< Apply vertex TRD matched selection
   bool mApplyBBT0A = false;                   ///< Apply T0A beam-beam timing selection
   bool mApplyBBT0C = false;                   ///< Apply T0C beam-beam timing selection
