@@ -1316,10 +1316,10 @@ struct HfTaskFlow {
 
         if (!fillingHFcontainer) {
           //  fill pair correlations
-          target->getPairHist()->Fill(step, sampleIndex, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
+          target->getPairHist()->Fill(step, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ, sampleIndex,
                                       triggerWeight * associatedWeight);
         } else {
-          target->getPairHist()->Fill(step, sampleIndex, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ, invmass,
+          target->getPairHist()->Fill(step, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ, invmass, sampleIndex,
                                       triggerWeight * associatedWeight);
         }
 
@@ -1484,10 +1484,10 @@ struct HfTaskFlow {
         deltaPhi = RecoDecay::constrainAngle(deltaPhi, -PIHalf);
 
         if (!fillingHFcontainer) {
-          target->getPairHist()->Fill(step, sampleIndex, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
+          target->getPairHist()->Fill(step, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ, sampleIndex,
                                       triggerWeight * associatedWeight);
         } else {
-          target->getPairHist()->Fill(step, sampleIndex, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ, invmass,
+          target->getPairHist()->Fill(step, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ, invmass, sampleIndex,
                                       triggerWeight * associatedWeight);
         }
 
@@ -1617,10 +1617,10 @@ struct HfTaskFlow {
           deltaPhi = RecoDecay::constrainAngle(deltaPhi, -PIHalf); // set range of delta phi in (-pi/2 , 3/2*pi)
 
           if (!fillingHFcontainer) {
-            target->getPairHist()->Fill(step, sampleIndex, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ,
+            target->getPairHist()->Fill(step, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ, sampleIndex,
                                         triggerWeight * associatedWeight);
           } else {
-            target->getPairHist()->Fill(step, sampleIndex, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ, invmass,
+            target->getPairHist()->Fill(step, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ, invmass, sampleIndex,
                                         triggerWeight * associatedWeight);
           }
 
@@ -1665,10 +1665,10 @@ struct HfTaskFlow {
           deltaPhi = RecoDecay::constrainAngle(deltaPhi, -PIHalf); // set range of delta phi in (-pi/2 , 3/2*pi)
 
           if (!fillingHFcontainer) {
-            target->getPairHist()->Fill(step, sampleIndex, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ,
+            target->getPairHist()->Fill(step, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ, sampleIndex,
                                         amplitude * triggerWeight * associatedWeight);
           } else {
-            target->getPairHist()->Fill(step, sampleIndex, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ, invmass,
+            target->getPairHist()->Fill(step, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ, invmass, sampleIndex,
                                         amplitude * triggerWeight * associatedWeight);
           }
 
@@ -1763,7 +1763,7 @@ struct HfTaskFlow {
           float deltaPhi = phi1 - phi2;
           deltaPhi = RecoDecay::constrainAngle(deltaPhi, -PIHalf); // set range of delta phi in (-pi/2 , 3/2*pi)
 
-          target->getPairHist()->Fill(step, sampleIndex, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ,
+          target->getPairHist()->Fill(step, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ, sampleIndex,
                                       triggerWeight * associatedWeight);
 
           // FILL QA PLOTS for associated particle
@@ -1796,7 +1796,7 @@ struct HfTaskFlow {
           float deltaPhi = phi1 - phi2;
           deltaPhi = RecoDecay::constrainAngle(deltaPhi, -PIHalf); // set range of delta phi in (-pi/2 , 3/2*pi)
 
-          target->getPairHist()->Fill(step, sampleIndex, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ,
+          target->getPairHist()->Fill(step, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ, sampleIndex,
                                       amplitude * triggerWeight * associatedWeight);
 
           // FILL QA PLOTS for associated particle
@@ -1845,7 +1845,7 @@ struct HfTaskFlow {
         auto etaC = getEtaFT0(channelIdC, isFT0C);
         float deltaPhi = RecoDecay::constrainAngle(phiA - phiC, -PIHalf);
 
-        target->getPairHist()->Fill(step, sampleIndex, etaA - etaC, 0.f, 0.f, multiplicity, deltaPhi, posZ,
+        target->getPairHist()->Fill(step, etaA - etaC, 0.f, 0.f, multiplicity, deltaPhi, posZ, sampleIndex,
                                     amplitude * triggerWeight * associatedWeight);
 
         if (sameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
