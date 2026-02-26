@@ -114,21 +114,21 @@ struct HfCorrelatorDplusDplusReduced {
       collision.posZ());
   }
 
-  template <typename Coll, bool doMc = false, bool doMl = false, typename T>
+  template <typename Coll, bool DoMc = false, bool DoMl = false, typename T>
   void fillCandidateTable(const T& candidate, int localEvIdx = -1, int sign = 1)
   {
     int8_t flagMc = 0;
     int8_t originMc = 0;
     int8_t channelMc = 0;
 
-    if constexpr (doMc) {
+    if constexpr (DoMc) {
       flagMc = candidate.flagMcMatchRec();
       originMc = candidate.originMcRec();
       channelMc = candidate.flagMcDecayChanRec();
     }
 
     std::vector<float> outputMl = {-999., -999.};
-    if constexpr (doMl) {
+    if constexpr (DoMl) {
       for (unsigned int iclass = 0; iclass < classMlIndexes->size(); iclass++) {
         outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMlIndexes->at(iclass)];
       }
@@ -283,7 +283,7 @@ struct HfCorrelatorDplusDplusReduced {
     }
   }
 
-  void processData(aod::Collisions const& collisions, SelectedCandidates const& candidates, aod::Tracks const&)
+  void processData(aod::Collisions const& collisions, SelectedCandidates const& candidates, aod::Tracks const&, aod::BCsWithTimestamps const&)
   {
     static int lastRunNumber = -1;
     // reserve memory
@@ -315,16 +315,16 @@ struct HfCorrelatorDplusDplusReduced {
           continue;
       fillEvent(collision);
       for (const auto& candidate : candidatesInThisCollision) {
-        auto prong_candidate = candidate.prong1_as<aod::Tracks>();
-        auto candidate_sign = prong_candidate.sign();
-        fillCandidateTable<aod::Collisions>(candidate, rowCandidateFullEvents.lastIndex(), candidate_sign);
+        auto prongCandidate = candidate.prong1_as<aod::Tracks>();
+        auto candidateSign = -prongCandidate.sign();
+        fillCandidateTable<aod::Collisions>(candidate, rowCandidateFullEvents.lastIndex(), candidateSign);
       }
     }
   }
   PROCESS_SWITCH(HfCorrelatorDplusDplusReduced, processData, "Process data per collision", false);
 
   void processMcRec(aod::Collisions const& collisions,
-                    SelectedCandidatesMc const& candidates)
+                    SelectedCandidatesMc const& candidates, aod::Tracks const&)
   {
     // reserve memory
     rowCandidateFullEvents.reserve(collisions.size());
@@ -342,9 +342,9 @@ struct HfCorrelatorDplusDplusReduced {
           continue;
       fillEvent(collision);
       for (const auto& candidate : candidatesInThisCollision) {
-        auto prong_candidate = candidate.prong1_as<aod::Tracks>();
-        auto candidate_sign = prong_candidate.sign();
-        fillCandidateTable<aod::Collisions, true>(candidate, rowCandidateFullEvents.lastIndex(), candidate_sign);
+        auto prongCandidate = candidate.prong1_as<aod::Tracks>();
+        auto candidateSign = -prongCandidate.sign();
+        fillCandidateTable<aod::Collisions, true>(candidate, rowCandidateFullEvents.lastIndex(), candidateSign);
       }
     }
   }
