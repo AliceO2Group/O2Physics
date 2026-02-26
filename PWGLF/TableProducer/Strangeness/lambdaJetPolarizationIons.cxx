@@ -142,6 +142,32 @@ enum CentEstimator {
     kCentFV0A
 };
 
+enum JetAlgorithm {
+    kKt = 0,
+    kCambridgeAachen,
+    kAntiKt
+};
+
+enum JetRecombScheme {
+    kEScheme = 0,
+    kPtScheme = 1,
+    kPt2Scheme = 2,
+    kWTAScheme = 7
+};
+
+enum JetType {
+    kChargedJet = 0,
+    kFullJet,
+    kPhotonJet,
+    kZJet
+};
+
+enum BkgSubtraction {
+    kNoSubtraction = 0,
+    kAreaBased,
+    kConstituentBased
+};
+
 //////////////////////////////////////////////
 struct lambdajetpolarizationions {
 
@@ -397,11 +423,13 @@ struct lambdajetpolarizationions {
         Configurable<double> radiusJet{"radiusJet", 0.4f, "Jet resolution parameter (R)"}; // (TODO: check if the JE people don't define this as a rescaled int to not lose precision for stricter selections)
         // Notice that the maximum Eta of the jet will then be 0.9 - R to keep the jet contained within the ITS+TPC barrel.
         
-        Configurable<int> jetAlgorithm{"jetAlgorithm", 2, "jet clustering algorithm. 0 = kT, 1 = C/A, 2 = Anti-kT"};
-        Configurable<int> jetRecombScheme{"jetRecombScheme", 0, "Jet recombination scheme: E_scheme (0), pT-scheme (1), pt2-scheme (2), WTA_pt_scheme (7)"}; // See PWGJE/JetFinders/jetFinder.h for more info.
-        Configurable<bool> bkgSubtraction{"bkgSubtraction", false, "Jet background subtraction: No subtraction (false), Area (true), Constituent (TODO)"}; // Selection bool for background subtraction strategy
+        Configurable<int> jetAlgorithm{"jetAlgorithm", kAntiKt, "jet clustering algorithm. 0 = kT, 1 = C/A, 2 = Anti-kT"};
+        Configurable<int> jetRecombScheme{"jetRecombScheme", kEScheme, "Jet recombination scheme: 0: E_scheme, 1: pT-scheme, 2: pt2-scheme, 7: WTA_pt_scheme"}; // See PWGJE/JetFinders/jetFinder.h for more info.
+        Configurable<int> bkgSubtraction{"bkgSubtraction", kNoSubtraction, "Jet background subtraction: No subtraction (false), Area (true), Constituent (TODO)"}; // Selection bool for background subtraction strategy
         Configurable<float> GhostedAreaSpecRapidity{"GhostedAreaSpecRapidity", 1.1, "Max ghost particle rapidity for jet area estimates"}; // At least 1.0 for tracks and jets within the |eta| < 0.9 window of ITS+TPC
-        Configurable<int> jetType{"jetType", 0, "Jet type: Charged Jet (0), Full Jet (1), Photon-tagged (2), Z-tagged (3)"}; // (TODO: create a reasonable track selection for full jets and photon/Z-tagged jet tracks, including detector angular acceptance parameters for EMCal)
+            // Using an enum for readability:
+        Configurable<int> jetType{"jetType", kChargedJet, "Jet type: 0: Charged Jet, 1: Full Jet, 2: Photon-tagged, 3: Z-tagged"};
+        // (TODO: create a reasonable track selection for full jets and photon/Z-tagged jet tracks, including detector angular acceptance parameters for EMCal)
 
         // // Configurables from JE PWG:
         // // (TODO: check the maximum pT of jets used in my analyses! If it is way too hard, it might not be the best jet to use!)
@@ -496,7 +524,7 @@ struct lambdajetpolarizationions {
         rctFlagsChecker.init(rctConfigurations.cfgRCTLabel.value, rctConfigurations.cfgCheckZDC, rctConfigurations.cfgTreatLimitedAcceptanceAsBad);
 
         // Event Counters
-        histos.add("hEventSelection", "hEventSelection", kTH1D, {{21, -0.5f, +20.5f}});
+        histos.add("hEventSelection", "hEventSelection", kTH1D, {{23, -0.5f, +20.5f}});
         histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
         histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
         histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "kIsTriggerTVX");
@@ -523,11 +551,15 @@ struct lambdajetpolarizationions {
         histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(19, "Below min IR");
         histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(20, "Above max IR");
         histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(21, "RCT flags");
+        histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(22, "hasRingJet");
+        histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(23, "hasRingV0");
+        // (notice we lack a hasRingJet AND hasRingV0 bin because the tasks run separately on all events!)
+        // (this QA number can be obtained at derived data level with ease)
 
         histos.add("Centrality/hEventCentrality", "hEventCentrality", kTH1D, {{101, 0.0f, 101.0f}});
         histos.add("Centrality/hCentralityVsNch", "hCentralityVsNch", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisNch});
         if (doEventQA) {
-            histos.add("hEventSelectionVsCentrality", "hEventSelectionVsCentrality", kTH2D, {{21, -0.5f, +20.5f}, {101, 0.0f, 101.0f}});
+            histos.add("hEventSelectionVsCentrality", "hEventSelectionVsCentrality", kTH2D, {{23, -0.5f, +20.5f}, {101, 0.0f, 101.0f}});
             histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(1, "All collisions");
             histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
             histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(3, "kIsTriggerTVX");
@@ -554,7 +586,10 @@ struct lambdajetpolarizationions {
             histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(19, "Below min IR");
             histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(20, "Above max IR");
             histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(21, "RCT flags");
+            histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(22, "hasRingJet");
+            histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(23, "hasRingV0");
 
+            // Centrality:
             histos.add("Centrality/hCentralityVsNGlobal", "hCentralityVsNGlobal", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisNch});
             histos.add("Centrality/hEventCentVsMultFT0M", "hEventCentVsMultFT0M", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFT0M});
             histos.add("Centrality/hEventCentVsMultFT0C", "hEventCentVsMultFT0C", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFT0C});
@@ -1275,6 +1310,11 @@ struct lambdajetpolarizationions {
     void processJetsData(SelCollisionsSimple::iterator const& collision, PseudoJetTracks const& tracks, aod::BCsWithTimestamps const& bcs){ // Uses BCsWithTimestamps to get timestamps for rejectTPCsectorBoundary
         float centrality = -1.0f; // Just a placeholder
 
+        // For event QA the last two indices never change for NEv_withJets and NEv_withV0s
+        // (Not the best way to initialize this: runs once per collision! TODO: think of a better way to do it)
+        int lastBinEvSel = histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->GetNbins();
+        bool validJetAlreadyFound = false; // Do not fill Event QA more than once
+
         auto bc = bcs.iteratorAt(collision.bcId()); // Got the iteratorAt() idea from O2Physics/PWGUD/Core/UDHelpers.h
         if (!isEventAccepted(collision, bc, centrality, false)) return; // Uses return instead of continue, as there is no explicit loop here
         const uint64_t collIdx = collision.globalIndex();
@@ -1306,7 +1346,7 @@ struct lambdajetpolarizationions {
             // Cluster particles using the anti-kt algorithm
         fastjet::JetDefinition jetDef(mapFJAlgorithm(jetConfigurations.jetAlgorithm), jetConfigurations.radiusJet, mapFJRecombScheme(jetConfigurations.jetRecombScheme));
         // std::vector<float> jets_pt, jets_eta, jets_phi; // Not worth it to store 4-vectors: the tracks assume pion mass hypothesis, so energy and rapidity are not right.
-        if (jetConfigurations.bkgSubtraction){
+        if (jetConfigurations.bkgSubtraction == kAreaBased){
             fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(jetConfigurations.GhostedAreaSpecRapidity));
             fastjet::ClusterSequenceArea clustSeq(fjParticles, jetDef, areaDef); // Attributes an area for each pseudojet in the list
             std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(clustSeq.inclusive_jets()); // No minimum pt before background subtraction
@@ -1351,6 +1391,9 @@ struct lambdajetpolarizationions {
             histos.fill(HIST("hJetsPerEvent"), selectedJets);
             if (selectedJets == 0) return;
             histos.fill(HIST("hEventsWithJet"), 0.5);
+                // Another version of this counter, which is already integrated in the Event Selection flow:
+            if (doEventQA && !validJetAlreadyFound) fillEventSelectionQA(lastBinEvSel-1, centrality); // hasRingJet passes
+            validJetAlreadyFound = true;
 
             if (doJetKinematicsQA){
                 histos.fill(HIST("JetKinematicsQA/hLeadingJetPt"), leadingJetSub.pt());
@@ -1433,6 +1476,9 @@ struct lambdajetpolarizationions {
             
             if (jetsInEvent == 0) return;
             histos.fill(HIST("hEventsWithJet"), 0.5);
+                // Another version of this counter, which is already integrated in the Event Selection flow:
+            if (doEventQA && !validJetAlreadyFound) fillEventSelectionQA(lastBinEvSel-1, centrality); // hasRingJet passes
+            validJetAlreadyFound = true;
 
             const auto& leadingJet = jets[0];
             for (const auto& jet : jets){
@@ -1524,9 +1570,16 @@ struct lambdajetpolarizationions {
         }
     }
 
-    // Had to include DauTracks in subscription, even though I don't loop in it, for the indices to resolve, avoiding " Exception while running: Index pointing to Tracks is not bound!"
+    // Had to include DauTracks in subscription, even though I don't loop in it, for the indices
+    // to resolve, avoiding " Exception while running: Index pointing to Tracks is not bound!"
     void processV0sData(SelCollisions::iterator const& collision, V0CandidatesWithTOF const& fullV0s, aod::BCsWithTimestamps const& bcs, DauTracks const& V0DauTracks){
         float centrality = getCentrality(collision);
+
+        // For event QA the last two indices never change for NEv_withJets and NEv_withV0s
+        // (Not the best way to initialize this: runs once per collision! TODO: think of a better way to do it)
+        int lastBinEvSel = histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->GetNbins();
+        bool validV0AlreadyFound = false;
+
         histos.fill(HIST("hEventSelection"), 0. /* all collisions */);
         histos.fill(HIST("hEventSelectionVsCentrality"), 0. /* all collisions */, centrality);
 
@@ -1536,6 +1589,9 @@ struct lambdajetpolarizationions {
         if (doEventQA) fillCentralityProperties(collision, centrality);
         const uint64_t collIdx = collision.globalIndex();
         if (v0Selections.rejectTPCsectorBoundary) initCCDB(bc); // Substituted call from collision to bc for raw data
+
+        // Fill event table:
+        tableCollisions(collIdx, centrality); // (TODO: add InteractionRate info and other useful cuts for later on in the analysis!)
 
         // bool hasValidV0 = false; // Bool to know if event information can be saved.
         for (auto const& v0 : fullV0s){
@@ -1557,6 +1613,8 @@ struct lambdajetpolarizationions {
             
             if (doArmenterosQA) histos.fill(HIST("GeneralQA/h2dArmenterosSelected"), v0.alpha(), v0.qtarm()); // cross-check
             if (isLambda && isAntiLambda) histos.fill(HIST("hAmbiguousLambdaCandidates"), 0);
+
+            if (doEventQA) fillEventSelectionQA(lastBinEvSel, centrality); // hasRingV0 passes
 
             // // Extra competing mass rejection of Lambdas // (TODO: test competing mass cuts)
             // v0.mLambda()
@@ -1595,7 +1653,9 @@ struct lambdajetpolarizationions {
                     v0.negativeeta(),
                     v0.negativephi()
                     );
-            
+            if (doEventQA && !validV0AlreadyFound) fillEventSelectionQA(lastBinEvSel, centrality); // hasRingV0 passes
+            validV0AlreadyFound = true;
+
             if (doV0KinematicQA){
                 // Cache kinematics once
                 const float v0y  = v0.yLambda();
@@ -1742,8 +1802,8 @@ struct lambdajetpolarizationions {
         // Only fills collision when there is a valid V0 in it: (TODO: could probably do the same for the jets table)
         // if (hasValidV0){
             // LOG(INFO) << "Filling tableCollisions";
-        // Current logic now fills tables independently of collision having V0s, for the Jets table to match correctly
-        tableCollisions(collIdx, centrality); // (TODO: add InteractionRate info and other useful cuts for later on in the analysis!)
+        // Current logic now fills tables independently of collision having V0s, for the Jets table to match correctly, at the START of the code
+        // tableCollisions(collIdx, centrality);
         // }
     }
 

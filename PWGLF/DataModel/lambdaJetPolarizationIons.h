@@ -54,6 +54,7 @@ DECLARE_SOA_COLUMN(NegEta, negEta, float);
 DECLARE_SOA_COLUMN(NegPhi, negPhi, float);
 
 // (TODO: add dynamic columns with jet px, py, pz)
+// (TODO: add leading particle as one of the columns!)
 
 } // namespace lambdajetpol
 
