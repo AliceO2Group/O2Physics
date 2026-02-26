@@ -538,8 +538,10 @@ class pidTPCModule
     static constexpr int NParticleTypes = 9;
     constexpr int ExpectedInputDimensionsNNV2 = 7;
     constexpr int ExpectedInputDimensionsNNV3 = 8;
+    constexpr int ExpectedInputDimensionsNNV4 = 9;
     constexpr auto NetworkVersionV2 = "2";
     constexpr auto NetworkVersionV3 = "3";
+    constexpr auto NetworkVersionV4 = "4";
     for (int j = 0; j < NParticleTypes; j++) { // Loop over particle number for which network correction is used
       for (auto const& trk : tracks) {
         if (!trk.hasTPC()) {
@@ -575,6 +577,25 @@ class pidTPCModule
               track_properties[counter_track_props + 7] = hadronicRateBegin / 50.;
             }
           }
+        }
+
+        if (input_dimensions == ExpectedInputDimensionsNNV4 && networkVersion == NetworkVersionV4) {
+          track_properties[counter_track_props + 6] = trk.has_collision() ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
+          if (trk.has_collision()) {
+            if (collsys == CollisionSystemType::kCollSyspp) {
+              track_properties[counter_track_props + 7] = hadronicRateForCollision[trk.collisionId()] / 1500.;
+            } else {
+              track_properties[counter_track_props + 7] = hadronicRateForCollision[trk.collisionId()] / 50.;
+            }
+          } else {
+            // asign Hadronic Rate at beginning of run  if track does not belong to a collision
+            if (collsys == CollisionSystemType::kCollSyspp) {
+              track_properties[counter_track_props + 7] = hadronicRateBegin / 1500.;
+            } else {
+              track_properties[counter_track_props + 7] = hadronicRateBegin / 50.;
+            }
+          }
+          track_properties[counter_track_props + 8] = std::fmod(std::fmod(trk.phi(), 2 * M_PI) + 2 * M_PI, M_PI / 9.0);
         }
         counter_track_props += input_dimensions;
       }

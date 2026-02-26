@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file EmMLResponsePCM.h
+/// \file EmMlResponsePCM.h
 /// \brief Class to compute the ML response for PCM analysis selections
 /// \author Isabel Kantak <isabel.kantak@cern.ch>, University of Heidelberg
 
@@ -85,13 +85,13 @@ class EmMlResponsePCM : public EmMlResponse<TypeOutputScore>
 
     for (const auto& idx : MlResponse<TypeOutputScore>::mCachedIndices) {
       switch (idx) {
-        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefDCAxyToPV, GetDcaXYToPV);
-        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefDCAzToPV, GetDcaZToPV);
-        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefPCA, GetPCA);
-        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefAlpha, GetAlpha);
-        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefQtArm, GetQt);
-        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefChiSquareNDF, GetChi2NDF);
-        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefCosPA, GetCosPA);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefDCAxyToPV, getDcaXYToPV);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefDCAzToPV, getDcaZToPV);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefPCA, getPCA);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefAlpha, getAlpha);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefQtArm, getQt);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefChiSquareNDF, getChi2NDF);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefCosPA, getCosPA);
         CHECK_AND_FILL_VEC_PCM_FULL(posLeg, posV0LegfTPCNSigmaEl, tpcNSigmaEl);
         CHECK_AND_FILL_VEC_PCM_FULL(posLeg, posV0LegfTPCNSigmaPi, tpcNSigmaPi);
         CHECK_AND_FILL_VEC_PCM_FULL(negLeg, negV0LegfTPCNSigmaEl, tpcNSigmaEl);

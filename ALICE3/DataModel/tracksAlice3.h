@@ -21,6 +21,7 @@
 
 // O2 includes
 #include "Framework/AnalysisDataModel.h"
+#include <Framework/ASoA.h>
 
 namespace o2::aod
 {
@@ -29,16 +30,30 @@ namespace track_alice3
 DECLARE_SOA_COLUMN(IsReconstructed, isReconstructed, bool); //! is reconstructed or not
 DECLARE_SOA_COLUMN(NSiliconHits, nSiliconHits, int);        //! number of silicon hits
 DECLARE_SOA_COLUMN(NTPCHits, nTPCHits, int);                //! number of tpc hits
+DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);                  //! PDG code of the linked truth MC particle
 } // namespace track_alice3
 DECLARE_SOA_TABLE(TracksAlice3, "AOD", "TRACKSALICE3",
                   track_alice3::IsReconstructed);
 using TrackAlice3 = TracksAlice3::iterator;
+
+DECLARE_SOA_TABLE(TracksAlice3Pdg, "AOD", "TRACKSALICE3PDG",
+                  track_alice3::PdgCode);
+using TrackAlice3Pdg = TracksAlice3Pdg::iterator;
 
 DECLARE_SOA_TABLE(TracksExtraA3, "AOD", "TracksExtraA3",
                   track_alice3::NSiliconHits,
                   track_alice3::NTPCHits);
 using TrackExtraA3 = TracksExtraA3::iterator;
 
+namespace mcparticle_alice3
+{
+DECLARE_SOA_COLUMN(NHits, nHits, int);     //! number of silicon hits
+DECLARE_SOA_COLUMN(Charge, charge, float); //! particle charge
+} // namespace mcparticle_alice3
+DECLARE_SOA_TABLE(MCParticlesExtraA3, "AOD", "MCParticlesExtraA3",
+                  mcparticle_alice3::NHits,
+                  mcparticle_alice3::Charge);
+using MCParticleExtraA3 = MCParticlesExtraA3::iterator;
 } // namespace o2::aod
 
 #endif // ALICE3_DATAMODEL_TRACKSALICE3_H_

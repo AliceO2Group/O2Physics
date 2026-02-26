@@ -14,8 +14,8 @@
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 /// \author Jochen Klein <jochen.klein@cern.ch>
 
-#ifndef PWGJE_JETFINDERS_JETFINDERHF_H_
-#define PWGJE_JETFINDERS_JETFINDERHF_H_
+#ifndef PWGJE_JETFINDERS_JETFINDERHFHFBAR_H_
+#define PWGJE_JETFINDERS_JETFINDERHFHFBAR_H_
 
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetFinder.h"
@@ -71,9 +71,6 @@ struct JetFinderHFHFBarTask {
   o2::framework::Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum track eta"};
   o2::framework::Configurable<float> trackPhiMin{"trackPhiMin", -999, "minimum track phi"};
   o2::framework::Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
-  o2::framework::Configurable<bool> applyTrackingEfficiency{"applyTrackingEfficiency", {false}, "configurable to decide whether to apply artificial tracking efficiency (discarding tracks) in jet finding"};
-  o2::framework::Configurable<std::vector<double>> trackingEfficiencyPtBinning{"trackingEfficiencyPtBinning", {0., 10, 999.}, "pt binning of tracking efficiency array if applyTrackingEfficiency is true"};
-  o2::framework::Configurable<std::vector<double>> trackingEfficiency{"trackingEfficiency", {1.0, 1.0}, "tracking efficiency array applied to jet finding if applyTrackingEfficiency is true"};
   o2::framework::Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
   o2::framework::Configurable<std::string> particleSelections{"particleSelections", "PhysicalPrimary", "set particle selections"};
 
@@ -101,6 +98,8 @@ struct JetFinderHFHFBarTask {
   o2::framework::Configurable<std::vector<double>> jetRadius{"jetRadius", {0.4}, "jet resolution parameters"};
   o2::framework::Configurable<float> jetPtMin{"jetPtMin", 0.0, "minimum jet pT"};
   o2::framework::Configurable<float> jetPtMax{"jetPtMax", 1000.0, "maximum jet pT"};
+  o2::framework::Configurable<float> jetPhiMin{"jetPhiMin", -99.0, "minimum jet phi"};
+  o2::framework::Configurable<float> jetPhiMax{"jetPhiMax", 99.0, "maximum jet phi"};
   o2::framework::Configurable<float> jetEWSPtMin{"jetEWSPtMin", 0.0, "minimum event-wise subtracted jet pT"};
   o2::framework::Configurable<float> jetEWSPtMax{"jetEWSPtMax", 1000.0, "maximum event-wise subtracted jet pT"};
   o2::framework::Configurable<float> jetEtaMin{"jetEtaMin", -99.0, "minimum jet pseudorapidity"};
@@ -137,6 +136,18 @@ struct JetFinderHFHFBarTask {
     jetFinder.etaMax = trackEtaMax;
     jetFinder.jetPtMin = jetPtMin;
     jetFinder.jetPtMax = jetPtMax;
+    jetFinder.phiMin = trackPhiMin;
+    jetFinder.phiMax = trackPhiMax;
+    if (trackPhiMin < -98.0) {
+      jetFinder.phiMin = -1.0 * M_PI;
+      jetFinder.phiMax = 2.0 * M_PI;
+    }
+    jetFinder.jetPhiMin = jetPhiMin;
+    jetFinder.jetPhiMax = jetPhiMax;
+    if (jetPhiMin < -98.0) {
+      jetFinder.jetPhiMin = -1.0 * M_PI;
+      jetFinder.jetPhiMax = 2.0 * M_PI;
+    }
     jetFinder.jetEtaMin = jetEtaMin;
     jetFinder.jetEtaMax = jetEtaMax;
     if (jetEtaMin < -98.0) {
@@ -167,15 +178,6 @@ struct JetFinderHFHFBarTask {
 
     registry.add("hJet", "sparse for data or mcd jets", {o2::framework::HistType::kTHnD, {{jetRadiiBins, ""}, {jetPtBinNumber, jetPtMinDouble, jetPtMaxDouble}, {40, -1.0, 1.0}, {18, 0.0, 7.0}}});
     registry.add("hJetMCP", "sparse for mcp jets", {o2::framework::HistType::kTHnD, {{jetRadiiBins, ""}, {jetPtBinNumber, jetPtMinDouble, jetPtMaxDouble}, {40, -1.0, 1.0}, {18, 0.0, 7.0}}});
-
-    if (applyTrackingEfficiency) {
-      if (trackingEfficiencyPtBinning->size() < 2) {
-        LOGP(fatal, "jetFinderHF workflow: trackingEfficiencyPtBinning configurable should have at least two bin edges");
-      }
-      if (trackingEfficiency->size() + 1 != trackingEfficiencyPtBinning->size()) {
-        LOGP(fatal, "jetFinderHF workflow: trackingEfficiency configurable should have exactly one less entry than the number of bin edges set in trackingEfficiencyPtBinning configurable");
-      }
-    }
   }
 
   o2::aod::EMCALClusterDefinition clusterDefinition = o2::aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS.value);
@@ -206,7 +208,7 @@ struct JetFinderHFHFBarTask {
   o2::framework::PresliceOptional<o2::soa::Filtered<JetTracksSubTable>> perDielectronMcCandidate = o2::aod::bkgdielectronmc::candidateId;
 
   // function that generalically processes Data and reco level events
-  template <bool isEvtWiseSub, typename T, typename U, typename V, typename M, typename N, typename O>
+  template <bool isMC, bool isEvtWiseSub, typename T, typename U, typename V, typename M, typename N, typename O>
   void analyseCharged(T const& collision, U const& tracks, V const& candidate, V const& candidateBar, M& jetsTableInput, N& constituentsTableInput, O& /*originalTracks*/, float minJetPt, float maxJetPt)
   {
     if (candidate.globalIndex() == candidateBar.globalIndex() || candidate.candidateSelFlag() == candidateBar.candidateSelFlag()) {
@@ -222,18 +224,16 @@ struct JetFinderHFHFBarTask {
     }
     inputParticles.clear();
 
-    if constexpr (jetcandidateutilities::isCandidate<V>()) {
+    if constexpr (!isMC) {
       if (!jetfindingutilities::analyseCandidate(inputParticles, candidate, candPtMin, candPtMax, candYMin, candYMax) || !jetfindingutilities::analyseCandidate(inputParticles, candidateBar, candPtMin, candPtMax, candYMin, candYMax)) {
         return;
       }
-    }
-
-    if constexpr (jetcandidateutilities::isMcCandidate<V>()) {
+    } else {
       if (!jetfindingutilities::analyseCandidateMC(inputParticles, candidate, candPtMin, candPtMax, candYMin, candYMax, rejectBackgroundMCDCandidates) || !jetfindingutilities::analyseCandidateMC(inputParticles, candidateBar, candPtMin, candPtMax, candYMin, candYMax, rejectBackgroundMCDCandidates)) {
         return;
       }
     }
-    jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, applyTrackingEfficiency, trackingEfficiency, trackingEfficiencyPtBinning, &candidate);
+    jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, &candidate);
 
     jetfindingutilities::findJets(jetFinder, inputParticles, minJetPt, maxJetPt, jetRadius, jetAreaFractionMin, collision, jetsTableInput, constituentsTableInput, registry.get<THn>(HIST("hJet")), fillTHnSparse, true);
   }
@@ -280,7 +280,7 @@ struct JetFinderHFHFBarTask {
       for (; candidateBarIterator != candidates.end(); ++candidateBarIterator) {
         typename CandidateTableData::iterator const& candidate = *candidateIterator;
         typename CandidateTableData::iterator const& candidateBar = *candidateBarIterator;
-        analyseCharged<false>(collision, tracks, candidate, candidateBar, jetsTable, constituentsTable, tracks, jetPtMin, jetPtMax);
+        analyseCharged<false, false>(collision, tracks, candidate, candidateBar, jetsTable, constituentsTable, tracks, jetPtMin, jetPtMax);
       }
     }
   }
@@ -294,7 +294,7 @@ struct JetFinderHFHFBarTask {
       for (; candidateBarIterator != candidates.end(); ++candidateBarIterator) {
         typename CandidateTableMCD::iterator const& candidate = *candidateIterator;
         typename CandidateTableMCD::iterator const& candidateBar = *candidateBarIterator;
-        analyseCharged<false>(collision, tracks, candidate, candidateBar, jetsTable, constituentsTable, tracks, jetPtMin, jetPtMax);
+        analyseCharged<true, false>(collision, tracks, candidate, candidateBar, jetsTable, constituentsTable, tracks, jetPtMin, jetPtMax);
       }
     }
   }
@@ -317,4 +317,4 @@ struct JetFinderHFHFBarTask {
   PROCESS_SWITCH(JetFinderHFHFBarTask, processChargedJetsMCP, "hf jet finding on MC particle level", false);
 };
 
-#endif // PWGJE_JETFINDERS_JETFINDERHF_H_
+#endif // PWGJE_JETFINDERS_JETFINDERHFHFBAR_H_

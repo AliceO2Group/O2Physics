@@ -54,7 +54,10 @@
 #include "TRandom3.h"
 #include <TPDGCode.h>
 
+#include <map>
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -64,7 +67,7 @@ using namespace o2::framework::expressions;
 // define the filtered collisions and tracks
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 // template for labelled array
-static constexpr float LongArrayFloat[3][20] = {{1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}, {2.1, 2.2, 2.3, -2.1, -2.2, -2.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}, {3.1, 3.2, 3.3, -3.1, -3.2, -3.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}};
+static constexpr float LongArrayFloat[3][6] = {{1.1, 1.2, 1.3, -1.1, -1.2, -1.3}, {2.1, 2.2, 2.3, -2.1, -2.2, -2.3}, {3.1, 3.2, 3.3, -3.1, -3.2, -3.3}};
 
 struct LongRangeDihadronCor {
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -107,12 +110,6 @@ struct LongRangeDihadronCor {
   O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, bool, false, "Use local efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgUseEventWeights, bool, false, "Use event weights for mixed event")
   O2_DEFINE_CONFIGURABLE(cfgDrawEtaPhiDis, bool, false, "draw eta-phi distribution for detectors in used")
-  O2_DEFINE_CONFIGURABLE(cfgRejectFT0AInside, bool, false, "Rejection of inner ring channels of the FT0A detector")
-  O2_DEFINE_CONFIGURABLE(cfgRejectFT0AOutside, bool, false, "Rejection of outer ring channels of the FT0A detector")
-  O2_DEFINE_CONFIGURABLE(cfgRejectFT0CInside, bool, false, "Rejection of inner ring channels of the FT0C detector")
-  O2_DEFINE_CONFIGURABLE(cfgRejectFT0COutside, bool, false, "Rejection of outer ring channels of the FT0C detector")
-  O2_DEFINE_CONFIGURABLE(cfgRemapFT0ADeadChannels, bool, false, "If true, remap FT0A channels 60-63 to amplitudes from 92-95 respectively")
-  O2_DEFINE_CONFIGURABLE(cfgRemapFT0CDeadChannels, bool, false, "If true, remap FT0C channels 177->145, 176->144, 178->146, 179->147, 139->115")
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgMultCentHighCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 10.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
     O2_DEFINE_CONFIGURABLE(cfgMultCentLowCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x - 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
@@ -147,8 +144,17 @@ struct LongRangeDihadronCor {
     O2_DEFINE_CONFIGURABLE(cfgUseItsPID, bool, true, "Use ITS PID for particle identification")
     O2_DEFINE_CONFIGURABLE(cfgPIDParticle, int, 0, "1 = pion, 2 = kaon, 3 = proton, 4 = kshort, 5 = lambda, 6 = phi, 0 for no PID")
     O2_DEFINE_CONFIGURABLE(cfgTofPtCut, float, 0.5f, "Minimum pt to use TOF N-sigma")
-    Configurable<LabeledArray<float>> nSigmas{"nSigmas", {LongArrayFloat[0], 3, 6, {"TPC", "TOF", "ITS"}, {"pos_pi", "pos_ka", "pos_pr", "neg_pi", "neg_ka", "neg_pr"}}, "Labeled array for n-sigma values for TPC, TOF, ITS for pions, kaons, protons (positive and negative)"};
+    Configurable<LabeledArray<float>> nSigmas{"nSigmas", {LongArrayFloat[0], 3, 6, {"TPC", "TOF", "ITS"}, {"upCut_pi", "upCut_ka", "upCut_pr", "lowCut_pi", "lowCut_ka", "lowCut_pr"}}, "Labeled array for n-sigma values for TPC, TOF, ITS for pions, kaons, protons (positive and negative)"};
   } cfgPIDConfig;
+  struct : ConfigurableGroup {
+    O2_DEFINE_CONFIGURABLE(cfgRejectFT0AInside, bool, false, "Rejection of inner ring channels of the FT0A detector")
+    O2_DEFINE_CONFIGURABLE(cfgRejectFT0AOutside, bool, false, "Rejection of outer ring channels of the FT0A detector")
+    O2_DEFINE_CONFIGURABLE(cfgRejectFT0CInside, bool, false, "Rejection of inner ring channels of the FT0C detector")
+    O2_DEFINE_CONFIGURABLE(cfgRejectFT0COutside, bool, false, "Rejection of outer ring channels of the FT0C detector")
+    O2_DEFINE_CONFIGURABLE(cfgMirrorFT0ADeadChannels, bool, false, "If true, mirror FT0A channels 60-63 to amplitudes from 92-95 respectively")
+    O2_DEFINE_CONFIGURABLE(cfgMirrorFT0CDeadChannels, bool, false, "If true, mirror FT0C channels 177->145, 176->144, 178->146, 179->147, 139->115")
+    O2_DEFINE_CONFIGURABLE(cfgRunbyRunAmplitudeFT0, bool, false, "Produce run-by-run FT0 amplitude distribution");
+  } cfgFwdConfig;
 
   SliceCache cache;
 
@@ -252,22 +258,19 @@ struct LongRangeDihadronCor {
     kFT0COuterRingMin = 144,
     kFT0COuterRingMax = 207
   };
-  enum MirroringConstants {
-    kFT0AOuterMirror = 32,
-    kFT0AInnerMirror = 16,
-    kFT0COuterMirror = 32,
-    kFT0CInnerMirror = 24
-  };
   enum DeadChannels {
-    kFT0ARemapChannelStart = 92,
-    kFT0ARemapChannelEnd = 95,
-    kFT0CRemapChannelStart = 144,
-    kFT0CRemapChannelEnd = 147,
-    kFT0CRemapChannelInnerRing = 115
+    kFT0AMirrorChannelStart = 92,
+    kFT0AMirrorChannelEnd = 95,
+    kFT0CMirrorChannelStart = 144,
+    kFT0CMirrorChannelEnd = 147,
+    kFT0CMirrorChannelInnerRing = 115
   };
   std::array<float, 6> tofNsigmaCut;
   std::array<float, 6> itsNsigmaCut;
   std::array<float, 6> tpcNsigmaCut;
+  int lastRunNumber = -1;
+  std::vector<int> runNumbers;
+  std::map<int, std::shared_ptr<TH2>> histAmpCorrectPerRun; // map of TH3 histograms for all runs
 
   void init(InitContext&)
   {
@@ -438,6 +441,19 @@ struct LongRangeDihadronCor {
     }
 
     LOGF(info, "End of init");
+  }
+
+  void createOutputObjectsForRun(int runNumber)
+  {
+    if (cfgFwdConfig.cfgRunbyRunAmplitudeFT0) {
+      if (histAmpCorrectPerRun.find(runNumber) != histAmpCorrectPerRun.end()) {
+        LOGF(info, "you are trying to create QA hist again, please make sure you are not filling it twice");
+      }
+      const AxisSpec axisFit{1000, 0, 5000, "FIT amplitude"};
+      const AxisSpec axisChID{220, 0, 220, "FIT channel"};
+      std::shared_ptr<TH2> histFT0AmpCorrect = registry.add<TH2>(Form("%d/FT0AmpCorrect", runNumber), "FIT channel;FIT amplitude", {HistType::kTH2F, {axisChID, axisFit}});
+      histAmpCorrectPerRun.insert(std::make_pair(runNumber, histFT0AmpCorrect));
+    }
   }
 
   double getPhiFT0(uint64_t chno, int i)
@@ -662,52 +678,53 @@ struct LongRangeDihadronCor {
   }
 
   template <typename TFT0s>
-  void getChannel(TFT0s const& ft0, std::size_t const& iCh, int& id, float& ampl, int fitType)
+  void getChannel(TFT0s const& ft0, std::size_t const& iCh, int& id, float& ampl, int fitType, int system)
   {
     if (fitType == kFT0C) {
       id = ft0.channelC()[iCh];
       id = id + Ft0IndexA;
       ampl = ft0.amplitudeC()[iCh];
-      if (cfgRemapFT0CDeadChannels) {
-        if (id == kFT0CRemapChannelInnerRing) {
-          int dead_id = id + kFT0CInnerMirror;
-          float mirroredAmpl = ampl;
-          float mirroredAmplCorrected = mirroredAmpl / cstFT0RelGain[iCh];
-          registry.fill(HIST("FT0Amp"), dead_id, mirroredAmpl);
-          registry.fill(HIST("FT0AmpCorrect"), dead_id, mirroredAmplCorrected);
-        } else if (id >= kFT0CRemapChannelStart && id <= kFT0CRemapChannelEnd) {
-          int dead_id = id + kFT0COuterMirror;
-          float mirroredAmpl = ampl;
-          float mirroredAmplCorrected = mirroredAmpl / cstFT0RelGain[iCh];
-          registry.fill(HIST("FT0Amp"), dead_id, mirroredAmpl);
-          registry.fill(HIST("FT0AmpCorrect"), dead_id, mirroredAmplCorrected);
-        }
-      }
-      if ((cfgRejectFT0CInside && (id >= kFT0CInnerRingMin && id <= kFT0CInnerRingMax)) || (cfgRejectFT0COutside && (id >= kFT0COuterRingMin && id <= kFT0COuterRingMax)))
+      if ((cfgFwdConfig.cfgRejectFT0CInside && (id >= kFT0CInnerRingMin && id <= kFT0CInnerRingMax)) || (cfgFwdConfig.cfgRejectFT0COutside && (id >= kFT0COuterRingMin && id <= kFT0COuterRingMax)))
         ampl = 0.;
-      registry.fill(HIST("FT0Amp"), id, ampl);
-      ampl = ampl / cstFT0RelGain[iCh];
-      registry.fill(HIST("FT0AmpCorrect"), id, ampl);
+      if (system == SameEvent)
+        registry.fill(HIST("FT0Amp"), id, ampl);
+      ampl = ampl / cstFT0RelGain[id];
+      if (system == SameEvent) {
+        registry.fill(HIST("FT0AmpCorrect"), id, ampl);
+        if (cfgFwdConfig.cfgRunbyRunAmplitudeFT0)
+          histAmpCorrectPerRun[lastRunNumber]->Fill(id, ampl);
+      }
     } else if (fitType == kFT0A) {
       id = ft0.channelA()[iCh];
       ampl = ft0.amplitudeA()[iCh];
-      if (cfgRemapFT0ADeadChannels) {
-        if (id >= kFT0ARemapChannelStart && id <= kFT0ARemapChannelEnd) {
-          int dead_id = id - kFT0AOuterMirror;
-          float mirroredAmpl = ampl;
-          float mirroredAmplCorrected = mirroredAmpl / cstFT0RelGain[iCh];
-          registry.fill(HIST("FT0Amp"), dead_id, mirroredAmpl);
-          registry.fill(HIST("FT0AmpCorrect"), dead_id, mirroredAmplCorrected);
-        }
-      }
-      if ((cfgRejectFT0AInside && (id >= kFT0AInnerRingMin && id <= kFT0AInnerRingMax)) || (cfgRejectFT0AOutside && (id >= kFT0AOuterRingMin && id <= kFT0AOuterRingMax)))
+      if ((cfgFwdConfig.cfgRejectFT0AInside && (id >= kFT0AInnerRingMin && id <= kFT0AInnerRingMax)) || (cfgFwdConfig.cfgRejectFT0AOutside && (id >= kFT0AOuterRingMin && id <= kFT0AOuterRingMax)))
         ampl = 0.;
-      registry.fill(HIST("FT0Amp"), id, ampl);
-      ampl = ampl / cstFT0RelGain[iCh];
-      registry.fill(HIST("FT0AmpCorrect"), id, ampl);
+      if (system == SameEvent)
+        registry.fill(HIST("FT0Amp"), id, ampl);
+      ampl = ampl / cstFT0RelGain[id];
+      if (system == SameEvent) {
+        registry.fill(HIST("FT0AmpCorrect"), id, ampl);
+        if (cfgFwdConfig.cfgRunbyRunAmplitudeFT0)
+          histAmpCorrectPerRun[lastRunNumber]->Fill(id, ampl);
+      }
     } else {
       LOGF(fatal, "Cor Index %d out of range", fitType);
     }
+  }
+
+  bool isMirrorId(int id, int corType)
+  {
+    if (corType == kFT0A) {
+      if (id >= kFT0AMirrorChannelStart && id <= kFT0AMirrorChannelEnd)
+        return true;
+    }
+    if (corType == kFT0C) {
+      if (id == kFT0CMirrorChannelInnerRing)
+        return true;
+      else if (id >= kFT0CMirrorChannelStart && id <= kFT0CMirrorChannelEnd)
+        return true;
+    }
+    return false;
   }
 
   template <CorrelationContainer::CFStep step, typename TTracks, typename TFT0s>
@@ -753,18 +770,24 @@ struct LongRangeDihadronCor {
       for (std::size_t iCh = 0; iCh < channelSize; iCh++) {
         int chanelid = 0;
         float ampl = 0.;
-        getChannel(ft0, iCh, chanelid, ampl, corType);
+        getChannel(ft0, iCh, chanelid, ampl, corType, system);
         if (corType == kFT0C) {
-          if ((cfgRejectFT0CInside && (chanelid >= kFT0CInnerRingMin && chanelid <= kFT0CInnerRingMax)) || (cfgRejectFT0COutside && (chanelid >= kFT0COuterRingMin && chanelid <= kFT0COuterRingMax)))
+          if ((cfgFwdConfig.cfgRejectFT0CInside && (chanelid >= kFT0CInnerRingMin && chanelid <= kFT0CInnerRingMax)) || (cfgFwdConfig.cfgRejectFT0COutside && (chanelid >= kFT0COuterRingMin && chanelid <= kFT0COuterRingMax)))
             continue;
         } else if (corType == kFT0A) {
-          if ((cfgRejectFT0AInside && (chanelid >= kFT0AInnerRingMin && chanelid <= kFT0AInnerRingMax)) || (cfgRejectFT0AOutside && (chanelid >= kFT0AOuterRingMin && chanelid <= kFT0AOuterRingMax)))
+          if ((cfgFwdConfig.cfgRejectFT0AInside && (chanelid >= kFT0AInnerRingMin && chanelid <= kFT0AInnerRingMax)) || (cfgFwdConfig.cfgRejectFT0AOutside && (chanelid >= kFT0AOuterRingMin && chanelid <= kFT0AOuterRingMax)))
             continue;
         }
+        bool mirrorChannel = false;
+        if ((corType == kFT0A && cfgFwdConfig.cfgMirrorFT0ADeadChannels) || (corType == kFT0C && cfgFwdConfig.cfgMirrorFT0CDeadChannels))
+          mirrorChannel = isMirrorId(chanelid, corType);
+
         auto phi = getPhiFT0(chanelid, corType);
         auto eta = getEtaFT0(chanelid, corType);
         if (cfgDrawEtaPhiDis && system == SameEvent) {
           registry.fill(HIST("EtaPhi"), eta, phi, ampl * eventWeight);
+          if (mirrorChannel)
+            registry.fill(HIST("EtaPhi"), eta, 4 * PIHalf - phi, ampl * eventWeight);
         }
         float deltaPhi = RecoDecay::constrainAngle(track1.phi() - phi, -PIHalf);
         float deltaEta = track1.eta() - eta;
@@ -772,22 +795,30 @@ struct LongRangeDihadronCor {
         if (system == SameEvent) {
           if (corType == kFT0A) {
             registry.fill(HIST("Assoc_amp_same_TPC_FT0A"), chanelid, ampl);
-            sameTpcFt0a->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track1.pt(), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
             registry.fill(HIST("deltaEta_deltaPhi_same_TPC_FT0A"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
+            sameTpcFt0a->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track1.pt(), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
+            if (mirrorChannel)
+              sameTpcFt0a->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track1.pt(), RecoDecay::constrainAngle(track1.phi() - phi - 2 * PIHalf, -PIHalf), deltaEta, ampl * eventWeight * triggerWeight);
           } else if (corType == kFT0C) {
             registry.fill(HIST("Assoc_amp_same_TPC_FT0C"), chanelid, ampl);
-            sameTpcFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track1.pt(), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
             registry.fill(HIST("deltaEta_deltaPhi_same_TPC_FT0C"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
+            sameTpcFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track1.pt(), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
+            if (mirrorChannel)
+              sameTpcFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track1.pt(), RecoDecay::constrainAngle(track1.phi() - phi - 2 * PIHalf, -PIHalf), deltaEta, ampl * eventWeight * triggerWeight);
           }
         } else if (system == MixedEvent) {
           if (corType == kFT0A) {
             registry.fill(HIST("Assoc_amp_mixed_TPC_FT0A"), chanelid, ampl);
-            mixedTpcFt0a->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track1.pt(), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
             registry.fill(HIST("deltaEta_deltaPhi_mixed_TPC_FT0A"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
+            mixedTpcFt0a->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track1.pt(), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
+            if (mirrorChannel)
+              mixedTpcFt0a->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track1.pt(), RecoDecay::constrainAngle(track1.phi() - phi - 2 * PIHalf, -PIHalf), deltaEta, ampl * eventWeight * triggerWeight);
           } else if (corType == kFT0C) {
             registry.fill(HIST("Assoc_amp_mixed_TPC_FT0C"), chanelid, ampl);
-            mixedTpcFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track1.pt(), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
             registry.fill(HIST("deltaEta_deltaPhi_mixed_TPC_FT0C"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
+            mixedTpcFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track1.pt(), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
+            if (mirrorChannel)
+              mixedTpcFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track1.pt(), RecoDecay::constrainAngle(track1.phi() - phi - 2 * PIHalf, -PIHalf), deltaEta, ampl * eventWeight * triggerWeight);
           }
         }
       }
@@ -807,9 +838,13 @@ struct LongRangeDihadronCor {
 
       int chanelAid = 0;
       float amplA = 0.;
-      getChannel(ft0Col1, iChA, chanelAid, amplA, kFT0A);
+      getChannel(ft0Col1, iChA, chanelAid, amplA, kFT0A, system);
       auto phiA = getPhiFT0(chanelAid, kFT0A);
       auto etaA = getEtaFT0(chanelAid, kFT0A);
+
+      bool mirrorChannelA = false;
+      if (cfgFwdConfig.cfgMirrorFT0ADeadChannels)
+        mirrorChannelA = isMirrorId(chanelAid, kFT0A);
 
       if (system == SameEvent) {
         registry.fill(HIST("Trig_hist_FT0A_FT0C"), fSampleIndex, posZ, 0.5, eventWeight * amplA);
@@ -818,18 +853,37 @@ struct LongRangeDihadronCor {
       for (std::size_t iChC = 0; iChC < channelCSize; iChC++) {
         int chanelCid = 0;
         float amplC = 0.;
-        getChannel(ft0Col2, iChC, chanelCid, amplC, kFT0C);
+        getChannel(ft0Col2, iChC, chanelCid, amplC, kFT0C, system);
         auto phiC = getPhiFT0(chanelCid, kFT0C);
         auto etaC = getEtaFT0(chanelCid, kFT0C);
         float deltaPhi = RecoDecay::constrainAngle(phiA - phiC, -PIHalf);
         float deltaEta = etaA - etaC;
+
+        bool mirrorChannelC = false;
+        if (cfgFwdConfig.cfgMirrorFT0CDeadChannels)
+          mirrorChannelC = isMirrorId(chanelCid, kFT0C);
+
         // fill the right sparse and histograms
         if (system == SameEvent) {
-          sameFt0aFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, 0.5, 0.5, deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
           registry.fill(HIST("deltaEta_deltaPhi_same_FT0A_FT0C"), deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
+          sameFt0aFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, 0.5, 0.5, deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
+          if (mirrorChannelA) {
+            sameFt0aFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, 0.5, 0.5, RecoDecay::constrainAngle(phiA + 2 * PIHalf - phiC, -PIHalf), deltaEta, amplA * amplC * eventWeight * triggerWeight);
+            if (mirrorChannelC)
+              sameFt0aFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, 0.5, 0.5, deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
+          }
+          if (mirrorChannelC)
+            sameFt0aFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, 0.5, 0.5, RecoDecay::constrainAngle(phiA - phiC - 2 * PIHalf, -PIHalf), deltaEta, amplA * amplC * eventWeight * triggerWeight);
         } else if (system == MixedEvent) {
-          mixedFt0aFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, 0.5, 0.5, deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
           registry.fill(HIST("deltaEta_deltaPhi_mixed_FT0A_FT0C"), deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
+          mixedFt0aFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, 0.5, 0.5, deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
+          if (mirrorChannelA) {
+            mixedFt0aFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, 0.5, 0.5, RecoDecay::constrainAngle(phiA + 2 * PIHalf - phiC, -PIHalf), deltaEta, amplA * amplC * eventWeight * triggerWeight);
+            if (mirrorChannelC)
+              mixedFt0aFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, 0.5, 0.5, deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
+          }
+          if (mirrorChannelC)
+            mixedFt0aFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, 0.5, 0.5, RecoDecay::constrainAngle(phiA - phiC - 2 * PIHalf, -PIHalf), deltaEta, amplA * amplC * eventWeight * triggerWeight);
         }
       }
     }
@@ -966,6 +1020,21 @@ struct LongRangeDihadronCor {
       return;
     }
 
+    int currentRunNumber = bc.runNumber();
+    if (cfgFwdConfig.cfgRunbyRunAmplitudeFT0 && currentRunNumber != lastRunNumber) {
+      lastRunNumber = currentRunNumber;
+      if (std::find(runNumbers.begin(), runNumbers.end(), currentRunNumber) == runNumbers.end()) {
+        // if run number is not in the preconfigured list, create new output histograms for this run
+        createOutputObjectsForRun(currentRunNumber);
+        runNumbers.push_back(currentRunNumber);
+        LOGF(info, "Created Run-by-run objects in processSameTpcFt0a");
+      }
+      if (histAmpCorrectPerRun.find(currentRunNumber) == histAmpCorrectPerRun.end()) {
+        LOGF(fatal, "RunNumber %d not found in histAmpCorrectPerRun", currentRunNumber);
+        return;
+      }
+    }
+
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
     fillYield(collision, tracks);
 
@@ -1071,6 +1140,21 @@ struct LongRangeDihadronCor {
       return;
     }
 
+    int currentRunNumber = bc.runNumber();
+    if (cfgFwdConfig.cfgRunbyRunAmplitudeFT0 && currentRunNumber != lastRunNumber) {
+      lastRunNumber = currentRunNumber;
+      if (std::find(runNumbers.begin(), runNumbers.end(), currentRunNumber) == runNumbers.end()) {
+        // if run number is not in the preconfigured list, create new output histograms for this run
+        createOutputObjectsForRun(currentRunNumber);
+        runNumbers.push_back(currentRunNumber);
+        LOGF(info, "Created Run-by-run objects in processSameTpcFt0c");
+      }
+      if (histAmpCorrectPerRun.find(currentRunNumber) == histAmpCorrectPerRun.end()) {
+        LOGF(fatal, "RunNumber %d not found in histAmpCorrectPerRun", currentRunNumber);
+        return;
+      }
+    }
+
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
     fillYield(collision, tracks);
 
@@ -1168,6 +1252,21 @@ struct LongRangeDihadronCor {
     }
     if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgCutCentMin || cent >= cfgCutCentMax)) {
       return;
+    }
+
+    int currentRunNumber = bc.runNumber();
+    if (cfgFwdConfig.cfgRunbyRunAmplitudeFT0 && currentRunNumber != lastRunNumber) {
+      lastRunNumber = currentRunNumber;
+      if (std::find(runNumbers.begin(), runNumbers.end(), currentRunNumber) == runNumbers.end()) {
+        // if run number is not in the preconfigured list, create new output histograms for this run
+        createOutputObjectsForRun(currentRunNumber);
+        runNumbers.push_back(currentRunNumber);
+        LOGF(info, "Created Run-by-run objects in processSameFt0aFt0c");
+      }
+      if (histAmpCorrectPerRun.find(currentRunNumber) == histAmpCorrectPerRun.end()) {
+        LOGF(fatal, "RunNumber %d not found in histAmpCorrectPerRun", currentRunNumber);
+        return;
+      }
     }
 
     sameFt0aFt0c->fillEvent(tracks.size(), CorrelationContainer::kCFStepReconstructed);

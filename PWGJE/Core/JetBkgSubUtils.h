@@ -46,7 +46,7 @@ class JetBkgSubUtils
   // Default contructor
   JetBkgSubUtils() = default;
 
-  JetBkgSubUtils(float jetBkgR_out, float bkgEtaMin_out = -0.8, float bkgEtaMax_out = 0.8,
+  JetBkgSubUtils(float jetBkgR_out, float bkgEtaMin_out = -0.9, float bkgEtaMax_out = 0.9,
                  float bkgPhiMin_out = 0., float bkgPhiMax_out = 2 * M_PI, float constSubAlpha_out = 1., float constSubRMax_out = 0.6, int nHardReject_out = 2, fastjet::GhostedAreaSpec ghostAreaSpec_out = fastjet::GhostedAreaSpec());
 
   // Default destructor
@@ -106,12 +106,8 @@ class JetBkgSubUtils
     constSubAlpha = alpha_out;
     constSubRMax = rmax_out;
   }
-  void setMaxEtaEvent(float etaMaxEvent) { maxEtaEvent = etaMaxEvent; }
   void setDoRhoMassSub(bool doMSub_out = true) { doRhoMassSub = doMSub_out; }
   void setGhostAreaSpec(fastjet::GhostedAreaSpec ghostAreaSpec_out) { ghostAreaSpec = ghostAreaSpec_out; }
-  void setJetDefinition(fastjet::JetDefinition jetdefbkg_out) { jetDefBkg = jetdefbkg_out; }
-  void setAreaDefinition(fastjet::AreaDefinition areaDefBkg_out) { areaDefBkg = areaDefBkg_out; }
-  void setRhoSelector(fastjet::Selector selRho_out) { selRho = selRho_out; }
 
   // Getters
   float getJetBkgR() const { return jetBkgR; }
@@ -119,7 +115,6 @@ class JetBkgSubUtils
   float getPhiMax() const { return bkgPhiMax; }
   float getEtaMin() const { return bkgEtaMin; }
   float getEtaMax() const { return bkgEtaMax; }
-  float getEtaMaxEvent() const { return maxEtaEvent; }
   float getConstSubAlpha() const { return constSubAlpha; }
   float getConstSubRMax() const { return constSubRMax; }
   float getDoRhoMassSub() const { return doRhoMassSub; }
@@ -139,7 +134,6 @@ class JetBkgSubUtils
   float bkgPhiMax = 2.0 * M_PI;
   float constSubAlpha = 1.0;
   float constSubRMax = 0.24;
-  float maxEtaEvent = 0.9;
   int nHardReject = 2;
   bool doRhoMassSub = false; /// flag whether to do jet mass subtraction with the const sub
 

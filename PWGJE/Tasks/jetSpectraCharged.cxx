@@ -48,6 +48,7 @@ struct JetSpectraCharged {
   HistogramRegistry registry;
 
   Configurable<float> selectedJetsRadius{"selectedJetsRadius", 0.2, "resolution parameter for histograms without radius"};
+  Configurable<bool> applyRCTSelections{"applyRCTSelections", true, "decide to apply RCT selections"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<float> centralityMin{"centralityMin", -999.0, "minimum centrality"};
@@ -352,7 +353,7 @@ struct JetSpectraCharged {
     bool centralityIsGood = false;
     bool occupancyIsGood = false;
     if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly) {
-      if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents)) {
+      if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
         hasSel8Coll = true;
       }
       if ((trackOccupancyInTimeRangeMin < collisions.begin().trackOccupancyInTimeRange()) && (collisions.begin().trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax)) {
@@ -364,7 +365,7 @@ struct JetSpectraCharged {
       }
     } else {
       for (auto const& collision : collisions) {
-        if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents)) {
+        if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
           hasSel8Coll = true;
         }
         if ((trackOccupancyInTimeRangeMin < collision.trackOccupancyInTimeRange()) && (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax)) {
@@ -425,7 +426,7 @@ struct JetSpectraCharged {
         registry.fill(HIST("h_collisions_weighted"), 0.5, eventWeight);
     }
 
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
       return false;
     }
     if (fillHistograms) {
@@ -979,7 +980,7 @@ struct JetSpectraCharged {
     bool occupancyIsGood = false;
     float centrality = mccollision.centFT0M();
     if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly) {
-      if (hasRecoColl && jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents)) {
+      if (hasRecoColl && jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
         hasSel8Coll = true;
       }
       if (hasRecoColl && (trackOccupancyInTimeRangeMin < collisions.begin().trackOccupancyInTimeRange()) && (collisions.begin().trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax)) {
@@ -990,7 +991,7 @@ struct JetSpectraCharged {
       }
     } else {
       for (auto const& collision : collisions) {
-        if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents)) {
+        if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
           hasSel8Coll = true;
         }
         if ((trackOccupancyInTimeRangeMin < collision.trackOccupancyInTimeRange()) && (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax)) {
@@ -1062,7 +1063,7 @@ struct JetSpectraCharged {
     bool occupancyIsGood = false;
     float centrality = mccollision.centFT0M();
     if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly) {
-      if (hasRecoColl && jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents)) {
+      if (hasRecoColl && jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
         hasSel8Coll = true;
       }
       if (hasRecoColl && (trackOccupancyInTimeRangeMin < collisions.begin().trackOccupancyInTimeRange()) && (collisions.begin().trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax)) {
@@ -1073,7 +1074,7 @@ struct JetSpectraCharged {
       }
     } else {
       for (auto const& collision : collisions) {
-        if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents)) {
+        if (jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
           hasSel8Coll = true;
         }
         if ((trackOccupancyInTimeRangeMin < collision.trackOccupancyInTimeRange()) && (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMax)) {

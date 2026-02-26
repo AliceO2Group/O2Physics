@@ -152,6 +152,8 @@ struct MeanptFluctuationsAnalysis {
   using MyMCTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>>;
   using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFV0As, aod::Mults>;
 
+  Preslice<MyMCTracks> perCollision = aod::track::collisionId;
+
   // Event selection cuts - Alex
   TF1* fMultPVCutLow = nullptr;
   TF1* fMultPVCutHigh = nullptr;
@@ -170,6 +172,7 @@ struct MeanptFluctuationsAnalysis {
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
 
     // Add histograms to histogram manager (as in the output object of in AliPhysics)
+    histos.add("hEventStatData", "Data Event statistics", kTH1F, {{10, 0.0f, 10.0f}});
     histos.add("hZvtx_after_sel", ";Z (cm)", kTH1F, {vtxZAxis});
     histos.add("hP", ";#it{p} (GeV/#it{c})", kTH1F, {{35, 0.2, 4.}});
     histos.add("hPt", ";#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
@@ -376,26 +379,40 @@ struct MeanptFluctuationsAnalysis {
   }
 
   template <typename TCollision>
-  void eventSelectionDefaultCuts(TCollision coll)
+  bool eventSelectionDefaultCuts(TCollision coll)
   {
+    histos.fill(HIST("hEventStatData"), 0.5);
     if (!coll.sel8()) {
-      return;
+      return 0;
     }
+
+    histos.fill(HIST("hEventStatData"), 1.5);
     if (cfgUseGoodITSLayerAllCut && !(coll.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))) {
-      return;
+      return 0;
     }
+
+    histos.fill(HIST("hEventStatData"), 2.5);
     if (cfgEvSelkNoSameBunchPileup && !(coll.selection_bit(o2::aod::evsel::kNoSameBunchPileup))) {
-      return;
+      return 0;
     }
+
+    histos.fill(HIST("hEventStatData"), 3.5);
     if (cfgEvSelkNoITSROFrameBorder && !(coll.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
-      return;
+      return 0;
     }
+
+    histos.fill(HIST("hEventStatData"), 4.5);
     if (cfgEvSelkNoTimeFrameBorder && !(coll.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))) {
-      return;
+      return 0;
     }
+
+    histos.fill(HIST("hEventStatData"), 5.5);
     if (cfgEvSelUseGoodZvtxFT0vsPV && !(coll.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))) {
-      return;
+      return 0;
     }
+
+    histos.fill(HIST("hEventStatData"), 6.5);
+    return 1;
   }
 
   template <typename C, typename T>
@@ -461,11 +478,12 @@ struct MeanptFluctuationsAnalysis {
       if (cfgEvSelUseGoodZvtxFT0vsPV && !(collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))) {
         continue;
       }
-      if (cfgUseSmallIonAdditionalEventCutInMC && !eventSelectedSmallion(collision, tracks.size(), cent)) {
+
+      auto rectrackspart = tracks.sliceBy(perCollision, collision.globalIndex());
+      cent = collision.centFT0C();
+      if (cfgUseSmallIonAdditionalEventCutInMC && !eventSelectedSmallion(collision, rectrackspart.size(), cent)) {
         continue;
       }
-
-      cent = collision.centFT0C();
 
       selectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
     }
@@ -554,10 +572,17 @@ struct MeanptFluctuationsAnalysis {
 
   void processMCRec(MyMCRecCollisions::iterator const& collision, MyMCTracks const& tracks, aod::McCollisions const&, aod::McParticles const&)
   {
+    histos.fill(HIST("MCGenerated/hMC"), 5.5);
+
     if (!collision.has_mcCollision()) {
       return;
     }
-    eventSelectionDefaultCuts(collision);
+    histos.fill(HIST("MCGenerated/hMC"), 6.5);
+
+    if (!eventSelectionDefaultCuts(collision)) {
+      return;
+    }
+    histos.fill(HIST("MCGenerated/hMC"), 7.5);
 
     fillMultCorrPlotsBeforeSel(collision, tracks);
 
@@ -571,7 +596,7 @@ struct MeanptFluctuationsAnalysis {
       fillMultCorrPlotsAfterSel(collision, tracks);
     }
 
-    histos.fill(HIST("MCGenerated/hMC"), 5.5);
+    histos.fill(HIST("MCGenerated/hMC"), 8.5);
     histos.fill(HIST("hZvtx_after_sel"), collision.posZ());
 
     double cent = 0.0;
@@ -688,7 +713,9 @@ struct MeanptFluctuationsAnalysis {
   // void process(aod::Collision const& coll, aod::Tracks const& inputTracks)
   void processData(AodCollisions::iterator const& coll, aod::BCsWithTimestamps const&, AodTracks const& inputTracks)
   {
-    eventSelectionDefaultCuts(coll);
+    if (!eventSelectionDefaultCuts(coll)) {
+      return;
+    }
 
     fillMultCorrPlotsBeforeSel(coll, inputTracks);
 
@@ -701,6 +728,8 @@ struct MeanptFluctuationsAnalysis {
     if (cfgUseSmallIonAdditionalEventCut) {
       fillMultCorrPlotsAfterSel(coll, inputTracks);
     }
+
+    histos.fill(HIST("hEventStatData"), 7.5);
 
     histos.fill(HIST("hZvtx_after_sel"), coll.posZ());
 

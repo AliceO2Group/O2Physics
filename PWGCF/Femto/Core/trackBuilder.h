@@ -753,8 +753,8 @@ struct TrackBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
 
 struct ConfTrackTablesDerivedToDerived : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("TrackTables");
-  o2::framework::Configurable<int> limitTrack1{"limitTrack1", 1, "At least this many tracks of type 1 need to be in the collision"};
-  o2::framework::Configurable<int> limitTrack2{"limitTrack2", 0, "At least this many tracks of type 2 need to be in the collision"};
+  o2::framework::Configurable<int> limitTrack1{"limitTrack1", 1, "At least this many tracks of type 1 need to be in the collision. Ignored if set to 0."};
+  o2::framework::Configurable<int> limitTrack2{"limitTrack2", 0, "At least this many tracks of type 2 need to be in the collision. Ignored if set to 0."};
 };
 
 class TrackBuilderDerivedToDerived
@@ -768,6 +768,10 @@ class TrackBuilderDerivedToDerived
   {
     mLimitTrack1 = config.limitTrack1.value;
     mLimitTrack2 = config.limitTrack2.value;
+
+    if (mLimitTrack1 == 0 && mLimitTrack2 == 0) {
+      LOG(fatal) << "Both track limits are 0. Breaking...";
+    }
   }
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5>
@@ -775,36 +779,40 @@ class TrackBuilderDerivedToDerived
   {
     auto trackSlice1 = partitionTrack1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     auto trackSlice2 = partitionTrack2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-    if (trackSlice1.size() >= mLimitTrack1 && trackSlice2.size() >= mLimitTrack2) {
-      return false;
-    }
-    return true;
+    return trackSlice1.size() < mLimitTrack1 || trackSlice2.size() < mLimitTrack2;
   }
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
   void processTracks(T1& col, T2& /*trackTable*/, T3& partitionTrack1, T4& partitionTrack2, T5& cache, T6& newTrackTable, T7& newCollisionTable)
   {
     indexMap.clear();
-    auto trackSlice1 = partitionTrack1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-    auto trackSlice2 = partitionTrack2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
 
-    for (auto const& track : trackSlice1) {
-      this->fillTrack(track, newTrackTable, newCollisionTable);
+    if (mLimitTrack1 > 0) {
+      auto trackSlice1 = partitionTrack1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+      for (auto const& track : trackSlice1) {
+        this->fillTrack(track, newTrackTable, newCollisionTable);
+      }
     }
-    for (auto const& track : trackSlice2) {
-      this->fillTrack(track, newTrackTable, newCollisionTable);
+
+    if (mLimitTrack2 > 0) {
+      auto trackSlice2 = partitionTrack2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+      for (auto const& track : trackSlice2) {
+        this->fillTrack(track, newTrackTable, newCollisionTable);
+      }
     }
   }
 
   template <typename T1, typename T2, typename T3>
   void fillTrack(T1 const& track, T2& trackProducts, T3& collisionProducts)
   {
-    trackProducts.producedTracks(collisionProducts.producedCollision.lastIndex(),
-                                 track.signedPt(),
-                                 track.eta(),
-                                 track.phi());
-    trackProducts.producedTrackMasks(track.mask());
-    indexMap.emplace(track.globalIndex(), trackProducts.producedTracks.lastIndex());
+    if (indexMap.find(track.globalIndex()) == indexMap.end()) { // protect against double filling
+      trackProducts.producedTracks(collisionProducts.producedCollision.lastIndex(),
+                                   track.signedPt(),
+                                   track.eta(),
+                                   track.phi());
+      trackProducts.producedTrackMasks(track.mask());
+      indexMap.emplace(track.globalIndex(), trackProducts.producedTracks.lastIndex());
+    }
   }
 
   template <typename T1, typename T2, typename T3>
@@ -816,7 +824,6 @@ class TrackBuilderDerivedToDerived
     } else {
       this->fillTrack(daughter, trackProducts, collisionProducts);
       int64_t idx = trackProducts.producedTracks.lastIndex();
-      indexMap.emplace(daughter.globalIndex(), idx);
       return idx;
     }
   }

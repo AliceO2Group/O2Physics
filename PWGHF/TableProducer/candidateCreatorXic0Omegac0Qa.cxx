@@ -216,8 +216,8 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     Configurable<float> impParXYPiMax{"impParXYPiMax", 1.5, "impParXYPiMax"};
   } configs;
 
-  // For magnetic field
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
+  Service<o2::framework::O2DatabasePDG> pdgdb{};
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
@@ -1205,12 +1205,12 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       // get KF cosThetaStar
       float cosThetaStarCharmBachelor;
       if constexpr (decayChannel == hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi) {
-        cosThetaStarCharmBachelor = cosThetaStarFromKF(0, pdgIdOfCharmBaryon, pdgIdOfCharmBach, pdgIdOfCascade, kfCharmBachToCharmBaryon, kfCascToCharmBaryon);
+        cosThetaStarCharmBachelor = cosThetaStarFromKF(0, pdgIdOfCharmBaryon, pdgIdOfCharmBach, pdgIdOfCascade, kfCharmBachToCharmBaryon, kfCascToCharmBaryon, pdgdb);
       }
       float cosThetaStarKaFromOmegac0, cosThetaStarKaFromXic0; // -> Only requeted to be calculated and filled for Xic0/Omegac0 -> Omega K
       if constexpr (decayChannel == hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK) {
-        cosThetaStarKaFromOmegac0 = cosThetaStarFromKF(0, 4332, 321, 3334, kfCharmBachToCharmBaryon, kfCascToCharmBaryon);
-        cosThetaStarKaFromXic0 = cosThetaStarFromKF(0, 4132, 321, 3334, kfCharmBachToCharmBaryon, kfCascToCharmBaryon);
+        cosThetaStarKaFromOmegac0 = cosThetaStarFromKF(0, 4332, 321, 3334, kfCharmBachToCharmBaryon, kfCascToCharmBaryon, pdgdb);
+        cosThetaStarKaFromXic0 = cosThetaStarFromKF(0, 4132, 321, 3334, kfCharmBachToCharmBaryon, kfCascToCharmBaryon, pdgdb);
       }
 
       // KF ct

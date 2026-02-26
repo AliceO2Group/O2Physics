@@ -39,12 +39,23 @@ const std::vector<double> eClusBins = {0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8
                                        100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200};
 o2::framework::AxisSpec const gAxisEClus = {eClusBins, "#it{E}_{clus} (GeV)"};
 
+const std::vector<double> pTBins = {0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8,
+                                    0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8,
+                                    1.9, 2, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8,
+                                    2.9, 3, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8,
+                                    3.9, 4, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8,
+                                    4.9, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9,
+                                    9.5, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+                                    19, 20};
+o2::framework::AxisSpec const gAxisPt = {pTBins, "#it{p}_{T} (GeV/#it{c})"};
+
 o2::framework::HistogramConfigSpec const gHistoSpecClusterTMdEtadPhi({o2::framework::HistType::kTH2F, {gAxisdEta, gAxisdPhi}});
 o2::framework::HistogramConfigSpec const gHistoSpecClusterTMdEtaMT({o2::framework::HistType::kTH2F, {gAxisdEta, {10, 0.5, 10.5}}});
 o2::framework::HistogramConfigSpec const gHistoSpecClusterTMdPhiMT({o2::framework::HistType::kTH2F, {gAxisdPhi, {10, 0.5, 10.5}}});
 o2::framework::HistogramConfigSpec const gHistoSpecClusterTMdRMT({o2::framework::HistType::kTH2F, {gAxisdR, {10, 0.5, 10.5}}});
 o2::framework::HistogramConfigSpec const gHistoSpecEtaPhi({o2::framework::HistType::kTH2F, {gAxisEta, gAxisPhi}});
 o2::framework::HistogramConfigSpec const gHistoSpecClusterE({o2::framework::HistType::kTH1F, {gAxisEClus}});
+o2::framework::HistogramConfigSpec const gHistoSpecPt({o2::framework::HistType::kTH1F, {gAxisPt}});
 o2::framework::HistogramConfigSpec const gHistoSpecClusterECuts({o2::framework::HistType::kTH2F, {gAxisEClus, {64, -0.5, 63.5}}});
 o2::framework::HistogramConfigSpec const gHistoSpecTMEoverP({o2::framework::HistType::kTH2D, {gAxisEClus, gAxisEoverP}});
 

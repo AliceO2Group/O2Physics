@@ -853,7 +853,7 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
       //       if(spt1o>0.)             covar[14]*=(spt1n/spt1o)*(spt1n/spt1o);//ptpt
       sigma1Pt2 = trackParCov.getSigma1Pt2();
       if (qOverPtMC > 0.) {
-        sigma1Pt2 *= (qOverPtData / qOverPtMC);
+        sigma1Pt2 *= (qOverPtData / qOverPtMC) * (qOverPtData / qOverPtMC);
         trackParCov.setCov(sigma1Pt2, 14);
       }
     } // updateCurvatureIU block ends here
@@ -1039,7 +1039,7 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
         //       if(spt1o>0.)             covar[14]*=(spt1n/spt1o)*(spt1n/spt1o);//ptpt
         sigma1Pt2 = trackParCov.getSigma1Pt2();
         if (qOverPtMC > 0.) {
-          sigma1Pt2 *= (qOverPtData / qOverPtMC);
+          sigma1Pt2 *= (qOverPtData / qOverPtMC) * (qOverPtData / qOverPtMC);
           trackParCov.setCov(sigma1Pt2, 14);
         }
       } // ---> track cov matrix elements for 1/Pt ends here

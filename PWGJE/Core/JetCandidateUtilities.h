@@ -188,13 +188,15 @@ template <typename T, typename U, typename V>
 auto matchedParticle(const T& candidate, const U& tracks, const V& particles)
 {
   if constexpr (jethfutilities::isHFCandidate<T>()) {
-    return jethfutilities::matchedHFParticle(candidate, tracks, particles);
+    bool isMatched = false;
+    return jethfutilities::matchedHFParticle(candidate, tracks, particles, isMatched);
   } else if constexpr (jetv0utilities::isV0Candidate<T>()) {
     return jetv0utilities::matchedV0Particle(candidate, tracks, particles);
   } else if constexpr (jetdqutilities::isDielectronCandidate<T>()) {
     return jetdqutilities::matchedDielectronParticle(candidate, tracks, particles);
   } else {
-    return jethfutilities::matchedHFParticle(candidate, tracks, particles); // this is a dummy output which should never be triggered
+    bool isMatched = false;
+    return jethfutilities::matchedHFParticle(candidate, tracks, particles, isMatched); // this is a dummy output which should never be triggered
   }
 }
 
