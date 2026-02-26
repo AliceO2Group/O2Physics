@@ -19,6 +19,7 @@
 #include <TRandom3.h>
 
 #include <chrono>
+#include <memory>
 #include <string>
 #include <vector>
 
