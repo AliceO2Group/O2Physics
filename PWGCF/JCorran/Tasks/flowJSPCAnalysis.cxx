@@ -8,9 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
-// \brief   Task for the calculation of SPC with filtered data.
-// \author  Maxim Virta (maxim.virta@cern.ch), Cindy Mordasini (cindy.mordasini@cern.ch)
+///
+/// \file    flowJSPCAnalysis.cxx
+/// \brief   Task for the calculation of SPC with filtered data.
+/// \author  Maxim Virta (maxim.virta@cern.ch), Cindy Mordasini (cindy.mordasini@cern.ch), Neelkamal Mallick (neelkamal.mallick@cern.ch)
 
 // Standard headers.
 #include <TFormula.h>
