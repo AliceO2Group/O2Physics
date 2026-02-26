@@ -120,7 +120,6 @@ struct flowJSPCAnalysis {
     histManager.setDebugLog(false);
     histManager.createHistQA();
 
-
     if (!cfgMultCutFormula.value.empty()) {
       multCutFormula = std::make_unique<TFormula>("multCutFormula", cfgMultCutFormula.value.c_str());
       std::fill_n(multCutFormulaParamIndex.begin(), std::size(multCutFormulaParamIndex), ~0u);
