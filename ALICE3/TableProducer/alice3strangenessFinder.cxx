@@ -44,6 +44,7 @@
 #include <TLorentzVector.h>
 
 #include <cstdlib>
+#include <vector>
 
 using namespace o2;
 // using namespace o2::analysis;
@@ -153,6 +154,27 @@ struct Alice3strangenessFinder {
     fitter.setMatCorrType(o2::base::Propagator::MatCorrType::USEMatCorrNONE);
 
     histos.add("hFitterQA", "", kTH1D, {{10, 0, 10}}); // For QA reasons, counting found candidates at different stages
+    auto hFitterStatusCode = histos.add<TH1>("hFitterStatusCode", "hFitterStatusCode", kTH1D, {{15, -0.5, 14.5}});
+    hFitterStatusCode->GetXaxis()->SetBinLabel(1, "None"); // no status set (should not be possible!)
+
+    /* Good Conditions */
+    hFitterStatusCode->GetXaxis()->SetBinLabel(2, "Converged"); // fit converged
+    hFitterStatusCode->GetXaxis()->SetBinLabel(3, "MaxIter");   // max iterations reached before fit convergence
+
+    /* Error Conditions */
+    hFitterStatusCode->GetXaxis()->SetBinLabel(4, "NoCrossing");       // no reasaonable crossing was found
+    hFitterStatusCode->GetXaxis()->SetBinLabel(5, "RejRadius");        // radius of crossing was not acceptable
+    hFitterStatusCode->GetXaxis()->SetBinLabel(6, "RejTrackX");        // one candidate track x was below the mimimum required radius
+    hFitterStatusCode->GetXaxis()->SetBinLabel(7, "RejTrackRoughZ");   // rejected by rough cut on tracks Z difference
+    hFitterStatusCode->GetXaxis()->SetBinLabel(8, "RejChi2Max");       // rejected by maximum chi2 cut
+    hFitterStatusCode->GetXaxis()->SetBinLabel(9, "FailProp");         // propagation of at least prong to PCA failed
+    hFitterStatusCode->GetXaxis()->SetBinLabel(10, "FailInvCov");      // inversion of cov.-matrix failed
+    hFitterStatusCode->GetXaxis()->SetBinLabel(11, "FailInvWeight");   // inversion of Ti weight matrix failed
+    hFitterStatusCode->GetXaxis()->SetBinLabel(12, "FailInv2ndDeriv"); // inversion of 2nd derivatives failed
+    hFitterStatusCode->GetXaxis()->SetBinLabel(13, "FailCorrTracks");  // correction of tracks to updated x failed
+    hFitterStatusCode->GetXaxis()->SetBinLabel(14, "FailCloserAlt");   // alternative PCA is closer
+    hFitterStatusCode->GetXaxis()->SetBinLabel(15, "NStatusesDefined");
+
     histos.add("hPtPosDau", "", kTH1D, {axisPt});
     histos.add("hPtNegDau", "", kTH1D, {axisPt});
     histos.add("hPtPosDauAfterV0Finding", "", kTH2D, {axisPt, axisPt});
@@ -220,6 +242,9 @@ struct Alice3strangenessFinder {
       } catch (...) {
         return false;
       }
+
+      const u_int8_t fitterStatusCode = fitter.getFitStatus();
+      histos.fill(HIST("hFitterStatusCode"), fitterStatusCode);
       histos.fill(HIST("hFitterQA"), 1.5);
       if (nCand == 0) {
         LOG(info) << "0 candidates found by fitter";
