@@ -337,11 +337,11 @@ struct LumiStabilityPP {
         isSuperLeadingBcFT0 = false; // not a super-leading BC for FT0
       }
 
-      if (ctpInputMask.test(13) || ctpInputMask.test(15) || ctpInputMask.test(16) || ctpInputMask.test(17) || ctpInputMask.test(18)) { // 5 FDD triggers
-        globalBCIdOfLastBCWithActivityFDD = globalBC;
+      if (ctpInputMask.test(12) || ctpInputMask.test(14) || ctpInputMask.test(15) || ctpInputMask.test(16) || ctpInputMask.test(17)) { // 5 FDD triggers
+        globalBCIdOfLastBCWithActivityFDD = globalBCFDD;
       }
-      if (ctpInputMask.test(1) || ctpInputMask.test(2) || ctpInputMask.test(3) || ctpInputMask.test(4) || ctpInputMask.test(5)) { // 5 FT0 triggers
-        globalBCIdOfLastBCWithActivityFT0 = globalBCFDD;
+      if (ctpInputMask.test(0) || ctpInputMask.test(1) || ctpInputMask.test(2) || ctpInputMask.test(3) || ctpInputMask.test(4)) { // 5 FT0 triggers
+        globalBCIdOfLastBCWithActivityFT0 = globalBC;
       }
 
       if (!bcPatternB[localBC]) {
