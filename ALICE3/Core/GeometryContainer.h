@@ -91,7 +91,7 @@ class GeometryContainer
   void init(o2::framework::InitContext& initContext);
 
   // Add a geometry entry from a configuration file
-  void addEntry(const std::string& filename) { mEntries.emplace_back(filename, mCcdb); }
+  void addEntry(const std::string& filename);
   static void setLutCleanupSetting(const bool cleanLutWhenLoaded) { mCleanLutWhenLoaded = cleanLutWhenLoaded; }
   void setCcdbManager(o2::ccdb::BasicCCDBManager* mgr) { mCcdb = mgr; }
 
