@@ -170,7 +170,7 @@ class DielectronCut : public TNamed
   template <bool dont_require_pteta = false, typename TTrack>
   bool IsSelectedTrack(TTrack const& track) const
   {
-    if (!track.hasITS()) {
+    if (!track.hasITS() || !track.hasTPC()) {
       return false;
     }
 
@@ -225,34 +225,32 @@ class DielectronCut : public TNamed
       }
     }
 
-    if (!mIncludeITSsa && (!track.hasITS() || !track.hasTPC())) { // track has to be ITS-TPC matched track
-      return false;
-    }
+    // if (!mIncludeITSsa && (!track.hasITS() || !track.hasTPC())) { // track has to be ITS-TPC matched track
+    //   return false;
+    // }
 
-    if ((track.hasITS() && !track.hasTPC() && !track.hasTRD() && !track.hasTOF()) && track.pt() > mMaxPtITSsa) { // ITSsa
-      return false;
-    }
+    // if ((track.hasITS() && !track.hasTPC() && !track.hasTRD() && !track.hasTOF()) && track.pt() > mMaxPtITSsa) { // ITSsa
+    //   return false;
+    // }
 
     // TPC cuts
-    if (track.hasTPC()) {
-      if (!IsSelectedTrack(track, DielectronCuts::kTPCNCls)) {
-        return false;
-      }
-      if (!IsSelectedTrack(track, DielectronCuts::kTPCCrossedRows)) {
-        return false;
-      }
-      if (!IsSelectedTrack(track, DielectronCuts::kTPCCrossedRowsOverNCls)) {
-        return false;
-      }
-      if (!IsSelectedTrack(track, DielectronCuts::kTPCFracSharedClusters)) {
-        return false;
-      }
-      if (!IsSelectedTrack(track, DielectronCuts::kRelDiffPin)) {
-        return false;
-      }
-      if (!IsSelectedTrack(track, DielectronCuts::kTPCChi2NDF)) {
-        return false;
-      }
+    if (!IsSelectedTrack(track, DielectronCuts::kTPCNCls)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, DielectronCuts::kTPCCrossedRows)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, DielectronCuts::kTPCCrossedRowsOverNCls)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, DielectronCuts::kTPCFracSharedClusters)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, DielectronCuts::kRelDiffPin)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, DielectronCuts::kTPCChi2NDF)) {
+      return false;
     }
 
     if (mApplyPF && !IsSelectedTrack(track, DielectronCuts::kPrefilter)) {

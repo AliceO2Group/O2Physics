@@ -81,10 +81,10 @@ using TracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelectionExt
 
 static constexpr int kNEtaHists{8};
 
-std::array<std::shared_ptr<TH3>, kNEtaHists> dEdxPiV0{};
-std::array<std::shared_ptr<TH3>, kNEtaHists> dEdxPrV0{};
-std::array<std::shared_ptr<TH3>, kNEtaHists> dEdxElV0{};
-std::array<std::shared_ptr<TH3>, kNEtaHists> dEdxPiTOF{};
+std::array<std::shared_ptr<TH2>, kNEtaHists> dEdxPiV0{};
+std::array<std::shared_ptr<TH2>, kNEtaHists> dEdxPrV0{};
+std::array<std::shared_ptr<TH2>, kNEtaHists> dEdxElV0{};
+std::array<std::shared_ptr<TH2>, kNEtaHists> dEdxPiTOF{};
 std::array<std::shared_ptr<TH3>, kNEtaHists> dEdx{};
 std::array<std::shared_ptr<TH2>, kNEtaHists> nClVsdEdxPiV0{};
 std::array<std::shared_ptr<TH2>, kNEtaHists> nClVsdEdxElV0{};
@@ -218,7 +218,6 @@ struct PiKpRAA {
   Configurable<bool> selINELgt0{"selINELgt0", true, "Select INEL > 0?"};
   Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy", false, "T0C Occu cut"};
   Configurable<bool> applyNchSel{"applyNchSel", false, "Use mid-rapidity-based Nch selection"};
-  Configurable<bool> skipRecoColGTOne{"skipRecoColGTOne", true, "Remove collisions if reconstructed more than once"};
 
   // Event selection
   Configurable<float> posZcut{"posZcut", +10.0, "z-vertex position cut"};
@@ -489,10 +488,10 @@ struct PiKpRAA {
       for (int i = 0; i < kNEtaHists; ++i) {
         dEdx[i] = registry.add<TH3>(Form("dEdx_%s", endingEta[i]), Form("%s;Momentum (GeV/#it{c});dE/dx;", latexEta[i]), kTH3F, {axisPt, axisdEdx, axisCent});
         pTVsP[i] = registry.add<TH2>(Form("pTVsP_%s", endingEta[i]), Form("%s;Momentum (GeV/#it{c});#it{p}_{T} (GeV/#it{c});", latexEta[i]), kTH2F, {axisPt, axisPt});
-        dEdxPiV0[i] = registry.add<TH3>(Form("dEdxPiV0_%s", endingEta[i]), Form("#pi^{+} + #pi^{-}, %s;Momentum (GeV/#it{c});dE/dx;", latexEta[i]), kTH3F, {axisPtV0s, axisdEdx, axisCent});
-        dEdxPrV0[i] = registry.add<TH3>(Form("dEdxPrV0_%s", endingEta[i]), Form("p + #bar{p}, %s;Momentum (GeV/#it{c});dE/dx;", latexEta[i]), kTH3F, {axisPtV0s, axisdEdx, axisCent});
-        dEdxElV0[i] = registry.add<TH3>(Form("dEdxElV0_%s", endingEta[i]), Form("e^{+} + e^{-}, %s;Momentum (GeV/#it{c});dE/dx;", latexEta[i]), kTH3F, {axisPtV0s, axisdEdx, axisCent});
-        dEdxPiTOF[i] = registry.add<TH3>(Form("dEdxPiTOF_%s", endingEta[i]), Form("#pi^{+} + #pi^{-}, %s;Momentum (GeV/#it{c});dE/dx;", latexEta[i]), kTH3F, {axisPtV0s, axisdEdx, axisCent});
+        dEdxPiV0[i] = registry.add<TH2>(Form("dEdxPiV0_%s", endingEta[i]), Form("#pi^{+} + #pi^{-}, %s;Momentum (GeV/#it{c});dE/dx;", latexEta[i]), kTH2F, {axisPtV0s, axisdEdx});
+        dEdxPrV0[i] = registry.add<TH2>(Form("dEdxPrV0_%s", endingEta[i]), Form("p + #bar{p}, %s;Momentum (GeV/#it{c});dE/dx;", latexEta[i]), kTH2F, {axisPtV0s, axisdEdx});
+        dEdxElV0[i] = registry.add<TH2>(Form("dEdxElV0_%s", endingEta[i]), Form("e^{+} + e^{-}, %s;Momentum (GeV/#it{c});dE/dx;", latexEta[i]), kTH2F, {axisPtV0s, axisdEdx});
+        dEdxPiTOF[i] = registry.add<TH2>(Form("dEdxPiTOF_%s", endingEta[i]), Form("#pi^{+} + #pi^{-}, %s;Momentum (GeV/#it{c});dE/dx;", latexEta[i]), kTH2F, {axisPtV0s, axisdEdx});
         nClVsdEdxPiV0[i] = registry.add<TH2>(Form("NclVsdEdxPiV0_%s", endingEta[i]), Form("%s;#it{N}_{cl} used for PID;dE/dx;", latexEta[i]), kTH2F, {axisNcl, axisdEdx});
         nClVsdEdxElV0[i] = registry.add<TH2>(Form("NclVsdEdxElV0_%s", endingEta[i]), Form("%s;#it{N}_{cl} used for PID;dE/dx;", latexEta[i]), kTH2F, {axisNcl, axisdEdx});
         nClVsdEdxPrV0[i] = registry.add<TH2>(Form("NclVsdEdxPrV0_%s", endingEta[i]), Form("%s;#it{N}_{cl} used for PID;dE/dx;", latexEta[i]), kTH2F, {axisNcl, axisdEdx});
@@ -525,26 +524,13 @@ struct PiKpRAA {
       xtrkSel->SetBinLabel(12, "Passed all");
     }
 
-    if (doprocessMC || doprocessSim) {
+    if (doprocessSim) {
       registry.add("zPosMC", "Generated Events With at least One Rec. Collision + Sel. criteria;;Entries;", kTH1F, {axisZpos});
       registry.add("dcaVsPtPiDec", "Secondary pions from decays;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm);Centrality Perc.;", kTH3F, {axisPt, axisDCAxy, axisCent});
       registry.add("dcaVsPtPrDec", "Secondary protons from decays;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm);Centrality Perc.;", kTH3F, {axisPt, axisDCAxy, axisCent});
       registry.add("dcaVsPtPiMat", "Secondary pions from material interactions;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm);Centrality Perc.;", kTH3F, {axisPt, axisDCAxy, axisCent});
       registry.add("dcaVsPtPrMat", "Secondary protons from material interactions;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm);Centrality Perc.;", kTH3F, {axisPt, axisDCAxy, axisCent});
       registry.add("NclVsPhip", Form("#LTNcl#GT used for PID;%s (GeV/#it{c});#varphi", titlePorPt.data()), kTProfile2D, {{{axisXPhiCut}, {350, 0.0, 0.35}}});
-    }
-
-    if (doprocessMC) {
-
-      registry.add("EventCounterMC", "Event counter", kTH1F, {axisEvent});
-
-      registry.add("PtPiVsCent", "", kTH2F, {axisPt, axisCent});
-      registry.add("PtKaVsCent", "", kTH2F, {axisPt, axisCent});
-      registry.add("PtPrVsCent", "", kTH2F, {axisPt, axisCent});
-
-      registry.add("PtPiVsCentMC", "", kTH2F, {axisPt, axisCent});
-      registry.add("PtKaVsCentMC", "", kTH2F, {axisPt, axisCent});
-      registry.add("PtPrVsCentMC", "", kTH2F, {axisPt, axisCent});
     }
 
     if (doprocessSim) {
@@ -906,7 +892,7 @@ struct PiKpRAA {
           // registry.fill(HIST("TOFExpEl2TOF"), momentum, tExpElTOF / tTOF);
 
           if (std::abs((tExpPiTOF / tTOF) - kOne) < v0Selections.maxExpTOFPi) {
-            dEdxPiTOF[indexEta]->Fill(momentum, dedx, centrality);
+            dEdxPiTOF[indexEta]->Fill(momentum, dedx);
           }
         }
       }
@@ -1042,8 +1028,8 @@ struct PiKpRAA {
           nClVsdEdxPiV0[posIndexEta]->Fill(posNcl, posTrkdEdx);
           nClVsdEdxpPiV0[posIndexEta]->Fill(posNcl, posTrkdEdx);
           nClVsPpPiV0[negIndexEta]->Fill(negPorPt, negNcl);
-          dEdxPiV0[posIndexEta]->Fill(posTrkP, posTrkdEdx, centrality);
-          dEdxPiV0[negIndexEta]->Fill(negTrkP, negTrkdEdx, centrality);
+          dEdxPiV0[posIndexEta]->Fill(posTrkP, posTrkdEdx);
+          dEdxPiV0[negIndexEta]->Fill(negTrkP, negTrkdEdx);
 
           if (posTrkP > kMinPMIP && posTrkP < kMaxPMIP && posTrkdEdx > kMindEdxMIP && posTrkdEdx < kMaxdEdxMIP) {
             registry.fill(HIST("dEdxVsEtaPiMIPV0"), posTrkEta, posTrkdEdx);
@@ -1068,7 +1054,7 @@ struct PiKpRAA {
           nClVsPpPrV0[posIndexEta]->Fill(posPorPt, posNcl);
           nClVsdEdxPrV0[posIndexEta]->Fill(posNcl, posTrkdEdx);
           nClVsdEdxpPrV0[posIndexEta]->Fill(posNcl, posTrkdEdx);
-          dEdxPrV0[posIndexEta]->Fill(posTrkP, posTrkdEdx, centrality);
+          dEdxPrV0[posIndexEta]->Fill(posTrkP, posTrkdEdx);
         }
         if (negTrackCharge < kZero) {
           registry.fill(HIST("nSigPiFromL"), negTrkPt, negTrack.tpcNSigmaPi());
@@ -1104,7 +1090,7 @@ struct PiKpRAA {
           nClVsPpPrV0[negIndexEta]->Fill(negPorPt, negNcl);
           nClVsdEdxPrV0[negIndexEta]->Fill(negNcl, negTrkdEdx);
           nClVsdEdxpPrV0[negIndexEta]->Fill(negNcl, negTrkdEdx);
-          dEdxPrV0[negIndexEta]->Fill(negTrkP, negTrkdEdx, centrality);
+          dEdxPrV0[negIndexEta]->Fill(negTrkP, negTrkdEdx);
         }
       }
 
@@ -1139,8 +1125,8 @@ struct PiKpRAA {
           registry.fill(HIST("dEdxVsEtaElMIPV0p"), posTrkEta, posTrkdEdx);
           registry.fill(HIST("dEdxVsEtaElMIPV0"), negTrkEta, negTrkdEdx);
           registry.fill(HIST("dEdxVsEtaElMIPV0p"), negTrkEta, negTrkdEdx);
-          dEdxElV0[posIndexEta]->Fill(posTrkP, posTrkdEdx, centrality);
-          dEdxElV0[negIndexEta]->Fill(negTrkP, negTrkdEdx, centrality);
+          dEdxElV0[posIndexEta]->Fill(posTrkP, posTrkdEdx);
+          dEdxElV0[negIndexEta]->Fill(negTrkP, negTrkdEdx);
         }
       }
     } // v0s
@@ -1149,264 +1135,6 @@ struct PiKpRAA {
 
   Preslice<TracksMC> perCollision = aod::track::collisionId;
   Service<o2::framework::O2DatabasePDG> pdg;
-  void processMC(aod::McCollisions::iterator const& mccollision, soa::SmallGroups<ColEvSelsMC> const& collisions, BCsRun3 const& /*bcs*/, aod::FT0s const& /*ft0s*/, aod::McParticles const& mcParticles, TracksMC const& tracksMC)
-  {
-    for (const auto& collision : collisions) {
-      // Event selection
-      if (!isEventSelected(collision)) {
-        continue;
-      }
-      // MC collision?
-      if (!collision.has_mcCollision()) {
-        continue;
-      }
-
-      registry.fill(HIST("EventCounterMC"), EvCutLabel::All);
-
-      if (std::fabs(mccollision.posZ()) > posZcut)
-        continue;
-
-      registry.fill(HIST("zPos"), collision.posZ());
-      registry.fill(HIST("zPosMC"), mccollision.posZ());
-      registry.fill(HIST("EventCounterMC"), EvCutLabel::VtxZ);
-
-      const auto& foundBC = collision.foundBC_as<BCsRun3>();
-      uint64_t timeStamp{foundBC.timestamp()};
-      const int magField{getMagneticField(timeStamp)};
-
-      if (v0Selections.applyPhiCut) {
-        const int nextRunNumber{foundBC.runNumber()};
-        if (currentRunNumberPhiSel != nextRunNumber) {
-          loadPhiCutSelections(timeStamp);
-          currentRunNumberPhiSel = nextRunNumber;
-          LOG(info) << "\tcurrentRunNumberPhiSel= " << currentRunNumberPhiSel << " timeStamp = " << timeStamp;
-        }
-
-        // return if phi cut objects are nullptr
-        if (!(phiCut.hPhiCutHigh && phiCut.hPhiCutLow))
-          return;
-      }
-
-      // Remove collisions if reconstructed more than once
-      if (skipRecoColGTOne && (collisions.size() > kOne))
-        continue;
-
-      const float centrality{isT0Ccent ? collision.centFT0C() : collision.centFT0M()};
-      registry.fill(HIST("T0Ccent"), centrality);
-
-      const auto& groupedTracks{tracksMC.sliceBy(perCollision, collision.globalIndex())};
-
-      // Track selection with Open DCAxy
-      for (const auto& track : groupedTracks) {
-        // Track Selection
-        if (track.eta() < v0Selections.minEtaDaughter || track.eta() > v0Selections.maxEtaDaughter)
-          continue;
-
-        if (track.pt() < v0Selections.minPt || track.pt() > v0Selections.maxPt)
-          continue;
-
-        if (!trkSelGlobalOpenDCAxy.IsSelected(track))
-          continue;
-
-        if (!track.has_mcParticle())
-          continue;
-
-        // Get the MC particle
-        const auto& particle{track.mcParticle()};
-        auto charge{0.};
-        auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
-        if (pdgParticle != nullptr)
-          charge = pdgParticle->Charge();
-        else
-          continue;
-
-        // Is it a charged particle?
-        if (std::abs(charge) < kMinCharge)
-          continue;
-
-        float phiPrime{track.phi()};
-        phiPrimeFunc(phiPrime, magField, charge);
-
-        const float pOrPt{v0Selections.usePinPhiSelection ? track.p() : track.pt()};
-        if (v0Selections.applyPhiCut) {
-          if (!passesPhiSelection(pOrPt, phiPrime))
-            continue;
-        }
-
-        const int16_t nclFound{track.tpcNClsFound()};
-        const int16_t nclPID{track.tpcNClsPID()};
-        const int16_t ncl = v0Selections.useNclsPID ? nclPID : nclFound;
-        if (v0Selections.applyNclSel && ncl < v0Selections.minNcl)
-          continue;
-
-        bool isPrimary{false};
-        bool isDecay{false};
-        bool isMaterial{false};
-        if (particle.isPhysicalPrimary())
-          isPrimary = true;
-        else if (particle.getProcess() == TMCProcess::kPDecay)
-          isDecay = true;
-        else
-          isMaterial = true;
-
-        bool isPi{false};
-        bool isPr{false};
-        if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus)
-          isPi = true;
-        else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar)
-          isPr = true;
-        else
-          continue;
-
-        if (isPrimary && !isDecay && !isMaterial) {
-          if (isPi && !isPr)
-            registry.fill(HIST("dcaVsPtPi"), track.pt(), track.dcaXY(), centrality);
-          if (isPr && !isPi)
-            registry.fill(HIST("dcaVsPtPr"), track.pt(), track.dcaXY(), centrality);
-        }
-
-        if (isDecay && !isPrimary && !isMaterial) {
-          if (isPi && !isPr)
-            registry.fill(HIST("dcaVsPtPiDec"), track.pt(), track.dcaXY(), centrality);
-          if (isPr && !isPi)
-            registry.fill(HIST("dcaVsPtPrDec"), track.pt(), track.dcaXY(), centrality);
-        }
-
-        if (isMaterial && !isPrimary && !isDecay) {
-          if (isPi && !isPr)
-            registry.fill(HIST("dcaVsPtPiMat"), track.pt(), track.dcaXY(), centrality);
-          if (isPr && !isPi)
-            registry.fill(HIST("dcaVsPtPrMat"), track.pt(), track.dcaXY(), centrality);
-        }
-      }
-
-      // Global track + DCAxy selections
-      for (const auto& track : groupedTracks) {
-        // Track Selection
-        if (track.eta() < v0Selections.minEtaDaughter || track.eta() > v0Selections.maxEtaDaughter)
-          continue;
-
-        if (track.pt() < v0Selections.minPt || track.pt() > v0Selections.maxPt)
-          continue;
-
-        if (!trkSelGlobal.IsSelected(track))
-          continue;
-
-        // Has MC particle?
-        if (!track.has_mcParticle())
-          continue;
-
-        // Get the MC particle
-        const auto& particle{track.mcParticle()};
-        auto charge{0.};
-        auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
-        if (pdgParticle != nullptr)
-          charge = pdgParticle->Charge();
-        else
-          continue;
-
-        // Is it a charged particle?
-        if (std::abs(charge) < kMinCharge)
-          continue;
-
-        float phiPrime{track.phi()};
-        phiPrimeFunc(phiPrime, magField, charge);
-
-        const float pOrPt{v0Selections.usePinPhiSelection ? track.p() : track.pt()};
-        if (v0Selections.applyPhiCut) {
-          if (!passesPhiSelection(pOrPt, phiPrime))
-            continue;
-        }
-
-        const int16_t nclFound{track.tpcNClsFound()};
-        const int16_t nclPID{track.tpcNClsPID()};
-        const int16_t ncl = v0Selections.useNclsPID ? nclPID : nclFound;
-        if (v0Selections.applyNclSel && ncl < v0Selections.minNcl)
-          continue;
-
-        int indexEta{-999};
-        const float eta{track.eta()};
-        for (int i = 0; i < kNEtaHists; ++i) {
-          if (eta >= kLowEta[i] && eta < kHighEta[i]) {
-            indexEta = i;
-            break;
-          }
-        }
-
-        if (indexEta < kZeroInt || indexEta > kSevenInt)
-          continue;
-
-        registry.fill(HIST("NclVsPhip"), pOrPt, phiPrime, ncl);
-        registry.fill(HIST("NclVsEtaPID"), eta, ncl);
-        registry.fill(HIST("NclVsEtaPIDp"), eta, ncl);
-
-        bool isPrimary{false};
-        if (particle.isPhysicalPrimary())
-          isPrimary = true;
-
-        if (!isPrimary)
-          continue;
-
-        bool isPi{false};
-        bool isKa{false};
-        bool isPr{false};
-
-        if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus)
-          isPi = true;
-        else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus)
-          isKa = true;
-        else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar)
-          isPr = true;
-        else
-          continue;
-
-        if (isPi && !isKa && !isPr)
-          registry.fill(HIST("PtPiVsCent"), track.pt(), centrality);
-        if (isKa && !isPi && !isPr)
-          registry.fill(HIST("PtKaVsCent"), track.pt(), centrality);
-        if (isPr && !isPi && !isKa)
-          registry.fill(HIST("PtPrVsCent"), track.pt(), centrality);
-      }
-
-      // Generated MC
-      for (const auto& particle : mcParticles) {
-        if (particle.eta() < v0Selections.minEtaDaughter || particle.eta() > v0Selections.maxEtaDaughter)
-          continue;
-
-        if (particle.pt() < v0Selections.minPt || particle.pt() > v0Selections.maxPt)
-          continue;
-
-        auto charge{0.};
-        // Get the MC particle
-        auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
-        if (pdgParticle != nullptr)
-          charge = pdgParticle->Charge();
-        else
-          continue;
-
-        // Is it a charged particle?
-        if (std::abs(charge) < kMinCharge)
-          continue;
-
-        // Is it a primary particle?
-        bool isPrimary{true};
-        if (!particle.isPhysicalPrimary())
-          isPrimary = false;
-
-        if (isPrimary) {
-          if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) // pion
-            registry.fill(HIST("PtPiVsCentMC"), particle.pt(), centrality);
-          else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) // kaon
-            registry.fill(HIST("PtKaVsCentMC"), particle.pt(), centrality);
-          else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) // proton
-            registry.fill(HIST("PtPrVsCentMC"), particle.pt(), centrality);
-          else
-            continue;
-        }
-      }
-    } // Collisions
-  }
-  PROCESS_SWITCH(PiKpRAA, processMC, "Process MC closure", false);
 
   void processSim(aod::McCollisions::iterator const& mccollision, soa::SmallGroups<ColEvSelsMC> const& collisions, BCsRun3 const& /*bcs*/, aod::FT0s const& /*ft0s*/, aod::McParticles const& mcParticles, TracksMC const& tracksMC)
   {

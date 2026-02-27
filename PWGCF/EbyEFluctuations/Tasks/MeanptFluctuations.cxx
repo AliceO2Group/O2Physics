@@ -87,6 +87,14 @@ struct MeanptFluctuationsAnalysis {
   Configurable<bool> cfgEvSelUseGoodZvtxFT0vsPV{"cfgEvSelUseGoodZvtxFT0vsPV", true, "GoodZvertex and FT0 vs PV cut"};
   Configurable<int> cfgCentralityEstimator{"cfgCentralityEstimator", 1, "Centrlaity estimatore choice: 1-->FT0C, 2-->FT0A; 3-->FT0M, 4-->FV0A"};
 
+  // pT dep DCAxy and DCAz cuts
+  Configurable<bool> cfgUsePtDepDCAxy{"cfgUsePtDepDCAxy", true, "Use pt-dependent DCAxy cut"};
+  Configurable<bool> cfgUsePtDepDCAz{"cfgUsePtDepDCAz", true, "Use pt-dependent DCAz cut"};
+  O2_DEFINE_CONFIGURABLE(cfgDCAxyFunc, std::string, "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAxy cut");
+  O2_DEFINE_CONFIGURABLE(cfgDCAzFunc, std::string, "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAz cut");
+  TF1* fPtDepDCAxy = nullptr;
+  TF1* fPtDepDCAz = nullptr;
+
   O2_DEFINE_CONFIGURABLE(cfgEvSelMultCorrelation, bool, true, "Multiplicity correlation cut")
   O2_DEFINE_CONFIGURABLE(cfgEvSelV0AT0ACut, bool, true, "V0A T0A 5 sigma cut")
   struct : ConfigurableGroup {
@@ -152,6 +160,8 @@ struct MeanptFluctuationsAnalysis {
   using MyMCTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>>;
   using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFV0As, aod::Mults>;
 
+  Preslice<MyMCTracks> perCollision = aod::track::collisionId;
+
   // Event selection cuts - Alex
   TF1* fMultPVCutLow = nullptr;
   TF1* fMultPVCutHigh = nullptr;
@@ -170,6 +180,7 @@ struct MeanptFluctuationsAnalysis {
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
 
     // Add histograms to histogram manager (as in the output object of in AliPhysics)
+    histos.add("hEventStatData", "Data Event statistics", kTH1F, {{10, 0.0f, 10.0f}});
     histos.add("hZvtx_after_sel", ";Z (cm)", kTH1F, {vtxZAxis});
     histos.add("hP", ";#it{p} (GeV/#it{c})", kTH1F, {{35, 0.2, 4.}});
     histos.add("hPt", ";#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
@@ -180,6 +191,8 @@ struct MeanptFluctuationsAnalysis {
     histos.add("hDcaZ", ";#it{dca}_{Z}", kTH1F, {{1000, -5, 5}});
     histos.add("his2DdcaXYvsPt", "", {HistType::kTH2D, {ptAxis, {1000, -1, 1}}});
     histos.add("his2DdcaZvsPt", "", {HistType::kTH2D, {ptAxis, {1000, -1, 1}}});
+    histos.add("his2DdcaXYvsPtBeforePtDepSel", "", {HistType::kTH2D, {ptAxis, {1000, -1, 1}}});
+    histos.add("his2DdcaZvsPtBeforePtDepSel", "", {HistType::kTH2D, {ptAxis, {1000, -1, 1}}});
     histos.add("hMeanPt", "", kTProfile, {centAxis});
     histos.add("Hist2D_globalTracks_PVTracks", "", {HistType::kTH2D, {nchAxis, nchAxis}});
     histos.add("Hist2D_cent_nch", "", {HistType::kTH2D, {nchAxis, centAxis}});
@@ -297,6 +310,13 @@ struct MeanptFluctuationsAnalysis {
       cfgFuncParas.fT0AV0ASigma->SetParameters(463.4144, 6.796509e-02, -9.097136e-07, 7.971088e-12, -2.600581e-17);
     }
 
+    if (cfgUsePtDepDCAxy) {
+      fPtDepDCAxy = new TF1("ptDepDCAxy", Form("%s", cfgDCAxyFunc->c_str()), 0.001, 1000);
+    }
+    if (cfgUsePtDepDCAz) {
+      fPtDepDCAz = new TF1("ptDepDCAz", Form("%s", cfgDCAzFunc->c_str()), 0.001, 1000);
+    }
+
   } //! end init function
 
   template <typename TCollision>
@@ -376,26 +396,40 @@ struct MeanptFluctuationsAnalysis {
   }
 
   template <typename TCollision>
-  void eventSelectionDefaultCuts(TCollision coll)
+  bool eventSelectionDefaultCuts(TCollision coll)
   {
+    histos.fill(HIST("hEventStatData"), 0.5);
     if (!coll.sel8()) {
-      return;
+      return 0;
     }
+
+    histos.fill(HIST("hEventStatData"), 1.5);
     if (cfgUseGoodITSLayerAllCut && !(coll.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))) {
-      return;
+      return 0;
     }
+
+    histos.fill(HIST("hEventStatData"), 2.5);
     if (cfgEvSelkNoSameBunchPileup && !(coll.selection_bit(o2::aod::evsel::kNoSameBunchPileup))) {
-      return;
+      return 0;
     }
+
+    histos.fill(HIST("hEventStatData"), 3.5);
     if (cfgEvSelkNoITSROFrameBorder && !(coll.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
-      return;
+      return 0;
     }
+
+    histos.fill(HIST("hEventStatData"), 4.5);
     if (cfgEvSelkNoTimeFrameBorder && !(coll.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))) {
-      return;
+      return 0;
     }
+
+    histos.fill(HIST("hEventStatData"), 5.5);
     if (cfgEvSelUseGoodZvtxFT0vsPV && !(coll.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))) {
-      return;
+      return 0;
     }
+
+    histos.fill(HIST("hEventStatData"), 6.5);
+    return 1;
   }
 
   template <typename C, typename T>
@@ -461,11 +495,12 @@ struct MeanptFluctuationsAnalysis {
       if (cfgEvSelUseGoodZvtxFT0vsPV && !(collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))) {
         continue;
       }
-      if (cfgUseSmallIonAdditionalEventCutInMC && !eventSelectedSmallion(collision, tracks.size(), cent)) {
+
+      auto rectrackspart = tracks.sliceBy(perCollision, collision.globalIndex());
+      cent = collision.centFT0C();
+      if (cfgUseSmallIonAdditionalEventCutInMC && !eventSelectedSmallion(collision, rectrackspart.size(), cent)) {
         continue;
       }
-
-      cent = collision.centFT0C();
 
       selectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
     }
@@ -554,10 +589,17 @@ struct MeanptFluctuationsAnalysis {
 
   void processMCRec(MyMCRecCollisions::iterator const& collision, MyMCTracks const& tracks, aod::McCollisions const&, aod::McParticles const&)
   {
+    histos.fill(HIST("MCGenerated/hMC"), 5.5);
+
     if (!collision.has_mcCollision()) {
       return;
     }
-    eventSelectionDefaultCuts(collision);
+    histos.fill(HIST("MCGenerated/hMC"), 6.5);
+
+    if (!eventSelectionDefaultCuts(collision)) {
+      return;
+    }
+    histos.fill(HIST("MCGenerated/hMC"), 7.5);
 
     fillMultCorrPlotsBeforeSel(collision, tracks);
 
@@ -571,7 +613,7 @@ struct MeanptFluctuationsAnalysis {
       fillMultCorrPlotsAfterSel(collision, tracks);
     }
 
-    histos.fill(HIST("MCGenerated/hMC"), 5.5);
+    histos.fill(HIST("MCGenerated/hMC"), 8.5);
     histos.fill(HIST("hZvtx_after_sel"), collision.posZ());
 
     double cent = 0.0;
@@ -621,6 +663,16 @@ struct MeanptFluctuationsAnalysis {
         continue;
       }
       if (!(track.itsNCls() > cfgITScluster) || !(track.tpcNClsFound() >= cfgTPCcluster) || !(track.tpcNClsCrossedRows() >= cfgTPCnCrossedRows) || !(track.tpcCrossedRowsOverFindableCls() >= cfgTPCnCrossedRowsOverFindableCls)) {
+        continue;
+      }
+
+      histos.fill(HIST("his2DdcaXYvsPtBeforePtDepSel"), track.pt(), track.dcaXY());
+      histos.fill(HIST("his2DdcaZvsPtBeforePtDepSel"), track.pt(), track.dcaZ());
+
+      if (cfgUsePtDepDCAxy && !(std::abs(track.dcaXY()) < fPtDepDCAxy->Eval(track.pt()))) {
+        continue;
+      }
+      if (cfgUsePtDepDCAz && !(std::abs(track.dcaZ()) < fPtDepDCAz->Eval(track.pt()))) {
         continue;
       }
 
@@ -688,7 +740,9 @@ struct MeanptFluctuationsAnalysis {
   // void process(aod::Collision const& coll, aod::Tracks const& inputTracks)
   void processData(AodCollisions::iterator const& coll, aod::BCsWithTimestamps const&, AodTracks const& inputTracks)
   {
-    eventSelectionDefaultCuts(coll);
+    if (!eventSelectionDefaultCuts(coll)) {
+      return;
+    }
 
     fillMultCorrPlotsBeforeSel(coll, inputTracks);
 
@@ -701,6 +755,8 @@ struct MeanptFluctuationsAnalysis {
     if (cfgUseSmallIonAdditionalEventCut) {
       fillMultCorrPlotsAfterSel(coll, inputTracks);
     }
+
+    histos.fill(HIST("hEventStatData"), 7.5);
 
     histos.fill(HIST("hZvtx_after_sel"), coll.posZ());
 
@@ -744,6 +800,16 @@ struct MeanptFluctuationsAnalysis {
       }
 
       if (!(track.itsNCls() > cfgITScluster) || !(track.tpcNClsFound() >= cfgTPCcluster) || !(track.tpcNClsCrossedRows() >= cfgTPCnCrossedRows) || !(track.tpcCrossedRowsOverFindableCls() >= cfgTPCnCrossedRowsOverFindableCls)) {
+        continue;
+      }
+
+      histos.fill(HIST("his2DdcaXYvsPtBeforePtDepSel"), track.pt(), track.dcaXY());
+      histos.fill(HIST("his2DdcaZvsPtBeforePtDepSel"), track.pt(), track.dcaZ());
+
+      if (cfgUsePtDepDCAxy && !(std::abs(track.dcaXY()) < fPtDepDCAxy->Eval(track.pt()))) {
+        continue;
+      }
+      if (cfgUsePtDepDCAz && !(std::abs(track.dcaZ()) < fPtDepDCAz->Eval(track.pt()))) {
         continue;
       }
 
