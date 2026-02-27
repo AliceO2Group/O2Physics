@@ -226,7 +226,7 @@ struct phi1020analysis {
 
   double massKa = o2::constants::physics::MassKPlus;
 
-    // Centralicity estimator selection
+  // Centralicity estimator selection
   template <typename Coll>
   float centEst(Coll collisions)
   {
@@ -399,7 +399,7 @@ struct phi1020analysis {
         tofPIDPassed = true;
       }
       if (!candidate.hasTOF()) {
-        //std::cout << candidate.tofNSigmaKa() << std::endl;
+        // std::cout << candidate.tofNSigmaKa() << std::endl;
       }
     }
     if (tpcPIDPassed && tofPIDPassed) {
