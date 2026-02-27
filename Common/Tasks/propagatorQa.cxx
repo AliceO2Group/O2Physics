@@ -36,6 +36,7 @@
 #include <Framework/runDataProcessing.h>
 #include <MathUtils/Primitive2D.h>
 #include <ReconstructionDataFormats/Track.h>
+#include "Common/DataModel/CollisionAssociationTables.h"
 
 #include <TMath.h>
 #include <TMathBase.h>
@@ -216,7 +217,7 @@ struct propagatorQa {
     }
   }
 
-  void processMC(aod::Collision const& collision, aod::V0s const& V0s, aod::Cascades const& cascades, soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const&)
+  void processMC(aod::Collision const& collision, aod::V0s const& V0s, aod::Cascades const& cascades, soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::TrackCompColls, aod::McTrackLabels> const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const&)
   {
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -224,6 +225,8 @@ struct propagatorQa {
     std::array<float, 2> dcaInfo;
 
     for (const auto& track : tracks) {
+      //if (track.compatibleCollIds().size() != 0)
+      //	continue;
       if (track.tpcNClsFound() < minTPCClustersRequired)
         continue;
 
@@ -336,7 +339,7 @@ struct propagatorQa {
   }
   PROCESS_SWITCH(propagatorQa, processMC, "process MC", true);
 
-  void processData(aod::Collision const& collision, aod::V0s const& V0s, aod::Cascades const& cascades, soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA> const& tracks, aod::BCsWithTimestamps const&)
+  void processData(aod::Collision const& collision, aod::V0s const& V0s, aod::Cascades const& cascades, soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::TrackCompColls> const& tracks, aod::BCsWithTimestamps const&)
   {
     /* check the previous run number */
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -344,6 +347,8 @@ struct propagatorQa {
     std::array<float, 2> dcaInfo;
 
     for (const auto& track : tracks) {
+      //if (track.compatibleCollIds().size() != 0)
+      //  continue;
       if (track.tpcNClsFound() < minTPCClustersRequired)
         continue;
 
