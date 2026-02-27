@@ -87,6 +87,14 @@ struct MeanptFluctuationsAnalysis {
   Configurable<bool> cfgEvSelUseGoodZvtxFT0vsPV{"cfgEvSelUseGoodZvtxFT0vsPV", true, "GoodZvertex and FT0 vs PV cut"};
   Configurable<int> cfgCentralityEstimator{"cfgCentralityEstimator", 1, "Centrlaity estimatore choice: 1-->FT0C, 2-->FT0A; 3-->FT0M, 4-->FV0A"};
 
+  // pT dep DCAxy and DCAz cuts
+  Configurable<bool> cfgUsePtDepDCAxy{"cfgUsePtDepDCAxy", true, "Use pt-dependent DCAxy cut"};
+  Configurable<bool> cfgUsePtDepDCAz{"cfgUsePtDepDCAz", true, "Use pt-dependent DCAz cut"};
+  O2_DEFINE_CONFIGURABLE(cfgDCAxyFunc, std::string, "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAxy cut");
+  O2_DEFINE_CONFIGURABLE(cfgDCAzFunc, std::string, "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAz cut");
+  TF1* fPtDepDCAxy = nullptr;
+  TF1* fPtDepDCAz = nullptr;
+
   O2_DEFINE_CONFIGURABLE(cfgEvSelMultCorrelation, bool, true, "Multiplicity correlation cut")
   O2_DEFINE_CONFIGURABLE(cfgEvSelV0AT0ACut, bool, true, "V0A T0A 5 sigma cut")
   struct : ConfigurableGroup {
@@ -183,6 +191,8 @@ struct MeanptFluctuationsAnalysis {
     histos.add("hDcaZ", ";#it{dca}_{Z}", kTH1F, {{1000, -5, 5}});
     histos.add("his2DdcaXYvsPt", "", {HistType::kTH2D, {ptAxis, {1000, -1, 1}}});
     histos.add("his2DdcaZvsPt", "", {HistType::kTH2D, {ptAxis, {1000, -1, 1}}});
+    histos.add("his2DdcaXYvsPtBeforePtDepSel", "", {HistType::kTH2D, {ptAxis, {1000, -1, 1}}});
+    histos.add("his2DdcaZvsPtBeforePtDepSel", "", {HistType::kTH2D, {ptAxis, {1000, -1, 1}}});
     histos.add("hMeanPt", "", kTProfile, {centAxis});
     histos.add("Hist2D_globalTracks_PVTracks", "", {HistType::kTH2D, {nchAxis, nchAxis}});
     histos.add("Hist2D_cent_nch", "", {HistType::kTH2D, {nchAxis, centAxis}});
@@ -298,6 +308,13 @@ struct MeanptFluctuationsAnalysis {
       cfgFuncParas.fT0AV0AMean->SetParameters(-1601.0581, 9.417652e-01);
       cfgFuncParas.fT0AV0ASigma = new TF1("fT0AV0ASigma", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 200000);
       cfgFuncParas.fT0AV0ASigma->SetParameters(463.4144, 6.796509e-02, -9.097136e-07, 7.971088e-12, -2.600581e-17);
+    }
+
+    if (cfgUsePtDepDCAxy) {
+      fPtDepDCAxy = new TF1("ptDepDCAxy", Form("%s", cfgDCAxyFunc->c_str()), 0.001, 1000);
+    }
+    if (cfgUsePtDepDCAz) {
+      fPtDepDCAz = new TF1("ptDepDCAz", Form("%s", cfgDCAzFunc->c_str()), 0.001, 1000);
     }
 
   } //! end init function
@@ -649,6 +666,16 @@ struct MeanptFluctuationsAnalysis {
         continue;
       }
 
+      histos.fill(HIST("his2DdcaXYvsPtBeforePtDepSel"), track.pt(), track.dcaXY());
+      histos.fill(HIST("his2DdcaZvsPtBeforePtDepSel"), track.pt(), track.dcaZ());
+
+      if (cfgUsePtDepDCAxy && !(std::abs(track.dcaXY()) < fPtDepDCAxy->Eval(track.pt()))) {
+        continue;
+      }
+      if (cfgUsePtDepDCAz && !(std::abs(track.dcaZ()) < fPtDepDCAz->Eval(track.pt()))) {
+        continue;
+      }
+
       if (particle.isPhysicalPrimary()) {
         if ((particle.pt() > cfgCutPtLower) && (particle.pt() < cfgCutPreSelPt) && (std::abs(particle.eta()) < cfgCutPreSelEta)) {
           histos.fill(HIST("hP"), track.p());
@@ -773,6 +800,16 @@ struct MeanptFluctuationsAnalysis {
       }
 
       if (!(track.itsNCls() > cfgITScluster) || !(track.tpcNClsFound() >= cfgTPCcluster) || !(track.tpcNClsCrossedRows() >= cfgTPCnCrossedRows) || !(track.tpcCrossedRowsOverFindableCls() >= cfgTPCnCrossedRowsOverFindableCls)) {
+        continue;
+      }
+
+      histos.fill(HIST("his2DdcaXYvsPtBeforePtDepSel"), track.pt(), track.dcaXY());
+      histos.fill(HIST("his2DdcaZvsPtBeforePtDepSel"), track.pt(), track.dcaZ());
+
+      if (cfgUsePtDepDCAxy && !(std::abs(track.dcaXY()) < fPtDepDCAxy->Eval(track.pt()))) {
+        continue;
+      }
+      if (cfgUsePtDepDCAz && !(std::abs(track.dcaZ()) < fPtDepDCAz->Eval(track.pt()))) {
         continue;
       }
 
