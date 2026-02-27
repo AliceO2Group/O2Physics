@@ -191,8 +191,8 @@ struct MeanptFluctuationsAnalysis {
     histos.add("hDcaZ", ";#it{dca}_{Z}", kTH1F, {{1000, -5, 5}});
     histos.add("his2DdcaXYvsPt", "", {HistType::kTH2D, {ptAxis, {1000, -1, 1}}});
     histos.add("his2DdcaZvsPt", "", {HistType::kTH2D, {ptAxis, {1000, -1, 1}}});
-    histos.add("his2DdcaXYvsPtPtBeforePtDepSel", "", {HistType::kTH2D, {ptAxis, {1000, -1, 1}}});
-    histos.add("his2DdcaZvsPtPtBeforePtDepSel", "", {HistType::kTH2D, {ptAxis, {1000, -1, 1}}});
+    histos.add("his2DdcaXYvsPtBeforePtDepSel", "", {HistType::kTH2D, {ptAxis, {1000, -1, 1}}});
+    histos.add("his2DdcaZvsPtBeforePtDepSel", "", {HistType::kTH2D, {ptAxis, {1000, -1, 1}}});
     histos.add("hMeanPt", "", kTProfile, {centAxis});
     histos.add("Hist2D_globalTracks_PVTracks", "", {HistType::kTH2D, {nchAxis, nchAxis}});
     histos.add("Hist2D_cent_nch", "", {HistType::kTH2D, {nchAxis, centAxis}});
@@ -667,7 +667,7 @@ struct MeanptFluctuationsAnalysis {
       }
 
       histos.fill(HIST("his2DdcaXYvsPtBeforePtDepSel"), track.pt(), track.dcaXY());
-      histos.fill(HIST("his2DdcaZvsPtPtBeforePtDepSel"), track.pt(), track.dcaZ());
+      histos.fill(HIST("his2DdcaZvsPtBeforePtDepSel"), track.pt(), track.dcaZ());
 
       if (cfgUsePtDepDCAxy && !(std::abs(track.dcaXY()) < fPtDepDCAxy->Eval(track.pt()))) {
         continue;
@@ -804,7 +804,7 @@ struct MeanptFluctuationsAnalysis {
       }
 
       histos.fill(HIST("his2DdcaXYvsPtBeforePtDepSel"), track.pt(), track.dcaXY());
-      histos.fill(HIST("his2DdcaZvsPtPtBeforePtDepSel"), track.pt(), track.dcaZ());
+      histos.fill(HIST("his2DdcaZvsPtBeforePtDepSel"), track.pt(), track.dcaZ());
 
       if (cfgUsePtDepDCAxy && !(std::abs(track.dcaXY()) < fPtDepDCAxy->Eval(track.pt()))) {
         continue;
