@@ -551,8 +551,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
 
   // Lc with ML selections
   void processLcSameEvent(CollsWithCentMult::iterator const& coll,
-                           TracksData const& tracks,
-                           CandLcData const&)
+                          TracksData const& tracks,
+                          CandLcData const&)
   {
     auto candsLcToPKPi = selectedLcToPKPi->sliceByCached(aod::hf_cand::collisionId, coll.globalIndex(), cache);
     if (forceCharmInCollision && candsLcToPKPi.size() < 1) {
