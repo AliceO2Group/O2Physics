@@ -146,6 +146,8 @@ struct CreateResolutionMap {
     Configurable<bool> includeITSsa{"includeITSsa", false, "Flag to include ITSsa tracks"};
     Configurable<float> maxpt_itssa{"maxpt_itssa", 0.15, "max pt for ITSsa track"};
     Configurable<float> maxMeanITSClusterSize{"maxMeanITSClusterSize", 16, "max <ITS cluster size> x cos(lambda)"};
+    Configurable<bool> checkPIDforTracking{"checkPIDforTracking", false, "check for PID in tracking"};
+    Configurable<int> PartIdentifier{"PartIdentifier", 2, "Particle identifier for selected particle; 0: electron, 1: muon, 2: pion, 3: kaon, 4: proton, 5: deuteron, 6: triton, 7: helium3, 8: alpha"};
   } electroncuts;
 
   struct : ConfigurableGroup {
@@ -498,6 +500,10 @@ struct CreateResolutionMap {
       }
     }
 
+    if (electroncuts.checkPIDforTracking && track.pidForTracking() != static_cast<unsigned int>(std::abs(electroncuts.PartIdentifier))) {
+      return false;
+    }
+
     return true;
   }
 
@@ -628,8 +634,8 @@ struct CreateResolutionMap {
       if constexpr (withMFTCov) {
         auto mfttrackcov = mftCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
         auto muonAtMP = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToMatchingPlane, muoncuts.matchingZ, mBzMFT, 0.0); // propagated to matching plane
-        o2::track::TrackParCovFwd mftsaAtMP = getTrackParCovFwd(mfttrack, mfttrackcov);                                               // values at innermost update
-        mftsaAtMP.propagateToZhelix(muoncuts.matchingZ, mBzMFT);                                                                      // propagated to matching plane
+        o2::track::TrackParCovFwd mftsaAtMP = getTrackParCovFwd(mfttrack, mfttrackcov);                                                    // values at innermost update
+        mftsaAtMP.propagateToZhelix(muoncuts.matchingZ, mBzMFT);                                                                           // propagated to matching plane
         etaMatchedMFTatMP = mftsaAtMP.getEta();
         phiMatchedMFTatMP = mftsaAtMP.getPhi();
         etaMatchedMCHMIDatMP = muonAtMP.getEta();
