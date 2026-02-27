@@ -514,9 +514,9 @@ struct he3HadronFemto {
   float correctPtHe3TrackedAsTriton(const float pt, const uint32_t pidForTracking)
   {
     if (pt < 2.5 && pidForTracking == o2::track::PID::Triton)
-      return pt * 2. * (1. - kHePidTrkParams[0] - kHePidTrkParams[1] * pt * 2.);
+      return pt * (1. - kHePidTrkParams[0] - kHePidTrkParams[1] * pt);
 
-    return pt * 2.;
+    return pt;
   }
 
   float computeNsigmaDCA(const float pt, const float dca, const int iSpecies, const char* dcaType = "xy")
