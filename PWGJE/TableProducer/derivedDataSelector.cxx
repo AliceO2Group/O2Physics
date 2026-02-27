@@ -50,8 +50,6 @@ struct JetDerivedDataSelector {
     Configurable<float> thresholdChargedJetPtMin{"thresholdChargedJetPtMin", 0.0, "Minimum charged jet pt to accept event"};
     Configurable<float> thresholdChargedEventWiseSubtractedJetPtMin{"thresholdChargedEventWiseSubtractedJetPtMin", 0.0, "Minimum charged event-wise subtracted jet pt to accept event"};
     Configurable<float> thresholdChargedMCPJetPtMin{"thresholdChargedMCPJetPtMin", 0.0, "Minimum charged mcp jet pt to accept event"};
-    Configurable<float> thresholdNeutralJetPtMin{"thresholdNeutralJetPtMin", 0.0, "Minimum neutral jet pt to accept event"};
-    Configurable<float> thresholdNeutralMCPJetPtMin{"thresholdNeutralMCPJetPtMin", 0.0, "Minimum neutal mcp jet pt to accept event"};
     Configurable<float> thresholdFullJetPtMin{"thresholdFullJetPtMin", 0.0, "Minimum full jet pt to accept event"};
     Configurable<float> thresholdFullMCPJetPtMin{"thresholdFullMCPJetPtMin", 0.0, "Minimum full mcp jet pt to accept event"};
     Configurable<float> thresholdD0PtMin{"thresholdD0PtMin", 0.0, "Minimum D0 pt to accept event"};
@@ -100,7 +98,9 @@ struct JetDerivedDataSelector {
     Configurable<float> thresholdChargedEventWiseSubtractedDielectronJetPtMin{"thresholdChargedEventWiseSubtractedDielectronJetPtMin", 0.0, "Minimum charged event-wise subtracted Dielectron jet pt to accept event"};
     Configurable<float> thresholdChargedDielectronMCPJetPtMin{"thresholdChargedDielectronMCPJetPtMin", 0.0, "Minimum charged Dielectron mcp jet pt to accept event"};
     Configurable<float> thresholdTriggerTrackPtMin{"thresholdTriggerTrackPtMin", 0.0, "Minimum trigger track pt to accept event"};
+    Configurable<float> thresholdTriggerTrackReferencePtMin{"thresholdTriggerTrackReferencePtMin", 0.0, "Minimum trigger track reference pt to accept event"};
     Configurable<float> thresholdTriggerParticlePtMin{"thresholdTriggerParticlePtMin", 0.0, "Minimum trigger particle pt to accept event"};
+    Configurable<float> thresholdTriggerParticleReferencePtMin{"thresholdTriggerParticleReferencePtMin", 0.0, "Minimum trigger particle reference pt to accept event"};
     Configurable<float> thresholdClusterEnergyMin{"thresholdClusterEnergyMin", 0.0, "Minimum cluster energy to accept event"};
     Configurable<int> downscaleFactor{"downscaleFactor", 1, "random downscale of selected events"};
 
@@ -116,12 +116,15 @@ struct JetDerivedDataSelector {
     Configurable<bool> performTrackSelection{"performTrackSelection", true, "only save tracks that pass one of the track selections"};
     Configurable<float> trackPtSelectionMin{"trackPtSelectionMin", 0.15, "only save tracks that have a pT larger than this pT"};
     Configurable<float> trackEtaSelectionMax{"trackEtaSelectionMax", 0.9, "only save tracks that have an eta smaller than this eta"};
+    Configurable<float> triggerTrackSignalFraction{"triggerTrackSignalFraction", 0.95, "fraction of events to scan for signal trigger track class"};
 
     Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
   } config;
 
   std::vector<bool> collisionFlag;
-  std::vector<bool> McCollisionFlag;
+  std::vector<bool> mcCollisionFlag;
+  std::vector<bool> collisionSplitFlag;
+  std::vector<bool> mcCollisionSplitFlag;
 
   TRandom3 randomNumber;
 
@@ -146,8 +149,8 @@ struct JetDerivedDataSelector {
 
   void processSetupMcCollisions(aod::JMcCollisions const& mcCollisions)
   {
-    McCollisionFlag.clear();
-    McCollisionFlag.resize(mcCollisions.size(), false);
+    mcCollisionFlag.clear();
+    mcCollisionFlag.resize(mcCollisions.size(), false);
   }
 
   void processSelectMcCollisionsPerCollision(aod::JMcCollisions const& mcCollisions, soa::Join<aod::JCollisions, aod::JMcCollisionLbs> const& collisions)
@@ -156,7 +159,7 @@ struct JetDerivedDataSelector {
       const auto collisionsPerMcCollision = collisions.sliceBy(CollisionsPerMcCollision, mcCollision.globalIndex());
       for (auto collision : collisionsPerMcCollision) {
         if (collisionFlag[collision.globalIndex()]) {
-          McCollisionFlag[mcCollision.globalIndex()] = true;
+          mcCollisionFlag[mcCollision.globalIndex()] = true;
         }
       }
     }
@@ -165,7 +168,7 @@ struct JetDerivedDataSelector {
   void processSelectCollisionsPerMcCollision(soa::Join<aod::JCollisions, aod::JMcCollisionLbs>::iterator const& collision)
   {
     if (collision.has_mcCollision()) {
-      if (McCollisionFlag[collision.mcCollisionId()]) {
+      if (mcCollisionFlag[collision.mcCollisionId()]) {
         collisionFlag[collision.globalIndex()] = true;
       }
     }
@@ -184,11 +187,11 @@ struct JetDerivedDataSelector {
 
   void processSetupAllMcCollisionsWithDownscaling(aod::JMcCollisions const& mcCollisions)
   {
-    McCollisionFlag.clear();
-    McCollisionFlag.resize(mcCollisions.size(), false);
+    mcCollisionFlag.clear();
+    mcCollisionFlag.resize(mcCollisions.size(), false);
     for (const auto& mcCollision : mcCollisions) {
       if (randomNumber.Integer(config.downscaleFactor) == 0) {
-        McCollisionFlag[mcCollision.globalIndex()] = true;
+        mcCollisionFlag[mcCollision.globalIndex()] = true;
       }
     }
   }
@@ -203,8 +206,8 @@ struct JetDerivedDataSelector {
         }
       }
       if constexpr (std::is_same_v<std::decay_t<T>, aod::JMcCollisions>) {
-        if (McCollisionFlag[collision.globalIndex()] && randomNumber.Integer(config.downscaleFactor) != 0) {
-          McCollisionFlag[collision.globalIndex()] = false;
+        if (mcCollisionFlag[collision.globalIndex()] && randomNumber.Integer(config.downscaleFactor) != 0) {
+          mcCollisionFlag[collision.globalIndex()] = false;
         }
       }
     }
@@ -227,13 +230,40 @@ struct JetDerivedDataSelector {
     if (jetderiveddatautilities::selectCollision(collision, eventSelectionBitsCharged, config.skipMBGapEvents, config.applyRCTSelectionsCharged)) {
       barrelRCTFlagSelection = true;
     }
-    if (doprocessSelectingNeutralJets || doprocessSelectingNeutralMCDJets || doprocessSelectingNeutralMCPJets || doprocessSelectingFullJets || doprocessSelectingFullMCDJets || doprocessSelectingFullMCPJets || doprocessSelectingClusters) {
+    if (doprocessSelectingFullJets || doprocessSelectingFullMCDJets || doprocessSelectingFullMCPJets || doprocessSelectingClusters) {
       if (jetderiveddatautilities::selectCollision(collision, eventSelectionBitsFull, config.skipMBGapEvents, config.applyRCTSelectionsFull, "CBT_calo")) {
         emcalRCTFlagSelection = true;
       }
     }
     if (!barrelRCTFlagSelection && !emcalRCTFlagSelection) {
       collisionFlag[collision.globalIndex()] = false;
+    }
+  }
+
+  void processCollisionSplitting(aod::JCollisions const& collisions)
+  {
+    collisionSplitFlag.clear();
+    collisionSplitFlag.resize(collisions.size(), true);
+    for (auto const& collision : collisions) {
+      if (randomNumber.Rndm() > config.triggerTrackSignalFraction) {
+        collisionSplitFlag[collision.globalIndex()] = false;
+      }
+    }
+  }
+
+  void processCollisionSplittingMC(aod::JMcCollisions const& mcCollisions, soa::Join<aod::JCollisions, aod::JMcCollisionLbs> const& collisions)
+  {
+    mcCollisionSplitFlag.clear();
+    mcCollisionSplitFlag.resize(mcCollisions.size(), true);
+    collisionSplitFlag.clear();
+    collisionSplitFlag.resize(collisions.size(), true);
+    for (auto const& mcCollision : mcCollisions) {
+      if (randomNumber.Rndm() > config.triggerTrackSignalFraction) {
+        mcCollisionSplitFlag[mcCollision.globalIndex()] = false;
+        for (auto const& collision : collisions.sliceBy(CollisionsPerMcCollision, mcCollision.globalIndex())) {
+          collisionSplitFlag[collision.globalIndex()] = false;
+        }
+      }
     }
   }
 
@@ -247,10 +277,6 @@ struct JetDerivedDataSelector {
       selectionObjectPtMin = config.thresholdChargedEventWiseSubtractedJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::ChargedMCParticleLevelJets>) {
       selectionObjectPtMin = config.thresholdChargedMCPJetPtMin;
-    } else if constexpr (std::is_same_v<std::decay_t<T>, aod::NeutralJets> || std::is_same_v<std::decay_t<T>, aod::NeutralMCDetectorLevelJets>) {
-      selectionObjectPtMin = config.thresholdNeutralJetPtMin;
-    } else if constexpr (std::is_same_v<std::decay_t<T>, aod::NeutralMCParticleLevelJets>) {
-      selectionObjectPtMin = config.thresholdNeutralMCPJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::FullJets> || std::is_same_v<std::decay_t<T>, aod::FullMCDetectorLevelJets>) {
       selectionObjectPtMin = config.thresholdFullJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::FullMCParticleLevelJets>) {
@@ -368,6 +394,13 @@ struct JetDerivedDataSelector {
           if (selectionObject.pt() < config.trackPtSelectionMin || std::abs(selectionObject.eta()) > config.trackEtaSelectionMax) {
             continue;
           }
+          if (doprocessCollisionSplitting || doprocessCollisionSplittingMC) {
+            if (collisionSplitFlag[selectionObject.collisionId()]) {
+              selectionObjectPtMin = config.thresholdTriggerTrackPtMin;
+            } else {
+              selectionObjectPtMin = config.thresholdTriggerTrackReferencePtMin;
+            }
+          }
         }
         if constexpr (std::is_same_v<std::decay_t<T>, aod::JMcParticles>) {
           if (!selectionObject.isPhysicalPrimary()) {
@@ -376,15 +409,22 @@ struct JetDerivedDataSelector {
           if (selectionObject.pt() < config.trackPtSelectionMin || std::abs(selectionObject.eta()) > config.trackEtaSelectionMax) {
             continue;
           }
+          if (doprocessCollisionSplittingMC) {
+            if (mcCollisionSplitFlag[selectionObject.mcCollisionId()]) {
+              selectionObjectPtMin = config.thresholdTriggerParticlePtMin;
+            } else {
+              selectionObjectPtMin = config.thresholdTriggerParticleReferencePtMin;
+            }
+          }
         }
         if (selectionObject.pt() >= selectionObjectPtMin) {
           isTriggerObject = true;
         }
       }
       if (isTriggerObject) {
-        if constexpr (std::is_same_v<std::decay_t<T>, aod::ChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::NeutralMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::FullMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::CandidatesD0MCP> || std::is_same_v<std::decay_t<T>, aod::D0ChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::CandidatesDplusMCP> || std::is_same_v<std::decay_t<T>, aod::DplusChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::CandidatesDsMCP> || std::is_same_v<std::decay_t<T>, aod::DsChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::CandidatesDstarMCP> || std::is_same_v<std::decay_t<T>, aod::DstarChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::CandidatesLcMCP> || std::is_same_v<std::decay_t<T>, aod::LcChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::CandidatesB0MCP> || std::is_same_v<std::decay_t<T>, aod::B0ChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::CandidatesBplusMCP> || std::is_same_v<std::decay_t<T>, aod::BplusChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::CandidatesXicToXiPiPiMCP> || std::is_same_v<std::decay_t<T>, aod::XicToXiPiPiChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::CandidatesDielectronMCP> || std::is_same_v<std::decay_t<T>, aod::DielectronChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::JMcParticles>) {
+        if constexpr (std::is_same_v<std::decay_t<T>, aod::ChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::FullMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::CandidatesD0MCP> || std::is_same_v<std::decay_t<T>, aod::D0ChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::CandidatesDplusMCP> || std::is_same_v<std::decay_t<T>, aod::DplusChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::CandidatesDsMCP> || std::is_same_v<std::decay_t<T>, aod::DsChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::CandidatesDstarMCP> || std::is_same_v<std::decay_t<T>, aod::DstarChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::CandidatesLcMCP> || std::is_same_v<std::decay_t<T>, aod::LcChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::CandidatesB0MCP> || std::is_same_v<std::decay_t<T>, aod::B0ChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::CandidatesBplusMCP> || std::is_same_v<std::decay_t<T>, aod::BplusChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::CandidatesXicToXiPiPiMCP> || std::is_same_v<std::decay_t<T>, aod::XicToXiPiPiChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::CandidatesDielectronMCP> || std::is_same_v<std::decay_t<T>, aod::DielectronChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::JMcParticles>) {
           if (selectionObject.mcCollisionId() >= 0) {
-            McCollisionFlag[selectionObject.mcCollisionId()] = true;
+            mcCollisionFlag[selectionObject.mcCollisionId()] = true;
           }
         } else {
           if (selectionObject.collisionId() >= 0) {
@@ -400,14 +440,13 @@ struct JetDerivedDataSelector {
   PROCESS_SWITCH(JetDerivedDataSelector, processSetupAllCollisionsWithDownscaling, "setup the writing of untriggered collisions with downscaling", false);
   PROCESS_SWITCH(JetDerivedDataSelector, processSetupAllMcCollisionsWithDownscaling, "setup the writing of untriggered mccollisions with downscaling", false);
   PROCESS_SWITCH(JetDerivedDataSelector, processSetupEventTriggering, "process software triggers", false);
+  PROCESS_SWITCH(JetDerivedDataSelector, processCollisionSplitting, "process collision splitting for trigger tracks", false);
+  PROCESS_SWITCH(JetDerivedDataSelector, processCollisionSplittingMC, "process mcCollision and collision splitting for trigger tracks", false);
   PROCESS_SWITCH_FULL(JetDerivedDataSelector, processSelectionObjects<aod::ChargedJets>, processSelectingChargedJets, "process charged jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataSelector, processSelectionObjects<aod::ChargedEventWiseSubtractedJets>, processSelectingChargedEventWiseSubtractedJets, "process charged event-wise subtracted jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataSelector, processSelectionObjects<aod::ChargedMCDetectorLevelJets>, processSelectingChargedMCDJets, "process charged mcd jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataSelector, processSelectionObjects<aod::ChargedMCDetectorLevelEventWiseSubtractedJets>, processSelectingChargedMCDetectorLevelEventWiseSubtractedJets, "process charged event-wise subtracted mcd jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataSelector, processSelectionObjects<aod::ChargedMCParticleLevelJets>, processSelectingChargedMCPJets, "process charged mcp jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataSelector, processSelectionObjects<aod::NeutralJets>, processSelectingNeutralJets, "process neutral jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataSelector, processSelectionObjects<aod::NeutralMCDetectorLevelJets>, processSelectingNeutralMCDJets, "process neutral mcd jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataSelector, processSelectionObjects<aod::NeutralMCParticleLevelJets>, processSelectingNeutralMCPJets, "process neutral mcp jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataSelector, processSelectionObjects<aod::FullJets>, processSelectingFullJets, "process full jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataSelector, processSelectionObjects<aod::FullMCDetectorLevelJets>, processSelectingFullMCDJets, "process full mcd jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataSelector, processSelectionObjects<aod::FullMCParticleLevelJets>, processSelectingFullMCPJets, "process full mcp jets", false);
@@ -460,8 +499,8 @@ struct JetDerivedDataSelector {
   PROCESS_SWITCH_FULL(JetDerivedDataSelector, processSelectionObjects<aod::BplusChargedMCDetectorLevelJets>, processSelectingBplusChargedMCDJets, "process Bplus charged mcd jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataSelector, processSelectionObjects<aod::BplusChargedMCDetectorLevelEventWiseSubtractedJets>, processSelectingBplusChargedMCDetectorLevelEventWiseSubtractedJets, "process Bplus event-wise subtracted charged mcd jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataSelector, processSelectionObjects<aod::BplusChargedMCParticleLevelJets>, processSelectingBplusChargedMCPJets, "process Bplus charged mcp jets", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataSelector, processSelectionObjects<aod::CandidatesXicToXiPiPiData>, processSelectingXicToXiPiPiCandidates, "process XicToXiPiPi candidates", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataSelector, processSelectionObjects<aod::CandidatesXicToXiPiPiMCP>, processSelectingXicToXiPiPiCandidatesMCP, "process XicToXiPiPi particles", false);
+  // PROCESS_SWITCH_FULL(JetDerivedDataSelector, processSelectionObjects<aod::CandidatesXicToXiPiPiData>, processSelectingXicToXiPiPiCandidates, "process XicToXiPiPi candidates", false);
+  // PROCESS_SWITCH_FULL(JetDerivedDataSelector, processSelectionObjects<aod::CandidatesXicToXiPiPiMCP>, processSelectingXicToXiPiPiCandidatesMCP, "process XicToXiPiPi particles", false);
   PROCESS_SWITCH_FULL(JetDerivedDataSelector, processSelectionObjects<aod::XicToXiPiPiChargedJets>, processSelectingXicToXiPiPiChargedJets, "process XicToXiPiPi charged jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataSelector, processSelectionObjects<aod::XicToXiPiPiChargedEventWiseSubtractedJets>, processSelectingXicToXiPiPiChargedEventWiseSubtractedJets, "process XicToXiPiPi event-wise subtracted charged jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataSelector, processSelectionObjects<aod::XicToXiPiPiChargedMCDetectorLevelJets>, processSelectingXicToXiPiPiChargedMCDJets, "process XicToXiPiPi charged mcd jets", false);
@@ -495,7 +534,7 @@ struct JetDerivedDataSelector {
 
   void processStoreMcCollisionDecision(aod::JMcCollision const& mcCollision)
   {
-    if (McCollisionFlag[mcCollision.globalIndex()]) {
+    if (mcCollisionFlag[mcCollision.globalIndex()]) {
       mcCollisionSelectionsTable(true);
     } else {
       mcCollisionSelectionsTable(false);
