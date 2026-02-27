@@ -781,8 +781,8 @@ struct LFNucleiBATask {
       histos.add<TH1>("tracks/helium/h1antiHeliumSpectra_Z2", "#it{p}_{T} (#bar{He})", HistType::kTH1F, {ptHeAxis});
 
       if (enableDebug) {
-        debugHistos.add<TH2>("tracks/helium/h2HeliumPidTrackingVsPt", "#it{p}_{T} (He) vs PIDforTracking", HistType::kTH2F, {{80, 0, 8}, {9, -0.5, 8.5}});
-        debugHistos.add<TH2>("tracks/helium/h2antiHeliumPidTrackingVsPt", "#it{p}_{T} (#bar{He}) vs PIDforTracking", HistType::kTH2F, {{80, 0, 8}, {9, -0.5, 8.5}});
+        debugHistos.add<TH2>("tracks/helium/h2HeliumPidTrackingVsPt", "#it{p}_{T} (He) vs PIDforTracking", HistType::kTH2F, {{80, 0, 8}, {12, -0.5, 11.5}});
+        debugHistos.add<TH2>("tracks/helium/h2antiHeliumPidTrackingVsPt", "#it{p}_{T} (#bar{He}) vs PIDforTracking", HistType::kTH2F, {{80, 0, 8}, {12, -0.5, 11.5}});
       }
 
       if (outFlagOptions.doTOFplots && enableCentrality) {
@@ -2165,6 +2165,8 @@ struct LFNucleiBATask {
     spectraGen.add("helium/histPtRecHe", "PtRecHe", HistType::kTH1F, {{800, 0.f, 8.f}});
     spectraGen.add("helium/histPtShiftHe", "PtReco-PtGen vs PtReco;#it{p}_{T}(reco); #it{p}_{T}(reco) - #it{p}_{T}(gen)", HistType::kTH2F, {{800, 0.f, 8.f}, {140, -1.f, 1.4f}});
     spectraGen.add("helium/histPtShiftHeVsGen", "PtReco-PtGen vs PtGen;#it{p}_{T}(gen); #it{p}_{T}(reco) - #it{p}_{T}(gen)", HistType::kTH2F, {{800, 0.f, 8.f}, {140, -1.f, 1.4f}});
+    spectraGen.add("helium/histPtShiftHe_WrongPidAll", "PtReco-PtGen (He, wrong PIDforTracking) vs PtReco;#it{p}_{T}(reco); #it{p}_{T}(reco) - #it{p}_{T}(gen)", HistType::kTH2F, {{800, 0.f, 8.f}, {140, -1.f, 1.4f}});
+    spectraGen.add("helium/histPtShiftHe_WrongPidDe", "PtReco-PtGen (He, wrong PIDforTracking) vs PtReco;#it{p}_{T}(reco); #it{p}_{T}(reco) - #it{p}_{T}(gen)", HistType::kTH2F, {{800, 0.f, 8.f}, {140, -1.f, 1.4f}});
     spectraGen.add("helium/histPtShiftHe_WrongPidTr", "PtReco-PtGen (He, wrong PIDforTracking) vs PtReco;#it{p}_{T}(reco); #it{p}_{T}(reco) - #it{p}_{T}(gen)", HistType::kTH2F, {{800, 0.f, 8.f}, {140, -1.f, 1.4f}});
 
     spectraGen.add("helium/histPtShiftVsEtaHe", "PtReco-PtGen vs #eta", HistType::kTH2F, {{140, -1.4f, 1.4f}, {140, -1.f, 1.4f}});
@@ -2178,6 +2180,8 @@ struct LFNucleiBATask {
     spectraGen.add("helium/histPtRecantiHe", "PtRecantiHe", HistType::kTH1F, {{800, 0.f, 8.f}});
     spectraGen.add("helium/histPtShiftantiHe", "PtReco-PtGen vs PtReco; #it{p}_{T}(reco); #it{p}_{T}(reco) - #it{p}_{T}(gen)", HistType::kTH2F, {{800, 0.f, 8.f}, {140, -1.f, 1.4f}});
     spectraGen.add("helium/histPtShiftantiHeVsGen", "PtReco-PtGen vs PtGen; #it{p}_{T}(gen); #it{p}_{T}(reco) - #it{p}_{T}(gen)", HistType::kTH2F, {{800, 0.f, 8.f}, {140, -1.f, 1.4f}});
+    spectraGen.add("helium/histPtShiftantiHe_WrongPidAll", "PtReco-PtGen (#bar{H}e, wrong PIDforTracking) vs PtReco;#it{p}_{T}(reco); #it{p}_{T}(reco) - #it{p}_{T}(gen)", HistType::kTH2F, {{800, 0.f, 8.f}, {140, -1.f, 1.4f}});
+    spectraGen.add("helium/histPtShiftantiHe_WrongPidDe", "PtReco-PtGen (#bar{H}e, wrong PIDforTracking) vs PtReco;#it{p}_{T}(reco); #it{p}_{T}(reco) - #it{p}_{T}(gen)", HistType::kTH2F, {{800, 0.f, 8.f}, {140, -1.f, 1.4f}});
     spectraGen.add("helium/histPtShiftantiHe_WrongPidTr", "PtReco-PtGen (#bar{H}e, wrong PIDforTracking) vs PtReco;#it{p}_{T}(reco); #it{p}_{T}(reco) - #it{p}_{T}(gen)", HistType::kTH2F, {{800, 0.f, 8.f}, {140, -1.f, 1.4f}});
     spectraGen.add("helium/histPtShiftVsEtaantiHe", "PtReco-PtGen vs #eta", HistType::kTH2F, {{140, -1.4f, 1.4f}, {140, -1.f, 1.4f}});
 
@@ -2466,6 +2470,8 @@ struct LFNucleiBATask {
 
       isTritonTPCpid = std::abs(track.tpcNSigmaTr()) < nsigmaTPCvar.nsigmaTPCTr;
       bool heliumPID = track.pidForTracking() == o2::track::PID::Helium3 || track.pidForTracking() == o2::track::PID::Alpha;
+      bool tritonPID = track.pidForTracking() == o2::track::PID::Triton;
+      bool deuteronPID = track.pidForTracking() == o2::track::PID::Deuteron;
 
       float shiftPtPos = 0.f;
       float shiftPtNeg = 0.f;
@@ -2539,7 +2545,7 @@ struct LFNucleiBATask {
           }
           if (enablePtShiftPID && fShiftPtPID) {
             shiftPtPID = fShiftPtPID->Eval(2 * track.pt());
-            if (!heliumPID && (track.pt() < 2.4f)) {
+            if (tritonPID && (track.pt() <= 1.25f)) {
               hePt = track.pt() - shiftPtPID / 2.f;
               antihePt = track.pt() - shiftPtPID / 2.f;
             }
@@ -3747,7 +3753,12 @@ struct LFNucleiBATask {
                     spectraGen.fill(HIST("helium/histPtShiftHe"), 2.f * hePt, 2.f * hePt - track.mcParticle().pt());
                     spectraGen.fill(HIST("helium/histPtShiftHeVsGen"), track.mcParticle().pt(), 2.f * hePt - track.mcParticle().pt());
                     if (!heliumPID)
+                      spectraGen.fill(HIST("helium/histPtShiftHe_WrongPidAll"), 2.f * hePt, 2.f * hePt - track.mcParticle().pt());
+                    if (tritonPID)
                       spectraGen.fill(HIST("helium/histPtShiftHe_WrongPidTr"), 2.f * hePt, 2.f * hePt - track.mcParticle().pt());
+                    if (deuteronPID)
+                      spectraGen.fill(HIST("helium/histPtShiftHe_WrongPidDe"), 2.f * hePt, 2.f * hePt - track.mcParticle().pt());
+
                     spectraGen.fill(HIST("helium/histPtShiftVsEtaHe"), track.eta(), 2.f * hePt - track.mcParticle().pt());
                     if (track.hasTOF() && outFlagOptions.doTOFplots) {
                       spectraGen.fill(HIST("helium/TOF/histPtShiftHe"), 2.f * hePt, 2.f * hePt - track.mcParticle().pt());
@@ -3826,7 +3837,12 @@ struct LFNucleiBATask {
                     spectraGen.fill(HIST("helium/histPtShiftantiHe"), 2.f * antihePt, 2.f * antihePt - track.mcParticle().pt());
                     spectraGen.fill(HIST("helium/histPtShiftantiHeVsGen"), track.mcParticle().pt(), 2.f * antihePt - track.mcParticle().pt());
                     if (!heliumPID)
+                      spectraGen.fill(HIST("helium/histPtShiftantiHe_WrongPidAll"), 2.f * antihePt, 2.f * antihePt - track.mcParticle().pt());
+                    if (tritonPID)
                       spectraGen.fill(HIST("helium/histPtShiftantiHe_WrongPidTr"), 2.f * antihePt, 2.f * antihePt - track.mcParticle().pt());
+                    if (deuteronPID)
+                      spectraGen.fill(HIST("helium/histPtShiftantiHe_WrongPidDe"), 2.f * antihePt, 2.f * antihePt - track.mcParticle().pt());
+
                     spectraGen.fill(HIST("helium/histPtShiftVsEtaantiHe"), track.eta(), 2.f * antihePt - track.mcParticle().pt());
                     if (track.hasTOF() && outFlagOptions.doTOFplots) {
                       spectraGen.fill(HIST("helium/TOF/histPtShiftantiHe"), 2.f * antihePt, 2.f * antihePt - track.mcParticle().pt());

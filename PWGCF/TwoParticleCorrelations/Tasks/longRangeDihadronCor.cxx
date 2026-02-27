@@ -691,7 +691,8 @@ struct LongRangeDihadronCor {
       ampl = ampl / cstFT0RelGain[id];
       if (system == SameEvent) {
         registry.fill(HIST("FT0AmpCorrect"), id, ampl);
-        histAmpCorrectPerRun[lastRunNumber]->Fill(id, ampl);
+        if (cfgFwdConfig.cfgRunbyRunAmplitudeFT0)
+          histAmpCorrectPerRun[lastRunNumber]->Fill(id, ampl);
       }
     } else if (fitType == kFT0A) {
       id = ft0.channelA()[iCh];
@@ -703,7 +704,8 @@ struct LongRangeDihadronCor {
       ampl = ampl / cstFT0RelGain[id];
       if (system == SameEvent) {
         registry.fill(HIST("FT0AmpCorrect"), id, ampl);
-        histAmpCorrectPerRun[lastRunNumber]->Fill(id, ampl);
+        if (cfgFwdConfig.cfgRunbyRunAmplitudeFT0)
+          histAmpCorrectPerRun[lastRunNumber]->Fill(id, ampl);
       }
     } else {
       LOGF(fatal, "Cor Index %d out of range", fitType);

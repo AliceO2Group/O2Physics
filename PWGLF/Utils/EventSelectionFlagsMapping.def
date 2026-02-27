@@ -49,6 +49,7 @@ EVSEL_FLAG(kNoITSROFrameBorder, applyNoITSROBorderCut, false, kFlagITSROFrameBor
 // Vertex quality
 EVSEL_FLAG(kIsVertexITSTPC, applyITSTPCvertex, false, kFlagVertexITSTPC, setApplyITSTPCvertex, ApplyITSTPCvertex, "IsVertexITSTPC", "Apply ITS-TPC vertex")
 EVSEL_FLAG(kIsGoodZvtxFT0vsPV, applyZvertexTimedifference, false, kFlagZvtxFT0vsPV, setApplyZvertexTimedifference, ApplyZvertexTimedifference, "IsGoodZvtxFT0vsPV", "Apply Z-vertex time difference")
+EVSEL_FLAG(kIsVertexTOFmatched, applyVertexTOFmatched, false, kFlagVertexTOFmatched, setApplyVertexTOFmatched, ApplyVertexTOFmatched, "IsVertexTOFmatched", "Vertex has TOF-matched track")
 EVSEL_FLAG(kIsVertexTRDmatched, applyVertexTRDmatched, false, kFlagVertexTRDmatched, setApplyVertexTRDmatched, ApplyVertexTRDmatched, "IsVertexTRDmatched", "Vertex has TRD-matched track")
 
 // Pileup rejection
@@ -74,5 +75,4 @@ EVSEL_FLAG(kIsBBT0A, applyBBT0A, false, kFlagBBT0A, setApplyBBT0A, ApplyBBT0A, "
 EVSEL_FLAG(kIsBBT0C, applyBBT0C, false, kFlagBBT0C, setApplyBBT0C, ApplyBBT0C, "IsBBT0C", "T0C in beam-beam window")
 
 // Future flags can be easily added here, for example:
-// EVSEL_FLAG(kIsVertexTOFmatched, applyVertexTOFmatched, false, kFlagVertexTOFmatched, setApplyVertexTOFmatched, ApplyVertexTOFmatched, "IsVertexTOFmatched", "Apply vertex TOF matched")
 // EVSEL_FLAG(kNoCollInTimeRangeStrict, applyCollInTimeRangeStrict, false, kNoCollInTimeRangeStrict, setApplyCollInTimeRangeStrict, ApplyCollInTimeRangeStrict, "NoCollInTimeRangeStrict", "Apply NoCollInTimeRangeStrict")

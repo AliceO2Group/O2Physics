@@ -423,8 +423,66 @@ std::tuple<float, float, float, float, float, int> VarManager::BimodalityCoeffic
   // trim the distribution if requested, by requiring a minimum of "trim" counts in each bin
   if (trim > 0) {
     for (int i = 0; i < nBins; ++i) {
+      // if the count in the bin is less than the trim value, set it to zero
       if (counts[i] < trim) {
-        counts[i] = 0;
+        // set the count to zero only if this is an isolated bin,
+        // i.e. if this count belongs to a peak, we want to keep it even if it has counts below the trim limit, as long as the whole peak is not below the trim limit
+        // check the previous bins until we find an empty bin or we reach the beginning of the histogram
+        int localPeakCount = counts[i];
+        for (int j = i - 1; j >= 0; --j) {
+          if (counts[j] == 0) {
+            break;
+          }
+          localPeakCount += counts[j];
+        }
+        // check the next bins until we find an empty bin or we reach the end of the histogram
+        for (int j = i + 1; j < nBins; ++j) {
+          if (counts[j] == 0) {
+            break;
+          }
+          localPeakCount += counts[j];
+        }
+        if (localPeakCount < trim) {
+          counts[i] = 0;
+        }
+      }
+    }
+  }
+  if (trim < 0) {
+    // if trim is negative, then we remove all counts belonging to local peaks with an integrated count below 1/abs(trim)
+    for (int i = 0; i < nBins; ++i) {
+      if (counts[i] == 0) {
+        continue; // skip empty bins
+      }
+      // check the previous bins until we find an empty bin or we reach the beginning of the histogram
+      int localPeakCount = counts[i];
+      for (int j = i - 1; j >= 0; --j) {
+        if (counts[j] == 0) {
+          break;
+        }
+        localPeakCount += counts[j];
+      }
+      // check the next bins until we find an empty bin or we reach the end of the histogram
+      for (int j = i + 1; j < nBins; ++j) {
+        if (counts[j] == 0) {
+          break;
+        }
+        localPeakCount += counts[j];
+      }
+      if (localPeakCount < (1.0 / std::abs(trim)) * data.size()) {
+        // set all bins belonging to this local peak to zero
+        for (int j = i; j >= 0; --j) {
+          if (counts[j] == 0) {
+            break;
+          }
+          counts[j] = 0;
+        }
+        for (int j = i + 1; j < nBins; ++j) {
+          if (counts[j] == 0) {
+            break;
+          }
+          counts[j] = 0;
+        }
       }
     }
   }
@@ -453,7 +511,7 @@ std::tuple<float, float, float, float, float, int> VarManager::BimodalityCoeffic
   }
 
   if (totalCounts == 0) {
-    return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0, -1);
+    return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0, nPeaks);
   }
   mean /= totalCounts;
 
@@ -477,7 +535,7 @@ std::tuple<float, float, float, float, float, int> VarManager::BimodalityCoeffic
   m4 /= totalCounts;
 
   if (m2 == 0.0) {
-    return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0, -1);
+    return std::make_tuple(-1.0, -1.0, -1.0, -1.0, -1.0, nPeaks);
   }
 
   float stddev = std::sqrt(m2);
