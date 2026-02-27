@@ -14,6 +14,7 @@
 /// \author Hirak Kumar Koley <hirak.koley@cern.ch>
 
 #include "PWGLF/Utils/collisionCuts.h"
+#include "PWGLF/Utils/inelGt.h"
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -92,15 +93,15 @@ struct Lambda1520analysisinpp {
     Configurable<float> cfgEvtZvtx{"cfgEvtZvtx", 10.0f, "Evt sel: Max. z-Vertex (cm)"};
     Configurable<int> cfgEvtOccupancyInTimeRangeMax{"cfgEvtOccupancyInTimeRangeMax", -1, "Evt sel: maximum track occupancy"};
     Configurable<int> cfgEvtOccupancyInTimeRangeMin{"cfgEvtOccupancyInTimeRangeMin", -1, "Evt sel: minimum track occupancy"};
-    Configurable<bool> cfgEvtTriggerCheck{"cfgEvtTriggerCheck", false, "Evt sel: check for trigger"};
-    Configurable<bool> cfgEvtOfflineCheck{"cfgEvtOfflineCheck", true, "Evt sel: check for offline selection"};
-    Configurable<bool> cfgEvtTriggerTVXSel{"cfgEvtTriggerTVXSel", false, "Evt sel: triggerTVX selection (MB)"};
-    Configurable<bool> cfgEvtTFBorderCut{"cfgEvtTFBorderCut", false, "Evt sel: apply TF border cut"};
-    Configurable<bool> cfgEvtUseITSTPCvertex{"cfgEvtUseITSTPCvertex", false, "Evt sel: use at lease on ITS-TPC track for vertexing"};
-    Configurable<bool> cfgEvtZvertexTimedifference{"cfgEvtZvertexTimedifference", false, "Evt sel: apply Z-vertex time difference"};
-    Configurable<bool> cfgEvtPileupRejection{"cfgEvtPileupRejection", false, "Evt sel: apply pileup rejection"};
-    Configurable<bool> cfgEvtNoITSROBorderCut{"cfgEvtNoITSROBorderCut", false, "Evt sel: apply NoITSRO border cut"};
-    Configurable<bool> cfgEvtCollInTimeRangeStandard{"cfgEvtCollInTimeRangeStandard", false, "Evt sel: apply NoCollInTimeRangeStandard"};
+    Configurable<bool> cfgEvtSel8{"cfgEvtSel8", false, "Evt Sel 8 check for offline selection"};
+    Configurable<bool> cfgEvtTriggerTVXSel{"cfgEvtTriggerTVXSel", true, "Evt sel: triggerTVX selection (MB)"};
+    Configurable<bool> cfgEvtNoTFBorderCut{"cfgEvtNoTFBorderCut", true, "Evt sel: apply TF border cut"};
+    Configurable<bool> cfgEvtIsVertexITSTPC{"cfgEvtIsVertexITSTPC", false, "Evt sel: use at lease on ITS-TPC track for vertexing"};
+    Configurable<bool> cfgEvtIsGoodZvtxFT0vsPV{"cfgEvtIsGoodZvtxFT0vsPV", true, "Evt sel: apply Z-vertex time difference"};
+    Configurable<bool> cfgEvtNoSameBunchPileup{"cfgEvtNoSameBunchPileup", false, "Evt sel: apply pileup rejection"};
+    Configurable<bool> cfgEvtNoITSROFrameBorderCut{"cfgEvtNoITSROFrameBorderCut", false, "Evt sel: apply NoITSRO border cut"};
+    Configurable<bool> cfgEvtNoCollInTimeRangeStandard{"cfgEvtNoCollInTimeRangeStandard", false, "Evt sel: apply NoNoCollInTimeRangeStandard"};
+    Configurable<bool> cfgEvtIsVertexTOFmatched{"cfgEvtIsVertexTOFmatched", true, "kIsVertexTOFmatched: apply vertex TOF matched"};
   } configEvents;
 
   struct : ConfigurableGroup {
@@ -157,7 +158,7 @@ struct Lambda1520analysisinpp {
     /// Event Mixing
     Configurable<int> nEvtMixing{"nEvtMixing", 10, "Number of events to mix"};
     ConfigurableAxis cfgVtxBins{"cfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.0f, -6.0f, -4.0f, -2.0f, 0.0f, 2.0f, 4.0f, 6.0f, 8.0f, 10.0f}, "Mixing bins - z-vertex"};
-    ConfigurableAxis cfgMultBins{"cfgMultBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Mixing bins - multiplicity"};
+    ConfigurableAxis cfgMultPercentileBins{"cfgMultPercentileBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Mixing bins - multiplicity"};
 
     // Rotational background
     Configurable<int> rotationalcut{"rotationalcut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
@@ -174,7 +175,6 @@ struct Lambda1520analysisinpp {
   Configurable<bool> cfgUseDaughterEtaCutMC{"cfgUseDaughterEtaCutMC", false, "Switch to turn on/off eta cuts for daughters in MC"};
 
   // MC selection cut
-  Configurable<float> cZvertCutMC{"cZvertCutMC", 10.0f, "MC Z-vertex cut"};
   Configurable<float> cEtacutMC{"cEtacutMC", 0.5f, "MC eta cut"};
   Configurable<bool> cUseRapcutMC{"cUseRapcutMC", true, "MC eta cut"};
   Configurable<bool> cUseEtacutMC{"cUseEtacutMC", true, "MC eta cut"};
@@ -237,16 +237,17 @@ struct Lambda1520analysisinpp {
 
   void init(framework::InitContext&)
   {
-    colCuts.setCuts(configEvents.cfgEvtZvtx, configEvents.cfgEvtTriggerCheck, configEvents.cfgEvtOfflineCheck, /*checkRun3*/ true, /*triggerTVXsel*/ false, configEvents.cfgEvtOccupancyInTimeRangeMax, configEvents.cfgEvtOccupancyInTimeRangeMin);
+    colCuts.setCuts(configEvents.cfgEvtZvtx, /* configEvents.cfgEvtTriggerCheck */ false, configEvents.cfgEvtSel8, /*checkRun3*/ true, /*triggerTVXsel*/ false, configEvents.cfgEvtOccupancyInTimeRangeMax, configEvents.cfgEvtOccupancyInTimeRangeMin);
 
     colCuts.init(&histos);
     colCuts.setTriggerTVX(configEvents.cfgEvtTriggerTVXSel);
-    colCuts.setApplyTFBorderCut(configEvents.cfgEvtTFBorderCut);
-    colCuts.setApplyITSTPCvertex(configEvents.cfgEvtUseITSTPCvertex);
-    colCuts.setApplyZvertexTimedifference(configEvents.cfgEvtZvertexTimedifference);
-    colCuts.setApplyPileupRejection(configEvents.cfgEvtPileupRejection);
-    colCuts.setApplyNoITSROBorderCut(configEvents.cfgEvtNoITSROBorderCut);
-    colCuts.setApplyCollInTimeRangeStandard(configEvents.cfgEvtCollInTimeRangeStandard);
+    colCuts.setApplyTFBorderCut(configEvents.cfgEvtNoTFBorderCut);
+    colCuts.setApplyITSTPCvertex(configEvents.cfgEvtIsVertexITSTPC);
+    colCuts.setApplyZvertexTimedifference(configEvents.cfgEvtIsGoodZvtxFT0vsPV);
+    colCuts.setApplyPileupRejection(configEvents.cfgEvtNoSameBunchPileup);
+    colCuts.setApplyNoITSROBorderCut(configEvents.cfgEvtNoITSROFrameBorderCut);
+    colCuts.setApplyCollInTimeRangeStandard(configEvents.cfgEvtNoCollInTimeRangeStandard);
+    colCuts.setApplyVertexTOFmatched(configEvents.cfgEvtIsVertexTOFmatched);
     colCuts.printCuts();
 
     // axes
@@ -255,22 +256,23 @@ struct Lambda1520analysisinpp {
     AxisSpec axisEta{binsEta, "#eta"};
     AxisSpec axisRap{binsEta, "#it{y}"};
     AxisSpec axisMassLambda1520{binsMass, "Invariant Mass (GeV/#it{c}^2)"};
-    AxisSpec axisMult{binsMult, "mult_{V0M}"};
+    AxisSpec axisMult{binsMult, "mult_{FT0M}"};
     AxisSpec axisDCAz{binsDCAz, "DCA_{z}"};
     AxisSpec axisDCAxy{binsDCAxy, "DCA_{XY}"};
     AxisSpec axisTPCXrow{binsTPCXrows, "#Xrows_{TPC}"};
     AxisSpec axisPIDQA{binsnSigma, "#sigma"};
     AxisSpec axisTPCSignal{binsnTPCSignal, ""};
-    AxisSpec axisMClabel{6, -1.5f, 5.5f, "MC Label"};
+    AxisSpec axisMClabel{6, -1.5f, 6.5f, "MC Label"};
     AxisSpec axisEtaPhi{binsEtaPhi, ""};
     AxisSpec axisPhi{350, 0, 7, "#Phi"};
-    AxisSpec axisMultMix{configBkg.cfgMultBins, "Multiplicity"};
+    AxisSpec axisMultMix{configBkg.cfgMultPercentileBins, "Multiplicity Percentile"};
     AxisSpec axisVtxMix{configBkg.cfgVtxBins, "Vertex Z (cm)"};
     AxisSpec idxMCAxis = {26, -0.5f, 25.5f, "Index"};
 
     if (cFilladditionalQAeventPlots) {
       // event histograms
       if (doprocessData) {
+        histos.add("QAevent/hEvents", "INEL>0 Events", HistType::kTH1F, {{2, 0.5f, 2.5f}});
         histos.add("QAevent/hPairsCounterSameE", "total valid no. of pairs sameE", HistType::kTH1F, {{1, 0.5f, 1.5f}});
         histos.add("QAevent/hnTrksSameE", "n tracks per event SameE", HistType::kTH1F, {{1000, 0.0, 1000.0}});
       }
@@ -286,6 +288,9 @@ struct Lambda1520analysisinpp {
         histos.add("QAevent/hVertexZMixedE", "Collision Vertex Z position", HistType::kTH1F, {{100, -15.0f, 15.0f}});
         histos.add("QAevent/hMultiplicityPercentMixedE", "Multiplicity percentile of collision", HistType::kTH1F, {{120, 0.0f, 120.0f}});
         histos.add("QAevent/hnTrksMixedE", "n tracks per event MixedE", HistType::kTH1F, {{1000, 0.0f, 1000.0f}});
+      }
+      if (doprocessMCRec) {
+        histos.add("QAevent/hEventsMC", "INEL>0 Events MC", HistType::kTH1F, {{2, 0.5f, 2.5f}});
       }
     }
 
@@ -395,7 +400,7 @@ struct Lambda1520analysisinpp {
 
     // MC QA
     histos.add("Event/hMCEventIndices", "hMCEventIndices", kTH2D, {axisMult, idxMCAxis});
-    if (doprocessMCTrue) {
+    if (doprocessMCGen) {
       histos.add("QA/MC/h2GenEtaPt_beforeanycut", " #eta-#it{p}_{T} distribution of Generated #Lambda(1520); #eta;  #it{p}_{T}; Counts;", HistType::kTHnSparseF, {axisEta, axisPtQA});
       histos.add("QA/MC/h2GenPhiRapidity_beforeanycut", " #phi-y distribution of Generated #Lambda(1520); #phi; y; Counts;", HistType::kTHnSparseF, {axisPhi, axisRap});
       histos.add("QA/MC/h2GenEtaPt_afterEtaRapCut", " #eta-#it{p}_{T} distribution of Generated #Lambda(1520); #eta;  #it{p}_{T}; Counts;", HistType::kTHnSparseF, {axisEta, axisPtQA});
@@ -406,7 +411,7 @@ struct Lambda1520analysisinpp {
       histos.add("Result/MC/Genlambda1520pt", "pT distribution of True MC #Lambda(1520)0", kTH3F, {axisMClabel, axisPt, axisMult});
       histos.add("Result/MC/Genantilambda1520pt", "pT distribution of True MC Anti-#Lambda(1520)0", kTH3F, {axisMClabel, axisPt, axisMult});
     }
-    if (doprocessMC) {
+    if (doprocessMCRec) {
       histos.add("QA/MC/h2RecoEtaPt_after", " #eta-#it{p}_{T} distribution of Reconstructed #Lambda(1520); #eta;  #it{p}_{T}; Counts;", HistType::kTHnSparseF, {axisEta, axisPt});
       histos.add("QA/MC/h2RecoPhiRapidity_after", " #phi-y distribution of Reconstructed #Lambda(1520); #phi; y; Counts;", HistType::kTHnSparseF, {axisPhi, axisRap});
 
@@ -451,26 +456,6 @@ struct Lambda1520analysisinpp {
         break;
     }
     return returnValue;
-  }
-
-  auto static constexpr TripleCharge = 3.0f;
-
-  // Check if the collision is INEL>0
-  template <typename MCColl, typename MCPart>
-  bool isTrueINEL0(MCColl const& /*mccoll*/, MCPart const& mcparts)
-  {
-    for (auto const& mcparticle : mcparts) {
-      if (!mcparticle.isPhysicalPrimary())
-        continue;
-      auto p = pdg->GetParticle(mcparticle.pdgCode());
-      if (p != nullptr) {
-        if (std::abs(p->Charge()) >= TripleCharge) { // check if the particle is charged
-          if (std::abs(mcparticle.eta()) < 1.0f)
-            return true;
-        }
-      }
-    }
-    return false;
   }
 
   template <typename TrackType>
@@ -1039,6 +1024,17 @@ struct Lambda1520analysisinpp {
     if (!colCuts.isSelected(collision)) // Default event selection
       return;
 
+    if (cFilladditionalQAeventPlots) {
+      histos.fill(HIST("QAevent/hEvents"), 1);
+    }
+
+    if (!collision.isInelGt0()) // <--
+      return;
+
+    if (cFilladditionalQAeventPlots) {
+      histos.fill(HIST("QAevent/hEvents"), 2);
+    }
+
     colCuts.fillQA(collision);
 
     fillHistograms<true, false, false, false>(collision, tracks, tracks);
@@ -1050,32 +1046,49 @@ struct Lambda1520analysisinpp {
     if (!colCuts.isSelected(collision, false)) // Default event selection
       return;
 
+    if (!collision.isInelGt0()) // <--
+      return;
+
     fillHistograms<false, true, false, false>(collision, tracks, tracks);
   }
   PROCESS_SWITCH(Lambda1520analysisinpp, processRotational, "Process Rotational Background", false);
 
-  void processMC(MCEventCandidates::iterator const& collision,
-                 aod::McCollisions const&,
-                 MCTrackCandidates const& tracks, aod::McParticles const&)
+  void processMCRec(MCEventCandidates::iterator const& collision,
+                    aod::McCollisions const&,
+                    MCTrackCandidates const& tracks, aod::McParticles const&)
   {
-    colCuts.fillQA(collision);
-
-    if (std::abs(collision.posZ()) > cZvertCutMC) // Z-vertex cut
+    if (!colCuts.isSelected(collision))
       return;
+
+    if (cFilladditionalQAeventPlots) {
+      histos.fill(HIST("QAevent/hEventsMC"), 1);
+    }
+
+    if (!collision.isInelGt0()) // <--
+      return;
+
+    if (cFilladditionalQAeventPlots) {
+      histos.fill(HIST("QAevent/hEventsMC"), 2);
+    }
 
     fillHistograms<false, false, true, false>(collision, tracks, tracks);
   }
-  PROCESS_SWITCH(Lambda1520analysisinpp, processMC, "Process Event for MC Light without partition", false);
+  PROCESS_SWITCH(Lambda1520analysisinpp, processMCRec, "Process Event for MC Rec without partition", false);
 
   Partition<aod::McParticles> selectedMCParticles = (nabs(aod::mcparticle::pdgCode) == static_cast<int>(Pdg::kLambda1520_Py)); // Lambda(1520)
 
-  void processMCTrue(MCEventCandidates::iterator const& collision, aod::McCollisions const&, aod::McParticles const& mcParticles)
+  void processMCGen(MCEventCandidates::iterator const& collision, aod::McCollisions const&, aod::McParticles const& mcParticles)
   {
-    bool isInAfterAllCuts = colCuts.isSelected(collision);
+    bool isInAfterAllCuts = colCuts.isSelected(collision, false);
     bool inVtx10 = (std::abs(collision.mcCollision().posZ()) > configEvents.cfgEvtZvtx) ? false : true;
     bool isTriggerTVX = collision.selection_bit(aod::evsel::kIsTriggerTVX);
     bool isSel8 = collision.sel8();
-    bool isTrueINELgt0 = isTrueINEL0(collision, mcParticles);
+
+    auto mcPartsAll = mcParticles.sliceBy(perMcCollision, collision.mcCollision().globalIndex());
+
+    bool isTrueINELgt0 = pwglf::isINELgt0mc(mcPartsAll, pdg);
+    // bool isTrueINELgt0 = collision.isInelGt0();
+
     auto centrality = centEst(collision);
 
     auto mcParts = selectedMCParticles->sliceBy(perMcCollision, collision.mcCollision().globalIndex());
@@ -1157,6 +1170,13 @@ struct Lambda1520analysisinpp {
         else
           histos.fill(HIST("Result/MC/Genantilambda1520pt"), 4, part.pt(), centrality);
       }
+      if (isInAfterAllCuts && isTrueINELgt0) // after all event selection
+      {
+        if (part.pdgCode() > 0)
+          histos.fill(HIST("Result/MC/Genlambda1520pt"), 5, part.pt(), centrality);
+        else
+          histos.fill(HIST("Result/MC/Genantilambda1520pt"), 5, part.pt(), centrality);
+      }
     }
 
     // QA for Trigger efficiency
@@ -1198,7 +1218,7 @@ struct Lambda1520analysisinpp {
     if (isInAfterAllCuts && isTrueINELgt0 && inVtx10)
       histos.fill(HIST("Event/hMCEventIndices"), centrality, AllCutsINELg010);
   }
-  PROCESS_SWITCH(Lambda1520analysisinpp, processMCTrue, "Process Event for MC only", false);
+  PROCESS_SWITCH(Lambda1520analysisinpp, processMCGen, "Process Event for MC only", false);
 
   // Processing Event Mixing
   using BinningTypeVtxZT0M = ColumnBinningPolicy<collision::PosZ, cent::CentFT0M>;
@@ -1208,7 +1228,7 @@ struct Lambda1520analysisinpp {
   {
     auto tracksTuple = std::make_tuple(tracks);
 
-    BinningTypeVtxZT0M colBinning{{configBkg.cfgVtxBins, configBkg.cfgMultBins}, true};
+    BinningTypeVtxZT0M colBinning{{configBkg.cfgVtxBins, configBkg.cfgMultPercentileBins}, true};
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVtxZT0M> pairs{colBinning, configBkg.nEvtMixing, -1, collision, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
@@ -1217,6 +1237,18 @@ struct Lambda1520analysisinpp {
       // for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
       //  LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d)", t1.index(), t2.index(), collision1.index(), collision2.index());
       //  }
+
+      if (!colCuts.isSelected(collision1, false)) // Default event selection
+        return;
+
+      if (!colCuts.isSelected(collision2, false)) // Default event selection
+        return;
+
+      if (!collision1.isInelGt0()) // <--
+        return;
+
+      if (!collision2.isInelGt0()) // <--
+        return;
 
       if (cFilladditionalQAeventPlots) {
         // Fill histograms for the characteristics of the *mixed* events (collision1 and collision2)

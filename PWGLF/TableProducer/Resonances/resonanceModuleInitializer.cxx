@@ -1037,7 +1037,8 @@ struct ResonanceDaughterInitializer {
                v0.mLambda(),
                v0.mAntiLambda(),
                v0.mK0Short(),
-               v0.v0radius(), v0.x(), v0.y(), v0.z());
+               v0.v0radius(), v0.x(), v0.y(), v0.z(),
+               v0.alpha(), v0.qtarm());
       if (!cfgBypassTrackIndexFill) {
         resoV0V0s(v0.globalIndex());
       }
