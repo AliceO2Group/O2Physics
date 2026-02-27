@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file phiInJets.cxx
+/// \file phi1020analysis.cxx
 /// \brief Reconstruction of Phi yield through track-track Minv correlations for resonance OO analysis
 ///
 ///
@@ -61,7 +61,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct phiOO {
+struct phi1020analysis {
 
   SliceCache cache;
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
@@ -77,6 +77,7 @@ struct phiOO {
   Configurable<bool> cfg_Event_Pileup{"cfg_Event_Pileup", true, "Pileup border cut"};
   Configurable<bool> cfg_Event_OccupancyCut{"cfg_Event_OccupancyCut", true, "Occupancy border cut"};
   Configurable<float> cfg_Event_MaxOccupancy{"cfg_Event_MaxOccupancy", 1, "Max TPC Occupancy"};
+  Configurable<int> centEstimator{"centEstimator", 0, "Select centrality estimator: 0 - FT0M, 1 - FT0A, 2 - FT0C"};
 
   // Track configurables
   Configurable<std::string> cfg_Track_Sel{"cfg_Track_Sel", "globalTracks", "set track selections"};
@@ -136,10 +137,10 @@ struct phiOO {
     // Event QA
     if (cfg_Event_CutQA) {
       histos.add("hPosZ_BC", "PosZ_BC", kTH1F, {{240, -12.0, 12.0}});
-      histos.add("hcentFT0C_BC", "centFT0C_BC", kTH1F, {{110, 0.0, 110.0}});
+      histos.add("hcentFT0_BC", "centFT0_BC", kTH1F, {{110, 0.0, 110.0}});
       histos.add("hOccupancy_BC", "Occupancy_BC", kTH1F, {{100, 0.0, 20000}});
       //
-      histos.add("hcentFT0C_AC", "centFT0C_AC", kTH1F, {{110, 0.0, 110.0}});
+      histos.add("hcentFT0_AC", "centFT0_AC", kTH1F, {{110, 0.0, 110.0}});
       histos.add("hPosZ_AC", "PosZ_AC", kTH1F, {{240, -12.0, 12.0}});
       histos.add("hOccupancy_AC", "Occupancy_AC", kTH1F, {{100, 0.0, 20000}});
     }
@@ -198,7 +199,7 @@ struct phiOO {
 
   Filter collisionFilter = nabs(aod::collision::posZ) <= cfg_Event_VtxCut;
   Filter collisionFilter_MC = nabs(aod::mccollision::posZ) <= cfg_Event_VtxCut;
-  Filter centralityFilter = nabs(aod::cent::centFT0C) <= cfg_Event_CentralityMax;
+  // Filter centralityFilter = nabs(aod::cent::centFT0C) <= cfg_Event_CentralityMax;
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfg_Track_MaxEta && nabs(aod::track::pt) >= cfg_Track_MinPt);
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;
   using EventCandidates_True = soa::Filtered<aod::McCollisions>;
@@ -208,7 +209,7 @@ struct phiOO {
   using TrackCandidates_MC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                                      aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTOFbeta, aod::McTrackLabels>>;
 
-  using BinningTypeVtxCent = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
+  using BinningTypeVtxCent = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
 
   Partition<TrackCandidates_MC> PosKaon_MC =
     (aod::track::signed1Pt > static_cast<float>(0)) &&
@@ -224,6 +225,29 @@ struct phiOO {
     (!cfg_Track_TPCPID || (nabs(aod::pidtpc::tpcNSigmaKa) <= cfg_Track_TPCPID_nSig));
 
   double massKa = o2::constants::physics::MassKPlus;
+
+    // Centralicity estimator selection
+  template <typename Coll>
+  float centEst(Coll collisions)
+  {
+    float returnValue = -999.0f;
+    switch (centEstimator) {
+      case 0:
+        returnValue = collisions.centFT0M();
+        break;
+      case 1:
+        returnValue = collisions.centFT0A();
+        break;
+      case 2:
+        returnValue = collisions.centFT0C();
+        break;
+      default:
+        returnValue = collisions.centFT0M();
+        break;
+    }
+    return returnValue;
+  }
+
   //***********************************//
   // First, we declare some helper functions
   template <typename objType>
@@ -234,10 +258,10 @@ struct phiOO {
       if constexpr (requires { obj.posZ(); }) {
         if (!pass) {
           histos.fill(HIST("hPosZ_BC"), obj.posZ());
-          histos.fill(HIST("hcentFT0C_BC"), obj.centFT0C());
+          histos.fill(HIST("hcentFT0_BC"), centEst(obj));
         } else {
           histos.fill(HIST("hPosZ_AC"), obj.posZ());
-          histos.fill(HIST("hcentFT0C_AC"), obj.centFT0C());
+          histos.fill(HIST("hcentFT0_AC"), centEst(obj));
         }
       }
     }
@@ -300,7 +324,7 @@ struct phiOO {
       return {false, 4};
     if (cfg_Event_Pileup && (!event.selection_bit(aod::evsel::kNoSameBunchPileup) || !event.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)))
       return {false, 5};
-    if (cfg_Event_Centrality && (event.centFT0C() > cfg_Event_CentralityMax))
+    if (cfg_Event_Centrality && (centEst(event) > cfg_Event_CentralityMax))
       return {false, 6};
     if (cfg_Event_OccupancyCut && (event.trackOccupancyInTimeRange() > cfg_Event_MaxOccupancy))
       return {false, 7};
@@ -375,7 +399,7 @@ struct phiOO {
         tofPIDPassed = true;
       }
       if (!candidate.hasTOF()) {
-        std::cout << candidate.tofNSigmaKa() << std::endl;
+        //std::cout << candidate.tofNSigmaKa() << std::endl;
       }
     }
     if (tpcPIDPassed && tofPIDPassed) {
@@ -392,7 +416,7 @@ struct phiOO {
   {
     auto slicedtracks1 = PosKaon->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
     auto slicedtracks2 = NegKaon->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
-    auto centrality = collision1.centFT0C();
+    auto centrality = centEst(collision1);
     for (auto& [track1, track2] : combinations(o2::soa::CombinationsFullIndexPolicy(slicedtracks1, slicedtracks2))) {
       auto [Minv, PhiPt] = minvReconstruction(track1, track2, QA);
       if (Minv < 0)
@@ -419,7 +443,7 @@ struct phiOO {
   {
     auto slicedtracks1 = PosKaon_MC->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
     auto slicedtracks2 = NegKaon_MC->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
-    auto centrality = collision1.centFT0C();
+    auto centrality = centEst(collision1);
     for (auto& [track1, track2] : combinations(o2::soa::CombinationsFullIndexPolicy(slicedtracks1, slicedtracks2))) {
       auto [Minv, PhiPt] = minvReconstruction(track1, track2, QA);
       if (Minv < 0)
@@ -526,7 +550,7 @@ struct phiOO {
 
   } // end of process
 
-  PROCESS_SWITCH(phiOO, processSameEvent, "Process Same events", true);
+  PROCESS_SWITCH(phi1020analysis, processSameEvent, "Process Same events", true);
 
   //***************//
   // DATA (MIX)
@@ -553,7 +577,7 @@ struct phiOO {
       TrackSlicing(collision1, tracks1, collision2, tracks2, false, true);
     } // mixing
   } // end of process
-  PROCESS_SWITCH(phiOO, processMixedEvent, "Process Mixed events", false);
+  PROCESS_SWITCH(phi1020analysis, processMixedEvent, "Process Mixed events", false);
 
   //***************//
   // RECONSTRUCTED MC
@@ -576,7 +600,7 @@ struct phiOO {
     TrackSlicing_MC(collision, tracks, collision, tracks, true, false);
 
   } // end of process
-  PROCESS_SWITCH(phiOO, processSameEvent_MC, "Process Same events (MC)", true);
+  PROCESS_SWITCH(phi1020analysis, processSameEvent_MC, "Process Same events (MC)", true);
 
   //***************//
   // RECONSTRUCTED MC (MIX)
@@ -602,7 +626,7 @@ struct phiOO {
       TrackSlicing_MC(collision1, tracks1, collision2, tracks2, false, true);
     } // mixing
   } // end of process
-  PROCESS_SWITCH(phiOO, processMixedEvent_MC, "Process Mixed events (MC)", false);
+  PROCESS_SWITCH(phi1020analysis, processMixedEvent_MC, "Process Mixed events (MC)", false);
 
   //***************//
   // GENERATED MC
@@ -629,7 +653,7 @@ struct phiOO {
 
     double centrality = -1;
     for (auto& recocoll : recocolls) { // poorly reconstructed
-      centrality = recocoll.centFT0C();
+      centrality = centEst(recocoll);
       auto [goodEv, code] = eventSelection(recocoll, false);
       histos.fill(HIST("hnEvents_MC_True"), code);
       if (!goodEv)
@@ -665,11 +689,11 @@ struct phiOO {
     } // loop over particles
 
   } // end of process
-  PROCESS_SWITCH(phiOO, processParticles, "Process Particles", false);
+  PROCESS_SWITCH(phi1020analysis, processParticles, "Process Particles", false);
 
 }; // end of main struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<phiOO>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<phi1020analysis>(cfgc)};
 };
