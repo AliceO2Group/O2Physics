@@ -193,12 +193,12 @@ struct DedxPidAnalysis {
                                       "Maximum V0 Radius"};
   Configurable<float> dcaV0DaughtersMax{"dcaV0DaughtersMax", 0.5f,
                                         "Maximum DCA Daughters"};
-    Configurable<float> dcaProtonsFromLambda{"dcaProtonsFromLambda", 0.05f,
-                                          "Minimum DCA of protons to vtx for Lambda"};
-    Configurable<float> dcaPionsFromLambda{"dcaPionsFromLambda", 0.2f,
-                                          "Minimum DCA of pions to vtx for Lambda"};
-    Configurable<float> dcaPionsFromK0s{"dcaPionsFromK0s", 0.1f,
-                                          "Minimum DCA of pions to vtx for K0s"};
+  Configurable<float> dcaProtonsFromLambda{"dcaProtonsFromLambda", 0.05f,
+                                           "Minimum DCA of protons to vtx for Lambda"};
+  Configurable<float> dcaPionsFromLambda{"dcaPionsFromLambda", 0.2f,
+                                         "Minimum DCA of pions to vtx for Lambda"};
+  Configurable<float> dcaPionsFromK0s{"dcaPionsFromK0s", 0.1f,
+                                      "Minimum DCA of pions to vtx for K0s"};
   Configurable<float> v0rapidityCut{"v0rapidityCut", 0.5f, "V0 rapidity cut"};
   Configurable<float> v0ProperLifetimeCutK0s{"v0ProperLifetimeCutK0s", 20.f, "V0 proper lifetime cut for K0s"};
   Configurable<float> v0ProperLifetimeCutLambda{"v0ProperLifetimeCutLambda", 30.f, "V0 proper lifetime cut for Lambda"};
@@ -216,7 +216,7 @@ struct DedxPidAnalysis {
   Configurable<int> v0SelectionMode{"v0SelectionMode", 3, "V0 Selection base on TPC: 1, TOF:2 ,Both:3"};
   Configurable<int> momentumMode{"momentumMode", 2, "1: TPC inner param, 2: Total momentum p"};
   Configurable<uint8_t> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
-    Configurable<uint8_t> v0TypeSelectionGamma{"v0TypeSelectionGamma", 7, "select on a certain V0 type (leave negative if no selection desired)"};
+  Configurable<uint8_t> v0TypeSelectionGamma{"v0TypeSelectionGamma", 7, "select on a certain V0 type (leave negative if no selection desired)"};
   Configurable<int> multiplicityEstimator{"multiplicityEstimator", 9, "Flag to use a multiplicity estimator; No multiplicity: 0, MultFV0A: 1, MultFT0M: 2, MultFDDM: 3 ,MultTracklets: 4,MultTPC: 5,MultNTracksPV: 6 ,MultNTracksPVeta1: 7,CentralityFT0C: 8 ,CentralityFT0M: 9, CentralityFV0A: 10"};
   Configurable<double> lowParam1{"lowParam1", 0.119297, "First parameter for low phi cut"};
   Configurable<double> lowParam2{"lowParam2", 0.000379693, "Second parameter for low phi cut"};
@@ -640,10 +640,10 @@ struct DedxPidAnalysis {
 
     // Event Counter by centrality
     registryDeDx.add("histCentrality", "Centrality", HistType::kTH1F, {centAxis});
-      
-      // Tracks vs p
-      registryDeDx.add("Tracks_vs_pT_all", "pT All", HistType::kTH1F,{{ ptAxis}});
-      registryDeDx.add("Tracks_vs_pT_all_cuts", "pT All + cuts", HistType::kTH1F,{{ ptAxis}});
+
+    // Tracks vs p
+    registryDeDx.add("Tracks_vs_pT_all", "pT All", HistType::kTH1F, {{ptAxis}});
+    registryDeDx.add("Tracks_vs_pT_all_cuts", "pT All + cuts", HistType::kTH1F, {{ptAxis}});
 
     // Event Counter
     registryDeDx.add("evsel", "events selected", HistType::kTH1F, {{6, 0.5, 6.5, ""}});
@@ -677,24 +677,24 @@ struct DedxPidAnalysis {
     xSec->SetBinLabel(NClTPCFoundCutSec, "NClTPCFoundCutSec");
     xSec->SetBinLabel(NClTPCPIDCutSec, "NClTPCPIDCutSec");
     xSec->SetBinLabel(AllK0s, "AllK0s");
-      xSec->SetBinLabel(SingleTrackSelectionK0s, "SingleTrackSelectionK0s");
-      xSec->SetBinLabel(V0TypeK0s, "V0TypeK0s");
-      xSec->SetBinLabel( DCAtoVtxK0s, "DCAtoVtxK0s");
-      xSec->SetBinLabel( Armenteros, "Armenteros");
+    xSec->SetBinLabel(SingleTrackSelectionK0s, "SingleTrackSelectionK0s");
+    xSec->SetBinLabel(V0TypeK0s, "V0TypeK0s");
+    xSec->SetBinLabel(DCAtoVtxK0s, "DCAtoVtxK0s");
+    xSec->SetBinLabel(Armenteros, "Armenteros");
     xSec->SetBinLabel(V0RapidityK0s, "V0RapidityK0s");
     xSec->SetBinLabel(V0ProperLifetimeK0s, "V0ProperLifetimeK0s");
     xSec->SetBinLabel(MassCutK0s, "MassCutK0s");
     xSec->SetBinLabel(AllLambda, "AllLambda");
-      xSec->SetBinLabel(SingleTrackSelectionLambda, "SingleTrackSelectionLambda");
-      xSec->SetBinLabel(V0TypeLambda, "V0TypeLambda");
-      xSec->SetBinLabel( DCAtoVtxLambda, "DCAtoVtxLambda");
+    xSec->SetBinLabel(SingleTrackSelectionLambda, "SingleTrackSelectionLambda");
+    xSec->SetBinLabel(V0TypeLambda, "V0TypeLambda");
+    xSec->SetBinLabel(DCAtoVtxLambda, "DCAtoVtxLambda");
     xSec->SetBinLabel(V0RapidityLambda, "V0RapidityLambda");
     xSec->SetBinLabel(V0ProperLifetimeLambda, "V0ProperLifetimeLambda");
     xSec->SetBinLabel(MassCutLambda, "MassCutLambda");
     xSec->SetBinLabel(AllAntiLambda, "AllAntiLambda");
-      xSec->SetBinLabel(SingleTrackSelectionAntiLambda, "SingleTrackSelectionAntiLambda");
-      xSec->SetBinLabel(V0TypeAntiLambda, "V0TypeAntiLambda");
-      xSec->SetBinLabel( DCAtoVtxAntiLambda, "DCAtoVtxAntiLambda");
+    xSec->SetBinLabel(SingleTrackSelectionAntiLambda, "SingleTrackSelectionAntiLambda");
+    xSec->SetBinLabel(V0TypeAntiLambda, "V0TypeAntiLambda");
+    xSec->SetBinLabel(DCAtoVtxAntiLambda, "DCAtoVtxAntiLambda");
     xSec->SetBinLabel(V0RapidityAntiLambda, "V0RapidityAntiLambda");
     xSec->SetBinLabel(V0ProperLifetimeAntiLambda, "V0ProperLifetimeAntiLambda");
     xSec->SetBinLabel(MassCutAntiLambda, "MassCutAntiLambda");
@@ -711,12 +711,12 @@ struct DedxPidAnalysis {
   bool passedSingleTrackSelection(const T1& track, const C& /*collision*/)
   {
     // Single-Track Selections
-    //if (!track.hasTPC())
-      //return false;
+    // if (!track.hasTPC())
+    // return false;
     if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC)
       return false;
-    //if (track.tpcChi2NCl() > maxChi2TPC)
-      //return false;
+    // if (track.tpcChi2NCl() > maxChi2TPC)
+    // return false;
     if (track.eta() < etaMin || track.eta() > etaMax)
       return false;
 
@@ -754,9 +754,9 @@ struct DedxPidAnalysis {
   bool passedK0Selection(const T1& v0, const T2& ntrack, const T2& ptrack,
                          const C& collision)
   {
-      
+
     if (fillHist)
-        registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::AllK0s);
+      registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::AllK0s);
     // Single-Track Selections
     if (!passedSingleTrackSelection(ptrack, collision))
       return false;
@@ -792,33 +792,33 @@ struct DedxPidAnalysis {
     if (fillHist)
       registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::SingleTrackSelectionK0s);
 
-      if (v0.v0Type() != v0TypeSelection) //V0 type selection
-          return false;
-      if (fillHist)
-          registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::V0TypeK0s);
-      
-      if (std::fabs(v0.dcapostopv()) < dcaPionsFromK0s &&  std::fabs(v0.dcanegtopv()) < dcaPionsFromK0s )  //DCA selection
-          return false;
-      if (fillHist)
-          registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::DCAtoVtxK0s);
-      
-      if (armPodCut * v0.qtarm() < std::abs(v0.alpha()))  // Armenteros-Podolanski cut
-          return false;
-      if (fillHist)
-          registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::Armenteros);
+    if (v0.v0Type() != v0TypeSelection) // V0 type selection
+      return false;
+    if (fillHist)
+      registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::V0TypeK0s);
 
-    if (std::abs(v0.yK0Short()) > v0rapidityCut) //Rapidity selection
+    if (std::fabs(v0.dcapostopv()) < dcaPionsFromK0s && std::fabs(v0.dcanegtopv()) < dcaPionsFromK0s) // DCA selection
+      return false;
+    if (fillHist)
+      registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::DCAtoVtxK0s);
+
+    if (armPodCut * v0.qtarm() < std::abs(v0.alpha())) // Armenteros-Podolanski cut
+      return false;
+    if (fillHist)
+      registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::Armenteros);
+
+    if (std::abs(v0.yK0Short()) > v0rapidityCut) // Rapidity selection
       return false;
     if (fillHist)
       registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::V0RapidityK0s);
 
     float properLifetime = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassK0Short;
-    if (properLifetime > v0ProperLifetimeCutK0s) //Proper lifetime
+    if (properLifetime > v0ProperLifetimeCutK0s) // Proper lifetime
       return false;
     if (fillHist)
       registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::V0ProperLifetimeK0s);
 
-    if (std::abs(v0.mK0Short() - MassK0Short) > invMassCutK0s) //Invarian mass
+    if (std::abs(v0.mK0Short() - MassK0Short) > invMassCutK0s) // Invarian mass
       return false;
     if (fillHist)
       registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::MassCutK0s);
@@ -831,15 +831,14 @@ struct DedxPidAnalysis {
   bool passedLambdaSelection(const T1& v0, const T2& ntrack, const T2& ptrack,
                              const C& collision)
   {
-      
-      if (fillHist)
-        registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::AllLambda);
+
+    if (fillHist)
+      registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::AllLambda);
     // Single-Track Selections
     if (!passedSingleTrackSelection(ptrack, collision))
       return false;
     if (!passedSingleTrackSelection(ntrack, collision))
       return false;
-      
 
     /*double sigmap = 0.0;
     double sigman = 0.0;
@@ -868,32 +867,32 @@ struct DedxPidAnalysis {
       if (std::abs(sigman) > nsigmaTOFmax)
         return false;
     }*/
-      
-      if (fillHist)
-        registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::SingleTrackSelectionLambda);
-      
-    if (v0.v0Type() != v0TypeSelection) //V0 type selection
-        return false;
-    if (fillHist)
-        registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::V0TypeLambda);
-      
-      if (std::fabs(v0.dcapostopv()) < dcaProtonsFromLambda &&  std::fabs(v0.dcanegtopv()) < dcaPionsFromLambda)  //DCA selection
-          return false;
-      if (fillHist)
-          registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::DCAtoVtxLambda);
 
-    if (std::abs(v0.yLambda()) > v0rapidityCut) //Rapidity selection
+    if (fillHist)
+      registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::SingleTrackSelectionLambda);
+
+    if (v0.v0Type() != v0TypeSelection) // V0 type selection
+      return false;
+    if (fillHist)
+      registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::V0TypeLambda);
+
+    if (std::fabs(v0.dcapostopv()) < dcaProtonsFromLambda && std::fabs(v0.dcanegtopv()) < dcaPionsFromLambda) // DCA selection
+      return false;
+    if (fillHist)
+      registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::DCAtoVtxLambda);
+
+    if (std::abs(v0.yLambda()) > v0rapidityCut) // Rapidity selection
       return false;
     if (fillHist)
       registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::V0RapidityLambda);
 
     float properLifetime = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassLambda;
-    if (properLifetime > v0ProperLifetimeCutLambda) //Proper lifetime
+    if (properLifetime > v0ProperLifetimeCutLambda) // Proper lifetime
       return false;
     if (fillHist)
       registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::V0ProperLifetimeLambda);
 
-    if (std::abs(v0.mLambda() - MassLambda) > invMassCutLambda) //Invarian mass
+    if (std::abs(v0.mLambda() - MassLambda) > invMassCutLambda) // Invarian mass
       return false;
     if (fillHist)
       registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::MassCutLambda);
@@ -906,9 +905,9 @@ struct DedxPidAnalysis {
   bool passedAntiLambdaSelection(const T1& v0, const T2& ntrack,
                                  const T2& ptrack, const C& collision)
   {
-      if (fillHist)
-        registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::AllAntiLambda);
-      
+    if (fillHist)
+      registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::AllAntiLambda);
+
     // Single-Track Selections
     if (!passedSingleTrackSelection(ptrack, collision))
       return false;
@@ -940,33 +939,33 @@ struct DedxPidAnalysis {
       if (std::abs(sigman) > nsigmaTOFmax)
         return false;
     }*/
-      
-      if (fillHist)
-        registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::SingleTrackSelectionAntiLambda);
-      
-      // Select V0 type
-      if (v0.v0Type() != v0TypeSelection) //V0 type selection
-          return false;
-      if (fillHist)
-          registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::V0TypeAntiLambda);
-      
-      if (std::fabs(v0.dcapostopv()) < dcaPionsFromLambda &&  std::fabs(v0.dcanegtopv()) < dcaProtonsFromLambda)  //DCA selection
-          return false;
-      if (fillHist)
-          registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::DCAtoVtxAntiLambda);
 
-    if (std::abs(v0.yLambda()) > v0rapidityCut) //Rapidity selection
+    if (fillHist)
+      registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::SingleTrackSelectionAntiLambda);
+
+    // Select V0 type
+    if (v0.v0Type() != v0TypeSelection) // V0 type selection
+      return false;
+    if (fillHist)
+      registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::V0TypeAntiLambda);
+
+    if (std::fabs(v0.dcapostopv()) < dcaPionsFromLambda && std::fabs(v0.dcanegtopv()) < dcaProtonsFromLambda) // DCA selection
+      return false;
+    if (fillHist)
+      registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::DCAtoVtxAntiLambda);
+
+    if (std::abs(v0.yLambda()) > v0rapidityCut) // Rapidity selection
       return false;
     if (fillHist)
       registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::V0RapidityAntiLambda);
 
     float properLifetime = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassLambda;
-    if (properLifetime > v0ProperLifetimeCutLambda) //Proper lifetime
+    if (properLifetime > v0ProperLifetimeCutLambda) // Proper lifetime
       return false;
     if (fillHist)
       registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::V0ProperLifetimeAntiLambda);
 
-    if (std::abs(v0.mAntiLambda() - MassLambda) > invMassCutLambda) //Invarian mass
+    if (std::abs(v0.mAntiLambda() - MassLambda) > invMassCutLambda) // Invarian mass
       return false;
     if (fillHist)
       registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::MassCutAntiLambda);
@@ -979,9 +978,9 @@ struct DedxPidAnalysis {
   bool passedGammaSelection(const T1& v0, const T2& ntrack, const T2& ptrack,
                             const C& collision)
   {
-      if (fillHist)
-        registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::AllGamma);
-      
+    if (fillHist)
+      registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::AllGamma);
+
     // Single-Track Selections
     if (!passedSingleTrackSelection(ptrack, collision))
       return false;
@@ -1016,22 +1015,22 @@ struct DedxPidAnalysis {
         return false;
     }*/
     const float gammaMass = 2 * MassElectron; // GeV/c^2
-      
-      if (fillHist)
-        registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::SingleTrackSelectionGamma);
 
-      if (v0.v0Type() != v0TypeSelectionGamma) //V0 type selection
-          return false;
-      if (fillHist)
-          registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::V0TypeGamma);
+    if (fillHist)
+      registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::SingleTrackSelectionGamma);
+
+    if (v0.v0Type() != v0TypeSelectionGamma) // V0 type selection
+      return false;
+    if (fillHist)
+      registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::V0TypeGamma);
 
     const float yGamma = RecoDecay::y(std::array{v0.px(), v0.py(), v0.pz()}, MassGamma);
-    if (std::abs(yGamma) > v0rapidityCut) //Rapidity selection
+    if (std::abs(yGamma) > v0rapidityCut) // Rapidity selection
       return false;
     if (fillHist)
       registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::V0RapidityGamma);
 
-    if (std::abs(v0.mGamma() - gammaMass) > invMassCutGamma) //Invarian mass
+    if (std::abs(v0.mGamma() - gammaMass) > invMassCutGamma) // Invarian mass
       return false;
     if (fillHist)
       registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::MassCutGamma);
@@ -1472,9 +1471,9 @@ struct DedxPidAnalysis {
         continue;
 
       registryDeDx.fill(HIST("trackselAll"), TrkPriCutLabel::SelectionPrim);
-      //For pt
+      // For pt
       registryDeDx.fill(HIST("Tracks_vs_pT_all"), trk.pt());
-        
+
       // phi and Ncl cut
       if (phiVarCut) {
         if (!passedPhiCutPri(trk, magField, *fphiCutLow, *fphiCutHigh))
@@ -1501,7 +1500,7 @@ struct DedxPidAnalysis {
       }
 
       registryDeDx.fill(HIST("heta_vs_NclFound_TPC_After_Primary"), trk.eta(), trk.tpcNClsFound());
-        //For pt + cuts
+      // For pt + cuts
       registryDeDx.fill(HIST("Tracks_vs_pT_all_cuts"), trk.pt());
 
       float signedP = trk.sign() * getMomentum(trk);
@@ -1623,8 +1622,8 @@ struct DedxPidAnalysis {
         if (!negTrack.passedTPCRefit())
           continue;*/
 
-        //registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::TPCRefit);
-        // phi and Ncl cut
+        // registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::TPCRefit);
+        //  phi and Ncl cut
         if (phiVarCut) {
           if (!passedPhiCutSecondaries(posTrack, magField, *fphiCutLow, *fphiCutHigh))
             continue;
