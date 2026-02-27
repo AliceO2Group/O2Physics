@@ -697,7 +697,7 @@ struct V0PtInvMassPlots {
 
   // This is the process for Generated Particles
   void genMCProcess(soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::MultMCExtras>::iterator const& mcCollision,
-                    soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults, aod::McCentFT0Ms>> const& collisions,
+                    soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults, aod::CentFT0Ms>> const& collisions,
                     aod::McParticles const& mcParticles)
   {
     // Event Efficiency, Event Split and V0 Signal Loss Corrections
