@@ -17,6 +17,7 @@
 ///
 
 #include "ALICE3/Core/FastTracker.h"
+#include "ALICE3/DataModel/OTFLUT.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/AnalysisTask.h>
@@ -33,6 +34,7 @@ struct OnTheFlyDetectorGeometryProvider {
   o2::framework::Configurable<std::vector<std::string>> detectorConfiguration{"detectorConfiguration",
                                                                               std::vector<std::string>{"$O2PHYSICS_ROOT/share/alice3/a3geometry_v3.ini"},
                                                                               "Paths of the detector geometry configuration files"};
+  o2::framework::Produces<o2::aod::LUTs> lutTable;
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
   void init(o2::framework::InitContext&)
   {
@@ -64,9 +66,41 @@ struct OnTheFlyDetectorGeometryProvider {
     LOG(info) << "Initialization completed";
   }
 
+  lutHeader_t* mLUTHeader[10] = {nullptr};
   void process(o2::aod::McCollisions const& mcCollisions, o2::aod::McParticles const& mcParticles)
   {
-    LOG(debug) << "On-the-fly detector geometry provider processing " << mcCollisions.size() << " collisions and " << mcParticles.size() << " particles.";
+    const int ipdg = 0;
+    mLUTHeader[ipdg] = new lutHeader_t;
+
+    const std::string filename = "ccdb:/Users/j/jekarlss/LookUpTables/NoEloss/el";
+    const std::string localFilename = o2::fastsim::GeometryEntry::accessFile(filename, "./.ALICE3/LUTs/", ccdb.operator->(), 10);
+
+    std::ifstream lutFile(localFilename, std::ifstream::binary);
+    if (!lutFile.is_open()) {
+      LOG(info) << " --- cannot open covariance matrix file for PDG " << pdg << ": " << localFilename << std::endl;
+      delete mLUTHeader[ipdg];
+      mLUTHeader[ipdg] = nullptr;
+      return false;
+    }
+    lutFile.read(reinterpret_cast<char*>(mLUTHeader[ipdg]), sizeof(lutHeader_t));
+    if (lutFile.gcount() != sizeof(lutHeader_t)) {
+      LOG(info) << " --- troubles reading covariance matrix header for PDG " << pdg << ": " << filename << std::endl;
+      LOG(info) << " --- expected/detected " << sizeof(lutHeader_t) << "/" << lutFile.gcount() << std::endl;
+      delete mLUTHeader[ipdg];
+      mLUTHeader[ipdg] = nullptr;
+      return false;
+    }
+    if (mLUTHeader[ipdg]->version != LUTCOVM_VERSION) {
+      LOG(info) << " --- LUT header version mismatch: expected/detected = " << LUTCOVM_VERSION << "/" << mLUTHeader[ipdg]->version << std::endl;
+      delete mLUTHeader[ipdg];
+      mLUTHeader[ipdg] = nullptr;
+      return false;
+    }
+
+    lutTable
+
+        LOG(debug)
+      << "On-the-fly detector geometry provider processing " << mcCollisions.size() << " collisions and " << mcParticles.size() << " particles.";
   }
 };
 
