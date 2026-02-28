@@ -129,6 +129,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
   using TracksWithPID = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>;
   using TracksWithPIDAndMC = soa::Join<TracksWithPID, aod::McTrackLabels>;
   using TracksIUWithPID = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCPi, aod::pidTOFFullPi, aod::pidTPCPr, aod::pidTOFFullPr>;
+  using TracksIUWithElPID = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCEl>;
   using TracksIUWithPIDAndMC = soa::Join<TracksIUWithPID, aod::McTrackLabels>;
   // Collisions MC
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
@@ -340,7 +341,7 @@ struct HfDataCreatorCharmResoToD0Reduced {
   void processD0GammaWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                             CandsD0FilteredWithMl const& candsD0,
                             aod::V0s const& v0s,
-                            TracksIUWithPID const& tracksIU,
+                            TracksIUWithElPID const& tracksIU,
                             aod::BCsWithTimestamps const&)
   {
     int zvtxColl{0};

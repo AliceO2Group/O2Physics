@@ -533,7 +533,7 @@ bool buildAndSelectGamma(const Coll& collision, const std::array<int, 3>& dDaugh
   if (!selectV0Daughter(trackPos, dDaughtersIds, cfgGammaCuts, rejectPairsWithCommonDaughter) || !selectV0Daughter(trackNeg, dDaughtersIds, cfgGammaCuts, rejectPairsWithCommonDaughter)) {
     return false;
   }
-  if ((trackPos.has_TPC() && std::abs(trackPos.tpcNSigmaEl()) > cfgGammaCuts.nSigmaTpcEl.value) || (trackNeg.has_TPC() && std::abs(trackNeg.tpcNSigmaEl()) > cfgGammaCuts.nSigmaTpcEl.value)) {
+  if ((trackPos.hasTPC() && std::abs(trackPos.tpcNSigmaEl()) > cfgGammaCuts.nSigmaTpcEl.value) || (trackNeg.hasTPC() && std::abs(trackNeg.tpcNSigmaEl()) > cfgGammaCuts.nSigmaTpcEl.value)) {
     return false;
   }
 
