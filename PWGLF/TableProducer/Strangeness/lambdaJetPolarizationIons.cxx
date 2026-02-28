@@ -175,6 +175,7 @@ struct lambdajetpolarizationions {
     // } products;
     Produces<o2::aod::RingLaV0s> tableV0s;
     Produces<o2::aod::RingJets> tableJets;
+    Produces<o2::aod::RingLeadP> tableLeadParticles;
     Produces<o2::aod::RingCollisions> tableCollisions;
 
     // Define histogram registries:
@@ -838,7 +839,11 @@ struct lambdajetpolarizationions {
 
         // Check if doing the right thing in AP space please
         histos.add("GeneralQA/h2dArmenterosAll", "h2dArmenterosAll", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
-        histos.add("GeneralQA/h2dArmenterosSelected", "h2dArmenterosSelected", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
+        histos.add("GeneralQA/h2dArmenterosKinematicSelected", "h2dArmenterosKinematicSelected", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
+        histos.add("GeneralQA/h2dArmenterosFullSelected", "h2dArmenterosFullSelected", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
+        histos.add("GeneralQA/h2dArmenterosFullSelectedLambda", "h2dArmenterosFullSelectedLambda", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
+        histos.add("GeneralQA/h2dArmenterosFullSelectedAntiLambda", "h2dArmenterosFullSelectedAntiLambda", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
+        histos.add("GeneralQA/h2dArmenterosFullSelectedAmbiguous", "h2dArmenterosFullSelectedAmbiguous", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
 
         // Jets histograms:
             // Histogram that needs to be present even out of QA:
@@ -1300,12 +1305,32 @@ struct lambdajetpolarizationions {
         return true;
     }
 
-    // (TODO: possible function to distinguish ambiguous candidates that pass both the Lambda_hypothesis true (i.e., a Lambda) or false (i.e., an AntiLambda))
-    // template <typename TV0>
-    // bool isCandidateLambda(TV0 const& v0){
-    //
+    // Function to help distinguish ambiguous candidates (via Armenteros) that pass both
+    // the Lambda_hypothesis true (i.e., a Lambda) or false (i.e., an AntiLambda) checks
+        // (This function is only called in about 1-3% of the Lambda-Like V0s which remain ambiguous after all other cuts)
+    // (TODO: add a histogram that tracks the amount of ambiguous candidates distinguished
+    //  by Armenteros, so that we can reconstruct the full ambiguous candidates number from
+    //  the number of ambiguous even after Armenteros and the total number before the cut)
+    // int isCandidateArmenterosLambda(const float alpha, const float qt){
+    //     // Remove K0s band
+    //     if (std::abs(alpha) < v0Selections.armK0AlphaThreshold && qt < v0Selections.armK0QtThreshold) return kIsArmenterosK0;
+    //     // std::abs(alpha) < 0.2 && qt < 0.1
+    //     if (std::abs(alpha) < v0Selections.armMinAlpha) return kArmenterosAmbiguous;
+    //     // std::abs(alpha) < 0.01f
+    //     // Lambda selection
+    //     if (alpha > 0) return kIsArmenterosLambda;
+    //     else return kIsArmenterosAntiLambda;
     // }
 
+    // TODO: another possible check that could be done (if not implemented already inside mLambda() getters)
+    // template <typename TV0>
+    // int isCandidateMassLambda(TV0 const& v0) {
+    //     float m1 = v0.mLambda();      // proton=positive
+    //     float m2 = v0.mAntiLambda();  // proton=negative
+    //     float d = std::abs(m1 - mLambdaTrue) - std::abs(m2 - mLambdaTrue);
+    //     if (d < 0.f) return +1;   // Lambda
+    //     else return -1;   // AntiLambda
+    // }
 
     void processJetsData(SelCollisionsSimple::iterator const& collision, PseudoJetTracks const& tracks, aod::BCsWithTimestamps const& bcs){ // Uses BCsWithTimestamps to get timestamps for rejectTPCsectorBoundary
         float centrality = -1.0f; // Just a placeholder
@@ -1341,6 +1366,12 @@ struct lambdajetpolarizationions {
         }
         // Reject empty events
         if (fjParticles.size() < 1) return;
+
+        auto const& leadingParticle = fjParticles[leadingParticleIdx];
+        tableLeadParticles(collIdx,
+                        leadingParticle.pt(),
+                        leadingParticle.eta(),
+                        leadingParticle.phi());
 
         // Start jet clusterization:
             // Cluster particles using the anti-kt algorithm
@@ -1435,8 +1466,6 @@ struct lambdajetpolarizationions {
                     histos.fill(HIST("JetKinematicsQA/h2dJetsPerEventvsCosThetaToLead"), selectedJets, cosTheta);
                 }
                 // Leading particle comparisons:
-                auto const& leadingParticle = fjParticles[leadingParticleIdx];
-
                 histos.fill(HIST("JetVsLeadingParticleQA/hLeadingParticlePt"), leadingParticle.pt());
                 histos.fill(HIST("JetVsLeadingParticleQA/hLeadingParticleEta"), leadingParticle.eta());
                 histos.fill(HIST("JetVsLeadingParticleQA/hLeadingParticlePhi"), leadingParticle.phi());
@@ -1538,8 +1567,6 @@ struct lambdajetpolarizationions {
                 histos.fill(HIST("JetKinematicsQA/hLeadingJetPhi"), leadingJet.phi());
 
                 // Leading particle comparisons:
-                auto const& leadingParticle = fjParticles[leadingParticleIdx];
-
                 histos.fill(HIST("JetVsLeadingParticleQA/hLeadingParticlePt"), leadingParticle.pt());
                 histos.fill(HIST("JetVsLeadingParticleQA/hLeadingParticleEta"), leadingParticle.eta());
                 histos.fill(HIST("JetVsLeadingParticleQA/hLeadingParticlePhi"), leadingParticle.phi());
@@ -1597,10 +1624,10 @@ struct lambdajetpolarizationions {
         for (auto const& v0 : fullV0s){
             V0SelCounter.resetForNewV0();
             V0SelCounter.fill(); // Fill for all v0 candidates
+            if (doArmenterosQA) histos.fill(HIST("GeneralQA/h2dArmenterosAll"), v0.alpha(), v0.qtarm()); // fill AP plot for all V0s
             if (!passesGenericV0Cuts(v0)) continue;
 
-            // fill AP plot for all V0s
-            if (doArmenterosQA) histos.fill(HIST("GeneralQA/h2dArmenterosAll"), v0.alpha(), v0.qtarm());
+            if (doArmenterosQA) histos.fill(HIST("GeneralQA/h2dArmenterosKinematicSelected"), v0.alpha(), v0.qtarm());
 
             // Else, just continue the loop:
             bool isLambda = false;
@@ -1611,8 +1638,22 @@ struct lambdajetpolarizationions {
             if (!isLambda && !isAntiLambda) continue; // Candidate is not considered to be a Lambda (TODO: expand this to a full if block with QA about rejections)
             // hasValidV0 = true;
             
-            if (doArmenterosQA) histos.fill(HIST("GeneralQA/h2dArmenterosSelected"), v0.alpha(), v0.qtarm()); // cross-check
-            if (isLambda && isAntiLambda) histos.fill(HIST("hAmbiguousLambdaCandidates"), 0);
+            if (doArmenterosQA) histos.fill(HIST("GeneralQA/h2dArmenterosFullSelected"), v0.alpha(), v0.qtarm()); // cross-check
+            if (isLambda && !isAntiLambda) histos.fill(HIST("GeneralQA/h2dArmenterosFullSelectedLambda"), v0.alpha(), v0.qtarm());
+            if (!isLambda && isAntiLambda) histos.fill(HIST("GeneralQA/h2dArmenterosFullSelectedAntiLambda"), v0.alpha(), v0.qtarm());
+
+            // int lambdaIdx = -1; // No need to pass armenteros
+            if (isLambda && isAntiLambda) {
+                histos.fill(HIST("hAmbiguousLambdaCandidates"), 0);
+                if (doArmenterosQA) histos.fill(HIST("GeneralQA/h2dArmenterosFullSelectedAmbiguous"), v0.alpha(), v0.qtarm()); // To know the discerning power of Armenteros in an Ambiguous Lambda vs AntiLambda case
+
+                // Armenteros cut is not worth it! From QA histograms, only about 0.05% of ambiguous candidates are in the regions probable to be Lamda/AntiLambdas!
+                // The statistics gain is not worth it.
+                // // Third and final check to distinguish between Lambda and AntiLambda ambiguous v0s:
+                // // (This check is only performed to recycle AMBIGUOUS candidates! Not a hard cut on all candidates!)
+                // lambdaIdx = isCandidateArmenterosLambda(v0.alpha(), v0.qtarm());
+            }
+            // if (lambdaIdx == kIsArmenterosK0) continue; // Should just skip this step then!
 
             if (doEventQA) fillEventSelectionQA(lastBinEvSel, centrality); // hasRingV0 passes
 

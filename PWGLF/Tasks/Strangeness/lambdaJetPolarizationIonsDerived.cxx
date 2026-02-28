@@ -68,28 +68,28 @@ constexpr double polPrefactorLambda = 3.0/lambdaWeakDecayConstant;
 constexpr double polPrefactorAntiLambda = 3.0/antiLambdaWeakDecayConstant;
 
 // Helper macro to avoid writing the histogram fills 4 times for about 20 histograms:
-#define RING_OBSERVABLE_FILL_LIST(X, FOLDER)                                                         \
-    /* 1D observable histograms */                                                                     \
+#define RING_OBSERVABLE_FILL_LIST(X, FOLDER)                                                          \
+    /* 1D observable histograms */                                                                    \
     X(FOLDER "/hRingObservableDeltaPhi",                     deltaPhiJet,   ringObservable)           \
     X(FOLDER "/hRingObservableDeltaTheta",                   deltaThetaJet, ringObservable)           \
     X(FOLDER "/hRingObservableIntegrated",                   0.,            ringObservable)           \
-    /* Counters */                                                                                     \
+    /* Counters */                                                                                    \
     X(FOLDER "/hDeltaPhi",                                   deltaPhiJet)                             \
     X(FOLDER "/hDeltaTheta",                                 deltaThetaJet)                           \
     X(FOLDER "/hIntegrated",                                 0.)                                      \
     /* Lambda pT variation -- Youpeng's proposal */                                                   \
     X(FOLDER "/hRingObservableLambdaPt",                     v0pt,           ringObservable)          \
     X(FOLDER "/hLambdaPt",                                   v0pt)                                    \
-    /* 2D Lambda correlations */                                                                       \
+    /* 2D Lambda correlations */                                                                      \
     X(FOLDER "/h2dRingObservableDeltaPhiVsLambdaPt",         deltaPhiJet,   v0pt, ringObservable)     \
     X(FOLDER "/h2dRingObservableDeltaThetaVsLambdaPt",       deltaThetaJet, v0pt, ringObservable)     \
-    /* Counters */                                                                                     \
+    /* Counters */                                                                                    \
     X(FOLDER "/h2dDeltaPhiVsLambdaPt",                       deltaPhiJet,   v0pt)                     \
     X(FOLDER "/h2dDeltaThetaVsLambdaPt",                     deltaThetaJet, v0pt)                     \
-    /* 2D Jet correlations */                                                                          \
+    /* 2D Jet correlations */                                                                         \
     X(FOLDER "/h2dRingObservableDeltaPhiVsLeadJetPt",        deltaPhiJet,   leadingJetPt, ringObservable) \
     X(FOLDER "/h2dRingObservableDeltaThetaVsLeadJetPt",      deltaThetaJet, leadingJetPt, ringObservable) \
-    /* Counters */                                                                                     \
+    /* Counters */                                                                                    \
     X(FOLDER "/h2dDeltaPhiVsLeadJetPt",                      deltaPhiJet,   leadingJetPt)             \
     X(FOLDER "/h2dDeltaThetaVsLeadJetPt",                    deltaThetaJet, leadingJetPt)             \
     /* Additional plots for instant gratification - 1D Profiles */                                    \
@@ -97,90 +97,76 @@ constexpr double polPrefactorAntiLambda = 3.0/antiLambdaWeakDecayConstant;
     X(FOLDER "/pRingObservableDeltaTheta",                   deltaThetaJet, ringObservable)           \
     X(FOLDER "/pRingObservableIntegrated",                   0.,            ringObservable)           \
     X(FOLDER "/pRingObservableLambdaPt",                     v0pt,          ringObservable)           \
-    /* 2D Profiles */                                                                                  \
+    /* 2D Profiles */                                                                                 \
     X(FOLDER "/p2dRingObservableDeltaPhiVsLambdaPt",         deltaPhiJet,   v0pt, ringObservable)     \
     X(FOLDER "/p2dRingObservableDeltaThetaVsLambdaPt",       deltaThetaJet, v0pt, ringObservable)     \
     X(FOLDER "/p2dRingObservableDeltaPhiVsLeadJetPt",        deltaPhiJet,   leadingJetPt, ringObservable) \
     X(FOLDER "/p2dRingObservableDeltaThetaVsLeadJetPt",      deltaThetaJet, leadingJetPt, ringObservable) \
-    /* 1D Mass */ \
-    X(FOLDER "/hMass", v0LambdaLikeMass) \
-    X(FOLDER "/hRingObservableMass", v0LambdaLikeMass, ringObservable) \
-    X(FOLDER "/hMassSigExtract", v0LambdaLikeMass) \
-    /* 2D: Observable vs Mass */ \
+    /* 1D Mass */                                                                                     \
+    X(FOLDER "/hMass", v0LambdaLikeMass)                                                              \
+    X(FOLDER "/hRingObservableMass", v0LambdaLikeMass, ringObservable)                                \
+    X(FOLDER "/hMassSigExtract", v0LambdaLikeMass)                                                    \
+    /* 2D: Observable vs Mass */                                                                      \
     X(FOLDER "/h2dRingObservableDeltaPhiVsMass",      deltaPhiJet,   v0LambdaLikeMass, ringObservable) \
     X(FOLDER "/h2dRingObservableDeltaThetaVsMass",    deltaThetaJet, v0LambdaLikeMass, ringObservable) \
-    /* Counters */ \
-    X(FOLDER "/h2dDeltaPhiVsMass",                    deltaPhiJet,   v0LambdaLikeMass) \
-    X(FOLDER "/h2dDeltaThetaVsMass",                  deltaThetaJet, v0LambdaLikeMass) \
-    /* 3D: Observable vs Mass vs Lambda pT */ \
+    /* Counters */                                                                                    \
+    X(FOLDER "/h2dDeltaPhiVsMass",                    deltaPhiJet,   v0LambdaLikeMass)                \
+    X(FOLDER "/h2dDeltaThetaVsMass",                  deltaThetaJet, v0LambdaLikeMass)                \
+    /* 3D: Observable vs Mass vs Lambda pT */                                                         \
     X(FOLDER "/h3dRingObservableDeltaPhiVsMassVsLambdaPt",   deltaPhiJet,   v0LambdaLikeMass, v0pt, ringObservable) \
     X(FOLDER "/h3dRingObservableDeltaThetaVsMassVsLambdaPt", deltaThetaJet, v0LambdaLikeMass, v0pt, ringObservable) \
-    /* Counters */ \
-    X(FOLDER "/h3dDeltaPhiVsMassVsLambdaPt",          deltaPhiJet,   v0LambdaLikeMass, v0pt) \
-    X(FOLDER "/h3dDeltaThetaVsMassVsLambdaPt",        deltaThetaJet, v0LambdaLikeMass, v0pt) \
-    /* 3D: Observable vs Mass vs Lead Jet pT */ \
+    /* Counters */                                                                                    \
+    X(FOLDER "/h3dDeltaPhiVsMassVsLambdaPt",          deltaPhiJet,   v0LambdaLikeMass, v0pt)          \
+    X(FOLDER "/h3dDeltaThetaVsMassVsLambdaPt",        deltaThetaJet, v0LambdaLikeMass, v0pt)          \
+    /* 3D: Observable vs Mass vs Lead Jet pT */                                                       \
     X(FOLDER "/h3dRingObservableDeltaPhiVsMassVsLeadJetPt",   deltaPhiJet,   v0LambdaLikeMass, leadingJetPt, ringObservable) \
     X(FOLDER "/h3dRingObservableDeltaThetaVsMassVsLeadJetPt", deltaThetaJet, v0LambdaLikeMass, leadingJetPt, ringObservable) \
-    /* Counters */ \
+    /* Counters */                                                                                    \
     X(FOLDER "/h3dDeltaPhiVsMassVsLeadJetPt",                 deltaPhiJet,   v0LambdaLikeMass, leadingJetPt) \
     X(FOLDER "/h3dDeltaThetaVsMassVsLeadJetPt",               deltaThetaJet, v0LambdaLikeMass, leadingJetPt) \
     /* 2D: Observable vs Mass vs Centrality (projected as 2D Mass vs Cent for integrated observable) */ \
-    X(FOLDER "/h2dRingObservableMassVsCent", v0LambdaLikeMass, centrality, ringObservable) \
-    /* 3D: Observable vs Mass vs Centrality */ \
+    X(FOLDER "/h2dRingObservableMassVsCent", v0LambdaLikeMass, centrality, ringObservable)            \
+    /* 3D: Observable vs Mass vs Centrality */                                                        \
     X(FOLDER "/h3dRingObservableDeltaPhiVsMassVsCent",   deltaPhiJet,   v0LambdaLikeMass, centrality, ringObservable) \
     X(FOLDER "/h3dRingObservableDeltaThetaVsMassVsCent", deltaThetaJet, v0LambdaLikeMass, centrality, ringObservable) \
-    /* Counters */ \
-    X(FOLDER "/h3dDeltaPhiVsMassVsCent",   deltaPhiJet,   v0LambdaLikeMass, centrality) \
-    X(FOLDER "/h3dDeltaThetaVsMassVsCent", deltaThetaJet, v0LambdaLikeMass, centrality) \
-    /* TProfile of Ring vs Mass */ \
-    X(FOLDER "/pRingObservableMass", v0LambdaLikeMass, ringObservable) \
-    /* 2D Profiles: Angle vs Mass */ \
-    X(FOLDER "/p2dRingObservableDeltaPhiVsMass",   deltaPhiJet,   v0LambdaLikeMass, ringObservable) \
-    X(FOLDER "/p2dRingObservableDeltaThetaVsMass", deltaThetaJet, v0LambdaLikeMass, ringObservable) \
-    /* 3D Profiles: Angle vs Mass vs Lambda pT */ \
+    /* Counters */                                                                                    \
+    X(FOLDER "/h3dDeltaPhiVsMassVsCent",   deltaPhiJet,   v0LambdaLikeMass, centrality)               \
+    X(FOLDER "/h3dDeltaThetaVsMassVsCent", deltaThetaJet, v0LambdaLikeMass, centrality)               \
+    /* TProfile of Ring vs Mass */                                                                    \
+    X(FOLDER "/pRingObservableMass", v0LambdaLikeMass, ringObservable)                                \
+    /* TProfile of Ring vs Mass -- Leading Particle and 2nd-to-leading jet - QA */                    \
+    X(FOLDER "/pRingObservableLeadPMass", v0LambdaLikeMass, ringObservableLeadP)                      \
+    X(FOLDER "/pRingObservable2ndJetMass", v0LambdaLikeMass, ringObservable2ndJet)                    \
+    /* 2D Profiles: Angle vs Mass */                                                                  \
+    X(FOLDER "/p2dRingObservableDeltaPhiVsMass",   deltaPhiJet,   v0LambdaLikeMass, ringObservable)   \
+    X(FOLDER "/p2dRingObservableDeltaThetaVsMass", deltaThetaJet, v0LambdaLikeMass, ringObservable)   \
+    /* 3D Profiles: Angle vs Mass vs Lambda pT */                                                     \
     X(FOLDER "/p3dRingObservableDeltaPhiVsMassVsLambdaPt",   deltaPhiJet,   v0LambdaLikeMass, v0pt, ringObservable) \
     X(FOLDER "/p3dRingObservableDeltaThetaVsMassVsLambdaPt", deltaThetaJet, v0LambdaLikeMass, v0pt, ringObservable) \
-    /* 3D Profiles: Angle vs Mass vs Lead Jet pT */ \
+    /* 3D Profiles: Angle vs Mass vs Lead Jet pT */                                                   \
     X(FOLDER "/p3dRingObservableDeltaPhiVsMassVsLeadJetPt",   deltaPhiJet,   v0LambdaLikeMass, leadingJetPt, ringObservable) \
     X(FOLDER "/p3dRingObservableDeltaThetaVsMassVsLeadJetPt", deltaThetaJet, v0LambdaLikeMass, leadingJetPt, ringObservable) \
-    /* 2D Profile: Mass vs Centrality */ \
-    X(FOLDER "/p2dRingObservableMassVsCent", v0LambdaLikeMass, centrality, ringObservable) \
-    /* 3D Profiles: Angle vs Mass vs Centrality */ \
+    /* 2D Profile: Mass vs Centrality */                                                              \
+    X(FOLDER "/p2dRingObservableMassVsCent", v0LambdaLikeMass, centrality, ringObservable)            \
+    /* 3D Profiles: Angle vs Mass vs Centrality */                                                    \
     X(FOLDER "/p3dRingObservableDeltaPhiVsMassVsCent",   deltaPhiJet,   v0LambdaLikeMass, centrality, ringObservable) \
     X(FOLDER "/p3dRingObservableDeltaThetaVsMassVsCent", deltaThetaJet, v0LambdaLikeMass, centrality, ringObservable)
     // (TODO: add counters for regular TH2Ds about centrality)
 
+// For leading particle
+#define RING_OBSERVABLE_LEADP_FILL_LIST(X, FOLDER)                                    \
+    X(FOLDER "/pRingObservableLeadPDeltaPhi",   deltaPhiLeadP,   ringObservableLeadP) \
+    X(FOLDER "/pRingObservableLeadPDeltaTheta", deltaThetaLeadP, ringObservableLeadP) \
+    X(FOLDER "/pRingObservableLeadPIntegrated", 0.,            ringObservableLeadP)   \
+    X(FOLDER "/pRingObservableLeadPLambdaPt",   v0pt,          ringObservableLeadP)
 
-// ======================================================
-// Ring Observable SQUARED histogram fill list
-// ======================================================
-#if 0 // Disabling the whole definition in a cleaner way -- Multiline comments do not work appropriately in this type of macro definition!
-#define RING_OBSERVABLE_SQUARED_FILL_LIST(X, FOLDER)                                                \
-    /* 1D observable histograms */                                                                    \
-    X(FOLDER "/hRingObservableSquaredDeltaPhi",               deltaPhiJet,   ringObservableSquared)  \
-    X(FOLDER "/hRingObservableSquaredDeltaTheta",             deltaThetaJet, ringObservableSquared)  \
-    X(FOLDER "/hRingObservableSquaredIntegrated",             0.,            ringObservableSquared)  \
-    /* Lambda pT variation */                                                                         \
-    X(FOLDER "/hRingObservableSquaredLambdaPt",               v0pt,          ringObservableSquared)  \
-    /* 2D Lambda correlations */                                                                      \
-    X(FOLDER "/h2dRingObservableSquaredDeltaPhiVsLambdaPt",   deltaPhiJet,   v0pt,          ringObservableSquared) \
-    X(FOLDER "/h2dRingObservableSquaredDeltaThetaVsLambdaPt", deltaThetaJet, v0pt,          ringObservableSquared) \
-    /* 2D Jet correlations */                                                                         \
-    X(FOLDER "/h2dRingObservableSquaredDeltaPhiVsLeadJetPt",  deltaPhiJet,   leadingJetPt, ringObservableSquared) \
-    X(FOLDER "/h2dRingObservableSquaredDeltaThetaVsLeadJetPt",deltaThetaJet, leadingJetPt, ringObservableSquared) \
-    /* 2D - Mass correlations */ \
-    X(FOLDER "/h2dRingObservableSquaredDeltaPhiVsMass",      deltaPhiJet,   v0LambdaLikeMass, ringObservableSquared) \
-    X(FOLDER "/h2dRingObservableSquaredDeltaThetaVsMass",    deltaThetaJet, v0LambdaLikeMass, ringObservableSquared) \
-    /* 3D - LambdaPt */ \
-    X(FOLDER "/h3dRingObservableSquaredDeltaPhiVsMassVsLambdaPt",   deltaPhiJet,   v0LambdaLikeMass, v0pt, ringObservableSquared) \
-    X(FOLDER "/h3dRingObservableSquaredDeltaThetaVsMassVsLambdaPt", deltaThetaJet, v0LambdaLikeMass, v0pt, ringObservableSquared) \
-    /* 3D - LeadJetPt*/ \
-    X(FOLDER "/h3dRingObservableSquaredDeltaPhiVsMassVsLeadJetPt",   deltaPhiJet,   v0LambdaLikeMass, leadingJetPt, ringObservableSquared) \
-    X(FOLDER "/h3dRingObservableSquaredDeltaThetaVsMassVsLeadJetPt", deltaThetaJet, v0LambdaLikeMass, leadingJetPt, ringObservableSquared) \
-    /* 3D: Squared observable vs Mass vs Centrality */ \
-    X(FOLDER "/h3dRingObservableSquaredDeltaPhiVsMassVsCent",   deltaPhiJet,   v0LambdaLikeMass, centrality, ringObservableSquared) \
-    X(FOLDER "/h3dRingObservableSquaredDeltaThetaVsMassVsCent", deltaThetaJet, v0LambdaLikeMass, centrality, ringObservableSquared)
-#endif
+// For subleading jet:
+#define RING_OBSERVABLE_2NDJET_FILL_LIST(X, FOLDER)                                      \
+    X(FOLDER "/pRingObservable2ndJetDeltaPhi",   deltaPhi2ndJet,   ringObservable2ndJet) \
+    X(FOLDER "/pRingObservable2ndJetDeltaTheta", deltaTheta2ndJet, ringObservable2ndJet) \
+    X(FOLDER "/pRingObservable2ndJetIntegrated", 0.,            ringObservable2ndJet)    \
+    X(FOLDER "/pRingObservable2ndJetLambdaPt",   v0pt,          ringObservable2ndJet)
+
 
 #define POLARIZATION_PROFILE_FILL_LIST(X, FOLDER) \
     /* =============================== */ \
@@ -206,18 +192,6 @@ constexpr double polPrefactorAntiLambda = 3.0/antiLambdaWeakDecayConstant;
 // write that when calling this APPLY_HISTO_FILL. The code will look weird, but without this the compiler
 // would not know to end each statement with a semicolon):
 #define APPLY_HISTO_FILL(NAME, ...) histos.fill(HIST(NAME), __VA_ARGS__);
-
-
-// // Another macro for the significance histograms expansion: // (Moved into signal extraction post-processing to allow for pipelining)
-// #define RING_1DSIGNIFICANCE_LIST(X, FOLDER) \
-//     X(FOLDER "/pRingObservableDeltaPhi",        FOLDER "/hRingSignificanceDeltaPhi") \
-//     X(FOLDER "/pRingObservableDeltaTheta",      FOLDER "/hRingSignificanceDeltaTheta") \
-//     X(FOLDER "/pRingObservableIntegrated",      FOLDER "/hRingSignificanceIntegrated") \
-//     X(FOLDER "/pRingObservableLambdaPt",        FOLDER "/hRingSignificanceLambdaPt") \
-//     X(FOLDER "/pRingObservableMass",            FOLDER "/hRingSignificanceMass")
-
-// #define APPLY_RING_SIGNIFICANCE(PROFILE, HISTO) \
-//     fillSignificance(histos.get<TProfile>(HIST(PROFILE)), histos.get<TH1>(HIST(HISTO)));
 
 
 struct lambdajetpolarizationionsderived {
@@ -253,10 +227,7 @@ struct lambdajetpolarizationionsderived {
         // Coarser axes for signal extraction:
         ConfigurableAxis axisPtSigExtract{"axisPtSigExtract", {VARIABLE_WIDTH, 0.0f, 0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f, 2.5f, 3.0f, 4.0f, 6.0f, 8.0f, 10.0f, 15.0f, 20.0f, 30.0f, 50.0f}, "pt axis for signal extraction"};
         // ConfigurableAxis axisLambdaMassSigExtract{"axisLambdaMassSigExtract", {175, 1.08f, 1.15f}, "Lambda mass in GeV/c"}; // With a sigma of 0.002 GeV/c, this has about 5 bins per sigma, so that the window is properly grasped.
-            // Rewrote the axisLambdaMassSigextract to have 5x coarser bins outside the peak region, and 2x coarser bins in the peak region
-            // (this allows for better fits and smaller fluctuations)
-        // ConfigurableAxis axisLambdaMassSigExtract{"axisLambdaMassSigExtract", {VARIABLE_WIDTH, 1.080000, 1.082000, 1.084000, 1.086000, 1.088000, 1.090000, 1.092000, 1.094000, 1.096000, 1.098000, 1.100000, 1.102000, 1.104000, 1.106000, 1.108000, 1.109683, 1.110483, 1.111283, 1.112083, 1.112883, 1.113683, 1.114483, 1.115283, 1.116083, 1.116883, 1.117683, 1.118483, 1.119283, 1.120083, 1.120883, 1.121683, 1.123683, 1.125683, 1.127683, 1.129683, 1.131683, 1.133683, 1.135683, 1.137683, 1.139683, 1.141683, 1.143683, 1.145683, 1.147683, 1.149683, 1.150000}, "Lambda mass in GeV/c"};
-            // Even coarser axis:
+        // A coarser axis (sigma is still well estimated, with about 8 bins in the peak region)
         ConfigurableAxis axisLambdaMassSigExtract{
             "axisLambdaMassSigExtract", {VARIABLE_WIDTH,
             // Left sideband (7 bins, 0.004 width)
@@ -325,19 +296,7 @@ struct lambdajetpolarizationionsderived {
             // Counters
             histos.add((folder + "/h2dDeltaPhiVsLeadJetPt").c_str(), "h2dDeltaPhiVsLeadJetPt", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisJetPt});
             histos.add((folder + "/h2dDeltaThetaVsLeadJetPt").c_str(), "h2dDeltaThetaVsLeadJetPt", kTH2D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisJetPt});
-            // (TODO: check if all squared observables were actually transformed into a (much better) TProfile version)
-            // // ===============================
-            // // Squared observable (error propagation)
-            // // ===============================
-            // histos.add((folder + "/hRingObservableSquaredDeltaPhi").c_str(), "hRingObservableSquaredDeltaPhi", kTH1D, {axisConfigurations.axisDeltaPhi});
-            // histos.add((folder + "/hRingObservableSquaredDeltaTheta").c_str(), "hRingObservableSquaredDeltaTheta", kTH1D, {axisConfigurations.axisDeltaTheta});
-            // histos.add((folder + "/hRingObservableSquaredIntegrated").c_str(), "hRingObservableSquaredIntegrated", kTH1D, {{1, -0.5, 0.5}});
-            // histos.add((folder + "/hRingObservableSquaredLambdaPt").c_str(), "hRingObservableSquaredLambdaPt", kTH1D, {axisConfigurations.axisPt});
-            // histos.add((folder + "/h2dRingObservableSquaredDeltaPhiVsLambdaPt").c_str(), "h2dRingObservableSquaredDeltaPhiVsLambdaPt", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisPt});
-            // histos.add((folder + "/h2dRingObservableSquaredDeltaThetaVsLambdaPt").c_str(), "h2dRingObservableSquaredDeltaThetaVsLambdaPt", kTH2D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisPt});
-            // histos.add((folder + "/h2dRingObservableSquaredDeltaPhiVsLeadJetPt").c_str(), "h2dRingObservableSquaredDeltaPhiVsLeadJetPt", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisJetPt});
-            // histos.add((folder + "/h2dRingObservableSquaredDeltaThetaVsLeadJetPt").c_str(), "h2dRingObservableSquaredDeltaThetaVsLeadJetPt", kTH2D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisJetPt});
-
+            
             // Additional plots for instant gratification:
             // -- TProfiles will handle the error estimate of the Ring Observable via the variance, even though
             // they still lack the proper signal extraction and possible efficiency corrections in the current state
@@ -353,6 +312,17 @@ struct lambdajetpolarizationionsderived {
             histos.add((folder + "/pRingObservableDeltaTheta").c_str(), "pRingObservableDeltaTheta;#Delta#theta_{jet};<#it{R}>", kTProfile, {axisConfigurations.axisDeltaTheta});
             histos.add((folder + "/pRingObservableIntegrated").c_str(), "pRingObservableIntegrated; ;<#it{R}>", kTProfile, {{1, -0.5, 0.5}});
             histos.add((folder + "/pRingObservableLambdaPt").c_str(), "pRingObservableLambdaPt;#it{p}_{T}^{#Lambda};<#it{R}>", kTProfile, {axisConfigurations.axisPt});
+
+            // For the leading particle:
+            histos.add((folder + "/pRingObservableLeadPDeltaPhi").c_str(), "pRingObservableLeadPDeltaPhi;#Delta#varphi_{leadP};<#it{R}>", kTProfile, {axisConfigurations.axisDeltaPhi});
+            histos.add((folder + "/pRingObservableLeadPDeltaTheta").c_str(), "pRingObservableLeadPDeltaTheta;#Delta#theta_{leadP};<#it{R}>", kTProfile, {axisConfigurations.axisDeltaTheta});
+            histos.add((folder + "/pRingObservableLeadPIntegrated").c_str(), "pRingObservableLeadPIntegrated; ;<#it{R}>", kTProfile, {{1, -0.5, 0.5}});
+            histos.add((folder + "/pRingObservableLeadPLambdaPt").c_str(), "pRingObservableLeadPLambdaPt;#it{p}_{T}^{#Lambda};<#it{R}>", kTProfile, {axisConfigurations.axisPt});
+            // For the second-to-leading jet:
+            histos.add((folder + "/pRingObservable2ndJetDeltaPhi").c_str(), "pRingObservable2ndJetDeltaPhi;#Delta#varphi_{2ndJet};<#it{R}>", kTProfile, {axisConfigurations.axisDeltaPhi});
+            histos.add((folder + "/pRingObservable2ndJetDeltaTheta").c_str(), "pRingObservable2ndJetDeltaTheta;#Delta#theta_{2ndJet};<#it{R}>", kTProfile, {axisConfigurations.axisDeltaTheta});
+            histos.add((folder + "/pRingObservable2ndJetIntegrated").c_str(), "pRingObservable2ndJetIntegrated; ;<#it{R}>", kTProfile, {{1, -0.5, 0.5}});
+            histos.add((folder + "/pRingObservable2ndJetLambdaPt").c_str(), "pRingObservable2ndJetLambdaPt;#it{p}_{T}^{#Lambda};<#it{R}>", kTProfile, {axisConfigurations.axisPt});
             // ===============================
             // 2D TProfiles (Lambda correlations)
             // ===============================
@@ -379,27 +349,18 @@ struct lambdajetpolarizationionsderived {
             // Ring observable weighted with R
             histos.add((folder + "/h2dRingObservableDeltaPhiVsMass").c_str(), "h2dRingObservableDeltaPhiVsMass", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract});
             histos.add((folder + "/h2dRingObservableDeltaThetaVsMass").c_str(), "h2dRingObservableDeltaThetaVsMass", kTH2D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisLambdaMassSigExtract});
-            // // Squared observable (for variance propagation)
-            // histos.add((folder + "/h2dRingObservableSquaredDeltaPhiVsMass").c_str(), "h2dRingObservableSquaredDeltaPhiVsMass", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract});
-            // histos.add((folder + "/h2dRingObservableSquaredDeltaThetaVsMass").c_str(), "h2dRingObservableSquaredDeltaThetaVsMass", kTH2D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisLambdaMassSigExtract});
             // --- Counters (denominators) ---
             histos.add((folder + "/h2dDeltaPhiVsMass").c_str(), "h2dDeltaPhiVsMass", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract});
             histos.add((folder + "/h2dDeltaThetaVsMass").c_str(), "h2dDeltaThetaVsMass", kTH2D,{axisConfigurations.axisDeltaTheta, axisConfigurations.axisLambdaMassSigExtract});
             // --- 3D: Angular observable vs Mass vs Lambda pT ---
             histos.add((folder + "/h3dRingObservableDeltaPhiVsMassVsLambdaPt").c_str(), "h3dRingObservableDeltaPhiVsMassVsLambdaPt", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisPtSigExtract});
             histos.add((folder + "/h3dRingObservableDeltaThetaVsMassVsLambdaPt").c_str(), "h3dRingObservableDeltaThetaVsMassVsLambdaPt", kTH3D, {axisConfigurations.axisDeltaTheta,axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisPtSigExtract});
-            // // Squared version
-            // histos.add((folder + "/h3dRingObservableSquaredDeltaPhiVsMassVsLambdaPt").c_str(), "h3dRingObservableSquaredDeltaPhiVsMassVsLambdaPt", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisPtSigExtract});
-            // histos.add((folder + "/h3dRingObservableSquaredDeltaThetaVsMassVsLambdaPt").c_str(), "h3dRingObservableSquaredDeltaThetaVsMassVsLambdaPt", kTH3D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisPtSigExtract});
             // Counters
             histos.add((folder + "/h3dDeltaPhiVsMassVsLambdaPt").c_str(), "h3dDeltaPhiVsMassVsLambdaPt", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisPtSigExtract});
             histos.add((folder + "/h3dDeltaThetaVsMassVsLambdaPt").c_str(), "h3dDeltaThetaVsMassVsLambdaPt", kTH3D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisPtSigExtract});
             // --- 3D: Angular observable vs Mass vs Lead Jet pT ---
             histos.add((folder + "/h3dRingObservableDeltaPhiVsMassVsLeadJetPt").c_str(), "h3dRingObservableDeltaPhiVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPtSigExtract}); 
             histos.add((folder + "/h3dRingObservableDeltaThetaVsMassVsLeadJetPt").c_str(), "h3dRingObservableDeltaThetaVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPtSigExtract}); 
-            // // --- Squared version ---
-            // histos.add((folder + "/h3dRingObservableSquaredDeltaPhiVsMassVsLeadJetPt").c_str(), "h3dRingObservableSquaredDeltaPhiVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPtSigExtract}); 
-            // histos.add((folder + "/h3dRingObservableSquaredDeltaThetaVsMassVsLeadJetPt").c_str(), "h3dRingObservableSquaredDeltaThetaVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPtSigExtract}); 
             // --- Counters ---
             histos.add((folder + "/h3dDeltaPhiVsMassVsLeadJetPt").c_str(), "h3dDeltaPhiVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPtSigExtract}); 
             histos.add((folder + "/h3dDeltaThetaVsMassVsLeadJetPt").c_str(), "h3dDeltaThetaVsMassVsLeadJetPt", kTH3D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisJetPtSigExtract});
@@ -409,6 +370,8 @@ struct lambdajetpolarizationionsderived {
             /////////////////////////////////////
             // TProfile of ring vs mass (integrated in all phi, and properly normalized by N_\Lambda):
             histos.add((folder + "/pRingObservableMass").c_str(), "pRingObservableMass;m_{p#pi};<#it{R}>", kTProfile, {axisConfigurations.axisLambdaMassSigExtract});
+            histos.add((folder + "/pRingObservableLeadPMass").c_str(), "pRingObservableLeadPMass;m_{p#pi};<#it{R}>", kTProfile, {axisConfigurations.axisLambdaMassSigExtract});
+            histos.add((folder + "/pRingObservable2ndJetMass").c_str(), "pRingObservableLeadPMass;m_{p#pi};<#it{R}>", kTProfile, {axisConfigurations.axisLambdaMassSigExtract});
                 // TProfile2D: <R> vs Mass (DeltaPhi)
             histos.add((folder + "/p2dRingObservableDeltaPhiVsMass").c_str(), "p2dRingObservableDeltaPhiVsMass;#Delta#varphi;m_{p#pi};<#it{R}>", kTProfile2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract});
                 // TProfile2D: <R> vs Mass (DeltaTheta)
@@ -432,9 +395,6 @@ struct lambdajetpolarizationionsderived {
             // --- 3D: Angular observable vs Invariant Mass ---
             histos.add((folder + "/h3dRingObservableDeltaPhiVsMassVsCent").c_str(), "h3dRingObservableDeltaPhiVsMassVsCent", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisCentrality});
             histos.add((folder + "/h3dRingObservableDeltaThetaVsMassVsCent").c_str(), "h3dRingObservableDeltaThetaVsMassVsCent", kTH3D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisCentrality});
-            // // Squared observable (for variance propagation)
-            // histos.add((folder + "/h3dRingObservableSquaredDeltaPhiVsMassVsCent").c_str(), "h3dRingObservableSquaredDeltaPhiVsMassVsCent", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisCentrality});
-            // histos.add((folder + "/h3dRingObservableSquaredDeltaThetaVsMassVsCent").c_str(), "h3dRingObservableSquaredDeltaThetaVsMassVsCent", kTH3D, {axisConfigurations.axisDeltaTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisCentrality});
             // --- Counters (denominators) ---
             histos.add((folder + "/h3dDeltaPhiVsMassVsCent").c_str(), "h3dDeltaPhiVsMassVsCent", kTH3D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisCentrality});
             histos.add((folder + "/h3dDeltaThetaVsMassVsCent").c_str(), "h3dDeltaThetaVsMassVsCent", kTH3D,{axisConfigurations.axisDeltaTheta, axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisCentrality});
@@ -472,11 +432,12 @@ struct lambdajetpolarizationionsderived {
             // QA histograms - Useful numbers
             // ===============================
             // (TODO: implement these!)
+            // (TODO: implement momentum imbalance checks for jets!)
             // Added to a separate folder for further control (changed the usage of the "folder" string):
-            histos.add(("QA_Numbers/" + folder + "/hEventsWithV0").c_str(), "hEventsWithV0", kTH1D, {{1,0,1}}); // In the current derived data, all saved events have a V0
-            histos.add(("QA_Numbers/" + folder + "/hLambdaCounter").c_str(), "hLambdaCounter", kTH1D, {{1,0,1}});
-            histos.add(("QA_Numbers/" + folder + "/hAntiLambdaCounter").c_str(), "hAntiLambdaCounter", kTH1D, {{1,0,1}});
-            histos.add(("QA_Numbers/" + folder + "/hValidLeadJets").c_str(), "hValidLeadJets", kTH1D, {{1,0,1}});
+            // histos.add(("QA_Numbers/" + folder + "/hEventsWithV0").c_str(), "hEventsWithV0", kTH1D, {{1,0,1}}); // In the current derived data, all saved events have a V0
+            // histos.add(("QA_Numbers/" + folder + "/hLambdaCounter").c_str(), "hLambdaCounter", kTH1D, {{1,0,1}});
+            // histos.add(("QA_Numbers/" + folder + "/hAntiLambdaCounter").c_str(), "hAntiLambdaCounter", kTH1D, {{1,0,1}});
+            // histos.add(("QA_Numbers/" + folder + "/hValidLeadJets").c_str(), "hValidLeadJets", kTH1D, {{1,0,1}});
         };
         // Execute local lambda to register histogram families:
         addRingObservableFamily("Ring");
@@ -489,27 +450,12 @@ struct lambdajetpolarizationionsderived {
     TRandom3 randomGen{0}; // 0 means we auto-seed from machine entropy. This is called once per device in the pipeline, so we should not see repeated seeds across workers
 
         // Preslices for correct collisions association:
+        // (TODO: test using custom grouping)
     Preslice<aod::RingJets> perColJets = o2::aod::lambdajetpol::collisionId;
     Preslice<aod::RingLaV0s> perColV0s = o2::aod::lambdajetpol::collisionId;
-    void processPolarizationData(o2::aod::RingCollisions const& collisions, o2::aod::RingJets const& jets, o2::aod::RingLaV0s const& v0s){
-        // Custom grouping
-        // (TODO: test using global index's custom grouping utility as in the sigma0builder)
-        // std::vector<std::vector<int>> v0Grouped(collisions.size());
-        // for (const auto& v0 : v0s) {v0Grouped[v0.collisionId()].push_back(v0.globalIndex());}
-        // std::vector<std::vector<int>> jetsGrouped(collisions.size());
-        // for (const auto& jet : jets) {jetsGrouped[jet.collisionId()].push_back(jet.globalIndex());}
-            // Only really need the leading jet for now:
-            // -1 means "no jet for this collision"
-        // std::vector<int> leadingJetIndex(collisions.size(), -1);
-        // std::vector<float> leadingJetPt(collisions.size(), -1.f);
-        // for (const auto& jet : jets) {
-        //     int collId = jet.collisionId();
-        //     float pt = jet.pt();  // or whatever pT accessor you use
-        //     if (pt > leadingJetPt[collId]) {
-        //         leadingJetPt[collId] = pt;
-        //         leadingJetIndex[collId] = jet.globalIndex();
-        //     }
-        // }
+    Preslice<aod::RingLeadP> perColLeadPs = o2::aod::lambdajetpol::collisionId;
+    void processPolarizationData(o2::aod::RingCollisions const& collisions, o2::aod::RingJets const& jets, o2::aod::RingLaV0s const& v0s,
+                                 o2::aod::RingLeadP const& leadPs){
         
         for (auto const& collision : collisions) {
             const auto collId = collision.collisionId();
@@ -520,39 +466,49 @@ struct lambdajetpolarizationionsderived {
             auto jetsInColl = jets.sliceBy(perColJets, collId);
             auto v0sInColl  = v0s.sliceBy(perColV0s, collId);
 
-            // Alternative custom grouping block:
-            // int jetIndex = leadingJetIndex[collision.globalIndex()];
-            // if (jetIndex < 0) continue;
-            // auto leadingJet = jets.rawIteratorAt(jetIndex);
-
             // Check if there is at least one V0 and one jet in the collision:
             // (in the way I fill the table, there is always at least one V0 in
             //  the stored collision, but the jets table can not be filled for
             //  that collision, and a collision may not be filled when the jets
             //  table is. Be mindful of that!)
             if (!jetsInColl.size() || !v0sInColl.size()) continue;
+            // (TODO: either add a separate loop for events that have a leading particle, but no leading jet,
+            // or be aware that there are events saved with a leading particle that don't have a single valid jet in them)
+            // (by the way, no need to check a leadPsInColl, because if there is a jet in the collision, 
+            //  there surely is a leading particle in it)
 
-            // Get leading jet:
-            double leadingJetPt = -1;
+            // Get leading jet and second to leading jet:
+            double leadingJetPt = -1.;
+            double subleadingJetPt = -1.;
             o2::aod::RingJets::iterator leadingJet;
+            std::optional<o2::aod::RingJets::iterator> subleadingJet;
+            // std::optional avoids undefined behaviour from a default-constructed iterator:
+            // (will work if subleadingJet was not found!)
             for (auto const& jet : jetsInColl) {
                 const auto jetpt = jet.jetPt();
                 if (jetpt > leadingJetPt){
+                    // Current leading becomes subleading:
+                    subleadingJetPt = leadingJetPt;
+                    subleadingJet = leadingJet; // may still be std::nullopt on first pass -- that is handled by std::optional!
+                    // Now update updating the leading jet:
                     leadingJetPt = jetpt;
                     leadingJet = jet;
                 }
+                else if (jetpt > subleadingJetPt){ // Update subleading only:
+                    subleadingJetPt = jetpt;
+                    subleadingJet = jet;
+                }
             }
 
-            // Now you can use:
+            // For leading jet (always exists):
             const double leadingJetEta = leadingJet.jetEta();
             const double leadingJetPhi = leadingJet.jetPhi();
-
             // Convert to 3-vector components for inner product:
             const double jetPx = leadingJetPt * std::cos(leadingJetPhi);
             const double jetPy = leadingJetPt * std::sin(leadingJetPhi);
             const double jetPz = leadingJetPt * std::sinh(leadingJetEta);
-            XYZVector leadingJetVec(jetPx, jetPy, jetPz);
-            XYZVector leadingJetUnitVec = leadingJetVec.Unit();
+            // XYZVector leadingJetVec(jetPx, jetPy, jetPz);
+            XYZVector leadingJetUnitVec = XYZVector(jetPx, jetPy, jetPz).Unit();
 
             // QA block -- Purposefully changing the jet direction (should kill signal, if any):
             if (forcePerpToJet) { // Use modified jet direction (done outside loop to guarantee all V0s inside event use same fake jet)
@@ -569,20 +525,72 @@ struct lambdajetpolarizationionsderived {
                 leadingJetUnitVec = rotatedPerpVec;
             }
 
+            // -----------------------------------------------------------------------
+            // Find the leading particle for this collision.
+            // pT = -1 means "not found".
+            double leadPPt  = -1.;
+            double leadPEta =  0.; // safe dummy values -- only used when leadPPt > 0
+            double leadPPhi =  0.;
+            // std::optional avoids the unassigned-iterator trap again:
+            std::optional<o2::aod::RingLeadP::iterator> leadingParticleOpt;
+            auto leadPsInColl = leadPs.sliceBy(perColLeadPs, collId);
+            for (auto const& lp : leadPsInColl) {
+                // Table should contain exactly one entry per collision,
+                // but we break immediately to be safe:
+                leadingParticleOpt = lp;
+                break;
+            }
+            // Extract kinematics only if we actually found an entry:
+            // (Physically, if there is at least one jet there should always be a
+            //  leading particle, but we guard against it anyway)
+            if (leadingParticleOpt.has_value()) {
+                leadPPt  = leadingParticleOpt->leadParticlePt();
+                leadPEta = leadingParticleOpt->leadParticleEta();
+                leadPPhi = leadingParticleOpt->leadParticlePhi();
+            }
+
+            // Defining some bools to help:
+            bool hasValidLeadP = leadPPt > 0.;
+            bool hasValidSubJet = subleadingJetPt > 0.;
+
+            // --- Subleading jet (only valid when subleadingJetPt > 0) ---
+            // We still build the variables here to keep the V0 loop clean.
+            // Their values are irrelevant when subleadingJetPt <= 0.
+            double subleadingJetEta = 0.;
+            double subleadingJetPhi = 0.;
+            XYZVector subJetUnitVec(1., 0., 0.); // dummy unit vector: overwritten below
+            if (hasValidSubJet) {
+                subleadingJetEta = subleadingJet->jetEta();
+                subleadingJetPhi = subleadingJet->jetPhi();
+                const double subJetPx = subleadingJetPt * std::cos(subleadingJetPhi);
+                const double subJetPy = subleadingJetPt * std::sin(subleadingJetPhi);
+                const double subJetPz = subleadingJetPt * std::sinh(subleadingJetEta);
+                subJetUnitVec = XYZVector(subJetPx, subJetPy, subJetPz).Unit();
+            }
+
+            // --- Leading particle (only valid when leadPPt > 0) ---
+            XYZVector leadPUnitVec(1., 0., 0.); // dummy: overwritten below
+            if (hasValidLeadP) {
+                const double leadPPx = leadPPt * std::cos(leadPPhi);
+                const double leadPPy = leadPPt * std::sin(leadPPhi);
+                const double leadPPz = leadPPt * std::sinh(leadPEta);
+                leadPUnitVec = XYZVector(leadPPx, leadPPy, leadPPz).Unit();
+            }
+
+            // Calculating per-event bools only once:
+            const bool kinematicJetCheck = std::abs(leadingJetEta) < 0.5;
+            const bool kinematic2ndJetCheck = (subleadingJetPt > 0.) && (std::abs(subleadingJetEta) < 0.5);
+            const bool kinematicLeadPCheck = (leadPPt > 0.) && (std::abs(leadPEta) < 0.5);
+
             // TODO: add centrality selection procedure and options (one configurable for no centrality separation at all too!)
-            // TODO: add Lambda candidate selection. Think of a statistical method like signal extraction (if possible) for ring polarization
-            // TODO: add calculations with second to leading jet too.
-            // TODO: Add calculations with leading particle
-
-            // Custom grouping alternative:
-            // for (size_t i = 0; i < v0Grouped[coll.globalIndex()].size(); i++) {
-            //     auto v0 = v0s.rawIteratorAt(v0Grouped[collision.globalIndex()][i]);
-            // }
-
             for (auto const& v0 : v0sInColl) {
                 const bool isLambda = v0.isLambda();
                 const bool isAntiLambda = v0.isAntiLambda();
-                if (isLambda && isAntiLambda) continue; // For now, removing the ambiguous candidates from the analysis. Derived data permits handling both.
+                // For now, removing the ambiguous candidates from the analysis. Derived data permits handling both.
+                // (From Podolanski-Armenteros plots, the population of ambiguous is ~2% without TOF, and without 
+                //  competing mass rejection. From those, ~99% seem to be K0s, so no real gain in considering the
+                //  ambiguous candidates in the analysis)
+                if (isLambda && isAntiLambda) continue;
                 const double v0pt = v0.v0Pt();
                 const double v0eta = v0.v0Eta();
                 const double v0phi = v0.v0Phi();
@@ -598,7 +606,7 @@ struct lambdajetpolarizationionsderived {
                     protonLikeEta = v0.posEta();
                     protonLikePhi = v0.posPhi();
                 }
-                else if (isAntiLambda){ // (TODO: add a split histogram where you consider Lambda and AntiLambda polarization separately)
+                else if (isAntiLambda){ // (TODO: add a split histogram where you consider Lambda and AntiLambda polarization separately?)
                     if (!analyseAntiLambda) continue;
                     v0LambdaLikeMass = v0.massAntiLambda();
                     protonLikePt = v0.negPt();
@@ -627,12 +635,47 @@ struct lambdajetpolarizationionsderived {
                 if (!forcePolSignQA) ringObservable *= (isLambda) ? polPrefactorLambda : polPrefactorAntiLambda;
                 else ringObservable *= (isLambda) ? polPrefactorLambda : -1.0*polPrefactorAntiLambda;
 
-                // // Calculating error bars:
-                // double ringObservableSquared = ringObservable*ringObservable;
-
                 // Angular variables:
                 double deltaPhiJet = wrapToPiFast(v0phi - leadingJetPhi); // Wrapped to [-PI, pi), for convenience
                 double deltaThetaJet = ROOT::Math::VectorUtil::Angle(leadingJetUnitVec, lambdaLike3Vec); // 3D angular separation
+
+                //////////////////////////////////////////
+                // Ring observable: Subleading jet proxy
+                //////////////////////////////////////////
+                double ringObservable2ndJet = 0.;
+                double deltaPhi2ndJet = 0.;
+                double deltaTheta2ndJet = 0.;
+                if (hasValidSubJet) {
+                    // Cross product
+                    XYZVector cross2ndJet = subJetUnitVec.Cross(lambdaLike3Vec);
+                    double crossProductNorm2ndJet = cross2ndJet.R();
+                    double ringObservable2ndJet = protonLikeStarUnit3Vec.Dot(cross2ndJet) / crossProductNorm2ndJet;
+                    // Adding prefactor
+                    if (!forcePolSignQA) ringObservable2ndJet *= (isLambda) ? polPrefactorLambda : polPrefactorAntiLambda;
+                    else ringObservable2ndJet *= (isLambda) ? polPrefactorLambda : -1.0 * polPrefactorAntiLambda;
+                    // Angular variables
+                    double deltaPhi2ndJet = wrapToPiFast(v0phi - subleadingJetPhi);
+                    double deltaTheta2ndJet = ROOT::Math::VectorUtil::Angle(subJetUnitVec, lambdaLike3Vec);
+                }
+
+                ////////////////////////////////////////////
+                // Ring observable: Leading particle proxy
+                ////////////////////////////////////////////
+                double ringObservableLeadP = 0.;
+                double deltaPhiLeadP = 0.;
+                double deltaThetaLeadP = 0.;
+                if (hasValidLeadP) {
+                    // Cross product
+                    XYZVector crossLeadP = leadPUnitVec.Cross(lambdaLike3Vec);
+                    double crossProductNormLeadP = crossLeadP.R();
+                    double ringObservableLeadP = protonLikeStarUnit3Vec.Dot(crossLeadP) / crossProductNormLeadP;
+                    // Adding prefactor
+                    if (!forcePolSignQA) ringObservableLeadP *= (isLambda) ? polPrefactorLambda : polPrefactorAntiLambda;
+                    else ringObservableLeadP *= (isLambda) ? polPrefactorLambda : -1.0 * polPrefactorAntiLambda;
+                    // Angular variables
+                    double deltaPhiLeadP = wrapToPiFast(v0phi - leadPPhi);
+                    double deltaThetaLeadP = ROOT::Math::VectorUtil::Angle(leadPUnitVec, lambdaLike3Vec);
+                }
 
                 // Calculating polarization observables (in the Lambda frame, because that is easier -- does not require boosts):
                     // To be precise, not actually the polarization, but a part of the summand in P^*_\Lambda = (3/\alpha_\Lambda) * <p^*_{proton}>
@@ -652,42 +695,40 @@ struct lambdajetpolarizationionsderived {
 
                 // Fill ring histograms: (1D, lambda 2D correlations and jet 2D correlations):
                 RING_OBSERVABLE_FILL_LIST(APPLY_HISTO_FILL, "Ring") // Notice the usage of macros! If you change the variable names, this WILL break the code!
-                // RING_OBSERVABLE_SQUARED_FILL_LIST(APPLY_HISTO_FILL, "Ring") // No, there should NOT be any ";" here! Read the macro definition for an explanation
+                                                                    // No, there should NOT be any ";" here! Read the macro definition for an explanation
+                if (hasValidLeadP) {RING_OBSERVABLE_LEADP_FILL_LIST(APPLY_HISTO_FILL, "Ring")}
+                if (hasValidSubJet) {RING_OBSERVABLE_2NDJET_FILL_LIST(APPLY_HISTO_FILL, "Ring")}
                 POLARIZATION_PROFILE_FILL_LIST(APPLY_HISTO_FILL, "Ring")
 
                 // Extra kinematic criteria for Lambda candidates (removes polarization background):
                 const bool kinematicLambdaCheck = (v0pt > 0.5 && v0pt < 1.5) && std::abs(lambdaRapidity) < 0.5;
                 if (kinematicLambdaCheck){
                     RING_OBSERVABLE_FILL_LIST(APPLY_HISTO_FILL, "RingKinematicCuts")
-                    // RING_OBSERVABLE_SQUARED_FILL_LIST(APPLY_HISTO_FILL, "RingKinematicCuts")
                     POLARIZATION_PROFILE_FILL_LIST(APPLY_HISTO_FILL, "RingKinematicCuts")
+                    if (hasValidLeadP) {RING_OBSERVABLE_LEADP_FILL_LIST(APPLY_HISTO_FILL, "RingKinematicCuts")}
+                    if (hasValidSubJet) {RING_OBSERVABLE_2NDJET_FILL_LIST(APPLY_HISTO_FILL, "RingKinematicCuts")}
                 }
                 
                 // Extra selection criteria on jet candidates:
-                const bool kinematicJetCheck = std::abs(leadingJetEta) < 0.5;
                 if (kinematicJetCheck){ // This is redundant for jets with R=0.4, but for jets with R<0.4 the leading jet may be farther in eta.
                     RING_OBSERVABLE_FILL_LIST(APPLY_HISTO_FILL, "JetKinematicCuts")
-                    // RING_OBSERVABLE_SQUARED_FILL_LIST(APPLY_HISTO_FILL, "JetKinematicCuts")
                     POLARIZATION_PROFILE_FILL_LIST(APPLY_HISTO_FILL, "JetKinematicCuts")
                 }
                 
                 // Extra selection criteria on both Lambda and jet candidates:
                 if (kinematicLambdaCheck && kinematicJetCheck){
                     RING_OBSERVABLE_FILL_LIST(APPLY_HISTO_FILL, "JetAndLambdaKinematicCuts")
-                    // RING_OBSERVABLE_SQUARED_FILL_LIST(APPLY_HISTO_FILL, "JetAndLambdaKinematicCuts")
                     POLARIZATION_PROFILE_FILL_LIST(APPLY_HISTO_FILL, "JetAndLambdaKinematicCuts")
                 }
+
+                // Same variations for the leading particle and for the subleading jet:
+                if (kinematicLeadPCheck){RING_OBSERVABLE_LEADP_FILL_LIST(APPLY_HISTO_FILL, "JetKinematicCuts")}
+                if (kinematic2ndJetCheck){RING_OBSERVABLE_2NDJET_FILL_LIST(APPLY_HISTO_FILL, "JetKinematicCuts")}
+                if (kinematicLambdaCheck && kinematicLeadPCheck){RING_OBSERVABLE_LEADP_FILL_LIST(APPLY_HISTO_FILL, "JetAndLambdaKinematicCuts")}
+                if (kinematicLambdaCheck && kinematic2ndJetCheck){RING_OBSERVABLE_2NDJET_FILL_LIST(APPLY_HISTO_FILL, "JetAndLambdaKinematicCuts")}
             } // end v0s loop
         } // end collisions
     }
-
-    // // Filling final histograms for QA based on previous 1D TProfiles, after all processing has been done
-    // void finalize(){
-    //     RING_1DSIGNIFICANCE_LIST(APPLY_RING_SIGNIFICANCE, "Ring")
-    //     RING_1DSIGNIFICANCE_LIST(APPLY_RING_SIGNIFICANCE, "RingKinematicCuts")
-    //     RING_1DSIGNIFICANCE_LIST(APPLY_RING_SIGNIFICANCE, "JetKinematicCuts")
-    //     RING_1DSIGNIFICANCE_LIST(APPLY_RING_SIGNIFICANCE, "JetAndLambdaKinematicCuts")
-    // }
     
     PROCESS_SWITCH(lambdajetpolarizationionsderived, processPolarizationData, "Process derived data in Run 3 Data", true);
 };

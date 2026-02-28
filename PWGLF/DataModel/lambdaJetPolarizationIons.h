@@ -37,6 +37,10 @@ DECLARE_SOA_COLUMN(JetEta, jetEta, float);
 DECLARE_SOA_COLUMN(JetPhi, jetPhi, float);
 DECLARE_SOA_COLUMN(JetNConstituents, jetNConstituents, uint64_t);
 
+DECLARE_SOA_COLUMN(LeadParticlePt, leadParticlePt, float);
+DECLARE_SOA_COLUMN(LeadParticleEta, leadParticleEta, float);
+DECLARE_SOA_COLUMN(LeadParticlePhi, leadParticlePhi, float);
+
 DECLARE_SOA_COLUMN(V0Pt, v0Pt, float);
 DECLARE_SOA_COLUMN(V0Eta, v0Eta, float);
 DECLARE_SOA_COLUMN(V0Phi, v0Phi, float);
@@ -54,7 +58,6 @@ DECLARE_SOA_COLUMN(NegEta, negEta, float);
 DECLARE_SOA_COLUMN(NegPhi, negPhi, float);
 
 // (TODO: add dynamic columns with jet px, py, pz)
-// (TODO: add leading particle as one of the columns!)
 
 } // namespace lambdajetpol
 
@@ -64,6 +67,12 @@ DECLARE_SOA_TABLE(RingJets, "AOD", "RINGJETS", // Renamed to follow convention o
                   lambdajetpol::JetEta,
                   lambdajetpol::JetPhi,
                   lambdajetpol::JetNConstituents);
+
+DECLARE_SOA_TABLE(RingLeadP, "AOD", "RINGLEADP", // Leading particle table
+                  lambdajetpol::CollisionId,
+                  lambdajetpol::LeadParticlePt,
+                  lambdajetpol::LeadParticleEta,
+                  lambdajetpol::LeadParticlePhi);
 
 DECLARE_SOA_TABLE(RingLaV0s, "AOD", "RINGLAV0S", // Had to write this in a shorter form because the derived data did not accept long names
                   lambdajetpol::CollisionId,
