@@ -288,6 +288,7 @@ struct OnTheFlyRichPid {
   float mMagneticField = 0.0f;
   void init(o2::framework::InitContext& initContext)
   {
+    mGeoContainer.setCcdbManager(ccdb.operator->());
     mGeoContainer.init(initContext);
 
     const int nGeometries = mGeoContainer.getNumberOfConfigurations();
