@@ -462,7 +462,7 @@ struct skimmerPrimaryMuon {
 
       const auto& fwdcov = propmuonAtPV.getCovariances(); // covatiance matrix at PV
       emprimarymuonscov(
-        propmuonAtPV.getX(), propmuonAtPV.getY(), propmuonAtPV.getZ(), 
+        propmuonAtPV.getX(), propmuonAtPV.getY(), propmuonAtPV.getZ(),
         // fwdcov(0, 0),
         // fwdcov(0, 1), fwdcov(1, 1),
         fwdcov(2, 0), fwdcov(2, 1), fwdcov(2, 2),

@@ -332,7 +332,6 @@ struct skimmerPrimaryTrack {
     emprimarytracks(/*collision.globalIndex(),*/ /*track.globalIndex(),*/ track.sign() / pt, eta, phi, trackBit);
     prmtrackeventidtmp(collision.globalIndex());
 
-
     if (fillQAHistogram) {
       fRegistry.fill(HIST("Track/hPt"), pt);
       fRegistry.fill(HIST("Track/hQoverPt"), track.sign() / pt);
