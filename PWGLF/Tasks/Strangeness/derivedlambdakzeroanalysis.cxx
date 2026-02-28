@@ -2067,7 +2067,7 @@ struct derivedlambdakzeroanalysis {
       rapidity = RecoDecay::y(std::array{v0mother.px(), v0mother.py(), v0mother.pz()}, o2::constants::physics::MassXiMinus);
     if (std::abs(v0mother.pdgCode()) == o2::constants::physics::Pdg::kXi0)
       rapidity = RecoDecay::y(std::array{v0mother.px(), v0mother.py(), v0mother.pz()}, o2::constants::physics::MassXi0);
-    
+
     if (std::fabs(rapidityXi) > 0.5f)
       return; // not a valid mother rapidity (PDG selection is later)
 
