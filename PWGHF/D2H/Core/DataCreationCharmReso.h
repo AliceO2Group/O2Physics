@@ -18,6 +18,13 @@
 #ifndef PWGHF_D2H_CORE_DATACREATIONCHARMRESO_H_
 #define PWGHF_D2H_CORE_DATACREATIONCHARMRESO_H_
 
+#ifndef HomogeneousField
+#define HomogeneousField // needed for KFParticle::SetField(magneticField);
+#endif
+
+#include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
+#include "PWGEM/Dilepton/Utils/PairUtilities.h"
+#include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
@@ -25,7 +32,9 @@
 #include "PWGHF/Utils/utilsMcMatching.h"
 
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/TPCVDriftManager.h"
 #include "Common/Core/trackUtilities.h"
+#include "Tools/KFparticle/KFUtilities.h"
 
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
@@ -40,6 +49,10 @@
 #include <TPDGCode.h>
 
 #include <Rtypes.h>
+
+#include <KFPTrack.h>
+#include <KFPVertex.h>
+#include <KFParticle.h>
 
 #include <algorithm>
 #include <array>
@@ -69,6 +82,7 @@ enum BachelorType : uint8_t {
   Lambda,
   AntiLambda,
   Track,
+  Gamma,
   NBachelorTypes
 };
 
@@ -83,6 +97,7 @@ enum PairingType : uint8_t {
   V0Only,
   TrackOnly,
   V0AndTrack,
+  GammaOnly,
   NPairingType
 };
 
@@ -110,6 +125,7 @@ struct HfResoCandidateV0 {
   float dcaV0ToPv = 1000.f;
   float dcaDau = 1000.f;
   float alpha = -1.f;
+  float qt = -1.f;
   float eta = -999.f;
   float radius = 0.f;
   float mK0Short = 0.f;
@@ -123,6 +139,7 @@ struct HfResoVarContainer {
   float invMassD0 = 0.f;
   float invMassD0Bar = 0.f;
   float invMassReso = 0.f;
+  float invMassResoBar = 0.f;
   float ptReso = -1.f;
   int8_t signD = 0;
   std::array<float, 3> pVectorProng0 = {0.f, 0.f, 0.f};
@@ -148,6 +165,31 @@ struct HfResoConfigV0Cuts : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> nSigmaTpc{"nSigmaTpc", 4.f, "Nsigmatpc"};
   o2::framework::Configurable<float> nSigmaTofPr{"nSigmaTofPr", 4.f, "N sigma TOF for protons only"};
   o2::framework::Configurable<bool> propagateV0toPV{"propagateV0toPV", false, "Enable or disable V0 propagation to V0"};
+};
+
+struct HfResoConfigGammaCuts : o2::framework::ConfigurableGroup {
+  std::string prefix = "gammas"; // JSON group name
+  o2::framework::Configurable<float> etaMax{"etaMax", 0.8f, "maximum eta"};
+  o2::framework::Configurable<float> ptMin{"ptMin", 0.1f, "minimum pT"};
+  o2::framework::Configurable<float> ptMaxItsOnly{"ptMaxItsOnly", 0.3f, "maximum pT for ITS-only gammas"};
+  o2::framework::Configurable<float> etaMaxDau{"etaMaxDau", 1.f, "maximum eta gamma daughters"};
+  o2::framework::Configurable<float> trackNclusItsCut{"trackNclusItsCut", 0, "Minimum number of ITS clusters for gamma daughter"};
+  o2::framework::Configurable<int> trackNCrossedRowsTpc{"trackNCrossedRowsTpc", 50, "Minimum TPC crossed rows"};
+  o2::framework::Configurable<float> trackNsharedClusTpc{"trackNsharedClusTpc", 1000, "Maximum number of shared TPC clusters for gamma daughter"};
+  o2::framework::Configurable<float> trackFracMaxindableTpcCls{"trackFracMaxindableTpcCls", 0.8f, "Maximum fraction of findable TPC clusters for gamma daughter"};
+  o2::framework::Configurable<float> dcaDauIts{"dcaDauIts", 0.5f, "maximum DCA gamma daughters (ITS)"};
+  o2::framework::Configurable<float> dcaDauItsIb{"dcaDauItsIb", 1.0f, "maximum DCA gamma daughters (ITS IB)"};
+  o2::framework::Configurable<float> dcaDauTpc{"dcaDauTpc", 0.5f, "maximum DCA gamma daughters (TPC)"};
+  o2::framework::Configurable<float> dcaDauTpcInner{"dcaDauTpcInner", 1.0f, "maximum DCA gamma daughters (TPC inner)"};
+  o2::framework::Configurable<float> dcaMaxDauToPv{"dcaMaxDauToPv", 0.1f, "Maximum gamma daughter's DCA to PV"};
+  o2::framework::Configurable<float> dcaPv{"dcaPv", 1.f, "DCA gamma to PV"};
+  o2::framework::Configurable<double> cosPa{"cosPa", 0.99f, "gamma CosPA"};
+  o2::framework::Configurable<float> radiusMin{"radiusMin", 1.0f, "Minimum gamma radius accepted"};
+  o2::framework::Configurable<float> radiusMax{"radiusMax", 90.f, "Maximum gamma radius accepted"};
+  o2::framework::Configurable<float> alphaApMax{"alphaApMax", 0.95f, "Maximum alpha AP"};
+  o2::framework::Configurable<float> qtApMax{"qtApMax", 0.01f, "Maximum qt AP"};
+  o2::framework::Configurable<float> nSigmaTpcEl{"nSigmaTpcEl", 4.f, "N sigma TPC for electrons"};
+  o2::framework::Configurable<bool> propagateGammatoPV{"propagateGammatoPV", false, "Enable or disable V0 propagation to V0"};
 };
 
 struct HfResoConfigSingleTrackCuts : o2::framework::ConfigurableGroup {
@@ -198,10 +240,16 @@ void addHistograms(o2::framework::HistogramRegistry& registry)
   const o2::framework::AxisSpec axisDeltaMassToPi{500, 0.13, 1.13, "inv. mass (GeV/#it{c}^{2})"};
   const o2::framework::AxisSpec axisDeltaMassToPr{500, 0.93, 1.93, "inv. mass (GeV/#it{c}^{2})"};
   const o2::framework::AxisSpec axisDeltaMassToLambda{500, 1.05, 2.05, "inv. mass (GeV/#it{c}^{2})"};
+  const o2::framework::AxisSpec axisDeltaMassToGamma{500, 0., 0.25, "inv. mass (GeV/#it{c}^{2})"};
   const o2::framework::AxisSpec axisMassDsj{400, 0.49f, 0.89f, ""}; // Ds1 and Ds2Star legacy
+  const o2::framework::AxisSpec axisAlpha{100, -1.f, 1.f};
+  const o2::framework::AxisSpec axisQt{100, 0.f, 0.25f};
+  const o2::framework::AxisSpec axisRadius{450, 0.f, 90.f};
 
   registry.add("hMassVsPtK0s", "K0^{s} candidates;#it{p}_{T} (GeV/#it{c});inv. mass (#pi^{#plus}#pi^{#minus}) (GeV/#it{c}^{2});entries", {o2::framework::HistType::kTH2D, {axisPt, axisMassKzero}});
   registry.add("hMassVsPtLambda", "Lambda candidates;#it{p}_{T} (GeV/#it{c});inv. mass (p #pi^{#minus}) (GeV/#it{c}^{2});entries", {o2::framework::HistType::kTH2D, {axisPt, axisMassLambda}});
+  registry.add("hAP", "Aremnteros-Podolanski plot for V0 candidates;#it{#alpha};#it{q}_{T} (GeV/#it{c});entries", {o2::framework::HistType::kTH2D, {axisAlpha, axisQt}});
+  registry.add("hRadius", "Radius of V0 candidates;#it{R} (cm);entries", {o2::framework::HistType::kTH1D, {axisRadius}});
   registry.add("hdEdxVsP", "Tracks;#it{p} (GeV/#it{c});d#it{E}/d#it{x};entries", {o2::framework::HistType::kTH2D, {axisP, axisDeDx}});
 
   if constexpr (DType == DMesonType::D0) {
@@ -214,6 +262,7 @@ void addHistograms(o2::framework::HistogramRegistry& registry)
     registry.add("hMassD0K", "D0Kplus candidates; m_{D^{0}K^{+}} - m_{D^{0}} (GeV/#it{c}^{2});entries", {o2::framework::HistType::kTH2D, {axisPt, axisDeltaMassToK}});
     registry.add("hMassD0Proton", "D0Proton candidates; m_{D^{0}p} - m_{D^{0}} (GeV/#it{c}^{2});entries", {o2::framework::HistType::kTH2D, {axisPt, axisDeltaMassToPr}});
     registry.add("hMassD0Lambda", "D0Lambda candidates; m_{D^{0}#Lambda} - m_{D^{0}} (GeV/#it{c}^{2});entries", {o2::framework::HistType::kTH2D, {axisPt, axisDeltaMassToLambda}});
+    registry.add("hMassD0Gamma", "D0Gamma candidates; m_{D^{0}#gamma} - m_{D^{0}} (GeV/#it{c}^{2});entries", {o2::framework::HistType::kTH2D, {axisPt, axisDeltaMassToGamma}});
   } else if constexpr (DType == DMesonType::Dplus) {
     const o2::framework::AxisSpec axisMassDplus{200, 1.7f, 2.1f, "inv. mass (GeV/#it{c}^{2})"};
     registry.add("hMassVsPtDplusAll", "Dplus candidates (all, regardless the pairing with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {o2::framework::HistType::kTH2D, {axisPt, axisMassDplus}});
@@ -290,6 +339,18 @@ float alphaAP(std::array<float, 3> const& momV0, std::array<float, 3> const& mom
   float const lQlPos = (momDau0[0] * momV0[0] + momDau0[1] * momV0[1] + momDau0[2] * momV0[2]) / momTot;
   float const lQlNeg = (momDau1[0] * momV0[0] + momDau1[1] * momV0[1] + momDau1[2] * momV0[2]) / momTot;
   return (lQlPos - lQlNeg) / (lQlPos + lQlNeg);
+}
+
+/// Utility to compute qT
+/// \param momDau0 is the momentum of first daughter
+/// \param momDau1 is the momentum of second daughter
+/// \return qtAP
+//_______________________________________________________________________
+inline float qtAP(std::array<float, 3> const& momDau0, std::array<float, 3> const& momDau1)
+{
+  float momTot = RecoDecay::p2(momDau0[0] + momDau1[0], momDau0[1] + momDau1[1], momDau0[2] + momDau1[2]);
+  float dp = RecoDecay::dotProd(std::array{momDau1[0], momDau1[1], momDau1[2]}, std::array{momDau0[0] + momDau1[0], momDau0[1] + momDau1[1], momDau0[2] + momDau1[2]});
+  return std::sqrt(RecoDecay::p2(momDau1[0], momDau1[1], momDau1[2]) - dp * dp / momTot); // qt of v0
 }
 
 /// Utility to find DCA of V0 to Primary vertex
@@ -397,6 +458,7 @@ bool buildAndSelectV0(const Coll& collision, const std::array<int, 3>& dDaughter
   v0.v0Type = {BIT(BachelorType::K0s) | BIT(BachelorType::Lambda) | BIT(BachelorType::AntiLambda)};
   // for lambda hypotesys define if its lambda or anti-lambda
   v0.alpha = alphaAP(v0.mom, v0.momPos, v0.momNeg);
+  v0.qt = qtAP(v0.momPos, v0.momNeg);
   bool const matter = v0.alpha > 0;
   CLRBIT(v0.v0Type, matter ? BachelorType::AntiLambda : BachelorType::Lambda);
   auto massPos = matter ? o2::constants::physics::MassProton : o2::constants::physics::MassPionCharged;
@@ -435,6 +497,194 @@ bool buildAndSelectV0(const Coll& collision, const std::array<int, 3>& dDaughter
   if (v0.v0Type == 0) {
     return false;
   }
+  return true;
+}
+
+/// Basic selection of V0 candidates
+/// \param collision is the current collision
+/// \param dauTracks are the v0 daughter tracks
+/// \param dDaughtersIds are the IDs of the D meson daughter tracks
+/// \param cfgV0Cuts are the cuts to be applied to the V0
+/// \param v0 is the V0 candidate
+/// \param matCorr is the material correction type to be used in the track propagation
+/// \param bz is the magnetic field
+/// \param vDriftMgr is the TPC velocity drift manager
+/// \param rejectPairsWithCommonDaughter is a flag to activate rejection of pairs sharing a daughter track
+/// \return a bitmap with mass hypotesis if passes all cuts
+template <class BCs, class Colls, typename Coll, typename Tr, typename Cuts>
+bool buildAndSelectGamma(const Coll& collision, const std::array<int, 3>& dDaughtersIds, const std::array<Tr, 2>& dauTracks, const Cuts& cfgGammaCuts, HfResoCandidateV0& v0, o2::base::Propagator::MatCorrType const& matCorr, const float bz, o2::aod::common::TPCVDriftManager* vDriftMgr, bool rejectPairsWithCommonDaughter)
+{
+  const auto& trackPos = dauTracks[0];
+  const auto& trackNeg = dauTracks[1];
+  if (trackPos.sign() * trackNeg.sign() > 0) { // reject same sign pair
+    return false;
+  }
+  if (trackPos.globalIndex() == trackNeg.globalIndex()) {
+    return false;
+  }
+  if (o2::pwgem::photonmeson::isITSonlyTrack(trackPos) && !trackNeg.hasITS()) {
+    return false;
+  }
+  if (o2::pwgem::photonmeson::isITSonlyTrack(trackNeg) && !trackPos.hasITS()) {
+    return false;
+  }
+
+  // single-tracks selection
+  if (!selectV0Daughter(trackPos, dDaughtersIds, cfgGammaCuts, rejectPairsWithCommonDaughter) || !selectV0Daughter(trackNeg, dDaughtersIds, cfgGammaCuts, rejectPairsWithCommonDaughter)) {
+    return false;
+  }
+  if ((trackPos.has_TPC() && std::abs(trackPos.tpcNSigmaEl()) > cfgGammaCuts.nSigmaTpcEl.value) || (trackNeg.has_TPC() && std::abs(trackNeg.tpcNSigmaEl()) > cfgGammaCuts.nSigmaTpcEl.value)) {
+    return false;
+  }
+
+  std::array<float, 2> dcaInfo;
+  auto trackParPos = getTrackParCov(trackPos);
+  if (o2::pwgem::photonmeson::isTPConlyTrack(trackPos) && !vDriftMgr->moveTPCTrack<BCs, Colls>(collision, trackPos, trackParPos)) {
+    LOGP(error, "failed correction for positive tpc track");
+    return false;
+  }
+  auto trackParPropPos = trackParPos;
+  trackParPropPos.setPID(o2::track::PID::Electron);
+  o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParPropPos, 2.f, matCorr, &dcaInfo);
+  auto trackPosDcaXY = dcaInfo[0];
+
+  auto trackParNeg = getTrackParCov(trackNeg);
+  if (o2::pwgem::photonmeson::isTPConlyTrack(trackNeg) && !vDriftMgr->moveTPCTrack<BCs, Colls>(collision, trackNeg, trackParNeg)) {
+    LOGP(error, "failed correction for negative tpc track");
+    return false;
+  }
+  auto trackParPropNeg = trackParNeg;
+  trackParPropNeg.setPID(o2::track::PID::Electron);
+  o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParPropNeg, 2.f, matCorr, &dcaInfo);
+  auto trackNegDcaXY = dcaInfo[0];
+
+  // daughters DCA to V0's collision primary vertex
+  if (std::fabs(trackPosDcaXY) < cfgGammaCuts.dcaMaxDauToPv.value || std::fabs(trackNegDcaXY) < cfgGammaCuts.dcaMaxDauToPv.value) {
+    return false;
+  }
+
+  float gammaVtx[3] = {0.f, 0.f, 0.f};
+  Vtx_recalculationParCov(o2::base::Propagator::Instance(), trackParPropPos, trackParPropNeg, gammaVtx, matCorr);
+  float radiusXy = std::hypot(gammaVtx[0], gammaVtx[1]);
+  const float maxX{83.1f}; // max X for track IU
+  const float marginTpc{7.f}; // margin for r cut in cm
+  if (radiusXy > maxX + marginTpc) {
+    return false;
+  }
+  if (radiusXy < std::fabs(gammaVtx[2]) * std::tan(2 * std::atan(std::exp(-cfgGammaCuts.etaMax.value))) - marginTpc) {
+    return false; // RZ line cut
+  }
+
+  // vertex reconstruction
+  KFPTrack kfpTrackPos = createKFPTrackFromTrackParCov(trackParPropPos, trackPos.sign(), trackPos.tpcNClsFound(), trackPos.tpcChi2NCl());
+  KFPTrack kfpTrackNeg = createKFPTrackFromTrackParCov(trackParPropNeg, trackNeg.sign(), trackNeg.tpcNClsFound(), trackNeg.tpcChi2NCl());
+  KFParticle kfPartPos(kfpTrackPos, kPositron);
+  KFParticle kfPartNeg(kfpTrackNeg, kElectron);
+  const KFParticle* gammaDaughters[2] = {&kfPartPos, &kfPartNeg};
+
+  KFParticle gamma;
+  gamma.SetConstructMethod(2);
+  gamma.Construct(gammaDaughters, 2);
+  KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
+  KFParticle KFPV(kfpVertex);
+
+  // Transport the gamma to the recalculated decay vertex
+  KFParticle gammaDecayVtx = gamma; // with respect to (0,0,0)
+  gammaDecayVtx.TransportToPoint(gammaVtx);
+  v0.cosPA = cpaFromKF(gammaDecayVtx, KFPV);
+  if (v0.cosPA < cfgGammaCuts.cosPa.value) {
+    return false;
+  }
+
+  v0.pos = {gammaDecayVtx.GetX(), gammaDecayVtx.GetY(), gammaDecayVtx.GetZ()};
+  v0.radius = std::hypot(gammaDecayVtx.GetX(), gammaDecayVtx.GetY());
+  if (v0.radius > maxX + marginTpc) {
+    return false;
+  }
+  if (v0.radius < std::fabs(gammaDecayVtx.GetZ()) * std::tan(2 * std::atan(std::exp(-cfgGammaCuts.etaMax.value))) - marginTpc) {
+    return false; // RZ line cut
+  }
+  if (v0.radius < cfgGammaCuts.radiusMin.value || cfgGammaCuts.radiusMax.value < v0.radius) {
+    return false;
+  }
+
+  const float minRadTpcOnly{16.f};
+  if ((!trackNeg.hasITS() && !trackNeg.hasITS()) && v0.radius < minRadTpcOnly) { // TPConly tracks can detect conversion points larger than minRadTpcOnly.
+    return false;
+  }
+
+  // Apply a topological constraint of the gamma to the PV. Parameters will be given at the primary vertex.
+  KFParticle gammaPvConstr = gamma;
+  gammaPvConstr.SetProductionVertex(KFPV);
+  v0.mom = RecoDecay::pVec(std::array{gammaPvConstr.GetPx(), gammaPvConstr.GetPy(), gammaPvConstr.GetPz()});
+  v0.pT = std::hypot(v0.mom[0], v0.mom[1]);
+  if (v0.pT < cfgGammaCuts.ptMin.value) {
+    return false;
+  }
+  if (o2::pwgem::photonmeson::isITSonlyTrack(trackNeg) && o2::pwgem::photonmeson::isITSonlyTrack(trackPos) && v0.pT > cfgGammaCuts.ptMaxItsOnly.value) {
+    return false;
+  }
+  v0.eta = RecoDecay::eta(v0.mom);
+  if (std::abs(v0.eta) > cfgGammaCuts.etaMax.value) {
+    return false;
+  }
+
+  KFParticle kfPartDecayVtxPos = kfPartPos;  // Don't set Primary Vertex
+  KFParticle kfPartDecayVtxNeg = kfPartNeg;  // Don't set Primary Vertex
+  kfPartDecayVtxPos.TransportToPoint(gammaVtx); // Don't set Primary Vertex
+  kfPartDecayVtxNeg.TransportToPoint(gammaVtx); // Don't set Primary Vertex
+  v0.dcaDau = kfPartDecayVtxPos.GetDistanceFromParticle(kfPartDecayVtxNeg);
+  v0.momPos = RecoDecay::pVec(std::array{kfPartDecayVtxPos.GetPx(), kfPartDecayVtxPos.GetPy(), kfPartDecayVtxPos.GetPz()});
+  v0.momNeg = RecoDecay::pVec(std::array{kfPartDecayVtxNeg.GetPx(), kfPartDecayVtxNeg.GetPy(), kfPartDecayVtxNeg.GetPz()});
+  float ptItsOnlyMax{0.15f};
+  if (o2::pwgem::photonmeson::isITSonlyTrack(trackPos) && std::hypot(v0.momPos[0], v0.momPos[1]) > ptItsOnlyMax) {
+    return false;
+  }
+  if (o2::pwgem::photonmeson::isITSonlyTrack(trackNeg) && std::hypot(v0.momNeg[0], v0.momNeg[1]) > ptItsOnlyMax) {
+    return false;
+  }
+
+  const float maxRItsMft{66.f};
+  if (!trackNeg.hasITS() && !trackPos.hasITS()) { // V0s with TPConly-TPConly
+    if (maxRItsMft < v0.radius && v0.radius < maxX + marginTpc) {
+      if (v0.dcaDau > cfgGammaCuts.dcaDauTpcInner.value) {
+        return false;
+      }
+    } else {
+      if (v0.dcaDau > cfgGammaCuts.dcaDauTpc.value) {
+        return false;
+      }
+    }
+  } else { // V0s with ITS hits
+    if (v0.radius < minRadTpcOnly) {
+      if (v0.dcaDau > cfgGammaCuts.dcaDauItsIb.value) {
+        return false;
+      }
+    } else {
+      if (v0.dcaDau > cfgGammaCuts.dcaDauIts.value) {
+        return false;
+      }
+    }
+  }
+
+  // v0 DCA to primary vertex
+  v0.dcaV0ToPv = calculateDCAStraightToPV(
+    v0.pos[0], v0.pos[1], v0.pos[2],
+    v0.momPos[0] + v0.momNeg[0],
+    v0.momPos[1] + v0.momNeg[1],
+    v0.momPos[2] + v0.momNeg[2],
+    collision.posX(), collision.posY(), collision.posZ());
+  if (std::abs(v0.dcaV0ToPv) > cfgGammaCuts.dcaPv.value) {
+    return false;
+  }
+
+  // distinguish V0 hypotheses
+  v0.alpha = alphaAP(v0.mom, v0.momPos, v0.momNeg);
+  v0.qt = qtAP(v0.momPos, v0.momNeg);;
+  if (!checkAP(v0.alpha, v0.qt, cfgGammaCuts.alphaApMax.value, cfgGammaCuts.qtApMax.value)) { // store only photon conversions
+    return false;
+  }
+  v0.v0Type = BIT(BachelorType::Gamma);
   return true;
 }
 
@@ -945,6 +1195,7 @@ void fillMcRecoInfoDTrack(PParticles const& particlesMc,
 /// \param tracksIU is the trackIU table
 /// \param particlesMc is the MC particle table
 /// \param hfRejMap is the event rejection map from the HF event selection util
+/// \param bz is the magnetic field
 /// \param pdg is the O2DatabasePDG service
 /// \param registry is the histogram registry
 /// \param matCorr is the material correction type to be used in the track propagation
@@ -957,7 +1208,8 @@ void fillMcRecoInfoDTrack(PParticles const& particlesMc,
 /// \param rowMcRecV0Reduced is the MC reco D-V0 reduced table to be filled
 /// \param rowMcRecTrkReduced is the MC reco D-track reduced table to be filled
 /// \param rowCandDmesMlReduced is the ML reduced table to be filled
-template <bool WithMl, bool DoMc, DMesonType DType, PairingType PairType, typename Coll, typename CCands, typename Tr, typename TrIU, typename PParticles, typename BBachV0s, typename BBachTracks, typename DmesCuts, typename TrkCuts, typename V0Cuts, typename QaConfig, typename TableCollRed, typename TableCandDRed, typename TableCandV0Red, typename TableTrkRed, typename TableMcRecV0Red, typename TableMcRecTrkRed, typename TableCandDMlRed>
+/// \param vDriftMgr is the TPC velocity drift manager object
+template <bool WithMl, bool DoMc, DMesonType DType, PairingType PairType, class BCs, class Colls, typename Coll, typename CCands, typename Tr, typename TrIU, typename PParticles, typename BBachV0s, typename BBachTracks, typename DmesCuts, typename TrkCuts, typename V0Cuts, typename GammaCuts, typename QaConfig, typename TableCollRed, typename TableCandDRed, typename TableCandV0Red, typename TableTrkRed, typename TableMcRecV0Red, typename TableMcRecTrkRed, typename TableCandDMlRed>
 void runDataCreation(Coll const& collision,
                      CCands const& candsD,
                      BBachV0s const& bachelorV0s,
@@ -974,6 +1226,7 @@ void runDataCreation(Coll const& collision,
                      DmesCuts const& cfgDmesCuts,
                      TrkCuts const& cfgSingleTrackCuts,
                      V0Cuts const& cfgV0Cuts,
+                     GammaCuts const& cfgGammaCuts,
                      QaConfig const& cfgQaPlots,
                      bool rejectPairsWithCommonDaughter,
                      TableCollRed& rowCollisionReduced,
@@ -982,16 +1235,19 @@ void runDataCreation(Coll const& collision,
                      TableTrkRed& rowTrkReduced,
                      TableMcRecV0Red& rowMcRecV0Reduced,
                      TableMcRecTrkRed& rowMcRecTrkReduced,
-                     TableCandDMlRed& rowCandDmesMlReduced)
+                     TableCandDMlRed& rowCandDmesMlReduced,
+                     o2::aod::common::TPCVDriftManager* vDriftMgr = nullptr)
 {
   int const indexHfReducedCollision = rowCollisionReduced.lastIndex() + 1;
   // std::map where the key is the V0.globalIndex() and
   // the value is the V0 index in the table of the selected v0s
   std::map<int64_t, int64_t> selectedV0s;
   std::map<int64_t, int64_t> selectedTracks;
+  std::map<int64_t, int64_t> selectedGammas;
   bool fillHfReducedCollision = false;
   constexpr bool DoTracks = PairType == PairingType::TrackOnly || PairType == PairingType::V0AndTrack;
   constexpr bool DoV0s = PairType == PairingType::V0Only || PairType == PairingType::V0AndTrack;
+  constexpr bool DoGammas = PairType == PairingType::GammaOnly;
   // loop on D candidates
   for (const auto& candD : candsD) {
     // initialize variables depending on D meson type
@@ -1131,6 +1387,8 @@ void runDataCreation(Coll const& collision,
           getPxPyPz(trackParK0, candV0.mom);
         }
         // compute resonance invariant mass and filling of QA histograms
+        registry.fill(HIST("hAP"), candV0.alpha, candV0.qt);
+        registry.fill(HIST("hV0Radius"), candV0.radius);
         if (TESTBIT(candV0.v0Type, BachelorType::K0s)) {
           registry.fill(HIST("hMassVsPtK0s"), candV0.pT, candV0.mK0Short);
           if constexpr (DType == DMesonType::Dstar) {
@@ -1416,6 +1674,70 @@ void runDataCreation(Coll const& collision,
         }
       } // end of loop on bachelor tracks
     } // end of do tracks
+    if constexpr (DoGammas) {
+      for (const auto& gamma : bachelorV0s) {
+        auto trackPos = tracksIU.rawIteratorAt(gamma.posTrackId());
+        auto trackNeg = tracksIU.rawIteratorAt(gamma.negTrackId());
+        // Apply selsection
+        auto gammaDauTracks = std::array{trackPos, trackNeg};
+        HfResoCandidateV0 candGamma;
+        if (!buildAndSelectGamma<BCs, Colls>(collision, prongIdsD, gammaDauTracks, cfgGammaCuts, candGamma, matCorr, bz, vDriftMgr, rejectPairsWithCommonDaughter)) {
+          continue;
+        }
+        // Get single track variables
+        float chi2TpcDauGammaMax = -1.f;
+        int nItsClsDauGammaMin = 8, nTpcCrossRowsDauGammaMin = 200;
+        for (const auto& gammaTrack : gammaDauTracks) {
+          if (gammaTrack.itsNCls() < nItsClsDauGammaMin) {
+            nItsClsDauGammaMin = gammaTrack.itsNCls();
+          }
+          if (gammaTrack.tpcNClsCrossedRows() < nTpcCrossRowsDauGammaMin) {
+            nTpcCrossRowsDauGammaMin = gammaTrack.tpcNClsCrossedRows();
+          }
+          if (gammaTrack.tpcChi2NCl() > chi2TpcDauGammaMax) {
+            chi2TpcDauGammaMax = gammaTrack.tpcChi2NCl();
+          }
+        }
+        // propagate gamma to primary vertex (if enabled)
+        if (cfgGammaCuts.propagateGammatoPV.value) {
+          std::array<float, 3> const pVecGammaOrig = {candGamma.mom[0], candGamma.mom[1], candGamma.mom[2]};
+          std::array<float, 2> dcaInfo{};
+          auto trackParGamma = o2::track::TrackPar(candGamma.pos, pVecGammaOrig, 0, true);
+          trackParGamma.setPID(o2::track::PID::Photon);
+          trackParGamma.setAbsCharge(0);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParGamma, 2.f, matCorr, &dcaInfo);
+          getPxPyPz(trackParGamma, candGamma.mom);
+        }
+        registry.fill(HIST("hAP"), candGamma.alpha, candGamma.qt);
+        registry.fill(HIST("hV0Radius"), candGamma.radius);
+        if constexpr (DType == DMesonType::D0) {
+          varUtils.invMassReso = RecoDecay::m(std::array{varUtils.pVectorProng0, varUtils.pVectorProng1, candGamma.mom}, std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassKPlus, o2::constants::physics::MassGamma});
+          varUtils.invMassResoBar = RecoDecay::m(std::array{varUtils.pVectorProng0, varUtils.pVectorProng1, candGamma.mom}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPionCharged, o2::constants::physics::MassGamma});
+          varUtils.ptReso = RecoDecay::pt(RecoDecay::sumOfVec(varUtils.pVectorProng0, varUtils.pVectorProng1, candGamma.mom));
+          if (!cfgQaPlots.applyCutsForQaHistograms.value ||
+              ((varUtils.invMassD0 > cfgQaPlots.cutMassDMin.value && varUtils.invMassD0 < cfgQaPlots.cutMassDMax.value) ||
+               (varUtils.invMassD0Bar > cfgQaPlots.cutMassDMin.value && varUtils.invMassD0Bar < cfgQaPlots.cutMassDMax.value))) {
+            registry.fill(HIST("hMassD0Gamma"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD0);
+            registry.fill(HIST("hMassD0Gamma"), varUtils.ptReso, varUtils.invMassResoBar - varUtils.invMassD0Bar);
+          }
+        }
+        // fill V0 table --> use same for V0s and gammas
+        // if information on V0 already stored, go to next V0
+        if (!selectedGammas.count(gamma.globalIndex())) {
+          rowCandV0Reduced(trackPos.globalIndex(), trackNeg.globalIndex(),
+                           indexHfReducedCollision,
+                           candGamma.pos[0], candGamma.pos[1], candGamma.pos[2],
+                           candGamma.momPos[0], candGamma.momPos[1], candGamma.momPos[2],
+                           candGamma.momNeg[0], candGamma.momNeg[1], candGamma.momNeg[2],
+                           candGamma.cosPA,
+                           candGamma.dcaV0ToPv,
+                           nItsClsDauGammaMin, nTpcCrossRowsDauGammaMin, chi2TpcDauGammaMax,
+                           candGamma.v0Type);
+          selectedGammas[gamma.globalIndex()] = rowCandV0Reduced.lastIndex();
+        }
+        fillHfCandD = true;
+      } // end of loop on V0 candidates
+    } // end of do gammas
     // fill D candidate table
     if (fillHfCandD) { // fill candDplus table only once per D candidate, only if at least one V0 is found
       if constexpr (DType == DMesonType::Dplus) {
