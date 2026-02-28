@@ -102,7 +102,7 @@ struct HfDerivedDataCreatorXicToXiPiPi {
   using THfCandDaughtersMl = aod::Cascades;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToXiPiPi & static_cast<int>(BIT(o2::aod::hf_sel_candidate_xic::XicToXiPiPiSelectionStep::RecoMl - 1))) != 0;
-  Filter filterMcGenMatching = aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchGen != 0;
+  Filter filterMcGenMatching = aod::hf_cand_mc_flag::flagMcMatchGen != 0;
 
   Preslice<SelectedCandidates> candidatesPerCollision = aod::hf_cand::collisionId;
   Preslice<SelectedCandidatesMc> candidatesMcPerCollision = aod::hf_cand::collisionId;
@@ -116,10 +116,10 @@ struct HfDerivedDataCreatorXicToXiPiPi {
   Partition<SelectedCandidatesMl> candidatesMlAll = aod::hf_sel_candidate_xic::isSelXicToXiPiPi >= 0;
   Partition<SelectedCandidatesMcMl> candidatesMcMlAll = aod::hf_sel_candidate_xic::isSelXicToXiPiPi >= 0;
   // partitions for signal and background
-  Partition<SelectedCandidatesMc> candidatesMcSig = aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec != 0;
-  Partition<SelectedCandidatesMc> candidatesMcBkg = aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec == 0;
-  Partition<SelectedCandidatesMcMl> candidatesMcMlSig = aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec != 0;
-  Partition<SelectedCandidatesMcMl> candidatesMcMlBkg = aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec == 0;
+  Partition<SelectedCandidatesMc> candidatesMcSig = aod::hf_cand_mc_flag::flagMcMatchRec != 0;
+  Partition<SelectedCandidatesMc> candidatesMcBkg = aod::hf_cand_mc_flag::flagMcMatchRec == 0;
+  Partition<SelectedCandidatesMcMl> candidatesMcMlSig = aod::hf_cand_mc_flag::flagMcMatchRec != 0;
+  Partition<SelectedCandidatesMcMl> candidatesMcMlBkg = aod::hf_cand_mc_flag::flagMcMatchRec == 0;
 
   void init(InitContext const&)
   {

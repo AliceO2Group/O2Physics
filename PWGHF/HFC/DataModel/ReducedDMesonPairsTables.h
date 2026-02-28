@@ -103,9 +103,9 @@ DECLARE_SOA_TABLE(HfCandDpTinys, "AOD", "HFCANDDPTINY",
                   full::Eta,
                   full::Phi,
                   full::HfCandDpFullEvId,
-                  hf_cand_3prong::FlagMcMatchRec,
-                  hf_cand_3prong::OriginMcRec,
-                  hf_cand_3prong::FlagMcDecayChanRec)
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::OriginMcRec,
+                  hf_cand_mc_flag::FlagMcDecayChanRec)
 
 DECLARE_SOA_TABLE(HfCandDpLites, "AOD", "HFCANDDPLITE",
                   hf_cand::Chi2PCA,
@@ -151,9 +151,9 @@ DECLARE_SOA_TABLE(HfCandDpLites, "AOD", "HFCANDDPLITE",
                   full::Y,
                   full::Centrality,
                   full::HfCandDpFullEvId,
-                  hf_cand_3prong::FlagMcMatchRec,
-                  hf_cand_3prong::OriginMcRec,
-                  hf_cand_3prong::FlagMcDecayChanRec)
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::OriginMcRec,
+                  hf_cand_mc_flag::FlagMcDecayChanRec)
 
 DECLARE_SOA_TABLE(HfCandDpFulls, "AOD", "HFCANDDPFULL",
                   hf_cand::XSecondaryVertex,
@@ -229,9 +229,9 @@ DECLARE_SOA_TABLE(HfCandDpFulls, "AOD", "HFCANDDPFULL",
                   full::E,
                   full::Centrality,
                   full::HfCandDpFullEvId,
-                  hf_cand_3prong::FlagMcMatchRec,
-                  hf_cand_3prong::OriginMcRec,
-                  hf_cand_3prong::FlagMcDecayChanRec);
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::OriginMcRec,
+                  hf_cand_mc_flag::FlagMcDecayChanRec);
 
 DECLARE_SOA_TABLE(HfCandDpMcPs, "AOD", "HFCANDDPMCP",
                   full::Pt,
@@ -239,9 +239,9 @@ DECLARE_SOA_TABLE(HfCandDpMcPs, "AOD", "HFCANDDPMCP",
                   full::Phi,
                   full::Y,
                   full::HfCandDpMcEvId,
-                  hf_cand_3prong::FlagMcMatchGen,
-                  hf_cand_3prong::FlagMcDecayChanGen,
-                  hf_cand_3prong::OriginMcGen);
+                  hf_cand_mc_flag::FlagMcMatchGen,
+                  hf_cand_mc_flag::FlagMcDecayChanGen,
+                  hf_cand_mc_flag::OriginMcGen);
 } // namespace o2::aod
 
 #endif // PWGHF_HFC_DATAMODEL_REDUCEDDMESONPAIRSTABLES_H_
