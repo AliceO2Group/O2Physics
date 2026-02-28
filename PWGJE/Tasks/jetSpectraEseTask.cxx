@@ -53,29 +53,11 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct JetSpectraEseTask {
-  ConfigurableAxis binJetPt{"binJetPt", {250, -50., 200.}, ""};
-  ConfigurableAxis bindPhi{"bindPhi", {180, -o2::constants::math::PI, o2::constants::math::PI}, ""};
-  ConfigurableAxis binESE{"binESE", {100, 0, 100}, ""};
-  ConfigurableAxis binCos{"binCos", {100, -1.05, 1.05}, ""};
-  ConfigurableAxis binOccupancy{"binOccupancy", {5000, 0, 25000}, ""};
-  ConfigurableAxis binQVec{"binQVec", {500, -3, 3}, ""};
-  ConfigurableAxis binCentrality{"binCentrality", {101, -1, 100}, ""};
-  ConfigurableAxis binPhi{"binPhi", {60, -1.0, 7.0}, ""};
-  ConfigurableAxis binEta{"binEta", {80, -0.9, 0.9}, ""};
-  ConfigurableAxis binFit0{"binFit0", {100, 0, 50}, ""};
-  ConfigurableAxis binFit13{"binFit13", {100, 0, 1.4}, ""};
-  ConfigurableAxis binFit24{"binFit24", {100, 0, 10}, ""};
-  ConfigurableAxis binTrackPt{"binTrackPt", {100, 0, 100}, ""};
-  ConfigurableAxis dbinEta{"dbinEta", {100, -1.6, 1.6}, ""};
-  ConfigurableAxis dbinPhi{"dbinPhi", {120, -o2::constants::math::PIHalf, 3 * o2::constants::math::PI / 2}, ""};
-
   Configurable<float> jetPtMin{"jetPtMin", 5.0, "minimum jet pT cut"};
   Configurable<float> jetR{"jetR", 0.2, "jet resolution parameter"};
   Configurable<float> randomConeR{"randomConeR", 0.4, "size of random Cone for estimating background fluctuations"};
   Configurable<float> randomConeLeadJetDeltaR{"randomConeLeadJetDeltaR", -99.0, "min distance between leading jet axis and random cone (RC) axis; if negative, min distance is set to automatic value of R_leadJet+R_RC "};
   Configurable<float> vertexZCut{"vertexZCut", 10.0, "vertex z cut"};
-  Configurable<std::vector<float>> centRange{"centRange", {0, 90}, "centrality region of interest"};
-  Configurable<bool> cfgSelCentrality{"cfgSelCentrality", true, "Flag for centrality selection"};
   // Configurable<double> leadingTrackPtCut{"leadingTrackPtCut", 5.0, "leading jet pT cut"};
   Configurable<double> jetAreaFractionMin{"jetAreaFractionMin", -99, "used to make a cut on the jet areas"};
   Configurable<bool> cfgCentVariant{"cfgCentVariant", false, "Flag for centrality variant 1"};
@@ -101,13 +83,11 @@ struct JetSpectraEseTask {
 
   Configurable<float> jetEtaMin{"jetEtaMin", -0.7, "minimum jet pseudorapidity"};
   Configurable<float> jetEtaMax{"jetEtaMax", 0.7, "maximum jet pseudorapidity"};
-  Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "number of events mixed in ME process"};
 
   Configurable<std::string> eventSelections{"eventSelections", "sel8FullPbPb", "choose event selection"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
 
   Configurable<bool> cfgEvSelOccupancy{"cfgEvSelOccupancy", true, "Flag for occupancy cut"};
-
   Configurable<std::vector<int>> cfgCutOccupancy{"cfgCutOccupancy", {0, 1000}, "Occupancy cut"};
   Configurable<std::vector<float>> cfgOccupancyPtCut{"cfgOccupancyPtCut", {0, 100}, "pT cut"};
 
@@ -120,25 +100,29 @@ struct JetSpectraEseTask {
   Configurable<std::string> cfgEPRefB{"cfgEPRefB", "TPCpos", "EP reference B"};
   Configurable<std::string> cfgEPRefC{"cfgEPRefC", "TPCneg", "EP reference C"};
 
-  AxisSpec jetPtAxis = {binJetPt, "#it{p}_{T,jet}"};
-  AxisSpec dPhiAxis = {bindPhi, "#Delta#phi"};
-  AxisSpec eseAxis = {binESE, "#it{q}_{2}"};
-  AxisSpec cosAxis = {binCos, ""};
-  AxisSpec occAxis = {binOccupancy, "Occupancy"};
-  AxisSpec qvecAxis = {binQVec, "Q-vector"};
-  AxisSpec centAxis = {binCentrality, "Centrality"};
-  AxisSpec phiAxis = {binPhi, "#phi"};
-  AxisSpec etaAxis = {binEta, "#eta"};
-  AxisSpec detaAxis = {dbinEta, "#Delta#eta"};
-  AxisSpec dphiAxis = {dbinPhi, "#Delta#phi"};
-  AxisSpec fitAxis0 = {binFit0, "Fit0"};
-  AxisSpec fitAxis13 = {binFit13, "Fit13"};
-  AxisSpec fitAxis24 = {binFit24, "Fit24"};
-
-  AxisSpec trackPtAxis = {binTrackPt, "#it{p}_{T}"};
   ConfigurableAxis assocTrackPt{"assocTrackPt", {VARIABLE_WIDTH, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, "pT of associated track"};
+  ConfigurableAxis jetPtAxis{"jetPtAxis", {VARIABLE_WIDTH, 0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 40.0, 50.0, 70.0, 100.0, 150.0, 200.0}, "#it{p}_{T,jet} (GeV/#it{c})"};
+  ConfigurableAxis dPhiAxis{"dPhiAxis", {60, -o2::constants::math::PI, o2::constants::math::PI}, "#Delta#phi"};
+  ConfigurableAxis eseAxis{"eseAxis", {100, 0, 100}, "#it{q}_{2}"};
+  Configurable<bool> cfgSelCentrality{"cfgSelCentrality", true, "Flag for centrality selection"};
+  Configurable<std::vector<float>> centRange{"centRange", {0, 90}, "centrality region of interest"};
+  ConfigurableAxis centAxis{"centAxis", {91, -1, 90}, "centrality"};
+  ConfigurableAxis cosAxis{"cosAxis", {50, -1.0, 1.0}, "cos(2(#Psi_{2}^{A}-#Psi_{2}^{B}))"};
+  ConfigurableAxis occAxis{"occAxis", {5000, 0, 25000}, "Occupancy"};
+  ConfigurableAxis qvecAxis{"qvecAxis", {60, -3, 3}, "Q-vector"};
+  ConfigurableAxis phiAxis{"phiAxis", {30, -1.0, 7.0}, "#phi"};
+  ConfigurableAxis etaAxis{"etaAxis", {30, -1.0, 1.0}, "#eta"};
+  ConfigurableAxis detaAxis{"detaAxis", {60, -1.6, 1.6}, "#Delta#eta"};
+  ConfigurableAxis dphiAxis{"dphiAxis", {120, -o2::constants::math::PIHalf, 3 * o2::constants::math::PI / 2}, "#Delta#phi"};
+  ConfigurableAxis trackPtAxis{"trackPtAxis", {100, 0, 100}, "#it{p}_{T} (GeV/#it{c})"};
+  ConfigurableAxis fitAxis0{"fitAxis0", {100, 0, 50}, ""};
+  ConfigurableAxis fitAxis13{"fitAxis13", {100, 0, 1.4}, ""};
+  ConfigurableAxis fitAxis24{"fitAxis24", {100, 0, 10}, ""};
   ConfigurableAxis rhoAxis{"rhoAxis", {50, 0, 200}, "#rho"};
-  ConfigurableAxis vertexZAxis{"vertexZAxis", {50, -10.0, 10.0}, "z vertex"};
+  ConfigurableAxis vertexZAxis{"vertexZAxis", {20, -10.0, 10.0}, "z vertex"};
+  Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "number of events mixed in ME process"};
+  ConfigurableAxis binsCentrality{"binsCentrality", {VARIABLE_WIDTH, 0.0, 10., 30., 50, 70., 100.}, "Mixing bins - centrality"};
+  ConfigurableAxis binsZVtx{"binsZVtx", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
@@ -157,8 +141,6 @@ struct JetSpectraEseTask {
   Preslice<ChargedMCDJets> mcdjetsPerJCollision = o2::aod::jet::collisionId;
   Preslice<aod::JetTracks> tracksPerJCollision = o2::aod::jtrack::collisionId;
 
-  ConfigurableAxis binsCentrality{"binsCentrality", {VARIABLE_WIDTH, 0.0, 10., 30., 50, 70., 100.}, "Mixing bins - centrality"};
-  ConfigurableAxis binsZVtx{"binsZVtx", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
   SliceCache cache;
   using BinningType = ColumnBinningPolicy<aod::jcollision::PosZ, aod::jcollision::CentFT0C>;
   BinningType corrBinning{{binsZVtx, binsCentrality}, true};
