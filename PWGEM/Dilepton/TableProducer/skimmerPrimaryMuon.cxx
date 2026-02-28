@@ -456,14 +456,15 @@ struct skimmerPrimaryMuon {
 
       emprimarymuons(collision.globalIndex(), fwdtrack.globalIndex(), fwdtrack.matchMFTTrackId(), fwdtrack.matchMCHTrackId(), fwdtrack.trackType(),
                      pt, eta, phi, fwdtrack.sign(), dcaX, dcaY, cXX, cYY, cXY, ptMatchedMCHMID, etaMatchedMCHMID, phiMatchedMCHMID,
-                     etaMatchedMCHMIDatMP, phiMatchedMCHMIDatMP, etaMatchedMFTatMP, phiMatchedMFTatMP,
+                     // etaMatchedMCHMIDatMP, phiMatchedMCHMIDatMP, etaMatchedMFTatMP, phiMatchedMFTatMP,
                      fwdtrack.nClusters(), pDCA, rAtAbsorberEnd, fwdtrack.chi2(), fwdtrack.chi2MatchMCHMID(), fwdtrack.chi2MatchMCHMFT(),
                      fwdtrack.mchBitMap(), fwdtrack.midBitMap(), fwdtrack.midBoards(), mftClusterSizesAndTrackFlags, chi2mft, isAssociatedToMPC, isAmbiguous);
 
       const auto& fwdcov = propmuonAtPV.getCovariances(); // covatiance matrix at PV
       emprimarymuonscov(
-        fwdcov(0, 0),
-        fwdcov(0, 1), fwdcov(1, 1),
+        propmuonAtPV.getX(), propmuonAtPV.getY(), propmuonAtPV.getZ(), 
+        // fwdcov(0, 0),
+        // fwdcov(0, 1), fwdcov(1, 1),
         fwdcov(2, 0), fwdcov(2, 1), fwdcov(2, 2),
         fwdcov(3, 0), fwdcov(3, 1), fwdcov(3, 2), fwdcov(3, 3),
         fwdcov(4, 0), fwdcov(4, 1), fwdcov(4, 2), fwdcov(4, 3), fwdcov(4, 4));

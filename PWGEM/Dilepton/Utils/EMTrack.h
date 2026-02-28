@@ -75,11 +75,11 @@ class EMTrackWithCov : public EMTrack
 {
  public:
   EMTrackWithCov(float pt, float eta, float phi, float mass, int8_t charge = 0, float dcaXY = 0.f, float dcaZ = 0.f,
-                 float X = 0.f, float Y = 0.f, float Z = 0.f, float Alpha = 0.f, float Snp = 0.f, float Tgl = 0.f,
                  float CYY = 0.f, float CZY = 0.f, float CZZ = 0.f,
+                 float X = 0.f, float Y = 0.f, float Z = 0.f, float Alpha = 0.f, float Snp = 0.f, float Tgl = 0.f,
                  float CSnpY = 0.f, float CSnpZ = 0.f, float CSnpSnp = 0.f,
                  float CTglY = 0.f, float CTglZ = 0.f, float CTglSnp = 0.f, float CTglTgl = 0.f,
-                 float C1PtY = 0.f, float C1PtZ = 0.f, float C1PtSnp = 0.f, float C1PtTgl = 0.f, float C1Pt21Pt2 = 0.f) : EMTrack(pt, eta, phi, mass, charge, dcaXY, dcaZ)
+                 float C1PtY = 0.f, float C1PtZ = 0.f, float C1PtSnp = 0.f, float C1PtTgl = 0.f, float C1Pt21Pt2 = 0.f) : EMTrack(pt, eta, phi, mass, charge, dcaXY, dcaZ, CYY, CZY, CZZ)
   {
     fX = X;
     fY = Y;

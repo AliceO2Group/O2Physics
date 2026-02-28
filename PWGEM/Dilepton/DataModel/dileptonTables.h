@@ -328,7 +328,7 @@ DECLARE_SOA_TABLE_VERSIONED(EMEventsAlias_000, "AOD", "EMEVENTALIAS", 0, evsel::
 using EMEventsAlias = EMEventsAlias_000;
 using EMEventAlias = EMEventsAlias::iterator;
 
-DECLARE_SOA_TABLE(EMEventsXY, "AOD", "EMEVENTXY", emevent::PosX, emevent::PosY); // joinable to EMEvents, only for treeCreatetorML.cxx
+DECLARE_SOA_TABLE(EMEventsXY, "AOD", "EMEVENTXY", collision::PosX, collision::PosY); // joinable to EMEvents
 using EMEventXY = EMEventsXY::iterator;
 
 DECLARE_SOA_TABLE(EMEventsCov, "AOD", "EMEVENTCOV", //! joinable to EMEvents
@@ -999,6 +999,7 @@ DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, bool);                    //! is am
 DECLARE_SOA_COLUMN(IsCorrectMatchMFTMCH, isCorrectMatchMFTMCH, bool);  //! is correct match between MFT and MCH, only for MC
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                //!
 DECLARE_SOA_COLUMN(Chi2MFT, chi2MFT, float);                           //! chi2 of MFT standalone track
+DECLARE_SOA_DYNAMIC_COLUMN(Tgl, tgl, [](float eta) -> float { return std::tan(o2::constants::math::PIHalf - 2 * std::atan(std::exp(-eta))); });
 DECLARE_SOA_DYNAMIC_COLUMN(Signed1Pt, signed1Pt, [](float pt, int8_t sign) -> float { return sign * 1. / pt; });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
@@ -1071,14 +1072,40 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryMuons_001, "AOD", "EMPRIMARYMU", 1, //!
                             emprimarymuon::Py<fwdtrack::Pt, fwdtrack::Phi>,
                             emprimarymuon::Pz<fwdtrack::Pt, fwdtrack::Eta>);
 
-using EMPrimaryMuons = EMPrimaryMuons_001;
+DECLARE_SOA_TABLE_VERSIONED(EMPrimaryMuons_002, "AOD", "EMPRIMARYMU", 2, //!
+                            o2::soa::Index<>, emprimarymuon::CollisionId,
+                            emprimarymuon::FwdTrackId, emprimarymuon::MFTTrackId, emprimarymuon::MCHTrackId, fwdtrack::TrackType,
+                            fwdtrack::Pt, fwdtrack::Eta, fwdtrack::Phi, emprimarymuon::Sign,
+                            fwdtrack::FwdDcaX, fwdtrack::FwdDcaY, aod::fwdtrack::CXX, aod::fwdtrack::CYY, aod::fwdtrack::CXY,
+                            emprimarymuon::PtMatchedMCHMID, emprimarymuon::EtaMatchedMCHMID, emprimarymuon::PhiMatchedMCHMID,
+                            // emprimarymuon::EtaMatchedMCHMIDatMP, emprimarymuon::PhiMatchedMCHMIDatMP,
+                            // emprimarymuon::EtaMatchedMFTatMP, emprimarymuon::PhiMatchedMFTatMP,
+
+                            fwdtrack::NClusters, fwdtrack::PDca, fwdtrack::RAtAbsorberEnd,
+                            fwdtrack::Chi2, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT,
+                            fwdtrack::MCHBitMap, fwdtrack::MIDBitMap, fwdtrack::MIDBoards,
+                            fwdtrack::MFTClusterSizesAndTrackFlags, emprimarymuon::Chi2MFT, emprimarymuon::IsAssociatedToMPC, emprimarymuon::IsAmbiguous,
+
+                            // dynamic column
+                            emprimarymuon::Signed1Pt<fwdtrack::Pt, emprimarymuon::Sign>,
+                            emprimarymuon::Tgl<fwdtrack::Eta>,
+                            emprimarymuon::NClustersMFT<fwdtrack::MFTClusterSizesAndTrackFlags>,
+                            fwdtrack::IsCA<fwdtrack::MFTClusterSizesAndTrackFlags>,
+                            emprimarymuon::MFTClusterMap<fwdtrack::MFTClusterSizesAndTrackFlags>,
+                            emprimarymuon::P<fwdtrack::Pt, fwdtrack::Eta>,
+                            emprimarymuon::Px<fwdtrack::Pt, fwdtrack::Phi>,
+                            emprimarymuon::Py<fwdtrack::Pt, fwdtrack::Phi>,
+                            emprimarymuon::Pz<fwdtrack::Pt, fwdtrack::Eta>);
+
+using EMPrimaryMuons = EMPrimaryMuons_002;
 // iterators
 using EMPrimaryMuon = EMPrimaryMuons::iterator;
 
-DECLARE_SOA_TABLE(EMPrimaryMuonsCov, "AOD", "EMPRIMARYMUCOV", //!
-                  aod::fwdtrack::CXX,
-                  aod::fwdtrack::CXY,
-                  aod::fwdtrack::CYY,
+DECLARE_SOA_TABLE_VERSIONED(EMPrimaryMuonsCov_002, "AOD", "EMPRIMARYMUCOV", 2, //!
+                  fwdtrack::X, fwdtrack::Y, fwdtrack::Z, // at PV. Signed1Pt, Tgl and Phi are in EMPrimaryMuons table.
+                  // aod::fwdtrack::CXX,
+                  // aod::fwdtrack::CXY,
+                  // aod::fwdtrack::CYY,
                   aod::fwdtrack::CPhiX,
                   aod::fwdtrack::CPhiY,
                   aod::fwdtrack::CPhiPhi,
@@ -1091,6 +1118,7 @@ DECLARE_SOA_TABLE(EMPrimaryMuonsCov, "AOD", "EMPRIMARYMUCOV", //!
                   aod::fwdtrack::C1PtPhi,
                   aod::fwdtrack::C1PtTgl,
                   aod::fwdtrack::C1Pt21Pt2);
+using EMPrimaryMuonsCov = EMPrimaryMuonsCov_002;
 // iterators
 using EMPrimaryMuonCov = EMPrimaryMuonsCov::iterator;
 
@@ -1132,7 +1160,7 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryTracks_000, "AOD", "EMPRIMARYTRACK", 0, //!
                             o2::soa::Index<>, emprimarytrack::CollisionId, emprimarytrack::TrackId, oldemprimarytrack::Sign, track::Pt, track::Eta, track::Phi, emprimarytrack::TrackBit);
 
 DECLARE_SOA_TABLE_VERSIONED(EMPrimaryTracks_001, "AOD", "EMPRIMARYTRACK", 1, //! primary charged track table for 2PC
-                            o2::soa::Index<>, emprimarytrack::CollisionId, emprimarytrack::TrackId,
+                            o2::soa::Index<>, /*emprimarytrack::CollisionId,*/ /*emprimarytrack::TrackId,*/
                             emprimarytrack::Signed1Pt, emprimarytrack::Eta, emprimarytrack::Phi, emprimarytrack::TrackBit,
                             // dynamic column
                             emprimarytrack::Sign<emprimarytrack::Signed1Pt>, emprimarytrack::Pt<emprimarytrack::Signed1Pt>);
