@@ -897,6 +897,9 @@ class BuilderModule
 
             // handle TPC-only tracks properly (photon conversions)
             if (v0BuilderOpts.moveTPCOnlyTracks) {
+              if (collision.has_bc()) {
+                mVDriftMgr.update(collision.template bc_as<aod::BCsWithTimestamps>().timestamp());
+              }
               if (isPosTPCOnly) {
                 // Nota bene: positive is TPC-only -> this entire V0 merits treatment as photon candidate
                 posTrackPar.setPID(o2::track::PID::Electron);
@@ -1368,6 +1371,9 @@ class BuilderModule
         pvX = collision.posX();
         pvY = collision.posY();
         pvZ = collision.posZ();
+        if (v0BuilderOpts.moveTPCOnlyTracks && collision.has_bc()) {
+          mVDriftMgr.update(collision.template bc_as<aod::BCsWithTimestamps>().timestamp());
+        }
       }
       auto const& posTrack = tracks.rawIteratorAt(v0.posTrackId);
       auto const& negTrack = tracks.rawIteratorAt(v0.negTrackId);
