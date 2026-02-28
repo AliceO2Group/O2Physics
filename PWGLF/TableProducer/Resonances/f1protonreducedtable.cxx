@@ -84,6 +84,7 @@ struct f1protonreducedtable {
   Configurable<int> trackSphMin{"trackSphMin", 10, "Number of tracks for Spherocity Calculation"};
 
   // Configs for track PID
+  Configurable<bool> Confglobaltrackcheck{"Confglobaltrackcheck", true, "Global track check"};
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", true, "Analysed skimmed events"};
   Configurable<bool> ConfUseManualPIDproton{"ConfUseManualPIDproton", true, "True: use home-made PID solution for proton "};
   Configurable<bool> ConfUseManualPIDkaon{"ConfUseManualPIDkaon", true, "True: use home-made PID solution for kaon "};
@@ -265,8 +266,8 @@ struct f1protonreducedtable {
   template <typename T>
   bool selectionGlobalTrack(const T& candidate)
   {
-    if (!(candidate.isGlobalTrack() && candidate.isPVContributor())) {
-      // return false;
+    if (Confglobaltrackcheck && !(candidate.isGlobalTrack() && candidate.isPVContributor())) {
+      return false;
     }
     return true;
   }
@@ -984,21 +985,22 @@ struct f1protonreducedtable {
       }
     }
     qaRegistry.fill(HIST("hEventstat"), 0.5);
-
-    for (auto iproton = protons.begin(); iproton != protons.end(); ++iproton) {
-      auto i6 = std::distance(protons.begin(), iproton);
-      ProtonVectorDummy2 = protons.at(i6);
-      if (std::abs(ProtonDcaxy.at(i6)) < 0.05 && std::abs(ProtonDcaz.at(i6)) < 0.05) {
-	if (ProtonTOFHit.at(i6) && ProtonVectorDummy2.P() > 0.7) {
-	  qaRegistry.fill(HIST("hNsigmaPtprotonTPC"),ProtonTPCNsigma.at(i6), ProtonTOFNsigma.at(i6), ProtonVectorDummy2.Pt());
+    if (keepEventF1Proton) {
+      for (auto iproton = protons.begin(); iproton != protons.end(); ++iproton) {
+	auto i6 = std::distance(protons.begin(), iproton);
+	ProtonVectorDummy2 = protons.at(i6);
+	if (std::abs(ProtonDcaxy.at(i6)) < 0.05 && std::abs(ProtonDcaz.at(i6)) < 0.05) {
+	  if (ProtonTOFHit.at(i6) && ProtonVectorDummy2.P() > 0.7) {
+	    qaRegistry.fill(HIST("hNsigmaPtprotonTPC"),ProtonTPCNsigma.at(i6), ProtonTOFNsigma.at(i6), ProtonVectorDummy2.Pt());
+	  }
+	  if (ProtonVectorDummy2.P() < 0.7) {
+	    qaRegistry.fill(HIST("hNsigmaPtprotonTPC"),ProtonTPCNsigma.at(i6), 4.999, ProtonVectorDummy2.Pt());
+	  }
 	}
-	if (ProtonVectorDummy2.P() < 0.7) {
-	  qaRegistry.fill(HIST("hNsigmaPtprotonTPC"),ProtonTPCNsigma.at(i6), 4.999, ProtonVectorDummy2.Pt());
+	if (passProtonPID(ProtonTPCNsigma.at(i6), ProtonTOFNsigma.at(i6), ProtonTOFHit.at(i6), ProtonVectorDummy2)) {
+	  qaRegistry.fill(HIST("hDCAxy"), ProtonDcaxy.at(i6), ProtonCharge.at(i6), ProtonVectorDummy2.Pt());
+	  qaRegistry.fill(HIST("hDCAz"), ProtonDcaz.at(i6), ProtonCharge.at(i6), ProtonVectorDummy2.Pt());
 	}
-      }
-      if (passProtonPID(ProtonTPCNsigma.at(i6), ProtonTOFNsigma.at(i6), ProtonTOFHit.at(i6), ProtonVectorDummy2)) {
-	qaRegistry.fill(HIST("hDCAxy"), ProtonDcaxy.at(i6), ProtonCharge.at(i6), ProtonVectorDummy2.Pt());
-	qaRegistry.fill(HIST("hDCAz"), ProtonDcaz.at(i6), ProtonCharge.at(i6), ProtonVectorDummy2.Pt());
       }
     }
     
