@@ -317,6 +317,7 @@ struct OnTheFlyTracker {
     LOG(info) << "Initializing OnTheFlyTracker task";
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setTimestamp(-1);
+    mGeoContainer.setCcdbManager(ccdb.operator->());
     mGeoContainer.init(initContext);
 
     const int nGeometries = mGeoContainer.getNumberOfConfigurations();
