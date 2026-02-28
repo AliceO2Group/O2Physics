@@ -22,8 +22,8 @@
 #define HomogeneousField // needed for KFParticle::SetField(magneticField);
 #endif
 
-#include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
+#include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
@@ -48,11 +48,11 @@
 #include <TH1.h>
 #include <TPDGCode.h>
 
-#include <Rtypes.h>
-
 #include <KFPTrack.h>
 #include <KFPVertex.h>
 #include <KFParticle.h>
+
+#include <Rtypes.h>
 
 #include <algorithm>
 #include <array>
@@ -566,7 +566,7 @@ bool buildAndSelectGamma(const Coll& collision, const std::array<int, 3>& dDaugh
   float gammaVtx[3] = {0.f, 0.f, 0.f};
   Vtx_recalculationParCov(o2::base::Propagator::Instance(), trackParPropPos, trackParPropNeg, gammaVtx, matCorr);
   float radiusXy = std::hypot(gammaVtx[0], gammaVtx[1]);
-  const float maxX{83.1f}; // max X for track IU
+  const float maxX{83.1f};    // max X for track IU
   const float marginTpc{7.f}; // margin for r cut in cm
   if (radiusXy > maxX + marginTpc) {
     return false;
@@ -629,8 +629,8 @@ bool buildAndSelectGamma(const Coll& collision, const std::array<int, 3>& dDaugh
     return false;
   }
 
-  KFParticle kfPartDecayVtxPos = kfPartPos;  // Don't set Primary Vertex
-  KFParticle kfPartDecayVtxNeg = kfPartNeg;  // Don't set Primary Vertex
+  KFParticle kfPartDecayVtxPos = kfPartPos;     // Don't set Primary Vertex
+  KFParticle kfPartDecayVtxNeg = kfPartNeg;     // Don't set Primary Vertex
   kfPartDecayVtxPos.TransportToPoint(gammaVtx); // Don't set Primary Vertex
   kfPartDecayVtxNeg.TransportToPoint(gammaVtx); // Don't set Primary Vertex
   v0.dcaDau = kfPartDecayVtxPos.GetDistanceFromParticle(kfPartDecayVtxNeg);
@@ -680,7 +680,8 @@ bool buildAndSelectGamma(const Coll& collision, const std::array<int, 3>& dDaugh
 
   // distinguish V0 hypotheses
   v0.alpha = alphaAP(v0.mom, v0.momPos, v0.momNeg);
-  v0.qt = qtAP(v0.momPos, v0.momNeg);;
+  v0.qt = qtAP(v0.momPos, v0.momNeg);
+  ;
   if (!checkAP(v0.alpha, v0.qt, cfgGammaCuts.alphaApMax.value, cfgGammaCuts.qtApMax.value)) { // store only photon conversions
     return false;
   }
