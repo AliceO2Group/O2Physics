@@ -59,6 +59,7 @@ struct skimmerPrimaryMFTTrack {
   SliceCache cache;
   Preslice<aod::MFTTracks> perCol = o2::aod::fwdtrack::collisionId;
   Produces<aod::EMPrimaryTracks> emprimarytracks;
+  Produces<aod::EMPrimaryTrackEMEventIdsTMP> prmtrackeventidtmp;
 
   // Configurables
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -231,7 +232,8 @@ struct skimmerPrimaryMFTTrack {
       trackBit |= static_cast<uint16_t>(RefMFTTrackBit::kDCAxy001cm);
     }
 
-    emprimarytracks(collision.globalIndex(), mfttrack.globalIndex(), mfttrack.sign() / pt, eta, phi, trackBit);
+    emprimarytracks(/*collision.globalIndex(),*/ /*mfttrack.globalIndex(),*/ mfttrack.sign() / pt, eta, phi, trackBit);
+    prmtrackeventidtmp(collision.globalIndex());
 
     if (fillQAHistogram) {
       fRegistry.fill(HIST("MFT/hPt"), pt);
