@@ -1102,22 +1102,22 @@ using EMPrimaryMuons = EMPrimaryMuons_002;
 using EMPrimaryMuon = EMPrimaryMuons::iterator;
 
 DECLARE_SOA_TABLE_VERSIONED(EMPrimaryMuonsCov_002, "AOD", "EMPRIMARYMUCOV", 2, //!
-                  fwdtrack::X, fwdtrack::Y, fwdtrack::Z, // at PV. Signed1Pt, Tgl and Phi are in EMPrimaryMuons table.
-                  // aod::fwdtrack::CXX,
-                  // aod::fwdtrack::CXY,
-                  // aod::fwdtrack::CYY,
-                  aod::fwdtrack::CPhiX,
-                  aod::fwdtrack::CPhiY,
-                  aod::fwdtrack::CPhiPhi,
-                  aod::fwdtrack::CTglX,
-                  aod::fwdtrack::CTglY,
-                  aod::fwdtrack::CTglPhi,
-                  aod::fwdtrack::CTglTgl,
-                  aod::fwdtrack::C1PtX,
-                  aod::fwdtrack::C1PtY,
-                  aod::fwdtrack::C1PtPhi,
-                  aod::fwdtrack::C1PtTgl,
-                  aod::fwdtrack::C1Pt21Pt2);
+                            fwdtrack::X, fwdtrack::Y, fwdtrack::Z,             // at PV. Signed1Pt, Tgl and Phi are in EMPrimaryMuons table.
+                            // aod::fwdtrack::CXX,
+                            // aod::fwdtrack::CXY,
+                            // aod::fwdtrack::CYY,
+                            aod::fwdtrack::CPhiX,
+                            aod::fwdtrack::CPhiY,
+                            aod::fwdtrack::CPhiPhi,
+                            aod::fwdtrack::CTglX,
+                            aod::fwdtrack::CTglY,
+                            aod::fwdtrack::CTglPhi,
+                            aod::fwdtrack::CTglTgl,
+                            aod::fwdtrack::C1PtX,
+                            aod::fwdtrack::C1PtY,
+                            aod::fwdtrack::C1PtPhi,
+                            aod::fwdtrack::C1PtTgl,
+                            aod::fwdtrack::C1Pt21Pt2);
 using EMPrimaryMuonsCov = EMPrimaryMuonsCov_002;
 // iterators
 using EMPrimaryMuonCov = EMPrimaryMuonsCov::iterator;
@@ -1159,7 +1159,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Sign, sign, [](float signed1Pt) -> short { return (si
 DECLARE_SOA_TABLE_VERSIONED(EMPrimaryTracks_000, "AOD", "EMPRIMARYTRACK", 0, //! primary charged track table for 2PC
                             o2::soa::Index<>, emprimarytrack::CollisionId, emprimarytrack::TrackId, oldemprimarytrack::Sign, track::Pt, track::Eta, track::Phi, emprimarytrack::TrackBit);
 
-DECLARE_SOA_TABLE_VERSIONED(EMPrimaryTracks_001, "AOD", "EMPRIMARYTRACK", 1, //! primary charged track table for 2PC
+DECLARE_SOA_TABLE_VERSIONED(EMPrimaryTracks_001, "AOD", "EMPRIMARYTRACK", 1,   //! primary charged track table for 2PC
                             o2::soa::Index<>, /*emprimarytrack::CollisionId,*/ /*emprimarytrack::TrackId,*/
                             emprimarytrack::Signed1Pt, emprimarytrack::Eta, emprimarytrack::Phi, emprimarytrack::TrackBit,
                             // dynamic column
