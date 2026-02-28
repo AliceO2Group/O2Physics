@@ -512,7 +512,7 @@ bool buildAndSelectV0(const Coll& collision, const std::array<int, 3>& dDaughter
 /// \param rejectPairsWithCommonDaughter is a flag to activate rejection of pairs sharing a daughter track
 /// \return a bitmap with mass hypotesis if passes all cuts
 template <class BCs, class Colls, typename Coll, typename Tr, typename Cuts>
-bool buildAndSelectGamma(const Coll& collision, const std::array<int, 3>& dDaughtersIds, const std::array<Tr, 2>& dauTracks, const Cuts& cfgGammaCuts, HfResoCandidateV0& v0, o2::base::Propagator::MatCorrType const& matCorr, const float bz, o2::aod::common::TPCVDriftManager* vDriftMgr, bool rejectPairsWithCommonDaughter)
+bool buildAndSelectGamma(const Coll& collision, const std::array<int, 3>& dDaughtersIds, const std::array<Tr, 2>& dauTracks, const Cuts& cfgGammaCuts, HfResoCandidateV0& v0, o2::base::Propagator::MatCorrType const& matCorr, o2::aod::common::TPCVDriftManager* vDriftMgr, bool rejectPairsWithCommonDaughter)
 {
   const auto& trackPos = dauTracks[0];
   const auto& trackNeg = dauTracks[1];
@@ -1681,7 +1681,7 @@ void runDataCreation(Coll const& collision,
         // Apply selsection
         auto gammaDauTracks = std::array{trackPos, trackNeg};
         HfResoCandidateV0 candGamma;
-        if (!buildAndSelectGamma<BCs, Colls>(collision, prongIdsD, gammaDauTracks, cfgGammaCuts, candGamma, matCorr, bz, vDriftMgr, rejectPairsWithCommonDaughter)) {
+        if (!buildAndSelectGamma<BCs, Colls>(collision, prongIdsD, gammaDauTracks, cfgGammaCuts, candGamma, matCorr, vDriftMgr, rejectPairsWithCommonDaughter)) {
           continue;
         }
         // Get single track variables
