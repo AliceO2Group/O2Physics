@@ -17,6 +17,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
@@ -25,6 +26,8 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/MathConstants.h"
 #include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsCommonDataFormats/AlignParam.h"
+#include "FT0Base/Geometry.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -68,6 +71,7 @@ using namespace constants::math;
 
 struct RadialFlowDecorr {
 
+  static constexpr int KnFt0cCell = 96;
   static constexpr int KIntM = 3;
   static constexpr int KIntK = 3;
 
@@ -249,6 +253,10 @@ struct RadialFlowDecorr {
   std::array<TProfile3D*, KNsp> pmeanNchEtabinPtbinStep2{};
   std::array<TProfile3D*, KNsp> pmeanMultNchEtabinPtbinStep2{};
 
+  TProfile* pmeanFT0A_multpvStep2 = nullptr;
+  TProfile* pmeanFT0C_multpvStep2 = nullptr;
+  o2::ft0::Geometry ft0Det;
+
   template <typename T>
   static std::tuple<float, float, float> getAllCombinedNSigmas(const T& candidate)
   {
@@ -267,6 +275,8 @@ struct RadialFlowDecorr {
     if (std::abs(col.posZ()) > cfgCutVertex)
       return false;
     if (cfgEvSelkNoSameBunchPileup && !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+      return false;
+    if (cfgUseGoodITSLayerAllCut && !col.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
       return false;
     if (cfgIsGoodZvtxFT0VsPV && !col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
       return false;
@@ -474,6 +484,60 @@ struct RadialFlowDecorr {
 
     return val;
   }
+  std::vector<o2::detectors::AlignParam>* offsetFT0 = nullptr;
+  uint64_t mLastTimestamp = 0;
+  double getEtaFT0(uint64_t globalChno, int i)
+  {
+    if (i > 1 || i < 0) {
+      LOGF(fatal, "kFIT Index %d out of range", i);
+    }
+
+    // Fetches from the pre-calculated array, very fast
+    auto chPos = ft0Det.getChannelCenter(globalChno);
+
+    auto x = chPos.X() + (*offsetFT0)[i].getX();
+    auto y = chPos.Y() + (*offsetFT0)[i].getY();
+    auto z = chPos.Z() + (*offsetFT0)[i].getZ();
+
+    // Force the correct physical Z-direction:
+    // i == 0 is FT0A (A-side, positive Z)
+    // i == 1 is FT0C (C-side, negative Z)
+    if (i == 1) {
+      z = -std::abs(z);
+    } else if (i == 0) {
+      z = std::abs(z);
+    }
+
+    auto r = std::sqrt(x * x + y * y);
+    auto theta = std::atan2(r, z);
+    return -std::log(std::tan(0.5 * theta));
+  }
+
+  void loadAlignParam(uint64_t timestamp)
+  {
+    // If the timestamp hasn't changed and pointers are valid, skip the CCDB query
+    if (timestamp == mLastTimestamp && offsetFT0 != nullptr) {
+      return;
+    }
+
+    // Fetch the alignment parameters for the new timestamp
+    offsetFT0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FT0/Calib/Align", timestamp);
+    // offsetFV0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FV0/Calib/Align", timestamp);
+
+    // Safety checks: Ensure the objects exist and contain A-side and C-side data
+    if (offsetFT0 == nullptr || offsetFT0->size() < 2) {
+      LOGF(fatal, "Could not load FT0/Calib/Align for timestamp %llu, or vector size < 2", timestamp);
+    }
+    // if (offsetFV0 == nullptr || offsetFV0->size() < 2) {
+    //   LOGF(fatal, "Could not load FV0/Calib/Align for timestamp %llu, or vector size < 2", timestamp);
+    // }
+
+    // Update the cached timestamp
+    mLastTimestamp = timestamp;
+    LOGF(info, "Successfully loaded new alignment parameters for timestamp %llu", timestamp);
+    LOGF(info, "Offset for FT0A: x = %.3f y = %.3f z = %.3f\n", (*offsetFT0)[0].getX(), (*offsetFT0)[0].getY(), (*offsetFT0)[0].getZ());
+    LOGF(info, "Offset for FT0C: x = %.3f y = %.3f z = %.3f\n", (*offsetFT0)[1].getX(), (*offsetFT0)[1].getY(), (*offsetFT0)[1].getZ());
+  }
 
   template <int KIntM, int KIntK>
   std::pair<float, float> calculateMeanAndC2FromSums(const double sumpmwk[KIntM][KIntK], const double sumwk[KIntK], float referenceMeanPt) const
@@ -630,6 +694,14 @@ struct RadialFlowDecorr {
     histos.add("Fake_eta", ";#eta;f_{fake}", kTProfile, {{KNbinsEtaFine, -KEtaFineMax, KEtaFineMax}});
     histos.add("wgt_eta", ";#eta;w", kTProfile, {{KNbinsEtaFine, -KEtaFineMax, KEtaFineMax}});
 
+    histos.add("pmeanFT0A_multpv", "N_{PV}; AmplitudeA", kTProfile, {nChAxis});
+    histos.add("pmeanFT0A_cent", "cent; AmplitudeA", kTProfile, {centAxis1Per});
+    histos.add("pmeanFT0C_multpv", "N_{PV}; AmplitudeA", kTProfile, {nChAxis});
+    histos.add("pmeanFT0C_cent", "cent; AmplitudeA", kTProfile, {centAxis1Per});
+
+    histos.add<TProfile3D>("pmean_cent_id_eta_FT0", ";cent;channel id; #eta;amplitude", kTProfile3D, {{centAxis1Per}, {100, -0.5, 99.5}, {100, -5.0, 5.0}});
+    histos.add("h3_cent_id_eta_FT0", ";cent;channel id; #eta", kTH3F, {{centAxis1Per}, {100, -0.5, 99.5}, {100, -5.0, 5.0}});
+
     for (const auto& suf : pidSuffix) {
       // Basic Profiles
       histos.add("MCGen/Prof_Cent_Nchrec" + suf, ";cent;#LT N_{PV}#GT", kTProfile, {centAxis1Per});
@@ -683,10 +755,17 @@ struct RadialFlowDecorr {
       histos.add<TProfile3D>("MCGen/Prof_Cov_Cent_etabin_ptbin" + suf, ";Centrality;#eta-bin; p_{T}-bin", kTProfile3D, {{centAxis1Per}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
       histos.add<TProfile3D>("MCGen/Prof_Cov_Mult_etabin_ptbin" + suf, ";N_{PV};#eta-bin; p_{T}-bin", kTProfile3D, {{nChAxis}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
 
+      histos.add<TProfile3D>("MCGen/Prof_CovFT0A_Cent_etabin_ptbin" + suf, ";Centrality;#eta-bin; p_{T}-bin", kTProfile3D, {{centAxis1Per}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
+      histos.add<TProfile3D>("MCGen/Prof_CovFT0A_Mult_etabin_ptbin" + suf, ";N_{PV};#eta-bin; p_{T}-bin", kTProfile3D, {{nChAxis}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
+      histos.add<TProfile3D>("MCGen/Prof_CovFT0C_Cent_etabin_ptbin" + suf, ";Centrality;#eta-bin; p_{T}-bin", kTProfile3D, {{centAxis1Per}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
+      histos.add<TProfile3D>("MCGen/Prof_CovFT0C_Mult_etabin_ptbin" + suf, ";N_{PV};#eta-bin; p_{T}-bin", kTProfile3D, {{nChAxis}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
+
       for (const int& i : {0, 1, 2}) {
         std::string ptTag = "_ipt" + std::to_string(i);
         histos.add<TProfile3D>("MCGen/Prof" + ptTag + "_C2Sub2D_Cent_etaA_etaC" + suf, ";cent;#eta_{A};#eta_{B}", kTProfile3D, {{centAxis1Per}, {etaAxis}, {etaAxis}});
         histos.add<TProfile3D>("MCGen/Prof" + ptTag + "_Cov2D_Cent_etaA_etaC" + suf, ";cent;#eta_{A};#eta_{B}", kTProfile3D, {{centAxis1Per}, {etaAxis}, {etaAxis}});
+        histos.add<TProfile3D>("MCGen/Prof" + ptTag + "_CovFT0A2D_Cent_etaA_etaC" + suf, ";cent;#eta_{A};#eta_{B}", kTProfile3D, {{centAxis1Per}, {etaAxis}, {etaAxis}});
+        histos.add<TProfile3D>("MCGen/Prof" + ptTag + "_CovFT0C2D_Cent_etaA_etaC" + suf, ";cent;#eta_{A};#eta_{B}", kTProfile3D, {{centAxis1Per}, {etaAxis}, {etaAxis}});
         histos.add<TProfile3D>("MCGen/Prof" + ptTag + "_GapSum2D" + suf, ";cent;#Delta#eta (Gap);#Sigma#eta/2 (Sum)", kTProfile3D, {{centAxis1Per}, {gapAxis}, {sumAxis}});
       }
 
@@ -726,6 +805,15 @@ struct RadialFlowDecorr {
 
   void declareDataMeanHists()
   {
+
+    histos.add("pmeanFT0A_multpv", "N_{PV}; AmplitudeA", kTProfile, {nChAxis});
+    histos.add("pmeanFT0A_cent", "cent; AmplitudeA", kTProfile, {centAxis1Per});
+    histos.add("pmeanFT0C_multpv", "N_{PV}; AmplitudeA", kTProfile, {nChAxis});
+    histos.add("pmeanFT0C_cent", "cent; AmplitudeA", kTProfile, {centAxis1Per});
+
+    histos.add<TProfile3D>("pmean_cent_id_eta_FT0", ";cent;channel id; #eta;amplitude", kTProfile3D, {{centAxis1Per}, {100, -0.5, 99.5}, {100, -5.0, 5.0}});
+    histos.add("h3_cent_id_eta_FT0", ";cent;channel id; #eta", kTH3F, {{centAxis1Per}, {100, -0.5, 99.5}, {100, -5.0, 5.0}});
+
     for (const auto& suf : pidSuffix) {
       std::string nameReco = "hEtaPhiReco" + suf;
       std::string nameWtd = "hEtaPhiRecoWtd" + suf;
@@ -779,12 +867,18 @@ struct RadialFlowDecorr {
 
       histos.add<TProfile3D>("Prof_Cov_Cent_etabin_ptbin" + suf, ";Centrality;#eta-bin; p_{T}-bin", kTProfile3D, {{centAxis1Per}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
       histos.add<TProfile3D>("Prof_Cov_Mult_etabin_ptbin" + suf, ";N_{PV};#eta-bin; p_{T}-bin", kTProfile3D, {{nChAxis}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
+      histos.add<TProfile3D>("Prof_CovFT0A_Cent_etabin_ptbin" + suf, ";Centrality;#eta-bin; p_{T}-bin", kTProfile3D, {{centAxis1Per}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
+      histos.add<TProfile3D>("Prof_CovFT0A_Mult_etabin_ptbin" + suf, ";N_{PV};#eta-bin; p_{T}-bin", kTProfile3D, {{nChAxis}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
+      histos.add<TProfile3D>("Prof_CovFT0C_Cent_etabin_ptbin" + suf, ";Centrality;#eta-bin; p_{T}-bin", kTProfile3D, {{centAxis1Per}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
+      histos.add<TProfile3D>("Prof_CovFT0C_Mult_etabin_ptbin" + suf, ";N_{PV};#eta-bin; p_{T}-bin", kTProfile3D, {{nChAxis}, {KNEta + 1, -KBinOffset, KNEta + KBinOffset}, {KNpT + 1, -KBinOffset, KNpT + KBinOffset}});
 
       for (const int& i : {0, 1, 2}) {
         std::string ptTag = "_ipt" + std::to_string(i);
         histos.add<TProfile3D>("Prof" + ptTag + "_C2Sub2D_Cent_etaA_etaC" + suf, ";cent;#eta_{A};#eta_{C}", kTProfile3D, {{centAxis1Per}, {etaAxis}, {etaAxis}});
         histos.add<TProfile3D>("Prof" + ptTag + "_GapSum2D" + suf, ";cent;#Delta#eta (Gap);#Sigma#eta/2 (Sum)", kTProfile3D, {{centAxis1Per}, {gapAxis}, {sumAxis}});
         histos.add<TProfile3D>("Prof" + ptTag + "_Cov2D_Cent_etaA_etaC" + suf, ";cent;#eta_{A} bin;#eta_{C} bin", kTProfile3D, {{centAxis1Per}, {etaAxis}, {etaAxis}});
+        histos.add<TProfile3D>("Prof" + ptTag + "_CovFT0A2D_Cent_etaA_etaC" + suf, ";cent;#eta_{A};#eta_{B}", kTProfile3D, {{centAxis1Per}, {etaAxis}, {etaAxis}});
+        histos.add<TProfile3D>("Prof" + ptTag + "_CovFT0C2D_Cent_etaA_etaC" + suf, ";cent;#eta_{A};#eta_{B}", kTProfile3D, {{centAxis1Per}, {etaAxis}, {etaAxis}});
       }
     }
   }
@@ -874,6 +968,11 @@ struct RadialFlowDecorr {
     ccdb->setLocalObjectValidityChecking();
     int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
+
+    // auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    // uint64_t currentTimestamp = bc.timestamp();
+    loadAlignParam(now);
+    ft0Det.calculateChannelCenter();
 
     std::string sysDir = "";
     switch (cfgSys) {
@@ -1069,11 +1168,28 @@ struct RadialFlowDecorr {
       }
     };
 
+    auto loadTProfileFromList = [&](TList* sourceList, const char* objName, TProfile*& target) {
+      if (!sourceList)
+        return;
+
+      auto* tp = reinterpret_cast<TProfile*>(sourceList->FindObject(objName));
+      if (tp) {
+        target = reinterpret_cast<TProfile*>(tp->Clone());
+        target->SetDirectory(nullptr);
+        LOGF(info, "Loaded %s from list", objName);
+      } else {
+        LOGF(error, "Histogram %s missing in CCDB TList", objName);
+      }
+    };
+
     if (cfgRunMCFluc) {
       LOGF(info, "Loading MC Mean profiles from CCDB path: %s", pathMCMean.c_str());
       TList* lstMCMean = ccdb->getForTimeStamp<TList>(pathMCMean, now);
 
       if (lstMCMean) {
+        loadTProfileFromList(lstMCMean, "pmeanFT0A_multpv", pmeanFT0A_multpvStep2);
+        loadTProfileFromList(lstMCMean, "pmeanFT0C_multpv", pmeanFT0C_multpvStep2);
+
         for (int isp = 0; isp < KNsp; ++isp) {
           std::string suf = pidSuffix[isp];
           loadTProfile3DFromList(lstMCMean, ("pmeanTruNchEtabinPtbin" + suf).c_str(), pmeanTruNchEtabinPtbinStep2[isp]);
@@ -1093,6 +1209,8 @@ struct RadialFlowDecorr {
       LOGF(info, "Loading Data Mean profiles from CCDB path: %s", pathDataMean.c_str());
       TList* lstDataMean = ccdb->getForTimeStamp<TList>(pathDataMean, now);
 
+      loadTProfileFromList(lstDataMean, "pmeanFT0A_multpv", pmeanFT0A_multpvStep2);
+      loadTProfileFromList(lstDataMean, "pmeanFT0C_multpv", pmeanFT0C_multpvStep2);
       if (lstDataMean) {
         for (int isp = 0; isp < KNsp; ++isp) {
           std::string suf = pidSuffix[isp];
@@ -1321,7 +1439,7 @@ struct RadialFlowDecorr {
   }
   PROCESS_SWITCH(RadialFlowDecorr, processMCFlat, "process MC to calculate FlatWeights", cfgRunGetMCFlat);
 
-  void processMCMean(aod::McCollisions const& mcColl, MyRun3MCCollisions const& collisions, TCs const& tracks, FilteredTCs const& /*filteredTracks*/, aod::McParticles const& mcParticles)
+  void processMCMean(aod::McCollisions const& mcColl, MyRun3MCCollisions const& collisions, TCs const& tracks, FilteredTCs const& /*filteredTracks*/, aod::FT0s const&, aod::McParticles const& mcParticles)
   {
     // Track-sum arrays using KNsp index (isp=0: Incl, 1: Pi, 2: Ka, 3: Pr)
     double sumWiTruth[KNsp][KNEta][KNpT]{}, sumWiptiTruth[KNsp][KNEta][KNpT]{};
@@ -1561,117 +1679,117 @@ struct RadialFlowDecorr {
         }
 
         for (int ietaA = 0; ietaA < KNEta; ++ietaA) {
-          for (int ietaB = 0; ietaB < KNEta; ++ietaB) {
+          for (int ietaC = 0; ietaC < KNEta; ++ietaC) {
             for (int ipt = 0; ipt < KNpT; ++ipt) {
               for (int isp = 0; isp < KNsp; ++isp) {
 
                 // 1. Truth Sub-event Mean
-                double nTruAB = sumWiTruth[isp][ietaA][ipt] + sumWiTruth[isp][ietaB][ipt];
+                double nTruAB = sumWiTruth[isp][ietaA][ipt] + sumWiTruth[isp][ietaC][ipt];
                 if (nTruAB > 0) {
-                  float mptsubTru = (sumWiptiTruth[isp][ietaA][ipt] + sumWiptiTruth[isp][ietaB][ipt]) / nTruAB;
+                  float mptsubTru = (sumWiptiTruth[isp][ietaA][ipt] + sumWiptiTruth[isp][ietaC][ipt]) / nTruAB;
                   if (isp == numKInclusive) { // Inclusive
                     if (ipt == 0)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_Tru"), cent, ietaA, ietaB, mptsubTru);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_Tru"), cent, ietaA, ietaC, mptsubTru);
                     if (ipt == KNpT - 2)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_Tru"), cent, ietaA, ietaB, mptsubTru);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_Tru"), cent, ietaA, ietaC, mptsubTru);
                     if (ipt == KNpT - 1)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_Tru"), cent, ietaA, ietaB, mptsubTru);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_Tru"), cent, ietaA, ietaC, mptsubTru);
                   } else if (isp == numKPion) { // Pion
                     if (ipt == 0)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_Tru_Pi"), cent, ietaA, ietaB, mptsubTru);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_Tru_Pi"), cent, ietaA, ietaC, mptsubTru);
                     if (ipt == KNpT - 2)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_Tru_Pi"), cent, ietaA, ietaB, mptsubTru);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_Tru_Pi"), cent, ietaA, ietaC, mptsubTru);
                     if (ipt == KNpT - 1)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_Tru_Pi"), cent, ietaA, ietaB, mptsubTru);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_Tru_Pi"), cent, ietaA, ietaC, mptsubTru);
                   } else if (isp == numKKaon) { // Kaon
                     if (ipt == 0)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_Tru_Ka"), cent, ietaA, ietaB, mptsubTru);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_Tru_Ka"), cent, ietaA, ietaC, mptsubTru);
                     if (ipt == KNpT - 2)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_Tru_Ka"), cent, ietaA, ietaB, mptsubTru);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_Tru_Ka"), cent, ietaA, ietaC, mptsubTru);
                     if (ipt == KNpT - 1)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_Tru_Ka"), cent, ietaA, ietaB, mptsubTru);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_Tru_Ka"), cent, ietaA, ietaC, mptsubTru);
                   } else if (isp == numKProton) { // Proton
                     if (ipt == 0)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_Tru_Pr"), cent, ietaA, ietaB, mptsubTru);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_Tru_Pr"), cent, ietaA, ietaC, mptsubTru);
                     if (ipt == KNpT - 2)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_Tru_Pr"), cent, ietaA, ietaB, mptsubTru);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_Tru_Pr"), cent, ietaA, ietaC, mptsubTru);
                     if (ipt == KNpT - 1)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_Tru_Pr"), cent, ietaA, ietaB, mptsubTru);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_Tru_Pr"), cent, ietaA, ietaC, mptsubTru);
                   }
                 }
 
                 // 2. Reco Raw Sub-event Mean
-                double nRecAB = sumWiReco[isp][ietaA][ipt] + sumWiReco[isp][ietaB][ipt];
+                double nRecAB = sumWiReco[isp][ietaA][ipt] + sumWiReco[isp][ietaC][ipt];
                 if (nRecAB > 0) {
-                  float mptsubReco = (sumWiptiReco[isp][ietaA][ipt] + sumWiptiReco[isp][ietaB][ipt]) / nRecAB;
+                  float mptsubReco = (sumWiptiReco[isp][ietaA][ipt] + sumWiptiReco[isp][ietaC][ipt]) / nRecAB;
                   if (isp == numKInclusive) {
                     if (ipt == 0)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_Reco"), cent, ietaA, ietaB, mptsubReco);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_Reco"), cent, ietaA, ietaC, mptsubReco);
                     if (ipt == KNpT - 2)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_Reco"), cent, ietaA, ietaB, mptsubReco);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_Reco"), cent, ietaA, ietaC, mptsubReco);
                     if (ipt == KNpT - 1)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_Reco"), cent, ietaA, ietaB, mptsubReco);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_Reco"), cent, ietaA, ietaC, mptsubReco);
                   } else if (isp == numKPion) {
                     if (ipt == 0)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_Reco_Pi"), cent, ietaA, ietaB, mptsubReco);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_Reco_Pi"), cent, ietaA, ietaC, mptsubReco);
                     if (ipt == KNpT - 2)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_Reco_Pi"), cent, ietaA, ietaB, mptsubReco);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_Reco_Pi"), cent, ietaA, ietaC, mptsubReco);
                     if (ipt == KNpT - 1)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_Reco_Pi"), cent, ietaA, ietaB, mptsubReco);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_Reco_Pi"), cent, ietaA, ietaC, mptsubReco);
                   } else if (isp == numKKaon) {
                     if (ipt == 0)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_Reco_Ka"), cent, ietaA, ietaB, mptsubReco);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_Reco_Ka"), cent, ietaA, ietaC, mptsubReco);
                     if (ipt == KNpT - 2)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_Reco_Ka"), cent, ietaA, ietaB, mptsubReco);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_Reco_Ka"), cent, ietaA, ietaC, mptsubReco);
                     if (ipt == KNpT - 1)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_Reco_Ka"), cent, ietaA, ietaB, mptsubReco);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_Reco_Ka"), cent, ietaA, ietaC, mptsubReco);
                   } else if (isp == numKProton) {
                     if (ipt == 0)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_Reco_Pr"), cent, ietaA, ietaB, mptsubReco);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_Reco_Pr"), cent, ietaA, ietaC, mptsubReco);
                     if (ipt == KNpT - 2)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_Reco_Pr"), cent, ietaA, ietaB, mptsubReco);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_Reco_Pr"), cent, ietaA, ietaC, mptsubReco);
                     if (ipt == KNpT - 1)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_Reco_Pr"), cent, ietaA, ietaB, mptsubReco);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_Reco_Pr"), cent, ietaA, ietaC, mptsubReco);
                   }
                 }
 
                 // 3. Reco Efficiency Corrected Sub-event Mean
-                double wCorrAB = sumWiRecoEffCorr[isp][ietaA][ipt] + sumWiRecoEffCorr[isp][ietaB][ipt];
+                double wCorrAB = sumWiRecoEffCorr[isp][ietaA][ipt] + sumWiRecoEffCorr[isp][ietaC][ipt];
                 if (wCorrAB > 0) {
-                  float mptsubRecoEffCorr = (sumWiptiRecoEffCorr[isp][ietaA][ipt] + sumWiptiRecoEffCorr[isp][ietaB][ipt]) / wCorrAB;
+                  float mptsubRecoEffCorr = (sumWiptiRecoEffCorr[isp][ietaA][ipt] + sumWiptiRecoEffCorr[isp][ietaC][ipt]) / wCorrAB;
                   if (isp == numKInclusive) {
                     if (ipt == 0)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_RecoEffCorr"), cent, ietaA, ietaB, mptsubRecoEffCorr);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_RecoEffCorr"), cent, ietaA, ietaC, mptsubRecoEffCorr);
                     if (ipt == KNpT - 2)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_RecoEffCorr"), cent, ietaA, ietaB, mptsubRecoEffCorr);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_RecoEffCorr"), cent, ietaA, ietaC, mptsubRecoEffCorr);
                     if (ipt == KNpT - 1)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_RecoEffCorr"), cent, ietaA, ietaB, mptsubRecoEffCorr);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_RecoEffCorr"), cent, ietaA, ietaC, mptsubRecoEffCorr);
                   } else if (isp == numKPion) {
                     if (ipt == 0)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_RecoEffCorr_Pi"), cent, ietaA, ietaB, mptsubRecoEffCorr);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_RecoEffCorr_Pi"), cent, ietaA, ietaC, mptsubRecoEffCorr);
                     if (ipt == KNpT - 2)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_RecoEffCorr_Pi"), cent, ietaA, ietaB, mptsubRecoEffCorr);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_RecoEffCorr_Pi"), cent, ietaA, ietaC, mptsubRecoEffCorr);
                     if (ipt == KNpT - 1)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_RecoEffCorr_Pi"), cent, ietaA, ietaB, mptsubRecoEffCorr);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_RecoEffCorr_Pi"), cent, ietaA, ietaC, mptsubRecoEffCorr);
                   } else if (isp == numKKaon) {
                     if (ipt == 0)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_RecoEffCorr_Ka"), cent, ietaA, ietaB, mptsubRecoEffCorr);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_RecoEffCorr_Ka"), cent, ietaA, ietaC, mptsubRecoEffCorr);
                     if (ipt == KNpT - 2)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_RecoEffCorr_Ka"), cent, ietaA, ietaB, mptsubRecoEffCorr);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_RecoEffCorr_Ka"), cent, ietaA, ietaC, mptsubRecoEffCorr);
                     if (ipt == KNpT - 1)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_RecoEffCorr_Ka"), cent, ietaA, ietaB, mptsubRecoEffCorr);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_RecoEffCorr_Ka"), cent, ietaA, ietaC, mptsubRecoEffCorr);
                   } else if (isp == numKProton) {
                     if (ipt == 0)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_RecoEffCorr_Pr"), cent, ietaA, ietaB, mptsubRecoEffCorr);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_RecoEffCorr_Pr"), cent, ietaA, ietaC, mptsubRecoEffCorr);
                     if (ipt == KNpT - 2)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_RecoEffCorr_Pr"), cent, ietaA, ietaB, mptsubRecoEffCorr);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_RecoEffCorr_Pr"), cent, ietaA, ietaC, mptsubRecoEffCorr);
                     if (ipt == KNpT - 1)
-                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_RecoEffCorr_Pr"), cent, ietaA, ietaB, mptsubRecoEffCorr);
+                      histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_RecoEffCorr_Pr"), cent, ietaA, ietaC, mptsubRecoEffCorr);
                   }
                 }
 
                 // 4. pmean Profiles (Individual Bins)
-                if (ietaA == ietaB) { // only fill once per eta bin
+                if (ietaA == ietaC) { // only fill once per eta bin
                   if (sumWiTruth[isp][ietaA][ipt] > 0) {
                     float val = sumWiptiTruth[isp][ietaA][ipt] / sumWiTruth[isp][ietaA][ipt];
                     if (isp == numKInclusive)
@@ -1741,14 +1859,41 @@ struct RadialFlowDecorr {
                 }
               } // end isp
             } // end ipt
-          } // end ietaB
+          } // end ietaC
         } // end ietaA
+
+        double amplFT0A = 0, amplFT0C = 0;
+        if (col.has_foundFT0()) {
+          const auto& ft0 = col.foundFT0();
+          for (std::size_t iCh = 0; iCh < ft0.channelA().size(); iCh++) {
+            auto chanelid = ft0.channelA()[iCh];
+            float ampl = ft0.amplitudeA()[iCh];
+            amplFT0A += ampl;
+            auto eta = getEtaFT0(chanelid, 0);
+            histos.fill(HIST("pmean_cent_id_eta_FT0"), cent, iCh, eta, ampl);
+            histos.fill(HIST("h3_cent_id_eta_FT0"), cent, iCh, eta, ampl);
+          }
+          for (std::size_t iCh = 0; iCh < ft0.channelC().size(); iCh++) {
+            auto chanelid = ft0.channelC()[iCh];
+            auto globalId = chanelid + KnFt0cCell;
+            float ampl = ft0.amplitudeC()[iCh];
+            auto eta = getEtaFT0(globalId, 1);
+            amplFT0C += ampl;
+            histos.fill(HIST("pmean_cent_id_eta_FT0"), cent, iCh, eta, ampl);
+            histos.fill(HIST("h3_cent_id_eta_FT0"), cent, iCh, eta, ampl);
+          }
+        }
+
+        histos.fill(HIST("pmeanFT0A_multpv"), multPV, amplFT0A);
+        histos.fill(HIST("pmeanFT0A_cent"), cent, amplFT0A);
+        histos.fill(HIST("pmeanFT0C_multpv"), multPV, amplFT0C);
+        histos.fill(HIST("pmeanFT0C_cent"), cent, amplFT0C);
       }
     }
   }
   PROCESS_SWITCH(RadialFlowDecorr, processMCMean, "process MC to calculate mean pt/Et and Eff Hists", cfgRunMCMean);
 
-  void processMCFluc(aod::McCollisions const& mcColl, MyRun3MCCollisions const& collisions, TCs const& tracks, FilteredTCs const& /*filteredTracks*/, aod::McParticles const& mcParticles)
+  void processMCFluc(aod::McCollisions const& mcColl, MyRun3MCCollisions const& collisions, TCs const& tracks, FilteredTCs const& /*filteredTracks*/, aod::FT0s const&, aod::McParticles const& mcParticles)
   {
     // 1. Safety Check: Step 2 Mean Maps
     for (int isp = 0; isp < KNsp; ++isp) {
@@ -1822,6 +1967,8 @@ struct RadialFlowDecorr {
         memset(p1kBarTruMult, 0, sizeof(p1kBarTruMult));
         memset(p1kBarRecoMult, 0, sizeof(p1kBarRecoMult));
         memset(p1kBarRecoEffCorMult, 0, sizeof(p1kBarRecoEffCorMult));
+
+        double p1kBarFt0A = 0.0, p1kBarFt0C = 0.0;
 
         // --- 1. Truth Loop ---
         for (const auto& particle : partSlice) {
@@ -1962,6 +2109,23 @@ struct RadialFlowDecorr {
               if (mmMultRecoEffCor != 0.0f)
                 p1kBarRecoEffCorMult[isp][ieta][ipt] = meanRecoEffCorMult[isp][ieta][ipt] - mmMultRecoEffCor;
             }
+          }
+        }
+
+        double amplFT0A = 0, amplFT0C = 0;
+        if (col.has_foundFT0()) {
+          const auto& ft0 = col.foundFT0();
+          for (std::size_t iCh = 0; iCh < ft0.channelA().size(); iCh++) {
+            // auto chanelid = ft0.channelA()[iCh];
+            float ampl = ft0.amplitudeA()[iCh];
+            amplFT0A += ampl;
+          }
+          for (std::size_t iCh = 0; iCh < ft0.channelC().size(); iCh++) {
+            // auto chanelid = ft0.channelC()[iCh];
+            // auto globalId = chanelid + KnFt0cCell;
+            float ampl = ft0.amplitudeC()[iCh];
+            // auto eta = getEtaFT0(globalId, 1);
+            amplFT0C += ampl;
           }
         }
 
@@ -2195,6 +2359,9 @@ struct RadialFlowDecorr {
           }
         }
 
+        p1kBarFt0A = amplFT0A - pmeanFT0A_multpvStep2->GetBinContent(pmeanFT0A_multpvStep2->GetXaxis()->FindBin(col.multNTracksPV()));
+        p1kBarFt0C = amplFT0C - pmeanFT0C_multpvStep2->GetBinContent(pmeanFT0C_multpvStep2->GetXaxis()->FindBin(col.multNTracksPV()));
+
         // --- 4. Symmetric Sub-Event (1D) Covariances ---
         for (int ietaA = 1; ietaA <= (KNEta - 1) / 2; ++ietaA) {
           int ietaC = KNEta - ietaA;
@@ -2207,6 +2374,14 @@ struct RadialFlowDecorr {
               float covTru = p1kBarTruMult[isp][ietaA][ipt] * p1kBarTru[isp][ietaC][ipt];
               float covReco = p1kBarRecoMult[isp][ietaA][ipt] * p1kBarReco[isp][ietaC][ipt];
               float covRecoEffCor = p1kBarRecoEffCorMult[isp][ietaA][ipt] * p1kBarRecoEffCor[isp][ietaC][ipt];
+
+              float covFT0ATru = p1kBarFt0A * p1kBarTru[isp][ietaC][ipt];
+              float covFT0AReco = p1kBarFt0A * p1kBarReco[isp][ietaC][ipt];
+              float covFT0ARecoEffCor = p1kBarFt0A * p1kBarRecoEffCor[isp][ietaC][ipt];
+
+              float covFT0CTru = p1kBarFt0C * p1kBarTru[isp][ietaA][ipt];
+              float covFT0CReco = p1kBarFt0C * p1kBarReco[isp][ietaA][ipt];
+              float covFT0CRecoEffCor = p1kBarFt0C * p1kBarRecoEffCor[isp][ietaA][ipt];
 
               if (isp == numKInclusive) {
                 if (std::isfinite(c2SubTru)) {
@@ -2232,6 +2407,32 @@ struct RadialFlowDecorr {
                 if (std::isfinite(covRecoEffCor)) {
                   histos.fill(HIST("MCRecoEffCorr/Prof_Cov_Cent_etabin_ptbin"), cent, ietaA, ipt, covRecoEffCor);
                   histos.fill(HIST("MCRecoEffCorr/Prof_Cov_Mult_etabin_ptbin"), col.multNTracksPV(), ietaA, ipt, covRecoEffCor);
+                }
+
+                if (std::isfinite(covFT0ATru)) {
+                  histos.fill(HIST("MCGen/Prof_CovFT0A_Cent_etabin_ptbin"), cent, ietaA, ipt, covFT0ATru);
+                  histos.fill(HIST("MCGen/Prof_CovFT0A_Mult_etabin_ptbin"), col.multNTracksPV(), ietaA, ipt, covFT0ATru);
+                }
+                if (std::isfinite(covFT0AReco)) {
+                  histos.fill(HIST("MCReco/Prof_CovFT0A_Cent_etabin_ptbin"), cent, ietaA, ipt, covFT0AReco);
+                  histos.fill(HIST("MCReco/Prof_CovFT0A_Mult_etabin_ptbin"), col.multNTracksPV(), ietaA, ipt, covFT0AReco);
+                }
+                if (std::isfinite(covFT0ARecoEffCor)) {
+                  histos.fill(HIST("MCRecoEffCorr/Prof_CovFT0A_Cent_etabin_ptbin"), cent, ietaA, ipt, covFT0ARecoEffCor);
+                  histos.fill(HIST("MCRecoEffCorr/Prof_CovFT0A_Mult_etabin_ptbin"), col.multNTracksPV(), ietaA, ipt, covFT0ARecoEffCor);
+                }
+
+                if (std::isfinite(covFT0CTru)) {
+                  histos.fill(HIST("MCGen/Prof_CovFT0C_Cent_etabin_ptbin"), cent, ietaA, ipt, covFT0CTru);
+                  histos.fill(HIST("MCGen/Prof_CovFT0C_Mult_etabin_ptbin"), col.multNTracksPV(), ietaA, ipt, covFT0CTru);
+                }
+                if (std::isfinite(covFT0CReco)) {
+                  histos.fill(HIST("MCReco/Prof_CovFT0C_Cent_etabin_ptbin"), cent, ietaA, ipt, covFT0CReco);
+                  histos.fill(HIST("MCReco/Prof_CovFT0C_Mult_etabin_ptbin"), col.multNTracksPV(), ietaA, ipt, covFT0CReco);
+                }
+                if (std::isfinite(covFT0CRecoEffCor)) {
+                  histos.fill(HIST("MCRecoEffCorr/Prof_CovFT0C_Cent_etabin_ptbin"), cent, ietaA, ipt, covFT0CRecoEffCor);
+                  histos.fill(HIST("MCRecoEffCorr/Prof_CovFT0C_Mult_etabin_ptbin"), col.multNTracksPV(), ietaA, ipt, covFT0CRecoEffCor);
                 }
 
               } else if (isp == numKPion) { // Pion
@@ -2260,6 +2461,32 @@ struct RadialFlowDecorr {
                   histos.fill(HIST("MCRecoEffCorr/Prof_Cov_Mult_etabin_ptbin_Pi"), col.multNTracksPV(), ietaA, ipt, covRecoEffCor);
                 }
 
+                if (std::isfinite(covFT0ATru)) {
+                  histos.fill(HIST("MCGen/Prof_CovFT0A_Cent_etabin_ptbin_Pi"), cent, ietaA, ipt, covFT0ATru);
+                  histos.fill(HIST("MCGen/Prof_CovFT0A_Mult_etabin_ptbin_Pi"), col.multNTracksPV(), ietaA, ipt, covFT0ATru);
+                }
+                if (std::isfinite(covFT0AReco)) {
+                  histos.fill(HIST("MCReco/Prof_CovFT0A_Cent_etabin_ptbin_Pi"), cent, ietaA, ipt, covFT0AReco);
+                  histos.fill(HIST("MCReco/Prof_CovFT0A_Mult_etabin_ptbin_Pi"), col.multNTracksPV(), ietaA, ipt, covFT0AReco);
+                }
+                if (std::isfinite(covFT0ARecoEffCor)) {
+                  histos.fill(HIST("MCRecoEffCorr/Prof_CovFT0A_Cent_etabin_ptbin_Pi"), cent, ietaA, ipt, covFT0ARecoEffCor);
+                  histos.fill(HIST("MCRecoEffCorr/Prof_CovFT0A_Mult_etabin_ptbin_Pi"), col.multNTracksPV(), ietaA, ipt, covFT0ARecoEffCor);
+                }
+
+                if (std::isfinite(covFT0CTru)) {
+                  histos.fill(HIST("MCGen/Prof_CovFT0C_Cent_etabin_ptbin_Pi"), cent, ietaA, ipt, covFT0CTru);
+                  histos.fill(HIST("MCGen/Prof_CovFT0C_Mult_etabin_ptbin_Pi"), col.multNTracksPV(), ietaA, ipt, covFT0CTru);
+                }
+                if (std::isfinite(covFT0CReco)) {
+                  histos.fill(HIST("MCReco/Prof_CovFT0C_Cent_etabin_ptbin_Pi"), cent, ietaA, ipt, covFT0CReco);
+                  histos.fill(HIST("MCReco/Prof_CovFT0C_Mult_etabin_ptbin_Pi"), col.multNTracksPV(), ietaA, ipt, covFT0CReco);
+                }
+                if (std::isfinite(covFT0CRecoEffCor)) {
+                  histos.fill(HIST("MCRecoEffCorr/Prof_CovFT0C_Cent_etabin_ptbin_Pi"), cent, ietaA, ipt, covFT0CRecoEffCor);
+                  histos.fill(HIST("MCRecoEffCorr/Prof_CovFT0C_Mult_etabin_ptbin_Pi"), col.multNTracksPV(), ietaA, ipt, covFT0CRecoEffCor);
+                }
+
               } else if (isp == numKKaon) { // Kaon
                 if (std::isfinite(c2SubTru)) {
                   histos.fill(HIST("MCGen/Prof_C2Sub_Cent_etabin_ptbin_Ka"), cent, ietaA, ipt, c2SubTru);
@@ -2285,6 +2512,33 @@ struct RadialFlowDecorr {
                   histos.fill(HIST("MCRecoEffCorr/Prof_Cov_Cent_etabin_ptbin_Ka"), cent, ietaA, ipt, covRecoEffCor);
                   histos.fill(HIST("MCRecoEffCorr/Prof_Cov_Mult_etabin_ptbin_Ka"), col.multNTracksPV(), ietaA, ipt, covRecoEffCor);
                 }
+
+                if (std::isfinite(covFT0ATru)) {
+                  histos.fill(HIST("MCGen/Prof_CovFT0A_Cent_etabin_ptbin_Ka"), cent, ietaA, ipt, covFT0ATru);
+                  histos.fill(HIST("MCGen/Prof_CovFT0A_Mult_etabin_ptbin_Ka"), col.multNTracksPV(), ietaA, ipt, covFT0ATru);
+                }
+                if (std::isfinite(covFT0AReco)) {
+                  histos.fill(HIST("MCReco/Prof_CovFT0A_Cent_etabin_ptbin_Ka"), cent, ietaA, ipt, covFT0AReco);
+                  histos.fill(HIST("MCReco/Prof_CovFT0A_Mult_etabin_ptbin_Ka"), col.multNTracksPV(), ietaA, ipt, covFT0AReco);
+                }
+                if (std::isfinite(covFT0ARecoEffCor)) {
+                  histos.fill(HIST("MCRecoEffCorr/Prof_CovFT0A_Cent_etabin_ptbin_Ka"), cent, ietaA, ipt, covFT0ARecoEffCor);
+                  histos.fill(HIST("MCRecoEffCorr/Prof_CovFT0A_Mult_etabin_ptbin_Ka"), col.multNTracksPV(), ietaA, ipt, covFT0ARecoEffCor);
+                }
+
+                if (std::isfinite(covFT0CTru)) {
+                  histos.fill(HIST("MCGen/Prof_CovFT0C_Cent_etabin_ptbin_Ka"), cent, ietaA, ipt, covFT0CTru);
+                  histos.fill(HIST("MCGen/Prof_CovFT0C_Mult_etabin_ptbin_Ka"), col.multNTracksPV(), ietaA, ipt, covFT0CTru);
+                }
+                if (std::isfinite(covFT0CReco)) {
+                  histos.fill(HIST("MCReco/Prof_CovFT0C_Cent_etabin_ptbin_Ka"), cent, ietaA, ipt, covFT0CReco);
+                  histos.fill(HIST("MCReco/Prof_CovFT0C_Mult_etabin_ptbin_Ka"), col.multNTracksPV(), ietaA, ipt, covFT0CReco);
+                }
+                if (std::isfinite(covFT0CRecoEffCor)) {
+                  histos.fill(HIST("MCRecoEffCorr/Prof_CovFT0C_Cent_etabin_ptbin_Ka"), cent, ietaA, ipt, covFT0CRecoEffCor);
+                  histos.fill(HIST("MCRecoEffCorr/Prof_CovFT0C_Mult_etabin_ptbin_Ka"), col.multNTracksPV(), ietaA, ipt, covFT0CRecoEffCor);
+                }
+
               } else if (isp == numKProton) { // Proton
                 if (std::isfinite(c2SubTru)) {
                   histos.fill(HIST("MCGen/Prof_C2Sub_Cent_etabin_ptbin_Pr"), cent, ietaA, ipt, c2SubTru);
@@ -2310,6 +2564,32 @@ struct RadialFlowDecorr {
                   histos.fill(HIST("MCRecoEffCorr/Prof_Cov_Cent_etabin_ptbin_Pr"), cent, ietaA, ipt, covRecoEffCor);
                   histos.fill(HIST("MCRecoEffCorr/Prof_Cov_Mult_etabin_ptbin_Pr"), col.multNTracksPV(), ietaA, ipt, covRecoEffCor);
                 }
+
+                if (std::isfinite(covFT0ATru)) {
+                  histos.fill(HIST("MCGen/Prof_CovFT0A_Cent_etabin_ptbin_Pr"), cent, ietaA, ipt, covFT0ATru);
+                  histos.fill(HIST("MCGen/Prof_CovFT0A_Mult_etabin_ptbin_Pr"), col.multNTracksPV(), ietaA, ipt, covFT0ATru);
+                }
+                if (std::isfinite(covFT0AReco)) {
+                  histos.fill(HIST("MCReco/Prof_CovFT0A_Cent_etabin_ptbin_Pr"), cent, ietaA, ipt, covFT0AReco);
+                  histos.fill(HIST("MCReco/Prof_CovFT0A_Mult_etabin_ptbin_Pr"), col.multNTracksPV(), ietaA, ipt, covFT0AReco);
+                }
+                if (std::isfinite(covFT0ARecoEffCor)) {
+                  histos.fill(HIST("MCRecoEffCorr/Prof_CovFT0A_Cent_etabin_ptbin_Pr"), cent, ietaA, ipt, covFT0ARecoEffCor);
+                  histos.fill(HIST("MCRecoEffCorr/Prof_CovFT0A_Mult_etabin_ptbin_Pr"), col.multNTracksPV(), ietaA, ipt, covFT0ARecoEffCor);
+                }
+
+                if (std::isfinite(covFT0CTru)) {
+                  histos.fill(HIST("MCGen/Prof_CovFT0C_Cent_etabin_ptbin_Pr"), cent, ietaA, ipt, covFT0CTru);
+                  histos.fill(HIST("MCGen/Prof_CovFT0C_Mult_etabin_ptbin_Pr"), col.multNTracksPV(), ietaA, ipt, covFT0CTru);
+                }
+                if (std::isfinite(covFT0CReco)) {
+                  histos.fill(HIST("MCReco/Prof_CovFT0C_Cent_etabin_ptbin_Pr"), cent, ietaA, ipt, covFT0CReco);
+                  histos.fill(HIST("MCReco/Prof_CovFT0C_Mult_etabin_ptbin_Pr"), col.multNTracksPV(), ietaA, ipt, covFT0CReco);
+                }
+                if (std::isfinite(covFT0CRecoEffCor)) {
+                  histos.fill(HIST("MCRecoEffCorr/Prof_CovFT0C_Cent_etabin_ptbin_Pr"), cent, ietaA, ipt, covFT0CRecoEffCor);
+                  histos.fill(HIST("MCRecoEffCorr/Prof_CovFT0C_Mult_etabin_ptbin_Pr"), col.multNTracksPV(), ietaA, ipt, covFT0CRecoEffCor);
+                }
               }
             }
           }
@@ -2317,24 +2597,32 @@ struct RadialFlowDecorr {
 
         // --- 5. Full 2D Covariances & GapSum2D Profiles ---
         for (int ietaA = 1; ietaA < KNEta; ++ietaA) {
-          for (int ietaB = 1; ietaB < KNEta; ++ietaB) {
+          for (int ietaC = 1; ietaC < KNEta; ++ietaC) {
 
             // Gap and Sum calculations
             float etaValA = (etaLw[ietaA] + etaUp[ietaA]) / 2.0f;
-            float etaValB = (etaLw[ietaB] + etaUp[ietaB]) / 2.0f;
+            float etaValB = (etaLw[ietaC] + etaUp[ietaC]) / 2.0f;
             float gap = etaValA - etaValB;
             float sum = (etaValA + etaValB) / 2.0f;
 
             for (int ipt = 0; ipt < KNpT; ++ipt) {
               for (int isp = 0; isp < KNsp; ++isp) {
 
-                float c2SubTru = p1kBarTru[isp][ietaA][ipt] * p1kBarTru[isp][ietaB][ipt];
-                float c2SubReco = p1kBarReco[isp][ietaA][ipt] * p1kBarReco[isp][ietaB][ipt];
-                float c2SubRecoEffCor = p1kBarRecoEffCor[isp][ietaA][ipt] * p1kBarRecoEffCor[isp][ietaB][ipt];
+                float c2SubTru = p1kBarTru[isp][ietaA][ipt] * p1kBarTru[isp][ietaC][ipt];
+                float c2SubReco = p1kBarReco[isp][ietaA][ipt] * p1kBarReco[isp][ietaC][ipt];
+                float c2SubRecoEffCor = p1kBarRecoEffCor[isp][ietaA][ipt] * p1kBarRecoEffCor[isp][ietaC][ipt];
 
-                float covTru = p1kBarTruMult[isp][ietaA][ipt] * p1kBarTru[isp][ietaB][ipt];
-                float covReco = p1kBarRecoMult[isp][ietaA][ipt] * p1kBarReco[isp][ietaB][ipt];
-                float covRecoEffCor = p1kBarRecoEffCorMult[isp][ietaA][ipt] * p1kBarRecoEffCor[isp][ietaB][ipt];
+                float covTru = p1kBarTruMult[isp][ietaA][ipt] * p1kBarTru[isp][ietaC][ipt];
+                float covReco = p1kBarRecoMult[isp][ietaA][ipt] * p1kBarReco[isp][ietaC][ipt];
+                float covRecoEffCor = p1kBarRecoEffCorMult[isp][ietaA][ipt] * p1kBarRecoEffCor[isp][ietaC][ipt];
+
+                float covFT0ATru = p1kBarFt0A * p1kBarTru[isp][ietaC][ipt];
+                float covFT0AReco = p1kBarFt0A * p1kBarReco[isp][ietaC][ipt];
+                float covFT0ARecoEffCor = p1kBarFt0A * p1kBarRecoEffCor[isp][ietaC][ipt];
+
+                float covFT0CTru = p1kBarFt0C * p1kBarTru[isp][ietaA][ipt];
+                float covFT0CReco = p1kBarFt0C * p1kBarReco[isp][ietaA][ipt];
+                float covFT0CRecoEffCor = p1kBarFt0C * p1kBarRecoEffCor[isp][ietaA][ipt];
 
                 if (isp == numKInclusive) { // Inclusive
                   if (ipt == 0) {
@@ -2350,12 +2638,28 @@ struct RadialFlowDecorr {
                       histos.fill(HIST("MCRecoEffCorr/Prof_ipt0_C2Sub2D_Cent_etaA_etaC"), cent, etaValA, etaValB, c2SubRecoEffCor);
                       histos.fill(HIST("MCRecoEffCorr/Prof_ipt0_GapSum2D"), cent, gap, sum, c2SubRecoEffCor);
                     }
+
                     if (std::isfinite(covTru))
                       histos.fill(HIST("MCGen/Prof_ipt0_Cov2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covTru);
                     if (std::isfinite(covReco))
                       histos.fill(HIST("MCReco/Prof_ipt0_Cov2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covReco);
                     if (std::isfinite(covRecoEffCor))
                       histos.fill(HIST("MCRecoEffCorr/Prof_ipt0_Cov2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covRecoEffCor);
+
+                    if (std::isfinite(covFT0ATru))
+                      histos.fill(HIST("MCGen/Prof_ipt0_CovFT0A2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covFT0ATru);
+                    if (std::isfinite(covFT0AReco))
+                      histos.fill(HIST("MCReco/Prof_ipt0_CovFT0A2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covFT0AReco);
+                    if (std::isfinite(covFT0ARecoEffCor))
+                      histos.fill(HIST("MCRecoEffCorr/Prof_ipt0_CovFT0A2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covFT0ARecoEffCor);
+
+                    if (std::isfinite(covFT0CTru))
+                      histos.fill(HIST("MCGen/Prof_ipt0_CovFT0C2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covFT0CTru);
+                    if (std::isfinite(covFT0CReco))
+                      histos.fill(HIST("MCReco/Prof_ipt0_CovFT0C2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covFT0CReco);
+                    if (std::isfinite(covFT0CRecoEffCor))
+                      histos.fill(HIST("MCRecoEffCorr/Prof_ipt0_CovFT0C2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covFT0CRecoEffCor);
+
                   } else if (ipt == KNpT - 2) {
                     if (std::isfinite(c2SubTru)) {
                       histos.fill(HIST("MCGen/Prof_ipt1_C2Sub2D_Cent_etaA_etaC"), cent, etaValA, etaValB, c2SubTru);
@@ -2375,6 +2679,21 @@ struct RadialFlowDecorr {
                       histos.fill(HIST("MCReco/Prof_ipt1_Cov2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covReco);
                     if (std::isfinite(covRecoEffCor))
                       histos.fill(HIST("MCRecoEffCorr/Prof_ipt1_Cov2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covRecoEffCor);
+
+                    if (std::isfinite(covFT0ATru))
+                      histos.fill(HIST("MCGen/Prof_ipt1_CovFT0A2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covFT0ATru);
+                    if (std::isfinite(covFT0AReco))
+                      histos.fill(HIST("MCReco/Prof_ipt1_CovFT0A2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covFT0AReco);
+                    if (std::isfinite(covFT0ARecoEffCor))
+                      histos.fill(HIST("MCRecoEffCorr/Prof_ipt1_CovFT0A2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covFT0ARecoEffCor);
+
+                    if (std::isfinite(covFT0CTru))
+                      histos.fill(HIST("MCGen/Prof_ipt1_CovFT0C2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covFT0CTru);
+                    if (std::isfinite(covFT0CReco))
+                      histos.fill(HIST("MCReco/Prof_ipt1_CovFT0C2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covFT0CReco);
+                    if (std::isfinite(covFT0CRecoEffCor))
+                      histos.fill(HIST("MCRecoEffCorr/Prof_ipt1_CovFT0C2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covFT0CRecoEffCor);
+
                   } else if (ipt == KNpT - 1) {
                     if (std::isfinite(c2SubTru)) {
                       histos.fill(HIST("MCGen/Prof_ipt2_C2Sub2D_Cent_etaA_etaC"), cent, etaValA, etaValB, c2SubTru);
@@ -2394,6 +2713,20 @@ struct RadialFlowDecorr {
                       histos.fill(HIST("MCReco/Prof_ipt2_Cov2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covReco);
                     if (std::isfinite(covRecoEffCor))
                       histos.fill(HIST("MCRecoEffCorr/Prof_ipt2_Cov2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covRecoEffCor);
+
+                    if (std::isfinite(covFT0ATru))
+                      histos.fill(HIST("MCGen/Prof_ipt2_CovFT0A2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covFT0ATru);
+                    if (std::isfinite(covFT0AReco))
+                      histos.fill(HIST("MCReco/Prof_ipt2_CovFT0A2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covFT0AReco);
+                    if (std::isfinite(covFT0ARecoEffCor))
+                      histos.fill(HIST("MCRecoEffCorr/Prof_ipt2_CovFT0A2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covFT0ARecoEffCor);
+
+                    if (std::isfinite(covFT0CTru))
+                      histos.fill(HIST("MCGen/Prof_ipt2_CovFT0C2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covFT0CTru);
+                    if (std::isfinite(covFT0CReco))
+                      histos.fill(HIST("MCReco/Prof_ipt2_CovFT0C2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covFT0CReco);
+                    if (std::isfinite(covFT0CRecoEffCor))
+                      histos.fill(HIST("MCRecoEffCorr/Prof_ipt2_CovFT0C2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covFT0CRecoEffCor);
                   }
 
                 } else if (isp == numKPion) { // Pion
@@ -2416,6 +2749,21 @@ struct RadialFlowDecorr {
                       histos.fill(HIST("MCReco/Prof_ipt0_Cov2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covReco);
                     if (std::isfinite(covRecoEffCor))
                       histos.fill(HIST("MCRecoEffCorr/Prof_ipt0_Cov2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covRecoEffCor);
+
+                    if (std::isfinite(covFT0ATru))
+                      histos.fill(HIST("MCGen/Prof_ipt0_CovFT0A2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covFT0ATru);
+                    if (std::isfinite(covFT0AReco))
+                      histos.fill(HIST("MCReco/Prof_ipt0_CovFT0A2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covFT0AReco);
+                    if (std::isfinite(covFT0ARecoEffCor))
+                      histos.fill(HIST("MCRecoEffCorr/Prof_ipt0_CovFT0A2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covFT0ARecoEffCor);
+
+                    if (std::isfinite(covFT0CTru))
+                      histos.fill(HIST("MCGen/Prof_ipt0_CovFT0C2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covFT0CTru);
+                    if (std::isfinite(covFT0CReco))
+                      histos.fill(HIST("MCReco/Prof_ipt0_CovFT0C2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covFT0CReco);
+                    if (std::isfinite(covFT0CRecoEffCor))
+                      histos.fill(HIST("MCRecoEffCorr/Prof_ipt0_CovFT0C2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covFT0CRecoEffCor);
+
                   } else if (ipt == KNpT - 2) {
                     if (std::isfinite(c2SubTru)) {
                       histos.fill(HIST("MCGen/Prof_ipt1_C2Sub2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, c2SubTru);
@@ -2435,6 +2783,21 @@ struct RadialFlowDecorr {
                       histos.fill(HIST("MCReco/Prof_ipt1_Cov2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covReco);
                     if (std::isfinite(covRecoEffCor))
                       histos.fill(HIST("MCRecoEffCorr/Prof_ipt1_Cov2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covRecoEffCor);
+
+                    if (std::isfinite(covFT0ATru))
+                      histos.fill(HIST("MCGen/Prof_ipt1_CovFT0A2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covFT0ATru);
+                    if (std::isfinite(covFT0AReco))
+                      histos.fill(HIST("MCReco/Prof_ipt1_CovFT0A2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covFT0AReco);
+                    if (std::isfinite(covFT0ARecoEffCor))
+                      histos.fill(HIST("MCRecoEffCorr/Prof_ipt1_CovFT0A2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covFT0ARecoEffCor);
+
+                    if (std::isfinite(covFT0CTru))
+                      histos.fill(HIST("MCGen/Prof_ipt1_CovFT0C2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covFT0CTru);
+                    if (std::isfinite(covFT0CReco))
+                      histos.fill(HIST("MCReco/Prof_ipt1_CovFT0C2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covFT0CReco);
+                    if (std::isfinite(covFT0CRecoEffCor))
+                      histos.fill(HIST("MCRecoEffCorr/Prof_ipt1_CovFT0C2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covFT0CRecoEffCor);
+
                   } else if (ipt == KNpT - 1) {
                     if (std::isfinite(c2SubTru)) {
                       histos.fill(HIST("MCGen/Prof_ipt2_C2Sub2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, c2SubTru);
@@ -2454,6 +2817,20 @@ struct RadialFlowDecorr {
                       histos.fill(HIST("MCReco/Prof_ipt2_Cov2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covReco);
                     if (std::isfinite(covRecoEffCor))
                       histos.fill(HIST("MCRecoEffCorr/Prof_ipt2_Cov2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covRecoEffCor);
+
+                    if (std::isfinite(covFT0ATru))
+                      histos.fill(HIST("MCGen/Prof_ipt2_CovFT0A2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covFT0ATru);
+                    if (std::isfinite(covFT0AReco))
+                      histos.fill(HIST("MCReco/Prof_ipt2_CovFT0A2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covFT0AReco);
+                    if (std::isfinite(covFT0ARecoEffCor))
+                      histos.fill(HIST("MCRecoEffCorr/Prof_ipt2_CovFT0A2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covFT0ARecoEffCor);
+
+                    if (std::isfinite(covFT0CTru))
+                      histos.fill(HIST("MCGen/Prof_ipt2_CovFT0C2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covFT0CTru);
+                    if (std::isfinite(covFT0CReco))
+                      histos.fill(HIST("MCReco/Prof_ipt2_CovFT0C2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covFT0CReco);
+                    if (std::isfinite(covFT0CRecoEffCor))
+                      histos.fill(HIST("MCRecoEffCorr/Prof_ipt2_CovFT0C2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covFT0CRecoEffCor);
                   }
                 } else if (isp == numKKaon) { // Kaon
                   if (ipt == 0) {
@@ -2475,6 +2852,21 @@ struct RadialFlowDecorr {
                       histos.fill(HIST("MCReco/Prof_ipt0_Cov2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covReco);
                     if (std::isfinite(covRecoEffCor))
                       histos.fill(HIST("MCRecoEffCorr/Prof_ipt0_Cov2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covRecoEffCor);
+
+                    if (std::isfinite(covFT0ATru))
+                      histos.fill(HIST("MCGen/Prof_ipt0_CovFT0A2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covFT0ATru);
+                    if (std::isfinite(covFT0AReco))
+                      histos.fill(HIST("MCReco/Prof_ipt0_CovFT0A2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covFT0AReco);
+                    if (std::isfinite(covFT0ARecoEffCor))
+                      histos.fill(HIST("MCRecoEffCorr/Prof_ipt0_CovFT0A2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covFT0ARecoEffCor);
+
+                    if (std::isfinite(covFT0CTru))
+                      histos.fill(HIST("MCGen/Prof_ipt0_CovFT0C2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covFT0CTru);
+                    if (std::isfinite(covFT0CReco))
+                      histos.fill(HIST("MCReco/Prof_ipt0_CovFT0C2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covFT0CReco);
+                    if (std::isfinite(covFT0CRecoEffCor))
+                      histos.fill(HIST("MCRecoEffCorr/Prof_ipt0_CovFT0C2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covFT0CRecoEffCor);
+
                   } else if (ipt == KNpT - 2) {
                     if (std::isfinite(c2SubTru)) {
                       histos.fill(HIST("MCGen/Prof_ipt1_C2Sub2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, c2SubTru);
@@ -2494,6 +2886,21 @@ struct RadialFlowDecorr {
                       histos.fill(HIST("MCReco/Prof_ipt1_Cov2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covReco);
                     if (std::isfinite(covRecoEffCor))
                       histos.fill(HIST("MCRecoEffCorr/Prof_ipt1_Cov2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covRecoEffCor);
+
+                    if (std::isfinite(covFT0ATru))
+                      histos.fill(HIST("MCGen/Prof_ipt1_CovFT0A2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covFT0ATru);
+                    if (std::isfinite(covFT0AReco))
+                      histos.fill(HIST("MCReco/Prof_ipt1_CovFT0A2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covFT0AReco);
+                    if (std::isfinite(covFT0ARecoEffCor))
+                      histos.fill(HIST("MCRecoEffCorr/Prof_ipt1_CovFT0A2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covFT0ARecoEffCor);
+
+                    if (std::isfinite(covFT0CTru))
+                      histos.fill(HIST("MCGen/Prof_ipt1_CovFT0C2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covFT0CTru);
+                    if (std::isfinite(covFT0CReco))
+                      histos.fill(HIST("MCReco/Prof_ipt1_CovFT0C2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covFT0CReco);
+                    if (std::isfinite(covFT0CRecoEffCor))
+                      histos.fill(HIST("MCRecoEffCorr/Prof_ipt1_CovFT0C2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covFT0CRecoEffCor);
+
                   } else if (ipt == KNpT - 1) {
                     if (std::isfinite(c2SubTru)) {
                       histos.fill(HIST("MCGen/Prof_ipt2_C2Sub2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, c2SubTru);
@@ -2513,6 +2920,20 @@ struct RadialFlowDecorr {
                       histos.fill(HIST("MCReco/Prof_ipt2_Cov2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covReco);
                     if (std::isfinite(covRecoEffCor))
                       histos.fill(HIST("MCRecoEffCorr/Prof_ipt2_Cov2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covRecoEffCor);
+
+                    if (std::isfinite(covFT0ATru))
+                      histos.fill(HIST("MCGen/Prof_ipt2_CovFT0A2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covFT0ATru);
+                    if (std::isfinite(covFT0AReco))
+                      histos.fill(HIST("MCReco/Prof_ipt2_CovFT0A2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covFT0AReco);
+                    if (std::isfinite(covFT0ARecoEffCor))
+                      histos.fill(HIST("MCRecoEffCorr/Prof_ipt2_CovFT0A2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covFT0ARecoEffCor);
+
+                    if (std::isfinite(covFT0CTru))
+                      histos.fill(HIST("MCGen/Prof_ipt2_CovFT0C2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covFT0CTru);
+                    if (std::isfinite(covFT0CReco))
+                      histos.fill(HIST("MCReco/Prof_ipt2_CovFT0C2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covFT0CReco);
+                    if (std::isfinite(covFT0CRecoEffCor))
+                      histos.fill(HIST("MCRecoEffCorr/Prof_ipt2_CovFT0C2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covFT0CRecoEffCor);
                   }
                 } else if (isp == numKProton) { // Proton
                   if (ipt == 0) {
@@ -2534,6 +2955,21 @@ struct RadialFlowDecorr {
                       histos.fill(HIST("MCReco/Prof_ipt0_Cov2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covReco);
                     if (std::isfinite(covRecoEffCor))
                       histos.fill(HIST("MCRecoEffCorr/Prof_ipt0_Cov2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covRecoEffCor);
+
+                    if (std::isfinite(covFT0ATru))
+                      histos.fill(HIST("MCGen/Prof_ipt0_CovFT0A2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covFT0ATru);
+                    if (std::isfinite(covFT0AReco))
+                      histos.fill(HIST("MCReco/Prof_ipt0_CovFT0A2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covFT0AReco);
+                    if (std::isfinite(covFT0ARecoEffCor))
+                      histos.fill(HIST("MCRecoEffCorr/Prof_ipt0_CovFT0A2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covFT0ARecoEffCor);
+
+                    if (std::isfinite(covFT0CTru))
+                      histos.fill(HIST("MCGen/Prof_ipt0_CovFT0C2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covFT0CTru);
+                    if (std::isfinite(covFT0CReco))
+                      histos.fill(HIST("MCReco/Prof_ipt0_CovFT0C2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covFT0CReco);
+                    if (std::isfinite(covFT0CRecoEffCor))
+                      histos.fill(HIST("MCRecoEffCorr/Prof_ipt0_CovFT0C2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covFT0CRecoEffCor);
+
                   } else if (ipt == KNpT - 2) {
                     if (std::isfinite(c2SubTru)) {
                       histos.fill(HIST("MCGen/Prof_ipt1_C2Sub2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, c2SubTru);
@@ -2553,6 +2989,21 @@ struct RadialFlowDecorr {
                       histos.fill(HIST("MCReco/Prof_ipt1_Cov2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covReco);
                     if (std::isfinite(covRecoEffCor))
                       histos.fill(HIST("MCRecoEffCorr/Prof_ipt1_Cov2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covRecoEffCor);
+
+                    if (std::isfinite(covFT0ATru))
+                      histos.fill(HIST("MCGen/Prof_ipt1_CovFT0A2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covFT0ATru);
+                    if (std::isfinite(covFT0AReco))
+                      histos.fill(HIST("MCReco/Prof_ipt1_CovFT0A2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covFT0AReco);
+                    if (std::isfinite(covFT0ARecoEffCor))
+                      histos.fill(HIST("MCRecoEffCorr/Prof_ipt1_CovFT0A2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covFT0ARecoEffCor);
+
+                    if (std::isfinite(covFT0CTru))
+                      histos.fill(HIST("MCGen/Prof_ipt1_CovFT0C2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covFT0CTru);
+                    if (std::isfinite(covFT0CReco))
+                      histos.fill(HIST("MCReco/Prof_ipt1_CovFT0C2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covFT0CReco);
+                    if (std::isfinite(covFT0CRecoEffCor))
+                      histos.fill(HIST("MCRecoEffCorr/Prof_ipt1_CovFT0C2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covFT0CRecoEffCor);
+
                   } else if (ipt == KNpT - 1) {
                     if (std::isfinite(c2SubTru)) {
                       histos.fill(HIST("MCGen/Prof_ipt2_C2Sub2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, c2SubTru);
@@ -2572,6 +3023,20 @@ struct RadialFlowDecorr {
                       histos.fill(HIST("MCReco/Prof_ipt2_Cov2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covReco);
                     if (std::isfinite(covRecoEffCor))
                       histos.fill(HIST("MCRecoEffCorr/Prof_ipt2_Cov2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covRecoEffCor);
+
+                    if (std::isfinite(covFT0ATru))
+                      histos.fill(HIST("MCGen/Prof_ipt2_CovFT0A2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covFT0ATru);
+                    if (std::isfinite(covFT0AReco))
+                      histos.fill(HIST("MCReco/Prof_ipt2_CovFT0A2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covFT0AReco);
+                    if (std::isfinite(covFT0ARecoEffCor))
+                      histos.fill(HIST("MCRecoEffCorr/Prof_ipt2_CovFT0A2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covFT0ARecoEffCor);
+
+                    if (std::isfinite(covFT0CTru))
+                      histos.fill(HIST("MCGen/Prof_ipt2_CovFT0C2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covFT0CTru);
+                    if (std::isfinite(covFT0CReco))
+                      histos.fill(HIST("MCReco/Prof_ipt2_CovFT0C2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covFT0CReco);
+                    if (std::isfinite(covFT0CRecoEffCor))
+                      histos.fill(HIST("MCRecoEffCorr/Prof_ipt2_CovFT0C2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covFT0CRecoEffCor);
                   }
                 }
               }
@@ -2671,7 +3136,7 @@ struct RadialFlowDecorr {
   }
   PROCESS_SWITCH(RadialFlowDecorr, processGetDataFlat, "process data to calculate Flattening maps", cfgRunGetDataFlat);
 
-  void processDataMean(AodCollisionsSel::iterator const& coll, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcsData*/, AodTracksSel const& tracks)
+  void processDataMean(AodCollisionsSel::iterator const& coll, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcsData*/, aod::FT0s const&, AodTracksSel const& tracks)
   {
     // Expanded to 4 species (isp = 0: Incl, 1: Pi, 2: Ka, 3: Pr)
     double sumWi[KNsp][KNEta][KNpT]{}, sumWipti[KNsp][KNEta][KNpT]{};
@@ -2787,47 +3252,47 @@ struct RadialFlowDecorr {
 
     // Kinematic Bin Means (1D and 2D Sub-event)
     for (int ietaA = 0; ietaA < KNEta; ++ietaA) {
-      for (int ietaB = 0; ietaB < KNEta; ++ietaB) {
+      for (int ietaC = 0; ietaC < KNEta; ++ietaC) {
         for (int ipt = 0; ipt < KNpT; ++ipt) {
           for (int isp = 0; isp < KNsp; ++isp) {
 
             // --- 2D Sub-Event Calculations ---
-            double wCorrAB = sumWi[isp][ietaA][ipt] + sumWi[isp][ietaB][ipt];
+            double wCorrAB = sumWi[isp][ietaA][ipt] + sumWi[isp][ietaC][ipt];
             if (wCorrAB > 0) {
-              float mptsub = (sumWipti[isp][ietaA][ipt] + sumWipti[isp][ietaB][ipt]) / wCorrAB;
+              float mptsub = (sumWipti[isp][ietaA][ipt] + sumWipti[isp][ietaC][ipt]) / wCorrAB;
               if (isp == numKInclusive) {
                 if (ipt == 0)
-                  histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0"), cent, ietaA, ietaB, mptsub);
+                  histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0"), cent, ietaA, ietaC, mptsub);
                 if (ipt == KNpT - 2)
-                  histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1"), cent, ietaA, ietaB, mptsub);
+                  histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1"), cent, ietaA, ietaC, mptsub);
                 if (ipt == KNpT - 1)
-                  histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2"), cent, ietaA, ietaB, mptsub);
+                  histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2"), cent, ietaA, ietaC, mptsub);
               } else if (isp == numKPion) {
                 if (ipt == 0)
-                  histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_Pi"), cent, ietaA, ietaB, mptsub);
+                  histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_Pi"), cent, ietaA, ietaC, mptsub);
                 if (ipt == KNpT - 2)
-                  histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_Pi"), cent, ietaA, ietaB, mptsub);
+                  histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_Pi"), cent, ietaA, ietaC, mptsub);
                 if (ipt == KNpT - 1)
-                  histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_Pi"), cent, ietaA, ietaB, mptsub);
+                  histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_Pi"), cent, ietaA, ietaC, mptsub);
               } else if (isp == numKKaon) {
                 if (ipt == 0)
-                  histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_Ka"), cent, ietaA, ietaB, mptsub);
+                  histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_Ka"), cent, ietaA, ietaC, mptsub);
                 if (ipt == KNpT - 2)
-                  histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_Ka"), cent, ietaA, ietaB, mptsub);
+                  histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_Ka"), cent, ietaA, ietaC, mptsub);
                 if (ipt == KNpT - 1)
-                  histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_Ka"), cent, ietaA, ietaB, mptsub);
+                  histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_Ka"), cent, ietaA, ietaC, mptsub);
               } else if (isp == numKProton) {
                 if (ipt == 0)
-                  histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_Pr"), cent, ietaA, ietaB, mptsub);
+                  histos.fill(HIST("Prof2D_MeanpT_Sub_ipt0_Pr"), cent, ietaA, ietaC, mptsub);
                 if (ipt == KNpT - 2)
-                  histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_Pr"), cent, ietaA, ietaB, mptsub);
+                  histos.fill(HIST("Prof2D_MeanpT_Sub_ipt1_Pr"), cent, ietaA, ietaC, mptsub);
                 if (ipt == KNpT - 1)
-                  histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_Pr"), cent, ietaA, ietaB, mptsub);
+                  histos.fill(HIST("Prof2D_MeanpT_Sub_ipt2_Pr"), cent, ietaA, ietaC, mptsub);
               }
             }
 
             // --- 1D Individual Bin Calculations (Only do when A == B to avoid overfilling) ---
-            if (ietaA == ietaB) {
+            if (ietaA == ietaC) {
               double mpt = sumWipti[isp][ietaA][ipt] / sumWi[isp][ietaA][ipt];
               if (sumWi[isp][ietaA][ipt] >= 1.0f && std::isfinite(mpt)) {
                 if (isp == numKInclusive) {
@@ -2857,10 +3322,37 @@ struct RadialFlowDecorr {
         }
       }
     }
+
+    double amplFT0A = 0, amplFT0C = 0;
+    if (coll.has_foundFT0()) {
+      const auto& ft0 = coll.foundFT0();
+      for (std::size_t iCh = 0; iCh < ft0.channelA().size(); iCh++) {
+        auto chanelid = ft0.channelA()[iCh];
+        float ampl = ft0.amplitudeA()[iCh];
+        amplFT0A += ampl;
+        auto eta = getEtaFT0(chanelid, 0);
+        histos.fill(HIST("pmean_cent_id_eta_FT0"), cent, iCh, eta, ampl);
+        histos.fill(HIST("h3_cent_id_eta_FT0"), cent, iCh, eta, ampl);
+      }
+      for (std::size_t iCh = 0; iCh < ft0.channelC().size(); iCh++) {
+        auto chanelid = ft0.channelC()[iCh];
+        auto globalId = chanelid + KnFt0cCell;
+        float ampl = ft0.amplitudeC()[iCh];
+        auto eta = getEtaFT0(globalId, 1);
+        amplFT0C += ampl;
+        histos.fill(HIST("pmean_cent_id_eta_FT0"), cent, iCh, eta, ampl);
+        histos.fill(HIST("h3_cent_id_eta_FT0"), cent, iCh, eta, ampl);
+      }
+    }
+
+    histos.fill(HIST("pmeanFT0A_multpv"), coll.multNTracksPV(), amplFT0A);
+    histos.fill(HIST("pmeanFT0A_cent"), cent, amplFT0A);
+    histos.fill(HIST("pmeanFT0C_multpv"), coll.multNTracksPV(), amplFT0C);
+    histos.fill(HIST("pmeanFT0C_cent"), cent, amplFT0C);
   }
   PROCESS_SWITCH(RadialFlowDecorr, processDataMean, "process data to calculate mean pT", cfgRunDataMean);
 
-  void processDataFluc(AodCollisionsSel::iterator const& coll, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcsData*/, AodTracksSel const& tracks)
+  void processDataFluc(AodCollisionsSel::iterator const& coll, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcsData*/, aod::FT0s const&, AodTracksSel const& tracks)
   {
     if (!isEventSelected(coll))
       return;
@@ -2960,6 +3452,23 @@ struct RadialFlowDecorr {
       }
     }
 
+    double amplFT0A = 0, amplFT0C = 0;
+    if (coll.has_foundFT0()) {
+      const auto& ft0 = coll.foundFT0();
+      for (std::size_t iCh = 0; iCh < ft0.channelA().size(); iCh++) {
+        float ampl = ft0.amplitudeA()[iCh];
+        amplFT0A += ampl;
+      }
+      for (std::size_t iCh = 0; iCh < ft0.channelC().size(); iCh++) {
+        auto chanelid = ft0.channelC()[iCh];
+        auto globalId = chanelid + KnFt0cCell;
+        float ampl = ft0.amplitudeC()[iCh];
+        amplFT0C += ampl;
+      }
+    }
+    double p1kBarFt0A = amplFT0A - pmeanFT0A_multpvStep2->GetBinContent(pmeanFT0A_multpvStep2->GetXaxis()->FindBin(coll.multNTracksPV()));
+    double p1kBarFt0C = amplFT0C - pmeanFT0C_multpvStep2->GetBinContent(pmeanFT0C_multpvStep2->GetXaxis()->FindBin(coll.multNTracksPV()));
+
     // --- 2. Step 2 Means and 1D Fluc Variables ---
     for (int ieta = 0; ieta < KNEta; ++ieta) {
       for (int ipt = 0; ipt < KNpT; ++ipt) {
@@ -3039,6 +3548,9 @@ struct RadialFlowDecorr {
           float covAC = p1kBarMult[isp][ietaA][ipt] * p1kBar[isp][ietaC][ipt];
           float covCA = p1kBar[isp][ietaA][ipt] * p1kBarMult[isp][ietaC][ipt];
 
+          float covFT0A = p1kBarFt0A * p1kBar[isp][ietaC][ipt];
+          float covFT0C = p1kBarFt0C * p1kBar[isp][ietaA][ipt];
+
           if (isp == numKInclusive) {
             if (std::isfinite(c2Sub)) {
               histos.fill(HIST("Prof_C2Sub_Cent_etabin_ptbin"), cent, ietaA, ipt, c2Sub);
@@ -3052,6 +3564,16 @@ struct RadialFlowDecorr {
               histos.fill(HIST("Prof_Cov_Cent_etabin_ptbin"), cent, ietaA, ipt, covCA);
               histos.fill(HIST("Prof_Cov_Mult_etabin_ptbin"), coll.multNTracksPV(), ietaA, ipt, covCA);
             }
+
+            if (std::isfinite(covFT0A)) {
+              histos.fill(HIST("Prof_CovFT0A_Cent_etabin_ptbin"), cent, ietaA, ipt, covFT0A);
+              histos.fill(HIST("Prof_CovFT0A_Mult_etabin_ptbin"), coll.multNTracksPV(), ietaA, ipt, covFT0A);
+            }
+            if (std::isfinite(covFT0C)) {
+              histos.fill(HIST("Prof_CovFT0C_Cent_etabin_ptbin"), cent, ietaA, ipt, covFT0C);
+              histos.fill(HIST("Prof_CovFT0C_Mult_etabin_ptbin"), coll.multNTracksPV(), ietaA, ipt, covFT0C);
+            }
+
           } else if (isp == numKPion) { // Pi
             if (std::isfinite(c2Sub)) {
               histos.fill(HIST("Prof_C2Sub_Cent_etabin_ptbin_Pi"), cent, ietaA, ipt, c2Sub);
@@ -3065,6 +3587,15 @@ struct RadialFlowDecorr {
               histos.fill(HIST("Prof_Cov_Cent_etabin_ptbin_Pi"), cent, ietaA, ipt, covCA);
               histos.fill(HIST("Prof_Cov_Mult_etabin_ptbin_Pi"), coll.multNTracksPV(), ietaA, ipt, covCA);
             }
+            if (std::isfinite(covFT0A)) {
+              histos.fill(HIST("Prof_CovFT0A_Cent_etabin_ptbin_Pi"), cent, ietaA, ipt, covFT0A);
+              histos.fill(HIST("Prof_CovFT0A_Mult_etabin_ptbin_Pi"), coll.multNTracksPV(), ietaA, ipt, covFT0A);
+            }
+            if (std::isfinite(covFT0C)) {
+              histos.fill(HIST("Prof_CovFT0C_Cent_etabin_ptbin_Pi"), cent, ietaA, ipt, covFT0C);
+              histos.fill(HIST("Prof_CovFT0C_Mult_etabin_ptbin_Pi"), coll.multNTracksPV(), ietaA, ipt, covFT0C);
+            }
+
           } else if (isp == numKKaon) { // Ka
             if (std::isfinite(c2Sub)) {
               histos.fill(HIST("Prof_C2Sub_Cent_etabin_ptbin_Ka"), cent, ietaA, ipt, c2Sub);
@@ -3078,6 +3609,15 @@ struct RadialFlowDecorr {
               histos.fill(HIST("Prof_Cov_Cent_etabin_ptbin_Ka"), cent, ietaA, ipt, covCA);
               histos.fill(HIST("Prof_Cov_Mult_etabin_ptbin_Ka"), coll.multNTracksPV(), ietaA, ipt, covCA);
             }
+            if (std::isfinite(covFT0A)) {
+              histos.fill(HIST("Prof_CovFT0A_Cent_etabin_ptbin_Ka"), cent, ietaA, ipt, covFT0A);
+              histos.fill(HIST("Prof_CovFT0A_Mult_etabin_ptbin_Ka"), coll.multNTracksPV(), ietaA, ipt, covFT0A);
+            }
+            if (std::isfinite(covFT0C)) {
+              histos.fill(HIST("Prof_CovFT0C_Cent_etabin_ptbin_Ka"), cent, ietaA, ipt, covFT0C);
+              histos.fill(HIST("Prof_CovFT0C_Mult_etabin_ptbin_Ka"), coll.multNTracksPV(), ietaA, ipt, covFT0C);
+            }
+
           } else if (isp == numKProton) { // Pr
             if (std::isfinite(c2Sub)) {
               histos.fill(HIST("Prof_C2Sub_Cent_etabin_ptbin_Pr"), cent, ietaA, ipt, c2Sub);
@@ -3091,6 +3631,14 @@ struct RadialFlowDecorr {
               histos.fill(HIST("Prof_Cov_Cent_etabin_ptbin_Pr"), cent, ietaA, ipt, covCA);
               histos.fill(HIST("Prof_Cov_Mult_etabin_ptbin_Pr"), coll.multNTracksPV(), ietaA, ipt, covCA);
             }
+            if (std::isfinite(covFT0A)) {
+              histos.fill(HIST("Prof_CovFT0A_Cent_etabin_ptbin_Pr"), cent, ietaA, ipt, covFT0A);
+              histos.fill(HIST("Prof_CovFT0A_Mult_etabin_ptbin_Pr"), coll.multNTracksPV(), ietaA, ipt, covFT0A);
+            }
+            if (std::isfinite(covFT0C)) {
+              histos.fill(HIST("Prof_CovFT0C_Cent_etabin_ptbin_Pr"), cent, ietaA, ipt, covFT0C);
+              histos.fill(HIST("Prof_CovFT0C_Mult_etabin_ptbin_Pr"), coll.multNTracksPV(), ietaA, ipt, covFT0C);
+            }
           }
         }
       }
@@ -3098,18 +3646,20 @@ struct RadialFlowDecorr {
 
     // --- 5. Full 2D Covariances & GapSum Profiles ---
     for (int ietaA = 1; ietaA < KNEta; ++ietaA) {
-      for (int ietaB = 1; ietaB < KNEta; ++ietaB) {
+      for (int ietaC = 1; ietaC < KNEta; ++ietaC) {
 
         float etaValA = (etaLw[ietaA] + etaUp[ietaA]) / 2.0f;
-        float etaValB = (etaLw[ietaB] + etaUp[ietaB]) / 2.0f;
+        float etaValB = (etaLw[ietaC] + etaUp[ietaC]) / 2.0f;
         float gap = etaValA - etaValB;
         float sum = (etaValA + etaValB) / 2.0f;
 
         for (int ipt = 0; ipt < KNpT; ++ipt) {
           for (int isp = 0; isp < KNsp; ++isp) {
 
-            float c2Sub = p1kBar[isp][ietaA][ipt] * p1kBar[isp][ietaB][ipt];
-            float cov = p1kBarMult[isp][ietaA][ipt] * p1kBar[isp][ietaB][ipt];
+            float c2Sub = p1kBar[isp][ietaA][ipt] * p1kBar[isp][ietaC][ipt];
+            float cov = p1kBarMult[isp][ietaA][ipt] * p1kBar[isp][ietaC][ipt];
+            float covFT0A = p1kBarFt0A * p1kBar[isp][ietaC][ipt];
+            float covFT0C = p1kBarFt0C * p1kBar[isp][ietaA][ipt];
 
             if (isp == numKInclusive) { // Inclusive
               if (ipt == 0) {
@@ -3119,6 +3669,10 @@ struct RadialFlowDecorr {
                 }
                 if (std::isfinite(cov))
                   histos.fill(HIST("Prof_ipt0_Cov2D_Cent_etaA_etaC"), cent, etaValA, etaValB, cov);
+                if (std::isfinite(covFT0A))
+                  histos.fill(HIST("Prof_ipt0_CovFT0A2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covFT0A);
+                if (std::isfinite(covFT0C))
+                  histos.fill(HIST("Prof_ipt0_CovFT0C2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covFT0C);
               } else if (ipt == KNpT - 2) {
                 if (std::isfinite(c2Sub)) {
                   histos.fill(HIST("Prof_ipt1_C2Sub2D_Cent_etaA_etaC"), cent, etaValA, etaValB, c2Sub);
@@ -3126,6 +3680,10 @@ struct RadialFlowDecorr {
                 }
                 if (std::isfinite(cov))
                   histos.fill(HIST("Prof_ipt1_Cov2D_Cent_etaA_etaC"), cent, etaValA, etaValB, cov);
+                if (std::isfinite(covFT0A))
+                  histos.fill(HIST("Prof_ipt1_CovFT0A2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covFT0A);
+                if (std::isfinite(covFT0C))
+                  histos.fill(HIST("Prof_ipt1_CovFT0C2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covFT0C);
               } else if (ipt == KNpT - 1) {
                 if (std::isfinite(c2Sub)) {
                   histos.fill(HIST("Prof_ipt2_C2Sub2D_Cent_etaA_etaC"), cent, etaValA, etaValB, c2Sub);
@@ -3133,6 +3691,10 @@ struct RadialFlowDecorr {
                 }
                 if (std::isfinite(cov))
                   histos.fill(HIST("Prof_ipt2_Cov2D_Cent_etaA_etaC"), cent, etaValA, etaValB, cov);
+                if (std::isfinite(covFT0A))
+                  histos.fill(HIST("Prof_ipt2_CovFT0A2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covFT0A);
+                if (std::isfinite(covFT0C))
+                  histos.fill(HIST("Prof_ipt2_CovFT0C2D_Cent_etaA_etaC"), cent, etaValA, etaValB, covFT0C);
               }
             } else if (isp == numKPion) { // Pi
               if (ipt == 0) {
@@ -3142,6 +3704,10 @@ struct RadialFlowDecorr {
                 }
                 if (std::isfinite(cov))
                   histos.fill(HIST("Prof_ipt0_Cov2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, cov);
+                if (std::isfinite(covFT0A))
+                  histos.fill(HIST("Prof_ipt0_CovFT0A2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covFT0A);
+                if (std::isfinite(covFT0C))
+                  histos.fill(HIST("Prof_ipt0_CovFT0C2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covFT0C);
               } else if (ipt == KNpT - 2) {
                 if (std::isfinite(c2Sub)) {
                   histos.fill(HIST("Prof_ipt1_C2Sub2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, c2Sub);
@@ -3149,6 +3715,10 @@ struct RadialFlowDecorr {
                 }
                 if (std::isfinite(cov))
                   histos.fill(HIST("Prof_ipt1_Cov2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, cov);
+                if (std::isfinite(covFT0A))
+                  histos.fill(HIST("Prof_ipt1_CovFT0A2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covFT0A);
+                if (std::isfinite(covFT0C))
+                  histos.fill(HIST("Prof_ipt1_CovFT0C2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covFT0C);
               } else if (ipt == KNpT - 1) {
                 if (std::isfinite(c2Sub)) {
                   histos.fill(HIST("Prof_ipt2_C2Sub2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, c2Sub);
@@ -3156,6 +3726,10 @@ struct RadialFlowDecorr {
                 }
                 if (std::isfinite(cov))
                   histos.fill(HIST("Prof_ipt2_Cov2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, cov);
+                if (std::isfinite(covFT0A))
+                  histos.fill(HIST("Prof_ipt2_CovFT0A2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covFT0A);
+                if (std::isfinite(covFT0C))
+                  histos.fill(HIST("Prof_ipt2_CovFT0C2D_Cent_etaA_etaC_Pi"), cent, etaValA, etaValB, covFT0C);
               }
             } else if (isp == numKKaon) { // Ka
               if (ipt == 0) {
@@ -3165,6 +3739,10 @@ struct RadialFlowDecorr {
                 }
                 if (std::isfinite(cov))
                   histos.fill(HIST("Prof_ipt0_Cov2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, cov);
+                if (std::isfinite(covFT0A))
+                  histos.fill(HIST("Prof_ipt0_CovFT0A2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covFT0A);
+                if (std::isfinite(covFT0C))
+                  histos.fill(HIST("Prof_ipt0_CovFT0C2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covFT0C);
               } else if (ipt == KNpT - 2) {
                 if (std::isfinite(c2Sub)) {
                   histos.fill(HIST("Prof_ipt1_C2Sub2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, c2Sub);
@@ -3172,6 +3750,10 @@ struct RadialFlowDecorr {
                 }
                 if (std::isfinite(cov))
                   histos.fill(HIST("Prof_ipt1_Cov2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, cov);
+                if (std::isfinite(covFT0A))
+                  histos.fill(HIST("Prof_ipt1_CovFT0A2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covFT0A);
+                if (std::isfinite(covFT0C))
+                  histos.fill(HIST("Prof_ipt1_CovFT0C2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, covFT0C);
               } else if (ipt == KNpT - 1) {
                 if (std::isfinite(c2Sub)) {
                   histos.fill(HIST("Prof_ipt2_C2Sub2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, c2Sub);
@@ -3179,6 +3761,10 @@ struct RadialFlowDecorr {
                 }
                 if (std::isfinite(cov))
                   histos.fill(HIST("Prof_ipt2_Cov2D_Cent_etaA_etaC_Ka"), cent, etaValA, etaValB, cov);
+                if (std::isfinite(covFT0A))
+                  histos.fill(HIST("Prof_ipt2_CovFT0A2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covFT0A);
+                if (std::isfinite(covFT0C))
+                  histos.fill(HIST("Prof_ipt2_CovFT0C2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covFT0C);
               }
             } else if (isp == numKProton) { // Pr
               if (ipt == 0) {
@@ -3188,6 +3774,10 @@ struct RadialFlowDecorr {
                 }
                 if (std::isfinite(cov))
                   histos.fill(HIST("Prof_ipt0_Cov2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, cov);
+                if (std::isfinite(covFT0A))
+                  histos.fill(HIST("Prof_ipt0_CovFT0A2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covFT0A);
+                if (std::isfinite(covFT0C))
+                  histos.fill(HIST("Prof_ipt0_CovFT0C2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covFT0C);
               } else if (ipt == KNpT - 2) {
                 if (std::isfinite(c2Sub)) {
                   histos.fill(HIST("Prof_ipt1_C2Sub2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, c2Sub);
@@ -3195,6 +3785,10 @@ struct RadialFlowDecorr {
                 }
                 if (std::isfinite(cov))
                   histos.fill(HIST("Prof_ipt1_Cov2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, cov);
+                if (std::isfinite(covFT0A))
+                  histos.fill(HIST("Prof_ipt1_CovFT0A2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covFT0A);
+                if (std::isfinite(covFT0C))
+                  histos.fill(HIST("Prof_ipt1_CovFT0C2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covFT0C);
               } else if (ipt == KNpT - 1) {
                 if (std::isfinite(c2Sub)) {
                   histos.fill(HIST("Prof_ipt2_C2Sub2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, c2Sub);
@@ -3202,6 +3796,10 @@ struct RadialFlowDecorr {
                 }
                 if (std::isfinite(cov))
                   histos.fill(HIST("Prof_ipt2_Cov2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, cov);
+                if (std::isfinite(covFT0A))
+                  histos.fill(HIST("Prof_ipt2_CovFT0A2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covFT0A);
+                if (std::isfinite(covFT0C))
+                  histos.fill(HIST("Prof_ipt2_CovFT0C2D_Cent_etaA_etaC_Pr"), cent, etaValA, etaValB, covFT0C);
               }
             }
           }
@@ -3209,7 +3807,7 @@ struct RadialFlowDecorr {
       }
     }
   }
-  PROCESS_SWITCH(RadialFlowDecorr, processDataFluc, "process data to calculate fluc pT and Et", cfgRunDataFluc);
+  PROCESS_SWITCH(RadialFlowDecorr, processDataFluc, "process data to calculate fluc pT", cfgRunDataFluc);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
