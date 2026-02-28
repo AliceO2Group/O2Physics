@@ -2062,7 +2062,7 @@ struct derivedlambdakzeroanalysis {
       return; // does not have mother particle in record, skip
 
     auto v0mother = v0.motherMCPart();
-    float rapidityXi = 0.;
+    float rapidityXi = 999.;
     if (std::abs(v0mother.pdgCode()) == PDG_t::kXiMinus)
       rapidity = RecoDecay::y(std::array{v0mother.px(), v0mother.py(), v0mother.pz()}, o2::constants::physics::MassXiMinus);
     if (std::abs(v0mother.pdgCode()) == o2::constants::physics::Pdg::kXi0)
