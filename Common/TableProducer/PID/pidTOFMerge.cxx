@@ -28,6 +28,7 @@
 #include "Common/DataModel/PIDResponseTOF.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsFT0/Digit.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
 #include <DataFormatsTOF/ParameterContainers.h>
 #include <Framework/ASoA.h>
@@ -72,7 +73,8 @@ using Run3TrksWtof = soa::Join<Run3Trks, aod::TOFSignal>;
 using Run3TrksWtofWevTime = soa::Join<Run3TrksWtof, aod::TOFEvTime, aod::pidEvTimeFlags>;
 
 using EvTimeCollisions = soa::Join<aod::Collisions, aod::EvSels>;
-using EvTimeCollisionsFT0 = soa::Join<EvTimeCollisions, aod::FT0sCorrected>;
+// using EvTimeCollisionsFT0 = soa::Join<EvTimeCollisions, aod::FT0sCorrected>;
+using EvTimeCollisionsFT0 = EvTimeCollisions;
 
 using Run2Trks = o2::soa::Join<aod::Tracks, aod::TracksExtra>;
 using Run2TrksWtofWevTime = soa::Join<Run2Trks, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
@@ -248,16 +250,18 @@ struct tofEventTime {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Service<o2::pid::tof::TOFResponse> tofResponse;
   // Tables to produce
-  Produces<o2::aod::TOFEvTime> tableEvTime;
-  Produces<o2::aod::EvTimeTOFOnly> tableEvTimeTOFOnly;
-  Produces<o2::aod::pidEvTimeFlags> tableFlags;
-  static constexpr bool kRemoveTOFEvTimeBias = true; // Flag to subtract the Ev. Time bias for low multiplicity events with TOF
-  static constexpr float kDiamond = 6.0;             // Collision diamond used in the estimation of the TOF event time
+  // Produces<o2::aod::FT0sCorrected> tableFT0Corrected;  // Table with corrected FT0 values, to be used in the TOF event time computation
+  Produces<o2::aod::TOFEvTime> tableEvTime;            // Table with the TOF event time, computed with the tracks that pass the filterForTOFEventTime selection and the TOF response
+  Produces<o2::aod::EvTimeTOFOnly> tableEvTimeTOFOnly; // Table with the TOF event time, computed only with the TOF itself
+  Produces<o2::aod::pidEvTimeFlags> tableFlags;        // Table with flags for the TOF event time, e.g. how it was computed
+  static constexpr bool kRemoveTOFEvTimeBias = true;   // Flag to subtract the Ev. Time bias for low multiplicity events with TOF
+  static constexpr float kDiamond = 6.0;               // Collision diamond used in the estimation of the TOF event time
   static constexpr float kErrDiamond = kDiamond * 33.356409f;
   static constexpr float kWeightDiamond = 1.f / (kErrDiamond * kErrDiamond);
 
   bool enableTableTOFEvTime = false;
   bool enableTableEvTimeTOFOnly = false;
+  bool enableTableFT0Corrected = false;
 
   // Event time configurations
   Configurable<float> minMomentum{"minMomentum", 0.5f, "Minimum momentum to select track sample for TOF event time"};
@@ -285,7 +289,12 @@ struct tofEventTime {
       LOG(info) << "Table EvTimeTOFOnly enabled!";
     }
 
-    if (!enableTableTOFEvTime && !enableTableEvTimeTOFOnly) {
+    enableTableFT0Corrected = isTableRequiredInWorkflow(initContext, "FT0Corrected");
+    if (enableTableFT0Corrected) {
+      LOG(info) << "Table FT0Corrected enabled!";
+    }
+
+    if (!enableTableTOFEvTime && !enableTableEvTimeTOFOnly && !enableTableFT0Corrected) {
       LOG(info) << "No table is enabled. Disabling task";
       return;
     }
@@ -362,6 +371,19 @@ struct tofEventTime {
   }
   PROCESS_SWITCH(tofEventTime, processRun2, "Process with Run2 data", true);
 
+  struct ft0Container {
+    ft0Container() = default;
+    ft0Container(float t0A, float t0C) : mT0A(t0A), mT0C(t0C) {}
+    float t0AC() const { return 0.5f * (mT0A + mT0C); }
+    float t0ACorrectedValid() const { return (mT0A < 1e9); }
+    float t0CCorrectedValid() const { return (mT0C < 1e9); }
+    float t0resolution() const { return 0.5f * (mT0A - mT0C); }
+    float t0ACValid() const { return (mT0A < 1e9) && (mT0C < 1e9); }
+
+   private:
+    float mT0A = 1e10f;
+    float mT0C = 1e10f;
+  };
   ///
   /// Process function to prepare the event for each track on Run 3 data without the FT0
   // Define slice per collision
@@ -370,7 +392,7 @@ struct tofEventTime {
   using ResponseImplementationEvTime = o2::pid::tof::ExpTimes<Run3TrksWtof::iterator, pid>;
   void processRun3(Run3TrksWtof const& tracks,
                    aod::FT0s const&,
-                   EvTimeCollisionsFT0 const&,
+                   EvTimeCollisionsFT0 const& collisions,
                    aod::BCsWithTimestamps const& bcs)
   {
     if (!enableTableTOFEvTime) {
@@ -384,6 +406,36 @@ struct tofEventTime {
       tableEvTimeTOFOnly.reserve(tracks.size());
     }
     tofResponse->processSetup(bcs.iteratorAt(0)); // Update the response parameters
+
+    std::unordered_map<int64_t, ft0Container> tableFT0Corrected;
+    if (1) {
+      float t0A = 1e10f;
+      float t0C = 1e10f;
+      for (const auto& collision : collisions) {
+        t0A = 1e10f;
+        t0C = 1e10f;
+        const float vertexPV = collision.posZ();
+        constexpr float invLightSpeedCm2NS = 1.f / o2::constants::physics::LightSpeedCm2NS;
+        const float vertex_corr = vertexPV * invLightSpeedCm2NS;
+        constexpr float dummyTime = 30.; // Due to HW limitations time can be only within range (-25,25) ns, dummy time is around 32 ns
+        if (collision.has_foundFT0()) {
+          const auto& ft0 = collision.foundFT0();
+          const std::bitset<8>& triggers = ft0.triggerMask();
+          const bool ora = triggers[o2::ft0::Triggers::bitA];
+          const bool orc = triggers[o2::ft0::Triggers::bitC];
+          LOGF(debug, "triggers OrA %i OrC %i ", ora, orc);
+          LOGF(debug, " T0A = %f, T0C %f, vertex_corr %f", ft0.timeA(), ft0.timeC(), vertex_corr);
+          if (ora && ft0.timeA() < dummyTime) {
+            t0A = ft0.timeA() + vertex_corr;
+          }
+          if (orc && ft0.timeC() < dummyTime) {
+            t0C = ft0.timeC() - vertex_corr;
+          }
+        }
+        LOGF(debug, " T0 collision time T0A = %f, T0C = %f", t0A, t0C);
+        tableFT0Corrected.emplace(collision.globalIndex(), ft0Container(t0A, t0C));
+      }
+    }
 
     // Autoset the processing mode for the event time computation
     if (mComputeEvTimeWithTOF == -1 || mComputeEvTimeWithFT0 == -1) {
@@ -455,11 +507,16 @@ struct tofEventTime {
 
           if (collision.has_foundFT0()) { // T0 measurement is available
             // const auto& ft0 = collision.foundFT0();
-            if (collision.t0ACValid()) {
-              t0AC[0] = collision.t0AC() * 1000.f;
-              t0AC[1] = collision.t0resolution() * 1000.f;
+            if (tableFT0Corrected[collision.globalIndex()].t0ACValid()) {
+              t0AC[0] = tableFT0Corrected[collision.globalIndex()].t0AC() * 1000.f;
+              t0AC[1] = tableFT0Corrected[collision.globalIndex()].t0resolution() * 1000.f;
               flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeT0AC;
             }
+            // if (collision.t0ACValid()) {
+            //   t0AC[0] = collision.t0AC() * 1000.f;
+            //   t0AC[1] = collision.t0resolution() * 1000.f;
+            //   flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeT0AC;
+            // }
 
             weight = 1.f / (t0AC[1] * t0AC[1]);
             eventTime += t0AC[0] * weight;
@@ -535,10 +592,16 @@ struct tofEventTime {
         const auto& collision = t.collision_as<EvTimeCollisionsFT0>();
 
         if (collision.has_foundFT0()) { // T0 measurement is available
+
           // const auto& ft0 = collision.foundFT0();
-          if (collision.t0ACValid()) {
+          // if (collision.t0ACValid()) {
+          //   tableFlags(o2::aod::pidflags::enums::PIDFlags::EvTimeT0AC);
+          //   tableEvTime(collision.t0AC() * 1000.f, collision.t0resolution() * 1000.f);
+          //   continue;
+          // }
+          if (tableFT0Corrected[collision.globalIndex()].t0ACValid()) {
             tableFlags(o2::aod::pidflags::enums::PIDFlags::EvTimeT0AC);
-            tableEvTime(collision.t0AC() * 1000.f, collision.t0resolution() * 1000.f);
+            tableEvTime(tableFT0Corrected[collision.globalIndex()].t0AC() * 1000.f, tableFT0Corrected[collision.globalIndex()].t0resolution() * 1000.f);
             continue;
           }
         }
