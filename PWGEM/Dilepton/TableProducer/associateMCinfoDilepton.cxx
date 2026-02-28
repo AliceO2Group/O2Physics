@@ -11,7 +11,7 @@
 //
 // ========================
 //
-// This code produces reduced events for photon analyses.
+// This code produces reduced mc info for dilepton analyses.
 //    Please write to: daiki.sekihata@cern.ch
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
@@ -58,8 +58,8 @@ struct AssociateMCInfoDilepton {
   Produces<o2::aod::EMDummyDatas> emdummydata;
 
   Configurable<int> n_dummy_loop{"n_dummy_loop", 0, "for loop runs over n times"};
-  Configurable<float> down_scaling_omega{"down_scaling_omega", 1.1, "down scaling factor to store omega"};
-  Configurable<float> down_scaling_phi{"down_scaling_phi", 1.1, "down scaling factor to store phi"};
+  Configurable<float> down_scaling_omega{"down_scaling_omega", 1.0, "down scaling factor to store omega"};
+  Configurable<float> down_scaling_phi{"down_scaling_phi", 1.0, "down scaling factor to store phi"};
   Configurable<float> min_eta_gen_primary{"min_eta_gen_primary", -1.5, "min eta to store generated information"};         // smearing is applied at analysis stage. set wider value.
   Configurable<float> max_eta_gen_primary{"max_eta_gen_primary", +1.5, "max eta to store generated information"};         // smearing is applied at analysis stage. set wider value.
   Configurable<float> min_eta_gen_primary_fwd{"min_eta_gen_primary_fwd", -6.0, "min eta to store generated information"}; // smearing is applied at analysis stage. set wider value.

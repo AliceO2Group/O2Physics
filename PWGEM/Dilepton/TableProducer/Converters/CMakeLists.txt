@@ -60,6 +60,11 @@ o2physics_add_dpl_workflow(muon-converter1
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(muon-converter2
+                  SOURCES muonConverter2.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(mcparticle-converter1
                   SOURCES mcParticleConverter1.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore

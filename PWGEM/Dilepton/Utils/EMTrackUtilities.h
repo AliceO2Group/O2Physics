@@ -97,9 +97,9 @@ float dcaZinSigma(T const& track)
 template <typename T>
 float fwdDcaXYinSigma(T const& track)
 {
-  float cXX = track.cXXatDCA();      // in cm^2
-  float cYY = track.cYYatDCA();      // in cm^2
-  float cXY = track.cXYatDCA();      // in cm^2
+  float cXX = track.cXX();           // in cm^2
+  float cYY = track.cYY();           // in cm^2
+  float cXY = track.cXY();           // in cm^2
   float dcaX = track.fwdDcaX();      // in cm
   float dcaY = track.fwdDcaY();      // in cm
   float det = cXX * cYY - cXY * cXY; // determinant
