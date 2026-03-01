@@ -136,6 +136,7 @@ struct FemtoUniverseProducerTask {
   Configurable<bool> confFillCollExt{"confFillCollExt", false, "Option to fill collision extended table"};
 
   Configurable<bool> confCollMCTruthOnlyReco{"confCollMCTruthOnlyReco", false, "Fill only MC truth collisions that were reconstructed and selected"};
+  Configurable<bool> confFillMCTruthV0Daugh{"confFillMCTruthV0Daugh", true, "Fill MC truth daughters of V0"};
 
   /// Event filtering (used for v0-cascade analysis)
   Configurable<std::string> zorroMask{"zorroMask", "", "zorro trigger class to select on (empty: none)"};
@@ -2913,7 +2914,11 @@ struct FemtoUniverseProducerTask {
         const auto colcheck = fillMCTruthCollisionsCentRun3(col);
         if (colcheck) {
           outputCollExtra(1.0, 1.0);
-          fillV0MCTruth(groupedMCParticles); // fills MC V0s and its daughters
+          if (confFillMCTruthV0Daugh) {
+            fillV0MCTruth(groupedMCParticles); // fills MC V0s and its daughters
+          } else {
+            fillParticles<decltype(groupedMCParticles), true, true>(groupedMCParticles, recoMcIds); // fills mc particles
+          }
         }
       }
     }
