@@ -532,9 +532,6 @@ struct V0ptHadPiKaProt {
     TH1D* fPtProfileKaInWinB = new TH1D("fPtProfileKaInWinB", "fPtProfileKaInWinB", 20, binsarray);
     TH1D* fPtProfileProtInWinB = new TH1D("fPtProfileProtInWinB", "fPtProfileProtInWinB", 20, binsarray);
     double nSumInWinB = 0.0; // for Z = f(pT) = n(pT)/N_B in window B
-    double nSumInWinBpi = 0.0;
-    double nSumInWinBka = 0.0;
-    double nSumInWinBprot = 0.0;
 
     double nSumInWinA = 0.0; // for X (in window A) to calculate v2^2
     double nSumInWinC = 0.0; // for Y (in window C) to calculate v2^2
@@ -679,15 +676,12 @@ struct V0ptHadPiKaProt {
         if (std::abs(trkEta) < cfgCutEtaWindowB) {
           if (isPion) {
             fPtProfilePiInWinB->Fill(trkPt);
-            nSumInWinBpi += 1.0;
           }
           if (isKaon) {
             fPtProfileKaInWinB->Fill(trkPt);
-            nSumInWinBka += 1.0;
           }
           if (isProton && trkPt > cfgCutPtLowerProt) {
             fPtProfileProtInWinB->Fill(trkPt);
-            nSumInWinBprot += 1.0;
           }
         }
       }
