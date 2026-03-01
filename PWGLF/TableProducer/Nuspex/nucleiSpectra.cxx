@@ -52,8 +52,10 @@
 #include "ReconstructionDataFormats/Track.h"
 
 #include <Math/Vector4D.h>
+#include <TDatabasePDG.h>
 #include <TMCProcess.h>
 #include <TPDGCode.h> // for PDG codes
+#include <TParticlePDG.h>
 #include <TRandom3.h>
 
 #include <algorithm>
@@ -334,6 +336,7 @@ struct nucleiSpectra {
   ConfigurableAxis cfgNTPCClusBins{"cfgNTPCClusBins", {3, 89.5, 159.5}, "N TPC clusters binning"};
 
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
+  Configurable<std::string> cfgTriggerList{"cfgTriggerList", "fHe", "Trigger List"};
 
   // running variables for track tuner
   o2::dataformats::DCA mDcaInfoCov;
@@ -453,7 +456,7 @@ struct nucleiSpectra {
       return;
     }
     if (cfgSkimmedProcessing) {
-      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), "fHe");
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfgTriggerList);
       zorro.populateHistRegistry(spectra, bc.runNumber());
     }
     auto timestamp = bc.timestamp();
@@ -911,21 +914,72 @@ struct nucleiSpectra {
   PROCESS_SWITCH(nucleiSpectra, processDataFlowAlternative, "Data analysis with flow - alternative framework", false);
 
   Preslice<TrackCandidates> tracksPerCollisions = aod::track::collisionId;
+  Preslice<aod::McParticles> particlesPerMcCollision = aod::mcparticle::mcCollisionId;
   void processMC(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mcCollisions, soa::Join<TrackCandidates, aod::McTrackLabels> const& tracks, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)
   {
     nuclei::candidates.clear();
-    for (const auto& c : mcCollisions) {
-      spectra.fill(HIST("hGenVtxZ"), c.posZ());
-    }
+
+    bool selectINELgt0 = cfgEventSelections->get(nuclei::evSel::kINELgt0);
     std::vector<bool> goodCollisions(mcCollisions.size(), false);
+
+    auto* pdgDB = TDatabasePDG::Instance(); // Useful for evaluating the particle charge
+
+    for (const auto& c : mcCollisions) {
+
+      // Apply the |z| < 10 cm condition
+      if (std::abs(c.posZ()) > 10.f)
+        continue;
+
+      const auto& slicedParticles = particlesMC.sliceBy(particlesPerMcCollision, c.globalIndex());
+
+      bool hasHitFT0A(false);
+      bool hasHitFT0C(false);
+      bool acceptEvent = !selectINELgt0;
+
+      for (const auto& p : slicedParticles) {
+        if (!p.isPhysicalPrimary())
+          continue;
+
+        // Apply the TVX trigger condition
+        if (p.eta() > 3.5f && p.eta() < 4.9f)
+          hasHitFT0A = true;
+        else if (p.eta() > -3.3f && p.eta() < -2.1f)
+          hasHitFT0C = true;
+
+        // Apply the INEL>0 selection (only in case of active configurable)
+        if (selectINELgt0 && !acceptEvent) {
+          if (std::abs(p.eta()) < 1.0f) {
+            auto* pdg = pdgDB->GetParticle(p.pdgCode());
+            if (pdg && pdg->Charge() != 0)
+              acceptEvent = true;
+          }
+        }
+
+        if (hasHitFT0A && hasHitFT0C && acceptEvent)
+          break;
+      }
+
+      if (hasHitFT0A && hasHitFT0C && acceptEvent) {
+        goodCollisions[c.globalIndex()] = true;
+        spectra.fill(HIST("hGenVtxZ"), c.posZ());
+      }
+    }
+
     for (const auto& collision : collisions) {
       if (!eventSelectionWithHisto(collision)) {
         continue;
       }
-      goodCollisions[collision.mcCollisionId()] = true;
+
+      int mcId = collision.mcCollisionId();
+      if (mcId < 0)
+        continue;
+      if (!goodCollisions[mcId])
+        continue;
+
       const auto& slicedTracks = tracks.sliceBy(tracksPerCollisions, collision.globalIndex());
       fillDataInfo(collision, slicedTracks);
     }
+
     std::vector<bool> isReconstructed(particlesMC.size(), false);
     for (auto& c : nuclei::candidates) {
       auto label = tracks.iteratorAt(c.globalIndex);
