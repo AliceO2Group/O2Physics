@@ -298,9 +298,9 @@ struct skimmerPrimaryMuon {
     int ndf_mchmft = 1;
     int ndf_mft = 1;
 
-    float etaMatchedMCHMIDatMP = 999.f;
+    // float etaMatchedMCHMIDatMP = 999.f;
     float phiMatchedMCHMIDatMP = 999.f;
-    float etaMatchedMFTatMP = 999.f;
+    // float etaMatchedMFTatMP = 999.f;
     float phiMatchedMFTatMP = 999.f;
 
     float deta = 999.f;
@@ -367,9 +367,9 @@ struct skimmerPrimaryMuon {
         auto muonAtMP = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToMatchingPlane, matchingZ, mBz, mZShift); // propagated to matching plane
         o2::track::TrackParCovFwd mftsaAtMP = getTrackParCovFwdShift(mfttrack, mZShift, mfttrackcov);                              // values at innermost update
         mftsaAtMP.propagateToZhelix(matchingZ, mBz);                                                                               // propagated to matching plane
-        etaMatchedMFTatMP = mftsaAtMP.getEta();
+        // etaMatchedMFTatMP = mftsaAtMP.getEta();
         phiMatchedMFTatMP = mftsaAtMP.getPhi();
-        etaMatchedMCHMIDatMP = muonAtMP.getEta();
+        // etaMatchedMCHMIDatMP = muonAtMP.getEta();
         phiMatchedMCHMIDatMP = muonAtMP.getPhi();
         o2::math_utils::bringTo02Pi(phiMatchedMCHMIDatMP);
         o2::math_utils::bringTo02Pi(phiMatchedMFTatMP);
