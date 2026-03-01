@@ -45,7 +45,7 @@ struct stradautrackstofpidconverter {
       lTOFEvTimes[casc.bachTrackExtraId()] = casc.bachTOFEventTime();
     }
     for (unsigned int ii = 0; ii < dauTracks.size(); ii++) {
-      dautracktofpids(-1, -1, lTOFSignals[ii], lTOFEvTimes[ii], lLengths[ii], 0.0f);
+      dautracktofpids(-1, -1, lTOFSignals[ii], lTOFEvTimes[ii], 999.0f /*dummy event time error for TOF*/, lLengths[ii], 0.0f);
     }
   }
 };
