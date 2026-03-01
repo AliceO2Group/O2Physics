@@ -982,6 +982,7 @@ DECLARE_SOA_COLUMN(CollisionId, collisionId, int);                              
 DECLARE_SOA_COLUMN(FwdTrackId, fwdtrackId, int);                                     //!
 DECLARE_SOA_COLUMN(MFTTrackId, mfttrackId, int);                                     //!
 DECLARE_SOA_COLUMN(MCHTrackId, mchtrackId, int);                                     //!
+DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(GlobalMuonsWithSameMCHMID, globalMuonsWithSameMCHMID); //! self indices to global muons that have the same MCHTrackId
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(GlobalMuonsWithSameMFT, globalMuonsWithSameMFT); //! self indices to global muons that have the same MFTTrackId
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(AmbiguousMuons, ambiguousMuons);
 DECLARE_SOA_COLUMN(CXXatDCA, cXXatDCA, float);                         //! DCAx resolution squared at DCA
@@ -1130,7 +1131,9 @@ DECLARE_SOA_TABLE(EMAmbiguousMuonSelfIds, "AOD", "EMAMBMUSELFID", emprimarymuon:
 // iterators
 using EMAmbiguousMuonSelfId = EMAmbiguousMuonSelfIds::iterator;
 
-DECLARE_SOA_TABLE(EMGlobalMuonSelfIds, "AOD", "EMGLMUSELFID", emprimarymuon::GlobalMuonsWithSameMFTIds); // To be joined with EMPrimaryMuons table at analysis level.
+DECLARE_SOA_TABLE(EMGlobalMuonSelfIds_000, "AOD", "EMGLMUSELFID", emprimarymuon::GlobalMuonsWithSameMFTIds);                                                           // To be joined with EMPrimaryMuons table at analysis level.
+DECLARE_SOA_TABLE_VERSIONED(EMGlobalMuonSelfIds_001, "AOD", "EMGLMUSELFID", 1, emprimarymuon::GlobalMuonsWithSameMCHMIDIds, emprimarymuon::GlobalMuonsWithSameMFTIds); // To be joined with EMPrimaryMuons table at analysis level.
+using EMGlobalMuonSelfIds = EMGlobalMuonSelfIds_001;
 // iterators
 using EMGlobalMuonSelfId = EMGlobalMuonSelfIds::iterator;
 
