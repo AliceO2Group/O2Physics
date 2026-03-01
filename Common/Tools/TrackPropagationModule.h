@@ -271,8 +271,9 @@ class TrackPropagationModule
       // std::array<float, 3> trackPxPyPz;
       // std::array<float, 3> trackPxPyPzTuned = {0.0, 0.0, 0.0};
       double q2OverPtNew = -9999.;
+      bool isPropagationOK = true;
       // Only propagate tracks which have passed the innermost wall of the TPC (e.g. skipping loopers etc). Others fill unpropagated.
-      if (track.trackType() == o2::aod::track::TrackIU && track.x() < cGroup.minPropagationRadius.value) {
+      if (track.x() < cGroup.minPropagationRadius.value) {
         if (fillTracksCov) {
           if constexpr (isMc) { // checking MC and fillCovMat block begins
             // bool hasMcParticle = track.has_mcParticle();
@@ -287,28 +288,60 @@ class TrackPropagationModule
             }
           } // MC and fillCovMat block ends
         }
-        bool isPropagationOK = true;
 
-        if (track.has_collision()) {
-          auto const& collision = collisions.rawIteratorAt(track.collisionId());
-          if (fillTracksCov) {
-            mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
-            mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-            isPropagationOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, mTrackParCov, 2.f, matCorr, &mDcaInfoCov);
+        if (track.trackType() == o2::aod::track::TrackIU) {
+          if (track.has_collision()) {
+            auto const& collision = collisions.rawIteratorAt(track.collisionId());
+            if (fillTracksCov) {
+              mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+              mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+              isPropagationOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, mTrackParCov, 2.f, matCorr, &mDcaInfoCov);
+            } else {
+              isPropagationOK = o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, mTrackPar, 2.f, matCorr, &mDcaInfo);
+            }
           } else {
-            isPropagationOK = o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, mTrackPar, 2.f, matCorr, &mDcaInfo);
+            if (fillTracksCov) {
+              mVtx.setPos({ccdbLoader.mMeanVtx->getX(), ccdbLoader.mMeanVtx->getY(), ccdbLoader.mMeanVtx->getZ()});
+              mVtx.setCov(ccdbLoader.mMeanVtx->getSigmaX() * ccdbLoader.mMeanVtx->getSigmaX(), 0.0f, ccdbLoader.mMeanVtx->getSigmaY() * ccdbLoader.mMeanVtx->getSigmaY(), 0.0f, 0.0f, ccdbLoader.mMeanVtx->getSigmaZ() * ccdbLoader.mMeanVtx->getSigmaZ());
+              isPropagationOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, mTrackParCov, 2.f, matCorr, &mDcaInfoCov);
+            } else {
+              isPropagationOK = o2::base::Propagator::Instance()->propagateToDCABxByBz({ccdbLoader.mMeanVtx->getX(), ccdbLoader.mMeanVtx->getY(), ccdbLoader.mMeanVtx->getZ()}, mTrackPar, 2.f, matCorr, &mDcaInfo);
+            }
+          }
+          if (isPropagationOK) {
+            trackType = o2::aod::track::Track;
           }
         } else {
-          if (fillTracksCov) {
-            mVtx.setPos({ccdbLoader.mMeanVtx->getX(), ccdbLoader.mMeanVtx->getY(), ccdbLoader.mMeanVtx->getZ()});
-            mVtx.setCov(ccdbLoader.mMeanVtx->getSigmaX() * ccdbLoader.mMeanVtx->getSigmaX(), 0.0f, ccdbLoader.mMeanVtx->getSigmaY() * ccdbLoader.mMeanVtx->getSigmaY(), 0.0f, 0.0f, ccdbLoader.mMeanVtx->getSigmaZ() * ccdbLoader.mMeanVtx->getSigmaZ());
-            isPropagationOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, mTrackParCov, 2.f, matCorr, &mDcaInfoCov);
-          } else {
-            isPropagationOK = o2::base::Propagator::Instance()->propagateToDCABxByBz({ccdbLoader.mMeanVtx->getX(), ccdbLoader.mMeanVtx->getY(), ccdbLoader.mMeanVtx->getZ()}, mTrackPar, 2.f, matCorr, &mDcaInfo);
+          if (fillTracksCov || fillTracksDCA || fillTracksDCACov) {
+            if (track.has_collision()) {
+              auto const& collision = collisions.rawIteratorAt(track.collisionId());
+              mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+              if (fillTracksCov || fillTracksDCACov) {
+                mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+              }
+            } else {
+              mVtx.setPos({ccdbLoader.mMeanVtx->getX(), ccdbLoader.mMeanVtx->getY(), ccdbLoader.mMeanVtx->getZ()});
+              if (fillTracksCov || fillTracksDCACov) {
+                mVtx.setCov(ccdbLoader.mMeanVtx->getSigmaX() * ccdbLoader.mMeanVtx->getSigmaX(), 0.0f, ccdbLoader.mMeanVtx->getSigmaY() * ccdbLoader.mMeanVtx->getSigmaY(), 0.0f, 0.0f, ccdbLoader.mMeanVtx->getSigmaZ() * ccdbLoader.mMeanVtx->getSigmaZ());
+              }
+            }
+            if (fillTracksCov) {
+              if constexpr (isMc) { // checking MC and fillCovMat block begins
+                if (cGroup.useTrackTuner.value) {
+                  bool hasMcParticle = track.has_mcParticle();
+                  if (hasMcParticle) {
+                    isPropagationOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, mTrackParCov, 2.f, matCorr, &mDcaInfoCov);
+                  }
+                }
+              } // MC and fillCovMat block ends
+            }
+
+            if (fillTracksDCACov) {
+              calculateDCA(mTrackParCov, mVtx, o2::base::Propagator::Instance()->getNominalBz(), &mDcaInfoCov, 999.f);
+            } else {
+              calculateDCA(mTrackPar, mVtx, o2::base::Propagator::Instance()->getNominalBz(), &mDcaInfo, 999.f);
+            }
           }
-        }
-        if (isPropagationOK) {
-          trackType = o2::aod::track::Track;
         }
         // filling some QA histograms for track tuner test purpose
         if (fillTracksCov) {
@@ -355,6 +388,55 @@ class TrackPropagationModule
         }
       }
     }
+  }
+
+  //_______________________________________________________________________
+  // TTrackPar type: either aod::TrackPar or aod::TrackParCov
+  // TVertex type: either math_utils::Point3D<value_t> or o2::dataformats::VertexBase
+  // TDCA type: either dim2_t or o2::dataformats::DCA
+  template <typename TTrackPar, typename TVertex, typename TDCA>
+  bool calculateDCA(TTrackPar& trackPar, const TVertex& vtx, double b, TDCA* dca, double maxD)
+  {
+    // propagate track to DCA to the vertex
+    float sn, cs, alp = trackPar.getAlpha();
+    o2::math_utils::detail::sincos(alp, sn, cs);
+    float x = trackPar.getX(), y = trackPar.getY(), snp = trackPar.getSnp(), csp = gpu::CAMath::Sqrt((1.f - snp) * (1.f + snp));
+    float xv = vtx.getX() * cs + vtx.getY() * sn, yv = -vtx.getX() * sn + vtx.getY() * cs, zv = vtx.getZ();
+    x -= xv;
+    y -= yv;
+
+    float crv = trackPar.getCurvature(b);
+    float tgfv = -(crv * x - snp) / (crv * y + csp);
+    sn = tgfv / gpu::CAMath::Sqrt(1.f + tgfv * tgfv);
+    cs = gpu::CAMath::Sqrt((1.f - sn) * (1.f + sn));
+    cs = (gpu::CAMath::Abs(tgfv) > constants::math::Almost0) ? sn / tgfv : constants::math::Almost1;
+
+    x = xv * cs + yv * sn;
+    yv = -xv * sn + yv * cs;
+    xv = x;
+
+    alp += gpu::CAMath::ASin(sn);
+    if (!trackPar.rotate(alp)) {
+      // provide default DCA for failed propag
+      if constexpr (requires { trackPar.getSigmaY2(); vtx.getSigmaX2(); }) {
+        dca->set(o2::track::DefaultDCA, o2::track::DefaultDCA,
+                 o2::track::DefaultDCACov, o2::track::DefaultDCACov, o2::track::DefaultDCACov);
+      } else {
+        (*dca)[0] = o2::track::DefaultDCA;
+        (*dca)[1] = o2::track::DefaultDCA;
+      }
+
+      return false;
+    }
+    if constexpr (requires { trackPar.getSigmaY2(); vtx.getSigmaX2(); }) {
+      o2::math_utils::detail::sincos(alp, sn, cs);
+      auto s2ylocvtx = vtx.getSigmaX2() * sn * sn + vtx.getSigmaY2() * cs * cs - 2. * vtx.getSigmaXY() * cs * sn;
+      dca->set(trackPar.getY() - yv, trackPar.getZ() - zv, trackPar.getSigmaY2() + s2ylocvtx, trackPar.getSigmaZY(), trackPar.getSigmaZ2() + vtx.getSigmaZ2());
+    } else {
+      (*dca)[0] = trackPar.getY() - yv;
+      (*dca)[1] = trackPar.getZ() - zv;
+    }
+    return true;
   }
 };
 
