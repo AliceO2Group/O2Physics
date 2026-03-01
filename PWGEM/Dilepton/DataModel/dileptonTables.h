@@ -1131,7 +1131,7 @@ DECLARE_SOA_TABLE(EMAmbiguousMuonSelfIds, "AOD", "EMAMBMUSELFID", emprimarymuon:
 // iterators
 using EMAmbiguousMuonSelfId = EMAmbiguousMuonSelfIds::iterator;
 
-DECLARE_SOA_TABLE(EMGlobalMuonSelfIds_000, "AOD", "EMGLMUSELFID", emprimarymuon::GlobalMuonsWithSameMFTIds); // To be joined with EMPrimaryMuons table at analysis level.
+DECLARE_SOA_TABLE(EMGlobalMuonSelfIds_000, "AOD", "EMGLMUSELFID", emprimarymuon::GlobalMuonsWithSameMFTIds);                                                           // To be joined with EMPrimaryMuons table at analysis level.
 DECLARE_SOA_TABLE_VERSIONED(EMGlobalMuonSelfIds_001, "AOD", "EMGLMUSELFID", 1, emprimarymuon::GlobalMuonsWithSameMCHMIDIds, emprimarymuon::GlobalMuonsWithSameMFTIds); // To be joined with EMPrimaryMuons table at analysis level.
 using EMGlobalMuonSelfIds = EMGlobalMuonSelfIds_001;
 // iterators

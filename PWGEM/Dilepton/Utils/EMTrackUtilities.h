@@ -164,24 +164,24 @@ bool isBestMatch(TTrack const& track, TCut const& cut, TTracks const& tracks)
     }
     map_chi2MCHMFT.clear();
 
-     // find best global muon per MCH-MID tracks. Keep in mind that there are 5 global muons per MCH-MID in pp/OO and 20 global muons per MCH-MID in PbPb.
-     map_chi2MCHMFT[track.globalIndex()] = track.chi2MatchMCHMFT(); // add myself
-     for (const auto& glmuonId : track.globalMuonsWithSameMCHMIDIds()) {
-       auto candidate = tracks.rawIteratorAt(glmuonId);
-       if (candidate.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && candidate.emeventId() == track.emeventId() && candidate.mfttrackId() != track.mfttrackId()) {
-         if (cut.template IsSelectedTrack<is_wo_acc>(candidate)) {
-           map_chi2MCHMFT[candidate.globalIndex()] = candidate.chi2MatchMCHMFT();
-         }
-       }
-     } // end of glmuonId
+    // find best global muon per MCH-MID tracks. Keep in mind that there are 5 global muons per MCH-MID in pp/OO and 20 global muons per MCH-MID in PbPb.
+    map_chi2MCHMFT[track.globalIndex()] = track.chi2MatchMCHMFT(); // add myself
+    for (const auto& glmuonId : track.globalMuonsWithSameMCHMIDIds()) {
+      auto candidate = tracks.rawIteratorAt(glmuonId);
+      if (candidate.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && candidate.emeventId() == track.emeventId() && candidate.mfttrackId() != track.mfttrackId()) {
+        if (cut.template IsSelectedTrack<is_wo_acc>(candidate)) {
+          map_chi2MCHMFT[candidate.globalIndex()] = candidate.chi2MatchMCHMFT();
+        }
+      }
+    } // end of glmuonId
 
-     auto it1 = std::min_element(map_chi2MCHMFT.begin(), map_chi2MCHMFT.end(), [](decltype(map_chi2MCHMFT)::value_type& l, decltype(map_chi2MCHMFT)::value_type& r) -> bool { return l.second < r.second; }); // search for minimum matching-chi2
-     if (it1->first == track.globalIndex()) {
-       isBestFromMCHMID2MFT = true;
-     } else {
-       isBestFromMCHMID2MFT = false;
-     }
-     map_chi2MCHMFT.clear();
+    auto it1 = std::min_element(map_chi2MCHMFT.begin(), map_chi2MCHMFT.end(), [](decltype(map_chi2MCHMFT)::value_type& l, decltype(map_chi2MCHMFT)::value_type& r) -> bool { return l.second < r.second; }); // search for minimum matching-chi2
+    if (it1->first == track.globalIndex()) {
+      isBestFromMCHMID2MFT = true;
+    } else {
+      isBestFromMCHMID2MFT = false;
+    }
+    map_chi2MCHMFT.clear();
 
     return isBestFromMCHMID2MFT && isBestFromMFT2MCHMID;
   } else {
