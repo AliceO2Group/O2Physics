@@ -20,6 +20,7 @@
 
 #include <algorithm>
 #include <map>
+#include <ranges>
 #include <string>
 #include <vector>
 
@@ -140,26 +141,49 @@ bool isBestMatch(TTrack const& track, TCut const& cut, TTracks const& tracks)
   // this is only for global muons at forward rapidity
   // Be careful! tracks are fwdtracks per DF.
   if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
+    bool isBestFromMCHMID2MFT = false;
+    bool isBestFromMFT2MCHMID = false;
     std::map<int64_t, float> map_chi2MCHMFT;
+
+    // 1 MFTsa track can match several MCH-MID tracks. find best global muon per MFTsa.
     map_chi2MCHMFT[track.globalIndex()] = track.chi2MatchMCHMFT(); // add myself
     for (const auto& glmuonId : track.globalMuonsWithSameMFTIds()) {
-      const auto& candidate = tracks.rawIteratorAt(glmuonId);
-      if (candidate.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && candidate.emeventId() == track.emeventId()) {
+      auto candidate = tracks.rawIteratorAt(glmuonId);
+      if (candidate.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && candidate.emeventId() == track.emeventId() && candidate.mchtrackId() != track.mchtrackId()) {
         if (cut.template IsSelectedTrack<is_wo_acc>(candidate)) {
           map_chi2MCHMFT[candidate.globalIndex()] = candidate.chi2MatchMCHMFT();
         }
       }
     } // end of glmuonId
 
-    auto it = std::min_element(map_chi2MCHMFT.begin(), map_chi2MCHMFT.end(), [](decltype(map_chi2MCHMFT)::value_type& l, decltype(map_chi2MCHMFT)::value_type& r) -> bool { return l.second < r.second; }); // search for minimum matching-chi2
-
-    if (it->first == track.globalIndex()) {
-      map_chi2MCHMFT.clear();
-      return true;
+    auto it0 = std::min_element(map_chi2MCHMFT.begin(), map_chi2MCHMFT.end(), [](decltype(map_chi2MCHMFT)::value_type& l, decltype(map_chi2MCHMFT)::value_type& r) -> bool { return l.second < r.second; }); // search for minimum matching-chi2
+    if (it0->first == track.globalIndex()) {
+      isBestFromMFT2MCHMID = true;
     } else {
-      map_chi2MCHMFT.clear();
-      return false;
+      isBestFromMFT2MCHMID = false;
     }
+    map_chi2MCHMFT.clear();
+
+    // find best global muon per MCH-MID tracks. Keep in mind that there are 5 global muons per MCH-MID in pp/OO and 20 global muons per MCH-MID in PbPb.
+    map_chi2MCHMFT[track.globalIndex()] = track.chi2MatchMCHMFT(); // add myself
+    for (const auto& glmuonId : track.globalMuonsWithSameMCHMIDIds()) {
+      auto candidate = tracks.rawIteratorAt(glmuonId);
+      if (candidate.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && candidate.emeventId() == track.emeventId() && candidate.mfttrackId() != track.mfttrackId()) {
+        if (cut.template IsSelectedTrack<is_wo_acc>(candidate)) {
+          map_chi2MCHMFT[candidate.globalIndex()] = candidate.chi2MatchMCHMFT();
+        }
+      }
+    } // end of glmuonId
+
+    auto it1 = std::min_element(map_chi2MCHMFT.begin(), map_chi2MCHMFT.end(), [](decltype(map_chi2MCHMFT)::value_type& l, decltype(map_chi2MCHMFT)::value_type& r) -> bool { return l.second < r.second; }); // search for minimum matching-chi2
+    if (it1->first == track.globalIndex()) {
+      isBestFromMCHMID2MFT = true;
+    } else {
+      isBestFromMCHMID2MFT = false;
+    }
+    map_chi2MCHMFT.clear();
+
+    return isBestFromMCHMID2MFT && isBestFromMFT2MCHMID;
   } else {
     return true;
   }
