@@ -137,6 +137,8 @@ struct PidFlowPtCorr {
   O2_DEFINE_CONFIGURABLE(cfgUsePtCentNUECorr, bool, true, "do NUA NUE, Using Eff(pt, cent) to do NUE")
   O2_DEFINE_CONFIGURABLE(cfgDebugMyCode, bool, false, "output some graph for code debug")
 
+  O2_DEFINE_CONFIGURABLE(cfgOutPutPtSpectra, bool, false, "output pt spectra for data, MC and RECO")
+
   /**
    * @brief cfg for PID pt range
    * @details default datas are from run2, note that separate pi-k and k-p needs to use difference pt range
@@ -182,7 +184,7 @@ struct PidFlowPtCorr {
   // filter and using
   // data
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < trkQualityOpts.cfgCutEta.value) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
+  Filter trackFilter = (nabs(aod::track::eta) < trkQualityOpts.cfgCutEta.value) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true));
 
   using TracksPID = soa::Join<aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
   // data tracks filter
@@ -197,7 +199,7 @@ struct PidFlowPtCorr {
   Filter particleFilter = (nabs(aod::mcparticle::eta) < trkQualityOpts.cfgCutEta.value);
   using FilteredMcParticles = soa::Filtered<aod::McParticles>;
 
-  using FilteredTracksWithMCLabel = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>>;
+  using FilteredTracksWithMCLabel = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels, TracksPID>>;
   using FilteredCollisionsWithMCLabel = soa::Filtered<soa::Join<AodCollisions, aod::EvSels, aod::McCollisionLabels>>;
   // end using and filter
 
@@ -382,7 +384,7 @@ struct PidFlowPtCorr {
         TH1* hPhiRunByRunBefore = registry.add<TH1>(Form("RunByRunQA%d/hPhiBefore", oneRun), "", {HistType::kTH1D, {cfgaxisPhi}}).get();
         TH1* hPhiRunByRunAfter = registry.add<TH1>(Form("RunByRunQA%d/hPhiAfter", oneRun), "", {HistType::kTH1D, {cfgaxisPhi}}).get();
 
-        TH2* hITSnclsVsPhi = registry.add<TH2>(Form("RunByRunQA%d/hITSnclsVsPhi", oneRun), "", {HistType::kTH2D, {cfgaxisPhi, {7, 0, 7}}}).get();
+        TH2* hITSnclsVsPhi = registry.add<TH2>(Form("RunByRunQA%d/hITSnclsVsPhi", oneRun), "", {HistType::kTH2D, {cfgaxisPhi, {8, 0, 8}}}).get();
         TH2* hITSChi2VsPhi = registry.add<TH2>(Form("RunByRunQA%d/hITSChi2VsPhi", oneRun), "", {HistType::kTH2D, {cfgaxisPhi, {100, 0, 10}}}).get();
 
         qaHistVector.emplace_back(qaHist(hPhiRunByRunBefore, hPhiRunByRunAfter, hITSnclsVsPhi, hITSChi2VsPhi));
@@ -394,6 +396,16 @@ struct PidFlowPtCorr {
       // hist for NUE correction
       registry.add("correction/hPtCentMcRec", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
       registry.add("correction/hPtCentMcGen", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+
+      // hist for Pi eff
+      registry.add("correction/hPtCentMcRecPi", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      registry.add("correction/hPtCentMcGenPi", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      // hist for Ka eff
+      registry.add("correction/hPtCentMcRecKa", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      registry.add("correction/hPtCentMcGenKa", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      // hist for Pr eff
+      registry.add("correction/hPtCentMcRecPr", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      registry.add("correction/hPtCentMcGenPr", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
     } // cfgoutputMC
 
     // debug hists
@@ -405,6 +417,26 @@ struct PidFlowPtCorr {
         registry.get<THnSparse>(HIST("debug/hRunNumberPhiEtaVertexWeight"))->GetAxis(0)->SetBinLabel(idx, std::to_string(runNumbers[idx - 1]).c_str());
       }
     } // cfgdebugmycode
+
+    if (cfgOutPutPtSpectra) {
+      registry.add("ptSpectra/hPtCentData", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      registry.add("ptSpectra/hCentEventCountData", "", {HistType::kTH1D, {axisMultiplicity}});
+      registry.add("ptSpectra/hCentEventCountMcGen", "", {HistType::kTH1D, {axisMultiplicity}});
+      registry.add("ptSpectra/hCentEventCountMcRec", "", {HistType::kTH1D, {axisMultiplicity}});
+
+      // (PosEta)(PosCh)
+      registry.add("ptSpectra/hPtCentDataPosEtaPosCh", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+
+      // (PosEta)(NegCh)
+      registry.add("ptSpectra/hPtCentDataPosEtaNegCh", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+
+      // (NegEta(PosCh)
+      registry.add("ptSpectra/hPtCentDataNegEtaPosCh", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+
+      // (NegEta)(NegCh)
+      registry.add("ptSpectra/hPtCentDataNegEtaNegCh", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+
+    } // cfgoutputptspectra
 
     if (cfgOutputrunbyrun) {
       // hist for NUA
@@ -1262,6 +1294,11 @@ struct PidFlowPtCorr {
       return;
     // end collision cut
 
+    // pt spectra
+    if (cfgOutPutPtSpectra) {
+      registry.fill(HIST("ptSpectra/hCentEventCountData"), cent);
+    } // cfgOutPutPtSpectra
+
     // correction
     loadCorrections(bc.timestamp());
     float vtxz = collision.posZ();
@@ -1387,6 +1424,27 @@ struct PidFlowPtCorr {
       registry.fill(HIST("hEtaPhiVtxzREF"), track.phi(), track.eta(), vtxz, wacc);
       registry.fill(HIST("hPt"), track.pt());
       // end fill QA hist
+
+      // pt spectra
+      if (cfgOutPutPtSpectra) {
+        registry.fill(HIST("ptSpectra/hPtCentData"), track.pt(), cent);
+
+        // region 1 +eta +ch
+        if (track.eta() > 0.05 && track.sign() > 0)
+          registry.fill(HIST("ptSpectra/hPtCentDataPosEtaPosCh"), track.pt(), cent);
+
+        // region 2 +eta -ch
+        if (track.eta() > 0.05 && track.sign() < 0)
+          registry.fill(HIST("ptSpectra/hPtCentDataPosEtaNegCh"), track.pt(), cent);
+
+        // region 3 -eta +ch
+        if (track.eta() < -0.05 && track.sign() > 0)
+          registry.fill(HIST("ptSpectra/hPtCentDataNegEtaPosCh"), track.pt(), cent);
+
+        // region 4 -eta -ch
+        if (track.eta() < -0.05 && track.sign() < 0)
+          registry.fill(HIST("ptSpectra/hPtCentDataNegEtaNegCh"), track.pt(), cent);
+      }
 
       // track pt cut
       if (!((track.pt() > trkQualityOpts.cfgCutPtMin.value) && (track.pt() < trkQualityOpts.cfgCutPtMax.value)))
@@ -1694,6 +1752,10 @@ struct PidFlowPtCorr {
       return;
     // end init && cut
 
+    if (cfgOutPutPtSpectra) {
+      registry.fill(HIST("ptSpectra/hCentEventCountMcRec"), cent);
+    } // cfgoutputptspectra
+
     // loop tracks
     for (const auto& track : tracks) {
       // track cut
@@ -1706,7 +1768,20 @@ struct PidFlowPtCorr {
         auto mcParticle = track.mcParticle();
         // fill graph
         if (particleSelected(mcParticle)) {
+          // graph for all particles
           registry.fill(HIST("correction/hPtCentMcRec"), track.pt(), cent);
+
+          // identify particle and fill graph
+          if (isPion(track)) {
+            registry.fill(HIST("correction/hPtCentMcRecPi"), track.pt(), cent);
+          }
+          if (isKaon(track)) {
+            registry.fill(HIST("correction/hPtCentMcRecKa"), track.pt(), cent);
+          }
+          if (isProton(track)) {
+            registry.fill(HIST("correction/hPtCentMcRecPr"), track.pt(), cent);
+          }
+          // end identify particle and fill graph
         }
         // end fill graph
       }
@@ -1755,11 +1830,28 @@ struct PidFlowPtCorr {
         continue;
       // end collision cut
 
+      if (cfgOutPutPtSpectra) {
+        registry.fill(HIST("ptSpectra/hCentEventCountMcGen"), cent);
+      } // cfgoutputptspectra
+
       // loop mc particles
       for (const auto& mcParticle : mcParticles) {
         // fill graph
         if (particleSelected(mcParticle)) {
+          // graph for all particles
           registry.fill(HIST("correction/hPtCentMcGen"), mcParticle.pt(), cent);
+
+          // identify particle and fill graph
+          if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus) {
+            registry.fill(HIST("correction/hPtCentMcGenPi"), mcParticle.pt(), cent);
+          }
+          if (std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus) {
+            registry.fill(HIST("correction/hPtCentMcGenKa"), mcParticle.pt(), cent);
+          }
+          if (std::abs(mcParticle.pdgCode()) == PDG_t::kProton) {
+            registry.fill(HIST("correction/hPtCentMcGenPr"), mcParticle.pt(), cent);
+          }
+          // end identify particle and fill graph
         }
         // end fill graph
       }
