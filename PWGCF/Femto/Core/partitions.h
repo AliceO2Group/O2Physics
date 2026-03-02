@@ -24,18 +24,22 @@
     (o2::aod::femtocollisions::magField >= static_cast<int8_t>(selection.magFieldMin) && o2::aod::femtocollisions::magField <= static_cast<int8_t>(selection.magFieldMax)) && \
     ncheckbit(o2::aod::femtocollisions::mask, selection.collisionMask)
 
+// macro for track momentum, i.e. ||q|*pT/q| * cosh(eta)
+// there is no ncosh function, so we have to make our own, i.e. cosh(x) = (exp(x)+exp(-x))/2
+#define TRACK_MOMENTUM(chargeAbs, signedPt, eta) nabs((chargeAbs) * (signedPt)) * (nexp(eta) + nexp(-1.f * (eta))) / 2.f
+
 // standard track partition
-#define MAKE_TRACK_PARTITION(selection)                                                                                                                                                                    \
-  ifnode(selection.chargeSign.node() != 0, ifnode(selection.chargeSign.node() > 0, o2::aod::femtobase::stored::signedPt > 0.f, o2::aod::femtobase::stored::signedPt < 0.f), true) &&                       \
-    (nabs(selection.chargeAbs.node() * o2::aod::femtobase::stored::signedPt) > selection.ptMin) &&                                                                                                         \
-    (nabs(selection.chargeAbs.node() * o2::aod::femtobase::stored::signedPt) < selection.ptMax) &&                                                                                                         \
-    (o2::aod::femtobase::stored::eta > selection.etaMin) &&                                                                                                                                                \
-    (o2::aod::femtobase::stored::eta < selection.etaMax) &&                                                                                                                                                \
-    (o2::aod::femtobase::stored::phi > selection.phiMin) &&                                                                                                                                                \
-    (o2::aod::femtobase::stored::phi < selection.phiMax) &&                                                                                                                                                \
-    ifnode(nabs(selection.chargeAbs.node() * o2::aod::femtobase::stored::signedPt) * (nexp(o2::aod::femtobase::stored::eta) + nexp(-1.f * o2::aod::femtobase::stored::eta)) / (2.f) <= selection.pidThres, \
-           ncheckbit(o2::aod::femtotracks::mask, selection.maskLowMomentum),                                                                                                                               \
-           ncheckbit(o2::aod::femtotracks::mask, selection.maskHighMomentum))
+#define MAKE_TRACK_PARTITION(selection)                                                                                                                                              \
+  ifnode(selection.chargeSign.node() != 0, ifnode(selection.chargeSign.node() > 0, o2::aod::femtobase::stored::signedPt > 0.f, o2::aod::femtobase::stored::signedPt < 0.f), true) && \
+    (nabs(selection.chargeAbs.node() * o2::aod::femtobase::stored::signedPt) > selection.ptMin) &&                                                                                   \
+    (nabs(selection.chargeAbs.node() * o2::aod::femtobase::stored::signedPt) < selection.ptMax) &&                                                                                   \
+    (o2::aod::femtobase::stored::eta > selection.etaMin) &&                                                                                                                          \
+    (o2::aod::femtobase::stored::eta < selection.etaMax) &&                                                                                                                          \
+    (o2::aod::femtobase::stored::phi > selection.phiMin) &&                                                                                                                          \
+    (o2::aod::femtobase::stored::phi < selection.phiMax) &&                                                                                                                          \
+    ifnode(TRACK_MOMENTUM(selection.chargeAbs.node(), o2::aod::femtobase::stored::pt, o2::aod::femtobase::stored::eta) <= selection.pidThres,                                        \
+           ncheckbit(o2::aod::femtotracks::mask, selection.maskLowMomentum) && (o2::aod::femtotracks::mask & selection.rejectionMaskLowMomentum.node()) == 0u,                       \
+           ncheckbit(o2::aod::femtotracks::mask, selection.maskHighMomentum) && (o2::aod::femtotracks::mask & selection.rejectionMaskHighMomentum.node()) == 0u)
 
 // partition for phis and rhos, i.e. resonance that are their own antiparticle
 #define MAKE_RESONANCE_0_PARTITON(selection)                                                     \

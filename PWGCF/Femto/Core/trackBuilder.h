@@ -146,6 +146,9 @@ struct ConfTrackSelection : public o2::framework::ConfigurableGroup {
   // track selection masks
   o2::framework::Configurable<o2::aod::femtodatatypes::TrackMaskType> maskLowMomentum{"maskLowMomentum", 0x2u, "Bitmask for selections below momentum threshold"};
   o2::framework::Configurable<o2::aod::femtodatatypes::TrackMaskType> maskHighMomentum{"maskHighMomentum", 0x1u, "Bitmask for selections above momentum threshold"};
+  // track rejection masks
+  o2::framework::Configurable<o2::aod::femtodatatypes::TrackMaskType> rejectionMaskLowMomentum{"rejectionMaskLowMomentum", 0x0u, "Bitmask for rejections below momentum threshold"};
+  o2::framework::Configurable<o2::aod::femtodatatypes::TrackMaskType> rejectionMaskHighMomentum{"rejectionMaskHighMomentum", 0x0u, "Bitmask for rejections above momentum threshold"};
   // momentum threshold for PID usage
   o2::framework::Configurable<float> pidThres{"pidThres", 1.2f, "Momentum threshold for using TPCTOF/TOF pid for tracks with large momentum (GeV/c)"};
 };
