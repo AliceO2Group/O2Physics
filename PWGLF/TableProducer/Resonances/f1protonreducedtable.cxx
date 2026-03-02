@@ -163,7 +163,7 @@ struct f1protonreducedtable {
                                              {"hInvMassf1kstar", "hInvMassf1kstar", {HistType::kTH3F, {{400, 1.1f, 1.9f}, {100, 0.0f, 10.0f}, {8, 0.0f, 0.8f}}}},
                                              {"hkstarDist", "hkstarDist", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
                                              {"hDCAxy", "hDCAxy", {HistType::kTH3F, {{100, -0.05f, 0.05f}, {5, -2.5, 2.5}, {40, 0.0, 4.0}}}},
-					     {"hDCAz", "hDCAz", {HistType::kTH3F, {{100, -0.05f, 0.05f}, {2, 0, 2}, {40, 0.0, 4.0}}}},
+                                             {"hDCAz", "hDCAz", {HistType::kTH3F, {{100, -0.05f, 0.05f}, {2, 0, 2}, {40, 0.0, 4.0}}}},
                                              {"hPhi", "hPhi", {HistType::kTH1F, {{1400, -7.0f, 7.0f}}}},
                                              {"hPhiSphero", "hPhiSphero", {HistType::kTH1F, {{1400, -7.0f, 7.0f}}}},
                                              {"hEta", "hEta", {HistType::kTH1F, {{20, -1.0f, 1.0f}}}},
@@ -369,13 +369,12 @@ struct f1protonreducedtable {
       return false;
     }
 
-
     const float nsTPC = nsigmaTPC;
     const float nsTOF = nsigmaTOF;
     const float comb = std::sqrt(nsTPC * nsTPC + nsTOF * nsTOF);
     return (comb < 2.5);
   }
-  
+
   template <typename Collision, typename V0>
   bool SelectionV0(Collision const& collision, V0 const& candidate)
   {
@@ -987,23 +986,23 @@ struct f1protonreducedtable {
     qaRegistry.fill(HIST("hEventstat"), 0.5);
     if (keepEventF1Proton) {
       for (auto iproton = protons.begin(); iproton != protons.end(); ++iproton) {
-	auto i6 = std::distance(protons.begin(), iproton);
-	ProtonVectorDummy2 = protons.at(i6);
-	if (std::abs(ProtonDcaxy.at(i6)) < 0.05 && std::abs(ProtonDcaz.at(i6)) < 0.05) {
-	  if (ProtonTOFHit.at(i6) && ProtonVectorDummy2.P() > 0.7) {
-	    qaRegistry.fill(HIST("hNsigmaPtprotonTPC"),ProtonTPCNsigma.at(i6), ProtonTOFNsigma.at(i6), ProtonVectorDummy2.Pt());
-	  }
-	  if (ProtonVectorDummy2.P() < 0.7) {
-	    qaRegistry.fill(HIST("hNsigmaPtprotonTPC"),ProtonTPCNsigma.at(i6), 4.999, ProtonVectorDummy2.Pt());
-	  }
-	}
-	if (passProtonPID(ProtonTPCNsigma.at(i6), ProtonTOFNsigma.at(i6), ProtonTOFHit.at(i6), ProtonVectorDummy2)) {
-	  qaRegistry.fill(HIST("hDCAxy"), ProtonDcaxy.at(i6), ProtonCharge.at(i6), ProtonVectorDummy2.Pt());
-	  qaRegistry.fill(HIST("hDCAz"), ProtonDcaz.at(i6), ProtonCharge.at(i6), ProtonVectorDummy2.Pt());
-	}
+        auto i6 = std::distance(protons.begin(), iproton);
+        ProtonVectorDummy2 = protons.at(i6);
+        if (std::abs(ProtonDcaxy.at(i6)) < 0.05 && std::abs(ProtonDcaz.at(i6)) < 0.05) {
+          if (ProtonTOFHit.at(i6) && ProtonVectorDummy2.P() > 0.7) {
+            qaRegistry.fill(HIST("hNsigmaPtprotonTPC"), ProtonTPCNsigma.at(i6), ProtonTOFNsigma.at(i6), ProtonVectorDummy2.Pt());
+          }
+          if (ProtonVectorDummy2.P() < 0.7) {
+            qaRegistry.fill(HIST("hNsigmaPtprotonTPC"), ProtonTPCNsigma.at(i6), 4.999, ProtonVectorDummy2.Pt());
+          }
+        }
+        if (passProtonPID(ProtonTPCNsigma.at(i6), ProtonTOFNsigma.at(i6), ProtonTOFHit.at(i6), ProtonVectorDummy2)) {
+          qaRegistry.fill(HIST("hDCAxy"), ProtonDcaxy.at(i6), ProtonCharge.at(i6), ProtonVectorDummy2.Pt());
+          qaRegistry.fill(HIST("hDCAz"), ProtonDcaz.at(i6), ProtonCharge.at(i6), ProtonVectorDummy2.Pt());
+        }
       }
     }
-    
+
     if (numberF1 > 0 && (f1resonance.size() == f1signal.size()) && (f1resonance.size() == f1kaonkshortmass.size()) && (f1resonance.size() == f1resonanced1.size()) && (f1resonance.size() == f1resonanced2.size()) && (f1resonance.size() == f1resonanced3.size())) {
       qaRegistry.fill(HIST("hEventstat"), 1.5);
       if (keepEventF1Proton) {
