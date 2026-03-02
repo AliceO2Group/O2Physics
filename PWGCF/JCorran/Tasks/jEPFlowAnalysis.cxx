@@ -367,7 +367,8 @@ struct jEPFlowAnalysis {
   void processDefault(MyCollisions::iterator const& coll, soa::Filtered<MyTracks> const& tracks, aod::BCsWithTimestamps const&)
   {
     if (cfgAddEvtSel) {
-      if (!eventSel(coll)) return;
+      if (!eventSel(coll))
+        return;
     }
 
     if (cfgEffCor) {
@@ -413,7 +414,8 @@ struct jEPFlowAnalysis {
     }
 
     if (cfgAddEvtSel) {
-      if (!eventSel(coll)) return;
+      if (!eventSel(coll))
+        return;
     }
 
     float cent = coll.centFT0C();
