@@ -1340,7 +1340,7 @@ struct lambdaspincorrderived {
   }
   PROCESS_SWITCH(lambdaspincorrderived, processMC, "Process MC (SE)", false);
 
-  void processMEV3MC(EventCandidatesMC const& collisions, AllTrackCandidatesMC const& V0sMC)
+  void processMCMEV3(EventCandidatesMC const& collisions, AllTrackCandidatesMC const& V0sMC)
   {
     auto nBins = colBinning.getAllBinsCount();
     std::vector<std::deque<std::pair<int, AllTrackCandidatesMC>>> eventPools(nBins);
@@ -1454,7 +1454,7 @@ struct lambdaspincorrderived {
   }
 
   // enable it
-  PROCESS_SWITCH(lambdaspincorrderived, processMEV3MC, "Process MC ME (MEV3)", false);
+  PROCESS_SWITCH(lambdaspincorrderived, processMCMEV3, "Process MC ME (MEV3)", false);
   // -----------------------------------------------------
   // 5) MC Event Mixing using your MEV4 6D-buffer approach
   // -----------------------------------------------------
