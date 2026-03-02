@@ -169,7 +169,7 @@ DECLARE_SOA_TABLE(GenParticles, "AOD", "GENPARTICLES",
 } // namespace o2::aod
 
 struct FilterTracks {
-  const static int nStudiedParticlesMc = 3;
+  static const int nStudiedParticlesMc = 3;
 
   Produces<aod::FiltTrackColIdx> filteredTracksCollIdx;
   Produces<aod::FilterTrackExtr> filteredTracksTableExtra;
