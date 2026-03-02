@@ -468,9 +468,10 @@ DECLARE_SOA_TABLE(DalitzEEs, "AOD", "DALITZEE", //!
 // iterators
 using DalitzEE = DalitzEEs::iterator;
 
-DECLARE_SOA_TABLE(DalitzEEEMEventIds, "AOD", "EEEMEVENTID", dalitzee::EMEventId); // To be joined with DalitzEEs table at analysis level.
-// iterators
-using DalitzEEEMEventId = DalitzEEEMEventIds::iterator;
+DECLARE_SOA_TABLE(DalitzEEEMEventIds_000, "AOD", "EEEMEVENTID", dalitzee::EMEventId);                    // To be joined with DalitzEEs table at analysis level.
+DECLARE_SOA_TABLE_VERSIONED(DalitzEEEMEventIds_001, "AOD", "EEEMEVENTID", 1, dalitzee::EMPhotonEventId); // To be joined with DalitzEEs table at analysis level.
+using DalitzEEEMEventIds = DalitzEEEMEventIds_001;
+using DalitzEEEMEventId  = DalitzEEEMEventIds::iterator;
 
 namespace pwgem::photon::swtinfo
 {
