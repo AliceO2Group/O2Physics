@@ -405,11 +405,6 @@ struct OnTheFlyTracker {
         insertHist(histPath + "hPtReconstructedPi", "hPtReconstructedPi;Reco #it{p}_{T} (GeV/c);Counts", {kTH1D, {{axes.axisMomentum}}});
         insertHist(histPath + "hPtReconstructedKa", "hPtReconstructedKa;Reco #it{p}_{T} (GeV/c);Counts", {kTH1D, {{axes.axisMomentum}}});
         insertHist(histPath + "hPtReconstructedPr", "hPtReconstructedPr;Reco #it{p}_{T} (GeV/c);Counts", {kTH1D, {{axes.axisMomentum}}});
-
-        insertHist(histPath + "h2dPtResCascade_old", "h2dPtResCascade_old", {kTH2F, {axes.axisMomentum, axes.axisDeltaPt}});
-        insertHist(histPath + "h2dPtResCascade_new", "h2dPtResCascade_new", {kTH2F, {axes.axisMomentum, axes.axisDeltaPt}});
-        insertHist(histPath + "h2dDCAxyCascade_old", "h2dDCAxyCascade_old", {kTH2F, {axes.axisMomentum, axes.axisDCA}});
-        insertHist(histPath + "h2dDCAxyCascade_new", "h2dDCAxyCascade_new", {kTH2F, {axes.axisMomentum, axes.axisDCA}});
       }
       // Collision QA
       insertHist(histPath + "hPVz", "hPVz;Primary Vertex Z (cm);Counts", {kTH1D, {{axes.axisVertexZ}}});
@@ -1292,27 +1287,6 @@ struct OnTheFlyTracker {
 
               newCascadeTrack.setPID(pdgCodeToPID(PDG_t::kXiMinus)); // FIXME: not OK for omegas
               tracksAlice3.push_back(TrackAlice3{newCascadeTrack, mcParticle.globalIndex(), time, timeResolutionUs, false, false, 1, thisCascade.foundClusters});
-
-              float dcaXY = 1e+10, dcaZ = 1e+10;
-              o2::vertexing::PVertex pvtx;
-              pvtx.setXYZ(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
-              o2::track::TrackParCov originalTrack(trackedCascade);
-              o2::track::TrackParCov fittedTrack(newCascadeTrack);
-
-              if (originalTrack.propagateToDCA(pvtx, mMagneticField, &dcaInfo)) {
-                dcaXY = dcaInfo.getY();
-                dcaZ = dcaInfo.getZ();
-              }
-
-              getHist(TH2, histPath + "h2dPtResCascade_old")->Fill(mcParticle.pt(), (originalTrack.getPt() - mcParticle.pt()) / originalTrack.getPt());
-              getHist(TH2, histPath + "h2dDCAxyCascade_old")->Fill(mcParticle.pt(), dcaXY);
-              if (fittedTrack.propagateToDCA(pvtx, mMagneticField, &dcaInfo)) {
-                dcaXY = dcaInfo.getY();
-                dcaZ = dcaInfo.getZ();
-              }
-
-              getHist(TH2, histPath + "h2dPtResCascade_new")->Fill(mcParticle.pt(), (fittedTrack.getPt() - mcParticle.pt()) / fittedTrack.getPt());
-              getHist(TH2, histPath + "h2dDCAxyCascade_new")->Fill(mcParticle.pt(), dcaXY);
 
               // add this cascade to vector (will fill cursor later with collision ID)
               cascadesAlice3.push_back(thisCascade);

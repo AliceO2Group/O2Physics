@@ -102,7 +102,6 @@ struct Alice3MulticharmFinder {
     Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
   } cfgFitter;
 
-
   Configurable<float> cfgMagneticField{"cfgMagneticField", 20.0f, "Magnetic field (in kilogauss) if value not found from geo provider"};
   Configurable<bool> doDCAplots{"doDCAplots", true, "do daughter prong DCA plots for D mesons"};
   Configurable<bool> mcSameMotherCheck{"mcSameMotherCheck", true, "check if tracks come from the same MC mother"};
@@ -243,7 +242,7 @@ struct Alice3MulticharmFinder {
     if (nCand == 0) {
       return false;
     }
-    
+
     fitter.propagateTracksToVertex();
     if (!fitter.isPropagateTracksToVertexDone()) {
       return false;
