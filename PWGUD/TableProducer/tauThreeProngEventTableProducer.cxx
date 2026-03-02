@@ -1056,7 +1056,8 @@ struct TauThreeProngEventTableProducer {
       partFromTauInEta = true;
 
       // get particles associated to generated collision
-      auto const& tmpPartsFromMcColl = mcParticles.sliceBy(partPerMcCollision, (int64_t)mccoll.globalIndex());
+      // auto const& tmpPartsFromMcColl = mcParticles.sliceBy(partPerMcCollision, (int64_t)mccoll.globalIndex());
+      auto const& tmpPartsFromMcColl = mcParticles.sliceBy(partPerMcCollision, mccoll.globalIndex());
 
       if (verbose)
         LOGF(info, "- part from MC coll %d", tmpPartsFromMcColl.size());
@@ -1267,7 +1268,7 @@ struct TauThreeProngEventTableProducer {
       // LOGF(info, "MC Coll global index %d", mccoll.globalIndex());
       // LOGF(info, "2. <MC> UDMcCollision size %d, Collisions size %d, UDtracks %d, UDMcParticles %d", mcCollisions.size(), collisions.size(), tracks.size(), mcParticles.size());
       // for (const auto& coll : collisions) {
-      //	LOGF(info, "coll global index %d", coll.globalIndex());
+      // LOGF(info, "coll global index %d", coll.globalIndex());
       // }
 
       // find reconstructed collisions associated to the generated collision
@@ -1414,7 +1415,7 @@ struct TauThreeProngEventTableProducer {
                 // tracks are accocated to 2 different collisions (!?)
                 float tmptrk[3];
                 bool firstObject = true;
-                short counter = 0;
+                int counter = 0;
                 for (const auto& trk : tracksFromDaughter) {
                   if (verbose)
                     LOGF(info, "------- track GID %d, p(%f,%f,%f)", trk.globalIndex(), trk.px(), trk.py(), trk.pz());
