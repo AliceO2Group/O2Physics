@@ -419,6 +419,8 @@ struct HStrangeCorrelation {
     hPurityUncertaintyHadronMult = static_cast<TH2F*>(listEfficiencies->FindObject("hPurityUncertaintyHadronMult"));
     if (efficiencyFlags.applyEfficiencyPropagation && !efficiencyFlags.applyEffAsFunctionOfMultAndPhi && !hEfficiencyUncertaintyTrigger)
       LOG(fatal) << "Problem getting hEfficiencyUncertaintyTrigger!";
+    if (efficiencyFlags.applyEffAsFunctionOfMult && !hEfficiencyTriggerMult)
+      LOG(fatal) << "Problem getting hEfficiencyTriggerMult!";
     LOG(info) << "Efficiencies now loaded for " << mRunNumber;
   }
 
@@ -1173,7 +1175,7 @@ struct HStrangeCorrelation {
             } else {
               efficiency = hEfficiencyCascade[Index]->Interpolate(ptassoc, assoc.eta());
               if (efficiencyFlags.applyEfficiencyPropagation)
-                efficiencyError = hEfficiencyUncertaintyCascade[Index]->Interpolate(ptassoc, assoc.eta(), assoc.phi());
+                efficiencyError = hEfficiencyUncertaintyCascade[Index]->Interpolate(ptassoc, assoc.eta());
             }
           }
           if (efficiency == 0) { // check for zero efficiency, do not apply if the case
