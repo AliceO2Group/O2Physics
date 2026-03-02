@@ -427,7 +427,7 @@ struct Alice3MulticharmFinder {
     return returnValue;
   }
 
-  void init(o2::framework::InitContext& initContext)
+  void init(o2::framework::InitContext&)
   {
     // initialize O2 2-prong fitter (only once)
     fitter.setPropagateToPCA(cfgFitter.propagateToPCA);
