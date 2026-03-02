@@ -1346,7 +1346,7 @@ struct lambdajetpolarizationions {
         
         // Loop over reconstructed tracks:
         std::vector<fastjet::PseudoJet> fjParticles;
-        int leadingParticleIdx; // An index inside fjParticles
+        int leadingParticleIdx = -1; // Initialized as -1, but could leave it unitialized as well. We reject any invalid events where this could pose a problem (e.g., pT<=0)
         float leadingParticlePt = 0;
         for (auto const& track : tracks){
             // Require that tracks pass selection criteria
@@ -1359,8 +1359,9 @@ struct lambdajetpolarizationions {
             fjParticles.emplace_back(candidate);
 
             // Calculating leading particle
-            if (track.pt() > leadingParticlePt){
-                leadingParticlePt = track.pt();
+            float pt = candidate.pt();
+            if (pt > leadingParticlePt){
+                leadingParticlePt = pt;
                 leadingParticleIdx = fjParticles.size() - 1;
             }
         }
