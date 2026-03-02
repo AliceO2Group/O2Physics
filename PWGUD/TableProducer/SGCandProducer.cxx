@@ -692,7 +692,7 @@ struct McSGCandProducer {
     auto mccol = mccols.iteratorAt(0);
     auto mcOfInterest = std::find(generatorIds->begin(), generatorIds->end(), mccol.getGeneratorId()) != generatorIds->end();
     if (verboseInfoMC)
-      LOGF(info, "Is Generator ID OK %d, MCcoll GenId %d, Set in json ID %d", mcOfInterest, mccol.getGeneratorId(), *(generatorIds->begin()));
+      LOGF(info, "Is Generator ID OK %d, MCcoll GenId %d, SubGenID %d, SourceId %d, Set in json ID %d", mcOfInterest, mccol.getGeneratorId(), mccol.getSubGeneratorId(), mccol.getSourceId(), *(generatorIds->begin()));
     auto lastmccol = mccols.iteratorAt(mccols.size() - 1);
     auto mccolAtEnd = false;
 
@@ -817,7 +817,7 @@ struct McSGCandProducer {
         // advance mccol
         if (mccol != lastmccol) {
           mccol++;
-          // mcOfInterest = std::find(generatorIds->begin(), generatorIds->end(), mccol.getGeneratorId()) != generatorIds->end();
+	  mcOfInterest = std::find(generatorIds->begin(), generatorIds->end(), mccol.getGeneratorId()) != generatorIds->end();
           mccolId = mccol.globalIndex();
         } else {
           mccolAtEnd = true;
