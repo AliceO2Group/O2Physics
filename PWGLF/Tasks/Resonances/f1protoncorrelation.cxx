@@ -1056,7 +1056,7 @@ struct f1protoncorrelation {
               histos.fill(HIST("hPhaseSpaceProtonKaonSame"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Kaon, protontrack.protonCharge(), kaonCharge, bz, bz), relative_momentum); // Phase Space Proton kaon
             if (pionCharge == protontrack.protonCharge())
               histos.fill(HIST("hPhaseSpaceProtonPionSame"), Proton.Eta() - Pion.Eta(), PhiAtSpecificRadiiTPC(Proton, Pion, protontrack.protonCharge(), pionCharge, bz, bz), relative_momentum); // Phase Space Proton Pion
-	    histos.fill(HIST("h2SameEventf1pptCorrelation"), F1.M(), relative_momentum, Proton.Pt());
+            histos.fill(HIST("h2SameEventf1pptCorrelation"), F1.M(), relative_momentum, Proton.Pt());
           }
           activePair.push_back(sysId);
         }
