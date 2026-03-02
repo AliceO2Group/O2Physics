@@ -120,7 +120,7 @@ struct TrackEfficiency {
     } else {
       const auto& aodTrack = jetTrack.template track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>>();
       if (effSystMinNCrossedRowsTPCUseAlternateCut) {
-        customTrackSelection.SetMinNCrossedRowsTPC(120 - 5./jetTrack.pt());
+        customTrackSelection.SetMinNCrossedRowsTPC(120 - 5. / jetTrack.pt());
       }
       if (customTrackSelection.IsSelected(aodTrack)) {
         return true;
@@ -1251,7 +1251,6 @@ struct TrackEfficiency {
     }
   }
   PROCESS_SWITCH(TrackEfficiency, processTrackSelectionHistograms, "plots distributions of variables that are cut on during track selection", false);
-
 
   void processOccupancyQA(soa::Filtered<aod::JetCollisions>::iterator const& collision, aod::JetTracks const& tracks)
   {
