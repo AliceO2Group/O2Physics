@@ -1301,7 +1301,7 @@ struct OnTheFlyTracker {
             getHist(TH1, histPath + "hMassLambda")->Fill(thisCascade.mLambda);
             getHist(TH1, histPath + "hMassXi")->Fill(thisCascade.mXi);
             getHist(TH2, histPath + "h2dMassXi")->Fill(thisCascade.mXi, thisCascade.pt);
-            getHist(TH2, histPath + "h2dDeltaPtVsPt")->Fill(thisCascade.pt, mcParticle.pt() - thisCascade.pt);
+            getHist(TH2, histPath + "h2dDeltaPtVsPt")->Fill(thisCascade.pt, (mcParticle.pt() - thisCascade.pt) / thisCascade.pt);
             getHist(TH2, histPath + "h2dDeltaEtaVsPt")->Fill(thisCascade.pt, mcParticle.eta() - thisCascade.eta);
             getHist(TH2, histPath + "hFoundVsFindable")->Fill(thisCascade.findableClusters, thisCascade.foundClusters);
           }
