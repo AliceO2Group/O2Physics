@@ -387,32 +387,32 @@ struct AssociatePhotonToEMEvent {
   // This struct is for both data and MC.
   // Note that reconstructed collisions without mc collisions are already rejected in CreateEMEventPhoton in MC.
 
-  void processPCM(aod::EMEvents const& collisions, aod::V0PhotonsKF const& photons)
+  void processPCM(aod::EMEvents_004 const& collisions, aod::V0PhotonsKF const& photons)
   {
     fillEventId(collisions, photons, v0kfeventid, perCollisionPCM);
   }
 
-  void processElectronFromDalitz(aod::EMEvents const& collisions, aod::EMPrimaryElectronsFromDalitz const& tracks)
+  void processElectronFromDalitz(aod::EMEvents_004 const& collisions, aod::EMPrimaryElectronsFromDalitz const& tracks)
   {
     fillEventId(collisions, tracks, prmeleventid, perCollisionEl);
   }
 
-  void processPHOS(aod::EMEvents const& collisions, aod::PHOSClusters const& photons)
+  void processPHOS(aod::EMEvents_004 const& collisions, aod::PHOSClusters const& photons)
   {
     fillEventId(collisions, photons, phoseventid, perCollisionPHOS);
   }
 
-  void processEMC(aod::EMEvents const& collisions, aod::SkimEMCClusters const& photons)
+  void processEMC(aod::EMEvents_004 const& collisions, aod::SkimEMCClusters const& photons)
   {
     fillEventId(collisions, photons, emceventid, perCollisionEMC);
   }
 
-  // void processChargedTrack(aod::EMEvents const& collisions, aod::EMPrimaryTracks const& tracks)
+  // void processChargedTrack(aod::EMEvents_004 const& collisions, aod::EMPrimaryTracks const& tracks)
   // {
   //   fillEventId(collisions, tracks, prmtrackeventid, perCollision_track);
   // }
 
-  void processDummy(aod::EMEvents const&) {}
+  void processDummy(aod::EMEvents_004 const&) {}
 
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processPCM, "process pcm-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processElectronFromDalitz, "process dalitzee-event indexing", false);

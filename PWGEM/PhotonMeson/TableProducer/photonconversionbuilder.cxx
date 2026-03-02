@@ -237,23 +237,24 @@ struct PhotonConversionBuilder {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
-
-    if (useMatCorrType == MatCorrType::TGeo) {
-      LOGF(info, "TGeo correction requested, loading geometry");
-      if (!o2::base::GeometryManager::isGeometryLoaded()) {
-        ccdb->get<TGeoManager>(geoPath);
-      }
-    }
-    if (useMatCorrType == MatCorrType::LUT) {
-      LOGF(info, "LUT correction requested, loading LUT");
-      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
-    }
-
-    if (useMatCorrType == MatCorrType::TGeo) {
-      matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
-    }
-    if (useMatCorrType == MatCorrType::LUT) {
-      matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+    switch (useMatCorrType) {
+      case MatCorrType::TGeo:
+        LOGF(info, "TGeo correction requested, loading geometry");
+        if (!o2::base::GeometryManager::isGeometryLoaded()) {
+          ccdb->get<TGeoManager>(geoPath);
+        }
+        matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
+        break;
+      case MatCorrType::LUT:
+        LOGF(info, "LUT correction requested, loading LUT");
+        lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+        matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+        break;
+      default:
+        LOGF(info, "no correction requested, loading LUT by default!");
+        lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+        matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+        break;
     }
 
     if (applyPCMMl) {
