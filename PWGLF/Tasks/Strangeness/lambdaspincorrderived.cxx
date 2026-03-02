@@ -1132,19 +1132,36 @@ struct lambdaspincorrderived {
         if (ptB < 0 || etaB < 0 || phiB < 0 || mB < 0)
           continue;
 
-        // Collect partners from nominal key, plus wrapped neighbor only for φ-edge bins
         std::vector<MatchRef> matches;
-        matches.reserve(128); // or keep binVec.size() if you prefer
-        const int64_t curColIdx = static_cast<int64_t>(collision1.index());
+        const int maxKeep = maxMatchesPerPair.value; // default 25
+        matches.reserve(std::max(64, maxKeep > 0 ? maxKeep : 64));
 
-        auto collectFrom = [&](int phiBinUse) {
-          const size_t keyUse = linearKey(colBin, status, ptB, etaB, phiBinUse, mB,
+        const int64_t curColIdx = static_cast<int64_t>(collision1.index());
+        std::unordered_set<int64_t> seenRow;
+        seenRow.reserve(static_cast<size_t>(std::max(256, 4 * (maxKeep > 0 ? maxKeep : 64))));
+
+        auto collectFrom = [&](int ptUse, int etaUse, int phiUse) {
+          if (maxKeep > 0 && static_cast<int>(matches.size()) >= maxKeep) {
+            return; // early stop
+          }
+
+          const size_t keyUse = linearKey(colBin, status, ptUse, etaUse, phiUse, mB,
                                           nStat, nPt, nEta, nPhi, nM);
           auto const& vec = buffer[keyUse];
+
           for (const auto& bc : vec) {
+            if (maxKeep > 0 && static_cast<int>(matches.size()) >= maxKeep) {
+              break;
+            }
             if (bc.collisionIdx == curColIdx) {
               continue; // must be from different event
             }
+
+            // dedupe first
+            if (!seenRow.insert(bc.rowIndex).second) {
+              continue;
+            }
+
             auto tX = V0s.iteratorAt(static_cast<uint64_t>(bc.rowIndex));
             if (!selectionV0(tX)) {
               continue;
@@ -1152,17 +1169,37 @@ struct lambdaspincorrderived {
             if (!checkKinematics(t1, tX)) {
               continue;
             }
+
             matches.push_back(MatchRef{bc.collisionIdx, bc.rowIndex});
           }
         };
         // 1) nominal φ-bin
         collectFrom(phiB);
 
-        // 2) wrap only at boundaries: 0 <-> nPhi-1
-        if (phiB == 0) {
-          collectFrom(nPhi - 1);
-        } else if (phiB == nPhi - 1) {
-          collectFrom(0);
+        // scan pt±1, eta±1, phi±1 (wrapped)
+        for (int dpt = -1; dpt <= 1; ++dpt) {
+          const int ptUse = ptB + dpt;
+          if (ptUse < 0 || ptUse >= nPt) {
+            continue;
+          }
+          for (int deta = -1; deta <= 1; ++deta) {
+            const int etaUse = etaB + deta;
+            if (etaUse < 0 || etaUse >= nEta) {
+              continue;
+            }
+            for (int phiUse : phiBins) {
+              collectFrom(ptUse, etaUse, phiUse);
+              if (maxKeep > 0 && static_cast<int>(matches.size()) >= maxKeep) {
+                break;
+              }
+            }
+            if (maxKeep > 0 && static_cast<int>(matches.size()) >= maxKeep) {
+              break;
+            }
+          }
+          if (maxKeep > 0 && static_cast<int>(matches.size()) >= maxKeep) {
+            break;
+          }
         }
 
         if (matches.empty()) {
@@ -1455,6 +1492,7 @@ struct lambdaspincorrderived {
 
   // enable it
   PROCESS_SWITCH(lambdaspincorrderived, processMCMEV3, "Process MC ME (MEV3)", false);
+
   // -----------------------------------------------------
   // 5) MC Event Mixing using your MEV4 6D-buffer approach
   // -----------------------------------------------------
