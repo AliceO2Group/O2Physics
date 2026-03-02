@@ -30,7 +30,12 @@ namespace lambdajetpol
 
 // DECLARE_SOA_COLUMN(CollIdx, collIdx, uint64_t); // Using a regular SOA column instead of an index column for convenience
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-DECLARE_SOA_COLUMN(Centrality, centrality, float);
+DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
+DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
+DECLARE_SOA_COLUMN(CentFT0CVariant1, centFT0CVariant1, float);
+DECLARE_SOA_COLUMN(CentMFT, centMFT, float);
+DECLARE_SOA_COLUMN(CentNGlobal, centNGlobal, float);
+DECLARE_SOA_COLUMN(CentFV0A, centFV0A, float);
 
 DECLARE_SOA_COLUMN(JetPt, jetPt, float);
 DECLARE_SOA_COLUMN(JetEta, jetEta, float);
@@ -57,7 +62,20 @@ DECLARE_SOA_COLUMN(NegPt, negPt, float);
 DECLARE_SOA_COLUMN(NegEta, negEta, float);
 DECLARE_SOA_COLUMN(NegPhi, negPhi, float);
 
-// (TODO: add dynamic columns with jet px, py, pz)
+// Dynamic columns for jets (Px,Py,Pz):
+DECLARE_SOA_DYNAMIC_COLUMN(JetPx, jetPx, //! Jet px
+                           [](float jetPt, float jetPhi) -> float {return jetPt * std::cos(jetPhi);});
+DECLARE_SOA_DYNAMIC_COLUMN(JetPy, jetPy, //! Jet py
+                           [](float jetPt, float jetPhi) -> float {return jetPt * std::sin(jetPhi);});
+DECLARE_SOA_DYNAMIC_COLUMN(JetPz, jetPz, //! Jet pz
+                           [](float jetPt, float jetEta) -> float {return jetPt * std::sinh(jetEta);});
+// Same for leading particles:
+DECLARE_SOA_DYNAMIC_COLUMN(LeadParticlePx, leadParticlePx, //! Leading particle px
+                           [](float leadParticlePt, float leadParticlePhi) -> float {return leadParticlePt * std::cos(leadParticlePhi);});
+DECLARE_SOA_DYNAMIC_COLUMN(LeadParticlePy, leadParticlePy, //! Leading particle py
+                           [](float leadParticlePt, float leadParticlePhi) -> float {return leadParticlePt * std::sin(leadParticlePhi);});
+DECLARE_SOA_DYNAMIC_COLUMN(LeadParticlePz, leadParticlePz, //! Leading particle pz
+                           [](float leadParticlePt, float leadParticleEta) -> float {return leadParticlePt * std::sinh(leadParticleEta);});
 
 } // namespace lambdajetpol
 
@@ -66,13 +84,23 @@ DECLARE_SOA_TABLE(RingJets, "AOD", "RINGJETS", // Renamed to follow convention o
                   lambdajetpol::JetPt,
                   lambdajetpol::JetEta,
                   lambdajetpol::JetPhi,
-                  lambdajetpol::JetNConstituents);
+                  lambdajetpol::JetNConstituents,
+                  // Dynamic columns
+                  lambdajetpol::JetPx<lambdajetpol::JetPt, lambdajetpol::JetPhi>, // Explicitly binding to static columns
+                  lambdajetpol::JetPy<lambdajetpol::JetPt, lambdajetpol::JetPhi>,
+                  lambdajetpol::JetPz<lambdajetpol::JetPt, lambdajetpol::JetEta>
+                );
 
 DECLARE_SOA_TABLE(RingLeadP, "AOD", "RINGLEADP", // Leading particle table
                   lambdajetpol::CollisionId,
                   lambdajetpol::LeadParticlePt,
                   lambdajetpol::LeadParticleEta,
-                  lambdajetpol::LeadParticlePhi);
+                  lambdajetpol::LeadParticlePhi,
+                  // Dynamic columns
+                  lambdajetpol::LeadParticlePx<lambdajetpol::LeadParticlePt, lambdajetpol::LeadParticlePhi>,
+                  lambdajetpol::LeadParticlePy<lambdajetpol::LeadParticlePt, lambdajetpol::LeadParticlePhi>,
+                  lambdajetpol::LeadParticlePz<lambdajetpol::LeadParticlePt, lambdajetpol::LeadParticleEta>
+                );
 
 DECLARE_SOA_TABLE(RingLaV0s, "AOD", "RINGLAV0S", // Had to write this in a shorter form because the derived data did not accept long names
                   lambdajetpol::CollisionId,
@@ -88,11 +116,19 @@ DECLARE_SOA_TABLE(RingLaV0s, "AOD", "RINGLAV0S", // Had to write this in a short
                   lambdajetpol::PosPhi,
                   lambdajetpol::NegPt,
                   lambdajetpol::NegEta,
-                  lambdajetpol::NegPhi);
+                  lambdajetpol::NegPhi
+                );
 
 DECLARE_SOA_TABLE(RingCollisions, "AOD", "RINGCOLLISIONS",
                   lambdajetpol::CollisionId,
-                  lambdajetpol::Centrality);
+                  lambdajetpol::CentFT0M,
+                  lambdajetpol::CentFT0C,
+                  lambdajetpol::CentFT0CVariant1,
+                  lambdajetpol::CentMFT,
+                  lambdajetpol::CentNGlobal,
+                  lambdajetpol::CentFV0A
+                );
+                  
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LAMBDAJETPOL_H_

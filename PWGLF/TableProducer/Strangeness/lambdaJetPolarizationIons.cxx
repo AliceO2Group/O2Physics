@@ -190,7 +190,9 @@ struct lambdajetpolarizationions {
 
     Configurable<bool> doPPAnalysis{"doPPAnalysis", false, "if in pp, set to true. Default is HI"};
     Configurable<std::string> irSource{"irSource", "ZNChadronic", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNChadronic)"}; // Renamed David's "ZNC hadronic" to the proper code "ZNChadronic"
-    Configurable<int> centralityEstimator{"centralityEstimator", kCentFT0M, "Run 3 centrality estimator (0:CentFT0C, 1:CentFT0M, 2:CentFT0CVariant1, 3:CentMFT, 4:CentNGlobal, 5:CentFV0A)"}; // Default is FT0M
+    Configurable<int> centralityEstimatorForQA{"centralityEstimatorForQA", kCentFT0M, "Run 3 centrality estimator (0:CentFT0C, 1:CentFT0M, 2:CentFT0CVariant1, 3:CentMFT, 4:CentNGlobal, 5:CentFV0A)"}; // Default is FT0M
+    // (Now saving all centralities at the derived data level -- Makes them all available for consumer)
+    // (But still using this variable for QA histograms)
 
     /////////////////////////////////////////////
     Configurable<bool> doEventQA{"doEventQA", false, "do event QA histograms"};
@@ -417,7 +419,7 @@ struct lambdajetpolarizationions {
     } axisConfigurations;
 
     // Jet selection configuration:
-    // (TODO: Add a configurable to select charged jets, neutral jets, full jets, photon-tagged jets and so on)
+    // (TODO: create a reasonable track selection for full, photon, and Z-tagged jet tracks, including detector angular acceptance parameters for EMCal)
     struct : ConfigurableGroup {
         std::string prefix = "jetConfigurations"; // JSON group name
         Configurable<double> minJetPt{"minJetPt", 30.0f, "Minimum reconstructed pt of the jet (GeV/c)"}; // Something in between pp and PbPb minima. Change for bkgSubtraction true or false!
@@ -429,27 +431,17 @@ struct lambdajetpolarizationions {
         Configurable<int> bkgSubtraction{"bkgSubtraction", kNoSubtraction, "Jet background subtraction: No subtraction (false), Area (true), Constituent (TODO)"}; // Selection bool for background subtraction strategy
         Configurable<float> GhostedAreaSpecRapidity{"GhostedAreaSpecRapidity", 1.1, "Max ghost particle rapidity for jet area estimates"}; // At least 1.0 for tracks and jets within the |eta| < 0.9 window of ITS+TPC
             // Using an enum for readability:
-        Configurable<int> jetType{"jetType", kChargedJet, "Jet type: 0: Charged Jet, 1: Full Jet, 2: Photon-tagged, 3: Z-tagged"};
-        // (TODO: create a reasonable track selection for full jets and photon/Z-tagged jet tracks, including detector angular acceptance parameters for EMCal)
+        Configurable<int> jetType{"jetType", kChargedJet, "Jet type: 0: Charged Jet, 1: Full Jet, 2: Photon-tagged, 3: Z-tagged"}; // TODO: implement full, photon and Z jets
+        // (TODO: check the maximum pT of jets used in my analyses! If it is way too hard, it might not be the best jet to use!)
 
+        // (TODO: Check which of these configurables might be useful for the photon-tagged and regular analyses)
         // // Configurables from JE PWG:
-        // // (TODO: check the maximum pT of jets used in my analyses! If it is way too hard, it might not be the best jet to use!)
         // Configurable<float> jetEWSPtMin{"jetEWSPtMin", 0.0, "minimum event-wise subtracted jet pT"};
         // Configurable<float> jetEWSPtMax{"jetEWSPtMax", 1000.0, "maximum event-wise subtracted jet pT"};
         // Configurable<float> jetGhostArea{"jetGhostArea", 0.005, "jet ghost area"};
         // Configurable<int> ghostRepeat{"ghostRepeat", 0, "set to 0 to gain speed if you dont need area calculation"};
         // Configurable<bool> DoTriggering{"DoTriggering", false, "used for the charged jet trigger to remove the eta constraint on the jet axis"};
         // Configurable<float> jetAreaFractionMin{"jetAreaFractionMin", -99.0, "used to make a cut on the jet areas"};
-
-        // (TODO: Check which of these configurables might be useful for the photon-tagged and regular analyses)
-        // // event level configurables
-        // Configurable<int> trackOccupancyInTimeRangeMax{"trackOccupancyInTimeRangeMax", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
-        // Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
-        // Configurable<bool> skipMBGapEvents{"skipMBGapEvents", true, "decide to run over MB gap events or not"};
-        // Configurable<bool> applyRCTSelections{"applyRCTSelections", true, "decide to apply RCT selections"};
-        // // track level configurables
-        // Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
-        // Configurable<std::string> particleSelections{"particleSelections", "PhysicalPrimary", "set particle selections"};
         // // cluster level configurables
         // Configurable<std::string> clusterDefinitionS{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
         // Configurable<float> clusterEtaMin{"clusterEtaMin", -0.71, "minimum cluster eta"}; // For ECMAL: |eta| < 0.7, phi = 1.40 - 3.26
@@ -515,7 +507,7 @@ struct lambdajetpolarizationions {
 
     JetBkgSubUtils backgroundSub;
 
-    void init(InitContext const&){ // (TODO: add all useful histograms here! Add flags for QA plots and the such too)
+    void init(InitContext const&){
         // setting CCDB service
         ccdb->setURL(ccdbConfigurations.ccdbUrl);
         ccdb->setCaching(true);
@@ -918,12 +910,12 @@ struct lambdajetpolarizationions {
     template <typename TCollision>
     auto getCentrality(TCollision const& collision)
     {
-        if (centralityEstimator == kCentFT0M) return collision.centFT0M();
-        else if (centralityEstimator == kCentFT0C) return collision.centFT0C();
-        else if (centralityEstimator == kCentFT0CVariant1) return collision.centFT0CVariant1();
-        else if (centralityEstimator == kCentMFT) return collision.centMFT();
-        else if (centralityEstimator == kCentNGlobal) return collision.centNGlobal();
-        else if (centralityEstimator == kCentFV0A) return collision.centFV0A();
+        if (centralityEstimatorForQA == kCentFT0M) return collision.centFT0M();
+        else if (centralityEstimatorForQA == kCentFT0C) return collision.centFT0C();
+        else if (centralityEstimatorForQA == kCentFT0CVariant1) return collision.centFT0CVariant1();
+        else if (centralityEstimatorForQA == kCentMFT) return collision.centMFT();
+        else if (centralityEstimatorForQA == kCentNGlobal) return collision.centNGlobal();
+        else if (centralityEstimatorForQA == kCentFV0A) return collision.centFV0A();
         return -1.f;
     }
 
@@ -1034,7 +1026,7 @@ struct lambdajetpolarizationions {
 
     /////////////////////////////////////////////
     // Helper functions for event and candidate selection:
-    template <typename TCollision, typename TBC> // (TODO: add fillHists and doEventQA capabilities from derivedlambdakzeroanalysis)
+    template <typename TCollision, typename TBC>
     bool isEventAccepted(TCollision const& collision, TBC const& bc, float centrality, bool fillHists){ // check whether the collision passes our collision selections
         int selectionIdx = 0; // To loop over QA histograms. First bin is already filled: first call will already increment this index (not actually the bin index, but a value in the X axis).
         if (eventSelections.requireSel8 && !collision.sel8()) return false;
@@ -1148,7 +1140,7 @@ struct lambdajetpolarizationions {
 
     // Lambda selections:
     template <typename TV0>
-    bool passesGenericV0Cuts(TV0 const& v0){ // (TODO: cache the posTrackExtra and neg track objects outside the V0cuts and hypothesis dependent cuts and then pass them by reference? May be quicker!)
+    bool passesGenericV0Cuts(TV0 const& v0){
         // Base topological variables (high rejection, low cost checks)
         if (v0.v0radius() < v0Selections.v0radius) return false;
         V0SelCounter.fill();
@@ -1237,7 +1229,6 @@ struct lambdajetpolarizationions {
         return true;
     }
     
-    // (TODO: implement Armenteros cut in later function to distinguish between Lambda or antiLambda)
     // Tests the hypothesis of the V0 being a Lambda or of it being an antiLambda.
     template <typename TV0, typename TCollision>
     bool passesLambdaLambdaBarHypothesis(TV0 const& v0, TCollision const& collision, bool Lambda_hypothesis){
@@ -1308,9 +1299,6 @@ struct lambdajetpolarizationions {
     // Function to help distinguish ambiguous candidates (via Armenteros) that pass both
     // the Lambda_hypothesis true (i.e., a Lambda) or false (i.e., an AntiLambda) checks
         // (This function is only called in about 1-3% of the Lambda-Like V0s which remain ambiguous after all other cuts)
-    // (TODO: add a histogram that tracks the amount of ambiguous candidates distinguished
-    //  by Armenteros, so that we can reconstruct the full ambiguous candidates number from
-    //  the number of ambiguous even after Armenteros and the total number before the cut)
     // int isCandidateArmenterosLambda(const float alpha, const float qt){
     //     // Remove K0s band
     //     if (std::abs(alpha) < v0Selections.armK0AlphaThreshold && qt < v0Selections.armK0QtThreshold) return kIsArmenterosK0;
@@ -1601,7 +1589,7 @@ struct lambdajetpolarizationions {
     // Had to include DauTracks in subscription, even though I don't loop in it, for the indices
     // to resolve, avoiding " Exception while running: Index pointing to Tracks is not bound!"
     void processV0sData(SelCollisions::iterator const& collision, V0CandidatesWithTOF const& fullV0s, aod::BCsWithTimestamps const& bcs, DauTracks const& V0DauTracks){
-        float centrality = getCentrality(collision);
+        float centrality = getCentrality(collision); // Strictly for QA. We save other types of centrality estimators in the derived data!
 
         // For event QA the last two indices never change for NEv_withJets and NEv_withV0s
         // (Not the best way to initialize this: runs once per collision! TODO: think of a better way to do it)
@@ -1619,9 +1607,15 @@ struct lambdajetpolarizationions {
         if (v0Selections.rejectTPCsectorBoundary) initCCDB(bc); // Substituted call from collision to bc for raw data
 
         // Fill event table:
-        tableCollisions(collIdx, centrality); // (TODO: add InteractionRate info and other useful cuts for later on in the analysis!)
+        tableCollisions(collIdx,
+                        collision.centFT0M(),
+                        collision.centFT0C(),
+                        collision.centFT0CVariant1(),
+                        collision.centMFT(),
+                        collision.centNGlobal(),
+                        collision.centFV0A()
+                    ); // (TODO: add InteractionRate info and other useful cuts for later on in the analysis?)
 
-        // bool hasValidV0 = false; // Bool to know if event information can be saved.
         for (auto const& v0 : fullV0s){
             V0SelCounter.resetForNewV0();
             V0SelCounter.fill(); // Fill for all v0 candidates
@@ -1636,8 +1630,7 @@ struct lambdajetpolarizationions {
             if (analyseLambda) isLambda = passesLambdaLambdaBarHypothesis(v0, collision, true);
             if (analyseAntiLambda) isAntiLambda = passesLambdaLambdaBarHypothesis(v0, collision, false);
 
-            if (!isLambda && !isAntiLambda) continue; // Candidate is not considered to be a Lambda (TODO: expand this to a full if block with QA about rejections)
-            // hasValidV0 = true;
+            if (!isLambda && !isAntiLambda) continue; // Candidate is not considered to be a Lambda
             
             if (doArmenterosQA) histos.fill(HIST("GeneralQA/h2dArmenterosFullSelected"), v0.alpha(), v0.qtarm()); // cross-check
             if (isLambda && !isAntiLambda) histos.fill(HIST("GeneralQA/h2dArmenterosFullSelectedLambda"), v0.alpha(), v0.qtarm());
@@ -1792,8 +1785,7 @@ struct lambdajetpolarizationions {
                     }
                 }
                 if (isAntiLambda && analyseAntiLambda) {
-                    // histos.add("h2dNbrOfAntiLambdaVsCentrality", "h2dNbrOfAntiLambdaVsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
-                    // histos.fill(HIST("h2dNbrOfAntiLambdaVsCentrality"), centrality, v0pt, v0.mAntiLambda()); // (TODO: add the proper call to this fill)
+                    // histos.fill(HIST("h2dNbrOfAntiLambdaVsCentrality"), centrality, NbrAntiLambda); // (TODO: add the proper call to this fill)
                     histos.fill(HIST("h3dMassAntiLambda"), centrality, v0pt, v0.mAntiLambda());
                     histos.fill(HIST("hMassAntiLambda"), v0.mAntiLambda());
                     histos.fill(HIST("AntiLambda/hPosDCAToPV"), v0.dcapostopv());
@@ -1841,12 +1833,6 @@ struct lambdajetpolarizationions {
                 }
             } // end CompleteTopoQA
         } // end V0s loop
-        // Only fills collision when there is a valid V0 in it: (TODO: could probably do the same for the jets table)
-        // if (hasValidV0){
-            // LOG(INFO) << "Filling tableCollisions";
-        // Current logic now fills tables independently of collision having V0s, for the Jets table to match correctly, at the START of the code
-        // tableCollisions(collIdx, centrality);
-        // }
     }
 
     PROCESS_SWITCH(lambdajetpolarizationions, processJetsData, "Process jets and produce derived data in Run 3 Data", true);
