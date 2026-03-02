@@ -212,6 +212,11 @@ struct PiKpRAA {
   Configurable<bool> isCentSel{"isCentSel", true, "Centrality selection?"};
   Configurable<bool> selHasFT0{"selHasFT0", true, "Has FT0?"};
   Configurable<bool> isT0Ccent{"isT0Ccent", true, "Use T0C-based centrality?"};
+
+  Configurable<bool> useSel8{"useSel8", false, "Use sel8?"};
+  Configurable<bool> selTriggerTVX{"selTriggerTVX", true, "selTriggerTVX?"};
+  Configurable<bool> selNoITSROFrameBorder{"selNoITSROFrameBorder", true, "selNoITSROFrameBorder?"};
+  Configurable<bool> selNoTimeFrameBorder{"selNoTimeFrameBorder", true, "selNoTimeFrameBorder?"};
   Configurable<bool> isZvtxPosSel{"isZvtxPosSel", true, "Zvtx position selection?"};
   Configurable<bool> isZvtxPosSelMC{"isZvtxPosSelMC", true, "Zvtx position selection for MC events?"};
   Configurable<bool> selTVXMC{"selTVXMC", true, "apply TVX selection in MC?"};
@@ -271,8 +276,12 @@ struct PiKpRAA {
   enum EvCutLabel {
     All = 1,
     SelEigth,
-    NoSameBunchPileup,
+    SelTriggerTVX,
+    SelNoITSROFrameBorder,
+    SelNoTimeFrameBorder,
+    VtxZ,
     IsGoodZvtxFT0vsPV,
+    NoSameBunchPileup,
     NoCollInTimeRangeStrict,
     NoCollInTimeRangeStandard,
     NoCollInRofStrict,
@@ -282,7 +291,6 @@ struct PiKpRAA {
     OccuCut,
     HasFT0,
     Centrality,
-    VtxZ,
     NchSel,
     INELgt0
   };
@@ -379,7 +387,7 @@ struct PiKpRAA {
     // define axes you want to use
     const std::string titlePorPt{v0Selections.usePinPhiSelection ? "#it{p} (GeV/#it{c})" : "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisZpos{binsZpos, "Vtx_{z} (cm)"};
-    const AxisSpec axisEvent{17, 0.5, 17.5, ""};
+    const AxisSpec axisEvent{22, 0.5, 22.5, ""};
     const AxisSpec axisNcl{161, -0.5, 160.5, "#it{N}_{cl} TPC"};
     const AxisSpec axisPt{binsPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisPtV0s{binsPtV0s, "#it{p}_{T} (GeV/#it{c})"};
@@ -403,20 +411,23 @@ struct PiKpRAA {
     auto* x = hstat->GetXaxis();
     x->SetBinLabel(1, "All");
     x->SetBinLabel(2, "SelEigth");
-    x->SetBinLabel(3, "NoSameBunchPileup");
-    x->SetBinLabel(4, "GoodZvtxFT0vsPV");
-    x->SetBinLabel(5, "NoCollInTimeRangeStrict");
-    x->SetBinLabel(6, "NoCollInTimeRangeStandard");
-    x->SetBinLabel(7, "NoCollInRofStrict");
-    x->SetBinLabel(8, "NoCollInRofStandard");
-    x->SetBinLabel(9, "NoHighMultCollInPrevRof");
-    x->SetBinLabel(10, "NoCollInTimeRangeNarrow");
-    x->SetBinLabel(11, "Occupancy Cut");
-    x->SetBinLabel(12, "Has FT0?");
-    x->SetBinLabel(13, "Cent. Sel.");
-    x->SetBinLabel(14, "VtxZ Sel.");
-    x->SetBinLabel(15, "Nch Sel.");
-    x->SetBinLabel(16, "INEL > 0");
+    x->SetBinLabel(3, "SelTriggerTVX");
+    x->SetBinLabel(4, "SelNoITSROFrameBorder");
+    x->SetBinLabel(5, "SelNoTimeFrameBorder");
+    x->SetBinLabel(6, "VtxZ Sel.");
+    x->SetBinLabel(7, "GoodZvtxFT0vsPV");
+    x->SetBinLabel(8, "NoSameBunchPileup");
+    x->SetBinLabel(9, "NoCollInTimeRangeStrict");
+    x->SetBinLabel(10, "NoCollInTimeRangeStandard");
+    x->SetBinLabel(11, "NoCollInRofStrict");
+    x->SetBinLabel(12, "NoCollInRofStandard");
+    x->SetBinLabel(13, "NoHighMultCollInPrevRof");
+    x->SetBinLabel(14, "NoCollInTimeRangeNarrow");
+    x->SetBinLabel(15, "Occupancy Cut");
+    x->SetBinLabel(16, "Has FT0?");
+    x->SetBinLabel(17, "Cent. Sel.");
+    x->SetBinLabel(18, "Nch Sel.");
+    x->SetBinLabel(19, "INEL > 0");
 
     if (doprocessCalibrationAndV0s) {
       registry.add("T0CcentVsRCTSel", "Bad RCT(=0.5) Good RCT(=1.5) Good RCT & Good PID RCT(=2.5);;RCT Status;", kTH2F, {{{axisCent}, {3, 0, 3}}});
@@ -1979,16 +1990,44 @@ struct PiKpRAA {
   bool isEventSelected(CheckCol const& col)
   {
     registry.fill(HIST("EventCounter"), EvCutLabel::All);
-    if (!col.sel8()) {
-      return false;
-    }
-    registry.fill(HIST("EventCounter"), EvCutLabel::SelEigth);
 
-    if (selNoSameBunchPileup) {
-      if (!col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+    if (useSel8) {
+      if (!col.sel8()) {
         return false;
       }
-      registry.fill(HIST("EventCounter"), EvCutLabel::NoSameBunchPileup);
+      registry.fill(HIST("EventCounter"), EvCutLabel::SelEigth);
+    }
+
+    // kIsTriggerTVX
+    if (selTriggerTVX) {
+      if (!col.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+        return false;
+      }
+      registry.fill(HIST("EventCounter"), EvCutLabel::SelTriggerTVX);
+    }
+
+    // kNoITSROFrameBorder
+    if (selNoITSROFrameBorder) {
+      if (!col.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+        return false;
+      }
+      registry.fill(HIST("EventCounter"), EvCutLabel::SelNoITSROFrameBorder);
+    }
+
+    // kNoTimeFrameBorder
+    if (selNoTimeFrameBorder) {
+      if (!col.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+        return false;
+      }
+      registry.fill(HIST("EventCounter"), EvCutLabel::SelNoTimeFrameBorder);
+    }
+
+    // Zvtx
+    if (isZvtxPosSel) {
+      if (std::fabs(col.posZ()) > posZcut) {
+        return false;
+      }
+      registry.fill(HIST("EventCounter"), EvCutLabel::VtxZ);
     }
 
     if (selIsGoodZvtxFT0vsPV) {
@@ -1996,6 +2035,13 @@ struct PiKpRAA {
         return false;
       }
       registry.fill(HIST("EventCounter"), EvCutLabel::IsGoodZvtxFT0vsPV);
+    }
+
+    if (selNoSameBunchPileup) {
+      if (!col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+        return false;
+      }
+      registry.fill(HIST("EventCounter"), EvCutLabel::NoSameBunchPileup);
     }
 
     if (isNoCollInTimeRangeStrict) {
@@ -2062,13 +2108,6 @@ struct PiKpRAA {
         return false;
       }
       registry.fill(HIST("EventCounter"), EvCutLabel::Centrality);
-    }
-
-    if (isZvtxPosSel) {
-      if (std::fabs(col.posZ()) > posZcut) {
-        return false;
-      }
-      registry.fill(HIST("EventCounter"), EvCutLabel::VtxZ);
     }
 
     if (selINELgt0) {
