@@ -1132,36 +1132,19 @@ struct lambdaspincorrderived {
         if (ptB < 0 || etaB < 0 || phiB < 0 || mB < 0)
           continue;
 
+        // Collect partners from nominal key, plus wrapped neighbor only for φ-edge bins
         std::vector<MatchRef> matches;
-        const int maxKeep = maxMatchesPerPair.value; // default 25
-        matches.reserve(std::max(64, maxKeep > 0 ? maxKeep : 64));
-
+        matches.reserve(128); // or keep binVec.size() if you prefer
         const int64_t curColIdx = static_cast<int64_t>(collision1.index());
-        std::unordered_set<int64_t> seenRow;
-        seenRow.reserve(static_cast<size_t>(std::max(256, 4 * (maxKeep > 0 ? maxKeep : 64))));
 
-        auto collectFrom = [&](int ptUse, int etaUse, int phiUse) {
-          if (maxKeep > 0 && static_cast<int>(matches.size()) >= maxKeep) {
-            return; // early stop
-          }
-
-          const size_t keyUse = linearKey(colBin, status, ptUse, etaUse, phiUse, mB,
+        auto collectFrom = [&](int phiBinUse) {
+          const size_t keyUse = linearKey(colBin, status, ptB, etaB, phiBinUse, mB,
                                           nStat, nPt, nEta, nPhi, nM);
           auto const& vec = buffer[keyUse];
-
           for (const auto& bc : vec) {
-            if (maxKeep > 0 && static_cast<int>(matches.size()) >= maxKeep) {
-              break;
-            }
             if (bc.collisionIdx == curColIdx) {
               continue; // must be from different event
             }
-
-            // dedupe first
-            if (!seenRow.insert(bc.rowIndex).second) {
-              continue;
-            }
-
             auto tX = V0s.iteratorAt(static_cast<uint64_t>(bc.rowIndex));
             if (!selectionV0(tX)) {
               continue;
@@ -1169,96 +1152,33 @@ struct lambdaspincorrderived {
             if (!checkKinematics(t1, tX)) {
               continue;
             }
-
             matches.push_back(MatchRef{bc.collisionIdx, bc.rowIndex});
           }
         };
+        // 1) nominal φ-bin
+        collectFrom(phiB);
 
-        // φ neighbor bins (wrapped)
-        std::vector<int> phiBins;
-        collectPhiNeighborBins(phiB, nPhi, /*nNeighbor=*/1, phiBins);
-
-        // scan pt±1, eta±1, phi±1 (wrapped)
-        for (int dpt = -1; dpt <= 1; ++dpt) {
-          const int ptUse = ptB + dpt;
-          if (ptUse < 0 || ptUse >= nPt) {
-            continue;
-          }
-          for (int deta = -1; deta <= 1; ++deta) {
-            const int etaUse = etaB + deta;
-            if (etaUse < 0 || etaUse >= nEta) {
-              continue;
-            }
-            for (int phiUse : phiBins) {
-              collectFrom(ptUse, etaUse, phiUse);
-              if (maxKeep > 0 && static_cast<int>(matches.size()) >= maxKeep) {
-                break;
-              }
-            }
-            if (maxKeep > 0 && static_cast<int>(matches.size()) >= maxKeep) {
-              break;
-            }
-          }
-          if (maxKeep > 0 && static_cast<int>(matches.size()) >= maxKeep) {
-            break;
-          }
+        // 2) wrap only at boundaries: 0 <-> nPhi-1
+        if (phiB == 0) {
+          collectFrom(nPhi - 1);
+        } else if (phiB == nPhi - 1) {
+          collectFrom(0);
         }
 
         if (matches.empty()) {
           continue;
         }
+
+        // Optional safety: dedupe exact same (collision,row) just in case
+        std::sort(matches.begin(), matches.end(),
+                  [](auto& a, auto& b) { return std::tie(a.collisionIdx, a.rowIndex) < std::tie(b.collisionIdx, b.rowIndex); });
+        matches.erase(std::unique(matches.begin(), matches.end(),
+                                  [](auto& a, auto& b) { return a.collisionIdx == b.collisionIdx && a.rowIndex == b.rowIndex; }),
+                      matches.end());
+        if (matches.empty()) {
+          continue;
+        }
         const float wBase = 1.0f / static_cast<float>(matches.size());
-        /*
-              // Collect partners from nominal key, plus wrapped neighbor only for φ-edge bins
-              std::vector<MatchRef> matches;
-              matches.reserve(128); // or keep binVec.size() if you prefer
-        const int64_t curColIdx = static_cast<int64_t>(collision1.index());
-        auto collectFrom = [&](int phiBinUse) {
-                const size_t keyUse = linearKey(colBin, status, ptB, etaB, phiBinUse, mB,
-                                                nStat, nPt, nEta, nPhi, nM);
-                auto const& vec = buffer[keyUse];
-                for (const auto& bc : vec) {
-                  if (bc.collisionIdx == curColIdx) {
-                    continue; // must be from different event
-                  }
-                  auto tX = V0s.iteratorAt(static_cast<uint64_t>(bc.rowIndex));
-                  if (!selectionV0(tX)) {
-                    continue;
-                  }
-                  if (!checkKinematics(t1, tX)) {
-                    continue;
-                  }
-                  matches.push_back(MatchRef{bc.collisionIdx, bc.rowIndex});
-                }
-              };
-
-              // 1) nominal φ-bin
-              collectFrom(phiB);
-
-              // 2) wrap only at boundaries: 0 <-> nPhi-1
-              if (phiB == 0) {
-                collectFrom(nPhi - 1);
-              } else if (phiB == nPhi - 1) {
-                collectFrom(0);
-              }
-
-              if (matches.empty()) {
-                continue;
-              }
-
-              // Optional safety: dedupe exact same (collision,row) just in case
-              std::sort(matches.begin(), matches.end(),
-                        [](auto& a, auto& b) { return std::tie(a.collisionIdx, a.rowIndex) < std::tie(b.collisionIdx, b.rowIndex); });
-              matches.erase(std::unique(matches.begin(), matches.end(),
-                                        [](auto& a, auto& b) { return a.collisionIdx == b.collisionIdx && a.rowIndex == b.rowIndex; }),
-                            matches.end());
-              if (matches.empty()) {
-                continue;
-              }
-
-              const float wBase = 1.0f / static_cast<float>(matches.size());
-        */
-
         for (const auto& m : matches) {
           auto tX = V0s.iteratorAt(static_cast<uint64_t>(m.rowIndex));
 
@@ -1420,6 +1340,121 @@ struct lambdaspincorrderived {
   }
   PROCESS_SWITCH(lambdaspincorrderived, processMC, "Process MC (SE)", false);
 
+  void processMEV3MC(EventCandidatesMC const& collisions, AllTrackCandidatesMC const& V0sMC)
+  {
+    auto nBins = colBinning.getAllBinsCount();
+    std::vector<std::deque<std::pair<int, AllTrackCandidatesMC>>> eventPools(nBins);
+
+    for (auto& collision1 : collisions) {
+      const int bin = colBinning.getBin(std::make_tuple(collision1.poszmc(), collision1.centmc()));
+
+      // if pool empty, push and continue
+      if (eventPools[bin].empty()) {
+        auto sliced = V0sMC.sliceBy(tracksPerCollisionV0mc, collision1.index());
+        eventPools[bin].emplace_back(collision1.index(), std::move(sliced));
+        if ((int)eventPools[bin].size() > nEvtMixing) {
+          eventPools[bin].pop_front();
+        }
+        continue;
+      }
+
+      // current event slice
+      auto poolA = V0sMC.sliceBy(tracksPerCollisionV0mc, collision1.index());
+
+      // loop over SE unordered pairs (t1,t2)
+      for (auto& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(poolA, poolA))) {
+
+        // ---- selections ----
+        if (!selectionV0MC(t1) || !selectionV0MC(t2)) {
+          continue;
+        }
+        if (t2.index() <= t1.index()) {
+          continue;
+        }
+
+        // no shared daughters (use global indices stored in your MC table)
+        if (t1.protonIndexmc() == t2.protonIndexmc())
+          continue;
+        if (t1.pionIndexmc() == t2.pionIndexmc())
+          continue;
+        if (t1.protonIndexmc() == t2.pionIndexmc())
+          continue;
+        if (t1.pionIndexmc() == t2.protonIndexmc())
+          continue;
+
+        // scan prior events for replacements for t1
+        struct PV {
+          AllTrackCandidatesMC* pool;
+          int nRepl;
+        };
+        std::vector<PV> usable;
+        int totalRepl = 0;
+
+        int mixes = 0;
+        for (auto it = eventPools[bin].rbegin();
+             it != eventPools[bin].rend() && mixes < nEvtMixing; ++it, ++mixes) {
+
+          const int collision2idx = it->first;
+          auto& poolB = it->second;
+          if (collision2idx == collision1.index()) {
+            continue;
+          }
+
+          int nRepl = 0;
+          for (auto& tX : poolB) {
+            if (!selectionV0MC(tX))
+              continue;
+            if (checkKinematicsMC(t1, tX))
+              ++nRepl;
+          }
+          if (nRepl > 0) {
+            usable.push_back(PV{&poolB, nRepl});
+            totalRepl += nRepl;
+          }
+        }
+
+        if (totalRepl == 0) {
+          continue;
+        }
+        const float wBase = 1.0f / static_cast<float>(totalRepl);
+
+        // emit mixed pairs: tX replaces t1; t2 stays
+        for (auto& pv : usable) {
+          auto& poolB = *pv.pool;
+          for (auto& tX : poolB) {
+            if (!selectionV0MC(tX))
+              continue;
+            if (!checkKinematicsMC(t1, tX))
+              continue;
+
+            // build 4-vectors
+            auto proton = ROOT::Math::PtEtaPhiMVector(tX.protonPtmc(), tX.protonEtamc(), tX.protonPhimc(), o2::constants::physics::MassProton);
+            auto lambda = ROOT::Math::PtEtaPhiMVector(tX.lambdaPtmc(), tX.lambdaEtamc(), tX.lambdaPhimc(), tX.lambdaMassmc());
+            auto proton2 = ROOT::Math::PtEtaPhiMVector(t2.protonPtmc(), t2.protonEtamc(), t2.protonPhimc(), o2::constants::physics::MassProton);
+            auto lambda2 = ROOT::Math::PtEtaPhiMVector(t2.lambdaPtmc(), t2.lambdaEtamc(), t2.lambdaPhimc(), t2.lambdaMassmc());
+
+            const float dPhi = RecoDecay::constrainAngle(
+              RecoDecay::constrainAngle(lambda.Phi(), 0.0F, harmonic) -
+                RecoDecay::constrainAngle(lambda2.Phi(), 0.0F, harmonic),
+              -TMath::Pi(), harmonicDphi);
+
+            histos.fill(HIST("deltaPhiMix"), dPhi, wBase);
+            fillHistograms(tX.v0Statusmc(), t2.v0Statusmc(), lambda, lambda2, proton, proton2, 1, wBase);
+          }
+        }
+      } // end SE pair loop
+
+      // push current event into pool
+      auto sliced = V0sMC.sliceBy(tracksPerCollisionV0mc, collision1.index());
+      eventPools[bin].emplace_back(collision1.index(), std::move(sliced));
+      if ((int)eventPools[bin].size() > nEvtMixing) {
+        eventPools[bin].pop_front();
+      }
+    } // end events
+  }
+
+  // enable it
+  PROCESS_SWITCH(lambdaspincorrderived, processMEV3MC, "Process MC ME (MEV3)", false);
   // -----------------------------------------------------
   // 5) MC Event Mixing using your MEV4 6D-buffer approach
   // -----------------------------------------------------
@@ -1517,39 +1552,17 @@ struct lambdaspincorrderived {
         if (ptB < 0 || etaB < 0 || phiB < 0 || mB < 0) {
           continue;
         }
-
         std::vector<MatchRef> matches;
-        const int maxKeep = maxMatchesPerPair.value; // default 25
-        matches.reserve(std::max(64, maxKeep > 0 ? maxKeep : 64));
-
+        matches.reserve(128);
         const int64_t curColIdx = static_cast<int64_t>(collision1.index());
-
-        // Dedupe on rowIndex BEFORE iteratorAt() to avoid repeated iteratorAt/selection/check calls
-        std::unordered_set<int64_t> seenRow;
-        seenRow.reserve(static_cast<size_t>(std::max(256, 4 * (maxKeep > 0 ? maxKeep : 64))));
-
-        auto collectFrom = [&](int ptUse, int etaUse, int phiUse) {
-          if (maxKeep > 0 && static_cast<int>(matches.size()) >= maxKeep) {
-            return; // early stop
-          }
-
-          const size_t keyUse = linearKey(colBin, status, ptUse, etaUse, phiUse, mB,
+        auto collectFrom = [&](int phiBinUse) {
+          const size_t keyUse = linearKey(colBin, status, ptB, etaB, phiBinUse, mB,
                                           nStat, nPt, nEta, nPhi, nM);
           auto const& vec = buffer[keyUse];
-
           for (const auto& bc : vec) {
-            if (maxKeep > 0 && static_cast<int>(matches.size()) >= maxKeep) {
-              break;
-            }
             if (bc.collisionIdx == curColIdx) {
-              continue; // must be from different event
+              continue; // different event
             }
-
-            // dedupe first
-            if (!seenRow.insert(bc.rowIndex).second) {
-              continue;
-            }
-
             auto tX = V0sMC.iteratorAt(static_cast<uint64_t>(bc.rowIndex));
             if (!selectionV0MC(tX)) {
               continue;
@@ -1557,93 +1570,33 @@ struct lambdaspincorrderived {
             if (!checkKinematicsMC(t1, tX)) {
               continue;
             }
-
             matches.push_back(MatchRef{bc.collisionIdx, bc.rowIndex});
           }
         };
 
-        // φ neighbor bins (wrapped)
-        std::vector<int> phiBins;
-        collectPhiNeighborBins(phiB, nPhi, /*nNeighbor=*/1, phiBins);
-
-        // scan pt±1, eta±1, phi±1 (wrapped)
-        for (int dpt = -1; dpt <= 1; ++dpt) {
-          const int ptUse = ptB + dpt;
-          if (ptUse < 0 || ptUse >= nPt) {
-            continue;
-          }
-          for (int deta = -1; deta <= 1; ++deta) {
-            const int etaUse = etaB + deta;
-            if (etaUse < 0 || etaUse >= nEta) {
-              continue;
-            }
-            for (int phiUse : phiBins) {
-              collectFrom(ptUse, etaUse, phiUse);
-              if (maxKeep > 0 && static_cast<int>(matches.size()) >= maxKeep) {
-                break;
-              }
-            }
-            if (maxKeep > 0 && static_cast<int>(matches.size()) >= maxKeep) {
-              break;
-            }
-          }
-          if (maxKeep > 0 && static_cast<int>(matches.size()) >= maxKeep) {
-            break;
-          }
+        // nominal φ-bin + wrap neighbors only at edges
+        collectFrom(phiB);
+        if (phiB == 0) {
+          collectFrom(nPhi - 1);
+        } else if (phiB == nPhi - 1) {
+          collectFrom(0);
         }
 
         if (matches.empty()) {
           continue;
         }
+
+        // dedupe identical (collision,row)
+        std::sort(matches.begin(), matches.end(),
+                  [](auto& a, auto& b) { return std::tie(a.collisionIdx, a.rowIndex) < std::tie(b.collisionIdx, b.rowIndex); });
+        matches.erase(std::unique(matches.begin(), matches.end(),
+                                  [](auto& a, auto& b) { return a.collisionIdx == b.collisionIdx && a.rowIndex == b.rowIndex; }),
+                      matches.end());
+        if (matches.empty()) {
+          continue;
+        }
+
         const float wBase = 1.0f / static_cast<float>(matches.size());
-
-        /*
-            std::vector<MatchRef> matches;
-            matches.reserve(128);
-            const int64_t curColIdx = static_cast<int64_t>(collision1.index());
-            auto collectFrom = [&](int phiBinUse) {
-            const size_t keyUse = linearKey(colBin, status, ptB, etaB, phiBinUse, mB,
-            nStat, nPt, nEta, nPhi, nM);
-            auto const& vec = buffer[keyUse];
-            for (const auto& bc : vec) {
-            if (bc.collisionIdx == curColIdx) {
-            continue; // different event
-            }
-            auto tX = V0sMC.iteratorAt(static_cast<uint64_t>(bc.rowIndex));
-            if (!selectionV0MC(tX)) {
-            continue;
-            }
-            if (!checkKinematicsMC(t1, tX)) {
-            continue;
-            }
-            matches.push_back(MatchRef{bc.collisionIdx, bc.rowIndex});
-            }
-            };
-
-            // nominal φ-bin + wrap neighbors only at edges
-            collectFrom(phiB);
-            if (phiB == 0) {
-            collectFrom(nPhi - 1);
-            } else if (phiB == nPhi - 1) {
-            collectFrom(0);
-            }
-
-            if (matches.empty()) {
-            continue;
-            }
-
-            // dedupe identical (collision,row)
-            std::sort(matches.begin(), matches.end(),
-            [](auto& a, auto& b) { return std::tie(a.collisionIdx, a.rowIndex) < std::tie(b.collisionIdx, b.rowIndex); });
-            matches.erase(std::unique(matches.begin(), matches.end(),
-            [](auto& a, auto& b) { return a.collisionIdx == b.collisionIdx && a.rowIndex == b.rowIndex; }),
-            matches.end());
-            if (matches.empty()) {
-            continue;
-            }
-
-            const float wBase = 1.0f / static_cast<float>(matches.size());
-        */
 
         for (const auto& m : matches) {
           auto tX = V0sMC.iteratorAt(static_cast<uint64_t>(m.rowIndex));
