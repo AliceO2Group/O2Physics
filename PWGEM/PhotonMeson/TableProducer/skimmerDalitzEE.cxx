@@ -37,7 +37,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
-using MyCollisions = soa::Join<aod::EMEvents_004, aod::EMEventsMult_000, aod::EMEventsCent_000>;
+using MyCollisions = soa::Join<aod::EMPhotonEvents, aod::EMEventsMult_000, aod::EMEventsCent_000>;
 using MyCollision = MyCollisions::iterator;
 
 using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsCov, aod::EMPrimaryElectronDaEMEventIds>;
@@ -375,7 +375,7 @@ struct skimmerDalitzEE {
   }
   PROCESS_SWITCH(skimmerDalitzEE, processCEFP, "Process dalitz ee for CEFP", false); // for central event filter processing
 
-  void processOnlyNee(soa::Join<aod::EMEvents_004, aod::EMEventsMult_000, aod::EMEventsCent_000> const& collisions)
+  void processOnlyNee(soa::Join<aod::EMPhotonEvents, aod::EMEventsMult_000, aod::EMEventsCent_000> const& collisions)
   {
     for (auto& collision : collisions) {
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
