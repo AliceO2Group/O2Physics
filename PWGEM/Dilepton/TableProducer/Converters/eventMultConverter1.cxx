@@ -11,24 +11,36 @@
 //
 // ========================
 //
-// This code loops over photons and makes pairs for neutral mesons analyses.
+// This code runs loop over ULS ee pars for virtual photon QC.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include "PWGEM/PhotonMeson/Core/DiphotonHadronMPC.h"
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
+#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 
 #include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::aod;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+using namespace o2::soa;
+
+struct eventMultConverter1 {
+  Produces<aod::EMEventsMult_001> mult_001;
+
+  void process(aod::EMEventsMult_000 const& collisions)
+  {
+    for (const auto& collision : collisions) {
+      mult_001(
+        collision.multFT0A(),
+        collision.multFT0C(),
+        collision.multNTracksPV());
+    } // end of mult row loop
+  }
+};
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<DiphotonHadronMPC<PairType::kPCMPCM, MyV0Photons, aod::V0Legs>>(cfgc, TaskName{"diphoton-hadron-mpc-pcmpcm"}),
-  };
+  return WorkflowSpec{adaptAnalysisTask<eventMultConverter1>(cfgc, TaskName{"event-mult-converter1"})};
 }

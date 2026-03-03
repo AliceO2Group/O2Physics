@@ -45,19 +45,19 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 
-using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::EMEoIs>;
-using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
-
-using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
-using MyTrack = MyTracks::iterator;
-using MyTracksMC = soa::Join<MyTracks, aod::McTrackLabels>;
-using MyTrackMC = MyTracksMC::iterator;
-
 struct skimmerPrimaryTrack {
+  using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::EMEoIs>;
+  using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
+
+  using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
+  using MyTrack = MyTracks::iterator;
+  using MyTracksMC = soa::Join<MyTracks, aod::McTrackLabels>;
+  using MyTrackMC = MyTracksMC::iterator;
+
   SliceCache cache;
   Preslice<aod::TracksIU> perCol = o2::aod::track::collisionId;
   Produces<aod::EMPrimaryTracks> emprimarytracks;
-  // Produces<aod::EMPrimaryTrackEMEventIdsTMP> prmtrackeventidtmp;
+  Produces<aod::EMPrimaryTrackEMEventIdsTMP> prmtrackeventidtmp;
 
   // Configurables
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -258,107 +258,102 @@ struct skimmerPrimaryTrack {
   template <typename TCollision, typename TTrack>
   void fillTrackTable(TCollision const& collision, TTrack const& track)
   {
-    if (std::find(stored_trackIds.begin(), stored_trackIds.end(), std::pair<int, int>{collision.globalIndex(), track.globalIndex()}) == stored_trackIds.end()) {
-      o2::dataformats::DCA mDcaInfoCov;
-      mDcaInfoCov.set(999, 999, 999, 999, 999);
-      auto trackParCov = getTrackParCov(track);
-      trackParCov.setPID(track.pidForTracking());
-      mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
-      mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-      o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
-      float dcaXY = mDcaInfoCov.getY();
-      float dcaZ = mDcaInfoCov.getZ();
+    o2::dataformats::DCA mDcaInfoCov;
+    mDcaInfoCov.set(999, 999, 999, 999, 999);
+    auto trackParCov = getTrackParCov(track);
+    trackParCov.setPID(track.pidForTracking());
+    mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+    mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+    float dcaXY = mDcaInfoCov.getY();
+    float dcaZ = mDcaInfoCov.getZ();
 
-      float pt = trackParCov.getPt();
-      float eta = trackParCov.getEta();
-      float phi = trackParCov.getPhi();
-      o2::math_utils::bringTo02Pi(phi);
-      uint16_t trackBit = 0;
+    float pt = trackParCov.getPt();
+    float eta = trackParCov.getEta();
+    float phi = trackParCov.getPhi();
+    o2::math_utils::bringTo02Pi(phi);
+    uint16_t trackBit = 0;
 
-      // As minimal cuts, following cuts are applied. The cut values are hardcoded on the purpose for consistent bit operation.
-      // has info on ITS and TPC
-      // a hit on ITSib any
-      // Ncls ITS >= 4
-      // chi2/Ncls ITS < 36
-      // Ncr TPC >= 50
-      // chi2/Ncls TPC < 5
-      // Ncr/Nf ratio in TPC > 0.8
+    // As minimal cuts, following cuts are applied. The cut values are hardcoded on the purpose for consistent bit operation.
+    // has info on ITS and TPC
+    // a hit on ITSib any
+    // Ncls ITS >= 4
+    // chi2/Ncls ITS < 36
+    // Ncr TPC >= 50
+    // chi2/Ncls TPC < 5
+    // Ncr/Nf ratio in TPC > 0.8
 
-      if (track.itsNCls() >= 5) {
-        trackBit |= static_cast<uint16_t>(RefTrackBit::kNclsITS5);
-      }
-      if (track.itsNCls() >= 6) {
-        trackBit |= static_cast<uint16_t>(RefTrackBit::kNclsITS6);
-      }
+    if (track.itsNCls() >= 5) {
+      trackBit |= static_cast<uint16_t>(RefTrackBit::kNclsITS5);
+    }
+    if (track.itsNCls() >= 6) {
+      trackBit |= static_cast<uint16_t>(RefTrackBit::kNclsITS6);
+    }
 
-      if (track.tpcNClsCrossedRows() >= 70) {
-        trackBit |= static_cast<uint16_t>(RefTrackBit::kNcrTPC70);
-      }
-      if (track.tpcNClsCrossedRows() >= 90) {
-        trackBit |= static_cast<uint16_t>(RefTrackBit::kNcrTPC90);
-      }
-      if (track.tpcNClsFound() >= 50) {
-        trackBit |= static_cast<uint16_t>(RefTrackBit::kNclsTPC50);
-      }
-      if (track.tpcNClsFound() >= 70) {
-        trackBit |= static_cast<uint16_t>(RefTrackBit::kNclsTPC70);
-      }
-      if (track.tpcNClsFound() >= 90) {
-        trackBit |= static_cast<uint16_t>(RefTrackBit::kNclsTPC90);
-      }
-      if (track.tpcChi2NCl() < 4.f) {
-        trackBit |= static_cast<uint16_t>(RefTrackBit::kChi2TPC4);
-      }
-      if (track.tpcChi2NCl() < 3.f) {
-        trackBit |= static_cast<uint16_t>(RefTrackBit::kChi2TPC3);
-      }
-      if (track.tpcFractionSharedCls() < 0.7) {
-        trackBit |= static_cast<uint16_t>(RefTrackBit::kFracSharedTPC07);
-      }
+    if (track.tpcNClsCrossedRows() >= 70) {
+      trackBit |= static_cast<uint16_t>(RefTrackBit::kNcrTPC70);
+    }
+    if (track.tpcNClsCrossedRows() >= 90) {
+      trackBit |= static_cast<uint16_t>(RefTrackBit::kNcrTPC90);
+    }
+    if (track.tpcNClsFound() >= 50) {
+      trackBit |= static_cast<uint16_t>(RefTrackBit::kNclsTPC50);
+    }
+    if (track.tpcNClsFound() >= 70) {
+      trackBit |= static_cast<uint16_t>(RefTrackBit::kNclsTPC70);
+    }
+    if (track.tpcNClsFound() >= 90) {
+      trackBit |= static_cast<uint16_t>(RefTrackBit::kNclsTPC90);
+    }
+    if (track.tpcChi2NCl() < 4.f) {
+      trackBit |= static_cast<uint16_t>(RefTrackBit::kChi2TPC4);
+    }
+    if (track.tpcChi2NCl() < 3.f) {
+      trackBit |= static_cast<uint16_t>(RefTrackBit::kChi2TPC3);
+    }
+    if (track.tpcFractionSharedCls() < 0.7) {
+      trackBit |= static_cast<uint16_t>(RefTrackBit::kFracSharedTPC07);
+    }
 
-      if (std::fabs(dcaZ) < 0.5) {
-        trackBit |= static_cast<uint16_t>(RefTrackBit::kDCAz05cm);
-      }
-      if (std::fabs(dcaZ) < 0.3) {
-        trackBit |= static_cast<uint16_t>(RefTrackBit::kDCAz03cm);
-      }
+    if (std::fabs(dcaZ) < 0.5) {
+      trackBit |= static_cast<uint16_t>(RefTrackBit::kDCAz05cm);
+    }
+    if (std::fabs(dcaZ) < 0.3) {
+      trackBit |= static_cast<uint16_t>(RefTrackBit::kDCAz03cm);
+    }
 
-      if (std::fabs(dcaXY) < 0.5) {
-        trackBit |= static_cast<uint16_t>(RefTrackBit::kDCAxy05cm);
-      }
-      if (std::fabs(dcaXY) < 0.3) {
-        trackBit |= static_cast<uint16_t>(RefTrackBit::kDCAxy03cm);
-      }
+    if (std::fabs(dcaXY) < 0.5) {
+      trackBit |= static_cast<uint16_t>(RefTrackBit::kDCAxy05cm);
+    }
+    if (std::fabs(dcaXY) < 0.3) {
+      trackBit |= static_cast<uint16_t>(RefTrackBit::kDCAxy03cm);
+    }
 
-      emprimarytracks(collision.globalIndex(), track.globalIndex(), track.sign() / pt, eta, phi, trackBit);
-      // prmtrackeventidtmp(collision.globalIndex());
+    emprimarytracks(/*collision.globalIndex(),*/ /*track.globalIndex(),*/ track.sign() / pt, eta, phi, trackBit);
+    prmtrackeventidtmp(collision.globalIndex());
 
-      stored_trackIds.emplace_back(std::pair<int, int>{collision.globalIndex(), track.globalIndex()});
-
-      if (fillQAHistogram) {
-        fRegistry.fill(HIST("Track/hPt"), pt);
-        fRegistry.fill(HIST("Track/hQoverPt"), track.sign() / pt);
-        fRegistry.fill(HIST("Track/hEtaPhi"), phi, eta);
-        fRegistry.fill(HIST("Track/hDCAxyz"), dcaXY, dcaZ);
-        fRegistry.fill(HIST("Track/hDCAxyzSigma"), dcaXY / std::sqrt(trackParCov.getSigmaY2()), dcaZ / std::sqrt(trackParCov.getSigmaZ2()));
-        fRegistry.fill(HIST("Track/hDCAxyRes_Pt"), pt, std::sqrt(trackParCov.getSigmaY2()) * 1e+4); // convert cm to um
-        fRegistry.fill(HIST("Track/hDCAzRes_Pt"), pt, std::sqrt(trackParCov.getSigmaZ2()) * 1e+4);  // convert cm to um
-        fRegistry.fill(HIST("Track/hNclsITS"), track.itsNCls());
-        fRegistry.fill(HIST("Track/hNclsTPC"), track.tpcNClsFound());
-        fRegistry.fill(HIST("Track/hNcrTPC"), track.tpcNClsCrossedRows());
-        fRegistry.fill(HIST("Track/hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
-        fRegistry.fill(HIST("Track/hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
-        fRegistry.fill(HIST("Track/hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
-        fRegistry.fill(HIST("Track/hChi2TPC"), track.tpcChi2NCl());
-        fRegistry.fill(HIST("Track/hChi2ITS"), track.itsChi2NCl());
-        fRegistry.fill(HIST("Track/hITSClusterMap"), track.itsClusterMap());
-        fRegistry.fill(HIST("Track/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
-      }
+    if (fillQAHistogram) {
+      fRegistry.fill(HIST("Track/hPt"), pt);
+      fRegistry.fill(HIST("Track/hQoverPt"), track.sign() / pt);
+      fRegistry.fill(HIST("Track/hEtaPhi"), phi, eta);
+      fRegistry.fill(HIST("Track/hDCAxyz"), dcaXY, dcaZ);
+      fRegistry.fill(HIST("Track/hDCAxyzSigma"), dcaXY / std::sqrt(trackParCov.getSigmaY2()), dcaZ / std::sqrt(trackParCov.getSigmaZ2()));
+      fRegistry.fill(HIST("Track/hDCAxyRes_Pt"), pt, std::sqrt(trackParCov.getSigmaY2()) * 1e+4); // convert cm to um
+      fRegistry.fill(HIST("Track/hDCAzRes_Pt"), pt, std::sqrt(trackParCov.getSigmaZ2()) * 1e+4);  // convert cm to um
+      fRegistry.fill(HIST("Track/hNclsITS"), track.itsNCls());
+      fRegistry.fill(HIST("Track/hNclsTPC"), track.tpcNClsFound());
+      fRegistry.fill(HIST("Track/hNcrTPC"), track.tpcNClsCrossedRows());
+      fRegistry.fill(HIST("Track/hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
+      fRegistry.fill(HIST("Track/hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
+      fRegistry.fill(HIST("Track/hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
+      fRegistry.fill(HIST("Track/hChi2TPC"), track.tpcChi2NCl());
+      fRegistry.fill(HIST("Track/hChi2ITS"), track.itsChi2NCl());
+      fRegistry.fill(HIST("Track/hITSClusterMap"), track.itsClusterMap());
+      fRegistry.fill(HIST("Track/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
     }
   }
 
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
-  std::vector<std::pair<int, int>> stored_trackIds;
   Filter trackFilter = o2::aod::track::itsChi2NCl < 36.f && o2::aod::track::tpcChi2NCl < 5.f && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC) == true;
   using MyFilteredTracks = soa::Filtered<MyTracks>;
 
@@ -366,8 +361,6 @@ struct skimmerPrimaryTrack {
 
   void processRec(MyCollisions const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracks const& tracks)
   {
-    stored_trackIds.reserve(tracks.size());
-
     for (const auto& collision : collisions) {
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
@@ -387,16 +380,11 @@ struct skimmerPrimaryTrack {
       }
 
     } // end of collision loop
-
-    stored_trackIds.clear();
-    stored_trackIds.shrink_to_fit();
   }
   PROCESS_SWITCH(skimmerPrimaryTrack, processRec, "process reconstructed info only", true); // standalone
 
   void processRec_SWT(MyCollisionsWithSWT const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracks const& tracks)
   {
-    stored_trackIds.reserve(tracks.size());
-
     for (const auto& collision : collisions) {
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
@@ -420,9 +408,6 @@ struct skimmerPrimaryTrack {
       }
 
     } // end of collision loop
-
-    stored_trackIds.clear();
-    stored_trackIds.shrink_to_fit();
   }
   PROCESS_SWITCH(skimmerPrimaryTrack, processRec_SWT, "process reconstructed info only", false); // standalone with swt
 
@@ -431,8 +416,6 @@ struct skimmerPrimaryTrack {
   using MyFilteredTracksMC = soa::Filtered<MyTracksMC>;
   void processMC(soa::Join<MyCollisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const&, aod::BCsWithTimestamps const&, MyFilteredTracksMC const& tracks)
   {
-    stored_trackIds.reserve(tracks.size());
-
     for (const auto& collision : collisions) {
       if (!collision.has_mcCollision()) {
         continue;
@@ -455,9 +438,6 @@ struct skimmerPrimaryTrack {
         fillTrackTable(collision, track);
       }
     } // end of collision loop
-
-    stored_trackIds.clear();
-    stored_trackIds.shrink_to_fit();
   }
   PROCESS_SWITCH(skimmerPrimaryTrack, processMC, "process reconstructed and MC info ", false);
 };

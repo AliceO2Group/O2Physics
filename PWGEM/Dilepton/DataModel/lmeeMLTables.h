@@ -114,6 +114,38 @@ using EMPIDPi = EMPIDsPi::iterator;
 using EMPIDKa = EMPIDsKa::iterator;
 using EMPIDPr = EMPIDsPr::iterator;
 
+namespace emmlfwdtrack
+{
+DECLARE_SOA_COLUMN(PtMatchedMCHMID, ptMatchedMCHMID, float);          //! pt of MCH-MID track in MFT-MCH-MID track at PV
+DECLARE_SOA_COLUMN(EtaMatchedMCHMID, etaMatchedMCHMID, float);        //! eta of MCH-MID track in MFT-MCH-MID track at PV
+DECLARE_SOA_COLUMN(PhiMatchedMCHMID, phiMatchedMCHMID, float);        //! phi of MCH-MID track in MFT-MCH-MID track at PV
+DECLARE_SOA_COLUMN(XMatchedMCHMIDatMP, xMatchedMCHMIDatMP, float);    //! x of MCH-MID track in MFT-MCH-MID track at matching plane
+DECLARE_SOA_COLUMN(YMatchedMCHMIDatMP, yMatchedMCHMIDatMP, float);    //! y of MCH-MID track in MFT-MCH-MID track at matching plane
+DECLARE_SOA_COLUMN(XMatchedMFTatMP, xMatchedMFTatMP, float);          //! x of MFT track in MFT-MCH-MID track at matching plane
+DECLARE_SOA_COLUMN(YMatchedMFTatMP, yMatchedMFTatMP, float);          //! y of MFT track in MFT-MCH-MID track at matching plane
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);                               //!
+DECLARE_SOA_COLUMN(Chi2MFT, chi2MFT, float);                          //! chi2 of MFT standalone track
+DECLARE_SOA_COLUMN(NClustersMFT, nClustersMFT, uint8_t);              //!
+DECLARE_SOA_COLUMN(IsPrimary, isPrimary, bool);                       //!
+DECLARE_SOA_COLUMN(IsCorrectMatchMFTMCH, isCorrectMatchMFTMCH, bool); //!
+} // namespace emmlfwdtrack
+
+DECLARE_SOA_TABLE_VERSIONED(EMFwdTracksForML_000, "AOD", "EMFWDTRKML", 0, //!
+                            o2::soa::Index<>, collision::PosZ, collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, emmltrack::HadronicRate,
+                            fwdtrack::TrackType, fwdtrack::Pt, fwdtrack::Eta, fwdtrack::Phi, emmlfwdtrack::Sign,
+                            fwdtrack::FwdDcaX, fwdtrack::FwdDcaY,
+                            emmlfwdtrack::PtMatchedMCHMID, emmlfwdtrack::EtaMatchedMCHMID, emmlfwdtrack::PhiMatchedMCHMID,
+                            emmlfwdtrack::XMatchedMCHMIDatMP, emmlfwdtrack::YMatchedMCHMIDatMP,
+                            emmlfwdtrack::XMatchedMFTatMP, emmlfwdtrack::YMatchedMFTatMP,
+                            fwdtrack::NClusters, fwdtrack::PDca, fwdtrack::RAtAbsorberEnd,
+                            fwdtrack::Chi2, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT,
+                            // fwdtrack::MCHBitMap, fwdtrack::MIDBitMap, fwdtrack::MIDBoards,
+                            fwdtrack::MFTClusterSizesAndTrackFlags, emmlfwdtrack::Chi2MFT, emmlfwdtrack::NClustersMFT, mcparticle::PdgCode, emmlfwdtrack::IsPrimary, emmlfwdtrack::IsCorrectMatchMFTMCH);
+
+using EMFwdTracksForML = EMFwdTracksForML_000;
+// iterators
+using EMFwdTrackForML = EMFwdTracksForML::iterator;
+
 } // namespace o2::aod
 
 #endif // PWGEM_DILEPTON_DATAMODEL_LMEEMLTABLES_H_

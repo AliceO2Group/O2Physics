@@ -44,6 +44,9 @@ DECLARE_SOA_COLUMN(NSigmaTOFPr, nSigmaTOFPr, float); //! Number of sigmas for th
 DECLARE_SOA_COLUMN(SigmaPDG, sigmaPDG, int);       //! PDG code of the Sigma daughter
 DECLARE_SOA_COLUMN(DaughterPDG, daughterPDG, int); //! PDG code of the kink daughter
 DECLARE_SOA_COLUMN(PrPDG, prPDG, int);             //! PDG code of the proton candidate
+DECLARE_SOA_COLUMN(SigmaGenPt, sigmaGenPt, float); //! Generated pT of the Sigma candidate
+DECLARE_SOA_COLUMN(PrGenPt, prGenPt, float);       //! Generated pT of the proton candidate
+DECLARE_SOA_COLUMN(GenKStar, genKStar, float);     //! Generated k* of the Sigma-Proton pair
 
 } // namespace sigmaproton
 
@@ -60,7 +63,8 @@ DECLARE_SOA_TABLE(SigmaProtonMCCands, "AOD", "SIGMAPROTONMCCANDS",
                   kinkcand::PxDaug, kinkcand::PyDaug, kinkcand::PzDaug, sigmaproton::SigmaDecRad, sigmaproton::SigmaCosPA,
                   sigmaproton::ChargePr, sigmaproton::PxPr, sigmaproton::PyPr, sigmaproton::PzPr,
                   sigmaproton::NSigmaTPCPr, sigmaproton::NSigmaTOFPr,
-                  sigmaproton::SigmaPDG, sigmaproton::DaughterPDG, sigmaproton::PrPDG);
+                  sigmaproton::SigmaPDG, sigmaproton::DaughterPDG, sigmaproton::PrPDG,
+                  sigmaproton::SigmaGenPt, sigmaproton::PrGenPt, sigmaproton::GenKStar);
 
 } // namespace o2::aod
 

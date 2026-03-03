@@ -55,7 +55,8 @@ struct LumiStabilityTask {
   Configurable<int> nOrbitsPerTF{"nOrbitsPerTF", 128, "number of orbits per time frame"};
   Configurable<double> minOrbitConf{"minOrbitConf", 0, "minimum orbit"};
   Configurable<bool> is2022Data{"is2022Data", true, "To 2022 data"};
-  Configurable<int> minEmpty{"minEmpty", 5, "number of BCs empty for leading BC"};
+  Configurable<int> minEmpty{"minEmpty", 13, "number of BCs empty for leading BC"};
+  Configurable<int> nBCsOffSet{"nBCsOffSet", 7, "number of BCs offset for FDD"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   parameters::GRPLHCIFData* grplhcif = nullptr;
@@ -74,6 +75,7 @@ struct LumiStabilityTask {
   std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternA;
   std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternC;
   std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternB;
+  std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternL;
   std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternE;
 
   void init(InitContext const&)
@@ -287,6 +289,7 @@ struct LumiStabilityTask {
       bcPatternC = ~beamPatternA & beamPatternC;
       bcPatternB = beamPatternA & beamPatternC;
       bcPatternE = ~beamPatternA & ~beamPatternC;
+      bcPatternL = beamPatternA & beamPatternC;
 
       for (int i = 0; i < nBCsPerOrbit; i++) {
         if (bcPatternA[i]) {
@@ -297,18 +300,23 @@ struct LumiStabilityTask {
         }
         if (bcPatternB[i]) {
           histos.fill(HIST("hBcB"), i);
+        }
+        if (bcPatternL[i]) {
           bool isLeadBC = true;
           for (int jbit = i - minEmpty; jbit < i; jbit++) {
             int kbit = jbit;
             if (kbit < 0)
               kbit += nbin;
-            if (bcPatternB[kbit]) {
+            if (!bcPatternE[kbit]) {
+              bcPatternL[i] = false;
               isLeadBC = false;
               break;
             }
           }
-          if (isLeadBC)
+          if (isLeadBC) {
+            // bcPatternL[i] = true;
             histos.fill(HIST("hBcBL"), i);
+          }
         }
         if (bcPatternE[i]) {
           histos.fill(HIST("hBcE"), i);
@@ -379,8 +387,8 @@ struct LumiStabilityTask {
       }
 
       if (trgFDD) {
-        histos.fill(HIST("FDD/bcVertexTriggerCTP"), localBC + 7);
-        if (bcPatternB[localBC]) {
+        histos.fill(HIST("FDD/bcVertexTriggerCTP"), localBC + nBCsOffSet);
+        if (bcPatternB[localBC + nBCsOffSet]) {
           histos.fill(HIST("FDD/nBCsVsTime"), timeSinceSOF);
           histos.fill(HIST("FDD/hTimeForRateCTP"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
         }
@@ -398,21 +406,13 @@ struct LumiStabilityTask {
           histos.fill(HIST("FV0/hTimeForRateCTP"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
         }
       }
-      bool isLeadBC = true;
-      for (int jbit = localBC - minEmpty; jbit < localBC; jbit++) {
-        int kbit = jbit;
-        if (kbit < 0)
-          kbit += nbin;
-        if (bcPatternB[kbit]) {
-          isLeadBC = false;
-          break;
-        }
-      }
-      if (isLeadBC) {
+      if (bcPatternL[localBC + nBCsOffSet]) {
         if (trgFDD) {
           histos.fill(HIST("FDD/nBCsVsTimeLeadingBC"), timeSinceSOF);
           histos.fill(HIST("FDD/hTimeForRateLeadingBCCTP"), (bc.timestamp() - tsSOR) * 1.e-3);
         }
+      }
+      if (bcPatternL[localBC]) {
         if (trgFT0) {
           histos.fill(HIST("FT0/nBCsVsTimeLeadingBC"), timeSinceSOF);
           histos.fill(HIST("FT0/hTimeForRateLeadingBCCTP"), (bc.timestamp() - tsSOR) * 1.e-3);
@@ -420,8 +420,7 @@ struct LumiStabilityTask {
         if (trgFV0) {
           histos.fill(HIST("FV0/hTimeForRateLeadingBCCTP"), (bc.timestamp() - tsSOR) * 1.e-3);
         }
-      }
-      // }
+      } // if over leading pattern
     } // loop over bcs
 
     for (auto const& fdd : fdds) {
@@ -465,18 +464,9 @@ struct LumiStabilityTask {
 
         if (bcPatternB[localBC]) {
           histos.fill(HIST("FDD/hTimeForRate"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
-          bool isLeadBC = true;
-          for (int jbit = localBC - minEmpty; jbit < localBC; jbit++) {
-            int kbit = jbit;
-            if (kbit < 0)
-              kbit += nbin;
-            if (bcPatternB[kbit]) {
-              isLeadBC = false;
-              break;
-            }
-          }
-          if (isLeadBC)
-            histos.fill(HIST("FDD/hTimeForRateLeadingBC"), (bc.timestamp() - tsSOR) * 1.e-3);
+        }
+        if (bcPatternL[localBC]) {
+          histos.fill(HIST("FDD/hTimeForRateLeadingBC"), (bc.timestamp() - tsSOR) * 1.e-3);
         }
 
         int deltaIndex = 0; // backward move counts
@@ -514,18 +504,6 @@ struct LumiStabilityTask {
           if (bcPatternB[localBC]) {
             histos.fill(HIST("FDD/timeACbcBVertex"), fdd.timeA(), fdd.timeC());
             histos.fill(HIST("FDD/hBcBVertex"), localBC);
-            bool isLeadBC = true;
-            for (int jbit = localBC - minEmpty; jbit < localBC; jbit++) {
-              int kbit = jbit;
-              if (kbit < 0)
-                kbit += nbin;
-              if (bcPatternB[kbit]) {
-                isLeadBC = false;
-                break;
-              }
-            }
-            if (isLeadBC)
-              histos.fill(HIST("FDD/hBcBVertexL"), localBC);
             histos.fill(HIST("FDD/hTimeAVertex"), fdd.timeA());
             histos.fill(HIST("FDD/hTimeCVertex"), fdd.timeC());
             if (is2022Data) {
@@ -555,6 +533,9 @@ struct LumiStabilityTask {
               }
             }
           }
+          if (bcPatternL[localBC]) {
+            histos.fill(HIST("FDD/hBcBVertexL"), localBC);
+          }
           if (bcPatternE[localBC]) {
             histos.fill(HIST("FDD/timeACbcEVertex"), fdd.timeA(), fdd.timeC());
             histos.fill(HIST("FDD/hBcEVertex"), localBC);
@@ -577,18 +558,6 @@ struct LumiStabilityTask {
           if (bcPatternB[localBC]) {
             histos.fill(HIST("FDD/timeACbcB"), fdd.timeA(), fdd.timeC());
             histos.fill(HIST("FDD/hBcB"), localBC);
-            bool isLeadBC = true;
-            for (int jbit = localBC - minEmpty; jbit < localBC; jbit++) {
-              int kbit = jbit;
-              if (kbit < 0)
-                kbit += nbin;
-              if (bcPatternB[kbit]) {
-                isLeadBC = false;
-                break;
-              }
-            }
-            if (isLeadBC)
-              histos.fill(HIST("FDD/hBcBL"), localBC);
             histos.fill(HIST("FDD/hTimeACoinc"), fdd.timeA());
             histos.fill(HIST("FDD/hTimeCCoinc"), fdd.timeC());
             if (!is2022Data) {
@@ -617,6 +586,9 @@ struct LumiStabilityTask {
                 histos.fill(HIST("FDD/hValidTimevsBC"), localBC);
               }
             }
+          }
+          if (bcPatternL[localBC]) {
+            histos.fill(HIST("FDD/hBcBL"), localBC);
           }
           if (bcPatternE[localBC]) {
             histos.fill(HIST("FDD/timeACbcE"), fdd.timeA(), fdd.timeC());
@@ -738,20 +710,6 @@ struct LumiStabilityTask {
           histos.fill(HIST("FT0/timeACbcB"), ft0.timeA(), ft0.timeC());
           histos.fill(HIST("FT0/hBcB"), localBC);
           histos.fill(HIST("FT0/hTimeForRate"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
-          bool isLeadBC = true;
-          for (int jbit = localBC - minEmpty; jbit < localBC; jbit++) {
-            int kbit = jbit;
-            if (kbit < 0)
-              kbit += nbin;
-            if (bcPatternB[kbit]) {
-              isLeadBC = false;
-              break;
-            }
-          }
-          if (isLeadBC) {
-            histos.fill(HIST("FT0/hTimeForRateLeadingBC"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
-            histos.fill(HIST("FT0/hBcBL"), localBC);
-          }
           histos.fill(HIST("FT0/hTimeA"), ft0.timeA());
           histos.fill(HIST("FT0/hTimeC"), ft0.timeC());
 
@@ -779,6 +737,10 @@ struct LumiStabilityTask {
             histos.fill(HIST("FT0/hCountsTime"), 1);
             histos.fill(HIST("FT0/hValidTimevsBC"), localBC);
           }
+        }
+        if (bcPatternL[localBC]) {
+          histos.fill(HIST("FT0/hTimeForRateLeadingBC"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
+          histos.fill(HIST("FT0/hBcBL"), localBC);
         }
         if (bcPatternE[localBC]) {
           histos.fill(HIST("FT0/timeACbcE"), ft0.timeA(), ft0.timeC());

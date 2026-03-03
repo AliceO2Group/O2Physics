@@ -68,6 +68,7 @@ DECLARE_SOA_COLUMN(EvtPlResAB, evtPlResAB, float);                            //
 DECLARE_SOA_COLUMN(EvtPlResAC, evtPlResAC, float);                            //! Second harmonic event plane resolution of A-C sub events
 DECLARE_SOA_COLUMN(EvtPlResBC, evtPlResBC, float);                            //! Second harmonic event plane resolution of B-C sub events
 DECLARE_SOA_COLUMN(BMagField, bMagField, float);                              //! Magnetic field
+DECLARE_SOA_COLUMN(IsRecINELgt0, isRecINELgt0, bool);                         //! Is reconstructed INEL>0 event
 // MC
 DECLARE_SOA_COLUMN(IsVtxIn10, isVtxIn10, bool);               //! Vtx10
 DECLARE_SOA_COLUMN(IsINELgt0, isINELgt0, bool);               //! INEL>0
@@ -75,16 +76,20 @@ DECLARE_SOA_COLUMN(IsTriggerTVX, isTriggerTVX, bool);         //! TriggerTVX
 DECLARE_SOA_COLUMN(IsInSel8, isInSel8, bool);                 //! InSel8
 DECLARE_SOA_COLUMN(IsInAfterAllCuts, isInAfterAllCuts, bool); //! InAfterAllCuts
 DECLARE_SOA_COLUMN(ImpactParameter, impactParameter, float);  //! ImpactParameter
+DECLARE_SOA_COLUMN(MCMultiplicity, mcMultiplicity, float);    //! MC Multiplicity
 
 } // namespace resocollision
 DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOLLISION",
                   o2::soa::Index<>,
                   o2::aod::mult::MultNTracksPV,
+                  o2::aod::mult::MultNTracksPVeta1,
+                  o2::aod::mult::MultNTracksPVetaHalf,
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
                   resocollision::Cent,
-                  resocollision::BMagField);
+                  resocollision::BMagField,
+                  resocollision::IsRecINELgt0);
 using ResoCollision = ResoCollisions::iterator;
 
 DECLARE_SOA_TABLE(ResoCollisionColls, "AOD", "RESOCOLLISIONCOL",
@@ -98,7 +103,8 @@ DECLARE_SOA_TABLE(ResoMCCollisions, "AOD", "RESOMCCOLLISION",
                   resocollision::IsTriggerTVX,
                   resocollision::IsInSel8,
                   resocollision::IsInAfterAllCuts,
-                  resocollision::ImpactParameter);
+                  resocollision::ImpactParameter,
+                  resocollision::MCMultiplicity);
 using ResoMCCollision = ResoMCCollisions::iterator;
 
 DECLARE_SOA_TABLE(ResoSpheroCollisions, "AOD", "RESOSPHEROCOLLISION",
@@ -204,6 +210,8 @@ DECLARE_SOA_COLUMN(CascTransRadius, cascTransRadius, float);                    
 DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);                                  //! X position of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);                                  //! Y position of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);                                  //! Z position of the decay vertex
+DECLARE_SOA_COLUMN(Alpha, alpha, float);                                          //! Alpha of the decay vertex
+DECLARE_SOA_COLUMN(QtArm, qtarm, float);                                          //! Armenteros Qt of the decay vertex
 DECLARE_SOA_COLUMN(TpcSignal10, tpcSignal10, int8_t);                             //! TPC signal of the track x10
 DECLARE_SOA_COLUMN(DaughterTPCNSigmaPosPi10, daughterTPCNSigmaPosPi10, int8_t);   //! TPC PID x10 of the positive daughter as Pion
 DECLARE_SOA_COLUMN(DaughterTPCNSigmaPosKa10, daughterTPCNSigmaPosKa10, int8_t);   //! TPC PID x10 of the positive daughter as Kaon
@@ -229,6 +237,8 @@ DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);
 DECLARE_SOA_COLUMN(ProducedByGenerator, producedByGenerator, bool);
 DECLARE_SOA_COLUMN(MotherId, motherId, int);         //! Id of the mother particle
 DECLARE_SOA_COLUMN(MotherPDG, motherPDG, int);       //! PDG code of the mother particle
+DECLARE_SOA_COLUMN(MotherPt, motherPt, float);       //! Pt of the mother particle
+DECLARE_SOA_COLUMN(MotherRap, motherRap, float);     //! Rapidity of the mother particle
 DECLARE_SOA_COLUMN(DaughterPDG1, daughterPDG1, int); //! PDG code of the first Daughter particle
 DECLARE_SOA_COLUMN(DaughterPDG2, daughterPDG2, int); //! PDG code of the second Daughter particle
 DECLARE_SOA_COLUMN(DaughterID1, daughterID1, int);   //! Id of the first Daughter particle
@@ -640,6 +650,8 @@ DECLARE_SOA_TABLE(ResoV0s, "AOD", "RESOV0",
                   resodaughter::DecayVtxX,
                   resodaughter::DecayVtxY,
                   resodaughter::DecayVtxZ,
+                  resodaughter::Alpha,
+                  resodaughter::QtArm,
                   // resodaughter::Pt<resodaughter::Px, resodaughter::Py>,
                   resodaughter::Eta<resodaughter::Px, resodaughter::Py, resodaughter::Pz>,
                   resodaughter::Phi<resodaughter::Px, resodaughter::Py>,
@@ -812,6 +824,8 @@ DECLARE_SOA_TABLE(ResoMCV0s, "AOD", "RESOMCV0",
                   mcparticle::PdgCode,
                   resodaughter::MotherId,
                   resodaughter::MotherPDG,
+                  resodaughter::MotherPt,
+                  resodaughter::MotherRap,
                   resodaughter::DaughterID1,
                   resodaughter::DaughterID2,
                   resodaughter::DaughterPDG1,
@@ -824,6 +838,8 @@ DECLARE_SOA_TABLE(ResoMCCascades, "AOD", "RESOMCCASCADE",
                   mcparticle::PdgCode,
                   resodaughter::MotherId,
                   resodaughter::MotherPDG,
+                  resodaughter::MotherPt,
+                  resodaughter::MotherRap,
                   resodaughter::BachTrkID,
                   resodaughter::V0ID,
                   resodaughter::DaughterPDG1,

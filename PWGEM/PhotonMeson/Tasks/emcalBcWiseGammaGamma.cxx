@@ -11,26 +11,23 @@
 //
 ///
 /// \file emcalBcWiseGammaGamma.cxx
-///
 /// \brief Task that extracts pi0s and eta mesons from BC wise derived data of EMCal clusters
-///
 /// \author Nicolas Strangmann (nicolas.strangmann@cern.ch) Goethe University Frankfurt
 ///
 
 #include "PWGEM/PhotonMeson/DataModel/bcWiseTables.h"
 
-#include "CommonConstants/MathConstants.h"
-#include "EMCALBase/Geometry.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/MathConstants.h>
+#include <EMCALBase/Geometry.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Math/AxisAngle.h"
-#include "Math/LorentzRotation.h"
-#include "Math/Rotation3D.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "TString.h"
+#include <Math/AxisAngle.h>
+#include <Math/Rotation3D.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep
+#include <Math/Vector4Dfwd.h>
+#include <TString.h>
 
 using namespace o2;
 using namespace o2::framework;

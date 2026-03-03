@@ -65,6 +65,7 @@ using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::constants::physics;
 using namespace o2::hf_centrality;
 using namespace o2::hf_evsel;
 using namespace o2::analysis::hf_flow_utils;
@@ -144,11 +145,6 @@ DECLARE_SOA_TABLE(HfLcPolBkg, "AOD", "HFLCPOLBKG",
 struct HfTaskCharmPolarisation {
   Produces<o2::aod::HfLcPolBkg> rowCandLcBkg;
 
-  float massPi{0.f};
-  float massProton{0.f};
-  float massKaon{0.f};
-  float massDstar{0.f};
-  float massLc{0.f};
   float bkgRotationAngleStep{0.f};
 
   uint8_t nMassHypos{0u};
@@ -222,7 +218,7 @@ struct HfTaskCharmPolarisation {
   SliceCache cache;
   EventPlaneHelper epHelper; // event plane helper
   HfEventSelection hfEvSel;  // event selection and monitoring
-  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   using CollisionsWithMcLabels = soa::SmallGroups<soa::Join<aod::Collisions, aod::McCollisionLabels>>;
   using CollisionsWithMcLabelsAndCent = soa::SmallGroups<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFT0Ms, aod::CentFT0Cs>>;
@@ -328,11 +324,6 @@ struct HfTaskCharmPolarisation {
       LOGP(fatal, "No background rotation supported for MC.");
     }
 
-    massPi = o2::constants::physics::MassPiPlus;
-    massProton = o2::constants::physics::MassProton;
-    massKaon = o2::constants::physics::MassKaonCharged;
-    massDstar = o2::constants::physics::MassDStar;
-    massLc = o2::constants::physics::MassLambdaCPlus;
     bkgRotationAngleStep = (nBkgRotations > 1) ? (maxRotAngleMultByPi - minRotAngleMultByPi) * constants::math::PI / (nBkgRotations - 1) : 0.;
 
     const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
@@ -1438,8 +1429,8 @@ struct HfTaskCharmPolarisation {
   template <charm_polarisation::DecayChannel Channel>
   bool isInSignalRegion(float invMass)
   {
-    float invMassMin;
-    float invMassMax;
+    float invMassMin{0.f};
+    float invMassMax{0.f};
     if constexpr (Channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
       invMassMin = 0.142f;
       invMassMax = 0.15f;
@@ -1600,7 +1591,7 @@ struct HfTaskCharmPolarisation {
         // Dstar analysis
         // polarization measured from the soft-pion daughter (*)
 
-        massDau = massPi; // (*)
+        massDau = MassPiPlus; // (*)
         const float bkgRotAngle = (bkgRotationId > 0) ? minRotAngleMultByPi * constants::math::PI + bkgRotationAngleStep * (bkgRotationId - 1) : 0;
 
         std::array<float, 3> threeVecSoftPi{candidate.pxSoftPi() * std::cos(bkgRotAngle) - candidate.pySoftPi() * std::sin(bkgRotAngle), candidate.pxSoftPi() * std::sin(bkgRotAngle) + candidate.pySoftPi() * std::cos(bkgRotAngle), candidate.pzSoftPi()}; // we rotate the soft pion
@@ -1615,13 +1606,13 @@ struct HfTaskCharmPolarisation {
           pyCharmHad = threeVecSoftPi[1] + threeVecD0Prong0[1] + threeVecD0Prong1[1];
           pzCharmHad = threeVecSoftPi[2] + threeVecD0Prong0[2] + threeVecD0Prong1[2];
           if (candidate.signSoftPi() > 0) {
-            invMassCharmHad = RecoDecay::m(std::array{threeVecD0Prong0, threeVecD0Prong1, threeVecSoftPi}, std::array{massPi, massKaon, massPi});
-            invMassD0 = RecoDecay::m(std::array{threeVecD0Prong0, threeVecD0Prong1}, std::array{massPi, massKaon});
+            invMassCharmHad = RecoDecay::m(std::array{threeVecD0Prong0, threeVecD0Prong1, threeVecSoftPi}, std::array{MassPiPlus, MassKaonCharged, MassPiPlus});
+            invMassD0 = RecoDecay::m(std::array{threeVecD0Prong0, threeVecD0Prong1}, std::array{MassPiPlus, MassKaonCharged});
           } else {
-            invMassCharmHad = RecoDecay::m(std::array{threeVecD0Prong0, threeVecD0Prong1, threeVecSoftPi}, std::array{massKaon, massPi, massPi});
-            invMassD0 = RecoDecay::m(std::array{threeVecD0Prong0, threeVecD0Prong1}, std::array{massKaon, massPi});
+            invMassCharmHad = RecoDecay::m(std::array{threeVecD0Prong0, threeVecD0Prong1, threeVecSoftPi}, std::array{MassKaonCharged, MassPiPlus, MassPiPlus});
+            invMassD0 = RecoDecay::m(std::array{threeVecD0Prong0, threeVecD0Prong1}, std::array{MassKaonCharged, MassPiPlus});
           }
-          rapidity = RecoDecay::y(std::array{pxCharmHad, pyCharmHad, pzCharmHad}, massDstar);
+          rapidity = RecoDecay::y(std::array{pxCharmHad, pyCharmHad, pzCharmHad}, MassDStar);
         } else {
           isRotatedCandidate = 0;
           pxDau = candidate.pxSoftPi();
@@ -1637,7 +1628,7 @@ struct HfTaskCharmPolarisation {
             invMassCharmHad = candidate.invMassAntiDstar();
             invMassD0 = candidate.invMassD0Bar();
           }
-          rapidity = candidate.y(massDstar);
+          rapidity = candidate.y(MassDStar);
         }
         invMassCharmHadForSparse = invMassCharmHad - invMassD0;
 
@@ -1677,8 +1668,8 @@ struct HfTaskCharmPolarisation {
           pyCharmHad = candidate.py();
           pzCharmHad = candidate.pz();
         }
-        massDau = massProton; // (*)
-        rapidity = RecoDecay::y(candidate.pVector(), massLc);
+        massDau = MassProton; // (*)
+        rapidity = RecoDecay::y(candidate.pVector(), MassLambdaCPlus);
 
         /// mass-hypothesis-dependent variables
         float invMassPiKPi = 0.f; // bkg. from D+ -> K+pi-pi-
@@ -1691,7 +1682,7 @@ struct HfTaskCharmPolarisation {
           pzDau = candidate.pzProng0();
           if (bkgRotationId) {
             /// rotational background - pt of the kaon track rotated
-            invMassCharmHad = RecoDecay::m(std::array{threeVecLcProng0, threeVecLcRotatedProng1, threeVecLcProng2}, std::array{massProton, massKaon, massPi});
+            invMassCharmHad = RecoDecay::m(std::array{threeVecLcProng0, threeVecLcRotatedProng1, threeVecLcProng2}, std::array{MassProton, MassKaonCharged, MassPiPlus});
             invMassCharmHadForSparse = invMassCharmHad;
           } else {
             /// original candidate (kaon track not rotated)
@@ -1725,7 +1716,7 @@ struct HfTaskCharmPolarisation {
           pzDau = candidate.pzProng2();
           if (bkgRotationId) {
             /// rotational background - pt of the kaon track rotated
-            invMassCharmHad = RecoDecay::m(std::array{threeVecLcProng0, threeVecLcRotatedProng1, threeVecLcProng2}, std::array{massPi, massKaon, massProton});
+            invMassCharmHad = RecoDecay::m(std::array{threeVecLcProng0, threeVecLcRotatedProng1, threeVecLcProng2}, std::array{MassPiPlus, MassKaonCharged, MassProton});
             invMassCharmHadForSparse = invMassCharmHad;
           } else {
             /// original candidate (kaon track not rotated)
@@ -2107,8 +2098,8 @@ struct HfTaskCharmPolarisation {
 
       std::array<int, 2> const dauPdgs = {kPiPlus, o2::constants::physics::Pdg::kD0};
       RecoDecay::getDaughters(mcParticle, &listDaughters, dauPdgs, 1);
-      massDau = massPi;
-      massCharmHad = massDstar;
+      massDau = MassPiPlus;
+      massCharmHad = MassDStar;
     } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPKPi) {
       if (std::abs(mcParticle.flagMcMatchGen()) != hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) { // this particle is not signal, skip
         return;
@@ -2117,8 +2108,8 @@ struct HfTaskCharmPolarisation {
       resoChannelLc = mcParticle.flagMcDecayChanGen();
       std::array<int, 3> const dauPdgs = {kProton, -kKPlus, kPiPlus};
       RecoDecay::getDaughters(mcParticle, &listDaughters, dauPdgs, 2);
-      massDau = massProton;
-      massCharmHad = massLc;
+      massDau = MassProton;
+      massCharmHad = MassLambdaCPlus;
 
       /// electric charge from PDG code
       int const pdgCode = mcParticle.pdgCode();
