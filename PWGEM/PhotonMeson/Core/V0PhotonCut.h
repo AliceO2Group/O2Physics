@@ -367,10 +367,10 @@ class V0PhotonCut : public TNamed
     const bool doQA = mDoQA && fRegistry != nullptr;
 
     uint nTotV0PerColl = 0;
-    currentCollID = v0s.iteratorAt(0).emphotoneventId();
+    currentCollID = v0s.iteratorAt(0).pmeventId();
 
     for (const auto& v0 : v0s) {
-      const auto collID = v0.emphotoneventId();
+      const auto collID = v0.pmeventId();
       if (!IsSelected<decltype(v0), TLeg>(v0, fRegistry)) {
         flags.set(iV0);
       }
@@ -604,7 +604,7 @@ class V0PhotonCut : public TNamed
     }
     if (doQA) {
       fillAfterPhotonHistogram(v0, pos, ele, fRegistry);
-      if (v0.emphotoneventId() != currentCollID) {
+      if (v0.pmeventId() != currentCollID) {
         fRegistry->fill(HIST("QA/V0Photon/after/hNgamma"), nAccV0PerColl);
         nAccV0PerColl = 0;
       }
