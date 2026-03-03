@@ -1176,6 +1176,7 @@ struct CorrSparse {
       }
 
       if (system == SameEvent) {
+
         registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, reassociatedMftTrack.pt(), triggerWeight);
       }
 
