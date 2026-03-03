@@ -11,7 +11,7 @@
 //
 // ========================
 //
-// This code runs loop over ULS ee pars for virtual photon QC.
+// This code produces muon table 001 from 000.
 //    Please write to: daiki.sekihata@cern.ch
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
@@ -26,24 +26,18 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-struct trackConverter1 {
-  Produces<aod::EMPrimaryTracks_001> track_001;
+struct muonSelfIdConverter1 {
+  Produces<aod::EMGlobalMuonSelfIds_001> muon_001;
 
-  void process(aod::EMPrimaryTracks_000 const& tracks)
+  void process(aod::EMGlobalMuonSelfIds_000 const& muons)
   {
-    for (const auto& track : tracks) {
-      track_001(
-        // track.collisionId(),
-        // track.trackId(),
-        track.sign() / track.pt(),
-        track.eta(),
-        track.phi(),
-        track.trackBit());
-    } // end of track loop
+    for (const auto& muon : muons) {
+      muon_001(std::vector<int>{}, muon.globalMuonsWithSameMFTIds());
+    } // end of muon loop
   }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<trackConverter1>(cfgc, TaskName{"track-converter1"})};
+  return WorkflowSpec{adaptAnalysisTask<muonSelfIdConverter1>(cfgc, TaskName{"muon-selfif-converter1"})};
 }

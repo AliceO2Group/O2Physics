@@ -337,23 +337,16 @@ struct LumiStabilityPP {
         isSuperLeadingBcFT0 = false; // not a super-leading BC for FT0
       }
 
-      if (ctpInputMask.test(12) || ctpInputMask.test(14) || ctpInputMask.test(15) || ctpInputMask.test(16) || ctpInputMask.test(17)) { // 5 FDD triggers
-        globalBCIdOfLastBCWithActivityFDD = globalBCFDD;
-      }
-      if (ctpInputMask.test(0) || ctpInputMask.test(1) || ctpInputMask.test(2) || ctpInputMask.test(3) || ctpInputMask.test(4)) { // 5 FT0 triggers
-        globalBCIdOfLastBCWithActivityFT0 = globalBC;
-      }
-
-      if (!bcPatternB[localBC]) {
-        isSuperLeadingBcFT0 = false; // not a super-leading BC
-      }
       if (!bcPatternB[localBCFDD]) {
-        isSuperLeadingBcFDD = false; // not a super-leading BC
+        isSuperLeadingBcFDD = false; // not a super-leading BC for FDD
+      }
+      if (!bcPatternB[localBC]) {
+        isSuperLeadingBcFT0 = false; // not a super-leading BC for FT0
       }
 
       int64_t globalBCStart = (globalBCLastInspectedBC >= 0 && globalBCLastInspectedBC < globalBC) ? globalBCLastInspectedBC + 1 : globalBC;
-      int64_t maxBcDiff = (rate > 0) ? 10 * static_cast<int>(nBunchesFillingScheme * constants::lhc::LHCRevFreq / rate / 1.e3) : 1500;
-      if (globalBC - globalBCStart > maxBcDiff) { // we changed fill, we should not count all BCs between the current and the previous one
+      int64_t maxBcDiff = (rate > 0) ? 15 * static_cast<int>(nBunchesFillingScheme * constants::lhc::LHCRevFreq / rate / 1.e3) : 1500;
+      if (globalBC - globalBCStart > maxBcDiff) { // we have a big jump in global BCs, we should not count all BCs between the current and the previous one
         globalBCStart = globalBC;
       }
       for (int64_t iGlobalBC{globalBCStart}; iGlobalBC <= globalBC; ++iGlobalBC) { // we count all BCs in between one and another stored in the AO2Ds
@@ -363,12 +356,12 @@ struct LumiStabilityPP {
         }
         if (bcPatternB[iLocalBC]) {
           nBCsPerBcId[iLocalBC][BCB]++;
-          if (iGlobalBC - globalBCIdOfLastBCWithActivityFDD > numEmptyBCsBeforeLeadingBC->get(0u, 2u)) {
+          if (iGlobalBC - globalBCIdOfLastBCWithActivityFDD >= numEmptyBCsBeforeLeadingBC->get(0u, 2u)) {
             nBCsPerBcId[iLocalBC][BCSLFDD]++;
           } else {
             nBCsPerBcId[iLocalBC][BCNSLFDD]++;
           }
-          if (iGlobalBC - globalBCIdOfLastBCWithActivityFT0 > numEmptyBCsBeforeLeadingBC->get(0u, 2u)) {
+          if (iGlobalBC - globalBCIdOfLastBCWithActivityFT0 >= numEmptyBCsBeforeLeadingBC->get(0u, 2u)) {
             nBCsPerBcId[iLocalBC][BCSLFT0]++;
           } else {
             nBCsPerBcId[iLocalBC][BCNSLFT0]++;
@@ -392,6 +385,13 @@ struct LumiStabilityPP {
         if (bcPatternLE[iLocalBC]) {
           nBCsPerBcId[iLocalBC][BCLE]++;
         }
+      }
+
+      if (ctpInputMask.test(12) || ctpInputMask.test(14) || ctpInputMask.test(15) || ctpInputMask.test(16) || ctpInputMask.test(17)) { // 5 FDD triggers
+        globalBCIdOfLastBCWithActivityFDD = globalBCFDD;
+      }
+      if (ctpInputMask.test(0) || ctpInputMask.test(1) || ctpInputMask.test(2) || ctpInputMask.test(3) || ctpInputMask.test(4)) { // 5 FT0 triggers
+        globalBCIdOfLastBCWithActivityFT0 = globalBC;
       }
 
       int64_t thisTFid = (globalBC - bcSOR) / nBCsPerTF;
