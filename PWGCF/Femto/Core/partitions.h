@@ -31,15 +31,17 @@
 // standard track partition
 #define MAKE_TRACK_PARTITION(selection)                                                                                                                                              \
   ifnode(selection.chargeSign.node() != 0, ifnode(selection.chargeSign.node() > 0, o2::aod::femtobase::stored::signedPt > 0.f, o2::aod::femtobase::stored::signedPt < 0.f), true) && \
-    (nabs(selection.chargeAbs.node() * o2::aod::femtobase::stored::signedPt) > selection.ptMin) &&                                                                                   \
-    (nabs(selection.chargeAbs.node() * o2::aod::femtobase::stored::signedPt) < selection.ptMax) &&                                                                                   \
+    (nabs(selection.chargeAbs * o2::aod::femtobase::stored::signedPt) > selection.ptMin) &&                                                                                          \
+    (nabs(selection.chargeAbs * o2::aod::femtobase::stored::signedPt) < selection.ptMax) &&                                                                                          \
     (o2::aod::femtobase::stored::eta > selection.etaMin) &&                                                                                                                          \
     (o2::aod::femtobase::stored::eta < selection.etaMax) &&                                                                                                                          \
     (o2::aod::femtobase::stored::phi > selection.phiMin) &&                                                                                                                          \
     (o2::aod::femtobase::stored::phi < selection.phiMax) &&                                                                                                                          \
-    ifnode(TRACK_MOMENTUM(selection.chargeAbs.node(), o2::aod::femtobase::stored::pt, o2::aod::femtobase::stored::eta) <= selection.pidThres,                                        \
-           ncheckbit(o2::aod::femtotracks::mask, selection.maskLowMomentum) && (o2::aod::femtotracks::mask & selection.rejectionMaskLowMomentum.node()) == 0u,                       \
-           ncheckbit(o2::aod::femtotracks::mask, selection.maskHighMomentum) && (o2::aod::femtotracks::mask & selection.rejectionMaskHighMomentum.node()) == 0u)
+    ifnode(TRACK_MOMENTUM(selection.chargeAbs, o2::aod::femtobase::stored::signedPt, o2::aod::femtobase::stored::eta) <= selection.pidThres,                                         \
+           ncheckbit(o2::aod::femtotracks::mask, selection.maskLowMomentum) &&                                                                                                       \
+             (o2::aod::femtotracks::mask & selection.rejectionMaskLowMomentum) == static_cast<o2::aod::femtodatatypes::TrackMaskType>(0),                                            \
+           ncheckbit(o2::aod::femtotracks::mask, selection.maskHighMomentum) &&                                                                                                      \
+             (o2::aod::femtotracks::mask & selection.rejectionMaskHighMomentum) == static_cast<o2::aod::femtodatatypes::TrackMaskType>(0))
 
 // partition for phis and rhos, i.e. resonance that are their own antiparticle
 #define MAKE_RESONANCE_0_PARTITON(selection)                                                     \
