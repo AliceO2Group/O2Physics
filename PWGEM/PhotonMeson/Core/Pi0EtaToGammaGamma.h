@@ -1094,7 +1094,7 @@ struct Pi0EtaToGammaGamma {
   }
   PROCESS_SWITCH(Pi0EtaToGammaGamma, processAnalysisJJMC, "process pair analysis", false);
 
-  void processDummy(o2::aod::EMEvents const&) {}
+  void processDummy(o2::aod::EMEvents_004 const&) {}
   PROCESS_SWITCH(Pi0EtaToGammaGamma, processDummy, "Dummy function", false);
 };
 #endif // PWGEM_PHOTONMESON_CORE_PI0ETATOGAMMAGAMMA_H_

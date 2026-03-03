@@ -1239,16 +1239,16 @@ struct Lambda1520analysisinpp {
       //  }
 
       if (!colCuts.isSelected(collision1, false)) // Default event selection
-        return;
+        continue;
 
       if (!colCuts.isSelected(collision2, false)) // Default event selection
-        return;
+        continue;
 
       if (!collision1.isInelGt0()) // <--
-        return;
+        continue;
 
       if (!collision2.isInelGt0()) // <--
-        return;
+        continue;
 
       if (cFilladditionalQAeventPlots) {
         // Fill histograms for the characteristics of the *mixed* events (collision1 and collision2)
