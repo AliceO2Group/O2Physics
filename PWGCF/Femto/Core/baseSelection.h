@@ -75,26 +75,7 @@ class BaseSelection
     // init selection container for selection at given index
     mSelectionContainers.at(observableIndex) = SelectionContainer<T, BitmaskType>(selectionName, selectionValues, limitType, skipMostPermissiveBit, isMinimalCut, isOptionalCut);
 
-    // check if any selections are configured
-    if (mSelectionContainers.at(observableIndex).isEmpty()) {
-      return;
-    }
-
-    // track the number of occupied bits and total selections
-    mNSelectionBits += mSelectionContainers.at(observableIndex).getShift();
-    mNSelection += mSelectionContainers.at(observableIndex).getNSelections();
-
-    if (mNSelectionBits > sizeof(BitmaskType) * CHAR_BIT) {
-      LOG(fatal) << "Too many selections. At most " << sizeof(BitmaskType) * CHAR_BIT << " number of bits are supported";
-    }
-    // check if any selection is minimal
-    if (mSelectionContainers.at(observableIndex).isMinimalCut()) {
-      mHasMinimalSelection = true;
-    }
-    // check if selection is optional
-    if (mSelectionContainers.at(observableIndex).isOptionalCut()) {
-      mHasOptionalSelection = true;
-    }
+    init(observableIndex);
   }
 
   /// \brief Add a function-based selection for a specific observable.
@@ -122,26 +103,32 @@ class BaseSelection
     }
     mSelectionContainers.at(observableIndex) = SelectionContainer<T, BitmaskType>(selectionName, lowerLimit, upperLimit, functions, limitType, skipMostPermissiveBit, isMinimalCut, isOptionalCut);
 
-    // check if any selections are configured
-    if (mSelectionContainers.at(observableIndex).isEmpty()) {
-      return;
-    }
+    init(observableIndex);
+  }
 
-    // track the number of occupied bits and total selections
-    mNSelectionBits += mSelectionContainers.at(observableIndex).getShift();
-    mNSelection += mSelectionContainers.at(observableIndex).getNSelections();
+  /// \brief Add a static-value based selection for a specific observable.
+  /// \param observableIndex Index of the observable.
+  /// \param selectionName Name of the selection.
+  /// \param selectionValues Vector of threshold values.
+  /// \param limitType Type of limit (from limits::LimitType).
+  /// \param skipMostPermissiveBit Whether to skip the loosest threshold when assembling the bitmask.
+  /// \param isMinimalCut Whether this cut is mandatory (must be passed for the candidate to be accepted).
+  /// \param isOptionalCut Whether this cut is optional (candidate is accepted if any optional cut passes).
+  void addSelection(int observableIndex,
+                    std::string const& selectionName,
+                    std::vector<std::string> const& selectionRanges,
+                    bool skipMostPermissiveBit,
+                    bool isMinimalCut,
+                    bool isOptionalCut)
+  {
+    // check index
+    if (static_cast<std::size_t>(observableIndex) >= NumObservables) {
+      LOG(fatal) << "Observable is not valid. Observable (index) has to be smaller than " << NumObservables;
+    }
+    // init selection container for selection at given index
+    mSelectionContainers.at(observableIndex) = SelectionContainer<T, BitmaskType>(selectionName, selectionRanges, skipMostPermissiveBit, isMinimalCut, isOptionalCut);
 
-    if (mNSelectionBits > sizeof(BitmaskType) * CHAR_BIT) {
-      LOG(fatal) << "Too many selections. At most " << sizeof(BitmaskType) * CHAR_BIT << " are supported";
-    }
-    // check if any cut is minimal
-    if (mSelectionContainers.at(observableIndex).isMinimalCut()) {
-      mHasMinimalSelection = true;
-    }
-    // check if any selection is optional
-    if (mSelectionContainers.at(observableIndex).isOptionalCut()) {
-      mHasOptionalSelection = true;
-    }
+    init(observableIndex);
   }
 
   /// \brief Add a boolean-based selection for a specific observable.
@@ -158,32 +145,17 @@ class BaseSelection
     switch (mode) {
       case -1: // cut is optional and we store a bit for it
         mSelectionContainers.at(observableIndex) = SelectionContainer<T, BitmaskType>(selectionName, std::vector<T>{1}, limits::LimitType::kEqual, false, false, true);
-        mHasOptionalSelection = true;
-        mNSelectionBits += 1;
-        mNSelection += 1;
         break;
       case 0: // cut is disabled; initialize with empty vector so evaluation bails out early
         mSelectionContainers.at(observableIndex) = SelectionContainer<T, BitmaskType>(selectionName, std::vector<T>{}, limits::LimitType::kEqual, false, false, false);
         break;
       case 1: // mandatory cut; only one threshold so the most permissive bit is skipped and no extra bit is stored
         mSelectionContainers.at(observableIndex) = SelectionContainer<T, BitmaskType>(selectionName, std::vector<T>{1}, limits::LimitType::kEqual, true, true, false);
-        mHasMinimalSelection = true;
-        mNSelection += 1;
         break;
       default:
         LOG(fatal) << "Invalid switch for boolean selection";
     }
-
-    if (mSelectionContainers.at(observableIndex).isMinimalCut()) {
-      mHasMinimalSelection = true;
-    }
-    if (mSelectionContainers.at(observableIndex).isOptionalCut()) {
-      mHasOptionalSelection = true;
-    }
-
-    if (mNSelectionBits > sizeof(BitmaskType) * CHAR_BIT) {
-      LOG(fatal) << "Too many selections. At most " << sizeof(BitmaskType) * CHAR_BIT << " are supported";
-    }
+    init(observableIndex);
   }
 
   /// \brief Update the limits of a function-based selection for a specific observable.
@@ -371,7 +343,7 @@ class BaseSelection
   {
     LOG(info) << "Printing Configuration of " << objectName;
     for (size_t idx = 0; idx < mSelectionContainers.size(); ++idx) {
-      const auto& container = mSelectionContainers[idx];
+      const auto& container = mSelectionContainers.at(idx);
       if (container.isEmpty()) {
         continue;
       }
@@ -385,15 +357,11 @@ class BaseSelection
       LOG(info) << "  Bitmask shift            : " << container.getShift();
       LOG(info) << "  Selections:";
 
-      const bool useFunctions = container.isUsingFunctions();
-      const auto& values = container.getSelectionValues();
-      const auto& functions = container.getSelectionFunction();
-      const auto& comments = container.getComments();
-
       for (std::size_t j = 0; j < container.getNSelections(); ++j) {
 
         std::stringstream line;
-        std::string sel = useFunctions ? std::string(functions[j].GetExpFormula().Data()) : std::to_string(values[j]);
+        std::string sel = container.getValueAsString(j);
+        std::string comment = container.getComment(j);
 
         line << "    " << std::left << std::setw(25) << sel;
 
@@ -404,8 +372,8 @@ class BaseSelection
           line << "-> Bit: 0x" << std::hex << std::uppercase << (1ULL << bit) << std::dec;
         }
 
-        if (!comments.empty()) {
-          line << " (" << comments.at(j) << ")";
+        if (!comment.empty()) {
+          line << " (" << comment << ")";
         }
         LOG(info) << line.str();
       }
@@ -446,6 +414,31 @@ class BaseSelection
   }
 
  protected:
+  void init(int observableIndex)
+  {
+    // check if any selections are configured
+    if (mSelectionContainers.at(observableIndex).isEmpty()) {
+      return;
+    }
+
+    // track the number of occupied bits and total selections
+    mNSelectionBits += mSelectionContainers.at(observableIndex).getShift();
+    mNSelection += mSelectionContainers.at(observableIndex).getNSelections();
+
+    // check if any selection is minimal
+    if (mSelectionContainers.at(observableIndex).isMinimalCut()) {
+      mHasMinimalSelection = true;
+    }
+    // check if selection is optional
+    if (mSelectionContainers.at(observableIndex).isOptionalCut()) {
+      mHasOptionalSelection = true;
+    }
+
+    if (mNSelectionBits > sizeof(BitmaskType) * CHAR_BIT) {
+      LOG(fatal) << "Too many selections. At most " << sizeof(BitmaskType) * CHAR_BIT << " number of bits are supported";
+    }
+  }
+
   o2::framework::HistogramRegistry* mHistRegistry = nullptr;
   std::array<SelectionContainer<T, BitmaskType>, NumObservables> mSelectionContainers = {}; ///< Array of selection containers, one per observable
   std::bitset<sizeof(BitmaskType) * CHAR_BIT> mFinalBitmask = {};                           ///< Assembled bitmask combining all observable selections
