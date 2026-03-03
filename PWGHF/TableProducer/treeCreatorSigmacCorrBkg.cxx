@@ -59,6 +59,7 @@ enum Reflections { NotReflected = 0,
                    Reflected };
 DECLARE_SOA_COLUMN(Y, y, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(PtLc, ptLc, float);
 DECLARE_SOA_COLUMN(Mass, mass, float);
 DECLARE_SOA_COLUMN(DeltaMass, deltaMass, float);
 DECLARE_SOA_COLUMN(Charge, charge, int8_t);
@@ -72,6 +73,7 @@ DECLARE_SOA_COLUMN(IsReflected, isReflected, int8_t);
 DECLARE_SOA_TABLE(HfCorrBkgSc, "AOD", "HFCORRBKGSC",
                   hf_sigmac_bkg::Y,
                   hf_sigmac_bkg::Pt,
+                  hf_sigmac_bkg::PtLc,
                   hf_sigmac_bkg::Mass,
                   hf_sigmac_bkg::DeltaMass,
                   hf_sigmac_bkg::Charge,
@@ -110,6 +112,8 @@ struct HfTreeCreatorSigmacCorrBkg {
     const int8_t isCandPKPiPiKP = hf_sigmac_utils::isDecayToPKPiToPiKP(candLcDauSc, candidateSc);
     std::array<float, 2> outputMlLcPKPi{-1., -1.};
     std::array<float, 2> outputMlLcPiKP{-1., -1.};
+    const float ptSc = candidateSc.pt();
+    const float ptLcDauSc = candLcDauSc.pt();
     /// rapidity selection on Σc0,++
     if (yCandRecoMax >= 0. && std::abs(rapidity) > yCandRecoMax) {
       return;
@@ -138,10 +142,10 @@ struct HfTreeCreatorSigmacCorrBkg {
 
       if (pdgCodeProng0Abs == kProton) {
         /// candidates with reconstructed Λc± → pK-π+ decay that are generated Λc± → pK-π+ (not reflected)
-        rowCorrBkgSc(rapidity, candidateSc.pt(), massSc, deltaMass, chargeSc, motherPdg, motherDecay, aod::hf_sigmac_bkg::DecaysLambdac::PKPi, outputMlLcPKPi.at(0), outputMlLcPKPi.at(1), aod::hf_sigmac_bkg::Reflections::NotReflected);
+        rowCorrBkgSc(rapidity, ptSc, ptLcDauSc, massSc, deltaMass, chargeSc, motherPdg, motherDecay, aod::hf_sigmac_bkg::DecaysLambdac::PKPi, outputMlLcPKPi.at(0), outputMlLcPKPi.at(1), aod::hf_sigmac_bkg::Reflections::NotReflected);
       } else if (keepReflectedSignals && pdgCodeProng0Abs == kPiPlus) {
         /// candidates with reconstructed Λc± → pK-π+ decay that are actually generated Λc± → π+K-p (reflected)
-        rowCorrBkgSc(rapidity, candidateSc.pt(), massSc, deltaMass, chargeSc, motherPdg, motherDecay, aod::hf_sigmac_bkg::DecaysLambdac::PKPi, outputMlLcPKPi.at(0), outputMlLcPKPi.at(1), aod::hf_sigmac_bkg::Reflections::Reflected);
+        rowCorrBkgSc(rapidity, ptSc, ptLcDauSc, massSc, deltaMass, chargeSc, motherPdg, motherDecay, aod::hf_sigmac_bkg::DecaysLambdac::PKPi, outputMlLcPKPi.at(0), outputMlLcPKPi.at(1), aod::hf_sigmac_bkg::Reflections::Reflected);
       }
     }
     /// candidates with Λc± reconstructed in the π+K-p decay
@@ -153,10 +157,10 @@ struct HfTreeCreatorSigmacCorrBkg {
 
       if (pdgCodeProng0Abs == kPiPlus) {
         /// candidates with reconstructed Λc± → π+K-p decay that are generated Λc± → π+K-p (not reflected)
-        rowCorrBkgSc(rapidity, candidateSc.pt(), massSc, deltaMass, chargeSc, motherPdg, motherDecay, aod::hf_sigmac_bkg::DecaysLambdac::PiKP, outputMlLcPiKP.at(0), outputMlLcPiKP.at(1), aod::hf_sigmac_bkg::Reflections::NotReflected);
+        rowCorrBkgSc(rapidity, ptSc, ptLcDauSc, massSc, deltaMass, chargeSc, motherPdg, motherDecay, aod::hf_sigmac_bkg::DecaysLambdac::PiKP, outputMlLcPiKP.at(0), outputMlLcPiKP.at(1), aod::hf_sigmac_bkg::Reflections::NotReflected);
       } else if (keepReflectedSignals && pdgCodeProng0Abs == kProton) {
         /// candidates with reconstructed Λc± → π+K-p decay that are actually generated Λc± → pK-π+ (reflected)
-        rowCorrBkgSc(rapidity, candidateSc.pt(), massSc, deltaMass, chargeSc, motherPdg, motherDecay, aod::hf_sigmac_bkg::DecaysLambdac::PiKP, outputMlLcPiKP.at(0), outputMlLcPiKP.at(1), aod::hf_sigmac_bkg::Reflections::Reflected);
+        rowCorrBkgSc(rapidity, ptSc, ptLcDauSc, massSc, deltaMass, chargeSc, motherPdg, motherDecay, aod::hf_sigmac_bkg::DecaysLambdac::PiKP, outputMlLcPiKP.at(0), outputMlLcPiKP.at(1), aod::hf_sigmac_bkg::Reflections::Reflected);
       }
     }
   }
