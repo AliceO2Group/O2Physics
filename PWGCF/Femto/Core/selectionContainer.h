@@ -27,8 +27,10 @@
 #include <climits>
 #include <cmath>
 #include <cstddef>
+#include <limits>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace o2::analysis::femto
