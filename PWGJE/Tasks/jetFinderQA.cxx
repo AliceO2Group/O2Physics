@@ -869,11 +869,6 @@ struct JetFinderQATask {
     registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirectionwithouttwoleadingjets"), collision.centFT0M(), randomConePtWithoutTwoLeadJet - M_PI * randomConeR * randomConeR * collision.rho());
   }
 
-  enum JCollisionSubGeneratorId {
-    none = -1,
-    mbGap = 0
-  };
-
   enum mbGapSelectionRequirement {
     mbGapOnly = -1,
     mbGapSkip = 0,
@@ -893,7 +888,6 @@ struct JetFinderQATask {
         registry.fill(HIST("h_collisions_weighted"), 0.5, eventWeight);
     }
 
-    bool skipMBGapEvents = false; // decided later with multCutCheck_analyseMBGapEvents
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, multCutCheck_applyRCTSelections)) {
       return false;
     }
@@ -924,9 +918,9 @@ struct JetFinderQATask {
         registry.fill(HIST("h_collisions_weighted"), 3.5, eventWeight);
     }
 
-    if (multCutCheck_analyseMBGapEvents == mbGapSelectionRequirement::mbGapOnly && collision.getSubGeneratorId() != JCollisionSubGeneratorId::mbGap) {
+    if (multCutCheck_analyseMBGapEvents == mbGapSelectionRequirement::mbGapOnly && collision.getSubGeneratorId() != jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return false;
-    } else if (multCutCheck_analyseMBGapEvents == mbGapSelectionRequirement::mbGapSkip && collision.getSubGeneratorId() == JCollisionSubGeneratorId::mbGap) {
+    } else if (multCutCheck_analyseMBGapEvents == mbGapSelectionRequirement::mbGapSkip && collision.getSubGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return false;
     }
 
