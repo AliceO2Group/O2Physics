@@ -26,44 +26,54 @@
 //    cicero.domenico.muncinelli@cern.ch
 //
 
-#include "PWGJE/Core/JetBkgSubUtils.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/Core/JetUtilities.h"
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/JetReducedData.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/LFStrangenessPIDTables.h" // For V0TOFPIDs and NSigmas getters. Better for considering the daughters as coming from V0s instead of from PV?
-#include "PWGLF/DataModel/mcCentrality.h"
-#include "Common/DataModel/Centrality.h"
-
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h" // for pp
-
-// For PID in raw data:
-// #include "Common/DataModel/PIDResponseTOF.h" // Maybe switch this around with LFStrangenessPIDTables?
-
-#include "Common/DataModel/McCollisionExtra.h"
-#include "Common/DataModel/PIDResponseTPC.h"
-// #include "Common/DataModel/Qvectors.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include <CCDB/BasicCCDBManager.h>
-#include <CCDB/CcdbApi.h>
-#include "DataFormatsParameters/GRPMagField.h"
+// O2 Framework
+#include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
+
+// O2 CCDB / Conditions
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include "DataFormatsParameters/GRPMagField.h"
+
+// O2 Reconstruction Data Formats
 #include <ReconstructionDataFormats/Track.h>
 
-// Custom data model:
-#include "PWGLF/DataModel/lambdaJetPolarizationIons.h"
+// O2 Common Core
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
 
-// Jets:
+// O2 Common DataModel
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/McCollisionExtra.h"
+#include "Common/DataModel/Multiplicity.h" // for pp
+#include "Common/DataModel/PIDResponseTPC.h"
+// For PID in raw data:
+// #include "Common/DataModel/PIDResponseTOF.h" // Maybe switch this around with LFStrangenessPIDTables?
+// #include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+// PWGJE
+#include "PWGJE/Core/JetBkgSubUtils.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+
+// PWGLF
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+// For V0TOFPIDs and NSigmas getters. Better for considering the daughters as coming from V0s instead of from PV?
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/lambdaJetPolarizationIons.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+
+// External Libraries (FastJet)
 #include <fastjet/AreaDefinition.hh>
 #include <fastjet/ClusterSequence.hh>
 #include <fastjet/ClusterSequenceArea.hh>
@@ -73,37 +83,16 @@
 #include <fastjet/tools/JetMedianBackgroundEstimator.hh>
 #include <fastjet/tools/Subtractor.hh>
 
+// ROOT Math
+#include "Math/GenVector/Boost.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
 
-////// Others not included from strangederivedbuilder.cxx:
-// #include "CommonConstants/PhysicsConstants.h"
-// #include "DCAFitter/DCAFitterN.h"
-// #include "DataFormatsParameters/GRPMagField.h"
-// #include "DataFormatsParameters/GRPObject.h"
-// #include "DetectorsBase/GeometryManager.h"
-// #include "DetectorsBase/Propagator.h"
-// #include "Framework/O2DatabasePDGPlugin.h"
-// #include "Framework/RunningWorkflowInfo.h"
-// #include "Framework/StaticFor.h"
-
+// Standard Library
 #include <cmath>
 #include <map>
 #include <string>
 #include <vector>
-
-//////////////////////////////////////////////
-// From Youpeng's:
-#include "Common/DataModel/CollisionAssociationTables.h"
-#include "Framework/ASoA.h"
-
-#include "Math/GenVector/Boost.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-// #include "TProfile2D.h"
-// #include <TFile.h>
-// // #include <TLorentzVector.h>
-// #include <TMatrixD.h>
-// #include <TTree.h>
-//////////////////////////////////////////////
 
 using namespace o2;
 using namespace o2::framework;
@@ -111,25 +100,29 @@ using namespace o2::framework::expressions;
 using std::array;
 using namespace o2::aod::rctsel;
 
-// Aliases for joined tables:
+///// Aliases for joined tables
+/// Collisions:
 using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0CVariant1s, aod::CentMFTs, aod::CentNGlobals,
                                 aod::CentFV0As, aod::PVMults, aod::FT0Mults, aod::FV0Mults, aod::MultsGlobal>; // Added PVMults to get MultNTracksPVeta1 as centrality estimator
 using SelCollisionsSimple = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>; // Simpler, for jets
-// using DauTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA,
-//                                  aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
-    // Actually used subscriptions (smaller memory usage):
-using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullPr>;
+
+/// V0s and Daughter tracks:
 // using V0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
 // using V0CandidatesSimple = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>; // No TOF
+/// To run in RAW data:
+// using V0Candidates = aod::V0Datas;
+using V0CandidatesWithTOF = soa::Join<aod::V0Datas, aod::V0TOFPIDs, aod::V0TOFNSigmas>; // Tables created by o2-analysis-lf-strangenesstofpid
+// using DauTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
+    // Actually used subscriptions (smaller memory usage):
+using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullPr>;
 
+/// Jets:
 using PseudoJetTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksDCA>; // Simpler tracks access. (Not using TracksIU and TracksCovIU. Did not use their info for now)
                                 // , aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>; // Not using TOF right now due to some possible mismatches
+
+/// MC:
 // using SimCollisions = soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels>;
 // using DauTracksMC = soa::Join<DaughterTracks, aod::McTrackLabels>;
-
-// To run in RAW data:
-using V0Candidates = aod::V0Datas;
-using V0CandidatesWithTOF = soa::Join<aod::V0Datas, aod::V0TOFPIDs, aod::V0TOFNSigmas>; // Tables created by o2-analysis-lf-strangenesstofpid
 
 
 
@@ -180,9 +173,6 @@ struct lambdajetpolarizationions {
 
     // Define histogram registries:
     HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-    // HistogramRegistry registryData{"registryData", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-    // HistogramRegistry registryMC{"registryMC", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-    // HistogramRegistry registryQC{"registryQC", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
     // master analysis switches
     Configurable<bool> analyseLambda{"analyseLambda", true, "process Lambda-like candidates"};
@@ -275,7 +265,7 @@ struct lambdajetpolarizationions {
         Configurable<float> lambdaLifetimeCut{"lambdaLifetimeCut", 30., "lifetime cut (c*tau) for Lambda (cm)"};
 
         // invariant mass selection
-        Configurable<float> compMassRejection{"compMassRejection", -1, "Competing mass rejection (GeV/#it{c}^{2})"}; // This was creating some bumps in Youpeng's inv mass spectra. Turned off for now.
+        Configurable<float> compMassRejection{"compMassRejection", -1, "Competing mass rejection (GeV/#it{c}^{2})"}; // This was creating bumps in the pp analysis code's invariant mass. Turned off for now.
 
         // Track quality
         Configurable<int> minTPCrows{"minTPCrows", 70, "minimum TPC crossed rows"};
@@ -402,13 +392,6 @@ struct lambdajetpolarizationions {
         // Jet QA axes:
         ConfigurableAxis JetsPerEvent{"JetsPerEvent", {20, 0, 20}, "Jets per event"};
 
-        // ConfigurableAxis axisLeadingParticlePt{"axisLeadingParticlePt",{VARIABLE_WIDTH,
-        // 0.0f, 0.5f, 1.0f, 1.5f, 2.0f, // very low pT (coarse on purpose)
-        // 3.0f, 4.0f, 5.0f, 6.0f, 8.0f, 10.0f, // trigger / intermediate region
-        // 12.0f, 15.0f, 20.0f, 25.0f, 30.0f, // high pT leading particles
-        // 40.0f, 50.0f, 60.0f, 80.0f, 100.0f,
-        // 120.0f, 150.0f, 200.0f}, // ultra-high pT safety net
-        // "Leading particle p_{T} (GeV/c)"};
         ConfigurableAxis axisLeadingParticlePt{"axisLeadingParticlePt",{200, 0.f, 200.f},"Leading particle p_{T} (GeV/c)"}; // Simpler version!
         ConfigurableAxis axisJetPt{"axisJetPt",{200, 0.f, 200.f},"Jet p_{t} (GeV)"};
         ConfigurableAxis axisCosTheta{"axisCosTheta", {50, -1.f, 1.f}, "cos(#Delta #theta_{jet})"};
@@ -455,6 +438,8 @@ struct lambdajetpolarizationions {
         // Configurable<int> hadronicCorrectionType{"hadronicCorrectionType", 0, "0 = no correction, 1 = CorrectedOneTrack1, 2 = CorrectedOneTrack2, 3 = CorrectedAllTracks1, 4 = CorrectedAllTracks2"};
         // Configurable<bool> doEMCALEventSelection{"doEMCALEventSelection", true, "apply the selection to the event alias_bit for full and neutral jets"};
         // Configurable<bool> doEMCALEventSelectionChargedJets{"doEMCALEventSelectionChargedJets", false, "apply the selection to the event alias_bit for charged jets"};
+
+        Configurable<float> minLeadParticlePt{"minLeadParticlePt", 2.0f, "Minimum Pt for a lead track to be considered a valid proxy for a jet"}; // For OO, about 2 or 3 should be enough (z~0.3 of jet), and for PbPb maybe 8 GeV
     } jetConfigurations;
 
     // Creating a short map to make sure the proper FastJet enums are used (safeguard against possible updates in FastJet indices):
@@ -656,20 +641,43 @@ struct lambdajetpolarizationions {
         addHypothesis(Lambda, analyseLambda);
         addHypothesis(AntiLambda, analyseAntiLambda);
 
-        auto hSelectionV0s = histos.add<TH1>("GeneralQA/hSelectionV0s","V0 #rightarrow #Lambda / #bar{#Lambda} selection flow",kTH1D,
+        auto hSelectionV0s = histos.add<TH1>("GeneralQA/hSelectionV0s","V0 #rightarrow #Lambda / #bar{#Lambda} selection flow", kTH1D,
                                             {{(int)v0LambdaSelectionLabels.size(),-0.5,(double)v0LambdaSelectionLabels.size()-0.5}});
         for(size_t i=0; i<v0LambdaSelectionLabels.size(); ++i){
             auto lbl=v0LambdaSelectionLabels[i].label;
             if(!v0LambdaSelectionLabels[i].enabled) lbl="#color[16]{(off) "+lbl+"}";
             hSelectionV0s->GetXaxis()->SetBinLabel(i+1,lbl.c_str()); // First non-underflow bin is bin 1
         }
+        ////////////////////////////////////////////////
+        // Jet track candidate selection flow (analogous to hSelectionV0s):
+        // Each label's "enabled" flag reflects whether the corresponding configurable
+        // makes that cut active, so disabled stages are shown in grey in the output.
+        std::vector<CutLabel> jetTrackSelectionLabels = {
+            {"All track candidates",                   true},
+            {"ITS clusters (min)",                     pseudoJetCandidateTrackSelections.minITSnCls >= 0},
+            {"TPC crossed rows (min)",                 pseudoJetCandidateTrackSelections.minNCrossedRowsTPC > 0},
+            {"TPC #chi^{2}/N_{cls} (max)",             pseudoJetCandidateTrackSelections.maxChi2TPC < 1.e8f},
+            {"ITS #chi^{2}/N_{cls} (max)",             pseudoJetCandidateTrackSelections.maxChi2ITS < 1.e8f},
+            {"p_{T} min",                              pseudoJetCandidateTrackSelections.minCandidatePt > 0.f},
+            {"|#eta| cut",                             pseudoJetCandidateTrackSelections.etaCut < 1.5f},
+            {"DCA_{z} to PV",                          pseudoJetCandidateTrackSelections.doDCAcuts.value},
+            {"DCA_{xy} to PV (parametric)",            pseudoJetCandidateTrackSelections.doDCAcuts.value},
+        };
+        auto hSelectionJetTracks = histos.add<TH1>("GeneralQA/hSelectionJetTracks", "Charged pseudojet candidate selection flow", kTH1D,
+                                                   {{(int)jetTrackSelectionLabels.size(), -0.5, (double)jetTrackSelectionLabels.size() - 0.5}});
+        for (size_t i = 0; i < jetTrackSelectionLabels.size(); ++i) {
+            auto lbl = jetTrackSelectionLabels[i].label;
+            if (!jetTrackSelectionLabels[i].enabled) lbl = "#color[16]{(off) " + lbl + "}";
+            hSelectionJetTracks->GetXaxis()->SetBinLabel(i + 1, lbl.c_str());
+        }
+        ////////////////////////////////////////////////
 
         // Histograms versus mass:
         if (analyseLambda) {
-            histos.add("h2dNbrOfLambdaVsCentrality", "h2dNbrOfLambdaVsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
-            histos.add("h3dMassLambda", "h3dMassLambda", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+            histos.add("Lambda/h2dNbrOfLambdaVsCentrality", "h2dNbrOfLambdaVsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
+            histos.add("Lambda/h3dMassLambda", "h3dMassLambda", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
             // Non-UPC info
-            histos.add("h3dMassLambdaHadronic", "h3dMassLambdaHadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+            histos.add("Lambda/h3dMassLambdaHadronic", "h3dMassLambdaHadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
             if (doTPCQA) {
                 histos.add("Lambda/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
                 histos.add("Lambda/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
@@ -706,10 +714,10 @@ struct lambdajetpolarizationions {
             }
         }
         if (analyseAntiLambda) {
-            histos.add("h2dNbrOfAntiLambdaVsCentrality", "h2dNbrOfAntiLambdaVsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
-            histos.add("h3dMassAntiLambda", "h3dMassAntiLambda", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+            histos.add("AntiLambda/h2dNbrOfAntiLambdaVsCentrality", "h2dNbrOfAntiLambdaVsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
+            histos.add("AntiLambda/h3dMassAntiLambda", "h3dMassAntiLambda", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
             // Non-UPC info
-            histos.add("h3dMassAntiLambdaHadronic", "h3dMassAntiLambdaHadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+            histos.add("AntiLambda/h3dMassAntiLambdaHadronic", "h3dMassAntiLambdaHadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
             if (doTPCQA) {
                 histos.add("AntiLambda/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
                 histos.add("AntiLambda/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
@@ -745,9 +753,18 @@ struct lambdajetpolarizationions {
             }
         }
 
-        if (analyseLambda) histos.add("hMassLambda", "hMassLambda", kTH1D, {axisConfigurations.axisLambdaMass});
-        if (analyseAntiLambda) histos.add("hMassAntiLambda", "hMassAntiLambda", kTH1D, {axisConfigurations.axisLambdaMass});
-        if (analyseLambda && analyseAntiLambda) histos.add("hAmbiguousLambdaCandidates", "hAmbiguousLambdaCandidates", kTH1D, {{1, 0, 1}});
+        if (analyseLambda) {
+            histos.add("hMassLambda", "hMassLambda", kTH1D, {axisConfigurations.axisLambdaMass});
+            histos.add("Lambda/hLambdasPerEvent", "hLambdasPerEvent", kTH1D, {{15,0,15}});
+        }
+        if (analyseAntiLambda) {
+            histos.add("hMassAntiLambda", "hMassAntiLambda", kTH1D, {axisConfigurations.axisLambdaMass});
+            histos.add("AntiLambda/hAntiLambdasPerEvent", "hAntiLambdasPerEvent", kTH1D, {{15,0,15}});
+        };
+        if (analyseLambda && analyseAntiLambda) {
+            histos.add("hAmbiguousLambdaCandidates", "hAmbiguousLambdaCandidates", kTH1D, {{1, 0, 1}});
+            histos.add("hAmbiguousPerEvent", "hAmbiguousPerEvent", kTH1D, {{15,0,15}});
+        }
 
         // QA histograms if requested
         if (doV0KinematicQA) {
@@ -829,7 +846,7 @@ struct lambdajetpolarizationions {
             }
         }
 
-        // Check if doing the right thing in AP space please
+        // Check ambiguous candidates in AP space:
         histos.add("GeneralQA/h2dArmenterosAll", "h2dArmenterosAll", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
         histos.add("GeneralQA/h2dArmenterosKinematicSelected", "h2dArmenterosKinematicSelected", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
         histos.add("GeneralQA/h2dArmenterosFullSelected", "h2dArmenterosFullSelected", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
@@ -955,6 +972,16 @@ struct lambdajetpolarizationions {
         void fill(){histos->fill(HIST("GeneralQA/hSelectionV0s"), ++binValue);} // Hardcoded hSelectionV0s histogram, as it will not change. Increments before filling, by default
     };
     V0SelectionFlowCounter V0SelCounter{0, &histos};
+
+    // Minimal helper to fill hSelectionJetTracks, mirroring V0SelectionFlowCounter.
+    // Reset once per track candidate, fill once per passed cut stage.
+    struct JetTrackSelectionFlowCounter {
+        int binValue = -1; // Same convention as V0: starts at -1, first fill goes to bin x=0
+        HistogramRegistry* histos = nullptr;
+        void resetForNewTrack() { binValue = -1; }
+        void fill() { histos->fill(HIST("GeneralQA/hSelectionJetTracks"), ++binValue); }
+    };
+    JetTrackSelectionFlowCounter JetTrackSelCounter{0, &histos};
 
     // Short inlined helper to simplify QA
     inline void fillEventSelectionQA(int bin, float centrality){
@@ -1117,23 +1144,32 @@ struct lambdajetpolarizationions {
         if (pseudoJetCandidateTrackSelections.minITSnCls >= 0){
             if (track.itsNCls() < pseudoJetCandidateTrackSelections.minITSnCls) return false;
         }
+        JetTrackSelCounter.fill(); // bin: ITS clusters (min)
+
         if (track.tpcNClsCrossedRows() < pseudoJetCandidateTrackSelections.minNCrossedRowsTPC) return false;
+        JetTrackSelCounter.fill();
 
         if (track.tpcChi2NCl() > pseudoJetCandidateTrackSelections.maxChi2TPC) return false;
+        JetTrackSelCounter.fill();
         if (track.itsChi2NCl() > pseudoJetCandidateTrackSelections.maxChi2ITS) return false;
+        JetTrackSelCounter.fill();
 
         // Kinematics:
         const float pt = track.pt();
         if (pt < pseudoJetCandidateTrackSelections.minCandidatePt) return false;
+        JetTrackSelCounter.fill();
         if (std::fabs(track.eta()) > pseudoJetCandidateTrackSelections.etaCut) return false;
+        JetTrackSelCounter.fill();
 
         // DCA pseudojet candidate selections -- These select primary vertex particles for the jet:
         if (pseudoJetCandidateTrackSelections.doDCAcuts){
             // if (std::fabs(track.dcaXY()) > pseudoJetCandidateTrackSelections.maxDCAxy) return false;
             if (std::fabs(track.dcaZ()) > pseudoJetCandidateTrackSelections.maxDCAz) return false;
+            JetTrackSelCounter.fill();
                 // Slightly more physics-motivated cut (parametrizes the DCA resolution as function of pt)
             if (std::fabs(track.dcaXY()) > (pseudoJetCandidateTrackSelections.dcaxyMaxTrackPar0 + 
                 pseudoJetCandidateTrackSelections.dcaxyMaxTrackPar1 / std::pow(pt, pseudoJetCandidateTrackSelections.dcaxyMaxTrackPar2))) return false;
+            JetTrackSelCounter.fill();
         }
         return true;
     }
@@ -1337,6 +1373,9 @@ struct lambdajetpolarizationions {
         int leadingParticleIdx = -1; // Initialized as -1, but could leave it unitialized as well. We reject any invalid events where this could pose a problem (e.g., pT<=0)
         float leadingParticlePt = 0;
         for (auto const& track : tracks){
+            JetTrackSelCounter.resetForNewTrack(); // reset bin counter for this candidate
+            JetTrackSelCounter.fill(); // bin: "All track candidates"
+
             // Require that tracks pass selection criteria
             if (!isCandidateForChargedPseudojetAccepted(track)) continue;
 
@@ -1357,10 +1396,9 @@ struct lambdajetpolarizationions {
         if (fjParticles.size() < 1) return;
 
         auto const& leadingParticle = fjParticles[leadingParticleIdx];
-        tableLeadParticles(collIdx,
-                        leadingParticle.pt(),
-                        leadingParticle.eta(),
-                        leadingParticle.phi());
+        if (leadingParticle.pt() > jetConfigurations.minLeadParticlePt){ // If not, leading particle is probably a bad proxy
+            tableLeadParticles(collIdx, leadingParticle.pt(), leadingParticle.eta(), leadingParticle.phi());
+        }
 
         // Start jet clusterization:
             // Cluster particles using the anti-kt algorithm
@@ -1429,7 +1467,7 @@ struct lambdajetpolarizationions {
                     if (jetMinusBkg.pt() < jetConfigurations.minJetPt) continue;
 
                     float cosTheta = cosThetaJets(leadingJetSub, jetMinusBkg);
-                    float deltaPhi = leadingJetSub.phi() - jetMinusBkg.phi();
+                    float deltaPhi = RecoDecay::constrainAngle(leadingJetSub.phi() - jetMinusBkg.phi(), -o2::constants::math::PI);
                     float deltaEta = leadingJetSub.eta() - jetMinusBkg.eta();
                     float deltaR = std::sqrt(deltaPhi*deltaPhi + deltaEta*deltaEta);
 
@@ -1440,15 +1478,15 @@ struct lambdajetpolarizationions {
 
                     // 2D correlations:
                     histos.fill(HIST("JetKinematicsQA/h2dJetsPerEventvsLeadJetPt"), selectedJets, leadingJetSub.pt());
-                    histos.fill(HIST("JetKinematicsQA/h2dJetsPerEventvsJetPt"), selectedJets, jet.pt());
+                    histos.fill(HIST("JetKinematicsQA/h2dJetsPerEventvsJetPt"), selectedJets, jetMinusBkg.pt());
                     histos.fill(HIST("JetKinematicsQA/h2dCosThetaToLeadvsDeltaPhiToLead"), cosTheta, deltaPhi);
                     histos.fill(HIST("JetKinematicsQA/h2dCosThetaToLeadvsDeltaEtaToLead"), cosTheta, deltaEta);
                     histos.fill(HIST("JetKinematicsQA/h2dCosThetaToLeadvsDeltaRToLead"), cosTheta, deltaR);
                     histos.fill(HIST("JetKinematicsQA/h2dDeltaPhiToLeadvsDeltaEtaToLead"), deltaPhi, deltaEta);
 
-                    histos.fill(HIST("JetKinematicsQA/h2dJetPtvsDeltaPhiToLead"), jet.pt(), deltaPhi); // Can't really get the energy of the jet, just the pt to make this comparison
-                    histos.fill(HIST("JetKinematicsQA/h2dJetEnergyvsDeltaPhiToLead"), jet.E(), deltaPhi); // Just a different scale
-                    histos.fill(HIST("JetKinematicsQA/h2dJetEnergyvsCosThetaToLead"), jet.E(), cosTheta);
+                    histos.fill(HIST("JetKinematicsQA/h2dJetPtvsDeltaPhiToLead"), jetMinusBkg.pt(), deltaPhi); // Can't really get the energy of the jet, just the pt to make this comparison
+                    histos.fill(HIST("JetKinematicsQA/h2dJetEnergyvsDeltaPhiToLead"), jetMinusBkg.E(), deltaPhi); // Just a different scale
+                    histos.fill(HIST("JetKinematicsQA/h2dJetEnergyvsCosThetaToLead"), jetMinusBkg.E(), cosTheta);
 
                     histos.fill(HIST("JetKinematicsQA/h2dJetsPerEventvsDeltaPhiToLead"), selectedJets, deltaPhi);
                     histos.fill(HIST("JetKinematicsQA/h2dJetsPerEventvsDeltaEtaToLead"), selectedJets, deltaEta);
@@ -1459,7 +1497,7 @@ struct lambdajetpolarizationions {
                 histos.fill(HIST("JetVsLeadingParticleQA/hLeadingParticleEta"), leadingParticle.eta());
                 histos.fill(HIST("JetVsLeadingParticleQA/hLeadingParticlePhi"), leadingParticle.phi());
 
-                float deltaPhiParticleToJet = leadingJetSub.phi() - leadingParticle.phi();
+                float deltaPhiParticleToJet = RecoDecay::constrainAngle(leadingJetSub.phi() - leadingParticle.phi(), -o2::constants::math::PI);
                 float deltaEtaParticleToJet = leadingJetSub.eta() - leadingParticle.eta();
                 float cosThetaParticleToJet = cosThetaJets(leadingJetSub, leadingParticle); // Takes advantage of the fact that this leading particle is a PseudoJet object
 
@@ -1483,11 +1521,10 @@ struct lambdajetpolarizationions {
                 histos.fill(HIST("JetVsLeadingParticleQA/h2dLeadParticlePtvsDeltaPhiParticleToLead"), leadingParticle.pt(), deltaPhiParticleToJet);
             }
         }
-        else{ // Otherwise, simple jet clustering
+        else{ // Otherwise, simple jet clustering (TODO: this is the fall back for kConstituentBased while not implemented)
             fastjet::ClusterSequence clustSeq(fjParticles, jetDef);
             // Jet pt must be larger than threshold:
             std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(clustSeq.inclusive_jets(jetConfigurations.minJetPt));
-            // INCREMENT JET COUNT
 
             const int jetsInEvent = jets.size();
             histos.fill(HIST("hJetsPerEvent"), jetsInEvent); // Fills even in empty events, as this is a useful number to know!
@@ -1504,10 +1541,6 @@ struct lambdajetpolarizationions {
                 const float jet_eta = jet.eta();
                 if (std::fabs(jet_eta) > (0.9f - jetConfigurations.radiusJet)) continue;
 
-                // Store jet:
-                // jets_pt.emplace_back(jet.pt());
-                // jets_eta.emplace_back(jet.eta());
-                // jets_phi.emplace_back(jet.phi()); // In the [0,2pi) range
                 tableJets(collIdx,
                         jet.pt(),
                         jet_eta, // Using eta instead of rapidity
@@ -1524,7 +1557,7 @@ struct lambdajetpolarizationions {
                     float cosTheta = cosThetaJets(leadingJet, jet);
 
                     // Calculate angular separation in projected angles:
-                    float deltaPhi = leadingJet.phi() - jet.phi();
+                    float deltaPhi = RecoDecay::constrainAngle(leadingJet.phi() - jet.phi(), -o2::constants::math::PI);
                     float deltaEta = leadingJet.eta() - jet_eta;
                     float deltaR = std::sqrt(deltaPhi*deltaPhi + deltaEta*deltaEta); // 2D angular distance in the eta-phi plane
 
@@ -1560,7 +1593,7 @@ struct lambdajetpolarizationions {
                 histos.fill(HIST("JetVsLeadingParticleQA/hLeadingParticleEta"), leadingParticle.eta());
                 histos.fill(HIST("JetVsLeadingParticleQA/hLeadingParticlePhi"), leadingParticle.phi());
 
-                double deltaPhiParticleToJet = leadingJet.phi() - leadingParticle.phi();
+                double deltaPhiParticleToJet = RecoDecay::constrainAngle(leadingJet.phi() - leadingParticle.phi(), -o2::constants::math::PI);
                 double deltaEtaParticleToJet = leadingJet.eta() - leadingParticle.eta();
                 double cosThetaParticleToJet = cosThetaJets(leadingJet, leadingParticle); // Takes advantage of the fact that this leading particle is a PseudoJet object
 
@@ -1588,7 +1621,8 @@ struct lambdajetpolarizationions {
 
     // Had to include DauTracks in subscription, even though I don't loop in it, for the indices
     // to resolve, avoiding " Exception while running: Index pointing to Tracks is not bound!"
-    void processV0sData(SelCollisions::iterator const& collision, V0CandidatesWithTOF const& fullV0s, aod::BCsWithTimestamps const& bcs, DauTracks const& V0DauTracks){
+    // Added the compiler option [[maybe_unused]] to avoid triggering any warnings because of this
+    void processV0sData(SelCollisions::iterator const& collision, V0CandidatesWithTOF const& fullV0s, aod::BCsWithTimestamps const& bcs, [[maybe_unused]] DauTracks const& V0DauTracks){
         float centrality = getCentrality(collision); // Strictly for QA. We save other types of centrality estimators in the derived data!
 
         // For event QA the last two indices never change for NEv_withJets and NEv_withV0s
@@ -1616,6 +1650,9 @@ struct lambdajetpolarizationions {
                         collision.centFV0A()
                     ); // (TODO: add InteractionRate info and other useful cuts for later on in the analysis?)
 
+        uint NLambdas = 0; // Counting particles per event
+        uint NAntiLambdas = 0;
+        uint NAmbiguous = 0;
         for (auto const& v0 : fullV0s){
             V0SelCounter.resetForNewV0();
             V0SelCounter.fill(); // Fill for all v0 candidates
@@ -1631,6 +1668,9 @@ struct lambdajetpolarizationions {
             if (analyseAntiLambda) isAntiLambda = passesLambdaLambdaBarHypothesis(v0, collision, false);
 
             if (!isLambda && !isAntiLambda) continue; // Candidate is not considered to be a Lambda
+
+            if (isLambda) NLambdas++;
+            if (isAntiLambda) NAntiLambdas++;
             
             if (doArmenterosQA) histos.fill(HIST("GeneralQA/h2dArmenterosFullSelected"), v0.alpha(), v0.qtarm()); // cross-check
             if (isLambda && !isAntiLambda) histos.fill(HIST("GeneralQA/h2dArmenterosFullSelectedLambda"), v0.alpha(), v0.qtarm());
@@ -1638,6 +1678,7 @@ struct lambdajetpolarizationions {
 
             // int lambdaIdx = -1; // No need to pass armenteros
             if (isLambda && isAntiLambda) {
+                NAmbiguous++;
                 histos.fill(HIST("hAmbiguousLambdaCandidates"), 0);
                 if (doArmenterosQA) histos.fill(HIST("GeneralQA/h2dArmenterosFullSelectedAmbiguous"), v0.alpha(), v0.qtarm()); // To know the discerning power of Armenteros in an Ambiguous Lambda vs AntiLambda case
 
@@ -1654,39 +1695,19 @@ struct lambdajetpolarizationions {
             // // Extra competing mass rejection of Lambdas // (TODO: test competing mass cuts)
             // v0.mLambda()
 
-            // Dealing with ambiguous tracks: // (TODO: for now, a simple QA plot to understand how many enter this stage is enough)
-
             // Saving the Lambdas into a derived data column:
             auto const v0pt = v0.pt();
-            // LOG(INFO) << "Filling tableV0s";
-            // LOG(INFO) << collIdx;
-            // LOG(INFO) << v0pt;
-            // LOG(INFO) << v0.eta();
-            // LOG(INFO) << v0.phi();
-            // LOG(INFO) << isLambda;
-            // LOG(INFO) << isAntiLambda;
-            // LOG(INFO) << v0.mLambda();
-            // LOG(INFO) << v0.mAntiLambda();
-            // LOG(INFO) << v0.positivept();
-            // LOG(INFO) << v0.positiveeta();
-            // LOG(INFO) << v0.positivephi();
-            // LOG(INFO) << v0.negativept();
-            // LOG(INFO) << v0.negativeeta();
-            // LOG(INFO) << v0.negativephi();
+            const auto posTrackExtra = v0.template posTrack_as<DauTracks>();
+            const auto negTrackExtra = v0.template negTrack_as<DauTracks>();
             tableV0s(collIdx,
-                    v0pt,
-                    v0.eta(), // Using eta instead of rapidity
-                    v0.phi(),
-                    isLambda,
-                    isAntiLambda,
-                    v0.mLambda(),
-                    v0.mAntiLambda(),
-                    v0.positivept(),
-                    v0.positiveeta(),
-                    v0.positivephi(),
-                    v0.negativept(),
-                    v0.negativeeta(),
-                    v0.negativephi()
+                    v0pt, v0.eta(), v0.phi(), // Using eta instead of rapidity
+                    isLambda, isAntiLambda,
+                    v0.mLambda(), v0.mAntiLambda(),
+                    v0.positivept(), v0.positiveeta(), v0.positivephi(),
+                    v0.negativept(), v0.negativeeta(), v0.negativephi(),
+                    v0.v0cosPA(), v0.v0radius(), v0.dcaV0daughters(), v0.dcapostopv(), v0.dcanegtopv(),
+                    posTrackExtra.tpcNSigmaPr(), posTrackExtra.tpcNSigmaPi(),
+                    negTrackExtra.tpcNSigmaPr(), negTrackExtra.tpcNSigmaPi()
                     );
             if (doEventQA && !validV0AlreadyFound) fillEventSelectionQA(lastBinEvSel, centrality); // hasRingV0 passes
             validV0AlreadyFound = true;
@@ -1727,8 +1748,6 @@ struct lambdajetpolarizationions {
             
             if (doCompleteTopoQA){
                 // Remaking these variables outside of the passesLambdaLambdaBarHypothesis. Loses performance, but that should be OK for QA
-                const auto posTrackExtra = v0.template posTrack_as<DauTracks>();
-                const auto negTrackExtra = v0.template negTrack_as<DauTracks>();
                 histos.fill(HIST("hPosDCAToPV"), v0.dcapostopv());
                 histos.fill(HIST("hNegDCAToPV"), v0.dcanegtopv());
                 histos.fill(HIST("hDCADaughters"), v0.dcaV0daughters());
@@ -1739,8 +1758,8 @@ struct lambdajetpolarizationions {
                 histos.fill(HIST("h2dPositivePtVsPhi"), v0.positivept(), computePhiMod(v0.positivephi(), 1));
                 histos.fill(HIST("h2dNegativePtVsPhi"), v0.negativept(), computePhiMod(v0.negativephi(), -1));
                 if (isLambda && analyseLambda) {
-                    histos.fill(HIST("h3dMassLambda"), centrality, v0pt, v0.mLambda());
                     histos.fill(HIST("hMassLambda"), v0.mLambda());
+                    histos.fill(HIST("Lambda/h3dMassLambda"), centrality, v0pt, v0.mLambda());
                     histos.fill(HIST("Lambda/hPosDCAToPV"), v0.dcapostopv());
                     histos.fill(HIST("Lambda/hNegDCAToPV"), v0.dcanegtopv());
                     histos.fill(HIST("Lambda/hDCADaughters"), v0.dcaV0daughters());
@@ -1785,9 +1804,8 @@ struct lambdajetpolarizationions {
                     }
                 }
                 if (isAntiLambda && analyseAntiLambda) {
-                    // histos.fill(HIST("h2dNbrOfAntiLambdaVsCentrality"), centrality, NbrAntiLambda); // (TODO: add the proper call to this fill)
-                    histos.fill(HIST("h3dMassAntiLambda"), centrality, v0pt, v0.mAntiLambda());
                     histos.fill(HIST("hMassAntiLambda"), v0.mAntiLambda());
+                    histos.fill(HIST("AntiLambda/h3dMassAntiLambda"), centrality, v0pt, v0.mAntiLambda());
                     histos.fill(HIST("AntiLambda/hPosDCAToPV"), v0.dcapostopv());
                     histos.fill(HIST("AntiLambda/hNegDCAToPV"), v0.dcanegtopv());
                     histos.fill(HIST("AntiLambda/hDCADaughters"), v0.dcaV0daughters());
@@ -1833,6 +1851,13 @@ struct lambdajetpolarizationions {
                 }
             } // end CompleteTopoQA
         } // end V0s loop
+
+        // Fill histograms on a per-event level:
+        histos.fill(HIST("Lambda/hLambdasPerEvent"), NLambdas);
+        histos.fill(HIST("AntiLambda/hAntiLambdasPerEvent"), NAntiLambdas);
+        histos.fill(HIST("hAmbiguousPerEvent"), NAmbiguous);
+        histos.fill(HIST("Lambda/h2dNbrOfLambdaVsCentrality"), centrality, NLambdas);
+        histos.fill(HIST("AntiLambda/h2dNbrOfAntiLambdaVsCentrality"), centrality, NAntiLambdas);
     }
 
     PROCESS_SWITCH(lambdajetpolarizationions, processJetsData, "Process jets and produce derived data in Run 3 Data", true);

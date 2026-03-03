@@ -29,6 +29,7 @@ namespace lambdajetpol
 {
 
 // DECLARE_SOA_COLUMN(CollIdx, collIdx, uint64_t); // Using a regular SOA column instead of an index column for convenience
+// Collision information:
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
 DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
@@ -37,6 +38,7 @@ DECLARE_SOA_COLUMN(CentMFT, centMFT, float);
 DECLARE_SOA_COLUMN(CentNGlobal, centNGlobal, float);
 DECLARE_SOA_COLUMN(CentFV0A, centFV0A, float);
 
+// Jet (and jet proxies) information:
 DECLARE_SOA_COLUMN(JetPt, jetPt, float);
 DECLARE_SOA_COLUMN(JetEta, jetEta, float);
 DECLARE_SOA_COLUMN(JetPhi, jetPhi, float);
@@ -46,6 +48,7 @@ DECLARE_SOA_COLUMN(LeadParticlePt, leadParticlePt, float);
 DECLARE_SOA_COLUMN(LeadParticleEta, leadParticleEta, float);
 DECLARE_SOA_COLUMN(LeadParticlePhi, leadParticlePhi, float);
 
+// V0 information:
 DECLARE_SOA_COLUMN(V0Pt, v0Pt, float);
 DECLARE_SOA_COLUMN(V0Eta, v0Eta, float);
 DECLARE_SOA_COLUMN(V0Phi, v0Phi, float);
@@ -61,6 +64,17 @@ DECLARE_SOA_COLUMN(PosPhi, posPhi, float);
 DECLARE_SOA_COLUMN(NegPt, negPt, float);
 DECLARE_SOA_COLUMN(NegEta, negEta, float);
 DECLARE_SOA_COLUMN(NegPhi, negPhi, float);
+
+DECLARE_SOA_COLUMN(PosTPCNSigmaPr, posTPCNSigmaPr, float);
+DECLARE_SOA_COLUMN(PosTPCNSigmaPi, posTPCNSigmaPi, float);
+DECLARE_SOA_COLUMN(NegTPCNSigmaPr, negTPCNSigmaPr, float);
+DECLARE_SOA_COLUMN(NegTPCNSigmaPi, negTPCNSigmaPi, float);
+
+DECLARE_SOA_COLUMN(V0CosPA, v0cosPA, float);
+DECLARE_SOA_COLUMN(V0Radius, v0radius, float);
+DECLARE_SOA_COLUMN(DcaV0Daughters, dcaV0daughters, float);
+DECLARE_SOA_COLUMN(DcaPosToPV, dcaPosToPV, float);
+DECLARE_SOA_COLUMN(DcaNegToPV, dcaNegToPV, float);
 
 // Dynamic columns for jets (Px,Py,Pz):
 DECLARE_SOA_DYNAMIC_COLUMN(JetPx, jetPx, //! Jet px
@@ -102,7 +116,7 @@ DECLARE_SOA_TABLE(RingLeadP, "AOD", "RINGLEADP", // Leading particle table
                   lambdajetpol::LeadParticlePz<lambdajetpol::LeadParticlePt, lambdajetpol::LeadParticleEta>
                 );
 
-DECLARE_SOA_TABLE(RingLaV0s, "AOD", "RINGLAV0S", // Had to write this in a shorter form because the derived data did not accept long names
+DECLARE_SOA_TABLE(RingLaV0s, "AOD", "RINGLAV0S",
                   lambdajetpol::CollisionId,
                   lambdajetpol::V0Pt,
                   lambdajetpol::V0Eta,
@@ -116,7 +130,16 @@ DECLARE_SOA_TABLE(RingLaV0s, "AOD", "RINGLAV0S", // Had to write this in a short
                   lambdajetpol::PosPhi,
                   lambdajetpol::NegPt,
                   lambdajetpol::NegEta,
-                  lambdajetpol::NegPhi
+                  lambdajetpol::NegPhi,
+                  lambdajetpol::PosTPCNSigmaPr,
+                  lambdajetpol::PosTPCNSigmaPi,
+                  lambdajetpol::NegTPCNSigmaPr,
+                  lambdajetpol::NegTPCNSigmaPi,
+                  lambdajetpol::V0CosPA,
+                  lambdajetpol::V0Radius,
+                  lambdajetpol::DcaV0Daughters,
+                  lambdajetpol::DcaPosToPV,
+                  lambdajetpol::DcaNegToPV
                 );
 
 DECLARE_SOA_TABLE(RingCollisions, "AOD", "RINGCOLLISIONS",

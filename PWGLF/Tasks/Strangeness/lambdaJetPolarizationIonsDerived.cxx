@@ -189,7 +189,9 @@ struct lambdajetpolarizationionsderived {
     // QAs that purposefully break the analysis
         // -- All of these tests should give us zero signal if the source is truly Lambda Polarization from vortices
     Configurable<bool> forcePolSignQA{"forcePolSignQA", false, "force antiLambda decay constant to be positive: should kill all the signal, if any. For QA"};
-    Configurable<bool> forcePerpToJet{"forcePerpToJet", false, "force jet direction to be perpendicular () to jet estimator. For QA"};
+    Configurable<bool> forcePerpToJet{"forcePerpToJet", false, "force jet direction to be perpendicular to jet estimator. For QA"};
+    Configurable<bool> forceJetDirectionSmudge{"forceJetDirectionSmudge", false, "fluctuate jet direction by 10% of R around original axis. For QA (tests sensibility)"};
+    Configurable<float> jetRForSmuding{"jetRForSmuding", 0.4, "QA quantity: the chosen R scale for the jet direction smudge"};
 
     /////////////////////////
     // Configurable blocks:
@@ -523,9 +525,42 @@ struct lambdajetpolarizationionsderived {
                     // Now we get a perpendicular vector to the jet direction:
                     XYZVector perpVec = leadingJetUnitVec.Cross(refVec).Unit();
                     // Now we rotate around the jet axis by a random angle, just to make sure we are not introducing a bias in the QA:
-                // We will use Rodrigues' rotation formula (v_rot = v*cos(randomAngle) + (Jet \cross v)*sin(randomAngle))
+                    // We will use Rodrigues' rotation formula (v_rot = v*cos(randomAngle) + (Jet \cross v)*sin(randomAngle))
                     double randomAngle = randomGen.Uniform(0., o2::constants::math::TwoPI);
                     leadingJetUnitVec = perpVec * std::cos(randomAngle) + leadingJetUnitVec.Cross(perpVec) * std::sin(randomAngle);
+                }
+                else if (forceJetDirectionSmudge) {
+                    // Smear the jet direction by a small random angle to estimate sensitivity to
+                    // jet axis uncertainty. We rotate the jet axis by angle theta around a uniformly
+                    // random perpendicular axis -- this is isotropic and coordinate-independent,
+                    // unlike smearing eta and phi separately (which would break azimuthal symmetry
+                    // around the jet axis and depend on where in eta the jet sits).
+
+                    // 1) We pick a uniformly random axis perpendicular to the jet.
+                    // (re-using the same Rodrigues formula as in the forcePerpToJet block above)
+                    XYZVector refVec(1., 0., 0.);
+                    if (std::abs(leadingJetUnitVec.Dot(refVec)) > 0.99) refVec = XYZVector(0., 1., 0.);
+                    XYZVector perpVec = leadingJetUnitVec.Cross(refVec).Unit();
+                    // Rotate perpVec around the jet axis by a uniform random azimuth to get
+                    // a uniformly distributed random perpendicular direction (the smear axis):
+                    double smearAzimuth = randomGen.Uniform(0., o2::constants::math::TwoPI);
+                    XYZVector smearAxis = perpVec * std::cos(smearAzimuth) + leadingJetUnitVec.Cross(perpVec) * std::sin(smearAzimuth);
+
+                    // Step 2: draw the smearing polar angle from a Gaussian:
+                    // sigma = 0.05 * R --> ~68% of events smeared within 5% of R,
+                    //                      ~95% of events smeared within 10% of R,
+                    //                       ~5% see a displacement > 0.1*R (a very "badly determined jet", for our QA purposes)
+                    // std::abs() folds the symmetric Gaussian onto a half-normal ([0, inf))
+                    // -- R is not really an angle: just gives me a scale for the angular shift I am performing.
+                    // -- This may pose problems for forward jets: a small displacemente in \theta becomes a large displacement in \eta space
+                    double smearSigma = 0.05 * jetRForSmuding;
+                    double smearAngle = std::abs(randomGen.Gaus(0., smearSigma));
+
+                    // Step 3: rotate the jet axis by smearAngle around smearAxis.
+                    // Rodrigues is v_rot = v*cos(theta) + (k \croos v)*sin(theta) + k*(k \cdot v)*(1-cos(theta))
+                    // But the last term vanishes because smearAxis is perpendicular to leadingJetUnitVec:
+                    leadingJetUnitVec = leadingJetUnitVec * std::cos(smearAngle) + smearAxis.Cross(leadingJetUnitVec) * std::sin(smearAngle);
+                    // Also, rotation preserves the norm, so no re-normalisation is needed for this to be a unit vector.
                 }
             }
 
