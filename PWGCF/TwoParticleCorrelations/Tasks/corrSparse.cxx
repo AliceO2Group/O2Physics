@@ -303,12 +303,6 @@ struct CorrSparse {
     MixedEvent = 3
   };
 
-  enum CollisionType {
-    p_p = 0,
-    p_Pb,
-    p_O,
-    O_O
-  };
   enum FITIndex {
     kFT0A = 0,
     kFT0C,
