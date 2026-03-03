@@ -204,6 +204,7 @@ struct lambdaspincorrderived {
   Configurable<std::string> ConfWeightPathLAL2{"ConfWeightPathLAL2", "Users/s/skundu/My/Object/spincorr/cent010LL", "Weight path 2"};
   Configurable<std::string> ConfWeightPathALL2{"ConfWeightPathALL2", "Users/s/skundu/My/Object/spincorr/cent010LL", "Weight path 2"};
 
+
   // Mixing /////////
 
   Configurable<int> cfgV5NeighborPt{"cfgV5NeighborPt", 0, "v5: neighbor bins in pT (use symmetric ±N, edge-safe)"};
@@ -1800,6 +1801,7 @@ struct lambdaspincorrderived {
     out.erase(std::unique(out.begin(), out.end()), out.end());
   }
 
+
   static inline void collectNeighborBinsClamp(int b, int nBins, int nNeighbor, std::vector<int>& out)
   {
     out.clear();
@@ -1940,7 +1942,6 @@ struct lambdaspincorrderived {
           continue; // same-event ordering
         }
 
-        // no shared daughters (same-event)
         if (t1.protonIndex() == t2.protonIndex())
           continue;
         if (t1.pionIndex() == t2.pionIndex())
@@ -2184,6 +2185,7 @@ struct lambdaspincorrderived {
           continue;
 
         const int status = mcacc::v0Status(t1);
+
         if (status < 0 || status >= nStat) {
           continue;
         }
