@@ -253,7 +253,7 @@ struct Kstarqa {
 
     std::vector<std::string> eveCutLabels = {
       "All Events",
-      Form("|Vz| < %.1f", selectionConfig.cutzvertex),
+      "|Vz| < 10",
       "sel8",
       std::string("kNoTimeFrameBorder") + check(selectionConfig.isNoTimeFrameBorder.value),
       std::string("kNoITSROFrameBorder") + check(selectionConfig.isNoITSROFrameBorder.value),
