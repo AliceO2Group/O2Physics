@@ -87,7 +87,20 @@ struct Alice3MulticharmFinder {
     Configurable<bool> fillMCharmIdx{"fillMCharmIdx", true, "fill MCharmIdx[] tables (careful: memory)"};
     Configurable<bool> fillMCharmCore{"fillMCharmCore", true, "fill MCharmCores[] tables (careful: memory)"};
     Configurable<bool> fillMCharmExtra{"fillMCharmExtra", false, "fill MCharmExtra[] tables (careful: memory)"};
-  } derivedTable; // allows for gap between peak and bg in case someone wants to
+  } derivedTable;
+
+  struct : ConfigurableGroup {
+    std::string prefix = "cfgFitter";
+    Configurable<bool> propagateToPCA{"propagateToPCA", false, "create tracks version propagated to PCA"};
+    Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
+    Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
+    Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+    Configurable<double> maxDZIni{"maxDZIni", 1e9, "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
+    Configurable<double> maxDXYIni{"maxDXYIni", 4, "reject (if>0) PCA candidate if tracks DXY exceeds threshold"};
+    Configurable<double> maxVtxChi2{"maxVtxChi2", 1e9, "reject (if>0) vtx. chi2 above this value"};
+    Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
+    Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
+  } cfgFitter;
 
   Configurable<float> cfgMagneticField{"cfgMagneticField", 20.0f, "Magnetic field (in kilogauss) if value not found from geo provider"};
   Configurable<bool> doDCAplots{"doDCAplots", true, "do daughter prong DCA plots for D mesons"};
@@ -164,7 +177,6 @@ struct Alice3MulticharmFinder {
   // filter expressions for pions
   static constexpr uint32_t TrackSelectionPic = 1 << kInnerTOFPion | 1 << kOuterTOFPion | 1 << kRICHPion | 1 << kTruePiFromXiC;
   static constexpr uint32_t TrackSelectionPicc = 1 << kInnerTOFPion | 1 << kOuterTOFPion | 1 << kRICHPion | 1 << kTruePiFromXiCC;
-  float magneticField{};
 
   // partitions
   Partition<aod::McParticles> trueXi = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kXiMinus);
@@ -224,14 +236,19 @@ struct Alice3MulticharmFinder {
     } catch (...) {
       return false;
     }
+
+    const u_int8_t fitterStatusCode = fitter.getFitStatus();
+    histos.fill(HIST("hFitterStatusCode"), fitterStatusCode);
     if (nCand == 0) {
       return false;
     }
 
-    const u_int8_t fitterStatusCode = fitter.getFitStatus();
-    histos.fill(HIST("hFitterStatusCode"), fitterStatusCode);
-    //}-{}-{}-{}-{}-{}-{}-{}-{}-{}
+    fitter.propagateTracksToVertex();
+    if (!fitter.isPropagateTracksToVertexDone()) {
+      return false;
+    }
 
+    //}-{}-{}-{}-{}-{}-{}-{}-{}-{}
     o2::track::TrackParCov t0new = fitter.getTrack(0);
     o2::track::TrackParCov t1new = fitter.getTrack(1);
     t0new.getPxPyPzGlo(thisXiccCandidate.prong0mom);
@@ -298,12 +315,17 @@ struct Alice3MulticharmFinder {
     } catch (...) {
       return false;
     }
+
+    const u_int8_t fitter3StatusCode = fitter3.getFitStatus();
+    histos.fill(HIST("hFitter3StatusCode"), fitter3StatusCode);
     if (nCand == 0) {
       return false;
     }
 
-    const u_int8_t fitter3StatusCode = fitter3.getFitStatus();
-    histos.fill(HIST("hFitter3StatusCode"), fitter3StatusCode);
+    fitter3.propagateTracksToVertex();
+    if (!fitter3.isPropagateTracksToVertexDone()) {
+      return false;
+    }
     //}-{}-{}-{}-{}-{}-{}-{}-{}-{}
 
     t0 = fitter3.getTrack(0);
@@ -405,38 +427,31 @@ struct Alice3MulticharmFinder {
     return returnValue;
   }
 
-  void init(o2::framework::InitContext& initContext)
+  void init(o2::framework::InitContext&)
   {
-    const bool foundMagneticField = common::core::getTaskOptionValue(initContext, "on-the-fly-detector-geometry-provider", "magneticField", magneticField, false);
-    if (!foundMagneticField) {
-      LOG(info) << "Could not retrieve magnetic field from geometry provider.";
-      LOG(info) << "Using value from configurable cfgMagneticField: " << cfgMagneticField;
-      magneticField = cfgMagneticField;
-    } else {
-      LOG(info) << "Using magnetic field form geometry provider with value: " << magneticField;
-    }
-
     // initialize O2 2-prong fitter (only once)
-    fitter.setPropagateToPCA(true);
-    fitter.setMaxR(200.);
-    fitter.setMinParamChange(1e-3);
-    fitter.setMinRelChi2Change(0.9);
-    fitter.setMaxDZIni(1e9);
-    fitter.setMaxChi2(1e9);
-    fitter.setUseAbsDCA(true);
-    fitter.setWeightedFinalPCA(false);
-    fitter.setBz(magneticField);
+    fitter.setPropagateToPCA(cfgFitter.propagateToPCA);
+    fitter.setMaxR(cfgFitter.maxR);
+    fitter.setMinParamChange(cfgFitter.minParamChange);
+    fitter.setMinRelChi2Change(cfgFitter.minRelChi2Change);
+    fitter.setMaxDZIni(cfgFitter.maxDZIni);
+    fitter.setMaxDXYIni(cfgFitter.maxDXYIni);
+    fitter.setMaxChi2(cfgFitter.maxVtxChi2);
+    fitter.setUseAbsDCA(cfgFitter.useAbsDCA);
+    fitter.setWeightedFinalPCA(cfgFitter.useWeightedFinalPCA);
+    fitter.setBz(cfgMagneticField);
     fitter.setMatCorrType(o2::base::Propagator::MatCorrType::USEMatCorrNONE);
 
-    fitter3.setPropagateToPCA(true);
-    fitter3.setMaxR(200.);
-    fitter3.setMinParamChange(1e-3);
-    fitter3.setMinRelChi2Change(0.9);
-    fitter3.setMaxDZIni(1e9);
-    fitter3.setMaxChi2(1e9);
-    fitter3.setUseAbsDCA(true);
-    fitter3.setWeightedFinalPCA(false);
-    fitter3.setBz(magneticField);
+    fitter3.setPropagateToPCA(cfgFitter.propagateToPCA);
+    fitter3.setMaxR(cfgFitter.maxR);
+    fitter3.setMinParamChange(cfgFitter.minParamChange);
+    fitter3.setMinRelChi2Change(cfgFitter.minRelChi2Change);
+    fitter3.setMaxDZIni(cfgFitter.maxDZIni);
+    fitter3.setMaxDZIni(cfgFitter.maxDXYIni);
+    fitter3.setMaxChi2(cfgFitter.maxVtxChi2);
+    fitter3.setUseAbsDCA(cfgFitter.useAbsDCA);
+    fitter3.setWeightedFinalPCA(cfgFitter.useWeightedFinalPCA);
+    fitter3.setBz(cfgMagneticField);
     fitter3.setMatCorrType(o2::base::Propagator::MatCorrType::USEMatCorrNONE);
 
     auto hFitterStatusCode = histos.add<TH1>("hFitterStatusCode", "hFitterStatusCode", kTH1D, {{15, -0.5, 14.5}});
@@ -713,7 +728,7 @@ struct Alice3MulticharmFinder {
           o2::vertexing::PVertex primaryVertex;
           primaryVertex.setXYZ(collision.posX(), collision.posY(), collision.posZ());
 
-          if (xicTrackCopy.propagateToDCA(primaryVertex, magneticField, &dcaInfo)) {
+          if (xicTrackCopy.propagateToDCA(primaryVertex, cfgMagneticField, &dcaInfo)) {
             xicdcaXY = dcaInfo.getY();
             xicdcaZ = dcaInfo.getZ();
           }
@@ -808,7 +823,7 @@ struct Alice3MulticharmFinder {
             GET_HIST(TH1, histPath + "hMultiCharmBuilding")->Fill(6.0f);
             GET_HIST(TH2, histPath + "hXicRadiusVsXiccRadius")->Fill(xicDecayRadius2D * ToMicrons, xiccDecayRadius2D * ToMicrons);
             float xiccdcaXY = 1e+10, xiccdcaZ = 1e+10;
-            if (xiccTrack.propagateToDCA(primaryVertex, magneticField, &dcaInfo)) {
+            if (xiccTrack.propagateToDCA(primaryVertex, cfgMagneticField, &dcaInfo)) {
               xiccdcaXY = dcaInfo.getY();
               xiccdcaZ = dcaInfo.getZ();
             }
