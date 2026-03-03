@@ -620,7 +620,7 @@ struct GammaConversions {
   }
 
   Preslice<V0DatasAdditional> perCollision = aod::v0photonkf::emphotoneventId;
-  void processRec(aod::EMEvents::iterator const& theCollision,
+  void processRec(aod::EMEvents_004::iterator const& theCollision,
                   V0DatasAdditional const& theV0s,
                   aod::V0Legs const&)
   {
@@ -645,7 +645,7 @@ struct GammaConversions {
 
   Preslice<aod::McGammasTrue> gperV0 = aod::gammamctrue::v0photonkfId;
 
-  void processMc(aod::EMEvents::iterator const& theCollision,
+  void processMc(aod::EMEvents_004::iterator const& theCollision,
                  V0DatasAdditional const& theV0s,
                  V0LegsWithMC const&,
                  aod::V0DaughterMcParticles const&,

@@ -72,17 +72,17 @@ o2physics_add_dpl_workflow(data-creator-charm-had-pi-reduced
 
 o2physics_add_dpl_workflow(data-creator-charm-reso-to-dstar-reduced
                     SOURCES dataCreatorCharmResoToDstarReduced.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils KFParticle::KFParticle
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(data-creator-charm-reso-to-dplus-reduced
                     SOURCES dataCreatorCharmResoToDplusReduced.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils KFParticle::KFParticle
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(data-creator-charm-reso-to-d0-reduced
                     SOURCES dataCreatorCharmResoToD0Reduced.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils KFParticle::KFParticle
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(data-creator-jpsi-had-reduced

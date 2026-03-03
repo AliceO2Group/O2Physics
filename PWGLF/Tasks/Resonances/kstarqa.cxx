@@ -91,6 +91,7 @@ struct Kstarqa {
     Configurable<bool> isapplypTdepPIDTOF{"isapplypTdepPIDTOF", false, "Apply pT dependent PID for TOF"};
     Configurable<bool> isApplyParticleMID{"isApplyParticleMID", false, "Apply particle misidentification"};
     Configurable<bool> isApplyParticleMIDPtDep{"isApplyParticleMIDPtDep", false, "Apply pT dependent MID selection"};
+    Configurable<bool> AllGenEvents{"AllGenEvents", false, "Fill all generated events in MC for signal loss calculations"};
 
     Configurable<bool> checkVzEvSigLoss{"checkVzEvSigLoss", false, "Check Vz event signal loss"};
     Configurable<bool> isApplyDeepAngle{"isApplyDeepAngle", false, "Deep Angle cut"};
@@ -2761,7 +2762,7 @@ struct Kstarqa {
 
     const auto evtReconstructedAndSelected = std::find(selectedEvents.begin(), selectedEvents.end(), mcCollision.globalIndex()) != selectedEvents.end();
     hInvMass.fill(HIST("hAllGenCollisions"), multiplicity);
-    if (!evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
+    if (!selectionConfig.AllGenEvents && !evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
       return;
     }
     double genMultiplicity = mcCollision.centFT0M();
