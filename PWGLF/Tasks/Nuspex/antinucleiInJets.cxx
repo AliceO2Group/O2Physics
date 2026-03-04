@@ -4065,7 +4065,7 @@ struct AntinucleiInJets {
             ptJetTrue = jetPair.ptTrue;
           }
         }
-          
+
         if (distanceMin < alpha * rJet) {
           registryMC.fill(HIST("jetPtResolution"), ptJetTrue, diffPt);
         }
