@@ -128,6 +128,13 @@ struct ReducedParticle {
   }
 };
 
+// Jet Matching
+struct JetMatching {
+  double distance;
+  double ptTrue;
+  double ptDiff;
+};
+
 struct AntinucleiInJets {
 
   // Histogram registries for data, MC, quality control, multiplicity and correlations
@@ -145,6 +152,7 @@ struct AntinucleiInJets {
   Configurable<double> cfgAreaFrac{"cfgAreaFrac", 0.6, "fraction of jet area"};
   Configurable<double> cfgEtaJetMax{"cfgEtaJetMax", 0.5, "max jet eta"};
   Configurable<double> cfgMinPtTrack{"cfgMinPtTrack", 0.15, "minimum pt of tracks for jet reconstruction"};
+  Configurable<double> alpha{"alpha", 0.3, "parameter to control jet matching"};
 
   // Event selection criteria
   Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "Reject events near the ITS ROF border"};
@@ -499,6 +507,11 @@ struct AntinucleiInJets {
       registryMC.add("antiproton_coal_fullEvent", "antiproton_coal_fullEvent", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_coal_jet", "antiproton_coal_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_coal_ue", "antiproton_coal_ue", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+    }
+
+    // jet pt resolution
+    if (doprocessJetPtResolution) {
+      registryMC.add("jetPtResolution", "jet Pt Resolution", HistType::kTH2F, {{200, 0, 20, "#it{p}^{jet}_{T,true} (GeV/#it{c})"}}, {{1000, -5, 5, "#Delta #it{p}^{jet}_{T} (GeV/#it{c})"}});
     }
 
     // Coalescence and Correlation analysis
@@ -3912,6 +3925,154 @@ struct AntinucleiInJets {
     }
   }
   PROCESS_SWITCH(AntinucleiInJets, processCoalescenceCorr, "process coalescence correlation", false);
+
+
+  // Jet Pt resolution
+  void processJetPtResolution(RecCollisionsMc const& collisions, AntiNucleiTracksMc const& mcTracks, aod::McParticles const& mcParticles)
+  {
+    // Define per-event particle containers
+    std::vector<fastjet::PseudoJet> fjParticles;
+    std::vector<fastjet::PseudoJet> fjTracks;
+
+    // Jet and area definitions
+    fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
+    fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
+
+    // Loop over all reconstructed collisions
+    for (const auto& collision : collisions) {
+
+      // Clear containers at the start of the event loop
+      fjParticles.clear();
+      fjTracks.clear();
+
+      // Reject reconstructed collisions with no simulated collision
+      if (!collision.has_mcCollision())
+        continue;
+
+      // Apply event selection: require sel8 and vertex position to be within the allowed z range
+      if (!collision.sel8() || std::fabs(collision.posZ()) > zVtx)
+        continue;
+
+      // Reject events near the ITS Read-Out Frame border
+      if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))
+        continue;
+
+      // Reject events at the Time Frame border
+      if (rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))
+        continue;
+
+      // Require at least one ITS-TPC matched track
+      if (requireVtxITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC))
+        continue;
+
+      // Reject events with same-bunch pileup
+      if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+        continue;
+
+      // Require consistent FT0 vs PV z-vertex
+      if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+        continue;
+
+      // Require TOF match for at least one vertex track
+      if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched))
+        continue;
+
+      // Get tracks and particles in this MC collision
+      const auto mcTracksThisMcColl = mcTracks.sliceBy(mcTracksPerMcCollision, collision.globalIndex());
+      const auto mcParticlesThisMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, collision.globalIndex());
+
+      // Loop over reconstructed tracks
+      for (auto const& track : mcTracksThisMcColl) {
+
+        // Apply track selection for jet reconstruction
+        if (!passedTrackSelectionForJetReconstruction(track))
+          continue;
+
+        // 4-momentum representation of a particle
+        fastjet::PseudoJet fourMomentum(track.px(), track.py(), track.pz(), track.energy(MassPionCharged));
+        fjTracks.emplace_back(fourMomentum);
+      }
+
+      // Loop over MC particles
+      for (const auto& particle : mcParticlesThisMcColl) {
+
+        // Select physical primary particles or HF decay products
+        if (!isPhysicalPrimaryOrFromHF(particle, mcParticles))
+          continue;
+
+        // Select particles within acceptance
+        if (particle.eta() < minEta || particle.eta() > maxEta || particle.pt() < cfgMinPtTrack)
+          continue;
+
+        // 4-momentum representation of a particle
+        double energy = std::sqrt(particle.p() * particle.p() + MassPionCharged * MassPionCharged);
+        fastjet::PseudoJet fourMomentum(particle.px(), particle.py(), particle.pz(), energy);
+        fjParticles.emplace_back(fourMomentum);
+      }
+
+      // Reject empty events
+      if (fjTracks.empty() || fjParticles.empty())
+        continue;
+
+      // Cluster particles using the anti-kt algorithm
+      fastjet::ClusterSequenceArea csRec(fjTracks, jetDef, areaDef);
+      std::vector<fastjet::PseudoJet> jetsRec = fastjet::sorted_by_pt(csRec.inclusive_jets());
+
+      fastjet::ClusterSequenceArea csGen(fjParticles, jetDef, areaDef);
+      std::vector<fastjet::PseudoJet> jetsGen = fastjet::sorted_by_pt(csGen.inclusive_jets());
+
+      // Loop over reconstructed jets
+      std::vector<JetMatching> jetGenRec;
+      for (const auto& jetRec : jetsRec) {
+
+        // Jet must be fully contained in the acceptance
+        if ((std::fabs(jetRec.eta()) + rJet) > (maxEta - deltaEtaEdge))
+          continue;
+
+        // Apply area cut if required
+        if (applyAreaCut && (jetRec.area() / (PI * rJet * rJet)) > maxNormalizedJetArea)
+          continue;
+
+        // Clear jet-pair container
+        jetGenRec.clear();
+
+        for (const auto& jetGen : jetsGen) {
+
+          // Jet must be fully contained in the acceptance
+          if ((std::fabs(jetGen.eta()) + rJet) > (maxEta - deltaEtaEdge))
+            continue;
+
+          // Apply area cut if required
+          if (applyAreaCut && (jetGen.area() / (PI * rJet * rJet)) > maxNormalizedJetArea)
+            continue;
+
+          double deltaEta = jetGen.eta() - jetRec.eta();
+          double deltaPhi = getDeltaPhi(jetGen.phi(), jetRec.phi());
+          double deltaR = std::sqrt(deltaEta * deltaEta + deltaPhi * deltaPhi);
+          if (deltaR < rJet)
+            jetGenRec.emplace_back({deltaR, jetGen.pt(), jetGen.pt() - jetRec.pt()});
+        }
+        if (jetGenRec.empty())
+          continue;
+
+        double distanceMin(1e+06);
+        double diffPt(0);
+        double ptJetTrue(0);
+        for (const auto& jetPair : jetGenRec) {
+          if (jetPair.distance < distanceMin) {
+            distanceMin = jetPair.distance;
+            diffPt = jetPair.ptDiff;
+            ptJetTrue = jetPair.ptTrue;
+          }
+        }
+          
+        if (distanceMin < alpha * rJet) {
+          registryMC.fill(HIST("jetPtResolution"), ptJetTrue, diffPt);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(AntinucleiInJets, processJetPtResolution, "process jet pt resolution", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
