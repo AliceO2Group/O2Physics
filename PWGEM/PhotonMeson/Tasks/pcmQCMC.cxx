@@ -16,6 +16,7 @@
 #include "PWGEM/Dilepton/Utils/MCUtilities.h"
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 
@@ -54,7 +55,7 @@ using namespace o2::aod::pwgem::photonmeson::utils::mcutil;
 using namespace o2::aod::pwgem::dilepton::utils::mcutil;
 using namespace o2::aod::pwgem::photon;
 
-using MyCollisions = soa::Join<aod::EMEvents_004, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMMCEventLabels>;
+using MyCollisions = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
 
 using MyMCCollisions = soa::Join<aod::EMMCEvents, aod::BinnedGenPts>;
@@ -568,8 +569,8 @@ struct PCMQCMC {
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hRxyGen_DeltaEta"), std::sqrt(std::pow(mcleg.vx(), 2) + std::pow(mcleg.vy(), 2)), leg.eta() - mcleg.eta());
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hRxyGen_DeltaPhi"), std::sqrt(std::pow(mcleg.vx(), 2) + std::pow(mcleg.vy(), 2)), leg.phi() - mcleg.phi());
   }
-  Preslice<MyV0Photons> perCollisionV0 = aod::v0photonkf::emphotoneventId;
-  Preslice<MyV0PhotonsML> perCollisionV0ML = aod::v0photonkf::emphotoneventId;
+  Preslice<MyV0Photons> perCollisionV0 = aod::v0photonkf::pmeventId;
+  Preslice<MyV0PhotonsML> perCollisionV0ML = aod::v0photonkf::pmeventId;
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
