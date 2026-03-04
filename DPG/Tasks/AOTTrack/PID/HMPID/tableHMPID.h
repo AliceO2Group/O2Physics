@@ -23,8 +23,6 @@ inline constexpr int kDimPhotonsCharge = 10;
 namespace variables_table
 {
 DECLARE_SOA_COLUMN(ChAngle, chAngle, float);
-DECLARE_SOA_COLUMN(Phi, phi, float);
-DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(MomentumHmpid, momentumHmpid, float);
 DECLARE_SOA_COLUMN(MomentumTrack, momentumTrack, float);
 DECLARE_SOA_COLUMN(XTrack, xTrack, float);
@@ -60,15 +58,12 @@ DECLARE_SOA_COLUMN(TpcNSigmaPr, tpcNSigmaPr, float);
 DECLARE_SOA_COLUMN(TofNSigmaPr, tofNSigmaPr, float);
 DECLARE_SOA_COLUMN(TpcNSigmaDe, tpcNSigmaDe, float);
 DECLARE_SOA_COLUMN(TofNSigmaDe, tofNSigmaDe, float);
-
 DECLARE_SOA_COLUMN(Centrality, centrality, float);
 
 } // namespace variables_table
 
 DECLARE_SOA_TABLE(HmpidAnalysis, "AOD", "HMPIDANALYSIS",
                   variables_table::ChAngle,
-                  variables_table::Phi,
-                  variables_table::Eta,
                   variables_table::MomentumHmpid,
                   variables_table::MomentumTrack,
                   variables_table::XTrack,

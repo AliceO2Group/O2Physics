@@ -118,7 +118,7 @@ struct TaskFlowReso {
   SliceCache cache;
   EventPlaneHelper epHelper;
 
-  using CollsWithQvecs = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
+  using CollsWithQvecs = soa::Join<aod::EMEvents_004, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMEventsQvec_001>;
   using CollWithQvec = CollsWithQvecs::iterator;
 
   static constexpr std::size_t NQVecEntries = 6;
