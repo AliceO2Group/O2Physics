@@ -1365,8 +1365,7 @@ DECLARE_SOA_TABLE(HfCandToOmegaPi, "AOD", "HFCANDTOOMEGAPI",
                   hf_cand_xic0_omegac0::DcaXYToPvV0Dau0, hf_cand_xic0_omegac0::DcaXYToPvV0Dau1, hf_cand_xic0_omegac0::DcaXYToPvCascDau,
                   hf_cand_xic0_omegac0::DcaZToPvV0Dau0, hf_cand_xic0_omegac0::DcaZToPvV0Dau1, hf_cand_xic0_omegac0::DcaZToPvCascDau,
                   hf_cand_xic0_omegac0::DcaCascDau, hf_cand_xic0_omegac0::DcaV0Dau, hf_cand_xic0_omegac0::DcaCharmBaryonDau,
-                  hf_cand_xic0_omegac0::DecLenCharmBaryon, hf_cand_xic0_omegac0::DecLenCascade, hf_cand_xic0_omegac0::DecLenV0, hf_cand_xic0_omegac0::ErrorDecayLengthCharmBaryon, hf_cand_xic0_omegac0::ErrorDecayLengthXYCharmBaryon, hf_track_index::HFflag,
-                  o2::soa::Marker<1>);
+                  hf_cand_xic0_omegac0::DecLenCharmBaryon, hf_cand_xic0_omegac0::DecLenCascade, hf_cand_xic0_omegac0::DecLenV0, hf_cand_xic0_omegac0::ErrorDecayLengthCharmBaryon, hf_cand_xic0_omegac0::ErrorDecayLengthXYCharmBaryon, hf_track_index::HFflag);
 
 DECLARE_SOA_TABLE(HfCandToOmegaK, "AOD", "HFCANDTOOMEGAK",
                   o2::soa::Index<>,
@@ -1394,8 +1393,7 @@ DECLARE_SOA_TABLE(HfCandToOmegaK, "AOD", "HFCANDTOOMEGAK",
                   hf_cand_xic0_omegac0::DcaXYToPvV0Dau0, hf_cand_xic0_omegac0::DcaXYToPvV0Dau1, hf_cand_xic0_omegac0::DcaXYToPvCascDau,
                   hf_cand_xic0_omegac0::DcaZToPvV0Dau0, hf_cand_xic0_omegac0::DcaZToPvV0Dau1, hf_cand_xic0_omegac0::DcaZToPvCascDau,
                   hf_cand_xic0_omegac0::DcaCascDau, hf_cand_xic0_omegac0::DcaV0Dau, hf_cand_xic0_omegac0::DcaCharmBaryonDau,
-                  hf_cand_xic0_omegac0::DecLenCharmBaryon, hf_cand_xic0_omegac0::DecLenCascade, hf_cand_xic0_omegac0::DecLenV0, hf_cand_xic0_omegac0::ErrorDecayLengthCharmBaryon, hf_cand_xic0_omegac0::ErrorDecayLengthXYCharmBaryon,
-                  o2::soa::Marker<2>);
+                  hf_cand_xic0_omegac0::DecLenCharmBaryon, hf_cand_xic0_omegac0::DecLenCascade, hf_cand_xic0_omegac0::DecLenV0, hf_cand_xic0_omegac0::ErrorDecayLengthCharmBaryon, hf_cand_xic0_omegac0::ErrorDecayLengthXYCharmBaryon);
 
 // table with results of KFParticle
 DECLARE_SOA_TABLE(HfOmegacKf, "AOD", "HFOMEGACKF", //!
@@ -1504,46 +1502,42 @@ DECLARE_SOA_TABLE(HfXicToXiPiMCRec, "AOD", "HFXICXIPIMCREC", //!
                   hf_cand_mc_flag::OriginMcRec,
                   hf_cand_xic0_omegac0::CollisionMatched,
                   hf_cand_mc_flag::PtBhadMotherPart,
-                  hf_cand_mc_flag::PdgBhadMotherPart,
-                  o2::soa::Marker<1>);
+                  hf_cand_mc_flag::PdgBhadMotherPart);
 DECLARE_SOA_TABLE(HfOmegacToXiPiMCRec, "AOD", "HFOMCXIPIMCREC", //!
                   hf_cand_mc_flag::FlagMcMatchRec,
                   hf_cand_mc_flag::DebugMcRec,
                   hf_cand_mc_flag::OriginMcRec,
                   hf_cand_xic0_omegac0::CollisionMatched,
                   hf_cand_mc_flag::PtBhadMotherPart,
-                  hf_cand_mc_flag::PdgBhadMotherPart,
-                  o2::soa::Marker<2>);
+                  hf_cand_mc_flag::PdgBhadMotherPart);
 DECLARE_SOA_TABLE(HfToOmegaPiMCRec, "AOD", "HFTOOMEPIMCREC", //!
                   hf_cand_mc_flag::FlagMcMatchRec,
                   hf_cand_mc_flag::DebugMcRec,
                   hf_cand_mc_flag::OriginMcRec,
                   hf_cand_xic0_omegac0::CollisionMatched,
                   hf_cand_mc_flag::PtBhadMotherPart,
-                  hf_cand_mc_flag::PdgBhadMotherPart,
-                  o2::soa::Marker<3>);
+                  hf_cand_mc_flag::PdgBhadMotherPart);
 DECLARE_SOA_TABLE(HfToOmegaKMCRec, "AOD", "HFTOOMEKMCREC", //!
                   hf_cand_mc_flag::FlagMcMatchRec,
                   hf_cand_mc_flag::DebugMcRec,
                   hf_cand_mc_flag::OriginMcRec,
                   hf_cand_xic0_omegac0::CollisionMatched,
                   hf_cand_mc_flag::PtBhadMotherPart,
-                  hf_cand_mc_flag::PdgBhadMotherPart,
-                  o2::soa::Marker<4>);
+                  hf_cand_mc_flag::PdgBhadMotherPart);
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfXicToXiPiMCGen, "AOD", "HFXICXIPIMCGEN", //!
                   hf_cand_mc_flag::FlagMcMatchGen, hf_cand_xic0_omegac0::DebugGenCharmBar, hf_cand_xic0_omegac0::DebugGenCasc, hf_cand_xic0_omegac0::DebugGenLambda,
-                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::RapidityCharmBaryonGen, hf_cand_mc_flag::OriginMcGen, hf_cand_mc_flag::IdxBhadMotherPart, o2::soa::Marker<1>);
+                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::RapidityCharmBaryonGen, hf_cand_mc_flag::OriginMcGen, hf_cand_mc_flag::IdxBhadMotherPart);
 DECLARE_SOA_TABLE(HfOmegacToXiPiMCGen, "AOD", "HFOMECXIPIMCGEN", //!
                   hf_cand_mc_flag::FlagMcMatchGen, hf_cand_xic0_omegac0::DebugGenCharmBar, hf_cand_xic0_omegac0::DebugGenCasc, hf_cand_xic0_omegac0::DebugGenLambda,
-                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::RapidityCharmBaryonGen, hf_cand_mc_flag::OriginMcGen, hf_cand_mc_flag::IdxBhadMotherPart, o2::soa::Marker<2>);
+                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::RapidityCharmBaryonGen, hf_cand_mc_flag::OriginMcGen, hf_cand_mc_flag::IdxBhadMotherPart);
 DECLARE_SOA_TABLE(HfToOmegaPiMCGen, "AOD", "HFTOOMEPIMCGEN", //!
                   hf_cand_mc_flag::FlagMcMatchGen, hf_cand_xic0_omegac0::DebugGenCharmBar, hf_cand_xic0_omegac0::DebugGenCasc, hf_cand_xic0_omegac0::DebugGenLambda,
-                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::RapidityCharmBaryonGen, hf_cand_mc_flag::OriginMcGen, hf_cand_mc_flag::IdxBhadMotherPart, o2::soa::Marker<3>);
+                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::RapidityCharmBaryonGen, hf_cand_mc_flag::OriginMcGen, hf_cand_mc_flag::IdxBhadMotherPart);
 DECLARE_SOA_TABLE(HfToOmegaKMCGen, "AOD", "HFTOOMEKMCGEN", //!
                   hf_cand_mc_flag::FlagMcMatchGen, hf_cand_xic0_omegac0::DebugGenCharmBar, hf_cand_xic0_omegac0::DebugGenCasc, hf_cand_xic0_omegac0::DebugGenLambda,
-                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::RapidityCharmBaryonGen, hf_cand_mc_flag::OriginMcGen, hf_cand_mc_flag::IdxBhadMotherPart, o2::soa::Marker<4>);
+                  hf_cand_xic0_omegac0::PtCharmBaryonGen, hf_cand_xic0_omegac0::RapidityCharmBaryonGen, hf_cand_mc_flag::OriginMcGen, hf_cand_mc_flag::IdxBhadMotherPart);
 
 // specific Xic to Xi Pi Pi candidate properties
 namespace hf_cand_xic_to_xi_pi_pi
@@ -2032,8 +2026,7 @@ DECLARE_SOA_TABLE(HfCandBsBase, "AOD", "HFCANDBSBASE",
                   hf_cand::Y<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
                   hf_cand::E<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
                   hf_cand::E2<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
-                  hf_cand_2prong::CtXY<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, collision::PosX, collision::PosY, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex>,
-                  o2::soa::Marker<1>);
+                  hf_cand_2prong::CtXY<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, collision::PosX, collision::PosY, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex>);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
 DECLARE_SOA_EXTENDED_TABLE_USER(HfCandBsExt, HfCandBsBase, "HFCANDBSEXT",
@@ -2118,8 +2111,7 @@ DECLARE_SOA_TABLE(HfCandBsJPBase, "AOD", "HFCANDBSJPBASE",
                   hf_cand::Y<hf_cand_4prong::Px, hf_cand_4prong::Py, hf_cand_4prong::Pz>,
                   hf_cand::E<hf_cand_4prong::Px, hf_cand_4prong::Py, hf_cand_4prong::Pz>,
                   hf_cand::E2<hf_cand_4prong::Px, hf_cand_4prong::Py, hf_cand_4prong::Pz>,
-                  hf_cand_4prong::CtXY<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2, hf_cand::PxProng3, hf_cand::PyProng3, hf_cand::PzProng3, collision::PosX, collision::PosY, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex>,
-                  o2::soa::Marker<1>);
+                  hf_cand_4prong::CtXY<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2, hf_cand::PxProng3, hf_cand::PyProng3, hf_cand::PzProng3, collision::PosX, collision::PosY, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex>);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
 DECLARE_SOA_EXTENDED_TABLE_USER(HfCandBsJPExt, HfCandBsJPBase, "HFCANDBSJPEXT",
