@@ -897,12 +897,12 @@ struct FlowGfwTask {
   // Apply process filters Global+ITS_only sample
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex && (aod::cent::centFT0C > cfgMinCentFT0C) && (aod::cent::centFT0C < cfgMaxCentFT0C);
   Filter trackFilter = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
-                           ncheckbit(aod::track::trackCutFlag, TrackSelectionITS) &&
-                           ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
-                                  ncheckbit(aod::track::trackCutFlag, TrackSelectionTPC), true) &&
-                           ifnode(dcaZ > 0.f, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, TrackSelectionDCAXYonly),
-                                  ncheckbit(aod::track::trackCutFlag, TrackSelectionDCA)) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::dcaXY) < cfgCutDCAxy);
- 
+                       ncheckbit(aod::track::trackCutFlag, TrackSelectionITS) &&
+                       ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
+                              ncheckbit(aod::track::trackCutFlag, TrackSelectionTPC), true) &&
+                       ifnode(dcaZ > 0.f, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, TrackSelectionDCAXYonly),
+                              ncheckbit(aod::track::trackCutFlag, TrackSelectionDCA)) &&
+                       (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::dcaXY) < cfgCutDCAxy);
 
   void processData(Colls::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks, aod::FT0s const&, BCsRun3 const&)
   {
