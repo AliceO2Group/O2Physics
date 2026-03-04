@@ -70,9 +70,6 @@ constexpr double polPrefactorAntiLambda = 3.0/antiLambdaWeakDecayConstant;
 enum CentEstimator {
     kCentFT0C = 0,
     kCentFT0M,
-    kCentFT0CVariant1,
-    kCentMFT,
-    kCentNGlobal,
     kCentFV0A
 };
 
@@ -184,7 +181,7 @@ struct lambdajetpolarizationionsderived {
     Configurable<bool> doPPAnalysis{"doPPAnalysis", false, "if in pp, set to true. Default is HI"};
 
     // Centrality:
-    Configurable<int> centralityEstimator{"centralityEstimator", kCentFT0M, "Run 3 centrality estimator (0:CentFT0C, 1:CentFT0M, 2:CentFT0CVariant1, 3:CentMFT, 4:CentNGlobal, 5:CentFV0A)"}; // Default is FT0M
+    Configurable<int> centralityEstimator{"centralityEstimator", kCentFT0M, "Run 3 centrality estimator (0:CentFT0C, 1:CentFT0M, 2:CentFV0A)"}; // Default is FT0M
     
     // QAs that purposefully break the analysis
         // -- All of these tests should give us zero signal if the source is truly Lambda Polarization from vortices
@@ -415,9 +412,6 @@ struct lambdajetpolarizationionsderived {
     {
         if (centralityEstimator == kCentFT0M) return collision.centFT0M();
         else if (centralityEstimator == kCentFT0C) return collision.centFT0C();
-        else if (centralityEstimator == kCentFT0CVariant1) return collision.centFT0CVariant1();
-        else if (centralityEstimator == kCentMFT) return collision.centMFT();
-        else if (centralityEstimator == kCentNGlobal) return collision.centNGlobal();
         else if (centralityEstimator == kCentFV0A) return collision.centFV0A();
         return -1.f;
     }
