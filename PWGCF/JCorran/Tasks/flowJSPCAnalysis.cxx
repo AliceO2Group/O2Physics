@@ -8,15 +8,19 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
-// \brief   Task for the calculation of SPC with filtered data.
-// \author  Maxim Virta (maxim.virta@cern.ch), Cindy Mordasini (cindy.mordasini@cern.ch)
+///
+/// \file    flowJSPCAnalysis.cxx
+/// \brief   Task for the calculation of SPC with filtered data.
+/// \author  Maxim Virta (maxim.virta@cern.ch), Cindy Mordasini (cindy.mordasini@cern.ch), Neelkamal Mallick (neelkamal.mallick@cern.ch)
 
 // Standard headers.
+#include <TFormula.h>
+#include <TRandom3.h>
+
 #include <chrono>
+#include <memory>
 #include <string>
 #include <vector>
-#include <TRandom3.h>
 
 // O2 headers. //
 // The first two are mandatory.
@@ -46,6 +50,8 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
+
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults,
                                aod::FT0sCorrected, aod::CentFT0Ms,
                                aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As,
@@ -61,6 +67,8 @@ struct flowJSPCAnalysis {
   using HasWeightNUA = decltype(std::declval<T&>().weightNUA());
   template <class T>
   using HasWeightEff = decltype(std::declval<T&>().weightEff());
+  template <class T>
+  using HasTrackType = decltype(std::declval<T&>().trackType());
 
   HistogramRegistry qaHistRegistry{"qaHistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   FlowJHistManager histManager;
@@ -84,12 +92,20 @@ struct flowJSPCAnalysis {
     Configurable<int> cfgMultMin{"cfgMultMin", 10, "Minimum number of particles required for the event to have."};
   } cfgEventCuts;
 
+  O2_DEFINE_CONFIGURABLE(cfgTrackBitMask, uint16_t, 0, "Track selection bitmask to use as defined in the filterCorrelations.cxx task");
+  O2_DEFINE_CONFIGURABLE(cfgMultCorrelationsMask, uint16_t, 0, "Selection bitmask for the multiplicity correlations. This should match the filter selection cfgEstimatorBitMask.")
+  O2_DEFINE_CONFIGURABLE(cfgMultCutFormula, std::string, "", "Multiplicity correlations cut formula. A result greater than zero results in accepted event. Parameters: [cFT0C] FT0C centrality, [mFV0A] V0A multiplicity, [mGlob] global track multiplicity, [mPV] PV track multiplicity, [cFT0M] FT0M centrality")
+
   // // Filters to be applied to the received data.
   // // The analysis assumes the data has been subjected to a QA of its selection,
   // // and thus only the final distributions of the data for analysis are saved.
   Filter collFilter = (nabs(aod::collision::posZ) < cfgEventCuts.cfgZvtxMax);
+
   Filter trackFilter = (aod::track::pt > cfgTrackCuts.cfgPtMin) && (aod::track::pt < cfgTrackCuts.cfgPtMax) && (nabs(aod::track::eta) < cfgTrackCuts.cfgEtaMax);
-  Filter cftrackFilter = (aod::cftrack::pt > cfgTrackCuts.cfgPtMin) && (aod::cftrack::pt < cfgTrackCuts.cfgPtMax); // eta cuts done by jfluc
+  Filter cftrackFilter = (nabs(aod::cftrack::eta) < cfgTrackCuts.cfgEtaMax) && (aod::cftrack::pt > cfgTrackCuts.cfgPtMin) && (aod::cftrack::pt < cfgTrackCuts.cfgPtMax) && ncheckbit(aod::track::trackType, as<uint8_t>(cfgTrackBitMask));
+
+  std::unique_ptr<TFormula> multCutFormula;
+  std::array<uint, aod::cfmultset::NMultiplicityEstimators> multCutFormulaParamIndex;
 
   void init(InitContext const&)
   {
@@ -103,6 +119,26 @@ struct flowJSPCAnalysis {
     histManager.setHistRegistryQA(&qaHistRegistry);
     histManager.setDebugLog(false);
     histManager.createHistQA();
+
+    if (!cfgMultCutFormula.value.empty()) {
+      multCutFormula = std::make_unique<TFormula>("multCutFormula", cfgMultCutFormula.value.c_str());
+      std::fill_n(multCutFormulaParamIndex.begin(), std::size(multCutFormulaParamIndex), ~0u);
+      std::array<std::string, aod::cfmultset::NMultiplicityEstimators> pars = {"cFT0C", "mFV0A", "mPV", "mGlob", "cFT0M"}; // must correspond the order of MultiplicityEstimators
+      for (uint i = 0, n = multCutFormula->GetNpar(); i < n; ++i) {
+        auto m = std::find(pars.begin(), pars.end(), multCutFormula->GetParName(i));
+        if (m == pars.end()) {
+          LOGF(warning, "Unknown parameter in cfgMultCutFormula: %s", multCutFormula->GetParName(i));
+          continue;
+        }
+        const uint estIdx = std::distance(pars.begin(), m);
+        if ((cfgMultCorrelationsMask.value & (1u << estIdx)) == 0) {
+          LOGF(warning, "The centrality/multiplicity estimator %s is not available to be used in cfgMultCutFormula. Ensure cfgMultCorrelationsMask is correct and matches the CFMultSets in derived data.", m->c_str());
+        } else {
+          multCutFormulaParamIndex[estIdx] = i;
+          LOGF(info, "Multiplicity cut parameter %s in use.", m->c_str());
+        }
+      }
+    }
   }
 
   template <class CollisionT, class TrackT>
@@ -119,6 +155,7 @@ struct flowJSPCAnalysis {
     int cBin = histManager.getCentBin(cent);
     spcHistograms.fill(HIST("FullCentrality"), cent);
     int nTracks = tracks.size();
+
     double wNUA = 1.0;
     double wEff = 1.0;
     for (const auto& track : tracks) {
@@ -135,6 +172,11 @@ struct flowJSPCAnalysis {
         if constexpr (std::experimental::is_detected<HasWeightNUA, const JInputClassIter>::value) {
           spcAnalysis.fillQAHistograms(cBin, track.phi(), 1. / track.weightNUA());
         }
+        if constexpr (std::experimental::is_detected<HasTrackType, const JInputClassIter>::value) {
+          if (track.trackType() != cfgTrackBitMask.value) {
+            LOGF(warning, "trackType %d (expected %d) is passed to the analysis", track.trackType(), cfgTrackBitMask.value);
+          }
+        }
       }
     }
 
@@ -144,6 +186,20 @@ struct flowJSPCAnalysis {
     jqvecs.Calculate(tracks, 0.0, cfgTrackCuts.cfgEtaMax);
     spcAnalysis.setQvectors(&jqvecs);
     spcAnalysis.calculateCorrelators(cBin);
+  }
+
+  template <class CollType>
+  bool passOutlier(CollType const& collision)
+  {
+    if (cfgMultCutFormula.value.empty())
+      return true;
+    for (uint i = 0; i < aod::cfmultset::NMultiplicityEstimators; ++i) {
+      if ((cfgMultCorrelationsMask.value & (1u << i)) == 0 || multCutFormulaParamIndex[i] == ~0u)
+        continue;
+      auto estIndex = std::popcount(static_cast<uint32_t>(cfgMultCorrelationsMask.value & ((1u << i) - 1)));
+      multCutFormula->SetParameter(multCutFormulaParamIndex[i], collision.multiplicities()[estIndex]);
+    }
+    return multCutFormula->Eval() > 0.0f;
   }
 
   void processJDerived(aod::JCollision const& collision, soa::Filtered<aod::JTracks> const& tracks)
@@ -164,11 +220,21 @@ struct flowJSPCAnalysis {
   }
   PROCESS_SWITCH(flowJSPCAnalysis, processCFDerived, "Process CF derived data", false);
 
-  void processCFDerivedCorrected(aod::CFCollision const& collision, soa::Filtered<soa::Join<aod::CFTracks, aod::JWeights>> const& tracks)
+  void processCFDerivedCorrected(soa::Filtered<aod::CFCollisions>::iterator const& collision, soa::Filtered<soa::Join<aod::CFTracks, aod::JWeights>> const& tracks)
   {
     analyze(collision, tracks);
   }
   PROCESS_SWITCH(flowJSPCAnalysis, processCFDerivedCorrected, "Process CF derived data with corrections", true);
+
+  void processCFDerivedMultSetCorrected(soa::Filtered<soa::Join<aod::CFCollisions, aod::CFMultSets>>::iterator const& collision, soa::Filtered<soa::Join<aod::CFTracks, aod::JWeights>> const& tracks)
+  {
+    if (std::popcount(static_cast<uint32_t>(cfgMultCorrelationsMask.value)) != static_cast<int>(collision.multiplicities().size()))
+      LOGF(fatal, "Multiplicity selections (cfgMultCorrelationsMask = 0x%x) do not match the size of the table column (%ld).", cfgMultCorrelationsMask.value, collision.multiplicities().size());
+    if (!passOutlier(collision))
+      return;
+    analyze(collision, tracks);
+  }
+  PROCESS_SWITCH(flowJSPCAnalysis, processCFDerivedMultSetCorrected, "Process CF derived data with corrections and multiplicity sets", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
