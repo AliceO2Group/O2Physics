@@ -813,15 +813,15 @@ struct lambdajetpolarizationions {
             }
 
             // For all received candidates:
-            histos.add("hPosDCAToPV", "hPosDCAToPV", kTH1D, {axisConfigurations.axisDCAtoPV});
-            histos.add("hNegDCAToPV", "hNegDCAToPV", kTH1D, {axisConfigurations.axisDCAtoPV});
-            histos.add("hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
-            histos.add("hPointingAngle", "hPointingAngle", kTH1D, {axisConfigurations.axisPointingAngle});
-            histos.add("hV0Radius", "hV0Radius", kTH1D, {axisConfigurations.axisV0Radius});
-            histos.add("h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
-            histos.add("h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
-            histos.add("h2dPositivePtVsPhi", "h2dPositivePtVsPhi", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
-            histos.add("h2dNegativePtVsPhi", "h2dNegativePtVsPhi", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
+            histos.add("V0KinematicQA/hPosDCAToPV", "hPosDCAToPV", kTH1D, {axisConfigurations.axisDCAtoPV});
+            histos.add("V0KinematicQA/hNegDCAToPV", "hNegDCAToPV", kTH1D, {axisConfigurations.axisDCAtoPV});
+            histos.add("V0KinematicQA/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
+            histos.add("V0KinematicQA/hPointingAngle", "hPointingAngle", kTH1D, {axisConfigurations.axisPointingAngle});
+            histos.add("V0KinematicQA/hV0Radius", "hV0Radius", kTH1D, {axisConfigurations.axisV0Radius});
+            histos.add("V0KinematicQA/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
+            histos.add("V0KinematicQA/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
+            histos.add("V0KinematicQA/h2dPositivePtVsPhi", "h2dPositivePtVsPhi", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
+            histos.add("V0KinematicQA/h2dNegativePtVsPhi", "h2dNegativePtVsPhi", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
             if (analyseLambda) {
                 histos.add("Lambda/hPosDCAToPV", "hPosDCAToPV", kTH1D, {axisConfigurations.axisDCAtoPV});
                 histos.add("Lambda/hNegDCAToPV", "hNegDCAToPV", kTH1D, {axisConfigurations.axisDCAtoPV});
@@ -1748,15 +1748,15 @@ struct lambdajetpolarizationions {
             
             if (doCompleteTopoQA){
                 // Remaking these variables outside of the passesLambdaLambdaBarHypothesis. Loses performance, but that should be OK for QA
-                histos.fill(HIST("hPosDCAToPV"), v0.dcapostopv());
-                histos.fill(HIST("hNegDCAToPV"), v0.dcanegtopv());
-                histos.fill(HIST("hDCADaughters"), v0.dcaV0daughters());
-                histos.fill(HIST("hPointingAngle"), std::acos(v0.v0cosPA()));
-                histos.fill(HIST("hV0Radius"), v0.v0radius());
-                histos.fill(HIST("h2dPositiveITSvsTPCpts"), posTrackExtra.tpcNClsCrossedRows(), posTrackExtra.itsNCls());
-                histos.fill(HIST("h2dNegativeITSvsTPCpts"), negTrackExtra.tpcNClsCrossedRows(), negTrackExtra.itsNCls());
-                histos.fill(HIST("h2dPositivePtVsPhi"), v0.positivept(), computePhiMod(v0.positivephi(), 1));
-                histos.fill(HIST("h2dNegativePtVsPhi"), v0.negativept(), computePhiMod(v0.negativephi(), -1));
+                histos.fill(HIST("V0KinematicQA/hPosDCAToPV"), v0.dcapostopv());
+                histos.fill(HIST("V0KinematicQA/hNegDCAToPV"), v0.dcanegtopv());
+                histos.fill(HIST("V0KinematicQA/hDCADaughters"), v0.dcaV0daughters());
+                histos.fill(HIST("V0KinematicQA/hPointingAngle"), std::acos(v0.v0cosPA()));
+                histos.fill(HIST("V0KinematicQA/hV0Radius"), v0.v0radius());
+                histos.fill(HIST("V0KinematicQA/h2dPositiveITSvsTPCpts"), posTrackExtra.tpcNClsCrossedRows(), posTrackExtra.itsNCls());
+                histos.fill(HIST("V0KinematicQA/h2dNegativeITSvsTPCpts"), negTrackExtra.tpcNClsCrossedRows(), negTrackExtra.itsNCls());
+                histos.fill(HIST("V0KinematicQA/h2dPositivePtVsPhi"), v0.positivept(), computePhiMod(v0.positivephi(), 1));
+                histos.fill(HIST("V0KinematicQA/h2dNegativePtVsPhi"), v0.negativept(), computePhiMod(v0.negativephi(), -1));
                 if (isLambda && analyseLambda) {
                     histos.fill(HIST("hMassLambda"), v0.mLambda());
                     histos.fill(HIST("Lambda/h3dMassLambda"), centrality, v0pt, v0.mLambda());
