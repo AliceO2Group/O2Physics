@@ -39,5 +39,5 @@ struct muonSelfIdConverter1 {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<muonSelfIdConverter1>(cfgc, TaskName{"muon-selfif-converter1"})};
+  return WorkflowSpec{adaptAnalysisTask<muonSelfIdConverter1>(cfgc, TaskName{"muon-selfid-converter1"})};
 }
