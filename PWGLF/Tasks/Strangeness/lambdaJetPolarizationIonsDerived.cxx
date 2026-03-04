@@ -669,7 +669,7 @@ struct lambdajetpolarizationionsderived {
 
                 // Calculating polarization observables (in the Lambda frame, because that is easier -- does not require boosts):
                     // To be precise, not actually the polarization, but a part of the summand in P^*_\Lambda = (3/\alpha_\Lambda) * <p^*_{proton}>
-                float PolStarX, PolStarY, PolStarZ;
+                float PolStarX = 0, PolStarY = 0, PolStarZ = 0; // Dummy initialization: avoid warnings in compile time
                 if (isLambda){ // Notice there is no need to check analyseLambda again due to previous checks.
                     PolStarX = polPrefactorLambda * protonLikeStarUnit3Vec.X();
                     PolStarY = polPrefactorLambda * protonLikeStarUnit3Vec.Y();
