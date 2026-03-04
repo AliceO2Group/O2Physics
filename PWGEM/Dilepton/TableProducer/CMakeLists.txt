@@ -41,6 +41,11 @@ o2physics_add_dpl_workflow(skimmer-primary-muon
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::GlobalTracking
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(skimmer-primary-muon-qc
+                    SOURCES skimmerPrimaryMuonQC.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::GlobalTracking
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(skimmer-primary-track
                     SOURCES skimmerPrimaryTrack.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
