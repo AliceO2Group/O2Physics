@@ -140,7 +140,8 @@ DECLARE_SOA_TABLE_VERSIONED(EMFwdTracksForML_000, "AOD", "EMFWDTRKML", 0, //!
                             fwdtrack::NClusters, fwdtrack::PDca, fwdtrack::RAtAbsorberEnd,
                             fwdtrack::Chi2, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT,
                             // fwdtrack::MCHBitMap, fwdtrack::MIDBitMap, fwdtrack::MIDBoards,
-                            fwdtrack::MFTClusterSizesAndTrackFlags, emmlfwdtrack::Chi2MFT, emmlfwdtrack::NClustersMFT, mcparticle::PdgCode, emmlfwdtrack::IsPrimary, emmlfwdtrack::IsCorrectMatchMFTMCH);
+                            fwdtrack::MFTClusterSizesAndTrackFlags, emmlfwdtrack::Chi2MFT, emmlfwdtrack::NClustersMFT, mcparticle::PdgCode, emmlfwdtrack::IsPrimary, emmlfwdtrack::IsCorrectMatchMFTMCH,
+                            mcparticle::Pt, mcparticle::Eta, mcparticle::Phi);
 
 using EMFwdTracksForML = EMFwdTracksForML_000;
 // iterators
