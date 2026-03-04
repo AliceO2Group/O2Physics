@@ -341,7 +341,7 @@ struct lambdajetpolarizationionsderived {
             // TProfile of ring vs mass (integrated in all phi, and properly normalized by N_\Lambda):
             histos.add((folder + "/pRingObservableMass").c_str(), "pRingObservableMass;m_{p#pi};<#it{R}>", kTProfile, {axisConfigurations.axisLambdaMassSigExtract});
             histos.add((folder + "/pRingObservableLeadPMass").c_str(), "pRingObservableLeadPMass;m_{p#pi};<#it{R}>", kTProfile, {axisConfigurations.axisLambdaMassSigExtract});
-            histos.add((folder + "/pRingObservable2ndJetMass").c_str(), "pRingObservableLeadPMass;m_{p#pi};<#it{R}>", kTProfile, {axisConfigurations.axisLambdaMassSigExtract});
+            histos.add((folder + "/pRingObservable2ndJetMass").c_str(), "pRingObservable2ndJetMass;m_{p#pi};<#it{R}>", kTProfile, {axisConfigurations.axisLambdaMassSigExtract});
             // TProfile2D: <R> vs Mass (DeltaPhi)
             histos.add((folder + "/p2dRingObservableDeltaPhiVsMass").c_str(), "p2dRingObservableDeltaPhiVsMass;#Delta#varphi;m_{p#pi};<#it{R}>", kTProfile2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisLambdaMassSigExtract});
             // TProfile2D: <R> vs Mass (DeltaTheta)
