@@ -161,7 +161,7 @@ struct FlowCorrelationsUpc {
 
   // make the filters and cuts.
   Filter trackFilter = (aod::udtrack::isPVContributor == true);
-  Filter collisionFilter = (((cfgGapSideMerge == true && (aod::udcollision::gapSide == (uint8_t)1 || aod::udcollision::gapSide == (uint8_t)0)) || aod::udcollision::gapSide == (uint8_t)cfgGapSide) && (cfgIfVertex == false || aod::collision::posZ < cfgZVtxCut) && (aod::udcollision::occupancyInTime > 0 && aod::udcollision::occupancyInTime < cfgCutOccupancyHigh) && ((cfgGapSideMerge == true && (aod::flowcorrupc::truegapside == 0 || aod::flowcorrupc::truegapside == 1)) || aod::flowcorrupc::truegapside == cfgGapSide));
+  Filter collisionFilter = (((cfgGapSideMerge == true && (aod::udcollision::gapSide == (uint8_t)1 || aod::udcollision::gapSide == (uint8_t)0)) || aod::udcollision::gapSide == (uint8_t)cfgGapSide) && (cfgIfVertex == false || aod::collision::posZ < cfgZVtxCut) && (aod::udcollision::occupancyInTime > 0 && aod::udcollision::occupancyInTime < cfgCutOccupancyHigh) && ((cfgGapSideMerge == true && (aod::flowcorrupc::truegapside == 0 || aod::flowcorrupc::truegapside == 1)) || aod::flowcorrupc::truegapside == cfgGapSide) && (aod::flowcorrupc::multiplicity > cfgMinMult) && (aod::flowcorrupc::multiplicity < cfgMaxMult));
   // Filter collisionFilter = (nabs(aod::collision::posZ) < cfgZVtxCut) && (aod::flowcorrupc::multiplicity) > cfgMinMult && (aod::flowcorrupc::multiplicity) < cfgMaxMult && (aod::evsel::sel8) == true;
   // Filter trackFilter = (nabs(aod::track::eta) < cfgEtaCut) && (aod::track::pt > cfgPtCutMin) && (aod::track::pt < cfgPtCutMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
 
@@ -352,9 +352,9 @@ struct FlowCorrelationsUpc {
 
   void processSame(UDCollisionsFull::iterator const& collision, UdTracksFull const& tracks)
   {
-    if (tracks.size() < cfgMinMult || tracks.size() > cfgMaxMult) {
-      return;
-    }
+    // if (tracks.size() < cfgMinMult || tracks.size() > cfgMaxMult) {
+    //   return;
+    // }
     // if (cfgIsGoodItsLayers && collision.trs() == 0) {
     //   return;
     // }
@@ -409,9 +409,9 @@ struct FlowCorrelationsUpc {
 
     for (auto const& [collision1, tracks1, collision2, tracks2] : pairs) {
       registry.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
-      if (tracks1.size() < cfgMinMult || tracks1.size() > cfgMaxMult || tracks2.size() < cfgMinMult || tracks2.size() > cfgMaxMult) {
-        continue;
-      }
+      // if (tracks1.size() < cfgMinMult || tracks1.size() > cfgMaxMult || tracks2.size() < cfgMinMult || tracks2.size() > cfgMaxMult) {
+      //   continue;
+      // }
       // registry.fill(HIST("eventcount"), 4.5);
       // if (cfgIsGoodItsLayers && (collision1.trs() == 0 || collision2.trs() == 0)) {
       //   continue;
