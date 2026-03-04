@@ -128,7 +128,7 @@ struct AnalysisEnergyCorrelator {
     Configurable<std::string> fConfigMCRecSignalsJSON{"cfgMCRecDileptonHadronSignalsJSON", "", "Additional list of MC signals (reconstructed) via JSON"};
     Configurable<std::string> fConfigMCGenSignalsJSON{"cfgMCGenDileptonHadronSignalsJSON", "", "Comma separated list of MC signals (generated) via JSON"};
     Configurable<float> fConfigMCGenHadronEtaAbs{"cfgMCGenHadronEtaAbs", 0.9f, "eta abs range for the hadron"};
-    Configurable<float> fConfigMCGenHadronPtMin{"cfgMCGenHadronPtMin", 1.0f, "minimum pt for the hadron"};
+    Configurable<float> fConfigMCGenHadronPtMin{"cfgMCGenHadronPtMin", 0.1f, "minimum pt for the hadron"};
   } fConfigDileptonHadronOptions;
 
   // Histogram configurables
@@ -553,10 +553,6 @@ struct AnalysisEnergyCorrelator {
       // Fill event variables first
       VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
       VarManager::FillEvent<gkEventFillMapWithMults>(event);
-      // if (event.has_mcCollision()) {
-      //   VarManager::FillEvent<VarManager::ObjTypes::CollisionMC>(event.mcCollision());
-      //   fHistMan->FillHistClass("EventsMC", VarManager::fgValues);
-      // }
 
       if (fConfigEventOptions.fConfigEventQA) {
         fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
@@ -837,6 +833,9 @@ struct AnalysisEnergyCorrelator {
             if (!MixedEvent) {
               fHistMan->FillHistClass(Form("MCTruthEenergyCorrelators_%s", sig->GetName()), VarManager::fgValues);
             }
+            if (MixedEvent) {
+              fHistMan->FillHistClass(Form("MCTruthEenergyCorrelatorsME_%s", sig->GetName()), VarManager::fgValues);
+            }
           }
         }
       }
@@ -997,6 +996,9 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses, const char
     }
     if (classStr.Contains("MCTruthEenergyCorrelators")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "energy-correlator-gen");
+    }
+    if (classStr.Contains("MCTruthGenSel")) {
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth_track");
     }
   } // end loop over histogram classes
 }
