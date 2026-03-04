@@ -3926,7 +3926,6 @@ struct AntinucleiInJets {
   }
   PROCESS_SWITCH(AntinucleiInJets, processCoalescenceCorr, "process coalescence correlation", false);
 
-
   // Jet Pt resolution
   void processJetPtResolution(RecCollisionsMc const& collisions, AntiNucleiTracksMc const& mcTracks, aod::McParticles const& mcParticles)
   {
