@@ -102,15 +102,15 @@ using namespace o2::aod::rctsel;
 
 ///// Aliases for joined tables
 /// Collisions:
-using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0CVariant1s, aod::CentMFTs, aod::CentNGlobals,
-                                aod::CentFV0As, aod::PVMults, aod::FT0Mults, aod::FV0Mults, aod::MultsGlobal>; // Added PVMults to get MultNTracksPVeta1 as centrality estimator
-using SelCollisionsSimple = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>; // Simpler, for jets
+using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As,
+                                aod::PVMults, aod::FT0Mults, aod::FV0Mults>; // Added PVMults to get MultNTracksPVeta1 as centrality estimator
+using SelCollisionsSimple = soa::Join<aod::Collisions, aod::EvSels>; // Simpler, for jets
 
 /// V0s and Daughter tracks:
 // using V0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
 // using V0CandidatesSimple = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>; // No TOF
 /// To run in RAW data:
-// using V0Candidates = aod::V0Datas;
+// using V0Candidates = aod::V0Datas; // TODO: possible quicker subscription for analysis that do not require TOF.
 using V0CandidatesWithTOF = soa::Join<aod::V0Datas, aod::V0TOFPIDs, aod::V0TOFNSigmas>; // Tables created by o2-analysis-lf-strangenesstofpid
 // using DauTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
     // Actually used subscriptions (smaller memory usage):
@@ -129,9 +129,6 @@ using PseudoJetTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, 
 enum CentEstimator {
     kCentFT0C = 0,
     kCentFT0M,
-    kCentFT0CVariant1,
-    kCentMFT,
-    kCentNGlobal,
     kCentFV0A
 };
 
@@ -180,7 +177,7 @@ struct lambdajetpolarizationions {
 
     Configurable<bool> doPPAnalysis{"doPPAnalysis", false, "if in pp, set to true. Default is HI"};
     Configurable<std::string> irSource{"irSource", "ZNChadronic", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNChadronic)"}; // Renamed David's "ZNC hadronic" to the proper code "ZNChadronic"
-    Configurable<int> centralityEstimatorForQA{"centralityEstimatorForQA", kCentFT0M, "Run 3 centrality estimator (0:CentFT0C, 1:CentFT0M, 2:CentFT0CVariant1, 3:CentMFT, 4:CentNGlobal, 5:CentFV0A)"}; // Default is FT0M
+    Configurable<int> centralityEstimatorForQA{"centralityEstimatorForQA", kCentFT0M, "Run 3 centrality estimator (0:CentFT0C, 1:CentFT0M, 2:CentFV0A)"}; // Default is FT0M
     // (Now saving all centralities at the derived data level -- Makes them all available for consumer)
     // (But still using this variable for QA histograms)
 
@@ -568,15 +565,9 @@ struct lambdajetpolarizationions {
             histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(23, "hasRingV0");
 
             // Centrality:
-            histos.add("Centrality/hCentralityVsNGlobal", "hCentralityVsNGlobal", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisNch});
             histos.add("Centrality/hEventCentVsMultFT0M", "hEventCentVsMultFT0M", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFT0M});
             histos.add("Centrality/hEventCentVsMultFT0C", "hEventCentVsMultFT0C", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFT0C});
-            histos.add("Centrality/hEventCentVsMultNGlobal", "hEventCentVsMultNGlobal", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisNch});
             histos.add("Centrality/hEventCentVsMultFV0A", "hEventCentVsMultFV0A", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFV0A});
-            histos.add("Centrality/hEventMultFT0MvsMultNGlobal", "hEventMultFT0MvsMultNGlobal", kTH2D, {axisConfigurations.axisMultFT0M, axisConfigurations.axisNch});
-            histos.add("Centrality/hEventMultFT0CvsMultNGlobal", "hEventMultFT0CvsMultNGlobal", kTH2D, {axisConfigurations.axisMultFT0C, axisConfigurations.axisNch});
-            histos.add("Centrality/hEventMultFV0AvsMultNGlobal", "hEventMultFV0AvsMultNGlobal", kTH2D, {axisConfigurations.axisMultFV0A, axisConfigurations.axisNch});
-            histos.add("Centrality/hEventMultPVvsMultNGlobal", "hEventMultPVvsMultNGlobal", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisNch});
             histos.add("Centrality/hEventMultFT0CvsMultFV0A", "hEventMultFT0CvsMultFV0A", kTH2D, {axisConfigurations.axisMultFT0C, axisConfigurations.axisMultFV0A});
         }
 
@@ -929,9 +920,6 @@ struct lambdajetpolarizationions {
     {
         if (centralityEstimatorForQA == kCentFT0M) return collision.centFT0M();
         else if (centralityEstimatorForQA == kCentFT0C) return collision.centFT0C();
-        else if (centralityEstimatorForQA == kCentFT0CVariant1) return collision.centFT0CVariant1();
-        else if (centralityEstimatorForQA == kCentMFT) return collision.centMFT();
-        else if (centralityEstimatorForQA == kCentNGlobal) return collision.centNGlobal();
         else if (centralityEstimatorForQA == kCentFV0A) return collision.centFV0A();
         return -1.f;
     }
@@ -1001,15 +989,9 @@ struct lambdajetpolarizationions {
         histos.fill(HIST("Centrality/hEventCentrality"), centrality);
         histos.fill(HIST("Centrality/hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
         if (doEventQA) {
-            histos.fill(HIST("Centrality/hCentralityVsNGlobal"), centrality, collision.multNTracksGlobal());
             histos.fill(HIST("Centrality/hEventCentVsMultFT0M"), collision.centFT0M(), collision.multFT0A() + collision.multFT0C());
             histos.fill(HIST("Centrality/hEventCentVsMultFT0C"), collision.centFT0C(), collision.multFT0C());
-            histos.fill(HIST("Centrality/hEventCentVsMultNGlobal"), collision.centNGlobal(), collision.multNTracksGlobal());
             histos.fill(HIST("Centrality/hEventCentVsMultFV0A"), collision.centFV0A(), collision.multFV0A());
-            histos.fill(HIST("Centrality/hEventMultFT0MvsMultNGlobal"), collision.multFT0A() + collision.multFT0C(), collision.multNTracksGlobal());
-            histos.fill(HIST("Centrality/hEventMultFT0CvsMultNGlobal"), collision.multFT0C(), collision.multNTracksGlobal());
-            histos.fill(HIST("Centrality/hEventMultFV0AvsMultNGlobal"), collision.multFV0A(), collision.multNTracksGlobal());
-            histos.fill(HIST("Centrality/hEventMultPVvsMultNGlobal"), collision.multNTracksPVeta1(), collision.multNTracksGlobal());
             histos.fill(HIST("Centrality/hEventMultFT0CvsMultFV0A"), collision.multFT0C(), collision.multFV0A());
         }
         return;
@@ -1644,9 +1626,6 @@ struct lambdajetpolarizationions {
         tableCollisions(collIdx,
                         collision.centFT0M(),
                         collision.centFT0C(),
-                        collision.centFT0CVariant1(),
-                        collision.centMFT(),
-                        collision.centNGlobal(),
                         collision.centFV0A()
                     ); // (TODO: add InteractionRate info and other useful cuts for later on in the analysis?)
 
@@ -1705,9 +1684,9 @@ struct lambdajetpolarizationions {
                     v0.mLambda(), v0.mAntiLambda(),
                     v0.positivept(), v0.positiveeta(), v0.positivephi(),
                     v0.negativept(), v0.negativeeta(), v0.negativephi(),
-                    v0.v0cosPA(), v0.v0radius(), v0.dcaV0daughters(), v0.dcapostopv(), v0.dcanegtopv(),
                     posTrackExtra.tpcNSigmaPr(), posTrackExtra.tpcNSigmaPi(),
-                    negTrackExtra.tpcNSigmaPr(), negTrackExtra.tpcNSigmaPi()
+                    negTrackExtra.tpcNSigmaPr(), negTrackExtra.tpcNSigmaPi(),
+                    v0.v0cosPA(), v0.v0radius(), v0.dcaV0daughters(), v0.dcapostopv(), v0.dcanegtopv()
                     );
             if (doEventQA && !validV0AlreadyFound) fillEventSelectionQA(lastBinEvSel, centrality); // hasRingV0 passes
             validV0AlreadyFound = true;

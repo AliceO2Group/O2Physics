@@ -146,9 +146,6 @@ DECLARE_SOA_TABLE(RingCollisions, "AOD", "RINGCOLLISIONS",
                   lambdajetpol::CollisionId,
                   lambdajetpol::CentFT0M,
                   lambdajetpol::CentFT0C,
-                  lambdajetpol::CentFT0CVariant1,
-                  lambdajetpol::CentMFT,
-                  lambdajetpol::CentNGlobal,
                   lambdajetpol::CentFV0A
                 );
                   
