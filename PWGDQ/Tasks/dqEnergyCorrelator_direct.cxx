@@ -521,8 +521,13 @@ struct AnalysisEnergyCorrelator {
     }
   }
 
-  void processBarrel(MyEvents const& events, aod::TrackAssoc const& assocs, MyBarrelTracksWithCov const& /*tracks*/, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles, BCsWithTimestamps const& bcs)
+  void processBarrel(MyEvents const& events, aod::TrackAssoc const& assocs, MyBarrelTracksWithCov const& /*tracks*/, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultMCExtras> const& mcEvents, aod::McParticles const& mcParticles, BCsWithTimestamps const& bcs)
   {
+    VarManager::ResetValues(0, VarManager::kNVars);
+    VarManager::FillTimeFrame(bcs);
+    VarManager::FillTimeFrame(events);
+    VarManager::FillTimeFrame(mcEvents);
+
     if (events.size() == 0)
       return;
 
@@ -531,9 +536,12 @@ struct AnalysisEnergyCorrelator {
       fCurrentRun = bcs.begin().runNumber();
     }
 
+    if (fConfigEventOptions.fConfigEventQA) {
+      fHistMan->FillHistClass("TimeFrameStats", VarManager::fgValues);
+    }
+
     for (auto& event : mcEvents) {
       // Reset the fValues array and fill event observables
-      VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
       VarManager::FillEvent<VarManager::ObjTypes::CollisionMC>(event);
       if (fConfigEventOptions.fConfigEventQA) {
         fHistMan->FillHistClass("EventsMC", VarManager::fgValues);
@@ -543,11 +551,12 @@ struct AnalysisEnergyCorrelator {
     // Event loop
     for (auto& event : events) {
       // Fill event variables first
-      VarManager::ResetValues(0, VarManager::kNVars);
+      VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
       VarManager::FillEvent<gkEventFillMapWithMults>(event);
-      if (event.has_mcCollision()) {
-        VarManager::FillEvent<VarManager::ObjTypes::CollisionMC>(event.mcCollision());
-      }
+      // if (event.has_mcCollision()) {
+      //   VarManager::FillEvent<VarManager::ObjTypes::CollisionMC>(event.mcCollision());
+      //   fHistMan->FillHistClass("EventsMC", VarManager::fgValues);
+      // }
 
       if (fConfigEventOptions.fConfigEventQA) {
         fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
