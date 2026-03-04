@@ -33,9 +33,9 @@
 
 /PWGCF @alibuild @victor-gonzalez @otonvd @shouqiye
 /PWGCF/Core @alibuild @jgrosseo
-/PWGCF/DataModel @alibuild @jgrosseo @victor-gonzalez @otonvd @shouqiye
-/PWGCF/TableProducer @alibuild @jgrosseo @victor-gonzalez @otonvd @shouqiye
-/PWGCF/Tasks @alibuild @jgrosseo @victor-gonzalez @otonvd @shouqiye
+/PWGCF/DataModel @alibuild @jgrosseo @jaelpark @victor-gonzalez @otonvd @shouqiye
+/PWGCF/TableProducer @alibuild @jgrosseo @jaelpark @victor-gonzalez @otonvd @shouqiye
+/PWGCF/Tasks @alibuild @jgrosseo @jaelpark @victor-gonzalez @otonvd @shouqiye
 /PWGCF/EbyEFluctuations @alibuild @SwatiSaha-1997 @isputows @victor-gonzalez @otonvd @shouqiye
 /PWGCF/Femto @alibuild @lauraser @ariedel-cern @dimihayl @victor-gonzalez @otonvd @shouqiye
 /PWGCF/FemtoDream @alibuild @lauraser @ariedel-cern @dimihayl @victor-gonzalez @otonvd @shouqiye
