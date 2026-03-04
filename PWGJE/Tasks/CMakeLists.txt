@@ -11,6 +11,7 @@
 add_library(JetSubstructureHFPCH OBJECT jetSubstructureHFPCH.cxx)
 target_link_libraries(JetSubstructureHFPCH
   PUBLIC O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore)
+if(NOT DEFINED ENV{USE_RECC})
 target_precompile_headers(JetSubstructureHFPCH PRIVATE
   [["PWGJE/DataModel/Jet.h"]]
   [["PWGJE/DataModel/JetSubstructure.h"]]
@@ -25,6 +26,7 @@ target_precompile_headers(JetSubstructureHFPCH PRIVATE
   <vector>
   <memory>
 )
+endif()
 
 o2physics_add_dpl_workflow(emc-cellmonitor
                     SOURCES emcCellMonitor.cxx
