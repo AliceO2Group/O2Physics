@@ -55,7 +55,7 @@ DECLARE_SOA_COLUMN(MotherPDGcode, MotherpdgCode, int);
 DECLARE_SOA_COLUMN(MotherDecRad, motherDecRad, float);
 DECLARE_SOA_COLUMN(AbsoDecL, absoDecL, float);
 DECLARE_SOA_COLUMN(McProcess, mcProcess, uint64_t);
-
+DECLARE_SOA_COLUMN(gEventMask, genEventMask, uint8_t);
 } // namespace NucleiTableNS
 
 namespace NucleiPairTableNS
@@ -203,6 +203,40 @@ DECLARE_SOA_TABLE(NucleiTableRed, "AOD", "NUCLEITABLERED",
                   NucleiTableNS::PDGcode,
                   NucleiTableNS::MotherPDGcode);
 
+// Table for keeping track of selection of generated events
+DECLARE_SOA_TABLE(GenEventMCSel, "AOD", "GENEVENTMCSEL",
+                  NucleiTableNS::gEventMask);
+
+DECLARE_SOA_TABLE(NucleiTableMCExtension, "AOD", "NUCTABLEMCSEL",
+                  NucleiTableNS::Pt,
+                  NucleiTableNS::Eta,
+                  NucleiTableNS::Phi,
+                  NucleiTableNS::TPCInnerParam,
+                  NucleiTableNS::Beta,
+                  NucleiTableNS::Zvertex,
+                  NucleiTableNS::NContrib,
+                  NucleiTableNS::DCAxy,
+                  NucleiTableNS::DCAz,
+                  NucleiTableNS::TPCsignal,
+                  NucleiTableNS::ITSchi2,
+                  NucleiTableNS::TPCchi2,
+                  NucleiTableNS::TOFchi2,
+                  NucleiTableNS::Flags,
+                  NucleiTableNS::TPCfindableCls,
+                  NucleiTableNS::TPCcrossedRows,
+                  NucleiTableNS::ITSclsMap,
+                  NucleiTableNS::TPCnCls,
+                  NucleiTableNS::TPCnClsShared,
+                  NucleiTableNS::ITSclusterSizes,
+                  NucleiTableNS::SurvivedEventSelection,
+                  NucleiTableNS::gPt,
+                  NucleiTableNS::gEta,
+                  NucleiTableNS::gPhi,
+                  NucleiTableNS::PDGcode,
+                  NucleiTableNS::MotherPDGcode,
+                  NucleiTableNS::MotherDecRad,
+                  NucleiTableNS::AbsoDecL,
+                  NucleiTableNS::gEventMask);
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFSLIMNUCLEITABLES_H_
