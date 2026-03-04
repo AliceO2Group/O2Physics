@@ -315,8 +315,8 @@ static const std::vector<std::string> labelsRowsCutsPt = {"Minimum", "Maximum"};
 
 // PID cuts
 constexpr float cutsNsigma[4][9] = {
-  {3., 3., 3., 5., 3., 3., 5., 3., 3.},                 // TPC proton from Lc, pi/K from D0, K from 3-prong, femto selected proton, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon, femto selected deuteron, K/p from beauty->JPsiX, proton from SigmaC-Pr correaltion
-  {3., 3., 3., 2.5, 3., 3., 5., 3., 3.},                // TOF proton from Lc, pi/K from D0, K from 3-prong, femto selected proton, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon, femto selected deuteron, K/p from beauty->JPsiX, proton from SigmaC-Pr correaltion
+  {3., 3., 3., 5., 3., 3., 5., 3., 3.},                 // TPC proton from Lc, pi/K from D0, K from 3-prong, femto selected proton, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon, femto selected deuteron, K/p from beauty->JPsiX, proton from SigmaC-Pr correlation
+  {3., 3., 3., 2.5, 3., 3., 5., 3., 3.},                // TOF proton from Lc, pi/K from D0, K from 3-prong, femto selected proton, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon, femto selected deuteron, K/p from beauty->JPsiX, proton from SigmaC-Pr correlation
   {999., 999., 999., 2.5, 999., 999., 5., 999., 3.},    // Sum in quadrature of TPC and TOF (used only for femto selected proton and deuteron for pT < 4 GeV/c)
   {999., 999., 999., 999., 999., 999., -4., 999., 999.} // ITS used only for femto selected deuteron for less than pt threshold
 };
@@ -429,6 +429,10 @@ class HfFilterHelper
   {
     mForceTofProtonForFemto = forceTofProtons;
     mForceTofDeuteronForFemto = forceTofDeuterons;
+  }
+  void setForceTofForLcResonances(bool forceTofProtons)
+  {
+    mForceTofProtonForLcResonances = forceTofProtons;
   }
   void setPtBinsSingleTracks(const std::vector<double>& ptBins) { mPtBinsTracks = ptBins; }
   void setPtBinsBeautyHadrons(const std::vector<double>& ptBins) { mPtBinsBeautyHadrons = ptBins; }
@@ -777,7 +781,7 @@ class HfFilterHelper
   float mPtMinSigmaC2520PlusPlus{0.f};                                            // pt min SigmaC(2520)++ candidate
   std::array<float, 4> mNSigmaPrCutsForFemto{3., 3., 3., -4.};                    // cut values for Nsigma TPC, TOF, combined, ITS for femto protons
   std::array<float, 4> mNSigmaDeCutsForFemto{3., 3., 3., -4.};                    // cut values for Nsigma TPC, TOF, combined, ITS for femto deuterons
-  std::array<float, 4> mNSigmaPrCutsForSigmaCPr{3., 3., 3., -4.};                 // cut values for Nsigma TPC, TOF, combined, ITS for proton in Sc-p correaltion
+  std::array<float, 4> mNSigmaPrCutsForSigmaCPr{3., 3., 3., -4.};                 // cut values for Nsigma TPC, TOF, combined, ITS for proton in Sc-p correlation
   float mNSigmaTpcPrCutForCharmBaryons{3.};                                       // maximum Nsigma TPC for protons in Lc and Xic decays
   float mNSigmaTofPrCutForCharmBaryons{3.};                                       // maximum Nsigma TOF for protons in Lc and Xic decays
   float mNSigmaTpcKaCutFor3Prongs{3.};                                            // maximum Nsigma TPC for kaons in 3-prong decays
@@ -822,6 +826,7 @@ class HfFilterHelper
   float mNSigmaTofKaonFromXicResoToSigmaC{3.};                                    // maximum Nsigma TOF for kaons in Xic*->SigmaC-Kaon
   bool mForceTofProtonForFemto = true;                                            // flag to force TOF PID for protons
   bool mForceTofDeuteronForFemto = false;                                         // flag to force TOF PID for deuterons
+  bool mForceTofProtonForLcResonances = false;                                    // flag to force TOF PID for protons in Lc resonances
   std::array<float, 3> mPtMinXiBach{5., 5., 5.};                                  // minimum pT for XiBachelor candidates
   std::array<float, 3> mMassMinXiBach{2.35, 2.6, 2.35};                           // minimum invariant-mass for XiBachelor candidates
   std::array<float, 3> mMassMaxXiBach{3.0, 3.0, 2.7};                             // maximum invariant-mass for XiBachelor candidates
@@ -2102,7 +2107,8 @@ inline bool HfFilterHelper::isSelectedKaon4Charm3ProngOrBeautyToJPsi(const T& tr
 template <bool is4ThetaC, typename T>
 inline bool HfFilterHelper::isSelectedProtonFromLcResoOrThetaC(const T& track)
 {
-
+  bool forceTOF = mForceTofProtonForLcResonances;
+  float NSigmaTOF = track.tofNSigmaPr();
   // pt selections
   float pt = track.pt();
   if constexpr (is4ThetaC) {
@@ -2113,6 +2119,12 @@ inline bool HfFilterHelper::isSelectedProtonFromLcResoOrThetaC(const T& track)
     if (pt < mPtMinLcResonanceBachelor || pt > mPtMaxLcResonanceBachelor) {
       return false;
     }
+  }
+  if (track.hasTOF()) {
+    if (std::fabs(NSigmaTOF) > mNSigmaTofPrCutForCharmBaryons)
+      return false;
+  } else if (forceTOF) {
+    return false;
   }
 
   return true;

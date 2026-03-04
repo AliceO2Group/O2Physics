@@ -56,6 +56,10 @@ DECLARE_SOA_COLUMN(MotherDecRad, motherDecRad, float);
 DECLARE_SOA_COLUMN(AbsoDecL, absoDecL, float);
 DECLARE_SOA_COLUMN(McProcess, mcProcess, uint64_t);
 DECLARE_SOA_COLUMN(gEventMask, genEventMask, uint8_t);
+
+DECLARE_SOA_COLUMN(NsigmaTpc, nsigmaTpc, uint8_t);
+DECLARE_SOA_COLUMN(NsigmaTof, nsigmaTof, uint8_t);
+
 } // namespace NucleiTableNS
 
 namespace NucleiPairTableNS
@@ -237,6 +241,11 @@ DECLARE_SOA_TABLE(NucleiTableMCExtension, "AOD", "NUCTABLEMCSEL",
                   NucleiTableNS::MotherDecRad,
                   NucleiTableNS::AbsoDecL,
                   NucleiTableNS::gEventMask);
+// Extended table with central PID information
+DECLARE_SOA_TABLE(NucleiTableExt, "AOD", "NUCLEITABLEEXT",
+                  NucleiTableNS::NsigmaTpc,
+                  NucleiTableNS::NsigmaTof);
+
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFSLIMNUCLEITABLES_H_

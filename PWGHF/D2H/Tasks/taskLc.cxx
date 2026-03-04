@@ -307,7 +307,7 @@ struct HfTaskLc {
         axesStd = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisTracklets};
       }
       if (isDataStd && isUpc) {
-        axesUpc = {thnAxisMass, thnAxisPt, thnAxisRapidity, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisTracklets, thnAxisFT0A, thnAxisFT0C, thnAxisZNA, thnAxisZNC, thnAxisZNATime, thnAxisZNCTime};
+        axesUpc = {thnAxisMass, thnAxisPt, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisTracklets, thnAxisFT0A, thnAxisFT0C, thnAxisZNA, thnAxisZNC, thnAxisZNATime, thnAxisZNCTime};
       }
       if (isMcStd) {
         axesStd = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisTracklets, thnAxisPtB, thnAxisCanType};
@@ -319,7 +319,7 @@ struct HfTaskLc {
         axesWithBdt = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcPrompt, thnAxisBdtScoreLcNonPrompt, thnAxisTracklets};
       }
       if (isDataWithMl && isUpc) {
-        axesUpcWithBdt = {thnAxisMass, thnAxisPt, thnAxisRapidity, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcPrompt, thnAxisBdtScoreLcNonPrompt, thnAxisTracklets, thnAxisFT0A, thnAxisFT0C, thnAxisZNA, thnAxisZNC, thnAxisZNATime, thnAxisZNCTime};
+        axesUpcWithBdt = {thnAxisMass, thnAxisPt, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcPrompt, thnAxisBdtScoreLcNonPrompt, thnAxisTracklets, thnAxisFT0A, thnAxisFT0C, thnAxisZNA, thnAxisZNC, thnAxisZNATime, thnAxisZNCTime};
       }
       if (isMcWithMl) {
         axesWithBdt = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcPrompt, thnAxisBdtScoreLcNonPrompt, thnAxisTracklets, thnAxisPtB, thnAxisCanType};

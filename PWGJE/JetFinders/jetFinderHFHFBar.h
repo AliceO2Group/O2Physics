@@ -208,7 +208,7 @@ struct JetFinderHFHFBarTask {
   o2::framework::PresliceOptional<o2::soa::Filtered<JetTracksSubTable>> perDielectronMcCandidate = o2::aod::bkgdielectronmc::candidateId;
 
   // function that generalically processes Data and reco level events
-  template <bool isEvtWiseSub, typename T, typename U, typename V, typename M, typename N, typename O>
+  template <bool isMC, bool isEvtWiseSub, typename T, typename U, typename V, typename M, typename N, typename O>
   void analyseCharged(T const& collision, U const& tracks, V const& candidate, V const& candidateBar, M& jetsTableInput, N& constituentsTableInput, O& /*originalTracks*/, float minJetPt, float maxJetPt)
   {
     if (candidate.globalIndex() == candidateBar.globalIndex() || candidate.candidateSelFlag() == candidateBar.candidateSelFlag()) {
@@ -224,13 +224,11 @@ struct JetFinderHFHFBarTask {
     }
     inputParticles.clear();
 
-    if constexpr (jetcandidateutilities::isCandidate<V>()) {
+    if constexpr (!isMC) {
       if (!jetfindingutilities::analyseCandidate(inputParticles, candidate, candPtMin, candPtMax, candYMin, candYMax) || !jetfindingutilities::analyseCandidate(inputParticles, candidateBar, candPtMin, candPtMax, candYMin, candYMax)) {
         return;
       }
-    }
-
-    if constexpr (jetcandidateutilities::isMcCandidate<V>()) {
+    } else {
       if (!jetfindingutilities::analyseCandidateMC(inputParticles, candidate, candPtMin, candPtMax, candYMin, candYMax, rejectBackgroundMCDCandidates) || !jetfindingutilities::analyseCandidateMC(inputParticles, candidateBar, candPtMin, candPtMax, candYMin, candYMax, rejectBackgroundMCDCandidates)) {
         return;
       }
@@ -282,7 +280,7 @@ struct JetFinderHFHFBarTask {
       for (; candidateBarIterator != candidates.end(); ++candidateBarIterator) {
         typename CandidateTableData::iterator const& candidate = *candidateIterator;
         typename CandidateTableData::iterator const& candidateBar = *candidateBarIterator;
-        analyseCharged<false>(collision, tracks, candidate, candidateBar, jetsTable, constituentsTable, tracks, jetPtMin, jetPtMax);
+        analyseCharged<false, false>(collision, tracks, candidate, candidateBar, jetsTable, constituentsTable, tracks, jetPtMin, jetPtMax);
       }
     }
   }
@@ -296,7 +294,7 @@ struct JetFinderHFHFBarTask {
       for (; candidateBarIterator != candidates.end(); ++candidateBarIterator) {
         typename CandidateTableMCD::iterator const& candidate = *candidateIterator;
         typename CandidateTableMCD::iterator const& candidateBar = *candidateBarIterator;
-        analyseCharged<false>(collision, tracks, candidate, candidateBar, jetsTable, constituentsTable, tracks, jetPtMin, jetPtMax);
+        analyseCharged<true, false>(collision, tracks, candidate, candidateBar, jetsTable, constituentsTable, tracks, jetPtMin, jetPtMax);
       }
     }
   }

@@ -29,7 +29,7 @@ using namespace o2::framework;
 using namespace o2::aod::pwgem::photonmeson::photonpair;
 
 using MyV0Photons = Filtered<Join<o2::aod::V0PhotonsKF, o2::aod::V0KFEMEventIds, o2::aod::V0PhotonsKFPrefilterBitDerived>>;
-using MyPrimaryElectrons = Filtered<Join<o2::aod::EMPrimaryElectronsFromDalitz, o2::aod::EMPrimaryElectronEMEventIds, o2::aod::EMPrimaryElectronsPrefilterBitDerived>>;
+using MyPrimaryElectrons = Filtered<Join<o2::aod::EMPrimaryElectronsFromDalitz, o2::aod::EMPrimaryElectronDaEMEventIds, o2::aod::EMPrimaryElectronsPrefilterBitDerived>>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

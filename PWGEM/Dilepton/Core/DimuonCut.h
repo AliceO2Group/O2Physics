@@ -202,16 +202,16 @@ class DimuonCut : public TNamed
         return track.nClusters() >= mMinNClustersMCHMID;
 
       case DimuonCuts::kChi2:
-        return track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2() / (2.f * (track.nClusters() + track.nClustersMFT()) - 5.f) < mMaxChi2 : track.chi2() < mMaxChi2;
+        return track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? 0.f < track.chi2() / (2.f * (track.nClusters() + track.nClustersMFT()) - 5.f) && track.chi2() / (2.f * (track.nClusters() + track.nClustersMFT()) - 5.f) < mMaxChi2 : 0.f < track.chi2() && track.chi2() < mMaxChi2;
 
       case DimuonCuts::kChi2MFT:
-        return track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2MFT() / (2.f * track.nClustersMFT() - 5.f) < mMaxChi2MFT : true;
+        return track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? 0.f < track.chi2MFT() / (2.f * track.nClustersMFT() - 5.f) && track.chi2MFT() / (2.f * track.nClustersMFT() - 5.f) < mMaxChi2MFT : true;
 
       case DimuonCuts::kMatchingChi2MCHMFT:
-        return track.chi2MatchMCHMFT() < mMaxMatchingChi2MCHMFT;
+        return 0.f < track.chi2MatchMCHMFT() && track.chi2MatchMCHMFT() < mMaxMatchingChi2MCHMFT;
 
       case DimuonCuts::kMatchingChi2MCHMID:
-        return track.chi2MatchMCHMID() < mMaxMatchingChi2MCHMID;
+        return 0.f < track.chi2MatchMCHMID() && track.chi2MatchMCHMID() < mMaxMatchingChi2MCHMID;
 
       case DimuonCuts::kPDCA:
         return track.pDca() < mMaxPDCARabsDep(track.rAtAbsorberEnd());

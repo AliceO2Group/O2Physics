@@ -86,6 +86,7 @@ struct CorrelationTask {
   O2_DEFINE_CONFIGURABLE(cfgTwoTrackCut, float, -1, "Two track cut: -1 = off; >0 otherwise distance value (suggested: 0.02)");
   O2_DEFINE_CONFIGURABLE(cfgTwoTrackCutMinRadius, float, 0.8f, "Two track cut: radius in m from which two track cuts are applied");
   O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, int, 0, "0 = OFF and 1 = ON for local efficiency");
+  O2_DEFINE_CONFIGURABLE(cfgDropStepRECO, bool, false, "choice to drop step RECO if efficiency correction is used")
   O2_DEFINE_CONFIGURABLE(cfgCentBinsForMC, int, 0, "0 = OFF and 1 = ON for data like multiplicity/centrality bins for MC steps");
   O2_DEFINE_CONFIGURABLE(cfgTrackBitMask, uint16_t, 0, "BitMask for track selection systematics; refer to the enum TrackSelectionCuts in filtering task");
   O2_DEFINE_CONFIGURABLE(cfgMultCorrelationsMask, uint16_t, 0, "Selection bitmask for the multiplicity correlations. This should match the filter selection cfgEstimatorBitMask.")
@@ -862,10 +863,14 @@ struct CorrelationTask {
     else
       fillQA(collision, multiplicity, tracks1);
 
-    same->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f);
+    const bool hasEfficiency = (cfg.mEfficiencyAssociated != nullptr || cfg.mEfficiencyTrigger != nullptr);
+    const bool fillReco = !(cfgDropStepRECO && hasEfficiency);
 
-    if (cfg.mEfficiencyAssociated || cfg.mEfficiencyTrigger) {
+    if (fillReco) {
+      same->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
+      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f);
+    }
+    if (hasEfficiency) {
       same->fillEvent(multiplicity, CorrelationContainer::kCFStepCorrected);
       fillCorrelations<CorrelationContainer::kCFStepCorrected>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f);
     }
@@ -988,19 +993,28 @@ struct CorrelationTask {
         LOGF(info, "processMixedDerived: Mixed collisions bin: %d pair: [%d, %d] %d (%.3f, %.3f), %d (%.3f, %.3f)", bin, it.isNewWindow(), it.currentWindowNeighbours(), collision1.globalIndex(), collision1.posZ(), collision1.multiplicity(), collision2.globalIndex(), collision2.posZ(), collision2.multiplicity());
       }
 
+      bool hasEfficiencyMixed = (cfg.mEfficiencyAssociated != nullptr || cfg.mEfficiencyTrigger != nullptr);
+      bool fillRecoMixed = !(cfgDropStepRECO && hasEfficiencyMixed);
+
       if (it.isNewWindow()) {
         loadEfficiency(collision1.timestamp());
+        hasEfficiencyMixed = (cfg.mEfficiencyAssociated != nullptr || cfg.mEfficiencyTrigger != nullptr);
+        fillRecoMixed = !(cfgDropStepRECO && hasEfficiencyMixed);
 
-        mixed->fillEvent(collision1.multiplicity(), CorrelationContainer::kCFStepReconstructed);
+        if (fillRecoMixed) {
+          mixed->fillEvent(collision1.multiplicity(), CorrelationContainer::kCFStepReconstructed);
+        }
       }
 
       // LOGF(info, "Tracks: %d and %d entries", tracks1.size(), tracks2.size());
 
       registry.fill(HIST("eventcount_mixed"), bin);
       registry.fill(HIST("trackcount_mixed"), bin, tracks1.size(), tracks2.size());
-      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, collision1.multiplicity(), collision1.posZ(), field, eventWeight);
+      if (fillRecoMixed) {
+        fillCorrelations<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, collision1.multiplicity(), collision1.posZ(), field, eventWeight);
+      }
 
-      if (cfg.mEfficiencyAssociated || cfg.mEfficiencyTrigger) {
+      if (hasEfficiencyMixed) {
         if (it.isNewWindow()) {
           mixed->fillEvent(collision1.multiplicity(), CorrelationContainer::kCFStepCorrected);
         }

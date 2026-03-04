@@ -431,8 +431,9 @@ struct FactorialMomentsTask {
       histos.fill(HIST("mNFractionShClsTPC"), track.tpcFractionSharedCls());
       histos.fill(HIST("mSharedClsvsPt"), track.pt(), track.tpcNClsShared());
       histos.fill(HIST("mSharedClsProbvsPt"), track.pt(), track.tpcFractionSharedCls() / track.tpcNClsCrossedRows());
-      checkpT(track);
-      //}
+      if (applyCheckPtForRec && !applyCheckPtForMC) {
+        checkpT(track);
+      }
     }
     auto mcParts = mcParticles.sliceBy(perMcCollision, coll.mcCollision().globalIndex());
     for (auto const& mc : mcParts) {

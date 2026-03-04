@@ -135,6 +135,7 @@ struct muonGlobalAlignment {
   Configurable<bool> fEnableMftDcaExtraPlots{"cfgEnableMftDcaExtraPlots", false, "Enable additional plots for the analysis of DCA-based MFT alignment"};
   Configurable<bool> fEnableGlobalFwdDcaAnalysis{"cfgEnableGlobalFwdDcaAnalysis", true, "Enable the analysis of DCA-based MFT alignment using global forward tracks"};
   Configurable<bool> fEnableMftMchResidualsAnalysis{"cfgEnableMftMchResidualsAnalysis", true, "Enable the analysis of residuals between MFT tracks and MCH clusters"};
+  Configurable<bool> fEnableMftMchResidualsExtraPlots{"cfgEnableMftMchResidualsExtraPlots", false, "Enable additional plots for the analysis of residuals between MFT tracks and MCH clusters"};
 
   int mRunNumber{0}; // needed to detect if the run changed and trigger update of magnetic field
 
@@ -430,23 +431,30 @@ struct muonGlobalAlignment {
     }
 
     if (fEnableMftMchResidualsAnalysis) {
-      registry.add("DCA/MCH/DCA_y_vs_x", std::format("DCA y vs. x").c_str(), {HistType::kTH2F, {dcaxMCHAxis, dcayMCHAxis}});
-      registry.add("DCA/MCH/DCA_x_vs_sign_vs_quadrant_vs_vz", std::format("DCA(x) vs. vz, quadrant, chargeSign").c_str(), {HistType::kTHnSparseF, {dcazAxis, {4, 0, 4, "quadrant"}, {2, 0, 2, "sign"}, dcaxMCHAxis}});
-      registry.add("DCA/MCH/DCA_y_vs_sign_vs_quadrant_vs_vz", std::format("DCA(y) vs. vz, quadrant, chargeSign").c_str(), {HistType::kTHnSparseF, {dcazAxis, {4, 0, 4, "quadrant"}, {2, 0, 2, "sign"}, dcayMCHAxis}});
-
-      //--
       AxisSpec dxAxis = {600, -30.0, 30.0, "#Delta x (cm)"};
       AxisSpec dyAxis = {600, -30.0, 30.0, "#Delta y (cm)"};
+
+      registry.add("DCA/MCH/DCA_y_vs_x", std::format("DCA y vs. x").c_str(), {HistType::kTH2F, {dcaxMCHAxis, dcayMCHAxis}});
+      registry.add("DCA/MCH/DCA_x_vs_sign_vs_quadrant_vs_mom", std::format("DCA(x) vs. p, quadrant, chargeSign").c_str(), {HistType::kTHnSparseF, {{20, 0, 100.0, "p (GeV/c)"}, {4, 0, 4, "quadrant"}, {2, 0, 2, "sign"}, dcaxMCHAxis}});
+      registry.add("DCA/MCH/DCA_y_vs_sign_vs_quadrant_vs_mom", std::format("DCA(y) vs. p, quadrant, chargeSign").c_str(), {HistType::kTHnSparseF, {{20, 0, 100.0, "p (GeV/c)"}, {4, 0, 4, "quadrant"}, {2, 0, 2, "sign"}, dcayMCHAxis}});
 
       registry.add("residuals/dx_vs_chamber", "Cluster x residual vs. chamber, quadrant, chargeSign",
                    {HistType::kTHnSparseF, {{10, 1, 11, "chamber"}, {4, 0, 4, "quadrant"}, {2, 0, 2, "sign"}, dxAxis}});
       registry.add("residuals/dy_vs_chamber", "Cluster y residual vs. chamber, quadrant, chargeSign",
                    {HistType::kTHnSparseF, {{10, 1, 11, "chamber"}, {4, 0, 4, "quadrant"}, {2, 0, 2, "sign"}, dyAxis}});
 
-      registry.add("residuals/dx_vs_de", "Cluster x residual vs. DE, quadrant, chargeSign",
-                   {HistType::kTHnSparseF, {{getNumDE(), 0, static_cast<double>(getNumDE()), "DE"}, {4, 0, 4, "quadrant"}, {2, 0, 2, "sign"}, dxAxis}});
-      registry.add("residuals/dy_vs_de", "Cluster y residual vs. DE, quadrant, chargeSign",
-                   {HistType::kTHnSparseF, {{getNumDE(), 0, static_cast<double>(getNumDE()), "DE"}, {4, 0, 4, "quadrant"}, {2, 0, 2, "sign"}, dyAxis}});
+      registry.add("residuals/dx_vs_de", "Cluster x residual vs. DE, quadrant, chargeSign, momentum",
+                   {HistType::kTHnSparseF, {dxAxis, {getNumDE(), 0, static_cast<double>(getNumDE()), "DE"}, {4, 0, 4, "quadrant"}, {2, 0, 2, "sign"}, {20, 0, 100.0, "p (GeV/c)"}}});
+      registry.add("residuals/dy_vs_de", "Cluster y residual vs. DE, quadrant, chargeSign, momentum",
+                   {HistType::kTHnSparseF, {dyAxis, {getNumDE(), 0, static_cast<double>(getNumDE()), "DE"}, {4, 0, 4, "quadrant"}, {2, 0, 2, "sign"}, {20, 0, 100.0, "p (GeV/c)"}}});
+
+      if (fEnableMftMchResidualsExtraPlots) {
+        registry.add("DCA/MCH/DCA_x_vs_sign_vs_quadrant_vs_vz", std::format("DCA(x) vs. vz, quadrant, chargeSign").c_str(), {HistType::kTHnSparseF, {dcazAxis, {4, 0, 4, "quadrant"}, {2, 0, 2, "sign"}, dcaxMCHAxis}});
+        registry.add("DCA/MCH/DCA_y_vs_sign_vs_quadrant_vs_vz", std::format("DCA(y) vs. vz, quadrant, chargeSign").c_str(), {HistType::kTHnSparseF, {dcazAxis, {4, 0, 4, "quadrant"}, {2, 0, 2, "sign"}, dcayMCHAxis}});
+
+        registry.add("residuals/dphi_at_mft", "Track #Delta#phi at MFT",
+                     {HistType::kTHnSparseF, {{200, -0.2f, 0.2f, "#Delta#phi"}, {80, -10.f, 10.f, "track_x (cm)"}, {80, -10.f, 10.f, "track_y (cm)"}, {2, 0, 2, "sign"}, {20, 0, 100.0, "p (GeV/c)"}}});
+      }
     }
   }
 
@@ -1055,25 +1063,6 @@ struct muonGlobalAlignment {
   {
     auto mchTrack = FwdtoMCH(muon);
     return PropagateMCHParam(mchTrack, z);
-
-    float absFront = -90.f;
-    float absBack = -505.f;
-
-    if (muon.getZ() < absBack && z > absFront) {
-      // extrapolation through the absorber in the upstream direction
-      o2::mch::TrackExtrap::extrapToVertexWithoutBranson(mchTrack, z);
-    } else {
-      // all other cases
-      o2::mch::TrackExtrap::extrapToZCov(mchTrack, z);
-    }
-
-    auto proptrack = MCHtoFwd(mchTrack);
-    o2::dataformats::GlobalFwdTrack propmuon;
-    propmuon.setParameters(proptrack.getParameters());
-    propmuon.setZ(proptrack.getZ());
-    propmuon.setCovariances(proptrack.getCovariances());
-
-    return propmuon;
   }
 
   o2::dataformats::GlobalFwdTrack PropagateMCHRealigned(const mch::Track& muon, const double z)
@@ -1501,8 +1490,8 @@ struct muonGlobalAlignment {
           registry.get<THnSparse>(HIST("residuals/dx_vs_chamber"))->Fill(chamber + 1, quadrantMch, posNeg, xPos[0] - xPos[1]);
           registry.get<THnSparse>(HIST("residuals/dy_vs_chamber"))->Fill(chamber + 1, quadrantMch, posNeg, yPos[0] - yPos[1]);
 
-          registry.get<THnSparse>(HIST("residuals/dx_vs_de"))->Fill(deIndex, quadrantMch, posNeg, xPos[0] - xPos[1]);
-          registry.get<THnSparse>(HIST("residuals/dy_vs_de"))->Fill(deIndex, quadrantMch, posNeg, yPos[0] - yPos[1]);
+          registry.get<THnSparse>(HIST("residuals/dx_vs_de"))->Fill(xPos[0] - xPos[1], deIndex, quadrantMch, posNeg, mchTrack.p());
+          registry.get<THnSparse>(HIST("residuals/dy_vs_de"))->Fill(yPos[0] - yPos[1], deIndex, quadrantMch, posNeg, mchTrack.p());
         }
 
         bool removable{false};
@@ -1521,8 +1510,16 @@ struct muonGlobalAlignment {
           auto dcay = mchTrackAtDCA.getY() - collision.posY();
 
           registry.get<TH2>(HIST("DCA/MCH/DCA_y_vs_x"))->Fill(dcax, dcay);
-          registry.get<THnSparse>(HIST("DCA/MCH/DCA_x_vs_sign_vs_quadrant_vs_vz"))->Fill(collision.posZ(), quadrantMch, posNeg, dcax);
-          registry.get<THnSparse>(HIST("DCA/MCH/DCA_y_vs_sign_vs_quadrant_vs_vz"))->Fill(collision.posZ(), quadrantMch, posNeg, dcay);
+          registry.get<THnSparse>(HIST("DCA/MCH/DCA_x_vs_sign_vs_quadrant_vs_mom"))->Fill(mchTrack.p(), quadrantMch, posNeg, dcax);
+          registry.get<THnSparse>(HIST("DCA/MCH/DCA_y_vs_sign_vs_quadrant_vs_mom"))->Fill(mchTrack.p(), quadrantMch, posNeg, dcay);
+
+          if (fEnableMftMchResidualsExtraPlots) {
+            registry.get<THnSparse>(HIST("DCA/MCH/DCA_x_vs_sign_vs_quadrant_vs_vz"))->Fill(collision.posZ(), quadrantMch, posNeg, dcax);
+            registry.get<THnSparse>(HIST("DCA/MCH/DCA_y_vs_sign_vs_quadrant_vs_vz"))->Fill(collision.posZ(), quadrantMch, posNeg, dcay);
+            auto mchTrackAtMFT = configRealign.fEnableMCHRealign ? PropagateMCHRealigned(convertedTrack, mftTrack.z()) : PropagateMCH(mchTrack, mftTrack.z());
+            double deltaPhi = mchTrackAtMFT.getPhi() - mftTrack.phi();
+            registry.get<THnSparse>(HIST("residuals/dphi_at_mft"))->Fill(deltaPhi, mftTrack.x(), mftTrack.y(), posNeg, mchTrackAtMFT.getP());
+          }
         }
       }
     }
