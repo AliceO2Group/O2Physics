@@ -80,9 +80,9 @@ struct TrackEfficiency {
   Configurable<int> phiEffNBins{"phiEffNBins", 200, "number of bins for phi axis in efficiency plots"};
   Configurable<int> etaEffNBins{"etaEffNBins", 200, "number of bins for eta axis in efficiency plots"};
 
-  Configurable<float> ptHatMin{"ptHatMin", 5, "min pT hat of collisions"};
-  Configurable<float> ptHatMax{"ptHatMax", 300, "max pT hat of collisions"};
-  Configurable<float> pTHatExponent{"pTHatExponent", 6.0, "exponent of the event weight for the calculation of pTHat"};
+  Configurable<float> ptHatMin{"ptHatMin", -999, "min pT hat of collisions"};
+  Configurable<float> ptHatMax{"ptHatMax", 999, "max pT hat of collisions"};
+  Configurable<float> pTHatExponent{"pTHatExponent", 4.0, "exponent of the event weight for the calculation of pTHat"};
   Configurable<float> pTHatMaxFractionMCD{"pTHatMaxFractionMCD", 999.0, "maximum fraction of hard scattering for reconstructed track acceptance in MC"};
 
   Configurable<bool> getPtHatFromHepMCXSection{"getPtHatFromHepMCXSection", true, "test configurable, configurable should be removed once well tested"};
@@ -92,6 +92,7 @@ struct TrackEfficiency {
   TrackSelection customTrackSelection;
   Configurable<bool> useCustomTrackSelection{"useCustomTrackSelection", false, "whether to use the custom cuts (used for cut variation for tracking efficiency systematics)"};
   Configurable<int> effSystMinNCrossedRowsTPC{"effSystMinNCrossedRowsTPC", 70, "min number of crossed rows TPC"};
+  Configurable<bool> effSystMinNCrossedRowsTPCUseAlternateCut{"effSystMinNCrossedRowsTPCUseAlternateCut", false, "min number of crossed rows TPC - alternate cut of 120 - 5./pt"};
   Configurable<float> effSystMinNCrossedRowsOverFindableClustersTPC{"effSystMinNCrossedRowsOverFindableClustersTPC", 0.8, "min ratio of crossed rows over findable clusters TPC"};
   Configurable<float> effSystMaxChi2PerClusterTPC{"effSystMaxChi2PerClusterTPC", 4.0, "max chi2 per cluster TPC"};
   Configurable<float> effSystMaxChi2PerClusterITS{"effSystMaxChi2PerClusterITS", 36.0, "max chi2 per cluster ITS"};
@@ -118,6 +119,9 @@ struct TrackEfficiency {
       }
     } else {
       const auto& aodTrack = jetTrack.template track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>>();
+      if (effSystMinNCrossedRowsTPCUseAlternateCut) {
+        customTrackSelection.SetMinNCrossedRowsTPC(120 - 5. / jetTrack.pt());
+      }
       if (customTrackSelection.IsSelected(aodTrack)) {
         return true;
       }
@@ -371,6 +375,18 @@ struct TrackEfficiency {
       registry.add("h2_trackselplot_pt_chi2ncls_its", "track selection variable: pt vs Chi2 / cluster for the ITS track segment", {HistType::kTH2F, {{200, 0., 200.}, {200, 0.0, 40.0}}});
       registry.add("h2_trackselplot_pt_dcaxy", "track selection variable: pt vs dca XY", {HistType::kTH2F, {{200, 0., 200.}, {1000, -1.0, 1.0}}});
       registry.add("h2_trackselplot_pt_dcaz", "track selection variable: pt vs dca Z", {HistType::kTH2F, {{200, 0., 200.}, {4000, -4.0, 4.0}}});
+    }
+
+    AxisSpec occupancyAxis = {140, -0.5, 13999.5, "occupancy"};
+    AxisSpec nTracksAxis = {16001, -1., 16000, "n tracks"};
+
+    if (doprocessOccupancyQA) {
+      registry.add("h2_occupancy_ntracksall_presel", "occupancy vs N_{tracks}; occupancy; N_{tracks}", {HistType::kTH2I, {occupancyAxis, nTracksAxis}});
+      registry.add("h2_occupancy_ntracksall_postsel", "occupancy vs N_{tracks}; occupancy; N_{tracks}", {HistType::kTH2I, {occupancyAxis, nTracksAxis}});
+      registry.add("h2_occupancy_ntrackssel_presel", "occupancy vs N_{tracks}; occupancy; N_{tracks}", {HistType::kTH2I, {occupancyAxis, nTracksAxis}});
+      registry.add("h2_occupancy_ntrackssel_postsel", "occupancy vs N_{tracks}; occupancy; N_{tracks}", {HistType::kTH2I, {occupancyAxis, nTracksAxis}});
+      registry.add("h2_occupancy_ntracksselptetacuts_presel", "occupancy vs N_{tracks}; occupancy; N_{tracks}", {HistType::kTH2I, {occupancyAxis, nTracksAxis}});
+      registry.add("h2_occupancy_ntracksselptetacuts_postsel", "occupancy vs N_{tracks}; occupancy; N_{tracks}", {HistType::kTH2I, {occupancyAxis, nTracksAxis}});
     }
   }
 
@@ -1235,6 +1251,38 @@ struct TrackEfficiency {
     }
   }
   PROCESS_SWITCH(TrackEfficiency, processTrackSelectionHistograms, "plots distributions of variables that are cut on during track selection", false);
+
+  void processOccupancyQA(soa::Filtered<aod::JetCollisions>::iterator const& collision, aod::JetTracks const& tracks)
+  {
+    float centrality = checkCentFT0M ? collision.centFT0M() : collision.centFT0C();
+    if (cutCentrality && (centrality < centralityMin || centralityMax < centrality)) {
+      return;
+    }
+
+    int occupancy = collision.trackOccupancyInTimeRange();
+    int nTracksAll = tracks.size();
+    int nTracksAllAcceptanceAndSelected = 0;
+    int nTracksInAcceptanceAndSelected = 0;
+    for (auto const& track : tracks) {
+      if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
+        nTracksAllAcceptanceAndSelected += 1;
+        if (track.pt() >= trackQAPtMin && track.pt() < trackQAPtMax && track.eta() > trackQAEtaMin && track.eta() < trackQAEtaMax) {
+          nTracksInAcceptanceAndSelected += 1;
+        }
+      }
+    }
+
+    registry.fill(HIST("h2_occupancy_ntracksall_presel"), occupancy, nTracksAll);
+    registry.fill(HIST("h2_occupancy_ntrackssel_presel"), occupancy, nTracksAllAcceptanceAndSelected);
+    registry.fill(HIST("h2_occupancy_ntracksselptetacuts_presel"), occupancy, nTracksInAcceptanceAndSelected);
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents)) {
+      return;
+    }
+    registry.fill(HIST("h2_occupancy_ntracksall_postsel"), occupancy, nTracksAll);
+    registry.fill(HIST("h2_occupancy_ntrackssel_postsel"), occupancy, nTracksAllAcceptanceAndSelected);
+    registry.fill(HIST("h2_occupancy_ntracksselptetacuts_postsel"), occupancy, nTracksInAcceptanceAndSelected);
+  }
+  PROCESS_SWITCH(TrackEfficiency, processOccupancyQA, "occupancy QA on jet derived data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

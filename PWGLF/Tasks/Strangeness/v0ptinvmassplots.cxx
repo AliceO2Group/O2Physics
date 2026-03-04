@@ -697,7 +697,7 @@ struct V0PtInvMassPlots {
 
   // This is the process for Generated Particles
   void genMCProcess(soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::MultMCExtras>::iterator const& mcCollision,
-                    soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults, aod::McCentFT0Ms>> const& collisions,
+                    soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults, aod::CentFT0Ms>> const& collisions,
                     aod::McParticles const& mcParticles)
   {
     // Event Efficiency, Event Split and V0 Signal Loss Corrections
@@ -981,9 +981,9 @@ struct V0PtInvMassPlots {
       antilambdaptedgevalues[i] = std::stod(pthistos::antilambdaPtBins[i]);
     }
 
-    // if (!acceptEvent(collision)) { // Event Selection
-    //   return;
-    // }
+    if (!acceptEvent(collision)) { // Event Selection
+      return;
+    }
     rPtAnalysis.fill(HIST("hNRecEvents"), 0.5, collision.centFT0M()); // Number of recorded events
     for (const auto& v0 : V0s) {
       // Checking that the V0 is a true K0s/Lambdas/Antilambdas and then filling the parameter histograms and the invariant mass plots for different cuts (which are taken from namespace)

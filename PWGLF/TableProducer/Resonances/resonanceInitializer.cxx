@@ -793,7 +793,8 @@ struct ResonanceInitializer {
                v0.mLambda(),
                v0.mAntiLambda(),
                v0.mK0Short(),
-               v0.v0radius(), v0.x(), v0.y(), v0.z());
+               v0.v0radius(), v0.x(), v0.y(), v0.z(),
+               v0.alpha(), v0.qtarm());
       if (!cfgBypassTrackIndexFill) {
         resoV0V0s(v0.globalIndex());
       }
@@ -1016,7 +1017,7 @@ struct ResonanceInitializer {
         daughterPDGs = getDaughtersPDGCodes(v0mc);
       }
       while (daughters.size() > 2) {
-        LOGF(info, "daughters.size() is larger than 2");
+        //        LOGF(info, "daughters.size() is larger than 2");
         daughters.pop_back();
         daughterPDGs.pop_back();
       }
@@ -1127,7 +1128,7 @@ struct ResonanceInitializer {
         daughterPDGs = getDaughtersPDGCodes(cascmc);
       }
       while (daughters.size() > 2) {
-        LOGF(info, "daughters.size() is larger than 2");
+        //  LOGF(info, "daughters.size() is larger than 2");
         daughters.pop_back();
         daughterPDGs.pop_back();
       }

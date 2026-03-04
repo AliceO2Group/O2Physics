@@ -642,7 +642,7 @@ struct Alice3Dilepton {
 
       } // end of mc particle loop
       registry.fill(HIST("Generated/Particle/ParticlesPerEvent"), nParticlesInEvent);
-      registry.fill(HIST("Generated/Particle/ParticlesFIT"), nParticlesFIT);
+      registry.fill(HIST("Generated/Particle/ParticlesFit"), nParticlesFIT);
 
       auto neg_mcParticles_coll = neg_mcParticles->sliceByCached(o2::aod::mcparticle::mcCollisionId, mccollision.globalIndex(), cache_mc);
       auto pos_mcParticles_coll = pos_mcParticles->sliceByCached(o2::aod::mcparticle::mcCollisionId, mccollision.globalIndex(), cache_mc);

@@ -192,6 +192,7 @@ struct FlowTask {
     // for deltaPt/<pT> vs centrality
     O2_DEFINE_CONFIGURABLE(cfgDptDisEnable, bool, false, "Produce deltaPt/meanPt vs centrality")
     O2_DEFINE_CONFIGURABLE(cfgDptDisSelectionSwitch, int, 0, "0: disable, 1: use low cut, 2:use high cut")
+    O2_DEFINE_CONFIGURABLE(cfgDptDisEtaGapQA, float, 0.5, "QA plot for pT dis in eta gap")
     TH1D* hEvAvgMeanPt = nullptr;
     TH1D* fDptDisCutLow = nullptr;
     TH1D* fDptDisCutHigh = nullptr;
@@ -361,6 +362,7 @@ struct FlowTask {
       registry.add("centFT0CVar_centFT0C", "after cut;Centrality T0C;Centrality T0C Var", {HistType::kTH2D, {axisCentForQA, axisCentForQA}});
       registry.add("centFT0M_centFT0C", "after cut;Centrality T0C;Centrality T0M", {HistType::kTH2D, {axisCentForQA, axisCentForQA}});
       registry.add("centFV0A_centFT0C", "after cut;Centrality T0C;Centrality V0A", {HistType::kTH2D, {axisCentForQA, axisCentForQA}});
+      registry.add("hEtaPtCent", "after cut;#eta;p_{T};Centrality;", {HistType::kTH3D, {{16, -0.8, 0.8}, axisPt, {10, 0, 100}}});
     }
     // Track QA
     registry.add("hPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
@@ -396,6 +398,8 @@ struct FlowTask {
       registry.add("hNormDeltaPt_X", "; #delta p_{T}/[p_{T}]; X", {HistType::kTH2D, {cfgAdditionObs.cfgDptDisAxisNormal, axisIndependent}});
       registry.add("hNormDeltaPt_X_afterCut", "; #delta p_{T}/[p_{T}]; X", {HistType::kTH2D, {cfgAdditionObs.cfgDptDisAxisNormal, axisIndependent}});
       registry.add("hPt_afterDptCut", "p_{T} distribution", {HistType::kTH1D, {axisPt}});
+      registry.add("hPtA_afterDptCut", "p_{T} distribution", {HistType::kTH1D, {axisPt}});
+      registry.add("hPtB_afterDptCut", "p_{T} distribution", {HistType::kTH1D, {axisPt}});
     }
     if (doprocessMCGen) {
       registry.add("MCGen/MChPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
@@ -1224,7 +1228,7 @@ struct FlowTask {
     std::vector<float> consistentEventVector = cfgUserIO.cfgConsistentEventVector;
     if (cfgUserIO.cfgConsistentEventFlag)
       LOGF(info, "consistentEventVector.size = %u", consistentEventVector.size());
-    std::vector<float> ptVec;
+    std::vector<std::pair<float, float>> ptEtaVec;
 
     double psi2Est = 0, psi3Est = 0, psi4Est = 0;
     float wEPeff = 1;
@@ -1294,7 +1298,10 @@ struct FlowTask {
       }
       registry.fill(HIST("hPt"), track.pt());
       if (cfgAdditionObs.cfgDptDisEnable)
-        ptVec.push_back(track.pt());
+        ptEtaVec.push_back({track.pt(), track.eta()});
+      if (!cfgUserIO.cfgUseSmallMemory) {
+        registry.fill(HIST("hEtaPtCent"), track.eta(), track.pt(), cent);
+      }
       if (cfgAdditionObs.cfgV02Enabled && track.eta() >= cfgAdditionObs.cfgV02FracEtaMin && track.eta() <= cfgAdditionObs.cfgV02FracEtaMax) {
         cfgAdditionObs.listPtX[0]->Fill(independent, track.pt(), weff);
         cfgAdditionObs.listPtX[sampleIndex + 1]->Fill(independent, track.pt(), weff);
@@ -1379,9 +1386,14 @@ struct FlowTask {
         return;
       }
       registry.fill(HIST("hNormDeltaPt_X_afterCut"), normDeltaPt, independent, weffEvent);
-      if (ptVec.size() > 0) {
-        for (auto trpt : ptVec)
-          registry.fill(HIST("hPt_afterDptCut"), trpt);
+      if (ptEtaVec.size() > 0) {
+        for (auto trptEta : ptEtaVec) {
+          registry.fill(HIST("hPt_afterDptCut"), trptEta.first);
+          if (trptEta.second < -1. * cfgAdditionObs.cfgDptDisEtaGapQA)
+            registry.fill(HIST("hPtA_afterDptCut"), trptEta.first);
+          if (trptEta.second > cfgAdditionObs.cfgDptDisEtaGapQA)
+            registry.fill(HIST("hPtB_afterDptCut"), trptEta.first);
+        }
       }
     }
 
