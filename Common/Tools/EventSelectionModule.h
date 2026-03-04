@@ -1514,10 +1514,14 @@ class EventSelectionModule
       // apply int7-like selections
       bool sel7 = 0;
 
-      // TODO apply other cuts for sel8
-      // TODO introduce sel1 etc?
+      // Combination of bits for Run 3 event selection decisions
+      // TODO apply other cuts for sel8?
       // TODO introduce array of sel[0]... sel[8] or similar?
-      bool sel8 = bitcheck64(bcselEntry.selection, aod::evsel::kIsTriggerTVX) && bitcheck64(bcselEntry.selection, aod::evsel::kNoTimeFrameBorder) && bitcheck64(bcselEntry.selection, aod::evsel::kNoITSROFrameBorder);
+      bool sel8 = false;
+      if (lastRun < 568873) // pre-2026 data & MC: require all three bits: TVX, TF and ROF border cuts
+        sel8 = bitcheck64(bcselEntry.selection, aod::evsel::kIsTriggerTVX) && bitcheck64(bcselEntry.selection, aod::evsel::kNoTimeFrameBorder) && bitcheck64(bcselEntry.selection, aod::evsel::kNoITSROFrameBorder);
+      else // for pp 2026: sel8 without kNoITSROFrameBorder bit, because the cross-ROF reconstruction for ITS will be On (the switch by a runNumber is a temporary solution)
+        sel8 = bitcheck64(bcselEntry.selection, aod::evsel::kIsTriggerTVX) && bitcheck64(bcselEntry.selection, aod::evsel::kNoTimeFrameBorder);
 
       // fill counters
       histos.template get<TH1>(HIST("eventselection/hColCounterAll"))->Fill(Form("%d", bc.runNumber()), 1);
