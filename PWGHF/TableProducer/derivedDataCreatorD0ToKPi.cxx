@@ -310,7 +310,7 @@ struct HfDerivedDataCreatorD0ToKPi {
 
         double const ct = HfHelper::ctD0(candidate);
         double const y = HfHelper::yD0(candidate);
-        float massD0, massD0bar;
+        float massD0{}, massD0bar{};
         float topolChi2PerNdf = -999.;
         if constexpr (ReconstructionType == aod::hf_cand::VertexerType::KfParticle) {
           massD0 = candidate.kfGeoMassD0();

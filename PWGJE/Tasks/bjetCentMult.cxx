@@ -177,10 +177,10 @@ struct BjetCentMultTask {
         }
       }
       registry.add("hn_jet_3prong_Sxy_N1_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
-      registry.add("hn_taggedjet_3prong_Sxy_N1_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisSxyz}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
+      registry.add("hn_taggedjet_3prong_Sxy_N1_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
       if (fillSVxyz) {
         registry.add("hn_jet_3prong_Sxyz_N1_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
-        registry.add("hn_taggedjet_3prong_Sxyz_N1_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisSxyz}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
+        registry.add("hn_taggedjet_3prong_Sxyz_N1_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
       }
     }
     if (doprocessRhoAreaSubSV3ProngMCD || doprocessRhoAreaSubSV3ProngMCPMCDMatched) {
@@ -196,10 +196,10 @@ struct BjetCentMultTask {
         }
       }
       registry.add("hn_jet_3prong_Sxy_N1_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
-      registry.add("hn_taggedjet_3prong_Sxy_N1_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisSxyz}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
+      registry.add("hn_taggedjet_3prong_Sxy_N1_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
       if (fillSVxyz) {
         registry.add("hn_jet_3prong_Sxyz_N1_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
-        registry.add("hn_taggedjet_3prong_Sxyz_N1_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxy}, {axisSxyz}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
+        registry.add("hn_taggedjet_3prong_Sxyz_N1_rhoareasubtracted_centrality_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisCentrality}, {axisJetFlavour}}});
       }
     }
   }

@@ -970,7 +970,7 @@ struct GammaJetTreeProducer {
   /// \brief Processes data events in data fill event table
   /// \param collision The collision to process
   /// \param clusters The EMCAL clusters in the event
-  void processEventData(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, emcClusters const& clusters)
+  void processEventData(soa::Join<aod::JetCollisions, aod::BkgChargedRhos>::iterator const& collision, emcClusters const& clusters)
   {
     if (!isEventAccepted(collision, clusters)) {
       return;
@@ -987,7 +987,7 @@ struct GammaJetTreeProducer {
   /// \param collision The collision to process
   /// \param clusters The EMCAL clusters in the event
   /// \param mcCollisions The MC collisions collection
-  void processEventMC(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs, JMcCollisionLbs>::iterator const& collision, emcClusters const& clusters, MCCol const&)
+  void processEventMC(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, JMcCollisionLbs>::iterator const& collision, emcClusters const& clusters, MCCol const&)
   {
     if (!isEventAccepted(collision, clusters)) {
       return;
@@ -1036,7 +1036,7 @@ struct GammaJetTreeProducer {
   /// \param clusters The EMCAL clusters to process
   /// \param tracks The tracks collection
   /// \param emctracks The EMCAL tracks collection from track matching
-  void processClusters(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, emcClusters const& clusters, aod::JetTracks const& tracks, aod::JEMCTracks const& emctracks)
+  void processClusters(soa::Join<aod::JetCollisions, aod::BkgChargedRhos>::iterator const& collision, emcClusters const& clusters, aod::JetTracks const& tracks, aod::JEMCTracks const& emctracks)
   {
     // event selection
     int32_t storedColIndex = getStoredColIndex(collision);
@@ -1096,7 +1096,7 @@ struct GammaJetTreeProducer {
   /// \param collision The collision to process
   /// \param mcClusters The MC clusters to process
   /// \param mcParticles The MC particles collection
-  void processClustersMCInfo(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, emcMCClusters const& mcClusters, aod::JMcParticles const& mcParticles)
+  void processClustersMCInfo(soa::Join<aod::JetCollisions, aod::BkgChargedRhos>::iterator const& collision, emcMCClusters const& mcClusters, aod::JMcParticles const& mcParticles)
   {
     // event selection
     int32_t storedColIndex = getStoredColIndex(collision);
@@ -1240,7 +1240,7 @@ struct GammaJetTreeProducer {
   /// \param collision The collision to process
   /// \param chargedJets The charged jets to process
   /// \param tracks The tracks collection
-  void processChargedJetsData(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& chargedJets, aod::JetTracks const& tracks)
+  void processChargedJetsData(soa::Join<aod::JetCollisions, aod::BkgChargedRhos>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& chargedJets, aod::JetTracks const& tracks)
   {
     // event selection
     int32_t storedColIndex = getStoredColIndex(collision);
@@ -1267,7 +1267,7 @@ struct GammaJetTreeProducer {
   /// \brief Processes MC particles and fills MC particle table
   /// \param collision The collision to process
   /// \param mcgenparticles The MC particles to process
-  void processMCParticles(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs, JMcCollisionLbs>::iterator const& collision, aod::JetParticles const& mcgenparticles, MCCol const&)
+  void processMCParticles(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, JMcCollisionLbs>::iterator const& collision, aod::JetParticles const& mcgenparticles, MCCol const&)
   {
     // event selection
     int32_t storedColIndex = getStoredColIndex(collision);
@@ -1347,7 +1347,7 @@ struct GammaJetTreeProducer {
   /// \param chargedJets The MC particle level charged jets to process
   /// \param mcgenparticles The MC particles collection
   /// \param mcCollisions The MC collisions collection
-  void processChargedJetsMCP(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs, JMcCollisionLbs>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>> const& chargedJets, aod::JetParticles const& mcgenparticles, MCCol const&)
+  void processChargedJetsMCP(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, JMcCollisionLbs>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>> const& chargedJets, aod::JetParticles const& mcgenparticles, MCCol const&)
   {
     // event selection
     int32_t storedColIndex = getStoredColIndex(collision);
@@ -1383,7 +1383,7 @@ struct GammaJetTreeProducer {
   /// \param chargedJets The MC detector level charged jets to process
   /// \param tracks The tracks collection
   /// \param pjets The MC particle level jets collection (just loaded to have subscription to the table)
-  void processChargedJetsMCD(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& chargedJets, aod::JetTracks const& tracks, JetMCPTable const& /*pjets*/)
+  void processChargedJetsMCD(soa::Join<aod::JetCollisions, aod::BkgChargedRhos>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& chargedJets, aod::JetTracks const& tracks, JetMCPTable const& /*pjets*/)
   {
     // event selection
     int32_t storedColIndex = getStoredColIndex(collision);

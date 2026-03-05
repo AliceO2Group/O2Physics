@@ -323,7 +323,6 @@ struct globalDimuonFilter {
 
     int nGoodGLPerSA = 0;
     auto muons_per_MCHMID = fwdtracks.sliceBy(fwdtracksPerMCHTrack, fwdtrack.globalIndex());
-    std::tuple<int, int, int> tupleIds_at_min_chi2mftmch;
     for (const auto& muon_tmp : muons_per_MCHMID) {
       if (muon_tmp.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
         float pt = 999.f, eta = 999.f, phi = 999.f;

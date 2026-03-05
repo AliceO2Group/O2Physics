@@ -38,9 +38,9 @@ void JetFinder::setParams()
   }
   float jetRForClustering = isReclustering ? 5.0 * jetR : jetR;
 
-  selGhosts = fastjet::SelectorEtaRange(ghostEtaMin, ghostEtaMax) && fastjet::SelectorPhiRange(phiMin, phiMax);
+  selGhosts = fastjet::SelectorRapRange(etaMin, etaMax) && fastjet::SelectorPhiRange(phiMin, phiMax); // note that this is rapidity not eta but since ghosts are effectively massless this is ok
   // ghostAreaSpec=fastjet::GhostedAreaSpec(selGhosts,ghostRepeatN,ghostArea,gridScatter,ktScatter,ghostktMean);
-  ghostAreaSpec = fastjet::GhostedAreaSpec(selGhosts, ghostRepeatN, ghostArea, gridScatter, ktScatter, ghostktMean); // the first argument is rapidity not pseudorapidity, to be checked
+  ghostAreaSpec = fastjet::GhostedAreaSpec(selGhosts, ghostRepeatN, ghostArea, gridScatter, ktScatter, ghostktMean);
   jetDef = fastjet::JetDefinition(fastjet::antikt_algorithm, jetRForClustering, recombScheme, strategy);
   if (fastjetExtraParam > -98.0) {
     jetDef.set_extra_param(fastjetExtraParam);

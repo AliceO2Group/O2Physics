@@ -147,10 +147,3 @@ void DimuonCut::SetMaxdPtdEtadPhiwrtMCHMID(float reldPtMax, float dEtaMax, float
   LOG(info) << "Dimuon Cut, set max deta between MFT-MCH-MID and associated MCH-MID: " << mMaxdEtawrtMCHMID;
   LOG(info) << "Dimuon Cut, set max dphi between MFT-MCH-MID and associated MCH-MID: " << mMaxdPhiwrtMCHMID;
 }
-void DimuonCut::SetSlopeAndInterceptDRvsChi2MCHMFT(float slope, float intercept)
-{
-  mSlope_dr_chi2MatchMFTMCH = slope;
-  mIntercept_dr_chi2MatchMFTMCH = intercept;
-  LOG(info) << "Dimuon Cut, set slope between dr and chi2MCHMFT: " << mSlope_dr_chi2MatchMFTMCH;
-  LOG(info) << "Dimuon Cut, set intercept between dr and chi2MCHMFT: " << mIntercept_dr_chi2MatchMFTMCH;
-}

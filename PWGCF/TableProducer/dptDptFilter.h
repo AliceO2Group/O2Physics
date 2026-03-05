@@ -896,27 +896,31 @@ inline std::bitset<32> getTriggerSelection(std::string_view const& triggstr)
 
 inline SystemType getSystemType(auto const& periodsForSysType)
 {
-  auto period = metadataInfo.get("LPMProductionTag");
-  auto anchoredPeriod = metadataInfo.get("AnchorProduction");
-  bool checkAnchor = anchoredPeriod.length() > 0;
+  if (fDataType != kOnTheFly) {
+    auto period = metadataInfo.get("LPMProductionTag");
+    auto anchoredPeriod = metadataInfo.get("AnchorProduction");
+    bool checkAnchor = anchoredPeriod.length() > 0;
 
-  for (SystemType sT = SystemNoSystem; sT < SystemNoOfSystems; ++sT) {
-    const std::string& periods = periodsForSysType[static_cast<int>(sT)][0];
-    auto contains = [periods](auto const& period) {
-      if (periods.find(period) != std::string::npos) {
-        return true;
-      }
-      return false;
-    };
-    if (periods.length() > 0) {
-      if (contains(period) || (checkAnchor && contains(anchoredPeriod))) {
-        LOGF(info, "DptDptCorrelations::getSystemType(). Assigned system type %s for period %s", systemExternalNamesMap.at(static_cast<int>(sT)).data(), period.c_str());
-        return sT;
+    for (SystemType sT = SystemNoSystem; sT < SystemNoOfSystems; ++sT) {
+      const std::string& periods = periodsForSysType[static_cast<int>(sT)][0];
+      auto contains = [periods](auto const& period) {
+        if (periods.find(period) != std::string::npos) {
+          return true;
+        }
+        return false;
+      };
+      if (periods.length() > 0) {
+        if (contains(period) || (checkAnchor && contains(anchoredPeriod))) {
+          LOGF(info, "DptDptCorrelations::getSystemType(). Assigned system type %s for period %s", systemExternalNamesMap.at(static_cast<int>(sT)).data(), period.c_str());
+          return sT;
+        }
       }
     }
+    LOGF(fatal, "DptDptCorrelations::getSystemType(). No system type for period: %s", period.c_str());
+    return SystemPbPb;
+  } else {
+    return SystemNeNeRun3;
   }
-  LOGF(fatal, "DptDptCorrelations::getSystemType(). No system type for period: %s", period.c_str());
-  return SystemPbPb;
 }
 
 /// \brief Type of data according to the configuration string

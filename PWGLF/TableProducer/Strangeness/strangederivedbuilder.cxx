@@ -213,7 +213,7 @@ struct strangederivedbuilder {
   Preslice<aod::V0Datas> V0perCollision = o2::aod::v0data::collisionId;
   Preslice<aod::CascDatas> CascperCollision = o2::aod::cascdata::collisionId;
   Preslice<aod::KFCascDatas> KFCascperCollision = o2::aod::cascdata::collisionId;
-  PresliceUnsorted<aod::TraCascDatas> TraCascperCollision = o2::aod::cascdata::collisionId;
+  Preslice<aod::TraCascDatas> TraCascperCollision = o2::aod::cascdata::collisionId;
   Preslice<aod::McParticles> mcParticlePerMcCollision = o2::aod::mcparticle::mcCollisionId;
   Preslice<UDCollisionsFull> udCollisionsPerCollision = o2::aod::udcollision::collisionId;
 

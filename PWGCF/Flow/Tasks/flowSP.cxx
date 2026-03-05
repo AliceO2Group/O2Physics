@@ -72,6 +72,7 @@ struct FlowSP {
   // event selection configurable group
   O2_DEFINE_CONFIGURABLE(cfgEvSelsUseAdditionalEventCut, bool, true, "Bool to enable Additional Event Cut");
   O2_DEFINE_CONFIGURABLE(cfgEvSelsMaxOccupancy, int, 10000, "Maximum occupancy of selected events");
+  O2_DEFINE_CONFIGURABLE(cfgEvSelsMinOccupancy, int, 0, "Minimum occupancy of selected events");
   O2_DEFINE_CONFIGURABLE(cfgEvSelsNoSameBunchPileupCut, bool, true, "kNoSameBunchPileupCut");
   O2_DEFINE_CONFIGURABLE(cfgEvSelsIsGoodZvtxFT0vsPV, bool, true, "kIsGoodZvtxFT0vsPV");
   O2_DEFINE_CONFIGURABLE(cfgEvSelsNoCollInTimeRangeStandard, bool, true, "kNoCollInTimeRangeStandard");
@@ -88,6 +89,7 @@ struct FlowSP {
   O2_DEFINE_CONFIGURABLE(cfgFillEventPlaneQA, bool, false, "Fill histograms for Event Plane QA");
   O2_DEFINE_CONFIGURABLE(cfgFillQABefore, bool, false, "Fill QA histograms before cuts, only for processData");
   O2_DEFINE_CONFIGURABLE(cfgFillMeanPT, bool, false, "Fill histograms for mean PX/PT");
+  O2_DEFINE_CONFIGURABLE(cfgUseCentAveragePt, bool, false, "Use <pt> in 1% centrality intervals and not ecent average");
   // Flags to make and fill histograms
   O2_DEFINE_CONFIGURABLE(cfgFillGeneralV1Histos, bool, true, "Fill histograms for vn analysis");
   O2_DEFINE_CONFIGURABLE(cfgFillMixedHarmonics, bool, true, "Flag to make and fill histos for mixed harmonics");
@@ -139,6 +141,7 @@ struct FlowSP {
   O2_DEFINE_CONFIGURABLE(cfgCCDB_NUE, std::string, "Users/c/ckoster/flowSP/LHC23_PbPb_pass5/NUE/Default", "ccdb dir for NUE corrections (pt)");
   O2_DEFINE_CONFIGURABLE(cfgCCDB_NUE2D, std::string, "Users/c/ckoster/flowSP/LHC23_PbPb_pass5/NUE/2D", "ccdb dir for NUE 2D corrections (eta, pt)");
   O2_DEFINE_CONFIGURABLE(cfgCCDBdir_centrality, std::string, "", "ccdb dir for Centrality corrections");
+  O2_DEFINE_CONFIGURABLE(cfgCCDBdir_meanPt, std::string, "", "ccdb dir for Mean Pt corrections");
   // Confogirable axis
   ConfigurableAxis axisCentrality{"axisCentrality", {20, 0, 100}, "Centrality bins for vn "};
   ConfigurableAxis axisNch = {"axisNch", {400, 0, 4000}, "Global N_{ch}"};
@@ -187,12 +190,12 @@ struct FlowSP {
     TProfile* hcorrQQy = nullptr;
     TProfile* hEvPlaneRes = nullptr;
     TH1D* hCentrality = nullptr;
-    TProfile2D* hRelPt = nullptr;
+    TProfile2D* hMeanPt = nullptr;
 
     bool clQQ = false;
     bool clEvPlaneRes = false;
     bool clCentrality = false;
-    bool clRelPt = false;
+    bool clMeanPt = false;
 
   } cfg;
 
@@ -200,6 +203,7 @@ struct FlowSP {
     std::vector<std::map<int, float>> wacc = {{{0, 1.0}, {1, 1.0}, {2, 1.0}, {3, 1.0}}, {{0, 1.0}, {1, 1.0}, {2, 1.0}, {3, 1.0}}, {{0, 1.0}, {1, 1.0}, {2, 1.0}, {3, 1.0}}}; // int for part species, float for weight vector for kIncl, kPos, kNeg
     std::vector<std::map<int, float>> weff = {{{0, 1.0}, {1, 1.0}, {2, 1.0}, {3, 1.0}}, {{0, 1.0}, {1, 1.0}, {2, 1.0}, {3, 1.0}}, {{0, 1.0}, {1, 1.0}, {2, 1.0}, {3, 1.0}}}; // int for part species, float for weight vector for kIncl, kPos, kNeg
     double centWeight = 1.0;
+    double meanPtWeight = 1.0;
     double ux = 0;
     double uy = 0;
     double uxMH = 0;
@@ -527,10 +531,10 @@ struct FlowSP {
           registry.add<TProfile2D>("incl/meanPT/meanRelPtA", "", kTProfile2D, {axisEtaVn, axisCentrality});
           registry.add<TProfile2D>("incl/meanPT/meanRelPtC", "", kTProfile2D, {axisEtaVn, axisCentrality});
 
-          registry.add<TProfile2D>("incl/meanPT/hRelEtaPt", "", kTProfile2D, {axisEtaVn, axisCentrality});
-          registry.add<TProfile2D>("incl/meanPT/ptV1A", "", kTProfile2D, {axisEtaVn, axisCentrality});
-          registry.add<TProfile2D>("incl/meanPT/ptV1C", "", kTProfile2D, {axisEtaVn, axisCentrality});
-          registry.add<TProfile>("incl/meanPT/meanPT", "", kTProfile, {axisCentrality});
+          registry.add<TProfile2D>("incl/meanPT/hMeanPtEtaCent", "", kTProfile2D, {axisEtaVn, axisCent});
+          registry.add<TProfile2D>("incl/meanPT/ptV1A", "", kTProfile2D, {axisEtaVn, axisCent});
+          registry.add<TProfile2D>("incl/meanPT/ptV1C", "", kTProfile2D, {axisEtaVn, axisCent});
+          registry.add<TProfile>("incl/meanPT/hMeanPtCent", "", kTProfile, {axisCent});
         }
         if (cfgFillPID) {
           registry.add<TProfile3D>("incl/pion/vnC", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
@@ -848,7 +852,7 @@ struct FlowSP {
     // Occupancy
     if (cfgEvSelsDoOccupancySel) {
       auto occupancy = collision.trackOccupancyInTimeRange();
-      if (occupancy > cfgEvSelsMaxOccupancy) {
+      if (occupancy > cfgEvSelsMaxOccupancy || occupancy < cfgEvSelsMinOccupancy) {
         return 0;
       }
       histos.fill(HIST("hEventCount"), evSel_occupancy);
@@ -1071,10 +1075,10 @@ struct FlowSP {
     }
 
     if (cfgFillMeanPT) {
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/hRelEtaPt"), track.eta(), spm.centrality, track.pt(), weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/meanPT"), spm.centrality, track.pt(), weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1A"), track.eta(), spm.centrality, track.pt() * ((spm.uy * spm.qyA + spm.ux * spm.qxA) / std::sqrt(std::fabs(spm.corrQQ))), weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1C"), track.eta(), spm.centrality, track.pt() * ((spm.uy * spm.qyC + spm.ux * spm.qxC) / std::sqrt(std::fabs(spm.corrQQ))), weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/hMeanPtEtaCent"), track.eta(), spm.centrality, track.pt(), weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/hMeanPtCent"), spm.centrality, track.pt(), weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1A"), track.eta(), spm.centrality, track.pt() * ((spm.uy * spm.qyA + spm.ux * spm.qxA) / (std::sqrt(std::fabs(spm.corrQQ)) * spm.meanPtWeight)), weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("meanPT/ptV1C"), track.eta(), spm.centrality, track.pt() * ((spm.uy * spm.qyC + spm.ux * spm.qxC) / (std::sqrt(std::fabs(spm.corrQQ)) * spm.meanPtWeight)), weight);
     }
   }
 
@@ -1305,14 +1309,19 @@ struct FlowSP {
       evPlaneRes = std::sqrt(evPlaneRes);
     }
 
+    spm.centWeight = 1.;
     if (cfgCCDBdir_centrality.value.empty() == false) {
       if (!cfg.clCentrality) {
         cfg.hCentrality = ccdb->getForTimeStamp<TH1D>(cfgCCDBdir_centrality.value, bc.timestamp());
         cfg.clCentrality = true;
       }
-      spm.centWeight = cfg.hCentrality->GetBinContent(cfg.hCentrality->FindBin(spm.centrality));
-      if (spm.centWeight < 0)
-        LOGF(fatal, "Centrality weight cannot be negative.. abort for (%.2f)", spm.centrality);
+      double centW = cfg.hCentrality->GetBinContent(cfg.hCentrality->FindBin(spm.centrality));
+      if (centW < 0) {
+        spm.centWeight = 1. / centW;
+      } else {
+        LOGF(fatal, "Centrality weight cannot be negative .. setting to 0. for (%.2f)", spm.centrality);
+        spm.centWeight = 0.;
+      }
     }
 
     fillEventQA<kAfter>(collision, tracks);
@@ -1365,6 +1374,23 @@ struct FlowSP {
 
       if (!trackSelected(track, field))
         continue;
+
+      spm.meanPtWeight = 1.0;
+      if (cfgCCDBdir_meanPt.value.empty() == false) {
+        if (!cfg.clMeanPt) {
+          cfg.hMeanPt = ccdb->getForTimeStamp<TProfile2D>(cfgCCDBdir_meanPt.value, bc.timestamp());
+          cfg.clMeanPt = true;
+        }
+        int etaBin = cfg.hMeanPt->GetXaxis()->FindBin(track.eta());
+        int centBin = cfg.hMeanPt->GetYaxis()->FindBin(spm.centrality);
+        double weight = cfg.hMeanPt->GetBinContent(etaBin, centBin);
+        if (weight > 0) {
+          spm.meanPtWeight = 1.0 / weight;
+        } else {
+          LOGF(info, "MeanPt cannot be negative or 0.. (weight = 1/meanPt) -> setting to 0. for (%.2f, %.2f)", track.eta(), spm.centrality);
+          spm.meanPtWeight = 0.0;
+        }
+      }
 
       // constrain angle to 0 -> [0,0+2pi]
       auto phi = RecoDecay::constrainAngle(track.phi(), 0);
@@ -1491,20 +1517,20 @@ struct FlowSP {
       double drelPxA = track.pt() * ((spm.uy * spm.qyA + spm.ux * spm.qxA) / std::sqrt(std::fabs(spm.corrQQ)));
       double drelPxC = track.pt() * ((spm.uy * spm.qyC + spm.ux * spm.qxC) / std::sqrt(std::fabs(spm.corrQQ)));
 
-      meanPTMap->Fill(track.eta(), track.pt(), spm.wacc[kInclusive][kUnidentified] * spm.weff[kInclusive][kUnidentified]);
-      relPxA->Fill(track.eta(), drelPxA, spm.wacc[kInclusive][kUnidentified] * spm.weff[kInclusive][kUnidentified]);
-      relPxC->Fill(track.eta(), drelPxC, spm.wacc[kInclusive][kUnidentified] * spm.weff[kInclusive][kUnidentified]);
+      meanPTMap->Fill(track.eta(), track.pt(), spm.wacc[kInclusive][kUnidentified] * spm.weff[kInclusive][kUnidentified] * spm.centWeight);
+      relPxA->Fill(track.eta(), drelPxA, spm.wacc[kInclusive][kUnidentified] * spm.weff[kInclusive][kUnidentified] * spm.centWeight);
+      relPxC->Fill(track.eta(), drelPxC, spm.wacc[kInclusive][kUnidentified] * spm.weff[kInclusive][kUnidentified] * spm.centWeight);
 
       if (spm.charge == kPositive) {
-        meanPTMapPos->Fill(track.eta(), track.pt(), spm.wacc[kPositive][kUnidentified] * spm.weff[kPositive][kUnidentified]);
-        relPxAPos->Fill(track.eta(), drelPxA, spm.wacc[kPositive][kUnidentified] * spm.weff[kPositive][kUnidentified]);
-        relPxCPos->Fill(track.eta(), drelPxC, spm.wacc[kPositive][kUnidentified] * spm.weff[kPositive][kUnidentified]);
+        meanPTMapPos->Fill(track.eta(), track.pt(), spm.wacc[kPositive][kUnidentified] * spm.weff[kPositive][kUnidentified] * spm.centWeight);
+        relPxAPos->Fill(track.eta(), drelPxA, spm.wacc[kPositive][kUnidentified] * spm.weff[kPositive][kUnidentified] * spm.centWeight);
+        relPxCPos->Fill(track.eta(), drelPxC, spm.wacc[kPositive][kUnidentified] * spm.weff[kPositive][kUnidentified] * spm.centWeight);
       }
 
       if (spm.charge == kNegative) {
-        meanPTMapNeg->Fill(track.eta(), track.pt(), spm.wacc[kNegative][kUnidentified] * spm.weff[kNegative][kUnidentified]);
-        relPxANeg->Fill(track.eta(), drelPxA, spm.wacc[kNegative][kUnidentified] * spm.weff[kNegative][kUnidentified]);
-        relPxCNeg->Fill(track.eta(), drelPxC, spm.wacc[kNegative][kUnidentified] * spm.weff[kNegative][kUnidentified]);
+        meanPTMapNeg->Fill(track.eta(), track.pt(), spm.wacc[kNegative][kUnidentified] * spm.weff[kNegative][kUnidentified] * spm.centWeight);
+        relPxANeg->Fill(track.eta(), drelPxA, spm.wacc[kNegative][kUnidentified] * spm.weff[kNegative][kUnidentified] * spm.centWeight);
+        relPxCNeg->Fill(track.eta(), drelPxC, spm.wacc[kNegative][kUnidentified] * spm.weff[kNegative][kUnidentified] * spm.centWeight);
       }
 
     } // end of track loop
@@ -1529,12 +1555,12 @@ struct FlowSP {
         double drelPxCPos = relPxCPos->GetBinContent(etabin);
 
         if (meanPt != 0) {
-          registry.fill(HIST("incl/meanPT/meanRelPtA"), eta, spm.centrality, drelPxA / meanPt, 1);
-          registry.fill(HIST("neg/meanPT/meanRelPtA"), eta, spm.centrality, drelPxANeg / meanPtNeg, 1);
-          registry.fill(HIST("pos/meanPT/meanRelPtA"), eta, spm.centrality, drelPxAPos / meanPtPos, 1);
-          registry.fill(HIST("incl/meanPT/meanRelPtC"), eta, spm.centrality, drelPxC / meanPt, 1);
-          registry.fill(HIST("neg/meanPT/meanRelPtC"), eta, spm.centrality, drelPxCNeg / meanPtNeg, 1);
-          registry.fill(HIST("pos/meanPT/meanRelPtC"), eta, spm.centrality, drelPxCPos / meanPtPos, 1);
+          registry.fill(HIST("incl/meanPT/meanRelPtA"), eta, spm.centrality, drelPxA / meanPt, spm.centWeight);
+          registry.fill(HIST("neg/meanPT/meanRelPtA"), eta, spm.centrality, drelPxANeg / meanPtNeg, spm.centWeight);
+          registry.fill(HIST("pos/meanPT/meanRelPtA"), eta, spm.centrality, drelPxAPos / meanPtPos, spm.centWeight);
+          registry.fill(HIST("incl/meanPT/meanRelPtC"), eta, spm.centrality, drelPxC / meanPt, spm.centWeight);
+          registry.fill(HIST("neg/meanPT/meanRelPtC"), eta, spm.centrality, drelPxCNeg / meanPtNeg, spm.centWeight);
+          registry.fill(HIST("pos/meanPT/meanRelPtC"), eta, spm.centrality, drelPxCPos / meanPtPos, spm.centWeight);
         }
       }
     }

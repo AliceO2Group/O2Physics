@@ -1244,11 +1244,18 @@ struct sigma0builder {
   template <typename TCollision, typename TV0Object>
   void analyzeV0CollAssoc(TCollision const& collision, TV0Object const& fullv0s, std::vector<int> selV0Indices, bool isPhotonAnalysis)
   {
+    if (!collision.has_straMCCollision())
+      return;
+
     auto v0MCCollision = collision.template straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
     float IR = (fGetIR) ? rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource, fIRCrashOnNull) * 1.e-3 : -1;
 
     for (size_t i = 0; i < selV0Indices.size(); ++i) {
       auto v0 = fullv0s.rawIteratorAt(selV0Indices[i]);
+
+      if (!v0.has_v0MCCore())
+        continue;
+
       auto v0MC = v0.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
 
       float V0MCpT = RecoDecay::pt(array<float, 2>{v0MC.pxMC(), v0MC.pyMC()});
@@ -2225,7 +2232,7 @@ struct sigma0builder {
 
       //_______________________________________________
       // Wrongly collision association study (MC-specific)
-      if constexpr (requires { coll.StraMCCollisionId(); }) {
+      if constexpr (requires { coll.straMCCollisionId(); }) {
         if (doAssocStudy) {
           analyzeV0CollAssoc(coll, fullV0s, bestGammasArray, true);   // Photon-analysis
           analyzeV0CollAssoc(coll, fullV0s, bestLambdasArray, false); // Lambda-analysis

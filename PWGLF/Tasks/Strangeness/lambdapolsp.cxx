@@ -190,6 +190,16 @@ struct lambdapolsp {
   ConfigurableAxis configbinAxis{"configbinAxis", {VARIABLE_WIDTH, -0.8, -0.4, -0.2, 0, 0.2, 0.4, 0.8}, "BA"};
   */
   // ConfigurableAxis configphiAxis{"configphiAxis", {VARIABLE_WIDTH, 0.0, 0.2, 0.4, 0.8, 1.0, 2.0, 2.5, 3.0, 4.0, 5.0, 5.5, 6.28}, "PhiAxis"};
+
+  struct : ConfigurableGroup {
+    Configurable<bool> isQA{"isQA", true, "Flag to fill QA"};
+    ConfigurableAxis centfineAxis{"centfineAxis", {VARIABLE_WIDTH, 0.0, 10.0, 40.0, 80.0}, "Cent V0M"};
+    ConfigurableAxis vxfineAxis{"vxfineAxis", {VARIABLE_WIDTH, 0.0, 10.0, 40.0, 80.0}, "vx fine axis"};
+    ConfigurableAxis vyfineAxis{"vyfineAxis", {VARIABLE_WIDTH, 0.0, 10.0, 40.0, 80.0}, "vy fine axis"};
+    ConfigurableAxis vzfineAxis{"vzfineAxis", {VARIABLE_WIDTH, 0.0, 10.0, 40.0, 80.0}, "vz fine axis"};
+    ConfigurableAxis qxZDCAxis{"qxZDCAxis", {VARIABLE_WIDTH, 0.0, 10.0, 40.0, 80.0}, "qx axis"};
+    ConfigurableAxis psiAxis{"psiAxis", {VARIABLE_WIDTH, 0.0, 10.0, 40.0, 80.0}, "psi axis"};
+  } QAgrp;
   struct : ConfigurableGroup {
     Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", true, "Check event quality in run condition table"};
     Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT_hadronPID", "Evt sel: RCT flag checker label"};
@@ -455,6 +465,32 @@ struct lambdapolsp {
     histos.add("hSparseGenAntiLambda", "hSparseGenAntiLambda", HistType::kTHnSparseF, runaxes2, true);
     histos.add("hSparseRecLambda", "hSparseRecLambda", HistType::kTHnSparseF, runaxes2, true);
     histos.add("hSparseRecAntiLambda", "hSparseRecAntiLambda", HistType::kTHnSparseF, runaxes2, true);
+
+    if (QAgrp.isQA) {
+      histos.add("hCentQxZDCA", "hCentQxZDCA", kTH2F, {{QAgrp.centfineAxis}, {QAgrp.qxZDCAxis}});
+      histos.add("hCentQyZDCA", "hCentQyZDCA", kTH2F, {{QAgrp.centfineAxis}, {QAgrp.qxZDCAxis}});
+      histos.add("hCentQxZDCC", "hCentQxZDCC", kTH2F, {{QAgrp.centfineAxis}, {QAgrp.qxZDCAxis}});
+      histos.add("hCentQyZDCC", "hCentQyZDCC", kTH2F, {{QAgrp.centfineAxis}, {QAgrp.qxZDCAxis}});
+
+      histos.add("hvxQxZDCA", "hvxQxZDCA", kTH2F, {{QAgrp.vxfineAxis}, {QAgrp.qxZDCAxis}});
+      histos.add("hvxQyZDCA", "hvxQyZDCA", kTH2F, {{QAgrp.vxfineAxis}, {QAgrp.qxZDCAxis}});
+      histos.add("hvxQxZDCC", "hvxQxZDCC", kTH2F, {{QAgrp.vxfineAxis}, {QAgrp.qxZDCAxis}});
+      histos.add("hvxQyZDCC", "hvxQyZDCC", kTH2F, {{QAgrp.vxfineAxis}, {QAgrp.qxZDCAxis}});
+
+      histos.add("hvyQxZDCA", "hvyQxZDCA", kTH2F, {{QAgrp.vyfineAxis}, {QAgrp.qxZDCAxis}});
+      histos.add("hvyQyZDCA", "hvyQyZDCA", kTH2F, {{QAgrp.vyfineAxis}, {QAgrp.qxZDCAxis}});
+      histos.add("hvyQxZDCC", "hvyQxZDCC", kTH2F, {{QAgrp.vyfineAxis}, {QAgrp.qxZDCAxis}});
+      histos.add("hvyQyZDCC", "hvyQyZDCC", kTH2F, {{QAgrp.vyfineAxis}, {QAgrp.qxZDCAxis}});
+
+      histos.add("hvzQxZDCA", "hvzQxZDCA", kTH2F, {{QAgrp.vzfineAxis}, {QAgrp.qxZDCAxis}});
+      histos.add("hvzQyZDCA", "hvzQyZDCA", kTH2F, {{QAgrp.vzfineAxis}, {QAgrp.qxZDCAxis}});
+      histos.add("hvzQxZDCC", "hvzQxZDCC", kTH2F, {{QAgrp.vzfineAxis}, {QAgrp.qxZDCAxis}});
+      histos.add("hvzQyZDCC", "hvzQyZDCC", kTH2F, {{QAgrp.vzfineAxis}, {QAgrp.qxZDCAxis}});
+
+      histos.add("PsiZDCC", "PsiZDCC", kTH2F, {QAgrp.centfineAxis, QAgrp.psiAxis});
+      histos.add("PsiZDCA", "PsiZDCA", kTH2F, {QAgrp.centfineAxis, QAgrp.psiAxis});
+      histos.add("PsiZDC", "PsiZDC", kTH2F, {QAgrp.centfineAxis, QAgrp.psiAxis});
+    }
 
     ccdb->setURL(cfgCcdbParam.cfgURL);
     ccdbApi.init("http://alice-ccdb.cern.ch");
@@ -939,6 +975,10 @@ struct lambdapolsp {
     // currentRunNumber = collision.foundBC_as<BCsRun3>().runNumber();
     auto bc = collision.foundBC_as<BCsRun3>();
 
+    auto vz = collision.vz();
+    auto vx = collision.vx();
+    auto vy = collision.vy();
+
     auto qxZDCA = collision.qxZDCA();
     auto qxZDCC = collision.qxZDCC();
     auto qyZDCA = collision.qyZDCA();
@@ -962,6 +1002,32 @@ struct lambdapolsp {
     /*if (useonlypsis) {
       psiZDC = psiZDCC - psiZDCA;
       }*/
+
+    if (QAgrp.isQA) {
+      histos.fill(HIST("hCentQxZDCA"), centrality, modqxZDCA);
+      histos.fill(HIST("hCentQyZDCA"), centrality, modqyZDCA);
+      histos.fill(HIST("hCentQxZDCC"), centrality, modqxZDCC);
+      histos.fill(HIST("hCentQyZDCC"), centrality, modqyZDCC);
+
+      histos.fill(HIST("hvxQxZDCA"), vx, modqxZDCA);
+      histos.fill(HIST("hvxQyZDCA"), vx, modqyZDCA);
+      histos.fill(HIST("hvxQxZDCC"), vx, modqxZDCC);
+      histos.fill(HIST("hvxQyZDCC"), vx, modqyZDCC);
+
+      histos.fill(HIST("hvyQxZDCA"), vy, modqxZDCA);
+      histos.fill(HIST("hvyQyZDCA"), vy, modqyZDCA);
+      histos.fill(HIST("hvyQxZDCC"), vy, modqxZDCC);
+      histos.fill(HIST("hvyQyZDCC"), vy, modqyZDCC);
+
+      histos.fill(HIST("hvzQxZDCA"), vz, modqxZDCA);
+      histos.fill(HIST("hvzQyZDCA"), vz, modqyZDCA);
+      histos.fill(HIST("hvzQxZDCC"), vz, modqxZDCC);
+      histos.fill(HIST("hvzQyZDCC"), vz, modqyZDCC);
+
+      histos.fill(HIST("PsiZDCA"), centrality, psiZDCA);
+      histos.fill(HIST("PsiZDCC"), centrality, psiZDCC);
+      histos.fill(HIST("PsiZDC"), centrality, psiZDC);
+    }
 
     histos.fill(HIST("hCentrality"), centrality);
     if (!checkwithpub) {
@@ -1260,6 +1326,10 @@ struct lambdapolsp {
     else if (centestim == 3)
       centrality = collision.centFV0A();
 
+    auto vz = collision.posZ();
+    auto vx = collision.posX();
+    auto vy = collision.posY();
+
     auto runnumber = collision.runNumber();
     if (!collision.triggereventsp()) { // provided by StraZDCSP
       return;
@@ -1318,6 +1388,32 @@ struct lambdapolsp {
     }
 
     auto psiZDC = TMath::ATan2((modqyZDCC - modqyZDCA), (modqxZDCC - modqxZDCA)); // full event plane
+
+    if (QAgrp.isQA) {
+      histos.fill(HIST("hCentQxZDCA"), centrality, modqxZDCA);
+      histos.fill(HIST("hCentQyZDCA"), centrality, modqyZDCA);
+      histos.fill(HIST("hCentQxZDCC"), centrality, modqxZDCC);
+      histos.fill(HIST("hCentQyZDCC"), centrality, modqyZDCC);
+
+      histos.fill(HIST("hvxQxZDCA"), vx, modqxZDCA);
+      histos.fill(HIST("hvxQyZDCA"), vx, modqyZDCA);
+      histos.fill(HIST("hvxQxZDCC"), vx, modqxZDCC);
+      histos.fill(HIST("hvxQyZDCC"), vx, modqyZDCC);
+
+      histos.fill(HIST("hvyQxZDCA"), vy, modqxZDCA);
+      histos.fill(HIST("hvyQyZDCA"), vy, modqyZDCA);
+      histos.fill(HIST("hvyQxZDCC"), vy, modqxZDCC);
+      histos.fill(HIST("hvyQyZDCC"), vy, modqyZDCC);
+
+      histos.fill(HIST("hvzQxZDCA"), vz, modqxZDCA);
+      histos.fill(HIST("hvzQyZDCA"), vz, modqyZDCA);
+      histos.fill(HIST("hvzQxZDCC"), vz, modqxZDCC);
+      histos.fill(HIST("hvzQyZDCC"), vz, modqyZDCC);
+
+      histos.fill(HIST("PsiZDCA"), centrality, psiZDCA);
+      histos.fill(HIST("PsiZDCC"), centrality, psiZDCC);
+      histos.fill(HIST("PsiZDC"), centrality, psiZDC);
+    }
 
     // fill histograms
     histos.fill(HIST("hCentrality"), centrality);
