@@ -101,7 +101,7 @@ struct HfDerivedDataCreatorLcToK0sP {
   using TypeMcCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= 1;
-  Filter filterMcGenMatching = nabs(aod::hf_cand_casc::flagMcMatchGen) == 1;
+  Filter filterMcGenMatching = nabs(aod::hf_cand_mc_flag::flagMcMatchGen) == 1;
 
   Preslice<SelectedCandidates> candidatesPerCollision = aod::hf_cand::collisionId;
   Preslice<SelectedCandidatesMc> candidatesMcPerCollision = aod::hf_cand::collisionId;
@@ -115,10 +115,10 @@ struct HfDerivedDataCreatorLcToK0sP {
   Partition<SelectedCandidatesMl> candidatesMlAll = aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= 0;
   Partition<SelectedCandidatesMcMl> candidatesMcMlAll = aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= 0;
   // partitions for signal and background
-  Partition<SelectedCandidatesMc> candidatesMcSig = nabs(aod::hf_cand_casc::flagMcMatchRec) == 1;
-  Partition<SelectedCandidatesMc> candidatesMcBkg = nabs(aod::hf_cand_casc::flagMcMatchRec) != 1;
-  Partition<SelectedCandidatesMcMl> candidatesMcMlSig = nabs(aod::hf_cand_casc::flagMcMatchRec) == 1;
-  Partition<SelectedCandidatesMcMl> candidatesMcMlBkg = nabs(aod::hf_cand_casc::flagMcMatchRec) != 1;
+  Partition<SelectedCandidatesMc> candidatesMcSig = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == 1;
+  Partition<SelectedCandidatesMc> candidatesMcBkg = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) != 1;
+  Partition<SelectedCandidatesMcMl> candidatesMcMlSig = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == 1;
+  Partition<SelectedCandidatesMcMl> candidatesMcMlBkg = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) != 1;
 
   void init(InitContext const&)
   {
