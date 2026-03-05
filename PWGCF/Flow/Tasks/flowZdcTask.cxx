@@ -92,7 +92,6 @@ struct FlowZdcTask {
   Configurable<bool> isOccupancyCut{"isOccupancyCut", false, "Occupancy cut?"};
   Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy", false, "T0C Occu cut?"};
   Configurable<bool> isTDCcut{"isTDCcut", false, "Use TDC cut?"};
-  Configurable<bool> isT0CCent{"isT0CCent", true, "Use T0C cent cut?"};
   Configurable<bool> isApplyRadialCut{"isApplyRadialCut", false, "Use cut on X and Y?"};
   Configurable<bool> useMidRapNchSel{"useMidRapNchSel", false, "Use mid-rapidity Nch selection"};
 
@@ -377,11 +376,9 @@ struct FlowZdcTask {
     }
     histos.fill(HIST("hEventCounter"), EvCutLabel::OccuCut);
 
-    if (isT0CCent) {
-      if (col.centFT0C() < minT0CcentCut || col.centFT0C() > maxT0CcentCut) {
+    if (col.centFT0C() < minT0CcentCut || col.centFT0C() > maxT0CcentCut) {
         return false;
       }
-    }
     histos.fill(HIST("hEventCounter"), EvCutLabel::Centrality);
 
     // Z-vertex position cut
