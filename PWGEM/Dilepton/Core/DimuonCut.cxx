@@ -93,6 +93,11 @@ void DimuonCut::SetMatchingChi2MCHMFT(float min, float max)
   mMaxMatchingChi2MCHMFT = max;
   LOG(info) << "Dimuon Cut, set matching chi2 MFT-MCH range: " << mMinMatchingChi2MCHMFT << " - " << mMaxMatchingChi2MCHMFT;
 }
+void DimuonCut::SetMaxMatchingChi2MCHMFTPtDep(std::function<float(float)> PtDepCut)
+{
+  mMaxMatchingChi2MCHMFTPtDep = PtDepCut;
+  LOG(info) << "Dimuon Cut, set matching chi2 MFT-MCH range: " << mMaxMatchingChi2MCHMFTPtDep(0.5);
+}
 void DimuonCut::SetMatchingChi2MCHMID(float min, float max)
 {
   mMinMatchingChi2MCHMID = min;
