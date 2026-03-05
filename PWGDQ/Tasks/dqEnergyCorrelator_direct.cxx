@@ -95,6 +95,7 @@ struct AnalysisEnergyCorrelator {
     Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Event histograms"};
     Configurable<std::string> fConfigAddEventMCHistogram{"cfgAddEventMCHistogram", "generator", "MC Event histograms"};
     Configurable<int> fConfigMixingDepth{"cfgMixingDepth", 5, "Event mixing pool depth"};
+    Configurable<float> fConfigEventfilterVtz{"cfgEventfilterVtz", 10.0, "Event filter Vtz"};
     Configurable<bool> fConfigEventQA{"cfgEventQA", false, "If true, fill Event QA histograms"};
   } fConfigEventOptions;
 
@@ -160,8 +161,6 @@ struct AnalysisEnergyCorrelator {
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
   int fCurrentRun = -1;
-  // uint32_t fTrackCutBitMap;
-  // uint32_t fHadronCutBitMap;
 
   // Preslice for association table
   Preslice<aod::TrackAssoc> preslice = aod::track_association::collisionId;
@@ -574,8 +573,6 @@ struct AnalysisEnergyCorrelator {
 
       // Get associated tracks for this event
       auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
-      if (groupedAssocs.size() < 2)
-        continue; // Need at least 2 tracks for pairing
 
       // Triple loop: track1 (electron) x track2 (electron) x hadron
       for (auto& a1 : groupedAssocs) {
@@ -587,6 +584,10 @@ struct AnalysisEnergyCorrelator {
         VarManager::FillTrackCollision<gkTrackFillMapWithCov>(t1, event);
         if (t1.has_mcParticle()) {
           VarManager::FillTrackMC(mcParticles, t1.mcParticle());
+        }
+
+        if (fConfigTrackOptions.fConfigTrackQA) {
+          fHistMan->FillHistClass("AssocsBarrel_BeforeCuts", VarManager::fgValues);
         }
 
         // Apply electron cuts and fill histograms
@@ -665,7 +666,8 @@ struct AnalysisEnergyCorrelator {
     } // end event loop
   }
 
-  void processBarrelMixedEvent(MyEvents const& events, aod::TrackAssoc const& assocs, MyBarrelTracksWithCov const& /*tracks*/, aod::McCollisions const& /*mcCollisions*/, aod::McParticles const& mcParticles, BCsWithTimestamps const& bcs)
+  Filter eventFilter = nabs(aod::collision::posZ) < fConfigEventOptions.fConfigEventfilterVtz && aod::evsel::sel8 == true;
+  void processBarrelMixedEvent(soa::Filtered<MyEvents>& events, aod::TrackAssoc const& assocs, MyBarrelTracksWithCov const& /*tracks*/, aod::McCollisions const& /*mcCollisions*/, aod::McParticles const& mcParticles, BCsWithTimestamps const& bcs)
   {
     if (events.size() == 0) {
       return;
@@ -842,7 +844,7 @@ struct AnalysisEnergyCorrelator {
     }
   }
 
-  void processMCGenEnergyCorrelators(MyEvents const& events,
+  void processMCGenEnergyCorrelators(soa::Filtered<MyEvents>& events,
                                      McCollisions const& /*mcEvents*/, McParticles const& mcTracks)
   {
     if (events.size() == 0) {
@@ -868,7 +870,7 @@ struct AnalysisEnergyCorrelator {
     }
   }
 
-  void processMCGenEnergyCorrelatorsME(MyEvents const& events,
+  void processMCGenEnergyCorrelatorsME(soa::Filtered<MyEvents>& events,
                                        McCollisions const& /*mcEvents*/, McParticles const& mcTracks)
   {
     if (events.size() == 0) {
@@ -898,7 +900,7 @@ struct AnalysisEnergyCorrelator {
     }
   }
 
-  void processMCGenEnergyCorrelatorsPion(MyEvents const& events,
+  void processMCGenEnergyCorrelatorsPion(soa::Filtered<MyEvents>& events,
                                          McCollisions const& /*mcEvents*/, McParticles const& mcTracks)
   {
     if (events.size() == 0) {
@@ -924,7 +926,7 @@ struct AnalysisEnergyCorrelator {
     }
   }
 
-  void processMCGenEnergyCorrelatorsPionME(MyEvents const& events,
+  void processMCGenEnergyCorrelatorsPionME(soa::Filtered<MyEvents>& events,
                                            McCollisions const& /*mcEvents*/, McParticles const& mcTracks)
   {
     if (events.size() == 0) {
