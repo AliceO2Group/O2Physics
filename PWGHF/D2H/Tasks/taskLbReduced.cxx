@@ -150,13 +150,13 @@ DECLARE_SOA_TABLE(HfRedCandLbLites, "AOD", "HFREDCANDLBLITE", //! Table with som
                   hf_cand_lb_lite::NSigTofPiBachelor,
                   hf_cand_lb_lite::NSigTpcTofPiBachelor,
                   // MC truth
-                  hf_cand_3prong::FlagMcMatchRec,
-                  hf_cand_3prong::OriginMcRec,
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::OriginMcRec,
                   hf_cand_lb_lite::FlagWrongCollision,
                   hf_cand_lb_lite::PtGen);
 
 DECLARE_SOA_TABLE(HfRedLbMcCheck, "AOD", "HFREDLBMCCHECK", //! Table with MC decay type check
-                  hf_cand_3prong::FlagMcMatchRec,
+                  hf_cand_mc_flag::FlagMcMatchRec,
                   hf_cand_lb_lite::FlagWrongCollision,
                   hf_cand_lb_lite::MLc,
                   hf_cand_lb_lite::PtLc,
