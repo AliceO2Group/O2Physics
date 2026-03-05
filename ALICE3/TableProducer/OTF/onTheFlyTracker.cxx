@@ -1525,16 +1525,16 @@ struct OnTheFlyTracker {
       }
 
       bool reconstructed = true;
-      int numHits = 0;
+      int nHits = 0;
       if (enablePrimarySmearing && !fastPrimaryTrackerSettings.fastTrackPrimaries) {
         reconstructed = mSmearer[icfg]->smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
-        numHits = fastTrackerSettings.minSiliconHits;
+        nHits = fastTrackerSettings.minSiliconHits;
       } else if (fastPrimaryTrackerSettings.fastTrackPrimaries) {
         o2::track::TrackParCov o2Track;
         o2::upgrade::convertMCParticleToO2Track(mcParticle, o2Track, pdgDB);
         o2Track.setPID(pdgCodeToPID(mcParticle.pdgCode()));
-        numHits = fastTracker[icfg]->FastTrack(o2Track, trackParCov, dNdEta);
-        if (numHits < fastPrimaryTrackerSettings.minSiliconHits) {
+        nHits = fastTracker[icfg]->FastTrack(o2Track, trackParCov, dNdEta);
+        if (nHits < fastPrimaryTrackerSettings.minSiliconHits) {
           reconstructed = false;
         }
       }
@@ -1569,7 +1569,7 @@ struct OnTheFlyTracker {
 
       // populate vector with track if we reco-ed it
       if (reconstructed) {
-        tracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), time, timeResolutionUs, isDecayDaughter, false, 0, numHits, 0});
+        tracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), time, timeResolutionUs, isDecayDaughter, false, 0, nHits});
       } else {
         ghostTracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), time, timeResolutionUs, isDecayDaughter});
       }
@@ -1929,17 +1929,17 @@ struct OnTheFlyTracker {
       const float time = (eventCollisionTimeNS + gRandom->Gaus(0., timeResolutionNs)) * nsToMus;
 
       bool reconstructed = false;
-      int numHits = 0;
+      int nHits = 0;
       if (enablePrimarySmearing && mcParticle.isPrimary()) {
         o2::upgrade::convertMCParticleToO2Track(mcParticle, trackParCov, pdgDB);
         reconstructed = mSmearer[icfg]->smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
-        numHits = fastTrackerSettings.minSiliconHits;
+        nHits = fastTrackerSettings.minSiliconHits;
       } else if (enableSecondarySmearing) {
         o2::track::TrackParCov perfectTrackParCov;
         o2::upgrade::convertMCParticleToO2Track(mcParticle, perfectTrackParCov, pdgDB);
         perfectTrackParCov.setPID(pdgCodeToPID(mcParticle.pdgCode()));
-        numHits = fastTracker[icfg]->FastTrack(perfectTrackParCov, trackParCov, dNdEta);
-        if (numHits < fastTrackerSettings.minSiliconHits) {
+        nHits = fastTracker[icfg]->FastTrack(perfectTrackParCov, trackParCov, dNdEta);
+        if (nHits < fastTrackerSettings.minSiliconHits) {
           reconstructed = false;
         } else {
           reconstructed = true;
@@ -1969,7 +1969,7 @@ struct OnTheFlyTracker {
       }
 
       if (reconstructed) {
-        tracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), time, timeResolutionUs, isDecayDaughter, false, 0, numHits, 0});
+        tracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), time, timeResolutionUs, isDecayDaughter, false, 0, nHits});
       } else {
         ghostTracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), time, timeResolutionUs, isDecayDaughter});
       }
