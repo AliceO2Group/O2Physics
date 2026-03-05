@@ -377,8 +377,8 @@ struct FlowZdcTask {
     histos.fill(HIST("hEventCounter"), EvCutLabel::OccuCut);
 
     if (col.centFT0C() < minT0CcentCut || col.centFT0C() > maxT0CcentCut) {
-        return false;
-      }
+      return false;
+    }
     histos.fill(HIST("hEventCounter"), EvCutLabel::Centrality);
 
     // Z-vertex position cut
