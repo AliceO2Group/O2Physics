@@ -945,7 +945,6 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryElectrons_006, "AOD", "EMPRIMARYEL", 6, //!
                             emprimaryelectron::MeanClusterSizeITSib<track::ITSClusterSizes>,
                             emprimaryelectron::MeanClusterSizeITSob<track::ITSClusterSizes>);
 
-
 using EMPrimaryElectrons = EMPrimaryElectrons_006;
 // iterators
 using EMPrimaryElectron = EMPrimaryElectrons::iterator;
