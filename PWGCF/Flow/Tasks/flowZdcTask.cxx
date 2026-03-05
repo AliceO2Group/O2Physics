@@ -509,7 +509,7 @@ struct FlowZdcTask {
     histos.fill(HIST("NchVsITStracks"), itsTracks, glbTracks);
     if (glbTracks >= minNchSel) {
       histos.fill(HIST("NchVsMeanPt"), glbTracks, meanpt / glbTracks);
-    }    
+    }
     float tZNA{zdc.timeZNA()};
     float tZNC{zdc.timeZNC()};
     float tZPA{zdc.timeZPA()};
