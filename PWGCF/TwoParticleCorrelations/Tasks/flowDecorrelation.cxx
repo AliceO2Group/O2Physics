@@ -145,7 +145,7 @@ struct FlowDecorrelation {
   ConfigurableAxis axisDeltaEtaTpcFt0a{"axisDeltaEtaTpcFt0a", {32, -5.8, -2.6}, "delta eta axis, -5.8~-2.6 for TPC-FT0A,"};
   ConfigurableAxis axisDeltaEtaTpcFt0c{"axisDeltaEtaTpcFt0c", {32, 1.2, 4.2}, "delta eta axis, 1.2~4.2 for TPC-FT0C"};
   ConfigurableAxis axisDeltaEtaTpcMft{"axisDeltaEtaTpcMft", {32, 1.3, 4.8}, "delta eta axis, 1.3~4.8 for TPC-MFT"};
-  ConfigurableAxis axisDeltaEtaTpcFv0{"axisDeltaEtaTpcFv0", {32, -1.2, -6.1}, "delta eta axis for TPC-FV0 histograms"};
+  ConfigurableAxis axisDeltaEtaTpcFv0{"axisDeltaEtaTpcFv0", {32, -6.1, -1.2}, "delta eta axis for TPC-FV0 histograms"};
   ConfigurableAxis axisEtaTrigger{"axisEtaTrigger", {VARIABLE_WIDTH, -3.3, -2.1, -0.8, -0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8, 3.5, 4.9}, "eta trigger axis for histograms"};
   ConfigurableAxis axisEtaAssoc{"axisEtaAssoc", {VARIABLE_WIDTH, -3.3, -2.1, -0.8, -0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8, 3.5, 4.9}, "eta associated axis for histograms"};
   ConfigurableAxis axisVtxMix{"axisVtxMix", {VARIABLE_WIDTH, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "vertex axis for mixed event histograms"};
@@ -250,7 +250,7 @@ struct FlowDecorrelation {
 
     LOGF(info, "Starting init");
     // Event Counter
-    if ((doprocessSameTpcFt0a || doprocessSameTpcFt0c || doprocessSameTpcMft) && cfgUseAdditionalEventCut) {
+    if ((doprocessSameTpcFt0a || doprocessSameTpcFt0c || doprocessSameTpcMft || doprocessSameTpcFv0) && cfgUseAdditionalEventCut) {
       registry.add("hEventCountSpecific", "Number of Event;; Count", {HistType::kTH1D, {{12, 0, 12}}});
       registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(1, "after sel8");
       registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(2, "kNoSameBunchPileup");
