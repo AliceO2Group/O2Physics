@@ -94,7 +94,6 @@ struct HfCandidateSelectorToXiPiQa {
   Configurable<double> etaTrackCharmBachMax{"etaTrackCharmBachMax", 0.8, "Max absolute value of eta for charm baryon bachelor"};
   Configurable<double> etaTrackLFDauMax{"etaTrackLFDauMax", 1.0, "Max absolute value of eta for V0 and cascade daughters"};
   Configurable<double> ptPiFromCascMin{"ptPiFromCascMin", 0.15, "Min pT pi <--Casc"};
-  Configurable<double> ptPiFromCharmBaryonMin{"ptPiFromCharmBaryonMin", 0.2, "Min pT pi <--Casc"};
   Configurable<double> radiusCascMin{"radiusCascMin", 0.6, "Min Cascade radius"};
   Configurable<double> radiusV0Min{"radiusV0Min", 1.2, "Min V0 radius"};
   Configurable<double> impactParXYPiFromCharmBaryonMin{"impactParXYPiFromCharmBaryonMin", 0., "Min dcaxy pi from charm baryon track to pV"};
@@ -457,8 +456,8 @@ struct HfCandidateSelectorToXiPiQa {
     registry.fill(HIST("hSelStatusHf"), 2.0);
 
     // pT: Charm Bachelor
-    double ptPiFromCharmBaryon = RecoDecay::pt(candidate.pxBachFromCharmBaryon(), candidate.pyBachFromCharmBaryon());
-    if (std::abs(ptPiFromCharmBaryon) < ptPiFromCharmBaryonMin) {
+    double ptPiFromCharmBaryon = RecoDecay::sqrtSumOfSquares(candidate.pxBachFromCharmBaryon(), candidate.pyBachFromCharmBaryon());
+    if (ptPiFromCharmBaryon < cuts->get(inputPtBin, "ptPiFromCharmBaryon")) {
       return false;
     }
     registry.fill(HIST("hSelStatusHf"), 3.0);
