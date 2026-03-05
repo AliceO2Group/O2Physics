@@ -425,7 +425,7 @@ struct RadialFlowDecorr {
     float sKaTof = pidMeanSigmaMap ? pidMeanSigmaMap->sigmaTOF[kaIdx][centBin] : 1.f;
     float mPrTof = pidMeanSigmaMap ? pidMeanSigmaMap->meanTOF[prIdx][centBin] : 0.f;
     float sPrTof = pidMeanSigmaMap ? pidMeanSigmaMap->sigmaTOF[prIdx][centBin] : 1.f;
-    //Fetch Raw nSigma Values
+    // Fetch Raw nSigma Values
     float rawTpcPi = candidate.tpcNSigmaPi();
     float rawTpcKa = candidate.tpcNSigmaKa();
     float rawTpcPr = candidate.tpcNSigmaPr();
