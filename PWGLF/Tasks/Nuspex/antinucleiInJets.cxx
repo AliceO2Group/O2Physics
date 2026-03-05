@@ -511,7 +511,7 @@ struct AntinucleiInJets {
 
     // jet pt resolution
     if (doprocessJetPtResolution) {
-      registryMC.add("jetPtResolution", "jet Pt Resolution", HistType::kTH2F, {{200, 0, 20, "#it{p}^{jet}_{T,true} (GeV/#it{c})"}}, {{1000, -5, 5, "#Delta #it{p}^{jet}_{T} (GeV/#it{c})"}});
+      registryMC.add("jetPtResolution", "jet Pt Resolution", HistType::kTH2F, {{200, 0, 20, "#it{p}^{jet}_{T,true} (GeV/#it{c})"}, {1000, -5, 5, "#Delta #it{p}^{jet}_{T} (GeV/#it{c})"}});
     }
 
     // Coalescence and Correlation analysis
@@ -4049,7 +4049,7 @@ struct AntinucleiInJets {
           double deltaPhi = getDeltaPhi(jetGen.phi(), jetRec.phi());
           double deltaR = std::sqrt(deltaEta * deltaEta + deltaPhi * deltaPhi);
           if (deltaR < rJet)
-            jetGenRec.emplace_back({deltaR, jetGen.pt(), jetGen.pt() - jetRec.pt()});
+            jetGenRec.push_back({deltaR, jetGen.pt(), jetGen.pt() - jetRec.pt()});
         }
         if (jetGenRec.empty())
           continue;
