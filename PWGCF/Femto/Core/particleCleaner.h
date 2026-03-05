@@ -32,7 +32,9 @@ struct ConfParticleCleaner : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> activate{"activate", false, "Activate particle cleaner"};
   o2::framework::Configurable<std::vector<int>> requiredPdgCodes{"requiredPdgCodes", {}, "Only consider particles with this exact pdg code (including the sign!)"};
   o2::framework::Configurable<std::vector<int>> rejectedPdgCodes{"rejectedPdgCodes", {}, "Reject particles with this exact pdg code (including the sign!)"};
-  o2::framework::Configurable<bool> rejectedParticleWithoutMcInformation{"rejectedParticleWithoutMcInformation", true, "If true, all particles which have no associated MC information, are rejected by default"};
+  o2::framework::Configurable<bool> rejectParticleWithoutMcParticle{"rejectParticleWithoutMcParticle", false, "If true, particles which have no associated MC information, are rejected"};
+  o2::framework::Configurable<bool> rejectParticleWithoutMcMother{"rejectParticleWithoutMcMother", false, "If true, particles which have no associated mother are rejected"};
+  o2::framework::Configurable<bool> rejectParticleWithoutMcPartonicMother{"rejectParticleWithoutMcPartonicMother", false, "If true, all particles which have no associated partonic mother"};
   o2::framework::Configurable<std::vector<int>> requiredMotherPdgCodes{"requiredMotherPdgCodes", {}, "Only consider particles whose mothers have one of the supplied pdg codes (inclduing the sign!)"};
   o2::framework::Configurable<std::vector<int>> rejectMotherPdgCodes{"rejectMotherPdgCodes", {}, "Only consider particles whose mothers do not have one of the supplied pdg codes (inclduing the sign!)"};
   o2::framework::Configurable<std::vector<int>> requiredPartonicMotherPdgCodes{"requiredPartonicMotherPdgCodes", {}, "Only consider particles whose partonic mothers have one of the supplied pdg codes (inclduing the sign!)"};
@@ -87,122 +89,141 @@ class ParticleCleaner
   {
     mActivate = confMpc.activate.value;
 
-    mRejectParticleWithoutMcInformation = confMpc.rejectedParticleWithoutMcInformation.value;
+    mRejectParticleWithoutMcParticle = confMpc.rejectParticleWithoutMcParticle.value;
+    mRejectParticleWithoutMcMother = confMpc.rejectParticleWithoutMcMother.value;
+    mRejectParticleWithoutMcPartonicMother = confMpc.rejectParticleWithoutMcPartonicMother.value;
 
     mRequiredPdgCodes = confMpc.requiredPdgCodes.value;
     mRejectedPdgCodes = confMpc.rejectedPdgCodes.value;
 
     mRequiredMotherPdgCodes = confMpc.requiredMotherPdgCodes.value;
-    mRejectMotherPdgCodes = confMpc.rejectMotherPdgCodes.value;
+    mRejectedMotherPdgCodes = confMpc.rejectMotherPdgCodes.value;
 
     mRequiredPartonicMotherPdgCodes = confMpc.requiredPartonicMotherPdgCodes.value;
-    mRejectPartonicMotherPdgCodes = confMpc.rejectPartonicMotherPdgCodes.value;
+    mRejectedPartonicMotherPdgCodes = confMpc.rejectPartonicMotherPdgCodes.value;
   }
 
   template <typename T1, typename T2, typename T3, typename T4>
-  bool isClean(T1 const& particle, T2 const& /*mcParticles*/, T3 const& /*mcMothers*/, T4 const& /*mcPartonicMothers*/)
+  bool isClean(T1 const& particle,
+               T2 const& /*mcParticles*/,
+               T3 const& /*mcMothers*/,
+               T4 const& /*mcPartonicMothers*/)
   {
-    // check whether we apply cuts at all
     if (!mActivate) {
       return true;
     }
-    // check if we even have an associated mc particle
-    if (!particle.has_fMcParticle()) {
-      if (mRejectParticleWithoutMcInformation) {
-        return false;
-      } else {
-        return true;
-      }
-    }
-    // perfrom cuts based on mc information of the particle itself
-    auto mcParticle = particle.template fMcParticle_as<T2>();
 
-    // if list is empty, set it to true and skip the looop
     bool hasRequiredPdgCode = true;
-    if (!mRequiredPdgCodes.empty()) {
-      hasRequiredPdgCode = false;
-      for (int const& pdgCode : mRequiredPdgCodes) {
-        if (pdgCode == mcParticle.pdgCode()) {
-          hasRequiredPdgCode = true;
-          break;
-        }
-      }
-    }
-
     bool hasRejectedPdgCode = false;
-    if (!mRejectedPdgCodes.empty()) {
-      for (int const& pdgCode : mRejectedPdgCodes) {
-        if (pdgCode == mcParticle.pdgCode()) {
-          hasRejectedPdgCode = true;
-          break;
-        }
-      }
-    }
 
-    // perfrom cuts based on mc information of the mothers
-    auto mother = particle.template fMcMother_as<T3>();
-
-    // if list is empty, set it to true and skip the looop
     bool hasMotherWithRequiredPdgCode = true;
-    if (!mRequiredMotherPdgCodes.empty()) {
-      hasMotherWithRequiredPdgCode = false;
-      for (int const& pdgCode : mRequiredMotherPdgCodes) {
-        if (pdgCode == mother.pdgCode()) {
-          hasMotherWithRequiredPdgCode = true;
-          break;
-        }
-      }
-    }
-
     bool hasMotherWithRejectedPdgCode = false;
-    if (!mRejectMotherPdgCodes.empty()) {
-      for (int const& pdgCode : mRejectMotherPdgCodes) {
-        if (pdgCode == mother.pdgCode()) {
-          hasMotherWithRejectedPdgCode = true;
-          break;
-        }
-      }
-    }
 
-    // perfrom cuts based on mc information of the partonic mothers
-    auto partonicMother = particle.template fMcPartMoth_as<T4>();
-
-    // if list is empty, set it to true and skip the looop
     bool hasPartonicMotherWithRequiredPdgCode = true;
-    if (!mRequiredPartonicMotherPdgCodes.empty()) {
-      hasPartonicMotherWithRequiredPdgCode = false;
-      for (int const& pdgCode : mRequiredPartonicMotherPdgCodes) {
-        if (pdgCode == partonicMother.pdgCode()) {
-          hasPartonicMotherWithRequiredPdgCode = true;
-          break;
+    bool hasPartonicMotherWithRejectedPdgCode = false;
+
+    // MC particle
+    if (!particle.has_fMcParticle()) {
+      if (mRejectParticleWithoutMcParticle || !mRequiredPdgCodes.empty()) {
+        return false;
+      }
+    } else {
+      auto mcParticle = particle.template fMcParticle_as<T2>();
+
+      if (!mRequiredPdgCodes.empty()) {
+        hasRequiredPdgCode = false;
+        for (int const& pdgCode : mRequiredPdgCodes) {
+          if (pdgCode == mcParticle.pdgCode()) {
+            hasRequiredPdgCode = true;
+            break;
+          }
+        }
+      }
+
+      if (!mRejectedPdgCodes.empty()) {
+        for (int const& pdgCode : mRejectedPdgCodes) {
+          if (pdgCode == mcParticle.pdgCode()) {
+            hasRejectedPdgCode = true;
+            break;
+          }
         }
       }
     }
 
-    bool hasPartonicMotherWithRejectedPdgCode = false;
-    if (!mRejectPartonicMotherPdgCodes.empty()) {
-      for (int const& pdgCode : mRejectPartonicMotherPdgCodes) {
-        if (pdgCode == partonicMother.pdgCode()) {
-          hasPartonicMotherWithRejectedPdgCode = true;
-          break;
+    // MC mother
+    if (!particle.has_fMcMother()) {
+      if (mRejectParticleWithoutMcMother || !mRequiredMotherPdgCodes.empty()) {
+        return false;
+      }
+    } else {
+      auto mother = particle.template fMcMother_as<T3>();
+
+      if (!mRequiredMotherPdgCodes.empty()) {
+        hasMotherWithRequiredPdgCode = false;
+        for (int const& pdgCode : mRequiredMotherPdgCodes) {
+          if (pdgCode == mother.pdgCode()) {
+            hasMotherWithRequiredPdgCode = true;
+            break;
+          }
+        }
+      }
+
+      if (!mRejectedMotherPdgCodes.empty()) {
+        for (int const& pdgCode : mRejectedMotherPdgCodes) {
+          if (pdgCode == mother.pdgCode()) {
+            hasMotherWithRejectedPdgCode = true;
+            break;
+          }
+        }
+      }
+    }
+
+    // MC partonic mother
+    if (!particle.has_fMcPartMoth()) {
+      if (mRejectParticleWithoutMcPartonicMother ||
+          !mRequiredPartonicMotherPdgCodes.empty()) {
+        return false;
+      }
+    } else {
+      auto partonicMother = particle.template fMcPartMoth_as<T4>();
+
+      if (!mRequiredPartonicMotherPdgCodes.empty()) {
+        hasPartonicMotherWithRequiredPdgCode = false;
+        for (int const& pdgCode : mRequiredPartonicMotherPdgCodes) {
+          if (pdgCode == partonicMother.pdgCode()) {
+            hasPartonicMotherWithRequiredPdgCode = true;
+            break;
+          }
+        }
+      }
+
+      if (!mRejectedPartonicMotherPdgCodes.empty()) {
+        for (int const& pdgCode : mRejectedPartonicMotherPdgCodes) {
+          if (pdgCode == partonicMother.pdgCode()) {
+            hasPartonicMotherWithRejectedPdgCode = true;
+            break;
+          }
         }
       }
     }
 
     return hasRequiredPdgCode && !hasRejectedPdgCode &&
            hasMotherWithRequiredPdgCode && !hasMotherWithRejectedPdgCode &&
-           hasPartonicMotherWithRequiredPdgCode && !hasPartonicMotherWithRejectedPdgCode;
+           hasPartonicMotherWithRequiredPdgCode &&
+           !hasPartonicMotherWithRejectedPdgCode;
   }
 
  private:
   bool mActivate = false;
-  bool mRejectParticleWithoutMcInformation = true;
+  bool mRejectParticleWithoutMcParticle = true;
+  bool mRejectParticleWithoutMcMother = true;
+  bool mRejectParticleWithoutMcPartonicMother = true;
   std::vector<int> mRequiredPdgCodes = {};
   std::vector<int> mRejectedPdgCodes = {};
   std::vector<int> mRequiredMotherPdgCodes{};
-  std::vector<int> mRejectMotherPdgCodes{};
+  std::vector<int> mRejectedMotherPdgCodes{};
   std::vector<int> mRequiredPartonicMotherPdgCodes{};
-  std::vector<int> mRejectPartonicMotherPdgCodes{};
+  std::vector<int> mRejectedPartonicMotherPdgCodes{};
 };
 
 } // namespace particlecleaner

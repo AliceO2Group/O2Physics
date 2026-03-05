@@ -239,9 +239,6 @@ struct HfCorrelatorD0Hadrons {
   Configurable<bool> useCentrality{"useCentrality", false, "Flag for centrality dependent analyses"};
 
   int leadingIndex = 0;
-  double massD0{0.};
-  double massPi{0.};
-  double massK{0.};
   double softPiMass = 0.14543; // pion mass + Q-value of the D*->D0pi decay
 
   SliceCache cache;
@@ -274,10 +271,6 @@ struct HfCorrelatorD0Hadrons {
 
   void init(InitContext&)
   {
-    massD0 = MassD0;
-    massPi = MassPiPlus;
-    massK = MassKPlus;
-
     AxisSpec axisMassD = {binsMassD, "inv. mass (#pi K) (GeV/#it{c}^{2})"};
     AxisSpec const axisEta = {binsEta, "#it{#eta}"};
     AxisSpec const axisPhi = {binsPhi, "#it{#varphi}"};
@@ -415,8 +408,8 @@ struct HfCorrelatorD0Hadrons {
       }
 
       // ========================== Define parameters for soft pion removal ================================
-      auto ePiK = RecoDecay::e(candidate.pVectorProng0(), massPi) + RecoDecay::e(candidate.pVectorProng1(), massK);
-      auto eKPi = RecoDecay::e(candidate.pVectorProng0(), massK) + RecoDecay::e(candidate.pVectorProng1(), massPi);
+      auto ePiK = RecoDecay::e(candidate.pVectorProng0(), MassPiPlus) + RecoDecay::e(candidate.pVectorProng1(), MassKPlus);
+      auto eKPi = RecoDecay::e(candidate.pVectorProng0(), MassKPlus) + RecoDecay::e(candidate.pVectorProng1(), MassPiPlus);
 
       // ========================== trigger efficiency ================================
       double efficiencyWeight = 1.;
@@ -437,7 +430,7 @@ struct HfCorrelatorD0Hadrons {
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
           outputMlD0[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
         }
-        registry.fill(HIST("hMLScoresVsMassVsPtVsEtaVsOriginVsCent"), outputMlD0[0], outputMlD0[1], outputMlD0[2], invMassD0, candidate.pt(), candidate.eta(), (candidate.isSelD0bar() != 0) ? o2::aod::hf_correlation_d0_hadron::D0D0barBoth : o2::aod::hf_correlation_d0_hadron::D0Only, cent);
+        registry.fill(HIST("hMLScoresVsMassVsPtVsEtaVsOriginVsCent"), outputMlD0[0], outputMlD0[1], outputMlD0[2], invMassD0, candidate.pt(), candidate.eta(), (candidate.isSelD0bar() != 0) ? o2::aod::hf_correlation_d0_hadron::D0D0barBoth : o2::aod::hf_correlation_d0_hadron::D0Only, cent, efficiencyWeight);
       }
       if (candidate.isSelD0bar() >= selectionFlagD0bar) {
         registry.fill(HIST("hMass"), invMassD0bar, candidate.pt(), efficiencyWeight);
@@ -447,7 +440,7 @@ struct HfCorrelatorD0Hadrons {
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
           outputMlD0bar[iclass] = candidate.mlProbD0bar()[classMl->at(iclass)];
         }
-        registry.fill(HIST("hMLScoresVsMassVsPtVsEtaVsOriginVsCent"), outputMlD0bar[0], outputMlD0bar[1], outputMlD0bar[2], invMassD0bar, candidate.pt(), candidate.eta(), (candidate.isSelD0() != 0) ? o2::aod::hf_correlation_d0_hadron::D0D0barBoth : o2::aod::hf_correlation_d0_hadron::D0barOnly, cent);
+        registry.fill(HIST("hMLScoresVsMassVsPtVsEtaVsOriginVsCent"), outputMlD0bar[0], outputMlD0bar[1], outputMlD0bar[2], invMassD0bar, candidate.pt(), candidate.eta(), (candidate.isSelD0() != 0) ? o2::aod::hf_correlation_d0_hadron::D0D0barBoth : o2::aod::hf_correlation_d0_hadron::D0barOnly, cent, efficiencyWeight);
       }
       entryD0CandRecoInfo(invMassD0, invMassD0bar, candidate.pt(), outputMlD0[0], outputMlD0[2], outputMlD0bar[0], outputMlD0bar[2]);
 
@@ -479,7 +472,7 @@ struct HfCorrelatorD0Hadrons {
         // ========== soft pion removal ===================================================
         double invMassDstar1 = 0., invMassDstar2 = 0.;
         auto pSum2 = RecoDecay::p2(candidate.pVector(), track.pVector());
-        auto ePion = track.energy(massPi);
+        auto ePion = track.energy(MassPiPlus);
         invMassDstar1 = std::sqrt((ePiK + ePion) * (ePiK + ePion) - pSum2);
         invMassDstar2 = std::sqrt((eKPi + ePion) * (eKPi + ePion) - pSum2);
 
@@ -627,7 +620,7 @@ struct HfCorrelatorD0Hadrons {
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
           outputMlD0[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
         }
-        registry.fill(HIST("hMLScoresVsMassVsPtVsEtaVsOriginVsCent"), outputMlD0[0], outputMlD0[1], outputMlD0[2], invMassD0, candidate.pt(), candidate.eta(), isD0Prompt, cent);
+        registry.fill(HIST("hMLScoresVsMassVsPtVsEtaVsOriginVsCent"), outputMlD0[0], outputMlD0[1], outputMlD0[2], invMassD0, candidate.pt(), candidate.eta(), isD0Prompt, cent, efficiencyWeight);
       }
       if (candidate.isSelD0bar() >= selectionFlagD0bar) {                                             // only reco as D0bar
         if (candidate.flagMcMatchRec() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) { // also matched as D0bar
@@ -649,14 +642,14 @@ struct HfCorrelatorD0Hadrons {
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
           outputMlD0bar[iclass] = candidate.mlProbD0bar()[classMl->at(iclass)];
         }
-        registry.fill(HIST("hMLScoresVsMassVsPtVsEtaVsOriginVsCent"), outputMlD0bar[0], outputMlD0bar[1], outputMlD0bar[2], invMassD0bar, candidate.pt(), candidate.eta(), isD0Prompt, cent);
+        registry.fill(HIST("hMLScoresVsMassVsPtVsEtaVsOriginVsCent"), outputMlD0bar[0], outputMlD0bar[1], outputMlD0bar[2], invMassD0bar, candidate.pt(), candidate.eta(), isD0Prompt, cent, efficiencyWeight);
       }
       entryD0CandRecoInfo(invMassD0, invMassD0bar, candidate.pt(), outputMlD0[0], outputMlD0[2], outputMlD0bar[0], outputMlD0bar[2]);
       entryD0CandGenInfo(isD0Prompt);
 
       // ===================== Define parameters for soft pion removal ========================
-      auto ePiK = RecoDecay::e(candidate.pVectorProng0(), massPi) + RecoDecay::e(candidate.pVectorProng1(), massK);
-      auto eKPi = RecoDecay::e(candidate.pVectorProng0(), massK) + RecoDecay::e(candidate.pVectorProng1(), massPi);
+      auto ePiK = RecoDecay::e(candidate.pVectorProng0(), MassPiPlus) + RecoDecay::e(candidate.pVectorProng1(), MassKPlus);
+      auto eKPi = RecoDecay::e(candidate.pVectorProng0(), MassKPlus) + RecoDecay::e(candidate.pVectorProng1(), MassPiPlus);
 
       // ============== D-h correlation dedicated section ====================================
 
@@ -684,7 +677,7 @@ struct HfCorrelatorD0Hadrons {
         double invMassDstar1 = 0, invMassDstar2 = 0;
         bool isSoftPiD0 = false, isSoftPiD0bar = false;
         auto pSum2 = RecoDecay::p2(candidate.pVector(), track.pVector());
-        auto ePion = track.energy(massPi);
+        auto ePion = track.energy(MassPiPlus);
         invMassDstar1 = std::sqrt((ePiK + ePion) * (ePiK + ePion) - pSum2);
         invMassDstar2 = std::sqrt((eKPi + ePion) * (eKPi + ePion) - pSum2);
 
@@ -856,7 +849,7 @@ struct HfCorrelatorD0Hadrons {
                             poolBin,
                             correlationStatus,
                             cent);
-          entryD0HadronRecoInfo(massD0, massD0, 0); // dummy info
+          entryD0HadronRecoInfo(MassD0, MassD0, 0); // dummy info
           entryD0HadronGenInfo(isD0Prompt, particleAssoc.isPhysicalPrimary(), trackOrigin);
         } // end inner loop (Tracks)
       }
@@ -897,12 +890,12 @@ struct HfCorrelatorD0Hadrons {
         // soft pion removal, signal status 1,3 for D0 and 2,3 for D0bar (SoftPi removed), signal status 11,13 for D0  and 12,13 for D0bar (only SoftPi)
         const auto invMassD0 = HfHelper::invMassD0ToPiK(candidate);
         const auto invMassD0bar = HfHelper::invMassD0barToKPi(candidate);
-        auto ePiK = RecoDecay::e(candidate.pVectorProng0(), massPi) + RecoDecay::e(candidate.pVectorProng1(), massK);
-        auto eKPi = RecoDecay::e(candidate.pVectorProng0(), massK) + RecoDecay::e(candidate.pVectorProng1(), massPi);
+        auto ePiK = RecoDecay::e(candidate.pVectorProng0(), MassPiPlus) + RecoDecay::e(candidate.pVectorProng1(), MassKPlus);
+        auto eKPi = RecoDecay::e(candidate.pVectorProng0(), MassKPlus) + RecoDecay::e(candidate.pVectorProng1(), MassPiPlus);
         double invMassDstar1 = 0., invMassDstar2 = 0.;
         bool isSoftPiD0 = false, isSoftPiD0bar = false;
         auto pSum2 = RecoDecay::p2(candidate.pVector(), particleAssoc.pVector());
-        auto ePion = particleAssoc.energy(massPi);
+        auto ePion = particleAssoc.energy(MassPiPlus);
         invMassDstar1 = std::sqrt((ePiK + ePion) * (ePiK + ePion) - pSum2);
         invMassDstar2 = std::sqrt((eKPi + ePion) * (eKPi + ePion) - pSum2);
         std::vector<float> outputMlD0 = {-1., -1., -1.};
@@ -1004,12 +997,12 @@ struct HfCorrelatorD0Hadrons {
         // soft pion removal
         const auto invMassD0 = HfHelper::invMassD0ToPiK(candidate);
         const auto invMassD0bar = HfHelper::invMassD0barToKPi(candidate);
-        auto ePiK = RecoDecay::e(candidate.pVectorProng0(), massPi) + RecoDecay::e(candidate.pVectorProng1(), massK);
-        auto eKPi = RecoDecay::e(candidate.pVectorProng0(), massK) + RecoDecay::e(candidate.pVectorProng1(), massPi);
+        auto ePiK = RecoDecay::e(candidate.pVectorProng0(), MassPiPlus) + RecoDecay::e(candidate.pVectorProng1(), MassKPlus);
+        auto eKPi = RecoDecay::e(candidate.pVectorProng0(), MassKPlus) + RecoDecay::e(candidate.pVectorProng1(), MassPiPlus);
         double invMassDstar1 = 0., invMassDstar2 = 0.;
         bool isSoftPiD0 = false, isSoftPiD0bar = false;
         auto pSum2 = RecoDecay::p2(candidate.pVector(), particleAssoc.pVector());
-        auto ePion = particleAssoc.energy(massPi);
+        auto ePion = particleAssoc.energy(MassPiPlus);
         invMassDstar1 = std::sqrt((ePiK + ePion) * (ePiK + ePion) - pSum2);
         invMassDstar2 = std::sqrt((eKPi + ePion) * (eKPi + ePion) - pSum2);
 
@@ -1128,7 +1121,7 @@ struct HfCorrelatorD0Hadrons {
           int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);
           bool isD0Prompt = particleTrigg.originMcGen() == RecoDecay::OriginType::Prompt;
           entryD0HadronPair(getDeltaPhi(particleAssoc.phi(), particleTrigg.phi()), particleAssoc.eta() - particleTrigg.eta(), particleTrigg.pt(), particleAssoc.pt(), poolBin, correlationStatus, cent);
-          entryD0HadronRecoInfo(massD0, massD0, 0); // dummy info
+          entryD0HadronRecoInfo(MassD0, MassD0, 0); // dummy info
           entryD0HadronGenInfo(isD0Prompt, particleAssoc.isPhysicalPrimary(), trackOrigin);
         }
       }

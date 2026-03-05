@@ -23,8 +23,8 @@
 #include "ALICE3/Core/DelphesO2TrackSmearer.h"
 #include "ALICE3/Core/FastTracker.h"
 #include "ALICE3/Core/TrackUtilities.h"
+#include "ALICE3/DataModel/OTFCollision.h"
 #include "ALICE3/DataModel/OTFPIDTrk.h"
-#include "ALICE3/DataModel/OTFTracks.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -433,11 +433,12 @@ struct OnTheFlyTrackerPid {
   float mMagneticField = 0.0f;
   void init(o2::framework::InitContext& initContext)
   {
-    mGeoContainer.init(initContext);
-    mMagneticField = mGeoContainer.getFloatValue(0, "global", "magneticfield");
-
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setTimestamp(-1);
+
+    mGeoContainer.setCcdbManager(ccdb.operator->());
+    mGeoContainer.init(initContext);
+    mMagneticField = mGeoContainer.getFloatValue(0, "global", "magneticfield");
 
     if (static_cast<size_t>(maxBarrelLayers.value) > kTrackerRadii.size()) {
       LOG(fatal) << "Configured maxBarrelLayers (" << maxBarrelLayers.value

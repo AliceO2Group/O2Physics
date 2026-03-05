@@ -252,6 +252,7 @@ struct EbyeMaker {
   Configurable<float> trackNclusItsCut{"trackNclusITScut", 2, "Minimum number of ITS clusters"};
   Configurable<float> trackNclusTpcCut{"trackNclusTPCcut", 60, "Minimum number of TPC clusters"};
   Configurable<float> trackChi2Cut{"trackChi2Cut", 4.f, "Maximum chi2/ncls in TPC"};
+  Configurable<float> trackMinChi2Cut{"trackMinChi2Cut", 0.f, "Minimum chi2/ncls in TPC"};
 
   Configurable<float> v0trackNcrossedRows{"v0trackNcrossedRows", 100, "Minimum number of crossed TPC rows for V0 daughter"};
   Configurable<float> v0trackNclusItsCut{"v0trackNclusITScut", 0, "Minimum number of ITS clusters for V0 daughter"};
@@ -350,7 +351,6 @@ struct EbyeMaker {
   {
     const float defItsChi2NClCut = 36.f;
     const float defNClCROverFind = 0.8f;
-    const float defMinChi2Cut = 0.f;
     if (std::abs(track.eta()) > etaMax) {
       return false;
     }
@@ -358,9 +358,9 @@ struct EbyeMaker {
       return false;
     }
     if (track.itsNCls() < trackNclusItsCut ||
-        track.tpcNClsCrossedRows() < defNClCROverFind * track.tpcNClsFindable() ||
+        (track.tpcNClsCrossedRows() < defNClCROverFind * track.tpcNClsFindable() && !(doprocessRun3 || doprocessMcRun3)) ||
         track.tpcChi2NCl() > trackChi2Cut ||
-        track.tpcChi2NCl() < defMinChi2Cut ||
+        track.tpcChi2NCl() < trackMinChi2Cut ||
         track.itsChi2NCl() > defItsChi2NClCut) {
       return false;
     }
@@ -554,8 +554,8 @@ struct EbyeMaker {
 
     // tracking variables QA
     histos.add<TH2>("QA/tpcCRvsCls", ";#it{N}_{TPCCR};#it{N}_{TPCcls}", HistType::kTH2F, {nTpcAxis, nTpcAxis});
-    histos.add<TH2>("QA/dcaxyVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{#it{xy}} (cm)", HistType::kTH2F, {momAxis, dcaAxis});
-    histos.add<TH2>("QA/dcazVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{#it{z}} (cm)", HistType::kTH2F, {momAxis, dcaAxis});
+    histos.add<TH2>("QA/dcaxyVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{#it{xy}} (cm)", HistType::kTH2F, {signMomAxis, dcaAxis});
+    histos.add<TH2>("QA/dcazVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{#it{z}} (cm)", HistType::kTH2F, {signMomAxis, dcaAxis});
     histos.add<TH3>("QA/phiVsPtVsCls", ";#it{N}^{TPC}_{CR};#it{p}_{T} (GeV/#it{c});#phi (rad)", HistType::kTH3F, {nTpcAxis, signMomAxis, phiAxis});
 
     ptMin = std::array<float, kNpart>{antipPtMin, antidPtMin};
@@ -604,11 +604,11 @@ struct EbyeMaker {
       auto trackPt = trackParCov.getPt();
       auto trackPhi = trackParCov.getPhi();
       auto trackEta = trackParCov.getEta();
-      histos.fill(HIST("QA/dcaxyVsPt"), track.pt(), dcaInfo[0]); // TODO: this should rather be trackPt (likely small effect for 7 ITS clusters?)
-      histos.fill(HIST("QA/dcazVsPt"), track.pt(), dcaInfo[1]);
-      if (std::abs(dcaInfo[0]) > dcaSigma(track.pt(), "dcaxy") || std::abs(dcaInfo[1]) > dcaSigma(track.pt(), "dcaz") || dca > dcaSigma(track.pt(), "dca"))
-        continue;
       if (track.tpcNClsFound() < trackNclusTpcCut || track.tpcNClsCrossedRows() < trackNcrossedRows)
+        continue;
+      histos.fill(HIST("QA/dcaxyVsPt"), track.sign() > 0. ? track.pt() : -track.pt(), dcaInfo[0]); // TODO: this should rather be trackPt (likely small effect for 7 ITS clusters?)
+      histos.fill(HIST("QA/dcazVsPt"), track.sign() > 0. ? track.pt() : -track.pt(), dcaInfo[1]);
+      if (std::abs(dcaInfo[0]) > dcaSigma(track.pt(), "dcaxy") || std::abs(dcaInfo[1]) > dcaSigma(track.pt(), "dcaz") || dca > dcaSigma(track.pt(), "dca"))
         continue;
       histos.fill(HIST("QA/phiVsPtVsCls"), track.tpcNClsFound(), track.sign() > 0. ? trackPt : -trackPt, trackPhi);
       histos.fill(HIST("QA/tpcSignal"), track.tpcInnerParam(), track.tpcSignal());
@@ -646,7 +646,7 @@ struct EbyeMaker {
           candTrack.dcaxypv = dcaInfo[0];
           candTrack.dcazpv = dcaInfo[1];
           candTrack.tpcchi2 = track.tpcChi2NCl();
-          candTrack.tpcncls = track.tpcNClsFound();
+          candTrack.tpcncls = (doprocessRun3 || doprocessMcRun3) ? track.tpcNClsCrossedRows() : track.tpcNClsFound();
           candTrack.tpcnsigma = nSigmaTPC;
           candTrack.tofmass = hasTof ? mass : -999.f;
           candTrack.globalIndex = track.globalIndex();

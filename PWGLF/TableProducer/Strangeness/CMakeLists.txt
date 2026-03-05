@@ -147,6 +147,11 @@ o2physics_add_dpl_workflow(lambdajetpolarizationbuilder
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(lambdajetpolarizationions
+    SOURCES lambdaJetPolarizationIons.cxx
+    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet O2Physics::AnalysisCCDB
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(stracents
     SOURCES stracents.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

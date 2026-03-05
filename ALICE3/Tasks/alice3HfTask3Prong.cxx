@@ -58,6 +58,7 @@ struct Alice3HfTask3Prong {
   Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_3prongs_alice3::vecBinsPt}, "pT bin limits"};
   Configurable<bool> fillThn{"fillThn", false, "fill Thn"};
+  Configurable<bool> fillSwapMassHypo{"fillSwapMassHypo", false, "Flag to fill derived tables with swapped mass hypothesis"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
@@ -335,26 +336,28 @@ struct Alice3HfTask3Prong {
             registry.get<THnSparse>(HIST("hSparseRec"))->Fill(valuesToFill.data());
           }
         }
-        if (candidate.isSelMassHypo1()) {
-          registry.fill(HIST("hSelectionStatus"), 1., pt);
-          double mass = hfHelper.getCandMass<CharmHad, true>(candidate);
-          /// Fill histograms
-          fillHistogramsRecSig<CharmHad, SignalClasses::Signal>(candidate, mass, true);
-          if (originType == RecoDecay::OriginType::Prompt) {
-            fillHistogramsRecSig<CharmHad, SignalClasses::Prompt>(candidate, mass, true);
-          } else if (originType == RecoDecay::OriginType::NonPrompt) {
-            fillHistogramsRecSig<CharmHad, SignalClasses::NonPrompt>(candidate, mass, true);
-          }
-          if (fillThn) {
-            std::vector<double> valuesToFill{mass, pt};
-            if constexpr (SaveMl) {
-              LOGP(fatal, "Trying to access ML scores, but SaveMl is false!");
-              valuesToFill.push_back(candidate.mlScore0());
-              valuesToFill.push_back(candidate.mlScore1());
-              valuesToFill.push_back(candidate.mlScore2());
+        if (fillSwapMassHypo) {
+          if (candidate.isSelMassHypo1()) {
+            registry.fill(HIST("hSelectionStatus"), 1., pt);
+            double mass = hfHelper.getCandMass<CharmHad, true>(candidate);
+            /// Fill histograms
+            fillHistogramsRecSig<CharmHad, SignalClasses::Signal>(candidate, mass, true);
+            if (originType == RecoDecay::OriginType::Prompt) {
+              fillHistogramsRecSig<CharmHad, SignalClasses::Prompt>(candidate, mass, true);
+            } else if (originType == RecoDecay::OriginType::NonPrompt) {
+              fillHistogramsRecSig<CharmHad, SignalClasses::NonPrompt>(candidate, mass, true);
             }
-            valuesToFill.push_back(static_cast<double>(originType));
-            registry.get<THnSparse>(HIST("hSparseRec"))->Fill(valuesToFill.data());
+            if (fillThn) {
+              std::vector<double> valuesToFill{mass, pt};
+              if constexpr (SaveMl) {
+                LOGP(fatal, "Trying to access ML scores, but SaveMl is false!");
+                valuesToFill.push_back(candidate.mlScore0());
+                valuesToFill.push_back(candidate.mlScore1());
+                valuesToFill.push_back(candidate.mlScore2());
+              }
+              valuesToFill.push_back(static_cast<double>(originType));
+              registry.get<THnSparse>(HIST("hSparseRec"))->Fill(valuesToFill.data());
+            }
           }
         }
       } else { // Background
@@ -362,9 +365,11 @@ struct Alice3HfTask3Prong {
           double mass = hfHelper.getCandMass<CharmHad, false>(candidate);
           fillHistogramsRecSig<CharmHad, SignalClasses::Bkg>(candidate, mass, false);
         }
-        if (candidate.isSelMassHypo1()) {
-          double mass = hfHelper.getCandMass<CharmHad, true>(candidate);
-          fillHistogramsRecSig<CharmHad, SignalClasses::Bkg>(candidate, mass, true);
+        if (fillSwapMassHypo) {
+          if (candidate.isSelMassHypo1()) {
+            double mass = hfHelper.getCandMass<CharmHad, true>(candidate);
+            fillHistogramsRecSig<CharmHad, SignalClasses::Bkg>(candidate, mass, true);
+          }
         }
       }
     }
