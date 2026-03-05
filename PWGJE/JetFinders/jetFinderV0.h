@@ -206,7 +206,7 @@ struct JetFinderV0Task {
   void analyseMCP(T const& mcCollision, U const& particles, V const& candidates, int jetTypeParticleLevel, float minJetPt, float maxJetPt)
   {
 
-    if (!jetderiveddatautilities::selectMcCollision(mcCollision, skipMBGapEvents, applyRCTSelections)) {
+    if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
 
