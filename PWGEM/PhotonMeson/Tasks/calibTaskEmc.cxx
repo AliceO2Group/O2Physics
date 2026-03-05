@@ -17,6 +17,7 @@
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
@@ -107,8 +108,6 @@ enum class MapLevel {
 };
 
 struct CalibTaskEmc {
-  static constexpr float MinEnergy = 0.7f;
-
   // configurable for flow
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3)"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -218,7 +217,8 @@ struct CalibTaskEmc {
 
   struct : ConfigurableGroup {
     std::string prefix = "correctionConfig";
-    Configurable<bool> cfgEnableNonLin{"cfgEnableNonLin", false, "flag to turn extra non linear energy calibration on/off"};
+    Configurable<bool> cfgEnableNonLinEMC{"cfgEnableNonLinEMC", false, "flag to turn extra non linear energy calibration for EMCal on/off"};
+    Configurable<bool> cfgEnableNonLinPCM{"cfgEnableNonLinPCM", false, "flag to turn extra non linear energy calibration for PCM on/off"};
   } correctionConfig;
 
   SliceCache cache;
@@ -227,16 +227,14 @@ struct CalibTaskEmc {
   int runBefore = -1;
 
   Filter collisionFilter = (nabs(aod::collision::posZ) <= eventcuts.cfgZvtxMax) && (aod::evsel::ft0cOccupancyInTimeRange <= eventcuts.cfgFT0COccupancyMax) && (aod::evsel::ft0cOccupancyInTimeRange >= eventcuts.cfgFT0COccupancyMin);
-  using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::MinClusters>;
-  using PCMPhotons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
-  using FilteredCollsWithQvecs = soa::Filtered<soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent>>;
-  using CollsWithQvecs = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent>;
-  using Colls = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent>;
+  using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::MinClusters, aod::NonLinEmcClusters>;
+  using PCMPhotons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds, aod::NonLinV0s>;
+  using FilteredCollsWithQvecs = soa::Filtered<soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000>>;
+  using CollsWithQvecs = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000>;
+  using Colls = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000>;
 
-  static constexpr std::size_t NQVecEntries = 6;
-
-  PresliceOptional<EMCalPhotons> perCollisionEMC = o2::aod::emccluster::emeventId;
-  PresliceOptional<PCMPhotons> perCollisionPCM = aod::v0photonkf::emeventId;
+  PresliceOptional<EMCalPhotons> perCollisionEMC = o2::aod::emccluster::pmeventId;
+  PresliceOptional<PCMPhotons> perCollisionPCM = aod::v0photonkf::pmeventId;
   PresliceOptional<MinMTracks> perEMCClusterMT = o2::aod::mintm::minClusterId;
   PresliceOptional<MinMSTracks> perEMCClusterMS = o2::aod::mintm::minClusterId;
 
@@ -252,16 +250,12 @@ struct CalibTaskEmc {
   static constexpr int NBinsPhi = 440; // (440 bins = 0.01 step size covering most regions)
 
   std::array<int8_t, NBinsEta * NBinsPhi> lookupTable1D;
-  float epsilon = 1.e-8;
-
-  // static constexpr
-  static constexpr int8_t NMinPhotonRotBkg = 3;
 
   // Usage when cfgEnableNonLin is enabled
   uint8_t nColl = 1;
 
   // To access the 1D array
-  inline int getIndex(int iEta, int iPhi)
+  static inline int getIndex(int iEta, int iPhi)
   {
     return iEta * NBinsPhi + iPhi;
   }
@@ -364,7 +358,8 @@ struct CalibTaskEmc {
     const AxisSpec thnAxisCent{thnConfigAxisCent, "Centrality (%)"};
     const AxisSpec thAxisTanThetaPhi{mesonConfig.thConfigAxisTanThetaPhi, "atan(#Delta#theta/#Delta#varphi)"};
     const AxisSpec thAxisEnergyCalib{thnConfigAxisEnergyCalib, "#it{E}_{clus} (GeV)"};
-    const AxisSpec thnAxisPtCalib{thnConfigAxisPtCalib, "#it{p}_{T} (GeV)"};
+    const AxisSpec thnAxisPtCalib{thnConfigAxisPtCalib, "#it{p}_{T,#gamma} (GeV)"};
+    const AxisSpec thnAxisPtCalibMeson{thnConfigAxisPtCalib, "#it{p}_{T,meson} (GeV)"};
     const AxisSpec thAxisAlpha{100, -1., +1, "#alpha"};
     const AxisSpec thAxisEnergy{1000, 0., 100., "#it{E}_{clus} (GeV)"};
     const AxisSpec thAxisEta{320, -0.8, 0.8, "#eta"};
@@ -406,10 +401,10 @@ struct CalibTaskEmc {
     hMesonCutsMixed->GetXaxis()->SetBinLabel(6, "out");
 
     if (mesonConfig.cfgEnableQA.value) {
-      registry.add("mesonQA/hInvMassPt", "Histo for inv pair mass vs pt", HistType::kTH2D, {thnAxisInvMass, thnAxisPtCalib});
+      registry.add("mesonQA/hInvMassPt", "Histo for inv pair mass vs pt", HistType::kTH2D, {thnAxisInvMass, thnAxisPtCalibMeson});
       registry.add("mesonQA/hTanThetaPhi", "Histo for identification of conversion cluster", HistType::kTH2D, {thnAxisInvMass, thAxisTanThetaPhi});
       registry.add("mesonQA/hAlphaPt", "Histo of meson asymmetry vs pT", HistType::kTH2D, {thAxisAlpha, thnAxisPtCalib});
-      registry.add("mesonQA/hInvMassPtMixed", "Histo for inv pair mass vs pt for mixed event", HistType::kTH2D, {thnAxisInvMass, thnAxisPtCalib});
+      registry.add("mesonQA/hInvMassPtMixed", "Histo for inv pair mass vs pt for mixed event", HistType::kTH2D, {thnAxisInvMass, thnAxisPtCalibMeson});
       registry.add("mesonQA/hTanThetaPhiMixed", "Histo for identification of conversion cluster for mixed event", HistType::kTH2D, {thnAxisInvMass, thAxisTanThetaPhi});
       registry.add("mesonQA/hAlphaPtMixed", "Histo of meson asymmetry vs pT for mixed event", HistType::kTH2D, {thAxisAlpha, thnAxisPtCalib});
     }
@@ -424,7 +419,7 @@ struct CalibTaskEmc {
   /// Change radians to degree
   /// \param angle in radians
   /// \return angle in degree
-  constexpr float getAngleDegree(float angle)
+  static constexpr float getAngleDegree(float angle)
   {
     return angle * o2::constants::math::Rad2Deg;
   }
@@ -632,9 +627,9 @@ struct CalibTaskEmc {
         continue;
       }
       if (mesonConfig.cfgEnableQA.value) {
-        registry.fill(HIST("mesonQA/hInvMassPt"), vMeson.M(), vMeson.Pt());
+        registry.fill(HIST("mesonQA/hInvMassPt"), vMeson.M(), g1.corrPt());
         registry.fill(HIST("mesonQA/hTanThetaPhi"), vMeson.M(), getAngleDegree(std::atan(dTheta / dPhi)));
-        registry.fill(HIST("mesonQA/hAlphaPt"), asymmetry, vMeson.Pt());
+        registry.fill(HIST("mesonQA/hAlphaPt"), asymmetry, g1.corrPt());
       }
       if (mesonConfig.enableTanThetadPhi && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
         registry.fill(HIST("hMesonCuts"), 5);
@@ -743,9 +738,9 @@ struct CalibTaskEmc {
           continue;
         }
         if (mesonConfig.cfgEnableQA.value) {
-          registry.fill(HIST("mesonQA/hInvMassPtMixed"), vMeson.M(), vMeson.Pt());
+          registry.fill(HIST("mesonQA/hInvMassPtMixed"), vMeson.M(), g1.corrPt());
           registry.fill(HIST("mesonQA/hTanThetaPhiMixed"), vMeson.M(), getAngleDegree(std::atan(dTheta / dPhi)));
-          registry.fill(HIST("mesonQA/hAlphaPtMixed"), asymmetry, vMeson.Pt());
+          registry.fill(HIST("mesonQA/hAlphaPtMixed"), asymmetry, g1.corrPt());
         }
         if (mesonConfig.enableTanThetadPhi && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
           registry.fill(HIST("hMesonCutsMixed"), 5);
@@ -802,9 +797,9 @@ struct CalibTaskEmc {
         }
 
         // EMCal photon v1
-        ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector v1(g1.corrPt(), g1.eta(), g1.phi(), 0.);
         // PCM photon v2s
-        ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector v2(g2.corrPt(), g2.eta(), g2.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
 
         float dTheta = v1.Theta() - v2.Theta();
@@ -820,15 +815,15 @@ struct CalibTaskEmc {
           continue;
         }
         if (mesonConfig.cfgEnableQA.value) {
-          registry.fill(HIST("mesonQA/hInvMassPt"), vMeson.M(), vMeson.Pt());
+          registry.fill(HIST("mesonQA/hInvMassPt"), vMeson.M(), g1.corrPt());
           registry.fill(HIST("mesonQA/hTanThetaPhi"), vMeson.M(), getAngleDegree(std::atan(dTheta / dPhi)));
-          registry.fill(HIST("mesonQA/hAlphaPt"), (v1.E() - v2.E()) / (v1.E() + v2.E()), vMeson.Pt());
+          registry.fill(HIST("mesonQA/hAlphaPt"), (v1.E() - v2.E()) / (v1.E() + v2.E()), g1.corrPt());
         }
         if (mesonConfig.enableTanThetadPhi && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
           registry.fill(HIST("hMesonCuts"), 5);
           continue;
         }
-        runFlowAnalysis<0>(collision, vMeson, g1.pt());
+        runFlowAnalysis<0>(collision, vMeson, g1.corrE());
       }
     }
   }
@@ -887,8 +882,12 @@ struct CalibTaskEmc {
             continue;
           }
         }
-        ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
-        ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+
+        float photon1Pt = g1.corrPt();
+        float photon2Pt = g2.corrPt();
+
+        ROOT::Math::PtEtaPhiMVector v1(photon1Pt, g1.eta(), g1.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector v2(photon2Pt, g2.eta(), g2.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
 
         float dTheta = v1.Theta() - v2.Theta();
@@ -905,16 +904,16 @@ struct CalibTaskEmc {
           continue;
         }
         if (mesonConfig.cfgEnableQA.value) {
-          registry.fill(HIST("mesonQA/hInvMassPtMixed"), vMeson.M(), vMeson.Pt());
+          registry.fill(HIST("mesonQA/hInvMassPtMixed"), vMeson.M(), photon1Pt);
           registry.fill(HIST("mesonQA/hTanThetaPhiMixed"), vMeson.M(), getAngleDegree(std::atan(dTheta / dPhi)));
-          registry.fill(HIST("mesonQA/hAlphaPtMixed"), (v1.E() - v2.E()) / (v1.E() + v2.E()), vMeson.Pt());
+          registry.fill(HIST("mesonQA/hAlphaPtMixed"), (v1.E() - v2.E()) / (v1.E() + v2.E()), photon1Pt);
         }
         if (mesonConfig.enableTanThetadPhi && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(std::atan(dTheta / dPhi)))) {
           registry.fill(HIST("hMesonCutsMixed"), 5);
           continue;
         }
         registry.fill(HIST("hMesonCutsMixed"), 6);
-        runFlowAnalysis<2>(c1, vMeson, g1.pt());
+        runFlowAnalysis<2>(c1, vMeson, g1.corrE());
       }
     }
   }
@@ -946,13 +945,16 @@ struct CalibTaskEmc {
           continue;
         }
 
-        float asymmetry = (g1.pt() - g2.pt()) / (g1.pt() + g2.pt());
+        float photon1Pt = g1.corrPt();
+        float photon2Pt = g2.corrPt();
+
+        float asymmetry = (photon1Pt - photon2Pt) / (photon1Pt + photon2Pt);
         if (std::fabs(asymmetry) > cfgMaxAsymmetry) { // only use symmetric decays
           continue;
         }
 
-        ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
-        ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector v1(photon1Pt, g1.eta(), g1.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector v2(photon2Pt, g2.eta(), g2.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
 
         float openingAngle = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));
@@ -967,11 +969,11 @@ struct CalibTaskEmc {
           continue;
         }
         if (mesonConfig.cfgEnableQA.value) {
-          registry.fill(HIST("mesonQA/hInvMassPt"), vMeson.M(), vMeson.Pt());
-          registry.fill(HIST("mesonQA/hAlphaPt"), asymmetry, vMeson.Pt());
+          registry.fill(HIST("mesonQA/hInvMassPt"), vMeson.M(), photon1Pt);
+          registry.fill(HIST("mesonQA/hAlphaPt"), asymmetry, photon1Pt);
         }
         registry.fill(HIST("hMesonCuts"), 6);
-        runFlowAnalysis<0>(collision, vMeson, g1.pt());
+        runFlowAnalysis<0>(collision, vMeson, photon1Pt);
       }
     } // end of loop over collisions
   }
@@ -1017,13 +1019,16 @@ struct CalibTaskEmc {
           continue;
         }
 
-        float asymmetry = (g1.pt() - g2.pt()) / (g1.pt() + g2.pt());
+        float photon1Pt = g1.corrPt();
+        float photon2Pt = g2.corrPt();
+
+        float asymmetry = (photon1Pt - photon2Pt) / (photon1Pt + photon2Pt);
         if (std::fabs(asymmetry) > cfgMaxAsymmetry) { // only use symmetric decays
           continue;
         }
 
-        ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
-        ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector v1(photon1Pt, g1.eta(), g1.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector v2(photon2Pt, g2.eta(), g2.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
 
         float openingAngle = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));
@@ -1038,11 +1043,11 @@ struct CalibTaskEmc {
           continue;
         }
         if (mesonConfig.cfgEnableQA.value) {
-          registry.fill(HIST("mesonQA/hInvMassPtMixed"), vMeson.M(), vMeson.Pt());
-          registry.fill(HIST("mesonQA/hAlphaPtMixed"), asymmetry, vMeson.Pt());
+          registry.fill(HIST("mesonQA/hInvMassPtMixed"), vMeson.M(), photon1Pt);
+          registry.fill(HIST("mesonQA/hAlphaPtMixed"), asymmetry, photon1Pt);
         }
         registry.fill(HIST("hMesonCutsMixed"), 6);
-        runFlowAnalysis<2>(c1, vMeson, g1.pt());
+        runFlowAnalysis<2>(c1, vMeson, photon1Pt);
       }
     }
   }

@@ -350,7 +350,8 @@ struct TreeCreatorMuonML {
             xMatchedMCHMIDatMP, yMatchedMCHMIDatMP, xMatchedMFTatMP, yMatchedMFTatMP,
             fwdtrack.nClusters(), pDCA, rAtAbsorberEnd, chi2, fwdtrack.chi2MatchMCHMID(), fwdtrack.chi2MatchMCHMFT(),
             // fwdtrack.mchBitMap(), fwdtrack.midBitMap(), fwdtrack.midBoards(),
-            mfttrack.mftClusterSizesAndTrackFlags(), chi2mft, mfttrack.nClusters(), pdgCode, isPrimary, isMatched);
+            mfttrack.mftClusterSizesAndTrackFlags(), chi2mft, mfttrack.nClusters(), pdgCode, isPrimary, isMatched,
+            mcParticle_MCHMID.pt(), mcParticle_MCHMID.eta(), mcParticle_MCHMID.phi());
 
     fRegistry.fill(HIST("hMuonType"), fwdtrack.trackType());
     fRegistry.fill(HIST("MFTMCHMID/hPt"), pt);

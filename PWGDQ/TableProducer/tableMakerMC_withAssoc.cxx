@@ -143,6 +143,7 @@ struct TableMakerMC {
   Produces<ReducedEventsMultPV> multPV;
   Produces<ReducedEventsMultAll> multAll;
   Produces<ReducedMCEventLabels> eventMClabels;
+  Produces<ReducedEventsMergingTable> mergingTable;
 
   Produces<ReducedTracksBarrelInfo> trackBarrelInfo;
   Produces<ReducedTracks> trackBasic;
@@ -215,7 +216,7 @@ struct TableMakerMC {
     Configurable<std::string> fGeoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
     Configurable<std::string> fGrpMagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
     Configurable<std::string> fZShiftPath{"zShiftPath", "Users/m/mcoquet/ZShift", "CCDB path for z shift to apply to forward tracks"};
-    Configurable<bool> fUseRemoteZShift{"cfgUseRemoteZShift", true, "Enable getting Zshift from ccdb"};
+    Configurable<bool> fUseRemoteZShift{"cfgUseRemoteZShift", false, "Enable getting Zshift from ccdb"};
     Configurable<float> fManualZShift{"cfgManualZShift", 0.f, "Manual value for the Zshift for muons."};
     Configurable<std::string> fGrpMagPathRun2{"grpmagPathRun2", "GLO/GRP/GRP", "CCDB path of the GRPObject (Usage for Run 2)"};
     Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
@@ -272,6 +273,36 @@ struct TableMakerMC {
 
   // RCT flag checker
   RCTFlagsChecker rctChecker{"CBT"};
+
+  // variables to store quantities needed for tagging collision merging candidates
+  struct {
+    std::map<int32_t, float> bimodalityCoeffDCAz;               // Bimodality coefficient of the DCAz distribution of tracks associated to a collision
+    std::map<int32_t, float> bimodalityCoeffDCAzBinned;         // Bimodality coefficient of the DCAz distribution of tracks associated to a collision, binned
+    std::map<int32_t, float> bimodalityCoeffDCAzBinnedTrimmed1; // Bimodality coefficient of the DCAz distribution of tracks associated to a collision, binned and trimmed 1
+    std::map<int32_t, float> bimodalityCoeffDCAzBinnedTrimmed2; // Bimodality coefficient of the DCAz distribution of tracks associated to a collision, binned and trimmed 2
+    std::map<int32_t, float> bimodalityCoeffDCAzBinnedTrimmed3; // Bimodality coefficient of the DCAz distribution of tracks associated to a collision, binned and trimmed 3
+    std::map<int32_t, float> meanDCAz;
+    std::map<int32_t, float> meanDCAzBinnedTrimmed1;
+    std::map<int32_t, float> meanDCAzBinnedTrimmed2;
+    std::map<int32_t, float> meanDCAzBinnedTrimmed3;
+    std::map<int32_t, float> rmsDCAz;
+    std::map<int32_t, float> rmsDCAzBinnedTrimmed1;
+    std::map<int32_t, float> rmsDCAzBinnedTrimmed2;
+    std::map<int32_t, float> rmsDCAzBinnedTrimmed3;
+    std::map<int32_t, float> skewnessDCAz;
+    std::map<int32_t, float> kurtosisDCAz;
+    std::map<int32_t, float> fraction100umDCAz; // fraction of tracks with |DCAz|>100um
+    std::map<int32_t, float> fraction200umDCAz; // fraction of tracks with |DCAz|>200um
+    std::map<int32_t, float> fraction500umDCAz; // fraction of tracks with |DCAz|>500um
+    std::map<int32_t, float> fraction1mmDCAz;   // fraction of tracks with |DCAz|>1mm
+    std::map<int32_t, float> fraction2mmDCAz;   // fraction of tracks with |DCAz|>2mm
+    std::map<int32_t, float> fraction5mmDCAz;   // fraction of tracks with |DCAz|>5mm
+    std::map<int32_t, float> fraction10mmDCAz;  // fraction of tracks with |DCAz|>10mm
+    std::map<int32_t, int> nPeaksDCAz;          // number of peaks in the DCAz distribution of tracks associated to a collision
+    std::map<int32_t, int> nPeaksDCAzTrimmed1;  // number of peaks in the binned DCAz distribution (trimmed 1)
+    std::map<int32_t, int> nPeaksDCAzTrimmed2;  // number of peaks in the binned DCAz distribution (trimmed 2)
+    std::map<int32_t, int> nPeaksDCAzTrimmed3;  // number of peaks in the binned DCAz distribution (trimmed 3)
+  } fCollMergingTag;
 
   void init(o2::framework::InitContext& context)
   {
@@ -472,6 +503,8 @@ struct TableMakerMC {
   Preslice<aod::FwdTrackAssoc> fwdtrackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::MFTTrackAssoc> mfttrackIndicesPerCollision = aod::track_association::collisionId;
 
+  Preslice<MyBarrelTracksWithCov> presliceBarrelTracksWithCov = aod::track_association::collisionId;
+
   void skimMCCollisions(MyEventsMcWithMults const& mcCollisions)
   {
     // skim MC collisions
@@ -580,6 +613,72 @@ struct TableMakerMC {
         }
       }
     } // end loop over mc stack
+  }
+
+  template <typename TEvents, typename TTracks>
+  void computeCollMergingTag(TEvents const& collisions, TTracks const& tracks, Preslice<TTracks>& preslice)
+  {
+    // this function uses the standard track - collision association to compute several quantities which could be related to collision merging
+    // clear the maps for this time frame
+    fCollMergingTag.bimodalityCoeffDCAz.clear();
+    fCollMergingTag.bimodalityCoeffDCAzBinned.clear();
+    fCollMergingTag.bimodalityCoeffDCAzBinnedTrimmed1.clear();
+    fCollMergingTag.bimodalityCoeffDCAzBinnedTrimmed2.clear();
+    fCollMergingTag.bimodalityCoeffDCAzBinnedTrimmed3.clear();
+    fCollMergingTag.meanDCAz.clear();
+    fCollMergingTag.meanDCAzBinnedTrimmed1.clear();
+    fCollMergingTag.meanDCAzBinnedTrimmed2.clear();
+    fCollMergingTag.meanDCAzBinnedTrimmed3.clear();
+    fCollMergingTag.rmsDCAz.clear();
+    fCollMergingTag.rmsDCAzBinnedTrimmed1.clear();
+    fCollMergingTag.rmsDCAzBinnedTrimmed2.clear();
+    fCollMergingTag.rmsDCAzBinnedTrimmed3.clear();
+    fCollMergingTag.skewnessDCAz.clear();
+    fCollMergingTag.kurtosisDCAz.clear();
+    fCollMergingTag.fraction100umDCAz.clear();
+    fCollMergingTag.fraction200umDCAz.clear();
+    fCollMergingTag.fraction500umDCAz.clear();
+    fCollMergingTag.fraction1mmDCAz.clear();
+    fCollMergingTag.fraction2mmDCAz.clear();
+    fCollMergingTag.fraction5mmDCAz.clear();
+    fCollMergingTag.fraction10mmDCAz.clear();
+    fCollMergingTag.nPeaksDCAz.clear();
+    fCollMergingTag.nPeaksDCAzTrimmed1.clear();
+    fCollMergingTag.nPeaksDCAzTrimmed2.clear();
+    fCollMergingTag.nPeaksDCAzTrimmed3.clear();
+
+    for (const auto& collision : collisions) {
+      // make a slice for this collision and compute the DCAz based event quantities
+      auto thisCollTracks = tracks.sliceBy(preslice, collision.globalIndex());
+      VarManager::FillEventTracks(thisCollTracks); // fill the VarManager arrays with the information of the tracks associated to this collision, needed for the cuts and histograms
+      // add the computed variables to the maps with the collision index as key
+      fCollMergingTag.bimodalityCoeffDCAz[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzBimodalityCoefficient];
+      fCollMergingTag.bimodalityCoeffDCAzBinned[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzBimodalityCoefficientBinned];
+      fCollMergingTag.bimodalityCoeffDCAzBinnedTrimmed1[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzBimodalityCoefficientBinnedTrimmed1];
+      fCollMergingTag.bimodalityCoeffDCAzBinnedTrimmed2[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzBimodalityCoefficientBinnedTrimmed2];
+      fCollMergingTag.bimodalityCoeffDCAzBinnedTrimmed3[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzBimodalityCoefficientBinnedTrimmed3];
+      fCollMergingTag.meanDCAz[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzMean];
+      fCollMergingTag.meanDCAzBinnedTrimmed1[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzMeanBinnedTrimmed1];
+      fCollMergingTag.meanDCAzBinnedTrimmed2[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzMeanBinnedTrimmed2];
+      fCollMergingTag.meanDCAzBinnedTrimmed3[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzMeanBinnedTrimmed3];
+      fCollMergingTag.rmsDCAz[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzRMS];
+      fCollMergingTag.rmsDCAzBinnedTrimmed1[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzRMSBinnedTrimmed1];
+      fCollMergingTag.rmsDCAzBinnedTrimmed2[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzRMSBinnedTrimmed2];
+      fCollMergingTag.rmsDCAzBinnedTrimmed3[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzRMSBinnedTrimmed3];
+      fCollMergingTag.skewnessDCAz[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzSkewness];
+      fCollMergingTag.kurtosisDCAz[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzKurtosis];
+      fCollMergingTag.fraction100umDCAz[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzFracAbove100um];
+      fCollMergingTag.fraction200umDCAz[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzFracAbove200um];
+      fCollMergingTag.fraction500umDCAz[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzFracAbove500um];
+      fCollMergingTag.fraction1mmDCAz[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzFracAbove1mm];
+      fCollMergingTag.fraction2mmDCAz[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzFracAbove2mm];
+      fCollMergingTag.fraction5mmDCAz[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzFracAbove5mm];
+      fCollMergingTag.fraction10mmDCAz[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzFracAbove10mm];
+      fCollMergingTag.nPeaksDCAz[collision.globalIndex()] = static_cast<int>(VarManager::fgValues[VarManager::kDCAzNPeaks]);
+      fCollMergingTag.nPeaksDCAzTrimmed1[collision.globalIndex()] = static_cast<int>(VarManager::fgValues[VarManager::kDCAzNPeaksTrimmed1]);
+      fCollMergingTag.nPeaksDCAzTrimmed2[collision.globalIndex()] = static_cast<int>(VarManager::fgValues[VarManager::kDCAzNPeaksTrimmed2]);
+      fCollMergingTag.nPeaksDCAzTrimmed3[collision.globalIndex()] = static_cast<int>(VarManager::fgValues[VarManager::kDCAzNPeaksTrimmed3]);
+    }
   }
 
   template <uint32_t TEventFillMap, typename TEvents>
@@ -697,6 +796,17 @@ struct TableMakerMC {
         multAll(collision.multAllTracksTPCOnly(), collision.multAllTracksITSTPC(),
                 0, 0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0.0, 0.0, 0.0, 0.0);
       }
+
+      mergingTable(fCollMergingTag.bimodalityCoeffDCAz[collision.globalIndex()], fCollMergingTag.bimodalityCoeffDCAzBinned[collision.globalIndex()],
+                   fCollMergingTag.bimodalityCoeffDCAzBinnedTrimmed1[collision.globalIndex()], fCollMergingTag.bimodalityCoeffDCAzBinnedTrimmed2[collision.globalIndex()], fCollMergingTag.bimodalityCoeffDCAzBinnedTrimmed3[collision.globalIndex()],
+                   fCollMergingTag.meanDCAz[collision.globalIndex()], fCollMergingTag.meanDCAzBinnedTrimmed1[collision.globalIndex()], fCollMergingTag.meanDCAzBinnedTrimmed2[collision.globalIndex()], fCollMergingTag.meanDCAzBinnedTrimmed3[collision.globalIndex()],
+                   fCollMergingTag.rmsDCAz[collision.globalIndex()], fCollMergingTag.rmsDCAzBinnedTrimmed1[collision.globalIndex()], fCollMergingTag.rmsDCAzBinnedTrimmed2[collision.globalIndex()], fCollMergingTag.rmsDCAzBinnedTrimmed3[collision.globalIndex()],
+                   fCollMergingTag.skewnessDCAz[collision.globalIndex()], fCollMergingTag.kurtosisDCAz[collision.globalIndex()],
+                   fCollMergingTag.fraction100umDCAz[collision.globalIndex()], fCollMergingTag.fraction200umDCAz[collision.globalIndex()],
+                   fCollMergingTag.fraction500umDCAz[collision.globalIndex()], fCollMergingTag.fraction1mmDCAz[collision.globalIndex()],
+                   fCollMergingTag.fraction2mmDCAz[collision.globalIndex()], fCollMergingTag.fraction5mmDCAz[collision.globalIndex()],
+                   fCollMergingTag.fraction10mmDCAz[collision.globalIndex()], fCollMergingTag.nPeaksDCAz[collision.globalIndex()], fCollMergingTag.nPeaksDCAzTrimmed1[collision.globalIndex()],
+                   fCollMergingTag.nPeaksDCAzTrimmed2[collision.globalIndex()], fCollMergingTag.nPeaksDCAzTrimmed3[collision.globalIndex()]);
 
       // add an element for this collision into the map
       fCollIndexMap[collision.globalIndex()] = event.lastIndex();
@@ -1204,6 +1314,8 @@ struct TableMakerMC {
           auto* fZShift = fCCDB->getForTimeStamp<std::vector<float>>(fConfigCCDB.fZShiftPath, bcs.begin().timestamp());
           if (fZShift != nullptr && !fZShift->empty()) {
             VarManager::SetZShift((*fZShift)[0]);
+          } else {
+            LOG(fatal) << "Could not retrieve Z-shift value from CCDB";
           }
         } else {
           VarManager::SetZShift(fConfigCCDB.fManualZShift.value);
@@ -1518,6 +1630,7 @@ struct TableMakerMC {
                              MyBarrelTracksWithCov const& tracksBarrel, aod::TrackAssoc const& trackAssocs,
                              MyEventsMcWithMults const& mcCollisions, aod::McParticles const& mcParticles)
   {
+    computeCollMergingTag(collisions, tracksBarrel, presliceBarrelTracksWithCov);
     fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMapWithCov, 0u, 0u, gkEventMcFillMapWithCent>(collisions, bcs, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr, mcCollisions, mcParticles, nullptr);
   }
 
@@ -1525,6 +1638,7 @@ struct TableMakerMC {
                                        MyBarrelTracksWithCov const& tracksBarrel, aod::TrackAssoc const& trackAssocs,
                                        MyEventsMcWithMults const& mcCollisions, aod::McParticles const& mcParticles)
   {
+    computeCollMergingTag(collisions, tracksBarrel, presliceBarrelTracksWithCov);
     fullSkimming<gkEventFillMapWithMultsRapidityGapFilter, gkTrackFillMapWithCov, 0u, 0u, gkEventMcFillMapWithCent>(collisions, bcs, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr, mcCollisions, mcParticles, nullptr);
   }
 

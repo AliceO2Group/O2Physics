@@ -63,11 +63,11 @@ namespace o2
 {
 namespace aod
 {
-using JoinedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::FV0MultZeqs, aod::FT0MultZeqs, aod::CentFV0As, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms>;
+using JoinedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::FT0MultZeqs, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms>;
 using JoinedTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
-using JoinedCollisionsWithMc = soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::FV0MultZeqs, aod::FT0MultZeqs, aod::CentFV0As, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms>;
+using JoinedCollisionsWithMc = soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::PVMults, aod::FT0MultZeqs, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms>;
 using JoinedTracksWithMc = soa::Join<aod::McTrackLabels, aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
-using JoinedMcCollisions = soa::Join<aod::McCollisions, aod::McCollsExtra>;
+using JoinedMcCollisions = soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultMCExtras>;
 } // namespace aod
 } // namespace o2
 
@@ -528,18 +528,40 @@ struct HolderCcdb {
   }
 };
 
+struct HolderMcEvent {
+  std::int32_t runNumber = 0;
+  std::int32_t runIndex = 0;
+  std::int32_t runGroupIndex = 0;
+  double vz = 0.;
+
+  void clear()
+  {
+    runNumber = 0;
+    runIndex = 0;
+    runGroupIndex = 0;
+    vz = 0.;
+  }
+};
+
 struct HolderEvent {
   std::int32_t runNumber = 0;
   std::int32_t runIndex = 0;
   std::int32_t runGroupIndex = 0;
   double vz = 0.;
-  std::int32_t nGlobalTracks = 0;
-  std::int32_t nPvContributors = 0;
-  double meanDcaXy = 0.;
-  double meanSquareDcaXy = 0.;
-  double meanDcaZ = 0.;
-  double meanSquareDcaZ = 0.;
-  std::int32_t nTofBeta = 0;
+  std::int32_t nGlobalTracksP = 0;
+  std::int32_t nGlobalTracksM = 0;
+  std::int32_t nPvContributorsP = 0;
+  std::int32_t nPvContributorsM = 0;
+  double meanDcaXyP = 0.;
+  double meanDcaXyM = 0.;
+  double meanSquareDcaXyP = 0.;
+  double meanSquareDcaXyM = 0.;
+  double meanDcaZP = 0.;
+  double meanDcaZM = 0.;
+  double meanSquareDcaZP = 0.;
+  double meanSquareDcaZM = 0.;
+  std::int32_t nTofBetaP = 0;
+  std::int32_t nTofBetaM = 0;
   double centrality = 0.;
   std::int32_t subgroupIndex = 0;
   std::int32_t nChPMc = 0;
@@ -561,13 +583,20 @@ struct HolderEvent {
     runIndex = 0;
     runGroupIndex = 0;
     vz = 0.;
-    nGlobalTracks = 0;
-    nPvContributors = 0;
-    meanDcaXy = 0.;
-    meanSquareDcaXy = 0.;
-    meanDcaZ = 0.;
-    meanSquareDcaZ = 0.;
-    nTofBeta = 0;
+    nGlobalTracksP = 0;
+    nGlobalTracksM = 0;
+    nPvContributorsP = 0;
+    nPvContributorsM = 0;
+    meanDcaXyP = 0.;
+    meanDcaXyM = 0.;
+    meanSquareDcaXyP = 0.;
+    meanSquareDcaXyM = 0.;
+    meanDcaZP = 0.;
+    meanDcaZM = 0.;
+    meanSquareDcaZP = 0.;
+    meanSquareDcaZM = 0.;
+    nTofBetaP = 0;
+    nTofBetaM = 0;
     centrality = 0.;
     subgroupIndex = 0;
     nChPMc = 0;
@@ -582,6 +611,23 @@ struct HolderEvent {
     nKaM = 0;
     nPrP = 0;
     nPrM = 0;
+  }
+};
+
+struct HolderMcParticle {
+  std::int32_t pdgCode = 0;
+  std::int32_t charge = 0;
+  double pt = 0.;
+  double eta = 0.;
+  double phi = 0.;
+
+  void clear()
+  {
+    pdgCode = 0;
+    charge = 0;
+    pt = 0.;
+    eta = 0.;
+    phi = 0.;
   }
 };
 
@@ -631,24 +677,8 @@ struct HolderTrack {
   }
 };
 
-struct HolderMcParticle {
-  const TParticlePDG* particlePdg = nullptr;
-  double pt = 0.;
-  double eta = 0.;
-  double phi = 0.;
-
-  void clear()
-  {
-    particlePdg = nullptr;
-    pt = 0.;
-    eta = 0.;
-    phi = 0.;
-  }
-};
-
 struct PartNumFluc {
-  enum class CentralityDefinition { kFv0a = 0,
-                                    kFt0a,
+  enum class CentralityDefinition { kFt0a = 0,
                                     kFt0c,
                                     kFt0m,
                                     kNDefinitions };
@@ -663,7 +693,7 @@ struct PartNumFluc {
                            kNStrategies };
 
   struct : ConfigurableGroup {
-    Configurable<std::string> cfgCcdbUrl{"cfgCcdbUrl", "https://alice-ccdb.cern.ch", "Url of CCDB"};
+    Configurable<std::string> cfgCcdbUrl{"cfgCcdbUrl", "http://ccdb-test.cern.ch:8080", "Url of CCDB"};
     Configurable<std::string> cfgCcdbPath{"cfgCcdbPath", "Users/f/fasi/test", "Path in CCDB"};
     Configurable<std::int64_t> cfgCcdbTimestampLatest{"cfgCcdbTimestampLatest", 0, "Latest timestamp in CCDB"};
   } groupCcdb;
@@ -702,12 +732,16 @@ struct PartNumFluc {
   } groupAnalysis;
 
   struct : ConfigurableGroup {
-    Configurable<bool> cfgFlagRejectionRunBad{"cfgFlagRejectionRunBad", false, "Bad run rejection flag"};
+    Configurable<bool> cfgFlagRejectionRunBad{"cfgFlagRejectionRunBad", true, "Bad run rejection flag"};
+    Configurable<bool> cfgFlagRejectionRunBadMc{"cfgFlagRejectionRunBadMc", false, "MC bad run rejection flag"};
     Configurable<std::string> cfgLabelFlagsRct{"cfgLabelFlagsRct", "CBT_hadronPID", "RCT flags label"};
-    Configurable<std::uint64_t> cfgBitsSelectionEvent{"cfgBitsSelectionEvent", 0b00000000001111110100000000000000000000000000000000ULL, "Event selection bits"};
+    Configurable<std::uint64_t> cfgBitsSelectionEvent{"cfgBitsSelectionEvent", 0b10000000001101110100000000000000000000000000000000ULL, "Event selection bits"};
+    Configurable<bool> cfgFlagInelEvent{"cfgFlagInelEvent", true, "Flag of requiring inelastic event"};
+    Configurable<bool> cfgFlagInelEventMc{"cfgFlagInelEventMc", false, "Flag of requiring inelastic MC event"};
     Configurable<double> cfgCutMaxAbsVertexZ{"cfgCutMaxAbsVertexZ", 6., "Maximum absolute vertex z position (cm)"};
+    Configurable<double> cfgCutMaxAbsVertexZMc{"cfgCutMaxAbsVertexZMc", 999., "Maximum absolute MC vertex z position (cm) for MC"};
     Configurable<std::int32_t> cfgCutMinDeviationNPvContributors{"cfgCutMinDeviationNPvContributors", -4, "Minimum nPvContributors deviation from nGlobalTracks"};
-    Configurable<std::int32_t> cfgIndexDefinitionCentrality{"cfgIndexDefinitionCentrality", 3, "Centrality definition index"};
+    Configurable<std::int32_t> cfgIndexDefinitionCentrality{"cfgIndexDefinitionCentrality", 2, "Centrality definition index"};
     ConfigurableAxis cfgAxisCentrality{"cfgAxisCentrality", {VARIABLE_WIDTH, 0., 5., 10., 15., 20., 25., 30., 35., 40., 45., 50., 55., 60., 65., 70., 75., 80., 85., 90.}, "Centrality axis in fluctuation calculation"};
     Configurable<std::int32_t> cfgNSubgroups{"cfgNSubgroups", 20, "Number of subgroups in fluctuation calculation"};
   } groupEvent;
@@ -718,11 +752,11 @@ struct PartNumFluc {
     Configurable<double> cfgCutMaxItsChi2NCls{"cfgCutMaxItsChi2NCls", 30., "Maximum chi2 per cluster ITS"};
     Configurable<std::int32_t> cfgCutMinTpcNCls{"cfgCutMinTpcNCls", 55, "Minimum number of clusters TPC"};
     Configurable<double> cfgCutMaxTpcChi2NCls{"cfgCutMaxTpcChi2NCls", 3.5, "Maximum chi2 per cluster TPC"};
-    Configurable<double> cfgCutMaxTpcNClsSharedRatio{"cfgCutMaxTpcNClsSharedRatio", 0.2, "Maximum ratio of shared clusters over clusters TPC"};
-    Configurable<std::int32_t> cfgCutMinTpcNClsCrossedRows{"cfgCutMinTpcNClsCrossedRows", 75, "Minimum number of crossed rows TPC"};
-    Configurable<double> cfgCutMinTpcNClsCrossedRowsRatio{"cfgCutMinTpcNClsCrossedRowsRatio", 0.8, "Minimum ratio of crossed rows over findable clusters TPC"};
-    Configurable<double> cfgCutMaxAbsNSigmaDcaXy{"cfgCutMaxAbsNSigmaDcaXy", 6., "Maximum absolute nSigma of DCAxy (cm)"};
-    Configurable<double> cfgCutMaxAbsNSigmaDcaZ{"cfgCutMaxAbsNSigmaDcaZ", 6., "Maximum absolute nSigma of DCAz (cm)"};
+    Configurable<double> cfgCutMaxTpcNClsSharedRatio{"cfgCutMaxTpcNClsSharedRatio", 0.25, "Maximum ratio of shared clusters over clusters TPC"};
+    Configurable<std::int32_t> cfgCutMinTpcNCrossedRows{"cfgCutMinTpcNCrossedRows", 75, "Minimum number of crossed rows TPC"};
+    Configurable<double> cfgCutMinTpcNCrossedRowsRatio{"cfgCutMinTpcNCrossedRowsRatio", 0.8, "Minimum ratio of crossed rows over findable clusters TPC"};
+    Configurable<double> cfgCutMaxAbsNSigmaDcaXy{"cfgCutMaxAbsNSigmaDcaXy", 2.5, "Maximum absolute nSigma of DCAxy (cm)"};
+    Configurable<double> cfgCutMaxAbsNSigmaDcaZ{"cfgCutMaxAbsNSigmaDcaZ", 2.5, "Maximum absolute nSigma of DCAz (cm)"};
     Configurable<double> cfgCutMinPt{"cfgCutMinPt", 0.4, "Minimum pT (GeV/c)"};
     Configurable<double> cfgCutMaxPt{"cfgCutMaxPt", 2., "Maximum pT (GeV/c)"};
     Configurable<double> cfgCutMaxAbsEta{"cfgCutMaxAbsEta", 0.8, "Maximum absolute eta"};
@@ -734,8 +768,8 @@ struct PartNumFluc {
     Configurable<bool> cfgFlagRecalibrationNSigmaPr{"cfgFlagRecalibrationNSigmaPr", false, "nSigmaPr recalibration flag"};
     Configurable<bool> cfgFlagRejectionOthers{"cfgFlagRejectionOthers", false, "Other particle species rejection flag"};
     Configurable<double> cfgCutMaxAbsNSigmaPid{"cfgCutMaxAbsNSigmaPid", 2., "Maximum absolute nSigma for PID"};
-    Configurable<bool> cfgFlagMcParticlePhysicalPrimary{"cfgFlagMcParticlePhysicalPrimary", false, "Flag of requiring physical primary MC particle"};
-    Configurable<bool> cfgFlagMcParticleMomentum{"cfgFlagMcParticleMomentum", false, "Flag of using momentum of MC particle"};
+    Configurable<bool> cfgFlagMcParticlePhysicalPrimary{"cfgFlagMcParticlePhysicalPrimary", true, "Flag of requiring physical primary MC particle"};
+    Configurable<bool> cfgFlagMcParticleMomentum{"cfgFlagMcParticleMomentum", true, "Flag of using momentum of MC particle"};
   } groupTrack;
 
   aod::rctsel::RCTFlagsChecker rctFlagsChecker;
@@ -744,9 +778,10 @@ struct PartNumFluc {
   Service<ccdb::BasicCCDBManager> ccdb;
 
   HolderCcdb holderCcdb;
+  HolderMcEvent holderMcEvent;
   HolderEvent holderEvent;
-  HolderTrack holderTrack;
   HolderMcParticle holderMcParticle;
+  HolderTrack holderTrack;
 
   std::unique_ptr<FluctuationCalculatorTrack> fluctuationCalculatorTrackChP;
   std::unique_ptr<FluctuationCalculatorTrack> fluctuationCalculatorTrackChM;
@@ -865,16 +900,13 @@ struct PartNumFluc {
     }
 
     switch (groupEvent.cfgIndexDefinitionCentrality.value) {
-      default:
-        LOG(info) << "Enabling centrality definition: FV0A";
-        break;
       case static_cast<std::int32_t>(CentralityDefinition::kFt0a):
         LOG(info) << "Enabling centrality definition: FT0A";
         break;
       case static_cast<std::int32_t>(CentralityDefinition::kFt0c):
         LOG(info) << "Enabling centrality definition: FT0C";
         break;
-      case static_cast<std::int32_t>(CentralityDefinition::kFt0m):
+      default:
         LOG(info) << "Enabling centrality definition: FT0M";
         break;
     }
@@ -1042,70 +1074,97 @@ struct PartNumFluc {
     }
 
     hrCounter.add("hNEvents", ";;No. of Events", {HistType::kTH1D, {{10 + aod::evsel::EventSelectionFlags::kNsel, -0.5, 9.5 + static_cast<double>(aod::evsel::EventSelectionFlags::kNsel), "Selection"}}});
+    if (doprocessMc.value) {
+      hrCounter.add("hNMcEvents", ";;No. of MC Events", {HistType::kTH1D, {{10, -0.5, 9.5, "Selection"}}});
+    }
 
     if (groupAnalysis.cfgFlagQaRun.value) {
       LOG(info) << "Enabling run QA.";
 
-      HistogramConfigSpec hcsQaRun(HistType::kTProfile, {{static_cast<std::int32_t>(holderCcdb.runNumbersIndicesGroupIndices.size()), -0.5, holderCcdb.runNumbersIndicesGroupIndices.size() - 0.5, "Run Index"}});
+      const HistogramConfigSpec hcsQaRun(HistType::kTProfile, {{static_cast<std::int32_t>(holderCcdb.runNumbersIndicesGroupIndices.size()), -0.5, holderCcdb.runNumbersIndicesGroupIndices.size() - 0.5, "Run Index"}});
 
       hrQaRun.add("QaRun/pRunIndexVx", ";;#LT#it{V}_{#it{x}}#GT (cm)", hcsQaRun);
       hrQaRun.add("QaRun/pRunIndexVy", ";;#LT#it{V}_{#it{y}}#GT (cm)", hcsQaRun);
       hrQaRun.add("QaRun/pRunIndexVz", ";;#LT#it{V}_{#it{z}}#GT (cm)", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexMultFv0a", ";;FV0A #LTMultiplicity#GT", hcsQaRun);
       hrQaRun.add("QaRun/pRunIndexMultFt0a", ";;FT0A #LTMultiplicity#GT", hcsQaRun);
       hrQaRun.add("QaRun/pRunIndexMultFt0c", ";;FT0C #LTMultiplicity#GT", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexNGlobalTracks", ";;#LTnGlobalTracks#GT", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexNPvContributors", ";;#LTnPvContributors#GT", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexMeanDcaXy", ";;#LT#LTDCA_{#it{xy}}#GT_{event}#GT (cm)", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexSigmaDcaXy", ";;#LT#it{#sigma}(DCA_{#it{xy}})_{event}#GT (cm)", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexMeanDcaZ", ";;#LT#LTDCA_{#it{z}}#GT_{event}#GT (cm)", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexSigmaDcaZ", ";;#LT#it{#sigma}(DCA_{#it{z}})_{event}#GT (cm)", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexNTofBeta", ";;#LTnTofBeta#GT", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexItsNCls", ";;ITS #LTnClusters#GT", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexItsChi2NCls", ";;ITS #LT#it{#chi}^{2}/nClusters#GT", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexTpcNCls", ";;TPC #LTnClusters#GT", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexTpcChi2NCls", ";;TPC #LT#it{#chi}^{2}/nClusters#GT", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexTpcNClsSharedRatio", ";;TPC #LTnSharedClusters/nClusters#GT", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexTpcNClsCrossedRows", ";;TPC #LTnCrossedRows#GT", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexTpcNClsCrossedRowsRatio", ";;TPC #LTnCrossedRows/nFindableClusters#GT", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexDcaXy", ";;#LTDCA_{#it{xy}}#GT (cm)", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexDcaZ", ";;#LTDCA_{#it{z}}#GT (cm)", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexPt", ";;#LT#it{p}_{T}#GT (GeV/#it{c})", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexEta", ";;#LT#it{#eta}#GT", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexPhi", ";;#LT#it{#varphi}#GT", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexTpcDeDx", ";;TPC #LTd#it{E}/d#it{x}#GT (a.u.)", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexTpcNSigmaPi", ";;TPC #LT#it{n}#it{#sigma}_{#pi}#GT", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexTpcNSigmaKa", ";;TPC #LT#it{n}#it{#sigma}_{K}#GT", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexTpcNSigmaPr", ";;TPC #LT#it{n}#it{#sigma}_{p}#GT", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexTofInverseBeta", ";;TOF #LT1/#it{#beta}#GT", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexTofNSigmaPi", ";;TOF #LT#it{n}#it{#sigma}_{#pi}#GT", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexTofNSigmaKa", ";;TOF #LT#it{n}#it{#sigma}_{K}#GT", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexTofNSigmaPr", ";;TOF #LT#it{n}#it{#sigma}_{p}#GT", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexNGlobalTracks_p", ";;#LTnGlobalTracks#GT (#it{q}>0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexNGlobalTracks_m", ";;#LTnGlobalTracks#GT (#it{q}<0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexNPvContributors_p", ";;#LTnPvContributors#GT (#it{q}>0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexNPvContributors_m", ";;#LTnPvContributors#GT (#it{q}<0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexMeanDcaXy_p", ";;#LT#LTDCA_{#it{xy}}#GT_{event}#GT (cm) (#it{q}>0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexMeanDcaXy_m", ";;#LT#LTDCA_{#it{xy}}#GT_{event}#GT (cm) (#it{q}<0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexSigmaDcaXy_p", ";;#LT#it{#sigma}(DCA_{#it{xy}})_{event}#GT (cm) (#it{q}>0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexSigmaDcaXy_m", ";;#LT#it{#sigma}(DCA_{#it{xy}})_{event}#GT (cm) (#it{q}<0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexMeanDcaZ_p", ";;#LT#LTDCA_{#it{z}}#GT_{event}#GT (cm) (#it{q}>0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexMeanDcaZ_m", ";;#LT#LTDCA_{#it{z}}#GT_{event}#GT (cm) (#it{q}<0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexSigmaDcaZ_p", ";;#LT#it{#sigma}(DCA_{#it{z}})_{event}#GT (cm) (#it{q}>0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexSigmaDcaZ_m", ";;#LT#it{#sigma}(DCA_{#it{z}})_{event}#GT (cm) (#it{q}<0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexNTofBeta_p", ";;#LTnTofBeta#GT (#it{q}>0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexNTofBeta_m", ";;#LTnTofBeta#GT (#it{q}<0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexItsNCls_p", ";;ITS #LTnClusters#GT (#it{q}>0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexItsNCls_m", ";;ITS #LTnClusters#GT (#it{q}<0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexItsChi2NCls_p", ";;ITS #LT#it{#chi}^{2}/nClusters#GT (#it{q}>0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexItsChi2NCls_m", ";;ITS #LT#it{#chi}^{2}/nClusters#GT (#it{q}<0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexTpcNCls_p", ";;TPC #LTnClusters#GT (#it{q}>0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexTpcNCls_m", ";;TPC #LTnClusters#GT (#it{q}<0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexTpcChi2NCls_p", ";;TPC #LT#it{#chi}^{2}/nClusters#GT (#it{q}>0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexTpcChi2NCls_m", ";;TPC #LT#it{#chi}^{2}/nClusters#GT (#it{q}<0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexTpcNClsSharedRatio_p", ";;TPC #LTnSharedClusters/nClusters#GT (#it{q}>0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexTpcNClsSharedRatio_m", ";;TPC #LTnSharedClusters/nClusters#GT (#it{q}<0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexTpcNCrossedRows_p", ";;TPC #LTnCrossedRows#GT (#it{q}>0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexTpcNCrossedRows_m", ";;TPC #LTnCrossedRows#GT (#it{q}<0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexTpcNCrossedRowsRatio_p", ";;TPC #LTnCrossedRows/nFindableClusters#GT (#it{q}>0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexTpcNCrossedRowsRatio_m", ";;TPC #LTnCrossedRows/nFindableClusters#GT (#it{q}<0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexDcaXy_p", ";;#LTDCA_{#it{xy}}#GT (cm) (#it{q}>0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexDcaXy_m", ";;#LTDCA_{#it{xy}}#GT (cm) (#it{q}<0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexDcaZ_p", ";;#LTDCA_{#it{z}}#GT (cm) (#it{q}>0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexDcaZ_m", ";;#LTDCA_{#it{z}}#GT (cm) (#it{q}<0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexPt_p", ";;#LT#it{p}_{T}#GT (GeV/#it{c}) (#it{q}>0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexPt_m", ";;#LT#it{p}_{T}#GT (GeV/#it{c}) (#it{q}<0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexEta_p", ";;#LT#it{#eta}#GT (#it{q}>0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexEta_m", ";;#LT#it{#eta}#GT (#it{q}<0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexPhi_p", ";;#LT#it{#varphi}#GT (#it{q}>0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexPhi_m", ";;#LT#it{#varphi}#GT (#it{q}<0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexTpcDeDx_p", ";;TPC #LTd#it{E}/d#it{x}#GT (a.u.) (#it{q}>0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexTpcDeDx_m", ";;TPC #LTd#it{E}/d#it{x}#GT (a.u.) (#it{q}<0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexTpcNSigmaPi_p", ";;TPC #LT#it{n}#it{#sigma}_{#pi}#GT (#it{q}>0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexTpcNSigmaPi_m", ";;TPC #LT#it{n}#it{#sigma}_{#pi}#GT (#it{q}<0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexTpcNSigmaKa_p", ";;TPC #LT#it{n}#it{#sigma}_{K}#GT (#it{q}>0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexTpcNSigmaKa_m", ";;TPC #LT#it{n}#it{#sigma}_{K}#GT (#it{q}<0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexTpcNSigmaPr_p", ";;TPC #LT#it{n}#it{#sigma}_{p}#GT (#it{q}>0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexTpcNSigmaPr_m", ";;TPC #LT#it{n}#it{#sigma}_{p}#GT (#it{q}<0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexTofInverseBeta_p", ";;TOF #LT1/#it{#beta}#GT (#it{q}>0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexTofInverseBeta_m", ";;TOF #LT1/#it{#beta}#GT (#it{q}<0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexTofNSigmaPi_p", ";;TOF #LT#it{n}#it{#sigma}_{#pi}#GT (#it{q}>0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexTofNSigmaPi_m", ";;TOF #LT#it{n}#it{#sigma}_{#pi}#GT (#it{q}<0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexTofNSigmaKa_p", ";;TOF #LT#it{n}#it{#sigma}_{K}#GT (#it{q}>0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexTofNSigmaKa_m", ";;TOF #LT#it{n}#it{#sigma}_{K}#GT (#it{q}<0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexTofNSigmaPr_p", ";;TOF #LT#it{n}#it{#sigma}_{p}#GT (#it{q}>0)", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexTofNSigmaPr_m", ";;TOF #LT#it{n}#it{#sigma}_{p}#GT (#it{q}<0)", hcsQaRun);
     }
 
     if (groupAnalysis.cfgFlagQaEvent.value) {
       LOG(info) << "Enabling event QA.";
 
-      AxisSpec asRunIndex(static_cast<std::int32_t>(holderCcdb.runNumbersIndicesGroupIndices.size()), -0.5, holderCcdb.runNumbersIndicesGroupIndices.size() - 0.5, "Run Index");
-      AxisSpec asNGlobalTracks(180, -0.5, 179.5, "nGlobalTracks");
+      const AxisSpec asNGlobalTracks(200, -0.5, 199.5, "nGlobalTracks");
 
-      hrQaEvent.add("QaEvent/hRunIndexVxVy", "", {HistType::kTHnSparseF, {asRunIndex, {150, -0.15, 0.15, "#it{V}_{#it{x}} (cm)"}, {150, -0.15, 0.15, "#it{V}_{#it{y}} (cm)"}}});
-      hrQaEvent.add("QaEvent/hRunIndexVz", "", {HistType::kTH2F, {asRunIndex, {300, -15., 15., "#it{V}_{#it{z}} (cm)"}}});
-      hrQaEvent.add("QaEvent/hRunIndexNPvContributorsNGlobalTracks", "", {HistType::kTHnSparseF, {asRunIndex, {180, -0.5, 179.5, "nPvContributors"}, asNGlobalTracks}});
-      hrQaEvent.add("QaEvent/hRunIndexNGlobalTracksMeanDcaXy", "", {HistType::kTHnSparseF, {asRunIndex, asNGlobalTracks, {200, -0.5, 0.5, "#LTDCA_{#it{xy}}#GT_{event} (cm)"}}});
-      hrQaEvent.add("QaEvent/hRunIndexNGlobalTracksMeanDcaXy_nPvContributorsCut", "", {HistType::kTHnSparseF, {asRunIndex, asNGlobalTracks, {200, -2., 2., "#LTDCA_{#it{z}}#GT_{event} (cm)"}}});
-      hrQaEvent.add("QaEvent/hRunIndexNGlobalTracksMeanDcaZ", "", {HistType::kTHnSparseF, {asRunIndex, asNGlobalTracks, {200, -2., 2., "#LTDCA_{#it{z}}#GT_{event} (cm)"}}});
-      hrQaEvent.add("QaEvent/hRunIndexNGlobalTracksMeanDcaZ_nPvContributorsCut", "", {HistType::kTHnSparseF, {asRunIndex, asNGlobalTracks, {200, -2., 2., "#LTDCA_{#it{z}}#GT_{event} (cm)"}}});
-      hrQaEvent.add("QaEvent/hRunIndexNTofBetaNGlobalTracks", "", {HistType::kTHnSparseF, {asRunIndex, {60, -0.5, 59.5, "nTofBeta"}, asNGlobalTracks}});
-      hrQaEvent.add("QaEvent/hRunIndexNTofBetaNGlobalTracks_nPvContributorsCut", "", {HistType::kTHnSparseF, {asRunIndex, {60, -0.5, 59.5, "nTofBeta"}, asNGlobalTracks}});
+      hrQaEvent.add("QaEvent/hVxVy", "", {HistType::kTHnSparseD, {{150, -0.15, 0.15, "#it{V}_{#it{x}} (cm)"}, {150, -0.15, 0.15, "#it{V}_{#it{y}} (cm)"}}});
+      hrQaEvent.add("QaEvent/hVz", "", {HistType::kTH1D, {{300, -15., 15., "#it{V}_{#it{z}} (cm)"}}});
+      hrQaEvent.add("QaEvent/hNPvContributorsNGlobalTracks", "", {HistType::kTHnSparseF, {{200, -0.5, 199.5, "nPvContributors"}, asNGlobalTracks}});
+      hrQaEvent.add("QaEvent/hNGlobalTracksMeanDcaXy", "", {HistType::kTHnSparseF, {asNGlobalTracks, {200, -0.5, 0.5, "#LTDCA_{#it{xy}}#GT_{event} (cm)"}}});
+      hrQaEvent.add("QaEvent/hNGlobalTracksMeanDcaXy_nPvContributorsCut", "", {HistType::kTHnSparseF, {asNGlobalTracks, {200, -2., 2., "#LTDCA_{#it{z}}#GT_{event} (cm)"}}});
+      hrQaEvent.add("QaEvent/hNGlobalTracksMeanDcaZ", "", {HistType::kTHnSparseF, {asNGlobalTracks, {200, -2., 2., "#LTDCA_{#it{z}}#GT_{event} (cm)"}}});
+      hrQaEvent.add("QaEvent/hNGlobalTracksMeanDcaZ_nPvContributorsCut", "", {HistType::kTHnSparseF, {asNGlobalTracks, {200, -2., 2., "#LTDCA_{#it{z}}#GT_{event} (cm)"}}});
+      hrQaEvent.add("QaEvent/hNTofBetaNGlobalTracks", "", {HistType::kTHnSparseF, {{200, -0.5, 199.5, "nTofBeta"}, asNGlobalTracks}});
+      hrQaEvent.add("QaEvent/hNTofBetaNGlobalTracks_nPvContributorsCut", "", {HistType::kTHnSparseF, {{200, -0.5, 199.5, "nTofBeta"}, asNGlobalTracks}});
     }
 
     if (groupAnalysis.cfgFlagQaCentrality.value) {
       LOG(info) << "Enabling centrality QA.";
 
-      AxisSpec asCentrality(20, 0., 100., "Centrality (%)");
+      const AxisSpec asCentrality(20, 0., 100., "Centrality (%)");
 
-      hrQaCentrality.add("QaCentrality/hCentralityFv0a", "", {HistType::kTHnSparseF, {asCentrality, {2400, 0., 24000., "FV0A Multiplicity"}}});
       hrQaCentrality.add("QaCentrality/hCentralityFt0a", "", {HistType::kTHnSparseF, {asCentrality, {1600, 0., 8000., "FT0A Multiplicity"}}});
       hrQaCentrality.add("QaCentrality/hCentralityFt0c", "", {HistType::kTHnSparseF, {asCentrality, {400, 0., 2000., "FT0C Multiplicity"}}});
       hrQaCentrality.add("QaCentrality/hCentralityFt0m", "", {HistType::kTHnSparseF, {asCentrality, {2000, 0., 10000., "FT0M Multiplicity"}}});
@@ -1118,37 +1177,37 @@ struct PartNumFluc {
       hrQaTrack.add("QaTrack/hItsNCls_m", "", {HistType::kTH1D, {{10, -0.5, 9.5, "ITS nClusters"}}});
       hrQaTrack.add("QaTrack/hItsChi2NCls_p", "", {HistType::kTH1D, {{80, 0., 40., "ITS #it{#chi}^{2}/nClusters"}}});
       hrQaTrack.add("QaTrack/hItsChi2NCls_m", "", {HistType::kTH1D, {{80, 0., 40., "ITS #it{#chi}^{2}/nClusters"}}});
-      hrQaTrack.add("QaTrack/hTpcNClsNClsShared_p", "", {HistType::kTH2D, {{180, -0.5, 179.5, "TPC nClusters"}, {180, -0.5, 179.5, "TPC nSharedClusters"}}});
-      hrQaTrack.add("QaTrack/hTpcNClsNClsShared_m", "", {HistType::kTH2D, {{180, -0.5, 179.5, "TPC nClusters"}, {180, -0.5, 179.5, "TPC nSharedClusters"}}});
+      hrQaTrack.add("QaTrack/hTpcNClsNClsShared_p", "", {HistType::kTHnSparseD, {{180, -0.5, 179.5, "TPC nClusters"}, {180, -0.5, 179.5, "TPC nSharedClusters"}}});
+      hrQaTrack.add("QaTrack/hTpcNClsNClsShared_m", "", {HistType::kTHnSparseD, {{180, -0.5, 179.5, "TPC nClusters"}, {180, -0.5, 179.5, "TPC nSharedClusters"}}});
       hrQaTrack.add("QaTrack/hTpcChi2NCls_p", "", {HistType::kTH1D, {{100, 0., 5., "TPC #it{#chi}^{2}/nClusters"}}});
       hrQaTrack.add("QaTrack/hTpcChi2NCls_m", "", {HistType::kTH1D, {{100, 0., 5., "TPC #it{#chi}^{2}/nClusters"}}});
-      hrQaTrack.add("QaTrack/hTpcNClsFindableNCrossedRows_p", "", {HistType::kTH2D, {{180, -0.5, 179.5, "TPC nFindableClusters"}, {180, -0.5, 179.5, "TPC nCrossedRows"}}});
-      hrQaTrack.add("QaTrack/hTpcNClsFindableNCrossedRows_m", "", {HistType::kTH2D, {{180, -0.5, 179.5, "TPC nFindableClusters"}, {180, -0.5, 179.5, "TPC nCrossedRows"}}});
+      hrQaTrack.add("QaTrack/hTpcNClsFindableNCrossedRows_p", "", {HistType::kTHnSparseD, {{180, -0.5, 179.5, "TPC nFindableClusters"}, {180, -0.5, 179.5, "TPC nCrossedRows"}}});
+      hrQaTrack.add("QaTrack/hTpcNClsFindableNCrossedRows_m", "", {HistType::kTHnSparseD, {{180, -0.5, 179.5, "TPC nFindableClusters"}, {180, -0.5, 179.5, "TPC nCrossedRows"}}});
     }
 
     if (groupAnalysis.cfgFlagQaDca.value) {
       LOG(info) << "Enabling DCA QA.";
 
-      AxisSpec asPt(200, 0., 2., "#it{p}_{T} (GeV/#it{c})");
-      AxisSpec asDca(400, -1., 1.);
+      const AxisSpec asPt(200, 0., 2., "#it{p}_{T} (GeV/#it{c})");
+      const AxisSpec asDca(400, -1., 1.);
 
-      hrQaDca.add("QaDca/hPtDcaXy_p", ";;DCA_{#it{xy}} (cm)", {HistType::kTH2D, {asPt, asDca}});
-      hrQaDca.add("QaDca/hPtDcaXy_m", ";;DCA_{#it{xy}} (cm)", {HistType::kTH2D, {asPt, asDca}});
+      hrQaDca.add("QaDca/hPtDcaXy_p", ";;DCA_{#it{xy}} (cm)", {HistType::kTHnSparseD, {asPt, asDca}});
+      hrQaDca.add("QaDca/hPtDcaXy_m", ";;DCA_{#it{xy}} (cm)", {HistType::kTHnSparseD, {asPt, asDca}});
       hrQaDca.add("QaDca/pPtDcaXy_p", ";;#LTDCA_{#it{xy}}#GT (cm)", {HistType::kTProfile, {asPt}});
       hrQaDca.add("QaDca/pPtDcaXy_m", ";;#LTDCA_{#it{xy}}#GT (cm)", {HistType::kTProfile, {asPt}});
-      hrQaDca.add("QaDca/hPtDcaZ_p", ";;DCA_{#it{z}} (cm)", {HistType::kTH2D, {asPt, asDca}});
-      hrQaDca.add("QaDca/hPtDcaZ_m", ";;DCA_{#it{z}} (cm)", {HistType::kTH2D, {asPt, asDca}});
+      hrQaDca.add("QaDca/hPtDcaZ_p", ";;DCA_{#it{z}} (cm)", {HistType::kTHnSparseD, {asPt, asDca}});
+      hrQaDca.add("QaDca/hPtDcaZ_m", ";;DCA_{#it{z}} (cm)", {HistType::kTHnSparseD, {asPt, asDca}});
       hrQaDca.add("QaDca/pPtDcaZ_p", ";;#LTDCA_{#it{z}}#GT (cm)", {HistType::kTProfile, {asPt}});
       hrQaDca.add("QaDca/pPtDcaZ_m", ";;#LTDCA_{#it{z}}#GT (cm)", {HistType::kTProfile, {asPt}});
     }
 
     if (groupAnalysis.cfgFlagQaAcceptance.value || groupAnalysis.cfgFlagQaAcceptancePi.value || groupAnalysis.cfgFlagQaAcceptanceKa.value || groupAnalysis.cfgFlagQaAcceptancePr.value) {
-      AxisSpec asPt(250, 0., 2.5, "#it{p}_{T} (GeV/#it{c})");
+      const AxisSpec asPt(250, 0., 2.5, "#it{p}_{T} (GeV/#it{c})");
 
       if (groupAnalysis.cfgFlagQaAcceptance.value) {
         LOG(info) << "Enabling acceptance QA.";
 
-        HistogramConfigSpec hcsQaAcceptance(HistType::kTHnSparseF, {{300, -1.5, 1.5, "#it{#eta}"}, asPt});
+        const HistogramConfigSpec hcsQaAcceptance(HistType::kTHnSparseD, {{300, -1.5, 1.5, "#it{#eta}"}, asPt});
 
         hrQaAcceptance.add("QaAcceptance/hEtaPt_tpcEdgeP", "", hcsQaAcceptance);
         hrQaAcceptance.add("QaAcceptance/hEtaPt_tpcEdgeM", "", hcsQaAcceptance);
@@ -1157,7 +1216,7 @@ struct PartNumFluc {
       }
 
       if (groupAnalysis.cfgFlagQaAcceptancePi.value || groupAnalysis.cfgFlagQaAcceptanceKa.value || groupAnalysis.cfgFlagQaAcceptancePr.value) {
-        HistogramConfigSpec hcsQaAcceptance(HistType::kTH2D, {{300, -1.5, 1.5, "#it{y}"}, asPt});
+        const HistogramConfigSpec hcsQaAcceptance(HistType::kTHnSparseD, {{300, -1.5, 1.5, "#it{y}"}, asPt});
 
         if (groupAnalysis.cfgFlagQaAcceptancePi.value) {
           LOG(info) << "Enabling pion acceptance QA.";
@@ -1189,7 +1248,7 @@ struct PartNumFluc {
     }
 
     if (groupAnalysis.cfgFlagQaPhi.value || groupAnalysis.cfgFlagQaPhiPi.value || groupAnalysis.cfgFlagQaPhiKa.value || groupAnalysis.cfgFlagQaPhiPr.value) {
-      HistogramConfigSpec hcsQaPhi(HistType::kTHnSparseF, {{{0., 5., 10., 20., 30., 40., 50., 60., 70., 80., 90.}, "Centrality (%)"}, {20, 0., 2., "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#it{#eta}"}, {360, 0., constants::math::TwoPI, "#it{#varphi} (rad)"}});
+      const HistogramConfigSpec hcsQaPhi(HistType::kTHnSparseF, {{{0., 5., 10., 20., 30., 40., 50., 60., 70., 80., 90.}, "Centrality (%)"}, {20, 0., 2., "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#it{#eta}"}, {360, 0., constants::math::TwoPI, "#it{#varphi} (rad)"}});
 
       if (groupAnalysis.cfgFlagQaPhi.value) {
         LOG(info) << "Enabling phi QA.";
@@ -1281,21 +1340,21 @@ struct PartNumFluc {
     }
 
     if (groupAnalysis.cfgFlagQaPid.value || groupAnalysis.cfgFlagQaPidPi.value || groupAnalysis.cfgFlagQaPidKa.value || groupAnalysis.cfgFlagQaPidPr.value) {
-      AxisSpec asCentrality({0., 5., 10., 20., 30., 40., 50., 60., 70., 80., 90.}, "Centrality (%)");
+      const AxisSpec asCentrality({0., 5., 10., 20., 30., 40., 50., 60., 70., 80., 90.}, "Centrality (%)");
 
       if (groupAnalysis.cfgFlagQaPid.value) {
         LOG(info) << "Enabling PID QA.";
 
-        AxisSpec asPOverQ(350, -3.5, 3.5, "#it{p}/#it{q} (GeV/#it{c})");
-        AxisSpec asEta(48, -1.2, 1.2, "#it{#eta}");
+        const AxisSpec asPOverQ(350, -3.5, 3.5, "#it{p}/#it{q} (GeV/#it{c})");
+        const AxisSpec asEta(48, -1.2, 1.2, "#it{#eta}");
 
         hrQaPid.add("QaPid/hCentralityPOverQEtaTpcLnDeDx", "", {HistType::kTHnSparseF, {asCentrality, asPOverQ, asEta, {240, 3., 9., "TPC ln(d#it{E}/d#it{x} (a.u.))"}}});
         hrQaPid.add("QaPid/hCentralityPOverQEtaTofInverseBeta", "", {HistType::kTHnSparseF, {asCentrality, asPOverQ, asEta, {120, 0.5, 3.5, "TOF 1/#it{#beta}"}}});
       }
 
       if (groupAnalysis.cfgFlagQaPidPi.value || groupAnalysis.cfgFlagQaPidKa.value || groupAnalysis.cfgFlagQaPidPr.value) {
-        AxisSpec asPt(40, 0., 2., "#it{p}_{T} (GeV/#it{c})");
-        AxisSpec asEta(32, -0.8, 0.8, "#it{#eta}");
+        const AxisSpec asPt(40, 0., 2., "#it{p}_{T} (GeV/#it{c})");
+        const AxisSpec asEta(32, -0.8, 0.8, "#it{#eta}");
 
         if (groupAnalysis.cfgFlagQaPidPi.value) {
           LOG(info) << "Enabling pion PID QA.";
@@ -1363,16 +1422,16 @@ struct PartNumFluc {
       if (groupAnalysis.cfgFlagQaMc.value) {
         LOG(info) << "Enabling MC QA.";
 
-        AxisSpec asCentrality(20, 0., 100., "Centrality (%)");
+        const AxisSpec asCentrality(20, 0., 100., "Centrality (%)");
 
-        hrQaMc.add("QaMc/hCentralityVzVzMc", "", {HistType::kTH3F, {asCentrality, {200, -10., 10., "#it{V}_{#it{z}}^{Rec} (cm)"}, {200, -10., 10., "#it{V}_{#it{z}}^{Gen} (cm)"}}});
+        hrQaMc.add("QaMc/hCentralityVzVzMc", "", {HistType::kTHnSparseF, {asCentrality, {200, -10., 10., "#it{V}_{#it{z}}^{Rec} (cm)"}, {200, -10., 10., "#it{V}_{#it{z}}^{Gen} (cm)"}}});
         hrQaMc.add("QaMc/hCentralityPtEtaDeltaPt", "", {HistType::kTHnSparseF, {asCentrality, {100, 0., 2., "#it{p}_{T}^{Rec} (GeV/#it{c})"}, {120, -1.2, 1.2, "#it{#eta}_{Rec}"}, {100, -1., 1., "#it{p}_{T}^{Rec}#minus#it{p}_{T}^{Gen} (GeV/#it{c})"}}});
         hrQaMc.add("QaMc/hCentralityPtEtaDeltaEta", "", {HistType::kTHnSparseF, {asCentrality, {100, 0., 2., "#it{p}_{T}^{Rec} (GeV/#it{c})"}, {120, -1.2, 1.2, "#it{#eta}_{Rec}"}, {100, -1., 1., "#it{#eta}_{Rec}#minus#it{#eta}_{Gen}"}}});
       }
     }
 
     if (groupAnalysis.cfgFlagCalculationYieldPi.value || groupAnalysis.cfgFlagCalculationYieldKa.value || groupAnalysis.cfgFlagCalculationYieldPr.value) {
-      HistogramConfigSpec hcsCalculationYield(HistType::kTHnSparseF, {{static_cast<std::int32_t>(std::llrint(std::ceil(groupEvent.cfgCutMaxAbsVertexZ.value))) * 2, -std::ceil(groupEvent.cfgCutMaxAbsVertexZ.value), std::ceil(groupEvent.cfgCutMaxAbsVertexZ.value), "#it{V}_{#it{z}} (cm)"}, {{0., 5., 10., 20., 30., 40., 50., 60., 70., 80., 90.}, "Centrality (%)"}, {20, 0., 2., "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#it{#eta}"}, {180, 0., constants::math::TwoPI, "#it{#varphi} (rad)"}});
+      const HistogramConfigSpec hcsCalculationYield(HistType::kTHnSparseF, {{static_cast<std::int32_t>(std::llrint(std::ceil(groupEvent.cfgCutMaxAbsVertexZ.value))) * 2, -std::ceil(groupEvent.cfgCutMaxAbsVertexZ.value), std::ceil(groupEvent.cfgCutMaxAbsVertexZ.value), "#it{V}_{#it{z}} (cm)"}, {{0., 5., 10., 20., 30., 40., 50., 60., 70., 80., 90.}, "Centrality (%)"}, {40, 0., 2., "#it{p}_{T} (GeV/#it{c})"}, {32, -0.8, 0.8, "#it{#eta}"}});
 
       if (groupAnalysis.cfgFlagCalculationYieldPi.value) {
         LOG(info) << "Enabling pion yield calculation.";
@@ -1443,7 +1502,7 @@ struct PartNumFluc {
 
     if (doprocessMc.value) {
       if (groupAnalysis.cfgFlagCalculationPurityPi.value || groupAnalysis.cfgFlagCalculationPurityKa.value || groupAnalysis.cfgFlagCalculationPurityPr.value) {
-        HistogramConfigSpec hcsCalculationPurity(HistType::kTProfile3D, {{{0., 5., 10., 20., 30., 40., 50., 60., 70., 80., 90.}, "Centrality (%)"}, {20, 0., 2., "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#it{#eta}"}});
+        const HistogramConfigSpec hcsCalculationPurity(HistType::kTProfile3D, {{{0., 5., 10., 20., 30., 40., 50., 60., 70., 80., 90.}, "Centrality (%)"}, {20, 0., 2., "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#it{#eta}"}});
 
         if (groupAnalysis.cfgFlagCalculationPurityPi.value) {
           LOG(info) << "Enabling pion purity calculation.";
@@ -1476,7 +1535,7 @@ struct PartNumFluc {
 
     if (doprocessMc.value) {
       if (groupAnalysis.cfgFlagCalculationFractionPrimaryPi.value || groupAnalysis.cfgFlagCalculationFractionPrimaryKa.value || groupAnalysis.cfgFlagCalculationFractionPrimaryPr.value) {
-        HistogramConfigSpec hcsCalculationFractionPrimary(HistType::kTProfile3D, {{{0., 5., 10., 20., 30., 40., 50., 60., 70., 80., 90.}, "Centrality (%)"}, {20, 0., 2., "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#it{#eta}"}});
+        const HistogramConfigSpec hcsCalculationFractionPrimary(HistType::kTProfile3D, {{{0., 5., 10., 20., 30., 40., 50., 60., 70., 80., 90.}, "Centrality (%)"}, {20, 0., 2., "#it{p}_{T} (GeV/#it{c})"}, {16, -0.8, 0.8, "#it{#eta}"}});
 
         if (groupAnalysis.cfgFlagCalculationFractionPrimaryPi.value) {
           LOG(info) << "Enabling pion primary fraction calculation.";
@@ -1508,9 +1567,11 @@ struct PartNumFluc {
     }
 
     if (groupAnalysis.cfgFlagCalculationFluctuationCh.value || groupAnalysis.cfgFlagCalculationFluctuationKa.value || groupAnalysis.cfgFlagCalculationFluctuationPr.value) {
-      AxisSpec asCentrality(groupEvent.cfgAxisCentrality, "Centrality (%)");
-      HistogramConfigSpec hcsCalculationFluctuation(HistType::kTH3D, {asCentrality, {40, -0.5, 39.5}, {40, -0.5, 39.5}});
-      HistogramConfigSpec hcsFluctuationCalculator(HistType::kTH3D, {asCentrality, {groupEvent.cfgNSubgroups.value, -0.5, groupEvent.cfgNSubgroups.value - 0.5, "Subgroup Index"}, {fluctuation_calculator_base::NOrderVectors, -0.5, fluctuation_calculator_base::NOrderVectors - 0.5, "Order Vector Index"}});
+      static constexpr std::int32_t NDimensionsEfficiency = 4;
+
+      const AxisSpec asCentrality(groupEvent.cfgAxisCentrality, "Centrality (%)");
+      const HistogramConfigSpec hcsCalculationFluctuation(HistType::kTHnSparseD, {asCentrality, {50, -0.5, 49.5}, {50, -0.5, 49.5}});
+      const HistogramConfigSpec hcsFluctuationCalculator(HistType::kTH3D, {asCentrality, {groupEvent.cfgNSubgroups.value, -0.5, groupEvent.cfgNSubgroups.value - 0.5, "Subgroup Index"}, {fluctuation_calculator_base::NOrderVectors, -0.5, fluctuation_calculator_base::NOrderVectors - 0.5, "Order Vector Index"}});
 
       if (groupAnalysis.cfgFlagCalculationFluctuationCh.value) {
         holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiP.resize(nRunGroups);
@@ -1523,22 +1584,22 @@ struct PartNumFluc {
             LOG(fatal) << "Invalid " << Form("lRunGroup_%d", iRunGroup + 1) << "!";
           }
           holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiP[iRunGroup] = static_cast<THnBase*>(lRunGroup->FindObject(Form("hVzCentralityPtEtaEfficiencyTpcPiP_runGroup%d", iRunGroup + 1)));
-          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiP[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiP[iRunGroup]->InheritsFrom(THnBase::Class())) {
+          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiP[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiP[iRunGroup]->InheritsFrom(THnBase::Class()) || holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiP[iRunGroup]->GetNdimensions() != NDimensionsEfficiency) {
             LOG(fatal) << "Invalid " << Form("hVzCentralityPtEtaEfficiencyTpcPiP_runGroup%d", iRunGroup + 1) << "!";
           }
           LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiP[iRunGroup]->GetName();
           holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiM[iRunGroup] = static_cast<THnBase*>(lRunGroup->FindObject(Form("hVzCentralityPtEtaEfficiencyTpcPiM_runGroup%d", iRunGroup + 1)));
-          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiM[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiM[iRunGroup]->InheritsFrom(THnBase::Class())) {
+          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiM[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiM[iRunGroup]->InheritsFrom(THnBase::Class()) || holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiM[iRunGroup]->GetNdimensions() != NDimensionsEfficiency) {
             LOG(fatal) << "Invalid " << Form("hVzCentralityPtEtaEfficiencyTpcPiM_runGroup%d", iRunGroup + 1) << "!";
           }
           LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiM[iRunGroup]->GetName();
           holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiP[iRunGroup] = static_cast<THnBase*>(lRunGroup->FindObject(Form("hVzCentralityPtEtaEfficiencyTpcTofPiP_runGroup%d", iRunGroup + 1)));
-          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiP[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiP[iRunGroup]->InheritsFrom(THnBase::Class())) {
+          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiP[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiP[iRunGroup]->InheritsFrom(THnBase::Class()) || holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiP[iRunGroup]->GetNdimensions() != NDimensionsEfficiency) {
             LOG(fatal) << "Invalid " << Form("hVzCentralityPtEtaEfficiencyTpcTofPiP_runGroup%d", iRunGroup + 1) << "!";
           }
           LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiP[iRunGroup]->GetName();
           holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiM[iRunGroup] = static_cast<THnBase*>(lRunGroup->FindObject(Form("hVzCentralityPtEtaEfficiencyTpcTofPiM_runGroup%d", iRunGroup + 1)));
-          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiM[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiM[iRunGroup]->InheritsFrom(THnBase::Class())) {
+          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiM[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiM[iRunGroup]->InheritsFrom(THnBase::Class()) || holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiM[iRunGroup]->GetNdimensions() != NDimensionsEfficiency) {
             LOG(fatal) << "Invalid " << Form("hVzCentralityPtEtaEfficiencyTpcTofPiM_runGroup%d", iRunGroup + 1) << "!";
           }
           LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiM[iRunGroup]->GetName();
@@ -1556,22 +1617,22 @@ struct PartNumFluc {
             LOG(fatal) << "Invalid " << Form("lRunGroup_%d", iRunGroup + 1) << "!";
           }
           holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaP[iRunGroup] = static_cast<THnBase*>(lRunGroup->FindObject(Form("hVzCentralityPtEtaEfficiencyTpcKaP_runGroup%d", iRunGroup + 1)));
-          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaP[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaP[iRunGroup]->InheritsFrom(THnBase::Class())) {
+          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaP[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaP[iRunGroup]->InheritsFrom(THnBase::Class()) || holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaP[iRunGroup]->GetNdimensions() != NDimensionsEfficiency) {
             LOG(fatal) << "Invalid " << Form("hVzCentralityPtEtaEfficiencyTpcKaP_runGroup%d", iRunGroup + 1) << "!";
           }
           LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaP[iRunGroup]->GetName();
           holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaM[iRunGroup] = static_cast<THnBase*>(lRunGroup->FindObject(Form("hVzCentralityPtEtaEfficiencyTpcKaM_runGroup%d", iRunGroup + 1)));
-          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaM[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaM[iRunGroup]->InheritsFrom(THnBase::Class())) {
+          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaM[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaM[iRunGroup]->InheritsFrom(THnBase::Class()) || holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaM[iRunGroup]->GetNdimensions() != NDimensionsEfficiency) {
             LOG(fatal) << "Invalid " << Form("hVzCentralityPtEtaEfficiencyTpcKaM_runGroup%d", iRunGroup + 1) << "!";
           }
           LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaM[iRunGroup]->GetName();
           holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaP[iRunGroup] = static_cast<THnBase*>(lRunGroup->FindObject(Form("hVzCentralityPtEtaEfficiencyTpcTofKaP_runGroup%d", iRunGroup + 1)));
-          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaP[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaP[iRunGroup]->InheritsFrom(THnBase::Class())) {
+          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaP[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaP[iRunGroup]->InheritsFrom(THnBase::Class()) || holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaP[iRunGroup]->GetNdimensions() != NDimensionsEfficiency) {
             LOG(fatal) << "Invalid " << Form("hVzCentralityPtEtaEfficiencyTpcTofKaP_runGroup%d", iRunGroup + 1) << "!";
           }
           LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaP[iRunGroup]->GetName();
           holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaM[iRunGroup] = static_cast<THnBase*>(lRunGroup->FindObject(Form("hVzCentralityPtEtaEfficiencyTpcTofKaM_runGroup%d", iRunGroup + 1)));
-          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaM[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaM[iRunGroup]->InheritsFrom(THnBase::Class())) {
+          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaM[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaM[iRunGroup]->InheritsFrom(THnBase::Class()) || holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaM[iRunGroup]->GetNdimensions() != NDimensionsEfficiency) {
             LOG(fatal) << "Invalid " << Form("hVzCentralityPtEtaEfficiencyTpcTofKaM_runGroup%d", iRunGroup + 1) << "!";
           }
           LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaM[iRunGroup]->GetName();
@@ -1589,22 +1650,22 @@ struct PartNumFluc {
             LOG(fatal) << "Invalid " << Form("lRunGroup_%d", iRunGroup + 1) << "!";
           }
           holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrP[iRunGroup] = static_cast<THnBase*>(lRunGroup->FindObject(Form("hVzCentralityPtEtaEfficiencyTpcPrP_runGroup%d", iRunGroup + 1)));
-          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrP[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrP[iRunGroup]->InheritsFrom(THnBase::Class())) {
+          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrP[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrP[iRunGroup]->InheritsFrom(THnBase::Class()) || holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrP[iRunGroup]->GetNdimensions() != NDimensionsEfficiency) {
             LOG(fatal) << "Invalid " << Form("hVzCentralityPtEtaEfficiencyTpcPrP_runGroup%d", iRunGroup + 1) << "!";
           }
           LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrP[iRunGroup]->GetName();
           holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrM[iRunGroup] = static_cast<THnBase*>(lRunGroup->FindObject(Form("hVzCentralityPtEtaEfficiencyTpcPrM_runGroup%d", iRunGroup + 1)));
-          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrM[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrM[iRunGroup]->InheritsFrom(THnBase::Class())) {
+          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrM[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrM[iRunGroup]->InheritsFrom(THnBase::Class()) || holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrM[iRunGroup]->GetNdimensions() != NDimensionsEfficiency) {
             LOG(fatal) << "Invalid " << Form("hVzCentralityPtEtaEfficiencyTpcPrM_runGroup%d", iRunGroup + 1) << "!";
           }
           LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrM[iRunGroup]->GetName();
           holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrP[iRunGroup] = static_cast<THnBase*>(lRunGroup->FindObject(Form("hVzCentralityPtEtaEfficiencyTpcTofPrP_runGroup%d", iRunGroup + 1)));
-          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrP[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrP[iRunGroup]->InheritsFrom(THnBase::Class())) {
+          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrP[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrP[iRunGroup]->InheritsFrom(THnBase::Class()) || holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrP[iRunGroup]->GetNdimensions() != NDimensionsEfficiency) {
             LOG(fatal) << "Invalid " << Form("hVzCentralityPtEtaEfficiencyTpcTofPrP_runGroup%d", iRunGroup + 1) << "!";
           }
           LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrP[iRunGroup]->GetName();
           holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrM[iRunGroup] = static_cast<THnBase*>(lRunGroup->FindObject(Form("hVzCentralityPtEtaEfficiencyTpcTofPrM_runGroup%d", iRunGroup + 1)));
-          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrM[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrM[iRunGroup]->InheritsFrom(THnBase::Class())) {
+          if (!holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrM[iRunGroup] || !holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrM[iRunGroup]->InheritsFrom(THnBase::Class()) || holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrM[iRunGroup]->GetNdimensions() != NDimensionsEfficiency) {
             LOG(fatal) << "Invalid " << Form("hVzCentralityPtEtaEfficiencyTpcTofPrM_runGroup%d", iRunGroup + 1) << "!";
           }
           LOG(info) << "Reading from CCDB: " << holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrM[iRunGroup]->GetName();
@@ -1667,6 +1728,29 @@ struct PartNumFluc {
     }
   }
 
+  template <bool doProcessingMc, ParticleSpecies particleSpecies, PidStrategy pidStrategy>
+  double getEfficiency()
+  {
+    static_assert(particleSpecies == ParticleSpecies::kPi || particleSpecies == ParticleSpecies::kKa || particleSpecies == ParticleSpecies::kPr);
+    static_assert(pidStrategy == PidStrategy::kTpc || pidStrategy == PidStrategy::kTpcTof);
+
+    static const std::array<std::array<std::array<std::vector<const THnBase*>*, 2>, 2>, static_cast<std::int32_t>(ParticleSpecies::kNSpecies)> pointersVectorHistogramEfficiency = {{{{{&holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiP, &holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiP}, {&holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiM, &holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiM}}}, {{{&holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaP, &holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaP}, {&holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaM, &holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaM}}}, {{{&holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrP, &holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrP}, {&holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrM, &holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrM}}}}};
+
+    if constexpr (doProcessingMc) {
+      if (holderMcParticle.charge == 0) {
+        return 0.;
+      }
+      const THnBase* const hVzCentralityPtEtaEfficiency = pointersVectorHistogramEfficiency[static_cast<std::int32_t>(particleSpecies)][holderMcParticle.charge > 0 ? 0 : 1][pidStrategy == PidStrategy::kTpc ? 0 : 1]->at(std::abs(holderEvent.runGroupIndex) - 1);
+      return hVzCentralityPtEtaEfficiency ? hVzCentralityPtEtaEfficiency->GetBinContent(hVzCentralityPtEtaEfficiency->GetBin(std::array<double, 4>{holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta}.data())) : 0.;
+    }
+
+    if (holderTrack.sign == 0) {
+      return 0.;
+    }
+    const THnBase* const hVzCentralityPtEtaEfficiency = pointersVectorHistogramEfficiency[static_cast<std::int32_t>(particleSpecies)][holderTrack.sign > 0 ? 0 : 1][pidStrategy == PidStrategy::kTpc ? 0 : 1]->at(std::abs(holderEvent.runGroupIndex) - 1);
+    return hVzCentralityPtEtaEfficiency ? hVzCentralityPtEtaEfficiency->GetBinContent(hVzCentralityPtEtaEfficiency->GetBin(std::array<double, 4>{holderEvent.vz, holderEvent.centrality, holderTrack.pt, holderTrack.eta}.data())) : 0.;
+  }
+
   template <ParticleSpecies particleSpecies, PidStrategy pidStrategy>
   double getShiftNSigmaPid()
   {
@@ -1694,29 +1778,6 @@ struct PartNumFluc {
     }
     const TH3* const hCentralityPtEtaShiftNSigmaPid = pointersVectorHistogramShiftNSigmaPid[static_cast<std::int32_t>(particleSpecies)][holderTrack.sign > 0 ? 0 : 1][pidStrategy == PidStrategy::kTpc ? 0 : 1]->at(std::abs(holderEvent.runGroupIndex) - 1);
     return hCentralityPtEtaShiftNSigmaPid ? hCentralityPtEtaShiftNSigmaPid->Interpolate(std::max(std::nextafter(hCentralityPtEtaShiftNSigmaPid->GetXaxis()->GetBinCenter(1), std::numeric_limits<double>::infinity()), std::min(holderEvent.centrality, std::nextafter(hCentralityPtEtaShiftNSigmaPid->GetXaxis()->GetBinCenter(hCentralityPtEtaShiftNSigmaPid->GetNbinsX()), -std::numeric_limits<double>::infinity()))), std::max(std::nextafter(hCentralityPtEtaShiftNSigmaPid->GetYaxis()->GetBinCenter(1), std::numeric_limits<double>::infinity()), std::min(holderTrack.pt, std::nextafter(hCentralityPtEtaShiftNSigmaPid->GetYaxis()->GetBinCenter(hCentralityPtEtaShiftNSigmaPid->GetNbinsY()), -std::numeric_limits<double>::infinity()))), std::max(std::nextafter(hCentralityPtEtaShiftNSigmaPid->GetZaxis()->GetBinCenter(1), std::numeric_limits<double>::infinity()), std::min(holderTrack.eta, std::nextafter(hCentralityPtEtaShiftNSigmaPid->GetZaxis()->GetBinCenter(hCentralityPtEtaShiftNSigmaPid->GetNbinsZ()), -std::numeric_limits<double>::infinity())))) : 0.;
-  }
-
-  template <bool doProcessingMc, ParticleSpecies particleSpecies, PidStrategy pidStrategy>
-  double getEfficiency()
-  {
-    static_assert(particleSpecies == ParticleSpecies::kPi || particleSpecies == ParticleSpecies::kKa || particleSpecies == ParticleSpecies::kPr);
-    static_assert(pidStrategy == PidStrategy::kTpc || pidStrategy == PidStrategy::kTpcTof);
-
-    static const std::array<std::array<std::array<std::vector<const THnBase*>*, 2>, 2>, static_cast<std::int32_t>(ParticleSpecies::kNSpecies)> pointersVectorHistogramEfficiency = {{{{{&holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiP, &holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiP}, {&holderCcdb.hVzCentralityPtEtaEfficiencyTpcPiM, &holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPiM}}}, {{{&holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaP, &holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaP}, {&holderCcdb.hVzCentralityPtEtaEfficiencyTpcKaM, &holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofKaM}}}, {{{&holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrP, &holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrP}, {&holderCcdb.hVzCentralityPtEtaEfficiencyTpcPrM, &holderCcdb.hVzCentralityPtEtaEfficiencyTpcTofPrM}}}}};
-
-    if constexpr (doProcessingMc) {
-      if (holderMcParticle.particlePdg->Charge() == 0.) {
-        return 0.;
-      }
-      const THnBase* const hVzCentralityPtEtaEfficiency = pointersVectorHistogramEfficiency[static_cast<std::int32_t>(particleSpecies)][holderMcParticle.particlePdg->Charge() > 0. ? 0 : 1][pidStrategy == PidStrategy::kTpc ? 0 : 1]->at(std::abs(holderEvent.runGroupIndex) - 1);
-      return hVzCentralityPtEtaEfficiency ? hVzCentralityPtEtaEfficiency->GetBinContent(hVzCentralityPtEtaEfficiency->GetBin(std::array<double, 4>{holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta}.data())) : 0.;
-    }
-
-    if (holderTrack.sign == 0) {
-      return 0.;
-    }
-    const THnBase* const hVzCentralityPtEtaEfficiency = pointersVectorHistogramEfficiency[static_cast<std::int32_t>(particleSpecies)][holderTrack.sign > 0 ? 0 : 1][pidStrategy == PidStrategy::kTpc ? 0 : 1]->at(std::abs(holderEvent.runGroupIndex) - 1);
-    return hVzCentralityPtEtaEfficiency ? hVzCentralityPtEtaEfficiency->GetBinContent(hVzCentralityPtEtaEfficiency->GetBin(std::array<double, 4>{holderEvent.vz, holderEvent.centrality, holderTrack.pt, holderTrack.eta}.data())) : 0.;
   }
 
   template <ParticleSpecies particleSpecies, PidStrategy pidStrategy>
@@ -1833,10 +1894,10 @@ struct PartNumFluc {
     if (!(track.tpcFractionSharedCls() < groupTrack.cfgCutMaxTpcNClsSharedRatio.value)) {
       return false;
     }
-    if (!(track.tpcNClsCrossedRows() > groupTrack.cfgCutMinTpcNClsCrossedRows.value)) {
+    if (!(track.tpcNClsCrossedRows() > groupTrack.cfgCutMinTpcNCrossedRows.value)) {
       return false;
     }
-    if (!(track.tpcCrossedRowsOverFindableCls() > groupTrack.cfgCutMinTpcNClsCrossedRowsRatio.value)) {
+    if (!(track.tpcCrossedRowsOverFindableCls() > groupTrack.cfgCutMinTpcNCrossedRowsRatio.value)) {
       return false;
     }
     return true;
@@ -1850,26 +1911,6 @@ struct PartNumFluc {
         return false;
       }
     }
-    return true;
-  }
-
-  template <bool doProcessingMc, typename MP>
-  bool initMcParticle(const MP& mcParticle)
-  {
-    holderMcParticle.clear();
-    holderMcParticle.particlePdg = pdg->GetParticle(mcParticle.pdgCode());
-    holderMcParticle.pt = mcParticle.pt();
-    holderMcParticle.eta = mcParticle.eta();
-    holderMcParticle.phi = mcParticle.phi();
-
-    if (!holderMcParticle.particlePdg) {
-      return false;
-    }
-
-    if (!isGoodMcParticle<doProcessingMc>(mcParticle)) {
-      return false;
-    }
-
     return true;
   }
 
@@ -1909,57 +1950,112 @@ struct PartNumFluc {
     }
 
     if constexpr (doInitingEvent) {
-      if (track.isPrimaryTrack()) {
-        holderEvent.nGlobalTracks++;
-        if (track.isPVContributor()) {
-          holderEvent.nPvContributors++;
+      if (holderTrack.sign > 0) {
+        if (track.isPrimaryTrack()) {
+          holderEvent.nGlobalTracksP++;
+          if (track.isPVContributor()) {
+            holderEvent.nPvContributorsP++;
+          }
+          holderEvent.meanDcaXyP += holderTrack.dcaXY;
+          holderEvent.meanSquareDcaXyP += std::pow(holderTrack.dcaXY, 2.);
+          holderEvent.meanDcaZP += holderTrack.dcaZ;
+          holderEvent.meanSquareDcaZP += std::pow(holderTrack.dcaZ, 2.);
+          if (holderTrack.hasTofPid) {
+            holderEvent.nTofBetaP++;
+          }
         }
-        holderEvent.meanDcaXy += holderTrack.dcaXY;
-        holderEvent.meanSquareDcaXy += std::pow(holderTrack.dcaXY, 2.);
-        holderEvent.meanDcaZ += holderTrack.dcaZ;
-        holderEvent.meanSquareDcaZ += std::pow(holderTrack.dcaZ, 2.);
-        if (holderTrack.hasTofPid) {
-          holderEvent.nTofBeta++;
+      } else if (holderTrack.sign < 0) {
+        if (track.isPrimaryTrack()) {
+          holderEvent.nGlobalTracksM++;
+          if (track.isPVContributor()) {
+            holderEvent.nPvContributorsM++;
+          }
+          holderEvent.meanDcaXyM += holderTrack.dcaXY;
+          holderEvent.meanSquareDcaXyM += std::pow(holderTrack.dcaXY, 2.);
+          holderEvent.meanDcaZM += holderTrack.dcaZ;
+          holderEvent.meanSquareDcaZM += std::pow(holderTrack.dcaZ, 2.);
+          if (holderTrack.hasTofPid) {
+            holderEvent.nTofBetaM++;
+          }
         }
       }
     }
 
     if constexpr (doInitingEvent) {
       if (groupAnalysis.cfgFlagQaRun.value && track.isPrimaryTrack()) {
-        hrQaRun.fill(HIST("QaRun/pRunIndexItsNCls"), holderEvent.runIndex, track.itsNCls());
-        hrQaRun.fill(HIST("QaRun/pRunIndexItsChi2NCls"), holderEvent.runIndex, track.itsChi2NCl());
-        hrQaRun.fill(HIST("QaRun/pRunIndexTpcNCls"), holderEvent.runIndex, track.tpcNClsFound());
-        hrQaRun.fill(HIST("QaRun/pRunIndexTpcChi2NCls"), holderEvent.runIndex, track.tpcChi2NCl());
-        hrQaRun.fill(HIST("QaRun/pRunIndexTpcNClsSharedRatio"), holderEvent.runIndex, track.tpcFractionSharedCls());
-        hrQaRun.fill(HIST("QaRun/pRunIndexTpcNClsCrossedRows"), holderEvent.runIndex, track.tpcNClsCrossedRows());
-        hrQaRun.fill(HIST("QaRun/pRunIndexTpcNClsCrossedRowsRatio"), holderEvent.runIndex, track.tpcCrossedRowsOverFindableCls());
-        hrQaRun.fill(HIST("QaRun/pRunIndexDcaXy"), holderEvent.runIndex, holderTrack.dcaXY);
-        hrQaRun.fill(HIST("QaRun/pRunIndexDcaZ"), holderEvent.runIndex, holderTrack.dcaZ);
-        hrQaRun.fill(HIST("QaRun/pRunIndexPt"), holderEvent.runIndex, holderTrack.pt);
-        hrQaRun.fill(HIST("QaRun/pRunIndexEta"), holderEvent.runIndex, holderTrack.eta);
-        hrQaRun.fill(HIST("QaRun/pRunIndexPhi"), holderEvent.runIndex, holderTrack.phi);
-        if (holderTrack.hasTpcPid) {
-          hrQaRun.fill(HIST("QaRun/pRunIndexTpcDeDx"), holderEvent.runIndex, track.tpcSignal());
-          if (std::fabs(holderTrack.tpcNSigmaPi) < HolderTrack::TruncationAbsNSigmaPid) {
-            hrQaRun.fill(HIST("QaRun/pRunIndexTpcNSigmaPi"), holderEvent.runIndex, holderTrack.tpcNSigmaPi);
+        if (holderTrack.sign > 0.) {
+          hrQaRun.fill(HIST("QaRun/pRunIndexItsNCls_p"), holderEvent.runIndex, track.itsNCls());
+          hrQaRun.fill(HIST("QaRun/pRunIndexItsChi2NCls_p"), holderEvent.runIndex, track.itsChi2NCl());
+          hrQaRun.fill(HIST("QaRun/pRunIndexTpcNCls_p"), holderEvent.runIndex, track.tpcNClsFound());
+          hrQaRun.fill(HIST("QaRun/pRunIndexTpcChi2NCls_p"), holderEvent.runIndex, track.tpcChi2NCl());
+          hrQaRun.fill(HIST("QaRun/pRunIndexTpcNClsSharedRatio_p"), holderEvent.runIndex, track.tpcFractionSharedCls());
+          hrQaRun.fill(HIST("QaRun/pRunIndexTpcNCrossedRows_p"), holderEvent.runIndex, track.tpcNClsCrossedRows());
+          hrQaRun.fill(HIST("QaRun/pRunIndexTpcNCrossedRowsRatio_p"), holderEvent.runIndex, track.tpcCrossedRowsOverFindableCls());
+          hrQaRun.fill(HIST("QaRun/pRunIndexDcaXy_p"), holderEvent.runIndex, holderTrack.dcaXY);
+          hrQaRun.fill(HIST("QaRun/pRunIndexDcaZ_p"), holderEvent.runIndex, holderTrack.dcaZ);
+          hrQaRun.fill(HIST("QaRun/pRunIndexPt_p"), holderEvent.runIndex, holderTrack.pt);
+          hrQaRun.fill(HIST("QaRun/pRunIndexEta_p"), holderEvent.runIndex, holderTrack.eta);
+          hrQaRun.fill(HIST("QaRun/pRunIndexPhi_p"), holderEvent.runIndex, holderTrack.phi);
+          if (holderTrack.hasTpcPid) {
+            hrQaRun.fill(HIST("QaRun/pRunIndexTpcDeDx_p"), holderEvent.runIndex, track.tpcSignal());
+            if (std::fabs(holderTrack.tpcNSigmaPi) < HolderTrack::TruncationAbsNSigmaPid) {
+              hrQaRun.fill(HIST("QaRun/pRunIndexTpcNSigmaPi_p"), holderEvent.runIndex, holderTrack.tpcNSigmaPi);
+            }
+            if (std::fabs(holderTrack.tpcNSigmaKa) < HolderTrack::TruncationAbsNSigmaPid) {
+              hrQaRun.fill(HIST("QaRun/pRunIndexTpcNSigmaKa_p"), holderEvent.runIndex, holderTrack.tpcNSigmaKa);
+            }
+            if (std::fabs(holderTrack.tpcNSigmaPr) < HolderTrack::TruncationAbsNSigmaPid) {
+              hrQaRun.fill(HIST("QaRun/pRunIndexTpcNSigmaPr_p"), holderEvent.runIndex, holderTrack.tpcNSigmaPr);
+            }
           }
-          if (std::fabs(holderTrack.tpcNSigmaKa) < HolderTrack::TruncationAbsNSigmaPid) {
-            hrQaRun.fill(HIST("QaRun/pRunIndexTpcNSigmaKa"), holderEvent.runIndex, holderTrack.tpcNSigmaKa);
+          if (holderTrack.hasTofPid) {
+            hrQaRun.fill(HIST("QaRun/pRunIndexTofInverseBeta_p"), holderEvent.runIndex, 1. / track.beta());
+            if (std::fabs(holderTrack.tofNSigmaPi) < HolderTrack::TruncationAbsNSigmaPid) {
+              hrQaRun.fill(HIST("QaRun/pRunIndexTofNSigmaPi_p"), holderEvent.runIndex, holderTrack.tofNSigmaPi);
+            }
+            if (std::fabs(holderTrack.tofNSigmaKa) < HolderTrack::TruncationAbsNSigmaPid) {
+              hrQaRun.fill(HIST("QaRun/pRunIndexTofNSigmaKa_p"), holderEvent.runIndex, holderTrack.tofNSigmaKa);
+            }
+            if (std::fabs(holderTrack.tofNSigmaPr) < HolderTrack::TruncationAbsNSigmaPid) {
+              hrQaRun.fill(HIST("QaRun/pRunIndexTofNSigmaPr_p"), holderEvent.runIndex, holderTrack.tofNSigmaPr);
+            }
           }
-          if (std::fabs(holderTrack.tpcNSigmaPr) < HolderTrack::TruncationAbsNSigmaPid) {
-            hrQaRun.fill(HIST("QaRun/pRunIndexTpcNSigmaPr"), holderEvent.runIndex, holderTrack.tpcNSigmaPr);
+        } else if (holderTrack.sign < 0.) {
+          hrQaRun.fill(HIST("QaRun/pRunIndexItsNCls_m"), holderEvent.runIndex, track.itsNCls());
+          hrQaRun.fill(HIST("QaRun/pRunIndexItsChi2NCls_m"), holderEvent.runIndex, track.itsChi2NCl());
+          hrQaRun.fill(HIST("QaRun/pRunIndexTpcNCls_m"), holderEvent.runIndex, track.tpcNClsFound());
+          hrQaRun.fill(HIST("QaRun/pRunIndexTpcChi2NCls_m"), holderEvent.runIndex, track.tpcChi2NCl());
+          hrQaRun.fill(HIST("QaRun/pRunIndexTpcNClsSharedRatio_m"), holderEvent.runIndex, track.tpcFractionSharedCls());
+          hrQaRun.fill(HIST("QaRun/pRunIndexTpcNCrossedRows_m"), holderEvent.runIndex, track.tpcNClsCrossedRows());
+          hrQaRun.fill(HIST("QaRun/pRunIndexTpcNCrossedRowsRatio_m"), holderEvent.runIndex, track.tpcCrossedRowsOverFindableCls());
+          hrQaRun.fill(HIST("QaRun/pRunIndexDcaXy_m"), holderEvent.runIndex, holderTrack.dcaXY);
+          hrQaRun.fill(HIST("QaRun/pRunIndexDcaZ_m"), holderEvent.runIndex, holderTrack.dcaZ);
+          hrQaRun.fill(HIST("QaRun/pRunIndexPt_m"), holderEvent.runIndex, holderTrack.pt);
+          hrQaRun.fill(HIST("QaRun/pRunIndexEta_m"), holderEvent.runIndex, holderTrack.eta);
+          hrQaRun.fill(HIST("QaRun/pRunIndexPhi_m"), holderEvent.runIndex, holderTrack.phi);
+          if (holderTrack.hasTpcPid) {
+            hrQaRun.fill(HIST("QaRun/pRunIndexTpcDeDx_m"), holderEvent.runIndex, track.tpcSignal());
+            if (std::fabs(holderTrack.tpcNSigmaPi) < HolderTrack::TruncationAbsNSigmaPid) {
+              hrQaRun.fill(HIST("QaRun/pRunIndexTpcNSigmaPi_m"), holderEvent.runIndex, holderTrack.tpcNSigmaPi);
+            }
+            if (std::fabs(holderTrack.tpcNSigmaKa) < HolderTrack::TruncationAbsNSigmaPid) {
+              hrQaRun.fill(HIST("QaRun/pRunIndexTpcNSigmaKa_m"), holderEvent.runIndex, holderTrack.tpcNSigmaKa);
+            }
+            if (std::fabs(holderTrack.tpcNSigmaPr) < HolderTrack::TruncationAbsNSigmaPid) {
+              hrQaRun.fill(HIST("QaRun/pRunIndexTpcNSigmaPr_m"), holderEvent.runIndex, holderTrack.tpcNSigmaPr);
+            }
           }
-        }
-        if (holderTrack.hasTofPid) {
-          hrQaRun.fill(HIST("QaRun/pRunIndexTofInverseBeta"), holderEvent.runIndex, 1. / track.beta());
-          if (std::fabs(holderTrack.tofNSigmaPi) < HolderTrack::TruncationAbsNSigmaPid) {
-            hrQaRun.fill(HIST("QaRun/pRunIndexTofNSigmaPi"), holderEvent.runIndex, holderTrack.tofNSigmaPi);
-          }
-          if (std::fabs(holderTrack.tofNSigmaKa) < HolderTrack::TruncationAbsNSigmaPid) {
-            hrQaRun.fill(HIST("QaRun/pRunIndexTofNSigmaKa"), holderEvent.runIndex, holderTrack.tofNSigmaKa);
-          }
-          if (std::fabs(holderTrack.tofNSigmaPr) < HolderTrack::TruncationAbsNSigmaPid) {
-            hrQaRun.fill(HIST("QaRun/pRunIndexTofNSigmaPr"), holderEvent.runIndex, holderTrack.tofNSigmaPr);
+          if (holderTrack.hasTofPid) {
+            hrQaRun.fill(HIST("QaRun/pRunIndexTofInverseBeta_m"), holderEvent.runIndex, 1. / track.beta());
+            if (std::fabs(holderTrack.tofNSigmaPi) < HolderTrack::TruncationAbsNSigmaPid) {
+              hrQaRun.fill(HIST("QaRun/pRunIndexTofNSigmaPi_m"), holderEvent.runIndex, holderTrack.tofNSigmaPi);
+            }
+            if (std::fabs(holderTrack.tofNSigmaKa) < HolderTrack::TruncationAbsNSigmaPid) {
+              hrQaRun.fill(HIST("QaRun/pRunIndexTofNSigmaKa_m"), holderEvent.runIndex, holderTrack.tofNSigmaKa);
+            }
+            if (std::fabs(holderTrack.tofNSigmaPr) < HolderTrack::TruncationAbsNSigmaPid) {
+              hrQaRun.fill(HIST("QaRun/pRunIndexTofNSigmaPr_m"), holderEvent.runIndex, holderTrack.tofNSigmaPr);
+            }
           }
         }
       }
@@ -2101,22 +2197,45 @@ struct PartNumFluc {
     return true;
   }
 
+  template <bool doProcessingMc, typename MP>
+  bool initMcParticle(const MP& mcParticle)
+  {
+    holderMcParticle.clear();
+    holderMcParticle.pdgCode = mcParticle.pdgCode();
+    const TParticlePDG* particlePdg = pdg->GetParticle(mcParticle.pdgCode());
+    if (particlePdg) {
+      holderMcParticle.charge = std::llrint(particlePdg->Charge());
+    } else {
+      switch (std::abs(holderMcParticle.pdgCode) / 100000000) {
+        case 10:
+          holderMcParticle.charge = holderMcParticle.pdgCode / 10000 % 1000;
+          break;
+      }
+    }
+    holderMcParticle.pt = mcParticle.pt();
+    holderMcParticle.eta = mcParticle.eta();
+    holderMcParticle.phi = mcParticle.phi();
+
+    if (!isGoodMcParticle<doProcessingMc>(mcParticle)) {
+      return false;
+    }
+
+    return true;
+  }
+
   template <bool doProcessingMc, typename C, typename Ts>
   bool initEvent(const C& collision, const Ts& tracks)
   {
     holderEvent.clear();
     holderEvent.vz = collision.posZ();
     switch (groupEvent.cfgIndexDefinitionCentrality.value) {
-      default:
-        holderEvent.centrality = collision.centFV0A();
-        break;
       case static_cast<std::int32_t>(CentralityDefinition::kFt0a):
         holderEvent.centrality = collision.centFT0A();
         break;
       case static_cast<std::int32_t>(CentralityDefinition::kFt0c):
         holderEvent.centrality = collision.centFT0C();
         break;
-      case static_cast<std::int32_t>(CentralityDefinition::kFt0m):
+      default:
         holderEvent.centrality = collision.centFT0M();
         break;
     }
@@ -2144,25 +2263,30 @@ struct PartNumFluc {
     }
 
     if (!groupEvent.cfgLabelFlagsRct.value.empty() && !rctFlagsChecker.checkTable(collision)) {
-      hrCounter.fill(HIST("hNEvents"), 3);
+      hrCounter.fill(HIST("hNEvents"), 3.);
       return false;
     }
 
     for (std::int32_t const& iEvSel : std::views::iota(0, aod::evsel::EventSelectionFlags::kNsel)) {
       if (((groupEvent.cfgBitsSelectionEvent.value >> iEvSel) & 1) && !collision.selection_bit(iEvSel)) {
-        hrCounter.fill(HIST("hNEvents"), 4);
-        hrCounter.fill(HIST("hNEvents"), 10 + iEvSel);
+        hrCounter.fill(HIST("hNEvents"), 4.);
+        hrCounter.fill(HIST("hNEvents"), 10. + iEvSel);
         return false;
       }
     }
 
+    if (groupEvent.cfgFlagInelEvent.value && !collision.isInelGt0()) {
+      hrCounter.fill(HIST("hNEvents"), 5.);
+      return false;
+    }
+
     if (groupAnalysis.cfgFlagQaEvent.value) {
-      hrQaEvent.fill(HIST("QaEvent/hRunIndexVxVy"), holderEvent.runIndex, collision.posX(), collision.posY());
-      hrQaEvent.fill(HIST("QaEvent/hRunIndexVz"), holderEvent.runIndex, holderEvent.vz);
+      hrQaEvent.fill(HIST("QaEvent/hVxVy"), collision.posX(), collision.posY());
+      hrQaEvent.fill(HIST("QaEvent/hVz"), holderEvent.vz);
     }
 
     if (!(std::fabs(holderEvent.vz) < groupEvent.cfgCutMaxAbsVertexZ.value)) {
-      hrCounter.fill(HIST("hNEvents"), 5);
+      hrCounter.fill(HIST("hNEvents"), 6.);
       return false;
     }
 
@@ -2170,7 +2294,6 @@ struct PartNumFluc {
       hrQaRun.fill(HIST("QaRun/pRunIndexVx"), holderEvent.runIndex, collision.posX());
       hrQaRun.fill(HIST("QaRun/pRunIndexVy"), holderEvent.runIndex, collision.posY());
       hrQaRun.fill(HIST("QaRun/pRunIndexVz"), holderEvent.runIndex, holderEvent.vz);
-      hrQaRun.fill(HIST("QaRun/pRunIndexMultFv0a"), holderEvent.runIndex, collision.multZeqFV0A());
       hrQaRun.fill(HIST("QaRun/pRunIndexMultFt0a"), holderEvent.runIndex, collision.multZeqFT0A());
       hrQaRun.fill(HIST("QaRun/pRunIndexMultFt0c"), holderEvent.runIndex, collision.multZeqFT0C());
     }
@@ -2182,51 +2305,65 @@ struct PartNumFluc {
 
       initTrack<doProcessingMc, true>(track);
     }
-    if (holderEvent.nGlobalTracks > 0.) {
-      holderEvent.meanDcaXy /= holderEvent.nGlobalTracks;
-      holderEvent.meanSquareDcaXy /= holderEvent.nGlobalTracks;
-      holderEvent.meanDcaZ /= holderEvent.nGlobalTracks;
-      holderEvent.meanSquareDcaZ /= holderEvent.nGlobalTracks;
+    if (holderEvent.nGlobalTracksP > 0.) {
+      holderEvent.meanDcaXyP /= holderEvent.nGlobalTracksP;
+      holderEvent.meanSquareDcaXyP /= holderEvent.nGlobalTracksP;
+      holderEvent.meanDcaZP /= holderEvent.nGlobalTracksP;
+      holderEvent.meanSquareDcaZP /= holderEvent.nGlobalTracksP;
+    }
+    if (holderEvent.nGlobalTracksM > 0.) {
+      holderEvent.meanDcaXyM /= holderEvent.nGlobalTracksM;
+      holderEvent.meanSquareDcaXyM /= holderEvent.nGlobalTracksM;
+      holderEvent.meanDcaZM /= holderEvent.nGlobalTracksM;
+      holderEvent.meanSquareDcaZM /= holderEvent.nGlobalTracksM;
     }
 
     if (groupAnalysis.cfgFlagQaRun.value) {
-      hrQaRun.fill(HIST("QaRun/pRunIndexNGlobalTracks"), holderEvent.runIndex, holderEvent.nGlobalTracks);
-      hrQaRun.fill(HIST("QaRun/pRunIndexNPvContributors"), holderEvent.runIndex, holderEvent.nPvContributors);
-      if (holderEvent.nGlobalTracks > 0) {
-        hrQaRun.fill(HIST("QaRun/pRunIndexMeanDcaXy"), holderEvent.runIndex, holderEvent.meanDcaXy);
-        hrQaRun.fill(HIST("QaRun/pRunIndexSigmaDcaXy"), holderEvent.runIndex, std::sqrt(holderEvent.meanSquareDcaXy - std::pow(holderEvent.meanDcaXy, 2.)));
-        hrQaRun.fill(HIST("QaRun/pRunIndexMeanDcaZ"), holderEvent.runIndex, holderEvent.meanDcaZ);
-        hrQaRun.fill(HIST("QaRun/pRunIndexSigmaDcaZ"), holderEvent.runIndex, std::sqrt(holderEvent.meanSquareDcaZ - std::pow(holderEvent.meanDcaZ, 2.)));
+      hrQaRun.fill(HIST("QaRun/pRunIndexNGlobalTracks_p"), holderEvent.runIndex, holderEvent.nGlobalTracksP);
+      hrQaRun.fill(HIST("QaRun/pRunIndexNGlobalTracks_m"), holderEvent.runIndex, holderEvent.nGlobalTracksM);
+      hrQaRun.fill(HIST("QaRun/pRunIndexNPvContributors_p"), holderEvent.runIndex, holderEvent.nPvContributorsP);
+      hrQaRun.fill(HIST("QaRun/pRunIndexNPvContributors_m"), holderEvent.runIndex, holderEvent.nPvContributorsM);
+      if (holderEvent.nGlobalTracksP > 0) {
+        hrQaRun.fill(HIST("QaRun/pRunIndexMeanDcaXy_p"), holderEvent.runIndex, holderEvent.meanDcaXyP);
+        hrQaRun.fill(HIST("QaRun/pRunIndexSigmaDcaXy_p"), holderEvent.runIndex, std::sqrt(holderEvent.meanSquareDcaXyP - std::pow(holderEvent.meanDcaXyP, 2.)));
+        hrQaRun.fill(HIST("QaRun/pRunIndexMeanDcaZ_p"), holderEvent.runIndex, holderEvent.meanDcaZP);
+        hrQaRun.fill(HIST("QaRun/pRunIndexSigmaDcaZ_p"), holderEvent.runIndex, std::sqrt(holderEvent.meanSquareDcaZP - std::pow(holderEvent.meanDcaZP, 2.)));
       }
-      hrQaRun.fill(HIST("QaRun/pRunIndexNTofBeta"), holderEvent.runIndex, holderEvent.nTofBeta);
+      if (holderEvent.nGlobalTracksM > 0) {
+        hrQaRun.fill(HIST("QaRun/pRunIndexMeanDcaXy_m"), holderEvent.runIndex, holderEvent.meanDcaXyM);
+        hrQaRun.fill(HIST("QaRun/pRunIndexSigmaDcaXy_m"), holderEvent.runIndex, std::sqrt(holderEvent.meanSquareDcaXyM - std::pow(holderEvent.meanDcaXyM, 2.)));
+        hrQaRun.fill(HIST("QaRun/pRunIndexMeanDcaZ_m"), holderEvent.runIndex, holderEvent.meanDcaZM);
+        hrQaRun.fill(HIST("QaRun/pRunIndexSigmaDcaZ_m"), holderEvent.runIndex, std::sqrt(holderEvent.meanSquareDcaZM - std::pow(holderEvent.meanDcaZM, 2.)));
+      }
+      hrQaRun.fill(HIST("QaRun/pRunIndexNTofBeta_p"), holderEvent.runIndex, holderEvent.nTofBetaP);
+      hrQaRun.fill(HIST("QaRun/pRunIndexNTofBeta_m"), holderEvent.runIndex, holderEvent.nTofBetaM);
     }
 
     if (groupAnalysis.cfgFlagQaEvent.value) {
-      hrQaEvent.fill(HIST("QaEvent/hRunIndexNPvContributorsNGlobalTracks"), holderEvent.runIndex, holderEvent.nPvContributors, holderEvent.nGlobalTracks);
-      if (holderEvent.nGlobalTracks > 0) {
-        hrQaEvent.fill(HIST("QaEvent/hRunIndexNGlobalTracksMeanDcaXy"), holderEvent.runIndex, holderEvent.nGlobalTracks, holderEvent.meanDcaXy);
-        hrQaEvent.fill(HIST("QaEvent/hRunIndexNGlobalTracksMeanDcaZ"), holderEvent.runIndex, holderEvent.nGlobalTracks, holderEvent.meanDcaZ);
+      hrQaEvent.fill(HIST("QaEvent/hNPvContributorsNGlobalTracks"), holderEvent.nPvContributorsP + holderEvent.nPvContributorsM, holderEvent.nGlobalTracksP + holderEvent.nGlobalTracksM);
+      if (holderEvent.nGlobalTracksP + holderEvent.nGlobalTracksM > 0) {
+        hrQaEvent.fill(HIST("QaEvent/hNGlobalTracksMeanDcaXy"), holderEvent.nGlobalTracksP + holderEvent.nGlobalTracksM, (holderEvent.meanDcaXyP * holderEvent.nGlobalTracksP + holderEvent.meanDcaXyM * holderEvent.nGlobalTracksM) / (holderEvent.nGlobalTracksP + holderEvent.nGlobalTracksM));
+        hrQaEvent.fill(HIST("QaEvent/hNGlobalTracksMeanDcaZ"), holderEvent.nGlobalTracksP + holderEvent.nGlobalTracksM, (holderEvent.meanDcaZP * holderEvent.nGlobalTracksP + holderEvent.meanDcaZM * holderEvent.nGlobalTracksM) / (holderEvent.nGlobalTracksP + holderEvent.nGlobalTracksM));
       }
-      hrQaEvent.fill(HIST("QaEvent/hRunIndexNTofBetaNGlobalTracks"), holderEvent.runIndex, holderEvent.nTofBeta, holderEvent.nGlobalTracks);
+      hrQaEvent.fill(HIST("QaEvent/hNTofBetaNGlobalTracks"), holderEvent.nTofBetaP + holderEvent.nTofBetaM, holderEvent.nGlobalTracksP + holderEvent.nGlobalTracksM);
     }
 
-    if (!(holderEvent.nPvContributors - holderEvent.nGlobalTracks > groupEvent.cfgCutMinDeviationNPvContributors.value)) {
-      hrCounter.fill(HIST("hNEvents"), 6);
+    if (!(holderEvent.nPvContributorsP + holderEvent.nPvContributorsM - holderEvent.nGlobalTracksP - holderEvent.nGlobalTracksM > groupEvent.cfgCutMinDeviationNPvContributors.value)) {
+      hrCounter.fill(HIST("hNEvents"), 7.);
       return false;
     }
 
     hrCounter.fill(HIST("hNEvents"), 1.);
 
     if (groupAnalysis.cfgFlagQaEvent.value) {
-      if (holderEvent.nGlobalTracks > 0) {
-        hrQaEvent.fill(HIST("QaEvent/hRunIndexNGlobalTracksMeanDcaXy_nPvContributorsCut"), holderEvent.runIndex, holderEvent.nGlobalTracks, holderEvent.meanDcaXy);
-        hrQaEvent.fill(HIST("QaEvent/hRunIndexNGlobalTracksMeanDcaZ_nPvContributorsCut"), holderEvent.runIndex, holderEvent.nGlobalTracks, holderEvent.meanDcaZ);
+      if (holderEvent.nGlobalTracksP + holderEvent.nGlobalTracksM > 0) {
+        hrQaEvent.fill(HIST("QaEvent/hNGlobalTracksMeanDcaXy_nPvContributorsCut"), holderEvent.nGlobalTracksP + holderEvent.nGlobalTracksM, (holderEvent.meanDcaXyP * holderEvent.nGlobalTracksP + holderEvent.meanDcaXyM * holderEvent.nGlobalTracksM) / (holderEvent.nGlobalTracksP + holderEvent.nGlobalTracksM));
+        hrQaEvent.fill(HIST("QaEvent/hNGlobalTracksMeanDcaZ_nPvContributorsCut"), holderEvent.nGlobalTracksP + holderEvent.nGlobalTracksM, (holderEvent.meanDcaZP * holderEvent.nGlobalTracksP + holderEvent.meanDcaZM * holderEvent.nGlobalTracksM) / (holderEvent.nGlobalTracksP + holderEvent.nGlobalTracksM));
       }
-      hrQaEvent.fill(HIST("QaEvent/hRunIndexNTofBetaNGlobalTracks_nPvContributorsCut"), holderEvent.runIndex, holderEvent.nTofBeta, holderEvent.nGlobalTracks);
+      hrQaEvent.fill(HIST("QaEvent/hNTofBetaNGlobalTracks_nPvContributorsCut"), holderEvent.nTofBetaP + holderEvent.nTofBetaM, holderEvent.nGlobalTracksP + holderEvent.nGlobalTracksM);
     }
 
     if (groupAnalysis.cfgFlagQaCentrality.value) {
-      hrQaCentrality.fill(HIST("QaCentrality/hCentralityFv0a"), collision.centFV0A(), collision.multZeqFV0A());
       hrQaCentrality.fill(HIST("QaCentrality/hCentralityFt0a"), collision.centFT0A(), collision.multZeqFT0A());
       hrQaCentrality.fill(HIST("QaCentrality/hCentralityFt0c"), collision.centFT0C(), collision.multZeqFT0C());
       hrQaCentrality.fill(HIST("QaCentrality/hCentralityFt0m"), collision.centFT0M(), collision.multZeqFT0A() + collision.multZeqFT0C());
@@ -2463,6 +2600,48 @@ struct PartNumFluc {
         }
       }
     }
+  }
+
+  template <typename MC>
+  bool initMcEvent(const MC& mcCollision)
+  {
+    holderMcEvent.vz = mcCollision.posZ();
+
+    hrCounter.fill(HIST("hNMcEvents"), 0.);
+
+    if (!mcCollision.has_bc()) {
+      hrCounter.fill(HIST("hNMcEvents"), 2.);
+      return false;
+    }
+
+    const auto& bc = mcCollision.template bc_as<aod::BCsWithTimestamps>();
+    holderMcEvent.runNumber = bc.runNumber();
+
+    if (holderCcdb.runNumbersIndicesGroupIndices.find(holderMcEvent.runNumber) == holderCcdb.runNumbersIndicesGroupIndices.end()) {
+      hrCounter.fill(HIST("hNMcEvents"), 2.);
+      return false;
+    }
+
+    std::tie(holderMcEvent.runIndex, holderMcEvent.runGroupIndex) = holderCcdb.runNumbersIndicesGroupIndices.at(holderMcEvent.runNumber);
+
+    if (holderMcEvent.runGroupIndex == 0 || (groupEvent.cfgFlagRejectionRunBadMc.value && holderMcEvent.runGroupIndex < 0)) {
+      hrCounter.fill(HIST("hNMcEvents"), 2.);
+      return false;
+    }
+
+    if (groupEvent.cfgFlagInelEvent.value && !mcCollision.isInelGt0()) {
+      hrCounter.fill(HIST("hNMcEvents"), 3.);
+      return false;
+    }
+
+    if (!(std::fabs(holderMcEvent.vz) < groupEvent.cfgCutMaxAbsVertexZMc.value)) {
+      hrCounter.fill(HIST("hNMcEvents"), 4.);
+      return false;
+    }
+
+    hrCounter.fill(HIST("hNMcEvents"), 1.);
+
+    return true;
   }
 
   void processRaw(const soa::Filtered<aod::JoinedCollisions>::iterator& collision, const soa::Filtered<aod::JoinedTracks>& tracks, const aod::BCsWithTimestamps&)
@@ -2763,6 +2942,10 @@ struct PartNumFluc {
 
   void processMc(const soa::Filtered<aod::JoinedMcCollisions>::iterator& mcCollision, const aod::McParticles& mcParticles, const soa::SmallGroups<aod::JoinedCollisionsWithMc>& collisions, const soa::Filtered<aod::JoinedTracksWithMc>& tracksUngrouped, const aod::BCsWithTimestamps&)
   {
+    if (!initMcEvent(mcCollision)) {
+      return;
+    }
+
     for (const auto& collision : collisions) {
       if (collision.globalIndex() != mcCollision.bestCollisionIndex()) {
         continue;
@@ -2775,7 +2958,7 @@ struct PartNumFluc {
       }
 
       if (groupAnalysis.cfgFlagQaMc.value) {
-        hrQaMc.fill(HIST("QaMc/hCentralityVzVzMc"), holderEvent.centrality, holderEvent.vz, mcCollision.posZ());
+        hrQaMc.fill(HIST("QaMc/hCentralityVzVzMc"), holderEvent.centrality, holderEvent.vz, holderMcEvent.vz);
       }
 
       if ((groupAnalysis.cfgFlagQaPhi.value || groupAnalysis.cfgFlagQaPhiPi.value || groupAnalysis.cfgFlagQaPhiKa.value || groupAnalysis.cfgFlagQaPhiPr.value) || (groupAnalysis.cfgFlagCalculationYieldPi.value || groupAnalysis.cfgFlagCalculationYieldKa.value || groupAnalysis.cfgFlagCalculationYieldPr.value) || (groupAnalysis.cfgFlagCalculationFluctuationCh.value || groupAnalysis.cfgFlagCalculationFluctuationKa.value || groupAnalysis.cfgFlagCalculationFluctuationPr.value)) {
@@ -2785,15 +2968,15 @@ struct PartNumFluc {
           }
 
           if (groupAnalysis.cfgFlagQaPhi.value) {
-            if (holderMcParticle.particlePdg->Charge() > 0.) {
+            if (holderMcParticle.charge > 0) {
               hrQaPhi.fill(HIST("QaPhi/hCentralityPtEtaPhi_mcP"), holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.phi);
-            } else if (holderMcParticle.particlePdg->Charge() < 0.) {
+            } else if (holderMcParticle.charge < 0) {
               hrQaPhi.fill(HIST("QaPhi/hCentralityPtEtaPhi_mcM"), holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.phi);
             }
           }
 
           if ((groupAnalysis.cfgFlagQaPhiPi.value || groupAnalysis.cfgFlagQaPhiKa.value || groupAnalysis.cfgFlagQaPhiPr.value) || (groupAnalysis.cfgFlagCalculationYieldPi.value || groupAnalysis.cfgFlagCalculationYieldKa.value || groupAnalysis.cfgFlagCalculationYieldPr.value) || (groupAnalysis.cfgFlagCalculationFluctuationCh.value || groupAnalysis.cfgFlagCalculationFluctuationKa.value || groupAnalysis.cfgFlagCalculationFluctuationPr.value)) {
-            switch (holderMcParticle.particlePdg->PdgCode()) {
+            switch (holderMcParticle.pdgCode) {
               case PDG_t::kPiPlus:
                 if (groupAnalysis.cfgFlagQaPhiPi.value) {
                   hrQaPhi.fill(HIST("QaPhi/hCentralityPtEtaPhi_mcPiP"), holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.phi);
@@ -2941,7 +3124,7 @@ struct PartNumFluc {
             }
 
             if (groupAnalysis.cfgFlagQaPhiPi.value) {
-              switch (holderMcParticle.particlePdg->PdgCode()) {
+              switch (holderMcParticle.pdgCode) {
                 case PDG_t::kPiPlus:
                   hrQaPhi.fill(HIST("QaPhi/hCentralityPtEtaPhiMc_mcTpcPiP"), holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.phi);
                   hrQaPhi.fill(HIST("QaPhi/hCentralityPtEtaPhi_mcTpcPiP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderTrack.phi);
@@ -2952,7 +3135,7 @@ struct PartNumFluc {
                   break;
               }
               if (holderTrack.hasTofPid) {
-                switch (holderMcParticle.particlePdg->PdgCode()) {
+                switch (holderMcParticle.pdgCode) {
                   case PDG_t::kPiPlus:
                     hrQaPhi.fill(HIST("QaPhi/hCentralityPtEtaPhiMc_mcTpcTofPiP"), holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.phi);
                     hrQaPhi.fill(HIST("QaPhi/hCentralityPtEtaPhi_mcTpcTofPiP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderTrack.phi);
@@ -2966,7 +3149,7 @@ struct PartNumFluc {
             }
 
             if (groupAnalysis.cfgFlagQaPhiKa.value) {
-              switch (holderMcParticle.particlePdg->PdgCode()) {
+              switch (holderMcParticle.pdgCode) {
                 case PDG_t::kKPlus:
                   hrQaPhi.fill(HIST("QaPhi/hCentralityPtEtaPhiMc_mcTpcKaP"), holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.phi);
                   hrQaPhi.fill(HIST("QaPhi/hCentralityPtEtaPhi_mcTpcKaP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderTrack.phi);
@@ -2977,7 +3160,7 @@ struct PartNumFluc {
                   break;
               }
               if (holderTrack.hasTofPid) {
-                switch (holderMcParticle.particlePdg->PdgCode()) {
+                switch (holderMcParticle.pdgCode) {
                   case PDG_t::kKPlus:
                     hrQaPhi.fill(HIST("QaPhi/hCentralityPtEtaPhiMc_mcTpcTofKaP"), holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.phi);
                     hrQaPhi.fill(HIST("QaPhi/hCentralityPtEtaPhi_mcTpcTofKaP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderTrack.phi);
@@ -2991,7 +3174,7 @@ struct PartNumFluc {
             }
 
             if (groupAnalysis.cfgFlagQaPhiPr.value) {
-              switch (holderMcParticle.particlePdg->PdgCode()) {
+              switch (holderMcParticle.pdgCode) {
                 case PDG_t::kProton:
                   hrQaPhi.fill(HIST("QaPhi/hVzCentralityPtEtaPhiMc_mcTpcPrP"), holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.phi);
                   hrQaPhi.fill(HIST("QaPhi/hVzCentralityPtEtaPhi_mcTpcPrP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderTrack.phi);
@@ -3002,7 +3185,7 @@ struct PartNumFluc {
                   break;
               }
               if (holderTrack.hasTofPid) {
-                switch (holderMcParticle.particlePdg->PdgCode()) {
+                switch (holderMcParticle.pdgCode) {
                   case PDG_t::kProton:
                     hrQaPhi.fill(HIST("QaPhi/hVzCentralityPtEtaPhiMc_mcTpcTofPrP"), holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.phi);
                     hrQaPhi.fill(HIST("QaPhi/hVzCentralityPtEtaPhi_mcTpcTofPrP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderTrack.phi);
@@ -3018,7 +3201,7 @@ struct PartNumFluc {
 
           if ((groupAnalysis.cfgFlagQaPidPi.value || groupAnalysis.cfgFlagQaPidKa.value || groupAnalysis.cfgFlagQaPidPr.value) && (!groupTrack.cfgFlagMcParticlePhysicalPrimary.value || mcParticle.isPhysicalPrimary()) && holderTrack.hasTpcPid) {
             if (groupAnalysis.cfgFlagQaPidPi.value) {
-              switch (holderMcParticle.particlePdg->PdgCode()) {
+              switch (holderMcParticle.pdgCode) {
                 case PDG_t::kPiPlus:
                   hrQaPid.fill(HIST("QaPid/hCentralityPtEtaTpcNSigmaPi_mcPiP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderTrack.tpcNSigmaPi);
                   if (holderTrack.hasTofPid) {
@@ -3035,7 +3218,7 @@ struct PartNumFluc {
             }
 
             if (groupAnalysis.cfgFlagQaPidKa.value) {
-              switch (holderMcParticle.particlePdg->PdgCode()) {
+              switch (holderMcParticle.pdgCode) {
                 case PDG_t::kKPlus:
                   hrQaPid.fill(HIST("QaPid/hCentralityPtEtaTpcNSigmaKa_mcKaP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderTrack.tpcNSigmaKa);
                   if (holderTrack.hasTofPid) {
@@ -3052,7 +3235,7 @@ struct PartNumFluc {
             }
 
             if (groupAnalysis.cfgFlagQaPidPr.value) {
-              switch (holderMcParticle.particlePdg->PdgCode()) {
+              switch (holderMcParticle.pdgCode) {
                 case PDG_t::kProton:
                   hrQaPid.fill(HIST("QaPid/hCentralityPtEtaTpcNSigmaPr_mcPrP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderTrack.tpcNSigmaPr);
                   if (holderTrack.hasTofPid) {
@@ -3078,13 +3261,13 @@ struct PartNumFluc {
             if (groupAnalysis.cfgFlagCalculationYieldPi.value) {
               switch (isPid<ParticleSpecies::kPi, PidStrategy::kTpc>(groupTrack.cfgFlagRejectionOthers.value)) {
                 case 1:
-                  if (holderMcParticle.particlePdg->PdgCode() == PDG_t::kPiPlus) {
+                  if (holderMcParticle.pdgCode == PDG_t::kPiPlus) {
                     hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEtaMc_mcTpcPiP"), holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta);
                     hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEta_mcTpcPiP"), holderEvent.vz, holderEvent.centrality, holderTrack.pt, holderTrack.eta);
                   }
                   break;
                 case -1:
-                  if (holderMcParticle.particlePdg->PdgCode() == PDG_t::kPiMinus) {
+                  if (holderMcParticle.pdgCode == PDG_t::kPiMinus) {
                     hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEtaMc_mcTpcPiM"), holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta);
                     hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEta_mcTpcPiM"), holderEvent.vz, holderEvent.centrality, holderTrack.pt, holderTrack.eta);
                   }
@@ -3093,13 +3276,13 @@ struct PartNumFluc {
               if (holderTrack.hasTofPid) {
                 switch (isPid<ParticleSpecies::kPi, PidStrategy::kTpcTof>(groupTrack.cfgFlagRejectionOthers.value)) {
                   case 1:
-                    if (holderMcParticle.particlePdg->PdgCode() == PDG_t::kPiPlus) {
+                    if (holderMcParticle.pdgCode == PDG_t::kPiPlus) {
                       hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEtaMc_mcTpcTofPiP"), holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta);
                       hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEta_mcTpcTofPiP"), holderEvent.vz, holderEvent.centrality, holderTrack.pt, holderTrack.eta);
                     }
                     break;
                   case -1:
-                    if (holderMcParticle.particlePdg->PdgCode() == PDG_t::kPiMinus) {
+                    if (holderMcParticle.pdgCode == PDG_t::kPiMinus) {
                       hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEtaMc_mcTpcTofPiM"), holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta);
                       hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEta_mcTpcTofPiM"), holderEvent.vz, holderEvent.centrality, holderTrack.pt, holderTrack.eta);
                     }
@@ -3111,13 +3294,13 @@ struct PartNumFluc {
             if (groupAnalysis.cfgFlagCalculationYieldKa.value) {
               switch (isPid<ParticleSpecies::kKa, PidStrategy::kTpc>(groupTrack.cfgFlagRejectionOthers.value)) {
                 case 1:
-                  if (holderMcParticle.particlePdg->PdgCode() == PDG_t::kKPlus) {
+                  if (holderMcParticle.pdgCode == PDG_t::kKPlus) {
                     hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEtaMc_mcTpcKaP"), holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta);
                     hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEta_mcTpcKaP"), holderEvent.vz, holderEvent.centrality, holderTrack.pt, holderTrack.eta);
                   }
                   break;
                 case -1:
-                  if (holderMcParticle.particlePdg->PdgCode() == PDG_t::kKMinus) {
+                  if (holderMcParticle.pdgCode == PDG_t::kKMinus) {
                     hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEtaMc_mcTpcKaM"), holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta);
                     hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEta_mcTpcKaM"), holderEvent.vz, holderEvent.centrality, holderTrack.pt, holderTrack.eta);
                   }
@@ -3126,13 +3309,13 @@ struct PartNumFluc {
               if (holderTrack.hasTofPid) {
                 switch (isPid<ParticleSpecies::kKa, PidStrategy::kTpcTof>(groupTrack.cfgFlagRejectionOthers.value)) {
                   case 1:
-                    if (holderMcParticle.particlePdg->PdgCode() == PDG_t::kKPlus) {
+                    if (holderMcParticle.pdgCode == PDG_t::kKPlus) {
                       hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEtaMc_mcTpcTofKaP"), holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta);
                       hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEta_mcTpcTofKaP"), holderEvent.vz, holderEvent.centrality, holderTrack.pt, holderTrack.eta);
                     }
                     break;
                   case -1:
-                    if (holderMcParticle.particlePdg->PdgCode() == PDG_t::kKMinus) {
+                    if (holderMcParticle.pdgCode == PDG_t::kKMinus) {
                       hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEtaMc_mcTpcTofKaM"), holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta);
                       hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEta_mcTpcTofKaM"), holderEvent.vz, holderEvent.centrality, holderTrack.pt, holderTrack.eta);
                     }
@@ -3144,13 +3327,13 @@ struct PartNumFluc {
             if (groupAnalysis.cfgFlagCalculationYieldPr.value) {
               switch (isPid<ParticleSpecies::kPr, PidStrategy::kTpc>(groupTrack.cfgFlagRejectionOthers.value)) {
                 case 1:
-                  if (holderMcParticle.particlePdg->PdgCode() == PDG_t::kProton) {
+                  if (holderMcParticle.pdgCode == PDG_t::kProton) {
                     hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEtaMc_mcTpcPrP"), holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta);
                     hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEta_mcTpcPrP"), holderEvent.vz, holderEvent.centrality, holderTrack.pt, holderTrack.eta);
                   }
                   break;
                 case -1:
-                  if (holderMcParticle.particlePdg->PdgCode() == PDG_t::kProtonBar) {
+                  if (holderMcParticle.pdgCode == PDG_t::kProtonBar) {
                     hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEtaMc_mcTpcPrM"), holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta);
                     hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEta_mcTpcPrM"), holderEvent.vz, holderEvent.centrality, holderTrack.pt, holderTrack.eta);
                   }
@@ -3159,13 +3342,13 @@ struct PartNumFluc {
               if (holderTrack.hasTofPid) {
                 switch (isPid<ParticleSpecies::kPr, PidStrategy::kTpcTof>(groupTrack.cfgFlagRejectionOthers.value)) {
                   case 1:
-                    if (holderMcParticle.particlePdg->PdgCode() == PDG_t::kProton) {
+                    if (holderMcParticle.pdgCode == PDG_t::kProton) {
                       hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEtaMc_mcTpcTofPrP"), holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta);
                       hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEta_mcTpcTofPrP"), holderEvent.vz, holderEvent.centrality, holderTrack.pt, holderTrack.eta);
                     }
                     break;
                   case -1:
-                    if (holderMcParticle.particlePdg->PdgCode() == PDG_t::kProtonBar) {
+                    if (holderMcParticle.pdgCode == PDG_t::kProtonBar) {
                       hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEtaMc_mcTpcTofPrM"), holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta);
                       hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEta_mcTpcTofPrM"), holderEvent.vz, holderEvent.centrality, holderTrack.pt, holderTrack.eta);
                     }
@@ -3179,19 +3362,19 @@ struct PartNumFluc {
             if (groupAnalysis.cfgFlagCalculationPurityPi.value) {
               switch (isPid<ParticleSpecies::kPi, PidStrategy::kTpc>(groupTrack.cfgFlagRejectionOthers.value)) {
                 case 1:
-                  hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcPiP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.particlePdg->PdgCode() == PDG_t::kPiPlus ? 1. : 0.);
+                  hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcPiP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kPiPlus ? 1. : 0.);
                   break;
                 case -1:
-                  hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcPiM"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.particlePdg->PdgCode() == PDG_t::kPiMinus ? 1. : 0.);
+                  hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcPiM"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kPiMinus ? 1. : 0.);
                   break;
               }
               if (holderTrack.hasTofPid) {
                 switch (isPid<ParticleSpecies::kPi, PidStrategy::kTpcTof>(groupTrack.cfgFlagRejectionOthers.value)) {
                   case 1:
-                    hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcTofPiP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.particlePdg->PdgCode() == PDG_t::kPiPlus ? 1. : 0.);
+                    hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcTofPiP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kPiPlus ? 1. : 0.);
                     break;
                   case -1:
-                    hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcTofPiM"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.particlePdg->PdgCode() == PDG_t::kPiMinus ? 1. : 0.);
+                    hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcTofPiM"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kPiMinus ? 1. : 0.);
                     break;
                 }
               }
@@ -3200,19 +3383,19 @@ struct PartNumFluc {
             if (groupAnalysis.cfgFlagCalculationPurityKa.value) {
               switch (isPid<ParticleSpecies::kKa, PidStrategy::kTpc>(groupTrack.cfgFlagRejectionOthers.value)) {
                 case 1:
-                  hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcKaP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.particlePdg->PdgCode() == PDG_t::kKPlus ? 1. : 0.);
+                  hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcKaP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kKPlus ? 1. : 0.);
                   break;
                 case -1:
-                  hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcKaM"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.particlePdg->PdgCode() == PDG_t::kKMinus ? 1. : 0.);
+                  hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcKaM"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kKMinus ? 1. : 0.);
                   break;
               }
               if (holderTrack.hasTofPid) {
                 switch (isPid<ParticleSpecies::kKa, PidStrategy::kTpcTof>(groupTrack.cfgFlagRejectionOthers.value)) {
                   case 1:
-                    hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcTofKaP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.particlePdg->PdgCode() == PDG_t::kKPlus ? 1. : 0.);
+                    hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcTofKaP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kKPlus ? 1. : 0.);
                     break;
                   case -1:
-                    hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcTofKaM"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.particlePdg->PdgCode() == PDG_t::kKMinus ? 1. : 0.);
+                    hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcTofKaM"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kKMinus ? 1. : 0.);
                     break;
                 }
               }
@@ -3221,19 +3404,19 @@ struct PartNumFluc {
             if (groupAnalysis.cfgFlagCalculationPurityPr.value) {
               switch (isPid<ParticleSpecies::kPr, PidStrategy::kTpc>(groupTrack.cfgFlagRejectionOthers.value)) {
                 case 1:
-                  hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcPrP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.particlePdg->PdgCode() == PDG_t::kProton ? 1. : 0.);
+                  hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcPrP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kProton ? 1. : 0.);
                   break;
                 case -1:
-                  hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcPrM"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.particlePdg->PdgCode() == PDG_t::kProtonBar ? 1. : 0.);
+                  hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcPrM"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kProtonBar ? 1. : 0.);
                   break;
               }
               if (holderTrack.hasTofPid) {
                 switch (isPid<ParticleSpecies::kPr, PidStrategy::kTpcTof>(groupTrack.cfgFlagRejectionOthers.value)) {
                   case 1:
-                    hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcTofPrP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.particlePdg->PdgCode() == PDG_t::kProton ? 1. : 0.);
+                    hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcTofPrP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kProton ? 1. : 0.);
                     break;
                   case -1:
-                    hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcTofPrM"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.particlePdg->PdgCode() == PDG_t::kProtonBar ? 1. : 0.);
+                    hrCalculationPurity.fill(HIST("CalculationPurity/pCentralityPtEtaPurityTpcTofPrM"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, holderMcParticle.pdgCode == PDG_t::kProtonBar ? 1. : 0.);
                     break;
                 }
               }
@@ -3244,12 +3427,12 @@ struct PartNumFluc {
             if (groupAnalysis.cfgFlagCalculationFractionPrimaryPi.value) {
               switch (isPid<ParticleSpecies::kPi, PidStrategy::kTpc>(groupTrack.cfgFlagRejectionOthers.value)) {
                 case 1:
-                  if (holderMcParticle.particlePdg->PdgCode() == PDG_t::kPiPlus) {
+                  if (holderMcParticle.pdgCode == PDG_t::kPiPlus) {
                     hrCalculationFractionPrimary.fill(HIST("CalculationFractionPrimary/pCentralityPtEtaFractionPrimaryTpcPiP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, mcParticle.isPhysicalPrimary() ? 1. : 0.);
                   }
                   break;
                 case -1:
-                  if (holderMcParticle.particlePdg->PdgCode() == PDG_t::kPiMinus) {
+                  if (holderMcParticle.pdgCode == PDG_t::kPiMinus) {
                     hrCalculationFractionPrimary.fill(HIST("CalculationFractionPrimary/pCentralityPtEtaFractionPrimaryTpcPiM"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, mcParticle.isPhysicalPrimary() ? 1. : 0.);
                   }
                   break;
@@ -3257,12 +3440,12 @@ struct PartNumFluc {
               if (holderTrack.hasTofPid) {
                 switch (isPid<ParticleSpecies::kPi, PidStrategy::kTpcTof>(groupTrack.cfgFlagRejectionOthers.value)) {
                   case 1:
-                    if (holderMcParticle.particlePdg->PdgCode() == PDG_t::kPiPlus) {
+                    if (holderMcParticle.pdgCode == PDG_t::kPiPlus) {
                       hrCalculationFractionPrimary.fill(HIST("CalculationFractionPrimary/pCentralityPtEtaFractionPrimaryTpcTofPiP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, mcParticle.isPhysicalPrimary() ? 1. : 0.);
                     }
                     break;
                   case -1:
-                    if (holderMcParticle.particlePdg->PdgCode() == PDG_t::kPiMinus) {
+                    if (holderMcParticle.pdgCode == PDG_t::kPiMinus) {
                       hrCalculationFractionPrimary.fill(HIST("CalculationFractionPrimary/pCentralityPtEtaFractionPrimaryTpcTofPiM"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, mcParticle.isPhysicalPrimary() ? 1. : 0.);
                     }
                     break;
@@ -3273,12 +3456,12 @@ struct PartNumFluc {
             if (groupAnalysis.cfgFlagCalculationFractionPrimaryKa.value) {
               switch (isPid<ParticleSpecies::kKa, PidStrategy::kTpc>(groupTrack.cfgFlagRejectionOthers.value)) {
                 case 1:
-                  if (holderMcParticle.particlePdg->PdgCode() == PDG_t::kKPlus) {
+                  if (holderMcParticle.pdgCode == PDG_t::kKPlus) {
                     hrCalculationFractionPrimary.fill(HIST("CalculationFractionPrimary/pCentralityPtEtaFractionPrimaryTpcKaP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, mcParticle.isPhysicalPrimary() ? 1. : 0.);
                   }
                   break;
                 case -1:
-                  if (holderMcParticle.particlePdg->PdgCode() == PDG_t::kKMinus) {
+                  if (holderMcParticle.pdgCode == PDG_t::kKMinus) {
                     hrCalculationFractionPrimary.fill(HIST("CalculationFractionPrimary/pCentralityPtEtaFractionPrimaryTpcKaM"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, mcParticle.isPhysicalPrimary() ? 1. : 0.);
                   }
                   break;
@@ -3286,12 +3469,12 @@ struct PartNumFluc {
               if (holderTrack.hasTofPid) {
                 switch (isPid<ParticleSpecies::kKa, PidStrategy::kTpcTof>(groupTrack.cfgFlagRejectionOthers.value)) {
                   case 1:
-                    if (holderMcParticle.particlePdg->PdgCode() == PDG_t::kKPlus) {
+                    if (holderMcParticle.pdgCode == PDG_t::kKPlus) {
                       hrCalculationFractionPrimary.fill(HIST("CalculationFractionPrimary/pCentralityPtEtaFractionPrimaryTpcTofKaP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, mcParticle.isPhysicalPrimary() ? 1. : 0.);
                     }
                     break;
                   case -1:
-                    if (holderMcParticle.particlePdg->PdgCode() == PDG_t::kKMinus) {
+                    if (holderMcParticle.pdgCode == PDG_t::kKMinus) {
                       hrCalculationFractionPrimary.fill(HIST("CalculationFractionPrimary/pCentralityPtEtaFractionPrimaryTpcTofKaM"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, mcParticle.isPhysicalPrimary() ? 1. : 0.);
                     }
                     break;
@@ -3302,12 +3485,12 @@ struct PartNumFluc {
             if (groupAnalysis.cfgFlagCalculationFractionPrimaryPr.value) {
               switch (isPid<ParticleSpecies::kPr, PidStrategy::kTpc>(groupTrack.cfgFlagRejectionOthers.value)) {
                 case 1:
-                  if (holderMcParticle.particlePdg->PdgCode() == PDG_t::kProton) {
+                  if (holderMcParticle.pdgCode == PDG_t::kProton) {
                     hrCalculationFractionPrimary.fill(HIST("CalculationFractionPrimary/pCentralityPtEtaFractionPrimaryTpcPrP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, mcParticle.isPhysicalPrimary() ? 1. : 0.);
                   }
                   break;
                 case -1:
-                  if (holderMcParticle.particlePdg->PdgCode() == PDG_t::kProtonBar) {
+                  if (holderMcParticle.pdgCode == PDG_t::kProtonBar) {
                     hrCalculationFractionPrimary.fill(HIST("CalculationFractionPrimary/pCentralityPtEtaFractionPrimaryTpcPrM"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, mcParticle.isPhysicalPrimary() ? 1. : 0.);
                   }
                   break;
@@ -3315,12 +3498,12 @@ struct PartNumFluc {
               if (holderTrack.hasTofPid) {
                 switch (isPid<ParticleSpecies::kPr, PidStrategy::kTpcTof>(groupTrack.cfgFlagRejectionOthers.value)) {
                   case 1:
-                    if (holderMcParticle.particlePdg->PdgCode() == PDG_t::kProton) {
+                    if (holderMcParticle.pdgCode == PDG_t::kProton) {
                       hrCalculationFractionPrimary.fill(HIST("CalculationFractionPrimary/pCentralityPtEtaFractionPrimaryTpcTofPrP"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, mcParticle.isPhysicalPrimary() ? 1. : 0.);
                     }
                     break;
                   case -1:
-                    if (holderMcParticle.particlePdg->PdgCode() == PDG_t::kProtonBar) {
+                    if (holderMcParticle.pdgCode == PDG_t::kProtonBar) {
                       hrCalculationFractionPrimary.fill(HIST("CalculationFractionPrimary/pCentralityPtEtaFractionPrimaryTpcTofPrM"), holderEvent.centrality, holderTrack.pt, holderTrack.eta, mcParticle.isPhysicalPrimary() ? 1. : 0.);
                     }
                     break;

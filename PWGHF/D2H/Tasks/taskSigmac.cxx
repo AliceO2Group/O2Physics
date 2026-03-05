@@ -62,7 +62,8 @@ struct HfTaskSigmac {
   /// consider the new parametrization of the fiducial acceptance (to be seen for reco signal in MC)
   Configurable<float> yCandGenMax{"yCandGenMax", -1, "Maximum generated Sc rapidity"};
   Configurable<float> yCandRecoMax{"yCandRecoMax", -1, "Maximum Sc candidate rapidity"};
-  Configurable<bool> enableTHn{"enableTHn", false, "enable the usage of THn for Λc+ and Σc0,++"};
+  Configurable<bool> enableTHnSc{"enableTHnSc", false, "enable the usage of THn for Σc0,++"};
+  Configurable<bool> enableTHnLc{"enableTHnLc", false, "enable the usage of THn for Λc+"};
   Configurable<bool> addSoftPiDcaToSigmacSparse{"addSoftPiDcaToSigmacSparse", false, "enable the filling of soft-pion dcaXY, dcaZ in the Σc0,++ THnSparse"};
   Configurable<bool> addMassDiffAbsLambdaCToSigmacSparse{"addMassDiffAbsLambdaCToSigmacSparse", false, "enable the filling of |M(pkpi, piKp) - M(LambdaC)| in the Σc0,++ THnSparse"};
   Configurable<float> deltaMassSigmacRecoMax{"deltaMassSigmacRecoMax", 1000, "Maximum allowed value for Sigmac deltaMass. Conceived to reduce the output size (i.e. reject background above a certain threshold)"};
@@ -289,7 +290,7 @@ struct HfTaskSigmac {
     }
 
     /// THn for candidate Λc+ and Σc0,++ cut variation
-    if (enableTHn) {
+    if (enableTHnSc || enableTHnLc) {
       std::vector<AxisSpec> axesLambdaCWithMl = {thnAxisPtLambdaC, thnAxisMassLambdaC, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcNonPrompt, thnAxisOriginMc, thnAxisChannel};
       std::vector<AxisSpec> axesSigmaCWithMl = {thnAxisPtLambdaC, axisDeltaMassSigmaC, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcNonPrompt, thnAxisOriginMc, thnAxisChannel, thnAxisPtSigmaC, thnAxisChargeSigmaC};
       std::vector<AxisSpec> axesLambdaCWoMl = {thnAxisPtLambdaC, thnAxisMassLambdaC, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA, thnAxisCPAXY, thnAxisOriginMc, thnAxisChannel};
@@ -309,8 +310,14 @@ struct HfTaskSigmac {
           if (addMassDiffAbsLambdaCToSigmacSparse) {
             axesSigmaCWithMl.push_back(thnAxisMassDiffAbsLambdaC);
           }
-          registry.add("hnLambdaC", "THn for Lambdac", HistType::kTHnSparseF, axesLambdaCWithMl);
-          registry.add("hnSigmaC", "THn for Sigmac", HistType::kTHnSparseF, axesSigmaCWithMl);
+          // enable THnSparse for Λc+
+          if (enableTHnLc) {
+            registry.add("hnLambdaC", "THn for Lambdac", HistType::kTHnSparseF, axesLambdaCWithMl);
+          }
+          // enable THnSparse for Σc0,++
+          if (enableTHnSc) {
+            registry.add("hnSigmaC", "THn for Sigmac", HistType::kTHnSparseF, axesSigmaCWithMl);
+          }
         } else {
           axesLambdaCWoMl.push_back(thnAxisGenPtLambdaCBMother);
           axesSigmaCWoMl.push_back(thnAxisGenPtSigmaCBMother);
@@ -323,8 +330,14 @@ struct HfTaskSigmac {
           if (addMassDiffAbsLambdaCToSigmacSparse) {
             axesSigmaCWoMl.push_back(thnAxisMassDiffAbsLambdaC);
           }
-          registry.add("hnLambdaC", "THn for Lambdac", HistType::kTHnSparseF, axesLambdaCWoMl);
-          registry.add("hnSigmaC", "THn for Sigmac", HistType::kTHnSparseF, axesSigmaCWoMl);
+          // enable THnSparse for Λc+
+          if (enableTHnLc) {
+            registry.add("hnLambdaC", "THn for Lambdac", HistType::kTHnSparseF, axesLambdaCWithMl);
+          }
+          // enable THnSparse for Σc0,++
+          if (enableTHnSc) {
+            registry.add("hnSigmaC", "THn for Sigmac", HistType::kTHnSparseF, axesSigmaCWithMl);
+          }
         }
       } else {
         if (doprocessDataWithMl) {
@@ -335,8 +348,14 @@ struct HfTaskSigmac {
           if (addMassDiffAbsLambdaCToSigmacSparse) {
             axesSigmaCWithMl.push_back(thnAxisMassDiffAbsLambdaC);
           }
-          registry.add("hnLambdaC", "THn for Lambdac", HistType::kTHnSparseF, axesLambdaCWithMl);
-          registry.add("hnSigmaC", "THn for Sigmac", HistType::kTHnSparseF, axesSigmaCWithMl);
+          // enable THnSparse for Λc+
+          if (enableTHnLc) {
+            registry.add("hnLambdaC", "THn for Lambdac", HistType::kTHnSparseF, axesLambdaCWithMl);
+          }
+          // enable THnSparse for Σc0,++
+          if (enableTHnSc) {
+            registry.add("hnSigmaC", "THn for Sigmac", HistType::kTHnSparseF, axesSigmaCWithMl);
+          }
         } else {
           if (addSoftPiDcaToSigmacSparse) {
             axesSigmaCWoMl.push_back(thnAxisSoftPiAbsDcaXY);
@@ -345,8 +364,14 @@ struct HfTaskSigmac {
           if (addMassDiffAbsLambdaCToSigmacSparse) {
             axesSigmaCWoMl.push_back(thnAxisMassDiffAbsLambdaC);
           }
-          registry.add("hnLambdaC", "THn for Lambdac", HistType::kTHnSparseF, axesLambdaCWoMl);
-          registry.add("hnSigmaC", "THn for Sigmac", HistType::kTHnSparseF, axesSigmaCWoMl);
+          // enable THnSparse for Λc+
+          if (enableTHnLc) {
+            registry.add("hnLambdaC", "THn for Lambdac", HistType::kTHnSparseF, axesLambdaCWithMl);
+          }
+          // enable THnSparse for Σc0,++
+          if (enableTHnSc) {
+            registry.add("hnSigmaC", "THn for Sigmac", HistType::kTHnSparseF, axesSigmaCWithMl);
+          }
         }
       }
     }
@@ -447,7 +472,7 @@ struct HfTaskSigmac {
           registry.fill(HIST("Data/hDeltaMassLcFromSc0PlusPlus"), deltaMass, ptLc); // Λc+ ← Σc0,++
         }
         /// THn for candidate Σc0,++ cut variation
-        if (enableTHn) {
+        if (enableTHnSc) {
           if (!isMc) {
             /// fill it only if no MC operations are enabled, otherwise fill it in the processMC with the right origin and channel!
             const float softPiAbsDcaXY = std::abs(candSc.softPiDcaXY());
@@ -573,7 +598,7 @@ struct HfTaskSigmac {
           registry.fill(HIST("Data/hDeltaMassLcFromSc0PlusPlus"), deltaMass, ptLc); // Λc+ ← Σc0,++
         }
         /// THn for candidate Σc0,++ cut variation
-        if (enableTHn) {
+        if (enableTHnSc) {
           if (!isMc) {
             /// fill it only if no MC operations are enabled, otherwise fill it in the processMC with the right origin and channel!
             const float softPiAbsDcaXY = std::abs(candSc.softPiDcaXY());
@@ -641,7 +666,7 @@ struct HfTaskSigmac {
     } /// end loop over the candidate Σc0,++
 
     /// THn for candidate Λc+ cut variation w/o Σc0,++ mass-window cut
-    if (enableTHn) {
+    if (enableTHnLc) {
       /// fill it only if no MC operations are enabled, otherwise fill it in the processMC with the right origin and channel!
       if (!isMc) {
         /// loop over Λc+ candidates w/o Σc0,++ mass-window cut
@@ -1038,7 +1063,7 @@ struct HfTaskSigmac {
           }
 
           /// THn for candidate Σc0,++ cut variation
-          if (enableTHn) {
+          if (enableTHnSc) {
             int8_t const particleAntiparticle = candSc.particleAntiparticle();
             const float softPiAbsDcaXY = std::abs(candSc.softPiDcaXY());
             const float softPiAbsDcaZ = std::abs(candSc.softPiDcaZ());
@@ -1165,7 +1190,7 @@ struct HfTaskSigmac {
           }
 
           /// THn for candidate Σc0,++ cut variation
-          if (enableTHn) {
+          if (enableTHnSc) {
             int8_t const particleAntiparticle = candSc.particleAntiparticle();
             const float softPiAbsDcaXY = std::abs(candSc.softPiDcaXY());
             const float softPiAbsDcaZ = std::abs(candSc.softPiDcaZ());
@@ -1329,7 +1354,7 @@ struct HfTaskSigmac {
           }
 
           /// THn for candidate Σc0,++ cut variation
-          if (enableTHn) {
+          if (enableTHnSc) {
             int8_t const particleAntiparticle = candSc.particleAntiparticle();
             const float softPiAbsDcaXY = std::abs(candSc.softPiDcaXY());
             const float softPiAbsDcaZ = std::abs(candSc.softPiDcaZ());
@@ -1454,7 +1479,7 @@ struct HfTaskSigmac {
           }
 
           /// THn for candidate Σc0,++ cut variation
-          if (enableTHn) {
+          if (enableTHnSc) {
             int8_t const particleAntiparticle = candSc.particleAntiparticle();
             const float softPiAbsDcaXY = std::abs(candSc.softPiDcaXY());
             const float softPiAbsDcaZ = std::abs(candSc.softPiDcaZ());
@@ -1523,7 +1548,7 @@ struct HfTaskSigmac {
     } /// end loop on reconstructed Σc0,++
 
     /// THn for candidate Λc+ cut variation w/o Σc0,++ mass-window cut
-    if (enableTHn) {
+    if (enableTHnLc) {
       /// loop over Λc+ candidates w/o Σc0,++ mass-window cut
       for (const auto& candidateLc : candidatesLc) {
         if (std::abs(candidateLc.flagMcMatchRec()) != hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {

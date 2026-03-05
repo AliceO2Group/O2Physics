@@ -101,6 +101,14 @@ void GeometryContainer::init(o2::framework::InitContext& initContext)
   }
 }
 
+void GeometryContainer::addEntry(const std::string& filename)
+{
+  if (!mCcdb) {
+    LOG(fatal) << " --- ccdb is not set";
+  }
+  mEntries.emplace_back(filename, mCcdb);
+}
+
 std::map<std::string, std::string> GeometryEntry::getConfiguration(const std::string& layerName) const
 {
   auto it = mConfigurations.find(layerName);

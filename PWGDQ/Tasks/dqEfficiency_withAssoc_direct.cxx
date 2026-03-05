@@ -733,6 +733,13 @@ struct AnalysisTrackSelection {
         trackSel(0);
         continue;
       }
+      ///
+      auto track = tracks.rawIteratorAt(assoc.trackId());
+      auto evFromTrack = events.rawIteratorAt(track.collisionId());
+      if (!evFromTrack.isEventSelected_bit(0)) {
+        trackSel(0);
+        continue;
+      }
 
       // cout << "Processing association: event global index " << event.globalIndex() << endl;
       VarManager::ResetValues(VarManager::kNTFWiseVariables, VarManager::kNBarrelTrackVariables);
@@ -743,10 +750,10 @@ struct AnalysisTrackSelection {
       }
       // cout << "Filled event observables for association" << endl;
 
-      auto track = tracks.rawIteratorAt(assoc.trackId());
       VarManager::FillTrack<TTrackFillMap>(track);
       // compute quantities which depend on the associated collision, such as DCA
-      VarManager::FillTrackCollision<TTrackFillMap>(track, event);
+      if (track.collisionId() != event.globalIndex())
+        VarManager::FillTrackCollision<TTrackFillMap>(track, event);
       // cout << "Filled track observables for association" << endl;
 
       bool isCorrectAssoc = false;
@@ -3152,13 +3159,21 @@ struct AnalysisDileptonTrack {
       // for the energy correlators
       for (auto& t2 : groupedMCTracks) {
         auto t2_raw = groupedMCTracks.rawIteratorAt(t2.globalIndex());
-        if (TMath::Abs(t2_raw.pdgCode()) == 443 || TMath::Abs(t2_raw.pdgCode()) == 11 || TMath::Abs(t2_raw.pdgCode()) == 22)
+        if (!t2_raw.isPhysicalPrimary()) {
           continue;
+        }
+
+        if (t2_raw.has_mothers()) {
+          auto mother_raw = t2_raw.template mothers_first_as<McParticles>();
+          if (mother_raw.globalIndex() == t1_raw.globalIndex()) {
+            continue;
+          }
+        }
+
         if (t2_raw.pt() < fConfigMCOptions.fConfigMCGenHadronPtMin.value || std::abs(t2_raw.eta()) > fConfigMCOptions.fConfigMCGenHadronEtaAbs.value) {
           continue;
         }
-        if (t2_raw.getGenStatusCode() <= 0)
-          continue;
+
         std::vector<float> fTransRange = fConfigOptions.fConfigTransRange;
         VarManager::FillEnergyCorrelatorsMC<THadronMassType>(t1_raw, t2_raw, VarManager::fgValues, fTransRange[0], fTransRange[1]);
         for (auto& sig : fGenMCSignals) {
@@ -3229,15 +3244,21 @@ struct AnalysisDileptonTrack {
       // for the energy correlators
       for (auto& t2 : groupedMCTracks2) {
         auto t2_raw = groupedMCTracks2.rawIteratorAt(t2.globalIndex());
-        if (TMath::Abs(t2_raw.pdgCode()) == 443 || TMath::Abs(t2_raw.pdgCode()) == 11 || TMath::Abs(t2_raw.pdgCode()) == 22) {
+        if (!t2_raw.isPhysicalPrimary()) {
           continue;
         }
+
+        if (t2_raw.has_mothers()) {
+          auto mother_raw = t2_raw.template mothers_first_as<McParticles>();
+          if (mother_raw.globalIndex() == t1_raw.globalIndex()) {
+            continue;
+          }
+        }
+
         if (t2_raw.pt() < fConfigMCOptions.fConfigMCGenHadronPtMin.value || std::abs(t2_raw.eta()) > fConfigMCOptions.fConfigMCGenHadronEtaAbs.value) {
           continue;
         }
-        if (t2_raw.getGenStatusCode() <= 0) {
-          continue;
-        }
+
         for (auto& sig : fGenMCSignals) {
           if (sig->CheckSignal(true, t1_raw)) {
             VarManager::FillEnergyCorrelatorsMC<THadronMassType>(t1_raw, t2_raw, VarManager::fgValues);
