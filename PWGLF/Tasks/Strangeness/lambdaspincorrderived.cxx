@@ -1242,30 +1242,11 @@ struct lambdaspincorrderived {
         // 1) nominal φ-bin
         collectFrom(phiB);
 
-        // scan pt±1, eta±1, phi±1 (wrapped)
-        for (int dpt = -1; dpt <= 1; ++dpt) {
-          const int ptUse = ptB + dpt;
-          if (ptUse < 0 || ptUse >= nPt) {
-            continue;
-          }
-          for (int deta = -1; deta <= 1; ++deta) {
-            const int etaUse = etaB + deta;
-            if (etaUse < 0 || etaUse >= nEta) {
-              continue;
-            }
-            for (int phiUse : phiBins) {
-              collectFrom(ptUse, etaUse, phiUse);
-              if (maxKeep > 0 && static_cast<int>(matches.size()) >= maxKeep) {
-                break;
-              }
-            }
-            if (maxKeep > 0 && static_cast<int>(matches.size()) >= maxKeep) {
-              break;
-            }
-          }
-          if (maxKeep > 0 && static_cast<int>(matches.size()) >= maxKeep) {
-            break;
-          }
+        // 2) wrap only at boundaries: 0 <-> nPhi-1
+        if (phiB == 0) {
+          collectFrom(nPhi - 1);
+        } else if (phiB == nPhi - 1) {
+          collectFrom(0);
         }
 
         if (matches.empty()) {
