@@ -434,24 +434,28 @@ struct Multiplicity {
       if (fhCL1EtaGapMultiplicity != nullptr) {
         fhCL1EtaGapMultiplicity->Fill(cl1EtaGapM, dNchdEta);
       }
+      /* if there is not calibration assign 50% mutltiplicity */
+      if (fhV0MMultPercentile == nullptr && fhCL1MultPercentile == nullptr && fhCL1EtaGapMultPercentile == nullptr) {
+        multiplicityClass = 50;
+      }
       switch (classestimator) {
         case kV0M:
           if (fhV0MMultPercentile != nullptr) {
             multiplicityClass = fhV0MMultPercentile->GetBinContent(fhV0MMultPercentile->FindFixBin(v0am + v0cm));
-            multiplicity = v0am + v0cm;
           }
+          multiplicity = v0am + v0cm;
           break;
         case kCL1:
           if (fhCL1MultPercentile != nullptr) {
             multiplicityClass = fhCL1MultPercentile->GetBinContent(fhCL1MultPercentile->FindFixBin(cl1m));
-            multiplicity = cl1m;
           }
+          multiplicity = cl1m;
           break;
         case kCL1GAP:
           if (fhCL1EtaGapMultPercentile != nullptr) {
             multiplicityClass = fhCL1EtaGapMultPercentile->GetBinContent(fhCL1EtaGapMultPercentile->FindFixBin(cl1EtaGapM));
-            multiplicity = cl1EtaGapM;
           }
+          multiplicity = cl1EtaGapM;
           break;
         default:
           break;
@@ -639,10 +643,10 @@ struct DptDptFilter {
     triggerSelectionFlags = getTriggerSelection(cfgEventSelection.triggSel.value.c_str());
     traceCollId0 = cfgTraceCollId0;
 
-    /* get the system type */
+    /* get the data type and the system type */
+    fDataType = getDataType(cfgDataType);
     fSystem = getSystemType(cfgSystemForPeriod.value);
     fLhcRun = multRunForSystemMap.at(fSystem);
-    fDataType = getDataType(cfgDataType);
 
     /* the multiplicities outliers exclusion */
     multiplicityCentralityCorrelationsExclusion = getExclusionFormula(cfgEventSelection.multiplicitiesExclusionFormula->getData()[fSystem][0].c_str());
@@ -1200,13 +1204,13 @@ struct DptDptFilterTracks {
     tpcExcluder = TpcExcludeTrack(tpcExclude);
     tpcExcluder.setCuts(pLowCut, pUpCut, nLowCut, nUpCut);
 
-    /* self configure system type and data type */
-    o2::framework::LabeledArray<std::string> tmpLabeledArray = {};
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgSystemForPeriod", tmpLabeledArray, false);
-    fSystem = getSystemType(tmpLabeledArray);
+    /* self configure data type and system */
     std::string tmpstr;
     getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgDataType", tmpstr, false);
     fDataType = getDataType(tmpstr);
+    o2::framework::LabeledArray<std::string> tmpLabeledArray = {};
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgSystemForPeriod", tmpLabeledArray, false);
+    fSystem = getSystemType(tmpLabeledArray);
 
     /* required ambiguous tracks checks? */
     if (dofilterDetectorLevelWithoutPIDAmbiguous || dofilterDetectorLevelWithPIDAmbiguous || dofilterDetectorLevelWithFullPIDAmbiguous ||
