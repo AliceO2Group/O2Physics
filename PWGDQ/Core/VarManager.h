@@ -5909,7 +5909,7 @@ void VarManager::FillEnergyCorrelatorTriple(T1 const& lepton1, T2 const& lepton2
     values[kPhiDau] = RecoDecay::constrainAngle(v2.phi(), -o2::constants::math::PIHalf);
 
     float deltaphi = RecoDecay::constrainAngle(v1.phi() - v2.phi(), -o2::constants::math::PI);
-    values[kDeltaPhi] = deltaphi;
+    values[kDeltaPhi] = RecoDecay::constrainAngle(v1.phi() - v2.phi(), -o2::constants::math::PIHalf);
     values[kDeltaEta] = v1.eta() - v2.eta();
     values[kCosChi_randomPhi_trans] = -999.9f;
     values[kCosChi_randomPhi_toward] = -999.9f;
