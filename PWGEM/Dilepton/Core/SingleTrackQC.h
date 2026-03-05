@@ -285,6 +285,7 @@ struct SingleTrackQC {
       // fRegistry.add("Track/positive/hTOFNsigmaKa", "TOF n sigma ka;p_{pv} (GeV/c);n #sigma_{K}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       // fRegistry.add("Track/positive/hTOFNsigmaPr", "TOF n sigma pr;p_{pv} (GeV/c);n #sigma_{p}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
 
+      fRegistry.add("Track/positive/hPIDForTracking", "PID for trackng", kTH1F, {{9, -0.5, 8.5}}, false); // see numbering in O2/DataFormats/Reconstruction/include/ReconstructionDataFormats/PID.h
       fRegistry.add("Track/positive/hProbElBDT", "probability to be e from BDT;p_{in} (GeV/c);BDT score;", kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
       fRegistry.add("Track/positive/hMeanClusterSizeITS", "mean cluster size ITS;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda);", kTH2F, {{1000, 0.f, 10.f}, {150, 0, 15}}, false);
       fRegistry.add("Track/positive/hMeanClusterSizeITSib", "mean cluster size ITS inner barrel;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda);", kTH2F, {{1000, 0.f, 10.f}, {150, 0, 15}}, false);
@@ -582,6 +583,7 @@ struct SingleTrackQC {
 
       fRegistry.fill(HIST("Track/positive/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
       fRegistry.fill(HIST("Track/positive/hTOFbeta"), track.p(), track.beta());
+      fRegistry.fill(HIST("Track/positive/hPIDForTracking"), track.pidForTracking());
       fRegistry.fill(HIST("Track/positive/hProbElBDT"), track.tpcInnerParam(), track.probElBDT());
       fRegistry.fill(HIST("Track/positive/hMeanClusterSizeITS"), track.p(), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
       fRegistry.fill(HIST("Track/positive/hMeanClusterSizeITSib"), track.p(), track.meanClusterSizeITSib() * std::cos(std::atan(track.tgl())));
@@ -621,6 +623,7 @@ struct SingleTrackQC {
 
       fRegistry.fill(HIST("Track/negative/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
       fRegistry.fill(HIST("Track/negative/hTOFbeta"), track.p(), track.beta());
+      fRegistry.fill(HIST("Track/negative/hPIDForTracking"), track.pidForTracking());
       fRegistry.fill(HIST("Track/negative/hProbElBDT"), track.tpcInnerParam(), track.probElBDT());
       fRegistry.fill(HIST("Track/negative/hMeanClusterSizeITS"), track.p(), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
       fRegistry.fill(HIST("Track/negative/hMeanClusterSizeITSib"), track.p(), track.meanClusterSizeITSib() * std::cos(std::atan(track.tgl())));

@@ -501,7 +501,7 @@ struct skimmerPrimaryElectronQC {
                        track.itsClusterSizes(),
                        track.itsChi2NCl(), track.tofChi2(), track.detectorMap(),
                        // trackParCov.getTgl(),
-                       isAssociatedToMPC, false, probaEl, mcTunedTPCSignal);
+                       isAssociatedToMPC, false, probaEl, track.flags(), mcTunedTPCSignal);
 
     emprimaryelectronscov(
       trackParCov.getX(),
