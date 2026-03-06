@@ -848,13 +848,13 @@ struct CorrSparse {
       id = id + Ft0IndexA;
       ampl = ft0.amplitudeC()[iCh];
       registry.fill(HIST("FT0Amp"), id, ampl);
-      ampl = ampl / cstFT0RelGain[iCh];
+      ampl = ampl / cstFT0RelGain[id];
       registry.fill(HIST("FT0AmpCorrect"), id, ampl);
     } else if (fitType == kFT0A) {
       id = ft0.channelA()[iCh];
       ampl = ft0.amplitudeA()[iCh];
       registry.fill(HIST("FT0Amp"), id, ampl);
-      ampl = ampl / cstFT0RelGain[iCh];
+      ampl = ampl / cstFT0RelGain[id];
       registry.fill(HIST("FT0AmpCorrect"), id, ampl);
     } else {
       LOGF(fatal, "Cor Index %d out of range", fitType);
@@ -1091,7 +1091,7 @@ struct CorrSparse {
         for (std::size_t iCh = 0; iCh < channelSize; iCh++) {
           int channelID = 0;
           float amplitude = 0.;
-          getChannelFT0(tracks2, iCh, channelID, amplitude, corType);
+          getChannelWithGain(tracks2, iCh, channelID, amplitude, corType);
 
           // reject depending on FT0C/FT0A rings
           if (corType == kFT0C) {
@@ -1216,7 +1216,7 @@ struct CorrSparse {
         for (std::size_t iCh = 0; iCh < channelSize; iCh++) {
           int channelID = 0;
           float amplitude = 0.;
-          getChannelFT0(tracks2, iCh, channelID, amplitude, corType);
+          getChannelWithGain(tracks2, iCh, channelID, amplitude, corType);
 
           // reject depending on FT0C/FT0A rings
           if (corType == kFT0C) {
@@ -1482,7 +1482,7 @@ struct CorrSparse {
     if (!collision.has_foundFT0())
       return;
     loadAlignParam(bc.timestamp());
-    // loadGain(bc);
+    loadGain(bc);
     loadCorrection(bc.timestamp());
 
     if ((tpctracks.size() < cfgEventSelection.cfgMinMult || tpctracks.size() >= cfgEventSelection.cfgMaxMult)) {
@@ -1536,7 +1536,7 @@ struct CorrSparse {
     if (!collision.has_foundFT0())
       return;
     loadAlignParam(bc.timestamp());
-    // loadGain(bc);
+    loadGain(bc);
     loadCorrection(bc.timestamp());
 
     if ((tpctracks.size() < cfgEventSelection.cfgMinMult || tpctracks.size() >= cfgEventSelection.cfgMaxMult)) {
