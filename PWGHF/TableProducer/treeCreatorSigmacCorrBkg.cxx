@@ -174,10 +174,6 @@ struct HfTreeCreatorSigmacCorrBkg {
     }
   }
 
-  /// @brief dummy process function
-  /// @param
-  void process(aod::Tracks const&) {}
-
   /// @brief process function to loop over the Σc reconstructed candidates and match them to corr. background sources in MC
   void processReco(RecoScMc const& candidatesSc,
                    ParticlesLcSigmac const& particles,
@@ -354,7 +350,7 @@ struct HfTreeCreatorSigmacCorrBkg {
   void processGen(aod::McParticles const& particles)
   {
     /// loop over particles
-    for (auto& particle : particles) {
+    for (auto const& particle : particles) {
       int pdgCodeAbs = std::abs(particle.pdgCode());
 
       /// keep only Σc and Λc±(2595, 2625)
