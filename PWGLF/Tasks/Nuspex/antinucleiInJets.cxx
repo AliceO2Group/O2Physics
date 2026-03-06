@@ -2483,7 +2483,7 @@ struct AntinucleiInJets {
           // Fill histograms (TPC and TOF) only for selected candidates
           if (passedItsPidProt && nsigmaTPCPr > minNsigmaTpc && nsigmaTPCPr < maxNsigmaTpc) {
             registryMC.fill(HIST("antiproton_rec_tpc_jet"), pt, weightJet);
-              
+
             // Fill histograms for reconstructed antiprotons for closure test
             if (isPseudoData) {
               registryMC.fill(HIST("antiproton_rec_tpc_jet_data"), pt);
@@ -2493,7 +2493,7 @@ struct AntinucleiInJets {
 
             if (track.hasTOF() && nsigmaTOFPr > minNsigmaTof && nsigmaTOFPr < maxNsigmaTof) {
               registryMC.fill(HIST("antiproton_rec_tof_jet"), pt, weightJet);
-                
+
               // Fill histograms for reconstructed antiprotons for closure test
               if (isPseudoData) {
                 registryMC.fill(HIST("antiproton_rec_tof_jet_data"), pt);
