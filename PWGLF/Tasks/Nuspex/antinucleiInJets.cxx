@@ -2218,9 +2218,9 @@ struct AntinucleiInJets {
 
           // Fill histograms for generated antiprotons for closure test
           if (sample == 0) {
-            registryMC.fill(HIST("antiproton_gen_ue_data"), particle.pt());
+            registryMC.fill(HIST("antiproton_gen_ue_data"), protonVec.Pt());
           } else {
-            registryMC.fill(HIST("antiproton_gen_ue_mc"), particle.pt());
+            registryMC.fill(HIST("antiproton_gen_ue_mc"), protonVec.Pt());
           }
 
           // Fill 2d (pt,eta) distribution of antiprotons
