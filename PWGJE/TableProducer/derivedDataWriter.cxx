@@ -685,7 +685,7 @@ struct JetDerivedDataWriter {
     mcCollisionMapping.resize(mcCollisions.size(), -1);
     for (auto const& mcCollision : mcCollisions) {
       if (mcCollision.isMcCollisionSelected()) {
-        products.storedJMcCollisionsTable(bcMapping[mcCollision.bcId()], mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.multFV0A(), mcCollision.multFT0A(), mcCollision.multFT0C(), mcCollision.centFT0M(), mcCollision.weight(), mcCollision.accepted(), mcCollision.attempted(), mcCollision.xsectGen(), mcCollision.xsectErr(), mcCollision.ptHard(), mcCollision.rct_raw(), mcCollision.getGeneratorId(), mcCollision.getSubGeneratorId(), mcCollision.getSourceId(), mcCollision.impactParameter(), mcCollision.eventPlaneAngle());
+        products.storedJMcCollisionsTable(bcMapping[mcCollision.bcId()], mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.multFV0A(), mcCollision.multFT0A(), mcCollision.multFT0C(), mcCollision.centFT0M(), mcCollision.weight(), mcCollision.accepted(), mcCollision.attempted(), mcCollision.xsectGen(), mcCollision.xsectErr(), mcCollision.ptHard(), mcCollision.eventSel(), mcCollision.rct_raw(), mcCollision.getGeneratorId(), mcCollision.getSubGeneratorId(), mcCollision.getSourceId(), mcCollision.impactParameter(), mcCollision.eventPlaneAngle());
         products.storedJMcCollisionsParentIndexTable(mcCollision.mcCollisionId());
         mcCollisionMapping[mcCollision.globalIndex()] = products.storedJMcCollisionsTable.lastIndex();
       }

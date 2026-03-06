@@ -219,6 +219,7 @@ DECLARE_SOA_COLUMN(XsectGen, xsectGen, float);
 DECLARE_SOA_COLUMN(XsectErr, xsectErr, float);
 DECLARE_SOA_COLUMN(PtHard, ptHard, float);
 DECLARE_SOA_COLUMN(IsOutlier, isOutlier, bool);
+DECLARE_SOA_COLUMN(EventSel, eventSel, uint16_t);
 DECLARE_SOA_BITMAP_COLUMN(Rct, rct, 32);
 DECLARE_SOA_COLUMN(GetGeneratorId, getGeneratorId, int);
 DECLARE_SOA_COLUMN(GetSubGeneratorId, getSubGeneratorId, int);
@@ -243,6 +244,7 @@ DECLARE_SOA_TABLE_STAGED(JMcCollisions, "JMCCOLLISION",
                          jmccollision::XsectGen,
                          jmccollision::XsectErr,
                          jmccollision::PtHard,
+                         jmccollision::EventSel,
                          jmccollision::Rct,
                          jmccollision::GetGeneratorId,
                          jmccollision::GetSubGeneratorId,

@@ -239,7 +239,7 @@ struct JetFinderHFTask {
   template <bool isEvtWiseSub, typename T, typename U, typename V, typename M, typename N>
   void analyseMCP(T const& mcCollision, U const& particles, V const& candidate, M& jetsTableInput, N& constituentsTableInput, int jetTypeParticleLevel, float minJetPt, float maxJetPt)
   {
-    if (!jetderiveddatautilities::selectMcCollision(mcCollision, skipMBGapEvents, applyRCTSelections)) {
+    if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
 

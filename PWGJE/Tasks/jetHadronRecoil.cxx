@@ -960,7 +960,7 @@ struct JetHadronRecoil {
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       return;
     }
-    if (!jetderiveddatautilities::selectMcCollision(mccollision, skipMBGapEvents, applyRCTSelections)) {
+    if (!jetderiveddatautilities::selectCollision(mccollision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
     if (mccollision.ptHard() < pTHatMinEvent) {
@@ -990,7 +990,7 @@ struct JetHadronRecoil {
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       return;
     }
-    if (!jetderiveddatautilities::selectMcCollision(mccollision, skipMBGapEvents, applyRCTSelections)) {
+    if (!jetderiveddatautilities::selectCollision(mccollision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
     if (mccollision.ptHard() < pTHatMinEvent) {
