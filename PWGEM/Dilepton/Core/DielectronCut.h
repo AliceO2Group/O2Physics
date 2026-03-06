@@ -225,34 +225,35 @@ class DielectronCut : public TNamed
       }
     }
 
-    // if (!mIncludeITSsa && (!track.hasITS() || !track.hasTPC())) { // track has to be ITS-TPC matched track
-    //   return false;
-    // }
+    if (!mIncludeITSsa && (!track.hasITS() || !track.hasTPC())) { // track has to be ITS-TPC matched track
+      return false;
+    }
 
     // if ((track.hasITS() && !track.hasTPC() && !track.hasTRD() && !track.hasTOF()) && track.pt() > mMaxPtITSsa) { // ITSsa
     //   return false;
     // }
 
     // TPC cuts
-    if (!IsSelectedTrack(track, DielectronCuts::kTPCNCls)) {
-      return false;
+    if (track.hasTPC()) {
+      if (!IsSelectedTrack(track, DielectronCuts::kTPCNCls)) {
+        return false;
+      }
+      if (!IsSelectedTrack(track, DielectronCuts::kTPCCrossedRows)) {
+        return false;
+      }
+      if (!IsSelectedTrack(track, DielectronCuts::kTPCCrossedRowsOverNCls)) {
+        return false;
+      }
+      if (!IsSelectedTrack(track, DielectronCuts::kTPCFracSharedClusters)) {
+        return false;
+      }
+      if (!IsSelectedTrack(track, DielectronCuts::kRelDiffPin)) {
+        return false;
+      }
+      if (!IsSelectedTrack(track, DielectronCuts::kTPCChi2NDF)) {
+        return false;
+      }
     }
-    if (!IsSelectedTrack(track, DielectronCuts::kTPCCrossedRows)) {
-      return false;
-    }
-    if (!IsSelectedTrack(track, DielectronCuts::kTPCCrossedRowsOverNCls)) {
-      return false;
-    }
-    if (!IsSelectedTrack(track, DielectronCuts::kTPCFracSharedClusters)) {
-      return false;
-    }
-    if (!IsSelectedTrack(track, DielectronCuts::kRelDiffPin)) {
-      return false;
-    }
-    if (!IsSelectedTrack(track, DielectronCuts::kTPCChi2NDF)) {
-      return false;
-    }
-
     if (mApplyPF && !IsSelectedTrack(track, DielectronCuts::kPrefilter)) {
       return false;
     }
@@ -609,7 +610,7 @@ class DielectronCut : public TNamed
   float mMinMeanClusterSizeITS{0.0}, mMaxMeanClusterSizeITS{1e10f}; // <its cluster size> x cos(lmabda)
   // float mMinP_ITSClusterSize{0.0}, mMaxP_ITSClusterSize{0.0};
   bool mIncludeITSsa{false};
-  float mMaxPtITSsa{0.15};
+  float mMaxPtITSsa{1e+10};
 
   // pid cuts
   int mPIDScheme{-1};
