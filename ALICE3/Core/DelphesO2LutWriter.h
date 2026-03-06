@@ -46,7 +46,7 @@ class DelphesO2LutWriter
   void setAtLeastHits(int n) { mAtLeastHits = n; }
   void setAtLeastCorr(int n) { mAtLeastCorr = n; }
   void setAtLeastFake(int n) { mAtLeastFake = n; }
-  bool fatSolve(lutEntry_t& lutEntry,
+  bool fatSolve(o2::delphes::DelphesO2TrackSmearer::lutEntry_t& lutEntry,
                 float pt = 0.1,
                 float eta = 0.0,
                 const float mass = o2::track::pid_constants::sMasses[o2::track::PID::Pion],
@@ -57,14 +57,14 @@ class DelphesO2LutWriter
 
   void print() const;
   bool fwdSolve(float* covm, float pt = 0.1, float eta = 0.0, float mass = o2::track::pid_constants::sMasses[o2::track::PID::Pion]);
-  bool fwdPara(lutEntry_t& lutEntry, float pt = 0.1, float eta = 0.0, float mass = o2::track::pid_constants::sMasses[o2::track::PID::Pion], float Bfield = 0.5);
+  bool fwdPara(o2::delphes::DelphesO2TrackSmearer::lutEntry_t& lutEntry, float pt = 0.1, float eta = 0.0, float mass = o2::track::pid_constants::sMasses[o2::track::PID::Pion], float Bfield = 0.5);
   void lutWrite(const char* filename = "lutCovm.dat", int pdg = 211, float field = 0.2, size_t itof = 0, size_t otof = 0);
   TGraph* lutRead(const char* filename, int pdg, int what, int vs, float nch = 0., float radius = 0., float eta = 0., float pt = 0.);
 
   o2::fastsim::FastTracker fat;
 
  private:
-  void diagonalise(lutEntry_t& lutEntry);
+  void diagonalise(o2::delphes::DelphesO2TrackSmearer::lutEntry_t& lutEntry);
   float etaMaxBarrel = 1.75f;
   bool usePara = true;        // use fwd parameterisation
   bool useDipole = false;     // use dipole i.e. flat parametrization for efficiency and momentum resolution

@@ -73,7 +73,7 @@ std::string DelphesO2LutWriter::LutBinning::toString() const
   return str;
 }
 
-bool DelphesO2LutWriter::fatSolve(lutEntry_t& lutEntry,
+bool DelphesO2LutWriter::fatSolve(o2::delphes::DelphesO2TrackSmearer::lutEntry_t& lutEntry,
                                   float pt,
                                   float eta,
                                   const float mass,
@@ -147,7 +147,7 @@ bool DelphesO2LutWriter::fwdSolve(float*, float, float, float)
 }
 #endif
 
-bool DelphesO2LutWriter::fwdPara(lutEntry_t& lutEntry, float pt, float eta, float mass, float Bfield)
+bool DelphesO2LutWriter::fwdPara(o2::delphes::DelphesO2TrackSmearer::lutEntry_t& lutEntry, float pt, float eta, float mass, float Bfield)
 {
   lutEntry.valid = false;
 
@@ -230,7 +230,7 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, si
   }
 
   // write header
-  lutHeader_t lutHeader;
+  o2::delphes::DelphesO2TrackSmearer::lutHeader_t lutHeader;
   // pid
   lutHeader.pdg = pdg;
   const TParticlePDG* particle = TDatabasePDG::Instance()->GetParticle(pdg);
@@ -245,7 +245,7 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, si
     return;
   }
   lutHeader.field = field;
-  auto setMap = [](map_t& map, LutBinning b) {
+  auto setMap = [](o2::delphes::DelphesO2TrackSmearer::map_t& map, LutBinning b) {
     map.log = b.log;
     map.nbins = b.nbins;
     map.min = b.min;
@@ -267,7 +267,7 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, si
   const int nrad = lutHeader.radmap.nbins;
   const int neta = lutHeader.etamap.nbins;
   const int npt = lutHeader.ptmap.nbins;
-  lutEntry_t lutEntry;
+  o2::delphes::DelphesO2TrackSmearer::lutEntry_t lutEntry;
 
   // write entries
   int nCalls = 0;
@@ -319,7 +319,7 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, si
               retval = fwdSolve(lutEntry.covm, lutEntry.pt, lutEntry.eta, lutHeader.mass);
             }
             if (useDipole) { // Using the parametrization at the border of the barrel only for efficiency and momentum resolution
-              lutEntry_t lutEntryBarrel;
+              o2::delphes::DelphesO2TrackSmearer::lutEntry_t lutEntryBarrel;
               retval = fatSolve(lutEntryBarrel, lutEntry.pt, etaMaxBarrel, lutHeader.mass, itof, otof, q);
               lutEntry.valid = lutEntryBarrel.valid;
               lutEntry.covm[14] = lutEntryBarrel.covm[14];
@@ -339,7 +339,7 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, si
           LOGF(info, "Diagonalizing");
           diagonalise(lutEntry);
           LOGF(info, "Writing");
-          lutFile.write(reinterpret_cast<char*>(&lutEntry), sizeof(lutEntry_t));
+          lutFile.write(reinterpret_cast<char*>(&lutEntry), sizeof(o2::delphes::DelphesO2TrackSmearer::lutEntry_t));
         }
       }
     }
@@ -349,7 +349,7 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, si
   lutFile.close();
 }
 
-void DelphesO2LutWriter::diagonalise(lutEntry_t& lutEntry)
+void DelphesO2LutWriter::diagonalise(o2::delphes::DelphesO2TrackSmearer::lutEntry_t& lutEntry)
 {
   static constexpr int kEig = 5;
   TMatrixDSym m(kEig);
@@ -399,7 +399,7 @@ TGraph* DelphesO2LutWriter::lutRead(const char* filename, int pdg, int what, int
   smearer.loadTable(pdg, filename);
   auto lutHeader = smearer.getLUTHeader(pdg);
   lutHeader->print();
-  map_t lutMap;
+  o2::delphes::DelphesO2TrackSmearer::map_t lutMap;
   switch (vs) {
     case kNch:
       lutMap = lutHeader->nchmap;
