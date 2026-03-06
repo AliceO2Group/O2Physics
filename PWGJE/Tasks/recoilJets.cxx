@@ -2663,7 +2663,7 @@ struct RecoilJets {
   template <typename Collision>
   bool skipMCEvent(const Collision& coll)
   {
-    return !jetderiveddatautilities::selectMcCollision(coll, ev.skipMBGapEvents, rct.enable, rct.label, rct.rejectLimitedAcceptance, rct.requireZDC);
+    return !jetderiveddatautilities::selectCollision(coll, eventSelectionBits, ev.skipMBGapEvents, rct.enable, rct.label, rct.rejectLimitedAcceptance, rct.requireZDC);
   }
 
   template <typename Track>
