@@ -81,6 +81,8 @@ struct skimmerPrimaryElectron {
   Configurable<float> min_tpc_cr_findable_ratio{"min_tpc_cr_findable_ratio", 0.8, "min. TPC Ncr/Nf ratio"};
   Configurable<int> min_ncluster_its{"min_ncluster_its", 4, "min ncluster its"};
   Configurable<int> min_ncluster_itsib{"min_ncluster_itsib", 1, "min ncluster itsib"};
+  Configurable<float> minchi2tpc{"minchi2tpc", 0.0, "min. chi2/NclsTPC"};
+  Configurable<float> minchi2its{"minchi2its", 0.0, "min. chi2/NclsITS"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
   Configurable<float> maxchi2its{"maxchi2its", 6.0, "max. chi2/NclsITS"};
   Configurable<float> minpt{"minpt", 0.15, "min pt for ITS-TPC track"};
@@ -104,6 +106,7 @@ struct skimmerPrimaryElectron {
   Configurable<float> maxMeanITSClusterSize{"maxMeanITSClusterSize", 16, "max <ITS cluster size> x cos(lambda)"};
   Configurable<bool> storeOnlyTrueElectronMC{"storeOnlyTrueElectronMC", false, "Flag to store only true electron in MC"};
   Configurable<int> minNelectron{"minNelectron", 0, "min number of electron candidates per collision"};
+  Configurable<bool> includeITSsa{"includeITSsa", false, "Flag to include ITSsa tracks only for MC. switch ON only if needed."};
   Configurable<bool> useTOFNSigmaDeltaBC{"useTOFNSigmaDeltaBC", false, "Flag to shift delta BC for TOF n sigma (only with TTCA)"};
 
   // configuration for PID ML
@@ -288,11 +291,11 @@ struct skimmerPrimaryElectron {
       return false;
     }
 
-    if (!track.hasITS() || !track.hasTPC()) {
+    if (!track.hasITS()) {
       return false;
     }
 
-    if (track.itsChi2NCl() < 0.f || maxchi2its < track.itsChi2NCl()) {
+    if (track.itsChi2NCl() < minchi2its || maxchi2its < track.itsChi2NCl()) {
       return false;
     }
     if (track.itsNCls() < min_ncluster_its) {
@@ -302,24 +305,30 @@ struct skimmerPrimaryElectron {
       return false;
     }
 
-    if (track.tpcChi2NCl() < 0.f || maxchi2tpc < track.tpcChi2NCl()) {
+    if (!includeITSsa && (!track.hasITS() || !track.hasTPC())) {
       return false;
     }
 
-    if (track.tpcNClsFound() < min_ncluster_tpc) {
-      return false;
-    }
+    if (track.hasTPC()) {
+      if (track.tpcChi2NCl() < minchi2tpc || maxchi2tpc < track.tpcChi2NCl()) {
+        return false;
+      }
 
-    if (track.tpcNClsCrossedRows() < mincrossedrows) {
-      return false;
-    }
+      if (track.tpcNClsFound() < min_ncluster_tpc) {
+        return false;
+      }
 
-    if (track.tpcCrossedRowsOverFindableCls() < min_tpc_cr_findable_ratio) {
-      return false;
-    }
+      if (track.tpcNClsCrossedRows() < mincrossedrows) {
+        return false;
+      }
 
-    if (track.tpcFractionSharedCls() > max_frac_shared_clusters_tpc) {
-      return false;
+      if (track.tpcCrossedRowsOverFindableCls() < min_tpc_cr_findable_ratio) {
+        return false;
+      }
+
+      if (track.tpcFractionSharedCls() > max_frac_shared_clusters_tpc) {
+        return false;
+      }
     }
 
     o2::dataformats::DCA mDcaInfoCov;
