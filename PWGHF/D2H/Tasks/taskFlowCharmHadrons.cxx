@@ -148,7 +148,7 @@ struct HfTaskFlowCharmHadrons {
   using CandXic0DataWMl = soa::Filtered<soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfMlToXiPi>>;
   using CandD0DataWMl = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>>;
   using CandD0Data = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
-  using CollsWithQvecs = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::QvectorBTots, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::centFT0CVariant2s>;
+  using CollsWithQvecs = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::QvectorBTots, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0CVariant2s>;
   using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
 
   Filter filterSelectDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlag || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlag;
@@ -885,7 +885,7 @@ struct HfTaskFlowCharmHadrons {
     float const xQVecBTot = collision.qvecBTotRe();
     float const yQVecBTot = collision.qvecBTotIm();
 
-    centrality = o2::hf_centrality::getCentralityColl(collision, CentEstimator);
+    centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
     if (storeResoOccu) {
       const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
       registry.fill(HIST("trackOccVsFT0COcc"), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
@@ -898,8 +898,8 @@ struct HfTaskFlowCharmHadrons {
     }
 
     if (storeCentSparse) {
-      registry.fill(HIST("hSparseCentEstimators"), o2::hf_centrality::getCentralityColl(collision, centEstimatorsForSparse[0]), o2::hf_centrality::getCentralityColl(collision, centEstimatorsForSparse[1]),
-                    o2::hf_centrality::getCentralityColl(collision, centEstimatorsForSparse[2]), o2::hf_centrality::getCentralityColl(collision, centEstimatorsForSparse[3]));
+      registry.fill(HIST("hSparseCentEstimators"), o2::hf_centrality::getCentralityColl(collision, centEstimatorsForSparse->at(0)), o2::hf_centrality::getCentralityColl(collision, centEstimatorsForSparse->at(1)),
+                    o2::hf_centrality::getCentralityColl(collision, centEstimatorsForSparse->at(2)), o2::hf_centrality::getCentralityColl(collision, centEstimatorsForSparse->at(3)));
     }
 
     if (!isCollSelected<o2::hf_centrality::CentralityEstimator::FT0C>(collision, bcs, centrality)) {
