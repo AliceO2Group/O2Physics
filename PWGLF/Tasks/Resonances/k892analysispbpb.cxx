@@ -114,7 +114,8 @@ struct K892analysispbpb {
   Configurable<bool> cTPClowpt{"cTPClowpt", true, "apply TPC at low pt"};
   Configurable<bool> cTOFonlyHighpt{"cTOFonlyHighpt", false, "apply TOF only at high pt"};
   Configurable<bool> cTOFandTPCHighpt{"cTOFandTPCHighpt", false, "apply TOF and TPC at high pt"};
-
+  Configurable<bool> circularCut{"circularCut", false, "apply TOF and TPC circular cut (applied only if cTOFandTPCHighpt is true)"};
+  
   // rotational bkg
   Configurable<int> cfgNoRotations{"cfgNoRotations", 3, "Number of rotations per pair for rotbkg"};
   Configurable<int> rotationalCut{"rotationalCut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
@@ -409,10 +410,17 @@ struct K892analysispbpb {
 
     } else if (cTOFandTPCHighpt) {
 
-      if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) <= cMaxTOFnSigmaKaon && candidate.hasTPC() && std::abs(candidate.tpcNSigmaKa()) <= cMaxTPCnSigmaKaon) { // tof and tpc cut
-        return true;
-      }
+      if(circularCut) {
 
+	if (candidate.hasTOF() && candidate.hasTPC() && std::sqrt( std::pow(candidate.tpcNSigmaKa(),2) + std::pow(candidate.tofNSigmaKa(),2) ) <= cMaxTPCnSigmaKaon)  // tof and tpc circular cut
+	  return true;
+	
+      } else {
+
+	if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) <= cMaxTOFnSigmaKaon && candidate.hasTPC() && std::abs(candidate.tpcNSigmaKa()) <= cMaxTPCnSigmaKaon)  // tof and tpc cut
+	  return true;
+	
+      }
     } else {
 
       if (candidate.hasTPC() && std::abs(candidate.tpcNSigmaKa()) <= cMaxTPCnSigmaKaon) { // tpc cut, tof when available
@@ -447,8 +455,15 @@ struct K892analysispbpb {
 
     } else if (cTOFandTPCHighpt) {
 
-      if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) <= cMaxTOFnSigmaPion && candidate.hasTPC() && std::abs(candidate.tpcNSigmaPi()) <= cMaxTPCnSigmaPion) { // tof and tpc cut
-        return true;
+      if(circularCut) {
+
+	if (candidate.hasTOF() && candidate.hasTPC() && std::sqrt( std::pow(candidate.tpcNSigmaPi(),2) + std::pow(candidate.tofNSigmaPi(),2) ) <= cMaxTPCnSigmaPion)  // tof and tpc circular cut
+	  return true;
+	
+      } else {
+
+	if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) <= cMaxTOFnSigmaPion && candidate.hasTPC() && std::abs(candidate.tpcNSigmaPi()) <= cMaxTPCnSigmaPion) // tof and tpc cut
+	  return true;
       }
 
     } else {
