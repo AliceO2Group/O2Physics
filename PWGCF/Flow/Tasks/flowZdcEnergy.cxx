@@ -119,8 +119,6 @@ struct flowZdcEnergy {
     registry.add("hEnergyWithCent_ZNA_SumSectors", "", {HistType::kTH2D, {axisEnergy, axisCent}});
     registry.add("hEnergyWithCent_ZNC_SumSectors", "", {HistType::kTH2D, {axisEnergy, axisCent}});
     registry.add("hEnergyWithCent_RescaledSumDiff", "", {HistType::kTH2D, {axisRescaledDiff, axisCent}});
-
-    
   }
 
   void process(ZDCCollisions::iterator const& collision, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcs*/)
@@ -143,7 +141,7 @@ struct flowZdcEnergy {
     double SumEnergyZNC = zdcCol.energySectorZNC()[0] + zdcCol.energySectorZNC()[1] + zdcCol.energySectorZNC()[2] + zdcCol.energySectorZNC()[3];
     double commonDen = zdcCol.energyCommonZNA() + zdcCol.energyCommonZNC();
     double sumDen = SumEnergyZNA + SumEnergyZNC;
-    
+
     if (commonDen > 1e-3) {
       registry.fill(HIST("hEnergyWithCent_RescaledDiff"),
                     (zdcCol.energyCommonZNA() - zdcCol.energyCommonZNC()) / commonDen,
@@ -166,8 +164,6 @@ struct flowZdcEnergy {
     registry.fill(HIST("hEnergyWithCent_ZNC_4"), zdcCol.energySectorZNC()[3], centrality);
     registry.fill(HIST("hEnergyWithCent_ZNA_SumSectors"), SumEnergyZNA, centrality);
     registry.fill(HIST("hEnergyWithCent_ZNC_SumSectors"), SumEnergyZNC, centrality);
-    
-  
   }
 };
 
