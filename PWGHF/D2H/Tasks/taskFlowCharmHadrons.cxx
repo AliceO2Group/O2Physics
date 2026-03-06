@@ -261,7 +261,6 @@ struct HfTaskFlowCharmHadrons {
       registry.add("hSparseCentEstimators", "THn with different centrality estimators; Centrality 0; Centrality 1; Centrality 2; Centrality 3", {HistType::kTHnSparseF, axesCent});
     }
 
-
     if (occEstimator != 0) {
       registry.add("trackOccVsFT0COcc", "trackOccVsFT0COcc; trackOcc; FT0COcc", {HistType::kTH2F, {thnAxisOccupancyITS, thnAxisOccupancyFT0C}});
     }
