@@ -68,6 +68,7 @@ DECLARE_SOA_COLUMN(DecayLambdac, decayLambdac, int8_t);
 DECLARE_SOA_COLUMN(MlScoreFirstClass, mlScoreFirstClass, float); /// background score Λc
 DECLARE_SOA_COLUMN(MlScoreThirdClass, mlScoreThirdClass, float); /// non-prompt score Λc
 DECLARE_SOA_COLUMN(IsReflected, isReflected, int8_t);
+DECLARE_SOA_COLUMN(Origin, origin, int8_t);
 } // namespace hf_sigmac_bkg
 DECLARE_SOA_TABLE(HfCorrBkgSc, "AOD", "HFCORRBKGSC",
                   hf_sigmac_bkg::Y,
@@ -81,11 +82,17 @@ DECLARE_SOA_TABLE(HfCorrBkgSc, "AOD", "HFCORRBKGSC",
                   hf_sigmac_bkg::MlScoreFirstClass,
                   hf_sigmac_bkg::MlScoreThirdClass,
                   hf_sigmac_bkg::IsReflected);
+DECLARE_SOA_TABLE(HfGenBkgSc, "AOD", "HFGENBKGSC",
+                  hf_sigmac_bkg::Y,
+                  hf_sigmac_bkg::Pt,
+                  hf_sigmac_bkg::MotherPdg,
+                  hf_sigmac_bkg::Origin);
 } // namespace o2::aod
 
 struct HfTreeCreatorSigmacCorrBkg {
 
   Produces<o2::aod::HfCorrBkgSc> rowCorrBkgSc;
+  Produces<o2::aod::HfGenBkgSc> rowGenBkgSc;
 
   /// Selection of candidates Λc+
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
@@ -97,7 +104,13 @@ struct HfTreeCreatorSigmacCorrBkg {
   using ParticlesLcSigmac = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen, aod::HfCandScMcGen>;
 
   /// @brief init function
-  void init(InitContext&) {}
+  void init(InitContext&)
+  {
+    std::array<bool, 2> doprocesses{doprocessReco, doprocessGen};
+    if (std::accumulate(doprocesses.begin(), doprocesses.end(), 0) == 0) {
+      LOGP(fatal, "No process function enabled. Aborting...");
+    }
+  }
 
   ///
   void fillTable(RecoScMc::iterator candidateSc, RecoLcMc::iterator candLcDauSc, int motherPdg, int motherDecay = -1)
@@ -161,11 +174,15 @@ struct HfTreeCreatorSigmacCorrBkg {
     }
   }
 
+  /// @brief dummy process function
+  /// @param
+  void process(aod::Tracks const&) {}
+
   /// @brief process function to loop over the Σc reconstructed candidates and match them to corr. background sources in MC
-  void process(RecoScMc const& candidatesSc,
-               ParticlesLcSigmac const& particles,
-               RecoLcMc const&,
-               aod::TracksWMc const&)
+  void processReco(RecoScMc const& candidatesSc,
+                   ParticlesLcSigmac const& particles,
+                   RecoLcMc const&,
+                   aod::TracksWMc const&)
   {
     /// loop over reconstructed Σc candidates
     for (auto const& candidateSc : candidatesSc) {
@@ -331,6 +348,29 @@ struct HfTreeCreatorSigmacCorrBkg {
 
     } /// end loop over reconstructed Σc candidates
   }
+  PROCESS_SWITCH(HfTreeCreatorSigmacCorrBkg, processReco, "Process Reco MC", false);
+
+  /// @brief process function to look for generated Σc and Λc±(2595, 2625) (needed to properly normalize the bkg templates)
+  void processGen(aod::McParticles const& particles)
+  {
+    /// loop over particles
+    for (auto& particle : particles) {
+      int pdgCodeAbs = std::abs(particle.pdgCode());
+
+      /// keep only Σc and Λc±(2595, 2625)
+      if (pdgCodeAbs != o2::constants::physics::Pdg::kSigmaC0 && pdgCodeAbs != o2::constants::physics::Pdg::kSigmaCPlusPlus && pdgCodeAbs != o2::constants::physics::Pdg::kSigmaCStar0 && pdgCodeAbs != o2::constants::physics::Pdg::kSigmaCStarPlusPlus && pdgCodeAbs != aod::hf_sigmac_bkg::pdgCodeLambdac2595 && pdgCodeAbs != aod::hf_sigmac_bkg::pdgCodeLambdac2625) {
+        continue;
+      }
+
+      /// if we arrive here, it means that the particle is either a Σc or Λc±(2595, 2625)
+      /// let's check the origin (prompt, non-prompt)
+      int8_t origin = static_cast<int8_t>(RecoDecay::getCharmHadronOrigin(particles, particle, false));
+
+      /// let's fill the table
+      rowGenBkgSc(particle.y(), particle.pt(), pdgCodeAbs, origin);
+    } /// end loop over particles
+  }
+  PROCESS_SWITCH(HfTreeCreatorSigmacCorrBkg, processGen, "Process generated MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
