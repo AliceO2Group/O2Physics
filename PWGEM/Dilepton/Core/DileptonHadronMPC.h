@@ -101,8 +101,6 @@ struct DileptonHadronMPC {
   Configurable<int> cfgAnalysisType{"cfgAnalysisType", static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonHadronAnalysisType::kAzimuthalCorrelation), "kAzimuthalCorrelation:0, kCumulant:1"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<int> cfgOccupancyEstimator{"cfgOccupancyEstimator", 0, "FT0C:0, Track:1"};
-  Configurable<float> cfgCentMin{"cfgCentMin", -1, "min. centrality"};
-  Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
   Configurable<bool> cfgDoMix{"cfgDoMix", true, "flag for event mixing"};
   Configurable<int> ndepth_lepton{"ndepth_lepton", 100, "depth for event mixing between lepton-lepton"};
   Configurable<int> ndepth_hadron{"ndepth_hadron", 1, "depth for event mixing between hadron-hadron"};
@@ -159,6 +157,11 @@ struct DileptonHadronMPC {
     Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
     Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "set ZDC flag for PbPb"};
     Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
+
+    Configurable<float> cfgCentMin{"cfgCentMin", -1, "min. centrality"};
+    Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
+    Configurable<uint16_t> cfgNumContribMin{"cfgNumContribMin", 0, "min. numContrib"};
+    Configurable<uint16_t> cfgNumContribMax{"cfgNumContribMax", 65000, "max. numContrib"};
   } eventcuts;
 
   DielectronCut fDielectronCut;
@@ -205,7 +208,7 @@ struct DileptonHadronMPC {
     Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 1.0, "max dca Z for single track in cm"};
     Configurable<bool> cfg_require_itsib_any{"cfg_require_itsib_any", false, "flag to require ITS ib any hits"};
     Configurable<bool> cfg_require_itsib_1st{"cfg_require_itsib_1st", true, "flag to require ITS ib 1st hit"};
-    Configurable<float> cfgRefR{"cfgRefR", 1.2, "reference R (in m) for extrapolation"}; // https://cds.cern.ch/record/1419204
+    Configurable<float> cfgRefR{"cfgRefR", 0.5, "reference R (in m) for extrapolation"}; // https://cds.cern.ch/record/1419204
 
     Configurable<int> cfg_pid_scheme{"cfg_pid_scheme", static_cast<int>(DielectronCut::PIDSchemes::kTPChadrejORTOFreq), "pid scheme [kTOFreq : 0, kTPChadrej : 1, kTPChadrejORTOFreq : 2, kTPConly : 3, kTOFif : 4, kPIDML : 5, kTPChadrejORTOFreq_woTOFif : 6]"};
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
@@ -260,7 +263,10 @@ struct DileptonHadronMPC {
     Configurable<int> cfg_min_ncluster_mch{"cfg_min_ncluster_mch", 8, "min ncluster MCH"};
     Configurable<float> cfg_max_chi2{"cfg_max_chi2", 1e+6, "max chi2/ndf"};
     Configurable<float> cfg_max_chi2mft{"cfg_max_chi2mft", 1e+6, "max chi2/ndf"};
-    Configurable<float> cfg_max_matching_chi2_mftmch{"cfg_max_matching_chi2_mftmch", 40, "max chi2 for MFT-MCH matching"};
+    // Configurable<float> cfg_max_matching_chi2_mftmch{"cfg_max_matching_chi2_mftmch", 40, "max chi2 for MFT-MCH matching"};
+    Configurable<float> cfg_border_pt_for_chi2mchmft{"cfg_border_pt_for_chi2mchmft", 0, "border pt for different max chi2 for MFT-MCH matching"};
+    Configurable<float> cfg_max_matching_chi2_mftmch_lowPt{"cfg_max_matching_chi2_mftmch_lowPt", 8, "max chi2 for MFT-MCH matching for low pT"};
+    Configurable<float> cfg_max_matching_chi2_mftmch_highPt{"cfg_max_matching_chi2_mftmch_highPt", 40, "max chi2 for MFT-MCH matching for high pT"};
     Configurable<float> cfg_max_matching_chi2_mchmid{"cfg_max_matching_chi2_mchmid", 1e+10, "max chi2 for MCH-MID matching"};
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1e+10, "max dca XY for single track in cm"};
     Configurable<float> cfg_min_rabs{"cfg_min_rabs", 17.6, "min Radius at the absorber end"};
@@ -614,7 +620,6 @@ struct DileptonHadronMPC {
     fDielectronCut.RequireITSib1st(dielectroncuts.cfg_require_itsib_1st);
     fDielectronCut.SetChi2TOF(0, dielectroncuts.cfg_max_chi2tof);
     fDielectronCut.SetRelDiffPin(-1e+10, +1e+10);
-    fDielectronCut.IncludeITSsa(false, 0.15);
 
     // for eID
     fDielectronCut.SetPIDScheme(dielectroncuts.cfg_pid_scheme);
@@ -685,7 +690,8 @@ struct DileptonHadronMPC {
     fDimuonCut.SetNClustersMCHMID(dimuoncuts.cfg_min_ncluster_mch, 20);
     fDimuonCut.SetChi2(0.f, dimuoncuts.cfg_max_chi2);
     fDimuonCut.SetChi2MFT(0.f, dimuoncuts.cfg_max_chi2mft);
-    fDimuonCut.SetMatchingChi2MCHMFT(0.f, dimuoncuts.cfg_max_matching_chi2_mftmch);
+    // fDimuonCut.SetMatchingChi2MCHMFT(0.f, dimuoncuts.cfg_max_matching_chi2_mftmch);
+    fDimuonCut.SetMaxMatchingChi2MCHMFTPtDep([&](float pt) { return (pt < dimuoncuts.cfg_border_pt_for_chi2mchmft ? dimuoncuts.cfg_max_matching_chi2_mftmch_lowPt : dimuoncuts.cfg_max_matching_chi2_mftmch_highPt); });
     fDimuonCut.SetMatchingChi2MCHMID(0.f, dimuoncuts.cfg_max_matching_chi2_mchmid);
     fDimuonCut.SetDCAxy(0.f, dimuoncuts.cfg_max_dcaxy);
     fDimuonCut.SetRabs(dimuoncuts.cfg_min_rabs, dimuoncuts.cfg_max_rabs);
@@ -804,9 +810,9 @@ struct DileptonHadronMPC {
           used_trackIds_per_col.emplace_back(t1.globalIndex());
           if (cfgDoMix) {
             if (t1.sign() > 0) {
-              emh_pos->AddTrackToEventPool(key_df_collision, EMFwdTrack(t1.pt(), t1.eta(), t1.phi(), leptonM1, t1.sign(), t1.fwdDcaX(), t1.fwdDcaY(), t1.cXXatDCA(), t1.cXYatDCA(), t1.cYYatDCA()));
+              emh_pos->AddTrackToEventPool(key_df_collision, EMFwdTrack(t1.pt(), t1.eta(), t1.phi(), leptonM1, t1.sign(), t1.fwdDcaX(), t1.fwdDcaY(), t1.cXX(), t1.cXY(), t1.cYY()));
             } else {
-              emh_neg->AddTrackToEventPool(key_df_collision, EMFwdTrack(t1.pt(), t1.eta(), t1.phi(), leptonM1, t1.sign(), t1.fwdDcaX(), t1.fwdDcaY(), t1.cXXatDCA(), t1.cXYatDCA(), t1.cYYatDCA()));
+              emh_neg->AddTrackToEventPool(key_df_collision, EMFwdTrack(t1.pt(), t1.eta(), t1.phi(), leptonM1, t1.sign(), t1.fwdDcaX(), t1.fwdDcaY(), t1.cXX(), t1.cXY(), t1.cYY()));
             }
           }
         }
@@ -814,9 +820,9 @@ struct DileptonHadronMPC {
           used_trackIds_per_col.emplace_back(t2.globalIndex());
           if (cfgDoMix) {
             if (t2.sign() > 0) {
-              emh_pos->AddTrackToEventPool(key_df_collision, EMFwdTrack(t2.pt(), t2.eta(), t2.phi(), leptonM2, t2.sign(), t2.fwdDcaX(), t2.fwdDcaY(), t2.cXXatDCA(), t2.cXYatDCA(), t2.cYYatDCA()));
+              emh_pos->AddTrackToEventPool(key_df_collision, EMFwdTrack(t2.pt(), t2.eta(), t2.phi(), leptonM2, t2.sign(), t2.fwdDcaX(), t2.fwdDcaY(), t2.cXX(), t2.cXY(), t2.cYY()));
             } else {
-              emh_neg->AddTrackToEventPool(key_df_collision, EMFwdTrack(t2.pt(), t2.eta(), t2.phi(), leptonM2, t2.sign(), t2.fwdDcaX(), t2.fwdDcaY(), t2.cXXatDCA(), t2.cXYatDCA(), t2.cYYatDCA()));
+              emh_neg->AddTrackToEventPool(key_df_collision, EMFwdTrack(t2.pt(), t2.eta(), t2.phi(), leptonM2, t2.sign(), t2.fwdDcaX(), t2.fwdDcaY(), t2.cXX(), t2.cXY(), t2.cYY()));
             }
           }
         }
@@ -841,9 +847,9 @@ struct DileptonHadronMPC {
             return false;
           }
         }
-        if (t1.trackId() == t3.trackId() || t2.trackId() == t3.trackId()) {
-          return false;
-        }
+        // if (t1.trackId() == t3.trackId() || t2.trackId() == t3.trackId()) {
+        //   return false;
+        // }
       } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
         if (!cut.template IsSelectedTrack<false>(t1) || !cut.template IsSelectedTrack<false>(t2)) {
           return false;
@@ -944,9 +950,9 @@ struct DileptonHadronMPC {
               continue;
             }
           }
-          if (t1.trackId() == pos.trackId() || t2.trackId() == pos.trackId()) {
-            return false;
-          }
+          // if (t1.trackId() == pos.trackId() || t2.trackId() == pos.trackId()) {
+          //   return false;
+          // }
         } // end of pos lepton loop
 
         for (const auto& neg : negLeptons) { // leptons per collision
@@ -959,9 +965,9 @@ struct DileptonHadronMPC {
               continue;
             }
           }
-          if (t1.trackId() == neg.trackId() || t2.trackId() == neg.trackId()) {
-            return false;
-          }
+          // if (t1.trackId() == neg.trackId() || t2.trackId() == neg.trackId()) {
+          //   return false;
+          // }
         } // end of neg lepton lopp
 
       } // end of if kDielectron
@@ -982,8 +988,8 @@ struct DileptonHadronMPC {
     return true;
   }
 
-  Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
-  // Filter collisionFilter_multiplicity = cfgNtracksPV08Min <= o2::aod::mult::multNTracksPV && o2::aod::mult::multNTracksPV < cfgNtracksPV08Max;
+  Filter collisionFilter_centrality = (eventcuts.cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < eventcuts.cfgCentMax) || (eventcuts.cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < eventcuts.cfgCentMax) || (eventcuts.cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < eventcuts.cfgCentMax);
+  Filter collisionFilter_numContrib = eventcuts.cfgNumContribMin <= o2::aod::collision::numContrib && o2::aod::collision::numContrib < eventcuts.cfgNumContribMax;
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
@@ -1041,7 +1047,7 @@ struct DileptonHadronMPC {
       initCCDB<isTriggerAnalysis>(collision);
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       float centrality = centralities[cfgCentEstimator];
-      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+      if (centralities[cfgCentEstimator] < eventcuts.cfgCentMin || eventcuts.cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
 
@@ -1300,7 +1306,7 @@ struct DileptonHadronMPC {
     for (const auto& collision : collisions) {
       initCCDB<isTriggerAnalysis>(collision);
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
-      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+      if (centralities[cfgCentEstimator] < eventcuts.cfgCentMin || eventcuts.cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
 

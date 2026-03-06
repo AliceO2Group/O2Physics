@@ -41,7 +41,6 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "MathUtils/BetheBlochAleph.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
 #include "Framework/ASoAHelpers.h"
@@ -49,6 +48,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
+#include "MathUtils/BetheBlochAleph.h"
 #include "ReconstructionDataFormats/Track.h"
 
 #include <Math/Vector4D.h>
@@ -231,13 +231,15 @@ enum evSel {
   kIsGoodZvtxFT0vsPV,
   kIsGoodITSLayersAll,
   kIsEPtriggered,
+  kINELgt0,
   kNevSels
 };
 
 static const std::vector<std::string> eventSelectionTitle{"Event selections"};
-static const std::vector<std::string> eventSelectionLabels{"TVX", "Z vtx", "TF border", "ITS ROF border", "No same-bunch pile-up", "kIsGoodZvtxFT0vsPV", "isGoodITSLayersAll", "isEPtriggered"};
+static const std::vector<std::string> eventSelectionLabels{"TVX", "Z vtx", "TF border", "ITS ROF border", "No same-bunch pile-up", "kIsGoodZvtxFT0vsPV", "isGoodITSLayersAll", "isEPtriggered", "INEL > 0"};
 
-constexpr int EvSelDefault[8][1]{
+constexpr int EvSelDefault[9][1]{
+  {1},
   {1},
   {1},
   {0},
@@ -297,7 +299,7 @@ struct nucleiSpectra {
   Configurable<float> cfgCutPtMinTree{"cfgCutPtMinTree", 0.2f, "Minimum track transverse momentum for tree saving"};
   Configurable<float> cfgCutPtMaxTree{"cfgCutPtMaxTree", 15.0f, "Maximum track transverse momentum for tree saving"};
 
-  Configurable<LabeledArray<int>> cfgEventSelections{"cfgEventSelections", {nuclei::EvSelDefault[0], 8, 1, nuclei::eventSelectionLabels, nuclei::eventSelectionTitle}, "Event selections"};
+  Configurable<LabeledArray<int>> cfgEventSelections{"cfgEventSelections", {nuclei::EvSelDefault[0], 9, 1, nuclei::eventSelectionLabels, nuclei::eventSelectionTitle}, "Event selections"};
 
   Configurable<LabeledArray<double>> cfgMomentumScalingBetheBloch{"cfgMomentumScalingBetheBloch", {nuclei::bbMomScalingDefault[0], 5, 2, nuclei::names, nuclei::chargeLabelNames}, "TPC Bethe-Bloch momentum scaling for light nuclei"};
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {nuclei::betheBlochDefault[0], 5, 6, nuclei::names, nuclei::betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
@@ -437,6 +439,11 @@ struct nucleiSpectra {
       spectra.fill(HIST("hEventSelections"), nuclei::evSel::kIsEPtriggered + 1);
     }
 
+    if (cfgEventSelections->get(nuclei::evSel::kINELgt0) && !collision.selection_bit(aod::kINELgtZERO)) {
+      return false;
+    }
+    spectra.fill(HIST("hEventSelections"), nuclei::evSel::kINELgt0 + 1);
+
     return true;
   }
 
@@ -510,6 +517,7 @@ struct nucleiSpectra {
     spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kIsGoodZvtxFT0vsPV + 2, "isGoodZvtxFT0vsPV");
     spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kIsGoodITSLayersAll + 2, "IsGoodITSLayersAll");
     spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kIsEPtriggered + 2, "IsEPtriggered");
+    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kINELgt0 + 2, "IsINELgt0");
 
     spectra.add("hRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
     if (doprocessMC) {
@@ -814,7 +822,7 @@ struct nucleiSpectra {
   void processData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
   {
     nuclei::candidates.clear();
-    if (!eventSelection(collision)) {
+    if (!eventSelectionWithHisto(collision)) {
       return;
     }
 
@@ -911,7 +919,7 @@ struct nucleiSpectra {
     }
     std::vector<bool> goodCollisions(mcCollisions.size(), false);
     for (const auto& collision : collisions) {
-      if (!eventSelection(collision)) {
+      if (!eventSelectionWithHisto(collision)) {
         continue;
       }
       goodCollisions[collision.mcCollisionId()] = true;

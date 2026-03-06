@@ -17,6 +17,7 @@
 #include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 
@@ -59,13 +60,13 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::pwgem::photonmeson::photonpair;
 
-using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsCent>;
+using MyCollisions = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsCent_000>;
 using MyCollision = MyCollisions::iterator;
 
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
-using MyPrimaryElectrons = soa::Join<aod::EMPrimaryElectronsFromDalitz, aod::EMPrimaryElectronEMEventIds>;
+using MyPrimaryElectrons = soa::Join<aod::EMPrimaryElectronsFromDalitz, aod::EMPrimaryElectronDaEMEventIds>;
 using MyPrimaryElectron = MyPrimaryElectrons::iterator;
 
 struct prefilterPhoton {
@@ -389,8 +390,8 @@ struct prefilterPhoton {
         }
 
         auto photons1_per_collision = photons1.sliceBy(perCollision1, collision.globalIndex());
-        auto positrons_per_collision = posTracks->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
-        auto electrons_per_collision = negTracks->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
+        auto positrons_per_collision = posTracks->sliceByCached(o2::aod::emprimaryelectronda::pmeventId, collision.globalIndex(), cache);
+        auto electrons_per_collision = negTracks->sliceByCached(o2::aod::emprimaryelectronda::pmeventId, collision.globalIndex(), cache);
 
         if (!fEMEventCut.IsSelected(collision) || !is_cent_ok) {
           for (const auto& photon1 : photons1_per_collision) {
@@ -537,8 +538,8 @@ struct prefilterPhoton {
         }
 
         auto photons1_per_collision = photons1.sliceBy(perCollision1, collision.globalIndex());
-        auto positrons_per_collision = posTracks->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
-        auto electrons_per_collision = negTracks->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
+        auto positrons_per_collision = posTracks->sliceByCached(o2::aod::emprimaryelectronda::pmeventId, collision.globalIndex(), cache);
+        auto electrons_per_collision = negTracks->sliceByCached(o2::aod::emprimaryelectronda::pmeventId, collision.globalIndex(), cache);
 
         for (const auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photons1_per_collision, photons1_per_collision))) {
           if (!cut1.template IsSelected<decltype(g1), TSubInfos1>(g1) || !cut1.template IsSelected<decltype(g2), TSubInfos1>(g2)) {
@@ -600,8 +601,8 @@ struct prefilterPhoton {
   std::unordered_map<int, uint16_t> map_pfb_ele; // map ele.globalIndex -> prefilter bit
 
   SliceCache cache;
-  Preslice<MyV0Photons> perCollision_v0 = aod::v0photonkf::emeventId;
-  Preslice<MyPrimaryElectrons> perCollision_electron = aod::emprimaryelectron::emeventId;
+  Preslice<MyV0Photons> perCollision_v0 = aod::v0photonkf::pmeventId;
+  Preslice<MyPrimaryElectrons> perCollision_electron = aod::emprimaryelectronda::pmeventId;
 
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;

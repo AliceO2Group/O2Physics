@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 //
-// Class for dimuon selection
+// Class for dimuon selection // dummy comment
 //
 
 #ifndef PWGEM_DILEPTON_CORE_DIMUONCUT_H_
@@ -202,16 +202,17 @@ class DimuonCut : public TNamed
         return track.nClusters() >= mMinNClustersMCHMID;
 
       case DimuonCuts::kChi2:
-        return track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2() / (2.f * (track.nClusters() + track.nClustersMFT()) - 5.f) < mMaxChi2 : track.chi2() < mMaxChi2;
+        return track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? 0.f < track.chi2() / (2.f * (track.nClusters() + track.nClustersMFT()) - 5.f) && track.chi2() / (2.f * (track.nClusters() + track.nClustersMFT()) - 5.f) < mMaxChi2 : 0.f < track.chi2() && track.chi2() < mMaxChi2;
 
       case DimuonCuts::kChi2MFT:
-        return track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2MFT() / (2.f * track.nClustersMFT() - 5.f) < mMaxChi2MFT : true;
+        return track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? 0.f < track.chi2MFT() / (2.f * track.nClustersMFT() - 5.f) && track.chi2MFT() / (2.f * track.nClustersMFT() - 5.f) < mMaxChi2MFT : true;
 
       case DimuonCuts::kMatchingChi2MCHMFT:
-        return track.chi2MatchMCHMFT() < mMaxMatchingChi2MCHMFT;
+        // return 0.f < track.chi2MatchMCHMFT() && track.chi2MatchMCHMFT() < mMaxMatchingChi2MCHMFT;
+        return 0.f < track.chi2MatchMCHMFT() && track.chi2MatchMCHMFT() < mMaxMatchingChi2MCHMFTPtDep(track.pt());
 
       case DimuonCuts::kMatchingChi2MCHMID:
-        return track.chi2MatchMCHMID() < mMaxMatchingChi2MCHMID;
+        return 0.f < track.chi2MatchMCHMID() && track.chi2MatchMCHMID() < mMaxMatchingChi2MCHMID;
 
       case DimuonCuts::kPDCA:
         return track.pDca() < mMaxPDCARabsDep(track.rAtAbsorberEnd());
@@ -259,6 +260,7 @@ class DimuonCut : public TNamed
   void SetMaxPDCARabsDep(std::function<float(float)> RabsDepCut);
   void SetMFTHitMap(bool flag, std::vector<int> hitMap);
   void SetMaxdPtdEtadPhiwrtMCHMID(float reldPtMax, float dEtaMax, float dPhiMax); // this is relevant for global muons
+  void SetMaxMatchingChi2MCHMFTPtDep(std::function<float(float)> PtDepCut);
 
  private:
   // pair cuts
@@ -284,6 +286,7 @@ class DimuonCut : public TNamed
   float mMinMatchingChi2MCHMFT{0.f}, mMaxMatchingChi2MCHMFT{1e10f}; // max matching chi2 between MCH-MFT
   float mMinMatchingChi2MCHMID{0.f}, mMaxMatchingChi2MCHMID{1e10f}; // max matching chi2 between MCH-MID
   std::function<float(float)> mMaxPDCARabsDep{};                    // max pdca in xy plane as function of Rabs
+  std::function<float(float)> mMaxMatchingChi2MCHMFTPtDep{};        // max matching chi2 between MCH-MFT as function of pt
 
   float mMinRabs{17.6}, mMaxRabs{89.5};
   float mMinDcaXY{0.0f}, mMaxDcaXY{1e10f};

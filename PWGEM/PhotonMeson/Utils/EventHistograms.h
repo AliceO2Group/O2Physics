@@ -79,7 +79,7 @@ inline void addEventHistograms(o2::framework::HistogramRegistry* fRegistry)
   fRegistry->addClone("Event/before/", "Event/after/");
 }
 
-template <const int ev_id, typename TCollision>
+template <const int ev_id, o2::soa::is_iterator TCollision>
 void fillEventInfo(o2::framework::HistogramRegistry* fRegistry, TCollision const& collision, float weight = 1.)
 {
   const float maxZ = 10.f;

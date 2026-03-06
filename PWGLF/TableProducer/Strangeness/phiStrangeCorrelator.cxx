@@ -14,6 +14,7 @@
 /// \author Stefano Cannito (stefano.cannito@cern.ch)
 
 #include "PWGLF/DataModel/LFPhiStrangeCorrelationTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/inelGt.h"
 
@@ -43,6 +44,7 @@
 #include <TH2F.h>
 #include <TH3F.h>
 #include <THn.h>
+#include <TMCProcess.h>
 #include <TMath.h>
 #include <TPDGCode.h>
 
@@ -50,6 +52,8 @@
 #include <array>
 #include <cmath>
 #include <cstdlib>
+#include <functional>
+#include <optional>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -65,7 +69,10 @@ struct PhiMesonCandProducer {
   Produces<aod::PhimesonCandidatesMcReco> phimesonCandidatesMcReco;
   Produces<aod::PhimesonCandidatesMcGen> phimesonCandidatesMcGen;
 
-  HistogramRegistry histos{"phiCandidates", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry histos{"phimesonCandidates", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+
+  // Configurable on multiplicity bins
+  Configurable<std::vector<double>> binsMult{"binsMult", {0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0}, "Multiplicity bin limits"};
 
   // Configurables for phi's daughter tracks selection
   struct : ConfigurableGroup {
@@ -88,14 +95,27 @@ struct PhiMesonCandProducer {
 
   // Configurables on phi selection
   struct : ConfigurableGroup {
-    Configurable<float> maxMPhi{"maxMPhi", 1.5f, "Maximum mass for Phi candidates"};
+    Configurable<float> maxMPhi{"maxMPhi", 1.2f, "Maximum mass for Phi candidates"};
     Configurable<float> minPhiPt{"minPhiPt", 0.4f, "Minimum pT for Phi candidates"};
     Configurable<float> cfgYAcceptance{"cfgYAcceptance", 0.5f, "Rapidity acceptance"};
   } phiConfigs;
 
+  // Configurables on phi pT bins
+  Configurable<std::vector<double>> binspTPhi{"binspTPhi", {0.4, 0.8, 1.4, 2.0, 2.8, 4.0, 6.0, 10.0}, "pT bin limits for Phi"};
+
+  // Filter on default selected collisions
+  // Filter collisionFilter = aod::lf_selection_default_collision::defaultSel == true;
+  // Filter collisionFilter = aod::lf_selection_event::defaultSel == true;
+
   // Defining the type of the collisions for data and MC
-  using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>;
+  using SelCollisions = soa::Join<aod::Collisions, aod::CentFT0Ms, aod::PVMults>;
   using SimCollisions = soa::Join<SelCollisions, aod::McCollisionLabels>;
+
+  /*using SelCollisions = soa::Join<aod::Collisions, aod::CentFT0Ms, aod::PVMults, aod::PhiStrangeDefEvtSelDataLike>;
+  using SimCollisions = soa::Join<SelCollisions, aod::McCollisionLabels, aod::PhiStrangeDefEvtSelMcGen>;
+
+  using FilteredSelCollisions = soa::Filtered<SelCollisions>;
+  using FilteredSimCollisions = soa::Filtered<SimCollisions>;*/
 
   // Defining the type of the phi's daughter tracks for data and MC
   using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa>;
@@ -116,9 +136,18 @@ struct PhiMesonCandProducer {
 
   void init(InitContext&)
   {
+    AxisSpec binnedmultAxis{(std::vector<double>)binsMult, "centFT0M"};
+    AxisSpec binnedpTPhiAxis{(std::vector<double>)binspTPhi, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec massPhiAxis = {200, 0.9f, 1.2f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
 
-    histos.add("h1PhiCandidateMass", "Phi candidate invariant mass", kTH1F, {massPhiAxis});
+    histos.add("h3PhiCandidatesMass", "Phi candidate invariant mass", kTH3F, {binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
+
+    // Phi's daughter tracks information
+    /*histos.add("hEta", "Eta of Kaon candidates", kTH1F, {{100, -1.0f, 1.0f}});
+    histos.add("hNsigmaKaonTPC", "NsigmaKaon TPC distribution vs pt", kTH2F, {{100, 0.0, 5.0, "#it{p} (GeV/#it{c})"}, {100, -10.0f, 10.0f}});
+    histos.add("hNsigmaKaonTOF", "NsigmaKaon TOF distribution vs pt", kTH2F, {{100, 0.0, 5.0, "#it{p} (GeV/#it{c})"}, {100, -10.0f, 10.0f}});
+    histos.add("h2DauTracksPhiDCAxy", "DCAxy distribution vs pt", kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
+    histos.add("h2DauTracksPhiDCAz", "DCAz distribution vs pt", kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});*/
   }
 
   // Topological track selection
@@ -167,19 +196,53 @@ struct PhiMesonCandProducer {
     return mother;
   }
 
-  void processData(SelCollisions::iterator const& collision, FullTracks const&)
+  template <bool isMC, typename T>
+  void processPhiCandidates(const T& collision, std::optional<std::reference_wrapper<const aod::McParticles>> mcParticlesOpt = std::nullopt)
   {
-    auto posThisColl = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    // Compile-time selection of the track partition to use based on the type of the analysis (Data or MCReco)
+    auto posThisColl = [&]() {
+      if constexpr (isMC)
+        return posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      else
+        return posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    }();
 
+    auto negThisColl = [&]() {
+      if constexpr (isMC)
+        return negMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      else
+        return negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    }();
+
+    // Loop over positive tracks
     for (const auto& track1 : posThisColl) {
       if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
         continue;
 
+      if constexpr (isMC) {
+        if (!track1.has_mcParticle())
+          continue;
+        const auto& mcParticles = mcParticlesOpt.value().get();
+        const auto track1McParticle = mcParticles.rawIteratorAt(track1.mcParticleId());
+        if (track1McParticle.pdgCode() != PDG_t::kKPlus || !track1McParticle.isPhysicalPrimary())
+          continue;
+      }
+
+      // Loop over negative tracks
       for (const auto& track2 : negThisColl) {
         if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
           continue;
 
+        if constexpr (isMC) {
+          if (!track2.has_mcParticle())
+            continue;
+          const auto& mcParticles = mcParticlesOpt.value().get();
+          const auto track2McParticle = mcParticles.rawIteratorAt(track2.mcParticleId());
+          if (track2McParticle.pdgCode() != PDG_t::kKMinus || !track2McParticle.isPhysicalPrimary())
+            continue;
+        }
+
+        // Kinematic reconstruction (common for data and MC)
         ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
 
         if (recPhi.Pt() < phiConfigs.minPhiPt)
@@ -189,106 +252,70 @@ struct PhiMesonCandProducer {
         if (std::abs(recPhi.Rapidity()) > phiConfigs.cfgYAcceptance)
           continue;
 
-        histos.fill(HIST("h1PhiCandidateMass"), recPhi.M());
+        // PDG check and MC truth association for MCReco analysis
+        if constexpr (isMC) {
+          const auto& mcParticles = mcParticlesOpt.value().get();
 
-        phimesonCandidatesData(collision.globalIndex(), recPhi.M(), recPhi.Pt(), recPhi.Rapidity(), recPhi.Phi());
+          const auto track1McParticle = mcParticles.rawIteratorAt(track1.mcParticleId());
+          const auto track2McParticle = mcParticles.rawIteratorAt(track2.mcParticleId());
+
+          const auto track1mcPartMotherIndexes = track1McParticle.mothersIds();
+          const auto track2mcPartMotherIndexes = track2McParticle.mothersIds();
+
+          auto genPhiMaybe = [&]() -> std::optional<aod::McParticles::iterator> {
+            for (const auto& mother1Index : track1mcPartMotherIndexes) {
+              for (const auto& mother2Index : track2mcPartMotherIndexes) {
+                if (mother1Index != mother2Index)
+                  continue;
+                const auto motherMcParticle = mcParticles.rawIteratorAt(mother1Index);
+                if (std::abs(motherMcParticle.pdgCode()) == o2::constants::physics::Pdg::kPhi) {
+                  return motherMcParticle;
+                }
+              }
+            }
+            return std::nullopt;
+          }();
+
+          if (!genPhiMaybe)
+            continue;
+          const auto genPhi = *genPhiMaybe;
+
+          phimesonCandidatesMcReco(collision.globalIndex(), recPhi.M(), genPhi.pt(), genPhi.y(), genPhi.phi());
+        } else {
+          histos.fill(HIST("h3PhiCandidatesMass"), collision.centFT0M(), recPhi.Pt(), recPhi.M());
+          phimesonCandidatesData(collision.globalIndex(), recPhi.M(), recPhi.Pt(), recPhi.Rapidity(), recPhi.Phi());
+        }
       }
     }
+  }
+
+  void processData(SelCollisions::iterator const& collision, FullTracks const&)
+  {
+    processPhiCandidates<false>(collision);
   }
 
   PROCESS_SWITCH(PhiMesonCandProducer, processData, "Process function to select Phi meson candidates in Data or in McReco (w/o McTruth) analysis", true);
 
-  /*
-  void processMCRecoDataLike(SimCollisions::iterator const& collision, FullMCTracks const&)
-  {
-    auto posThisColl = posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    auto negThisColl = negMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-
-    for (const auto& track1 : posThisColl) {
-      if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
-        continue;
-
-      for (const auto& track2 : negThisColl) {
-        if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
-          continue;
-
-        ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
-
-        if (recPhi.Pt() < phiConfigs.minPhiPt)
-          continue;
-        if (recPhi.M() > phiConfigs.maxMPhi)
-          continue;
-        if (std::abs(recPhi.Rapidity()) > phiConfigs.cfgYAcceptance)
-          continue;
-
-        phimesonCandidatesData(collision.globalIndex(), recPhi.M(), recPhi.Pt(), recPhi.Rapidity(), recPhi.Phi());
-      }
-    }
-  }
-
-  PROCESS_SWITCH(PhiMesonCandProducer, processMCRecoDataLike, "Process function to select Phi meson candidates in MCReco w/o MC truth", false);
-  */
-
   void processMCReco(SimCollisions::iterator const& collision, FullMCTracks const&, aod::McParticles const& mcParticles)
   {
-    auto posThisColl = posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    auto negThisColl = negMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-
-    for (const auto& track1 : posThisColl) {
-      if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
-        continue;
-      if (!track1.has_mcParticle())
-        continue;
-      const auto track1McParticle = mcParticles.rawIteratorAt(track1.mcParticleId());
-      if (track1McParticle.pdgCode() != PDG_t::kKPlus || !track1McParticle.isPhysicalPrimary())
-        continue;
-
-      for (const auto& track2 : negThisColl) {
-        if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
-          continue;
-        if (!track2.has_mcParticle())
-          continue;
-        const auto track2McParticle = mcParticles.rawIteratorAt(track2.mcParticleId());
-        if (track2McParticle.pdgCode() != PDG_t::kKMinus || !track2McParticle.isPhysicalPrimary())
-          continue;
-
-        ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
-
-        if (recPhi.Pt() < phiConfigs.minPhiPt)
-          continue;
-        if (recPhi.M() > phiConfigs.maxMPhi)
-          continue;
-        if (std::abs(recPhi.Rapidity()) > phiConfigs.cfgYAcceptance)
-          continue;
-
-        const auto track1mcPartMotherIndexes = track1McParticle.mothersIds();
-        const auto track2mcPartMotherIndexes = track2McParticle.mothersIds();
-
-        auto genPhiMaybe = [&]() -> std::optional<aod::McParticles::iterator> {
-          for (const auto& mother1Index : track1mcPartMotherIndexes) {
-            for (const auto& mother2Index : track2mcPartMotherIndexes) {
-              if (mother1Index != mother2Index)
-                continue;
-
-              const auto motherMcParticle = mcParticles.rawIteratorAt(mother1Index);
-              if (std::abs(motherMcParticle.pdgCode()) == o2::constants::physics::Pdg::kPhi)
-                return motherMcParticle;
-            }
-          }
-
-          return std::nullopt;
-        }();
-
-        if (!genPhiMaybe)
-          continue;
-        const auto genPhi = *genPhiMaybe;
-
-        phimesonCandidatesMcReco(collision.globalIndex(), recPhi.M(), genPhi.pt(), genPhi.y(), genPhi.phi());
-      }
-    }
+    processPhiCandidates<true>(collision, mcParticles);
   }
 
   PROCESS_SWITCH(PhiMesonCandProducer, processMCReco, "Process function to select Phi meson candidates in MCReco w MC truth", false);
+
+  /*void processFilteredData(FilteredSelCollisions::iterator const& collision, FullTracks const&)
+  {
+    processPhiCandidates<false>(collision);
+  }
+
+  PROCESS_SWITCH(PhiMesonCandProducer, processFilteredData, "Process function to select Phi meson candidates in filtered Data", true);
+
+  void processFilteredMCReco(FilteredSimCollisions::iterator const& collision, FullMCTracks const&, aod::McParticles const& mcParticles)
+  {
+    processPhiCandidates<true>(collision, mcParticles);
+  }
+
+  PROCESS_SWITCH(PhiMesonCandProducer, processFilteredMCReco, "Process function to select Phi meson candidates in filtered MCReco w MC truth", false);*/
 
   void processMCGen(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles)
   {
@@ -321,16 +348,395 @@ struct PhiMesonCandProducer {
   PROCESS_SWITCH(PhiMesonCandProducer, processMCGen, "Process function to select Phi meson candidates in MCGen", false);
 };
 
-struct PhiMesonSelCollision {
+struct K0sReducedCandProducer {
+  // Produce the table with the K0s candidates information
+  Produces<aod::K0sReducedCandidatesData> k0sReducedCandidatesData;
+  Produces<aod::K0sReducedCandidatesMcReco> k0sReducedCandidatesMcReco;
+
+  HistogramRegistry histos{"k0sReducedCandidates", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+
+  // Configurable on multiplicity bins
+  Configurable<std::vector<double>> binsMult{"binsMult", {0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0}, "Multiplicity bin limits"};
+
+  // Configurables for tracks selection
+  struct : ConfigurableGroup {
+    Configurable<float> etaMax{"etaMax", 0.8f, "eta max"};
+    Configurable<float> nSigmaCutTPCSecPion{"nSigmaCutTPCSecPion", 4.0f, "Value of the TPC Nsigma cut for secondary Pions"};
+
+    Configurable<int> minTPCnClsFound{"minTPCnClsFound", 70, "min number of found TPC clusters"};
+    Configurable<int> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70, "min number of TPC crossed rows"};
+    Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
+  } trackConfigs;
+
+  // Configurables for V0 selection
+  struct : ConfigurableGroup {
+    Configurable<float> v0SettingCosPA{"v0SettingCosPA", 0.98f, "V0 CosPA"};
+    Configurable<float> v0SettingRadius{"v0SettingRadius", 0.5f, "v0radius"};
+    Configurable<float> v0SettingDCAV0Dau{"v0SettingDCAV0Dau", 1.0f, "DCA V0 Daughters"};
+    Configurable<float> v0SettingDCAPosToPV{"v0SettingDCAPosToPV", 0.1f, "DCA Pos To PV"};
+    Configurable<float> v0SettingDCANegToPV{"v0SettingDCANegToPV", 0.1f, "DCA Neg To PV"};
+    Configurable<float> v0SettingMinPt{"v0SettingMinPt", 0.1f, "V0 min pt"};
+
+    Configurable<bool> cfgFurtherV0Selection{"cfgFurtherV0Selection", false, "Further V0 selection"};
+    Configurable<float> ctauK0s{"ctauK0s", 20.0f, "C tau K0s(cm)"};
+    Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2f, "parameter Armenteros Cut"};
+    Configurable<float> v0rejK0s{"v0rejK0s", 0.005f, "V0 rej K0s"};
+
+    Configurable<std::pair<float, float>> rangeMK0sSignal{"rangeMK0sSignal", {0.47f, 0.53f}, "K0S mass range for signal extraction"};
+
+    Configurable<float> cfgYAcceptance{"cfgYAcceptance", 0.5f, "Rapidity acceptance"};
+  } v0Configs;
+
+  // Configurable on K0S pT bins
+  Configurable<std::vector<double>> binspTK0S{"binspTK0S", {0.1, 0.5, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for K0S"};
+
+  // Constants
+  static constexpr double massK0S = o2::constants::physics::MassK0Short;
+  static constexpr double massLambda = o2::constants::physics::MassLambda0;
+
+  // Filter on default selected collisions
+  // Filter collisionFilter = aod::lf_selection_default_collision::defaultSel == true;
+  Filter collisionFilter = aod::lf_selection_event::defaultSel == true;
+
+  // Defining filters on V0s (cannot filter on dynamic columns)
+  Filter v0PreFilter = (nabs(aod::v0data::dcapostopv) > v0Configs.v0SettingDCAPosToPV && nabs(aod::v0data::dcanegtopv) > v0Configs.v0SettingDCANegToPV && aod::v0data::dcaV0daughters < v0Configs.v0SettingDCAV0Dau);
+
+  // Defining the type of the collisions for data and MC
+  using SelCollisions = soa::Join<aod::Collisions, aod::CentFT0Ms, aod::PVMults, aod::PhiStrangeEvtSelDataLike>;
+  using SimCollisions = soa::Join<SelCollisions, aod::McCollisionLabels>;
+
+  using FilteredSelCollisions = soa::Filtered<SelCollisions>;
+  using FilteredSimCollisions = soa::Filtered<SimCollisions>;
+
+  // Defining the type of the V0s and corresponding daughter tracks for data and MC
+  using FullV0s = soa::Filtered<aod::V0Datas>;
+  using FullMCV0s = soa::Filtered<soa::Join<aod::V0Datas, aod::McV0Labels>>;
+
+  using V0DauTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCFullPi>;
+  using V0DauMCTracks = soa::Join<V0DauTracks, aod::McTrackLabels>;
+
+  void init(InitContext&)
+  {
+    AxisSpec binnedmultAxis{(std::vector<double>)binsMult, "centFT0M"};
+    AxisSpec binnedpTK0SAxis{(std::vector<double>)binspTK0S, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec massK0sAxis = {200, 0.4f, 0.6f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
+
+    histos.add("h3K0sCandidatesMass", "K^{0}_{S} candidate invariant mass", kTH3F, {binnedmultAxis, binnedpTK0SAxis, massK0sAxis});
+  }
+
+  // Single track selection for strangeness sector
+  template <typename T>
+  bool selectionTrackStrangeness(const T& track)
+  {
+    if (!track.hasTPC())
+      return false;
+    if (track.tpcNClsFound() < trackConfigs.minTPCnClsFound)
+      return false;
+    if (track.tpcNClsCrossedRows() < trackConfigs.minNCrossedRowsTPC)
+      return false;
+    if (track.tpcChi2NCl() > trackConfigs.maxChi2TPC)
+      return false;
+
+    if (std::abs(track.eta()) > trackConfigs.etaMax)
+      return false;
+    return true;
+  }
+
+  // V0 selection
+  template <bool isMC, typename T1, typename T2>
+  bool selectionV0(const T1& v0, const T2& collision)
+  {
+    using V0DauTrackType = std::conditional_t<isMC, V0DauMCTracks, V0DauTracks>;
+
+    const auto& posDaughterTrack = v0.template posTrack_as<V0DauTrackType>();
+    const auto& negDaughterTrack = v0.template negTrack_as<V0DauTrackType>();
+
+    if (!selectionTrackStrangeness(posDaughterTrack) || !selectionTrackStrangeness(negDaughterTrack))
+      return false;
+
+    if constexpr (!isMC) {
+      if (std::abs(posDaughterTrack.tpcNSigmaPi()) > trackConfigs.nSigmaCutTPCSecPion)
+        return false;
+      if (std::abs(negDaughterTrack.tpcNSigmaPi()) > trackConfigs.nSigmaCutTPCSecPion)
+        return false;
+    }
+
+    if (v0.v0cosPA() < v0Configs.v0SettingCosPA)
+      return false;
+    if (v0.v0radius() < v0Configs.v0SettingRadius)
+      return false;
+    if (v0.pt() < v0Configs.v0SettingMinPt)
+      return false;
+
+    if (v0Configs.cfgFurtherV0Selection) {
+      if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massK0S > v0Configs.ctauK0s)
+        return false;
+      if (v0.qtarm() < (v0Configs.paramArmenterosCut * std::abs(v0.alpha())))
+        return false;
+      if (std::abs(v0.mLambda() - massLambda) < v0Configs.v0rejK0s)
+        return false;
+    }
+
+    if (std::abs(v0.yK0Short()) > v0Configs.cfgYAcceptance)
+      return false;
+
+    return true;
+  }
+
+  // void processData(SelCollisions::iterator const& collision, FullV0s const& V0s, V0DauTracks const&)
+  void processData(FilteredSelCollisions::iterator const& collision, FullV0s const& V0s, V0DauTracks const&)
+  {
+    for (const auto& v0 : V0s) {
+      // Cut on V0 dynamic columns
+      if (!selectionV0<false>(v0, collision))
+        continue;
+
+      histos.fill(HIST("h3K0sCandidatesMass"), collision.centFT0M(), v0.pt(), v0.mK0Short());
+
+      k0sReducedCandidatesData(collision.globalIndex(), v0.mK0Short(), v0.pt(), v0.yK0Short(), v0.phi());
+    }
+  }
+
+  PROCESS_SWITCH(K0sReducedCandProducer, processData, "Process function to select reduced K0s candidates in Data or in McReco (w/o McTruth) analysis", true);
+
+  // void processMCReco(SimCollisions::iterator const& collision, FullMCV0s const& V0s, V0DauMCTracks const&, aod::McParticles const& mcParticles)
+  void processMCReco(FilteredSimCollisions::iterator const& collision, FullMCV0s const& V0s, V0DauMCTracks const&, aod::McParticles const& mcParticles)
+  {
+    for (const auto& v0 : V0s) {
+      if (!selectionV0<true>(v0, collision))
+        continue;
+      if (!v0.has_mcParticle())
+        continue;
+
+      const auto& v0McParticle = mcParticles.rawIteratorAt(v0.mcParticleId());
+      if (std::abs(v0McParticle.pdgCode()) != PDG_t::kK0Short || !v0McParticle.isPhysicalPrimary())
+        continue;
+
+      k0sReducedCandidatesMcReco(collision.globalIndex(), v0.mK0Short(), v0McParticle.pt(), v0McParticle.y(), v0McParticle.phi());
+    }
+  }
+
+  PROCESS_SWITCH(K0sReducedCandProducer, processMCReco, "Process function to select reduced K0s candidates in MCReco w MC truth", false);
+};
+
+struct PionTrackProducer {
+  // Produce the table with the pion tracks information
+  Produces<aod::PionTracksData> pionTracksData;
+  Produces<aod::PionTracksMcReco> pionTracksMcReco;
+
+  HistogramRegistry histos{"pionTracks", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+
+  // Configurable for analysis mode
+  Configurable<int> analysisMode{"analysisMode", 1, "Analysis mode: 0 - old method with online normalization, 1 - new method with correlations"};
+
+  // Configurable on multiplicity bins
+  Configurable<std::vector<double>> binsMult{"binsMult", {0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0}, "Multiplicity bin limits"};
+
+  // Configurables for pion track selection
+  struct : ConfigurableGroup {
+    Configurable<float> cMinPionPtcut{"cMinPionPtcut", 0.2f, "Track minimum pt cut"};
+    Configurable<float> nSigmaCutTPCPrimPion{"nSigmaCutTPCPrimPion", 2.0f, "Value of the TPC Nsigma cut for primary Pions"};
+    Configurable<float> nSigmaCutCombinedPi{"nSigmaCutCombinedPi", 2.0f, "Value of the TPC and TOF Nsigma cut for Pions"};
+
+    Configurable<bool> cfgIsTOFChecked{"cfgIsTOFChecked", true, "Is TOF checked in PID for pions"};
+    Configurable<std::vector<float>> cMaxDCArToPVPion{"cMaxDCArToPVPion", {0.004f, 0.013f, 1.0f}, "Track DCAr cut to PV for Pions"};
+    Configurable<float> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 2.0f, "Track DCAz cut to PV Maximum"};
+    Configurable<bool> cfgIsDCAzParameterized{"cfgIsDCAzParameterized", false, "IsDCAzParameterized"};
+    Configurable<std::vector<float>> cMaxDCAzToPVPion{"cMaxDCAzToPVPion", {0.004f, 0.013f, 1.0f}, "Track DCAz cut to PV for Pions"};
+
+    Configurable<int> minTPCnClsFound{"minTPCnClsFound", 70, "min number of found TPC clusters"};
+    Configurable<int> minITSnCls{"minITSnCls", 4, "min number of ITS clusters"};
+
+    Configurable<bool> forceTOF{"forceTOF", false, "force the TOF signal for the PID"};
+    Configurable<float> tofPIDThreshold{"tofPIDThreshold", 0.5, "minimum pT after which TOF PID is applicable"};
+    Configurable<std::vector<int>> trkPIDspecies{"trkPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton}, "Trk sel: Particles species for PID, proton, pion, kaon"};
+    Configurable<std::vector<float>> pidTPCMax{"pidTPCMax", std::vector<float>{2.0f, 2.0f, 2.0f}, "maximum nSigma TPC"};
+    Configurable<std::vector<float>> pidTOFMax{"pidTOFMax", std::vector<float>{2.0f, 2.0f, 2.0f}, "maximum nSigma TOF"};
+
+    Configurable<float> cfgYAcceptance{"cfgYAcceptance", 0.5f, "Rapidity acceptance"};
+  } trackConfigs;
+
+  // Configurable on pion pT bins
+  Configurable<std::vector<double>> binspTPi{"binspTPi", {0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0}, "pT bin limits for pions"};
+
+  static constexpr double massPi = o2::constants::physics::MassPiPlus;
+
+  // Filter on default selected collisions
+  // Filter collisionFilter = aod::lf_selection_default_collision::defaultSel == true;
+  Filter collisionFilter = aod::lf_selection_event::defaultSel == true;
+
+  // Defining the type of the collisions for data and MC
+  using SelCollisions = soa::Join<aod::Collisions, aod::CentFT0Ms, aod::PVMults, aod::PhiStrangeEvtSelDataLike>;
+  using SimCollisions = soa::Join<SelCollisions, aod::McCollisionLabels>;
+
+  using FilteredSelCollisions = soa::Filtered<SelCollisions>;
+  using FilteredSimCollisions = soa::Filtered<SimCollisions>;
+
+  // Defining the type of the tracks for data and MC
+  using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+  using FullMCTracks = soa::Join<FullTracks, aod::McTrackLabels>;
+
+  void init(InitContext&)
+  {
+    AxisSpec binnedmultAxis{(std::vector<double>)binsMult, "centFT0M"};
+    AxisSpec binnedpTPiAxis{(std::vector<double>)binspTPi, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec nSigmaPiAxis = {100, -10.0f, 10.0f, "N#sigma #pi"};
+
+    histos.add("h3PionTPCnSigma", "Pion TPC nSigma distribution", kTH3F, {binnedmultAxis, binnedpTPiAxis, nSigmaPiAxis});
+    histos.add("h3PionTOFnSigma", "Pion TOF nSigma distribution", kTH3F, {binnedmultAxis, binnedpTPiAxis, nSigmaPiAxis});
+
+    histos.add("h2RecMCDCAxyPrimPi", "Dcaxy distribution vs pt for Primary Pions", kTH2F, {binnedpTPiAxis, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
+    histos.add("h2RecMCDCAxySecWeakDecayPi", "Dcaz distribution vs pt for Secondary Pions from Weak Decay", kTH2F, {binnedpTPiAxis, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
+    histos.add("h2RecMCDCAxySecMaterialPi", "Dcaxy distribution vs pt for Secondary Pions from Material", kTH2F, {binnedpTPiAxis, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
+  }
+
+  // PID selection for Pions
+  template <typename T>
+  bool pidSelectionPion(const T& track)
+  {
+    for (size_t speciesIndex = 0; speciesIndex < trackConfigs.trkPIDspecies->size(); ++speciesIndex) {
+      auto const& pid = trackConfigs.trkPIDspecies->at(speciesIndex);
+      auto nSigmaTPC = aod::pidutils::tpcNSigma(pid, track);
+
+      if (trackConfigs.forceTOF && !track.hasTOF()) {
+        return false;
+      }
+
+      if (speciesIndex == 0) { // First species logic
+        if (std::abs(nSigmaTPC) >= trackConfigs.pidTPCMax->at(speciesIndex)) {
+          return false; // TPC check failed
+        }
+        if (trackConfigs.forceTOF || (track.pt() >= trackConfigs.tofPIDThreshold && track.hasTOF())) {
+          auto nSigmaTOF = aod::pidutils::tofNSigma(pid, track);
+          if (std::abs(nSigmaTOF) >= trackConfigs.pidTOFMax->at(speciesIndex)) {
+            return false; // TOF check failed
+          }
+        }
+      } else {                                                                // Other species logic
+        if (std::abs(nSigmaTPC) < trackConfigs.pidTPCMax->at(speciesIndex)) { // Check TPC nSigma  first
+          if (track.hasTOF()) {
+            auto nSigmaTOF = aod::pidutils::tofNSigma(pid, track);
+            if (std::abs(nSigmaTOF) < trackConfigs.pidTOFMax->at(speciesIndex)) {
+              return false; // Reject if both TPC and TOF are within thresholds
+            }
+          } else {
+            return false; // Reject if only TPC is within threshold and TOF is unavailable
+          }
+        }
+      }
+    }
+
+    return true;
+  }
+
+  // Track selection for Pions
+  template <typename T>
+  bool selectionPion(const T& track)
+  {
+    if (!track.isGlobalTrackWoDCA())
+      return false;
+
+    if (track.itsNCls() < trackConfigs.minITSnCls)
+      return false;
+    if (track.tpcNClsFound() < trackConfigs.minTPCnClsFound)
+      return false;
+
+    if (track.pt() < trackConfigs.cMinPionPtcut)
+      return false;
+
+    if (std::abs(track.dcaXY()) > trackConfigs.cMaxDCArToPVPion->at(0) + (trackConfigs.cMaxDCArToPVPion->at(1) / std::pow(track.pt(), trackConfigs.cMaxDCArToPVPion->at(2))))
+      return false;
+    if (trackConfigs.cfgIsDCAzParameterized) {
+      if (std::abs(track.dcaZ()) > trackConfigs.cMaxDCAzToPVPion->at(0) + (trackConfigs.cMaxDCAzToPVPion->at(1) / std::pow(track.pt(), trackConfigs.cMaxDCAzToPVPion->at(2))))
+        return false;
+    } else {
+      if (std::abs(track.dcaZ()) > trackConfigs.cMaxDCAzToPVcut)
+        return false;
+    }
+
+    if (trackConfigs.cfgIsTOFChecked && track.pt() >= trackConfigs.tofPIDThreshold && !track.hasTOF())
+      return false;
+
+    if (analysisMode == 1 && !pidSelectionPion(track))
+      return false;
+
+    /*
+    if (analysisMode == 1) {
+      if (track.pt() < trackConfigs.tofPIDThreshold && std::abs(track.tpcNSigmaPi()) >= trackConfigs.nSigmaCutTPCPrimPion)
+        return false;
+      if (trackConfigs.cfgIsTOFChecked && track.pt() >= trackConfigs.tofPIDThreshold && (std::pow(track.tofNSigmaPi(), 2) + std::pow(track.tpcNSigmaPi(), 2)) >= std::pow(trackConfigs.nSigmaCutCombinedPi, 2))
+        return false;
+    }
+    */
+
+    if (std::abs(track.rapidity(massPi)) > trackConfigs.cfgYAcceptance)
+      return false;
+
+    return true;
+  }
+
+  // void processData(SelCollisions::iterator const& collision, FullTracks const& fullTracks)
+  void processData(FilteredSelCollisions::iterator const& collision, FullTracks const& fullTracks)
+  {
+    for (const auto& track : fullTracks) {
+      if (!selectionPion(track))
+        continue;
+
+      histos.fill(HIST("h3PionTPCnSigma"), collision.centFT0M(), track.pt(), track.tpcNSigmaPi());
+      histos.fill(HIST("h3PionTOFnSigma"), collision.centFT0M(), track.pt(), track.tofNSigmaPi());
+
+      pionTracksData(collision.globalIndex(), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt(), track.rapidity(massPi), track.phi());
+    }
+  }
+
+  PROCESS_SWITCH(PionTrackProducer, processData, "Process function to select pion tracks in Data or in McReco (w/o MC truth) analysis", true);
+
+  // void processMCReco(SimCollisions::iterator const& collision, FullMCTracks const& fullTracks, aod::McParticles const& mcParticles)
+  void processMCReco(FilteredSimCollisions::iterator const& collision, FullMCTracks const& fullTracks, aod::McParticles const& mcParticles)
+  {
+    for (const auto& track : fullTracks) {
+      if (!selectionPion(track))
+        continue;
+      if (!track.has_mcParticle())
+        continue;
+
+      const auto trackMcParticle = mcParticles.rawIteratorAt(track.mcParticleId());
+      if (std::abs(trackMcParticle.pdgCode()) != PDG_t::kPiPlus)
+        continue;
+
+      if (trackMcParticle.isPhysicalPrimary()) {
+        histos.fill(HIST("h2RecMCDCAxyPrimPi"), track.pt(), track.dcaXY());
+      } else {
+        if (trackMcParticle.getProcess() == TMCProcess::kPDecay) { // Selection of secondary pions from weak decay
+          histos.fill(HIST("h2RecMCDCAxySecWeakDecayPi"), track.pt(), track.dcaXY());
+        } else { // Selection of secondary pions from material interactions
+          histos.fill(HIST("h2RecMCDCAxySecMaterialPi"), track.pt(), track.dcaXY());
+        }
+        continue;
+      }
+
+      pionTracksMcReco(collision.globalIndex(), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt(), track.rapidity(massPi), track.phi());
+    }
+  }
+
+  PROCESS_SWITCH(PionTrackProducer, processMCReco, "Process function to select pion tracks in MCReco w MC truth", false);
+};
+
+struct EventSelectionProducer {
   // Produce the table with the event selection information
+  Produces<aod::PhiStrangeEvtSelDataLike> phiStrangeEvtSelDataLike;
+  Produces<aod::PhiStrangeEvtSelMcGen> phiStrangeEvtSelMcGen;
+
+  // Produces<aod::PhiStrangeDefEvtSelDataLike> phiStrangeDefEvtSelDataLike;
+  // Produces<aod::PhiStrangeDefEvtSelMcGen> phiStrangeDefEvtSelMcGen;
+
+  /*Produces<aod::DefaultSelectionData> defaultSelectionData;
+  Produces<aod::DefaultSelectionMcGen> defaultSelectionMcGen;
+
   Produces<aod::PhimesonSelectionData> phimesonSelectionData;
-  // Produces<aod::PhimesonSelectionMcReco> phimesonSelectionMcReco;
-  Produces<aod::PhimesonSelectionMcGen> phimesonSelectionMcGen;
+  Produces<aod::PhimesonSelectionMcGen> phimesonSelectionMcGen;*/
 
   HistogramRegistry histos{"eventSelection", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-
-  // Configurable for selection type
-  Configurable<int> selectionType{"selectionType", 1, "Selection type: 0 - default selection only, 1 - default + phi meson selection"};
 
   // Configurable for event selection
   Configurable<float> cutZVertex{"cutZVertex", 10.0f, "Accepted z-vertex range (cm)"};
@@ -393,13 +799,6 @@ struct PhiMesonSelCollision {
     histos.add("hMultiplicityPercentWPhi", "Multiplicity Percentile in Events with a Phi Candidate", kTH1F, {multAxis});
     histos.add("h2VertexZvsMult", "Vertex Z vs Multiplicity Percentile", kTH2F, {vertexZAxis, binnedmultAxis});
     histos.add("h2VertexZvsMultWPhi", "Vertex Z vs Multiplicity Percentile with a Phi Candidate", kTH2F, {vertexZAxis, binnedmultAxis});
-
-    // Phi's daughter tracks information
-    /*histos.add("hEta", "Eta of Kaon candidates", kTH1F, {{100, -1.0f, 1.0f}});
-    histos.add("hNsigmaKaonTPC", "NsigmaKaon TPC distribution vs pt", kTH2F, {{100, 0.0, 5.0, "#it{p} (GeV/#it{c})"}, {100, -10.0f, 10.0f}});
-    histos.add("hNsigmaKaonTOF", "NsigmaKaon TOF distribution vs pt", kTH2F, {{100, 0.0, 5.0, "#it{p} (GeV/#it{c})"}, {100, -10.0f, 10.0f}});
-    histos.add("h2DauTracksPhiDCAxy", "DCAxy distribution vs pt", kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
-    histos.add("h2DauTracksPhiDCAz", "DCAz distribution vs pt", kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});*/
   }
 
   // Default event selection
@@ -500,31 +899,65 @@ struct PhiMesonSelCollision {
     return true;
   }
 
-  void processData(SelCollisions::iterator const& collision, aod::PhimesonCandidatesData const& phiCandidatesData)
+  // Default event selection
+  void processData(SelCollisions::iterator const& collision)
   {
-    phimesonSelectionData(defaultEventSelection<false>(collision) && selectionType == 1 ? eventHasPhi<false>(collision, phiCandidatesData) : true);
+    // phiStrangeDefEvtSelDataLike(defaultEventSelection<false>(collision));
+    phiStrangeEvtSelDataLike(defaultEventSelection<false>(collision), false);
+    // defaultSelectionData(defaultEventSelection<false>(collision), false);
   }
 
-  PROCESS_SWITCH(PhiMesonSelCollision, processData, "Process function to select events with Phi mesons in Data", true);
+  PROCESS_SWITCH(EventSelectionProducer, processData, "Process function to select default events in Data", true);
 
-  void processMCReco(SimCollisions::iterator const& collision, MCCollisions const&, aod::PhimesonCandidatesData const& phiCandidatesData)
+  void processMCReco(SimCollisions::iterator const& collision, MCCollisions const&)
   {
-    // phimesonSelectionMcReco(defaultEventSelection<true, MCCollisions>(collision) && selectionType == 1 ? eventHasPhi<true, MCCollisions>(collision, phiCandidatesData) : true);
-    phimesonSelectionData(defaultEventSelection<true, MCCollisions>(collision) && selectionType == 1 ? eventHasPhi<true, MCCollisions>(collision, phiCandidatesData) : true);
+    // phiStrangeDefEvtSelDataLike(defaultEventSelection<true, MCCollisions>(collision));
+    phiStrangeEvtSelDataLike(defaultEventSelection<true, MCCollisions>(collision), false);
+    // defaultSelectionData(defaultEventSelection<true, MCCollisions>(collision));
   }
 
-  PROCESS_SWITCH(PhiMesonSelCollision, processMCReco, "Process function to select events with Phi mesons in MCReco", false);
+  PROCESS_SWITCH(EventSelectionProducer, processMCReco, "Process function to select default events in MCReco", false);
 
-  void processMCGen(MCCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles, aod::PhimesonCandidatesMcGen const& phiCandidatesMcGen)
+  void processMCGen(MCCollisions::iterator const&, aod::McParticles const& mcParticles)
   {
-    phimesonSelectionMcGen(pwglf::isINELgt0mc(mcParticles, pdgDB) && selectionType == 1 ? eventHasPhi<true>(mcCollision, phiCandidatesMcGen) : true);
+
+    // phiStrangeDefEvtSelMcGen(pwglf::isINELgt0mc(mcParticles, pdgDB));
+    phiStrangeEvtSelMcGen(pwglf::isINELgt0mc(mcParticles, pdgDB), false);
+    // defaultSelectionMcGen(pwglf::isINELgt0mc(mcParticles, pdgDB));
   }
 
-  PROCESS_SWITCH(PhiMesonSelCollision, processMCGen, "Process function to select events with Phi mesons in MCGen", false);
+  PROCESS_SWITCH(EventSelectionProducer, processMCGen, "Process function to select default events in MCGen", false);
+
+  // Default event selection + phi meson requirement
+  void processDataWPhi(SelCollisions::iterator const& collision, aod::PhimesonCandidatesData const& phiCandidatesData)
+  {
+    phiStrangeEvtSelDataLike(defaultEventSelection<false>(collision), eventHasPhi<false>(collision, phiCandidatesData));
+    // phimesonSelectionData(defaultEventSelection<false>(collision) && eventHasPhi<false>(collision, phiCandidatesData));
+  }
+
+  PROCESS_SWITCH(EventSelectionProducer, processDataWPhi, "Process function to select events with Phi mesons in Data", false);
+
+  void processMCRecoWPhi(SimCollisions::iterator const& collision, MCCollisions const&, aod::PhimesonCandidatesData const& phiCandidatesData)
+  {
+    phiStrangeEvtSelDataLike(defaultEventSelection<true, MCCollisions>(collision), eventHasPhi<true, MCCollisions>(collision, phiCandidatesData));
+    // phimesonSelectionData(defaultEventSelection<true, MCCollisions>(collision) && eventHasPhi<true, MCCollisions>(collision, phiCandidatesData));
+  }
+
+  PROCESS_SWITCH(EventSelectionProducer, processMCRecoWPhi, "Process function to select events with Phi mesons in MCReco", false);
+
+  void processMCGenWPhi(MCCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles, aod::PhimesonCandidatesMcGen const& phiCandidatesMcGen)
+  {
+    phiStrangeEvtSelMcGen(pwglf::isINELgt0mc(mcParticles, pdgDB), eventHasPhi<true>(mcCollision, phiCandidatesMcGen));
+    // phimesonSelectionMcGen(pwglf::isINELgt0mc(mcParticles, pdgDB) && eventHasPhi<true>(mcCollision, phiCandidatesMcGen));
+  }
+
+  PROCESS_SWITCH(EventSelectionProducer, processMCGenWPhi, "Process function to select events with Phi mesons in MCGen", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<PhiMesonCandProducer>(cfgc),
-                      adaptAnalysisTask<PhiMesonSelCollision>(cfgc)};
+                      adaptAnalysisTask<K0sReducedCandProducer>(cfgc),
+                      adaptAnalysisTask<PionTrackProducer>(cfgc),
+                      adaptAnalysisTask<EventSelectionProducer>(cfgc)};
 }
