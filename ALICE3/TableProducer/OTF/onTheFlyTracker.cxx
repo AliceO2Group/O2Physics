@@ -928,12 +928,12 @@ struct OnTheFlyTracker {
       const float timeResolutionUs = timeResolutionNs * nsToMus; // us
       const float time = (eventCollisionTimeNS + gRandom->Gaus(0., timeResolutionNs)) * nsToMus;
       static constexpr int kCascProngs = 3;
-      std::vector<o2::track::TrackParCov> xiDaughterTrackParCovsPerfect(3);
-      std::vector<o2::track::TrackParCov> xiDaughterTrackParCovsTracked(3);
-      std::vector<bool> isReco(kCascProngs);
-      std::vector<int> nHits(kCascProngs);        // total
-      std::vector<int> nSiliconHits(kCascProngs); // silicon type
-      std::vector<int> nTPCHits(kCascProngs);     // TPC type
+      std::array<o2::track::TrackParCov, kCascProngs> xiDaughterTrackParCovsPerfect;
+      std::array<o2::track::TrackParCov, kCascProngs> xiDaughterTrackParCovsTracked;
+      std::array<bool, kCascProngs> isReco;
+      std::array<int, kCascProngs> nHitsCascadeProngs;        // total
+      std::array<int, kCascProngs> nSiliconHitsCascadeProngs; // silicon type
+      std::array<int, kCascProngs> nTPCHitsCascadeProngs;     // TPC type
 
       bool tryKinkReco = false;
       if (cascadeDecaySettings.decayXi && isCascade) {
@@ -951,19 +951,19 @@ struct OnTheFlyTracker {
 
         for (int i = 0; i < kCascProngs; i++) {
           isReco[i] = false;
-          nHits[i] = 0;
-          nSiliconHits[i] = 0;
-          nTPCHits[i] = 0;
+          nHitsCascadeProngs[i] = 0;
+          nSiliconHitsCascadeProngs[i] = 0;
+          nTPCHitsCascadeProngs[i] = 0;
           if (enableSecondarySmearing) {
-            nHits[i] = fastTracker[icfg]->FastTrack(xiDaughterTrackParCovsPerfect[i], xiDaughterTrackParCovsTracked[i], dNdEta);
-            nSiliconHits[i] = fastTracker[icfg]->GetNSiliconPoints();
-            nTPCHits[i] = fastTracker[icfg]->GetNGasPoints();
+            nHitsCascadeProngs[i] = fastTracker[icfg]->FastTrack(xiDaughterTrackParCovsPerfect[i], xiDaughterTrackParCovsTracked[i], dNdEta);
+            nSiliconHitsCascadeProngs[i] = fastTracker[icfg]->GetNSiliconPoints();
+            nTPCHitsCascadeProngs[i] = fastTracker[icfg]->GetNGasPoints();
 
-            if (nHits[i] < 0 && cascadeDecaySettings.doXiQA) { // QA
-              getHist(TH1, histPath + "hFastTrackerQA")->Fill(o2::math_utils::abs(nHits[i]));
+            if (nHitsCascadeProngs[i] < 0 && cascadeDecaySettings.doXiQA) { // QA
+              getHist(TH1, histPath + "hFastTrackerQA")->Fill(o2::math_utils::abs(nHitsCascadeProngs[i]));
             }
 
-            if (nSiliconHits[i] >= fastTrackerSettings.minSiliconHits || (nSiliconHits[i] >= fastTrackerSettings.minSiliconHitsIfTPCUsed && nTPCHits[i] >= fastTrackerSettings.minTPCClusters)) {
+            if (nSiliconHitsCascadeProngs[i] >= fastTrackerSettings.minSiliconHits || (nSiliconHitsCascadeProngs[i] >= fastTrackerSettings.minSiliconHitsIfTPCUsed && nTPCHitsCascadeProngs[i] >= fastTrackerSettings.minTPCClusters)) {
               isReco[i] = true;
             } else {
               continue; // extra sure
@@ -982,7 +982,7 @@ struct OnTheFlyTracker {
             histos.fill(HIST("hNaNBookkeeping"), i + 1, 1.0f);
           }
           if (isReco[i]) {
-            tracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovsTracked[i], mcParticle.globalIndex(), time, timeResolutionUs, true, true, i + 2, nSiliconHits[i], nTPCHits[i]});
+            tracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovsTracked[i], mcParticle.globalIndex(), time, timeResolutionUs, true, true, i + 2, nSiliconHitsCascadeProngs[i], nTPCHitsCascadeProngs[i]});
           } else {
             ghostTracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovsTracked[i], mcParticle.globalIndex(), time, timeResolutionUs, true, true, i + 2});
           }
@@ -1379,7 +1379,7 @@ struct OnTheFlyTracker {
           //   histos.fill(HIST("hNaNBookkeeping"), i + 1, 1.0f);
           // }
           if (isReco[i]) {
-            tracksAlice3.push_back(TrackAlice3{v0DaughterTrackParCovsTracked[i], mcParticle.globalIndex(), time, timeResolutionUs, true, true, i + 2, nSiliconHits[i], nTPCHits[i]});
+            tracksAlice3.push_back(TrackAlice3{v0DaughterTrackParCovsTracked[i], mcParticle.globalIndex(), time, timeResolutionUs, true, true, i + 2, nSiliconHitsCascadeProngs[i], nTPCHitsCascadeProngs[i]});
           } else {
             ghostTracksAlice3.push_back(TrackAlice3{v0DaughterTrackParCovsTracked[i], mcParticle.globalIndex(), time, timeResolutionUs, true, true, i + 2});
           }
