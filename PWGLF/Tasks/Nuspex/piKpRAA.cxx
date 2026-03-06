@@ -275,6 +275,7 @@ struct PiKpRAA {
 
   enum EvCutLabel {
     All = 1,
+    HasFT0,
     SelEigth,
     SelTriggerTVX,
     SelNoITSROFrameBorder,
@@ -289,7 +290,6 @@ struct PiKpRAA {
     NoHighMultCollInPrevRof,
     NoCollInTimeRangeNarrow,
     OccuCut,
-    HasFT0,
     Centrality,
     NchSel,
     INELgt0
@@ -398,9 +398,11 @@ struct PiKpRAA {
     const char* latexEta[kNEtaHists] = {"-0.8<#eta<-0.6", "-0.6<#eta<-0.4", "-0.4<#eta<-0.2", "-0.2<#eta<0", "0<#eta<0.2", "0.2<#eta<0.4", "0.4<#eta<0.6", "0.6<#eta<0.8"};
 
     registry.add("EventCounter", ";;Events", kTH1F, {axisEvent});
+    registry.add("HasFT0AndTVX", "AllEvents=1 | HasFT0=2 | HasFT0&TVX=3;;", kTH1F, {{3, 0.5, 3.5}});
     registry.add("zPos", "With Event Selection;;Entries;", kTH1F, {axisZpos});
     registry.add("T0Ccent", ";;Entries", kTH1F, {axisCent});
     registry.add("T0CcentVsFoundFT0", "Found(=1.5) NOT Found(=0.5);;Status;", kTH2F, {{{axisCent}, {2, 0, 2}}});
+    registry.add("T0CcentVsFoundFT0AndTVX", "Found(=1.5) NOT Found(=0.5);;Status;", kTH2F, {{{axisCent}, {2, 0, 2}}});
     registry.add("NchVsCent", "Measured Nch v.s. Centrality (At least Once Rec. Coll. + Sel. criteria);;Nch", kTH2F, {{axisCent, {nBinsNch, minNch, maxNch}}});
     registry.add("NclVsEtaPID", ";#eta;Ncl used for PID", kTH2F, {{{axisEta}, {161, -0.5, 160.5}}});
     registry.add("NclVsEtaPIDp", ";#eta;#LTNcl#GT used for PID", kTProfile, {axisEta});
@@ -410,21 +412,21 @@ struct PiKpRAA {
     auto hstat = registry.get<TH1>(HIST("EventCounter"));
     auto* x = hstat->GetXaxis();
     x->SetBinLabel(1, "All");
-    x->SetBinLabel(2, "SelEigth");
-    x->SetBinLabel(3, "SelTriggerTVX");
-    x->SetBinLabel(4, "SelNoITSROFrameBorder");
-    x->SetBinLabel(5, "SelNoTimeFrameBorder");
-    x->SetBinLabel(6, "VtxZ Sel.");
-    x->SetBinLabel(7, "GoodZvtxFT0vsPV");
-    x->SetBinLabel(8, "NoSameBunchPileup");
-    x->SetBinLabel(9, "NoCollInTimeRangeStrict");
-    x->SetBinLabel(10, "NoCollInTimeRangeStandard");
-    x->SetBinLabel(11, "NoCollInRofStrict");
-    x->SetBinLabel(12, "NoCollInRofStandard");
-    x->SetBinLabel(13, "NoHighMultCollInPrevRof");
-    x->SetBinLabel(14, "NoCollInTimeRangeNarrow");
-    x->SetBinLabel(15, "Occupancy Cut");
-    x->SetBinLabel(16, "Has FT0?");
+    x->SetBinLabel(2, "Has FT0?");
+    x->SetBinLabel(3, "SelEigth");
+    x->SetBinLabel(4, "SelTriggerTVX");
+    x->SetBinLabel(5, "SelNoITSROFrameBorder");
+    x->SetBinLabel(6, "SelNoTimeFrameBorder");
+    x->SetBinLabel(7, "VtxZ Sel.");
+    x->SetBinLabel(8, "GoodZvtxFT0vsPV");
+    x->SetBinLabel(9, "NoSameBunchPileup");
+    x->SetBinLabel(10, "NoCollInTimeRangeStrict");
+    x->SetBinLabel(11, "NoCollInTimeRangeStandard");
+    x->SetBinLabel(12, "NoCollInRofStrict");
+    x->SetBinLabel(13, "NoCollInRofStandard");
+    x->SetBinLabel(14, "NoHighMultCollInPrevRof");
+    x->SetBinLabel(15, "NoCollInTimeRangeNarrow");
+    x->SetBinLabel(16, "Occupancy Cut");
     x->SetBinLabel(17, "Cent. Sel.");
     x->SetBinLabel(18, "Nch Sel.");
     x->SetBinLabel(19, "INEL > 0");
@@ -584,6 +586,10 @@ struct PiKpRAA {
       registry.add("PtPiVsNchMC_WithRecoEvt", "Generated Events With at least One Rec. Collision;;Gen. Nch (|#eta|<0.8);", kTH2F, {{axisPt, {nBinsNch, minNch, maxNch}}});
       registry.add("PtKaVsNchMC_WithRecoEvt", "Generated Events With at least One Rec. Collision;;Gen. Nch (|#eta|<0.8);", kTH2F, {{axisPt, {nBinsNch, minNch, maxNch}}});
       registry.add("PtPrVsNchMC_WithRecoEvt", "Generated Events With at least One Rec. Collision;;Gen. Nch (|#eta|<0.8);", kTH2F, {{axisPt, {nBinsNch, minNch, maxNch}}});
+
+      registry.add("PtPiVsNchMC_WithRecoEvt_has_FT0_and_TVX", "Generated Events With at least One Rec. Collision;;Gen. Nch (|#eta|<0.8);", kTH2F, {{axisPt, {nBinsNch, minNch, maxNch}}});
+      registry.add("PtKaVsNchMC_WithRecoEvt_has_FT0_and_TVX", "Generated Events With at least One Rec. Collision;;Gen. Nch (|#eta|<0.8);", kTH2F, {{axisPt, {nBinsNch, minNch, maxNch}}});
+      registry.add("PtPrVsNchMC_WithRecoEvt_has_FT0_and_TVX", "Generated Events With at least One Rec. Collision;;Gen. Nch (|#eta|<0.8);", kTH2F, {{axisPt, {nBinsNch, minNch, maxNch}}});
 
       // Needed to calculate the denominator of the Signal Loss correction
       registry.add("PtPiVsNchMC_AllGen", "All Generated Events;;Gen. Nch (|#eta|<0.8);", kTH2F, {{axisPt, {nBinsNch, minNch, maxNch}}});
@@ -1250,10 +1256,36 @@ struct PiKpRAA {
           bestCollisionIndex = collision.globalIndex();
         }
 
+        if (selHasFT0 && !collision.has_foundFT0())
+          continue;
+
+        if (useSel8 && !collision.sel8())
+          continue;
+
+        // kIsTriggerTVX
+        if (selTriggerTVX && !collision.selection_bit(o2::aod::evsel::kIsTriggerTVX))
+          continue;
+
+        // kNoITSROFrameBorder
+        if (selNoITSROFrameBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))
+          continue;
+
+        // kNoTimeFrameBorder
+        if (selNoTimeFrameBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))
+          continue;
+
+        // Zvtx
+        if (isZvtxPosSel && std::fabs(collision.posZ()) > posZcut)
+          continue;
+
+        if (selIsGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+          continue;
+
+        if (selNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+          continue;
+
         // Needed to calculate denominator of the Event Splitting correction
-        if (isEventSelected(collision)) {
-          registry.fill(HIST("Centrality_AllRecoEvt"), centrality);
-        }
+        registry.fill(HIST("Centrality_AllRecoEvt"), centrality);
       }
 
       //---------------------------
@@ -1263,15 +1295,6 @@ struct PiKpRAA {
       for (const auto& collision : collisions) {
 
         const float centrality{isT0Ccent ? collision.centFT0C() : collision.centFT0M()};
-
-        //---------------------------
-        // Reject collisions if has_foundFT0() returns false
-        //---------------------------
-        if (selHasFT0 && !collision.has_foundFT0()) {
-          registry.fill(HIST("T0CcentVsFoundFT0"), centrality, 0.5);
-          continue;
-        }
-        registry.fill(HIST("T0CcentVsFoundFT0"), centrality, 1.5);
 
         //---------------------------
         // Pick the collisions with the largest number of contributors
@@ -1301,7 +1324,6 @@ struct PiKpRAA {
         //---------------------------
         // Needed to construct the correlation between MC Nch v.s. centrality
         //---------------------------
-
         registry.fill(HIST("Centrality_WRecoEvt"), centrality);
         registry.fill(HIST("zPosMC"), mccollision.posZ());
 
@@ -1318,6 +1340,22 @@ struct PiKpRAA {
         registry.fill(HIST("NchMC_WithRecoEvt"), nChMCEta08); // Numerator of event loss correction
         registry.fill(HIST("zPos"), collision.posZ());
         registry.fill(HIST("T0Ccent"), centrality);
+
+        //---------------------------
+        // has_foundFT0() ?
+        //---------------------------
+        if (collision.has_foundFT0()) {
+          registry.fill(HIST("HasFT0AndTVX"), 2.0);
+          registry.fill(HIST("T0CcentVsFoundFT0"), centrality, 1.5);
+        } else {
+          registry.fill(HIST("T0CcentVsFoundFT0"), centrality, 0.5);
+        }
+        if (collision.has_foundFT0() && collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+          registry.fill(HIST("HasFT0AndTVX"), 3.0);
+          registry.fill(HIST("T0CcentVsFoundFT0AndTVX"), centrality, 1.5);
+        } else {
+          registry.fill(HIST("T0CcentVsFoundFT0AndTVX"), centrality, 0.5);
+        }
 
         //---------------------------
         // All Generated events with at least one associated reconstructed collision
@@ -1365,6 +1403,47 @@ struct PiKpRAA {
             }
           }
         } // Loop over generated particles per generated collision
+
+        // Generated events with FT0 information but not TVX triggered
+        if (selHasFT0 && collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+          for (const auto& particle : mcParticles) {
+            if (particle.eta() < v0Selections.minEtaDaughter || particle.eta() > v0Selections.maxEtaDaughter)
+              continue;
+
+            if (particle.pt() < v0Selections.minPt || particle.pt() > v0Selections.maxPt)
+              continue;
+
+            auto charge{0.};
+            // Get the MC particle
+            auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
+            if (pdgParticle != nullptr) {
+              charge = pdgParticle->Charge();
+            } else {
+              continue;
+            }
+
+            // Is it a charged particle?
+            if (std::abs(charge) < kMinCharge)
+              continue;
+
+            // Is it a primary particle?
+            bool isPrimary{true};
+            if (!particle.isPhysicalPrimary())
+              isPrimary = false;
+
+            if (isPrimary) {
+              if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
+                registry.fill(HIST("PtPiVsNchMC_WithRecoEvt_has_FT0_and_TVX"), particle.pt(), nChMCEta08); // Numerator of signal loss
+              } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) {
+                registry.fill(HIST("PtKaVsNchMC_WithRecoEvt_has_FT0_and_TVX"), particle.pt(), nChMCEta08);
+              } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) {
+                registry.fill(HIST("PtPrVsNchMC_WithRecoEvt_has_FT0_and_TVX"), particle.pt(), nChMCEta08);
+              } else {
+                continue;
+              }
+            }
+          } // Loop over generated particles per generated collision
+        }
 
         const auto& groupedTracks{tracksMC.sliceBy(perCollision, collision.globalIndex())};
 
@@ -1990,6 +2069,15 @@ struct PiKpRAA {
   bool isEventSelected(CheckCol const& col)
   {
     registry.fill(HIST("EventCounter"), EvCutLabel::All);
+    registry.fill(HIST("HasFT0AndTVX"), EvCutLabel::All);
+
+    // Has FT0 information?
+    if (selHasFT0) {
+      if (!col.has_foundFT0()) {
+        return false;
+      }
+      registry.fill(HIST("EventCounter"), EvCutLabel::HasFT0);
+    }
 
     if (useSel8) {
       if (!col.sel8()) {
@@ -2094,13 +2182,6 @@ struct PiKpRAA {
         return false;
       }
       registry.fill(HIST("EventCounter"), EvCutLabel::OccuCut);
-    }
-
-    if (selHasFT0) {
-      if (!col.has_foundFT0()) {
-        return false;
-      }
-      registry.fill(HIST("EventCounter"), EvCutLabel::HasFT0);
     }
 
     if (isCentSel) {
