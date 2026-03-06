@@ -124,6 +124,8 @@ struct HfTaskFlowCharmHadrons {
   Configurable<bool> storeEpCosSin{"storeEpCosSin", false, "Flag to store cos and sin of EP angle in ThnSparse"};
   Configurable<bool> storeCandEta{"storeCandEta", false, "Flag to store candidates eta"};
   Configurable<bool> storeCandSign{"storeCandSign", false, "Flag to store candidates sign"};
+  Configurable<bool> storeCentSparse{"storeCentSparse", false, "Flag to store up to 4 centrality estimators comparison sparse (only applied in resolution process)"};
+  Configurable<std::vector<int>> centEstimatorsForSparse{"centEstimatorsForSparse", {1, 2, 3, 4}, "Centrality estimators to be stored in the centrality sparse (FT0A: 1, FT0C: 2, FT0M: 3, FV0A: 4). Up to 4 estimators can be configured."};
   Configurable<int> occEstimator{"occEstimator", 0, "Occupancy estimation (0: None, 1: ITS, 2: FT0C)"};
   Configurable<bool> saveEpResoHisto{"saveEpResoHisto", false, "Flag to save event plane resolution histogram"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -253,6 +255,12 @@ struct HfTaskFlowCharmHadrons {
     registry.add("hSparseFlowCharm", "THn for SP", HistType::kTHnSparseF, axes);
     registry.add("hCentEventWithCand", "Centrality distributions with charm candidates;Cent;entries", HistType::kTH1F, {{100, 0.f, 100.f}});
     registry.add("hCentEventWithCandInSigRegion", "Centrality distributions with charm candidates in signal range;Cent;entries", HistType::kTH1F, {{100, 0.f, 100.f}});
+
+    if (storeCentSparse) {
+      std::vector<AxisSpec> axesCent = {thnAxisCent, thnAxisCent, thnAxisCent, thnAxisCent};
+      registry.add("hSparseCentEstimators", "THn with different centrality estimators; Centrality 0; Centrality 1; Centrality 2; Centrality 3", {HistType::kTHnSparseF, axesCent});
+    }
+
 
     if (occEstimator != 0) {
       registry.add("trackOccVsFT0COcc", "trackOccVsFT0COcc; trackOcc; FT0COcc", {HistType::kTH2F, {thnAxisOccupancyITS, thnAxisOccupancyFT0C}});
@@ -888,6 +896,11 @@ struct HfTaskFlowCharmHadrons {
                     xQVecFT0c * xQVecBTot + yQVecFT0c * yQVecBTot,
                     xQVecFV0a * xQVecBTot + yQVecFV0a * yQVecBTot,
                     occupancy, evtSelFlags[0], evtSelFlags[1], evtSelFlags[2], evtSelFlags[3], evtSelFlags[4]);
+    }
+
+    if (storeCentSparse) {
+      registry.fill(HIST("hSparseCentEstimators"), o2::hf_centrality::getCentralityColl(collision, centEstimatorsForSparse[0]), o2::hf_centrality::getCentralityColl(collision, centEstimatorsForSparse[1]),
+                    o2::hf_centrality::getCentralityColl(collision, centEstimatorsForSparse[2]), o2::hf_centrality::getCentralityColl(collision, centEstimatorsForSparse[3]));
     }
 
     if (!isCollSelected<o2::hf_centrality::CentralityEstimator::FT0C>(collision, bcs, centrality)) {
