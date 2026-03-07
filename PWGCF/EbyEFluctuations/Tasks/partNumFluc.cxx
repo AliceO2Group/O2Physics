@@ -735,7 +735,7 @@ struct PartNumFluc {
     Configurable<bool> cfgFlagRejectionRunBad{"cfgFlagRejectionRunBad", true, "Bad run rejection flag"};
     Configurable<bool> cfgFlagRejectionRunBadMc{"cfgFlagRejectionRunBadMc", false, "MC bad run rejection flag"};
     Configurable<std::string> cfgLabelFlagsRct{"cfgLabelFlagsRct", "CBT_hadronPID", "RCT flags label"};
-    Configurable<std::uint64_t> cfgBitsSelectionEvent{"cfgBitsSelectionEvent", 0b10000000001101110100000000000000000000000000000000ULL, "Event selection bits"};
+    Configurable<std::uint64_t> cfgBitsSelectionEvent{"cfgBitsSelectionEvent", 0b10000000001101000000000000000000000000000000000000ULL, "Event selection bits"};
     Configurable<bool> cfgFlagInelEvent{"cfgFlagInelEvent", true, "Flag of requiring inelastic event"};
     Configurable<bool> cfgFlagInelEventMc{"cfgFlagInelEventMc", false, "Flag of requiring inelastic MC event"};
     Configurable<double> cfgCutMaxAbsVertexZ{"cfgCutMaxAbsVertexZ", 6., "Maximum absolute vertex z position (cm)"};
@@ -1086,8 +1086,11 @@ struct PartNumFluc {
       hrQaRun.add("QaRun/pRunIndexVx", ";;#LT#it{V}_{#it{x}}#GT (cm)", hcsQaRun);
       hrQaRun.add("QaRun/pRunIndexVy", ";;#LT#it{V}_{#it{y}}#GT (cm)", hcsQaRun);
       hrQaRun.add("QaRun/pRunIndexVz", ";;#LT#it{V}_{#it{z}}#GT (cm)", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexMultFt0a", ";;FT0A #LTMultiplicity#GT", hcsQaRun);
-      hrQaRun.add("QaRun/pRunIndexMultFt0c", ";;FT0C #LTMultiplicity#GT", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexMultiplicityFt0a", ";;FT0A #LTMultiplicity#GT", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexMultiplicityFt0c", ";;FT0C #LTMultiplicity#GT", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexCentralityFt0a", ";;FT0A #LTCentrality#GT", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexCentralityFt0c", ";;FT0C #LTCentrality#GT", hcsQaRun);
+      hrQaRun.add("QaRun/pRunIndexCentralityFt0m", ";;FT0M #LTCentrality#GT", hcsQaRun);
       hrQaRun.add("QaRun/pRunIndexNGlobalTracks_p", ";;#LTnGlobalTracks#GT (#it{q}>0)", hcsQaRun);
       hrQaRun.add("QaRun/pRunIndexNGlobalTracks_m", ";;#LTnGlobalTracks#GT (#it{q}<0)", hcsQaRun);
       hrQaRun.add("QaRun/pRunIndexNPvContributors_p", ";;#LTnPvContributors#GT (#it{q}>0)", hcsQaRun);
@@ -1237,7 +1240,7 @@ struct PartNumFluc {
         }
 
         if (groupAnalysis.cfgFlagQaAcceptancePr.value) {
-          LOG(info) << "Enabling proton acceptance QA.";
+          LOG(info) << "Enabling (anti)proton acceptance QA.";
 
           hrQaAcceptance.add("QaAcceptance/hRapidityPt_tpcEdgePrP", "", hcsQaAcceptance);
           hrQaAcceptance.add("QaAcceptance/hRapidityPt_tpcEdgePrM", "", hcsQaAcceptance);
@@ -1317,7 +1320,7 @@ struct PartNumFluc {
       }
 
       if (groupAnalysis.cfgFlagQaPhiPr.value) {
-        LOG(info) << "Enabling proton phi QA.";
+        LOG(info) << "Enabling (anti)proton phi QA.";
 
         if (doprocessMc.value) {
           hrQaPhi.add("QaPhi/hCentralityPtEtaPhiMc_mcPrP", "", hcsQaPhi);
@@ -1397,7 +1400,7 @@ struct PartNumFluc {
         }
 
         if (groupAnalysis.cfgFlagQaPidPr.value) {
-          LOG(info) << "Enabling proton PID QA.";
+          LOG(info) << "Enabling (anti)proton PID QA.";
 
           if (doprocessMc.value) {
             hrQaPid.add("QaPid/hCentralityPtEtaTpcNSigmaPr_mcPrP", "", {HistType::kTHnSparseF, {asCentrality, asPt, asEta, {200, -10., 10., "TPC #it{n}#it{#sigma}_{p}"}}});
@@ -1478,7 +1481,7 @@ struct PartNumFluc {
       }
 
       if (groupAnalysis.cfgFlagCalculationYieldPr.value) {
-        LOG(info) << "Enabling proton yield calculation.";
+        LOG(info) << "Enabling (anti)proton yield calculation.";
 
         if (doprocessMc.value) {
           hrCalculationYield.add("CalculationYield/hVzCentralityPtEtaMc_mcPrP", "", hcsCalculationYield);
@@ -2294,8 +2297,17 @@ struct PartNumFluc {
       hrQaRun.fill(HIST("QaRun/pRunIndexVx"), holderEvent.runIndex, collision.posX());
       hrQaRun.fill(HIST("QaRun/pRunIndexVy"), holderEvent.runIndex, collision.posY());
       hrQaRun.fill(HIST("QaRun/pRunIndexVz"), holderEvent.runIndex, holderEvent.vz);
-      hrQaRun.fill(HIST("QaRun/pRunIndexMultFt0a"), holderEvent.runIndex, collision.multZeqFT0A());
-      hrQaRun.fill(HIST("QaRun/pRunIndexMultFt0c"), holderEvent.runIndex, collision.multZeqFT0C());
+      hrQaRun.fill(HIST("QaRun/pRunIndexMultiplicityFt0a"), holderEvent.runIndex, collision.multZeqFT0A());
+      hrQaRun.fill(HIST("QaRun/pRunIndexMultiplicityFt0c"), holderEvent.runIndex, collision.multZeqFT0C());
+      if (0. <= collision.centFT0A() && collision.centFT0A() <= 100.) {
+        hrQaRun.fill(HIST("QaRun/pRunIndexCentralityFt0a"), holderEvent.runIndex, collision.centFT0A());
+      }
+      if (0. <= collision.centFT0C() && collision.centFT0C() <= 100.) {
+        hrQaRun.fill(HIST("QaRun/pRunIndexCentralityFt0c"), holderEvent.runIndex, collision.centFT0C());
+      }
+      if (0. <= collision.centFT0M() && collision.centFT0M() <= 100.) {
+        hrQaRun.fill(HIST("QaRun/pRunIndexCentralityFt0m"), holderEvent.runIndex, collision.centFT0M());
+      }
     }
 
     for (const auto& track : tracks) {
@@ -2969,9 +2981,9 @@ struct PartNumFluc {
 
           if (groupAnalysis.cfgFlagQaPhi.value) {
             if (holderMcParticle.charge > 0) {
-              hrQaPhi.fill(HIST("QaPhi/hCentralityPtEtaPhi_mcP"), holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.phi);
+              hrQaPhi.fill(HIST("QaPhi/hCentralityPtEtaPhiMc_mcP"), holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.phi);
             } else if (holderMcParticle.charge < 0) {
-              hrQaPhi.fill(HIST("QaPhi/hCentralityPtEtaPhi_mcM"), holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.phi);
+              hrQaPhi.fill(HIST("QaPhi/hCentralityPtEtaPhiMc_mcM"), holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.phi);
             }
           }
 
@@ -2979,7 +2991,7 @@ struct PartNumFluc {
             switch (holderMcParticle.pdgCode) {
               case PDG_t::kPiPlus:
                 if (groupAnalysis.cfgFlagQaPhiPi.value) {
-                  hrQaPhi.fill(HIST("QaPhi/hCentralityPtEtaPhi_mcPiP"), holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.phi);
+                  hrQaPhi.fill(HIST("QaPhi/hCentralityPtEtaPhiMc_mcPiP"), holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.phi);
                 }
                 if (groupAnalysis.cfgFlagCalculationYieldPi.value) {
                   hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEtaMc_mcPiP"), holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta);
@@ -2990,7 +3002,7 @@ struct PartNumFluc {
                 break;
               case PDG_t::kPiMinus:
                 if (groupAnalysis.cfgFlagQaPhiPi.value) {
-                  hrQaPhi.fill(HIST("QaPhi/hCentralityPtEtaPhi_mcPiM"), holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.phi);
+                  hrQaPhi.fill(HIST("QaPhi/hCentralityPtEtaPhiMc_mcPiM"), holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.phi);
                 }
                 if (groupAnalysis.cfgFlagCalculationYieldPi.value) {
                   hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEtaMc_mcPiM"), holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta);
@@ -3001,7 +3013,7 @@ struct PartNumFluc {
                 break;
               case PDG_t::kKPlus:
                 if (groupAnalysis.cfgFlagQaPhiKa.value) {
-                  hrQaPhi.fill(HIST("QaPhi/hCentralityPtEtaPhi_mcKaP"), holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.phi);
+                  hrQaPhi.fill(HIST("QaPhi/hCentralityPtEtaPhiMc_mcKaP"), holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.phi);
                 }
                 if (groupAnalysis.cfgFlagCalculationYieldKa.value) {
                   hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEtaMc_mcKaP"), holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta);
@@ -3015,7 +3027,7 @@ struct PartNumFluc {
                 break;
               case PDG_t::kKMinus:
                 if (groupAnalysis.cfgFlagQaPhiKa.value) {
-                  hrQaPhi.fill(HIST("QaPhi/hCentralityPtEtaPhi_mcKaM"), holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.phi);
+                  hrQaPhi.fill(HIST("QaPhi/hCentralityPtEtaPhiMc_mcKaM"), holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.phi);
                 }
                 if (groupAnalysis.cfgFlagCalculationYieldKa.value) {
                   hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEtaMc_mcKaM"), holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta);
@@ -3029,7 +3041,7 @@ struct PartNumFluc {
                 break;
               case PDG_t::kProton:
                 if (groupAnalysis.cfgFlagQaPhiPr.value) {
-                  hrQaPhi.fill(HIST("QaPhi/hCentralityPtEtaPhi_mcPrP"), holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.phi);
+                  hrQaPhi.fill(HIST("QaPhi/hCentralityPtEtaPhiMc_mcPrP"), holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.phi);
                 }
                 if (groupAnalysis.cfgFlagCalculationYieldPr.value) {
                   hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEtaMc_mcPrP"), holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta);
@@ -3043,7 +3055,7 @@ struct PartNumFluc {
                 break;
               case PDG_t::kProtonBar:
                 if (groupAnalysis.cfgFlagQaPhiPr.value) {
-                  hrQaPhi.fill(HIST("QaPhi/hCentralityPtEtaPhi_mcPrM"), holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.phi);
+                  hrQaPhi.fill(HIST("QaPhi/hCentralityPtEtaPhiMc_mcPrM"), holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta, holderMcParticle.phi);
                 }
                 if (groupAnalysis.cfgFlagCalculationYieldPr.value) {
                   hrCalculationYield.fill(HIST("CalculationYield/hVzCentralityPtEtaMc_mcPrM"), holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta);
