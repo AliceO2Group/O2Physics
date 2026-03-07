@@ -611,6 +611,13 @@ struct PidFlowPtCorr {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {3} poiKaP08 {-3}", "KaKa08gap22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN08 {3} poiPrP08 {-3}", "PrPr08gap22", kFALSE));
 
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN {2} refP {-2}", "Pion0gap22a", kFALSE)); // 35
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP {2} refN {-2}", "Pion0gap22b", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN {2} refP {-2}", "Kaon0gap22a", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP {2} refN {-2}", "Kaon0gap22b", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN {2} refP {-2}", "Prot0gap22a", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP {2} refN {-2}", "Prot0gap22b", kFALSE)); // 40
+
     fGFW->CreateRegions(); // finalize the initialization
 
     // used for event selection
@@ -1717,6 +1724,13 @@ struct PidFlowPtCorr {
       fillFC(MyParticleType::kCharged, corrconfigs.at(2), cent, rndm, "c22Full");
       fillFC(MyParticleType::kCharged, corrconfigs.at(3), cent, rndm, "c32");
       fillFC(MyParticleType::kCharged, corrconfigs.at(4), cent, rndm, "c34");
+
+      fillFC(MyParticleType::kPion, corrconfigs.at(35), cent, rndm, "c22Full");
+      fillFC(MyParticleType::kPion, corrconfigs.at(36), cent, rndm, "c22Full");
+      fillFC(MyParticleType::kKaon, corrconfigs.at(37), cent, rndm, "c22Full");
+      fillFC(MyParticleType::kKaon, corrconfigs.at(38), cent, rndm, "c22Full");
+      fillFC(MyParticleType::kProton, corrconfigs.at(39), cent, rndm, "c22Full");
+      fillFC(MyParticleType::kProton, corrconfigs.at(40), cent, rndm, "c22Full");
 
       fillFC(MyParticleType::kPion, corrconfigs.at(5), cent, rndm, "c22");
       fillFC(MyParticleType::kPion, corrconfigs.at(6), cent, rndm, "c22");
