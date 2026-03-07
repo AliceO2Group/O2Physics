@@ -207,6 +207,7 @@ struct lambdaspincorrderived {
   Configurable<int> cfgV5NeighborPt{"cfgV5NeighborPt", 0, "v5: neighbor bins in pT (use symmetric ±N, edge-safe)"};
   Configurable<int> cfgV5NeighborEta{"cfgV5NeighborEta", 0, "v5: neighbor bins in eta (use symmetric ±N, edge-safe)"};
   Configurable<int> cfgV5NeighborPhi{"cfgV5NeighborPhi", 0, "v5: neighbor bins in phi (use symmetric ±N, periodic wrap)"};
+
   Configurable<int> cfgV5MaxMatches{"cfgV5MaxMatches", 50, "v5: max ME replacements per SE pair (after all cuts)"};
   Configurable<uint64_t> cfgMixSeed{"cfgMixSeed", 0xdecafbadULL, "RNG seed for downsampling matches (deterministic)"};
   Configurable<float> centMin{"centMin", 0, "Minimum Centrality"};
@@ -1866,9 +1867,10 @@ struct lambdaspincorrderived {
       }
     }
 
-    // Neighbor policy (continuous mixing)
-    constexpr int nN_pt = 1;  // ±1 pt-bin
-    constexpr int nN_eta = 1; // ±1 eta/y-bin (can make configurable later)
+    // Neighbor policy from configurables
+    const int nN_pt = std::max(0, cfgV5NeighborPt.value);
+    const int nN_eta = std::max(0, cfgV5NeighborEta.value);
+    const int nN_phi = std::max(0, cfgV5NeighborPhi.value);
 
     std::vector<int> ptBins, etaBins, phiBins;
     std::vector<MatchRef> matches;
@@ -1926,7 +1928,7 @@ struct lambdaspincorrderived {
 
         collectNeighborBinsClamp(ptB, nPt, nN_pt, ptBins);
         collectNeighborBinsClamp(etaB, nEta, nN_eta, etaBins);
-        collectPhiBinsWithEdgeWrap(phiB, nPhi, phiBins);
+        collectNeighborBinsPhi(phiB, nPhi, nN_phi, phiBins);
 
         matches.clear();
 
@@ -1947,12 +1949,10 @@ struct lambdaspincorrderived {
                   continue;
                 }
 
-                // extra strict kinematic check (uses eta or rapidity based on userapidity)
                 if (!checkKinematics(t1, tX)) {
                   continue;
                 }
 
-                // safety (should be redundant because different event)
                 if (tX.globalIndex() == t1.globalIndex())
                   continue;
                 if (tX.globalIndex() == t2.globalIndex())
@@ -1968,7 +1968,6 @@ struct lambdaspincorrderived {
           continue;
         }
 
-        // dedupe
         std::sort(matches.begin(), matches.end(),
                   [](auto const& a, auto const& b) {
                     return std::tie(a.collisionIdx, a.rowIndex) < std::tie(b.collisionIdx, b.rowIndex);
@@ -1982,9 +1981,8 @@ struct lambdaspincorrderived {
           continue;
         }
 
-        // unbiased cap (cfgV5MaxMatches==1 => pick-one mode)
         if (cfgV5MaxMatches.value > 0 && (int)matches.size() > cfgV5MaxMatches.value) {
-          uint64_t seed = 0;
+          uint64_t seed = cfgMixSeed.value;
           seed ^= splitmix64((uint64_t)t1.globalIndex());
           seed ^= splitmix64((uint64_t)t2.globalIndex() + 0x1234567ULL);
           seed ^= splitmix64((uint64_t)curColIdx + 0x9abcULL);
@@ -2027,8 +2025,6 @@ struct lambdaspincorrderived {
 
   void processMCMEV5(EventCandidatesMC const& collisions, AllTrackCandidatesMC const& V0sMC)
   {
-    // Buffer binning: v0etaMixBuffer = max(|eta|) or max(|y|) if userapidity
-    //                etaMix         = step for that axis (and also your matching window inside checkKinematicsMC)
     MixBinner mb{
       ptMin.value, ptMax.value, ptMix.value,
       v0etaMixBuffer.value, etaMix.value,
@@ -2037,7 +2033,7 @@ struct lambdaspincorrderived {
     const int nCol = colBinning.getAllBinsCount();
     const int nStat = N_STATUS;
     const int nPt = mb.nPt();
-    const int nEta = mb.nEta(); // logical "nY" if userapidity=true
+    const int nEta = mb.nEta();
     const int nPhi = mb.nPhi();
 
     const size_t nKeys = static_cast<size_t>(nCol) * nStat * nPt * nEta * nPhi;
@@ -2096,8 +2092,9 @@ struct lambdaspincorrderived {
       }
     }
 
-    constexpr int nN_pt = 1;
-    constexpr int nN_eta = 1;
+    const int nN_pt = std::max(0, cfgV5NeighborPt.value);
+    const int nN_eta = std::max(0, cfgV5NeighborEta.value);
+    const int nN_phi = std::max(0, cfgV5NeighborPhi.value);
 
     std::vector<int> ptBins, etaBins, phiBins;
     std::vector<MatchRef> matches;
@@ -2123,7 +2120,6 @@ struct lambdaspincorrderived {
           continue;
         }
 
-        // no shared daughters
         if (mcacc::prIdx(t1) == mcacc::prIdx(t2))
           continue;
         if (mcacc::piIdx(t1) == mcacc::piIdx(t2))
@@ -2154,7 +2150,7 @@ struct lambdaspincorrderived {
 
         collectNeighborBinsClamp(ptB, nPt, nN_pt, ptBins);
         collectNeighborBinsClamp(etaB, nEta, nN_eta, etaBins);
-        collectPhiBinsWithEdgeWrap(phiB, nPhi, phiBins);
+        collectNeighborBinsPhi(phiB, nPhi, nN_phi, phiBins);
 
         matches.clear();
 
@@ -2165,7 +2161,7 @@ struct lambdaspincorrderived {
 
               for (auto const& bc : vec) {
                 if (bc.collisionIdx == curColIdx) {
-                  continue; // different event
+                  continue;
                 }
 
                 auto tX = V0sMC.iteratorAt(static_cast<uint64_t>(bc.rowIndex));
@@ -2176,7 +2172,6 @@ struct lambdaspincorrderived {
                   continue;
                 }
 
-                // safety (should be redundant due to different event)
                 if (tX.globalIndex() == t1.globalIndex())
                   continue;
                 if (tX.globalIndex() == t2.globalIndex())
@@ -2192,7 +2187,6 @@ struct lambdaspincorrderived {
           continue;
         }
 
-        // dedupe
         std::sort(matches.begin(), matches.end(),
                   [](auto const& a, auto const& b) {
                     return std::tie(a.collisionIdx, a.rowIndex) < std::tie(b.collisionIdx, b.rowIndex);
@@ -2206,9 +2200,8 @@ struct lambdaspincorrderived {
           continue;
         }
 
-        // unbiased cap (cfgV5MaxMatches==1 => pick-one mode)
         if (cfgV5MaxMatches.value > 0 && (int)matches.size() > cfgV5MaxMatches.value) {
-          uint64_t seed = 0;
+          uint64_t seed = cfgMixSeed.value;
           seed ^= splitmix64((uint64_t)t1.globalIndex());
           seed ^= splitmix64((uint64_t)t2.globalIndex() + 0x1234567ULL);
           seed ^= splitmix64((uint64_t)curColIdx + 0x9abcULL);
