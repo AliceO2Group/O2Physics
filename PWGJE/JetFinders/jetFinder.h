@@ -251,7 +251,7 @@ struct JetFinderTask {
 
   void processParticleLevelChargedJets(o2::soa::Filtered<o2::aod::JetMcCollisions>::iterator const& mcCollision, o2::soa::Filtered<o2::aod::JetParticles> const& particles)
   {
-    if (!jetderiveddatautilities::selectMcCollision(mcCollision, skipMBGapEvents, applyRCTSelections)) {
+    if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
     inputParticles.clear();
@@ -262,7 +262,7 @@ struct JetFinderTask {
 
   void processParticleLevelChargedEvtWiseSubJets(o2::soa::Filtered<o2::aod::JetMcCollisions>::iterator const& mcCollision, o2::soa::Filtered<o2::aod::JetParticlesSub> const& particles)
   {
-    if (!jetderiveddatautilities::selectMcCollision(mcCollision, skipMBGapEvents, applyRCTSelections)) {
+    if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
     inputParticles.clear();
@@ -273,7 +273,7 @@ struct JetFinderTask {
 
   void processParticleLevelNeutralJets(o2::soa::Filtered<o2::aod::JetMcCollisions>::iterator const& mcCollision, o2::soa::Filtered<o2::aod::JetParticles> const& particles)
   {
-    if (!jetderiveddatautilities::selectMcCollision(mcCollision, skipMBGapEvents, applyRCTSelections, "CBT_calo")) {
+    if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, "CBT_calo")) {
       return;
     }
     inputParticles.clear();
@@ -284,7 +284,7 @@ struct JetFinderTask {
 
   void processParticleLevelFullJets(o2::soa::Filtered<o2::aod::JetMcCollisions>::iterator const& mcCollision, o2::soa::Filtered<o2::aod::JetParticles> const& particles)
   {
-    if (!jetderiveddatautilities::selectMcCollision(mcCollision, skipMBGapEvents, applyRCTSelections, "CBT_calo")) {
+    if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, "CBT_calo")) {
       return;
     }
     inputParticles.clear();
