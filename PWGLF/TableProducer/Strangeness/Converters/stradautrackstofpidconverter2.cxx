@@ -21,7 +21,7 @@ using namespace o2::framework;
 // converts DauTrackTOFPIDs_000 to _001
 struct stradautrackstofpidconverter2 {
   Produces<aod::DauTrackTOFPIDs_001> dautracktofpids;
-  Produces<aod::StraEvTimes> straEvTimes;
+  Produces<aod::StraEvTimes_000> straEvTimes;
 
   void process(aod::StraCollisions const& collisions, soa::Join<aod::DauTrackExtras, aod::DauTrackTOFPIDs_000> const& dauTracks, soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras> const& v0s)
   {

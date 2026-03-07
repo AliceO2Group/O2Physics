@@ -112,6 +112,7 @@ DECLARE_SOA_INDEX_COLUMN(DauTrackExtra, dauTrackExtra); //! point to daughter th
 DECLARE_SOA_INDEX_COLUMN(StraCollision, straCollision); //! point to collision associated with this track (not the V0/Casc)
 DECLARE_SOA_COLUMN(TOFSignal, tofSignal, float);        //! track TOF signal
 DECLARE_SOA_COLUMN(TOFEvTime, tofEvTime, float);        //! event time
+DECLARE_SOA_COLUMN(TOFEvTimeErr, tofEvTimeErr, float);  //! event time error for TOF
 DECLARE_SOA_COLUMN(Length, length, float);              //! track length (to assigned PV)
 DECLARE_SOA_COLUMN(TOFExpMom, tofExpMom, float);        //! tof Exp Mom (to assigned PV)
 
@@ -171,7 +172,17 @@ DECLARE_SOA_TABLE_VERSIONED(DauTrackTOFPIDs_001, "AOD", "DAUTRACKTOFPID", 1, // 
                             dautrack::TOFExpTimeKa<dautrack::Length, dautrack::TOFExpMom>,
                             dautrack::TOFExpTimePr<dautrack::Length, dautrack::TOFExpMom>);
 
-using DauTrackTOFPIDs = DauTrackTOFPIDs_001; // second gen: with collision Id, with TOFExpMom
+DECLARE_SOA_TABLE_VERSIONED(DauTrackTOFPIDs_002, "AOD", "DAUTRACKTOFPID", 2, // raw table (for posterior TOF calculation)
+                            o2::soa::Index<>,
+                            dautrack::StraCollisionId, dautrack::DauTrackExtraId,
+                            dautrack::TOFSignal, dautrack::TOFEvTime, dautrack::TOFEvTimeErr,
+                            dautrack::Length, dautrack::TOFExpMom,
+                            dautrack::TOFExpTimeEl<dautrack::Length, dautrack::TOFExpMom>,
+                            dautrack::TOFExpTimePi<dautrack::Length, dautrack::TOFExpMom>,
+                            dautrack::TOFExpTimeKa<dautrack::Length, dautrack::TOFExpMom>,
+                            dautrack::TOFExpTimePr<dautrack::Length, dautrack::TOFExpMom>);
+
+using DauTrackTOFPIDs = DauTrackTOFPIDs_002; // second gen: with collision Id, with TOFExpMom
 
 namespace v0data
 {
@@ -210,6 +221,34 @@ DECLARE_SOA_COLUMN(TOFNSigmaALaPr, tofNSigmaALaPr, float);         //! negative 
 DECLARE_SOA_COLUMN(TOFNSigmaALaPi, tofNSigmaALaPi, float);         //! positive track NSigma from pion <- antilambda expectation
 DECLARE_SOA_COLUMN(TOFNSigmaK0PiPlus, tofNSigmaK0PiPlus, float);   //! positive track NSigma from pion <- k0short expectation
 DECLARE_SOA_COLUMN(TOFNSigmaK0PiMinus, tofNSigmaK0PiMinus, float); //! negative track NSigma from pion <- k0short expectation
+
+// for wrong hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaElPosFromPhoton, tofNSigmaElPosFromPhoton, float); //! n sigma of positive track from photon conversion under electron hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaElNegFromPhoton, tofNSigmaElNegFromPhoton, float); //! n sigma of negative track from photon conversion under electron hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPiPosFromPhoton, tofNSigmaPiPosFromPhoton, float); //! n sigma of positive track from photon conversion under pion hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPiNegFromPhoton, tofNSigmaPiNegFromPhoton, float); //! n sigma of negative track from photon conversion under pion hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaKaPosFromPhoton, tofNSigmaKaPosFromPhoton, float); //! n sigma of positive track from photon conversion under kaon hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaKaNegFromPhoton, tofNSigmaKaNegFromPhoton, float); //! n sigma of negative track from photon conversion under kaon hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPrPosFromPhoton, tofNSigmaPrPosFromPhoton, float); //! n sigma of positive track from photon conversion under proton hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPrNegFromPhoton, tofNSigmaPrNegFromPhoton, float); //! n sigma of negative track from photon conversion under proton hypothesis
+
+DECLARE_SOA_COLUMN(TOFNSigmaElPosFromK0S, tofNSigmaElPosFromK0S, float); //! n sigma of positive track from K0S under electron hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaElNegFromK0S, tofNSigmaElNegFromK0S, float); //! n sigma of negative track from K0S under electron hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPiPosFromK0S, tofNSigmaPiPosFromK0S, float); //! n sigma of positive track from K0S under pion hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPiNegFromK0S, tofNSigmaPiNegFromK0S, float); //! n sigma of negative track from K0S under pion hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaKaPosFromK0S, tofNSigmaKaPosFromK0S, float); //! n sigma of positive track from K0S under kaon hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaKaNegFromK0S, tofNSigmaKaNegFromK0S, float); //! n sigma of negative track from K0S under kaon hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPrPosFromK0S, tofNSigmaPrPosFromK0S, float); //! n sigma of positive track from K0S under proton hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPrNegFromK0S, tofNSigmaPrNegFromK0S, float); //! n sigma of negative track from K0S under proton hypothesis
+
+DECLARE_SOA_COLUMN(TOFNSigmaElPosFromLambda, tofNSigmaElPosFromLambda, float); //! n sigma of positive track from Lambda under electron hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaElNegFromLambda, tofNSigmaElNegFromLambda, float); //! n sigma of negative track from Lambda under electron hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPiPosFromLambda, tofNSigmaPiPosFromLambda, float); //! n sigma of positive track from Lambda under pion hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPiNegFromLambda, tofNSigmaPiNegFromLambda, float); //! n sigma of negative track from Lambda under pion hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaKaPosFromLambda, tofNSigmaKaPosFromLambda, float); //! n sigma of positive track from Lambda under kaon hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaKaNegFromLambda, tofNSigmaKaNegFromLambda, float); //! n sigma of negative track from Lambda under kaon hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPrPosFromLambda, tofNSigmaPrPosFromLambda, float); //! n sigma of positive track from Lambda under proton hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPrNegFromLambda, tofNSigmaPrNegFromLambda, float); //! n sigma of negative track from Lambda under proton hypothesis
 
 // dynamics to replace hasTOF (note: that condition does not match track hasTOF!)
 // note: only single hypothesis check necessary; other hypotheses will always be valid
@@ -317,6 +356,16 @@ DECLARE_SOA_TABLE(V0TOFNSigmas, "AOD", "V0TOFNSIGMA", // processed NSigma table 
                   v0data::TofAntiLambdaCompatibility<v0data::TOFNSigmaALaPr, v0data::TOFNSigmaALaPi>,
                   v0data::TofK0ShortCompatibility<v0data::TOFNSigmaK0PiPlus, v0data::TOFNSigmaK0PiMinus>);
 
+DECLARE_SOA_TABLE(V0TOFNSigmasAll, "AOD", "V0TOFNSIGMAALL", // processed NSigma table (for analysis) including wrong hypothesis
+                  v0data::TOFNSigmaElPosFromPhoton, v0data::TOFNSigmaElPosFromK0S, v0data::TOFNSigmaElPosFromLambda,
+                  v0data::TOFNSigmaElNegFromPhoton, v0data::TOFNSigmaElNegFromK0S, v0data::TOFNSigmaElNegFromLambda,
+                  v0data::TOFNSigmaPiPosFromPhoton, v0data::TOFNSigmaPiPosFromK0S, v0data::TOFNSigmaPiPosFromLambda,
+                  v0data::TOFNSigmaPiNegFromPhoton, v0data::TOFNSigmaPiNegFromK0S, v0data::TOFNSigmaPiNegFromLambda,
+                  v0data::TOFNSigmaKaPosFromPhoton, v0data::TOFNSigmaKaPosFromK0S, v0data::TOFNSigmaKaPosFromLambda,
+                  v0data::TOFNSigmaKaNegFromPhoton, v0data::TOFNSigmaKaNegFromK0S, v0data::TOFNSigmaKaNegFromLambda,
+                  v0data::TOFNSigmaPrPosFromPhoton, v0data::TOFNSigmaPrPosFromK0S, v0data::TOFNSigmaPrPosFromLambda,
+                  v0data::TOFNSigmaPrNegFromPhoton, v0data::TOFNSigmaPrNegFromK0S, v0data::TOFNSigmaPrNegFromLambda);
+
 namespace cascdata
 {
 // define constants for NSigma operation
@@ -353,6 +402,27 @@ DECLARE_SOA_COLUMN(TOFNSigmaXiPi, tofNSigmaXiPi, float);     //! bachelor track 
 DECLARE_SOA_COLUMN(TOFNSigmaOmLaPi, tofNSigmaOmLaPi, float); //! meson track NSigma from pion <- lambda <- om expectation
 DECLARE_SOA_COLUMN(TOFNSigmaOmLaPr, tofNSigmaOmLaPr, float); //! baryon track NSigma from proton <- lambda <- om expectation
 DECLARE_SOA_COLUMN(TOFNSigmaOmKa, tofNSigmaOmKa, float);     //! bachelor track NSigma from kaon <- om expectation
+
+// for wrong hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaElFromLambdaFromXi, tofNSigmaElFromLambdaFromXi, float);       //! nigma of positive track from Lambda from Xi under electron hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaElFromXi, tofNSigmaElFromXi, float);                           //! nigma of bachelor track from Xi under electron hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaElFromLambdaFromOmega, tofNSigmaElFromLambdaFromOmega, float); //! nigma of positive track from Lambda from Omega under electron hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaElFromOmega, tofNSigmaElFromOmega, float);                     //! nigma of bachelor track from Omega under electron hypothesis
+
+DECLARE_SOA_COLUMN(TOFNSigmaPiFromLambdaFromXi, tofNSigmaPiFromLambdaFromXi, float);       //! nigma of positive track from Lambda from Xi under pion hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPiFromXi, tofNSigmaPiFromXi, float);                           //! nigma of bachelor track from Xi under pion hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPiFromLambdaFromOmega, tofNSigmaPiFromLambdaFromOmega, float); //! nigma of positive track from Lambda from Omega under pion hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPiFromOmega, tofNSigmaPiFromOmega, float);                     //! nigma of bachelor track from Omega under pion hypothesis
+
+DECLARE_SOA_COLUMN(TOFNSigmaKaFromLambdaFromXi, tofNSigmaKaFromLambdaFromXi, float);       //! nigma of positive track from Lambda from Xi under kaon hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaKaFromXi, tofNSigmaKaFromXi, float);                           //! nigma of bachelor track from Xi under kaon hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaKaFromLambdaFromOmega, tofNSigmaKaFromLambdaFromOmega, float); //! nigma of positive track from Lambda from Omega under kaon hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaKaFromOmega, tofNSigmaKaFromOmega, float);                     //! nigma of bachelor track from Omega under kaon hypothesis
+
+DECLARE_SOA_COLUMN(TOFNSigmaPrFromLambdaFromXi, tofNSigmaPrFromLambdaFromXi, float);       //! nigma of positive track from Lambda from Xi under proton hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPrFromXi, tofNSigmaPrFromXi, float);                           //! nigma of bachelor track from Xi under proton hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPrFromLambdaFromOmega, tofNSigmaPrFromLambdaFromOmega, float); //! nigma of positive track from Lambda from Omega under proton hypothesis
+DECLARE_SOA_COLUMN(TOFNSigmaPrFromOmega, tofNSigmaPrFromOmega, float);                     //! nigma of bachelor track from Omega under proton hypothesis
 
 // dynamics to replace hasTOF (note: that condition does not match track hasTOF!)
 // note: only single hypothesis check necessary; other hypotheses will always be valid
@@ -429,6 +499,7 @@ DECLARE_SOA_TABLE(CascTOFPIDs, "AOD", "CASCTOFPID", // processed information for
                   cascdata::PosTOFDeltaTOmPi, cascdata::PosTOFDeltaTOmPr,
                   cascdata::NegTOFDeltaTOmPi, cascdata::NegTOFDeltaTOmPr,
                   cascdata::BachTOFDeltaTOmKa);
+
 DECLARE_SOA_TABLE(CascTOFNSigmas, "AOD", "CascTOFNSigmas", // Nsigmas for cascades
                   cascdata::TOFNSigmaXiLaPi, cascdata::TOFNSigmaXiLaPr, cascdata::TOFNSigmaXiPi,
                   cascdata::TOFNSigmaOmLaPi, cascdata::TOFNSigmaOmLaPr, cascdata::TOFNSigmaOmKa,
@@ -437,6 +508,13 @@ DECLARE_SOA_TABLE(CascTOFNSigmas, "AOD", "CascTOFNSigmas", // Nsigmas for cascad
                   cascdata::BachelorHasTOF<cascdata::BachTOFDeltaTXiPi>,
                   cascdata::TofXiCompatibility<cascdata::TOFNSigmaXiLaPr, cascdata::TOFNSigmaXiLaPi, cascdata::TOFNSigmaXiPi>,
                   cascdata::TofOmegaCompatibility<cascdata::TOFNSigmaOmLaPr, cascdata::TOFNSigmaOmLaPi, cascdata::TOFNSigmaOmKa>);
+
+DECLARE_SOA_TABLE(CascTOFNSigmasAll, "AOD", "CascTOFNSigmasAll", // Nsigmas for cascades including wrong hypothesis
+                  cascdata::TOFNSigmaElFromLambdaFromXi, cascdata::TOFNSigmaElFromXi, cascdata::TOFNSigmaElFromLambdaFromOmega, cascdata::TOFNSigmaElFromOmega,
+                  cascdata::TOFNSigmaPiFromLambdaFromXi, cascdata::TOFNSigmaPiFromXi, cascdata::TOFNSigmaPiFromLambdaFromOmega, cascdata::TOFNSigmaPiFromOmega,
+                  cascdata::TOFNSigmaKaFromLambdaFromXi, cascdata::TOFNSigmaKaFromXi, cascdata::TOFNSigmaKaFromLambdaFromOmega, cascdata::TOFNSigmaKaFromOmega,
+                  cascdata::TOFNSigmaPrFromLambdaFromXi, cascdata::TOFNSigmaPrFromXi, cascdata::TOFNSigmaPrFromLambdaFromOmega, cascdata::TOFNSigmaPrFromOmega);
+
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFSTRANGENESSPIDTABLES_H_
