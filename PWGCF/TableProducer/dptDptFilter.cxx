@@ -128,7 +128,7 @@ static constexpr float MultiplicityUpperLimitBase[11][8] = {
 };
 
 /* helpers for the multiplicity/centrality correlations exclusion formulae */
-static const std::string multiplicityCentralityCorrelationsFormulaBase[11][1] = {
+static const std::string multiplicityCentralityCorrelationsFormulaBase[11][1] = { // NOLINT
   /* no system */ {""},
   /* pp Run2   */ {""},
   /* pPb Run2  */ {""},
@@ -142,7 +142,7 @@ static const std::string multiplicityCentralityCorrelationsFormulaBase[11][1] = 
   /* pO Run3   */ {""}};
 
 /* helpers for the system type assignment */
-static const std::string periodsOnSystemType[11][1] = {
+static const std::string periodsOnSystemType[11][1] = { // NOLINT
   /* no system */ {""},
   /* pp Run2   */ {""},
   /* pPb Run2  */ {""},
@@ -316,8 +316,8 @@ struct Multiplicity {
 
   MultEst classestimator = kV0M;
 
-  static constexpr float kForMultiplicityPtLowLimit = 0.001f;
-  static constexpr float kForMultiplicityPtHighLimit = 50.0f;
+  static constexpr float KForMultiplicityPtLowLimit = 0.001f;
+  static constexpr float KForMultiplicityPtHighLimit = 50.0f;
   float multiplicityClass = -1.0;
   float multiplicity = 0.0;
   bool inelgth0 = false;
@@ -353,7 +353,7 @@ struct Multiplicity {
 
   void setMultiplicityPercentiles(TList* list)
   {
-    LOGF(info, "setMultiplicityPercentiles()", "From list %s", list->GetName());
+    LOGF(info, "setMultiplicityPercentiles(). From list %s", list->GetName());
     fhV0MMultPercentile = reinterpret_cast<TH1*>(list->FindObject("V0MCentMult"));
     fhCL1MultPercentile = reinterpret_cast<TH1*>(list->FindObject("CL1MCentMult"));
     fhCL1EtaGapMultPercentile = reinterpret_cast<TH1*>(list->FindObject("CL1EtaGapMCentMult"));
@@ -385,7 +385,7 @@ struct Multiplicity {
       case kProton:
         /* not clear if we should use IsPhysicalPrimary here */
         /* TODO: adapt to FT0M Run 3 and other estimators */
-        if (kForMultiplicityPtLowLimit < p.pt() && p.pt() < kForMultiplicityPtHighLimit) {
+        if (KForMultiplicityPtLowLimit < p.pt() && p.pt() < KForMultiplicityPtHighLimit) {
           if (p.eta() < 1.0f && -1.0f < p.eta()) {
             inelgth0 = true;
           }
@@ -545,8 +545,10 @@ struct DptDptFilter {
     Configurable<std::string> url{"url", "http://ccdb-test.cern.ch:8080", "The CCDB url for the input file"};
     Configurable<std::string> pathNameCorrections{"pathNameCorrections", "", "The CCDB path for the corrections file. Default \"\", i.e. don't load from CCDB"};
     Configurable<std::string> pathNamePID{"pathNamePID", "", "The CCDB path for the PID adjusts file. Default \"\", i.e. don't load from CCDB"};
+    Configurable<std::string> pathNameOTF{"pathNameOTF", "", "The CCDB path for the OTF configuration file. Default \"\", i.e. don't load from CCDB"};
     Configurable<std::string> dateCorrections{"dateCorrections", "20220307", "The CCDB date for the corrections input file"};
     Configurable<std::string> datePID{"datePID", "20220307", "The CCDB date for the PID adjustments input file"};
+    Configurable<std::string> dateOTF{"dateOTF", "20260306", "The CCDB date for the OTF configuration file"};
     Configurable<std::string> suffix{"suffix", "", "Dataset period suffix for metadata discrimination"};
   } cfginputfile;
   Configurable<bool> cfgFullDerivedData{"cfgFullDerivedData", false, "Produce the full derived data for external storage. Default false"};
@@ -595,9 +597,12 @@ struct DptDptFilter {
   Produces<aod::DptDptCFGenCollisionsInfo> gencollisionsinfo;
 
   Multiplicity multiplicity;
+  std::string otfGenerator;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  bool storedCcdbInfo = false;
   Preslice<DptDptFullTracksDetLevel> perCollision = aod::track::collisionId;
 
-  void init(InitContext const&)
+  void init(InitContext& initContext)
   {
     using namespace dptdptfilter;
 
@@ -645,8 +650,18 @@ struct DptDptFilter {
 
     /* get the data type and the system type */
     fDataType = getDataType(cfgDataType);
-    fSystem = getSystemType(cfgSystemForPeriod.value);
-    fLhcRun = multRunForSystemMap.at(fSystem);
+    if (fDataType != kOnTheFly) {
+      fSystem = getSystemType(cfgSystemForPeriod.value);
+      fLhcRun = multRunForSystemMap.at(fSystem);
+    } else {
+      std::string tmpstr;
+      getTaskOptionValue(initContext, "generator-task", "configFile", tmpstr, false);
+      TString fullPath = tmpstr;
+      auto tokens = fullPath.Tokenize("/");
+      otfGenerator = TString(tokens->At(tokens->GetEntries() - 1)->GetName()).ReplaceAll(".ini", "");
+      delete tokens;
+      LOGF(info, "The generator configuration file: %s", otfGenerator.c_str());
+    }
 
     /* the multiplicities outliers exclusion */
     multiplicityCentralityCorrelationsExclusion = getExclusionFormula(cfgEventSelection.multiplicitiesExclusionFormula->getData()[fSystem][0].c_str());
@@ -765,6 +780,23 @@ struct DptDptFilter {
       } else {
         fOutputList->Add(fhTrueVertexZAA);
       }
+    }
+    /* initialize access to the CCDB */
+    ccdb->setURL(cfginputfile.url);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+  }
+
+  void getCCDBInformation()
+  {
+    /* let's get a potential OTF configuration */
+    if ((cfginputfile.dateOTF.value.length() > 0) && (cfginputfile.pathNameOTF.value.length() > 0) && !storedCcdbInfo) {
+      LOGF(info, "Getting information for OTF configuration from %s, at %s", cfginputfile.pathNameOTF.value.c_str(), cfginputfile.dateOTF.value.c_str());
+      TList* otfinfo = getCCDBInput(ccdb, cfginputfile.pathNameOTF.value.c_str(), cfginputfile.dateOTF.value.c_str(), true, otfGenerator);
+      if (otfinfo != nullptr) {
+        multiplicity.setMultiplicityPercentiles(otfinfo);
+      }
+      storedCcdbInfo = true;
     }
   }
 
@@ -1056,6 +1088,8 @@ void DptDptFilter::processOnTheFlyGeneratorLevel(aod::McCollision const& mccolli
   fhTrueVertexZB->Fill(mccollision.posZ());
   /* we assign a default value for the time being */
   float centormult = 50.0f;
+  /* ask for configuration */
+  getCCDBInformation();
   if (isEventSelected(mccollision, centormult)) {
     acceptedEvent = true;
     multiplicity.extractMultiplicity(mcparticles);
