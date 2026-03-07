@@ -1898,6 +1898,7 @@ struct lambdaspincorrderived {
           continue; // same-event ordering
         }
 
+        // no shared daughters (same-event)
         if (t1.protonIndex() == t2.protonIndex())
           continue;
         if (t1.pionIndex() == t2.pionIndex())
@@ -2131,7 +2132,6 @@ struct lambdaspincorrderived {
           continue;
 
         const int status = mcacc::v0Status(t1);
-
         if (status < 0 || status >= nStat) {
           continue;
         }
