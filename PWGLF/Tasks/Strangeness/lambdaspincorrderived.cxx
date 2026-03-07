@@ -204,7 +204,6 @@ struct lambdaspincorrderived {
   Configurable<std::string> ConfWeightPathLAL2{"ConfWeightPathLAL2", "Users/s/skundu/My/Object/spincorr/cent010LL", "Weight path 2"};
   Configurable<std::string> ConfWeightPathALL2{"ConfWeightPathALL2", "Users/s/skundu/My/Object/spincorr/cent010LL", "Weight path 2"};
 
-
   // Mixing /////////
 
   Configurable<int> cfgV5NeighborPt{"cfgV5NeighborPt", 0, "v5: neighbor bins in pT (use symmetric ±N, edge-safe)"};
@@ -1781,7 +1780,6 @@ struct lambdaspincorrderived {
     std::sort(out.begin(), out.end());
     out.erase(std::unique(out.begin(), out.end()), out.end());
   }
-
 
   static inline void collectNeighborBinsClamp(int b, int nBins, int nNeighbor, std::vector<int>& out)
   {
