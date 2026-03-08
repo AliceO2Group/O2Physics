@@ -1606,10 +1606,6 @@ struct prefilterPrimaryElectron {
             fRegistry.fill(HIST("Pair/before/uls/hMvsPhiV"), phiv, v12.M());
             fRegistry.fill(HIST("Pair/before/uls/hMvsPt"), v12.M(), v12.Pt());
           }
-          if (v12.M() < max_mee_vec.at(static_cast<int>(max_mee_vec.size()) - 1)) {
-            if (fillQAHistogram) {
-            }
-          }
           for (int i = 0; i < static_cast<int>(max_mee_vec.size()); i++) {
             if (v12.M() < max_mee_vec.at(i)) {
               pfb_map[empos.globalIndex()] |= (uint8_t(1) << (static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_20MeV) + i));
