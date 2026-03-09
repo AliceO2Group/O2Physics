@@ -67,6 +67,7 @@ class DielectronCut : public TNamed
     kITSNCls,
     kITSChi2NDF,
     kITSClusterSize,
+    kTTCA,
     kPrefilter,
     kNCuts
   };
@@ -208,6 +209,9 @@ class DielectronCut : public TNamed
     }
 
     if (!IsSelectedTrack(track, DielectronCuts::kITSClusterSize)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, DielectronCuts::kTTCA)) {
       return false;
     }
 
@@ -470,6 +474,9 @@ class DielectronCut : public TNamed
       case DielectronCuts::kITSClusterSize:
         return mMinMeanClusterSizeITS < track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())) && track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())) < mMaxMeanClusterSizeITS;
 
+      case DielectronCuts::kTTCA:
+        return mEnableTTCA ? true : track.isAssociatedToMPC();
+
       case DielectronCuts::kPrefilter:
         return track.pfb() <= 0;
 
@@ -538,6 +545,7 @@ class DielectronCut : public TNamed
   void ApplyPrefilter(bool flag);
   void ApplyPhiV(bool flag);
   void IncludeITSsa(bool flag, float maxpt);
+  void EnableTTCA(bool flag);
 
   void SetPIDMlResponse(o2::analysis::MlResponseDielectronSingleTrack<float>* mlResponse)
   {
@@ -628,6 +636,7 @@ class DielectronCut : public TNamed
   float mMinTOFNsigmaPi{-1e+10}, mMaxTOFNsigmaPi{+1e+10};
   float mMinTOFNsigmaKa{-1e+10}, mMaxTOFNsigmaKa{+1e+10};
   float mMinTOFNsigmaPr{-1e+10}, mMaxTOFNsigmaPr{+1e+10};
+  bool mEnableTTCA{true};
 
   // float mMinITSNsigmaEl{-1e+10}, mMaxITSNsigmaEl{+1e+10};
   // float mMinITSNsigmaMu{-1e+10}, mMaxITSNsigmaMu{+1e+10};

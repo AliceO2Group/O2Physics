@@ -658,7 +658,12 @@ struct DptDptFilter {
       getTaskOptionValue(initContext, "generator-task", "configFile", tmpstr, false);
       TString fullPath = tmpstr;
       auto tokens = fullPath.Tokenize("/");
-      otfGenerator = TString(tokens->At(tokens->GetEntries() - 1)->GetName()).ReplaceAll(".ini", "");
+      if (tokens->GetEntries() > 0) {
+        otfGenerator = TString(tokens->At(tokens->GetEntries() - 1)->GetName()).ReplaceAll(".ini", "");
+      } else {
+        /* let's take it from the time being from the data type string */
+        otfGenerator = TString(cfgDataType).ReplaceAll("OnTheFlyMC_", "");
+      }
       delete tokens;
       LOGF(info, "The generator configuration file: %s", otfGenerator.c_str());
     }

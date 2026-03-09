@@ -22,6 +22,7 @@
 #include <map>
 #include <ranges>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 //_______________________________________________________________________
@@ -135,9 +136,11 @@ bool checkMFTHitMap(T const& track)
   return (clmap > 0);
 }
 //_______________________________________________________________________
-template <bool is_wo_acc = false, typename TTrack, typename TCut, typename TTracks>
+template <typename TTrack, typename TCut, typename TTracks>
 bool isBestMatch(TTrack const& track, TCut const& cut, TTracks const& tracks)
 {
+  // find the best glboal muon without pt, eta cut (ie. without single track acceptance cut) to keep possibility for unfolding.
+
   // this is only for global muons at forward rapidity
   // Be careful! tracks are fwdtracks per DF.
   if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
@@ -150,7 +153,7 @@ bool isBestMatch(TTrack const& track, TCut const& cut, TTracks const& tracks)
     for (const auto& glmuonId : track.globalMuonsWithSameMFTIds()) {
       auto candidate = tracks.rawIteratorAt(glmuonId);
       if (candidate.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && candidate.emeventId() == track.emeventId() && candidate.mchtrackId() != track.mchtrackId()) {
-        if (cut.template IsSelectedTrack<is_wo_acc>(candidate)) {
+        if (cut.template IsSelectedTrack<true>(candidate)) {
           map_chi2MCHMFT[candidate.globalIndex()] = candidate.chi2MatchMCHMFT();
         }
       }
@@ -169,7 +172,7 @@ bool isBestMatch(TTrack const& track, TCut const& cut, TTracks const& tracks)
     for (const auto& glmuonId : track.globalMuonsWithSameMCHMIDIds()) {
       auto candidate = tracks.rawIteratorAt(glmuonId);
       if (candidate.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && candidate.emeventId() == track.emeventId() && candidate.mfttrackId() != track.mfttrackId()) {
-        if (cut.template IsSelectedTrack<is_wo_acc>(candidate)) {
+        if (cut.template IsSelectedTrack<true>(candidate)) {
           map_chi2MCHMFT[candidate.globalIndex()] = candidate.chi2MatchMCHMFT();
         }
       }
@@ -187,6 +190,16 @@ bool isBestMatch(TTrack const& track, TCut const& cut, TTracks const& tracks)
   } else {
     return true;
   }
+}
+//_______________________________________________________________________
+template <typename TTracks, typename TCut>
+std::unordered_map<int, bool> findBestMatchMap(TTracks const& tracks, TCut const& cut)
+{
+  std::unordered_map<int, bool> map;
+  for (const auto& track : tracks) {
+    map[track.globalIndex()] = isBestMatch(track, cut, tracks);
+  }
+  return map;
 }
 //_______________________________________________________________________
 // template <typename T>
