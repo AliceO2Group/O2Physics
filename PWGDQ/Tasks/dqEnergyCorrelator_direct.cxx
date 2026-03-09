@@ -808,7 +808,7 @@ struct AnalysisEnergyCorrelator {
       // apply kinematic cuts for signal
       if ((t1_raw.pt() < fConfigPairOptions.fConfigJpsiPtMin || t1_raw.pt() > fConfigPairOptions.fConfigJpsiPtMax))
         continue;
-      if (abs(t1_raw.y()) > fConfigPairOptions.fConfigJpsiRapMax)
+      if (std::abs(t1_raw.y()) > fConfigPairOptions.fConfigJpsiRapMax)
         continue;
       // for the energy correlators
       for (auto& t2 : groupedMCTracks2) {
@@ -879,6 +879,7 @@ struct AnalysisEnergyCorrelator {
     }
     // loop over two event comibnations
     for (auto& [event1, event2] : selfCombinations(*fMixingBinning, fConfigEventOptions.fConfigMixingDepth.value, -1, events, events)) {
+      LOG(info) << "check1";
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<gkEventFillMapWithMults>(event1);
       if (!fEventCut->IsSelected(VarManager::fgValues)) {
