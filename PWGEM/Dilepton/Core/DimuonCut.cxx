@@ -128,6 +128,11 @@ void DimuonCut::SetDCAxy(float min, float max)
   mMaxDcaXY = max;
   LOG(info) << "Dimuon Cut, set DCAxy range: " << mMinDcaXY << " - " << mMaxDcaXY;
 }
+void DimuonCut::EnableTTCA(const bool flag)
+{
+  mEnableTTCA = flag;
+  LOG(info) << "Dimuon Cut, enable TTCA: " << mEnableTTCA;
+}
 void DimuonCut::SetMaxPDCARabsDep(std::function<float(float)> RabsDepCut)
 {
   mMaxPDCARabsDep = RabsDepCut;
