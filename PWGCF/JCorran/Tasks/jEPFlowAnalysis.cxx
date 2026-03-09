@@ -370,7 +370,6 @@ struct jEPFlowAnalysis {
     epFlowHistograms.add("hCentQ2", "", {HistType::kTH3F, {axisMod, axisCent, axisQ2}});
     epFlowHistograms.add("SPvnxxQ2", "", {HistType::kTHnSparseF, {axisMod, axisCent, axisPt, axisQvec, axisQ2ana}});
 
-
     epFlowHistograms.add("MC/hPartGen", "", {kTHnSparseF, {cfgAxisCentMC, cfgAxisVtxZMC, cfgAxisEtaMC, cfgAxisPhiMC, cfgAxisPtMC}});
     epFlowHistograms.add("MC/hPartRecPr", "", {kTHnSparseF, {cfgAxisCentMC, cfgAxisVtxZMC, cfgAxisEtaMC, cfgAxisPhiMC, cfgAxisPtMC}});
     epFlowHistograms.add("MC/hPartRec", "", {kTHnSparseF, {cfgAxisCentMC, cfgAxisVtxZMC, cfgAxisEtaMC, cfgAxisPhiMC, cfgAxisPtMC}});
