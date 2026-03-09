@@ -279,7 +279,7 @@ struct jEPFlowAnalysis {
       epFlowHistograms.fill(HIST("EpResQvecRefARefBxx"), i + 2, cent, qx_shifted[1] * qx_shifted[2] + qy_shifted[1] * qy_shifted[2]);
       epFlowHistograms.fill(HIST("EpResQvecRefARefBxy"), i + 2, cent, qx_shifted[2] * qy_shifted[1] - qx_shifted[1] * qy_shifted[2]);
 
-      float q2 = std::sqrt(std::pow(qx_shifted[0], 2) + std::pos(qy_shifted[0], 2)) / std::sqrt(coll.qvecAmp()[detId]);
+      float q2 = std::sqrt(std::pow(qx_shifted[0], 2) + std::pow(qy_shifted[0], 2)) / std::sqrt(coll.qvecAmp()[detId]);
       epFlowHistograms.fill(HIST("hCentQ2"), i + 2, cent, q2);
 
       for (const auto& track : tracks) {
