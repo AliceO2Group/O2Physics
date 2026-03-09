@@ -861,20 +861,15 @@ struct TableMaker {
   // Function to compute the mu for pileup estimation, taken from EM code
   double calculateMu(const auto& bc)
   {
-    auto& ccdbMgr = o2::ccdb::BasicCCDBManager::instance();
-
     uint64_t timeStamp = bc.timestamp();
-    std::map<std::string, std::string> metadata;
-    mLHCIFdata = ccdbMgr.getSpecific<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", timeStamp, metadata);
-
     auto bfilling = mLHCIFdata->getBunchFilling();
     double nbc = bfilling.getFilledBCs().size();
 
     double tvxRate;
     if (fConfigHistOutput.fConfigIrEstimator.value.empty()) {
-      tvxRate = mRateFetcher.fetch(&ccdbMgr, timeStamp, bc.runNumber(), "T0VTX");
+      tvxRate = mRateFetcher.fetch(fCCDB.service, timeStamp, bc.runNumber(), "T0VTX");
     } else {
-      tvxRate = mRateFetcher.fetch(&ccdbMgr, timeStamp, bc.runNumber(), fConfigHistOutput.fConfigIrEstimator.value);
+      tvxRate = mRateFetcher.fetch(fCCDB.service, timeStamp, bc.runNumber(), fConfigHistOutput.fConfigIrEstimator.value);
     }
 
     double nTriggersPerFilledBC = tvxRate / nbc / o2::constants::lhc::LHCRevFreq;
@@ -1699,6 +1694,9 @@ struct TableMaker {
           }
         } else {
           VarManager::SetZShift(fConfigCCDB.fManualZShift.value);
+        }
+        if (fConfigHistOutput.fConfigFillBcStat) {
+          mLHCIFdata = fCCDB->getSpecific<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", bcs.begin().timestamp());
         }
         if (fConfigVariousOptions.fPropMuon) {
           VarManager::SetupMuonMagField();
