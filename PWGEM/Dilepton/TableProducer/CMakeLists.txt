@@ -106,3 +106,7 @@ o2physics_add_dpl_workflow(qvector3-dummy-otf
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(prefilter-dimuon
+                    SOURCES prefilterDimuon.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore
+                    COMPONENT_NAME Analysis)
