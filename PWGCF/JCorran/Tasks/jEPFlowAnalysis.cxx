@@ -100,6 +100,8 @@ struct jEPFlowAnalysis {
   ConfigurableAxis cfgAxisPt{"cfgAxisPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10.0, 12.0, 15.0, 30.0, 50.0, 70.0, 100.0}, ""};
   ConfigurableAxis cfgAxisCos{"cfgAxisCos", {102, -1.02, 1.02}, ""};
   ConfigurableAxis cfgAxisQvec{"cfgAxisQvec", {200, -5.0, 5.0}, ""};
+  ConfigurableAxis cfgAxisQ2{"cfgAxisQ2", {200, 0., 20.}, ""};
+  ConfigurableAxis cfgAxisQ2ana{"cfgAxisQ2ana", {20, 0., 20.}, ""};
 
   ConfigurableAxis cfgAxisCentMC{"cfgAxisCentMC", {5, 0, 100}, ""};
   ConfigurableAxis cfgAxisVtxZMC{"cfgAxisVtxZMC", {20, -10, 10}, ""};
@@ -294,6 +296,7 @@ struct jEPFlowAnalysis {
         epFlowHistograms.fill(HIST("SPvnxx"), i + 2, cent, track.pt(), (std::cos(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] + std::sin(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]), weight);
         epFlowHistograms.fill(HIST("SPvnxy"), i + 2, cent, track.pt(), (std::sin(track.phi() * static_cast<float>(i + 2)) * qx_shifted[0] - std::cos(track.phi() * static_cast<float>(i + 2)) * qy_shifted[0]), weight);
       }
+      epFlowHistograms.fill(HIST("hCentQ2"), i + 2, cent, std::sqrt(std::pow(qx_shifted[0], 2) + std::pos(qy_shifted[0], 2)) / std::sqrt(coll.qvecAmp()[detId]));
     }
   }
 
@@ -328,6 +331,8 @@ struct jEPFlowAnalysis {
     AxisSpec axisPt{cfgAxisPt, "pT"};
     AxisSpec axisCos{cfgAxisCos, "cos"};
     AxisSpec axisQvec{cfgAxisQvec, "Qvec"};
+    AxisSpec axisQ2{cfgAxisQ2, "Q2"};
+    AxisSpec axisQ2ana{cfgAxisQ2ana, "Q2ana"};
 
     AxisSpec axisCentMC{cfgAxisCentMC, "cent"};
     AxisSpec axisVtxZMC{cfgAxisVtxZMC, "vtxz"};
@@ -358,6 +363,8 @@ struct jEPFlowAnalysis {
 
     epFlowHistograms.add("hCentrality", "", {HistType::kTH1F, {axisCent}});
     epFlowHistograms.add("hVertex", "", {HistType::kTH1F, {axisVertex}});
+
+    epFlowHistograms.add("hCentQ2", "", {HistType::kTH3F, {axisMod, axisCent, cfgAxisQ2}});
 
     epFlowHistograms.add("MC/hPartGen", "", {kTHnSparseF, {cfgAxisCentMC, cfgAxisVtxZMC, cfgAxisEtaMC, cfgAxisPhiMC, cfgAxisPtMC}});
     epFlowHistograms.add("MC/hPartRecPr", "", {kTHnSparseF, {cfgAxisCentMC, cfgAxisVtxZMC, cfgAxisEtaMC, cfgAxisPhiMC, cfgAxisPtMC}});
