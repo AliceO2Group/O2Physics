@@ -361,4 +361,3 @@ void DielectronCut::EnableTTCA(bool flag)
   mEnableTTCA = flag;
   LOG(info) << "Dielectron Cut, enable TTCA: " << mEnableTTCA;
 }
-
