@@ -14,8 +14,6 @@
 /// \since  03/2026
 /// \brief  A try to use the znc energy.
 
-#include "PWGCF/DataModel/SPTableZDC.h"
-
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
@@ -55,34 +53,38 @@ using namespace o2::aod::rctsel;
 
 struct flowZdcEnergy {
 
-  RCTFlagsChecker rctChecker;
-
-  struct : ConfigurableGroup {
-    O2_DEFINE_CONFIGURABLE(cfgEvtUseRCTFlagChecker, bool, false, "Evt sel: use RCT flag checker");
-    O2_DEFINE_CONFIGURABLE(cfgEvtRCTFlagCheckerLabel, std::string, "CBT_hadronPID", "Evt sel: RCT flag checker label (CBT, CBT_hadronPID)"); // all Labels can be found in Common/CCDB/RCTSelectionFlags.h
-    O2_DEFINE_CONFIGURABLE(cfgEvtRCTFlagCheckerZDCCheck, bool, false, "Evt sel: RCT flag checker ZDC check");
-    O2_DEFINE_CONFIGURABLE(cfgEvtRCTFlagCheckerLimitAcceptAsBad, bool, false, "Evt sel: RCT flag checker treat Limited Acceptance As Bad");
-  } rctFlags;
-
   struct : ConfigurableGroup {
     // Additional event selections
-    O2_DEFINE_CONFIGURABLE(cfgMaxOccupancy, int, 10000, "Maximum occupancy of selected events");
     O2_DEFINE_CONFIGURABLE(cfgCentMin, float, 0, "Minimum cenrality for selected events");
     O2_DEFINE_CONFIGURABLE(cfgCentMax, float, 90, "Maximum cenrality for selected events");
+    O2_DEFINE_CONFIGURABLE(cfgVtxZ, float, 10.0f, "Accepted z-vertex range for selected events")
   } EvSel;
 
   // Configurables containing vector
-  O2_DEFINE_CONFIGURABLE(cfgVtxZ, float, 10.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgEtaMax, float, 0.8f, "Maximum track #eta")
   O2_DEFINE_CONFIGURABLE(cfgPtMin, float, 0.2f, "Minimum track #P_{t}")
   O2_DEFINE_CONFIGURABLE(cfgPtMax, float, 10.0f, "Maximum track #P_{t}")
   O2_DEFINE_CONFIGURABLE(cfgDcaXYMax, float, 0.2f, "Maximum DCAxy")
   O2_DEFINE_CONFIGURABLE(cfgDcaZMax, float, 2.0f, "Maximum DCAz")
 
+  enum SelectionCriteria {
+    evSel_AllEvent,
+    evSel_sel8,
+    evSel_Zvtx,
+    evSel_CentCuts,
+    evSel_BCHasZDC,
+    evSel_isSelectedZDC,
+    nEventSelections
+  };
+
+  ConfigurableAxis axisCent = {"axisCent", {100, 0, 100}, "Centrality(%)"};
+  ConfigurableAxis axisEnergy = {"axisEnergy", {300, 0, 300}, "Energy"};
+  ConfigurableAxis axisRescaledDiff = {"axisRescaledDiff", {400, -1, 1}, "(#E_{A}-#E_{C}) / (#E_{A}+#E_{C})"};
+
   // Filter trackFilter = nabs(aod::track::eta) < cfgEtaMax && aod::track::pt > cfgPtMin&& aod::track::pt < cfgPtMax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDcaXYMax&& nabs(aod::track::dcaZ) < cfgDcaZMax;
 
   // using UsedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
-  using ZDCCollisions = soa::Join<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>, aod::SPTableZDC>;
+  using ZDCCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>;
   using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
   //  Connect to ccdb
@@ -99,12 +101,15 @@ struct flowZdcEnergy {
     int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
 
-    rctChecker.init(rctFlags.cfgEvtRCTFlagCheckerLabel, rctFlags.cfgEvtRCTFlagCheckerZDCCheck, rctFlags.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
-
-    AxisSpec axisCent = {100, 0, 100, "Centrality(%)"};
-    AxisSpec axisEnergy = {300, 0, 300, "Energy"};
-    AxisSpec axisRescaledDiff = {40, -2, 2, "(#E_{A}-#E_{C}) / (#E_{A}+#E_{C})"};
-
+    // QA hist
+    registry.add("hEventCount", "Number of Event; Cut; #Events Passed Cut", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}});
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_AllEvent + 1, "All events");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_sel8 + 1, "Sel8");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_Zvtx + 1, "Z vertex cut event");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_CentCuts + 1, "Cenrality range");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_BCHasZDC + 1, "BCHasZDC");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_isSelectedZDC + 1, "isSelected");
+    // ana hist
     registry.add("hEnergyWithCent_ZNA_Common", "", {HistType::kTH2D, {axisEnergy, axisCent}});
     registry.add("hEnergyWithCent_ZNC_Common", "", {HistType::kTH2D, {axisEnergy, axisCent}});
     registry.add("hEnergyWithCent_RescaledDiff", "", {HistType::kTH2D, {axisRescaledDiff, axisCent}});
@@ -126,16 +131,31 @@ struct flowZdcEnergy {
 
     double centrality = collision.centFT0C();
     // event selection
-    if (centrality < EvSel.cfgCentMin || centrality > EvSel.cfgCentMax || !collision.sel8() || std::abs(collision.posZ()) > cfgVtxZ) {
+    registry.fill(HIST("hEventCount"), evSel_AllEvent);
+    if (!collision.sel8()) {
       return;
     }
+    registry.fill(HIST("hEventCount"), evSel_sel8);
+    if (std::abs(collision.posZ()) > EvSel.cfgVtxZ) {
+      return;
+    }
+    registry.fill(HIST("hEventCount"), evSel_Zvtx);
+    if (centrality < EvSel.cfgCentMin || centrality > EvSel.cfgCentMax) {
+      return;
+    }
+    registry.fill(HIST("hEventCount"), evSel_CentCuts);
 
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
     if (!foundBC.has_zdc()) {
       return;
     }
+    registry.fill(HIST("hEventCount"), evSel_BCHasZDC);
 
     const auto& zdcCol = foundBC.zdc();
+    if (zdcCol.energyCommonZNA() <= 0 || zdcCol.energyCommonZNC() <= 0) {
+      return;
+    }
+    registry.fill(HIST("hEventCount"), evSel_isSelectedZDC);
 
     double SumEnergyZNA = zdcCol.energySectorZNA()[0] + zdcCol.energySectorZNA()[1] + zdcCol.energySectorZNA()[2] + zdcCol.energySectorZNA()[3];
     double SumEnergyZNC = zdcCol.energySectorZNC()[0] + zdcCol.energySectorZNC()[1] + zdcCol.energySectorZNC()[2] + zdcCol.energySectorZNC()[3];
