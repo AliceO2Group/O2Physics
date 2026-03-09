@@ -578,6 +578,7 @@ DECLARE_SOA_TABLE_STAGED(HfD0Mls, "HFD0ML", //! Table with candidate selection M
 DECLARE_SOA_TABLE_STAGED(HfD0Mcs, "HFD0MC", //! Table with MC candidate info
                          hf_cand_mc::FlagMcMatchRec,
                          hf_cand_mc::OriginMcRec,
+                         hf_cand_mc::FlagMcDecayChanRec,
                          o2::soa::Marker<MarkerD0>);
 
 // ----------------

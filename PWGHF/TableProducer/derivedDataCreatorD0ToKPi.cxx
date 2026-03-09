@@ -232,7 +232,8 @@ struct HfDerivedDataCreatorD0ToKPi {
     if (fillCandidateMc) {
       rowCandidateMc(
         flagMc,
-        origin);
+        origin,
+        flagDecayChan);
     }
   }
 
