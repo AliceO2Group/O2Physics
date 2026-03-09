@@ -778,7 +778,7 @@ std::pair<double, double> HFInvMassFitter::getRangesOfSignal() const
     return std::make_pair(mMinMass, mMaxMass);
   } else {
     const double mean = mRooMeanSgn->getVal();
-    const double sigma = mRooSigmaSgn->getVal();
+    const double sigma = mRooSecSigmaSgn->getVal();
     return std::make_pair(mean - mNSigmaForSgn * sigma, mean + mNSigmaForSgn * sigma);
   }
 }
