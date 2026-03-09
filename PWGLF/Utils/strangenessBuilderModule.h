@@ -1371,7 +1371,7 @@ class BuilderModule
         pvX = collision.posX();
         pvY = collision.posY();
         pvZ = collision.posZ();
-        if (v0BuilderOpts.moveTPCOnlyTracks && collision.has_bc()) {
+        if (v0BuilderOpts.generatePhotonCandidates && v0BuilderOpts.moveTPCOnlyTracks && collision.has_bc()) {
           mVDriftMgr.update(collision.template bc_as<aod::BCsWithTimestamps>().timestamp());
         }
       }
