@@ -148,7 +148,7 @@ struct HfDerivedDataCreatorD0ToKPi {
 
   template <typename T>
   void fillTablesCandidate(const T& candidate, int candFlag, double invMass, double cosThetaStar, double topoChi2,
-                           double ct, double y, int8_t flagMc, int8_t origin, const std::vector<float>& mlScores)
+                           double ct, double y, int8_t flagMc, int8_t origin, int8_t flagDecayChanRec, const std::vector<float>& mlScores)
   {
     rowsCommon.fillTablesCandidate(candidate, invMass, y);
     if (fillCandidatePar) {
@@ -278,11 +278,12 @@ struct HfDerivedDataCreatorD0ToKPi {
       if constexpr (IsMc) {
         reserveTable(rowCandidateMc, fillCandidateMc, sizeTableCand);
       }
-      int8_t flagMcRec = 0, origin = 0;
+      int8_t flagMcRec = 0, origin = 0, flagDecayChanRec = 0;
       for (const auto& candidate : candidatesThisColl) {
         if constexpr (IsMc) {
           flagMcRec = candidate.flagMcMatchRec();
           origin = candidate.originMcRec();
+          flagDecayChanRec = candidate.flagMcDecayChanRec();
           if constexpr (OnlyBkg) {
             if (std::abs(flagMcRec) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
               continue;
@@ -326,10 +327,10 @@ struct HfDerivedDataCreatorD0ToKPi {
           std::copy(candidate.mlProbD0bar().begin(), candidate.mlProbD0bar().end(), std::back_inserter(mlScoresD0bar));
         }
         if (candidate.isSelD0()) {
-          fillTablesCandidate(candidate, 0, massD0, HfHelper::cosThetaStarD0(candidate), topolChi2PerNdf, ct, y, flagMcRec, origin, mlScoresD0);
+          fillTablesCandidate(candidate, 0, massD0, HfHelper::cosThetaStarD0(candidate), topolChi2PerNdf, ct, y, flagMcRec, origin, flagDecayChanRec, mlScoresD0);
         }
         if (candidate.isSelD0bar()) {
-          fillTablesCandidate(candidate, 1, massD0bar, HfHelper::cosThetaStarD0bar(candidate), topolChi2PerNdf, ct, y, flagMcRec, origin, mlScoresD0bar);
+          fillTablesCandidate(candidate, 1, massD0bar, HfHelper::cosThetaStarD0bar(candidate), topolChi2PerNdf, ct, y, flagMcRec, origin, flagDecayChanRec, mlScoresD0bar);
         }
       }
     }
