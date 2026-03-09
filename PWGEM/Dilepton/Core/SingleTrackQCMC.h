@@ -521,6 +521,7 @@ struct SingleTrackQCMC {
     fDielectronCut.SetChi2TOF(0.0, dielectroncuts.cfg_max_chi2tof);
     fDielectronCut.SetRelDiffPin(dielectroncuts.cfg_min_rel_diff_pin, dielectroncuts.cfg_max_rel_diff_pin);
     fDielectronCut.IncludeITSsa(dielectroncuts.includeITSsa, 1e+10);
+    fDielectronCut.EnableTTCA(dielectroncuts.enableTTCA);
 
     // for eID
     fDielectronCut.SetPIDScheme(dielectroncuts.cfg_pid_scheme);
@@ -593,6 +594,7 @@ struct SingleTrackQCMC {
     fDimuonCut.SetMaxPDCARabsDep([&](float rabs) { return (rabs < 26.5 ? 594.f : 324.f); });
     fDimuonCut.SetMaxdPtdEtadPhiwrtMCHMID(dimuoncuts.cfg_max_relDPt_wrt_matchedMCHMID, dimuoncuts.cfg_max_DEta_wrt_matchedMCHMID, dimuoncuts.cfg_max_DPhi_wrt_matchedMCHMID); // this is relevant for global muons
     fDimuonCut.SetMFTHitMap(dimuoncuts.requireMFTHitMap, dimuoncuts.requiredMFTDisks);
+    fDimuonCut.EnableTTCA(dimuoncuts.enableTTCA);
   }
 
   template <bool isSmeared, typename T>
@@ -892,9 +894,12 @@ struct SingleTrackQCMC {
           if (!cut.template IsSelectedTrack<false>(track)) {
             continue;
           }
-          if (!o2::aod::pwgem::dilepton::utils::emtrackutil::isBestMatch(track, cut, tracks)) {
+          if (!map_best_match_globalmuon[track.globalIndex()]) {
             continue;
           }
+          // if (!o2::aod::pwgem::dilepton::utils::emtrackutil::isBestMatch(track, cut, tracks)) {
+          //   continue;
+          // }
           if (dimuoncuts.acceptOnlyCorrectMatch && track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && track.emmcparticleId() != track.emmftmcparticleId()) {
             continue;
           }
@@ -1089,10 +1094,12 @@ struct SingleTrackQCMC {
           if (!cut.template IsSelectedTrack<false>(track)) {
             continue;
           }
-
-          if (!o2::aod::pwgem::dilepton::utils::emtrackutil::isBestMatch(track, cut, tracks)) {
+          if (!map_best_match_globalmuon[track.globalIndex()]) {
             continue;
           }
+          // if (!o2::aod::pwgem::dilepton::utils::emtrackutil::isBestMatch(track, cut, tracks)) {
+          //   continue;
+          // }
           passed_trackIds.emplace_back(track.globalIndex());
         } // end of track loop
       }
@@ -1128,15 +1135,16 @@ struct SingleTrackQCMC {
     passed_trackIds.shrink_to_fit();
   }
 
+  std::unordered_map<int, bool> map_best_match_globalmuon;
   SliceCache cache;
   Preslice<MyMCElectrons> perCollision_electron = aod::emprimaryelectron::emeventId;
   Filter trackFilter_electron = o2::aod::track::tpcChi2NCl < dielectroncuts.cfg_max_chi2tpc && o2::aod::track::itsChi2NCl < dielectroncuts.cfg_max_chi2its && nabs(o2::aod::track::dcaXY) < dielectroncuts.cfg_max_dcaxy && nabs(o2::aod::track::dcaZ) < dielectroncuts.cfg_max_dcaz;
   Filter pidFilter_electron = dielectroncuts.cfg_min_TPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < dielectroncuts.cfg_max_TPCNsigmaEl;
-  Filter ttcaFilter_electron = ifnode(dielectroncuts.enableTTCA.node(), o2::aod::emprimaryelectron::isAssociatedToMPC == true || o2::aod::emprimaryelectron::isAssociatedToMPC == false, o2::aod::emprimaryelectron::isAssociatedToMPC == true);
+  Filter ttcaFilter_electron = ifnode(dielectroncuts.enableTTCA.node(), true, o2::aod::emprimaryelectron::isAssociatedToMPC == true);
 
   Preslice<MyMCMuons> perCollision_muon = aod::emprimarymuon::emeventId;
   Filter trackFilter_muon = o2::aod::fwdtrack::trackType == dimuoncuts.cfg_track_type && dimuoncuts.cfg_min_phi_track < o2::aod::fwdtrack::phi && o2::aod::fwdtrack::phi < dimuoncuts.cfg_max_phi_track;
-  Filter ttcaFilter_muon = ifnode(dimuoncuts.enableTTCA.node(), o2::aod::emprimarymuon::isAssociatedToMPC == true || o2::aod::emprimarymuon::isAssociatedToMPC == false, o2::aod::emprimarymuon::isAssociatedToMPC == true);
+  Filter ttcaFilter_muon = ifnode(dimuoncuts.enableTTCA.node(), true, o2::aod::emprimarymuon::isAssociatedToMPC == true);
 
   Filter collisionFilter_centrality = (eventcuts.cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < eventcuts.cfgCentMax) || (eventcuts.cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < eventcuts.cfgCentMax) || (eventcuts.cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < eventcuts.cfgCentMax);
   Filter collisionFilter_numContrib = eventcuts.cfgNumContribMin <= o2::aod::collision::numContrib && o2::aod::collision::numContrib < eventcuts.cfgNumContribMax;
@@ -1159,6 +1167,7 @@ struct SingleTrackQCMC {
       runQCMC<false>(collisions, tracks, perCollision_electron, fDielectronCut, mccollisions, mcparticles);
       runGenInfo<false>(collisions, electronsMC, mccollisions, mcparticles);
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
+      map_best_match_globalmuon = findBestMatchMap(tracks, fDimuonCut);
       if (cfgApplyWeightTTCA) {
         fillTrackWeightMap(collisions, tracks, perCollision_muon, fDimuonCut, mccollisions, mcparticles);
       }
@@ -1166,6 +1175,7 @@ struct SingleTrackQCMC {
       runGenInfo<false>(collisions, muonsMC, mccollisions, mcparticles);
     }
     map_weight.clear();
+    map_best_match_globalmuon.clear();
   }
   PROCESS_SWITCH(SingleTrackQCMC, processQCMC, "run single track QC MC", true);
 
@@ -1181,6 +1191,7 @@ struct SingleTrackQCMC {
       runQCMC<true>(collisions, tracks, perCollision_electron, fDielectronCut, mccollisions, mcparticles_smeared);
       runGenInfo<true>(collisions, electronsMC_smeared, mccollisions, mcparticles_smeared);
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
+      map_best_match_globalmuon = findBestMatchMap(tracks, fDimuonCut);
       if (cfgApplyWeightTTCA) {
         fillTrackWeightMap(collisions, tracks, perCollision_muon, fDimuonCut, mccollisions, mcparticles_smeared);
       }
@@ -1188,6 +1199,7 @@ struct SingleTrackQCMC {
       runGenInfo<true>(collisions, muonsMC_smeared, mccollisions, mcparticles_smeared);
     }
     map_weight.clear();
+    map_best_match_globalmuon.clear();
   }
   PROCESS_SWITCH(SingleTrackQCMC, processQCMC_Smeared, "run single track QC MC with smearing", false);
 
