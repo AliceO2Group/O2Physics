@@ -51,15 +51,18 @@ enum ColHist {
   kCentVsMult,
   kCentVsSphericity,
   kMultVsSphericity,
+  // particle number correlation
+  kNpart1VsNpart2,
+  kNpart1VsNpart2VsNpart3,
   // mc
   kTrueCentVsCent,
   kTrueMultVsMult,
   kColHistLast
 };
 
-constexpr std::string_view ColAnalysisDir = "Collisions/Analysis/";
-constexpr std::string_view ColQaDir = "Collisions/QA/";
-constexpr std::string_view ColMcDir = "Collisions/MC/";
+constexpr std::string_view AnalysisDir = "Collisions/Analysis/";
+constexpr std::string_view QaDir = "Collisions/QA/";
+constexpr std::string_view McDir = "Collisions/MC/";
 
 constexpr std::array<histmanager::HistInfo<ColHist>, kColHistLast> HistTable = {
   {
@@ -79,16 +82,21 @@ constexpr std::array<histmanager::HistInfo<ColHist>, kColHistLast> HistTable = {
     {kCentVsMult, o2::framework::kTH2F, "hCentVsMult", "Centrality vs Multiplicity; Centrality (%); Multiplicity"},
     {kMultVsSphericity, o2::framework::kTH2F, "hMultVsSphericity", "Multiplicity vs Sphericity; Multiplicity; Sphericity"},
     {kCentVsSphericity, o2::framework::kTH2F, "hCentVsSphericity", "Centrality vs Sphericity; Centrality (%); Sphericity"},
+    // particle number correlation
+    {kNpart1VsNpart2, o2::framework::kTH2F, "hNpart1VsNpart2", "# particle 1 vs # particle 2; # particle 1; # particle 2"},
+    {kNpart1VsNpart2VsNpart3, o2::framework::kTHnSparseF, "hNpart1VsNpart2VsNpart3", "# particle 1 vs # particle 2 vs particle 3; # particle 1; # particle 2; # particle 3"},
     // mc
     {kTrueCentVsCent, o2::framework::kTH2F, "hTrueCentVsCent", "True centrality vs centrality; Centrality_{True} (%); Centrality (%)"},
     {kTrueMultVsMult, o2::framework::kTH2F, "hTrueMultVsMult", "True multiplicity vs multiplicity; Multiplicity_{True}; Multiplicity"},
   }};
 
-#define COL_HIST_ANALYSIS_MAP(conf) \
-  {kPosZ, {conf.vtxZ}},             \
-    {kMult, {conf.mult}},           \
-    {kCent, {conf.cent}},           \
-    {kMagField, {conf.magField}},
+#define COL_HIST_ANALYSIS_MAP(conf)                                          \
+  {kPosZ, {conf.vtxZ}},                                                      \
+    {kMult, {conf.mult}},                                                    \
+    {kCent, {conf.cent}},                                                    \
+    {kMagField, {conf.magField}},                                            \
+    {kNpart1VsNpart2, {conf.particleCorrelation, conf.particleCorrelation}}, \
+    {kNpart1VsNpart2VsNpart3, {conf.particleCorrelation, conf.particleCorrelation, conf.particleCorrelation}},
 
 #define COL_HIST_QA_MAP(confAnalysis, confQa)                    \
   {kPosX, {confQa.vtxXY}},                                       \
@@ -109,14 +117,14 @@ constexpr std::array<histmanager::HistInfo<ColHist>, kColHistLast> HistTable = {
 template <typename T>
 auto makeColHistSpecMap(const T& confBinningAnalysis)
 {
-  return std::map<ColHist, std::vector<framework::AxisSpec>>{
+  return std::map<ColHist, std::vector<o2::framework::AxisSpec>>{
     COL_HIST_ANALYSIS_MAP(confBinningAnalysis)};
 }
 
 template <typename T>
 auto makeColMcHistSpecMap(const T& confBinningAnalysis)
 {
-  return std::map<ColHist, std::vector<framework::AxisSpec>>{
+  return std::map<ColHist, std::vector<o2::framework::AxisSpec>>{
     COL_HIST_ANALYSIS_MAP(confBinningAnalysis)
       COL_HIST_MC_MAP(confBinningAnalysis)};
 }
@@ -124,7 +132,7 @@ auto makeColMcHistSpecMap(const T& confBinningAnalysis)
 template <typename T1, typename T2>
 auto makeColQaHistSpecMap(const T1& confBinningAnalysis, const T2& confBinningQa)
 {
-  return std::map<ColHist, std::vector<framework::AxisSpec>>{
+  return std::map<ColHist, std::vector<o2::framework::AxisSpec>>{
     COL_HIST_ANALYSIS_MAP(confBinningAnalysis)
       COL_HIST_QA_MAP(confBinningAnalysis, confBinningQa)};
 }
@@ -132,7 +140,7 @@ auto makeColQaHistSpecMap(const T1& confBinningAnalysis, const T2& confBinningQa
 template <typename T1, typename T2>
 auto makeColMcQaHistSpecMap(const T1& confBinningAnalysis, const T2& confBinningQa)
 {
-  return std::map<ColHist, std::vector<framework::AxisSpec>>{
+  return std::map<ColHist, std::vector<o2::framework::AxisSpec>>{
     COL_HIST_ANALYSIS_MAP(confBinningAnalysis)
       COL_HIST_QA_MAP(confBinningAnalysis, confBinningQa)
         COL_HIST_MC_MAP(confBinningAnalysis)};
@@ -148,6 +156,9 @@ struct ConfCollisionBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis mult{"mult", {200, 0, 200}, "Multiplicity binning"};
   o2::framework::ConfigurableAxis cent{"cent", {100, 0.0f, 100.0f}, "Centrality (multiplicity percentile) binning"};
   o2::framework::ConfigurableAxis magField{"magField", {11, -5.5, 5.5}, "Magnetic field binning"};
+  o2::framework::Configurable<bool> plotParticlePairCorrelation{"plotParticlePairCorrelation", false, "Plot particle number correlation for pairs"};
+  o2::framework::Configurable<bool> plotParticleTripletCorrelation{"plotParticleTripletCorrelation", false, "Plot particle number correlation for triplets"};
+  o2::framework::ConfigurableAxis particleCorrelation{"particleCorrelation", {6, -0.5f, 5.5f}, "Binning for particle number correlation of pairs/triplets"};
 };
 
 struct ConfCollisionQaBinning : o2::framework::ConfigurableGroup {
@@ -165,10 +176,14 @@ class CollisionHistManager
   CollisionHistManager() = default;
   ~CollisionHistManager() = default;
 
-  template <modes::Mode mode>
-  void init(o2::framework::HistogramRegistry* registry, std::map<ColHist, std::vector<o2::framework::AxisSpec>> const& Specs)
+  template <modes::Mode mode, typename T>
+  void init(o2::framework::HistogramRegistry* registry,
+            std::map<ColHist, std::vector<o2::framework::AxisSpec>> const& Specs,
+            T const& ConfCollisionBinning)
   {
     mHistogramRegistry = registry;
+    mPlotPairCorrelation = ConfCollisionBinning.plotParticlePairCorrelation.value;
+    mPlotTripletCorrelation = ConfCollisionBinning.plotParticleTripletCorrelation.value;
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
       initAnalysis(Specs);
     }
@@ -186,18 +201,21 @@ class CollisionHistManager
     mPlot2d = ConfBinningQa.plot2d.value;
   }
 
-  template <modes::Mode mode, typename T>
-  void init(o2::framework::HistogramRegistry* registry, std::map<ColHist, std::vector<o2::framework::AxisSpec>> const& Specs, T const& ConfBinningQa)
+  template <modes::Mode mode, typename T1, typename T2>
+  void init(o2::framework::HistogramRegistry* registry,
+            std::map<ColHist, std::vector<o2::framework::AxisSpec>> const& Specs,
+            T1 const& ConfCollisionBinning,
+            T2 const& ConfBinningQa)
   {
     enableOptionalHistograms(ConfBinningQa);
-    this->template init<mode>(registry, Specs);
+    init<mode>(registry, Specs, ConfCollisionBinning);
   }
 
   template <modes::Mode mode, typename T>
-  void fill(T const& col)
+  void fill(T const& col, int64_t nSlice1, int64_t nSlice2, int64_t nSlice3)
   {
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
-      fillAnalysis(col);
+      fillAnalysis(col, nSlice1, nSlice2, nSlice3);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
       fillQa(col);
@@ -205,10 +223,10 @@ class CollisionHistManager
   }
 
   template <modes::Mode mode, typename T1, typename T2>
-  void fill(T1 const& col, T2 const& mcCols)
+  void fill(T1 const& col, T2 const& mcCols, int64_t nSlice1, int64_t nSlice2, int64_t nSlice3)
   {
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
-      fillAnalysis(col);
+      fillAnalysis(col, nSlice1, nSlice2, nSlice3);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
       fillQa(col);
@@ -221,16 +239,22 @@ class CollisionHistManager
  private:
   void initAnalysis(std::map<ColHist, std::vector<o2::framework::AxisSpec>> const& Specs)
   {
-    std::string analysisDir = std::string(ColAnalysisDir);
+    std::string analysisDir = std::string(AnalysisDir);
     mHistogramRegistry->add(analysisDir + getHistNameV2(kPosZ, HistTable), getHistDesc(kPosZ, HistTable), getHistType(kPosZ, HistTable), {Specs.at(kPosZ)});
     mHistogramRegistry->add(analysisDir + getHistNameV2(kMult, HistTable), getHistDesc(kMult, HistTable), getHistType(kMult, HistTable), {Specs.at(kMult)});
     mHistogramRegistry->add(analysisDir + getHistNameV2(kCent, HistTable), getHistDesc(kCent, HistTable), getHistType(kCent, HistTable), {Specs.at(kCent)});
     mHistogramRegistry->add(analysisDir + getHistNameV2(kMagField, HistTable), getHistDesc(kMagField, HistTable), getHistType(kMagField, HistTable), {Specs.at(kMagField)});
+    if (mPlotPairCorrelation) {
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kNpart1VsNpart2, HistTable), getHistDesc(kNpart1VsNpart2, HistTable), getHistType(kNpart1VsNpart2, HistTable), {Specs.at(kNpart1VsNpart2)});
+    }
+    if (mPlotTripletCorrelation) {
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kNpart1VsNpart2VsNpart3, HistTable), getHistDesc(kNpart1VsNpart2VsNpart3, HistTable), getHistType(kNpart1VsNpart2VsNpart3, HistTable), {Specs.at(kNpart1VsNpart2VsNpart3)});
+    }
   }
 
   void initQa(std::map<ColHist, std::vector<o2::framework::AxisSpec>> const& Specs)
   {
-    std::string qaDir = std::string(ColQaDir);
+    std::string qaDir = std::string(QaDir);
     mHistogramRegistry->add(qaDir + getHistNameV2(kPosX, HistTable), getHistDesc(kPosX, HistTable), getHistType(kPosX, HistTable), {Specs.at(kPosX)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kPosY, HistTable), getHistDesc(kPosY, HistTable), getHistType(kPosY, HistTable), {Specs.at(kPosY)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kPos, HistTable), getHistDesc(kPos, HistTable), getHistType(kPos, HistTable), {Specs.at(kPos)});
@@ -247,34 +271,40 @@ class CollisionHistManager
 
   void initMc(std::map<ColHist, std::vector<o2::framework::AxisSpec>> const& Specs)
   {
-    std::string mcDir = std::string(ColMcDir);
+    std::string mcDir = std::string(McDir);
     mHistogramRegistry->add(mcDir + getHistNameV2(kTrueMultVsMult, HistTable), getHistDesc(kTrueMultVsMult, HistTable), getHistType(kTrueMultVsMult, HistTable), {Specs.at(kTrueMultVsMult)});
     mHistogramRegistry->add(mcDir + getHistNameV2(kTrueCentVsCent, HistTable), getHistDesc(kTrueCentVsCent, HistTable), getHistType(kTrueCentVsCent, HistTable), {Specs.at(kTrueCentVsCent)});
   }
 
   template <typename T>
-  void fillAnalysis(T const& col)
+  void fillAnalysis(T const& col, size_t nSlice1, size_t nSlice2, size_t nSlice3)
   {
-    mHistogramRegistry->fill(HIST(ColAnalysisDir) + HIST(getHistName(kPosZ, HistTable)), col.posZ());
-    mHistogramRegistry->fill(HIST(ColAnalysisDir) + HIST(getHistName(kMult, HistTable)), col.mult());
-    mHistogramRegistry->fill(HIST(ColAnalysisDir) + HIST(getHistName(kCent, HistTable)), col.cent());
-    mHistogramRegistry->fill(HIST(ColAnalysisDir) + HIST(getHistName(kMagField, HistTable)), col.magField());
+    mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kPosZ, HistTable)), col.posZ());
+    mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kMult, HistTable)), col.mult());
+    mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kCent, HistTable)), col.cent());
+    mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kMagField, HistTable)), col.magField());
+    if (mPlotPairCorrelation) {
+      mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kNpart1VsNpart2, HistTable)), nSlice1, nSlice2);
+    }
+    if (mPlotTripletCorrelation) {
+      mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kNpart1VsNpart2VsNpart3, HistTable)), nSlice1, nSlice2, nSlice3);
+    }
   }
 
   template <typename T>
   void fillQa(T const& col)
   {
-    mHistogramRegistry->fill(HIST(ColQaDir) + HIST(getHistName(kPosX, HistTable)), col.posX());
-    mHistogramRegistry->fill(HIST(ColQaDir) + HIST(getHistName(kPosY, HistTable)), col.posY());
-    mHistogramRegistry->fill(HIST(ColQaDir) + HIST(getHistName(kPos, HistTable)), std::hypot(col.posX(), col.posY(), col.posZ()));
-    mHistogramRegistry->fill(HIST(ColQaDir) + HIST(getHistName(kSphericity, HistTable)), col.sphericity());
-    mHistogramRegistry->fill(HIST(ColQaDir) + HIST(getHistName(kOccupancy, HistTable)), col.trackOccupancyInTimeRange());
+    mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kPosX, HistTable)), col.posX());
+    mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kPosY, HistTable)), col.posY());
+    mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kPos, HistTable)), std::hypot(col.posX(), col.posY(), col.posZ()));
+    mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kSphericity, HistTable)), col.sphericity());
+    mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kOccupancy, HistTable)), col.trackOccupancyInTimeRange());
     if (mPlot2d) {
-      mHistogramRegistry->fill(HIST(ColQaDir) + HIST(getHistName(kPoszVsMult, HistTable)), col.posZ(), col.mult());
-      mHistogramRegistry->fill(HIST(ColQaDir) + HIST(getHistName(kPoszVsCent, HistTable)), col.posZ(), col.cent());
-      mHistogramRegistry->fill(HIST(ColQaDir) + HIST(getHistName(kCentVsMult, HistTable)), col.cent(), col.mult());
-      mHistogramRegistry->fill(HIST(ColQaDir) + HIST(getHistName(kMultVsSphericity, HistTable)), col.mult(), col.sphericity());
-      mHistogramRegistry->fill(HIST(ColQaDir) + HIST(getHistName(kCentVsSphericity, HistTable)), col.cent(), col.sphericity());
+      mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kPoszVsMult, HistTable)), col.posZ(), col.mult());
+      mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kPoszVsCent, HistTable)), col.posZ(), col.cent());
+      mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kCentVsMult, HistTable)), col.cent(), col.mult());
+      mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kMultVsSphericity, HistTable)), col.mult(), col.sphericity());
+      mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kCentVsSphericity, HistTable)), col.cent(), col.sphericity());
     }
   }
 
@@ -285,12 +315,14 @@ class CollisionHistManager
       return;
     }
     auto mcCol = col.template fMcCol_as<T2>();
-    mHistogramRegistry->fill(HIST(ColMcDir) + HIST(getHistName(kTrueMultVsMult, HistTable)), mcCol.mult(), col.mult());
-    mHistogramRegistry->fill(HIST(ColMcDir) + HIST(getHistName(kTrueCentVsCent, HistTable)), mcCol.cent(), col.cent());
+    mHistogramRegistry->fill(HIST(McDir) + HIST(getHistName(kTrueMultVsMult, HistTable)), mcCol.mult(), col.mult());
+    mHistogramRegistry->fill(HIST(McDir) + HIST(getHistName(kTrueCentVsCent, HistTable)), mcCol.cent(), col.cent());
   }
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
-  bool mPlot2d = true;
+  bool mPlot2d = false;
+  bool mPlotPairCorrelation = false;
+  bool mPlotTripletCorrelation = false;
 }; // namespace femtounitedcolhistmanager
 }; // namespace colhistmanager
 }; // namespace o2::analysis::femto

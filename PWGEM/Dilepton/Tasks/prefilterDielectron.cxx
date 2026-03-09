@@ -50,13 +50,13 @@ using namespace o2::soa;
 using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 using namespace o2::aod::pwgem::dilepton::utils::pairutil;
 
-using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent>;
-using MyCollision = MyCollisions::iterator;
-
-using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMEventIds, aod::EMAmbiguousElectronSelfIds, aod::EMPrimaryElectronsPrefilterBit>;
-using MyTrack = MyTracks::iterator;
-
 struct prefilterDielectron {
+  using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent>;
+  using MyCollision = MyCollisions::iterator;
+
+  using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMEventIds, aod::EMAmbiguousElectronSelfIds, aod::EMPrimaryElectronsPrefilterBit>;
+  using MyTrack = MyTracks::iterator;
+
   Produces<aod::EMPrimaryElectronsPrefilterBitDerived> pfb_derived;
 
   // Configurables
@@ -129,8 +129,8 @@ struct prefilterDielectron {
     Configurable<bool> cfg_require_itsib_1st{"cfg_require_itsib_1st", false, "flag to require ITS ib 1st hit"};
     Configurable<float> cfg_min_its_cluster_size{"cfg_min_its_cluster_size", 0.f, "min ITS cluster size"};
     Configurable<float> cfg_max_its_cluster_size{"cfg_max_its_cluster_size", 16.f, "max ITS cluster size"};
-    Configurable<float> cfg_min_rel_diff_pin{"cfg_min_rel_diff_pin", -1e+10, "min rel. diff. between pin and ppv"};
-    Configurable<float> cfg_max_rel_diff_pin{"cfg_max_rel_diff_pin", +1e+10, "max rel. diff. between pin and ppv"};
+    // Configurable<float> cfg_min_rel_diff_pin{"cfg_min_rel_diff_pin", -1e+10, "min rel. diff. between pin and ppv"};
+    // Configurable<float> cfg_max_rel_diff_pin{"cfg_max_rel_diff_pin", +1e+10, "max rel. diff. between pin and ppv"};
     // Configurable<float> cfgRefR{"cfgRefR", 1.2, "reference R (in m) for extrapolation"}; // https://cds.cern.ch/record/1419204
 
     Configurable<int> cfg_pid_scheme{"cfg_pid_scheme", static_cast<int>(DielectronCut::PIDSchemes::kTPChadrejORTOFreq), "pid scheme [kTOFreq : 0, kTPChadrej : 1, kTPChadrejORTOFreq : 2, kTPConly : 3, kTOFif : 4, kPIDML : 5, kTPChadrejORTOFreq_woTOFif : 6]"};
@@ -249,7 +249,7 @@ struct prefilterDielectron {
     fEMEventCut = EMEventCut("fEMEventCut", "fEMEventCut");
     fEMEventCut.SetRequireSel8(eventcuts.cfgRequireSel8);
     fEMEventCut.SetRequireFT0AND(eventcuts.cfgRequireFT0AND);
-    fEMEventCut.SetZvtxRange(eventcuts.cfgZvtxMin, +eventcuts.cfgZvtxMax);
+    fEMEventCut.SetZvtxRange(eventcuts.cfgZvtxMin, eventcuts.cfgZvtxMax);
     fEMEventCut.SetRequireNoTFB(eventcuts.cfgRequireNoTFB);
     fEMEventCut.SetRequireNoITSROFB(eventcuts.cfgRequireNoITSROFB);
     fEMEventCut.SetRequireNoSameBunchPileup(eventcuts.cfgRequireNoSameBunchPileup);
@@ -289,8 +289,9 @@ struct prefilterDielectron {
     fDielectronCut.RequireITSibAny(dielectroncuts.cfg_require_itsib_any);
     fDielectronCut.RequireITSib1st(dielectroncuts.cfg_require_itsib_1st);
     fDielectronCut.SetChi2TOF(0, dielectroncuts.cfg_max_chi2tof);
-    fDielectronCut.SetRelDiffPin(dielectroncuts.cfg_min_rel_diff_pin, dielectroncuts.cfg_max_rel_diff_pin);
+    // fDielectronCut.SetRelDiffPin(dielectroncuts.cfg_min_rel_diff_pin, dielectroncuts.cfg_max_rel_diff_pin);
     fDielectronCut.IncludeITSsa(dielectroncuts.includeITSsa, dielectroncuts.cfg_max_pt_track_ITSsa);
+    fDielectronCut.EnableTTCA(dielectroncuts.enableTTCA);
 
     // for eID
     fDielectronCut.SetPIDScheme(dielectroncuts.cfg_pid_scheme);
@@ -356,11 +357,11 @@ struct prefilterDielectron {
   int ndf = 0;
   void processPFB(FilteredMyCollisions const& collisions, MyTracks const& tracks)
   {
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       map_pfb[track.globalIndex()] = 0;
     } // end of track loop
 
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       initCCDB(collision);
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       bool is_cent_ok = true;
@@ -372,10 +373,10 @@ struct prefilterDielectron {
       auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
 
       if (!fEMEventCut.IsSelected(collision) || !is_cent_ok) {
-        for (auto& pos : posTracks_per_coll) {
+        for (const auto& pos : posTracks_per_coll) {
           map_pfb[pos.globalIndex()] = 0;
         }
-        for (auto& neg : negTracks_per_coll) {
+        for (const auto& neg : negTracks_per_coll) {
           map_pfb[neg.globalIndex()] = 0;
         }
         continue;
@@ -383,7 +384,7 @@ struct prefilterDielectron {
 
       // LOGF(info, "centrality = %f , posTracks_per_coll.size() = %d, negTracks_per_coll.size() = %d", centralities[cfgCentEstimator], posTracks_per_coll.size(), negTracks_per_coll.size());
 
-      for (auto& [pos, ele] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
+      for (const auto& [pos, ele] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
         if (!fDielectronCut.IsSelectedTrack(pos) || !fDielectronCut.IsSelectedTrack(ele)) {
           continue;
         }
@@ -417,7 +418,7 @@ struct prefilterDielectron {
         }
       } // end of ULS pairing
 
-      for (auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
+      for (const auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
         if (!fDielectronCut.IsSelectedTrack(pos1) || !fDielectronCut.IsSelectedTrack(pos2)) {
           continue;
         }
@@ -441,7 +442,7 @@ struct prefilterDielectron {
         }
       } // end of LS++ pairing
 
-      for (auto& [ele1, ele2] : combinations(CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) { // LS--
+      for (const auto& [ele1, ele2] : combinations(CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) { // LS--
         if (!fDielectronCut.IsSelectedTrack(ele1) || !fDielectronCut.IsSelectedTrack(ele2)) {
           continue;
         }
@@ -467,13 +468,13 @@ struct prefilterDielectron {
 
     } // end of collision loop
 
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       // LOGF(info, "map_pfb[%d] = %d", track.globalIndex(), map_pfb[track.globalIndex()]);
       pfb_derived(map_pfb[track.globalIndex()]);
     } // end of track loop
 
     // check pfb.
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
@@ -486,7 +487,7 @@ struct prefilterDielectron {
         continue;
       }
 
-      for (auto& [pos, ele] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
+      for (const auto& [pos, ele] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
         if (!fDielectronCut.IsSelectedTrack(pos) || !fDielectronCut.IsSelectedTrack(ele)) {
           continue;
         }
@@ -507,7 +508,7 @@ struct prefilterDielectron {
         fRegistry.fill(HIST("Pair/after/uls/hDeltaEtaDeltaPhi"), dphi, deta);
       }
 
-      for (auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
+      for (const auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
         if (!fDielectronCut.IsSelectedTrack(pos1) || !fDielectronCut.IsSelectedTrack(pos2)) {
           continue;
         }
@@ -528,7 +529,7 @@ struct prefilterDielectron {
         fRegistry.fill(HIST("Pair/after/lspp/hDeltaEtaDeltaPhi"), dphi, deta);
       }
 
-      for (auto& [ele1, ele2] : combinations(CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) { // LS--
+      for (const auto& [ele1, ele2] : combinations(CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) { // LS--
         if (!fDielectronCut.IsSelectedTrack(ele1) || !fDielectronCut.IsSelectedTrack(ele2)) {
           continue;
         }

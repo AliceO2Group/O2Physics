@@ -15,6 +15,7 @@
 
 #include "PWGEM/Dilepton/Utils/MCUtilities.h"
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGLF/DataModel/LFStrangenessMLTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
@@ -57,7 +58,7 @@ using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
 using MyMCV0Leg = MyMCV0Legs::iterator;
 
-using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent, aod::EMMCEventLabels>;
+using MyCollisions = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
 
 using MyMCCollisions = soa::Join<aod::EMMCEvents, aod::BinnedGenPts>;
@@ -128,7 +129,7 @@ struct Compconvbuilder {
   }
 
   // Link V0-photons to their collision
-  Preslice<MyV0Photons> perV0PhotonCollision = aod::v0photonkf::emeventId;
+  Preslice<MyV0Photons> perV0PhotonCollision = aod::v0photonkf::pmeventId;
 
   void init(InitContext const& /*ctx*/)
   {
@@ -656,7 +657,7 @@ struct Compconvbuilder {
     }
   }
 
-  Preslice<MyV0Photons> perCollision = aod::v0photonkf::emeventId;
+  Preslice<MyV0Photons> perCollision = aod::v0photonkf::pmeventId;
 
   void processEMV0sMC(MyV0Photons const& v0s, aod::EMMCParticles const& mcparticles, MyMCV0Legs const&, MyCollisions const& collisions)
   {

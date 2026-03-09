@@ -22,6 +22,7 @@
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/ASoA.h>
@@ -39,6 +40,7 @@
 #include <array>
 #include <cmath>
 #include <cstdlib>
+#include <limits>
 #include <numeric>
 #include <string>
 #include <utility>
@@ -207,8 +209,9 @@ struct HfTaskPtFlucCharmHadrons {
     int n = 0;
 
     for (const auto& trk : tracks) {
-      if (!selectionTrack(trk))
+      if (!selectionTrack(trk)) {
         continue;
+      }
       float eta = trk.eta();
       if (eta <= etaMin || eta >= etaMax) {
         continue;

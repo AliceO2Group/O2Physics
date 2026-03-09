@@ -265,6 +265,8 @@ struct cascadeFlow {
     Configurable<float> rapidityLambda{"rapidityLambda", 0.5, "rapidityLambda"};
     Configurable<float> etaLambda{"etaLambda", 0.8, "etaLambda"};
     Configurable<float> dauTrackV0Eta{"dauTrackV0Eta", 0.8, "dauTrackV0Eta"};
+    Configurable<bool> isPositiveEta{"isPositiveEta", 0, "isPositiveEta"};
+    Configurable<bool> isNegativeEta{"isNegativeEta", 0, "isNegativeEta"};
   } V0Configs;
 
   Configurable<double> sideBandStart{"sideBandStart", 5, "Start of the sideband region in number of sigmas"};
@@ -443,10 +445,6 @@ struct cascadeFlow {
       return false;
 
     counter++;
-
-    // eta daughters)
-    //     if (abs(posExtra.eta()) > V0Configs.dauTrackV0Eta || abs(negExtra.y()) > V0Configs.dauTrackV0Eta) return false;
-
     return true;
   }
   template <typename TDaughter>
@@ -487,6 +485,28 @@ struct cascadeFlow {
       return false;
     if (std::abs(v0.eta()) > V0Configs.etaLambda)
       return false;
+    Float_t posDauEta = RecoDecay::eta(std::array{v0.pxpos(), v0.pypos(), v0.pzpos()});
+    Float_t negDauEta = RecoDecay::eta(std::array{v0.pxneg(), v0.pyneg(), v0.pzneg()});
+    if (std::abs(posDauEta) > V0Configs.dauTrackV0Eta)
+      return false;
+    if (std::abs(negDauEta) > V0Configs.dauTrackV0Eta)
+      return false;
+    if (V0Configs.isPositiveEta) { // v0 and daughter tracks required to have positive eta
+      if (v0.pzpos() <= 0)
+        return false;
+      if (v0.pzneg() <= 0)
+        return false;
+      if (v0.eta() <= 0)
+        return false;
+    }
+    if (V0Configs.isNegativeEta) {
+      if (v0.pzpos() >= 0)
+        return false;
+      if (v0.pzneg() >= 0)
+        return false;
+      if (v0.eta() >= 0)
+        return false;
+    }
 
     return true;
   }
@@ -589,6 +609,7 @@ struct cascadeFlow {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry histosMCGen{"histosMCGen", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry histosMCReco{"histosMCReco", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry resolution{"resolution", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
   // Tables to produce
@@ -812,6 +833,7 @@ struct cascadeFlow {
     TString hNEventsLabels[10] = {"All", "sel8", "z vrtx", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "trackOccupancyInTimeRange", "kNoCollInTimeRange", "kNoCollInROF", "kTVXinTRD", "kIsGoodEventEP"};
     TString hNEventsLabelsMC[6] = {"All", "z vtx", ">=1RecoColl", "1Reco", "2Reco", "EvSelected"};
     TString hNCascLabelsMC[8] = {"All Xi", "all Omega", "Xi: has MC coll", "Om: has MC coll", "Xi: isPrimary", "Om: is Primary", "Xi: |eta|<0.8", "Om: |eta| < 0.8"};
+    TString hNLambdaLabelsMC[5] = {"All Lambdas", "has MC coll", "isPrimary", "|eta|<0.8", "|y| < 0.5"};
 
     resolution.add("QVectorsT0CTPCA", "QVectorsT0CTPCA", HistType::kTH2F, {axisQVs, CentAxisPerCent});
     resolution.add("QVectorsT0CTPCC", "QVectorsT0CTPCC", HistType::kTH2F, {axisQVs, CentAxisPerCent});
@@ -908,6 +930,10 @@ struct cascadeFlow {
     histos.add("hv2CEPvsv2CSP", "hv2CEPvsV2CSP", HistType::kTH2F, {{100, -1, 1}, {100, -1, 1}});
     histos.add("hv1EPvsv1SP", "hV1EPvsV1SP", HistType::kTH2F, {{100, -1, 1}, {100, -1, 1}});
     histos.add("hv1SP_ZDCA_vs_ZDCC", "hv1SP_ZDCA_vs_ZDCC", HistType::kTH2F, {{100, -1, 1}, {100, -1, 1}});
+    histos.add("hV0RapidityvsPt", "hV0RapidityvsPt", HistType::kTH2F, {{100, 0, 10}, {100, -2, 2}});
+    histos.add("hEtaV0", "hEtaV0", HistType::kTH1F, {{100, -1, 1}});
+    histos.add("hEtaV0posDau", "hEtaV0posDau", HistType::kTH1F, {{100, -1, 1}});
+    histos.add("hEtaV0negDau", "hEtaV0negDau", HistType::kTH1F, {{100, -1, 1}});
 
     const AxisSpec thnAxisFT0C{thnAxisConfigs.thnConfigAxisFT0C, "FT0C (%)"};
     const AxisSpec thnAxisEta{thnAxisConfigs.thnConfigAxisEta, "#eta"};
@@ -1005,8 +1031,14 @@ struct cascadeFlow {
     histosMCGen.add("h2DGenOmegaEta08", "h2DGenOmegaEta08", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
     histosMCGen.add("h2DGenXiY05", "h2DGenXiY05", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
     histosMCGen.add("h2DGenOmegaY05", "h2DGenOmegaY05", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
+    histosMCGen.add("h2DGenLambdaEta08", "h2DGenLambdaEta08", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
+    histosMCGen.add("h2DGenLambdaY05", "h2DGenLambdaY05", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
+    histosMCGen.add("h2DGenAntiLambdaEta08", "h2DGenAntiLambdaEta08", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
+    histosMCGen.add("h2DGenAntiLambdaY05", "h2DGenAntiLambdaY05", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
     histosMCGen.add("hGenXiY", "hGenXiY", HistType::kTH1F, {{100, -1, 1}});
     histosMCGen.add("hGenOmegaY", "hGenOmegaY", HistType::kTH1F, {{100, -1, 1}});
+    histosMCGen.add("hGenLambdaY", "hGenLambdaY", HistType::kTH1F, {{100, -2, 2}});
+    histosMCGen.add("hGenLambdaEta", "hGenLambdaEta", HistType::kTH1F, {{100, -2, 2}});
     histosMCGen.add("hZvertexGen", "hZvertexGen", HistType::kTH1F, {{100, -20, 20}});
     histosMCGen.add("hNEventsMC", "hNEventsMC", {HistType::kTH1F, {{6, 0.f, 6.f}}});
     for (Int_t n = 1; n <= histosMCGen.get<TH1>(HIST("hNEventsMC"))->GetNbinsX(); n++) {
@@ -1016,6 +1048,13 @@ struct cascadeFlow {
     for (Int_t n = 1; n <= histosMCGen.get<TH1>(HIST("hNCascGen"))->GetNbinsX(); n++) {
       histosMCGen.get<TH1>(HIST("hNCascGen"))->GetXaxis()->SetBinLabel(n, hNCascLabelsMC[n - 1]);
     }
+    histosMCGen.add("hNLambdaGen", "hNLambdaGen", {HistType::kTH1F, {{5, 0.f, 5.f}}});
+    for (Int_t n = 1; n <= histosMCGen.get<TH1>(HIST("hNLambdaGen"))->GetNbinsX(); n++) {
+      histosMCGen.get<TH1>(HIST("hNLambdaGen"))->GetXaxis()->SetBinLabel(n, hNLambdaLabelsMC[n - 1]);
+    }
+
+    histosMCReco.add("h2DRecoTrueLambda", "h2DRecoTrueLambda", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
+    histosMCReco.add("h2DRecoTrueAntiLambda", "h2DRecoTrueAntiLambda", HistType::kTH2F, {{100, 0, 100}, {400, 0, 20}});
 
     for (int iS{0}; iS < nParticles; ++iS) {
       cascadev2::hMassBeforeSelVsPt[iS] = histos.add<TH2>(Form("hMassBeforeSelVsPt%s", cascadev2::speciesNames[iS].data()), "hMassBeforeSelVsPt", HistType::kTH2F, {massCascAxis[iS], ptAxisCasc});
@@ -2001,6 +2040,12 @@ struct cascadeFlow {
       if (!isSelectedV0[0] && !isSelectedV0[1])
         continue;
 
+      histos.fill(HIST("hV0RapidityvsPt"), v0.pt(), v0.yLambda());
+      histos.fill(HIST("hEtaV0"), v0.eta());
+      Float_t posDauEta = RecoDecay::eta(std::array{v0.pxpos(), v0.pypos(), v0.pzpos()});
+      histos.fill(HIST("hEtaV0posDau"), posDauEta);
+      Float_t negDauEta = RecoDecay::eta(std::array{v0.pxneg(), v0.pyneg(), v0.pzneg()});
+      histos.fill(HIST("hEtaV0negDau"), negDauEta);
       ROOT::Math::XYZVector lambdaQvec{std::cos(2 * v0.phi()), std::sin(2 * v0.phi()), 0};
       auto v2CSP = lambdaQvec.Dot(eventplaneVecT0C); // not normalised by amplitude
       auto lambdaminuspsiT0C = GetPhiInRange(v0.phi() - psiT0CCorr);
@@ -2410,7 +2455,7 @@ struct cascadeFlow {
     }
   }
 
-  void processMCGen(MCCollisionsStra::iterator const& mcCollision, const soa::SmallGroups<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>>& collisions, const soa::SmallGroups<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>& cascMC)
+  void processMCGen(MCCollisionsStra::iterator const& mcCollision, const soa::SmallGroups<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>>& collisions, const soa::SmallGroups<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>& v0MC, const soa::SmallGroups<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>& cascMC)
   {
 
     histosMCGen.fill(HIST("hZvertexGen"), mcCollision.posZ());
@@ -2447,6 +2492,42 @@ struct cascadeFlow {
     }
 
     histosMCGen.fill(HIST("hNEventsMC"), 5.5);
+
+    for (auto const& v0mc : v0MC) {
+      if (std::abs(v0mc.pdgCode()) == PDG_t::kLambda0)
+        histosMCGen.fill(HIST("hNLambdaGen"), 0.5);
+      if (!v0mc.has_straMCCollision())
+        continue;
+      if (std::abs(v0mc.pdgCode()) == PDG_t::kLambda0)
+        histosMCGen.fill(HIST("hNLambdaGen"), 1.5);
+      if (!v0mc.isPhysicalPrimary())
+        continue;
+      if (std::abs(v0mc.pdgCode()) == PDG_t::kLambda0)
+        histosMCGen.fill(HIST("hNLambdaGen"), 2.5);
+
+      float ptmc = RecoDecay::sqrtSumOfSquares(v0mc.pxMC(), v0mc.pyMC());
+      float lambdaMCeta = RecoDecay::eta(std::array{v0mc.pxMC(), v0mc.pyMC(), v0mc.pzMC()});
+      float lambdaMCy = 0;
+      if (std::abs(v0mc.pdgCode()) == PDG_t::kLambda0) {
+        lambdaMCy = RecoDecay::y(std::array{v0mc.pxMC(), v0mc.pyMC(), v0mc.pzMC()}, constants::physics::MassLambda);
+        if (std::abs(lambdaMCeta) < etaCascMCGen) {
+          if (v0mc.pdgCode() == PDG_t::kLambda0)
+            histosMCGen.fill(HIST("h2DGenLambdaEta08"), centrality, ptmc);
+          else if (v0mc.pdgCode() == PDG_t::kLambda0Bar)
+            histosMCGen.fill(HIST("h2DGenAntiLambdaEta08"), centrality, ptmc);
+          histosMCGen.fill(HIST("hNLambdaGen"), 3.5);
+        }
+        if (std::abs(lambdaMCy) < yCascMCGen) {
+          if (v0mc.pdgCode() == PDG_t::kLambda0)
+            histosMCGen.fill(HIST("h2DGenLambdaY05"), centrality, ptmc);
+          else if (v0mc.pdgCode() == PDG_t::kLambda0Bar)
+            histosMCGen.fill(HIST("h2DGenAntiLambdaY05"), centrality, ptmc);
+          histosMCGen.fill(HIST("hNLambdaGen"), 4.5);
+        }
+        histosMCGen.fill(HIST("hGenLambdaY"), lambdaMCy);
+        histosMCGen.fill(HIST("hGenLambdaEta"), lambdaMCeta);
+      }
+    }
 
     for (auto const& cascmc : cascMC) {
       if (std::abs(cascmc.pdgCode()) == PDG_t::kXiMinus)
@@ -2584,6 +2665,7 @@ struct cascadeFlow {
       //--------------------------------------------------------------
 
       auto v0MC = v0.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+      float ptmc = RecoDecay::sqrtSumOfSquares(v0MC.pxMC(), v0MC.pyMC());
       int pdgCode{v0MC.pdgCode()};
       // select true lambdas
       bool isTrueLambda = 0;
@@ -2606,6 +2688,7 @@ struct cascadeFlow {
         if (isPrimary) {
           histos.fill(HIST("hCentvsPtvsPrimaryFracLambda"), collisionCentrality, v0.pt(), 0);
           histos.fill(HIST("hCentvsPrimaryFracLambda"), collisionCentrality, 0);
+          histosMCReco.fill(HIST("h2DRecoTrueLambda"), collisionCentrality, ptmc);
         } else {
           histos.fill(HIST("hCentvsPtvsPrimaryFracLambda"), collisionCentrality, v0.pt(), 1);
           histos.fill(HIST("hCentvsPrimaryFracLambda"), collisionCentrality, 1);
@@ -2614,6 +2697,7 @@ struct cascadeFlow {
         if (isPrimary) {
           histos.fill(HIST("hCentvsPtvsPrimaryFracLambda"), collisionCentrality, v0.pt(), 2);
           histos.fill(HIST("hCentvsPrimaryFracLambda"), collisionCentrality, 2);
+          histosMCReco.fill(HIST("h2DRecoTrueAntiLambda"), collisionCentrality, ptmc);
         } else {
           histos.fill(HIST("hCentvsPtvsPrimaryFracLambda"), collisionCentrality, v0.pt(), 3);
           histos.fill(HIST("hCentvsPrimaryFracLambda"), collisionCentrality, 3);

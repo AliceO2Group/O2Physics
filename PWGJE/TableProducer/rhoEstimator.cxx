@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// Task to produce a table joinable to the jcollision table with the mean background pT density
+// Task to produce a table joinable to the jcollision or candidate table with the mean background pT density
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
@@ -72,9 +72,6 @@ struct RhoEstimatorTask {
     Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum track eta"};
     Configurable<float> trackPhiMin{"trackPhiMin", -99.0, "minimum track phi"};
     Configurable<float> trackPhiMax{"trackPhiMax", 99.0, "maximum track phi"};
-    Configurable<bool> applyTrackingEfficiency{"applyTrackingEfficiency", {false}, "configurable to decide whether to apply artificial tracking efficiency (discarding tracks) in the collision analysed by this task"};
-    Configurable<std::vector<double>> trackingEfficiencyPtBinning{"trackingEfficiencyPtBinning", {0., 10, 999.}, "pt binning of tracking efficiency array if applyTrackingEfficiency is true"};
-    Configurable<std::vector<double>> trackingEfficiency{"trackingEfficiency", {1.0, 1.0}, "tracking efficiency array applied if applyTrackingEfficiency is true"};
     Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
 
     Configurable<std::string> particleSelections{"particleSelections", "PhysicalPrimary", "set particle selections"};
@@ -147,15 +144,6 @@ struct RhoEstimatorTask {
 
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(config.eventSelections));
     triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(config.triggerMasks);
-
-    if (config.applyTrackingEfficiency) {
-      if (config.trackingEfficiencyPtBinning->size() < 2) {
-        LOGP(fatal, "rhoEstimator workflow: trackingEfficiencyPtBinning configurable should have at least two bin edges");
-      }
-      if (config.trackingEfficiency->size() + 1 != config.trackingEfficiencyPtBinning->size()) {
-        LOGP(fatal, "rhoEstimator workflow: trackingEfficiency configurable should have exactly one less entry than the number of bin edges set in trackingEfficiencyPtBinning configurable");
-      }
-    }
   }
 
   Filter trackCuts = (aod::jtrack::pt >= config.trackPtMin && aod::jtrack::pt < config.trackPtMax && aod::jtrack::eta > config.trackEtaMin && aod::jtrack::eta < config.trackEtaMax && aod::jtrack::phi >= config.trackPhiMin && aod::jtrack::phi <= config.trackPhiMax);
@@ -227,7 +215,7 @@ struct RhoEstimatorTask {
       return;
     }
     inputParticles.clear();
-    jetfindingutilities::analyseTracks<soa::Filtered<aod::JetTracks>, soa::Filtered<aod::JetTracks>::iterator>(inputParticles, tracks, trackSelection, config.applyTrackingEfficiency, config.trackingEfficiency, config.trackingEfficiencyPtBinning);
+    jetfindingutilities::analyseTracks<soa::Filtered<aod::JetTracks>, soa::Filtered<aod::JetTracks>::iterator>(inputParticles, tracks, trackSelection);
     auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
     rhoChargedTable(rho, rhoM);
   }
@@ -235,7 +223,7 @@ struct RhoEstimatorTask {
 
   void processChargedMcCollisions(aod::JetMcCollision const& mcCollision, soa::Filtered<aod::JetParticles> const& particles)
   {
-    if (!jetderiveddatautilities::selectMcCollision(mcCollision, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
+    if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
       rhoChargedMcTable(0.0, 0.0);
       return;
     }
@@ -254,7 +242,7 @@ struct RhoEstimatorTask {
         continue;
       }
       inputParticles.clear();
-      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, config.applyTrackingEfficiency, config.trackingEfficiency, config.trackingEfficiencyPtBinning, &candidate);
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, &candidate);
 
       auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
       rhoD0Table(rho, rhoM);
@@ -265,7 +253,7 @@ struct RhoEstimatorTask {
   void processD0McCollisions(aod::JetMcCollision const& mcCollision, soa::Filtered<aod::JetParticles> const& particles, aod::CandidatesD0MCP const& candidates)
   {
     for (auto& candidate : candidates) {
-      if (!jetderiveddatautilities::selectMcCollision(mcCollision, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
+      if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
         rhoD0McTable(0.0, 0.0);
         continue;
       }
@@ -286,7 +274,7 @@ struct RhoEstimatorTask {
         continue;
       }
       inputParticles.clear();
-      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, config.applyTrackingEfficiency, config.trackingEfficiency, config.trackingEfficiencyPtBinning, &candidate);
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, &candidate);
 
       auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
       rhoDplusTable(rho, rhoM);
@@ -298,7 +286,7 @@ struct RhoEstimatorTask {
   {
     for (auto& candidate : candidates) {
 
-      if (!jetderiveddatautilities::selectMcCollision(mcCollision, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
+      if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
         rhoDplusMcTable(0.0, 0.0);
         continue;
       }
@@ -319,7 +307,7 @@ struct RhoEstimatorTask {
         continue;
       }
       inputParticles.clear();
-      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, config.applyTrackingEfficiency, config.trackingEfficiency, config.trackingEfficiencyPtBinning, &candidate);
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, &candidate);
 
       auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
       rhoDsTable(rho, rhoM);
@@ -330,7 +318,7 @@ struct RhoEstimatorTask {
   void processDsMcCollisions(aod::JetMcCollision const& mcCollision, soa::Filtered<aod::JetParticles> const& particles, aod::CandidatesDsMCP const& candidates)
   {
     for (auto& candidate : candidates) {
-      if (!jetderiveddatautilities::selectMcCollision(mcCollision, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
+      if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
         rhoDsMcTable(0.0, 0.0);
         continue;
       }
@@ -351,7 +339,7 @@ struct RhoEstimatorTask {
         continue;
       }
       inputParticles.clear();
-      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, config.applyTrackingEfficiency, config.trackingEfficiency, config.trackingEfficiencyPtBinning, &candidate);
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, &candidate);
 
       auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
       rhoDstarTable(rho, rhoM);
@@ -362,7 +350,7 @@ struct RhoEstimatorTask {
   void processDstarMcCollisions(aod::JetMcCollision const& mcCollision, soa::Filtered<aod::JetParticles> const& particles, aod::CandidatesDstarMCP const& candidates)
   {
     for (auto& candidate : candidates) {
-      if (!jetderiveddatautilities::selectMcCollision(mcCollision, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
+      if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
         rhoDstarMcTable(0.0, 0.0);
         continue;
       }
@@ -383,7 +371,7 @@ struct RhoEstimatorTask {
         continue;
       }
       inputParticles.clear();
-      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, config.applyTrackingEfficiency, config.trackingEfficiency, config.trackingEfficiencyPtBinning, &candidate);
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, &candidate);
 
       auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
       rhoLcTable(rho, rhoM);
@@ -394,7 +382,7 @@ struct RhoEstimatorTask {
   void processLcMcCollisions(aod::JetMcCollision const& mcCollision, soa::Filtered<aod::JetParticles> const& particles, aod::CandidatesLcMCP const& candidates)
   {
     for (auto& candidate : candidates) {
-      if (!jetderiveddatautilities::selectMcCollision(mcCollision, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
+      if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
         rhoLcMcTable(0.0, 0.0);
         continue;
       }
@@ -415,7 +403,7 @@ struct RhoEstimatorTask {
         continue;
       }
       inputParticles.clear();
-      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, config.applyTrackingEfficiency, config.trackingEfficiency, config.trackingEfficiencyPtBinning, &candidate);
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, &candidate);
 
       auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
       rhoB0Table(rho, rhoM);
@@ -426,7 +414,7 @@ struct RhoEstimatorTask {
   void processB0McCollisions(aod::JetMcCollision const& mcCollision, soa::Filtered<aod::JetParticles> const& particles, aod::CandidatesB0MCP const& candidates)
   {
     for (auto& candidate : candidates) {
-      if (!jetderiveddatautilities::selectMcCollision(mcCollision, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
+      if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
         rhoB0McTable(0.0, 0.0);
         continue;
       }
@@ -447,7 +435,7 @@ struct RhoEstimatorTask {
         continue;
       }
       inputParticles.clear();
-      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, config.applyTrackingEfficiency, config.trackingEfficiency, config.trackingEfficiencyPtBinning, &candidate);
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, &candidate);
 
       auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
       rhoBplusTable(rho, rhoM);
@@ -458,7 +446,7 @@ struct RhoEstimatorTask {
   void processBplusMcCollisions(aod::JetMcCollision const& mcCollision, soa::Filtered<aod::JetParticles> const& particles, aod::CandidatesBplusMCP const& candidates)
   {
     for (auto& candidate : candidates) {
-      if (!jetderiveddatautilities::selectMcCollision(mcCollision, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
+      if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
         rhoBplusMcTable(0.0, 0.0);
         continue;
       }
@@ -479,7 +467,7 @@ struct RhoEstimatorTask {
         continue;
       }
       inputParticles.clear();
-      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, config.applyTrackingEfficiency, config.trackingEfficiency, config.trackingEfficiencyPtBinning, &candidate);
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, &candidate);
 
       auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
       rhoXicToXiPiPiTable(rho, rhoM);
@@ -490,7 +478,7 @@ struct RhoEstimatorTask {
   void processXicToXiPiPiMcCollisions(aod::JetMcCollision const& mcCollision, soa::Filtered<aod::JetParticles> const& particles, aod::CandidatesXicToXiPiPiMCP const& candidates)
   {
     for (auto& candidate : candidates) {
-      if (!jetderiveddatautilities::selectMcCollision(mcCollision, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
+      if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
         rhoXicToXiPiPiMcTable(0.0, 0.0);
         continue;
       }
@@ -511,7 +499,7 @@ struct RhoEstimatorTask {
         continue;
       }
       inputParticles.clear();
-      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, config.applyTrackingEfficiency, config.trackingEfficiency, config.trackingEfficiencyPtBinning, &candidate);
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, &candidate);
 
       auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
       rhoDielectronTable(rho, rhoM);
@@ -522,7 +510,7 @@ struct RhoEstimatorTask {
   void processDielectronMcCollisions(aod::JetMcCollision const& mcCollision, soa::Filtered<aod::JetParticles> const& particles, aod::CandidatesDielectronMCP const& candidates)
   {
     for (auto& candidate : candidates) {
-      if (!jetderiveddatautilities::selectMcCollision(mcCollision, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
+      if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
         rhoDielectronMcTable(0.0, 0.0);
         continue;
       }

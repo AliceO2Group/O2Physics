@@ -2,7 +2,7 @@
 # Find issues in O2 code
 name: O2 linter
 
-"on": [pull_request_target, push]
+#"on": [pull_request_target, push]
 permissions: {}
 env:
   BRANCH_MAIN: master
@@ -47,6 +47,8 @@ jobs:
           fi
           echo "linter_ran=1" >> "$GITHUB_OUTPUT"
           [[ "${{ github.event_name }}" == "pull_request_target" ]] && options="-g"
+          # Checkout the script from the base branch to prevent execution of arbitrary code in the head branch.
+          git checkout ${{ env.BRANCH_BASE }} -- Scripts/o2_linter.py
           # shellcheck disable=SC2086 # Ignore unquoted options.
           python3 Scripts/o2_linter.py $options "${files[@]}"
           echo "Tip: If you allow actions in your fork repository, O2 linter will run when you push commits."

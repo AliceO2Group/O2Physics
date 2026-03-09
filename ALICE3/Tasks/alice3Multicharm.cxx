@@ -8,17 +8,17 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
+
+/// \file alice3Multicharm.cxx
+/// \brief consumer task for alice 3 multicharm studies
+/// \author Jesper Karlsson Gumprecht <jesper.gumprecht@cern.ch>
+
 //  *+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 //   Decay finder task for ALICE 3
 //  *+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 //
 //    Uses specific ALICE 3 PID and performance for studying
 //    HF decays. Work in progress: use at your own risk!
-//
-
-#include "PWGLF/DataModel/LFParticleIdentification.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "ALICE3/DataModel/A3DecayFinderTables.h"
 #include "ALICE3/DataModel/OTFMulticharm.h"
@@ -64,27 +64,23 @@ using namespace o2::ml;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using multiCharmTracksPID = soa::Join<aod::MCharmCores, aod::MCharmPID>;
-using multiCharmTracksFull = soa::Join<aod::MCharmCores, aod::MCharmPID, aod::MCharmExtra>;
+using MultiCharmTracksPID = soa::Join<aod::MCharmCores, aod::MCharmIndices>;
+using MultiCharmTracksFull = soa::Join<aod::MCharmCores, aod::MCharmIndices, aod::MCharmExtra>;
 
-struct alice3multicharm {
+struct Alice3Multicharm {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  std::map<std::string, HistPtr> histPointers;
-  std::vector<int> savedConfigs;
-  std::string histPath;
 
   std::map<int, int> pdgToBin;
   o2::ml::OnnxModel bdtMCharm;
-
   std::map<std::string, std::string> metadata;
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   struct : ConfigurableGroup {
     std::string prefix = "bdt"; // JSON group name
-    Configurable<std::string> ccdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+    Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
     Configurable<std::string> localPath{"localPath", "MCharm_BDTModel.onnx", "(std::string) Path to the local .onnx file."};
-    Configurable<std::string> pathCCDB{"btdPathCCDB", "Users/j/jekarlss/MLModels", "Path on CCDB"};
+    Configurable<std::string> pathCCDB{"pathCCDB", "Users/j/jekarlss/MLModels", "Path on CCDB"};
     Configurable<int64_t> timestampCCDB{"timestampCCDB", 1695750420200, "timestamp of the ONNX file for ML model used to query in CCDB. Please use 1695750420200"};
     Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
     Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
@@ -131,6 +127,7 @@ struct alice3multicharm {
   Configurable<float> xiccMinProperLength{"xiccMinProperLength", -1, "Minimum proper length for Xicc decay (cm)"};
   Configurable<float> xiccMaxProperLength{"xiccMaxProperLength", 1e+4, "Minimum proper length for Xicc decay (cm)"};
   Configurable<int> otfConfig{"otfConfig", 0, "OTF configuration flag"};
+
   Filter configFilter = (aod::otfmulticharm::lutConfigId == otfConfig);
 
   void init(InitContext&)
@@ -181,44 +178,6 @@ struct alice3multicharm {
     hMCharmBuilding->GetXaxis()->SetBinLabel(20, "xiccMinProperLength");
     hMCharmBuilding->GetXaxis()->SetBinLabel(21, "xiccMaxProperLength");
     hMCharmBuilding->GetXaxis()->SetBinLabel(22, "xicMinDecayDistanceFromPV");
-
-    if (doprocessXiccPID || doprocessXiccExtra) {
-      auto hPdgCodes = histos.add<TH2>("PIDQA/hPdgCodes", "hPdgCodes", kTH2D, {{3, 0.5, 3.5}, {7, 0.5, 7.5}});
-      hPdgCodes->GetXaxis()->SetBinLabel(1, "pi1c");
-      hPdgCodes->GetXaxis()->SetBinLabel(2, "pi2c");
-      hPdgCodes->GetXaxis()->SetBinLabel(3, "picc");
-      hPdgCodes->GetYaxis()->SetBinLabel(1, "el");
-      hPdgCodes->GetYaxis()->SetBinLabel(2, "mu");
-      hPdgCodes->GetYaxis()->SetBinLabel(3, "pi");
-      hPdgCodes->GetYaxis()->SetBinLabel(4, "ka");
-      hPdgCodes->GetYaxis()->SetBinLabel(5, "pr");
-      hPdgCodes->GetYaxis()->SetBinLabel(6, "xi");
-      hPdgCodes->GetYaxis()->SetBinLabel(7, "other");
-      pdgToBin.insert({kElectron, 1});
-      pdgToBin.insert({kMuonMinus, 2});
-      pdgToBin.insert({kPiPlus, 3});
-      pdgToBin.insert({kKPlus, 4});
-      pdgToBin.insert({kProton, 5});
-      pdgToBin.insert({kXiMinus, 6});
-
-      histos.add("PIDQA/hInnerTofTimeDeltaPi1c", "hInnerTofTimeDeltaPi1c; Reco - expected pion (ps)", kTH1D, {axisTofTrackDelta});
-      histos.add("PIDQA/hInnerTofTimeDeltaPi2c", "hInnerTofTimeDeltaPi2c; Reco - expected pion (ps)", kTH1D, {axisTofTrackDelta});
-      histos.add("PIDQA/hInnerTofTimeDeltaPicc", "hInnerTofTimeDeltaPicc; Reco - expected pion (ps)", kTH1D, {axisTofTrackDelta});
-      histos.add("PIDQA/hOuterTofTimeDeltaPi1c", "hOuterTofTimeDeltaPi1c; Reco - expected pion (ps)", kTH1D, {axisTofTrackDelta});
-      histos.add("PIDQA/hOuterTofTimeDeltaPi2c", "hOuterTofTimeDeltaPi2c; Reco - expected pion (ps)", kTH1D, {axisTofTrackDelta});
-      histos.add("PIDQA/hOuterTofTimeDeltaPicc", "hOuterTofTimeDeltaPicc; Reco - expected pion (ps)", kTH1D, {axisTofTrackDelta});
-
-      histos.add("PIDQA/hInnerTofNSigmaPi1c", "hInnerTofNSigmaPi1c; TOF NSigma pion", kTH2D, {axisPt, axisNSigma});
-      histos.add("PIDQA/hOuterTofNSigmaPi1c", "hOuterTofNSigmaPi1c; TOF NSigma pion", kTH2D, {axisPt, axisNSigma});
-      histos.add("PIDQA/hInnerTofNSigmaPi2c", "hInnerTofNSigmaPi2c; TOF NSigma pion", kTH2D, {axisPt, axisNSigma});
-      histos.add("PIDQA/hOuterTofNSigmaPi2c", "hOuterTofNSigmaPi2c; TOF NSigma pion", kTH2D, {axisPt, axisNSigma});
-      histos.add("PIDQA/hInnerTofNSigmaPicc", "hInnerTofNSigmaPicc; TOF NSigma pion", kTH2D, {axisPt, axisNSigma});
-      histos.add("PIDQA/hOuterTofNSigmaPicc", "hOuterTofNSigmaPicc; TOF NSigma pion", kTH2D, {axisPt, axisNSigma});
-
-      histos.add("PIDQA/hRichNSigmaPi1c", "hRichNSigmaPi1c; RICH NSigma pion", kTH2D, {axisPt, axisNSigma});
-      histos.add("PIDQA/hRichNSigmaPi2c", "hRichNSigmaPi2c; RICH NSigma pion", kTH2D, {axisPt, axisNSigma});
-      histos.add("PIDQA/hRichNSigmaPicc", "hRichNSigmaPicc; RICH NSigma pion", kTH2D, {axisPt, axisNSigma});
-    }
 
     if (doprocessXiccExtra) {
       histos.add("XiccProngs/h3dPos", "h3dPos; Xicc pT (GeV/#it(c)); Pos pT (GeV/#it(c)); Pos #eta", kTH3D, {axisPt, axisPt, axisEta});
@@ -283,12 +242,6 @@ struct alice3multicharm {
       histos.add("hXiccPt", "hXiccPt", kTH2D, {{axisBDTScore, axisPt}});
       histos.add("hXicPt", "hXicPt", kTH2D, {{axisBDTScore, axisPt}});
     }
-  }
-
-  int getBin(const std::map<int, int>& pdgToBin, int pdg)
-  {
-    auto it = pdgToBin.find(pdg);
-    return (it != pdgToBin.end()) ? it->second : 7;
   }
 
   template <typename TMCharmCands>
@@ -505,34 +458,6 @@ struct alice3multicharm {
       histos.fill(HIST("SelectionQA/hPi2cPt"), xiccCand.pi2cPt());
       histos.fill(HIST("SelectionQA/hPiccPt"), xiccCand.piccPt());
 
-      if constexpr (requires { xiccCand.pi1cTofDeltaInner(); }) { // if pid table
-        histos.fill(HIST("PIDQA/hInnerTofTimeDeltaPi1c"), xiccCand.pi1cTofDeltaInner());
-        histos.fill(HIST("PIDQA/hInnerTofTimeDeltaPi2c"), xiccCand.pi2cTofDeltaInner());
-        histos.fill(HIST("PIDQA/hInnerTofTimeDeltaPicc"), xiccCand.piccTofDeltaInner());
-        histos.fill(HIST("PIDQA/hOuterTofTimeDeltaPi1c"), xiccCand.pi1cTofDeltaOuter());
-        histos.fill(HIST("PIDQA/hOuterTofTimeDeltaPi2c"), xiccCand.pi2cTofDeltaOuter());
-        histos.fill(HIST("PIDQA/hOuterTofTimeDeltaPicc"), xiccCand.piccTofDeltaOuter());
-        histos.fill(HIST("PIDQA/hInnerTofNSigmaPi1c"), xiccCand.pi1cPt(), xiccCand.pi1cTofNSigmaInner());
-        histos.fill(HIST("PIDQA/hOuterTofNSigmaPi1c"), xiccCand.pi1cPt(), xiccCand.pi1cTofNSigmaOuter());
-        histos.fill(HIST("PIDQA/hInnerTofNSigmaPi2c"), xiccCand.pi2cPt(), xiccCand.pi2cTofNSigmaInner());
-        histos.fill(HIST("PIDQA/hOuterTofNSigmaPi2c"), xiccCand.pi2cPt(), xiccCand.pi2cTofNSigmaOuter());
-        histos.fill(HIST("PIDQA/hInnerTofNSigmaPicc"), xiccCand.piccPt(), xiccCand.piccTofNSigmaInner());
-        histos.fill(HIST("PIDQA/hOuterTofNSigmaPicc"), xiccCand.piccPt(), xiccCand.piccTofNSigmaOuter());
-        if (xiccCand.pi1cHasRichSignal()) {
-          histos.fill(HIST("PIDQA/hRichNSigmaPi1c"), xiccCand.pi1cPt(), xiccCand.pi1cRichNSigma());
-        }
-        if (xiccCand.pi2cHasRichSignal()) {
-          histos.fill(HIST("PIDQA/hRichNSigmaPi2c"), xiccCand.pi2cPt(), xiccCand.pi2cRichNSigma());
-        }
-        if (xiccCand.piccHasRichSignal()) {
-          histos.fill(HIST("PIDQA/hRichNSigmaPicc"), xiccCand.piccPt(), xiccCand.piccRichNSigma());
-        }
-
-        histos.fill(HIST("PIDQA/hPdgCodes"), 1, getBin(pdgToBin, std::abs(xiccCand.pi1cPdgCode())));
-        histos.fill(HIST("PIDQA/hPdgCodes"), 2, getBin(pdgToBin, std::abs(xiccCand.pi2cPdgCode())));
-        histos.fill(HIST("PIDQA/hPdgCodes"), 3, getBin(pdgToBin, std::abs(xiccCand.piccPdgCode())));
-      }
-
       if constexpr (requires { xiccCand.negPt(); }) { // if extra table
         histos.fill(HIST("XiccProngs/h3dNeg"), xiccCand.xiccPt(), xiccCand.negPt(), xiccCand.negEta());
         histos.fill(HIST("XiccProngs/h3dPos"), xiccCand.xiccPt(), xiccCand.posPt(), xiccCand.posEta());
@@ -555,23 +480,17 @@ struct alice3multicharm {
     genericProcessXicc(multiCharmTracks);
   }
 
-  void processXiccPID(soa::Filtered<multiCharmTracksPID> const& multiCharmTracks)
+  void processXiccExtra(soa::Filtered<MultiCharmTracksFull> const& multiCharmTracks)
   {
     genericProcessXicc(multiCharmTracks);
   }
 
-  void processXiccExtra(soa::Filtered<multiCharmTracksFull> const& multiCharmTracks)
-  {
-    genericProcessXicc(multiCharmTracks);
-  }
-
-  PROCESS_SWITCH(alice3multicharm, processXicc, "find Xicc baryons", true);
-  PROCESS_SWITCH(alice3multicharm, processXiccPID, "find Xicc baryons with more QA from PID information", false);
-  PROCESS_SWITCH(alice3multicharm, processXiccExtra, "find Xicc baryons with all QA", false);
+  PROCESS_SWITCH(Alice3Multicharm, processXicc, "find Xicc baryons", true);
+  PROCESS_SWITCH(Alice3Multicharm, processXiccExtra, "find Xicc baryons with all QA", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<alice3multicharm>(cfgc)};
+    adaptAnalysisTask<Alice3Multicharm>(cfgc)};
 }

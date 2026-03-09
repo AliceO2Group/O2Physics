@@ -17,10 +17,10 @@
 #ifndef DPG_TASKS_TPC_TPCTREECREATORLIGHT_H_
 #define DPG_TASKS_TPC_TPCTREECREATORLIGHT_H_
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/PIDResponse.h"
+
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 
 enum ParticleSpecies {
   kPionTrack = BIT(0),

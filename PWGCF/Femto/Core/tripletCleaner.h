@@ -59,6 +59,46 @@ class TrackTrackTrackTripletCleaner : public paircleaner::BasePairCleaner
   }
 };
 
+class TrackTrackV0TripletCleaner : public paircleaner::BasePairCleaner
+{
+ public:
+  TrackTrackV0TripletCleaner() = default;
+  ~TrackTrackV0TripletCleaner() = default;
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  bool isCleanTriplet(T1 const& track1, T2 const& track2, T3 const& v0, T4 const& trackTable) const
+  {
+    auto posDaughter = trackTable.rawIteratorAt(v0.posDauId() - trackTable.offset());
+    auto negDaughter = trackTable.rawIteratorAt(v0.negDauId() - trackTable.offset());
+    return this->isCleanTrackPair(track1, track2) &&
+           this->isCleanTrackPair(track1, posDaughter) &&
+           this->isCleanTrackPair(track1, negDaughter) &&
+           this->isCleanTrackPair(track2, posDaughter) &&
+           this->isCleanTrackPair(track2, negDaughter);
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5>
+  bool isCleanTriplet(T1 const& track1, T2 const& track2, T3 const& v0, T4 const& trackTable, T5 const& partonicMothers) const
+  {
+    if (!this->isCleanTriplet(track1, track2, v0, trackTable)) {
+      return false;
+    }
+    // pair is clean
+    // no check if we require common or non-common ancestry
+    if (mMixPairsWithCommonAncestor) {
+      return this->pairHasCommonAncestor(track1, track2, partonicMothers) &&
+             this->pairHasCommonAncestor(track1, v0, partonicMothers) &&
+             this->pairHasCommonAncestor(track2, v0, partonicMothers);
+    }
+    if (mMixPairsWithNonCommonAncestor) {
+      return this->pairHasNonCommonAncestor(track1, track2, partonicMothers) &&
+             this->pairHasNonCommonAncestor(track1, v0, partonicMothers) &&
+             this->pairHasNonCommonAncestor(track2, v0, partonicMothers);
+    }
+    return true;
+  }
+};
+
 } // namespace tripletcleaner
 } // namespace o2::analysis::femto
 

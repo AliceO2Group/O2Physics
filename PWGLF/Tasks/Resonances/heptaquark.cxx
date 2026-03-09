@@ -12,27 +12,32 @@
 /// \brief this is a starting point for the Resonances tutorial
 /// \author junlee kim
 
+#include "PWGLF/DataModel/ReducedHeptaQuarkTables.h"
+
+#include "Common/Core/trackUtilities.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
 #include <Framework/Configurable.h>
-#include <TLorentzVector.h>
+
 #include <Math/GenVector/Boost.h>
-#include <Math/Vector4D.h>
 #include <Math/Vector3D.h>
+#include <Math/Vector4D.h>
+#include <TLorentzVector.h>
 #include <TMath.h>
 #include <TRandom3.h>
+
 #include <fairlogger/Logger.h>
+
+#include <algorithm>
 #include <iostream>
 #include <iterator>
 #include <string>
 #include <vector>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/StepTHn.h"
-#include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/ReducedHeptaQuarkTables.h"
-#include "CommonConstants/PhysicsConstants.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -47,14 +52,23 @@ struct heptaquark {
   Configurable<int> cfgPIDStrategy{"cfgPIDStrategy", 3, "PID strategy 1"};
   Configurable<float> cfgPIDPrPi{"cfgPIDPrPi", 3, "PID selection for proton and pion"};
 
-  Configurable<float> minPhiMass{"minPhiMass", 1.01, "Minimum phi mass"};
-  Configurable<float> maxPhiMass{"maxPhiMass", 1.03, "Maximum phi mass"};
+  Configurable<float> cfgMinPhiMass{"cfgMinPhiMass", 1.01, "Minimum phi mass"};
+  Configurable<float> cfgMaxPhiMass{"cfgMaxPhiMass", 1.03, "Maximum phi mass"};
 
-  Configurable<float> minLambdaMass{"minLambdaMass", 1.1, "Minimum lambda mass"};
-  Configurable<float> maxLambdaMass{"maxLambdaMass", 1.13, "Maximum lambda mass"};
+  Configurable<float> cfgMinLambdaMass{"cfgMinLambdaMass", 1.1, "Minimum lambda mass"};
+  Configurable<float> cfgMaxLambdaMass{"cfgMaxLambdaMass", 1.13, "Maximum lambda mass"};
 
-  Configurable<float> cutNsigmaTPC{"cutNsigmaTPC", 2.5, "nsigma cut TPC"};
-  Configurable<float> cutNsigmaTOF{"cutNsigmaTOF", 3.0, "nsigma cut TOF"};
+  Configurable<float> cfgNsigmaTPC{"cfgNsigmaTPC", 2.5, "nsigma cut TPC"};
+  Configurable<float> cfgNsigmaTOF{"cfgNsigmaTOF", 3.0, "nsigma cut TOF"};
+
+  Configurable<bool> cfgSelectHQ{"cfgSelectHQ", true, "switch to select HQ"};
+
+  Configurable<float> cfgMinPhiPt{"cfgMinPhiPt", 0.2, "Minimum phi pt"};
+  Configurable<float> cfgMinLambdaPt{"cfgMinLambdaPt", 0.5, "Minimum lambda pt"};
+
+  Configurable<float> cfgSoftFraction{"cfgSoftFraction", 0.01, "Minimum allowed softest fraction"};
+  Configurable<float> cfgCollinear{"cfgCollinear", 0.98, "Maximum allowed collinear selection"};
+  Configurable<float> cfgCosPoint{"cfgCosPoint", 0.95, "Minimum pointing angle selection"};
 
   ConfigurableAxis massAxis{"massAxis", {600, 2.8, 3.4}, "Invariant mass axis"};
   ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0, 100.0}, "Transverse momentum bins"};
@@ -84,6 +98,18 @@ struct heptaquark {
     histos.add("hDalitzRot", "hDalitzRot", {HistType::kTHnSparseF, {massPPAxis, massPLAxis, massAxis, ptAxis, {2, -0.5f, 1.5f}, centAxis}});
   }
 
+  template <typename HQRow>
+  static inline TLorentzVector makeP4FromHQRow(HQRow const& hq)
+  {
+    const double px = hq.hqPx();
+    const double py = hq.hqPy();
+    const double pz = hq.hqPz();
+    const double m = hq.hqMass();
+    TLorentzVector v;
+    v.SetXYZM(px, py, pz, m);
+    return v;
+  }
+
   double massLambda = o2::constants::physics::MassLambda;
   double massPr = o2::constants::physics::MassProton;
   double massPi = o2::constants::physics::MassPionCharged;
@@ -95,76 +121,76 @@ struct heptaquark {
   {
     if (PIDStrategy == 0) {
       if (TOFHit != 1) {
-        if (TMath::Abs(nsigmaTPC) < cutNsigmaTPC) {
+        if (TMath::Abs(nsigmaTPC) < cfgNsigmaTPC) {
           return true;
         }
       }
       if (TOFHit == 1) {
-        if (TMath::Abs(nsigmaTOF) < cutNsigmaTOF) {
+        if (TMath::Abs(nsigmaTOF) < cfgNsigmaTOF) {
           return true;
         }
       }
     }
     if (PIDStrategy == 1) {
       if (ptcand < 0.5) {
-        if (TOFHit != 1 && TMath::Abs(nsigmaTPC) < cutNsigmaTPC) {
+        if (TOFHit != 1 && TMath::Abs(nsigmaTPC) < cfgNsigmaTPC) {
           return true;
         }
-        if (TOFHit == 1 && TMath::Abs(nsigmaTOF) < cutNsigmaTOF) {
+        if (TOFHit == 1 && TMath::Abs(nsigmaTOF) < cfgNsigmaTOF) {
           return true;
         }
       }
       if (ptcand >= 0.5) {
-        if (TOFHit == 1 && TMath::Abs(nsigmaTOF) < cutNsigmaTOF) {
+        if (TOFHit == 1 && TMath::Abs(nsigmaTOF) < cfgNsigmaTOF) {
           return true;
         }
       }
     }
     if (PIDStrategy == 2) {
       if (ptcand < 0.5) {
-        if (TOFHit != 1 && TMath::Abs(nsigmaTPC) < cutNsigmaTPC) {
+        if (TOFHit != 1 && TMath::Abs(nsigmaTPC) < cfgNsigmaTPC) {
           return true;
         }
-        if (TOFHit == 1 && TMath::Abs(nsigmaTOF) < cutNsigmaTOF) {
+        if (TOFHit == 1 && TMath::Abs(nsigmaTOF) < cfgNsigmaTOF) {
           return true;
         }
       }
       if (ptcand >= 0.5 && ptcand < 1.2) {
-        if (TOFHit == 1 && TMath::Abs(nsigmaTOF) < cutNsigmaTOF) {
+        if (TOFHit == 1 && TMath::Abs(nsigmaTOF) < cfgNsigmaTOF) {
           return true;
         }
-        if (TOFHit != 1 && nsigmaTPC > -1.5 && nsigmaTPC < cutNsigmaTPC) {
+        if (TOFHit != 1 && nsigmaTPC > -1.5 && nsigmaTPC < cfgNsigmaTPC) {
           return true;
         }
       }
       if (ptcand >= 1.2) {
-        if (TOFHit == 1 && TMath::Abs(nsigmaTOF) < cutNsigmaTOF) {
+        if (TOFHit == 1 && TMath::Abs(nsigmaTOF) < cfgNsigmaTOF) {
           return true;
         }
-        if (TOFHit != 1 && TMath::Abs(nsigmaTPC) < cutNsigmaTPC) {
+        if (TOFHit != 1 && TMath::Abs(nsigmaTPC) < cfgNsigmaTPC) {
           return true;
         }
       }
     }
     if (PIDStrategy == 3) {
       if (ptcand < 0.5) {
-        if (TOFHit != 1 && TMath::Abs(nsigmaTPC) < cutNsigmaTPC) {
+        if (TOFHit != 1 && TMath::Abs(nsigmaTPC) < cfgNsigmaTPC) {
           return true;
         }
-        if (TOFHit == 1 && TMath::Abs(nsigmaTOF) < cutNsigmaTOF) {
+        if (TOFHit == 1 && TMath::Abs(nsigmaTOF) < cfgNsigmaTOF) {
           return true;
         }
       }
       if (ptcand >= 0.5 && ptcand < 1.2) {
-        if (TOFHit == 1 && TMath::Abs(nsigmaTOF) < cutNsigmaTOF) {
+        if (TOFHit == 1 && TMath::Abs(nsigmaTOF) < cfgNsigmaTOF) {
           return true;
         }
       }
       if (ptcand >= 1.2) {
-        if (TOFHit == 1 && TMath::Abs(nsigmaTOF) < cutNsigmaTOF) {
+        if (TOFHit == 1 && TMath::Abs(nsigmaTOF) < cfgNsigmaTOF) {
           return true;
         }
-        if (TOFHit != 1 && TMath::Abs(nsigmaTPC) < cutNsigmaTPC) {
+        if (TOFHit != 1 && TMath::Abs(nsigmaTPC) < cfgNsigmaTPC) {
           return true;
         }
       }
@@ -172,28 +198,53 @@ struct heptaquark {
     return false;
   }
 
-  template <typename V01, typename V02>
-  ROOT::Math::XYZVector getDCAofV0V0(V01 const& v01, V02 const& v02)
+  template <typename HQRow1, typename HQRow2, typename HQRow3, typename ColRow>
+  int selectHQ(HQRow1 const& hq1r, HQRow2 const& hq2r, HQRow3 const& hq3r, ColRow const& col)
   {
-    ROOT::Math::XYZVector v01pos, v02pos, v01mom, v02mom;
-    v01pos.SetXYZ(v01.x(), v01.y(), v01.z());
-    v02pos.SetXYZ(v02.x(), v02.y(), v02.z());
-    v01mom.SetXYZ(v01.px(), v01.py(), v01.pz());
-    v02mom.SetXYZ(v02.px(), v02.py(), v02.pz());
+    int selection = 0;
 
-    ROOT::Math::XYZVector posdiff = v02pos - v01pos;
-    ROOT::Math::XYZVector cross = v01mom.Cross(v02mom);
-    ROOT::Math::XYZVector dcaVec = (posdiff.Dot(cross) / cross.Mag2()) * cross;
-    return dcaVec;
-  }
+    auto hq1 = makeP4FromHQRow(hq1r);
+    auto hq2 = makeP4FromHQRow(hq2r);
+    auto hq3 = makeP4FromHQRow(hq3r);
 
-  template <typename V01, typename V02>
-  float getCPA(V01 const& v01, V02 const& v02)
-  {
-    ROOT::Math::XYZVector v01mom, v02mom;
-    v01mom.SetXYZ(v01.px() / v01.p(), v01.py() / v01.p(), v01.pz() / v01.p());
-    v02mom.SetXYZ(v02.px() / v02.p(), v02.py() / v02.p(), v02.pz() / v02.p());
-    return v01mom.Dot(v02mom);
+    if (hq1.Pt() < cfgMinPhiPt || hq2.Pt() < cfgMinPhiPt || hq3.Pt() < cfgMinLambdaPt) {
+      selection += 1;
+    }
+
+    const double sumE = hq1.E() + hq2.E() + hq3.E();
+    const double emin = std::min({hq1.E(), hq2.E(), hq3.E()});
+    const double fmin = emin / std::max(1e-9, sumE);
+    if (fmin < cfgSoftFraction) {
+      selection += 2;
+    }
+
+    auto ex = hq1 + hq2 + hq3;
+    TVector3 boost = -ex.BoostVector();
+
+    auto hqphipair_boost = hq1 + hq2;
+    auto hqlambda_boost = hq3;
+    hqphipair_boost.Boost(boost);
+    hqlambda_boost.Boost(boost);
+
+    const double denom = (hqlambda_boost.Vect().Mag() * hqphipair_boost.Vect().Mag());
+    const double cosHel = (denom > 0.) ? (hqlambda_boost.Vect().Dot(hqphipair_boost.Vect()) / denom) : 1.0;
+    if (std::abs(cosHel) > cfgCollinear) {
+      selection += 4;
+    }
+
+    ROOT::Math::XYZVector rPV(col.posX(), col.posY(), col.posZ());
+    ROOT::Math::XYZVector rSV(hq3r.hqx(), hq3r.hqy(), hq3r.hqz());
+
+    ROOT::Math::XYZVector L = rSV - rPV;
+    ROOT::Math::XYZVector exMom(ex.Px(), ex.Py(), ex.Pz());
+
+    const double denom2 = (L.R() * exMom.R() + 1e-9);
+    const double cosPoint = L.Dot(exMom) / denom2;
+    if (cosPoint < cfgCosPoint) {
+      selection += 8;
+    }
+
+    return selection;
   }
 
   ROOT::Math::PxPyPzMVector DauVec1, DauVec2;
@@ -214,7 +265,7 @@ struct heptaquark {
       if (hqtrackd1.hqId() != 333)
         continue;
 
-      if (hqtrackd1.hqMass() < minPhiMass || hqtrackd1.hqMass() > maxPhiMass)
+      if (hqtrackd1.hqMass() < cfgMinPhiMass || hqtrackd1.hqMass() > cfgMaxPhiMass)
         continue;
 
       DauVec1 = ROOT::Math::PxPyPzMVector(hqtrackd1.hqd1Px(), hqtrackd1.hqd1Py(), hqtrackd1.hqd1Pz(), massKa);
@@ -246,7 +297,7 @@ struct heptaquark {
         if (hqtrackd2.hqId() != 333)
           continue;
 
-        if (hqtrackd2.hqMass() < minPhiMass || hqtrackd2.hqMass() > maxPhiMass)
+        if (hqtrackd2.hqMass() < cfgMinPhiMass || hqtrackd2.hqMass() > cfgMaxPhiMass)
           continue;
 
         DauVec1 = ROOT::Math::PxPyPzMVector(hqtrackd2.hqd1Px(), hqtrackd2.hqd1Py(), hqtrackd2.hqd1Pz(), massKa);
@@ -278,7 +329,7 @@ struct heptaquark {
           if (std::abs(hqtrackd3.hqId()) != 3122)
             continue;
 
-          if (hqtrackd3.hqMass() < minLambdaMass || hqtrackd3.hqMass() > maxLambdaMass)
+          if (hqtrackd3.hqMass() < cfgMinLambdaMass || hqtrackd3.hqMass() > cfgMaxLambdaMass)
             continue;
 
           int isLambda = static_cast<int>(hqtrackd3.hqId() < 0);
@@ -320,6 +371,9 @@ struct heptaquark {
           exotic = HQ1 + HQ2 + HQ3;
           HQ12 = HQ1 + HQ2;
           HQ13 = HQ1 + HQ3;
+
+          if (cfgSelectHQ && selectHQ(hqtrackd1, hqtrackd2, hqtrackd3, collision))
+            continue;
 
           histos.fill(HIST("h_InvMass_same"), exotic.M(), exotic.Pt(), collision.centrality());
           histos.fill(HIST("hDalitz"), HQ12.M2(), HQ13.M2(), exotic.M(), exotic.Pt(), isLambda, collision.centrality());

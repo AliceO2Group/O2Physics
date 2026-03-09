@@ -984,9 +984,6 @@ struct HfCorrelatorDMesonPairs {
       registry.fill(HIST("hInputCheckD0OrD0barMcGen"), nDorDbarevent);
     }
 
-    auto massD = MassD0;
-    auto massDbar = MassD0Bar;
-
     for (const auto& particle1 : mcParticles) {
       // check if the particle is D0 or D0bar
       if (std::abs(particle1.pdgCode()) != Pdg::kD0) {
@@ -1112,7 +1109,7 @@ struct HfCorrelatorDMesonPairs {
         }
 
         // Fill pair Selection Status
-        entryD0PairMcGen(particle1.pt(), particle2.pt(), particle1.y(), particle2.y(), particle1.phi(), particle2.phi(), massD, massDbar, massD, massDbar, pairType, particleType1, particleType2);
+        entryD0PairMcGen(particle1.pt(), particle2.pt(), particle1.y(), particle2.y(), particle1.phi(), particle2.phi(), MassD0, MassD0Bar, MassD0, MassD0Bar, pairType, particleType1, particleType2);
         entryD0PairMcGenInfo(originGen1, originGen2, matchedGen1, matchedGen2);
 
       } // end inner loop

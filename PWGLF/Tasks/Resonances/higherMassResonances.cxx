@@ -369,6 +369,7 @@ struct HigherMassResonances {
 
     // For MC
     if (doprocessGen || doprocessRec) {
+      hMChists.add("MCcorrections/hGenNo", "Generated collisions before and after event selection", kTH1F, {{5, 0.0f, 5.0f}});
       hMChists.add("Genf1710", "Gen f_{0}(1710)", kTHnSparseF, {multiplicityAxis, ptAxis, thnAxisPOL});
       hMChists.add("Genf1710Calib", "Calibrated Gen f_{0}(1710)", kTHnSparseF, {multiplicityAxis, ptAxis, thnAxisPOL});
       hMChists.add("Genf17102", "Gen f_{0}(1710)", kTHnSparseF, {multiplicityAxis, ptAxis, thnAxisPOL});
@@ -406,7 +407,6 @@ struct HigherMassResonances {
       hMChists.add("MCcorrections/MultiplicityRec2", "Multiplicity in generated MC with at least 1 reconstruction", kTH1F, {multiplicityAxis});
       hMChists.add("MCcorrections/MultiplicityGen2", "Multiplicity in generated MC", kTH1F, {multiplicityAxis});
 
-      hMChists.add("MCcorrections/hGenNo", "Generated collisions before and after event selection", kTH1F, {{5, 0.0f, 5.0f}});
       hMChists.add("MCcorrections/hSignalLossDenominator3", "Kstar generated before event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
       hMChists.add("MCcorrections/hSignalLossDenominator4", "Kstar generated before event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
       hMChists.add("MCcorrections/hSignalLossNumerator3", "Kstar generated after event selection", kTH2F, {{ptAxis}, {multiplicityAxis}});
@@ -1453,7 +1453,7 @@ struct HigherMassResonances {
       return;
     }
 
-    if (std::abs(mcCollision.posZ()) >= config.cutzvertex) {
+    if (std::abs(mcCollision.posZ()) > config.cutzvertex) {
       return;
     }
 
@@ -1491,9 +1491,9 @@ struct HigherMassResonances {
       for (const auto& kCurrentDaughter : kDaughters) {
         // int daupdg = std::abs(kCurrentDaughter.pdgCode());
 
-        if (!kCurrentDaughter.isPhysicalPrimary()) {
-          continue;
-        }
+        // if (!kCurrentDaughter.isPhysicalPrimary()) {
+        //   continue;
+        // }
         if (std::abs(kCurrentDaughter.pdgCode()) == PDG_t::kK0Short) {
           passKs.push_back(true);
           if (passKs.size() == 1) {
@@ -1545,6 +1545,7 @@ struct HigherMassResonances {
       return;
     }
     hMChists.fill(HIST("Rec_Multiplicity"), multiplicity);
+    rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
 
     hMChists.fill(HIST("MC_mult_after_event_sel"), multiplicity);
     eventCounter++;

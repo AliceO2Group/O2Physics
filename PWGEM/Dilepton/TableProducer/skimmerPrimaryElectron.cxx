@@ -54,16 +54,44 @@ using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
 
 using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU,
                            aod::pidTPCFullEl, /*aod::pidTPCFullMu,*/ aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                           aod::pidTOFFullEl, /*aod::pidTOFFullMu,*/ aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
+                           aod::pidTOFFullEl, /*aod::pidTOFFullMu,*/ aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta, aod::TOFSignal, aod::TOFEvTime>;
 using MyTrack = MyTracks::iterator;
 using MyTracksMC = soa::Join<MyTracks, aod::McTrackLabels, aod::mcTPCTuneOnData>;
 using MyTrackMC = MyTracksMC::iterator;
+
+namespace o2::aod
+{
+namespace pwgem::dilepton::recalculatedtofpid
+{
+DECLARE_SOA_COLUMN(BetaRecalculated, betaRecalculated, float);
+DECLARE_SOA_COLUMN(TOFNSigmaElRecalculated, tofNSigmaElRecalculated, float);
+} // namespace pwgem::dilepton::recalculatedtofpid
+
+DECLARE_SOA_TABLE(EMTOFNSigmas, "AOD", "EMTOFNSIGMA", // make std::map in your tasks later. // Don't store this table in the derived data.
+                  o2::aod::emprimaryelectron::CollisionId, o2::aod::emprimaryelectron::TrackId,
+                  o2::aod::pwgem::dilepton::recalculatedtofpid::BetaRecalculated, o2::aod::pwgem::dilepton::recalculatedtofpid::TOFNSigmaElRecalculated);
+
+using EMTOFNSigma = EMTOFNSigmas::iterator;
+
+namespace pwgem::dilepton::mlpid
+{
+DECLARE_SOA_COLUMN(BDTScore, bdtScore, float);
+} // namespace pwgem::dilepton::mlpid
+
+DECLARE_SOA_TABLE(EMMLPIDs, "AOD", "EMMLPID", // make std::map in your tasks later. // Don't store this table in the derived data.
+                  o2::aod::emprimaryelectron::CollisionId, o2::aod::emprimaryelectron::TrackId, o2::aod::pwgem::dilepton::mlpid::BDTScore);
+using EMMLPID = EMMLPIDs::iterator;
+
+} // namespace o2::aod
 
 struct skimmerPrimaryElectron {
   SliceCache cache;
   Preslice<aod::TracksIU> perCol = o2::aod::track::collisionId;
   Produces<aod::EMPrimaryElectrons> emprimaryelectrons;
   Produces<aod::EMPrimaryElectronsCov> emprimaryelectronscov;
+
+  Produces<aod::EMTOFNSigmas> emtofs;
+  Produces<aod::EMMLPIDs> emmlpids;
 
   // Configurables
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -81,6 +109,8 @@ struct skimmerPrimaryElectron {
   Configurable<float> min_tpc_cr_findable_ratio{"min_tpc_cr_findable_ratio", 0.8, "min. TPC Ncr/Nf ratio"};
   Configurable<int> min_ncluster_its{"min_ncluster_its", 4, "min ncluster its"};
   Configurable<int> min_ncluster_itsib{"min_ncluster_itsib", 1, "min ncluster itsib"};
+  Configurable<float> minchi2tpc{"minchi2tpc", 0.0, "min. chi2/NclsTPC"};
+  Configurable<float> minchi2its{"minchi2its", 0.0, "min. chi2/NclsITS"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
   Configurable<float> maxchi2its{"maxchi2its", 6.0, "max. chi2/NclsITS"};
   Configurable<float> minpt{"minpt", 0.15, "min pt for ITS-TPC track"};
@@ -101,20 +131,20 @@ struct skimmerPrimaryElectron {
   Configurable<float> min_pin_for_pion_rejection{"min_pin_for_pion_rejection", 0.0, "pion rejection is applied above this pin"}; // this is used only in TOFreq
   Configurable<float> max_pin_for_pion_rejection{"max_pin_for_pion_rejection", 0.5, "pion rejection is applied below this pin"};
   Configurable<float> max_frac_shared_clusters_tpc{"max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
-  Configurable<bool> includeITSsa{"includeITSsa", false, "Flag to include ITSsa tracks"};
-  Configurable<float> maxpt_itssa{"maxpt_itssa", 0.15, "max pt for ITSsa track"};
   Configurable<float> maxMeanITSClusterSize{"maxMeanITSClusterSize", 16, "max <ITS cluster size> x cos(lambda)"};
   Configurable<bool> storeOnlyTrueElectronMC{"storeOnlyTrueElectronMC", false, "Flag to store only true electron in MC"};
   Configurable<int> minNelectron{"minNelectron", 0, "min number of electron candidates per collision"};
+  Configurable<bool> includeITSsa{"includeITSsa", false, "Flag to include ITSsa tracks only for MC. switch ON only if needed."};
+  Configurable<bool> useTOFNSigmaDeltaBC{"useTOFNSigmaDeltaBC", false, "Flag to shift delta BC for TOF n sigma (only with TTCA)"};
 
   // configuration for PID ML
   Configurable<bool> usePIDML{"usePIDML", false, "Flag to use PID ML"};
   Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"filename"}, "ONNX file names for each bin (if not from CCDB full path)"};
   Configurable<std::vector<std::string>> onnxPathsCCDB{"onnxPathsCCDB", std::vector<std::string>{"path"}, "Paths of models on CCDB"};
-  Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{-999999., 999999.}, "Bin limits for ML application"};
-  Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.95}, "ML cuts per bin"};
-  Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature"}, "Names of ML model input features"};
-  Configurable<std::string> nameBinningFeature{"nameBinningFeature", "pt", "Names of ML model binning feature"};
+  Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.15, 0.2, 0.25, 0.4, 0.8, 1.6, 2.0, 20}, "Bin limits for ML application"};
+  Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.95, 0.95, 0.7, 0.7, 0.8, 0.8, 0.7, 0.7}, "ML cuts per bin"};
+  Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"tpcInnerParam", "tpcNClsFound", "tpcChi2NCl", "tpcNSigmaEl", "tofNSigmaEl", "meanClusterSizeITSobCos"}, "Names of ML model input features"};
+  Configurable<std::string> nameBinningFeature{"nameBinningFeature", "tpcInnerParam", "Names of ML model binning feature"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB.  Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
   Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
@@ -131,8 +161,9 @@ struct skimmerPrimaryElectron {
   const o2::dataformats::MeanVertexObject* mMeanVtx = nullptr;
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::ccdb::CcdbApi ccdbApi;
+  Service<o2::pid::tof::TOFResponse> mTOFResponse;
 
-  void init(InitContext&)
+  void init(InitContext& initContext)
   {
     mRunNumber = 0;
     d_bz = 0;
@@ -142,6 +173,9 @@ struct skimmerPrimaryElectron {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
     ccdbApi.init(ccdburl);
+
+    LOGF(info, "intializing TOFResponse");
+    mTOFResponse->initSetup(ccdb, initContext);
 
     if (fillQAHistogram) {
       fRegistry.add("Track/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
@@ -171,9 +205,9 @@ struct skimmerPrimaryElectron {
       fRegistry.add("Track/hTOFbeta", "TOF beta;p_{pv} (GeV/c);#beta", kTH2F, {{1000, 0, 10}, {240, 0, 1.2}}, false);
       fRegistry.add("Track/hTOFNsigmaEl", "TOF n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       // fRegistry.add("Track/hTOFNsigmaMu", "TOF n sigma mu;p_{in} (GeV/c);n #sigma_{#mu}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-      fRegistry.add("Track/hTOFNsigmaPi", "TOF n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-      fRegistry.add("Track/hTOFNsigmaKa", "TOF n sigma ka;p_{in} (GeV/c);n #sigma_{K}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-      fRegistry.add("Track/hTOFNsigmaPr", "TOF n sigma pr;p_{in} (GeV/c);n #sigma_{p}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+      // fRegistry.add("Track/hTOFNsigmaPi", "TOF n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+      // fRegistry.add("Track/hTOFNsigmaKa", "TOF n sigma ka;p_{in} (GeV/c);n #sigma_{K}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+      // fRegistry.add("Track/hTOFNsigmaPr", "TOF n sigma pr;p_{in} (GeV/c);n #sigma_{p}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hMeanClusterSizeITS", "mean cluster size ITS;p_{pv} (GeV/c);<ITS cluster size> #times cos(#lambda)", kTH2F, {{1000, 0, 10}, {150, 0, 15}}, false);
       fRegistry.add("Track/hMeanClusterSizeITSib", "mean cluster size ITSib;p_{pv} (GeV/c);<ITSib cluster size> #times cos(#lambda)", kTH2F, {{1000, 0, 10}, {150, 0, 15}}, false);
       fRegistry.add("Track/hMeanClusterSizeITSob", "mean cluster size ITSob;p_{pv} (GeV/c);<ITSob cluster size> #times cos(#lambda)", kTH2F, {{1000, 0, 10}, {150, 0, 15}}, false);
@@ -204,6 +238,7 @@ struct skimmerPrimaryElectron {
       mlResponseSingleTrack.cacheInputFeaturesIndices(namesInputFeatures);
       mlResponseSingleTrack.cacheBinningIndex(nameBinningFeature);
       mlResponseSingleTrack.init(enableOptimizations.value);
+      mlResponseSingleTrack.useReassociatedTOF(useTOFNSigmaDeltaBC.value);
     } // end of PID ML
   }
 
@@ -279,7 +314,8 @@ struct skimmerPrimaryElectron {
       }
     }
 
-    if (requireTOF && !(track.hasTOF() && std::fabs(track.tofNSigmaEl()) < maxTOFNsigmaEl)) {
+    float tofNSigmaEl = mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
+    if (requireTOF && !(track.hasTOF() && std::fabs(tofNSigmaEl) < maxTOFNsigmaEl)) {
       return false;
     }
 
@@ -287,7 +323,7 @@ struct skimmerPrimaryElectron {
       return false;
     }
 
-    if (track.itsChi2NCl() < 0.f || maxchi2its < track.itsChi2NCl()) {
+    if (track.itsChi2NCl() < minchi2its || maxchi2its < track.itsChi2NCl()) {
       return false;
     }
     if (track.itsNCls() < min_ncluster_its) {
@@ -302,7 +338,7 @@ struct skimmerPrimaryElectron {
     }
 
     if (track.hasTPC()) {
-      if (track.tpcChi2NCl() < 0.f || maxchi2tpc < track.tpcChi2NCl()) {
+      if (track.tpcChi2NCl() < minchi2tpc || maxchi2tpc < track.tpcChi2NCl()) {
         return false;
       }
 
@@ -356,10 +392,6 @@ struct skimmerPrimaryElectron {
       return false;
     }
 
-    if ((track.hasITS() && !track.hasTPC() && !track.hasTOF() && !track.hasTRD()) && maxpt_itssa < trackParCov.getPt()) {
-      return false;
-    }
-
     int total_cluster_size = 0, nl = 0;
     for (unsigned int layer = 0; layer < 7; layer++) {
       int cluster_size_per_layer = track.itsClsSizeInLayer(layer);
@@ -377,38 +409,23 @@ struct skimmerPrimaryElectron {
   }
 
   template <typename TCollision, typename TTrack>
-  bool isElectron(TCollision const& collision, TTrack const& track, float& probaEl)
+  void fillMLPIDTable(TCollision const& collision, TTrack const& track)
   {
-    probaEl = 1.f;
-    if (includeITSsa && (track.hasITS() && !track.hasTPC() && !track.hasTRD() && !track.hasTOF())) {
-      return true;
-    }
-
     if (usePIDML) {
-      if (!isElectron_TOFif(track)) {
-        return false;
-      }
       o2::dataformats::DCA mDcaInfoCov;
       mDcaInfoCov.set(999, 999, 999, 999, 999);
       auto trackParCov = getTrackParCov(track);
       trackParCov.setPID(o2::track::PID::Electron);
-      mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
-      mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-      bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
-      if (!isPropOK) {
-        return false;
-      }
-      std::vector<float> inputFeatures = mlResponseSingleTrack.getInputFeatures(track, trackParCov, collision);
-      float binningFeature = mlResponseSingleTrack.getBinningFeature(track, trackParCov, collision);
 
-      // std::vector<float> outputs = {};
-      // bool isSelected = mlResponseSingleTrack.isSelectedMl(inputFeatures, binningFeature, outputs); // 0: hadron, 1:electron
-      // probaEl = outputs[1];
-      // outputs.clear();
-      // outputs.shrink_to_fit();
-
-      // std::vector<float> inputFeatures = mlResponseSingleTrack.getInputFeatures(track, trackParCov, collision);
-      // float binningFeature = mlResponseSingleTrack.getBinningFeature(track, trackParCov, collision);
+      // mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+      // mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+      // bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+      // if (!isPropOK) {
+      //   probaEl = 0.0;
+      //   return false;
+      // }
+      std::vector<float> inputFeatures = mlResponseSingleTrack.getInputFeatures(track, trackParCov, collision, mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())], mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())]);
+      float binningFeature = mlResponseSingleTrack.getBinningFeature(track, trackParCov, collision, mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())], mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())]);
 
       int pbin = lower_bound(binsMl.value.begin(), binsMl.value.end(), binningFeature) - binsMl.value.begin() - 1;
       if (pbin < 0) {
@@ -418,25 +435,67 @@ struct skimmerPrimaryElectron {
       }
       // LOGF(info, "track.tpcInnerParam() = %f (GeV/c), pbin = %d", track.tpcInnerParam(), pbin);
 
-      probaEl = mlResponseSingleTrack.getModelOutput(inputFeatures, pbin)[1]; // 0: hadron, 1:electron
-      return probaEl > cutsMl.value[pbin];
-      // return isSelected;
+      float probaEl = mlResponseSingleTrack.getModelOutput(inputFeatures, pbin)[1]; // 0: hadron, 1:electron
+      mapProbaEl[std::make_pair(collision.globalIndex(), track.globalIndex())] = probaEl;
+      emmlpids(collision.globalIndex(), track.globalIndex(), probaEl);
     } else {
-      return isElectron_TPChadrej(track) || isElectron_TOFreq(track);
+      mapProbaEl[std::make_pair(collision.globalIndex(), track.globalIndex())] = 1.0;
+      emmlpids(collision.globalIndex(), track.globalIndex(), 1.0);
     }
   }
 
-  template <typename TTrack>
-  bool isElectron_TOFif(TTrack const& track)
+  template <typename TCollision, typename TTrack>
+  bool isElectron(TCollision const& collision, TTrack const& track)
   {
+    if (usePIDML) {
+      if (isElectron_TOFif(track, collision)) {
+        auto trackParCov = getTrackParCov(track);
+        // trackParCov.setPID(o2::track::PID::Electron);
+        // o2::dataformats::DCA mDcaInfoCov;
+        // mDcaInfoCov.set(999, 999, 999, 999, 999);
+        // mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+        // mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+        // bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+        // if (!isPropOK) {
+        //   probaEl = 0.0;
+        //   return false;
+        // }
+        // std::vector<float> inputFeatures = mlResponseSingleTrack.getInputFeatures(track, trackParCov, collision, mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())], mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())]);
+        float binningFeature = mlResponseSingleTrack.getBinningFeature(track, trackParCov, collision, mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())], mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())]);
+
+        int pbin = lower_bound(binsMl.value.begin(), binsMl.value.end(), binningFeature) - binsMl.value.begin() - 1;
+        if (pbin < 0) {
+          pbin = 0;
+        } else if (static_cast<int>(binsMl.value.size()) - 2 < pbin) {
+          pbin = static_cast<int>(binsMl.value.size()) - 2;
+        }
+        // LOGF(info, "track.tpcInnerParam() = %f (GeV/c), pbin = %d", track.tpcInnerParam(), pbin);
+
+        return mapProbaEl[std::make_pair(collision.globalIndex(), track.globalIndex())] > cutsMl.value[pbin];
+      } else {
+        return false;
+      }
+    } else {
+      return isElectron_TPChadrej(track, collision) || isElectron_TOFreq(track, collision);
+    }
+  }
+
+  template <typename TTrack, typename TCollision>
+  bool isElectron_TOFif(TTrack const& track, TCollision const& collision)
+  {
+    // collisionId must be collisionId after reassociation.
+    // track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCascade.globalBC())
+    float tofNSigmaEl = mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
     bool is_EL_TPC = minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl;
-    bool is_EL_TOF = track.hasTOF() ? (std::fabs(track.tofNSigmaEl()) < maxTOFNsigmaEl) : true; // TOFif
+    bool is_EL_TOF = track.hasTOF() ? (std::fabs(tofNSigmaEl) < maxTOFNsigmaEl) : true; // TOFif
     return is_EL_TPC && is_EL_TOF;
   }
 
-  template <typename TTrack>
-  bool isElectron_TPChadrej(TTrack const& track)
+  template <typename TTrack, typename TCollision>
+  bool isElectron_TPChadrej(TTrack const& track, TCollision const& collision)
   {
+    float tofNSigmaEl = mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
+
     if (track.tpcNSigmaEl() < minTPCNsigmaEl || maxTPCNsigmaEl < track.tpcNSigmaEl()) {
       return false;
     }
@@ -449,23 +508,25 @@ struct skimmerPrimaryElectron {
     if (minTPCNsigmaPr < track.tpcNSigmaPr() && track.tpcNSigmaPr() < maxTPCNsigmaPr) {
       return false;
     }
-    if (track.hasTOF() && (maxTOFNsigmaEl < std::fabs(track.tofNSigmaEl()))) {
+    if (track.hasTOF() && (maxTOFNsigmaEl < std::fabs(tofNSigmaEl))) {
       return false;
     }
     return true;
   }
 
-  template <typename TTrack>
-  bool isElectron_TOFreq(TTrack const& track)
+  template <typename TTrack, typename TCollision>
+  bool isElectron_TOFreq(TTrack const& track, TCollision const& collision)
   {
+    float tofNSigmaEl = mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
+
     if (minTPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < maxTPCNsigmaPi && (min_pin_for_pion_rejection < track.tpcInnerParam() && track.tpcInnerParam() < max_pin_for_pion_rejection)) {
       return false;
     }
-    return minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl && std::fabs(track.tofNSigmaEl()) < maxTOFNsigmaEl;
+    return minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl && std::fabs(tofNSigmaEl) < maxTOFNsigmaEl;
   }
 
   template <bool isMC, typename TCollision, typename TTrack>
-  void fillTrackTable(TCollision const& collision, TTrack const& track, const float probaEl)
+  void fillTrackTable(TCollision const& collision, TTrack const& track)
   {
     if (std::find(stored_trackIds.begin(), stored_trackIds.end(), std::pair<int, int>{collision.globalIndex(), track.globalIndex()}) == stored_trackIds.end()) {
       o2::dataformats::DCA mDcaInfoCov;
@@ -486,6 +547,10 @@ struct skimmerPrimaryElectron {
       float phi_recalc = trackParCov.getPhi();
       o2::math_utils::bringTo02Pi(phi_recalc);
 
+      float tofNSigmaEl = mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
+      float beta = mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
+      float probaEl = mapProbaEl[std::make_pair(collision.globalIndex(), track.globalIndex())];
+
       bool isAssociatedToMPC = collision.globalIndex() == track.collisionId();
       float mcTunedTPCSignal = 0.f;
       if constexpr (isMC) {
@@ -498,10 +563,10 @@ struct skimmerPrimaryElectron {
                          track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusPID(), track.tpcNClsFindableMinusCrossedRows(), track.tpcNClsShared(),
                          track.tpcChi2NCl(), track.tpcInnerParam(),
                          track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
-                         track.beta(), track.tofNSigmaEl(), /*track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),*/
+                         beta, tofNSigmaEl,
                          track.itsClusterSizes(),
                          track.itsChi2NCl(), track.tofChi2(), track.detectorMap(),
-                         isAssociatedToMPC, false, probaEl, mcTunedTPCSignal);
+                         isAssociatedToMPC, false, probaEl, track.flags(), mcTunedTPCSignal);
 
       emprimaryelectronscov(
         trackParCov.getX(),
@@ -581,12 +646,12 @@ struct skimmerPrimaryElectron {
         fRegistry.fill(HIST("Track/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
         fRegistry.fill(HIST("Track/hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
         fRegistry.fill(HIST("Track/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
-        fRegistry.fill(HIST("Track/hTOFbeta"), trackParCov.getP(), track.beta());
-        fRegistry.fill(HIST("Track/hTOFNsigmaEl"), track.tpcInnerParam(), track.tofNSigmaEl());
+        fRegistry.fill(HIST("Track/hTOFbeta"), trackParCov.getP(), beta);
+        fRegistry.fill(HIST("Track/hTOFNsigmaEl"), track.tpcInnerParam(), tofNSigmaEl);
         // fRegistry.fill(HIST("Track/hTOFNsigmaMu"), track.tpcInnerParam(), track.tofNSigmaMu());
-        fRegistry.fill(HIST("Track/hTOFNsigmaPi"), track.tpcInnerParam(), track.tofNSigmaPi());
-        fRegistry.fill(HIST("Track/hTOFNsigmaKa"), track.tpcInnerParam(), track.tofNSigmaKa());
-        fRegistry.fill(HIST("Track/hTOFNsigmaPr"), track.tpcInnerParam(), track.tofNSigmaPr());
+        // fRegistry.fill(HIST("Track/hTOFNsigmaPi"), track.tpcInnerParam(), track.tofNSigmaPi());
+        // fRegistry.fill(HIST("Track/hTOFNsigmaKa"), track.tpcInnerParam(), track.tofNSigmaKa());
+        // fRegistry.fill(HIST("Track/hTOFNsigmaPr"), track.tpcInnerParam(), track.tofNSigmaPr());
         fRegistry.fill(HIST("Track/hMeanClusterSizeITS"), trackParCov.getP(), static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(trackParCov.getTgl())));
         fRegistry.fill(HIST("Track/hMeanClusterSizeITSib"), trackParCov.getP(), static_cast<float>(total_cluster_size_ib) / static_cast<float>(nl_ib) * std::cos(std::atan(trackParCov.getTgl())));
         fRegistry.fill(HIST("Track/hMeanClusterSizeITSob"), trackParCov.getP(), static_cast<float>(total_cluster_size_ob) / static_cast<float>(nl_ob) * std::cos(std::atan(trackParCov.getTgl())));
@@ -595,22 +660,107 @@ struct skimmerPrimaryElectron {
     }
   }
 
+  template <bool withTTCA, typename TCollisions, typename TBCs, typename TTracks, typename TTrackAssoc>
+  void calculateTOFNSigmaWithReassociation(TCollisions const& collisions, TBCs const&, TTracks const& tracks, TTrackAssoc const& trackIndices)
+  {
+    if (useTOFNSigmaDeltaBC) {
+      if constexpr (withTTCA) {
+        for (const auto& collision : collisions) {
+          if (mapCollisionTime.find(collision.globalIndex()) == mapCollisionTime.end()) {
+            continue;
+          }
+          auto bcCollision = collision.template bc_as<TBCs>();
+          auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
+          for (const auto& trackId : trackIdsThisCollision) {
+            auto track = trackId.template track_as<TTracks>();
+            if (!track.hasITS() || !track.hasTPC()) { // apply only minimal cut
+              continue;
+            }
+
+            if (track.hasTOF() && track.has_collision()) { // TTCA may use orphan tracks.
+              auto bcTrack = track.template collision_as<TCollisions>().template bc_as<TBCs>();
+              float tofNSigmaEl = mTOFResponse->nSigma<o2::track::PID::Electron>(track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()), track.tofExpMom(), track.length(), track.p(), track.eta(), mapCollisionTime[collision.globalIndex()], mapCollisionTimeError[collision.globalIndex()]);
+              float beta = track.length() / (track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()) - mapCollisionTime[collision.globalIndex()]) / (TMath::C() * 1e+2 * 1e-12);
+              mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = tofNSigmaEl;
+              mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = beta;
+              emtofs(collision.globalIndex(), track.globalIndex(), mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())], mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())]);
+            } else {
+              mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaEl();
+              mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.beta();
+              emtofs(collision.globalIndex(), track.globalIndex(), mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())], mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())]);
+            }
+          } // end of track loop
+        } // end of collision loop
+      } else {
+        for (const auto& collision : collisions) {
+          auto tracks_per_coll = tracks.sliceBy(perCol, collision.globalIndex());
+          for (const auto& track : tracks_per_coll) {
+            if (!track.hasITS() || !track.hasTPC()) { // apply only minimal cut
+              continue;
+            }
+            mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaEl();
+            mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.beta();
+            emtofs(collision.globalIndex(), track.globalIndex(), mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())], mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())]);
+          }
+        } // end of track loop
+      } // end of collision loop
+    } else {
+      if constexpr (withTTCA) {
+        for (const auto& collision : collisions) {
+          auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
+          for (const auto& trackId : trackIdsThisCollision) {
+            auto track = trackId.template track_as<TTracks>();
+            if (!track.hasITS() || !track.hasTPC()) { // apply only minimal cut
+              continue;
+            }
+            mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaEl();
+            mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.beta();
+            emtofs(collision.globalIndex(), track.globalIndex(), mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())], mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())]);
+          } // end of track loop
+        } // end of collision loop
+      } else {
+        for (const auto& collision : collisions) {
+          auto tracks_per_coll = tracks.sliceBy(perCol, collision.globalIndex());
+          for (const auto& track : tracks_per_coll) {
+            if (!track.hasITS() || !track.hasTPC()) { // apply only minimal cut
+              continue;
+            }
+            mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaEl();
+            mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.beta();
+            emtofs(collision.globalIndex(), track.globalIndex(), mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())], mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())]);
+          }
+        } // end of track loop
+      } // end of collision loop
+    }
+  }
+
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   std::vector<std::pair<int, int>> stored_trackIds;
-  Filter trackFilter = o2::aod::track::itsChi2NCl < maxchi2its && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true;
+  Filter trackFilter = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC) == true;
   using MyFilteredTracks = soa::Filtered<MyTracks>;
 
-  Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
-  Partition<MyFilteredTracks> negTracks = o2::aod::track::signed1Pt < 0.f;
+  Partition<MyTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
+  Partition<MyTracks> negTracks = o2::aod::track::signed1Pt < 0.f;
 
-  std::map<std::pair<int, int>, float> mapProbEl;               // map pair(collisionId, trackId) -> probaEl
   std::unordered_multimap<int, int> multiMapTracksPerCollision; // collisionId -> trackIds
+
+  std::unordered_map<int, double> mapCollisionTime;
+  std::unordered_map<int, double> mapCollisionTimeError;
+
+  std::map<std::pair<int, int>, float> mapProbaEl;               // map pair(collisionId, trackId) -> probaEl
+  std::map<std::pair<int, int>, float> mapTOFNsigmaReassociated; // map pair(collisionId, trackId) -> tof n sigma
+  std::map<std::pair<int, int>, float> mapTOFBetaReassociated;   // map pair(collisionId, trackId) -> tof beta
 
   // ---------- for data ----------
 
-  void processRec_SA(MyCollisions const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracks const& tracks)
+  void processRec_SA(MyCollisions const& collisions, aod::BCsWithTimestamps const& bcs, MyFilteredTracks const& tracks)
   {
     stored_trackIds.reserve(tracks.size());
+
+    initCCDB(bcs.iteratorAt(0));
+    mTOFResponse->processSetup(bcs.iteratorAt(0));
+
+    calculateTOFNSigmaWithReassociation<false>(collisions, bcs, tracks, nullptr);
 
     for (const auto& collision : collisions) {
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
@@ -622,14 +772,13 @@ struct skimmerPrimaryElectron {
 
       auto tracks_per_coll = tracks.sliceBy(perCol, collision.globalIndex());
       for (const auto& track : tracks_per_coll) {
-        float probaEl = 1.0;
+        fillMLPIDTable(collision, track);
         if (!checkTrack<false>(collision, track)) {
           continue;
         }
-        if (!isElectron(collision, track, probaEl)) {
+        if (!isElectron(collision, track)) {
           continue;
         }
-        mapProbEl[std::make_pair(collision.globalIndex(), track.globalIndex())] = probaEl;
         multiMapTracksPerCollision.insert(std::make_pair(collision.globalIndex(), track.globalIndex()));
       }
     } // end of collision loop
@@ -643,21 +792,38 @@ struct skimmerPrimaryElectron {
         auto range_electrons = multiMapTracksPerCollision.equal_range(collision.globalIndex());
         for (auto it = range_electrons.first; it != range_electrons.second; it++) {
           auto track = tracks.rawIteratorAt(it->second);
-          fillTrackTable<false>(collision, track, mapProbEl[std::make_pair(collision.globalIndex(), track.globalIndex())]);
+          fillTrackTable<false>(collision, track);
         }
       }
     } // end of collision loop
 
-    mapProbEl.clear();
+    mapProbaEl.clear();
     multiMapTracksPerCollision.clear();
     stored_trackIds.clear();
     stored_trackIds.shrink_to_fit();
+
+    mapCollisionTime.clear();
+    mapCollisionTimeError.clear();
+    mapTOFNsigmaReassociated.clear();
+    mapTOFBetaReassociated.clear();
   }
   PROCESS_SWITCH(skimmerPrimaryElectron, processRec_SA, "process reconstructed info only", true); // standalone
 
-  void processRec_TTCA(MyCollisions const& collisions, aod::BCsWithTimestamps const&, MyTracks const& tracks, aod::TrackAssoc const& trackIndices)
+  void processRec_TTCA(MyCollisions const& collisions, aod::BCsWithTimestamps const& bcs, MyTracks const& tracks, aod::TrackAssoc const& trackIndices)
   {
     stored_trackIds.reserve(tracks.size() * 2);
+
+    initCCDB(bcs.iteratorAt(0));
+    mTOFResponse->processSetup(bcs.iteratorAt(0));
+
+    for (const auto& track : tracks) {
+      if (mapCollisionTime.find(track.collisionId()) == mapCollisionTime.end()) {
+        // LOGF(info, "track.collisionId() = %d, track.tofEvTime() = %f, track.tofEvTimeErr() = %f", track.collisionId(), track.tofEvTime(), track.tofEvTimeErr());
+        mapCollisionTime[track.collisionId()] = track.tofEvTime();
+        mapCollisionTimeError[track.collisionId()] = track.tofEvTimeErr();
+      }
+    }
+    calculateTOFNSigmaWithReassociation<true>(collisions, bcs, tracks, trackIndices);
 
     for (const auto& collision : collisions) {
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
@@ -671,14 +837,13 @@ struct skimmerPrimaryElectron {
 
       for (const auto& trackId : trackIdsThisCollision) {
         auto track = trackId.template track_as<MyTracks>();
-        float probaEl = 1.0;
+        fillMLPIDTable(collision, track);
         if (!checkTrack<false>(collision, track)) {
           continue;
         }
-        if (!isElectron(collision, track, probaEl)) {
+        if (!isElectron(collision, track)) {
           continue;
         }
-        mapProbEl[std::make_pair(collision.globalIndex(), track.globalIndex())] = probaEl;
         multiMapTracksPerCollision.insert(std::make_pair(collision.globalIndex(), track.globalIndex()));
       }
     } // end of collision loop
@@ -692,21 +857,28 @@ struct skimmerPrimaryElectron {
         auto range_electrons = multiMapTracksPerCollision.equal_range(collision.globalIndex());
         for (auto it = range_electrons.first; it != range_electrons.second; it++) {
           auto track = tracks.rawIteratorAt(it->second);
-          fillTrackTable<false>(collision, track, mapProbEl[std::make_pair(collision.globalIndex(), track.globalIndex())]);
+          fillTrackTable<false>(collision, track);
         }
       }
     } // end of collision loop
 
-    mapProbEl.clear();
+    mapProbaEl.clear();
     multiMapTracksPerCollision.clear();
     stored_trackIds.clear();
     stored_trackIds.shrink_to_fit();
+    mapCollisionTime.clear();
+    mapCollisionTimeError.clear();
+    mapTOFNsigmaReassociated.clear();
+    mapTOFBetaReassociated.clear();
   }
   PROCESS_SWITCH(skimmerPrimaryElectron, processRec_TTCA, "process reconstructed info only", false); // with TTCA
 
-  void processRec_SA_SWT(MyCollisionsWithSWT const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracks const& tracks)
+  void processRec_SA_SWT(MyCollisionsWithSWT const& collisions, aod::BCsWithTimestamps const& bcs, MyFilteredTracks const& tracks)
   {
     stored_trackIds.reserve(tracks.size());
+    initCCDB(bcs.iteratorAt(0));
+    mTOFResponse->processSetup(bcs.iteratorAt(0));
+    calculateTOFNSigmaWithReassociation<false>(collisions, bcs, tracks, nullptr);
 
     for (const auto& collision : collisions) {
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
@@ -722,14 +894,13 @@ struct skimmerPrimaryElectron {
 
       auto tracks_per_coll = tracks.sliceBy(perCol, collision.globalIndex());
       for (const auto& track : tracks_per_coll) {
-        float probaEl = 1.0;
+        fillMLPIDTable(collision, track);
         if (!checkTrack<false>(collision, track)) {
           continue;
         }
-        if (!isElectron(collision, track, probaEl)) {
+        if (!isElectron(collision, track)) {
           continue;
         }
-        mapProbEl[std::make_pair(collision.globalIndex(), track.globalIndex())] = probaEl;
         multiMapTracksPerCollision.insert(std::make_pair(collision.globalIndex(), track.globalIndex()));
       }
 
@@ -744,21 +915,35 @@ struct skimmerPrimaryElectron {
         auto range_electrons = multiMapTracksPerCollision.equal_range(collision.globalIndex());
         for (auto it = range_electrons.first; it != range_electrons.second; it++) {
           auto track = tracks.rawIteratorAt(it->second);
-          fillTrackTable<false>(collision, track, mapProbEl[std::make_pair(collision.globalIndex(), track.globalIndex())]);
+          fillTrackTable<false>(collision, track);
         }
       }
     } // end of collision loop
 
-    mapProbEl.clear();
+    mapProbaEl.clear();
     multiMapTracksPerCollision.clear();
     stored_trackIds.clear();
     stored_trackIds.shrink_to_fit();
+    mapCollisionTime.clear();
+    mapCollisionTimeError.clear();
+    mapTOFNsigmaReassociated.clear();
+    mapTOFBetaReassociated.clear();
   }
   PROCESS_SWITCH(skimmerPrimaryElectron, processRec_SA_SWT, "process reconstructed info only", false); // standalone with swt
 
-  void processRec_TTCA_SWT(MyCollisionsWithSWT const& collisions, aod::BCsWithTimestamps const&, MyTracks const& tracks, aod::TrackAssoc const& trackIndices)
+  void processRec_TTCA_SWT(MyCollisionsWithSWT const& collisions, aod::BCsWithTimestamps const& bcs, MyTracks const& tracks, aod::TrackAssoc const& trackIndices)
   {
     stored_trackIds.reserve(tracks.size() * 2);
+    initCCDB(bcs.iteratorAt(0));
+    mTOFResponse->processSetup(bcs.iteratorAt(0));
+    for (const auto& track : tracks) {
+      if (mapCollisionTime.find(track.collisionId()) == mapCollisionTime.end()) {
+        // LOGF(info, "track.collisionId() = %d, track.tofEvTime() = %f, track.tofEvTimeErr() = %f", track.collisionId(), track.tofEvTime(), track.tofEvTimeErr());
+        mapCollisionTime[track.collisionId()] = track.tofEvTime();
+        mapCollisionTimeError[track.collisionId()] = track.tofEvTimeErr();
+      }
+    }
+    calculateTOFNSigmaWithReassociation<true>(collisions, bcs, tracks, trackIndices);
 
     for (const auto& collision : collisions) {
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
@@ -775,14 +960,13 @@ struct skimmerPrimaryElectron {
 
       for (const auto& trackId : trackIdsThisCollision) {
         auto track = trackId.template track_as<MyTracks>();
-        float probaEl = 1.0;
+        fillMLPIDTable(collision, track);
         if (!checkTrack<false>(collision, track)) {
           continue;
         }
-        if (!isElectron(collision, track, probaEl)) {
+        if (!isElectron(collision, track)) {
           continue;
         }
-        mapProbEl[std::make_pair(collision.globalIndex(), track.globalIndex())] = probaEl;
         multiMapTracksPerCollision.insert(std::make_pair(collision.globalIndex(), track.globalIndex()));
       }
     } // end of collision loop
@@ -796,26 +980,33 @@ struct skimmerPrimaryElectron {
         auto range_electrons = multiMapTracksPerCollision.equal_range(collision.globalIndex());
         for (auto it = range_electrons.first; it != range_electrons.second; it++) {
           auto track = tracks.rawIteratorAt(it->second);
-          fillTrackTable<false>(collision, track, mapProbEl[std::make_pair(collision.globalIndex(), track.globalIndex())]);
+          fillTrackTable<false>(collision, track);
         }
       }
     } // end of collision loop
 
-    mapProbEl.clear();
+    mapProbaEl.clear();
     multiMapTracksPerCollision.clear();
     stored_trackIds.clear();
     stored_trackIds.shrink_to_fit();
+    mapCollisionTime.clear();
+    mapCollisionTimeError.clear();
+    mapTOFNsigmaReassociated.clear();
+    mapTOFBetaReassociated.clear();
   }
   PROCESS_SWITCH(skimmerPrimaryElectron, processRec_TTCA_SWT, "process reconstructed info only", false); // with TTCA with swt
 
   // ---------- for MC ----------
 
   using MyFilteredTracksMC = soa::Filtered<MyTracksMC>;
-  Partition<MyFilteredTracksMC> posTracksMC = o2::aod::track::signed1Pt > 0.f;
-  Partition<MyFilteredTracksMC> negTracksMC = o2::aod::track::signed1Pt < 0.f;
-  void processMC_SA(soa::Join<MyCollisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const&, aod::BCsWithTimestamps const&, MyFilteredTracksMC const& tracks, aod::McParticles const&)
+  Partition<MyTracksMC> posTracksMC = o2::aod::track::signed1Pt > 0.f;
+  Partition<MyTracksMC> negTracksMC = o2::aod::track::signed1Pt < 0.f;
+  void processMC_SA(soa::Join<MyCollisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const&, aod::BCsWithTimestamps const& bcs, MyFilteredTracksMC const& tracks, aod::McParticles const&)
   {
     stored_trackIds.reserve(tracks.size());
+    initCCDB(bcs.iteratorAt(0));
+    mTOFResponse->processSetup(bcs.iteratorAt(0));
+    calculateTOFNSigmaWithReassociation<false>(collisions, bcs, tracks, nullptr);
 
     for (const auto& collision : collisions) {
       if (!collision.has_mcCollision()) {
@@ -830,14 +1021,13 @@ struct skimmerPrimaryElectron {
 
       auto tracks_per_coll = tracks.sliceBy(perCol, collision.globalIndex());
       for (const auto& track : tracks_per_coll) {
-        float probaEl = 1.0;
+        fillMLPIDTable(collision, track);
         if (!checkTrack<true>(collision, track)) {
           continue;
         }
-        if (!isElectron(collision, track, probaEl)) {
+        if (!isElectron(collision, track)) {
           continue;
         }
-        mapProbEl[std::make_pair(collision.globalIndex(), track.globalIndex())] = probaEl;
         multiMapTracksPerCollision.insert(std::make_pair(collision.globalIndex(), track.globalIndex()));
       }
     } // end of collision loop
@@ -851,21 +1041,35 @@ struct skimmerPrimaryElectron {
         auto range_electrons = multiMapTracksPerCollision.equal_range(collision.globalIndex());
         for (auto it = range_electrons.first; it != range_electrons.second; it++) {
           auto track = tracks.rawIteratorAt(it->second);
-          fillTrackTable<true>(collision, track, mapProbEl[std::make_pair(collision.globalIndex(), track.globalIndex())]);
+          fillTrackTable<true>(collision, track);
         }
       }
     } // end of collision loop
 
-    mapProbEl.clear();
+    mapProbaEl.clear();
     multiMapTracksPerCollision.clear();
     stored_trackIds.clear();
     stored_trackIds.shrink_to_fit();
+    mapCollisionTime.clear();
+    mapCollisionTimeError.clear();
+    mapTOFNsigmaReassociated.clear();
+    mapTOFBetaReassociated.clear();
   }
   PROCESS_SWITCH(skimmerPrimaryElectron, processMC_SA, "process reconstructed and MC info ", false);
 
-  void processMC_TTCA(soa::Join<MyCollisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const&, aod::BCsWithTimestamps const&, MyTracksMC const& tracks, aod::TrackAssoc const& trackIndices, aod::McParticles const&)
+  void processMC_TTCA(soa::Join<MyCollisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const&, aod::BCsWithTimestamps const& bcs, MyTracksMC const& tracks, aod::TrackAssoc const& trackIndices, aod::McParticles const&)
   {
     stored_trackIds.reserve(tracks.size() * 2);
+    initCCDB(bcs.iteratorAt(0));
+    mTOFResponse->processSetup(bcs.iteratorAt(0));
+    for (const auto& track : tracks) {
+      if (mapCollisionTime.find(track.collisionId()) == mapCollisionTime.end()) {
+        // LOGF(info, "track.collisionId() = %d, track.tofEvTime() = %f, track.tofEvTimeErr() = %f", track.collisionId(), track.tofEvTime(), track.tofEvTimeErr());
+        mapCollisionTime[track.collisionId()] = track.tofEvTime();
+        mapCollisionTimeError[track.collisionId()] = track.tofEvTimeErr();
+      }
+    }
+    calculateTOFNSigmaWithReassociation<true>(collisions, bcs, tracks, trackIndices);
 
     for (const auto& collision : collisions) {
       if (!collision.has_mcCollision()) {
@@ -882,14 +1086,13 @@ struct skimmerPrimaryElectron {
 
       for (const auto& trackId : trackIdsThisCollision) {
         auto track = trackId.template track_as<MyTracksMC>();
-        float probaEl = 1.0;
+        fillMLPIDTable(collision, track);
         if (!checkTrack<true>(collision, track)) {
           continue;
         }
-        if (!isElectron(collision, track, probaEl)) {
+        if (!isElectron(collision, track)) {
           continue;
         }
-        mapProbEl[std::make_pair(collision.globalIndex(), track.globalIndex())] = probaEl;
         multiMapTracksPerCollision.insert(std::make_pair(collision.globalIndex(), track.globalIndex()));
       }
     } // end of collision loop
@@ -903,15 +1106,19 @@ struct skimmerPrimaryElectron {
         auto range_electrons = multiMapTracksPerCollision.equal_range(collision.globalIndex());
         for (auto it = range_electrons.first; it != range_electrons.second; it++) {
           auto track = tracks.rawIteratorAt(it->second);
-          fillTrackTable<true>(collision, track, mapProbEl[std::make_pair(collision.globalIndex(), track.globalIndex())]);
+          fillTrackTable<true>(collision, track);
         }
       }
     } // end of collision loop
 
-    mapProbEl.clear();
+    mapProbaEl.clear();
     multiMapTracksPerCollision.clear();
     stored_trackIds.clear();
     stored_trackIds.shrink_to_fit();
+    mapCollisionTime.clear();
+    mapCollisionTimeError.clear();
+    mapTOFNsigmaReassociated.clear();
+    mapTOFBetaReassociated.clear();
   }
   PROCESS_SWITCH(skimmerPrimaryElectron, processMC_TTCA, "process reconstructed info only", false); // with TTCA
 };
@@ -937,23 +1144,38 @@ struct prefilterPrimaryElectron {
   Configurable<bool> fillQAHistogram{"fillQAHistogram", false, "flag to fill QA histograms"};
   Configurable<float> max_dcaxy{"max_dcaxy", 1.0, "DCAxy To PV for loose track sample"};
   Configurable<float> max_dcaz{"max_dcaz", 1.0, "DCAz To PV for loose track sample"};
-  Configurable<float> minpt{"minpt", 0.1, "min pt for ITS-TPC track"};
-  Configurable<float> maxeta{"maxeta", 1.2, "eta acceptance for loose track sample"};
+  Configurable<float> minpt{"minpt", 0.01, "min pt for ITS-TPC track"};
+  Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance for loose track sample"};
   Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"};
-  Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
-  Configurable<float> max_frac_shared_clusters_tpc{"max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
+  Configurable<int> mincrossedrows{"mincrossedrows", 40, "min crossed rows"};
+  Configurable<float> max_frac_shared_clusters_tpc{"max_frac_shared_clusters_tpc", 0.7f, "max fraction of shared clusters in TPC"};
   Configurable<float> min_tpc_cr_findable_ratio{"min_tpc_cr_findable_ratio", 0.8, "min. TPC Ncr/Nf ratio"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max chi2/NclsTPC"};
   Configurable<float> maxchi2its{"maxchi2its", 36.0, "max chi2/NclsITS"};
-  Configurable<int> min_ncluster_its{"min_ncluster_its", 4, "min ncluster its"};
+  Configurable<int> min_ncluster_its{"min_ncluster_its", 2, "min ncluster its"};
   Configurable<int> min_ncluster_itsib{"min_ncluster_itsib", 1, "min ncluster itsib"};
   Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
   Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 3.0, "max. TPC n sigma for electron inclusion"};
+  Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", 3.0, "max. TOF n sigma for electron inclusion"}; // TOFif
+  Configurable<float> maxTPCNsigmaPi{"maxTPCNsigmaPi", 0, "max. TPC n sigma for pion exclusion"};
+  Configurable<float> minTPCNsigmaPi{"minTPCNsigmaPi", 0, "min. TPC n sigma for pion exclusion"};
+  Configurable<float> maxTPCNsigmaKa{"maxTPCNsigmaKa", 0, "max. TPC n sigma for kaon exclusion"};
+  Configurable<float> minTPCNsigmaKa{"minTPCNsigmaKa", 0, "min. TPC n sigma for kaon exclusion"};
+  Configurable<float> maxTPCNsigmaPr{"maxTPCNsigmaPr", 0, "max. TPC n sigma for proton exclusion"};
+  Configurable<float> minTPCNsigmaPr{"minTPCNsigmaPr", 0, "min. TPC n sigma for proton exclusion"};
+  Configurable<float> min_pin_for_pion_rejection{"min_pin_for_pion_rejection", 0.0, "pion rejection is applied above this pin"}; // this is used only in TOFreq
+  Configurable<float> max_pin_for_pion_rejection{"max_pin_for_pion_rejection", 0.5, "pion rejection is applied below this pin"};
   Configurable<float> slope{"slope", 0.0185, "slope for m vs. phiv"};
   Configurable<float> intercept{"intercept", -0.0280, "intercept for m vs. phiv"};
-  Configurable<bool> includeITSsa{"includeITSsa", false, "Flag to include ITSsa tracks"};
   Configurable<float> maxMeanITSClusterSize{"maxMeanITSClusterSize", 16, "max <ITS cluster size> x cos(lambda)"};
+  // Configurable<bool> useTOFNSigmaDeltaBC{"useTOFNSigmaDeltaBC", false, "Flag to shift delta BC for TOF n sigma (only with TTCA)"};
 
+  Configurable<bool> usePIDML{"usePIDML", false, "Flag to use PID ML"};
+  Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.15, 0.2, 0.25, 0.4, 0.8, 1.6, 2.0, 20}, "Bin limits for ML application"};
+  Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.85, 0.85, 0.6, 0.6, 0.7, 0.7, 0.6, 0.6}, "ML cuts per bin"};
+  Configurable<std::string> nameBinningFeature{"nameBinningFeature", "tpcInnerParam", "Names of ML model binning feature"};
+
+  o2::analysis::MlResponseO2Track<float> mlResponseSingleTrack;
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   const std::vector<float> max_mee_vec{0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.14};
 
@@ -966,7 +1188,7 @@ struct prefilterPrimaryElectron {
   const o2::dataformats::MeanVertexObject* mMeanVtx = nullptr;
   o2::base::MatLayerCylSet* lut = nullptr;
 
-  void init(InitContext&)
+  void init(InitContext& initContext)
   {
     mRunNumber = 0;
     d_bz = 0;
@@ -979,13 +1201,52 @@ struct prefilterPrimaryElectron {
     if (!doprocessDummy && fillQAHistogram) {
       addHistograms();
     }
+
+    // BDT files are inherited from skimmer-primary-electron task above.
+    getTaskOptionValue(initContext, "skimmer-primary-electron", "usePIDML", usePIDML.value, true);
+    // getTaskOptionValue(initContext, "skimmer-primary-electron", "useTOFNSigmaDeltaBC", useTOFNSigmaDeltaBC.value, true);
+
+    if (usePIDML) {
+      getTaskOptionValue(initContext, "skimmer-primary-electron", "binsMl.value", binsMl.value, true);
+      // getTaskOptionValue(initContext, "skimmer-primary-electron", "cutsMl.value", cutsMl.value, true);
+      getTaskOptionValue(initContext, "skimmer-primary-electron", "nameBinningFeature", nameBinningFeature.value, true);
+    }
+
+    if (usePIDML) {
+      static constexpr int nClassesMl = 2;
+      const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutSmaller};
+      const std::vector<std::string> labelsClasses = {"Background", "Signal"};
+      const uint32_t nBinsMl = binsMl.value.size() - 1;
+      const std::vector<std::string> labelsBins(nBinsMl, "bin");
+      double cutsMlArr[nBinsMl][nClassesMl];
+      for (uint32_t i = 0; i < nBinsMl; i++) {
+        cutsMlArr[i][0] = 0.0;
+        cutsMlArr[i][1] = cutsMl.value[i];
+      }
+      o2::framework::LabeledArray<double> cutsMl = {cutsMlArr[0], nBinsMl, nClassesMl, labelsBins, labelsClasses};
+
+      mlResponseSingleTrack.configure(binsMl.value, cutsMl, cutDirMl, nClassesMl);
+
+      // if (loadModelsFromCCDB) {
+      //   ccdbApi.init(ccdburl);
+      //   mlResponseSingleTrack.setModelPathsCCDB(onnxFileNames.value, ccdbApi, onnxPathsCCDB.value, timestampCCDB.value);
+      // } else {
+      //   mlResponseSingleTrack.setModelPathsLocal(onnxFileNames.value);
+      // }
+      // mlResponseSingleTrack.cacheInputFeaturesIndices(namesInputFeatures);
+      mlResponseSingleTrack.cacheBinningIndex(nameBinningFeature);
+      // mlResponseSingleTrack.init(enableOptimizations.value);
+      // mlResponseSingleTrack.useReassociatedTOF(useTOFNSigmaDeltaBC.value);
+    } // end of PID ML
   }
 
   void addHistograms()
   {
     fRegistry.add("Track/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
-    fRegistry.add("Track/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{90, 0, 2 * M_PI}, {80, -2.0f, 2.0f}}, false);
+    fRegistry.add("Track/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{90, 0, 2 * M_PI}, {40, -1.0f, 1.0f}}, false);
     fRegistry.add("Track/hTPCNsigmaEl", "loose track TPC PID", kTH2F, {{1000, 0.f, 10}, {100, -5, +5}});
+    fRegistry.add("Track/hTOFNsigmaEl", "loose track TOF PID", kTH2F, {{1000, 0.f, 10}, {100, -5, +5}});
+    fRegistry.add("Track/hProbElBDT", "BDT score", kTH2F, {{1000, 0.f, 10}, {100, 0, 1}});
     fRegistry.add("Pair/before/uls/hMvsPt", "mass vs. pT;m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", kTH2F, {{500, 0, 0.5}, {100, 0, 1}});
     fRegistry.add("Pair/before/uls/hMvsPhiV", "mass vs. phiv;#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0.f, M_PI}, {100, 0, 0.1}});
     fRegistry.addClone("Pair/before/uls/", "Pair/before/lspp/");
@@ -1053,7 +1314,7 @@ struct prefilterPrimaryElectron {
   template <typename TCollision, typename TTrack>
   bool checkTrack(TCollision const& collision, TTrack const& track)
   {
-    if (!track.hasITS()) {
+    if (!track.hasITS() || !track.hasTPC()) {
       return false;
     }
     if (track.itsChi2NCl() > maxchi2its) {
@@ -1066,29 +1327,24 @@ struct prefilterPrimaryElectron {
       return false;
     }
 
-    if (!includeITSsa && (!track.hasITS() || !track.hasTPC())) {
+    // if (track.tpcNSigmaEl() < minTPCNsigmaEl || maxTPCNsigmaEl < track.tpcNSigmaEl()) {
+    //   return false;
+    // }
+
+    if (track.tpcNClsFound() < min_ncluster_tpc) {
       return false;
     }
-
-    if (track.hasTPC()) {
-      if (track.tpcNSigmaEl() < minTPCNsigmaEl || maxTPCNsigmaEl < track.tpcNSigmaEl()) {
-        return false;
-      }
-      if (track.tpcNClsFound() < min_ncluster_tpc) {
-        return false;
-      }
-      if (track.tpcNClsCrossedRows() < mincrossedrows) {
-        return false;
-      }
-      if (track.tpcCrossedRowsOverFindableCls() < min_tpc_cr_findable_ratio) {
-        return false;
-      }
-      if (track.tpcFractionSharedCls() > max_frac_shared_clusters_tpc) {
-        return false;
-      }
-      if (track.tpcChi2NCl() > maxchi2tpc) {
-        return false;
-      }
+    if (track.tpcNClsCrossedRows() < mincrossedrows) {
+      return false;
+    }
+    if (track.tpcCrossedRowsOverFindableCls() < min_tpc_cr_findable_ratio) {
+      return false;
+    }
+    if (track.tpcFractionSharedCls() > max_frac_shared_clusters_tpc) {
+      return false;
+    }
+    if (track.tpcChi2NCl() > maxchi2tpc) {
+      return false;
     }
 
     o2::dataformats::DCA mDcaInfoCov;
@@ -1126,6 +1382,87 @@ struct prefilterPrimaryElectron {
     }
 
     return true;
+  }
+
+  template <typename TCollision, typename TTrack>
+  bool isElectron(TCollision const& collision, TTrack const& track)
+  {
+    if (usePIDML) {
+      if (isElectron_TOFif(track, collision)) {
+        auto trackParCov = getTrackParCov(track);
+        // trackParCov.setPID(o2::track::PID::Electron);
+        // o2::dataformats::DCA mDcaInfoCov;
+        // mDcaInfoCov.set(999, 999, 999, 999, 999);
+        // mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+        // mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+        // bool isPropOK = o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+        // if (!isPropOK) {
+        //   probaEl = 0.0;
+        //   return false;
+        // }
+        // std::vector<float> inputFeatures = mlResponseSingleTrack.getInputFeatures(track, trackParCov, collision, mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())], mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())]);
+        float binningFeature = mlResponseSingleTrack.getBinningFeature(track, trackParCov, collision, mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())], mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())]);
+
+        int pbin = lower_bound(binsMl.value.begin(), binsMl.value.end(), binningFeature) - binsMl.value.begin() - 1;
+        if (pbin < 0) {
+          pbin = 0;
+        } else if (static_cast<int>(binsMl.value.size()) - 2 < pbin) {
+          pbin = static_cast<int>(binsMl.value.size()) - 2;
+        }
+        // LOGF(info, "track.tpcInnerParam() = %f (GeV/c), pbin = %d", track.tpcInnerParam(), pbin);
+
+        return mapProbaEl[std::make_pair(collision.globalIndex(), track.globalIndex())] > cutsMl.value[pbin];
+      } else {
+        return false;
+      }
+    } else {
+      return isElectron_TPChadrej(track, collision) || isElectron_TOFreq(track, collision);
+    }
+  }
+
+  template <typename TTrack, typename TCollision>
+  bool isElectron_TOFif(TTrack const& track, TCollision const& collision)
+  {
+    // collisionId must be collisionId after reassociation.
+    // track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCascade.globalBC())
+    float tofNSigmaEl = mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
+    bool is_EL_TPC = minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl;
+    bool is_EL_TOF = track.hasTOF() ? (std::fabs(tofNSigmaEl) < maxTOFNsigmaEl) : true; // TOFif
+    return is_EL_TPC && is_EL_TOF;
+  }
+
+  template <typename TTrack, typename TCollision>
+  bool isElectron_TPChadrej(TTrack const& track, TCollision const& collision)
+  {
+    float tofNSigmaEl = mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
+
+    if (track.tpcNSigmaEl() < minTPCNsigmaEl || maxTPCNsigmaEl < track.tpcNSigmaEl()) {
+      return false;
+    }
+    if (minTPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < maxTPCNsigmaPi && track.tpcInnerParam() < max_pin_for_pion_rejection) {
+      return false;
+    }
+    if (minTPCNsigmaKa < track.tpcNSigmaKa() && track.tpcNSigmaKa() < maxTPCNsigmaKa) {
+      return false;
+    }
+    if (minTPCNsigmaPr < track.tpcNSigmaPr() && track.tpcNSigmaPr() < maxTPCNsigmaPr) {
+      return false;
+    }
+    if (track.hasTOF() && (maxTOFNsigmaEl < std::fabs(tofNSigmaEl))) {
+      return false;
+    }
+    return true;
+  }
+
+  template <typename TTrack, typename TCollision>
+  bool isElectron_TOFreq(TTrack const& track, TCollision const& collision)
+  {
+    float tofNSigmaEl = mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
+
+    if (minTPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < maxTPCNsigmaPi && (min_pin_for_pion_rejection < track.tpcInnerParam() && track.tpcInnerParam() < max_pin_for_pion_rejection)) {
+      return false;
+    }
+    return minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl && std::fabs(tofNSigmaEl) < maxTOFNsigmaEl;
   }
 
   template <int loose_track_sign, typename TCollision, typename TTrack1, typename TTrack2>
@@ -1175,9 +1512,13 @@ struct prefilterPrimaryElectron {
     }
   }
 
+  std::map<std::pair<int, int>, float> mapProbaEl;               // map pair(collisionId, trackId) -> probaEl
+  std::map<std::pair<int, int>, float> mapTOFNsigmaReassociated; // map pair(collisionId, trackId) -> tof n sigma
+  std::map<std::pair<int, int>, float> mapTOFBetaReassociated;   // map pair(collisionId, trackId) -> tof beta
+
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
 
-  Filter trackFilter = o2::aod::track::itsChi2NCl < maxchi2its && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true;
+  Filter trackFilter = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC) == true;
   using MyFilteredTracks = soa::Filtered<MyTracks>;
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
   Partition<MyFilteredTracks> negTracks = o2::aod::track::signed1Pt < 0.f;
@@ -1185,8 +1526,16 @@ struct prefilterPrimaryElectron {
   Partition<aod::EMPrimaryElectrons> positrons = o2::aod::emprimaryelectron::sign > int8_t(0);
   Partition<aod::EMPrimaryElectrons> electrons = o2::aod::emprimaryelectron::sign < int8_t(0);
 
-  void processPrefilter_TTCA(MyCollisions const& collisions, aod::BCsWithTimestamps const&, MyTracks const&, aod::EMPrimaryElectrons const& primaryelectrons, aod::TrackAssoc const& trackIndices)
+  void processPrefilter_TTCA(MyCollisions const& collisions, aod::BCsWithTimestamps const&, MyTracks const&, aod::EMPrimaryElectrons const& primaryelectrons, aod::TrackAssoc const& trackIndices, aod::EMTOFNSigmas const& emtofs, aod::EMMLPIDs const& emmlpids)
   {
+    for (const auto& emtof : emtofs) {
+      mapTOFNsigmaReassociated[std::make_pair(emtof.collisionId(), emtof.trackId())] = emtof.tofNSigmaElRecalculated();
+      mapTOFBetaReassociated[std::make_pair(emtof.collisionId(), emtof.trackId())] = emtof.betaRecalculated();
+    }
+    for (const auto& emmlpid : emmlpids) {
+      mapProbaEl[std::make_pair(emmlpid.collisionId(), emmlpid.trackId())] = emmlpid.bdtScore();
+    }
+
     std::unordered_map<int, uint8_t> pfb_map; // map track.globalIndex -> prefilter bit
 
     for (const auto& collision : collisions) {
@@ -1210,9 +1559,15 @@ struct prefilterPrimaryElectron {
         if (!checkTrack(collision, track)) {
           continue;
         }
+        if (!isElectron(collision, track)) {
+          continue;
+        }
         if (fillQAHistogram) {
           fRegistry.fill(HIST("Track/hPt"), track.pt());
           fRegistry.fill(HIST("Track/hEtaPhi"), track.phi(), track.eta());
+          fRegistry.fill(HIST("Track/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
+          fRegistry.fill(HIST("Track/hTOFNsigmaEl"), track.tpcInnerParam(), mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())]);
+          fRegistry.fill(HIST("Track/hProbElBDT"), track.tpcInnerParam(), mapProbaEl[std::make_pair(collision.globalIndex(), track.globalIndex())]);
         }
         if (track.sign() > 0) {
           posTracks_per_coll.emplace_back(track);
@@ -1250,11 +1605,6 @@ struct prefilterPrimaryElectron {
           if (fillQAHistogram) {
             fRegistry.fill(HIST("Pair/before/uls/hMvsPhiV"), phiv, v12.M());
             fRegistry.fill(HIST("Pair/before/uls/hMvsPt"), v12.M(), v12.Pt());
-          }
-          if (v12.M() < max_mee_vec.at(static_cast<int>(max_mee_vec.size()) - 1)) {
-            if (fillQAHistogram) {
-              fRegistry.fill(HIST("Track/hTPCNsigmaEl"), ele.tpcInnerParam(), ele.tpcNSigmaEl());
-            }
           }
           for (int i = 0; i < static_cast<int>(max_mee_vec.size()); i++) {
             if (v12.M() < max_mee_vec.at(i)) {
@@ -1297,11 +1647,6 @@ struct prefilterPrimaryElectron {
           if (fillQAHistogram) {
             fRegistry.fill(HIST("Pair/before/uls/hMvsPhiV"), phiv, v12.M());
             fRegistry.fill(HIST("Pair/before/uls/hMvsPt"), v12.M(), v12.Pt());
-          }
-          if (v12.M() < max_mee_vec.at(static_cast<int>(max_mee_vec.size()) - 1)) {
-            if (fillQAHistogram) {
-              fRegistry.fill(HIST("Track/hTPCNsigmaEl"), pos.tpcInnerParam(), pos.tpcNSigmaEl());
-            }
           }
           for (int i = 0; i < static_cast<int>(max_mee_vec.size()); i++) {
             if (v12.M() < max_mee_vec.at(i)) {
@@ -1416,8 +1761,16 @@ struct prefilterPrimaryElectron {
   }
   PROCESS_SWITCH(prefilterPrimaryElectron, processPrefilter_TTCA, "process prefilter with TTCA", false);
 
-  void processPrefilter_SA(MyCollisions const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracks const&, aod::EMPrimaryElectrons const& primaryelectrons)
+  void processPrefilter_SA(MyCollisions const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracks const&, aod::EMPrimaryElectrons const& primaryelectrons, aod::EMTOFNSigmas const& emtofs, aod::EMMLPIDs const& emmlpids)
   {
+    for (const auto& emtof : emtofs) {
+      mapTOFNsigmaReassociated[std::make_pair(emtof.collisionId(), emtof.trackId())] = emtof.tofNSigmaElRecalculated();
+      mapTOFBetaReassociated[std::make_pair(emtof.collisionId(), emtof.trackId())] = emtof.betaRecalculated();
+    }
+    for (const auto& emmlpid : emmlpids) {
+      mapProbaEl[std::make_pair(emmlpid.collisionId(), emmlpid.trackId())] = emmlpid.bdtScore();
+    }
+
     std::unordered_map<int, uint8_t> pfb_map; // map track.globalIndex -> prefilter bit
 
     for (const auto& collision : collisions) {
@@ -1437,24 +1790,39 @@ struct prefilterPrimaryElectron {
         if (!checkTrack(collision, pos)) { // track cut is applied to loose sample
           continue;
         }
+        if (!isElectron(collision, pos)) {
+          continue;
+        }
         if (fillQAHistogram) {
           fRegistry.fill(HIST("Track/hPt"), pos.pt());
           fRegistry.fill(HIST("Track/hEtaPhi"), pos.phi(), pos.eta());
+          fRegistry.fill(HIST("Track/hTPCNsigmaEl"), pos.tpcInnerParam(), pos.tpcNSigmaEl());
+          fRegistry.fill(HIST("Track/hTOFNsigmaEl"), pos.tpcInnerParam(), mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), pos.globalIndex())]);
+          fRegistry.fill(HIST("Track/hProbElBDT"), pos.tpcInnerParam(), mapProbaEl[std::make_pair(collision.globalIndex(), pos.globalIndex())]);
         }
       }
       for (const auto& neg : negTracks_per_coll) {
         if (!checkTrack(collision, neg)) { // track cut is applied to loose sample
           continue;
         }
+        if (!isElectron(collision, neg)) {
+          continue;
+        }
         if (fillQAHistogram) {
           fRegistry.fill(HIST("Track/hPt"), neg.pt());
           fRegistry.fill(HIST("Track/hEtaPhi"), neg.phi(), neg.eta());
+          fRegistry.fill(HIST("Track/hTPCNsigmaEl"), neg.tpcInnerParam(), neg.tpcNSigmaEl());
+          fRegistry.fill(HIST("Track/hTOFNsigmaEl"), neg.tpcInnerParam(), mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), neg.globalIndex())]);
+          fRegistry.fill(HIST("Track/hProbElBDT"), neg.tpcInnerParam(), mapProbaEl[std::make_pair(collision.globalIndex(), neg.globalIndex())]);
         }
       }
 
       for (const auto& [ele, empos] : combinations(CombinationsFullIndexPolicy(negTracks_per_coll, positrons_per_coll))) {
         // auto pos = tracks.rawIteratorAt(empos.trackId()); // use rawIterator, if the table is filtered.
         if (!checkTrack(collision, ele)) { // track cut is applied to loose sample
+          continue;
+        }
+        if (!isElectron(collision, ele)) {
           continue;
         }
         if (empos.trackId() == ele.globalIndex()) {
@@ -1468,11 +1836,6 @@ struct prefilterPrimaryElectron {
         if (fillQAHistogram) {
           fRegistry.fill(HIST("Pair/before/uls/hMvsPhiV"), phiv, v12.M());
           fRegistry.fill(HIST("Pair/before/uls/hMvsPt"), v12.M(), v12.Pt());
-        }
-        if (v12.M() < max_mee_vec.at(static_cast<int>(max_mee_vec.size()) - 1)) {
-          if (fillQAHistogram) {
-            fRegistry.fill(HIST("Track/hTPCNsigmaEl"), ele.tpcInnerParam(), ele.tpcNSigmaEl());
-          }
         }
         for (int i = 0; i < static_cast<int>(max_mee_vec.size()); i++) {
           if (v12.M() < max_mee_vec.at(i)) {
@@ -1491,6 +1854,9 @@ struct prefilterPrimaryElectron {
         if (!checkTrack(collision, pos)) { // track cut is applied to loose sample
           continue;
         }
+        if (!isElectron(collision, pos)) {
+          continue;
+        }
         if (emele.trackId() == pos.globalIndex()) {
           continue;
         }
@@ -1502,11 +1868,6 @@ struct prefilterPrimaryElectron {
         if (fillQAHistogram) {
           fRegistry.fill(HIST("Pair/before/uls/hMvsPhiV"), phiv, v12.M());
           fRegistry.fill(HIST("Pair/before/uls/hMvsPt"), v12.M(), v12.Pt());
-        }
-        if (v12.M() < max_mee_vec.at(static_cast<int>(max_mee_vec.size()) - 1)) {
-          if (fillQAHistogram) {
-            fRegistry.fill(HIST("Track/hTPCNsigmaEl"), pos.tpcInnerParam(), pos.tpcNSigmaEl());
-          }
         }
         for (int i = 0; i < static_cast<int>(max_mee_vec.size()); i++) {
           if (v12.M() < max_mee_vec.at(i)) {
@@ -1523,6 +1884,9 @@ struct prefilterPrimaryElectron {
       for (const auto& [pos, empos] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, positrons_per_coll))) {
         // auto pos = tracks.rawIteratorAt(empos.trackId()); // use rawIterator, if the table is filtered.
         if (!checkTrack(collision, pos)) { // track cut is applied to loose sample
+          continue;
+        }
+        if (!isElectron(collision, pos)) {
           continue;
         }
         if (empos.trackId() == pos.globalIndex()) {
@@ -1542,6 +1906,9 @@ struct prefilterPrimaryElectron {
       for (const auto& [ele, emele] : combinations(CombinationsFullIndexPolicy(negTracks_per_coll, electrons_per_coll))) {
         // auto ele = tracks.rawIteratorAt(emele.trackId()); // use rawIterator, if the table is filtered.
         if (!checkTrack(collision, ele)) { // track cut is applied to loose sample
+          continue;
+        }
+        if (!isElectron(collision, ele)) {
           continue;
         }
         if (emele.trackId() == ele.globalIndex()) {
@@ -1624,6 +1991,7 @@ struct associateAmbiguousElectron {
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
+  o2::pid::tof::TOFResponseImpl::metadataInfo.initMetadata(cfgc);
   return WorkflowSpec{
     adaptAnalysisTask<skimmerPrimaryElectron>(cfgc, TaskName{"skimmer-primary-electron"}),
     adaptAnalysisTask<prefilterPrimaryElectron>(cfgc, TaskName{"prefilter-primary-electron"}),
