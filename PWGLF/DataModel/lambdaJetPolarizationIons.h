@@ -17,32 +17,28 @@
 //    cicero.domenico.muncinelli@cern.ch
 //
 
-#ifndef PWGLF_DATAMODEL_LAMBDAJETPOL_H_
-#define PWGLF_DATAMODEL_LAMBDAJETPOL_H_
+#ifndef PWGLF_DATAMODEL_LAMBDAJETPOLARIZATIONIONS_H_
+#define PWGLF_DATAMODEL_LAMBDAJETPOLARIZATIONIONS_H_
 
 #include <Framework/ASoA.h>
+#include <cmath>
+#include <cstdint>
 
 namespace o2::aod
 {
 
 namespace lambdajetpol
 {
-
-// DECLARE_SOA_COLUMN(CollIdx, collIdx, uint64_t); // Using a regular SOA column instead of an index column for convenience
 // Collision information:
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
 DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
-DECLARE_SOA_COLUMN(CentFT0CVariant1, centFT0CVariant1, float);
-DECLARE_SOA_COLUMN(CentMFT, centMFT, float);
-DECLARE_SOA_COLUMN(CentNGlobal, centNGlobal, float);
 DECLARE_SOA_COLUMN(CentFV0A, centFV0A, float);
 
 // Jet (and jet proxies) information:
 DECLARE_SOA_COLUMN(JetPt, jetPt, float);
 DECLARE_SOA_COLUMN(JetEta, jetEta, float);
 DECLARE_SOA_COLUMN(JetPhi, jetPhi, float);
-DECLARE_SOA_COLUMN(JetNConstituents, jetNConstituents, uint64_t);
+DECLARE_SOA_COLUMN(JetNConstituents, jetNConstituents, int);
 
 DECLARE_SOA_COLUMN(LeadParticlePt, leadParticlePt, float);
 DECLARE_SOA_COLUMN(LeadParticleEta, leadParticleEta, float);
@@ -70,9 +66,9 @@ DECLARE_SOA_COLUMN(PosTPCNSigmaPi, posTPCNSigmaPi, float);
 DECLARE_SOA_COLUMN(NegTPCNSigmaPr, negTPCNSigmaPr, float);
 DECLARE_SOA_COLUMN(NegTPCNSigmaPi, negTPCNSigmaPi, float);
 
-DECLARE_SOA_COLUMN(V0CosPA, v0cosPA, float);
-DECLARE_SOA_COLUMN(V0Radius, v0radius, float);
-DECLARE_SOA_COLUMN(DcaV0Daughters, dcaV0daughters, float);
+DECLARE_SOA_COLUMN(V0CosPA, v0CosPA, float);
+DECLARE_SOA_COLUMN(V0Radius, v0Radius, float);
+DECLARE_SOA_COLUMN(DcaV0Daughters, dcaV0Daughters, float);
 DECLARE_SOA_COLUMN(DcaPosToPV, dcaPosToPV, float);
 DECLARE_SOA_COLUMN(DcaNegToPV, dcaNegToPV, float);
 
@@ -90,32 +86,42 @@ DECLARE_SOA_DYNAMIC_COLUMN(LeadParticlePy, leadParticlePy, //! Leading particle 
                            [](float leadParticlePt, float leadParticlePhi) -> float { return leadParticlePt * std::sin(leadParticlePhi); });
 DECLARE_SOA_DYNAMIC_COLUMN(LeadParticlePz, leadParticlePz, //! Leading particle pz
                            [](float leadParticlePt, float leadParticleEta) -> float { return leadParticlePt * std::sinh(leadParticleEta); });
-
 } // namespace lambdajetpol
 
-DECLARE_SOA_TABLE(RingJets, "AOD", "RINGJETS", // Renamed to follow convention on "s" at the end of table name.
-                  lambdajetpol::CollisionId,   // Changed to an internal O2 index, slightly different from usual o2::soa::Index<> though
+DECLARE_SOA_TABLE(RingCollisions, "AOD", "RINGCOLLISIONS",
+                  o2::soa::Index<>,               // self-index: auto-assigned row number
+                  lambdajetpol::CentFT0M,
+                  lambdajetpol::CentFT0C,
+                  lambdajetpol::CentFV0A);
+
+namespace lambdajetpol
+{
+DECLARE_SOA_INDEX_COLUMN(RingCollision, ringCollision); // Declare index after table is available
+} // namespace lambdajetpol
+
+DECLARE_SOA_TABLE(RingJets, "AOD", "RINGJETS",
+                  lambdajetpol::RingCollisionId,  // relational index -> RingCollisions
                   lambdajetpol::JetPt,
                   lambdajetpol::JetEta,
                   lambdajetpol::JetPhi,
                   lambdajetpol::JetNConstituents,
-                  // Dynamic columns
-                  lambdajetpol::JetPx<lambdajetpol::JetPt, lambdajetpol::JetPhi>, // Explicitly binding to static columns
+                  // Dynamic columns (explicitly bound to their static inputs):
+                  lambdajetpol::JetPx<lambdajetpol::JetPt, lambdajetpol::JetPhi>,
                   lambdajetpol::JetPy<lambdajetpol::JetPt, lambdajetpol::JetPhi>,
                   lambdajetpol::JetPz<lambdajetpol::JetPt, lambdajetpol::JetEta>);
 
-DECLARE_SOA_TABLE(RingLeadP, "AOD", "RINGLEADP", // Leading particle table
-                  lambdajetpol::CollisionId,
+DECLARE_SOA_TABLE(RingLeadP, "AOD", "RINGLEADP",
+                  lambdajetpol::RingCollisionId,
                   lambdajetpol::LeadParticlePt,
                   lambdajetpol::LeadParticleEta,
                   lambdajetpol::LeadParticlePhi,
-                  // Dynamic columns
+                  // Dynamic columns:
                   lambdajetpol::LeadParticlePx<lambdajetpol::LeadParticlePt, lambdajetpol::LeadParticlePhi>,
                   lambdajetpol::LeadParticlePy<lambdajetpol::LeadParticlePt, lambdajetpol::LeadParticlePhi>,
                   lambdajetpol::LeadParticlePz<lambdajetpol::LeadParticlePt, lambdajetpol::LeadParticleEta>);
 
 DECLARE_SOA_TABLE(RingLaV0s, "AOD", "RINGLAV0S",
-                  lambdajetpol::CollisionId,
+                  lambdajetpol::RingCollisionId,
                   lambdajetpol::V0Pt,
                   lambdajetpol::V0Eta,
                   lambdajetpol::V0Phi,
@@ -139,12 +145,7 @@ DECLARE_SOA_TABLE(RingLaV0s, "AOD", "RINGLAV0S",
                   lambdajetpol::DcaPosToPV,
                   lambdajetpol::DcaNegToPV);
 
-DECLARE_SOA_TABLE(RingCollisions, "AOD", "RINGCOLLISIONS",
-                  lambdajetpol::CollisionId,
-                  lambdajetpol::CentFT0M,
-                  lambdajetpol::CentFT0C,
-                  lambdajetpol::CentFV0A);
-
+using RingCollision = RingCollisions::iterator; // Useful shorthand
 } // namespace o2::aod
 
-#endif // PWGLF_DATAMODEL_LAMBDAJETPOL_H_
+#endif // PWGLF_DATAMODEL_LAMBDAJETPOLARIZATIONIONS_H_

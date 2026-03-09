@@ -17,7 +17,7 @@
 // Jet Polarization Ions task
 // ================
 //
-// This code loops over a V0Cores table and produces standard derived
+// This code loops over a V0Datas table and produces standard derived
 // data as output. In the post-processing stage, this analysis aims
 // to measure the formation of vorticity rings in HI collisions.
 //
@@ -26,54 +26,54 @@
 //    cicero.domenico.muncinelli@cern.ch
 //
 
-// O2 Framework
+// Standard Library
+#include <cmath>
+#include <cstdint>
+#include <map>
+#include <string>
+#include <vector>
+
+// PWGLF
+#include "PWGLF/DataModel/lambdaJetPolarizationIons.h"
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+// #include "Common/DataModel/PIDResponseTOF.h" // Maybe switch this around with LFStrangenessPIDTables?
+#include "PWGLF/DataModel/LFStrangenessTables.h" // For V0TOFPIDs and NSigmas getters. Better for considering the daughters as coming from V0s instead of from PV:
+
+// // MC
+// #include "Common/DataModel/CollisionAssociationTables.h"
+// #include "Common/DataModel/McCollisionExtra.h"
+// #include "PWGLF/DataModel/mcCentrality.h"
+
+// PWGJE
+#include "PWGJE/Core/JetBkgSubUtils.h"
+#include "PWGJE/Core/JetUtilities.h"
+
+// Common DataModel
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+// Common Core
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+
+// Framework
 #include <Framework/ASoA.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
 
-// O2 CCDB / Conditions
-#include "DataFormatsParameters/GRPMagField.h"
+// O2 subsystems
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
-
-// O2 Reconstruction Data Formats
+#include "Common/CCDB/ctpRateFetcher.h"
+#include <DataFormatsParameters/GRPMagField.h>
 #include <ReconstructionDataFormats/Track.h>
 
-// O2 Common Core
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-
-// O2 Common DataModel
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/McCollisionExtra.h"
-#include "Common/DataModel/Multiplicity.h" // for pp
-#include "Common/DataModel/PIDResponseTPC.h"
-// For PID in raw data:
-// #include "Common/DataModel/PIDResponseTOF.h" // Maybe switch this around with LFStrangenessPIDTables?
-// #include "Common/DataModel/Qvectors.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-// PWGJE
-#include "PWGJE/Core/JetBkgSubUtils.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/Core/JetUtilities.h"
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/JetReducedData.h"
-
-// PWGLF
-#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
-// For V0TOFPIDs and NSigmas getters. Better for considering the daughters as coming from V0s instead of from PV?
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/lambdaJetPolarizationIons.h"
-#include "PWGLF/DataModel/mcCentrality.h"
-
-// External Libraries (FastJet)
+// External libraries
 #include <fastjet/AreaDefinition.hh>
 #include <fastjet/ClusterSequence.hh>
 #include <fastjet/ClusterSequenceArea.hh>
@@ -83,43 +83,25 @@
 #include <fastjet/tools/JetMedianBackgroundEstimator.hh>
 #include <fastjet/tools/Subtractor.hh>
 
-// ROOT Math
+// ROOT math
 #include "Math/GenVector/Boost.h"
 #include "Math/Vector3D.h"
 #include "Math/Vector4D.h"
 
-// Standard Library
-#include <cmath>
-#include <map>
-#include <string>
-#include <vector>
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using std::array;
 using namespace o2::aod::rctsel;
 
 ///// Aliases for joined tables
 /// Collisions:
 using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As,
                                 aod::PVMults, aod::FT0Mults, aod::FV0Mults>; // Added PVMults to get MultNTracksPVeta1 as centrality estimator
-using SelCollisionsSimple = soa::Join<aod::Collisions, aod::EvSels>;         // Simpler, for jets
-
 /// V0s and Daughter tracks:
-// using V0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
-// using V0CandidatesSimple = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>; // No TOF
-/// To run in RAW data:
-// using V0Candidates = aod::V0Datas; // TODO: possible quicker subscription for analysis that do not require TOF.
 using V0CandidatesWithTOF = soa::Join<aod::V0Datas, aod::V0TOFPIDs, aod::V0TOFNSigmas>; // Tables created by o2-analysis-lf-strangenesstofpid
-// using DauTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
-// Actually used subscriptions (smaller memory usage):
 using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullPr>;
-
 /// Jets:
-using PseudoJetTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksDCA>; // Simpler tracks access. (Not using TracksIU and TracksCovIU. Did not use their info for now)
-                                                                                                 // , aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>; // Not using TOF right now due to some possible mismatches
-
+// using JetTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksDCA>; // Simpler tracks access, yet can't pass this and DauTracks as subscriptions simultaneously.
 /// MC:
 // using SimCollisions = soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels>;
 // using DauTracksMC = soa::Join<DaughterTracks, aod::McTrackLabels>;
@@ -658,7 +640,7 @@ struct lambdajetpolarizationions {
     addHypothesis(AntiLambda, analyseAntiLambda);
 
     auto hSelectionV0s = histos.add<TH1>("GeneralQA/hSelectionV0s", "V0 #rightarrow #Lambda / #bar{#Lambda} selection flow", kTH1D,
-                                         {{(int)v0LambdaSelectionLabels.size(), -0.5, (double)v0LambdaSelectionLabels.size() - 0.5}});
+                                         {{static_cast<int>(v0LambdaSelectionLabels.size()), -0.5, static_cast<double>(v0LambdaSelectionLabels.size()) - 0.5}});
     for (size_t i = 0; i < v0LambdaSelectionLabels.size(); ++i) {
       auto lbl = v0LambdaSelectionLabels[i].label;
       if (!v0LambdaSelectionLabels[i].enabled)
@@ -778,7 +760,7 @@ struct lambdajetpolarizationions {
     if (analyseAntiLambda) {
       histos.add("hMassAntiLambda", "hMassAntiLambda", kTH1D, {axisConfigurations.axisLambdaMass});
       histos.add("AntiLambda/hAntiLambdasPerEvent", "hAntiLambdasPerEvent", kTH1D, {{15, 0, 15}});
-    };
+    }
     if (analyseLambda && analyseAntiLambda) {
       histos.add("hAmbiguousLambdaCandidates", "hAmbiguousLambdaCandidates", kTH1D, {{1, 0, 1}});
       histos.add("hAmbiguousPerEvent", "hAmbiguousPerEvent", kTH1D, {{15, 0, 15}});
@@ -870,6 +852,7 @@ struct lambdajetpolarizationions {
     histos.add("GeneralQA/h2dArmenterosFullSelected", "h2dArmenterosFullSelected", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
     histos.add("GeneralQA/h2dArmenterosFullSelectedLambda", "h2dArmenterosFullSelectedLambda", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
     histos.add("GeneralQA/h2dArmenterosFullSelectedAntiLambda", "h2dArmenterosFullSelectedAntiLambda", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
+    histos.add("GeneralQA/h2dArmenterosFullSelectedNonAmbiguous", "h2dArmenterosFullSelectedNonAmbiguous", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
     histos.add("GeneralQA/h2dArmenterosFullSelectedAmbiguous", "h2dArmenterosFullSelectedAmbiguous", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
 
     // Jets histograms:
@@ -1237,6 +1220,9 @@ struct lambdajetpolarizationions {
                                       pseudoJetCandidateTrackSelections.dcaxyMaxTrackPar1 / std::pow(pt, pseudoJetCandidateTrackSelections.dcaxyMaxTrackPar2)))
         return false;
       JetTrackSelCounter.fill();
+    } else { // Should fill counters an equal number of times to advance indices (future-proofing, but could do it by just advancing indices by hand in JetTrackSelectionFlowCounter)
+      JetTrackSelCounter.fill();
+      JetTrackSelCounter.fill();
     }
     return true;
   }
@@ -1399,36 +1385,45 @@ struct lambdajetpolarizationions {
       return false;
     V0SelCounter.fill();
 
-    // TOF PID in DeltaT (if TOF is not available, then uses the track. If is available, uses it. In this sense, TOF is optional)
-    // const bool posHasTOF = posTrackExtra.hasTOF(); // For the older version, which worked only for Lambdas
-    const bool protonHasTOF = protonTrack.hasTOF(); // Should work even without PIDResponseTOF.h, as it is a TracksExtra property
-    const bool pionHasTOF = pionTrack.hasTOF();
+    // Only do TOF checks when actually using TOF subscriptions:
+    // if (doprocessDataWithTOF) {
+    if constexpr (requires { v0.tofNSigmaLaPr(); }) { // Compile-time check is better in hot-loop
+      // TOF PID in DeltaT (if TOF is not available, then uses the track. If is available, uses it. In this sense, TOF is optional)
+      // const bool posHasTOF = posTrackExtra.hasTOF(); // For the older version, which worked only for Lambdas
+      const bool protonHasTOF = protonTrack.hasTOF(); // Should work even without PIDResponseTOF.h, as it is a TracksExtra property
+      const bool pionHasTOF = pionTrack.hasTOF();
 
-    // Proton-like track
-    if (protonHasTOF && std::abs(Lambda_hypothesis ? v0.posTOFDeltaTLaPr() : v0.negTOFDeltaTLaPr()) > v0Selections.maxDeltaTimeProton)
-      return false;
-    V0SelCounter.fill();
-    // Pion-like track
-    if (pionHasTOF && std::abs(Lambda_hypothesis ? v0.negTOFDeltaTLaPi() : v0.posTOFDeltaTLaPi()) > v0Selections.maxDeltaTimePion)
-      return false;
-    V0SelCounter.fill();
+      // Proton-like track
+      if (protonHasTOF && std::abs(Lambda_hypothesis ? v0.posTOFDeltaTLaPr() : v0.negTOFDeltaTLaPr()) > v0Selections.maxDeltaTimeProton)
+        return false;
+      V0SelCounter.fill();
+      // Pion-like track
+      if (pionHasTOF && std::abs(Lambda_hypothesis ? v0.negTOFDeltaTLaPi() : v0.posTOFDeltaTLaPi()) > v0Selections.maxDeltaTimePion)
+        return false;
+      V0SelCounter.fill();
 
-    // TOF PID in NSigma (TODO: add asymmetric NSigma windows for purity tuning?)
-    // Proton-like track
-    if (protonHasTOF && std::fabs(v0.tofNSigmaLaPr()) > v0Selections.tofPidNsigmaCutLaPr)
-      return false; // (No need to select which candidate is which with the Lambda_hypothesis. Automatically done already!)
-    V0SelCounter.fill();
-    // Pion-like track
-    if (pionHasTOF && std::fabs(v0.tofNSigmaLaPi()) > v0Selections.tofPidNsigmaCutLaPi)
-      return false;
-    V0SelCounter.fill();
+      // TOF PID in NSigma (TODO: add asymmetric NSigma windows for purity tuning?)
+      // Proton-like track (notice usage of tofNSigmaLaPr vs tofNSigmaALaPr)
+      if (protonHasTOF && std::fabs(Lambda_hypothesis ? v0.tofNSigmaLaPr() : v0.tofNSigmaALaPr()) > v0Selections.tofPidNsigmaCutLaPr)
+        return false; // (No need to select which candidate is which with the Lambda_hypothesis. Automatically done already!)
+      V0SelCounter.fill();
+      // Pion-like track
+      if (pionHasTOF && std::fabs(Lambda_hypothesis ? v0.tofNSigmaLaPi() : v0.tofNSigmaALaPi()) > v0Selections.tofPidNsigmaCutLaPi)
+        return false;
+      V0SelCounter.fill();
 
-    // (CAUTION!) You cannot use the getter for raw data's PIDResponseTOF.h instead of LFStrangenessPIDTables.h (as below)
-    // If you do use, TOF will just try to identify that track as a proton, instead of using the correct path length from the
-    // V0s PV-DCA and the such! In other words, it is a naive estimator of TOF PID, because it does not correct for the V0
-    // mother's travel time and considers all tracks as if they came from the PV!
-    // if (protonHasTOF && std::fabs(protonTrack.tofNSigmaPr()) > v0Selections.tofPidNsigmaCutLaPr) return false;
-    // To properly use the LFStrangenessPIDTables version, you need to call o2-analysis-lf-strangenesstofpid too.
+      // (CAUTION!) You cannot use the getter for raw data's PIDResponseTOF.h instead of LFStrangenessPIDTables.h (as below)
+      // If you do use, TOF will just try to identify that track as a proton from the PV, instead of using the correct path
+      // length from the V0s PV-DCA and the such! In other words, it is a naive estimator of TOF PID, because it does not 
+      // correct for the V0 mother's travel time and considers all tracks as if they came from the PV!
+      // if (protonHasTOF && std::fabs(protonTrack.tofNSigmaPr()) > v0Selections.tofPidNsigmaCutLaPr) return false;
+      // To properly use the LFStrangenessPIDTables version, you need to call o2-analysis-lf-strangenesstofpid too.
+    } else { // Should fill counters an equal number of times to advance indices (TODO: implement better solution, such as just advancing the index)
+      V0SelCounter.fill();
+      V0SelCounter.fill();
+      V0SelCounter.fill();
+      V0SelCounter.fill();
+    }
 
     // proper lifetime
     if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 > v0Selections.lambdaLifetimeCut)
@@ -1462,20 +1457,9 @@ struct lambdajetpolarizationions {
   //     else return -1;   // AntiLambda
   // }
 
-  void processJetsData(SelCollisionsSimple::iterator const& collision, PseudoJetTracks const& tracks, aod::BCsWithTimestamps const& bcs)
-  {                           // Uses BCsWithTimestamps to get timestamps for rejectTPCsectorBoundary
-    float centrality = -1.0f; // Just a placeholder
-
-    // For event QA the last two indices never change for NEv_withJets and NEv_withV0s
-    // (Not the best way to initialize this: runs once per collision! TODO: think of a better way to do it)
-    int lastBinEvSel = histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->GetNbins();
-    bool validJetAlreadyFound = false; // Do not fill Event QA more than once
-
-    auto bc = bcs.iteratorAt(collision.bcId()); // Got the iteratorAt() idea from O2Physics/PWGUD/Core/UDHelpers.h
-    if (!isEventAccepted(collision, bc, centrality, false))
-      return; // Uses return instead of continue, as there is no explicit loop here
-    const uint64_t collIdx = collision.globalIndex();
-
+  template <typename TJetTracks>
+  void jetsProcess(TJetTracks const& tracks, const int ringCollIdx, const float centrality)
+  {
     // Loop over reconstructed tracks:
     std::vector<fastjet::PseudoJet> fjParticles;
     int leadingParticleIdx = -1; // Initialized as -1, but could leave it unitialized as well. We reject any invalid events where this could pose a problem (e.g., pT<=0)
@@ -1505,15 +1489,16 @@ struct lambdajetpolarizationions {
     if (fjParticles.size() < 1)
       return;
 
+    int lastBinEvSel = histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->GetNbins();
+
     auto const& leadingParticle = fjParticles[leadingParticleIdx];
     if (leadingParticle.pt() > jetConfigurations.minLeadParticlePt) { // If not, leading particle is probably a bad proxy
-      tableLeadParticles(collIdx, leadingParticle.pt(), leadingParticle.eta(), leadingParticle.phi());
+      tableLeadParticles(ringCollIdx, leadingParticle.pt(), leadingParticle.eta(), leadingParticle.phi());
     }
 
     // Start jet clusterization:
     // Cluster particles using the anti-kt algorithm
     fastjet::JetDefinition jetDef(mapFJAlgorithm(jetConfigurations.jetAlgorithm), jetConfigurations.radiusJet, mapFJRecombScheme(jetConfigurations.jetRecombScheme));
-    // std::vector<float> jets_pt, jets_eta, jets_phi; // Not worth it to store 4-vectors: the tracks assume pion mass hypothesis, so energy and rapidity are not right.
     if (jetConfigurations.bkgSubtraction == kAreaBased) {
       fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(jetConfigurations.GhostedAreaSpecRapidity));
       fastjet::ClusterSequenceArea clustSeq(fjParticles, jetDef, areaDef);                     // Attributes an area for each pseudojet in the list
@@ -1527,7 +1512,6 @@ struct lambdajetpolarizationions {
       int selectedJets = 0;
 
       fastjet::PseudoJet leadingJetSub;
-      // bool hasLeadingJet = false; // Not needed: if the event has any jet, that is the leading jet. Check is superseded by the selectedJets information
       float leadingJetPt = -1.f;
       for (const auto& jet : jets) {
         // Jet must be fully contained in the acceptance (0.9 for ITS+TPC barrel)
@@ -1546,7 +1530,7 @@ struct lambdajetpolarizationions {
         selectedJets++;
 
         // Store jet:
-        tableJets(collIdx,
+        tableJets(ringCollIdx,
                   jetMinusBkg.pt(),
                   jetMinusBkg.eta(), // Using eta instead of rapidity
                   jetMinusBkg.phi(),
@@ -1563,9 +1547,7 @@ struct lambdajetpolarizationions {
         return;
       histos.fill(HIST("hEventsWithJet"), 0.5);
       // Another version of this counter, which is already integrated in the Event Selection flow:
-      if (doEventQA && !validJetAlreadyFound)
-        fillEventSelectionQA(lastBinEvSel - 1, centrality); // hasRingJet passes
-      validJetAlreadyFound = true;
+      if (doEventQA) fillEventSelectionQA(lastBinEvSel - 1, centrality); // hasRingJet passes
 
       if (doJetKinematicsQA) {
         histos.fill(HIST("JetKinematicsQA/hLeadingJetPt"), leadingJetSub.pt());
@@ -1647,9 +1629,7 @@ struct lambdajetpolarizationions {
         return;
       histos.fill(HIST("hEventsWithJet"), 0.5);
       // Another version of this counter, which is already integrated in the Event Selection flow:
-      if (doEventQA && !validJetAlreadyFound)
-        fillEventSelectionQA(lastBinEvSel - 1, centrality); // hasRingJet passes
-      validJetAlreadyFound = true;
+      if (doEventQA) fillEventSelectionQA(lastBinEvSel - 1, centrality); // hasRingJet passes
 
       const auto& leadingJet = jets[0];
       for (const auto& jet : jets) {
@@ -1658,7 +1638,7 @@ struct lambdajetpolarizationions {
         if (std::fabs(jet_eta) > (0.9f - jetConfigurations.radiusJet))
           continue;
 
-        tableJets(collIdx,
+        tableJets(ringCollIdx,
                   jet.pt(),
                   jet_eta, // Using eta instead of rapidity
                   jet.phi(),
@@ -1735,10 +1715,9 @@ struct lambdajetpolarizationions {
     }
   }
 
-  // Had to include DauTracks in subscription, even though I don't loop in it, for the indices
-  // to resolve, avoiding " Exception while running: Index pointing to Tracks is not bound!"
-  // Added the compiler option [[maybe_unused]] to avoid triggering any warnings because of this
-  void processV0sData(SelCollisions::iterator const& collision, V0CandidatesWithTOF const& fullV0s, aod::BCsWithTimestamps const& bcs, [[maybe_unused]] DauTracks const& V0DauTracks)
+  // No longer use a separate JetTracks joined table -- it was mostly a subset of DauTracks + TracksIU (which was not used)
+  template <typename TCollision, typename TV0Candidates, typename TDaughterTracks>
+  void dataProcess(TCollision const& collision, TV0Candidates const& V0s, TDaughterTracks const& V0DauTracks, aod::BCsWithTimestamps const& bcs)
   {
     float centrality = getCentrality(collision); // Strictly for QA. We save other types of centrality estimators in the derived data!
 
@@ -1754,22 +1733,24 @@ struct lambdajetpolarizationions {
     if (!isEventAccepted(collision, bc, centrality, doEventQA))
       return; // Uses return instead of continue, as there is no explicit loop here
 
-    if (doEventQA)
-      fillCentralityProperties(collision, centrality);
-    const uint64_t collIdx = collision.globalIndex();
-    if (v0Selections.rejectTPCsectorBoundary)
-      initCCDB(bc); // Substituted call from collision to bc for raw data
+    if (doEventQA) fillCentralityProperties(collision, centrality);
+    if (v0Selections.rejectTPCsectorBoundary) initCCDB(bc); // Substituted call from collision to bc for raw data
 
     // Fill event table:
-    tableCollisions(collIdx,
-                    collision.centFT0M(),
+    tableCollisions(collision.centFT0M(),
                     collision.centFT0C(),
                     collision.centFV0A()); // (TODO: add InteractionRate info and other useful cuts for later on in the analysis?)
+
+    // Get the derived collision row index for this event:
+    const int ringCollIdx = tableCollisions.lastIndex();
+    
+    // Call to jets process:
+    jetsProcess(V0DauTracks, ringCollIdx, centrality); // V0DauTracks takes the place of jetTracks now
 
     uint NLambdas = 0; // Counting particles per event
     uint NAntiLambdas = 0;
     uint NAmbiguous = 0;
-    for (auto const& v0 : fullV0s) {
+    for (auto const& v0 : V0s) {
       V0SelCounter.resetForNewV0();
       V0SelCounter.fill(); // Fill for all v0 candidates
       if (doArmenterosQA)
@@ -1789,7 +1770,7 @@ struct lambdajetpolarizationions {
         isAntiLambda = passesLambdaLambdaBarHypothesis(v0, collision, false);
 
       if (!isLambda && !isAntiLambda)
-        continue; // Candidate is not considered to be a Lambda
+        continue; // Candidate is not considered to be a Lambda-like
 
       if (isLambda)
         NLambdas++;
@@ -1802,6 +1783,10 @@ struct lambdajetpolarizationions {
         histos.fill(HIST("GeneralQA/h2dArmenterosFullSelectedLambda"), v0.alpha(), v0.qtarm());
       if (!isLambda && isAntiLambda)
         histos.fill(HIST("GeneralQA/h2dArmenterosFullSelectedAntiLambda"), v0.alpha(), v0.qtarm());
+
+      // XOR check:
+      if (isLambda ^ isAntiLambda)
+        histos.fill(HIST("GeneralQA/h2dArmenterosFullSelectedNonAmbiguous"), v0.alpha(), v0.qtarm());
 
       // int lambdaIdx = -1; // No need to pass armenteros
       if (isLambda && isAntiLambda) {
@@ -1828,7 +1813,7 @@ struct lambdajetpolarizationions {
       auto const v0pt = v0.pt();
       const auto posTrackExtra = v0.template posTrack_as<DauTracks>();
       const auto negTrackExtra = v0.template negTrack_as<DauTracks>();
-      tableV0s(collIdx,
+      tableV0s(ringCollIdx,
                v0pt, v0.eta(), v0.phi(), // Using eta instead of rapidity
                isLambda, isAntiLambda,
                v0.mLambda(), v0.mAntiLambda(),
@@ -1912,19 +1897,21 @@ struct lambdajetpolarizationions {
             histos.fill(HIST("Lambda/h3dPosTPCsignalVsTrackPt"), centrality, v0.positivept(), posTrackExtra.tpcSignal());
             histos.fill(HIST("Lambda/h3dNegTPCsignalVsTrackPt"), centrality, v0.negativept(), negTrackExtra.tpcSignal());
           }
-          if (doTOFQA) {
-            histos.fill(HIST("Lambda/h3dPosNsigmaTOF"), centrality, v0pt, v0.tofNSigmaLaPr());
-            histos.fill(HIST("Lambda/h3dNegNsigmaTOF"), centrality, v0pt, v0.tofNSigmaLaPi());
-            histos.fill(HIST("Lambda/h3dPosTOFdeltaT"), centrality, v0pt, v0.posTOFDeltaTLaPr());
-            histos.fill(HIST("Lambda/h3dNegTOFdeltaT"), centrality, v0pt, v0.negTOFDeltaTLaPi());
-            histos.fill(HIST("Lambda/h3dPosNsigmaTOFvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.tofNSigmaLaPr());
-            histos.fill(HIST("Lambda/h3dNegNsigmaTOFvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.tofNSigmaLaPi());
-            histos.fill(HIST("Lambda/h3dPosTOFdeltaTvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.posTOFDeltaTLaPr());
-            histos.fill(HIST("Lambda/h3dNegTOFdeltaTvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.negTOFDeltaTLaPi());
-            histos.fill(HIST("Lambda/h3dPosNsigmaTOFvsTrackPt"), centrality, v0.positivept(), v0.tofNSigmaLaPr());
-            histos.fill(HIST("Lambda/h3dNegNsigmaTOFvsTrackPt"), centrality, v0.negativept(), v0.tofNSigmaLaPi());
-            histos.fill(HIST("Lambda/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTLaPr());
-            histos.fill(HIST("Lambda/h3dNegTOFdeltaTvsTrackPt"), centrality, v0.negativept(), v0.negTOFDeltaTLaPi());
+          if constexpr (requires { v0.tofNSigmaLaPr(); }) {
+            if (doTOFQA) {
+              histos.fill(HIST("Lambda/h3dPosNsigmaTOF"), centrality, v0pt, v0.tofNSigmaLaPr());
+              histos.fill(HIST("Lambda/h3dNegNsigmaTOF"), centrality, v0pt, v0.tofNSigmaLaPi());
+              histos.fill(HIST("Lambda/h3dPosTOFdeltaT"), centrality, v0pt, v0.posTOFDeltaTLaPr());
+              histos.fill(HIST("Lambda/h3dNegTOFdeltaT"), centrality, v0pt, v0.negTOFDeltaTLaPi());
+              histos.fill(HIST("Lambda/h3dPosNsigmaTOFvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.tofNSigmaLaPr());
+              histos.fill(HIST("Lambda/h3dNegNsigmaTOFvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.tofNSigmaLaPi());
+              histos.fill(HIST("Lambda/h3dPosTOFdeltaTvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.posTOFDeltaTLaPr());
+              histos.fill(HIST("Lambda/h3dNegTOFdeltaTvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.negTOFDeltaTLaPi());
+              histos.fill(HIST("Lambda/h3dPosNsigmaTOFvsTrackPt"), centrality, v0.positivept(), v0.tofNSigmaLaPr());
+              histos.fill(HIST("Lambda/h3dNegNsigmaTOFvsTrackPt"), centrality, v0.negativept(), v0.tofNSigmaLaPi());
+              histos.fill(HIST("Lambda/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTLaPr());
+              histos.fill(HIST("Lambda/h3dNegTOFdeltaTvsTrackPt"), centrality, v0.negativept(), v0.negTOFDeltaTLaPi());
+            }
           }
           if (doEtaPhiQA) {
             histos.fill(HIST("Lambda/h5dV0PhiVsEta"), centrality, v0pt, v0.mLambda(), v0.phi(), v0.eta());
@@ -1958,19 +1945,21 @@ struct lambdajetpolarizationions {
             histos.fill(HIST("AntiLambda/h3dPosTPCsignalVsTrackPt"), centrality, v0.positivept(), posTrackExtra.tpcSignal());
             histos.fill(HIST("AntiLambda/h3dNegTPCsignalVsTrackPt"), centrality, v0.negativept(), negTrackExtra.tpcSignal());
           }
-          if (doTOFQA) {
-            histos.fill(HIST("AntiLambda/h3dPosNsigmaTOF"), centrality, v0pt, v0.tofNSigmaALaPi());
-            histos.fill(HIST("AntiLambda/h3dNegNsigmaTOF"), centrality, v0pt, v0.tofNSigmaALaPr());
-            histos.fill(HIST("AntiLambda/h3dPosTOFdeltaT"), centrality, v0pt, v0.posTOFDeltaTLaPi());
-            histos.fill(HIST("AntiLambda/h3dNegTOFdeltaT"), centrality, v0pt, v0.negTOFDeltaTLaPr());
-            histos.fill(HIST("AntiLambda/h3dPosNsigmaTOFvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.tofNSigmaALaPi());
-            histos.fill(HIST("AntiLambda/h3dNegNsigmaTOFvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.tofNSigmaALaPr());
-            histos.fill(HIST("AntiLambda/h3dPosTOFdeltaTvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.posTOFDeltaTLaPi());
-            histos.fill(HIST("AntiLambda/h3dNegTOFdeltaTvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.negTOFDeltaTLaPr());
-            histos.fill(HIST("AntiLambda/h3dPosNsigmaTOFvsTrackPt"), centrality, v0.positivept(), v0.tofNSigmaALaPi());
-            histos.fill(HIST("AntiLambda/h3dNegNsigmaTOFvsTrackPt"), centrality, v0.negativept(), v0.tofNSigmaALaPr());
-            histos.fill(HIST("AntiLambda/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTLaPi());
-            histos.fill(HIST("AntiLambda/h3dNegTOFdeltaTvsTrackPt"), centrality, v0.negativept(), v0.negTOFDeltaTLaPr());
+          if constexpr (requires { v0.tofNSigmaLaPr(); }) {
+            if (doTOFQA) {
+              histos.fill(HIST("AntiLambda/h3dPosNsigmaTOF"), centrality, v0pt, v0.tofNSigmaALaPi());
+              histos.fill(HIST("AntiLambda/h3dNegNsigmaTOF"), centrality, v0pt, v0.tofNSigmaALaPr());
+              histos.fill(HIST("AntiLambda/h3dPosTOFdeltaT"), centrality, v0pt, v0.posTOFDeltaTLaPi());
+              histos.fill(HIST("AntiLambda/h3dNegTOFdeltaT"), centrality, v0pt, v0.negTOFDeltaTLaPr());
+              histos.fill(HIST("AntiLambda/h3dPosNsigmaTOFvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.tofNSigmaALaPi());
+              histos.fill(HIST("AntiLambda/h3dNegNsigmaTOFvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.tofNSigmaALaPr());
+              histos.fill(HIST("AntiLambda/h3dPosTOFdeltaTvsTrackPtot"), centrality, v0.pfracpos() * v0.p(), v0.posTOFDeltaTLaPi());
+              histos.fill(HIST("AntiLambda/h3dNegTOFdeltaTvsTrackPtot"), centrality, v0.pfracneg() * v0.p(), v0.negTOFDeltaTLaPr());
+              histos.fill(HIST("AntiLambda/h3dPosNsigmaTOFvsTrackPt"), centrality, v0.positivept(), v0.tofNSigmaALaPi());
+              histos.fill(HIST("AntiLambda/h3dNegNsigmaTOFvsTrackPt"), centrality, v0.negativept(), v0.tofNSigmaALaPr());
+              histos.fill(HIST("AntiLambda/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTLaPi());
+              histos.fill(HIST("AntiLambda/h3dNegTOFdeltaTvsTrackPt"), centrality, v0.negativept(), v0.negTOFDeltaTLaPr());
+            }
           }
           if (doEtaPhiQA) {
             histos.fill(HIST("AntiLambda/h5dV0PhiVsEta"), centrality, v0pt, v0.mAntiLambda(), v0.phi(), v0.eta());
@@ -1989,10 +1978,19 @@ struct lambdajetpolarizationions {
     histos.fill(HIST("AntiLambda/h2dNbrOfAntiLambdaVsCentrality"), centrality, NAntiLambdas);
   }
 
-  PROCESS_SWITCH(lambdajetpolarizationions, processJetsData, "Process jets and produce derived data in Run 3 Data", true);
-  PROCESS_SWITCH(lambdajetpolarizationions, processV0sData, "Process V0s and produce derived data in Run 3 Data", true);
-  // PROCESS_SWITCH(lambdajetpolarizationions, processJetsMC, "Process jets and produced derived data in Run 3 MC", true);
-  // PROCESS_SWITCH(lambdajetpolarizationions, processV0sMC, "Process V0s and produce derived data in Run 3 MC", true);
+  void processData(SelCollisions::iterator const& collision, aod::V0Datas const& V0s, DauTracks const& V0DauTracks, aod::BCsWithTimestamps const& bcs)
+  {
+    dataProcess(collision, V0s, V0DauTracks, bcs); // No longer need "JetTracks const& jetTracks" -- using DauTracks subscription instead
+  }
+
+  void processDataWithTOF(SelCollisions::iterator const& collision, V0CandidatesWithTOF const& V0s, DauTracks const& V0DauTracks, aod::BCsWithTimestamps const& bcs)
+  {
+    dataProcess(collision, V0s, V0DauTracks, bcs);
+  }
+
+  PROCESS_SWITCH(lambdajetpolarizationions, processData, "Process jets and V0s, produces derived data in Run 3 Data", true);
+  PROCESS_SWITCH(lambdajetpolarizationions, processDataWithTOF, "Process jets and V0s (with TOF), produces derived data in Run 3 Data", false);
+  // PROCESS_SWITCH(lambdajetpolarizationions, processMC, "Process jets and V0s, produces derived data in Run 3 MC", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
