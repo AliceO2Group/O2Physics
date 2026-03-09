@@ -944,7 +944,7 @@ inline DataType getDataType(std::string const& datastr)
     return kMC;
   } else if (datastr == "FastMC") {
     return kFastMC;
-  } else if (datastr == "OnTheFlyMC") {
+  } else if (datastr.starts_with("OnTheFlyMC")) {
     return kOnTheFly;
   } else {
     LOGF(fatal, "DptDptCorrelations::getDataType(). Wrong type of dat: %d", datastr.c_str());
