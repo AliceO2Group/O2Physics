@@ -980,8 +980,6 @@ struct K892analysispbpb {
 
     if (!myEventSelections(collision))
       return;
-    
-    auto centrality = collision.centFT0C();
 
     //                            <IsMC, IsMix, IsRot, IsRun2, isLikeSig>
     callFillHistoswithPartitions<false, false, false, false, true>(collision, tracks, collision, tracks);
