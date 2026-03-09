@@ -322,7 +322,6 @@ struct RadialFlowDecorr {
       histos.fill(HIST("h3DnsigmaTpcVsPtBefCut_Cent_AntiPr"), cent, pt, track.tpcNSigmaPr());
       histos.fill(HIST("h3DnsigmaTofVsPtBefCut_Cent_AntiPr"), cent, pt, track.tofNSigmaPr());
       histos.fill(HIST("h3DnsigmaTpcVsTofBefCut_Cent_AntiPr"), cent, track.tofNSigmaPr(), track.tpcNSigmaPr());
-
     }
     histos.fill(HIST("h3DnsigmaTpcVsPtBefCut_Cent_PiAll"), cent, pt, track.tpcNSigmaPi());
     histos.fill(HIST("h3DnsigmaTofVsPtBefCut_Cent_PiAll"), cent, pt, track.tofNSigmaPi());
@@ -418,8 +417,8 @@ struct RadialFlowDecorr {
       histos.fill(HIST("h3DnsigmaTpcVsPtAftCut_Cent"), cent, pt, tpcPr);
       histos.fill(HIST("h3DnsigmaTofVsPtAftCut_Cent"), cent, pt, tofPr);
       histos.fill(HIST("h3DnsigmaTpcVsTofAftCut_Cent"), cent, tofPi, tpcPr);
-    }
-    else return;
+    } else
+      return;
   }
 
   // Returns: 0 = Unknown/Reject, 1 = Pion, 2 = Kaon, 3 = Proton
@@ -3089,7 +3088,7 @@ struct RadialFlowDecorr {
         isKa && sign < 0, isKa && sign > 0, isKa,
         isPr && sign < 0, isPr && sign > 0, isPr};
 
-        fillNSigmaAftCut(track, cent, isSpecies);
+      fillNSigmaAftCut(track, cent, isSpecies);
       for (int isp = 0; isp < KNsp; ++isp) {
         if (!isSpecies[isp])
           continue;
@@ -3283,7 +3282,8 @@ struct RadialFlowDecorr {
     }
 
     for (int isp = 0; isp < KNsp; ++isp) {
-      if (sumWi[isp][0] < 1.0f) continue;
+      if (sumWi[isp][0] < 1.0f)
+        continue;
       histos.fill(HIST("Prof_Cent_Nsp_Nchrec"), cent, isp, sumWi[isp][0]);
       histos.fill(HIST("Prof_Mult_Nsp_Nchrec"), coll.multNTracksPV(), isp, sumWi[isp][0]);
       histos.fill(HIST("Prof_Cent_Nsp_MeanpT"), cent, isp, sumWipti[isp][0] / sumWi[isp][0]);
@@ -3293,7 +3293,8 @@ struct RadialFlowDecorr {
     for (int ietaA = 0; ietaA < KNEta; ++ietaA) {
       for (int ietaC = 0; ietaC < KNEta; ++ietaC) {
         for (int isp = 0; isp < KNsp; ++isp) {
-          if ((sumWi[isp][ietaA] < 1.0f) || (sumWi[isp][ietaC] < 1.0f)) continue;
+          if ((sumWi[isp][ietaA] < 1.0f) || (sumWi[isp][ietaC] < 1.0f))
+            continue;
 
           double wCorrAB = sumWi[isp][ietaA] + sumWi[isp][ietaC];
           if (wCorrAB > 0) {
