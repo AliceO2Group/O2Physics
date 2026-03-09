@@ -70,6 +70,7 @@
 #include <cstdint>
 #include <iostream>
 #include <map>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -6618,6 +6619,8 @@ void VarManager::FillTrackAlice3(T const& track, float* values)
       values[kITSClusterMap] = track.itsClusterMap();
     }
 
+    values[kIsReconstructed] = track.isReconstructed();
+    values[kNSiliconHits] = track.nSiliconHits();
     values[kITSchi2] = track.itsChi2NCl();
   }
 
