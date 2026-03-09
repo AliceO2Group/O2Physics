@@ -130,7 +130,7 @@ struct RadialFlowDecorr {
     KNsp
   };
 
-  const std::vector<std::string> pidSuffix = {"", "_PiMinus", "_PiPlus", "_PiAll", "_KaMinus", "_KaPlus", "_KaAll", "_AntiPr", "_Pr", "_PrAll"};
+  inline static const std::vector<std::string> pidSuffix = {"", "_PiMinus", "_PiPlus", "_PiAll", "_KaMinus", "_KaPlus", "_KaAll", "_AntiPr", "_Pr", "_PrAll"};
 
   struct PIDMeanSigmaMap {
     static constexpr int MaxCentBins = 100;
@@ -155,10 +155,10 @@ struct RadialFlowDecorr {
     kpp = 4
   };
   static constexpr float KinvalidCentrality = -1.0f;
-  const std::vector<float> etaLw = {
+  inline static const std::vector<float> etaLw = {
     -0.8,
     -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7};
-  const std::vector<float> etaUp = {
+  inline static const std::vector<float> etaUp = {
     0.8,
     -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8};
 
@@ -202,13 +202,20 @@ struct RadialFlowDecorr {
   Configurable<float> cfgCutPtUpperPID{"cfgCutPtUpperPID", 6.0f, "Higher pT cut for identified particle analysis"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "absolute Eta cut"};
   Configurable<int> cfgNsubsample{"cfgNsubsample", 10, "Number of subsamples"};
-  Configurable<int> cfgCentralityChoice{"cfgCentralityChoice", 2, "Which centrality estimator? 1-->FT0C, 2-->FT0M, 3-->FDDM, 4-->FV0A"};
+  Configurable<int> cfgCentralityChoice{"cfgCentralityChoice", 1, "Which centrality estimator? 1-->FT0C, 2-->FT0M, 3-->FDDM, 4-->FV0A"};
   Configurable<bool> cfgEvSelNoSameBunchPileup{"cfgEvSelNoSameBunchPileup", true, "Pileup removal"};
   Configurable<bool> cfgUseGoodITSLayerAllCut{"cfgUseGoodITSLayerAllCut", true, "Remove time interval with dead ITS zone"};
   Configurable<bool> cfgIsGoodZvtxFT0VsPV{"cfgIsGoodZvtxFT0VsPV", true, "Good Vertexing cut"};
 
-  Configurable<int> cfgNchPbMax{"cfgNchPbMax", 6000, "Max Nch range for PbPb collisions"};
-  Configurable<int> cfgNchOMax{"cfgNchOMax", 600, "Max Nch range for OO collisions"};
+  Configurable<float> cfgPupnSig{"cfgPupnSig", 3.0f, "Additional Pileup Cut"};
+  Configurable<bool> cfgApplySigPupCut{"cfgApplySigPupCut", 0, "nSig Pileup Cut"};
+  Configurable<bool> cfgApplyLinPupCut{"cfgApplyLinPupCut", 0, "Lin Pileup Cut"};
+
+  Configurable<float> cfgLinPupParam0{"cfgLinPupParam0", 3.0f, "Linear Pileup Cut Const"};
+  Configurable<float> cfgLinPupParam1{"cfgLinPupParam1", 3.0f, "Linear Pileup Slope"};
+
+  Configurable<int> cfgNchPbMax{"cfgNchPbMax", 10000, "Max Nch range for PbPb collisions"};
+  Configurable<int> cfgNchOMax{"cfgNchOMax", 1000, "Max Nch range for OO collisions"};
 
   Configurable<int> cfgSys{"cfgSys", 1, "Efficiency to be used for which system? 1-->PbPb, 2-->NeNe, 3-->OO, 4-->pp"};
   Configurable<bool> cfgFlat{"cfgFlat", false, "Whether to use flattening weights"};
@@ -266,6 +273,9 @@ struct RadialFlowDecorr {
     std::array<TH3F*, KNsp> hFake{};
     std::array<THnSparseF*, KNsp> hFlatWeight{};
 
+    std::vector<std::pair<float, float>> mLimitsNchCent;
+    float mMinXNchCent = 0, mMaxXNchCent = 0;
+
     TProfile3D* pmeanTruNchEtabinSpbinStep2 = nullptr;
     TProfile3D* pmeanRecoNchEtabinSpbinStep2 = nullptr;
     TProfile3D* pmeanRecoEffcorrNchEtabinSpbinStep2 = nullptr;
@@ -287,25 +297,16 @@ struct RadialFlowDecorr {
   {
     float pt = track.pt();
     auto sign = track.sign();
-    // --- Generic Inclusive ---
-    histos.fill(HIST("h3DnsigmaTpcVsPtBefCut_Cent"), cent, pt, track.tpcNSigmaPi());
-    histos.fill(HIST("h3DnsigmaTofVsPtBefCut_Cent"), cent, pt, track.tofNSigmaPi());
-    histos.fill(HIST("h3DnsigmaTpcVsTofBefCut_Cent"), cent, track.tofNSigmaPi(), track.tpcNSigmaPi());
 
-    histos.fill(HIST("h3DnsigmaTpcVsPtBefCut_Cent"), cent, pt, track.tpcNSigmaKa());
-    histos.fill(HIST("h3DnsigmaTofVsPtBefCut_Cent"), cent, pt, track.tofNSigmaKa());
-    histos.fill(HIST("h3DnsigmaTpcVsTofBefCut_Cent"), cent, track.tofNSigmaKa(), track.tpcNSigmaKa());
-
-    histos.fill(HIST("h3DnsigmaTpcVsPtBefCut_Cent"), cent, pt, track.tpcNSigmaPr());
-    histos.fill(HIST("h3DnsigmaTofVsPtBefCut_Cent"), cent, pt, track.tofNSigmaPr());
-    histos.fill(HIST("h3DnsigmaTpcVsTofBefCut_Cent"), cent, track.tofNSigmaPr(), track.tpcNSigmaPr());
     if (sign > 0) {
       histos.fill(HIST("h3DnsigmaTpcVsPtBefCut_Cent_PiPlus"), cent, pt, track.tpcNSigmaPi());
       histos.fill(HIST("h3DnsigmaTofVsPtBefCut_Cent_PiPlus"), cent, pt, track.tofNSigmaPi());
       histos.fill(HIST("h3DnsigmaTpcVsTofBefCut_Cent_PiPlus"), cent, track.tofNSigmaPi(), track.tpcNSigmaPi());
+
       histos.fill(HIST("h3DnsigmaTpcVsPtBefCut_Cent_KaPlus"), cent, pt, track.tpcNSigmaKa());
       histos.fill(HIST("h3DnsigmaTofVsPtBefCut_Cent_KaPlus"), cent, pt, track.tofNSigmaKa());
       histos.fill(HIST("h3DnsigmaTpcVsTofBefCut_Cent_KaPlus"), cent, track.tofNSigmaKa(), track.tpcNSigmaKa());
+
       histos.fill(HIST("h3DnsigmaTpcVsPtBefCut_Cent_Pr"), cent, pt, track.tpcNSigmaPr());
       histos.fill(HIST("h3DnsigmaTofVsPtBefCut_Cent_Pr"), cent, pt, track.tofNSigmaPr());
       histos.fill(HIST("h3DnsigmaTpcVsTofBefCut_Cent_Pr"), cent, track.tofNSigmaPr(), track.tpcNSigmaPr());
@@ -313,12 +314,15 @@ struct RadialFlowDecorr {
       histos.fill(HIST("h3DnsigmaTpcVsPtBefCut_Cent_PiMinus"), cent, pt, track.tpcNSigmaPi());
       histos.fill(HIST("h3DnsigmaTofVsPtBefCut_Cent_PiMinus"), cent, pt, track.tofNSigmaPi());
       histos.fill(HIST("h3DnsigmaTpcVsTofBefCut_Cent_PiMinus"), cent, track.tofNSigmaPi(), track.tpcNSigmaPi());
+
       histos.fill(HIST("h3DnsigmaTpcVsPtBefCut_Cent_KaMinus"), cent, pt, track.tpcNSigmaKa());
       histos.fill(HIST("h3DnsigmaTofVsPtBefCut_Cent_KaMinus"), cent, pt, track.tofNSigmaKa());
       histos.fill(HIST("h3DnsigmaTpcVsTofBefCut_Cent_KaMinus"), cent, track.tofNSigmaKa(), track.tpcNSigmaKa());
+
       histos.fill(HIST("h3DnsigmaTpcVsPtBefCut_Cent_AntiPr"), cent, pt, track.tpcNSigmaPr());
       histos.fill(HIST("h3DnsigmaTofVsPtBefCut_Cent_AntiPr"), cent, pt, track.tofNSigmaPr());
       histos.fill(HIST("h3DnsigmaTpcVsTofBefCut_Cent_AntiPr"), cent, track.tofNSigmaPr(), track.tpcNSigmaPr());
+
     }
     histos.fill(HIST("h3DnsigmaTpcVsPtBefCut_Cent_PiAll"), cent, pt, track.tpcNSigmaPi());
     histos.fill(HIST("h3DnsigmaTofVsPtBefCut_Cent_PiAll"), cent, pt, track.tofNSigmaPi());
@@ -331,118 +335,157 @@ struct RadialFlowDecorr {
     histos.fill(HIST("h3DnsigmaTpcVsPtBefCut_Cent_PrAll"), cent, pt, track.tpcNSigmaPr());
     histos.fill(HIST("h3DnsigmaTofVsPtBefCut_Cent_PrAll"), cent, pt, track.tofNSigmaPr());
     histos.fill(HIST("h3DnsigmaTpcVsTofBefCut_Cent_PrAll"), cent, track.tofNSigmaPr(), track.tpcNSigmaPr());
+
+    histos.fill(HIST("h3DnsigmaTpcVsPtBefCut_Cent"), cent, pt, track.tpcNSigmaPi());
+    histos.fill(HIST("h3DnsigmaTofVsPtBefCut_Cent"), cent, pt, track.tofNSigmaPi());
+    histos.fill(HIST("h3DnsigmaTpcVsTofBefCut_Cent"), cent, track.tofNSigmaPi(), track.tpcNSigmaPi());
+
+    histos.fill(HIST("h3DnsigmaTpcVsPtBefCut_Cent"), cent, pt, track.tpcNSigmaKa());
+    histos.fill(HIST("h3DnsigmaTofVsPtBefCut_Cent"), cent, pt, track.tofNSigmaKa());
+    histos.fill(HIST("h3DnsigmaTpcVsTofBefCut_Cent"), cent, track.tofNSigmaKa(), track.tpcNSigmaKa());
+
+    histos.fill(HIST("h3DnsigmaTpcVsPtBefCut_Cent"), cent, pt, track.tpcNSigmaPr());
+    histos.fill(HIST("h3DnsigmaTofVsPtBefCut_Cent"), cent, pt, track.tofNSigmaPr());
+    histos.fill(HIST("h3DnsigmaTpcVsTofBefCut_Cent"), cent, track.tofNSigmaPr(), track.tpcNSigmaPr());
   }
 
   template <typename T>
   void fillNSigmaAftCut(const T& track, float cent, bool isSpecies[])
   {
     float pt = track.pt();
+    float tpcPi = track.tpcNSigmaPi();
+    float tofPi = track.tofNSigmaPi();
 
-    if (isSpecies[kInclusiveIdx]) {
-      histos.fill(HIST("h3DnsigmaTpcVsPtAftCut_Cent"), cent, pt, track.tpcNSigmaPi());
-      histos.fill(HIST("h3DnsigmaTofVsPtAftCut_Cent"), cent, pt, track.tofNSigmaPi());
-      histos.fill(HIST("h3DnsigmaTpcVsTofAftCut_Cent"), cent, track.tofNSigmaPi(), track.tpcNSigmaPi());
+    float tpcKa = track.tpcNSigmaKa();
+    float tofKa = track.tofNSigmaKa();
 
-      histos.fill(HIST("h3DnsigmaTpcVsPtAftCut_Cent"), cent, pt, track.tpcNSigmaKa());
-      histos.fill(HIST("h3DnsigmaTofVsPtAftCut_Cent"), cent, pt, track.tofNSigmaKa());
-      histos.fill(HIST("h3DnsigmaTpcVsTofAftCut_Cent"), cent, track.tofNSigmaKa(), track.tpcNSigmaKa());
+    float tpcPr = track.tpcNSigmaPr();
+    float tofPr = track.tofNSigmaPr();
 
-      histos.fill(HIST("h3DnsigmaTpcVsPtAftCut_Cent"), cent, pt, track.tpcNSigmaPr());
-      histos.fill(HIST("h3DnsigmaTofVsPtAftCut_Cent"), cent, pt, track.tofNSigmaPr());
-      histos.fill(HIST("h3DnsigmaTpcVsTofAftCut_Cent"), cent, track.tofNSigmaPr(), track.tpcNSigmaPr());
-    }
     if (isSpecies[kPiPlusIdx]) {
-      histos.fill(HIST("h3DnsigmaTpcVsPtAftCut_Cent_PiPlus"), cent, pt, track.tpcNSigmaPi());
-      histos.fill(HIST("h3DnsigmaTofVsPtAftCut_Cent_PiPlus"), cent, pt, track.tofNSigmaPi());
-      histos.fill(HIST("h3DnsigmaTpcVsTofAftCut_Cent_PiPlus"), cent, track.tofNSigmaPi(), track.tpcNSigmaPi());
-    } else if (isSpecies[kPiMinusIdx]) {
-      histos.fill(HIST("h3DnsigmaTpcVsPtAftCut_Cent_PiMinus"), cent, pt, track.tpcNSigmaPi());
-      histos.fill(HIST("h3DnsigmaTofVsPtAftCut_Cent_PiMinus"), cent, pt, track.tofNSigmaPi());
-      histos.fill(HIST("h3DnsigmaTpcVsTofAftCut_Cent_PiMinus"), cent, track.tofNSigmaPi(), track.tpcNSigmaPi());
+      histos.fill(HIST("h3DnsigmaTpcVsPtAftCut_Cent_PiPlus"), cent, pt, tpcPi);
+      histos.fill(HIST("h3DnsigmaTofVsPtAftCut_Cent_PiPlus"), cent, pt, tofPi);
+      histos.fill(HIST("h3DnsigmaTpcVsTofAftCut_Cent_PiPlus"), cent, tofPi, tpcPi);
+    }
+    if (isSpecies[kPiMinusIdx]) {
+      histos.fill(HIST("h3DnsigmaTpcVsPtAftCut_Cent_PiMinus"), cent, pt, tpcPi);
+      histos.fill(HIST("h3DnsigmaTofVsPtAftCut_Cent_PiMinus"), cent, pt, tofPi);
+      histos.fill(HIST("h3DnsigmaTpcVsTofAftCut_Cent_PiMinus"), cent, tofPi, tpcPi);
     }
     if (isSpecies[kPiAllIdx]) {
-      histos.fill(HIST("h3DnsigmaTpcVsPtAftCut_Cent_PiAll"), cent, pt, track.tpcNSigmaPi());
-      histos.fill(HIST("h3DnsigmaTofVsPtAftCut_Cent_PiAll"), cent, pt, track.tofNSigmaPi());
-      histos.fill(HIST("h3DnsigmaTpcVsTofAftCut_Cent_PiAll"), cent, track.tofNSigmaPi(), track.tpcNSigmaPi());
+      histos.fill(HIST("h3DnsigmaTpcVsPtAftCut_Cent_PiAll"), cent, pt, tpcPi);
+      histos.fill(HIST("h3DnsigmaTofVsPtAftCut_Cent_PiAll"), cent, pt, tofPi);
+      histos.fill(HIST("h3DnsigmaTpcVsTofAftCut_Cent_PiAll"), cent, tofPi, tpcPi);
+
+      histos.fill(HIST("h3DnsigmaTpcVsPtAftCut_Cent"), cent, pt, tpcPi);
+      histos.fill(HIST("h3DnsigmaTofVsPtAftCut_Cent"), cent, pt, tofPi);
+      histos.fill(HIST("h3DnsigmaTpcVsTofAftCut_Cent"), cent, tofPi, tpcPi);
     }
     if (isSpecies[kKaPlusIdx]) {
-      histos.fill(HIST("h3DnsigmaTpcVsPtAftCut_Cent_KaPlus"), cent, pt, track.tpcNSigmaKa());
-      histos.fill(HIST("h3DnsigmaTofVsPtAftCut_Cent_KaPlus"), cent, pt, track.tofNSigmaKa());
-      histos.fill(HIST("h3DnsigmaTpcVsTofAftCut_Cent_KaPlus"), cent, track.tofNSigmaKa(), track.tpcNSigmaKa());
-    } else if (isSpecies[kKaMinusIdx]) {
-      histos.fill(HIST("h3DnsigmaTpcVsPtAftCut_Cent_KaMinus"), cent, pt, track.tpcNSigmaKa());
-      histos.fill(HIST("h3DnsigmaTofVsPtAftCut_Cent_KaMinus"), cent, pt, track.tofNSigmaKa());
-      histos.fill(HIST("h3DnsigmaTpcVsTofAftCut_Cent_KaMinus"), cent, track.tofNSigmaKa(), track.tpcNSigmaKa());
+      histos.fill(HIST("h3DnsigmaTpcVsPtAftCut_Cent_KaPlus"), cent, pt, tpcKa);
+      histos.fill(HIST("h3DnsigmaTofVsPtAftCut_Cent_KaPlus"), cent, pt, tofKa);
+      histos.fill(HIST("h3DnsigmaTpcVsTofAftCut_Cent_KaPlus"), cent, tofKa, tpcKa);
+    }
+    if (isSpecies[kKaMinusIdx]) {
+      histos.fill(HIST("h3DnsigmaTpcVsPtAftCut_Cent_KaMinus"), cent, pt, tpcKa);
+      histos.fill(HIST("h3DnsigmaTofVsPtAftCut_Cent_KaMinus"), cent, pt, tofKa);
+      histos.fill(HIST("h3DnsigmaTpcVsTofAftCut_Cent_KaMinus"), cent, tofKa, tpcKa);
     }
     if (isSpecies[kKaAllIdx]) {
-      histos.fill(HIST("h3DnsigmaTpcVsPtAftCut_Cent_KaAll"), cent, pt, track.tpcNSigmaKa());
-      histos.fill(HIST("h3DnsigmaTofVsPtAftCut_Cent_KaAll"), cent, pt, track.tofNSigmaKa());
-      histos.fill(HIST("h3DnsigmaTpcVsTofAftCut_Cent_KaAll"), cent, track.tofNSigmaKa(), track.tpcNSigmaKa());
+      histos.fill(HIST("h3DnsigmaTpcVsPtAftCut_Cent_KaAll"), cent, pt, tpcKa);
+      histos.fill(HIST("h3DnsigmaTofVsPtAftCut_Cent_KaAll"), cent, pt, tofKa);
+      histos.fill(HIST("h3DnsigmaTpcVsTofAftCut_Cent_KaAll"), cent, tofKa, tpcKa);
+
+      histos.fill(HIST("h3DnsigmaTpcVsPtAftCut_Cent"), cent, pt, tpcKa);
+      histos.fill(HIST("h3DnsigmaTofVsPtAftCut_Cent"), cent, pt, tofKa);
+      histos.fill(HIST("h3DnsigmaTpcVsTofAftCut_Cent"), cent, tofPi, tpcKa);
     }
     if (isSpecies[kPrIdx]) {
-      histos.fill(HIST("h3DnsigmaTpcVsPtAftCut_Cent_Pr"), cent, pt, track.tpcNSigmaPr());
-      histos.fill(HIST("h3DnsigmaTofVsPtAftCut_Cent_Pr"), cent, pt, track.tofNSigmaPr());
-      histos.fill(HIST("h3DnsigmaTpcVsTofAftCut_Cent_Pr"), cent, track.tofNSigmaPr(), track.tpcNSigmaPr());
-    } else if (isSpecies[kAntiPrIdx]) {
-      histos.fill(HIST("h3DnsigmaTpcVsPtAftCut_Cent_AntiPr"), cent, pt, track.tpcNSigmaPr());
-      histos.fill(HIST("h3DnsigmaTofVsPtAftCut_Cent_AntiPr"), cent, pt, track.tofNSigmaPr());
-      histos.fill(HIST("h3DnsigmaTpcVsTofAftCut_Cent_AntiPr"), cent, track.tofNSigmaPr(), track.tpcNSigmaPr());
+      histos.fill(HIST("h3DnsigmaTpcVsPtAftCut_Cent_Pr"), cent, pt, tpcPr);
+      histos.fill(HIST("h3DnsigmaTofVsPtAftCut_Cent_Pr"), cent, pt, tofPr);
+      histos.fill(HIST("h3DnsigmaTpcVsTofAftCut_Cent_Pr"), cent, tofPr, tpcPr);
+    }
+    if (isSpecies[kAntiPrIdx]) {
+      histos.fill(HIST("h3DnsigmaTpcVsPtAftCut_Cent_AntiPr"), cent, pt, tpcPr);
+      histos.fill(HIST("h3DnsigmaTofVsPtAftCut_Cent_AntiPr"), cent, pt, tofPr);
+      histos.fill(HIST("h3DnsigmaTpcVsTofAftCut_Cent_AntiPr"), cent, tofPr, tpcPr);
     }
     if (isSpecies[kPrAllIdx]) {
-      histos.fill(HIST("h3DnsigmaTpcVsPtAftCut_Cent_PrAll"), cent, pt, track.tpcNSigmaPr());
-      histos.fill(HIST("h3DnsigmaTofVsPtAftCut_Cent_PrAll"), cent, pt, track.tofNSigmaPr());
-      histos.fill(HIST("h3DnsigmaTpcVsTofAftCut_Cent_PrAll"), cent, track.tofNSigmaPr(), track.tpcNSigmaPr());
+      histos.fill(HIST("h3DnsigmaTpcVsPtAftCut_Cent_PrAll"), cent, pt, tpcPr);
+      histos.fill(HIST("h3DnsigmaTofVsPtAftCut_Cent_PrAll"), cent, pt, tofPr);
+      histos.fill(HIST("h3DnsigmaTpcVsTofAftCut_Cent_PrAll"), cent, tofPr, tpcPr);
+
+      histos.fill(HIST("h3DnsigmaTpcVsPtAftCut_Cent"), cent, pt, tpcPr);
+      histos.fill(HIST("h3DnsigmaTofVsPtAftCut_Cent"), cent, pt, tofPr);
+      histos.fill(HIST("h3DnsigmaTpcVsTofAftCut_Cent"), cent, tofPi, tpcPr);
     }
+    else return;
   }
 
   // Returns: 0 = Unknown/Reject, 1 = Pion, 2 = Kaon, 3 = Proton
   template <typename T>
-  int identifyTrack(const T& candidate, int centBin)
+  int identifyTrack(const T& candidate, int cent)
   {
-    // Initial sanity checks
     if (!candidate.hasTPC())
       return 0;
+
     float pt = candidate.pt();
     if (pt <= cfgCutPtLower || pt >= cfgCutPtUpperPID)
       return 0; // Out of bounds
-    // Determine species indices based on charge
+
+    if (!pidMeanSigmaMap)
+      return 0;
+
+    int centBin = cent + 0.5;
     auto charge = candidate.sign();
     int piIdx = (charge > 0) ? kPiPlusIdx : kPiMinusIdx;
     int kaIdx = (charge > 0) ? kKaPlusIdx : kKaMinusIdx;
     int prIdx = (charge > 0) ? kPrIdx : kAntiPrIdx;
-    // Fetch Calibration Data (Means and Sigmas)
+
     // TPC
-    float mPiTpc = pidMeanSigmaMap ? pidMeanSigmaMap->meanTPC[piIdx][centBin] : 0.f;
-    float sPiTpc = pidMeanSigmaMap ? pidMeanSigmaMap->sigmaTPC[piIdx][centBin] : 1.f;
-    float mKaTpc = pidMeanSigmaMap ? pidMeanSigmaMap->meanTPC[kaIdx][centBin] : 0.f;
-    float sKaTpc = pidMeanSigmaMap ? pidMeanSigmaMap->sigmaTPC[kaIdx][centBin] : 1.f;
-    float mPrTpc = pidMeanSigmaMap ? pidMeanSigmaMap->meanTPC[prIdx][centBin] : 0.f;
-    float sPrTpc = pidMeanSigmaMap ? pidMeanSigmaMap->sigmaTPC[prIdx][centBin] : 1.f;
+    float mPiTpc = pidMeanSigmaMap->meanTPC[piIdx][centBin];
+    float sPiTpc = pidMeanSigmaMap->sigmaTPC[piIdx][centBin];
+
+    float mKaTpc = pidMeanSigmaMap->meanTPC[kaIdx][centBin];
+    float sKaTpc = pidMeanSigmaMap->sigmaTPC[kaIdx][centBin];
+
+    float mPrTpc = pidMeanSigmaMap->meanTPC[prIdx][centBin];
+    float sPrTpc = pidMeanSigmaMap->sigmaTPC[prIdx][centBin];
+
     // TOF
-    float mPiTof = pidMeanSigmaMap ? pidMeanSigmaMap->meanTOF[piIdx][centBin] : 0.f;
-    float sPiTof = pidMeanSigmaMap ? pidMeanSigmaMap->sigmaTOF[piIdx][centBin] : 1.f;
-    float mKaTof = pidMeanSigmaMap ? pidMeanSigmaMap->meanTOF[kaIdx][centBin] : 0.f;
-    float sKaTof = pidMeanSigmaMap ? pidMeanSigmaMap->sigmaTOF[kaIdx][centBin] : 1.f;
-    float mPrTof = pidMeanSigmaMap ? pidMeanSigmaMap->meanTOF[prIdx][centBin] : 0.f;
-    float sPrTof = pidMeanSigmaMap ? pidMeanSigmaMap->sigmaTOF[prIdx][centBin] : 1.f;
+    float mPiTof = pidMeanSigmaMap->meanTOF[piIdx][centBin];
+    float sPiTof = pidMeanSigmaMap->sigmaTOF[piIdx][centBin];
+
+    float mKaTof = pidMeanSigmaMap->meanTOF[kaIdx][centBin];
+    float sKaTof = pidMeanSigmaMap->sigmaTOF[kaIdx][centBin];
+
+    float mPrTof = pidMeanSigmaMap->meanTOF[prIdx][centBin];
+    float sPrTof = pidMeanSigmaMap->sigmaTOF[prIdx][centBin];
+
+    static int debugLogCounter = 0;
+    if (debugLogCounter < KConstTen) {
+      LOGF(info, "[PID DEBUG] CentBin: %d, Charge: %d", centBin, charge);
+      LOGF(info, "   -> TPC USED | Pi (\u03bc=%.3f, \u03c3=%.3f) | Ka (\u03bc=%.3f, \u03c3=%.3f) | Pr (\u03bc=%.3f, \u03c3=%.3f)",
+           mPiTpc, sPiTpc, mKaTpc, sKaTpc, mPrTpc, sPrTpc);
+
+      if (candidate.hasTOF()) {
+        LOGF(info, "   -> TOF USED | Pi (\u03bc=%.3f, \u03c3=%.3f) | Ka (\u03bc=%.3f, \u03c3=%.3f) | Pr (\u03bc=%.3f, \u03c3=%.3f)",
+             mPiTof, sPiTof, mKaTof, sKaTof, mPrTof, sPrTof);
+      } else {
+        LOGF(info, "   -> TOF USED | Track has no TOF signal.");
+      }
+      debugLogCounter++;
+    }
     // Fetch Raw nSigma Values
     float rawTpcPi = candidate.tpcNSigmaPi();
     float rawTpcKa = candidate.tpcNSigmaKa();
     float rawTpcPr = candidate.tpcNSigmaPr();
-    float rawTpcEl = candidate.tpcNSigmaEl();
 
     float rawTofPi = 0.f, rawTofKa = 0.f, rawTofPr = 0.f;
     if (candidate.hasTOF()) {
       rawTofPi = candidate.tofNSigmaPi();
       rawTofKa = candidate.tofNSigmaKa();
       rawTofPr = candidate.tofNSigmaPr();
-    }
-    // ELECTRON REJECTION: Reject if it is > cTpcRejCut from ALL hadron hypotheses AND falls within the electron band [-3, 5]
-    if (std::abs(rawTpcPi - mPiTpc) > cfgTpcElRejCut &&
-        std::abs(rawTpcKa - mKaTpc) > cfgTpcElRejCut &&
-        std::abs(rawTpcPr - mPrTpc) > cfgTpcElRejCut &&
-        rawTpcEl > cfgTpcElRejCutMin && rawTpcEl < cfgTpcElRejCutMax) {
-      return 0; // It's an electron, reject it!
     }
 
     // --- Low PT Regime ---
@@ -451,10 +494,12 @@ struct RadialFlowDecorr {
       bool inTpcPi = std::abs(rawTpcPi - mPiTpc) < (cfgnSigmaCutTPC * sPiTpc);
       bool inTpcKa = std::abs(rawTpcKa - mKaTpc) < (cfgnSigmaCutTPC * sKaTpc);
       bool inTpcPr = std::abs(rawTpcPr - mPrTpc) < (cfgnSigmaCutTPC * sPrTpc);
+
       // Combined passing check (adds TOF if available)
       bool passPi = inTpcPi && (!candidate.hasTOF() || std::abs(rawTofPi - mPiTof) < (cfgnSigmaCutTOF * sPiTof));
       bool passKa = inTpcKa && (!candidate.hasTOF() || std::abs(rawTofKa - mKaTof) < (cfgnSigmaCutTOF * sKaTof));
       bool passPr = inTpcPr && (!candidate.hasTOF() || std::abs(rawTofPr - mPrTof) < (cfgnSigmaCutTOF * sPrTof));
+
       // Uniqueness check: Must pass target cut, and NOT fall into the TPC range of the others
       if (passPi && !passKa && !passPr)
         return 1;
@@ -465,16 +510,19 @@ struct RadialFlowDecorr {
 
       return 0; // Ambiguous or failed all cuts
     }
+
     // --- High PT Regime---
     if (candidate.hasTOF() && pt > cfgCutPtUpperTPC) {
       // Calculate 2D Normalized Distance (Elliptical distance normalized by sigma)
       float dPi = std::hypot((rawTpcPi - mPiTpc) / sPiTpc, (rawTofPi - mPiTof) / sPiTof);
       float dKa = std::hypot((rawTpcKa - mKaTpc) / sKaTpc, (rawTofKa - mKaTof) / sKaTof);
       float dPr = std::hypot((rawTpcPr - mPrTpc) / sPrTpc, (rawTofPr - mPrTof) / sPrTof);
+
       // Count how many particles are within the ambiguity radius
       int competitors = (dPi < cfgnSigmaOtherParticles) +
                         (dKa < cfgnSigmaOtherParticles) +
                         (dPr < cfgnSigmaOtherParticles);
+
       // If 1 or fewer are in the ambiguity region, pick the absolute best match
       if (competitors <= 1) {
         if (dPi <= dKa && dPi <= dPr && dPi < cfgnSigmaCutCombTPCTOF)
@@ -512,6 +560,29 @@ struct RadialFlowDecorr {
     if (cfgIsGoodZvtxFT0VsPV && !col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
       return false;
     histos.fill(HIST("hEvtCount"), 5.5);
+    return true;
+  }
+
+  bool isPassAddPileup(int multPV, int trksize, float cent)
+  {
+    auto checkLimits = [](float x, float y, const std::vector<std::pair<float, float>>& limits, float xM, float xMx) {
+      if (limits.empty())
+        return true;
+      int bin = 1 + static_cast<int>((x - xM) / (xMx - xM) * (limits.size() - 2));
+      if (bin < 1 || bin >= static_cast<int>(limits.size() - 1))
+        return false;
+      return (y >= limits[bin].first && y <= limits[bin].second);
+    };
+    if (cfgApplySigPupCut) {
+      if (!checkLimits(trksize, cent, state.mLimitsNchCent, state.mMinXNchCent, state.mMaxXNchCent))
+        return false;
+    }
+    histos.fill(HIST("hEvtCount"), 6.5);
+    if (cfgApplyLinPupCut) {
+      if (trksize > (cfgLinPupParam0 + cfgLinPupParam1 * multPV))
+        return false;
+    }
+    histos.fill(HIST("hEvtCount"), 7.5);
 
     return true;
   }
@@ -771,20 +842,22 @@ struct RadialFlowDecorr {
     histos.add("hVtxZ_after_sel", ";z_{vtx} (cm)", kTH1F, {{KNbinsZvtx, KZvtxMin, KZvtxMax}});
     histos.add("hVtxZ", ";z_{vtx} (cm)", kTH1F, {{KNbinsZvtx, KZvtxMin, KZvtxMax}});
     histos.add("hCentrality", ";centrality (%)", kTH1F, {{centAxis1Per}});
-    histos.add("Hist2D_globalTracks_PVTracks", ";N_{global};N_{PV}", kTH2F, {{nChAxis2}, {nChAxis2}});
-    histos.add("Hist2D_cent_nch", ";N_{PV};cent (%)", kTH2F, {{nChAxis2}, {centAxis1Per}});
+    histos.add("Hist2D_globalTracks_PVTracks", ";N_{global};N_{PV}", kTH2F, {{nChAxis}, {nChAxis}});
+    histos.add("Hist2D_cent_nch", ";N_{PV};cent (%)", kTH2F, {{nChAxis}, {centAxis1Per}});
     histos.add("hP", ";p (GeV/c)", kTH1F, {{KNbinsPt, KPMin, KPMax}});
     histos.add("hPt", ";p_{T} (GeV/c)", kTH1F, {{KNbinsPt, KPtMin, KPtMax}});
     histos.add("hEta", ";#eta", kTH1F, {{KNbinsEtaFine, KEtaMin, KEtaMax}});
     histos.add("hPhi", ";#phi", kTH1F, {{KNbinsPhi, KPhiMin, TwoPI}});
 
-    histos.add("hEvtCount", "Number of Event;; Count", kTH1F, {{7, 0, 7}});
+    histos.add("hEvtCount", "Number of Event;; Count", kTH1F, {{9, 0, 9}});
     histos.get<TH1>(HIST("hEvtCount"))->GetXaxis()->SetBinLabel(1, "all Events");
     histos.get<TH1>(HIST("hEvtCount"))->GetXaxis()->SetBinLabel(2, "after sel8");
     histos.get<TH1>(HIST("hEvtCount"))->GetXaxis()->SetBinLabel(3, "after VertexZ Cut");
     histos.get<TH1>(HIST("hEvtCount"))->GetXaxis()->SetBinLabel(4, "after kNoSameBunchPileup");
     histos.get<TH1>(HIST("hEvtCount"))->GetXaxis()->SetBinLabel(5, "after kIsGoodZvtxFT0vsPV");
     histos.get<TH1>(HIST("hEvtCount"))->GetXaxis()->SetBinLabel(6, "after kIsGoodITSLayersAll");
+    histos.get<TH1>(HIST("hEvtCount"))->GetXaxis()->SetBinLabel(7, "after PVTracksCent Pileup Cut");
+    histos.get<TH1>(HIST("hEvtCount"))->GetXaxis()->SetBinLabel(8, "after Linear Pileup Cut");
 
     histos.add("hTrkCount", "Number of Tracks;; Count", kTH1F, {{11, 0, 11}});
     histos.get<TH1>(HIST("hTrkCount"))->GetXaxis()->SetBinLabel(1, "all Tracks");
@@ -1193,50 +1266,48 @@ struct RadialFlowDecorr {
       }
     }
 
-    if (cfgRunGetEff || cfgRunGetMCFlat || cfgRunMCMean || cfgRunMCFluc) {
-      TList* pidList = ccdb->getForTimeStamp<TList>(pathNsig, now);
+    bool requiresMCMap = (cfgRunGetEff || cfgRunGetMCFlat || cfgRunMCMean || cfgRunMCFluc);
+    bool requiresDataMap = (cfgRunGetDataFlat || cfgRunDataMean || cfgRunDataFluc);
+
+    if (requiresMCMap || requiresDataMap) {
+      std::string currentPath = requiresMCMap ? pathNsig : pathDataNsig;
+      TList* pidList = ccdb->getForTimeStamp<TList>(currentPath, now);
 
       if (!pidList) {
-        LOGF(warn, "nSigma maps required but CCDB list is null at %s! Using raw values.", pathNsig.c_str());
+        LOGF(warn, "nSigma maps required but CCDB list is null at %s! Using raw values.", currentPath.c_str());
       } else {
-        if (!pidMeanSigmaMap)
+        if (!pidMeanSigmaMap) {
           pidMeanSigmaMap = new PIDMeanSigmaMap();
-
+        }
         LOGF(info, "Performing 2D Gaussian fits on PID maps from CCDB...");
-
         auto loadPIDMeans = [&](PIDIdx pidType) {
           std::string suffix = pidSuffix[pidType];
           std::string hName = "h3DnsigmaTpcVsTofBefCut_Cent" + suffix;
           auto* h3 = reinterpret_cast<TH3F*>(pidList->FindObject(hName.c_str()));
-
           if (!h3) {
             LOGF(warn, "  [!] PID Hist %s not found in CCDB list.", hName.c_str());
             return;
           }
-
           int nCentBins = std::min(h3->GetXaxis()->GetNbins(), PIDMeanSigmaMap::MaxCentBins - 1);
           LOGF(info, "  -> Species: %s (Bins: %d)", hName.c_str(), nCentBins);
-
           for (int iCent = 1; iCent <= nCentBins; ++iCent) {
             h3->GetXaxis()->SetRange(iCent, iCent);
             // Projecting: Z(TPC) vs Y(TOF). Result: X_axis=TOF, Y_axis=TPC
             std::unique_ptr<TH2D> h2(reinterpret_cast<TH2D*>(h3->Project3D("zy")));
             if (h2) {
+              int binX, binY, binZ;
+              h2->GetMaximumBin(binX, binY, binZ);
+              double guessMeanTOF = h2->GetXaxis()->GetBinCenter(binX);
+              double guessMeanTPC = h2->GetYaxis()->GetBinCenter(binY);
               TF2 f2("f2", "[0]*TMath::Gaus(x,[1],[2])*TMath::Gaus(y,[3],[4])", -3, 3, -3, 3);
-              // Initial Parameters: Amp, MeanTOF, SigmaTOF, MeanTPC, SigmaTPC
-              f2.SetParameter(0, h2->GetMaximum());
-              f2.SetParameter(1, 0.0);
-              f2.SetParLimits(1, -2, 2);
-
-              h2->Fit(&f2, "QRN");
+              f2.SetParameters(h2->GetMaximum(), guessMeanTOF, 1.0, guessMeanTPC, 1.0);
+              h2->Fit(&f2, "QRN"); // Q=Quiet, R=Range, N=NoDraw
               pidMeanSigmaMap->meanTOF[pidType][iCent - 1] = f2.GetParameter(1);
               pidMeanSigmaMap->meanTPC[pidType][iCent - 1] = f2.GetParameter(3);
               pidMeanSigmaMap->sigmaTOF[pidType][iCent - 1] = std::abs(f2.GetParameter(2));
               pidMeanSigmaMap->sigmaTPC[pidType][iCent - 1] = std::abs(f2.GetParameter(4));
-
               if (iCent % KConstTen == 0) {
-                LOGF(info, "     Bin %d: Mean TOF = %.3f, Mean TPC = %.3f",
-                     iCent - 1, f2.GetParameter(1), f2.GetParameter(3));
+                LOGF(info, "  Derived: For Species: %s (Bins: %d), Mean TOF = %.3f, Mean TPC = %.3f, Sigma TOF = %.3f, Sigma TPC = %.3f", hName.c_str(), iCent - 1, f2.GetParameter(1), f2.GetParameter(3), f2.GetParameter(2), f2.GetParameter(4));
               }
             }
           }
@@ -1244,60 +1315,23 @@ struct RadialFlowDecorr {
         for (int i = 0; i < KNsp; ++i) {
           loadPIDMeans(static_cast<PIDIdx>(i));
         }
-      }
-    }
 
-    if (cfgRunGetDataFlat || cfgRunDataMean || cfgRunDataFluc) {
-      TList* pidList = ccdb->getForTimeStamp<TList>(pathDataNsig, now);
-
-      if (!pidList) {
-        LOGF(warn, "nSigma maps required but CCDB list is null at %s! Using raw values.", pathDataNsig.c_str());
-      } else {
-        if (!pidMeanSigmaMap)
-          pidMeanSigmaMap = new PIDMeanSigmaMap();
-
-        LOGF(info, "Performing 2D Gaussian fits on PID maps from CCDB...");
-
-        auto loadPIDMeans = [&](PIDIdx pidType) {
-          std::string suffix = pidSuffix[pidType];
-          std::string hName = "h3DnsigmaTpcVsTofBefCut_Cent" + suffix;
-          auto* h3 = reinterpret_cast<TH3F*>(pidList->FindObject(hName.c_str()));
-
-          if (!h3) {
-            LOGF(warn, "  [!] PID Hist %s not found in CCDB list.", hName.c_str());
-            return;
-          }
-
-          int nCentBins = std::min(h3->GetXaxis()->GetNbins(), PIDMeanSigmaMap::MaxCentBins - 1);
-          LOGF(info, "  -> Species: %s (Bins: %d)", hName.c_str(), nCentBins);
-
-          for (int iCent = 1; iCent <= nCentBins; ++iCent) {
-            h3->GetXaxis()->SetRange(iCent, iCent);
-            // Projecting: Z(TPC) vs Y(TOF). Result: X_axis=TOF, Y_axis=TPC
-            std::unique_ptr<TH2D> h2(reinterpret_cast<TH2D*>(h3->Project3D("zy")));
-            if (h2) {
-              TF2 f2("f2", "[0]*TMath::Gaus(x,[1],[2])*TMath::Gaus(y,[3],[4])", -3, 3, -3, 3);
-              // Initial Parameters: Amp, MeanTOF, SigmaTOF, MeanTPC, SigmaTPC
-              f2.SetParameter(0, h2->GetMaximum());
-              f2.SetParameter(1, 0.0);
-              f2.SetParLimits(1, -2, 2);
-
-              h2->Fit(&f2, "QRN");
-              pidMeanSigmaMap->meanTOF[pidType][iCent - 1] = f2.GetParameter(1);
-              pidMeanSigmaMap->meanTPC[pidType][iCent - 1] = f2.GetParameter(3);
-              pidMeanSigmaMap->sigmaTOF[pidType][iCent - 1] = std::abs(f2.GetParameter(2));
-              pidMeanSigmaMap->sigmaTPC[pidType][iCent - 1] = std::abs(f2.GetParameter(4));
-
-              if (iCent % KConstTen == 0) {
-                LOGF(info, "     Bin %d: Mean TOF = %.3f, Mean TPC = %.3f",
-                     iCent - 1, f2.GetParameter(1), f2.GetParameter(3));
-              }
-            }
+        auto loadLimits = [&](const char* name, std::vector<std::pair<float, float>>& limits, float& xMin, float& xMax) {
+          auto* h2 = reinterpret_cast<TH2F*>(pidList->FindObject(name));
+          if (!h2)
+            return; // Skip if missing
+          int nBins = h2->GetXaxis()->GetNbins();
+          xMin = h2->GetXaxis()->GetXmin();
+          xMax = h2->GetXaxis()->GetXmax();
+          limits.assign(nBins + 2, {-9999.f, 99999.f});
+          for (int i = 1; i <= nBins; ++i) {
+            std::unique_ptr<TH1D> proj(h2->ProjectionY("_py", i, i));
+            float m = proj->GetMean();
+            float s = proj->GetRMS();
+            limits[i] = {m - cfgPupnSig * s, m + cfgPupnSig * s};
           }
         };
-        for (int i = 0; i < KNsp; ++i) {
-          loadPIDMeans(static_cast<PIDIdx>(i));
-        }
+        loadLimits("Hist2D_cent_nch", state.mLimitsNchCent, state.mMinXNchCent, state.mMaxXNchCent);
       }
     }
 
@@ -1446,15 +1480,16 @@ struct RadialFlowDecorr {
         if (cent > KCentMax)
           continue;
         float multPV = col.multNTracksPV();
+
+        histos.fill(HIST("hVtxZ_after_sel"), col.posZ());
+        histos.fill(HIST("hCentrality"), cent);
+
+        histos.fill(HIST("Hist2D_globalTracks_PVTracks"), multPV, trackSlice.size());
+        histos.fill(HIST("Hist2D_cent_nch"), trackSlice.size(), cent);
+
         for (const auto& particle : partSlice) {
           if (!isParticleSelected(particle) || !particle.isPhysicalPrimary())
             continue;
-          histos.fill(HIST("hVtxZ_after_sel"), col.posZ());
-          histos.fill(HIST("hCentrality"), cent);
-
-          histos.fill(HIST("Hist2D_globalTracks_PVTracks"), multPV, trackSlice.size());
-          histos.fill(HIST("Hist2D_cent_nch"), trackSlice.size(), cent);
-
           for (const auto& track : trackSlice) {
             if (!isTrackSelected(track))
               continue;
@@ -1490,6 +1525,15 @@ struct RadialFlowDecorr {
         float multPV = col.multNTracksPV();
         float vz = col.posZ();
 
+        if (!isPassAddPileup(multPV, trackSlice.size(), cent))
+          continue;
+
+        histos.fill(HIST("hVtxZ_after_sel"), col.posZ());
+        histos.fill(HIST("hCentrality"), cent);
+
+        histos.fill(HIST("Hist2D_globalTracks_PVTracks"), multPV, trackSlice.size());
+        histos.fill(HIST("Hist2D_cent_nch"), trackSlice.size(), cent);
+
         for (const auto& particle : partSlice) {
           if (!isParticleSelected(particle) || !particle.isPhysicalPrimary())
             continue;
@@ -1499,16 +1543,16 @@ struct RadialFlowDecorr {
           float pt = particle.pt(), eta = particle.eta();
 
           bool isSpecies[KNsp] = {
-            true,              // kInclusiveIdx
-            pdg == -KPiPlus,   // kPiMinusIdx
-            pdg == KPiPlus,    // kPiPlusIdx
-            absPdg == KPiPlus, // kPiAllIdx
-            pdg == -KKPlus,    // kKaMinusIdx
-            pdg == KKPlus,     // kKaPlusIdx
-            absPdg == KKPlus,  // kKaAllIdx
-            pdg == -KProton,   // kAntiPrIdx
-            pdg == KProton,    // kPrIdx
-            absPdg == KProton  // kPrAllIdx
+            (absPdg == KPiPlus || absPdg == KKPlus || absPdg == KProton), // kInclusiveIdx
+            pdg == -KPiPlus,                                              // kPiMinusIdx
+            pdg == KPiPlus,                                               // kPiPlusIdx
+            absPdg == KPiPlus,                                            // kPiAllIdx
+            pdg == -KKPlus,                                               // kKaMinusIdx
+            pdg == KKPlus,                                                // kKaPlusIdx
+            absPdg == KKPlus,                                             // kKaAllIdx
+            pdg == -KProton,                                              // kAntiPrIdx
+            pdg == KProton,                                               // kPrIdx
+            absPdg == KProton                                             // kPrAllIdx
           };
 
           histos.fill(HIST("h3_AllPrimary"), multPV, pt, eta);
@@ -1534,12 +1578,6 @@ struct RadialFlowDecorr {
             histos.fill(HIST("h3_AllPrimary_PrAll"), multPV, pt, eta);
         }
 
-        histos.fill(HIST("hVtxZ_after_sel"), col.posZ());
-        histos.fill(HIST("hCentrality"), cent);
-
-        histos.fill(HIST("Hist2D_globalTracks_PVTracks"), multPV, trackSlice.size());
-        histos.fill(HIST("Hist2D_cent_nch"), trackSlice.size(), cent);
-
         for (const auto& track : trackSlice) {
           if (!isTrackSelected(track))
             continue;
@@ -1548,23 +1586,23 @@ struct RadialFlowDecorr {
           auto sign = track.sign();
           fillNSigmaBefCut(track, cent);
 
-          int centBin = static_cast<int>(cent);
-          int id = identifyTrack(track, centBin);
+          int id = identifyTrack(track, cent);
           bool isPi = (id == KPidPionOne);
           bool isKa = (id == KPidKaonTwo);
           bool isPr = (id == KPidProtonThree);
+          bool isAny = (isPi || isKa || isPr); // Only true if it passed PID!
 
           bool isSpecies[KNsp] = {
-            true,
+            isAny,
             isPi && sign < 0, isPi && sign > 0, isPi,
             isKa && sign < 0, isKa && sign > 0, isKa,
             isPr && sign < 0, isPr && sign > 0, isPr};
 
+          fillNSigmaAftCut(track, cent, isSpecies);
+
           for (int isp = 0; isp < KNsp; ++isp) {
             if (!isSpecies[isp])
               continue;
-
-            fillNSigmaAftCut(track, cent, isSpecies);
 
             if (isp == kInclusiveIdx) {
               histos.fill(HIST("h3_AllReco"), multPV, pt, eta);
@@ -1749,6 +1787,7 @@ struct RadialFlowDecorr {
         continue;
 
       for (const auto& col : colSlice) {
+        histos.fill(HIST("hVtxZ"), col.posZ());
         if (!col.has_mcCollision() || !isEventSelected(col))
           continue;
 
@@ -1763,6 +1802,8 @@ struct RadialFlowDecorr {
         float multPV = col.multNTracksPV();
         float vz = col.posZ();
 
+        if (!isPassAddPileup(multPV, trackSlice.size(), cent))
+          continue;
         histos.fill(HIST("hVtxZ_after_sel"), col.posZ());
         histos.fill(HIST("hCentrality"), cent);
 
@@ -1774,14 +1815,14 @@ struct RadialFlowDecorr {
 
           float pt = track.pt(), eta = track.eta(), phi = track.phi();
           auto sign = track.sign();
-          int centBin = static_cast<int>(cent);
-          int id = identifyTrack(track, centBin);
+          int id = identifyTrack(track, cent);
           bool isPi = (id == KPidPionOne);
           bool isKa = (id == KPidKaonTwo);
           bool isPr = (id == KPidProtonThree);
+          bool isAny = (isPi || isKa || isPr); // Only true if it passed PID!
 
           bool isSpecies[KNsp] = {
-            true,
+            isAny,
             isPi && sign < 0, isPi && sign > 0, isPi,
             isKa && sign < 0, isKa && sign > 0, isKa,
             isPr && sign < 0, isPr && sign > 0, isPr};
@@ -1856,6 +1897,7 @@ struct RadialFlowDecorr {
         continue;
 
       for (const auto& col : colSlice) {
+        histos.fill(HIST("hVtxZ"), col.posZ());
         if (!col.has_mcCollision() || !isEventSelected(col))
           continue;
 
@@ -1869,6 +1911,15 @@ struct RadialFlowDecorr {
           continue;
         float multPV = col.multNTracksPV();
         float vz = col.posZ();
+
+        if (!isPassAddPileup(multPV, trackSlice.size(), cent))
+          continue;
+
+        histos.fill(HIST("hVtxZ_after_sel"), col.posZ());
+        histos.fill(HIST("hCentrality"), cent);
+
+        histos.fill(HIST("Hist2D_globalTracks_PVTracks"), col.multNTracksPV(), trackSlice.size());
+        histos.fill(HIST("Hist2D_cent_nch"), trackSlice.size(), cent);
 
         memset(sumWiTruth, 0, sizeof(sumWiTruth));
         memset(sumWiptiTruth, 0, sizeof(sumWiptiTruth));
@@ -1887,16 +1938,16 @@ struct RadialFlowDecorr {
           int absPdg = std::abs(pdgCode);
 
           bool isSpecies[KNsp] = {
-            true,                // kInclusiveIdx
-            pdgCode == -KPiPlus, // kPiMinusIdx
-            pdgCode == KPiPlus,  // kPiPlusIdx
-            absPdg == KPiPlus,   // kPiAllIdx
-            pdgCode == -KKPlus,  // kKaMinusIdx
-            pdgCode == KKPlus,   // kKaPlusIdx
-            absPdg == KKPlus,    // kKaAllIdx
-            pdgCode == -KProton, // kAntiPrIdx
-            pdgCode == KProton,  // kPrIdx
-            absPdg == KProton    // kPrAllIdx
+            (absPdg == KPiPlus || absPdg == KKPlus || absPdg == KProton), // kInclusiveIdx
+            pdgCode == -KPiPlus,                                          // kPiMinusIdx
+            pdgCode == KPiPlus,                                           // kPiPlusIdx
+            absPdg == KPiPlus,                                            // kPiAllIdx
+            pdgCode == -KKPlus,                                           // kKaMinusIdx
+            pdgCode == KKPlus,                                            // kKaPlusIdx
+            absPdg == KKPlus,                                             // kKaAllIdx
+            pdgCode == -KProton,                                          // kAntiPrIdx
+            pdgCode == KProton,                                           // kPrIdx
+            absPdg == KProton                                             // kPrAllIdx
           };
 
           for (int ieta = 0; ieta < KNEta; ++ieta) {
@@ -1921,12 +1972,6 @@ struct RadialFlowDecorr {
           }
         }
 
-        histos.fill(HIST("hVtxZ_after_sel"), col.posZ());
-        histos.fill(HIST("hCentrality"), cent);
-
-        histos.fill(HIST("Hist2D_globalTracks_PVTracks"), col.multNTracksPV(), trackSlice.size());
-        histos.fill(HIST("Hist2D_cent_nch"), trackSlice.size(), cent);
-
         for (const auto& track : trackSlice) {
           if (!isTrackSelected(track))
             continue;
@@ -1934,14 +1979,13 @@ struct RadialFlowDecorr {
           if (pt <= cfgPtMin || pt > cfgPtMax)
             continue;
           auto sign = track.sign();
-          int centBin = static_cast<int>(cent);
-          int id = identifyTrack(track, centBin);
+          int id = identifyTrack(track, cent);
           bool isPi = (id == KPidPionOne);
           bool isKa = (id == KPidKaonTwo);
           bool isPr = (id == KPidProtonThree);
-
+          bool isAny = (isPi || isKa || isPr); // Only true if it passed PID!
           bool isSpecies[KNsp] = {
-            true,
+            isAny,
             isPi && sign < 0, isPi && sign > 0, isPi,
             isKa && sign < 0, isKa && sign > 0, isKa,
             isPr && sign < 0, isPr && sign > 0, isPr};
@@ -1982,7 +2026,6 @@ struct RadialFlowDecorr {
               histos.fill(HIST("Fake_eta"), eta, fake);
               histos.fill(HIST("wgt_eta"), eta, w);
             }
-
             if (isp == kInclusiveIdx) {
               histos.fill(HIST("hEtaPhiReco"), vz, sign, pt, eta, phi);
               histos.fill(HIST("hEtaPhiRecoWtd"), vz, sign, pt, eta, phi, w);
@@ -2220,6 +2263,15 @@ struct RadialFlowDecorr {
           continue;
         float multPV = col.multNTracksPV();
 
+        if (!isPassAddPileup(multPV, trackSlice.size(), cent))
+          continue;
+
+        histos.fill(HIST("hVtxZ_after_sel"), col.posZ());
+        histos.fill(HIST("hCentrality"), cent);
+
+        histos.fill(HIST("Hist2D_globalTracks_PVTracks"), col.multNTracksPV(), trackSlice.size());
+        histos.fill(HIST("Hist2D_cent_nch"), trackSlice.size(), cent);
+
         memset(sumPmwkTru, 0, sizeof(sumPmwkTru));
         memset(sumWkTru, 0, sizeof(sumWkTru));
         memset(sumPmwkReco, 0, sizeof(sumPmwkReco));
@@ -2260,16 +2312,16 @@ struct RadialFlowDecorr {
           int absPdg = std::abs(pdgCode);
 
           bool isSpecies[KNsp] = {
-            true,                // kInclusiveIdx
-            pdgCode == -KPiPlus, // kPiMinusIdx
-            pdgCode == KPiPlus,  // kPiPlusIdx
-            absPdg == KPiPlus,   // kPiAllIdx
-            pdgCode == -KKPlus,  // kKaMinusIdx
-            pdgCode == KKPlus,   // kKaPlusIdx
-            absPdg == KKPlus,    // kKaAllIdx
-            pdgCode == -KProton, // kAntiPrIdx
-            pdgCode == KProton,  // kPrIdx
-            absPdg == KProton    // kPrAllIdx
+            (absPdg == KPiPlus || absPdg == KKPlus || absPdg == KProton), // kInclusiveIdx
+            pdgCode == -KPiPlus,                                          // kPiMinusIdx
+            pdgCode == KPiPlus,                                           // kPiPlusIdx
+            absPdg == KPiPlus,                                            // kPiAllIdx
+            pdgCode == -KKPlus,                                           // kKaMinusIdx
+            pdgCode == KKPlus,                                            // kKaPlusIdx
+            absPdg == KKPlus,                                             // kKaAllIdx
+            pdgCode == -KProton,                                          // kAntiPrIdx
+            pdgCode == KProton,                                           // kPrIdx
+            absPdg == KProton                                             // kPrAllIdx
           };
 
           for (int ieta = 0; ieta < KNEta; ++ieta) {
@@ -2289,12 +2341,6 @@ struct RadialFlowDecorr {
         } // end truth loop
         float vz = col.posZ();
 
-        histos.fill(HIST("hVtxZ_after_sel"), col.posZ());
-        histos.fill(HIST("hCentrality"), cent);
-
-        histos.fill(HIST("Hist2D_globalTracks_PVTracks"), col.multNTracksPV(), trackSlice.size());
-        histos.fill(HIST("Hist2D_cent_nch"), trackSlice.size(), cent);
-
         for (const auto& track : trackSlice) {
           if (!isTrackSelected(track))
             continue;
@@ -2305,14 +2351,14 @@ struct RadialFlowDecorr {
           float eta = track.eta();
           float phi = track.phi();
           auto sign = track.sign();
-          int centBin = static_cast<int>(cent);
-          int id = identifyTrack(track, centBin);
+          int id = identifyTrack(track, cent);
           bool isPi = (id == KPidPionOne);
           bool isKa = (id == KPidKaonTwo);
           bool isPr = (id == KPidProtonThree);
+          bool isAny = (isPi || isKa || isPr); // Only true if it passed PID!
 
           bool isSpecies[KNsp] = {
-            true,
+            isAny,
             isPi && sign < 0, isPi && sign > 0, isPi,
             isKa && sign < 0, isKa && sign > 0, isKa,
             isPr && sign < 0, isPr && sign > 0, isPr};
@@ -3006,6 +3052,9 @@ struct RadialFlowDecorr {
     if (cent > KCentMax)
       return;
 
+    if (!isPassAddPileup(coll.multNTracksPV(), tracks.size(), cent))
+      return;
+
     histos.fill(HIST("hVtxZ_after_sel"), coll.posZ());
     histos.fill(HIST("hCentrality"), cent);
 
@@ -3028,22 +3077,22 @@ struct RadialFlowDecorr {
       if (eta > etaLw[0] && eta < etaUp[0])
         ntrk++;
       fillNSigmaBefCut(track, cent);
-      int centBin = static_cast<int>(cent);
-      int id = identifyTrack(track, centBin);
+      int id = identifyTrack(track, cent);
       bool isPi = (id == KPidPionOne);
       bool isKa = (id == KPidKaonTwo);
       bool isPr = (id == KPidProtonThree);
+      bool isAny = (isPi || isKa || isPr); // Only true if it passed PID!
 
       bool isSpecies[KNsp] = {
-        true,
+        isAny,
         isPi && sign < 0, isPi && sign > 0, isPi,
         isKa && sign < 0, isKa && sign > 0, isKa,
         isPr && sign < 0, isPr && sign > 0, isPr};
 
+        fillNSigmaAftCut(track, cent, isSpecies);
       for (int isp = 0; isp < KNsp; ++isp) {
         if (!isSpecies[isp])
           continue;
-        fillNSigmaAftCut(track, cent, isSpecies);
         float eff = getEfficiency(coll.multNTracksPV(), pt, eta, static_cast<PIDIdx>(isp), 0, cfgEff);
         if (eff <= KFloatEpsilon)
           continue;
@@ -3125,6 +3174,9 @@ struct RadialFlowDecorr {
     if (cent > KCentMax)
       return;
 
+    if (!isPassAddPileup(coll.multNTracksPV(), tracks.size(), cent))
+      return;
+
     histos.fill(HIST("hVtxZ_after_sel"), coll.posZ());
     histos.fill(HIST("hCentrality"), cent);
 
@@ -3153,14 +3205,14 @@ struct RadialFlowDecorr {
       histos.fill(HIST("hPt"), pt);
       histos.fill(HIST("hEta"), eta);
       histos.fill(HIST("hPhi"), phi);
-      int centBin = static_cast<int>(cent);
-      int id = identifyTrack(track, centBin);
+      int id = identifyTrack(track, cent);
       bool isPi = (id == KPidPionOne);
       bool isKa = (id == KPidKaonTwo);
       bool isPr = (id == KPidProtonThree);
+      bool isAny = (isPi || isKa || isPr); // Only true if it passed PID!
 
       bool isSpecies[KNsp] = {
-        true,
+        isAny,
         isPi && sign < 0, isPi && sign > 0, isPi,
         isKa && sign < 0, isKa && sign > 0, isKa,
         isPr && sign < 0, isPr && sign > 0, isPr};
@@ -3169,8 +3221,6 @@ struct RadialFlowDecorr {
         if (!isSpecies[isp])
           continue;
         float eff = getEfficiency(coll.multNTracksPV(), pt, eta, static_cast<PIDIdx>(isp), 0, cfgEff);
-
-        // Safety check BEFORE dividing
         if (eff <= KFloatEpsilon)
           continue;
 
@@ -3233,16 +3283,18 @@ struct RadialFlowDecorr {
     }
 
     for (int isp = 0; isp < KNsp; ++isp) {
+      if (sumWi[isp][0] < 1.0f) continue;
       histos.fill(HIST("Prof_Cent_Nsp_Nchrec"), cent, isp, sumWi[isp][0]);
       histos.fill(HIST("Prof_Mult_Nsp_Nchrec"), coll.multNTracksPV(), isp, sumWi[isp][0]);
-      if (sumWi[isp][0] > 1.0f)
-        histos.fill(HIST("Prof_Cent_Nsp_MeanpT"), cent, isp, sumWipti[isp][0] / sumWi[isp][0]);
+      histos.fill(HIST("Prof_Cent_Nsp_MeanpT"), cent, isp, sumWipti[isp][0] / sumWi[isp][0]);
       histos.fill(HIST("Prof_Mult_Nsp_MeanpT"), coll.multNTracksPV(), isp, sumWipti[isp][0] / sumWi[isp][0]);
     }
 
     for (int ietaA = 0; ietaA < KNEta; ++ietaA) {
       for (int ietaC = 0; ietaC < KNEta; ++ietaC) {
         for (int isp = 0; isp < KNsp; ++isp) {
+          if ((sumWi[isp][ietaA] < 1.0f) || (sumWi[isp][ietaC] < 1.0f)) continue;
+
           double wCorrAB = sumWi[isp][ietaA] + sumWi[isp][ietaC];
           if (wCorrAB > 0) {
             float mptsub = (sumWipti[isp][ietaA] + sumWipti[isp][ietaC]) / wCorrAB;
@@ -3279,7 +3331,6 @@ struct RadialFlowDecorr {
         }
       }
     }
-
     double amplFT0A = 0, amplFT0C = 0;
     if (coll.has_foundFT0()) {
       const auto& ft0 = coll.foundFT0();
@@ -3316,6 +3367,15 @@ struct RadialFlowDecorr {
     float cent = getCentrality(coll);
     if (cent > KCentMax)
       return;
+
+    if (!isPassAddPileup(coll.multNTracksPV(), tracks.size(), cent))
+      return;
+
+    histos.fill(HIST("hVtxZ_after_sel"), coll.posZ());
+    histos.fill(HIST("hCentrality"), cent);
+
+    histos.fill(HIST("Hist2D_globalTracks_PVTracks"), coll.multNTracksPV(), tracks.size());
+    histos.fill(HIST("Hist2D_cent_nch"), tracks.size(), cent);
 
     if (!state.pmeanNchEtabinSpbinStep2 || !state.pmeanMultNchEtabinSpbinStep2) {
       LOGF(warning, "Data fluc: Mean pT or Mult map missing");
@@ -3354,14 +3414,14 @@ struct RadialFlowDecorr {
 
       if (pt <= cfgPtMin || pt > cfgPtMax)
         continue;
-      int centBin = static_cast<int>(cent);
-      int id = identifyTrack(track, centBin);
+      int id = identifyTrack(track, cent);
       bool isPi = (id == KPidPionOne);
       bool isKa = (id == KPidKaonTwo);
       bool isPr = (id == KPidProtonThree);
+      bool isAny = (isPi || isKa || isPr); // Only true if it passed PID!
 
       bool isSpecies[KNsp] = {
-        true,
+        isAny,
         isPi && sign < 0, isPi && sign > 0, isPi,
         isKa && sign < 0, isKa && sign > 0, isKa,
         isPr && sign < 0, isPr && sign > 0, isPr};
@@ -3370,8 +3430,6 @@ struct RadialFlowDecorr {
         if (!isSpecies[isp])
           continue;
         float eff = getEfficiency(coll.multNTracksPV(), pt, eta, static_cast<PIDIdx>(isp), 0, cfgEff);
-
-        // Safety check BEFORE dividing
         if (eff <= KFloatEpsilon)
           continue;
 
@@ -3491,7 +3549,6 @@ struct RadialFlowDecorr {
           float covFT0A = p1kBarFt0A * p1kBar[isp][ietaC];
           float covFT0C = p1kBarFt0C * p1kBar[isp][ietaA];
 
-          // Updated enum checks here
           if (isp == kInclusiveIdx) {
             if (std::isfinite(c2Sub)) {
               histos.fill(HIST("Prof_C2Sub2D_Cent_etaA_etaC"), cent, etaValA, etaValB, c2Sub);
