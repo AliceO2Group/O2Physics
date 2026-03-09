@@ -51,9 +51,9 @@ enum JCollisionSel {
   selIsGoodZvtxFT0vsPV = 7,
   selNoCollInTimeRangeStandard = 8,
   selNoCollInRofStandard = 9,
-  selUpcSingleGapA = 10,
-  selUpcSingleGapC = 11,
-  selUpcDoubleGap = 12,
+  selUPCSingleGapA = 10,
+  selUPCSingleGapC = 11,
+  selUPCDoubleGap = 12,
 };
 
 enum JCollisionSubGeneratorId {
@@ -62,30 +62,15 @@ enum JCollisionSubGeneratorId {
 };
 
 template <typename T>
-bool commonCollisionSelection(T const& collision, bool skipMBGapEvents = true, bool rctSelection = true, std::string rctLabel = "CBT_hadronPID", bool rejectLimitedAcceptanceRct = false, bool requireZDCRct = false)
+bool selectCollision(T const& collision, const std::vector<int>& eventSelectionMaskBits, bool skipMBGapEvents = true, bool rctSelection = true, std::string rctLabel = "CBT_hadronPID", bool rejectLimitedAcceptanceRct = false, bool requireZDCRct = false)
 {
+
   if (skipMBGapEvents && collision.getSubGeneratorId() == JCollisionSubGeneratorId::mbGap) {
     return false;
   }
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
   rctChecker.init(rctLabel, requireZDCRct, rejectLimitedAcceptanceRct);
   if (rctSelection && !rctChecker.checkTable(collision)) { // CBT_hadronPID given as default so that TOF is included in RCT selection to benefit from better timing for tracks. Impact of this for inclusive jets should be studied
-    return false;
-  }
-  return true;
-}
-
-template <typename T>
-bool selectMcCollision(T const& mcCollision, bool skipMBGapEvents = true, bool rctSelection = true, std::string rctLabel = "CBT_hadronPID", bool rejectLimitedAcceptanceRct = false, bool requireZDCRct = false)
-{
-  return commonCollisionSelection(mcCollision, skipMBGapEvents, rctSelection, rctLabel, rejectLimitedAcceptanceRct, requireZDCRct);
-}
-
-template <typename T>
-bool selectCollision(T const& collision, const std::vector<int>& eventSelectionMaskBits, bool skipMBGapEvents = true, bool rctSelection = true, std::string rctLabel = "CBT_hadronPID", bool rejectLimitedAcceptanceRct = false, bool requireZDCRct = false)
-{
-
-  if (!commonCollisionSelection(collision, skipMBGapEvents, rctSelection, rctLabel, rejectLimitedAcceptanceRct, requireZDCRct)) {
     return false;
   }
   if (eventSelectionMaskBits.size() == 0) {
@@ -192,13 +177,13 @@ std::vector<int> initialiseEventSelectionBits(const std::string& eventSelectionM
     eventSelectionMaskBits.push_back(JCollisionSel::selKINT7);
   }
   if (eventSelectionMasksContainSelection(eventSelectionMasks, "selUPCSingleGapA")) {
-    eventSelectionMaskBits.push_back(JCollisionSel::selUpcSingleGapA);
+    eventSelectionMaskBits.push_back(JCollisionSel::selUPCSingleGapA);
   }
   if (eventSelectionMasksContainSelection(eventSelectionMasks, "selUPCSingleGapC")) {
-    eventSelectionMaskBits.push_back(JCollisionSel::selUpcSingleGapC);
+    eventSelectionMaskBits.push_back(JCollisionSel::selUPCSingleGapC);
   }
   if (eventSelectionMasksContainSelection(eventSelectionMasks, "selUPCDoubleGap")) {
-    eventSelectionMaskBits.push_back(JCollisionSel::selUpcDoubleGap);
+    eventSelectionMaskBits.push_back(JCollisionSel::selUPCDoubleGap);
   }
 
   return eventSelectionMaskBits;
@@ -239,14 +224,37 @@ uint16_t setEventSelectionBit(T const& collision, int upcSelectionResult = o2::a
     SETBIT(bit, JCollisionSel::selNoCollInRofStandard);
   }
   if (upcSelectionResult == o2::aod::sgselector::SingleGapA) {
-    SETBIT(bit, JCollisionSel::selUpcSingleGapA);
+    SETBIT(bit, JCollisionSel::selUPCSingleGapA);
   }
   if (upcSelectionResult == o2::aod::sgselector::SingleGapC) {
-    SETBIT(bit, JCollisionSel::selUpcSingleGapC);
+    SETBIT(bit, JCollisionSel::selUPCSingleGapC);
   }
   if (upcSelectionResult == o2::aod::sgselector::DoubleGap) {
-    SETBIT(bit, JCollisionSel::selUpcDoubleGap);
+    SETBIT(bit, JCollisionSel::selUPCDoubleGap);
   }
+
+  return bit;
+}
+
+template <typename T>
+uint16_t setMCEventSelectionBit(T const& bc)
+{
+  uint16_t bit = 0;
+  if (bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+    SETBIT(bit, JCollisionSel::sel8);
+    SETBIT(bit, JCollisionSel::sel7);
+    SETBIT(bit, JCollisionSel::selKINT7);
+    SETBIT(bit, JCollisionSel::selTVX);
+  }
+  SETBIT(bit, JCollisionSel::selNoTimeFrameBorder);
+  SETBIT(bit, JCollisionSel::selNoITSROFrameBorder);
+  SETBIT(bit, JCollisionSel::selNoSameBunchPileup);
+  SETBIT(bit, JCollisionSel::selIsGoodZvtxFT0vsPV);
+  SETBIT(bit, JCollisionSel::selNoCollInTimeRangeStandard);
+  SETBIT(bit, JCollisionSel::selNoCollInRofStandard);
+  SETBIT(bit, JCollisionSel::selUPCSingleGapA);
+  SETBIT(bit, JCollisionSel::selUPCSingleGapC);
+  SETBIT(bit, JCollisionSel::selUPCDoubleGap);
 
   return bit;
 }

@@ -70,6 +70,7 @@
 #include <cstdint>
 #include <iostream>
 #include <map>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -2452,7 +2453,7 @@ void VarManager::FillEventTracks(T const& tracks, float* values)
     values[kDCAzBimodalityCoefficientBinned] = -9999.0;
   }
   values[kDCAzNPeaks] = nPeaksBin;
-  cout << "Bimodality coefficient binned: " << bimodalityCoefficientBin << ", mean: " << mean << ", stddev: " << stddev << ", skewness: " << skewness << ", kurtosis: " << kurtosis << ", nPeaks: " << nPeaksBin << endl;
+  // cout << "Bimodality coefficient binned: " << bimodalityCoefficientBin << ", mean: " << mean << ", stddev: " << stddev << ", skewness: " << skewness << ", kurtosis: " << kurtosis << ", nPeaks: " << nPeaksBin << endl;
   // compute the binned bimodality coefficient and related statistics with a bin width of 50um and different trimming versions
   // more then 3 counts per bin
   auto [bimodalityCoefficientBinTrimmed1, meanBinTrimmed1, stddevBinTrimmed1, skewnessBinTrimmed1, kurtosisBinTrimmed1, nPeaksBinTrimmed1] = BimodalityCoefficientAndNPeaks(dcazValues, 0.005, 4);
@@ -2466,7 +2467,7 @@ void VarManager::FillEventTracks(T const& tracks, float* values)
     values[kDCAzRMSBinnedTrimmed1] = -9999.0;
   }
   values[kDCAzNPeaksTrimmed1] = nPeaksBinTrimmed1;
-  cout << "Bimodality coefficient (trimmed 1): " << bimodalityCoefficientBinTrimmed1 << ", mean: " << meanBinTrimmed1 << ", stddev: " << stddevBinTrimmed1 << ", skewness: " << skewnessBinTrimmed1 << ", kurtosis: " << kurtosisBinTrimmed1 << ", nPeaks: " << nPeaksBinTrimmed1 << endl;
+  // cout << "Bimodality coefficient (trimmed 1): " << bimodalityCoefficientBinTrimmed1 << ", mean: " << meanBinTrimmed1 << ", stddev: " << stddevBinTrimmed1 << ", skewness: " << skewnessBinTrimmed1 << ", kurtosis: " << kurtosisBinTrimmed1 << ", nPeaks: " << nPeaksBinTrimmed1 << endl;
   // more than 3% of the entries per peak
   auto [bimodalityCoefficientBinTrimmed2, meanBinTrimmed2, stddevBinTrimmed2, skewnessBinTrimmed2, kurtosisBinTrimmed2, nPeaksBinTrimmed2] = BimodalityCoefficientAndNPeaks(dcazValues, 0.005, -100);
   if (stddevBinTrimmed2 > -1.0) {
@@ -2479,7 +2480,7 @@ void VarManager::FillEventTracks(T const& tracks, float* values)
     values[kDCAzRMSBinnedTrimmed2] = -9999.0;
   }
   values[kDCAzNPeaksTrimmed2] = nPeaksBinTrimmed2;
-  cout << "Bimodality coefficient (trimmed 2): " << bimodalityCoefficientBinTrimmed2 << ", mean: " << meanBinTrimmed2 << ", stddev: " << stddevBinTrimmed2 << ", skewness: " << skewnessBinTrimmed2 << ", kurtosis: " << kurtosisBinTrimmed2 << ", nPeaks: " << nPeaksBinTrimmed2 << endl;
+  // cout << "Bimodality coefficient (trimmed 2): " << bimodalityCoefficientBinTrimmed2 << ", mean: " << meanBinTrimmed2 << ", stddev: " << stddevBinTrimmed2 << ", skewness: " << skewnessBinTrimmed2 << ", kurtosis: " << kurtosisBinTrimmed2 << ", nPeaks: " << nPeaksBinTrimmed2 << endl;
   // more than 5% of the entries per peak
   auto [bimodalityCoefficientBinTrimmed3, meanBinTrimmed3, stddevBinTrimmed3, skewnessBinTrimmed3, kurtosisBinTrimmed3, nPeaksBinTrimmed3] = BimodalityCoefficientAndNPeaks(dcazValues, 0.005, -20);
   if (stddevBinTrimmed3 > -1.0) {
@@ -2492,7 +2493,7 @@ void VarManager::FillEventTracks(T const& tracks, float* values)
     values[kDCAzRMSBinnedTrimmed3] = -9999.0;
   }
   values[kDCAzNPeaksTrimmed3] = nPeaksBinTrimmed3;
-  cout << "Bimodality coefficient (trimmed 3): " << bimodalityCoefficientBinTrimmed3 << ", mean: " << meanBinTrimmed3 << ", stddev: " << stddevBinTrimmed3 << ", skewness: " << skewnessBinTrimmed3 << ", kurtosis: " << kurtosisBinTrimmed3 << ", nPeaks: " << nPeaksBinTrimmed3 << endl;
+  // cout << "Bimodality coefficient (trimmed 3): " << bimodalityCoefficientBinTrimmed3 << ", mean: " << meanBinTrimmed3 << ", stddev: " << stddevBinTrimmed3 << ", skewness: " << skewnessBinTrimmed3 << ", kurtosis: " << kurtosisBinTrimmed3 << ", nPeaks: " << nPeaksBinTrimmed3 << endl;
 
   // compute fraction of tracks with |DCAz| > 100um, 200um, 500um, 1mm, 2mm, 5mm, 10mm
   // make a loop over the DCAz values and count how many are above each threshold
@@ -6730,6 +6731,8 @@ void VarManager::FillTrackAlice3(T const& track, float* values)
       values[kITSClusterMap] = track.itsClusterMap();
     }
 
+    values[kIsReconstructed] = track.isReconstructed();
+    values[kNSiliconHits] = track.nSiliconHits();
     values[kITSchi2] = track.itsChi2NCl();
   }
 

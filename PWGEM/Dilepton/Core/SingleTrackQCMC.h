@@ -181,6 +181,7 @@ struct SingleTrackQCMC {
     Configurable<float> cfg_min_pin_pirejTPC{"cfg_min_pin_pirejTPC", 0.f, "min. pin for pion rejection in TPC"};
     Configurable<float> cfg_max_pin_pirejTPC{"cfg_max_pin_pirejTPC", 1e+10, "max. pin for pion rejection in TPC"};
     Configurable<bool> enableTTCA{"enableTTCA", true, "Flag to enable or disable TTCA"};
+    Configurable<bool> includeITSsa{"includeITSsa", false, "Flag to include ITSsa tracks only for MC. switch ON only if needed."};
 
     // configuration for PID ML
     Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"filename"}, "ONNX file names for each bin (if not from CCDB full path)"};
@@ -208,7 +209,10 @@ struct SingleTrackQCMC {
     Configurable<int> cfg_min_ncluster_mch{"cfg_min_ncluster_mch", 5, "min ncluster MCH"};
     Configurable<float> cfg_max_chi2{"cfg_max_chi2", 1e+6, "max chi2/ndf"};
     Configurable<float> cfg_max_chi2mft{"cfg_max_chi2mft", 1e+6, "max chi2/ndf"};
-    Configurable<float> cfg_max_matching_chi2_mftmch{"cfg_max_matching_chi2_mftmch", 40, "max chi2 for MFT-MCH matching"};
+    // Configurable<float> cfg_max_matching_chi2_mftmch{"cfg_max_matching_chi2_mftmch", 40, "max chi2 for MFT-MCH matching"};
+    Configurable<float> cfg_border_pt_for_chi2mchmft{"cfg_border_pt_for_chi2mchmft", 0, "border pt for different max chi2 for MFT-MCH matching"};
+    Configurable<float> cfg_max_matching_chi2_mftmch_lowPt{"cfg_max_matching_chi2_mftmch_lowPt", 8, "max chi2 for MFT-MCH matching for low pT"};
+    Configurable<float> cfg_max_matching_chi2_mftmch_highPt{"cfg_max_matching_chi2_mftmch_highPt", 40, "max chi2 for MFT-MCH matching for high pT"};
     Configurable<float> cfg_max_matching_chi2_mchmid{"cfg_max_matching_chi2_mchmid", 1e+10, "max chi2 for MCH-MID matching"};
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1e+10, "max dca XY for single track in cm"};
     Configurable<float> cfg_min_rabs{"cfg_min_rabs", 17.6, "min Radius at the absorber end"};
@@ -281,17 +285,18 @@ struct SingleTrackQCMC {
         fRegistry.add("Track/PromptLF/positive/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
         fRegistry.add("Track/PromptLF/positive/hDCAzRes_Pt", "DCA_{z} resolution vs. pT;p_{T} (GeV/c);DCA_{z} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
         fRegistry.add("Track/PromptLF/positive/hDCA3dRes_Pt", "DCA_{3D} resolution vs. pT;p_{T} (GeV/c);DCA_{3D} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
-        fRegistry.add("Track/PromptLF/positive/hNclsTPC_Pt", "number of TPC clusters;p_{T,e} (GeV/c);;TPC N_{cls}", kTH2F, {axis_pt, {161, -0.5, 160.5}}, false);
-        fRegistry.add("Track/PromptLF/positive/hNcrTPC_Pt", "number of TPC crossed rows;p_{T,e} (GeV/c);;TPC N_{CR}", kTH2F, {axis_pt, {161, -0.5, 160.5}}, false);
-        fRegistry.add("Track/PromptLF/positive/hChi2TPC", "chi2/number of TPC clusters", kTH1F, {{100, 0, 10}}, false);
-        fRegistry.add("Track/PromptLF/positive/hTPCNcr2Nf", "TPC Ncr/Nfindable", kTH1F, {{200, 0, 2}}, false);
-        fRegistry.add("Track/PromptLF/positive/hTPCNcls2Nf", "TPC Ncls/Nfindable", kTH1F, {{200, 0, 2}}, false);
+        fRegistry.add("Track/PromptLF/positive/hNclsTPC_Pt", "number of TPC clusters;p_{T,e} (GeV/c);TPC N_{cls}", kTH2F, {axis_pt, {161, -0.5, 160.5}}, false);
+        fRegistry.add("Track/PromptLF/positive/hNcrTPC_Pt", "number of TPC crossed rows;p_{T,e} (GeV/c);TPC N_{CR}", kTH2F, {axis_pt, {161, -0.5, 160.5}}, false);
+        fRegistry.add("Track/PromptLF/positive/hChi2TPC", "chi2/number of TPC clusters;TPC #chi^{2}/N_{CR}", kTH1F, {{100, 0, 10}}, false);
+        fRegistry.add("Track/PromptLF/positive/hTPCNcr2Nf", "TPC Ncr/Nfindable;TPC N_{CR}/N_{cls}^{findable}", kTH1F, {{200, 0, 2}}, false);
+        fRegistry.add("Track/PromptLF/positive/hTPCNcls2Nf", "TPC Ncls/Nfindable;TPC N_{cls}/N_{cls}^{findable}", kTH1F, {{200, 0, 2}}, false);
         fRegistry.add("Track/PromptLF/positive/hTPCNclsShared", "TPC Ncls shared/Ncls;p_{T} (GeV/c);N_{cls}^{shared}/N_{cls} in TPC", kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
-        fRegistry.add("Track/PromptLF/positive/hNclsITS", "number of ITS clusters", kTH1F, {{8, -0.5, 7.5}}, false);
-        fRegistry.add("Track/PromptLF/positive/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
+        fRegistry.add("Track/PromptLF/positive/hNclsITS", "number of ITS clusters;ITS N_{cls}", kTH1F, {{8, -0.5, 7.5}}, false);
+        fRegistry.add("Track/PromptLF/positive/hChi2ITS", "chi2/number of ITS clusters;ITS #chi^{2}/N_{cls}", kTH1F, {{100, 0, 10}}, false);
         fRegistry.add("Track/PromptLF/positive/hDeltaPin", "p_{in} vs. p_{pv};p_{in} (GeV/c);(p_{pv} - p_{in})/p_{in}", kTH2F, {{1000, 0, 10}, {200, -1, +1}}, false);
-        fRegistry.add("Track/PromptLF/positive/hChi2TOF", "TOF Chi2;p_{pv} (GeV/c);chi2", kTH2F, {{1000, 0, 10}, {100, 0, 10}}, false);
+        fRegistry.add("Track/PromptLF/positive/hChi2TOF", "TOF Chi2;p_{pv} (GeV/c);TOF #chi^{2}", kTH2F, {{1000, 0, 10}, {100, 0, 10}}, false);
         fRegistry.add("Track/PromptLF/positive/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
+        fRegistry.add("Track/PromptLF/positive/hPIDForTracking", "PID for trackng", kTH1F, {{9, -0.5, 8.5}}, false); // see numbering in O2/DataFormats/Reconstruction/include/ReconstructionDataFormats/PID.h
         fRegistry.add("Track/PromptLF/positive/hPtGen_DeltaPtOverPtGen", "electron p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{200, 0, 10}, {200, -1.0f, 1.0f}}, true);
         fRegistry.add("Track/PromptLF/positive/hPtGen_DeltaEta", "electron #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{200, 0, 10}, {100, -0.05f, 0.05f}}, true);
         fRegistry.add("Track/PromptLF/positive/hPtGen_DeltaPhi", "electron #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{200, 0, 10}, {100, -0.05f, 0.05f}}, true);
@@ -515,6 +520,7 @@ struct SingleTrackQCMC {
     fDielectronCut.RequireITSib1st(dielectroncuts.cfg_require_itsib_1st);
     fDielectronCut.SetChi2TOF(0.0, dielectroncuts.cfg_max_chi2tof);
     fDielectronCut.SetRelDiffPin(dielectroncuts.cfg_min_rel_diff_pin, dielectroncuts.cfg_max_rel_diff_pin);
+    fDielectronCut.IncludeITSsa(dielectroncuts.includeITSsa, 1e+10);
 
     // for eID
     fDielectronCut.SetPIDScheme(dielectroncuts.cfg_pid_scheme);
@@ -579,7 +585,8 @@ struct SingleTrackQCMC {
     fDimuonCut.SetNClustersMCHMID(dimuoncuts.cfg_min_ncluster_mch, 20);
     fDimuonCut.SetChi2(0.f, dimuoncuts.cfg_max_chi2);
     fDimuonCut.SetChi2MFT(0.f, dimuoncuts.cfg_max_chi2mft);
-    fDimuonCut.SetMatchingChi2MCHMFT(0.f, dimuoncuts.cfg_max_matching_chi2_mftmch);
+    // fDimuonCut.SetMatchingChi2MCHMFT(0.f, dimuoncuts.cfg_max_matching_chi2_mftmch);
+    fDimuonCut.SetMaxMatchingChi2MCHMFTPtDep([&](float pt) { return (pt < dimuoncuts.cfg_border_pt_for_chi2mchmft ? dimuoncuts.cfg_max_matching_chi2_mftmch_lowPt : dimuoncuts.cfg_max_matching_chi2_mftmch_highPt); });
     fDimuonCut.SetMatchingChi2MCHMID(0.f, dimuoncuts.cfg_max_matching_chi2_mchmid);
     fDimuonCut.SetDCAxy(0.f, dimuoncuts.cfg_max_dcaxy);
     fDimuonCut.SetRabs(dimuoncuts.cfg_min_rabs, dimuoncuts.cfg_max_rabs);
@@ -676,6 +683,7 @@ struct SingleTrackQCMC {
           fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDeltaPin"), track.tpcInnerParam(), (track.p() - track.tpcInnerParam()) / track.tpcInnerParam());
         }
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hITSClusterMap"), track.itsClusterMap());
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPIDForTracking"), track.pidForTracking());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPtGen_DeltaPtOverPtGen"), mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPtGen_DeltaEta"), mctrack.pt(), track.eta() - mctrack.eta());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPtGen_DeltaPhi"), mctrack.pt(), track.phi() - mctrack.phi());
@@ -721,6 +729,7 @@ struct SingleTrackQCMC {
           fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDeltaPin"), track.tpcInnerParam(), (track.p() - track.tpcInnerParam()) / track.tpcInnerParam());
         }
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hITSClusterMap"), track.itsClusterMap());
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPIDForTracking"), track.pidForTracking());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPtGen_DeltaPtOverPtGen"), mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPtGen_DeltaEta"), mctrack.pt(), track.eta() - mctrack.eta());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPtGen_DeltaPhi"), mctrack.pt(), track.phi() - mctrack.phi());

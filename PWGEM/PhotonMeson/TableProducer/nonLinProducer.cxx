@@ -15,6 +15,7 @@
 /// dependencies: skimmer-gamma-calo
 
 #include "PWGEM/PhotonMeson/Core/EMNonLin.h"
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/emcalHistoDefinitions.h"
@@ -59,7 +60,7 @@ struct NonLinProducer {
   using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::MinClusters>;
   using PcmPhotons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 
-  using Colls = soa::Join<aod::EMEvents_004, aod::EMEventsCent_000>;
+  using Colls = soa::Join<aod::PMEvents, aod::EMEventsCent_000>;
 
   EMNonLin emNonLinEMC;
   EMNonLin emNonLinPCM;
@@ -117,8 +118,8 @@ struct NonLinProducer {
     for (const auto& cluster : clusters) {
 
       // check that we are at the correct collision
-      if (cluster.emphotoneventId() != collIndex) {
-        collIndex = cluster.emphotoneventId();
+      if (cluster.pmeventId() != collIndex) {
+        collIndex = cluster.pmeventId();
         collision.setCursor(collIndex);
         cent = getCentrality(collision);
         emNonLinContextEMC.setParams(emNonLinEMC.resolveParams(o2::pwgem::nonlin::EMNonLin::PhotonType::kEMC, cent));
@@ -152,8 +153,8 @@ struct NonLinProducer {
     for (const auto& v0 : v0s) {
 
       // check that we are at the correct collision
-      if (v0.emphotoneventId() != collIndex) {
-        collIndex = v0.emphotoneventId();
+      if (v0.pmeventId() != collIndex) {
+        collIndex = v0.pmeventId();
         collision.setCursor(collIndex);
         cent = getCentrality(collision);
         emNonLinContextPCM.setParams(emNonLinPCM.resolveParams(o2::pwgem::nonlin::EMNonLin::PhotonType::kPCM, cent));

@@ -21,6 +21,7 @@
 
 #include "PWGLF/DataModel/EPCalibrationTables.h"
 #include "PWGLF/DataModel/LFSlimNucleiTables.h"
+#include "PWGLF/Utils/inelGt.h"
 
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/PID/PIDTOF.h"
@@ -52,8 +53,10 @@
 #include "ReconstructionDataFormats/Track.h"
 
 #include <Math/Vector4D.h>
+#include <TDatabasePDG.h>
 #include <TMCProcess.h>
 #include <TPDGCode.h> // for PDG codes
+#include <TParticlePDG.h>
 #include <TRandom3.h>
 
 #include <algorithm>
@@ -248,6 +251,13 @@ constexpr int EvSelDefault[9][1]{
   {0},
   {0},
   {0}};
+
+enum EvGenSel : uint8_t {
+  kGenTVX = 1 << 0,
+  kGenZvtx = 1 << 1,
+  kGenINELgt0 = 1 << 2,
+};
+
 } // namespace nuclei
 
 struct nucleiSpectra {
@@ -269,7 +279,9 @@ struct nucleiSpectra {
   Produces<o2::aod::NucleiTable> nucleiTable;
   Produces<o2::aod::NucleiPairTable> nucleiPairTable;
   Produces<o2::aod::NucleiTableMC> nucleiTableMC;
+  Produces<o2::aod::NucleiTableMCExtension> nucleiTableMCExtension;
   Produces<o2::aod::NucleiTableFlow> nucleiTableFlow;
+  Produces<o2::aod::GenEventMCSel> GenEventMCSel;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Zorro zorro;
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
@@ -334,6 +346,7 @@ struct nucleiSpectra {
   ConfigurableAxis cfgNTPCClusBins{"cfgNTPCClusBins", {3, 89.5, 159.5}, "N TPC clusters binning"};
 
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
+  Configurable<std::string> cfgTriggerList{"cfgTriggerList", "fHe", "Trigger List"};
 
   // running variables for track tuner
   o2::dataformats::DCA mDcaInfoCov;
@@ -453,7 +466,7 @@ struct nucleiSpectra {
       return;
     }
     if (cfgSkimmedProcessing) {
-      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), "fHe");
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfgTriggerList);
       zorro.populateHistRegistry(spectra, bc.runNumber());
     }
     auto timestamp = bc.timestamp();
@@ -911,13 +924,64 @@ struct nucleiSpectra {
   PROCESS_SWITCH(nucleiSpectra, processDataFlowAlternative, "Data analysis with flow - alternative framework", false);
 
   Preslice<TrackCandidates> tracksPerCollisions = aod::track::collisionId;
+  Preslice<aod::McParticles> particlesPerMcCollision = aod::mcparticle::mcCollisionId;
   void processMC(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mcCollisions, soa::Join<TrackCandidates, aod::McTrackLabels> const& tracks, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)
   {
     nuclei::candidates.clear();
+
+    bool selectINELgt0 = cfgEventSelections->get(nuclei::evSel::kINELgt0);
+    std::vector<bool> goodCollisions(mcCollisions.size(), false);
+    std::vector<uint8_t> eventMask(mcCollisions.size(), 0);
+
+    auto* pdgDB = TDatabasePDG::Instance(); // Useful for evaluating the particle charge
+
     for (const auto& c : mcCollisions) {
+
+      uint8_t mask = 0;
+
+      const auto& slicedParticles = particlesMC.sliceBy(particlesPerMcCollision, c.globalIndex());
+
+      bool hasHitFT0A(false);
+      bool hasHitFT0C(false);
+
+      // TVX trigger
+      for (const auto& p : slicedParticles) {
+        if (!p.isPhysicalPrimary())
+          continue;
+
+        auto* pdg = pdgDB->GetParticle(p.pdgCode());
+        if (!pdg || pdg->Charge() == 0)
+          continue;
+
+        // Apply the TVX trigger condition
+        if (p.eta() > 3.5f && p.eta() < 4.9f)
+          hasHitFT0A = true;
+        else if (p.eta() > -3.3f && p.eta() < -2.1f)
+          hasHitFT0C = true;
+
+        if (hasHitFT0A && hasHitFT0C)
+          break;
+      }
+
+      if (hasHitFT0A && hasHitFT0C)
+        mask |= nuclei::kGenTVX;
+
+      // |z| condition
+      if (std::abs(c.posZ()) < cfgCutVertex)
+        mask |= nuclei::kGenZvtx;
+
+      // INEL > 0 selection
+      if (selectINELgt0) {
+        if (o2::pwglf::isINELgt0mc(slicedParticles, pdgDB)) {
+          mask |= nuclei::kGenINELgt0;
+        }
+      }
+
+      eventMask[c.globalIndex()] = mask;
+      GenEventMCSel(mask);
       spectra.fill(HIST("hGenVtxZ"), c.posZ());
     }
-    std::vector<bool> goodCollisions(mcCollisions.size(), false);
+
     for (const auto& collision : collisions) {
       if (!eventSelectionWithHisto(collision)) {
         continue;
@@ -926,6 +990,7 @@ struct nucleiSpectra {
       const auto& slicedTracks = tracks.sliceBy(tracksPerCollisions, collision.globalIndex());
       fillDataInfo(collision, slicedTracks);
     }
+
     std::vector<bool> isReconstructed(particlesMC.size(), false);
     for (auto& c : nuclei::candidates) {
       auto label = tracks.iteratorAt(c.globalIndex);
@@ -987,7 +1052,7 @@ struct nucleiSpectra {
 
       isReconstructed[particle.globalIndex()] = true;
       float absoDecL = computeAbsoDecL(particle);
-      nucleiTableMC(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.nContrib, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.TOFchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.TPCnClsShared, c.clusterSizesITS, goodCollisions[particle.mcCollisionId()], particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), motherPdgCode, motherDecRadius, absoDecL);
+      nucleiTableMCExtension(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.nContrib, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.TOFchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.TPCnClsShared, c.clusterSizesITS, goodCollisions[particle.mcCollisionId()], particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), motherPdgCode, motherDecRadius, absoDecL, eventMask[particle.mcCollisionId()]);
     }
 
     int index{0};
@@ -1039,7 +1104,7 @@ struct nucleiSpectra {
             continue; // skip secondaries from material if not requested
           }
           float absDecL = computeAbsoDecL(particle);
-          nucleiTableMC(999., 999., 999., 0., 0., 999., -1, 999., 999., -1, -1, -1, -1, flags, 0, 0, 0, 0, 0, 0, goodCollisions[particle.mcCollisionId()], particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), motherPdgCode, motherDecRadius, absDecL);
+          nucleiTableMCExtension(999., 999., 999., 0., 0., 999., -1, 999., 999., -1, -1, -1, -1, flags, 0, 0, 0, 0, 0, 0, goodCollisions[particle.mcCollisionId()], particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), motherPdgCode, motherDecRadius, absDecL, eventMask[particle.mcCollisionId()]);
         }
         break;
       }

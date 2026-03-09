@@ -17,6 +17,7 @@
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
@@ -228,12 +229,12 @@ struct CalibTaskEmc {
   Filter collisionFilter = (nabs(aod::collision::posZ) <= eventcuts.cfgZvtxMax) && (aod::evsel::ft0cOccupancyInTimeRange <= eventcuts.cfgFT0COccupancyMax) && (aod::evsel::ft0cOccupancyInTimeRange >= eventcuts.cfgFT0COccupancyMin);
   using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::MinClusters, aod::NonLinEmcClusters>;
   using PCMPhotons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds, aod::NonLinV0s>;
-  using FilteredCollsWithQvecs = soa::Filtered<soa::Join<aod::EMEvents_004, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000>>;
-  using CollsWithQvecs = soa::Join<aod::EMEvents_004, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000>;
-  using Colls = soa::Join<aod::EMEvents_004, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000>;
+  using FilteredCollsWithQvecs = soa::Filtered<soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000>>;
+  using CollsWithQvecs = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000>;
+  using Colls = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000>;
 
-  PresliceOptional<EMCalPhotons> perCollisionEMC = o2::aod::emccluster::emphotoneventId;
-  PresliceOptional<PCMPhotons> perCollisionPCM = aod::v0photonkf::emphotoneventId;
+  PresliceOptional<EMCalPhotons> perCollisionEMC = o2::aod::emccluster::pmeventId;
+  PresliceOptional<PCMPhotons> perCollisionPCM = aod::v0photonkf::pmeventId;
   PresliceOptional<MinMTracks> perEMCClusterMT = o2::aod::mintm::minClusterId;
   PresliceOptional<MinMSTracks> perEMCClusterMS = o2::aod::mintm::minClusterId;
 
