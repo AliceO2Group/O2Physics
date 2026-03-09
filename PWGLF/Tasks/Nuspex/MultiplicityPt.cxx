@@ -66,10 +66,7 @@ struct MultiplicityPt {
   // Service
   Service<o2::framework::O2DatabasePDG> pdg;
 
-  //===========================================================================
-  // Configurable Parameters
-  //===========================================================================
-  // Add CCDB service for magnetic field
+
   Service<ccdb::BasicCCDBManager> ccdb;
 
   Configurable<bool> isRun3{"isRun3", true, "is Run3 dataset"};
