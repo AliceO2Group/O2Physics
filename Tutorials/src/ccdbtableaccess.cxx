@@ -13,12 +13,12 @@
 /// \author Daiki Sekihata
 /// \since 2026-03-01
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsCalibration/MeanVertexObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 #include <chrono>
 
@@ -30,12 +30,12 @@ namespace o2::aod
 {
 namespace testccdb
 {
-DECLARE_SOA_CCDB_COLUMN(GRPMagField, grpMagField, o2::parameters::GRPMagField, "GLO/Config/GRPMagField"); //!
+DECLARE_SOA_CCDB_COLUMN(GRPMagField, grpMagField, o2::parameters::GRPMagField, "GLO/Config/GRPMagField");   //!
 DECLARE_SOA_CCDB_COLUMN(MeanVertex, meanVertex, o2::dataformats::MeanVertexObject, "GLO/Calib/MeanVertex"); //!
 } // namespace testccdb
 
 DECLARE_SOA_TIMESTAMPED_TABLE(MyCCDBObjects, aod::Timestamps, o2::aod::timestamp::Timestamp, 1, "MYCCDBOBJ", //!
-    testccdb::GRPMagField, testccdb::MeanVertex);
+                              testccdb::GRPMagField, testccdb::MeanVertex);
 } // namespace o2::aod
 
 struct TestCCDBTable {
@@ -46,7 +46,7 @@ struct TestCCDBTable {
   void process(MyBCs const& bcs)
   {
     int i = 0;
-    for (const auto& bc: bcs) {
+    for (const auto& bc : bcs) {
       if (i >= 5) {
         return;
       }
@@ -56,7 +56,6 @@ struct TestCCDBTable {
       i++;
     }
   }
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
