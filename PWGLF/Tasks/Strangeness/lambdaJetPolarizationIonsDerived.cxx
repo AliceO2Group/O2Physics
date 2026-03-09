@@ -30,27 +30,33 @@
 //    cicero.domenico.muncinelli@cern.ch
 //
 
+#include <CommonConstants/PhysicsConstants.h>
+#include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/Logger.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
 // Custom data model:
 #include "PWGLF/DataModel/lambdaJetPolarizationIons.h"
 
 #include <cmath>
-#include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
 // #include <TLorentzVector.h>
 // #include <TVector3.h>
 // New recommended format:
-#include <Math/Vector3D.h>
+#include <Math/Vector3D.h> // clang-tidy usually confuses this! Careful!
 #include <Math/Vector4D.h>
 #include <Math/VectorUtil.h>
+#include <TProfile.h>
 #include <TRandom3.h> // For perpendicular jet direction QAs
 
 using namespace o2;

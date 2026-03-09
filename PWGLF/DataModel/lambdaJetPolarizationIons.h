@@ -22,7 +22,6 @@
 
 #include <Framework/ASoA.h>
 #include <cmath>
-#include <cstdint>
 
 namespace o2::aod
 {

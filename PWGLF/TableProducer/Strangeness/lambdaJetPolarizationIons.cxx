@@ -28,13 +28,16 @@
 
 // Standard Library
 #include <cmath>
-#include <cstdint>
+#include <cstddef>
 #include <map>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
 // PWGLF
 #include "PWGLF/DataModel/lambdaJetPolarizationIons.h"
+#include "RCTSelectionFlags.h"
+#include "EventSelectionParams.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 // #include "Common/DataModel/PIDResponseTOF.h" // Maybe switch this around with LFStrangenessPIDTables?
 #include "PWGLF/DataModel/LFStrangenessTables.h" // For V0TOFPIDs and NSigmas getters. Better for considering the daughters as coming from V0s instead of from PV:
@@ -57,13 +60,21 @@
 
 // Common Core
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
 
 // Framework
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/DataTypes.h>
 #include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
 // O2 subsystems
@@ -71,22 +82,20 @@
 #include <CCDB/CcdbApi.h>
 #include "Common/CCDB/ctpRateFetcher.h"
 #include <DataFormatsParameters/GRPMagField.h>
-#include <ReconstructionDataFormats/Track.h>
 
 // External libraries
 #include <fastjet/AreaDefinition.hh>
 #include <fastjet/ClusterSequence.hh>
 #include <fastjet/ClusterSequenceArea.hh>
 #include <fastjet/GhostedAreaSpec.hh>
+#include <fastjet/JetDefinition.hh>
 #include <fastjet/PseudoJet.hh>
-#include <fastjet/Selector.hh>
-#include <fastjet/tools/JetMedianBackgroundEstimator.hh>
-#include <fastjet/tools/Subtractor.hh>
+#include <sys/types.h>
 
 // ROOT math
-#include "Math/GenVector/Boost.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
+#include <TF1.h>
+#include <TH1.h>
+#include <TH2.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -970,9 +979,24 @@ struct lambdajetpolarizationions {
     HistogramRegistry* histos = nullptr; // Had to pass the histos group to this struct, as it was not visible to the members of this struct
 
     void resetForNewV0() { binValue = -1; }
+    // Advance to targetBinX, filling all intermediate bins.
+    // Use this for DISABLED cuts within a single hypothesis
+    // (shows pass-through count as a flat line, making it visually
+    // clear that the stage was not active).
+    // (Replaces N dummy fill() calls)
+    void fillUpTo(int targetBinX) {
+        while (binValue < targetBinX)
+          histos->fill(HIST("GeneralQA/hSelectionV0s"), ++binValue);
+    }
+
+    void advanceTo(int targetBinX) { binValue = targetBinX - 1; } // next fill() lands at targetBin. Needed to deal with early exits at isLambda vs isAntiLambda checks
     void fill() { histos->fill(HIST("GeneralQA/hSelectionV0s"), ++binValue); } // Hardcoded hSelectionV0s histogram, as it will not change. Increments before filling, by default
   };
-  V0SelectionFlowCounter V0SelCounter{0, &histos};
+  V0SelectionFlowCounter V0SelCounter{-1, &histos}; // Could initialize with any index (resetForNewV0 is always called for a new V0 anyways)
+    // Calculating some bins, for convenience:
+  int nGenericCuts  = 31; // x=0 to x=30
+  int nHypoCuts     = 9;  // per hypothesis (x=31..39 for Lambda)
+  int lambdaHypoEnd = nGenericCuts + nHypoCuts - 1; // x=39
 
   // Minimal helper to fill hSelectionJetTracks, mirroring V0SelectionFlowCounter.
   // Reset once per track candidate, fill once per passed cut stage.
@@ -982,7 +1006,7 @@ struct lambdajetpolarizationions {
     void resetForNewTrack() { binValue = -1; }
     void fill() { histos->fill(HIST("GeneralQA/hSelectionJetTracks"), ++binValue); }
   };
-  JetTrackSelectionFlowCounter JetTrackSelCounter{0, &histos};
+  JetTrackSelectionFlowCounter JetTrackSelCounter{-1, &histos};
 
   // Short inlined helper to simplify QA
   inline void fillEventSelectionQA(int bin, float centrality)
@@ -1418,11 +1442,8 @@ struct lambdajetpolarizationions {
       // correct for the V0 mother's travel time and considers all tracks as if they came from the PV!
       // if (protonHasTOF && std::fabs(protonTrack.tofNSigmaPr()) > v0Selections.tofPidNsigmaCutLaPr) return false;
       // To properly use the LFStrangenessPIDTables version, you need to call o2-analysis-lf-strangenesstofpid too.
-    } else { // Should fill counters an equal number of times to advance indices (TODO: implement better solution, such as just advancing the index)
-      V0SelCounter.fill();
-      V0SelCounter.fill();
-      V0SelCounter.fill();
-      V0SelCounter.fill();
+    } else { // Should fill counters an equal number of times to advance indices
+      V0SelCounter.fillUpTo(V0SelCounter.binValue + 4); // Fills the 4 times "V0SelCounter.fill()" would be called
     }
 
     // proper lifetime
@@ -1766,8 +1787,11 @@ struct lambdajetpolarizationions {
       bool isAntiLambda = false;
       if (analyseLambda)
         isLambda = passesLambdaLambdaBarHypothesis(v0, collision, true);
-      if (analyseAntiLambda)
+      if (analyseAntiLambda) {
+        if (analyseLambda) // We only need to advance when the Lambda hypothesis had an early exit on the counters
+          V0SelCounter.advanceTo(lambdaHypoEnd + 1); // sync to bin 41 (x=40 means bin 41, the first #bar{#Lambda} bin)
         isAntiLambda = passesLambdaLambdaBarHypothesis(v0, collision, false);
+      }
 
       if (!isLambda && !isAntiLambda)
         continue; // Candidate is not considered to be a Lambda-like
