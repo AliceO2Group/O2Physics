@@ -723,8 +723,10 @@ struct PhotonConversionBuilder {
     kfp_pos_DecayVtx.TransportToPoint(xyz); // Don't set Primary Vertex
     kfp_ele_DecayVtx.TransportToPoint(xyz); // Don't set Primary Vertex
 
+    float cospaXY_kf = cospaXY_KF(gammaKF_DecayVtx, KFPV);
+    float cospaRZ_kf = cospaRZ_KF(gammaKF_DecayVtx, KFPV);
     CentType centType = static_cast<CentType>(centTypePCMMl.value);
-    v0photoncandidate.setPhotonCandidate(gammaKF_DecayVtx, kfp_pos_DecayVtx, kfp_ele_DecayVtx, collision, cospa_kf, psipair, phiv, centType);
+    v0photoncandidate.setPhotonCandidate(gammaKF_DecayVtx, gammaKF_PV, pos, kfp_pos_DecayVtx, ele, kfp_ele_DecayVtx, collision, cospa_kf, cospaRZ_kf, cospaXY_kf, psipair, phiv, centType, posdcaXY, posdcaZ, eledcaXY, eledcaZ);
 
     if (!ele.hasITS() && !pos.hasITS()) { // V0s with TPConly-TPConly
       if (max_r_itsmft_ss < rxy && rxy < maxX + margin_r_tpc) {
@@ -822,8 +824,6 @@ struct PhotonConversionBuilder {
       registry.fill(HIST("V0/hPCA_diffX"), v0photoncandidate.getPCA(), std::min(pTrack.getX(), nTrack.getX()) - rxy); // trackiu.x() - rxy should be positive
       registry.fill(HIST("V0/hPhiVPsiPair"), v0photoncandidate.getPsiPair(), v0photoncandidate.getPhiV());
 
-      float cospaXY_kf = cospaXY_KF(gammaKF_DecayVtx, KFPV);
-      float cospaRZ_kf = cospaRZ_KF(gammaKF_DecayVtx, KFPV);
       // LOGF(info, "cospa_kf = %f, cospaXY_kf = %f, cospaRZ_kf = %f", cospa_kf, cospaXY_kf, cospaRZ_kf);
       registry.fill(HIST("V0/hCosPAXY_Rxy"), rxy, cospaXY_kf);
       registry.fill(HIST("V0/hCosPARZ_Rxy"), rxy, cospaRZ_kf);
