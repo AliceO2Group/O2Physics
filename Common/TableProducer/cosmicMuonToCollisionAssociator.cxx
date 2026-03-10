@@ -44,12 +44,13 @@
 
 #include "TPDGCode.h"
 #include <TRandom.h>
+
 #include <algorithm>
-#include <unordered_set>
-#include <string>
 #include <chrono>
 #include <random>
+#include <string>
 #include <typeinfo>
+#include <unordered_set>
 #include <vector>
 
 namespace o2
@@ -1590,8 +1591,7 @@ struct CosmicMuonToCollisionAssociator {
               // upperTrk.eventCollisionTime(),
 
               lowerTrk.goodTOFMatch(),
-              lowerTrk.tofSignal()
-            );
+              lowerTrk.tofSignal());
         }
         if constexpr (mode == kProcessWithPidEvTimeFlags) {
           if (cfgCM.produceTable12)
