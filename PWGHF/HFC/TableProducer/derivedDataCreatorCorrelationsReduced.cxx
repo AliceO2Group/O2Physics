@@ -266,20 +266,21 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   /// Cut on rapidity of the candidate
   /// \param candidate is the charm hadron candidate
   template <CandidateType CandType, typename TCand>
-  bool cutCandRapidity(const TCand& candidate) {
-      double y = 0.0;
-      if constexpr (CandType == CandidateType::DsToKKPi || CandType == CandidateType::DsToPiKK) {
-          y = HfHelper::yDs(candidate);
-      } else if constexpr (CandType == CandidateType::DplusToPiKPi) {
-          y = HfHelper::yDplus(candidate);
-      } else if constexpr (CandType == CandidateType::D0ToPiK || CandType == CandidateType::D0ToKPi) {
-          y = HfHelper::yD0(candidate);
-      } else if constexpr (CandType == CandidateType::LcToPKPi) {
-          y = HfHelper::yLc(candidate);
-      } else {
-          return true;
-      }
-      return std::fabs(y) < yCandMax;
+  bool cutCandRapidity(const TCand& candidate)
+  {
+    double y = 0.0;
+    if constexpr (CandType == CandidateType::DsToKKPi || CandType == CandidateType::DsToPiKK) {
+      y = HfHelper::yDs(candidate);
+    } else if constexpr (CandType == CandidateType::DplusToPiKPi) {
+      y = HfHelper::yDplus(candidate);
+    } else if constexpr (CandType == CandidateType::D0ToPiK || CandType == CandidateType::D0ToKPi) {
+      y = HfHelper::yD0(candidate);
+    } else if constexpr (CandType == CandidateType::LcToPKPi) {
+      y = HfHelper::yLc(candidate);
+    } else {
+      return true;
+    }
+    return std::fabs(y) < yCandMax;
   }
 
   /// Check event selections for collision and fill the collision table
