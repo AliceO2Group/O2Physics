@@ -55,6 +55,7 @@ namespace o2::analysis
 enum class InputFeaturesPCM : uint8_t {
   v0PhotonCandidatefVx,
   v0PhotonCandidatefVy,
+  v0PhotonCandidatefVz,
   v0PhotonCandidatefDCAxyToPV,
   v0PhotonCandidatefDCAzToPV,
   v0PhotonCandidatefPCA,
@@ -92,7 +93,7 @@ enum class InputFeaturesPCM : uint8_t {
   negV0LegfITSClusterSizes
 };
 
-template <typename TypeOutputScore = float>
+template <std::floating_point TypeOutputScore = float>
 class EmMlResponsePCM : public EmMlResponse<TypeOutputScore>
 {
  public:
@@ -111,8 +112,9 @@ class EmMlResponsePCM : public EmMlResponse<TypeOutputScore>
 
     for (const auto& idx : MlResponse<TypeOutputScore>::mCachedIndices) {
       switch (idx) {
-        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefVx, getX);
-        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefVy, getY);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefVx, getConversionPointX);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefVy, getConversionPointY);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefVz, getConversionPointZ);
         CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefDCAxyToPV, getDcaXYToPV);
         CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefDCAzToPV, getDcaZToPV);
         CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefPCA, getPCA);
@@ -160,6 +162,7 @@ class EmMlResponsePCM : public EmMlResponse<TypeOutputScore>
     MlResponse<TypeOutputScore>::mAvailableInputFeatures = {
       FILL_MAP_PCM(v0PhotonCandidatefVx),
       FILL_MAP_PCM(v0PhotonCandidatefVy),
+      FILL_MAP_PCM(v0PhotonCandidatefVz),
       FILL_MAP_PCM(v0PhotonCandidatefDCAxyToPV),
       FILL_MAP_PCM(v0PhotonCandidatefDCAzToPV),
       FILL_MAP_PCM(v0PhotonCandidatefPCA),

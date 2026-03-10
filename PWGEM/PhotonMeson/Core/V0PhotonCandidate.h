@@ -36,22 +36,22 @@ struct V0PhotonCandidate {
   V0PhotonCandidate() = default;
   // Set method for photonconversionbuilder
   template <class TTrack>
-  void setPhotonCandidate(const KFParticle& v0_DecayVtx, const KFParticle& v0_PV, const TTrack& pos, const KFParticle& pos_DecayVtx, const TTrack& ele, const KFParticle& ele_DecayVtx, const auto& collision, float cospa, float cospaRZ, float cospaXY, float psipair, float phiv, CentType centType, auto posdcaXY, auto eledcaXY, auto posdcaZ, auto eledcaZ)
+  void setPhotonCandidate(const KFParticle& v0DecayVtx, const KFParticle& v0PV, const TTrack& pos, const KFParticle& posDecayVtx, const TTrack& ele, const KFParticle& eleDecayVtx, const auto& collision, float cospa, float cospaRZ, float cospaXY, float psipair, float phiv, CentType centType, auto posdcaXY, auto eledcaXY, auto posdcaZ, auto eledcaZ)
   {
-    x = v0_DecayVtx.GetX();
-    y = v0_DecayVtx.GetY();
-    z = v0_DecayVtx.GetZ();
-    px = v0_PV.GetPx();
-    py = v0_PV.GetPy();
-    pz = v0_PV.GetPz();
+    conversionPointx = v0DecayVtx.GetX();
+    conversionPointy = v0DecayVtx.GetY();
+    conversionPointz = v0DecayVtx.GetZ();
+    px = v0PV.GetPx();
+    py = v0PV.GetPy();
+    pz = v0PV.GetPz();
     pT = RecoDecay::sqrtSumOfSquares(px, py);
 
-    posPx = pos_DecayVtx.GetPx();
-    posPy = pos_DecayVtx.GetPy();
-    posPz = pos_DecayVtx.GetPz();
-    elePx = ele_DecayVtx.GetPx();
-    elePy = ele_DecayVtx.GetPy();
-    elePz = ele_DecayVtx.GetPz();
+    posPx = posDecayVtx.GetPx();
+    posPy = posDecayVtx.GetPy();
+    posPz = posDecayVtx.GetPz();
+    elePx = eleDecayVtx.GetPx();
+    elePy = eleDecayVtx.GetPy();
+    elePz = eleDecayVtx.GetPz();
     posPT = RecoDecay::sqrtSumOfSquares(posPx, posPy);
     elePT = RecoDecay::sqrtSumOfSquares(elePx, elePy);
     posEta = RecoDecay::eta(std::array{posPx, posPy, posPz});
@@ -72,20 +72,20 @@ struct V0PhotonCandidate {
     eleTPCSignal = ele.tpcSignal();
     eleITSClusterSizes = ele.itsClusterSizes();
 
-    chi2ndf = v0_DecayVtx.GetChi2() / v0_DecayVtx.GetNDF();
-    pca = pos_DecayVtx.GetDistanceFromParticle(ele_DecayVtx);
+    chi2ndf = v0DecayVtx.GetChi2() / v0DecayVtx.GetNDF();
+    pca = posDecayVtx.GetDistanceFromParticle(eleDecayVtx);
     eta = RecoDecay::eta(std::array{px, py, pz});
     posEta = RecoDecay::eta(std::array{posPx, posPy, posPz});
     eleEta = RecoDecay::eta(std::array{elePx, elePy, elePz});
 
-    float v0mom = RecoDecay::sqrtSumOfSquares(v0_DecayVtx.GetPx(), v0_DecayVtx.GetPy(), v0_DecayVtx.GetPz());
-    float length = RecoDecay::sqrtSumOfSquares(v0_DecayVtx.GetX() - collision.posX(), v0_DecayVtx.GetY() - collision.posY(), v0_DecayVtx.GetZ() - collision.posZ());
-    float dcaXV0ToPV = (v0_DecayVtx.GetX() - v0_DecayVtx.GetPx() * cospa * length / v0mom) - collision.posX();
-    float dcaYV0ToPV = (v0_DecayVtx.GetY() - v0_DecayVtx.GetPy() * cospa * length / v0mom) - collision.posY();
+    float v0mom = RecoDecay::sqrtSumOfSquares(v0DecayVtx.GetPx(), v0DecayVtx.GetPy(), v0DecayVtx.GetPz());
+    float length = RecoDecay::sqrtSumOfSquares(v0DecayVtx.GetX() - collision.posX(), v0DecayVtx.GetY() - collision.posY(), v0DecayVtx.GetZ() - collision.posZ());
+    float dcaXV0ToPV = (v0DecayVtx.GetX() - v0DecayVtx.GetPx() * cospa * length / v0mom) - collision.posX();
+    float dcaYV0ToPV = (v0DecayVtx.GetY() - v0DecayVtx.GetPy() * cospa * length / v0mom) - collision.posY();
     float tmpSign = (dcaXV0ToPV * dcaYV0ToPV > 0.f) ? +1.f : -1.f;
 
     dcaXYV0ToPV = RecoDecay::sqrtSumOfSquares(dcaXV0ToPV, dcaYV0ToPV) * tmpSign;
-    dcaZV0ToPV = (v0_DecayVtx.GetZ() - v0_DecayVtx.GetPz() * cospa * length / v0mom) - collision.posZ();
+    dcaZV0ToPV = (v0DecayVtx.GetZ() - v0DecayVtx.GetPz() * cospa * length / v0mom) - collision.posZ();
 
     alpha = v0_alpha(posPx, posPy, posPz, elePx, elePy, elePz);
     qt = v0_qt(posPx, posPy, posPz, elePx, elePy, elePz);
@@ -117,9 +117,9 @@ struct V0PhotonCandidate {
   // Set-Method for V0PhotonCut
   void setPhoton(const auto& v0, const auto& pos, const auto& ele, float cent, CentType centType)
   {
-    x = v0.vx();
-    y = v0.vy();
-    z = v0.vz();
+    conversionPointx = v0.vx();
+    conversionPointy = v0.vy();
+    conversionPointz = v0.vz();
     px = v0.px();
     py = v0.py();
     pz = v0.pz();
@@ -192,9 +192,9 @@ struct V0PhotonCandidate {
   float getEta() const { return eta; }
   float getPosEta() const { return posEta; }
   float getEleEta() const { return eleEta; }
-  float getX() const { return x; }
-  float getY() const { return y; }
-  float getZ() const { return z; }
+  float getConversionPointX() const { return conversionPointx; }
+  float getConversionPointY() const { return conversionPointy; }
+  float getConversionPointZ() const { return conversionPointz; }
   float getPx() const { return px; }
   float getPy() const { return py; }
   float getPz() const { return pz; }
@@ -228,9 +228,9 @@ struct V0PhotonCandidate {
   CentType getCentType() const { return centType; }
 
  private:
-  float x;
-  float y;
-  float z;
+  float conversionPointx;
+  float conversionPointy;
+  float conversionPointz;
   float px;
   float py;
   float pz;

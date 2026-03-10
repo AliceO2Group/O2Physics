@@ -100,8 +100,8 @@ struct Pi0EtaToGammaGamma {
 
   o2::framework::Configurable<int> cfgAlphaMesonCut{"cfgAlphaMesonCut", 0, "flag for photon energy asymmetry distribution cut: 0: no cut, 1: cut specific value, 2: cut depending on pT"};
   o2::framework::Configurable<float> cfgAlphaMeson{"cfgAlphaMeson", 0.65, "photon energy asymmetry distribution parameter for specific value cut"};
-  o2::framework::Configurable<float> cfgAlphaMesonA{"cfgAlphaMesonA", 0.65, "photon energy asymmetry distribution parameter A for pT dependent cut"};
-  o2::framework::Configurable<float> cfgAlphaMesonB{"cfgAlphaMesonB", 1.2, "photon energy asymmetry distribution parameter B for pT dependent cut"};
+  o2::framework::Configurable<float> cfgAlphaMesonA{"cfgAlphaMesonA", 0.65, "photon energy asymmetry distribution parameter A for pT dependent cut(A * tanh(B*pT))"};
+  o2::framework::Configurable<float> cfgAlphaMesonB{"cfgAlphaMesonB", 1.2, "photon energy asymmetry distribution parameter B for pT dependent cut (A * tanh(B*pT))"};
 
   EMPhotonEventCut fEMEventCut;
   struct : o2::framework::ConfigurableGroup {
@@ -891,23 +891,22 @@ struct Pi0EtaToGammaGamma {
             continue;
           }
 
-          float alpha_meson = std::fabs(g1.e() - g2.e()) / (g1.e() + g2.e());
-          float alpha_cut = 999.f;
-          AlphaMesonCutOption alpha_meson_cut = static_cast<AlphaMesonCutOption>(cfgAlphaMesonCut.value);
-          switch (alpha_meson_cut) {
+          float alphaMeson = std::fabs(g1.e() - g2.e()) / (g1.e() + g2.e());
+          float alphaCut = 999.f;
+          switch (static_cast<AlphaMesonCutOption>(cfgAlphaMesonCut.value)) {
             case AlphaMesonCutOption::Off:
               break;
             case AlphaMesonCutOption::SpecificValue:
-              alpha_cut = cfgAlphaMeson;
+              alphaCut = cfgAlphaMeson;
               break;
             case AlphaMesonCutOption::PTDependent: {
-              alpha_cut = cfgAlphaMesonA * std::tanh(cfgAlphaMesonB * v12.pt());
+              alphaCut = cfgAlphaMesonA * std::tanh(cfgAlphaMesonB * v12.pt());
               break;
             }
             default:
               LOGF(error, "Invalid option for alpha meson cut. No alpha cut will be applied.");
           }
-          if (alpha_meson > alpha_cut) {
+          if (alphaMeson > alphaCut) {
             continue;
           }
 
