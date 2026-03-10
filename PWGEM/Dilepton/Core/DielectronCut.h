@@ -67,6 +67,7 @@ class DielectronCut : public TNamed
     kITSNCls,
     kITSChi2NDF,
     kITSClusterSize,
+    kTTCA,
     kPrefilter,
     kNCuts
   };
@@ -210,6 +211,9 @@ class DielectronCut : public TNamed
     if (!IsSelectedTrack(track, DielectronCuts::kITSClusterSize)) {
       return false;
     }
+    if (!IsSelectedTrack(track, DielectronCuts::kTTCA)) {
+      return false;
+    }
 
     if (mRequireITSibAny) {
       auto hits_ib = std::count_if(its_ib_any_Requirement.second.begin(), its_ib_any_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
@@ -225,34 +229,35 @@ class DielectronCut : public TNamed
       }
     }
 
-    // if (!mIncludeITSsa && (!track.hasITS() || !track.hasTPC())) { // track has to be ITS-TPC matched track
-    //   return false;
-    // }
+    if (!mIncludeITSsa && (!track.hasITS() || !track.hasTPC())) { // track has to be ITS-TPC matched track
+      return false;
+    }
 
     // if ((track.hasITS() && !track.hasTPC() && !track.hasTRD() && !track.hasTOF()) && track.pt() > mMaxPtITSsa) { // ITSsa
     //   return false;
     // }
 
     // TPC cuts
-    if (!IsSelectedTrack(track, DielectronCuts::kTPCNCls)) {
-      return false;
+    if (track.hasTPC()) {
+      if (!IsSelectedTrack(track, DielectronCuts::kTPCNCls)) {
+        return false;
+      }
+      if (!IsSelectedTrack(track, DielectronCuts::kTPCCrossedRows)) {
+        return false;
+      }
+      if (!IsSelectedTrack(track, DielectronCuts::kTPCCrossedRowsOverNCls)) {
+        return false;
+      }
+      if (!IsSelectedTrack(track, DielectronCuts::kTPCFracSharedClusters)) {
+        return false;
+      }
+      if (!IsSelectedTrack(track, DielectronCuts::kRelDiffPin)) {
+        return false;
+      }
+      if (!IsSelectedTrack(track, DielectronCuts::kTPCChi2NDF)) {
+        return false;
+      }
     }
-    if (!IsSelectedTrack(track, DielectronCuts::kTPCCrossedRows)) {
-      return false;
-    }
-    if (!IsSelectedTrack(track, DielectronCuts::kTPCCrossedRowsOverNCls)) {
-      return false;
-    }
-    if (!IsSelectedTrack(track, DielectronCuts::kTPCFracSharedClusters)) {
-      return false;
-    }
-    if (!IsSelectedTrack(track, DielectronCuts::kRelDiffPin)) {
-      return false;
-    }
-    if (!IsSelectedTrack(track, DielectronCuts::kTPCChi2NDF)) {
-      return false;
-    }
-
     if (mApplyPF && !IsSelectedTrack(track, DielectronCuts::kPrefilter)) {
       return false;
     }
@@ -469,6 +474,9 @@ class DielectronCut : public TNamed
       case DielectronCuts::kITSClusterSize:
         return mMinMeanClusterSizeITS < track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())) && track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())) < mMaxMeanClusterSizeITS;
 
+      case DielectronCuts::kTTCA:
+        return mEnableTTCA ? true : track.isAssociatedToMPC();
+
       case DielectronCuts::kPrefilter:
         return track.pfb() <= 0;
 
@@ -537,6 +545,7 @@ class DielectronCut : public TNamed
   void ApplyPrefilter(bool flag);
   void ApplyPhiV(bool flag);
   void IncludeITSsa(bool flag, float maxpt);
+  void EnableTTCA(bool flag);
 
   void SetPIDMlResponse(o2::analysis::MlResponseDielectronSingleTrack<float>* mlResponse)
   {
@@ -609,7 +618,7 @@ class DielectronCut : public TNamed
   float mMinMeanClusterSizeITS{0.0}, mMaxMeanClusterSizeITS{1e10f}; // <its cluster size> x cos(lmabda)
   // float mMinP_ITSClusterSize{0.0}, mMaxP_ITSClusterSize{0.0};
   bool mIncludeITSsa{false};
-  float mMaxPtITSsa{0.15};
+  float mMaxPtITSsa{1e+10};
 
   // pid cuts
   int mPIDScheme{-1};
@@ -627,6 +636,7 @@ class DielectronCut : public TNamed
   float mMinTOFNsigmaPi{-1e+10}, mMaxTOFNsigmaPi{+1e+10};
   float mMinTOFNsigmaKa{-1e+10}, mMaxTOFNsigmaKa{+1e+10};
   float mMinTOFNsigmaPr{-1e+10}, mMaxTOFNsigmaPr{+1e+10};
+  bool mEnableTTCA{true};
 
   // float mMinITSNsigmaEl{-1e+10}, mMaxITSNsigmaEl{+1e+10};
   // float mMinITSNsigmaMu{-1e+10}, mMaxITSNsigmaMu{+1e+10};

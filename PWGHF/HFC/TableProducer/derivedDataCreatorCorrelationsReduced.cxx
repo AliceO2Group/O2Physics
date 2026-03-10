@@ -88,6 +88,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   Configurable<float> ptCandMax{"ptCandMax", 24., "max. cand. pT"};
   Configurable<int> tpcNClsCrossedRowsMin{"tpcNClsCrossedRowsMin", 70, "min. TPC crossed rows for associated tracks"};
   Configurable<float> etaTrkMax{"etaTrkMax", 1., "max. track eta"};
+  Configurable<float> etaCandMax{"etaCandMax", 1., "max. trigger candidate eta"};
   Configurable<float> ptTrkMin{"ptTrkMin", 0.2, "min. track pT"};
   Configurable<float> ptTrkMax{"ptTrkMax", 3., "max. track pT"};
   Configurable<float> dcaXYTrkMax{"dcaXYTrkMax", 1., "max. track DCA XY"};
@@ -335,6 +336,9 @@ struct HfDerivedDataCreatorCorrelationsReduced {
                      const float collCentrality)
   {
     for (const auto& trigCand : trigCands) {
+      if (std::fabs(trigCand.eta()) >= etaCandMax) {
+        continue;
+      }
       double trigCandPt = trigCand.pt();
       registry.fill(HIST("hPhiVsPtTrig"), RecoDecay::constrainAngle(trigCand.phi(), -o2::constants::math::PIHalf), trigCandPt);
       registry.fill(HIST("hEtaVsPtTrig"), trigCand.eta(), trigCandPt);
@@ -388,6 +392,9 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   void fillCharmMixedEvent(TTrigCands const& trigCands)
   {
     for (const auto& trigCand : trigCands) {
+      if (std::fabs(trigCand.eta()) >= etaCandMax) {
+        continue;
+      }
       registry.fill(HIST("hPhiVsPtTrig"), RecoDecay::constrainAngle(trigCand.phi(), -o2::constants::math::PIHalf), trigCand.pt());
       registry.fill(HIST("hEtaVsPtTrig"), trigCand.eta(), trigCand.pt());
 
