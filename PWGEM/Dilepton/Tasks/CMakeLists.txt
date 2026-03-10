@@ -40,6 +40,11 @@ o2physics_add_dpl_workflow(create-resolution-map
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::GlobalTracking
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(create-resolution-map-derived
+                    SOURCES createResolutionMapDerived.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(test-bremsstrahlung
                     SOURCES testBremsstrahlung.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
