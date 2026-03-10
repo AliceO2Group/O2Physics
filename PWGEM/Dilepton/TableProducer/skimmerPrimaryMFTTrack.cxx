@@ -201,7 +201,7 @@ struct skimmerPrimaryMFTTrack {
     // chi2/ndf MFT < 4
     // |dcaXY| < 0.05 cm
 
-    if (mfttrack.nClusters() < 5 || mfttrack.chi2() / ndf > 4.f || std::fabs(dcaXY) > 0.05) {
+    if (mfttrack.nClusters() < 5 || mfttrack.chi2() / ndf > 4.f || std::fabs(dcaXY) > 0.06) {
       return;
     }
 
@@ -222,6 +222,9 @@ struct skimmerPrimaryMFTTrack {
       trackBit |= static_cast<uint16_t>(RefMFTTrackBit::kChi2MFT2);
     }
 
+    if (std::fabs(dcaXY) < 0.05) {
+      trackBit |= static_cast<uint16_t>(RefMFTTrackBit::kDCAxy005cm);
+    }
     if (std::fabs(dcaXY) < 0.04) {
       trackBit |= static_cast<uint16_t>(RefMFTTrackBit::kDCAxy004cm);
     }
