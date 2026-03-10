@@ -195,6 +195,7 @@ DECLARE_SOA_TABLE(JPsieeCandidates, "AOD", "DQPSEUDOPROPER", dqanalysisflags::Ma
 
 // Declarations of various short names
 using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
+using MyEventsBasic = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended>;
 using MyEventsMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsQvectorCentr, aod::ReducedEventsMergingTable>;
 using MyEventsMultExtraQVector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra>;
 using MyEventsZdc = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedZdcs>;
@@ -307,7 +308,7 @@ struct AnalysisEventSelection {
   void init(o2::framework::InitContext& context)
   {
 
-    bool isAnyProcessEnabled = context.mOptions.get<bool>("processSkimmed") || context.mOptions.get<bool>("processSkimmedWithZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtra") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdcFit") || context.mOptions.get<bool>("processSkimmedWithQvectorCentr");
+    bool isAnyProcessEnabled = context.mOptions.get<bool>("processSkimmed") || context.mOptions.get<bool>("processSkimmedBasic") || context.mOptions.get<bool>("processSkimmedWithZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtra") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdcFit") || context.mOptions.get<bool>("processSkimmedWithQvectorCentr");
     bool isDummyEnabled = context.mOptions.get<bool>("processDummy");
 
     if (isDummyEnabled) {
@@ -528,6 +529,11 @@ struct AnalysisEventSelection {
     runEventSelection<gkEventFillMap>(events);
     publishSelections<gkEventFillMap>(events);
   }
+  void processSkimmedBasic(MyEventsBasic const& events)
+  {
+    runEventSelection<gkEventFillMap>(events);
+    publishSelections<gkEventFillMap>(events);
+  }
   void processSkimmedWithZdc(MyEventsZdc const& events)
   {
     runEventSelection<gkEventFillMapWithZdc>(events);
@@ -553,12 +559,13 @@ struct AnalysisEventSelection {
     runEventSelection<gkEventFillMapWithQvectorCentr>(events);
     publishSelections<gkEventFillMapWithQvectorCentr>(events);
   }
-  void processDummy(MyEvents&)
+  void processDummy(MyEventsBasic&)
   {
     // do nothing
   }
 
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmed, "Run event selection on DQ skimmed events", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedBasic, "Run event selection on DQ skimmed events with basic tables", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithZdc, "Run event selection on DQ skimmed events, with ZDC", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtra, "Run event selection on DQ skimmed events, with mult extra", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtraZdc, "Run event selection on DQ skimmed events, with mult extra and ZDC", false);
@@ -814,7 +821,7 @@ struct AnalysisTrackSelection {
   {
     runTrackSelection<gkEventFillMapWithCov, gkTrackFillMapWithCov>(assocs, events, tracks);
   }
-  void processDummy(MyEvents&)
+  void processDummy(MyEventsBasic&)
   {
     // do nothing
   }
@@ -1025,7 +1032,7 @@ struct AnalysisMuonSelection {
   {
     runMuonSelection<gkEventFillMapWithCov, gkMuonFillMapWithCov>(assocs, events, muons);
   }
-  void processDummy(MyEvents&)
+  void processDummy(MyEventsBasic&)
   {
     // do nothing
   }
@@ -1207,7 +1214,7 @@ struct AnalysisPrefilterSelection {
     }
   }
 
-  void processDummy(MyEvents&)
+  void processDummy(MyEventsBasic&)
   {
     // do nothing
   }
@@ -2500,7 +2507,7 @@ struct AnalysisSameEventPairing {
     runSameSideMixing<pairTypeMuMu, gkEventFillMap>(events, muonAssocs, muons, muonAssocsPerCollision);
   }
 
-  void processDummy(MyEvents&)
+  void processDummy(MyEventsBasic&)
   {
     // do nothing
   }
@@ -3246,7 +3253,7 @@ struct AnalysisAsymmetricPairing {
     runThreeProng<true, gkEventFillMapWithCovZdcFit, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, VarManager::kTripleCandidateToPKPi);
   }
 
-  void processDummy(MyEvents&)
+  void processDummy(MyEventsBasic&)
   {
     // do nothing
   }
@@ -3930,7 +3937,7 @@ struct AnalysisDileptonTrack {
     } // end event loop
   }
 
-  void processDummy(MyEvents&)
+  void processDummy(MyEventsBasic&)
   {
     // do nothing
   }
@@ -4185,7 +4192,7 @@ struct AnalysisDileptonTrackTrack {
     }
   }
 
-  void processDummy(MyEvents&)
+  void processDummy(MyEventsBasic&)
   {
     // do nothing
   }

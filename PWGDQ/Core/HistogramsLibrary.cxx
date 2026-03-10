@@ -1169,6 +1169,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "VzMC_VtxZMC", "MC vz vs MC vtxZ", false, 50, -15.0, 15.0, VarManager::kMCVz, 50, -15.0, 15.0, VarManager::kMCVtxZ);
     hm->AddHistogram(histClass, "Weight", "", false, 50, 0.0, 5.0, VarManager::kMCParticleWeight);
     hm->AddHistogram(histClass, "MCImpPar_CentFT0CMC", "MC impact param vs MC Cent. FT0C", false, 20, 0.0, 20.0, VarManager::kMCEventImpParam, 100, 0.0, 100.0, VarManager::kMCEventCentrFT0C);
+    hm->AddHistogram(histClass, "PtMC_MultEta08", "MC pT vs mult |#eta| < 0.8", false, 200, 0.0, 20.0, VarManager::kMCPt, 150, 0.0, 150.0, VarManager::kMultMCNParticlesEta08);
   }
 
   if (!groupStr.CompareTo("energy-correlator-gen")) {
