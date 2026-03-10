@@ -1226,7 +1226,7 @@ struct CosmicMuonToCollisionAssociator {
     float uTrkCollPosZ = 0;
     float lTrkCollPosZ = 0;
 
-    float tpcTime0[2]; // 	 	tpc only time0 (mTime0 in TPC track)
+    float tpcTime0[2]; // tpc only time0 (mTime0 in TPC track)
     float tpcdEdxNorm[2];
     int16_t tpcdcaR[2];            // tpc only DCAr
     int16_t tpcdcaZ[2];            // tpc only DCAz
