@@ -1176,7 +1176,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "PtMC_MultEta10", "MC pT vs mult |#eta| < 1.0", false, 200, 0.0, 20.0, VarManager::kMCPt, 150, 0.0, 150.0, VarManager::kMultMCNParticlesEta10);
     hm->AddHistogram(histClass, "EtaMC_MultEta05", "MC Eta vs mult |#eta| < 0.5", false, 40, -2.0, 2.0, VarManager::kMCEta, 150, 0.0, 150.0, VarManager::kMultMCNParticlesEta05);
     hm->AddHistogram(histClass, "EtaMC_MultEta08", "MC Eta vs mult |#eta| < 0.8", false, 40, -2.0, 2.0, VarManager::kMCEta, 150, 0.0, 150.0, VarManager::kMultMCNParticlesEta08);
-    hm->AddHistogram(histClass, "EtaMC_MultEta10", "MC Eta vs mult |#eta| < 1.0", false, 40, -2.0, 2.0, VarManager::kMCEta, 150, 0.0, 150.0, VarManager::kMultMCNParticlesEta10)
+    hm->AddHistogram(histClass, "EtaMC_MultEta10", "MC Eta vs mult |#eta| < 1.0", false, 40, -2.0, 2.0, VarManager::kMCEta, 150, 0.0, 150.0, VarManager::kMultMCNParticlesEta10);
   }
 
   if (!groupStr.CompareTo("energy-correlator-gen")) {
