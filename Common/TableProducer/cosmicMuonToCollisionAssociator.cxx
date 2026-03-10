@@ -44,10 +44,13 @@
 
 #include "TPDGCode.h"
 #include <TRandom.h>
-
+#include <algorithm>
+#include <unordered_set>
+#include <string>
 #include <chrono>
 #include <random>
 #include <typeinfo>
+#include <vector>
 
 namespace o2
 {
@@ -1288,8 +1291,8 @@ struct CosmicMuonToCollisionAssociator {
       } else {
         tpcTime0[kTrk] = -999.f;
         tpcdEdxNorm[kTrk] = -999.f;
-        tpcdcaR[kTrk] = (int16_t)-999;
-        tpcdcaZ[kTrk] = (int16_t)-999;
+        tpcdcaR[kTrk] = static_cast<int16_t>(-999);
+        tpcdcaZ[kTrk] = static_cast<int16_t>(-999);
         tpcClusterByteMask[kTrk] = 0x00;
         tpcdEdxMax0R[kTrk] = 0x00;
         tpcdEdxMax1R[kTrk] = 0x00;
@@ -1588,7 +1591,6 @@ struct CosmicMuonToCollisionAssociator {
 
               lowerTrk.goodTOFMatch(),
               lowerTrk.tofSignal()
-              // lowerTrk.eventCollisionTime()
             );
         }
         if constexpr (mode == kProcessWithPidEvTimeFlags) {
