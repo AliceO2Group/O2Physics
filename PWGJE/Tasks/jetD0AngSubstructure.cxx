@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// \file jetD0Substructure.cxx
+// \file JetD0AngSubstructure.cxx
 //
 // \brief Analysis task for the reconstruction and study of charged jets
 //        containing D_0 mesons in pp collisions.
@@ -89,7 +89,7 @@ DECLARE_SOA_TABLE(JetObjTable, "AOD", "JETOBJTABLE",
                   jet_obj::HfMlScore1,
                   jet_obj::HfMlScore2);
 } // namespace o2::aod
-struct JetD0Substructure {
+struct JetD0AngSubstructure {
   /**
    * Histogram registry
    *
@@ -99,14 +99,7 @@ struct JetD0Substructure {
    *  - D0–jet substructure observables
    */
   HistogramRegistry registry{"registry",
-                             {{"h_collisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}}},
-                              {"h_track_pt", "track pT;#it{p}_{T,track} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
-                              {"h_track_eta", "track #eta;#eta_{track};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
-                              {"h_track_phi", "track #varphi;#varphi_{track};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}},
-                              {"h_jet_pt", "jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
-                              {"h_jet_eta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
-                              {"h_jet_phi", "jet #phi;#phi_{jet};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}},
-                              {"h_collision_counter", "# of collisions;", {HistType::kTH1F, {{2, 0., 2.}}}},
+                             {{"h_collision_counter", "# of collisions;", {HistType::kTH1F, {{2, 0., 2.}}}},
                               {"h_jet_counter", ";# of D^{0} jets;", {HistType::kTH1F, {{6, 0., 3.0}}}},
                               {"h_d0_jet_projection", ";z^{D^{0},jet}_{||};dN/dz^{D^{0},jet}_{||}", {HistType::kTH1F, {{1000, 0., 10.}}}},
                               {"h_d0_jet_distance_vs_projection", ";#DeltaR_{D^{0},jet};z^{D^{0},jet}_{||}", {HistType::kTH2F, {{1000, 0., 10.}, {1000, 0., 10.}}}},
@@ -114,9 +107,9 @@ struct JetD0Substructure {
                               {"h_d0_jet_pt", ";p_{T,D^{0} jet};dN/dp_{T,D^{0} jet}", {HistType::kTH1F, {{200, 0., 10.}}}},
                               {"h_d0_jet_eta", ";#eta_{T,D^{0} jet};dN/d#eta_{D^{0} jet}", {HistType::kTH1F, {{250, -5., 5.}}}},
                               {"h_d0_jet_phi", ";#phi_{T,D^{0} jet};dN/d#phi_{D^{0} jet}", {HistType::kTH1F, {{250, -10., 10.}}}},
-                              {"h_d0_mass", ";m_{D^{0}} (GeV/c^{2});dN/dm_{D^{0}}", {HistType::kTH1F, {{1000, 0., 10.}}}},
-                              {"h_d0_eta", ";#eta_{D^{0}} (GeV/c^{2});dN/d#eta_{D_{}}", {HistType::kTH1F, {{250, -5., 5.}}}},
-                              {"h_d0_phi", ";#phi_{D^{0}} (GeV/c^{2});dN/d#phi_{D^{0}}", {HistType::kTH1F, {{250, -10., 10.}}}},
+                              {"h_d0_mass", ";m_{D^{0}});dN/dm_{D^{0}}", {HistType::kTH1F, {{1000, 0., 10.}}}},
+                              {"h_d0_eta", ";#eta_{D^{0}});dN/d#eta_{D_{}}", {HistType::kTH1F, {{250, -5., 5.}}}},
+                              {"h_d0_phi", ";#phi_{D^{0}});dN/d#phi_{D^{0}}", {HistType::kTH1F, {{250, -10., 10.}}}},
                               {"h_d0_ang", ";#lambda_{#kappa}^{#alpha};counts", {HistType::kTH1F, {{100, 0., 1.}}}}}};
 
   // Configurables
@@ -137,7 +130,6 @@ struct JetD0Substructure {
   Produces<aod::JetObjTable> ObjJetTable;
 
   float angularity;
-  float leadingConstituentPt;
 
   void init(o2::framework::InitContext&)
   {
@@ -145,58 +137,15 @@ struct JetD0Substructure {
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
   }
 
-  Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r == nround(jetR.node() * 100.0f);
-  Filter collisionFilter = nabs(aod::jcollision::posZ) < vertexZCut;
-
   template <typename T, typename U>
   void jetCalculateAngularity(T const& jet, U const& /*tracks*/)
   {
     angularity = 0.0;
-    leadingConstituentPt = 0.0;
     for (auto& constituent : jet.template tracks_as<U>()) {
-      if (constituent.pt() >= leadingConstituentPt) {
-        leadingConstituentPt = constituent.pt();
-      }
-      angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent), alpha);
+      angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent)/(jet.r() / 100.f), alpha);
     }
-    angularity /= (jet.pt() * (jet.r() / 100.f));
+    angularity /= std::pow(jet.pt(), kappa);
   }
-  // Collision-level and for Tracks QA
-  void processCollisions(aod::JetCollision const& collision, aod::JetTracks const& tracks)
-  {
-
-    registry.fill(HIST("h_collisions"), 0.5);
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
-      return;
-    }
-    registry.fill(HIST("h_collisions"), 1.5);
-
-    // Loop over tracks and apply track selection
-    for (auto const& track : tracks) {
-      if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
-        continue;
-      }
-      registry.fill(HIST("h_track_pt"), track.pt());
-      registry.fill(HIST("h_track_eta"), track.eta());
-      registry.fill(HIST("h_track_phi"), track.phi());
-    }
-  }
-  PROCESS_SWITCH(JetD0Substructure, processCollisions, "process JE collisions", false);
-
-  // Charged jet processing (no HF requirement)
-  void processDataCharged(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets)
-  {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
-      return;
-    }
-    // jets -> charged jet
-    for (auto& jet : jets) {
-      registry.fill(HIST("h_jet_pt"), jet.pt());
-      registry.fill(HIST("h_jet_eta"), jet.eta());
-      registry.fill(HIST("h_jet_phi"), jet.phi());
-    }
-  }
-  PROCESS_SWITCH(JetD0Substructure, processDataCharged, "charged jets in data", false);
 
   void processDataChargedSubstructure(aod::JetCollision const& collision,
                                       soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents> const& jets,
@@ -253,7 +202,8 @@ struct JetD0Substructure {
     } // end of jets loop
 
   } // end of process function
-  PROCESS_SWITCH(JetD0Substructure, processDataChargedSubstructure, "charged HF jet substructure", false);
+  PROCESS_SWITCH(JetD0AngSubstructure, processDataChargedSubstructure, "charged HF jet substructure", false);
 };
 // Workflow definition
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetD0Substructure>(cfgc, TaskName{"jet-d0-substructure"})}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetD0AngSubstructure>(cfgc, TaskName{"jet-d0-ang-substructure"})}; }
+
