@@ -35,7 +35,7 @@ struct JetMatchingDuplicates {
   o2::framework::Configurable<bool> doMatchingPt{"doMatchingPt", true, "Enable pt matching"};
   o2::framework::Configurable<bool> doMatchingHf{"doMatchingHf", false, "Enable HF matching"};
   o2::framework::Configurable<std::vector<double>> jetRadiiForMatchingDistance{"jetRadiiForMatchingDistance", {0.2, 0.3, 0.4, 0.5, 0.6}, "Jet R values for per-R matching distance"};
-  o2::framework::Configurable<std::vector<double>> maxMatchingDistancePerJetR{"maxMatchingDistancePerJetR", {0.15, 0.225, 0.30, 0.375, 0.45}, "Max matching distance for each R in jetRadiiForMatchingDistance"};
+  o2::framework::Configurable<std::vector<double>> maxMatchingDistancePerJetR{"maxMatchingDistancePerJetR", {0.15, 0.225, 0.30, 0.375, 0.45}, "Max matching distance (0.75*R, see ALICE-AN-933) for each R in jetRadiiForMatchingDistance"};
   o2::framework::Configurable<float> minPtFraction{"minPtFraction", 0.5f, "Minimum pt fraction for pt matching"};
 
   o2::framework::Produces<JetsBasetoTagMatchingTable> jetsBasetoTagMatchingTable;
