@@ -50,6 +50,7 @@
 #include <THashList.h>
 #include <TList.h>
 #include <TObjString.h>
+#include <TPDGCode.h>
 #include <TString.h>
 
 #include <algorithm>
@@ -825,6 +826,9 @@ struct AnalysisEnergyCorrelator {
             continue;
           }
         }
+        if (std::abs(t2_raw.pdgCode()) != PDG_t::kPiPlus && std::abs(t2_raw.pdgCode()) != PDG_t::kKPlus && std::abs(t2_raw.pdgCode()) != PDG_t::kProton && std::abs(t2_raw.pdgCode()) != PDG_t::kElectron && std::abs(t2_raw.pdgCode()) != PDG_t::kMuonMinus) {
+          continue;
+        }
         if (t2_raw.pt() < fConfigDileptonHadronOptions.fConfigMCGenHadronPtMin.value || std::abs(t2_raw.eta()) > fConfigDileptonHadronOptions.fConfigMCGenHadronEtaAbs.value) {
           continue;
         }
@@ -879,7 +883,6 @@ struct AnalysisEnergyCorrelator {
     }
     // loop over two event comibnations
     for (auto& [event1, event2] : selfCombinations(*fMixingBinning, fConfigEventOptions.fConfigMixingDepth.value, -1, events, events)) {
-      LOG(info) << "check1";
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<gkEventFillMapWithMults>(event1);
       if (!fEventCut->IsSelected(VarManager::fgValues)) {
