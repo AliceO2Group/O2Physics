@@ -672,7 +672,7 @@ struct lambdajetpolarizationions {
       {"DCA_{xy} to PV (parametric)", pseudoJetCandidateTrackSelections.doDCAcuts.value},
     };
     auto hSelectionJetTracks = histos.add<TH1>("GeneralQA/hSelectionJetTracks", "Charged pseudojet candidate selection flow", kTH1D,
-                                               {{(int)jetTrackSelectionLabels.size(), -0.5, (double)jetTrackSelectionLabels.size() - 0.5}});
+                                               {{static_cast<int>(jetTrackSelectionLabels.size()), -0.5, static_cast<double>(jetTrackSelectionLabels.size()) - 0.5}});
     for (size_t i = 0; i < jetTrackSelectionLabels.size(); ++i) {
       auto lbl = jetTrackSelectionLabels[i].label;
       if (!jetTrackSelectionLabels[i].enabled)
