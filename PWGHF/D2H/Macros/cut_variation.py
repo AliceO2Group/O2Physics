@@ -484,6 +484,7 @@ class CutVarMinimiser:
         - leg: ROOT.TLegend
             needed otherwise it is destroyed
         """
+        suffix = suffix.replace(".", "_")
 
         set_global_style(padleftmargin=0.16, padbottommargin=0.12, padtopmargin=0.075, titleoffsety=1.6)
 
@@ -604,6 +605,7 @@ class CutVarMinimiser:
         - hist_corr_matrix: ROOT.TH2F
             histogram of correlation matrix
         """
+        suffix = suffix.replace(".", "_")
 
         set_global_style(
             padleftmargin=0.14,
@@ -667,6 +669,7 @@ class CutVarMinimiser:
         - leg: ROOT.TLegend
             needed otherwise it is destroyed
         """
+        suffix = suffix.replace(".", "_")
 
         set_global_style(padleftmargin=0.14, padbottommargin=0.12, titleoffset=1.2, padtopmargin = 0.075)
 
@@ -758,6 +761,7 @@ class CutVarMinimiser:
         - leg: ROOT.TLegend
             needed otherwise it is destroyed
         """
+        suffix = suffix.replace(".", "_")
 
         set_global_style(padleftmargin=0.14, padbottommargin=0.12, titleoffset=1.2, padtopmargin = 0.075)
 
@@ -844,6 +848,7 @@ class CutVarMinimiser:
         - leg: ROOT.TLegend
             needed otherwise it is destroyed
         """
+        suffix = suffix.replace(".", "_")
 
         set_global_style(padleftmargin=0.16, padbottommargin=0.12, padtopmargin=0.075, titleoffsety=1.6)
 
