@@ -891,7 +891,7 @@ struct Pi0EtaToGammaGamma {
             continue;
           }
 
-          float alpha_meson = std::fabs(g1.e() - g2.e())/(g1.e() + g2.e());
+          float alpha_meson = std::fabs(g1.e() - g2.e()) / (g1.e() + g2.e());
           float alpha_cut = 999.f;
           switch (cfgAlphaMesonCut) {
             case AlphaMesonCutOption::Off:
