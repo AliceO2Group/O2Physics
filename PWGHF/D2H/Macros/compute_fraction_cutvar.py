@@ -224,7 +224,7 @@ def main(config):
             hist_bin_title = f"bin # {ipt+1}; {pt_axis_title}#in ({pt_min}; {pt_max})"
 
             hist_bin_title_rawy = hist_bin_title if is_draw_title_rawy else ""
-            canv_rawy, histos_rawy, leg_r = minimiser.plot_result(f"_pt{pt_min}_{pt_max}", hist_bin_title_rawy)
+            canv_rawy, histos_rawy, leg_r = minimiser.plot_result(f"_pt_{pt_min}_to_{pt_max}", hist_bin_title_rawy)
             output.cd()
             canv_rawy.Write()
             for _, hist in histos_rawy.items():
@@ -233,7 +233,7 @@ def main(config):
                 canv_rawy.SaveAs(f"canv_rawy_{ipt+1}.C")
 
             hist_bin_title_unc = hist_bin_title if is_draw_title_unc else ""
-            canv_unc, histos_unc, leg_unc = minimiser.plot_uncertainties(f"_pt{pt_min}_{pt_max}", hist_bin_title_unc)
+            canv_unc, histos_unc, leg_unc = minimiser.plot_uncertainties(f"_pt_{pt_min}_to_{pt_max}", hist_bin_title_unc)
             output.cd()
             canv_unc.Write()
             for _, hist in histos_unc.items():
@@ -242,7 +242,7 @@ def main(config):
                 canv_unc.SaveAs(f"canv_unc_{ipt+1}.C")
 
             hist_bin_title_eff = hist_bin_title if is_draw_title_eff else ""
-            canv_eff, histos_eff, leg_e = minimiser.plot_efficiencies(f"_pt{pt_min}_{pt_max}", hist_bin_title_eff)
+            canv_eff, histos_eff, leg_e = minimiser.plot_efficiencies(f"_pt_{pt_min}_to_{pt_max}", hist_bin_title_eff)
             output.cd()
             canv_eff.Write()
             for _, hist in histos_eff.items():
@@ -251,7 +251,7 @@ def main(config):
                 canv_eff.SaveAs(f"canv_eff_{ipt+1}.C")
 
             hist_bin_title_frac = hist_bin_title if is_draw_title_frac else ""
-            canv_frac, histos_frac, leg_f = minimiser.plot_fractions(f"_pt{pt_min}_{pt_max}", hist_bin_title_frac)
+            canv_frac, histos_frac, leg_f = minimiser.plot_fractions(f"_pt_{pt_min}_to_{pt_max}", hist_bin_title_frac)
             output.cd()
             canv_frac.Write()
             for _, hist in histos_frac.items():
@@ -260,7 +260,7 @@ def main(config):
                 canv_frac.SaveAs(f"canv_frac_{ipt+1}.C")
 
             hist_bin_title_cov = hist_bin_title if is_draw_title_cov else ""
-            canv_cov, histo_cov = minimiser.plot_cov_matrix(True, f"_pt{pt_min}_{pt_max}", hist_bin_title_cov)
+            canv_cov, histo_cov = minimiser.plot_cov_matrix(True, f"_pt_{pt_min}_to_{pt_max}", hist_bin_title_cov)
             output.cd()
             canv_cov.Write()
             histo_cov.Write()
