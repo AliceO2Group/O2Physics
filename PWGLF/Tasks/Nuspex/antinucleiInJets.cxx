@@ -155,7 +155,7 @@ struct AntinucleiInJets {
   Configurable<bool> isppRefAnalysis{"isppRefAnalysis", false, "Is ppRef analysis"};
   Configurable<double> cfgAreaFrac{"cfgAreaFrac", 0.6, "fraction of jet area"};
   Configurable<double> cfgEtaJetMax{"cfgEtaJetMax", 0.5, "max jet eta"};
-  Configurable<double> cfgMinPtTrack{"cfgMinPtTrack", 0.15, "minimum pt of tracks for jet reconstruction"};
+  Configurable<double> cfgMinPtTrack{"cfgMinPtTrack", 0.1, "minimum pt of tracks for jet reconstruction"};
   Configurable<double> alpha{"alpha", 0.3, "parameter to control jet matching"};
 
   // Event selection criteria
@@ -172,7 +172,7 @@ struct AntinucleiInJets {
 
   // Jet selection and event filtering parameters
   Configurable<double> minJetPt{"minJetPt", 10.0, "Minimum pt of the jet after bkg subtraction"};
-  Configurable<double> maxJetPt{"maxJetPt", 1000.0, "Maximum pt of the jet after bkg subtraction"};
+  Configurable<double> maxJetPt{"maxJetPt", 1e+06, "Maximum pt of the jet after bkg subtraction"};
   Configurable<double> ptLeadingMin{"ptLeadingMin", 5.0, "pt Leading Min"};
   Configurable<double> rJet{"rJet", 0.4, "Jet resolution parameter R"};
   Configurable<double> zVtx{"zVtx", 10.0, "Maximum zVertex"};
@@ -534,7 +534,7 @@ struct AntinucleiInJets {
 
     // jet pt resolution
     if (doprocessJetPtResolution) {
-      registryMC.add("jetPtResolution", "jet Pt Resolution", HistType::kTH2F, {{200, 0, 20, "#it{p}^{jet}_{T,true} (GeV/#it{c})"}, {1000, -5, 5, "#Delta #it{p}^{jet}_{T} (GeV/#it{c})"}});
+      registryMC.add("jetPtResolution", "jet Pt Resolution", HistType::kTH2F, {{1000, 0, 100, "#it{p}^{jet}_{T,true} (GeV/#it{c})"}, {1000, -20, 20, "#Delta #it{p}^{jet}_{T} (GeV/#it{c})"}});
     }
 
     // Coalescence and Correlation analysis
