@@ -199,7 +199,7 @@ struct skimmerPrimaryMFTTrack {
     // As minimal cuts, following cuts are applied. The cut values are hardcoded on the purpose for consistent bit operation.
     // Ncls MFT >= 5
     // chi2/ndf MFT < 4
-    // |dcaXY| < 0.05 cm
+    // |dcaXY| < 0.06 cm
 
     if (mfttrack.nClusters() < 5 || mfttrack.chi2() / ndf > 4.f || std::fabs(dcaXY) > 0.06) {
       return;
