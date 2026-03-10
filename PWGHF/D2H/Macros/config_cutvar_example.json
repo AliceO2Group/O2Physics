@@ -64,6 +64,13 @@
         "cov": false,
         "unc": true
     },
+    "is_save_canvas_as_macro": {
+        "rawy": false,
+        "frac": false,
+        "eff": false,
+        "cov": false,
+        "unc": false
+    },
     "central_efficiency": {
         "computerawfrac": true,
         "inputdir": "path/to/central/efficiency",

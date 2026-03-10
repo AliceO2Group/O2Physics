@@ -67,6 +67,12 @@ def main(config):
     is_draw_title_cov = cfg.get("is_draw_title", {}).get("cov", False)
     is_draw_title_unc = cfg.get("is_draw_title", {}).get("unc", True)
 
+    is_save_canvas_as_macro_rawy = cfg.get("is_save_canvas_as_macro", {}).get("rawy", False)
+    is_save_canvas_as_macro_eff = cfg.get("is_save_canvas_as_macro", {}).get("eff", False)
+    is_save_canvas_as_macro_frac = cfg.get("is_save_canvas_as_macro", {}).get("frac", False)
+    is_save_canvas_as_macro_cov = cfg.get("is_save_canvas_as_macro", {}).get("cov", False)
+    is_save_canvas_as_macro_unc = cfg.get("is_save_canvas_as_macro", {}).get("unc", False)
+
     if cfg["central_efficiency"]["computerawfrac"]:
         infile_name = os.path.join(cfg["central_efficiency"]["inputdir"], cfg["central_efficiency"]["inputfile"])
         infile_central_eff = ROOT.TFile.Open(infile_name)
@@ -223,6 +229,8 @@ def main(config):
             canv_rawy.Write()
             for _, hist in histos_rawy.items():
                 hist.Write()
+            if (is_save_canvas_as_macro_rawy):
+                canv_rawy.SaveAs(f"canv_rawy_{ipt+1}.C")
 
             hist_bin_title_unc = hist_bin_title if is_draw_title_unc else ""
             canv_unc, histos_unc, leg_unc = minimiser.plot_uncertainties(f"_pt{pt_min}_{pt_max}", hist_bin_title_unc)
@@ -230,6 +238,8 @@ def main(config):
             canv_unc.Write()
             for _, hist in histos_unc.items():
                 hist.Write()
+            if (is_save_canvas_as_macro_unc):
+                canv_unc.SaveAs(f"canv_unc_{ipt+1}.C")
 
             hist_bin_title_eff = hist_bin_title if is_draw_title_eff else ""
             canv_eff, histos_eff, leg_e = minimiser.plot_efficiencies(f"_pt{pt_min}_{pt_max}", hist_bin_title_eff)
@@ -237,6 +247,8 @@ def main(config):
             canv_eff.Write()
             for _, hist in histos_eff.items():
                 hist.Write()
+            if (is_save_canvas_as_macro_eff):
+                canv_eff.SaveAs(f"canv_eff_{ipt+1}.C")
 
             hist_bin_title_frac = hist_bin_title if is_draw_title_frac else ""
             canv_frac, histos_frac, leg_f = minimiser.plot_fractions(f"_pt{pt_min}_{pt_max}", hist_bin_title_frac)
@@ -244,12 +256,16 @@ def main(config):
             canv_frac.Write()
             for _, hist in histos_frac.items():
                 hist.Write()
+            if (is_save_canvas_as_macro_frac):
+                canv_frac.SaveAs(f"canv_frac_{ipt+1}.C")
 
             hist_bin_title_cov = hist_bin_title if is_draw_title_cov else ""
             canv_cov, histo_cov = minimiser.plot_cov_matrix(True, f"_pt{pt_min}_{pt_max}", hist_bin_title_cov)
             output.cd()
             canv_cov.Write()
             histo_cov.Write()
+            if (is_save_canvas_as_macro_cov):
+                canv_cov.SaveAs(f"canv_cov_{ipt+1}.C")
         else:
             print(f"Minimization for pT {pt_min}, {pt_max} not successful")
             canv_rawy = ROOT.TCanvas("c_rawy_minimization_error", "Minimization error", 500, 500)
