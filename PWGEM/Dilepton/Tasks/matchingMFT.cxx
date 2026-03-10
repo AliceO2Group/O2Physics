@@ -135,7 +135,6 @@ struct matchingMFT {
     // Configurable<uint16_t> cfgNumContribMax{"cfgNumContribMax", 65000, "max. numContrib"};
   } eventcuts;
 
-
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
 
   HistogramRegistry fRegistry{"fRegistry"};
