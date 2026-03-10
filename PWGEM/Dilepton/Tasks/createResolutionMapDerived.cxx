@@ -547,7 +547,7 @@ struct createResolutionMapDerived {
     }
   }
 
-  PROCESS_SWITCH_FULL(createResolutionMapDerived, processReso<MyMCElectrons>, processElectron, "create resolution map for electrons at mid rapidity", true);
+  PROCESS_SWITCH_FULL(createResolutionMapDerived, processReso<MyMCElectrons>, processElectron, "create resolution map for electrons at mid rapidity", false);
   PROCESS_SWITCH_FULL(createResolutionMapDerived, processReso<MyMCMuons>, processMuon, "create resolution map for global muons at fwd rapidity", false); // gl or sa can be selected in subwagons.
 
   void processGen(aod::EMMCEvents const& mcCollisions)
