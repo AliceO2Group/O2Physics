@@ -35,7 +35,7 @@ struct V0PhotonCandidate {
   // Empty Constructor
   V0PhotonCandidate() = default;
   // Set method for photonconversionbuilder
-  template<class TTrack>
+  template <class TTrack>
   void setPhotonCandidate(const KFParticle& v0_DecayVtx, const KFParticle& v0_PV, const TTrack& pos, const KFParticle& pos_DecayVtx, const TTrack& ele, const KFParticle& ele_DecayVtx, const auto& collision, float cospa, float cospaRZ, float cospaXY, float psipair, float phiv, CentType centType, auto posdcaXY, auto eledcaXY, auto posdcaZ, auto eledcaZ)
   {
     x = v0_DecayVtx.GetX();

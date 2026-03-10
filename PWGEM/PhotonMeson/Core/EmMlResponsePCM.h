@@ -194,8 +194,7 @@ class EmMlResponsePCM : public EmMlResponse<TypeOutputScore>
       FILL_MAP_PCM(negV0LegfTPCSignal),
       FILL_MAP_PCM(negV0LegfTPCNSigmaEl),
       FILL_MAP_PCM(negV0LegfTPCNSigmaPi),
-      FILL_MAP_PCM(negV0LegfITSClusterSizes)
-    };
+      FILL_MAP_PCM(negV0LegfITSClusterSizes)};
   }
 };
 
