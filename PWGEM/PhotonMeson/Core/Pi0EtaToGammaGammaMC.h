@@ -65,6 +65,12 @@
 #include <type_traits>
 #include <vector>
 
+enum AlphaMesonCutOption {
+  Off = 0,
+  SpecificValue = 1,
+  PTDependent = 2
+};
+
 template <o2::aod::pwgem::photonmeson::photonpair::PairType pairtype, o2::soa::is_table... Types>
 struct Pi0EtaToGammaGammaMC {
   o2::framework::Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -80,6 +86,11 @@ struct Pi0EtaToGammaGammaMC {
   o2::framework::Configurable<float> maxY_rec{"maxY_rec", 0.9, "maximum rapidity for reconstructed particles"};
   o2::framework::Configurable<std::string> fd_k0s_to_pi0{"fd_k0s_pi0", "1.0", "feed down correction to pi0"};
   o2::framework::Configurable<bool> cfgRequireTrueAssociation{"cfgRequireTrueAssociation", false, "flag to require true mc collision association"};
+
+  o2::framework::Configurable<int> cfgAlphaMesonCut{"cfgAlphaMesonCut", 0, "flag for photon energy asymmetry distribution cut: 0: no cut, 1: cut specific value, 2: cut depending on pT"};
+  o2::framework::Configurable<float> cfgAlphaMeson{"cfgAlphaMeson", 0.65, "photon energy asymmetry distribution parameter for specific value cut"};
+  o2::framework::Configurable<float> cfgAlphaMesonA{"cfgAlphaMesonA", 0.65, "photon energy asymmetry distribution parameter A for pT dependent cut (A * tanh(B*pT))"};
+  o2::framework::Configurable<float> cfgAlphaMesonB{"cfgAlphaMesonB", 1.2, "photon energy asymmetry distribution parameter B for pT dependent cut (A * tanh(B*pT))"};
 
   EMPhotonEventCut fEMEventCut;
   struct : o2::framework::ConfigurableGroup {
@@ -669,6 +680,25 @@ struct Pi0EtaToGammaGammaMC {
           ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
           if (std::fabs(v12.Rapidity()) > maxY_rec) {
+            continue;
+          }
+
+          float alphaMeson = std::fabs(g1.e() - g2.e()) / (g1.e() + g2.e());
+          float alphaCut = 999.f;
+          switch (static_cast<AlphaMesonCutOption>(cfgAlphaMesonCut.value)) {
+            case AlphaMesonCutOption::Off:
+              break;
+            case AlphaMesonCutOption::SpecificValue:
+              alphaCut = cfgAlphaMeson;
+              break;
+            case AlphaMesonCutOption::PTDependent: {
+              alphaCut = cfgAlphaMesonA * std::tanh(cfgAlphaMesonB * v12.pt());
+              break;
+            }
+            default:
+              LOGF(error, "Invalid option for alpha meson cut. No alpha cut will be applied.");
+          }
+          if (alphaMeson > alphaCut) {
             continue;
           }
 
