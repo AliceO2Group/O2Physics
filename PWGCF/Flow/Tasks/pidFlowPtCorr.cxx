@@ -144,6 +144,8 @@ struct PidFlowPtCorr {
 
   O2_DEFINE_CONFIGURABLE(cfgOutPutPtSpectra, bool, false, "output pt spectra for data, MC and RECO")
 
+  O2_DEFINE_CONFIGURABLE(cfgCheck2MethodDiff, bool, false, "check difference between v2' && v2''")
+
   /**
    * @brief cfg for PID pt range
    * @details default datas are from run2, note that separate pi-k and k-p needs to use difference pt range
@@ -431,18 +433,7 @@ struct PidFlowPtCorr {
       registry.add("ptSpectra/hCentEventCountMcGen", "", {HistType::kTH1D, {axisMultiplicity}});
       registry.add("ptSpectra/hCentEventCountMcRec", "", {HistType::kTH1D, {axisMultiplicity}});
 
-      // (PosEta)(PosCh)
-      registry.add("ptSpectra/hPtCentDataPosEtaPosCh", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
-
-      // (PosEta)(NegCh)
-      registry.add("ptSpectra/hPtCentDataPosEtaNegCh", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
-
-      // (NegEta(PosCh)
-      registry.add("ptSpectra/hPtCentDataNegEtaPosCh", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
-
-      // (NegEta)(NegCh)
-      registry.add("ptSpectra/hPtCentDataNegEtaNegCh", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
-
+      registry.add("ptSpectra/hPtCentData4ITSOnly", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
     } // cfgoutputptspectra
 
     if (cfgOutputrunbyrun) {
@@ -590,7 +581,7 @@ struct PidFlowPtCorr {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN refN | olKaN {2 2} refP {-2 -2}", "Kaon0gap24a", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP refP | olKaP {2 2} refN {-2 -2}", "Kaon0gap24b", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN refN | olPrN {2 2} refP {-2 -2}", "Prot0gap24a", kFALSE)); // 15
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP refP | olPaP {2 2} refN {-2 -2}", "Prot0gap24b", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP refP | olPrP {2 2} refN {-2 -2}", "Prot0gap24b", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN08 {3} refP08 {-3}", "Pion08gap32a", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP08 {3} refN08 {-3}", "Pion08gap32b", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {3} refP08 {-3}", "Kaon08gap32a", kFALSE));
@@ -602,7 +593,7 @@ struct PidFlowPtCorr {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN refN | olKaN {3 3} refP {-3 -3}", "Kaon0gap34a", kFALSE)); // 25
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP refP | olKaP {3 3} refN {-3 -3}", "Kaon0gap34b", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN refN | olPrN {3 3} refP {-3 -3}", "Prot0gap34a", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP refP | olPaP {3 3} refN {-3 -3}", "Prot0gap34b", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP refP | olPrP {3 3} refN {-3 -3}", "Prot0gap34b", kFALSE));
 
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN08 {2} poiPiP08 {-2}", "PiPi08gap22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {2} poiKaP08 {-2}", "KaKa08gap22", kFALSE)); // 30
@@ -813,14 +804,14 @@ struct PidFlowPtCorr {
     return false;
   }
 
-  void fillFC(MyParticleType type, const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, const char* tarName)
+  bool fillFC(MyParticleType type, const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, const char* tarName)
   {
     double dnx, val;
     // calculate #sum exp{i * 0 (#phi_{i} - #phi_{j})} == N_{pairs}
     // note that weight is ignored in the formula but not in the calculation, for c24 is similar
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
     if (dnx == 0)
-      return;
+      return false;
     if (!corrconf.pTDif) {
       // #sum exp{i * 2 * (#phi_{i} - #phi_{j})} / N_{pairs} == < 2 >
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
@@ -845,10 +836,10 @@ struct PidFlowPtCorr {
             LOGF(warning, "particle not found");
             break;
         }
-        return;
+        return true;
       }
     }
-    return;
+    return true;
   }
 
   /**
@@ -1543,6 +1534,10 @@ struct PidFlowPtCorr {
         continue;
       // end track cut its only
 
+      if (cfgOutPutPtSpectra) {
+        registry.fill(HIST("ptSpectra/hPtCentData4ITSOnly"), track.pt(), cent);
+      }
+
       // calculate ncharged(nch with weight) and pt
       if (std::fabs(track.eta()) < trkQualityOpts.cfgRangeEta.value) {
         nch += weff;
@@ -1669,22 +1664,6 @@ struct PidFlowPtCorr {
       // pt spectra
       if (cfgOutPutPtSpectra) {
         registry.fill(HIST("ptSpectra/hPtCentData"), track.pt(), cent);
-
-        // region 1 +eta +ch
-        if (track.eta() > 0.05 && track.sign() > 0)
-          registry.fill(HIST("ptSpectra/hPtCentDataPosEtaPosCh"), track.pt(), cent);
-
-        // region 2 +eta -ch
-        if (track.eta() > 0.05 && track.sign() < 0)
-          registry.fill(HIST("ptSpectra/hPtCentDataPosEtaNegCh"), track.pt(), cent);
-
-        // region 3 -eta +ch
-        if (track.eta() < -0.05 && track.sign() > 0)
-          registry.fill(HIST("ptSpectra/hPtCentDataNegEtaPosCh"), track.pt(), cent);
-
-        // region 4 -eta -ch
-        if (track.eta() < -0.05 && track.sign() < 0)
-          registry.fill(HIST("ptSpectra/hPtCentDataNegEtaNegCh"), track.pt(), cent);
       }
 
       // fill GFW
@@ -1732,13 +1711,6 @@ struct PidFlowPtCorr {
       fillFC(MyParticleType::kProton, corrconfigs.at(39), cent, rndm, "c22Full");
       fillFC(MyParticleType::kProton, corrconfigs.at(40), cent, rndm, "c22Full");
 
-      fillFC(MyParticleType::kPion, corrconfigs.at(5), cent, rndm, "c22");
-      fillFC(MyParticleType::kPion, corrconfigs.at(6), cent, rndm, "c22");
-      fillFC(MyParticleType::kKaon, corrconfigs.at(7), cent, rndm, "c22");
-      fillFC(MyParticleType::kKaon, corrconfigs.at(8), cent, rndm, "c22");
-      fillFC(MyParticleType::kProton, corrconfigs.at(9), cent, rndm, "c22");
-      fillFC(MyParticleType::kProton, corrconfigs.at(10), cent, rndm, "c22");
-
       fillFC(MyParticleType::kPion, corrconfigs.at(11), cent, rndm, "c24");
       fillFC(MyParticleType::kPion, corrconfigs.at(12), cent, rndm, "c24");
       fillFC(MyParticleType::kKaon, corrconfigs.at(13), cent, rndm, "c24");
@@ -1760,13 +1732,26 @@ struct PidFlowPtCorr {
       fillFC(MyParticleType::kProton, corrconfigs.at(27), cent, rndm, "c34");
       fillFC(MyParticleType::kProton, corrconfigs.at(28), cent, rndm, "c34");
 
-      fillFC(MyParticleType::kPion, corrconfigs.at(29), cent, rndm, "c22pure");
-      fillFC(MyParticleType::kKaon, corrconfigs.at(30), cent, rndm, "c22pure");
-      fillFC(MyParticleType::kProton, corrconfigs.at(31), cent, rndm, "c22pure");
+      bool filledPi = fillFC(MyParticleType::kPion, corrconfigs.at(29), cent, rndm, "c22pure");
+      bool filledKa = fillFC(MyParticleType::kKaon, corrconfigs.at(30), cent, rndm, "c22pure");
+      bool filledPr = fillFC(MyParticleType::kProton, corrconfigs.at(31), cent, rndm, "c22pure");
+
       fillFC(MyParticleType::kPion, corrconfigs.at(32), cent, rndm, "c32pure");
       fillFC(MyParticleType::kKaon, corrconfigs.at(33), cent, rndm, "c32pure");
       fillFC(MyParticleType::kProton, corrconfigs.at(34), cent, rndm, "c32pure");
 
+      if (filledPi || !cfgCheck2MethodDiff) {
+        fillFC(MyParticleType::kPion, corrconfigs.at(5), cent, rndm, "c22");
+        fillFC(MyParticleType::kPion, corrconfigs.at(6), cent, rndm, "c22");
+      }
+      if (filledKa || !cfgCheck2MethodDiff) {
+        fillFC(MyParticleType::kKaon, corrconfigs.at(7), cent, rndm, "c22");
+        fillFC(MyParticleType::kKaon, corrconfigs.at(8), cent, rndm, "c22");
+      }
+      if (filledPr || !cfgCheck2MethodDiff) {
+        fillFC(MyParticleType::kProton, corrconfigs.at(9), cent, rndm, "c22");
+        fillFC(MyParticleType::kProton, corrconfigs.at(10), cent, rndm, "c22");
+      }
       fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(0), cent, rndm, nch, nch, "c22TrackWeight");
       fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(1), cent, rndm, nch, nch, "c24TrackWeight");
       fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(2), cent, rndm, nch, nch, "c22FullTrackWeight");
