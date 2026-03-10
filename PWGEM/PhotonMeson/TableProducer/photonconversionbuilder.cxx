@@ -723,8 +723,10 @@ struct PhotonConversionBuilder {
     kfp_pos_DecayVtx.TransportToPoint(xyz); // Don't set Primary Vertex
     kfp_ele_DecayVtx.TransportToPoint(xyz); // Don't set Primary Vertex
 
+    float cospaXYKF = cospaXY_KF(gammaKF_DecayVtx, KFPV);
+    float cospaRZKF = cospaRZ_KF(gammaKF_DecayVtx, KFPV);
     CentType centType = static_cast<CentType>(centTypePCMMl.value);
-    v0photoncandidate.setPhotonCandidate(gammaKF_DecayVtx, kfp_pos_DecayVtx, kfp_ele_DecayVtx, collision, cospa_kf, psipair, phiv, centType);
+    v0photoncandidate.setPhotonCandidate(gammaKF_DecayVtx, gammaKF_PV, pos, kfp_pos_DecayVtx, ele, kfp_ele_DecayVtx, collision, cospaXYKF, cospaRZKF, cospaXYKF, psipair, phiv, centType, posdcaXY, posdcaZ, eledcaXY, eledcaZ);
 
     if (!ele.hasITS() && !pos.hasITS()) { // V0s with TPConly-TPConly
       if (max_r_itsmft_ss < rxy && rxy < maxX + margin_r_tpc) {
@@ -822,11 +824,9 @@ struct PhotonConversionBuilder {
       registry.fill(HIST("V0/hPCA_diffX"), v0photoncandidate.getPCA(), std::min(pTrack.getX(), nTrack.getX()) - rxy); // trackiu.x() - rxy should be positive
       registry.fill(HIST("V0/hPhiVPsiPair"), v0photoncandidate.getPsiPair(), v0photoncandidate.getPhiV());
 
-      float cospaXY_kf = cospaXY_KF(gammaKF_DecayVtx, KFPV);
-      float cospaRZ_kf = cospaRZ_KF(gammaKF_DecayVtx, KFPV);
       // LOGF(info, "cospa_kf = %f, cospaXY_kf = %f, cospaRZ_kf = %f", cospa_kf, cospaXY_kf, cospaRZ_kf);
-      registry.fill(HIST("V0/hCosPAXY_Rxy"), rxy, cospaXY_kf);
-      registry.fill(HIST("V0/hCosPARZ_Rxy"), rxy, cospaRZ_kf);
+      registry.fill(HIST("V0/hCosPAXY_Rxy"), rxy, cospaXYKF);
+      registry.fill(HIST("V0/hCosPARZ_Rxy"), rxy, cospaRZKF);
 
       for (const auto& leg : {kfp_pos_DecayVtx, kfp_ele_DecayVtx}) {
         float legpt = RecoDecay::sqrtSumOfSquares(leg.GetPx(), leg.GetPy());
@@ -855,7 +855,7 @@ struct PhotonConversionBuilder {
                   gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY(), gammaKF_DecayVtx.GetZ(),
                   gammaKF_PV.GetPx(), gammaKF_PV.GetPy(), gammaKF_PV.GetPz(),
                   v0_sv.M(), v0photoncandidate.getDcaXYToPV(), v0photoncandidate.getDcaZToPV(),
-                  cospa_kf, cospaXY_kf, cospaRZ_kf,
+                  cospa_kf, cospaXYKF, cospaRZKF,
                   v0photoncandidate.getPCA(), v0photoncandidate.getAlpha(), v0photoncandidate.getQt(), v0photoncandidate.getChi2NDF());
       v0photonsphivpsi(v0photoncandidate.getPhiV(), v0photoncandidate.getPsiPair());
 
