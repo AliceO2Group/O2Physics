@@ -30,27 +30,33 @@
 //    cicero.domenico.muncinelli@cern.ch
 //
 
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/Logger.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
 // Custom data model:
 #include "PWGLF/DataModel/lambdaJetPolarizationIons.h"
 
 #include <cmath>
-#include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
 // #include <TLorentzVector.h>
 // #include <TVector3.h>
 // New recommended format:
-#include <Math/Vector3D.h>
+#include <Math/Vector3D.h> // clang-tidy usually confuses this! Careful!
 #include <Math/Vector4D.h>
 #include <Math/VectorUtil.h>
+#include <TProfile.h>
 #include <TRandom3.h> // For perpendicular jet direction QAs
 
 using namespace o2;
@@ -424,14 +430,14 @@ struct lambdajetpolarizationionsderived {
 
   // Preslices for correct collisions association:
   // (TODO: test using custom grouping)
-  Preslice<aod::RingJets> perColJets = o2::aod::lambdajetpol::collisionId;
-  Preslice<aod::RingLaV0s> perColV0s = o2::aod::lambdajetpol::collisionId;
-  Preslice<aod::RingLeadP> perColLeadPs = o2::aod::lambdajetpol::collisionId;
+  Preslice<aod::RingJets> perColJets = o2::aod::lambdajetpol::ringCollisionId;
+  Preslice<aod::RingLaV0s> perColV0s = o2::aod::lambdajetpol::ringCollisionId;
+  Preslice<aod::RingLeadP> perColLeadPs = o2::aod::lambdajetpol::ringCollisionId;
   void processPolarizationData(o2::aod::RingCollisions const& collisions, o2::aod::RingJets const& jets, o2::aod::RingLaV0s const& v0s,
                                o2::aod::RingLeadP const& leadPs)
   {
     for (auto const& collision : collisions) {
-      const auto collId = collision.collisionId();
+      const auto collId = collision.globalIndex(); // The self-index accessor
       const double centrality = getCentrality(collision);
 
       // Slice jets, V0s and leading particle belonging to this collision:
