@@ -3602,7 +3602,7 @@ struct AnalysisDileptonTrack {
       }
       // dilepton rap cut
       float rap = dilepton.rap();
-      if (fConfigUseRapcut && abs(rap) > fConfigDileptonRapCutAbs)
+      if (fConfigUseRapcut && std::abs(rap) > fConfigDileptonRapCutAbs)
         continue;
 
       VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesDilepton);
@@ -3660,7 +3660,7 @@ struct AnalysisDileptonTrack {
 
           // for the energy correlator analysis
           std::vector<float> fTransRange = fConfigTransRange;
-          VarManager::FillEnergyCorrelator(dilepton, track, fValuesHadron, fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom());
+          VarManager::FillEnergyCorrelatorTriple(lepton1, lepton2, track, fValuesHadron, fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom());
 
           // table to be written out for ML analysis
           BmesonsTable(event.runNumber(), event.globalIndex(), event.timestamp(), fValuesHadron[VarManager::kPairMass], dilepton.mass(), fValuesHadron[VarManager::kDeltaMass], fValuesHadron[VarManager::kPairPt], fValuesHadron[VarManager::kPairEta], fValuesHadron[VarManager::kPairPhi], fValuesHadron[VarManager::kPairRap],
@@ -3817,7 +3817,7 @@ struct AnalysisDileptonTrack {
 
   void processBarrelMixedEvent(soa::Filtered<MyEventsHashSelected>& events,
                                soa::Filtered<soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts>> const& assocs,
-                               MyBarrelTracksWithCov const&, soa::Filtered<MyDielectronCandidates> const& dileptons)
+                               MyBarrelTracksWithCov const& tracks, soa::Filtered<MyDielectronCandidates> const& dileptons)
   {
     if (events.size() == 0) {
       return;
@@ -3853,10 +3853,16 @@ struct AnalysisDileptonTrack {
 
         // loop over dileptons
         for (auto dilepton : evDileptons) {
-
+          // get full track info of tracks based on the index
+          auto lepton1 = tracks.rawIteratorAt(dilepton.index0Id());
+          auto lepton2 = tracks.rawIteratorAt(dilepton.index1Id());
+          // Check that the dilepton has zero charge
+          if (dilepton.sign() != 0) {
+            continue;
+          }
           // dilepton rap cut
           float rap = dilepton.rap();
-          if (fConfigUseRapcut && abs(rap) > fConfigDileptonRapCutAbs)
+          if (fConfigUseRapcut && std::abs(rap) > fConfigDileptonRapCutAbs)
             continue;
 
           // compute dilepton - track quantities
@@ -3864,7 +3870,7 @@ struct AnalysisDileptonTrack {
 
           // for the energy correlator analysis
           std::vector<float> fTransRange = fConfigTransRange;
-          VarManager::FillEnergyCorrelator(dilepton, track, VarManager::fgValues, fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom());
+          VarManager::FillEnergyCorrelatorTriple(lepton1, lepton2, track, fValuesHadron, fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom());
 
           // loop over dilepton leg cuts and track cuts and fill histograms separately for each combination
           for (int icut = 0; icut < fNCuts; icut++) {
