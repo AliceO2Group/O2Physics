@@ -21,6 +21,7 @@
 #define PWGLF_DATAMODEL_LAMBDAJETPOLARIZATIONIONS_H_
 
 #include <Framework/ASoA.h>
+
 #include <cmath>
 
 namespace o2::aod
@@ -88,7 +89,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(LeadParticlePz, leadParticlePz, //! Leading particle 
 } // namespace lambdajetpol
 
 DECLARE_SOA_TABLE(RingCollisions, "AOD", "RINGCOLLISIONS",
-                  o2::soa::Index<>,               // self-index: auto-assigned row number
+                  o2::soa::Index<>, // self-index: auto-assigned row number
                   lambdajetpol::CentFT0M,
                   lambdajetpol::CentFT0C,
                   lambdajetpol::CentFV0A);
@@ -99,7 +100,7 @@ DECLARE_SOA_INDEX_COLUMN(RingCollision, ringCollision); // Declare index after t
 } // namespace lambdajetpol
 
 DECLARE_SOA_TABLE(RingJets, "AOD", "RINGJETS",
-                  lambdajetpol::RingCollisionId,  // relational index -> RingCollisions
+                  lambdajetpol::RingCollisionId, // relational index -> RingCollisions
                   lambdajetpol::JetPt,
                   lambdajetpol::JetEta,
                   lambdajetpol::JetPhi,

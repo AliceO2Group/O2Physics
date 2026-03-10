@@ -35,10 +35,11 @@
 #include <vector>
 
 // PWGLF
-#include "PWGLF/DataModel/lambdaJetPolarizationIons.h"
-#include "RCTSelectionFlags.h"
 #include "EventSelectionParams.h"
+#include "RCTSelectionFlags.h"
+
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+#include "PWGLF/DataModel/lambdaJetPolarizationIons.h"
 // #include "Common/DataModel/PIDResponseTOF.h" // Maybe switch this around with LFStrangenessPIDTables?
 #include "PWGLF/DataModel/LFStrangenessTables.h" // For V0TOFPIDs and NSigmas getters. Better for considering the daughters as coming from V0s instead of from PV:
 
@@ -68,19 +69,20 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/HistogramRegistry.h>
 #include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
-#include <Framework/DataTypes.h>
 #include <Framework/Logger.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
 // O2 subsystems
+#include "Common/CCDB/ctpRateFetcher.h"
+
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
-#include "Common/CCDB/ctpRateFetcher.h"
 #include <DataFormatsParameters/GRPMagField.h>
 
 // External libraries
@@ -984,18 +986,19 @@ struct lambdajetpolarizationions {
     // (shows pass-through count as a flat line, making it visually
     // clear that the stage was not active).
     // (Replaces N dummy fill() calls)
-    void fillUpTo(int targetBinX) {
-        while (binValue < targetBinX)
-          histos->fill(HIST("GeneralQA/hSelectionV0s"), ++binValue);
+    void fillUpTo(int targetBinX)
+    {
+      while (binValue < targetBinX)
+        histos->fill(HIST("GeneralQA/hSelectionV0s"), ++binValue);
     }
 
-    void advanceTo(int targetBinX) { binValue = targetBinX - 1; } // next fill() lands at targetBin. Needed to deal with early exits at isLambda vs isAntiLambda checks
+    void advanceTo(int targetBinX) { binValue = targetBinX - 1; }              // next fill() lands at targetBin. Needed to deal with early exits at isLambda vs isAntiLambda checks
     void fill() { histos->fill(HIST("GeneralQA/hSelectionV0s"), ++binValue); } // Hardcoded hSelectionV0s histogram, as it will not change. Increments before filling, by default
   };
   V0SelectionFlowCounter V0SelCounter{-1, &histos}; // Could initialize with any index (resetForNewV0 is always called for a new V0 anyways)
-    // Calculating some bins, for convenience:
-  int nGenericCuts  = 31; // x=0 to x=30
-  int nHypoCuts     = 9;  // per hypothesis (x=31..39 for Lambda)
+                                                    // Calculating some bins, for convenience:
+  int nGenericCuts = 31;                            // x=0 to x=30
+  int nHypoCuts = 9;                                // per hypothesis (x=31..39 for Lambda)
   int lambdaHypoEnd = nGenericCuts + nHypoCuts - 1; // x=39
 
   // Minimal helper to fill hSelectionJetTracks, mirroring V0SelectionFlowCounter.
@@ -1438,11 +1441,11 @@ struct lambdajetpolarizationions {
 
       // (CAUTION!) You cannot use the getter for raw data's PIDResponseTOF.h instead of LFStrangenessPIDTables.h (as below)
       // If you do use, TOF will just try to identify that track as a proton from the PV, instead of using the correct path
-      // length from the V0s PV-DCA and the such! In other words, it is a naive estimator of TOF PID, because it does not 
+      // length from the V0s PV-DCA and the such! In other words, it is a naive estimator of TOF PID, because it does not
       // correct for the V0 mother's travel time and considers all tracks as if they came from the PV!
       // if (protonHasTOF && std::fabs(protonTrack.tofNSigmaPr()) > v0Selections.tofPidNsigmaCutLaPr) return false;
       // To properly use the LFStrangenessPIDTables version, you need to call o2-analysis-lf-strangenesstofpid too.
-    } else { // Should fill counters an equal number of times to advance indices
+    } else {                                            // Should fill counters an equal number of times to advance indices
       V0SelCounter.fillUpTo(V0SelCounter.binValue + 4); // Fills the 4 times "V0SelCounter.fill()" would be called
     }
 
@@ -1568,7 +1571,8 @@ struct lambdajetpolarizationions {
         return;
       histos.fill(HIST("hEventsWithJet"), 0.5);
       // Another version of this counter, which is already integrated in the Event Selection flow:
-      if (doEventQA) fillEventSelectionQA(lastBinEvSel - 1, centrality); // hasRingJet passes
+      if (doEventQA)
+        fillEventSelectionQA(lastBinEvSel - 1, centrality); // hasRingJet passes
 
       if (doJetKinematicsQA) {
         histos.fill(HIST("JetKinematicsQA/hLeadingJetPt"), leadingJetSub.pt());
@@ -1650,7 +1654,8 @@ struct lambdajetpolarizationions {
         return;
       histos.fill(HIST("hEventsWithJet"), 0.5);
       // Another version of this counter, which is already integrated in the Event Selection flow:
-      if (doEventQA) fillEventSelectionQA(lastBinEvSel - 1, centrality); // hasRingJet passes
+      if (doEventQA)
+        fillEventSelectionQA(lastBinEvSel - 1, centrality); // hasRingJet passes
 
       const auto& leadingJet = jets[0];
       for (const auto& jet : jets) {
@@ -1754,8 +1759,10 @@ struct lambdajetpolarizationions {
     if (!isEventAccepted(collision, bc, centrality, doEventQA))
       return; // Uses return instead of continue, as there is no explicit loop here
 
-    if (doEventQA) fillCentralityProperties(collision, centrality);
-    if (v0Selections.rejectTPCsectorBoundary) initCCDB(bc); // Substituted call from collision to bc for raw data
+    if (doEventQA)
+      fillCentralityProperties(collision, centrality);
+    if (v0Selections.rejectTPCsectorBoundary)
+      initCCDB(bc); // Substituted call from collision to bc for raw data
 
     // Fill event table:
     tableCollisions(collision.centFT0M(),
@@ -1764,7 +1771,7 @@ struct lambdajetpolarizationions {
 
     // Get the derived collision row index for this event:
     const int ringCollIdx = tableCollisions.lastIndex();
-    
+
     // Call to jets process:
     jetsProcess(V0DauTracks, ringCollIdx, centrality); // V0DauTracks takes the place of jetTracks now
 
@@ -1788,7 +1795,7 @@ struct lambdajetpolarizationions {
       if (analyseLambda)
         isLambda = passesLambdaLambdaBarHypothesis(v0, collision, true);
       if (analyseAntiLambda) {
-        if (analyseLambda) // We only need to advance when the Lambda hypothesis had an early exit on the counters
+        if (analyseLambda)                           // We only need to advance when the Lambda hypothesis had an early exit on the counters
           V0SelCounter.advanceTo(lambdaHypoEnd + 1); // sync to bin 41 (x=40 means bin 41, the first #bar{#Lambda} bin)
         isAntiLambda = passesLambdaLambdaBarHypothesis(v0, collision, false);
       }
@@ -2022,3 +2029,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<lambdajetpolarizationions>(cfgc)};
 }
+ 
