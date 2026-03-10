@@ -89,8 +89,8 @@ struct Pi0EtaToGammaGammaMC {
 
   o2::framework::Configurable<int> cfgAlphaMesonCut{"cfgAlphaMesonCut", 0, "flag for photon energy asymmetry distribution cut: 0: no cut, 1: cut specific value, 2: cut depending on pT"};
   o2::framework::Configurable<float> cfgAlphaMeson{"cfgAlphaMeson", 0.65, "photon energy asymmetry distribution parameter for specific value cut"};
-  o2::framework::Configurable<float> cfgAlphaMesonA{"cfgAlphaMesonA", 0.65, "photon energy asymmetry distribution parameter A for pT dependent cut"};
-  o2::framework::Configurable<float> cfgAlphaMesonB{"cfgAlphaMesonB", 1.2, "photon energy asymmetry distribution parameter B for pT dependent cut"};
+  o2::framework::Configurable<float> cfgAlphaMesonA{"cfgAlphaMesonA", 0.65, "photon energy asymmetry distribution parameter A for pT dependent cut (A * tanh(B*pT))"};
+  o2::framework::Configurable<float> cfgAlphaMesonB{"cfgAlphaMesonB", 1.2, "photon energy asymmetry distribution parameter B for pT dependent cut (A * tanh(B*pT))"};
 
   EMPhotonEventCut fEMEventCut;
   struct : o2::framework::ConfigurableGroup {
