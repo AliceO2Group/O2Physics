@@ -142,7 +142,7 @@ struct JetD0AngSubstructure {
   {
     angularity = 0.0;
     for (auto& constituent : jet.template tracks_as<U>()) {
-      angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent)/(jet.r() / 100.f), alpha);
+      angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent) / (jet.r() / 100.f), alpha);
     }
     angularity /= std::pow(jet.pt(), kappa);
   }
@@ -206,4 +206,3 @@ struct JetD0AngSubstructure {
 };
 // Workflow definition
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetD0AngSubstructure>(cfgc, TaskName{"jet-d0-ang-substructure"})}; }
-
