@@ -1758,6 +1758,9 @@ struct prefilterPrimaryElectron {
     } // end of collision loop
 
     pfb_map.clear();
+    mapTOFNsigmaReassociated.clear();
+    mapTOFBetaReassociated.clear();
+    mapProbaEl.clear();
   }
   PROCESS_SWITCH(prefilterPrimaryElectron, processPrefilter_TTCA, "process prefilter with TTCA", false);
 
@@ -1953,6 +1956,9 @@ struct prefilterPrimaryElectron {
     } // end of collision loop
 
     pfb_map.clear();
+    mapTOFNsigmaReassociated.clear();
+    mapTOFBetaReassociated.clear();
+    mapProbaEl.clear();
   }
   PROCESS_SWITCH(prefilterPrimaryElectron, processPrefilter_SA, "process prefilter standalone", false);
 
