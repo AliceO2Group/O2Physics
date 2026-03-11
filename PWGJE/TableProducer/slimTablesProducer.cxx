@@ -17,6 +17,10 @@
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -54,9 +58,6 @@ DECLARE_SOA_COLUMN(E, e, float);
 DECLARE_SOA_TABLE(SlimTracks, "AOD", "SlimTracks",
                   o2::soa::Index<>,
                   slimtracks::SlimCollisionId,
-                  slimtracks::Pt,
-                  slimtracks::Eta,
-                  slimtracks::Phi,
                   slimtracks::Px,
                   slimtracks::Py,
                   slimtracks::Pz,
@@ -75,9 +76,6 @@ DECLARE_SOA_COLUMN(Pz, pz, float);
 DECLARE_SOA_TABLE(SlimParticles, "AOD", "SlimParticles",
                   o2::soa::Index<>,
                   slimparticles::SlMcCollisionId,
-                  slimparticles::Pt,
-                  slimparticles::Eta,
-                  slimparticles::Phi,
                   slimparticles::Px,
                   slimparticles::Py,
                   slimparticles::Pz);
@@ -99,11 +97,15 @@ struct SlimTablesProducer {
   Configurable<float> minEta{"minEta", -0.9, "min eta to save"};
   Configurable<float> maxEta{"maxEta", 0.9, "max eta to save"};
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
+  Configurable<float> trackDcaZmax{"trackDcaZmax", 99, "additional cut on dcaZ to PV for tracks; uniformTracks in particular don't cut on this at all"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "Event selection"};
+  Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections; other option: uniformTracks"};
+  Configurable<int> minTPCNClsCrossedRows{"minTPCNClsCrossedRows", 80, "min TPC crossed rows"};
   Configurable<bool> skipMBGapEvents{"skipMBGapEvents", false, "flag to choose to reject min. bias gap events; jet-level rejection can also be applied at the jet finder level for jets only, here rejection is applied for collision and track process functions for the first time, and on jets in case it was set to false at the jet finder level"};
   Configurable<bool> applyRCTSelections{"applyRCTSelections", true, "decide to apply RCT selections"};
 
   std::vector<int> eventSelectionBits;
+  int trackSelection = -1;
   bool doSumw2 = false;
 
   void init(InitContext&)
@@ -134,6 +136,7 @@ struct SlimTablesProducer {
     hMCP->GetXaxis()->SetBinLabel(5, "eventSelectionMC");
 
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
   }
 
   Produces<o2::aod::SlimCollisions> slimCollisions;
@@ -149,7 +152,8 @@ struct SlimTablesProducer {
   Filter particleCuts = (aod::jmcparticle::pt >= minPt && aod::jmcparticle::pt < maxPt && aod::jmcparticle::eta > minEta && aod::jmcparticle::eta < maxEta);
 
   void processData(soa::Filtered<o2::aod::JetCollisions>::iterator const& collision,
-                   soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JTrackPIs>> const& tracks)
+                   soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JTrackPIs>> const& tracks,
+                   soa::Join<aod::Tracks, aod::TracksExtra, o2::aod::TracksDCA> const&)
   {
     histos.fill(HIST("h_collisions"), 0.5);
     float centrality = -1.0;
@@ -163,19 +167,27 @@ struct SlimTablesProducer {
     slimCollisions(collision.posZ());
     auto slimCollIndex = slimCollisions.lastIndex();
     for (const auto& track : tracks) {
+      if (!jetderiveddatautilities::selectTrack(track, trackSelection) && jetderiveddatautilities::selectTrackDcaZ(track, trackDcaZmax)) {
+        continue;
+      }
+      const auto& aodTrack = track.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>>();
+      if (aodTrack.tpcNClsCrossedRows() < minTPCNClsCrossedRows) {
+        continue; // remove badly tracked
+      }
       float mass = jetderiveddatautilities::mPion;
       float p = track.pt() * std::cosh(track.eta());
       float energy = std::sqrt(p * p + mass * mass);
-      slimTracks(slimCollIndex, track.pt(), track.eta(), track.phi(), track.px(), track.py(), track.pz(), energy);
+      slimTracks(slimCollIndex, track.px(), track.py(), track.pz(), energy);
     }
   }
   PROCESS_SWITCH(SlimTablesProducer, processData, "process collisions and tracks for Data and MCD", false);
 
   void processMCD(soa::Filtered<aod::JetCollisionsMCD>::iterator const& collision,
-                  soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const&, // join the weight
-                  soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JTrackPIs>> const& tracks)
+                  soa::Filtered<aod::JetMcCollisions> const&, // join the weight
+                  soa::Filtered<soa::Join<aod::JetTracksMCD, aod::JTrackExtras, aod::JTrackPIs>> const& tracks,
+                  soa::Join<aod::Tracks, aod::TracksExtra, o2::aod::TracksDCA> const&)
   {
-    float eventWeight = collision.mcCollision_as<soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>>().weight();
+    float eventWeight = collision.mcCollision_as<aod::JetMcCollisions>().weight();
     histos.fill(HIST("h_mcCollMCD_counts_weight"), 0.5, eventWeight);
 
     float centrality = -1.0;
@@ -189,13 +201,20 @@ struct SlimTablesProducer {
       return;
     }
     histos.fill(HIST("h_mcCollMCD_counts_weight"), 1.5, eventWeight);
-    auto slimCollIndex = slimCollisions.lastIndex();
     slimCollisions(collision.posZ());
+    auto slimCollIndex = slimCollisions.lastIndex();
     for (const auto& track : tracks) {
+      if (!jetderiveddatautilities::selectTrack(track, trackSelection) && jetderiveddatautilities::selectTrackDcaZ(track, trackDcaZmax)) {
+        continue;
+      }
+      const auto& aodTrack = track.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>>();
+      if (aodTrack.tpcNClsCrossedRows() < minTPCNClsCrossedRows) {
+        continue; // remove badly tracked
+      }
       float mass = jetderiveddatautilities::mPion;
       float p = track.pt() * std::cosh(track.eta());
       float energy = std::sqrt(p * p + mass * mass);
-      slimTracks(slimCollIndex, track.pt(), track.eta(), track.phi(), track.px(), track.py(), track.pz(), energy);
+      slimTracks(slimCollIndex, track.px(), track.py(), track.pz(), energy);
     }
   }
   PROCESS_SWITCH(SlimTablesProducer, processMCD, "process collisions and tracks for MCD", false);
@@ -230,10 +249,10 @@ struct SlimTablesProducer {
       return;
     }
     histos.fill(HIST("h_mcCollMCP_counts_weight"), 4.5, eventWeight);
-    auto slimMcCollIndex = slimMcCollisions.lastIndex();
     slimMcCollisions(mcCollision.posZ());
+    auto slimMcCollIndex = slimMcCollisions.lastIndex();
     for (const auto& particle : particles) {
-      slimParticles(slimMcCollIndex, particle.pt(), particle.eta(), particle.phi(), particle.px(), particle.py(), particle.pz());
+      slimParticles(slimMcCollIndex, particle.px(), particle.py(), particle.pz());
     }
   }
   PROCESS_SWITCH(SlimTablesProducer, processMCP, "process mccollisions and mcparticles for MCD", false);
