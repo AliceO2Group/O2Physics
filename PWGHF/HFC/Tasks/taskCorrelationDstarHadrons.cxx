@@ -81,11 +81,11 @@ struct HfTaskCorrelationDstarHadrons {
   Configurable<bool> applyEfficiency{"applyEfficiency", true, "Flag for applying efficiency weights"};
   Configurable<bool> useCcdbEfficiency{"useCcdbEfficiency", false, "Flag for using efficiency values from CCDB (if false, efficiency values must be provided via json files)"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> ccdbPathEfficiencyDstar{"ccdbPathEfficiencyDstar", "/HFCALIB/hf_efficiency_dstar_pt", "path in ccdb for Dstar efficiency values"};
-  Configurable<std::string> ccdbPathEfficiencyTracks{"ccdbPathEfficiencyTracks", "/HFCALIB/hf_efficiency_tracks_pt", "path in ccdb for track efficiency values"};
+  Configurable<std::string> ccdbPathEfficiencyDstar{"ccdbPathEfficiencyDstar", "Users/d/desharma/HFC/Efficiency/Dstar", "path in ccdb for Dstar efficiency values"};
+  Configurable<std::string> ccdbPathEfficiencyTracks{"ccdbPathEfficiencyTracks", "Users/d/desharma/HFC/Efficiency/Track", "path in ccdb for track efficiency values"};
   Configurable<int64_t> ccdbTimestamp{"ccdbTimestamp", -1, "timestamp for retrieving efficiency values from CCDB"};
-  Configurable<std::string> efficiencyDstarFileName{"efficiencyDstarFileName", "EfficiencyDstar.root", "name of the efficiency file for Dstar"};
-  Configurable<std::string> efficiencyTracksFileName{"efficiencyTracksFileName", "EfficiencyTracks.root", "name of the efficiency file for tracks"};
+  Configurable<std::string> efficiencyDstarFileName{"efficiencyDstarFileName", "efficiencyHFCDstar.root", "name of the efficiency file for Dstar"};
+  Configurable<std::string> efficiencyTracksFileName{"efficiencyTracksFileName", "efficiencyHFCTrack.root", "name of the efficiency file for tracks"};
   Configurable<int> nEfficiencyHist{"nEfficiencyHist", 1, "if MB nEfficiencyHist = 1, if Centrality classes nEfficiencyHist = number of centrality classes (i.e. 10)"};
 
   // pT ranges for correlation plots: the default values are those embedded in hf_cuts_dplus_to_pi_k_pi (i.e. the mass pT bins), but can be redefined via json files
