@@ -19,9 +19,6 @@
 #ifndef PWGEM_PHOTONMESON_UTILS_MATERIALBUDGETWEIGHTS_H_
 #define PWGEM_PHOTONMESON_UTILS_MATERIALBUDGETWEIGHTS_H_
 
-#include <map>
-#include <string>
-
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
 #include "Framework/ASoAHelpers.h"
@@ -93,7 +90,7 @@ struct MaterialBudgetWeights {
       LOG(info) << "MaterialBudgetWeights: standard process running";
       once = true;
     }
-    if (!hOmegaMBFromCCDB) {        // histogram not loaded => behave like dummy
+    if (!hOmegaMBFromCCDB) { // histogram not loaded => behave like dummy
       omegaMBWeight(1.f);
       return;
     }

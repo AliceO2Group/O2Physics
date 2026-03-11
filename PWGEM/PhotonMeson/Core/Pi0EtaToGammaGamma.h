@@ -851,8 +851,8 @@ struct Pi0EtaToGammaGamma {
               used_dileptonIds_per_col.emplace_back(tuple_tmp_id2);
             }
             ndiphoton++;
-          } // end of dielectron loop
-        } // end of g1 loop
+          }    // end of dielectron loop
+        }      // end of g1 loop
       } else { // PCM-PCM, EMC-EMC, PHOS-PHOS, PCM-EMC and PCM-PHOS.
         auto photons1_per_collision = photons1.sliceByCached(TDetectorTag1::perCollision(), collision.globalIndex(), cache);
         auto photons2_per_collision = photons2.sliceByCached(TDetectorTag2::perCollision(), collision.globalIndex(), cache);
@@ -932,7 +932,7 @@ struct Pi0EtaToGammaGamma {
           }
           ndiphoton++;
         } // end of pairing loop
-      } // end of pairing in same event
+      }   // end of pairing in same event
 
       used_photonIds_per_col.clear();
       used_photonIds_per_col.shrink_to_fit();
