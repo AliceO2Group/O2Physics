@@ -108,6 +108,7 @@ class HFInvMassFitter : public TNamed
   void setFixRatioToGausSigma(double sigmaFrac);
   void setFixSignalYield(double yield) { mFixedRawYield = yield; }
   void setNumberOfSigmaForSidebands(double numberOfSigma) { mNSigmaForSidebands = numberOfSigma; }
+  void setNumberOfSigmaForSignal(double numberOfSigma) { mNSigmaForSgn = numberOfSigma; }
   void setFixDscbAlphaL(double alphaL);
   void setFixDscbAlphaR(double alphaR);
   void setFixDscbNL(double nL);

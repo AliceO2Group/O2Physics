@@ -183,6 +183,8 @@ void runMassFitter(const std::string& configFileName)
   const bool drawBgPrefit = readJsonField<bool>(config, "DrawBgPrefit", true);
   const bool highlightPeakRegion = readJsonField<bool>(config, "HighlightPeakRegion", true);
   const int randomSeed = readJsonField<int>(config, "RandomSeed", -1);
+  const double nSigmaForSideband = readJsonField<double>(config, "NSigmaForSideband", 3.);
+  const double nSigmaForSignal = readJsonField<double>(config, "NSigmaForSignal", 3.);
 
   readJsonVector(dscbAlphaLInitial, config, "DscbAlphaLInitial");
   readJsonVector(dscbAlphaLLower, config, "DscbAlphaLLower");
@@ -475,6 +477,8 @@ void runMassFitter(const std::string& configFileName)
 
     HFInvMassFitter* massFitter = new HFInvMassFitter(hMass[iSliceVar], massMin[iSliceVar], massMax[iSliceVar], bkgFunc[iSliceVar], sgnFunc[iSliceVar], randomSeed);
     massFitter->setDrawBgPrefit(drawBgPrefit);
+    massFitter->setNumberOfSigmaForSidebands(nSigmaForSideband);
+    massFitter->setNumberOfSigmaForSignal(nSigmaForSignal);
     massFitter->setHighlightPeakRegion(highlightPeakRegion);
     massFitter->setInitialGaussianMean(massPDG);
     massFitter->setParticlePdgMass(massPDG);

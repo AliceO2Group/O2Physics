@@ -583,9 +583,9 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, const std::vector<std::string>& 
   textFitMetrics->AddText(Form("S = %.0f #pm %.0f ", mRawYield, mRawYieldErr));
   textFitMetrics->AddText(Form("S_{count} = %.0f #pm %.0f ", mRawYieldCounted, mRawYieldCountedErr));
   if (mTypeOfBkgPdf != NoBkg) {
-    textFitMetrics->AddText(Form("B (%.1f#sigma) = %.0f #pm %.0f", mNSigmaForSidebands, mBkgYield, mBkgYieldErr));
-    textFitMetrics->AddText(Form("S/B (%.1f#sigma) = %.4g ", mNSigmaForSidebands, mRawYield / mBkgYield));
-    textFitMetrics->AddText(Form("Significance (%.1f#sigma) = %.1f #pm %.1f ", mNSigmaForSidebands, mSignificance, mSignificanceErr));
+    textFitMetrics->AddText(Form("B (%.1f#sigma) = %.0f #pm %.0f", mNSigmaForSgn, mBkgYield, mBkgYieldErr));
+    textFitMetrics->AddText(Form("S/B (%.1f#sigma) = %.4g ", mNSigmaForSgn, mRawYield / mBkgYield));
+    textFitMetrics->AddText(Form("Significance (%.1f#sigma) = %.1f #pm %.1f ", mNSigmaForSgn, mSignificance, mSignificanceErr));
     textFitMetrics->AddText(Form("#chi^{2} / ndf  =  %.3f", mChiSquareOverNdfTotal));
   }
   if (mReflPdf != nullptr) {
