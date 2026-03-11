@@ -644,8 +644,7 @@ DECLARE_SOA_TABLE_STAGED(HfBplusParD0Es, "HFBPPARD0E", //! Table with additional
                          hf_cand_par_charm::PyProng1Charm,
                          hf_cand_par_charm::PzProng1Charm,
                          hf_cand_par_charm::PtProng0Charm,
-                         hf_cand_par_charm::PtProng1Charm
-                         );
+                         hf_cand_par_charm::PtProng1Charm);
 
 DECLARE_SOA_TABLE_STAGED(HfBplusParEs, "HFBPPARE", //! Table with additional candidate properties used for selection
                          hf_cand::XSecondaryVertex,
