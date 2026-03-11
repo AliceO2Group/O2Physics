@@ -17,7 +17,6 @@
 #include "PWGEM/Dilepton/Core/DimuonCut.h"
 #include "PWGEM/Dilepton/Core/EMEventCut.h"
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
-
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
 #include "Framework/ASoAHelpers.h"
