@@ -257,6 +257,7 @@ class HFInvMassFitter : public TNamed
   RooPlot* mReflFrame;             /// reflection frame
   RooPlot* mReflOnlyFrame;         /// reflection frame plot on reflection only
   RooPlot* mResidualFrame;         /// residual frame
+  RooHist* mResidualHist;          /// residual histogram
   RooPlot* mRatioFrame;            /// fit/data ratio frame
   RooPlot* mResidualFrameForCalculation;
   RooWorkspace* mWorkspace;  /// workspace
