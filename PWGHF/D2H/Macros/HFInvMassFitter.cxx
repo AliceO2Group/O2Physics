@@ -215,11 +215,8 @@ void HFInvMassFitter::doFit()
   mInvMassFrame = mass->frame(Title(Form("%s", mHistoInvMass->GetTitle()))); // define the frame to plot
   dataHistogram.plotOn(mInvMassFrame, Name("data_c"));                       // plot data histogram on the frame
 
-  // define number of background and background fit function
-  const ParameterRanges rooNBkgParamRanges{0., 1.2 * mIntegralHisto, 0.3 * mIntegralHisto};
-  mRooNBkg = new RooRealVar("mRooNBkg", "number of background", randomizeInitialParameter(rooNBkgParamRanges), rooNBkgParamRanges.lower, rooNBkgParamRanges.upper); // background yield
-  RooAbsPdf* bkgPdf = createBackgroundFitFunction(mWorkspace);                                                                                                      // Create background pdf
-  RooAbsPdf* sgnPdf = createSignalFitFunction(mWorkspace);                                                                                                          // Create signal pdf
+  RooAbsPdf* bkgPdf = createBackgroundFitFunction(mWorkspace); // Create background pdf
+  RooAbsPdf* sgnPdf = createSignalFitFunction(mWorkspace);     // Create signal pdf
 
   // fit MC or Data
   if (mTypeOfBkgPdf == NoBkg) { // MC
@@ -240,6 +237,8 @@ void HFInvMassFitter::doFit()
     mRatioFrame = mass->frame(Title(Form("%s", mHistoInvMass->GetTitle())));
     calculateFitToDataRatio();
   } else { // data
+    const ParameterRanges rooNBkgParamRanges{0., 1.2 * mIntegralHisto, 0.3 * mIntegralHisto};
+    mRooNBkg = new RooRealVar("mRooNBkg", "number of background", randomizeInitialParameter(rooNBkgParamRanges), rooNBkgParamRanges.lower, rooNBkgParamRanges.upper); // background yield
     mBkgPdf = new RooAddPdf("mBkgPdf", "background fit function", RooArgList(*bkgPdf), RooArgList(*mRooNBkg));
     if (mTypeOfSgnPdf == GausSec) { // two peak fit
       if (strcmp(mFitOption.c_str(), "Chi2") == 0) {
@@ -740,6 +739,11 @@ void HFInvMassFitter::calculateSignal(double& signal, double& errSignal) const
 // calculate background yield
 void HFInvMassFitter::calculateBackground(double& bkg, double& errBkg) const
 {
+  if (mTypeOfBkgPdf == NoBkg) {
+    bkg = 0.;
+    errBkg = 0.;
+    return;
+  }
   bkg = mRooNBkg->getVal() * mIntegralBkg;
   errBkg = mRooNBkg->getError() * mIntegralBkg;
 }
