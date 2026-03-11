@@ -17,7 +17,6 @@
 
 #include "Common/Core/TableHelper.h"
 #include "Common/Core/fwdtrackUtilities.h"
-// #include "Common/DataModel/CollisionAssociationTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
@@ -68,7 +67,7 @@ struct skimmerPrimaryMFTTrack {
 
   Configurable<bool> fillQAHistogram{"fillQAHistogram", true, "flag to fill QA histograms"};
 
-  Configurable<float> cfgPtMin{"cfgPtMin", 0.2, "min pt for MFTsa track"};
+  Configurable<float> cfgPtMin{"cfgPtMin", 0.1, "min pt for MFTsa track"};
   Configurable<float> cfgPtMax{"cfgPtMax", 1e+10, "max pt for MFTsa track"};
   Configurable<float> cfgEtaMin{"cfgEtaMin", -4, "min eta acceptance"};
   Configurable<float> cfgEtaMax{"cfgEtaMax", -2, "max eta acceptance"};
@@ -238,7 +237,7 @@ struct skimmerPrimaryMFTTrack {
       trackBit |= static_cast<uint16_t>(RefMFTTrackBit::kDCAxy001cm);
     }
 
-    emprimarytracks(/*collision.globalIndex(),*/ /*mfttrack.globalIndex(),*/ mfttrack.sign() / pt, eta, phi, trackBit);
+    emprimarytracks(mfttrack.sign() / pt, eta, phi, trackBit);
     prmtrackeventidtmp(collision.globalIndex());
 
     if (fillQAHistogram) {

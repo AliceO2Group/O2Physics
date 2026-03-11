@@ -18,7 +18,6 @@
 #include "Common/Core/TableHelper.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
-// #include "Common/DataModel/PIDResponseITS.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
@@ -212,10 +211,6 @@ struct skimmerPrimaryTrack {
       return false;
     }
 
-    if (track.tpcNClsFound() < 0) {
-      return false;
-    }
-
     if (track.tpcNClsCrossedRows() < 50) {
       return false;
     }
@@ -241,14 +236,8 @@ struct skimmerPrimaryTrack {
     if (std::fabs(dcaXY) > dca_xy_max || std::fabs(dcaZ) > dca_z_max) {
       return false;
     }
-    if (std::fabs(dcaZ) > 3.f) {
-      return false;
-    }
 
     if (std::fabs(trackParCov.getEta()) > maxeta || trackParCov.getPt() < minpt || maxpt < trackParCov.getPt()) {
-      return false;
-    }
-    if (trackParCov.getPt() > 5.f) {
       return false;
     }
 
