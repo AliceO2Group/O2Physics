@@ -910,7 +910,6 @@ struct Pi0EtaToGammaGamma {
             continue;
           }
 
-          fRegistry.fill(HIST("Pair/same/hs"), v12.M(), v12.Pt(), weight);
           float wpair = weight;
 
           if constexpr (requires { g1.omegaMBWeight(); }) {
