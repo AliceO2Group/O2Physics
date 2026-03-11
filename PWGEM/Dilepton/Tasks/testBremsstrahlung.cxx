@@ -37,8 +37,6 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
-// #include "TGeoGlobalMagField.h"
-
 #include <array>
 #include <map>
 #include <set>
