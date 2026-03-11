@@ -163,6 +163,8 @@
         "3 for GausSec",
         "4 for DoubleSidedCrystalBall"
     ],
+    "NSigmaForSideband": 3,
+    "NSigmaForSignal": 3,
     "DrawBgPrefit": true,
     "HighlightPeakRegion": true,
     "RandomSeed": -1
