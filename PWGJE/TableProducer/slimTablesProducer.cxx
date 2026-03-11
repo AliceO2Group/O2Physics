@@ -47,9 +47,6 @@ using SlMcCollision = SlMcCollisions::iterator;
 namespace slimtracks
 {
 DECLARE_SOA_INDEX_COLUMN(SlimCollision, slimCollision);
-DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(Eta, eta, float);
-DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Px, px, float);
 DECLARE_SOA_COLUMN(Py, py, float);
 DECLARE_SOA_COLUMN(Pz, pz, float);
@@ -66,9 +63,6 @@ using SlimTrack = SlimTracks::iterator;
 namespace slimparticles
 {
 DECLARE_SOA_INDEX_COLUMN(SlMcCollision, slMcCollision);
-DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(Eta, eta, float);
-DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Px, px, float);
 DECLARE_SOA_COLUMN(Py, py, float);
 DECLARE_SOA_COLUMN(Pz, pz, float);
