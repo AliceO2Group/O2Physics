@@ -156,7 +156,7 @@ struct lambdajetpolarizationions {
   // } products;
   Produces<o2::aod::RingLaV0s> tableV0s;
   Produces<o2::aod::RingJets> tableJets;
-  Produces<o2::aod::RingLeadP> tableLeadParticles;
+  Produces<o2::aod::RingLeadPs> tableLeadParticles;
   Produces<o2::aod::RingCollisions> tableCollisions;
 
   // Define histogram registries:
@@ -274,7 +274,7 @@ struct lambdajetpolarizationions {
     Configurable<std::string> phiHighCut{"phiHighCut", "0.1/x+pi/18.0+0.06", "High azimuth cut parametrisation"};
 
     // PID (TPC/TOF)
-    Configurable<float> tpcPidNsigmaCut{"tpcPidNsigmaCut", 3, "tpcPidNsigmaCut"}; // Default is 5. Reduced to agree with strangenessInJetsIons
+    Configurable<float> tpcPidNsigmaCut{"tpcPidNsigmaCut", 4, "tpcPidNsigmaCut"}; // Default is 5
     Configurable<float> tofPidNsigmaCutLaPr{"tofPidNsigmaCutLaPr", 1e+6, "tofPidNsigmaCutLaPr"};
     Configurable<float> tofPidNsigmaCutLaPi{"tofPidNsigmaCutLaPi", 1e+6, "tofPidNsigmaCutLaPi"};
 
