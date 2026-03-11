@@ -16,8 +16,8 @@
 /// \author Youssef El Mard (youssef.el.mard.bouziani@cern.ch)
 ///
 
-#ifndef PWGEM_PHOTONMESON_UTILS_MATERIALBUDGETWEIGHTS_H_
-#define PWGEM_PHOTONMESON_UTILS_MATERIALBUDGETWEIGHTS_H_
+#ifndef PWGEM_PHOTONMESON_CORE_MATERIALBUDGETWEIGHTS_H_
+#define PWGEM_PHOTONMESON_CORE_MATERIALBUDGETWEIGHTS_H_
 
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
@@ -112,4 +112,4 @@ struct MaterialBudgetWeights {
   PROCESS_SWITCH(MaterialBudgetWeights, processDummy, "Fill dummy MB weights (=1)", true);
 };
 
-#endif // PWGEM_PHOTONMESON_UTILS_MATERIALBUDGETWEIGHTS_H_
+#endif // PWGEM_PHOTONMESON_CORE_MATERIALBUDGETWEIGHTS_H_

@@ -15,7 +15,7 @@
 ///
 /// \author Youssef El Mard (youssef.el.mard.bouziani@cern.ch)
 
-#include "PWGEM/PhotonMeson/Utils/MaterialBudgetWeights.h"
+#include "PWGEM/PhotonMeson/Core/MaterialBudgetWeights.h"
 
 #include "Framework/runDataProcessing.h"
 

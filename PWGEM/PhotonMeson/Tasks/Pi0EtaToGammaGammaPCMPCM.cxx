@@ -13,9 +13,9 @@
 /// \brief This code loops over photons and makes pairs for neutral mesons analyses for PCM-PCM.
 /// \author D. Sekihata, daiki.sekihata@cern.ch
 
+#include "PWGEM/PhotonMeson/Core/MaterialBudgetWeights.h"
 #include "PWGEM/PhotonMeson/Core/Pi0EtaToGammaGamma.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Utils/MaterialBudgetWeights.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 
 #include <Framework/AnalysisDataModel.h>
