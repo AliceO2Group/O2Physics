@@ -223,8 +223,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
         prongCharm.pyProng1(),
         prongCharm.pzProng1(),
         prongCharm.ptProng0(),
-        prongCharm.ptProng1()
-      );
+        prongCharm.ptProng1());
     }
     if (fillCandidateParE) {
       rowCandidateParE(
