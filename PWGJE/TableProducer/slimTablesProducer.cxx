@@ -183,17 +183,15 @@ struct SlimTablesProducer {
   PROCESS_SWITCH(SlimTablesProducer, processData, "process collisions and tracks for Data and MCD", false);
 
   void processMCD(soa::Filtered<aod::JetCollisionsMCD>::iterator const& collision,
-                  soa::Filtered<aod::JetMcCollisions> const&, // join the weight
+                  soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const&, // join the weight
                   soa::Filtered<soa::Join<aod::JetTracksMCD, aod::JTrackExtras, aod::JTrackPIs>> const& tracks,
                   soa::Join<aod::Tracks, aod::TracksExtra, o2::aod::TracksDCA> const&)
   {
-    float eventWeight = collision.mcCollision_as<aod::JetMcCollisions>().weight();
+    float eventWeight = collision.mcCollision_as<soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>>().weight();
     histos.fill(HIST("h_mcCollMCD_counts_weight"), 0.5, eventWeight);
-
     float centrality = -1.0;
     checkCentFT0M ? centrality = collision.centFT0M() : centrality = collision.centFT0C();
     histos.fill(HIST("h2_centrality_MCD"), centrality, 0.5, eventWeight);
-
     if (!collision.has_mcCollision()) {
       return;
     }
