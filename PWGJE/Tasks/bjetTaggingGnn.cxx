@@ -289,14 +289,14 @@ struct BjetTaggingGnn {
       registry.add("h_partpT", "", {HistType::kTH1F, {axisTrackpT}}, callSumw2);
       registry.add("h_partpT_fine", "", {HistType::kTH1F, {axisTrackpTFine}}, callSumw2);
       // DCA cut study histograms (pT > pTMin)
-      registry.add("h_dcaXY_coll_fake", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_{#it{xy}}| (cm)"}}}, callSumw2);        // tracks from fake collisions
-      registry.add("h_dcaXY_fake", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_{#it{xy}}| (cm)"}}}, callSumw2);             // fake tracks (no matched particle)
-      registry.add("h_dcaXY_coll_matched", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_{#it{xy}}| (cm)"}}}, callSumw2);     // tracks from matched collisions
-      registry.add("h_dcaXY_coll_matched_b", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_{#it{xy}}| (cm)"}}}, callSumw2);   // tracks from matched collisions, b hadron decay
-      registry.add("h_dcaXY_coll_matched_c", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_{#it{xy}}| (cm)"}}}, callSumw2);   // tracks from matched collisions, c hadron decay
-      registry.add("h_dcaXY_coll_matched_lf", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_{#it{xy}}| (cm)"}}}, callSumw2);  // tracks from matched collisions, others
-      registry.add("h_dcaXY_coll_mismatched", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_{#it{xy}}| (cm)"}}}, callSumw2);  // tracks from mismatched collisions
-      registry.add("h_dcaXY_npp", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_{#it{xy}}| (cm)"}}}, callSumw2);              // non-physical primary tracks (GenStatusCode=-1)
+      registry.add("h_dcaXY_coll_fake", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_{#it{xy}}| (cm)"}}}, callSumw2);       // tracks from fake collisions
+      registry.add("h_dcaXY_fake", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_{#it{xy}}| (cm)"}}}, callSumw2);            // fake tracks (no matched particle)
+      registry.add("h_dcaXY_coll_matched", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_{#it{xy}}| (cm)"}}}, callSumw2);    // tracks from matched collisions
+      registry.add("h_dcaXY_coll_matched_b", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_{#it{xy}}| (cm)"}}}, callSumw2);  // tracks from matched collisions, b hadron decay
+      registry.add("h_dcaXY_coll_matched_c", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_{#it{xy}}| (cm)"}}}, callSumw2);  // tracks from matched collisions, c hadron decay
+      registry.add("h_dcaXY_coll_matched_lf", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_{#it{xy}}| (cm)"}}}, callSumw2); // tracks from matched collisions, others
+      registry.add("h_dcaXY_coll_mismatched", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_{#it{xy}}| (cm)"}}}, callSumw2); // tracks from mismatched collisions
+      registry.add("h_dcaXY_npp", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_{#it{xy}}| (cm)"}}}, callSumw2);             // non-physical primary tracks (GenStatusCode=-1)
       registry.add("h_dcaZ_coll_fake", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_{#it{z}}| (cm)"}}}, callSumw2);
       registry.add("h_dcaZ_fake", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_{#it{z}}| (cm)"}}}, callSumw2);
       registry.add("h_dcaZ_coll_matched", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_{#it{z}}| (cm)"}}}, callSumw2);
