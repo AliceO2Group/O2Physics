@@ -612,10 +612,10 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, const std::vector<std::string>& 
     const std::string fixMeanStatus = mFixedMean ? "fixed" : "free";
     const std::string fixSigmaStatus = mFixedSigma ? "fixed" : "free";
     const std::string fixSigmaDoubleGausStatus = mFixedSigmaDoubleGaus ? "fixed" : "free";
-    textSignalPar->AddText(Form("mean(%s) = %.3f #pm %.3f", fixMeanStatus.c_str(), mRooMeanSgn->getVal(), mRooMeanSgn->getError()));
-    textSignalPar->AddText(Form("sigma(%s) = %.3f #pm %.3f", fixSigmaStatus.c_str(), mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
+    textSignalPar->AddText(Form("#mu(%s) = %.3f #pm %.3f", fixMeanStatus.c_str(), mRooMeanSgn->getVal(), mRooMeanSgn->getError()));
+    textSignalPar->AddText(Form("#sigma(%s) = %.3f #pm %.3f", fixSigmaStatus.c_str(), mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
     if (mTypeOfSgnPdf == DoubleGaus) {
-      textSignalPar->AddText(Form("sigma 2(%s) = %.3f #pm %.3f", fixSigmaDoubleGausStatus.c_str(), mRooSecSigmaSgn->getVal(), mRooSecSigmaSgn->getError()));
+      textSignalPar->AddText(Form("#sigma_{2}(%s) = %.3f #pm %.3f", fixSigmaDoubleGausStatus.c_str(), mRooSecSigmaSgn->getVal(), mRooSecSigmaSgn->getError()));
     }
     mInvMassFrame->addObject(textSignalPar);
   }
@@ -642,10 +642,10 @@ void HFInvMassFitter::drawResidual(TVirtualPad* pad)
   textInfo->SetTextColor(kBlue);
   textInfo->AddText(Form("S = %.0f #pm %.0f ", mRawYield, mRawYieldErr));
   textInfo->AddText(Form("S_{count} = %.0f #pm %.0f ", mRawYieldCounted, mRawYieldCountedErr));
-  textInfo->AddText(Form("mean = %.3f #pm %.3f", mRooMeanSgn->getVal(), mRooMeanSgn->getError()));
-  textInfo->AddText(Form("sigma = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
+  textInfo->AddText(Form("#mu = %.3f #pm %.3f", mRooMeanSgn->getVal(), mRooMeanSgn->getError()));
+  textInfo->AddText(Form("#sigma = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
   if (mTypeOfSgnPdf == DoubleGaus) {
-    textInfo->AddText(Form("sigma 2 = %.3f #pm %.3f", mRooSecSigmaSgn->getVal(), mRooSecSigmaSgn->getError()));
+    textInfo->AddText(Form("#sigma_{2} = %.3f #pm %.3f", mRooSecSigmaSgn->getVal(), mRooSecSigmaSgn->getError()));
   }
   mResidualFrame->addObject(textInfo);
   mResidualFrame->Draw();
