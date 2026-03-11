@@ -259,16 +259,15 @@ class HFInvMassFitter : public TNamed
   RooPlot* mResidualFrame;         /// residual frame
   RooHist* mResidualHist;          /// residual histogram
   RooPlot* mRatioFrame;            /// fit/data ratio frame
-  RooPlot* mResidualFrameForCalculation;
-  RooWorkspace* mWorkspace;  /// workspace
-  double mIntegralHisto;     /// integral of histogram to fit
-  double mIntegralBkg;       /// integral of background fit function
-  double mIntegralSgn;       /// integral of signal fit function
-  TH1* mHistoTemplateRefl;   /// reflection histogram
-  bool mDrawBgPrefit;        /// draw background after fitting the sidebands
-  bool mHighlightPeakRegion; /// draw vertical lines showing the peak region (usually +- 3 sigma)
-  int mRandomSeed;           /// seed for random engine for fit's initial parameters randomization
-  TRandom3* mRandomGen;      /// engine for fit's initial parameters randomization
+  RooWorkspace* mWorkspace;        /// workspace
+  double mIntegralHisto;           /// integral of histogram to fit
+  double mIntegralBkg;             /// integral of background fit function
+  double mIntegralSgn;             /// integral of signal fit function
+  TH1* mHistoTemplateRefl;         /// reflection histogram
+  bool mDrawBgPrefit;              /// draw background after fitting the sidebands
+  bool mHighlightPeakRegion;       /// draw vertical lines showing the peak region (usually +- 3 sigma)
+  int mRandomSeed;                 /// seed for random engine for fit's initial parameters randomization
+  TRandom3* mRandomGen;            /// engine for fit's initial parameters randomization
 
   ClassDefOverride(HFInvMassFitter, 1);
 };
