@@ -789,7 +789,7 @@ struct AnalysisEnergyCorrelator {
   }
 
   PresliceUnsorted<aod::McParticles> perReducedMcEvent = aod::mcparticle::mcCollisionId;
-  template <bool MixedEvent, bool HadronMass, int THadronMassType, typename TEvent>
+  template <bool MixedEvent, bool PionMass, int THadronMassType, typename TEvent>
   void runEnergyCorrelators(TEvent const& event1, TEvent const& event2, McParticles const& mcTracks)
   {
     auto groupedMCTracks1 = mcTracks.sliceBy(perReducedMcEvent, event1.mcCollisionId());
@@ -804,7 +804,7 @@ struct AnalysisEnergyCorrelator {
             continue;
           }
           VarManager::FillTrackMC(groupedMCTracks1, t1_raw);
-          if (!MixedEvent && !HadronMass) {
+          if (!MixedEvent && !PionMass) {
             fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), VarManager::fgValues);
           }
         }
@@ -842,16 +842,16 @@ struct AnalysisEnergyCorrelator {
         VarManager::FillEnergyCorrelatorsMC<THadronMassType>(t1_raw, t2_raw, VarManager::fgValues, fTransRange[0], fTransRange[1]);
         for (auto& sig : fGenMCSignals) {
           if (sig->CheckSignal(true, t1_raw)) {
-            if (!MixedEvent && !HadronMass) {
+            if (!MixedEvent && !PionMass) {
               fHistMan->FillHistClass(Form("MCTruthEenergyCorrelators_%s", sig->GetName()), VarManager::fgValues);
             }
-            if (MixedEvent && !HadronMass) {
+            if (MixedEvent && !PionMass) {
               fHistMan->FillHistClass(Form("MCTruthEenergyCorrelatorsME_%s", sig->GetName()), VarManager::fgValues);
             }
-            if (!MixedEvent && HadronMass) {
+            if (!MixedEvent && PionMass) {
               fHistMan->FillHistClass(Form("MCTruthEenergyCorrelators_Pion_%s", sig->GetName()), VarManager::fgValues);
             }
-            if (MixedEvent && HadronMass) {
+            if (MixedEvent && PionMass) {
               fHistMan->FillHistClass(Form("MCTruthEenergyCorrelatorsME_Pion_%s", sig->GetName()), VarManager::fgValues);
             }
           }
