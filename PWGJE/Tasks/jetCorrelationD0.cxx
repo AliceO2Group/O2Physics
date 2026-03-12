@@ -27,10 +27,6 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
 #include "Framework/runDataProcessing.h"
-#include <Framework/ASoA.h>
-#include <Framework/HistogramSpec.h>
-
-#include <fairlogger/Logger.h>
 
 #include <string>
 #include <vector>
@@ -103,8 +99,8 @@ DECLARE_SOA_TABLE(D0McPTables, "AOD", "D0MCPARTICLELEVELTABLE",
 namespace jetInfo
 {
 // D0 tables
-DECLARE_SOA_INDEX_COLUMN(D0DataTable, d0Data);
-DECLARE_SOA_INDEX_COLUMN(D0McPTable, d0MCP);
+DECLARE_SOA_INDEX_COLUMN(D0DataTable, d0DataTable);
+DECLARE_SOA_INDEX_COLUMN(D0McPTable, d0McPTable);
 // Jet
 DECLARE_SOA_COLUMN(JetPt, jetPt, float);
 DECLARE_SOA_COLUMN(JetEta, jetEta, float);
@@ -202,7 +198,7 @@ struct JetCorrelationD0 {
   {
     for (const auto& jetBase : jetsBase) {
       if (jetBase.has_matchedJetGeo()) { // geometric matching
-        for (auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<U>>()) {
+        for (auto const& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<U>>()) {
           registry.fill(HIST("hPtMatched"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), weight);
           registry.fill(HIST("hPtMatched1d"), jetTag.pt(), weight);
           registry.fill(HIST("hPhiMatched"), jetBase.phi(), jetTag.phi(), weight);
@@ -280,7 +276,7 @@ struct JetCorrelationD0 {
           continue;
         }
         float dphi = RecoDecay::constrainAngle(jet.phi() - d0Candidate.phi());
-        if (abs(dphi - M_PI) > (M_PI / 2)) { // this is quite loose  instead of pi/2 could do 0.6
+        if (std::abs(dphi - o2::constants::math::PI) > (o2::constants::math::PI / 2)) { // this is quite loose  instead of pi/2 could do 0.6
           continue;
         }
         fillJetHistograms(jet, dphi);
@@ -323,7 +319,7 @@ struct JetCorrelationD0 {
           continue;
         }
         float dphi = RecoDecay::constrainAngle(jet.phi() - d0Candidate.phi());
-        if (abs(dphi - M_PI) > (M_PI / 2)) { // this is quite loose  instead of pi/2 could do 0.6
+        if (std::abs(dphi - o2::constants::math::PI) > (o2::constants::math::PI / 2)) { // this is quite loose  instead of pi/2 could do 0.6
           continue;
         }
         fillJetHistograms(jet, dphi);
@@ -362,7 +358,7 @@ struct JetCorrelationD0 {
           continue;
         }
         float dphi = RecoDecay::constrainAngle(jet.phi() - d0MCPCandidate.phi());
-        if (abs(dphi - M_PI) > (M_PI / 2)) {
+        if (std::abs(dphi - o2::constants::math::PI) > (o2::constants::math::PI / 2)) {
           continue;
         }
         fillJetHistograms(jet, dphi);
