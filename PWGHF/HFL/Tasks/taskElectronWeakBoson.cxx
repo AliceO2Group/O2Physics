@@ -625,7 +625,7 @@ struct HfTaskElectronWeakBoson {
 
     if (useUEsub) {
       rho = estimateRhoRC(emcClusters);
-      UE = rho * (float)(o2::constants::math::PI * rIsolation * rIsolation);
+      UE = rho * static_cast<float>(o2::constants::math::PI * rIsolation * rIsolation);
       registry.fill(HIST("hUE"), centrality, UE);
       // LOG(info) << "UE = " << UE;
     }
