@@ -19,19 +19,16 @@
 
 #include "Common/Core/RecoDecay.h"
 
-#include <CommonConstants/MathConstants.h>
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/Logger.h"
+#include "Framework/runDataProcessing.h"
 #include <Framework/ASoA.h>
-#include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
-#include <Framework/AnalysisTask.h>
-#include <Framework/Configurable.h>
-#include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
-#include <Framework/OutputObjHeader.h>
-#include <Framework/runDataProcessing.h>
 
-#include <cstdlib>
+#include <fairlogger/Logger.h>
+
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -108,8 +105,8 @@ DECLARE_SOA_TABLE(D0McPTables, "AOD", "D0MCPTABLE",
 namespace jetInfo
 {
 // D0 tables
-DECLARE_SOA_INDEX_COLUMN(D0DataTable, d0DataTable);
-DECLARE_SOA_INDEX_COLUMN(D0McPTable, d0McPTable);
+DECLARE_SOA_INDEX_COLUMN(D0DataTable, d0Data);
+DECLARE_SOA_INDEX_COLUMN(D0McPTable, d0MCP);
 // Jet
 DECLARE_SOA_COLUMN(JetPt, jetPt, float);
 DECLARE_SOA_COLUMN(JetEta, jetEta, float);
