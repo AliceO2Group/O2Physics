@@ -33,7 +33,6 @@ using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<MaterialBudgetWeights>(cfgc),
     adaptAnalysisTask<Pi0EtaToGammaGammaMC<PairType::kPCMPCM, MyV0Photons, MyMCV0Legs>>(cfgc, TaskName{"pi0eta-to-gammagamma-mc-pcmpcm"}),
   };
 }

@@ -32,7 +32,6 @@ using MyV0Photons = o2::soa::Filtered<o2::soa::Join<o2::aod::V0PhotonsKF, o2::ao
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<MaterialBudgetWeights>(cfgc),
     adaptAnalysisTask<Pi0EtaToGammaGamma<PairType::kPCMPCM, MyV0Photons, aod::V0Legs>>(cfgc, TaskName{"pi0eta-to-gammagamma-pcmpcm"}),
   };
 }
