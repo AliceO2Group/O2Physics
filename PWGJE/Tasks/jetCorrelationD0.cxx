@@ -53,9 +53,9 @@ DECLARE_SOA_TABLE(McCollisionTables, "AOD", "MCCOLLINFOTABLE",
 
 namespace collisionInfo
 {
-//DECLARE_SOA_INDEX_COLUMN(CollisionTable, collisionTable);
+// DECLARE_SOA_INDEX_COLUMN(CollisionTable, collisionTable);
 DECLARE_SOA_INDEX_COLUMN_CUSTOM(CollisionTable, collisionTable, "COLLINFOTABLES");
-//DECLARE_SOA_INDEX_COLUMN(McCollisionTable, mcCollisionTable);
+// DECLARE_SOA_INDEX_COLUMN(McCollisionTable, mcCollisionTable);
 DECLARE_SOA_INDEX_COLUMN_CUSTOM(McCollisionTable, mcCollisionTable, "MCCOLLINFOTABLES");
 } // namespace collisionInfo
 namespace d0Info
