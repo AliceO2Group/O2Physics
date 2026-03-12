@@ -1163,20 +1163,16 @@ struct FlowGfwOmegaXi {
           }
         }
         // Lambda and antiLambda
-        if (v0.pt() > trkQualityOpts.cfgCutPtLambdaMin.value && v0.pt() < trkQualityOpts.cfgCutPtLambdaMax.value &&
-            (std::fabs(v0.mLambda() - o2::constants::physics::MassLambda) < v0BuilderOpts.cfgv0_mlambdawindow.value || std::fabs(v0.mAntiLambda() - o2::constants::physics::MassLambda) < v0BuilderOpts.cfgv0_mlambdawindow.value)) {
-        // if (v0.pt() > trkQualityOpts.cfgCutPtLambdaMin.value && v0.pt() < trkQualityOpts.cfgCutPtLambdaMax.value) {
-          registry.fill(HIST("QAhisto/Lambda/hTPCnsigmaposPi"), v0posdau.tpcNSigmaPi());
-          registry.fill(HIST("QAhisto/Lambda/hTPCnsigmanegPi"), v0negdau.tpcNSigmaPi());
-          registry.fill(HIST("QAhisto/Lambda/hTPCnsigmaposPr"), v0posdau.tpcNSigmaPr());
-          registry.fill(HIST("QAhisto/Lambda/hTPCnsigmanegPr"), v0negdau.tpcNSigmaPr());
-          if ((std::fabs(v0posdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(v0negdau.tpcNSigmaPi()) < cfgNSigma[0]) &&
+        if (v0.pt() > trkQualityOpts.cfgCutPtLambdaMin.value && v0.pt() < trkQualityOpts.cfgCutPtLambdaMax.value) {
+          if (std::fabs(v0.mLambda() - o2::constants::physics::MassLambda) < v0BuilderOpts.cfgv0_mlambdawindow.value &&
+              (std::fabs(v0posdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(v0negdau.tpcNSigmaPi()) < cfgNSigma[0]) &&
               ((std::fabs(v0.tofNSigmaLaPr()) < cfgNSigma[4] || v0posdau.pt() < lowpt) && (std::fabs(v0.tofNSigmaLaPi()) < cfgNSigma[3] || v0negdau.pt() < lowpt)) &&
               ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(v0posdau)) < cfgNSigma[7]) || v0posdau.pt() > lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(v0negdau)) < cfgNSigma[6]) || v0negdau.pt() > lowpt)) {
             registry.fill(HIST("InvMassLambda_all"), v0.pt(), v0.mLambda(), v0.eta(), cent);
             isLambda = true;
           } 
-          if ((std::fabs(v0negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(v0posdau.tpcNSigmaPi()) < cfgNSigma[0]) &&
+          if (std::fabs(v0.mAntiLambda() - o2::constants::physics::MassLambda) < v0BuilderOpts.cfgv0_mlambdawindow.value &&
+              (std::fabs(v0negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(v0posdau.tpcNSigmaPi()) < cfgNSigma[0]) &&
               ((std::fabs(v0.tofNSigmaALaPr()) < cfgNSigma[4] || v0negdau.pt() < lowpt) && (std::fabs(v0.tofNSigmaALaPi()) < cfgNSigma[3] || v0posdau.pt() < lowpt)) &&
               ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(v0negdau)) < cfgNSigma[7]) || v0posdau.pt() > lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(v0posdau)) < cfgNSigma[6]) || v0negdau.pt() > lowpt)) {
             registry.fill(HIST("InvMassALambda_all"), v0.pt(), v0.mAntiLambda(), v0.eta(), cent);
