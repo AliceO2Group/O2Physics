@@ -343,12 +343,12 @@ struct HfTaskElectronWeakBoson {
     // histogram for UE
     registry.add("hRho", "rho UE density", kTH1F, {axisE});
     registry.add("hSumERC", "RC sumE", kTH1F, {axisE});
-    registry.add("hUE", "UE vs. centrality", kTH2F, {{axisCentrality}, {axisE}});
+    registry.add("hEnergyUE", "UE vs. centrality", kTH2F, {{axisCentrality}, {axisE}});
   }
 
   double getIsolatedCluster(const o2::aod::EMCALCluster& cluster,
                             const SelectedClusters& clusters,
-                            float UE)
+                            float EnergyUE)
   {
     double energySum = 0.0;
     double energySum_excl = 0.0;
@@ -374,10 +374,10 @@ struct HfTaskElectronWeakBoson {
     }
     energySum_excl = energySum - cluster.energy();
     if (energySum > 0) {
-      isoEnergy = (energySum_excl - UE) / cluster.energy();
+      isoEnergy = (energySum_excl - EnergyUE) / cluster.energy();
     }
 
-    // LOG(info) <<"clustE = " << cluster.energy() << " ; energySum = " << energySum << " ; nclust in Cone = " <<  nclustSum - 1  << " ; UE = " << UE << " ; isoEnergy = " << isoEnergy;
+    // LOG(info) <<"clustE = " << cluster.energy() << " ; energySum = " << energySum << " ; nclust in Cone = " <<  nclustSum - 1  << " ; UE = " << EnergyUE << " ; isoEnergy = " << isoEnergy;
     registry.fill(HIST("hIsolationEnergy"), cluster.energy(), isoEnergy);
 
     return (isoEnergy);
@@ -416,8 +416,8 @@ struct HfTaskElectronWeakBoson {
   }
   float estimateRhoRC(const SelectedClusters& clusters)
   {
-    const float R = rIsolation;
-    const float A = o2::constants::math::PI * R * R;
+    const float randomConeR = rIsolation;
+    const float randomConeArea = o2::constants::math::PI * randomConeR * randomConeR;
 
     std::vector<float> sumErc;
     sumErc.reserve(nRandomCones);
@@ -427,7 +427,7 @@ struct HfTaskElectronWeakBoson {
       float etarc = rnd->Uniform(-etaEmcMax, etaEmcMax); // in EMCal acceptance
       float phirc = rnd->Uniform(phiEmcMin, phiEmcMax);  // in EMCal acceptance
 
-      float s = 0;
+      float energySumRC = 0;
 
       for (auto& c : clusters) {
         if (c.energy() > rcHardE)
@@ -436,13 +436,13 @@ struct HfTaskElectronWeakBoson {
         double dPhirc = phirc - c.phi();
         dPhirc = RecoDecay::constrainAngle(dPhirc, -o2::constants::math::PI);
         double const deltaRrc = std::sqrt(dEtarc * dEtarc + dPhirc * dPhirc);
-        if (deltaRrc < R) {
-          s += c.energy();
+        if (deltaRrc < randomConeR) {
+          energySumRC += c.energy();
         }
       }
 
-      registry.fill(HIST("hSumERC"), s);
-      sumErc.push_back(s);
+      registry.fill(HIST("hSumERC"), energySumRC);
+      sumErc.push_back(energySumRC);
     }
 
     if (sumErc.empty())
@@ -454,9 +454,9 @@ struct HfTaskElectronWeakBoson {
 
     float median = sumErc[sumErc.size() / 2];
     // LOG(info) << "median = " << median;
-    registry.fill(HIST("hRho"), median / A);
+    registry.fill(HIST("hRho"), median / randomConeArea);
 
-    return median / A;
+    return median / randomConeArea;
   }
 
   void recoMassZee(const KFParticle& kfpIsoEle,
@@ -621,13 +621,13 @@ struct HfTaskElectronWeakBoson {
 
     // UE estimate
     float rho = 0.f;
-    float UE = 0.f;
+    float EnergyUE = 0.f;
 
     if (useUEsub) {
       rho = estimateRhoRC(emcClusters);
-      UE = rho * static_cast<float>(o2::constants::math::PI * rIsolation * rIsolation);
-      registry.fill(HIST("hUE"), centrality, UE);
-      // LOG(info) << "UE = " << UE;
+      EnergyUE = rho * static_cast<float>(o2::constants::math::PI * rIsolation * rIsolation);
+      registry.fill(HIST("hEnergyUE"), centrality, EnergyUE);
+      // LOG(info) << "UE = " << EnergyUE;
     }
 
     // track loop
@@ -754,7 +754,7 @@ struct HfTaskElectronWeakBoson {
             eop = energyEmc / match.track_as<TrackEle>().p();
             // LOG(info) << "eop = " << eop;
 
-            isoEnergy = getIsolatedCluster(cluster, emcClusters, UE);
+            isoEnergy = getIsolatedCluster(cluster, emcClusters, EnergyUE);
 
             if (match.track_as<TrackEle>().pt() > ptTHnThresh && isTHnElectron) {
               registry.fill(HIST("hTHnElectrons"), match.track_as<TrackEle>().pt(), match.track_as<TrackEle>().tpcNSigmaEl(), m02Emc, eop, isoEnergy, isoMomentum, trackCount, track.eta(), track.tpcSignal());
