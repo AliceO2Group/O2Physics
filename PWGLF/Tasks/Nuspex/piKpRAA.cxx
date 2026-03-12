@@ -269,7 +269,7 @@ struct PiKpRAA {
   Configurable<bool> rctCheckZDC{"rctCheckZDC", false, "RCT flag to check whether the ZDC is present or not"};
   Configurable<bool> rctTreatLimitedAcceptanceAsBad{"rctTreatLimitedAcceptanceAsBad", false, "RCT flag to reject events with limited acceptance for selected detectors"};
   Configurable<bool> requireGoodRct{"requireGoodRct", true, "RCT flag to reject events with limited acceptance for selected detectors"};
-  Configurable<bool> requireGoodPIDRct{"requireGoodPIDRct", true, "RCT flag to reject events with limited acceptance for selected detectors"};
+  Configurable<bool> requireBCRct{"requireBCRct", true, "RCT flag to reject events with limited acceptance for selected detectors"};
 
   // RCT Checker instance
   RCTFlagsChecker rctChecker;
@@ -403,9 +403,10 @@ struct PiKpRAA {
     registry.add("HasBCVsFT0VsTVXVsEvSel", "Alls=1 | BC=2 | FT0=3 | TVX=4 | EvSel=5;;", kTH1F, {{5, 0.5, 5.5}});
     registry.add("zPos", "With Event Selection;;Entries;", kTH1F, {axisZpos});
     registry.add("T0Ccent", ";;Entries", kTH1F, {axisCent});
+    registry.add("RCTSel", "Event accepted if flag=false: All=1 | RTC sel=2;;;", kTH1F, {{2, 0.5, 2.5}});
+    registry.add("T0CcentVsRCTSel", "Event accepted if flag=false;;RCT Status;", kTH2F, {{{axisCent}, {9, 0.5, 9.5}}});
     registry.add("T0CcentVsFoundFT0", "Found(=1.5) NOT Found(=0.5);;Status;", kTH2F, {{{axisCent}, {2, 0, 2}}});
     registry.add("T0CcentVsBCVsFT0VsTVXVsEvSel", "All=1 | BC=2 | FT0=3 | TVX=4 | EvSel=5;;Status;", kTH2F, {{axisCent}, {5, 0.5, 5.5}});
-    // registry.add("T0CcentVsFoundFT0AndTVX", "Found(=1.5) NOT Found(=0.5);;Status;", kTH2F, {{{axisCent}, {2, 0, 2}}});
     registry.add("NchVsCent", "Measured Nch v.s. Centrality (At least Once Rec. Coll. + Sel. criteria);;Nch", kTH2F, {{axisCent, {nBinsNch, minNch, maxNch}}});
     registry.add("NclVsEtaPID", ";#eta;Ncl used for PID", kTH2F, {{{axisEta}, {161, -0.5, 160.5}}});
     registry.add("NclVsEtaPIDp", ";#eta;#LTNcl#GT used for PID", kTProfile, {axisEta});
@@ -435,8 +436,19 @@ struct PiKpRAA {
     x->SetBinLabel(19, "Nch Sel.");
     x->SetBinLabel(20, "INEL > 0");
 
+    auto hrct = registry.get<TH2>(HIST("T0CcentVsRCTSel"));
+    auto* y = hrct->GetYaxis();
+    y->SetBinLabel(1, "All");
+    y->SetBinLabel(2, "kFT0Bad");
+    y->SetBinLabel(3, "kITSBad");
+    y->SetBinLabel(4, "kITSLimAccMCRepr");
+    y->SetBinLabel(5, "kTOFBad");
+    y->SetBinLabel(6, "kTOFLimAccMCRepr");
+    y->SetBinLabel(7, "kTPCBadTracking");
+    y->SetBinLabel(8, "kTPCBadPID");
+    y->SetBinLabel(9, "kTPCLimAccMCRepr");
+
     if (doprocessCalibrationAndV0s) {
-      registry.add("T0CcentVsRCTSel", "Bad RCT(=0.5) Good RCT(=1.5) Good RCT & Good PID RCT(=2.5);;RCT Status;", kTH2F, {{{axisCent}, {3, 0, 3}}});
       registry.add("NchVsNPV", ";Nch; NPV;", kTH2F, {{{nBinsNPV, minNpv, maxNpv}, {nBinsNch, minNch, maxNch}}});
       registry.add("ExcludedEvtVsNch", ";Nch;Entries;", kTH1F, {{nBinsNch, minNch, maxNch}});
       registry.add("ExcludedEvtVsNPV", ";NPV;Entries;", kTH1F, {{nBinsNPV, minNpv, maxNpv}});
@@ -673,15 +685,51 @@ struct PiKpRAA {
     // Table's size: " << collisions.tableSize() << "\n";
     // LOG(info) << "Run number: " << foundBC.runNumber() << "\n";
 
-    if (!isEventSelected(collision)) {
-      return;
-    }
-
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
     const uint64_t timeStamp{foundBC.timestamp()};
     const int magField{getMagneticField(timeStamp)};
     const double nPV{collision.multNTracksPVeta1() / 1.};
     const float centrality{isT0Ccent ? collision.centFT0C() : collision.centFT0M()};
+
+    // Apply RCT selection?
+    if (requireGoodRct) {
+      // Checks if collisions passes RCT selection
+      const bool isFT0Bad{requireBCRct ? foundBC.rct_bit(kFT0Bad) : collision.rct_bit(kFT0Bad)};
+      const bool isITSBad{requireBCRct ? foundBC.rct_bit(kITSBad) : collision.rct_bit(kITSBad)};
+      const bool isITSLimAcc{requireBCRct ? foundBC.rct_bit(kITSLimAccMCRepr) : collision.rct_bit(kITSLimAccMCRepr)};
+      const bool isTOFBad{requireBCRct ? foundBC.rct_bit(kTOFBad) : collision.rct_bit(kTOFBad)};
+      const bool isTOFLimAcc{requireBCRct ? foundBC.rct_bit(kTOFLimAccMCRepr) : collision.rct_bit(kTOFLimAccMCRepr)};
+      const bool isTPCTrackingBad{requireBCRct ? foundBC.rct_bit(kTPCBadTracking) : collision.rct_bit(kTPCBadTracking)};
+      const bool isTPCPIDBad{requireBCRct ? foundBC.rct_bit(kTPCBadPID) : collision.rct_bit(kTPCBadPID)};
+      const bool isTPCLimAcc{requireBCRct ? foundBC.rct_bit(kTPCLimAccMCRepr) : collision.rct_bit(kTPCLimAccMCRepr)};
+
+      registry.fill(HIST("T0CcentVsRCTSel"), centrality, 1.0);
+      if (!isFT0Bad)
+        registry.fill(HIST("T0CcentVsRCTSel"), centrality, 2.0);
+      if (!isITSBad)
+        registry.fill(HIST("T0CcentVsRCTSel"), centrality, 3.0);
+      if (!isITSLimAcc)
+        registry.fill(HIST("T0CcentVsRCTSel"), centrality, 4.0);
+      if (!isTOFBad)
+        registry.fill(HIST("T0CcentVsRCTSel"), centrality, 5.0);
+      if (!isTOFLimAcc)
+        registry.fill(HIST("T0CcentVsRCTSel"), centrality, 6.0);
+      if (!isTPCTrackingBad)
+        registry.fill(HIST("T0CcentVsRCTSel"), centrality, 7.0);
+      if (!isTPCPIDBad)
+        registry.fill(HIST("T0CcentVsRCTSel"), centrality, 8.0);
+      if (!isTPCLimAcc)
+        registry.fill(HIST("T0CcentVsRCTSel"), centrality, 9.0);
+
+      registry.fill(HIST("RCTSel"), 1.0);
+      if (!rctChecker(collision))
+        return;
+
+      registry.fill(HIST("RCTSel"), 2.0);
+    }
+
+    if (!isEventSelected(collision))
+      return;
 
     //---------------------------
     // Control histogram
@@ -690,23 +738,6 @@ struct PiKpRAA {
       registry.fill(HIST("T0CcentVsFoundFT0"), centrality, 0.5);
     }
     registry.fill(HIST("T0CcentVsFoundFT0"), centrality, 1.5);
-
-    // Apply RCT selection?
-    if (requireGoodRct) {
-
-      // Checks if collisions passes RCT selection
-      if (!rctChecker(*collision)) {
-        registry.fill(HIST("T0CcentVsRCTSel"), centrality, 0.5);
-        return;
-      }
-
-      registry.fill(HIST("T0CcentVsRCTSel"), centrality, 1.5);
-      // Checks if collisions passes good PID RCT status
-      if (requireGoodPIDRct && collision.rct_bit(kTPCBadPID)) {
-        return;
-      }
-      registry.fill(HIST("T0CcentVsRCTSel"), centrality, 2.5);
-    }
 
     if (applyNchSel) {
       const int nextRunNumber{foundBC.runNumber()};
@@ -1402,6 +1433,45 @@ struct PiKpRAA {
         if (collision.has_foundBC() && collision.has_foundFT0() && collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
           registry.fill(HIST("T0CcentVsBCVsFT0VsTVXVsEvSel"), centrality, 4.0);
           registry.fill(HIST("HasBCVsFT0VsTVXVsEvSel"), 4.0);
+        }
+
+        //---------------------------
+        // RCT Selection
+        //---------------------------
+        if (requireGoodRct) {
+          // Checks if collisions passes RCT selection
+          const bool isFT0Bad{requireBCRct ? foundBC.rct_bit(kFT0Bad) : collision.rct_bit(kFT0Bad)};
+          const bool isITSBad{requireBCRct ? foundBC.rct_bit(kITSBad) : collision.rct_bit(kITSBad)};
+          const bool isITSLimAcc{requireBCRct ? foundBC.rct_bit(kITSLimAccMCRepr) : collision.rct_bit(kITSLimAccMCRepr)};
+          const bool isTOFBad{requireBCRct ? foundBC.rct_bit(kTOFBad) : collision.rct_bit(kTOFBad)};
+          const bool isTOFLimAcc{requireBCRct ? foundBC.rct_bit(kTOFLimAccMCRepr) : collision.rct_bit(kTOFLimAccMCRepr)};
+          const bool isTPCTrackingBad{requireBCRct ? foundBC.rct_bit(kTPCBadTracking) : collision.rct_bit(kTPCBadTracking)};
+          const bool isTPCPIDBad{requireBCRct ? foundBC.rct_bit(kTPCBadPID) : collision.rct_bit(kTPCBadPID)};
+          const bool isTPCLimAcc{requireBCRct ? foundBC.rct_bit(kTPCLimAccMCRepr) : collision.rct_bit(kTPCLimAccMCRepr)};
+
+          registry.fill(HIST("T0CcentVsRCTSel"), centrality, 1.0);
+          if (!isFT0Bad)
+            registry.fill(HIST("T0CcentVsRCTSel"), centrality, 2.0);
+          if (!isITSBad)
+            registry.fill(HIST("T0CcentVsRCTSel"), centrality, 3.0);
+          if (!isITSLimAcc)
+            registry.fill(HIST("T0CcentVsRCTSel"), centrality, 4.0);
+          if (!isTOFBad)
+            registry.fill(HIST("T0CcentVsRCTSel"), centrality, 5.0);
+          if (!isTOFLimAcc)
+            registry.fill(HIST("T0CcentVsRCTSel"), centrality, 6.0);
+          if (!isTPCTrackingBad)
+            registry.fill(HIST("T0CcentVsRCTSel"), centrality, 7.0);
+          if (!isTPCPIDBad)
+            registry.fill(HIST("T0CcentVsRCTSel"), centrality, 8.0);
+          if (!isTPCLimAcc)
+            registry.fill(HIST("T0CcentVsRCTSel"), centrality, 9.0);
+
+          registry.fill(HIST("RCTSel"), 1.0);
+          if (!rctChecker(collision))
+            return;
+
+          registry.fill(HIST("RCTSel"), 2.0);
         }
 
         //---------------------------
