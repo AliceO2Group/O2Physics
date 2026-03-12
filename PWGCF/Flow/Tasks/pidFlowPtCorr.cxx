@@ -66,6 +66,7 @@ using namespace o2::framework::expressions;
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
 struct PidFlowPtCorr {
+#pragma region // configurable
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
@@ -172,6 +173,15 @@ struct PidFlowPtCorr {
   // end separate k-p
   // end cfg for PID pt range
 
+  struct : ConfigurableGroup {
+    std::string prefix = "particleAbundanceOpts";
+    ConfigurableAxis cfgaxisAbundancePi{"cfgaxisAbundancePi", {100, 0, 1100}, "axis for Abundance Pi"};
+    ConfigurableAxis cfgaxisAbundanceKa{"cfgaxisAbundanceKa", {100, 0, 200}, "axis for Abundance ka"};
+    ConfigurableAxis cfgaxisAbundancePr{"cfgaxisAbundancePr", {100, 0, 50}, "axis for Abundance Pr"};
+
+    O2_DEFINE_CONFIGURABLE(cfgOutPutAbundanceDis, bool, false, "out put hists for pid particle Abundance QA");
+  } particleAbundanceOpts;
+
   ConfigurableAxis cfgaxisVertex{"cfgaxisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis cfgaxisPhi{"cfgaxisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
   ConfigurableAxis cfgaxisEta{"cfgaxisEta", {40, -1., 1.}, "eta axis for histograms"};
@@ -188,6 +198,9 @@ struct PidFlowPtCorr {
 
   AxisSpec axisMultiplicity{{0, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90}, "Centrality (%)"};
 
+#pragma endregion // configurable
+
+#pragma region // filter
   // filter and using
   // data
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -209,6 +222,10 @@ struct PidFlowPtCorr {
   using FilteredTracksWithMCLabel = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels, TracksPID>>;
   using FilteredCollisionsWithMCLabel = soa::Filtered<soa::Join<AodCollisions, aod::EvSels, aod::McCollisionLabels>>;
   // end using and filter
+
+#pragma endregion // filter
+
+#pragma region // others
 
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
 
@@ -248,6 +265,7 @@ struct PidFlowPtCorr {
     kProton,
     kNumberOfParticles
   };
+
   enum OutputTH1Names {
     // here are TProfiles for vn-pt correlations that are not implemented in GFW
     hPhi = 0,
@@ -316,6 +334,8 @@ struct PidFlowPtCorr {
   };
   std::vector<qaHist> qaHistVector;
   // end hists for QA runbyrun
+
+#pragma endregion // others
 
   void init(InitContext const&) // Initialization
   {
@@ -434,6 +454,10 @@ struct PidFlowPtCorr {
       registry.add("ptSpectra/hCentEventCountMcRec", "", {HistType::kTH1D, {axisMultiplicity}});
 
       registry.add("ptSpectra/hPtCentData4ITSOnly", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+
+      registry.add("c22PrimeVsc22/Pi", "", {HistType::kTH2D, {{100, 0., 0.01}, {100, 0., 0.01}}});
+      registry.add("c22PrimeVsc22/Ka", "", {HistType::kTH2D, {{100, 0., 0.01}, {100, 0., 0.01}}});
+      registry.add("c22PrimeVsc22/Pr", "", {HistType::kTH2D, {{100, 0., 0.01}, {100, 0., 0.01}}});
     } // cfgoutputptspectra
 
     if (cfgOutputrunbyrun) {
@@ -445,6 +469,12 @@ struct PidFlowPtCorr {
       }
       // end set "correction/hRunNumberPhiEtaVertex" axis0 label
     } // cfgooutputrunbyrun
+
+    if (particleAbundanceOpts.cfgOutPutAbundanceDis) {
+      registry.add("abundance/hNumOfPiEventCount", "", {HistType::kTH1D, {particleAbundanceOpts.cfgaxisAbundancePi}});
+      registry.add("abundance/hNumOfKaEventCount", "", {HistType::kTH1D, {particleAbundanceOpts.cfgaxisAbundanceKa}});
+      registry.add("abundance/hNumOfPrEventCount", "", {HistType::kTH1D, {particleAbundanceOpts.cfgaxisAbundancePr}});
+    }
 
     // set bin label for hEventCount
     // processdata
@@ -643,6 +673,8 @@ struct PidFlowPtCorr {
     funcV4->SetParameters(v4para[0], v4para[1], v4para[2], v4para[3], v4para[4]);
   }
 
+#pragma region // pid utils function
+
   /**
    * @brief Identify whether the input track is a Pion
    *
@@ -773,6 +805,26 @@ struct PidFlowPtCorr {
     return resultKaon;
   }
 
+#pragma endregion // pid util function
+
+#pragma region // other utils
+
+  double getPidC22InOneEvent(const GFW::CorrConfig& corrconfA, const GFW::CorrConfig& corrconfB)
+  {
+    double NpairA = fGFW->Calculate(corrconfA, 0, true).real();
+    double NpairB = fGFW->Calculate(corrconfB, 0, true).real();
+
+    if (NpairA == 0 && NpairB == 0)
+      return 0;
+
+    double ChC22A = NpairA ? fGFW->Calculate(corrconfA, 0, false).real() / NpairA : 0.;
+    double ChC22B = NpairB ? fGFW->Calculate(corrconfB, 0, false).real() / NpairB : 0.;
+
+    double ChC22 = (ChC22A * NpairA + ChC22B * NpairB) / (NpairA + NpairB);
+
+    return ChC22;
+  }
+
   /**
    * @brief get stable particle
    * @note stable particle include
@@ -803,6 +855,10 @@ struct PidFlowPtCorr {
 
     return false;
   }
+
+#pragma endregion // other utils
+
+#pragma region // fgfw filling helpers
 
   bool fillFC(MyParticleType type, const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, const char* tarName)
   {
@@ -942,6 +998,10 @@ struct PidFlowPtCorr {
       registry.fill(tarName, cent, ptSum / nch, val, dnx);
     return;
   }
+
+#pragma endregion // fill fgfw helper
+
+#pragma region // correction apply functions
 
   /**
    * @brief load NUE(1D) NUE(2D) NUA graphs
@@ -1179,6 +1239,10 @@ struct PidFlowPtCorr {
     return true;
   }
 
+#pragma endregion // correction apply function
+
+#pragma region // track cut functions
+
   /**
    * @brief cut MC particles
    * @note include
@@ -1295,6 +1359,10 @@ struct PidFlowPtCorr {
 
     return true;
   }
+
+#pragma endregion // track cut
+
+#pragma region // event selection functions
 
   /**
    * @brief fill eventCount for different function
@@ -1438,6 +1506,10 @@ struct PidFlowPtCorr {
     return true;
   }
 
+#pragma endregion // event selection
+
+#pragma region // main functions
+
   void processData(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)
   {
     // init
@@ -1562,7 +1634,10 @@ struct PidFlowPtCorr {
     }
 
     int totalGlobalTrack = 0;
-
+    // calculate number of pid particle
+    int numOfPi = 0;
+    int numOfKa = 0;
+    int numOfPr = 0;
     // fill v2 flow
     // use global track
     for (const auto& track : tracks) {
@@ -1674,21 +1749,30 @@ struct PidFlowPtCorr {
         // bitmask 18: 0010010
         fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, 18);
         // fill PIONS and overlap Pions
+        numOfPi++;
       }
 
       if (isKaon(track)) {
         // bitmask 36: 0100100
         fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, 36);
         // fill KAONS and overlap Kaons
+        numOfKa++;
       }
 
       if (isProton(track)) {
         // bitmask 72: 1001000
         fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, 72);
         // fill PROTONS and overlap Protons
+        numOfPr++;
       }
       // end fill GFW
     } // end track loop for v2 calculation
+
+    if (particleAbundanceOpts.cfgOutPutAbundanceDis) {
+      registry.fill(HIST("abundance/hNumOfPiEventCount"), numOfPi);
+      registry.fill(HIST("abundance/hNumOfKaEventCount"), numOfKa);
+      registry.fill(HIST("abundance/hNumOfPrEventCount"), numOfPr);
+    } // outputabundacedis
 
     if (cfgDebugMyCode) {
       LOGF(info, Form("global track num %d", totalGlobalTrack));
@@ -1783,6 +1867,31 @@ struct PidFlowPtCorr {
       fillProfilePOIvnpt(corrconfigs.at(8), HIST("ka/c22dmeanpt"), cent, ptSum, nch);
       fillProfilePOIvnpt(corrconfigs.at(9), HIST("pr/c22dmeanpt"), cent, ptSum, nch);
       fillProfilePOIvnpt(corrconfigs.at(10), HIST("pr/c22dmeanpt"), cent, ptSum, nch);
+
+      if (cfgOutPutPtSpectra) {
+        // charged calculation
+        double NpairCharged = fGFW->Calculate(corrconfigs.at(0), 0, true).real();
+        double chargedC22 = NpairCharged > 0 ? fGFW->Calculate(corrconfigs.at(0), 0, false).real() / NpairCharged : 0;
+        // end charged calculation
+
+        // pi
+        double pidChargedC22Pi = getPidC22InOneEvent(corrconfigs.at(5), corrconfigs.at(6));
+        if (pidChargedC22Pi > 0 && chargedC22 > 0)
+          registry.fill(HIST("c22PrimeVsc22/Pi"), pidChargedC22Pi, chargedC22);
+        // end pi
+
+        // Ka
+        double pidKaonC22 = getPidC22InOneEvent(corrconfigs.at(7), corrconfigs.at(8));
+        if (pidKaonC22 > 0 && chargedC22 > 0)
+          registry.fill(HIST("c22PrimeVsc22/Ka"), pidKaonC22, chargedC22);
+        // end Ka
+
+        // Pr
+        double pidProtonC22 = getPidC22InOneEvent(corrconfigs.at(9), corrconfigs.at(10));
+        if (pidProtonC22 > 0 && chargedC22 > 0)
+          registry.fill(HIST("c22PrimeVsc22/Pr"), pidProtonC22, chargedC22);
+        // end Pr
+      }
 
       fFCCh->FillProfile("hMeanPt", cent, (ptSum / nch), nch, rndm);
 
@@ -2108,6 +2217,8 @@ struct PidFlowPtCorr {
     // end cut && init
   }
   PROCESS_SWITCH(PidFlowPtCorr, processSim, "function used to do pt eff, NOTE (OutPutMc, processReco, processSim) should be open", true);
+
+#pragma endregion // main function
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
