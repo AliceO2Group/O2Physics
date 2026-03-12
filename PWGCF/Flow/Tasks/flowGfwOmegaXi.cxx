@@ -1042,7 +1042,7 @@ struct FlowGfwOmegaXi {
     return true;
   }
 
-  void processData(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks, soa::Join<aod::CascDataExt, aod::CascTOFNSigmas> const& Cascades, soa::Join<aod::V0Datas, aod::V0TOFNSigmas>  const& V0s, DaughterTracks const&)
+  void processData(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks, soa::Join<aod::CascDataExt, aod::CascTOFNSigmas> const& Cascades, soa::Join<aod::V0Datas, aod::V0TOFNSigmas> const& V0s, DaughterTracks const&)
   {
     o2::aod::ITSResponse itsResponse;
     int nTot = tracks.size();
@@ -1170,7 +1170,7 @@ struct FlowGfwOmegaXi {
               ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(v0posdau)) < cfgNSigma[7]) || v0posdau.pt() > lowpt) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(v0negdau)) < cfgNSigma[6]) || v0negdau.pt() > lowpt)) {
             registry.fill(HIST("InvMassLambda_all"), v0.pt(), v0.mLambda(), v0.eta(), cent);
             isLambda = true;
-          } 
+          }
           if (std::fabs(v0.mAntiLambda() - o2::constants::physics::MassLambda) < v0BuilderOpts.cfgv0_mlambdawindow.value &&
               (std::fabs(v0negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(v0posdau.tpcNSigmaPi()) < cfgNSigma[0]) &&
               ((std::fabs(v0.tofNSigmaALaPr()) < cfgNSigma[4] || v0negdau.pt() < lowpt) && (std::fabs(v0.tofNSigmaALaPi()) < cfgNSigma[3] || v0posdau.pt() < lowpt)) &&
@@ -1381,11 +1381,10 @@ struct FlowGfwOmegaXi {
             registry.fill(HIST("QAhisto/Xi/hTOFnsigmaposPr"), casc.tofNSigmaXiLaPr());
             registry.fill(HIST("QAhisto/Xi/hBachTOFnsigmavsPt"), casc.tofNSigmaXiPi(), bachelor.pt());
             registry.fill(HIST("QAhisto/Xi/hLaPrTOFnsigmavsPt"), casc.tofNSigmaXiLaPr(), posdau.pt());
-          }
-          else if (casc.sign() > 0 && std::fabs(casc.yXi()) < cfgCasc_rapidity &&
-                   (std::fabs(bachelor.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(posdau.tpcNSigmaPi()) < cfgNSigma[0]) &&
-                   ((std::fabs(casc.tofNSigmaXiPi()) < cfgNSigma[3] || bachelor.pt() < bachPtcut) && (std::fabs(casc.tofNSigmaXiLaPi()) < cfgNSigma[3] || posdau.pt() < dauLaPiPtcut)) &&
-                   ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(bachelor)) < cfgNSigma[6]) || bachelor.pt() > bachPtcut) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(negdau)) < cfgNSigma[7]) || negdau.pt() > dauLaPrPtcut) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(posdau)) < cfgNSigma[6]) || posdau.pt() > dauLaPiPtcut)) {
+          } else if (casc.sign() > 0 && std::fabs(casc.yXi()) < cfgCasc_rapidity &&
+                     (std::fabs(bachelor.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(posdau.tpcNSigmaPi()) < cfgNSigma[0]) &&
+                     ((std::fabs(casc.tofNSigmaXiPi()) < cfgNSigma[3] || bachelor.pt() < bachPtcut) && (std::fabs(casc.tofNSigmaXiLaPi()) < cfgNSigma[3] || posdau.pt() < dauLaPiPtcut)) &&
+                     ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(bachelor)) < cfgNSigma[6]) || bachelor.pt() > bachPtcut) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(negdau)) < cfgNSigma[7]) || negdau.pt() > dauLaPrPtcut) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(posdau)) < cfgNSigma[6]) || posdau.pt() > dauLaPiPtcut)) {
             registry.fill(HIST("InvMassXi_all"), casc.pt(), casc.mXi(), casc.eta(), cent);
             isXi = true;
             registry.fill(HIST("QAhisto/Xi/hTOFnsigmaposPi"), casc.tofNSigmaXiLaPi());
