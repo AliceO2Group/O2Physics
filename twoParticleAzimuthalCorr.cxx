@@ -44,13 +44,12 @@
 #include <CCDB/BasicCCDBManager.h>
 
 #include "TF1.h"
+#include "TLorentzVector.h"
 #include "TRandom3.h"
 #include <TPDGCode.h>
 
 #include <string>
 #include <vector>
-
-#include "TLorentzVector.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -59,7 +58,6 @@ using namespace o2::framework::expressions;
 // define the filtered collisions and tracks
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 R__LOAD_LIBRARY(libO2PhysicsPWGCFCore)
-
 
 // STEP 2
 // Example task illustrating how to mix elements of different partitions and different events + process switches
@@ -157,7 +155,7 @@ struct twoParticleAzimuthalCorr {
     return deltaPhi;
   }
   SliceCache cache;
-  
+
   // Corrections
   TH3D* mEfficiency = nullptr;
   TH1D* mCentralityWeight = nullptr;
@@ -170,7 +168,7 @@ struct twoParticleAzimuthalCorr {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Defining configurables
-  
+
   Configurable<float> ConfMinNSigmaTPCCut{"ConfMinNSigmaTPCCut", 3., "N-sigma TPC cut"};
   Configurable<float> ConfChargeCut{"ConfChargeCut", 0., "N-sigma TPC cut"};
 
@@ -193,42 +191,35 @@ struct twoParticleAzimuthalCorr {
   // mixBuffer[zBin] is a deque of previous events; each event is a vector<SimpleTrack>
   std::vector<std::deque<std::vector<SimpleTrack>>> mixBuffer;
 
-
-
   // Defining filters
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVtxZ);
   Filter trackFilter = (nabs(aod::track::eta) < 0.8f) && (aod::track::pt > 0.2f) && (aod::track::pt < 20.0f);
 
   // Applying filters
-   using MyTracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>;
-   using MyFilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
-   using MyFilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
-   using FilteredTracksWithMCLabels = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>>;
+  using MyTracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>;
+  using MyFilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
+  using MyFilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
+  using FilteredTracksWithMCLabels = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>>;
 
-    // Filter for MCParticle
-   Filter particleFilter = (nabs(aod::mcparticle::eta) < cfgCutEta) && (aod::mcparticle::pt > cfgCutPtMin) && (aod::mcparticle::pt < cfgCutPtMax);
-   using FilteredMcParticles = soa::Filtered<aod::McParticles>;
-   using McParticlesFull = aod::McParticles;
+  // Filter for MCParticle
+  Filter particleFilter = (nabs(aod::mcparticle::eta) < cfgCutEta) && (aod::mcparticle::pt > cfgCutPtMin) && (aod::mcparticle::pt < cfgCutPtMax);
+  using FilteredMcParticles = soa::Filtered<aod::McParticles>;
+  using McParticlesFull = aod::McParticles;
 
-   // Filter for MCcollisions
-   Filter mccollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVtxZ;
-   using FilteredMcCollisions = soa::Filtered<aod::McCollisions>;
+  // Filter for MCcollisions
+  Filter mccollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVtxZ;
+  using FilteredMcCollisions = soa::Filtered<aod::McCollisions>;
 
-   using SmallGroupMcCollisions = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
+  using SmallGroupMcCollisions = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
 
-
-  
-
-  
   Partition<MyFilteredTracks> positive = aod::track::signed1Pt > ConfChargeCut;
   Partition<MyFilteredTracks> negative = aod::track::signed1Pt < ConfChargeCut;
 
   Partition<MyFilteredTracks> triggerTracks = aod::track::pt > triggerMinPt;
-  Partition<MyFilteredTracks> associatedTracks = aod::track::pt > associatedMinPt && aod::track::pt <= associatedMaxPt;
+  Partition<MyFilteredTracks> associatedTracks = aod::track::pt > associatedMinPt&& aod::track::pt <= associatedMaxPt;
 
   Preslice<MyTracks> perCol = aod::track::collisionId;
   PresliceUnsorted<aod::McCollisionLabels> collisionPerMCCollision = aod::mccollisionlabel::mcCollisionId;
-
 
   ConfigurableAxis ConfMultBins{"ConfMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
@@ -236,26 +227,19 @@ struct twoParticleAzimuthalCorr {
   ConfigurableAxis axisVertex{"axisVertex", {10, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 10, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260}, "multiplicity axis for histograms"};
   ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, "centrality axis for histograms"};
-  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -0.5*o2::constants::math::PI, +1.5*o2::constants::math::PI}, "delta phi axis for histograms"};
+  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -0.5 * o2::constants::math::PI, +1.5 * o2::constants::math::PI}, "delta phi axis for histograms"};
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {48, -2.4, 2.4}, "delta eta axis for histograms"};
   ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.2, 0.5, 1, 1.5, 2, 3, 4, 6, 8, 10, 13, 16, 20}, "pt trigger axis for histograms"};
   ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.2, 0.5, 1, 1.5, 2, 3, 4, 6, 10}, "pt associated axis for histograms"};
   ConfigurableAxis axisVtxMix{"axisVtxMix", {VARIABLE_WIDTH, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "vertex axis for mixed event histograms"};
   ConfigurableAxis axisMultMix{"axisMultMix", {VARIABLE_WIDTH, 0, 10, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260}, "multiplicity / centrality axis for mixed event histograms"};
   ConfigurableAxis axisSample{"axisSample", {cfgSampleSize, 0, cfgSampleSize}, "sample axis for histograms"};
-  ConfigurableAxis axisPt{"axisPt", {200,0.0f,20.0f}, "pt axis"};
-  ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f,
-0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f,
-2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f,
-7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f,
-30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
+  ConfigurableAxis axisPt{"axisPt", {200, 0.0f, 20.0f}, "pt axis"};
+  ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
 
   ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
   ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
   ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.2, 0.5, 1, 1.5, 2, 3, 4, 6, 10}, "pt axis for efficiency histograms"};
-
-
-
 
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFT0A>;
 
@@ -274,15 +258,14 @@ struct twoParticleAzimuthalCorr {
     MixedEvent = 3
   };
 
-
   // Equivalent of the AliRoot task UserCreateOutputObjects
   void init(o2::framework::InitContext&)
   {
     if (cfgCentTableUnavailable && !cfgSelCollByNch) {
       LOGF(fatal, "Centrality table is unavailable, cannot select collisions by centrality");
     }
-  
-    const AxisSpec axisPhi{72, 0.0, 2*o2::constants::math::PI, "#varphi"};
+
+    const AxisSpec axisPhi{72, 0.0, 2 * o2::constants::math::PI, "#varphi"};
     const AxisSpec axisEta{40, -1., 1., "#eta"};
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
@@ -305,10 +288,8 @@ struct twoParticleAzimuthalCorr {
     histos.add("correlationFunction2dMixed", "correlationFunction2dMixed", kTH2F, {axisDeltaPhi, axisDeltaEta});
     histos.add("associatedPt", "associatedPt", kTH1D, {axisPtQA});
 
-    
     // prepare mixing buffers (one deque per z-bin)
     mixBuffer.resize(nMixZBins);
-
 
     // Add histograms to histogram manager (as in the output object of in AliPhysics)
     histos.add("hZvtx", ";Z (cm)", kTH1F, {axisVertex});
@@ -339,7 +320,7 @@ struct twoParticleAzimuthalCorr {
       histos.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(12, "cfgEvSelV0AT0ACut");
     }
 
-        std::string hCentTitle = "Centrality distribution, Estimator " + std::to_string(cfgCentEstimator);
+    std::string hCentTitle = "Centrality distribution, Estimator " + std::to_string(cfgCentEstimator);
     // Make histograms to check the distributions after cuts
     if (doprocessSame) {
       histos.add("deltaEta_deltaPhi_same", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}}); // check to see the delta eta and delta phi distribution
@@ -387,7 +368,6 @@ struct twoParticleAzimuthalCorr {
       histos.add("Trig_hist_MC", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
       histos.add("SE_correlation_MC", "", {HistType::kTHnSparseF, {{axisDeltaPhi, axisDeltaEta, axisPtTrigger, axisPtAssoc}}});
       histos.add("ME_correlation_MC", "", {HistType::kTHnSparseF, {{axisDeltaPhi, axisDeltaEta, axisPtTrigger, axisPtAssoc}}});
-
     }
     if (doprocessMCEfficiency) {
       histos.add("MCEffeventcount", "bin", {HistType::kTH1F, {{5, 0, 5, "bin"}}});
@@ -417,7 +397,6 @@ struct twoParticleAzimuthalCorr {
 
     LOGF(info, "End of init");
   }
-  
 
   int getMagneticField(uint64_t timestamp)
   {
@@ -457,7 +436,7 @@ struct twoParticleAzimuthalCorr {
     return cent;
   }
 
-   template <typename TTrack>
+  template <typename TTrack>
   bool trackSelected(TTrack track)
   {
     return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.tpcNClsCrossedRows() >= cfgCutTPCCrossedRows) && (track.itsNCls() >= cfgCutITSclu));
@@ -480,7 +459,6 @@ struct twoParticleAzimuthalCorr {
     }
     return true;
   }
-
 
   void loadCorrection(uint64_t timestamp)
   {
@@ -559,8 +537,7 @@ struct twoParticleAzimuthalCorr {
       histos.fill(HIST("pT"), track1.pt());
       histos.fill(HIST("pTCorrected"), track1.pt(), weff1);
 
-          // LOGF(info, "///////////////////////////////////////////////////////////////////////////////////");
-
+      // LOGF(info, "///////////////////////////////////////////////////////////////////////////////////");
     }
   }
 
@@ -579,8 +556,8 @@ struct twoParticleAzimuthalCorr {
     int fbSign = (magField > 0) ? 1 : -1;
 
     /// \param phi1 first phi value
-  /// \param phi2 second phi value
- 
+    /// \param phi2 second phi value
+
     Double_t getdeltaPhi = phi1 - phi2 - charge1 * fbSign * std::asin(0.075 * radius / pt1) + charge2 * fbSign * std::asin(0.075 * radius / pt2);
     if (getdeltaPhi < -TMath::Pi() / 2.) {
       getdeltaPhi += 2. * TMath::Pi();
@@ -591,18 +568,17 @@ struct twoParticleAzimuthalCorr {
     return getdeltaPhi;
   }
 
-
   template <CorrelationContainer::CFStep step, typename TTracks, typename TTracksAssoc>
   void fillCorrelations(TTracks tracks1, TTracksAssoc tracks2, float posZ, int system, int magneticField, float cent, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
-       if (system == SameEvent) {
-     if (!cfgCentTableUnavailable) {
-       histos.fill(HIST("Centrality_used"), cent);
-     }
-   }
+    if (system == SameEvent) {
+      if (!cfgCentTableUnavailable) {
+        histos.fill(HIST("Centrality_used"), cent);
+      }
+    }
 
-  // Fill centrality histogram
-  histos.fill(HIST("Centrality"), cent);
+    // Fill centrality histogram
+    histos.fill(HIST("Centrality"), cent);
 
     int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
 
@@ -629,7 +605,7 @@ struct twoParticleAzimuthalCorr {
         if (cfgUsePtOrder && system == MixedEvent && cfgUsePtOrderInMixEvent && track1.pt() <= track2.pt())
           continue; // For pt-differential correlations in mixed events, skip if the trigger pt is less than the associate pt
 
-        float deltaPhi = RecoDecay::constrainAngle(track1.phi() - track2.phi(), -0.5*o2::constants::math::PI);
+        float deltaPhi = RecoDecay::constrainAngle(track1.phi() - track2.phi(), -0.5 * o2::constants::math::PI);
         float deltaEta = track1.eta() - track2.eta();
 
         if (std::abs(deltaEta) < cfgCutMerging) {
@@ -653,7 +629,7 @@ struct twoParticleAzimuthalCorr {
               continue;
           }
         }
-    // LOGF(info, "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$4");
+        // LOGF(info, "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$4");
 
         // fill the right sparse and histograms
         if (system == SameEvent) {
@@ -667,12 +643,10 @@ struct twoParticleAzimuthalCorr {
           mixed->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt(), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
           histos.fill(HIST("deltaEta_deltaPhi_mixed"), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
           histos.fill(HIST("ME_correlation"), deltaPhi, deltaEta, track1.pt(), track2.pt(), cent);
-
         }
       }
     }
   }
-
 
   template <CorrelationContainer::CFStep step, typename TTracks, typename TTracksAssoc>
   void fillMCCorrelations(TTracks tracks1, TTracksAssoc tracks2, float posZ, int system, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
@@ -850,7 +824,6 @@ struct twoParticleAzimuthalCorr {
     histos.fill(HIST("Nch"), tracks.size());
     histos.fill(HIST("zVtx"), collision.posZ());
 
-
     auto groupPositive = positive->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto groupNegative = negative->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     histos.fill(HIST("hZvtx"), collision.posZ());
@@ -873,9 +846,9 @@ struct twoParticleAzimuthalCorr {
 
     for (auto const& track : tracks) {
       histos.fill(HIST("pT"), track.pt());
-      }
+    }
 
-      // LOGF(info, "--------------------tracks size--------------------: %d", tracks.size());
+    // LOGF(info, "--------------------tracks size--------------------: %d", tracks.size());
 
     for (auto const& track1 : tracks) {
       if (!trackSelected(track1))
@@ -888,8 +861,7 @@ struct twoParticleAzimuthalCorr {
       histos.fill(HIST("pT"), track1.pt());
       histos.fill(HIST("pTCorrected"), track1.pt(), weff1);
 
-          // LOGF(info, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
-
+      // LOGF(info, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
     }
 
     histos.fill(HIST("zVtx"), SameEvent); // because its same event i put it in the 1 bin
@@ -897,22 +869,23 @@ struct twoParticleAzimuthalCorr {
     auto assoTracksThisCollision = associatedTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto trigTracksThisCollision = triggerTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
-    for (auto& track : assoTracksThisCollision){
+    for (auto& track : assoTracksThisCollision) {
       // LOGF(info, "================================================================================");
-      histos.fill(HIST("ptAssoHistogram"), track.pt());}
-    for (auto& track : trigTracksThisCollision){
-      histos.fill(HIST("ptTrigHistogram"), track.pt());}
+      histos.fill(HIST("ptAssoHistogram"), track.pt());
+    }
+    for (auto& track : trigTracksThisCollision) {
+      histos.fill(HIST("ptTrigHistogram"), track.pt());
+    }
 
-    
-    for (auto& trigger : trigTracksThisCollision){
-      for (auto& associated : assoTracksThisCollision){
-        histos.fill(HIST("correlationFunction"), ComputeDeltaPhi(trigger.phi(),associated.phi()));
+    for (auto& trigger : trigTracksThisCollision) {
+      for (auto& associated : assoTracksThisCollision) {
+        histos.fill(HIST("correlationFunction"), ComputeDeltaPhi(trigger.phi(), associated.phi()));
       }
     }
 
     for (auto& [trigger, associated] : combinations(o2::soa::CombinationsFullIndexPolicy(trigTracksThisCollision, assoTracksThisCollision))) {
-      histos.fill(HIST("correlationFunctionO2"), ComputeDeltaPhi(trigger.phi(),associated.phi()));
-      histos.fill(HIST("correlationFunction2d"), ComputeDeltaPhi(trigger.phi(),associated.phi()), trigger.eta() - associated.eta());
+      histos.fill(HIST("correlationFunctionO2"), ComputeDeltaPhi(trigger.phi(), associated.phi()));
+      histos.fill(HIST("correlationFunction2d"), ComputeDeltaPhi(trigger.phi(), associated.phi()), trigger.eta() - associated.eta());
     }
 
     fillYield(collision, trigTracksThisCollision);
@@ -920,8 +893,8 @@ struct twoParticleAzimuthalCorr {
     same->fillEvent(tracks.size(), CorrelationContainer::kCFStepReconstructed);
 
     // if (!cfgSoloPtTrack) {
-      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(trigTracksThisCollision, assoTracksThisCollision, collision.posZ(), SameEvent, getMagneticField(bc.timestamp()), cent, weightCent);
-    // } 
+    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(trigTracksThisCollision, assoTracksThisCollision, collision.posZ(), SameEvent, getMagneticField(bc.timestamp()), cent, weightCent);
+    // }
     // else {
     //   fillCorrelationsExcludeSoloTracks<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), getMagneticField(bc.timestamp()), cent, weightCent);
     // }
@@ -933,9 +906,9 @@ struct twoParticleAzimuthalCorr {
   {
 
     auto getTracksSize = [&tracks, this](MyFilteredCollisions::iterator const& collision) {
-    auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
-    auto mult = associatedTracks.size();
-    return mult;
+      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
+      auto mult = associatedTracks.size();
+      return mult;
     };
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
@@ -1003,8 +976,7 @@ struct twoParticleAzimuthalCorr {
     }
   }
 
-
-   void processMCEfficiency(FilteredMcCollisions::iterator const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, McParticlesFull const& mcParticles, FilteredTracksWithMCLabels const& tracks)
+  void processMCEfficiency(FilteredMcCollisions::iterator const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, McParticlesFull const& mcParticles, FilteredTracksWithMCLabels const& tracks)
   {
     histos.fill(HIST("MCEffeventcount"), 0.5);
     if (cfgSelCollByNch && (mcParticles.size() < cfgCutMultMin || mcParticles.size() >= cfgCutMultMax)) {
@@ -1027,8 +999,8 @@ struct twoParticleAzimuthalCorr {
       for (const auto& track : groupedTracks) {
         if (track.has_mcParticle()) {
 
-          auto mcId = track.mcParticleId();          //  get index
-          auto mcParticle = mcParticles.iteratorAt(mcId);      //  correct binding
+          auto mcId = track.mcParticleId();               //  get index
+          auto mcParticle = mcParticles.iteratorAt(mcId); //  correct binding
 
           if (mcParticle.isPhysicalPrimary()) {
             histos.fill(HIST("MCEffeventcount"), 2.5);
@@ -1046,8 +1018,7 @@ struct twoParticleAzimuthalCorr {
   }
   PROCESS_SWITCH(twoParticleAzimuthalCorr, processMCEfficiency, "MC: Extract efficiencies", true);
 
-      // LOGF(info, "#######################################################################");
-
+  // LOGF(info, "#######################################################################");
 
   void processMCSame(FilteredMcCollisions::iterator const& mcCollision, FilteredMcParticles const& mcParticles, SmallGroupMcCollisions const& collisions)
   {
@@ -1084,15 +1055,13 @@ struct twoParticleAzimuthalCorr {
       }
     }
 
-
     // auto assoTracksThisCollisionMC = associatedTracks->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
     // auto trigTracksThisCollisionMC = triggerTracks->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
 
     same->fillEvent(mcParticles.size(), CorrelationContainer::kCFStepAll);
 
     fillMCCorrelations<CorrelationContainer::kCFStepAll>(mcParticles, mcParticles, mcCollision.posZ(), SameEvent, 1.0f);
-      // fillMCCorrelations<CorrelationContainer::kCFStepAll>(trigTracksThisCollisionMC, assoTracksThisCollisionMC, mcCollision.posZ(), SameEvent, 1.0f);
-
+    // fillMCCorrelations<CorrelationContainer::kCFStepAll>(trigTracksThisCollisionMC, assoTracksThisCollisionMC, mcCollision.posZ(), SameEvent, 1.0f);
 
     if (collisions.size() == 0) {
       return;
@@ -1159,7 +1128,6 @@ struct twoParticleAzimuthalCorr {
     }
   }
   PROCESS_SWITCH(twoParticleAzimuthalCorr, processMCMixed, "Process MC mixed events", true);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
