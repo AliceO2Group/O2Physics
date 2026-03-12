@@ -435,7 +435,7 @@ struct Pi0EtaToGammaGammaMC {
   }
 
   o2::framework::SliceCache cache;
-  o2::framework::PresliceOptional<o2::soa::Filtered<o2::soa::Join<o2::aod::V0PhotonsKF, o2::aod::V0KFEMEventIds, o2::aod::V0PhotonsKFPrefilterBitDerived>>> perCollision_pcm = o2::aod::v0photonkf::pmeventId;
+  o2::framework::PresliceOptional<o2::soa::Filtered<o2::soa::Join<o2::aod::V0PhotonsKF, o2::aod::V0KFEMEventIds, o2::aod::V0PhotonsKFPrefilterBitDerived, o2::aod::V0PhotonOmegaMBWeights>>> perCollision_pcm = o2::aod::v0photonkf::pmeventId;
   o2::framework::PresliceOptional<o2::soa::Join<o2::aod::SkimEMCClusters, o2::aod::EMEMCClusterMCLabels, o2::aod::EMCEMEventIds>> perCollision_emc = o2::aod::emccluster::pmeventId;
   o2::framework::PresliceOptional<o2::soa::Join<o2::aod::PHOSClusters, o2::aod::PHOSEMEventIds>> perCollision_phos = o2::aod::phoscluster::pmeventId;
   o2::framework::PresliceOptional<o2::soa::Filtered<o2::soa::Join<o2::aod::EMPrimaryElectronsFromDalitz, o2::aod::EMPrimaryElectronDaEMEventIds, o2::aod::EMPrimaryElectronsPrefilterBitDerived, o2::aod::EMPrimaryElectronMCLabels>>> perCollision_electron = o2::aod::emprimaryelectronda::pmeventId;
@@ -702,6 +702,15 @@ struct Pi0EtaToGammaGammaMC {
             continue;
           }
 
+          float wpair = weight;
+
+          if constexpr (requires { g1.omegaMBWeight(); }) {
+            wpair *= g1.omegaMBWeight();
+          }
+          if constexpr (requires { g2.omegaMBWeight(); }) {
+            wpair *= g2.omegaMBWeight();
+          }
+
           if (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kEMCEMC) {
             float openingAngle = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));
             if (openingAngle < emccuts.minOpenAngle) {
@@ -711,9 +720,9 @@ struct Pi0EtaToGammaGammaMC {
 
           if (g1mc.globalIndex() == g2mc.globalIndex()) {
             if (o2::aod::pwgem::dilepton::utils::mcutil::getMotherPDGCode(g1mc, mcparticles) == 111)
-              fRegistry.fill(HIST("Pair/Pi0/hs_FromSameGamma"), v12.M(), v12.Pt(), weight);
+              fRegistry.fill(HIST("Pair/Pi0/hs_FromSameGamma"), v12.M(), v12.Pt(), wpair);
             else if (o2::aod::pwgem::dilepton::utils::mcutil::getMotherPDGCode(g1mc, mcparticles) == 221)
-              fRegistry.fill(HIST("Pair/Eta/hs_FromSameGamma"), v12.M(), v12.Pt(), weight);
+              fRegistry.fill(HIST("Pair/Eta/hs_FromSameGamma"), v12.M(), v12.Pt(), wpair);
             continue;
           }
 
@@ -722,13 +731,13 @@ struct Pi0EtaToGammaGammaMC {
             if (cfgRequireTrueAssociation && (pi0mc.emmceventId() != collision.emmceventId())) {
               continue;
             }
-            o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, v12, pi0mc, mcparticles, mccollisions, f1fd_k0s_to_pi0, weight);
+            o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, v12, pi0mc, mcparticles, mccollisions, f1fd_k0s_to_pi0, wpair);
           } else if (etaid > 0) {
             auto etamc = mcparticles.iteratorAt(etaid);
             if (cfgRequireTrueAssociation && (etamc.emmceventId() != collision.emmceventId())) {
               continue;
             }
-            o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, v12, etamc, mcparticles, mccollisions, f1fd_k0s_to_pi0, weight);
+            o2::aod::pwgem::photonmeson::utils::nmhistogram::fillTruePairInfo(&fRegistry, v12, etamc, mcparticles, mccollisions, f1fd_k0s_to_pi0, wpair);
           }
         } // end of pairing loop
       } else if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMDalitzEE) {
