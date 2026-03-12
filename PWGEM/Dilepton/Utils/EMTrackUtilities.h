@@ -20,7 +20,9 @@
 
 #include <algorithm>
 #include <map>
+#include <ranges>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 //_______________________________________________________________________
@@ -45,14 +47,16 @@ enum class RefTrackBit : uint16_t { // This is not for leptons, but charged trac
 };
 
 enum class RefMFTTrackBit : uint16_t { // This is not for leptons, but charged tracks for reference flow.
-  kNclsMFT7 = 1,                       // default is 6
-  kNclsMFT8 = 2,
-  kChi2MFT4 = 4, // default is 5
-  kChi2MFT3 = 8,
-  kDCAxy004cm = 16, // default is 0.05 cm
-  kDCAxy003cm = 32,
-  kDCAxy002cm = 64,
-  kDCAxy001cm = 128,
+  kNclsMFT6 = 1,                       // default is 5
+  kNclsMFT7 = 2,
+  kNclsMFT8 = 4,
+  kChi2MFT3 = 8, // default is 4
+  kChi2MFT2 = 16,
+  kDCAxy005cm = 32, // default is 0.06 cm
+  kDCAxy004cm = 64,
+  kDCAxy003cm = 128,
+  kDCAxy002cm = 256,
+  kDCAxy001cm = 512,
 };
 
 //_______________________________________________________________________
@@ -97,9 +101,9 @@ float dcaZinSigma(T const& track)
 template <typename T>
 float fwdDcaXYinSigma(T const& track)
 {
-  float cXX = track.cXXatDCA();      // in cm^2
-  float cYY = track.cYYatDCA();      // in cm^2
-  float cXY = track.cXYatDCA();      // in cm^2
+  float cXX = track.cXX();           // in cm^2
+  float cYY = track.cYY();           // in cm^2
+  float cXY = track.cXY();           // in cm^2
   float dcaX = track.fwdDcaX();      // in cm
   float dcaY = track.fwdDcaY();      // in cm
   float det = cXX * cYY - cXY * cXY; // determinant
@@ -134,35 +138,70 @@ bool checkMFTHitMap(T const& track)
   return (clmap > 0);
 }
 //_______________________________________________________________________
-template <bool is_wo_acc = false, typename TTrack, typename TCut, typename TTracks>
+template <typename TTrack, typename TCut, typename TTracks>
 bool isBestMatch(TTrack const& track, TCut const& cut, TTracks const& tracks)
 {
+  // find the best glboal muon without pt, eta cut (ie. without single track acceptance cut) to keep possibility for unfolding.
+
   // this is only for global muons at forward rapidity
   // Be careful! tracks are fwdtracks per DF.
   if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
+    bool isBestFromMCHMID2MFT = false;
+    bool isBestFromMFT2MCHMID = false;
     std::map<int64_t, float> map_chi2MCHMFT;
+
+    // 1 MFTsa track can match several MCH-MID tracks. find best global muon per MFTsa.
     map_chi2MCHMFT[track.globalIndex()] = track.chi2MatchMCHMFT(); // add myself
     for (const auto& glmuonId : track.globalMuonsWithSameMFTIds()) {
-      const auto& candidate = tracks.rawIteratorAt(glmuonId);
-      if (candidate.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && candidate.emeventId() == track.emeventId()) {
-        if (cut.template IsSelectedTrack<is_wo_acc>(candidate)) {
+      auto candidate = tracks.rawIteratorAt(glmuonId);
+      if (candidate.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && candidate.emeventId() == track.emeventId() && candidate.mchtrackId() != track.mchtrackId()) {
+        if (cut.template IsSelectedTrack<true>(candidate)) {
           map_chi2MCHMFT[candidate.globalIndex()] = candidate.chi2MatchMCHMFT();
         }
       }
     } // end of glmuonId
 
-    auto it = std::min_element(map_chi2MCHMFT.begin(), map_chi2MCHMFT.end(), [](decltype(map_chi2MCHMFT)::value_type& l, decltype(map_chi2MCHMFT)::value_type& r) -> bool { return l.second < r.second; }); // search for minimum matching-chi2
-
-    if (it->first == track.globalIndex()) {
-      map_chi2MCHMFT.clear();
-      return true;
+    auto it0 = std::min_element(map_chi2MCHMFT.begin(), map_chi2MCHMFT.end(), [](decltype(map_chi2MCHMFT)::value_type& l, decltype(map_chi2MCHMFT)::value_type& r) -> bool { return l.second < r.second; }); // search for minimum matching-chi2
+    if (it0->first == track.globalIndex()) {
+      isBestFromMFT2MCHMID = true;
     } else {
-      map_chi2MCHMFT.clear();
-      return false;
+      isBestFromMFT2MCHMID = false;
     }
+    map_chi2MCHMFT.clear();
+
+    // find best global muon per MCH-MID tracks. Keep in mind that there are 5 global muons per MCH-MID in pp/OO and 20 global muons per MCH-MID in PbPb.
+    map_chi2MCHMFT[track.globalIndex()] = track.chi2MatchMCHMFT(); // add myself
+    for (const auto& glmuonId : track.globalMuonsWithSameMCHMIDIds()) {
+      auto candidate = tracks.rawIteratorAt(glmuonId);
+      if (candidate.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && candidate.emeventId() == track.emeventId() && candidate.mfttrackId() != track.mfttrackId()) {
+        if (cut.template IsSelectedTrack<true>(candidate)) {
+          map_chi2MCHMFT[candidate.globalIndex()] = candidate.chi2MatchMCHMFT();
+        }
+      }
+    } // end of glmuonId
+
+    auto it1 = std::min_element(map_chi2MCHMFT.begin(), map_chi2MCHMFT.end(), [](decltype(map_chi2MCHMFT)::value_type& l, decltype(map_chi2MCHMFT)::value_type& r) -> bool { return l.second < r.second; }); // search for minimum matching-chi2
+    if (it1->first == track.globalIndex()) {
+      isBestFromMCHMID2MFT = true;
+    } else {
+      isBestFromMCHMID2MFT = false;
+    }
+    map_chi2MCHMFT.clear();
+
+    return isBestFromMCHMID2MFT && isBestFromMFT2MCHMID;
   } else {
     return true;
   }
+}
+//_______________________________________________________________________
+template <typename TTracks, typename TCut>
+std::unordered_map<int, bool> findBestMatchMap(TTracks const& tracks, TCut const& cut)
+{
+  std::unordered_map<int, bool> map;
+  for (const auto& track : tracks) {
+    map[track.globalIndex()] = isBestMatch(track, cut, tracks);
+  }
+  return map;
 }
 //_______________________________________________________________________
 // template <typename T>

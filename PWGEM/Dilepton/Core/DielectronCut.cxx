@@ -356,3 +356,8 @@ void DielectronCut::IncludeITSsa(bool flag, float max)
   mMaxPtITSsa = max;
   LOG(info) << "Dielectron Cut, include ITSsa tracks: " << mIncludeITSsa << ", mMaxPtITSsa = " << mMaxPtITSsa;
 }
+void DielectronCut::EnableTTCA(bool flag)
+{
+  mEnableTTCA = flag;
+  LOG(info) << "Dielectron Cut, enable TTCA: " << mEnableTTCA;
+}

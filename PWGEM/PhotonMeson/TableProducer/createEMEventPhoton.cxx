@@ -13,6 +13,7 @@
 /// \brief This code produces reduced events for photon analyses.
 /// \author Daiki Sekihata, daiki.sekihata@cern.ch
 
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 //
 #include "PWGJE/DataModel/Jet.h"
@@ -66,7 +67,7 @@ using MyCollisionsMCCentQvec = soa::Join<MyCollisionsMCCent, MyQvectors>;
 
 struct CreateEMEventPhoton {
   // Produces<o2::aod::EMBCs> embc;
-  Produces<o2::aod::EMEvents_004> event;
+  Produces<o2::aod::PMEvents> event;
   Produces<o2::aod::EMEventsAlias> eventalias;
   // Produces<o2::aod::EMEventsCov> eventCov;
   Produces<o2::aod::EMEventsMult_000> eventMult;
@@ -362,13 +363,13 @@ struct AssociatePhotonToEMEvent {
   Produces<o2::aod::EMPrimaryElectronDaEMEventIds> prmeleventid;
   Produces<o2::aod::PHOSEMEventIds> phoseventid;
   Produces<o2::aod::EMCEMEventIds> emceventid;
-  Produces<o2::aod::EMPrimaryTrackEMEventIds> prmtrackeventid;
+  // Produces<o2::aod::EMPrimaryTrackEMEventIds> prmtrackeventid;
 
   Preslice<aod::V0PhotonsKF> perCollisionPCM = aod::v0photonkf::collisionId;
   PresliceUnsorted<aod::EMPrimaryElectronsFromDalitz> perCollisionEl = aod::emprimaryelectron::collisionId;
   Preslice<aod::PHOSClusters> perCollisionPHOS = aod::skimmedcluster::collisionId;
   Preslice<aod::SkimEMCClusters> perCollisionEMC = aod::skimmedcluster::collisionId;
-  Preslice<aod::EMPrimaryTracks> perCollision_track = aod::emprimarytrack::collisionId;
+  // Preslice<aod::EMPrimaryTracks> perCollision_track = aod::emprimarytrack::collisionId;
 
   void init(o2::framework::InitContext&) {}
 
@@ -387,32 +388,32 @@ struct AssociatePhotonToEMEvent {
   // This struct is for both data and MC.
   // Note that reconstructed collisions without mc collisions are already rejected in CreateEMEventPhoton in MC.
 
-  void processPCM(aod::EMEvents const& collisions, aod::V0PhotonsKF const& photons)
+  void processPCM(aod::PMEvents const& collisions, aod::V0PhotonsKF const& photons)
   {
     fillEventId(collisions, photons, v0kfeventid, perCollisionPCM);
   }
 
-  void processElectronFromDalitz(aod::EMEvents const& collisions, aod::EMPrimaryElectronsFromDalitz const& tracks)
+  void processElectronFromDalitz(aod::PMEvents const& collisions, aod::EMPrimaryElectronsFromDalitz const& tracks)
   {
     fillEventId(collisions, tracks, prmeleventid, perCollisionEl);
   }
 
-  void processPHOS(aod::EMEvents const& collisions, aod::PHOSClusters const& photons)
+  void processPHOS(aod::PMEvents const& collisions, aod::PHOSClusters const& photons)
   {
     fillEventId(collisions, photons, phoseventid, perCollisionPHOS);
   }
 
-  void processEMC(aod::EMEvents const& collisions, aod::SkimEMCClusters const& photons)
+  void processEMC(aod::PMEvents const& collisions, aod::SkimEMCClusters const& photons)
   {
     fillEventId(collisions, photons, emceventid, perCollisionEMC);
   }
 
-  // void processChargedTrack(aod::EMEvents const& collisions, aod::EMPrimaryTracks const& tracks)
+  // void processChargedTrack(aod::PMEvents const& collisions, aod::EMPrimaryTracks const& tracks)
   // {
   //   fillEventId(collisions, tracks, prmtrackeventid, perCollision_track);
   // }
 
-  void processDummy(aod::EMEvents const&) {}
+  void processDummy(aod::PMEvents const&) {}
 
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processPCM, "process pcm-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processElectronFromDalitz, "process dalitzee-event indexing", false);

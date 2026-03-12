@@ -11,6 +11,7 @@
 add_library(JetSubstructureHFPCH OBJECT jetSubstructureHFPCH.cxx)
 target_link_libraries(JetSubstructureHFPCH
   PUBLIC O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore)
+if(NOT DEFINED ENV{USE_RECC})
 target_precompile_headers(JetSubstructureHFPCH PRIVATE
   [["PWGJE/DataModel/Jet.h"]]
   [["PWGJE/DataModel/JetSubstructure.h"]]
@@ -25,6 +26,7 @@ target_precompile_headers(JetSubstructureHFPCH PRIVATE
   <vector>
   <memory>
 )
+endif()
 
 o2physics_add_dpl_workflow(emc-cellmonitor
                     SOURCES emcCellMonitor.cxx
@@ -373,6 +375,10 @@ if(FastJet_FOUND)
                         SOURCES jetFormationTimeReclustering.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-correlation-d0
+                        SOURCES jetCorrelationD0.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(hf-debug
                         SOURCES hfDebug.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
@@ -387,6 +393,10 @@ if(FastJet_FOUND)
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-ds-spectrum-subs
                         SOURCES jetDsSpectrumAndSubstructure.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-d0-ang-substructure
+                        SOURCES jetD0AngSubstructure.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(bjet-cent-mult

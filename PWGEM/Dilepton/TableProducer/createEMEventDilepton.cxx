@@ -14,7 +14,6 @@
 /// \author Daiki Sekihata, daiki.sekihata@cern.ch
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
@@ -294,16 +293,14 @@ struct CreateEMEventDilepton {
   PROCESS_SWITCH(CreateEMEventDilepton, processDummy, "processDummy", true);
 };
 struct AssociateDileptonToEMEvent {
-  Produces<o2::aod::V0KFEMEventIds> v0kfeventid;
   Produces<o2::aod::EMPrimaryElectronEMEventIds> prmeleventid;
   Produces<o2::aod::EMPrimaryMuonEMEventIds> prmmueventid;
   Produces<o2::aod::EMPrimaryTrackEMEventIds> prmtrackeventid;
 
-  Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
   PresliceUnsorted<aod::EMPrimaryElectrons> perCollision_el = aod::emprimaryelectron::collisionId;
   PresliceUnsorted<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
-  Preslice<aod::EMPrimaryTracks> perCollision_track = aod::emprimarytrack::collisionId;
-  // Preslice<aod::EMPrimaryTrackEMEventIdsTMP> perCollision_track = aod::track::collisionId;
+  // Preslice<aod::EMPrimaryTracks> perCollision_track = aod::emprimarytrack::collisionId;
+  Preslice<aod::EMPrimaryTrackEMEventIdsTMP> perCollision_track = aod::track::collisionId;
 
   void init(o2::framework::InitContext&) {}
 
@@ -323,11 +320,6 @@ struct AssociateDileptonToEMEvent {
   // This struct is for both data and MC.
   // Note that reconstructed collisions without mc collisions are already rejected in CreateEMEventDilepton in MC.
 
-  // void processPCM(aod::EMEvents const& collisions, aod::V0PhotonsKF const& photons)
-  // {
-  //   fillEventId(collisions, photons, v0kfeventid, perCollision_pcm);
-  // }
-
   void processElectron(aod::EMEvents const& collisions, aod::EMPrimaryElectrons const& tracks)
   {
     fillEventId(collisions, tracks, prmeleventid, perCollision_el);
@@ -338,14 +330,13 @@ struct AssociateDileptonToEMEvent {
     fillEventId(collisions, tracks, prmmueventid, perCollision_mu);
   }
 
-  void processChargedTrack(aod::EMEvents const& collisions, aod::EMPrimaryTracks const& tracks)
+  void processChargedTrack(aod::EMEvents const& collisions, soa::Join<aod::EMPrimaryTracks, aod::EMPrimaryTrackEMEventIdsTMP> const& tracks)
   {
     fillEventId(collisions, tracks, prmtrackeventid, perCollision_track);
   }
 
   void processDummy(aod::EMEvents const&) {}
 
-  // PROCESS_SWITCH(AssociateDileptonToEMEvent, processPCM, "process indexing for PCM", false);
   PROCESS_SWITCH(AssociateDileptonToEMEvent, processElectron, "process indexing for electrons", false);
   PROCESS_SWITCH(AssociateDileptonToEMEvent, processFwdMuon, "process indexing for forward muons", false);
   PROCESS_SWITCH(AssociateDileptonToEMEvent, processChargedTrack, "process indexing for charged tracks", false);

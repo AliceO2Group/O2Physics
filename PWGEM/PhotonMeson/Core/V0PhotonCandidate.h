@@ -35,41 +35,71 @@ struct V0PhotonCandidate {
   // Empty Constructor
   V0PhotonCandidate() = default;
   // Set method for photonconversionbuilder
-  void setPhotonCandidate(const KFParticle& v0, const KFParticle& pos, const KFParticle& ele, const auto& collision, float cospa, float psipair, float phiv, CentType centType)
+  template <class TTrack>
+  void setPhotonCandidate(const KFParticle& v0DecayVtx, const KFParticle& v0PV, const TTrack& pos, const KFParticle& posDecayVtx, const TTrack& ele, const KFParticle& eleDecayVtx, const auto& collision, float cospa, float cospaRZ, float cospaXY, float psipair, float phiv, CentType centType, auto posdcaXY, auto eledcaXY, auto posdcaZ, auto eledcaZ)
   {
-    px = v0.GetPx();
-    py = v0.GetPy();
-    pz = v0.GetPz();
+    conversionPointx = v0DecayVtx.GetX();
+    conversionPointy = v0DecayVtx.GetY();
+    conversionPointz = v0DecayVtx.GetZ();
+    px = v0PV.GetPx();
+    py = v0PV.GetPy();
+    pz = v0PV.GetPz();
     pT = RecoDecay::sqrtSumOfSquares(px, py);
 
-    posPx = pos.GetPx();
-    posPy = pos.GetPy();
-    posPz = pos.GetPz();
-    elePx = ele.GetPx();
-    elePy = ele.GetPy();
-    elePz = ele.GetPz();
+    posPx = posDecayVtx.GetPx();
+    posPy = posDecayVtx.GetPy();
+    posPz = posDecayVtx.GetPz();
+    elePx = eleDecayVtx.GetPx();
+    elePy = eleDecayVtx.GetPy();
+    elePz = eleDecayVtx.GetPz();
     posPT = RecoDecay::sqrtSumOfSquares(posPx, posPy);
     elePT = RecoDecay::sqrtSumOfSquares(elePx, elePy);
+    posEta = RecoDecay::eta(std::array{posPx, posPy, posPz});
+    eleEta = RecoDecay::eta(std::array{elePx, elePy, elePz});
 
-    chi2ndf = v0.GetChi2() / v0.GetNDF();
-    pca = pos.GetDistanceFromParticle(ele);
+    posTPCNClsShared = pos.tpcNClsShared();
+    posTPCNClsFindable = pos.tpcNClsFindable();
+    posTPCNClsFindableMinusShared = pos.tpcNClsFindableMinusFound();
+    posTPCNClsFindableMinusCrossedRows = pos.tpcNClsFindableMinusCrossedRows();
+    posTPCChi2NCl = pos.tpcChi2NCl();
+    posTPCSignal = pos.tpcSignal();
+    posITSClusterSizes = pos.itsClusterSizes();
+    eleTPCNClsShared = ele.tpcNClsShared();
+    eleTPCNClsFindable = ele.tpcNClsFindable();
+    eleTPCNClsFindableMinusShared = ele.tpcNClsFindableMinusFound();
+    eleTPCNClsFindableMinusCrossedRows = ele.tpcNClsFindableMinusCrossedRows();
+    eleTPCChi2NCl = ele.tpcChi2NCl();
+    eleTPCSignal = ele.tpcSignal();
+    eleITSClusterSizes = ele.itsClusterSizes();
 
-    float v0mom = RecoDecay::sqrtSumOfSquares(v0.GetPx(), v0.GetPy(), v0.GetPz());
-    float length = RecoDecay::sqrtSumOfSquares(v0.GetX() - collision.posX(), v0.GetY() - collision.posY(), v0.GetZ() - collision.posZ());
-    float dcaXV0ToPV = (v0.GetX() - v0.GetPx() * cospa * length / v0mom) - collision.posX();
-    float dcaYV0ToPV = (v0.GetY() - v0.GetPy() * cospa * length / v0mom) - collision.posY();
+    chi2ndf = v0DecayVtx.GetChi2() / v0DecayVtx.GetNDF();
+    pca = posDecayVtx.GetDistanceFromParticle(eleDecayVtx);
+    eta = RecoDecay::eta(std::array{px, py, pz});
+    posEta = RecoDecay::eta(std::array{posPx, posPy, posPz});
+    eleEta = RecoDecay::eta(std::array{elePx, elePy, elePz});
+
+    float v0mom = RecoDecay::sqrtSumOfSquares(v0DecayVtx.GetPx(), v0DecayVtx.GetPy(), v0DecayVtx.GetPz());
+    float length = RecoDecay::sqrtSumOfSquares(v0DecayVtx.GetX() - collision.posX(), v0DecayVtx.GetY() - collision.posY(), v0DecayVtx.GetZ() - collision.posZ());
+    float dcaXV0ToPV = (v0DecayVtx.GetX() - v0DecayVtx.GetPx() * cospa * length / v0mom) - collision.posX();
+    float dcaYV0ToPV = (v0DecayVtx.GetY() - v0DecayVtx.GetPy() * cospa * length / v0mom) - collision.posY();
     float tmpSign = (dcaXV0ToPV * dcaYV0ToPV > 0.f) ? +1.f : -1.f;
 
     dcaXYV0ToPV = RecoDecay::sqrtSumOfSquares(dcaXV0ToPV, dcaYV0ToPV) * tmpSign;
-    dcaZV0ToPV = (v0.GetZ() - v0.GetPz() * cospa * length / v0mom) - collision.posZ();
+    dcaZV0ToPV = (v0DecayVtx.GetZ() - v0DecayVtx.GetPz() * cospa * length / v0mom) - collision.posZ();
 
     alpha = v0_alpha(posPx, posPy, posPz, elePx, elePy, elePz);
     qt = v0_qt(posPx, posPy, posPz, elePx, elePy, elePz);
 
     this->cospa = cospa;
+    this->cospaRZ = cospaRZ;
+    this->cospaXY = cospaXY;
     this->psipair = psipair;
     this->phiv = phiv;
     this->centType = centType;
+    this->posdcaXY = posdcaXY;
+    this->eledcaXY = eledcaXY;
+    this->posdcaZ = posdcaZ;
+    this->eledcaZ = eledcaZ;
 
     switch (centType) {
       case CentType::CentFT0A:
@@ -87,6 +117,9 @@ struct V0PhotonCandidate {
   // Set-Method for V0PhotonCut
   void setPhoton(const auto& v0, const auto& pos, const auto& ele, float cent, CentType centType)
   {
+    conversionPointx = v0.vx();
+    conversionPointy = v0.vy();
+    conversionPointz = v0.vz();
     px = v0.px();
     py = v0.py();
     pz = v0.pz();
@@ -100,14 +133,37 @@ struct V0PhotonCandidate {
     elePz = ele.pz();
     posPT = pos.pt();
     elePT = ele.pt();
+    posEta = pos.eta();
+    eleEta = ele.eta();
+    posdcaXY = pos.dcaXY();
+    posdcaZ = pos.dcaZ();
+    eledcaXY = ele.dcaXY();
+    eledcaZ = ele.dcaZ();
+    posTPCNClsShared = pos.tpcNClsShared();
+    posTPCNClsFindable = pos.tpcNClsFindable();
+    posTPCNClsFindableMinusShared = pos.tpcNClsFindableMinusFound();
+    posTPCNClsFindableMinusCrossedRows = pos.tpcNClsFindableMinusCrossedRows();
+    posTPCChi2NCl = pos.tpcChi2NCl();
+    posTPCSignal = pos.tpcSignal();
+    posITSClusterSizes = pos.itsClusterSizes();
+    eleTPCNClsShared = ele.tpcNClsShared();
+    eleTPCNClsFindable = ele.tpcNClsFindable();
+    eleTPCNClsFindableMinusShared = ele.tpcNClsFindableMinusFound();
+    eleTPCNClsFindableMinusCrossedRows = ele.tpcNClsFindableMinusCrossedRows();
+    eleTPCChi2NCl = ele.tpcChi2NCl();
+    eleTPCSignal = ele.tpcSignal();
+    eleITSClusterSizes = ele.itsClusterSizes();
 
     chi2ndf = v0.chiSquareNDF();
     pca = v0.pca();
+    eta = v0.eta();
 
     dcaXYV0ToPV = v0.dcaXYtopv();
     dcaZV0ToPV = v0.dcaZtopv();
 
     cospa = v0.cospa();
+    cospaRZ = v0.cospaRZ();
+    cospaXY = v0.cospaXY();
     alpha = v0.alpha();
     qt = v0.qtarm();
     psipair = 999.f; // default if V0PhotonPhiVPsi table is not included
@@ -131,6 +187,14 @@ struct V0PhotonCandidate {
   float getPhiV() const { return phiv; }
   float getPsiPair() const { return psipair; }
   float getCosPA() const { return cospa; }
+  float getCosPARZ() const { return cospaRZ; }
+  float getCosPAXY() const { return cospaXY; }
+  float getEta() const { return eta; }
+  float getPosEta() const { return posEta; }
+  float getEleEta() const { return eleEta; }
+  float getConversionPointX() const { return conversionPointx; }
+  float getConversionPointY() const { return conversionPointy; }
+  float getConversionPointZ() const { return conversionPointz; }
   float getPx() const { return px; }
   float getPy() const { return py; }
   float getPz() const { return pz; }
@@ -141,11 +205,32 @@ struct V0PhotonCandidate {
   float getElePx() const { return elePx; }
   float getElePy() const { return elePy; }
   float getElePz() const { return elePz; }
+  float getPosDcaXY() const { return posdcaXY; }
+  float getPosDcaZ() const { return posdcaZ; }
+  float getEleDcaXY() const { return eledcaXY; }
+  float getEleDcaZ() const { return eledcaZ; }
+  float getPosTPCNClsShared() const { return posTPCNClsShared; }
+  float getPosTPCNClsFindable() const { return posTPCNClsFindable; }
+  float getPosTPCNClsFindableMinusShared() const { return posTPCNClsFindableMinusShared; }
+  float getPosTPCNClsFindableMinusCrossedRows() const { return posTPCNClsFindableMinusCrossedRows; }
+  float getPosTPCChi2NCl() const { return posTPCChi2NCl; }
+  float getPosTPCSignal() const { return posTPCSignal; }
+  float getPosITSClusterSizes() const { return posITSClusterSizes; }
+  float getEleTPCNClsShared() const { return eleTPCNClsShared; }
+  float getEleTPCNClsFindable() const { return eleTPCNClsFindable; }
+  float getEleTPCNClsFindableMinusShared() const { return eleTPCNClsFindableMinusShared; }
+  float getEleTPCNClsFindableMinusCrossedRows() const { return eleTPCNClsFindableMinusCrossedRows; }
+  float getEleTPCChi2NCl() const { return eleTPCChi2NCl; }
+  float getEleTPCSignal() const { return eleTPCSignal; }
+  float getEleITSClusterSizes() const { return eleITSClusterSizes; }
   float getCent() const { return cent; }
   float getPCA() const { return pca; }
   CentType getCentType() const { return centType; }
 
  private:
+  float conversionPointx;
+  float conversionPointy;
+  float conversionPointz;
   float px;
   float py;
   float pz;
@@ -165,9 +250,32 @@ struct V0PhotonCandidate {
   float phiv;
   float psipair;
   float cospa;
+  float cospaRZ;
+  float cospaXY;
   float chi2ndf;
   float cent;
   float pca;
+  float eta;
+  float posEta;
+  float eleEta;
+  float posdcaXY;
+  float posdcaZ;
+  float eledcaXY;
+  float eledcaZ;
+  float posTPCNClsShared;
+  float posTPCNClsFindable;
+  float posTPCNClsFindableMinusShared;
+  float posTPCNClsFindableMinusCrossedRows;
+  float posTPCChi2NCl;
+  float posTPCSignal;
+  float posITSClusterSizes;
+  float eleTPCNClsShared;
+  float eleTPCNClsFindable;
+  float eleTPCNClsFindableMinusShared;
+  float eleTPCNClsFindableMinusCrossedRows;
+  float eleTPCChi2NCl;
+  float eleTPCSignal;
+  float eleITSClusterSizes;
   CentType centType;
 };
 

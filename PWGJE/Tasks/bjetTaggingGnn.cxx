@@ -15,12 +15,14 @@
 /// \author Changhwan Choi <changhwan.choi@cern.ch>, Pusan National University
 
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/Core/JetTaggingUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetTagging.h"
 
 #include "Common/CCDB/TriggerAliases.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
 #include "Common/DataModel/EventSelection.h"
@@ -126,6 +128,7 @@ struct BjetTaggingGnn {
   Configurable<float> pTHatExponent{"pTHatExponent", 6.0, "exponent of the event weight for the calculation of pTHat"};
 
   // track level configurables
+  Configurable<std::string> trackSelections{"trackSelections", "QualityTracks", "set track selections"};
   Configurable<float> trackPtMin{"trackPtMin", 0.15, "minimum track pT"};
   Configurable<float> trackPtMax{"trackPtMax", 1000.0, "maximum track pT"};
   Configurable<float> trackEtaMin{"trackEtaMin", -0.9, "minimum track eta"};
@@ -175,6 +178,8 @@ struct BjetTaggingGnn {
   std::vector<int> eventSelectionBitsSelMC;
   std::vector<int> eventSelectionBitsSel8;
 
+  int trackSelectionBits;
+
   std::vector<double> jetRadiiValues;
 
   void init(InitContext const&)
@@ -185,6 +190,8 @@ struct BjetTaggingGnn {
     eventSelectionBitsTVX = jetderiveddatautilities::initialiseEventSelectionBits("TVX");
     eventSelectionBitsSel8 = jetderiveddatautilities::initialiseEventSelectionBits("sel8");
     eventSelectionBitsSelMC = jetderiveddatautilities::initialiseEventSelectionBits("selMC");
+
+    trackSelectionBits = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
 
     if (doprocessDataJetsTrig) {
       zorroSummary.setObject(zorro.getZorroSummary());
@@ -236,7 +243,7 @@ struct BjetTaggingGnn {
 
     const AxisSpec axisTrackpT{200, 0., 200., "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisTrackpTFine{1000, 0., 10., "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec axisJetpT{200, 0., 200., "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec axisJetpT{250, 0., 250., "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisJetEta{200, -0.8, 0.8, "#it{#eta}_{jet}"};
     const AxisSpec axisDb{200, dbMin, dbMax, "#it{D}_{b}"};
     const AxisSpec axisDbFine{dbNbins, dbMin, dbMax, "#it{D}_{b}"};
@@ -250,6 +257,7 @@ struct BjetTaggingGnn {
     registry.add("h_jetMass", "", {HistType::kTH1F, {axisJetMass}});
     registry.add("h_Db", "", {HistType::kTH1F, {axisDbFine}});
     registry.add("h2_jetpT_Db", "", {HistType::kTH2F, {axisJetpT, axisDb}});
+    registry.add("h2_nTracks_Db", "", {HistType::kTH2F, {axisNTracks, axisDb}});
 
     registry.add("h_gnnfeat_trackpT", "", {HistType::kTH1F, {{200, 0., 100., "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("h_gnnfeat_trackPhi", "", {HistType::kTH1F, {{200, 0., 2. * M_PI, "#it{#phi}"}}});
@@ -278,6 +286,18 @@ struct BjetTaggingGnn {
       registry.add("h_partpT_matched_fine", "", {HistType::kTH1F, {axisTrackpTFine}}, callSumw2);
       registry.add("h_partpT", "", {HistType::kTH1F, {axisTrackpT}}, callSumw2);
       registry.add("h_partpT_fine", "", {HistType::kTH1F, {axisTrackpTFine}}, callSumw2);
+      registry.add("h_dcaXY_coll_matched", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_#it{xy}| (cm)"}}}, callSumw2);
+      registry.add("h_dcaXY_coll_matched_b", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_#it{xy}| (cm)"}}}, callSumw2);
+      registry.add("h_dcaXY_coll_matched_c", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_#it{xy}| (cm)"}}}, callSumw2);
+      registry.add("h_dcaXY_coll_matched_lf", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_#it{xy}| (cm)"}}}, callSumw2);
+      registry.add("h_dcaXY_coll_mismatched", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_#it{xy}| (cm)"}}}, callSumw2);
+      registry.add("h_dcaXY_npp", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_#it{xy}| (cm)"}}}, callSumw2);
+      registry.add("h_dcaZ_coll_matched", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_#it{z}| (cm)"}}}, callSumw2);
+      registry.add("h_dcaZ_coll_matched_b", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_#it{z}| (cm)"}}}, callSumw2);
+      registry.add("h_dcaZ_coll_matched_c", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_#it{z}| (cm)"}}}, callSumw2);
+      registry.add("h_dcaZ_coll_matched_lf", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_#it{z}| (cm)"}}}, callSumw2);
+      registry.add("h_dcaZ_coll_mismatched", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_#it{z}| (cm)"}}}, callSumw2);
+      registry.add("h_dcaZ_npp", "", {HistType::kTH1F, {{200, 0., 5., "|DCA_#it{z}| (cm)"}}}, callSumw2);
     }
 
     if (doprocessDataJetsSel || doprocessMCDJetsSel) {
@@ -302,6 +322,9 @@ struct BjetTaggingGnn {
       registry.add("h2_jetpT_Db_b", "b-jet", {HistType::kTH2F, {axisJetpT, axisDb}});
       registry.add("h2_jetpT_Db_c", "c-jet", {HistType::kTH2F, {axisJetpT, axisDb}});
       registry.add("h2_jetpT_Db_lf", "lf-jet", {HistType::kTH2F, {axisJetpT, axisDb}});
+      registry.add("h2_nTracks_Db_b", "b-jet", {HistType::kTH2F, {axisNTracks, axisDb}});
+      registry.add("h2_nTracks_Db_c", "c-jet", {HistType::kTH2F, {axisNTracks, axisDb}});
+      registry.add("h2_nTracks_Db_lf", "lf-jet", {HistType::kTH2F, {axisNTracks, axisDb}});
       registry.add("h2_Response_DetjetpT_PartjetpT", "", {HistType::kTH2F, {axisJetpT, axisJetpT}}, callSumw2);
       registry.add("h2_Response_DetjetpT_PartjetpT_b", "b-jet", {HistType::kTH2F, {axisJetpT, axisJetpT}}, callSumw2);
       registry.add("h2_Response_DetjetpT_PartjetpT_c", "c-jet", {HistType::kTH2F, {axisJetpT, axisJetpT}}, callSumw2);
@@ -513,6 +536,7 @@ struct BjetTaggingGnn {
     registry.fill(HIST("h_jetMass"), analysisJet.mass());
     registry.fill(HIST("h_Db"), analysisJet.scoreML());
     registry.fill(HIST("h2_jetpT_Db"), analysisJet.pt(), analysisJet.scoreML());
+    registry.fill(HIST("h2_nTracks_Db"), nTracks, analysisJet.scoreML());
 
     if (doDataDriven) {
       if (doDataDrivenExtra) {
@@ -567,19 +591,23 @@ struct BjetTaggingGnn {
     registry.fill(HIST("h_jetMass"), analysisJet.mass(), weightEvt);
     registry.fill(HIST("h_Db"), analysisJet.scoreML(), weightEvt);
     registry.fill(HIST("h2_jetpT_Db"), analysisJet.pt(), analysisJet.scoreML(), weightEvt);
+    registry.fill(HIST("h2_nTracks_Db"), nTracks, analysisJet.scoreML(), weightEvt);
 
     if (jetFlavor == JetTaggingSpecies::beauty) {
       registry.fill(HIST("h_jetpT_b"), analysisJet.pt(), weightEvt);
       registry.fill(HIST("h_Db_b"), analysisJet.scoreML(), weightEvt);
       registry.fill(HIST("h2_jetpT_Db_b"), analysisJet.pt(), analysisJet.scoreML(), weightEvt);
+      registry.fill(HIST("h2_nTracks_Db_b"), nTracks, analysisJet.scoreML(), weightEvt);
     } else if (jetFlavor == JetTaggingSpecies::charm) {
       registry.fill(HIST("h_jetpT_c"), analysisJet.pt(), weightEvt);
       registry.fill(HIST("h_Db_c"), analysisJet.scoreML(), weightEvt);
       registry.fill(HIST("h2_jetpT_Db_c"), analysisJet.pt(), analysisJet.scoreML(), weightEvt);
+      registry.fill(HIST("h2_nTracks_Db_c"), nTracks, analysisJet.scoreML(), weightEvt);
     } else {
       registry.fill(HIST("h_jetpT_lf"), analysisJet.pt(), weightEvt);
       registry.fill(HIST("h_Db_lf"), analysisJet.scoreML(), weightEvt);
       registry.fill(HIST("h2_jetpT_Db_lf"), analysisJet.pt(), analysisJet.scoreML(), weightEvt);
+      registry.fill(HIST("h2_nTracks_Db_lf"), nTracks, analysisJet.scoreML(), weightEvt);
       if (jetFlavor == JetTaggingSpecies::none) {
         registry.fill(HIST("h2_jetpT_Db_lf_none"), analysisJet.pt(), analysisJet.scoreML(), weightEvt);
       } else {
@@ -1061,7 +1089,7 @@ struct BjetTaggingGnn {
     bool matchedMcColl = collision.has_mcCollision() && std::fabs(collision.template mcCollision_as<FilteredCollisionsMCP>().posZ()) < vertexZCut;
 
     for (const auto& track : tracks) {
-      if (track.eta() <= trackEtaMin || track.eta() >= trackEtaMax) {
+      if (!jetderiveddatautilities::selectTrack(track, trackSelectionBits) || track.eta() <= trackEtaMin || track.eta() >= trackEtaMax) {
         continue;
       }
       registry.fill(HIST("h_trackpT"), track.pt(), weightEvt);
@@ -1072,9 +1100,37 @@ struct BjetTaggingGnn {
         continue;
       }
       auto particle = track.template mcParticle_as<aod::JetParticles>();
-      if (particle.isPhysicalPrimary() && particle.eta() > trackEtaMin && particle.eta() < trackEtaMax) {
-        registry.fill(HIST("h2_trackpT_partpT"), track.pt(), particle.pt(), weightEvt);
-        registry.fill(HIST("h_partpT_matched_fine"), particle.pt(), weightEvt);
+      if (particle.isPhysicalPrimary()) {
+        if (particle.eta() > trackEtaMin && particle.eta() < trackEtaMax) {
+          registry.fill(HIST("h2_trackpT_partpT"), track.pt(), particle.pt(), weightEvt);
+          registry.fill(HIST("h_partpT_matched_fine"), particle.pt(), weightEvt);
+          // Track association accuracy as a function of DCA
+          if (track.pt() >= trackPtMin) {
+            if (particle.mcCollisionId() == collision.mcCollisionId()) {
+              registry.fill(HIST("h_dcaXY_coll_matched"), std::fabs(track.dcaXY()), weightEvt); // Matched to particle from the same MC collision
+              registry.fill(HIST("h_dcaZ_coll_matched"), std::fabs(track.dcaZ()), weightEvt);
+              int origin = RecoDecay::getParticleOrigin(allParticles, particle, false);
+              if (origin == RecoDecay::OriginType::NonPrompt) {
+                registry.fill(HIST("h_dcaXY_coll_matched_b"), std::fabs(track.dcaXY()), weightEvt);
+                registry.fill(HIST("h_dcaZ_coll_matched_b"), std::fabs(track.dcaZ()), weightEvt);
+              } else if (origin == RecoDecay::OriginType::Prompt) {
+                registry.fill(HIST("h_dcaXY_coll_matched_c"), std::fabs(track.dcaXY()), weightEvt);
+                registry.fill(HIST("h_dcaZ_coll_matched_c"), std::fabs(track.dcaZ()), weightEvt);
+              } else {
+                registry.fill(HIST("h_dcaXY_coll_matched_lf"), std::fabs(track.dcaXY()), weightEvt);
+                registry.fill(HIST("h_dcaZ_coll_matched_lf"), std::fabs(track.dcaZ()), weightEvt);
+              }
+            } else {
+              registry.fill(HIST("h_dcaXY_coll_mismatched"), std::fabs(track.dcaXY()), weightEvt); // Matched to particle from a different MC collision
+              registry.fill(HIST("h_dcaZ_coll_mismatched"), std::fabs(track.dcaZ()), weightEvt);
+            }
+          }
+        }
+      } else {
+        if (particle.eta() > trackEtaMin && particle.eta() < trackEtaMax && track.pt() >= trackPtMin) {
+          registry.fill(HIST("h_dcaXY_npp"), std::fabs(track.dcaXY()), weightEvt);
+          registry.fill(HIST("h_dcaZ_npp"), std::fabs(track.dcaZ()), weightEvt);
+        }
       }
     }
 

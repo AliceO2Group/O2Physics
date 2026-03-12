@@ -15,6 +15,7 @@
 /// dependencies: skimmer-gamma-calo
 
 #include "PWGEM/PhotonMeson/Core/EMNonLin.h"
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/emcalHistoDefinitions.h"
@@ -59,7 +60,7 @@ struct NonLinProducer {
   using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::MinClusters>;
   using PcmPhotons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 
-  using Colls = soa::Join<aod::EMEvents_004, aod::EMEventsCent_000>;
+  using Colls = soa::Join<aod::PMEvents, aod::EMEventsCent_000>;
 
   EMNonLin emNonLinEMC;
   EMNonLin emNonLinPCM;
@@ -109,32 +110,30 @@ struct NonLinProducer {
   template <o2::soa::is_table TClusters, o2::soa::is_iterator TCollisio>
   void runEMC(TClusters const& clusters, TCollisio& collision)
   {
-    float cent = getCentrality(collision);
 
     int32_t collIndex = collision.globalIndex();
+    float cent = getCentrality(collision);
+    emNonLinContextEMC.setParams(emNonLinEMC.resolveParams(o2::pwgem::nonlin::EMNonLin::PhotonType::kEMC, cent));
+
     for (const auto& cluster : clusters) {
-      float nonLinE = 0.f;
-      float nonLinPt = 0.f;
-      float nonLinFactor = 1.f;
 
       // check that we are at the correct collision
-      if (cluster.emphotoneventId() != collIndex) {
-        collIndex = cluster.emphotoneventId();
+      if (cluster.pmeventId() != collIndex) {
+        collIndex = cluster.pmeventId();
         collision.setCursor(collIndex);
         cent = getCentrality(collision);
+        emNonLinContextEMC.setParams(emNonLinEMC.resolveParams(o2::pwgem::nonlin::EMNonLin::PhotonType::kEMC, cent));
       }
-
-      emNonLinContextEMC.setParams(emNonLinEMC.resolveParams(o2::pwgem::nonlin::EMNonLin::PhotonType::kEMC, cent));
 
       // fill before non lin histograms
       historeg.fill(HIST("QA/EMC/EIn"), cluster.e());
       historeg.fill(HIST("QA/EMC/PtIn"), cluster.pt());
 
       // get NonLin factor from class dependent on the centrality
-      nonLinFactor = emNonLinEMC.getCorrectionFactor(cluster.e(), emNonLinContextEMC);
+      float nonLinFactor = emNonLinEMC.getCorrectionFactor(cluster.e(), emNonLinContextEMC);
 
-      nonLinE = nonLinFactor * cluster.e();
-      nonLinPt = nonLinFactor * cluster.pt();
+      float nonLinE = nonLinFactor * cluster.e();
+      float nonLinPt = nonLinFactor * cluster.pt();
 
       // fill after non lin histograms
       historeg.fill(HIST("QA/EMC/EOut"), nonLinE);
@@ -147,29 +146,27 @@ struct NonLinProducer {
   template <o2::soa::is_table TV0, o2::soa::is_iterator TCollisio>
   void runPCM(TV0 const& v0s, TCollisio& collision)
   {
-    float cent = getCentrality(collision);
 
     int32_t collIndex = collision.globalIndex();
+    float cent = getCentrality(collision);
+    emNonLinContextPCM.setParams(emNonLinPCM.resolveParams(o2::pwgem::nonlin::EMNonLin::PhotonType::kPCM, cent));
     for (const auto& v0 : v0s) {
-      float nonLinPt = 0.f;
-      float nonLinFactor = 1.f;
 
       // check that we are at the correct collision
-      if (v0.emphotoneventId() != collIndex) {
-        collIndex = v0.emphotoneventId();
+      if (v0.pmeventId() != collIndex) {
+        collIndex = v0.pmeventId();
         collision.setCursor(collIndex);
         cent = getCentrality(collision);
+        emNonLinContextPCM.setParams(emNonLinPCM.resolveParams(o2::pwgem::nonlin::EMNonLin::PhotonType::kPCM, cent));
       }
-
-      emNonLinContextPCM.setParams(emNonLinPCM.resolveParams(o2::pwgem::nonlin::EMNonLin::PhotonType::kPCM, cent));
 
       // fill before non lin histograms
       historeg.fill(HIST("QA/PCM/PtIn"), v0.pt());
 
       // get NonLin factor from class dependent on the centrality
-      nonLinFactor = emNonLinEMC.getCorrectionFactor(v0.pt(), emNonLinContextPCM);
+      float nonLinFactor = emNonLinEMC.getCorrectionFactor(v0.pt(), emNonLinContextPCM);
 
-      nonLinPt = nonLinFactor * v0.pt();
+      float nonLinPt = nonLinFactor * v0.pt();
 
       // fill after non lin histograms
       historeg.fill(HIST("QA/PCM/PtOut"), nonLinPt);

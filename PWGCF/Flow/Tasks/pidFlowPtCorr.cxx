@@ -112,13 +112,20 @@ struct PidFlowPtCorr {
   } dcaCutOpts;
 
   O2_DEFINE_CONFIGURABLE(cfgNSigmapid, std::vector<float>, (std::vector<float>{3, 3, 3, 9, 9, 9, 9, 9, 9}), "tpc, tof and its NSigma for Pion Proton Kaon")
-  O2_DEFINE_CONFIGURABLE(cfgMeanPtcent, std::vector<float>, (std::vector<float>{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}), "mean Pt in different cent bin")
 
   struct : ConfigurableGroup {
     std::string prefix = "correctionPathOpts";
     O2_DEFINE_CONFIGURABLE(cfgAcceptancePath, std::vector<std::string>, (std::vector<std::string>{"Users/f/fcui/NUA/NUAREFPartical", "Users/f/fcui/NUA/NUAK0s", "Users/f/fcui/NUA/NUALambda", "Users/f/fcui/NUA/NUAXi", "Users/f/fcui/NUA/NUAOmega"}), "CCDB path to acceptance object")
+
     O2_DEFINE_CONFIGURABLE(cfgEfficiencyPath, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "CCDB path to efficiency object")
     O2_DEFINE_CONFIGURABLE(cfgEfficiency2DPath, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "CCDB path to efficiency(pt, cent) object")
+    O2_DEFINE_CONFIGURABLE(cfgPidEfficiencyPath, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "Pi, Ka, Pr, CCDB path to PID efficiency(pt, cent) object")
+
+    O2_DEFINE_CONFIGURABLE(cfgEfficiencyPath4ITSOnly, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "CCDB path to efficiency object")
+    O2_DEFINE_CONFIGURABLE(cfgEfficiency2DPath4ITSOnly, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "CCDB path to efficiency(pt, cent) object")
+    O2_DEFINE_CONFIGURABLE(cfgPidEfficiencyPath4ITSOnly, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "Pi, Ka, Pr, CCDB path to PID efficiency(pt, cent) object")
+
+    O2_DEFINE_CONFIGURABLE(cfgNUEOption, int, 1, "do NUE, 1: use 1D eff, 2: Using Eff(pt, cent), 3: use pid 1D eff, 4: use pid 2D eff, other: dont do NUE")
   } correctionPathOpts;
 
   O2_DEFINE_CONFIGURABLE(cfgRunNumbers, std::vector<int>, (std::vector<int>{544095, 544098, 544116, 544121, 544122, 544123, 544124}), "Preconfigured run numbers")
@@ -126,16 +133,16 @@ struct PidFlowPtCorr {
   O2_DEFINE_CONFIGURABLE(cfgFlowNbootstrap, int, 30, "Number of subsamples for bootstrap")
 
   // switch
-  O2_DEFINE_CONFIGURABLE(cfgDoAccEffCorr, bool, false, "do acc and eff corr")
   O2_DEFINE_CONFIGURABLE(cfgDoLocDenCorr, bool, false, "do local density corr")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
-  O2_DEFINE_CONFIGURABLE(cfgOutputrunbyrun, bool, false, "Fill and output NUA weights run by run")
+  O2_DEFINE_CONFIGURABLE(cfgOutputrunbyrun, bool, false, "OPEN IF USE FUNCTION(fillcorrectiongraph) Fill and output NUA weights run by run")
   O2_DEFINE_CONFIGURABLE(cfgOutPutMC, bool, false, "Fill MC graphs, note that if the processMCgen is open,this MUST be open")
   O2_DEFINE_CONFIGURABLE(cfgOutputLocDenWeights, bool, false, "Fill and output local density weights")
-  O2_DEFINE_CONFIGURABLE(cfgOutputQA, bool, false, "do QA")
+  O2_DEFINE_CONFIGURABLE(cfgOutputQA, bool, false, "OPEN IF USE FUNCTION(detectorPidQa) do QA")
 
-  O2_DEFINE_CONFIGURABLE(cfgUsePtCentNUECorr, bool, true, "do NUA NUE, Using Eff(pt, cent) to do NUE")
   O2_DEFINE_CONFIGURABLE(cfgDebugMyCode, bool, false, "output some graph for code debug")
+
+  O2_DEFINE_CONFIGURABLE(cfgOutPutPtSpectra, bool, false, "output pt spectra for data, MC and RECO")
 
   /**
    * @brief cfg for PID pt range
@@ -182,7 +189,7 @@ struct PidFlowPtCorr {
   // filter and using
   // data
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < trkQualityOpts.cfgCutEta.value) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
+  Filter trackFilter = (nabs(aod::track::eta) < trkQualityOpts.cfgCutEta.value);
 
   using TracksPID = soa::Join<aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
   // data tracks filter
@@ -197,7 +204,7 @@ struct PidFlowPtCorr {
   Filter particleFilter = (nabs(aod::mcparticle::eta) < trkQualityOpts.cfgCutEta.value);
   using FilteredMcParticles = soa::Filtered<aod::McParticles>;
 
-  using FilteredTracksWithMCLabel = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>>;
+  using FilteredTracksWithMCLabel = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels, TracksPID>>;
   using FilteredCollisionsWithMCLabel = soa::Filtered<soa::Join<AodCollisions, aod::EvSels, aod::McCollisionLabels>>;
   // end using and filter
 
@@ -224,12 +231,11 @@ struct PidFlowPtCorr {
   // define global variables
   GFW* fGFW = new GFW(); // GFW class used from main src
   std::vector<GFW::CorrConfig> corrconfigs;
+
   std::vector<std::string> cfgAcceptance;
-  std::vector<std::string> cfgEfficiency;
-  std::vector<std::string> cfgEfficiency2D;
+
   std::vector<float> cfgMultPVCutPara;
   std::vector<float> cfgNSigma;
-  std::vector<float> cfgMeanPt;
   std::vector<int> runNumbers;
   std::map<int, std::vector<std::shared_ptr<TH1>>> th1sList;
   std::map<int, std::vector<std::shared_ptr<TH3>>> th3sList;
@@ -261,9 +267,11 @@ struct PidFlowPtCorr {
     funcNumber
   };
 
+  // graphs for NUE / NUA
   std::vector<GFWWeights*> mAcceptance;
-  std::vector<TH1D*> mEfficiency;
-  std::vector<TH2D*> mEfficiency2D;
+  std::vector<TH1*> mEfficiency;
+  std::vector<TH1*> mEfficiency4ITSOnly;
+
   bool correctionsLoaded = false;
 
   TF1* fMultPVCutLow = nullptr;
@@ -314,10 +322,8 @@ struct PidFlowPtCorr {
     ccdb->setCreatedNotAfter(cfgnolaterthan.value);
 
     cfgAcceptance = correctionPathOpts.cfgAcceptancePath.value;
-    cfgEfficiency = correctionPathOpts.cfgEfficiencyPath.value;
-    cfgEfficiency2D = correctionPathOpts.cfgEfficiency2DPath.value;
+
     cfgNSigma = cfgNSigmapid;
-    cfgMeanPt = cfgMeanPtcent;
     cfgMultPVCutPara = evtSeleOpts.cfgMultPVCut;
 
     // Set the pt, mult and phi Axis;
@@ -351,6 +357,7 @@ struct PidFlowPtCorr {
     registry.add("hEtaPhiVtxzREF", "", {HistType::kTH3D, {cfgaxisPhi, cfgaxisEta, {20, -10, 10}}});
     registry.add("hNTracksPVvsCentrality", "", {HistType::kTH2D, {{5000, 0, 5000}, axisMultiplicity}});
 
+    registry.add("hNchUnCorrectedVSNchCorrected", "", {HistType::kTH2D, {cfgaxisNch, cfgaxisNch}});
     runNumbers = cfgRunNumbers;
     // TPC vs TOF vs its, comparation graphs, check the PID performance in difference pt
     if (cfgOutputQA) {
@@ -382,7 +389,7 @@ struct PidFlowPtCorr {
         TH1* hPhiRunByRunBefore = registry.add<TH1>(Form("RunByRunQA%d/hPhiBefore", oneRun), "", {HistType::kTH1D, {cfgaxisPhi}}).get();
         TH1* hPhiRunByRunAfter = registry.add<TH1>(Form("RunByRunQA%d/hPhiAfter", oneRun), "", {HistType::kTH1D, {cfgaxisPhi}}).get();
 
-        TH2* hITSnclsVsPhi = registry.add<TH2>(Form("RunByRunQA%d/hITSnclsVsPhi", oneRun), "", {HistType::kTH2D, {cfgaxisPhi, {7, 0, 7}}}).get();
+        TH2* hITSnclsVsPhi = registry.add<TH2>(Form("RunByRunQA%d/hITSnclsVsPhi", oneRun), "", {HistType::kTH2D, {cfgaxisPhi, {8, 0, 8}}}).get();
         TH2* hITSChi2VsPhi = registry.add<TH2>(Form("RunByRunQA%d/hITSChi2VsPhi", oneRun), "", {HistType::kTH2D, {cfgaxisPhi, {100, 0, 10}}}).get();
 
         qaHistVector.emplace_back(qaHist(hPhiRunByRunBefore, hPhiRunByRunAfter, hITSnclsVsPhi, hITSChi2VsPhi));
@@ -394,6 +401,18 @@ struct PidFlowPtCorr {
       // hist for NUE correction
       registry.add("correction/hPtCentMcRec", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
       registry.add("correction/hPtCentMcGen", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      // ITS only
+      registry.add("correction/hPtCentMcRec4ITSOnly", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+
+      // hist for Pi eff
+      registry.add("correction/hPtCentMcRecPi", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      registry.add("correction/hPtCentMcGenPi", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      // hist for Ka eff
+      registry.add("correction/hPtCentMcRecKa", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      registry.add("correction/hPtCentMcGenKa", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      // hist for Pr eff
+      registry.add("correction/hPtCentMcRecPr", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      registry.add("correction/hPtCentMcGenPr", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
     } // cfgoutputMC
 
     // debug hists
@@ -405,6 +424,26 @@ struct PidFlowPtCorr {
         registry.get<THnSparse>(HIST("debug/hRunNumberPhiEtaVertexWeight"))->GetAxis(0)->SetBinLabel(idx, std::to_string(runNumbers[idx - 1]).c_str());
       }
     } // cfgdebugmycode
+
+    if (cfgOutPutPtSpectra) {
+      registry.add("ptSpectra/hPtCentData", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      registry.add("ptSpectra/hCentEventCountData", "", {HistType::kTH1D, {axisMultiplicity}});
+      registry.add("ptSpectra/hCentEventCountMcGen", "", {HistType::kTH1D, {axisMultiplicity}});
+      registry.add("ptSpectra/hCentEventCountMcRec", "", {HistType::kTH1D, {axisMultiplicity}});
+
+      // (PosEta)(PosCh)
+      registry.add("ptSpectra/hPtCentDataPosEtaPosCh", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+
+      // (PosEta)(NegCh)
+      registry.add("ptSpectra/hPtCentDataPosEtaNegCh", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+
+      // (NegEta(PosCh)
+      registry.add("ptSpectra/hPtCentDataNegEtaPosCh", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+
+      // (NegEta)(NegCh)
+      registry.add("ptSpectra/hPtCentDataNegEtaNegCh", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+
+    } // cfgoutputptspectra
 
     if (cfgOutputrunbyrun) {
       // hist for NUA
@@ -572,6 +611,13 @@ struct PidFlowPtCorr {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {3} poiKaP08 {-3}", "KaKa08gap22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN08 {3} poiPrP08 {-3}", "PrPr08gap22", kFALSE));
 
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN {2} refP {-2}", "Pion0gap22a", kFALSE)); // 35
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP {2} refN {-2}", "Pion0gap22b", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN {2} refP {-2}", "Kaon0gap22a", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP {2} refN {-2}", "Kaon0gap22b", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN {2} refP {-2}", "Prot0gap22a", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP {2} refN {-2}", "Prot0gap22b", kFALSE)); // 40
+
     fGFW->CreateRegions(); // finalize the initialization
 
     // used for event selection
@@ -585,16 +631,10 @@ struct PidFlowPtCorr {
     fT0AV0ASigma = new TF1("fT0AV0ASigma", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 200000);
     fT0AV0ASigma->SetParameters(463.4144, 6.796509e-02, -9.097136e-07, 7.971088e-12, -2.600581e-17);
 
-    // fWeight output
-    if (cfgOutputNUAWeights) {
-      fWeightsREF->setPtBins(nPtBins, &(axisPt.binEdges)[0]);
-      fWeightsREF->init(true, false);
-    }
-
     std::vector<double> pTEffBins = {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.4, 1.8, 2.2, 2.6, 3.0};
     hFindPtBin = new TH1D("hFindPtBin", "hFindPtBin", pTEffBins.size() - 1, &pTEffBins[0]);
     funcEff.resize(pTEffBins.size() - 1);
-    // LHC24g3 Eff
+
     std::vector<double> f1p0 = cfgTrackDensityP0;
     std::vector<double> f1p1 = cfgTrackDensityP1;
     for (uint ifunc = 0; ifunc < pTEffBins.size() - 1; ifunc++) {
@@ -935,78 +975,217 @@ struct PidFlowPtCorr {
     }
     // end load NUA
 
-    // load NUE 1d
-    if (cfgEfficiency.size() == static_cast<uint64_t>(nspecies)) {
-      for (int i = 0; i <= nspecies - 1; i++) {
-        mEfficiency.push_back(ccdb->getForTimeStamp<TH1D>(cfgEfficiency[i], timestamp));
-      }
-      if (mEfficiency.size() == static_cast<uint64_t>(nspecies))
-        LOGF(info, "Loaded efficiency histogram");
-      else
-        LOGF(fatal, "Could not load efficiency histogram");
-    }
-    // end load NUE1d
+    /// @note dont modify load NUA!, just modify NUE
+    // here needs to load 2 NUE graph selected from 6 ccdb path
+    /// @note when using eff 2D, convert TH1* to (TH2D *)
+    // pid eff is not available now...
+    std::vector<std::string> effPath1D = correctionPathOpts.cfgEfficiencyPath.value;
+    std::vector<std::string> effPath2D = correctionPathOpts.cfgEfficiency2DPath.value;
+    std::vector<std::string> effPathPid = correctionPathOpts.cfgPidEfficiencyPath.value;
 
-    // load NUE 2D
-    if (cfgEfficiency2D.size() == static_cast<uint64_t>(nspecies)) {
-      for (int i = 0; i <= nspecies - 1; i++) {
-        mEfficiency2D.push_back(ccdb->getForTimeStamp<TH2D>(cfgEfficiency2D[i], timestamp));
-      }
-      if (mEfficiency2D.size() == static_cast<uint64_t>(nspecies))
-        LOGF(info, "Loaded efficiency2D histogram");
-      else
-        LOGF(fatal, "Could not load efficiency2D histogram");
-    }
-    // end load NUE 2D
+    std::vector<std::string> effPath1D4ITSOnly = correctionPathOpts.cfgEfficiencyPath4ITSOnly.value;
+    std::vector<std::string> effPath2D4ITSOnly = correctionPathOpts.cfgEfficiency2DPath4ITSOnly.value;
+    std::vector<std::string> effPathPid4ITSOnly = correctionPathOpts.cfgPidEfficiencyPath4ITSOnly.value;
+
+    switch (correctionPathOpts.cfgNUEOption.value) {
+      case 1: // use 1D eff
+        // load 1d eff for global track
+        if (effPath1D.size() != static_cast<uint64_t>(1)) {
+          LOGF(warning, "eff path 1d size != 1, skip eff 1d load");
+          break;
+        }
+        mEfficiency.push_back(ccdb->getForTimeStamp<TH1>(effPath1D[0], timestamp));
+        if (mEfficiency.size() == static_cast<uint64_t>(1)) {
+          LOGF(info, "Loaded efficiency histogram");
+        } else {
+          LOGF(fatal, "Could not load efficiency histogram");
+        }
+        // end load 1d eff for global track
+
+        // load 1d eff for ITS only
+        if (effPath1D4ITSOnly.size() != static_cast<uint64_t>(1)) {
+          LOGF(warning, "eff path for its 1d size != 1, skip its eff 1d load");
+          break;
+        }
+        mEfficiency4ITSOnly.push_back(ccdb->getForTimeStamp<TH1>(effPath1D4ITSOnly[0], timestamp));
+        if (mEfficiency4ITSOnly.size() == static_cast<uint64_t>(1)) {
+          LOGF(info, "Loaded ITS only efficiency histogram");
+        } else {
+          LOGF(fatal, "Could not load ITS only efficiency histogram");
+        }
+        // end load 1d eff for its only
+
+        break;
+        // end use 1d eff
+
+      case 2: // Use 2D eff
+        // load 2d eff for global track
+        if (effPath2D.size() != static_cast<uint64_t>(1)) {
+          LOGF(warning, "eff path 2d size != 1, skip eff 2d load");
+          break;
+        }
+        mEfficiency.push_back(ccdb->getForTimeStamp<TH2>(effPath2D[0], timestamp));
+        if (mEfficiency.size() == static_cast<uint64_t>(1)) {
+          LOGF(info, "Loaded 2D efficiency histogram");
+        } else {
+          LOGF(fatal, "Could not load 2D efficiency histogram");
+        }
+        // end load 2d eff for global track
+
+        // load 2d eff for ITS only
+        if (effPath2D4ITSOnly.size() != static_cast<uint64_t>(1)) {
+          LOGF(warning, "eff path for its 2d size != 1, skip its eff 2d load");
+          break;
+        }
+        mEfficiency4ITSOnly.push_back(ccdb->getForTimeStamp<TH2>(effPath2D4ITSOnly[0], timestamp));
+        if (mEfficiency4ITSOnly.size() == static_cast<uint64_t>(1)) {
+          LOGF(info, "Loaded ITS only 2D efficiency histogram");
+        } else {
+          LOGF(fatal, "Could not load ITS only 2D efficiency histogram");
+        }
+        // end load 2d eff for its only
+
+        break;
+        // end use 2d eff
+
+      case 3: // use pid 1D eff
+        // load pid 1d eff for ITS + global track
+        if (effPathPid.size() != static_cast<uint64_t>(3)) {
+          LOGF(warning, "eff path pid 1d size != 3, skip pid eff 1d load");
+          break;
+        }
+        for (int i = 0; i < 3; i++) {
+          mEfficiency.push_back(ccdb->getForTimeStamp<TH1>(effPathPid[i], timestamp));
+        }
+        if (mEfficiency.size() == static_cast<uint64_t>(3)) {
+          LOGF(info, "Loaded PID efficiency histogram");
+        } else {
+          LOGF(fatal, "Could not load PID efficiency histogram");
+        }
+        // end load pid 1d eff for ITS + global track
+
+        // load pid 1d eff for ITS only
+        if (effPathPid4ITSOnly.size() != static_cast<uint64_t>(3)) {
+          LOGF(warning, "eff path for its pid 1d size != 3, skip its pid eff 1d load");
+          break;
+        }
+        for (int i = 0; i < 3; i++) {
+          mEfficiency4ITSOnly.push_back(ccdb->getForTimeStamp<TH1>(effPathPid4ITSOnly[i], timestamp));
+        }
+        if (mEfficiency4ITSOnly.size() == static_cast<uint64_t>(3)) {
+          LOGF(info, "Loaded ITS only PID efficiency histogram");
+        } else {
+          LOGF(fatal, "Could not load ITS only PID efficiency histogram");
+        }
+        // end load pid 1d eff for its only
+
+        break;
+        // end use pid 1d eff
+
+      default: // not do NUE
+        break;
+    } // end switch load eff
 
     correctionsLoaded = true;
   }
 
   template <typename TrackObject>
-  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, TrackObject& track, float vtxz, int ispecies)
+  bool setParticleNUAWeight(float& weight_nua, TrackObject& track, float vtxz)
   {
-    float eff = 1.;
-    int nspecies = 1;
-    if (mEfficiency.size() == static_cast<uint64_t>(nspecies))
-      eff = mEfficiency[ispecies]->GetBinContent(mEfficiency[ispecies]->FindBin(track.pt()));
-    else
-      eff = 1.0;
-    if (eff == 0) {
-      return false;
-    }
-    weight_nue = 1. / eff;
-    if (mAcceptance.size() == static_cast<uint64_t>(nspecies))
-      weight_nua = mAcceptance[ispecies]->getNUA(track.phi(), track.eta(), vtxz);
+    if (mAcceptance.size() == static_cast<uint64_t>(1))
+      weight_nua = mAcceptance[0]->getNUA(track.phi(), track.eta(), vtxz);
     else
       weight_nua = 1;
     return true;
   }
 
+  /**
+   * @brief Set the Particle Nue Weight, for global track and ITS track, use different eff path
+   *
+   * @tparam TrackObject
+   * @param weight_nue
+   * @param track
+   * @param cent
+   * @param isGlobalTrack
+   * @return true weight setted succesfully, note that weight == 1 also return true;
+   * @return false eff got from graph == 0
+   */
   template <typename TrackObject>
-  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, TrackObject& track, float vtxz, int ispecies, double cent)
+  bool setParticleNUEWeight(float& weight_nue, TrackObject& track, double cent, bool isGlobalTrack)
   {
     float eff = 1.;
-    int nspecies = 1;
 
-    // eff 2d
-    if (mEfficiency2D.size() == static_cast<uint64_t>(nspecies)) {
-      int ptBin = mEfficiency2D[ispecies]->GetXaxis()->FindBin(track.pt());
-      int centBin = mEfficiency2D[ispecies]->GetYaxis()->FindBin(cent);
-      eff = mEfficiency2D[ispecies]->GetBinContent(ptBin, centBin);
+    uint64_t sizeOfEffVec = mEfficiency.size();
+    uint64_t sizeOfEffVec4ITS = mEfficiency4ITSOnly.size();
+
+    TH2* eff2D = 0;
+    TH2* eff2D4ITS = 0;
+
+    /// @note 1. size check 2. load eff 3. dividezero check
+    switch (correctionPathOpts.cfgNUEOption.value) {
+      case 1: // 1d
+        if (sizeOfEffVec != 1)
+          break;
+        if (sizeOfEffVec4ITS != 1)
+          break;
+
+        if (isGlobalTrack)
+          eff = mEfficiency[0]->GetBinContent(mEfficiency[0]->FindBin(track.pt()));
+        else
+          eff = mEfficiency4ITSOnly[0]->GetBinContent(mEfficiency4ITSOnly[0]->FindBin(track.pt()));
+
+        if (eff == 0.)
+          return false;
+
+        break;
+        // end 1d
+
+      case 2: // 2d
+        if (sizeOfEffVec != 1)
+          break;
+        if (sizeOfEffVec4ITS != 1)
+          break;
+
+        eff2D = dynamic_cast<TH2*>(mEfficiency[0]);
+        eff2D4ITS = dynamic_cast<TH2*>(mEfficiency4ITSOnly[0]);
+
+        if (!eff2D || !eff2D4ITS) {
+          LOGF(warning, "failed while converting TH1 to TH2! skip eff apply");
+          break;
+        }
+
+        if (isGlobalTrack) {
+          int ptBin = eff2D->GetXaxis()->FindBin(track.pt());
+          int centBin = eff2D->GetYaxis()->FindBin(cent);
+          eff = eff2D->GetBinContent(ptBin, centBin);
+        } else {
+          int ptBin = eff2D4ITS->GetXaxis()->FindBin(track.pt());
+          int centBin = eff2D4ITS->GetYaxis()->FindBin(cent);
+          eff = eff2D4ITS->GetBinContent(ptBin, centBin);
+        }
+
+        if (eff == 0.)
+          return false;
+
+        break;
+        // end 2d
+
+      /// @todo add pid NUE eff
+      case 3: // pid
+        if (sizeOfEffVec != 3)
+          break;
+        if (sizeOfEffVec4ITS != 3)
+          break;
+
+        break;
+        // end pid
+
+      default:
+        break;
     }
-    if (eff == 0) {
-      return false;
-    }
+
     weight_nue = 1. / eff;
-    // end eff 2d
-
-    // acc
-    if (mAcceptance.size() == static_cast<uint64_t>(nspecies))
-      weight_nua = mAcceptance[ispecies]->getNUA(track.phi(), track.eta(), vtxz);
-    else
-      weight_nua = 1;
     return true;
-    // end acc
   }
 
   /**
@@ -1014,8 +1193,7 @@ struct PidFlowPtCorr {
    * @note include
    *        1. eta cut
    *        2. pt cut
-   *        3. primaryparticle check
-   *        4. stable partccle
+   *        3. stable partccle
    *
    * @tparam mcParticle
    * @param particle
@@ -1033,9 +1211,6 @@ struct PidFlowPtCorr {
       return false;
     if (particle.pt() > trkQualityOpts.cfgCutPtMax.value)
       return false;
-    // primary particle
-    if (!particle.isPhysicalPrimary())
-      return false;
     // stable particle
     if (!isStable(particle.pdgCode()))
       return false;
@@ -1044,16 +1219,12 @@ struct PidFlowPtCorr {
   }
 
   /**
-   * @brief track selection
+   * @brief global track selection, cut for specified detector is not include
    * @note include: 1. dcaxy
-   *                2. its ncls
-   *                3. tpc cross row
-   *                4. tpc ncls
-   *                5. pt cut
-   *                6. eta
-   *                7. tpc chi2
-   *                8. dcaz
-   *                9. its CHI2
+   *                2. pt cut
+   *                3. eta
+   *                4. dcaz
+   *
    *
    * @tparam TTrack
    * @param track
@@ -1061,35 +1232,74 @@ struct PidFlowPtCorr {
    * @return false reject track
    */
   template <typename TTrack>
-  bool trackSelected(TTrack& track)
+  bool trackSelectedGlobal(TTrack& track)
   {
     // dca xy cut
     // note that z cut is in filter
     if (dcaCutOpts.cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > dcaCutOpts.fPtDepDCAxy->Eval(track.pt())))
       return false;
+
+    // pt
+    if (!((track.pt() > trkQualityOpts.cfgCutPtMin.value) && (track.pt() < trkQualityOpts.cfgCutPtMax.value)))
+      return false;
+
+    // eta
+    if (std::fabs(track.eta()) > trkQualityOpts.cfgCutEta.value)
+      return false;
+
+    // dca z
+    if (std::fabs(track.dcaZ()) > dcaCutOpts.cfgCutDCAz.value)
+      return false;
+
+    return true;
+  }
+
+  /**
+   * @brief cut for ITS, include:
+   *        1. its n cluster
+   *        2. its chi2
+   *
+   * @tparam TTrack
+   * @param track
+   * @return true
+   * @return false
+   */
+  template <typename TTrack>
+  bool trackSelected4ITS(TTrack& track)
+  {
     // its ncls cut
     if (track.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
       return false;
+
+    // its chi2
+    if (track.itsChi2NCl() > trkQualityOpts.cfgITSChi2NDF.value)
+      return false;
+
+    return true;
+  }
+
+  /**
+   * @brief cut for TPC, include
+   *        1. TPC  cross rows
+   *        2. tpc n cluster
+   *        3. tpc chi2
+   *
+   * @tparam TTrack
+   * @param track
+   * @return true
+   * @return false
+   */
+  template <typename TTrack>
+  bool trackSelected4TPC(TTrack& track)
+  {
     // tpc crossedrows cut
     if (track.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value)
       return false;
     // tpc ncls cut
     if (track.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value)
       return false;
-    // pt
-    if (!((track.pt() > trkQualityOpts.cfgCutPtMin.value) && (track.pt() < trkQualityOpts.cfgCutPtMax.value)))
-      return false;
-    // eta
-    if (std::fabs(track.eta()) > trkQualityOpts.cfgCutEta.value)
-      return false;
     // tpc chi2
     if (track.tpcChi2NCl() > cfgCutChi2prTPCcls)
-      return false;
-    // dca z
-    if (std::fabs(track.dcaZ()) > dcaCutOpts.cfgCutDCAz.value)
-      return false;
-    // its chi2
-    if (track.itsChi2NCl() > trkQualityOpts.cfgITSChi2NDF.value)
       return false;
 
     return true;
@@ -1262,6 +1472,11 @@ struct PidFlowPtCorr {
       return;
     // end collision cut
 
+    // pt spectra
+    if (cfgOutPutPtSpectra) {
+      registry.fill(HIST("ptSpectra/hCentEventCountData"), cent);
+    } // cfgOutPutPtSpectra
+
     // correction
     loadCorrections(bc.timestamp());
     float vtxz = collision.posZ();
@@ -1298,26 +1513,71 @@ struct PidFlowPtCorr {
       v4 = funcV4->Eval(cent);
     } // cfgDoLocDenCorr
 
-    float weff = 1;
-    float wacc = 1;
     double ptSum = 0;
     double ptSumw2 = 0;
     double nch = 0;
     double nchSquare = 0;
     double ptSquareSum = 0;
-    // fill GFW ref flow
+    double nchCorrectedPassed = 0;
+    double nchPassedSelection = 0;
+
+    if (cfgDebugMyCode) {
+      LOGF(info, "====================================");
+    }
+
+    /// @note calculate pt
+    /// use ITS only
     for (const auto& track : tracks) {
-      if (cfgDoAccEffCorr) {
-        if (cfgUsePtCentNUECorr) {
-          // true
-          if (!setCurrentParticleWeights(weff, wacc, track, vtxz, 0, cent))
-            continue;
-        } else {
-          // false
-          if (!setCurrentParticleWeights(weff, wacc, track, vtxz, 0))
-            continue;
-        } // cfgUsePtCentNUECorr
-      } // cfgDoAccEffCorr
+      float weff = 1;
+
+      // do nue
+      setParticleNUEWeight(weff, track, cent, false);
+      // end do nue
+
+      // track cut ITS only
+      if (!trackSelectedGlobal(track))
+        continue;
+      if (!trackSelected4ITS(track))
+        continue;
+      if (track.hasTPC())
+        continue;
+      // end track cut its only
+
+      // calculate ncharged(nch with weight) and pt
+      if (std::fabs(track.eta()) < trkQualityOpts.cfgRangeEta.value) {
+        nch += weff;
+        nchSquare += weff * weff;
+        ptSum += weff * track.pt();
+        ptSumw2 += weff * weff * track.pt();
+        ptSquareSum += weff * weff * track.pt() * track.pt();
+      }
+      // end calculate nch and pt
+
+      nchCorrectedPassed += weff;
+      nchPassedSelection += 1;
+
+      if (weff == 1. && cfgDebugMyCode) {
+        LOGF(info, "weff is 1, if nue opt is open and this message appears a lot, check!");
+      }
+    }
+    // end pt calculation using ITS only
+
+    if (cfgDebugMyCode) {
+      LOGF(info, Form("its only track num %f", nchPassedSelection));
+    }
+
+    int totalGlobalTrack = 0;
+
+    // fill v2 flow
+    // use global track
+    for (const auto& track : tracks) {
+      float weff = 1;
+      float wacc = 1;
+
+      // do NUE && NUA
+      setParticleNUAWeight(wacc, track, vtxz);
+      setParticleNUEWeight(weff, track, cent, true);
+      // end do NUE && NUA
 
       if (cfgDoLocDenCorr) {
         bool withinPtRef = (trkQualityOpts.cfgCutPtMin.value < track.pt()) && (track.pt() < trkQualityOpts.cfgCutPtMax.value);
@@ -1375,10 +1635,28 @@ struct PidFlowPtCorr {
         // end thn wacc graph
       } // cfgDebugMycode
 
-      // track cut
-      if (!trackSelected(track))
+      // track cut, global + ITS + TPC
+      if (!trackSelectedGlobal(track))
         continue;
+      if (!track.hasITS())
+        continue;
+      if (!track.hasTPC())
+        continue;
+      if (!trackSelected4ITS(track))
+        continue;
+      if (!trackSelected4TPC(track))
+        continue;
+
       // end track cut
+      totalGlobalTrack++;
+
+      if (cfgDebugMyCode && weff == 1.) {
+        LOGF(info, "weff for global track is 1, if NUE is open and this appears a lot, check!");
+      }
+
+      if (cfgDebugMyCode && wacc == 1.) {
+        LOGF(info, "wacc for global track is 1, if NUA is open and this appears alot, check!");
+      }
 
       // fill QA hist
       registry.fill(HIST("hPhi"), track.phi());
@@ -1388,10 +1666,26 @@ struct PidFlowPtCorr {
       registry.fill(HIST("hPt"), track.pt());
       // end fill QA hist
 
-      // track pt cut
-      if (!((track.pt() > trkQualityOpts.cfgCutPtMin.value) && (track.pt() < trkQualityOpts.cfgCutPtMax.value)))
-        continue;
-      // end track pt cut
+      // pt spectra
+      if (cfgOutPutPtSpectra) {
+        registry.fill(HIST("ptSpectra/hPtCentData"), track.pt(), cent);
+
+        // region 1 +eta +ch
+        if (track.eta() > 0.05 && track.sign() > 0)
+          registry.fill(HIST("ptSpectra/hPtCentDataPosEtaPosCh"), track.pt(), cent);
+
+        // region 2 +eta -ch
+        if (track.eta() > 0.05 && track.sign() < 0)
+          registry.fill(HIST("ptSpectra/hPtCentDataPosEtaNegCh"), track.pt(), cent);
+
+        // region 3 -eta +ch
+        if (track.eta() < -0.05 && track.sign() > 0)
+          registry.fill(HIST("ptSpectra/hPtCentDataNegEtaPosCh"), track.pt(), cent);
+
+        // region 4 -eta -ch
+        if (track.eta() < -0.05 && track.sign() < 0)
+          registry.fill(HIST("ptSpectra/hPtCentDataNegEtaNegCh"), track.pt(), cent);
+      }
 
       // fill GFW
       // bit mask 1: fill CHARGED PARTICLES
@@ -1415,20 +1709,13 @@ struct PidFlowPtCorr {
         // fill PROTONS and overlap Protons
       }
       // end fill GFW
+    } // end track loop for v2 calculation
 
-      if (cfgOutputNUAWeights)
-        fWeightsREF->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
+    if (cfgDebugMyCode) {
+      LOGF(info, Form("global track num %d", totalGlobalTrack));
+    }
 
-      // calculate ncharged(nch with weight) and pt
-      if (std::fabs(track.eta()) < trkQualityOpts.cfgRangeEta.value) {
-        nch += weff;
-        nchSquare += weff * weff;
-        ptSum += weff * track.pt();
-        ptSumw2 += weff * weff * track.pt();
-        ptSquareSum += weff * weff * track.pt() * track.pt();
-      }
-      // end calculate nch and pt
-    } // end track loop
+    registry.fill(HIST("hNchUnCorrectedVSNchCorrected"), nchPassedSelection, nchCorrectedPassed);
 
     // fill hist using fGFW
     if (nch > 0) {
@@ -1437,6 +1724,13 @@ struct PidFlowPtCorr {
       fillFC(MyParticleType::kCharged, corrconfigs.at(2), cent, rndm, "c22Full");
       fillFC(MyParticleType::kCharged, corrconfigs.at(3), cent, rndm, "c32");
       fillFC(MyParticleType::kCharged, corrconfigs.at(4), cent, rndm, "c34");
+
+      fillFC(MyParticleType::kPion, corrconfigs.at(35), cent, rndm, "c22Full");
+      fillFC(MyParticleType::kPion, corrconfigs.at(36), cent, rndm, "c22Full");
+      fillFC(MyParticleType::kKaon, corrconfigs.at(37), cent, rndm, "c22Full");
+      fillFC(MyParticleType::kKaon, corrconfigs.at(38), cent, rndm, "c22Full");
+      fillFC(MyParticleType::kProton, corrconfigs.at(39), cent, rndm, "c22Full");
+      fillFC(MyParticleType::kProton, corrconfigs.at(40), cent, rndm, "c22Full");
 
       fillFC(MyParticleType::kPion, corrconfigs.at(5), cent, rndm, "c22");
       fillFC(MyParticleType::kPion, corrconfigs.at(6), cent, rndm, "c22");
@@ -1568,7 +1862,15 @@ struct PidFlowPtCorr {
     // loop all the track
     for (const auto& track : tracks) {
       // track cut
-      if (!trackSelected(track))
+      if (!trackSelectedGlobal(track))
+        continue;
+      if (!track.hasITS())
+        continue;
+      if (!track.hasTPC())
+        continue;
+      if (!trackSelected4ITS(track))
+        continue;
+      if (!trackSelected4TPC(track))
         continue;
       // end track cut
 
@@ -1641,7 +1943,15 @@ struct PidFlowPtCorr {
     // start filling graphs
     for (const auto& track : tracks) {
       // track cut
-      if (!trackSelected(track))
+      if (!trackSelectedGlobal(track))
+        continue;
+      if (!track.hasITS())
+        continue;
+      if (!track.hasTPC())
+        continue;
+      if (!trackSelected4ITS(track))
+        continue;
+      if (!trackSelected4TPC(track))
         continue;
       // end track cut
 
@@ -1694,10 +2004,14 @@ struct PidFlowPtCorr {
       return;
     // end init && cut
 
+    if (cfgOutPutPtSpectra) {
+      registry.fill(HIST("ptSpectra/hCentEventCountMcRec"), cent);
+    } // cfgoutputptspectra
+
     // loop tracks
     for (const auto& track : tracks) {
       // track cut
-      if (!trackSelected(track))
+      if (!trackSelectedGlobal(track))
         continue;
       // end track cut
 
@@ -1706,7 +2020,30 @@ struct PidFlowPtCorr {
         auto mcParticle = track.mcParticle();
         // fill graph
         if (particleSelected(mcParticle)) {
-          registry.fill(HIST("correction/hPtCentMcRec"), track.pt(), cent);
+          /// @note global track, fill rec hist
+          if (track.hasITS() && track.hasTPC() && trackSelected4ITS(track) && trackSelected4TPC(track)) {
+            // graph for all particles
+            registry.fill(HIST("correction/hPtCentMcRec"), track.pt(), cent);
+
+            // identify particle and fill graph
+            if (isPion(track)) {
+              registry.fill(HIST("correction/hPtCentMcRecPi"), track.pt(), cent);
+            }
+            if (isKaon(track)) {
+              registry.fill(HIST("correction/hPtCentMcRecKa"), track.pt(), cent);
+            }
+            if (isProton(track)) {
+              registry.fill(HIST("correction/hPtCentMcRecPr"), track.pt(), cent);
+            }
+            // end identify particle and fill graph
+          }
+          // end global track, fill rec hist
+
+          /// @note ITS track. fill rec hist
+          if (track.hasITS() && !track.hasTPC() && trackSelected4ITS(track)) {
+            registry.fill(HIST("correction/hPtCentMcRec4ITSOnly"), track.pt(), cent);
+          }
+          // end ITS track. fill rec hist
         }
         // end fill graph
       }
@@ -1755,11 +2092,28 @@ struct PidFlowPtCorr {
         continue;
       // end collision cut
 
+      if (cfgOutPutPtSpectra) {
+        registry.fill(HIST("ptSpectra/hCentEventCountMcGen"), cent);
+      } // cfgoutputptspectra
+
       // loop mc particles
       for (const auto& mcParticle : mcParticles) {
         // fill graph
-        if (particleSelected(mcParticle)) {
+        if (particleSelected(mcParticle) && mcParticle.isPhysicalPrimary()) {
+          // graph for all particles
           registry.fill(HIST("correction/hPtCentMcGen"), mcParticle.pt(), cent);
+
+          // identify particle and fill graph
+          if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus) {
+            registry.fill(HIST("correction/hPtCentMcGenPi"), mcParticle.pt(), cent);
+          }
+          if (std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus) {
+            registry.fill(HIST("correction/hPtCentMcGenKa"), mcParticle.pt(), cent);
+          }
+          if (std::abs(mcParticle.pdgCode()) == PDG_t::kProton) {
+            registry.fill(HIST("correction/hPtCentMcGenPr"), mcParticle.pt(), cent);
+          }
+          // end identify particle and fill graph
         }
         // end fill graph
       }

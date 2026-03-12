@@ -82,7 +82,7 @@ struct FlowGfwTask {
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "Custom DCA Z cut")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 1.0f, "Custom DCA XY cut")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
-  O2_DEFINE_CONFIGURABLE(cfgCentEstFt0c, bool, false, "Centrality estimator based on FT0C signal")
+  O2_DEFINE_CONFIGURABLE(cfgCentEstFt0c, bool, true, "Centrality estimator based on FT0C signal")
   O2_DEFINE_CONFIGURABLE(cfgCentEstFt0a, bool, false, "Centrality estimator based on FT0A signal")
   O2_DEFINE_CONFIGURABLE(cfgCentEstFt0m, bool, false, " A centrality estimator based on FT0A+FT0C signals.")
   O2_DEFINE_CONFIGURABLE(cfgCentEstFv0a, bool, false, "Centrality estimator based on FV0A signal")
@@ -93,20 +93,20 @@ struct FlowGfwTask {
   O2_DEFINE_CONFIGURABLE(cfgMagnetField, std::string, "GLO/Config/GRPMagField", "CCDB path to Magnet field object")
   O2_DEFINE_CONFIGURABLE(cfgDCAzPt, bool, false, "switch for DCAz pt dependent")
   O2_DEFINE_CONFIGURABLE(cfgTrackSelRun3ITSMatch, bool, false, "Track selection for ITS matches")
-  O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
-  O2_DEFINE_CONFIGURABLE(cfgUseAdditionalTrackCut, bool, false, "Use additional track cut on phi")
+  O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, true, "Use additional event cut on mult correlations")
+  O2_DEFINE_CONFIGURABLE(cfgUseAdditionalTrackCut, bool, true, "Use additional track cut on phi")
   O2_DEFINE_CONFIGURABLE(cfgOccupancy, bool, false, "Bool for event selection on detector occupancy");
   O2_DEFINE_CONFIGURABLE(cfgNoTimeFrameBorder, bool, false, "kNoTimeFrameBorder");
   O2_DEFINE_CONFIGURABLE(cfgNoITSROFrameBorder, bool, false, "kNoITSROFrameBorder");
   O2_DEFINE_CONFIGURABLE(cfgNoSameBunchPileup, bool, false, "kNoSameBunchPileup");
   O2_DEFINE_CONFIGURABLE(cfgIsGoodZvtxFT0vsPV, bool, false, "kIsGoodZvtxFT0vsPV");
-  O2_DEFINE_CONFIGURABLE(cfgIsVertexITSTPC, bool, false, "kIsVertexITSTPC");
+  O2_DEFINE_CONFIGURABLE(cfgIsVertexITSTPC, bool, true, "kIsVertexITSTPC");
   O2_DEFINE_CONFIGURABLE(cfgNoCollInTimeRangeStandard, bool, false, "kNoCollInTimeRangeStandard");
   O2_DEFINE_CONFIGURABLE(cfgEvSelkIsGoodITSLayersAll, bool, false, "kIsGoodITSLayersAll")
   O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, false, "Use additional event cut on mult correlations");
   O2_DEFINE_CONFIGURABLE(cfgV0AT0ANSigma, bool, false, "V0A T0A n sigma cut")
   O2_DEFINE_CONFIGURABLE(cfgNSigma, float, 5.0f, "N sigma cut")
-  O2_DEFINE_CONFIGURABLE(cfgGlobalTracks, bool, false, "Global tracks")
+  O2_DEFINE_CONFIGURABLE(cfgGlobalTracks, bool, true, "Global tracks")
   O2_DEFINE_CONFIGURABLE(cfgGlobalplusITS, bool, false, "Global and ITS tracks")
   O2_DEFINE_CONFIGURABLE(cfgGlobalonly, bool, false, "Global only tracks")
   O2_DEFINE_CONFIGURABLE(cfgITSonly, bool, false, "ITS only tracks")
@@ -894,9 +894,15 @@ struct FlowGfwTask {
     }
   }
 
-  // Apply process filters GlobalTracks
+  // Apply process filters Global+ITS_only sample
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex && (aod::cent::centFT0C > cfgMinCentFT0C) && (aod::cent::centFT0C < cfgMaxCentFT0C);
-  Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::dcaXY) < cfgCutDCAxy);
+  Filter trackFilter = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
+                       ncheckbit(aod::track::trackCutFlag, TrackSelectionITS) &&
+                       ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
+                              ncheckbit(aod::track::trackCutFlag, TrackSelectionTPC), true) &&
+                       ifnode(dcaZ > 0.f, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, TrackSelectionDCAXYonly),
+                              ncheckbit(aod::track::trackCutFlag, TrackSelectionDCA)) &&
+                       (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::dcaXY) < cfgCutDCAxy);
 
   void processData(Colls::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks, aod::FT0s const&, BCsRun3 const&)
   {
@@ -1239,7 +1245,7 @@ struct FlowGfwTask {
     }
 
   } // End of process
-  PROCESS_SWITCH(FlowGfwTask, processData, "Process analysis for Run 3 data", false);
+  PROCESS_SWITCH(FlowGfwTask, processData, "Process analysis for Run 3 data", true);
 
   using TheFilteredMyTracks = soa::Filtered<MyTracks>;
   using TheFilteredMyCollisions = soa::Filtered<MyCollisions>;
