@@ -751,8 +751,12 @@ struct femtoUniversePairTaskTrackCascadeExtended {
           if (!isParticleCombined(p1, confTrackChoicePartOne))
             continue;
         } else {
-          if ((p1.pidCut() & (64u << confTrackChoicePartOne)) == 0)
+          if ((p1.pidCut() & 512u) != 0) {
+            if ((p1.pidCut() & (64u << confTrackChoicePartOne)) == 0)
+              continue;
+          } else if ((p1.pidCut() & (1u << confTrackChoicePartOne)) == 0) {
             continue;
+          }
         }
 
         const auto& posChild = parts.iteratorAt(p2.globalIndex() - 3 - parts.begin().globalIndex());
