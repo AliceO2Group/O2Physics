@@ -251,10 +251,11 @@ struct HfCandidateSelectorToXiPiQa {
       registry.get<TH1>(HIST("hSelStatusHf"))->GetXaxis()->SetBinLabel(5, "cosPaCascToXic");
       registry.get<TH1>(HIST("hSelStatusHf"))->GetXaxis()->SetBinLabel(6, "kfDcaXYPiFromXic");
       registry.get<TH1>(HIST("hSelStatusHf"))->GetXaxis()->SetBinLabel(7, "chi2GeoXic");
-      registry.get<TH1>(HIST("hSelStatusHf"))->GetXaxis()->SetBinLabel(8, "chi2TopoPiFromXicToPv");
-      registry.get<TH1>(HIST("hSelStatusHf"))->GetXaxis()->SetBinLabel(9, "chi2TopoCascToXic");
-      registry.get<TH1>(HIST("hSelStatusHf"))->GetXaxis()->SetBinLabel(10, "decayLenXYXic");
-      registry.get<TH1>(HIST("hSelStatusHf"))->GetXaxis()->SetBinLabel(11, "cTauXic");
+      registry.get<TH1>(HIST("hSelStatusHf"))->GetXaxis()->SetBinLabel(8, "chi2TopoXicToPv");
+      registry.get<TH1>(HIST("hSelStatusHf"))->GetXaxis()->SetBinLabel(9, "chi2TopoPiFromXicToPv");
+      registry.get<TH1>(HIST("hSelStatusHf"))->GetXaxis()->SetBinLabel(10, "chi2TopoCascToXic");
+      registry.get<TH1>(HIST("hSelStatusHf"))->GetXaxis()->SetBinLabel(11, "decayLenXYXic");
+      registry.get<TH1>(HIST("hSelStatusHf"))->GetXaxis()->SetBinLabel(12, "cTauXic");
     }
 
     // invarinat mass histograms
@@ -372,7 +373,7 @@ struct HfCandidateSelectorToXiPiQa {
       registry.fill(HIST("hSelStatusLf"), 12.0);
 
       // DCA
-      if (candidate.kfDcaXYCascToPv() > cuts->get(inputPtBin, "kfDcaXYCascToPv")) {
+      if (std::abs(candidate.kfDcaXYCascToPv()) > cuts->get(inputPtBin, "kfDcaXYCascToPv")) {
         return false;
       }
       registry.fill(HIST("hSelStatusLf"), 13.0);
@@ -481,26 +482,30 @@ struct HfCandidateSelectorToXiPiQa {
         return false;
       }
       registry.fill(HIST("hSelStatusHf"), 6.0);
-      if (candidate.chi2TopoPiFromXicToPv() < 0 || candidate.chi2TopoPiFromXicToPv() > cuts->get(inputPtBin, "chi2TopoXicToPv")) {
+      if (candidate.chi2TopoXicToPv() < 0 || candidate.chi2TopoXicToPv() > cuts->get(inputPtBin, "chi2TopoXicToPv")) {
         return false;
       }
       registry.fill(HIST("hSelStatusHf"), 7.0);
-      if (candidate.chi2TopoCascToXic() < 0 || candidate.chi2TopoCascToXic() > cuts->get(inputPtBin, "chi2TopoCascToXic")) {
+      if (candidate.chi2TopoPiFromXicToPv() < 0 || candidate.chi2TopoPiFromXicToPv() > cuts->get(inputPtBin, "chi2TopoPiFromXicToPv")) {
         return false;
       }
       registry.fill(HIST("hSelStatusHf"), 8.0);
+      if (candidate.chi2TopoCascToXic() < 0 || candidate.chi2TopoCascToXic() > cuts->get(inputPtBin, "chi2TopoCascToXic")) {
+        return false;
+      }
+      registry.fill(HIST("hSelStatusHf"), 9.0);
 
       // Decay Length
       if (std::abs(candidate.decayLenXYXic()) > cuts->get(inputPtBin, "decayLenXYXic")) {
         return false;
       }
-      registry.fill(HIST("hSelStatusHf"), 9.0);
+      registry.fill(HIST("hSelStatusHf"), 10.0);
 
       // ctau
       if (std::abs(candidate.cTauXic()) > cuts->get(inputPtBin, "cTauXic")) {
         return false;
       }
-      registry.fill(HIST("hSelStatusHf"), 10.0);
+      registry.fill(HIST("hSelStatusHf"), 11.0);
     } else {
       // Impact parameter(DCA?)
       if ((std::abs(candidate.impactParBachFromCharmBaryonXY()) < impactParXYPiFromCharmBaryonMin) || (std::abs(candidate.impactParBachFromCharmBaryonXY()) > impactParXYPiFromCharmBaryonMax)) {
@@ -715,7 +720,9 @@ struct HfCandidateSelectorToXiPiQa {
                     trackPiFromCharm.tpcNSigmaPi(), trackPiFromCasc.tpcNSigmaPi(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
                     trackPiFromCharm.tofNSigmaPi(), trackPiFromCasc.tofNSigmaPi(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
       } else {
-        if (!statusPidCharmBaryon || !statusInvMassCharmBaryon) {
+        // Convert resultSelectrions to false if one of pid status and inv status is false
+        // This is only needed for KF(currently) since output selection table doesn't contain those information
+        if (!statusPidCharmBaryon || !statusInvMassLambda || !statusInvMassCascade || !statusInvMassCharmBaryon) {
           resultSelections = false;
         }
         hfSelToXiPiKf(resultSelections,
