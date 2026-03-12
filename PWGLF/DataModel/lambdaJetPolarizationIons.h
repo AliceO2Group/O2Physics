@@ -88,7 +88,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(LeadParticlePz, leadParticlePz, //! Leading particle 
                            [](float leadParticlePt, float leadParticleEta) -> float { return leadParticlePt * std::sinh(leadParticleEta); });
 } // namespace lambdajetpol
 
-DECLARE_SOA_TABLE(RingCollisions, "AOD", "RINGCOLLISIONS",
+DECLARE_SOA_TABLE(RingCollisions, "AOD", "RINGCOLLISION",
                   o2::soa::Index<>, // self-index: auto-assigned row number
                   lambdajetpol::CentFT0M,
                   lambdajetpol::CentFT0C,
@@ -99,7 +99,7 @@ namespace lambdajetpol
 DECLARE_SOA_INDEX_COLUMN(RingCollision, ringCollision); // Declare index after table is available
 } // namespace lambdajetpol
 
-DECLARE_SOA_TABLE(RingJets, "AOD", "RINGJETS",
+DECLARE_SOA_TABLE(RingJets, "AOD", "RINGJET",
                   lambdajetpol::RingCollisionId, // relational index -> RingCollisions
                   lambdajetpol::JetPt,
                   lambdajetpol::JetEta,
@@ -110,7 +110,7 @@ DECLARE_SOA_TABLE(RingJets, "AOD", "RINGJETS",
                   lambdajetpol::JetPy<lambdajetpol::JetPt, lambdajetpol::JetPhi>,
                   lambdajetpol::JetPz<lambdajetpol::JetPt, lambdajetpol::JetEta>);
 
-DECLARE_SOA_TABLE(RingLeadP, "AOD", "RINGLEADP",
+DECLARE_SOA_TABLE(RingLeadPs, "AOD", "RINGLEADP",
                   lambdajetpol::RingCollisionId,
                   lambdajetpol::LeadParticlePt,
                   lambdajetpol::LeadParticleEta,
@@ -120,7 +120,7 @@ DECLARE_SOA_TABLE(RingLeadP, "AOD", "RINGLEADP",
                   lambdajetpol::LeadParticlePy<lambdajetpol::LeadParticlePt, lambdajetpol::LeadParticlePhi>,
                   lambdajetpol::LeadParticlePz<lambdajetpol::LeadParticlePt, lambdajetpol::LeadParticleEta>);
 
-DECLARE_SOA_TABLE(RingLaV0s, "AOD", "RINGLAV0S",
+DECLARE_SOA_TABLE(RingLaV0s, "AOD", "RINGLAV0",
                   lambdajetpol::RingCollisionId,
                   lambdajetpol::V0Pt,
                   lambdajetpol::V0Eta,

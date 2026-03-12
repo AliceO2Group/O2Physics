@@ -47,14 +47,16 @@ enum class RefTrackBit : uint16_t { // This is not for leptons, but charged trac
 };
 
 enum class RefMFTTrackBit : uint16_t { // This is not for leptons, but charged tracks for reference flow.
-  kNclsMFT7 = 1,                       // default is 6
-  kNclsMFT8 = 2,
-  kChi2MFT4 = 4, // default is 5
-  kChi2MFT3 = 8,
-  kDCAxy004cm = 16, // default is 0.05 cm
-  kDCAxy003cm = 32,
-  kDCAxy002cm = 64,
-  kDCAxy001cm = 128,
+  kNclsMFT6 = 1,                       // default is 5
+  kNclsMFT7 = 2,
+  kNclsMFT8 = 4,
+  kChi2MFT3 = 8, // default is 4
+  kChi2MFT2 = 16,
+  kDCAxy005cm = 32, // default is 0.06 cm
+  kDCAxy004cm = 64,
+  kDCAxy003cm = 128,
+  kDCAxy002cm = 256,
+  kDCAxy001cm = 512,
 };
 
 //_______________________________________________________________________
