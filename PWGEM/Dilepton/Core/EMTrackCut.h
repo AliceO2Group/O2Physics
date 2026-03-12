@@ -91,7 +91,6 @@ class EMTrackCut : public TNamed
   void SetTrackBit(uint16_t bits);
 
  private:
-
   // kinematic cuts
   float mMinTrackPt{0.f}, mMaxTrackPt{1e10f};      // range in pT
   float mMinTrackEta{-1e10f}, mMaxTrackEta{1e10f}; // range in eta
