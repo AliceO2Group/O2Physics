@@ -205,7 +205,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
         sigmas[HfProngSpecies::Kaon][HfProngSpecies::Kaon][2]);
     }
     if (fillCandidateParD0E) {
-      float invMassD0;
+      float invMassD0 = 0.;
       if (candFlag == 0) {
         invMassD0 = HfHelper::invMassD0ToPiK(prongCharm);
       } else if (candFlag == 1) {
