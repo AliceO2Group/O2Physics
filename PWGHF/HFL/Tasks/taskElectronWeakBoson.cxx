@@ -149,7 +149,6 @@ struct HfTaskElectronWeakBoson {
   Configurable<float> rcVetoR{"rcVetoR", 0.4, "veto radius"};
   Configurable<bool> useUEsub{"useUEsub", true, "apply UE subtraction in isolation"};
 
-  TRandom3* rnd = new TRandom3(0);
 
   struct HfElectronCandidate {
     float pt, eta, phi, dcaxyTrk, dcazTrk, eop, energyIso, momIso;
@@ -221,6 +220,9 @@ struct HfTaskElectronWeakBoson {
   Zorro zorro;
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
+  // defined rnd
+  TRandom3* rnd = nullptr;
+
   void init(InitContext const&)
   {
     // Configure CCDB
@@ -241,6 +243,9 @@ struct HfTaskElectronWeakBoson {
 
     // add configurable for CCDB path
     zorro.setBaseCCDBPath(cfgCCDBPath.value);
+
+    // init random
+    rnd = new TRandom3(0);
 
     // define axes you want to use
     const AxisSpec axisZvtx{40, -20, 20, "Zvtx"};
@@ -429,9 +434,10 @@ struct HfTaskElectronWeakBoson {
 
       float energySumRC = 0;
 
-      for (auto& c : clusters) {
-        if (c.energy() > rcHardE)
+      for (const auto& c : clusters) {
+        if (c.energy() > rcHardE) {
           continue;
+        }
         double dEtarc = etarc - c.eta();
         double dPhirc = phirc - c.phi();
         dPhirc = RecoDecay::constrainAngle(dPhirc, -o2::constants::math::PI);
@@ -445,9 +451,9 @@ struct HfTaskElectronWeakBoson {
       sumErc.push_back(energySumRC);
     }
 
-    if (sumErc.empty())
+    if (sumErc.empty()) {
       return 0;
-
+    }
     std::nth_element(sumErc.begin(),
                      sumErc.begin() + sumErc.size() / 2,
                      sumErc.end());
