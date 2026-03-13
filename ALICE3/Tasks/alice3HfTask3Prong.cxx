@@ -14,16 +14,11 @@
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Polytechnic University of Turin and INFN Turin
 
 #include "ALICE3/DataModel/A3DecayFinderTables.h"
-#include "ALICE3/DataModel/OTFPIDTrk.h"
-#include "ALICE3/DataModel/OTFRICH.h"
-#include "ALICE3/DataModel/OTFTOF.h"
-#include "ALICE3/DataModel/RICH.h"
 #include "ALICE3/Utils/utilsHfAlice3.h"
 #include "ALICE3/Utils/utilsSelectionsAlice3.h"
 #include "Common/Core/RecoDecay.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -33,12 +28,12 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
-#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
+#include <TH2.h>
 #include <THnSparse.h>
-#include <TPDGCode.h>
+#include <TString.h>
 
 #include <array>
 #include <cmath>
