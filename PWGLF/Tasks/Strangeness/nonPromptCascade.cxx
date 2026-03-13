@@ -46,7 +46,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-// #include "PWGHF/Core/PDG.h"
 #include "PWGLF/DataModel/LFNonPromptCascadeTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
