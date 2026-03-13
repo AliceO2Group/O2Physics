@@ -31,6 +31,7 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
+#include <Framework/RunningWorkflowInfo.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/TrackParametrization.h>
 #include <ReconstructionDataFormats/TrackParametrizationWithError.h>
@@ -111,10 +112,10 @@ class TrackPropagationModule
   void init(TConfigurableGroup const& cGroup, TrackTuner& trackTunerObj, THistoRegistry& registry, TInitContext& initContext)
   {
     // Checking if the tables are requested in the workflow and enabling them
-    fillTracks = isTableRequiredInWorkflow(initContext, "Tracks");
-    fillTracksCov = isTableRequiredInWorkflow(initContext, "TracksCov");
-    fillTracksDCA = isTableRequiredInWorkflow(initContext, "TracksDCA");
-    fillTracksDCACov = isTableRequiredInWorkflow(initContext, "TracksDCACov");
+    fillTracks = o2::common::core::isTableRequiredInWorkflow(initContext, "Tracks");
+    fillTracksCov = o2::common::core::isTableRequiredInWorkflow(initContext, "TracksCov");
+    fillTracksDCA = o2::common::core::isTableRequiredInWorkflow(initContext, "TracksDCA");
+    fillTracksDCACov = o2::common::core::isTableRequiredInWorkflow(initContext, "TracksDCACov");
 
     // enable Tracks in case Tracks have been requested
     if (fillTracksDCA && !fillTracks) {
