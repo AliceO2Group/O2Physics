@@ -40,7 +40,7 @@ namespace fastjetutilities
 class fastjet_user_info : public fastjet::PseudoJet::UserInfoBase
 {
   JetConstituentStatus status; // the status of each particle (Options are: TrueParticle (final state particles in generator event which arent special), HFParticle (heavy-flavour particle of interest in generator event), ThermalParticle (particles belonging to the thermal backgound), DecaySisterParticle (other particles poduced in the decay resulting in a non-prompt heavy-flavour particle of interest))
-  int index;  // a number unique to each particle in the event
+  int index;                   // a number unique to each particle in the event
 
  public:
   fastjet_user_info()
