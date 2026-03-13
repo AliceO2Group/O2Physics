@@ -66,6 +66,7 @@ using namespace o2::framework::expressions;
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
 struct PidFlowPtCorr {
+#pragma region // configurable
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
@@ -133,16 +134,17 @@ struct PidFlowPtCorr {
   O2_DEFINE_CONFIGURABLE(cfgFlowNbootstrap, int, 30, "Number of subsamples for bootstrap")
 
   // switch
-  O2_DEFINE_CONFIGURABLE(cfgDoLocDenCorr, bool, false, "do local density corr")
-  O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
-  O2_DEFINE_CONFIGURABLE(cfgOutputrunbyrun, bool, false, "OPEN IF USE FUNCTION(fillcorrectiongraph) Fill and output NUA weights run by run")
-  O2_DEFINE_CONFIGURABLE(cfgOutPutMC, bool, false, "Fill MC graphs, note that if the processMCgen is open,this MUST be open")
-  O2_DEFINE_CONFIGURABLE(cfgOutputLocDenWeights, bool, false, "Fill and output local density weights")
-  O2_DEFINE_CONFIGURABLE(cfgOutputQA, bool, false, "OPEN IF USE FUNCTION(detectorPidQa) do QA")
-
-  O2_DEFINE_CONFIGURABLE(cfgDebugMyCode, bool, false, "output some graph for code debug")
-
-  O2_DEFINE_CONFIGURABLE(cfgOutPutPtSpectra, bool, false, "output pt spectra for data, MC and RECO")
+  struct : ConfigurableGroup {
+    std::string prefix = "switchsOpts";
+    O2_DEFINE_CONFIGURABLE(cfgDoLocDenCorr, bool, false, "do local density corr");
+    O2_DEFINE_CONFIGURABLE(cfgOutputrunbyrun, bool, false, "OPEN IF USE FUNCTION(fillcorrectiongraph) Fill and output NUA weights run by run");
+    O2_DEFINE_CONFIGURABLE(cfgOutPutMC, bool, false, "Fill MC graphs, note that if the processMCgen is open,this MUST be open");
+    O2_DEFINE_CONFIGURABLE(cfgOutputQA, bool, false, "OPEN IF USE FUNCTION(detectorPidQa) do QA");
+    O2_DEFINE_CONFIGURABLE(cfgDebugMyCode, bool, false, "output some graph for code debug");
+    O2_DEFINE_CONFIGURABLE(cfgOutPutPtSpectra, bool, false, "output pt spectra for data, MC and RECO");
+    O2_DEFINE_CONFIGURABLE(cfgCheck2MethodDiff, bool, false, "check difference between v2' && v2''");
+    O2_DEFINE_CONFIGURABLE(cfgUseITSOnly4MeanPt, bool, false, "use ITS only to calculate mean pt");
+  } switchsOpts;
 
   /**
    * @brief cfg for PID pt range
@@ -170,6 +172,15 @@ struct PidFlowPtCorr {
   // end separate k-p
   // end cfg for PID pt range
 
+  struct : ConfigurableGroup {
+    std::string prefix = "particleAbundanceOpts";
+    ConfigurableAxis cfgaxisAbundancePi{"cfgaxisAbundancePi", {100, 0, 1100}, "axis for Abundance Pi"};
+    ConfigurableAxis cfgaxisAbundanceKa{"cfgaxisAbundanceKa", {100, 0, 200}, "axis for Abundance ka"};
+    ConfigurableAxis cfgaxisAbundancePr{"cfgaxisAbundancePr", {100, 0, 50}, "axis for Abundance Pr"};
+
+    O2_DEFINE_CONFIGURABLE(cfgOutPutAbundanceDis, bool, false, "out put hists for pid particle Abundance QA");
+  } particleAbundanceOpts;
+
   ConfigurableAxis cfgaxisVertex{"cfgaxisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis cfgaxisPhi{"cfgaxisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
   ConfigurableAxis cfgaxisEta{"cfgaxisEta", {40, -1., 1.}, "eta axis for histograms"};
@@ -184,8 +195,16 @@ struct PidFlowPtCorr {
   Configurable<std::vector<double>> cfgTrackDensityV3P{"cfgTrackDensityV3P", std::vector<double>{0.0174056, 0.000703329, -1.45044e-05, 1.91991e-07, -1.62137e-09}, "parameter of v2(cent) for track density efficiency correction"};
   Configurable<std::vector<double>> cfgTrackDensityV4P{"cfgTrackDensityV4P", std::vector<double>{0.008845, 0.000259668, -3.24435e-06, 4.54837e-08, -6.01825e-10}, "parameter of v2(cent) for track density efficiency correction"};
 
+  struct : ConfigurableGroup {
+    std::string prefix = "meanptC22GraphOpts";
+    ConfigurableAxis cfgaxisBootstrap{"cfgaxisBootstrap", {30, 0, 30}, "cfgaxisBootstrap"};
+  } meanptC22GraphOpts;
+
   AxisSpec axisMultiplicity{{0, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90}, "Centrality (%)"};
 
+#pragma endregion // configurable
+
+#pragma region // filter
   // filter and using
   // data
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -208,6 +227,10 @@ struct PidFlowPtCorr {
   using FilteredCollisionsWithMCLabel = soa::Filtered<soa::Join<AodCollisions, aod::EvSels, aod::McCollisionLabels>>;
   // end using and filter
 
+#pragma endregion // filter
+
+#pragma region // others
+
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
 
   // Connect to ccdb
@@ -218,7 +241,6 @@ struct PidFlowPtCorr {
 
   // Define output
   HistogramRegistry registry{"registry"};
-  OutputObj<GFWWeights> fWeightsREF{GFWWeights("weightsREF")};
 
   // val used for bootstrap
   TRandom3* fRndm = new TRandom3(0);
@@ -246,6 +268,7 @@ struct PidFlowPtCorr {
     kProton,
     kNumberOfParticles
   };
+
   enum OutputTH1Names {
     // here are TProfiles for vn-pt correlations that are not implemented in GFW
     hPhi = 0,
@@ -315,8 +338,11 @@ struct PidFlowPtCorr {
   std::vector<qaHist> qaHistVector;
   // end hists for QA runbyrun
 
+#pragma endregion // others
+
   void init(InitContext const&) // Initialization
   {
+#pragma region // init and add lots of graphs according to switch
     ccdb->setURL(cfgurl.value);
     ccdb->setCaching(true);
     ccdb->setCreatedNotAfter(cfgnolaterthan.value);
@@ -360,7 +386,7 @@ struct PidFlowPtCorr {
     registry.add("hNchUnCorrectedVSNchCorrected", "", {HistType::kTH2D, {cfgaxisNch, cfgaxisNch}});
     runNumbers = cfgRunNumbers;
     // TPC vs TOF vs its, comparation graphs, check the PID performance in difference pt
-    if (cfgOutputQA) {
+    if (switchsOpts.cfgOutputQA.value) {
       registry.add("DetectorPidPerformace/TPCvsTOF/Pi", "", {HistType::kTH3D, {{600, -30, 30}, {600, -30, 30}, cfgaxisPt}});
       registry.add("DetectorPidPerformace/TPCvsTOF/Pr", "", {HistType::kTH3D, {{600, -30, 30}, {600, -30, 30}, cfgaxisPt}});
       registry.add("DetectorPidPerformace/TPCvsTOF/Ka", "", {HistType::kTH3D, {{600, -30, 30}, {600, -30, 30}, cfgaxisPt}});
@@ -397,7 +423,7 @@ struct PidFlowPtCorr {
       // end run by run QA hists
     } // cfgoutputqa
 
-    if (cfgOutPutMC) {
+    if (switchsOpts.cfgOutPutMC.value) {
       // hist for NUE correction
       registry.add("correction/hPtCentMcRec", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
       registry.add("correction/hPtCentMcGen", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
@@ -416,7 +442,7 @@ struct PidFlowPtCorr {
     } // cfgoutputMC
 
     // debug hists
-    if (cfgDebugMyCode) {
+    if (switchsOpts.cfgDebugMyCode.value) {
       debugHist.hPtEffWeight = registry.add<TH1>("debug/hPtEffWeight", "", {HistType::kTH1D, {cfgaxisPt}});
       debugHist.hPtCentEffWeight = registry.add<TH2>("debug/hPtCentEffWeight", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
       debugHist.hRunNumberPhiEtaVertexWeight = registry.add<THnSparse>("debug/hRunNumberPhiEtaVertexWeight", "", {HistType::kTHnSparseF, {cfgaxisRun, cfgaxisPhi, cfgaxisEta, cfgaxisVertex}});
@@ -425,27 +451,20 @@ struct PidFlowPtCorr {
       }
     } // cfgdebugmycode
 
-    if (cfgOutPutPtSpectra) {
+    if (switchsOpts.cfgOutPutPtSpectra.value) {
       registry.add("ptSpectra/hPtCentData", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
       registry.add("ptSpectra/hCentEventCountData", "", {HistType::kTH1D, {axisMultiplicity}});
       registry.add("ptSpectra/hCentEventCountMcGen", "", {HistType::kTH1D, {axisMultiplicity}});
       registry.add("ptSpectra/hCentEventCountMcRec", "", {HistType::kTH1D, {axisMultiplicity}});
 
-      // (PosEta)(PosCh)
-      registry.add("ptSpectra/hPtCentDataPosEtaPosCh", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
+      registry.add("ptSpectra/hPtCentData4ITSOnly", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
 
-      // (PosEta)(NegCh)
-      registry.add("ptSpectra/hPtCentDataPosEtaNegCh", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
-
-      // (NegEta(PosCh)
-      registry.add("ptSpectra/hPtCentDataNegEtaPosCh", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
-
-      // (NegEta)(NegCh)
-      registry.add("ptSpectra/hPtCentDataNegEtaNegCh", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
-
+      registry.add("c22PrimeVsc22/Pi", "", {HistType::kTH2D, {{100, 0., 0.01}, {100, 0., 0.01}}});
+      registry.add("c22PrimeVsc22/Ka", "", {HistType::kTH2D, {{100, 0., 0.01}, {100, 0., 0.01}}});
+      registry.add("c22PrimeVsc22/Pr", "", {HistType::kTH2D, {{100, 0., 0.01}, {100, 0., 0.01}}});
     } // cfgoutputptspectra
 
-    if (cfgOutputrunbyrun) {
+    if (switchsOpts.cfgOutputrunbyrun.value) {
       // hist for NUA
       registry.add("correction/hRunNumberPhiEtaVertex", "", {HistType::kTHnSparseF, {cfgaxisRun, cfgaxisPhi, cfgaxisEta, cfgaxisVertex}});
       // set "correction/hRunNumberPhiEtaVertex" axis0 label
@@ -454,6 +473,12 @@ struct PidFlowPtCorr {
       }
       // end set "correction/hRunNumberPhiEtaVertex" axis0 label
     } // cfgooutputrunbyrun
+
+    if (particleAbundanceOpts.cfgOutPutAbundanceDis) {
+      registry.add("abundance/hNumOfPiEventCount", "", {HistType::kTH1D, {particleAbundanceOpts.cfgaxisAbundancePi}});
+      registry.add("abundance/hNumOfKaEventCount", "", {HistType::kTH1D, {particleAbundanceOpts.cfgaxisAbundanceKa}});
+      registry.add("abundance/hNumOfPrEventCount", "", {HistType::kTH1D, {particleAbundanceOpts.cfgaxisAbundancePr}});
+    }
 
     // set bin label for hEventCount
     // processdata
@@ -483,7 +508,9 @@ struct PidFlowPtCorr {
 
     registry.add("hInteractionRate", "", {HistType::kTH1D, {{1000, 0, 1000}}});
     // end set bin label for eventcount
+#pragma endregion
 
+#pragma region // flow container setup
     // cumulant of flow
     // fill TObjArray for charged
     TObjArray* oba4Ch = new TObjArray();
@@ -530,6 +557,29 @@ struct PidFlowPtCorr {
     registry.add("ka/c22dmeanpt", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile2D, {axisMultiplicity, cfgaxisMeanPt}});
     registry.add("pr/c22dmeanpt", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile2D, {axisMultiplicity, cfgaxisMeanPt}});
 
+    // init tprofile3d for <2'> - meanpt
+    // charged
+    registry.add("meanptCentNbs/hCharged", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+    // end charged
+
+    // pid
+    registry.add("meanptCentNbs/hChargedPionWithNpair", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+    registry.add("meanptCentNbs/hChargedPionFull", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+    registry.add("meanptCentNbs/hPion", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+
+    registry.add("meanptCentNbs/hChargedKaonWithNpair", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+    registry.add("meanptCentNbs/hChargedKaonFull", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+    registry.add("meanptCentNbs/hKaon", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+
+    registry.add("meanptCentNbs/hChargedProtonWithNpair", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+    registry.add("meanptCentNbs/hChargedProtonFull", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+    registry.add("meanptCentNbs/hProton", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+    // end pid
+    // end init tprofile3d for <2'> - meanpt
+
+#pragma endregion
+
+#pragma region // fgfw set up and correlation config setup
     // Data stored in fGFW
     double etaMax = trkQualityOpts.cfgCutEta.value;
     double etaGap = cfgEtaGap;
@@ -590,7 +640,7 @@ struct PidFlowPtCorr {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN refN | olKaN {2 2} refP {-2 -2}", "Kaon0gap24a", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP refP | olKaP {2 2} refN {-2 -2}", "Kaon0gap24b", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN refN | olPrN {2 2} refP {-2 -2}", "Prot0gap24a", kFALSE)); // 15
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP refP | olPaP {2 2} refN {-2 -2}", "Prot0gap24b", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP refP | olPrP {2 2} refN {-2 -2}", "Prot0gap24b", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN08 {3} refP08 {-3}", "Pion08gap32a", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP08 {3} refN08 {-3}", "Pion08gap32b", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {3} refP08 {-3}", "Kaon08gap32a", kFALSE));
@@ -602,7 +652,7 @@ struct PidFlowPtCorr {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN refN | olKaN {3 3} refP {-3 -3}", "Kaon0gap34a", kFALSE)); // 25
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP refP | olKaP {3 3} refN {-3 -3}", "Kaon0gap34b", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN refN | olPrN {3 3} refP {-3 -3}", "Prot0gap34a", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP refP | olPaP {3 3} refN {-3 -3}", "Prot0gap34b", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP refP | olPrP {3 3} refN {-3 -3}", "Prot0gap34b", kFALSE));
 
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN08 {2} poiPiP08 {-2}", "PiPi08gap22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {2} poiKaP08 {-2}", "KaKa08gap22", kFALSE)); // 30
@@ -620,6 +670,9 @@ struct PidFlowPtCorr {
 
     fGFW->CreateRegions(); // finalize the initialization
 
+#pragma endregion
+
+#pragma region // params
     // used for event selection
     fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
     fMultPVCutLow->SetParameters(cfgMultPVCutPara[0], cfgMultPVCutPara[1], cfgMultPVCutPara[2], cfgMultPVCutPara[3], cfgMultPVCutPara[4], cfgMultPVCutPara[5], cfgMultPVCutPara[6], cfgMultPVCutPara[7], cfgMultPVCutPara[8], cfgMultPVCutPara[9]);
@@ -650,7 +703,11 @@ struct PidFlowPtCorr {
     funcV3->SetParameters(v3para[0], v3para[1], v3para[2], v3para[3], v3para[4]);
     funcV4 = new TF1("funcV4", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
     funcV4->SetParameters(v4para[0], v4para[1], v4para[2], v4para[3], v4para[4]);
+
+#pragma endregion
   }
+
+#pragma region // pid utils function
 
   /**
    * @brief Identify whether the input track is a Pion
@@ -782,6 +839,26 @@ struct PidFlowPtCorr {
     return resultKaon;
   }
 
+#pragma endregion // pid util function
+
+#pragma region // other utils
+
+  double getPidC22InOneEvent(const GFW::CorrConfig& corrconfA, const GFW::CorrConfig& corrconfB)
+  {
+    double NpairA = fGFW->Calculate(corrconfA, 0, true).real();
+    double NpairB = fGFW->Calculate(corrconfB, 0, true).real();
+
+    if (NpairA == 0 && NpairB == 0)
+      return 0;
+
+    double ChC22A = NpairA ? fGFW->Calculate(corrconfA, 0, false).real() / NpairA : 0.;
+    double ChC22B = NpairB ? fGFW->Calculate(corrconfB, 0, false).real() / NpairB : 0.;
+
+    double ChC22 = (ChC22A * NpairA + ChC22B * NpairB) / (NpairA + NpairB);
+
+    return ChC22;
+  }
+
   /**
    * @brief get stable particle
    * @note stable particle include
@@ -813,14 +890,125 @@ struct PidFlowPtCorr {
     return false;
   }
 
-  void fillFC(MyParticleType type, const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, const char* tarName)
+#pragma endregion // other utils
+
+#pragma region // fgfw filling helpers
+
+  /**
+   * @brief this function is used to fill fFCCh4PtC22
+   * @details weight is nch * npair
+   *
+   * @param cent
+   * @param ptSum
+   * @param nch
+   * @param rndm
+   */
+  void fillFC4PtC22(const double& cent, const double& ptSum, const double& nch, const double& rndm)
+  {
+    double dnx, val;
+
+    dnx = fGFW->Calculate(corrconfigs.at(0), 0, kTRUE).real();
+    if (dnx == 0)
+      return;
+
+    // <2>
+    val = fGFW->Calculate(corrconfigs.at(0), 0, kFALSE).real() / dnx;
+    if (std::fabs(val) >= 1)
+      return;
+
+    registry.fill(HIST("meanptCentNbs/hCharged"), ptSum / nch, cent, rndm * cfgFlowNbootstrap, val, nch * dnx);
+  }
+
+  /**
+   * @brief note that the graph's x axis is pid meanpt, for <2'> weight is nPid * npairPID, for <2> weight is nch * npair
+   *
+   * @param cent
+   * @param nch
+   * @param rndm
+   * @param type
+   * @param pidPtSum
+   * @param nPid
+   */
+  void fillFC4PtC22(const double& cent, const double& nch, const double& rndm, MyParticleType type, const double& pidPtSum, const double& nPid)
+  {
+    // <2>
+    double dnx, val;
+
+    dnx = fGFW->Calculate(corrconfigs.at(0), 0, kTRUE).real();
+    if (dnx == 0)
+      return;
+
+    // <2>
+    val = fGFW->Calculate(corrconfigs.at(0), 0, kFALSE).real() / dnx;
+    if (std::fabs(val) >= 1)
+      return;
+
+    double pidc22 = 0;
+    double npairPid = 0;
+    switch (type) {
+      case MyParticleType::kPion:
+        pidc22 = getPidC22InOneEvent(corrconfigs.at(5), corrconfigs.at(6));
+        if (pidc22 == 0)
+          return;
+
+        npairPid = fGFW->Calculate(corrconfigs.at(5), 0, kTRUE).real() + fGFW->Calculate(corrconfigs.at(6), 0, kTRUE).real();
+        if (npairPid == 0)
+          return;
+
+        registry.fill(HIST("meanptCentNbs/hPion"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidc22, nPid * npairPid);
+        registry.fill(HIST("meanptCentNbs/hChargedPionFull"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx * nch);
+        registry.fill(HIST("meanptCentNbs/hChargedPionWithNpair"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx);
+
+        break;
+        // end pion
+
+      case MyParticleType::kKaon:
+        pidc22 = getPidC22InOneEvent(corrconfigs.at(7), corrconfigs.at(8));
+        if (pidc22 == 0)
+          return;
+
+        npairPid = fGFW->Calculate(corrconfigs.at(7), 0, kTRUE).real() + fGFW->Calculate(corrconfigs.at(8), 0, kTRUE).real();
+        if (npairPid == 0)
+          return;
+
+        registry.fill(HIST("meanptCentNbs/hKaon"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidc22, nPid * npairPid);
+        registry.fill(HIST("meanptCentNbs/hChargedKaonFull"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx * nch);
+        registry.fill(HIST("meanptCentNbs/hChargedKaonWithNpair"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx);
+
+        break;
+        // end kaon
+
+      case MyParticleType::kProton:
+        pidc22 = getPidC22InOneEvent(corrconfigs.at(9), corrconfigs.at(10));
+        if (pidc22 == 0)
+          return;
+
+        npairPid = fGFW->Calculate(corrconfigs.at(9), 0, kTRUE).real() + fGFW->Calculate(corrconfigs.at(10), 0, kTRUE).real();
+        if (npairPid == 0)
+          return;
+
+        registry.fill(HIST("meanptCentNbs/hProton"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidc22, nPid * npairPid);
+        registry.fill(HIST("meanptCentNbs/hChargedProtonFull"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx * nch);
+        registry.fill(HIST("meanptCentNbs/hChargedProtonWithNpair"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx);
+
+        break;
+        // end proton
+
+      default:
+        return;
+        break;
+    }
+    // end switch particle type
+  }
+
+  bool fillFC(MyParticleType type, const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, const char* tarName)
   {
     double dnx, val;
     // calculate #sum exp{i * 0 (#phi_{i} - #phi_{j})} == N_{pairs}
     // note that weight is ignored in the formula but not in the calculation, for c24 is similar
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
     if (dnx == 0)
-      return;
+      return false;
     if (!corrconf.pTDif) {
       // #sum exp{i * 2 * (#phi_{i} - #phi_{j})} / N_{pairs} == < 2 >
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
@@ -845,10 +1033,10 @@ struct PidFlowPtCorr {
             LOGF(warning, "particle not found");
             break;
         }
-        return;
+        return true;
       }
     }
-    return;
+    return true;
   }
 
   /**
@@ -951,6 +1139,10 @@ struct PidFlowPtCorr {
       registry.fill(tarName, cent, ptSum / nch, val, dnx);
     return;
   }
+
+#pragma endregion // fill fgfw helper
+
+#pragma region // correction apply functions
 
   /**
    * @brief load NUE(1D) NUE(2D) NUA graphs
@@ -1188,6 +1380,10 @@ struct PidFlowPtCorr {
     return true;
   }
 
+#pragma endregion // correction apply function
+
+#pragma region // track cut functions
+
   /**
    * @brief cut MC particles
    * @note include
@@ -1304,6 +1500,10 @@ struct PidFlowPtCorr {
 
     return true;
   }
+
+#pragma endregion // track cut
+
+#pragma region // event selection functions
 
   /**
    * @brief fill eventCount for different function
@@ -1447,8 +1647,13 @@ struct PidFlowPtCorr {
     return true;
   }
 
+#pragma endregion // event selection
+
+#pragma region // main functions
+
   void processData(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)
   {
+#pragma region // sub region, init
     // init
     float rndm = fRndm->Rndm();
     int nTot = tracks.size();
@@ -1473,9 +1678,9 @@ struct PidFlowPtCorr {
     // end collision cut
 
     // pt spectra
-    if (cfgOutPutPtSpectra) {
+    if (switchsOpts.cfgOutPutPtSpectra.value) {
       registry.fill(HIST("ptSpectra/hCentEventCountData"), cent);
-    } // cfgOutPutPtSpectra
+    } // switchsOpts.cfgOutPutPtSpectra.value
 
     // correction
     loadCorrections(bc.timestamp());
@@ -1489,7 +1694,7 @@ struct PidFlowPtCorr {
     double psi2Est = 0, psi3Est = 0, psi4Est = 0;
     float wEPeff = 1;
     double v2 = 0, v3 = 0, v4 = 0;
-    if (cfgDoLocDenCorr) {
+    if (switchsOpts.cfgDoLocDenCorr.value) {
       double q2x = 0, q2y = 0;
       double q3x = 0, q3y = 0;
       double q4x = 0, q4y = 0;
@@ -1521,9 +1726,18 @@ struct PidFlowPtCorr {
     double nchCorrectedPassed = 0;
     double nchPassedSelection = 0;
 
-    if (cfgDebugMyCode) {
+    if (switchsOpts.cfgDebugMyCode.value) {
       LOGF(info, "====================================");
     }
+
+#pragma endregion
+
+    double pionPtSum = 0;
+    double kaonPtSum = 0;
+    double protonPtSum = 0;
+    double nPionWeighted = 0;
+    double nKaonWeighted = 0;
+    double nProtonWeighted = 0;
 
     /// @note calculate pt
     /// use ITS only
@@ -1531,17 +1745,34 @@ struct PidFlowPtCorr {
       float weff = 1;
 
       // do nue
-      setParticleNUEWeight(weff, track, cent, false);
+      if (switchsOpts.cfgUseITSOnly4MeanPt.value)
+        setParticleNUEWeight(weff, track, cent, false);
+      else
+        setParticleNUEWeight(weff, track, cent, true);
       // end do nue
 
       // track cut ITS only
       if (!trackSelectedGlobal(track))
         continue;
+      if (!track.hasITS())
+        continue;
       if (!trackSelected4ITS(track))
         continue;
-      if (track.hasTPC())
-        continue;
+
+      if (switchsOpts.cfgUseITSOnly4MeanPt.value) {
+        if (track.hasTPC())
+          continue;
+      } else {
+        if (!track.hasTPC())
+          continue;
+        if (!trackSelected4TPC(track))
+          continue;
+      }
       // end track cut its only
+
+      if (switchsOpts.cfgOutPutPtSpectra.value) {
+        registry.fill(HIST("ptSpectra/hPtCentData4ITSOnly"), track.pt(), cent);
+      }
 
       // calculate ncharged(nch with weight) and pt
       if (std::fabs(track.eta()) < trkQualityOpts.cfgRangeEta.value) {
@@ -1550,25 +1781,42 @@ struct PidFlowPtCorr {
         ptSum += weff * track.pt();
         ptSumw2 += weff * weff * track.pt();
         ptSquareSum += weff * weff * track.pt() * track.pt();
+
+        if (isPion(track)) {
+          pionPtSum += weff * track.pt();
+          nPionWeighted += weff;
+        }
+        if (isKaon(track)) {
+          kaonPtSum += weff * track.pt();
+          nKaonWeighted += weff;
+        }
+        if (isProton(track)) {
+          protonPtSum += weff * track.pt();
+          nProtonWeighted += weff;
+        }
       }
       // end calculate nch and pt
 
       nchCorrectedPassed += weff;
       nchPassedSelection += 1;
 
-      if (weff == 1. && cfgDebugMyCode) {
+      if (weff == 1. && switchsOpts.cfgDebugMyCode.value) {
         LOGF(info, "weff is 1, if nue opt is open and this message appears a lot, check!");
       }
     }
     // end pt calculation using ITS only
 
-    if (cfgDebugMyCode) {
+    if (switchsOpts.cfgDebugMyCode.value) {
       LOGF(info, Form("its only track num %f", nchPassedSelection));
     }
 
     int totalGlobalTrack = 0;
+    // calculate number of pid particle
+    int numOfPi = 0;
+    int numOfKa = 0;
+    int numOfPr = 0;
 
-    // fill v2 flow
+    /// @note fill v2 flow
     // use global track
     for (const auto& track : tracks) {
       float weff = 1;
@@ -1579,7 +1827,7 @@ struct PidFlowPtCorr {
       setParticleNUEWeight(weff, track, cent, true);
       // end do NUE && NUA
 
-      if (cfgDoLocDenCorr) {
+      if (switchsOpts.cfgDoLocDenCorr.value) {
         bool withinPtRef = (trkQualityOpts.cfgCutPtMin.value < track.pt()) && (track.pt() < trkQualityOpts.cfgCutPtMax.value);
         if (withinPtRef) {
           double fphi = v2 * std::cos(2 * (track.phi() - psi2Est)) + v3 * std::cos(3 * (track.phi() - psi3Est)) + v4 * std::cos(4 * (track.phi() - psi4Est));
@@ -1595,7 +1843,7 @@ struct PidFlowPtCorr {
         }
       } // cfgDoLocDenCorr
 
-      if (cfgDebugMyCode) {
+      if (switchsOpts.cfgDebugMyCode.value) {
         // pt eff weight graph
         {
           int ptBin = debugHist.hPtEffWeight->GetXaxis()->FindBin(track.pt());
@@ -1650,11 +1898,11 @@ struct PidFlowPtCorr {
       // end track cut
       totalGlobalTrack++;
 
-      if (cfgDebugMyCode && weff == 1.) {
+      if (switchsOpts.cfgDebugMyCode.value && weff == 1.) {
         LOGF(info, "weff for global track is 1, if NUE is open and this appears a lot, check!");
       }
 
-      if (cfgDebugMyCode && wacc == 1.) {
+      if (switchsOpts.cfgDebugMyCode.value && wacc == 1.) {
         LOGF(info, "wacc for global track is 1, if NUA is open and this appears alot, check!");
       }
 
@@ -1667,24 +1915,8 @@ struct PidFlowPtCorr {
       // end fill QA hist
 
       // pt spectra
-      if (cfgOutPutPtSpectra) {
+      if (switchsOpts.cfgOutPutPtSpectra.value) {
         registry.fill(HIST("ptSpectra/hPtCentData"), track.pt(), cent);
-
-        // region 1 +eta +ch
-        if (track.eta() > 0.05 && track.sign() > 0)
-          registry.fill(HIST("ptSpectra/hPtCentDataPosEtaPosCh"), track.pt(), cent);
-
-        // region 2 +eta -ch
-        if (track.eta() > 0.05 && track.sign() < 0)
-          registry.fill(HIST("ptSpectra/hPtCentDataPosEtaNegCh"), track.pt(), cent);
-
-        // region 3 -eta +ch
-        if (track.eta() < -0.05 && track.sign() > 0)
-          registry.fill(HIST("ptSpectra/hPtCentDataNegEtaPosCh"), track.pt(), cent);
-
-        // region 4 -eta -ch
-        if (track.eta() < -0.05 && track.sign() < 0)
-          registry.fill(HIST("ptSpectra/hPtCentDataNegEtaNegCh"), track.pt(), cent);
       }
 
       // fill GFW
@@ -1695,23 +1927,33 @@ struct PidFlowPtCorr {
         // bitmask 18: 0010010
         fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, 18);
         // fill PIONS and overlap Pions
+        numOfPi++;
       }
 
       if (isKaon(track)) {
         // bitmask 36: 0100100
         fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, 36);
         // fill KAONS and overlap Kaons
+        numOfKa++;
       }
 
       if (isProton(track)) {
         // bitmask 72: 1001000
         fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, 72);
         // fill PROTONS and overlap Protons
+        numOfPr++;
       }
       // end fill GFW
     } // end track loop for v2 calculation
 
-    if (cfgDebugMyCode) {
+#pragma region // sub region, fill graphs after 2 loop on all tracks
+    if (particleAbundanceOpts.cfgOutPutAbundanceDis) {
+      registry.fill(HIST("abundance/hNumOfPiEventCount"), numOfPi);
+      registry.fill(HIST("abundance/hNumOfKaEventCount"), numOfKa);
+      registry.fill(HIST("abundance/hNumOfPrEventCount"), numOfPr);
+    } // outputabundacedis
+
+    if (switchsOpts.cfgDebugMyCode.value) {
       LOGF(info, Form("global track num %d", totalGlobalTrack));
     }
 
@@ -1731,13 +1973,6 @@ struct PidFlowPtCorr {
       fillFC(MyParticleType::kKaon, corrconfigs.at(38), cent, rndm, "c22Full");
       fillFC(MyParticleType::kProton, corrconfigs.at(39), cent, rndm, "c22Full");
       fillFC(MyParticleType::kProton, corrconfigs.at(40), cent, rndm, "c22Full");
-
-      fillFC(MyParticleType::kPion, corrconfigs.at(5), cent, rndm, "c22");
-      fillFC(MyParticleType::kPion, corrconfigs.at(6), cent, rndm, "c22");
-      fillFC(MyParticleType::kKaon, corrconfigs.at(7), cent, rndm, "c22");
-      fillFC(MyParticleType::kKaon, corrconfigs.at(8), cent, rndm, "c22");
-      fillFC(MyParticleType::kProton, corrconfigs.at(9), cent, rndm, "c22");
-      fillFC(MyParticleType::kProton, corrconfigs.at(10), cent, rndm, "c22");
 
       fillFC(MyParticleType::kPion, corrconfigs.at(11), cent, rndm, "c24");
       fillFC(MyParticleType::kPion, corrconfigs.at(12), cent, rndm, "c24");
@@ -1760,13 +1995,26 @@ struct PidFlowPtCorr {
       fillFC(MyParticleType::kProton, corrconfigs.at(27), cent, rndm, "c34");
       fillFC(MyParticleType::kProton, corrconfigs.at(28), cent, rndm, "c34");
 
-      fillFC(MyParticleType::kPion, corrconfigs.at(29), cent, rndm, "c22pure");
-      fillFC(MyParticleType::kKaon, corrconfigs.at(30), cent, rndm, "c22pure");
-      fillFC(MyParticleType::kProton, corrconfigs.at(31), cent, rndm, "c22pure");
+      bool filledPi = fillFC(MyParticleType::kPion, corrconfigs.at(29), cent, rndm, "c22pure");
+      bool filledKa = fillFC(MyParticleType::kKaon, corrconfigs.at(30), cent, rndm, "c22pure");
+      bool filledPr = fillFC(MyParticleType::kProton, corrconfigs.at(31), cent, rndm, "c22pure");
+
       fillFC(MyParticleType::kPion, corrconfigs.at(32), cent, rndm, "c32pure");
       fillFC(MyParticleType::kKaon, corrconfigs.at(33), cent, rndm, "c32pure");
       fillFC(MyParticleType::kProton, corrconfigs.at(34), cent, rndm, "c32pure");
 
+      if (filledPi || !switchsOpts.cfgCheck2MethodDiff.value) {
+        fillFC(MyParticleType::kPion, corrconfigs.at(5), cent, rndm, "c22");
+        fillFC(MyParticleType::kPion, corrconfigs.at(6), cent, rndm, "c22");
+      }
+      if (filledKa || !switchsOpts.cfgCheck2MethodDiff.value) {
+        fillFC(MyParticleType::kKaon, corrconfigs.at(7), cent, rndm, "c22");
+        fillFC(MyParticleType::kKaon, corrconfigs.at(8), cent, rndm, "c22");
+      }
+      if (filledPr || !switchsOpts.cfgCheck2MethodDiff.value) {
+        fillFC(MyParticleType::kProton, corrconfigs.at(9), cent, rndm, "c22");
+        fillFC(MyParticleType::kProton, corrconfigs.at(10), cent, rndm, "c22");
+      }
       fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(0), cent, rndm, nch, nch, "c22TrackWeight");
       fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(1), cent, rndm, nch, nch, "c24TrackWeight");
       fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(2), cent, rndm, nch, nch, "c22FullTrackWeight");
@@ -1799,6 +2047,41 @@ struct PidFlowPtCorr {
       fillProfilePOIvnpt(corrconfigs.at(9), HIST("pr/c22dmeanpt"), cent, ptSum, nch);
       fillProfilePOIvnpt(corrconfigs.at(10), HIST("pr/c22dmeanpt"), cent, ptSum, nch);
 
+      fillFC4PtC22(cent, ptSum, nch, rndm);
+      if (nPionWeighted > 0)
+        fillFC4PtC22(cent, nch, rndm, MyParticleType::kPion, pionPtSum, nPionWeighted);
+
+      if (nKaonWeighted > 0)
+        fillFC4PtC22(cent, nch, rndm, MyParticleType::kKaon, kaonPtSum, nKaonWeighted);
+
+      if (nProtonWeighted > 0)
+        fillFC4PtC22(cent, nch, rndm, MyParticleType::kProton, protonPtSum, nProtonWeighted);
+
+      if (switchsOpts.cfgOutPutPtSpectra.value) {
+        // charged calculation
+        double NpairCharged = fGFW->Calculate(corrconfigs.at(0), 0, true).real();
+        double chargedC22 = NpairCharged > 0 ? fGFW->Calculate(corrconfigs.at(0), 0, false).real() / NpairCharged : 0;
+        // end charged calculation
+
+        // pi
+        double pidChargedC22Pi = getPidC22InOneEvent(corrconfigs.at(5), corrconfigs.at(6));
+        if (pidChargedC22Pi > 0 && chargedC22 > 0)
+          registry.fill(HIST("c22PrimeVsc22/Pi"), pidChargedC22Pi, chargedC22);
+        // end pi
+
+        // Ka
+        double pidKaonC22 = getPidC22InOneEvent(corrconfigs.at(7), corrconfigs.at(8));
+        if (pidKaonC22 > 0 && chargedC22 > 0)
+          registry.fill(HIST("c22PrimeVsc22/Ka"), pidKaonC22, chargedC22);
+        // end Ka
+
+        // Pr
+        double pidProtonC22 = getPidC22InOneEvent(corrconfigs.at(9), corrconfigs.at(10));
+        if (pidProtonC22 > 0 && chargedC22 > 0)
+          registry.fill(HIST("c22PrimeVsc22/Pr"), pidProtonC22, chargedC22);
+        // end Pr
+      }
+
       fFCCh->FillProfile("hMeanPt", cent, (ptSum / nch), nch, rndm);
 
       double nchDiff = nch * nch - nchSquare;
@@ -1812,6 +2095,8 @@ struct PidFlowPtCorr {
                            nchDiff, rndm);
       }
     } // end fill hist using fillProfile
+
+#pragma endregion
   }
   PROCESS_SWITCH(PidFlowPtCorr, processData, "", true);
 
@@ -2004,7 +2289,7 @@ struct PidFlowPtCorr {
       return;
     // end init && cut
 
-    if (cfgOutPutPtSpectra) {
+    if (switchsOpts.cfgOutPutPtSpectra.value) {
       registry.fill(HIST("ptSpectra/hCentEventCountMcRec"), cent);
     } // cfgoutputptspectra
 
@@ -2092,7 +2377,7 @@ struct PidFlowPtCorr {
         continue;
       // end collision cut
 
-      if (cfgOutPutPtSpectra) {
+      if (switchsOpts.cfgOutPutPtSpectra.value) {
         registry.fill(HIST("ptSpectra/hCentEventCountMcGen"), cent);
       } // cfgoutputptspectra
 
@@ -2123,6 +2408,8 @@ struct PidFlowPtCorr {
     // end cut && init
   }
   PROCESS_SWITCH(PidFlowPtCorr, processSim, "function used to do pt eff, NOTE (OutPutMc, processReco, processSim) should be open", true);
+
+#pragma endregion // main function
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
