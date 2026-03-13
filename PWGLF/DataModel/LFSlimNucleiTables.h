@@ -14,10 +14,9 @@
 /// \brief Slim nuclei tables
 ///
 
-#include "Common/DataModel/Centrality.h"
+#include <Framework/AnalysisDataModel.h>
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
+#include <cstdint>
 
 #ifndef PWGLF_DATAMODEL_LFSLIMNUCLEITABLES_H_
 #define PWGLF_DATAMODEL_LFSLIMNUCLEITABLES_H_

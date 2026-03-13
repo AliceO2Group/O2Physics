@@ -14,8 +14,9 @@
 /// \brief Slim lnn tables
 ///
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 
 #ifndef PWGLF_DATAMODEL_LFLNNTABLES_H_
 #define PWGLF_DATAMODEL_LFLNNTABLES_H_

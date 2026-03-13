@@ -16,49 +16,50 @@
 
 #include "PWGLF/DataModel/LFSpincorrelationTables.h"
 
-#include "Common/Core/trackUtilities.h"
+#include "Common/Core/RecoDecay.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/BinningPolicy.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
 #include <Math/GenVector/Boost.h>
-#include <Math/Vector3D.h>
-#include <Math/Vector4D.h>
-#include <TLorentzVector.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TH3.h>
 #include <TMath.h>
-#include <TRandom3.h>
-
-#include <fairlogger/Logger.h>
+#include <TVector3.h>
 
 #include <algorithm>
-#include <cmath> // for std::fabs
+#include <chrono>
+#include <cmath> // for std::abs
+#include <cstddef>
 #include <cstdint>
 #include <deque>
-#include <iostream>
 #include <iterator>
-#include <limits>
 #include <random>
 #include <set> // <<< CHANGED: for dedup sets
 #include <string>
-#include <type_traits>
 #include <unordered_map> // <<< CHANGED: for seenMap
 #include <utility>
 #include <vector>
-
-// o2 includes.
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
+
 namespace mcacc
 {
 // event

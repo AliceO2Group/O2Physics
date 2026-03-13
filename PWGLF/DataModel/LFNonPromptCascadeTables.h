@@ -14,8 +14,9 @@
 /// \brief Non prompt cascade tables
 ///
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 
 #ifndef PWGLF_DATAMODEL_LFNONPROMPTCASCADETABLES_H_
 #define PWGLF_DATAMODEL_LFNONPROMPTCASCADETABLES_H_
