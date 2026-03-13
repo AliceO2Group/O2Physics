@@ -149,7 +149,6 @@ struct HfTaskElectronWeakBoson {
   Configurable<float> rcVetoR{"rcVetoR", 0.4, "veto radius"};
   Configurable<bool> useUEsub{"useUEsub", true, "apply UE subtraction in isolation"};
 
-
   struct HfElectronCandidate {
     float pt, eta, phi, dcaxyTrk, dcazTrk, eop, energyIso, momIso;
     int ntrackIso, nclusterTPC, nclusterITS;
