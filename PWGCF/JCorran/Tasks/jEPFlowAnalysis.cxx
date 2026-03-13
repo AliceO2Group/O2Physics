@@ -76,6 +76,7 @@ struct jEPFlowAnalysis {
   Configurable<bool> cfgEffCor{"cfgEffCor", false, "flag for efficiency correction"};
   Configurable<std::string> cfgEffCorDir{"cfgEffCorDir", "Users/n/nmallick/Run3OO/Eff/LHC25h3b_FT0C", "path for efficiency correction"};
 
+  Configurable<bool> cfgTrkSelFlag{"cfgTrkSelFlag", true, "flag for track selection"};
   Configurable<bool> cfgSystStudy{"cfgSystStudy", false, "flag for syst study"};
   Configurable<int> cfgITSNCls{"cfgITSNCls", 5, "minimum number of its clusters"};
   Configurable<int> cfgTPCNclsCR{"cfgTPCNclsCR", 70, "minimum number of tpc cluster crossed rows"};
@@ -278,7 +279,7 @@ struct jEPFlowAnalysis {
       epFlowHistograms.fill(HIST("EpResQvecRefARefBxy"), i + 2, cent, qx_shifted[2] * qy_shifted[1] - qx_shifted[1] * qy_shifted[2]);
 
       for (const auto& track : tracks) {
-        if (trackSel(track))
+        if (cfgTrkSelFlag && trackSel(track))
           continue;
 
         if (cfgEffCor) {
