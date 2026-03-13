@@ -61,7 +61,7 @@ struct FemtoPairLambdaAntilambda {
   using FemtoTracksWithLabel = o2::soa::Join<FemtoTracks, o2::aod::FTrackLabels>;
   using FemtoLambdasWithLabel = o2::soa::Join<FemtoLambdas, o2::aod::FLambdaLabels>;
   using FemtoK0shortsWithLabel = o2::soa::Join<FemtoK0shorts, o2::aod::FK0shortLabels>;
-  
+
   o2::framework::SliceCache cache;
 
   // setup collisions
