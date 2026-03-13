@@ -945,12 +945,9 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCD, "jet finder QA mcd", false);
 
-  void processJetsMCDWeighted(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs, aod::JCollisionOutliers>>::iterator const& collision, aod::JetMcCollisions const&, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets, aod::JetTracks const&)
+  void processJetsMCDWeighted(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>::iterator const& collision, aod::JetMcCollisions const&, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets, aod::JetTracks const&)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
-      return;
-    }
-    if (collision.isOutlier()) {
       return;
     }
     for (auto const& jet : jets) {
@@ -990,7 +987,7 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCP, "jet finder QA mcp", false);
 
-  void processJetsMCPWeighted(soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>::iterator const& jet, aod::JetParticles const&, soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const& mcCollisions, soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JCollisionOutliers>> const& collisions)
+  void processJetsMCPWeighted(soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>::iterator const& jet, aod::JetParticles const&, soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const& mcCollisions, soa::Filtered<aod::JetCollisionsMCD> const& collisions)
   {
     if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
       return;
@@ -1007,7 +1004,7 @@ struct JetFinderQATask {
       }
       if (checkMcCollisionIsMatched) {
         auto collisionspermcpjet = collisions.sliceBy(CollisionsPerMCPCollision, jet.mcCollisionId());
-        if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelectionBits) && !collisionspermcpjet.begin().isOutlier()) {
+        if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelectionBits)) {
           fillMCPHistograms(jet, mcCollision.begin().weight(), mcCollision.begin().ptHard());
         }
       } else {
@@ -1047,16 +1044,13 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCPMCDMatched, "jet finder QA matched mcp and mcd", false);
 
-  void processJetsMCPMCDMatchedWeighted(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs, aod::JCollisionOutliers>>::iterator const& collision,
+  void processJetsMCPMCDMatchedWeighted(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>::iterator const& collision,
                                         aod::JetMcCollisions const&,
                                         soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets> const& mcdjets,
                                         soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets> const&,
                                         aod::JetTracks const&, aod::JetParticles const&)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
-      return;
-    }
-    if (collision.isOutlier()) {
       return;
     }
     for (const auto& mcdjet : mcdjets) {
@@ -1246,7 +1240,7 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processTracks, "QA for charged tracks", false);
 
-  void processTracksWeighted(soa::Join<aod::JetCollisions, aod::JMcCollisionLbs, aod::JCollisionOutliers>::iterator const& collision,
+  void processTracksWeighted(soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>::iterator const& collision,
                              aod::JetMcCollisions const&,
                              soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras>> const& tracks)
   {
@@ -1266,11 +1260,6 @@ struct JetFinderQATask {
     }
     registry.fill(HIST("h_collisions"), 2.5);
     registry.fill(HIST("h_collisions_weighted"), 2.5, eventWeight);
-    if (collision.isOutlier()) {
-      return;
-    }
-    registry.fill(HIST("h_collisions"), 3.5);
-    registry.fill(HIST("h_collisions_weighted"), 3.5, eventWeight);
     fillTrackHistograms(collision, tracks, eventWeight, collision.mcCollision().ptHard());
   }
   PROCESS_SWITCH(JetFinderQATask, processTracksWeighted, "QA for charged tracks weighted", false);
