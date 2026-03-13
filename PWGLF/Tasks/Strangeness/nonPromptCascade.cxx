@@ -981,19 +981,30 @@ struct NonPromptCascadeTask {
   {
     // std::cout << "Processing pile up" << std::endl;
     int ds = 1;
+    uint32_t orbitO = 0;
+    bool writeFlag = 0;
     for (const auto& coll : collisions) {
-      if (ds == cfgDownscaleMB) {
-        auto bc = coll.template bc_as<aod::BCsWithTimestamps>();
+      auto bc = coll.template bc_as<aod::BCsWithTimestamps>();
+      uint64_t globalBC = bc.globalBC();
+      uint32_t orbit = globalBC / 3564;
+      if(orbitO != orbit) {
+        orbitO = orbit;
+        if((ds % cfgDownscaleMB) == 0) {
+          writeFlag = 1;
+        } else {
+          writeFlag = 0;
+        }
+        ds++;
+      }
+      if (writeFlag) {  
         if (mRunNumber != bc.runNumber()) {
           mRunNumber = bc.runNumber();
         }
         float centFT0M = coll.centFT0M();
         float multFT0M = coll.multFT0M();
-        uint64_t globalBC = bc.globalBC();
+        uint64_t ts = bc.timestamp();
         NPPUTable(mRunNumber, globalBC, coll.numContrib(), coll.multNTracksGlobal(), centFT0M, multFT0M);
-        ds = 0;
       }
-      ds++;
     }
   };
   PROCESS_SWITCH(NonPromptCascadeTask, processPileUp, "pile up studies", true);
