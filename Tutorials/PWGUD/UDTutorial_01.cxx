@@ -13,15 +13,23 @@
 // \author Paul Buehler, paul.buehler@oeaw.ac.at
 // \since  April 2023
 
-#include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/DataModel/UDTables.h"
 
-#include "Common/DataModel/PIDResponseTOF.h"
+#include <CommonConstants/LHCConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <TH1.h>
+#include <TH2.h>
+#include <TVector3.h>
 
-#include "TVector3.h"
+#include <Rtypes.h>
 
 using namespace o2;
 using namespace o2::framework;

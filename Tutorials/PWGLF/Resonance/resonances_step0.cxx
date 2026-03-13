@@ -13,12 +13,15 @@
 /// \author
 /// \since 08/11/2023
 
-#include <TLorentzVector.h>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
+
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::framework;
