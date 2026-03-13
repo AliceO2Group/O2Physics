@@ -238,8 +238,7 @@ struct FlowCorrelationsUpc {
   enum EventType {
     SameEvent = 1,
     MixedEvent = 3,
-    MixedFinal = 9
-    MixedEvent = 3,
+    MixedFinal = 9 MixedEvent = 3,
     MixedFinal = 9
   };
 
