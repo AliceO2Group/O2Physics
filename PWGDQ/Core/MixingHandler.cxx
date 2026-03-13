@@ -10,15 +10,18 @@
 // or submit itself to any jurisdiction.
 
 #include "PWGDQ/Core/MixingHandler.h"
+
 #include "PWGDQ/Core/VarManager.h"
 
-#include <iostream>
-#include <fstream>
-using namespace std;
+#include <TArrayF.h>
+#include <TMathBase.h>
+#include <TNamed.h>
 
-#include <TMath.h>
-#include <TTimeStamp.h>
-#include <TRandom.h>
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
+#include <vector>
+using namespace std;
 
 ClassImp(MixingHandler);
 
