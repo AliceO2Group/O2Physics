@@ -348,7 +348,7 @@ struct HfTaskElectronWeakBoson {
 
   double getIsolatedCluster(const o2::aod::EMCALCluster& cluster,
                             const SelectedClusters& clusters,
-                            float EnergyUE)
+                            float energyUE)
   {
     double energySum = 0.0;
     double energySum_excl = 0.0;
@@ -374,10 +374,10 @@ struct HfTaskElectronWeakBoson {
     }
     energySum_excl = energySum - cluster.energy();
     if (energySum > 0) {
-      isoEnergy = (energySum_excl - EnergyUE) / cluster.energy();
+      isoEnergy = (energySum_excl - energyUE) / cluster.energy();
     }
 
-    // LOG(info) <<"clustE = " << cluster.energy() << " ; energySum = " << energySum << " ; nclust in Cone = " <<  nclustSum - 1  << " ; UE = " << EnergyUE << " ; isoEnergy = " << isoEnergy;
+    // LOG(info) <<"clustE = " << cluster.energy() << " ; energySum = " << energySum << " ; nclust in Cone = " <<  nclustSum - 1  << " ; UE = " << energyUE << " ; isoEnergy = " << isoEnergy;
     registry.fill(HIST("hIsolationEnergy"), cluster.energy(), isoEnergy);
 
     return (isoEnergy);
@@ -621,13 +621,13 @@ struct HfTaskElectronWeakBoson {
 
     // UE estimate
     float rho = 0.f;
-    float EnergyUE = 0.f;
+    float energyUE = 0.f;
 
     if (useUEsub) {
       rho = estimateRhoRC(emcClusters);
-      EnergyUE = rho * static_cast<float>(o2::constants::math::PI * rIsolation * rIsolation);
-      registry.fill(HIST("hEnergyUE"), centrality, EnergyUE);
-      // LOG(info) << "UE = " << EnergyUE;
+      energyUE = rho * static_cast<float>(o2::constants::math::PI * rIsolation * rIsolation);
+      registry.fill(HIST("hEnergyUE"), centrality, energyUE);
+      // LOG(info) << "UE = " << energyUE;
     }
 
     // track loop
@@ -754,7 +754,7 @@ struct HfTaskElectronWeakBoson {
             eop = energyEmc / match.track_as<TrackEle>().p();
             // LOG(info) << "eop = " << eop;
 
-            isoEnergy = getIsolatedCluster(cluster, emcClusters, EnergyUE);
+            isoEnergy = getIsolatedCluster(cluster, emcClusters, energyUE);
 
             if (match.track_as<TrackEle>().pt() > ptTHnThresh && isTHnElectron) {
               registry.fill(HIST("hTHnElectrons"), match.track_as<TrackEle>().pt(), match.track_as<TrackEle>().tpcNSigmaEl(), m02Emc, eop, isoEnergy, isoMomentum, trackCount, track.eta(), track.tpcSignal());
