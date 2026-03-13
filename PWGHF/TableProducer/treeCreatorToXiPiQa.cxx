@@ -300,6 +300,7 @@ DECLARE_SOA_TABLE(HfKfXicFulls, "AOD", "HFKFXICFULL",
                   full::MassV0Ndf, full::MassCascNdf,
                   full::V0Chi2OverNdf, full::CascChi2OverNdf, full::XicChi2OverNdf,
                   full::MassV0Chi2OverNdf, full::MassCascChi2OverNdf,
+                  full::ResultSelections,
                   full::FlagMcMatchRec, full::DebugMcRec, full::OriginRec, full::CollisionMatched);
 
 } // namespace o2::aod
@@ -601,6 +602,7 @@ struct HfTreeCreatorToXiPiQa {
                        candidate.xicChi2OverNdf(),
                        candidate.massV0Chi2OverNdf(),
                        candidate.massCascChi2OverNdf(),
+                       candidate.resultSelections(),
                        flagMc,
                        debugMc,
                        originMc,
