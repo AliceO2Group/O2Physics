@@ -9,6 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "EventSelectionFilterAndAnalysis.h"
+#include "PIDSelectionFilterAndAnalysis.h"
+#include "SelectionFilterAndAnalysis.h"
+#include "TrackSelectionFilterAndAnalysis.h"
+
 #include "PWGCF/TwoParticleCorrelations/Core/FilterAndAnalysisFramework.h"
 #include "PWGCF/TwoParticleCorrelations/DataModel/TwoParticleCorrelationsSkimmed.h"
 
@@ -18,12 +23,24 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
 #include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+
+#include <Rtypes.h>
+
+#include <cstdint>
+#include <memory>
 
 using namespace o2;
 using namespace o2::framework;

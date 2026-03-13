@@ -21,21 +21,42 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseEventHisto.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniversePairCleaner.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"
+#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
 
 #include <TFile.h>
 #include <TH1.h>
 #include <TPDGCode.h>
 
+#include <chrono>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <experimental/type_traits>
 #include <memory>
 #include <set>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 using namespace o2;
@@ -482,8 +503,12 @@ struct FemtoUniversePairTaskTrackV0Extended {
           trackHistoPartOneNeg.fillQA<false, false>(part);
         }
       } else {
-        if ((part.pidCut() & (64u << ConfTrkSelection.confTrackChoicePartOne)) == 0)
+        if ((part.pidCut() & 512u) != 0) {
+          if ((part.pidCut() & (64u << ConfTrkSelection.confTrackChoicePartOne)) == 0)
+            continue;
+        } else if ((part.pidCut() & (1u << ConfTrkSelection.confTrackChoicePartOne)) == 0) {
           continue;
+        }
         if (ConfTrkSelection.confChargePart1 > 0)
           trackHistoPartOnePos.fillQA<false, false>(part);
         if (ConfTrkSelection.confChargePart1 < 0)
@@ -501,8 +526,12 @@ struct FemtoUniversePairTaskTrackV0Extended {
         if (!isParticleCombined(p1, ConfTrkSelection.confTrackChoicePartOne))
           continue;
       } else {
-        if ((p1.pidCut() & (64u << ConfTrkSelection.confTrackChoicePartOne)) == 0)
+        if ((p1.pidCut() & 512u) != 0) {
+          if ((p1.pidCut() & (64u << ConfTrkSelection.confTrackChoicePartOne)) == 0)
+            continue;
+        } else if ((p1.pidCut() & (1u << ConfTrkSelection.confTrackChoicePartOne)) == 0) {
           continue;
+        }
       }
       // track cleaning
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
@@ -958,8 +987,12 @@ struct FemtoUniversePairTaskTrackV0Extended {
           if (!isParticleCombined(p1, ConfTrkSelection.confTrackChoicePartOne))
             continue;
         } else {
-          if ((p1.pidCut() & (64u << ConfTrkSelection.confTrackChoicePartOne)) == 0)
+          if ((p1.pidCut() & 512u) != 0) {
+            if ((p1.pidCut() & (64u << ConfTrkSelection.confTrackChoicePartOne)) == 0)
+              continue;
+          } else if ((p1.pidCut() & (1u << ConfTrkSelection.confTrackChoicePartOne)) == 0) {
             continue;
+          }
         }
 
         const auto& posChild = parts.iteratorAt(p2.globalIndex() - 2 - parts.begin().globalIndex());

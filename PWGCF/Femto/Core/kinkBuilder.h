@@ -26,11 +26,11 @@
 
 #include "Common/Core/RecoDecay.h"
 
-#include "CommonConstants/MathConstants.h"
-#include "Framework/AnalysisHelpers.h"
-#include "Framework/Configurable.h"
-
-#include "fairlogger/Logger.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/Logger.h>
 
 #include <algorithm>
 #include <array>

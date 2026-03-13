@@ -17,12 +17,9 @@
 #include "FlowPtContainer.h"
 #include "GFW.h"
 #include "GFWConfig.h"
-#include "GFWCumulant.h"
-#include "GFWPowerArray.h"
 #include "GFWWeights.h"
-#include "GFWWeightsList.h"
 
-#include "Common/Core/TrackSelection.h"
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -30,30 +27,53 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
-#include <DataFormatsParameters/GRPObject.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
+#include <TArrayD.h>
 #include <TF1.h>
+#include <TH1.h>
+#include <TH3.h>
+#include <TNamed.h>
+#include <TObjArray.h>
 #include <TPDGCode.h>
 #include <TProfile.h>
+#include <TProfile2D.h>
 #include <TRandom3.h>
+#include <TString.h>
+
+#include <sys/types.h>
+
+#include <RtypesCore.h>
 
 #include <algorithm>
+#include <chrono>
+#include <cmath>
 #include <complex>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <map>
-#include <numeric>
+#include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
 using namespace o2;
 using namespace o2::framework;
+using namespace o2::analysis::genericframework;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
@@ -280,8 +300,8 @@ struct FlowGenericFramework {
   TF1* fMultGlobalT0ACutHigh = nullptr;
 
   // Track selection - pt-phi cuts
-  TF1* fPhiCutLow;
-  TF1* fPhiCutHigh;
+  TF1* fPhiCutLow = nullptr;
+  TF1* fPhiCutHigh = nullptr;
 
   void init(InitContext const&)
   {
@@ -334,11 +354,11 @@ struct FlowGenericFramework {
     }
     AxisSpec nchAxis = {nchbinning, "N_{ch}"};
     AxisSpec bAxis = {200, 0, 20, "#it{b}"};
-    AxisSpec t0cAxis = {1000, 0, 10000, "N_{ch} (T0C)"};
-    AxisSpec t0aAxis = {300, 0, 30000, "N_{ch} (T0A)"};
-    AxisSpec v0aAxis = {800, 0, 80000, "N_{ch} (V0A)"};
-    AxisSpec multpvAxis = {600, 0, 600, "N_{ch} (PV)"};
-    AxisSpec occAxis = {600, 0, 3000, "occupancy"};
+    AxisSpec t0cAxis = {1000, 0, 50000, "N_{ch} (T0C)"};
+    AxisSpec t0aAxis = {1800, 0, 180000, "N_{ch} (T0A)"};
+    AxisSpec v0aAxis = {1800, 0, 180000, "N_{ch} (V0A)"};
+    AxisSpec multpvAxis = {3500, 0, 3500, "N_{ch} (PV)"};
+    AxisSpec occAxis = {500, 0, 5000, "occupancy"};
     AxisSpec multAxis = (doprocessOnTheFly && !cfgUseNch) ? bAxis : (cfgUseNch) ? nchAxis
                                                                                 : centAxis;
     AxisSpec dcaZAXis = {200, -2, 2, "DCA_{z} (cm)"};
@@ -380,8 +400,8 @@ struct FlowGenericFramework {
       registry.add("eventQA/before/PVTracks_centT0C", "; FT0C centrality (%); N_{PV}", {HistType::kTH2D, {centAxis, multpvAxis}});
       registry.add("eventQA/before/globalTracks_PVTracks", "; N_{PV}; N_{global}", {HistType::kTH2D, {multpvAxis, nchAxis}});
       registry.add("eventQA/before/globalTracks_multT0A", "; multT0A; N_{global}", {HistType::kTH2D, {t0aAxis, nchAxis}});
-      registry.add("eventQA/before/globalTracks_multV0A", "; multV0A; N_{global}", {HistType::kTH2D, {t0aAxis, nchAxis}});
-      registry.add("eventQA/before/multV0A_multT0A", "; multV0A; multT0A", {HistType::kTH2D, {t0aAxis, t0aAxis}});
+      registry.add("eventQA/before/globalTracks_multV0A", "; multV0A; N_{global}", {HistType::kTH2D, {v0aAxis, nchAxis}});
+      registry.add("eventQA/before/multV0A_multT0A", "; multV0A; multT0A", {HistType::kTH2D, {t0aAxis, v0aAxis}});
       registry.add("eventQA/before/multT0C_centT0C", "; multT0C; FT0C centrality (%)", {HistType::kTH2D, {centAxis, t0cAxis}});
       registry.add("eventQA/before/occ_mult_cent", "; occupancy; N_{ch}; centrality (%)", {HistType::kTH3D, {occAxis, nchAxis, centAxis}});
       registry.addClone("eventQA/before/", "eventQA/after/");
@@ -633,7 +653,7 @@ struct FlowGenericFramework {
   }
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const int& multTrk, const float& centrality, const int& run)
+  bool eventSelected(TCollision collision, const int multTrk, const float& centrality, const int run)
   {
     // Cut on trigger alias
     if (cfgEventCutFlags.cfgTVXinTRD) {
@@ -686,7 +706,7 @@ struct FlowGenericFramework {
   }
 
   template <typename TCollision>
-  bool selectMultiplicityCorrelation(TCollision collision, const int& multTrk, const float& centrality, const int& run)
+  bool selectMultiplicityCorrelation(TCollision collision, const int multTrk, const float& centrality, const int run)
   {
     auto multNTracksPV = collision.multNTracksPV();
     if (multNTracksPV < fMultPVCutLow->Eval(centrality))
@@ -715,7 +735,7 @@ struct FlowGenericFramework {
   }
 
   template <typename TTrack>
-  bool trackSelected(TTrack track, const int& field)
+  bool trackSelected(TTrack track, const int field)
   {
     if (cfgTrackCuts.cfgTPCSectorCut) {
       double phimodn = track.phi();
@@ -754,7 +774,7 @@ struct FlowGenericFramework {
   };
 
   template <typename TTrack>
-  void fillWeights(const TTrack track, const double vtxz, const int& pid_index, const int& run)
+  void fillWeights(const TTrack track, const double vtxz, const int pid_index, const int run)
   {
     if (cfgUsePID) {
       double ptpidmins[] = {o2::analysis::gfw::ptpoilow, o2::analysis::gfw::ptpoilow, 0.3, 0.5};                  // min pt for ch, pi, ka, pr
@@ -795,7 +815,7 @@ struct FlowGenericFramework {
     return;
   }
 
-  void createRunByRunHistograms(const int& run)
+  void createRunByRunHistograms(const int run)
   {
     AxisSpec phiAxis = {o2::analysis::gfw::phibins, o2::analysis::gfw::philow, o2::analysis::gfw::phiup, "#phi"};
     AxisSpec phiModAxis = {100, 0, constants::math::PI / 9, "fmod(#varphi,#pi/9)"};
@@ -883,7 +903,7 @@ struct FlowGenericFramework {
   }
 
   template <DataType dt, typename TCollision, typename TTracks>
-  void processCollision(TCollision collision, TTracks tracks, const float& centrality, const int& field, const int& run)
+  void processCollision(TCollision collision, TTracks tracks, const float& centrality, const int field, const int run)
   {
     if (tracks.size() < 1)
       return;
@@ -974,7 +994,7 @@ struct FlowGenericFramework {
   };
 
   template <typename TTrack>
-  inline void processTrack(TTrack const& track, const float& vtxz, const int& field, const int& run, DensityCorr densitycorrections, AcceptedTracks& acceptedTracks)
+  inline void processTrack(TTrack const& track, const float& vtxz, const int field, const int run, DensityCorr densitycorrections, AcceptedTracks& acceptedTracks)
   {
     if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TTrack::all_columns>) {
       if (track.mcParticleId() < 0 || !(track.has_mcParticle()))
@@ -1297,9 +1317,31 @@ struct FlowGenericFramework {
       if (cfgRunByRun)
         createRunByRunHistograms(run);
     }
+
+    registry.fill(HIST("eventQA/eventSel"), 0.5);
+    if (cfgRunByRun)
+      th1sList[run][hEventSel]->Fill(0.5);
+
     if (!collision.sel8())
       return;
+
+    registry.fill(HIST("eventQA/eventSel"), 1.5);
+    if (cfgRunByRun)
+      th1sList[run][hEventSel]->Fill(1.5);
+
     const auto centrality = getCentrality(collision);
+
+    if (cfgDoOccupancySel) {
+      int occupancy = collision.trackOccupancyInTimeRange();
+      registry.fill(HIST("eventQA/before/occ_mult_cent"), occupancy, tracks.size(), centrality);
+      if (occupancy < 0 || occupancy > cfgOccupancySelection)
+        return;
+      registry.fill(HIST("eventQA/after/occ_mult_cent"), occupancy, tracks.size(), centrality);
+    }
+    registry.fill(HIST("eventQA/eventSel"), 2.5);
+    if (cfgRunByRun)
+      th1sList[run][hEventSel]->Fill(2.5);
+
     if (cfgFillQA)
       fillEventQA<kBefore>(collision, tracks);
     if (!eventSelected(collision, tracks.size(), centrality, run))

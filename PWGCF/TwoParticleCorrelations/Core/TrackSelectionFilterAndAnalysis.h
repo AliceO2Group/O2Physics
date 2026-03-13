@@ -8,18 +8,22 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef TRACKSELECTIONFILTERANDANALYSIS_H
-#define TRACKSELECTIONFILTERANDANALYSIS_H
+
+#ifndef PWGCF_TWOPARTICLECORRELATIONS_CORE_TRACKSELECTIONFILTERANDANALYSIS_H_
+#define PWGCF_TWOPARTICLECORRELATIONS_CORE_TRACKSELECTIONFILTERANDANALYSIS_H_
+
+#include "SelectionFilterAndAnalysis.h"
+#include "SkimmingConfigurableCuts.h"
+
+#include <TList.h>
+#include <TObject.h>
+#include <TString.h>
 
 #include <Rtypes.h>
-#include <TString.h>
-#include <TObject.h>
-#include <TNamed.h>
-#include <TList.h>
 
-#include <fairlogger/Logger.h>
-#include "SkimmingConfigurableCuts.h"
-#include "SelectionFilterAndAnalysis.h"
+#include <cstdint>
+#include <string>
+#include <vector>
 
 namespace o2
 {
@@ -205,4 +209,4 @@ uint64_t TrackSelectionFilterAndAnalysis::Filter(TrackToFilter const& track)
 } // namespace analysis
 } // namespace o2
 
-#endif // TRACKSELECTIONFILTERANDANALYSIS_H
+#endif // PWGCF_TWOPARTICLECORRELATIONS_CORE_TRACKSELECTIONFILTERANDANALYSIS_H_

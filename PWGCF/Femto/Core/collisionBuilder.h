@@ -27,11 +27,11 @@
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/Zorro.h"
 
-#include "DataFormatsParameters/GRPMagField.h"
-#include "Framework/AnalysisHelpers.h"
-#include "Framework/Configurable.h"
-
-#include "fairlogger/Logger.h"
+#include <DataFormatsParameters/GRPMagField.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/Logger.h>
 
 #include <algorithm>
 #include <cmath>
