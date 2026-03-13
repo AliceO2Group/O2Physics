@@ -205,11 +205,12 @@ struct lambdaspincorrderived {
   Configurable<std::string> ConfWeightPathALL2{"ConfWeightPathALL2", "Users/s/skundu/My/Object/spincorr/cent010LL", "Weight path 2"};
 
   // Mixing /////////
+  Configurable<int> cfgV5MassBins{"cfgV5MassBins", 5, "Number of fixed mass bins for V5 mixing"};
 
   Configurable<int> cfgV5NeighborPt{"cfgV5NeighborPt", 0, "v5: neighbor bins in pT (use symmetric ±N, edge-safe)"};
   Configurable<int> cfgV5NeighborEta{"cfgV5NeighborEta", 0, "v5: neighbor bins in eta (use symmetric ±N, edge-safe)"};
   Configurable<int> cfgV5NeighborPhi{"cfgV5NeighborPhi", 0, "v5: neighbor bins in phi (use symmetric ±N, periodic wrap)"};
-
+  Configurable<bool> usePairKineMatch{"usePairKineMatch", true, "Require pair-level matching between (A,B) and (C,B)"};
   Configurable<int> cfgV5MaxMatches{"cfgV5MaxMatches", 50, "v5: max ME replacements per SE pair (after all cuts)"};
   Configurable<uint64_t> cfgMixSeed{"cfgMixSeed", 0xdecafbadULL, "RNG seed for downsampling matches (deterministic)"};
   Configurable<float> centMin{"centMin", 0, "Minimum Centrality"};
@@ -447,6 +448,88 @@ struct lambdaspincorrderived {
     }
 
     if (std::abs(c1.lambdaMass() - c2.lambdaMass()) > massMix) {
+      return false;
+    }
+
+    return true;
+  }
+
+  template <typename TA, typename TB, typename TC>
+  bool checkPairKinematics(TA const& A, TB const& B, TC const& C)
+  {
+    if (!usePairKineMatch) {
+      return true;
+    }
+
+    const auto lA = ROOT::Math::PtEtaPhiMVector(A.lambdaPt(), A.lambdaEta(), A.lambdaPhi(), A.lambdaMass());
+    const auto lB = ROOT::Math::PtEtaPhiMVector(B.lambdaPt(), B.lambdaEta(), B.lambdaPhi(), B.lambdaMass());
+    const auto lC = ROOT::Math::PtEtaPhiMVector(C.lambdaPt(), C.lambdaEta(), C.lambdaPhi(), C.lambdaMass());
+
+    // relative pT inside the pair: |pT1 - pT2|
+    const float dPtAB = std::abs(A.lambdaPt() - B.lambdaPt());
+    const float dPtCB = std::abs(C.lambdaPt() - B.lambdaPt());
+    if (std::abs(dPtAB - dPtCB) > ptMix) {
+      return false;
+    }
+
+    // relative longitudinal kinematics: |Δy| or |Δη|
+    if (userapidity) {
+      const float dYAB = std::abs(lA.Rapidity() - lB.Rapidity());
+      const float dYCB = std::abs(lC.Rapidity() - lB.Rapidity());
+      if (std::abs(dYAB - dYCB) > etaMix) {
+        return false;
+      }
+    } else {
+      const float dEtaAB = std::abs(A.lambdaEta() - B.lambdaEta());
+      const float dEtaCB = std::abs(C.lambdaEta() - B.lambdaEta());
+      if (std::abs(dEtaAB - dEtaCB) > etaMix) {
+        return false;
+      }
+    }
+
+    // relative azimuth inside the pair: |Δφ|
+    const float dPhiAB = std::abs(deltaPhiMinusPiToPi((float)A.lambdaPhi(), (float)B.lambdaPhi()));
+    const float dPhiCB = std::abs(deltaPhiMinusPiToPi((float)C.lambdaPhi(), (float)B.lambdaPhi()));
+    if (std::abs(dPhiAB - dPhiCB) > phiMix) {
+      return false;
+    }
+
+    return true;
+  }
+  template <typename TA, typename TB, typename TC>
+  bool checkPairKinematicsMC(TA const& A, TB const& B, TC const& C)
+  {
+    if (!usePairKineMatch) {
+      return true;
+    }
+
+    const auto lA = ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(A), mcacc::lamEta(A), mcacc::lamPhi(A), mcacc::lamMass(A));
+    const auto lB = ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(B), mcacc::lamEta(B), mcacc::lamPhi(B), mcacc::lamMass(B));
+    const auto lC = ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(C), mcacc::lamEta(C), mcacc::lamPhi(C), mcacc::lamMass(C));
+
+    const float dPtAB = std::abs(mcacc::lamPt(A) - mcacc::lamPt(B));
+    const float dPtCB = std::abs(mcacc::lamPt(C) - mcacc::lamPt(B));
+    if (std::abs(dPtAB - dPtCB) > ptMix) {
+      return false;
+    }
+
+    if (userapidity) {
+      const float dYAB = std::abs(lA.Rapidity() - lB.Rapidity());
+      const float dYCB = std::abs(lC.Rapidity() - lB.Rapidity());
+      if (std::abs(dYAB - dYCB) > etaMix) {
+        return false;
+      }
+    } else {
+      const float dEtaAB = std::abs(mcacc::lamEta(A) - mcacc::lamEta(B));
+      const float dEtaCB = std::abs(mcacc::lamEta(C) - mcacc::lamEta(B));
+      if (std::abs(dEtaAB - dEtaCB) > etaMix) {
+        return false;
+      }
+    }
+
+    const float dPhiAB = std::abs(deltaPhiMinusPiToPi((float)mcacc::lamPhi(A), (float)mcacc::lamPhi(B)));
+    const float dPhiCB = std::abs(deltaPhiMinusPiToPi((float)mcacc::lamPhi(C), (float)mcacc::lamPhi(B)));
+    if (std::abs(dPhiAB - dPhiCB) > phiMix) {
       return false;
     }
 
@@ -1036,28 +1119,49 @@ struct lambdaspincorrderived {
   static constexpr int N_STATUS = 2; // v0Status ∈ {0,1}
 
   struct MixBinner {
-    // constructed from the task's configurables; φ is assumed already constrained into [0, 2π)
+    // constructed from the task's configurables; φ is assumed already constrained upstream
     float ptMin, ptMax, ptStep;
     float etaMin, etaMax, etaStep;
     float phiMin, phiMax, phiStep;
 
-    // Mass binning: [1.09, 1.14) with 50 bins (1e-3 GeV/c^2)
-    static constexpr float mMin = 1.09f;
-    static constexpr float mMax = 1.14f;
-    static constexpr int nM_ = 1;
-    static constexpr float mStep = (mMax - mMin) / nM_;
+    // configurable fixed mass-binning for mixing buffer
+    float mMin, mMax, mStep;
+    int nM_;
 
     int nPt_, nEta_, nPhi_;
 
     MixBinner(float ptMin_, float ptMax_, float ptStep_,
               float etaAbsMax, float etaStep_,
-              float phiStep_)
-      : ptMin(ptMin_), ptMax(ptMax_), ptStep(ptStep_), etaMin(-etaAbsMax), etaMax(+etaAbsMax), etaStep(etaStep_), phiMin(-static_cast<float>(TMath::Pi())), phiMax(+static_cast<float>(TMath::Pi())), phiStep(phiStep_)
-    // : ptMin(ptMin_), ptMax(ptMax_), ptStep(ptStep_), etaMin(-etaAbsMax), etaMax(+etaAbsMax), etaStep(etaStep_), phiMin(0.f), phiMax(static_cast<float>(2.0 * TMath::Pi())), phiStep(phiStep_)
+              float phiStep_,
+              float mMin_, float mMax_, int nMassBins_)
+      : ptMin(ptMin_),
+        ptMax(ptMax_),
+        ptStep(ptStep_),
+        etaMin(-etaAbsMax),
+        etaMax(+etaAbsMax),
+        etaStep(etaStep_),
+        phiMin(-static_cast<float>(TMath::Pi())),
+        phiMax(+static_cast<float>(TMath::Pi())),
+        phiStep(phiStep_),
+        mMin(mMin_),
+        mMax(mMax_),
+        mStep(0.f),
+        nM_(std::max(1, nMassBins_)),
+        nPt_(0),
+        nEta_(0),
+        nPhi_(0)
+    // If you want phi in [0, 2pi), use:
+    // : ... phiMin(0.f), phiMax(static_cast<float>(2.0 * TMath::Pi())), ...
     {
       ptStep = (ptStep > 0.f ? ptStep : 0.1f);
       etaStep = (etaStep > 0.f ? etaStep : 0.1f);
       phiStep = (phiStep > 0.f ? phiStep : 0.1f);
+
+      if (!(mMax > mMin)) {
+        mMin = 1.09f;
+        mMax = 1.14f;
+      }
+      mStep = (mMax - mMin) / static_cast<float>(nM_);
 
       nPt_ = std::max(1, static_cast<int>(std::floor((ptMax - ptMin) / ptStep + 0.5f)));
       nEta_ = std::max(1, static_cast<int>(std::floor((etaMax - etaMin) / etaStep + 0.5f)));
@@ -1071,14 +1175,17 @@ struct lambdaspincorrderived {
 
     inline int binFromValue(float v, float vmin, float step, int nBins) const
     {
-      if (!std::isfinite(v))
+      if (!std::isfinite(v) || !std::isfinite(vmin) || !std::isfinite(step) || step <= 0.f || nBins <= 0) {
         return -1;
+      }
       const float x = (v - vmin) / step;
       int b = static_cast<int>(std::floor(x + 1e-6f));
-      if (b < 0)
+      if (b < 0) {
         return -1;
-      if (b >= nBins)
+      }
+      if (b >= nBins) {
         b = nBins - 1; // clamp exact-top edge
+      }
       return b;
     }
 
@@ -1128,12 +1235,11 @@ struct lambdaspincorrderived {
   // ===================== Main mixing (with mass-bin + random unique sampling) =====================
   void processMEV4(EventCandidates const& collisions, AllTrackCandidates const& V0s)
   {
-    // Build binner from your existing configurables
     MixBinner mb{
-      ptMin.value, ptMax.value, ptMix.value, // pT range & step
-      v0etaMixBuffer.value, etaMix.value,    // |eta| max & step
-      phiMix.value                           // φ step; φ range fixed to [0, 2π)
-    };
+      ptMin.value, ptMax.value, ptMix.value,
+      v0etaMixBuffer.value, etaMix.value,
+      phiMix.value,
+      MassMin.value, MassMax.value, cfgV5MassBins.value};
 
     const int nCol = colBinning.getAllBinsCount(); // event-class bins (vz, centrality)
     const int nStat = N_STATUS;                    // 2
@@ -1233,6 +1339,9 @@ struct lambdaspincorrderived {
               continue;
             }
             if (!checkKinematics(t1, tX)) {
+              continue;
+            }
+            if (!checkPairKinematics(t1, t2, tX)) {
               continue;
             }
             matches.push_back(MatchRef{bc.collisionIdx, bc.rowIndex});
@@ -1565,11 +1674,11 @@ struct lambdaspincorrderived {
   // -----------------------------------------------------
   void processMCMEV4(EventCandidatesMC const& collisions, AllTrackCandidatesMC const& V0sMC)
   {
-    // Same binner as in data MEV4
     MixBinner mb{
       ptMin.value, ptMax.value, ptMix.value,
       v0etaMixBuffer.value, etaMix.value,
-      phiMix.value};
+      phiMix.value,
+      MassMin.value, MassMax.value, cfgV5MassBins.value};
 
     const int nCol = colBinning.getAllBinsCount();
     const int nStat = N_STATUS;
@@ -1671,6 +1780,9 @@ struct lambdaspincorrderived {
               continue;
             }
             if (!checkKinematicsMC(t1, tX)) {
+              continue;
+            }
+            if (!checkPairKinematicsMC(t1, t2, tX)) {
               continue;
             }
             matches.push_back(MatchRef{bc.collisionIdx, bc.rowIndex});
@@ -1827,12 +1939,11 @@ struct lambdaspincorrderived {
 
   void processMEV5(EventCandidates const& collisions, AllTrackCandidates const& V0s)
   {
-    // Buffer binning: use v0etaMixBuffer as the max range, etaMix as the bin step
     MixBinner mb{
-      ptMin.value, ptMax.value, ptMix.value, // pT range & step
-      v0etaMixBuffer.value, etaMix.value,    // |eta| (or |y|) max & step
-      phiMix.value                           // phi step
-    };
+      ptMin.value, ptMax.value, ptMix.value,
+      v0etaMixBuffer.value, etaMix.value,
+      phiMix.value,
+      MassMin.value, MassMax.value, cfgV5MassBins.value};
 
     const int nCol = colBinning.getAllBinsCount();
     const int nStat = N_STATUS;
@@ -2063,25 +2174,18 @@ struct lambdaspincorrderived {
     MixBinner mb{
       ptMin.value, ptMax.value, ptMix.value,
       v0etaMixBuffer.value, etaMix.value,
-      phiMix.value};
+      phiMix.value,
+      MassMin.value, MassMax.value, cfgV5MassBins.value};
 
     const int nCol = colBinning.getAllBinsCount();
     const int nStat = N_STATUS;
     const int nPt = mb.nPt();
-    const int nEta = mb.nEta();
+    const int nEta = mb.nEta(); // logical "nY" if userapidity=true
     const int nPhi = mb.nPhi();
+    const int nM = mb.nM();
 
-    const size_t nKeys = static_cast<size_t>(nCol) * nStat * nPt * nEta * nPhi;
+    const size_t nKeys = static_cast<size_t>(nCol) * nStat * nPt * nEta * nPhi * nM;
     std::vector<std::vector<BufferCand>> buffer(nKeys);
-
-    auto key5 = [&](int colBin, int status, int ptB, int etaB, int phiB) -> size_t {
-      size_t k = static_cast<size_t>(colBin);
-      k = k * static_cast<size_t>(nStat) + static_cast<size_t>(status);
-      k = k * static_cast<size_t>(nPt) + static_cast<size_t>(ptB);
-      k = k * static_cast<size_t>(nEta) + static_cast<size_t>(etaB);
-      k = k * static_cast<size_t>(nPhi) + static_cast<size_t>(phiB);
-      return k;
-    };
 
     // -------- PASS 1: fill buffer --------
     for (auto const& col : collisions) {
@@ -2112,18 +2216,21 @@ struct lambdaspincorrderived {
         }
 
         const int phiB = mb.phiBin(RecoDecay::constrainAngle(mcacc::lamPhi(t), -TMath::Pi(), harmonic));
-        if (ptB < 0 || etaB < 0 || phiB < 0) {
+        const int mB = mb.massBin(mcacc::lamMass(t));
+        if (ptB < 0 || etaB < 0 || phiB < 0 || mB < 0) {
           continue;
         }
 
-        buffer[key5(colBin, status, ptB, etaB, phiB)].push_back(BufferCand{
-          .collisionIdx = static_cast<int64_t>(col.index()),
-          .rowIndex = static_cast<int64_t>(t.globalIndex()),
-          .v0Status = static_cast<uint8_t>(status),
-          .ptBin = static_cast<uint16_t>(ptB),
-          .etaBin = static_cast<uint16_t>(etaB),
-          .phiBin = static_cast<uint16_t>(phiB),
-          .mBin = 0});
+        buffer[linearKey(colBin, status, ptB, etaB, phiB, mB,
+                         nStat, nPt, nEta, nPhi, nM)]
+          .push_back(BufferCand{
+            .collisionIdx = static_cast<int64_t>(col.index()),
+            .rowIndex = static_cast<int64_t>(t.globalIndex()),
+            .v0Status = static_cast<uint8_t>(status),
+            .ptBin = static_cast<uint16_t>(ptB),
+            .etaBin = static_cast<uint16_t>(etaB),
+            .phiBin = static_cast<uint16_t>(phiB),
+            .mBin = static_cast<uint16_t>(mB)});
       }
     }
 
@@ -2178,10 +2285,10 @@ struct lambdaspincorrderived {
           etaB = mb.etaBin(lv1.Rapidity());
         }
         const int phiB = mb.phiBin(RecoDecay::constrainAngle(mcacc::lamPhi(t1), -TMath::Pi(), harmonic));
-        if (ptB < 0 || etaB < 0 || phiB < 0) {
+        const int mB = mb.massBin(mcacc::lamMass(t1));
+        if (ptB < 0 || etaB < 0 || phiB < 0 || mB < 0) {
           continue;
         }
-
         collectNeighborBinsClamp(ptB, nPt, nN_pt, ptBins);
         collectNeighborBinsClamp(etaB, nEta, nN_eta, etaBins);
         collectNeighborBinsPhi(phiB, nPhi, nN_phi, phiBins);
@@ -2191,8 +2298,8 @@ struct lambdaspincorrderived {
         for (int ptUse : ptBins) {
           for (int etaUse : etaBins) {
             for (int phiUse : phiBins) {
-              auto const& vec = buffer[key5(colBin, status, ptUse, etaUse, phiUse)];
-
+              auto const& vec = buffer[linearKey(colBin, status, ptUse, etaUse, phiUse, mB,
+                                                 nStat, nPt, nEta, nPhi, nM)];
               for (auto const& bc : vec) {
                 if (bc.collisionIdx == curColIdx) {
                   continue;
@@ -2285,6 +2392,573 @@ struct lambdaspincorrderived {
     }
   }
   PROCESS_SWITCH(lambdaspincorrderived, processMCMEV5, "Process MC ME v5 (paper-style)", false);
+
+  void processMEV6(EventCandidates const& collisions, AllTrackCandidates const& V0s)
+  {
+    MixBinner mb{
+      ptMin.value, ptMax.value, ptMix.value,
+      v0etaMixBuffer.value, etaMix.value,
+      phiMix.value,
+      MassMin.value, MassMax.value, cfgV5MassBins.value};
+
+    const int nCol = colBinning.getAllBinsCount();
+    const int nStat = N_STATUS;
+    const int nPt = mb.nPt();
+    const int nEta = mb.nEta();
+    const int nPhi = mb.nPhi();
+    const int nM = mb.nM();
+
+    const size_t nKeys = static_cast<size_t>(nCol) * nStat * nPt * nEta * nPhi * nM;
+    std::vector<std::vector<BufferCand>> buffer(nKeys);
+
+    // -------- PASS 1: fill buffer --------
+    for (auto const& col : collisions) {
+      const int colBin = colBinning.getBin(std::make_tuple(col.posz(), col.cent()));
+      if (colBin < 0) {
+        continue;
+      }
+
+      auto slice = V0s.sliceBy(tracksPerCollisionV0, col.index());
+
+      for (auto const& t : slice) {
+        if (!selectionV0(t)) {
+          continue;
+        }
+
+        const int status = static_cast<int>(t.v0Status());
+        if (status < 0 || status >= nStat) {
+          continue;
+        }
+
+        const int ptB = mb.ptBin(t.lambdaPt());
+
+        int etaB = mb.etaBin(t.lambdaEta());
+        if (userapidity) {
+          const auto lv = ROOT::Math::PtEtaPhiMVector(t.lambdaPt(), t.lambdaEta(), t.lambdaPhi(), t.lambdaMass());
+          etaB = mb.etaBin(lv.Rapidity());
+        }
+
+        const int phiB = mb.phiBin(RecoDecay::constrainAngle(t.lambdaPhi(), -TMath::Pi(), harmonic));
+        const int mB = mb.massBin(t.lambdaMass());
+
+        if (ptB < 0 || etaB < 0 || phiB < 0 || mB < 0) {
+          continue;
+        }
+
+        const size_t key = linearKey(colBin, status, ptB, etaB, phiB, mB,
+                                     nStat, nPt, nEta, nPhi, nM);
+
+        buffer[key].push_back(BufferCand{
+          .collisionIdx = static_cast<int64_t>(col.index()),
+          .rowIndex = static_cast<int64_t>(t.globalIndex()),
+          .v0Status = static_cast<uint8_t>(status),
+          .ptBin = static_cast<uint16_t>(ptB),
+          .etaBin = static_cast<uint16_t>(etaB),
+          .phiBin = static_cast<uint16_t>(phiB),
+          .mBin = static_cast<uint16_t>(mB)});
+      }
+    }
+
+    const int nN_pt = std::max(0, cfgV5NeighborPt.value);
+    const int nN_eta = std::max(0, cfgV5NeighborEta.value);
+    const int nN_phi = std::max(0, cfgV5NeighborPhi.value);
+
+    std::vector<int> ptBins, etaBins, phiBins;
+    std::vector<MatchRef> matches1, matches2;
+    matches1.reserve(256);
+    matches2.reserve(256);
+
+    auto collectMatchesForReplacedLeg = [&](auto const& tRep, auto const& tKeep, int colBin, int64_t curColIdx, std::vector<MatchRef>& matches) {
+      matches.clear();
+
+      const int status = static_cast<int>(tRep.v0Status());
+      if (status < 0 || status >= nStat) {
+        return;
+      }
+
+      const int ptB = mb.ptBin(tRep.lambdaPt());
+
+      int etaB = mb.etaBin(tRep.lambdaEta());
+      if (userapidity) {
+        const auto lv = ROOT::Math::PtEtaPhiMVector(tRep.lambdaPt(), tRep.lambdaEta(), tRep.lambdaPhi(), tRep.lambdaMass());
+        etaB = mb.etaBin(lv.Rapidity());
+      }
+
+      const int phiB = mb.phiBin(RecoDecay::constrainAngle(tRep.lambdaPhi(), -TMath::Pi(), harmonic));
+      const int mB = mb.massBin(tRep.lambdaMass());
+
+      if (ptB < 0 || etaB < 0 || phiB < 0 || mB < 0) {
+        return;
+      }
+
+      collectNeighborBinsClamp(ptB, nPt, nN_pt, ptBins);
+      collectNeighborBinsClamp(etaB, nEta, nN_eta, etaBins);
+      collectNeighborBinsPhi(phiB, nPhi, nN_phi, phiBins);
+
+      for (int ptUse : ptBins) {
+        for (int etaUse : etaBins) {
+          for (int phiUse : phiBins) {
+            const auto& vec = buffer[linearKey(colBin, status, ptUse, etaUse, phiUse, mB,
+                                               nStat, nPt, nEta, nPhi, nM)];
+
+            for (auto const& bc : vec) {
+              if (bc.collisionIdx == curColIdx) {
+                continue;
+              }
+
+              auto tX = V0s.iteratorAt(static_cast<uint64_t>(bc.rowIndex));
+
+              if (!selectionV0(tX)) {
+                continue;
+              }
+              if (!checkKinematics(tRep, tX)) {
+                continue;
+              }
+              if (!checkPairKinematics(tRep, tKeep, tX)) {
+                continue;
+              }
+
+              if (tX.globalIndex() == tRep.globalIndex()) {
+                continue;
+              }
+              if (tX.globalIndex() == tKeep.globalIndex()) {
+                continue;
+              }
+
+              matches.push_back(MatchRef{bc.collisionIdx, bc.rowIndex});
+            }
+          }
+        }
+      }
+
+      std::sort(matches.begin(), matches.end(),
+                [](auto const& a, auto const& b) {
+                  return std::tie(a.collisionIdx, a.rowIndex) < std::tie(b.collisionIdx, b.rowIndex);
+                });
+      matches.erase(std::unique(matches.begin(), matches.end(),
+                                [](auto const& a, auto const& b) {
+                                  return a.collisionIdx == b.collisionIdx && a.rowIndex == b.rowIndex;
+                                }),
+                    matches.end());
+    };
+
+    auto downsampleMatches = [&](std::vector<MatchRef>& matches, uint64_t seedBase) {
+      if (cfgV5MaxMatches.value > 0 && (int)matches.size() > cfgV5MaxMatches.value) {
+        uint64_t seed = cfgMixSeed.value ^ splitmix64(seedBase);
+        const int K = cfgV5MaxMatches.value;
+        for (int i = 0; i < K; ++i) {
+          seed = splitmix64(seed);
+          const int j = i + (int)(seed % (uint64_t)(matches.size() - i));
+          std::swap(matches[i], matches[j]);
+        }
+        matches.resize(K);
+      }
+    };
+
+    // -------- PASS 2: two-leg mixing --------
+    for (auto const& col1 : collisions) {
+      const int colBin = colBinning.getBin(std::make_tuple(col1.posz(), col1.cent()));
+      if (colBin < 0) {
+        continue;
+      }
+
+      const int64_t curColIdx = static_cast<int64_t>(col1.index());
+      auto poolA = V0s.sliceBy(tracksPerCollisionV0, col1.index());
+
+      for (auto const& [t1, t2] :
+           soa::combinations(o2::soa::CombinationsFullIndexPolicy(poolA, poolA))) {
+
+        if (!selectionV0(t1) || !selectionV0(t2)) {
+          continue;
+        }
+        if (t2.index() <= t1.index()) {
+          continue;
+        }
+
+        if (t1.protonIndex() == t2.protonIndex()) {
+          continue;
+        }
+        if (t1.pionIndex() == t2.pionIndex()) {
+          continue;
+        }
+        if (t1.protonIndex() == t2.pionIndex()) {
+          continue;
+        }
+        if (t1.pionIndex() == t2.protonIndex()) {
+          continue;
+        }
+
+        // leg 1 replaced: (t1,t2) -> (tX,t2)
+        collectMatchesForReplacedLeg(t1, t2, colBin, curColIdx, matches1);
+
+        // leg 2 replaced: (t1,t2) -> (t1,tY)
+        collectMatchesForReplacedLeg(t2, t1, colBin, curColIdx, matches2);
+
+        downsampleMatches(matches1,
+                          (uint64_t)t1.globalIndex() ^ (splitmix64((uint64_t)t2.globalIndex()) + 0x111ULL) ^ splitmix64((uint64_t)curColIdx));
+        downsampleMatches(matches2,
+                          (uint64_t)t2.globalIndex() ^ (splitmix64((uint64_t)t1.globalIndex()) + 0x222ULL) ^ splitmix64((uint64_t)curColIdx));
+
+        const int nReuse = static_cast<int>(matches1.size() + matches2.size());
+        if (nReuse <= 0) {
+          continue;
+        }
+
+        const float wSE = 1.0f / static_cast<float>(nReuse);
+
+        // replace t1 -> tX, keep t2
+        for (auto const& m : matches1) {
+          auto tX = V0s.iteratorAt(static_cast<uint64_t>(m.rowIndex));
+
+          auto proton = ROOT::Math::PtEtaPhiMVector(tX.protonPt(), tX.protonEta(), tX.protonPhi(),
+                                                    o2::constants::physics::MassProton);
+          auto lambda = ROOT::Math::PtEtaPhiMVector(tX.lambdaPt(), tX.lambdaEta(), tX.lambdaPhi(),
+                                                    tX.lambdaMass());
+
+          auto proton2 = ROOT::Math::PtEtaPhiMVector(t2.protonPt(), t2.protonEta(), t2.protonPhi(),
+                                                     o2::constants::physics::MassProton);
+          auto lambda2 = ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(),
+                                                     t2.lambdaMass());
+
+          const int ptype = pairTypeCode(tX.v0Status(), t2.v0Status());
+          double centPairWeight = 1.0;
+          if (hweightCentPair) {
+            const int bin = hweightCentPair->FindBin(col1.cent(), ptype);
+            centPairWeight = hweightCentPair->GetBinContent(bin);
+            if (centPairWeight <= 0.0) {
+              centPairWeight = 1.0;
+            }
+          }
+
+          const float meWeight = wSE * centPairWeight;
+          const float dPhi = deltaPhiMinusPiToPi((float)lambda.Phi(), (float)lambda2.Phi());
+          histos.fill(HIST("deltaPhiMix"), dPhi, wSE);
+          histos.fill(HIST("hCentPairTypeME"), col1.cent(), ptype, wSE);
+
+          fillHistograms(tX.v0Status(), t2.v0Status(),
+                         lambda, lambda2, proton, proton2,
+                         1, meWeight);
+        }
+
+        // replace t2 -> tY, keep t1
+        for (auto const& m : matches2) {
+          auto tY = V0s.iteratorAt(static_cast<uint64_t>(m.rowIndex));
+
+          auto proton = ROOT::Math::PtEtaPhiMVector(t1.protonPt(), t1.protonEta(), t1.protonPhi(),
+                                                    o2::constants::physics::MassProton);
+          auto lambda = ROOT::Math::PtEtaPhiMVector(t1.lambdaPt(), t1.lambdaEta(), t1.lambdaPhi(),
+                                                    t1.lambdaMass());
+
+          auto proton2 = ROOT::Math::PtEtaPhiMVector(tY.protonPt(), tY.protonEta(), tY.protonPhi(),
+                                                     o2::constants::physics::MassProton);
+          auto lambda2 = ROOT::Math::PtEtaPhiMVector(tY.lambdaPt(), tY.lambdaEta(), tY.lambdaPhi(),
+                                                     tY.lambdaMass());
+
+          const int ptype = pairTypeCode(t1.v0Status(), tY.v0Status());
+          double centPairWeight = 1.0;
+          if (hweightCentPair) {
+            const int bin = hweightCentPair->FindBin(col1.cent(), ptype);
+            centPairWeight = hweightCentPair->GetBinContent(bin);
+            if (centPairWeight <= 0.0) {
+              centPairWeight = 1.0;
+            }
+          }
+
+          const float meWeight = wSE * centPairWeight;
+          const float dPhi = deltaPhiMinusPiToPi((float)lambda.Phi(), (float)lambda2.Phi());
+          histos.fill(HIST("deltaPhiMix"), dPhi, wSE);
+          histos.fill(HIST("hCentPairTypeME"), col1.cent(), ptype, wSE);
+
+          fillHistograms(t1.v0Status(), tY.v0Status(),
+                         lambda, lambda2, proton, proton2,
+                         1, meWeight);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(lambdaspincorrderived, processMEV6, "Process data ME v6 two-leg", false);
+
+  void processMCMEV6(EventCandidatesMC const& collisions, AllTrackCandidatesMC const& V0sMC)
+  {
+    MixBinner mb{
+      ptMin.value, ptMax.value, ptMix.value,
+      v0etaMixBuffer.value, etaMix.value,
+      phiMix.value,
+      MassMin.value, MassMax.value, cfgV5MassBins.value};
+
+    const int nCol = colBinning.getAllBinsCount();
+    const int nStat = N_STATUS;
+    const int nPt = mb.nPt();
+    const int nEta = mb.nEta();
+    const int nPhi = mb.nPhi();
+    const int nM = mb.nM();
+
+    const size_t nKeys = static_cast<size_t>(nCol) * nStat * nPt * nEta * nPhi * nM;
+    std::vector<std::vector<BufferCand>> buffer(nKeys);
+
+    // -------- PASS 1: fill buffer --------
+    for (auto const& col : collisions) {
+      const int colBin = colBinning.getBin(std::make_tuple(mcacc::posz(col), mcacc::cent(col)));
+      if (colBin < 0) {
+        continue;
+      }
+
+      auto slice = V0sMC.sliceBy(tracksPerCollisionV0mc, col.index());
+
+      for (auto const& t : slice) {
+        if (!selectionV0MC(t)) {
+          continue;
+        }
+
+        const int status = mcacc::v0Status(t);
+        if (status < 0 || status >= nStat) {
+          continue;
+        }
+
+        const int ptB = mb.ptBin(mcacc::lamPt(t));
+
+        int etaB = mb.etaBin(mcacc::lamEta(t));
+        if (userapidity) {
+          const auto lv = ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(t), mcacc::lamEta(t), mcacc::lamPhi(t), mcacc::lamMass(t));
+          etaB = mb.etaBin(lv.Rapidity());
+        }
+
+        const int phiB = mb.phiBin(RecoDecay::constrainAngle(mcacc::lamPhi(t), -TMath::Pi(), harmonic));
+        const int mB = mb.massBin(mcacc::lamMass(t));
+
+        if (ptB < 0 || etaB < 0 || phiB < 0 || mB < 0) {
+          continue;
+        }
+
+        const size_t key = linearKey(colBin, status, ptB, etaB, phiB, mB,
+                                     nStat, nPt, nEta, nPhi, nM);
+
+        buffer[key].push_back(BufferCand{
+          .collisionIdx = static_cast<int64_t>(col.index()),
+          .rowIndex = static_cast<int64_t>(t.globalIndex()),
+          .v0Status = static_cast<uint8_t>(status),
+          .ptBin = static_cast<uint16_t>(ptB),
+          .etaBin = static_cast<uint16_t>(etaB),
+          .phiBin = static_cast<uint16_t>(phiB),
+          .mBin = static_cast<uint16_t>(mB)});
+      }
+    }
+
+    const int nN_pt = std::max(0, cfgV5NeighborPt.value);
+    const int nN_eta = std::max(0, cfgV5NeighborEta.value);
+    const int nN_phi = std::max(0, cfgV5NeighborPhi.value);
+
+    std::vector<int> ptBins, etaBins, phiBins;
+    std::vector<MatchRef> matches1, matches2;
+    matches1.reserve(256);
+    matches2.reserve(256);
+
+    auto collectMatchesForReplacedLeg = [&](auto const& tRep, auto const& tKeep, int colBin, int64_t curColIdx, std::vector<MatchRef>& matches) {
+      matches.clear();
+
+      const int status = mcacc::v0Status(tRep);
+      if (status < 0 || status >= nStat) {
+        return;
+      }
+
+      const int ptB = mb.ptBin(mcacc::lamPt(tRep));
+
+      int etaB = mb.etaBin(mcacc::lamEta(tRep));
+      if (userapidity) {
+        const auto lv = ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(tRep), mcacc::lamEta(tRep), mcacc::lamPhi(tRep), mcacc::lamMass(tRep));
+        etaB = mb.etaBin(lv.Rapidity());
+      }
+
+      const int phiB = mb.phiBin(RecoDecay::constrainAngle(mcacc::lamPhi(tRep), -TMath::Pi(), harmonic));
+      const int mB = mb.massBin(mcacc::lamMass(tRep));
+
+      if (ptB < 0 || etaB < 0 || phiB < 0 || mB < 0) {
+        return;
+      }
+
+      collectNeighborBinsClamp(ptB, nPt, nN_pt, ptBins);
+      collectNeighborBinsClamp(etaB, nEta, nN_eta, etaBins);
+      collectNeighborBinsPhi(phiB, nPhi, nN_phi, phiBins);
+
+      for (int ptUse : ptBins) {
+        for (int etaUse : etaBins) {
+          for (int phiUse : phiBins) {
+            const auto& vec = buffer[linearKey(colBin, status, ptUse, etaUse, phiUse, mB,
+                                               nStat, nPt, nEta, nPhi, nM)];
+
+            for (auto const& bc : vec) {
+              if (bc.collisionIdx == curColIdx) {
+                continue;
+              }
+
+              auto tX = V0sMC.iteratorAt(static_cast<uint64_t>(bc.rowIndex));
+
+              if (!selectionV0MC(tX)) {
+                continue;
+              }
+              if (!checkKinematicsMC(tRep, tX)) {
+                continue;
+              }
+              if (!checkPairKinematicsMC(tRep, tKeep, tX)) {
+                continue;
+              }
+
+              if (tX.globalIndex() == tRep.globalIndex()) {
+                continue;
+              }
+              if (tX.globalIndex() == tKeep.globalIndex()) {
+                continue;
+              }
+
+              matches.push_back(MatchRef{bc.collisionIdx, bc.rowIndex});
+            }
+          }
+        }
+      }
+
+      std::sort(matches.begin(), matches.end(),
+                [](auto const& a, auto const& b) {
+                  return std::tie(a.collisionIdx, a.rowIndex) < std::tie(b.collisionIdx, b.rowIndex);
+                });
+      matches.erase(std::unique(matches.begin(), matches.end(),
+                                [](auto const& a, auto const& b) {
+                                  return a.collisionIdx == b.collisionIdx && a.rowIndex == b.rowIndex;
+                                }),
+                    matches.end());
+    };
+
+    auto downsampleMatches = [&](std::vector<MatchRef>& matches, uint64_t seedBase) {
+      if (cfgV5MaxMatches.value > 0 && (int)matches.size() > cfgV5MaxMatches.value) {
+        uint64_t seed = cfgMixSeed.value ^ splitmix64(seedBase);
+        const int K = cfgV5MaxMatches.value;
+        for (int i = 0; i < K; ++i) {
+          seed = splitmix64(seed);
+          const int j = i + (int)(seed % (uint64_t)(matches.size() - i));
+          std::swap(matches[i], matches[j]);
+        }
+        matches.resize(K);
+      }
+    };
+
+    // -------- PASS 2: two-leg mixing --------
+    for (auto const& col1 : collisions) {
+      const int colBin = colBinning.getBin(std::make_tuple(mcacc::posz(col1), mcacc::cent(col1)));
+      if (colBin < 0) {
+        continue;
+      }
+
+      const int64_t curColIdx = static_cast<int64_t>(col1.index());
+      auto poolA = V0sMC.sliceBy(tracksPerCollisionV0mc, col1.index());
+
+      for (auto const& [t1, t2] :
+           soa::combinations(o2::soa::CombinationsFullIndexPolicy(poolA, poolA))) {
+
+        if (!selectionV0MC(t1) || !selectionV0MC(t2)) {
+          continue;
+        }
+        if (t2.index() <= t1.index()) {
+          continue;
+        }
+
+        if (mcacc::prIdx(t1) == mcacc::prIdx(t2)) {
+          continue;
+        }
+        if (mcacc::piIdx(t1) == mcacc::piIdx(t2)) {
+          continue;
+        }
+        if (mcacc::prIdx(t1) == mcacc::piIdx(t2)) {
+          continue;
+        }
+        if (mcacc::piIdx(t1) == mcacc::prIdx(t2)) {
+          continue;
+        }
+
+        collectMatchesForReplacedLeg(t1, t2, colBin, curColIdx, matches1);
+        collectMatchesForReplacedLeg(t2, t1, colBin, curColIdx, matches2);
+
+        downsampleMatches(matches1,
+                          (uint64_t)t1.globalIndex() ^ (splitmix64((uint64_t)t2.globalIndex()) + 0x111ULL) ^ splitmix64((uint64_t)curColIdx));
+        downsampleMatches(matches2,
+                          (uint64_t)t2.globalIndex() ^ (splitmix64((uint64_t)t1.globalIndex()) + 0x222ULL) ^ splitmix64((uint64_t)curColIdx));
+
+        const int nReuse = static_cast<int>(matches1.size() + matches2.size());
+        if (nReuse <= 0) {
+          continue;
+        }
+
+        const float wSE = 1.0f / static_cast<float>(nReuse);
+
+        // replace t1 -> tX, keep t2
+        for (auto const& m : matches1) {
+          auto tX = V0sMC.iteratorAt(static_cast<uint64_t>(m.rowIndex));
+
+          auto pX = ROOT::Math::PtEtaPhiMVector(mcacc::prPt(tX), mcacc::prEta(tX), mcacc::prPhi(tX),
+                                                o2::constants::physics::MassProton);
+          auto lX = ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(tX), mcacc::lamEta(tX), mcacc::lamPhi(tX),
+                                                mcacc::lamMass(tX));
+
+          auto p2 = ROOT::Math::PtEtaPhiMVector(mcacc::prPt(t2), mcacc::prEta(t2), mcacc::prPhi(t2),
+                                                o2::constants::physics::MassProton);
+          auto l2 = ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(t2), mcacc::lamEta(t2), mcacc::lamPhi(t2),
+                                                mcacc::lamMass(t2));
+
+          const int ptype = pairTypeCode(mcacc::v0Status(tX), mcacc::v0Status(t2));
+          double centPairWeight = 1.0;
+          if (hweightCentPair) {
+            const int bin = hweightCentPair->FindBin(mcacc::cent(col1), ptype);
+            centPairWeight = hweightCentPair->GetBinContent(bin);
+            if (centPairWeight <= 0.0) {
+              centPairWeight = 1.0;
+            }
+          }
+
+          const float meWeight = wSE * centPairWeight;
+          const float dPhi = deltaPhiMinusPiToPi((float)lX.Phi(), (float)l2.Phi());
+          histos.fill(HIST("deltaPhiMix"), dPhi, wSE);
+          histos.fill(HIST("hCentPairTypeME"), mcacc::cent(col1), ptype, wSE);
+
+          fillHistograms(mcacc::v0Status(tX), mcacc::v0Status(t2),
+                         lX, l2, pX, p2,
+                         1, meWeight);
+        }
+
+        // replace t2 -> tY, keep t1
+        for (auto const& m : matches2) {
+          auto tY = V0sMC.iteratorAt(static_cast<uint64_t>(m.rowIndex));
+
+          auto p1 = ROOT::Math::PtEtaPhiMVector(mcacc::prPt(t1), mcacc::prEta(t1), mcacc::prPhi(t1),
+                                                o2::constants::physics::MassProton);
+          auto l1 = ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(t1), mcacc::lamEta(t1), mcacc::lamPhi(t1),
+                                                mcacc::lamMass(t1));
+
+          auto pY = ROOT::Math::PtEtaPhiMVector(mcacc::prPt(tY), mcacc::prEta(tY), mcacc::prPhi(tY),
+                                                o2::constants::physics::MassProton);
+          auto lY = ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(tY), mcacc::lamEta(tY), mcacc::lamPhi(tY),
+                                                mcacc::lamMass(tY));
+
+          const int ptype = pairTypeCode(mcacc::v0Status(t1), mcacc::v0Status(tY));
+          double centPairWeight = 1.0;
+          if (hweightCentPair) {
+            const int bin = hweightCentPair->FindBin(mcacc::cent(col1), ptype);
+            centPairWeight = hweightCentPair->GetBinContent(bin);
+            if (centPairWeight <= 0.0) {
+              centPairWeight = 1.0;
+            }
+          }
+
+          const float meWeight = wSE * centPairWeight;
+          const float dPhi = deltaPhiMinusPiToPi((float)l1.Phi(), (float)lY.Phi());
+          histos.fill(HIST("deltaPhiMix"), dPhi, wSE);
+          histos.fill(HIST("hCentPairTypeME"), mcacc::cent(col1), ptype, wSE);
+
+          fillHistograms(mcacc::v0Status(t1), mcacc::v0Status(tY),
+                         l1, lY, p1, pY,
+                         1, meWeight);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(lambdaspincorrderived, processMCMEV6, "Process MC ME v6 two-leg", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
