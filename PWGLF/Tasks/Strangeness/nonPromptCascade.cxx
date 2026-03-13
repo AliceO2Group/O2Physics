@@ -987,16 +987,16 @@ struct NonPromptCascadeTask {
       auto bc = coll.template bc_as<aod::BCsWithTimestamps>();
       uint64_t globalBC = bc.globalBC();
       uint32_t orbit = globalBC / 3564;
-      if(orbitO != orbit) {
+      if (orbitO != orbit) {
         orbitO = orbit;
-        if((ds % cfgDownscaleMB) == 0) {
+        if ((ds % cfgDownscaleMB) == 0) {
           writeFlag = 1;
         } else {
           writeFlag = 0;
         }
         ds++;
       }
-      if (writeFlag) {  
+      if (writeFlag) {
         if (mRunNumber != bc.runNumber()) {
           mRunNumber = bc.runNumber();
         }
