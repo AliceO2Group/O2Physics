@@ -9,6 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "PWGLF/DataModel/LFNonPromptCascadeTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
@@ -34,6 +37,8 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "MathUtils/BetheBlochAleph.h"
+#include "ReconstructionDataFormats/DCA.h"
+#include "ReconstructionDataFormats/Track.h"
 #include "ReconstructionDataFormats/Vertex.h"
 
 #include "Math/Vector4D.h"
@@ -46,11 +51,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "PWGLF/DataModel/LFNonPromptCascadeTables.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/Track.h"
 
 using namespace o2;
 using namespace o2::framework;
