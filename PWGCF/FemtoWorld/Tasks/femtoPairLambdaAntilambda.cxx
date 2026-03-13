@@ -12,21 +12,7 @@
 /// \file FemtoPairLambdaAntilambda.cxx
 /// \brief Tasks that computes correlation between two v0s
 /// \author Anton Riedel, TU München, anton.riedel@cern.ch
-
-
-// WORKFLOW -----------------------------------------------------------------------------------------------------------------
-
-// start analysis       ->
-// init()               ->
-// loop over events     ->
-// processSameEvent()   ->
-// build pairs          ->
-// fill histograms      ->
-// optional mixing      ->
-// output ROOT
-
-
-// 00. IMPORT WYKORZYSTYWANYCH MODUŁÓW --------------------------------------------------------------------------------------
+/// \author Barbara Gawlik, WUT Warsaw, barbara.maria.gawlik@cern.ch
 
 #include "PWGCF/Femto/Core/closePairRejection.h"
 #include "PWGCF/Femto/Core/collisionBuilder.h"
@@ -57,11 +43,7 @@
 
 using namespace o2::analysis::femto;
 
-
 struct FemtoPairLambdaAntilambda {
-
-
-    // 01. DEFINICJA TABEL DANYCH ---------------------------------------------------------------------------------------
 
   // setup tables
   using FemtoCollisions = o2::soa::Join<o2::aod::FCols, o2::aod::FColMasks>;
@@ -82,9 +64,6 @@ struct FemtoPairLambdaAntilambda {
   
   o2::framework::SliceCache cache;
 
-
-    // 02. KONFIGURACJA SELEKCJI ZDARZEŃ I CÓREK, ORAZ HISTOGRAMÓW -----------------------------------------------------
-
   // setup collisions
   collisionbuilder::ConfCollisionSelection collisionSelection;
   o2::framework::expressions::Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
@@ -94,30 +73,18 @@ struct FemtoPairLambdaAntilambda {
   trackhistmanager::ConfV0PosDauBinning confPosDauBinning;
   trackhistmanager::ConfV0NegDauBinning confNegDauBinning;
 
-
-    // 03. KONFIGURACJA SELEKCJI LAMBDA I USUWANIE POWIELAJĄCYCH SIĘ PAR/CZĄSTEK ---------------------------------------
-
   // setup lambdas
   v0builder::ConfLambdaSelection1 confLambdaSelection;
-  // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-  v0builder::ConfLambdaSelection2 confLambdaSelection2; 
-  // ======================================================================================================================================
+  v0builder::ConfLambdaSelection2 confLambdaSelection2;
   particlecleaner::ConfLambdaCleaner1 confLambdaCleaner;
   v0histmanager::ConfLambdaBinning1 confLambdaBinning;
 
-
-    // 04. WYBÓR PODZBIORÓW TABEL SPEŁNIAJĄCYCH DANE SELEKCJE ----------------------------------------------------------
-
   o2::framework::Partition<FemtoLambdas> lambdaPartition = MAKE_LAMBDA_PARTITION(confLambdaSelection);
-  // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
   o2::framework::Partition<FemtoLambdas> lambdaPartition2 = MAKE_LAMBDA_PARTITION(confLambdaSelection2);
-  // ======================================================================================================================================
   o2::framework::Preslice<FemtoLambdas> perColLambdas = o2::aod::femtobase::stored::fColId;
 
   o2::framework::Partition<FemtoLambdasWithLabel> lambdaWithLabelPartition = MAKE_LAMBDA_PARTITION(confLambdaSelection);
-  // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
   o2::framework::Partition<FemtoLambdasWithLabel> lambdaWithLabelPartition2 = MAKE_LAMBDA_PARTITION(confLambdaSelection2);
-  // ======================================================================================================================================
   o2::framework::Preslice<FemtoLambdasWithLabel> perCollambdasWithLabel = o2::aod::femtobase::stored::fColId;
 
   // setup k0shorts
@@ -134,9 +101,6 @@ struct FemtoPairLambdaAntilambda {
   // setup pairs
   pairhistmanager::ConfPairBinning confPairBinning;
   pairhistmanager::ConfPairCuts confPairCuts;
-
-
-    // 05. BUDOWANIE PAR V0-V0 -------------------------------------------------------------------------------------------
 
   pairbuilder::PairV0V0Builder<
     v0histmanager::PrefixLambda1,
@@ -172,9 +136,6 @@ struct FemtoPairLambdaAntilambda {
     modes::V0::kK0short>
     pairK0shortK0shortBuilder;
 
-    
-    // 06. SETUP DO EVENT MIXING ---------------------------------------------------------------------------------------
-
   // setup mixing
   std::vector<double> defaultVtxBins{10, -10, 10};
   std::vector<double> defaultMultBins{50, 0, 200};
@@ -184,22 +145,14 @@ struct FemtoPairLambdaAntilambda {
   o2::framework::ColumnBinningPolicy<o2::aod::femtocollisions::PosZ, o2::aod::femtocollisions::Mult, o2::aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}, true};
   pairhistmanager::ConfMixing confMixing;
 
-
-    // 07. SETUP REJESTRU HISTOGRAMÓW ORAZ CPR -------------------------------------------------------------------------
-
   o2::framework::HistogramRegistry hRegistry{"FemtoV0V0", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
 
   // setup cpr
   closepairrejection::ConfCprV0DaugherV0DaughterPos confCprPos;
   closepairrejection::ConfCprV0DaugherV0DaughterNeg confCprNeg;
 
-
-    // 08. INICJALIZACJA TASKA ----------------------------------------------------------------------------------------
-
   void init(o2::framework::InitContext&)
   {
-
-    // 08a. SPRAWDZENIE TRYBÓW
 
     // TODO: implement lambda-k0short
     bool processData = doprocessLambdaLambdaSameEvent || doprocessLambdaLambdaSameEvent || doprocessK0shortK0shortSameEvent || doprocessK0shortK0shortSameEvent;
@@ -216,15 +169,11 @@ struct FemtoPairLambdaAntilambda {
       LOG(fatal) << "Both lambda-lambda and k0short-k0short processing is enabled. Breaking...";
     }
 
-
     // setup columnpolicy for binning
     // default values are used during instantiation, so we need to explicity update them here
     mixBinsVtxMult = {{confMixing.vtxBins, confMixing.multBins.value}, true};
     mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}, true};
     mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}, true};
-
-
-    // 08b. DEFINICJE HISTOGRAMÓW
 
     // setup histograms
     std::map<colhistmanager::ColHist, std::vector<o2::framework::AxisSpec>> colHistSpec;
@@ -244,10 +193,7 @@ struct FemtoPairLambdaAntilambda {
       if (processLambdaLambda) {
         lambdaHistSpec = v0histmanager::makeV0HistSpecMap(confLambdaBinning);
         pairV0V0HistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
-        // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        // pairLambdaLambdaBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confCollisionBinning, confLambdaSelection, confLambdaSelection, confLambdaCleaner, confLambdaCleaner, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, lambdaHistSpec, lambdaHistSpec, posDauSpec, negDauSpec, pairV0V0HistSpec, cprHistSpecPos, cprHistSpecNeg);
-        pairLambdaLambdaBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confCollisionBinning, confLambdaSelection, confLambdaSelection2, confLambdaCleaner, confLambdaCleaner, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, lambdaHistSpec, lambdaHistSpec, posDauSpec, negDauSpec, pairV0V0HistSpec, cprHistSpecPos, cprHistSpecNeg); 
-        // ======================================================================================================================================
+        pairLambdaLambdaBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confCollisionBinning, confLambdaSelection, confLambdaSelection2, confLambdaCleaner, confLambdaCleaner, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, lambdaHistSpec, lambdaHistSpec, posDauSpec, negDauSpec, pairV0V0HistSpec, cprHistSpecPos, cprHistSpecNeg);
       }
 
       // setup for k0short
@@ -263,10 +209,7 @@ struct FemtoPairLambdaAntilambda {
       if (processLambdaLambda) {
         lambdaHistSpec = v0histmanager::makeV0McHistSpecMap(confLambdaBinning);
         pairV0V0HistSpec = pairhistmanager::makePairMcHistSpecMap(confPairBinning);
-        // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        // pairLambdaLambdaBuilder.init<modes::Mode::kAnalysis_Qa>(&hRegistry, confCollisionBinning, confLambdaSelection, confLambdaSelection, confLambdaCleaner, confLambdaCleaner, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, lambdaHistSpec, lambdaHistSpec, posDauSpec, negDauSpec, pairV0V0HistSpec, cprHistSpecPos, cprHistSpecNeg);
         pairLambdaLambdaBuilder.init<modes::Mode::kAnalysis_Qa>(&hRegistry, confCollisionBinning, confLambdaSelection, confLambdaSelection2, confLambdaCleaner, confLambdaCleaner, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, lambdaHistSpec, lambdaHistSpec, posDauSpec, negDauSpec, pairV0V0HistSpec, cprHistSpecPos, cprHistSpecNeg);
-        // ======================================================================================================================================
       }
 
       // setup for k0short
@@ -278,42 +221,27 @@ struct FemtoPairLambdaAntilambda {
     }
   };
 
-
-   // 09. OPCJONALNY EVENT MIXING
-
   void processLambdaLambdaSameEvent(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoLambdas const& lambdas)
   {
-    // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    // pairLambdaLambdaBuilder.processSameEvent<modes::Mode::kAnalysis>(col, tracks, lambdas, lambdaPartition, lambdaPartition, cache);
     pairLambdaLambdaBuilder.processSameEvent<modes::Mode::kAnalysis>(col, tracks, lambdas, lambdaPartition, lambdaPartition2, cache);
-    // ======================================================================================================================================
   }
   PROCESS_SWITCH(FemtoPairLambdaAntilambda, processLambdaLambdaSameEvent, "Enable processing same event processing for lambda-lambda", true);
 
   void processLambdaLambdaSameEventMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoLambdasWithLabel const& lambdas, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    // pairLambdaLambdaBuilder.processSameEvent<modes::Mode::kAnalysis_Mc>(col, mcCols, tracks, lambdas, lambdaWithLabelPartition, lambdaWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache);
     pairLambdaLambdaBuilder.processSameEvent<modes::Mode::kAnalysis_Mc>(col, mcCols, tracks, lambdas, lambdaWithLabelPartition, lambdaWithLabelPartition2, mcParticles, mcMothers, mcPartonicMothers, cache);
-    // ======================================================================================================================================
   }
   PROCESS_SWITCH(FemtoPairLambdaAntilambda, processLambdaLambdaSameEventMc, "Enable processing same event processing for lambda-lambda with mc information", false);
 
   void processLambdaLambdaMixedEvent(FilteredFemtoCollisions const& cols, FemtoTracks const& tracks, FemtoLambdas const& lambdas)
   {
-    // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    // pairLambdaLambdaBuilder.processMixedEvent<modes::Mode::kAnalysis>(cols, tracks, lambdas, lambdaPartition, lambdaPartition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
     pairLambdaLambdaBuilder.processMixedEvent<modes::Mode::kAnalysis>(cols, tracks, lambdas, lambdaPartition, lambdaPartition2, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
-    // ======================================================================================================================================
   }
   PROCESS_SWITCH(FemtoPairLambdaAntilambda, processLambdaLambdaMixedEvent, "Enable processing mixed event processing for lambda-lambda", true);
 
   void processLambdaLambdaMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoLambdasWithLabel const& /*lambdas*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    // pairLambdaLambdaBuilder.processMixedEvent<modes::Mode::kAnalysis_Mc>(cols, mcCols, tracks, lambdaWithLabelPartition, lambdaWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
     pairLambdaLambdaBuilder.processMixedEvent<modes::Mode::kAnalysis_Mc>(cols, mcCols, tracks, lambdaWithLabelPartition, lambdaWithLabelPartition2, mcParticles, mcMothers, mcPartonicMothers, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
-    // ======================================================================================================================================
   }
   PROCESS_SWITCH(FemtoPairLambdaAntilambda, processLambdaLambdaMixedEventMc, "Enable processing mixed event processing for lambda-lambda with mc information", false);
 
@@ -341,7 +269,6 @@ struct FemtoPairLambdaAntilambda {
   }
   PROCESS_SWITCH(FemtoPairLambdaAntilambda, processK0shortK0shortMixedEventMc, "Enable processing mixed event processing for k0short-k0short with mc information", false);
 };
-
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
 {
