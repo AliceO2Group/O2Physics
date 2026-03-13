@@ -9,26 +9,30 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <climits>
-#include <cstdlib>
-#include <map>
-#include <memory>
-#include <vector>
-#include <string>
-
-#include "CCDB/BasicCCDBManager.h"
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/EventSelection.h"
-#include "DataFormatsPHOS/Cell.h"
-#include "DataFormatsPHOS/CalibParams.h"
-#include "Framework/ConfigParamSpec.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/HistogramRegistry.h"
 
-#include "PHOSBase/Geometry.h"
-#include "CommonDataFormat/InteractionRecord.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonDataFormat/InteractionRecord.h>
+#include <DataFormatsPHOS/CalibParams.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+#include <PHOSBase/Geometry.h>
+
+#include <TString.h>
+
+#include <climits>
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+#include <vector>
 
 /// \struct PHOS QA
 /// \brief Monitoring task for PHOS related quantities

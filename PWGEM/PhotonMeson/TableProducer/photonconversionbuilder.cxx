@@ -18,6 +18,7 @@
 #define HomogeneousField // needed for KFParticle::SetField(magneticField);
 #endif
 
+#include "PWGEM/Dilepton/Utils/PairUtilities.h"
 #include "PWGEM/PhotonMeson/Core/EmMlResponsePCM.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCandidate.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
@@ -53,7 +54,7 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/PID.h>
 
-#include <Math/Vector4D.h> // IWYU pragma: keep
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 #include <TPDGCode.h>
 

@@ -15,15 +15,13 @@
 #ifndef PWGEM_DILEPTON_UTILS_EMTRACKUTILITIES_H_
 #define PWGEM_DILEPTON_UTILS_EMTRACKUTILITIES_H_
 
-#include "Framework/DataTypes.h"
-#include "Framework/Logger.h"
+#include <Framework/DataTypes.h>
 
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
 #include <map>
-#include <ranges>
-#include <string>
 #include <unordered_map>
-#include <vector>
 
 //_______________________________________________________________________
 namespace o2::aod::pwgem::dilepton::utils::emtrackutil

@@ -19,21 +19,27 @@
 #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/DataTypes.h"
-#include "Framework/Logger.h"
+#include "Common/Core/RecoDecay.h"
 
-#include "Math/Vector4D.h"
-#include "TNamed.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/Logger.h>
+#include <MathUtils/Utils.h>
+
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TNamed.h>
+
+#include <Rtypes.h>
 
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <functional>
 #include <set>
-#include <string>
 #include <utility>
 #include <vector>
 
-using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
-using namespace o2::aod::pwgem::dilepton::utils::pairutil;
+#include <math.h>
 
 class DielectronCut : public TNamed
 {
@@ -108,9 +114,9 @@ class DielectronCut : public TNamed
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
-    float dca_ee_3d = pairDCAQuadSum(dca3DinSigma(t1), dca3DinSigma(t2));
-    float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), bz);
-    float opAng = getOpeningAngle(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz());
+    float dca_ee_3d = o2::aod::pwgem::dilepton::utils::pairutil::pairDCAQuadSum(o2::aod::pwgem::dilepton::utils::emtrackutil::dca3DinSigma(t1), o2::aod::pwgem::dilepton::utils::emtrackutil::dca3DinSigma(t2));
+    float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), bz);
+    float opAng = o2::aod::pwgem::dilepton::utils::pairutil::getOpeningAngle(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz());
 
     if (v12.M() < mMinMee || mMaxMee < v12.M()) {
       return false;
@@ -456,7 +462,7 @@ class DielectronCut : public TNamed
         return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
 
       case DielectronCuts::kDCA3Dsigma:
-        return mMinDca3D < dca3DinSigma(track) && dca3DinSigma(track) < mMaxDca3D; // in sigma for single leg
+        return mMinDca3D < o2::aod::pwgem::dilepton::utils::emtrackutil::dca3DinSigma(track) && o2::aod::pwgem::dilepton::utils::emtrackutil::dca3DinSigma(track) < mMaxDca3D; // in sigma for single leg
 
       case DielectronCuts::kDCAxy:
         return std::fabs(track.dcaXY()) < ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
