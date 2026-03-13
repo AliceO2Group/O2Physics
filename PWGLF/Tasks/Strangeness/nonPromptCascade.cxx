@@ -1001,7 +1001,6 @@ struct NonPromptCascadeTask {
         }
         float centFT0M = coll.centFT0M();
         float multFT0M = coll.multFT0M();
-        uint64_t ts = bc.timestamp();
         NPPUTable(mRunNumber, globalBC, coll.numContrib(), coll.multNTracksGlobal(), centFT0M, multFT0M);
       }
     }
