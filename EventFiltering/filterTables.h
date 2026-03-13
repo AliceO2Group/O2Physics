@@ -12,10 +12,12 @@
 #define EVENTFILTERING_FILTERTABLES_H_
 
 #include <array>
-#include <unordered_map>
-#include <string>
-#include <vector>
+#include <concepts>
 #include <cstdint>
+#include <string>
+#include <type_traits>
+#include <unordered_map>
+#include <vector>
 
 namespace o2::aod
 {
@@ -23,7 +25,7 @@ template <uint32_t T>
 struct Hash;
 }
 
-#include "Framework/ASoA.h"
+#include <Framework/ASoA.h>
 
 namespace o2::soa
 {
