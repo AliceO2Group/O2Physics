@@ -103,9 +103,6 @@ struct NucleiAntineutronCex {
     histos.add("pEta", "Pseudorapidity;#eta;Entries", kTH1F, {{100, -10., 10.}});
     histos.add("pP_ITScuts", "Momentum with ITS cuts;|p| (GeV/c);Entries", kTH1F, {{100, 0., 10.}});
 
-    // test (MC)
-    histos.add("antip_test", "Secondary antiprotons;|p| (GeV/c);Entries", kTH1F, {{100, 0., 10.}});
-
     // Process enum breakdown (secondary antiproton that anchors the SV)
     histos.add("hProcEnumAP_CEX", "procEnum of secondary #bar{p} (CEX);procEnum;Entries", kTH1I, {{100, -0.5, 99.5}});
     histos.add("hProcEnumAP_BG", "procEnum of secondary #bar{p} (BG);procEnum;Entries", kTH1I, {{100, -0.5, 99.5}});
@@ -154,8 +151,8 @@ struct NucleiAntineutronCex {
     histos.add("hDeltaP_BG", "|p_{mother}-Σp_{SV}| (BG);Δp (GeV/c);Entries", kTH1F, {{200, 0., 10.}});
 
     // Mother IB hits
-    histos.add("hMotherNHitIB_CEX", "Mother #bar{p} IB hit layers (L0-L2) (CEX);N_{IB layers};Entries", kTH1I, {{4, -0.5, 3.5}});
-    histos.add("hMotherNHitIB_BG", "Mother #bar{p} IB hit layers (L0-L2) (BG);N_{IB layers};Entries", kTH1I, {{4, -0.5, 3.5}});
+    histos.add("hMotherNHitIB_CEX", "Mother IB hit layers (L0-L2) (CEX);N_{IB layers};Entries", kTH1I, {{5, -1.5, 4.5}});
+    histos.add("hMotherNHitIB_BG", "Mother IB hit layers (L0-L2) (BG);N_{IB layers};Entries", kTH1I, {{5, -1.5, 4.5}});
 
     // CEX pair from antineutron (TRK)
     histos.add("cex_pairtrk_angle", "Pair opening angle (tracks);Angle (°);Entries", kTH1F, {{180, 0., 180.}});
@@ -287,7 +284,6 @@ struct NucleiAntineutronCex {
         const bool isSecondaryFromMaterial = (!particle.producedByGenerator()) && (procEnum == kPHadronic || procEnum == kPHInhelastic);
         if (particle.pdgCode() != -kProton || !isSecondaryFromMaterial || particle.mothersIds().empty())
           continue;
-        histos.fill(HIST("antip_test"), particle.p());
 
         // Primary mother
         bool hasPrimaryMotherAntip = false;
@@ -564,8 +560,7 @@ struct NucleiAntineutronCex {
           float antipTrkTgl = 0.f;
 
           bool motherHasTrack = false;
-          uint16_t motherItsMap = 0;
-          int motherNHitIB = 0; // number of hits in IB (L0-L2)
+          int motherNHitIB = -1; // number of hits in IB (L0-L2)
 
           o2::aod::ITSResponse itsResponse;
 
@@ -596,7 +591,6 @@ struct NucleiAntineutronCex {
 
             if (mc.globalIndex() == motherId) {
               motherHasTrack = true;
-              motherItsMap = static_cast<uint16_t>(track.itsClusterMap());
               motherNHitIB = static_cast<int>(hitL0) + static_cast<int>(hitL1) + static_cast<int>(hitL2);
             }
 
@@ -738,8 +732,12 @@ struct NucleiAntineutronCex {
               const TVector3 pv2sv(secX - pvtxX, secY - pvtxY, secZ - pvtxZ);
               const double pairPointingAngleDeg = pv2sv.Angle(total_trk_pVec) * Rad2Deg;
 
-              const TVector3 zAxis(0., 0., 1.);
-              const double pvsvAngleZDeg = pv2sv.Angle(zAxis) * Rad2Deg;
+              const double pvsvThetaDeg = pv2sv.Theta() * Rad2Deg;
+
+              double pvsvPhiDeg = pv2sv.Phi() * Rad2Deg;
+              if (pvsvPhiDeg < 0.) {
+                pvsvPhiDeg += 360.;
+              }
 
               const double pP = pVecProton_trk.Mag();
               const double pAP = AntipVecProton_trk.Mag();
@@ -858,7 +856,7 @@ struct NucleiAntineutronCex {
                 if (std::abs(q) > 0.0) {
                   ++vtxNCh;
                 } else {
-                  ++vtxNN;
+                  ++vtxNNeut;
                 }
               }
 
@@ -908,6 +906,7 @@ struct NucleiAntineutronCex {
               outPairs(
                 isCex,
                 motherPdg,
+                motherNHitIB,
                 colId,
                 pId,
                 antipId,
@@ -966,7 +965,8 @@ struct NucleiAntineutronCex {
                 selMask,
 
                 pairPointingAngleDeg,
-                pvsvAngleZDeg,
+                pvsvThetaDeg,
+                pvsvPhiDeg,
                 pairPBalance,
                 pairPtBalance,
                 pairQ,
