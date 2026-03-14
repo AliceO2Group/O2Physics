@@ -14,6 +14,7 @@
 /// \author M. Hemmer, marvin.hemmer@cern.ch
 
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
 
@@ -118,7 +119,7 @@ struct TaskFlowReso {
   SliceCache cache;
   EventPlaneHelper epHelper;
 
-  using CollsWithQvecs = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
+  using CollsWithQvecs = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMEventsQvec_001>;
   using CollWithQvec = CollsWithQvecs::iterator;
 
   static constexpr std::size_t NQVecEntries = 6;

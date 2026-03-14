@@ -83,8 +83,8 @@ struct HfTaskXic0ToXiPi {
   using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
   Filter filterSelectXic0Candidates = aod::hf_sel_toxipi::resultSelections == true;
-  Filter filterXicMatchedRec = nabs(aod::hf_cand_xic0_omegac0::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi));
-  Filter filterXicMatchedGen = nabs(aod::hf_cand_xic0_omegac0::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi));
+  Filter filterXicMatchedRec = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi));
+  Filter filterXicMatchedGen = nabs(aod::hf_cand_mc_flag::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi));
   Preslice<Xic0Cands> candXicPerCollision = aod::hf_cand_xic0_omegac0::collisionId;
   Preslice<Xic0CandsKF> candXicKFPerCollision = aod::hf_cand_xic0_omegac0::collisionId;
   Preslice<Xic0CandsMl> candXicMlPerCollision = aod::hf_cand_xic0_omegac0::collisionId;
@@ -174,7 +174,7 @@ struct HfTaskXic0ToXiPi {
     if (candidate.resultSelections() != true) {
       return;
     }
-    double yCharmBaryon;
+    double yCharmBaryon{0.};
     if constexpr (UseKfParticle) {
       yCharmBaryon = candidate.kfRapXic();
     } else {
@@ -223,7 +223,7 @@ struct HfTaskXic0ToXiPi {
       if (candidate.resultSelections() != true) {
         continue;
       }
-      double yCharmBaryon;
+      double yCharmBaryon{0.};
       if constexpr (UseKfParticle) {
         yCharmBaryon = candidate.kfRapXic();
       } else {

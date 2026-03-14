@@ -13,7 +13,7 @@ def make_list(object) -> list:
     """
     Returns the object as a list if it is not a list already.
     """
-    return object if isinstance(object, list) else list(object)
+    return object if isinstance(object, list) else [object]
 
 
 # pylint: disable=too-many-arguments

@@ -32,6 +32,7 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -58,6 +59,7 @@ using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::constants::physics;
 using namespace o2::hf_centrality;
 using namespace o2::hf_occupancy;
 using namespace o2::hf_evsel;
@@ -107,7 +109,7 @@ struct HfTaskFlowCharmHadrons {
 
   Configurable<int> harmonic{"harmonic", 2, "harmonic number"};
   Configurable<int> qVecDetector{"qVecDetector", 3, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3, TPC Pos: 4, TPC Neg: 5, TPC Tot: 6)"};
-  Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3, FV0A: 4)"};
+  Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3, FV0A: 4, NTracksPV: 5, FT0CVariant2: 6)"};
   Configurable<int> selectionFlag{"selectionFlag", 1, "Selection Flag for hadron (e.g. 1 for skimming, 3 for topo. and kine., 7 for PID)"};
   Configurable<float> centralityMin{"centralityMin", 0., "Minimum centrality accepted in SP/EP computation (not applied in resolution process)"};
   Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality accepted in SP/EP computation (not applied in resolution process)"};
@@ -122,6 +124,8 @@ struct HfTaskFlowCharmHadrons {
   Configurable<bool> storeEpCosSin{"storeEpCosSin", false, "Flag to store cos and sin of EP angle in ThnSparse"};
   Configurable<bool> storeCandEta{"storeCandEta", false, "Flag to store candidates eta"};
   Configurable<bool> storeCandSign{"storeCandSign", false, "Flag to store candidates sign"};
+  Configurable<bool> storeCentSparse{"storeCentSparse", false, "Flag to store up to 4 centrality estimators comparison sparse (only applied in resolution process)"};
+  Configurable<std::vector<int>> centEstimatorsForSparse{"centEstimatorsForSparse", {1, 2, 3, 4}, "Centrality estimators to be stored in the centrality sparse (FT0A: 1, FT0C: 2, FT0M: 3, FV0A: 4). Up to 4 estimators can be configured."};
   Configurable<int> occEstimator{"occEstimator", 0, "Occupancy estimation (0: None, 1: ITS, 2: FT0C)"};
   Configurable<bool> saveEpResoHisto{"saveEpResoHisto", false, "Flag to save event plane resolution histogram"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -129,7 +133,7 @@ struct HfTaskFlowCharmHadrons {
 
   EventPlaneHelper epHelper;
   HfEventSelection hfEvSel; // event selection and monitoring
-  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
   SliceCache cache;
 
   using CandDsDataWMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;
@@ -144,7 +148,7 @@ struct HfTaskFlowCharmHadrons {
   using CandXic0DataWMl = soa::Filtered<soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfMlToXiPi>>;
   using CandD0DataWMl = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>>;
   using CandD0Data = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
-  using CollsWithQvecs = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::QvectorBTots, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
+  using CollsWithQvecs = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::QvectorBTots, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0CVariant2s>;
   using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
 
   Filter filterSelectDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlag || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlag;
@@ -249,6 +253,13 @@ struct HfTaskFlowCharmHadrons {
       }
     }
     registry.add("hSparseFlowCharm", "THn for SP", HistType::kTHnSparseF, axes);
+    registry.add("hCentEventWithCand", "Centrality distributions with charm candidates;Cent;entries", HistType::kTH1F, {{100, 0.f, 100.f}});
+    registry.add("hCentEventWithCandInSigRegion", "Centrality distributions with charm candidates in signal range;Cent;entries", HistType::kTH1F, {{100, 0.f, 100.f}});
+
+    if (storeCentSparse) {
+      std::vector<AxisSpec> axesCent = {thnAxisCent, thnAxisCent, thnAxisCent, thnAxisCent};
+      registry.add("hSparseCentEstimators", "THn with different centrality estimators; Centrality 0; Centrality 1; Centrality 2; Centrality 3", {HistType::kTHnSparseF, axesCent});
+    }
 
     if (occEstimator != 0) {
       registry.add("trackOccVsFT0COcc", "trackOccVsFT0COcc; trackOcc; FT0COcc", {HistType::kTH2F, {thnAxisOccupancyITS, thnAxisOccupancyFT0C}});
@@ -512,6 +523,9 @@ struct HfTaskFlowCharmHadrons {
     if (cent < centralityMin || cent > centralityMax) {
       return;
     }
+    if (candidates.size() > 0) {
+      registry.fill(HIST("hCentEventWithCand"), cent);
+    }
     float occupancy = 0.;
     o2::hf_evsel::HfCollisionRejectionMask hfevflag{};
     if (occEstimator != 0) {
@@ -519,6 +533,10 @@ struct HfTaskFlowCharmHadrons {
       registry.fill(HIST("trackOccVsFT0COcc"), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
       hfevflag = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
     }
+    bool hasCandInMassWin = false;
+    float const sigmaMD0 = 0.02;     // used 20 MeV as the D0 average peak width in run3
+    float const sigmaMDplus = 0.015; // used 15 MeV as the D+ average peak width in run3
+    float const nSigmaMass = 2.5;
 
     std::array<float, 3> qVecs = getQvec(collision, qVecDetector.value);
     float xQVec = qVecs[0];
@@ -554,6 +572,9 @@ struct HfTaskFlowCharmHadrons {
         }
       } else if constexpr (std::is_same_v<T1, CandDplusData> || std::is_same_v<T1, CandDplusDataWMl>) {
         massCand = HfHelper::invMassDplusToPiKPi(candidate);
+        if (std::abs(massCand - MassDPlus) < nSigmaMass * sigmaMDplus) {
+          hasCandInMassWin = true;
+        }
         auto trackprong0 = candidate.template prong0_as<Trk>();
         signCand = trackprong0.sign();
         if constexpr (std::is_same_v<T1, CandDplusDataWMl>) {
@@ -566,6 +587,9 @@ struct HfTaskFlowCharmHadrons {
           case DecayChannel::D0ToPiK:
             signCand = candidate.isSelD0bar() ? 3 : 1; // 3: reflected D0bar, 1: pure D0 excluding reflected D0bar
             massCand = HfHelper::invMassD0ToPiK(candidate);
+            if (std::abs(massCand - MassD0) < nSigmaMass * sigmaMD0) {
+              hasCandInMassWin = true;
+            }
             if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
               for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
                 outputMl[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
@@ -574,6 +598,9 @@ struct HfTaskFlowCharmHadrons {
             break;
           case DecayChannel::D0ToKPi:
             massCand = HfHelper::invMassD0barToKPi(candidate);
+            if (std::abs(massCand - MassD0) < nSigmaMass * sigmaMD0) {
+              hasCandInMassWin = true;
+            }
             signCand = candidate.isSelD0() ? 3 : 2; // 3: reflected D0, 2: pure D0bar excluding reflected D0
             if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
               for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
@@ -698,6 +725,9 @@ struct HfTaskFlowCharmHadrons {
       if (fillSparse) {
         fillThn(massCand, ptCand, etaCand, signCand, cent, cosNPhi, sinNPhi, cosDeltaPhi, scalprodCand, outputMl, occupancy, hfevflag);
       }
+    }
+    if (hasCandInMassWin) {
+      registry.fill(HIST("hCentEventWithCandInSigRegion"), cent);
     }
   }
 
@@ -855,7 +885,7 @@ struct HfTaskFlowCharmHadrons {
     float const xQVecBTot = collision.qvecBTotRe();
     float const yQVecBTot = collision.qvecBTotIm();
 
-    centrality = o2::hf_centrality::getCentralityColl(collision, o2::hf_centrality::CentralityEstimator::FT0C);
+    centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
     if (storeResoOccu) {
       const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
       registry.fill(HIST("trackOccVsFT0COcc"), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
@@ -865,6 +895,11 @@ struct HfTaskFlowCharmHadrons {
                     xQVecFT0c * xQVecBTot + yQVecFT0c * yQVecBTot,
                     xQVecFV0a * xQVecBTot + yQVecFV0a * yQVecBTot,
                     occupancy, evtSelFlags[0], evtSelFlags[1], evtSelFlags[2], evtSelFlags[3], evtSelFlags[4]);
+    }
+
+    if (storeCentSparse) {
+      registry.fill(HIST("hSparseCentEstimators"), o2::hf_centrality::getCentralityColl(collision, centEstimatorsForSparse->at(0)), o2::hf_centrality::getCentralityColl(collision, centEstimatorsForSparse->at(1)),
+                    o2::hf_centrality::getCentralityColl(collision, centEstimatorsForSparse->at(2)), o2::hf_centrality::getCentralityColl(collision, centEstimatorsForSparse->at(3)));
     }
 
     if (!isCollSelected<o2::hf_centrality::CentralityEstimator::FT0C>(collision, bcs, centrality)) {

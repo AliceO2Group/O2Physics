@@ -153,7 +153,7 @@ DECLARE_SOA_TABLE(HfCandBpFulls, "AOD", "HFCANDBPFULL",
                   full::Phi,
                   full::Y,
                   full::E,
-                  hf_cand_2prong::FlagMcMatchRec,
+                  hf_cand_mc_flag::FlagMcMatchRec,
                   full::D0M,
                   full::D0PtProng0,
                   full::D0PtProng1,
@@ -195,8 +195,8 @@ DECLARE_SOA_TABLE(HfCandBpFullPs, "AOD", "HFCANDBPFULLP",
                   full::Eta,
                   full::Phi,
                   full::Y,
-                  hf_cand_2prong::FlagMcMatchRec,
-                  hf_cand_2prong::OriginMcGen);
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::OriginMcGen);
 
 DECLARE_SOA_TABLE(HfCandBpLites, "AOD", "HFCANDBPLITE",
                   hf_cand::Chi2PCA,
@@ -219,8 +219,8 @@ DECLARE_SOA_TABLE(HfCandBpLites, "AOD", "HFCANDBPLITE",
                   full::Eta,
                   full::Phi,
                   full::Y,
-                  hf_cand_2prong::FlagMcMatchRec,
-                  hf_cand_2prong::OriginMcRec);
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::OriginMcRec);
 
 } // namespace o2::aod
 
@@ -244,8 +244,8 @@ struct HfTreeCreatorBplusToD0Pi {
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= selectionFlagBplus;
 
-  Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_bplus::flagMcMatchRec) == static_cast<int8_t>(DecayChannelMain::BplusToD0Pi);
-  Partition<SelectedCandidatesMc> recBg = nabs(aod::hf_cand_bplus::flagMcMatchRec) != static_cast<int8_t>(DecayChannelMain::BplusToD0Pi);
+  Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(DecayChannelMain::BplusToD0Pi);
+  Partition<SelectedCandidatesMc> recBg = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) != static_cast<int8_t>(DecayChannelMain::BplusToD0Pi);
 
   void init(InitContext const&)
   {

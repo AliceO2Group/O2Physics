@@ -60,7 +60,7 @@ fastjet::ClusterSequenceArea jetToPseudoJet(T const& jet, U const& /*tracks*/, V
   }
   if constexpr (jetcandidateutilities::isCandidateTable<O>() || jetcandidateutilities::isCandidateMcTable<O>()) {
     for (auto& jetHFConstituent : jet.template candidates_as<O>()) {
-      fastjetutilities::fillTracks(jetHFConstituent, jetConstituents, jetHFConstituent.globalIndex(), static_cast<int>(JetConstituentStatus::candidate), jetcandidateutilities::getTablePDGMass<O>());
+      fastjetutilities::fillTracks(jetHFConstituent, jetConstituents, jetHFConstituent.globalIndex(), JetConstituentStatus::candidate, jetcandidateutilities::getTablePDGMass<O>());
     }
   }
   std::vector<fastjet::PseudoJet> jetReclustered;

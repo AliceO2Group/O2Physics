@@ -14,14 +14,11 @@
 // This code is for event QC for PWG-EM.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/Zorro.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/Qvectors.h"

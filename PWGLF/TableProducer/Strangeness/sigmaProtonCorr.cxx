@@ -180,6 +180,26 @@ struct sigmaProtonCorrTask {
     return 0.5 * trackRelK.P();
   }
 
+  float getKStar(float sigmaPx, float sigmaPy, float sigmaPz, float pxPr, float pyPr, float pzPr)
+  {
+    TLorentzVector part1; // Sigma
+    TLorentzVector part2; // Proton
+    part1.SetXYZM(sigmaPx, sigmaPy, sigmaPz, o2::constants::physics::MassSigmaMinus);
+    part2.SetXYZM(pxPr, pyPr, pzPr, o2::constants::physics::MassProton);
+    trackSum = part1 + part2;
+    const float beta = trackSum.Beta();
+    const float betax = beta * std::cos(trackSum.Phi()) * std::sin(trackSum.Theta());
+    const float betay = beta * std::sin(trackSum.Phi()) * std::sin(trackSum.Theta());
+    const float betaz = beta * std::cos(trackSum.Theta());
+    PartOneCMS.SetXYZM(part1.Px(), part1.Py(), part1.Pz(), part1.M());
+    PartTwoCMS.SetXYZM(part2.Px(), part2.Py(), part2.Pz(), part2.M());
+    const ROOT::Math::Boost boostPRF = ROOT::Math::Boost(-betax, -betay, -betaz);
+    PartOneCMS = boostPRF(PartOneCMS);
+    PartTwoCMS = boostPRF(PartTwoCMS);
+    trackRelK = PartOneCMS - PartTwoCMS;
+    return 0.5 * trackRelK.P();
+  }
+
   template <typename Ttrack>
   bool selectPrTrack(const Ttrack& candidate)
   {
@@ -410,9 +430,22 @@ struct sigmaProtonCorrTask {
           auto mcLabelSigma = tracks.rawIteratorAt(candidate.sigmaID);
           auto mcLabelSigmaDau = tracks.rawIteratorAt(candidate.kinkDauID);
           auto mcLabelPr = tracks.rawIteratorAt(candidate.prID);
-          auto pdgSigma = mcLabelSigma.has_mcParticle() ? mcLabelSigma.mcParticle_as<aod::McParticles>().pdgCode() : -999;
-          auto pdgSigmaDau = mcLabelSigmaDau.has_mcParticle() ? mcLabelSigmaDau.mcParticle_as<aod::McParticles>().pdgCode() : -999;
-          auto pdgPr = mcLabelPr.has_mcParticle() ? mcLabelPr.mcParticle_as<aod::McParticles>().pdgCode() : -999;
+
+          if (!mcLabelSigma.has_mcParticle() || !mcLabelSigmaDau.has_mcParticle() || !mcLabelPr.has_mcParticle()) {
+            continue; // Skip candidates where MC truth is not available
+          }
+
+          auto mcPartSigma = mcLabelSigma.mcParticle_as<aod::McParticles>();
+          auto mcPartSigmaDau = mcLabelSigmaDau.mcParticle_as<aod::McParticles>();
+          auto mcPartPr = mcLabelPr.mcParticle_as<aod::McParticles>();
+          auto pdgSigma = mcPartSigma.pdgCode();
+          auto pdgSigmaDau = mcLabelSigmaDau.has_mcParticle() ? mcPartSigmaDau.pdgCode() : -999;
+          auto pdgPr = mcLabelPr.has_mcParticle() ? mcPartPr.pdgCode() : -999;
+
+          float sigmaPtGen = std::hypot(mcPartSigma.px(), mcPartSigma.py());
+          float prPtGen = std::hypot(mcPartPr.px(), mcPartPr.py());
+          float kStarGen = getKStar(mcPartSigma.px(), mcPartSigma.py(), mcPartSigma.pz(), mcPartPr.px(), mcPartPr.py(), mcPartPr.pz());
+
           outputDataTableMC(candidate.sigmaCharge,
                             candidate.sigmaPx,
                             candidate.sigmaPy,
@@ -430,7 +463,10 @@ struct sigmaProtonCorrTask {
                             candidate.nSigmaTOFPr,
                             pdgSigma,
                             pdgSigmaDau,
-                            pdgPr);
+                            pdgPr,
+                            sigmaPtGen,
+                            prPtGen,
+                            kStarGen);
         }
       }
     }
@@ -462,9 +498,20 @@ struct sigmaProtonCorrTask {
           auto mcLabelSigma = tracks.rawIteratorAt(candidate.sigmaID);
           auto mcLabelSigmaDau = tracks.rawIteratorAt(candidate.kinkDauID);
           auto mcLabelPr = tracks.rawIteratorAt(candidate.prID);
-          auto pdgSigma = mcLabelSigma.has_mcParticle() ? mcLabelSigma.mcParticle_as<aod::McParticles>().pdgCode() : -999;
-          auto pdgSigmaDau = mcLabelSigmaDau.has_mcParticle() ? mcLabelSigmaDau.mcParticle_as<aod::McParticles>().pdgCode() : -999;
-          auto pdgPr = mcLabelPr.has_mcParticle() ? mcLabelPr.mcParticle_as<aod::McParticles>().pdgCode() : -999;
+
+          if (!mcLabelSigma.has_mcParticle() || !mcLabelSigmaDau.has_mcParticle() || !mcLabelPr.has_mcParticle()) {
+            continue; // Skip candidates where MC truth is not available
+          }
+
+          auto mcPartSigma = mcLabelSigma.mcParticle_as<aod::McParticles>();
+          auto mcPartSigmaDau = mcLabelSigmaDau.mcParticle_as<aod::McParticles>();
+          auto mcPartPr = mcLabelPr.mcParticle_as<aod::McParticles>();
+          auto pdgSigma = mcPartSigma.pdgCode();
+          auto pdgSigmaDau = mcLabelSigmaDau.has_mcParticle() ? mcPartSigmaDau.pdgCode() : -999;
+          auto pdgPr = mcLabelPr.has_mcParticle() ? mcPartPr.pdgCode() : -999;
+          float sigmaPtGen = std::hypot(mcPartSigma.px(), mcPartSigma.py());
+          float prPtGen = std::hypot(mcPartPr.px(), mcPartPr.py());
+          float kStarGen = getKStar(mcPartSigma.px(), mcPartSigma.py(), mcPartSigma.pz(), mcPartPr.px(), mcPartPr.py(), mcPartPr.pz());
           outputDataTableMC(candidate.sigmaCharge,
                             candidate.sigmaPx,
                             candidate.sigmaPy,
@@ -482,7 +529,10 @@ struct sigmaProtonCorrTask {
                             candidate.nSigmaTOFPr,
                             pdgSigma,
                             pdgSigmaDau,
-                            pdgPr);
+                            pdgPr,
+                            sigmaPtGen,
+                            prPtGen,
+                            kStarGen);
         }
       }
     }

@@ -49,7 +49,6 @@ using namespace o2;
 using namespace o2::framework;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Qvectors>;
-using MyCollisionsWithSC = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorsShifteds>;
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension>;
 
 struct qVectorsCorrection {
@@ -757,49 +756,6 @@ struct qVectorsCorrection {
     }
   }
   PROCESS_SWITCH(qVectorsCorrection, processDefault, "default process", true);
-
-  void processWithSC(MyCollisionsWithSC::iterator const& qVec, MyTracks const& tracks)
-  {
-    histosQA.fill(HIST("histCentFull"), qVec.cent());
-    if (cfgAddEvtSel) {
-      if (std::abs(qVec.posZ()) > 10.)
-        return;
-      switch (cfgEvtSel) {
-        case 0: // Sel8
-          if (!qVec.sel8())
-            return;
-          break;
-        case 1: // PbPb standard
-          if (!qVec.sel8() || !qVec.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !qVec.selection_bit(aod::evsel::kNoSameBunchPileup))
-            return;
-          break;
-        case 2: // PbPb with pileup
-          if (!qVec.sel8() || !qVec.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) ||
-              !qVec.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !qVec.selection_bit(aod::evsel::kNoSameBunchPileup))
-            return;
-          break;
-        case 3: // Small systems (OO, NeNe, pp)
-          if (!qVec.sel8() || !qVec.selection_bit(aod::evsel::kNoSameBunchPileup))
-            return;
-          break;
-        default:
-          LOGF(warning, "Event selection flag was not found, continuing without basic event selections!\n");
-      }
-      // Check occupancy
-      if (qVec.trackOccupancyInTimeRange() > cfgMaxOccupancy || qVec.trackOccupancyInTimeRange() < cfgMinOccupancy)
-        return;
-    }
-    histosQA.fill(HIST("histCentSelected"), qVec.cent());
-    histosQA.fill(HIST("histVtxSelected"), qVec.posZ());
-
-    for (uint i = 0; i < cfgnMods->size(); i++) {
-      fillHistosQvecWithSC(qVec, cfgnMods->at(i));
-      if (cfgQAFinal && cfgQAFlowStudy) {
-        fillHistosFlowWithSC(qVec, tracks, cfgnMods->at(i));
-      }
-    }
-  }
-  PROCESS_SWITCH(qVectorsCorrection, processWithSC, "process with shift correction", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

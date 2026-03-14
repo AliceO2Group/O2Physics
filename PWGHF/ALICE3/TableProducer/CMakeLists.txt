@@ -21,6 +21,11 @@ o2physics_add_dpl_workflow(candidate-creator-x
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(candidate-creator-xicc
+                    SOURCES candidateCreatorXicc.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
+                    COMPONENT_NAME Analysis)
+
 # Candidate selectors
 
 o2physics_add_dpl_workflow(candidate-selector-chic-to-jpsi-gamma
@@ -63,6 +68,11 @@ o2physics_add_dpl_workflow(candidate-selector-x-to-jpsi-pi-pi
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(candidate-selector-xicc-to-p-k-pi-pi
+                    SOURCES candidateSelectorXiccToPKPiPi.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 # Tree creators
 
 o2physics_add_dpl_workflow(tree-creator-chic-to-jpsi-gamma
@@ -72,5 +82,10 @@ o2physics_add_dpl_workflow(tree-creator-chic-to-jpsi-gamma
 
 o2physics_add_dpl_workflow(tree-creator-x-to-jpsi-pi-pi
                     SOURCES treeCreatorXToJpsiPiPi.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(tree-creator-xicc-to-p-k-pi-pi
+                    SOURCES treeCreatorXiccToPKPiPi.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

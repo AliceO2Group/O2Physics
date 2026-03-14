@@ -200,11 +200,11 @@ struct FemtoPairTrackCascade {
       if (processXi) {
         xiHistSpec = cascadehistmanager::makeCascadeHistSpecMap(confXiBinning);
         pairTrackCascadeHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
-        pairTrackXiBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confTrackSelection, confTrackCleaner, confXiSelection, confXiCleaner, confCprBachelor, confCprV0Daughter, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, xiHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, pairTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter);
+        pairTrackXiBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, confXiSelection, confXiCleaner, confCprBachelor, confCprV0Daughter, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, xiHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, pairTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter);
       } else {
         omegaHistSpec = cascadehistmanager::makeCascadeHistSpecMap(confOmegaBinning);
         pairTrackCascadeHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
-        pairTrackOmegaBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confTrackSelection, confTrackCleaner, confOmegaSelection, confOmegaCleaner, confCprBachelor, confCprV0Daughter, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, omegaHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, pairTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter);
+        pairTrackOmegaBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, confOmegaSelection, confOmegaCleaner, confCprBachelor, confCprV0Daughter, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, omegaHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, pairTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter);
       }
     } else {
       colHistSpec = colhistmanager::makeColMcHistSpecMap(confCollisionBinning);
@@ -216,11 +216,11 @@ struct FemtoPairTrackCascade {
       if (processXi) {
         xiHistSpec = cascadehistmanager::makeCascadeMcHistSpecMap(confXiBinning);
         pairTrackCascadeHistSpec = pairhistmanager::makePairMcHistSpecMap(confPairBinning);
-        pairTrackXiBuilder.init<modes::Mode::kAnalysis_Mc>(&hRegistry, confTrackSelection, confTrackCleaner, confXiSelection, confXiCleaner, confCprBachelor, confCprV0Daughter, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, xiHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, pairTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter);
+        pairTrackXiBuilder.init<modes::Mode::kAnalysis_Mc>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, confXiSelection, confXiCleaner, confCprBachelor, confCprV0Daughter, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, xiHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, pairTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter);
       } else {
         omegaHistSpec = cascadehistmanager::makeCascadeMcHistSpecMap(confOmegaBinning);
         pairTrackCascadeHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
-        pairTrackOmegaBuilder.init<modes::Mode::kAnalysis_Mc>(&hRegistry, confTrackSelection, confTrackCleaner, confOmegaSelection, confOmegaCleaner, confCprBachelor, confCprV0Daughter, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, omegaHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, pairTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter);
+        pairTrackOmegaBuilder.init<modes::Mode::kAnalysis_Mc>(&hRegistry, confCollisionBinning, confTrackSelection, confTrackCleaner, confOmegaSelection, confOmegaCleaner, confCprBachelor, confCprV0Daughter, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, omegaHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, pairTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter);
       }
     }
   };
