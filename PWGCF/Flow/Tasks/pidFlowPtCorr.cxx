@@ -66,7 +66,7 @@ using namespace o2::framework::expressions;
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
 struct PidFlowPtCorr {
-#pragma region // configurable
+  // configurable
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
@@ -202,9 +202,9 @@ struct PidFlowPtCorr {
 
   AxisSpec axisMultiplicity{{0, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90}, "Centrality (%)"};
 
-#pragma endregion // configurable
+  // configurable
 
-#pragma region // filter
+  // filter
   // filter and using
   // data
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -227,9 +227,9 @@ struct PidFlowPtCorr {
   using FilteredCollisionsWithMCLabel = soa::Filtered<soa::Join<AodCollisions, aod::EvSels, aod::McCollisionLabels>>;
   // end using and filter
 
-#pragma endregion // filter
+  // filter
 
-#pragma region // others
+  // others
 
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
 
@@ -338,11 +338,11 @@ struct PidFlowPtCorr {
   std::vector<qaHist> qaHistVector;
   // end hists for QA runbyrun
 
-#pragma endregion // others
+  // others
 
   void init(InitContext const&) // Initialization
   {
-#pragma region // init and add lots of graphs according to switch
+    // init and add lots of graphs according to switch
     ccdb->setURL(cfgurl.value);
     ccdb->setCaching(true);
     ccdb->setCreatedNotAfter(cfgnolaterthan.value);
@@ -508,9 +508,8 @@ struct PidFlowPtCorr {
 
     registry.add("hInteractionRate", "", {HistType::kTH1D, {{1000, 0, 1000}}});
     // end set bin label for eventcount
-#pragma endregion
 
-#pragma region // flow container setup
+    // flow container setup
     // cumulant of flow
     // fill TObjArray for charged
     TObjArray* oba4Ch = new TObjArray();
@@ -560,6 +559,7 @@ struct PidFlowPtCorr {
     // init tprofile3d for <2'> - meanpt
     // charged
     registry.add("meanptCentNbs/hCharged", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+    registry.add("meanptCentNbs/hChargedMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
     // end charged
 
     // pid
@@ -577,9 +577,7 @@ struct PidFlowPtCorr {
     // end pid
     // end init tprofile3d for <2'> - meanpt
 
-#pragma endregion
-
-#pragma region // fgfw set up and correlation config setup
+    // fgfw set up and correlation config setup
     // Data stored in fGFW
     double etaMax = trkQualityOpts.cfgCutEta.value;
     double etaGap = cfgEtaGap;
@@ -670,9 +668,7 @@ struct PidFlowPtCorr {
 
     fGFW->CreateRegions(); // finalize the initialization
 
-#pragma endregion
-
-#pragma region // params
+    // params
     // used for event selection
     fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
     fMultPVCutLow->SetParameters(cfgMultPVCutPara[0], cfgMultPVCutPara[1], cfgMultPVCutPara[2], cfgMultPVCutPara[3], cfgMultPVCutPara[4], cfgMultPVCutPara[5], cfgMultPVCutPara[6], cfgMultPVCutPara[7], cfgMultPVCutPara[8], cfgMultPVCutPara[9]);
@@ -703,11 +699,9 @@ struct PidFlowPtCorr {
     funcV3->SetParameters(v3para[0], v3para[1], v3para[2], v3para[3], v3para[4]);
     funcV4 = new TF1("funcV4", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
     funcV4->SetParameters(v4para[0], v4para[1], v4para[2], v4para[3], v4para[4]);
-
-#pragma endregion
   }
 
-#pragma region // pid utils function
+  // pid utils function
 
   /**
    * @brief Identify whether the input track is a Pion
@@ -839,9 +833,9 @@ struct PidFlowPtCorr {
     return resultKaon;
   }
 
-#pragma endregion // pid util function
+  // pid util function
 
-#pragma region // other utils
+  // other utils
 
   double getPidC22InOneEvent(const GFW::CorrConfig& corrconfA, const GFW::CorrConfig& corrconfB)
   {
@@ -890,9 +884,9 @@ struct PidFlowPtCorr {
     return false;
   }
 
-#pragma endregion // other utils
+  // other utils
 
-#pragma region // fgfw filling helpers
+  // fgfw filling helpers
 
   /**
    * @brief this function is used to fill fFCCh4PtC22
@@ -917,6 +911,7 @@ struct PidFlowPtCorr {
       return;
 
     registry.fill(HIST("meanptCentNbs/hCharged"), ptSum / nch, cent, rndm * cfgFlowNbootstrap, val, nch * dnx);
+    registry.fill(HIST("meanptCentNbs/hChargedMeanpt"), ptSum / nch, cent, rndm * cfgFlowNbootstrap, ptSum / nch, nch * dnx);
   }
 
   /**
@@ -1140,9 +1135,9 @@ struct PidFlowPtCorr {
     return;
   }
 
-#pragma endregion // fill fgfw helper
+  // fill fgfw helper
 
-#pragma region // correction apply functions
+  // correction apply functions
 
   /**
    * @brief load NUE(1D) NUE(2D) NUA graphs
@@ -1380,9 +1375,9 @@ struct PidFlowPtCorr {
     return true;
   }
 
-#pragma endregion // correction apply function
+  // correction apply function
 
-#pragma region // track cut functions
+  // track cut functions
 
   /**
    * @brief cut MC particles
@@ -1501,9 +1496,9 @@ struct PidFlowPtCorr {
     return true;
   }
 
-#pragma endregion // track cut
+  // track cut
 
-#pragma region // event selection functions
+  // event selection functions
 
   /**
    * @brief fill eventCount for different function
@@ -1647,13 +1642,13 @@ struct PidFlowPtCorr {
     return true;
   }
 
-#pragma endregion // event selection
+  // event selection
 
-#pragma region // main functions
+  // main functions
 
   void processData(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)
   {
-#pragma region // sub region, init
+    // sub region, init
     // init
     float rndm = fRndm->Rndm();
     int nTot = tracks.size();
@@ -1730,14 +1725,27 @@ struct PidFlowPtCorr {
       LOGF(info, "====================================");
     }
 
-#pragma endregion
-
+    // val for pid particles
     double pionPtSum = 0;
     double kaonPtSum = 0;
     double protonPtSum = 0;
+
     double nPionWeighted = 0;
     double nKaonWeighted = 0;
     double nProtonWeighted = 0;
+
+    double pionPtSumw2 = 0;
+    double kaonPtSumw2 = 0;
+    double protonPtSumw2 = 0;
+
+    double nPionSquare = 0;
+    double nKaonSquare = 0;
+    double nProtonSquare = 0;
+
+    double pionPtSquareSum = 0;
+    double kaonPtSquareSum = 0;
+    double protonPtSquareSum = 0;
+    // end val for pid particles
 
     /// @note calculate pt
     /// use ITS only
@@ -1783,16 +1791,25 @@ struct PidFlowPtCorr {
         ptSquareSum += weff * weff * track.pt() * track.pt();
 
         if (isPion(track)) {
-          pionPtSum += weff * track.pt();
           nPionWeighted += weff;
+          nPionSquare += weff * weff;
+          pionPtSum += weff * track.pt();
+          pionPtSumw2 += weff * weff * track.pt();
+          pionPtSquareSum += weff * weff * track.pt() * track.pt();
         }
         if (isKaon(track)) {
-          kaonPtSum += weff * track.pt();
           nKaonWeighted += weff;
+          nKaonSquare += weff * weff;
+          kaonPtSum += weff * track.pt();
+          kaonPtSumw2 += weff * weff * track.pt();
+          kaonPtSquareSum += weff * weff * track.pt() * track.pt();
         }
         if (isProton(track)) {
-          protonPtSum += weff * track.pt();
           nProtonWeighted += weff;
+          nProtonSquare += weff * weff;
+          protonPtSum += weff * track.pt();
+          protonPtSumw2 += weff * weff * track.pt();
+          protonPtSquareSum += weff * weff * track.pt() * track.pt();
         }
       }
       // end calculate nch and pt
@@ -1946,7 +1963,7 @@ struct PidFlowPtCorr {
       // end fill GFW
     } // end track loop for v2 calculation
 
-#pragma region // sub region, fill graphs after 2 loop on all tracks
+    // sub region, fill graphs after 2 loop on all tracks
     if (particleAbundanceOpts.cfgOutPutAbundanceDis) {
       registry.fill(HIST("abundance/hNumOfPiEventCount"), numOfPi);
       registry.fill(HIST("abundance/hNumOfKaEventCount"), numOfKa);
@@ -2084,8 +2101,17 @@ struct PidFlowPtCorr {
 
       fFCCh->FillProfile("hMeanPt", cent, (ptSum / nch), nch, rndm);
 
+      if (nPionWeighted > 0)
+        fFCPi->FillProfile("hMeanPt", cent, (pionPtSum / nPionWeighted), nPionWeighted, rndm);
+
+      if (nKaonWeighted > 0)
+        fFCKa->FillProfile("hMeanPt", cent, (kaonPtSum / nKaonWeighted), nKaonWeighted, rndm);
+
+      if (nProtonWeighted > 0)
+        fFCPr->FillProfile("hMeanPt", cent, (protonPtSum / nProtonWeighted), nProtonWeighted, rndm);
+
       double nchDiff = nch * nch - nchSquare;
-      if (nchDiff) {
+      if (nchDiff > 1e-3) {
         fFCCh->FillProfile("ptSquareAve", cent,
                            (ptSum * ptSum - ptSquareSum) / nchDiff,
                            nchDiff, rndm);
@@ -2094,9 +2120,41 @@ struct PidFlowPtCorr {
                            (nch * ptSum - ptSumw2) / nchDiff,
                            nchDiff, rndm);
       }
-    } // end fill hist using fillProfile
 
-#pragma endregion
+      double pionDiff = nPionWeighted * nPionWeighted - nPionSquare;
+      if (pionDiff > 1e-3) {
+        fFCPi->FillProfile("ptSquareAve", cent,
+                           (pionPtSum * pionPtSum - pionPtSquareSum) / pionDiff,
+                           pionDiff, rndm);
+
+        fFCPi->FillProfile("ptAve", cent,
+                           (nPionWeighted * pionPtSum - pionPtSumw2) / pionDiff,
+                           pionDiff, rndm);
+      }
+
+      double kaonDiff = nKaonWeighted * nKaonWeighted - nKaonSquare;
+      if (kaonDiff > 1e-3) {
+        fFCKa->FillProfile("ptSquareAve", cent,
+                           (kaonPtSum * kaonPtSum - kaonPtSquareSum) / kaonDiff,
+                           kaonDiff, rndm);
+
+        fFCKa->FillProfile("ptAve", cent,
+                           (nKaonWeighted * kaonPtSum - kaonPtSumw2) / kaonDiff,
+                           kaonDiff, rndm);
+      }
+
+      double protonDiff = nProtonWeighted * nProtonWeighted - nProtonSquare;
+      if (protonDiff > 1e-3) {
+        fFCPr->FillProfile("ptSquareAve", cent,
+                           (protonPtSum * protonPtSum - protonPtSquareSum) / protonDiff,
+                           protonDiff, rndm);
+
+        fFCPr->FillProfile("ptAve", cent,
+                           (nProtonWeighted * protonPtSum - protonPtSumw2) / protonDiff,
+                           protonDiff, rndm);
+      }
+
+    } // end fill hist using fillProfile
   }
   PROCESS_SWITCH(PidFlowPtCorr, processData, "", true);
 
@@ -2409,7 +2467,7 @@ struct PidFlowPtCorr {
   }
   PROCESS_SWITCH(PidFlowPtCorr, processSim, "function used to do pt eff, NOTE (OutPutMc, processReco, processSim) should be open", true);
 
-#pragma endregion // main function
+  // main function
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
