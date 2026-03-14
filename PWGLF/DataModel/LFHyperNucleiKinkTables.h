@@ -13,8 +13,9 @@
 /// \brief Slim hypernuclei kink tables
 /// \author Yuanzhe Wang <yuanzhe.wang@cern.ch>
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 
 #ifndef PWGLF_DATAMODEL_LFHYPERNUCLEIKINKTABLES_H_
 #define PWGLF_DATAMODEL_LFHYPERNUCLEIKINKTABLES_H_

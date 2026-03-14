@@ -23,13 +23,22 @@
 
 #include "PWGLF/Utils/collisionCutsGroup.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/TriggerAliases.h" // IWYU pragma: keep (needed by EventSelectionFlagsMapping.def)
 #include "Common/DataModel/EventSelection.h"
 
-#include "Framework/HistogramRegistry.h"
-#include "Framework/Logger.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
+
+#include <TH1.h>
+
+#include <Rtypes.h>
 
 #include <map>
-#include <string>
+#include <utility>
 #include <vector>
 
 namespace o2::analysis

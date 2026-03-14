@@ -12,24 +12,19 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Qvectors.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
 
-#include "Math/Vector3D.h"
-#include "TVector3.h"
+#include <TPDGCode.h>
+#include <TVector3.h>
 
+#include <array>
 #include <cmath>
-#include <vector>
+#include <cstdint>
 
 #ifndef PWGLF_DATAMODEL_LFSIGMATABLES_H_
 #define PWGLF_DATAMODEL_LFSIGMATABLES_H_
-
-using std::array;
 
 // Creating output TTree for sigma analysis
 namespace o2::aod
@@ -73,7 +68,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //! Sigma0 pz
 
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,
                            [](float photonPx, float photonPy, float lambdaPx, float lambdaPy) -> float {
-                             return RecoDecay::pt(array{photonPx + lambdaPx, photonPy + lambdaPy});
+                             return RecoDecay::pt(std::array{photonPx + lambdaPx, photonPy + lambdaPy});
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! Total momentum in GeV/c
@@ -223,7 +218,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //! KStar pz
 
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,
                            [](float photonPx, float photonPy, float kshortPx, float kshortPy) -> float {
-                             return RecoDecay::pt(array{photonPx + kshortPx, photonPy + kshortPy});
+                             return RecoDecay::pt(std::array{photonPx + kshortPx, photonPy + kshortPy});
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! Total momentum in GeV/c
@@ -604,7 +599,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MCPz, mcpz, //! Sigma0 pz
 
 DECLARE_SOA_DYNAMIC_COLUMN(MCPt, mcpt,
                            [](float photonMCPx, float photonMCPy, float lambdaMCPx, float lambdaMCPy) -> float {
-                             return RecoDecay::pt(array{photonMCPx + lambdaMCPx, photonMCPy + lambdaMCPy});
+                             return RecoDecay::pt(std::array{photonMCPx + lambdaMCPx, photonMCPy + lambdaMCPy});
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(MCP, mcp, //! Total momentum in GeV/c
@@ -770,7 +765,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MCPz, mcpz, //! Sigma0 pz
 
 DECLARE_SOA_DYNAMIC_COLUMN(MCPt, mcpt,
                            [](float photonMCPx, float photonMCPy, float kshortMCPx, float kshortMCPy) -> float {
-                             return RecoDecay::pt(array{photonMCPx + kshortMCPx, photonMCPy + kshortMCPy});
+                             return RecoDecay::pt(std::array{photonMCPx + kshortMCPx, photonMCPy + kshortMCPy});
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(MCP, mcp, //! Total momentum in GeV/c
@@ -1000,7 +995,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //! Pi0 pz
 
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,
                            [](float photon1Px, float photon1Py, float photon2Px, float photon2Py) -> float {
-                             return RecoDecay::pt(array{photon1Px + photon2Px, photon1Py + photon2Py});
+                             return RecoDecay::pt(std::array{photon1Px + photon2Px, photon1Py + photon2Py});
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! Total momentum in GeV/c
@@ -1168,7 +1163,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MCPz, mcpz, //! Pi0 MC pz
 
 DECLARE_SOA_DYNAMIC_COLUMN(MCPt, mcpt,
                            [](float photon1MCPx, float photon1MCPy, float photon2MCPx, float photon2MCPy) -> float {
-                             return RecoDecay::pt(array{photon1MCPx + photon2MCPx, photon1MCPy + photon2MCPy});
+                             return RecoDecay::pt(std::array{photon1MCPx + photon2MCPx, photon1MCPy + photon2MCPy});
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(MCP, mcp, //! Total momentum in GeV/c

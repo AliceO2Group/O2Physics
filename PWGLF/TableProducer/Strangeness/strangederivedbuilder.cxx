@@ -16,49 +16,52 @@
 // when dealing with derived data.
 
 #include "PWGLF/DataModel/EPCalibrationTables.h"
-#include "PWGLF/DataModel/LFParticleIdentification.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/SPCalibrationTables.h"
+#include "PWGUD/DataModel/UDTables.h"
 
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/McCollisionExtra.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/TableProducer/PID/pidTOFBase.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StaticFor.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
 
-#include <array>
+#include <TH1.h>
+#include <TH2.h>
+#include <TMathBase.h>
+#include <TPDGCode.h>
+#include <TString.h>
+
+#include <RtypesCore.h>
+
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
-#include <iterator>
-#include <map>
 #include <string>
-#include <utility>
+#include <string_view>
 #include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using std::array;
 
 using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullHe, aod::TOFEvTime, aod::TOFSignal>;
 using TracksCompleteIUMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::McTrackLabels>;

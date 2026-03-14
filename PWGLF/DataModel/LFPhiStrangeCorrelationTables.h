@@ -16,9 +16,8 @@
 #ifndef PWGLF_DATAMODEL_LFPHISTRANGECORRELATIONTABLES_H_
 #define PWGLF_DATAMODEL_LFPHISTRANGECORRELATIONTABLES_H_
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
 #include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 
 namespace o2::aod
 {

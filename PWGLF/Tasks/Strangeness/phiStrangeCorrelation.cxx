@@ -14,61 +14,46 @@
 /// \author Stefano Cannito (stefano.cannito@cern.ch)
 
 #include "PWGLF/DataModel/LFPhiStrangeCorrelationTables.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
-#include "PWGLF/Utils/inelGt.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TableHelper.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/PID.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/SliceCache.h>
 #include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
-#include <TDirectory.h>
-#include <TF1.h>
-#include <TFile.h>
 #include <TH1.h>
-#include <TH2.h>
 #include <TH3.h>
-#include <THn.h>
-#include <TList.h>
-#include <TMCProcess.h>
-#include <TMath.h>
-#include <TObjArray.h>
 #include <TPDGCode.h>
-#include <TRandom.h>
 
-#include <algorithm>
+#include <fmt/format.h>
+
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <memory>
 #include <ranges>
 #include <string>
 #include <string_view>
 #include <tuple>
-#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <vector>
