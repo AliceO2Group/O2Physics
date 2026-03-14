@@ -666,17 +666,6 @@ struct RadialFlowDecorr {
     int iby = h->GetYaxis()->FindBin(pt);
     int ibz = h->GetZaxis()->FindBin(eta);
     float val = h->GetBinContent(ibx, iby, ibz);
-    // If the bin is empty, iterate backwards through pt bins (Y-axis) to find the last valid content.
-    if (val <= KFloatEpsilon) {
-      for (int i = iby - 1; i >= 1; --i) {
-        float fallbackVal = h->GetBinContent(ibx, i, ibz);
-        if (fallbackVal > KFloatEpsilon) {
-          val = fallbackVal;
-          break;
-        }
-      }
-    }
-
     return val;
   }
 
