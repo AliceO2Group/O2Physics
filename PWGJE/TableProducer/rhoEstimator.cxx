@@ -130,7 +130,7 @@ struct RhoEstimatorTask {
       bkgPhiMax_ = 2.0 * M_PI;
     }
     if (config.trackPhiMin < -98.0) {
-      bkgPhiMin_ = -2.0 * M_PI;
+      bkgPhiMin_ = -1.0 * M_PI;
     }
     bkgSub.setPhiMinMax(bkgPhiMin_, bkgPhiMax_);
 
