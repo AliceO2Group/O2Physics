@@ -47,12 +47,12 @@
 #include "TParticlePDG.h"
 #include "TTree.h"
 
+#include <algorithm>
 #include <cmath>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
-#include <map>
-#include <algorithm>
 
 using namespace o2;
 using namespace o2::framework;
