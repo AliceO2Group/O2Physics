@@ -233,19 +233,18 @@ struct RadialFlowDecorr {
   const AxisSpec etaBinAxis{KNEta + 1, -0.5, KNEta + 0.5, "#eta bin Number"};
   const AxisSpec spBinAxis{KNsp + 1, -KBinOffset, static_cast<float>(KNsp) + KBinOffset, "species index Number"};
 
-  const AxisSpec gapAxis{{-1.55, -1.45, -1.35, -1.25, -1.15, -1.05, -0.95, -0.85,
-                          -0.75, -0.65, -0.55, -0.45, -0.35, -0.25, -0.15, -0.05,
+const AxisSpec gapAxis{{-1.55, -1.45, -1.35, -1.25, -1.15, -1.05, -0.95, -0.85,
+                         -0.75, -0.65, -0.55, -0.45, -0.35, -0.25, -0.15, -0.05,
                           0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75,
                           0.85, 0.95, 1.05, 1.15, 1.25, 1.35, 1.45, 1.55},
-                         "Gaps"};
+                        "Gap"};
 
-  const AxisSpec sumAxis{{-0.775, -0.725, -0.675, -0.625, -0.575, -0.525,
-                          -0.475, -0.425, -0.375, -0.325, -0.275, -0.225,
-                          -0.175, -0.125, -0.075, -0.025,
-                          0.025, 0.075, 0.125, 0.175, 0.225, 0.275,
-                          0.325, 0.375, 0.425, 0.475, 0.525, 0.575,
-                          0.625, 0.675, 0.725, 0.775},
-                         "Sums"};
+const AxisSpec sumAxis{{-1.55, -1.45, -1.35, -1.25, -1.15, -1.05, -0.95, -0.85,
+                         -0.75, -0.65, -0.55, -0.45, -0.35, -0.25, -0.15, -0.05,
+                          0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75,
+                          0.85, 0.95, 1.05, 1.15, 1.25, 1.35, 1.45, 1.55},
+                        "Sum"};
+
   Configurable<bool> cfgRunMCGetNSig{"cfgRunMCGetNSig", false, "Run MC pass to get mean of Nsig Plots"};
   Configurable<bool> cfgRunGetEff{"cfgRunGetEff", false, "Run MC pass to build efficiency/fake maps"};
   Configurable<bool> cfgRunGetMCFlat{"cfgRunGetMCFlat", false, "Run MC to Get Flattening Weights"};
@@ -2405,8 +2404,8 @@ struct RadialFlowDecorr {
           histos.fill(HIST("MCReco/Prof_Mult_NEta_Nsp_MeanpT"), multPV, ieta, isp, meanReco[isp][ieta]);
         }
         if (sumWkRecoEffCor[isp][ieta][1] > 1.0f) {
-          histos.fill(HIST("MCReco/Prof_Cent_NEta_Nsp_MeanpT"), cent, ieta, isp, meanRecoEffCor[isp][ieta]);
-          histos.fill(HIST("MCReco/Prof_Mult_NEta_Nsp_MeanpT"), multPV, ieta, isp, meanRecoEffCor[isp][ieta]);
+          histos.fill(HIST("MCRecoEffCorr/Prof_Cent_NEta_Nsp_MeanpT"), cent, ieta, isp, meanRecoEffCor[isp][ieta]);
+          histos.fill(HIST("MCRecoEffCorr/Prof_Mult_NEta_Nsp_MeanpT"), multPV, ieta, isp, meanRecoEffCor[isp][ieta]);
         }
       }
     }
@@ -2521,7 +2520,7 @@ struct RadialFlowDecorr {
         float etaValA = (etaLw[ietaA] + etaUp[ietaA]) / 2.0f;
         float etaValB = (etaLw[ietaC] + etaUp[ietaC]) / 2.0f;
         float gap = etaValA - etaValB;
-        float sum = (etaValA + etaValB) / 2.0f;
+        float sum = (etaValA + etaValB);
         for (int isp = 0; isp < KNsp; ++isp) {
 
           float c2SubTru = p1kBarTru[isp][ietaA] * p1kBarTru[isp][ietaC];
@@ -3438,7 +3437,7 @@ struct RadialFlowDecorr {
         float etaValA = (etaLw[ietaA] + etaUp[ietaA]) / 2.0f;
         float etaValB = (etaLw[ietaC] + etaUp[ietaC]) / 2.0f;
         float gap = etaValA - etaValB;
-        float sum = (etaValA + etaValB) / 2.0f;
+        float sum = (etaValA + etaValB);
 
         for (int isp = 0; isp < KNsp; ++isp) {
 
