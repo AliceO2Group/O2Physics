@@ -233,17 +233,17 @@ struct RadialFlowDecorr {
   const AxisSpec etaBinAxis{KNEta + 1, -0.5, KNEta + 0.5, "#eta bin Number"};
   const AxisSpec spBinAxis{KNsp + 1, -KBinOffset, static_cast<float>(KNsp) + KBinOffset, "species index Number"};
 
-const AxisSpec gapAxis{{-1.55, -1.45, -1.35, -1.25, -1.15, -1.05, -0.95, -0.85,
-                         -0.75, -0.65, -0.55, -0.45, -0.35, -0.25, -0.15, -0.05,
+  const AxisSpec gapAxis{{-1.55, -1.45, -1.35, -1.25, -1.15, -1.05, -0.95, -0.85,
+                          -0.75, -0.65, -0.55, -0.45, -0.35, -0.25, -0.15, -0.05,
                           0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75,
                           0.85, 0.95, 1.05, 1.15, 1.25, 1.35, 1.45, 1.55},
-                        "Gap"};
+                         "Gap"};
 
-const AxisSpec sumAxis{{-1.55, -1.45, -1.35, -1.25, -1.15, -1.05, -0.95, -0.85,
-                         -0.75, -0.65, -0.55, -0.45, -0.35, -0.25, -0.15, -0.05,
+  const AxisSpec sumAxis{{-1.55, -1.45, -1.35, -1.25, -1.15, -1.05, -0.95, -0.85,
+                          -0.75, -0.65, -0.55, -0.45, -0.35, -0.25, -0.15, -0.05,
                           0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75,
                           0.85, 0.95, 1.05, 1.15, 1.25, 1.35, 1.45, 1.55},
-                        "Sum"};
+                         "Sum"};
 
   Configurable<bool> cfgRunMCGetNSig{"cfgRunMCGetNSig", false, "Run MC pass to get mean of Nsig Plots"};
   Configurable<bool> cfgRunGetEff{"cfgRunGetEff", false, "Run MC pass to build efficiency/fake maps"};
