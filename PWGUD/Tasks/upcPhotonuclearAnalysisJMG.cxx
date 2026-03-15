@@ -382,7 +382,7 @@ struct UpcPhotonuclearAnalysisJMG {
   template <typename CSG>
   bool isCollisionCutSG(CSG const& collision, int SideGap)
   {
-    if (std::abs(collision.posZ()) > myZVtxCut ) {
+    if (std::abs(collision.posZ()) > myZVtxCut) {
       return false;
     }
     if (useSBP && collision.sbp() != sbpCut) {
@@ -405,7 +405,7 @@ struct UpcPhotonuclearAnalysisJMG {
     }
 
     switch (SideGap) {
-      case 0:            // Gap in A side
+      case 0: // Gap in A side
         if ((collision.timeZNA() > cutGapAMyEnergyZNA) && (collision.timeZNC() < cutGapAMyEnergyZNC)) {
           return false;
         }
@@ -422,7 +422,7 @@ struct UpcPhotonuclearAnalysisJMG {
         //   return false;
         // }
         break;
-      case 1:            // Gap in C side
+      case 1: // Gap in C side
         if ((collision.timeZNA() < cutGapCMyEnergyZNA) && (collision.timeZNC() > cutGapCMyEnergyZNC)) {
           return false;
         }
@@ -569,7 +569,7 @@ struct UpcPhotonuclearAnalysisJMG {
                                     multiplicity,
                                     deltaPhi,
                                     posZ);
-        if ( system == SameEvent) {
+        if (system == SameEvent) {
           if (minMultiplicity <= multiplicity) {
             histos.fill(HIST("sameEvent2D"), deltaEta, deltaPhi);
           }
@@ -588,7 +588,7 @@ struct UpcPhotonuclearAnalysisJMG {
           if (range5Min <= multiplicity && multiplicity <= range5Max) {
             histos.fill(HIST("sameEvent_41_50"), deltaEta, deltaPhi);
           }
-        } else if ( system == MixedEvent) {
+        } else if (system == MixedEvent) {
           if (minMultiplicity <= multiplicity) {
             histos.fill(HIST("mixedEvent2D"), deltaEta, deltaPhi);
           }
@@ -762,39 +762,39 @@ struct UpcPhotonuclearAnalysisJMG {
         break;
     }
     tree(sgSide,
-      reconstructedCollision.sbp(),
-      reconstructedCollision.itsROFb(),
-      reconstructedCollision.vtxITSTPC(),
-      reconstructedCollision.zVtxFT0vPV(),
-      reconstructedCollision.timeZNA(),
-      reconstructedCollision.timeZNC(),
-      reconstructedCollision.energyCommonZNA(),
-      reconstructedCollision.energyCommonZNC(),
-      reconstructedCollision.totalFV0AmplitudeA(),
-      reconstructedCollision.occupancyInTime(),
-      reconstructedCollision.flags(),
-      vTrackPtSideA,
-      vTrackEtaSideA,
-      vTrackPhiSideA,
-      vTrackTPCSignalSideA,
-      vTrackTOFSignalSideA,
-      vTrackTPCNSigmaPiSideA,
-      vTrackTOFNSigmaPiSideA,
-      vTrackTPCNSigmaKaSideA,
-      vTrackTOFNSigmaKaSideA,
-      vTrackPtSideC,
-      vTrackEtaSideC,
-      vTrackPhiSideC,
-      vTrackTPCSignalSideA,
-      vTrackTOFSignalSideA,
-      vTrackTPCNSigmaPiSideA,
-      vTrackTOFNSigmaPiSideA,
-      vTrackTPCNSigmaKaSideA,
-      vTrackTOFNSigmaKaSideA,
-      nTracksChargedSideA,
-      multiplicitySideA,
-      nTracksChargedSideC,
-      multiplicitySideC);
+         reconstructedCollision.sbp(),
+         reconstructedCollision.itsROFb(),
+         reconstructedCollision.vtxITSTPC(),
+         reconstructedCollision.zVtxFT0vPV(),
+         reconstructedCollision.timeZNA(),
+         reconstructedCollision.timeZNC(),
+         reconstructedCollision.energyCommonZNA(),
+         reconstructedCollision.energyCommonZNC(),
+         reconstructedCollision.totalFV0AmplitudeA(),
+         reconstructedCollision.occupancyInTime(),
+         reconstructedCollision.flags(),
+         vTrackPtSideA,
+         vTrackEtaSideA,
+         vTrackPhiSideA,
+         vTrackTPCSignalSideA,
+         vTrackTOFSignalSideA,
+         vTrackTPCNSigmaPiSideA,
+         vTrackTOFNSigmaPiSideA,
+         vTrackTPCNSigmaKaSideA,
+         vTrackTOFNSigmaKaSideA,
+         vTrackPtSideC,
+         vTrackEtaSideC,
+         vTrackPhiSideC,
+         vTrackTPCSignalSideA,
+         vTrackTOFSignalSideA,
+         vTrackTPCNSigmaPiSideA,
+         vTrackTOFNSigmaPiSideA,
+         vTrackTPCNSigmaKaSideA,
+         vTrackTOFNSigmaKaSideA,
+         nTracksChargedSideA,
+         multiplicitySideA,
+         nTracksChargedSideC,
+         multiplicitySideC);
     // nTracksChargedSideA = nTracksChargedSideC = multiplicitySideA = multiplicitySideC = 0;
   }
 
@@ -866,7 +866,7 @@ struct UpcPhotonuclearAnalysisJMG {
     hEventFlow->GetXaxis()->SetBinLabel(12, "GapSide Variable");
 
     histos.fill(HIST("Events/hCollisionsFlow"), 0);
-    if (std::abs(reconstructedCollision.posZ()) > myZVtxCut ) {
+    if (std::abs(reconstructedCollision.posZ()) > myZVtxCut) {
       return;
     }
     histos.fill(HIST("Events/hCollisionsFlow"), 1);
@@ -896,14 +896,14 @@ struct UpcPhotonuclearAnalysisJMG {
     histos.fill(HIST("Events/hCollisionsFlow"), 7);
     bool cutGapAMyTimeZN = (reconstructedCollision.timeZNA() > cutGapAMyEnergyZNA) && (reconstructedCollision.timeZNC() < cutGapAMyEnergyZNC);
     bool cutGapCMyTimeZN = (reconstructedCollision.timeZNA() < cutGapCMyEnergyZNA) && (reconstructedCollision.timeZNC() > cutGapCMyEnergyZNC);
-    if( cutGapAMyTimeZN || cutGapCMyTimeZN) {
+    if (cutGapAMyTimeZN || cutGapCMyTimeZN) {
       return;
     }
     histos.fill(HIST("Events/hCollisionsFlow"), 8);
 
     bool cutGapAMyEnergyZN = useEnergyZN && ((reconstructedCollision.energyCommonZNA() < cutGapAMyEnergyZNA) && (reconstructedCollision.energyCommonZNC() >= cutGapAMyEnergyZNC));
     bool cutGapCMyEnergyZN = useEnergyZN && ((reconstructedCollision.energyCommonZNA() >= cutGapCMyEnergyZNA) && (reconstructedCollision.energyCommonZNC() < cutGapCMyEnergyZNC));
-    if( cutGapAMyEnergyZN || cutGapCMyEnergyZN) {
+    if (cutGapAMyEnergyZN || cutGapCMyEnergyZN) {
       return;
     }
     histos.fill(HIST("Events/hCollisionsFlow"), 9);
@@ -917,7 +917,6 @@ struct UpcPhotonuclearAnalysisJMG {
       return;
     }
     histos.fill(HIST("Events/hCollisionsFlow"), 11);
-
 
     if (isCollisionCutSG(reconstructedCollision) == false) {
       return;
