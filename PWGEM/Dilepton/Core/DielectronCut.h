@@ -416,6 +416,7 @@ class DielectronCut : public TNamed
 
       case DielectronCuts::kTrackPhiPositionRange: {
         float phiPosition = track.phi() + std::asin(-0.30282 * track.sign() * (mBz * 0.1) * mRefR / (2.f * track.pt()));
+        phiPosition = RecoDecay::constrainAngle(phiPosition, 0, 1U); // 0-2pi
 
         if (mMinTrackPhiPosition < 0.f && mMaxTrackPhiPosition < M_PI) { // threshold across 0 rad.
           o2::math_utils::bringToPMPi(phiPosition);
@@ -429,6 +430,7 @@ class DielectronCut : public TNamed
         } else {
           o2::math_utils::bringTo02Pi(phiPosition);
           bool isInAcc = mMinTrackPhiPosition < phiPosition && phiPosition < mMaxTrackPhiPosition;
+
           bool isInAccMirrored = false;
           if (mMirrorTrackPhi) {
             isInAccMirrored = mMinTrackPhiPosition + M_PI < phiPosition && phiPosition < mMaxTrackPhiPosition + M_PI;
