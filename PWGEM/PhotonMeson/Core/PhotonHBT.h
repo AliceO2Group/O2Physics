@@ -81,7 +81,6 @@ using MyV0Photon = MyV0Photons::iterator;
 template <ggHBTPairType pairtype, typename... Types>
 struct PhotonHBT {
 
-
   // Single-photon:
   //   0 = Inclusive  (all photons)
   //   1 = ITSTPC_ITSTPC   — both legs have ITS+TPC
