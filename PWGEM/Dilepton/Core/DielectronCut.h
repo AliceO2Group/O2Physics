@@ -430,7 +430,6 @@ class DielectronCut : public TNamed
         } else {
           o2::math_utils::bringTo02Pi(phiPosition);
           bool isInAcc = mMinTrackPhiPosition < phiPosition && phiPosition < mMaxTrackPhiPosition;
-
           bool isInAccMirrored = false;
           if (mMirrorTrackPhi) {
             isInAccMirrored = mMinTrackPhiPosition + M_PI < phiPosition && phiPosition < mMaxTrackPhiPosition + M_PI;
