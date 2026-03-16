@@ -357,6 +357,13 @@ struct PhiStrangenessCorrelation {
 
     const std::array<std::pair<float, float>, 2> phiMassRegions = {phiConfigs.rangeMPhiSignal, phiConfigs.rangeMPhiSideband};
 
+    const bool applyK0sMassCut = (analysisMode == kDeltaYvsDeltaPhi) && k0sConfigs.selectK0sInSigRegion;
+    const auto& [minMassK0s, maxMassK0s] = k0sConfigs.rangeMK0sSignal.value;
+
+    auto isK0sValid = [&](const auto& k0s) {
+      return !applyK0sMassCut || k0s.inMassRegion(minMassK0s, maxMassK0s);
+    };
+
     for (const auto& phiCand : phiCandidates) {
       float weightPhi = computeWeight(BoundEfficiencyMap(effMaps[Phi], multiplicity, phiCand.pt(), phiCand.y()));
 
@@ -365,11 +372,13 @@ struct PhiStrangenessCorrelation {
       auto processCorrelations = [&](auto fillK0S, auto fillPion) {
         // Loop over all reduced K0S candidates
         for (const auto& k0s : k0sReduced) {
-          if (k0sConfigs.selectK0sInSigRegion) {
+          /*if (k0sConfigs.selectK0sInSigRegion) {
             const auto& [minMassK0s, maxMassK0s] = k0sConfigs.rangeMK0sSignal.value;
             if (!k0s.inMassRegion(minMassK0s, maxMassK0s))
               continue;
-          }
+          }*/
+          if (!isK0sValid(k0s))
+            continue;
 
           float weightPhiK0S = computeWeight(BoundEfficiencyMap(effMaps[Phi], multiplicity, phiCand.pt(), phiCand.y()),
                                              BoundEfficiencyMap(effMaps[K0S], multiplicity, k0s.pt(), k0s.y()));
@@ -449,6 +458,13 @@ struct PhiStrangenessCorrelation {
   {
     const std::array<std::pair<float, float>, 2> phiMassRegions = {phiConfigs.rangeMPhiSignal, phiConfigs.rangeMPhiSideband};
 
+    const bool applyK0sMassCut = (analysisMode == kDeltaYvsDeltaPhi) && k0sConfigs.selectK0sInSigRegion;
+    const auto& [minMassK0s, maxMassK0s] = k0sConfigs.rangeMK0sSignal.value;
+
+    auto isK0sValid = [&](const auto& k0s) {
+      return !applyK0sMassCut || k0s.inMassRegion(minMassK0s, maxMassK0s);
+    };
+
     auto tuplePhiK0S = std::make_tuple(phiCandidates, k0sReduced);
     Pair<SelCollisions, aod::PhimesonCandidatesData, aod::K0sReducedCandidatesData, BinningTypeVertexCent> pairPhiK0S{binningOnVertexAndCent, cfgNoMixedEvents, -1, collisions, tuplePhiK0S, &cache};
 
@@ -457,12 +473,15 @@ struct PhiStrangenessCorrelation {
       float multiplicity = c1.centFT0M();
 
       for (const auto& [phiCand, k0s] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(phiCands, k0sRed))) {
+        if (!isK0sValid(k0s))
+          continue;
+
         auto processCorrelations = [&](auto fillK0S) {
-          if (k0sConfigs.selectK0sInSigRegion) {
+          /*if (k0sConfigs.selectK0sInSigRegion) {
             const auto& [minMassK0s, maxMassK0s] = k0sConfigs.rangeMK0sSignal.value;
             if (!k0s.inMassRegion(minMassK0s, maxMassK0s))
-              return;
-          }
+              continue;
+          }*/
 
           float weightPhiK0S = computeWeight(BoundEfficiencyMap(effMaps[Phi], multiplicity, phiCand.pt(), phiCand.y()),
                                              BoundEfficiencyMap(effMaps[K0S], multiplicity, k0s.pt(), k0s.y()));
