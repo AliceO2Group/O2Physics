@@ -36,7 +36,7 @@ using namespace o2::constants::math;
 // Define convenient aliases for commonly used table joins
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
 
-// CRITICAL FIX: Replaced Proton/Deuteron/Helium PID tables with Pion PID tables
+
 using PionTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCPi, aod::pidTOFPi>;
 
 struct PIDHadronsInJets {
@@ -149,7 +149,7 @@ struct PIDHadronsInJets {
   }
 
   // Process Data
-  void processData(SelectedCollisions::iterator const& collision, PionTracks const& tracks)
+  void process(SelectedCollisions::iterator const& collision, PionTracks const& tracks)
   {
     // Apply standard event selection
     if (!collision.sel8() || std::fabs(collision.posZ()) > zVtx) return;
@@ -214,12 +214,12 @@ struct PIDHadronsInJets {
         double nsigmaTPCPi = track.tpcNSigmaPi();
         double nSigmaITSPi = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Pion>(track));
 
-        // Fill TPC
+        // Fill TPC histograms
         if (std::abs(nsigmaTPCPi) <= 3.0) {
             registryData.fill(HIST("pion_jet_tpc"), pt, nsigmaTPCPi);
         }
         
-        // Fill TOF
+        // Fill TOF histograms
         if (track.hasTOF()) {
             double nsigmaTOFPi = track.tofNSigmaPi();
             if (std::abs(nsigmaTOFPi) <= 3.0) {
@@ -227,7 +227,7 @@ struct PIDHadronsInJets {
             }
         }
 
-        // Fill ITS
+        // Fill ITS histograms
         if (std::abs(nSigmaITSPi) <= 3.0) {
             registryData.fill(HIST("pion_jet_its"), pt, nSigmaITSPi);
         }
