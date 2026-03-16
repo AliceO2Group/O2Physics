@@ -25,11 +25,12 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/PID.h"
 
-#include <vector>
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector4D.h>
 #include <TLorentzVector.h>
 #include <TMath.h>
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
