@@ -262,7 +262,7 @@ struct Lambda1520analysisinpp {
     AxisSpec axisTPCXrow{binsTPCXrows, "#Xrows_{TPC}"};
     AxisSpec axisPIDQA{binsnSigma, "#sigma"};
     AxisSpec axisTPCSignal{binsnTPCSignal, ""};
-    AxisSpec axisMClabel{6, -1.5f, 6.5f, "MC Label"};
+    AxisSpec axisMClabel{9, -1.5f, 7.5f, "MC Label"};
     AxisSpec axisEtaPhi{binsEtaPhi, ""};
     AxisSpec axisPhi{350, 0, 7, "#Phi"};
     AxisSpec axisMultMix{configBkg.cfgMultPercentileBins, "Multiplicity Percentile"};
@@ -1071,6 +1071,8 @@ struct Lambda1520analysisinpp {
       histos.fill(HIST("QAevent/hEventsMC"), 2);
     }
 
+    colCuts.fillQA(collision);
+
     fillHistograms<false, false, true, false>(collision, tracks, tracks);
   }
   PROCESS_SWITCH(Lambda1520analysisinpp, processMCRec, "Process Event for MC Rec without partition", false);
@@ -1136,20 +1138,19 @@ struct Lambda1520analysisinpp {
       histos.fill(HIST("QA/MC/h2GenEtaPt_afterEtaRapCut"), part.eta(), part.pt());
       histos.fill(HIST("QA/MC/h2GenPhiRapidity_afterEtaRapCut"), part.phi(), part.y());
 
-      // without any event selection
-      if (part.pdgCode() > 0)
+      if (part.pdgCode() > 0) // without any event selection
         histos.fill(HIST("Result/MC/Genlambda1520pt"), 0, part.pt(), centrality);
       else
         histos.fill(HIST("Result/MC/Genantilambda1520pt"), 0, part.pt(), centrality);
 
-      if (inVtx10) // INEL10
+      if (inVtx10) // vtx10
       {
         if (part.pdgCode() > 0)
           histos.fill(HIST("Result/MC/Genlambda1520pt"), 1, part.pt(), centrality);
         else
           histos.fill(HIST("Result/MC/Genantilambda1520pt"), 1, part.pt(), centrality);
       }
-      if (inVtx10 && isSel8) // INEL>10, vtx10
+      if (inVtx10 && isSel8) // vtx10, sel8
       {
         if (part.pdgCode() > 0)
           histos.fill(HIST("Result/MC/Genlambda1520pt"), 2, part.pt(), centrality);
@@ -1163,19 +1164,26 @@ struct Lambda1520analysisinpp {
         else
           histos.fill(HIST("Result/MC/Genantilambda1520pt"), 3, part.pt(), centrality);
       }
-      if (isInAfterAllCuts) // after all event selection
+      if (inVtx10 && isTrueINELgt0) // vtx10, INEL>0
       {
         if (part.pdgCode() > 0)
           histos.fill(HIST("Result/MC/Genlambda1520pt"), 4, part.pt(), centrality);
         else
           histos.fill(HIST("Result/MC/Genantilambda1520pt"), 4, part.pt(), centrality);
       }
-      if (isInAfterAllCuts && isTrueINELgt0) // after all event selection
+      if (isInAfterAllCuts) // after all event selection
       {
         if (part.pdgCode() > 0)
           histos.fill(HIST("Result/MC/Genlambda1520pt"), 5, part.pt(), centrality);
         else
           histos.fill(HIST("Result/MC/Genantilambda1520pt"), 5, part.pt(), centrality);
+      }
+      if (isInAfterAllCuts && isTrueINELgt0) // after all event selection && INEL>0
+      {
+        if (part.pdgCode() > 0)
+          histos.fill(HIST("Result/MC/Genlambda1520pt"), 6, part.pt(), centrality);
+        else
+          histos.fill(HIST("Result/MC/Genantilambda1520pt"), 6, part.pt(), centrality);
       }
     }
 
