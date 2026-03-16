@@ -67,7 +67,7 @@ struct ZdcExtraTableProducer {
   Configurable<bool> cfgEvSelsIsGoodITSLayersAll{"cfgEvSelsIsGoodITSLayersAll", true, "Event selection: is good ITS layers all"};
   // Calibration settings
   Configurable<float> cfgCalibrationDownscaling{"cfgCalibrationDownscaling", 1.f, "Percentage of events to be saved to derived table"};
-  
+
   // Output settings
   Configurable<bool> cfgSaveQaHistos{"cfgSaveQaHistos", false, "Flag to save QA histograms"};
 
@@ -102,9 +102,9 @@ struct ZdcExtraTableProducer {
 
     // Skip histogram registration if QA flag is false
     if (!cfgSaveQaHistos) {
-      return;}
-     
-  
+      return;
+    }
+
     registry.add("ZNApmc", "ZNApmc; ZNA PMC; Entries", {HistType::kTH1F, {{nBins, -0.5, maxZN}}});
     registry.add("ZNCpmc", "ZNCpmc; ZNC PMC; Entries", {HistType::kTH1F, {{nBins, -0.5, maxZN}}});
     registry.add("ZNApm1", "ZNApm1; ZNA PM1; Entries", {HistType::kTH1F, {{nBins, -0.5, maxZN}}});
@@ -120,7 +120,6 @@ struct ZdcExtraTableProducer {
 
     registry.add("ZNACentroid", "ZNA Centroid; X; Y", {HistType::kTH2F, {{50, -1.5, 1.5}, {50, -1.5, 1.5}}});
     registry.add("ZNCCentroid", "ZNC Centroid; X; Y", {HistType::kTH2F, {{50, -1.5, 1.5}, {50, -1.5, 1.5}}});
-
   }
 
   template <typename TCollision>
@@ -129,7 +128,7 @@ struct ZdcExtraTableProducer {
     uint8_t selectionBits = 0;
     bool selected;
 
- registry.fill(HIST("hEventCount"), evSel_allEvents);
+    registry.fill(HIST("hEventCount"), evSel_allEvents);
 
     selected = std::fabs(collision.posZ()) < cfgEvSelVtxZ;
     if (selected) {
@@ -140,44 +139,44 @@ struct ZdcExtraTableProducer {
     selected = collision.sel8();
     if (selected) {
       selectionBits |= (uint8_t)(0x1u << evSel_sel8);
-     registry.fill(HIST("hEventCount"), evSel_sel8);
+      registry.fill(HIST("hEventCount"), evSel_sel8);
     }
 
     auto occupancy = collision.trackOccupancyInTimeRange();
     selected = occupancy <= cfgEvSelsMaxOccupancy;
     if (selected) {
       selectionBits |= (uint8_t)(0x1u << evSel_occupancy);
-     registry.fill(HIST("hEventCount"), evSel_occupancy);
+      registry.fill(HIST("hEventCount"), evSel_occupancy);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
     if (selected) {
       selectionBits |= (uint8_t)(0x1u << evSel_kNoSameBunchPileup);
-     registry.fill(HIST("hEventCount"), evSel_kNoSameBunchPileup);
+      registry.fill(HIST("hEventCount"), evSel_kNoSameBunchPileup);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
     if (selected) {
       selectionBits |= (uint8_t)(0x1u << evSel_kIsGoodZvtxFT0vsPV);
-     registry.fill(HIST("hEventCount"), evSel_kIsGoodZvtxFT0vsPV);
+      registry.fill(HIST("hEventCount"), evSel_kIsGoodZvtxFT0vsPV);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard);
     if (selected) {
       selectionBits |= (uint8_t)(0x1u << evSel_kNoCollInTimeRangeStandard);
-     registry.fill(HIST("hEventCount"), evSel_kNoCollInTimeRangeStandard);
+      registry.fill(HIST("hEventCount"), evSel_kNoCollInTimeRangeStandard);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC);
     if (selected) {
       selectionBits |= (uint8_t)(0x1u << evSel_kIsVertexITSTPC);
-     registry.fill(HIST("hEventCount"), evSel_kIsVertexITSTPC);
+      registry.fill(HIST("hEventCount"), evSel_kIsVertexITSTPC);
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll);
     if (selected) {
       selectionBits |= (uint8_t)(0x1u << evSel_kIsGoodITSLayersAll);
-     registry.fill(HIST("hEventCount"), evSel_kIsGoodITSLayersAll);
+      registry.fill(HIST("hEventCount"), evSel_kIsGoodITSLayersAll);
     }
 
     return selectionBits;
@@ -209,10 +208,10 @@ struct ZdcExtraTableProducer {
 
         // OR we can select a narrow window in both ZN TDCs using the configurable parameters
         if (tdcCut) { // a narrow TDC window is set
-          if ((tdcZNC >= tdcZNmincut) && (tdcZNC <= tdcZNmaxcut) ) {
+          if ((tdcZNC >= tdcZNmincut) && (tdcZNC <= tdcZNmaxcut)) {
             isZNChit = true;
           }
-          if ((tdcZNA >= tdcZNmincut) && (tdcZNA <= tdcZNmaxcut) ) {
+          if ((tdcZNA >= tdcZNmincut) && (tdcZNA <= tdcZNmaxcut)) {
             isZNAhit = true;
           }
         } else { // if no window on TDC is set
@@ -235,15 +234,14 @@ struct ZdcExtraTableProducer {
             sumZNC += pmqZNC[it];
           }
 
-          if (cfgSaveQaHistos)
-          {
+          if (cfgSaveQaHistos) {
             registry.get<TH1>(HIST("ZNCpmc"))->Fill(pmcZNC);
-          registry.get<TH1>(HIST("ZNCpm1"))->Fill(pmqZNC[0]);
-          registry.get<TH1>(HIST("ZNCpm2"))->Fill(pmqZNC[1]);
-          registry.get<TH1>(HIST("ZNCpm3"))->Fill(pmqZNC[2]);
-          registry.get<TH1>(HIST("ZNCpm4"))->Fill(pmqZNC[3]);
-          registry.get<TH1>(HIST("ZNCsumq"))->Fill(sumZNC);
-        }
+            registry.get<TH1>(HIST("ZNCpm1"))->Fill(pmqZNC[0]);
+            registry.get<TH1>(HIST("ZNCpm2"))->Fill(pmqZNC[1]);
+            registry.get<TH1>(HIST("ZNCpm3"))->Fill(pmqZNC[2]);
+            registry.get<TH1>(HIST("ZNCpm4"))->Fill(pmqZNC[3]);
+            registry.get<TH1>(HIST("ZNCsumq"))->Fill(sumZNC);
+          }
         }
         if (isZNAhit) {
           for (int it = 0; it < kNTowers; it++) {
@@ -251,15 +249,14 @@ struct ZdcExtraTableProducer {
             sumZNA += pmqZNA[it];
           }
           //
-          if (cfgSaveQaHistos)
-          {
-          registry.get<TH1>(HIST("ZNApmc"))->Fill(pmcZNA);
-          registry.get<TH1>(HIST("ZNApm1"))->Fill(pmqZNA[0]);
-          registry.get<TH1>(HIST("ZNApm2"))->Fill(pmqZNA[1]);
-          registry.get<TH1>(HIST("ZNApm3"))->Fill(pmqZNA[2]);
-          registry.get<TH1>(HIST("ZNApm4"))->Fill(pmqZNA[3]);
-          registry.get<TH1>(HIST("ZNAsumq"))->Fill(sumZNA);
-        }
+          if (cfgSaveQaHistos) {
+            registry.get<TH1>(HIST("ZNApmc"))->Fill(pmcZNA);
+            registry.get<TH1>(HIST("ZNApm1"))->Fill(pmqZNA[0]);
+            registry.get<TH1>(HIST("ZNApm2"))->Fill(pmqZNA[1]);
+            registry.get<TH1>(HIST("ZNApm3"))->Fill(pmqZNA[2]);
+            registry.get<TH1>(HIST("ZNApm4"))->Fill(pmqZNA[3]);
+            registry.get<TH1>(HIST("ZNAsumq"))->Fill(sumZNA);
+          }
         }
 
         // Q-vectors (centroid) calculation
@@ -324,11 +321,10 @@ struct ZdcExtraTableProducer {
           centroidZNA[0] = 999.;
           centroidZNA[1] = 999.;
         }
-        if (cfgSaveQaHistos)
-         {
-        registry.get<TH2>(HIST("ZNCCentroid"))->Fill(centroidZNC[0], centroidZNC[1]);
-        registry.get<TH2>(HIST("ZNACentroid"))->Fill(centroidZNA[0], centroidZNA[1]);
-         }
+        if (cfgSaveQaHistos) {
+          registry.get<TH2>(HIST("ZNCCentroid"))->Fill(centroidZNC[0], centroidZNC[1]);
+          registry.get<TH2>(HIST("ZNACentroid"))->Fill(centroidZNA[0], centroidZNA[1]);
+        }
 
         auto vz = collision.posZ();
         auto vx = collision.posX();
