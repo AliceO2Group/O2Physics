@@ -40,9 +40,9 @@
 #include <MathUtils/Utils.h>
 
 #include <Math/GenVector/Boost.h>
-#include <Math/Vector3D.h> // IWYU pragma: keep
+#include <Math/Vector3D.h> // IWYU pragma: keep (do not replace with Math/Vector3Dfwd.h)
 #include <Math/Vector3Dfwd.h>
-#include <Math/Vector4D.h> // IWYU pragma: keep
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 #include <TString.h>
 
@@ -64,106 +64,100 @@ enum class ggHBTPairType : int {
 };
 } // namespace o2::aod::pwgem::photon::core::photonhbt
 
-using namespace o2;
-using namespace o2::aod;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
-using namespace o2::soa;
-using namespace o2::aod::pwgem::dilepton::utils;
-using namespace o2::aod::pwgem::photon::core::photonhbt;
-
-using MyCollisions = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMEventsQvec_001>;
+using MyCollisions = o2::soa::Join<o2::aod::PMEvents, o2::aod::EMEventsAlias, o2::aod::EMEventsMult_000, o2::aod::EMEventsCent_000, o2::aod::EMEventsQvec_001>;
 using MyCollision = MyCollisions::iterator;
 
-using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
+using MyV0Photons = o2::soa::Join<o2::aod::V0PhotonsKF, o2::aod::V0KFEMEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
-template <ggHBTPairType pairtype, typename... Types>
+template <o2::aod::pwgem::photon::core::photonhbt::ggHBTPairType pairtype, typename... Types>
 struct PhotonHBT {
   // Configurables
 
-  // Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  // Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  // Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  // Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
-  // Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
+  // o2::framework::Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  // o2::framework::Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+  // o2::framework::Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  // o2::framework::Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
+  // o2::framework::Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
 
-  Configurable<bool> cfgDo3D{"cfgDo3D", false, "enable 3D analysis"};
-  Configurable<int> cfgEP2Estimator_for_Mix{"cfgEP2Estimator_for_Mix", 3, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5"};
-  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
-  Configurable<int> cfgOccupancyEstimator{"cfgOccupancyEstimator", 0, "FT0C:0, Track:1"};
-  Configurable<float> cfgCentMin{"cfgCentMin", -1, "min. centrality"};
-  Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
-  Configurable<float> maxY{"maxY", 0.8, "maximum rapidity for reconstructed particles"};
-  Configurable<bool> cfgDoMix{"cfgDoMix", true, "flag for event mixing"};
-  Configurable<int> ndepth{"ndepth", 100, "depth for event mixing"};
-  Configurable<uint64_t> ndiff_bc_mix{"ndiff_bc_mix", 594, "difference in global BC required in mixed events"};
-  ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f, 999.f}, "Mixing bins - centrality"};
-  ConfigurableAxis ConfEPBins{"ConfEPBins", {16, -o2::constants::math::PIHalf, +o2::constants::math::PIHalf}, "Mixing bins - event plane angle"};
-  ConfigurableAxis ConfOccupancyBins{"ConfOccupancyBins", {VARIABLE_WIDTH, -1, 1e+10}, "Mixing bins - occupancy"};
-  Configurable<bool> cfgUseLCMS{"cfgUseLCMS", true, "measure relative momentum in LCMS for 1D"}; // always in LCMS for 3D
+  o2::framework::Configurable<bool> cfgDo3D{"cfgDo3D", false, "enable 3D analysis"};
+  o2::framework::Configurable<int> cfgEP2Estimator_for_Mix{"cfgEP2Estimator_for_Mix", 3, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5"};
+  o2::framework::Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
+  o2::framework::Configurable<int> cfgOccupancyEstimator{"cfgOccupancyEstimator", 0, "FT0C:0, Track:1"};
+  o2::framework::Configurable<float> cfgCentMin{"cfgCentMin", -1, "min. centrality"};
+  o2::framework::Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
+  o2::framework::Configurable<float> maxY{"maxY", 0.8, "maximum rapidity for reconstructed particles"};
+  o2::framework::Configurable<bool> cfgDoMix{"cfgDoMix", true, "flag for event mixing"};
+  o2::framework::Configurable<int> ndepth{"ndepth", 100, "depth for event mixing"};
+  o2::framework::Configurable<uint64_t> ndiff_bc_mix{"ndiff_bc_mix", 594, "difference in global BC required in mixed events"};
+  o2::framework::ConfigurableAxis ConfVtxBins{"ConfVtxBins", {o2::framework::VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
+  o2::framework::ConfigurableAxis ConfCentBins{"ConfCentBins", {o2::framework::VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f, 999.f}, "Mixing bins - centrality"};
+  o2::framework::ConfigurableAxis ConfEPBins{"ConfEPBins", {16, -o2::constants::math::PIHalf, +o2::constants::math::PIHalf}, "Mixing bins - event plane angle"};
+  o2::framework::ConfigurableAxis ConfOccupancyBins{"ConfOccupancyBins", {o2::framework::VARIABLE_WIDTH, -1, 1e+10}, "Mixing bins - occupancy"};
+  o2::framework::Configurable<bool> cfgUseLCMS{"cfgUseLCMS", true, "measure relative momentum in LCMS for 1D"}; // always in LCMS for 3D
 
-  ConfigurableAxis ConfQBins{"ConfQBins", {60, 0, +0.3f}, "q bins for output histograms"};
-  ConfigurableAxis ConfKtBins{"ConfKtBins", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0}, "kT bins for output histograms"};
+  o2::framework::ConfigurableAxis ConfQBins{"ConfQBins", {60, 0, +0.3f}, "q bins for output histograms"};
+  o2::framework::ConfigurableAxis ConfKtBins{"ConfKtBins", {o2::framework::VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0}, "kT bins for output histograms"};
 
+  using MyEMH = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, o2::aod::pwgem::dilepton::utils::EMPair>;
   EMPhotonEventCut fEMEventCut;
-  struct : ConfigurableGroup {
+
+  struct : o2::framework::ConfigurableGroup {
     std::string prefix = "eventcut_group";
-    Configurable<float> cfgZvtxMin{"cfgZvtxMin", -10.f, "min. Zvtx"};
-    Configurable<float> cfgZvtxMax{"cfgZvtxMax", +10.f, "max. Zvtx"};
-    Configurable<bool> cfgRequireSel8{"cfgRequireSel8", true, "require sel8 in event cut"};
-    Configurable<bool> cfgRequireFT0AND{"cfgRequireFT0AND", true, "require FT0AND in event cut"};
-    Configurable<bool> cfgRequireNoTFB{"cfgRequireNoTFB", true, "require No time frame border in event cut"};
-    Configurable<bool> cfgRequireNoITSROFB{"cfgRequireNoITSROFB", true, "require no ITS readout frame border in event cut"};
-    Configurable<bool> cfgRequireNoSameBunchPileup{"cfgRequireNoSameBunchPileup", false, "require no same bunch pileup in event cut"};
-    Configurable<bool> cfgRequireVertexITSTPC{"cfgRequireVertexITSTPC", false, "require Vertex ITSTPC in event cut"}; // ITS-TPC matched track contributes PV.
-    Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
-    Configurable<int> cfgTrackOccupancyMin{"cfgTrackOccupancyMin", -2, "min. track occupancy"};
-    Configurable<int> cfgTrackOccupancyMax{"cfgTrackOccupancyMax", 1000000000, "max. track occupancy"};
-    Configurable<float> cfgFT0COccupancyMin{"cfgFT0COccupancyMin", -2, "min. FT0C occupancy"};
-    Configurable<float> cfgFT0COccupancyMax{"cfgFT0COccupancyMax", 1000000000, "max. FT0C occupancy"};
-    Configurable<bool> cfgRequireNoCollInTimeRangeStandard{"cfgRequireNoCollInTimeRangeStandard", false, "require no collision in time range standard"};
-    Configurable<bool> cfgRequireNoCollInTimeRangeStrict{"cfgRequireNoCollInTimeRangeStrict", false, "require no collision in time range strict"};
-    Configurable<bool> cfgRequireNoCollInITSROFStandard{"cfgRequireNoCollInITSROFStandard", false, "require no collision in time range standard"};
-    Configurable<bool> cfgRequireNoCollInITSROFStrict{"cfgRequireNoCollInITSROFStrict", false, "require no collision in time range strict"};
-    Configurable<bool> cfgRequireNoHighMultCollInPrevRof{"cfgRequireNoHighMultCollInPrevRof", false, "require no HM collision in previous ITS ROF"};
-    Configurable<bool> cfgRequireGoodITSLayer3{"cfgRequireGoodITSLayer3", false, "number of inactive chips on ITS layer 3 are below threshold "};
-    Configurable<bool> cfgRequireGoodITSLayer0123{"cfgRequireGoodITSLayer0123", false, "number of inactive chips on ITS layers 0-3 are below threshold "};
-    Configurable<bool> cfgRequireGoodITSLayersAll{"cfgRequireGoodITSLayersAll", false, "number of inactive chips on all ITS layers are below threshold "};
+    o2::framework::Configurable<float> cfgZvtxMin{"cfgZvtxMin", -10.f, "min. Zvtx"};
+    o2::framework::Configurable<float> cfgZvtxMax{"cfgZvtxMax", +10.f, "max. Zvtx"};
+    o2::framework::Configurable<bool> cfgRequireSel8{"cfgRequireSel8", true, "require sel8 in event cut"};
+    o2::framework::Configurable<bool> cfgRequireFT0AND{"cfgRequireFT0AND", true, "require FT0AND in event cut"};
+    o2::framework::Configurable<bool> cfgRequireNoTFB{"cfgRequireNoTFB", true, "require No time frame border in event cut"};
+    o2::framework::Configurable<bool> cfgRequireNoITSROFB{"cfgRequireNoITSROFB", true, "require no ITS readout frame border in event cut"};
+    o2::framework::Configurable<bool> cfgRequireNoSameBunchPileup{"cfgRequireNoSameBunchPileup", false, "require no same bunch pileup in event cut"};
+    o2::framework::Configurable<bool> cfgRequireVertexITSTPC{"cfgRequireVertexITSTPC", false, "require Vertex ITSTPC in event cut"}; // ITS-TPC matched track contributes PV.
+    o2::framework::Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
+    o2::framework::Configurable<int> cfgTrackOccupancyMin{"cfgTrackOccupancyMin", -2, "min. track occupancy"};
+    o2::framework::Configurable<int> cfgTrackOccupancyMax{"cfgTrackOccupancyMax", 1000000000, "max. track occupancy"};
+    o2::framework::Configurable<float> cfgFT0COccupancyMin{"cfgFT0COccupancyMin", -2, "min. FT0C occupancy"};
+    o2::framework::Configurable<float> cfgFT0COccupancyMax{"cfgFT0COccupancyMax", 1000000000, "max. FT0C occupancy"};
+    o2::framework::Configurable<bool> cfgRequireNoCollInTimeRangeStandard{"cfgRequireNoCollInTimeRangeStandard", false, "require no collision in time range standard"};
+    o2::framework::Configurable<bool> cfgRequireNoCollInTimeRangeStrict{"cfgRequireNoCollInTimeRangeStrict", false, "require no collision in time range strict"};
+    o2::framework::Configurable<bool> cfgRequireNoCollInITSROFStandard{"cfgRequireNoCollInITSROFStandard", false, "require no collision in time range standard"};
+    o2::framework::Configurable<bool> cfgRequireNoCollInITSROFStrict{"cfgRequireNoCollInITSROFStrict", false, "require no collision in time range strict"};
+    o2::framework::Configurable<bool> cfgRequireNoHighMultCollInPrevRof{"cfgRequireNoHighMultCollInPrevRof", false, "require no HM collision in previous ITS ROF"};
+    o2::framework::Configurable<bool> cfgRequireGoodITSLayer3{"cfgRequireGoodITSLayer3", false, "number of inactive chips on ITS layer 3 are below threshold "};
+    o2::framework::Configurable<bool> cfgRequireGoodITSLayer0123{"cfgRequireGoodITSLayer0123", false, "number of inactive chips on ITS layers 0-3 are below threshold "};
+    o2::framework::Configurable<bool> cfgRequireGoodITSLayersAll{"cfgRequireGoodITSLayersAll", false, "number of inactive chips on all ITS layers are below threshold "};
   } eventcuts;
 
   V0PhotonCut fV0PhotonCut;
-  struct : ConfigurableGroup {
+  struct : o2::framework::ConfigurableGroup {
     std::string prefix = "pcmcut_group";
-    Configurable<bool> cfg_require_v0_with_itstpc{"cfg_require_v0_with_itstpc", false, "flag to select V0s with ITS-TPC matched tracks"};
-    Configurable<bool> cfg_require_v0_with_itsonly{"cfg_require_v0_with_itsonly", false, "flag to select V0s with ITSonly tracks"};
-    Configurable<bool> cfg_require_v0_with_tpconly{"cfg_require_v0_with_tpconly", false, "flag to select V0s with TPConly tracks"};
-    Configurable<float> cfg_min_pt_v0{"cfg_min_pt_v0", 0.1, "min pT for v0 photons at PV"};
-    Configurable<float> cfg_max_eta_v0{"cfg_max_eta_v0", 0.8, "max eta for v0 photons at PV"};
-    Configurable<float> cfg_min_v0radius{"cfg_min_v0radius", 16.0, "min v0 radius"};
-    Configurable<float> cfg_max_v0radius{"cfg_max_v0radius", 90.0, "max v0 radius"};
-    Configurable<float> cfg_max_alpha_ap{"cfg_max_alpha_ap", 0.95, "max alpha for AP cut"};
-    Configurable<float> cfg_max_qt_ap{"cfg_max_qt_ap", 0.01, "max qT for AP cut"};
-    Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.997, "min V0 CosPA"};
-    Configurable<float> cfg_max_pca{"cfg_max_pca", 3.0, "max distance btween 2 legs"};
-    Configurable<float> cfg_max_chi2kf{"cfg_max_chi2kf", 1e+10, "max chi2/ndf with KF"};
-    Configurable<bool> cfg_reject_v0_on_itsib{"cfg_reject_v0_on_itsib", true, "flag to reject V0s on ITSib"};
+    o2::framework::Configurable<bool> cfg_require_v0_with_itstpc{"cfg_require_v0_with_itstpc", false, "flag to select V0s with ITS-TPC matched tracks"};
+    o2::framework::Configurable<bool> cfg_require_v0_with_itsonly{"cfg_require_v0_with_itsonly", false, "flag to select V0s with ITSonly tracks"};
+    o2::framework::Configurable<bool> cfg_require_v0_with_tpconly{"cfg_require_v0_with_tpconly", false, "flag to select V0s with TPConly tracks"};
+    o2::framework::Configurable<float> cfg_min_pt_v0{"cfg_min_pt_v0", 0.1, "min pT for v0 photons at PV"};
+    o2::framework::Configurable<float> cfg_max_eta_v0{"cfg_max_eta_v0", 0.8, "max eta for v0 photons at PV"};
+    o2::framework::Configurable<float> cfg_min_v0radius{"cfg_min_v0radius", 16.0, "min v0 radius"};
+    o2::framework::Configurable<float> cfg_max_v0radius{"cfg_max_v0radius", 90.0, "max v0 radius"};
+    o2::framework::Configurable<float> cfg_max_alpha_ap{"cfg_max_alpha_ap", 0.95, "max alpha for AP cut"};
+    o2::framework::Configurable<float> cfg_max_qt_ap{"cfg_max_qt_ap", 0.01, "max qT for AP cut"};
+    o2::framework::Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.997, "min V0 CosPA"};
+    o2::framework::Configurable<float> cfg_max_pca{"cfg_max_pca", 3.0, "max distance btween 2 legs"};
+    o2::framework::Configurable<float> cfg_max_chi2kf{"cfg_max_chi2kf", 1e+10, "max chi2/ndf with KF"};
+    o2::framework::Configurable<bool> cfg_reject_v0_on_itsib{"cfg_reject_v0_on_itsib", true, "flag to reject V0s on ITSib"};
 
-    Configurable<bool> cfg_disable_itsonly_track{"cfg_disable_itsonly_track", false, "flag to disable ITSonly tracks"};
-    Configurable<bool> cfg_disable_tpconly_track{"cfg_disable_tpconly_track", false, "flag to disable TPConly tracks"};
-    Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
-    Configurable<int> cfg_min_ncrossedrows{"cfg_min_ncrossedrows", 40, "min ncrossed rows"};
-    Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
-    Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
-    Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 36.0, "max chi2/NclsITS"};
-    Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -3.0, "min. TPC n sigma for electron"};
-    Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +3.0, "max. TPC n sigma for electron"};
+    o2::framework::Configurable<bool> cfg_disable_itsonly_track{"cfg_disable_itsonly_track", false, "flag to disable ITSonly tracks"};
+    o2::framework::Configurable<bool> cfg_disable_tpconly_track{"cfg_disable_tpconly_track", false, "flag to disable TPConly tracks"};
+    o2::framework::Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
+    o2::framework::Configurable<int> cfg_min_ncrossedrows{"cfg_min_ncrossedrows", 40, "min ncrossed rows"};
+    o2::framework::Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
+    o2::framework::Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
+    o2::framework::Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 36.0, "max chi2/NclsITS"};
+    o2::framework::Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -3.0, "min. TPC n sigma for electron"};
+    o2::framework::Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +3.0, "max. TPC n sigma for electron"};
   } pcmcuts;
 
-  struct : ConfigurableGroup {
+  struct : o2::framework::ConfigurableGroup {
     std::string prefix = "ggpaircut_group";
-    Configurable<float> cfgMinDR_CosOA{"cfgMinDR_CosOA", -1, "min. dr/cosOA for kPCMPCM"};
+    o2::framework::Configurable<float> cfgMinDR_CosOA{"cfgMinDR_CosOA", -1, "min. dr/cosOA for kPCMPCM"};
   } ggpaircuts;
 
   ~PhotonHBT()
@@ -179,7 +173,7 @@ struct PhotonHBT {
     used_photonIds_per_col.shrink_to_fit();
   }
 
-  HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
+  o2::framework::HistogramRegistry fRegistry{"output", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject, false, false};
   // static constexpr std::string_view event_types[2] = {"before", "after"};
   static constexpr std::string_view event_pair_types[2] = {"same/", "mix/"};
 
@@ -187,7 +181,7 @@ struct PhotonHBT {
   std::uniform_int_distribution<int> dist01;
 
   // o2::ccdb::CcdbApi ccdbApi;
-  // Service<o2::ccdb::BasicCCDBManager> ccdb;
+  // o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
   int mRunNumber;
   // float d_bz;
 
@@ -196,7 +190,7 @@ struct PhotonHBT {
   std::vector<float> ep_bin_edges;
   std::vector<float> occ_bin_edges;
 
-  void init(InitContext& /*context*/)
+  void init(o2::framework::InitContext& /*context*/)
   {
     mRunNumber = 0;
     // d_bz = 0;
@@ -206,11 +200,11 @@ struct PhotonHBT {
     // ccdb->setLocalObjectValidityChecking();
     // ccdb->setFatalWhenNull(false);
 
-    if (ConfVtxBins.value[0] == VARIABLE_WIDTH) {
+    if (ConfVtxBins.value[0] == o2::framework::VARIABLE_WIDTH) {
       zvtx_bin_edges = std::vector<float>(ConfVtxBins.value.begin(), ConfVtxBins.value.end());
       zvtx_bin_edges.erase(zvtx_bin_edges.begin());
       for (const auto& edge : zvtx_bin_edges) {
-        LOGF(info, "VARIABLE_WIDTH: zvtx_bin_edges = %f", edge);
+        LOGF(info, "o2::framework::VARIABLE_WIDTH: zvtx_bin_edges = %f", edge);
       }
     } else {
       int nbins = static_cast<int>(ConfVtxBins.value[0]);
@@ -223,11 +217,11 @@ struct PhotonHBT {
       }
     }
 
-    if (ConfCentBins.value[0] == VARIABLE_WIDTH) {
+    if (ConfCentBins.value[0] == o2::framework::VARIABLE_WIDTH) {
       cent_bin_edges = std::vector<float>(ConfCentBins.value.begin(), ConfCentBins.value.end());
       cent_bin_edges.erase(cent_bin_edges.begin());
       for (const auto& edge : cent_bin_edges) {
-        LOGF(info, "VARIABLE_WIDTH: cent_bin_edges = %f", edge);
+        LOGF(info, "o2::framework::VARIABLE_WIDTH: cent_bin_edges = %f", edge);
       }
     } else {
       int nbins = static_cast<int>(ConfCentBins.value[0]);
@@ -240,11 +234,11 @@ struct PhotonHBT {
       }
     }
 
-    if (ConfEPBins.value[0] == VARIABLE_WIDTH) {
+    if (ConfEPBins.value[0] == o2::framework::VARIABLE_WIDTH) {
       ep_bin_edges = std::vector<float>(ConfEPBins.value.begin(), ConfEPBins.value.end());
       ep_bin_edges.erase(ep_bin_edges.begin());
       for (const auto& edge : ep_bin_edges) {
-        LOGF(info, "VARIABLE_WIDTH: ep_bin_edges = %f", edge);
+        LOGF(info, "o2::framework::VARIABLE_WIDTH: ep_bin_edges = %f", edge);
       }
     } else {
       int nbins = static_cast<int>(ConfEPBins.value[0]);
@@ -258,11 +252,11 @@ struct PhotonHBT {
     }
 
     LOGF(info, "cfgOccupancyEstimator = %d", cfgOccupancyEstimator.value);
-    if (ConfOccupancyBins.value[0] == VARIABLE_WIDTH) {
+    if (ConfOccupancyBins.value[0] == o2::framework::VARIABLE_WIDTH) {
       occ_bin_edges = std::vector<float>(ConfOccupancyBins.value.begin(), ConfOccupancyBins.value.end());
       occ_bin_edges.erase(occ_bin_edges.begin());
       for (const auto& edge : occ_bin_edges) {
-        LOGF(info, "VARIABLE_WIDTH: occ_bin_edges = %f", edge);
+        LOGF(info, "o2::framework::VARIABLE_WIDTH: occ_bin_edges = %f", edge);
       }
     } else {
       int nbins = static_cast<int>(ConfOccupancyBins.value[0]);
@@ -288,7 +282,7 @@ struct PhotonHBT {
     engine = std::mt19937(seed_gen());
     dist01 = std::uniform_int_distribution<int>(0, 1);
 
-    fRegistry.add("Pair/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", kTH1D, {{10001, -0.5, 10000.5}}, true);
+    fRegistry.add("Pair/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", o2::framework::kTH1D, {{10001, -0.5, 10000.5}}, true);
   }
 
   template <typename TCollision>
@@ -334,29 +328,29 @@ struct PhotonHBT {
   {
     // o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms<-1>(&fRegistry);
     static constexpr std::string_view qvec_det_names[6] = {"FT0M", "FT0A", "FT0C", "BTot", "BPos", "BNeg"};
-    fRegistry.add("Event/before/hEP2_CentFT0C_forMix", Form("2nd harmonics event plane for mix;centrality FT0C (%%);#Psi_{2}^{%s} (rad.)", qvec_det_names[cfgEP2Estimator_for_Mix].data()), kTH2F, {{110, 0, 110}, {180, -o2::constants::math::PIHalf, +o2::constants::math::PIHalf}}, false);
-    fRegistry.add("Event/after/hEP2_CentFT0C_forMix", Form("2nd harmonics event plane for mix;centrality FT0C (%%);#Psi_{2}^{%s} (rad.)", qvec_det_names[cfgEP2Estimator_for_Mix].data()), kTH2F, {{110, 0, 110}, {180, -o2::constants::math::PIHalf, +o2::constants::math::PIHalf}}, false);
+    fRegistry.add("Event/before/hEP2_CentFT0C_forMix", Form("2nd harmonics event plane for mix;centrality FT0C (%%);#Psi_{2}^{%s} (rad.)", qvec_det_names[cfgEP2Estimator_for_Mix].data()), o2::framework::kTH2F, {{110, 0, 110}, {180, -o2::constants::math::PIHalf, +o2::constants::math::PIHalf}}, false);
+    fRegistry.add("Event/after/hEP2_CentFT0C_forMix", Form("2nd harmonics event plane for mix;centrality FT0C (%%);#Psi_{2}^{%s} (rad.)", qvec_det_names[cfgEP2Estimator_for_Mix].data()), o2::framework::kTH2F, {{110, 0, 110}, {180, -o2::constants::math::PIHalf, +o2::constants::math::PIHalf}}, false);
 
     // pair info
-    const AxisSpec axis_kt{ConfKtBins, "k_{T} (GeV/c)"};
-    const AxisSpec axis_qinv{ConfQBins, "q_{inv} (GeV/c)"};
-    const AxisSpec axis_qabs_lcms{ConfQBins, "|#bf{q}|^{LCMS} (GeV/c)"};
-    const AxisSpec axis_qout{ConfQBins, "q_{out} (GeV/c)"};   // qout does not change between LAB and LCMS frame
-    const AxisSpec axis_qside{ConfQBins, "q_{side} (GeV/c)"}; // qside does not change between LAB and LCMS frame
-    const AxisSpec axis_qlong{ConfQBins, "q_{long} (GeV/c)"};
+    const o2::framework::AxisSpec axis_kt{ConfKtBins, "k_{T} (GeV/c)"};
+    const o2::framework::AxisSpec axis_qinv{ConfQBins, "q_{inv} (GeV/c)"};
+    const o2::framework::AxisSpec axis_qabs_lcms{ConfQBins, "|#bf{q}|^{LCMS} (GeV/c)"};
+    const o2::framework::AxisSpec axis_qout{ConfQBins, "q_{out} (GeV/c)"};   // qout does not change between LAB and LCMS frame
+    const o2::framework::AxisSpec axis_qside{ConfQBins, "q_{side} (GeV/c)"}; // qside does not change between LAB and LCMS frame
+    const o2::framework::AxisSpec axis_qlong{ConfQBins, "q_{long} (GeV/c)"};
 
     if (cfgDo3D) { // 3D
-      fRegistry.add("Pair/same/hs_3d", "diphoton correlation 3D LCMS", kTHnSparseD, {axis_qout, axis_qside, axis_qlong, axis_kt}, true);
+      fRegistry.add("Pair/same/hs_3d", "diphoton correlation 3D LCMS", o2::framework::kTHnSparseD, {axis_qout, axis_qside, axis_qlong, axis_kt}, true);
     } else { // 1D
       if (cfgUseLCMS) {
-        fRegistry.add("Pair/same/hs_1d", "diphoton correlation 1D LCMS", kTHnSparseD, {axis_qabs_lcms, axis_kt}, true);
+        fRegistry.add("Pair/same/hs_1d", "diphoton correlation 1D LCMS", o2::framework::kTHnSparseD, {axis_qabs_lcms, axis_kt}, true);
       } else {
-        fRegistry.add("Pair/same/hs_1d", "diphoton correlation 1D", kTHnSparseD, {axis_qinv, axis_kt}, true);
+        fRegistry.add("Pair/same/hs_1d", "diphoton correlation 1D", o2::framework::kTHnSparseD, {axis_qinv, axis_kt}, true);
       }
     }
 
-    if constexpr (pairtype == ggHBTPairType::kPCMPCM) {
-      fRegistry.add("Pair/same/hDeltaRCosOA", "distance between 2 conversion points;#Deltar/cos(#theta_{op}/2) (cm)", kTH1D, {{100, 0, 100}}, true); // dr/cosOA of conversion points
+    if constexpr (pairtype == o2::aod::pwgem::photon::core::photonhbt::ggHBTPairType::kPCMPCM) {
+      fRegistry.add("Pair/same/hDeltaRCosOA", "distance between 2 conversion points;#Deltar/cos(#theta_{op}/2) (cm)", o2::framework::kTH1D, {{100, 0, 100}}, true); // dr/cosOA of conversion points
     }
 
     fRegistry.addClone("Pair/same/", "Pair/mix/");
@@ -544,10 +538,10 @@ struct PhotonHBT {
       auto key_bin = std::make_tuple(zbin, centbin, epbin, occbin);
       auto key_df_collision = std::make_pair(ndf, collision.globalIndex());
 
-      if constexpr (pairtype == ggHBTPairType::kPCMPCM) {
+      if constexpr (pairtype == o2::aod::pwgem::photon::core::photonhbt::ggHBTPairType::kPCMPCM) {
         auto photons1_coll = photons1.sliceBy(perCollision1, collision.globalIndex());
         auto photons2_coll = photons2.sliceBy(perCollision2, collision.globalIndex());
-        for (const auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photons1_coll, photons2_coll))) {
+        for (const auto& [g1, g2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(photons1_coll, photons2_coll))) {
           if (!cut1.template IsSelected<decltype(g1), TSubInfos1>(g1) || !cut2.template IsSelected<decltype(g2), TSubInfos2>(g2)) {
             continue;
           }
@@ -581,13 +575,13 @@ struct PhotonHBT {
           ndiphoton++;
 
           if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g1.globalIndex()) == used_photonIds_per_col.end()) {
-            EMPair g1tmp = EMPair(g1.pt(), g1.eta(), g1.phi(), 0);
+            o2::aod::pwgem::dilepton::utils::EMPair g1tmp = o2::aod::pwgem::dilepton::utils::EMPair(g1.pt(), g1.eta(), g1.phi(), 0);
             g1tmp.setConversionPointXYZ(g1.vx(), g1.vy(), g1.vz());
             emh1->AddTrackToEventPool(key_df_collision, g1tmp);
             used_photonIds_per_col.emplace_back(g1.globalIndex());
           }
           if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g2.globalIndex()) == used_photonIds_per_col.end()) {
-            EMPair g2tmp = EMPair(g2.pt(), g2.eta(), g2.phi(), 0);
+            o2::aod::pwgem::dilepton::utils::EMPair g2tmp = o2::aod::pwgem::dilepton::utils::EMPair(g2.pt(), g2.eta(), g2.phi(), 0);
             g2tmp.setConversionPointXYZ(g2.vx(), g2.vy(), g2.vz());
             emh1->AddTrackToEventPool(key_df_collision, g2tmp);
             used_photonIds_per_col.emplace_back(g2.globalIndex());
@@ -610,7 +604,7 @@ struct PhotonHBT {
       auto collisionIds1_in_mixing_pool = emh1->GetCollisionIdsFromEventPool(key_bin);
       auto collisionIds2_in_mixing_pool = emh2->GetCollisionIdsFromEventPool(key_bin);
 
-      if constexpr (pairtype == ggHBTPairType::kPCMPCM) {
+      if constexpr (pairtype == o2::aod::pwgem::photon::core::photonhbt::ggHBTPairType::kPCMPCM) {
         for (const auto& mix_dfId_collisionId : collisionIds1_in_mixing_pool) {
           int mix_dfId = mix_dfId_collisionId.first;
           int64_t mix_collisionId = mix_dfId_collisionId.second;
@@ -662,24 +656,23 @@ struct PhotonHBT {
     } // end of collision loop
   }
 
-  using MyEMH = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, EMPair>;
   MyEMH* emh1 = nullptr;
   MyEMH* emh2 = nullptr;
   std::vector<int> used_photonIds_per_col; // <trackId>
   std::map<std::pair<int, int>, uint64_t> map_mixed_eventId_to_globalBC;
 
-  SliceCache cache;
-  Preslice<MyV0Photons> perCollision_pcm = aod::v0photonkf::pmeventId;
+  o2::framework::SliceCache cache;
+  o2::framework::Preslice<MyV0Photons> perCollision_pcm = o2::aod::v0photonkf::pmeventId;
 
-  Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
-  Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
-  Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
-  using FilteredMyCollisions = soa::Filtered<MyCollisions>;
+  o2::framework::expressions::Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
+  o2::framework::expressions::Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
+  o2::framework::expressions::Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
+  using FilteredMyCollisions = o2::soa::Filtered<MyCollisions>;
 
   int ndf = 0;
   void processAnalysis(FilteredMyCollisions const& collisions, Types const&... args)
   {
-    if constexpr (pairtype == ggHBTPairType::kPCMPCM) {
+    if constexpr (pairtype == o2::aod::pwgem::photon::core::photonhbt::ggHBTPairType::kPCMPCM) {
       auto v0photons = std::get<0>(std::tie(args...));
       auto v0legs = std::get<1>(std::tie(args...));
       runPairing(collisions, v0photons, v0photons, v0legs, v0legs, perCollision_pcm, perCollision_pcm, fV0PhotonCut, fV0PhotonCut);

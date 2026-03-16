@@ -19,15 +19,28 @@
 
 #include <CommonConstants/MathConstants.h>
 #include <EMCALBase/Geometry.h>
+#include <EMCALBase/GeometryBase.h>
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Math/AxisAngle.h>
-#include <Math/Rotation3D.h>
+#include <Math/GenVector/AxisAngle.h>
+#include <Math/GenVector/Rotation3D.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
+#include <TH2.h>
 #include <TString.h>
+
+#include <cmath>
+#include <cstdint>
+#include <stdexcept>
 
 using namespace o2;
 using namespace o2::framework;

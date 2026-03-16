@@ -16,12 +16,14 @@
 #ifndef PWGEM_PHOTONMESON_CORE_V0PHOTONCANDIDATE_H_
 #define PWGEM_PHOTONMESON_CORE_V0PHOTONCANDIDATE_H_
 
-#include "PWGEM/Dilepton/Utils/PairUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 
 #include "Common/Core/RecoDecay.h"
 
 #include <KFParticle.h>
+
+#include <array>
+#include <cstdint>
 
 enum CentType : uint8_t {
   CentFT0M = 0,

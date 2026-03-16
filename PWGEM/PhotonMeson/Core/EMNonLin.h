@@ -16,8 +16,6 @@
 #ifndef PWGEM_PHOTONMESON_CORE_EMNONLIN_H_
 #define PWGEM_PHOTONMESON_CORE_EMNONLIN_H_
 
-#include <Framework/Configurable.h>
-
 #include <cstdint> // uint8_t
 
 namespace o2::pwgem::nonlin
