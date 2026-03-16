@@ -419,9 +419,9 @@ struct K0sReducedCandProducer {
   {
     AxisSpec binnedmultAxis{(std::vector<double>)binsMult, "centFT0M"};
     AxisSpec binnedpTK0SAxis{(std::vector<double>)binspTK0S, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec massK0sAxis = {200, 0.4f, 0.6f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
+    AxisSpec massK0SAxis = {200, 0.45f, 0.55f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
 
-    histos.add("h3K0sCandidatesMass", "K^{0}_{S} candidate invariant mass", kTH3F, {binnedmultAxis, binnedpTK0SAxis, massK0sAxis});
+    histos.add("h3K0sCandidatesMass", "K^{0}_{S} candidate invariant mass", kTH3F, {binnedmultAxis, binnedpTK0SAxis, massK0SAxis});
   }
 
   // Single track selection for strangeness sector
