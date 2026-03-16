@@ -482,7 +482,7 @@ struct PhiStrangenessCorrelation {
     };
 
     auto tuplePhiK0S = std::make_tuple(phiCandidates, k0sReduced);
-    Pair<SelCollisions, aod::PhimesonCandidatesData, aod::K0sReducedCandidatesData, BinningTypeVertexCent> pairPhiK0S{binningOnVertexAndCent, cfgNoMixedEvents, -1, collisions, tuplePhiK0S, &cache};
+    Pair<TCollisions, TPhiCands, TK0SCands, BinningTypeVertexCent> pairPhiK0S{binningOnVertexAndCent, cfgNoMixedEvents, -1, collisions, tuplePhiK0S, &cache};
 
     for (const auto& [c1, phiCands, c2, k0sRed] : pairPhiK0S) {
 
@@ -568,7 +568,7 @@ struct PhiStrangenessCorrelation {
     const std::array<std::pair<float, float>, 2> phiMassRegions = {phiConfigs.rangeMPhiSignal, phiConfigs.rangeMPhiSideband};
 
     auto tuplePhiPion = std::make_tuple(phiCandidates, pionTracks);
-    Pair<SelCollisions, aod::PhimesonCandidatesData, aod::PionTracksData, BinningTypeVertexCent> pairPhiPion{binningOnVertexAndCent, cfgNoMixedEvents, -1, collisions, tuplePhiPion, &cache};
+    Pair<TCollisions, TPhiCands, TPionCands, BinningTypeVertexCent> pairPhiPion{binningOnVertexAndCent, cfgNoMixedEvents, -1, collisions, tuplePhiPion, &cache};
 
     for (const auto& [c1, phiCands, c2, piTracks] : pairPhiPion) {
 
