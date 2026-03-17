@@ -1274,7 +1274,7 @@ struct FlowDecorrelation {
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
       loadAlignParam(bc.timestamp());
       loadCorrection(bc.timestamp());
-      loadGain(bc.timestamp());
+      loadGain(bc);
       float eventWeight = 1.0f;
       if (cfgUseEventWeights) {
         eventWeight = 1.0f / it.currentWindowNeighbours();
