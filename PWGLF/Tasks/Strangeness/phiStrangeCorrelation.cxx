@@ -185,7 +185,7 @@ struct PhiStrangenessCorrelation {
   struct : ConfigurableGroup {
     Configurable<bool> selectPionInSigRegion{"selectPionInSigRegion", false, "Select Pion candidates in signal region"};
     Configurable<float> pidTPCMax{"pidTPCMax", 2.0f, "Maximum nSigma TPC"};
-    Configurable<float> pidTOFMax{"pidTPCMax", 2.0f, "Maximum nSigma TOF"};
+    Configurable<float> pidTOFMax{"pidTOFMax", 2.0f, "Maximum nSigma TOF"};
     Configurable<float> tofPIDThreshold{"tofPIDThreshold", 0.5f, "Minimum pT after which TOF PID is applicable"};
   } pionConfigs;
 
