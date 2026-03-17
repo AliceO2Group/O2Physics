@@ -29,6 +29,9 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "Framework/ASoAHelpers.h"
@@ -37,14 +40,10 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/PID.h"
 #include <CCDB/BasicCCDBManager.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DataFormatsParameters/GRPObject.h>
-
-#include "Common/DataModel/PIDResponseITS.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponseTPC.h"
-#include "ReconstructionDataFormats/PID.h"
 
 #include <TF1.h>
 #include <TPDGCode.h>
@@ -57,9 +56,9 @@
 #include <chrono>
 #include <complex>
 #include <ctime>
-#include <memory>
 #include <experimental/type_traits>
 #include <map>
+#include <memory>
 #include <numeric>
 #include <string>
 #include <utility>
@@ -173,7 +172,7 @@ struct FlowGfwV02 {
   PIDState pidStates;
 
   using GFWTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
-  
+
   enum PIDIndex {
     kCharged = 0,
     kPions,
@@ -194,12 +193,9 @@ struct FlowGfwV02 {
     kITS
   };
 
-  
-
   void init(InitContext const&)
   {
 
-    
     pidStates.tpcNsigmaCut[iPionUp] = nSigmas->getData()[iPionUp][kTPC];
     pidStates.tpcNsigmaCut[iKaonUp] = nSigmas->getData()[iKaonUp][kTPC];
     pidStates.tpcNsigmaCut[iProtonUp] = nSigmas->getData()[iProtonUp][kTPC];
@@ -234,7 +230,6 @@ struct FlowGfwV02 {
       registry.add("TpcdEdx_ptwise", "", {HistType::kTH2D, {{pidStates.axisTpcSignal, pidStates.axisPt}}});
       registry.add("TpcdEdx_ptwise_afterCut", "", {HistType::kTH2D, {{pidStates.axisTpcSignal, pidStates.axisPt}}});
     }
-    
 
     o2::analysis::gfw::regions.SetNames(cfgRegions->GetNames());
     o2::analysis::gfw::regions.SetEtaMin(cfgRegions->GetEtaMin());
@@ -381,7 +376,6 @@ struct FlowGfwV02 {
     }
   }
 
-  
   template <typename TTrack>
   int getNsigmaPID(TTrack track)
   {
@@ -431,7 +425,7 @@ struct FlowGfwV02 {
 
     return pid; // -1 = not identified, 1 = pion, 2 = kaon, 3 = proton
   }
-  
+
   void loadCorrections(aod::BCsWithTimestamps::iterator const& bc)
   {
     uint64_t timestamp = bc.timestamp();
@@ -653,8 +647,6 @@ struct FlowGfwV02 {
   inline void fillGFW(TTrack track, const double& vtxz)
   {
     int pidInd = getNsigmaPID(track);
-
-    
 
     bool withinPtRef = (track.pt() > o2::analysis::gfw::ptreflow && track.pt() < o2::analysis::gfw::ptrefup);
     bool withinPtPOI = (track.pt() > o2::analysis::gfw::ptpoilow && track.pt() < o2::analysis::gfw::ptpoiup);
