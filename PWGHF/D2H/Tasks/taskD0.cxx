@@ -638,7 +638,6 @@ struct HfTaskD0 {
         registry.fill(HIST("Data/hGapVsEta"), gap, candidate.eta());
         registry.fill(HIST("Data/hGapVsRap"), gap, HfHelper::yD0(candidate));
 
-
         if (candidate.isSelD0() >= selectionFlagD0) {
           registry.fill(HIST("hMass"), massD0, ptCandidate);
           registry.fill(HIST("hMassFinerBinning"), massD0, ptCandidate);
