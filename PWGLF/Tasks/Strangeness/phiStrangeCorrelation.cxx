@@ -663,7 +663,21 @@ struct PhiStrangenessCorrelation {
 
   void processParticleEfficiency(MCCollisions const& mcCollisions, SimCollisions const& collisions, aod::PhimesonCandidatesMcReco const& phiCandidates, aod::K0sReducedCandidatesMcReco const& k0sReduced, aod::PionTracksMcReco const& pionTracks, aod::McParticles const& mcParticles)
   {
-    // std::vector<std::vector<int>> collsGrouped(mcCollisions.size());
+    const bool applyK0sMassCut = (analysisMode == kDeltaYvsDeltaPhi) && k0sConfigs.selectK0sInSigRegion;
+    const auto& [minMassK0s, maxMassK0s] = k0sConfigs.rangeMK0sSignal.value;
+    auto isK0sValid = [&](const auto& k0s) {
+      return !applyK0sMassCut || k0s.inMassRegion(minMassK0s, maxMassK0s);
+    };
+
+    const bool applyPionNSigmaCut = (analysisMode == kDeltaYvsDeltaPhi) && pionConfigs.selectPionInSigRegion;
+    const float& pidTPCMax = pionConfigs.pidTPCMax;
+    const float& pidTOFMax = pionConfigs.pidTOFMax;
+    const float& tofPIDThreshold = pionConfigs.tofPIDThreshold;
+
+    auto isPionValid = [&](const auto& pion) {
+      return !applyPionNSigmaCut || pion.inNSigmaRegion(pidTPCMax, tofPIDThreshold, pidTOFMax);
+    };
+
     std::unordered_map<int, std::vector<int>> collsGrouped;
     collsGrouped.reserve(mcCollisions.size());
 
@@ -705,10 +719,16 @@ struct PhiStrangenessCorrelation {
           const auto pionTracksThisColl = pionTracks.sliceBy(preslices.pionTrackMcRecoPerCollision, collision.globalIndex());
 
           for (const auto& k0s : k0sThisColl) {
+            if (!isK0sValid(k0s))
+              continue;
+
             histos.fill(HIST("k0s/h4K0SMCReco"), collision.posZ(), mcCollision.centFT0M(), k0s.pt(), k0s.y());
           }
 
           for (const auto& pionTrack : pionTracksThisColl) {
+            if (!isPionValid(pionTrack))
+              continue;
+
             histos.fill(HIST("pi/h4PiMCReco"), collision.posZ(), mcCollision.centFT0M(), pionTrack.pt(), pionTrack.y());
           }
 
