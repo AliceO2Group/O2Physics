@@ -352,10 +352,6 @@ struct sigmaHadCorrTask {
     float alphaAP = getAlphaAP(momMoth, momDaug);
     float qtAP = getQtAP(momMoth, momDaug);
 
-    if (sigmaCand.ptMoth() < minPtSigma) {
-      return false;
-    }
-
     if (alphaAP > alphaAPCut || (qtAP < qtAPCutLow || qtAP > qtAPCutHigh)) {
       return false;
     }
@@ -421,14 +417,17 @@ struct sigmaHadCorrTask {
       sigmaForPt.sigmaDauPx = sigmaCand.pxDaug();
       sigmaForPt.sigmaDauPy = sigmaCand.pyDaug();
       sigmaForPt.sigmaDauPz = sigmaCand.pzDaug();
-      auto sigmaMomForPt = getSigmaMomentumForKstar(sigmaForPt);
-      float sigmaPtRecal = std::hypot(sigmaMomForPt[0], sigmaMomForPt[1]);
-      float sigmaPtForSparse = useRecalculatedSigmaMomentum ? sigmaPtRecal : sigmaCand.ptMoth();
+      auto sigmaPRecal = getSigmaMomentumForKstar(sigmaForPt);
+      float sigmaPtRecal = std::hypot(sigmaPRecal[0], sigmaPRecal[1]);
       float sigmaMassForQa = doSigmaMinus ? sigmaCand.mSigmaMinus() : sigmaCand.mSigmaPlus();
+
+      if (sigmaPtRecal < minPtSigma) {
+        continue;
+      }
 
       rSigmaHad.fill(HIST("QA/hSigmaPt"), sigmaCand.ptMoth());
       rSigmaHad.fill(HIST("QA/hSigmaPtRecal"), sigmaPtRecal);
-      rSigmaHad.fill(HIST("QA/h2InvMassVsPtSigma"), sigmaPtForSparse, sigmaMassForQa);
+      rSigmaHad.fill(HIST("QA/h2InvMassVsPtSigma"), sigmaPtRecal, sigmaMassForQa);
 
       for (const auto& hadTrack : tracks) {
         if (hadTrack.globalIndex() == sigmaCand.trackDaugId()) {
@@ -466,13 +465,10 @@ struct sigmaHadCorrTask {
         candidate.kinkDauID = sigmaCand.trackDaugId();
         candidate.hadID = hadTrack.globalIndex();
 
-        auto sigmaMomForKstar = getSigmaMomentumForKstar(candidate);
-        float kStar = getKStar(sigmaMomForKstar[0], sigmaMomForKstar[1], sigmaMomForKstar[2], candidate.pxHad, candidate.pyHad, candidate.pzHad);
+        float kStar = getKStar(sigmaPRecal[0], sigmaPRecal[1], sigmaPRecal[2], candidate.pxHad, candidate.pyHad, candidate.pzHad);
         if (kStar > cutMaxKStar) {
           continue;
         }
-
-        float sigmaPtUsed = std::hypot(sigmaMomForKstar[0], sigmaMomForKstar[1]);
 
         rSigmaHad.fill(HIST("QA/h2TPCNSigmaHadVsPtHad"), candidate.ptHad(), candidate.nSigmaTPCHad);
         if (hadTrack.hasTOF()) {
@@ -486,7 +482,7 @@ struct sigmaHadCorrTask {
                          candidate.chargeHad,
                          candidate.sigmaDecRadius,
                          candidate.sigmaCosPA,
-                         sigmaPtUsed);
+                         sigmaPtRecal);
         }
         sigmaHadCandidates.push_back(candidate);
       }
