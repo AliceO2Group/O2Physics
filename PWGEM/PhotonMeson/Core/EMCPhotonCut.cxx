@@ -82,6 +82,12 @@ void EMCPhotonCut::SetUseSecondaryTM(bool flag)
   LOG(info) << "EM Photon Cluster Cut, using secondary TM cut is set to : " << mUseTM;
 }
 
+void EMCPhotonCut::SetDoQA(bool flag)
+{
+  mDoQA = flag;
+  LOG(info) << "EM Photon Cluster Cut, QA is set to: " << mUseTM;
+}
+
 void EMCPhotonCut::print() const
 {
   LOG(info) << "EMCal Photon Cut:";

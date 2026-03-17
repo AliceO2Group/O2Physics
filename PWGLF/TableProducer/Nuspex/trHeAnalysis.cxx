@@ -8,7 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
+///
 /// \file trHeAnalysis.cxx
 /// \brief triton and helion analysis on Run 3 pp data
 /// \author Esther Bartsch <esther.bartsch@cern.ch>, Goethe University Frankfurt
@@ -285,6 +285,7 @@ struct TrHeAnalysis {
     Configurable<float> cfgMaxDCAXY{"cfgMaxDCAXY", 10000.f, "Maximum DCA to PV in Z"};
     Configurable<float> cfgMinDCAZ{"cfgMinDCAZ", 0.f, "Minimum DCA to PV in XY"};
     Configurable<float> cfgMaxDCAZ{"cfgMaxDCAZ", 10000.f, "Maximum DCA to PV in Z"};
+    Configurable<int> cfgTrackSign{"cfgTrackSign", 0, "1: positive only, -1: negative only, 0: all tracks"};
   } trackCuts;
 
   Configurable<LabeledArray<float>> cfgBetheBlochParams{"cfgBetheBlochParams",
@@ -459,6 +460,8 @@ struct TrHeAnalysis {
           if (!track.has_mcParticle())
             continue;
         }
+        if (track.sign() * trackCuts.cfgTrackSign < 0)
+          continue;
         float rigidity = getRigidity(track);
         histos.fill(HIST("PID/histdEdx"), track.sign() * rigidity,
                     track.tpcSignal());
@@ -584,13 +587,13 @@ struct TrHeAnalysis {
             continue;
           histCuts.at(species)->Fill(12., pt);
 
-          if (track.dcaXY() < trackCuts.cfgMinDCAXY ||
-              track.dcaXY() > trackCuts.cfgMaxDCAXY)
+          if (std::abs(track.dcaXY()) < trackCuts.cfgMinDCAXY ||
+              std::abs(track.dcaXY()) > trackCuts.cfgMaxDCAXY)
             continue;
           histCuts.at(species)->Fill(13., pt);
 
-          if (track.dcaZ() < trackCuts.cfgMinDCAZ ||
-              track.dcaZ() > trackCuts.cfgMaxDCAZ)
+          if (std::abs(track.dcaZ()) < trackCuts.cfgMinDCAZ ||
+              std::abs(track.dcaZ()) > trackCuts.cfgMaxDCAZ)
             continue;
           histCuts.at(species)->Fill(14., pt);
 
