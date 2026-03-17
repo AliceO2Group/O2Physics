@@ -197,7 +197,7 @@ struct ZdcExtraTableProducer {
         // add event selection
         if (cfgEvSelSel8 && !(evSelection & (1 << evSel_sel8)))
           continue;
-        if (std::fabs(collision.posZ()) > cfgEvSelVtxZ)
+        if (!(evSelection & (1 << evSel_zvtx)))
           continue;
         if (cfgEvSelsDoOccupancySel && !(evSelection & (1 << evSel_occupancy)))
           continue;
