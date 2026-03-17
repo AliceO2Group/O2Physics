@@ -375,10 +375,9 @@ struct PhiStrangenessCorrelation {
 
     auto isPionValid = [&](const auto& pion) {
       return !applyPionNSigmaCut || pion.inNSigmaRegion(pidTPCMax, tofPIDThreshold, pidTOFMax);
-    }
+    };
 
-    for (const auto& phiCand : phiCandidates)
-    {
+    for (const auto& phiCand : phiCandidates) {
       float weightPhi = computeWeight(BoundEfficiencyMap(effMaps[Phi], multiplicity, phiCand.pt(), phiCand.y()));
 
       histos.fill(HIST("phi/h3PhiData"), multiplicity, phiCand.pt(), phiCand.m(), weightPhi);
@@ -590,7 +589,7 @@ struct PhiStrangenessCorrelation {
 
     auto isPionValid = [&](const auto& pion) {
       return !applyPionNSigmaCut || pion.inNSigmaRegion(pidTPCMax, tofPIDThreshold, pidTOFMax);
-    }
+    };
 
     auto tuplePhiPion = std::make_tuple(phiCandidates, pionTracks);
     Pair<TCollisions, TPhiCands, TPionCands, BinningTypeVertexCent> pairPhiPion{binningOnVertexAndCent, cfgNoMixedEvents, -1, collisions, tuplePhiPion, &cache};
