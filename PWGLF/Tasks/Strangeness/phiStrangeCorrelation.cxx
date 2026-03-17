@@ -207,7 +207,7 @@ struct PhiStrangenessCorrelation {
 
   // Configurables for CCDB
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository to use"};
-  Configurable<std::string> ccdbEfficiencyPath{"ccdbEfficiencyPath", "Users/s/scannito/Efficiencies", "Correction path to file"};
+  Configurable<std::string> ccdbEfficiencyPath{"ccdbEfficiencyPath", "Users/s/scannito/Efficiencies/h3EffMap", "Correction path to file"};
 
   // Configurables for minimum pt selection in McGen
   struct : ConfigurableGroup {
@@ -324,7 +324,7 @@ struct PhiStrangenessCorrelation {
 
   void loadEfficiencyMapFromCCDB(ParticleOfInterest poi)
   {
-    effMaps[poi] = std::shared_ptr<TH3>(ccdb->get<TH3F>(fmt::format("{}/h3EffMap{}", ccdbEfficiencyPath.value, particleOfInterestLabels[poi])));
+    effMaps[poi] = std::shared_ptr<TH3>(ccdb->get<TH3D>(fmt::format("{}{}", ccdbEfficiencyPath.value, particleOfInterestLabels[poi])));
     if (!effMaps[poi])
       LOG(fatal) << "Could not load efficiency map for " << particleOfInterestLabels[poi] << "!";
     LOG(info) << "Efficiency map for " << particleOfInterestLabels[poi] << " loaded from CCDB";
