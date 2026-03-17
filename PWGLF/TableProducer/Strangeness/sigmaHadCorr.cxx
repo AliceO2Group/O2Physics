@@ -102,13 +102,13 @@ struct sigmaHadCorrTask {
   Configurable<float> cutNSigmaTPC{"cutNSigmaTPC", 3, "TPC nSigma cut for hadron track"};
   Configurable<float> cutNSigmaTOF{"cutNSigmaTOF", 3, "TOF nSigma cut for hadron track"};
   Configurable<bool> applyTOFPIDKinkDaughter{"applyTOFPIDKinkDaughter", false, "If true, apply TOF PID cut to the kink daughter track"};
-  Configurable<bool> matchSigmaToPions{"matchSigmaToPions", false, "If true, pair Sigma with pions instead of hadrons"};
+  Configurable<bool> doSigmaPion{"doSigmaPion", false, "If true, pair Sigma with pions instead of protons"};
 
   Configurable<float> cutMaxKStar{"cutMaxKStar", 1.5, "Maximum k* for Sigma-hadron pairs (GeV/c)"};
-  Configurable<bool> useRecalculatedSigmaMomentum{"useRecalculatedSigmaMomentum", false, "If true, compute k* using Sigma momentum recalculated from daughter kinematics"};
+  Configurable<bool> useRecalculatedSigmaMomentum{"useRecalculatedSigmaMomentum", true, "If true, compute k* using Sigma momentum recalculated from daughter kinematics"};
 
   Configurable<bool> fillOutputTree{"fillOutputTree", true, "If true, fill the output tree with Sigma-hadron candidates"};
-  Configurable<bool> fillSparseInvMassKstar{"fillSparseInvMassKstar", false, "If true, fill THnSparse with invmass, k*, sigma charge, proton charge, sigma decay radius, cosPA, sigma pt"};
+  Configurable<bool> fillSparseInvMassKstar{"fillSparseInvMassKstar", false, "If true, fill THn with invmass, k*, sigma charge, proton charge, sigma decay radius, cosPA, sigma pt"};
 
   ConfigurableAxis CfgVtxBins{"CfgVtxBins", {10, -10, 10}, "Mixing bins - z-vertex"};
   ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0, 40.0, 80.0, 500.0}, "Mixing bins - number of contributor"};
@@ -124,14 +124,17 @@ struct sigmaHadCorrTask {
     const AxisSpec ptAxis{100, -10, 10, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec massResolutionAxis{100, -0.1, 0.1, "m_{rec} - m_{gen} (GeV/#it{c}^{2})"};
     const AxisSpec nSigmaHadAxis{100, -5, 5, "n#sigma_{had}"};
-    const AxisSpec sigmaMassAxis{100, 1.1, 1.3, "m (GeV/#it{c}^{2})"};
+    const AxisSpec sigmaMassAxis{50, 1.1, 1.3, "m (GeV/#it{c}^{2})"};
     const AxisSpec kStarAxis{200, 0.0, 2., "k* (GeV/#it{c})"};
     const AxisSpec ptHadAxis{100, 0.0, 10.0, "#it{p}_{T,had} (GeV/#it{c})"};
     const AxisSpec sigmaPtAxis{100, 0.0, 10.0, "#it{p}_{T,#Sigma} (GeV/#it{c})"};
+    const AxisSpec sigmaPtAxisCoarse{20, 0.0, 10.0, "#it{p}_{T,#Sigma} (GeV/#it{c})"};
     const AxisSpec sigmaChargeAxis{2, -1.5, 1.5, "#Sigma charge"};
     const AxisSpec hadronChargeAxis{2, -1.5, 1.5, "Hadron charge"};
     const AxisSpec sigmaDecRadiusAxis{25, 14.5, 40.5, "#Sigma decay radius (cm)"};
+    const AxisSpec sigmaDecRadiusAxisCoarse{5, 14.5, 40.5, "#Sigma decay radius (cm)"};
     const AxisSpec cosPAAxis{50, 0.9, 1.0, "cos(PA)"};
+    const AxisSpec cosPAAxisCoarse{5, 0.9, 1.0, "cos(PA)"};
     const AxisSpec alphaAPAxis{100, -1.0, 1.0, "#alpha_{AP}"};
     const AxisSpec qtAPAxis{100, 0.0, 0.5, "q_{T,AP} (GeV/#it{c})"};
     const AxisSpec vertexZAxis{100, -15., 15., "vrtx_{Z} [cm]"};
@@ -148,11 +151,11 @@ struct sigmaHadCorrTask {
 
     if (fillSparseInvMassKstar) {
       rSigmaHad.add("hSparseSigmaHad",
-                    "7D sparse: invmass, k*, sigma charge, hadron charge, sigma decay radius, cosPA, sigma pt",
-                    {HistType::kTHnSparseF, {sigmaMassAxis, kStarAxis, sigmaChargeAxis, hadronChargeAxis, sigmaDecRadiusAxis, cosPAAxis, sigmaPtAxis}});
+                    "7D THn: invmass, k*, sigma charge, hadron charge, sigma decay radius, cosPA, sigma pt",
+                    {HistType::kTHnF, {sigmaMassAxis, kStarAxis, sigmaChargeAxis, hadronChargeAxis, sigmaDecRadiusAxisCoarse, cosPAAxisCoarse, sigmaPtAxisCoarse}});
       rSigmaHad.add("hSparseSigmaHadMC",
-                    "8D sparse (MC): invmass, k*, sigma charge, hadron charge, sigma decay radius, cosPA, sigma pt, k* gen",
-                    {HistType::kTHnSparseF, {sigmaMassAxis, kStarAxis, sigmaChargeAxis, hadronChargeAxis, sigmaDecRadiusAxis, cosPAAxis, sigmaPtAxis, kStarAxis}});
+                    "8D THn (MC): invmass, k*, sigma charge, hadron charge, sigma decay radius, cosPA, sigma pt, k* gen",
+                    {HistType::kTHnF, {sigmaMassAxis, kStarAxis, sigmaChargeAxis, hadronChargeAxis, sigmaDecRadiusAxisCoarse, cosPAAxisCoarse, sigmaPtAxisCoarse, kStarAxis}});
     }
 
     LOG(info) << "Sigma-hadron correlation task initialized";
@@ -160,7 +163,7 @@ struct sigmaHadCorrTask {
     LOG(info) << "Process ME enabled: " << doprocessMixedEvent;
     LOG(info) << "Process SE MC enabled: " << doprocessSameEventMC;
     LOG(info) << "Process ME MC enabled: " << doprocessMixedEventMC;
-    LOG(info) << "Pairing mode: " << (matchSigmaToPions ? "Sigma-pion" : "Sigma-hadron");
+    LOG(info) << "Pairing mode: " << (doSigmaPion ? "Sigma-pion" : "Sigma-proton");
   }
 
   float getAlphaAP(const std::array<float, 3>& momMother, const std::array<float, 3>& momKink)
@@ -254,7 +257,7 @@ struct sigmaHadCorrTask {
 
   float getHadTrackMass()
   {
-    return matchSigmaToPions ? o2::constants::physics::MassPionCharged : o2::constants::physics::MassProton;
+    return doSigmaPion ? o2::constants::physics::MassPionCharged : o2::constants::physics::MassProton;
   }
 
   float getSigmaMassForKstar()
@@ -265,13 +268,13 @@ struct sigmaHadCorrTask {
   template <typename Ttrack>
   float getTPCNSigmaHad(const Ttrack& track)
   {
-    return matchSigmaToPions ? track.tpcNSigmaPi() : track.tpcNSigmaPr();
+    return doSigmaPion ? track.tpcNSigmaPi() : track.tpcNSigmaPr();
   }
 
   template <typename Ttrack>
   float getTOFNSigmaHad(const Ttrack& track)
   {
-    return matchSigmaToPions ? track.tofNSigmaPi() : track.tofNSigmaPr();
+    return doSigmaPion ? track.tofNSigmaPi() : track.tofNSigmaPr();
   }
 
   TLorentzVector trackSum, PartOneCMS, PartTwoCMS, trackRelK;
@@ -349,10 +352,6 @@ struct sigmaHadCorrTask {
     float alphaAP = getAlphaAP(momMoth, momDaug);
     float qtAP = getQtAP(momMoth, momDaug);
 
-    if (sigmaCand.ptMoth() < minPtSigma) {
-      return false;
-    }
-
     if (alphaAP > alphaAPCut || (qtAP < qtAPCutLow || qtAP > qtAPCutHigh)) {
       return false;
     }
@@ -418,14 +417,17 @@ struct sigmaHadCorrTask {
       sigmaForPt.sigmaDauPx = sigmaCand.pxDaug();
       sigmaForPt.sigmaDauPy = sigmaCand.pyDaug();
       sigmaForPt.sigmaDauPz = sigmaCand.pzDaug();
-      auto sigmaMomForPt = getSigmaMomentumForKstar(sigmaForPt);
-      float sigmaPtRecal = std::hypot(sigmaMomForPt[0], sigmaMomForPt[1]);
-      float sigmaPtForSparse = useRecalculatedSigmaMomentum ? sigmaPtRecal : sigmaCand.ptMoth();
+      auto sigmaPRecal = getSigmaMomentumForKstar(sigmaForPt);
+      float sigmaPtRecal = std::hypot(sigmaPRecal[0], sigmaPRecal[1]);
       float sigmaMassForQa = doSigmaMinus ? sigmaCand.mSigmaMinus() : sigmaCand.mSigmaPlus();
+
+      if (sigmaPtRecal < minPtSigma) {
+        continue;
+      }
 
       rSigmaHad.fill(HIST("QA/hSigmaPt"), sigmaCand.ptMoth());
       rSigmaHad.fill(HIST("QA/hSigmaPtRecal"), sigmaPtRecal);
-      rSigmaHad.fill(HIST("QA/h2InvMassVsPtSigma"), sigmaPtForSparse, sigmaMassForQa);
+      rSigmaHad.fill(HIST("QA/h2InvMassVsPtSigma"), sigmaPtRecal, sigmaMassForQa);
 
       for (const auto& hadTrack : tracks) {
         if (hadTrack.globalIndex() == sigmaCand.trackDaugId()) {
@@ -463,18 +465,13 @@ struct sigmaHadCorrTask {
         candidate.kinkDauID = sigmaCand.trackDaugId();
         candidate.hadID = hadTrack.globalIndex();
 
-        auto sigmaMomForKstar = getSigmaMomentumForKstar(candidate);
-        float kStar = getKStar(sigmaMomForKstar[0], sigmaMomForKstar[1], sigmaMomForKstar[2], candidate.pxHad, candidate.pyHad, candidate.pzHad);
+        float kStar = getKStar(sigmaPRecal[0], sigmaPRecal[1], sigmaPRecal[2], candidate.pxHad, candidate.pyHad, candidate.pzHad);
         if (kStar > cutMaxKStar) {
           continue;
         }
 
-        float sigmaPtUsed = std::hypot(sigmaMomForKstar[0], sigmaMomForKstar[1]);
-
-        rSigmaHad.fill(HIST("h2PtHadNSigmaTPC"), candidate.ptHad(), candidate.nSigmaTPCHad);
         rSigmaHad.fill(HIST("QA/h2TPCNSigmaHadVsPtHad"), candidate.ptHad(), candidate.nSigmaTPCHad);
         if (hadTrack.hasTOF()) {
-          rSigmaHad.fill(HIST("h2PtHadNSigmaTOF"), candidate.ptHad(), candidate.nSigmaTOFHad);
           rSigmaHad.fill(HIST("QA/h2TOFNSigmaHadVsPtHad"), candidate.ptHad(), candidate.nSigmaTOFHad);
         }
         if (fillSparseInvMassKstar && !isMC) {
@@ -485,7 +482,7 @@ struct sigmaHadCorrTask {
                          candidate.chargeHad,
                          candidate.sigmaDecRadius,
                          candidate.sigmaCosPA,
-                         sigmaPtUsed);
+                         sigmaPtRecal);
         }
         sigmaHadCandidates.push_back(candidate);
       }
@@ -503,7 +500,7 @@ struct sigmaHadCorrTask {
         continue;
       }
       rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
-      fillTreeAndHistograms(kinkCands_c, tracks_c, tracks_c, collision, false);
+      fillTreeAndHistograms(kinkCands_c, tracks, tracks_c, collision, false);
       if (fillOutputTree) {
         // Fill output table
         for (const auto& candidate : sigmaHadCandidates) {
@@ -550,7 +547,7 @@ struct sigmaHadCorrTask {
       auto kinkCands_c1 = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision1.globalIndex());
       auto tracks_c1 = tracks.sliceBy(tracksPerCollisionPreslice, collision1.globalIndex());
       auto tracks_c2 = tracks.sliceBy(tracksPerCollisionPreslice, collision2.globalIndex());
-      fillTreeAndHistograms(kinkCands_c1, tracks_c1, tracks_c2, collision1, false);
+      fillTreeAndHistograms(kinkCands_c1, tracks, tracks_c2, collision1, false);
 
       if (fillOutputTree) {
         // Fill output table
@@ -589,7 +586,7 @@ struct sigmaHadCorrTask {
         continue;
       }
       rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
-      fillTreeAndHistograms(kinkCands_c, tracks_c, tracks_c, collision, true);
+      fillTreeAndHistograms(kinkCands_c, tracks, tracks_c, collision, true);
       for (const auto& candidate : sigmaHadCandidates) {
         auto mcLabelSigma = tracks.rawIteratorAt(candidate.sigmaID);
         auto mcLabelSigmaDau = tracks.rawIteratorAt(candidate.kinkDauID);
@@ -670,7 +667,7 @@ struct sigmaHadCorrTask {
       auto kinkCands_c1 = kinkCands.sliceBy(kinkCandsPerCollisionPreslice, collision1.globalIndex());
       auto tracks_c1 = tracks.sliceBy(tracksPerCollisionPreslice, collision1.globalIndex());
       auto tracks_c2 = tracks.sliceBy(tracksPerCollisionPreslice, collision2.globalIndex());
-      fillTreeAndHistograms(kinkCands_c1, tracks_c1, tracks_c2, collision1, true);
+      fillTreeAndHistograms(kinkCands_c1, tracks, tracks_c2, collision1, true);
 
       for (const auto& candidate : sigmaHadCandidates) {
         auto mcLabelSigma = tracks.rawIteratorAt(candidate.sigmaID);
