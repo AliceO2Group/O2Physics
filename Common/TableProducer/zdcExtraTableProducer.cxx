@@ -185,7 +185,7 @@ struct ZdcExtraTableProducer {
   void process(ColEvSels const& cols, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcs*/)
   {
     // collision-based event selection
-    constexpr int kNTowers = 4; // number of ZDC towers
+    constexpr int NTowers = 4; // number of ZDC towers
 
     for (auto const& collision : cols) {
       const auto& foundBC = collision.foundBC_as<BCsRun3>();
@@ -229,7 +229,7 @@ struct ZdcExtraTableProducer {
         double pmqZNA[4] = {};
         //
         if (isZNChit) {
-          for (int it = 0; it < kNTowers; it++) {
+          for (int it = 0; it < NTowers; it++) {
             pmqZNC[it] = (zdc.energySectorZNC())[it];
             sumZNC += pmqZNC[it];
           }
@@ -244,7 +244,7 @@ struct ZdcExtraTableProducer {
           }
         }
         if (isZNAhit) {
-          for (int it = 0; it < kNTowers; it++) {
+          for (int it = 0; it < NTowers; it++) {
             pmqZNA[it] = (zdc.energySectorZNA())[it];
             sumZNA += pmqZNA[it];
           }
@@ -272,7 +272,7 @@ struct ZdcExtraTableProducer {
         float numXZNA = 0., numYZNA = 0., denZNA = 0.;
 
         // Calculate weighted sums of the x and y coordinates
-        for (int i = 0; i < kNTowers; i++) {
+        for (int i = 0; i < NTowers; i++) {
           if (pmqZNC[i] > 0.) {
             float wZNC = std::pow(pmqZNC[i], kAlpha);
             numXZNC -= X[i] * wZNC; // numerator x (minus sign due to opposite orientation of ZNC)
