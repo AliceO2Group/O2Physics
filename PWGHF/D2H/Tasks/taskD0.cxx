@@ -382,6 +382,8 @@ struct HfTaskD0 {
     registry.add("Data/fitInfo/ampFT0A_vs_ampFT0C", "FT0-A vs FT0-C amplitude;FT0-A amplitude (a.u.);FT0-C amplitude (a.u.)", {HistType::kTH2F, {{2500, 0., 250}, {2500, 0., 250}}});
     registry.add("Data/zdc/energyZNA_vs_energyZNC", "ZNA vs ZNC common energy;E_{ZNA}^{common} (a.u.);E_{ZNC}^{common} (a.u.)", {HistType::kTH2F, {{200, 0., 20}, {200, 0., 20}}});
     registry.add("Data/hUpcGapAfterSelection", "UPC gap type after selection;Gap type;Counts", {HistType::kTH1F, {{7, -1.5, 5.5}}});
+    registry.add("Data/hGapVsEta", "UPC gap vs Eta;Gap type;Eta", {HistType::kTH2F, {{7, -1.5, 5.5}, {50, -1., 1.}}});
+    registry.add("Data/hGapVsRap", "UPC gap vs Eta;Gap type;Eta", {HistType::kTH2F, {{7, -1.5, 5.5}, {50, -1., 1.}}});
 
     hfEvSel.addHistograms(registry);
 
@@ -633,6 +635,8 @@ struct HfTaskD0 {
         const float massD0 = HfHelper::invMassD0ToPiK(candidate);
         const float massD0bar = HfHelper::invMassD0barToKPi(candidate);
         const auto ptCandidate = candidate.pt();
+        registry.fill(HIST("Data/hGapVsEta"), gap, candidate.eta());
+        registry.fill(HIST("Data/hGapVsRap"), gap, HfHelper::yD0(candidate));
 
         if (candidate.isSelD0() >= selectionFlagD0) {
           registry.fill(HIST("hMass"), massD0, ptCandidate);
