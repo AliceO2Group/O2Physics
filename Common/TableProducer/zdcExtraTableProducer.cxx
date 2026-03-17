@@ -322,8 +322,12 @@ struct ZdcExtraTableProducer {
           centroidZNA[1] = 999.;
         }
         if (cfgSaveQaHistos) {
-          registry.get<TH2>(HIST("ZNCCentroid"))->Fill(centroidZNC[0], centroidZNC[1]);
-          registry.get<TH2>(HIST("ZNACentroid"))->Fill(centroidZNA[0], centroidZNA[1]);
+          if (isZNChit) {
+            registry.get<TH2>(HIST("ZNCCentroid"))->Fill(centroidZNC[0], centroidZNC[1]);
+          }
+          if (isZNAhit) {
+            registry.get<TH2>(HIST("ZNACentroid"))->Fill(centroidZNA[0], centroidZNA[1]);
+          }
         }
 
         auto vz = collision.posZ();
