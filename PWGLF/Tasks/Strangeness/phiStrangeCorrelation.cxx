@@ -83,8 +83,7 @@ enum AnalysisMode {
   kDeltaYvsDeltaPhi
 };
 
-static constexpr std::array<std::string_view, 2>
-  phiMassRegionLabels{"Signal", "Sideband"};
+static constexpr std::array<std::string_view, 2> phiMassRegionLabels{"Signal", "Sideband"};
 
 enum ParticleOfInterest {
   Phi = 0,
@@ -231,7 +230,8 @@ struct PhiStrangenessCorrelation {
 
   struct : PresliceGroup {
     Preslice<aod::PhimesonCandidatesData> phiCandDataPerCollision = aod::lf_selection_phi_candidate::collisionId;
-    PresliceUnsorted<aod::PhimesonCandidatesMcReco> phiCandMcRecoPerCollision = aod::lf_selection_phi_candidate::collisionId;
+    // PresliceUnsorted<aod::PhimesonCandidatesMcReco> phiCandMcRecoPerCollision = aod::lf_selection_phi_candidate::collisionId;
+    Preslice<aod::PhimesonCandidatesMcReco> phiCandMcRecoPerCollision = aod::lf_selection_phi_candidate::collisionId;
 
     Preslice<aod::K0sReducedCandidatesData> k0sDataPerCollision = aod::v0::collisionId;
     Preslice<aod::K0sReducedCandidatesMcReco> k0sMcRecoPerCollision = aod::v0::collisionId;
@@ -308,10 +308,6 @@ struct PhiStrangenessCorrelation {
     histos.add("pi/h4PiMCReco", "Pion in MC Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, binnedpTPiAxis, yAxis});
     histos.add("pi/h3PiMCGen", "Pion in MC Gen", kTH3F, {binnedmultAxis, binnedpTPiAxis, yAxis});
     histos.add("pi/h4PiMCGenAssocReco", "Pion in MC Gen Assoc Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, binnedpTPiAxis, yAxis});
-
-    histos.add("pi/h2RecMCDCAxyPrimPi", "Dcaxy distribution vs pt for Primary Pions", kTH2F, {binnedpTPiAxis, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
-    histos.add("pi/h2RecMCDCAxySecWeakDecayPi", "Dcaz distribution vs pt for Secondary Pions from Weak Decay", kTH2F, {binnedpTPiAxis, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
-    histos.add("pi/h2RecMCDCAxySecMaterialPi", "Dcaxy distribution vs pt for Secondary Pions from Material", kTH2F, {binnedpTPiAxis, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
 
     // Load efficiency maps from CCDB
     if (applyEfficiency) {
