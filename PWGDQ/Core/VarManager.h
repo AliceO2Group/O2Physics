@@ -22,38 +22,45 @@
 #endif
 
 #include "PWGUD/Core/UDHelpers.h"
+#include "PWGUD/Core/UPCHelpers.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
-#include "Common/Core/CollisionTypeHelper.h"
 #include "Common/Core/EventPlaneHelper.h"
-#include "Common/Core/PID/PIDTOFParamService.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/fwdtrackUtilities.h"
 #include "Common/Core/trackUtilities.h"
 
 #include <CommonConstants/LHCConstants.h>
+#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
 #include <DCAFitter/FwdDCAFitterN.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
-#include <Field/MagneticField.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/DataTypes.h>
+#include <Framework/Logger.h>
 #include <GlobalTracking/MatchGlobalFwd.h>
+#include <MCHTracking/TrackExtrap.h>
 #include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/GlobalFwdTrack.h>
 #include <ReconstructionDataFormats/Track.h>
 #include <ReconstructionDataFormats/TrackFwd.h>
+#include <ReconstructionDataFormats/TrackParametrizationWithError.h>
 #include <ReconstructionDataFormats/Vertex.h>
 
 #include <Math/GenVector/Boost.h>
+#include <Math/GenVector/VectorUtil.h>
+#include <Math/MatrixRepresentationsStatic.h>
 #include <Math/SMatrix.h>
-#include <Math/Vector3D.h>
-#include <Math/Vector4D.h>
+#include <Math/Vector3Dfwd.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
-#include <Math/VectorUtil.h>
-#include <TGeoGlobalMagField.h>
-#include <TH3F.h>
-#include <THn.h>
+#include <TMath.h>
+#include <TMathBase.h>
 #include <TObject.h>
 #include <TRandom.h>
 #include <TString.h>
@@ -61,22 +68,21 @@
 #include <KFPTrack.h>
 #include <KFPVertex.h>
 #include <KFParticle.h>
-#include <KFParticleBase.h>
-#include <KFVertex.h>
 
-#include <algorithm>
+#include <GPUROOTCartesianFwd.h>
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
+#include <array>
 #include <cmath>
 #include <complex>
 #include <cstdint>
-#include <iostream>
 #include <map>
 #include <tuple>
 #include <utility>
 #include <vector>
 
-using std::complex;
-using std::cout;
-using std::endl;
+#include <math.h>
 
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
 using SMatrix5 = ROOT::Math::SVector<double, 5>;
@@ -2771,10 +2777,10 @@ void VarManager::FillTrack(T const& track, float* values)
     if (fgUsedVars[kM11REFoverMpsingle]) {
       float m = o2::constants::physics::MassMuon;
       ROOT::Math::PtEtaPhiMVector v(track.pt(), track.eta(), track.phi(), m);
-      complex<double> Q21(values[kQ2X0A] * values[kS11A], values[kQ2Y0A] * values[kS11A]);
-      complex<double> Q42(values[kQ42XA], values[kQ42YA]);
-      complex<double> Q23(values[kQ23XA], values[kQ23YA]);
-      complex<double> P2(TMath::Cos(2 * v.Phi()), TMath::Sin(2 * v.Phi()));
+      std::complex<double> Q21(values[kQ2X0A] * values[kS11A], values[kQ2Y0A] * values[kS11A]);
+      std::complex<double> Q42(values[kQ42XA], values[kQ42YA]);
+      std::complex<double> Q23(values[kQ23XA], values[kQ23YA]);
+      std::complex<double> P2(TMath::Cos(2 * v.Phi()), TMath::Sin(2 * v.Phi()));
       values[kM11REFoverMpsingle] = values[kMultSingleMuons] > 0 && !(std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) || std::isnan(values[kM1111REF]) || std::isinf(values[kM1111REF]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF])) ? values[kM11REF] / values[kMultSingleMuons] : 0;
       values[kM1111REFoverMpsingle] = values[kMultSingleMuons] > 0 && !(std::isnan(values[kM1111REF]) || std::isinf(values[kM1111REF]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF]) || std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF])) ? values[kM1111REF] / values[kMultSingleMuons] : 0;
       values[kCORR2REFbysinglemu] = std::isnan(values[kM11REFoverMpsingle]) || std::isinf(values[kM11REFoverMpsingle]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) || std::isnan(values[kM1111REFoverMpsingle]) || std::isinf(values[kM1111REFoverMpsingle]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF]) ? 0 : values[kCORR2REF];
@@ -4031,10 +4037,10 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
     values[kWV24ME] = (std::isnan(V22ME) || std::isinf(V22ME) || std::isnan(V24ME) || std::isinf(V24ME)) ? 0. : 1.0;
 
     if constexpr ((fillMap & ReducedEventQvectorExtra) > 0) {
-      complex<double> Q21(values[kQ2X0A] * values[kS11A], values[kQ2Y0A] * values[kS11A]);
-      complex<double> Q42(values[kQ42XA], values[kQ42YA]);
-      complex<double> Q23(values[kQ23XA], values[kQ23YA]);
-      complex<double> P2(TMath::Cos(2 * v12.Phi()), TMath::Sin(2 * v12.Phi()));
+      std::complex<double> Q21(values[kQ2X0A] * values[kS11A], values[kQ2Y0A] * values[kS11A]);
+      std::complex<double> Q42(values[kQ42XA], values[kQ42YA]);
+      std::complex<double> Q23(values[kQ23XA], values[kQ23YA]);
+      std::complex<double> P2(TMath::Cos(2 * v12.Phi()), TMath::Sin(2 * v12.Phi()));
       values[kM01POIME] = values[kMultDimuonsME] * values[kS11A];
       values[kM0111POIME] = values[kMultDimuonsME] * (values[kS31A] - 3. * values[kS11A] * values[kS12A] + 2. * values[kS13A]);
       values[kCORR2POIME] = (P2 * conj(Q21)).real() / values[kM01POIME];
@@ -5317,9 +5323,9 @@ void VarManager::FillQVectorFromGFW(C const& /*collision*/, A const& compA11, A 
   values[kM11M1111REF] = values[kM11REF] * values[kM1111REF];
 
   // For cumulants: A = Full TPC, B = Negative TPC, C = Positive TPC
-  complex<double> QA(values[kQ2X0A] * values[kS11A], values[kQ2Y0A] * values[kS11A]);
-  complex<double> QB(values[kQ2X0B] * S11B, values[kQ2Y0B] * S11B);
-  complex<double> QC(values[kQ2X0C] * S11C, values[kQ2Y0C] * S11C);
+  std::complex<double> QA(values[kQ2X0A] * values[kS11A], values[kQ2Y0A] * values[kS11A]);
+  std::complex<double> QB(values[kQ2X0B] * S11B, values[kQ2Y0B] * S11B);
+  std::complex<double> QC(values[kQ2X0C] * S11C, values[kQ2Y0C] * S11C);
   values[kM11REFetagap] = S11B * S11C;
   values[kCORR2REFetagap] = ((QB * conj(QC)).real()) / values[kM11REFetagap];
   values[kCORR2REFetagap] = std::isnan(values[kM11REFetagap]) || std::isinf(values[kM11REFetagap]) || std::isnan(values[kCORR2REFetagap]) || std::isinf(values[kCORR2REFetagap]) ? 0 : values[kCORR2REFetagap];
@@ -5655,10 +5661,10 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
 
   //  kV4, kC4POI, kC4REF etc.
   if constexpr ((fillMap & ReducedEventQvectorExtra) > 0) {
-    complex<double> Q21(values[kQ2X0A] * values[kS11A], values[kQ2Y0A] * values[kS11A]);
-    complex<double> Q42(values[kQ42XA], values[kQ42YA]);
-    complex<double> Q23(values[kQ23XA], values[kQ23YA]);
-    complex<double> P2(TMath::Cos(2 * v12.Phi()), TMath::Sin(2 * v12.Phi()));
+    std::complex<double> Q21(values[kQ2X0A] * values[kS11A], values[kQ2Y0A] * values[kS11A]);
+    std::complex<double> Q42(values[kQ42XA], values[kQ42YA]);
+    std::complex<double> Q23(values[kQ23XA], values[kQ23YA]);
+    std::complex<double> P2(TMath::Cos(2 * v12.Phi()), TMath::Sin(2 * v12.Phi()));
     values[kM01POI] = values[kMultDimuons] * values[kS11A];
     values[kM0111POI] = values[kMultDimuons] * (values[kS31A] - 3. * values[kS11A] * values[kS12A] + 2. * values[kS13A]);
     values[kCORR2POI] = (P2 * conj(Q21)).real() / values[kM01POI];
@@ -5680,8 +5686,8 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     values[kM11M0111overMp] = values[kMultDimuons] > 0 && !(std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kM0111POI]) || std::isinf(values[kM0111POI]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) || std::isnan(values[kCORR4POI]) || std::isinf(values[kCORR4POI])) ? (values[kM11REF] * values[kM0111POI]) / values[kMultDimuons] : 0;
     values[kM11M01overMp] = values[kMultDimuons] > 0 && !(std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kM01POI]) || std::isinf(values[kM01POI]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) || std::isnan(values[kCORR2POI]) || std::isinf(values[kCORR2POI])) ? (values[kM11REF] * values[kM01POI]) / values[kMultDimuons] : 0;
 
-    complex<double> P2plus(TMath::Cos(2 * v1.Phi()), TMath::Sin(2 * v1.Phi()));
-    complex<double> P2minus(TMath::Cos(2 * v2.Phi()), TMath::Sin(2 * v2.Phi()));
+    std::complex<double> P2plus(TMath::Cos(2 * v1.Phi()), TMath::Sin(2 * v1.Phi()));
+    std::complex<double> P2minus(TMath::Cos(2 * v2.Phi()), TMath::Sin(2 * v2.Phi()));
     values[kM11REFoverMpplus] = values[kMultAntiMuons] > 0 && !(std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) || std::isnan(values[kM1111REF]) || std::isinf(values[kM1111REF]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF])) ? values[kM11REF] / values[kMultAntiMuons] : 0;
     values[kM1111REFoverMpplus] = values[kMultAntiMuons] > 0 && !(std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) || std::isnan(values[kM1111REF]) || std::isinf(values[kM1111REF]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF])) ? values[kM1111REF] / values[kMultAntiMuons] : 0;
     values[kM11REFoverMpminus] = values[kMultMuons] > 0 && !(std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) || std::isnan(values[kM1111REF]) || std::isinf(values[kM1111REF]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF])) ? values[kM11REF] / values[kMultMuons] : 0;

@@ -18,25 +18,28 @@
 ///
 /// \author Luca Quaglia <luca.quaglia@cern.ch
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/CallbackService.h"
-#include "Framework/ASoAHelpers.h"
-#include <iostream>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cstdint>
 
 // O2 physics classes
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 
 // O2
-#include "DataFormatsMID/Track.h" //MID track from O2
-#include "Framework/Variant.h"
-#include "Framework/ConfigParamSpec.h"
-#include "Framework/CompletionPolicyHelpers.h"
+#include <DataFormatsMID/Track.h> //MID track from O2
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <MIDBase/DetectorParameters.h>
+#include <MIDBase/Mapping.h>
 
-#include "MIDEfficiency/Efficiency.h"
-#include "MIDBase/DetectorParameters.h"
-#include "MIDBase/Mapping.h"
+#include <TMath.h>
 
 using namespace o2;
 using namespace o2::aod;

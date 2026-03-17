@@ -13,6 +13,11 @@
 //
 #include "PWGDQ/Core/MixingLibrary.h"
 
+#include "MixingHandler.h"
+#include "VarManager.h"
+
+#include <TMath.h>
+
 #include <string>
 #include <vector>
 
