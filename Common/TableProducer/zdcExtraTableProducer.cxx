@@ -58,13 +58,13 @@ struct ZdcExtraTableProducer {
   // Event selections
   Configurable<bool> cfgEvSelSel8{"cfgEvSelSel8", true, "Event selection: sel8"};
   Configurable<float> cfgEvSelVtxZ{"cfgEvSelVtxZ", 10, "Event selection: zVtx"};
-  Configurable<bool> cfgEvSelsDoOccupancySel{"cfgEvSelsDoOccupancySel", true, "Event selection: do occupancy selection"};
+  Configurable<bool> cfgEvSelsDoOccupancySel{"cfgEvSelsDoOccupancySel", false, "Event selection: do occupancy selection"};
   Configurable<float> cfgEvSelsMaxOccupancy{"cfgEvSelsMaxOccupancy", 10000, "Event selection: set max occupancy"};
-  Configurable<bool> cfgEvSelsNoSameBunchPileupCut{"cfgEvSelsNoSameBunchPileupCut", true, "Event selection: no same bunch pileup cut"};
-  Configurable<bool> cfgEvSelsIsGoodZvtxFT0vsPV{"cfgEvSelsIsGoodZvtxFT0vsPV", true, "Event selection: is good ZVTX FT0 vs PV"};
-  Configurable<bool> cfgEvSelsNoCollInTimeRangeStandard{"cfgEvSelsNoCollInTimeRangeStandard", true, "Event selection: no collision in time range standard"};
-  Configurable<bool> cfgEvSelsIsVertexITSTPC{"cfgEvSelsIsVertexITSTPC", true, "Event selection: is vertex ITSTPC"};
-  Configurable<bool> cfgEvSelsIsGoodITSLayersAll{"cfgEvSelsIsGoodITSLayersAll", true, "Event selection: is good ITS layers all"};
+  Configurable<bool> cfgEvSelsNoSameBunchPileupCut{"cfgEvSelsNoSameBunchPileupCut", false, "Event selection: no same bunch pileup cut"};
+  Configurable<bool> cfgEvSelsIsGoodZvtxFT0vsPV{"cfgEvSelsIsGoodZvtxFT0vsPV", false, "Event selection: is good ZVTX FT0 vs PV"};
+  Configurable<bool> cfgEvSelsNoCollInTimeRangeStandard{"cfgEvSelsNoCollInTimeRangeStandard", false, "Event selection: no collision in time range standard"};
+  Configurable<bool> cfgEvSelsIsVertexITSTPC{"cfgEvSelsIsVertexITSTPC", false, "Event selection: is vertex ITSTPC"};
+  Configurable<bool> cfgEvSelsIsGoodITSLayersAll{"cfgEvSelsIsGoodITSLayersAll", false, "Event selection: is good ITS layers all"};
   // Calibration settings
   Configurable<float> cfgCalibrationDownscaling{"cfgCalibrationDownscaling", 1.f, "Percentage of events to be saved to derived table"};
 
@@ -193,6 +193,16 @@ struct ZdcExtraTableProducer {
         const auto& zdc = foundBC.zdc();
 
         uint8_t evSelection = eventSelected(collision);
+
+        //add event selection 
+        if (cfgEvSelSel8 && !(evSelection & (1 << evSel_sel8))) continue;
+        if (std::fabs(collision.posZ()) > cfgEvSelVtxZ) continue; 
+        if (cfgEvSelsDoOccupancySel && !(evSelection & (1 << evSel_occupancy))) continue;
+        if (cfgEvSelsNoSameBunchPileupCut && !(evSelection & (1 << evSel_kNoSameBunchPileup))) continue;
+        if (cfgEvSelsIsGoodZvtxFT0vsPV && !(evSelection & (1 << evSel_kIsGoodZvtxFT0vsPV))) continue;
+        if (cfgEvSelsNoCollInTimeRangeStandard && !(evSelection & (1 << evSel_kNoCollInTimeRangeStandard))) continue;
+        if (cfgEvSelsIsVertexITSTPC && !(evSelection & (1 << evSel_kIsVertexITSTPC))) continue;
+        if (cfgEvSelsIsGoodITSLayersAll && !(evSelection & (1 << evSel_kIsGoodITSLayersAll))) continue;
 
         float centrality = collision.centFT0C();
 
