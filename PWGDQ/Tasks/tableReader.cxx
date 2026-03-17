@@ -163,6 +163,7 @@ struct AnalysisEventSelection {
   OutputObj<THashList> fOutputList{"output"};
   // TODO: Provide the mixing variables and binning directly via configurables (e.g. vectors of float)
   Configurable<std::string> fConfigMixingVariables{"cfgMixingVars", "", "Mixing configs separated by a comma, default no mixing"};
+  Configurable<std::string> fConfigMixingVariablesJson{"cfgMixingVarsJSON", "", "Mixing configs in JSON format"};
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
   Configurable<bool> fConfigRunZorro{"cfgRunZorro", false, "Enable event selection with zorro [WARNING: under debug, do not enable!]"};
@@ -200,12 +201,18 @@ struct AnalysisEventSelection {
     }
 
     TString mixVarsString = fConfigMixingVariables.value;
+    TString mixVarsJsonString = fConfigMixingVariablesJson.value;
     std::unique_ptr<TObjArray> objArray(mixVarsString.Tokenize(","));
-    if (objArray->GetEntries() > 0) {
+    if (objArray->GetEntries() > 0 || mixVarsJsonString != "") {
       fMixHandler = new MixingHandler("mixingHandler", "mixing handler");
       fMixHandler->Init();
-      for (int iVar = 0; iVar < objArray->GetEntries(); ++iVar) {
-        dqmixing::SetUpMixing(fMixHandler, objArray->At(iVar)->GetName());
+      if (objArray->GetEntries() > 0) {
+        for (int iVar = 0; iVar < objArray->GetEntries(); ++iVar) {
+          dqmixing::SetUpMixing(fMixHandler, objArray->At(iVar)->GetName());
+        }
+      }
+      if (mixVarsJsonString != "") {
+        dqmixing::SetUpMixingFromJSON(fMixHandler, mixVarsJsonString.Data());
       }
     }
 
