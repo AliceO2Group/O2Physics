@@ -497,6 +497,11 @@ struct FlowGfwOmegaXi {
       registry.add("QAhisto/Omega/hqadcaCascdauafter", "", {HistType::kTH1D, {{100, 0, 1}}});
       registry.add("QAhisto/Omega/hqadcaCascV0daubefore", "", {HistType::kTH1D, {{100, 0, 1}}});
       registry.add("QAhisto/Omega/hqadcaCascV0dauafter", "", {HistType::kTH1D, {{100, 0, 1}}});
+      registry.add("QAhisto/Omega/hTOFnsigmaposPi", "", {HistType::kTH1D, {{1000, -100, 100}}});
+      registry.add("QAhisto/Omega/hTOFnsigmaposPr", "", {HistType::kTH1D, {{1000, -100, 100}}});
+      registry.add("QAhisto/Omega/hBachTOFnsigmavsPt", "", {HistType::kTH2D, {{1000, -100, 100}, cfgaxisPt}});
+      registry.add("QAhisto/Omega/hLaPrTOFnsigmavsPt", "", {HistType::kTH2D, {{1000, -100, 100}, cfgaxisPt}});
+      registry.add("QAhisto/Omega/hLaPiTOFnsigmavsPt", "", {HistType::kTH2D, {{1000, -100, 100}, cfgaxisPt}});
     }
 
     // cumulant of flow
@@ -1378,18 +1383,12 @@ struct FlowGfwOmegaXi {
               ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(bachelor)) < cfgNSigma[6]) || bachelor.pt() > bachPtcut) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(posdau)) < cfgNSigma[7]) || posdau.pt() > dauLaPrPtcut) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(negdau)) < cfgNSigma[6]) || negdau.pt() > dauLaPiPtcut)) {
             registry.fill(HIST("InvMassXi_all"), casc.pt(), casc.mXi(), casc.eta(), cent);
             isXi = true;
-            registry.fill(HIST("QAhisto/Xi/hTOFnsigmaposPr"), casc.tofNSigmaXiLaPr());
-            registry.fill(HIST("QAhisto/Xi/hBachTOFnsigmavsPt"), casc.tofNSigmaXiPi(), bachelor.pt());
-            registry.fill(HIST("QAhisto/Xi/hLaPrTOFnsigmavsPt"), casc.tofNSigmaXiLaPr(), posdau.pt());
           } else if (casc.sign() > 0 && std::fabs(casc.yXi()) < cfgCasc_rapidity &&
                      (std::fabs(bachelor.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(posdau.tpcNSigmaPi()) < cfgNSigma[0]) &&
                      ((std::fabs(casc.tofNSigmaXiPi()) < cfgNSigma[3] || bachelor.pt() < bachPtcut) && (std::fabs(casc.tofNSigmaXiLaPi()) < cfgNSigma[3] || posdau.pt() < dauLaPiPtcut)) &&
                      ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(bachelor)) < cfgNSigma[6]) || bachelor.pt() > bachPtcut) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Proton>(negdau)) < cfgNSigma[7]) || negdau.pt() > dauLaPrPtcut) && ((std::fabs(itsResponse.nSigmaITS<o2::track::PID::Pion>(posdau)) < cfgNSigma[6]) || posdau.pt() > dauLaPiPtcut)) {
             registry.fill(HIST("InvMassXi_all"), casc.pt(), casc.mXi(), casc.eta(), cent);
             isXi = true;
-            registry.fill(HIST("QAhisto/Xi/hTOFnsigmaposPi"), casc.tofNSigmaXiLaPi());
-            registry.fill(HIST("QAhisto/Xi/hBachTOFnsigmavsPt"), casc.tofNSigmaXiPi(), bachelor.pt());
-            registry.fill(HIST("QAhisto/Xi/hLaPiTOFnsigmavsPt"), casc.tofNSigmaXiLaPi(), posdau.pt());
           }
         }
         // fill QA
@@ -1405,9 +1404,15 @@ struct FlowGfwOmegaXi {
             if (casc.sign() > 0) {
               registry.fill(HIST("QAhisto/Xi/hqadcaCascLaprtoPVbefore"), casc.dcapostopv());
               registry.fill(HIST("QAhisto/Xi/hqadcaCascLapitoPVbefore"), casc.dcanegtopv());
+              registry.fill(HIST("QAhisto/Xi/hTOFnsigmaposPi"), casc.tofNSigmaXiLaPi());
+              registry.fill(HIST("QAhisto/Xi/hBachTOFnsigmavsPt"), casc.tofNSigmaXiPi(), bachelor.pt());
+              registry.fill(HIST("QAhisto/Xi/hLaPiTOFnsigmavsPt"), casc.tofNSigmaXiLaPi(), posdau.pt());
             } else {
               registry.fill(HIST("QAhisto/Xi/hqadcaCascLaprtoPVbefore"), casc.dcanegtopv());
               registry.fill(HIST("QAhisto/Xi/hqadcaCascLapitoPVbefore"), casc.dcapostopv());
+              registry.fill(HIST("QAhisto/Xi/hTOFnsigmaposPr"), casc.tofNSigmaXiLaPr());
+              registry.fill(HIST("QAhisto/Xi/hBachTOFnsigmavsPt"), casc.tofNSigmaXiPi(), bachelor.pt());
+              registry.fill(HIST("QAhisto/Xi/hLaPrTOFnsigmavsPt"), casc.tofNSigmaXiLaPr(), posdau.pt());
             }
           }
           if (isOmega) {
@@ -1421,9 +1426,15 @@ struct FlowGfwOmegaXi {
             if (casc.sign() > 0) {
               registry.fill(HIST("QAhisto/Omega/hqadcaCascLaprtoPVbefore"), casc.dcapostopv());
               registry.fill(HIST("QAhisto/Omega/hqadcaCascLapitoPVbefore"), casc.dcanegtopv());
+              registry.fill(HIST("QAhisto/Omega/hTOFnsigmaposPi"), casc.tofNSigmaXiLaPi());
+              registry.fill(HIST("QAhisto/Omega/hBachTOFnsigmavsPt"), casc.tofNSigmaXiPi(), bachelor.pt());
+              registry.fill(HIST("QAhisto/Omega/hLaPiTOFnsigmavsPt"), casc.tofNSigmaXiLaPi(), posdau.pt());
             } else {
               registry.fill(HIST("QAhisto/Omega/hqadcaCascLaprtoPVbefore"), casc.dcanegtopv());
               registry.fill(HIST("QAhisto/Omega/hqadcaCascLapitoPVbefore"), casc.dcapostopv());
+              registry.fill(HIST("QAhisto/Omega/hTOFnsigmaposPr"), casc.tofNSigmaXiLaPr());
+              registry.fill(HIST("QAhisto/Omega/hBachTOFnsigmavsPt"), casc.tofNSigmaXiPi(), bachelor.pt());
+              registry.fill(HIST("QAhisto/Omega/hLaPrTOFnsigmavsPt"), casc.tofNSigmaXiLaPr(), posdau.pt());
             }
           }
         }
