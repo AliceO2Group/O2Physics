@@ -102,6 +102,7 @@ struct StudyPnch {
   Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", true, "Enable SameBunchPileup cut"};
   Configurable<bool> isApplyInelgt0{"isApplyInelgt0", false, "Enable INEL > 0 condition"};
   Configurable<bool> isApplyExtraPhiCut{"isApplyExtraPhiCut", false, "Enable extra phi cut"};
+  Configurable<bool> isApplyTVX{"isApplyTVX", false, "Enable TVX trigger sel"};
 
   void init(InitContext const&)
   {
@@ -163,7 +164,7 @@ struct StudyPnch {
   bool isEventSelected(CheckCol const& col)
   {
     histos.fill(HIST("EventHist"), 1);
-    if (!col.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+    if (isApplyTVX && !col.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
       return false;
     }
     histos.fill(HIST("EventHist"), 2);
@@ -282,6 +283,11 @@ struct StudyPnch {
     return nTrk;
   }
 
+  bool isINELgt0(auto nTrk)
+  {
+    return nTrk > 0;
+  }
+
   Filter fTrackSelectionITS = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
                               ncheckbit(aod::track::trackCutFlag, TrackSelectionIts);
   Filter fTrackSelectionTPC = ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
@@ -295,7 +301,9 @@ struct StudyPnch {
       return;
     }
     auto mult = countNTracks(tracks);
-    histos.fill(HIST("hMultiplicityData"), mult);
+    if (isINELgt0(mult)) {
+      histos.fill(HIST("hMultiplicityData"), mult);
+    }
   }
 
   void processCorrelation(ColDataTable::iterator const& cols, FilTrackDataTable const& tracks)
@@ -319,10 +327,14 @@ struct StudyPnch {
       }
       auto recTracksPart = RecTracks.sliceBy(perCollision, RecCol.globalIndex());
       auto multrec = countNTracksMcCol(recTracksPart, RecCol);
-      histos.fill(HIST("hMultiplicityMCrec"), multrec);
+      if (isINELgt0(multrec)) {
+        histos.fill(HIST("hMultiplicityMCrec"), multrec);
+      }
       auto multgen = countGenTracks(GenParticles, mcCollision);
-      histos.fill(HIST("hMultiplicityMCgen"), multgen);
-      histos.fill(HIST("hResponseMatrix"), multrec, multgen);
+      if (isINELgt0(multgen) && isINELgt0(multrec)) {
+        histos.fill(HIST("hMultiplicityMCgen"), multgen);
+        histos.fill(HIST("hResponseMatrix"), multrec, multgen);
+      }    
     }
   }
 
@@ -351,14 +363,19 @@ struct StudyPnch {
     if (isApplyInelgt0 && !mcCollision.isInelGt0()) {
       return;
     }
+    if (isApplyTVX && !(mcCollision.multMCFT0C() > 0 && mcCollision.multMCFT0A() > 0)) {
+      return;
+    }
     if (std::abs(mcCollision.posZ()) >= vtxRange) {
       return;
     }
     // All generated events
     histos.fill(HIST("MCEventHist"), 1);
     auto multAll = countGenTracks(GenParticles, mcCollision);
-    histos.fill(HIST("hMultiplicityMCgenAll"), multAll);
-
+    if (isINELgt0(multAll)) {
+      histos.fill(HIST("hMultiplicityMCgenAll"), multAll);
+    }
+    
     bool atLeastOne = false;
     auto numcontributors = -999;
     for (const auto& RecCol : RecCols) {
@@ -376,7 +393,9 @@ struct StudyPnch {
     if (atLeastOne) {
       histos.fill(HIST("MCEventHist"), 2);
       auto multSel = countGenTracks(GenParticles, mcCollision);
-      histos.fill(HIST("hMultiplicityMCgenSel"), multSel);
+      if (isINELgt0(multSel)) {
+        histos.fill(HIST("hMultiplicityMCgenSel"), multSel);      
+      }
     }
   }
 
