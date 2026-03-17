@@ -481,7 +481,7 @@ struct FlowGfwV02 {
   }
 
   template <typename TTrack>
-  double getAcceptance(TTrack track, const double& vtxz, const int& pidInd = 0)
+  double getAcceptance(TTrack track, const double& /*vtxz*/, const int& /*pidInd*/ = 0)
   {
     double wacc = 1;
     if constexpr (requires { track.weightNUA(); })
@@ -490,7 +490,7 @@ struct FlowGfwV02 {
   }
 
   template <typename TTrack>
-  double getEfficiency(TTrack track, const int& pidInd = 0)
+  double getEfficiency(TTrack track, const int& /*pidInd*/ = 0)
   {
     double eff = 1.;
     if constexpr (requires { track.weightEff(); })
@@ -527,7 +527,7 @@ struct FlowGfwV02 {
   }
 
   template <DataType dt>
-  void fillOutputContainers(const float& centmult, const double& rndm, const int& run = 0)
+  void fillOutputContainers(const float& centmult, const double& rndm, const int& /*run*/ = 0)
   {
     for (uint l_ind = 0; l_ind < corrconfigs.size(); ++l_ind) {
       if (!corrconfigs.at(l_ind).pTDif) {
@@ -654,7 +654,7 @@ struct FlowGfwV02 {
   }
 
   template <typename TTrack>
-  inline void processTrack(TTrack const& track, const float& vtxz, const int& multiplicity, const int& run, AcceptedTracks& acceptedTracks)
+  inline void processTrack(TTrack const& track, const float& vtxz, const int& multiplicity, const int& /*run*/, AcceptedTracks& acceptedTracks)
   {
     // fillPtSums<kReco>(track); // Fill pT sums
     fillTrackQA<kBefore>(track, vtxz);
