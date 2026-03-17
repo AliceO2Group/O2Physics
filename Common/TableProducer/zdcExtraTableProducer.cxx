@@ -194,15 +194,23 @@ struct ZdcExtraTableProducer {
 
         uint8_t evSelection = eventSelected(collision);
 
-        //add event selection 
-        if (cfgEvSelSel8 && !(evSelection & (1 << evSel_sel8))) continue;
-        if (std::fabs(collision.posZ()) > cfgEvSelVtxZ) continue; 
-        if (cfgEvSelsDoOccupancySel && !(evSelection & (1 << evSel_occupancy))) continue;
-        if (cfgEvSelsNoSameBunchPileupCut && !(evSelection & (1 << evSel_kNoSameBunchPileup))) continue;
-        if (cfgEvSelsIsGoodZvtxFT0vsPV && !(evSelection & (1 << evSel_kIsGoodZvtxFT0vsPV))) continue;
-        if (cfgEvSelsNoCollInTimeRangeStandard && !(evSelection & (1 << evSel_kNoCollInTimeRangeStandard))) continue;
-        if (cfgEvSelsIsVertexITSTPC && !(evSelection & (1 << evSel_kIsVertexITSTPC))) continue;
-        if (cfgEvSelsIsGoodITSLayersAll && !(evSelection & (1 << evSel_kIsGoodITSLayersAll))) continue;
+        // add event selection
+        if (cfgEvSelSel8 && !(evSelection & (1 << evSel_sel8)))
+          continue;
+        if (std::fabs(collision.posZ()) > cfgEvSelVtxZ)
+          continue;
+        if (cfgEvSelsDoOccupancySel && !(evSelection & (1 << evSel_occupancy)))
+          continue;
+        if (cfgEvSelsNoSameBunchPileupCut && !(evSelection & (1 << evSel_kNoSameBunchPileup)))
+          continue;
+        if (cfgEvSelsIsGoodZvtxFT0vsPV && !(evSelection & (1 << evSel_kIsGoodZvtxFT0vsPV)))
+          continue;
+        if (cfgEvSelsNoCollInTimeRangeStandard && !(evSelection & (1 << evSel_kNoCollInTimeRangeStandard)))
+          continue;
+        if (cfgEvSelsIsVertexITSTPC && !(evSelection & (1 << evSel_kIsVertexITSTPC)))
+          continue;
+        if (cfgEvSelsIsGoodITSLayersAll && !(evSelection & (1 << evSel_kIsGoodITSLayersAll)))
+          continue;
 
         float centrality = collision.centFT0C();
 
