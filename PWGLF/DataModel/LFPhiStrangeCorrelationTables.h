@@ -157,7 +157,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(InNSigmaRegion, inNSigmaRegion,
                              }
                              if (pt >= tofPIDThreshold && hasTOF && std::abs(nSigmaTOF) >= pidTOFMax) {
                                return false; // TOF check failed
-                             };
+                             }
                              return true;
                            });
 } // namespace lf_selection_pion_track
