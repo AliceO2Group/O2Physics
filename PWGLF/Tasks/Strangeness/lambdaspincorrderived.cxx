@@ -1681,10 +1681,15 @@ struct lambdaspincorrderived {
   void processMEV6(EventCandidates const& collisions, AllTrackCandidates const& V0s)
   {
     MixBinnerR mb{
-      ptMinMixBuffer.value, ptMaxMixBuffer.value, (ptMaxMixBuffer.value - ptMinMixBuffer.value) / cfgKinematicBins.nKinematicPt.value,
-      v0etaMixBuffer.value, (2.0 * v0etaMixBuffer.value) / cfgKinematicBins.nKinematicEta.value,
-      2.0 * TMath::Pi() / cfgKinematicBins.nKinematicPhi.value,
-      MassMin.value, MassMax.value, cfgV5MassBins.value,
+      ptMinMixBuffer.value,
+      ptMaxMixBuffer.value,
+      static_cast<float>((ptMaxMixBuffer.value - ptMinMixBuffer.value) / cfgKinematicBins.nKinematicPt.value),
+      v0etaMixBuffer.value,
+      static_cast<float>((2.0 * v0etaMixBuffer.value) / cfgKinematicBins.nKinematicEta.value),
+      static_cast<float>((2.0 * TMath::Pi()) / cfgKinematicBins.nKinematicPhi.value),
+      MassMin.value,
+      MassMax.value,
+      cfgV5MassBins.value,
       cfgMixRadiusParam.cfgMixRadiusBins.value};
 
     const int nCol = colBinning.getAllBinsCount();
@@ -1964,10 +1969,15 @@ struct lambdaspincorrderived {
   void processMCMEV6(EventCandidatesMC const& collisions, AllTrackCandidatesMC const& V0sMC)
   {
     MixBinnerR mb{
-      ptMinMixBuffer.value, ptMaxMixBuffer.value, (ptMaxMixBuffer.value - ptMinMixBuffer.value) / cfgKinematicBins.nKinematicPt.value,
-      v0etaMixBuffer.value, (2.0 * v0etaMixBuffer.value) / cfgKinematicBins.nKinematicEta.value,
-      2.0 * TMath::Pi() / cfgKinematicBins.nKinematicPhi.value,
-      MassMin.value, MassMax.value, cfgV5MassBins.value,
+      ptMinMixBuffer.value,
+      ptMaxMixBuffer.value,
+      static_cast<float>((ptMaxMixBuffer.value - ptMinMixBuffer.value) / cfgKinematicBins.nKinematicPt.value),
+      v0etaMixBuffer.value,
+      static_cast<float>((2.0 * v0etaMixBuffer.value) / cfgKinematicBins.nKinematicEta.value),
+      static_cast<float>((2.0 * TMath::Pi()) / cfgKinematicBins.nKinematicPhi.value),
+      MassMin.value,
+      MassMax.value,
+      cfgV5MassBins.value,
       cfgMixRadiusParam.cfgMixRadiusBins.value};
 
     const int nCol = colBinning.getAllBinsCount();
