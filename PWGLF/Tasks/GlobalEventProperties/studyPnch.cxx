@@ -329,7 +329,7 @@ struct StudyPnch {
       if (isINELgt0(multgen) && isINELgt0(multrec)) {
         histos.fill(HIST("hMultiplicityMCgen"), multgen);
         histos.fill(HIST("hResponseMatrix"), multrec, multgen);
-      }    
+      }
     }
   }
 
@@ -350,7 +350,7 @@ struct StudyPnch {
     if (isINELgt0(multAll)) {
       histos.fill(HIST("hMultiplicityMCgenAll"), multAll);
     }
-    
+
     bool atLeastOne = false;
     auto numcontributors = -999;
     for (const auto& RecCol : RecCols) {
@@ -369,7 +369,7 @@ struct StudyPnch {
       histos.fill(HIST("MCEventHist"), 2);
       auto multSel = countGenTracks(GenParticles, mcCollision);
       if (isINELgt0(multSel)) {
-        histos.fill(HIST("hMultiplicityMCgenSel"), multSel);      
+        histos.fill(HIST("hMultiplicityMCgenSel"), multSel);
       }
     }
   }
