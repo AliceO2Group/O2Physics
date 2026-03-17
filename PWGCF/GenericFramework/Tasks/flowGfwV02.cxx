@@ -41,13 +41,10 @@
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DataFormatsParameters/GRPObject.h>
 
-// PID ADD
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
-
 #include "ReconstructionDataFormats/PID.h"
-// PID ADD
 
 #include <TF1.h>
 #include <TPDGCode.h>
@@ -60,6 +57,7 @@
 #include <chrono>
 #include <complex>
 #include <ctime>
+#include <memory>
 #include <experimental/type_traits>
 #include <map>
 #include <numeric>
@@ -104,12 +102,9 @@ struct FlowGfwV02 {
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgFixedMultMin, int, 1, "Minimum for fixed nch range");
   O2_DEFINE_CONFIGURABLE(cfgFixedMultMax, int, 3000, "Maximum for fixed nch range");
-  // PID ADD
   O2_DEFINE_CONFIGURABLE(cfgTofPtCut, float, 0.5f, "Minimum pt to use TOF N-sigma")
   O2_DEFINE_CONFIGURABLE(cfgUseItsPID, bool, true, "Use ITS PID for particle identification")
   O2_DEFINE_CONFIGURABLE(cfgGetNsigmaQA, bool, true, "Get QA histograms for selection of pions, kaons, and protons")
-
-  // PID ADD
   O2_DEFINE_CONFIGURABLE(cfgUseMultiplicityFlowWeights, bool, true, "Enable or disable the use of multiplicity-based event weighting");
   O2_DEFINE_CONFIGURABLE(cfgConsistentEventFlag, int, 15, "Flag for consistent event selection");
 
@@ -150,11 +145,10 @@ struct FlowGfwV02 {
   OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
   HistogramRegistry registry{"registry"};
 
-  GFW* fGFW = new GFW();
+  std::unique_ptr<GFW> fGFW{std::make_unique<GFW>()};
+  std::unique_ptr<TRandom3> fRndm{std::make_unique<TRandom3>(0)};
+  std::unique_ptr<TAxis> fSecondAxis{nullptr};
   std::vector<GFW::CorrConfig> corrconfigs;
-
-  TRandom3* fRndm = new TRandom3(0);
-  TAxis* fSecondAxis;
   int lastRun = -1;
 
   // region indices for consistency flag
@@ -179,18 +173,7 @@ struct FlowGfwV02 {
   PIDState pidStates;
 
   using GFWTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
-
-  ~FlowGfwV02()
-  {
-    delete fGFW;
-    fGFW = nullptr;
-    delete fRndm;
-    fRndm = nullptr;
-    delete fSecondAxis;
-    fSecondAxis = nullptr;
-  }
-
-  // PID ADD
+  
   enum PIDIndex {
     kCharged = 0,
     kPions,
@@ -211,12 +194,12 @@ struct FlowGfwV02 {
     kITS
   };
 
-  // PID ADD
+  
 
   void init(InitContext const&)
   {
 
-    // PID ADD
+    
     pidStates.tpcNsigmaCut[iPionUp] = nSigmas->getData()[iPionUp][kTPC];
     pidStates.tpcNsigmaCut[iKaonUp] = nSigmas->getData()[iKaonUp][kTPC];
     pidStates.tpcNsigmaCut[iProtonUp] = nSigmas->getData()[iProtonUp][kTPC];
@@ -251,7 +234,7 @@ struct FlowGfwV02 {
       registry.add("TpcdEdx_ptwise", "", {HistType::kTH2D, {{pidStates.axisTpcSignal, pidStates.axisPt}}});
       registry.add("TpcdEdx_ptwise_afterCut", "", {HistType::kTH2D, {{pidStates.axisTpcSignal, pidStates.axisPt}}});
     }
-    // PID ADD
+    
 
     o2::analysis::gfw::regions.SetNames(cfgRegions->GetNames());
     o2::analysis::gfw::regions.SetEtaMin(cfgRegions->GetEtaMin());
@@ -317,7 +300,7 @@ struct FlowGfwV02 {
     ccdb->setCreatedNotAfter(now);
 
     int ptbins = o2::analysis::gfw::ptbinning.size() - 1;
-    fSecondAxis = new TAxis(ptbins, &o2::analysis::gfw::ptbinning[0]);
+    fSecondAxis = std::make_unique<TAxis>(ptbins, &o2::analysis::gfw::ptbinning[0]);
 
     // QA histograms
     registry.add("trackQA/before/phi_eta_vtxZ", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
@@ -345,7 +328,7 @@ struct FlowGfwV02 {
     addConfigObjectsToObjArray(oba, corrconfigs);
     LOGF(info, "Number of correlators: %d", oba->GetEntries());
     fFC->SetName("FlowContainer");
-    fFC->SetXAxis(fSecondAxis);
+    fFC->SetXAxis(fSecondAxis.get());
     fFC->Initialize(oba, centAxis, cfgNbootstrap);
     delete oba;
 
@@ -398,7 +381,7 @@ struct FlowGfwV02 {
     }
   }
 
-  // PID ADD
+  
   template <typename TTrack>
   int getNsigmaPID(TTrack track)
   {
@@ -448,7 +431,7 @@ struct FlowGfwV02 {
 
     return pid; // -1 = not identified, 1 = pion, 2 = kaon, 3 = proton
   }
-  // PID ADD
+  
   void loadCorrections(aod::BCsWithTimestamps::iterator const& bc)
   {
     uint64_t timestamp = bc.timestamp();
@@ -671,7 +654,7 @@ struct FlowGfwV02 {
   {
     int pidInd = getNsigmaPID(track);
 
-    // PID ADD
+    
 
     bool withinPtRef = (track.pt() > o2::analysis::gfw::ptreflow && track.pt() < o2::analysis::gfw::ptrefup);
     bool withinPtPOI = (track.pt() > o2::analysis::gfw::ptpoilow && track.pt() < o2::analysis::gfw::ptpoiup);
