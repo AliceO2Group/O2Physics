@@ -17,12 +17,10 @@
 #ifndef PWGCF_DATAMODEL_SPTABLEZDC_H_
 #define PWGCF_DATAMODEL_SPTABLEZDC_H_
 
-#include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
 
 #include <cmath>
+#include <cstdint>
 #include <vector>
 
 namespace o2::aod

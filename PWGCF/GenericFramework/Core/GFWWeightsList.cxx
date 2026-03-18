@@ -14,8 +14,24 @@
 /// \since  Dec/25/2024
 /// \brief  one object to hold a list of GFWWeights objects,
 
-#include <utility>
 #include "GFWWeightsList.h"
+
+#include "GFWWeights.h"
+
+#include <Framework/Logger.h>
+
+#include <TCollection.h>
+#include <TNamed.h>
+#include <TObjArray.h>
+#include <TString.h>
+
+#include <RtypesCore.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <string>
+#include <utility>
+#include <vector>
 
 GFWWeightsList::GFWWeightsList() : TNamed("", ""), list(0)
 {

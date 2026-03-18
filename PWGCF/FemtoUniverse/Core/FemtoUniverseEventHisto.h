@@ -17,11 +17,9 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEEVENTHISTO_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEEVENTHISTO_H_
 
-#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 
-#include "Framework/HistogramRegistry.h"
-
-using namespace o2::framework;
 namespace o2::analysis::femto_universe
 {
 /// \class FemtoUniverseEventHisto
@@ -33,14 +31,14 @@ class FemtoUniverseEventHisto
   virtual ~FemtoUniverseEventHisto() = default;
   /// Initializes histograms for the task
   /// \param registry Histogram registry to be passed
-  void init(HistogramRegistry* registry)
+  void init(o2::framework::HistogramRegistry* registry)
   {
     mHistogramRegistry = registry;
-    mHistogramRegistry->add("Event/zvtxhist", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}});
-    mHistogramRegistry->add("Event/MultV0M", "; vMultV0M; Entries", kTH1F, {{2000, 0, 20000}});
-    mHistogramRegistry->add("Event/MultNTr", "; vMultNTr; Entries", kTH1F, {{20, 0, 200}});
-    mHistogramRegistry->add("Event/MultNTrVSMultV0M", "; vMultNTr; MultV0M", kTH2F, {{200, 0, 4000}, {2000, 0, 20000}});
-    mHistogramRegistry->add("Event/zvtxhist_MultNTr", "; zvtxhist; MultNTr", kTH2F, {{250, -12.5, 12.5}, {20, 0, 200}});
+    mHistogramRegistry->add("Event/zvtxhist", "; vtx_{z} (cm); Entries", o2::framework::kTH1F, {{250, -12.5, 12.5}});
+    mHistogramRegistry->add("Event/MultV0M", "; vMultV0M; Entries", o2::framework::kTH1F, {{2000, 0, 20000}});
+    mHistogramRegistry->add("Event/MultNTr", "; vMultNTr; Entries", o2::framework::kTH1F, {{20, 0, 200}});
+    mHistogramRegistry->add("Event/MultNTrVSMultV0M", "; vMultNTr; MultV0M", o2::framework::kTH2F, {{200, 0, 4000}, {2000, 0, 20000}});
+    mHistogramRegistry->add("Event/zvtxhist_MultNTr", "; zvtxhist; MultNTr", o2::framework::kTH2F, {{250, -12.5, 12.5}, {20, 0, 200}});
   }
 
   /// Some basic QA of the event
@@ -59,7 +57,7 @@ class FemtoUniverseEventHisto
   }
 
  private:
-  HistogramRegistry* mHistogramRegistry; ///< For QA output
+  o2::framework::HistogramRegistry* mHistogramRegistry; ///< For QA output
 };
 } // namespace o2::analysis::femto_universe
 
