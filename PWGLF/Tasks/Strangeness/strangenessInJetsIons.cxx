@@ -358,24 +358,30 @@ struct StrangenessInJetsIons {
         registryMC.add("OmegaNeg_generated_MB", "OmegaNeg_generated_MB", HistType::kTH2F, {multAxis, ptAxis});
       }
       if (particleOfInterestDict[ParticleOfInterest::kPions]) {
-        registryMC.add("Pion_generated_jet", "Pion_generated_jet", HistType::kTH2F, {multAxis, ptAxisLongLived});
-        registryMC.add("Pion_generated_ue", "Pion_generated_ue", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("PionPos_generated_jet", "PionPos_generated_jet", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("PionNeg_generated_jet", "PionNeg_generated_jet", HistType::kTH2F, {multAxis, ptAxisLongLived}); 
+        registryMC.add("PionPos_generated_ue", "PionPos_generated_ue", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("PionNeg_generated_ue", "PionNeg_generated_ue", HistType::kTH2F, {multAxis, ptAxisLongLived});
 
         // Histograms for the full event (without jets)
         registryMC.add("PionPos_generated_MB", "PionPos_generated_MB", HistType::kTH2F, {multAxis, ptAxisLongLived});
         registryMC.add("PionNeg_generated_MB", "PionNeg_generated_MB", HistType::kTH2F, {multAxis, ptAxisLongLived});
       }
       if (particleOfInterestDict[ParticleOfInterest::kKaons]) {
-        registryMC.add("Kaon_generated_jet", "Kaon_generated_jet", HistType::kTH2F, {multAxis, ptAxisLongLived});
-        registryMC.add("Kaon_generated_ue", "Kaon_generated_ue", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("KaonPos_generated_jet", "KaonPos_generated_jet", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("KaonNeg_generated_jet", "KaonNeg_generated_jet", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("KaonPos_generated_ue", "KaonPos_generated_ue", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("KaonNeg_generated_ue", "KaonNeg_generated_ue", HistType::kTH2F, {multAxis, ptAxisLongLived});
 
         // Histograms for the full event (without jets)
         registryMC.add("KaonPos_generated_MB", "KaonPos_generated_MB", HistType::kTH2F, {multAxis, ptAxisLongLived});
         registryMC.add("KaonNeg_generated_MB", "KaonNeg_generated_MB", HistType::kTH2F, {multAxis, ptAxisLongLived});
       }
       if (particleOfInterestDict[ParticleOfInterest::kProtons]) {
-        registryMC.add("Proton_generated_jet", "Proton_generated_jet", HistType::kTH2F, {multAxis, ptAxisLongLived});
-        registryMC.add("Proton_generated_ue", "Proton_generated_ue", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("ProtonPos_generated_jet", "ProtonPos_generated_jet", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("ProtonNeg_generated_jet", "ProtonNeg_generated_jet", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("ProtonPos_generated_ue", "ProtonPos_generated_ue", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("ProtonNeg_generated_ue", "ProtonNeg_generated_ue", HistType::kTH2F, {multAxis, ptAxisLongLived});
 
         // Histograms for the full event (without jets)
         registryMC.add("ProtonPos_generated_MB", "ProtonPos_generated_MB", HistType::kTH2F, {multAxis, ptAxisLongLived});
@@ -1667,7 +1673,7 @@ struct StrangenessInJetsIons {
       for (const auto& particle : mcParticlesPerColl) {
         // Store properties of strange hadrons
         int pdgAbs = std::abs(particle.pdgCode());
-        if (particle.isPhysicalPrimary() && (pdgAbs == kK0Short || pdgAbs == kLambda0 || pdgAbs == kXiMinus || pdgAbs == kOmegaMinus)) {
+        if (particle.isPhysicalPrimary() && (pdgAbs == kK0Short || pdgAbs == kLambda0 || pdgAbs == kXiMinus || pdgAbs == kOmegaMinus)) { // TODO: add protons, kaons, pions
           pdg.emplace_back(particle.pdgCode());
           strHadronMomentum.emplace_back(particle.px(), particle.py(), particle.pz());
         }
@@ -1785,32 +1791,32 @@ struct StrangenessInJetsIons {
                 break;
               case kPiPlus:
                 if (particleOfInterestDict[ParticleOfInterest::kPions]) {
-                  registryMC.fill(HIST("Pion_generated_jet"), genMultiplicity, hadron.Pt());
+                  registryMC.fill(HIST("PionPos_generated_jet"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kKPlus:
                 if (particleOfInterestDict[ParticleOfInterest::kKaons]) {
-                  registryMC.fill(HIST("Kaon_generated_jet"), genMultiplicity, hadron.Pt());
+                  registryMC.fill(HIST("KaonPos_generated_jet"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kProton:
                 if (particleOfInterestDict[ParticleOfInterest::kProtons]) {
-                  registryMC.fill(HIST("Proton_generated_jet"), genMultiplicity, hadron.Pt());
+                  registryMC.fill(HIST("ProtonPos_generated_jet"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kPiMinus:
                 if (particleOfInterestDict[ParticleOfInterest::kPions]) {
-                  registryMC.fill(HIST("Pion_generated_jet"), genMultiplicity, hadron.Pt() * -1.f);
+                  registryMC.fill(HIST("PionNeg_generated_jet"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kKMinus:
                 if (particleOfInterestDict[ParticleOfInterest::kKaons]) {
-                  registryMC.fill(HIST("Kaon_generated_jet"), genMultiplicity, hadron.Pt() * -1.f);
+                  registryMC.fill(HIST("KaonNeg_generated_jet"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kProtonBar:
                 if (particleOfInterestDict[ParticleOfInterest::kProtons]) {
-                  registryMC.fill(HIST("Proton_generated_jet"), genMultiplicity, hadron.Pt() * -1.f);
+                  registryMC.fill(HIST("ProtonNeg_generated_jet"), genMultiplicity, hadron.Pt());
                 }
                 break;
               default:
@@ -1858,32 +1864,32 @@ struct StrangenessInJetsIons {
                 break;
               case kPiPlus:
                 if (particleOfInterestDict[ParticleOfInterest::kPions]) {
-                  registryMC.fill(HIST("Pion_generated_ue"), genMultiplicity, hadron.Pt());
+                  registryMC.fill(HIST("PionPos_generated_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kKPlus:
                 if (particleOfInterestDict[ParticleOfInterest::kKaons]) {
-                  registryMC.fill(HIST("Kaon_generated_ue"), genMultiplicity, hadron.Pt());
+                  registryMC.fill(HIST("KaonPos_generated_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kProton:
                 if (particleOfInterestDict[ParticleOfInterest::kProtons]) {
-                  registryMC.fill(HIST("Proton_generated_ue"), genMultiplicity, hadron.Pt());
+                  registryMC.fill(HIST("ProtonPos_generated_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kPiMinus:
                 if (particleOfInterestDict[ParticleOfInterest::kPions]) {
-                  registryMC.fill(HIST("Pion_generated_ue"), genMultiplicity, hadron.Pt() * -1.f);
+                  registryMC.fill(HIST("PionNeg_generated_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kKMinus:
                 if (particleOfInterestDict[ParticleOfInterest::kKaons]) {
-                  registryMC.fill(HIST("Kaon_generated_ue"), genMultiplicity, hadron.Pt() * -1.f);
+                  registryMC.fill(HIST("KaonNeg_generated_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kProtonBar:
                 if (particleOfInterestDict[ParticleOfInterest::kProtons]) {
-                  registryMC.fill(HIST("Proton_generated_ue"), genMultiplicity, hadron.Pt() * -1.f);
+                  registryMC.fill(HIST("ProtonNeg_generated_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
               default:
