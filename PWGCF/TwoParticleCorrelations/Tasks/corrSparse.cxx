@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file CorrSparse.cxx
-/// \brief Provides a sparse with usefull two particle correlation info
+/// \brief Two particle correlation used for pp and pO collisions
 /// \author Thor Jensen (thor.kjaersgaard.jensen@cern.ch)
 
 #include "PWGCF/Core/CorrelationContainer.h"
