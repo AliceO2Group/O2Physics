@@ -24,27 +24,26 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/runDataProcessing.h"
 
+#include <chrono>
 #include <cmath>
 #include <cstdint>
-#include <chrono>
 
 using namespace o2;
 using namespace o2::framework;
 
-#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{ #NAME, DEFAULT, HELP };
+#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
 struct flowZdcEnergy {
 
   struct : ConfigurableGroup{
-    O2_DEFINE_CONFIGURABLE(cfgCentMin, float, 0.f, "Minimum centrality for selected events")
-      O2_DEFINE_CONFIGURABLE(cfgCentMax, float, 90.f, "Maximum centrality for selected events")
-        O2_DEFINE_CONFIGURABLE(cfgVtxZ, float, 10.f, "Accepted z-vertex range")
-  } evsel;
+             O2_DEFINE_CONFIGURABLE(cfgCentMin, float, 0.f, "Minimum centrality for selected events")
+               O2_DEFINE_CONFIGURABLE(cfgCentMax, float, 90.f, "Maximum centrality for selected events")
+                 O2_DEFINE_CONFIGURABLE(cfgVtxZ, float, 10.f, "Accepted z-vertex range")} evsel;
 
-  ConfigurableAxis axisCent{ "axisCent", { 90, 0, 90 }, "Centrality (%)" };
-  ConfigurableAxis axisMult{ "axisMult", { 100, 0, 100000 }, "Multiplicity" };
-  ConfigurableAxis axisEnergy{ "axisEnergy", { 300, 0, 300 }, "Energy" };
-  ConfigurableAxis axisRescaledDiff{ "axisRescaledDiff", { 400, -1, 1 }, "(EA-EC)/(EA+EC)" };
+  ConfigurableAxis axisCent{"axisCent", {90, 0, 90}, "Centrality (%)"};
+  ConfigurableAxis axisMult{"axisMult", {100, 0, 100000}, "Multiplicity"};
+  ConfigurableAxis axisEnergy{"axisEnergy", {300, 0, 300}, "Energy"};
+  ConfigurableAxis axisRescaledDiff{"axisRescaledDiff", {400, -1, 1}, "(EA-EC)/(EA+EC)"};
 
   // Event counter bins
   enum SelectionCriteria : uint8_t {
@@ -58,7 +57,7 @@ struct flowZdcEnergy {
   };
 
   Service<ccdb::BasicCCDBManager> ccdb;
-  HistogramRegistry registry{ "registry" };
+  HistogramRegistry registry{"registry"};
 
   // Run 3
   using CollisionsRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>;
@@ -78,7 +77,7 @@ struct flowZdcEnergy {
                  .count();
     ccdb->setCreatedNotAfter(now);
 
-    registry.add("hEventCount", "Event counter;Selection;Events", { HistType::kTH1D, { { kNSelections, 0, kNSelections } } });
+    registry.add("hEventCount", "Event counter;Selection;Events", {HistType::kTH1D, {{kNSelections, 0, kNSelections}}});
     auto hCount = registry.get<TH1>(HIST("hEventCount"));
     hCount->GetXaxis()->SetBinLabel(kAllEvents + 1, "All events");
     hCount->GetXaxis()->SetBinLabel(kSeln + 1, "Sel7/8");
@@ -87,23 +86,23 @@ struct flowZdcEnergy {
     hCount->GetXaxis()->SetBinLabel(kBCHasZDC + 1, "BC has ZDC");
     hCount->GetXaxis()->SetBinLabel(kSelectedZDC + 1, "Selected ZDC");
 
-    registry.add("hCentrality", "", { HistType::kTH1D, { axisCent } });
-    registry.add("hMultiplicity", "", { HistType::kTH1D, { axisMult } });
+    registry.add("hCentrality", "", {HistType::kTH1D, {axisCent}});
+    registry.add("hMultiplicity", "", {HistType::kTH1D, {axisMult}});
 
-    registry.add("hEnergyWithCent_ZNA_Common", "", { HistType::kTH2D, { axisEnergy, axisCent } });
-    registry.add("hEnergyWithCent_ZNC_Common", "", { HistType::kTH2D, { axisEnergy, axisCent } });
-    registry.add("hEnergyWithCent_RescaledDiff", "", { HistType::kTH2D, { axisRescaledDiff, axisCent } });
-    registry.add("hEnergyWithCent_ZNA_1", "", { HistType::kTH2D, { axisEnergy, axisCent } });
-    registry.add("hEnergyWithCent_ZNA_2", "", { HistType::kTH2D, { axisEnergy, axisCent } });
-    registry.add("hEnergyWithCent_ZNA_3", "", { HistType::kTH2D, { axisEnergy, axisCent } });
-    registry.add("hEnergyWithCent_ZNA_4", "", { HistType::kTH2D, { axisEnergy, axisCent } });
-    registry.add("hEnergyWithCent_ZNC_1", "", { HistType::kTH2D, { axisEnergy, axisCent } });
-    registry.add("hEnergyWithCent_ZNC_2", "", { HistType::kTH2D, { axisEnergy, axisCent } });
-    registry.add("hEnergyWithCent_ZNC_3", "", { HistType::kTH2D, { axisEnergy, axisCent } });
-    registry.add("hEnergyWithCent_ZNC_4", "", { HistType::kTH2D, { axisEnergy, axisCent } });
-    registry.add("hEnergyWithCent_ZNA_SumSectors", "", { HistType::kTH2D, { axisEnergy, axisCent } });
-    registry.add("hEnergyWithCent_ZNC_SumSectors", "", { HistType::kTH2D, { axisEnergy, axisCent } });
-    registry.add("hEnergyWithCent_RescaledSumDiff", "", { HistType::kTH2D, { axisRescaledDiff, axisCent } });
+    registry.add("hEnergyWithCent_ZNA_Common", "", {HistType::kTH2D, {axisEnergy, axisCent}});
+    registry.add("hEnergyWithCent_ZNC_Common", "", {HistType::kTH2D, {axisEnergy, axisCent}});
+    registry.add("hEnergyWithCent_RescaledDiff", "", {HistType::kTH2D, {axisRescaledDiff, axisCent}});
+    registry.add("hEnergyWithCent_ZNA_1", "", {HistType::kTH2D, {axisEnergy, axisCent}});
+    registry.add("hEnergyWithCent_ZNA_2", "", {HistType::kTH2D, {axisEnergy, axisCent}});
+    registry.add("hEnergyWithCent_ZNA_3", "", {HistType::kTH2D, {axisEnergy, axisCent}});
+    registry.add("hEnergyWithCent_ZNA_4", "", {HistType::kTH2D, {axisEnergy, axisCent}});
+    registry.add("hEnergyWithCent_ZNC_1", "", {HistType::kTH2D, {axisEnergy, axisCent}});
+    registry.add("hEnergyWithCent_ZNC_2", "", {HistType::kTH2D, {axisEnergy, axisCent}});
+    registry.add("hEnergyWithCent_ZNC_3", "", {HistType::kTH2D, {axisEnergy, axisCent}});
+    registry.add("hEnergyWithCent_ZNC_4", "", {HistType::kTH2D, {axisEnergy, axisCent}});
+    registry.add("hEnergyWithCent_ZNA_SumSectors", "", {HistType::kTH2D, {axisEnergy, axisCent}});
+    registry.add("hEnergyWithCent_ZNC_SumSectors", "", {HistType::kTH2D, {axisEnergy, axisCent}});
+    registry.add("hEnergyWithCent_RescaledSumDiff", "", {HistType::kTH2D, {axisRescaledDiff, axisCent}});
   }
 
   // Helper: event selection
@@ -229,6 +228,6 @@ struct flowZdcEnergy {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<flowZdcEnergy>(cfgc)
-  };
+    adaptAnalysisTask<flowZdcEnergy>(cfgc)};
 }
+ 
