@@ -84,6 +84,7 @@ struct TrackEfficiency {
   Configurable<float> ptHatMax{"ptHatMax", 300, "max pT hat of collisions"};
   Configurable<float> pTHatExponent{"pTHatExponent", 6.0, "exponent of the event weight for the calculation of pTHat"};
   Configurable<float> pTHatMaxFractionMCD{"pTHatMaxFractionMCD", 999.0, "maximum fraction of hard scattering for reconstructed track acceptance in MC"};
+  Configurable<float> pTHatMaxFractionMCP{"pTHatMaxFractionMCP", 999.0, "maximum fraction of hard scattering for particle acceptance in MC"};
 
   Configurable<bool> getPtHatFromHepMCXSection{"getPtHatFromHepMCXSection", true, "test configurable, configurable should be removed once well tested"};
   Configurable<bool> useTrueTrackWeight{"useTrueTrackWeight", true, "test configurable, should be set to 1 then config removed once well tested"};
@@ -170,6 +171,10 @@ struct TrackEfficiency {
     float centrality = checkCentFT0M ? collisions.begin().centFT0M() : collisions.begin().centFT0C();
 
     for (auto const& mcparticle : mcparticles) {
+      float pTHat = simPtRef / (std::pow(weight, 1.0 / pTHatExponent));
+      if (mcparticle.pt() > pTHatMaxFractionMCP * pTHat) {
+        continue;
+      }
       registry.fill(HIST("h2_centrality_particle_pt"), centrality, mcparticle.pt(), weight);
       registry.fill(HIST("h2_centrality_particle_eta"), centrality, mcparticle.eta(), weight);
       registry.fill(HIST("h2_centrality_particle_phi"), centrality, mcparticle.phi(), weight);
@@ -643,6 +648,9 @@ struct TrackEfficiency {
     registry.fill(HIST("hMcCollCutsCounts"), 6.5, mcCollision.weight()); // ptHat condition
 
     for (auto const& jMcParticle : jMcParticles) {
+      if (jMcParticle.pt() > pTHatMaxFractionMCP * pTHat) {
+        continue;
+      }
       registry.fill(HIST("hMcPartCutsCounts"), 0.5, mcCollision.weight()); // allPartsInSelMcColl
 
       if (!isChargedParticle(jMcParticle.pdgCode())) {
@@ -706,6 +714,9 @@ struct TrackEfficiency {
         float trueTrackCollEventWeight = useTrueTrackWeight ? trueTrackMcCollision.weight() : mcCollEventWeight;
 
         auto jMcParticleFromTrack = track.mcParticle_as<JetParticlesWithOriginal>();
+        if (jMcParticleFromTrack.pt() > pTHatMaxFractionMCP * pTHat) {
+          continue;
+        }
         if (!jMcParticleFromTrack.isPhysicalPrimary()) {
           registry.fill(HIST("h3_track_pt_track_eta_track_phi_associatedtrack_nonprimary"), track.pt(), track.eta(), track.phi(), trueTrackCollEventWeight);
           registry.fill(HIST("h3_particle_pt_particle_eta_particle_phi_associatedtrack_nonprimary"), jMcParticleFromTrack.pt(), jMcParticleFromTrack.eta(), jMcParticleFromTrack.phi(), trueTrackCollEventWeight);
