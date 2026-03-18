@@ -156,9 +156,6 @@ struct CorrSparse {
   O2_DEFINE_CONFIGURABLE(cfgCentralityWeight, std::string, "", "CCDB path to centrality weight object")
   O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, bool, false, "Use local efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgUseEventWeights, bool, false, "Use event weights for mixed event")
-  O2_DEFINE_CONFIGURABLE(cfgCollType, int, 0, "Collision type: 0 = pp, 1 = pPb, 2 = pO, 3 = OO")
-  O2_DEFINE_CONFIGURABLE(cfgGapSide, int, 0, "0: gapside A;1:C")
-  O2_DEFINE_CONFIGURABLE(cfgGapSideMerge, bool, false, "whether merge A and C side together")
 
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgMultCentHighCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 10.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
