@@ -151,11 +151,11 @@ struct sigmaHadCorrTask {
 
     if (fillSparseInvMassKstar) {
       rSigmaHad.add("hSparseSigmaHad",
-                    "7D THn: invmass, k*, sigma charge, hadron charge, sigma decay radius, cosPA, sigma pt",
-                    {HistType::kTHnF, {sigmaMassAxis, kStarAxis, sigmaChargeAxis, hadronChargeAxis, sigmaDecRadiusAxisCoarse, cosPAAxisCoarse, sigmaPtAxisCoarse}});
+                    "7D THnSparse: invmass, k*, sigma charge, hadron charge, sigma decay radius, cosPA, sigma pt",
+                    {HistType::kTHnSparseF, {sigmaMassAxis, kStarAxis, sigmaChargeAxis, hadronChargeAxis, sigmaDecRadiusAxisCoarse, cosPAAxisCoarse, sigmaPtAxisCoarse}});
       rSigmaHad.add("hSparseSigmaHadMC",
-                    "8D THn (MC): invmass, k*, sigma charge, hadron charge, sigma decay radius, cosPA, sigma pt, k* gen",
-                    {HistType::kTHnF, {sigmaMassAxis, kStarAxis, sigmaChargeAxis, hadronChargeAxis, sigmaDecRadiusAxisCoarse, cosPAAxisCoarse, sigmaPtAxisCoarse, kStarAxis}});
+                    "8D THnSparse (MC): invmass, k*, sigma charge, hadron charge, sigma decay radius, cosPA, sigma pt, k* gen",
+                    {HistType::kTHnSparseF, {sigmaMassAxis, kStarAxis, sigmaChargeAxis, hadronChargeAxis, sigmaDecRadiusAxisCoarse, cosPAAxisCoarse, sigmaPtAxisCoarse, kStarAxis}});
     }
 
     LOG(info) << "Sigma-hadron correlation task initialized";
