@@ -1515,11 +1515,10 @@ struct CorrSparse {
     if (!collision.has_foundFT0())
       return;
     loadAlignParam(bc.timestamp());
+    loadCorrection(bc.timestamp());
     if (cfgDetectorConfig.withGain) {
       loadGain(bc);
     }
-
-    loadCorrection(bc.timestamp());
 
     if ((tpctracks.size() < cfgEventSelection.cfgMinMult || tpctracks.size() >= cfgEventSelection.cfgMaxMult)) {
       return;
