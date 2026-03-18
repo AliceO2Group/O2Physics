@@ -1715,8 +1715,8 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
 
     // Add histograms for QA
     if (configs.fillMcHistograms) {
-      registry.add("hGenCharmBaryonPtRapidityTight", "Generated charm baryon #it{p}_{T};#if{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{20, 0.0, 20.0}}});
-      registry.add("hGenCharmBaryonPtRapidityLoose", "Generated charm baryon #it{p}_{T};#if{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{20, 0.0, 20.0}}});
+      registry.add("hGenCharmBaryonPtRapidityTight", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{20, 0.0, 20.0}}});
+      registry.add("hGenCharmBaryonPtRapidityLoose", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{20, 0.0, 20.0}}});
     }
   }
 
@@ -1853,7 +1853,7 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
         }
       }
 
-      // Check if Xic0 is from b-hadron decay(prompt vs non-prompt)
+      // Check if charm baryon is from b-hadron decay(prompt vs non-prompt)
       if (flag != 0) {
         auto particle = mcParticles.rawIteratorAt(indexRecCharmBaryon);
         origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
@@ -1878,7 +1878,7 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
       const auto& mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
 
       float centrality{-1.f};
-      uint16_t rejectionMask{0};
+      o2::hf_evsel::HfCollisionRejectionMask rejectionMask{};
       int nSplitColl{0};
 
       if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::None) {
@@ -1909,14 +1909,14 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
         ptCharmBaryonGen = -999.;
         yCharmBaryonGen = -999.;
         flag = 0;
-        sign = 0;
+        sign = -9;
         debugGenCharmBaryon = 0;
         debugGenCasc = 0;
         debugGenV0 = 0;
         origin = RecoDecay::OriginType::None;
         std::vector<int> idxBhadMothers{};
-        float kYCutTight = 0.5;
-        float kYCutLoose = 0.8;
+        const float kYCutTight = 0.5;
+        const float kYCutLoose = 0.8;
 
         // Reject particles from background events
         if (particle.fromBackgroundEvent() && configs.rejectBackground) {
@@ -1929,7 +1929,6 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
           debugGenCharmBaryon = 1;
           ptCharmBaryonGen = particle.pt();
           yCharmBaryonGen = particle.y();
-          debug = 1; // -> Matched Xic0
 
           for (auto const& daughterCharm : particle.template daughters_as<aod::McParticles>()) {
             if (std::abs(daughterCharm.pdgCode()) != pdgOfCascade[decayChannel]) {
