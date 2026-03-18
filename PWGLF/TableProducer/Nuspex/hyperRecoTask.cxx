@@ -138,6 +138,8 @@ struct hyperCandidate {
   uint8_t nTPCClustersPi = 0u;
   uint8_t nTPCpidClusHe3 = 0u;
   uint8_t nTPCpidClusPi = 0u;
+  uint8_t nTPCCrossedRowsHe3 = 0u;
+  uint8_t nTPCCrossedRowsPi = 0u;
   uint32_t clusterSizeITSHe3 = 0u;
   uint32_t clusterSizeITSPi = 0u;
 
@@ -182,6 +184,8 @@ struct hyperRecoTask {
   Configurable<float> nSigmaMaxHe{"nSigmaMaxHe", 5, "helium dEdx cut (n sigma)"};
   Configurable<float> nTPCClusMinHe{"nTPCClusMinHe", 70, "helium NTPC clusters cut"};
   Configurable<float> nTPCClusMinPi{"nTPCClusMinPi", -1., "pion NTPC clusters cut"};
+  Configurable<float> nTPCCrossedRowsMinHe{"nTPCCrossedRowsMinHe", 70, "helium minimum crossed rows"};
+  Configurable<float> nTPCCrossedRowsMinPi{"nTPCCrossedRowsMinPi", -1., "pion minimum crossed rows"};
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
   Configurable<bool> isEventUsedForEPCalibration{"isEventUsedForEPCalibration", 1, "Event is used for EP calibration"};
@@ -509,10 +513,12 @@ struct hyperRecoTask {
     hypCand.isMatter = heTrack.sign() > 0;
     hypCand.nSigmaHe3 = computeNSigmaHe3(heTrack);
     hypCand.nTPCClustersHe3 = heTrack.tpcNClsFound();
+    hypCand.nTPCCrossedRowsHe3 = heTrack.tpcNClsCrossedRows();
     hypCand.tpcSignalHe3 = heTrack.tpcSignal();
     hypCand.nTPCpidClusHe3 = static_cast<int16_t>(heTrack.tpcNClsFindable()) - heTrack.tpcNClsFindableMinusPID();
     hypCand.clusterSizeITSHe3 = heTrack.itsClusterSizes();
     hypCand.nTPCClustersPi = piTrack.tpcNClsFound();
+    hypCand.nTPCCrossedRowsPi = piTrack.tpcNClsCrossedRows();
     hypCand.nTPCpidClusPi = static_cast<int16_t>(piTrack.tpcNClsFindable()) - piTrack.tpcNClsFindableMinusPID();
     hypCand.tpcSignalPi = piTrack.tpcSignal();
     hypCand.tpcChi2He3 = heTrack.tpcChi2NCl();
@@ -673,6 +679,9 @@ struct hyperRecoTask {
       if (heTrack.tpcNClsFound() < nTPCClusMinHe || piTrack.tpcNClsFound() < nTPCClusMinPi) {
         continue;
       }
+      if (heTrack.tpcNClsCrossedRows() < nTPCCrossedRowsMinHe || piTrack.tpcNClsCrossedRows() < nTPCCrossedRowsMinPi) {
+        continue;
+      }
 
       hyperCandidate hypCand;
       hypCand.v0ID = v0.globalIndex();
@@ -706,6 +715,10 @@ struct hyperRecoTask {
       if (isHe && track.tpcNClsFound() < nTPCClusMinHe)
         continue;
       if (!isHe && track.tpcNClsFound() < nTPCClusMinPi)
+        continue;
+      if (isHe && track.tpcNClsCrossedRows() < nTPCCrossedRowsMinHe)
+        continue;
+      if (!isHe && track.tpcNClsCrossedRows() < nTPCCrossedRowsMinPi)
         continue;
 
       svCreator.appendTrackCand(track, collisions, pdgHypo, ambiguousTracks, bcs);
@@ -793,6 +806,7 @@ struct hyperRecoTask {
                       hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
                       hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
                       hypCand.nTPCpidClusHe3, hypCand.nTPCpidClusPi,
+                      hypCand.nTPCCrossedRowsHe3, hypCand.nTPCCrossedRowsPi,
                       hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi, hypCand.tpcChi2He3, hypCand.itsChi2He3, hypCand.itsChi2Pi,
                       hypCand.massTOFHe3,
                       hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedHypClSize);
@@ -828,6 +842,7 @@ struct hyperRecoTask {
                               hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
                               hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
                               hypCand.nTPCpidClusHe3, hypCand.nTPCpidClusPi,
+                              hypCand.nTPCCrossedRowsHe3, hypCand.nTPCCrossedRowsPi,
                               hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi, hypCand.tpcChi2He3, hypCand.itsChi2He3, hypCand.itsChi2Pi,
                               hypCand.massTOFHe3,
                               hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedHypClSize);
@@ -856,6 +871,7 @@ struct hyperRecoTask {
                                 hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
                                 hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
                                 hypCand.nTPCpidClusHe3, hypCand.nTPCpidClusPi,
+                                hypCand.nTPCCrossedRowsHe3, hypCand.nTPCCrossedRowsPi,
                                 hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi, hypCand.tpcChi2He3, hypCand.itsChi2He3, hypCand.itsChi2Pi,
                                 hypCand.massTOFHe3,
                                 hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedHypClSize);
@@ -890,7 +906,7 @@ struct hyperRecoTask {
                     hypCand.recoPtPi(), hypCand.recoPhiPi(), hypCand.recoEtaPi(),
                     hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
                     hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
-                    hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi, hypCand.nTPCpidClusHe3, hypCand.nTPCpidClusPi,
+                    hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi, hypCand.nTPCpidClusHe3, hypCand.nTPCpidClusPi, hypCand.nTPCCrossedRowsHe3, hypCand.nTPCCrossedRowsPi,
                     hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi, hypCand.tpcChi2He3, hypCand.itsChi2He3, hypCand.itsChi2Pi,
                     hypCand.massTOFHe3,
                     hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedHypClSize,
@@ -960,14 +976,14 @@ struct hyperRecoTask {
       }
 
       outputMCTable(centFT0A, centFT0C, centFT0M,
-                    mRunNumber, -1, -1, -1,
-                    0,
+                    -1, -1, -1,
+                    mRunNumber, 0,
                     -1, -1, -1,
                     -1, -1, -1,
                     -1, -1, -1,
                     -1, -1, -1,
-                    -1, -1, -1,
-                    -1, -1, -1, -1, -1, -1, 0, 0, 0, 0,
+                    -1, -1, -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1, 0, 0, 0, 0,
                     -1, -1, -1, false,
                     chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(), hypCand.genPtHe3(),
                     hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2],
