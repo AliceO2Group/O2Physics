@@ -128,7 +128,7 @@ static constexpr float MultiplicityUpperLimitBase[11][8] = {
 };
 
 /* helpers for the multiplicity/centrality correlations exclusion formulae */
-static const std::string multiplicityCentralityCorrelationsFormulaBase[11][1] = {
+static const std::string multiplicityCentralityCorrelationsFormulaBase[11][1] = { // NOLINT
   /* no system */ {""},
   /* pp Run2   */ {""},
   /* pPb Run2  */ {""},
@@ -142,7 +142,7 @@ static const std::string multiplicityCentralityCorrelationsFormulaBase[11][1] = 
   /* pO Run3   */ {""}};
 
 /* helpers for the system type assignment */
-static const std::string periodsOnSystemType[11][1] = {
+static const std::string periodsOnSystemType[11][1] = { // NOLINT
   /* no system */ {""},
   /* pp Run2   */ {""},
   /* pPb Run2  */ {""},
@@ -316,8 +316,8 @@ struct Multiplicity {
 
   MultEst classestimator = kV0M;
 
-  static constexpr float kForMultiplicityPtLowLimit = 0.001f;
-  static constexpr float kForMultiplicityPtHighLimit = 50.0f;
+  static constexpr float KForMultiplicityPtLowLimit = 0.001f;
+  static constexpr float KForMultiplicityPtHighLimit = 50.0f;
   float multiplicityClass = -1.0;
   float multiplicity = 0.0;
   bool inelgth0 = false;
@@ -353,7 +353,7 @@ struct Multiplicity {
 
   void setMultiplicityPercentiles(TList* list)
   {
-    LOGF(info, "setMultiplicityPercentiles()", "From list %s", list->GetName());
+    LOGF(info, "setMultiplicityPercentiles(). From list %s", list->GetName());
     fhV0MMultPercentile = reinterpret_cast<TH1*>(list->FindObject("V0MCentMult"));
     fhCL1MultPercentile = reinterpret_cast<TH1*>(list->FindObject("CL1MCentMult"));
     fhCL1EtaGapMultPercentile = reinterpret_cast<TH1*>(list->FindObject("CL1EtaGapMCentMult"));
@@ -385,7 +385,7 @@ struct Multiplicity {
       case kProton:
         /* not clear if we should use IsPhysicalPrimary here */
         /* TODO: adapt to FT0M Run 3 and other estimators */
-        if (kForMultiplicityPtLowLimit < p.pt() && p.pt() < kForMultiplicityPtHighLimit) {
+        if (KForMultiplicityPtLowLimit < p.pt() && p.pt() < KForMultiplicityPtHighLimit) {
           if (p.eta() < 1.0f && -1.0f < p.eta()) {
             inelgth0 = true;
           }
@@ -434,24 +434,28 @@ struct Multiplicity {
       if (fhCL1EtaGapMultiplicity != nullptr) {
         fhCL1EtaGapMultiplicity->Fill(cl1EtaGapM, dNchdEta);
       }
+      /* if there is not calibration assign 50% mutltiplicity */
+      if (fhV0MMultPercentile == nullptr && fhCL1MultPercentile == nullptr && fhCL1EtaGapMultPercentile == nullptr) {
+        multiplicityClass = 50;
+      }
       switch (classestimator) {
         case kV0M:
           if (fhV0MMultPercentile != nullptr) {
             multiplicityClass = fhV0MMultPercentile->GetBinContent(fhV0MMultPercentile->FindFixBin(v0am + v0cm));
-            multiplicity = v0am + v0cm;
           }
+          multiplicity = v0am + v0cm;
           break;
         case kCL1:
           if (fhCL1MultPercentile != nullptr) {
             multiplicityClass = fhCL1MultPercentile->GetBinContent(fhCL1MultPercentile->FindFixBin(cl1m));
-            multiplicity = cl1m;
           }
+          multiplicity = cl1m;
           break;
         case kCL1GAP:
           if (fhCL1EtaGapMultPercentile != nullptr) {
             multiplicityClass = fhCL1EtaGapMultPercentile->GetBinContent(fhCL1EtaGapMultPercentile->FindFixBin(cl1EtaGapM));
-            multiplicity = cl1EtaGapM;
           }
+          multiplicity = cl1EtaGapM;
           break;
         default:
           break;
@@ -541,8 +545,10 @@ struct DptDptFilter {
     Configurable<std::string> url{"url", "http://ccdb-test.cern.ch:8080", "The CCDB url for the input file"};
     Configurable<std::string> pathNameCorrections{"pathNameCorrections", "", "The CCDB path for the corrections file. Default \"\", i.e. don't load from CCDB"};
     Configurable<std::string> pathNamePID{"pathNamePID", "", "The CCDB path for the PID adjusts file. Default \"\", i.e. don't load from CCDB"};
+    Configurable<std::string> pathNameOTF{"pathNameOTF", "", "The CCDB path for the OTF configuration file. Default \"\", i.e. don't load from CCDB"};
     Configurable<std::string> dateCorrections{"dateCorrections", "20220307", "The CCDB date for the corrections input file"};
     Configurable<std::string> datePID{"datePID", "20220307", "The CCDB date for the PID adjustments input file"};
+    Configurable<std::string> dateOTF{"dateOTF", "20260306", "The CCDB date for the OTF configuration file"};
     Configurable<std::string> suffix{"suffix", "", "Dataset period suffix for metadata discrimination"};
   } cfginputfile;
   Configurable<bool> cfgFullDerivedData{"cfgFullDerivedData", false, "Produce the full derived data for external storage. Default false"};
@@ -591,9 +597,12 @@ struct DptDptFilter {
   Produces<aod::DptDptCFGenCollisionsInfo> gencollisionsinfo;
 
   Multiplicity multiplicity;
+  std::string otfGenerator;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  bool storedCcdbInfo = false;
   Preslice<DptDptFullTracksDetLevel> perCollision = aod::track::collisionId;
 
-  void init(InitContext const&)
+  void init(InitContext& initContext)
   {
     using namespace dptdptfilter;
 
@@ -639,10 +648,25 @@ struct DptDptFilter {
     triggerSelectionFlags = getTriggerSelection(cfgEventSelection.triggSel.value.c_str());
     traceCollId0 = cfgTraceCollId0;
 
-    /* get the system type */
-    fSystem = getSystemType(cfgSystemForPeriod.value);
-    fLhcRun = multRunForSystemMap.at(fSystem);
+    /* get the data type and the system type */
     fDataType = getDataType(cfgDataType);
+    if (fDataType != kOnTheFly) {
+      fSystem = getSystemType(cfgSystemForPeriod.value);
+      fLhcRun = multRunForSystemMap.at(fSystem);
+    } else {
+      std::string tmpstr;
+      getTaskOptionValue(initContext, "generator-task", "configFile", tmpstr, false);
+      TString fullPath = tmpstr;
+      auto tokens = fullPath.Tokenize("/");
+      if (tokens->GetEntries() > 0) {
+        otfGenerator = TString(tokens->At(tokens->GetEntries() - 1)->GetName()).ReplaceAll(".ini", "");
+      } else {
+        /* let's take it from the time being from the data type string */
+        otfGenerator = TString(cfgDataType).ReplaceAll("OnTheFlyMC_", "");
+      }
+      delete tokens;
+      LOGF(info, "The generator configuration file: %s", otfGenerator.c_str());
+    }
 
     /* the multiplicities outliers exclusion */
     multiplicityCentralityCorrelationsExclusion = getExclusionFormula(cfgEventSelection.multiplicitiesExclusionFormula->getData()[fSystem][0].c_str());
@@ -761,6 +785,23 @@ struct DptDptFilter {
       } else {
         fOutputList->Add(fhTrueVertexZAA);
       }
+    }
+    /* initialize access to the CCDB */
+    ccdb->setURL(cfginputfile.url);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+  }
+
+  void getCCDBInformation()
+  {
+    /* let's get a potential OTF configuration */
+    if ((cfginputfile.dateOTF.value.length() > 0) && (cfginputfile.pathNameOTF.value.length() > 0) && !storedCcdbInfo) {
+      LOGF(info, "Getting information for OTF configuration from %s, at %s", cfginputfile.pathNameOTF.value.c_str(), cfginputfile.dateOTF.value.c_str());
+      TList* otfinfo = getCCDBInput(ccdb, cfginputfile.pathNameOTF.value.c_str(), cfginputfile.dateOTF.value.c_str(), true, otfGenerator);
+      if (otfinfo != nullptr) {
+        multiplicity.setMultiplicityPercentiles(otfinfo);
+      }
+      storedCcdbInfo = true;
     }
   }
 
@@ -1052,6 +1093,8 @@ void DptDptFilter::processOnTheFlyGeneratorLevel(aod::McCollision const& mccolli
   fhTrueVertexZB->Fill(mccollision.posZ());
   /* we assign a default value for the time being */
   float centormult = 50.0f;
+  /* ask for configuration */
+  getCCDBInformation();
   if (isEventSelected(mccollision, centormult)) {
     acceptedEvent = true;
     multiplicity.extractMultiplicity(mcparticles);
@@ -1200,13 +1243,13 @@ struct DptDptFilterTracks {
     tpcExcluder = TpcExcludeTrack(tpcExclude);
     tpcExcluder.setCuts(pLowCut, pUpCut, nLowCut, nUpCut);
 
-    /* self configure system type and data type */
-    o2::framework::LabeledArray<std::string> tmpLabeledArray = {};
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgSystemForPeriod", tmpLabeledArray, false);
-    fSystem = getSystemType(tmpLabeledArray);
+    /* self configure data type and system */
     std::string tmpstr;
     getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgDataType", tmpstr, false);
     fDataType = getDataType(tmpstr);
+    o2::framework::LabeledArray<std::string> tmpLabeledArray = {};
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgSystemForPeriod", tmpLabeledArray, false);
+    fSystem = getSystemType(tmpLabeledArray);
 
     /* required ambiguous tracks checks? */
     if (dofilterDetectorLevelWithoutPIDAmbiguous || dofilterDetectorLevelWithPIDAmbiguous || dofilterDetectorLevelWithFullPIDAmbiguous ||

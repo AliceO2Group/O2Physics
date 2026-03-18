@@ -18,290 +18,134 @@
 
 #include <Framework/Configurable.h>
 
-#include <cstdint> // uint8_t
+#include <TMatrixD.h>
+
+#include <algorithm>
+#include <cstdint>
 
 namespace o2::pwgem::nonlin
 {
 
+constexpr int MaxCent = 100.f;
+
 /// \class EMNonLin
 /// \brief Class to obtain non linear correction factors for PbPb.
+/// Parameters are loaded from CCDB (TMatrixD: rows = iterations, cols = 6 pol1 coefficients).
+/// Falls back to hardcoded static table if CCDB object is not available.
+/// The correction is of type a + b * refVal^(-c), where a, b and c are themselves described by linear functions over centrality.
 class EMNonLin
 {
  public:
-  static constexpr int MaxIter = 2;
+  static constexpr int MaxIter = 2; // hard cap on iterations
   static constexpr int PhotonN = 3;
-  static constexpr int CentBins = 10;
+  static constexpr int NCols = 6; // a0, a1, b0, b1, c0, c1
 
   enum class PhotonType : uint8_t {
     kEMC = 0,
     kPCM = 1,
-    kPHOS = 2 // just in case
+    kPHOS = 2
   };
 
   struct NonLinParams {
-    float par0{0.f};
-    float par1{0.f};
-    float par2{0.f};
+    float a0{1.f}, a1{0.f}; // pol1 params for a: asymptote
+    float b0{0.f}, b1{0.f}; // pol1 params for b: magnitude
+    float c0{0.f}, c1{0.f}; // pol1 params for c: exponent
   };
 
   struct Context {
     const NonLinParams* params = nullptr;
     int nIter = 0;
+    float cent = 0.f;
 
+    /// \brief Sets parameters for the NonLin. Used with EMNonLin::resolveParams()
+    /// \param newParams pointer to new NonLinParams
     void setParams(const NonLinParams* newParams)
     {
       params = newParams;
     }
 
+    /// \brief Sets iteration used for the NonLin.
+    /// \param iter iteration
     void setIter(int iter)
     {
-      if (iter < 0 || iter >= MaxIter) {
-        nIter = MaxIter - 1;
-        return;
-      }
+      nIter = (iter < 0 || iter >= MaxIter) ? MaxIter - 1 : iter;
+    }
 
-      nIter = iter;
+    /// \brief Sets current centrality.
+    /// \param centrality centrality
+    void setCent(float centrality)
+    {
+      cent = (centrality >= MaxCent) ? MaxCent : centrality;
     }
   };
 
-  /// \brief gets the correction value for energy or pT for a specific
-  /// \param inputCalibValue pT or energy of the photon that needs calibration
-  /// \param ctx Context which has the centrality, photontype and number of iterations stored inside
-  static float getCorrectionFactor(float inputCalibValue, const Context& ctx);
+  /// \brief Load parameters from a TMatrixD fetched from CCDB.
+  /// Rows = iterations, cols = {a0, a1, b0, b1, c0, c1}.
+  /// Overwrites the static fallback for this photon type.
+  /// \param mat  pointer to TMatrixD from CCDB (may be nullptr)
+  /// \param type photon type to fill
+  void getFromCCDBObject(const TMatrixD* mat, PhotonType type)
+  {
+    int iType = static_cast<int>(type);
+    if (!mat || mat->GetNcols() != NCols) {
+      mCCDBLoaded[iType] = false;
+      return;
+    }
+    int nIter = std::min(mat->GetNrows(), MaxIter);
+    for (int i = 0; i < nIter; ++i) {
+      mCCDBParams[iType][i] = {
+        static_cast<float>((*mat)(i, 0)), static_cast<float>((*mat)(i, 1)),
+        static_cast<float>((*mat)(i, 2)), static_cast<float>((*mat)(i, 3)),
+        static_cast<float>((*mat)(i, 4)), static_cast<float>((*mat)(i, 5))};
+    }
+    mCCDBLoaded[iType] = true;
+  }
 
-  /// \brief sets the parameters accordingly to the photon type, centrality and the wanted iteration level
-  /// \param photonType type of the photon (e.g. 0 for EMC)
-  /// \param cent centrality of the current collision in case the correction is centrality dependent
-  static const NonLinParams* resolveParams(PhotonType type, float cent);
+  /// \brief Compute the multiplicative correction factor for energy/pT.
+  /// \param par energy or pT of the photon
+  /// \param ctx context holding centrality, iteration level, and params pointer
+  static float getCorrectionFactor(float var, const Context& ctx);
 
-  /// \brief sets the parameters accordingly to the photon type, centrality and the wanted iteration level for MC
-  /// \param photonType type of the photon (e.g. 0 for EMC)
-  /// \param cent centrality of the current collision in case the correction is centrality dependent
-  static const NonLinParams* resolveParamsMC(PhotonType type, float cent);
+  /// \brief Return pointer to the params array for a given photon type.
+  /// \returns CCDB-loaded params if available, otherwise the static fallback.
+  const NonLinParams* resolveParams(PhotonType type) const
+  {
+    int iType = static_cast<int>(type);
+    return mCCDBLoaded[iType] ? &mCCDBParams[iType][0] : &FallbackTable[iType][0];
+  }
 
  private:
-  static constexpr NonLinParams kNonLinTable
-    [PhotonN][CentBins][MaxIter] =
-      {
-        // ============================
-        // PhotonType::kEMC  (0)
-        // ============================
-        {
-          // 00–10
-          {
-            {-5.33426e-01f, 1.40144e-02f, -5.24434e-01f}, // iter 0
-            {0.f, 0.f, 0.f}                               // iter 1
-          },
-          // 10–20
-          {
-            {-5.33426e-01f, 1.40144e-02f, -5.24434e-01f},
-            {0.f, 0.f, 0.f}},
-          // 20–30
-          {
-            {-5.33426e-01f, 1.40144e-02f, -5.24434e-01f},
-            {0.f, 0.f, 0.f}},
-          // 30–40
-          {
-            {-5.33426e-01f, 1.40144e-02f, -5.24434e-01f},
-            {0.f, 0.f, 0.f}},
-          // 40–50
-          {
-            {-5.33426e-01f, 1.40144e-02f, -5.24434e-01f},
-            {0.f, 0.f, 0.f}},
-          // 50–60
-          {
-            {-5.33426e-01f, 1.40144e-02f, -5.24434e-01f},
-            {0.f, 0.f, 0.f}},
-          // 60–70
-          {
-            {-5.33426e-01f, 1.40144e-02f, -5.24434e-01f},
-            {0.f, 0.f, 0.f}},
-          // 70–80
-          {
-            {-5.33426e-01f, 1.40144e-02f, -5.24434e-01f},
-            {0.f, 0.f, 0.f}},
-          // 80–90
-          {
-            {-5.33426e-01f, 1.40144e-02f, -5.24434e-01f},
-            {0.f, 0.f, 0.f}},
-          // 90–100
-          {
-            {-5.33426e-01f, 1.40144e-02f, -5.24434e-01f},
-            {0.f, 0.f, 0.f}}},
+  NonLinParams mCCDBParams[PhotonN][MaxIter] = {}; // Runtime params loaded from CCDB (per photon type, per iteration)
+  bool mCCDBLoaded[PhotonN] = {false, false, false};
 
-        // ============================
-        // PhotonType::kPCM  (1)
-        // ============================
-        {
-          // 00–10
-          {
-            {10.7203f, 0.0383968f, 10.6025f}, // iter 0
-            {7.84549f, 0.0250021f, 7.86976f}  // iter 1
-          },
-          // 10–20
-          {
-            {10.7203f, 0.0383968f, 10.6025f},
-            {7.84549f, 0.0250021f, 7.86976f}},
-          // 20–30
-          {
-            {10.7203f, 0.0383968f, 10.6025f},
-            {7.84549f, 0.0250021f, 7.86976f}},
-          // 30–40
-          {
-            {10.7203f, 0.0383968f, 10.6025f},
-            {7.84549f, 0.0250021f, 7.86976f}},
-          // 40–50
-          {
-            {10.7203f, 0.0383968f, 10.6025f},
-            {7.84549f, 0.0250021f, 7.86976f}},
-          // 50–60
-          {
-            {10.7203f, 0.0383968f, 10.6025f},
-            {7.84549f, 0.0250021f, 7.86976f}},
-          // 60–70
-          {
-            {10.7203f, 0.0383968f, 10.6025f},
-            {7.84549f, 0.0250021f, 7.86976f}},
-          // 70–80
-          {
-            {10.7203f, 0.0383968f, 10.6025f},
-            {7.84549f, 0.0250021f, 7.86976f}},
-          // 80–90
-          {
-            {10.7203f, 0.0383968f, 10.6025f},
-            {7.84549f, 0.0250021f, 7.86976f}},
-          // 90–100
-          {
-            {10.7203f, 0.0383968f, 10.6025f},
-            {7.84549f, 0.0250021f, 7.86976f}}},
+  // -------------------------------------------------------
+  // Static fallback tables (used when CCDB object is absent)
+  // -------------------------------------------------------
+  static constexpr NonLinParams FallbackTable[PhotonN][MaxIter] = {
+    // kEMC
+    {{1.f, 0.f, 0.f, 0.f, 0.f, 0.f},
+     {1.f, 0.f, 0.f, 0.f, 0.f, 0.f}},
+    // kPCM
+    {{1.f, 0.f, 0.010417f, -1.09508e-05f, 0.355795f, 0.00427618f},
+     {1.f, 0.f, 0.f, 0.f, 0.f, 0.f}},
+    // kPHOS
+    {{1.f, 0.f, 0.f, 0.f, 0.f, 0.f},
+     {1.f, 0.f, 0.f, 0.f, 0.f, 0.f}},
+  };
 
-        // ============================
-        // PhotonType::kPHOS  (2)
-        // ============================
-        {
-          // All centralities identical
-          {{0.f, 0.f, 0.f}, {0.f, 0.f, 0.f}},
-          {{0.f, 0.f, 0.f}, {0.f, 0.f, 0.f}},
-          {{0.f, 0.f, 0.f}, {0.f, 0.f, 0.f}},
-          {{0.f, 0.f, 0.f}, {0.f, 0.f, 0.f}},
-          {{0.f, 0.f, 0.f}, {0.f, 0.f, 0.f}},
-          {{0.f, 0.f, 0.f}, {0.f, 0.f, 0.f}},
-          {{0.f, 0.f, 0.f}, {0.f, 0.f, 0.f}},
-          {{0.f, 0.f, 0.f}, {0.f, 0.f, 0.f}},
-          {{0.f, 0.f, 0.f}, {0.f, 0.f, 0.f}},
-          {{0.f, 0.f, 0.f}, {0.f, 0.f, 0.f}}}};
-
-  static constexpr NonLinParams kNonLinTableMC
-    [PhotonN][CentBins][MaxIter] =
-      {
-        // ============================
-        // PhotonType::kEMC  (0)
-        // ============================
-        {
-          // 00–10
-          {
-            {-5.33426e-01f, 1.40144e-02f, -5.24434e-01f}, // iter 0
-            {0.f, 0.f, 0.f}                               // iter 1
-          },
-          // 10–20
-          {
-            {-5.33426e-01f, 1.40144e-02f, -5.24434e-01f},
-            {0.f, 0.f, 0.f}},
-          // 20–30
-          {
-            {-5.33426e-01f, 1.40144e-02f, -5.24434e-01f},
-            {0.f, 0.f, 0.f}},
-          // 30–40
-          {
-            {-5.33426e-01f, 1.40144e-02f, -5.24434e-01f},
-            {0.f, 0.f, 0.f}},
-          // 40–50
-          {
-            {-5.33426e-01f, 1.40144e-02f, -5.24434e-01f},
-            {0.f, 0.f, 0.f}},
-          // 50–60
-          {
-            {-5.33426e-01f, 1.40144e-02f, -5.24434e-01f},
-            {0.f, 0.f, 0.f}},
-          // 60–70
-          {
-            {-5.33426e-01f, 1.40144e-02f, -5.24434e-01f},
-            {0.f, 0.f, 0.f}},
-          // 70–80
-          {
-            {-5.33426e-01f, 1.40144e-02f, -5.24434e-01f},
-            {0.f, 0.f, 0.f}},
-          // 80–90
-          {
-            {-5.33426e-01f, 1.40144e-02f, -5.24434e-01f},
-            {0.f, 0.f, 0.f}},
-          // 90–100
-          {
-            {-5.33426e-01f, 1.40144e-02f, -5.24434e-01f},
-            {0.f, 0.f, 0.f}}},
-
-        // ============================
-        // PhotonType::kPCM  (1)
-        // ============================
-        {
-          // 00–10
-          {
-            {10.7203f, 0.0383968f, 10.6025f}, // iter 0
-            {7.84549f, 0.0250021f, 7.86976f}  // iter 1
-          },
-          // 10–20
-          {
-            {10.7203f, 0.0383968f, 10.6025f},
-            {7.84549f, 0.0250021f, 7.86976f}},
-          // 20–30
-          {
-            {10.7203f, 0.0383968f, 10.6025f},
-            {7.84549f, 0.0250021f, 7.86976f}},
-          // 30–40
-          {
-            {10.7203f, 0.0383968f, 10.6025f},
-            {7.84549f, 0.0250021f, 7.86976f}},
-          // 40–50
-          {
-            {10.7203f, 0.0383968f, 10.6025f},
-            {7.84549f, 0.0250021f, 7.86976f}},
-          // 50–60
-          {
-            {10.7203f, 0.0383968f, 10.6025f},
-            {7.84549f, 0.0250021f, 7.86976f}},
-          // 60–70
-          {
-            {10.7203f, 0.0383968f, 10.6025f},
-            {7.84549f, 0.0250021f, 7.86976f}},
-          // 70–80
-          {
-            {10.7203f, 0.0383968f, 10.6025f},
-            {7.84549f, 0.0250021f, 7.86976f}},
-          // 80–90
-          {
-            {10.7203f, 0.0383968f, 10.6025f},
-            {7.84549f, 0.0250021f, 7.86976f}},
-          // 90–100
-          {
-            {10.7203f, 0.0383968f, 10.6025f},
-            {7.84549f, 0.0250021f, 7.86976f}}},
-
-        // ============================
-        // PhotonType::kPHOS  (2)
-        // ============================
-        {
-          // All centralities identical
-          {{0.f, 0.f, 0.f}, {0.f, 0.f, 0.f}},
-          {{0.f, 0.f, 0.f}, {0.f, 0.f, 0.f}},
-          {{0.f, 0.f, 0.f}, {0.f, 0.f, 0.f}},
-          {{0.f, 0.f, 0.f}, {0.f, 0.f, 0.f}},
-          {{0.f, 0.f, 0.f}, {0.f, 0.f, 0.f}},
-          {{0.f, 0.f, 0.f}, {0.f, 0.f, 0.f}},
-          {{0.f, 0.f, 0.f}, {0.f, 0.f, 0.f}},
-          {{0.f, 0.f, 0.f}, {0.f, 0.f, 0.f}},
-          {{0.f, 0.f, 0.f}, {0.f, 0.f, 0.f}},
-          {{0.f, 0.f, 0.f}, {0.f, 0.f, 0.f}}}};
+  static constexpr NonLinParams FallbackTableMC[PhotonN][MaxIter] = {
+    // kEMC
+    {{1.f, 0.f, 0.f, 0.f, 0.f, 0.f},
+     {1.f, 0.f, 0.f, 0.f, 0.f, 0.f}},
+    // kPCM
+    {{1.f, 0.f, 0.010417f, -1.09508e-05f, 0.355795f, 0.00427618f},
+     {1.f, 0.f, 0.f, 0.f, 0.f, 0.f}},
+    // kPHOS
+    {{1.f, 0.f, 0.f, 0.f, 0.f, 0.f},
+     {1.f, 0.f, 0.f, 0.f, 0.f, 0.f}},
+  };
 };
+
 } // namespace o2::pwgem::nonlin
 
 #endif // PWGEM_PHOTONMESON_CORE_EMNONLIN_H_

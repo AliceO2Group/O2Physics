@@ -2176,7 +2176,6 @@ struct AnalysisSameEventPairing {
   template <int TPairType>
   void runMCGen(MyEventsVtxCovSelected const& events, ReducedMCEvents const& mcEvents, ReducedMCTracks const& mcTracks)
   {
-    cout << "AnalysisSameEventPairing::runMCGen() called" << endl;
     uint32_t mcDecision = 0;
     int isig = 0;
 

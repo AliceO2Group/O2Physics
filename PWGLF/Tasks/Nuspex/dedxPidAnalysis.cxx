@@ -797,7 +797,9 @@ struct DedxPidAnalysis {
     if (fillHist)
       registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::V0TypeK0s);
 
-    if (std::fabs(v0.dcapostopv()) < dcaPionsFromK0s && std::fabs(v0.dcanegtopv()) < dcaPionsFromK0s) // DCA selection
+    if (std::fabs(v0.dcapostopv()) < dcaPionsFromK0s) // DCA selection
+      return false;
+    if (std::fabs(v0.dcanegtopv()) < dcaPionsFromK0s) // DCA selection
       return false;
     if (fillHist)
       registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::DCAtoVtxK0s);
@@ -876,7 +878,9 @@ struct DedxPidAnalysis {
     if (fillHist)
       registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::V0TypeLambda);
 
-    if (std::fabs(v0.dcapostopv()) < dcaProtonsFromLambda && std::fabs(v0.dcanegtopv()) < dcaPionsFromLambda) // DCA selection
+    if (std::fabs(v0.dcapostopv()) < dcaProtonsFromLambda) // DCA selection
+      return false;
+    if (std::fabs(v0.dcanegtopv()) < dcaPionsFromLambda) // DCA selection
       return false;
     if (fillHist)
       registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::DCAtoVtxLambda);
@@ -949,7 +953,9 @@ struct DedxPidAnalysis {
     if (fillHist)
       registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::V0TypeAntiLambda);
 
-    if (std::fabs(v0.dcapostopv()) < dcaPionsFromLambda && std::fabs(v0.dcanegtopv()) < dcaProtonsFromLambda) // DCA selection
+    if (std::fabs(v0.dcapostopv()) < dcaPionsFromLambda) // DCA selection
+      return false;
+    if (std::fabs(v0.dcanegtopv()) < dcaProtonsFromLambda) // DCA selection
       return false;
     if (fillHist)
       registryDeDx.fill(HIST("trackselSec"), TrkSecCutLabel::DCAtoVtxAntiLambda);

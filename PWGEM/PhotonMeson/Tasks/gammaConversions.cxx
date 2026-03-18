@@ -16,6 +16,7 @@
 
 #include "PWGEM/PhotonMeson/Tasks/gammaConversions.h"
 
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/gammaConvDefinitions.h"
 
@@ -619,8 +620,8 @@ struct GammaConversions {
     }
   }
 
-  Preslice<V0DatasAdditional> perCollision = aod::v0photonkf::emphotoneventId;
-  void processRec(aod::EMEvents_004::iterator const& theCollision,
+  Preslice<V0DatasAdditional> perCollision = aod::v0photonkf::pmeventId;
+  void processRec(aod::PMEvents::iterator const& theCollision,
                   V0DatasAdditional const& theV0s,
                   aod::V0Legs const&)
   {
@@ -645,7 +646,7 @@ struct GammaConversions {
 
   Preslice<aod::McGammasTrue> gperV0 = aod::gammamctrue::v0photonkfId;
 
-  void processMc(aod::EMEvents_004::iterator const& theCollision,
+  void processMc(aod::PMEvents::iterator const& theCollision,
                  V0DatasAdditional const& theV0s,
                  V0LegsWithMC const&,
                  aod::V0DaughterMcParticles const&,

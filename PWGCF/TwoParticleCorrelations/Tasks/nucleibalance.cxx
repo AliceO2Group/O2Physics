@@ -24,18 +24,18 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/MathConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/StepTHn.h>
+#include <Framework/runDataProcessing.h>
 
 #include <TDirectory.h>
 #include <TFile.h>
@@ -1707,7 +1707,8 @@ struct Lambdastarproxy {
   Configurable<float> lstarMixZvtxMax{"lstarMixZvtxMax", float{MixZvtxMaxDefault}, "Max |Δzvtx| (cm) for event mixing"};
   Configurable<float> lstarMixMultMax{"lstarMixMultMax", float{MixMultMaxDefault}, "Max |Δmult| for event mixing"};
   Configurable<int> lstarEnablePidQA{"lstarEnablePidQA", 0, "Enable PID QA histograms (dE/dx, TOF #beta, proxy invariant-mass QA, etc.): 1 = ON, 0 = OFF"};
-  Configurable<int> lstarEnableSparse{"lstarEnableSparse", 0, "Enable THnSparse invariant-mass histograms (#Lambda^{*} pK and proxy); 1 = ON, 0 = OFF"};
+  Configurable<int> lstarEnableSparse{"lstarEnableSparse", 1, "Enable THnSparse invariant-mass histograms (#Lambda^{*} pK and proxy); 1 = ON, 0 = OFF"};
+  Configurable<float> lstarLambdaAbsYMax{"lstarLambdaAbsYMax", 0.5f, "Max |y_{pK}| (or y_{proxy K}) for #Lambda^{*} candidates"};
 
   struct KaonCand {
     float px, py, pz;
@@ -1715,6 +1716,11 @@ struct Lambdastarproxy {
     int tid;
   };
   struct ProxyCand {
+    float px, py, pz;
+    int charge;
+    int tid;
+  };
+  struct ProtonCand {
     float px, py, pz;
     int charge;
     int tid;
@@ -2004,7 +2010,7 @@ struct Lambdastarproxy {
 
     // Deuteron-proxy invariant mass (p_{proxy} from d/2 combined with K)
     histos.add("hDeuteronProxyMass",
-               "#Lambda^{*} proxy invariant mass from (d/2 + K);M_{pK} (GeV/c^{2});Counts",
+               "#Lambda^{*} proxy invariant mass from (d/2 + K);M_{p_{proxy}K} (GeV/c^{2});Counts",
                HistType::kTH1F, {massAxis});
 
     // TPC dE/dx vs total momentum
@@ -2405,8 +2411,10 @@ struct Lambdastarproxy {
 
     std::vector<KaonCand> kaonCands;
     std::vector<ProxyCand> proxyCands;
+    std::vector<ProtonCand> protonCands;
     kaonCands.reserve(128);
     proxyCands.reserve(32);
+    protonCands.reserve(128);
 
     float eventMultFallback = 0.f; // fallback mixing variable: number of selected charged tracks (after quality cuts)
 
@@ -2507,7 +2515,9 @@ struct Lambdastarproxy {
       // PID for deuteron candidates
       const float nsTPCDe = trkD.tpcNSigmaDe();
       const float nsTOFDe = trkD.tofNSigmaDe();
-      const bool isDeuteron = (std::abs(nsTPCDe) < lstarCutNsigmaTPCDe.value) && (std::abs(nsTOFDe) < lstarCutNsigmaTOFDe.value);
+      const bool hasTofDe = hasTOFMatch(trkD);
+      const bool isDeuteron = (std::abs(nsTPCDe) < lstarCutNsigmaTPCDe.value) &&
+                              (!hasTofDe || (std::abs(nsTOFDe) < lstarCutNsigmaTOFDe.value));
       if (!isDeuteron) {
         continue;
       }
@@ -2537,6 +2547,38 @@ struct Lambdastarproxy {
       proxyCands.push_back(ProxyCand{pxProxy, pyProxy, pzProxy, static_cast<int>(trkD.sign()), static_cast<int>(trkD.globalIndex())});
     }
 
+    // Proton candidates (for genuine pK #Lambda^{*} reconstruction)
+    for (auto const& trkP : tracks) {
+      if (trkP.pt() < lstarCutPtMin.value || std::abs(trkP.eta()) > lstarCutEtaMax.value) {
+        continue;
+      }
+      if (!passTrackQuality(trkP)) {
+        continue;
+      }
+      if (trkP.sign() == 0) {
+        continue;
+      }
+
+      const float nsTPCPr = trkP.tpcNSigmaPr();
+      const float nsTOFPr = trkP.tofNSigmaPr();
+      const bool hasTofPr = hasTOFMatch(trkP);
+      const bool isProton = (std::abs(nsTPCPr) < lstarCutNsigmaTPCPr.value) &&
+                            (!hasTofPr || (std::abs(nsTOFPr) < lstarCutNsigmaTOFPr.value));
+      if (!isProton) {
+        continue;
+      }
+
+      const float ptP = trkP.pt();
+      const float etaP = trkP.eta();
+      const float phiP = trkP.phi();
+
+      const float pxP = ptP * std::cos(phiP);
+      const float pyP = ptP * std::sin(phiP);
+      const float pzP = ptP * std::sinh(etaP);
+
+      protonCands.push_back(ProtonCand{pxP, pyP, pzP, static_cast<int>(trkP.sign()), static_cast<int>(trkP.globalIndex())});
+    }
+
     // Kaon candidates
     for (auto const& trkK : tracks) {
       if (trkK.pt() < lstarCutPtMin.value || std::abs(trkK.eta()) > lstarCutEtaMax.value) {
@@ -2552,7 +2594,9 @@ struct Lambdastarproxy {
       // PID for kaon candidates
       const float nsTPCK = trkK.tpcNSigmaKa();
       const float nsTOFK = trkK.tofNSigmaKa();
-      const bool isKaon = (std::abs(nsTPCK) < lstarCutNsigmaTPCKaon.value) && (std::abs(nsTOFK) < lstarCutNsigmaTOFKaon.value);
+      const bool hasTofK = hasTOFMatch(trkK);
+      const bool isKaon = (std::abs(nsTPCK) < lstarCutNsigmaTPCKaon.value) &&
+                          (!hasTofK || (std::abs(nsTOFK) < lstarCutNsigmaTOFKaon.value));
       if (!isKaon) {
         continue;
       }
@@ -2595,6 +2639,46 @@ struct Lambdastarproxy {
       return;
     }
 
+    // --- SAME-EVENT: genuine pK #Lambda^{*} candidates ---
+    for (auto const& pr : protonCands) {
+      for (auto const& k : kaonCands) {
+        if (pr.tid == k.tid) {
+          continue;
+        }
+        const double mass = invariantMass(pr.px, pr.py, pr.pz, MassProton,
+                                          k.px, k.py, k.pz, MassKaonCharged);
+
+        const float pxTot = pr.px + k.px;
+        const float pyTot = pr.py + k.py;
+        const float pzTot = pr.pz + k.pz;
+        const float ptPair = std::sqrt(pxTot * pxTot + pyTot * pyTot);
+        const float phiPair = phiFromPxPy(pxTot, pyTot);
+
+        const double eTot = std::sqrt(mass * mass + static_cast<double>(pxTot) * pxTot +
+                                      static_cast<double>(pyTot) * pyTot + static_cast<double>(pzTot) * pzTot);
+        const float yPair = rapidityFromEPz(eTot, pzTot);
+
+        if (std::abs(yPair) > lstarLambdaAbsYMax.value) {
+          continue;
+        }
+
+        const bool unlikeSignPK = (pr.charge * k.charge) < 0;
+        if (unlikeSignPK) {
+          histos.fill(HIST("hInvMassPKUnlike"), mass);
+          histos.fill(HIST("hInvMassPKUnlikeVsPt"), mass, ptPair);
+          if (lstarEnableSparse.value != 0) {
+            histos.fill(HIST("hLambdaStarPKUnlikeSparse"), mass, ptPair, yPair, phiPair, eventMult);
+          }
+        } else {
+          histos.fill(HIST("hInvMassPKLike"), mass);
+          histos.fill(HIST("hInvMassPKLikeVsPt"), mass, ptPair);
+          if (lstarEnableSparse.value != 0) {
+            histos.fill(HIST("hLambdaStarPKLikeSparse"), mass, ptPair, yPair, phiPair, eventMult);
+          }
+        }
+      }
+    }
+
     // --- SAME-EVENT: proxy (d/2) + K ---
     for (auto const& pr : proxyCands) {
       for (auto const& k : kaonCands) {
@@ -2611,25 +2695,10 @@ struct Lambdastarproxy {
         const double eTot = std::sqrt(mass * mass + static_cast<double>(pxTot) * pxTot + static_cast<double>(pyTot) * pyTot + static_cast<double>(pzTot) * pzTot);
         const float yPair = rapidityFromEPz(eTot, pzTot);
 
-        // Inclusive invariant-mass spectrum for the #Lambda^{*} proxy
+        // Inclusive invariant-mass spectrum for the #Lambda^{*} proxy (d/2 + K)
         histos.fill(HIST("hDeuteronProxyMass"), mass);
         if (lstarEnableSparse.value != 0) {
           histos.fill(HIST("hLambdaStarProxySparse"), mass, ptPair, yPair, phiPair, eventMult);
-        }
-
-        const bool unlikeSign = (pr.charge * k.charge) < 0;
-        if (unlikeSign) {
-          histos.fill(HIST("hInvMassPKUnlike"), mass);
-          histos.fill(HIST("hInvMassPKUnlikeVsPt"), mass, ptPair);
-          if (lstarEnableSparse.value != 0) {
-            histos.fill(HIST("hLambdaStarPKUnlikeSparse"), mass, ptPair, yPair, phiPair, eventMult);
-          }
-        } else {
-          histos.fill(HIST("hInvMassPKLike"), mass);
-          histos.fill(HIST("hInvMassPKLikeVsPt"), mass, ptPair);
-          if (lstarEnableSparse.value != 0) {
-            histos.fill(HIST("hLambdaStarPKLikeSparse"), mass, ptPair, yPair, phiPair, eventMult);
-          }
         }
       }
     }
@@ -2664,9 +2733,8 @@ struct Lambdastarproxy {
           const double eTot = std::sqrt(mass * mass + static_cast<double>(pxTot) * pxTot + static_cast<double>(pyTot) * pyTot + static_cast<double>(pzTot) * pzTot);
           const float yPair = rapidityFromEPz(eTot, pzTot);
 
-          // Fill mixed-event THnSparse
+          // Fill mixed-event THnSparse (proxy only)
           if (lstarEnableSparse.value != 0) {
-            histos.fill(HIST("hLambdaStarPKMixedSparse"), mass, ptPair, yPair, phiPair, eventMult);
             histos.fill(HIST("hLambdaStarProxyMixedSparse"), mass, ptPair, yPair, phiPair, eventMult);
           }
         }
