@@ -1188,7 +1188,7 @@ struct AnalysisPrefilterSelection {
     } // end loop over combinations
   }
 
-  void processBarrelSkimmed(MyEvents const& events, soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& assocs, MyBarrelTracks const& tracks)
+  void processBarrelSkimmed(MyEventsBasic const& events, soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& assocs, MyBarrelTracks const& tracks)
   {
     fPrefilterMap.clear();
 
