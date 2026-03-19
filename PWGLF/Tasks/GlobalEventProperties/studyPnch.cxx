@@ -322,14 +322,14 @@ struct StudyPnch {
       }
       auto recTracksPart = RecTracks.sliceBy(perCollision, RecCol.globalIndex());
       auto multrec = countNTracksMcCol(recTracksPart, RecCol);
-      if (isINELgt0(multrec)) {
+      if (multrec > 0) {
         histos.fill(HIST("hMultiplicityMCrec"), multrec);
       }
       auto multgen = countGenTracks(GenParticles, mcCollision);
-      if (isINELgt0(multgen) && isINELgt0(multrec)) {
+      if (multgen > 0 && multrec > 0) {
         histos.fill(HIST("hMultiplicityMCgen"), multgen);
         histos.fill(HIST("hResponseMatrix"), multrec, multgen);
-      }    
+      }
     }
   }
 
@@ -347,10 +347,10 @@ struct StudyPnch {
     // All generated events
     histos.fill(HIST("MCEventHist"), 1);
     auto multAll = countGenTracks(GenParticles, mcCollision);
-    if (isINELgt0(multAll)) {
+    if (multAll > 0) {
       histos.fill(HIST("hMultiplicityMCgenAll"), multAll);
     }
-    
+
     bool atLeastOne = false;
     auto numcontributors = -999;
     for (const auto& RecCol : RecCols) {
@@ -368,8 +368,8 @@ struct StudyPnch {
     if (atLeastOne) {
       histos.fill(HIST("MCEventHist"), 2);
       auto multSel = countGenTracks(GenParticles, mcCollision);
-      if (isINELgt0(multSel)) {
-        histos.fill(HIST("hMultiplicityMCgenSel"), multSel);      
+      if (multSel > 0) {
+        histos.fill(HIST("hMultiplicityMCgenSel"), multSel);
       }
     }
   }
