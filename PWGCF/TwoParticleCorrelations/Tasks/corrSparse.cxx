@@ -771,7 +771,7 @@ struct CorrSparse {
     auto theta = std::atan2(r, z);
     return -std::log(std::tan(0.5 * theta));
   }
-//checks if it is an accepted mft track
+  // checks if it is an accepted mft track
   template <typename TTrack>
   bool isAcceptedMftTrack(TTrack const& mftTrack)
   {
