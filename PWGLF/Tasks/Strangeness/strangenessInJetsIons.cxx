@@ -237,6 +237,8 @@ struct StrangenessInJetsIons {
     AxisSpec multAxis = {multBinning, multAxTitle};
 
     const AxisSpec ptAxis{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec ptJetAxis{101, 0.0, 100.0, "#it{p}_{T,jet} (GeV/#it{c})"};
+    const AxisSpec numJets{21, -0.5, 20.5, "Number of jets per collision"};
     const AxisSpec invMassK0sAxis{200, 0.44, 0.56, "m_{#pi#pi} (GeV/#it{c}^{2})"};
     const AxisSpec invMassLambdaAxis{200, 1.09, 1.14, "m_{p#pi} (GeV/#it{c}^{2})"};
     const AxisSpec invMassXiAxis{200, 1.28, 1.36, "m_{p#pi#pi} (GeV/#it{c}^{2})"};
@@ -282,6 +284,10 @@ struct StrangenessInJetsIons {
       registryData.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(6, "kIsGoodZvtxFT0vsPV");
       registryData.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(7, "No empty events");
       registryData.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(8, "At least one jet");
+
+      // Jet counters
+      registryData.add("n_jets_vs_mult_pT", "n_jets_vs_mult_pT", HistType::kTH2F, {multAxis, ptJetAxis});
+      registryData.add("n_jets_vs_mult", "n_jets_vs_mult", HistType::kTH2F, {multAxis, numJets});
 
       // Armenteros-Podolanski plot
       // registryQC.add("ArmenterosPreSel_DATA", "ArmenterosPreSel_DATA", HistType::kTH2F, {alphaArmAxis, qtarmAxis});
@@ -332,6 +338,10 @@ struct StrangenessInJetsIons {
 
       // Add histogram to store multiplicity of the event
       registryMC.add("number_of_events_vsmultiplicity_gen", "number of events vs multiplicity", HistType::kTH1D, {{101, -0.5, 100.5, "Multiplicity percentile"}});
+
+      // Jet counters
+      registryMC.add("n_jets_vs_mult_pT_mc_gen", "n_jets_vs_mult_pT_mc_gen", HistType::kTH2F, {multAxis, ptJetAxis});
+      registryMC.add("n_jets_vs_mult_mc_gen", "n_jets_vs_mult_mc_gen", HistType::kTH2F, {multAxis, numJets});
 
       // Histograms for analysis
       if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
@@ -411,6 +421,10 @@ struct StrangenessInJetsIons {
 
       // Add histogram to store multiplicity of the event
       registryMC.add("number_of_events_vsmultiplicity_rec", "number of events vs multiplicity", HistType::kTH1D, {{101, -0.5, 100.5, "Multiplicity percentile"}});
+
+      // Jet counters
+      registryMC.add("n_jets_vs_mult_pT_mc_rec", "n_jets_vs_mult_pT_mc_rec", HistType::kTH2F, {multAxis, ptJetAxis});
+      registryMC.add("n_jets_vs_mult_mc_rec", "n_jets_vs_mult_mc_rec", HistType::kTH2F, {multAxis, numJets});
 
       // Armenteros-Podolanski plot
       // registryQC.add("ArmenterosPreSel_REC", "ArmenterosPreSel_REC", HistType::kTH2F, {alphaArmAxis, qtarmAxis});
@@ -1414,6 +1428,7 @@ struct StrangenessInJetsIons {
     std::vector<TVector3> selectedJet;
     std::vector<TVector3> ue1;
     std::vector<TVector3> ue2;
+    std::vector<double> jetPt;
 
     // Loop over reconstructed jets
     for (const auto& jet : jets) {
@@ -1441,6 +1456,7 @@ struct StrangenessInJetsIons {
       selectedJet.emplace_back(jetAxis);
       ue1.emplace_back(ueAxis1);
       ue2.emplace_back(ueAxis2);
+      jetPt.emplace_back(jetMinusBkg.pt());
     }
     if (!isAtLeastOneJetSelected)
       return;
@@ -1458,9 +1474,14 @@ struct StrangenessInJetsIons {
 
     // Fill event multiplicity
     registryData.fill(HIST("number_of_events_vsmultiplicity"), multiplicity);
+    registryData.fill(HIST("n_jets_vs_mult"), multiplicity, static_cast<int>(selectedJet.size()));
 
     // Loop over selected jets
     for (int i = 0; i < static_cast<int>(selectedJet.size()); i++) {
+
+      // Fill jet counter
+      registryData.fill(HIST("n_jets_vs_mult_pT"), multiplicity, jetPt[i]);
+
       if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) { // V0s
         for (const auto& v0 : fullV0s) {
 
@@ -1748,6 +1769,7 @@ struct StrangenessInJetsIons {
       auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(fjParticles, jets[0], rJet);
 
       // Loop over clustered jets
+      int countSelJet = 0; // number of selected jets
       for (const auto& jet : jets) {
 
         // Jet must be fully contained in acceptance
@@ -1761,8 +1783,12 @@ struct StrangenessInJetsIons {
         // Apply jet pT threshold
         if (jetMinusBkg.pt() < minJetPt)
           continue;
+        countSelJet++;
         registryMC.fill(HIST("number_of_events_mc_gen"), 3.5);
         registryMC.fill(HIST("number_of_events_vsmultiplicity_gen"), genMultiplicity);
+
+        // Fill jet counter
+        registryMC.fill(HIST("n_jets_vs_mult_pT_mc_gen"), genMultiplicity, jetMinusBkg.pt());
 
         // Set up two perpendicular cone axes for underlying event estimation
         TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
@@ -1937,6 +1963,8 @@ struct StrangenessInJetsIons {
           }
         }
       }
+      // Fill jet counter
+      registryMC.fill(HIST("n_jets_vs_mult_mc_gen"), genMultiplicity, countSelJet);
     }
   }
   PROCESS_SWITCH(StrangenessInJetsIons, processMCgenerated, "Process MC generated events", false);
@@ -2037,6 +2065,7 @@ struct StrangenessInJetsIons {
 
       // Jet selection
       bool isAtLeastOneJetSelected = false;
+      std::vector<double> jetPt;
 
       // Loop over clustered jets
       for (const auto& jet : jets) {
@@ -2064,6 +2093,7 @@ struct StrangenessInJetsIons {
         selectedJet.emplace_back(jetAxis);
         ue1.emplace_back(ueAxis1);
         ue2.emplace_back(ueAxis2);
+        jetPt.emplace_back(jetMinusBkg.pt());
       }
       if (!isAtLeastOneJetSelected)
         continue;
@@ -2071,9 +2101,13 @@ struct StrangenessInJetsIons {
       // Fill event counter for events with at least one selected jet
       registryMC.fill(HIST("number_of_events_mc_rec"), 6.5);
       registryMC.fill(HIST("number_of_events_vsmultiplicity_rec"), multiplicity);
+      registryMC.fill(HIST("n_jets_vs_mult_mc_rec"), multiplicity, static_cast<int>(selectedJet.size()));
 
       // Loop over selected jets
       for (int i = 0; i < static_cast<int>(selectedJet.size()); i++) {
+
+        // Fill jet counter
+        registryMC.fill(HIST("n_jets_vs_mult_pT_mc_rec"), multiplicity, jetPt[i]);
 
         // ------------------------------------------------
         // --- Generated hadrons in reconstructed jets ----
@@ -2082,11 +2116,11 @@ struct StrangenessInJetsIons {
             continue;
 
           int absPdg = std::abs(particle.pdgCode());
-          if (absPdg != kK0Short && absPdg != kLambda0 )
+          if (absPdg != kK0Short && absPdg != kLambda0)
             continue;
 
           TVector3 momVec(particle.px(), particle.py(), particle.pz());
-          
+
           // Compute distance of particles from jet and UE axes
           const double deltaEtaJet = momVec.Eta() - selectedJet[i].Eta();
           const double deltaPhiJet = getDeltaPhi(momVec.Phi(), selectedJet[i].Phi());
@@ -2336,6 +2370,7 @@ struct StrangenessInJetsIons {
           }
         }
       }
+      jetPt.clear();
     }
   }
   PROCESS_SWITCH(StrangenessInJetsIons, processMCreconstructed, "process reconstructed events", false);
