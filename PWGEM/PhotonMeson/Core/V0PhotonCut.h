@@ -27,6 +27,9 @@
 #include <Framework/Array2D.h>
 #include <Framework/HistogramRegistry.h>
 
+#include <Math/Vector3D.h> // IWYU pragma: keep
+#include <Math/Vector3Dfwd.h>
+#include <Math/VectorUtil.h>
 #include <TMath.h>
 #include <TNamed.h>
 
@@ -183,6 +186,7 @@ class V0PhotonCut : public TNamed
     kRZLine,
     kOnWwireIB,
     kOnWwireOB,
+    kIsTooClose,
     // leg cut
     kTrackPtRange,
     kTrackEtaRange,
@@ -204,6 +208,12 @@ class V0PhotonCut : public TNamed
     kRequireTPCTRD,
     kRequireTPCTOF,
     kNCuts
+  };
+
+  enum class TooCloseCuts : uint8_t {
+    kNoCut = 0,
+    kDistance3D = 1,
+    kRadAndAngle = 2
   };
 
   /// \brief add histograms to registry
@@ -268,26 +278,27 @@ class V0PhotonCut : public TNamed
       hPhotonQualityCuts->GetXaxis()->SetBinLabel(12, "RZ_{line}");
       hPhotonQualityCuts->GetXaxis()->SetBinLabel(13, "Wire_{IB}");
       hPhotonQualityCuts->GetXaxis()->SetBinLabel(14, "Wire_{OB}");
-      hPhotonQualityCuts->GetXaxis()->SetBinLabel(15, "#it{p}_{T,leg}");
-      hPhotonQualityCuts->GetXaxis()->SetBinLabel(16, "#it{#eta}_{leg}");
-      hPhotonQualityCuts->GetXaxis()->SetBinLabel(17, "#it{N}_{cl,TPC}");
-      hPhotonQualityCuts->GetXaxis()->SetBinLabel(18, "#it{N}_{cr,TPC}");
-      hPhotonQualityCuts->GetXaxis()->SetBinLabel(19, "#it{N}_{cr,TPC}/#it{N}_{cl,TPC}");
-      hPhotonQualityCuts->GetXaxis()->SetBinLabel(20, "FracSharedCl");
-      hPhotonQualityCuts->GetXaxis()->SetBinLabel(21, "#chi^{2}_{TPC}/NDF");
-      hPhotonQualityCuts->GetXaxis()->SetBinLabel(22, "#it{N#sigma}_{e,TPC}");
-      hPhotonQualityCuts->GetXaxis()->SetBinLabel(23, "#it{N#sigma}_{#pi,TPC}");
-      hPhotonQualityCuts->GetXaxis()->SetBinLabel(24, "DCA_{xy}");
-      hPhotonQualityCuts->GetXaxis()->SetBinLabel(25, "DCA_{z}");
-      hPhotonQualityCuts->GetXaxis()->SetBinLabel(26, "#it{N}_{cl,ITS}");
-      hPhotonQualityCuts->GetXaxis()->SetBinLabel(27, "#chi^{2}_{ITS}/NDF");
-      hPhotonQualityCuts->GetXaxis()->SetBinLabel(28, "size_{ITS}");
-      hPhotonQualityCuts->GetXaxis()->SetBinLabel(29, "ITSTPC");
-      hPhotonQualityCuts->GetXaxis()->SetBinLabel(30, "ITSOnly");
-      hPhotonQualityCuts->GetXaxis()->SetBinLabel(31, "TPCOnly");
-      hPhotonQualityCuts->GetXaxis()->SetBinLabel(32, "TPCTRD");
-      hPhotonQualityCuts->GetXaxis()->SetBinLabel(33, "TPCTOF");
-      hPhotonQualityCuts->GetXaxis()->SetBinLabel(34, "Out");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(15, "IsTooClose");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(16, "#it{p}_{T,leg}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(17, "#it{#eta}_{leg}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(18, "#it{N}_{cl,TPC}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(19, "#it{N}_{cr,TPC}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(20, "#it{N}_{cr,TPC}/#it{N}_{cl,TPC}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(21, "FracSharedCl");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(22, "#chi^{2}_{TPC}/NDF");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(23, "#it{N#sigma}_{e,TPC}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(24, "#it{N#sigma}_{#pi,TPC}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(25, "DCA_{xy}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(26, "DCA_{z}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(27, "#it{N}_{cl,ITS}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(28, "#chi^{2}_{ITS}/NDF");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(29, "size_{ITS}");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(30, "ITSTPC");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(31, "ITSOnly");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(32, "TPCOnly");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(33, "TPCTRD");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(34, "TPCTOF");
+      hPhotonQualityCuts->GetXaxis()->SetBinLabel(35, "Out");
     }
   }
 
@@ -351,6 +362,119 @@ class V0PhotonCut : public TNamed
     fRegistry->fill(HIST("QA/V0Photon/after/Neg/hTPCHits"), ele.tpcNClsFound(), ele.tpcNClsCrossedRows());
   }
 
+  /// \brief creates a mask for the V0s if they are too close to another V0 and have higher chi^2
+  /// \param v0s V0 table
+  template <o2::soa::is_table TV0>
+  void createCloseV0CutMask(TV0 const& v0s) const
+  {
+    const bool useDistance3D = (mTooCloseType == TooCloseCuts::kDistance3D);
+    const float windowWidth = useDistance3D ? std::sqrt(mMinV0DistSquared) : mDeltaR;
+    const float cosMinAngle = std::cos(mMinOpeningAngle);
+
+    int tableSize = v0s.size();
+    std::vector<uint8_t> rejectMask(tableSize, 0);
+
+    if (mTooCloseType == TooCloseCuts::kNoCut) {
+      mRejectMask = rejectMask;
+      return;
+    }
+
+    auto currentV0Iter = v0s.begin();
+    auto otherV0Iter = v0s.begin();
+
+    int groupStart = 0;
+    while (groupStart < tableSize) {
+
+      // --- find the end of this collision's group ---
+      int currentCollisionId = v0s.iteratorAt(groupStart).collisionId();
+      int groupEnd = groupStart + 1;
+      while (groupEnd < tableSize && v0s.iteratorAt(groupEnd).collisionId() == currentCollisionId) {
+        groupEnd++;
+      }
+
+      int groupSize = groupEnd - groupStart;
+
+      std::vector<std::pair<int, float>> indexedRadii(groupSize);
+      for (int k = 0; k < groupSize; k++) {
+        currentV0Iter.setCursor(groupStart + k);
+        indexedRadii[k] = {groupStart + k, currentV0Iter.v0radius()};
+      }
+      std::sort(indexedRadii.begin(), indexedRadii.end(), [](const auto& a, const auto& b) {
+        return a.second < b.second;
+      });
+      // extract sorted indices and pre-sorted radii
+      std::vector<int> sortedIndices(groupSize);
+      std::vector<float> sortedRadii(groupSize);
+      for (int k = 0; k < groupSize; k++) {
+        sortedIndices[k] = indexedRadii[k].first;
+        sortedRadii[k] = indexedRadii[k].second;
+      }
+
+      // --- sliding window within this group ---
+      int windowStart = 0; // reset per group
+      for (int i = 0; i < groupSize; i++) {
+
+        float currentRadius = sortedRadii[i];
+        while (windowStart < groupSize && sortedRadii[windowStart] < currentRadius - windowWidth) {
+          windowStart++;
+        }
+
+        currentV0Iter.setCursor(sortedIndices[i]);
+
+        float vx1 = currentV0Iter.vx();
+        float vy1 = currentV0Iter.vy();
+        float vz1 = currentV0Iter.vz();
+
+        float px1 = currentV0Iter.px();
+        float py1 = currentV0Iter.py();
+        float pz1 = currentV0Iter.pz();
+        float chi2I = currentV0Iter.chiSquareNDF();
+
+        for (int j = windowStart; j < groupSize; j++) {
+          if (j == i) {
+            continue;
+          }
+          if (sortedRadii[j] > currentRadius + windowWidth) {
+            break;
+          }
+
+          otherV0Iter.setCursor(sortedIndices[j]);
+
+          bool tooClose = false;
+          if (useDistance3D) {
+            float dx = vx1 - otherV0Iter.vx();
+            float dy = vy1 - otherV0Iter.vy();
+            float dz = vz1 - otherV0Iter.vz();
+            float distSquared = dx * dx + dy * dy + dz * dz;
+            tooClose = distSquared < mMinV0DistSquared;
+          } else {
+            float px2 = otherV0Iter.px(), py2 = otherV0Iter.py(), pz2 = otherV0Iter.pz();
+            float dot = px1 * px2 + py1 * py2 + pz1 * pz2;
+            float mag1 = px1 * px1 + py1 * py1 + pz1 * pz1;
+            float mag2 = px2 * px2 + py2 * py2 + pz2 * pz2;
+            float denom = std::sqrt(mag1 * mag2);
+            if (denom > 0) {
+              float cosAngle = dot / denom;
+              cosAngle = std::clamp(cosAngle, -1.0f, 1.0f);
+              tooClose = cosAngle > cosMinAngle;
+            }
+          }
+
+          if (tooClose) {
+            if (chi2I > otherV0Iter.chiSquareNDF()) {
+              rejectMask[sortedIndices[i]] = 1;
+
+            } else {
+              rejectMask[sortedIndices[j]] = 1;
+            }
+          }
+        }
+      }
+      groupStart = groupEnd;
+    }
+    mRejectMask = rejectMask;
+  }
+
   /// \brief check if given v0 photon survives all cuts
   /// \param flags EMBitFlags where results will be stored
   /// \param v0s v0 photon table to check
@@ -360,6 +484,8 @@ class V0PhotonCut : public TNamed
     if (v0s.size() <= 0) {
       return;
     }
+
+    createCloseV0CutMask(v0s);
     // auto legIter = legs.begin();
     // auto legEnd = legs.end();
     size_t iV0 = 0;
@@ -487,6 +613,13 @@ class V0PhotonCut : public TNamed
         }
         return false;
       }
+    }
+
+    if (!IsSelectedV0(v0, V0PhotonCuts::kIsTooClose)) {
+      if (doQA) {
+        fRegistry->fill(HIST("QA/V0Photon/hPhotonQualityCuts"), static_cast<int>(V0PhotonCuts::kIsTooClose) + 1, v0Pt);
+      }
+      return false;
     }
 
     for (const auto& track : {pos, ele}) {
@@ -707,11 +840,24 @@ class V0PhotonCut : public TNamed
       case V0PhotonCuts::kAP:
         return std::pow(v0.alpha() / mMaxAlpha, 2) + std::pow(v0.qtarm() / mMaxQt, 2) < 1.0;
 
-      case V0PhotonCuts::kPsiPair:
-        return true;
+      // TODO: implement fully
+      case V0PhotonCuts::kPsiPair: {
+        if constexpr (requires { v0.psipair(); }) {
+          // return (std::fabs(v0.psipair() < 0.18f * std::exp( -0.55f * v0.chiSquareNDF())));
+          return true;
+        } else {
+          return true;
+        }
+      }
 
-      case V0PhotonCuts::kPhiV:
-        return true;
+      // TODO: implement fully
+      case V0PhotonCuts::kPhiV: {
+        if constexpr (requires { v0.phiv(); }) {
+          return true;
+        } else {
+          return true;
+        }
+      }
 
       case V0PhotonCuts::kRxy: {
         if (v0.v0radius() < mMinRxy || mMaxRxy < v0.v0radius()) {
@@ -774,6 +920,12 @@ class V0PhotonCut : public TNamed
 
         float dxy = std::sqrt(std::pow(x - x_exp, 2) + std::pow(y - y_exp, 2));
         return !(dxy > margin_xy);
+      }
+      case V0PhotonCuts::kIsTooClose: {
+        if (mRejectMask.size() == 0) {
+          return true;
+        }
+        return (mRejectMask[v0.globalIndex()] == 0);
       }
       default:
         return false;
@@ -950,6 +1102,11 @@ class V0PhotonCut : public TNamed
   void SetOnWwireOB(bool flag = false);
   void RejectITSib(bool flag = false);
 
+  void setTooCloseType(V0PhotonCut::TooCloseCuts type);
+  void setMinV0DistSquared(float value);
+  void setDeltaR(float value);
+  void setMinOpeningAngle(float value);
+
   void SetTrackPtRange(float minPt = 0.f, float maxPt = 1e10f);
   void SetTrackEtaRange(float minEta = -1e10f, float maxEta = 1e10f);
   void SetMinNClustersTPC(int minNClustersTPC);
@@ -1017,6 +1174,11 @@ class V0PhotonCut : public TNamed
   bool mIsOnWwireIB{false};
   bool mIsOnWwireOB{false};
   bool mRejectITSib{false};
+  TooCloseCuts mTooCloseType{V0PhotonCut::TooCloseCuts::kRadAndAngle}; // for TooCloseV0Cut: either squared distance between conversion points OR opening angle and deltaR
+  float mMinV0DistSquared{1.};                                         // for TooCloseV0Cut: cut value when using squared distance between conversion points
+  float mDeltaR{6.};                                                   // for TooCloseV0Cut: V0PhotonCut::TooCloseCuts::kRadAndAngle when deltaR < this -> compare chi2
+  float mMinOpeningAngle{0.02};                                        // for TooCloseV0Cut: V0PhotonCut::TooCloseCuts::kRadAndAngle when opening angle < this -> compare chi2
+  mutable std::vector<uint8_t> mRejectMask{};
 
   // ML cuts
   bool mApplyMlCuts{false};

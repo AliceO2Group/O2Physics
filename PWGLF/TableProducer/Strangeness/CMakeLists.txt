@@ -162,8 +162,8 @@ o2physics_add_dpl_workflow(lambdaspincorrelation
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(sigmaprotoncorr
-    SOURCES sigmaProtonCorr.cxx
+o2physics_add_dpl_workflow(sigmahadcorr
+    SOURCES sigmaHadCorr.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
