@@ -48,6 +48,7 @@ namespace o2::aod
 namespace tree
 {
 DECLARE_SOA_COLUMN(GapSide, gapSide, float);
+DECLARE_SOA_COLUMN(GapSideTimeZN, gapSideTimeZN, float);
 DECLARE_SOA_COLUMN(Sbp, sbp, int);
 DECLARE_SOA_COLUMN(ITSROFb, itsROFb, int);
 DECLARE_SOA_COLUMN(VtxITSTPCCut, vtxITSTPCCut, int);
@@ -84,6 +85,7 @@ DECLARE_SOA_COLUMN(MultiplicitySideC, multiplicitySideC, int);
 } // namespace tree
 DECLARE_SOA_TABLE(TREE, "AOD", "Tree",
                   tree::GapSide,
+                  tree::GapSideTimeZN,
                   tree::Sbp,
                   tree::ITSROFb,
                   tree::VtxITSTPCCut,
@@ -406,7 +408,7 @@ struct UpcPhotonuclearAnalysisJMG {
 
     switch (SideGap) {
       case 0: // Gap in A side
-        if ((collision.timeZNA() > cutGapAMyEnergyZNA) && (collision.timeZNC() < cutGapAMyEnergyZNC)) {
+        if (!(std::abs(collision.timeZNA()) > cutGapATimeZNA && std::abs(collision.timeZNC()) < cutGapATimeZNC)) {
           return false;
         }
         if (useEnergyZN && ((collision.energyCommonZNA() < cutGapAMyEnergyZNA) && (collision.energyCommonZNC() >= cutGapAMyEnergyZNC))) {
@@ -423,7 +425,7 @@ struct UpcPhotonuclearAnalysisJMG {
         // }
         break;
       case 1: // Gap in C side
-        if ((collision.timeZNA() < cutGapCMyEnergyZNA) && (collision.timeZNC() > cutGapCMyEnergyZNC)) {
+        if (!(std::abs(collision.timeZNA()) < cutGapCTimeZNA && std::abs(collision.timeZNC()) > cutGapCTimeZNC)) {
           return false;
         }
         if (useEnergyZN && ((collision.energyCommonZNA() >= cutGapCMyEnergyZNA) && (collision.energyCommonZNC() < cutGapCMyEnergyZNC))) {
@@ -616,6 +618,7 @@ struct UpcPhotonuclearAnalysisJMG {
   {
     histos.fill(HIST("Events/hCountCollisions"), 0);
     int sgSide = reconstructedCollision.gapSide();
+    int sgSideTimeZN = -1;
     int nTracksCharged = 0;
     float sumPt = 0;
     int nchPVGapSideA = 0;
@@ -634,8 +637,16 @@ struct UpcPhotonuclearAnalysisJMG {
       float phiVal = RecoDecay::constrainAngle(phi(track.px(), track.py()), 0.f);
       histos.fill(HIST("etaphiVtx"), reconstructedCollision.posZ(), eta(track.px(), track.py(), track.pz()), phiVal);
     }
+    bool isGapATimeZN = (std::abs(reconstructedCollision.timeZNA()) > cutGapATimeZNA) && (std::abs(reconstructedCollision.timeZNC()) < cutGapATimeZNC);
+    bool isGapCTimeZN = (std::abs(reconstructedCollision.timeZNA()) < cutGapCTimeZNA) && (std::abs(reconstructedCollision.timeZNC()) > cutGapCTimeZNC);
+    if (isGapATimeZN) {
+      sgSideTimeZN = 0;
+    }
+    if (isGapCTimeZN) {
+      sgSideTimeZN = 1;
+    }
 
-    switch (sgSide) {
+    switch (sgSideTimeZN) {
       case 0: // gap for side A
         if (isCollisionCutSG(reconstructedCollision, 0) == false) {
           return;
@@ -762,6 +773,7 @@ struct UpcPhotonuclearAnalysisJMG {
         break;
     }
     tree(sgSide,
+         sgSideTimeZN,
          reconstructedCollision.sbp(),
          reconstructedCollision.itsROFb(),
          reconstructedCollision.vtxITSTPC(),
@@ -894,20 +906,20 @@ struct UpcPhotonuclearAnalysisJMG {
       return;
     }
     histos.fill(HIST("Events/hCollisionsFlow"), 7);
-    bool cutGapAMyTimeZN = (reconstructedCollision.timeZNA() > cutGapAMyEnergyZNA) && (reconstructedCollision.timeZNC() < cutGapAMyEnergyZNC);
-    bool cutGapCMyTimeZN = (reconstructedCollision.timeZNA() < cutGapCMyEnergyZNA) && (reconstructedCollision.timeZNC() > cutGapCMyEnergyZNC);
-    if (cutGapAMyTimeZN || cutGapCMyTimeZN) {
+    bool isGapATimeZN = (std::abs(reconstructedCollision.timeZNA()) > cutGapATimeZNA) && (std::abs(reconstructedCollision.timeZNC()) < cutGapATimeZNC);
+    bool isGapCTimeZN = (std::abs(reconstructedCollision.timeZNA()) < cutGapCTimeZNA) && (std::abs(reconstructedCollision.timeZNC()) > cutGapCTimeZNC);
+    if (!(isGapATimeZN || isGapCTimeZN)) {
       return;
     }
     histos.fill(HIST("Events/hCollisionsFlow"), 8);
 
-    bool cutGapAMyEnergyZN = useEnergyZN && ((reconstructedCollision.energyCommonZNA() < cutGapAMyEnergyZNA) && (reconstructedCollision.energyCommonZNC() >= cutGapAMyEnergyZNC));
-    bool cutGapCMyEnergyZN = useEnergyZN && ((reconstructedCollision.energyCommonZNA() >= cutGapCMyEnergyZNA) && (reconstructedCollision.energyCommonZNC() < cutGapCMyEnergyZNC));
-    if (cutGapAMyEnergyZN || cutGapCMyEnergyZN) {
+    bool isGapAMyEnergyZN = useEnergyZN && ((reconstructedCollision.energyCommonZNA() < cutGapAMyEnergyZNA) && (reconstructedCollision.energyCommonZNC() >= cutGapAMyEnergyZNC));
+    bool isGapCMyEnergyZN = useEnergyZN && ((reconstructedCollision.energyCommonZNA() >= cutGapCMyEnergyZNA) && (reconstructedCollision.energyCommonZNC() < cutGapCMyEnergyZNC));
+    if (isGapAMyEnergyZN || isGapCMyEnergyZN) {
       return;
     }
     histos.fill(HIST("Events/hCollisionsFlow"), 9);
-    if (cutGapAMyTimeZN && useFV0 && reconstructedCollision.totalFV0AmplitudeA() > cutGapAFV0Amplitude) {
+    if (isGapATimeZN && useFV0 && reconstructedCollision.totalFV0AmplitudeA() > cutGapAFV0Amplitude) {
       return;
     }
     histos.fill(HIST("Events/hCollisionsFlow"), 10);
