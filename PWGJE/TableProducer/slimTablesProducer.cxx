@@ -93,7 +93,6 @@ struct SlimTablesProducer {
   Configurable<float> minEta{"minEta", -0.9, "min eta to save"};
   Configurable<float> maxEta{"maxEta", 0.9, "max eta to save"};
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
-  Configurable<float> trackDcaZmax{"trackDcaZmax", 99, "additional cut on dcaZ to PV for tracks; uniformTracks in particular don't cut on this at all"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "Event selection"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections; other option: uniformTracks"};
   Configurable<int> minTPCNClsCrossedRows{"minTPCNClsCrossedRows", 80, "min TPC crossed rows"};
