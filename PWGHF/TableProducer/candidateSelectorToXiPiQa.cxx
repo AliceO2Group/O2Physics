@@ -173,7 +173,7 @@ struct HfCandidateSelectorToXiPiQa {
     const AxisSpec axisSelOnLfDca{14, -0.5, 13.5, "status"};
     const AxisSpec axisSelOnLfKf{23, -0.5, 22.5, "status"};
     const AxisSpec axisSelOnHfDca{6, -0.5, 5.5, "status"};
-    const AxisSpec axisSelOnHfKf{11, -0.5, 10.5, "status"};
+    const AxisSpec axisSelOnHfKf{12, -0.5, 11.5, "status"};
 
     registry.add("hSelSignDec", "hSelSignDec;status;entries", {HistType::kTH1F, {axisSel}});
     registry.add("hSelStatusCluster", "hSelStatusCluster:# of events Passed;;", {HistType::kTH1F, {{6, -0.5, 5.5}}});
