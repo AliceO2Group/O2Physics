@@ -1478,7 +1478,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
             }
             delete randgen;
           }
-          if (pairCloseRejectionV0.isClosePair(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
+          if (pairCloseRejectionV0.isClosePair(part1, part2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
             continue;
           }
         }
