@@ -543,7 +543,7 @@ struct mftMchMatcher {
 
     auto const& mchTrack = muonTrack.template matchMCHTrack_as<TMUONS>();
     auto const& mftTrack = muonTrack.template matchMFTTrack_as<TMFTS>();
-    
+
     if (!muonTrack.has_mcParticle() || !mftTrack.has_mcParticle()) {
       return result;
     }
