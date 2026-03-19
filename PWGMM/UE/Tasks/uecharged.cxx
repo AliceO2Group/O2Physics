@@ -13,7 +13,7 @@
 /// \file uecharged.cxx
 /// \brief Underlying event analysis task
 /// \since November 2021
-/// \last update: January 2026
+/// \last update: March 2026
 
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/collisionCuts.h"
@@ -50,58 +50,35 @@ using FT0s = aod::FT0s;
 
 struct ueCharged {
 
-  TrackSelection myTrackSelectionPrim()
-  {
-    TrackSelection selectedTracks;
-    selectedTracks.SetPtRange(0.1f, 1e10f);
-    selectedTracks.SetEtaRange(-0.8f, 0.8f);
-    selectedTracks.SetRequireITSRefit(true);
-    selectedTracks.SetRequireTPCRefit(true);
-    selectedTracks.SetRequireGoldenChi2(true);
-    selectedTracks.SetMinNCrossedRowsTPC(70);
-    selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
-    selectedTracks.SetMaxChi2PerClusterTPC(4.f);
-    selectedTracks.SetRequireHitsInITSLayers(1, {0, 1, 2}); // Run3ITSibAny
-    selectedTracks.SetMaxChi2PerClusterITS(36.f);
-    selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / std::pow(pt, 1.1f); });
-    selectedTracks.SetMaxDcaZ(0.1f);
-    return selectedTracks;
-  }
-
-  TrackSelection myTrackSelectionOpenDCA()
-  {
-    TrackSelection selectedTracks;
-    selectedTracks.SetPtRange(0.1f, 1e10f);
-    selectedTracks.SetEtaRange(-0.8f, 0.8f);
-    selectedTracks.SetRequireITSRefit(true);
-    selectedTracks.SetRequireTPCRefit(true);
-    selectedTracks.SetRequireGoldenChi2(true);
-    selectedTracks.SetMinNCrossedRowsTPC(70);
-    selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
-    selectedTracks.SetMaxChi2PerClusterTPC(4.f);
-    selectedTracks.SetRequireHitsInITSLayers(1, {0, 1, 2}); // Run3ITSibAny
-    selectedTracks.SetMaxChi2PerClusterITS(36.f);
-    selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / pow(pt, 1.1f); });
-    selectedTracks.SetMaxDcaZ(0.1f);
-    return selectedTracks;
-  }
-
-  TrackSelection mySelectionPrim;
-  TrackSelection mySelectionOpenDCA;
-
-  Service<o2::framework::O2DatabasePDG> pdg;
-
   // Configurable for event selection
   Configurable<bool> isRun3{"isRun3", true, "is Run3 dataset"};
-  Configurable<bool> pileuprejection{"pileuprejection", true, "Pileup rejection"};
-  Configurable<bool> goodzvertex{"goodzvertex", true, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference"};
-  Configurable<bool> sel8{"sel8", true, "Apply the sel8 event selection"};
-  Configurable<bool> removeITSROFBorder{"removeITSROFBorder", false, "Remove ITS Read-Out Frame border and only apply kIsTriggerTVX & kNoTimeFrameBorder (recommended for MC)"};
-  Configurable<int> cfgINELCut{"cfgINELCut", 0, "INEL event selection: 0 no sel, 1 INEL>0, 2 INEL>1"};
+  Configurable<bool> pileuprejection{"event_pileuprejection", true, "Pileup rejection"};
+  Configurable<bool> goodzvertex{"event_goodzvertex", true, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference"};
+  Configurable<bool> sel8{"event_sel8", true, "Apply the sel8 event selection"};
+  Configurable<bool> removeITSROFBorder{"event_removeITSROFBorder", false, "Remove ITS Read-Out Frame border and only apply kIsTriggerTVX & kNoTimeFrameBorder (recommended for MC)"};
+  Configurable<int> cfgINELCut{"event_cfgINELCut", 0, "INEL event selection: 0 no sel, 1 INEL>0, 2 INEL>1"};
   Configurable<bool> analyzeEvandTracksel{"analyzeEvandTracksel", true, "Analyze the event and track selection"};
-  // acceptance cuts
-  Configurable<float> cfgTrkEtaCut{"cfgTrkEtaCut", 0.8f, "Eta range for tracks"};
+
+  // Track selection configurables
+  TrackSelection myTrkSel;
   Configurable<float> cfgTrkLowPtCut{"cfgTrkLowPtCut", 0.15f, "Minimum constituent pT"};
+  Configurable<bool> isCustomTracks{"trkcfg_isCustomTracks", true, "Use custom track cuts"};
+  Configurable<int> setITSreq{"trkcfg_setITSreq", 0, "0 = Run3ITSibAny, 1 = Run3ITSallAny, 2 = Run3ITSall7Layers, 3 = Run3ITSibTwo"};
+  Configurable<float> minPt{"trkcfg_minPt", 0.1f, "Set minimum pT of tracks"};
+  Configurable<float> maxPt{"trkcfg_maxPt", 1e10f, "Set maximum pT of tracks"};
+  Configurable<float> requireEta{"trkcfg_requireEta", 0.8f, "Set eta range of tracks"};
+  Configurable<bool> requireITSRefit{"trkcfg_requireITSRefit", true, "Additional cut on the ITS requirement"};
+  Configurable<bool> requireTPCRefit{"trkcfg_requireTPCRefit", true, "Additional cut on the TPC requirement"};
+  Configurable<bool> requireGoldenChi2{"trkcfg_requireGoldenChi2", true, "Additional cut on the GoldenChi2"};
+  Configurable<float> maxChi2PerClusterTPC{"trkcfg_maxChi2PerClusterTPC", 4.f, "Additional cut on the maximum value of the chi2 per cluster in the TPC"};
+  Configurable<float> maxChi2PerClusterITS{"trkcfg_maxChi2PerClusterITS", 36.f, "Additional cut on the maximum value of the chi2 per cluster in the ITS"};
+  // Configurable<int> minITSnClusters{"trkcfg_minITSnClusters", 5, "minimum number of found ITS clusters"};
+  Configurable<float> minNCrossedRowsTPC{"trkcfg_minNCrossedRowsTPC", 70.f, "Additional cut on the minimum number of crossed rows in the TPC"};
+  Configurable<float> minNCrossedRowsOverFindableClustersTPC{"trkcfg_minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
+  Configurable<float> maxDcaXYFactor{"trkcfg_maxDcaXYFactor", 1.f, "Multiplicative factor on the maximum value of the DCA xy"};
+  Configurable<float> maxDcaZ{"trkcfg_maxDcaZ", 0.1f, "Additional cut on the maximum value of the DCA z"};
+
+  Service<o2::framework::O2DatabasePDG> pdg;
 
   // Data table definitions
   using ColDataTable = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::PVMults>;
@@ -152,6 +129,24 @@ struct ueCharged {
   void init(InitContext const&)
   {
 
+    if (isCustomTracks.value) {
+      myTrkSel = getGlobalTrackSelectionRun3ITSMatch(setITSreq.value);
+      myTrkSel.SetPtRange(minPt.value, maxPt.value);
+      myTrkSel.SetEtaRange(-requireEta.value, requireEta.value);
+      myTrkSel.SetRequireITSRefit(requireITSRefit.value);
+      myTrkSel.SetRequireTPCRefit(requireTPCRefit.value);
+      myTrkSel.SetRequireGoldenChi2(requireGoldenChi2.value);
+      myTrkSel.SetMaxChi2PerClusterTPC(maxChi2PerClusterTPC.value);
+      myTrkSel.SetMaxChi2PerClusterITS(maxChi2PerClusterITS.value);
+      // myTrkSel.SetMinNClustersITS(minITSnClusters.value);
+      myTrkSel.SetMinNCrossedRowsTPC(minNCrossedRowsTPC.value);
+      myTrkSel.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
+      // myTrkSel.SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / pow(pt, 1.1f); });
+      myTrkSel.SetMaxDcaXYPtDep([](float /*pt*/) { return 10000.f; });
+      myTrkSel.SetMaxDcaZ(maxDcaZ.value);
+      myTrkSel.print();
+    }
+
     ConfigurableAxis ptBinningt{"ptBinningt",
                                 {0, 0.15, 0.50, 1.00, 1.50, 2.00, 2.50,
                                  3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00,
@@ -170,12 +165,13 @@ struct ueCharged {
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T}^{assoc} (GeV/#it{c})"};
 
     fEff.setObject(new TF1("fpara",
-                           "(x<0.3)*((0.402353)+x*(1.90824)+x*x*(-3.37295)) +"
-                           "(x>=0.3&&x<1.8)*((0.603846)+(0.30189)*x+(-0.240649)*"
-                           "x*x+(0.0635382)*x*x*x) +"
-                           "(x>=1.8&&x<14.)*((0.75982)+(-0.0241023)*x+"
-                           "(0.00560107)*x*x+(-0.00048451)*x*x*x+"
-                           "(1.43868e-05)*x*x*x*x)+(x>=14)*((0.755339)+(-0.000986326)*x)",
+                           "(x<0.33)*((0.384347)+x*(1.77554)+x*x*(-2.9172)) +"
+                           "(x>=0.33&&x<1.2)*((0.58547)+(0.293843)*x+(-0.293957)*"
+                           "x*x+(0.109855)*x*x*x) +"
+                           "(x>=1.2&&x<5.6)*((0.581232)+(0.205847)*x+"
+                           "(-0.12133)*x*x+(0.0347906)*x*x*x+"
+                           "(-0.0048334)*x*x*x*x+(0.000261644)*x*x*x*x*x)+(x>=5.6)*((0.711869)+(0.00364573)*x"
+                           "+(-0.00019009)*x*x+(3.09894e-06)*x*x*x+(-1.81785e-08)*x*x*x*x)",
                            0., 1e5));
 
     if (doprocessMC || doprocessMCTrue) {
@@ -325,16 +321,41 @@ struct ueCharged {
     if (!track.has_collision()) {
       return false;
     }
-    if (!mySelectionPrim.IsSelected(track)) {
-      return false;
-    }
-    if (std::abs(track.eta()) >= cfgTrkEtaCut) {
-      return false;
-    }
     if (track.pt() < cfgTrkLowPtCut) {
       return false;
     }
-    return true;
+    if (isCustomTracks.value) {
+      for (int i = 0; i < static_cast<int>(TrackSelection::TrackCuts::kNCuts); i++) {
+        if (i == static_cast<int>(TrackSelection::TrackCuts::kDCAxy)) {
+          continue;
+        }
+        if (!myTrkSel.IsSelected(track, static_cast<TrackSelection::TrackCuts>(i))) {
+          return false;
+        }
+      }
+      return (std::abs(track.dcaXY()) <= (maxDcaXYFactor.value * (0.0105f + 0.0350f / std::pow(track.pt(), 1.1f))));
+    }
+    return track.isGlobalTrack();
+  }
+
+  template <typename T>
+  bool isDCAxyWoCut(T const& track) // function to skip DCA track selections
+  {
+    if (isCustomTracks.value) {
+      for (int i = 0; i < static_cast<int>(TrackSelection::TrackCuts::kNCuts); i++) {
+        if (i == static_cast<int>(TrackSelection::TrackCuts::kDCAxy)) {
+          continue;
+        }
+        if (i == static_cast<int>(TrackSelection::TrackCuts::kDCAz)) {
+          continue;
+        }
+        if (!myTrkSel.IsSelected(track, static_cast<TrackSelection::TrackCuts>(i))) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return track.isGlobalTrackWoDCA();
   }
 
   template <typename P>
@@ -350,7 +371,7 @@ struct ueCharged {
     if (!pdgParticle || pdgParticle->Charge() == 0.) {
       return false;
     }
-    if (std::abs(particle.eta()) >= cfgTrkEtaCut) {
+    if (std::abs(particle.eta()) >= requireEta) {
       return false;
     }
     if (particle.pt() < cfgTrkLowPtCut) {
@@ -508,7 +529,7 @@ struct ueCharged {
     std::vector<int> indexArray;
 
     for (const auto& track : tracks) {
-      if (mySelectionOpenDCA.IsSelected(track))
+      if (isDCAxyWoCut(track))
         ue.fill(HIST("hPTVsDCAData"), track.pt(), track.dcaXY());
 
       if (isTrackSelected(track)) {
@@ -667,6 +688,10 @@ struct ueCharged {
     if (!foundRec)
       return;
 
+    if (analyzeEvandTracksel) {
+      analyzeEventAndTrackSelection(chosenRec, RecTracks.sliceBy(perCollision, chosenRecGlobalIndex));
+    }
+
     // compute truth-level leading particle and truth-region observables
     double flPtTrue = 0.;
     double flPhiTrue = 0.;
@@ -762,7 +787,7 @@ struct ueCharged {
       if (!pdgParticle || pdgParticle->Charge() == 0.) {
         continue;
       }
-      if (std::abs(particle.eta()) >= cfgTrkEtaCut) {
+      if (std::abs(particle.eta()) >= requireEta) {
         continue;
       }
 
@@ -832,7 +857,7 @@ struct ueCharged {
       if (track.collisionId() != chosenRecGlobalIndex)
         continue;
 
-      if (mySelectionOpenDCA.IsSelected(track))
+      if (isDCAxyWoCut(track))
         ue.fill(HIST("hPTVsDCAData"), track.pt(), track.dcaXY());
 
       if (track.has_mcParticle()) {
@@ -843,20 +868,20 @@ struct ueCharged {
 
         if (isTrackSelected(track))
           ue.fill(HIST("hPtOut"), track.pt());
-        if (mySelectionOpenDCA.IsSelected(track))
+        if (isDCAxyWoCut(track))
           ue.fill(HIST("hPtDCAall"), track.pt(), track.dcaXY());
 
         if (particle.isPhysicalPrimary() && particle.producedByGenerator()) { // primary particles
           if (isTrackSelected(track) && isParticleSelected(particle)) {       // TODO check if this condition
             ue.fill(HIST("hPtOutPrim"), particle.pt());
           }
-          if (mySelectionOpenDCA.IsSelected(track)) {
+          if (isDCAxyWoCut(track)) {
             ue.fill(HIST("hPtDCAPrimary"), track.pt(), track.dcaXY());
           }
         } else { // Secondaries (weak decays and material)
           if (isTrackSelected(track))
             ue.fill(HIST("hPtOutSec"), track.pt());
-          if (mySelectionOpenDCA.IsSelected(track)) {
+          if (isDCAxyWoCut(track)) {
             if (particle.getProcess() == 4)
               ue.fill(HIST("hPtDCAWeak"), track.pt(), track.dcaXY());
             else
@@ -996,7 +1021,7 @@ struct ueCharged {
       auto pdgParticle = pdg->GetParticle(particle.pdgCode());
       if (!pdgParticle || pdgParticle->Charge() == 0.)
         continue;
-      if (std::abs(particle.eta()) >= cfgTrkEtaCut)
+      if (std::abs(particle.eta()) >= requireEta)
         continue;
       multTrue++;
       if (particle.pt() < cfgTrkLowPtCut)
@@ -1145,7 +1170,7 @@ struct ueCharged {
         tracks_before++;
       }
 
-      if (mySelectionPrim.IsSelected(track)) {
+      if (isTrackSelected(track)) {
         if (track.hasITS() && track.hasTPC()) {
           ue.fill(HIST("postselection_track/ITS/itsNCls"), track.itsNCls());
           ue.fill(HIST("postselection_track/ITS/itsChi2NCl"), track.itsChi2NCl());

@@ -881,12 +881,14 @@ struct FemtoUniverseProducerTask {
   template <typename ParticleType>
   int32_t getMotherPDG(ParticleType particle)
   {
-    auto motherparticlesMC = particle.template mothers_as<aod::McParticles>();
-    if (!motherparticlesMC.empty()) {
+    if (particle.isPhysicalPrimary()) {
+      return 0;
+    } else if (particle.has_mothers()) {
+      auto motherparticlesMC = particle.template mothers_as<aod::McParticles>();
       auto motherparticleMC = motherparticlesMC.front();
-      return particle.isPhysicalPrimary() ? 0 : motherparticleMC.pdgCode();
+      return motherparticleMC.pdgCode();
     } else {
-      return 9999;
+      return 999;
     }
   }
 
@@ -926,7 +928,7 @@ struct FemtoUniverseProducerTask {
       outputPartsMCLabels(outputPartsMC.lastIndex());
     } else {
       outputPartsMCLabels(-1);
-      outputDebugPartsMC(9999);
+      outputDebugPartsMC(-999);
     }
   }
 
@@ -2169,7 +2171,7 @@ struct FemtoUniverseProducerTask {
       // aligned, so that they can be joined in the task.
       if constexpr (transientLabels) {
         outputPartsMCLabels(-1);
-        outputDebugPartsMC(9999);
+        outputDebugPartsMC(-999);
       }
     }
     if constexpr (resolveDaughs) {
@@ -2214,7 +2216,7 @@ struct FemtoUniverseProducerTask {
         // aligned, so that they can be joined in the task.
         if constexpr (transientLabels) {
           outputPartsMCLabels(-1);
-          outputDebugPartsMC(9999);
+          outputDebugPartsMC(-999);
         }
       }
     }

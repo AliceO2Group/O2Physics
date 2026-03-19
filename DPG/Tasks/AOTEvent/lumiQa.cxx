@@ -9,24 +9,29 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
 #include "CCDB/BasicCCDBManager.h"
-#include "Framework/HistogramRegistry.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
 #include "DataFormatsFT0/Digit.h"
-#include "TList.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+#include <DataFormatsParameters/AggregatedRunInfo.h>
+
 #include "TH1.h"
+#include "TList.h"
 
 using namespace o2;
 using namespace o2::framework;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 
 struct LumiQaTask {
+  Configurable<float> confTimeBinWidthInSec{"TimeBinWidthInSec", 60., "Width of time bins in seconds"}; // o2-linter: disable=name/configurable (temporary fix)
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   int lastRunNumber = -1;
+  double maxSec = 1;
+  double minSec = 0;
   TH1* hCalibT0C = nullptr;
   static const int nBCsPerOrbit = o2::constants::lhc::LHCMaxBunches;
   std::bitset<nBCsPerOrbit> bcPatternB;
@@ -40,6 +45,7 @@ struct LumiQaTask {
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
+
     const AxisSpec axisMultZNA{2000, 0., 400., "ZNA multiplicity"};
     const AxisSpec axisMultZNC{2000, 0., 400., "ZNC multiplicity"};
     const AxisSpec axisMultT0M{1000, 0., 270000., "T0M multiplicity"};
@@ -116,9 +122,30 @@ struct LumiQaTask {
         LOGF(info, "hCalibZeqFT0C histogram is not available for run=%d at timestamp=%llu", runNumber, ts);
         return;
       }
+
+      if (runNumber >= 500000) {
+        auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), runNumber);
+        auto tsSOR = runInfo.sor;
+        auto tsEOR = runInfo.eor;
+        minSec = floor(tsSOR / 1000.);
+        maxSec = ceil(tsEOR / 1000.);
+      }
+
+      int nTimeBins = static_cast<int>((maxSec - minSec) / confTimeBinWidthInSec);
+      double timeInterval = nTimeBins * confTimeBinWidthInSec;
+
+      const AxisSpec axisBCs{nBCsPerOrbit, 0., static_cast<double>(nBCsPerOrbit), ""};
+      const AxisSpec axisSeconds{nTimeBins, 0, timeInterval, "seconds"};
+      histos.add("hSecondsBcsTCE", "", kTH2D, {axisSeconds, axisBCs});
+      histos.add("hSecondsBcsZNA", "", kTH2D, {axisSeconds, axisBCs});
+      histos.add("hSecondsBcsZNC", "", kTH2D, {axisSeconds, axisBCs});
+      histos.add("hSecondsBcsZEM", "", kTH2D, {axisSeconds, axisBCs});
     }
 
     for (const auto& bc : bcs) {
+      int64_t ts = bc.timestamp();
+      double secFromSOR = ts / 1000. - minSec;
+      double bcInOrbit = bc.globalBC() % nBCsPerOrbit;
       if (bc.has_zdc()) {
         float timeZNA = bc.zdc().timeZNA();
         float timeZNC = bc.zdc().timeZNC();
@@ -159,12 +186,15 @@ struct LumiQaTask {
 
         if (fabs(timeZNA - meanTimeZNA) < 2) {
           histos.get<TH1>(HIST("hCounterZNA"))->Fill(srun, 1);
+          histos.fill(HIST("hSecondsBcsZNA"), secFromSOR, bcInOrbit);
         }
         if (fabs(timeZNC - meanTimeZNC) < 2) {
           histos.get<TH1>(HIST("hCounterZNC"))->Fill(srun, 1);
+          histos.fill(HIST("hSecondsBcsZNC"), secFromSOR, bcInOrbit);
         }
         if (fabs(timeZNA - meanTimeZNA) < 2 || fabs(timeZNC - meanTimeZNC) < 2) {
           histos.get<TH1>(HIST("hCounterZEM"))->Fill(srun, 1);
+          histos.fill(HIST("hSecondsBcsZEM"), secFromSOR, bcInOrbit);
         }
       }
 
@@ -211,6 +241,7 @@ struct LumiQaTask {
       histos.fill(HIST("hCentT0CselTVXTCEB"), centT0C);
 
       histos.get<TH1>(HIST("hCounterTCE"))->Fill(srun, 1);
+      histos.fill(HIST("hSecondsBcsTCE"), secFromSOR, bcInOrbit);
     }
   }
 };

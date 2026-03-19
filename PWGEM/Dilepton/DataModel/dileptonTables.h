@@ -910,7 +910,42 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryElectrons_005, "AOD", "EMPRIMARYEL", 5, //!
                             emprimaryelectron::MeanClusterSizeITSib<track::ITSClusterSizes>,
                             emprimaryelectron::MeanClusterSizeITSob<track::ITSClusterSizes>);
 
-using EMPrimaryElectrons = EMPrimaryElectrons_005;
+DECLARE_SOA_TABLE_VERSIONED(EMPrimaryElectrons_006, "AOD", "EMPRIMARYEL", 6, //!
+                            o2::soa::Index<>, emprimaryelectron::CollisionId,
+                            emprimaryelectron::TrackId, emprimaryelectron::Sign,
+                            track::Pt, track::Eta, track::Phi,
+                            track::DcaXY, track::DcaZ, aod::track::CYY, aod::track::CZY, aod::track::CZZ,
+                            track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusPID, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared,
+                            track::TPCChi2NCl, track::TPCInnerParam,
+                            track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
+                            pidtofbeta::Beta, pidtof::TOFNSigmaEl,                                         /*pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr,*/
+                            track::ITSClusterSizes, track::ITSChi2NCl, track::TOFChi2, track::DetectorMap, /*track::Tgl,*/
+                            emprimaryelectron::IsAssociatedToMPC, emprimaryelectron::IsAmbiguous, emprimaryelectron::ProbElBDT, track::Flags,
+                            mcpidtpc::DeDxTunedMc,
+
+                            // dynamic column
+                            track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::TPCNClsPID<track::TPCNClsFindable, track::TPCNClsFindableMinusPID>,
+                            track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
+                            track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>, track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
+                            track::PIDForTracking<track::Flags>, // see numbering in O2/DataFormats/Reconstruction/include/ReconstructionDataFormats/PID.h
+                            track::IsPVContributor<track::Flags>,
+
+                            emprimaryelectron::Signed1Pt<track::Pt, emprimaryelectron::Sign>,
+                            emprimaryelectron::P<track::Pt, track::Eta>,
+                            emprimaryelectron::Px<track::Pt, track::Phi>,
+                            emprimaryelectron::Py<track::Pt, track::Phi>,
+                            emprimaryelectron::Pz<track::Pt, track::Eta>,
+                            emprimaryelectron::Tgl<track::Eta>,
+                            emprimaryelectron::MeanClusterSizeITS<track::ITSClusterSizes>,
+                            emprimaryelectron::MeanClusterSizeITSib<track::ITSClusterSizes>,
+                            emprimaryelectron::MeanClusterSizeITSob<track::ITSClusterSizes>);
+
+using EMPrimaryElectrons = EMPrimaryElectrons_006;
 // iterators
 using EMPrimaryElectron = EMPrimaryElectrons::iterator;
 
@@ -971,7 +1006,7 @@ DECLARE_SOA_TABLE(EMAmbiguousElectronSelfIds, "AOD", "EMAMBELSELFID", emprimarye
 // iterators
 using EMAmbiguousElectronSelfId = EMAmbiguousElectronSelfIds::iterator;
 
-DECLARE_SOA_TABLE(EMPrimaryElectronsPrefilterBitDerived, "AOD", "PRMELPFBPI0", emprimaryelectron::PrefilterBitDerived); // To be joined with EMPrimaryElectrons table at analysis level.
+DECLARE_SOA_TABLE(EMPrimaryElectronsPrefilterBitDerived, "AOD", "PRMELPFBDERIVED", emprimaryelectron::PrefilterBitDerived); // To be joined with EMPrimaryElectrons table at analysis level.
 // iterators
 using EMPrimaryElectronPrefilterBitDerived = EMPrimaryElectronsPrefilterBitDerived::iterator;
 
@@ -1000,6 +1035,7 @@ DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, bool);                    //! is am
 DECLARE_SOA_COLUMN(IsCorrectMatchMFTMCH, isCorrectMatchMFTMCH, bool);  //! is correct match between MFT and MCH, only for MC
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                //!
 DECLARE_SOA_COLUMN(Chi2MFT, chi2MFT, float);                           //! chi2 of MFT standalone track
+DECLARE_SOA_COLUMN(PrefilterBitDerived, pfbderived, uint16_t);         //!
 DECLARE_SOA_DYNAMIC_COLUMN(Tgl, tgl, [](float eta) -> float { return std::tan(o2::constants::math::PIHalf - 2 * std::atan(std::exp(-eta))); });
 DECLARE_SOA_DYNAMIC_COLUMN(Signed1Pt, signed1Pt, [](float pt, int8_t sign) -> float { return sign * 1. / pt; });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
@@ -1136,6 +1172,10 @@ DECLARE_SOA_TABLE_VERSIONED(EMGlobalMuonSelfIds_001, "AOD", "EMGLMUSELFID", 1, e
 using EMGlobalMuonSelfIds = EMGlobalMuonSelfIds_001;
 // iterators
 using EMGlobalMuonSelfId = EMGlobalMuonSelfIds::iterator;
+
+DECLARE_SOA_TABLE(EMPrimaryMuonsPrefilterBitDerived, "AOD", "PRMMUPFBDERIVED", emprimarymuon::PrefilterBitDerived); // To be joined with EMPrimaryMuons table at analysis level.
+// iterators
+using EMPrimaryMuonPrefilterBitDerived = EMPrimaryMuonsPrefilterBitDerived::iterator;
 
 DECLARE_SOA_TABLE(EMPrimaryMuonsMatchMC, "AOD", "EMMUONMATCHMC", emprimarymuon::IsCorrectMatchMFTMCH); // To be joined with EMPrimaryMuons table at analysis level. only for MC.
 // iterators

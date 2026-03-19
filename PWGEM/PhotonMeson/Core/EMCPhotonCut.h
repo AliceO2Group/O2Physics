@@ -295,9 +295,9 @@ class EMCPhotonCut : public TNamed
     const bool doQA = mDoQA && fRegistry != nullptr;
 
     nTotClusterPerColl = 0;
-    currentCollID = clusters.iteratorAt(0).emphotoneventId();
+    currentCollID = clusters.iteratorAt(0).pmeventId();
     for (const auto& cluster : clusters) {
-      const auto collID = cluster.emphotoneventId();
+      const auto collID = cluster.pmeventId();
       if (doQA) {
         fillBeforeClusterHistogram(cluster, fRegistry);
       }
@@ -376,7 +376,7 @@ class EMCPhotonCut : public TNamed
       }
       return false;
     }
-    if (currentCollID == cluster.emphotoneventId()) {
+    if (currentCollID == cluster.pmeventId()) {
       ++nAccClusterPerColl;
     } else {
       if (doQA) {

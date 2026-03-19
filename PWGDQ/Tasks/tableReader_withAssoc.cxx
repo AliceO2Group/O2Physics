@@ -195,6 +195,7 @@ DECLARE_SOA_TABLE(JPsieeCandidates, "AOD", "DQPSEUDOPROPER", dqanalysisflags::Ma
 
 // Declarations of various short names
 using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
+using MyEventsBasic = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended>;
 using MyEventsMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsQvectorCentr, aod::ReducedEventsMergingTable>;
 using MyEventsMultExtraQVector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra>;
 using MyEventsZdc = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedZdcs>;
@@ -276,6 +277,7 @@ struct AnalysisEventSelection {
 
   // TODO: Provide the mixing variables and binning directly via configurables (e.g. vectors of float)
   Configurable<std::string> fConfigMixingVariables{"cfgMixingVars", "", "Mixing configs separated by a comma, default no mixing"};
+  Configurable<std::string> fConfigMixingVariablesJson{"cfgMixingVarsJSON", "", "Mixing configs in JSON format"};
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<std::string> fConfigEventCutsJSON{"cfgEventCutsJSON", "", "Additional event cuts specified in JSON format"};
   Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
@@ -307,7 +309,7 @@ struct AnalysisEventSelection {
   void init(o2::framework::InitContext& context)
   {
 
-    bool isAnyProcessEnabled = context.mOptions.get<bool>("processSkimmed") || context.mOptions.get<bool>("processSkimmedWithZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtra") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdcFit") || context.mOptions.get<bool>("processSkimmedWithQvectorCentr");
+    bool isAnyProcessEnabled = context.mOptions.get<bool>("processSkimmed") || context.mOptions.get<bool>("processSkimmedBasic") || context.mOptions.get<bool>("processSkimmedWithZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtra") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdcFit") || context.mOptions.get<bool>("processSkimmedWithQvectorCentr");
     bool isDummyEnabled = context.mOptions.get<bool>("processDummy");
 
     if (isDummyEnabled) {
@@ -356,12 +358,18 @@ struct AnalysisEventSelection {
     }
 
     TString mixVarsString = fConfigMixingVariables.value;
+    TString mixVarsJsonString = fConfigMixingVariablesJson.value;
     std::unique_ptr<TObjArray> objArray(mixVarsString.Tokenize(","));
-    if (objArray->GetEntries() > 0) {
+    if (objArray->GetEntries() > 0 || mixVarsJsonString != "") {
       fMixHandler = new MixingHandler("mixingHandler", "mixing handler");
       fMixHandler->Init();
-      for (int iVar = 0; iVar < objArray->GetEntries(); ++iVar) {
-        dqmixing::SetUpMixing(fMixHandler, objArray->At(iVar)->GetName());
+      if (objArray->GetEntries() > 0) {
+        for (int iVar = 0; iVar < objArray->GetEntries(); ++iVar) {
+          dqmixing::SetUpMixing(fMixHandler, objArray->At(iVar)->GetName());
+        }
+      }
+      if (mixVarsJsonString != "") {
+        dqmixing::SetUpMixingFromJSON(fMixHandler, mixVarsJsonString.Data());
       }
     }
 
@@ -528,6 +536,11 @@ struct AnalysisEventSelection {
     runEventSelection<gkEventFillMap>(events);
     publishSelections<gkEventFillMap>(events);
   }
+  void processSkimmedBasic(MyEventsBasic const& events)
+  {
+    runEventSelection<gkEventFillMap>(events);
+    publishSelections<gkEventFillMap>(events);
+  }
   void processSkimmedWithZdc(MyEventsZdc const& events)
   {
     runEventSelection<gkEventFillMapWithZdc>(events);
@@ -553,12 +566,13 @@ struct AnalysisEventSelection {
     runEventSelection<gkEventFillMapWithQvectorCentr>(events);
     publishSelections<gkEventFillMapWithQvectorCentr>(events);
   }
-  void processDummy(MyEvents&)
+  void processDummy(MyEventsBasic&)
   {
     // do nothing
   }
 
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmed, "Run event selection on DQ skimmed events", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedBasic, "Run event selection on DQ skimmed events with basic tables", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithZdc, "Run event selection on DQ skimmed events, with ZDC", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtra, "Run event selection on DQ skimmed events, with mult extra", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtraZdc, "Run event selection on DQ skimmed events, with mult extra and ZDC", false);
@@ -814,7 +828,7 @@ struct AnalysisTrackSelection {
   {
     runTrackSelection<gkEventFillMapWithCov, gkTrackFillMapWithCov>(assocs, events, tracks);
   }
-  void processDummy(MyEvents&)
+  void processDummy(MyEventsBasic&)
   {
     // do nothing
   }
@@ -1025,7 +1039,7 @@ struct AnalysisMuonSelection {
   {
     runMuonSelection<gkEventFillMapWithCov, gkMuonFillMapWithCov>(assocs, events, muons);
   }
-  void processDummy(MyEvents&)
+  void processDummy(MyEventsBasic&)
   {
     // do nothing
   }
@@ -1174,7 +1188,7 @@ struct AnalysisPrefilterSelection {
     } // end loop over combinations
   }
 
-  void processBarrelSkimmed(MyEvents const& events, soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& assocs, MyBarrelTracks const& tracks)
+  void processBarrelSkimmed(MyEventsBasic const& events, soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& assocs, MyBarrelTracks const& tracks)
   {
     fPrefilterMap.clear();
 
@@ -1207,7 +1221,7 @@ struct AnalysisPrefilterSelection {
     }
   }
 
-  void processDummy(MyEvents&)
+  void processDummy(MyEventsBasic&)
   {
     // do nothing
   }
@@ -2500,7 +2514,7 @@ struct AnalysisSameEventPairing {
     runSameSideMixing<pairTypeMuMu, gkEventFillMap>(events, muonAssocs, muons, muonAssocsPerCollision);
   }
 
-  void processDummy(MyEvents&)
+  void processDummy(MyEventsBasic&)
   {
     // do nothing
   }
@@ -3246,7 +3260,7 @@ struct AnalysisAsymmetricPairing {
     runThreeProng<true, gkEventFillMapWithCovZdcFit, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, VarManager::kTripleCandidateToPKPi);
   }
 
-  void processDummy(MyEvents&)
+  void processDummy(MyEventsBasic&)
   {
     // do nothing
   }
@@ -3602,7 +3616,7 @@ struct AnalysisDileptonTrack {
       }
       // dilepton rap cut
       float rap = dilepton.rap();
-      if (fConfigUseRapcut && abs(rap) > fConfigDileptonRapCutAbs)
+      if (fConfigUseRapcut && std::abs(rap) > fConfigDileptonRapCutAbs)
         continue;
 
       VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesDilepton);
@@ -3660,7 +3674,7 @@ struct AnalysisDileptonTrack {
 
           // for the energy correlator analysis
           std::vector<float> fTransRange = fConfigTransRange;
-          VarManager::FillEnergyCorrelator(dilepton, track, fValuesHadron, fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom());
+          VarManager::FillEnergyCorrelatorTriple(lepton1, lepton2, track, fValuesHadron, fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom());
 
           // table to be written out for ML analysis
           BmesonsTable(event.runNumber(), event.globalIndex(), event.timestamp(), fValuesHadron[VarManager::kPairMass], dilepton.mass(), fValuesHadron[VarManager::kDeltaMass], fValuesHadron[VarManager::kPairPt], fValuesHadron[VarManager::kPairEta], fValuesHadron[VarManager::kPairPhi], fValuesHadron[VarManager::kPairRap],
@@ -3817,7 +3831,7 @@ struct AnalysisDileptonTrack {
 
   void processBarrelMixedEvent(soa::Filtered<MyEventsHashSelected>& events,
                                soa::Filtered<soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts>> const& assocs,
-                               MyBarrelTracksWithCov const&, soa::Filtered<MyDielectronCandidates> const& dileptons)
+                               MyBarrelTracksWithCov const& tracks, soa::Filtered<MyDielectronCandidates> const& dileptons)
   {
     if (events.size() == 0) {
       return;
@@ -3853,10 +3867,16 @@ struct AnalysisDileptonTrack {
 
         // loop over dileptons
         for (auto dilepton : evDileptons) {
-
+          // get full track info of tracks based on the index
+          auto lepton1 = tracks.rawIteratorAt(dilepton.index0Id());
+          auto lepton2 = tracks.rawIteratorAt(dilepton.index1Id());
+          // Check that the dilepton has zero charge
+          if (dilepton.sign() != 0) {
+            continue;
+          }
           // dilepton rap cut
           float rap = dilepton.rap();
-          if (fConfigUseRapcut && abs(rap) > fConfigDileptonRapCutAbs)
+          if (fConfigUseRapcut && std::abs(rap) > fConfigDileptonRapCutAbs)
             continue;
 
           // compute dilepton - track quantities
@@ -3864,7 +3884,7 @@ struct AnalysisDileptonTrack {
 
           // for the energy correlator analysis
           std::vector<float> fTransRange = fConfigTransRange;
-          VarManager::FillEnergyCorrelator(dilepton, track, VarManager::fgValues, fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom());
+          VarManager::FillEnergyCorrelatorTriple(lepton1, lepton2, track, fValuesHadron, fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom());
 
           // loop over dilepton leg cuts and track cuts and fill histograms separately for each combination
           for (int icut = 0; icut < fNCuts; icut++) {
@@ -3930,7 +3950,7 @@ struct AnalysisDileptonTrack {
     } // end event loop
   }
 
-  void processDummy(MyEvents&)
+  void processDummy(MyEventsBasic&)
   {
     // do nothing
   }
@@ -4185,7 +4205,7 @@ struct AnalysisDileptonTrackTrack {
     }
   }
 
-  void processDummy(MyEvents&)
+  void processDummy(MyEventsBasic&)
   {
     // do nothing
   }

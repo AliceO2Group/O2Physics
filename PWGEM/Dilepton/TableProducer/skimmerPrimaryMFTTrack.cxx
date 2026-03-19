@@ -17,7 +17,6 @@
 
 #include "Common/Core/TableHelper.h"
 #include "Common/Core/fwdtrackUtilities.h"
-// #include "Common/DataModel/CollisionAssociationTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
@@ -68,7 +67,7 @@ struct skimmerPrimaryMFTTrack {
 
   Configurable<bool> fillQAHistogram{"fillQAHistogram", true, "flag to fill QA histograms"};
 
-  Configurable<float> cfgPtMin{"cfgPtMin", 0.2, "min pt for MFTsa track"};
+  Configurable<float> cfgPtMin{"cfgPtMin", 0.1, "min pt for MFTsa track"};
   Configurable<float> cfgPtMax{"cfgPtMax", 1e+10, "max pt for MFTsa track"};
   Configurable<float> cfgEtaMin{"cfgEtaMin", -4, "min eta acceptance"};
   Configurable<float> cfgEtaMax{"cfgEtaMax", -2, "max eta acceptance"};
@@ -198,13 +197,16 @@ struct skimmerPrimaryMFTTrack {
 
     // As minimal cuts, following cuts are applied. The cut values are hardcoded on the purpose for consistent bit operation.
     // Ncls MFT >= 5
-    // chi2/ndf MFT < 5
+    // chi2/ndf MFT < 4
     // |dcaXY| < 0.06 cm
 
-    if (mfttrack.nClusters() < 6 || mfttrack.chi2() / ndf > 5.f || std::fabs(dcaXY) > 0.05) {
+    if (mfttrack.nClusters() < 5 || mfttrack.chi2() / ndf > 4.f || std::fabs(dcaXY) > 0.06) {
       return;
     }
 
+    if (mfttrack.nClusters() >= 6) {
+      trackBit |= static_cast<uint16_t>(RefMFTTrackBit::kNclsMFT6);
+    }
     if (mfttrack.nClusters() >= 7) {
       trackBit |= static_cast<uint16_t>(RefMFTTrackBit::kNclsMFT7);
     }
@@ -212,13 +214,16 @@ struct skimmerPrimaryMFTTrack {
       trackBit |= static_cast<uint16_t>(RefMFTTrackBit::kNclsMFT8);
     }
 
-    if (mfttrack.chi2() / ndf < 4.f) {
-      trackBit |= static_cast<uint16_t>(RefMFTTrackBit::kChi2MFT4);
-    }
     if (mfttrack.chi2() / ndf < 3.f) {
       trackBit |= static_cast<uint16_t>(RefMFTTrackBit::kChi2MFT3);
     }
+    if (mfttrack.chi2() / ndf < 2.f) {
+      trackBit |= static_cast<uint16_t>(RefMFTTrackBit::kChi2MFT2);
+    }
 
+    if (std::fabs(dcaXY) < 0.05) {
+      trackBit |= static_cast<uint16_t>(RefMFTTrackBit::kDCAxy005cm);
+    }
     if (std::fabs(dcaXY) < 0.04) {
       trackBit |= static_cast<uint16_t>(RefMFTTrackBit::kDCAxy004cm);
     }
@@ -232,7 +237,7 @@ struct skimmerPrimaryMFTTrack {
       trackBit |= static_cast<uint16_t>(RefMFTTrackBit::kDCAxy001cm);
     }
 
-    emprimarytracks(/*collision.globalIndex(),*/ /*mfttrack.globalIndex(),*/ mfttrack.sign() / pt, eta, phi, trackBit);
+    emprimarytracks(mfttrack.sign() / pt, eta, phi, trackBit);
     prmtrackeventidtmp(collision.globalIndex());
 
     if (fillQAHistogram) {

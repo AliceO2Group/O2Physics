@@ -64,6 +64,7 @@ class DimuonCut : public TNamed
     kPDCA,
     kMFTHitMap,
     kDPtDEtaDPhiwrtMCHMID,
+    kTTCA,
     kNCuts
   };
 
@@ -166,6 +167,9 @@ class DimuonCut : public TNamed
     if (!IsSelectedTrack(track, DimuonCuts::kRabs)) {
       return false;
     }
+    if (!IsSelectedTrack(track, DimuonCuts::kTTCA)) {
+      return false;
+    }
     if (mApplyMFTHitMap && track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && !IsSelectedTrack(track, DimuonCuts::kMFTHitMap)) {
       return false;
     }
@@ -208,7 +212,8 @@ class DimuonCut : public TNamed
         return track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? 0.f < track.chi2MFT() / (2.f * track.nClustersMFT() - 5.f) && track.chi2MFT() / (2.f * track.nClustersMFT() - 5.f) < mMaxChi2MFT : true;
 
       case DimuonCuts::kMatchingChi2MCHMFT:
-        return 0.f < track.chi2MatchMCHMFT() && track.chi2MatchMCHMFT() < mMaxMatchingChi2MCHMFT;
+        // return 0.f < track.chi2MatchMCHMFT() && track.chi2MatchMCHMFT() < mMaxMatchingChi2MCHMFT;
+        return 0.f < track.chi2MatchMCHMFT() && track.chi2MatchMCHMFT() < mMaxMatchingChi2MCHMFTPtDep(track.pt());
 
       case DimuonCuts::kMatchingChi2MCHMID:
         return 0.f < track.chi2MatchMCHMID() && track.chi2MatchMCHMID() < mMaxMatchingChi2MCHMID;
@@ -218,6 +223,9 @@ class DimuonCut : public TNamed
 
       case DimuonCuts::kRabs:
         return mMinRabs < track.rAtAbsorberEnd() && track.rAtAbsorberEnd() < mMaxRabs;
+
+      case DimuonCuts::kTTCA:
+        return mEnableTTCA ? true : track.isAssociatedToMPC();
 
       case DimuonCuts::kMFTHitMap: {
         std::vector<bool> mftHitMap{checkMFTHitMap<0, 1>(track), checkMFTHitMap<2, 3>(track), checkMFTHitMap<4, 5>(track), checkMFTHitMap<6, 7>(track), checkMFTHitMap<8, 9>(track)};
@@ -259,6 +267,8 @@ class DimuonCut : public TNamed
   void SetMaxPDCARabsDep(std::function<float(float)> RabsDepCut);
   void SetMFTHitMap(bool flag, std::vector<int> hitMap);
   void SetMaxdPtdEtadPhiwrtMCHMID(float reldPtMax, float dEtaMax, float dPhiMax); // this is relevant for global muons
+  void SetMaxMatchingChi2MCHMFTPtDep(std::function<float(float)> PtDepCut);
+  void EnableTTCA(bool flag);
 
  private:
   // pair cuts
@@ -269,6 +279,7 @@ class DimuonCut : public TNamed
   bool mApplydEtadPhi{false};                     // flag to apply deta, dphi cut between 2 tracks
   float mMinDeltaEta{0.f};
   float mMinDeltaPhi{0.f};
+  bool mEnableTTCA{true};
 
   // kinematic cuts
   float mMinTrackPt{0.f}, mMaxTrackPt{1e10f};        // range in pT
@@ -284,6 +295,7 @@ class DimuonCut : public TNamed
   float mMinMatchingChi2MCHMFT{0.f}, mMaxMatchingChi2MCHMFT{1e10f}; // max matching chi2 between MCH-MFT
   float mMinMatchingChi2MCHMID{0.f}, mMaxMatchingChi2MCHMID{1e10f}; // max matching chi2 between MCH-MID
   std::function<float(float)> mMaxPDCARabsDep{};                    // max pdca in xy plane as function of Rabs
+  std::function<float(float)> mMaxMatchingChi2MCHMFTPtDep{};        // max matching chi2 between MCH-MFT as function of pt
 
   float mMinRabs{17.6}, mMaxRabs{89.5};
   float mMinDcaXY{0.0f}, mMaxDcaXY{1e10f};

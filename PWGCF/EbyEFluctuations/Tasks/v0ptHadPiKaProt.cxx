@@ -47,6 +47,7 @@
 #include <TH1F.h>
 #include <TH2D.h>
 #include <TH2F.h>
+#include <TH3D.h>
 #include <THn.h>
 #include <TList.h>
 #include <TMath.h>
@@ -68,6 +69,8 @@ using namespace o2::framework::expressions;
 
 static constexpr float LongArrayFloat[3][20] = {{1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}, {2.1, 2.2, 2.3, -2.1, -2.2, -2.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}, {3.1, 3.2, 3.3, -3.1, -3.2, -3.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}};
 
+#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
+
 struct V0ptHadPiKaProt {
 
   // ITS response
@@ -75,7 +78,8 @@ struct V0ptHadPiKaProt {
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "https://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPath{"ccdbPath", "Users/s/swati/PhiWeight", "CCDB path to ccdb object containing phi weight in a 3D histogram"};
 
   enum Particles {
     PIONS = 0,
@@ -116,6 +120,9 @@ struct V0ptHadPiKaProt {
   Configurable<float> cfgnSigmaCutCombTPCTOF{"cfgnSigmaCutCombTPCTOF", 2.0f, "PID nSigma combined cut for TPC and TOF"};
   ConfigurableAxis nchAxis{"nchAxis", {5000, 0.5, 5000.5}, ""};
   ConfigurableAxis centAxis{"centAxis", {90, 0., 90.}, "Centrality/Multiplicity percentile bining"};
+  ConfigurableAxis nchAxis1{"nchAxis1", {500, 0.5, 500.5}, "Axis for multiplicity of GlobalTracks/PVTracks"};
+  ConfigurableAxis nchAxis2{"nchAxis2", {1000, 0.5, 30000.5}, "Axis for multiplicity of FT0A/FT0C/FV0A"};
+  ConfigurableAxis nchAxis3{"nchAxis3", {1000, 0.5, 100000.5}, "Axis for multiplicity of FT0A/FT0C/FV0A"};
   Configurable<float> cfgCutPtLower{"cfgCutPtLower", 0.2f, "Lower pT cut"};
   Configurable<float> cfgCutPtLowerProt{"cfgCutPtLowerProt", 0.2f, "Lower pT cut"};
   Configurable<float> cfgCutPtUpper{"cfgCutPtUpper", 10.0f, "Higher pT cut for inclusive hadron analysis"};
@@ -123,7 +130,7 @@ struct V0ptHadPiKaProt {
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "absolute Eta cut"};
   Configurable<float> cfgCutEtaLeft{"cfgCutEtaLeft", 0.8f, "Left end of eta gap"};
   Configurable<float> cfgCutEtaRight{"cfgCutEtaRight", 0.8f, "Right end of eta gap"};
-  Configurable<int> cfgNSubsample{"cfgNSubsample", 10, "Number of subsamples"};
+  Configurable<int> cfgNSubsample{"cfgNSubsample", 20, "Number of subsamples"};
   Configurable<int> cfgCentralityChoice{"cfgCentralityChoice", 0, "Which centrality estimator? 0-->FT0C, 1-->FT0A, 2-->FT0M, 3-->FV0A"};
   Configurable<bool> cfgEvSelkNoSameBunchPileup{"cfgEvSelkNoSameBunchPileup", true, "Pileup removal"};
   Configurable<bool> cfgUseGoodITSLayerAllCut{"cfgUseGoodITSLayerAllCut", true, "Remove time interval with dead ITS zone"};
@@ -137,11 +144,63 @@ struct V0ptHadPiKaProt {
   Configurable<int> cfgNbinsV02pt{"cfgNbinsV02pt", 14, "No. of pT bins for v02(pT) analysis"};
   Configurable<float> cfgCutPtMaxForV02{"cfgCutPtMaxForV02", 3.0f, "Max. pT for v02(pT)"};
   Configurable<float> cfgCutEtaWindowB{"cfgCutEtaWindowB", 0.4f, "value of x in |eta|<x for window B"};
+  Configurable<bool> cfgLoadPhiWeights{"cfgLoadPhiWeights", false, "Load phi weights from CCDB to take care of non-uniform acceptance"};
 
+  // pT dep DCAxy and DCAz cuts
+  Configurable<bool> cfgUsePtDepDCAxy{"cfgUsePtDepDCAxy", true, "Use pt-dependent DCAxy cut"};
+  Configurable<bool> cfgUsePtDepDCAz{"cfgUsePtDepDCAz", true, "Use pt-dependent DCAz cut"};
+  O2_DEFINE_CONFIGURABLE(cfgDCAxyFunc, std::string, "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAxy cut");
+  O2_DEFINE_CONFIGURABLE(cfgDCAzFunc, std::string, "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAz cut");
+  TF1* fPtDepDCAxy = nullptr;
+  TF1* fPtDepDCAz = nullptr;
+
+  O2_DEFINE_CONFIGURABLE(cfgUseSmallIonAdditionalEventCut, bool, true, "Use additional event cut on mult correlations for small ions")
+  O2_DEFINE_CONFIGURABLE(cfgEvSelMultCorrelation, bool, true, "Multiplicity correlation cut")
+  O2_DEFINE_CONFIGURABLE(cfgEvSelV0AT0ACut, bool, true, "V0A T0A 5 sigma cut")
+  struct : ConfigurableGroup {
+    O2_DEFINE_CONFIGURABLE(cfgMultCentHighCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 10.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
+    O2_DEFINE_CONFIGURABLE(cfgMultCentLowCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x - 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
+    O2_DEFINE_CONFIGURABLE(cfgMultT0CCutEnabled, bool, false, "Enable Global multiplicity vs T0C centrality cut")
+    Configurable<std::vector<double>> cfgMultT0CCutPars{"cfgMultT0CCutPars", std::vector<double>{143.04, -4.58368, 0.0766055, -0.000727796, 2.86153e-06, 23.3108, -0.36304, 0.00437706, -4.717e-05, 1.98332e-07}, "Global multiplicity vs T0C centrality cut parameter values"};
+    O2_DEFINE_CONFIGURABLE(cfgMultPVT0CCutEnabled, bool, false, "Enable PV multiplicity vs T0C centrality cut")
+    Configurable<std::vector<double>> cfgMultPVT0CCutPars{"cfgMultPVT0CCutPars", std::vector<double>{195.357, -6.15194, 0.101313, -0.000955828, 3.74793e-06, 30.0326, -0.43322, 0.00476265, -5.11206e-05, 2.13613e-07}, "PV multiplicity vs T0C centrality cut parameter values"};
+
+    O2_DEFINE_CONFIGURABLE(cfgMultMultPVHighCutFunction, std::string, "[0]+[1]*x + 5.*([2]+[3]*x)", "Functional for multiplicity correlation cut");
+    O2_DEFINE_CONFIGURABLE(cfgMultMultPVLowCutFunction, std::string, "[0]+[1]*x - 5.*([2]+[3]*x)", "Functional for multiplicity correlation cut");
+    O2_DEFINE_CONFIGURABLE(cfgMultGlobalPVCutEnabled, bool, false, "Enable global multiplicity vs PV multiplicity cut")
+    Configurable<std::vector<double>> cfgMultGlobalPVCutPars{"cfgMultGlobalPVCutPars", std::vector<double>{-0.140809, 0.734344, 2.77495, 0.0165935}, "PV multiplicity vs T0C centrality cut parameter values"};
+
+    O2_DEFINE_CONFIGURABLE(cfgMultMultV0AHighCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 4.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
+    O2_DEFINE_CONFIGURABLE(cfgMultMultV0ALowCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x - 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
+    O2_DEFINE_CONFIGURABLE(cfgMultMultV0ACutEnabled, bool, false, "Enable global multiplicity vs V0A multiplicity cut")
+    Configurable<std::vector<double>> cfgMultMultV0ACutPars{"cfgMultMultV0ACutPars", std::vector<double>{534.893, 184.344, 0.423539, -0.00331436, 5.34622e-06, 871.239, 53.3735, -0.203528, 0.000122758, 5.41027e-07}, "Global multiplicity vs V0A multiplicity cut parameter values"};
+
+    std::vector<double> multT0CCutPars;
+    std::vector<double> multPVT0CCutPars;
+    std::vector<double> multGlobalPVCutPars;
+    std::vector<double> multMultV0ACutPars;
+    TF1* fMultPVT0CCutLow = nullptr;
+    TF1* fMultPVT0CCutHigh = nullptr;
+    TF1* fMultT0CCutLow = nullptr;
+    TF1* fMultT0CCutHigh = nullptr;
+    TF1* fMultGlobalPVCutLow = nullptr;
+    TF1* fMultGlobalPVCutHigh = nullptr;
+    TF1* fMultMultV0ACutLow = nullptr;
+    TF1* fMultMultV0ACutHigh = nullptr;
+    TF1* fT0AV0AMean = nullptr;
+    TF1* fT0AV0ASigma = nullptr;
+
+  } cfgFuncParas;
+
+  // Output
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry histosAnalysis{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   std::vector<std::vector<std::shared_ptr<TProfile2D>>> subSample;
   std::vector<std::vector<std::shared_ptr<TProfile2D>>> subSampleV02;
   TRandom3* funRndm = new TRandom3(0);
+
+  // Phi weight histograms initialization
+  TH2F* hWeightPhiFunctionVzEtaPhi = nullptr;
 
   // Filter command***********
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -180,6 +239,24 @@ struct V0ptHadPiKaProt {
     itsNsigmaCut[kKaonLowCut] = nSigmas->getData()[kITS][kKaonLowCut];
     itsNsigmaCut[kProtonLowCut] = nSigmas->getData()[kITS][kProtonLowCut];
 
+    // Loading phi weight histograms from CCDB
+    if (cfgLoadPhiWeights) {
+
+      // Accessing eff histograms
+      ccdb->setURL(ccdbUrl.value);
+      // Enabling object caching, otherwise each call goes to the CCDB server
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      // Not later than now, will be replaced by the value of the train creation
+      // This avoids that users can replace objects **while** a train is running
+      ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
+      LOGF(info, "Getting object %s", ccdbPath.value.data());
+      TList* lst = ccdb->getForTimeStamp<TList>(ccdbPath.value, ccdbNoLaterThan.value);
+      hWeightPhiFunctionVzEtaPhi = reinterpret_cast<TH2F*>(lst->FindObject("hWeightPhiFunctionVzEtaPhi"));
+      if (!hWeightPhiFunctionVzEtaPhi)
+        LOGF(info, "FATAL!! could not get phi weights---------> check");
+    }
+
     // Define axes
     std::vector<double> ptBin = {0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.5, 4.0, 5.0, 6.0, 8.0, 10.0};
     AxisSpec ptAxis = {ptBin, "#it{p}_{T} (GeV/#it{c})"};
@@ -189,17 +266,38 @@ struct V0ptHadPiKaProt {
     // Add histograms to histogram manager (as in the output object of in AliPhysics)
 
     // QA hists
+    histos.add("hEventStatData", "Data Event statistics", kTH1F, {{10, 0.0f, 10.0f}});
     histos.add("hZvtx_after_sel", ";Z (cm)", kTH1F, {{240, -12, 12}});
     histos.add("hCentrality", ";centrality (%)", kTH1F, {{90, 0, 90}});
+    // before selection
+    histos.add("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_PVTracks_beforeSel", "", {HistType::kTH2D, {nchAxis1, nchAxis1}});
+    histos.add("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_centFT0C_beforeSel", "", {HistType::kTH2D, {centAxis, nchAxis1}});
+    histos.add("MultCorrelationPlots/BeforeSelection/His2D_PVTracks_centFT0C_beforeSel", "", {HistType::kTH2D, {centAxis, nchAxis1}});
+    histos.add("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_V0ATracks_beforeSel", "", {HistType::kTH2D, {nchAxis3, nchAxis1}});
+    histos.add("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_T0ATracks_beforeSel", "", {HistType::kTH2D, {nchAxis2, nchAxis1}});
+    histos.add("MultCorrelationPlots/BeforeSelection/His2D_V0ATracks_T0CTracks_beforeSel", "", {HistType::kTH2D, {nchAxis2, nchAxis3}});
+    // after selection
+    if (cfgUseSmallIonAdditionalEventCut) {
+      histos.add("MultCorrelationPlots/AfterSelection/His2D_globalTracks_PVTracks_afterSel", "", {HistType::kTH2D, {nchAxis1, nchAxis1}});
+      histos.add("MultCorrelationPlots/AfterSelection/His2D_globalTracks_centFT0C_afterSel", "", {HistType::kTH2D, {centAxis, nchAxis1}});
+      histos.add("MultCorrelationPlots/AfterSelection/His2D_PVTracks_centFT0C_afterSel", "", {HistType::kTH2D, {centAxis, nchAxis1}});
+      histos.add("MultCorrelationPlots/AfterSelection/His2D_globalTracks_V0ATracks_afterSel", "", {HistType::kTH2D, {nchAxis3, nchAxis1}});
+      histos.add("MultCorrelationPlots/AfterSelection/His2D_globalTracks_T0ATracks_afterSel", "", {HistType::kTH2D, {nchAxis2, nchAxis1}});
+      histos.add("MultCorrelationPlots/AfterSelection/His2D_V0ATracks_T0CTracks_afterSel", "", {HistType::kTH2D, {nchAxis2, nchAxis3}});
+    }
+
     histos.add("Hist2D_globalTracks_PVTracks", "", {HistType::kTH2D, {nchAxis, nchAxis}});
     histos.add("Hist2D_cent_nch", "", {HistType::kTH2D, {nchAxis, centAxis}});
     histos.add("hP", ";#it{p} (GeV/#it{c})", kTH1F, {{35, 0.2, 4.}});
     histos.add("hPt", ";#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
     histos.add("hPhi", ";#phi", kTH1F, {{100, 0., o2::constants::math::TwoPI}});
     histos.add("hEta", ";#eta", kTH1F, {{100, -2.01, 2.01}});
-    histos.add("hDcaXY", ";#it{dca}_{XY}", kTH1F, {{1000, -5, 5}});
-    histos.add("hDcaZ", ";#it{dca}_{Z}", kTH1F, {{1000, -5, 5}});
+    histos.add("hDcaXY", ";#it{dca}_{XY}", kTH1F, {{1000, -0.5, 0.5}});
+    histos.add("hDcaZ", ";#it{dca}_{Z}", kTH1F, {{1000, -0.5, 0.5}});
     histos.add("hMeanPt", "", kTProfile, {centAxis});
+
+    // phi weight hist for non-uniform acceptance correction
+    histos.add("h3DVtxZetaPhi", "", kTH3D, {{20, -10, 10}, {16, -0.8, +0.8}, {100, 0., o2::constants::math::TwoPI}});
 
     // 2D histograms of nSigma
     // before cut
@@ -265,7 +363,7 @@ struct V0ptHadPiKaProt {
     subSampleV02.resize(cfgNSubsample);
     for (int i = 0; i < cfgNSubsample; i++) {
       subSample[i].resize(20);
-      subSampleV02[i].resize(20);
+      subSampleV02[i].resize(9);
     }
     for (int i = 0; i < cfgNSubsample; i++) {
       subSample[i][0] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_A_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
@@ -292,16 +390,51 @@ struct V0ptHadPiKaProt {
       subSample[i][18] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_Bone_prot", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
       subSample[i][19] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_Btwo_prot", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
 
-      subSampleV02[i][0] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSampleV02_%d/Prof_XY", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
-      subSampleV02[i][1] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSampleV02_%d/Prof_XYZ_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-      subSampleV02[i][2] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSampleV02_%d/Prof_Z_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-      subSampleV02[i][3] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSampleV02_%d/Prof_XYZ_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-      subSampleV02[i][4] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSampleV02_%d/Prof_Z_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-      subSampleV02[i][5] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSampleV02_%d/Prof_XYZ_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-      subSampleV02[i][6] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSampleV02_%d/Prof_Z_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-      subSampleV02[i][1] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSampleV02_%d/Prof_XYZ_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
-      subSampleV02[i][2] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSampleV02_%d/Prof_Z_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+      subSampleV02[i][0] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_XY", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+      subSampleV02[i][1] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_XYZ_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+      subSampleV02[i][2] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_Z_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+      subSampleV02[i][3] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_XYZ_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+      subSampleV02[i][4] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_Z_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+      subSampleV02[i][5] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_XYZ_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+      subSampleV02[i][6] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_Z_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+      subSampleV02[i][7] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_XYZ_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+      subSampleV02[i][8] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_Z_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
     }
+
+    if (cfgEvSelMultCorrelation) {
+      cfgFuncParas.multT0CCutPars = cfgFuncParas.cfgMultT0CCutPars;
+      cfgFuncParas.multPVT0CCutPars = cfgFuncParas.cfgMultPVT0CCutPars;
+      cfgFuncParas.multGlobalPVCutPars = cfgFuncParas.cfgMultGlobalPVCutPars;
+      cfgFuncParas.multMultV0ACutPars = cfgFuncParas.cfgMultMultV0ACutPars;
+      cfgFuncParas.fMultPVT0CCutLow = new TF1("fMultPVT0CCutLow", cfgFuncParas.cfgMultCentLowCutFunction->c_str(), 0, 100);
+      cfgFuncParas.fMultPVT0CCutLow->SetParameters(&(cfgFuncParas.multPVT0CCutPars[0]));
+      cfgFuncParas.fMultPVT0CCutHigh = new TF1("fMultPVT0CCutHigh", cfgFuncParas.cfgMultCentHighCutFunction->c_str(), 0, 100);
+      cfgFuncParas.fMultPVT0CCutHigh->SetParameters(&(cfgFuncParas.multPVT0CCutPars[0]));
+      cfgFuncParas.fMultT0CCutLow = new TF1("fMultT0CCutLow", cfgFuncParas.cfgMultCentLowCutFunction->c_str(), 0, 100);
+      cfgFuncParas.fMultT0CCutLow->SetParameters(&(cfgFuncParas.multT0CCutPars[0]));
+      cfgFuncParas.fMultT0CCutHigh = new TF1("fMultT0CCutHigh", cfgFuncParas.cfgMultCentHighCutFunction->c_str(), 0, 100);
+      cfgFuncParas.fMultT0CCutHigh->SetParameters(&(cfgFuncParas.multT0CCutPars[0]));
+      cfgFuncParas.fMultGlobalPVCutLow = new TF1("fMultGlobalPVCutLow", cfgFuncParas.cfgMultMultPVLowCutFunction->c_str(), 0, 4000);
+      cfgFuncParas.fMultGlobalPVCutLow->SetParameters(&(cfgFuncParas.multGlobalPVCutPars[0]));
+      cfgFuncParas.fMultGlobalPVCutHigh = new TF1("fMultGlobalPVCutHigh", cfgFuncParas.cfgMultMultPVHighCutFunction->c_str(), 0, 4000);
+      cfgFuncParas.fMultGlobalPVCutHigh->SetParameters(&(cfgFuncParas.multGlobalPVCutPars[0]));
+      cfgFuncParas.fMultMultV0ACutLow = new TF1("fMultMultV0ACutLow", cfgFuncParas.cfgMultMultV0ALowCutFunction->c_str(), 0, 4000);
+      cfgFuncParas.fMultMultV0ACutLow->SetParameters(&(cfgFuncParas.multMultV0ACutPars[0]));
+      cfgFuncParas.fMultMultV0ACutHigh = new TF1("fMultMultV0ACutHigh", cfgFuncParas.cfgMultMultV0AHighCutFunction->c_str(), 0, 4000);
+      cfgFuncParas.fMultMultV0ACutHigh->SetParameters(&(cfgFuncParas.multMultV0ACutPars[0]));
+      cfgFuncParas.fT0AV0AMean = new TF1("fT0AV0AMean", "[0]+[1]*x", 0, 200000);
+      cfgFuncParas.fT0AV0AMean->SetParameters(-1601.0581, 9.417652e-01);
+      cfgFuncParas.fT0AV0ASigma = new TF1("fT0AV0ASigma", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 200000);
+      cfgFuncParas.fT0AV0ASigma->SetParameters(463.4144, 6.796509e-02, -9.097136e-07, 7.971088e-12, -2.600581e-17);
+    }
+
+    if (cfgUsePtDepDCAxy) {
+      fPtDepDCAxy = new TF1("ptDepDCAxy", Form("%s", cfgDCAxyFunc->c_str()), 0.001, 1000);
+    }
+    if (cfgUsePtDepDCAz) {
+      fPtDepDCAz = new TF1("ptDepDCAz", Form("%s", cfgDCAzFunc->c_str()), 0.001, 1000);
+    }
+
   } // end init
 
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -472,26 +605,137 @@ struct V0ptHadPiKaProt {
     return pid; // 0 = not identified, 1 = pion, 2 = kaon, 3 = proton
   }
 
+  // additional multiplicity correlation based event selection cuts
+  template <typename TCollision>
+  bool eventSelectedSmallion(TCollision collision, const int multTrk, const float centrality)
+  {
+    auto multNTracksPV = collision.multNTracksPV();
+
+    if (cfgEvSelMultCorrelation) {
+      if (cfgFuncParas.cfgMultPVT0CCutEnabled) {
+        if (multNTracksPV < cfgFuncParas.fMultPVT0CCutLow->Eval(centrality))
+          return 0;
+        if (multNTracksPV > cfgFuncParas.fMultPVT0CCutHigh->Eval(centrality))
+          return 0;
+      }
+
+      if (cfgFuncParas.cfgMultT0CCutEnabled) {
+        if (multTrk < cfgFuncParas.fMultT0CCutLow->Eval(centrality))
+          return 0;
+        if (multTrk > cfgFuncParas.fMultT0CCutHigh->Eval(centrality))
+          return 0;
+      }
+
+      if (cfgFuncParas.cfgMultGlobalPVCutEnabled) {
+        if (multTrk < cfgFuncParas.fMultGlobalPVCutLow->Eval(multNTracksPV))
+          return 0;
+        if (multTrk > cfgFuncParas.fMultGlobalPVCutHigh->Eval(multNTracksPV))
+          return 0;
+      }
+
+      if (cfgFuncParas.cfgMultMultV0ACutEnabled) {
+        if (collision.multFV0A() < cfgFuncParas.fMultMultV0ACutLow->Eval(multTrk))
+          return 0;
+        if (collision.multFV0A() > cfgFuncParas.fMultMultV0ACutHigh->Eval(multTrk))
+          return 0;
+      }
+    }
+
+    float sigma = 5.0;
+    if (cfgEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - cfgFuncParas.fT0AV0AMean->Eval(collision.multFT0A())) > sigma * cfgFuncParas.fT0AV0ASigma->Eval(collision.multFT0A())))
+      return 0;
+
+    return 1;
+  }
+
+  template <typename TCollision>
+  bool eventSelectionDefaultCuts(TCollision coll)
+  {
+    histos.fill(HIST("hEventStatData"), 0.5);
+    if (!coll.sel8()) {
+      return 0;
+    }
+
+    histos.fill(HIST("hEventStatData"), 1.5);
+    if (cfgUseGoodITSLayerAllCut && !(coll.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))) {
+      return 0;
+    }
+
+    histos.fill(HIST("hEventStatData"), 2.5);
+    if (cfgEvSelkNoSameBunchPileup && !(coll.selection_bit(o2::aod::evsel::kNoSameBunchPileup))) {
+      return 0;
+    }
+
+    histos.fill(HIST("hEventStatData"), 3.5);
+    if (cfgEvSelkNoITSROFrameBorder && !(coll.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+      return 0;
+    }
+
+    histos.fill(HIST("hEventStatData"), 4.5);
+    if (cfgEvSelkNoTimeFrameBorder && !(coll.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))) {
+      return 0;
+    }
+
+    histos.fill(HIST("hEventStatData"), 5.5);
+    if (cfgEvSelUseGoodZvtxFT0vsPV && !(coll.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      return 0;
+    }
+
+    histos.fill(HIST("hEventStatData"), 6.5);
+    return 1;
+  }
+
+  template <typename C, typename T>
+  void fillMultCorrPlotsBeforeSel(C const& coll, T const& inputTracks)
+  {
+    histos.fill(HIST("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_PVTracks_beforeSel"), coll.multNTracksPV(), inputTracks.size());
+    histos.fill(HIST("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_centFT0C_beforeSel"), coll.centFT0C(), inputTracks.size());
+    histos.fill(HIST("MultCorrelationPlots/BeforeSelection/His2D_PVTracks_centFT0C_beforeSel"), coll.centFT0C(), coll.multNTracksPV());
+    histos.fill(HIST("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_V0ATracks_beforeSel"), coll.multFV0A(), inputTracks.size());
+    histos.fill(HIST("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_T0ATracks_beforeSel"), coll.multFT0A(), inputTracks.size());
+    histos.fill(HIST("MultCorrelationPlots/BeforeSelection/His2D_V0ATracks_T0CTracks_beforeSel"), coll.multFT0C(), coll.multFV0A());
+  }
+
+  template <typename C, typename T>
+  void fillMultCorrPlotsAfterSel(C const& coll, T const& inputTracks)
+  {
+    histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_globalTracks_PVTracks_afterSel"), coll.multNTracksPV(), inputTracks.size());
+    histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_globalTracks_centFT0C_afterSel"), coll.centFT0C(), inputTracks.size());
+    histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_PVTracks_centFT0C_afterSel"), coll.centFT0C(), coll.multNTracksPV());
+    histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_globalTracks_V0ATracks_afterSel"), coll.multFV0A(), inputTracks.size());
+    histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_globalTracks_T0ATracks_afterSel"), coll.multFT0A(), inputTracks.size());
+    histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_V0ATracks_T0CTracks_afterSel"), coll.multFT0C(), coll.multFV0A());
+  }
+
+  template <typename T>
+  float getPhiWeight(const T& candidate, float vtxz)
+  {
+    if (!cfgLoadPhiWeights || !hWeightPhiFunctionVzEtaPhi) {
+      return 1.0;
+    }
+    int bin = hWeightPhiFunctionVzEtaPhi->FindBin(vtxz, candidate.eta(), candidate.phi());
+    float weight = hWeightPhiFunctionVzEtaPhi->GetBinContent(bin);
+    if (!std::isfinite(weight) || weight <= 0) {
+      return 1.0;
+    }
+    return weight;
+  }
+
   // process Data
   void process(AodCollisions::iterator const& coll, aod::BCsWithTimestamps const&, AodTracks const& inputTracks)
   {
-    if (!coll.sel8()) {
+    if (!eventSelectionDefaultCuts(coll)) {
       return;
     }
-    if (cfgUseGoodITSLayerAllCut && !(coll.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))) {
+
+    fillMultCorrPlotsBeforeSel(coll, inputTracks);
+
+    const auto centralityFT0C = coll.centFT0C();
+    if (cfgUseSmallIonAdditionalEventCut && !eventSelectedSmallion(coll, inputTracks.size(), centralityFT0C))
       return;
-    }
-    if (cfgEvSelkNoSameBunchPileup && !(coll.selection_bit(o2::aod::evsel::kNoSameBunchPileup))) {
-      return;
-    }
-    if (cfgEvSelkNoITSROFrameBorder && !(coll.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
-      return;
-    }
-    if (cfgEvSelkNoTimeFrameBorder && !(coll.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))) {
-      return;
-    }
-    if (cfgEvSelUseGoodZvtxFT0vsPV && !(coll.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))) {
-      return;
+
+    if (cfgUseSmallIonAdditionalEventCut) {
+      fillMultCorrPlotsAfterSel(coll, inputTracks);
     }
 
     // Centrality
@@ -552,6 +796,13 @@ struct V0ptHadPiKaProt {
         continue;
       }
 
+      if (cfgUsePtDepDCAxy && !(std::abs(track.dcaXY()) < fPtDepDCAxy->Eval(track.pt()))) {
+        continue;
+      }
+      if (cfgUsePtDepDCAz && !(std::abs(track.dcaZ()) < fPtDepDCAz->Eval(track.pt()))) {
+        continue;
+      }
+
       histos.fill(HIST("hP"), track.p());
       histos.fill(HIST("hPt"), track.pt());
       histos.fill(HIST("hEta"), track.eta());
@@ -584,8 +835,12 @@ struct V0ptHadPiKaProt {
         }
       }
       double phiweight = 1.0;
+      if (cfgLoadPhiWeights) {
+        phiweight = getPhiWeight(track, coll.posZ());
+      }
       // fill subevent C for v2^2 in v02(pT)
       if (track.sign() != 0 && trkPt < cfgCutPtMaxForV02) {
+        histos.fill(HIST("h3DVtxZetaPhi"), coll.posZ(), trkEta, trkPhi);
         if (cfgCutEtaWindowB < trkEta && trkEta < 0.8) {
           vecQInWinC += phiweight * TComplex(TMath::Cos(2. * trkPhi), TMath::Sin(2. * trkPhi));
           nSumInWinC += phiweight;
@@ -780,8 +1035,8 @@ struct V0ptHadPiKaProt {
         histos.get<TProfile2D>(HIST("Prof_XYZ_pi"))->Fill(cent, fPtProfilePiInWinB->GetBinCenter(i + 1), threeParCorrPi);
         histos.get<TProfile2D>(HIST("Prof_Z_pi"))->Fill(cent, fPtProfilePiInWinB->GetBinCenter(i + 1), (fPtProfilePiInWinB->GetBinContent(i + 1) / nSumInWinB));
 
-        subSampleV02[sampleIndex][1]->Fill(cent, fPtProfilePiInWinB->GetBinCenter(i + 1), threeParCorrPi);
-        subSampleV02[sampleIndex][2]->Fill(cent, fPtProfilePiInWinB->GetBinCenter(i + 1), (fPtProfilePiInWinB->GetBinContent(i + 1) / nSumInWinB));
+        subSampleV02[sampleIndex][3]->Fill(cent, fPtProfilePiInWinB->GetBinCenter(i + 1), threeParCorrPi);
+        subSampleV02[sampleIndex][4]->Fill(cent, fPtProfilePiInWinB->GetBinCenter(i + 1), (fPtProfilePiInWinB->GetBinContent(i + 1) / nSumInWinB));
       }
 
       // kaons
@@ -791,8 +1046,8 @@ struct V0ptHadPiKaProt {
         histos.get<TProfile2D>(HIST("Prof_XYZ_ka"))->Fill(cent, fPtProfileKaInWinB->GetBinCenter(i + 1), threeParCorrKa);
         histos.get<TProfile2D>(HIST("Prof_Z_ka"))->Fill(cent, fPtProfileKaInWinB->GetBinCenter(i + 1), (fPtProfileKaInWinB->GetBinContent(i + 1) / nSumInWinB));
 
-        subSampleV02[sampleIndex][1]->Fill(cent, fPtProfileKaInWinB->GetBinCenter(i + 1), threeParCorrKa);
-        subSampleV02[sampleIndex][2]->Fill(cent, fPtProfileKaInWinB->GetBinCenter(i + 1), (fPtProfileKaInWinB->GetBinContent(i + 1) / nSumInWinB));
+        subSampleV02[sampleIndex][5]->Fill(cent, fPtProfileKaInWinB->GetBinCenter(i + 1), threeParCorrKa);
+        subSampleV02[sampleIndex][6]->Fill(cent, fPtProfileKaInWinB->GetBinCenter(i + 1), (fPtProfileKaInWinB->GetBinContent(i + 1) / nSumInWinB));
       }
 
       // protons
@@ -802,8 +1057,8 @@ struct V0ptHadPiKaProt {
         histos.get<TProfile2D>(HIST("Prof_XYZ_prot"))->Fill(cent, fPtProfileProtInWinB->GetBinCenter(i + 1), threeParCorrProt);
         histos.get<TProfile2D>(HIST("Prof_Z_prot"))->Fill(cent, fPtProfileProtInWinB->GetBinCenter(i + 1), (fPtProfileProtInWinB->GetBinContent(i + 1) / nSumInWinB));
 
-        subSampleV02[sampleIndex][1]->Fill(cent, fPtProfileProtInWinB->GetBinCenter(i + 1), threeParCorrProt);
-        subSampleV02[sampleIndex][2]->Fill(cent, fPtProfileProtInWinB->GetBinCenter(i + 1), (fPtProfileProtInWinB->GetBinContent(i + 1) / nSumInWinB));
+        subSampleV02[sampleIndex][7]->Fill(cent, fPtProfileProtInWinB->GetBinCenter(i + 1), threeParCorrProt);
+        subSampleV02[sampleIndex][8]->Fill(cent, fPtProfileProtInWinB->GetBinCenter(i + 1), (fPtProfileProtInWinB->GetBinContent(i + 1) / nSumInWinB));
       }
     }
 
