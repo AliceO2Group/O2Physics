@@ -1666,7 +1666,7 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
   // Configurables
   struct : ConfigurableGroup {
 
-    Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"}; // -> Used for only Xic0
+    Configurable<bool> rejectBackground{"rejectBackground", false, "Reject particles from background events"}; // -> Used for only Xic0
     Configurable<bool> acceptTrackInteractionWithMaterial{"acceptTrackInteractionWithMaterial", false, "Accept candidates with final daughters interacting with materials"};
     Configurable<bool> fillMcHistograms{"fillMcHistograms", true, "Fill validation plots"};
     Configurable<bool> fillResidualTable{"fillResidualTable", true, "Fill table contaning residuals and pulls of PV and SV"};
