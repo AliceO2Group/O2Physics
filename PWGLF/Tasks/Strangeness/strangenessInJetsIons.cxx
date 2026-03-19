@@ -761,7 +761,7 @@ struct StrangenessInJetsIons {
       return false;
 
     if (configV0.requireLambdaMassCuts &&
-        std::abs(v0.mLambda() - o2::constants::physics::MassLambda) > configV0.lamMassWindow)
+        std::abs(v0.mAntiLambda() - o2::constants::physics::MassLambda) > configV0.lamMassWindow)
       return false;
 
     // PID selections (TOF): negative track = proton, positive track = pion
