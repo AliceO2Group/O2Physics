@@ -627,6 +627,25 @@ DECLARE_SOA_TABLE_STAGED(HfBplusParD0s, "HFBPPARD0", //! Table with D0 candidate
                          hf_cand_par_charm::NSigTofKaExpKaCharm,
                          hf_cand_par_charm::NSigTpcTofKaExpKaCharm);
 
+DECLARE_SOA_TABLE_STAGED(HfBplusParD0Es, "HFBPPARD0E", //! Table with additional D0 candidate properties used for selection of B+
+                         hf_cand_par_charm::Chi2PCACharm,
+                         hf_cand_par_charm::NProngsContributorsPVCharm,
+                         hf_cand_par_charm::InvMassCharm,
+                         hf_cand_par_charm::MaxNormalisedDeltaIPCharm,
+                         hf_cand_par_charm::DecayLengthXYCharm,
+                         hf_cand_par_charm::DecayLengthNormalisedCharm,
+                         hf_cand_par_charm::DecayLengthXYNormalisedCharm,
+                         hf_cand_par_charm::ImpactParameterNormalised0Charm,
+                         hf_cand_par_charm::ImpactParameterNormalised1Charm,
+                         hf_cand_par_charm::PxProng0Charm,
+                         hf_cand_par_charm::PyProng0Charm,
+                         hf_cand_par_charm::PzProng0Charm,
+                         hf_cand_par_charm::PxProng1Charm,
+                         hf_cand_par_charm::PyProng1Charm,
+                         hf_cand_par_charm::PzProng1Charm,
+                         hf_cand_par_charm::PtProng0Charm,
+                         hf_cand_par_charm::PtProng1Charm);
+
 DECLARE_SOA_TABLE_STAGED(HfBplusParEs, "HFBPPARE", //! Table with additional candidate properties used for selection
                          hf_cand::XSecondaryVertex,
                          hf_cand::YSecondaryVertex,
@@ -638,6 +657,10 @@ DECLARE_SOA_TABLE_STAGED(HfBplusParEs, "HFBPPARE", //! Table with additional can
                          hf_cand::PxProng1,
                          hf_cand::PyProng1,
                          hf_cand::PzProng1,
+                         hf_cand_par::PProng0,
+                         hf_cand::PxProng0,
+                         hf_cand::PyProng0,
+                         hf_cand::PzProng0,
                          hf_cand::ErrorImpactParameter1,
                          hf_cand_par::CosThetaStar,
                          hf_cand_par::Ct,
