@@ -168,10 +168,16 @@ struct StrangenessInJetsIons {
     Configurable<bool> requireArmenterosCut{"requireArmenterosCut", true, "Require Armenteros Cut"};
     Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2f, "Parameter Armenteros Cut (K0S only). This parameters multiplies alphaArm (Check if: qtarm >= this * |alphaArm|)"};
     Configurable<float> ctauK0s{"ctauK0s", 20.0f, "C tau K0S (cm)"};
+    Configurable<bool> requireK0sMassCuts{"requireK0sMassCuts", true, "[K0S] Require mass window for K0S selection and for Lambda rejection"};
+    Configurable<double> lamRejWindow{"lamRejWindow", 0.005f, "[K0S] Mass window for Lambda rejection"};
+    Configurable<double> k0sMassWindow{"k0sMassWindow", 0.1f, "[K0S] Mass window for K0S selection"};
     // Lambda/anti-Lambda paramaters
     Configurable<double> dcaProtonToPVmin{"dcaProtonToPVmin", 0.05f, "Minimum DCA of proton/anti-proton track to primary vertex in Lambda/anti-Lambda decays (cm)"};
     Configurable<double> dcaPionToPVmin{"dcaPionToPVmin", 0.2f, "Minimum DCA of pion-/pion+ track to primary vertex in Lambda/anti-Lambda decays (cm)"};
     Configurable<float> ctauLambda{"ctauLambda", 30.0f, "C tau Lambda (cm)"};
+    Configurable<bool> requireLambdaMassCuts{"requireLambdaMassCuts", true, "[Lambda] Require mass window for Lambda selection and for K0S rejection"};
+    Configurable<double> k0sRejWindow{"k0sRejWindow", 0.010f, "[Lambda] Mass window for K0S rejection"};
+    Configurable<double> lamMassWindow{"lamMassWindow", 0.1f, "[Lambda] Mass window for Lambda selection"};
   } configV0;
 
   // Cascade analysis parameters
@@ -359,7 +365,7 @@ struct StrangenessInJetsIons {
       }
       if (particleOfInterestDict[ParticleOfInterest::kPions]) {
         registryMC.add("PionPos_generated_jet", "PionPos_generated_jet", HistType::kTH2F, {multAxis, ptAxisLongLived});
-        registryMC.add("PionNeg_generated_jet", "PionNeg_generated_jet", HistType::kTH2F, {multAxis, ptAxisLongLived}); 
+        registryMC.add("PionNeg_generated_jet", "PionNeg_generated_jet", HistType::kTH2F, {multAxis, ptAxisLongLived});
         registryMC.add("PionPos_generated_ue", "PionPos_generated_ue", HistType::kTH2F, {multAxis, ptAxisLongLived});
         registryMC.add("PionNeg_generated_ue", "PionNeg_generated_ue", HistType::kTH2F, {multAxis, ptAxisLongLived});
 
@@ -425,6 +431,14 @@ struct StrangenessInJetsIons {
         registryMC.add("Lambda_reconstructed_ue_incl", "Lambda_reconstructed_ue_incl", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("AntiLambda_reconstructed_jet_incl", "AntiLambda_reconstructed_jet_incl", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("AntiLambda_reconstructed_ue_incl", "AntiLambda_reconstructed_ue_incl", HistType::kTH2F, {multAxis, ptAxis});
+
+        // Histograms for generated particles in reconstructed events
+        registryMC.add("K0s_gen_recoEvent_jet", "K0s_gen_recoEvent_jet", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("K0s_gen_recoEvent_ue", "K0s_gen_recoEvent_ue", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("Lambda_gen_recoEvent_jet", "Lambda_gen_recoEvent_jet", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("Lambda_gen_recoEvent_ue", "Lambda_gen_recoEvent_ue", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("AntiLambda_gen_recoEvent_jet", "AntiLambda_gen_recoEvent_jet", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("AntiLambda_gen_recoEvent_ue", "AntiLambda_gen_recoEvent_ue", HistType::kTH2F, {multAxis, ptAxis});
 
         // Histograms for the full event (without jets)
         registryMC.add("K0s_reconstructed_MB", "K0s_reconstructed_MB", HistType::kTH2F, {multAxis, ptAxis});
@@ -667,6 +681,14 @@ struct StrangenessInJetsIons {
     if (ntrack.tpcNSigmaPi() < configTracks.nsigmaTPCmin || ntrack.tpcNSigmaPi() > configTracks.nsigmaTPCmax)
       return false;
 
+    if (configV0.requireLambdaMassCuts &&
+        std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < configV0.k0sRejWindow)
+      return false;
+
+    if (configV0.requireLambdaMassCuts &&
+        std::abs(v0.mLambda() - o2::constants::physics::MassLambda) > configV0.lamMassWindow)
+      return false;
+
     // PID selections (TOF): positive track = proton, negative track = pion
     if (configTracks.requireTOF) {
       if (ptrack.tofNSigmaPr() < configTracks.nsigmaTOFmin || ptrack.tofNSigmaPr() > configTracks.nsigmaTOFmax)
@@ -718,6 +740,14 @@ struct StrangenessInJetsIons {
     if (ptrack.tpcNSigmaPi() < configTracks.nsigmaTPCmin || ptrack.tpcNSigmaPi() > configTracks.nsigmaTPCmax)
       return false;
     if (ntrack.tpcNSigmaPr() < configTracks.nsigmaTPCmin || ntrack.tpcNSigmaPr() > configTracks.nsigmaTPCmax)
+      return false;
+
+    if (configV0.requireLambdaMassCuts &&
+        std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < configV0.k0sRejWindow)
+      return false;
+
+    if (configV0.requireLambdaMassCuts &&
+        std::abs(v0.mLambda() - o2::constants::physics::MassLambda) > configV0.lamMassWindow)
       return false;
 
     // PID selections (TOF): negative track = proton, positive track = pion
@@ -776,6 +806,15 @@ struct StrangenessInJetsIons {
     if (ptrack.tpcNSigmaPi() < configTracks.nsigmaTPCmin || ptrack.tpcNSigmaPi() > configTracks.nsigmaTPCmax)
       return false;
     if (ntrack.tpcNSigmaPi() < configTracks.nsigmaTPCmin || ntrack.tpcNSigmaPi() > configTracks.nsigmaTPCmax)
+      return false;
+
+    if (configV0.requireK0sMassCuts &&
+        (std::abs(v0.mLambda() - o2::constants::physics::MassLambda) < configV0.lamRejWindow ||
+         std::abs(v0.mAntiLambda() - o2::constants::physics::MassLambda) < configV0.lamRejWindow))
+      return false;
+
+    if (configV0.requireK0sMassCuts &&
+        std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) > configV0.k0sMassWindow)
       return false;
 
     // PID selections (TOF)
@@ -1971,6 +2010,7 @@ struct StrangenessInJetsIons {
       auto v0sPerColl = fullV0s.sliceBy(perCollisionV0, collision.globalIndex());
       auto cascPerColl = Cascades.sliceBy(perCollisionCasc, collision.globalIndex());
       auto tracksPerColl = mcTracks.sliceBy(perCollisionTrk, collision.globalIndex());
+      const auto& mcParticlesPerColl = mcParticles.sliceBy(perMCCollision, mcCollision.globalIndex());
 
       FillFullEventHistoMCREC(collision, mcParticles, v0sPerColl,
                               cascPerColl, tracksPerColl, multiplicity);
@@ -2034,6 +2074,75 @@ struct StrangenessInJetsIons {
 
       // Loop over selected jets
       for (int i = 0; i < static_cast<int>(selectedJet.size()); i++) {
+
+        // ------------------------------------------------
+        // --- Generated hadrons in reconstructed jets ----
+        for (auto& particle : mcParticlesPerColl) {
+          if (!particle.isPhysicalPrimary() || std::abs(particle.eta()) > 0.8)
+            continue;
+
+          int absPdg = std::abs(particle.pdgCode());
+          if (absPdg != kK0Short && absPdg != kLambda0 )
+            continue;
+
+          TVector3 momVec(particle.px(), particle.py(), particle.pz());
+          
+          // Compute distance of particles from jet and UE axes
+          const double deltaEtaJet = momVec.Eta() - selectedJet[i].Eta();
+          const double deltaPhiJet = getDeltaPhi(momVec.Phi(), selectedJet[i].Phi());
+          const double deltaRJet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
+          const double deltaEtaUe1 = momVec.Eta() - ue1[i].Eta();
+          const double deltaPhiUe1 = getDeltaPhi(momVec.Phi(), ue1[i].Phi());
+          const double deltaRUe1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
+          const double deltaEtaUe2 = momVec.Eta() - ue2[i].Eta();
+          const double deltaPhiUe2 = getDeltaPhi(momVec.Phi(), ue2[i].Phi());
+          const double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
+
+          // Select particles inside jet
+          if (deltaRJet < rJet) {
+            switch (particle.pdgCode()) {
+              case kK0Short:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("K0s_gen_recoEvent_jet"), multiplicity, momVec.Pt());
+                }
+                break;
+              case kLambda0:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("Lambda_gen_recoEvent_jet"), multiplicity, momVec.Pt());
+                }
+                break;
+              case kLambda0Bar:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("AntiLambda_gen_recoEvent_jet"), multiplicity, momVec.Pt());
+                }
+                break;
+              default:
+                break;
+            }
+          }
+          if (deltaRUe1 < rJet || deltaRUe2 < rJet) {
+            switch (particle.pdgCode()) {
+              case kK0Short:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("K0s_gen_recoEvent_ue"), multiplicity, momVec.Pt());
+                }
+                break;
+              case kLambda0:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("Lambda_gen_recoEvent_ue"), multiplicity, momVec.Pt());
+                }
+                break;
+              case kLambda0Bar:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("AntiLambda_gen_recoEvent_ue"), multiplicity, momVec.Pt());
+                }
+                break;
+              default:
+                break;
+            }
+          }
+        }
+        // ----------------------------------------
 
         // V0 particles
         if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
