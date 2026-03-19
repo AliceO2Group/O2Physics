@@ -359,7 +359,7 @@ struct FlowCorrelationsUpc {
 
   void processSame(UDCollisionsFull::iterator const& collision, UdTracksFull const& tracks)
   {
-    LOG(info) << "Event passed filter: truegapside=" << collision.truegapside();
+    // LOG(info) << "Event passed filter: truegapside=" << collision.truegapside();
     if (tracks.size() < cfgMinMult || tracks.size() > cfgMaxMult) {
       return;
     }
