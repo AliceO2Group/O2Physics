@@ -1203,12 +1203,14 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       float yCharmBaryon = kfCharmBaryon.GetRapidity();
 
       // get KF cosThetaStar
-      float cosThetaStarCharmBachelor;
+      float cosThetaStarCharmBachelor = -99.0;
+      float cosThetaStarKaFromOmegac0 = -99.0;
+      float cosThetaStarKaFromXic0 = -99.0;
+
       if constexpr (decayChannel == hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi) {
         cosThetaStarCharmBachelor = cosThetaStarFromKF(0, pdgIdOfCharmBaryon, pdgIdOfCharmBach, pdgIdOfCascade, kfCharmBachToCharmBaryon, kfCascToCharmBaryon, pdgdb);
       }
-      float cosThetaStarKaFromOmegac0, cosThetaStarKaFromXic0; // -> Only requeted to be calculated and filled for Xic0/Omegac0 -> Omega K
-      if constexpr (decayChannel == hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK) {
+      if constexpr (decayChannel == hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK) { // -> Only requeted to be calculated and filled for Xic0/Omegac0 -> Omega K
         cosThetaStarKaFromOmegac0 = cosThetaStarFromKF(0, 4332, 321, 3334, kfCharmBachToCharmBaryon, kfCascToCharmBaryon, pdgdb);
         cosThetaStarKaFromXic0 = cosThetaStarFromKF(0, 4132, 321, 3334, kfCharmBachToCharmBaryon, kfCascToCharmBaryon, pdgdb);
       }
