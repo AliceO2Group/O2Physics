@@ -29,6 +29,7 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 
+#include "TRandom2.h"
 #include <TFile.h>
 #include <TH1.h>
 #include <TPDGCode.h>
@@ -171,6 +172,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
     Configurable<float> confCPRdeltaEtaCutMax{"confCPRdeltaEtaCutMax", 0.0, "Delta Eta max cut for Close Pair Rejection"};
     Configurable<float> confCPRdeltaEtaCutMin{"confCPRdeltaEtaCutMin", 0.0, "Delta Eta min cut for Close Pair Rejection"};
     Configurable<float> confCPRChosenRadii{"confCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
+    Configurable<bool> confRandomizeCPR{"confRandomizeCPR", false, "Fill Dete-Dphi histograms in random order: v01, v02 or v02, v01 - does not apply to track-V0"};
   } ConfCPR;
 
   // Efficiency
@@ -200,6 +202,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
   std::unique_ptr<TH1> pEffHistp1;
   std::unique_ptr<TH1> pEffHistp2;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+
+  TRandom2* randgen;
 
   bool isNSigmaCombined(float mom, float nsigmaTPCParticle, float nsigmaTOFParticle)
   {
@@ -730,9 +734,23 @@ struct FemtoUniversePairTaskTrackV0Extended {
       }
 
       if (ConfCPR.confIsCPR.value) {
-        if (ConfCPR.confRectV0V0CPR && pairCloseRejectionV0.isClosePair<true>(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
+        double rand;
+        auto part1 = p1;
+        auto part2 = p2;
+
+        if (ConfCPR.confRandomizeCPR) {
+          randgen = new TRandom2(0);
+          rand = randgen->Rndm();
+
+          if (rand > 0.5) {
+            part1 = p2;
+            part2 = p1;
+          }
+          delete randgen;
+        }
+        if (ConfCPR.confRectV0V0CPR && pairCloseRejectionV0.isClosePair<true>(part1, part2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
           return false;
-        } else if (!ConfCPR.confRectV0V0CPR && pairCloseRejectionV0.isClosePair<false>(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
+        } else if (!ConfCPR.confRectV0V0CPR && pairCloseRejectionV0.isClosePair<false>(part1, part2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
           return false;
         }
       }
@@ -1104,9 +1122,23 @@ struct FemtoUniversePairTaskTrackV0Extended {
           continue;
         }
         if (ConfCPR.confIsCPR.value) {
-          if (ConfCPR.confRectV0V0CPR && pairCloseRejectionV0.isClosePair<true>(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
+          double rand;
+          auto part1 = p1;
+          auto part2 = p2;
+
+          if (ConfCPR.confRandomizeCPR) {
+            randgen = new TRandom2(0);
+            rand = randgen->Rndm();
+
+            if (rand > 0.5) {
+              part1 = p2;
+              part2 = p1;
+            }
+            delete randgen;
+          }
+          if (ConfCPR.confRectV0V0CPR && pairCloseRejectionV0.isClosePair<true>(part1, part2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
             continue;
-          } else if (!ConfCPR.confRectV0V0CPR && pairCloseRejectionV0.isClosePair<false>(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
+          } else if (!ConfCPR.confRectV0V0CPR && pairCloseRejectionV0.isClosePair<false>(part1, part2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
             continue;
           }
         }
@@ -1432,6 +1464,20 @@ struct FemtoUniversePairTaskTrackV0Extended {
           continue;
         }
         if (ConfCPR.confIsCPR.value) {
+          double rand;
+          auto part1 = p1;
+          auto part2 = p2;
+
+          if (ConfCPR.confRandomizeCPR) {
+            randgen = new TRandom2(0);
+            rand = randgen->Rndm();
+
+            if (rand > 0.5) {
+              part1 = p2;
+              part2 = p1;
+            }
+            delete randgen;
+          }
           if (pairCloseRejectionV0.isClosePair(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
             continue;
           }
