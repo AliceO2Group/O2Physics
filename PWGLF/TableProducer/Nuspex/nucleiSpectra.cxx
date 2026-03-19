@@ -256,6 +256,7 @@ enum EvGenSel : uint8_t {
   kGenTVX = 1 << 0,
   kGenZvtx = 1 << 1,
   kGenINELgt0 = 1 << 2,
+  kHasRecoEv = 1 << 3
 };
 
 } // namespace nuclei
@@ -347,6 +348,7 @@ struct nucleiSpectra {
 
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
   Configurable<std::string> cfgTriggerList{"cfgTriggerList", "fHe", "Trigger List"};
+  Configurable<bool> cfgSelectTrgEv{"cfgSelectTrgEv", false, "If true, select events with active trigger list"};
 
   // running variables for track tuner
   o2::dataformats::DCA mDcaInfoCov;
@@ -362,7 +364,7 @@ struct nucleiSpectra {
 
   using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime>;
 
-  // Collisions with chentrality
+  // Collisions with centrality
   using CollWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>::iterator;
 
   // Flow analysis
@@ -613,8 +615,15 @@ struct nucleiSpectra {
   {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
+
+    bool isTriggered = true;
+
+    // Using zorro for selecting only events with active trigger
     if (cfgSkimmedProcessing) {
-      zorro.isSelected(bc.globalBC()); /// Just let Zorro do the accounting
+      isTriggered = zorro.isSelected(bc.globalBC()); /// Just let Zorro do the accounting
+      if (cfgSelectTrgEv && !isTriggered) {
+        return;
+      }
     }
     gRandom->SetSeed(bc.timestamp());
 
@@ -929,7 +938,6 @@ struct nucleiSpectra {
   {
     nuclei::candidates.clear();
 
-    bool selectINELgt0 = cfgEventSelections->get(nuclei::evSel::kINELgt0);
     std::vector<bool> goodCollisions(mcCollisions.size(), false);
     std::vector<uint8_t> eventMask(mcCollisions.size(), 0);
 
@@ -971,10 +979,8 @@ struct nucleiSpectra {
         mask |= nuclei::kGenZvtx;
 
       // INEL > 0 selection
-      if (selectINELgt0) {
-        if (o2::pwglf::isINELgt0mc(slicedParticles, pdgDB)) {
-          mask |= nuclei::kGenINELgt0;
-        }
+      if (o2::pwglf::isINELgt0mc(slicedParticles, pdgDB)) {
+        mask |= nuclei::kGenINELgt0;
       }
 
       eventMask[c.globalIndex()] = mask;
@@ -987,6 +993,10 @@ struct nucleiSpectra {
         continue;
       }
       goodCollisions[collision.mcCollisionId()] = true;
+      auto& mask = eventMask[collision.mcCollisionId()];
+      mask |= nuclei::kHasRecoEv;
+
+      GenEventMCSel(mask);
       const auto& slicedTracks = tracks.sliceBy(tracksPerCollisions, collision.globalIndex());
       fillDataInfo(collision, slicedTracks);
     }
