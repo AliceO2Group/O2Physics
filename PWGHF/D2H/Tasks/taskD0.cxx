@@ -369,6 +369,7 @@ struct HfTaskD0 {
       axes.push_back(thnAxisFDDC);
       axes.push_back(thnAxisZNA);
       axes.push_back(thnAxisZNC);
+      axes.push_back(thnAxisNumPvContr);
     }
 
     if (applyMl) {
@@ -382,6 +383,8 @@ struct HfTaskD0 {
     registry.add("Data/fitInfo/ampFT0A_vs_ampFT0C", "FT0-A vs FT0-C amplitude;FT0-A amplitude (a.u.);FT0-C amplitude (a.u.)", {HistType::kTH2F, {{2500, 0., 250}, {2500, 0., 250}}});
     registry.add("Data/zdc/energyZNA_vs_energyZNC", "ZNA vs ZNC common energy;E_{ZNA}^{common} (a.u.);E_{ZNC}^{common} (a.u.)", {HistType::kTH2F, {{200, 0., 20}, {200, 0., 20}}});
     registry.add("Data/hUpcGapAfterSelection", "UPC gap type after selection;Gap type;Counts", {HistType::kTH1F, {{7, -1.5, 5.5}}});
+    registry.add("Data/hGapVsEta", "UPC gap vs Eta;Gap type;Eta", {HistType::kTH2F, {{7, -1.5, 5.5}, {50, -1., 1.}}});
+    registry.add("Data/hGapVsRap", "UPC gap vs Eta;Gap type;Eta", {HistType::kTH2F, {{7, -1.5, 5.5}, {50, -1., 1.}}});
 
     hfEvSel.addHistograms(registry);
 
@@ -589,6 +592,7 @@ struct HfTaskD0 {
       // Determine gap type using SGSelector with BC range checking
       const auto gapResult = hf_upc::determineGapType(collision, bcs, upcThresholds);
       const int gap = gapResult.value;
+      const auto numPvContributors = collision.numContrib();
 
       // Use the BC with FIT activity if available from SGSelector
       auto bcForUPC = bc;
@@ -633,6 +637,8 @@ struct HfTaskD0 {
         const float massD0 = HfHelper::invMassD0ToPiK(candidate);
         const float massD0bar = HfHelper::invMassD0barToKPi(candidate);
         const auto ptCandidate = candidate.pt();
+        registry.fill(HIST("Data/hGapVsEta"), gap, candidate.eta());
+        registry.fill(HIST("Data/hGapVsRap"), gap, HfHelper::yD0(candidate));
 
         if (candidate.isSelD0() >= selectionFlagD0) {
           registry.fill(HIST("hMass"), massD0, ptCandidate);
@@ -648,7 +654,7 @@ struct HfTaskD0 {
         // Fill THnSparse with structure matching histogram axes: [mass, pt, (mlScores if FillMl), rapidity, d0Type, (cent if storeCentrality), (occ, ir if storeOccupancyAndIR), gapType, FT0A, FT0C, FV0A, FDDA, FDDC, ZNA, ZNC]
         auto fillTHnData = [&](float mass, int d0Type) {
           // Pre-calculate vector size to avoid reallocations
-          constexpr int NAxesBase = 12;                       // mass, pt, rapidity, d0Type, gapType, FT0A, FT0C, FV0A, FDDA, FDDC, ZNA, ZNC
+          constexpr int NAxesBase = 13;                       // mass, pt, rapidity, d0Type, gapType, FT0A, FT0C, FV0A, FDDA, FDDC, ZNA, ZNC, nPVcontr
           constexpr int NAxesMl = FillMl ? 3 : 0;             // 3 ML scores if FillMl
           int const nAxesCent = storeCentrality ? 1 : 0;      // centrality if storeCentrality
           int const nAxesOccIR = storeOccupancyAndIR ? 2 : 0; // occupancy and IR if storeOccupancyAndIR
@@ -682,6 +688,7 @@ struct HfTaskD0 {
           valuesToFill.push_back(static_cast<double>(fitInfo.ampFDDC));
           valuesToFill.push_back(static_cast<double>(zdcEnergyZNA));
           valuesToFill.push_back(static_cast<double>(zdcEnergyZNC));
+          valuesToFill.push_back(static_cast<double>(numPvContributors));
 
           if constexpr (FillMl) {
             registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"))->Fill(valuesToFill.data());
