@@ -183,6 +183,7 @@ struct NonPromptCascadeTask {
   Produces<o2::aod::NPCascTableMCNT> NPCTableMCNT;
   Produces<o2::aod::NPCascTableGen> NPCTableGen;
   Produces<o2::aod::NPPileUpTable> NPPUTable;
+  Produces<o2::aod::NPMCNegativesTable> NPMCNTable;
 
   using TracksExtData = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>;
   using TracksExtMC = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>;
@@ -421,7 +422,7 @@ struct NonPromptCascadeTask {
       float multNTracks = coll.multNTracksGlobal();
       float run = mRunNumber;
       float numContrib = coll.numContrib();
-      mRegistryMults.fill(HIST("hCentMultsRuns"), centFT0M, multFT0M, numContrib, multNTracks, run);
+      //mRegistryMults.fill(HIST("hCentMultsRuns"), centFT0M, multFT0M, numContrib, multNTracks, run);
     }
   };
 
@@ -743,7 +744,7 @@ struct NonPromptCascadeTask {
   {
     fillCandidatesVector<TracksExtMC>(collisions, tracks, cascades, gCandidatesNT);
     fillMCtable<aod::Cascades>(mcParticles, collisions, gCandidatesNT);
-    fillMultHistos<CollisionCandidatesRun3MC>(collisions);
+    //fillMultHistos<CollisionCandidatesRun3MC>(collisions);
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processCascadesMC, "process cascades: MC analysis", false);
 
@@ -794,7 +795,7 @@ struct NonPromptCascadeTask {
     zorroAccounting(collisions);
     fillCandidatesVector<TracksExtData>(collisions, tracks, cascades, gCandidatesNT);
     fillDataTable<aod::Cascades>(gCandidatesNT);
-    fillMultHistos<CollisionCandidatesRun3>(collisions);
+    //fillMultHistos<CollisionCandidatesRun3>(collisions);
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processCascadesData, "process cascades: Data analysis", false);
 
@@ -950,6 +951,8 @@ struct NonPromptCascadeTask {
       const float ptMC = mcPar.pt();
 
       mRegistrydNdeta.fill(HIST("hdNdetaRM/hdNdetaRM"), mult, multReco, ptMC, ptReco);
+      NPMCNTable(ptMC,ptReco,mult,multReco);
+
     }
 
     // ------------------------------------------------------------
@@ -959,6 +962,7 @@ struct NonPromptCascadeTask {
       if (!isReco[pid]) {
         auto mcp = mcParticles.rawIteratorAt(pid);
         mRegistrydNdeta.fill(HIST("hdNdetaRM/hdNdetaRMNotInRecoTrk"), isRecoMult[pid], mcp.pt());
+        NPMCNTable(mcp.pt(),-1,isRecoMult[pid],-1);
       }
     }
 
@@ -971,6 +975,7 @@ struct NonPromptCascadeTask {
         const int mult = mcMult[mcid];
         for (auto const& pt : mcptvec) {
           mRegistrydNdeta.fill(HIST("hdNdetaRM/hdNdetaRMNotInRecoCol"), mult, pt);
+          NPMCNTable(pt,-2,mult,-2);
         }
       }
     }
@@ -1007,7 +1012,7 @@ struct NonPromptCascadeTask {
       }
     }
   };
-  PROCESS_SWITCH(NonPromptCascadeTask, processPileUp, "pile up studies", true);
+  PROCESS_SWITCH(NonPromptCascadeTask, processPileUp, "pile up studies", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
