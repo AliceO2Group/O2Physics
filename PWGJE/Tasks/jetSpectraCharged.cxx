@@ -83,6 +83,7 @@ struct JetSpectraCharged {
 
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
+  float simPtRef = 10.;
 
   bool doSumw2 = false;
 
@@ -715,7 +716,7 @@ struct JetSpectraCharged {
 
     registry.fill(HIST("h_collisions_zvertex"), collision.posZ(), eventWeight);
 
-    float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     registry.fill(HIST("h_coll_phat"), pTHat);
     registry.fill(HIST("h_coll_phat_weighted"), pTHat, eventWeight);
   }
@@ -744,7 +745,7 @@ struct JetSpectraCharged {
 
     registry.fill(HIST("h_mccollisions_zvertex"), mccollision.posZ(), eventWeight);
 
-    float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     registry.fill(HIST("h_mccoll_phat"), pTHat);
     registry.fill(HIST("h_mccoll_phat_weighted"), pTHat, eventWeight);
   }
@@ -853,7 +854,7 @@ struct JetSpectraCharged {
     if (!applyCollisionCuts(collision, fillHistograms, isWeighted, eventWeight)) {
       return;
     }
-    float pTHat = collision.has_mcCollision() && collision.mcCollision().ptHard() < 999.0f ? collision.mcCollision().ptHard() : 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = collision.has_mcCollision() && collision.mcCollision().ptHard() < 999.0f ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     float centrality = -1.0;
     checkCentFT0M ? centrality = collision.centFT0M() : centrality = collision.centFT0C();
 
@@ -880,7 +881,7 @@ struct JetSpectraCharged {
     if (!applyCollisionCuts(collision, fillHistograms, isWeighted, eventWeight)) {
       return;
     }
-    float pTHat = collision.has_mcCollision() && collision.mcCollision().ptHard() < 999.0f ? collision.mcCollision().ptHard() : 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = collision.has_mcCollision() && collision.mcCollision().ptHard() < 999.0f ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     float centrality = -1.0;
     checkCentFT0M ? centrality = collision.centFT0M() : centrality = collision.centFT0C();
 
@@ -1123,7 +1124,7 @@ struct JetSpectraCharged {
     if (!applyMCCollisionCuts(mccollision, collisions, fillHistograms, isWeighted, eventWeight)) {
       return;
     }
-    float pTHat = mccollision.ptHard() < 999.0f ? mccollision.ptHard() : 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = mccollision.ptHard() < 999.0f ? mccollision.ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
@@ -1155,7 +1156,7 @@ struct JetSpectraCharged {
     if (!applyMCCollisionCuts(mccollision, collisions, fillHistograms, isWeighted, eventWeight)) {
       return;
     }
-    float pTHat = mccollision.ptHard() < 999.0f ? mccollision.ptHard() : 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = mccollision.ptHard() < 999.0f ? mccollision.ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     registry.fill(HIST("h_mccollisions_rho"), mccollision.rho(), eventWeight);
 
     for (auto const& jet : jets) {
@@ -1246,7 +1247,7 @@ struct JetSpectraCharged {
     if (!applyCollisionCuts(collision, fillHistograms, isWeighted, eventWeight)) {
       return;
     }
-    float pTHat = collision.has_mcCollision() && collision.mcCollision().ptHard() < 999.0f ? collision.mcCollision().ptHard() : 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = collision.has_mcCollision() && collision.mcCollision().ptHard() < 999.0f ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     for (const auto& mcdjet : mcdjets) {
       if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
         continue;
@@ -1289,7 +1290,7 @@ struct JetSpectraCharged {
     if (!applyCollisionCuts(collision, fillHistograms, isWeighted, eventWeight)) {
       return;
     }
-    float pTHat = collision.has_mcCollision() && collision.mcCollision().ptHard() < 999.0f ? collision.mcCollision().ptHard() : 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = collision.has_mcCollision() && collision.mcCollision().ptHard() < 999.0f ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
 
     double mcrho = collision.has_mcCollision() ? collision.mcCollision_as<JetBkgRhoMcCollisions>().rho() : -1;
 
