@@ -9,6 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "PWGLF/DataModel/LFNonPromptCascadeTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
@@ -34,6 +37,8 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "MathUtils/BetheBlochAleph.h"
+#include "ReconstructionDataFormats/DCA.h"
+#include "ReconstructionDataFormats/Track.h"
 #include "ReconstructionDataFormats/Vertex.h"
 
 #include "Math/Vector4D.h"
@@ -42,16 +47,12 @@
 #include "TParticlePDG.h"
 #include "TTree.h"
 
+#include <algorithm>
 #include <cmath>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
-// #include "PWGHF/Core/PDG.h"
-#include "PWGLF/DataModel/LFNonPromptCascadeTables.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/Track.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -813,7 +814,7 @@ struct NonPromptCascadeTask {
     std::vector<int> mcMult(mcCollisions.size(), 0);
     for (auto const& mcp : mcParticles) {
       int mcid = mcp.mcCollisionId();
-      if (mcid < 0 || mcid >= (int)mcMult.size())
+      if (mcid < 0 || static_cast<size_t>(mcid) >= mcMult.size())
         continue;
 
       // apply your primary/eta/charge definition here
@@ -823,7 +824,7 @@ struct NonPromptCascadeTask {
         continue;
       int q = 0;
       if (auto pdg = pdgDB->GetParticle(mcp.pdgCode())) {
-        q = int(std::round(pdg->Charge() / 3.0));
+        q = static_cast<int>(std::round(pdg->Charge() / 3.0));
       }
       if (q == 0)
         continue;
@@ -838,14 +839,14 @@ struct NonPromptCascadeTask {
     // ------------------------------------------------------------
     int maxCollRowId = -1;
     for (auto const& trk : tracks) {
-      maxCollRowId = std::max(maxCollRowId, (int)trk.collisionId());
+      maxCollRowId = std::max(maxCollRowId, static_cast<int>(trk.collisionId()));
     }
     std::vector<int> collRowIdToDense(maxCollRowId + 1, -1);
 
     int dense = 0;
     for (auto const& col : colls) {
       const int collRowId = col.globalIndex(); // row id in aod::Collisions
-      if (collRowId >= 0 && collRowId < (int)collRowIdToDense.size()) {
+      if (collRowId >= 0 && static_cast<size_t>(collRowId) < collRowIdToDense.size()) {
         collRowIdToDense[collRowId] = dense;
       }
       ++dense;
@@ -860,7 +861,7 @@ struct NonPromptCascadeTask {
         continue;
       }
       const int collRowId = trk.collisionId();
-      if (collRowId < 0 || collRowId >= (int)collRowIdToDense.size()) {
+      if (collRowId < 0 || static_cast<size_t>(collRowId) >= collRowIdToDense.size()) {
         continue;
       }
       const int dIdx = collRowIdToDense[collRowId];
@@ -890,7 +891,7 @@ struct NonPromptCascadeTask {
 
       // Map track's collision row id -> dense colls index
       const int collRowId = trk.collisionId();
-      if (collRowId < 0 || collRowId >= (int)collRowIdToDense.size()) {
+      if (collRowId < 0 || static_cast<size_t>(collRowId) >= collRowIdToDense.size()) {
         continue;
       }
       const int dIdx = collRowIdToDense[collRowId];
@@ -903,14 +904,14 @@ struct NonPromptCascadeTask {
 
       // MC collision id (row index in aod::McCollisions)
       const int mcCollId = col.mcCollisionId();
-      if (mcCollId < 0 || mcCollId >= (int)mcCollisions.size()) {
+      if (mcCollId < 0 || static_cast<int64_t>(mcCollId) >= mcCollisions.size()) {
         continue;
       }
       mcReconstructed[mcCollId] = 1;
 
       // MC particle id (row index in aod::McParticles)
       const int mcPid = trk.mcParticleId();
-      if (mcPid < 0 || mcPid >= (int)mcParticles.size()) {
+      if (mcPid < 0 || static_cast<int64_t>(mcPid) >= mcParticles.size()) {
         continue;
       }
 
@@ -934,7 +935,7 @@ struct NonPromptCascadeTask {
 
       int q = 0;
       if (auto pdgEntry = pdgDB->GetParticle(mcPar.pdgCode())) {
-        q = int(std::round(pdgEntry->Charge() / 3.0));
+        q = static_cast<int>(std::round(pdgEntry->Charge() / 3.0));
       }
       if (q == 0) {
         continue;
@@ -954,7 +955,7 @@ struct NonPromptCascadeTask {
     // ------------------------------------------------------------
     // MC particles with no reco track (iterate by row index)
     // ------------------------------------------------------------
-    for (int pid = 0; pid < (int)mcParticles.size(); ++pid) {
+    for (int pid = 0; pid < static_cast<int>(mcParticles.size()); ++pid) {
       if (!isReco[pid]) {
         auto mcp = mcParticles.rawIteratorAt(pid);
         mRegistrydNdeta.fill(HIST("hdNdetaRM/hdNdetaRMNotInRecoTrk"), isRecoMult[pid], mcp.pt());
@@ -964,7 +965,7 @@ struct NonPromptCascadeTask {
     // ------------------------------------------------------------
     // Unreconstructed MC collisions (iterate by row index)
     // ------------------------------------------------------------
-    for (int mcid = 0; mcid < (int)mcCollisions.size(); ++mcid) {
+    for (int mcid = 0; mcid < static_cast<int>(mcCollisions.size()); ++mcid) {
       if (!mcReconstructed[mcid]) {
         std::vector<float> mcptvec;
         const int mult = mcMult[mcid];
@@ -981,19 +982,29 @@ struct NonPromptCascadeTask {
   {
     // std::cout << "Processing pile up" << std::endl;
     int ds = 1;
+    uint32_t orbitO = 0;
+    bool writeFlag = 0;
     for (const auto& coll : collisions) {
-      if (ds == cfgDownscaleMB) {
-        auto bc = coll.template bc_as<aod::BCsWithTimestamps>();
+      auto bc = coll.template bc_as<aod::BCsWithTimestamps>();
+      uint64_t globalBC = bc.globalBC();
+      uint32_t orbit = globalBC / 3564;
+      if (orbitO != orbit) {
+        orbitO = orbit;
+        if ((ds % cfgDownscaleMB) == 0) {
+          writeFlag = 1;
+        } else {
+          writeFlag = 0;
+        }
+        ds++;
+      }
+      if (writeFlag) {
         if (mRunNumber != bc.runNumber()) {
           mRunNumber = bc.runNumber();
         }
         float centFT0M = coll.centFT0M();
         float multFT0M = coll.multFT0M();
-        uint64_t globalBC = bc.globalBC();
         NPPUTable(mRunNumber, globalBC, coll.numContrib(), coll.multNTracksGlobal(), centFT0M, multFT0M);
-        ds = 0;
       }
-      ds++;
     }
   };
   PROCESS_SWITCH(NonPromptCascadeTask, processPileUp, "pile up studies", true);

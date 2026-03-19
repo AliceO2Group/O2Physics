@@ -79,10 +79,6 @@ struct RhoEstimatorTask {
     Configurable<int> jetAlgorithm{"jetAlgorithm", 0, "jet clustering algorithm. 0 = kT, 1 = C/A, 2 = Anti-kT"};
     Configurable<int> jetRecombScheme{"jetRecombScheme", 0, "jet recombination scheme. 0 = E-scheme, 1 = pT-scheme, 2 = pT2-scheme"};
     Configurable<float> bkgjetR{"bkgjetR", 0.2, "jet resolution parameter for determining background density"};
-    Configurable<float> bkgEtaMin{"bkgEtaMin", -0.7, "minimim pseudorapidity for determining background density"};
-    Configurable<float> bkgEtaMax{"bkgEtaMax", 0.7, "maximum pseudorapidity for determining background density"};
-    Configurable<float> bkgPhiMin{"bkgPhiMin", -6.283, "minimim phi for determining background density"};
-    Configurable<float> bkgPhiMax{"bkgPhiMax", 6.283, "maximum phi for determining background density"};
     Configurable<bool> doSparse{"doSparse", false, "perfom sparse estimation"};
     Configurable<double> ghostRapMax{"ghostRapMax", 0.9, "Ghost rapidity max"};
     Configurable<int> ghostRepeat{"ghostRepeat", 1, "Ghost tiling repeats"};
@@ -127,14 +123,14 @@ struct RhoEstimatorTask {
 
     bkgSub.setJetAlgorithmAndScheme(static_cast<fastjet::JetAlgorithm>(static_cast<int>(config.jetAlgorithm)), static_cast<fastjet::RecombinationScheme>(static_cast<int>(config.jetRecombScheme)));
     bkgSub.setJetBkgR(config.bkgjetR);
-    bkgSub.setEtaMinMax(config.bkgEtaMin, config.bkgEtaMax);
-    bkgPhiMax_ = config.bkgPhiMax;
-    bkgPhiMin_ = config.bkgPhiMin;
-    if (config.bkgPhiMax > 98.0) {
+    bkgSub.setEtaMinMax(config.trackEtaMin, config.trackEtaMax);
+    bkgPhiMax_ = config.trackPhiMax;
+    bkgPhiMin_ = config.trackPhiMin;
+    if (config.trackPhiMax > 98.0) {
       bkgPhiMax_ = 2.0 * M_PI;
     }
-    if (config.bkgPhiMin < -98.0) {
-      bkgPhiMin_ = -2.0 * M_PI;
+    if (config.trackPhiMin < -98.0) {
+      bkgPhiMin_ = -1.0 * M_PI;
     }
     bkgSub.setPhiMinMax(bkgPhiMin_, bkgPhiMax_);
 

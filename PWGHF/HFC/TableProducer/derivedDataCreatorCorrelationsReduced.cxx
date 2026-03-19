@@ -88,7 +88,6 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   Configurable<float> ptCandMax{"ptCandMax", 24., "max. cand. pT"};
   Configurable<int> tpcNClsCrossedRowsMin{"tpcNClsCrossedRowsMin", 70, "min. TPC crossed rows for associated tracks"};
   Configurable<float> etaTrkMax{"etaTrkMax", 1., "max. track eta"};
-  Configurable<float> etaCandMax{"etaCandMax", 1., "max. trigger candidate eta"};
   Configurable<float> ptTrkMin{"ptTrkMin", 0.2, "min. track pT"};
   Configurable<float> ptTrkMax{"ptTrkMax", 3., "max. track pT"};
   Configurable<float> dcaXYTrkMax{"dcaXYTrkMax", 1., "max. track DCA XY"};
@@ -264,6 +263,26 @@ struct HfDerivedDataCreatorCorrelationsReduced {
     return outputMl;
   }
 
+  /// Cut on rapidity of the candidate
+  /// \param candidate is the charm hadron candidate
+  template <CandidateType CandType, typename TCand>
+  bool cutCandRapidity(const TCand& candidate)
+  {
+    double y = 0.0;
+    if constexpr (CandType == CandidateType::DsToKKPi || CandType == CandidateType::DsToPiKK) {
+      y = HfHelper::yDs(candidate);
+    } else if constexpr (CandType == CandidateType::DplusToPiKPi) {
+      y = HfHelper::yDplus(candidate);
+    } else if constexpr (CandType == CandidateType::D0ToPiK || CandType == CandidateType::D0ToKPi) {
+      y = HfHelper::yD0(candidate);
+    } else if constexpr (CandType == CandidateType::LcToPKPi) {
+      y = HfHelper::yLc(candidate);
+    } else {
+      return true;
+    }
+    return std::fabs(y) < yCandMax;
+  }
+
   /// Check event selections for collision and fill the collision table
   /// \param collision is the collision
   template <typename Coll>
@@ -336,7 +355,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
                      const float collCentrality)
   {
     for (const auto& trigCand : trigCands) {
-      if (std::fabs(trigCand.eta()) >= etaCandMax) {
+      if (!cutCandRapidity<CandType>(trigCand)) {
         continue;
       }
       double trigCandPt = trigCand.pt();
@@ -392,7 +411,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   void fillCharmMixedEvent(TTrigCands const& trigCands)
   {
     for (const auto& trigCand : trigCands) {
-      if (std::fabs(trigCand.eta()) >= etaCandMax) {
+      if (!cutCandRapidity<CandType>(trigCand)) {
         continue;
       }
       registry.fill(HIST("hPhiVsPtTrig"), RecoDecay::constrainAngle(trigCand.phi(), -o2::constants::math::PIHalf), trigCand.pt());
