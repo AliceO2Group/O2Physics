@@ -396,7 +396,6 @@ struct AnalysisEnergyCorrelator {
 
     for (auto& sig : fGenMCSignals) {
       if (sig->GetNProngs() == 1) {
-        LOG(info) << "Signal: " << sig->GetName() << ", nProngs: " << sig->GetNProngs();
         if (isMCGen_energycorrelators) {
           DefineHistograms(fHistMan, Form("MCTruthGenSel_%s", sig->GetName()), "");
           DefineHistograms(fHistMan, Form("MCTruthEenergyCorrelators_%s", sig->GetName()), "");
