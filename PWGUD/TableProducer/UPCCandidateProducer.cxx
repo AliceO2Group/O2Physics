@@ -11,6 +11,8 @@
 /// \author Nazar Burmasov, nazar.burmasov@cern.ch
 /// \author Diana Krupova, diana.krupova@cern.ch
 /// \since 04.06.2024
+/// \author Andrea Riffero, andrea.giovanni.riffero@cern.ch
+/// \since 19.03.2026
 
 #include "PWGUD/Core/UPCCutparHolder.h"
 #include "PWGUD/Core/UPCHelpers.h"
