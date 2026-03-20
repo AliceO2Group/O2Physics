@@ -1566,7 +1566,7 @@ struct photonhbt {
 
   PROCESS_SWITCH(photonhbt, processAnalysis, "pairing for analysis", true);
 
- template <soa::is_table TCollisions,
+  template <soa::is_table TCollisions,
             soa::is_table TPhotons,
             soa::is_table TLegs,
             soa::is_table TMCParticles,
