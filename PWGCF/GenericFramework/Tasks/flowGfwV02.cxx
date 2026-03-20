@@ -105,6 +105,7 @@ struct FlowGfwV02 {
   O2_DEFINE_CONFIGURABLE(cfgUseItsPID, bool, true, "Use ITS PID for particle identification")
   O2_DEFINE_CONFIGURABLE(cfgGetNsigmaQA, bool, true, "Get QA histograms for selection of pions, kaons, and protons")
   O2_DEFINE_CONFIGURABLE(cfgUseMultiplicityFlowWeights, bool, true, "Enable or disable the use of multiplicity-based event weighting");
+  O2_DEFINE_CONFIGURABLE(cfgNormalizeByCharged, bool, true, "Enable or disable the normalization by charged particles");
   O2_DEFINE_CONFIGURABLE(cfgConsistentEventFlag, int, 15, "Flag for consistent event selection");
 
   Configurable<GFWBinningCuts> cfgGFWBinning{"cfgGFWBinning", {40, 16, 72, 300, 0, 3000, 0.2, 10.0, 0.2, 5.0, {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75, 4, 4.5, 5}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90}}, "Configuration for binning"};
@@ -174,18 +175,18 @@ struct FlowGfwV02 {
   using GFWTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
 
   enum PIDIndex {
-    kCharged = 0,
-    kPions,
-    kKaons,
-    kProtons
+    PidCharged = 0,
+    PidPions,
+    PidKaons,
+    PidProtons
   };
   enum PiKpArrayIndex {
-    iPionUp = 0,
-    iKaonUp,
-    iProtonUp,
-    iPionLow,
-    iKaonLow,
-    iProtonLow
+    IndPionUp = 0,
+    IndKaonUp,
+    IndProtonUp,
+    IndPionLow,
+    IndKaonLow,
+    IndProtonLow
   };
   enum DetectorType {
     kTPC = 0,
@@ -196,26 +197,26 @@ struct FlowGfwV02 {
   void init(InitContext const&)
   {
 
-    pidStates.tpcNsigmaCut[iPionUp] = nSigmas->getData()[iPionUp][kTPC];
-    pidStates.tpcNsigmaCut[iKaonUp] = nSigmas->getData()[iKaonUp][kTPC];
-    pidStates.tpcNsigmaCut[iProtonUp] = nSigmas->getData()[iProtonUp][kTPC];
-    pidStates.tpcNsigmaCut[iPionLow] = nSigmas->getData()[iPionLow][kTPC];
-    pidStates.tpcNsigmaCut[iKaonLow] = nSigmas->getData()[iKaonLow][kTPC];
-    pidStates.tpcNsigmaCut[iProtonLow] = nSigmas->getData()[iProtonLow][kTPC];
+    pidStates.tpcNsigmaCut[IndPionUp] = nSigmas->getData()[IndPionUp][kTPC];
+    pidStates.tpcNsigmaCut[IndKaonUp] = nSigmas->getData()[IndKaonUp][kTPC];
+    pidStates.tpcNsigmaCut[IndProtonUp] = nSigmas->getData()[IndProtonUp][kTPC];
+    pidStates.tpcNsigmaCut[IndPionLow] = nSigmas->getData()[IndPionLow][kTPC];
+    pidStates.tpcNsigmaCut[IndKaonLow] = nSigmas->getData()[IndKaonLow][kTPC];
+    pidStates.tpcNsigmaCut[IndProtonLow] = nSigmas->getData()[IndProtonLow][kTPC];
 
-    pidStates.tofNsigmaCut[iPionUp] = nSigmas->getData()[iPionUp][kTOF];
-    pidStates.tofNsigmaCut[iKaonUp] = nSigmas->getData()[iKaonUp][kTOF];
-    pidStates.tofNsigmaCut[iProtonUp] = nSigmas->getData()[iProtonUp][kTOF];
-    pidStates.tofNsigmaCut[iPionLow] = nSigmas->getData()[iPionLow][kTOF];
-    pidStates.tofNsigmaCut[iKaonLow] = nSigmas->getData()[iKaonLow][kTOF];
-    pidStates.tofNsigmaCut[iProtonLow] = nSigmas->getData()[iProtonLow][kTOF];
+    pidStates.tofNsigmaCut[IndPionUp] = nSigmas->getData()[IndPionUp][kTOF];
+    pidStates.tofNsigmaCut[IndKaonUp] = nSigmas->getData()[IndKaonUp][kTOF];
+    pidStates.tofNsigmaCut[IndProtonUp] = nSigmas->getData()[IndProtonUp][kTOF];
+    pidStates.tofNsigmaCut[IndPionLow] = nSigmas->getData()[IndPionLow][kTOF];
+    pidStates.tofNsigmaCut[IndKaonLow] = nSigmas->getData()[IndKaonLow][kTOF];
+    pidStates.tofNsigmaCut[IndProtonLow] = nSigmas->getData()[IndProtonLow][kTOF];
 
-    pidStates.itsNsigmaCut[iPionUp] = nSigmas->getData()[iPionUp][kITS];
-    pidStates.itsNsigmaCut[iKaonUp] = nSigmas->getData()[iKaonUp][kITS];
-    pidStates.itsNsigmaCut[iProtonUp] = nSigmas->getData()[iProtonUp][kITS];
-    pidStates.itsNsigmaCut[iPionLow] = nSigmas->getData()[iPionLow][kITS];
-    pidStates.itsNsigmaCut[iKaonLow] = nSigmas->getData()[iKaonLow][kITS];
-    pidStates.itsNsigmaCut[iProtonLow] = nSigmas->getData()[iProtonLow][kITS];
+    pidStates.itsNsigmaCut[IndPionUp] = nSigmas->getData()[IndPionUp][kITS];
+    pidStates.itsNsigmaCut[IndKaonUp] = nSigmas->getData()[IndKaonUp][kITS];
+    pidStates.itsNsigmaCut[IndProtonUp] = nSigmas->getData()[IndProtonUp][kITS];
+    pidStates.itsNsigmaCut[IndPionLow] = nSigmas->getData()[IndPionLow][kITS];
+    pidStates.itsNsigmaCut[IndKaonLow] = nSigmas->getData()[IndKaonLow][kITS];
+    pidStates.itsNsigmaCut[IndProtonLow] = nSigmas->getData()[IndProtonLow][kITS];
 
     if (cfgGetNsigmaQA) {
       if (!cfgUseItsPID) {
@@ -261,14 +262,14 @@ struct FlowGfwV02 {
     cfgGFWBinning->Print();
 
     // Initialise pt spectra histograms for different particles
-    pidStates.hPtMid[kCharged] = new TH1D("hPtMid_charged", "hPtMid_charged", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
-    pidStates.hPtMid[kPions] = new TH1D("hPtMid_pions", "hPtMid_pions", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
-    pidStates.hPtMid[kKaons] = new TH1D("hPtMid_kaons", "hPtMid_kaons", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
-    pidStates.hPtMid[kProtons] = new TH1D("hPtMid_protons", "hPtMid_protons", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
-    pidStates.hPtMid[kCharged]->SetDirectory(nullptr);
-    pidStates.hPtMid[kPions]->SetDirectory(nullptr);
-    pidStates.hPtMid[kKaons]->SetDirectory(nullptr);
-    pidStates.hPtMid[kProtons]->SetDirectory(nullptr);
+    pidStates.hPtMid[PidCharged] = new TH1D("hPtMid_charged", "hPtMid_charged", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
+    pidStates.hPtMid[PidPions] = new TH1D("hPtMid_pions", "hPtMid_pions", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
+    pidStates.hPtMid[PidKaons] = new TH1D("hPtMid_kaons", "hPtMid_kaons", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
+    pidStates.hPtMid[PidProtons] = new TH1D("hPtMid_protons", "hPtMid_protons", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
+    pidStates.hPtMid[PidCharged]->SetDirectory(nullptr);
+    pidStates.hPtMid[PidPions]->SetDirectory(nullptr);
+    pidStates.hPtMid[PidKaons]->SetDirectory(nullptr);
+    pidStates.hPtMid[PidProtons]->SetDirectory(nullptr);
 
     AxisSpec phiAxis = {o2::analysis::gfw::phibins, o2::analysis::gfw::philow, o2::analysis::gfw::phiup, "#phi"};
     AxisSpec etaAxis = {o2::analysis::gfw::etabins, -cfgTrackCuts.cfgEtaMax, cfgTrackCuts.cfgEtaMax, "#eta"};
@@ -389,13 +390,13 @@ struct FlowGfwV02 {
     std::array<float, 6> detectorNsigmaCut = cfgUseItsPID ? pidStates.itsNsigmaCut : pidStates.tpcNsigmaCut; // Choose which nSigma to use: TPC or ITS
 
     bool isPion, isKaon, isProton;
-    bool isDetectedPion = nSigmaToUse[iPionUp] < detectorNsigmaCut[iPionUp] && nSigmaToUse[iPionUp] > detectorNsigmaCut[iPionLow];
-    bool isDetectedKaon = nSigmaToUse[iKaonUp] < detectorNsigmaCut[iKaonUp] && nSigmaToUse[iKaonUp] > detectorNsigmaCut[iKaonLow];
-    bool isDetectedProton = nSigmaToUse[iProtonUp] < detectorNsigmaCut[iProtonUp] && nSigmaToUse[iProtonUp] > detectorNsigmaCut[iProtonLow];
+    bool isDetectedPion = nSigmaToUse[IndPionUp] < detectorNsigmaCut[IndPionUp] && nSigmaToUse[IndPionUp] > detectorNsigmaCut[IndPionLow];
+    bool isDetectedKaon = nSigmaToUse[IndKaonUp] < detectorNsigmaCut[IndKaonUp] && nSigmaToUse[IndKaonUp] > detectorNsigmaCut[IndKaonLow];
+    bool isDetectedProton = nSigmaToUse[IndProtonUp] < detectorNsigmaCut[IndProtonUp] && nSigmaToUse[IndProtonUp] > detectorNsigmaCut[IndProtonLow];
 
-    bool isTofPion = nSigmaTOF[iPionUp] < pidStates.tofNsigmaCut[iPionUp] && nSigmaTOF[iPionUp] > pidStates.tofNsigmaCut[iPionLow];
-    bool isTofKaon = nSigmaTOF[iKaonUp] < pidStates.tofNsigmaCut[iKaonUp] && nSigmaTOF[iKaonUp] > pidStates.tofNsigmaCut[iKaonLow];
-    bool isTofProton = nSigmaTOF[iProtonUp] < pidStates.tofNsigmaCut[iProtonUp] && nSigmaTOF[iProtonUp] > pidStates.tofNsigmaCut[iProtonLow];
+    bool isTofPion = nSigmaTOF[IndPionUp] < pidStates.tofNsigmaCut[IndPionUp] && nSigmaTOF[IndPionUp] > pidStates.tofNsigmaCut[IndPionLow];
+    bool isTofKaon = nSigmaTOF[IndKaonUp] < pidStates.tofNsigmaCut[IndKaonUp] && nSigmaTOF[IndKaonUp] > pidStates.tofNsigmaCut[IndKaonLow];
+    bool isTofProton = nSigmaTOF[IndProtonUp] < pidStates.tofNsigmaCut[IndProtonUp] && nSigmaTOF[IndProtonUp] > pidStates.tofNsigmaCut[IndProtonLow];
 
     if (track.pt() > cfgTofPtCut && !track.hasTOF()) {
       return -1;
@@ -414,11 +415,11 @@ struct FlowGfwV02 {
     }
 
     if (isPion) {
-      pid = kPions;
+      pid = PidPions;
     } else if (isKaon) {
-      pid = kKaons;
+      pid = PidKaons;
     } else if (isProton) {
-      pid = kProtons;
+      pid = PidProtons;
     } else {
       return -1; // no particle satisfies the criteria
     }
@@ -484,21 +485,21 @@ struct FlowGfwV02 {
   int getPIDIndex(const std::string& corrconfig)
   {
     if (boost::ifind_first(corrconfig, "pi"))
-      return kPions;
+      return PidPions;
     if (boost::ifind_first(corrconfig, "ka"))
-      return kKaons;
+      return PidKaons;
     if (boost::ifind_first(corrconfig, "pr"))
-      return kProtons;
-    return kCharged;
+      return PidProtons;
+    return PidCharged;
   }
 
   GFW::CorrConfig getRelevantCorrName(const int& pidInd)
   {
-    if (pidInd == kPions)
+    if (pidInd == PidPions)
       return fGFW->GetCorrelatorConfig("piP {2} refN {-2}", "PiGap22", kFALSE);
-    if (pidInd == kKaons)
+    if (pidInd == PidKaons)
       return fGFW->GetCorrelatorConfig("kaP {2} refN {-2}", "KaGap22", kFALSE);
-    if (pidInd == kProtons)
+    if (pidInd == PidProtons)
       return fGFW->GetCorrelatorConfig("prP {2} refN {-2}", "PrGap22", kFALSE);
     return fGFW->GetCorrelatorConfig("refP {2} refN {-2}", "ChGap22", kFALSE);
   }
@@ -529,14 +530,18 @@ struct FlowGfwV02 {
       if (dnx == 0)
         continue;
       auto val = fGFW->Calculate(corrconfigs.at(0), 0, kFALSE).real() / dnx;
+      double ebyeWeight = (cfgUseMultiplicityFlowWeights) ? dnx : 1.0;
       for (int i = 1; i <= fSecondAxis->GetNbins(); i++) {
-        if (corrconfigs.at(l_ind).Head.find("nch") != std::string::npos)
+        if (corrconfigs.at(l_ind).Head.find("nch") != std::string::npos) {
+          ebyeWeight = 1.0;
           val = 1.0;
+        }
         double ptFraction = 0;
-        if (pidStates.hPtMid[pidInd]->Integral() > 0) {
-          ptFraction = pidStates.hPtMid[pidInd]->GetBinContent(i) / pidStates.hPtMid[pidInd]->Integral();
+        int normIndex = (cfgNormalizeByCharged) ? PidCharged : pidInd; // Configured to normalize by charged particles or the selected particle
+        if (pidStates.hPtMid[normIndex]->Integral() > 0) {
+          ptFraction = pidStates.hPtMid[pidInd]->GetBinContent(i) / pidStates.hPtMid[normIndex]->Integral();
           if (std::abs(val) < 1.01)
-            fFC->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val * ptFraction, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm);
+            fFC->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val * ptFraction, ebyeWeight, rndm);
         }
       }
     }
@@ -548,8 +553,8 @@ struct FlowGfwV02 {
     auto val = fGFW->Calculate(corrconfigs.at(0), 0, kFALSE).real() / dnx;
     for (int i = 1; i <= fSecondAxis->GetNbins(); i++) {
       double ptFraction = 0;
-      if (pidStates.hPtMid[kCharged]->Integral() > 0) {
-        ptFraction = pidStates.hPtMid[kCharged]->GetBinContent(i) / pidStates.hPtMid[kCharged]->Integral();
+      if (pidStates.hPtMid[PidCharged]->Integral() > 0) {
+        ptFraction = pidStates.hPtMid[PidCharged]->GetBinContent(i) / pidStates.hPtMid[PidCharged]->Integral();
         if (std::abs(val) < 1)
           registry.fill(HIST("v02pt"), fSecondAxis->GetBinCenter(i), centmult, val * ptFraction, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0);
         // printf("bincenter hPtMid: %f, fsecondaxis: %f\n", hPtMid->GetBinCenter(i), fSecondAxis->GetBinCenter(i));
@@ -583,10 +588,10 @@ struct FlowGfwV02 {
     if (xaxis.multiplicity < cfgFixedMultMin || xaxis.multiplicity > cfgFixedMultMax)
       return;
     fGFW->Clear();
-    pidStates.hPtMid[kCharged]->Reset();
-    pidStates.hPtMid[kPions]->Reset();
-    pidStates.hPtMid[kKaons]->Reset();
-    pidStates.hPtMid[kProtons]->Reset();
+    pidStates.hPtMid[PidCharged]->Reset();
+    pidStates.hPtMid[PidPions]->Reset();
+    pidStates.hPtMid[PidKaons]->Reset();
+    pidStates.hPtMid[PidProtons]->Reset();
 
     float lRandom = fRndm->Rndm();
 
@@ -594,7 +599,7 @@ struct FlowGfwV02 {
     AcceptedTracks acceptedTracks{0, 0, 0, 0};
     for (const auto& track : tracks) {
       processTrack(track, vtxz, xaxis.multiplicity, run, acceptedTracks);
-      pidStates.hPtMid[kCharged]->Fill(track.pt(), getEfficiency(track));
+      pidStates.hPtMid[PidCharged]->Fill(track.pt(), getEfficiency(track));
       // If PID is identified, fill pt spectrum for the corresponding particle
       int pidInd = getNsigmaPID(track);
       if (pidInd != -1 && track.eta() > -0.4 && track.eta() < 0.4) {
@@ -663,12 +668,12 @@ struct FlowGfwV02 {
     // ***Need to add proper weights for each particle!***
     if (withinPtRef)
       fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 0);
-    if (withinPtPOI && pidInd == kPions)
-      fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, kPions);
-    if (withinPtPOI && pidInd == kKaons)
-      fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, kKaons);
-    if (withinPtPOI && pidInd == kProtons)
-      fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, kProtons);
+    if (withinPtPOI && pidInd == PidPions)
+      fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, PidPions);
+    if (withinPtPOI && pidInd == PidKaons)
+      fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, PidKaons);
+    if (withinPtPOI && pidInd == PidProtons)
+      fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, PidProtons);
     return;
   }
 

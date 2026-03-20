@@ -10,11 +10,12 @@
 // or submit itself to any jurisdiction.
 
 /// \file treeCreatorOmegacSt.cxx
-/// \brief Task to reconstruct Ωc from strangeness-tracked Ω and pion/kaon
+/// \brief Task to reconstruct Ωc/Ξc from strangeness-tracked Ω/Ξ and pion/kaon
 ///
 /// \author Jochen Klein
 /// \author Tiantian Cheng
 
+#include "PWGHF/Core/DecayChannelsLegacy.h"
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -306,6 +307,8 @@ struct HfTreeCreatorOmegacSt {
       {"hMassOmegaPiVsPt", "inv. mass #Omega + #pi;inv. mass (GeV/#it{c}^{2});p_{T} (GeV/#it{c})", {HistType::kTH2D, {{400, 1.5, 3.}, {10, 0., 10.}}}},
       {"hMassOmegaK", "inv. mass #Omega + K;inv. mass (GeV/#it{c}^{2})", {HistType::kTH1D, {{400, 1.5, 3.}}}},
       {"hMassOmegaKVsPt", "inv. mass #Omega + K;inv. mass (GeV/#it{c}^{2});p_{T} (GeV/#it{c})", {HistType::kTH2D, {{400, 1.5, 3.}, {10, 0., 10.}}}},
+      {"hMassXiPi", "inv. mass #Xi + #pi;inv. mass (GeV/#it{c}^{2})", {HistType::kTH1D, {{400, 1.2, 3.2}}}},
+      {"hMassXiPiVsPt", "inv. mass #Xi + #pi;inv. mass (GeV/#it{c}^{2});p_{T} (GeV/#it{c})", {HistType::kTH2D, {{400, 1.2, 3.2}, {10, 0., 10.}}}},
       {"hMassOmegacId", "inv. mass #Omega + #pi (MC ID);inv. mass (GeV/#it{c}^{2})", {HistType::kTH1D, {{400, 1.5, 3.}}}},
       {"hMassOmegacGen", "inv. mass #Omega + #pi (from MC);inv. mass (GeV/#it{c}^{2})", {HistType::kTH1D, {{400, 1.5, 3.}}}},
       {"hPtVsMassOmega", "#Omega mass;p_{T} (GeV/#it{c});m (GeV/#it{c}^3)", {HistType::kTH2D, {{200, 0., 10.}, {1000, 1., 3.}}}},
@@ -366,70 +369,111 @@ struct HfTreeCreatorOmegacSt {
     for (const auto& mcParticle : mcParticles) {
       const bool isOmegaC = std::abs(mcParticle.pdgCode()) == constants::physics::Pdg::kOmegaC0;
       const bool isXiC = std::abs(mcParticle.pdgCode()) == constants::physics::Pdg::kXiC0;
-      if (isOmegaC || isXiC) {
-        const auto daughters = mcParticle.daughters_as<aod::McParticles>();
-        if (daughters.size() == NDaughters) {
-          int idxPionDaughter = -1;
-          int idxCascDaughter = -1;
-          int idxKaonDaughter = -1;
-          const auto daughters = mcParticle.daughters_as<aod::McParticles>();
-          for (const auto& daughter : daughters) {
-            if (idxCascDaughter < 0 && (std::abs(daughter.pdgCode()) == (isOmegaC ? kOmegaMinus : kXiMinus))) {
-              idxCascDaughter = daughter.globalIndex();
-            }
-            if (idxPionDaughter < 0 && (std::abs(daughter.pdgCode()) == kPiPlus)) {
-              idxPionDaughter = daughter.globalIndex();
-            }
-            if (idxKaonDaughter < 0 && (std::abs(daughter.pdgCode()) == kKPlus)) {
-              idxKaonDaughter = daughter.globalIndex();
-            }
-          }
-          if (idxPionDaughter >= 0 && idxCascDaughter >= 0) {
-            decayChannel = o2::aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi; // OmegaC -> Omega + Pi
-          } else if (idxKaonDaughter >= 0 && idxCascDaughter >= 0) {
-            decayChannel = o2::aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK; // OmegaC -> Omega + K
-          } else {
-            decayChannel = -1; // LOG(warning) << "Decay channel not recognized!";
-          }
-          if (decayChannel != -1) {
-            int const idxDaughter = (decayChannel == o2::aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi) ? idxPionDaughter : idxKaonDaughter;
-            auto particle = mcParticles.rawIteratorAt(idxDaughter);
-            origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
-
-            const auto& cascDaughter = mcParticles.iteratorAt(idxCascDaughter);
-            const auto& mcColl = mcParticle.mcCollision();
-            std::array<double, 3> const primaryVertexPosGen = {mcColl.posX(), mcColl.posY(), mcColl.posZ()};
-            std::array<double, 3> const secondaryVertexGen = {cascDaughter.vx(), cascDaughter.vy(), cascDaughter.vz()};
-            float decayLengthCascGen = -1.;
-            float decayLengthXYCascGen = -1.;
-            if (cascDaughter.has_daughters()) {
-              const auto& cascDecayDaughter = cascDaughter.daughters_as<aod::McParticles>().iteratorAt(0);
-              std::array<double, 3> const tertiaryVertexGen = {cascDecayDaughter.vx(), cascDecayDaughter.vy(), cascDecayDaughter.vz()};
-              decayLengthCascGen = RecoDecay::distance(tertiaryVertexGen, primaryVertexPosGen);
-              decayLengthXYCascGen = RecoDecay::distanceXY(tertiaryVertexGen, primaryVertexPosGen);
-            }
-            const auto decayLengthGen = RecoDecay::distance(secondaryVertexGen, primaryVertexPosGen);
-            const auto decayLengthXYGen = RecoDecay::distanceXY(secondaryVertexGen, primaryVertexPosGen);
-            registry.fill(HIST("hDecayLengthScaledMc"), decayLengthGen * o2::constants::physics::MassOmegaC0 / mcParticle.mothers_first_as<aod::McParticles>().p() * 1e4);
-            outputTableGen(
-              mcParticle.px(),
-              mcParticle.py(),
-              mcParticle.pz(),
-              mcParticle.pdgCode(),
-              cascDaughter.px(),
-              cascDaughter.py(),
-              cascDaughter.pz(),
-              cascDaughter.pdgCode(),
-              decayLengthGen,
-              decayLengthXYGen,
-              decayLengthCascGen,
-              decayLengthXYCascGen,
-              origin,
-              decayChannel);
-            mapMcPartToGenTable[mcParticle.globalIndex()] = outputTableGen.lastIndex();
+      if (!isOmegaC && !isXiC) {
+        continue;
+      }
+      const auto daughters = mcParticle.daughters_as<aod::McParticles>();
+      if (daughters.size() != NDaughters) {
+        continue;
+      }
+      int idxPionDaughter = -1;
+      int idxCascDaughter = -1;
+      int idxKaonDaughter = -1;
+      for (const auto& daughter : daughters) {
+        const int absDauPdg = std::abs(daughter.pdgCode());
+        if (idxCascDaughter < 0) {
+          if (absDauPdg == kOmegaMinus || absDauPdg == kXiMinus) {
+            idxCascDaughter = daughter.globalIndex();
           }
         }
+        if (idxPionDaughter < 0 && absDauPdg == kPiPlus) {
+          idxPionDaughter = daughter.globalIndex();
+        }
+        if (idxKaonDaughter < 0 && absDauPdg == kKPlus) {
+          idxKaonDaughter = daughter.globalIndex();
+        }
       }
+
+      if (idxCascDaughter < 0) {
+        continue;
+      }
+
+      int decayChannel = -1;
+      const int pdgCasc = std::abs(mcParticles.iteratorAt(idxCascDaughter).pdgCode());
+
+      if (isOmegaC) {
+        // Omegac0 -> Omega- pi+ or Xi- pi+
+        if (idxPionDaughter >= 0) {
+          if (pdgCasc == kOmegaMinus) {
+            decayChannel = o2::aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi;
+          } else if (pdgCasc == kXiMinus) {
+            decayChannel = o2::aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi;
+          }
+        }
+      } else if (isXiC) {
+        // Xic0 -> Omega- K+ or Xi- pi+
+        if (pdgCasc == kOmegaMinus && idxKaonDaughter >= 0) {
+          decayChannel = o2::aod::hf_cand_xic0_omegac0::DecayType::XiczeroToOmegaK;
+        } else if (pdgCasc == kXiMinus && idxPionDaughter >= 0) {
+          decayChannel = o2::aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi;
+        }
+      }
+
+      if (decayChannel == -1) {
+        continue;
+      }
+
+      int idxDaughter = -1;
+      switch (decayChannel) {
+        case o2::aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi:
+        case o2::aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi:
+        case o2::aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi:
+          idxDaughter = idxPionDaughter;
+          break;
+        case o2::aod::hf_cand_xic0_omegac0::DecayType::XiczeroToOmegaK:
+          idxDaughter = idxKaonDaughter;
+          break;
+        default:
+          idxDaughter = -1;
+          break;
+      }
+
+      if (idxDaughter >= 0) {
+        auto particle = mcParticles.rawIteratorAt(idxDaughter);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
+      }
+
+      const auto& cascDaughter = mcParticles.iteratorAt(idxCascDaughter);
+      const auto& mcColl = mcParticle.mcCollision();
+      std::array<double, 3> const primaryVertexPosGen = {mcColl.posX(), mcColl.posY(), mcColl.posZ()};
+      std::array<double, 3> const secondaryVertexGen = {cascDaughter.vx(), cascDaughter.vy(), cascDaughter.vz()};
+      float decayLengthCascGen = -1.;
+      float decayLengthXYCascGen = -1.;
+      if (cascDaughter.has_daughters()) {
+        const auto& cascDecayDaughter = cascDaughter.daughters_as<aod::McParticles>().iteratorAt(0);
+        std::array<double, 3> const tertiaryVertexGen = {cascDecayDaughter.vx(), cascDecayDaughter.vy(), cascDecayDaughter.vz()};
+        decayLengthCascGen = RecoDecay::distance(tertiaryVertexGen, primaryVertexPosGen);
+        decayLengthXYCascGen = RecoDecay::distanceXY(tertiaryVertexGen, primaryVertexPosGen);
+      }
+      const auto decayLengthGen = RecoDecay::distance(secondaryVertexGen, primaryVertexPosGen);
+      const auto decayLengthXYGen = RecoDecay::distanceXY(secondaryVertexGen, primaryVertexPosGen);
+      registry.fill(HIST("hDecayLengthScaledMc"), decayLengthGen * o2::constants::physics::MassOmegaC0 / mcParticle.mothers_first_as<aod::McParticles>().p() * 1e4);
+      outputTableGen(
+        mcParticle.px(),
+        mcParticle.py(),
+        mcParticle.pz(),
+        mcParticle.pdgCode(),
+        cascDaughter.px(),
+        cascDaughter.py(),
+        cascDaughter.pz(),
+        cascDaughter.pdgCode(),
+        decayLengthGen,
+        decayLengthXYGen,
+        decayLengthCascGen,
+        decayLengthXYCascGen,
+        origin,
+        decayChannel);
+      mapMcPartToGenTable[mcParticle.globalIndex()] = outputTableGen.lastIndex();
     }
   }
   PROCESS_SWITCH(HfTreeCreatorOmegacSt, processMc, "Process MC", true);
@@ -476,7 +520,6 @@ struct HfTreeCreatorOmegacSt {
           }
         }
       }
-
       const auto primaryVertex = getPrimaryVertex(collision);
       const std::array<double, 3> primaryVertexPos = {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()};
 
@@ -570,7 +613,6 @@ struct HfTreeCreatorOmegacSt {
         const auto massXi = RecoDecay::m(momentaCascDaughters, massesXiDaughters);
         std::array<double, NDaughters> const massesOmegaDaughters = {o2::constants::physics::MassLambda0, o2::constants::physics::MassKPlus};
         const auto massOmega = RecoDecay::m(momentaCascDaughters, massesOmegaDaughters);
-
         registry.fill(HIST("hDca"), std::sqrt(impactParameterCasc.getR2()));
         registry.fill(HIST("hDcaXY"), impactParameterCasc.getY());
         registry.fill(HIST("hDcaXYVsPt"), trackParCovCasc.getPt(), impactParameterCasc.getY());
@@ -588,7 +630,8 @@ struct HfTreeCreatorOmegacSt {
 
             std::array<double, NDaughters> const massesOmegacToOmegaPi{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassPiPlus};
             std::array<double, NDaughters> const massesOmegacToOmegaK{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassKPlus};
-            std::array<double, NDaughters> const massesXicDaughters{o2::constants::physics::MassXiMinus, o2::constants::physics::MassPiPlus};
+            // std::array<double, NDaughters> const massesXicDaughters{o2::constants::physics::MassXiMinus, o2::constants::physics::MassPiPlus};
+            std::array<double, NDaughters> massesXicOrOmegacToXiPi{o2::constants::physics::MassXiMinus, o2::constants::physics::MassPiPlus};
             std::array<std::array<float, 3>, NDaughters> momenta{};
 
             auto trackParCovPr = getTrackParCov(v0TrackPr);
@@ -662,11 +705,15 @@ struct HfTreeCreatorOmegacSt {
                     df2.getTrackParamAtPCA(1).getPxPyPzGlo(momenta[1]);
                     const auto massOmegaPi = RecoDecay::m(momenta, massesOmegacToOmegaPi);
                     const auto massOmegaK = RecoDecay::m(momenta, massesOmegacToOmegaK);
-                    const auto massXiC = RecoDecay::m(momenta, massesXicDaughters);
+                    // const auto massXiC = RecoDecay::m(momenta, massesXicDaughters);
+                    const auto massXiPi = RecoDecay::m(momenta, massesXicOrOmegacToXiPi);
+
                     registry.fill(HIST("hMassOmegaPi"), massOmegaPi);
                     registry.fill(HIST("hMassOmegaPiVsPt"), massOmegaPi, RecoDecay::pt(momenta[0], momenta[1]));
                     registry.fill(HIST("hMassOmegaK"), massOmegaK);
                     registry.fill(HIST("hMassOmegaKVsPt"), massOmegaK, RecoDecay::pt(momenta[0], momenta[1]));
+                    registry.fill(HIST("hMassXiPi"), massXiPi);
+                    registry.fill(HIST("hMassXiPiVsPt"), massXiPi, RecoDecay::pt(momenta[0], momenta[1]));
 
                     //--- do the MC Rec match
                     if (mcParticles) {
@@ -684,7 +731,7 @@ struct HfTreeCreatorOmegacSt {
                         v0.posTrack_as<TracksExtMc>(),  // p <- lambda
                         v0.negTrack_as<TracksExtMc>()}; // pi <- lambda
 
-                      if (decayChannel == o2::aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi) {
+                      if (decayChannel == o2::aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi) {
                         // Match Omegac0 → Omega- + Pi+
                         indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, false>(mcParticles->get(), arrayDaughters, o2::constants::physics::kOmegaC0,
                                                                                                std::array{+kPiPlus, +kKMinus, +kProton, +kPiMinus}, true, &sign, 3, &nPiToMuOmegac0, &nKaToPiOmegac0);
@@ -700,17 +747,65 @@ struct HfTreeCreatorOmegacSt {
                             }
                           }
                         }
-                      } else if (decayChannel == o2::aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK) {
-                        // Match Omegac0 → Omega- + K+
+                        // } else if (decayChannel == o2::aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK) {
+                        //   // Match Omegac0 → Omega- + K+
+                        //   indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, false>(mcParticles->get(), arrayDaughters, o2::constants::physics::kOmegaC0,
+                        //                                                                          std::array{+kKPlus, +kKMinus, +kProton, +kPiMinus}, true, &sign, 3, &nPiToMuOmegac0, &nKaToPiOmegac0);
+                        //   indexRecCharmBaryon = indexRec;
+                        //   if (indexRec > -1) {
+                        //     // Omega- → K pi p (Cascade match)
+                        //     indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles->get(), arrayDaughtersCasc, +kOmegaMinus, std::array{+kKMinus, +kProton, +kPiMinus}, true, &signCasc, 2, &nPiToMuCasc, &nKaToPiCasc);
+                        //     if (indexRec > -1) {
+                        //       // Lambda → p pi (Lambda match)
+                        //       indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles->get(), arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &signV0, 1, &nPiToMuV0);
+                        //       if (indexRec > -1) {
+                        //         isMatched = true;
+                        //       }
+                        //     }
+                        //   }
+                      } else if (decayChannel == o2::aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi) {
+                        // Match Omegac0 -> Xi Pion
                         indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, false>(mcParticles->get(), arrayDaughters, o2::constants::physics::kOmegaC0,
-                                                                                               std::array{+kKPlus, +kKMinus, +kProton, +kPiMinus}, true, &sign, 3, &nPiToMuOmegac0, &nKaToPiOmegac0);
+                                                                                               std::array{+kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 3);
+                        indexRecCharmBaryon = indexRec;
+                        if (indexRec > -1) {
+                          // Xi- → pi pi p (Cascade match)
+                          indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles->get(), arrayDaughtersCasc, +kXiMinus, std::array{+kPiMinus, +kProton, +kPiMinus}, true, &signCasc, 2);
+                          if (indexRec > -1) {
+                            // Lambda → p pi (Lambda match)
+                            indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles->get(), arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &signV0, 1);
+                            if (indexRec > -1) {
+                              isMatched = true;
+                            }
+                          }
+                        }
+                      } else if (decayChannel == o2::aod::hf_cand_xic0_omegac0::DecayType::XiczeroToOmegaK) {
+                        // Match Xic0 → Omega- + K+
+                        indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, false>(mcParticles->get(), arrayDaughters, o2::constants::physics::kXiC0,
+                                                                                               std::array{+kKPlus, +kKMinus, +kProton, +kPiMinus}, true, &sign, 3);
                         indexRecCharmBaryon = indexRec;
                         if (indexRec > -1) {
                           // Omega- → K pi p (Cascade match)
-                          indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles->get(), arrayDaughtersCasc, +kOmegaMinus, std::array{+kKMinus, +kProton, +kPiMinus}, true, &signCasc, 2, &nPiToMuCasc, &nKaToPiCasc);
+                          indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles->get(), arrayDaughtersCasc, +kOmegaMinus, std::array{+kKMinus, +kProton, +kPiMinus}, true, &signCasc, 2);
                           if (indexRec > -1) {
                             // Lambda → p pi (Lambda match)
-                            indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles->get(), arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &signV0, 1, &nPiToMuV0);
+                            indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles->get(), arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &signV0, 1);
+                            if (indexRec > -1) {
+                              isMatched = true;
+                            }
+                          }
+                        }
+                      } else if (decayChannel == o2::aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
+                        // Match Xic0 -> Xi Pion
+                        indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, false>(mcParticles->get(), arrayDaughters, o2::constants::physics::kXiC0,
+                                                                                               std::array{+kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 3);
+                        indexRecCharmBaryon = indexRec;
+                        if (indexRec > -1) {
+                          // Xi- → pi pi p (Cascade match)
+                          indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles->get(), arrayDaughtersCasc, +kXiMinus, std::array{+kPiMinus, +kProton, +kPiMinus}, true, &signCasc, 2);
+                          if (indexRec > -1) {
+                            // Lambda → p pi (Lambda match)
+                            indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles->get(), arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &signV0, 1);
                             if (indexRec > -1) {
                               isMatched = true;
                             }
@@ -723,9 +818,12 @@ struct HfTreeCreatorOmegacSt {
                       }
                     }
 
-                    if ((std::abs(massOmegaK - o2::constants::physics::MassOmegaC0) < massWindowOmegaC) ||
+                    if ((std::abs(massOmegaK - o2::constants::physics::MassXiC0) < massWindowXiC) ||
                         (std::abs(massOmegaPi - o2::constants::physics::MassOmegaC0) < massWindowOmegaC) ||
-                        (std::abs(massXiC - o2::constants::physics::MassXiC0) < massWindowXiC)) {
+                        (std::abs(massXiPi - o2::constants::physics::MassXiC0) < massWindowXiC) ||
+                        (std::abs(massXiPi - o2::constants::physics::MassOmegaC0) < massWindowOmegaC)
+
+                    ) {
                       registry.fill(HIST("hDecayLength"), decayLength * 1e4);
                       registry.fill(HIST("hDecayLengthScaled"), decayLength * o2::constants::physics::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
                       outputTable(massOmega,

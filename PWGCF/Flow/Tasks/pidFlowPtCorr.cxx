@@ -144,6 +144,7 @@ struct PidFlowPtCorr {
     O2_DEFINE_CONFIGURABLE(cfgOutPutPtSpectra, bool, false, "output pt spectra for data, MC and RECO");
     O2_DEFINE_CONFIGURABLE(cfgCheck2MethodDiff, bool, false, "check difference between v2' && v2''");
     O2_DEFINE_CONFIGURABLE(cfgUseITSOnly4MeanPt, bool, false, "use ITS only to calculate mean pt");
+    O2_DEFINE_CONFIGURABLE(cfgClosureTest, int, 0, "choose (val) percent particle from charged to pass Pion PID selection");
   } switchsOpts;
 
   /**
@@ -566,14 +567,23 @@ struct PidFlowPtCorr {
     registry.add("meanptCentNbs/hChargedPionWithNpair", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
     registry.add("meanptCentNbs/hChargedPionFull", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
     registry.add("meanptCentNbs/hPion", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+    registry.add("meanptCentNbs/hPionMeanptWeightPidflow", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+
+    if (switchsOpts.cfgClosureTest.value != 0) {
+      registry.add("meanptCentNbs/hPionMeanptWeightC22pure", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+      registry.add("meanptCentNbs/hPionMeanptWeightMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+      registry.add("meanptCentNbs/hPionMeanptWeightC22prime", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+    }
 
     registry.add("meanptCentNbs/hChargedKaonWithNpair", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
     registry.add("meanptCentNbs/hChargedKaonFull", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
     registry.add("meanptCentNbs/hKaon", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+    registry.add("meanptCentNbs/hKaonMeanptWeightPidflow", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
 
     registry.add("meanptCentNbs/hChargedProtonWithNpair", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
     registry.add("meanptCentNbs/hChargedProtonFull", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
     registry.add("meanptCentNbs/hProton", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+    registry.add("meanptCentNbs/hProtonMeanptWeightPidflow", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
     // end pid
     // end init tprofile3d for <2'> - meanpt
 
@@ -715,6 +725,13 @@ struct PidFlowPtCorr {
   template <typename TrackObject>
   bool isPion(TrackObject const& track)
   {
+    if (switchsOpts.cfgClosureTest.value != 0) {
+      float rnd4test = fRndm->Rndm() * 100;
+      if (rnd4test < switchsOpts.cfgClosureTest.value) {
+        return true;
+      }
+    } // closure test
+
     bool resultPion = true;
 
     // Declare ITSResponse object internally to get ITS Sigma
@@ -911,20 +928,19 @@ struct PidFlowPtCorr {
       return;
 
     registry.fill(HIST("meanptCentNbs/hCharged"), ptSum / nch, cent, rndm * cfgFlowNbootstrap, val, nch * dnx);
-    registry.fill(HIST("meanptCentNbs/hChargedMeanpt"), ptSum / nch, cent, rndm * cfgFlowNbootstrap, ptSum / nch, nch * dnx);
+    registry.fill(HIST("meanptCentNbs/hChargedMeanpt"), ptSum / nch, cent, rndm * cfgFlowNbootstrap, ptSum / nch, nch * dnx * val);
   }
 
   /**
-   * @brief note that the graph's x axis is pid meanpt, for <2'> weight is nPid * npairPID, for <2> weight is nch * npair
+   * @brief note that the graph's x axis is pid meanpt, for <2'> weight is nPid * npairPID, for <2> weight is nPid * npair
    *
    * @param cent
-   * @param nch
    * @param rndm
    * @param type
    * @param pidPtSum
    * @param nPid
    */
-  void fillFC4PtC22(const double& cent, const double& nch, const double& rndm, MyParticleType type, const double& pidPtSum, const double& nPid)
+  void fillFC4PtC22(const double& cent, const double& rndm, MyParticleType type, const double& pidPtSum, const double& nPid)
   {
     // <2>
     double dnx, val;
@@ -951,8 +967,27 @@ struct PidFlowPtCorr {
           return;
 
         registry.fill(HIST("meanptCentNbs/hPion"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidc22, nPid * npairPid);
-        registry.fill(HIST("meanptCentNbs/hChargedPionFull"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx * nch);
+        registry.fill(HIST("meanptCentNbs/hChargedPionFull"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx * nPid);
         registry.fill(HIST("meanptCentNbs/hChargedPionWithNpair"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx);
+        registry.fill(HIST("meanptCentNbs/hPionMeanptWeightPidflow"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidPtSum / nPid, nPid * npairPid * pidc22 * pidc22 / val);
+
+        if (switchsOpts.cfgClosureTest.value != 0) {
+          double npair4c22pure = fGFW->Calculate(corrconfigs.at(29), 0, kTRUE).real();
+          if (npair4c22pure > 1e-3)
+            registry.fill(HIST("meanptCentNbs/hPionMeanptWeightC22pure"),
+                          pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap,
+                          pidPtSum / nPid,
+                          nPid * npairPid * fGFW->Calculate(corrconfigs.at(29), 0, kFALSE).real() / npair4c22pure);
+
+          registry.fill(HIST("meanptCentNbs/hPionMeanptWeightMeanpt"),
+                        pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap,
+                        pidPtSum / nPid,
+                        nPid * npairPid * pidPtSum / nPid);
+          registry.fill(HIST("meanptCentNbs/hPionMeanptWeightC22prime"),
+                        pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap,
+                        pidPtSum / nPid,
+                        nPid * npairPid * pidc22);
+        }
 
         break;
         // end pion
@@ -967,8 +1002,9 @@ struct PidFlowPtCorr {
           return;
 
         registry.fill(HIST("meanptCentNbs/hKaon"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidc22, nPid * npairPid);
-        registry.fill(HIST("meanptCentNbs/hChargedKaonFull"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx * nch);
+        registry.fill(HIST("meanptCentNbs/hChargedKaonFull"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx * nPid);
         registry.fill(HIST("meanptCentNbs/hChargedKaonWithNpair"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx);
+        registry.fill(HIST("meanptCentNbs/hKaonMeanptWeightPidflow"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidPtSum / nPid, nPid * npairPid * pidc22 * pidc22 / val);
 
         break;
         // end kaon
@@ -983,8 +1019,9 @@ struct PidFlowPtCorr {
           return;
 
         registry.fill(HIST("meanptCentNbs/hProton"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidc22, nPid * npairPid);
-        registry.fill(HIST("meanptCentNbs/hChargedProtonFull"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx * nch);
+        registry.fill(HIST("meanptCentNbs/hChargedProtonFull"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx * nPid);
         registry.fill(HIST("meanptCentNbs/hChargedProtonWithNpair"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx);
+        registry.fill(HIST("meanptCentNbs/hProtonMeanptWeightPidflow"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidPtSum / nPid, nPid * npairPid * pidc22 * pidc22 / val);
 
         break;
         // end proton
@@ -2066,13 +2103,13 @@ struct PidFlowPtCorr {
 
       fillFC4PtC22(cent, ptSum, nch, rndm);
       if (nPionWeighted > 0)
-        fillFC4PtC22(cent, nch, rndm, MyParticleType::kPion, pionPtSum, nPionWeighted);
+        fillFC4PtC22(cent, rndm, MyParticleType::kPion, pionPtSum, nPionWeighted);
 
       if (nKaonWeighted > 0)
-        fillFC4PtC22(cent, nch, rndm, MyParticleType::kKaon, kaonPtSum, nKaonWeighted);
+        fillFC4PtC22(cent, rndm, MyParticleType::kKaon, kaonPtSum, nKaonWeighted);
 
       if (nProtonWeighted > 0)
-        fillFC4PtC22(cent, nch, rndm, MyParticleType::kProton, protonPtSum, nProtonWeighted);
+        fillFC4PtC22(cent, rndm, MyParticleType::kProton, protonPtSum, nProtonWeighted);
 
       if (switchsOpts.cfgOutPutPtSpectra.value) {
         // charged calculation
