@@ -1643,10 +1643,10 @@ struct AnalysisSameEventPairing {
       VarManager::SetCollisionSystem((TString)fConfigOptions.collisionSystem, fConfigOptions.centerMassEnergy); // set collision system and center of mass energy
       DefineHistograms(fHistMan, histNames.Data(), fConfigAddSEPHistogram.value.data());                        // define all histograms
       if (fEnableBarrelHistos) {
-        DefineHistograms(fHistMan, "PairingSEQA", "sameevent-pairing");                                         // histograms for QA of the pairing
+        DefineHistograms(fHistMan, "PairingSEQA", "sameevent-pairing"); // histograms for QA of the pairing
       };
       if (fEnableBarrelMixingHistos) {
-        DefineHistograms(fHistMan, "PairingMEQA", "mixedevent-pairing");                                       // histograms for QA of the pairing
+        DefineHistograms(fHistMan, "PairingMEQA", "mixedevent-pairing"); // histograms for QA of the pairing
       };
       dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str());                    // ad-hoc histograms via JSON
       VarManager::SetUseVars(fHistMan->GetUsedVars());                                                          // provide the list of required variables so that VarManager knows what to fill
@@ -2298,7 +2298,7 @@ struct AnalysisSameEventPairing {
 
       auto assocs2 = assocs.sliceBy(preSlice, event2.globalIndex());
       assocs2.bindExternalIndices(&events);
-      
+
       fNPairPerEvent = 0;
       runMixedPairing<TPairType, TEventFillMap>(assocs1, assocs2, tracks, tracks);
       VarManager::fgValues[VarManager::kNPairsPerEvent] = fNPairPerEvent;
