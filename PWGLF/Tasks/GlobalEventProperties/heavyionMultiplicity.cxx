@@ -343,6 +343,10 @@ struct HeavyionMultiplicity {
       histos.add("hMultEta05vsCentrRec", "multiplicity in eta<0.5 of selected MC events vs centrality", kTH2F, {axisCent, multAxis});
       histos.add("hgendndetaVsMultEta05BeforeEvtSel", "hgendndetaBeforeEvtSel vs multiplicity in eta<0.5", kTH2F, {axisEta, multAxis});
       histos.add("hgendndetaVsMultEta05AfterEvtSel", "hgendndetaAfterEvtSel vs multiplicity in eta<0.5", kTH2F, {axisEta, multAxis});
+      histos.add("hImpactParameterSplit", "Impact parameter of selected and split MC events", kTH1F, {impactParAxis});
+      histos.add("hMultEta05Split", "multiplicity in eta<0.5 of selected and split MC events", kTH1F, {multAxis});
+      histos.add("hMultSplit", "multiplicity of selected and split MC events", kTH1F, {axisFt0cMult});
+      histos.add("hMultvsCentrSplit", "multiplicity of selected and split MC events vs centrality ", kTH2F, {axisCent, axisFt0cMult});
 
       histos.add("hMultGen", "multiplicity of generated MC events", kTH1F, {axisFt0cMult});
       histos.add("hMultRec", "multiplicity of selected MC events", kTH1F, {axisFt0cMult});
@@ -462,8 +466,9 @@ struct HeavyionMultiplicity {
     auto cent = -1;
     if (isApplyCentFT0C) {
       cent = col.multMCFT0C();
-    }
-    if (isApplyCentFV0A) {
+    } else if (isApplyCentFT0M) {
+      cent = (col.multMCFT0C() + col.multMCFT0A()) / 2.;
+    } else if (isApplyCentFV0A) {
       cent = col.multMCFV0A();
     }
     return cent;
@@ -990,6 +995,12 @@ struct HeavyionMultiplicity {
       if (std::abs(RecCol.posZ()) >= vtxRange) {
         continue;
       }
+
+      histos.fill(HIST("hImpactParameterSplit"), mcCollision.impactParameter());
+      histos.fill(HIST("hMultEta05Split"), mcCollision.multMCNParticlesEta05());
+      histos.fill(HIST("hMultSplit"), selColMultMC(mcCollision));
+      histos.fill(HIST("hMultvsCentrSplit"), selColCent(RecCol), selColMultMC(mcCollision));
+
       if (RecCol.numContrib() <= numcontributors) {
         continue;
       } else {
