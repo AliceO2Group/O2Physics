@@ -530,15 +530,18 @@ struct FlowGfwV02 {
       if (dnx == 0)
         continue;
       auto val = fGFW->Calculate(corrconfigs.at(0), 0, kFALSE).real() / dnx;
+      double ebyeWeight = (cfgUseMultiplicityFlowWeights) ? dnx : 1.0;
       for (int i = 1; i <= fSecondAxis->GetNbins(); i++) {
-        if (corrconfigs.at(l_ind).Head.find("nch") != std::string::npos)
+        if (corrconfigs.at(l_ind).Head.find("nch") != std::string::npos) {
+          ebyeWeight = 1.0;
           val = 1.0;
+        }
         double ptFraction = 0;
         int normIndex = (cfgNormalizeByCharged) ? PidCharged : pidInd; // Configured to normalize by charged particles or the selected particle
         if (pidStates.hPtMid[normIndex]->Integral() > 0) {
           ptFraction = pidStates.hPtMid[pidInd]->GetBinContent(i) / pidStates.hPtMid[normIndex]->Integral();
           if (std::abs(val) < 1.01)
-            fFC->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val * ptFraction, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm);
+            fFC->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val * ptFraction, ebyeWeight, rndm);
         }
       }
     }
