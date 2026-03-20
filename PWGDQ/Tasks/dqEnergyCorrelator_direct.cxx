@@ -447,7 +447,6 @@ struct AnalysisEnergyCorrelator {
         mcDecision |= (static_cast<uint32_t>(1) << isig);
       }
     }
-    
     auto motherParticle = lepton1MC.template mothers_first_as<McParticles>();
     // Fill dilepton-hadron variables
     std::vector<float> fTransRange = fConfigDileptonHadronOptions.fConfigTransRange;
