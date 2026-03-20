@@ -422,7 +422,7 @@ struct NonPromptCascadeTask {
       float multNTracks = coll.multNTracksGlobal();
       float run = mRunNumber;
       float numContrib = coll.numContrib();
-      // mRegistryMults.fill(HIST("hCentMultsRuns"), centFT0M, multFT0M, numContrib, multNTracks, run);
+      mRegistryMults.fill(HIST("hCentMultsRuns"), centFT0M, multFT0M, numContrib, multNTracks, run);
     }
   };
 
