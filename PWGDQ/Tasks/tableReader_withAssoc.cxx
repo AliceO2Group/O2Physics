@@ -1326,6 +1326,7 @@ struct AnalysisSameEventPairing {
   int fNCutsBarrel;
   int fNCutsMuon;
   int fNPairCuts;
+  int fNPairPerEvent;
 
   bool fEnableBarrelMixingHistos;
   bool fEnableBarrelHistos;
@@ -1641,6 +1642,12 @@ struct AnalysisSameEventPairing {
       fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
       VarManager::SetCollisionSystem((TString)fConfigOptions.collisionSystem, fConfigOptions.centerMassEnergy); // set collision system and center of mass energy
       DefineHistograms(fHistMan, histNames.Data(), fConfigAddSEPHistogram.value.data());                        // define all histograms
+      if (fEnableBarrelHistos) {
+        DefineHistograms(fHistMan, "PairingSEQA", "sameevent-pairing");                                         // histograms for QA of the pairing
+      };
+      if (fEnableBarrelMixingHistos) {
+        DefineHistograms(fHistMan, "PairingMEQA", "mixedevent-pairing");                                       // histograms for QA of the pairing
+      };
       dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str());                    // ad-hoc histograms via JSON
       VarManager::SetUseVars(fHistMan->GetUsedVars());                                                          // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
@@ -1749,6 +1756,7 @@ struct AnalysisSameEventPairing {
     constexpr bool eventHasQvectorCentr = ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0);
     constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::TrackCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelCov) > 0);
     bool isSelectedBDT = false;
+    fNPairPerEvent = 0;
 
     for (auto& event : events) {
       if (!event.isEventSelected_bit(0)) {
@@ -1796,6 +1804,7 @@ struct AnalysisSameEventPairing {
             twoTrackFilter |= (static_cast<uint32_t>(1) << 31);
           }
 
+          fNPairPerEvent++;
           VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
           // compute quantities which depend on the associated collision, such as DCA
           if (fConfigOptions.propTrack) {
@@ -2101,6 +2110,10 @@ struct AnalysisSameEventPairing {
           }
         } // end loop (cuts)
       } // end loop over pairs of track associations
+      VarManager::fgValues[VarManager::kNPairsPerEvent] = fNPairPerEvent;
+      if (fEnableBarrelHistos && fConfigQA) {
+        fHistMan->FillHistClass("PairingSEQA", VarManager::fgValues);
+      }
     } // end loop over events
   }
 
@@ -2120,6 +2133,7 @@ struct AnalysisSameEventPairing {
           }
           auto t1 = a1.template reducedtrack_as<TTracks1>();
           auto t2 = a2.template reducedtrack_as<TTracks2>();
+          fNPairPerEvent++;
           VarManager::FillPairME<TEventFillMap, TPairType>(t1, t2);
           if constexpr ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0) {
             VarManager::FillPairVn<TEventFillMap, TPairType>(t1, t2);
@@ -2284,8 +2298,13 @@ struct AnalysisSameEventPairing {
 
       auto assocs2 = assocs.sliceBy(preSlice, event2.globalIndex());
       assocs2.bindExternalIndices(&events);
-
+      
+      fNPairPerEvent = 0;
       runMixedPairing<TPairType, TEventFillMap>(assocs1, assocs2, tracks, tracks);
+      VarManager::fgValues[VarManager::kNPairsPerEvent] = fNPairPerEvent;
+      if (fEnableBarrelMixingHistos && fConfigQA) {
+        fHistMan->FillHistClass("PairingMEQA", VarManager::fgValues);
+      }
     } // end event loop
   }
 
@@ -4272,6 +4291,10 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses, const char
 
     if (classStr.Contains("Pairs")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", histName);
+    }
+
+    if (classStr.Contains("Pairing")) {
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", histName);
     }
 
     if (classStr.Contains("Triplets")) {

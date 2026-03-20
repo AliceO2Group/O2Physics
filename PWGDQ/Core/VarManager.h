@@ -484,6 +484,7 @@ class VarManager : public TObject
     kTwoR2SP2, // Scalar product resolution of event2 for ME technique
     kTwoR2EP1, // Event plane resolution of event2 for ME technique
     kTwoR2EP2, // Event plane resolution of event2 for ME technique
+    kNPairsPerEvent, // number of pairs per event in same-event or mixed-event pairing
 
     // Variables for event mixing with cumulant
     kV22m,
