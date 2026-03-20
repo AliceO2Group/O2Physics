@@ -223,6 +223,7 @@ struct AnalysisEnergyCorrelator {
       for (auto& t : addTrackCuts) {
         fTrackCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
         fTrackCutNames.push_back(t->GetName());
+        trackCutStr += Form(",%s", t->GetName());
       }
     }
 
@@ -797,13 +798,13 @@ struct AnalysisEnergyCorrelator {
     groupedMCTracks1.bindInternalIndicesTo(&mcTracks);
     groupedMCTracks2.bindInternalIndicesTo(&mcTracks);
     for (auto& t1 : groupedMCTracks1) {
-      auto t1_raw = groupedMCTracks1.rawIteratorAt(t1.globalIndex());
+      auto t1_raw = mcTracks.rawIteratorAt(t1.globalIndex());
       for (auto& sig : fGenMCSignals) {
         if (sig->CheckSignal(true, t1_raw)) {
           if (t1.mcCollisionId() != event1.mcCollisionId()) { // check that the mc track belongs to the same mc collision as the reconstructed event
             continue;
           }
-          VarManager::FillTrackMC(groupedMCTracks1, t1_raw);
+          VarManager::FillTrackMC(mcTracks, t1_raw);
           if (!MixedEvent && !PionMass) {
             fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), VarManager::fgValues);
           }
