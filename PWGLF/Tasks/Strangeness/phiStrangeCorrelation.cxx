@@ -412,11 +412,14 @@ struct PhiStrangenessCorrelation {
       if (analysisMode == kMassvsMass) {
         processCorrelations(
           [&](const auto& k0s, float w) {
-            histos.fill(HIST("phiK0S/h6PhiK0SData"), multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), phiCand.m(), k0s.m(), w);
+            auto histID = HIST("phiK0S/h6PhiK0SData");
+            histos.fill(histID, multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), phiCand.m(), k0s.m(), w);
           },
           [&](const auto& pion, float w) {
-            histos.fill(HIST("phiPi/h6PhiPiTPCData"), multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), phiCand.m(), pion.nSigmaTPC(), w);
-            histos.fill(HIST("phiPi/h6PhiPiTOFData"), multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), phiCand.m(), pion.nSigmaTOF(), w);
+            auto histID1 = HIST("phiPi/h6PhiPiTPCData");
+            histos.fill(histID1, multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), phiCand.m(), pion.nSigmaTPC(), w);
+            auto histID2 = HIST("phiPi/h6PhiPiTOFData");
+            histos.fill(histID2, multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), phiCand.m(), pion.nSigmaTOF(), w);
           });
       } else if (analysisMode == kDeltaYvsDeltaPhi) {
         static_for<0, phiMassRegionLabels.size() - 1>([&](auto i_idx) {
@@ -428,10 +431,12 @@ struct PhiStrangenessCorrelation {
 
           processCorrelations(
             [&](const auto& k0s, float w) {
-              histos.fill(HIST("phiK0S/h5PhiK0SData") + HIST(phiMassRegionLabels[i]), multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), getDeltaPhi(phiCand.phi(), k0s.phi()), w);
+              auto histID = HIST("phiK0S/h5PhiK0SData") + HIST(phiMassRegionLabels[i]);
+              histos.fill(histID, multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), getDeltaPhi(phiCand.phi(), k0s.phi()), w);
             },
             [&](const auto& pion, float w) {
-              histos.fill(HIST("phiPi/h5PhiPiData") + HIST(phiMassRegionLabels[i]), multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), getDeltaPhi(phiCand.phi(), pion.phi()), w);
+              auto histID = HIST("phiPi/h5PhiPiData") + HIST(phiMassRegionLabels[i]);
+              histos.fill(histID, multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), getDeltaPhi(phiCand.phi(), pion.phi()), w);
             });
         });
       }
@@ -522,7 +527,8 @@ struct PhiStrangenessCorrelation {
         if (analysisMode == kMassvsMass) {
           processCorrelations(
             [&](const auto& k0s, float w) {
-              histos.fill(HIST("phiK0S/h6PhiK0SDataMe"), multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), phiCand.m(), k0s.m(), w);
+              auto histID = HIST("phiK0S/h6PhiK0SDataME");
+              histos.fill(histID, multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), phiCand.m(), k0s.m(), w);
             });
         } else if (analysisMode == kDeltaYvsDeltaPhi) {
           static_for<0, phiMassRegionLabels.size() - 1>([&](auto i_idx) {
@@ -534,7 +540,8 @@ struct PhiStrangenessCorrelation {
 
             processCorrelations(
               [&](const auto& k0s, float w) {
-                histos.fill(HIST("phiK0S/h5PhiK0SDataME") + HIST(phiMassRegionLabels[i]), multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), getDeltaPhi(phiCand.phi(), k0s.phi()), w);
+                auto histID = HIST("phiK0S/h5PhiK0SDataME") + HIST(phiMassRegionLabels[i]);
+                histos.fill(histID, multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), getDeltaPhi(phiCand.phi(), k0s.phi()), w);
               });
           });
         }
@@ -611,8 +618,10 @@ struct PhiStrangenessCorrelation {
         if (analysisMode == kMassvsMass) {
           processCorrelations(
             [&](const auto& pion, float w) {
-              histos.fill(HIST("phiPi/h6PhiPiTPCDataME"), multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), phiCand.m(), pion.nSigmaTPC(), w);
-              histos.fill(HIST("phiPi/h6PhiPiTOFDataME"), multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), phiCand.m(), pion.nSigmaTOF(), w);
+              auto histID1 = HIST("phiPi/h6PhiPiTPCDataME");
+              histos.fill(histID1, multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), phiCand.m(), pion.nSigmaTPC(), w);
+              auto histID2 = HIST("phiPi/h6PhiPiTOFDataME");
+              histos.fill(histID2, multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), phiCand.m(), pion.nSigmaTOF(), w);
             });
         } else if (analysisMode == kDeltaYvsDeltaPhi) {
           static_for<0, phiMassRegionLabels.size() - 1>([&](auto i_idx) {
@@ -624,7 +633,8 @@ struct PhiStrangenessCorrelation {
 
             processCorrelations(
               [&](const auto& pion, float w) {
-                histos.fill(HIST("phiPi/h5PhiPiDataME") + HIST(phiMassRegionLabels[i]), multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), getDeltaPhi(phiCand.phi(), pion.phi()), w);
+                auto histID = HIST("phiPi/h5PhiPiDataME") + HIST(phiMassRegionLabels[i]);
+                histos.fill(histID, multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), getDeltaPhi(phiCand.phi(), pion.phi()), w);
               });
           });
         }
