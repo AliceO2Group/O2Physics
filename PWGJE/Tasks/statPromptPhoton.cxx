@@ -51,9 +51,9 @@
 
 #include <iostream>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
-#include <set>
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -222,7 +222,6 @@ struct statPromptPhoton {
       histos.add("REC_cluster_both_phiQA", "REC_cluster_both_phiQA", kTH1F, {{640 * 2, 0, 2 * TMath::Pi()}});
       histos.add("REC_cluster_both_etaQA", "REC_cluster_both_etaQA", kTH1F, {{100, -1, 1}});
       histos.add("REC_cluster_both_energyQA", "REC_cluster_both_energyQA", kTH1F, {{82, -1.0, 40.0}});
-
     }
     if (cfgGenHistograms) {
       histos.add("GEN_prompt_phiQA", "GEN_prompt_phiQA", kTH1F, {{640 * 2, 0, 2 * TMath::Pi()}});
@@ -465,7 +464,7 @@ struct statPromptPhoton {
   }; // end of track selection
   /////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////
-  //Below is shamelessly stolen from Florian's gammetreeproducer code.
+  // Below is shamelessly stolen from Florian's gammetreeproducer code.
   template <typename T>
   T iTopCopy(const T& particle) const
   {
@@ -1474,7 +1473,7 @@ struct statPromptPhoton {
 
   PROCESS_SWITCH(statPromptPhoton, processData, "processJE data", false);
 
-  int nEventsGenMC_Simple = 0;     
+  int nEventsGenMC_Simple = 0;
   void processMCGen_simple(filteredMCCollisions::iterator const& collision, soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, jfilteredCollisions>> const& recocolls, aod::JMcParticles const& mcParticles, jfilteredMCClusters const&)
   {
     nEventsGenMC_Simple++;
@@ -1487,28 +1486,29 @@ struct statPromptPhoton {
     if (fabs(collision.posZ()) > cfgVtxCut)
       return;
 
-    if(cfgGenReqRec){
+    if (cfgGenReqRec) {
       if (recocolls.size() <= 0) // not reconstructed
-   	return;
+        return;
       for (auto& recocoll : recocolls) { // poorly reconstructed
-   	if (!recocoll.sel8())
-   	  return;
-   	if (fabs(recocoll.posZ()) > cfgVtxCut)
+        if (!recocoll.sel8())
+          return;
+        if (fabs(recocoll.posZ()) > cfgVtxCut)
 
-   	  return;
-   	histos.fill(HIST("GEN_nEvents_simple"), 1.5);
+          return;
+        histos.fill(HIST("GEN_nEvents_simple"), 1.5);
 
-   	if (cfgEmcTrigger) {
-   	  if (!recocoll.isEmcalReadout())
-   	    return;
-   	}
-   	histos.fill(HIST("GEN_nEvents_simple"), 2.5);
+        if (cfgEmcTrigger) {
+          if (!recocoll.isEmcalReadout())
+            return;
+        }
+        histos.fill(HIST("GEN_nEvents_simple"), 2.5);
       }
     }
 
     // First pass: find all status -23 particles
     for (auto& hardParticle : mcParticles) {
-      if (hardParticle.getGenStatusCode() != -23) continue;
+      if (hardParticle.getGenStatusCode() != -23)
+        continue;
 
       bool isPhoton23 = (hardParticle.pdgCode() == 22);
 
@@ -1517,9 +1517,12 @@ struct statPromptPhoton {
       // We search all final-state photons and check if they trace back here//
 
       for (auto& mcParticle : mcParticles) {
-        if (mcParticle.pdgCode() != 22) continue;
-        if (mcParticle.getGenStatusCode() < 0) continue;
-        if (std::fabs(mcParticle.getGenStatusCode()) >= 81 || !mcParticle.isPhysicalPrimary()) continue;
+        if (mcParticle.pdgCode() != 22)
+          continue;
+        if (mcParticle.getGenStatusCode() < 0)
+          continue;
+        if (std::fabs(mcParticle.getGenStatusCode()) >= 81 || !mcParticle.isPhysicalPrimary())
+          continue;
 
         // Chase this final-state photon upward
         int chaseindex = -1;
@@ -1527,7 +1530,8 @@ struct statPromptPhoton {
           chaseindex = mom.globalIndex();
           break;
         }
-        if (chaseindex < 0) continue;
+        if (chaseindex < 0)
+          continue;
 
         std::set<int> visited;
         bool chase = true;
@@ -1536,11 +1540,15 @@ struct statPromptPhoton {
         bool cleanPhotonChain = true; // all intermediates are photons
 
         while (chase) {
-          if (visited.count(chaseindex)) { chase = false; break; }
+          if (visited.count(chaseindex)) {
+            chase = false;
+            break;
+          }
           visited.insert(chaseindex);
 
           for (auto& particle : mcParticles) {
-            if (particle.globalIndex() != chaseindex) continue;
+            if (particle.globalIndex() != chaseindex)
+              continue;
 
             if (particle.globalIndex() == hardParticle.globalIndex()) {
               reachedThisHard = true;
@@ -1549,21 +1557,27 @@ struct statPromptPhoton {
             }
 
             int abspdg = std::abs(particle.pdgCode());
-            if (abspdg > 100) hadronInChain = true;
-            if (abspdg != 22) cleanPhotonChain = false;
+            if (abspdg > 100)
+              hadronInChain = true;
+            if (abspdg != 22)
+              cleanPhotonChain = false;
 
             int nextindex = -1;
             for (auto& mom : particle.mothers_as<aod::JMcParticles>()) {
               nextindex = mom.globalIndex();
               break;
             }
-            if (nextindex < 0) { chase = false; }
-            else { chaseindex = nextindex; }
+            if (nextindex < 0) {
+              chase = false;
+            } else {
+              chaseindex = nextindex;
+            }
             break;
           }
         }
 
-        if (!reachedThisHard) continue;
+        if (!reachedThisHard)
+          continue;
 
         if (isPhoton23 && cleanPhotonChain) {
           // Case 1: -23 photon, clean photon chain — direct prompt
@@ -1586,7 +1600,7 @@ struct statPromptPhoton {
     nEventsRecMC_simple++;
     if (cfgDebug) {
       if ((nEventsRecMC_simple + 1) % 10000 == 0) {
-	std::cout << "Processed JE Rec MC Events: " << nEventsRecMC_simple << std::endl;
+        std::cout << "Processed JE Rec MC Events: " << nEventsRecMC_simple << std::endl;
       }
     }
     histos.fill(HIST("REC_nEvents"), 0.5);
@@ -1597,7 +1611,7 @@ struct statPromptPhoton {
     histos.fill(HIST("REC_nEvents"), 1.5);
     if (cfgEmcTrigger) {
       if (!collision.isEmcalReadout())
-	return;
+        return;
     }
     histos.fill(HIST("REC_nEvents"), 2.5);
     if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits))
@@ -1606,103 +1620,116 @@ struct statPromptPhoton {
     for (auto& mccluster : mcclusters) {
       histos.fill(HIST("REC_M02_BC"), mccluster.m02());
       if (mccluster.m02() < cfgLowM02)
-	continue;
+        continue;
       if (mccluster.m02() > cfgHighM02)
-	continue;
+        continue;
       if (mccluster.energy() < cfgLowClusterE)
-	continue;
+        continue;
       if (mccluster.energy() > cfgHighClusterE)
-	continue;
+        continue;
       if (fabs(mccluster.eta()) > cfgtrkMaxEta)
-	continue;
-      int ClusterHasDirectPhoton =0;
+        continue;
+      int ClusterHasDirectPhoton = 0;
       int ClusterHasFragPhoton = 0;
-    auto ClusterParticles = mccluster.mcParticles_as<aod::JMcParticles>();
-    for (auto& clusterparticle : ClusterParticles) {
-      if (clusterparticle.pdgCode() != 22 && std::fabs(clusterparticle.pdgCode()) != 13) continue;
-      if (clusterparticle.getGenStatusCode() < 0) continue;
-      if (std::fabs(clusterparticle.getGenStatusCode()) >= 81) continue;
+      auto ClusterParticles = mccluster.mcParticles_as<aod::JMcParticles>();
+      for (auto& clusterparticle : ClusterParticles) {
+        if (clusterparticle.pdgCode() != 22 && std::fabs(clusterparticle.pdgCode()) != 13)
+          continue;
+        if (clusterparticle.getGenStatusCode() < 0)
+          continue;
+        if (std::fabs(clusterparticle.getGenStatusCode()) >= 81)
+          continue;
 
-      int chaseindex = -1;
-      for (auto& mom : clusterparticle.mothers_as<aod::JMcParticles>()) {
-        chaseindex = mom.globalIndex();
-        break;
-      }
-      if (chaseindex < 0) continue;
+        int chaseindex = -1;
+        for (auto& mom : clusterparticle.mothers_as<aod::JMcParticles>()) {
+          chaseindex = mom.globalIndex();
+          break;
+        }
+        if (chaseindex < 0)
+          continue;
 
-      std::set<int> visited;
-      bool chase = true;
-      bool hadronInChain = false;
-      bool cleanPhotonChain = true;
-      bool adrianprompt = false;
-      bool adrianfrag = false;
+        std::set<int> visited;
+        bool chase = true;
+        bool hadronInChain = false;
+        bool cleanPhotonChain = true;
+        bool adrianprompt = false;
+        bool adrianfrag = false;
 
-      while (chase) {
-        if (visited.count(chaseindex)) { chase = false; break; }
-        visited.insert(chaseindex);
-
-        for (auto& particle : mcparticles) {
-          if (particle.globalIndex() != chaseindex) continue;
-
-          if (particle.getGenStatusCode() == -23) {
-            if (particle.pdgCode() == 22 && cleanPhotonChain) {
-              adrianprompt = true;
-            } else if (particle.pdgCode() != 22 && !hadronInChain) {
-              adrianfrag = true;
-            }
+        while (chase) {
+          if (visited.count(chaseindex)) {
             chase = false;
             break;
           }
+          visited.insert(chaseindex);
 
-          int abspdg = std::abs(particle.pdgCode());
-          if (abspdg > 100) hadronInChain = true;
-          if (abspdg != 22) cleanPhotonChain = false;
+          for (auto& particle : mcparticles) {
+            if (particle.globalIndex() != chaseindex)
+              continue;
 
-          int nextindex = -1;
-          for (auto& mom : particle.mothers_as<aod::JMcParticles>()) {
-            nextindex = mom.globalIndex();
+            if (particle.getGenStatusCode() == -23) {
+              if (particle.pdgCode() == 22 && cleanPhotonChain) {
+                adrianprompt = true;
+              } else if (particle.pdgCode() != 22 && !hadronInChain) {
+                adrianfrag = true;
+              }
+              chase = false;
+              break;
+            }
+
+            int abspdg = std::abs(particle.pdgCode());
+            if (abspdg > 100)
+              hadronInChain = true;
+            if (abspdg != 22)
+              cleanPhotonChain = false;
+
+            int nextindex = -1;
+            for (auto& mom : particle.mothers_as<aod::JMcParticles>()) {
+              nextindex = mom.globalIndex();
+              break;
+            }
+            if (nextindex < 0) {
+              chase = false;
+            } else {
+              chaseindex = nextindex;
+            }
             break;
           }
-          if (nextindex < 0) { chase = false; }
-          else { chaseindex = nextindex; }
-          break;
+        } // chase
+
+        if (adrianprompt) {
+          ClusterHasDirectPhoton++;
+          histos.fill(HIST("REC_direct_phiQA"), clusterparticle.phi());
+          histos.fill(HIST("REC_direct_etaQA"), clusterparticle.eta());
+          histos.fill(HIST("REC_direct_ptQA"), clusterparticle.pt());
         }
-      } // chase
+        if (adrianfrag) {
+          ClusterHasFragPhoton++;
+          histos.fill(HIST("REC_frag_phiQA"), clusterparticle.phi());
+          histos.fill(HIST("REC_frag_etaQA"), clusterparticle.eta());
+          histos.fill(HIST("REC_frag_ptQA"), clusterparticle.pt());
+        }
+      } // clusterparticle loop
 
-      if (adrianprompt) {
-	ClusterHasDirectPhoton++;
-        histos.fill(HIST("REC_direct_phiQA"), clusterparticle.phi());
-        histos.fill(HIST("REC_direct_etaQA"), clusterparticle.eta());
-        histos.fill(HIST("REC_direct_ptQA"), clusterparticle.pt());
+      if (ClusterHasFragPhoton > 0) {
+        histos.fill(HIST("REC_cluster_frag_phiQA"), mccluster.phi());
+        histos.fill(HIST("REC_cluster_frag_etaQA"), mccluster.eta());
+        histos.fill(HIST("REC_cluster_frag_energyQA"), mccluster.energy());
       }
-      if (adrianfrag) {
-	ClusterHasFragPhoton++;
-        histos.fill(HIST("REC_frag_phiQA"), clusterparticle.phi());
-        histos.fill(HIST("REC_frag_etaQA"), clusterparticle.eta());
-        histos.fill(HIST("REC_frag_ptQA"), clusterparticle.pt());
+      if (ClusterHasDirectPhoton > 0) {
+        histos.fill(HIST("REC_cluster_direct_phiQA"), mccluster.phi());
+        histos.fill(HIST("REC_cluster_direct_etaQA"), mccluster.eta());
+        histos.fill(HIST("REC_cluster_direct_energyQA"), mccluster.energy());
       }
-    } // clusterparticle loop
+      if (ClusterHasDirectPhoton > 0 && ClusterHasFragPhoton > 0) {
+        histos.fill(HIST("REC_cluster_both_phiQA"), mccluster.phi());
+        histos.fill(HIST("REC_cluster_both_etaQA"), mccluster.eta());
+        histos.fill(HIST("REC_cluster_both_energyQA"), mccluster.energy());
+      }
 
-    if(ClusterHasFragPhoton>0){
-      histos.fill(HIST("REC_cluster_frag_phiQA"), mccluster.phi());
-      histos.fill(HIST("REC_cluster_frag_etaQA"), mccluster.eta());
-      histos.fill(HIST("REC_cluster_frag_energyQA"), mccluster.energy());
-    }
-    if(ClusterHasDirectPhoton>0){
-      histos.fill(HIST("REC_cluster_direct_phiQA"), mccluster.phi());
-      histos.fill(HIST("REC_cluster_direct_etaQA"), mccluster.eta());
-      histos.fill(HIST("REC_cluster_direct_energyQA"), mccluster.energy());
-    }
-    if(ClusterHasDirectPhoton>0 && ClusterHasFragPhoton>0){
-      histos.fill(HIST("REC_cluster_both_phiQA"), mccluster.phi());
-      histos.fill(HIST("REC_cluster_both_etaQA"), mccluster.eta());
-      histos.fill(HIST("REC_cluster_both_energyQA"), mccluster.energy());
-    }
-
-    //now we do cluster tracks
-    bool photontrigger = false; // is a neutral cluster
-    bool chargetrigger = false; // is definitely not a neutral cluster
-    auto tracksofcluster = mccluster.matchedTracks_as<soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs>>();
+      // now we do cluster tracks
+      bool photontrigger = false; // is a neutral cluster
+      bool chargetrigger = false; // is definitely not a neutral cluster
+      auto tracksofcluster = mccluster.matchedTracks_as<soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs>>();
       // first, we check if veto is required
       double sumptT = 0;
       bool clusterqa = false;
@@ -1767,7 +1794,7 @@ struct statPromptPhoton {
         histos.fill(HIST("REC_Track_v_Cluster_Phi"), phidiff);
         histos.fill(HIST("REC_Track_v_Cluster_Eta"), etadiff);
         histos.fill(HIST("REC_Track_v_Cluster_Phi_Eta"), phidiff, etadiff);
-	histos.fill(HIST("REC_track_phiQA"), ctrack.phi());
+        histos.fill(HIST("REC_track_phiQA"), ctrack.phi());
         histos.fill(HIST("REC_track_etaQA"), ctrack.eta());
         histos.fill(HIST("REC_track_ptQA"), ctrack.pt());
       } // track of cluster loop
@@ -1798,8 +1825,8 @@ struct statPromptPhoton {
         histos.fill(HIST("REC_cluster_etaQA"), mccluster.eta());
         histos.fill(HIST("REC_cluster_energyQA"), mccluster.energy());
       }
-    }//clusters
-  }//main function
+    } // clusters
+  } // main function
   PROCESS_SWITCH(statPromptPhoton, processMCRec_simple, "processMC_QA_Rce", false);
 
 }; // end of main struct
@@ -1808,4 +1835,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<statPromptPhoton>(cfgc)};
 };
-
