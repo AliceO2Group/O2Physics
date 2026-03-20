@@ -442,13 +442,12 @@ struct AnalysisEnergyCorrelator {
     auto lepton2MC = track2.mcParticle();
     uint32_t mcDecision = 0;
     int isig = 0;
-
     for (auto sig = fRecMCTripleSignals.begin(); sig != fRecMCTripleSignals.end(); sig++, isig++) {
       if ((*sig)->CheckSignal(true, lepton1MC, lepton2MC, hadronMC)) {
         mcDecision |= (static_cast<uint32_t>(1) << isig);
       }
     }
-
+    
     auto motherParticle = lepton1MC.template mothers_first_as<McParticles>();
     // Fill dilepton-hadron variables
     std::vector<float> fTransRange = fConfigDileptonHadronOptions.fConfigTransRange;
