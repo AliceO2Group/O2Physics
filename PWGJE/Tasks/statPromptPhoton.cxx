@@ -1512,9 +1512,9 @@ struct statPromptPhoton {
 
       bool isPhoton23 = (hardParticle.pdgCode() == 22);
 
-      // For prompt: find the final-state photon descending from this -23 photon
-      // For frag: find any final-state photon descending from this -23 non-photon
-      // We search all final-state photons and check if they trace back here
+      // For prompt: find the final-state photon descending from this -23 photon//
+      // For frag: find any final-state photon descending from this -23 non-photon//
+      // We search all final-state photons and check if they trace back here//
 
       for (auto& mcParticle : mcParticles) {
         if (mcParticle.pdgCode() != 22) continue;
@@ -1581,7 +1581,7 @@ struct statPromptPhoton {
   }
   PROCESS_SWITCH(statPromptPhoton, processMCGen_simple, "processMC_QA_Gen", false);
   int nEventsRecMC_simple = 0;
-  void processMCRec_simple(jfilteredCollisions::iterator const& collision, jfilteredMCClusters const& mcclusters, jTrackCandidates const& tracks, soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs> const&, TrackCandidates const&, aod::JMcParticles const& mcparticles, BcCandidates const&, jEMCtracks const& emctracks, aod::JetMcCollisions const&)
+  void processMCRec_simple(jfilteredCollisions::iterator const& collision, jfilteredMCClusters const& mcclusters, jTrackCandidates const&, soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs> const&, TrackCandidates const&, aod::JMcParticles const& mcparticles, BcCandidates const&, jEMCtracks const& emctracks, aod::JetMcCollisions const&)
   {
     nEventsRecMC_simple++;
     if (cfgDebug) {
