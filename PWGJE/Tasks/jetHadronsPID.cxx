@@ -37,7 +37,7 @@ using namespace o2::constants::math;
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
 
 
-using PionTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCPi, aod::pidTOFPi>;
+using PionTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA>;
 
 struct PIDHadronsInJets {
 
@@ -210,24 +210,24 @@ struct PIDHadronsInJets {
 
         double pt = track.pt();
 
-        // Check Pion PID (+/- 3 Sigma)
-        double nsigmaTPCPi = track.tpcNSigmaPi();
+        // Check Pion PID (+/- 3 Sigma) 
+        double nsigmaTPCPi = track.pidTPC().nSigmaPi();
         double nSigmaITSPi = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Pion>(track));
 
-        // Fill TPC histograms
+        // Fill TPC
         if (std::abs(nsigmaTPCPi) <= 3.0) {
             registryData.fill(HIST("pion_jet_tpc"), pt, nsigmaTPCPi);
         }
         
-        // Fill TOF histograms
+        // Fill TOF
         if (track.hasTOF()) {
-            double nsigmaTOFPi = track.tofNSigmaPi();
+            double nsigmaTOFPi = track.pidTOF().nSigmaPi();
             if (std::abs(nsigmaTOFPi) <= 3.0) {
                 registryData.fill(HIST("pion_jet_tof"), pt, nsigmaTOFPi);
             }
         }
 
-        // Fill ITS histograms
+        // Fill ITS
         if (std::abs(nSigmaITSPi) <= 3.0) {
             registryData.fill(HIST("pion_jet_its"), pt, nSigmaITSPi);
         }
