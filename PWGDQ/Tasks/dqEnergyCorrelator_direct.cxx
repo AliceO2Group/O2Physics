@@ -296,6 +296,7 @@ struct AnalysisEnergyCorrelator {
       for (auto& t : addHadronCuts) {
         fHadronCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
         fHadronCutNames.push_back(t->GetName());
+        hadronCutStr += Form(",%s", t->GetName());
       }
     }
 
@@ -441,6 +442,7 @@ struct AnalysisEnergyCorrelator {
     auto lepton2MC = track2.mcParticle();
     uint32_t mcDecision = 0;
     int isig = 0;
+
     for (auto sig = fRecMCTripleSignals.begin(); sig != fRecMCTripleSignals.end(); sig++, isig++) {
       if ((*sig)->CheckSignal(true, lepton1MC, lepton2MC, hadronMC)) {
         mcDecision |= (static_cast<uint32_t>(1) << isig);
@@ -451,7 +453,7 @@ struct AnalysisEnergyCorrelator {
     // Fill dilepton-hadron variables
     std::vector<float> fTransRange = fConfigDileptonHadronOptions.fConfigTransRange;
     VarManager::FillEnergyCorrelatorTriple(track1, track2, hadron, VarManager::fgValues, fTransRange[0], fTransRange[1], fConfigDileptonHadronOptions.fConfigApplyMassEC.value);
-    VarManager::FillEnergyCorrelatorsUnfoldingTriple<VarManager::kJpsiHadronMass>(track1, track2, hadron, motherParticle, hadronMC, VarManager::fgValues);
+    VarManager::FillEnergyCorrelatorsUnfoldingTriple<VarManager::kJpsiHadronMass>(track1, track2, hadron, motherParticle, hadronMC, VarManager::fgValues, fConfigDileptonHadronOptions.fConfigApplyMassEC.value);
 
     int iHadronCut = 0;
     for (auto hCut = fHadronCuts.begin(); hCut != fHadronCuts.end(); hCut++, iHadronCut++) {
