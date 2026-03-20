@@ -496,6 +496,10 @@ struct photonhbt {
   /// Defined early so all histogram-booking and fill functions can use it.
 
   struct PairQAObservables {
+    // photon four-vectors and pair kinematics
+    ROOT::Math::PtEtaPhiMVector v1;
+    ROOT::Math::PtEtaPhiMVector v2;
+    ROOT::Math::PtEtaPhiMVector k12;
     // conversion-point coordinates
     float x1 = 0.f, y1 = 0.f, z1 = 0.f;
     float x2 = 0.f, y2 = 0.f, z2 = 0.f;
@@ -510,10 +514,6 @@ struct photonhbt {
     float opa = 0.f;
     float cosOA = 0.f;
     float drOverCosOA = 0.f;
-    // photon four-vectors and pair kinematics
-    ROOT::Math::PtEtaPhiMVector v1;
-    ROOT::Math::PtEtaPhiMVector v2;
-    ROOT::Math::PtEtaPhiMVector k12;
     float deta = 0.f, dphi = 0.f;
     float pairEta = 0.f, pairPhi = 0.f;
     float kt = 0.f, qinv = 0.f;
@@ -1566,10 +1566,10 @@ struct photonhbt {
 
   PROCESS_SWITCH(photonhbt, processAnalysis, "pairing for analysis", true);
 
-  template <typename TCollisions,
-            typename TPhotons,
-            typename TLegs,
-            typename TMCParticles,
+ template <soa::is_table TCollisions,
+            soa::is_table TPhotons,
+            soa::is_table TLegs,
+            soa::is_table TMCParticles,
             typename TPreslice,
             typename TCut>
   void runPairingMC(TCollisions const& collisions,
