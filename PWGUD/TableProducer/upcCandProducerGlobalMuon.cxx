@@ -17,7 +17,10 @@
 #include "PWGUD/Core/UPCCutparHolder.h"
 #include "PWGUD/Core/UPCHelpers.h"
 
+#include "Common/Core/fwdtrackUtilities.h"
+
 #include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/GeomConstants.h"
 #include "CommonConstants/LHCConstants.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DetectorsBase/Propagator.h"
@@ -25,8 +28,6 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "Common/Core/fwdtrackUtilities.h"
-#include "CommonConstants/GeomConstants.h"
 #include "GlobalTracking/MatchGlobalFwd.h"
 #include "MCHTracking/TrackExtrap.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
@@ -90,9 +91,9 @@ struct UpcCandProducerGlobalMuon {
   o2::globaltracking::MatchGlobalFwd fMatching;
 
   // Ambiguous track propagation members
-  float fBz{0};                                            // Magnetic field at MFT center
+  float fBz{0};                                           // Magnetic field at MFT center
   static constexpr double fCcenterMFT[3] = {0, 0, -61.4}; // Field evaluation point at center of MFT
-  float fZShift{0};                                        // z-vertex shift for forward track propagation
+  float fZShift{0};                                       // z-vertex shift for forward track propagation
 
   void init(InitContext&)
   {
@@ -460,7 +461,7 @@ struct UpcCandProducerGlobalMuon {
   // and compute DCA (adapted from ambiguousTrackPropagation)
   // Returns {DCAxy, DCAz, DCAx, DCAy}
   std::array<double, 4> propagateGlobalToDCA(ForwardTracks::iterator const& track,
-                                              double colX, double colY, double colZ)
+                                             double colX, double colY, double colZ)
   {
     o2::track::TrackParCovFwd trackPar = o2::aod::fwdtrackutils::getTrackParCovFwdShift(track, fZShift);
     std::array<double, 3> dcaOrig;
