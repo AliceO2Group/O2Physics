@@ -1306,7 +1306,6 @@ struct RadialFlowDecorr {
         loadLimits("Hist2D_globalTracks_cent", state.mLimitsNchCent, state.mMinXNchCent, state.mMaxXNchCent);
       }
     }
-
     if (!cfgRunGetEff && (cfgFlat)) {
       if (cfgRunDataMean || cfgRunDataFluc) {
         LOGF(info, "Data Run: Loading flattening maps from %s", pathDataFlat.c_str());
