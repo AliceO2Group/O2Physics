@@ -16,7 +16,6 @@
 #ifndef PWGEM_PHOTONMESON_CORE_V0PHOTONCANDIDATE_H_
 #define PWGEM_PHOTONMESON_CORE_V0PHOTONCANDIDATE_H_
 
-#include "PWGEM/Dilepton/Utils/PairUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 
 #include "Common/Core/RecoDecay.h"
@@ -228,55 +227,55 @@ struct V0PhotonCandidate {
   CentType getCentType() const { return centType; }
 
  private:
-  float conversionPointx;
-  float conversionPointy;
-  float conversionPointz;
-  float px;
-  float py;
-  float pz;
-  float posPx;
-  float posPy;
-  float posPz;
-  float elePx;
-  float elePy;
-  float elePz;
-  float pT;
-  float posPT;
-  float elePT;
-  float dcaXYV0ToPV;
-  float dcaZV0ToPV;
-  float alpha;
-  float qt;
-  float phiv;
-  float psipair;
-  float cospa;
-  float cospaRZ;
-  float cospaXY;
-  float chi2ndf;
-  float cent;
-  float pca;
-  float eta;
-  float posEta;
-  float eleEta;
-  float posdcaXY;
-  float posdcaZ;
-  float eledcaXY;
-  float eledcaZ;
-  float posTPCNClsShared;
-  float posTPCNClsFindable;
-  float posTPCNClsFindableMinusShared;
-  float posTPCNClsFindableMinusCrossedRows;
-  float posTPCChi2NCl;
-  float posTPCSignal;
-  float posITSClusterSizes;
-  float eleTPCNClsShared;
-  float eleTPCNClsFindable;
-  float eleTPCNClsFindableMinusShared;
-  float eleTPCNClsFindableMinusCrossedRows;
-  float eleTPCChi2NCl;
-  float eleTPCSignal;
-  float eleITSClusterSizes;
-  CentType centType;
+  float conversionPointx{0.f};
+  float conversionPointy{0.f};
+  float conversionPointz{0.f};
+  float px{0.f};
+  float py{0.f};
+  float pz{0.f};
+  float posPx{0.f};
+  float posPy{0.f};
+  float posPz{0.f};
+  float elePx{0.f};
+  float elePy{0.f};
+  float elePz{0.f};
+  float pT{0.f};
+  float posPT{0.f};
+  float elePT{0.f};
+  float dcaXYV0ToPV{0.f};
+  float dcaZV0ToPV{0.f};
+  float alpha{0.f};
+  float qt{0.f};
+  float phiv{0.f};
+  float psipair{0.f};
+  float cospa{0.f};
+  float cospaRZ{0.f};
+  float cospaXY{0.f};
+  float chi2ndf{0.f};
+  float cent{0.f};
+  float pca{0.f};
+  float eta{0.f};
+  float posEta{0.f};
+  float eleEta{0.f};
+  float posdcaXY{0.f};
+  float posdcaZ{0.f};
+  float eledcaXY{0.f};
+  float eledcaZ{0.f};
+  float posTPCNClsShared{0.f};
+  float posTPCNClsFindable{0.f};
+  float posTPCNClsFindableMinusShared{0.f};
+  float posTPCNClsFindableMinusCrossedRows{0.f};
+  float posTPCChi2NCl{0.f};
+  float posTPCSignal{0.f};
+  float posITSClusterSizes{0.f};
+  float eleTPCNClsShared{0.f};
+  float eleTPCNClsFindable{0.f};
+  float eleTPCNClsFindableMinusShared{0.f};
+  float eleTPCNClsFindableMinusCrossedRows{0.f};
+  float eleTPCChi2NCl{0.f};
+  float eleTPCSignal{0.f};
+  float eleITSClusterSizes{0.f};
+  CentType centType{CentFT0C};
 };
 
 #endif // PWGEM_PHOTONMESON_CORE_V0PHOTONCANDIDATE_H_
