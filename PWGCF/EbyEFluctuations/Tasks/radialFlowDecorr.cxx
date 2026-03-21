@@ -658,13 +658,17 @@ struct RadialFlowDecorr {
       return (effidx == 0) ? 1.0f : 0.0f;
     }
     TH3F* h = (effidx == 0) ? state.hEff[pidType] : state.hFake[pidType];
-    if (!h) {
-      return (effidx == 0) ? 1.0f : 0.0f; // Safe defaults if map is missing
-    }
+
+    if (!h)
+      return -1;
+
     int ibx = h->GetXaxis()->FindBin(mult);
     int iby = h->GetYaxis()->FindBin(pt);
     int ibz = h->GetZaxis()->FindBin(eta);
     float val = h->GetBinContent(ibx, iby, ibz);
+
+    if (effidx == 0)
+      return (val > 0.f) ? val : 1.0f;
     return val;
   }
 
@@ -1302,7 +1306,6 @@ struct RadialFlowDecorr {
         loadLimits("Hist2D_globalTracks_cent", state.mLimitsNchCent, state.mMinXNchCent, state.mMaxXNchCent);
       }
     }
-
     if (!cfgRunGetEff && (cfgFlat)) {
       if (cfgRunDataMean || cfgRunDataFluc) {
         LOGF(info, "Data Run: Loading flattening maps from %s", pathDataFlat.c_str());
@@ -1448,6 +1451,9 @@ struct RadialFlowDecorr {
     histos.fill(HIST("Hist2D_PVTracks_cent"), cent, multPV);
 
     for (const auto& track : mcTracks) {
+      if (track.collisionId() != mcCollision.index())
+        continue;
+
       if (!isTrackSelected(track))
         continue;
       fillNSigmaBefCut(track, cent);
@@ -1476,6 +1482,9 @@ struct RadialFlowDecorr {
     histos.fill(HIST("Hist2D_PVTracks_cent"), cent, multPV);
 
     for (const auto& particle : mcParticles) {
+      if (particle.mcCollisionId() != mcCollision.mcCollisionId())
+        continue;
+
       if (!isParticleSelected(particle) || !particle.isPhysicalPrimary())
         continue;
 
@@ -1520,6 +1529,9 @@ struct RadialFlowDecorr {
     }
 
     for (const auto& track : mcTracks) {
+      if (track.collisionId() != mcCollision.index())
+        continue;
+
       if (!isTrackSelected(track))
         continue;
 
@@ -1733,6 +1745,9 @@ struct RadialFlowDecorr {
     histos.fill(HIST("Hist2D_globalTracks_cent"), cent, mcTracks.size());
     histos.fill(HIST("Hist2D_PVTracks_cent"), cent, multPV);
     for (const auto& track : mcTracks) {
+      if (track.collisionId() != mcCollision.index())
+        continue;
+
       if (!isTrackSelected(track))
         continue;
 
@@ -1836,6 +1851,9 @@ struct RadialFlowDecorr {
     memset(sumWiptiRecoEffCorr, 0, sizeof(sumWiptiRecoEffCorr));
 
     for (const auto& particle : mcParticles) {
+      if (particle.mcCollisionId() != mcCollision.mcCollisionId())
+        continue;
+
       if (!isParticleSelected(particle) || !particle.isPhysicalPrimary())
         continue;
       float pt = particle.pt(), eta = particle.eta();
@@ -1880,6 +1898,9 @@ struct RadialFlowDecorr {
     }
 
     for (const auto& track : mcTracks) {
+      if (track.collisionId() != mcCollision.index())
+        continue;
+
       if (!isTrackSelected(track))
         continue;
       float pt = track.pt(), eta = track.eta(), phi = track.phi();
@@ -2198,6 +2219,9 @@ struct RadialFlowDecorr {
     double p1kBarFt0A = 0.0, p1kBarFt0C = 0.0;
 
     for (const auto& particle : mcParticles) {
+      if (particle.mcCollisionId() != mcCollision.mcCollisionId())
+        continue;
+
       if (!isParticleSelected(particle) || !particle.isPhysicalPrimary())
         continue;
 
@@ -2238,6 +2262,9 @@ struct RadialFlowDecorr {
     } // end truth loop
 
     for (const auto& track : mcTracks) {
+      if (track.collisionId() != mcCollision.index())
+        continue;
+
       if (!isTrackSelected(track))
         continue;
 
