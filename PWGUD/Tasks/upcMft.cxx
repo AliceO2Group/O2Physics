@@ -10,30 +10,40 @@
 // or submit itself to any jurisdiction.
 
 // c++ headers
-#include <iostream>
+#include <cstdlib>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 // root headers
-#include <TH1F.h>
-#include <TH2F.h>
-#include "TMath.h"
-#include "TLorentzVector.h"
+#include <Math/MatrixRepresentationsStatic.h>
+#include <TLorentzVector.h>
 
 // framework headers
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
 
 // for track propagation
-#include "ReconstructionDataFormats/TrackFwd.h"
-#include "Math/MatrixFunctions.h"
-#include "Math/SMatrix.h"
-#include "MathUtils/Utils.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/Propagator.h"
-#include "TGeoGlobalMagField.h"
-#include "Field/MagneticField.h"
-#include "DataFormatsMFT/TrackMFT.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/Propagator.h>
+#include <Field/MagneticField.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <ReconstructionDataFormats/TrackFwd.h>
+
+#include <Math/MatrixFunctions.h>
+#include <Math/SMatrix.h>
+#include <TGeoGlobalMagField.h>
+
+#include <RtypesCore.h>
 
 // define namespaces
 using namespace o2;

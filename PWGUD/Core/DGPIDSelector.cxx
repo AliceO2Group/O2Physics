@@ -8,10 +8,21 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#include <vector>
-#include <string>
-#include "CommonConstants/PhysicsConstants.h"
 #include "DGPIDSelector.h"
+
+#include <Framework/Logger.h>
+
+#include <TDatabasePDG.h>
+#include <TParticlePDG.h>
+
+#include <sys/types.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <cstdlib>
+#include <functional>
+#include <string>
+#include <vector>
 
 // -----------------------------------------------------------------------------
 float particleMass(TDatabasePDG* pdg, int pid)

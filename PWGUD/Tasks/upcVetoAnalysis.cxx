@@ -8,21 +8,39 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/LHCConstants.h>
+#include <DataFormatsFIT/Triggers.h>
+#include <DataFormatsParameters/GRPECSObject.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TH2.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
+#include <algorithm>
+#include <bitset>
+#include <cstdint>
+#include <cstdlib>
+#include <iterator>
 #include <map>
+#include <memory>
+#include <numeric>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include <unordered_map>
-#include <memory>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/LHCConstants.h"
-#include "DataFormatsFIT/Triggers.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "DataFormatsParameters/GRPECSObject.h"
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;

@@ -14,17 +14,39 @@
 /// \author Paul Buehler, paul.buehler@oeaw.ac.at
 /// \since  04.05.2023
 
-#include <vector>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "ReconstructionDataFormats/BCRange.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/DataModel/FT0Corrected.h"
+#include "DGCutparHolder.h"
+
 #include "PWGUD/Core/UDHelpers.h"
-#include "Framework/StaticFor.h"
-#include "TLorentzVector.h"
-#include "TMath.h"
+
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/FT0Corrected.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CommonConstants/LHCConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/BCRange.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <TLorentzVector.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <string_view>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

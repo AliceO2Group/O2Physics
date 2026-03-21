@@ -17,23 +17,28 @@
 //
 
 // C++ headers
-#include <algorithm>
-#include <set>
-#include <utility>
 #include <vector>
 
 // O2 headers
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <SimulationDataFormat/MCGenProperties.h>
 
 // O2Physics headers
 #include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
 
 // ROOT headers
-#include "Math/Vector4D.h"
+#include <Math/GenVector/LorentzVector.h>
+#include <Math/GenVector/PxPyPzE4D.h>
+#include <TH2.h>
 
 using namespace o2;
 using namespace o2::framework;
