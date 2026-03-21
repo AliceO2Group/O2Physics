@@ -667,9 +667,12 @@ struct HfTaskD0 {
           valuesToFill.push_back(static_cast<double>(mass));
           valuesToFill.push_back(static_cast<double>(ptCandidate));
           if constexpr (FillMl) {
-            valuesToFill.push_back(candidate.mlProbD0()[0]);
-            valuesToFill.push_back(candidate.mlProbD0()[1]);
-            valuesToFill.push_back(candidate.mlProbD0()[2]);
+            auto const& mlScores = candidate.mlProbD0();
+            if (mlScores.size() == 3) {
+                valuesToFill.push_back(mlScores[0]);
+                valuesToFill.push_back(mlScores[1]);
+                valuesToFill.push_back(mlScores[2]);
+            }
           }
           valuesToFill.push_back(static_cast<double>(HfHelper::yD0(candidate)));
           valuesToFill.push_back(static_cast<double>(d0Type));
