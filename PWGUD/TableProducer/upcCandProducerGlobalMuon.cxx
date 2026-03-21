@@ -17,7 +17,10 @@
 #include "PWGUD/Core/UPCCutparHolder.h"
 #include "PWGUD/Core/UPCHelpers.h"
 
+#include "Common/Core/fwdtrackUtilities.h"
+
 #include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/GeomConstants.h"
 #include "CommonConstants/LHCConstants.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DetectorsBase/Propagator.h"
@@ -71,6 +74,13 @@ struct UpcCandProducerGlobalMuon {
   Configurable<float> fMaxEtaMFT{"fMaxEtaMFT", -2.5, "Maximum eta for MFT acceptance"};
   Configurable<bool> fSaveMFTClusters{"fSaveMFTClusters", true, "Save MFT cluster information"};
 
+  // Ambiguous track propagation configurables
+  Configurable<bool> fApplyZShiftFromCCDB{"fApplyZShiftFromCCDB", false, "Apply z-shift from CCDB for global muon propagation"};
+  Configurable<std::string> fZShiftPath{"fZShiftPath", "Users/m/mcoquet/ZShift", "CCDB path for z-shift"};
+  Configurable<float> fManualZShift{"fManualZShift", 0.0f, "Manual z-shift for global muon propagation to PV"};
+  Configurable<float> fMaxDCAxy{"fMaxDCAxy", 999.f, "Maximum DCAxy for global muon track selection (cm)"};
+  Configurable<int> fBcWindowCollision{"fBcWindowCollision", 4, "BC window for collision search for DCA-based vertex assignment"};
+
   using ForwardTracks = o2::soa::Join<o2::aod::FwdTracks, o2::aod::FwdTracksCov>;
 
   HistogramRegistry histRegistry{"HistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -80,10 +90,15 @@ struct UpcCandProducerGlobalMuon {
   o2::ccdb::CcdbApi fCCDBApi;
   o2::globaltracking::MatchGlobalFwd fMatching;
 
+  // Ambiguous track propagation members
+  float fBz{0};                                           // Magnetic field at MFT center
+  static constexpr double fCcenterMFT[3] = {0, 0, -61.4}; // Field evaluation point at center of MFT
+  float fZShift{0};                                       // z-vertex shift for forward track propagation
+
   void init(InitContext&)
   {
     fUpcCuts = (UPCCutparHolder)fUpcCutsConf;
-    if (fUpcCuts.getUseFwdCuts()) {
+    if (fUpcCuts.getUseFwdCuts() || fEnableMFT) {
       fCCDB->setURL("http://alice-ccdb.cern.ch");
       fCCDB->setCaching(true);
       fCCDB->setLocalObjectValidityChecking();
@@ -110,6 +125,12 @@ struct UpcCandProducerGlobalMuon {
       const AxisSpec axisEta{100, -4.0, -2.0, "#eta"};
       histRegistry.add("hEtaMFT", "MFT track eta", kTH1F, {axisEta});
       histRegistry.add("hEtaGlobal", "Global track eta", kTH1F, {axisEta});
+
+      const AxisSpec axisDCAxy{200, 0., 10., "DCA_{xy} (cm)"};
+      const AxisSpec axisDCAz{200, -10., 10., "DCA_{z} (cm)"};
+      histRegistry.add("hDCAxyGlobal", "DCAxy of global tracks to best collision", kTH1F, {axisDCAxy});
+      histRegistry.add("hDCAzGlobal", "DCAz of global tracks to best collision", kTH1F, {axisDCAz});
+      histRegistry.add("hNCompatColls", "Number of compatible collisions per global track", kTH1F, {{21, -0.5, 20.5}});
     }
   }
 
@@ -436,6 +457,19 @@ struct UpcCandProducerGlobalMuon {
     return (eta > fMinEtaMFT && eta < fMaxEtaMFT);
   }
 
+  // Propagate global muon track to collision vertex using helix propagation
+  // and compute DCA (adapted from ambiguousTrackPropagation)
+  // Returns {DCAxy, DCAz, DCAx, DCAy}
+  std::array<double, 4> propagateGlobalToDCA(ForwardTracks::iterator const& track,
+                                             double colX, double colY, double colZ)
+  {
+    o2::track::TrackParCovFwd trackPar = o2::aod::fwdtrackutils::getTrackParCovFwdShift(track, fZShift);
+    std::array<double, 3> dcaOrig;
+    trackPar.propagateToDCAhelix(fBz, {colX, colY, colZ}, dcaOrig);
+    double dcaXY = std::sqrt(dcaOrig[0] * dcaOrig[0] + dcaOrig[1] * dcaOrig[1]);
+    return {dcaXY, dcaOrig[2], dcaOrig[0], dcaOrig[1]};
+  }
+
   void createCandidates(ForwardTracks const& fwdTracks,
                         o2::aod::FwdTrkCls const& fwdTrkCls,
                         o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
@@ -451,7 +485,7 @@ struct UpcCandProducerGlobalMuon {
     using o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack;
 
     int32_t runNumber = bcs.iteratorAt(0).runNumber();
-    if (fUpcCuts.getUseFwdCuts()) {
+    if (fUpcCuts.getUseFwdCuts() || fEnableMFT) {
       if (runNumber != fRun) {
         fRun = runNumber;
         std::map<std::string, std::string> metadata;
@@ -461,7 +495,28 @@ struct UpcCandProducerGlobalMuon {
         o2::base::Propagator::initFieldFromGRP(grpmag);
         if (!o2::base::GeometryManager::isGeometryLoaded())
           fCCDB->get<TGeoManager>("GLO/Config/GeometryAligned");
-        o2::mch::TrackExtrap::setField();
+        if (fUpcCuts.getUseFwdCuts()) {
+          o2::mch::TrackExtrap::setField();
+        }
+        // Initialize MFT magnetic field and z-shift for ambiguous track propagation
+        if (fEnableMFT) {
+          o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+          fBz = field->getBz(fCcenterMFT);
+          LOG(info) << "Magnetic field at MFT center: bZ = " << fBz;
+          if (fApplyZShiftFromCCDB) {
+            auto* zShift = fCCDB->getForTimeStamp<std::vector<float>>(fZShiftPath, ts);
+            if (zShift != nullptr && !zShift->empty()) {
+              fZShift = (*zShift)[0];
+              LOGF(info, "z-shift from CCDB: %f cm", fZShift);
+            } else {
+              fZShift = 0;
+              LOGF(info, "z-shift not found in CCDB path %s, set to 0 cm", fZShiftPath.value);
+            }
+          } else {
+            fZShift = fManualZShift;
+            LOGF(info, "z-shift manually set to %f cm", fZShift);
+          }
+        }
       }
     }
 
@@ -533,6 +588,15 @@ struct UpcCandProducerGlobalMuon {
       }
     }
 
+    // Map global BC to collisions for DCA-based vertex assignment
+    std::map<uint64_t, std::vector<int64_t>> mapGlobalBCtoCollisions;
+    if (fEnableMFT) {
+      for (const auto& col : collisions) {
+        uint64_t gbc = vGlobalBCs[col.bcId()];
+        mapGlobalBCtoCollisions[gbc].push_back(col.globalIndex());
+      }
+    }
+
     std::vector<int64_t> selTrackIds{}; // NEW: For cluster saving
 
     int32_t candId = 0;
@@ -552,13 +616,57 @@ struct UpcCandProducerGlobalMuon {
             continue;
         }
 
-        uint16_t numContrib = 0;
         auto& vGlobalIds = gbc_globalids.second;
 
-        // Check if we have global tracks (with MFT)
+        // Step 1: Find best collision vertex using DCA-based propagation
+        // (adapted from ambiguousTrackPropagation processMFTReassoc3D)
+        float bestVtxX = 0., bestVtxY = 0., bestVtxZ = 0.;
+        double bestAvgDCA = 999.;
+        bool hasVertex = false;
+        int nCompatColls = 0;
+
+        for (int dbc = -static_cast<int>(fBcWindowCollision); dbc <= static_cast<int>(fBcWindowCollision); dbc++) {
+          uint64_t searchBC = globalBcGlobal + dbc;
+          auto itCol = mapGlobalBCtoCollisions.find(searchBC);
+          if (itCol == mapGlobalBCtoCollisions.end())
+            continue;
+          for (auto colIdx : itCol->second) {
+            nCompatColls++;
+            const auto& col = collisions.iteratorAt(colIdx);
+            double sumDCAxy = 0.;
+            int nTracks = 0;
+            for (const auto& iglobal : vGlobalIds) {
+              const auto& trk = fwdTracks.iteratorAt(iglobal);
+              auto dca = propagateGlobalToDCA(trk, col.posX(), col.posY(), col.posZ());
+              sumDCAxy += dca[0];
+              nTracks++;
+            }
+            double avgDCA = nTracks > 0 ? sumDCAxy / nTracks : 999.;
+            if (!hasVertex || avgDCA < bestAvgDCA) {
+              bestAvgDCA = avgDCA;
+              bestVtxX = col.posX();
+              bestVtxY = col.posY();
+              bestVtxZ = col.posZ();
+              hasVertex = true;
+            }
+          }
+        }
+
+        histRegistry.fill(HIST("hNCompatColls"), nCompatColls);
+
+        // Step 2: Select tracks with DCA quality cut
         std::vector<int64_t> tracksToSave;
         for (const auto& iglobal : vGlobalIds) {
           const auto& trk = fwdTracks.iteratorAt(iglobal);
+
+          // Apply DCA cut using best collision vertex
+          if (hasVertex) {
+            auto dca = propagateGlobalToDCA(trk, bestVtxX, bestVtxY, bestVtxZ);
+            histRegistry.fill(HIST("hDCAxyGlobal"), dca[0]);
+            histRegistry.fill(HIST("hDCAzGlobal"), dca[1]);
+            if (dca[0] > static_cast<double>(fMaxDCAxy))
+              continue;
+          }
 
           // Check MFT acceptance and decide which track to use
           if (isInMFTAcceptance(trk.eta())) {
@@ -567,19 +675,18 @@ struct UpcCandProducerGlobalMuon {
             histRegistry.fill(HIST("hEtaMFT"), trk.eta());
           } else {
             // Outside MFT acceptance - look for MCH-MID counterpart
-            // Find the corresponding MCH-MID track at the same BC
             auto itMid = mapGlobalBcsWithMCHMIDTrackIds.find(globalBcGlobal);
             if (itMid != mapGlobalBcsWithMCHMIDTrackIds.end()) {
-              // Use MCH-MID track instead
               if (!itMid->second.empty()) {
                 tracksToSave.push_back(itMid->second[0]);
-                itMid->second.erase(itMid->second.begin()); // Remove used track
+                itMid->second.erase(itMid->second.begin());
               }
             }
           }
         }
 
-        // Write selected tracks
+        // Step 3: Write tracks and event candidate with actual vertex position
+        uint16_t numContrib = 0;
         for (const auto& trkId : tracksToSave) {
           if (!addToFwdTable(candId, trkId, globalBcGlobal, 0., fwdTracks, mcFwdTrackLabels))
             continue;
@@ -590,7 +697,7 @@ struct UpcCandProducerGlobalMuon {
         if (numContrib < 1)
           continue;
 
-        eventCandidates(globalBcGlobal, runNumber, 0., 0., 0., 0, numContrib, 0, 0);
+        eventCandidates(globalBcGlobal, runNumber, bestVtxX, bestVtxY, bestVtxZ, 0, numContrib, 0, 0);
         std::vector<float> amplitudesV0A{};
         std::vector<int8_t> relBCsV0A{};
         std::vector<float> amplitudesT0A{};
@@ -683,8 +790,9 @@ struct UpcCandProducerGlobalMuon {
     vAmbFwdTrackIndexBCs.clear();
     mapGlobalBcsWithMCHMIDTrackIds.clear();
     mapGlobalBcsWithMCHTrackIds.clear();
-    mapGlobalBcsWithGlobalTrackIds.clear(); // NEW
-    selTrackIds.clear();                    // NEW
+    mapGlobalBcsWithGlobalTrackIds.clear();
+    mapGlobalBCtoCollisions.clear();
+    selTrackIds.clear();
   }
 
   void processFwd(ForwardTracks const& fwdTracks,
