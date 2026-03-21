@@ -669,9 +669,9 @@ struct HfTaskD0 {
           if constexpr (FillMl) {
             auto const& mlScores = candidate.mlProbD0();
             if (mlScores.size() == 3) {
-                valuesToFill.push_back(mlScores[0]);
-                valuesToFill.push_back(mlScores[1]);
-                valuesToFill.push_back(mlScores[2]);
+              valuesToFill.push_back(mlScores[0]);
+              valuesToFill.push_back(mlScores[1]);
+              valuesToFill.push_back(mlScores[2]);
             }
           }
           valuesToFill.push_back(static_cast<double>(HfHelper::yD0(candidate)));
