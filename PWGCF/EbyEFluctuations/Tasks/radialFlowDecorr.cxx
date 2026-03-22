@@ -1100,8 +1100,8 @@ struct RadialFlowDecorr {
   void init(InitContext&)
   {
     if (cfgSys == kPbPb) {
-      nChAxis = {cfgNchPbMax/2, KBinOffset, cfgNchPbMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
-      nChAxis2 = {cfgNchPbMax/4, KBinOffset, cfgNchPbMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
+      nChAxis = {cfgNchPbMax / 2, KBinOffset, cfgNchPbMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
+      nChAxis2 = {cfgNchPbMax / 4, KBinOffset, cfgNchPbMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
     } else {
       nChAxis = {cfgNchOMax, KBinOffset, cfgNchOMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
       nChAxis2 = {cfgNchOMax, KBinOffset, cfgNchOMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
