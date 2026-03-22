@@ -207,8 +207,8 @@ struct RadialFlowDecorr {
   Configurable<float> cfgLinPupParam2{"cfgLinPupParam2", 3.0f, "(Lower) Linear Pileup Cut Const"};
   Configurable<float> cfgLinPupParam3{"cfgLinPupParam3", 3.0f, "(Lower) Linear Pileup Slope"};
 
-  Configurable<int> cfgNchPbMax{"cfgNchPbMax", 10000, "Max Nch range for PbPb collisions"};
-  Configurable<int> cfgNchOMax{"cfgNchOMax", 1000, "Max Nch range for OO collisions"};
+  Configurable<int> cfgNchPbMax{"cfgNchPbMax", 4000, "Max Nch range for PbPb collisions"};
+  Configurable<int> cfgNchOMax{"cfgNchOMax", 800, "Max Nch range for OO collisions"};
 
   Configurable<int> cfgSys{"cfgSys", 1, "Efficiency to be used for which system? 1-->PbPb, 2-->NeNe, 3-->OO, 4-->pp"};
   Configurable<bool> cfgFlat{"cfgFlat", false, "Whether to use flattening weights"};
@@ -227,7 +227,7 @@ struct RadialFlowDecorr {
 
   const AxisSpec vzAxis{5, -12.5, 12.5, "Vz"};
   const AxisSpec chgAxis{3, -1.5, 1.5};
-  const AxisSpec pTAxis{{0.0, 0.2, 0.5, 1, 3, 5, 7.5, 10}, "pT Axis"};
+  const AxisSpec pTAxis{{0.0, 0.2, 0.4, 0.6, 0.8, 1, 3, 5, 7, 10}, "pT Axis"};
   const AxisSpec etaAxis{{-0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9}, "Eta"};
   const AxisSpec phiAxis{KNbinsPhi, KPhiMin, TwoPI, "#phi"};
   const AxisSpec etaBinAxis{KNEta + 1, -0.5, KNEta + 0.5, "#eta bin Number"};
@@ -1100,14 +1100,11 @@ struct RadialFlowDecorr {
   void init(InitContext&)
   {
     if (cfgSys == kPbPb) {
-      nChAxis = {cfgNchPbMax / 4, KBinOffset, cfgNchPbMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
-      nChAxis2 = {cfgNchPbMax / 20, KBinOffset, cfgNchPbMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
-    } else if (cfgSys == kNeNe || cfgSys == kOO) {
-      nChAxis = {cfgNchOMax / 2, KBinOffset, cfgNchOMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
-      nChAxis2 = {cfgNchOMax / 5, KBinOffset, cfgNchOMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
+      nChAxis = {cfgNchPbMax / 2, KBinOffset, cfgNchPbMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
+      nChAxis2 = {cfgNchPbMax / 4, KBinOffset, cfgNchPbMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
     } else {
-      nChAxis = {cfgNchOMax / 2, KBinOffset, cfgNchOMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
-      nChAxis2 = {cfgNchOMax / 5, KBinOffset, cfgNchOMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
+      nChAxis = {cfgNchOMax, KBinOffset, cfgNchOMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
+      nChAxis2 = {cfgNchOMax, KBinOffset, cfgNchOMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
     }
 
     ccdb->setURL(cfgCCDBurl.value);
@@ -1536,6 +1533,8 @@ struct RadialFlowDecorr {
         continue;
 
       float pt = track.pt(), eta = track.eta();
+      histos.fill(HIST("hPt"), pt);
+      histos.fill(HIST("hEta"), eta);
       auto sign = track.sign();
       fillNSigmaBefCut(track, cent);
 
@@ -1753,6 +1752,9 @@ struct RadialFlowDecorr {
 
       float pt = track.pt(), eta = track.eta(), phi = track.phi();
       auto sign = track.sign();
+      histos.fill(HIST("hPt"), pt);
+      histos.fill(HIST("hEta"), eta);
+      histos.fill(HIST("hPhi"), phi);
       int id = identifyTrack(track, cent);
       bool isPi = (id == KPidPionOne);
       bool isKa = (id == KPidKaonTwo);
