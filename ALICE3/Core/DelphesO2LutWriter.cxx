@@ -25,14 +25,26 @@
 #include "ALICE3/Core/FastTracker.h"
 #include "ALICE3/Core/TrackUtilities.h"
 
-#include "TAxis.h"
-#include "TDatabasePDG.h"
-#include "TLorentzVector.h"
-#include "TMatrixD.h"
-#include "TMatrixDSymEigen.h"
-#include "TVectorD.h"
+#include <Framework/Logger.h>
+#include <ReconstructionDataFormats/Track.h>
 
+#include <TAxis.h>
+#include <TDatabasePDG.h>
+#include <TGraph.h>
+#include <TLorentzVector.h>
+#include <TMatrixDSymEigen.h>
+#include <TMatrixDSymfwd.h>
+#include <TMatrixDfwd.h>
+#include <TParticlePDG.h>
+#include <TString.h>
+#include <TVectorDfwd.h>
+
+#include <Rtypes.h>
+
+#include <cmath>
 #include <cstdio>
+#include <cstdlib>
+#include <fstream>
 #include <string>
 
 // #define USE_FWD_PARAM
