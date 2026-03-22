@@ -13,11 +13,20 @@
 // \author Sigurd Nese
 // \since  November 2025
 
+#include "SGCutParHolder.h"
+#include "UDHelpers.h"
+
 #include "PWGUD/Core/SGSelector.h"
 
+#include "Common/DataModel/EventSelection.h"
+
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
 
 using namespace o2::framework;
 

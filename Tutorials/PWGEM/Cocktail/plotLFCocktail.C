@@ -9,6 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <TCanvas.h>
+#include <TFile.h>
+#include <TH1.h>
+#include <TString.h>
+#include <TVirtualPad.h>
+
 const int nHists = 7;
 TH1F* mee[nHists];
 TH1F* mee_orig[nHists];
