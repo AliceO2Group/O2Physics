@@ -379,7 +379,21 @@ struct UpcCandProducerGlobalMuon {
     }
 
     if (fUpcCuts.getUseFwdCuts()) {
-      auto pft = propagateToZero(track);
+      bool isGlobal = track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack ||
+                      track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalForwardTrack;
+      o2::dataformats::GlobalFwdTrack pft;
+      if (isGlobal && fEnableMFT) {
+        // For global tracks, use MFT helix propagation to vertex instead of
+        // MCH extrapolation, which fails because the track z is upstream of
+        // the front absorber (z ~ -60 cm vs absorber at z ~ -90 cm)
+        o2::track::TrackParCovFwd trackPar = o2::aod::fwdtrackutils::getTrackParCovFwdShift(track, fZShift);
+        trackPar.propagateToZhelix(0., fBz);
+        pft.setParameters(trackPar.getParameters());
+        pft.setZ(trackPar.getZ());
+        pft.setCovariances(trackPar.getCovariances());
+      } else {
+        pft = propagateToZero(track);
+      }
       bool pass = cut(pft, track);
       if (!pass)
         return false;
