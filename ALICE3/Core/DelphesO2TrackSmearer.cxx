@@ -13,26 +13,12 @@
 /// \file DelphesO2TrackSmearer.cxx
 /// \author Roberto Preghenella
 /// \brief Porting to O2Physics of DelphesO2 code.
-///        Minimal changes have been made to the original code for adaptation purposes, formatting and commented parts have been considered.
 ///        Relevant sources:
 ///                 DelphesO2/src/lutCovm.hh https://github.com/AliceO2Group/DelphesO2/blob/master/src/lutCovm.hh
 ///                 DelphesO2/src/TrackSmearer.cc https://github.com/AliceO2Group/DelphesO2/blob/master/src/TrackSmearer.cc
 ///                 DelphesO2/src/TrackSmearer.hh https://github.com/AliceO2Group/DelphesO2/blob/master/src/TrackSmearer.hh
 /// @email: preghenella@bo.infn.it
 ///
-
-//////////////////////////////
-// DelphesO2/src/lutCovm.cc //
-//////////////////////////////
-
-/// @author: Roberto Preghenella
-/// @email: preghenella@bo.infn.it
-
-// #include "TrackSmearer.hh"
-// #include "TrackUtils.hh"
-// #include "TRandom.h"
-// #include <iostream>
-// #include <fstream>
 
 #include "ALICE3/Core/DelphesO2TrackSmearer.h"
 
@@ -51,7 +37,59 @@ namespace delphes
 
 /*****************************************************************/
 
-bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
+int DelphesO2TrackSmearer::getIndexPDG(const int pdg)
+{
+  switch (abs(pdg)) {
+    case 11:
+      return 0; // Electron
+    case 13:
+      return 1; // Muon
+    case 211:
+      return 2; // Pion
+    case 321:
+      return 3; // Kaon
+    case 2212:
+      return 4; // Proton
+    case 1000010020:
+      return 5; // Deuteron
+    case 1000010030:
+      return 6; // Triton
+    case 1000020030:
+      return 7; // Helium3
+    case 1000020040:
+      return 8; // Alphas
+    default:
+      return 2; // Default: pion
+  }
+}
+
+const char* DelphesO2TrackSmearer::getParticleName(int pdg)
+{
+  switch (abs(pdg)) {
+    case 11:
+      return "electron";
+    case 13:
+      return "muon";
+    case 211:
+      return "pion";
+    case 321:
+      return "kaon";
+    case 2212:
+      return "proton";
+    case 1000010020:
+      return "deuteron";
+    case 1000010030:
+      return "triton";
+    case 1000020030:
+      return "helium3";
+    case 1000020040:
+      return "alpha";
+    default:
+      return "pion"; // Default: pion
+  }
+}
+
+bool DelphesO2TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
 {
   if (!filename || filename[0] == '\0') {
     LOG(info) << " --- No LUT file provided for PDG " << pdg << ". Skipping load.";
@@ -109,17 +147,17 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
   const int nrad = mLUTHeader[ipdg]->radmap.nbins;
   const int neta = mLUTHeader[ipdg]->etamap.nbins;
   const int npt = mLUTHeader[ipdg]->ptmap.nbins;
-  mLUTEntry[ipdg] = new lutEntry_t****[nnch];
+  mLUTEntry[ipdg] = new DelphesO2TrackSmearer::lutEntry_t****[nnch];
   for (int inch = 0; inch < nnch; ++inch) {
-    mLUTEntry[ipdg][inch] = new lutEntry_t***[nrad];
+    mLUTEntry[ipdg][inch] = new DelphesO2TrackSmearer::lutEntry_t***[nrad];
     for (int irad = 0; irad < nrad; ++irad) {
-      mLUTEntry[ipdg][inch][irad] = new lutEntry_t**[neta];
+      mLUTEntry[ipdg][inch][irad] = new DelphesO2TrackSmearer::lutEntry_t**[neta];
       for (int ieta = 0; ieta < neta; ++ieta) {
-        mLUTEntry[ipdg][inch][irad][ieta] = new lutEntry_t*[npt];
+        mLUTEntry[ipdg][inch][irad][ieta] = new DelphesO2TrackSmearer::lutEntry_t*[npt];
         for (int ipt = 0; ipt < npt; ++ipt) {
-          mLUTEntry[ipdg][inch][irad][ieta][ipt] = new lutEntry_t;
-          lutFile.read(reinterpret_cast<char*>(mLUTEntry[ipdg][inch][irad][ieta][ipt]), sizeof(lutEntry_t));
-          if (lutFile.gcount() != sizeof(lutEntry_t)) {
+          mLUTEntry[ipdg][inch][irad][ieta][ipt] = new DelphesO2TrackSmearer::lutEntry_t;
+          lutFile.read(reinterpret_cast<char*>(mLUTEntry[ipdg][inch][irad][ieta][ipt]), sizeof(DelphesO2TrackSmearer::lutEntry_t));
+          if (lutFile.gcount() != sizeof(DelphesO2TrackSmearer::lutEntry_t)) {
             LOG(info) << " --- troubles reading covariance matrix entry for PDG " << pdg << ": " << localFilename << std::endl;
             LOG(info) << " --- expected/detected " << sizeof(lutHeader_t) << "/" << lutFile.gcount() << std::endl;
             return false;
@@ -137,7 +175,7 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
 
 /*****************************************************************/
 
-lutEntry_t* TrackSmearer::getLUTEntry(const int pdg, const float nch, const float radius, const float eta, const float pt, float& interpolatedEff)
+DelphesO2TrackSmearer::lutEntry_t* DelphesO2TrackSmearer::getLUTEntry(const int pdg, const float nch, const float radius, const float eta, const float pt, float& interpolatedEff)
 {
   const int ipdg = getIndexPDG(pdg);
   if (!mLUTHeader[ipdg]) {
@@ -210,7 +248,7 @@ lutEntry_t* TrackSmearer::getLUTEntry(const int pdg, const float nch, const floa
 
 /*****************************************************************/
 
-bool TrackSmearer::smearTrack(O2Track& o2track, lutEntry_t* lutEntry, float interpolatedEff)
+bool DelphesO2TrackSmearer::smearTrack(o2::track::TrackParCov& o2track, DelphesO2TrackSmearer::lutEntry_t* lutEntry, float interpolatedEff)
 {
   bool isReconstructed = true;
   // generate efficiency
@@ -263,7 +301,7 @@ bool TrackSmearer::smearTrack(O2Track& o2track, lutEntry_t* lutEntry, float inte
 
 /*****************************************************************/
 
-bool TrackSmearer::smearTrack(O2Track& o2track, int pdg, float nch)
+bool DelphesO2TrackSmearer::smearTrack(o2::track::TrackParCov& o2track, int pdg, float nch)
 {
   auto pt = o2track.getPt();
   switch (pdg) {
@@ -274,7 +312,7 @@ bool TrackSmearer::smearTrack(O2Track& o2track, int pdg, float nch)
   }
   auto eta = o2track.getEta();
   float interpolatedEff = 0.0f;
-  lutEntry_t* lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, interpolatedEff);
+  DelphesO2TrackSmearer::lutEntry_t* lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, interpolatedEff);
   if (!lutEntry || !lutEntry->valid)
     return false;
   return smearTrack(o2track, lutEntry, interpolatedEff);
@@ -282,20 +320,20 @@ bool TrackSmearer::smearTrack(O2Track& o2track, int pdg, float nch)
 
 /*****************************************************************/
 // relative uncertainty on pt
-double TrackSmearer::getPtRes(const int pdg, const float nch, const float eta, const float pt)
+double DelphesO2TrackSmearer::getPtRes(const int pdg, const float nch, const float eta, const float pt)
 {
   float dummy = 0.0f;
-  lutEntry_t* lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
+  DelphesO2TrackSmearer::lutEntry_t* lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
   auto val = std::sqrt(lutEntry->covm[14]) * lutEntry->pt;
   return val;
 }
 
 /*****************************************************************/
 // relative uncertainty on eta
-double TrackSmearer::getEtaRes(const int pdg, const float nch, const float eta, const float pt)
+double DelphesO2TrackSmearer::getEtaRes(const int pdg, const float nch, const float eta, const float pt)
 {
   float dummy = 0.0f;
-  lutEntry_t* lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
+  DelphesO2TrackSmearer::lutEntry_t* lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
   auto sigmatgl = std::sqrt(lutEntry->covm[9]);                                  // sigmatgl2
   auto etaRes = std::fabs(std::sin(2.0 * std::atan(std::exp(-eta)))) * sigmatgl; // propagate tgl to eta uncertainty
   etaRes /= lutEntry->eta;                                                       // relative uncertainty
@@ -303,27 +341,27 @@ double TrackSmearer::getEtaRes(const int pdg, const float nch, const float eta, 
 }
 /*****************************************************************/
 // absolute uncertainty on pt
-double TrackSmearer::getAbsPtRes(const int pdg, const float nch, const float eta, const float pt)
+double DelphesO2TrackSmearer::getAbsPtRes(const int pdg, const float nch, const float eta, const float pt)
 {
   float dummy = 0.0f;
-  lutEntry_t* lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
+  DelphesO2TrackSmearer::lutEntry_t* lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
   auto val = std::sqrt(lutEntry->covm[14]) * lutEntry->pt * lutEntry->pt;
   return val;
 }
 
 /*****************************************************************/
 // absolute uncertainty on eta
-double TrackSmearer::getAbsEtaRes(const int pdg, const float nch, const float eta, const float pt)
+double DelphesO2TrackSmearer::getAbsEtaRes(const int pdg, const float nch, const float eta, const float pt)
 {
   float dummy = 0.0f;
-  lutEntry_t* lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
+  DelphesO2TrackSmearer::lutEntry_t* lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
   auto sigmatgl = std::sqrt(lutEntry->covm[9]);                                  // sigmatgl2
   auto etaRes = std::fabs(std::sin(2.0 * std::atan(std::exp(-eta)))) * sigmatgl; // propagate tgl to eta uncertainty
   return etaRes;
 }
 /*****************************************************************/
 // efficiency
-double TrackSmearer::getEfficiency(const int pdg, const float nch, const float eta, const float pt)
+double DelphesO2TrackSmearer::getEfficiency(const int pdg, const float nch, const float eta, const float pt)
 {
   float efficiency = 0.0f;
   getLUTEntry(pdg, nch, 0., eta, pt, efficiency);
@@ -331,10 +369,10 @@ double TrackSmearer::getEfficiency(const int pdg, const float nch, const float e
 }
 /*****************************************************************/
 // Only in DelphesO2
-// bool TrackSmearer::smearTrack(Track& track, bool atDCA)
+// bool DelphesO2TrackSmearer::smearTrack(Track& track, bool atDCA)
 // {
 
-//   O2Track o2track;
+//   o2::track::TrackParCov o2track;
 //   TrackUtils::convertTrackToO2Track(track, o2track, atDCA);
 //   int pdg = track.PID;
 //   float nch = mdNdEta; // use locally stored dNch/deta for the time being
@@ -344,11 +382,11 @@ double TrackSmearer::getEfficiency(const int pdg, const float nch, const float e
 //   return true;
 
 // #if 0
-//   lutEntry_t* lutEntry = getLUTEntry(track.PID, 0., 0., track.Eta, track.PT);
+//   DelphesO2TrackSmearer::lutEntry_t* lutEntry = getLUTEntry(track.PID, 0., 0., track.Eta, track.PT);
 //   if (!lutEntry)
 //     return;
 
-//   O2Track o2track;
+//   o2::track::TrackParCov o2track;
 //   TrackUtils::convertTrackToO2Track(track, o2track, atDCA);
 //   smearTrack(o2track, lutEntry);
 //   TrackUtils::convertO2TrackToTrack(o2track, track, atDCA);
