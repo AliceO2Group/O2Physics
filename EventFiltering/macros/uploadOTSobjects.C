@@ -14,6 +14,7 @@
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/LHCConstants.h"
+#include <CCDB/CcdbApi.h>
 
 #include "TFile.h"
 #include "TGrid.h"
@@ -21,13 +22,19 @@
 #include "TKey.h"
 #include "TSystem.h"
 #include "TTree.h"
+#include <TString.h>
 
-#include <array>
+#include <RtypesCore.h>
+
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 constexpr uint32_t chunkSize = 1000000;
