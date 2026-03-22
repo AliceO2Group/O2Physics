@@ -419,9 +419,9 @@ struct K0sReducedCandProducer {
   {
     AxisSpec binnedmultAxis{(std::vector<double>)binsMult, "centFT0M"};
     AxisSpec binnedpTK0SAxis{(std::vector<double>)binspTK0S, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec massK0sAxis = {200, 0.4f, 0.6f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
+    AxisSpec massK0SAxis = {200, 0.45f, 0.55f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
 
-    histos.add("h3K0sCandidatesMass", "K^{0}_{S} candidate invariant mass", kTH3F, {binnedmultAxis, binnedpTK0SAxis, massK0sAxis});
+    histos.add("h3K0sCandidatesMass", "K^{0}_{S} candidate invariant mass", kTH3F, {binnedmultAxis, binnedpTK0SAxis, massK0SAxis});
   }
 
   // Single track selection for strangeness sector
@@ -527,7 +527,7 @@ struct PionTrackProducer {
   HistogramRegistry histos{"pionTracks", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // Configurable for analysis mode
-  Configurable<int> analysisMode{"analysisMode", 1, "Analysis mode: 0 - old method with online normalization, 1 - new method with correlations"};
+  // Configurable<int> analysisMode{"analysisMode", 1, "Analysis mode: 0 - old method with online normalization, 1 - new method with correlations"};
 
   // Configurable on multiplicity bins
   Configurable<std::vector<double>> binsMult{"binsMult", {0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0}, "Multiplicity bin limits"};
@@ -547,11 +547,11 @@ struct PionTrackProducer {
     Configurable<int> minTPCnClsFound{"minTPCnClsFound", 70, "min number of found TPC clusters"};
     Configurable<int> minITSnCls{"minITSnCls", 4, "min number of ITS clusters"};
 
-    Configurable<bool> forceTOF{"forceTOF", false, "force the TOF signal for the PID"};
+    // Configurable<bool> forceTOF{"forceTOF", false, "force the TOF signal for the PID"};
     Configurable<float> tofPIDThreshold{"tofPIDThreshold", 0.5, "minimum pT after which TOF PID is applicable"};
-    Configurable<std::vector<int>> trkPIDspecies{"trkPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton}, "Trk sel: Particles species for PID, proton, pion, kaon"};
-    Configurable<std::vector<float>> pidTPCMax{"pidTPCMax", std::vector<float>{2.0f, 2.0f, 2.0f}, "maximum nSigma TPC"};
-    Configurable<std::vector<float>> pidTOFMax{"pidTOFMax", std::vector<float>{2.0f, 2.0f, 2.0f}, "maximum nSigma TOF"};
+    Configurable<std::vector<int>> trkPIDspecies{"trkPIDspecies", std::vector<int>{o2::track::PID::Kaon, o2::track::PID::Proton}, "Trk sel: Particles species for PID rejection, kaon, proton"};
+    Configurable<std::vector<float>> pidTPCMax{"pidTPCMax", std::vector<float>{2.0f, 2.0f}, "maximum nSigma TPC"};
+    Configurable<std::vector<float>> pidTOFMax{"pidTOFMax", std::vector<float>{2.0f, 2.0f}, "maximum nSigma TOF"};
 
     Configurable<float> cfgYAcceptance{"cfgYAcceptance", 0.5f, "Rapidity acceptance"};
   } trackConfigs;
@@ -590,7 +590,7 @@ struct PionTrackProducer {
     histos.add("h2RecMCDCAxySecMaterialPi", "Dcaxy distribution vs pt for Secondary Pions from Material", kTH2F, {binnedpTPiAxis, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
   }
 
-  // PID selection for Pions
+  /*// PID selection for Pions
   template <typename T>
   bool pidSelectionPion(const T& track)
   {
@@ -627,6 +627,29 @@ struct PionTrackProducer {
     }
 
     return true;
+  }*/
+
+  // PID Hypotheses rejection for Pions
+  template <typename T>
+  bool pidHypothesesRejection(const T& track)
+  {
+    for (size_t speciesIndex = 0; speciesIndex < trackConfigs.trkPIDspecies->size(); ++speciesIndex) {
+      auto const& pid = trackConfigs.trkPIDspecies->at(speciesIndex);
+      auto nSigmaTPC = aod::pidutils::tpcNSigma(pid, track);
+
+      if (std::abs(nSigmaTPC) < trackConfigs.pidTPCMax->at(speciesIndex)) { // Check TPC nSigma first
+        if (track.hasTOF()) {
+          auto nSigmaTOF = aod::pidutils::tofNSigma(pid, track);
+          if (std::abs(nSigmaTOF) < trackConfigs.pidTOFMax->at(speciesIndex)) {
+            return false; // Reject if both TPC and TOF are within thresholds
+          }
+        } else {
+          return false; // Reject if only TPC is within threshold and TOF is unavailable
+        }
+      }
+    }
+
+    return true;
   }
 
   // Track selection for Pions
@@ -657,7 +680,10 @@ struct PionTrackProducer {
     if (trackConfigs.cfgIsTOFChecked && track.pt() >= trackConfigs.tofPIDThreshold && !track.hasTOF())
       return false;
 
-    if (analysisMode == 1 && !pidSelectionPion(track))
+    /*if (analysisMode == 1 && !pidSelectionPion(track))
+      return false;*/
+
+    if (!pidHypothesesRejection(track))
       return false;
 
     /*
@@ -685,7 +711,7 @@ struct PionTrackProducer {
       histos.fill(HIST("h3PionTPCnSigma"), collision.centFT0M(), track.pt(), track.tpcNSigmaPi());
       histos.fill(HIST("h3PionTOFnSigma"), collision.centFT0M(), track.pt(), track.tofNSigmaPi());
 
-      pionTracksData(collision.globalIndex(), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt(), track.rapidity(massPi), track.phi());
+      pionTracksData(collision.globalIndex(), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt(), track.rapidity(massPi), track.phi(), track.hasTOF());
     }
   }
 
@@ -715,7 +741,7 @@ struct PionTrackProducer {
         continue;
       }
 
-      pionTracksMcReco(collision.globalIndex(), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt(), track.rapidity(massPi), track.phi());
+      pionTracksMcReco(collision.globalIndex(), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt(), track.rapidity(massPi), track.phi(), track.hasTOF());
     }
   }
 
