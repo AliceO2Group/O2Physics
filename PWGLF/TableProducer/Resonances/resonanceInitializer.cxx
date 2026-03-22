@@ -270,7 +270,7 @@ struct ResonanceInitializer {
                                                     || (nabs(aod::mcparticle::pdgCode) == 123314)  // Xi(1820)0
                                                     || (nabs(aod::mcparticle::pdgCode) == 123324); // Xi(1820)-0
 
-  using ResoEvents = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As,  aod::Mults>;
+  using ResoEvents = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As, aod::Mults>;
   using ResoEvents001 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As, aod::Mults, aod::MultsExtra, aod::PVMults>;
   using ResoRun2Events = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
   using ResoEventsMC = soa::Join<ResoEvents, aod::McCollisionLabels>;
@@ -1200,7 +1200,7 @@ struct ResonanceInitializer {
 
       if (std::abs(mcPart.pdgCode()) != GenCuts.pdgTruthMother)
         continue;
-      if((mcPart.y() >= GenCuts.cfgRapidityCutMaxGen) ||  (mcPart.y() <= GenCuts.cfgRapidityCutMinGen))
+      if ((mcPart.y() >= GenCuts.cfgRapidityCutMaxGen) || (mcPart.y() <= GenCuts.cfgRapidityCutMinGen))
         continue;
       std::vector<int> daughterPDGs;
       if (mcPart.has_daughters()) {
@@ -1355,7 +1355,6 @@ struct ResonanceInitializer {
       qaRegistry.add("hGoodCascIndices", "hGoodCascIndices", kTH1F, {idxAxis});
       qaRegistry.add("hGoodMCCascIndices", "hGoodMCCascIndices", kTH1F, {idxAxis});
       qaRegistry.add("Phi", "#phi distribution", kTH1F, {{65, -0.1, 6.4}});
-
     }
 
     TString hNEventsMCLabels[4] = {"All", "z vrtx", "INEL", "INEL>0"};
@@ -1523,7 +1522,7 @@ struct ResonanceInitializer {
     }
     resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
     resoEvtPlCollisions(0, 0, 0, 0);
-    if(FilterForDerivedTables.cfgBypassNoPairV0s && (V0s.size() <1)){
+    if (FilterForDerivedTables.cfgBypassNoPairV0s && (V0s.size() < 1)) {
       return;
     }
 
@@ -1585,12 +1584,12 @@ struct ResonanceInitializer {
     }
     resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
     resoEvtPlCollisions(0, 0, 0, 0);
-    if(cfgMultName.value == "FV0A")
-      qaRegistry.fill(HIST("Event/CentFV0A"),centEst(collision));
-    if(FilterForDerivedTables.cfgBypassNoPairV0s && (V0s.size() <1)){
+    if (cfgMultName.value == "FV0A")
+      qaRegistry.fill(HIST("Event/CentFV0A"), centEst(collision));
+    if (FilterForDerivedTables.cfgBypassNoPairV0s && (V0s.size() < 1)) {
       return;
     }
-    if(FilterForDerivedTables.cfgBypassNoPairCascades && (Cascades.size() <1)){
+    if (FilterForDerivedTables.cfgBypassNoPairCascades && (Cascades.size() < 1)) {
       return;
     }
     fillTracks<false>(collision, tracks);
@@ -1739,7 +1738,7 @@ struct ResonanceInitializer {
     fillMCCollision<false>(collision, mcParticles);
 
     // Loop over tracks
-    if(FilterForDerivedTables.cfgBypassNoPairV0s && (V0s.size() <1)){
+    if (FilterForDerivedTables.cfgBypassNoPairV0s && (V0s.size() < 1)) {
       return;
     }
     fillTracks<true>(collision, tracks);
@@ -1806,8 +1805,8 @@ struct ResonanceInitializer {
       Cent = mcCollision.centFT0M();
     else
       Cent = centEst(collision);
-    if(cfgMultName.value == "FV0A")
-      qaRegistry.fill(HIST("Event/CentFV0A"),centEst(collision));
+    if (cfgMultName.value == "FV0A")
+      qaRegistry.fill(HIST("Event/CentFV0A"), centEst(collision));
 
     bool isRecINELgt0 = 0;
     if (checkIsRecINELgt0)
@@ -1828,10 +1827,10 @@ struct ResonanceInitializer {
     fillMCCollision<false>(collision, mcParticles, impactpar, mult);
 
     // Loop over tracks
-    if(FilterForDerivedTables.cfgBypassNoPairV0s && (V0s.size() <1)){
+    if (FilterForDerivedTables.cfgBypassNoPairV0s && (V0s.size() < 1)) {
       return;
     }
-    if(FilterForDerivedTables.cfgBypassNoPairCascades && (Cascades.size() <1)){
+    if (FilterForDerivedTables.cfgBypassNoPairCascades && (Cascades.size() < 1)) {
       return;
     }
     fillTracks<true>(collision, tracks);
@@ -1909,7 +1908,7 @@ struct ResonanceInitializer {
     for (const auto& collision : collisions) {
       if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
         continue;
-      if (!colCuts.isSelected(collision,false)) // Bug is appeared in colCuts-> double counting in event QA histo, will be fixed later
+      if (!colCuts.isSelected(collision, false)) // Bug is appeared in colCuts-> double counting in event QA histo, will be fixed later
         continue;
       if (biggestNContribs < collision.multPVTotalContributors()) {
         biggestNContribs = collision.multPVTotalContributors();
