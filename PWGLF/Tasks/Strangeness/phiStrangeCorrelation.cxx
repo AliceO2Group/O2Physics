@@ -83,8 +83,6 @@ enum AnalysisMode {
   kDeltaYvsDeltaPhi
 };
 
-static constexpr std::array<std::string_view, 2> phiMassRegionLabels{"Signal", "Sideband"};
-
 enum ParticleOfInterest {
   Phi = 0,
   K0S,
@@ -93,8 +91,6 @@ enum ParticleOfInterest {
   PionTPCTOF*/
   ParticleOfInterestSize
 };
-
-static constexpr std::array<std::string_view, ParticleOfInterestSize> particleOfInterestLabels{"Phi", "K0S", "Pion" /*"PionTPC", "PionTPCTOF"*/};
 
 /*
 #define LIST_OF_PARTICLES_OF_INTEREST \
@@ -262,6 +258,9 @@ struct PhiStrangenessCorrelation {
   using BinningTypeVertexCent = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
   BinningTypeVertexCent binningOnVertexAndCent{{axisVertexMixing, axisCentralityMixing}, true};
 
+  static constexpr std::array<std::string_view, 2> phiMassRegionLabels{"Signal", "Sideband"};
+  static constexpr std::array<std::string_view, ParticleOfInterestSize> particleOfInterestLabels{"Phi", "K0S", "Pion" /*"PionTPC", "PionTPCTOF"*/};
+
   void init(InitContext&)
   {
     AxisSpec vertexZAxis = {100, -cutZVertex, cutZVertex, "vrtx_{Z} [cm]"}; // TO BE REMOVED
@@ -385,11 +384,6 @@ struct PhiStrangenessCorrelation {
       auto processCorrelations = [&](auto fillK0S, auto fillPion) {
         // Loop over all reduced K0S candidates
         for (const auto& k0s : k0sReduced) {
-          /*if (k0sConfigs.selectK0sInSigRegion) {
-            const auto& [minMassK0s, maxMassK0s] = k0sConfigs.rangeMK0sSignal.value;
-            if (!k0s.inMassRegion(minMassK0s, maxMassK0s))
-              continue;
-          }*/
           if (!isK0sValid(k0s))
             continue;
 
@@ -410,18 +404,22 @@ struct PhiStrangenessCorrelation {
       };
 
       if (analysisMode == kMassvsMass) {
+        auto k0sHistID = HIST("phiK0S/h6PhiK0SData");
+        auto piTPCHistID = HIST("phiPi/h6PhiPiTPCData");
+        auto piTOFHistID = HIST("phiPi/h6PhiPiTOFData");
+
         processCorrelations(
           [&](const auto& k0s, float w) {
-            auto histID = HIST("phiK0S/h6PhiK0SData");
-            histos.fill(histID, multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), phiCand.m(), k0s.m(), w);
+            histos.fill(k0sHistID, multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), phiCand.m(), k0s.m(), w);
           },
           [&](const auto& pion, float w) {
-            auto histID1 = HIST("phiPi/h6PhiPiTPCData");
-            histos.fill(histID1, multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), phiCand.m(), pion.nSigmaTPC(), w);
-            auto histID2 = HIST("phiPi/h6PhiPiTOFData");
-            histos.fill(histID2, multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), phiCand.m(), pion.nSigmaTOF(), w);
+            histos.fill(piTPCHistID, multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), phiCand.m(), pion.nSigmaTPC(), w);
+            histos.fill(piTOFHistID, multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), phiCand.m(), pion.nSigmaTOF(), w);
           });
       } else if (analysisMode == kDeltaYvsDeltaPhi) {
+        auto k0sHistID = std::make_tuple(HIST("phiK0S/h5PhiK0SDataSignal"), HIST("phiK0S/h5PhiK0SDataSideband"));
+        auto piHistID = std::make_tuple(HIST("phiPi/h5PhiPiDataSignal"), HIST("phiPi/h5PhiPiDataSideband"));
+
         static_for<0, phiMassRegionLabels.size() - 1>([&](auto i_idx) {
           constexpr unsigned int i = i_idx.value;
 
@@ -429,14 +427,15 @@ struct PhiStrangenessCorrelation {
           if (!phiCand.inMassRegion(minMassPhi, maxMassPhi))
             return;
 
+          // auto k0sHistID = HIST("phiK0S/h5PhiK0SData") + HIST(phiMassRegionLabels[i]);
+          // auto piHistID = HIST("phiPi/h5PhiPiData") + HIST(phiMassRegionLabels[i]);
+
           processCorrelations(
             [&](const auto& k0s, float w) {
-              auto histID = HIST("phiK0S/h5PhiK0SData") + HIST(phiMassRegionLabels[i]);
-              histos.fill(histID, multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), getDeltaPhi(phiCand.phi(), k0s.phi()), w);
+              histos.fill(std::get<i>(k0sHistID), multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), getDeltaPhi(phiCand.phi(), k0s.phi()), w);
             },
             [&](const auto& pion, float w) {
-              auto histID = HIST("phiPi/h5PhiPiData") + HIST(phiMassRegionLabels[i]);
-              histos.fill(histID, multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), getDeltaPhi(phiCand.phi(), pion.phi()), w);
+              histos.fill(std::get<i>(piHistID), multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), getDeltaPhi(phiCand.phi(), pion.phi()), w);
             });
         });
       }
@@ -513,24 +512,21 @@ struct PhiStrangenessCorrelation {
           continue;
 
         auto processCorrelations = [&](auto fillK0S) {
-          /*if (k0sConfigs.selectK0sInSigRegion) {
-            const auto& [minMassK0s, maxMassK0s] = k0sConfigs.rangeMK0sSignal.value;
-            if (!k0s.inMassRegion(minMassK0s, maxMassK0s))
-              continue;
-          }*/
-
           float weightPhiK0S = computeWeight(BoundEfficiencyMap(effMaps[Phi], multiplicity, phiCand.pt(), phiCand.y()),
                                              BoundEfficiencyMap(effMaps[K0S], multiplicity, k0s.pt(), k0s.y()));
           fillK0S(k0s, weightPhiK0S);
         };
 
         if (analysisMode == kMassvsMass) {
+          auto k0sHistID = HIST("phiK0S/h6PhiK0SDataME");
+
           processCorrelations(
             [&](const auto& k0s, float w) {
-              auto histID = HIST("phiK0S/h6PhiK0SDataME");
-              histos.fill(histID, multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), phiCand.m(), k0s.m(), w);
+              histos.fill(k0sHistID, multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), phiCand.m(), k0s.m(), w);
             });
         } else if (analysisMode == kDeltaYvsDeltaPhi) {
+          auto k0sHistID = std::make_tuple(HIST("phiK0S/h5PhiK0SDataMESignal"), HIST("phiK0S/h5PhiK0SDataMESideband"));
+
           static_for<0, phiMassRegionLabels.size() - 1>([&](auto i_idx) {
             constexpr unsigned int i = i_idx.value;
 
@@ -540,8 +536,7 @@ struct PhiStrangenessCorrelation {
 
             processCorrelations(
               [&](const auto& k0s, float w) {
-                auto histID = HIST("phiK0S/h5PhiK0SDataME") + HIST(phiMassRegionLabels[i]);
-                histos.fill(histID, multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), getDeltaPhi(phiCand.phi(), k0s.phi()), w);
+                histos.fill(std::get<i>(k0sHistID), multiplicity, phiCand.pt(), k0s.pt(), phiCand.y() - k0s.y(), getDeltaPhi(phiCand.phi(), k0s.phi()), w);
               });
           });
         }
@@ -616,14 +611,17 @@ struct PhiStrangenessCorrelation {
         };
 
         if (analysisMode == kMassvsMass) {
+          auto piTPCHistID = HIST("phiPi/h6PhiPiTPCDataME");
+          auto piTOFHistID = HIST("phiPi/h6PhiPiTOFDataME");
+
           processCorrelations(
             [&](const auto& pion, float w) {
-              auto histID1 = HIST("phiPi/h6PhiPiTPCDataME");
-              histos.fill(histID1, multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), phiCand.m(), pion.nSigmaTPC(), w);
-              auto histID2 = HIST("phiPi/h6PhiPiTOFDataME");
-              histos.fill(histID2, multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), phiCand.m(), pion.nSigmaTOF(), w);
+              histos.fill(piTPCHistID, multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), phiCand.m(), pion.nSigmaTPC(), w);
+              histos.fill(piTOFHistID, multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), phiCand.m(), pion.nSigmaTOF(), w);
             });
         } else if (analysisMode == kDeltaYvsDeltaPhi) {
+          auto piHistID = std::make_tuple(HIST("phiPi/h5PhiPiDataMESignal"), HIST("phiPi/h5PhiPiDataMESideband"));
+
           static_for<0, phiMassRegionLabels.size() - 1>([&](auto i_idx) {
             constexpr unsigned int i = i_idx.value;
 
@@ -633,8 +631,7 @@ struct PhiStrangenessCorrelation {
 
             processCorrelations(
               [&](const auto& pion, float w) {
-                auto histID = HIST("phiPi/h5PhiPiDataME") + HIST(phiMassRegionLabels[i]);
-                histos.fill(histID, multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), getDeltaPhi(phiCand.phi(), pion.phi()), w);
+                histos.fill(std::get<i>(piHistID), multiplicity, phiCand.pt(), pion.pt(), phiCand.y() - pion.y(), getDeltaPhi(phiCand.phi(), pion.phi()), w);
               });
           });
         }
