@@ -15,31 +15,35 @@
 /// \since November 2021
 /// \last update: March 2026
 
-#include "PWGLF/DataModel/mcCentrality.h"
-#include "PWGLF/Utils/collisionCuts.h"
 #include "PWGLF/Utils/inelGt.h"
-#include "PWGLF/Utils/mcParticle.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
 
 #include <TF1.h>
-#include <TH1F.h>
-#include <TH2F.h>
-#include <TMath.h>
 #include <TRandom.h>
 
 #include <cmath>
 #include <cstdint>
+#include <string_view>
 #include <vector>
 
 using namespace o2;
