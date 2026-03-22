@@ -28,8 +28,8 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 
-#include "Math/Vector4D.h"
 #include "Math/RotationZ.h"
+#include "Math/Vector4D.h"
 #include "TF1.h"
 #include "TRandom3.h"
 
@@ -180,7 +180,7 @@ struct Xi1530Analysisqa {
     Configurable<float> cMasswindowCasccut{"cMasswindowCasccut", 0.008, "Cascade Mass window cut"};
     Configurable<float> cMassXiminus{"cMassXiminus", 1.32171, "Mass of Xi baryon"};
 
-    Configurable<float> cMaxProperLifetimeCut{"cMaxProperLifetimeCut", 4.7, "Maximum proper lifetime cut for Xi- candidates"}; 
+    Configurable<float> cMaxProperLifetimeCut{"cMaxProperLifetimeCut", 4.7, "Maximum proper lifetime cut for Xi- candidates"};
 
   } cascadeConfig;
 
@@ -400,7 +400,7 @@ struct Xi1530Analysisqa {
     histos.add("h3XiinvmassDSAnti", "Invariant mass of Anti-Xi- differnt sign", kTHnSparseF, {centAxis, ptAxis, invMassAxisCasc, flagAxis});
 
     histos.add("h3Xi1530invmassLSAnti", "Invariant mass of Anti-Xi(1530)0 same sign", kTHnSparseF, {centAxis, ptAxis, invMassAxis, flagAxis});
-     histos.add("h3Xi1530invmassRotDSAnti", "Invariant mass of Anti-Xi(1530)0 rotated DS", kTHnSparseF, {centAxis, ptAxis, invMassAxis, flagAxis});
+    histos.add("h3Xi1530invmassRotDSAnti", "Invariant mass of Anti-Xi(1530)0 rotated DS", kTHnSparseF, {centAxis, ptAxis, invMassAxis, flagAxis});
 
     if (doprocessMEDF || doprocessMEMicro) {
       histos.add("h3Xi1530invmassME_DS", "Invariant mass of Xi(1530)0 mixed event DS", kTHnSparseF, {centAxis, ptAxis, invMassAxis, flagAxis});
@@ -449,7 +449,7 @@ struct Xi1530Analysisqa {
       histos.add("Xi1530RecAnti", "pT distribution of Reconstructed MC Anti-Xi(1530)0", kTH2F, {ptAxis, centAxis});
       histos.add("Xi1530Recinvmass", "Inv mass distribution of Reconstructed MC Xi(1530)0", kTH1F, {invMassAxis});
     }
-    //QA for topological, kinematical cut for cascades
+    // QA for topological, kinematical cut for cascades
     if (histoConfig.additionalQAplots) {
       histos.add("QAbefore/V0DCATopPV", "V0s DCA to PV distribution as pt", HistType::kTH2F, {ptAxis, dcaxyAxis});
       histos.add("QAbefore/V0DCADoughter", "V0s DCA Doughter distribution as pt", HistType::kTH2F, {ptAxis, dcaDaugAxis});
@@ -492,8 +492,6 @@ struct Xi1530Analysisqa {
       histos.add("QAMCTrue/V0Radius", "V0 Radius distribution as pt", HistType::kTH2F, {ptAxis, transRadiusAxis});
       histos.add("QAMCTrue/CascRadius", "Casc Radius distribution as pt", HistType::kTH2F, {ptAxis, transRadiusAxis});
       histos.add("QAMCTrue/ProperLifetime", "Proper Lifetime distribution as pt", HistType::kTH2F, {ptAxis, properLifetimeAxis});
-
-
     }
   }
 
@@ -1056,7 +1054,7 @@ struct Xi1530Analysisqa {
               if (additionalConfig.cfgFillRotBkg) {
                 for (int i = 0; i < additionalConfig.cfgNrotBkg; i++) {
                   auto lRotAngle = additionalConfig.cfgMinRot + i * ((additionalConfig.cfgMaxRot - additionalConfig.cfgMinRot) / (additionalConfig.cfgNrotBkg - 1));
-                    histos.fill(HIST("QAevent/hRotBkg"), lRotAngle);
+                  histos.fill(HIST("QAevent/hRotBkg"), lRotAngle);
                   if (additionalConfig.cfgRotPion) {
                     lDaughterRot = lDecayDaughter1;
                     ROOT::Math::RotationZ rot(lRotAngle);
@@ -1081,7 +1079,7 @@ struct Xi1530Analysisqa {
               if (additionalConfig.cfgFillRotBkg) {
                 for (int i = 0; i < additionalConfig.cfgNrotBkg; i++) {
                   auto lRotAngle = additionalConfig.cfgMinRot + i * ((additionalConfig.cfgMaxRot - additionalConfig.cfgMinRot) / (additionalConfig.cfgNrotBkg - 1));
-                    histos.fill(HIST("QAevent/hRotBkg"), lRotAngle);
+                  histos.fill(HIST("QAevent/hRotBkg"), lRotAngle);
                   if (additionalConfig.cfgRotPion) {
                     lDaughterRot = lDecayDaughter1;
                     ROOT::Math::RotationZ rot(lRotAngle);
@@ -1117,8 +1115,8 @@ struct Xi1530Analysisqa {
             auto lResonancePtMC = xiCand.motherPt();
             if (additionalConfig.cUseTruthRapidity)
               continue;
-            if( (xiCand.motherRap() >= primarytrackConfig.cfgRapidityMaxCut) || (xiCand.motherRap() <= primarytrackConfig.cfgRapidityMinCut) )
-              continue; 
+            if ((xiCand.motherRap() >= primarytrackConfig.cfgRapidityMaxCut) || (xiCand.motherRap() <= primarytrackConfig.cfgRapidityMinCut))
+              continue;
             if (histoConfig.truthQA) {
               float trk1DCAXY = -1.f;
               float trk1DCAZ = -1.f;
@@ -1187,7 +1185,6 @@ struct Xi1530Analysisqa {
               histos.fill(HIST("QAMCTrue/V0Mass"), xiCandPt, massLambdaCand);
               histos.fill(HIST("QAMCTrue/CascMass"), xiCandPt, massXiCand);
               histos.fill(HIST("QAMCTrue/ProperLifetime"), xiCandPt, trk2ProperLifetime);
-            
 
               histos.fill(HIST("QAMCTrue/TPC_Nsigma_pi_first_all"), Cent, pionCandPt, trk1NSigmaPiTPC);
               if (hasSubsystemInfo(trk1NSigmaPiTOF)) {
@@ -1311,7 +1308,7 @@ struct Xi1530Analysisqa {
     for (const auto& part : resoParents) { // loop over all pre-filtered MC particles
       if (std::abs(part.pdgCode()) != kXiStar)
         continue;
-      if((part.y() <= primarytrackConfig.cfgRapidityMinCut) || (part.y() >= primarytrackConfig.cfgRapidityMaxCut))
+      if ((part.y() <= primarytrackConfig.cfgRapidityMinCut) || (part.y() >= primarytrackConfig.cfgRapidityMaxCut))
         continue;
       bool pass1 = std::abs(part.daughterPDG1()) == kPiPlus || std::abs(part.daughterPDG2()) == kPiPlus;
       bool pass2 = std::abs(part.daughterPDG1()) == kXiMinus || std::abs(part.daughterPDG2()) == kXiMinus;
