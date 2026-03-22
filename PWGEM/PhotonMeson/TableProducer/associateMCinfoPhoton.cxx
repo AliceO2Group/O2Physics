@@ -65,7 +65,8 @@ struct AssociateMCInfoPhoton {
   Configurable<float> margin_z_gen{"margin_z_gen", 15.f, "margin for Z of true photon conversion point to store generated information"};
   Configurable<float> max_rxy_gen{"max_rxy_gen", 100, "max rxy to store generated information"};
   Configurable<bool> requireGammaGammaDecay{"requireGammaGammaDecay", false, "require gamma gamma decay for generated pi0 and eta meson"};
-
+  Configurable<float> cfg_max_eta_photon{"cfg_max_eta_gamma", 0.8, "max eta for photons at PV"};
+  
   HistogramRegistry registry{"EMMCEvent"};
 
   void init(o2::framework::InitContext&)
@@ -98,6 +99,7 @@ struct AssociateMCInfoPhoton {
 
     for (uint i = 0; i < NParticleNames; i++) {
       registry.add<TH2>(Form("Generated/h2PtY_%s", ParticleNames[i].data()), Form("Generated %s", ParticleNames[i].data()), kTH2F, {axisPt, axisRapidity}, true);
+      registry.add<TH2>(Form("Generated/h2PtY_Accepted_%s", ParticleNames[i].data()), Form("Generated %s", ParticleNames[i].data()), kTH2F, {axisPt, axisRapidity}, true);
     }
 
     // reserve space for generated vectors if that process enabled
@@ -170,6 +172,19 @@ struct AssociateMCInfoPhoton {
       for (const auto& mcParticle : groupedMcParticles) { // store necessary information for denominator of efficiency
         if ((mcParticle.isPhysicalPrimary() || mcParticle.producedByGenerator()) && std::fabs(mcParticle.y()) < 0.9f && mcParticle.pt() < 20.f) {
           auto binNumber = hBinFinder->FindBin(mcParticle.pt(), std::fabs(mcParticle.y())); // caution: pack
+          size_t lNDaughters = 0; 
+          size_t mesonAccepted = 0;
+          if (mcParticle.has_daughters()) {
+            auto lDaughters = mcParticle.daughters_as<aod::McParticles>();
+            lNDaughters = lDaughters.size();
+            auto lDaughter0 = lDaughters.begin();
+            if (lNDaughters == 2) {
+              auto lDaughter1 = lDaughters.iteratorAt(1);
+              if ( std::fabs(lDaughter0.eta())< cfg_max_eta_photon &&   std::fabs(lDaughter1.eta()) < cfg_max_eta_photon){
+                mesonAccepted = 1;
+              }
+            } 
+          } 
           switch (std::abs(mcParticle.pdgCode())) {
             case PDG_t::kGamma:
               registry.fill(HIST("Generated/h2PtY_Gamma"), mcParticle.pt(), std::fabs(mcParticle.y()));
@@ -180,12 +195,18 @@ struct AssociateMCInfoPhoton {
                 continue;
               registry.fill(HIST("Generated/h2PtY_Pi0"), mcParticle.pt(), std::fabs(mcParticle.y()));
               genPi0[binNumber]++;
+              if (mesonAccepted == 1){
+                registry.fill(HIST("Generated/h2PtY_Accepted_Pi0"), mcParticle.pt(), std::fabs(mcParticle.y()));
+              }
               break;
             case Pdg::kEta:
               if (requireGammaGammaDecay && !isGammaGammaDecay(mcParticle, mcParticles))
                 continue;
               registry.fill(HIST("Generated/h2PtY_Eta"), mcParticle.pt(), std::fabs(mcParticle.y()));
               genEta[binNumber]++;
+              if (mesonAccepted == 1){
+                registry.fill(HIST("Generated/h2PtY_Accepted_Eta"), mcParticle.pt(), std::fabs(mcParticle.y()));
+              }
               break;
             default:
               break;
