@@ -161,16 +161,18 @@ struct UpcPhotonuclearAnalysisJMG {
   Configurable<float> cutGapATimeZNA{"cutGapATimeZNA", 2., {"My collision cut. Gap Side A"}};
   Configurable<float> cutGapATimeZNC{"cutGapATimeZNC", 2., {"My collision cut. Gap Side A"}};
   Configurable<float> cutGapAMyEnergyZNA{"cutGapAMyEnergyZNA", 0., {"My collision cut. Gap Side A"}};
-  // Configurable<float> cutAGapMyAmplitudeFT0AMax{"cutAGapMyAmplitudeFT0AMax", 200., {"My collision cut. A Gap"}};
+  Configurable<bool> useFT0AGapA{"useFT0AGapA", false, {"My collision cut. Gap Side A"}};
+  Configurable<float> cutGapAMyAmplitudeFT0A{"cutGapAMyAmplitudeFT0A", 100., {"My collision cut. A Gap"}};
   Configurable<float> cutGapAMyEnergyZNC{"cutGapAMyEnergyZNC", 1., {"My collision cut. Gap Side A"}};
-  Configurable<float> useFV0{"useFV0", false, {"My collision cut. Gap Side A"}};
+  Configurable<bool> useFV0{"useFV0", false, {"My collision cut. Gap Side A"}};
   Configurable<float> cutGapAFV0Amplitude{"cutGapAFV0Amplitude", 50, {"My collision cut. Gap Side A"}};
   // Configurable<float> cutAGapMyAmplitudeFT0CMin{"cutAGapMyAmplitudeFT0CMin", 0., {"My collision cut. A Gap"}};
   // Declare configurables on side C gap
   Configurable<float> cutGapCTimeZNA{"cutGapCTimeZNA", 2., {"My collision cut. Gap Side C"}};
   Configurable<float> cutGapCTimeZNC{"cutGapCTimeZNC", 2., {"My collision cut. Gap Side C"}};
   Configurable<float> cutGapCMyEnergyZNA{"cutGapCMyEnergyZNA", 1., {"My collision cut. Gap Side C"}};
-  // Configurable<float> cutCGapMyAmplitudeFT0AMin{"cutCGapMyAmplitudeFT0AMin", 0., {"My collision cut. A Gap"}};
+  Configurable<bool> useFT0CGapC{"useFT0CGapC", false, {"My collision cut. Gap Side A"}};
+  Configurable<float> cutGapCMyAmplitudeFT0C{"cutGapCMyAmplitudeFT0C", 50., {"My collision cut. A Gap"}};
   Configurable<float> cutGapCMyEnergyZNC{"cutGapCMyEnergyZNC", 0., {"My collision cut. Gap Side C"}};
   // Configurable<float> cutCGapMyAmplitudeFT0CMax{"cutCGapMyAmplitudeFT0CMax", 200., {"My collision cut. A Gap"}};
   // Declare configurables on tracks
@@ -230,7 +232,7 @@ struct UpcPhotonuclearAnalysisJMG {
   void init(InitContext const&)
   {
     const AxisSpec axisCollision{4, -0.5, 3.5};
-    const AxisSpec axisCollisionFlow{12, -0.5, 11.5};
+    const AxisSpec axisCollisionFlow{13, -0.5, 12.5};
     const AxisSpec axisZvtx{20, -10., 10.};
     const AxisSpec axisPt{402, -0.05, 20.05};
     const AxisSpec axisP{402, -10.05, 10.05};
@@ -411,7 +413,7 @@ struct UpcPhotonuclearAnalysisJMG {
         if (!(std::abs(collision.timeZNA()) > cutGapATimeZNA && std::abs(collision.timeZNC()) < cutGapATimeZNC)) {
           return false;
         }
-        if (useEnergyZN && ((collision.energyCommonZNA() < cutGapAMyEnergyZNA) && (collision.energyCommonZNC() >= cutGapAMyEnergyZNC))) {
+        if (useEnergyZN && !((collision.energyCommonZNA() < cutGapAMyEnergyZNA) && (collision.energyCommonZNC() >= cutGapAMyEnergyZNC))) {
           return false;
         } // 0n - A side && Xn - C Side
         if (useGapSideVariable && collision.gapSide() != uint8_t(0)) {
@@ -420,23 +422,23 @@ struct UpcPhotonuclearAnalysisJMG {
         if (useFV0 && collision.totalFV0AmplitudeA() > cutGapAFV0Amplitude) {
           return false;
         }
-        // if ((collision.totalFT0AmplitudeA() < cutAGapMyAmplitudeFT0AMax && collision.totalFT0AmplitudeC() >= cutAGapMyAmplitudeFT0CMin) == false) {
-        //   return false;
-        // }
+        if (useFT0AGapA && (collision.totalFT0AmplitudeA() > cutGapAMyAmplitudeFT0A)) {
+          return false;
+        }
         break;
       case 1: // Gap in C side
         if (!(std::abs(collision.timeZNA()) < cutGapCTimeZNA && std::abs(collision.timeZNC()) > cutGapCTimeZNC)) {
           return false;
         }
-        if (useEnergyZN && ((collision.energyCommonZNA() >= cutGapCMyEnergyZNA) && (collision.energyCommonZNC() < cutGapCMyEnergyZNC))) {
+        if (useEnergyZN && !((collision.energyCommonZNA() >= cutGapCMyEnergyZNA) && (collision.energyCommonZNC() < cutGapCMyEnergyZNC))) {
           return false;
         } // Xn - A side && 0n - C Side
         if (useGapSideVariable && collision.gapSide() != uint8_t(1)) {
           return false;
         }
-        // if ((collision.totalFT0AmplitudeA() >= cutCGapMyAmplitudeFT0AMin && collision.totalFT0AmplitudeC() < cutCGapMyAmplitudeFT0CMax) == false) {
-        //   return false;
-        // }
+        if (useFT0CGapC && (collision.totalFT0AmplitudeC() > cutGapCMyAmplitudeFT0C)) {
+          return false;
+        }
         break;
       default:
         return false;
@@ -875,7 +877,8 @@ struct UpcPhotonuclearAnalysisJMG {
     hEventFlow->GetXaxis()->SetBinLabel(9, "Time ZN");
     hEventFlow->GetXaxis()->SetBinLabel(10, "Energy ZN");
     hEventFlow->GetXaxis()->SetBinLabel(11, "FV0-A Amplitude");
-    hEventFlow->GetXaxis()->SetBinLabel(12, "GapSide Variable");
+    hEventFlow->GetXaxis()->SetBinLabel(12, "FT0 Amplitude");
+    hEventFlow->GetXaxis()->SetBinLabel(13, "GapSide Variable");
 
     histos.fill(HIST("Events/hCollisionsFlow"), 0);
     if (std::abs(reconstructedCollision.posZ()) > myZVtxCut) {
@@ -915,7 +918,7 @@ struct UpcPhotonuclearAnalysisJMG {
 
     bool isGapAMyEnergyZN = useEnergyZN && ((reconstructedCollision.energyCommonZNA() < cutGapAMyEnergyZNA) && (reconstructedCollision.energyCommonZNC() >= cutGapAMyEnergyZNC));
     bool isGapCMyEnergyZN = useEnergyZN && ((reconstructedCollision.energyCommonZNA() >= cutGapCMyEnergyZNA) && (reconstructedCollision.energyCommonZNC() < cutGapCMyEnergyZNC));
-    if (isGapAMyEnergyZN || isGapCMyEnergyZN) {
+    if (useEnergyZN && !(isGapAMyEnergyZN || isGapCMyEnergyZN)) {
       return;
     }
     histos.fill(HIST("Events/hCollisionsFlow"), 9);
@@ -923,12 +926,18 @@ struct UpcPhotonuclearAnalysisJMG {
       return;
     }
     histos.fill(HIST("Events/hCollisionsFlow"), 10);
+    bool cutFT0AGapA = useFT0AGapA && reconstructedCollision.totalFT0AmplitudeA() > cutGapAMyAmplitudeFT0A;
+    bool cutFT0CGapC = useFT0CGapC && reconstructedCollision.totalFT0AmplitudeC() > cutGapCMyAmplitudeFT0C;
+    if (cutFT0AGapA || cutFT0CGapC) {
+      return;
+    }
+    histos.fill(HIST("Events/hCollisionsFlow"), 11);
     bool cutGapSideAVariable = useGapSideVariable && reconstructedCollision.gapSide() != uint8_t(0);
     bool cutGapSideCVariable = useGapSideVariable && reconstructedCollision.gapSide() != uint8_t(1);
     if (cutGapSideAVariable || cutGapSideCVariable) {
       return;
     }
-    histos.fill(HIST("Events/hCollisionsFlow"), 11);
+    histos.fill(HIST("Events/hCollisionsFlow"), 12);
 
     if (isCollisionCutSG(reconstructedCollision) == false) {
       return;
