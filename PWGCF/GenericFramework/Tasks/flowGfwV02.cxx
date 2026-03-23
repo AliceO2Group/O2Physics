@@ -699,7 +699,7 @@ struct FlowGfwV02 {
   }
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const int& multTrk, const float& centrality, const int& run)
+  bool eventSelected(TCollision collision, const int& multTrk, const float& centrality)
   {
     if (cfgEventCutFlags.cfgTVXinTRD) {
       if (collision.alias_bit(kTVXinTRD)) {
@@ -1111,8 +1111,7 @@ struct FlowGfwV02 {
       registry.fill(HIST("eventQA/before/centrality"), xaxis.centrality);
       registry.fill(HIST("eventQA/before/multiplicity"), xaxis.multiplicity);
     }
-
-    if (cfgUseAdditionalEventCut && !eventSelected(collision, xaxis.multiplicity, xaxis.centrality, run))
+    if (cfgUseAdditionalEventCut && !eventSelected(collision, xaxis.multiplicity, xaxis.centrality))
       return;
     if (cfgFillQA)
       fillEventQA<kAfter>(collision, xaxis);
