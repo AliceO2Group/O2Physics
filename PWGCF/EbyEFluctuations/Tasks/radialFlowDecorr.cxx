@@ -207,8 +207,8 @@ struct RadialFlowDecorr {
   Configurable<float> cfgLinPupParam2{"cfgLinPupParam2", 3.0f, "(Lower) Linear Pileup Cut Const"};
   Configurable<float> cfgLinPupParam3{"cfgLinPupParam3", 3.0f, "(Lower) Linear Pileup Slope"};
 
-  Configurable<int> cfgNchPbMax{"cfgNchPbMax", 10000, "Max Nch range for PbPb collisions"};
-  Configurable<int> cfgNchOMax{"cfgNchOMax", 1000, "Max Nch range for OO collisions"};
+  Configurable<int> cfgNchPbMax{"cfgNchPbMax", 4000, "Max Nch range for PbPb collisions"};
+  Configurable<int> cfgNchOMax{"cfgNchOMax", 800, "Max Nch range for OO collisions"};
 
   Configurable<int> cfgSys{"cfgSys", 1, "Efficiency to be used for which system? 1-->PbPb, 2-->NeNe, 3-->OO, 4-->pp"};
   Configurable<bool> cfgFlat{"cfgFlat", false, "Whether to use flattening weights"};
@@ -227,7 +227,7 @@ struct RadialFlowDecorr {
 
   const AxisSpec vzAxis{5, -12.5, 12.5, "Vz"};
   const AxisSpec chgAxis{3, -1.5, 1.5};
-  const AxisSpec pTAxis{{0.0, 0.2, 0.5, 1, 3, 5, 7.5, 10}, "pT Axis"};
+  const AxisSpec pTAxis{{0.0, 0.2, 0.4, 0.6, 0.8, 1, 3, 5, 7, 10}, "pT Axis"};
   const AxisSpec etaAxis{{-0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9}, "Eta"};
   const AxisSpec phiAxis{KNbinsPhi, KPhiMin, TwoPI, "#phi"};
   const AxisSpec etaBinAxis{KNEta + 1, -0.5, KNEta + 0.5, "#eta bin Number"};
@@ -658,13 +658,17 @@ struct RadialFlowDecorr {
       return (effidx == 0) ? 1.0f : 0.0f;
     }
     TH3F* h = (effidx == 0) ? state.hEff[pidType] : state.hFake[pidType];
-    if (!h) {
-      return (effidx == 0) ? 1.0f : 0.0f; // Safe defaults if map is missing
-    }
+
+    if (!h)
+      return -1;
+
     int ibx = h->GetXaxis()->FindBin(mult);
     int iby = h->GetYaxis()->FindBin(pt);
     int ibz = h->GetZaxis()->FindBin(eta);
     float val = h->GetBinContent(ibx, iby, ibz);
+
+    if (effidx == 0)
+      return (val > 0.f) ? val : 1.0f;
     return val;
   }
 
@@ -1096,14 +1100,11 @@ struct RadialFlowDecorr {
   void init(InitContext&)
   {
     if (cfgSys == kPbPb) {
-      nChAxis = {cfgNchPbMax / 4, KBinOffset, cfgNchPbMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
-      nChAxis2 = {cfgNchPbMax / 20, KBinOffset, cfgNchPbMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
-    } else if (cfgSys == kNeNe || cfgSys == kOO) {
-      nChAxis = {cfgNchOMax / 2, KBinOffset, cfgNchOMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
-      nChAxis2 = {cfgNchOMax / 5, KBinOffset, cfgNchOMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
+      nChAxis = {cfgNchPbMax / 2, KBinOffset, cfgNchPbMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
+      nChAxis2 = {cfgNchPbMax / 4, KBinOffset, cfgNchPbMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
     } else {
-      nChAxis = {cfgNchOMax / 2, KBinOffset, cfgNchOMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
-      nChAxis2 = {cfgNchOMax / 5, KBinOffset, cfgNchOMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
+      nChAxis = {cfgNchOMax, KBinOffset, cfgNchOMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
+      nChAxis2 = {cfgNchOMax, KBinOffset, cfgNchOMax + KBinOffset, "Nch", "PV-contributor track multiplicity"};
     }
 
     ccdb->setURL(cfgCCDBurl.value);
@@ -1302,7 +1303,6 @@ struct RadialFlowDecorr {
         loadLimits("Hist2D_globalTracks_cent", state.mLimitsNchCent, state.mMinXNchCent, state.mMaxXNchCent);
       }
     }
-
     if (!cfgRunGetEff && (cfgFlat)) {
       if (cfgRunDataMean || cfgRunDataFluc) {
         LOGF(info, "Data Run: Loading flattening maps from %s", pathDataFlat.c_str());
@@ -1448,6 +1448,9 @@ struct RadialFlowDecorr {
     histos.fill(HIST("Hist2D_PVTracks_cent"), cent, multPV);
 
     for (const auto& track : mcTracks) {
+      if (track.collisionId() != mcCollision.index())
+        continue;
+
       if (!isTrackSelected(track))
         continue;
       fillNSigmaBefCut(track, cent);
@@ -1476,6 +1479,9 @@ struct RadialFlowDecorr {
     histos.fill(HIST("Hist2D_PVTracks_cent"), cent, multPV);
 
     for (const auto& particle : mcParticles) {
+      if (particle.mcCollisionId() != mcCollision.mcCollisionId())
+        continue;
+
       if (!isParticleSelected(particle) || !particle.isPhysicalPrimary())
         continue;
 
@@ -1520,10 +1526,15 @@ struct RadialFlowDecorr {
     }
 
     for (const auto& track : mcTracks) {
+      if (track.collisionId() != mcCollision.index())
+        continue;
+
       if (!isTrackSelected(track))
         continue;
 
       float pt = track.pt(), eta = track.eta();
+      histos.fill(HIST("hPt"), pt);
+      histos.fill(HIST("hEta"), eta);
       auto sign = track.sign();
       fillNSigmaBefCut(track, cent);
 
@@ -1733,11 +1744,17 @@ struct RadialFlowDecorr {
     histos.fill(HIST("Hist2D_globalTracks_cent"), cent, mcTracks.size());
     histos.fill(HIST("Hist2D_PVTracks_cent"), cent, multPV);
     for (const auto& track : mcTracks) {
+      if (track.collisionId() != mcCollision.index())
+        continue;
+
       if (!isTrackSelected(track))
         continue;
 
       float pt = track.pt(), eta = track.eta(), phi = track.phi();
       auto sign = track.sign();
+      histos.fill(HIST("hPt"), pt);
+      histos.fill(HIST("hEta"), eta);
+      histos.fill(HIST("hPhi"), phi);
       int id = identifyTrack(track, cent);
       bool isPi = (id == KPidPionOne);
       bool isKa = (id == KPidKaonTwo);
@@ -1836,6 +1853,9 @@ struct RadialFlowDecorr {
     memset(sumWiptiRecoEffCorr, 0, sizeof(sumWiptiRecoEffCorr));
 
     for (const auto& particle : mcParticles) {
+      if (particle.mcCollisionId() != mcCollision.mcCollisionId())
+        continue;
+
       if (!isParticleSelected(particle) || !particle.isPhysicalPrimary())
         continue;
       float pt = particle.pt(), eta = particle.eta();
@@ -1880,6 +1900,9 @@ struct RadialFlowDecorr {
     }
 
     for (const auto& track : mcTracks) {
+      if (track.collisionId() != mcCollision.index())
+        continue;
+
       if (!isTrackSelected(track))
         continue;
       float pt = track.pt(), eta = track.eta(), phi = track.phi();
@@ -2198,6 +2221,9 @@ struct RadialFlowDecorr {
     double p1kBarFt0A = 0.0, p1kBarFt0C = 0.0;
 
     for (const auto& particle : mcParticles) {
+      if (particle.mcCollisionId() != mcCollision.mcCollisionId())
+        continue;
+
       if (!isParticleSelected(particle) || !particle.isPhysicalPrimary())
         continue;
 
@@ -2238,6 +2264,9 @@ struct RadialFlowDecorr {
     } // end truth loop
 
     for (const auto& track : mcTracks) {
+      if (track.collisionId() != mcCollision.index())
+        continue;
+
       if (!isTrackSelected(track))
         continue;
 
