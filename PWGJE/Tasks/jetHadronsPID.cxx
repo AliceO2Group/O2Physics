@@ -24,6 +24,9 @@
 #include <fastjet/ClusterSequenceArea.hh>
 #include <fastjet/PseudoJet.hh>
 
+#include <TVector2.h>
+#include <TVector3.h>
+
 #include <cmath>
 #include <vector>
 
@@ -37,7 +40,10 @@ using namespace o2::constants::math;
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
 
 
-using PionTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCPi, aod::pidTOFPi>;
+using HadronTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, 
+                               aod::pidTPCFullPi, aod::pidTOFFullPi, 
+                               aod::pidTPCFullKa, aod::pidTOFFullKa, 
+                               aod::pidTPCFullPr, aod::pidTOFFullPr>;
 
 struct PIDHadronsInJets {
 
@@ -75,6 +81,7 @@ struct PIDHadronsInJets {
   Configurable<double> maxChiSquareTpc{"maxChiSquareTpc", 4.0, "maximum TPC chi^2/Ncls"};
   Configurable<double> maxChiSquareIts{"maxChiSquareIts", 36.0, "maximum ITS chi^2/Ncls"};
   Configurable<double> minPt{"minPt", 0.3, "minimum pt of the tracks"};
+  Configurable<double> maxPt{"maxPt", 4.0, "maximum pt of the tracks for PID analysis"}; // pt cut at 4.0
   Configurable<double> minEta{"minEta", -0.8, "minimum eta"};
   Configurable<double> maxEta{"maxEta", +0.8, "maximum eta"};
   Configurable<double> maxDcaxy{"maxDcaxy", 0.05, "Maximum DCAxy"};
@@ -94,10 +101,64 @@ struct PIDHadronsInJets {
       itsResponse.setMCDefaultParameters();
     }
 
-    // pid of pions
-    registryData.add("pion_jet_tpc", "TPC Pion PID in Jets", HistType::kTH2F, {{120, 0.0, 6.0, "#it{p}_{T} (GeV/#it{c})"}, {100, -3.0, 3.0, "n#sigma_{TPC}"}});
-    registryData.add("pion_jet_tof", "TOF Pion PID in Jets", HistType::kTH2F, {{120, 0.0, 6.0, "#it{p}_{T} (GeV/#it{c})"}, {100, -3.0, 3.0, "n#sigma_{TOF}"}});
-    registryData.add("pion_jet_its", "ITS Pion PID in Jets", HistType::kTH2F, {{120, 0.0, 6.0, "#it{p}_{T} (GeV/#it{c})"}, {100, -3.0, 3.0, "n#sigma_{ITS}"}});
+    // Pions, Kaons, Protons in Jet
+    registryData.add("pion_jet_tpc", "TPC Pion PID in Jets", HistType::kTH2F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -3.0, 3.0, "n#sigma_{TPC}"}});
+    registryData.add("pion_jet_tof", "TOF Pion PID in Jets", HistType::kTH2F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -3.0, 3.0, "n#sigma_{TOF}"}});
+    registryData.add("kaon_jet_tpc", "TPC Kaon PID in Jets", HistType::kTH2F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -3.0, 3.0, "n#sigma_{TPC}"}});
+    registryData.add("kaon_jet_tof", "TOF Kaon PID in Jets", HistType::kTH2F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -3.0, 3.0, "n#sigma_{TOF}"}});
+    registryData.add("proton_jet_tpc", "TPC Proton PID in Jets", HistType::kTH2F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -3.0, 3.0, "n#sigma_{TPC}"}});
+    registryData.add("proton_jet_tof", "TOF Proton PID in Jets", HistType::kTH2F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -3.0, 3.0, "n#sigma_{TOF}"}});
+
+    // Pions, Kaons, Protons Underlying Event
+    registryData.add("pion_ue_tpc", "TPC Pion PID in UE", HistType::kTH2F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -3.0, 3.0, "n#sigma_{TPC}"}});
+    registryData.add("pion_ue_tof", "TOF Pion PID in UE", HistType::kTH2F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -3.0, 3.0, "n#sigma_{TOF}"}});
+    registryData.add("kaon_ue_tpc", "TPC Kaon PID in UE", HistType::kTH2F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -3.0, 3.0, "n#sigma_{TPC}"}});
+    registryData.add("kaon_ue_tof", "TOF Kaon PID in UE", HistType::kTH2F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -3.0, 3.0, "n#sigma_{TOF}"}});
+    registryData.add("proton_ue_tpc", "TPC Proton PID in UE", HistType::kTH2F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -3.0, 3.0, "n#sigma_{TPC}"}});
+    registryData.add("proton_ue_tof", "TOF Proton PID in UE", HistType::kTH2F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -3.0, 3.0, "n#sigma_{TOF}"}});
+  }
+
+  // Compute two transverse directions orthogonal to vector p
+  void getPerpendicularDirections(const TVector3& p, TVector3& u1, TVector3& u2)
+  {
+    double px = p.X(), py = p.Y(), pz = p.Z();
+    double px2 = px * px, py2 = py * py, pz2 = pz * pz;
+    double pz4 = pz2 * pz2;
+
+    if (px == 0 && py == 0) { u1.SetXYZ(0, 0, 0); u2.SetXYZ(0, 0, 0); return; }
+    if (px == 0 && py != 0) {
+      double ux = std::sqrt(py2 - pz4 / py2);
+      double uy = -pz2 / py;
+      u1.SetXYZ(ux, uy, pz); u2.SetXYZ(-ux, uy, pz); return;
+    }
+    if (py == 0 && px != 0) {
+      double ux = -pz2 / px;
+      double uy = std::sqrt(px2 - pz4 / px2);
+      u1.SetXYZ(ux, uy, pz); u2.SetXYZ(ux, -uy, pz); return;
+    }
+
+    double a = px2 + py2;
+    double b = 2.0 * px * pz2;
+    double c = pz4 - py2 * py2 - px2 * py2;
+    double delta = b * b - 4.0 * a * c;
+
+    if (delta < 0 || a == 0) { u1.SetXYZ(0, 0, 0); u2.SetXYZ(0, 0, 0); return; }
+    double u1x = (-b + std::sqrt(delta)) / (2.0 * a);
+    u1.SetXYZ(u1x, (-pz2 - px * u1x) / py, pz);
+    double u2x = (-b - std::sqrt(delta)) / (2.0 * a);
+    u2.SetXYZ(u2x, (-pz2 - px * u2x) / py, pz);
+  }
+
+  double getDeltaPhi(double a1, double a2)
+  {
+    double deltaPhi(0);
+    double phi1 = TVector2::Phi_0_2pi(a1);
+    double phi2 = TVector2::Phi_0_2pi(a2);
+    double diff = std::fabs(phi1 - phi2);
+
+    if (diff <= PI) deltaPhi = diff;
+    if (diff > PI) deltaPhi = TwoPI - diff;
+    return deltaPhi;
   }
 
   // ITS hit helper
@@ -144,12 +205,12 @@ struct PIDHadronsInJets {
     if (track.tpcChi2NCl() < minChiSquareTpc || track.tpcChi2NCl() > maxChiSquareTpc) return false;
     if (track.itsChi2NCl() > maxChiSquareIts) return false;
     if (track.eta() < minEta || track.eta() > maxEta) return false;
-    if (track.pt() < minPt) return false;
+    if (track.pt() < minPt || track.pt() > maxPt) return false;
     return true;
   }
 
   // Process Data
-  void process(SelectedCollisions::iterator const& collision, PionTracks const& tracks)
+  void process(SelectedCollisions::iterator const& collision, HadronTracks const& tracks)
   {
     // Apply standard event selection
     if (!collision.sel8() || std::fabs(collision.posZ()) > zVtx) return;
@@ -174,14 +235,16 @@ struct PIDHadronsInJets {
 
     if (fjParticles.empty()) return;
 
-    // Cluster particles
+
     fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
     fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
     fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
     std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
+    
+    if (jets.empty()) return;
+
     auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(fjParticles, jets[0], rJet);
 
-    // Loop over reconstructed jets
     for (const auto& jet : jets) {
 
       if (!isppRefAnalysis && ((std::fabs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge))) continue;
@@ -197,41 +260,88 @@ struct PIDHadronsInJets {
       if (applyAreaCut && (!isppRefAnalysis) && normalizedJetArea > maxNormalizedJetArea) continue;
       if (isppRefAnalysis && (jet.area() < cfgAreaFrac * PI * rJet * rJet)) continue;
 
-      std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
 
-      // loop to fill historgrams
+      double coneRadius = std::sqrt(jet.area() / PI);
+      TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
+      TVector3 ueAxis1(0, 0, 0), ueAxis2(0, 0, 0);
+      getPerpendicularDirections(jetAxis, ueAxis1, ueAxis2);
+      
+      if (ueAxis1.Mag() == 0 || ueAxis2.Mag() == 0) continue;
+
+      std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
       for (const auto& particle : jetConstituents) {
 
         auto const& track = tracks.iteratorAt(particle.user_index());
         
-        // Constituent Track Selection (includes DCA checks)
         if (!passedTrackSelection(track)) continue;
         if (std::fabs(track.dcaXY()) > maxDcaxy || std::fabs(track.dcaZ()) > maxDcaz) continue;
 
         double pt = track.pt();
-        // double nSigmaITSPi = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Pion>(track));
 
-
-        // Check Pion PID (+/- 3 Sigma)
-        double nsigmaTPCPi = track.tpcNSigmaPi();
-        
-        // Fill TPC
-        if (std::abs(nsigmaTPCPi) <= 3.0) {
-            registryData.fill(HIST("pion_jet_tpc"), pt, nsigmaTPCPi);
+        if (std::abs(track.tpcNSigmaPi()) <= 3.0) {
+            registryData.fill(HIST("pion_jet_tpc"), pt, track.tpcNSigmaPi());
         }
-        
-        // Fill TOF
-        if (track.hasTOF()) {
-            double nsigmaTOFPi = track.tofNSigmaPi();
-            if (std::abs(nsigmaTOFPi) <= 3.0) {
-                registryData.fill(HIST("pion_jet_tof"), pt, nsigmaTOFPi);
-            }
+        if (track.hasTOF() && std::abs(track.tofNSigmaPi()) <= 3.0) {
+            registryData.fill(HIST("pion_jet_tof"), pt, track.tofNSigmaPi());
         }
 
-        // // Fill ITS
-        // if (std::abs(nSigmaITSPi) <= 3.0) {
-        //     registryData.fill(HIST("pion_jet_its"), pt, nSigmaITSPi);
-        // }
+        if (std::abs(track.tpcNSigmaKa()) <= 3.0) {
+            registryData.fill(HIST("kaon_jet_tpc"), pt, track.tpcNSigmaKa());
+        }
+        if (track.hasTOF() && std::abs(track.tofNSigmaKa()) <= 3.0) {
+            registryData.fill(HIST("kaon_jet_tof"), pt, track.tofNSigmaKa());
+        }
+
+        if (std::abs(track.tpcNSigmaPr()) <= 3.0) {
+            registryData.fill(HIST("proton_jet_tpc"), pt, track.tpcNSigmaPr());
+        }
+        if (track.hasTOF() && std::abs(track.tofNSigmaPr()) <= 3.0) {
+            registryData.fill(HIST("proton_jet_tof"), pt, track.tofNSigmaPr());
+        }
+      }
+
+      for (auto const& track : tracks) {
+
+        if (!passedTrackSelection(track)) continue;
+        if (std::fabs(track.dcaXY()) > maxDcaxy || std::fabs(track.dcaZ()) > maxDcaz) continue;
+
+        double deltaEtaUe1 = track.eta() - ueAxis1.Eta();
+        double deltaPhiUe1 = getDeltaPhi(track.phi(), ueAxis1.Phi());
+        double deltaRUe1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
+        
+        double deltaEtaUe2 = track.eta() - ueAxis2.Eta();
+        double deltaPhiUe2 = getDeltaPhi(track.phi(), ueAxis2.Phi());
+        double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
+
+        double maxConeRadius = coneRadius;
+        if (applyAreaCut) {
+          maxConeRadius = std::sqrt(maxNormalizedJetArea) * rJet;
+        }
+
+        if (deltaRUe1 > maxConeRadius && deltaRUe2 > maxConeRadius) continue;
+
+        double pt = track.pt();
+
+        if (std::abs(track.tpcNSigmaPi()) <= 3.0) {
+            registryData.fill(HIST("pion_ue_tpc"), pt, track.tpcNSigmaPi());
+        }
+        if (track.hasTOF() && std::abs(track.tofNSigmaPi()) <= 3.0) {
+            registryData.fill(HIST("pion_ue_tof"), pt, track.tofNSigmaPi());
+        }
+
+        if (std::abs(track.tpcNSigmaKa()) <= 3.0) {
+            registryData.fill(HIST("kaon_ue_tpc"), pt, track.tpcNSigmaKa());
+        }
+        if (track.hasTOF() && std::abs(track.tofNSigmaKa()) <= 3.0) {
+            registryData.fill(HIST("kaon_ue_tof"), pt, track.tofNSigmaKa());
+        }
+
+        if (std::abs(track.tpcNSigmaPr()) <= 3.0) {
+            registryData.fill(HIST("proton_ue_tpc"), pt, track.tpcNSigmaPr());
+        }
+        if (track.hasTOF() && std::abs(track.tofNSigmaPr()) <= 3.0) {
+            registryData.fill(HIST("proton_ue_tof"), pt, track.tofNSigmaPr());
+        }
       }
     }
   }
