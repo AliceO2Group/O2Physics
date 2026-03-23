@@ -994,6 +994,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
         kfCasc.Construct(cascDaughters, 2);
       } catch (std::runtime_error& e) {
         LOG(debug) << "Failed to construct Cascade: " << e.what();
+        continue;
       }
 
       float massCasc, sigMassCasc, massCascRej, sigMassCascRej;
@@ -1002,7 +1003,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       if (sigMassCasc <= 0) {
         continue;
       }
-      if (std::abs(massCasc - massCasc) > configs.massToleranceCascade) {
+      if (std::abs(massCasc - massOfCascade) > configs.massToleranceCascade) {
         continue;
       }
       if (kfCasc.GetNDF() <= 0 || kfCasc.GetChi2() <= 0) {
@@ -1016,6 +1017,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
           kfCascRej.Construct(cascDaughtersRej, 2);
         } catch (std::runtime_error& e) {
           LOG(debug) << "Failed to construct Cascade_rej: " << e.what();
+          continue;
         }
 
         kfCascRej.GetMass(massCascRej, sigMassCascRej);
@@ -1041,6 +1043,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
         kfCharmBaryon.Construct(charmBaryonDaughters, 2);
       } catch (std::runtime_error& e) {
         LOG(debug) << "Failed to construct Charm baryon: " << e.what();
+        continue;
       }
 
       float massCharmBaryon, sigMassCharmBaryon;
@@ -1071,7 +1074,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       // To Casc
       KFParticle kfBachToCasc = kfBach;
       KFParticle kfV0ToCasc = kfV0;
-      kfBach.SetProductionVertex(kfCasc);
+      kfBachToCasc.SetProductionVertex(kfCasc);
       kfV0ToCasc.SetProductionVertex(kfCasc);
 
       // To Charm baryon
@@ -1099,7 +1102,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       std::array<float, 3> pVecV0 = {kfV0.GetPx(), kfV0.GetPy(), kfV0.GetPz()};
       std::array<float, 3> pVecBach = {kfBachToCasc.GetPx(), kfBachToCasc.GetPy(), kfBachToCasc.GetPz()};
       std::array<float, 3> pVecCharmBachelorAsD = {kfCharmBachToCharmBaryon.GetPx(), kfCharmBachToCharmBaryon.GetPy(), kfCharmBachToCharmBaryon.GetPz()};
-      std::array<float, 3> pVecCharmBaryon = {kfCharmBaryon.GetPx(), kfCharmBaryon.GetPy(), kfCharmBaryon.GetPy()};
+      std::array<float, 3> pVecCharmBaryon = {kfCharmBaryon.GetPx(), kfCharmBaryon.GetPy(), kfCharmBaryon.GetPz()};
 
       auto* covVtxCharmBaryon = kfCharmBaryon.CovarianceMatrix();
       float covMatrixPv[6];
@@ -1146,8 +1149,8 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       float chi2NdfTopoCharmBaryonToPv = kfCharmBaryonToPv.GetChi2() / kfCharmBaryonToPv.GetNDF();
       float chi2NdfTopoBachToCasc = kfBachToCasc.GetChi2() / kfBachToCasc.GetNDF();
       float chi2NdfTopoV0ToCasc = kfV0ToCasc.GetChi2() / kfV0ToCasc.GetNDF();
-      float chi2NdfTopoCharmBachToCharmBaryon = kfCharmBachToCharmBaryon.GetChi2() / kfCharmBachToCharmBaryon.GetChi2();
-      float chi2NdfTopoCascToCharmBaryon = kfCascToCharmBaryon.GetChi2() / kfCascToCharmBaryon.GetChi2();
+      float chi2NdfTopoCharmBachToCharmBaryon = kfCharmBachToCharmBaryon.GetChi2() / kfCharmBachToCharmBaryon.GetNDF();
+      float chi2NdfTopoCascToCharmBaryon = kfCascToCharmBaryon.GetChi2() / kfCascToCharmBaryon.GetNDF();
 
       // get ldl
       float ldlV0 = ldlFromKF(kfV0, kfPv);
@@ -1177,7 +1180,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       float decayLCharmBaryon = RecoDecay::distance(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{kfCharmBaryon.GetX(), kfCharmBaryon.GetY(), kfCharmBaryon.GetZ()});
 
       double phiCharmBaryon, thetaCharmBaryon;
-      getPointDirection(std::array<float, 3>{kfV0.GetX(), kfV0.GetY(), kfV0.GetZ()}, std::array<float, 3>{kfCharmBaryon.GetX(), kfCharmBaryon.GetY(), kfCharmBaryon.GetZ()}, phiCharmBaryon, thetaCharmBaryon);
+      getPointDirection(std::array<float, 3>{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, std::array<float, 3>{kfCharmBaryon.GetX(), kfCharmBaryon.GetY(), kfCharmBaryon.GetZ()}, phiCharmBaryon, thetaCharmBaryon);
       float errDecayLCharmBaryon = std::sqrt(getRotatedCovMatrixXX(covMatrixPv, phiCharmBaryon, thetaCharmBaryon) + getRotatedCovMatrixXX(covVtxCharmBaryon, phiCharmBaryon, thetaCharmBaryon));
 
       // get cosine of pointing angle
