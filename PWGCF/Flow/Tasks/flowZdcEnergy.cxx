@@ -14,9 +14,11 @@
 /// \since  03/2026
 /// \brief  Study ZDC energy observables versus centrality for Run 2 / Run 3.
 
+#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
@@ -30,18 +32,28 @@
 
 using namespace o2;
 using namespace o2::framework;
+using namespace o2::framework::expressions;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
 struct flowZdcEnergy {
 
   struct : ConfigurableGroup{
-             O2_DEFINE_CONFIGURABLE(cfgCentMin, float, 0.f, "Minimum centrality for selected events")
-               O2_DEFINE_CONFIGURABLE(cfgCentMax, float, 90.f, "Maximum centrality for selected events")
-                 O2_DEFINE_CONFIGURABLE(cfgVtxZ, float, 10.f, "Accepted z-vertex range")} evsel;
+             O2_DEFINE_CONFIGURABLE(cfgUseEvsel, bool, true, "whether to enable event selection")
+               O2_DEFINE_CONFIGURABLE(cfgCentMin, float, 0.f, "Minimum centrality for selected events")
+                 O2_DEFINE_CONFIGURABLE(cfgCentMax, float, 90.f, "Maximum centrality for selected events")
+                   O2_DEFINE_CONFIGURABLE(cfgVtxZ, float, 10.f, "Accepted z-vertex range")} evsel;
+
+  O2_DEFINE_CONFIGURABLE(cfgEtaMax, float, 0.8f, "Maximum track #eta")
+  O2_DEFINE_CONFIGURABLE(cfgPtMin, float, 0.2f, "Minimum track #P_{t}")
+  O2_DEFINE_CONFIGURABLE(cfgPtMax, float, 10.0f, "Maximum track #P_{t}")
+  O2_DEFINE_CONFIGURABLE(cfgDcaXYMax, float, 0.2f, "Maximum DCAxy")
+  O2_DEFINE_CONFIGURABLE(cfgDcaZMax, float, 2.0f, "Maximum DCAz")
 
   ConfigurableAxis axisCent{"axisCent", {90, 0, 90}, "Centrality (%)"};
   ConfigurableAxis axisMult{"axisMult", {100, 0, 100000}, "Multiplicity"};
+  ConfigurableAxis axisPt{"axisPt", {100, 0, 15}, "#P_{t}"};
+  ConfigurableAxis axisEta{"axisEta", {64, -1.6, 1.6}, "#eta"};
   ConfigurableAxis axisEnergy{"axisEnergy", {300, 0, 300}, "Energy"};
   ConfigurableAxis axisRescaledDiff{"axisRescaledDiff", {400, -1, 1}, "(EA-EC)/(EA+EC)"};
 
@@ -59,6 +71,8 @@ struct flowZdcEnergy {
   Service<ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry registry{"registry"};
 
+  Filter trackFilter = nabs(aod::track::eta) < cfgEtaMax && aod::track::pt > cfgPtMin&& aod::track::pt < cfgPtMax&& nabs(aod::track::dcaXY) < cfgDcaXYMax&& nabs(aod::track::dcaZ) < cfgDcaZMax;
+  using UsedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
   // Run 3
   using CollisionsRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>;
   using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
@@ -77,8 +91,8 @@ struct flowZdcEnergy {
                  .count();
     ccdb->setCreatedNotAfter(now);
 
-    registry.add("hEventCount", "Event counter;Selection;Events", {HistType::kTH1D, {{kNSelections, 0, kNSelections}}});
-    auto hCount = registry.get<TH1>(HIST("hEventCount"));
+    registry.add("QA/hEventCount", "Event counter;Selection;Events", {HistType::kTH1D, {{kNSelections, 0, kNSelections}}});
+    auto hCount = registry.get<TH1>(HIST("QA/hEventCount"));
     hCount->GetXaxis()->SetBinLabel(kAllEvents + 1, "All events");
     hCount->GetXaxis()->SetBinLabel(kSeln + 1, "Sel7/8");
     hCount->GetXaxis()->SetBinLabel(kZvtx + 1, "Zvtx");
@@ -86,8 +100,11 @@ struct flowZdcEnergy {
     hCount->GetXaxis()->SetBinLabel(kBCHasZDC + 1, "BC has ZDC");
     hCount->GetXaxis()->SetBinLabel(kSelectedZDC + 1, "Selected ZDC");
 
-    registry.add("hCentrality", "", {HistType::kTH1D, {axisCent}});
-    registry.add("hMultiplicity", "", {HistType::kTH1D, {axisMult}});
+    registry.add("QA/hCentrality", "", {HistType::kTH1D, {axisCent}});
+    registry.add("QA/hMultiplicity", "", {HistType::kTH1D, {axisMult}});
+    registry.add("QA/hMultiplicity_TPC", "", {HistType::kTH1D, {axisMult}});
+    registry.add("QA/hPt", "", {HistType::kTH1D, {axisPt}});
+    registry.add("QA/hEta", "", {HistType::kTH1D, {axisEta}});
 
     registry.add("hEnergyWithCent_ZNA_Common", "", {HistType::kTH2D, {axisEnergy, axisCent}});
     registry.add("hEnergyWithCent_ZNC_Common", "", {HistType::kTH2D, {axisEnergy, axisCent}});
@@ -107,28 +124,31 @@ struct flowZdcEnergy {
 
   // Helper: event selection
   template <typename TCollision>
-  bool acceptEvent(TCollision const& collision, float centrality, const int runmode)
+  bool acceptEvent(TCollision const& collision, bool UseEvsel, float centrality, const int runmode)
   {
-    registry.fill(HIST("hEventCount"), kAllEvents);
-
-    if (runmode == 2 && !collision.sel7()) {
-      return false;
+    if (!UseEvsel) {
+      registry.fill(HIST("QA/hEventCount"), kAllEvents);
+      registry.fill(HIST("QA/hEventCount"), kSeln);
+      registry.fill(HIST("QA/hEventCount"), kZvtx);
+      registry.fill(HIST("QA/hEventCount"), kCentrality);
+    } else {
+      registry.fill(HIST("QA/hEventCount"), kAllEvents);
+      if (runmode == 2 && !collision.sel7()) {
+        return false;
+      }
+      if (runmode == 3 && !collision.sel8()) {
+        return false;
+      }
+      registry.fill(HIST("QA/hEventCount"), kSeln);
+      if (std::abs(collision.posZ()) > evsel.cfgVtxZ) {
+        return false;
+      }
+      registry.fill(HIST("QA/hEventCount"), kZvtx);
+      if (centrality < evsel.cfgCentMin || centrality > evsel.cfgCentMax) {
+        return false;
+      }
+      registry.fill(HIST("QA/hEventCount"), kCentrality);
     }
-    if (runmode == 3 && !collision.sel8()) {
-      return false;
-    }
-    registry.fill(HIST("hEventCount"), kSeln);
-
-    if (std::abs(collision.posZ()) > evsel.cfgVtxZ) {
-      return false;
-    }
-    registry.fill(HIST("hEventCount"), kZvtx);
-
-    if (centrality < evsel.cfgCentMin || centrality > evsel.cfgCentMax) {
-      return false;
-    }
-    registry.fill(HIST("hEventCount"), kCentrality);
-
     return true;
   }
 
@@ -140,13 +160,13 @@ struct flowZdcEnergy {
     if (!foundBC.has_zdc()) {
       return;
     }
-    registry.fill(HIST("hEventCount"), kBCHasZDC);
+    registry.fill(HIST("QA/hEventCount"), kBCHasZDC);
 
     const auto& zdc = foundBC.zdc();
     if (zdc.energyCommonZNA() <= 1.f || zdc.energyCommonZNC() <= 1.f) {
       return;
     }
-    registry.fill(HIST("hEventCount"), kSelectedZDC);
+    registry.fill(HIST("QA/hEventCount"), kSelectedZDC);
 
     const float energyCommonZNA = zdc.energyCommonZNA();
     const float energyCommonZNC = zdc.energyCommonZNC();
@@ -188,36 +208,50 @@ struct flowZdcEnergy {
 
   // Run 3 process
   void processRun3(CollisionsRun3::iterator const& collision,
+                   UsedTracks const& tracks,
                    BCsRun3 const&,
                    aod::Zdcs const&)
   {
     const float centrality = collision.centFT0C();
     const float multi = collision.multFT0C();
+    const float multiTPC = collision.multTPC();
 
-    if (!acceptEvent(collision, centrality, 3)) {
+    if (!acceptEvent(collision, evsel.cfgUseEvsel, centrality, 3)) {
       return;
     }
-    registry.fill(HIST("hCentrality"), centrality);
-    registry.fill(HIST("hMultiplicity"), multi);
-
+    registry.fill(HIST("QA/hCentrality"), centrality);
+    registry.fill(HIST("QA/hMultiplicity"), multi);
+    registry.fill(HIST("QA/hMultiplicity_TPC"), multiTPC);
     fillZDCObservables<CollisionsRun3::iterator, BCsRun3>(collision, centrality);
+
+    for (const auto& track : tracks) {
+      registry.fill(HIST("QA/hPt"), track.pt());
+      registry.fill(HIST("QA/hEta"), track.eta());
+    }
   }
 
   // Run 2 process
   void processRun2(CollisionsRun2::iterator const& collision,
+                   UsedTracks const& tracks,
                    BCsRun2 const&,
                    aod::Zdcs const&)
   {
     const float centrality = collision.centRun2V0M();
     const float multi = collision.multFV0M();
+    const float multiTPC = collision.multTPC();
 
-    if (!acceptEvent(collision, centrality, 2)) {
+    if (!acceptEvent(collision, evsel.cfgUseEvsel, centrality, 2)) {
       return;
     }
-    registry.fill(HIST("hCentrality"), centrality);
-    registry.fill(HIST("hMultiplicity"), multi);
-
+    registry.fill(HIST("QA/hCentrality"), centrality);
+    registry.fill(HIST("QA/hMultiplicity"), multi);
+    registry.fill(HIST("QA/hMultiplicity_TPC"), multiTPC);
     fillZDCObservables<CollisionsRun2::iterator, BCsRun2>(collision, centrality);
+
+    for (const auto& track : tracks) {
+      registry.fill(HIST("QA/hPt"), track.pt());
+      registry.fill(HIST("QA/hEta"), track.eta());
+    }
   }
 
   // Process switches
