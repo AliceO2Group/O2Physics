@@ -272,6 +272,7 @@ struct hyperRecoTask {
     int mat{static_cast<int>(cfgMaterialCorrection)};
     fitter.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(mat));
 
+    svCreator.setPDGs(heDauPdg, piDauPdg);
     svCreator.setTimeMargin(customVertexerTimeMargin);
     if (skipAmbiTracks) {
       svCreator.setSkipAmbiTracks();
