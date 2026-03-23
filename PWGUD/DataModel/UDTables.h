@@ -406,18 +406,6 @@ DECLARE_SOA_TABLE(UDTracksFlags, "AOD", "UDTRACKFLAG",
 DECLARE_SOA_TABLE(UDTracksLabels, "AOD", "UDTRACKLABEL",
                   udtrack::TrackId);
 
-/*
-using Bits256 = std::array<uint64_t, 4>;
-
-DECLARE_SOA_COLUMN(FT0BitsThr1MIP, ft0BitsThr1MIP, Bits256);
-DECLARE_SOA_COLUMN(FT0BitsThr2MIP, ft0BitsThr2MIP, Bits256);
-
-DECLARE_SOA_TABLE(UDCollisionFT0Bits, "AOD", "UDCOLLFT0BITS",
-                  o2::soa::Index<>,
-                  FT0BitsThr1MIP,
-                  FT0BitsThr2MIP);
-*/
-
 namespace udcollfitbits
 {
   DECLARE_SOA_COLUMN(Thr1W0, thr1W0, uint64_t); /// 1 MIP thresholds for FT0A ch 0 - ch 63
@@ -431,7 +419,7 @@ namespace udcollfitbits
   DECLARE_SOA_COLUMN(Thr2W3, thr2W3, uint64_t); /// 2 MIP thresholds for FT0C ch 97 - 112 & FV0 0 - 47
 } // namespace udcollfitbits
 
-DECLARE_SOA_TABLE(UDCollisionFT0Bits, "AOD", "UDCOLLFITBITS",
+DECLARE_SOA_TABLE(UDCollisionFITBits, "AOD", "UDCOLLFITBITS",
                   o2::soa::Index<>,
                   udcollfitbits::Thr1W0, /// 1 MIP thresholds for FT0A ch 0 - ch 63
                   udcollfitbits::Thr1W1, /// 1 MIP thresholds for FT0A ch 63 - ch 96 & FT0C ch 0 - ch 31

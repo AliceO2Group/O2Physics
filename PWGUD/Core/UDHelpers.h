@@ -535,6 +535,56 @@ bool FITveto(T const& bc, DGCutparHolder const& diffCuts)
   return false;
 }
 
+inline void setBit(uint64_t w[4], int bit, bool val)
+{
+  if (!val) {
+    return;
+  }
+  const int word = bit >> 6;
+  const int offs = bit & 63;
+  w[word] |= (uint64_t(1) << offs);
+}
+
+template <typename TFT0, typename TFV0A>
+inline void buildFT0FV0Words(TFT0 const& ft0, TFV0A const& fv0a,
+                             uint64_t thr1[4], uint64_t thr2[4],
+                             float thr1_FT0A = 25., float thr1_FT0C = 50., float thr1_FV0A = 50.,
+                             float thr2_FT0A = 50., float thr2_FT0C = 100., float thr2_FV0A = 100.)
+{
+  thr1[0] = thr1[1] = thr1[2] = thr1[3] = 0ull;
+  thr2[0] = thr2[1] = thr2[2] = thr2[3] = 0ull;
+
+  constexpr int kFT0AOffset = 0;
+  constexpr int kFT0COffset = 96;
+  constexpr int kFV0Offset = 208;
+
+  auto ampsA = ft0.amplitudeA();
+  const int nA = std::min<int>(ampsA.size(), 96);
+  for (int i = 0; i < nA; ++i) {
+    const auto a = ampsA[i];
+    setBit(thr1, kFT0AOffset + i, a >= thr1_FT0A);
+    setBit(thr2, kFT0AOffset + i, a >= thr2_FT0A);
+  }
+
+  auto ampsC = ft0.amplitudeC();
+  const int nC = std::min<int>(ampsC.size(), 112);
+  for (int i = 0; i < nC; ++i) {
+    const auto a = ampsC[i];
+    setBit(thr1, kFT0COffset + i, a >= thr1_FT0C);
+    setBit(thr2, kFT0COffset + i, a >= thr2_FT0C);
+  }
+
+  auto ampsV = fv0a.amplitude();
+  const int nV = std::min<int>(ampsV.size(), 48);
+  for (int i = 0; i < nV; ++i) {
+    const auto a = ampsV[i];
+    setBit(thr1, kFV0Offset + i, a >= thr1_FV0A);
+    setBit(thr2, kFV0Offset + i, a >= thr2_FV0A);
+  }
+}
+
+
+
 // -----------------------------------------------------------------------------
 // return eta and phi of a given FIT channel based on the bitset
 // Bit layout contract:
@@ -542,7 +592,7 @@ constexpr int kFT0Bits = 208;        // FT0 total channels
 constexpr int kFV0Bits = 48;         // FV0A channels
 constexpr int kTotalBits = 256;      // 4*64
 
-// FT0 side split (adjust if your channelization differs in your tag)
+// FT0 side split
 constexpr int kFT0AChannels = 96;    // FT0A channels are [0..95]
 constexpr int kFT0CChannels = 112;   // FT0C channels are [96..207]
 static_assert(kFT0AChannels + kFT0CChannels == kFT0Bits);
@@ -586,7 +636,6 @@ inline FitBitRef decodeFitBit(int bit)
   return out;
 }
 
-// You can pass whatever type offsetFT0 is (vector/array/span of objects with getX/Y/Z).
 template <typename FT0DetT, typename OffsetsT>
 inline double getPhiFT0_fromChannel(FT0DetT& ft0Det, int ft0Ch, OffsetsT const& offsetFT0, int i)
 {
@@ -633,13 +682,8 @@ inline bool getPhiEtaFromFitBit(FT0DetT& ft0Det,
     return false;
   }
 	
-	// packed mapping: bit index == ft0Ch in the detector numbering you used for getChannelCenter
   // FT0A: 0..95, FT0C: 96..207
   const int ft0Ch = bit;
-
-  // (Optional) if ft0Det expects FT0C channels numbered 0..111 separately, then map:
-  // const int ft0Ch = (bit < kFT0AChannels) ? bit : (bit - kFT0AChannels);
-
   phi = getPhiFT0_fromChannel(ft0Det, ft0Ch, offsetFT0, iRunOffset);
   eta = getEtaFT0_fromChannel(ft0Det, ft0Ch, offsetFT0, iRunOffset);
   return true;

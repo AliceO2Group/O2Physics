@@ -10,7 +10,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
 
-#include "PWGUD/DataModel/UDTables.h"     // aod::UDCollisionFT0Bits
+#include "PWGUD/DataModel/UDTables.h"     // aod::UDCollisionFITBits
 #include "PWGUD/Core/UDHelpers.h"         // udhelpers::Bits256, makeBits256, testBit, getPhiEtaFromFitBit
 #include "FT0Base/Geometry.h"             // o2::ft0::Geometry
 
@@ -56,7 +56,7 @@ struct UpcTestFITBitMapping
     ft0Det.calculateChannelCenter();
   }
 
-  void process(aod::UDCollisionFT0Bits const& bitsTable)
+  void process(aod::UDCollisionFITBits const& bitsTable)
   {
     int64_t nProcessed = 0;
 

@@ -20,6 +20,7 @@
 
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/Core/UPCHelpers.h"
+#include "PWGUD/Core/FITCutParHolder.h"
 #include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
@@ -76,6 +77,8 @@ struct SGCandProducer {
   // get an SGCutparHolder
   SGCutParHolder sameCuts = SGCutParHolder(); // SGCutparHolder
   Configurable<SGCutParHolder> SGCuts{"SGCuts", {}, "SG event cuts"};
+	FITCutParHolder fitCuts = FITCutParHolder();
+	Configurable<FITCutParHolder> FITCuts{"FITCuts", {}, "FIT bitset cuts"};
   Configurable<bool> verboseInfo{"verboseInfo", false, "Print general info to terminal; default it false."};
   Configurable<bool> saveAllTracks{"saveAllTracks", true, "save only PV contributors or all tracks associated to a collision"};
   Configurable<bool> savenonPVCITSOnlyTracks{"savenonPVCITSOnlyTracks", false, "save non PV contributors with ITS only information"};
@@ -89,12 +92,6 @@ struct SGCandProducer {
   Configurable<bool> storeDG{"storeDG", true, "Store DG events in the output"};
 
   Configurable<bool> saveFITbitsets{"saveFITbitsets", true, "Write FT0 and FV0 bitset tables to output"};
-	Configurable<float> thr1_FV0A{"thr1_FV0A",  50., "Threshold for 1 MIP in FV0A"};
-  Configurable<float> thr1_FT0A{"thr1_FT0A",  50., "Threshold for 1 MIP in FT0A"};
-  Configurable<float> thr1_FT0C{"thr1_FT0C",  50., "Threshold for 1 MIP in FT0C"};
-  Configurable<float> thr2_FV0A{"thr2_FV0A", 100., "Threshold for 2 MIP in FV0A"};
-  Configurable<float> thr2_FT0A{"thr2_FT0A", 100., "Threshold for 2 MIP in FT0A"};
-  Configurable<float> thr2_FT0C{"thr2_FT0C", 100., "Threshold for 2 MIP in FT0C"};
 
   Configurable<bool> isGoodRCTCollision{"isGoodRCTCollision", true, "Check RCT flags for FT0,ITS,TPC and tracking"};
   Configurable<bool> isGoodRCTZdc{"isGoodRCTZdc", false, "Check RCT flags for ZDC if present in run"};
@@ -128,7 +125,7 @@ struct SGCandProducer {
   Produces<aod::UDFwdTracks> outputFwdTracks;
   Produces<aod::UDFwdTracksExtra> outputFwdTracksExtra;
   Produces<aod::UDTracksLabels> outputTracksLabel;
-	Produces<aod::UDCollisionFT0Bits> outputFT0Bits;
+	Produces<aod::UDCollisionFITBits> outputFITBits;
 
   // initialize histogram registry
   HistogramRegistry registry{
@@ -284,60 +281,6 @@ struct SGCandProducer {
       }
     }
   }
-	
-	static inline void setBit(uint64_t w[4], int bit, bool val)
-	{
-		if (!val) {
-			return;
-		}
-		const int word = bit >> 6;   // /64
-		const int offs = bit & 63;   // %64
-		w[word] |= (uint64_t(1) << offs);
-	}
-
-	template <typename TFT0, typename TFV0A>
-	static inline void buildFT0FV0Words(TFT0 const& ft0, TFV0A const& fv0a,
-																		 uint64_t thr1[4], uint64_t thr2[4],
-																		 float thr1_FT0A = 25., float thr1_FT0C = 50., float thr1_FV0A = 50.,
-																		 float thr2_FT0A = 50., float thr2_FT0C = 100., float thr2_FV0A = 100. )
-	{
-		thr1[0]=thr1[1]=thr1[2]=thr1[3]=0ull;
-		thr2[0]=thr2[1]=thr2[2]=thr2[3]=0ull;
-
-		constexpr int kFT0AOffset = 0;
-		constexpr int kFT0COffset = 96;
-		constexpr int kFV0Offset  = 208;
-		
-		// Setting bits for FT0A
-		auto ampsA = ft0.amplitudeA();
-		const int nA = std::min<int>(ampsA.size(), 96);
-		for (int i = 0; i < nA; ++i) {
-			const auto a = ampsA[i];
-			setBit(thr1, kFT0AOffset + i, a >= thr1_FT0A);
-			setBit(thr2, kFT0AOffset + i, a >= thr2_FT0A);
-		}
-
-		// Setting bits for FT0C
-		auto ampsC = ft0.amplitudeC();
-		const int nC = std::min<int>(ampsC.size(), 112);
-		for (int i = 0; i < nC; ++i) {
-			const auto a = ampsC[i];
-			setBit(thr1, kFT0COffset + i, a >= thr1_FT0C);
-			setBit(thr2, kFT0COffset + i, a >= thr2_FT0C);
-		}
-
-		// Setting bits for FV0A
-		auto ampsV = fv0a.amplitude();
-		const int nV = std::min<int>(ampsV.size(), 48);
-		for (int i = 0; i < nV; ++i) {
-			const auto a = ampsV[i];
-			setBit(thr1, kFV0Offset + i, a >= thr1_FV0A);
-			setBit(thr2, kFV0Offset + i, a >= thr2_FV0A);
-		}
-	}
-	
-	
-	
 
   PROCESS_SWITCH(SGCandProducer, processCountersTrg, "Produce trigger counters and luminosity histograms", true);
 
@@ -458,11 +401,17 @@ struct SGCandProducer {
 			uint64_t w1[4] = {0ull, 0ull, 0ull, 0ull};
 			uint64_t w2[4] = {0ull, 0ull, 0ull, 0ull};
 
-			if ( saveFITbitsets && newbc.has_foundFT0() && newbc.has_fv0a() ) {
-				buildFT0FV0Words(newbc.ft0(), newbc.fv0a(), w1, w2, thr1_FT0A, thr1_FT0C, thr1_FV0A, thr2_FT0A, thr2_FT0C, thr2_FV0A);
+			if (fitCuts.saveFITbitsets() && newbc.has_foundFT0() && newbc.has_fv0a()) {
+				udhelpers::buildFT0FV0Words(newbc.ft0(), newbc.fv0a(), w1, w2,
+																		fitCuts.thr1_FT0A(),
+																		fitCuts.thr1_FT0C(),
+																		fitCuts.thr1_FV0A(),
+																		fitCuts.thr2_FT0A(),
+																		fitCuts.thr2_FT0C(),
+																		fitCuts.thr2_FV0A());
 			}
 
-			outputFT0Bits(w1[0], w1[1], w1[2], w1[3],
+			outputFITBits(w1[0], w1[1], w1[2], w1[3],
 										w2[0], w2[1], w2[2], w2[3]);
 			
       if (newbc.has_zdc()) {
@@ -503,6 +452,7 @@ struct SGCandProducer {
     ccdb->setCaching(true);
     ccdb->setFatalWhenNull(false);
     sameCuts = (SGCutParHolder)SGCuts;
+		fitCuts = (FITCutParHolder)FITCuts;
 
     // add histograms for the different process functions
     histPointers.clear();
