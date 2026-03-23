@@ -180,7 +180,7 @@ struct FlowGfwV02 {
   // // The analysis assumes the data has been subjected to a QA of its selection,
   // // and thus only the final distributions of the data for analysis are saved.
   o2::framework::expressions::Filter collFilter = (nabs(aod::collision::posZ) < cfgEventCuts.cfgZvtxMax);
-  o2::framework::expressions::Filter trackFilter = (aod::track::pt > cfgTrackCuts.cfgPtMin) && (aod::track::pt < cfgTrackCuts.cfgPtMax) && (nabs(aod::track::eta) < cfgTrackCuts.cfgEtaMax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::itsChi2NCl < cfgTrackCuts.cfgChi2PrITSCls) && (aod::track::tpcChi2NCl < cfgTrackCuts.cfgChi2PrTPCCls) && nabs(aod::track::dcaZ) < cfgTrackCuts.cfgDCAz);
+  o2::framework::expressions::Filter trackFilter = (aod::track::pt > cfgTrackCuts.cfgPtMin) && (aod::track::pt < cfgTrackCuts.cfgPtMax) && (nabs(aod::track::eta) < cfgTrackCuts.cfgEtaMax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::itsChi2NCl < cfgTrackCuts.cfgChi2PrITSCls) && (aod::track::tpcChi2NCl < cfgTrackCuts.cfgChi2PrTPCCls) && nabs(aod::track::dcaZ) < cfgTrackCuts.cfgDCAz);
 
   //  Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -224,7 +224,6 @@ struct FlowGfwV02 {
     kTrackCent
   };
 
-
   std::unique_ptr<GFW> fGFW{std::make_unique<GFW>()};
   std::unique_ptr<TRandom3> fRndm{std::make_unique<TRandom3>(0)};
   std::unique_ptr<TAxis> fSecondAxis{nullptr};
@@ -246,7 +245,6 @@ struct FlowGfwV02 {
     TH1D* hPtMid[4] = {nullptr, nullptr, nullptr, nullptr};
   };
   PIDState pidStates;
-
 
   // Event selection cuts - Alex
   TF1* fMultPVCutLow = nullptr;
@@ -383,7 +381,6 @@ struct FlowGfwV02 {
     AxisSpec multpvAxis = {600, 0, 600, "N_{ch} (PV)"};
     AxisSpec dcaZAxis = {200, -2, 2, "DCA_{z} (cm)"};
     AxisSpec dcaXYAxis = {200, -0.5, 0.5, "DCA_{xy} (cm)"};
-
 
     registry.add("v02pt", "", {HistType::kTProfile2D, {ptAxis, centAxis}});
     registry.add("nchMid", "", {HistType::kTProfile2D, {ptAxis, centAxis}});
@@ -652,7 +649,6 @@ struct FlowGfwV02 {
       return 1. / eff;
   }
 
-
   template <typename TTrack>
   void fillNsigmaAfterCut(TTrack track1, Int_t pid) // function to fill the QA after Nsigma selection
   {
@@ -701,7 +697,6 @@ struct FlowGfwV02 {
         break;
     } // end of switch
   }
-
 
   template <typename TCollision>
   bool eventSelected(TCollision collision, const int& multTrk, const float& centrality, const int& run)
@@ -980,7 +975,6 @@ struct FlowGfwV02 {
     return ((track.tpcNClsCrossedRows() >= cfgTrackCuts.cfgNTPCXrows) && (track.tpcNClsFound() >= cfgTrackCuts.cfgNTPCCls) && (track.itsNCls() >= cfgTrackCuts.cfgMinNITSCls));
   }
 
-  
   template <typename TCollision>
   float getCentrality(TCollision collision)
   {
@@ -1004,15 +998,14 @@ struct FlowGfwV02 {
     }
   }
 
-
   template <typename TTrack>
   inline void processTrack(TTrack const& track, const float& vtxz, const int& multiplicity, const int& /*run*/, AcceptedTracks& acceptedTracks)
   {
-   
+
     if (cfgFillQA) {
       fillTrackQA<kBefore>(track, vtxz);
       registry.fill(HIST("trackQA/before/nch_pt"), multiplicity, track.pt());
-    } 
+    }
     if (!trackSelected(track))
       return;
 
@@ -1093,7 +1086,6 @@ struct FlowGfwV02 {
     return;
   }
 
-
   double getTimeSinceStartOfFill(uint64_t, int) { return 0.0; }
 
   void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs>>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
@@ -1119,12 +1111,11 @@ struct FlowGfwV02 {
       registry.fill(HIST("eventQA/before/centrality"), xaxis.centrality);
       registry.fill(HIST("eventQA/before/multiplicity"), xaxis.multiplicity);
     }
-    
+
     if (cfgUseAdditionalEventCut && !eventSelected(collision, xaxis.multiplicity, xaxis.centrality, run))
       return;
     if (cfgFillQA)
       fillEventQA<kAfter>(collision, xaxis);
-
 
     registry.fill(HIST("eventQA/after/centrality"), xaxis.centrality);
     registry.fill(HIST("eventQA/after/multiplicity"), xaxis.multiplicity);
