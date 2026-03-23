@@ -855,6 +855,7 @@ struct StrangeCascTrack {
     histos.add("MC/EvRec/EvCounter", "Event Counter", kTH1D, {{1, 0, 1}});
     histos.add("MC/EvRec/Mult", "Event charged multiplicty (gen events with reco>=1)", kTH1D, {{1600, 0, 3200}});
     histos.add("MC/EvRec/MultCent", "Gen multiplicity vs reco centrality", kTH2D, {{100, 0, 100}, {1600, 0, 3200}});
+    histos.add("MC/EvRec/Cent", "FT0 Centality", kTH1D, {axesConfig.axisMult});
     histos.add("MC/EvRec/Xi", "Xi", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                                             // generated Xis in reco>=1
     histos.add("MC/EvRec/PrimaryXi", "Xi primaries", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                            // generated primary Xis in reco>=1
     histos.add("MC/EvRec/PrimaryXiRapidity", "Xi primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});             // generated primary Xis in selected rapidity range in reco>=1
@@ -1048,6 +1049,8 @@ struct StrangeCascTrack {
       // look at reco>= 1 for corrections
       auto slicedRecColls = recColls.sliceBy(perMcCollision, genColl.globalIndex());
       bool recoCounter = false;
+      int biggestNContribs = -1;
+      float bestCentrality = 100.5;
       for (auto const& recColl : slicedRecColls) {
         if (!isValidEvent(recColl, false))
           continue; // from this point on - only gen events (and cascades from such events) that were reconstructed
@@ -1059,41 +1062,47 @@ struct StrangeCascTrack {
           histos.fill(HIST("MC/EvRec/Mult"), genMult);
           recoCounter = true;
         }
-        // fill multiplicity-centrality distribution
-        double recoMult = (doProcessIons) ? recColl.centFT0C() : recColl.centFT0M();
-        histos.fill(HIST("MC/EvRec/MultCent"), recoMult, genMult);
+        if (biggestNContribs < recColl.multPVTotalContributors()) {
+        biggestNContribs = recColl.multPVTotalContributors();
+        bestCentrality = (doProcessIons) ? recColl.centFT0C() : recColl.centFT0M();
+        }
         // look at generated cascades within reconstructed events
         for (auto const& casc : slicedGenCascs) {
           if (casc.straMCCollisionId() != genCollId)
             continue; // check for cascades belonging to the correct reco collision
           double cascPt = casc.ptMC();
           if (isValidPDG(casc, "Xi"))
-            histos.fill(HIST("MC/EvRec/Xi"), cascPt, recoMult);
+            histos.fill(HIST("MC/EvRec/Xi"), cascPt, bestCentrality);
           if (isValidPDG(casc, "Omega"))
-            histos.fill(HIST("MC/EvRec/Omega"), cascPt, recoMult);
+            histos.fill(HIST("MC/EvRec/Omega"), cascPt, bestCentrality);
           if (casc.isPhysicalPrimary()) {
             if (isValidPDG(casc, "Xi")) {
-              histos.fill(HIST("MC/EvRec/PrimaryXi"), cascPt, recoMult);
+              histos.fill(HIST("MC/EvRec/PrimaryXi"), cascPt, bestCentrality);
               if (std::abs(casc.rapidityMC(0)) < selCuts.cutRapidity) {
-                histos.fill(HIST("MC/EvRec/PrimaryXiRapidity"), cascPt, recoMult);
+                histos.fill(HIST("MC/EvRec/PrimaryXiRapidity"), cascPt, bestCentrality);
                 if (casc.pdgCode() == PDG_t::kXiMinus)
-                  histos.fill(HIST("MC/EvRec/PrimaryXiMinusRapidity"), cascPt, recoMult);
+                  histos.fill(HIST("MC/EvRec/PrimaryXiMinusRapidity"), cascPt, bestCentrality);
                 if (casc.pdgCode() == PDG_t::kXiPlusBar)
-                  histos.fill(HIST("MC/EvRec/PrimaryXiPlusRapidity"), cascPt, recoMult);
+                  histos.fill(HIST("MC/EvRec/PrimaryXiPlusRapidity"), cascPt, bestCentrality);
               }
             }
             if (isValidPDG(casc, "Omega")) {
-              histos.fill(HIST("MC/EvRec/PrimaryOmega"), cascPt, recoMult);
+              histos.fill(HIST("MC/EvRec/PrimaryOmega"), cascPt, bestCentrality);
               if (std::abs(casc.rapidityMC(2)) < selCuts.cutRapidity) {
-                histos.fill(HIST("MC/EvRec/PrimaryOmegaRapidity"), cascPt, recoMult);
+                histos.fill(HIST("MC/EvRec/PrimaryOmegaRapidity"), cascPt, bestCentrality);
                 if (casc.pdgCode() == PDG_t::kOmegaMinus)
-                  histos.fill(HIST("MC/EvRec/PrimaryOmegaMinusRapidity"), cascPt, recoMult);
+                  histos.fill(HIST("MC/EvRec/PrimaryOmegaMinusRapidity"), cascPt, bestCentrality);
                 if (casc.pdgCode() == PDG_t::kOmegaPlusBar)
-                  histos.fill(HIST("MC/EvRec/PrimaryOmegaPlusRapidity"), cascPt, recoMult);
+                  histos.fill(HIST("MC/EvRec/PrimaryOmegaPlusRapidity"), cascPt, bestCentrality);
               }
             }
           }
         }
+      }
+      // fill centrality exactly once for each rec gen event
+      if (biggestNContribs >= 0) {
+      histos.fill(HIST("MC/EvRec/MultCent"), bestCentrality, genMult);
+      histos.fill(HIST("MC/EvRec/Cent"), bestCentrality);
       }
     }
   }
