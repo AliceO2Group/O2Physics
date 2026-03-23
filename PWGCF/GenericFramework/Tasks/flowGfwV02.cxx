@@ -180,7 +180,7 @@ struct FlowGfwV02 {
   // // The analysis assumes the data has been subjected to a QA of its selection,
   // // and thus only the final distributions of the data for analysis are saved.
   o2::framework::expressions::Filter collFilter = (nabs(aod::collision::posZ) < cfgEventCuts.cfgZvtxMax);
-  o2::framework::expressions::Filter trackFilter = (aod::track::pt > cfgTrackCuts.cfgPtMin) && (aod::track::pt < cfgTrackCuts.cfgPtMax) && (nabs(aod::track::eta) < cfgTrackCuts.cfgEtaMax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::itsChi2NCl < cfgTrackCuts.cfgChi2PrITSCls) && (aod::track::tpcChi2NCl < cfgTrackCuts.cfgChi2PrTPCCls) && nabs(aod::track::dcaZ) < cfgTrackCuts.cfgDCAz);
+  o2::framework::expressions::Filter trackFilter = (aod::track::pt > cfgTrackCuts.cfgPtMin) && (aod::track::pt < cfgTrackCuts.cfgPtMax) && nabs(aod::track::eta) < cfgTrackCuts.cfgEtaMax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::itsChi2NCl < cfgTrackCuts.cfgChi2PrITSCls) && (aod::track::tpcChi2NCl < cfgTrackCuts.cfgChi2PrTPCCls) && nabs(aod::track::dcaZ) < cfgTrackCuts.cfgDCAz;
 
   //  Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -878,7 +878,6 @@ struct FlowGfwV02 {
       }
     }
     // Fill the profiles for each pT bin
-    // printf("Config name: %s\n", corrconfigs.at(0).Head.c_str());
     auto dnx = fGFW->Calculate(corrconfigs.at(0), 0, kTRUE).real();
     if (dnx == 0)
       return;
@@ -889,7 +888,6 @@ struct FlowGfwV02 {
         ptFraction = pidStates.hPtMid[PidCharged]->GetBinContent(i) / pidStates.hPtMid[PidCharged]->Integral();
         if (std::abs(val) < 1)
           registry.fill(HIST("v02pt"), fSecondAxis->GetBinCenter(i), centmult, val * ptFraction, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0);
-        // printf("bincenter hPtMid: %f, fsecondaxis: %f\n", hPtMid->GetBinCenter(i), fSecondAxis->GetBinCenter(i));
         registry.fill(HIST("nchMid"), fSecondAxis->GetBinCenter(i), centmult, ptFraction);
       }
     }
@@ -931,7 +929,8 @@ struct FlowGfwV02 {
     AcceptedTracks acceptedTracks{0, 0, 0, 0};
     for (const auto& track : tracks) {
       processTrack(track, vtxz, xaxis.multiplicity, run, acceptedTracks);
-      pidStates.hPtMid[PidCharged]->Fill(track.pt(), getEfficiency(track));
+      if (track.eta() > -0.4 && track.eta() < 0.4) 
+        pidStates.hPtMid[PidCharged]->Fill(track.pt(), getEfficiency(track));
       // If PID is identified, fill pt spectrum for the corresponding particle
       int pidInd = getNsigmaPID(track);
       if (pidInd != -1 && track.eta() > -0.4 && track.eta() < 0.4) {
@@ -1096,7 +1095,6 @@ struct FlowGfwV02 {
       lastRun = run;
       LOGF(info, "run = %d", run);
     }
-
     loadCorrections(bc);
 
     registry.fill(HIST("eventQA/eventSel"), kFilteredEvent);
