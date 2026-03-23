@@ -103,7 +103,7 @@ struct HfElectronSelectionWithTpcEmcal {
   Configurable<float> etaTrackDCalNegativeMin{"etaTrackDCalNegativeMin", -0.6f, "Eta range for electron tracks"};
   Configurable<float> etaTrackDCalPositiveMax{"etaTrackDCalPositiveMax", 0.6f, "Eta range for electron Dcal tracks"};
   Configurable<float> etaTrackDCalPositiveMin{"etaTrackDCalPositiveMin", 0.22f, "Eta range for electron tracks"};
-  Configurable<float> phiTrackDCalMax{"phiTrackDCalMax", 5.708f, "phi range for electron tracks associated Dcal"};
+  Configurable<float> phiTrackDCalMax{"phiTrackDCalMax", 4.5355f, "phi range for electron tracks associated Dcal"};
   Configurable<float> phiTrackDCalMin{"phiTrackDCalMin", 4.5355f, "phi range for electron tracks associated Dcal"};
   Configurable<float> phiTrackEMCalMax{"phiTrackEMCalMax", 3.3621f, "phi range for electron tracks associated Emcal"};
   Configurable<float> phiTrackEMCalMin{"phiTrackEMCalMin", 1.3955f, "phi range for electron tracks associated Emcal"};
@@ -189,14 +189,20 @@ struct HfElectronSelectionWithTpcEmcal {
     registry.add("hZvertex", "z vertex", {HistType::kTH1D, {axisPosZ}});
     registry.add("hNeventsAfterPassEmcal", "No of events pass the Emcal", {HistType::kTH1D, {{3, 1, 4}}});
     registry.add("hNevents", "No of events", {HistType::kTH1D, {{3, 1, 4}}});
-    registry.add("hLikeMass", "Like mass", {HistType::kTH1D, {{axisMass}}});
-    registry.add("hUnLikeMass", "unLike mass", {HistType::kTH1D, {{axisMass}}});
-    registry.add("hLikeSignPt", "Like sign Momentum ", {HistType::kTH1D, {{axisPt}}});
-    registry.add("hUnLikeSignPt", "UnLike sign Momentum", {HistType::kTH1D, {{axisPt}}});
+    registry.add("hLikeMass_EMCAL", "Like mass Emcal", {HistType::kTH1D, {{axisMass}}});
+    registry.add("hUnLikeMass_EMCAL", "unLike mass Emcal", {HistType::kTH1D, {{axisMass}}});
+    registry.add("hLikeSignPt_EMCAL", "Like sign Momentum Emcal ", {HistType::kTH1D, {{axisPt}}});
+    registry.add("hUnLikeSignPt_EMCAL", "UnLike sign Momentum Emcal", {HistType::kTH1D, {{axisPt}}});
+    registry.add("hLikeMass_NoEMCAL", "Like mass NoEMCAL", {HistType::kTH1D, {{axisMass}}});
+    registry.add("hUnLikeMass_NoEMCAL", "unLike mass NoEMCAL", {HistType::kTH1D, {{axisMass}}});
+    registry.add("hLikeSignPt_NoEMCAL", "Like sign Momentum NoEMCAL ", {HistType::kTH1D, {{axisPt}}});
+    registry.add("hUnLikeSignPt_NoEMCAL", "UnLike sign Momentum NoEMCAL", {HistType::kTH1D, {{axisPt}}});
+
     registry.add("hMcgenInElectron", "Mc Gen Inclusive Electron", {HistType::kTH1D, {{axisPt}}});
     registry.add("hMcRecInElectron", "Mc Rec Inclusive Electron", {HistType::kTH1D, {{axisPt}}});
     registry.add("hMcRecwithoutEMCalInElectron", "Mc Rec Inclusive Electron without Emcal", {HistType::kTH1D, {{axisPt}}});
-
+    registry.add("hphiElectron", "hphiElectron", {HistType::kTH1D, {axisPhi}});
+    registry.add("hphiElectronPassEmcal", "hphiElectron pass Emcal", {HistType::kTH1D, {axisPhi}});
     registry.add("hMcgenAllNonHfeElectron", "Mc Gen All NonHf Electron", {HistType::kTH1D, {{axisPt}}});
     registry.add("hMcgenNonHfeElectron", "Mc Gen NonHf  Electron with mother", {HistType::kTH1D, {{axisPt}}});
     registry.add("hPi0eEmbTrkPt", "Mc Gen  Pi0 mother NonHf Electron", {HistType::kTH1D, {{axisPt}}});
@@ -352,8 +358,10 @@ struct HfElectronSelectionWithTpcEmcal {
         massLike = invMassElectron;
         vecLSMass.push_back(massLike);
         isLSElectron = true;
-        if (isEMcal) {
-          registry.fill(HIST("hLikeMass"), massLike);
+        if (!isEMcal) {
+          registry.fill(HIST("hLikeMass_EMCAL"), massLike);
+        } else {
+          registry.fill(HIST("hLikeMass_NoEMCAL"), massLike);
         }
       }
       // for unlike charge
@@ -361,8 +369,10 @@ struct HfElectronSelectionWithTpcEmcal {
         massUnLike = invMassElectron;
         vecULSMass.push_back(massUnLike);
         isULSElectron = true;
-        if (isEMcal) {
-          registry.fill(HIST("hUnLikeMass"), massUnLike);
+        if (!isEMcal) {
+          registry.fill(HIST("hUnLikeMass_EMCAL"), massUnLike);
+        } else {
+          registry.fill(HIST("hUnLikeMass_NoEMCAL"), massUnLike);
         }
       }
 
@@ -371,7 +381,9 @@ struct HfElectronSelectionWithTpcEmcal {
         massLike = invMassElectron;
         ++nElPairsLS;
         if (isEMcal) {
-          registry.fill(HIST("hLikeSignPt"), electron.pt());
+          registry.fill(HIST("hLikeSignPt_EMCAL"), electron.pt());
+        } else {
+          registry.fill(HIST("hLikeSignPt_NoEMCAL"), electron.pt());
         }
       }
       // for unlike charge
@@ -379,7 +391,9 @@ struct HfElectronSelectionWithTpcEmcal {
         massUnLike = invMassElectron;
         ++nElPairsUS;
         if (isEMcal) {
-          registry.fill(HIST("hUnLikeSignPt"), electron.pt());
+          registry.fill(HIST("hUnLikeSignPt_EMCAL"), electron.pt());
+        } else {
+          registry.fill(HIST("hUnLikeSignPt_NoEMCAL"), electron.pt());
         }
       }
     }
@@ -445,7 +459,7 @@ struct HfElectronSelectionWithTpcEmcal {
       }
 
       if (fillTrackInfo) {
-        registry.fill(HIST("hTrackEtaPhi"), etaTrack, phiTrack, passEMCal);                 // track etaphi infor after filter bit
+        // track etaphi infor after filter bit
         registry.fill(HIST("hTrackEnergyLossVsP"), track.tpcSignal(), pTrack, passEMCal);   // track etaphi infor after filter bit
         registry.fill(HIST("hTrackEnergyLossVsPt"), track.tpcSignal(), ptTrack, passEMCal); // track etaphi infor after filter bit
         registry.fill(HIST("hTracknSigmaVsP"), tpcNsigmaTrack, pTrack, passEMCal);          // track etaphi infor after filter bit
@@ -530,7 +544,7 @@ struct HfElectronSelectionWithTpcEmcal {
         if (eop < eopElectronMin || eop > eopElectronMax) {
           continue;
         }
-
+        registry.fill(HIST("hphiElectronPassEmcal"), track.phi());
         /////////////////          NonHf electron Selection with Emcal       ////////////////////////
         if constexpr (IsMc) {
           if (matchTrack.has_mcParticle()) {
@@ -648,6 +662,7 @@ struct HfElectronSelectionWithTpcEmcal {
       if ((track.tpcNSigmaEl() < tpcNsigmaElectronMin || track.tpcNSigmaEl() > tpcNsigmaElectronMax)) {
         continue;
       }
+      registry.fill(HIST("hphiElectron"), track.phi());
       if constexpr (IsMc) {
         if (track.has_mcParticle()) {
           auto mcParticle = track.template mcParticle_as<aod::McParticles>();
