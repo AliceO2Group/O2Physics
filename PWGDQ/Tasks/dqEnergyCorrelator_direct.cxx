@@ -132,6 +132,7 @@ struct AnalysisEnergyCorrelator {
     Configurable<float> fConfigMCGenHadronEtaAbs{"cfgMCGenHadronEtaAbs", 0.9f, "eta abs range for the hadron"};
     Configurable<float> fConfigMCGenHadronPtMin{"cfgMCGenHadronPtMin", 0.1f, "minimum pt for the hadron"};
     Configurable<bool> fConfigContainlepton{"cfgContainlepton", false, "If true, require the hadron to contain the lepton in its decay tree for the energy correlator study"};
+    Configurable<bool> fConfigUsePionMass{"cfgUsePionMass", false, "If true, use pion mass for the hadron in the energy correlator study"};
   } fConfigDileptonHadronOptions;
 
   // Histogram configurables
@@ -451,7 +452,11 @@ struct AnalysisEnergyCorrelator {
     // Fill dilepton-hadron variables
     std::vector<float> fTransRange = fConfigDileptonHadronOptions.fConfigTransRange;
     VarManager::FillEnergyCorrelatorTriple(track1, track2, hadron, VarManager::fgValues, fTransRange[0], fTransRange[1], fConfigDileptonHadronOptions.fConfigApplyMassEC.value);
-    VarManager::FillEnergyCorrelatorsUnfoldingTriple<VarManager::kJpsiHadronMass>(track1, track2, hadron, motherParticle, hadronMC, VarManager::fgValues, fConfigDileptonHadronOptions.fConfigApplyMassEC.value);
+    if (fConfigDileptonHadronOptions.fConfigUsePionMass.value) {
+      VarManager::FillEnergyCorrelatorsUnfoldingTriple<VarManager::kJpsiPionMass>(track1, track2, hadron, motherParticle, hadronMC, VarManager::fgValues, fConfigDileptonHadronOptions.fConfigApplyMassEC.value);
+    } else {
+      VarManager::FillEnergyCorrelatorsUnfoldingTriple<VarManager::kJpsiHadronMass>(track1, track2, hadron, motherParticle, hadronMC, VarManager::fgValues, fConfigDileptonHadronOptions.fConfigApplyMassEC.value);
+    }
 
     int iHadronCut = 0;
     for (auto hCut = fHadronCuts.begin(); hCut != fHadronCuts.end(); hCut++, iHadronCut++) {
