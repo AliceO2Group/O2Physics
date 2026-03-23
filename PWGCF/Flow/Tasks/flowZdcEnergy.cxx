@@ -14,11 +14,11 @@
 /// \since  03/2026
 /// \brief  Study ZDC energy observables versus centrality for Run 2 / Run 3.
 
+#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/TrackSelection.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
@@ -26,24 +26,23 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/runDataProcessing.h"
 
+#include <chrono>
 #include <cmath>
 #include <cstdint>
-#include <chrono>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{ #NAME, DEFAULT, HELP };
+#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
 struct flowZdcEnergy {
 
   struct : ConfigurableGroup{
-    O2_DEFINE_CONFIGURABLE(cfgUseEvsel, bool, true, "whether to enable event selection")
-    O2_DEFINE_CONFIGURABLE(cfgCentMin, float, 0.f, "Minimum centrality for selected events")
-    O2_DEFINE_CONFIGURABLE(cfgCentMax, float, 90.f, "Maximum centrality for selected events")
-    O2_DEFINE_CONFIGURABLE(cfgVtxZ, float, 10.f, "Accepted z-vertex range")
-  } evsel;
+             O2_DEFINE_CONFIGURABLE(cfgUseEvsel, bool, true, "whether to enable event selection")
+               O2_DEFINE_CONFIGURABLE(cfgCentMin, float, 0.f, "Minimum centrality for selected events")
+                 O2_DEFINE_CONFIGURABLE(cfgCentMax, float, 90.f, "Maximum centrality for selected events")
+                   O2_DEFINE_CONFIGURABLE(cfgVtxZ, float, 10.f, "Accepted z-vertex range")} evsel;
 
   O2_DEFINE_CONFIGURABLE(cfgEtaMax, float, 0.8f, "Maximum track #eta")
   O2_DEFINE_CONFIGURABLE(cfgPtMin, float, 0.2f, "Minimum track #P_{t}")
@@ -51,12 +50,12 @@ struct flowZdcEnergy {
   O2_DEFINE_CONFIGURABLE(cfgDcaXYMax, float, 0.2f, "Maximum DCAxy")
   O2_DEFINE_CONFIGURABLE(cfgDcaZMax, float, 2.0f, "Maximum DCAz")
 
-  ConfigurableAxis axisCent{ "axisCent", { 90, 0, 90 }, "Centrality (%)" };
-  ConfigurableAxis axisMult{ "axisMult", { 100, 0, 100000 }, "Multiplicity" };
-  ConfigurableAxis axisPt{ "axisPt", { 100, 0, 15 }, "#P_{t}" };
-  ConfigurableAxis axisEta{ "axisEta", { 64, -1.6, 1.6 }, "#eta" };
-  ConfigurableAxis axisEnergy{ "axisEnergy", { 300, 0, 300 }, "Energy" };
-  ConfigurableAxis axisRescaledDiff{ "axisRescaledDiff", { 400, -1, 1 }, "(EA-EC)/(EA+EC)" };
+  ConfigurableAxis axisCent{"axisCent", {90, 0, 90}, "Centrality (%)"};
+  ConfigurableAxis axisMult{"axisMult", {100, 0, 100000}, "Multiplicity"};
+  ConfigurableAxis axisPt{"axisPt", {100, 0, 15}, "#P_{t}"};
+  ConfigurableAxis axisEta{"axisEta", {64, -1.6, 1.6}, "#eta"};
+  ConfigurableAxis axisEnergy{"axisEnergy", {300, 0, 300}, "Energy"};
+  ConfigurableAxis axisRescaledDiff{"axisRescaledDiff", {400, -1, 1}, "(EA-EC)/(EA+EC)"};
 
   // Event counter bins
   enum SelectionCriteria : uint8_t {
@@ -70,9 +69,9 @@ struct flowZdcEnergy {
   };
 
   Service<ccdb::BasicCCDBManager> ccdb;
-  HistogramRegistry registry{ "registry" };
+  HistogramRegistry registry{"registry"};
 
-  Filter trackFilter = nabs(aod::track::eta) < cfgEtaMax && aod::track::pt > cfgPtMin && aod::track::pt < cfgPtMax && nabs(aod::track::dcaXY) < cfgDcaXYMax&& nabs(aod::track::dcaZ) < cfgDcaZMax;
+  Filter trackFilter = nabs(aod::track::eta) < cfgEtaMax && aod::track::pt > cfgPtMin&& aod::track::pt < cfgPtMax&& nabs(aod::track::dcaXY) < cfgDcaXYMax&& nabs(aod::track::dcaZ) < cfgDcaZMax;
   using UsedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
   // Run 3
   using CollisionsRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>;
@@ -91,8 +90,8 @@ struct flowZdcEnergy {
                  std::chrono::system_clock::now().time_since_epoch())
                  .count();
     ccdb->setCreatedNotAfter(now);
-    
-    registry.add("QA/hEventCount", "Event counter;Selection;Events", { HistType::kTH1D, { { kNSelections, 0, kNSelections } } });
+
+    registry.add("QA/hEventCount", "Event counter;Selection;Events", {HistType::kTH1D, {{kNSelections, 0, kNSelections}}});
     auto hCount = registry.get<TH1>(HIST("QA/hEventCount"));
     hCount->GetXaxis()->SetBinLabel(kAllEvents + 1, "All events");
     hCount->GetXaxis()->SetBinLabel(kSeln + 1, "Sel7/8");
@@ -101,26 +100,26 @@ struct flowZdcEnergy {
     hCount->GetXaxis()->SetBinLabel(kBCHasZDC + 1, "BC has ZDC");
     hCount->GetXaxis()->SetBinLabel(kSelectedZDC + 1, "Selected ZDC");
 
-    registry.add("QA/hCentrality", "", { HistType::kTH1D, { axisCent } });
-    registry.add("QA/hMultiplicity", "", { HistType::kTH1D, { axisMult } });
-    registry.add("QA/hMultiplicity_TPC", "", { HistType::kTH1D, { axisMult } });
-    registry.add("QA/hPt", "", { HistType::kTH1D, { axisPt } });
-    registry.add("QA/hEta", "", { HistType::kTH1D, { axisEta } });
+    registry.add("QA/hCentrality", "", {HistType::kTH1D, {axisCent}});
+    registry.add("QA/hMultiplicity", "", {HistType::kTH1D, {axisMult}});
+    registry.add("QA/hMultiplicity_TPC", "", {HistType::kTH1D, {axisMult}});
+    registry.add("QA/hPt", "", {HistType::kTH1D, {axisPt}});
+    registry.add("QA/hEta", "", {HistType::kTH1D, {axisEta}});
 
-    registry.add("hEnergyWithCent_ZNA_Common", "", { HistType::kTH2D, { axisEnergy, axisCent } });
-    registry.add("hEnergyWithCent_ZNC_Common", "", { HistType::kTH2D, { axisEnergy, axisCent } });
-    registry.add("hEnergyWithCent_RescaledDiff", "", { HistType::kTH2D, { axisRescaledDiff, axisCent } });
-    registry.add("hEnergyWithCent_ZNA_1", "", { HistType::kTH2D, { axisEnergy, axisCent } });
-    registry.add("hEnergyWithCent_ZNA_2", "", { HistType::kTH2D, { axisEnergy, axisCent } });
-    registry.add("hEnergyWithCent_ZNA_3", "", { HistType::kTH2D, { axisEnergy, axisCent } });
-    registry.add("hEnergyWithCent_ZNA_4", "", { HistType::kTH2D, { axisEnergy, axisCent } });
-    registry.add("hEnergyWithCent_ZNC_1", "", { HistType::kTH2D, { axisEnergy, axisCent } });
-    registry.add("hEnergyWithCent_ZNC_2", "", { HistType::kTH2D, { axisEnergy, axisCent } });
-    registry.add("hEnergyWithCent_ZNC_3", "", { HistType::kTH2D, { axisEnergy, axisCent } });
-    registry.add("hEnergyWithCent_ZNC_4", "", { HistType::kTH2D, { axisEnergy, axisCent } });
-    registry.add("hEnergyWithCent_ZNA_SumSectors", "", { HistType::kTH2D, { axisEnergy, axisCent } });
-    registry.add("hEnergyWithCent_ZNC_SumSectors", "", { HistType::kTH2D, { axisEnergy, axisCent } });
-    registry.add("hEnergyWithCent_RescaledSumDiff", "", { HistType::kTH2D, { axisRescaledDiff, axisCent } });
+    registry.add("hEnergyWithCent_ZNA_Common", "", {HistType::kTH2D, {axisEnergy, axisCent}});
+    registry.add("hEnergyWithCent_ZNC_Common", "", {HistType::kTH2D, {axisEnergy, axisCent}});
+    registry.add("hEnergyWithCent_RescaledDiff", "", {HistType::kTH2D, {axisRescaledDiff, axisCent}});
+    registry.add("hEnergyWithCent_ZNA_1", "", {HistType::kTH2D, {axisEnergy, axisCent}});
+    registry.add("hEnergyWithCent_ZNA_2", "", {HistType::kTH2D, {axisEnergy, axisCent}});
+    registry.add("hEnergyWithCent_ZNA_3", "", {HistType::kTH2D, {axisEnergy, axisCent}});
+    registry.add("hEnergyWithCent_ZNA_4", "", {HistType::kTH2D, {axisEnergy, axisCent}});
+    registry.add("hEnergyWithCent_ZNC_1", "", {HistType::kTH2D, {axisEnergy, axisCent}});
+    registry.add("hEnergyWithCent_ZNC_2", "", {HistType::kTH2D, {axisEnergy, axisCent}});
+    registry.add("hEnergyWithCent_ZNC_3", "", {HistType::kTH2D, {axisEnergy, axisCent}});
+    registry.add("hEnergyWithCent_ZNC_4", "", {HistType::kTH2D, {axisEnergy, axisCent}});
+    registry.add("hEnergyWithCent_ZNA_SumSectors", "", {HistType::kTH2D, {axisEnergy, axisCent}});
+    registry.add("hEnergyWithCent_ZNC_SumSectors", "", {HistType::kTH2D, {axisEnergy, axisCent}});
+    registry.add("hEnergyWithCent_RescaledSumDiff", "", {HistType::kTH2D, {axisRescaledDiff, axisCent}});
   }
 
   // Helper: event selection
@@ -150,7 +149,7 @@ struct flowZdcEnergy {
       }
       registry.fill(HIST("QA/hEventCount"), kCentrality);
     }
-    return true; 
+    return true;
   }
 
   // Helper: fill ZDC observables
@@ -263,6 +262,5 @@ struct flowZdcEnergy {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<flowZdcEnergy>(cfgc)
-  };
+    adaptAnalysisTask<flowZdcEnergy>(cfgc)};
 }
