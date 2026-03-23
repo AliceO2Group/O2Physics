@@ -376,7 +376,7 @@ struct JetDerivedDataProducerTask {
     if (collision.has_mcCollision()) {
       products.jCollisionMcInfosTable(collision.mcCollision().weight(), collision.mcCollision().getSubGeneratorId());
     } else {
-      products.jCollisionMcInfosTable(0.0, jetderiveddatautilities::JCollisionSubGeneratorId::none);
+      products.jCollisionMcInfosTable(-99.0, jetderiveddatautilities::JCollisionSubGeneratorId::none);
     }
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcCollisionLabels, "produces derived MC collision labels table", false);
