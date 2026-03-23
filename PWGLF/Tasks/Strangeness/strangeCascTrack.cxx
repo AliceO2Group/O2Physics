@@ -1063,8 +1063,8 @@ struct StrangeCascTrack {
           recoCounter = true;
         }
         if (biggestNContribs < recColl.multPVTotalContributors()) {
-        biggestNContribs = recColl.multPVTotalContributors();
-        bestCentrality = (doProcessIons) ? recColl.centFT0C() : recColl.centFT0M();
+          biggestNContribs = recColl.multPVTotalContributors();
+          bestCentrality = (doProcessIons) ? recColl.centFT0C() : recColl.centFT0M();
         }
         // look at generated cascades within reconstructed events
         for (auto const& casc : slicedGenCascs) {
@@ -1101,8 +1101,8 @@ struct StrangeCascTrack {
       }
       // fill centrality exactly once for each rec gen event
       if (biggestNContribs >= 0) {
-      histos.fill(HIST("MC/EvRec/MultCent"), bestCentrality, genMult);
-      histos.fill(HIST("MC/EvRec/Cent"), bestCentrality);
+        histos.fill(HIST("MC/EvRec/MultCent"), bestCentrality, genMult);
+        histos.fill(HIST("MC/EvRec/Cent"), bestCentrality);
       }
     }
   }
