@@ -929,7 +929,7 @@ struct FlowGfwV02 {
     AcceptedTracks acceptedTracks{0, 0, 0, 0};
     for (const auto& track : tracks) {
       processTrack(track, vtxz, xaxis.multiplicity, run, acceptedTracks);
-      if (track.eta() > -0.4 && track.eta() < 0.4) 
+      if (track.eta() > -0.4 && track.eta() < 0.4)
         pidStates.hPtMid[PidCharged]->Fill(track.pt(), getEfficiency(track));
       // If PID is identified, fill pt spectrum for the corresponding particle
       int pidInd = getNsigmaPID(track);
