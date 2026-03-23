@@ -2303,7 +2303,7 @@ struct FemtoUniverseProducerTask {
 
   template <bool isMC, typename V0Type, typename TrackType,
             typename CollisionType>
-  void fillCollisionsAndTracksAndV0AndPhi(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
+  bool fillCollisionsAndTracksAndV0AndPhi(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
   {
     const auto colcheck = fillCollisions<isMC>(col, tracks);
     if (colcheck) {
@@ -2315,6 +2315,7 @@ struct FemtoUniverseProducerTask {
         fillPhi<isMC>(col, tracks);
       }
     }
+    return colcheck;
   }
 
   void processFullData(aod::FemtoFullCollision const& col,
@@ -2584,8 +2585,10 @@ struct FemtoUniverseProducerTask {
           fillCascade<true>(col, groupedStrageParts, groupedTracks);
         }
       } else {
-        mcColIds.insert(col.mcCollisionId());
-        fillCollisionsAndTracksAndV0AndPhi<true>(col, groupedTracks, groupedStrageParts);
+        const auto colcheck = fillCollisionsAndTracksAndV0AndPhi<true>(col, groupedTracks, groupedStrageParts);
+        if (colcheck) {
+          mcColIds.insert(col.mcCollisionId());
+        }
       }
       for (const auto& track : groupedTracks) {
         if (trackCuts.isSelectedMinimal(track))
