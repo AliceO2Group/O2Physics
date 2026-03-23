@@ -262,7 +262,7 @@ struct ParticleHistograms {
   int fParticleSparseHistogramsNBins[eDiffWeightCategory_N][gMaxNumberSparseDimensions] = {{0}};            // number of bins. I do not have min and max, because for sparse I use BinEdges, see below
   TArrayD* fParticleSparseHistogramsBinEdges[eDiffWeightCategory_N][gMaxNumberSparseDimensions] = {{NULL}}; // arrays holding bin edges, see the usage of SetBinEdges for sparse histograms
   TString fParticleSparseHistogramsAxisTitle[eDiffWeightCategory_N][gMaxNumberSparseDimensions] = {{""}};   // axis title
-  int fRebinSparse = 1;                                                                                     // used only for all fixed-length bins which are implemented directly for sparse histograms (i.e. not inherited from results histograms)
+  float fRebinSparse[eDiffWeightCategory_N][gMaxNumberSparseDimensions] = {{1.}};                           // used only for all fixed-length bins which are implemented directly for sparse histograms (i.e. not inherited from results histograms)
 } ph;                                                                                                       // "ph" labels an instance of group of histograms "ParticleHistograms"
 
 // *) Particle cuts:
@@ -343,6 +343,7 @@ struct ParticleWeights {
   bool fUseDiffPhiWeights[eDiffPhiWeights_N] = {false};          // use differential phi weights, see enum eDiffPhiWeights for supported dimensions
   bool fUseDiffPtWeights[eDiffPtWeights_N] = {false};            // use differential pt weights, see enum eDiffPtWeights for supported dimensions
   bool fUseDiffEtaWeights[eDiffEtaWeights_N] = {false};          // use differential eta weights, see enum eDiffEtaWeights for supported dimensions
+  bool fUseDiffChargeWeights[eDiffChargeWeights_N] = {false};    // use differential charge weights, see enum eDiffChargeWeights for supported dimensions
   // ...
   int fDWdimension[eDiffWeightCategory_N] = {0};           // dimension of differential weight for each category in current analysis
   TArrayD* fFindBinVector[eDiffWeightCategory_N] = {NULL}; // this is the vector I use to find bin when I obtain weights with sparse histograms
@@ -399,7 +400,7 @@ struct InternalValidation {
                                                       // Remember that for each real event, I do fnEventsInternalValidation events on-the-fly.
                                                       // Can be used in combination with setting fSequentialBailout > 0.
   unsigned int fnEventsInternalValidation = 0;        // how many on-the-fly events will be sampled for each real event, for internal validation
-  TString* fHarmonicsOptionInternalValidation = NULL; // "constant", "correlated", "persistent", "ptDependent", "ptEtaDependent", see .cxx for full documentation
+  TString* fHarmonicsOptionInternalValidation = NULL; // "constant", "correlated", "persistent", "ptDependent", "ptEtaDependent", "ptEtaChargeDependent", see .cxx for full documentation
   bool fRescaleWithTheoreticalInput = false;          // if true, all measured correlators are rescaled with theoretical input, so that in profiles everything is at 1
   bool fRandomizeReactionPlane = true;                // if true, RP is randomized e-by-e. I need false basically only when validating against theoretical input non-isotropic correlators
   TArrayD* fInternalValidationVnPsin[2] = {NULL};     // 0 = { v1, v2, ... }, 1 = { Psi1, Psi2, ... }

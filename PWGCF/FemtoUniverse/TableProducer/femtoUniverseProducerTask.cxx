@@ -136,6 +136,7 @@ struct FemtoUniverseProducerTask {
   Configurable<bool> confFillCollExt{"confFillCollExt", false, "Option to fill collision extended table"};
 
   Configurable<bool> confCollMCTruthOnlyReco{"confCollMCTruthOnlyReco", false, "Fill only MC truth collisions that were reconstructed and selected"};
+  Configurable<bool> confFillMCTruthV0Daugh{"confFillMCTruthV0Daugh", true, "Fill MC truth daughters of V0"};
 
   /// Event filtering (used for v0-cascade analysis)
   Configurable<std::string> zorroMask{"zorroMask", "", "zorro trigger class to select on (empty: none)"};
@@ -880,12 +881,14 @@ struct FemtoUniverseProducerTask {
   template <typename ParticleType>
   int32_t getMotherPDG(ParticleType particle)
   {
-    auto motherparticlesMC = particle.template mothers_as<aod::McParticles>();
-    if (!motherparticlesMC.empty()) {
+    if (particle.isPhysicalPrimary()) {
+      return 0;
+    } else if (particle.has_mothers()) {
+      auto motherparticlesMC = particle.template mothers_as<aod::McParticles>();
       auto motherparticleMC = motherparticlesMC.front();
-      return particle.isPhysicalPrimary() ? 0 : motherparticleMC.pdgCode();
+      return motherparticleMC.pdgCode();
     } else {
-      return 9999;
+      return 999;
     }
   }
 
@@ -925,7 +928,7 @@ struct FemtoUniverseProducerTask {
       outputPartsMCLabels(outputPartsMC.lastIndex());
     } else {
       outputPartsMCLabels(-1);
-      outputDebugPartsMC(9999);
+      outputDebugPartsMC(-999);
     }
   }
 
@@ -2168,7 +2171,7 @@ struct FemtoUniverseProducerTask {
       // aligned, so that they can be joined in the task.
       if constexpr (transientLabels) {
         outputPartsMCLabels(-1);
-        outputDebugPartsMC(9999);
+        outputDebugPartsMC(-999);
       }
     }
     if constexpr (resolveDaughs) {
@@ -2213,7 +2216,7 @@ struct FemtoUniverseProducerTask {
         // aligned, so that they can be joined in the task.
         if constexpr (transientLabels) {
           outputPartsMCLabels(-1);
-          outputDebugPartsMC(9999);
+          outputDebugPartsMC(-999);
         }
       }
     }
@@ -2300,7 +2303,7 @@ struct FemtoUniverseProducerTask {
 
   template <bool isMC, typename V0Type, typename TrackType,
             typename CollisionType>
-  void fillCollisionsAndTracksAndV0AndPhi(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
+  bool fillCollisionsAndTracksAndV0AndPhi(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
   {
     const auto colcheck = fillCollisions<isMC>(col, tracks);
     if (colcheck) {
@@ -2312,6 +2315,7 @@ struct FemtoUniverseProducerTask {
         fillPhi<isMC>(col, tracks);
       }
     }
+    return colcheck;
   }
 
   void processFullData(aod::FemtoFullCollision const& col,
@@ -2581,7 +2585,10 @@ struct FemtoUniverseProducerTask {
           fillCascade<true>(col, groupedStrageParts, groupedTracks);
         }
       } else {
-        fillCollisionsAndTracksAndV0AndPhi<true>(col, groupedTracks, groupedStrageParts);
+        const auto colcheck = fillCollisionsAndTracksAndV0AndPhi<true>(col, groupedTracks, groupedStrageParts);
+        if (colcheck) {
+          mcColIds.insert(col.mcCollisionId());
+        }
       }
       for (const auto& track : groupedTracks) {
         if (trackCuts.isSelectedMinimal(track))
@@ -2912,7 +2919,11 @@ struct FemtoUniverseProducerTask {
         const auto colcheck = fillMCTruthCollisionsCentRun3(col);
         if (colcheck) {
           outputCollExtra(1.0, 1.0);
-          fillV0MCTruth(groupedMCParticles); // fills MC V0s and its daughters
+          if (confFillMCTruthV0Daugh) {
+            fillV0MCTruth(groupedMCParticles); // fills MC V0s and its daughters
+          } else {
+            fillParticles<decltype(groupedMCParticles), true, true>(groupedMCParticles, recoMcIds); // fills mc particles
+          }
         }
       }
     }

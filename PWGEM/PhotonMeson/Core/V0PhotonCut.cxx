@@ -115,6 +115,28 @@ void V0PhotonCut::RejectITSib(bool flag)
   mRejectITSib = flag;
   LOG(info) << "V0 Photon Cut, reject photon on ITSib: " << mRejectITSib;
 }
+
+void V0PhotonCut::setTooCloseType(V0PhotonCut::TooCloseCuts type)
+{
+  mTooCloseType = type;
+  LOG(info) << "V0 Photon Cut, TooCloseV0 cut type: " << static_cast<uint>(mTooCloseType);
+}
+void V0PhotonCut::setMinV0DistSquared(float value)
+{
+  mMinV0DistSquared = value;
+  LOG(info) << "V0 Photon Cut, min V0 distance squared: " << mMinV0DistSquared;
+}
+void V0PhotonCut::setDeltaR(float value)
+{
+  mDeltaR = value;
+  LOG(info) << "V0 Photon Cut, delta R for too close V0: " << mDeltaR;
+}
+void V0PhotonCut::setMinOpeningAngle(float value)
+{
+  mMinOpeningAngle = value;
+  LOG(info) << "V0 Photon Cut, min opening angle for too close V0: " << mMinOpeningAngle;
+}
+
 void V0PhotonCut::SetTPCNsigmaElRange(float min, float max)
 {
   mMinTPCNsigmaEl = min;
@@ -306,20 +328,20 @@ void V0PhotonCut::SetCutsMl(const std::vector<double>& cuts)
 void V0PhotonCut::SetNClassesMl(int nClasses)
 {
   mNClassesMl = nClasses;
+  mOutputML.reserve(mNClassesMl);
   LOG(info) << "V0 Photon Cut, set number of classes ML: " << mNClassesMl;
 }
 
 void V0PhotonCut::SetNamesInputFeatures(const std::vector<std::string>& featureNames)
 {
   mNamesInputFeatures = featureNames;
+  mMlInputFeatures.reserve(mNamesInputFeatures.size());
   LOG(info) << "V0 Photon Cut, set ML input feature names with size:" << mNamesInputFeatures.size();
 }
 
-void V0PhotonCut::SetCentrality(float centFT0A, float centFT0C, float centFT0M)
+void V0PhotonCut::SetCentrality(float cent)
 {
-  mCentFT0A = centFT0A;
-  mCentFT0C = centFT0C;
-  mCentFT0M = centFT0M;
+  mCent = cent;
 }
 void V0PhotonCut::SetD_Bz(float d_bz)
 {
@@ -332,10 +354,10 @@ void V0PhotonCut::SetCutDirMl(const std::vector<int>& cutDirMl)
   LOG(info) << "V0 Photon Cut, set ML cut directions with size:" << mCutDirMl.size();
 }
 
-void V0PhotonCut::SetCentralityTypeMl(const std::string& centType)
+void V0PhotonCut::SetCentralityTypeMl(CentType centType)
 {
   mCentralityTypeMl = centType;
-  LOG(info) << "V0 Photon Cut, set centrality type ML: " << mCentralityTypeMl;
+  LOG(info) << "V0 Photon Cut, set centrality type ML: " << mCentralityTypeMl << " (0: CentFT0M, 1: CentFT0A, 2: CentFT0C)";
 }
 
 void V0PhotonCut::SetLabelsBinsMl(const std::vector<std::string>& labelsBins)

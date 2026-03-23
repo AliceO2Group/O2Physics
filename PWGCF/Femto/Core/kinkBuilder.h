@@ -307,9 +307,19 @@ class KinkSelection : public BaseSelection<float, o2::aod::femtodatatypes::KinkM
   void computeKinkMotherKinematics(const T& kinkCand)
   {
     std::array<float, 3> momMother = {kinkCand.pxMoth(), kinkCand.pyMoth(), kinkCand.pzMoth()};
-    mKinkMotherPt = RecoDecay::pt(momMother);
+    std::array<float, 3> momDaughter = {kinkCand.pxDaug(), kinkCand.pyDaug(), kinkCand.pzDaug()};
+
     mKinkMotherEta = RecoDecay::eta(momMother);
     mKinkMotherPhi = RecoDecay::phi(momMother);
+
+    // Recalculate pT using kinematic constraints
+    float ptRecalc = utils::calcPtnew(momMother[0], momMother[1], momMother[2],
+                                      momDaughter[0], momDaughter[1], momDaughter[2]);
+    if (ptRecalc > 0.f) {
+      mKinkMotherPt = ptRecalc;
+    } else {
+      mKinkMotherPt = -1.f;
+    }
   }
 
   template <typename T>
@@ -401,7 +411,7 @@ class KinkBuilder
   {
     if constexpr (modes::isEqual(kinkType, modes::Kink::kSigma)) {
       LOG(info) << "Initialize femto Sigma builder...";
-      mProduceSigmas = utils::enableTable("FSigmas_001", table.produceSigmas.value, initContext);
+      mProduceSigmas = utils::enableTable("FSigmas_002", table.produceSigmas.value, initContext);
       mProduceSigmaMasks = utils::enableTable("FSigmaMasks_001", table.produceSigmaMasks.value, initContext);
       mProduceSigmaExtras = utils::enableTable("FSigmaExtras_001", table.produceSigmaExtras.value, initContext);
     }
@@ -510,11 +520,12 @@ class KinkBuilder
   template <typename T1, typename T2, typename T3>
   void fillSigma(T1& collisionProducts, T2& kinkProducts, T3 const& kink, int64_t daughterIndex)
   {
+    // Mass is calculated from original momentum components stored in kink table
     float mass = kink.mSigmaMinus();
 
     if (mProduceSigmas) {
       kinkProducts.producedSigmas(collisionProducts.producedCollision.lastIndex(),
-                                  kink.mothSign() * mKinkSelection.getKinkMotherPt(),
+                                  kink.mothSign() * mKinkSelection.getKinkMotherPt(), // Recalculated pT
                                   mKinkSelection.getKinkMotherEta(),
                                   mKinkSelection.getKinkMotherPhi(),
                                   mass,
@@ -538,11 +549,12 @@ class KinkBuilder
   template <typename T1, typename T2, typename T3>
   void fillSigmaPlus(T1& collisionProducts, T2& kinkProducts, T3 const& kink, int64_t daughterIndex)
   {
+    // Mass is calculated from original momentum components stored in kink table
     float mass = kink.mSigmaPlus();
 
     if (mProduceSigmaPlus) {
       kinkProducts.producedSigmaPlus(collisionProducts.producedCollision.lastIndex(),
-                                     kink.mothSign() * mKinkSelection.getKinkMotherPt(),
+                                     kink.mothSign() * mKinkSelection.getKinkMotherPt(), // Recalculated pT
                                      mKinkSelection.getKinkMotherEta(),
                                      mKinkSelection.getKinkMotherPhi(),
                                      mass,
@@ -574,6 +586,103 @@ class KinkBuilder
   bool mProduceSigmaPlus = false;
   bool mProduceSigmaPlusMasks = false;
   bool mProduceSigmaPlusExtras = false;
+};
+
+struct ConfKinkTablesDerivedToDerived : o2::framework::ConfigurableGroup {
+  std::string prefix = std::string("KinkTables");
+  o2::framework::Configurable<int> limitSigma{"limitSigma", 1, "At least this many sigmas need to be in the collision"};
+  o2::framework::Configurable<int> limitSigmaPlus{"limitSigmaPlus", 0, "At least this many sigma pluses need to be in the collision"};
+};
+
+struct KinkBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
+  o2::framework::Produces<o2::aod::StoredFSigmas_002> producedSigmas;
+  o2::framework::Produces<o2::aod::StoredFSigmaMasks_001> producedSigmaMasks;
+  o2::framework::Produces<o2::aod::StoredFSigmaPlus_001> producedSigmaPluses;
+  o2::framework::Produces<o2::aod::StoredFSigmaPlusMasks_001> producedSigmaPlusMasks;
+};
+
+class KinkBuilderDerivedToDerived
+{
+ public:
+  KinkBuilderDerivedToDerived() = default;
+  ~KinkBuilderDerivedToDerived() = default;
+
+  template <typename T>
+  void init(T& config)
+  {
+    mLimitSigma = config.limitSigma.value;
+    mLimitSigmaPlus = config.limitSigmaPlus.value;
+
+    if (mLimitSigma == 0 && mLimitSigmaPlus == 0) {
+      LOG(fatal) << "Both sigma limit and sigmaplus limit are 0. Breaking...";
+    }
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  bool collisionHasTooFewSigma(T1 const& col, T2 const& /*sigmaTable*/, T3& partitionSigma, T4& cache)
+  {
+    auto sigmaSlice = partitionSigma->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (sigmaSlice.size() >= mLimitSigma) {
+      return false;
+    }
+    return true;
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  bool collisionHasTooFewSigmaPlus(T1 const& col, T2 const& /*sigmaPlusTable*/, T3& partitionSigmaPlus, T4& cache)
+  {
+    auto sigmaPlusSlice = partitionSigmaPlus->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (sigmaPlusSlice.size() >= mLimitSigmaPlus) {
+      return false;
+    }
+    return true;
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+  void processSigma(T1 const& col, T2 const& /*sigmaTable*/, T3 const& oldTrackTable, T4& partitionSigma, T5& trackBuilder, T6& cache, T7& newSigmaTable, T8& newTrackTable, T9& newCollisionTable)
+  {
+    auto sigmaSlice = partitionSigma->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+
+    for (auto const& sigma : sigmaSlice) {
+
+      auto chaDaughter = oldTrackTable.rawIteratorAt(sigma.chaDauId() - oldTrackTable.offset());
+
+      int chaDaughterIndex = trackBuilder.getDaughterIndex(chaDaughter, newTrackTable, newCollisionTable);
+
+      newSigmaTable.producedSigmas(newCollisionTable.producedCollision.lastIndex(),
+                                   sigma.signedPt(),
+                                   sigma.eta(),
+                                   sigma.phi(),
+                                   sigma.mass(),
+                                   chaDaughterIndex);
+      newSigmaTable.producedSigmaMasks(sigma.mask());
+    }
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+  void processSigmaPlus(T1 const& col, T2 const& /*sigmaPlusTable*/, T3 const& oldTrackTable, T4& partitionSigmaPlus, T5& trackBuilder, T6& cache, T7& newSigmaPlusTable, T8& newTrackTable, T9& newCollisionTable)
+  {
+    auto sigmaPlusSlice = partitionSigmaPlus->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+
+    for (auto const& sigmaPlus : sigmaPlusSlice) {
+
+      auto chaDaughter = oldTrackTable.rawIteratorAt(sigmaPlus.chaDauId() - oldTrackTable.offset());
+
+      int chaDaughterIndex = trackBuilder.getDaughterIndex(chaDaughter, newTrackTable, newCollisionTable);
+
+      newSigmaPlusTable.producedSigmaPluses(newCollisionTable.producedCollision.lastIndex(),
+                                            sigmaPlus.signedPt(),
+                                            sigmaPlus.eta(),
+                                            sigmaPlus.phi(),
+                                            sigmaPlus.mass(),
+                                            chaDaughterIndex);
+      newSigmaPlusTable.producedSigmaPlusMasks(sigmaPlus.mask());
+    }
+  }
+
+ private:
+  int mLimitSigma = 0;
+  int mLimitSigmaPlus = 0;
 };
 
 } // namespace kinkbuilder

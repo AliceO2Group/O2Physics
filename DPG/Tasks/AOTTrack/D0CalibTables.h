@@ -444,6 +444,8 @@ DECLARE_SOA_COLUMN(Eta, eta, float);                                           /
 DECLARE_SOA_COLUMN(Phi, phi, float);                                           //! D0-candidate phi
 DECLARE_SOA_COLUMN(InvMassD0, invMassD0, float);                               //! invariant mass (D0 hypothesis)
 DECLARE_SOA_COLUMN(InvMassD0bar, invMassD0bar, float);                         //! invariant mass (D0bar hypothesis)
+DECLARE_SOA_COLUMN(CosThetaStarD0, cosThetaStarD0, float);                     //! D0-candidate cost* (Helicity frame, D0 mass hypothesis)
+DECLARE_SOA_COLUMN(CosThetaStarD0bar, cosThetaStarD0bar, float);               //! D0-candidate cost* (Helicity frame, D0bar mass hypthesis)
 DECLARE_SOA_COLUMN(DecLength, decLength, uint8_t);                             //! compressed decay length
 DECLARE_SOA_COLUMN(DecLengthXY, decLengthXY, uint8_t);                         //! compressed decay length XY
 DECLARE_SOA_COLUMN(NormDecLength, normDecLength, uint8_t);                     //! compressed normalised decay length
@@ -472,6 +474,8 @@ DECLARE_SOA_TABLE(D0CalibCands, "AOD", "D0CALIBCAND",
                   hf_calib::Phi,
                   hf_calib::InvMassD0,
                   hf_calib::InvMassD0bar,
+                  hf_calib::CosThetaStarD0,
+                  hf_calib::CosThetaStarD0bar,
                   hf_calib::DecLength,
                   hf_calib::DecLengthXY,
                   hf_calib::NormDecLength,

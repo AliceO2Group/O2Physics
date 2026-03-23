@@ -751,7 +751,7 @@ struct FullJetSpectra {
   }
   */
   using EMCCollisionsData = o2::soa::Join<aod::JetCollisions, aod::JEMCCollisionLbs>; // JetCollisions with EMCAL Collision Labels
-  using EMCCollisionsTriggeredData = o2::soa::Join<aod::JetCollisions, aod::JCollisionBCs, aod::JEMCCollisionLbs>;
+  using EMCCollisionsTriggeredData = o2::soa::Join<aod::JetCollisions, aod::JEMCCollisionLbs>;
 
   using EMCCollisionsMCD = o2::soa::Join<aod::JetCollisionsMCD, aod::JEMCCollisionLbs>; // where, JetCollisionsMCD = JetCollisions+JMcCollisionLbs
 

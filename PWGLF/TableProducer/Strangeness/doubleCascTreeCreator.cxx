@@ -248,7 +248,22 @@ struct doubleCascTreeCreator {
         histos.fill(HIST("QA/massXi2"), casc2.pt(), casc2.mXi());
         histos.fill(HIST("QA/massOmega2"), casc2.pt(), casc2.mOmega());
 
-        if (casc1.posTrackId() == casc2.posTrackId() || casc1.posTrackId() == casc2.negTrackId() || casc1.bachelorId() == casc2.bachelorId()) {
+        // check that the cascades do not share any track
+        std::vector<int> trackIdsCasc1 = {casc1.posTrackId(), casc1.negTrackId(), casc1.bachelorId()};
+        std::vector<int> trackIdsCasc2 = {casc2.posTrackId(), casc2.negTrackId(), casc2.bachelorId()};
+        bool shareTrack = false;
+        for (auto id1 : trackIdsCasc1) {
+          for (auto id2 : trackIdsCasc2) {
+            if (id1 == id2) {
+              shareTrack = true;
+              break;
+            }
+          }
+          if (shareTrack) {
+            break;
+          }
+        }
+        if (shareTrack) {
           continue;
         }
 

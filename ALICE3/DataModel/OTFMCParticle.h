@@ -37,7 +37,7 @@ DECLARE_SOA_COLUMN(IsPrimary, isPrimary, bool);
 
 } // namespace otfmcparticle
 
-DECLARE_SOA_TABLE_FULL(McParticlesWithDau, "McParticlesWithDau", "AOD", "MCPARTICLEWITHDAU",
+DECLARE_SOA_TABLE_FULL(McPartsWithDau, "McPartsWithDau", "AOD", "MCPARTSWITHDAU",
                        o2::soa::Index<>,
                        mcparticle::McCollisionId,
                        mcparticle::PdgCode,
@@ -69,7 +69,7 @@ DECLARE_SOA_TABLE_FULL(McParticlesWithDau, "McParticlesWithDau", "AOD", "MCPARTI
                        mcparticle::GetProcess<mcparticle::Flags, mcparticle::StatusCode>,
                        mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
 
-using McParticleWithDau = McParticlesWithDau::iterator;
+using McPartWithDau = McPartsWithDau::iterator;
 
 } // namespace o2::aod
 

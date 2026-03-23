@@ -36,7 +36,6 @@
 #include "Math/Vector4D.h"
 
 #include <string>
-// #include <utility>
 #include <vector>
 
 using namespace o2;
@@ -76,13 +75,14 @@ struct skimmerPrimaryElectronQC {
   struct : ConfigurableGroup {
     std::string prefix = "trackcut";
     Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"};
-    Configurable<int> mincrossedrows{"mincrossedrows", 40, "min. crossed rows"};
+    Configurable<int> mincrossedrows{"mincrossedrows", 0, "min. crossed rows"};
     Configurable<int> min_ncluster_its{"min_ncluster_its", 2, "min ncluster its"};
     Configurable<int> min_ncluster_itsib{"min_ncluster_itsib", 0, "min ncluster itsib"};
-    Configurable<float> min_tpc_cr_findable_ratio{"min_tpc_cr_findable_ratio", 0.8, "min. TPC Ncr/Nf ratio"};
+    Configurable<float> min_tpc_cr_findable_ratio{"min_tpc_cr_findable_ratio", 0.0, "min. TPC Ncr/Nf ratio"};
     Configurable<float> max_frac_shared_clusters_tpc{"max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
-    Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
-    Configurable<float> maxchi2its{"maxchi2its", 36.0, "max. chi2/NclsITS"};
+    Configurable<float> maxchi2tpc{"maxchi2tpc", 1e+10, "max. chi2/NclsTPC"};
+    Configurable<float> minchi2tpc{"minchi2tpc", -1e+10, "min. chi2/NclsTPC"};
+    Configurable<float> maxchi2its{"maxchi2its", 1e+10, "max. chi2/NclsITS"}; // actual maximum is 36 in the reconstruction.
     Configurable<float> minchi2its{"minchi2its", -1e+10, "min. chi2/NclsITS"};
     Configurable<float> minpt{"minpt", 0.05, "min pt for ITS-TPC track"};
     Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance"};
@@ -95,9 +95,9 @@ struct skimmerPrimaryElectronQC {
 
   struct : ConfigurableGroup {
     std::string prefix = "tighttrackcut";
-    Configurable<int> min_ncluster_tpc_pid{"min_ncluster_tpc_pid", 60, "min ncluster tpc used for PID"};
+    Configurable<int> min_ncluster_tpc_pid{"min_ncluster_tpc_pid", 0, "min ncluster tpc used for PID"};
     Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"};
-    Configurable<int> mincrossedrows{"mincrossedrows", 100, "min. crossed rows"};
+    Configurable<int> mincrossedrows{"mincrossedrows", 120, "min. crossed rows"};
     Configurable<int> min_ncluster_its{"min_ncluster_its", 5, "min ncluster its"};
     Configurable<int> min_ncluster_itsib{"min_ncluster_itsib", 3, "min ncluster itsib"};
     Configurable<float> min_tpc_cr_findable_ratio{"min_tpc_cr_findable_ratio", 0.8, "min. TPC Ncr/Nf ratio"};
@@ -113,8 +113,10 @@ struct skimmerPrimaryElectronQC {
   } tighttrackcut;
 
   Configurable<bool> storeOnlyTrueElectronMC{"storeOnlyTrueElectronMC", false, "Flag to store only true electron in MC"};
-  Configurable<float> maxMee{"maxMee", 0.005, "max mee for pi0 -> ee"};
-  Configurable<float> maxPhiV{"maxPhiV", M_PI / 2, "max phiv for pi0 -> ee"};
+  Configurable<float> minMee{"minMee", 0.000, "min mee for pi0 -> ee or gamma -> ee"};
+  Configurable<float> maxMee{"maxMee", 0.005, "max mee for pi0 -> ee or gamma -> ee"};
+  Configurable<float> minPhiV{"minPhiV", 0.f, "min phiv for pi0 -> ee or gamma -> ee"};
+  Configurable<float> maxPhiV{"maxPhiV", M_PI / 2, "max phiv for pi0 -> ee or gamma -> ee"};
 
   // configuration for PID ML
   Configurable<bool> usePIDML{"usePIDML", false, "Flag to use PID ML"};
@@ -308,7 +310,7 @@ struct skimmerPrimaryElectronQC {
     }
 
     if (track.hasTPC()) {
-      if (track.tpcChi2NCl() < 0.f || trackcut.maxchi2tpc < track.tpcChi2NCl()) {
+      if (track.tpcChi2NCl() < trackcut.minchi2tpc || trackcut.maxchi2tpc < track.tpcChi2NCl()) {
         return false;
       }
 
@@ -500,7 +502,7 @@ struct skimmerPrimaryElectronQC {
                        track.itsClusterSizes(),
                        track.itsChi2NCl(), track.tofChi2(), track.detectorMap(),
                        // trackParCov.getTgl(),
-                       isAssociatedToMPC, false, probaEl, mcTunedTPCSignal);
+                       isAssociatedToMPC, false, probaEl, track.flags(), mcTunedTPCSignal);
 
     emprimaryelectronscov(
       trackParCov.getX(),
@@ -622,7 +624,7 @@ struct skimmerPrimaryElectronQC {
     if (fillQAHistogram) {
       fRegistry.fill(HIST("Pair/hMvsPhiV"), phiv, mee);
     }
-    if (mee < maxMee && phiv < maxPhiV) {
+    if ((minMee < mee && mee < maxMee) && (minPhiV < phiv && phiv < maxPhiV)) {
       return true;
     } else {
       return false;

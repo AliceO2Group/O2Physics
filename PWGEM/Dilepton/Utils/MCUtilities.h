@@ -20,6 +20,7 @@
 
 #include <algorithm>
 #include <string>
+#include <utility>
 #include <vector>
 
 //_______________________________________________________________________
@@ -34,6 +35,7 @@ enum class EM_HFeeType : int {
   kBCe_Be_DiffB = 4, // LS
   kBCCe_BCe = 5,     // ULS
   kBCCe_BCCe = 6,    // ULS
+  kBCCee = 7,        // ULS
 };
 
 //_______________________________________________________________________
@@ -464,19 +466,18 @@ int IsFromCharm(TMCParticle const& p, TMCParticles const& mcparticles)
 }
 //_______________________________________________________________________
 template <typename T, typename U>
-int hasNCharmHadronsInBeautyDecay(T const& mcParticle, U const& mcParticles)
+std::pair<int, int> getBeautyHadronIDandNCharmHadronDaughters(T const& mcParticle, U const& mcParticles)
 {
-  // require that the direct mother is beauty hadron via semileptonice decay. e.g. hb->e, not hb->X->pi0->eegamma
   if (!mcParticle.has_mothers()) {
-    return -999;
+    return {-999, -999};
   }
   if (!IsFromBeauty(mcParticle, mcParticles)) {
-    return -999;
+    return {-999, -999};
   }
 
   auto mp = mcParticles.iteratorAt(mcParticle.mothersIds()[0]);
   if (!isCharmMeson(mp) && !isCharmBaryon(mp)) {
-    return -999;
+    return {-999, -999};
   }
 
   int motherid = mcParticle.mothersIds()[0]; // first mother index
@@ -496,21 +497,22 @@ int hasNCharmHadronsInBeautyDecay(T const& mcParticle, U const& mcParticles)
               }
             }
           }
-          return count_charm_hadron;
+          return {motherid, count_charm_hadron};
         } else {
           LOGF(debug, "Something went wrong: Did not find any daughter for the current mother! Can't be a mother if there are no daughters\n");
         }
+        return {-999, -999};
       }
       if (mp.has_mothers()) {
         motherid = mp.mothersIds()[0];
       } else {
-        return -999;
+        return {-999, -999};
       }
     } else {
       LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mcParticles.size());
     }
   }
-  return -999;
+  return {-999, -999};
 }
 //_______________________________________________________________________
 template <typename TMCParticle>
@@ -717,12 +719,18 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
     if constexpr (!doMoreDifferentially) {
       return static_cast<int>(EM_HFeeType::kBCe_BCe); // default to b->c->e and b->c->e, decay type = 1
     } else {
-      int n_c_from_b1 = hasNCharmHadronsInBeautyDecay(p1, mcparticles);
-      int n_c_from_b2 = hasNCharmHadronsInBeautyDecay(p2, mcparticles);
+      int beauty_motherid1 = getBeautyHadronIDandNCharmHadronDaughters(p1, mcparticles).first;
+      int beauty_motherid2 = getBeautyHadronIDandNCharmHadronDaughters(p2, mcparticles).first;
+      int n_c_from_b1 = getBeautyHadronIDandNCharmHadronDaughters(p1, mcparticles).second;
+      int n_c_from_b2 = getBeautyHadronIDandNCharmHadronDaughters(p2, mcparticles).second;
       if (n_c_from_b1 == 1 && n_c_from_b2 == 1) {
         return static_cast<int>(EM_HFeeType::kBCe_BCe); // b->c->e and b->c->e, decay type = 1
       } else if (n_c_from_b1 == 2 && n_c_from_b2 == 2) {
-        return static_cast<int>(EM_HFeeType::kBCCe_BCCe); // b->cc->e and b->cc->e, decay type = 6
+        if (beauty_motherid1 == beauty_motherid2) {     // same beauty hadron decays into 2 charm hadrons which then decay semileptonically
+          return static_cast<int>(EM_HFeeType::kBCCee); // b->cc->ee, decay type = 7
+        } else {
+          return static_cast<int>(EM_HFeeType::kBCCe_BCCe); // b->cc->e and b->cc->e, decay type = 6
+        }
       } else if ((n_c_from_b1 == 1 && n_c_from_b2 == 2) || (n_c_from_b1 == 2 && n_c_from_b2 == 1)) {
         return static_cast<int>(EM_HFeeType::kBCCe_BCe); // b->cc->e and b->c->e, decay type = 5
       } else {

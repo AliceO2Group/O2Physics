@@ -70,6 +70,7 @@
 #include <cstdint>
 #include <iostream>
 #include <map>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -206,6 +207,7 @@ class VarManager : public TObject
     kCollisionTimeRes,
     kBC,
     kBCOrbit,
+    kCollisionRandom, // random number generated per collision (if required, can be used to perform random selections at the collision level)
     kIsPhysicsSelection,
     kIsTVXTriggered,             // Is trigger TVX
     kIsNoTFBorder,               // No time frame border
@@ -293,6 +295,32 @@ class VarManager : public TObject
     kNTPCmeanTimeShortC,
     kNTPCmedianTimeShortA,
     kNTPCmedianTimeShortC,
+    kDCAzBimodalityCoefficient,
+    kDCAzMean,
+    kDCAzRMS,
+    kDCAzSkewness,
+    kDCAzKurtosis,
+    kDCAzBimodalityCoefficientBinned,
+    kDCAzBimodalityCoefficientBinnedTrimmed1,
+    kDCAzBimodalityCoefficientBinnedTrimmed2,
+    kDCAzBimodalityCoefficientBinnedTrimmed3,
+    kDCAzMeanBinnedTrimmed1,
+    kDCAzMeanBinnedTrimmed2,
+    kDCAzMeanBinnedTrimmed3,
+    kDCAzRMSBinnedTrimmed1,
+    kDCAzRMSBinnedTrimmed2,
+    kDCAzRMSBinnedTrimmed3,
+    kDCAzFracAbove100um,
+    kDCAzFracAbove200um,
+    kDCAzFracAbove500um,
+    kDCAzFracAbove1mm,
+    kDCAzFracAbove2mm,
+    kDCAzFracAbove5mm,
+    kDCAzFracAbove10mm,
+    kDCAzNPeaks,
+    kDCAzNPeaksTrimmed1,
+    kDCAzNPeaksTrimmed2,
+    kDCAzNPeaksTrimmed3,
     kMCEventGeneratorId,
     kMCEventSubGeneratorId,
     kMCVtxX,
@@ -452,10 +480,11 @@ class VarManager : public TObject
     kV2ME_EP,
     kWV2ME_SP,
     kWV2ME_EP,
-    kTwoR2SP1, // Scalar product resolution of event1 for ME technique
-    kTwoR2SP2, // Scalar product resolution of event2 for ME technique
-    kTwoR2EP1, // Event plane resolution of event2 for ME technique
-    kTwoR2EP2, // Event plane resolution of event2 for ME technique
+    kTwoR2SP1,       // Scalar product resolution of event1 for ME technique
+    kTwoR2SP2,       // Scalar product resolution of event2 for ME technique
+    kTwoR2EP1,       // Event plane resolution of event2 for ME technique
+    kTwoR2EP2,       // Event plane resolution of event2 for ME technique
+    kNPairsPerEvent, // number of pairs per event in same-event or mixed-event pairing
 
     // Variables for event mixing with cumulant
     kV22m,
@@ -1255,6 +1284,10 @@ class VarManager : public TObject
   }
   template <typename T, typename T1>
   static o2::dataformats::VertexBase RecalculatePrimaryVertex(T const& track0, T const& track1, const T1& collision);
+
+  static std::tuple<float, float, float, float, float> BimodalityCoefficientUnbinned(const std::vector<float>& data);
+  static std::tuple<float, float, float, float, float, int> BimodalityCoefficientAndNPeaks(const std::vector<float>& data, float binWidth, int trim = 0, float min = -15.0, float max = 15.0);
+
   template <typename T, typename C>
   static o2::track::TrackParCovFwd FwdToTrackPar(const T& track, const C& cov);
   template <typename T, typename C>
@@ -1269,6 +1302,8 @@ class VarManager : public TObject
   static void FillBC(T const& bc, float* values = nullptr);
   template <uint32_t fillMap, typename T>
   static void FillEvent(T const& event, float* values = nullptr);
+  template <typename T>
+  static void FillEventTracks(T const& tracks, float* values = nullptr);
   template <typename T>
   static void FillTimeFrame(T const& tfTable, float* values = nullptr);
   template <typename T>
@@ -1295,8 +1330,6 @@ class VarManager : public TObject
   static void FillTrackMC(const U& mcStack, T const& track, float* values = nullptr);
   template <int pairType, typename T, typename T1>
   static void FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* values = nullptr, float Translow = 1. / 3, float Transhigh = 2. / 3);
-  template <int pairType, typename T1, typename T2, typename T, typename T3>
-  static void FillEnergyCorrelatorsMCUnfolding(T1 const& dilepton, T2 const& hadron, T const& track, T3 const& t1, float* values = nullptr);
   template <uint32_t fillMap, typename T1, typename T2, typename C>
   static void FillPairPropagateMuon(T1 const& muon1, T2 const& muon2, const C& collision, float* values = nullptr);
   template <uint32_t fillMap, typename T1, typename T2, typename C>
@@ -1329,8 +1362,10 @@ class VarManager : public TObject
   static void FillDileptonTrackVertexing(C const& collision, T1 const& lepton1, T1 const& lepton2, T1 const& track, float* values);
   template <typename T1, typename T2>
   static void FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float* values = nullptr, float hadronMass = 0.0f);
-  template <typename T1, typename T2>
-  static void FillEnergyCorrelator(T1 const& dilepton, T2 const& hadron, float* values = nullptr, float Translow = 1. / 3, float Transhigh = 2. / 3, bool applyFitMass = false, float sidebandMass = 0.0f);
+  template <typename T1, typename T2, typename T3>
+  static void FillEnergyCorrelatorTriple(T1 const& lepton1, T2 const& lepton2, T3 const& hadron, float* values = nullptr, float Translow = 1. / 3, float Transhigh = 2. / 3, bool applyFitMass = false, float sidebandMass = 0.0f);
+  template <int pairType, typename T1, typename T2, typename T3, typename T4, typename T5>
+  static void FillEnergyCorrelatorsUnfoldingTriple(T1 const& lepton1, T2 const& lepton2, T3 const& hadron, T4 const& track, T5 const& t1, float* values = nullptr, bool applyFitMass = false);
   template <typename T1, typename T2>
   static void FillDileptonPhoton(T1 const& dilepton, T2 const& photon, float* values = nullptr);
   template <typename T>
@@ -1486,7 +1521,7 @@ class VarManager : public TObject
   VarManager& operator=(const VarManager& c);
   VarManager(const VarManager& c);
 
-  ClassDef(VarManager, 5);
+  ClassDef(VarManager, 6);
 };
 
 template <typename T, typename C>
@@ -1618,6 +1653,7 @@ o2::dataformats::VertexBase VarManager::RecalculatePrimaryVertex(T const& track0
   o2::dataformats::VertexBase primaryVertexRec = {std::move(vtxXYZ), std::move(vtxCov)};
   return primaryVertexRec;
 }
+
 template <typename T, typename C>
 o2::dataformats::GlobalFwdTrack VarManager::PropagateMuon(const T& muon, const C& collision, const int endPoint)
 {
@@ -1837,6 +1873,10 @@ void VarManager::FillEvent(T const& event, float* values)
 
   if constexpr ((fillMap & CollisionTimestamp) > 0) {
     values[kTimestamp] = event.timestamp();
+  }
+
+  if (fgUsedVars[kCollisionRandom]) {
+    values[kCollisionRandom] = gRandom->Rndm();
   }
 
   if constexpr ((fillMap & Collision) > 0) {
@@ -2282,6 +2322,9 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMCEventWeight] = event.weight();
     values[kMCEventImpParam] = event.impactParameter();
     values[kMCEventCentrFT0C] = event.centFT0C();
+    values[kMultMCNParticlesEta05] = event.multMCNParticlesEta05();
+    values[kMultMCNParticlesEta08] = event.multMCNParticlesEta08();
+    values[kMultMCNParticlesEta10] = event.multMCNParticlesEta10();
   }
 
   if constexpr ((fillMap & EventFilter) > 0 || (fillMap & RapidityGapFilter) > 0) {
@@ -2326,7 +2369,173 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kBGFDDCpf] = event.bgFDDCpf();
   }
 
+  // check if the template T type includes the O2remerge table and if so, fill the corresponding variables
+  if constexpr (requires { event.dcazBimodalityCoefficient(); }) {
+    values[kDCAzBimodalityCoefficient] = event.dcazBimodalityCoefficient();
+    values[kDCAzBimodalityCoefficientBinned] = event.dcazBimodalityCoefficientBinned();
+    values[kDCAzBimodalityCoefficientBinnedTrimmed1] = event.dcazBimodalityCoefficientBinnedTrimmed1();
+    values[kDCAzBimodalityCoefficientBinnedTrimmed2] = event.dcazBimodalityCoefficientBinnedTrimmed2();
+    values[kDCAzBimodalityCoefficientBinnedTrimmed3] = event.dcazBimodalityCoefficientBinnedTrimmed3();
+    values[kDCAzMean] = event.dcazMean();
+    values[kDCAzMeanBinnedTrimmed1] = event.dcazMeanBinnedTrimmed1();
+    values[kDCAzMeanBinnedTrimmed2] = event.dcazMeanBinnedTrimmed2();
+    values[kDCAzMeanBinnedTrimmed3] = event.dcazMeanBinnedTrimmed3();
+    values[kDCAzRMS] = event.dcazRMS();
+    values[kDCAzRMSBinnedTrimmed1] = event.dcazRMSBinnedTrimmed1();
+    values[kDCAzRMSBinnedTrimmed2] = event.dcazRMSBinnedTrimmed2();
+    values[kDCAzRMSBinnedTrimmed3] = event.dcazRMSBinnedTrimmed3();
+    values[kDCAzSkewness] = event.dcazSkewness();
+    values[kDCAzKurtosis] = event.dcazKurtosis();
+    values[kDCAzNPeaks] = event.dcazNPeaks();
+    values[kDCAzNPeaksTrimmed1] = event.dcazNPeaksTrimmed1();
+    values[kDCAzNPeaksTrimmed2] = event.dcazNPeaksTrimmed2();
+    values[kDCAzNPeaksTrimmed3] = event.dcazNPeaksTrimmed3();
+    values[kDCAzFracAbove100um] = event.dcazFracAbove100um();
+    values[kDCAzFracAbove200um] = event.dcazFracAbove200um();
+    values[kDCAzFracAbove500um] = event.dcazFracAbove500um();
+    values[kDCAzFracAbove1mm] = event.dcazFracAbove1mm();
+    values[kDCAzFracAbove2mm] = event.dcazFracAbove2mm();
+    values[kDCAzFracAbove5mm] = event.dcazFracAbove5mm();
+    values[kDCAzFracAbove10mm] = event.dcazFracAbove10mm();
+  }
+
   // FillEventDerived(values);
+}
+
+template <typename T>
+void VarManager::FillEventTracks(T const& tracks, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  // compute event properties based on DCAz of the tracks
+  std::vector<float> dcazValues;
+  for (const auto& track : tracks) {
+    if (!track.hasITS()) {
+      continue; // skip tracks without ITS information
+    }
+    if (!track.hasTPC()) {
+      continue; // skip tracks without TPC information
+    }
+    if (track.dcaZ() > 998) {
+      continue; // skip tracks without valid DCAz
+    }
+    dcazValues.push_back(track.dcaZ());
+  }
+
+  if (dcazValues.empty()) {
+    return;
+  }
+
+  // compute the unbinned bimodality coefficient and related statistics
+  auto [bimodalityCoefficient, mean, stddev, skewness, kurtosis, nPeaks] = BimodalityCoefficientAndNPeaks(dcazValues, -1.0);
+  if (stddev > -1.0) {
+    values[kDCAzBimodalityCoefficient] = bimodalityCoefficient;
+    values[kDCAzMean] = mean;
+    values[kDCAzRMS] = stddev;
+    values[kDCAzSkewness] = skewness;
+    values[kDCAzKurtosis] = kurtosis;
+    values[kDCAzNPeaks] = nPeaks;
+  } else {
+    values[kDCAzBimodalityCoefficient] = -9999.0;
+    values[kDCAzMean] = -9999.0;
+    values[kDCAzRMS] = -9999.0;
+    values[kDCAzSkewness] = -9999.0;
+    values[kDCAzKurtosis] = -9999.0;
+    values[kDCAzNPeaks] = -9999.0;
+  }
+  // compute the binned bimodality coefficient and related statistics with a bin width of 50um
+  auto [bimodalityCoefficientBin, meanBin, stddevBin, skewnessBin, kurtosisBin, nPeaksBin] = BimodalityCoefficientAndNPeaks(dcazValues, 0.005);
+  if (stddevBin > -1.0) {
+    values[kDCAzBimodalityCoefficientBinned] = bimodalityCoefficientBin;
+  } else {
+    values[kDCAzBimodalityCoefficientBinned] = -9999.0;
+  }
+  values[kDCAzNPeaks] = nPeaksBin;
+  // cout << "Bimodality coefficient binned: " << bimodalityCoefficientBin << ", mean: " << mean << ", stddev: " << stddev << ", skewness: " << skewness << ", kurtosis: " << kurtosis << ", nPeaks: " << nPeaksBin << endl;
+  // compute the binned bimodality coefficient and related statistics with a bin width of 50um and different trimming versions
+  // more then 3 counts per bin
+  auto [bimodalityCoefficientBinTrimmed1, meanBinTrimmed1, stddevBinTrimmed1, skewnessBinTrimmed1, kurtosisBinTrimmed1, nPeaksBinTrimmed1] = BimodalityCoefficientAndNPeaks(dcazValues, 0.005, 4);
+  if (stddevBinTrimmed1 > -1.0) {
+    values[kDCAzBimodalityCoefficientBinnedTrimmed1] = bimodalityCoefficientBinTrimmed1;
+    values[kDCAzMeanBinnedTrimmed1] = meanBinTrimmed1;
+    values[kDCAzRMSBinnedTrimmed1] = stddevBinTrimmed1;
+  } else {
+    values[kDCAzBimodalityCoefficientBinnedTrimmed1] = -9999.0;
+    values[kDCAzMeanBinnedTrimmed1] = -9999.0;
+    values[kDCAzRMSBinnedTrimmed1] = -9999.0;
+  }
+  values[kDCAzNPeaksTrimmed1] = nPeaksBinTrimmed1;
+  // cout << "Bimodality coefficient (trimmed 1): " << bimodalityCoefficientBinTrimmed1 << ", mean: " << meanBinTrimmed1 << ", stddev: " << stddevBinTrimmed1 << ", skewness: " << skewnessBinTrimmed1 << ", kurtosis: " << kurtosisBinTrimmed1 << ", nPeaks: " << nPeaksBinTrimmed1 << endl;
+  // more than 3% of the entries per peak
+  auto [bimodalityCoefficientBinTrimmed2, meanBinTrimmed2, stddevBinTrimmed2, skewnessBinTrimmed2, kurtosisBinTrimmed2, nPeaksBinTrimmed2] = BimodalityCoefficientAndNPeaks(dcazValues, 0.005, -100);
+  if (stddevBinTrimmed2 > -1.0) {
+    values[kDCAzBimodalityCoefficientBinnedTrimmed2] = bimodalityCoefficientBinTrimmed2;
+    values[kDCAzMeanBinnedTrimmed2] = meanBinTrimmed2;
+    values[kDCAzRMSBinnedTrimmed2] = stddevBinTrimmed2;
+  } else {
+    values[kDCAzBimodalityCoefficientBinnedTrimmed2] = -9999.0;
+    values[kDCAzMeanBinnedTrimmed2] = -9999.0;
+    values[kDCAzRMSBinnedTrimmed2] = -9999.0;
+  }
+  values[kDCAzNPeaksTrimmed2] = nPeaksBinTrimmed2;
+  // cout << "Bimodality coefficient (trimmed 2): " << bimodalityCoefficientBinTrimmed2 << ", mean: " << meanBinTrimmed2 << ", stddev: " << stddevBinTrimmed2 << ", skewness: " << skewnessBinTrimmed2 << ", kurtosis: " << kurtosisBinTrimmed2 << ", nPeaks: " << nPeaksBinTrimmed2 << endl;
+  // more than 5% of the entries per peak
+  auto [bimodalityCoefficientBinTrimmed3, meanBinTrimmed3, stddevBinTrimmed3, skewnessBinTrimmed3, kurtosisBinTrimmed3, nPeaksBinTrimmed3] = BimodalityCoefficientAndNPeaks(dcazValues, 0.005, -20);
+  if (stddevBinTrimmed3 > -1.0) {
+    values[kDCAzBimodalityCoefficientBinnedTrimmed3] = bimodalityCoefficientBinTrimmed3;
+    values[kDCAzMeanBinnedTrimmed3] = meanBinTrimmed3;
+    values[kDCAzRMSBinnedTrimmed3] = stddevBinTrimmed3;
+  } else {
+    values[kDCAzBimodalityCoefficientBinnedTrimmed3] = -9999.0;
+    values[kDCAzMeanBinnedTrimmed3] = -9999.0;
+    values[kDCAzRMSBinnedTrimmed3] = -9999.0;
+  }
+  values[kDCAzNPeaksTrimmed3] = nPeaksBinTrimmed3;
+  // cout << "Bimodality coefficient (trimmed 3): " << bimodalityCoefficientBinTrimmed3 << ", mean: " << meanBinTrimmed3 << ", stddev: " << stddevBinTrimmed3 << ", skewness: " << skewnessBinTrimmed3 << ", kurtosis: " << kurtosisBinTrimmed3 << ", nPeaks: " << nPeaksBinTrimmed3 << endl;
+
+  // compute fraction of tracks with |DCAz| > 100um, 200um, 500um, 1mm, 2mm, 5mm, 10mm
+  // make a loop over the DCAz values and count how many are above each threshold
+  int counter100um = 0;
+  int counter200um = 0;
+  int counter500um = 0;
+  int counter1mm = 0;
+  int counter2mm = 0;
+  int counter5mm = 0;
+  int counter10mm = 0;
+  for (auto& d : dcazValues) {
+    double absD = std::abs(d);
+    if (absD > 0.01) {
+      counter100um++;
+      if (absD > 0.02) {
+        counter200um++;
+        if (absD > 0.05) {
+          counter500um++;
+          if (absD > 0.1) {
+            counter1mm++;
+            if (absD > 0.2) {
+              counter2mm++;
+              if (absD > 0.5) {
+                counter5mm++;
+                if (absD > 1.0) {
+                  counter10mm++;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  int totalTracks = static_cast<int>(dcazValues.size());
+  values[kDCAzFracAbove100um] = static_cast<float>(counter100um) / totalTracks;
+  values[kDCAzFracAbove200um] = static_cast<float>(counter200um) / totalTracks;
+  values[kDCAzFracAbove500um] = static_cast<float>(counter500um) / totalTracks;
+  values[kDCAzFracAbove1mm] = static_cast<float>(counter1mm) / totalTracks;
+  values[kDCAzFracAbove2mm] = static_cast<float>(counter2mm) / totalTracks;
+  values[kDCAzFracAbove5mm] = static_cast<float>(counter5mm) / totalTracks;
+  values[kDCAzFracAbove10mm] = static_cast<float>(counter10mm) / totalTracks;
 }
 
 template <typename T>
@@ -3148,35 +3357,6 @@ void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* va
     values[kMCdeltaphi_randomPhi_trans] = RecoDecay::constrainAngle(v1.phi() - randomPhi_trans, -o2::constants::math::PIHalf);
     values[kMCdeltaphi_randomPhi_toward] = RecoDecay::constrainAngle(v1.phi() - randomPhi_toward, -o2::constants::math::PIHalf);
     values[kMCdeltaphi_randomPhi_away] = RecoDecay::constrainAngle(v1.phi() - randomPhi_away, -o2::constants::math::PIHalf);
-  }
-}
-
-template <int pairType, typename T1, typename T2, typename T, typename T3>
-void VarManager::FillEnergyCorrelatorsMCUnfolding(T1 const& dilepton, T2 const& hadron, T const& track, T3 const& t1, float* values)
-{
-  if (fgUsedVars[kMCCosChi_gen] || fgUsedVars[kMCWeight_gen] || fgUsedVars[kMCdeltaeta_gen] || fgUsedVars[kMCCosChi_rec] || fgUsedVars[kMCWeight_rec] || fgUsedVars[kMCdeltaeta_rec]) {
-    // energy correlators
-    float MassHadron;
-    if constexpr (pairType == kJpsiHadronMass) {
-      MassHadron = TMath::Sqrt(t1.e() * t1.e() - t1.p() * t1.p());
-    }
-    if constexpr (pairType == kJpsiPionMass) {
-      MassHadron = o2::constants::physics::MassPionCharged;
-    }
-    ROOT::Math::PtEtaPhiMVector v1_gen(track.pt(), track.eta(), track.phi(), o2::constants::physics::MassJPsi);
-    ROOT::Math::PtEtaPhiMVector v2_gen(t1.pt(), t1.eta(), t1.phi(), MassHadron);
-    float E_boost_gen = LorentzTransformJpsihadroncosChi("weight_boost", v1_gen, v2_gen);
-    float CosChi_gen = LorentzTransformJpsihadroncosChi("coschi", v1_gen, v2_gen);
-    values[kMCCosChi_gen] = CosChi_gen;
-    values[kMCWeight_gen] = E_boost_gen / o2::constants::physics::MassJPsi;
-    values[kMCdeltaeta_gen] = track.eta() - t1.eta();
-
-    ROOT::Math::PtEtaPhiMVector v1_rec(dilepton.pt(), dilepton.eta(), dilepton.phi(), dilepton.mass());
-    ROOT::Math::PtEtaPhiMVector v2_rec(hadron.pt(), hadron.eta(), hadron.phi(), o2::constants::physics::MassPionCharged);
-    values[kMCCosChi_rec] = LorentzTransformJpsihadroncosChi("coschi", v1_rec, v2_rec);
-    float E_boost_rec = LorentzTransformJpsihadroncosChi("weight_boost", v1_rec, v2_rec);
-    values[kMCWeight_rec] = E_boost_rec / v1_rec.M();
-    values[kMCdeltaeta_rec] = dilepton.eta() - hadron.eta();
   }
 }
 
@@ -5608,9 +5788,16 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
   }
 }
 
-template <typename T1, typename T2>
-void VarManager::FillEnergyCorrelator(T1 const& dilepton, T2 const& hadron, float* values, float Translow, float Transhigh, bool applyFitMass, float sidebandMass)
+template <typename T1, typename T2, typename T3>
+void VarManager::FillEnergyCorrelatorTriple(T1 const& lepton1, T2 const& lepton2, T3 const& hadron, float* values, float Translow, float Transhigh, bool applyFitMass, float sidebandMass)
 {
+  float m1 = o2::constants::physics::MassElectron;
+  float m2 = o2::constants::physics::MassElectron;
+
+  ROOT::Math::PtEtaPhiMVector v_lepton1(lepton1.pt(), lepton1.eta(), lepton1.phi(), m1);
+  ROOT::Math::PtEtaPhiMVector v_lepton2(lepton2.pt(), lepton2.eta(), lepton2.phi(), m2);
+  ROOT::Math::PtEtaPhiMVector dilepton = v_lepton1 + v_lepton2;
+
   float dileptonmass = o2::constants::physics::MassJPsi;
   if (applyFitMass) {
     dileptonmass = dilepton.mass();
@@ -5633,6 +5820,8 @@ void VarManager::FillEnergyCorrelator(T1 const& dilepton, T2 const& hadron, floa
     values[kPhiDau] = RecoDecay::constrainAngle(v2.phi(), -o2::constants::math::PIHalf);
 
     float deltaphi = RecoDecay::constrainAngle(v1.phi() - v2.phi(), -o2::constants::math::PI);
+    values[kDeltaPhi] = RecoDecay::constrainAngle(v1.phi() - v2.phi(), -o2::constants::math::PIHalf);
+    values[kDeltaEta] = v1.eta() - v2.eta();
     values[kCosChi_randomPhi_trans] = -999.9f;
     values[kCosChi_randomPhi_toward] = -999.9f;
     values[kCosChi_randomPhi_away] = -999.9f;
@@ -5668,6 +5857,49 @@ void VarManager::FillEnergyCorrelator(T1 const& dilepton, T2 const& hadron, floa
     }
   }
 }
+
+template <int pairType, typename T1, typename T2, typename T3, typename T4, typename T5>
+void VarManager::FillEnergyCorrelatorsUnfoldingTriple(T1 const& lepton1, T2 const& lepton2, T3 const& hadron, T4 const& track, T5 const& t1, float* values, bool applyFitMass)
+{
+  if (fgUsedVars[kMCCosChi_gen] || fgUsedVars[kMCWeight_gen] || fgUsedVars[kMCdeltaeta_gen] || fgUsedVars[kMCCosChi_rec] || fgUsedVars[kMCWeight_rec] || fgUsedVars[kMCdeltaeta_rec]) {
+    // energy correlators
+
+    float m1 = o2::constants::physics::MassElectron;
+    float m2 = o2::constants::physics::MassElectron;
+
+    ROOT::Math::PtEtaPhiMVector v_lepton1(lepton1.pt(), lepton1.eta(), lepton1.phi(), m1);
+    ROOT::Math::PtEtaPhiMVector v_lepton2(lepton2.pt(), lepton2.eta(), lepton2.phi(), m2);
+    ROOT::Math::PtEtaPhiMVector dilepton = v_lepton1 + v_lepton2;
+
+    float dileptonmass = o2::constants::physics::MassJPsi;
+    if (applyFitMass) {
+      dileptonmass = dilepton.mass();
+    }
+
+    float MassHadron;
+    if constexpr (pairType == kJpsiHadronMass) {
+      MassHadron = TMath::Sqrt(t1.e() * t1.e() - t1.p() * t1.p());
+    }
+    if constexpr (pairType == kJpsiPionMass) {
+      MassHadron = o2::constants::physics::MassPionCharged;
+    }
+    ROOT::Math::PtEtaPhiMVector v1_gen(track.pt(), track.eta(), track.phi(), o2::constants::physics::MassJPsi);
+    ROOT::Math::PtEtaPhiMVector v2_gen(t1.pt(), t1.eta(), t1.phi(), MassHadron);
+    float E_boost_gen = LorentzTransformJpsihadroncosChi("weight_boost", v1_gen, v2_gen);
+    float CosChi_gen = LorentzTransformJpsihadroncosChi("coschi", v1_gen, v2_gen);
+    values[kMCCosChi_gen] = CosChi_gen;
+    values[kMCWeight_gen] = E_boost_gen / o2::constants::physics::MassJPsi;
+    values[kMCdeltaeta_gen] = track.eta() - t1.eta();
+
+    ROOT::Math::PtEtaPhiMVector v1_rec(dilepton.pt(), dilepton.eta(), dilepton.phi(), dileptonmass);
+    ROOT::Math::PtEtaPhiMVector v2_rec(hadron.pt(), hadron.eta(), hadron.phi(), o2::constants::physics::MassPionCharged);
+    values[kMCCosChi_rec] = LorentzTransformJpsihadroncosChi("coschi", v1_rec, v2_rec);
+    float E_boost_rec = LorentzTransformJpsihadroncosChi("weight_boost", v1_rec, v2_rec);
+    values[kMCWeight_rec] = E_boost_rec / v1_rec.M();
+    values[kMCdeltaeta_rec] = dilepton.eta() - hadron.eta();
+  }
+}
+
 template <typename T1, typename T2>
 void VarManager::FillDileptonPhoton(T1 const& dilepton, T2 const& photon, float* values)
 {
@@ -6414,6 +6646,8 @@ void VarManager::FillTrackAlice3(T const& track, float* values)
       values[kITSClusterMap] = track.itsClusterMap();
     }
 
+    values[kIsReconstructed] = track.isReconstructed();
+    values[kNSiliconHits] = track.nSiliconHits();
     values[kITSchi2] = track.itsChi2NCl();
   }
 

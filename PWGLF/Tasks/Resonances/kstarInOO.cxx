@@ -222,7 +222,11 @@ struct kstarInOO {
       histos.add("QA_track_pT_AC", "QA_track_pT_AC", kTH1F, {{13, 0.0, 13.0}});
     }
     if (cfgJetQAHistos) {
-      histos.add("nTriggerQA", "nTriggerQA", kTH1F, {{7, 0.0, 7.0}});
+      histos.add("nTriggerQA", "nTriggerQA", kTH1F, {{8, 0.0, 8.0}});
+      histos.add("nTriggerQA_GoodEv", "nTriggerQA_GoodEv", kTH1F, {{8, 0.0, 8.0}});
+      histos.add("nTriggerQA_GoodTrig", "nTriggerQA_GoodTrig", kTH1F, {{8, 0.0, 8.0}});
+      histos.add("nTriggerQA_GoodEvTrig", "nTriggerQA_GoodEvTrig", kTH1F, {{8, 0.0, 8.0}});
+
       histos.add("JetpT", "Jet pT (GeV/c)", kTH1F, {{4000, 0., 200.}});
       histos.add("JetEta", "Jet Eta", kTH1F, {{100, -1.0, 1.0}});
       histos.add("JetPhi", "Jet Phi", kTH1F, {{80, -1.0, 7.0}});
@@ -249,6 +253,7 @@ struct kstarInOO {
     if (cfgMCHistos) {
       histos.add("nEvents_Gen", "nEvents_Gen", kTH1F, {{4, 0.0, 4.0}});
       histos.add("hUSS_TrueRec", "hUSS_TrueRec", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
+      histos.add("hGen_pT_Raw", "Gen_pT_Raw (GeV/c)", kTH1F, {{800, 0., 40.}});
       histos.add("hGen_pT_GoodEv", "hGen_pT_GoodEv", kTHnSparseF, {cfgCentAxis, ptAxis});
     }
     if (cfgJetHistos) {
@@ -1148,12 +1153,10 @@ struct kstarInOO {
 
     if (!jetderiveddatautilities::selectTrigger(collision, RealTriggerMaskBits))
       return;
-
-    histos.fill(HIST("nEvents"), 1.5); // Before passing the condition
-
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
+    histos.fill(HIST("nEvents"), 1.5); // Before passing the condition
 
     bool INELgt0 = false;
     for (auto& jetTrack : jetTracks) {
@@ -1570,13 +1573,22 @@ struct kstarInOO {
           // check K* PID
           if (goodEv) {
             histos.fill(HIST("hGen_pT_GoodEv"), particle.pt());
-          }
+
+          } // goodEv
+
           if (goodTrig) {
             histos.fill(HIST("hGen_pT_GoodTrig"), particle.pt());
-          }
+
+          } // goodTrig
+
           if (goodEv && goodTrig) {
             histos.fill(HIST("hGen_pT_GoodEvTrig"), particle.pt());
-          }
+
+            if (cfgJetQAHistos) {
+              histos.fill(HIST("nTriggerQA"), 7.5);
+            }
+
+          } // goodEvTrig
         } // cfgJetMCHistos
       } // mcParticles
     } // recocolls (=reconstructed collisions)
@@ -1584,16 +1596,22 @@ struct kstarInOO {
     //=================
     //|| Efficiency
     //=================
-    if (fabs(collision.posZ()) > cfgEventVtxCut)
-      return;
+    // if (fabs(collision.posZ()) > cfgEventVtxCut)
+    //   return;
 
     for (auto& recocoll : recocolls) { // poorly reconstructed
       auto goodEv = jetderiveddatautilities::selectCollision(recocoll, eventSelectionBits);
       if (goodEv) {
         goodEv = jetderiveddatautilities::selectTrigger(recocoll, RealTriggerMaskBits);
       }
+      if (cfgJetMCHistos) {
+        histos.fill(HIST("nEvents_Gen"), 1.5);
+      }
       if (!goodEv)
         return;
+    }
+    if (cfgJetMCHistos) {
+      histos.fill(HIST("nEvents_Gen"), 2.5);
     }
 
     for (auto& particle : mcParticles) {
@@ -1626,7 +1644,7 @@ struct kstarInOO {
       */
 
       if (cfgJetMCHistos) {
-        histos.fill(HIST("nEvents_Gen"), 1.5);
+        histos.fill(HIST("nEvents_Gen"), 3.5);
         histos.fill(HIST("hEffGen_pT"), particle.pt());
       } // cfgJetMCHistos
     } // loop over particles
