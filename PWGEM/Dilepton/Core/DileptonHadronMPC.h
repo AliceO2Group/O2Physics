@@ -937,7 +937,7 @@ struct DileptonHadronMPC {
   }
 
   template <int ev_id, typename TRefTrack, typename TLeptons, typename TLeptonCut>
-  bool fillHadronHadron(TRefTrack const& t1, TRefTrack const& t2, TLeptons const& posLeptons, TLeptons const& negLeptons, TLeptonCut const& cut)
+  bool fillHadronHadron(TRefTrack const& t1, TRefTrack const& t2, TLeptons const&, TLeptons const&, TLeptonCut const&)
   {
     if constexpr (ev_id == 0) {
       if (!fEMTrackCut.IsSelected(t1) || !fEMTrackCut.IsSelected(t2)) { // for charged track
