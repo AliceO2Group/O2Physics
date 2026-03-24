@@ -41,8 +41,11 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
+#include <Math/GenVector/AxisAngle.h>
+#include <Math/GenVector/Rotation3D.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep
+#include <Math/Vector4Dfwd.h>
 #include <TH1.h>
-#include <TLorentzVector.h>
 #include <TString.h>
 #include <TVector3.h>
 
@@ -80,7 +83,7 @@ struct Photon {
     onDCal = (phi < 6 && phi > 4);
   }
 
-  TLorentzVector photon;
+  ROOT::Math::PxPyPzEVector photon;
   float pt;
   float px;
   float py;
@@ -102,11 +105,17 @@ struct Meson {
   }
   Photon pgamma1;
   Photon pgamma2;
-  TLorentzVector pMeson;
+  ROOT::Math::PxPyPzEVector pMeson;
 
   float getMass() const { return pMeson.M(); }
   float getPt() const { return pMeson.Pt(); }
-  float getOpeningAngle() const { return pgamma1.photon.Angle(pgamma2.photon.Vect()); }
+  float getOpeningAngle() const
+  {
+    float cosAngle = pgamma1.photon.Vect().Dot(pgamma2.photon.Vect()) / (pgamma1.photon.P() * pgamma2.photon.P());
+    float angle = std::acos(std::clamp(cosAngle, -1.0f, 1.0f));
+    return angle;
+  }
+  ROOT::Math::PxPyPzEVector getMathVector() const { return pMeson; }
 };
 
 struct EventMixVec {
@@ -695,24 +704,28 @@ struct EmcalPi0Qc {
     }
     const double rotationAngle = o2::constants::math::PIHalf; // 0.78539816339; // rotaion angle 90°
 
-    TLorentzVector lvRotationPhoton1; // photon candidates which get rotated
-    TLorentzVector lvRotationPhoton2; // photon candidates which get rotated
-    TVector3 lvRotationPion;          // rotation axis
+    ROOT::Math::PxPyPzEVector lvRotationPhoton1; // photon candidates which get rotated
+    ROOT::Math::PxPyPzEVector lvRotationPhoton2; // photon candidates which get rotated
+    ROOT::Math::PxPyPzEVector lvRotationPion;    // rotation axis
     for (unsigned int ig3 = 0; ig3 < mPhotons.size(); ++ig3) {
       // continue if photons are identical
       if (ig3 == ig1 || ig3 == ig2) {
         continue;
       }
-      // calculate rotation axis
-      lvRotationPion = (meson.pMeson).Vect();
 
       // initialize photons for rotation
       lvRotationPhoton1.SetPxPyPzE(mPhotons[ig1].px, mPhotons[ig1].py, mPhotons[ig1].pz, mPhotons[ig1].energy);
       lvRotationPhoton2.SetPxPyPzE(mPhotons[ig2].px, mPhotons[ig2].py, mPhotons[ig2].pz, mPhotons[ig2].energy);
+      lvRotationPion = meson.getMathVector();
+
+      // calculate rotation axis and matrix
+      lvRotationPion = lvRotationPhoton1 + lvRotationPhoton2;
+      ROOT::Math::AxisAngle rotationAxis(lvRotationPion.Vect(), rotationAngle);
+      ROOT::Math::Rotation3D rotationMatrix(rotationAxis);
 
       // rotate photons around rotation axis
-      lvRotationPhoton1.Rotate(rotationAngle, lvRotationPion);
-      lvRotationPhoton2.Rotate(rotationAngle, lvRotationPion);
+      lvRotationPhoton1 = rotationMatrix * lvRotationPhoton1;
+      lvRotationPhoton2 = rotationMatrix * lvRotationPhoton2;
 
       // initialize Photon objects for rotated photons
       Photon rotPhoton1(lvRotationPhoton1.Eta(), lvRotationPhoton1.Phi(), lvRotationPhoton1.E(), mPhotons[ig1].id);
