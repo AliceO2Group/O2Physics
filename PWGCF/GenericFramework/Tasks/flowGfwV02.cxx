@@ -105,6 +105,7 @@ struct FlowGfwV02 {
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
+  O2_DEFINE_CONFIGURABLE(cfgPIDEfficiency, bool, false, "Use PID efficiency for efficiency calculation")
   O2_DEFINE_CONFIGURABLE(cfgFixedMultMin, int, 1, "Minimum for fixed nch range");
   O2_DEFINE_CONFIGURABLE(cfgFixedMultMax, int, 3000, "Maximum for fixed nch range");
   O2_DEFINE_CONFIGURABLE(cfgTofPtCut, float, 0.5f, "Minimum pt to use TOF N-sigma")
@@ -186,7 +187,7 @@ struct FlowGfwV02 {
   Service<ccdb::BasicCCDBManager> ccdb;
 
   struct Config {
-    TH1D* mEfficiency = nullptr;
+    TH1D* mEfficiency[4] = {nullptr, nullptr, nullptr, nullptr};
     GFWWeights* mAcceptance;
     bool correctionsLoaded = false;
   } cfg;
@@ -306,17 +307,24 @@ struct FlowGfwV02 {
     pidStates.itsNsigmaCut[IndProtonLow] = nSigmas->getData()[IndProtonLow][kITS];
 
     if (cfgGetNsigmaQA) {
-      if (!cfgUseItsPID) {
-        registry.add("TofTpcNsigma_before", "", {HistType::kTHnSparseD, {cfgPIDHistograms.cfgAxisNsigmaTPC, cfgPIDHistograms.cfgAxisNsigmaTOF, cfgPIDHistograms.cfgAxisPt}});
-        registry.add("TofTpcNsigma_after", "", {HistType::kTHnSparseD, {cfgPIDHistograms.cfgAxisNsigmaTPC, cfgPIDHistograms.cfgAxisNsigmaTOF, cfgPIDHistograms.cfgAxisPt}});
-      }
       if (cfgUseItsPID) {
-        registry.add("TofItsNsigma_before", "", {HistType::kTHnSparseD, {cfgPIDHistograms.cfgAxisNsigmaITS, cfgPIDHistograms.cfgAxisNsigmaTOF, cfgPIDHistograms.cfgAxisPt}});
-        registry.add("TofItsNsigma_after", "", {HistType::kTHnSparseD, {cfgPIDHistograms.cfgAxisNsigmaITS, cfgPIDHistograms.cfgAxisNsigmaTOF, cfgPIDHistograms.cfgAxisPt}});
+        registry.add("QA_PID/before/TofItsNsigma", "", {HistType::kTHnSparseD, {cfgPIDHistograms.cfgAxisNsigmaITS, cfgPIDHistograms.cfgAxisNsigmaTOF, cfgPIDHistograms.cfgAxisPt}});
+      } else {
+        registry.add("QA_PID/before/TofTpcNsigma_pions", "", {HistType::kTHnSparseD, {cfgPIDHistograms.cfgAxisNsigmaTPC, cfgPIDHistograms.cfgAxisNsigmaTOF, cfgPIDHistograms.cfgAxisPt}});
+        registry.add("QA_PID/before/TofTpcNsigma_kaons", "", {HistType::kTHnSparseD, {cfgPIDHistograms.cfgAxisNsigmaTPC, cfgPIDHistograms.cfgAxisNsigmaTOF, cfgPIDHistograms.cfgAxisPt}});
+        registry.add("QA_PID/before/TofTpcNsigma_protons", "", {HistType::kTHnSparseD, {cfgPIDHistograms.cfgAxisNsigmaTPC, cfgPIDHistograms.cfgAxisNsigmaTOF, cfgPIDHistograms.cfgAxisPt}});
       }
 
-      registry.add("TpcdEdx_ptwise", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
-      registry.add("TpcdEdx_ptwise_afterCut", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
+      registry.add("QA_PID/before/TpcdEdx_ptwise_pions", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
+      registry.add("QA_PID/before/ExpTpcdEdx_ptwise_pions", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
+      registry.add("QA_PID/before/ExpSigma_ptwise_pions", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
+      registry.add("QA_PID/before/TpcdEdx_ptwise_kaons", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
+      registry.add("QA_PID/before/ExpTpcdEdx_ptwise_kaons", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
+      registry.add("QA_PID/before/ExpSigma_ptwise_kaons", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
+      registry.add("QA_PID/before/TpcdEdx_ptwise_protons", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
+      registry.add("QA_PID/before/ExpTpcdEdx_ptwise_protons", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
+      registry.add("QA_PID/before/ExpSigma_ptwise_protons", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
+      registry.addClone("QA_PID/before/", "QA_PID/after/");
     }
 
     o2::analysis::gfw::regions.SetNames(cfgRegions->GetNames());
@@ -588,11 +596,22 @@ struct FlowGfwV02 {
       cfg.mAcceptance = ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance.value, timestamp);
     }
     if (!cfgEfficiency.value.empty()) {
-      cfg.mEfficiency = ccdb->getForTimeStamp<TH1D>(cfgEfficiency, timestamp);
-      if (cfg.mEfficiency == nullptr) {
+      cfg.mEfficiency[PidCharged] = ccdb->getForTimeStamp<TH1D>(cfgEfficiency, timestamp);
+      if (cfg.mEfficiency[PidCharged] == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram from %s", cfgEfficiency.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), (void*)cfg.mEfficiency);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), (void*)cfg.mEfficiency[PidCharged]);
+    }
+    if (cfgPIDEfficiency) {
+      const std::array<std::string, 4> pidStrings = {"ch", "pi", "ka", "pr"};
+      for (int i = 1; i < 4; i++) {
+
+        cfg.mEfficiency[i] = ccdb->getForTimeStamp<TH1D>(cfgEfficiency.value + pidStrings[i], timestamp);
+        if (cfg.mEfficiency[i] == nullptr) {
+          LOGF(fatal, "Could not load PID efficiency histogram from %s", cfgEfficiency.value + pidStrings[i].c_str());
+        }
+        LOGF(info, "Loaded PID efficiency histogram from %s (%p)", cfgEfficiency.value + pidStrings[i].c_str(), (void*)cfg.mEfficiency[i]);
+      }
     }
     cfg.correctionsLoaded = true;
   }
@@ -605,7 +624,7 @@ struct FlowGfwV02 {
       cfg.mAcceptance = ccdb->getForRun<GFWWeights>(cfgAcceptance.value, runnumber);
     }
     if (!cfgEfficiency.value.empty()) {
-      cfg.mEfficiency = ccdb->getForRun<TH1D>(cfgEfficiency.value, runnumber);
+      cfg.mEfficiency[PidCharged] = ccdb->getForRun<TH1D>(cfgEfficiency.value, runnumber);
     }
     cfg.correctionsLoaded = true;
   }
@@ -638,64 +657,15 @@ struct FlowGfwV02 {
   }
 
   template <typename TTrack>
-  double getEfficiency(TTrack track)
+  double getEfficiency(TTrack track, const int& pid = PidCharged)
   {
     double eff = 1.;
-    if (cfg.mEfficiency)
-      eff = cfg.mEfficiency->GetBinContent(cfg.mEfficiency->FindBin(track.pt()));
+    if (cfg.mEfficiency[pid])
+      eff = cfg.mEfficiency[pid]->GetBinContent(cfg.mEfficiency[pid]->FindBin(track.pt()));
     if (eff == 0)
       return -1.;
     else
       return 1. / eff;
-  }
-
-  template <typename TTrack>
-  void fillNsigmaAfterCut(TTrack track1, Int_t pid) // function to fill the QA after Nsigma selection
-  {
-    switch (pid) {
-      case 1: // For Pions
-        if (!cfgUseItsPID) {
-          if (cfgGetdEdx) {
-            double tpcExpSignalPi = track1.tpcSignal() - (track1.tpcNSigmaPi() * track1.tpcExpSigmaPi());
-
-            registry.fill(HIST("TpcdEdx_ptwise_afterCut"), track1.pt(), track1.tpcSignal(), track1.tofNSigmaPi());
-            registry.fill(HIST("ExpTpcdEdx_ptwise_afterCut"), track1.pt(), tpcExpSignalPi, track1.tofNSigmaPi());
-            registry.fill(HIST("ExpSigma_ptwise_afterCut"), track1.pt(), track1.tpcExpSigmaPi(), track1.tofNSigmaPi());
-          }
-          registry.fill(HIST("TofTpcNsigma_after"), track1.tpcNSigmaPi(), track1.tofNSigmaPi(), track1.pt());
-        }
-        if (cfgUseItsPID)
-          registry.fill(HIST("TofItsNsigma_after"), pidStates.itsResponse.nSigmaITS<o2::track::PID::Pion>(track1), track1.tofNSigmaPi(), track1.pt());
-        break;
-      case 2: // For Kaons
-        if (!cfgUseItsPID) {
-          if (cfgGetdEdx) {
-            double tpcExpSignalKa = track1.tpcSignal() - (track1.tpcNSigmaKa() * track1.tpcExpSigmaKa());
-
-            registry.fill(HIST("TpcdEdx_ptwise_afterCut"), track1.pt(), track1.tpcSignal(), track1.tofNSigmaKa());
-            registry.fill(HIST("ExpTpcdEdx_ptwise_afterCut"), track1.pt(), tpcExpSignalKa, track1.tofNSigmaKa());
-            registry.fill(HIST("ExpSigma_ptwise_afterCut"), track1.pt(), track1.tpcExpSigmaKa(), track1.tofNSigmaKa());
-          }
-          registry.fill(HIST("TofTpcNsigma_after"), track1.tpcNSigmaKa(), track1.tofNSigmaKa(), track1.pt());
-        }
-        if (cfgUseItsPID)
-          registry.fill(HIST("TofItsNsigma_after"), pidStates.itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1), track1.tofNSigmaKa(), track1.pt());
-        break;
-      case 3: // For Protons
-        if (!cfgUseItsPID) {
-          if (cfgGetdEdx) {
-            double tpcExpSignalPr = track1.tpcSignal() - (track1.tpcNSigmaPr() * track1.tpcExpSigmaPr());
-
-            registry.fill(HIST("TpcdEdx_ptwise_afterCut"), track1.pt(), track1.tpcSignal(), track1.tofNSigmaPr());
-            registry.fill(HIST("ExpTpcdEdx_ptwise_afterCut"), track1.pt(), tpcExpSignalPr, track1.tofNSigmaPr());
-            registry.fill(HIST("ExpSigma_ptwise_afterCut"), track1.pt(), track1.tpcExpSigmaPr(), track1.tofNSigmaPr());
-          }
-          registry.fill(HIST("TofTpcNsigma_after"), track1.tpcNSigmaPr(), track1.tofNSigmaPr(), track1.pt());
-        }
-        if (cfgUseItsPID)
-          registry.fill(HIST("TofItsNsigma_after"), pidStates.itsResponse.nSigmaITS<o2::track::PID::Proton>(track1), track1.tofNSigmaPr(), track1.pt());
-        break;
-    } // end of switch
   }
 
   template <typename TCollision>
@@ -930,11 +900,14 @@ struct FlowGfwV02 {
     for (const auto& track : tracks) {
       processTrack(track, vtxz, xaxis.multiplicity, run, acceptedTracks);
       if (track.eta() > -0.4 && track.eta() < 0.4)
-        pidStates.hPtMid[PidCharged]->Fill(track.pt(), getEfficiency(track));
+        pidStates.hPtMid[PidCharged]->Fill(track.pt(), getEfficiency(track, PidCharged));
       // If PID is identified, fill pt spectrum for the corresponding particle
       int pidInd = getNsigmaPID(track);
       if (pidInd != -1 && track.eta() > -0.4 && track.eta() < 0.4) {
-        pidStates.hPtMid[pidInd]->Fill(track.pt(), getEfficiency(track)); // TODO: Add PID index to the efficiency histogram
+        if (cfgPIDEfficiency)
+          pidStates.hPtMid[pidInd]->Fill(track.pt(), getEfficiency(track, pidInd));
+        else
+          pidStates.hPtMid[pidInd]->Fill(track.pt(), getEfficiency(track, PidCharged)); // Default to charged particles if PID efficiency is not used
       }
     }
     if (cfgConsistentEventFlag & 1)
@@ -1005,6 +978,10 @@ struct FlowGfwV02 {
       fillTrackQA<kBefore>(track, vtxz);
       registry.fill(HIST("trackQA/before/nch_pt"), multiplicity, track.pt());
     }
+
+    if (cfgGetNsigmaQA)
+      fillPidQA<kBefore>(track, getNsigmaPID(track));
+
     if (!trackSelected(track))
       return;
 
@@ -1014,6 +991,9 @@ struct FlowGfwV02 {
       fillTrackQA<kAfter>(track, vtxz);
       registry.fill(HIST("trackQA/after/nch_pt"), multiplicity, track.pt());
     }
+
+    if (cfgGetNsigmaQA)
+      fillPidQA<kAfter>(track, getNsigmaPID(track));
   }
 
   template <DataType dt, typename TTrack>
@@ -1043,6 +1023,70 @@ struct FlowGfwV02 {
     if (withinPtPOI && pidInd == PidProtons)
       fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, PidProtons);
     return;
+  }
+
+  template <QAFillTime ft, typename TTrack>
+  inline void fillPidQA(TTrack track, const int& pid)
+  {
+    // Fill Nsigma QA
+    if (!cfgUseItsPID) {
+      if (ft == kBefore) {
+        registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("TofTpcNsigma_pions"), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt());
+        if (cfgGetdEdx) {
+          double tpcExpSignalPi = track.tpcSignal() - (track.tpcNSigmaPi() * track.tpcExpSigmaPi());
+
+          registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("TpcdEdx_ptwise_pions"), track.pt(), track.tpcSignal(), track.tofNSigmaPi());
+          registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("ExpTpcdEdx_ptwise_pions"), track.pt(), tpcExpSignalPi, track.tofNSigmaPi());
+          registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("ExpSigma_ptwise_pions"), track.pt(), track.tpcExpSigmaPi(), track.tofNSigmaPi());
+        }
+        registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("TofTpcNsigma_kaons"), track.tpcNSigmaKa(), track.tofNSigmaKa(), track.pt());
+        if (cfgGetdEdx) {
+          double tpcExpSignalKa = track.tpcSignal() - (track.tpcNSigmaKa() * track.tpcExpSigmaKa());
+
+          registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("TpcdEdx_ptwise_kaons"), track.pt(), track.tpcSignal(), track.tofNSigmaKa());
+          registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("ExpTpcdEdx_ptwise_kaons"), track.pt(), tpcExpSignalKa, track.tofNSigmaKa());
+          registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("ExpSigma_ptwise_kaons"), track.pt(), track.tpcExpSigmaKa(), track.tofNSigmaKa());
+        }
+        registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("TofTpcNsigma_protons"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
+        if (cfgGetdEdx) {
+          double tpcExpSignalPr = track.tpcSignal() - (track.tpcNSigmaPr() * track.tpcExpSigmaPr());
+
+          registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("TpcdEdx_ptwise_protons"), track.pt(), track.tpcSignal(), track.tofNSigmaPr());
+          registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("ExpTpcdEdx_ptwise_protons"), track.pt(), tpcExpSignalPr, track.tofNSigmaPr());
+          registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("ExpSigma_ptwise_protons"), track.pt(), track.tpcExpSigmaPr(), track.tofNSigmaPr());
+        }
+      } else if (ft == kAfter) {
+        if (pid == PidPions) {
+          registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("TofTpcNsigma_pions"), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt());
+          if (cfgGetdEdx) {
+            double tpcExpSignalPi = track.tpcSignal() - (track.tpcNSigmaPi() * track.tpcExpSigmaPi());
+
+            registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("TpcdEdx_ptwise_pions"), track.pt(), track.tpcSignal(), track.tofNSigmaPi());
+            registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("ExpTpcdEdx_ptwise_pions"), track.pt(), tpcExpSignalPi, track.tofNSigmaPi());
+            registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("ExpSigma_ptwise_pions"), track.pt(), track.tpcExpSigmaPi(), track.tofNSigmaPi());
+          }
+        }
+        if (pid == PidKaons) {
+          registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("TofTpcNsigma_kaons"), track.tpcNSigmaKa(), track.tofNSigmaKa(), track.pt());
+          if (cfgGetdEdx) {
+            double tpcExpSignalKa = track.tpcSignal() - (track.tpcNSigmaKa() * track.tpcExpSigmaKa());
+
+            registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("TpcdEdx_ptwise_kaons"), track.pt(), track.tpcSignal(), track.tofNSigmaKa());
+            registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("ExpTpcdEdx_ptwise_kaons"), track.pt(), tpcExpSignalKa, track.tofNSigmaKa());
+            registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("ExpSigma_ptwise_kaons"), track.pt(), track.tpcExpSigmaKa(), track.tofNSigmaKa());
+          }
+        }
+        if (pid == PidProtons) {
+          registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("TofTpcNsigma_protons"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
+          if (cfgGetdEdx) {
+            double tpcExpSignalPr = track.tpcSignal() - (track.tpcNSigmaPr() * track.tpcExpSigmaPr());
+            registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("TpcdEdx_ptwise_protons"), track.pt(), track.tpcSignal(), track.tofNSigmaPr());
+            registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("ExpTpcdEdx_ptwise_protons"), track.pt(), tpcExpSignalPr, track.tofNSigmaPr());
+            registry.fill(HIST("QA_PID/") + HIST(FillTimeName[ft]) + HIST("ExpSigma_ptwise_protons"), track.pt(), track.tpcExpSigmaPr(), track.tofNSigmaPr());
+          }
+        }
+      }
+    }
   }
 
   template <QAFillTime ft, typename TTrack>
