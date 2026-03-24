@@ -1711,7 +1711,7 @@ struct AnalysisSameEventPairing {
         } else if (sig->GetNProngs() == 2) {
           histNames += Form("MCTruthGenPair_%s;", sig->GetName());
           histNames += Form("MCTruthGenPairSel_%s;", sig->GetName());
-          istNames += Form("MCTruthGenPseudoPolPair_%s;", sig->GetName());
+          histNames += Form("MCTruthGenPseudoPolPair_%s;", sig->GetName());
           histNames += Form("MCTruthGenPseudoPolPairSel_%s;", sig->GetName());
           fHasTwoProngGenMCsignals = true;
           // for these pair level signals, also add histograms for each MCgenAcc cut if specified
