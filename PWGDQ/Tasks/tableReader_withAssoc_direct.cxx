@@ -177,8 +177,8 @@ DECLARE_SOA_COLUMN(MultiplicityNContrib, multiplicityNContribJPsi2ee, float);
 DECLARE_SOA_COLUMN(AmbiguousInBunchPairs, AmbiguousJpsiPairsInBunch, bool);
 DECLARE_SOA_COLUMN(AmbiguousOutOfBunchPairs, AmbiguousJpsiPairsOutOfBunch, bool);
 DECLARE_SOA_COLUMN(Corrassoc, corrassoc, bool);
-DECLARE_SOA_BITMAP_COLUMN(IsMuonSelected, isMuonSelected, 32);        //! Muon track decisions (joinable to FwdTrackAssoc)
-DECLARE_SOA_COLUMN(MuonAmbiguityInBunch, muonAmbiguityInBunch, int8_t);    //! Muon track in-bunch ambiguity
+DECLARE_SOA_BITMAP_COLUMN(IsMuonSelected, isMuonSelected, 32);                //! Muon track decisions (joinable to FwdTrackAssoc)
+DECLARE_SOA_COLUMN(MuonAmbiguityInBunch, muonAmbiguityInBunch, int8_t);       //! Muon track in-bunch ambiguity
 DECLARE_SOA_COLUMN(MuonAmbiguityOutOfBunch, muonAmbiguityOutOfBunch, int8_t); //! Muon track out of bunch ambiguity
 } // namespace dqanalysisflags
 
@@ -187,7 +187,7 @@ DECLARE_SOA_TABLE(MixingHashes, "AOD", "DQANAMIXHASHA", dqanalysisflags::MixingH
 DECLARE_SOA_TABLE(BarrelTrackCuts, "AOD", "DQANATRKCUTS", dqanalysisflags::IsBarrelSelected);
 DECLARE_SOA_TABLE(BarrelAmbiguities, "AOD", "DQBARRELAMB", dqanalysisflags::BarrelAmbiguityInBunch, dqanalysisflags::BarrelAmbiguityOutOfBunch);
 DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTER", dqanalysisflags::IsBarrelSelectedPrefilter);
-DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTS", dqanalysisflags::IsMuonSelected);         //! joinable to FwdTrackAssoc
+DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTS", dqanalysisflags::IsMuonSelected);                                               //! joinable to FwdTrackAssoc
 DECLARE_SOA_TABLE(MuonAmbiguities, "AOD", "DQMUONAMB", dqanalysisflags::MuonAmbiguityInBunch, dqanalysisflags::MuonAmbiguityOutOfBunch); //! joinable to FwdTracks
 
 DECLARE_SOA_TABLE(JPsieeCandidates, "AOD", "DQPSEUDOPROPER",
@@ -1323,6 +1323,7 @@ struct AnalysisMuonSelection {
                         aod::FwdTrackAssoc const& assocs,
                         TEvents const& events, TMuons const& muons)
   {
+    (void)events;
     fNAssocsInBunch.clear();
     fNAssocsOutOfBunch.clear();
 
@@ -1624,7 +1625,6 @@ struct AnalysisSameEventPairing {
         }
       }
     }
-
 
     // get the muon track selection cuts (from analysis-muon-selection task)
     getTaskOptionValue<string>(context, "analysis-muon-selection", "cfgMuonCuts", tempCuts, false);
@@ -2006,6 +2006,8 @@ struct AnalysisSameEventPairing {
                               Preslice<TTrackAssocs>& preslice1, TTrackAssocs const& assocs1, TTracks const& tracks1,
                               Preslice<TMuonAssocs>& preslice2, TMuonAssocs const& assocs2, TMuons const& tracks2)
   {
+    (void)tracks1;
+    (void)tracks2;
     if (events.size() == 0) {
       LOG(warning) << "No events in this TF, going to the next one ...";
       return;
