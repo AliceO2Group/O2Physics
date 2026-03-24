@@ -949,7 +949,7 @@ struct FlattenictyPikp {
     return false;
   }
 
-  template <o2::track::PID::ID id, typename T, typename C>
+  template <int id, typename T, typename C>
   void fillDCA(T const& tracks, C const& collision, aod::BCsWithTimestamps const& /*bcs*/)
   {
     if (trkSelOpt.cfgRejectTrkAtTPCSector) {
@@ -981,7 +981,9 @@ struct FlattenictyPikp {
       if (!isDCAxyWoCut(track)) {
         continue;
       }
-      checkDCA<id>(track, mult, flat);
+      if (track.hasTOF() && (std::sqrt(std::pow(std::fabs(o2::aod::pidutils::tpcNSigma<id>(track)), 2) + std::pow(std::fabs(o2::aod::pidutils::tofNSigma<id>(track)), 2) < trkSelOpt.cfgDcaNsigmaCombinedMax))) {
+        flatchrg.fill(HIST(Cprefix) + HIST(CspeciesAll[id]) + HIST(CpTvsDCAxy), mult, flat, track.pt(), track.dcaXY());
+      }
     }
   }
 
@@ -1569,20 +1571,6 @@ struct FlattenictyPikp {
     return true;
   }
 
-  template <o2::track::PID::ID pid, typename T>
-  inline void checkDCA(const T& track, const float mult, const float flat)
-  {
-    if (std::abs(track.rapidity(o2::track::PID::getMass(pid))) > trkSelOpt.cfgRapMax) {
-      return;
-    }
-    static_for<0, 4>([&](auto i) {
-      constexpr int Cidx = i.value;
-      if (track.hasTOF() && (std::sqrt(std::pow(std::fabs(o2::aod::pidutils::tpcNSigma<Cidx>(track)), 2) + std::pow(std::fabs(o2::aod::pidutils::tofNSigma<Cidx>(track)), 2) < trkSelOpt.cfgDcaNsigmaCombinedMax))) {
-        flatchrg.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxy), mult, flat, track.pt(), track.dcaXY());
-      }
-    });
-  }
-
   template <FillType ft, bool fillHist = false, typename T>
   inline void fillTrackQA(T const& track)
   {
@@ -2004,9 +1992,9 @@ struct FlattenictyPikp {
       v0sPerCollision.bindExternalIndices(&tracks);
       filldEdx(tracksPerCollision, v0sPerCollision, collision, bcs);
       if (cfgFillDCAxyHist) {
-        fillDCA<o2::track::PID::Pion>(tracksPerCollision, collision, bcs);
-        fillDCA<o2::track::PID::Kaon>(tracksPerCollision, collision, bcs);
-        fillDCA<o2::track::PID::Proton>(tracksPerCollision, collision, bcs);
+        static_for<0, 4>([&](auto i) {
+          fillDCA<i>(tracksPerCollision, collision, bcs);
+        });
       }
     }
   }
