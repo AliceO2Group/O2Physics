@@ -23,30 +23,30 @@ namespace o2::aod
 {
 namespace photondeuteron
 {
-DECLARE_SOA_COLUMN(PhotonPt, photonPt, float);                       //! Photon transverse momentum
-DECLARE_SOA_COLUMN(PhotonEta, photonEta, float);                     //! Photon pseudorapidity
-DECLARE_SOA_COLUMN(PhotonPhi, photonPhi, float);                     //! Photon azimuthal angle
-DECLARE_SOA_COLUMN(PhotonMass, photonMass, float);                   //! Photon invariant mass
-DECLARE_SOA_COLUMN(PhotonPosPt, photonPosPt, float);                 //! Positive daughter (e+) transverse momentum
-DECLARE_SOA_COLUMN(PhotonPosEta, photonPosEta, float);               //! Positive daughter (e+) pseudorapidity
-DECLARE_SOA_COLUMN(PhotonPosPhi, photonPosPhi, float);               //! Positive daughter (e+) azimuthal angle
+DECLARE_SOA_COLUMN(PhotonPt, photonPt, float);                         //! Photon transverse momentum
+DECLARE_SOA_COLUMN(PhotonEta, photonEta, float);                       //! Photon pseudorapidity
+DECLARE_SOA_COLUMN(PhotonPhi, photonPhi, float);                       //! Photon azimuthal angle
+DECLARE_SOA_COLUMN(PhotonMass, photonMass, float);                     //! Photon invariant mass
+DECLARE_SOA_COLUMN(PhotonPosPt, photonPosPt, float);                   //! Positive daughter (e+) transverse momentum
+DECLARE_SOA_COLUMN(PhotonPosEta, photonPosEta, float);                 //! Positive daughter (e+) pseudorapidity
+DECLARE_SOA_COLUMN(PhotonPosPhi, photonPosPhi, float);                 //! Positive daughter (e+) azimuthal angle
 DECLARE_SOA_COLUMN(PhotonPosNSigmaElTPC, photonPosNSigmaElTPC, float); //! Positive daughter (e+) NSigma electron TPC
-DECLARE_SOA_COLUMN(PhotonNegPt, photonNegPt, float);                 //! Negative daughter (e-) transverse momentum
-DECLARE_SOA_COLUMN(PhotonNegEta, photonNegEta, float);               //! Negative daughter (e-) pseudorapidity
-DECLARE_SOA_COLUMN(PhotonNegPhi, photonNegPhi, float);               //! Negative daughter (e-) azimuthal angle
+DECLARE_SOA_COLUMN(PhotonNegPt, photonNegPt, float);                   //! Negative daughter (e-) transverse momentum
+DECLARE_SOA_COLUMN(PhotonNegEta, photonNegEta, float);                 //! Negative daughter (e-) pseudorapidity
+DECLARE_SOA_COLUMN(PhotonNegPhi, photonNegPhi, float);                 //! Negative daughter (e-) azimuthal angle
 DECLARE_SOA_COLUMN(PhotonNegNSigmaElTPC, photonNegNSigmaElTPC, float); //! Negative daughter (e-) NSigma electron TPC
-DECLARE_SOA_COLUMN(DeuteronPt, deuteronPt, float);                   //! Deuteron transverse momentum
-DECLARE_SOA_COLUMN(DeuteronEta, deuteronEta, float);                 //! Deuteron pseudorapidity
-DECLARE_SOA_COLUMN(DeuteronPhi, deuteronPhi, float);                 //! Deuteron azimuthal angle
-DECLARE_SOA_COLUMN(DeuteronNSigmaTPC, deuteronNSigmaTPC, float);     //! Deuteron NSigma TPC
-DECLARE_SOA_COLUMN(DeuteronNSigmaTOF, deuteronNSigmaTOF, float);     //! Deuteron NSigma TOF
-DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                       //! Delta phi between photon and deuteron
-DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                       //! Delta eta between photon and deuteron
-DECLARE_SOA_COLUMN(InvMass, invMass, float);                         //! Photon-deuteron invariant mass
-DECLARE_SOA_COLUMN(RelativeMomentum, relativeMomentum, float);       //! Relative momentum k*_pn
+DECLARE_SOA_COLUMN(DeuteronPt, deuteronPt, float);                     //! Deuteron transverse momentum
+DECLARE_SOA_COLUMN(DeuteronEta, deuteronEta, float);                   //! Deuteron pseudorapidity
+DECLARE_SOA_COLUMN(DeuteronPhi, deuteronPhi, float);                   //! Deuteron azimuthal angle
+DECLARE_SOA_COLUMN(DeuteronNSigmaTPC, deuteronNSigmaTPC, float);       //! Deuteron NSigma TPC
+DECLARE_SOA_COLUMN(DeuteronNSigmaTOF, deuteronNSigmaTOF, float);       //! Deuteron NSigma TOF
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                         //! Delta phi between photon and deuteron
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                         //! Delta eta between photon and deuteron
+DECLARE_SOA_COLUMN(InvMass, invMass, float);                           //! Photon-deuteron invariant mass
+DECLARE_SOA_COLUMN(RelativeMomentum, relativeMomentum, float);         //! Relative momentum k*_pn
 } // namespace photondeuteron
 
-DECLARE_SOA_TABLE(PhotonDeuteronPairs, "AOD", "PHOTONDPAIRS",         //! Table for photon-deuteron pairs
+DECLARE_SOA_TABLE(PhotonDeuteronPairs, "AOD", "PHOTONDPAIRS", //! Table for photon-deuteron pairs
                   photondeuteron::PhotonPt,
                   photondeuteron::PhotonEta,
                   photondeuteron::PhotonPhi,
