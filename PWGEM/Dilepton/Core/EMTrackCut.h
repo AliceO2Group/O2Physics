@@ -72,7 +72,7 @@ class EMTrackCut : public TNamed
         return track.phi() > mMinTrackPhi && track.phi() < mMaxTrackPhi;
 
       case EMTrackCuts::kTrackBit:
-          return (track.trackBit() & mTrackBit) >= mTrackBit;
+        return (track.trackBit() & mTrackBit) >= mTrackBit;
 
       default:
         return false;
