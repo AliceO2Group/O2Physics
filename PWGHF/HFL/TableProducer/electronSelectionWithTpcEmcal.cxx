@@ -103,7 +103,7 @@ struct HfElectronSelectionWithTpcEmcal {
   Configurable<float> etaTrackDCalNegativeMin{"etaTrackDCalNegativeMin", -0.6f, "Eta range for electron tracks"};
   Configurable<float> etaTrackDCalPositiveMax{"etaTrackDCalPositiveMax", 0.6f, "Eta range for electron Dcal tracks"};
   Configurable<float> etaTrackDCalPositiveMin{"etaTrackDCalPositiveMin", 0.22f, "Eta range for electron tracks"};
-  Configurable<float> phiTrackDCalMax{"phiTrackDCalMax", 4.5355f, "phi range for electron tracks associated Dcal"};
+  Configurable<float> phiTrackDCalMax{"phiTrackDCalMax", 5.708f, "phi range for electron tracks associated Dcal"};
   Configurable<float> phiTrackDCalMin{"phiTrackDCalMin", 4.5355f, "phi range for electron tracks associated Dcal"};
   Configurable<float> phiTrackEMCalMax{"phiTrackEMCalMax", 3.3621f, "phi range for electron tracks associated Emcal"};
   Configurable<float> phiTrackEMCalMin{"phiTrackEMCalMin", 1.3955f, "phi range for electron tracks associated Emcal"};
@@ -358,7 +358,7 @@ struct HfElectronSelectionWithTpcEmcal {
         massLike = invMassElectron;
         vecLSMass.push_back(massLike);
         isLSElectron = true;
-        if (!isEMcal) {
+        if (isEMcal) {
           registry.fill(HIST("hLikeMass_EMCAL"), massLike);
         } else {
           registry.fill(HIST("hLikeMass_NoEMCAL"), massLike);
@@ -369,7 +369,7 @@ struct HfElectronSelectionWithTpcEmcal {
         massUnLike = invMassElectron;
         vecULSMass.push_back(massUnLike);
         isULSElectron = true;
-        if (!isEMcal) {
+        if (isEMcal) {
           registry.fill(HIST("hUnLikeMass_EMCAL"), massUnLike);
         } else {
           registry.fill(HIST("hUnLikeMass_NoEMCAL"), massUnLike);
