@@ -214,9 +214,7 @@ struct lambdaspincorrderived {
     Configurable<double> nKinematicEta{"nKinematicEta", 1.0, "Number of eta buffer bins"};
     Configurable<double> nKinematicPhi{"nKinematicPhi", 1.0, "Number of phi buffer bins"};
   } cfgKinematicBins;
-
-  Configurable<float> ptMinMixBuffer{"ptMinMixBuffer", 0.7, "Minimum V0 pT for mix buffer"};
-  Configurable<float> ptMaxMixBuffer{"ptMaxMixBuffer", 4.1, "Maximum V0 pT for mix buffer"};
+  Configurable<std::vector<float>> massMixEdges{"massMixEdges", {1.09f, 1.108f, 1.122f, 1.14f}, "Mass-mixing region edges: [SB low | signal | SB high]"};
   Configurable<int> cfgMixLegMode{"cfgMixLegMode", 0, "0=replace leg-1 only, 1=replace leg-2 only, 2=do both one-leg replacements"};
   Configurable<int> cfgV5MassBins{"cfgV5MassBins", 5, "Number of fixed mass bins for V5 mixing"};
   Configurable<int> cfgV5NeighborPt{"cfgV5NeighborPt", 0, "v5: neighbor bins in pT (use symmetric ±N, edge-safe)"};
@@ -482,88 +480,6 @@ struct lambdaspincorrderived {
     }
 
     if (std::abs(c1.lambdaMass() - c2.lambdaMass()) > massMix) {
-      return false;
-    }
-
-    return true;
-  }
-
-  template <typename TA, typename TB, typename TC>
-  bool checkPairKinematics(TA const& A, TB const& B, TC const& C)
-  {
-    if (!usePairKineMatch) {
-      return true;
-    }
-
-    const auto lA = ROOT::Math::PtEtaPhiMVector(A.lambdaPt(), A.lambdaEta(), A.lambdaPhi(), A.lambdaMass());
-    const auto lB = ROOT::Math::PtEtaPhiMVector(B.lambdaPt(), B.lambdaEta(), B.lambdaPhi(), B.lambdaMass());
-    const auto lC = ROOT::Math::PtEtaPhiMVector(C.lambdaPt(), C.lambdaEta(), C.lambdaPhi(), C.lambdaMass());
-
-    // relative pT inside the pair: |pT1 - pT2|
-    const float dPtAB = std::abs(A.lambdaPt() - B.lambdaPt());
-    const float dPtCB = std::abs(C.lambdaPt() - B.lambdaPt());
-    if (std::abs(dPtAB - dPtCB) > ptMix) {
-      return false;
-    }
-
-    // relative longitudinal kinematics: |Δy| or |Δη|
-    if (userapidity) {
-      const float dYAB = std::abs(lA.Rapidity() - lB.Rapidity());
-      const float dYCB = std::abs(lC.Rapidity() - lB.Rapidity());
-      if (std::abs(dYAB - dYCB) > etaMix) {
-        return false;
-      }
-    } else {
-      const float dEtaAB = std::abs(A.lambdaEta() - B.lambdaEta());
-      const float dEtaCB = std::abs(C.lambdaEta() - B.lambdaEta());
-      if (std::abs(dEtaAB - dEtaCB) > etaMix) {
-        return false;
-      }
-    }
-
-    // relative azimuth inside the pair: |Δφ|
-    const float dPhiAB = std::abs(deltaPhiMinusPiToPi((float)A.lambdaPhi(), (float)B.lambdaPhi()));
-    const float dPhiCB = std::abs(deltaPhiMinusPiToPi((float)C.lambdaPhi(), (float)B.lambdaPhi()));
-    if (std::abs(dPhiAB - dPhiCB) > phiMix) {
-      return false;
-    }
-
-    return true;
-  }
-  template <typename TA, typename TB, typename TC>
-  bool checkPairKinematicsMC(TA const& A, TB const& B, TC const& C)
-  {
-    if (!usePairKineMatch) {
-      return true;
-    }
-
-    const auto lA = ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(A), mcacc::lamEta(A), mcacc::lamPhi(A), mcacc::lamMass(A));
-    const auto lB = ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(B), mcacc::lamEta(B), mcacc::lamPhi(B), mcacc::lamMass(B));
-    const auto lC = ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(C), mcacc::lamEta(C), mcacc::lamPhi(C), mcacc::lamMass(C));
-
-    const float dPtAB = std::abs(mcacc::lamPt(A) - mcacc::lamPt(B));
-    const float dPtCB = std::abs(mcacc::lamPt(C) - mcacc::lamPt(B));
-    if (std::abs(dPtAB - dPtCB) > ptMix) {
-      return false;
-    }
-
-    if (userapidity) {
-      const float dYAB = std::abs(lA.Rapidity() - lB.Rapidity());
-      const float dYCB = std::abs(lC.Rapidity() - lB.Rapidity());
-      if (std::abs(dYAB - dYCB) > etaMix) {
-        return false;
-      }
-    } else {
-      const float dEtaAB = std::abs(mcacc::lamEta(A) - mcacc::lamEta(B));
-      const float dEtaCB = std::abs(mcacc::lamEta(C) - mcacc::lamEta(B));
-      if (std::abs(dEtaAB - dEtaCB) > etaMix) {
-        return false;
-      }
-    }
-
-    const float dPhiAB = std::abs(deltaPhiMinusPiToPi((float)mcacc::lamPhi(A), (float)mcacc::lamPhi(B)));
-    const float dPhiCB = std::abs(deltaPhiMinusPiToPi((float)mcacc::lamPhi(C), (float)mcacc::lamPhi(B)));
-    if (std::abs(dPhiAB - dPhiCB) > phiMix) {
       return false;
     }
 
@@ -853,6 +769,24 @@ struct lambdaspincorrderived {
     }
   }
 
+  template <typename A, typename B>
+  static inline bool hasSharedDaughters(const A& a, const B& b)
+  {
+    return (a.protonIndex() == b.protonIndex()) ||
+           (a.pionIndex() == b.pionIndex()) ||
+           (a.protonIndex() == b.pionIndex()) ||
+           (a.pionIndex() == b.protonIndex());
+  }
+
+  template <typename A, typename B>
+  static inline bool hasSharedDaughtersMC(const A& a, const B& b)
+  {
+    return (a.protonIndexmc() == b.protonIndexmc()) ||
+           (a.pionIndexmc() == b.pionIndexmc()) ||
+           (a.protonIndexmc() == b.pionIndexmc()) ||
+           (a.pionIndexmc() == b.protonIndexmc());
+  }
+
   ROOT::Math::PtEtaPhiMVector lambda0, proton0;
   ROOT::Math::PtEtaPhiMVector lambda, proton;
   ROOT::Math::PtEtaPhiMVector lambda2, proton2;
@@ -882,18 +816,8 @@ struct lambdaspincorrderived {
         if (!selectionV0(v02)) {
           continue;
         }
-        if (v0.protonIndex() == v02.protonIndex()) {
+        if (hasSharedDaughters(v0, v02))
           continue;
-        }
-        if (v0.pionIndex() == v02.pionIndex()) {
-          continue;
-        }
-        if (v0.protonIndex() == v02.pionIndex()) {
-          continue;
-        }
-        if (v0.pionIndex() == v02.protonIndex()) {
-          continue;
-        }
         proton2 = ROOT::Math::PtEtaPhiMVector(v02.protonPt(), v02.protonEta(), v02.protonPhi(), o2::constants::physics::MassProton);
         lambda2 = ROOT::Math::PtEtaPhiMVector(v02.lambdaPt(), v02.lambdaEta(), v02.lambdaPhi(), v02.lambdaMass());
         histos.fill(HIST("deltaPhiSame"), RecoDecay::constrainAngle(v0.lambdaPhi() - v02.lambdaPhi(), -TMath::Pi(), harmonicDphi));
@@ -1011,19 +935,8 @@ struct lambdaspincorrderived {
         if (t2.index() <= t1.index()) {
           continue;
         }
-
-        if (t1.protonIndex() == t2.protonIndex()) {
+        if (hasSharedDaughters(t1, t2))
           continue;
-        }
-        if (t1.pionIndex() == t2.pionIndex()) {
-          continue;
-        }
-        if (t1.protonIndex() == t2.pionIndex()) {
-          continue;
-        }
-        if (t1.pionIndex() == t2.protonIndex()) {
-          continue;
-        }
         const bool doMixLeg1 = (cfgMixLegMode.value == 0 || cfgMixLegMode.value == 2);
         const bool doMixLeg2 = (cfgMixLegMode.value == 1 || cfgMixLegMode.value == 2);
 
@@ -1065,13 +978,13 @@ struct lambdaspincorrderived {
             }
 
             if (doMixLeg1) {
-              if (checkKinematics(t1, tX) && checkPairKinematics(t1, t2, tX)) {
+              if (checkKinematics(t1, tX)) {
                 ++nRepl1;
               }
             }
 
             if (doMixLeg2) {
-              if (checkKinematics(t2, tX) && checkPairKinematics(t2, t1, tX)) {
+              if (checkKinematics(t2, tX)) {
                 ++nRepl2;
               }
             }
@@ -1099,7 +1012,7 @@ struct lambdaspincorrderived {
 
             // -------- leg-1 replacement: (tX, t2)
             if (doMixLeg1) {
-              if (checkKinematics(t1, tX) && checkPairKinematics(t1, t2, tX)) {
+              if (checkKinematics(t1, tX)) {
                 fillReplacementControlMap(tX.v0Status(), t2.v0Status(), 1, false,
                                           ROOT::Math::PtEtaPhiMVector(tX.lambdaPt(), tX.lambdaEta(), tX.lambdaPhi(), tX.lambdaMass()),
                                           wBase);
@@ -1126,7 +1039,7 @@ struct lambdaspincorrderived {
 
             // -------- leg-2 replacement: (t1, tX)
             if (doMixLeg2) {
-              if (checkKinematics(t2, tX) && checkPairKinematics(t2, t1, tX)) {
+              if (checkKinematics(t2, tX)) {
                 fillReplacementControlMap(t1.v0Status(), tX.v0Status(), 2, false,
                                           ROOT::Math::PtEtaPhiMVector(tX.lambdaPt(), tX.lambdaEta(), tX.lambdaPhi(), tX.lambdaMass()),
                                           wBase);
@@ -1175,7 +1088,6 @@ struct lambdaspincorrderived {
     if (nMixEvents <= 0 || matches.empty()) {
       return;
     }
-
     std::vector<MatchRef> kept;
     kept.reserve(matches.size());
 
@@ -1188,7 +1100,6 @@ struct lambdaspincorrderived {
         usedEvents.insert(m.collisionIdx);
       }
     }
-
     matches.swap(kept);
   }
 
@@ -1436,21 +1347,8 @@ struct lambdaspincorrderived {
         if (!selectionV0MC(v02)) {
           continue;
         }
-
-        // no shared daughters
-        if (mcacc::prIdx(v0) == mcacc::prIdx(v02)) {
+        if (hasSharedDaughtersMC(v0, v02))
           continue;
-        }
-        if (mcacc::piIdx(v0) == mcacc::piIdx(v02)) {
-          continue;
-        }
-        if (mcacc::prIdx(v0) == mcacc::piIdx(v02)) {
-          continue;
-        }
-        if (mcacc::piIdx(v0) == mcacc::prIdx(v02)) {
-          continue;
-        }
-
         proton2 = ROOT::Math::PtEtaPhiMVector(mcacc::prPt(v02), mcacc::prEta(v02), mcacc::prPhi(v02),
                                               o2::constants::physics::MassProton);
         lambda2 = ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(v02), mcacc::lamEta(v02), mcacc::lamPhi(v02),
@@ -1499,19 +1397,8 @@ struct lambdaspincorrderived {
         if (t2.index() <= t1.index()) {
           continue;
         }
-
-        if (mcacc::prIdx(t1) == mcacc::prIdx(t2)) {
+        if (hasSharedDaughtersMC(t1, t2))
           continue;
-        }
-        if (mcacc::piIdx(t1) == mcacc::piIdx(t2)) {
-          continue;
-        }
-        if (mcacc::prIdx(t1) == mcacc::piIdx(t2)) {
-          continue;
-        }
-        if (mcacc::piIdx(t1) == mcacc::prIdx(t2)) {
-          continue;
-        }
         const bool doMixLeg1 = (cfgMixLegMode.value == 0 || cfgMixLegMode.value == 2);
         const bool doMixLeg2 = (cfgMixLegMode.value == 1 || cfgMixLegMode.value == 2);
 
@@ -1553,13 +1440,13 @@ struct lambdaspincorrderived {
             }
 
             if (doMixLeg1) {
-              if (checkKinematicsMC(t1, tX) && checkPairKinematicsMC(t1, t2, tX)) {
+              if (checkKinematicsMC(t1, tX)) {
                 ++nRepl1;
               }
             }
 
             if (doMixLeg2) {
-              if (checkKinematicsMC(t2, tX) && checkPairKinematicsMC(t2, t1, tX)) {
+              if (checkKinematicsMC(t2, tX)) {
                 ++nRepl2;
               }
             }
@@ -1587,7 +1474,7 @@ struct lambdaspincorrderived {
 
             // -------- leg-1 replacement: (tX, t2)
             if (doMixLeg1) {
-              if (checkKinematicsMC(t1, tX) && checkPairKinematicsMC(t1, t2, tX)) {
+              if (checkKinematicsMC(t1, tX)) {
                 fillReplacementControlMap(mcacc::v0Status(tX), mcacc::v0Status(t2), 1, false,
                                           ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(tX), mcacc::lamEta(tX), mcacc::lamPhi(tX), mcacc::lamMass(tX)),
                                           wBase);
@@ -1614,7 +1501,7 @@ struct lambdaspincorrderived {
 
             // -------- leg-2 replacement: (t1, tX)
             if (doMixLeg2) {
-              if (checkKinematicsMC(t2, tX) && checkPairKinematicsMC(t2, t1, tX)) {
+              if (checkKinematicsMC(t2, tX)) {
                 fillReplacementControlMap(mcacc::v0Status(t1), mcacc::v0Status(tX), 2, false,
                                           ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(tX), mcacc::lamEta(tX), mcacc::lamPhi(tX), mcacc::lamMass(tX)),
                                           wBase);
@@ -1650,6 +1537,7 @@ struct lambdaspincorrderived {
     }
   }
   PROCESS_SWITCH(lambdaspincorrderived, processMCMEV3, "Process MC ME v3 FIFO", false);
+
   static inline float phi0To2Pi(float phi)
   {
     // harmonic=1, min=0 => [0, 2pi)
@@ -1684,7 +1572,6 @@ struct lambdaspincorrderived {
     std::sort(out.begin(), out.end());
     out.erase(std::unique(out.begin(), out.end()), out.end());
   }
-
   static inline void collectNeighborBinsClamp(int b, int nBins, int nNeighbor, std::vector<int>& out)
   {
     out.clear();
@@ -1696,7 +1583,43 @@ struct lambdaspincorrderived {
       }
     }
   }
+  static inline int getMassRegionFromEdges(float m, const std::vector<float>& edges)
+  {
+    if (edges.size() != 4) {
+      return -1;
+    }
 
+    if (m >= edges[0] && m < edges[1])
+      return 0; // low sideband
+    if (m >= edges[1] && m < edges[2])
+      return 1; // signal
+    if (m >= edges[2] && m < edges[3])
+      return 2; // high sideband
+
+    return -1;
+  }
+  static inline int getMassMixClassFromEdges(float m, const std::vector<float>& edges)
+  {
+    // no mass separation
+    if (edges.size() == 2) {
+      if (m >= edges[0] && m < edges[1])
+        return 0;
+      return -1;
+    }
+
+    // 3 regions: SB low, signal, SB high
+    if (edges.size() == 4) {
+      if (m >= edges[0] && m < edges[1])
+        return 0; // low sideband
+      if (m >= edges[1] && m < edges[2])
+        return 1; // signal
+      if (m >= edges[2] && m < edges[3])
+        return 0; // high sideband merged with low sideband
+      return -1;
+    }
+
+    return -1;
+  }
   static inline uint64_t splitmix64(uint64_t x)
   {
     // simple deterministic hash for reproducible shuffling
@@ -1712,7 +1635,7 @@ struct lambdaspincorrderived {
       ptMin.value,
       ptMax.value,
       ptMix.value,
-      v0eta.value,
+      v0etaMixBuffer.value,
       etaMix.value,
       phiMix.value,
       MassMin.value,
@@ -1759,7 +1682,7 @@ struct lambdaspincorrderived {
         }
 
         const int phiB = mb.phiBin(RecoDecay::constrainAngle(t.lambdaPhi(), 0.0, harmonic));
-        const int mB = mb.massBin(t.lambdaMass());
+        const int mB = getMassMixClassFromEdges(t.lambdaMass(), massMixEdges.value);
         const int rB = mb.radiusBin(t.v0Radius());
 
         if (ptB < 0 || etaB < 0 || phiB < 0 || mB < 0 || rB < 0) {
@@ -1807,48 +1730,103 @@ struct lambdaspincorrderived {
       }
 
       const int phiB = mb.phiBin(RecoDecay::constrainAngle(tRep.lambdaPhi(), 0.0, harmonic));
-      const int mB = mb.massBin(tRep.lambdaMass());
+      const int mB = getMassMixClassFromEdges(tRep.lambdaMass(), massMixEdges.value);
       const int rB = mb.radiusBin(tRep.v0Radius());
 
       if (ptB < 0 || etaB < 0 || phiB < 0 || mB < 0 || rB < 0) {
         return;
       }
+      auto collectFromBins = [&](const std::vector<int>& ptUseBins,
+                                 const std::vector<int>& etaUseBins,
+                                 const std::vector<int>& phiUseBins) {
+        for (int ptUse : ptUseBins) {
+          for (int etaUse : etaUseBins) {
+            for (int phiUse : phiUseBins) {
+              const auto& vec = buffer[linearKeyR(colBin, status, ptUse, etaUse, phiUse, mB, rB,
+                                                  nStat, nPt, nEta, nPhi, nM, nR)];
 
-      collectNeighborBinsClamp(ptB, nPt, nN_pt, ptBins);
-      collectNeighborBinsClamp(etaB, nEta, nN_eta, etaBins);
-      collectNeighborBinsPhi(phiB, nPhi, nN_phi, phiBins);
+              for (auto const& bc : vec) {
+                if (bc.collisionIdx == curColIdx)
+                  continue;
 
-      for (int ptUse : ptBins) {
-        for (int etaUse : etaBins) {
-          for (int phiUse : phiBins) {
-            const auto& vec = buffer[linearKeyR(colBin, status, ptUse, etaUse, phiUse, mB, rB,
-                                                nStat, nPt, nEta, nPhi, nM, nR)];
+                auto tX = V0s.iteratorAt(static_cast<uint64_t>(bc.rowIndex));
 
-            for (auto const& bc : vec) {
-              if (bc.collisionIdx == curColIdx) {
-                continue;
+                if (!selectionV0(tX))
+                  continue;
+                if (!checkKinematics(tRep, tX))
+                  continue;
+
+                if (tX.globalIndex() == tRep.globalIndex())
+                  continue;
+                if (tX.globalIndex() == tKeep.globalIndex())
+                  continue;
+
+                if (hasSharedDaughters(tX, tKeep))
+                  continue;
+                if (hasSharedDaughters(tX, tRep))
+                  continue;
+
+                matches.push_back(MatchRef{bc.collisionIdx, bc.rowIndex});
               }
+            }
+          }
+        }
+      };
 
-              auto tX = V0s.iteratorAt(static_cast<uint64_t>(bc.rowIndex));
+      matches.clear();
 
-              if (!selectionV0(tX)) {
-                continue;
-              }
-              if (!checkKinematics(tRep, tX)) {
-                continue;
-              }
-              if (!checkPairKinematics(tRep, tKeep, tX)) {
-                continue;
-              }
+      // 1) exact bin first
+      ptBins.clear();
+      etaBins.clear();
+      phiBins.clear();
 
-              if (tX.globalIndex() == tRep.globalIndex()) {
-                continue;
-              }
-              if (tX.globalIndex() == tKeep.globalIndex()) {
-                continue;
-              }
+      ptBins.push_back(ptB);
+      etaBins.push_back(etaB);
+      phiBins.push_back(phiB);
 
-              matches.push_back(MatchRef{bc.collisionIdx, bc.rowIndex});
+      collectFromBins(ptBins, etaBins, phiBins);
+
+      // 2) if exact bin gives fewer than required matches, also search neighbors
+      const int targetMatches = (cfgV5MaxMatches.value > 0) ? cfgV5MaxMatches.value : 1;
+
+      if ((int)matches.size() < targetMatches) {
+        std::vector<int> ptBinsN, etaBinsN, phiBinsN;
+        collectNeighborBinsClamp(ptB, nPt, nN_pt, ptBinsN);
+        collectNeighborBinsClamp(etaB, nEta, nN_eta, etaBinsN);
+        collectNeighborBinsPhi(phiB, nPhi, nN_phi, phiBinsN);
+
+        for (int ptUse : ptBinsN) {
+          for (int etaUse : etaBinsN) {
+            for (int phiUse : phiBinsN) {
+              if (ptUse == ptB && etaUse == etaB && phiUse == phiB)
+                continue;
+
+              const auto& vec = buffer[linearKeyR(colBin, status, ptUse, etaUse, phiUse, mB, rB,
+                                                  nStat, nPt, nEta, nPhi, nM, nR)];
+
+              for (auto const& bc : vec) {
+                if (bc.collisionIdx == curColIdx)
+                  continue;
+
+                auto tX = V0s.iteratorAt(static_cast<uint64_t>(bc.rowIndex));
+
+                if (!selectionV0(tX))
+                  continue;
+                if (!checkKinematics(tRep, tX))
+                  continue;
+
+                if (tX.globalIndex() == tRep.globalIndex())
+                  continue;
+                if (tX.globalIndex() == tKeep.globalIndex())
+                  continue;
+
+                if (hasSharedDaughters(tX, tKeep))
+                  continue;
+                if (hasSharedDaughters(tX, tRep))
+                  continue;
+
+                matches.push_back(MatchRef{bc.collisionIdx, bc.rowIndex});
+              }
             }
           }
         }
@@ -1895,20 +1873,8 @@ struct lambdaspincorrderived {
         if (t2.index() <= t1.index()) {
           continue;
         }
-
-        if (t1.protonIndex() == t2.protonIndex()) {
+        if (hasSharedDaughters(t1, t2))
           continue;
-        }
-        if (t1.pionIndex() == t2.pionIndex()) {
-          continue;
-        }
-        if (t1.protonIndex() == t2.pionIndex()) {
-          continue;
-        }
-        if (t1.pionIndex() == t2.protonIndex()) {
-          continue;
-        }
-
         const bool doMixLeg1 = (cfgMixLegMode.value == 0 || cfgMixLegMode.value == 2);
         const bool doMixLeg2 = (cfgMixLegMode.value == 1 || cfgMixLegMode.value == 2);
 
@@ -1940,15 +1906,70 @@ struct lambdaspincorrderived {
                                     ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass()),
                                     1.0f);
         }
-        const int nReuse = static_cast<int>(matches1.size() + matches2.size());
-        if (nReuse <= 0) {
-          continue;
-        }
-        const float wSE = 1.0f / static_cast<float>(nReuse);
-
+        int nFill1 = 0;
+        int nFill2 = 0;
+        // count actual accepted fills for leg-1 replacement
         if (doMixLeg1) {
           for (auto const& m : matches1) {
             auto tX = V0s.iteratorAt(static_cast<uint64_t>(m.rowIndex));
+            if (!selectionV0(tX))
+              continue;
+            if (!checkKinematics(t1, tX))
+              continue;
+            if (tX.globalIndex() == t1.globalIndex())
+              continue;
+            if (tX.globalIndex() == t2.globalIndex())
+              continue;
+            if (hasSharedDaughters(tX, t2))
+              continue;
+            if (hasSharedDaughters(tX, t1))
+              continue;
+            ++nFill1;
+          }
+        }
+
+        // count actual accepted fills for leg-2 replacement
+        if (doMixLeg2) {
+          for (auto const& m : matches2) {
+            auto tY = V0s.iteratorAt(static_cast<uint64_t>(m.rowIndex));
+            if (!checkKinematics(t2, tY))
+              continue;
+            if (!selectionV0(tY))
+              continue;
+            if (tY.globalIndex() == t2.globalIndex())
+              continue;
+            if (tY.globalIndex() == t1.globalIndex())
+              continue;
+            if (hasSharedDaughters(tY, t2))
+              continue;
+            if (hasSharedDaughters(tY, t1))
+              continue;
+            ++nFill2;
+          }
+        }
+
+        if (nFill1 <= 0 && nFill2 <= 0) {
+          continue;
+        }
+        const int nUse = nFill1 + nFill2;
+        const float wSE = (nUse > 0) ? 1.0f / static_cast<float>(nUse) : 0.0f;
+
+        if (doMixLeg1 && nFill1 > 0) {
+          for (auto const& m : matches1) {
+            auto tX = V0s.iteratorAt(static_cast<uint64_t>(m.rowIndex));
+            if (!selectionV0(tX)) {
+              continue;
+            }
+            if (!checkKinematics(t1, tX))
+              continue;
+            if (tX.globalIndex() == t1.globalIndex())
+              continue;
+            if (tX.globalIndex() == t2.globalIndex())
+              continue;
+            if (hasSharedDaughters(tX, t1))
+              continue;
+            if (hasSharedDaughters(tX, t2))
+              continue;
             fillReplacementControlMap(tX.v0Status(), t2.v0Status(), 1, false,
                                       ROOT::Math::PtEtaPhiMVector(tX.lambdaPt(), tX.lambdaEta(), tX.lambdaPhi(), tX.lambdaMass()),
                                       wSE);
@@ -1976,9 +1997,22 @@ struct lambdaspincorrderived {
           }
         }
 
-        if (doMixLeg2) {
+        if (doMixLeg2 && nFill2 > 0) {
           for (auto const& m : matches2) {
             auto tY = V0s.iteratorAt(static_cast<uint64_t>(m.rowIndex));
+            if (!selectionV0(tY)) {
+              continue;
+            }
+            if (!checkKinematics(t2, tY))
+              continue;
+            if (tY.globalIndex() == t2.globalIndex())
+              continue;
+            if (tY.globalIndex() == t1.globalIndex())
+              continue;
+            if (hasSharedDaughters(tY, t1))
+              continue;
+            if (hasSharedDaughters(tY, t2))
+              continue;
             fillReplacementControlMap(t1.v0Status(), tY.v0Status(), 2, false,
                                       ROOT::Math::PtEtaPhiMVector(tY.lambdaPt(), tY.lambdaEta(), tY.lambdaPhi(), tY.lambdaMass()),
                                       wSE);
@@ -2015,7 +2049,7 @@ struct lambdaspincorrderived {
       ptMin.value,
       ptMax.value,
       ptMix.value,
-      v0eta.value,
+      v0etaMixBuffer.value,
       etaMix.value,
       phiMix.value,
       MassMin.value,
@@ -2062,7 +2096,7 @@ struct lambdaspincorrderived {
         }
 
         const int phiB = mb.phiBin(RecoDecay::constrainAngle(mcacc::lamPhi(t), 0.0, harmonic));
-        const int mB = mb.massBin(mcacc::lamMass(t));
+        const int mB = getMassMixClassFromEdges(mcacc::lamMass(t), massMixEdges.value);
         const int rB = mb.radiusBin(mcacc::v0Radius(t));
 
         if (ptB < 0 || etaB < 0 || phiB < 0 || mB < 0 || rB < 0) {
@@ -2110,51 +2144,79 @@ struct lambdaspincorrderived {
       }
 
       const int phiB = mb.phiBin(RecoDecay::constrainAngle(mcacc::lamPhi(tRep), 0.0, harmonic));
-      const int mB = mb.massBin(mcacc::lamMass(tRep));
+      const int mB = getMassMixClassFromEdges(mcacc::lamMass(tRep), massMixEdges.value);
       const int rB = mb.radiusBin(mcacc::v0Radius(tRep));
 
       if (ptB < 0 || etaB < 0 || phiB < 0 || mB < 0 || rB < 0) {
         return;
       }
+      auto collectFromBins = [&](const std::vector<int>& ptUseBins,
+                                 const std::vector<int>& etaUseBins,
+                                 const std::vector<int>& phiUseBins) {
+        for (int ptUse : ptUseBins) {
+          for (int etaUse : etaUseBins) {
+            for (int phiUse : phiUseBins) {
+              const auto& vec = buffer[linearKeyR(colBin, status, ptUse, etaUse, phiUse, mB, rB,
+                                                  nStat, nPt, nEta, nPhi, nM, nR)];
 
-      collectNeighborBinsClamp(ptB, nPt, nN_pt, ptBins);
-      collectNeighborBinsClamp(etaB, nEta, nN_eta, etaBins);
-      collectNeighborBinsPhi(phiB, nPhi, nN_phi, phiBins);
+              for (auto const& bc : vec) {
+                if (bc.collisionIdx == curColIdx)
+                  continue;
 
-      for (int ptUse : ptBins) {
-        for (int etaUse : etaBins) {
-          for (int phiUse : phiBins) {
-            const auto& vec = buffer[linearKeyR(colBin, status, ptUse, etaUse, phiUse, mB, rB,
-                                                nStat, nPt, nEta, nPhi, nM, nR)];
+                auto tX = V0sMC.iteratorAt(static_cast<uint64_t>(bc.rowIndex));
 
-            for (auto const& bc : vec) {
-              if (bc.collisionIdx == curColIdx) {
-                continue;
+                if (!selectionV0MC(tX))
+                  continue;
+                if (!checkKinematicsMC(tRep, tX))
+                  continue;
+
+                if (tX.globalIndex() == tRep.globalIndex())
+                  continue;
+                if (tX.globalIndex() == tKeep.globalIndex())
+                  continue;
+
+                if (hasSharedDaughtersMC(tX, tKeep))
+                  continue;
+                if (hasSharedDaughtersMC(tX, tRep))
+                  continue;
+
+                matches.push_back(MatchRef{bc.collisionIdx, bc.rowIndex});
               }
-
-              auto tX = V0sMC.iteratorAt(static_cast<uint64_t>(bc.rowIndex));
-
-              if (!selectionV0MC(tX)) {
-                continue;
-              }
-              if (!checkKinematicsMC(tRep, tX)) {
-                continue;
-              }
-              if (!checkPairKinematicsMC(tRep, tKeep, tX)) {
-                continue;
-              }
-
-              if (tX.globalIndex() == tRep.globalIndex()) {
-                continue;
-              }
-              if (tX.globalIndex() == tKeep.globalIndex()) {
-                continue;
-              }
-
-              matches.push_back(MatchRef{bc.collisionIdx, bc.rowIndex});
             }
           }
         }
+      };
+
+      matches.clear();
+      // 1) try exact bin only
+      ptBins.clear();
+      etaBins.clear();
+      phiBins.clear();
+
+      ptBins.push_back(ptB);
+      etaBins.push_back(etaB);
+      phiBins.push_back(phiB);
+
+      collectFromBins(ptBins, etaBins, phiBins);
+
+      // 2) if exact bin does not give enough, top up from neighbors
+      const int targetMatches = (cfgV5MaxMatches.value > 0) ? cfgV5MaxMatches.value : 1;
+
+      if ((int)matches.size() < targetMatches) {
+        collectNeighborBinsClamp(ptB, nPt, nN_pt, ptBins);
+        collectNeighborBinsClamp(etaB, nEta, nN_eta, etaBins);
+        collectNeighborBinsPhi(phiB, nPhi, nN_phi, phiBins);
+
+        collectFromBins(ptBins, etaBins, phiBins);
+      }
+
+      // if nothing found, then try neighboring bins
+      if (matches.empty()) {
+        collectNeighborBinsClamp(ptB, nPt, nN_pt, ptBins);
+        collectNeighborBinsClamp(etaB, nEta, nN_eta, etaBins);
+        collectNeighborBinsPhi(phiB, nPhi, nN_phi, phiBins);
+
+        collectFromBins(ptBins, etaBins, phiBins);
       }
 
       std::sort(matches.begin(), matches.end(),
@@ -2198,20 +2260,8 @@ struct lambdaspincorrderived {
         if (t2.index() <= t1.index()) {
           continue;
         }
-
-        if (mcacc::prIdx(t1) == mcacc::prIdx(t2)) {
+        if (hasSharedDaughtersMC(t1, t2))
           continue;
-        }
-        if (mcacc::piIdx(t1) == mcacc::piIdx(t2)) {
-          continue;
-        }
-        if (mcacc::prIdx(t1) == mcacc::piIdx(t2)) {
-          continue;
-        }
-        if (mcacc::piIdx(t1) == mcacc::prIdx(t2)) {
-          continue;
-        }
-
         const bool doMixLeg1 = (cfgMixLegMode.value == 0 || cfgMixLegMode.value == 2);
         const bool doMixLeg2 = (cfgMixLegMode.value == 1 || cfgMixLegMode.value == 2);
 
@@ -2241,19 +2291,77 @@ struct lambdaspincorrderived {
                                     1.0f);
         }
 
-        const int nReuse = static_cast<int>(matches1.size() + matches2.size());
-        if (nReuse <= 0) {
-          continue;
-        }
+        int nFill1 = 0;
+        int nFill2 = 0;
 
-        const float wSE = 1.0f / static_cast<float>(nReuse);
-
+        // count actual accepted fills for leg-1 replacement
         if (doMixLeg1) {
           for (auto const& m : matches1) {
             auto tX = V0sMC.iteratorAt(static_cast<uint64_t>(m.rowIndex));
+
+            if (!selectionV0MC(tX))
+              continue;
+            if (!checkKinematicsMC(t1, tX))
+              continue;
+            if (tX.globalIndex() == t1.globalIndex())
+              continue;
+            if (tX.globalIndex() == t2.globalIndex())
+              continue;
+            if (hasSharedDaughtersMC(tX, t1))
+              continue;
+            if (hasSharedDaughtersMC(tX, t2))
+              continue;
+            ++nFill1;
+          }
+        }
+
+        // count actual accepted fills for leg-2 replacement
+        if (doMixLeg2) {
+          for (auto const& m : matches2) {
+            auto tY = V0sMC.iteratorAt(static_cast<uint64_t>(m.rowIndex));
+
+            if (!selectionV0MC(tY))
+              continue;
+            if (!checkKinematicsMC(t2, tY))
+              continue;
+            if (tY.globalIndex() == t2.globalIndex())
+              continue;
+            if (tY.globalIndex() == t1.globalIndex())
+              continue;
+            if (hasSharedDaughtersMC(tY, t1))
+              continue;
+            if (hasSharedDaughtersMC(tY, t2))
+              continue;
+            ++nFill2;
+          }
+        }
+
+        if (nFill1 <= 0 && nFill2 <= 0) {
+          continue;
+        }
+        const int nUse = nFill1 + nFill2;
+        const float wSE = (nUse > 0) ? 1.0f / static_cast<float>(nUse) : 0.0f;
+
+        if (doMixLeg1 && nFill1 > 0) {
+          for (auto const& m : matches1) {
+            auto tX = V0sMC.iteratorAt(static_cast<uint64_t>(m.rowIndex));
+
+            if (!selectionV0MC(tX))
+              continue;
+            if (!checkKinematicsMC(t1, tX))
+              continue;
+            if (tX.globalIndex() == t1.globalIndex())
+              continue;
+            if (tX.globalIndex() == t2.globalIndex())
+              continue;
+            if (hasSharedDaughtersMC(tX, t1))
+              continue;
+            if (hasSharedDaughtersMC(tX, t2))
+              continue;
             fillReplacementControlMap(mcacc::v0Status(tX), mcacc::v0Status(t2), 1, false,
                                       ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(tX), mcacc::lamEta(tX), mcacc::lamPhi(tX), mcacc::lamMass(tX)),
                                       wSE);
+
             auto pX = ROOT::Math::PtEtaPhiMVector(mcacc::prPt(tX), mcacc::prEta(tX), mcacc::prPhi(tX),
                                                   o2::constants::physics::MassProton);
             auto lX = ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(tX), mcacc::lamEta(tX), mcacc::lamPhi(tX),
@@ -2283,13 +2391,26 @@ struct lambdaspincorrderived {
                            1, meWeight, 1);
           }
         }
-
-        if (doMixLeg2) {
+        if (doMixLeg2 && nFill2 > 0) {
           for (auto const& m : matches2) {
             auto tY = V0sMC.iteratorAt(static_cast<uint64_t>(m.rowIndex));
+
+            if (!selectionV0MC(tY))
+              continue;
+            if (!checkKinematicsMC(t2, tY))
+              continue;
+            if (tY.globalIndex() == t2.globalIndex())
+              continue;
+            if (tY.globalIndex() == t1.globalIndex())
+              continue;
+            if (hasSharedDaughtersMC(tY, t1))
+              continue;
+            if (hasSharedDaughtersMC(tY, t2))
+              continue;
             fillReplacementControlMap(mcacc::v0Status(t1), mcacc::v0Status(tY), 2, false,
                                       ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(tY), mcacc::lamEta(tY), mcacc::lamPhi(tY), mcacc::lamMass(tY)),
                                       wSE);
+
             auto p1 = ROOT::Math::PtEtaPhiMVector(mcacc::prPt(t1), mcacc::prEta(t1), mcacc::prPhi(t1),
                                                   o2::constants::physics::MassProton);
             auto l1 = ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(t1), mcacc::lamEta(t1), mcacc::lamPhi(t1),
