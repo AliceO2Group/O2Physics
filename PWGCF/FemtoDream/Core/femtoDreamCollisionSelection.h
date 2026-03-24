@@ -219,35 +219,40 @@ class FemtoDreamCollisionSelection
     mHistogramQn = registry;
     mHistogramQn->add("Event/centFT0CBeforeQn", "; cent", kTH1F, {{10, 0, 100}});
     mHistogramQn->add("Event/centFT0CAfterQn", "; cent", kTH1F, {{10, 0, 100}});
-    mHistogramQn->add("Event/centVsqn", "; cent; qn", kTH2F, {{10, 0, 100}, {100, 0, 1000}});
+    mHistogramQn->add("Event/centVsqn", "; cent; qn", kTH2F, {{10, 0, 100}, {1000, 0, 1000}});
     mHistogramQn->add("Event/centVsqnVsSpher", "; cent; qn; Sphericity", kTH3F, {{10, 0, 100}, {100, 0, 1000}, {100, 0, 1}});
     mHistogramQn->add("Event/qnBin", "; qnBin; entries", kTH1F, {{20, 0, 20}});
     mHistogramQn->add("Event/psiEP", "; #Psi_{EP} (deg); entries", kTH1F, {{100, 0, 180}});
+    mHistogramQn->add("Event/epReso_FT0CTPC", "; cent; qnBin; reso_ft0c_tpc", kTH2F, {{10, 0, 100}, {10, 0, 10}});
+    mHistogramQn->add("Event/epReso_FT0ATPC", "; cent; qnBin; reso_ft0a_tpc", kTH2F, {{10, 0, 100}, {10, 0, 10}});
+    mHistogramQn->add("Event/epReso_FT0CFT0A", "; cent; qnBin; reso_ft0c_ft0a", kTH2F, {{10, 0, 100}, {10, 0, 10}});
+    mHistogramQn->add("Event/epReso_count", "; cent; qnBin; count", kTH2F, {{10, 0, 100}, {10, 0, 10}});
 
     return;
   }
 
   /// Initializes histograms for the flow calculation
   /// \param registry Histogram registry to be passed
-  void initFlow(HistogramRegistry* registry, bool doQnSeparation, int mumQnBins = 10, int binPt = 100, int binEta = 32)
+  void initFlow(HistogramRegistry* registry, bool doQnSeparation, int mumQnBins = 10, int centBins = 10)
   {
     if (!mCutsSet) {
       LOGF(error, "Event selection not set - quitting!");
     }
-    mReQthisEvt = new TH2D("ReQthisEvt", "", binPt, 0., 5., binEta, -0.8, 0.8);
-    mImQthisEvt = new TH2D("ImQthisEvt", "", binPt, 0., 5., binEta, -0.8, 0.8);
-    mReQ2thisEvt = new TH2D("ReQ2thisEvt", "", binPt, 0., 5., binEta, -0.8, 0.8);
-    mImQ2thisEvt = new TH2D("ImQ2thisEvt", "", binPt, 0., 5., binEta, -0.8, 0.8);
-    mMQthisEvt = new TH2D("MQthisEvt", "", binPt, 0., 5., binEta, -0.8, 0.8);
-    mMQWeightthisEvt = new TH2D("MQWeightthisEvt", "", binPt, 0., 5., binEta, -0.8, 0.8);
 
     mHistogramQn = registry;
-    mHistogramQn->add<TProfile>("Event/profileC22", "; cent; c22", kTProfile, {{10, 0, 100}}, "s");
-    mHistogramQn->add<TProfile>("Event/profileC24", "; cent; c24", kTProfile, {{10, 0, 100}}, "s");
+    mHistogramQn->add("Event/hN2allQn", ";centrality; #sum Re(Q_{2,A} Q_{2,B}^{*})", kTH1F, {{centBins, 0, 100}});
+    mHistogramQn->add("Event/hD2allQn", ";centrality; #sum (W_{A} W_{B})", kTH1F, {{centBins, 0, 100}});
+    mHistogramQn->get<TH1>(HIST("Event/hN2allQn"))->Sumw2();
+    mHistogramQn->get<TH1>(HIST("Event/hD2allQn"))->Sumw2();
 
     if (doQnSeparation) {
       for (int iqn(0); iqn < mumQnBins; ++iqn) {
-        profilesC22.push_back(mHistogramQn->add<TProfile>(("Qn/profileC22_" + std::to_string(iqn)).c_str(), "; cent; c22", kTProfile, {{10, 0, 100}}, "s"));
+        hN2.push_back(mHistogramQn->add(("Qn/hN2_" + std::to_string(iqn)).c_str(), ";centrality; #sum Re(Q_{2,A} Q_{2,B}^{*})", kTH1F, {{centBins, 0, 100}}));
+        hD2.push_back(mHistogramQn->add(("Qn/hD2_" + std::to_string(iqn)).c_str(), ";centrality; #sum (W_{A} W_{B})", kTH1F, {{centBins, 0, 100}}));
+      }
+      for (int iqn(0); iqn < mumQnBins; ++iqn) {
+        std::get<std::shared_ptr<TH1>>(hN2[iqn])->Sumw2();
+        std::get<std::shared_ptr<TH1>>(hD2[iqn])->Sumw2();
       }
     }
     return;
@@ -329,9 +334,17 @@ class FemtoDreamCollisionSelection
   /// \param col Collision
   /// \return value of the qn-vector of FT0C of the event
   template <typename T>
-  float computeqnVec(T const& col)
+  float computeqnVec(T const& col, int qvecMod = 0)
   {
-    double qn = std::sqrt(col.qvecFT0CReVec()[0] * col.qvecFT0CReVec()[0] + col.qvecFT0CImVec()[0] * col.qvecFT0CImVec()[0]) * std::sqrt(col.sumAmplFT0C());
+    double qn = -999.f;
+    if (qvecMod == 0) {
+      qn = std::sqrt(col.qvecFT0CReVec()[0] * col.qvecFT0CReVec()[0] + col.qvecFT0CImVec()[0] * col.qvecFT0CImVec()[0]) * std::sqrt(col.sumAmplFT0C());
+    } else if (qvecMod == 1) {
+      qn = std::sqrt(col.qvecFT0AReVec()[0] * col.qvecFT0AReVec()[0] + col.qvecFT0AImVec()[0] * col.qvecFT0AImVec()[0]) * std::sqrt(col.sumAmplFT0A());
+    } else {
+      LOGP(error, "no selected detector of Qvec for ESE ");
+      return qn;
+    }
     return qn;
   }
 
@@ -341,13 +354,41 @@ class FemtoDreamCollisionSelection
   /// \param nmode EP in which harmonic(default 2nd harmonic)
   /// \return angle of the event plane (rad) of FT0C of the event
   template <typename T>
-  float computeEP(T const& col, int nmode)
+  float computeEP(T const& col, int nmode, int qvecMod)
   {
-    double EP = ((1. / nmode) * (TMath::ATan2(col.qvecFT0CImVec()[0], col.qvecFT0CReVec()[0])));
-    if (EP < 0)
+    double EP = -999.f;
+    if (qvecMod == 0) {
+      EP = ((1. / nmode) * (TMath::ATan2(col.qvecFT0CImVec()[0], col.qvecFT0CReVec()[0])));
+    } else if (qvecMod == 1) {
+      EP = ((1. / nmode) * (TMath::ATan2(col.qvecFT0AImVec()[0], col.qvecFT0AReVec()[0])));
+    } else if (qvecMod == 2) {
+      EP = ((1. / nmode) * (TMath::ATan2(col.qvecTPCallImVec()[0], col.qvecTPCallReVec()[0])));
+    } else {
+      LOGP(error, "no selected detector of Qvec for EP");
+      return EP;
+    }
+
+    if (EP < 0) {
       EP += TMath::Pi();
-    // atan2 return in rad -pi/2-pi/2, then make it 0-pi
+    } // atan2 return in rad -pi/2-pi/2, then make it 0-pi
     return EP;
+  }
+
+  /// Compute the event plane resolution of 3 sub-events
+  /// \tparam T type of the collision
+  /// \param col Collision
+  /// \param nmode EP in which harmonic(default 2nd harmonic)
+  template <typename T>
+  void fillEPReso(T const& col, int nmode, float centrality)
+  {
+    const float psi_ft0c = ((1. / nmode) * (TMath::ATan2(col.qvecFT0CImVec()[0], col.qvecFT0CReVec()[0])));
+    const float psi_ft0a = ((1. / nmode) * (TMath::ATan2(col.qvecFT0AImVec()[0], col.qvecFT0AReVec()[0])));
+    const float psi_tpc = ((1. / nmode) * (TMath::ATan2(col.qvecTPCallImVec()[0], col.qvecTPCallReVec()[0])));
+
+    mHistogramQn->fill(HIST("Event/epReso_FT0CTPC"), centrality, mQnBin + 0.f, std::cos((psi_ft0c - psi_tpc) * nmode));
+    mHistogramQn->fill(HIST("Event/epReso_FT0ATPC"), centrality, mQnBin + 0.f, std::cos((psi_ft0a - psi_tpc) * nmode));
+    mHistogramQn->fill(HIST("Event/epReso_FT0CFT0A"), centrality, mQnBin + 0.f, std::cos((psi_ft0c - psi_ft0a) * nmode));
+    mHistogramQn->fill(HIST("Event/epReso_count"), centrality, mQnBin + 0.f);
   }
 
   /// \return the 1-d qn-vector separator to 2-d
@@ -412,52 +453,15 @@ class FemtoDreamCollisionSelection
   }
 
   /// \fill event-wise informations
-  void fillEPQA(float centrality, float fSpher, float qn, float psiEP)
+  template <typename T>
+  void fillEPQA(T& col, float centrality, float fSpher, float qn, float psiEP, int nmode = 2)
   {
     mHistogramQn->fill(HIST("Event/centFT0CBeforeQn"), centrality);
     mHistogramQn->fill(HIST("Event/centVsqn"), centrality, qn);
     mHistogramQn->fill(HIST("Event/centVsqnVsSpher"), centrality, qn, fSpher);
     mHistogramQn->fill(HIST("Event/qnBin"), mQnBin + 0.f);
     mHistogramQn->fill(HIST("Event/psiEP"), psiEP);
-  }
-
-  /// \todo to be implemented!
-  /// Fill cumulants histo for flow calculation
-  /// Reset hists event-by-event
-  /// \tparam T1 type of the collision
-  /// \tparam T2 type of the tracks
-  /// \param tracks All tracks
-  template <typename T1, typename T2>
-  bool fillCumulants(T1 const& col, T2 const& tracks, float fHarmonic = 2.f)
-  {
-    int numOfTracks = col.numContrib();
-    if (numOfTracks < 3)
-      return false;
-
-    mReQthisEvt->Reset();
-    mImQthisEvt->Reset();
-    mReQ2thisEvt->Reset();
-    mImQ2thisEvt->Reset();
-    mMQthisEvt->Reset();
-    mMQWeightthisEvt->Reset();
-
-    for (auto const& track : tracks) {
-      double weight = 1; // Will implement NUA&NUE correction
-      double phi = track.phi();
-      double pt = track.pt();
-      double eta = track.eta();
-      double cosnphi = weight * TMath::Cos(fHarmonic * phi);
-      double sinnphi = weight * TMath::Sin(fHarmonic * phi);
-      double cos2nphi = weight * TMath::Cos(2 * fHarmonic * phi);
-      double sin2nphi = weight * TMath::Sin(2 * fHarmonic * phi);
-      mReQthisEvt->Fill(pt, eta, cosnphi);
-      mImQthisEvt->Fill(pt, eta, sinnphi);
-      mReQ2thisEvt->Fill(pt, eta, cos2nphi);
-      mImQ2thisEvt->Fill(pt, eta, sin2nphi);
-      mMQthisEvt->Fill(pt, eta);
-      mMQWeightthisEvt->Fill(pt, eta, weight);
-    }
-    return true;
+    fillEPReso(col, nmode, centrality);
   }
 
   /// \todo to be implemented!
@@ -466,39 +470,63 @@ class FemtoDreamCollisionSelection
   /// \param doQnSeparation to fill flow in divied qn bins
   /// \param qnBin should be <int> in 0-9
   /// \param fEtaGap eta gap for flow cumulant
-  template <typename T1, typename T2>
-  void doCumulants(T1 const& col, T2 const& tracks, float centrality, bool doQnSeparation = false, int numQnBins = 10, float fEtaGap = 0.3f, int binPt = 100, int binEta = 32)
+  template <typename T1, typename T2, typename TC>
+  void doCumulants(T1 const& col, T2 const& tracks, TC& trackCuts, float centrality, bool doQnSeparation = false, int numQnBins = 10, float fEtaGap = 0.5f, float ptMin = 0.2f, float ptMax = 5.0f, float harmonic = 2.0f)
   {
-    if (!fillCumulants(col, tracks))
+    int numOfTracks = col.numContrib();
+    if (numOfTracks < 3)
       return;
 
-    if (mMQthisEvt->Integral(1, binPt, 1, binEta) < 2)
+    double Q2A_re = 0., Q2A_im = 0., WA = 0.;
+    double Q2B_re = 0., Q2B_im = 0., WB = 0.;
+
+    int nA = 0, nB = 0;
+
+    for (auto const& trk : tracks) {
+      if (!trackCuts.isSelectedMinimal(trk)) {
+        continue;
+      }
+      const double pt = trk.pt();
+      const double eta = trk.eta();
+      if (pt < ptMin || pt > ptMax) {
+        continue;
+      }
+
+      const double w = 1.0; // TODO: NUA/NUE weight
+      const double phi = trk.phi();
+      const double c = w * TMath::Cos(harmonic * phi);
+      const double s = w * TMath::Sin(harmonic * phi);
+
+      if (eta > fEtaGap) {
+        Q2A_re += c;
+        Q2A_im += s;
+        WA += w;
+        nA++;
+      } else if (eta < -1 * fEtaGap) {
+        Q2B_re += c;
+        Q2B_im += s;
+        WB += w;
+        nB++;
+      }
+    }
+
+    // need at least 1 track on each side to form pairs; for stability, require >=2
+    if (nA < 2 || nB < 2) {
       return;
-
-    double allReQ = mReQthisEvt->Integral(1, binPt, 1, binEta);
-    double allImQ = mImQthisEvt->Integral(1, binPt, 1, binEta);
-    TComplex Q(allReQ, allImQ);
-    TComplex QStar = TComplex::Conjugate(Q);
-
-    double posEtaRe = mReQthisEvt->Integral(1, binPt, mReQthisEvt->GetYaxis()->FindBin(fEtaGap + 1e-6), binEta);
-    double posEtaIm = mImQthisEvt->Integral(1, binPt, mImQthisEvt->GetYaxis()->FindBin(fEtaGap + 1e-6), binEta);
-    if (mMQthisEvt->Integral(1, binPt, mMQthisEvt->GetYaxis()->FindBin(fEtaGap + 1e-6), binEta) < 2)
+    }
+    const double D2_evt = WA * WB;
+    if (D2_evt <= 0.) {
       return;
-    float posEtaMQ = mMQWeightthisEvt->Integral(1, binPt, mMQthisEvt->GetYaxis()->FindBin(fEtaGap + 1e-6), binEta);
-    TComplex posEtaQ = TComplex(posEtaRe, posEtaIm);
-    TComplex posEtaQStar = TComplex::Conjugate(posEtaQ);
+    }
 
-    double negEtaRe = mReQthisEvt->Integral(1, binPt, 1, mReQthisEvt->GetYaxis()->FindBin(-1 * fEtaGap - 1e-6));
-    double negEtaIm = mImQthisEvt->Integral(1, binPt, 1, mImQthisEvt->GetYaxis()->FindBin(-1 * fEtaGap - 1e-6));
-    if (mMQthisEvt->Integral(1, binPt, 1, mMQthisEvt->GetYaxis()->FindBin(-1 * fEtaGap - 1e-6)) < 2)
-      return;
-    float negEtaMQ = mMQWeightthisEvt->Integral(1, binPt, 1, mMQthisEvt->GetYaxis()->FindBin(-1 * fEtaGap - 1e-6));
-    TComplex negEtaQ = TComplex(negEtaRe, negEtaIm);
-    TComplex negEtaQStar = TComplex::Conjugate(negEtaQ);
+    // N2_evt = Re(Q2A * conj(Q2B)) = Q2A_re*Q2B_re + Q2A_im*Q2B_im
+    const double N2_evt = Q2A_re * Q2B_re + Q2A_im * Q2B_im;
 
-    mHistogramQn->get<TProfile>(HIST("Event/profileC22"))->Fill(centrality, (negEtaQ * posEtaQStar).Re() / (negEtaMQ * posEtaMQ), (negEtaMQ * posEtaMQ));
+    mHistogramQn->fill(HIST("Event/hN2allQn"), centrality, N2_evt);
+    mHistogramQn->fill(HIST("Event/hD2allQn"), centrality, D2_evt);
     if (doQnSeparation && mQnBin >= 0 && mQnBin < numQnBins) {
-      std::get<std::shared_ptr<TProfile>>(profilesC22[mQnBin])->Fill(centrality, (negEtaQ * posEtaQStar).Re() / (negEtaMQ * posEtaMQ), (negEtaMQ * posEtaMQ));
+      std::get<std::shared_ptr<TH1>>(hN2[mQnBin])->Fill(centrality, N2_evt);
+      std::get<std::shared_ptr<TH1>>(hD2[mQnBin])->Fill(centrality, D2_evt);
     }
     return;
   }
@@ -516,13 +544,8 @@ class FemtoDreamCollisionSelection
   float mSphericityPtmin = 0.f;
   int mQnBin = -999;
   HistogramRegistry* mHistogramQn = nullptr; ///< For flow cumulant output
-  std::vector<HistPtr> profilesC22;          /// Pofile Histograms of c22 per Qn bin
-  TH2D* mReQthisEvt = nullptr;               ///< For flow cumulant in an event
-  TH2D* mImQthisEvt = nullptr;               ///< For flow cumulant in an event
-  TH2D* mReQ2thisEvt = nullptr;              ///< For flow cumulant in an event
-  TH2D* mImQ2thisEvt = nullptr;              ///< For flow cumulant in an event
-  TH2D* mMQthisEvt = nullptr;                ///< For flow cumulant in an event
-  TH2D* mMQWeightthisEvt = nullptr;          ///< For flow cumulant in an event
+  std::vector<HistPtr> hN2;                  ///< Histograms of c22 per Qn bin
+  std::vector<HistPtr> hD2;                  ///< Histograms of c22 per Qn bin
 };
 } // namespace o2::analysis::femtoDream
 

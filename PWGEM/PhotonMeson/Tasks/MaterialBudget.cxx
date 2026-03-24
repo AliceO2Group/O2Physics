@@ -17,6 +17,7 @@
 #include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
@@ -70,10 +71,10 @@ using namespace o2::aod::pwgem::dilepton::utils::mcutil;
 using namespace o2::aod::pwgem::dilepton::utils;
 using o2::constants::math::TwoPI;
 
-using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMEventsMult, aod::EMEventsCent>;
+using MyCollisions = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000>;
 using MyCollision = MyCollisions::iterator;
 
-using MyCollisionsMC = soa::Join<aod::EMEvents, aod::EMEventsAlias, aod::EMMCEventLabels>;
+using MyCollisionsMC = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMMCEventLabels>;
 using MyCollisionMC = MyCollisionsMC::iterator;
 
 using MyMCCollisions = soa::Join<aod::EMMCEvents, aod::BinnedGenPts, aod::MostProbableEMEventIdsInMC>;
@@ -82,7 +83,7 @@ using MyMCCollision = MyMCCollisions::iterator;
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
-using MyPrimaryElectrons = soa::Filtered<soa::Join<aod::EMPrimaryElectronsFromDalitz, aod::EMPrimaryElectronEMEventIds, aod::EMPrimaryElectronsPrefilterBitDerived>>;
+using MyPrimaryElectrons = soa::Filtered<soa::Join<aod::EMPrimaryElectronsFromDalitz, aod::EMPrimaryElectronDaEMEventIds, aod::EMPrimaryElectronsPrefilterBitDerived>>;
 using MyPrimaryElectron = MyPrimaryElectrons::iterator;
 
 using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
@@ -831,8 +832,8 @@ struct MaterialBudget {
   }
 
   SliceCache cache;
-  Preslice<MyV0Photons> perCollision = aod::v0photonkf::emeventId;
-  Preslice<MyPrimaryElectrons> perCollisionElectron = aod::emprimaryelectron::emeventId;
+  Preslice<MyV0Photons> perCollision = aod::v0photonkf::pmeventId;
+  Preslice<MyPrimaryElectrons> perCollisionElectron = aod::emprimaryelectronda::pmeventId;
 
   Partition<MyPrimaryElectrons> positrons = o2::aod::emprimaryelectron::sign > int8_t(0) && dileptoncuts.cfgMinPtTrack < o2::aod::track::pt&& nabs(o2::aod::track::eta) < dileptoncuts.cfgMaxEtaTrack;
   Partition<MyPrimaryElectrons> electrons = o2::aod::emprimaryelectron::sign < int8_t(0) && dileptoncuts.cfgMinPtTrack < o2::aod::track::pt && nabs(o2::aod::track::eta) < dileptoncuts.cfgMaxEtaTrack;

@@ -116,7 +116,7 @@ struct TwoTracksEventTableProducer {
     Configurable<bool> preselBothAreTOFtracks{"preselBothAreTOFtracks", false, {"Both tracks are required to hit TOF."}};
     Configurable<bool> preselUseMinMomentumOnBothTracks{"preselUseMinMomentumOnBothTracks", false, {"Both tracks are required to fill requirement on minimum momentum."}};
     Configurable<float> preselMinTrackMomentum{"preselMinTrackMomentum", 0.1, {"Requirement on minimum momentum of the track."}};
-    Configurable<float> preselSystemPtCut{"preselSystemPtCut", 0.0, {"By default, cut on maximum system pT."}};
+    Configurable<float> preselSystemPtCut{"preselSystemPtCut", 2.0, {"By default, cut on maximum system pT."}};
     Configurable<bool> preselUseOppositeSystemPtCut{"preselUseOppositeSystemPtCut", false, {"Negates the system pT cut (cut on minimum system pT)."}};
     Configurable<float> preselMinInvariantMass{"preselMinInvariantMass", 2.0, {"Requirement on minimum system invariant mass."}};
     Configurable<float> preselMaxInvariantMass{"preselMaxInvariantMass", 5.0, {"Requirement on maximum system invariant mass."}};
@@ -137,8 +137,10 @@ struct TwoTracksEventTableProducer {
 
     mySetITShitsRule(cutGlobalTrack.cutITShitsRule);
 
-    histos.add("Reco/hSelections", "Effect of selections;;Number of  events (-)", HistType::kTH1D, {{50, 0.5, 50.5}});
-    histos.add("Truth/hTroubles", "Counter of unwanted issues;;Number of  troubles (-)", HistType::kTH1D, {{15, 0.5, 15.5}});
+    histos.add("Reco/hSelections", "Effect of selections;;Number of events (-)", HistType::kTH1D, {{50, 0.5, 50.5}});
+    histos.add("Reco/hNanalyzedPerRun", "N analyzed events per run;Run number (-);Number of analyzed events (-)", HistType::kTH1D, {{1, 0., 1.}});
+    histos.add("Reco/hNselectedPerRun", "N selected events per run;Run number (-);Number of selected events (-)", HistType::kTH1D, {{1, 0., 1.}});
+    histos.add("Truth/hTroubles", "Counter of unwanted issues;;Number of troubles (-)", HistType::kTH1D, {{15, 0.5, 15.5}});
 
   } // end init
 
@@ -358,6 +360,9 @@ struct TwoTracksEventTableProducer {
   void processDataSG(FullSGUDCollision const& collision,
                      FullUDTracks const& tracks)
   {
+    int run = collision.runNumber();
+    const char* srun = Form("%d", run);
+    histos.get<TH1>(HIST("Reco/hNanalyzedPerRun"))->Fill(srun, 1);
 
     nSelection = 0;
     histos.get<TH1>(HIST("Reco/hSelections"))->Fill(nSelection);
@@ -490,6 +495,8 @@ struct TwoTracksEventTableProducer {
     float tofEP[2] = {trk1.tofExpMom(), trk2.tofExpMom()};
     float infoZDC[4] = {collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC()};
 
+    histos.get<TH1>(HIST("Reco/hNselectedPerRun"))->Fill(srun, 1);
+
     twoTracks(collision.runNumber(), collision.globalBC(), countTracksPerCollision, collision.numContrib(), countGoodNonPVtracks, collision.posX(), collision.posY(), collision.posZ(),
               collision.flags(), collision.occupancyInTime(), collision.hadronicRate(), collision.trs(), collision.trofs(), collision.hmpr(),
               collision.tfb(), collision.itsROFb(), collision.sbp(), collision.zVtxFT0vPV(), collision.vtxITSTPC(),
@@ -500,7 +507,7 @@ struct TwoTracksEventTableProducer {
               tpcSignal, tpcEl, tpcMu, tpcPi, tpcKa, tpcPr, tpcIP,
               tofSignal, tofEl, tofMu, tofPi, tofKa, tofPr, tofEP);
   }
-  PROCESS_SWITCH(TwoTracksEventTableProducer, processDataSG, "Iterate UD tables with measured data created by SG-Candidate-Producer.", false);
+  PROCESS_SWITCH(TwoTracksEventTableProducer, processDataSG, "Iterate UD tables with measured data created by SG-Candidate-Producer.", true);
 
   PresliceUnsorted<aod::UDMcParticles> partPerMcCollision = aod::udmcparticle::udMcCollisionId;
   PresliceUnsorted<FullMCSGUDCollisions> colPerMcCollision = aod::udcollision::udMcCollisionId;
@@ -619,6 +626,7 @@ struct TwoTracksEventTableProducer {
         // get particles associated to generated collision
         auto const& partsFromMcColl = parts.sliceBy(partPerMcCollision, mccoll.globalIndex());
         int countMothers = 0;
+        int totalChargedDaughters = 0;
         for (const auto& particle : partsFromMcColl) {
           // select only mothers with checking if particle has no mother
           if (particle.has_mothers())
@@ -637,74 +645,85 @@ struct TwoTracksEventTableProducer {
           trueMotherY[countMothers - 1] = particle.py();
           trueMotherZ[countMothers - 1] = particle.pz();
 
-          // get daughters of the tau
+          // get daughters of the mother
           const auto& daughters = particle.daughters_as<aod::UDMcParticles>();
-          int countDaughters = 0;
           for (const auto& daughter : daughters) {
             // check if it is the charged particle (= no pi0 or neutrino)
             if (enumMyParticle(daughter.pdgCode()) == -1)
               continue;
-            countDaughters++;
-            // check there is only 1 charged daughter related to 1 tau
-            if (countDaughters > 1) {
+            // check we do not have more than 2 charged daughters in total
+            if (totalChargedDaughters >= 2) {
               if (verboseInfo)
-                printLargeMessage("Truth collision has more than 1 charged daughters of no mother particles. Breaking the daughter loop.");
+                printLargeMessage("Truth collision has more than 2 total charged daughters. Breaking the daughter loop.");
               histos.get<TH1>(HIST("Truth/hTroubles"))->Fill(3);
               problem = true;
               break;
             }
             // fill info for each daughter
-            trueDaugX[countMothers - 1] = daughter.px();
-            trueDaugY[countMothers - 1] = daughter.py();
-            trueDaugZ[countMothers - 1] = daughter.pz();
-            trueDaugPdgCode[countMothers - 1] = daughter.pdgCode();
+            trueDaugX[totalChargedDaughters] = daughter.px();
+            trueDaugY[totalChargedDaughters] = daughter.py();
+            trueDaugZ[totalChargedDaughters] = daughter.pz();
+            trueDaugPdgCode[totalChargedDaughters] = daughter.pdgCode();
 
             // get tracks associated to MC daughter (how well the daughter was reconstructed)
             auto const& tracksFromDaughter = trks.sliceBy(trackPerMcParticle, daughter.globalIndex());
             // check there is exactly 1 track per 1 particle
+            if (tracksFromDaughter.size() == 0) {
+              if (verboseInfo)
+                printLargeMessage("Daughter has no associated track. Skipping this daughter.");
+              histos.get<TH1>(HIST("Truth/hTroubles"))->Fill(5);
+              problem = true;
+              totalChargedDaughters++;
+              continue;
+            }
             if (tracksFromDaughter.size() > 1) {
               if (verboseInfo)
                 printLargeMessage("Daughter has more than 1 associated track. Skipping this daughter.");
               histos.get<TH1>(HIST("Truth/hTroubles"))->Fill(4);
               problem = true;
+              totalChargedDaughters++;
               continue;
             }
-            // grab the track and fill info for reconstructed track (should be done twice)
+            // grab the track and fill info for reconstructed track
             const auto& trk = tracksFromDaughter.iteratorAt(0);
-            px[countMothers - 1] = trk.px();
-            py[countMothers - 1] = trk.py();
-            pz[countMothers - 1] = trk.pz();
-            sign[countMothers - 1] = trk.sign();
-            dcaxy[countMothers - 1] = trk.dcaXY();
-            dcaz[countMothers - 1] = trk.dcaZ();
-            trkTimeRes[countMothers - 1] = trk.trackTimeRes();
-            if (countMothers == 1) {
+            px[totalChargedDaughters] = trk.px();
+            py[totalChargedDaughters] = trk.py();
+            pz[totalChargedDaughters] = trk.pz();
+            sign[totalChargedDaughters] = trk.sign();
+            dcaxy[totalChargedDaughters] = trk.dcaXY();
+            dcaz[totalChargedDaughters] = trk.dcaZ();
+            trkTimeRes[totalChargedDaughters] = trk.trackTimeRes();
+            if (totalChargedDaughters == 0) {
               itsClusterSizesTrk1 = trk.itsClusterSizes();
             } else {
               itsClusterSizesTrk2 = trk.itsClusterSizes();
             }
-            tpcSignal[countMothers - 1] = trk.tpcSignal();
-            tpcEl[countMothers - 1] = trk.tpcNSigmaEl();
-            tpcMu[countMothers - 1] = trk.tpcNSigmaMu();
-            tpcPi[countMothers - 1] = trk.tpcNSigmaPi();
-            tpcKa[countMothers - 1] = trk.tpcNSigmaKa();
-            tpcPr[countMothers - 1] = trk.tpcNSigmaPr();
-            tpcIP[countMothers - 1] = trk.tpcInnerParam();
-            tofSignal[countMothers - 1] = trk.tofSignal();
-            tofEl[countMothers - 1] = trk.tofNSigmaEl();
-            tofMu[countMothers - 1] = trk.tofNSigmaMu();
-            tofPi[countMothers - 1] = trk.tofNSigmaPi();
-            tofKa[countMothers - 1] = trk.tofNSigmaKa();
-            tofPr[countMothers - 1] = trk.tofNSigmaPr();
-            tofEP[countMothers - 1] = trk.tofExpMom();
+            tpcSignal[totalChargedDaughters] = trk.tpcSignal();
+            tpcEl[totalChargedDaughters] = trk.tpcNSigmaEl();
+            tpcMu[totalChargedDaughters] = trk.tpcNSigmaMu();
+            tpcPi[totalChargedDaughters] = trk.tpcNSigmaPi();
+            tpcKa[totalChargedDaughters] = trk.tpcNSigmaKa();
+            tpcPr[totalChargedDaughters] = trk.tpcNSigmaPr();
+            tpcIP[totalChargedDaughters] = trk.tpcInnerParam();
+            tofSignal[totalChargedDaughters] = trk.tofSignal();
+            tofEl[totalChargedDaughters] = trk.tofNSigmaEl();
+            tofMu[totalChargedDaughters] = trk.tofNSigmaMu();
+            tofPi[totalChargedDaughters] = trk.tofNSigmaPi();
+            tofKa[totalChargedDaughters] = trk.tofNSigmaKa();
+            tofPr[totalChargedDaughters] = trk.tofNSigmaPr();
+            tofEP[totalChargedDaughters] = trk.tofExpMom();
+            totalChargedDaughters++;
           } // daughters
+          if (problem)
+            break;
         } // particles
       } else { // get only the truth information. The reco-level info is left on default
         // get particles associated to generated collision
         auto const& partsFromMcColl = parts.sliceBy(partPerMcCollision, mccoll.globalIndex());
         int countMothers = 0;
+        int totalChargedDaughters = 0;
         for (const auto& particle : partsFromMcColl) {
-          // select only tauons with checking if particle has no mother
+          // select only motherless particles
           if (particle.has_mothers())
             continue;
           countMothers++;
@@ -716,39 +735,42 @@ struct TwoTracksEventTableProducer {
             problem = true;
             break;
           }
-          // fill info for each tau
+          // fill info for each mother
           trueMotherX[countMothers - 1] = particle.px();
           trueMotherY[countMothers - 1] = particle.py();
           trueMotherZ[countMothers - 1] = particle.pz();
 
-          // get daughters of the tau
+          // get daughters of the mother
           const auto& daughters = particle.daughters_as<aod::UDMcParticles>();
-          int countDaughters = 0;
           for (const auto& daughter : daughters) {
             // select only the charged particle (= no pi0 or neutrino)
             if (enumMyParticle(daughter.pdgCode()) == -1)
               continue;
-            countDaughters++;
-            // check there is only 1 charged daughter related to 1 tau
-            if (countDaughters > 1) {
+            // check we do not have more than 2 charged daughters in total
+            if (totalChargedDaughters >= 2) {
               if (verboseInfo)
-                printLargeMessage("Truth collision has more than 1 charged daughters of no mother particles. Breaking the daughter loop.");
+                printLargeMessage("Truth collision has more than 2 total charged daughters. Breaking the daughter loop.");
               histos.get<TH1>(HIST("Truth/hTroubles"))->Fill(13);
               problem = true;
               break;
             }
             // fill info for each daughter
-            trueDaugX[countMothers - 1] = daughter.px();
-            trueDaugY[countMothers - 1] = daughter.py();
-            trueDaugZ[countMothers - 1] = daughter.pz();
-            trueDaugPdgCode[countMothers - 1] = daughter.pdgCode();
+            trueDaugX[totalChargedDaughters] = daughter.px();
+            trueDaugY[totalChargedDaughters] = daughter.py();
+            trueDaugZ[totalChargedDaughters] = daughter.pz();
+            trueDaugPdgCode[totalChargedDaughters] = daughter.pdgCode();
+            totalChargedDaughters++;
           } // daughters
+          if (problem)
+            break;
         } // particles
       } // collisions
 
-      // decide the channel and set the variable. Only two cahnnels suported now.
+      // decide the channel and set the variable
       if ((enumMyParticle(trueDaugPdgCode[0]) == P_ELECTRON) && (enumMyParticle(trueDaugPdgCode[1]) == P_ELECTRON))
         trueChannel = CH_EE;
+      if ((enumMyParticle(trueDaugPdgCode[0]) == P_MUON) && (enumMyParticle(trueDaugPdgCode[1]) == P_MUON))
+        trueChannel = CH_MUMU;
       if ((enumMyParticle(trueDaugPdgCode[0]) == P_ELECTRON) && ((enumMyParticle(trueDaugPdgCode[1]) == P_PION) || (enumMyParticle(trueDaugPdgCode[1]) == P_MUON)))
         trueChannel = CH_EMUPI;
       if ((enumMyParticle(trueDaugPdgCode[1]) == P_ELECTRON) && ((enumMyParticle(trueDaugPdgCode[0]) == P_PION) || (enumMyParticle(trueDaugPdgCode[0]) == P_MUON)))
