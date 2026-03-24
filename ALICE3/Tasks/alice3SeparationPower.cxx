@@ -17,20 +17,22 @@
 /// \since  May 13, 2025
 ///
 
-#include <utility>
+#include "ALICE3/DataModel/OTFRICH.h"
+#include "ALICE3/DataModel/OTFTOF.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/runDataProcessing.h>
+
+#include <THashList.h>
+#include <TProfile2D.h>
+
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
-
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/HistogramRegistry.h"
-#include "TProfile2D.h"
-#include "THashList.h"
-#include "ALICE3/DataModel/OTFTOF.h"
-#include "ALICE3/DataModel/OTFRICH.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -73,7 +75,7 @@ struct alice3SeparationPower {
       //   Check that all the nsigmas are numbers (sanity check)
       for (int i = 0; i < 5; i++) {
         if (std::isnan(track.nSigmaInnerTOF(i)) || std::isnan(track.nSigmaOuterTOF(i))) {
-          LOG(fatal) << "Unrecognized nsigma for " << i << " " << track.nSigmaInnerTOF(i) << " " << track.nSigmaOuterTOF(i);
+          LOG(warning) << "Unrecognized nsigma for " << i << " " << track.nSigmaInnerTOF(i) << " " << track.nSigmaOuterTOF(i);
         }
       }
 

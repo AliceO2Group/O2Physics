@@ -13,11 +13,10 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include "PWGJE/TableProducer/Matching/Substructure/jetSubstructureMatching.cxx"
-
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetSubstructure.h"
+#include "PWGJE/TableProducer/Matching/Substructure/jetSubstructureMatching.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisTask.h>
@@ -26,6 +25,10 @@
 #include <Framework/runDataProcessing.h>
 
 #include <vector>
+
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
 
 using DstarChargedJetSubstructureMatchingMC = JetSubstructureMatching<soa::Join<aod::DstarChargedMCDetectorLevelJets, aod::DstarChargedMCDetectorLevelJetConstituents, aod::DstarChargedMCDetectorLevelJetsMatchedToDstarChargedMCParticleLevelJets>,
                                                                       soa::Join<aod::DstarChargedMCParticleLevelJets, aod::DstarChargedMCParticleLevelJetConstituents, aod::DstarChargedMCParticleLevelJetsMatchedToDstarChargedMCDetectorLevelJets>,

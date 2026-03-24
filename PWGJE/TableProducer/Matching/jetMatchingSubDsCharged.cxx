@@ -13,10 +13,9 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include "PWGJE/TableProducer/Matching/jetMatchingSub.cxx"
-
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetSubtraction.h"
+#include "PWGJE/TableProducer/Matching/jetMatchingSub.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisTask.h>
@@ -25,6 +24,10 @@
 #include <Framework/runDataProcessing.h>
 
 #include <vector>
+
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
 
 using DsChargedJetMatchingSub = JetMatchingSub<soa::Join<aod::DsChargedJets, aod::DsChargedJetConstituents>,
                                                soa::Join<aod::DsChargedEventWiseSubtractedJets, aod::DsChargedEventWiseSubtractedJetConstituents>,

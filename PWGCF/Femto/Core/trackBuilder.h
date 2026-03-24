@@ -65,67 +65,67 @@ struct ConfTrackBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<std::string>> dcazMax{"dcazMax", {"0.004 + 0.013*pow(x, -1)"}, "Maximum |dca_z| as a function of pT. Has to be a valid TForumal, where x=pt"};
 
   // Electron PID cuts
-  o2::framework::Configurable<bool> pidIsOptionalElectron{"pidIsOptionalElectron", false, "Make election PID optional"};
+  o2::framework::Configurable<bool> requirePidElectron{"requirePidElectron", false, "Make election PID optional"};
   o2::framework::Configurable<float> minMomTofElectron{"minMomTofElectron", 0.3, "Minimum momentum to required TOF PID for Electron"};
-  o2::framework::Configurable<std::vector<float>> itsElectron{"itsElectron", {}, "Maximum |nsigma| for Electron PID"};
-  o2::framework::Configurable<std::vector<float>> tpcElectron{"tpcElectron", {}, "Maximum |nsigma| for Electron PID"};
-  o2::framework::Configurable<std::vector<float>> tofElectron{"tofElectron", {}, "Maximum |nsigma| for Electron PID"};
-  o2::framework::Configurable<std::vector<float>> tpcitsElectron{"tpcitsElectron", {}, "Maximum |nsigma| for Electron PID"};
-  o2::framework::Configurable<std::vector<float>> tpctofElectron{"tpctofElectron", {}, "Maximum |nsigma| for Electron PID"};
+  o2::framework::Configurable<std::vector<std::string>> itsElectron{"itsElectron", {}, "Ranges LowerLimit;UpperLimit for nsigma_ITS for Electron PID"};
+  o2::framework::Configurable<std::vector<std::string>> tpcElectron{"tpcElectron", {}, "Ranges LowerLimit;UpperLimit for nsigma_TPC for Electron PID"};
+  o2::framework::Configurable<std::vector<std::string>> tofElectron{"tofElectron", {}, "Ranges LowerLimit;UpperLimit for nsigma_TOF for Electron PID"};
+  o2::framework::Configurable<std::vector<float>> tpcitsElectron{"tpcitsElectron", {}, "Maximum nsigma_TPCITS for Electron PID"};
+  o2::framework::Configurable<std::vector<float>> tpctofElectron{"tpctofElectron", {}, "Maximum nsigma_TPCTOF for Electron PID"};
 
   // Pion PID cuts
-  o2::framework::Configurable<bool> pidIsOptionalPion{"pidIsOptionalPion", false, "Make election PID optional"};
+  o2::framework::Configurable<bool> requirePidPion{"requirePidPion", false, "Make election PID optional"};
   o2::framework::Configurable<float> minMomTofPion{"minMomTofPion", 0.5, "Minimum momentum to required TOF PID for Pion"};
-  o2::framework::Configurable<std::vector<float>> itsPion{"itsPion", {}, "Maximum |nsigma| for Pion PID"};
-  o2::framework::Configurable<std::vector<float>> tpcPion{"tpcPion", {}, "Maximum |nsigma| for Pion PID"};
-  o2::framework::Configurable<std::vector<float>> tofPion{"tofPion", {}, "Maximum |nsigma| for Pion PID"};
-  o2::framework::Configurable<std::vector<float>> tpcitsPion{"tpcitsPion", {}, "Maximum |nsigma| for Pion PID"};
-  o2::framework::Configurable<std::vector<float>> tpctofPion{"tpctofPion", {}, "Maximum |nsigma| for Pion PID"};
+  o2::framework::Configurable<std::vector<std::string>> itsPion{"itsPion", {}, "Ranges LowerLimit;UpperLimit for nsigma_ITS for Pion PID"};
+  o2::framework::Configurable<std::vector<std::string>> tpcPion{"tpcPion", {}, "Ranges LowerLimit;UpperLimit for nsigma_TPC for Pion PID"};
+  o2::framework::Configurable<std::vector<std::string>> tofPion{"tofPion", {}, "Ranges LowerLimit;UpperLimit for nsigma_TOF for Pion PID"};
+  o2::framework::Configurable<std::vector<float>> tpcitsPion{"tpcitsPion", {}, "Maximum nsigma_TPCITS for Pion PID"};
+  o2::framework::Configurable<std::vector<float>> tpctofPion{"tpctofPion", {}, "Maximum nsigma_TPCTOF for Pion PID"};
 
   // Kaon PID cuts
-  o2::framework::Configurable<bool> pidIsOptionalKaon{"pidIsOptionalKaon", false, "Make election PID optional"};
+  o2::framework::Configurable<bool> requirePidKaon{"requirePidKaon", false, "Make election PID optional"};
   o2::framework::Configurable<float> minMomTofKaon{"minMomTofKaon", 0.4, "Minimum momentum to required TOF PID for Kaon"};
-  o2::framework::Configurable<std::vector<float>> itsKaon{"itsKaon", {}, "Maximum |nsigma| for Kaon PID"};
-  o2::framework::Configurable<std::vector<float>> tpcKaon{"tpcKaon", {}, "Maximum |nsigma| for Kaon PID"};
-  o2::framework::Configurable<std::vector<float>> tofKaon{"tofKaon", {}, "Maximum |nsigma| for Kaon PID"};
-  o2::framework::Configurable<std::vector<float>> tpcitsKaon{"tpcitsKaon", {}, "Maximum |nsigma| for Kaon PID"};
-  o2::framework::Configurable<std::vector<float>> tpctofKaon{"tpctofKaon", {}, "Maximum |nsigma| for Kaon PID"};
+  o2::framework::Configurable<std::vector<std::string>> itsKaon{"itsKaon", {}, "Ranges LowerLimit;UpperLimit for nsigma_ITS for Kaon PID"};
+  o2::framework::Configurable<std::vector<std::string>> tpcKaon{"tpcKaon", {}, "Ranges LowerLimit;UpperLimit for nsigma_TPC for Kaon PID"};
+  o2::framework::Configurable<std::vector<std::string>> tofKaon{"tofKaon", {}, "Ranges LowerLimit;UpperLimit for nsigma_TOF for Kaon PID"};
+  o2::framework::Configurable<std::vector<float>> tpcitsKaon{"tpcitsKaon", {}, "Maximum nsigma_TPCITS for Kaon PID"};
+  o2::framework::Configurable<std::vector<float>> tpctofKaon{"tpctofKaon", {}, "Maximum nsigma_TPCTOF for Kaon PID"};
 
   // Proton PID cuts
-  o2::framework::Configurable<bool> pidIsOptionalProton{"pidIsOptionalProton", true, "Make election PID optional"};
+  o2::framework::Configurable<bool> requirePidProton{"requirePidProton", true, "Make election PID optional"};
   o2::framework::Configurable<float> minMomTofProton{"minMomTofProton", 0.75, "Minimum momentum to required TOF PID for Proton"};
-  o2::framework::Configurable<std::vector<float>> itsProton{"itsProton", {}, "Maximum |nsigma| for Proton PID"};
-  o2::framework::Configurable<std::vector<float>> tpcProton{"tpcProton", {}, "Maximum |nsigma| for Proton PID"};
-  o2::framework::Configurable<std::vector<float>> tofProton{"tofProton", {}, "Maximum |nsigma| for Proton PID"};
-  o2::framework::Configurable<std::vector<float>> tpcitsProton{"tpcitsProton", {3.f}, "Maximum |nsigma| for Proton PID"};
-  o2::framework::Configurable<std::vector<float>> tpctofProton{"tpctofProton", {3.f}, "Maximum |nsigma| for Proton PID"};
+  o2::framework::Configurable<std::vector<std::string>> itsProton{"itsProton", {}, "Ranges LowerLimit;UpperLimit for nsigma_ITS for Proton PID"};
+  o2::framework::Configurable<std::vector<std::string>> tpcProton{"tpcProton", {}, "Ranges LowerLimit;UpperLimit for nsigma_TPC for Proton PID"};
+  o2::framework::Configurable<std::vector<std::string>> tofProton{"tofProton", {}, "Ranges LowerLimit;UpperLimit for nsigma_TOF for Proton PID"};
+  o2::framework::Configurable<std::vector<float>> tpcitsProton{"tpcitsProton", {}, "Maximum nsigma_TPCITS for Proton PID"};
+  o2::framework::Configurable<std::vector<float>> tpctofProton{"tpctofProton", {}, "Maximum nsigma_TPCTOF for Proton PID"};
 
   // Deuteron PID cuts
-  o2::framework::Configurable<bool> pidIsOptionalDeuteron{"pidIsOptionalDeuteron", false, "Make election PID optional"};
+  o2::framework::Configurable<bool> requirePidDeuteron{"requirePidDeuteron", false, "Make election PID optional"};
   o2::framework::Configurable<float> minMomTofDeuteron{"minMomTofDeuteron", 1.2, "Minimum momentum to required TOF PID for Deuteron"};
-  o2::framework::Configurable<std::vector<float>> itsDeuteron{"itsDeuteron", {}, "Maximum |nsigma| for Deuteron PID"};
-  o2::framework::Configurable<std::vector<float>> tpcDeuteron{"tpcDeuteron", {}, "Maximum |nsigma| for Deuteron PID"};
-  o2::framework::Configurable<std::vector<float>> tofDeuteron{"tofDeuteron", {}, "Maximum |nsigma| for Deuteron PID"};
-  o2::framework::Configurable<std::vector<float>> tpcitsDeuteron{"tpcitsDeuteron", {}, "Maximum |nsigma| for Deuteron PID"};
-  o2::framework::Configurable<std::vector<float>> tpctofDeuteron{"tpctofDeuteron", {}, "Maximum |nsigma| for Deuteron PID"};
+  o2::framework::Configurable<std::vector<std::string>> itsDeuteron{"itsDeuteron", {}, "Ranges LowerLimit;UpperLimit for nsigma_ITS for Deuteron PID"};
+  o2::framework::Configurable<std::vector<std::string>> tpcDeuteron{"tpcDeuteron", {}, "Ranges LowerLimit;UpperLimit for nsigma_TPC for Deuteron PID"};
+  o2::framework::Configurable<std::vector<std::string>> tofDeuteron{"tofDeuteron", {}, "Ranges LowerLimit;UpperLimit for nsigma_TOF for Deuteron PID"};
+  o2::framework::Configurable<std::vector<float>> tpcitsDeuteron{"tpcitsDeuteron", {}, "Maximum nsigma_TPCITS for Deuteron PID"};
+  o2::framework::Configurable<std::vector<float>> tpctofDeuteron{"tpctofDeuteron", {}, "Maximum nsigma_TPCTOF for Deuteron PID"};
 
   // Triton PID cuts
-  o2::framework::Configurable<bool> pidIsOptionalTriton{"pidIsOptionalTriton", false, "Make election PID optional"};
+  o2::framework::Configurable<bool> requirePidTriton{"requirePidTriton", false, "Make election PID optional"};
   o2::framework::Configurable<float> minMomTofTriton{"minMomTofTriton", 1.4, "Minimum momentum to required TOF PID for Triton"};
-  o2::framework::Configurable<std::vector<float>> itsTriton{"itsTriton", {}, "Maximum |nsigma| for Triton PID"};
-  o2::framework::Configurable<std::vector<float>> tpcTriton{"tpcTriton", {}, "Maximum |nsigma| for Triton PID"};
-  o2::framework::Configurable<std::vector<float>> tofTriton{"tofTriton", {}, "Maximum |nsigma| for Triton PID"};
-  o2::framework::Configurable<std::vector<float>> tpcitsTriton{"tpcitsTriton", {}, "Maximum |nsigma| for Triton PID"};
-  o2::framework::Configurable<std::vector<float>> tpctofTriton{"tpctofTriton", {}, "Maximum |nsigma| for Triton PID"};
+  o2::framework::Configurable<std::vector<std::string>> itsTriton{"itsTriton", {}, "Ranges LowerLimit;UpperLimit for nsigma_ITS for Triton PID"};
+  o2::framework::Configurable<std::vector<std::string>> tpcTriton{"tpcTriton", {}, "Ranges LowerLimit;UpperLimit for nsigma_TPC for Triton PID"};
+  o2::framework::Configurable<std::vector<std::string>> tofTriton{"tofTriton", {}, "Ranges LowerLimit;UpperLimit for nsigma_TOF for Triton PID"};
+  o2::framework::Configurable<std::vector<float>> tpcitsTriton{"tpcitsTriton", {}, "Maximum nsigma_TPCITS for Triton PID"};
+  o2::framework::Configurable<std::vector<float>> tpctofTriton{"tpctofTriton", {}, "Maximum nsigma_TPCTOF for Triton PID"};
 
   // Helium PID cuts
-  o2::framework::Configurable<bool> pidIsOptionalHelium{"pidIsOptionalHelium", false, "Make election PID optional"};
+  o2::framework::Configurable<bool> requirePidHelium{"requirePidHelium", false, "Make election PID optional"};
   o2::framework::Configurable<float> minMomTofHelium{"minMomTofHelium", 1.6, "Minimum momentum to required TOF PID for Helium"};
-  o2::framework::Configurable<std::vector<float>> itsHelium{"itsHelium", {}, "Maximum |nsigma| for Helium PID"};
-  o2::framework::Configurable<std::vector<float>> tpcHelium{"tpcHelium", {}, "Maximum |nsigma| for Helium PID"};
-  o2::framework::Configurable<std::vector<float>> tofHelium{"tofHelium", {}, "Maximum |nsigma| for Helium PID"};
-  o2::framework::Configurable<std::vector<float>> tpcitsHelium{"tpcitsHelium", {}, "Maximum |nsigma| for Helium PID"};
-  o2::framework::Configurable<std::vector<float>> tpctofHelium{"tpctofHelium", {}, "Maximum |nsigma| for Helium PID"};
+  o2::framework::Configurable<std::vector<std::string>> itsHelium{"itsHelium", {}, "Ranges LowerLimit;UpperLimit for nsigma_ITS for Helium PID"};
+  o2::framework::Configurable<std::vector<std::string>> tpcHelium{"tpcHelium", {}, "Ranges LowerLimit;UpperLimit for nsigma_TPC for Helium PID"};
+  o2::framework::Configurable<std::vector<std::string>> tofHelium{"tofHelium", {}, "Ranges LowerLimit;UpperLimit for nsigma_TOF for Helium PID"};
+  o2::framework::Configurable<std::vector<float>> tpcitsHelium{"tpcitsHelium", {}, "Maximum nsigma_TPCITS for Helium PID"};
+  o2::framework::Configurable<std::vector<float>> tpctofHelium{"tpctofHelium", {}, "Maximum nsigma_TPCTOF for Helium PID"};
 };
 
 // define the template structure for TrackSelection
@@ -133,8 +133,8 @@ template <const char* Prefix>
 struct ConfTrackSelection : public o2::framework::ConfigurableGroup {
   std::string prefix = Prefix; // Unique prefix based on the template argument
   // configuration parameters
-  o2::framework::Configurable<int> pdgCode{"pdgCode", 2212, "Track PDG code"};
-  o2::framework::Configurable<int> chargeAbs{"chargeAbs", 1, "Absolute value of charge (e.g. 1 for most tracks, 2 for He3)"};
+  o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", 2212, "Absolute value of PDG code. Set sign of charge to -1 for antiparticle."};
+  o2::framework::Configurable<int> chargeAbs{"chargeAbs", 1, "Absolute value of charge (e.g. 1 for most tracks, 2 for He3). Set sign of charge to -1 for antiparticle"};
   o2::framework::Configurable<int> chargeSign{"chargeSign", 1, "Track charge sign: +1 for positive, -1 for negative, 0 for both"};
   // filters for kinematics
   o2::framework::Configurable<float> ptMin{"ptMin", 0.2f, "Minimum pT (GeV/c)"};
@@ -144,8 +144,11 @@ struct ConfTrackSelection : public o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};
   // track selection masks
-  o2::framework::Configurable<o2::aod::femtodatatypes::TrackMaskType> maskLowMomentum{"maskLowMomentum", 0x2u, "Bitmask for selections below momentum threshold"};
-  o2::framework::Configurable<o2::aod::femtodatatypes::TrackMaskType> maskHighMomentum{"maskHighMomentum", 0x1u, "Bitmask for selections above momentum threshold"};
+  o2::framework::Configurable<o2::aod::femtodatatypes::TrackMaskType> maskLowMomentum{"maskLowMomentum", 1ul, "Bitmask for selections below momentum threshold"};
+  o2::framework::Configurable<o2::aod::femtodatatypes::TrackMaskType> maskHighMomentum{"maskHighMomentum", 2ul, "Bitmask for selections above momentum threshold"};
+  // track rejection masks
+  o2::framework::Configurable<o2::aod::femtodatatypes::TrackMaskType> rejectionMaskLowMomentum{"rejectionMaskLowMomentum", 0ul, "Bitmask for rejections below momentum threshold"};
+  o2::framework::Configurable<o2::aod::femtodatatypes::TrackMaskType> rejectionMaskHighMomentum{"rejectionMaskHighMomentum", 0ul, "Bitmask for rejections above momentum threshold"};
   // momentum threshold for PID usage
   o2::framework::Configurable<float> pidThres{"pidThres", 1.2f, "Momentum threshold for using TPCTOF/TOF pid for tracks with large momentum (GeV/c)"};
 };
@@ -283,12 +286,12 @@ class TrackSelection : public BaseSelection<float, o2::aod::femtodatatypes::Trac
   template <typename T1, typename T2>
   void configure(o2::framework::HistogramRegistry* registry, T1& config, T2& filter)
   {
-    mPtMin = filter.ptMin;
-    mPtMax = filter.ptMax;
-    mEtaMin = filter.etaMin;
-    mEtaMax = filter.etaMax;
-    mPhiMin = filter.phiMin;
-    mPhiMax = filter.phiMax;
+    mPtMin = filter.ptMin.value;
+    mPtMax = filter.ptMax.value;
+    mEtaMin = filter.etaMin.value;
+    mEtaMax = filter.etaMax.value;
+    mPhiMin = filter.phiMin.value;
+    mPhiMax = filter.phiMax.value;
 
     // add selections for track quality
     this->addSelection(kTPCnClsMin, trackSelectionNames.at(kTPCnClsMin), config.tpcClustersMin.value, limits::kLowerLimit, true, true, false);
@@ -298,63 +301,63 @@ class TrackSelection : public BaseSelection<float, o2::aod::femtodatatypes::Trac
     this->addSelection(kTPCsClsFracMax, trackSelectionNames.at(kTPCsClsFracMax), config.tpcSharedClusterFractionMax.value, limits::kUpperLimit, true, true, false);
     this->addSelection(kITSnClsMin, trackSelectionNames.at(kITSnClsMin), config.itsClustersMin.value, limits::kLowerLimit, true, true, false);
     this->addSelection(kITSnClsIbMin, trackSelectionNames.at(kITSnClsIbMin), config.itsIbClustersMin.value, limits::kLowerLimit, true, true, false);
-    this->addSelection(kDCAxyMax, trackSelectionNames.at(kDCAxyMax), filter.ptMin, filter.ptMax.value, config.dcaxyMax.value, limits::kAbsUpperFunctionLimit, true, true, false);
+    this->addSelection(kDCAxyMax, trackSelectionNames.at(kDCAxyMax), filter.ptMin.value, filter.ptMax.value, config.dcaxyMax.value, limits::kAbsUpperFunctionLimit, true, true, false);
     this->addSelection(kDCAzMax, trackSelectionNames.at(kDCAzMax), filter.ptMin.value, filter.ptMax.value, config.dcazMax.value, limits::kAbsUpperFunctionLimit, true, true, false);
 
     // add selections for Electron pid
-    this->addSelection(kItsElectron, trackSelectionNames.at(kItsElectron), config.itsElectron.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalElectron);
-    this->addSelection(kTpcElectron, trackSelectionNames.at(kTpcElectron), config.tpcElectron.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalElectron);
-    this->addSelection(kTofElectron, trackSelectionNames.at(kTofElectron), config.tofElectron.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalElectron);
-    this->addSelection(kTpcitsElectron, trackSelectionNames.at(kTpcitsElectron), config.tpcitsElectron.value, limits::kUpperLimit, false, false, config.pidIsOptionalElectron);
-    this->addSelection(kTpctofElectron, trackSelectionNames.at(kTpctofElectron), config.tpctofElectron.value, limits::kUpperLimit, false, false, config.pidIsOptionalElectron);
+    this->addSelection(kItsElectron, trackSelectionNames.at(kItsElectron), config.itsElectron.value, false, false, config.requirePidElectron);
+    this->addSelection(kTpcElectron, trackSelectionNames.at(kTpcElectron), config.tpcElectron.value, false, false, config.requirePidElectron);
+    this->addSelection(kTofElectron, trackSelectionNames.at(kTofElectron), config.tofElectron.value, false, false, config.requirePidElectron);
+    this->addSelection(kTpcitsElectron, trackSelectionNames.at(kTpcitsElectron), config.tpcitsElectron.value, limits::kUpperLimit, false, false, config.requirePidElectron);
+    this->addSelection(kTpctofElectron, trackSelectionNames.at(kTpctofElectron), config.tpctofElectron.value, limits::kUpperLimit, false, false, config.requirePidElectron);
     mElectronTofThres = config.minMomTofElectron.value;
 
     // add selections for Pion pid
-    this->addSelection(kItsPion, trackSelectionNames.at(kItsPion), config.itsPion.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalPion);
-    this->addSelection(kTpcPion, trackSelectionNames.at(kTpcPion), config.tpcPion.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalPion);
-    this->addSelection(kTofPion, trackSelectionNames.at(kTofPion), config.tofPion.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalPion);
-    this->addSelection(kTpcitsPion, trackSelectionNames.at(kTpcitsPion), config.tpcitsPion.value, limits::kUpperLimit, false, false, config.pidIsOptionalPion);
-    this->addSelection(kTpctofPion, trackSelectionNames.at(kTpctofPion), config.tpctofPion.value, limits::kUpperLimit, false, false, config.pidIsOptionalPion);
+    this->addSelection(kItsPion, trackSelectionNames.at(kItsPion), config.itsPion.value, false, false, config.requirePidPion);
+    this->addSelection(kTpcPion, trackSelectionNames.at(kTpcPion), config.tpcPion.value, false, false, config.requirePidPion);
+    this->addSelection(kTofPion, trackSelectionNames.at(kTofPion), config.tofPion.value, false, false, config.requirePidPion);
+    this->addSelection(kTpcitsPion, trackSelectionNames.at(kTpcitsPion), config.tpcitsPion.value, limits::kUpperLimit, false, false, config.requirePidPion);
+    this->addSelection(kTpctofPion, trackSelectionNames.at(kTpctofPion), config.tpctofPion.value, limits::kUpperLimit, false, false, config.requirePidPion);
     mPionTofThres = config.minMomTofPion.value;
 
     // add selections for Kaon pid
-    this->addSelection(kItsKaon, trackSelectionNames.at(kItsKaon), config.itsKaon.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalKaon);
-    this->addSelection(kTpcKaon, trackSelectionNames.at(kTpcKaon), config.tpcKaon.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalKaon);
-    this->addSelection(kTofKaon, trackSelectionNames.at(kTofKaon), config.tofKaon.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalKaon);
-    this->addSelection(kTpcitsKaon, trackSelectionNames.at(kTpcitsKaon), config.tpcitsKaon.value, limits::kUpperLimit, false, false, config.pidIsOptionalKaon);
-    this->addSelection(kTpctofKaon, trackSelectionNames.at(kTpctofKaon), config.tpctofKaon.value, limits::kUpperLimit, false, false, config.pidIsOptionalKaon);
+    this->addSelection(kItsKaon, trackSelectionNames.at(kItsKaon), config.itsKaon.value, false, false, config.requirePidKaon);
+    this->addSelection(kTpcKaon, trackSelectionNames.at(kTpcKaon), config.tpcKaon.value, false, false, config.requirePidKaon);
+    this->addSelection(kTofKaon, trackSelectionNames.at(kTofKaon), config.tofKaon.value, false, false, config.requirePidKaon);
+    this->addSelection(kTpcitsKaon, trackSelectionNames.at(kTpcitsKaon), config.tpcitsKaon.value, limits::kUpperLimit, false, false, config.requirePidKaon);
+    this->addSelection(kTpctofKaon, trackSelectionNames.at(kTpctofKaon), config.tpctofKaon.value, limits::kUpperLimit, false, false, config.requirePidKaon);
     mKaonTofThres = config.minMomTofKaon.value;
 
     // add selections for Proton pid
-    this->addSelection(kItsProton, trackSelectionNames.at(kItsProton), config.itsProton.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalProton);
-    this->addSelection(kTpcProton, trackSelectionNames.at(kTpcProton), config.tpcProton.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalProton);
-    this->addSelection(kTofProton, trackSelectionNames.at(kTofProton), config.tofProton.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalProton);
-    this->addSelection(kTpcitsProton, trackSelectionNames.at(kTpcitsProton), config.tpcitsProton.value, limits::kUpperLimit, false, false, config.pidIsOptionalProton);
-    this->addSelection(kTpctofProton, trackSelectionNames.at(kTpctofProton), config.tpctofProton.value, limits::kUpperLimit, false, false, config.pidIsOptionalProton);
+    this->addSelection(kItsProton, trackSelectionNames.at(kItsProton), config.itsProton.value, false, false, config.requirePidProton);
+    this->addSelection(kTpcProton, trackSelectionNames.at(kTpcProton), config.tpcProton.value, false, false, config.requirePidProton);
+    this->addSelection(kTofProton, trackSelectionNames.at(kTofProton), config.tofProton.value, false, false, config.requirePidProton);
+    this->addSelection(kTpcitsProton, trackSelectionNames.at(kTpcitsProton), config.tpcitsProton.value, limits::kUpperLimit, false, false, config.requirePidProton);
+    this->addSelection(kTpctofProton, trackSelectionNames.at(kTpctofProton), config.tpctofProton.value, limits::kUpperLimit, false, false, config.requirePidProton);
     mProtonTofThres = config.minMomTofProton.value;
 
     // add selections for Deuteron pid
-    this->addSelection(kItsDeuteron, trackSelectionNames.at(kItsDeuteron), config.itsDeuteron.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalDeuteron);
-    this->addSelection(kTpcDeuteron, trackSelectionNames.at(kTpcDeuteron), config.tpcDeuteron.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalDeuteron);
-    this->addSelection(kTofDeuteron, trackSelectionNames.at(kTofDeuteron), config.tofDeuteron.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalDeuteron);
-    this->addSelection(kTpcitsDeuteron, trackSelectionNames.at(kTpcitsDeuteron), config.tpcitsDeuteron.value, limits::kUpperLimit, false, false, config.pidIsOptionalDeuteron);
-    this->addSelection(kTpctofDeuteron, trackSelectionNames.at(kTpctofDeuteron), config.tpctofDeuteron.value, limits::kUpperLimit, false, false, config.pidIsOptionalDeuteron);
+    this->addSelection(kItsDeuteron, trackSelectionNames.at(kItsDeuteron), config.itsDeuteron.value, false, false, config.requirePidDeuteron);
+    this->addSelection(kTpcDeuteron, trackSelectionNames.at(kTpcDeuteron), config.tpcDeuteron.value, false, false, config.requirePidDeuteron);
+    this->addSelection(kTofDeuteron, trackSelectionNames.at(kTofDeuteron), config.tofDeuteron.value, false, false, config.requirePidDeuteron);
+    this->addSelection(kTpcitsDeuteron, trackSelectionNames.at(kTpcitsDeuteron), config.tpcitsDeuteron.value, limits::kUpperLimit, false, false, config.requirePidDeuteron);
+    this->addSelection(kTpctofDeuteron, trackSelectionNames.at(kTpctofDeuteron), config.tpctofDeuteron.value, limits::kUpperLimit, false, false, config.requirePidDeuteron);
     mDeuteronTofThres = config.minMomTofDeuteron.value;
 
     // add selections for Triton pid
-    this->addSelection(kItsTriton, trackSelectionNames.at(kItsTriton), config.itsTriton.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalTriton);
-    this->addSelection(kTpcTriton, trackSelectionNames.at(kTpcTriton), config.tpcTriton.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalTriton);
-    this->addSelection(kTofTriton, trackSelectionNames.at(kTofTriton), config.tofTriton.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalTriton);
-    this->addSelection(kTpcitsTriton, trackSelectionNames.at(kTpcitsTriton), config.tpcitsTriton.value, limits::kUpperLimit, false, false, config.pidIsOptionalTriton);
-    this->addSelection(kTpctofTriton, trackSelectionNames.at(kTpctofTriton), config.tpctofTriton.value, limits::kUpperLimit, false, false, config.pidIsOptionalTriton);
+    this->addSelection(kItsTriton, trackSelectionNames.at(kItsTriton), config.itsTriton.value, false, false, config.requirePidTriton);
+    this->addSelection(kTpcTriton, trackSelectionNames.at(kTpcTriton), config.tpcTriton.value, false, false, config.requirePidTriton);
+    this->addSelection(kTofTriton, trackSelectionNames.at(kTofTriton), config.tofTriton.value, false, false, config.requirePidTriton);
+    this->addSelection(kTpcitsTriton, trackSelectionNames.at(kTpcitsTriton), config.tpcitsTriton.value, limits::kUpperLimit, false, false, config.requirePidTriton);
+    this->addSelection(kTpctofTriton, trackSelectionNames.at(kTpctofTriton), config.tpctofTriton.value, limits::kUpperLimit, false, false, config.requirePidTriton);
     mTritonTofThres = config.minMomTofTriton.value;
 
     // add selections for Helium pid
-    this->addSelection(kItsHelium, trackSelectionNames.at(kItsHelium), config.itsHelium.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalHelium);
-    this->addSelection(kTpcHelium, trackSelectionNames.at(kTpcHelium), config.tpcHelium.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalHelium);
-    this->addSelection(kTofHelium, trackSelectionNames.at(kTofHelium), config.tofHelium.value, limits::kAbsUpperLimit, false, false, config.pidIsOptionalHelium);
-    this->addSelection(kTpcitsHelium, trackSelectionNames.at(kTpcitsHelium), config.tpcitsHelium.value, limits::kUpperLimit, false, false, config.pidIsOptionalHelium);
-    this->addSelection(kTpctofHelium, trackSelectionNames.at(kTpctofHelium), config.tpctofHelium.value, limits::kUpperLimit, false, false, config.pidIsOptionalHelium);
+    this->addSelection(kItsHelium, trackSelectionNames.at(kItsHelium), config.itsHelium.value, false, false, config.requirePidHelium);
+    this->addSelection(kTpcHelium, trackSelectionNames.at(kTpcHelium), config.tpcHelium.value, false, false, config.requirePidHelium);
+    this->addSelection(kTofHelium, trackSelectionNames.at(kTofHelium), config.tofHelium.value, false, false, config.requirePidHelium);
+    this->addSelection(kTpcitsHelium, trackSelectionNames.at(kTpcitsHelium), config.tpcitsHelium.value, limits::kUpperLimit, false, false, config.requirePidHelium);
+    this->addSelection(kTpctofHelium, trackSelectionNames.at(kTpctofHelium), config.tpctofHelium.value, limits::kUpperLimit, false, false, config.requirePidHelium);
     mHeliumTofThres = config.minMomTofHelium.value;
 
     this->setupContainers<HistName>(registry);
@@ -378,30 +381,20 @@ class TrackSelection : public BaseSelection<float, o2::aod::femtodatatypes::Trac
                    TrackSels tpc,
                    TrackSels tof,
                    TrackSels tpcits,
-                   TrackSels tpctof)
+                   TrackSels tpctof,
+                   bool ignoreThreshold = false)
   {
-    // if track is below threshold, just check every PID
-    if (Track.p() < tofThreshold) {
-      this->evaluateObservable(its, nsigmaIts);
-      this->evaluateObservable(tpc, nsigmaTpc);
-      this->evaluateObservable(tpcits, std::hypot(nsigmaTpc, nsigmaIts));
-      this->evaluateObservable(tof, nsigmaTof);
-      this->evaluateObservable(tpctof, std::hypot(nsigmaTpc, nsigmaTof));
+    // above threshold without TOF: skip entirely unless forced
+    // forced evaluation is used in the second pass to populate rejection bits
+    if (!ignoreThreshold && Track.p() >= tofThreshold && !Track.hasTOF()) {
       return;
     }
-    // if track is above threshold, check if TOF PID is available
-    // if not, we dont check any selection and they stay at reseted values, i.e. the cut fails
+    this->evaluateObservable(its, nsigmaIts);
+    this->evaluateObservable(tpc, nsigmaTpc);
+    this->evaluateObservable(tpcits, std::hypot(nsigmaTpc, nsigmaIts));
     if (Track.hasTOF()) {
-      // if tof inforamtion is available, check them first
       this->evaluateObservable(tof, nsigmaTof);
       this->evaluateObservable(tpctof, std::hypot(nsigmaTpc, nsigmaTof));
-      // if both failed, the bitmask will be 0 and there is no need to check tpc and its information since we do not want to have this track
-      // so if we just bail out here, the PID for this particle type will failed for its, tpc and tof
-      if (this->passesOptionalSelection(tof) || this->passesOptionalSelection(tpctof)) {
-        this->evaluateObservable(its, nsigmaIts);
-        this->evaluateObservable(tpc, nsigmaTpc);
-        this->evaluateObservable(tpcits, std::hypot(nsigmaTpc, nsigmaIts));
-      }
     }
   }
 
@@ -416,90 +409,34 @@ class TrackSelection : public BaseSelection<float, o2::aod::femtodatatypes::Trac
     this->evaluateObservable(kTPCsClsFracMax, static_cast<float>(Track.tpcNClsShared()) / static_cast<float>(Track.tpcNClsFound()));
     this->evaluateObservable(kITSnClsMin, Track.itsNCls());
     this->evaluateObservable(kITSnClsIbMin, Track.itsNClsInnerBarrel());
-
-    // evalue bitmask for pt dependent dca cuts
     this->updateLimits(kDCAxyMax, Track.pt());
     this->evaluateObservable(kDCAxyMax, Track.dcaXY());
-
     this->updateLimits(kDCAzMax, Track.pt());
     this->evaluateObservable(kDCAzMax, Track.dcaZ());
 
-    this->evaluatePid(Track,
-                      mElectronTofThres,
-                      Track.itsNSigmaEl(),
-                      Track.tpcNSigmaEl(),
-                      Track.tofNSigmaEl(),
-                      kItsElectron,
-                      kTpcElectron,
-                      kTofElectron,
-                      kTpcitsElectron,
-                      kTpctofElectron);
+    // first pass: threshold-aware PID evaluation
+    // determines if the track passes any optional selection and should be stored
+    this->evaluatePid(Track, mElectronTofThres, Track.itsNSigmaEl(), Track.tpcNSigmaEl(), Track.tofNSigmaEl(), kItsElectron, kTpcElectron, kTofElectron, kTpcitsElectron, kTpctofElectron);
+    this->evaluatePid(Track, mPionTofThres, Track.itsNSigmaPi(), Track.tpcNSigmaPi(), Track.tofNSigmaPi(), kItsPion, kTpcPion, kTofPion, kTpcitsPion, kTpctofPion);
+    this->evaluatePid(Track, mKaonTofThres, Track.itsNSigmaKa(), Track.tpcNSigmaKa(), Track.tofNSigmaKa(), kItsKaon, kTpcKaon, kTofKaon, kTpcitsKaon, kTpctofKaon);
+    this->evaluatePid(Track, mProtonTofThres, Track.itsNSigmaPr(), Track.tpcNSigmaPr(), Track.tofNSigmaPr(), kItsProton, kTpcProton, kTofProton, kTpcitsProton, kTpctofProton);
+    this->evaluatePid(Track, mDeuteronTofThres, Track.itsNSigmaDe(), Track.tpcNSigmaDe(), Track.tofNSigmaDe(), kItsDeuteron, kTpcDeuteron, kTofDeuteron, kTpcitsDeuteron, kTpctofDeuteron);
+    this->evaluatePid(Track, mTritonTofThres, Track.itsNSigmaTr(), Track.tpcNSigmaTr(), Track.tofNSigmaTr(), kItsTriton, kTpcTriton, kTofTriton, kTpcitsTriton, kTpctofTriton);
+    this->evaluatePid(Track, mHeliumTofThres, Track.itsNSigmaHe(), Track.tpcNSigmaHe(), Track.tofNSigmaHe(), kItsHelium, kTpcHelium, kTofHelium, kTpcitsHelium, kTpctofHelium);
 
-    this->evaluatePid(Track,
-                      mPionTofThres,
-                      Track.itsNSigmaPi(),
-                      Track.tpcNSigmaPi(),
-                      Track.tofNSigmaPi(),
-                      kItsPion,
-                      kTpcPion,
-                      kTofPion,
-                      kTpcitsPion,
-                      kTpctofPion);
-
-    this->evaluatePid(Track,
-                      mKaonTofThres,
-                      Track.itsNSigmaKa(),
-                      Track.tpcNSigmaKa(),
-                      Track.tofNSigmaKa(),
-                      kItsKaon,
-                      kTpcKaon,
-                      kTofKaon,
-                      kTpcitsKaon,
-                      kTpctofKaon);
-
-    this->evaluatePid(Track,
-                      mProtonTofThres,
-                      Track.itsNSigmaPr(),
-                      Track.tpcNSigmaPr(),
-                      Track.tofNSigmaPr(),
-                      kItsProton,
-                      kTpcProton,
-                      kTofProton,
-                      kTpcitsProton,
-                      kTpctofProton);
-
-    this->evaluatePid(Track,
-                      mDeuteronTofThres,
-                      Track.itsNSigmaDe(),
-                      Track.tpcNSigmaDe(),
-                      Track.tofNSigmaDe(),
-                      kItsDeuteron,
-                      kTpcDeuteron,
-                      kTofDeuteron,
-                      kTpcitsDeuteron,
-                      kTpctofDeuteron);
-
-    this->evaluatePid(Track,
-                      mTritonTofThres,
-                      Track.itsNSigmaTr(),
-                      Track.tpcNSigmaTr(),
-                      Track.tofNSigmaTr(),
-                      kItsTriton,
-                      kTpcTriton,
-                      kTofTriton,
-                      kTpcitsTriton,
-                      kTpctofTriton);
-
-    this->evaluatePid(Track,
-                      mHeliumTofThres,
-                      Track.itsNSigmaHe(),
-                      Track.tpcNSigmaHe(),
-                      Track.tofNSigmaHe(),
-                      kItsHelium,
-                      kTpcHelium,
-                      kTofHelium,
-                      kTpcitsHelium,
-                      kTpctofHelium);
+    // second pass: if the track passes minimal and any optional selection,
+    // re-evaluate all species ignoring thresholds so rejection bits are fully
+    // populated for all competing hypotheses. evaluate() resets each container
+    // before writing, so no explicit reset is needed before this pass.
+    if (this->passesAllRequiredSelections()) {
+      this->evaluatePid(Track, mElectronTofThres, Track.itsNSigmaEl(), Track.tpcNSigmaEl(), Track.tofNSigmaEl(), kItsElectron, kTpcElectron, kTofElectron, kTpcitsElectron, kTpctofElectron, true);
+      this->evaluatePid(Track, mPionTofThres, Track.itsNSigmaPi(), Track.tpcNSigmaPi(), Track.tofNSigmaPi(), kItsPion, kTpcPion, kTofPion, kTpcitsPion, kTpctofPion, true);
+      this->evaluatePid(Track, mKaonTofThres, Track.itsNSigmaKa(), Track.tpcNSigmaKa(), Track.tofNSigmaKa(), kItsKaon, kTpcKaon, kTofKaon, kTpcitsKaon, kTpctofKaon, true);
+      this->evaluatePid(Track, mProtonTofThres, Track.itsNSigmaPr(), Track.tpcNSigmaPr(), Track.tofNSigmaPr(), kItsProton, kTpcProton, kTofProton, kTpcitsProton, kTpctofProton, true);
+      this->evaluatePid(Track, mDeuteronTofThres, Track.itsNSigmaDe(), Track.tpcNSigmaDe(), Track.tofNSigmaDe(), kItsDeuteron, kTpcDeuteron, kTofDeuteron, kTpcitsDeuteron, kTpctofDeuteron, true);
+      this->evaluatePid(Track, mTritonTofThres, Track.itsNSigmaTr(), Track.tpcNSigmaTr(), Track.tofNSigmaTr(), kItsTriton, kTpcTriton, kTofTriton, kTpcitsTriton, kTpctofTriton, true);
+      this->evaluatePid(Track, mHeliumTofThres, Track.itsNSigmaHe(), Track.tpcNSigmaHe(), Track.tofNSigmaHe(), kItsHelium, kTpcHelium, kTofHelium, kTpcitsHelium, kTpctofHelium, true);
+    }
 
     this->assembleBitmask<HistName>();
   }
@@ -586,8 +523,8 @@ class TrackBuilder
     LOG(info) << "Initialization done...";
   }
 
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-  void fillTracks(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4 const& tracks, T5& trackProducts, T6& indexMap)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void fillTracks(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4 const& tracks, T5& trackProducts)
   {
     if (!mFillAnyTable) {
       return;
@@ -602,12 +539,12 @@ class TrackBuilder
       }
 
       collisionBuilder.template fillCollision<system>(collisionProducts, col);
-      this->fillTrack<modes::Track::kPrimaryTrack>(track, trackProducts, collisionProducts, indexMap);
+      this->fillTrack<modes::Track::kTrack>(track, trackProducts, collisionProducts);
     }
   }
 
-  template <modes::Track type, typename T1, typename T2, typename T3, typename T4>
-  void fillTrack(T1 const& track, T2& trackProducts, T3& collisionProducts, T4& indexMap)
+  template <modes::Track type, typename T1, typename T2, typename T3>
+  void fillTrack(T1 const& track, T2& trackProducts, T3& collisionProducts)
   {
     if (mProduceTracks) {
       trackProducts.producedTracks(collisionProducts.producedCollision.lastIndex(),
@@ -617,7 +554,7 @@ class TrackBuilder
       indexMap.emplace(track.globalIndex(), trackProducts.producedTracks.lastIndex());
     }
     if (mProduceTrackMasks) {
-      if constexpr (type == modes::Track::kPrimaryTrack) {
+      if constexpr (type == modes::Track::kTrack) {
         trackProducts.producedTrackMasks(mTrackSelection.getBitmask());
       } else {
         trackProducts.producedTrackMasks(static_cast<o2::aod::femtodatatypes::TrackMaskType>(0u));
@@ -641,69 +578,92 @@ class TrackBuilder
                                         track.mass());
     }
     if (mProduceElectronPids) {
-      if constexpr (type == modes::Track::kPrimaryTrack) {
-        trackProducts.producedElectronPids(track.itsNSigmaEl(), track.tpcNSigmaEl(), track.tofNSigmaEl());
-      } else {
-        trackProducts.producedElectronPids(0, track.tpcNSigmaEl(), track.tofNSigmaEl());
-      }
+      trackProducts.producedElectronPids(track.itsNSigmaEl(), track.tpcNSigmaEl(), track.tofNSigmaEl());
     }
     if (mProducePionPids) {
-      if constexpr (type == modes::Track::kPrimaryTrack) {
-        trackProducts.producedPionPids(track.itsNSigmaPi(), track.tpcNSigmaPi(), track.tofNSigmaPi());
-      } else {
-        trackProducts.producedPionPids(0, track.tpcNSigmaPi(), track.tofNSigmaPi());
-      }
+      trackProducts.producedPionPids(track.itsNSigmaPi(), track.tpcNSigmaPi(), track.tofNSigmaPi());
     }
     if (mProduceKaonPids) {
-      if constexpr (type == modes::Track::kPrimaryTrack) {
-        trackProducts.producedKaonPids(track.itsNSigmaKa(), track.tpcNSigmaKa(), track.tofNSigmaKa());
-      } else {
-        trackProducts.producedKaonPids(0, track.tpcNSigmaKa(), track.tofNSigmaKa());
-      }
+      trackProducts.producedKaonPids(track.itsNSigmaKa(), track.tpcNSigmaKa(), track.tofNSigmaKa());
     }
     if (mProduceProtonPids) {
-      if constexpr (type == modes::Track::kPrimaryTrack) {
-        trackProducts.producedProtonPids(track.itsNSigmaPr(), track.tpcNSigmaPr(), track.tofNSigmaPr());
-      } else {
-        trackProducts.producedProtonPids(0, track.tpcNSigmaPr(), track.tofNSigmaPr());
-      }
+      trackProducts.producedProtonPids(track.itsNSigmaPr(), track.tpcNSigmaPr(), track.tofNSigmaPr());
     }
     if (mProduceDeuteronPids) {
-      if constexpr (type == modes::Track::kPrimaryTrack) {
-        trackProducts.producedDeuteronPids(track.itsNSigmaDe(), track.tpcNSigmaDe(), track.tofNSigmaDe());
-      } else {
-        trackProducts.producedDeuteronPids(0, track.tpcNSigmaDe(), track.tofNSigmaDe());
-      }
+      trackProducts.producedDeuteronPids(track.itsNSigmaDe(), track.tpcNSigmaDe(), track.tofNSigmaDe());
     }
     if (mProduceTritonPids) {
-      if constexpr (type == modes::Track::kPrimaryTrack) {
-        trackProducts.producedTritonPids(track.itsNSigmaTr(), track.tpcNSigmaTr(), track.tofNSigmaTr());
-      } else {
-        trackProducts.producedTritonPids(0, track.tpcNSigmaTr(), track.tofNSigmaTr());
-      }
+      trackProducts.producedTritonPids(track.itsNSigmaTr(), track.tpcNSigmaTr(), track.tofNSigmaTr());
     }
     if (mProduceHeliumPids) {
-      if constexpr (type == modes::Track::kPrimaryTrack) {
-        trackProducts.producedHeliumPids(track.itsNSigmaHe(), track.tpcNSigmaHe(), track.tofNSigmaHe());
-      } else {
-        trackProducts.producedHeliumPids(0, track.tpcNSigmaHe(), track.tofNSigmaHe());
-      }
+      trackProducts.producedHeliumPids(track.itsNSigmaHe(), track.tpcNSigmaHe(), track.tofNSigmaHe());
     }
   }
 
-  template <modes::Track type, typename T1, typename T2, typename T3, typename T4>
-  int64_t getDaughterIndex(const T1& daughter, T2& trackProducts, T3& collisionProducts, T4& indexMap)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
+  void fillMcTracks(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4 const& mcCols, T5 const& tracks, T6 const& tracksWithItsPid, T7& trackProducts, T8 const& mcParticles, T9& mcBuilder, T10& mcProducts)
+  {
+    if (!mFillAnyTable) {
+      return;
+    }
+    for (const auto& trackWithItsPid : tracksWithItsPid) {
+      if (!mTrackSelection.checkFilters(trackWithItsPid)) {
+        continue;
+      }
+      mTrackSelection.applySelections(trackWithItsPid);
+      if (!mTrackSelection.passesAllRequiredSelections()) {
+        continue;
+      }
+      collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
+      // get track from the track table so we can dereference mc particle properly
+      auto track = tracks.iteratorAt(trackWithItsPid.index());
+      this->template fillMcTrack<system, modes::Track::kTrack>(col, collisionProducts, mcCols, track, trackWithItsPid, trackProducts, mcParticles, mcBuilder, mcProducts);
+    }
+  }
+
+  template <modes::System system, modes::Track trackType, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+  void fillMcTrack(T1 const& col, T2& collisionProducts, T3 const& mcCols, T4 const& track, T5 const& trackWithItsPid, T6& trackProducts, T7 const& mcParticles, T8& mcBuilder, T9& mcProducts)
+  {
+    if (!mProduceTracks) {
+      return;
+    }
+    this->template fillTrack<trackType>(trackWithItsPid, trackProducts, collisionProducts);
+    mcBuilder.template fillMcTrackWithLabel<system>(col, mcCols, track, mcParticles, mcProducts);
+  }
+
+  template <modes::Track type, typename T1, typename T2, typename T3>
+  int64_t getDaughterIndex(const T1& daughter, T2& trackProducts, T3& collisionProducts)
   {
     auto result = utils::getIndex(daughter.globalIndex(), indexMap);
     if (result) {
       return result.value();
     } else {
-      this->fillTrack<type>(daughter, trackProducts, collisionProducts, indexMap);
+      this->fillTrack<type>(daughter, trackProducts, collisionProducts);
       int64_t idx = trackProducts.producedTracks.lastIndex();
-      indexMap.emplace(daughter.globalIndex(), idx);
       return idx;
     }
   }
+
+  template <modes::System system, modes::Track type, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+  int64_t getDaughterIndex(const T1& col, T2& collisionProducts, T3 const& mcCols, const T4& daughter, T5& daughterWithItsPid, T6& trackProducts, T7 const& mcParticles, T8& mcBuilder, T9& mcProducts)
+  {
+    auto result = utils::getIndex(daughter.globalIndex(), indexMap);
+    if (result) {
+      // daugher already in track table
+      return result.value();
+    } else {
+      this->fillMcTrack<system, type>(col, collisionProducts, mcCols, daughter, daughterWithItsPid, trackProducts, mcParticles, mcBuilder, mcProducts);
+      // daughter is last track which was added added
+      return trackProducts.producedTracks.lastIndex();
+    }
+  }
+
+  template <typename T>
+  void reset(T const& tracks)
+  {
+    indexMap.clear();
+    indexMap.reserve(tracks.size());
+  };
 
  private:
   TrackSelection<HistName> mTrackSelection;
@@ -719,6 +679,8 @@ class TrackBuilder
   bool mProduceDeuteronPids = false;
   bool mProduceTritonPids = false;
   bool mProduceHeliumPids = false;
+
+  std::unordered_map<int64_t, int64_t> indexMap; // for mapping tracks to daughers of lambdas, cascades and resonances ...
 };
 
 struct TrackBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
@@ -728,8 +690,8 @@ struct TrackBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
 
 struct ConfTrackTablesDerivedToDerived : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("TrackTables");
-  o2::framework::Configurable<int> limitTrack1{"limitTrack1", 1, "At least this many tracks of type 1 need to be in the collision"};
-  o2::framework::Configurable<int> limitTrack2{"limitTrack2", 0, "At least this many tracks of type 2 need to be in the collision"};
+  o2::framework::Configurable<int> limitTrack1{"limitTrack1", 1, "At least this many tracks of type 1 need to be in the collision. Ignored if set to 0."};
+  o2::framework::Configurable<int> limitTrack2{"limitTrack2", 0, "At least this many tracks of type 2 need to be in the collision. Ignored if set to 0."};
 };
 
 class TrackBuilderDerivedToDerived
@@ -743,6 +705,10 @@ class TrackBuilderDerivedToDerived
   {
     mLimitTrack1 = config.limitTrack1.value;
     mLimitTrack2 = config.limitTrack2.value;
+
+    if (mLimitTrack1 == 0 && mLimitTrack2 == 0) {
+      LOG(fatal) << "Both track limits are 0. Breaking...";
+    }
   }
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5>
@@ -750,47 +716,51 @@ class TrackBuilderDerivedToDerived
   {
     auto trackSlice1 = partitionTrack1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     auto trackSlice2 = partitionTrack2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-    if (trackSlice1.size() >= mLimitTrack1 && trackSlice2.size() >= mLimitTrack2) {
-      return false;
-    }
-    return true;
+    return trackSlice1.size() < mLimitTrack1 || trackSlice2.size() < mLimitTrack2;
   }
 
-  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
-  void processTracks(T1& col, T2& /*trackTable*/, T3& partitionTrack1, T4& partitionTrack2, T5& indexMap, T6& cache, T7& newTrackTable, T8& newCollisionTable)
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
+  void processTracks(T1& col, T2& /*trackTable*/, T3& partitionTrack1, T4& partitionTrack2, T5& cache, T6& newTrackTable, T7& newCollisionTable)
   {
-    auto trackSlice1 = partitionTrack1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-    auto trackSlice2 = partitionTrack2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    indexMap.clear();
 
-    for (auto const& track : trackSlice1) {
-      this->fillTrack(track, newTrackTable, newCollisionTable, indexMap);
+    if (mLimitTrack1 > 0) {
+      auto trackSlice1 = partitionTrack1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+      for (auto const& track : trackSlice1) {
+        this->fillTrack(track, newTrackTable, newCollisionTable);
+      }
     }
-    for (auto const& track : trackSlice2) {
-      this->fillTrack(track, newTrackTable, newCollisionTable, indexMap);
+
+    if (mLimitTrack2 > 0) {
+      auto trackSlice2 = partitionTrack2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+      for (auto const& track : trackSlice2) {
+        this->fillTrack(track, newTrackTable, newCollisionTable);
+      }
     }
   }
 
-  template <typename T1, typename T2, typename T3, typename T4>
-  void fillTrack(T1 const& track, T2& trackProducts, T3& collisionProducts, T4& indexMap)
+  template <typename T1, typename T2, typename T3>
+  void fillTrack(T1 const& track, T2& trackProducts, T3& collisionProducts)
   {
-    trackProducts.producedTracks(collisionProducts.producedCollision.lastIndex(),
-                                 track.signedPt(),
-                                 track.eta(),
-                                 track.phi());
-    trackProducts.producedTrackMasks(track.mask());
-    indexMap.emplace(track.globalIndex(), trackProducts.producedTracks.lastIndex());
+    if (indexMap.find(track.globalIndex()) == indexMap.end()) { // protect against double filling
+      trackProducts.producedTracks(collisionProducts.producedCollision.lastIndex(),
+                                   track.signedPt(),
+                                   track.eta(),
+                                   track.phi());
+      trackProducts.producedTrackMasks(track.mask());
+      indexMap.emplace(track.globalIndex(), trackProducts.producedTracks.lastIndex());
+    }
   }
 
-  template <typename T1, typename T2, typename T3, typename T4>
-  int64_t getDaughterIndex(const T1& daughter, T2& trackProducts, T3& collisionProducts, T4& indexMap)
+  template <typename T1, typename T2, typename T3>
+  int64_t getDaughterIndex(const T1& daughter, T2& trackProducts, T3& collisionProducts)
   {
     auto result = utils::getIndex(daughter.globalIndex(), indexMap);
     if (result) {
       return result.value();
     } else {
-      this->fillTrack(daughter, trackProducts, collisionProducts, indexMap);
+      this->fillTrack(daughter, trackProducts, collisionProducts);
       int64_t idx = trackProducts.producedTracks.lastIndex();
-      indexMap.emplace(daughter.globalIndex(), idx);
       return idx;
     }
   }
@@ -798,6 +768,8 @@ class TrackBuilderDerivedToDerived
  private:
   int mLimitTrack1 = 0;
   int mLimitTrack2 = 0;
+
+  std::unordered_map<int64_t, int64_t> indexMap; // for mapping tracks to daughers of lambdas, cascades and resonances ...
 };
 
 } // namespace trackbuilder

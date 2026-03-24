@@ -30,7 +30,6 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -75,6 +74,15 @@ static const std::vector<std::string> LambdaSels = {"NoSel", "V0Radius", "DCADau
 
 static const std::vector<std::string> DirList = {"BeforeSel", "AfterSel"};
 
+enum CentEstimator {
+  kCentFT0C = 0,
+  kCentFT0M,
+  kCentFT0CVariant1,
+  kCentMFT,
+  kCentNGlobal,
+  kCentFV0A
+};
+
 struct sigmaanalysis {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   ctpRateFetcher rateFetcher;
@@ -88,6 +96,7 @@ struct sigmaanalysis {
 
   // Event level
   Configurable<bool> doPPAnalysis{"doPPAnalysis", true, "if in pp, set to true"};
+  Configurable<int> centralityEstimator{"centralityEstimator", kCentFT0C, "Run 3 centrality estimator (0:CentFT0C, 1:CentFT0M, 2:CentFT0CVariant1, 3:CentMFT, 4:CentNGlobal, 5:CentFV0A)"};
   Configurable<bool> fGetIR{"fGetIR", false, "Flag to retrieve the IR info."};
   Configurable<bool> fIRCrashOnNull{"fIRCrashOnNull", false, "Flag to avoid CTP RateFetcher crash."};
   Configurable<std::string> irSource{"irSource", "T0VTX", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
@@ -289,6 +298,7 @@ struct sigmaanalysis {
 
     // Event Counters
     histos.add("hEventCentrality", "hEventCentrality", kTH1D, {axisCentrality});
+    histos.add("hCentralityVsNch", "hCentralityVsNch", kTH2D, {{101, 0.0f, 101.0f}, axisNch});
 
     histos.add("hEventSelection", "hEventSelection", kTH1D, {{21, -0.5f, +20.5f}});
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
@@ -574,6 +584,26 @@ struct sigmaanalysis {
     histos.print();
   }
 
+  // Auxiliary function to get the centrality of a collision according to the selected estimator
+  template <typename TCollision>
+  auto getCentralityRun3(TCollision const& collision)
+  {
+    if (centralityEstimator == kCentFT0C)
+      return collision.centFT0C();
+    else if (centralityEstimator == kCentFT0M)
+      return collision.centFT0M();
+    else if (centralityEstimator == kCentFT0CVariant1)
+      return collision.centFT0CVariant1();
+    else if (centralityEstimator == kCentMFT)
+      return collision.centMFT();
+    else if (centralityEstimator == kCentNGlobal)
+      return collision.centNGlobal();
+    else if (centralityEstimator == kCentFV0A)
+      return collision.centFV0A();
+
+    return -1.f;
+  }
+
   // ______________________________________________________
   // Check whether the collision passes our collision selections
   // Should work with collisions, mccollisions, stracollisions and stramccollisions tables!
@@ -684,7 +714,7 @@ struct sigmaanalysis {
 
     // Fetch interaction rate only if required (in order to limit ccdb calls)
     float interactionRate = (fGetIR) ? rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource, fIRCrashOnNull) * 1.e-3 : -1;
-    float centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
+    float centrality = getCentralityRun3(collision);
 
     if (fGetIR) {
       if (interactionRate < 0)
@@ -709,6 +739,7 @@ struct sigmaanalysis {
     // Fill centrality histogram after event selection
     if (fillHists)
       histos.fill(HIST("hEventCentrality"), centrality);
+    histos.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
 
     return true;
   }
@@ -782,7 +813,7 @@ struct sigmaanalysis {
 
         if (biggestNContribs < collision.multPVTotalContributors()) {
           biggestNContribs = collision.multPVTotalContributors();
-          centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
+          centrality = getCentralityRun3(collision);
         }
 
         nCollisions++;
@@ -852,7 +883,7 @@ struct sigmaanalysis {
 
           if (listBestCollisionIdx[mcCollision.globalIndex()] > -1) {
             auto collision = collisions.iteratorAt(listBestCollisionIdx[mcCollision.globalIndex()]);
-            centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
+            centrality = getCentralityRun3(collision);
 
             if (genParticle.isSigma0())
               histos.fill(HIST("Gen/h2dGenSigma0VsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
@@ -1018,7 +1049,7 @@ struct sigmaanalysis {
     int LambdaTrkCode = retrieveV0TrackCode<false>(sigma);
 
     float photonRZLineCut = TMath::Abs(sigma.photonZconv()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-photonSelections.PhotonMaxDauEta))) - photonSelections.PhotonLineCutZ0;
-    float centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
+    float centrality = getCentralityRun3(collision);
 
     if (fillSelhistos) {
       //_______________________________________
@@ -1658,7 +1689,7 @@ struct sigmaanalysis {
         continue;
 
       // Pi0s loop
-      float centrality = doPPAnalysis ? coll.centFT0M() : coll.centFT0C();
+      float centrality = getCentralityRun3(coll);
 
       for (size_t i = 0; i < pi0grouped[coll.globalIndex()].size(); i++) {
         auto pi0 = fullPi0s.rawIteratorAt(pi0grouped[coll.globalIndex()][i]);

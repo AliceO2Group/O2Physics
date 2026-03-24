@@ -177,7 +177,7 @@ class FemtoUniverseMath
   /// \param mass2 Mass of particle 2
   /// \param isiden Identical or non-identical particle pair
   template <typename T>
-  static std::vector<double> newpairfunc(const T& part1, const float mass1, const T& part2, const float mass2, bool isiden)
+  static std::vector<double> newpairfunc(const T& part1, const float mass1, const T& part2, const float mass2, bool isIdenLCMS, bool isWeight, bool isIdenPRF)
   {
     const double e1 = std::sqrt(std::pow(part1.px(), 2) + std::pow(part1.py(), 2) + std::pow(part1.pz(), 2) + std::pow(mass1, 2));
     const double e2 = std::sqrt(std::pow(part2.px(), 2) + std::pow(part2.py(), 2) + std::pow(part2.pz(), 2) + std::pow(mass2, 2));
@@ -185,6 +185,9 @@ class FemtoUniverseMath
     const ROOT::Math::PxPyPzEVector vecpart1(part1.px(), part1.py(), part1.pz(), e1);
     const ROOT::Math::PxPyPzEVector vecpart2(part2.px(), part2.py(), part2.pz(), e2);
     const ROOT::Math::PxPyPzEVector trackSum = vecpart1 + vecpart2;
+
+    const ROOT::Math::PtEtaPhiMVector vecspace_part1(part1.pt(), part1.eta(), part1.phi(), mass1);
+    const ROOT::Math::PtEtaPhiMVector vecspace_part2(part2.pt(), part2.eta(), part2.phi(), mass2);
 
     std::vector<double> vect;
 
@@ -237,7 +240,7 @@ class FemtoUniverseMath
     const double qinv = std::sqrt(fDKOutPRF * fDKOutPRF + fDKSidePRF * fDKSidePRF + fDKLongPRF * fDKLongPRF);
     const double kstar = std::sqrt(fKOut * fKOut + fDKSide * fDKSide + fDKLong * fDKLong);
 
-    if (isiden) {
+    if (isIdenLCMS) {
       vect.push_back(qinv);
       vect.push_back(fDKOutLCMS);
       vect.push_back(fDKSideLCMS);
@@ -248,7 +251,40 @@ class FemtoUniverseMath
       vect.push_back(fDKOut);
       vect.push_back(fDKSide);
       vect.push_back(fDKLong);
+      vect.push_back(1.0);
     }
+
+    if (isIdenLCMS && isWeight) {
+      const double x1_lcms = (vecspace_part1.x() * tPx + vecspace_part1.y() * tPy) / tPt;
+      const double y1_lcms = (-vecspace_part1.x() * tPy + vecspace_part1.y() * tPx) / tPt;
+      const double x2_lcms = (vecspace_part2.x() * tPx + vecspace_part2.y() * tPy) / tPt;
+      const double y2_lcms = (-vecspace_part2.x() * tPy + vecspace_part2.y() * tPx) / tPt;
+
+      const double z1_lcms = gamma * (vecspace_part1.z() - beta * vecspace_part1.t());
+      const double t1_lcms = gamma * (vecspace_part1.t() - beta * vecspace_part1.z());
+      const double z2_lcms = gamma * (vecspace_part2.z() - beta * vecspace_part2.t());
+      const double t2_lcms = gamma * (vecspace_part2.t() - beta * vecspace_part2.z());
+
+      const double mRO = (x1_lcms - x2_lcms) / 0.197327;
+      const double mRS = (y1_lcms - y2_lcms) / 0.197327;
+      const double mRL = (z1_lcms - z2_lcms) / 0.197327;
+      const double mDT = (t1_lcms - t2_lcms) / 0.197327;
+      const double rOutPRF = gammaOut * (mRO - betaOut * mDT);
+
+      const double phase_inv = fDKOutPRF * rOutPRF + fDKSidePRF * mRS + fDKLongPRF * mRL;
+      double quantumweight = 1.0 + TMath::Cos(2.0 * phase_inv);
+
+      vect.push_back(quantumweight);
+    } else {
+      vect.push_back(1.0);
+    }
+
+    if (isIdenPRF) {
+      vect.push_back(fDKOutPRF);
+      vect.push_back(fDKSidePRF);
+      vect.push_back(fDKLongPRF);
+    }
+
     return vect;
   }
 };

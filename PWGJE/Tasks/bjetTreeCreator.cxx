@@ -238,6 +238,10 @@ struct BJetTreeCreator {
   Configurable<float> jetEtaMin{"jetEtaMin", -99.0, "minimum jet pseudorapidity"};
   Configurable<float> jetEtaMax{"jetEtaMax", 99.0, "maximum jet pseudorapidity"};
 
+  Configurable<float> leadingConstituentPtMin{"leadingConstituentPtMin", -99.0, "minimum pT selection on jet constituent"};
+  Configurable<float> leadingConstituentPtMax{"leadingConstituentPtMax", 9999.0, "maximum pT selection on jet constituent"};
+  Configurable<float> jetAreaFractionMin{"jetAreaFractionMin", -99.0, "used to make a cut on the jet areas"};
+
   Configurable<float> maxConstSV{"maxConstSV", 999.0, "maximum number of SVs to be stored in the table"};
 
   Configurable<float> svReductionFactor{"svReductionFactor", 1.0, "factor for how many SVs to keep"};
@@ -442,6 +446,42 @@ struct BJetTreeCreator {
         }
       }
     }
+  }
+
+  template <typename AnyTracks, typename AnalysisJet>
+  bool isAcceptedJet(AnalysisJet const& jet)
+  {
+
+    if (jetAreaFractionMin > -98.0) {
+      if (jet.area() < jetAreaFractionMin * M_PI * (jet.r() / 100.0) * (jet.r() / 100.0)) {
+        return false;
+      }
+    }
+    bool checkConstituentPt = true;
+    bool checkConstituentMinPt = (leadingConstituentPtMin > -98.0);
+    bool checkConstituentMaxPt = (leadingConstituentPtMax < 9998.0);
+    if (!checkConstituentMinPt && !checkConstituentMaxPt) {
+      checkConstituentPt = false;
+    }
+
+    if (checkConstituentPt) {
+      bool isMinLeadingConstituent = !checkConstituentMinPt;
+      bool isMaxLeadingConstituent = true;
+
+      for (const auto& constituent : jet.template tracks_as<AnyTracks>()) {
+        double pt = constituent.pt();
+
+        if (checkConstituentMinPt && pt >= leadingConstituentPtMin) {
+          isMinLeadingConstituent = true;
+        }
+        if (checkConstituentMaxPt && pt > leadingConstituentPtMax) {
+          isMaxLeadingConstituent = false;
+        }
+      }
+      return isMinLeadingConstituent && isMaxLeadingConstituent;
+    }
+
+    return true;
   }
 
   using TrackLabelMap = std::unordered_map<std::string, std::vector<int>>;
@@ -742,16 +782,7 @@ struct BJetTreeCreator {
     auto const mcPJetsPerColl = MCPjets.sliceBy(mcpJetsPerCollision, collision.mcCollisionId());
 
     for (const auto& analysisJet : MCDjets) {
-
-      bool jetIncluded = false;
-      for (const auto& jetR : jetRadiiValues) {
-        if (analysisJet.r() == static_cast<int>(jetR * 100)) {
-          jetIncluded = true;
-          break;
-        }
-      }
-
-      if (!jetIncluded) {
+      if (!isAcceptedJet<JetTracksMCDwID>(analysisJet)) {
         continue;
       }
 

@@ -9,22 +9,32 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+o2physics_add_dpl_workflow(onthefly-decayer
+                    SOURCES onTheFlyDecayer.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsCommonDataFormats O2::DetectorsVertexing O2::DCAFitter O2Physics::ALICE3Core
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(onthefly-tracker
                     SOURCES onTheFlyTracker.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsCommonDataFormats O2::DetectorsVertexing O2::DCAFitter O2Physics::ALICE3Core O2Physics::FastTracker
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsCommonDataFormats O2::DetectorsVertexing O2::DCAFitter O2Physics::ALICE3Core O2Physics::FastTracker
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(onthefly-tofpid
                     SOURCES onTheFlyTofPid.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsCommonDataFormats O2Physics::ALICE3Core
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsCommonDataFormats O2Physics::ALICE3Core O2Physics::FastTracker
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(onthefly-richpid
                     SOURCES onTheFlyRichPid.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsCommonDataFormats O2Physics::ALICE3Core
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsCommonDataFormats O2Physics::ALICE3Core O2Physics::FastTracker
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(on-the-fly-tracker-pid
                     SOURCES onTheFlyTrackerPid.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsCommonDataFormats O2Physics::ALICE3Core
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsCommonDataFormats O2Physics::ALICE3Core O2Physics::FastTracker
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(on-the-fly-detector-geometry-provider
+                    SOURCES onTheFlyDetectorGeometryProvider.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::ALICE3Core O2Physics::FastTracker
                     COMPONENT_NAME Analysis)

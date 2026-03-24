@@ -62,7 +62,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-using recoStraCollisions = soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraCents, aod::StraRawCents, aod::StraCollLabels>;
+using recoStraCollisions = soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraCents, aod::StraCollLabels>;
 using reconstructedV0s = soa::Join<aod::V0CoreMCLabels, aod::V0Cores, aod::V0FoundTags, aod::V0MCCollRefs, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
 using reconstructedV0sNoMC = soa::Join<aod::V0Cores, aod::V0Extras>;
 
@@ -261,7 +261,7 @@ struct findableStudy {
     bool hasBeenFound = false;
     int nCandidatesWithTPC = 0;
 
-    for (auto& recv0 : recv0s) {
+    for (const auto& recv0 : recv0s) {
       if (recv0.v0Type() != 1)
         continue; // skip anything other than a standard V0
 

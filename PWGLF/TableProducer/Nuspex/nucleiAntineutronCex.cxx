@@ -28,6 +28,7 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/TrackParametrization.h>
 
+#include <TDatabasePDG.h>
 #include <TMCProcess.h>
 #include <TMath.h>
 #include <TPDGCode.h>
@@ -49,11 +50,11 @@ struct NucleiAntineutronCex {
   using TracksWCovMc = soa::Join<aod::TracksIU, aod::TracksExtra, aod::McTrackLabels, o2::aod::TracksCovIU>;
 
   // === Cut values ===
-  static constexpr double kIts2MinR = 2.2;    // ITS2 min radius [cm]
-  static constexpr double kIts2MaxR = 39.0;   // ITS2 max radius [cm]
+  static constexpr double kIts2MinR = 4.5;    // ITS2 min radius (exluding IB) [cm]
+  static constexpr double kIts2MaxR = 48.0;   // ITS2 max radius [cm]
   static constexpr double kIts2MaxVz = 39.0;  // ITS2 max |vz| [cm]
   static constexpr double kAccMaxEta = 1.2;   // acceptance |eta|
-  static constexpr double kAccMaxVz = 5.3;    // acceptance |vz| [cm]
+  static constexpr double kAccMaxVz = 10.0;   // acceptance |vz| [cm]
   static constexpr double kStrictEta = 0.9;   // tighter eta cut
   static constexpr double kInitDplane = 10.0; // init dplane
   static constexpr double kHuge = 1e9;        // fallback for bad denom
@@ -102,8 +103,24 @@ struct NucleiAntineutronCex {
     histos.add("pEta", "Pseudorapidity;#eta;Entries", kTH1F, {{100, -10., 10.}});
     histos.add("pP_ITScuts", "Momentum with ITS cuts;|p| (GeV/c);Entries", kTH1F, {{100, 0., 10.}});
 
-    // test (MC)
-    histos.add("antip_test", "Secondary antiprotons;|p| (GeV/c);Entries", kTH1F, {{100, 0., 10.}});
+    // Process enum breakdown (secondary antiproton that anchors the SV)
+    histos.add("hProcEnumAP_CEX", "procEnum of secondary #bar{p} (CEX);procEnum;Entries", kTH1I, {{100, -0.5, 99.5}});
+    histos.add("hProcEnumAP_BG", "procEnum of secondary #bar{p} (BG);procEnum;Entries", kTH1I, {{100, -0.5, 99.5}});
+
+    // Multiplicity/composition at the SV (MC truth, for FINAL selected candidates)
+    histos.add("hVtxNAll_CEX", "N(all) secondaries at SV (CEX);N;Entries", kTH1I, {{60, -0.5, 59.5}});
+    histos.add("hVtxNAll_BG", "N(all) secondaries at SV (BG);N;Entries", kTH1I, {{60, -0.5, 59.5}});
+    histos.add("hVtxNCh_CEX", "N(charged) secondaries at SV (CEX);N;Entries", kTH1I, {{60, -0.5, 59.5}});
+    histos.add("hVtxNCh_BG", "N(charged) secondaries at SV (BG);N;Entries", kTH1I, {{60, -0.5, 59.5}});
+    histos.add("hVtxNNeut_CEX", "N(neutral) secondaries at SV (CEX);N;Entries", kTH1I, {{60, -0.5, 59.5}});
+    histos.add("hVtxNNeut_BG", "N(neutral) secondaries at SV (BG);N;Entries", kTH1I, {{60, -0.5, 59.5}});
+
+    histos.add("hVtxNPi0_CEX", "N(#pi^{0}) at SV (CEX);N;Entries", kTH1I, {{40, -0.5, 39.5}});
+    histos.add("hVtxNPi0_BG", "N(#pi^{0}) at SV (BG);N;Entries", kTH1I, {{40, -0.5, 39.5}});
+    histos.add("hVtxNGamma_CEX", "N(#gamma) at SV (CEX);N;Entries", kTH1I, {{60, -0.5, 59.5}});
+    histos.add("hVtxNGamma_BG", "N(#gamma) at SV (BG);N;Entries", kTH1I, {{60, -0.5, 59.5}});
+    histos.add("hVtxNN_CEX", "N(n) at SV (CEX);N;Entries", kTH1I, {{40, -0.5, 39.5}});
+    histos.add("hVtxNN_BG", "N(n) at SV (BG);N;Entries", kTH1I, {{40, -0.5, 39.5}});
 
     // CEX pair from antineutron (MC)
     histos.add("cexPairMcP", "CEX pair total momentum;|p| (GeV/c);Entries", kTH1F, {{100, 0., 10.}});
@@ -129,6 +146,13 @@ struct NucleiAntineutronCex {
     histos.add("cexbg_pairmc_vtx", "Background pair vertex;X (cm);Y (cm)", kTH2F, {{100, -50., 50.}, {100, -50., 50.}});
     histos.add("cexbg_pairmc_vtxz", "Background secondary vertex Z;Z (cm);Entries", kTH1F, {{200, -60., 60.}});
     histos.add("cexbg_pairmc_pITScuts", "Background momentum (ITS cuts);|p| (GeV/c);Entries", kTH1F, {{100, 0., 10.}});
+
+    histos.add("hDeltaP_CEX", "|p_{mother}-Σp_{SV}| (CEX);Δp (GeV/c);Entries", kTH1F, {{200, 0., 10.}});
+    histos.add("hDeltaP_BG", "|p_{mother}-Σp_{SV}| (BG);Δp (GeV/c);Entries", kTH1F, {{200, 0., 10.}});
+
+    // Mother IB hits
+    histos.add("hMotherNHitIB_CEX", "Mother IB hit layers (L0-L2) (CEX);N_{IB layers};Entries", kTH1I, {{5, -1.5, 4.5}});
+    histos.add("hMotherNHitIB_BG", "Mother IB hit layers (L0-L2) (BG);N_{IB layers};Entries", kTH1I, {{5, -1.5, 4.5}});
 
     // CEX pair from antineutron (TRK)
     histos.add("cex_pairtrk_angle", "Pair opening angle (tracks);Angle (°);Entries", kTH1F, {{180, 0., 180.}});
@@ -260,26 +284,31 @@ struct NucleiAntineutronCex {
         const bool isSecondaryFromMaterial = (!particle.producedByGenerator()) && (procEnum == kPHadronic || procEnum == kPHInhelastic);
         if (particle.pdgCode() != -kProton || !isSecondaryFromMaterial || particle.mothersIds().empty())
           continue;
-        histos.fill(HIST("antip_test"), particle.p());
 
         // Primary mother
         bool hasPrimaryMotherAntip = false;
         double motherPt = 0.0;
+        double motherPx = 0.0;
+        double motherPy = 0.0;
         double motherPz = 0.0;
         double motherVz = 0.0;
         double motherP = 0.0;
         double motherEta = 0.0;
         int motherPdg = 0;
+        int motherId = -1;
 
         for (const auto& mother : particle.mothers_as<aod::McParticles>()) {
           if (mother.isPhysicalPrimary()) {
             hasPrimaryMotherAntip = true;
             motherPt = mother.pt();
+            motherPx = mother.px();
+            motherPy = mother.py();
             motherPz = mother.pz();
             motherVz = mother.vz();
             motherP = mother.p();
             motherEta = mother.eta();
             motherPdg = mother.pdgCode();
+            motherId = mother.globalIndex();
             break;
           }
         }
@@ -530,6 +559,9 @@ struct NucleiAntineutronCex {
           int8_t antipTrkItsPidValid = 0;
           float antipTrkTgl = 0.f;
 
+          bool motherHasTrack = false;
+          int motherNHitIB = -1; // number of hits in IB (L0-L2)
+
           o2::aod::ITSResponse itsResponse;
 
           for (const auto& track : tracks) {
@@ -556,6 +588,11 @@ struct NucleiAntineutronCex {
             bool hitOuter = (hitL3 || hitL4 || hitL5 || hitL6);
             int nITS = track.itsNCls();
             bool layerCondition = (!hitIB) && hitOuter && (nITS >= kMinItsHits);
+
+            if (mc.globalIndex() == motherId) {
+              motherHasTrack = true;
+              motherNHitIB = static_cast<int>(hitL0) + static_cast<int>(hitL1) + static_cast<int>(hitL2);
+            }
 
             if (mc.globalIndex() == antipId) {
               antipTrkP = track.p();
@@ -695,6 +732,13 @@ struct NucleiAntineutronCex {
               const TVector3 pv2sv(secX - pvtxX, secY - pvtxY, secZ - pvtxZ);
               const double pairPointingAngleDeg = pv2sv.Angle(total_trk_pVec) * Rad2Deg;
 
+              const double pvsvThetaDeg = pv2sv.Theta() * Rad2Deg;
+
+              double pvsvPhiDeg = pv2sv.Phi() * Rad2Deg;
+              if (pvsvPhiDeg < 0.) {
+                pvsvPhiDeg += 360.;
+              }
+
               const double pP = pVecProton_trk.Mag();
               const double pAP = AntipVecProton_trk.Mag();
               const double ptP = pVecProton_trk.Pt();
@@ -715,7 +759,7 @@ struct NucleiAntineutronCex {
               const float dOpenAngle = trkangleDeg - mcangleDeg;
 
               // Closest ITS layer: Radius need to be checked
-              static const std::array<double, 7> rLayers = {2.2, 2.8, 3.6, 19.6, 24.0, 29.0, 35.0};
+              static const std::array<double, 7> rLayers = {2.3, 3.1, 3.9, 24.0, 30.0, 42.0, 48.0};
               int16_t svNearestLayerId = -1;
               float svDeltaRToLayer = 1e9f;
               for (int i = 0; i < static_cast<int>(rLayers.size()); ++i) {
@@ -757,16 +801,112 @@ struct NucleiAntineutronCex {
 
               const bool isCex = (motherPdg == -kNeutron);
 
+              // Nature of the process
+              if (isCex) {
+                histos.fill(HIST("hProcEnumAP_CEX"), static_cast<int>(procEnum));
+              } else {
+                histos.fill(HIST("hProcEnumAP_BG"), static_cast<int>(procEnum));
+              }
+
+              // Count material secondaries produced at the same SV as the selected secondary antiproton.
+              int vtxNAll = 0;
+              int vtxNCh = 0;
+              int vtxNNeut = 0;
+              int vtxNPi0 = 0;
+              int vtxNGamma = 0;
+              int vtxNN = 0;
+              double sumPx_vtx = 0.0;
+              double sumPy_vtx = 0.0;
+              double sumPz_vtx = 0.0;
+              auto* pdgDB = TDatabasePDG::Instance();
+
+              for (const auto& particle5 : mcPartsThis) {
+                if (particle5.mcCollisionId() != colId) {
+                  continue;
+                }
+                // Same SV (use the SV of the selected secondary antiproton)
+                if (std::abs(particle5.vx() - antipVx) >= kVtxTol || std::abs(particle5.vy() - antipVy) >= kVtxTol || std::abs(particle5.vz() - antipVz) >= kVtxTol) {
+                  continue;
+                }
+                const auto proc5Enum = particle5.getProcess();
+                const bool isSecondaryFromMaterial5 =
+                  (!particle5.producedByGenerator()) && (proc5Enum == kPHadronic || proc5Enum == kPHInhelastic);
+                if (!isSecondaryFromMaterial5) {
+                  continue;
+                }
+                ++vtxNAll;
+                sumPx_vtx += particle5.px();
+                sumPy_vtx += particle5.py();
+                sumPz_vtx += particle5.pz();
+                const int pdg = particle5.pdgCode();
+                if (pdg == kPi0) {
+                  ++vtxNPi0;
+                }
+                if (pdg == kGamma) {
+                  ++vtxNGamma;
+                }
+                if (pdg == kNeutron) {
+                  ++vtxNN;
+                }
+                // Charged vs neutral via PDG database (Charge() is in units of e/3)
+                double q = 0.0;
+                if (auto* part = pdgDB->GetParticle(pdg)) {
+                  q = part->Charge() / 3.0;
+                }
+                if (std::abs(q) > 0.0) {
+                  ++vtxNCh;
+                } else {
+                  ++vtxNNeut;
+                }
+              }
+
+              // Fill histos (final selected candidates only)
+              if (isCex) {
+                histos.fill(HIST("hVtxNAll_CEX"), vtxNAll);
+                histos.fill(HIST("hVtxNCh_CEX"), vtxNCh);
+                histos.fill(HIST("hVtxNNeut_CEX"), vtxNNeut);
+                histos.fill(HIST("hVtxNPi0_CEX"), vtxNPi0);
+                histos.fill(HIST("hVtxNGamma_CEX"), vtxNGamma);
+                histos.fill(HIST("hVtxNN_CEX"), vtxNN);
+              } else {
+                histos.fill(HIST("hVtxNAll_BG"), vtxNAll);
+                histos.fill(HIST("hVtxNCh_BG"), vtxNCh);
+                histos.fill(HIST("hVtxNNeut_BG"), vtxNNeut);
+                histos.fill(HIST("hVtxNPi0_BG"), vtxNPi0);
+                histos.fill(HIST("hVtxNGamma_BG"), vtxNGamma);
+                histos.fill(HIST("hVtxNN_BG"), vtxNN);
+              }
+
               const float vtxfitDX = secX - antipVx;
               const float vtxfitDY = secY - antipVy;
               const float vtxfitDZ = secZ - antipVz;
               const float vtxfitD3D = std::sqrt(vtxfitDX * vtxfitDX + vtxfitDY * vtxfitDY + vtxfitDZ * vtxfitDZ);
+
+              const double dPx = motherPx - sumPx_vtx;
+              const double dPy = motherPy - sumPy_vtx;
+              const double dPz = motherPz - sumPz_vtx;
+              const double deltaP = std::sqrt(dPx * dPx + dPy * dPy + dPz * dPz);
+
+              if (isCex) {
+                histos.fill(HIST("hDeltaP_CEX"), deltaP);
+              } else {
+                histos.fill(HIST("hDeltaP_BG"), deltaP);
+              }
+
+              if (motherHasTrack) {
+                if (isCex) {
+                  histos.fill(HIST("hMotherNHitIB_CEX"), motherNHitIB);
+                } else {
+                  histos.fill(HIST("hMotherNHitIB_BG"), motherNHitIB);
+                }
+              }
 
               const uint32_t selMask = 0u;
 
               outPairs(
                 isCex,
                 motherPdg,
+                motherNHitIB,
                 colId,
                 pId,
                 antipId,
@@ -779,6 +919,13 @@ struct NucleiAntineutronCex {
                 antipVx,
                 antipVy,
                 antipVz,
+
+                static_cast<int16_t>(vtxNAll),
+                static_cast<int16_t>(vtxNCh),
+                static_cast<int16_t>(vtxNNeut),
+                static_cast<int16_t>(vtxNPi0),
+                static_cast<int16_t>(vtxNGamma),
+                static_cast<int16_t>(vtxNN),
 
                 cexPairTrkP,
                 cexPairTrkPt,
@@ -818,6 +965,8 @@ struct NucleiAntineutronCex {
                 selMask,
 
                 pairPointingAngleDeg,
+                pvsvThetaDeg,
+                pvsvPhiDeg,
                 pairPBalance,
                 pairPtBalance,
                 pairQ,

@@ -26,6 +26,13 @@ namespace o2::analysis::femto
 namespace histmanager
 {
 
+// plot level for secondaries during mc processing
+enum SecondaryPlotLevel {
+  kSecondaryPlotLevel1 = 1,
+  kSecondaryPlotLevel2 = 2,
+  kSecondaryPlotLevel3 = 3
+};
+
 template <typename Hist>
 struct HistInfo {
   Hist hist;

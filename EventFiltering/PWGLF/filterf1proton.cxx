@@ -35,7 +35,7 @@
 #include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "MathUtils/BetheBlochAleph.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -298,7 +298,7 @@ struct filterf1proton {
   template <typename T>
   double updatePID(T const& track, double bgScaling, std::vector<double> BB)
   {
-    double expBethe = tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * bgScaling), BB[0], BB[1], BB[2], BB[3], BB[4]);
+    double expBethe = common::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * bgScaling), BB[0], BB[1], BB[2], BB[3], BB[4]);
     double expSigma = expBethe * BB[5];
     return static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
   }

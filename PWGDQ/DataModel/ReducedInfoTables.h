@@ -20,7 +20,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Qvectors.h"
 
 #include "Framework/ASoA.h"
@@ -67,6 +66,32 @@ DECLARE_SOA_COLUMN(NTPCoccupMeanTimeShortA, nTPCoccupMeanTimeShortA, float);    
 DECLARE_SOA_COLUMN(NTPCoccupMeanTimeShortC, nTPCoccupMeanTimeShortC, float);     //!  TPC pileup mean time on C side (short time range)
 DECLARE_SOA_COLUMN(NTPCoccupMedianTimeShortA, nTPCoccupMedianTimeShortA, float); //!  TPC pileup median time on A side (short time range)
 DECLARE_SOA_COLUMN(NTPCoccupMedianTimeShortC, nTPCoccupMedianTimeShortC, float); //!  TPC pileup median time on C side (short time range)
+DECLARE_SOA_COLUMN(DCAzBimodalityCoefficient, dcazBimodalityCoefficient, float); //!  Bimodality coefficient of the DCAz distribution of the tracks in the event
+DECLARE_SOA_COLUMN(DCAzBimodalityCoefficientBinned, dcazBimodalityCoefficientBinned, float);                 //!  Bimodality coefficient of the DCAz distribution of the tracks in the event, binned
+DECLARE_SOA_COLUMN(DCAzBimodalityCoefficientBinnedTrimmed1, dcazBimodalityCoefficientBinnedTrimmed1, float); //!  Bimodality coefficient of the DCAz distribution of the tracks in the event, binned and trimmed 1
+DECLARE_SOA_COLUMN(DCAzBimodalityCoefficientBinnedTrimmed2, dcazBimodalityCoefficientBinnedTrimmed2, float); //!  Bimodality coefficient of the DCAz distribution of the tracks in the event, binned and trimmed 2
+DECLARE_SOA_COLUMN(DCAzBimodalityCoefficientBinnedTrimmed3, dcazBimodalityCoefficientBinnedTrimmed3, float); //!  Bimodality coefficient of the DCAz distribution of the tracks in the event, binned and trimmed 3
+DECLARE_SOA_COLUMN(DCAzMean, dcazMean, float);                                                               //!  Mean of the DCAz distribution of the tracks in the event
+DECLARE_SOA_COLUMN(DCAzMeanBinnedTrimmed1, dcazMeanBinnedTrimmed1, float);                                   //!  Mean of the DCAz distribution of the tracks in the event, binned and trimmed 1
+DECLARE_SOA_COLUMN(DCAzMeanBinnedTrimmed2, dcazMeanBinnedTrimmed2, float);                                   //!  Mean of the DCAz distribution of the tracks in the event, binned and trimmed 2
+DECLARE_SOA_COLUMN(DCAzMeanBinnedTrimmed3, dcazMeanBinnedTrimmed3, float);                                   //!  Mean of the DCAz distribution of the tracks in the event, binned and trimmed 3
+DECLARE_SOA_COLUMN(DCAzRMS, dcazRMS, float);                                                                 //!  RMS of the DCAz distribution of the tracks in the event
+DECLARE_SOA_COLUMN(DCAzRMSBinnedTrimmed1, dcazRMSBinnedTrimmed1, float);                                     //!  RMS of the DCAz distribution of the tracks in the event, binned and trimmed 1
+DECLARE_SOA_COLUMN(DCAzRMSBinnedTrimmed2, dcazRMSBinnedTrimmed2, float);                                     //!  RMS of the DCAz distribution of the tracks in the event, binned and trimmed 2
+DECLARE_SOA_COLUMN(DCAzRMSBinnedTrimmed3, dcazRMSBinnedTrimmed3, float);                                     //!  RMS of the DCAz distribution of the tracks in the event, binned and trimmed 3
+DECLARE_SOA_COLUMN(DCAzSkewness, dcazSkewness, float);                                                       //!  Skewness of the DCAz distribution of the tracks in the event
+DECLARE_SOA_COLUMN(DCAzKurtosis, dcazKurtosis, float);                                                       //!  Kurtosis of the DCAz distribution of the tracks in the event
+DECLARE_SOA_COLUMN(DCAzFracAbove100um, dcazFracAbove100um, float);                                           //!  Fraction of tracks in the event with |DCAz| > 100um
+DECLARE_SOA_COLUMN(DCAzFracAbove200um, dcazFracAbove200um, float);                                           //!  Fraction of tracks in the event with |DCAz| > 200um
+DECLARE_SOA_COLUMN(DCAzFracAbove500um, dcazFracAbove500um, float);                                           //!  Fraction of tracks in the event with |DCAz| > 500um
+DECLARE_SOA_COLUMN(DCAzFracAbove1mm, dcazFracAbove1mm, float);                                               //!  Fraction of tracks in the event with |DCAz| > 1mm
+DECLARE_SOA_COLUMN(DCAzFracAbove2mm, dcazFracAbove2mm, float);                                               //!  Fraction of tracks in the event with |DCAz| > 2mm
+DECLARE_SOA_COLUMN(DCAzFracAbove5mm, dcazFracAbove5mm, float);                                               //!  Fraction of tracks in the event with |DCAz| > 5mm
+DECLARE_SOA_COLUMN(DCAzFracAbove10mm, dcazFracAbove10mm, float);                                             //!  Fraction of tracks in the event with |DCAz| > 10mm
+DECLARE_SOA_COLUMN(DCAzNPeaks, dcazNPeaks, int);                                                             //!  Number of peaks in the DCAz distribution of the tracks in the event
+DECLARE_SOA_COLUMN(DCAzNPeaksTrimmed1, dcazNPeaksTrimmed1, int);                                             //!  Number of peaks in the binned DCAz distribution (trimmed 1)
+DECLARE_SOA_COLUMN(DCAzNPeaksTrimmed2, dcazNPeaksTrimmed2, int);                                             //!  Number of peaks in the binned DCAz distribution (trimmed 2)
+DECLARE_SOA_COLUMN(DCAzNPeaksTrimmed3, dcazNPeaksTrimmed3, int);                                             //!  Number of peaks in the binned DCAz distribution (trimmed 3)
 
 // Columns declared to guarantee the backward compatibility of the tables
 DECLARE_SOA_COLUMN(QvecBPosRe, qvecBPosRe, float);
@@ -197,6 +222,16 @@ DECLARE_SOA_TABLE(ReducedEventsQvectorZN, "AOD", "REQVECTORZN", //!    Event Q-v
 
 DECLARE_SOA_TABLE(ReducedEventsInfo, "AOD", "REDUCEVENTINFO", //!   Main event index table
                   reducedevent::CollisionId);
+
+DECLARE_SOA_TABLE(ReducedEventsMergingTable, "AOD", "REMERGE", //!   Collision merging quatities
+                  reducedevent::DCAzBimodalityCoefficient, reducedevent::DCAzBimodalityCoefficientBinned,
+                  reducedevent::DCAzBimodalityCoefficientBinnedTrimmed1, reducedevent::DCAzBimodalityCoefficientBinnedTrimmed2, reducedevent::DCAzBimodalityCoefficientBinnedTrimmed3,
+                  reducedevent::DCAzMean, reducedevent::DCAzMeanBinnedTrimmed1, reducedevent::DCAzMeanBinnedTrimmed2, reducedevent::DCAzMeanBinnedTrimmed3,
+                  reducedevent::DCAzRMS, reducedevent::DCAzRMSBinnedTrimmed1, reducedevent::DCAzRMSBinnedTrimmed2, reducedevent::DCAzRMSBinnedTrimmed3,
+                  reducedevent::DCAzSkewness, reducedevent::DCAzKurtosis,
+                  reducedevent::DCAzFracAbove100um, reducedevent::DCAzFracAbove200um, reducedevent::DCAzFracAbove500um,
+                  reducedevent::DCAzFracAbove1mm, reducedevent::DCAzFracAbove2mm, reducedevent::DCAzFracAbove5mm, reducedevent::DCAzFracAbove10mm,
+                  reducedevent::DCAzNPeaks, reducedevent::DCAzNPeaksTrimmed1, reducedevent::DCAzNPeaksTrimmed2, reducedevent::DCAzNPeaksTrimmed3);
 
 // TODO and NOTE: This table is just an extension of the ReducedEvents table
 //       There is no explicit accounting for MC events which were not reconstructed!!!
@@ -666,6 +701,8 @@ DECLARE_SOA_COLUMN(Vt2, vt2, float); //! Production vertex time
 
 DECLARE_SOA_COLUMN(IsAmbig1, isAmbig1, int); //!
 DECLARE_SOA_COLUMN(IsAmbig2, isAmbig2, int); //!
+DECLARE_SOA_COLUMN(IsCorrectAssoc1, isCorrectAssoc1, bool); //!
+DECLARE_SOA_COLUMN(IsCorrectAssoc2, isCorrectAssoc2, bool); //!
 
 DECLARE_SOA_COLUMN(FwdDcaX1, fwdDcaX1, float);               //! X component of forward DCA
 DECLARE_SOA_COLUMN(FwdDcaY1, fwdDcaY1, float);               //! Y component of forward DCA
@@ -831,6 +868,17 @@ DECLARE_SOA_TABLE(Dimuons, "AOD", "RTDIMUON", //!
                   reducedpair::Rap<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>,
                   reducedpair::Y<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>);
 
+DECLARE_SOA_TABLE(ElectronMuons, "AOD", "RTELECTRONMUON", //!
+                  o2::soa::Index<>, reducedpair::ReducedEventId,
+                  reducedpair::Mass, reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
+                  reducedpair::FilterMap, reducedpair::McDecision,
+                  reducedpair::Px<reducedpair::Pt, reducedpair::Phi>,
+                  reducedpair::Py<reducedpair::Pt, reducedpair::Phi>,
+                  reducedpair::Pz<reducedpair::Pt, reducedpair::Eta>,
+                  reducedpair::P<reducedpair::Pt, reducedpair::Eta>,
+                  reducedpair::Rap<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>,
+                  reducedpair::Y<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>);
+
 DECLARE_SOA_TABLE(DielectronsExtra, "AOD", "RTDIELEEXTRA", //!
                   reducedpair::Index0Id, reducedpair::Index1Id,
                   reducedpair::Tauz,
@@ -902,6 +950,7 @@ DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
                   dilepton_track_index::Vx1, dilepton_track_index::Vy1, dilepton_track_index::Vz1, dilepton_track_index::Vt1,
                   dilepton_track_index::Vx2, dilepton_track_index::Vy2, dilepton_track_index::Vz2, dilepton_track_index::Vt2,
                   dilepton_track_index::IsAmbig1, dilepton_track_index::IsAmbig2,
+                  dilepton_track_index::IsCorrectAssoc1, dilepton_track_index::IsCorrectAssoc2,
                   reducedpair::U2Q2,
                   reducedpair::U3Q3,
                   reducedpair::R2EP_AB,

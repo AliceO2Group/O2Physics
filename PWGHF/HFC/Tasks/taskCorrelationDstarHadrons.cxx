@@ -29,6 +29,8 @@
 
 #include <TString.h>
 
+#include <map>
+#include <string>
 #include <vector>
 
 using namespace o2;
@@ -71,14 +73,32 @@ const auto vecSidebandRightOuterDefault = std::vector<double>{sidebandRightOuter
 const int npTBinsEfficiency = o2::analysis::hf_cuts_dstar_to_d0_pi::NBinsPt;
 const std::vector<double> vecEfficiencyDstarDefault(npTBinsEfficiency); // line # 76 in taskCorrelationDstarHadron.cxx; why (npTBinsEfficiency+1) ?
 
+const int nPtBinsTrackEfficiency = o2::analysis::hf_cuts_single_track::NBinsPtTrack;
+const std::vector<double> vecEfficiencyTracksDefault(nPtBinsTrackEfficiency);
+
 // Dstar-Hadron correlation pair
 struct HfTaskCorrelationDstarHadrons {
 
   Configurable<bool> applyEfficiency{"applyEfficiency", true, "Flag for applying efficiency weights"};
+  Configurable<bool> useCcdbEfficiency{"useCcdbEfficiency", false, "Flag for using efficiency values from CCDB (if false, efficiency values must be provided via json files)"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathEfficiencyDstar{"ccdbPathEfficiencyDstar", "Users/d/desharma/HFC/Efficiency/Dstar", "path in ccdb for Dstar efficiency values"};
+  Configurable<std::string> ccdbPathEfficiencyTracks{"ccdbPathEfficiencyTracks", "Users/d/desharma/HFC/Efficiency/Track", "path in ccdb for track efficiency values"};
+  Configurable<int64_t> ccdbTimestamp{"ccdbTimestamp", -1, "timestamp for retrieving efficiency values from CCDB"};
+  Configurable<std::string> efficiencyDstarFileName{"efficiencyDstarFileName", "efficiencyHFCDstar.root", "name of the efficiency file for Dstar"};
+  Configurable<std::string> efficiencyTracksFileName{"efficiencyTracksFileName", "efficiencyHFCTrack.root", "name of the efficiency file for tracks"};
+  Configurable<int> nEfficiencyHist{"nEfficiencyHist", 1, "if MB nEfficiencyHist = 1, if Centrality classes nEfficiencyHist = number of centrality classes (i.e. 10)"};
+
   // pT ranges for correlation plots: the default values are those embedded in hf_cuts_dplus_to_pi_k_pi (i.e. the mass pT bins), but can be redefined via json files
   Configurable<std::vector<double>> binsPtCorrelations{"binsPtCorrelations", std::vector<double>{vecBinsPtCorrelationsDefault}, "pT bin limits for correlation plots"};
+
+  // efficiency configurables for candidate Dstar
   Configurable<std::vector<double>> binsPtEfficiency{"binsPtEfficiency", std::vector<double>{o2::analysis::hf_cuts_dstar_to_d0_pi::vecBinsPt}, "pT bin limits for efficiency"};
   Configurable<std::vector<double>> efficiencyDstar{"efficiencyDstar", std::vector<double>{vecEfficiencyDstarDefault}, "efficiency values for Dstar vs pT bin"};
+
+  // efficiency configurables for associated tracks
+  Configurable<std::vector<double>> binsPtEfficiencyTracks{"binsPtEfficiencyTracks", std::vector<double>{o2::analysis::hf_cuts_single_track::vecBinsPtTrack}, "pT bin limits for track efficiency"};
+  Configurable<std::vector<double>> efficiencyTracks{"efficiencyTracks", std::vector<double>{vecEfficiencyTracksDefault}, "efficiency values for tracks vs pT bin"};
 
   Configurable<std::vector<double>> signalRegionLefBound{"signalRegionLefBound", std::vector<double>{vecSignalRegionLefBoundDefault}, "left boundary of signal region vs pT"};
   Configurable<std::vector<double>> signalRegionRightBound{"signalRegionRightBound", std::vector<double>{vecSignalRegionRightBoundDefault}, "right boundary of signal region vs pT"};
@@ -92,6 +112,10 @@ struct HfTaskCorrelationDstarHadrons {
   ConfigurableAxis ptHadronBinsEdges{"ptHadronBinsEdges", {11, 0., 11.}, "pT Bins of equal width for Hadrons"};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+
+  o2::ccdb::CcdbApi ccdbApi;
+  std::vector<TH1F*> vecHistEfficiencyDstar;
+  std::vector<TH1D*> vecHistEfficiencyTracks;
 
   void init(InitContext&)
   {
@@ -111,6 +135,51 @@ struct HfTaskCorrelationDstarHadrons {
     registry.add("hCorrel2DPtIntSidebands", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2D, {axisSpecDeltaPhi, axisSpecDeltaEta}}, true);
     registry.add("hDeltaEtaPtIntSidebands", stringDHadron + stringSideband + stringDeltaEta + "entries", {HistType::kTH1D, {axisSpecDeltaEta}}, true);
     registry.add("hDeltaPhiPtIntSidebands", stringDHadron + stringSideband + stringDeltaPhi + "entries", {HistType::kTH1D, {axisSpecDeltaPhi}}, true);
+
+    if (applyEfficiency && useCcdbEfficiency) {
+      ccdbApi.init(ccdbUrl);
+      std::map<std::string, std::string> const metadata;
+      bool const isEfficiencyDstarfileAvailable = ccdbApi.retrieveBlob(ccdbPathEfficiencyDstar, ".", metadata, ccdbTimestamp, false, efficiencyDstarFileName);
+      if (!isEfficiencyDstarfileAvailable) {
+        LOGF(fatal, "Failed to retrieve efficiency file for Dstar from CCDB");
+      }
+      bool const isEfficiencyTracksfileAvailable = ccdbApi.retrieveBlob(ccdbPathEfficiencyTracks, ".", metadata, ccdbTimestamp, false, efficiencyTracksFileName);
+      if (!isEfficiencyTracksfileAvailable) {
+        LOGF(fatal, "Failed to retrieve efficiency file for tracks from CCDB");
+      }
+
+      TFile* efficiencyDstarRootFile = TFile::Open(efficiencyDstarFileName.value.c_str(), "READ");
+      if (!efficiencyDstarRootFile || efficiencyDstarRootFile->IsZombie()) {
+        LOGF(fatal, "Failed to open efficiency file for Dstar");
+      }
+
+      TFile* efficiencyTracksRootFile = TFile::Open(efficiencyTracksFileName.value.c_str(), "READ");
+      if (!efficiencyTracksRootFile || efficiencyTracksRootFile->IsZombie()) {
+        LOGF(fatal, "Failed to open efficiency file for tracks");
+      }
+
+      vecHistEfficiencyDstar.resize(nEfficiencyHist);
+      vecHistEfficiencyTracks.resize(nEfficiencyHist);
+
+      for (int iHist = 0; iHist < nEfficiencyHist; iHist++) {
+        vecHistEfficiencyDstar[iHist] = dynamic_cast<TH1F*>(efficiencyDstarRootFile->Get(Form("hEfficiencyDstar_%d", iHist)));
+        if (!vecHistEfficiencyDstar[iHist]) {
+          LOGF(fatal, "Failed to retrieve Dstar efficiency histogram hEfficiencyDstar_%d from file", iHist);
+        }
+
+        vecHistEfficiencyTracks[iHist] = dynamic_cast<TH1D*>(efficiencyTracksRootFile->Get(Form("hEfficiencyTracks_%d", iHist)));
+        if (!vecHistEfficiencyTracks[iHist]) {
+          LOGF(fatal, "Failed to retrieve track efficiency histogram hEfficiencyTracks_%d from file", iHist);
+        }
+        vecHistEfficiencyDstar[iHist]->SetDirectory(nullptr);
+        vecHistEfficiencyTracks[iHist]->SetDirectory(nullptr);
+      }
+
+      efficiencyDstarRootFile->Close();
+      efficiencyTracksRootFile->Close();
+      delete efficiencyDstarRootFile;
+      delete efficiencyTracksRootFile;
+    }
   }
 
   void processData(aod::DstarHadronPair const& dstarHPairs)
@@ -128,6 +197,9 @@ struct HfTaskCorrelationDstarHadrons {
       int const corrBinPtDstar = o2::analysis::findBin(binsPtCorrelations, ptDstar);
       // LOG(info) << "correlation index " << corrBinPtDstar;
 
+      int const effBinPtTrack = o2::analysis::findBin(binsPtEfficiencyTracks, ptTrack);
+      // LOG(info) << "track efficiency index " << effBinPtTrack;
+
       // reject candidate if outside pT ranges of interst
       if (corrBinPtDstar < 0 || effBinPtDstar < 0) {
         continue;
@@ -137,12 +209,22 @@ struct HfTaskCorrelationDstarHadrons {
       //   ptTrack = 10.5;
       // }
       float netEfficiencyWeight = 1.0;
-      float const efficiencyWeightTracks = 1.0;
 
-      if (applyEfficiency) {
+      if (applyEfficiency && !useCcdbEfficiency) {
         float const efficiencyWeightDstar = efficiencyDstar->at(effBinPtDstar);
         // LOG(info)<<"efficiencyWeightDstar "<<efficiencyWeightDstar;
+        float const efficiencyWeightTracks = efficiencyTracks->at(effBinPtTrack);
+        // LOG(info)<<"efficiencyWeightTracks "<<efficiencyWeightTracks;
         netEfficiencyWeight = 1.0 / (efficiencyWeightDstar * efficiencyWeightTracks);
+      } else if (applyEfficiency && useCcdbEfficiency && nEfficiencyHist == 1) {
+        float const efficiencyWeightDstar = vecHistEfficiencyDstar[0]->GetBinContent(vecHistEfficiencyDstar[0]->GetXaxis()->FindBin(ptDstar));
+        // LOG(info)<<"efficiencyWeightDstar "<<efficiencyWeightDstar;
+        float const efficiencyWeightTracks = vecHistEfficiencyTracks[0]->GetBinContent(vecHistEfficiencyTracks[0]->GetXaxis()->FindBin(ptTrack));
+        // LOG(info)<<"efficiencyWeightTracks "<<efficiencyWeightTracks;
+        netEfficiencyWeight = 1.0 / (efficiencyWeightDstar * efficiencyWeightTracks);
+      } else if (applyEfficiency && useCcdbEfficiency && nEfficiencyHist > 1) {
+        // to do
+        LOGF(fatal, "Using CCDB efficiency with more than 1 histogram is not implemented yet");
       }
 
       // check if correlation entry belongs to signal region, sidebands or is outside both, and fill correlation plots

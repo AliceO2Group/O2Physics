@@ -34,7 +34,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
 
-#include "DataFormatsTPC/BetheBlochAleph.h"
+#include "MathUtils/BetheBlochAleph.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"

@@ -16,3 +16,11 @@ o2physics_add_library(v0SelectionGroup
 o2physics_target_root_dictionary(v0SelectionGroup
     HEADERS v0SelectionGroup.h
     LINKDEF v0SelectionGroupLinkDef.h)
+
+o2physics_add_library(collisionCutsGroup
+    SOURCES collisionCutsGroup.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore)
+
+o2physics_target_root_dictionary(collisionCutsGroup
+    HEADERS collisionCutsGroup.h
+    LINKDEF collisionCutsGroupLinkDef.h)

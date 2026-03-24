@@ -209,4 +209,34 @@ o2physics_add_dpl_workflow(jet-finder-dielectron-mcp-charged
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(jet-finder-d0d0bar-data-charged
+                    SOURCES jetFinderD0D0BarDataCharged.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(jet-finder-d0d0bar-mcd-charged
+                    SOURCES jetFinderD0D0BarMCDCharged.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(jet-finder-d0d0bar-mcp-charged
+                    SOURCES jetFinderD0D0BarMCPCharged.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(jet-finder-dplusdminus-data-charged
+                    SOURCES jetFinderDplusDminusDataCharged.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(jet-finder-dplusdminus-mcd-charged
+                    SOURCES jetFinderDplusDminusMCDCharged.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(jet-finder-dplusdminus-mcp-charged
+                    SOURCES jetFinderDplusDminusMCPCharged.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
+                    COMPONENT_NAME Analysis)
+
 endif()

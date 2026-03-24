@@ -663,7 +663,7 @@ struct HfTaskMcValidationRec {
   Preslice<HfCand2ProngWithMCRec> cand2ProngPerCollision = aod::hf_cand::collisionId;
   Preslice<HfCand3ProngWithMCRec> cand3ProngPerCollision = aod::hf_cand::collisionId;
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   HfEventSelection hfEvSel; // event selection and monitoring
 
   AxisSpec axisDeltaMom{2000, -1., 1.};
@@ -831,7 +831,7 @@ struct HfTaskMcValidationRec {
     histContributors = registry.add<TH1>("TrackToCollChecks/histContributors", "PV contributors from correct/wrong MC collision;;entries", HistType::kTH1F, {axisDecision});
     histContributors->GetXaxis()->SetBinLabel(1, "correct MC collision");
     histContributors->GetXaxis()->SetBinLabel(2, "wrong MC collision");
-    hfEvSel.addHistograms(registry); // collision monitoring
+    hfEvSel.init(registry, nullptr); // collision monitoring
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -911,9 +911,9 @@ struct HfTaskMcValidationRec {
       }
       float const frac = (nContributors > 0) ? static_cast<float>(nGoodContributors) / nContributors : 1.;
       registry.fill(HIST("TrackToCollChecks/histFracGoodContributors"), frac);
-      uint64_t const mostProbableBC = collision.bc().globalBC();
+      uint64_t const mostProbableBC = collision.template bc_as<aod::BCsWithTimestamps>().globalBC();
       for (auto collision2 = collision + 1; collision2 != collisions.end(); ++collision2) {
-        uint64_t const mostProbableBC2 = collision2.bc().globalBC();
+        uint64_t const mostProbableBC2 = collision2.template bc_as<aod::BCsWithTimestamps>().globalBC();
         if (mostProbableBC2 == mostProbableBC) {
           float const radColl1 = std::sqrt(collision.posX() * collision.posX() + collision.posY() * collision.posY());
           float const radColl2 = std::sqrt(collision2.posX() * collision2.posX() + collision2.posY() * collision2.posY());
@@ -1105,7 +1105,7 @@ struct HfTaskMcValidationRec {
         if (std::abs(cand2Prong.flagMcMatchRec()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
           whichHad = DzeroToKPi;
         }
-        int whichOrigin;
+        int whichOrigin{};
         if (cand2Prong.originMcRec() == RecoDecay::OriginType::Prompt) {
           whichOrigin = 0;
         } else {
@@ -1153,7 +1153,7 @@ struct HfTaskMcValidationRec {
         } else if (isXicSel && std::abs(cand3Prong.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::XicToPKPi) {
           whichHad = XiCplusToPKPi;
         }
-        int whichOrigin;
+        int whichOrigin{};
         if (cand3Prong.originMcRec() == RecoDecay::OriginType::Prompt) {
           whichOrigin = 0;
         } else {

@@ -19,11 +19,14 @@
 /// \author Zaida Conesa del Valle <zaida.conesa.del.valle@cern.ch>
 ///
 
+#include "PWGDQ/DataModel/MchTrkEffTables.h"
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
-#include "PWGDQ/DataModel/MchTrkEffTables.h"
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;

@@ -36,6 +36,7 @@ DECLARE_SOA_INDEX_COLUMN(BC, bc);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);
 DECLARE_SOA_COLUMN(Timestamp, timestamp, uint64_t);
+DECLARE_SOA_COLUMN(TriggerMask, triggerMask, uint64_t);
 DECLARE_SOA_BITMAP_COLUMN(Alias, alias, 32);
 DECLARE_SOA_BITMAP_COLUMN(Selection, selection, 64);
 DECLARE_SOA_BITMAP_COLUMN(Rct, rct, 32);
@@ -49,6 +50,7 @@ DECLARE_SOA_TABLE_STAGED(JBCs, "JBC",
                          o2::soa::Index<>,
                          jbc::RunNumber,
                          jbc::GlobalBC,
+                         jbc::TriggerMask,
                          jbc::Timestamp,
                          jbc::Alias,
                          jbc::Selection,
@@ -73,6 +75,7 @@ DECLARE_SOA_INDEX_COLUMN(JBC, bc);
 DECLARE_SOA_COLUMN(PosX, posX, float);
 DECLARE_SOA_COLUMN(PosY, posY, float);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
+DECLARE_SOA_COLUMN(CollisionTime, collisionTime, float);
 DECLARE_SOA_COLUMN(MultFV0A, multFV0A, float);
 DECLARE_SOA_COLUMN(MultFV0C, multFV0C, float);
 DECLARE_SOA_DYNAMIC_COLUMN(MultFV0M, multFV0M,
@@ -88,6 +91,11 @@ DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
 DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
 DECLARE_SOA_COLUMN(CentFT0CVariant1, centFT0CVariant1, float);
 DECLARE_SOA_COLUMN(CentralityVariant1, centralityVariant1, float);
+DECLARE_SOA_COLUMN(AmplitudesFV0, amplitudesFV0, std::vector<float>);
+DECLARE_SOA_COLUMN(AmplitudesFT0A, amplitudesFT0A, std::vector<float>);
+DECLARE_SOA_COLUMN(AmplitudesFT0C, amplitudesFT0C, std::vector<float>);
+DECLARE_SOA_COLUMN(AmplitudesFDDA, amplitudesFDDA, std::vector<float>);
+DECLARE_SOA_COLUMN(AmplitudesFDDC, amplitudesFDDC, std::vector<float>);
 DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, float);
 DECLARE_SOA_COLUMN(Weight, weight, float);
 DECLARE_SOA_COLUMN(GetSubGeneratorId, getSubGeneratorId, int);
@@ -119,9 +127,11 @@ DECLARE_SOA_COLUMN(IsOutlier, isOutlier, bool);
 
 DECLARE_SOA_TABLE_STAGED(JCollisions, "JCOLLISION",
                          o2::soa::Index<>,
+                         jcollision::JBCId,
                          jcollision::PosX,
                          jcollision::PosY,
                          jcollision::PosZ,
+                         jcollision::CollisionTime,
                          jcollision::MultFV0A,
                          jcollision::MultFV0C,
                          jcollision::MultFV0M<jcollision::MultFV0A, jcollision::MultFV0C>,
@@ -144,6 +154,13 @@ DECLARE_SOA_TABLE_STAGED(JCollisions, "JCOLLISION",
 using JCollision = JCollisions::iterator;
 using StoredJCollision = StoredJCollisions::iterator;
 
+DECLARE_SOA_TABLE_STAGED(JCollisionUPCs, "JCOLLISIONUPC",
+                         jcollision::AmplitudesFV0,
+                         jcollision::AmplitudesFT0A,
+                         jcollision::AmplitudesFT0C,
+                         jcollision::AmplitudesFDDA,
+                         jcollision::AmplitudesFDDC);
+
 DECLARE_SOA_TABLE_STAGED(JCollisionMcInfos, "JCOLLISIONMCINFO",
                          jcollision::Weight,
                          jcollision::GetSubGeneratorId);
@@ -159,9 +176,6 @@ using StoredJEMCCollisionLb = StoredJEMCCollisionLbs::iterator;
 
 DECLARE_SOA_TABLE_STAGED(JCollisionPIs, "JCOLLISIONPI",
                          jcollision::CollisionId);
-
-DECLARE_SOA_TABLE_STAGED(JCollisionBCs, "JCOLLISIONBC",
-                         jcollision::JBCId);
 
 DECLARE_SOA_TABLE(JChTrigSels, "AOD", "JCHTRIGSEL",
                   jcollision::ChargedTriggerSel);
@@ -190,6 +204,7 @@ DECLARE_SOA_TABLE_STAGED(CollisionCounts, "COLLCOUNT",
 namespace jmccollision
 {
 DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);
+DECLARE_SOA_INDEX_COLUMN(JBC, bc);
 DECLARE_SOA_COLUMN(PosX, posX, float);
 DECLARE_SOA_COLUMN(PosY, posY, float);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
@@ -204,6 +219,7 @@ DECLARE_SOA_COLUMN(XsectGen, xsectGen, float);
 DECLARE_SOA_COLUMN(XsectErr, xsectErr, float);
 DECLARE_SOA_COLUMN(PtHard, ptHard, float);
 DECLARE_SOA_COLUMN(IsOutlier, isOutlier, bool);
+DECLARE_SOA_COLUMN(EventSel, eventSel, uint16_t);
 DECLARE_SOA_BITMAP_COLUMN(Rct, rct, 32);
 DECLARE_SOA_COLUMN(GetGeneratorId, getGeneratorId, int);
 DECLARE_SOA_COLUMN(GetSubGeneratorId, getSubGeneratorId, int);
@@ -214,6 +230,7 @@ DECLARE_SOA_COLUMN(EventPlaneAngle, eventPlaneAngle, float);
 } // namespace jmccollision
 DECLARE_SOA_TABLE_STAGED(JMcCollisions, "JMCCOLLISION",
                          o2::soa::Index<>,
+                         jmccollision::JBCId,
                          jmccollision::PosX,
                          jmccollision::PosY,
                          jmccollision::PosZ,
@@ -227,6 +244,7 @@ DECLARE_SOA_TABLE_STAGED(JMcCollisions, "JMCCOLLISION",
                          jmccollision::XsectGen,
                          jmccollision::XsectErr,
                          jmccollision::PtHard,
+                         jmccollision::EventSel,
                          jmccollision::Rct,
                          jmccollision::GetGeneratorId,
                          jmccollision::GetSubGeneratorId,

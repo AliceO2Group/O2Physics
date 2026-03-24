@@ -71,6 +71,10 @@ DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Y, y, float);
 DECLARE_SOA_COLUMN(E, e, float);
 DECLARE_SOA_COLUMN(M, m, float);
+DECLARE_SOA_COLUMN(Vx, vx, float);
+DECLARE_SOA_COLUMN(Vy, vy, float);
+DECLARE_SOA_COLUMN(Vz, vz, float);
+DECLARE_SOA_COLUMN(Vt, vt, float);
 DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);
 DECLARE_SOA_COLUMN(StatusCode, statusCode, int);
 DECLARE_SOA_COLUMN(Flags, flags, uint8_t);
@@ -112,6 +116,10 @@ DECLARE_SOA_TABLE_STAGED(JDielectronMcs, "JDIELMC",
                          jdielectronmc::Y,
                          jdielectronmc::E,
                          jdielectronmc::M,
+                         jdielectronmc::Vx,
+                         jdielectronmc::Vy,
+                         jdielectronmc::Vz,
+                         jdielectronmc::Vt,
                          jdielectronmc::PdgCode,
                          jdielectronmc::StatusCode,
                          jdielectronmc::Flags,

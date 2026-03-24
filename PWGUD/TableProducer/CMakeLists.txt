@@ -11,8 +11,8 @@
 
 add_subdirectory(Converters)
 
-o2physics_add_dpl_workflow(dgcand-producer
-                           SOURCES DGCandProducer.cxx
+o2physics_add_dpl_workflow(dg-cand-producer
+                           SOURCES dgCandProducer.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder  O2Physics::AnalysisCCDB O2Physics::EventFilteringUtils
                            COMPONENT_NAME Analysis)
 
@@ -41,7 +41,7 @@ o2physics_add_dpl_workflow(two-tracks-event-table-producer
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(fwdtrack-propagation
+o2physics_add_dpl_workflow(fwd-track-propagation
                            SOURCES fwdTrackPropagation.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::GlobalTracking
                            COMPONENT_NAME Analysis)
@@ -60,3 +60,13 @@ o2physics_add_dpl_workflow(tau-three-prong-event-table-producer
                            SOURCES tauThreeProngEventTableProducer.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(upc-cand-producer-muon
+                           SOURCES upcCandProducerMuon.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::UPCCutparHolder O2::GlobalTracking
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(upc-cand-producer-global-muon
+        SOURCES upcCandProducerGlobalMuon.cxx
+        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::UPCCutparHolder O2::GlobalTracking
+        COMPONENT_NAME Analysis)

@@ -8,29 +8,37 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+/// \file fwdTrackPropagation.cxx
+/// \brief Forward track propagation task for UD tasks
 /// \author Nazar Burmasov, nazar.burmasov@cern.ch
 /// \author Diana Krupova, diana.krupova@cern.ch
 /// \since 04.06.2024
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include "PWGUD/DataModel/UDTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
-#include "TGeoGlobalMagField.h"
-#include "Field/MagneticField.h"
 #include "DetectorsBase/Propagator.h"
+#include "Field/MagneticField.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/DataTypes.h"
+#include "Framework/runDataProcessing.h"
 #include "GlobalTracking/MatchGlobalFwd.h"
 #include "MCHTracking/TrackExtrap.h"
-#include "MCHTracking/TrackParam.h"
-#include "Math/SMatrix.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
 
-#include "PWGUD/DataModel/UDTables.h"
+#include "Math/SMatrix.h"
+#include "TGeoGlobalMagField.h"
+
+#include <map>
+#include <string>
+#include <vector>
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using o2::aod::fwdtrack::ForwardTrackTypeEnum;
 
 struct FwdTrackPropagation {
   using ForwardTracks = o2::soa::Join<o2::aod::FwdTracks, o2::aod::FwdTracksCov>;
@@ -65,13 +73,12 @@ struct FwdTrackPropagation {
                            muon.cPhiPhi(), muon.cTglX(), muon.cTglY(), muon.cTglPhi(), muon.cTglTgl(),
                            muon.c1PtX(), muon.c1PtY(), muon.c1PtPhi(), muon.c1PtTgl(), muon.c1Pt21Pt2()};
     SMatrix55 tcovs(v1.begin(), v1.end());
-    o2::track::TrackParCovFwd fwdtrack{muon.z(), tpars, tcovs, chi2};
     o2::dataformats::GlobalFwdTrack propmuon;
 
-    if (static_cast<int>(muon.trackType()) > 2) {
+    if (muon.trackType() > ForwardTrackTypeEnum::GlobalForwardTrack) { // tracks without MFT
       o2::dataformats::GlobalFwdTrack track;
       track.setParameters(tpars);
-      track.setZ(fwdtrack.getZ());
+      track.setZ(muon.z());
       track.setCovariances(tcovs);
       auto mchTrack = fMatching.FwdtoMCH(track);
       o2::mch::TrackExtrap::extrapToVertex(mchTrack, vtx[0], vtx[1], vtx[2], vtxCov[0], vtxCov[1]);
@@ -79,13 +86,14 @@ struct FwdTrackPropagation {
       propmuon.setParameters(proptrack.getParameters());
       propmuon.setZ(proptrack.getZ());
       propmuon.setCovariances(proptrack.getCovariances());
-    } else if (static_cast<int>(muon.trackType()) < 2) {
+    } else if (muon.trackType() <= ForwardTrackTypeEnum::GlobalForwardTrack) { // tracks with MFT
       double centerMFT[3] = {0, 0, -61.4};
-      o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
-      auto Bz = field->getBz(centerMFT); // Get field at centre of MFT
+      o2::track::TrackParCovFwd fwdtrack{muon.z(), tpars, tcovs, chi2};
+      auto* field = dynamic_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+      auto bz = field->getBz(centerMFT); // Get field at centre of MFT
       auto geoMan = o2::base::GeometryManager::meanMaterialBudget(muon.x(), muon.y(), muon.z(), vtx[0], vtx[1], vtx[2]);
       auto x2x0 = static_cast<float>(geoMan.meanX2X0);
-      fwdtrack.propagateToVtxhelixWithMCS(vtx[2], {vtx[0], vtx[1]}, {vtxCov[0], vtxCov[1]}, Bz, x2x0);
+      fwdtrack.propagateToVtxhelixWithMCS(vtx[2], {vtx[0], vtx[1]}, {vtxCov[0], vtxCov[1]}, bz, x2x0);
       propmuon.setParameters(fwdtrack.getParameters());
       propmuon.setZ(fwdtrack.getZ());
       propmuon.setCovariances(fwdtrack.getCovariances());
@@ -112,11 +120,12 @@ struct FwdTrackPropagation {
     propFwdTracks.reserve(fwdTracks.size());
     propFwdTracksCov.reserve(fwdTracks.size());
 
+    constexpr float ZAbsorberFront = -90.f;
     for (const auto& t : fwdTracks) {
-      if (t.z() < -90.f) {
+      if (t.z() < ZAbsorberFront) {
         std::array<float, 3> vtx = {0.f, 0.f, 0.f};
         std::array<float, 2> vtxCov = {0.f, 0.f};
-        if (t.has_collision()) {
+        if (t.has_collision() && t.trackType() <= ForwardTrackTypeEnum::GlobalForwardTrack) { // propagate only global muon tracks to collision vtx
           auto col = cols.iteratorAt(t.collisionId());
           vtx[0] = col.posX();
           vtx[1] = col.posY();
@@ -129,7 +138,7 @@ struct FwdTrackPropagation {
                       pft.getX(), pft.getY(), pft.getZ(), pft.getPhi(), pft.getTgl(), pft.getInvQPt(),
                       pft.getEta(), pft.getPt(), pft.getP(),
                       t.nClusters(), t.pDca(), t.rAtAbsorberEnd(),
-                      pft.getTrackChi2(), t.chi2MatchMCHMID(), t.chi2MatchMCHMFT(),
+                      t.chi2(), t.chi2MatchMCHMID(), t.chi2MatchMCHMFT(),
                       t.matchScoreMCHMFT(), t.matchMFTTrackId(), t.matchMCHTrackId(),
                       t.mchBitMap(), t.midBoards(), t.midBitMap(),
                       t.trackTime(), t.trackTimeRes());
@@ -137,11 +146,11 @@ struct FwdTrackPropagation {
         // LOGP(info, "track {}, before: {} {} {} {} {} {}", t.globalIndex(), t.x(), t.y(), t.z(), t.phi(), t.tgl(), t.signed1Pt());
         // LOGP(info, "track {}, after: {} {} {} {} {} {}", t.globalIndex(), pft.getX(), pft.getY(), pft.getZ(), pft.getPhi(), pft.getTgl(), pft.getInvQPt());
         SMatrix55 cov = pft.getCovariances();
-        float sigX = TMath::Sqrt(cov(0, 0));
-        float sigY = TMath::Sqrt(cov(1, 1));
-        float sigPhi = TMath::Sqrt(cov(2, 2));
-        float sigTgl = TMath::Sqrt(cov(3, 3));
-        float sig1Pt = TMath::Sqrt(cov(4, 4));
+        float sigX = std::sqrt(cov(0, 0));
+        float sigY = std::sqrt(cov(1, 1));
+        float sigPhi = std::sqrt(cov(2, 2));
+        float sigTgl = std::sqrt(cov(3, 3));
+        float sig1Pt = std::sqrt(cov(4, 4));
         auto rhoXY = static_cast<int8_t>(128. * cov(0, 1) / (sigX * sigY));
         auto rhoPhiX = static_cast<int8_t>(128. * cov(0, 2) / (sigPhi * sigX));
         auto rhoPhiY = static_cast<int8_t>(128. * cov(1, 2) / (sigPhi * sigY));

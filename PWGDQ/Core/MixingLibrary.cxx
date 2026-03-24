@@ -13,6 +13,9 @@
 //
 #include "PWGDQ/Core/MixingLibrary.h"
 
+#include <string>
+#include <vector>
+
 void o2::aod::dqmixing::SetUpMixing(MixingHandler* mh, const char* mixingVarible)
 {
   std::string nameStr = mixingVarible;
@@ -195,5 +198,48 @@ void o2::aod::dqmixing::SetUpMixing(MixingHandler* mh, const char* mixingVarible
   if (!nameStr.compare("PileUpA4")) {
     std::vector<float> fPileUpLimsHashing = {0.0f, 500.0f, 1000.0f, 1500.0f, 2000.0f, 2500.0f, 3000.0f, 3500.0f, 4000.0f, 4500.0f, 5000.0f, 5500.0f, 6000.0f, 8000.0f, 10000.0f, 20000.0f};
     mh->AddMixingVariable(VarManager::kNTPCcontribLongA, fPileUpLimsHashing.size(), fPileUpLimsHashing);
+  }
+}
+
+// Set up mixing hashing by json
+void o2::aod::dqmixing::SetUpMixingFromJSON(MixingHandler* mh, const char* json)
+{
+  rapidjson::Document document;
+
+  rapidjson::ParseResult ok = document.Parse(json);
+  if (!ok) {
+    LOG(fatal) << "JSON parse error";
+    return;
+  }
+
+  for (auto it = document.MemberBegin(); it != document.MemberEnd(); ++it) {
+    std::string nameStr = it->name.GetString();
+    const auto& obj = it->value;
+
+    LOG(info) << "Configuring mixing variable: " << nameStr;
+
+    if (!obj.HasMember("var") || !obj.HasMember("LimsHashing")) {
+      LOG(fatal) << "Missing 'var' or 'LimsHashing' in " << nameStr;
+      continue;
+    }
+
+    // read var
+    std::string varStr = obj["var"].GetString();
+
+    // read limits
+    const auto& lims = obj["LimsHashing"];
+    std::vector<float> limits;
+    limits.reserve(lims.Size());
+    for (auto& v : lims.GetArray()) {
+      limits.push_back(v.GetFloat());
+    }
+
+    if (VarManager::fgVarNamesMap.find(varStr) == VarManager::fgVarNamesMap.end()) {
+      LOG(fatal) << "Bad variable (" << varStr << ") specified for this mixing setting";
+      return;
+    }
+
+    // set up mixing variable
+    mh->AddMixingVariable(VarManager::fgVarNamesMap[varStr], limits.size(), limits);
   }
 }

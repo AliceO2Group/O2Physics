@@ -157,14 +157,22 @@ struct HeavyionMultiplicity {
   Configurable<float> etaRange{"etaRange", 1.0f, "Eta range to consider"};
   Configurable<float> vtxRange{"vtxRange", 10.0f, "Vertex Z range to consider"};
   Configurable<float> dcaZ{"dcaZ", 0.2f, "Custom DCA Z cut (ignored if negative)"};
-  Configurable<float> v0radiusCut{"v0radiusCut", 1.2f, "RadiusCut"};
-  Configurable<float> dcapostopvCut{"dcapostopvCut", 0.05f, "dcapostopvCut"};
-  Configurable<float> dcanegtopvCut{"dcanegtopvCut", 0.05f, "dcanegtopvCut"};
-  Configurable<float> v0cospaCut{"v0cospaCut", 0.995f, "v0cospaCut"};
-  Configurable<float> dcav0daughtercut{"dcav0daughtercut", 1.0f, "dcav0daughtercut"};
-  Configurable<float> minTPCnClsCut{"minTPCnClsCut", 50.0f, "minTPCnClsCut"};
-  Configurable<float> nSigmaTpcCut{"nSigmaTpcCut", 5.0f, "nSigmaTpcCut"};
-  Configurable<float> v0etaCut{"v0etaCut", 0.9f, "v0etaCut"};
+  Configurable<float> v0radiusK0SCut{"v0radiusK0SCut", 1.2f, "K0S RadiusCut"};
+  Configurable<float> dcapostopvK0SCut{"dcapostopvK0SCut", 0.05f, "K0S dcapostopvCut"};
+  Configurable<float> dcanegtopvK0SCut{"dcanegtopvK0SCut", 0.05f, "K0S dcanegtopvCut"};
+  Configurable<float> v0cospaK0SCut{"v0cospaK0SCut", 0.995f, "K0S v0cospaCut"};
+  Configurable<float> dcav0daughterK0Scut{"dcav0daughterK0Scut", 1.0f, "K0S dcav0daughtercut"};
+  Configurable<float> minTPCnClsK0SCut{"minTPCnClsK0SCut", 50.0f, "K0S minTPCnClsCut"};
+  Configurable<float> nSigmaTpcK0SCut{"nSigmaTpcK0SCut", 5.0f, "K0S nSigmaTpcCut"};
+  Configurable<float> v0etaK0SCut{"v0etaK0SCut", 0.9f, "K0S v0etaCut"};
+  Configurable<float> v0radiusLambdaCut{"v0radiusLambdaCut", 1.2f, "Lambda RadiusCut"};
+  Configurable<float> dcapostopvLambdaCut{"dcapostopvLambdaCut", 0.05f, "Lambda dcapostopvCut"};
+  Configurable<float> dcanegtopvLambdaCut{"dcanegtopvLambdaCut", 0.05f, "Lambda dcanegtopvCut"};
+  Configurable<float> v0cospaLambdaCut{"v0cospaLambdaCut", 0.995f, "Lambda v0cospaCut"};
+  Configurable<float> dcav0daughterLambdacut{"dcav0daughterLambdacut", 1.0f, "Lambda dcav0daughtercut"};
+  Configurable<float> minTPCnClsLambdaCut{"minTPCnClsLambdaCut", 50.0f, "Lambda minTPCnClsCut"};
+  Configurable<float> nSigmaTpcLambdaCut{"nSigmaTpcLambdaCut", 5.0f, "Lambda nSigmaTpcCut"};
+  Configurable<float> v0etaLambdaCut{"v0etaLambdaCut", 0.9f, "Lambda v0etaCut"};
   Configurable<float> extraphicut1{"extraphicut1", 3.07666f, "Extra Phi cut 1"};
   Configurable<float> extraphicut2{"extraphicut2", 3.12661f, "Extra Phi cut 2"};
   Configurable<float> extraphicut3{"extraphicut3", 0.03f, "Extra Phi cut 3"};
@@ -180,6 +188,7 @@ struct HeavyionMultiplicity {
   ConfigurableAxis centBinGen{"centBinGen", {VARIABLE_WIDTH, 0, 500, 1000, 2000, 5000, 10000}, ""};
   ConfigurableAxis binsImpactPar{"binsImpactPar", {VARIABLE_WIDTH, 0.0, 3.00065, 4.28798, 6.14552, 7.6196, 8.90942, 10.0897, 11.2002, 12.2709, 13.3167, 14.4173, 23.2518}, "Binning of the impact parameter axis"};
   ConfigurableAxis binsMult{"binsMult", {500, 0.0f, +500.0f}, ""};
+  ConfigurableAxis binsDCA{"binsDCA", {500, -10.0f, 10.0f}, ""};
 
   Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", true, "Enable SameBunchPileup cut"};
   Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", true, "Enable GoodZvtxFT0vsPV cut"};
@@ -200,6 +209,7 @@ struct HeavyionMultiplicity {
   Configurable<bool> isApplyCentMFT{"isApplyCentMFT", false, "Centrality based on MFT tracks"};
   Configurable<bool> isApplySplitRecCol{"isApplySplitRecCol", false, "Split MC reco collisions"};
   Configurable<bool> isApplyInelgt0{"isApplyInelgt0", false, "Enable INEL > 0 condition"};
+  Configurable<bool> isApplyTVX{"isApplyTVX", false, "Enable TVX trigger sel"};
 
   void init(InitContext const&)
   {
@@ -214,6 +224,7 @@ struct HeavyionMultiplicity {
     AxisSpec axisCentBinGen = {centBinGen, "GenCentrality", "CentGenAxis"};
     AxisSpec impactParAxis = {binsImpactPar, "Impact Parameter"};
     AxisSpec multAxis = {binsMult, "Multiplicity #eta<0.5"};
+    AxisSpec dcaAxis = {binsDCA, "DCA vs PV"};
 
     histos.add("EventHist", "EventHist", kTH1D, {axisEvent}, false);
     histos.add("VtxZHist", "VtxZHist", kTH1D, {axisVtxZ}, false);
@@ -231,10 +242,13 @@ struct HeavyionMultiplicity {
     x->SetBinLabel(9, "INEL > 0");
 
     if (doprocessData) {
+      histos.add("hdcaxy", "dca to pv in the xy plane", kTH1D, {dcaAxis}, false);
+      histos.add("hdcaz", "dca to pv in the z axis", kTH1D, {dcaAxis}, false);
       histos.add("CentPercentileHist", "CentPercentileHist", kTH1D, {axisCent}, false);
       histos.add("hdatazvtxcent", "hdatazvtxcent", kTH3D, {axisVtxZ, centAxis, axisOccupancy}, false);
       histos.add("PhiVsEtaHist", "PhiVsEtaHist", kTH2D, {axisPhi2, axisEta}, false);
       histos.add("hdatadndeta", "hdatadndeta", kTHnSparseD, {axisVtxZ, centAxis, axisOccupancy, axisEta, axisPhi, axisTrackType}, false);
+      histos.add("hdatadndetaMB", "hdatadndetaMB", kTHnSparseD, {axisVtxZ, axisEta, axisPhi}, false);
     }
 
     if (doprocessMonteCarlo || doprocessMCpTefficiency || doprocessMCcheckFakeTracks) {
@@ -243,9 +257,13 @@ struct HeavyionMultiplicity {
     }
 
     if (doprocessMonteCarlo) {
+      histos.add("hmcdcaxy", "dca to pv in the xy plane", kTH1D, {dcaAxis}, false);
+      histos.add("hmcdcaz", "dca to pv in the z axis", kTH1D, {dcaAxis}, false);
       histos.add("MCrecPhiVsEtaHist", "MCrecPhiVsEtaHist", kTH2D, {axisPhi2, axisEta}, false);
       histos.add("hmcrecdndeta", "hmcrecdndeta", kTHnSparseD, {axisVtxZ, centAxis, axisOccupancy, axisEta, axisPhi, axisSpecies, axisTrackType}, false);
+      histos.add("hmcrecdndetaMB", "hmcrecdndetaMB", kTHnSparseD, {axisVtxZ, axisEta, axisPhi, axisSpecies}, false);
       histos.add("hmcgendndeta", "hmcgendndeta", kTHnSparseD, {axisVtxZ, centAxis, axisEta, axisPhi, axisSpecies, axisGenPtVary}, false);
+      histos.add("hmcgendndetaMB", "hmcgendndetaMB", kTHnSparseD, {axisVtxZ, axisEta, axisPhi, axisSpecies}, false);
     }
 
     if (doprocessMCpTefficiency) {
@@ -325,6 +343,10 @@ struct HeavyionMultiplicity {
       histos.add("hMultEta05vsCentrRec", "multiplicity in eta<0.5 of selected MC events vs centrality", kTH2F, {axisCent, multAxis});
       histos.add("hgendndetaVsMultEta05BeforeEvtSel", "hgendndetaBeforeEvtSel vs multiplicity in eta<0.5", kTH2F, {axisEta, multAxis});
       histos.add("hgendndetaVsMultEta05AfterEvtSel", "hgendndetaAfterEvtSel vs multiplicity in eta<0.5", kTH2F, {axisEta, multAxis});
+      histos.add("hImpactParameterSplit", "Impact parameter of selected and split MC events", kTH1F, {impactParAxis});
+      histos.add("hMultEta05Split", "multiplicity in eta<0.5 of selected and split MC events", kTH1F, {multAxis});
+      histos.add("hMultSplit", "multiplicity of selected and split MC events", kTH1F, {axisFt0cMult});
+      histos.add("hMultvsCentrSplit", "multiplicity of selected and split MC events vs centrality ", kTH2F, {axisCent, axisFt0cMult});
 
       histos.add("hMultGen", "multiplicity of generated MC events", kTH1F, {axisFt0cMult});
       histos.add("hMultRec", "multiplicity of selected MC events", kTH1F, {axisFt0cMult});
@@ -368,6 +390,10 @@ struct HeavyionMultiplicity {
       return false;
     }
     histos.fill(HIST("EventHist"), 2);
+
+    if (isApplyTVX && !col.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+      return false;
+    }
 
     if (isApplySameBunchPileup && !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return false;
@@ -440,8 +466,9 @@ struct HeavyionMultiplicity {
     auto cent = -1;
     if (isApplyCentFT0C) {
       cent = col.multMCFT0C();
-    }
-    if (isApplyCentFV0A) {
+    } else if (isApplyCentFT0M) {
+      cent = (col.multMCFT0C() + col.multMCFT0A()) / 2.;
+    } else if (isApplyCentFV0A) {
       cent = col.multMCFV0A();
     }
     return cent;
@@ -511,8 +538,12 @@ struct HeavyionMultiplicity {
       if (!isTrackSelected(track)) {
         continue;
       }
+      histos.fill(HIST("hdcaxy"), track.dcaXY());
+      histos.fill(HIST("hdcaz"), track.dcaZ());
       histos.fill(HIST("PhiVsEtaHist"), track.phi(), track.eta());
       histos.fill(HIST("hdatadndeta"), cols.posZ(), selColCent(cols), selColOccu(cols), track.eta(), track.phi(), kGlobalplusITS);
+      histos.fill(HIST("hdatadndetaMB"), cols.posZ(), track.eta(), track.phi());
+
       if (track.hasTPC()) {
         histos.fill(HIST("hdatadndeta"), cols.posZ(), selColCent(cols), selColOccu(cols), track.eta(), track.phi(), kGlobalonly);
       } else {
@@ -563,15 +594,17 @@ struct HeavyionMultiplicity {
       histos.fill(HIST("VtxZHist"), RecCol.posZ());
       histos.fill(HIST("CentPercentileMCRecHist"), selColCent(RecCol));
       histos.fill(HIST("hmczvtxcent"), RecCol.posZ(), selColCent(RecCol), selColOccu(RecCol));
-
       auto recTracksPart = RecTracks.sliceBy(perCollision, RecCol.globalIndex());
       std::vector<int> mclabels;
       for (const auto& Rectrack : recTracksPart) {
         if (!isTrackSelected(Rectrack)) {
           continue;
         }
+        histos.fill(HIST("hmcdcaxy"), Rectrack.dcaXY());
+        histos.fill(HIST("hmcdcaz"), Rectrack.dcaZ());
         histos.fill(HIST("MCrecPhiVsEtaHist"), Rectrack.phi(), Rectrack.eta());
         histos.fill(HIST("hmcrecdndeta"), RecCol.posZ(), selColCent(RecCol), selColOccu(RecCol), Rectrack.eta(), Rectrack.phi(), static_cast<double>(kSpAll), kGlobalplusITS);
+        histos.fill(HIST("hmcrecdndetaMB"), RecCol.posZ(), Rectrack.eta(), Rectrack.phi(), static_cast<double>(kSpAll));
         if (Rectrack.hasTPC()) {
           histos.fill(HIST("hmcrecdndeta"), RecCol.posZ(), selColCent(RecCol), selColOccu(RecCol), Rectrack.eta(), Rectrack.phi(), static_cast<double>(kSpAll), kGlobalonly);
         } else {
@@ -610,8 +643,10 @@ struct HeavyionMultiplicity {
           }
           mclabels.push_back(Rectrack.mcParticleId());
           histos.fill(HIST("hmcrecdndeta"), RecCol.posZ(), selColCent(RecCol), selColOccu(RecCol), Rectrack.eta(), Rectrack.phi(), static_cast<double>(pid), kGlobalplusITS);
+          histos.fill(HIST("hmcrecdndetaMB"), RecCol.posZ(), Rectrack.eta(), Rectrack.phi(), static_cast<double>(pid));
         } else {
           histos.fill(HIST("hmcrecdndeta"), RecCol.posZ(), selColCent(RecCol), selColOccu(RecCol), Rectrack.eta(), Rectrack.phi(), static_cast<double>(kBkg), kGlobalplusITS);
+          histos.fill(HIST("hmcrecdndetaMB"), RecCol.posZ(), Rectrack.eta(), Rectrack.phi(), static_cast<double>(kBkg));
         }
       } // track (mcrec) loop
 
@@ -620,6 +655,7 @@ struct HeavyionMultiplicity {
           continue;
         }
         histos.fill(HIST("hmcgendndeta"), RecCol.posZ(), selColCent(RecCol), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kNoGenpTVar);
+        histos.fill(HIST("hmcgendndetaMB"), RecCol.posZ(), particle.eta(), particle.phi(), static_cast<double>(kSpAll));
         if (particle.pt() < KminPtCut) {
           histos.fill(HIST("hmcgendndeta"), RecCol.posZ(), selColCent(RecCol), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTup, -10.0 * particle.pt() + 2);
           histos.fill(HIST("hmcgendndeta"), RecCol.posZ(), selColCent(RecCol), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTdown, 5.0 * particle.pt() + 0.5);
@@ -644,6 +680,7 @@ struct HeavyionMultiplicity {
             break;
         }
         histos.fill(HIST("hmcgendndeta"), RecCol.posZ(), selColCent(RecCol), particle.eta(), particle.phi(), static_cast<double>(pid), kNoGenpTVar);
+        histos.fill(HIST("hmcgendndetaMB"), RecCol.posZ(), particle.eta(), particle.phi(), static_cast<double>(pid));
       } // track (mcgen) loop
     } // collision loop
   }
@@ -745,33 +782,19 @@ struct HeavyionMultiplicity {
     for (const auto& v0track : v0data) {
       auto v0pTrack = v0track.template posTrack_as<V0TrackCandidates>();
       auto v0nTrack = v0track.template negTrack_as<V0TrackCandidates>();
-      if (std::abs(v0pTrack.eta()) > v0etaCut || std::abs(v0nTrack.eta()) > v0etaCut) {
-        continue;
+      if (std::abs(v0pTrack.eta()) <= v0etaK0SCut && std::abs(v0nTrack.eta()) <= v0etaK0SCut && v0pTrack.tpcNClsFound() >= minTPCnClsK0SCut && v0nTrack.tpcNClsFound() >= minTPCnClsK0SCut && std::abs(v0track.dcapostopv()) >= dcapostopvK0SCut && std::abs(v0track.dcanegtopv()) >= dcanegtopvK0SCut && v0track.v0radius() >= v0radiusK0SCut && v0track.v0cosPA() >= v0cospaK0SCut && std::abs(v0track.dcaV0daughters()) <= dcav0daughterK0Scut && std::abs(v0pTrack.tpcNSigmaPi()) <= nSigmaTpcK0SCut && std::abs(v0nTrack.tpcNSigmaPi()) <= nSigmaTpcK0SCut) {
+
+        histos.fill(HIST("K0sCentEtaMass"), selColCent(cols), v0track.eta(), v0track.mK0Short());
       }
-      if (v0pTrack.tpcNClsFound() < minTPCnClsCut) {
-        continue;
+      if (std::abs(v0pTrack.eta()) <= v0etaLambdaCut && std::abs(v0nTrack.eta()) <= v0etaLambdaCut && v0pTrack.tpcNClsFound() >= minTPCnClsLambdaCut && v0nTrack.tpcNClsFound() >= minTPCnClsLambdaCut && std::abs(v0track.dcapostopv()) >= dcapostopvLambdaCut && std::abs(v0track.dcanegtopv()) >= dcanegtopvLambdaCut && v0track.v0radius() >= v0radiusLambdaCut && v0track.v0cosPA() >= v0cospaLambdaCut && std::abs(v0track.dcaV0daughters()) <= dcav0daughterLambdacut) {
+
+        if (std::abs(v0pTrack.tpcNSigmaPr()) <= nSigmaTpcLambdaCut && std::abs(v0nTrack.tpcNSigmaPi()) <= nSigmaTpcLambdaCut) {
+          histos.fill(HIST("LambdaCentEtaMass"), selColCent(cols), v0track.eta(), v0track.mLambda());
+        }
+        if (std::abs(v0pTrack.tpcNSigmaPi()) <= nSigmaTpcLambdaCut && std::abs(v0nTrack.tpcNSigmaPr()) <= nSigmaTpcLambdaCut) {
+          histos.fill(HIST("AntiLambdaCentEtaMass"), selColCent(cols), v0track.eta(), v0track.mAntiLambda());
+        }
       }
-      if (v0nTrack.tpcNClsFound() < minTPCnClsCut) {
-        continue;
-      }
-      if (std::abs(v0pTrack.tpcNSigmaPi()) > nSigmaTpcCut) {
-        continue;
-      }
-      if (std::abs(v0nTrack.tpcNSigmaPi()) > nSigmaTpcCut) {
-        continue;
-      }
-      if (std::abs(v0pTrack.tpcNSigmaPr()) > nSigmaTpcCut) {
-        continue;
-      }
-      if (std::abs(v0nTrack.tpcNSigmaPr()) > nSigmaTpcCut) {
-        continue;
-      }
-      if (std::abs(v0track.dcapostopv()) < dcapostopvCut || std::abs(v0track.dcanegtopv()) < dcanegtopvCut || v0track.v0radius() < v0radiusCut || v0track.v0cosPA() < v0cospaCut || std::abs(v0track.dcaV0daughters()) > dcav0daughtercut) {
-        continue;
-      }
-      histos.fill(HIST("K0sCentEtaMass"), selColCent(cols), v0track.eta(), v0track.mK0Short());
-      histos.fill(HIST("LambdaCentEtaMass"), selColCent(cols), v0track.eta(), v0track.mLambda());
-      histos.fill(HIST("AntiLambdaCentEtaMass"), selColCent(cols), v0track.eta(), v0track.mAntiLambda());
     }
   }
 
@@ -942,6 +965,11 @@ struct HeavyionMultiplicity {
     if (isApplyInelgt0 && !mcCollision.isInelGt0()) {
       return;
     }
+
+    if (isApplyTVX && !(mcCollision.multMCFT0C() > 0 && mcCollision.multMCFT0A() > 0)) {
+      return;
+    }
+
     if (std::abs(mcCollision.posZ()) >= vtxRange) {
       return;
     }
@@ -967,6 +995,12 @@ struct HeavyionMultiplicity {
       if (std::abs(RecCol.posZ()) >= vtxRange) {
         continue;
       }
+
+      histos.fill(HIST("hImpactParameterSplit"), mcCollision.impactParameter());
+      histos.fill(HIST("hMultEta05Split"), mcCollision.multMCNParticlesEta05());
+      histos.fill(HIST("hMultSplit"), selColMultMC(mcCollision));
+      histos.fill(HIST("hMultvsCentrSplit"), selColCent(RecCol), selColMultMC(mcCollision));
+
       if (RecCol.numContrib() <= numcontributors) {
         continue;
       } else {

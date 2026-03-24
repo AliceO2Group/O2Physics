@@ -17,7 +17,7 @@
 #ifndef COMMON_CORE_PID_TPCPIDRESPONSE_H_
 #define COMMON_CORE_PID_TPCPIDRESPONSE_H_
 
-#include <DataFormatsTPC/BetheBlochAleph.h>
+#include <MathUtils/BetheBlochAleph.h>
 #include <Framework/Logger.h>
 #include <ReconstructionDataFormats/PID.h>
 
@@ -116,7 +116,7 @@ inline float Response::GetExpectedSignal(const TrackType& track, const o2::track
   if (!track.hasTPC()) {
     return -999.f;
   }
-  const float bethe = mMIP * o2::tpc::BetheBlochAleph(track.tpcInnerParam() / o2::track::pid_constants::sMasses[id], mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow(static_cast<float>(o2::track::pid_constants::sCharges[id]), mChargeFactor);
+  const float bethe = mMIP * o2::common::BetheBlochAleph(track.tpcInnerParam() / o2::track::pid_constants::sMasses[id], mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow(static_cast<float>(o2::track::pid_constants::sCharges[id]), mChargeFactor);
   return bethe >= 0.f ? bethe : -999.f;
 }
 
@@ -145,7 +145,7 @@ inline float Response::GetExpectedSigmaAtMultiplicity(const long multTPC, const 
     const double p = track.tpcInnerParam();
     const double mass = o2::track::pid_constants::sMasses[id];
     const double bg = p / mass;
-    const double dEdx = o2::tpc::BetheBlochAleph(static_cast<float>(bg), mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow(static_cast<float>(o2::track::pid_constants::sCharges[id]), mChargeFactor);
+    const double dEdx = o2::common::BetheBlochAleph(static_cast<float>(bg), mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow(static_cast<float>(o2::track::pid_constants::sCharges[id]), mChargeFactor);
     const double relReso = GetRelativeResolutiondEdx(p, mass, o2::track::pid_constants::sCharges[id], mResolutionParams[3]);
 
     const std::vector<double> values{1.f / dEdx, track.tgl(), std::sqrt(ncl), relReso, track.signed1Pt(), multTPC / mMultNormalization};
@@ -210,10 +210,10 @@ inline float Response::GetSignalDelta(const TrackType& trk, const o2::track::PID
 inline float Response::GetRelativeResolutiondEdx(const float p, const float mass, const float charge, const float resol) const
 {
   const float bg = p / mass;
-  const float dEdx = o2::tpc::BetheBlochAleph(bg, mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow(charge, mChargeFactor);
+  const float dEdx = o2::common::BetheBlochAleph(bg, mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow(charge, mChargeFactor);
   const float deltaP = resol * std::sqrt(dEdx);
   const float bgDelta = p * (1 + deltaP) / mass;
-  const float dEdx2 = o2::tpc::BetheBlochAleph(bgDelta, mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow(charge, mChargeFactor);
+  const float dEdx2 = o2::common::BetheBlochAleph(bgDelta, mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4]) * std::pow(charge, mChargeFactor);
   const float deltaRel = std::abs(dEdx2 - dEdx) / dEdx;
   return deltaRel;
 }

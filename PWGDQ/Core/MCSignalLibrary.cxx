@@ -193,7 +193,8 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
   if (!nameStr.compare("nonPromptJpsiFromBeauty")) {
-    MCProng prong(2, {443, 503}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prong(2, {503, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSignalInTime(true);
     signal = new MCSignal(name, "Non-prompt jpsi directly from beauty", {prong}, {-1});
     return signal;
   }

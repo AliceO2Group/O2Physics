@@ -216,7 +216,7 @@ struct nucleiFromHypertritonMap {
         }
 
         const auto& mcparticle = track.mcParticle();
-        if (mcparticle.pdgCode() != mSelectedPDG) {
+        if (std::abs(mcparticle.pdgCode()) != mSelectedPDG) {
           continue;
         }
 
