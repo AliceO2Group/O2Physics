@@ -13,9 +13,9 @@
 /// \brief Produces PWGUD derived table from standard tables
 ///
 /// \author Alexander Bylinkin <roman.lavicka@cern.ch>, University of Bergen
-/// \since	23.11.2023
+/// \since 23.11.2023
 /// \author Adam Matyja <adam.tomasz.matyja@cern.ch>, INP PAN Krakow, Poland
-/// \since	May 2025
+/// \since May 2025
 //
 
 #include "PWGUD/Core/FITCutParHolder.h"
@@ -100,7 +100,7 @@ struct SGCandProducer {
   Configurable<bool> fillTrackTables{"fillTrackTables", true, "Fill track tables"};
   Configurable<bool> fillFwdTrackTables{"fillFwdTrackTables", true, "Fill forward track tables"};
 
-  //	SG selector
+  // SG selector
   SGSelector sgSelector;
   ctpRateFetcher mRateFetcher;
 
@@ -219,7 +219,7 @@ struct SGCandProducer {
                    aod::FV0As const& fv0as, aod::FT0s const& ft0s, aod::FDDs const& fdds)
   {
     if (verboseInfo)
-      LOGF(debug, "<SGCandProducer>	 collision %d", collision.globalIndex());
+      LOGF(debug, "<SGCandProducer> collision %d", collision.globalIndex());
     getHist(TH1, histdir + "/Stat")->Fill(0., 1.);
     // reject collisions at TF boundaries
     if (rejectAtTFBoundary && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
@@ -357,7 +357,7 @@ struct SGCandProducer {
             } else if (saveAllTracks) {
               if (track.itsClusterSizes() && track.itsChi2NCl() > 0 && ((track.tpcNClsFindable() == 0 && savenonPVCITSOnlyTracks) || track.tpcNClsFindable() > 50))
                 updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
-              // if (track.isPVContributor())	 updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
+              // if (track.isPVContributor()) updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
             }
           }
         }
@@ -542,7 +542,7 @@ struct McSGCandProducer {
         for (const auto& oldmid : oldmids) {
           auto m = McParts.rawIteratorAt(oldmid);
           if (verboseInfoMC)
-            LOGF(debug, "		 m %d", m.globalIndex());
+            LOGF(debug, "m %d", m.globalIndex());
           if (mcPartIsSaved.find(oldmid) != mcPartIsSaved.end()) {
             newval = mcPartIsSaved[oldmid];
           } else {
@@ -688,7 +688,7 @@ struct McSGCandProducer {
         if (mcsgId >= 0 && mcOfInterest) {
           if (mcColIsSaved.find(mcsgId) == mcColIsSaved.end()) {
             if (verboseInfoMC)
-              LOGF(info, "	Saving McCollision %d", mcsgId);
+              LOGF(info, "Saving McCollision %d", mcsgId);
             // update UDMcCollisions
             auto sgcandMcCol = sgcand.collision_as<CCs>().mcCollision();
             updateUDMcCollisions(sgcandMcCol, globBC);
@@ -709,7 +709,7 @@ struct McSGCandProducer {
           // If the sgcand has no associated McCollision then only the McParticles which are associated
           // with the tracks of the sgcand are saved
           if (verboseInfoMC)
-            LOGF(info, "	Saving McCollision %d", -1);
+            LOGF(info, "Saving McCollision %d", -1);
 
           // update UDMcColsLabels (for each UDCollision -> UDMcCollisions)
           outputMcCollsLabels(-1);
@@ -751,7 +751,7 @@ struct McSGCandProducer {
         // but only consider generated events of interest
         if (mcOfInterest && mcColIsSaved.find(mccolId) == mcColIsSaved.end()) {
           if (verboseInfoMC)
-            LOGF(info, "	Saving McCollision %d", mccolId);
+            LOGF(info, "Saving McCollision %d", mccolId);
           // update UDMcCollisions
           updateUDMcCollisions(mccol, globBC);
           mcColIsSaved[mccolId] = outputMcCollisions.lastIndex();
@@ -795,7 +795,7 @@ struct McSGCandProducer {
       // update UDMcCollisions and UDMcParticles
       if (mcColIsSaved.find(mccolId) == mcColIsSaved.end()) {
         if (verboseInfoMC)
-          LOGF(info, "	Saving McCollision %d", mccolId);
+          LOGF(info, "Saving McCollision %d", mccolId);
 
         // update UDMcCollisions
         updateUDMcCollisions(mccol, globBC);
