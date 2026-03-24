@@ -677,7 +677,7 @@ inline bool getPhiEtaFromFitBit(FT0DetT& ft0Det,
                                 double& phi,
                                 double& eta)
 {
-	auto ref = decodeFitBit(bit);
+  auto ref = decodeFitBit(bit);
   if (ref.det != FitBitRef::Det::FT0) {
     return false;
   }
