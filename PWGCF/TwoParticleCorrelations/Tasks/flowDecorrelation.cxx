@@ -87,6 +87,7 @@ struct FlowDecorrelation {
   O2_DEFINE_CONFIGURABLE(cfgEvSelkIsGoodZvtxFT0vsPV, bool, false, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference, use this cut at low multiplicities with caution")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoCollInTimeRangeStandard, bool, false, "no collisions in specified time range")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkIsGoodITSLayersAll, bool, true, "cut time intervals with dead ITS staves")
+  O2_DEFINE_CONFIGURABLE(cfgEvSelkIsGoodITSLayer0123, bool, false, "cut time intervals with dead ITS staves (layers 0-3 only, for pp)")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoCollInRofStandard, bool, false, "no other collisions in this Readout Frame with per-collision multiplicity above threshold")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoHighMultCollInPrevRof, bool, false, "veto an event if FT0C amplitude in previous ITS ROF is above threshold")
   O2_DEFINE_CONFIGURABLE(cfgEvSelMultCorrelation, bool, true, "Multiplicity correlation cut")
@@ -252,7 +253,7 @@ struct FlowDecorrelation {
     LOGF(info, "Starting init");
     // Event Counter
     if ((doprocessSameTpcFt0a || doprocessSameTpcFt0c || doprocessSameFt0aFt0c || doprocessSameTpcMft || doprocessSameTpcFv0) && cfgUseAdditionalEventCut) {
-      registry.add("hEventCountSpecific", "Number of Event;; Count", {HistType::kTH1D, {{12, 0, 12}}});
+      registry.add("hEventCountSpecific", "Number of Event;; Count", {HistType::kTH1D, {{13, 0, 13}}});
       registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(1, "after sel8");
       registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(2, "kNoSameBunchPileup");
       registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(3, "kNoITSROFrameBorder");
@@ -260,11 +261,12 @@ struct FlowDecorrelation {
       registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(5, "kIsGoodZvtxFT0vsPV");
       registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(6, "kNoCollInTimeRangeStandard");
       registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(7, "kIsGoodITSLayersAll");
-      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(8, "kNoCollInRofStandard");
-      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(9, "kNoHighMultCollInPrevRof");
-      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(10, "occupancy");
-      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(11, "MultCorrelation");
-      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(12, "cfgEvSelV0AT0ACut");
+      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(8, "kIsGoodITSLayer0123");
+      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(9, "kNoCollInRofStandard");
+      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(10, "kNoHighMultCollInPrevRof");
+      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(11, "occupancy");
+      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(12, "MultCorrelation");
+      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(13, "cfgEvSelV0AT0ACut");
     }
 
     if (cfgEvSelMultCorrelation) {
@@ -917,23 +919,29 @@ struct FlowDecorrelation {
     }
     if (fillCounter && cfgEvSelkIsGoodITSLayersAll)
       registry.fill(HIST("hEventCountSpecific"), 6.5);
+    if (cfgEvSelkIsGoodITSLayer0123 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
+      // for pp: cut time intervals with dead ITS staves on layers 0-3 only
+      return 0;
+    }
+    if (fillCounter && cfgEvSelkIsGoodITSLayer0123)
+      registry.fill(HIST("hEventCountSpecific"), 7.5);
     if (cfgEvSelkNoCollInRofStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       // no other collisions in this Readout Frame with per-collision multiplicity above threshold
       return 0;
     }
     if (fillCounter && cfgEvSelkNoCollInRofStandard)
-      registry.fill(HIST("hEventCountSpecific"), 7.5);
+      registry.fill(HIST("hEventCountSpecific"), 8.5);
     if (cfgEvSelkNoHighMultCollInPrevRof && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
       // veto an event if FT0C amplitude in previous ITS ROF is above threshold
       return 0;
     }
     if (fillCounter && cfgEvSelkNoHighMultCollInPrevRof)
-      registry.fill(HIST("hEventCountSpecific"), 8.5);
+      registry.fill(HIST("hEventCountSpecific"), 9.5);
     auto occupancy = collision.trackOccupancyInTimeRange();
     if (cfgEvSelOccupancy && (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh))
       return 0;
     if (fillCounter && cfgEvSelOccupancy)
-      registry.fill(HIST("hEventCountSpecific"), 9.5);
+      registry.fill(HIST("hEventCountSpecific"), 10.5);
 
     auto multNTracksPV = collision.multNTracksPV();
     if (cfgEvSelMultCorrelation) {
@@ -963,14 +971,14 @@ struct FlowDecorrelation {
       }
     }
     if (fillCounter && cfgEvSelMultCorrelation)
-      registry.fill(HIST("hEventCountSpecific"), 10.5);
+      registry.fill(HIST("hEventCountSpecific"), 11.5);
 
     // V0A T0A 5 sigma cut
     float sigma = 5.0;
     if (cfgEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - cfgFuncParas.fT0AV0AMean->Eval(collision.multFT0A())) > sigma * cfgFuncParas.fT0AV0ASigma->Eval(collision.multFT0A())))
       return 0;
     if (fillCounter && cfgEvSelV0AT0ACut)
-      registry.fill(HIST("hEventCountSpecific"), 11.5);
+      registry.fill(HIST("hEventCountSpecific"), 12.5);
 
     return 1;
   }
