@@ -33,6 +33,7 @@
 
 #include <bitset>
 #include <vector>
+#include <algorithm>
 
 // namespace with helpers for UD framework
 namespace udhelpers
@@ -542,7 +543,7 @@ inline void setBit(uint64_t w[4], int bit, bool val)
   }
   const int word = bit >> 6;
   const int offs = bit & 63;
-  w[word] |= (uint64_t(1) << offs);
+  w[word] |= (static_cast<uint64_t>(1) << offs);
 }
 
 template <typename TFT0, typename TFV0A>
