@@ -27,6 +27,8 @@
 
 #include <TLorentzVector.h>
 #include <TVector3.h>
+#include <iostream>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
