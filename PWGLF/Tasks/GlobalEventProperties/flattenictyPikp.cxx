@@ -72,7 +72,9 @@ using namespace o2::constants::math;
 using namespace o2::aod::rctsel;
 
 auto static constexpr CminCharge = 3.f;
+static constexpr float CnullInt = 0;
 static constexpr float Cnull = 0.0f;
+static constexpr float ConeInt = 1;
 static constexpr float Cone = 1.0f;
 
 // FV0 specific constants
@@ -923,8 +925,8 @@ struct FlattenictyPikp {
   template <int pidSgn, o2::track::PID::ID id, typename P>
   bool isPID(const P& mcParticle)
   {
-    static_assert(pidSgn == Cnull || pidSgn == 1);
-    static_assert(id > Cnull || id < Npart);
+    static_assert(pidSgn == CnullInt || pidSgn == ConeInt);
+    static_assert(id > CnullInt || id < Npart);
     constexpr int Cidx = id + pidSgn * Npart;
     return mcParticle.pdgCode() == PidSgn[Cidx];
   }
@@ -2079,7 +2081,7 @@ struct FlattenictyPikp {
     AxisSpec ptAxis{binOpt.axisPt, "#it{p}_{T} (GeV/#it{c})"};
     constexpr int ChistIdx = id + pidSgn * Npart;
     auto idx = static_cast<int>(id);
-    const std::string strID = Form("/%s/%s", (pidSgn == Cnull && id < Npart) ? "pos" : "neg", Pid[idx]);
+    const std::string strID = Form("/%s/%s", (pidSgn == CnullInt && id < Npart) ? "pos" : "neg", Pid[idx]);
     hPtEffRec[ChistIdx] = flatchrg.add<TH1>("Tracks/hPtEffRec" + strID, " ; p_{T} (GeV/c)", kTH1F, {ptAxis});
     hPtEffGen[ChistIdx] = flatchrg.add<TH1>("Tracks/hPtEffGen" + strID, " ; p_{T} (GeV/c)", kTH1F, {ptAxis});
   }
@@ -2087,8 +2089,8 @@ struct FlattenictyPikp {
   template <int pidSgn, o2::track::PID::ID id>
   void initEfficiency()
   {
-    static_assert(pidSgn == Cnull || pidSgn == 1);
-    static_assert(id > Cnull || id < Npart);
+    static_assert(pidSgn == CnullInt || pidSgn == ConeInt);
+    static_assert(id > CnullInt || id < Npart);
     constexpr int Cidx = id + pidSgn * Npart;
     const TString partName = PidChrg[Cidx];
     THashList* lhash = new THashList();
@@ -2110,7 +2112,7 @@ struct FlattenictyPikp {
   template <int pidSgn, o2::track::PID::ID id>
   void fillEfficiency()
   {
-    static_assert(pidSgn == Cnull || pidSgn == 1);
+    static_assert(pidSgn == CnullInt || pidSgn == ConeInt);
     constexpr int ChistIdx = id + pidSgn * Npart;
     const char* partName = PidChrg[ChistIdx];
     THashList* lhash = static_cast<THashList*>(listEfficiency->FindObject(partName));
@@ -2134,8 +2136,10 @@ struct FlattenictyPikp {
   template <int pidSgn, o2::track::PID::ID id>
   void fillMCRecTrack(MyLabeledPIDTracks::iterator const& track, const float mult, const float flat)
   {
-    static_assert(pidSgn == Cnull || pidSgn == 1);
+    static_assert(pidSgn == CnullInt || pidSgn == ConeInt);
     constexpr int ChistIdx = id + pidSgn * Npart;
+    constexpr int Cidx = id;
+    LOG(debug) << "fillMCRecTrack for pidSgn '" << pidSgn << "' and id '" << static_cast<int>(id) << " with index " << ChistIdx;
     const aod::McParticles::iterator& mcParticle = track.mcParticle();
     const CollsGen::iterator& collision = track.collision_as<CollsGen>();
 
@@ -2163,36 +2167,33 @@ struct FlattenictyPikp {
     }
 
     if (collision.has_mcCollision() && (mcParticle.mcCollisionId() == collision.mcCollisionId())) {
-      static_for<0, 4>([&](auto i) {
-        constexpr int Cidx = i.value;
-        if (std::sqrt(std::pow(std::fabs(o2::aod::pidutils::tpcNSigma<Cidx>(track)), 2) + std::pow(std::fabs(o2::aod::pidutils::tofNSigma<Cidx>(track)), 2) < trkSelOpt.cfgDcaNsigmaCombinedMax)) {
-          if (std::fabs(mcParticle.pdgCode()) == PDGs[Cidx]) {
-            if (!mcParticle.isPhysicalPrimary()) {
-              if (mcParticle.getProcess() == CprocessIdWeak) {
-                hPtEffRecWeak[ChistIdx]->Fill(mult, flat, track.pt());
-                hPtVsDCAxyWeak[ChistIdx]->Fill(track.pt(), track.dcaXY());
-                flatchrg.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyWeakAll), mult, flat, track.pt(), track.dcaXY());
-              } else {
-                hPtEffRecMat[ChistIdx]->Fill(mult, flat, track.pt());
-                hPtVsDCAxyMat[ChistIdx]->Fill(track.pt(), track.dcaXY());
-                flatchrg.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyMatAll), mult, flat, track.pt(), track.dcaXY());
-              }
+      if (std::sqrt(std::pow(std::fabs(o2::aod::pidutils::tpcNSigma<Cidx>(track)), 2) + std::pow(std::fabs(o2::aod::pidutils::tofNSigma<Cidx>(track)), 2) < trkSelOpt.cfgDcaNsigmaCombinedMax)) {
+        if (std::fabs(mcParticle.pdgCode()) == PDGs[Cidx]) {
+          if (!mcParticle.isPhysicalPrimary()) {
+            if (mcParticle.getProcess() == CprocessIdWeak) {
+              hPtEffRecWeak[ChistIdx]->Fill(mult, flat, track.pt());
+              hPtVsDCAxyWeak[ChistIdx]->Fill(track.pt(), track.dcaXY());
+              flatchrg.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyWeakAll), mult, flat, track.pt(), track.dcaXY());
             } else {
-              hPtEffRecPrim[ChistIdx]->Fill(mult, flat, track.pt());
-              hPtVsDCAxyPrim[ChistIdx]->Fill(track.pt(), track.dcaXY());
-              flatchrg.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyPrimAll), mult, flat, track.pt(), track.dcaXY());
+              hPtEffRecMat[ChistIdx]->Fill(mult, flat, track.pt());
+              hPtVsDCAxyMat[ChistIdx]->Fill(track.pt(), track.dcaXY());
+              flatchrg.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyMatAll), mult, flat, track.pt(), track.dcaXY());
             }
-            flatchrg.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyAll), mult, flat, track.pt(), track.dcaXY());
+          } else {
+            hPtEffRecPrim[ChistIdx]->Fill(mult, flat, track.pt());
+            hPtVsDCAxyPrim[ChistIdx]->Fill(track.pt(), track.dcaXY());
+            flatchrg.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyPrimAll), mult, flat, track.pt(), track.dcaXY());
           }
+          flatchrg.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyAll), mult, flat, track.pt(), track.dcaXY());
         }
-      });
+      }
     }
   }
 
   template <int pidSgn, o2::track::PID::ID id, bool recoEvt = false>
   void fillMCGen(aod::McParticles::iterator const& mcParticle, const float mult, const float flat)
   {
-    static_assert(pidSgn == Cnull || pidSgn == 1);
+    static_assert(pidSgn == CnullInt || pidSgn == ConeInt);
     constexpr int ChistIdx = id + pidSgn * Npart;
 
     if (!isPID<pidSgn, id>(mcParticle)) {
