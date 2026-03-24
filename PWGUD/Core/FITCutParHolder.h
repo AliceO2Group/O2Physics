@@ -9,12 +9,12 @@ class FITCutParHolder
  public:
   // constructor
   FITCutParHolder(bool saveFITbitsets = true,
-                  float thr1_FV0A = 50.,
-                  float thr1_FT0A = 50.,
-                  float thr1_FT0C = 50.,
-                  float thr2_FV0A = 100.,
-                  float thr2_FT0A = 100.,
-                  float thr2_FT0C = 100.)
+                  float thr1_FV0A = 8.,
+                  float thr1_FT0A = 8.,
+                  float thr1_FT0C = 8.,
+                  float thr2_FV0A = 20.,
+                  float thr2_FT0A = 20.,
+                  float thr2_FT0C = 20.)
     : mSaveFITbitsets{saveFITbitsets},
       mThr1FV0A{thr1_FV0A},
       mThr1FT0A{thr1_FT0A},
