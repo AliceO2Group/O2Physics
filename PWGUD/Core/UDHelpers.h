@@ -31,9 +31,9 @@
 
 #include "TLorentzVector.h"
 
+#include <algorithm>
 #include <bitset>
 #include <vector>
-#include <algorithm>
 
 // namespace with helpers for UD framework
 namespace udhelpers
