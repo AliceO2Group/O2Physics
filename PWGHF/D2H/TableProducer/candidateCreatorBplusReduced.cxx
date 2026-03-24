@@ -169,8 +169,7 @@ struct HfCandidateCreatorBplusReduced {
         registry.fill(HIST("hCovSVXX"), covMatrixPCA[0]);
         registry.fill(HIST("hCovPVXX"), covMatrixPV[0]);
 
-        // propagate D0 and Pi to the B+ vertex
-        df2.propagateTracksToVertex();
+        // get D and Pi tracks (propagated to the B+ vertex if propagateToPCA==true)
         // track.getPxPyPzGlo(pVec) modifies pVec of track
         df2.getTrack(0).getPxPyPzGlo(pVecD0);   // momentum of D0 at the B+ vertex
         df2.getTrack(1).getPxPyPzGlo(pVecPion); // momentum of Pi at the B+ vertex
@@ -184,7 +183,7 @@ struct HfCandidateCreatorBplusReduced {
         trackParCovPi.propagateToDCA(primaryVertex, bz, &dcaPion);
 
         // get uncertainty of the decay length
-        double phi, theta;
+        double phi{}, theta{};
         // getPointDirection modifies phi and theta
         getPointDirection(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertexBplus, phi, theta);
         auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));

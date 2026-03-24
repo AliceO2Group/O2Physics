@@ -69,7 +69,7 @@ class Decayer
       vy = pos[1] + rxyz * (mom[1] / track.getP());
       vz = pos[2] + rxyz * (mom[2] / track.getP());
       px = mom[0];
-      py = mom[2];
+      py = mom[1];
     } else {
       float sna, csa;
       o2::math_utils::CircleXYf_t circle;

@@ -87,3 +87,7 @@ trigger:
 tutorial:
   - changed-files:
       - any-glob-to-any-file: ["Tutorials/**"]
+
+photon:
+  - changed-files:
+      - any-glob-to-any-file: ["PWGEM/PhotonMeson/**", "*/PWGEM/PhotonMeson/**"]

@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file taskCharmHadronsFemtoDream.cxx
+/// \file taskCharmHadronsTrackFemtoDream.cxx
 /// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks
 /// \author Ravindra SIngh, GSI, ravindra.singh@cern.ch
 /// \author Biao Zhang, Heidelberg University, biao.zhang@cern.ch
@@ -47,6 +47,7 @@
 
 #include <array>
 #include <cstdint>
+#include <numeric>
 #include <string>
 #include <utility>
 
@@ -62,7 +63,10 @@ using namespace o2::constants::physics;
 
 inline o2::framework::expressions::Node coshEta(o2::framework::expressions::Node&& eta)
 {
-  return (nexp(std::move(eta)) + nexp(0.0f - std::move(eta))) * 0.5f;
+  auto e1 = std::move(eta);
+  auto e2 = e1;
+
+  return (nexp(std::move(e1)) + nexp(std::move(e2) * (-1.0f))) * 0.5f;
 }
 
 struct HfTaskCharmHadronsTrackFemtoDream {
@@ -88,6 +92,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   constexpr static int OriginRecPrompt = 1;
   constexpr static int OriginRecFD = 2;
   constexpr static int CutBitChargePositive = 2;
+  constexpr static uint32_t PidTrackPass = 1u;
 
   Produces<o2::aod::FDHfCharmTrkPairs> rowFemtoResultPairs;
   Produces<o2::aod::FDHfCharm3Prong> rowFemtoResultCharm3Prong;
@@ -114,15 +119,17 @@ struct HfTaskCharmHadronsTrackFemtoDream {
     Configurable<float> charmHadPromptBDTmax{"charmHadPromptBDTmax", 1., "Maximum prompt bdt score Charm Hadron (particle 2)"};
   } charmSel;
   /// General options
-  Configurable<float> cprDeltaEtaMax{"cprDeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
-  Configurable<float> cprDeltaPhiMax{"cprDeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
-  Configurable<bool> cprPlotPerRadii{"cprPlotPerRadii", false, "Plot CPR per radii"};
-  Configurable<bool> extendedPlots{"extendedPlots", false, "Enable additional three dimensional histogramms. High memory consumption. Use for debugging"};
+  struct : ConfigurableGroup {
+    Configurable<float> cprDeltaEtaMax{"cprDeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
+    Configurable<float> cprDeltaPhiMax{"cprDeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
+    Configurable<bool> cprPlotPerRadii{"cprPlotPerRadii", false, "Plot CPR per radii"};
+    Configurable<bool> extendedPlots{"extendedPlots", false, "Enable additional three dimensional histogramms. High memory consumption. Use for debugging"};
+    Configurable<bool> use4D{"use4D", false, "Enable four dimensional histogramms (to be used only for analysis with high statistics): k* vs multiplicity vs multiplicity percentil vs mT"};
+    Configurable<bool> useCPR{"useCPR", false, "Close Pair Rejection"};
+  } pairQASetting;
   Configurable<float> highkstarCut{"highkstarCut", 100000., "Set a cut for high k*, above which the pairs are rejected"};
   Configurable<bool> isMc{"isMc", false, "Set true in the case of a MonteCarlo Run"};
   Configurable<bool> smearingByOrigin{"smearingByOrigin", false, "Obtain the smearing matrix differential in the MC origin of particle 1 and particle 2. High memory consumption. Use with care!"};
-  Configurable<bool> use4D{"use4D", false, "Enable four dimensional histogramms (to be used only for analysis with high statistics): k* vs multiplicity vs multiplicity percentil vs mT"};
-  Configurable<bool> useCPR{"useCPR", false, "Close Pair Rejection"};
   Configurable<bool> fillTableWithCharm{"fillTableWithCharm", true, "Write charm/tracks/collision table only if >=1 charm hadron in this collision"};
 
   // Mixing configurables
@@ -200,10 +207,13 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
   /// Partition for particle 1
   Partition<FilteredFDParticles> partitionTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && (ncheckbit(aod::femtodreamparticle::cut, trackSel.cutBitTrack1)) && ifnode(aod::femtodreamparticle::pt * coshEta(aod::femtodreamparticle::eta) <= trackSel.pidThresTrack1, ncheckbit(aod::femtodreamparticle::pidcut, trackSel.tpcBitTrack1), ncheckbit(aod::femtodreamparticle::pidcut, trackSel.tpcTofBitTrack1));
+  Partition<FilteredFDParticles> partitionTrk1Ka = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && (ncheckbit(aod::femtodreamparticle::cut, trackSel.cutBitTrack1)) && (aod::femtodreamparticle::pidcut == PidTrackPass);
 
   Partition<FilteredFDMcParts> partitionMcTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                                  (ncheckbit(aod::femtodreamparticle::cut, trackSel.cutBitTrack1)) &&
                                                  ifnode(aod::femtodreamparticle::pt * coshEta(aod::femtodreamparticle::eta) <= trackSel.pidThresTrack1, ncheckbit(aod::femtodreamparticle::pidcut, trackSel.tpcBitTrack1), ncheckbit(aod::femtodreamparticle::pidcut, trackSel.tpcTofBitTrack1));
+
+  Partition<FilteredFDMcParts> partitionMcTrk1Ka = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && (ncheckbit(aod::femtodreamparticle::cut, trackSel.cutBitTrack1)) && (aod::femtodreamparticle::pidcut == PidTrackPass);
 
   /// Partition for particle 2
   Partition<FilteredCharmCand3Prongs> partitionCharmHadron3Prong = aod::fdhf::bdtBkg < charmSel.charmHadBkgBDTmax && aod::fdhf::bdtFD < charmSel.charmHadFdBDTmax && aod::fdhf::bdtFD > charmSel.charmHadFdBDTmin&& aod::fdhf::bdtPrompt<charmSel.charmHadPromptBDTmax && aod::fdhf::bdtPrompt> charmSel.charmHadPromptBDTmin;
@@ -298,7 +308,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
     sameEventCont.init(&registry,
                        binkstar, binpTTrack, binkT, binmT, mixingBinMult, mixingBinMultPercentile,
                        bin4Dkstar, bin4DmT, bin4DMult, bin4DmultPercentile,
-                       isMc, use4D, extendedPlots,
+                       isMc, pairQASetting.use4D, pairQASetting.extendedPlots,
                        highkstarCut,
                        smearingByOrigin, binInvMass);
 
@@ -306,7 +316,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
     mixedEventCont.init(&registry,
                         binkstar, binpTTrack, binkT, binmT, mixingBinMult, mixingBinMultPercentile,
                         bin4Dkstar, bin4DmT, bin4DMult, bin4DmultPercentile,
-                        isMc, use4D, extendedPlots,
+                        isMc, pairQASetting.use4D, pairQASetting.extendedPlots,
                         highkstarCut,
                         smearingByOrigin, binInvMass);
 
@@ -316,18 +326,18 @@ struct HfTaskCharmHadronsTrackFemtoDream {
     registryMixQa.add("MixingQA/hMECollisionBins", "; bin; Entries", kTH1F, {{120, -0.5, 119.5}});
     registryCharmHadronQa.add("CharmHadronQA/hPtVsMass", "; #it{p}_{T} (GeV/#it{c}); inv. mass (GeV/#it{c}^{2})", kTH2F, {binpTCharm, binInvMass});
 
-    if (useCPR.value && process3Prong) {
+    if (pairQASetting.useCPR.value && process3Prong) {
       pairCleaner3Prong.init(&registry);
-      pairCloseRejectionSE3Prong.init(&registry, &registry, cprDeltaPhiMax.value, cprDeltaEtaMax.value, cprPlotPerRadii.value, 1);
-      pairCloseRejectionME3Prong.init(&registry, &registry, cprDeltaPhiMax.value, cprDeltaEtaMax.value, cprPlotPerRadii.value, 2);
-    } else if (useCPR.value && process2Prong) {
+      pairCloseRejectionSE3Prong.init(&registry, &registry, pairQASetting.cprDeltaPhiMax.value, pairQASetting.cprDeltaEtaMax.value, pairQASetting.cprPlotPerRadii.value, 1);
+      pairCloseRejectionME3Prong.init(&registry, &registry, pairQASetting.cprDeltaPhiMax.value, pairQASetting.cprDeltaEtaMax.value, pairQASetting.cprPlotPerRadii.value, 2);
+    } else if (pairQASetting.useCPR.value && process2Prong) {
       pairCleaner2Prong.init(&registry);
-      pairCloseRejectionSE2Prong.init(&registry, &registry, cprDeltaPhiMax.value, cprDeltaEtaMax.value, cprPlotPerRadii.value, 1);
-      pairCloseRejectionME2Prong.init(&registry, &registry, cprDeltaPhiMax.value, cprDeltaEtaMax.value, cprPlotPerRadii.value, 2);
-    } else if (useCPR.value && processDstar) {
+      pairCloseRejectionSE2Prong.init(&registry, &registry, pairQASetting.cprDeltaPhiMax.value, pairQASetting.cprDeltaEtaMax.value, pairQASetting.cprPlotPerRadii.value, 1);
+      pairCloseRejectionME2Prong.init(&registry, &registry, pairQASetting.cprDeltaPhiMax.value, pairQASetting.cprDeltaEtaMax.value, pairQASetting.cprPlotPerRadii.value, 2);
+    } else if (pairQASetting.useCPR.value && processDstar) {
       pairCleanerDstar.init(&registry);
-      pairCloseRejectionSEDstar.init(&registry, &registry, cprDeltaPhiMax.value, cprDeltaEtaMax.value, cprPlotPerRadii.value, 1);
-      pairCloseRejectionMEDstar.init(&registry, &registry, cprDeltaPhiMax.value, cprDeltaEtaMax.value, cprPlotPerRadii.value, 2);
+      pairCloseRejectionSEDstar.init(&registry, &registry, pairQASetting.cprDeltaPhiMax.value, pairQASetting.cprDeltaEtaMax.value, pairQASetting.cprPlotPerRadii.value, 1);
+      pairCloseRejectionMEDstar.init(&registry, &registry, pairQASetting.cprDeltaPhiMax.value, pairQASetting.cprDeltaEtaMax.value, pairQASetting.cprPlotPerRadii.value, 2);
     }
   }
 
@@ -462,10 +472,11 @@ struct HfTaskCharmHadronsTrackFemtoDream {
     for (auto const& [p1, p2] : combinations(CombinationsFullIndexPolicy(sliceTrk1, sliceCharmHad))) {
 
       if constexpr (Channel == DecayChannel::D0ToPiK) {
-        if (p1.trackId() == p2.prong0Id() || p1.trackId() == p2.prong1Id())
+        if (p1.trackId() == p2.prong0Id() || p1.trackId() == p2.prong1Id()) {
           continue;
+        }
 
-        if (useCPR.value) {
+        if (pairQASetting.useCPR.value) {
           if (pairCloseRejectionSE2Prong.isClosePair(p1, p2, parts, col.magField())) {
             continue;
           }
@@ -477,9 +488,10 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       }
 
       if constexpr (Channel == DecayChannel::LcToPKPi || Channel == DecayChannel::DplusToPiKPi) {
-        if (p1.trackId() == p2.prong0Id() || p1.trackId() == p2.prong1Id() || p1.trackId() == p2.prong2Id())
+        if (p1.trackId() == p2.prong0Id() || p1.trackId() == p2.prong1Id() || p1.trackId() == p2.prong2Id()) {
           continue;
-        if (useCPR.value) {
+        }
+        if (pairQASetting.useCPR.value) {
           if (pairCloseRejectionSE3Prong.isClosePair(p1, p2, parts, col.magField())) {
             continue;
           }
@@ -491,9 +503,10 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       }
 
       if constexpr (Channel == DecayChannel::DstarToD0Pi) {
-        if (p1.trackId() == p2.prong0Id() || p1.trackId() == p2.prong1Id() || p1.trackId() == p2.prong2Id())
+        if (p1.trackId() == p2.prong0Id() || p1.trackId() == p2.prong1Id() || p1.trackId() == p2.prong2Id()) {
           continue;
-        if (useCPR.value) {
+        }
+        if (pairQASetting.useCPR.value) {
           if (pairCloseRejectionSEDstar.isClosePair(p1, p2, parts, col.magField())) {
             continue;
           }
@@ -565,7 +578,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
         charmHadMc,
         originType);
 
-      sameEventCont.setPair<IsMc, true>(p1, p2, col.multNtr(), col.multV0M(), use4D, extendedPlots, smearingByOrigin);
+      sameEventCont.setPair<IsMc, true>(p1, p2, col.multNtr(), col.multV0M(), pairQASetting.use4D, pairQASetting.extendedPlots, smearingByOrigin);
     }
   }
 
@@ -595,7 +608,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
         if constexpr (Channel == DecayChannel::D0ToPiK) {
 
-          if (useCPR.value) {
+          if (pairQASetting.useCPR.value) {
             if (pairCloseRejectionME2Prong.isClosePair(p1, p2, parts, collision1.magField())) {
               continue;
             }
@@ -608,7 +621,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
         if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi) {
 
-          if (useCPR.value) {
+          if (pairQASetting.useCPR.value) {
             if (pairCloseRejectionME3Prong.isClosePair(p1, p2, parts, collision1.magField())) {
               continue;
             }
@@ -621,7 +634,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
         if constexpr (Channel == DecayChannel::DstarToD0Pi) {
 
-          if (useCPR.value) {
+          if (pairQASetting.useCPR.value) {
             if (pairCloseRejectionME3Prong.isClosePair(p1, p2, parts, collision1.magField())) {
               continue;
             }
@@ -691,7 +704,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           charmHadMc,
           originType);
 
-        mixedEventCont.setPair<IsMc, true>(p1, p2, collision1.multNtr(), collision1.multV0M(), use4D, extendedPlots, smearingByOrigin);
+        mixedEventCont.setPair<IsMc, true>(p1, p2, collision1.multNtr(), collision1.multV0M(), pairQASetting.use4D, pairQASetting.extendedPlots, smearingByOrigin);
       }
     }
   }
@@ -828,7 +841,11 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   {
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
-      auto sliceTrk1 = partitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+      auto* partitionTrk1Selected = &partitionTrk1;
+      if (trackSel.pdgCodeTrack1.value == kKPlus) {
+        partitionTrk1Selected = &partitionTrk1Ka;
+      }
+      auto sliceTrk1 = partitionTrk1Selected->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
       auto sliceCharmHad = partitionCharmHadron3Prong->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
       if (fillTableWithCharm.value && sliceCharmHad.size() == 0) {
         continue;
@@ -863,7 +880,11 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   {
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
-      auto sliceTrk1 = partitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+      auto* partitionTrk1Selected = &partitionTrk1;
+      if (trackSel.pdgCodeTrack1.value == kKPlus) {
+        partitionTrk1Selected = &partitionTrk1Ka;
+      }
+      auto sliceTrk1 = partitionTrk1Selected->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
       auto sliceCharmHad = partitionCharmHadron3Prong->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
 
       if (fillTableWithCharm.value && sliceCharmHad.size() == 0) {
@@ -899,7 +920,11 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   {
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
-      auto sliceTrk1 = partitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+      auto* partitionTrk1Selected = &partitionTrk1;
+      if (trackSel.pdgCodeTrack1.value == kKPlus) {
+        partitionTrk1Selected = &partitionTrk1Ka;
+      }
+      auto sliceTrk1 = partitionTrk1Selected->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
       auto sliceCharmHad = partitionCharmHadron2Prong->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
       if (fillTableWithCharm.value && sliceCharmHad.size() == 0) {
         continue;
@@ -934,7 +959,11 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   {
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
-      auto sliceTrk1 = partitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+      auto* partitionTrk1Selected = &partitionTrk1;
+      if (trackSel.pdgCodeTrack1.value == kKPlus) {
+        partitionTrk1Selected = &partitionTrk1Ka;
+      }
+      auto sliceTrk1 = partitionTrk1Selected->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
       auto sliceCharmHad = partitionCharmHadronDstar->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
       if (fillTableWithCharm.value && sliceCharmHad.size() == 0) {
         continue;
@@ -971,7 +1000,11 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   {
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
-      auto sliceMcTrk1 = partitionMcTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+      auto* partitionTrk1Selected = &partitionMcTrk1;
+      if (trackSel.pdgCodeTrack1.value == kKPlus) {
+        partitionTrk1Selected = &partitionMcTrk1Ka;
+      }
+      auto sliceMcTrk1 = partitionTrk1Selected->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
       auto sliceMcCharmHad = partitionMcCharmHadron3Prong->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
       if ((col.bitmaskTrackOne() & bitMask) != bitMask || (col.bitmaskTrackTwo() & bitMask) != bitMask) {
         continue;
@@ -1002,7 +1035,11 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   {
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
-      auto sliceMcTrk1 = partitionMcTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+      auto* partitionTrk1Selected = &partitionMcTrk1;
+      if (trackSel.pdgCodeTrack1.value == kKPlus) {
+        partitionTrk1Selected = &partitionMcTrk1Ka;
+      }
+      auto sliceMcTrk1 = partitionTrk1Selected->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
       auto sliceMcCharmHad = partitionMcCharmHadron3Prong->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
       if ((col.bitmaskTrackOne() & bitMask) != bitMask || (col.bitmaskTrackTwo() & bitMask) != bitMask) {
         continue;
@@ -1033,7 +1070,11 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   {
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
-      auto sliceMcTrk1 = partitionMcTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+      auto* partitionTrk1Selected = &partitionMcTrk1;
+      if (trackSel.pdgCodeTrack1.value == kKPlus) {
+        partitionTrk1Selected = &partitionMcTrk1Ka;
+      }
+      auto sliceMcTrk1 = partitionTrk1Selected->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
       auto sliceMcCharmHad = partitionMcCharmHadron2Prong->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
       if ((col.bitmaskTrackOne() & bitMask) != bitMask || (col.bitmaskTrackTwo() & bitMask) != bitMask) {
         continue;
@@ -1064,7 +1105,11 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   {
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
-      auto sliceMcTrk1 = partitionMcTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+      auto* partitionTrk1Selected = &partitionMcTrk1;
+      if (trackSel.pdgCodeTrack1.value == kKPlus) {
+        partitionTrk1Selected = &partitionMcTrk1Ka;
+      }
+      auto sliceMcTrk1 = partitionTrk1Selected->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
       auto sliceMcCharmHad = partitionMcCharmHadronDstar->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
       if ((col.bitmaskTrackOne() & bitMask) != bitMask || (col.bitmaskTrackTwo() & bitMask) != bitMask) {
         continue;

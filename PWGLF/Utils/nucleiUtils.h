@@ -14,19 +14,20 @@
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
 
-#include "MathUtils/BetheBlochAleph.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/HistogramSpec.h"
+#include "MathUtils/BetheBlochAleph.h"
 
 #include "TMCProcess.h"
 
 #include <algorithm>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -102,6 +103,8 @@ struct SlimCandidate {
   float phiGenerated = -999.f;
   float centrality = -1.f;
   uint64_t mcProcess = TMCProcess::kPNoProcess;
+  float nsigmaTpc = -999.f;
+  float nsigmaTof = -999.f;
 };
 
 enum Species {
@@ -534,11 +537,11 @@ class PidManager
     float pScaled = p * mMomScaling[0] + mMomScaling[1];
     float betaGamma = pScaled / masses[mSpecies];
     return o2::common::BetheBlochAleph(betaGamma,
-                                    mTpcBetheBlochParams[0],
-                                    mTpcBetheBlochParams[1],
-                                    mTpcBetheBlochParams[2],
-                                    mTpcBetheBlochParams[3],
-                                    mTpcBetheBlochParams[4]);
+                                       mTpcBetheBlochParams[0],
+                                       mTpcBetheBlochParams[1],
+                                       mTpcBetheBlochParams[2],
+                                       mTpcBetheBlochParams[3],
+                                       mTpcBetheBlochParams[4]);
   }
 
   template <typename Ttrack>

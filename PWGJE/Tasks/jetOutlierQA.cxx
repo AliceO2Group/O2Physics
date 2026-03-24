@@ -418,7 +418,7 @@ struct JetOutlierQATask {
   }
   PROCESS_SWITCH(JetOutlierQATask, processJetsAmbiguous, "jet finder QA mcd with weighted events", false);
 
-  void processCollisionsBC(soa::Join<aod::JetCollisions, aod::JMcCollisionLbs, aod::JCollisionBCs> const& collisions,
+  void processCollisionsBC(soa::Join<aod::JetCollisions, aod::JMcCollisionLbs> const& collisions,
                            aod::JetMcCollisions const&)
   {
     //
@@ -510,7 +510,7 @@ struct JetOutlierQATask {
   }
   PROCESS_SWITCH(JetOutlierQATask, processCollisionsBC, "jet finder QA outliers", false);
 
-  void processTracksBC(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs, aod::JCollisionBCs>> const& collisions,
+  void processTracksBC(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>> const& collisions,
                        soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const&,
                        aod::JetMcCollisions const& collisionsMC,
                        aod::JetTracksMCD const& tracks,

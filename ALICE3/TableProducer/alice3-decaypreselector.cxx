@@ -74,9 +74,6 @@ struct alice3decaypreselector {
   Configurable<float> nSigmaTOF{"nSigmaTOF", 4.0f, "Nsigma for TOF PID (if enabled)"};
   Configurable<float> nSigmaRICH{"nSigmaRICH", 4.0f, "Nsigma for RICH PID (if enabled)"};
 
-  // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
-  o2::vertexing::DCAFitterN<2> fitter;
-
   // for bit-packed maps
   std::vector<uint32_t> selectionMap;
 
@@ -104,7 +101,17 @@ struct alice3decaypreselector {
 
   void init(InitContext&)
   {
-    // future dev if needed
+    auto h = histos.add<TH1>("TracksProcessed", "TracksProcessed", o2::framework::HistType::kTH1D, {{10, 0, 10}});
+    h->GetXaxis()->SetBinLabel(1, "TotalTracks");
+    h->GetXaxis()->SetBinLabel(2, "InnerTOFPiRejected");
+    h->GetXaxis()->SetBinLabel(3, "InnerTOFKaRejected");
+    h->GetXaxis()->SetBinLabel(4, "InnerTOFPrRejected");
+    h->GetXaxis()->SetBinLabel(5, "OuterTOFPiRejected ");
+    h->GetXaxis()->SetBinLabel(6, "OuterTOFKaRejected");
+    h->GetXaxis()->SetBinLabel(7, "OuterTOFPrRejected");
+    h->GetXaxis()->SetBinLabel(8, "RICHPiRejected");
+    h->GetXaxis()->SetBinLabel(9, "RICHKaRejected");
+    h->GetXaxis()->SetBinLabel(10, "RICHPrRejected");
   }
 
   // go declarative: use partitions instead of "if", then just toggle bits to allow for mask selection later
@@ -129,37 +136,56 @@ struct alice3decaypreselector {
   /// This process function ensures that all V0s are built. It will simply tag everything as true.
   void processInitialize(aod::Tracks const& tracks)
   {
+    histos.fill(HIST("TracksProcessed"), 0.5, tracks.size());
     initializeMasks(tracks.size());
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   void processFilterInnerTOF(tofTracks const&)
   {
-    for (auto const& track : pInnerTOFPi)
+    for (auto const& track : pInnerTOFPi) {
       bitoff(selectionMap[track.globalIndex()], kInnerTOFPion);
-    for (auto const& track : pInnerTOFKa)
+      histos.fill(HIST("TracksProcessed"), 1.5);
+    }
+    for (auto const& track : pInnerTOFKa) {
       bitoff(selectionMap[track.globalIndex()], kInnerTOFKaon);
-    for (auto const& track : pInnerTOFPr)
+      histos.fill(HIST("TracksProcessed"), 2.5);
+    }
+    for (auto const& track : pInnerTOFPr) {
       bitoff(selectionMap[track.globalIndex()], kInnerTOFProton);
+      histos.fill(HIST("TracksProcessed"), 3.5);
+    }
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   void processFilterOuterTOF(tofTracks const&)
   {
-    for (auto const& track : pOuterTOFPi)
+    for (auto const& track : pOuterTOFPi) {
       bitoff(selectionMap[track.globalIndex()], kOuterTOFPion);
-    for (auto const& track : pOuterTOFKa)
+      histos.fill(HIST("TracksProcessed"), 4.5);
+    }
+    for (auto const& track : pOuterTOFKa) {
       bitoff(selectionMap[track.globalIndex()], kOuterTOFKaon);
-    for (auto const& track : pOuterTOFPr)
+      histos.fill(HIST("TracksProcessed"), 5.5);
+    }
+    for (auto const& track : pOuterTOFPr) {
       bitoff(selectionMap[track.globalIndex()], kOuterTOFProton);
+      histos.fill(HIST("TracksProcessed"), 6.5);
+    }
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   void processFilterRICH(richTracks const&)
   {
-    for (auto const& track : pRICHPi)
+    for (auto const& track : pRICHPi) {
       bitoff(selectionMap[track.globalIndex()], kRICHPion);
-    for (auto const& track : pRICHKa)
+      histos.fill(HIST("TracksProcessed"), 7.5);
+    }
+    for (auto const& track : pRICHKa) {
       bitoff(selectionMap[track.globalIndex()], kRICHKaon);
-    for (auto const& track : pRICHPr)
+      histos.fill(HIST("TracksProcessed"), 8.5);
+    }
+    for (auto const& track : pRICHPr) {
       bitoff(selectionMap[track.globalIndex()], kRICHProton);
+      histos.fill(HIST("TracksProcessed"), 9.5);
+    }
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   void processFilterOnMonteCarloTruth(labeledTracks const& tracks, aod::McParticles const&)

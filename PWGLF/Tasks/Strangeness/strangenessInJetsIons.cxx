@@ -82,9 +82,7 @@ using SelCollisions = soa::Join<aod::Collisions,
                                 aod::CentFT0Ms>;
 using SimCollisions = soa::Join<aod::McCollisionLabels,
                                 aod::Collisions,
-                                aod::EvSels,
-                                aod::CentFT0Cs,
-                                aod::CentFT0Ms>;
+                                aod::EvSels>;
 using DaughterTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA,
                                  aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                                  aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
@@ -127,66 +125,82 @@ struct StrangenessInJetsIons {
   Configurable<double> deltaEtaEdge{"deltaEtaEdge", 0.05, "eta gap from detector edge"};
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Enable processing of skimmed data"};
   Configurable<std::string> triggerName{"triggerName", "fOmega", "Software trigger name"};
-  Configurable<int> centrEstimator{"centrEstimator", 0, "Select centrality estimator. Options: 0 = FT0C, 1 = FT0M"};
+  Configurable<int> centrEstimator{"centrEstimator", 1, "Select centrality estimator. Options: 0 = FT0C, 1 = FT0M. CCDB objects available only for FT0M."};
 
   // Event selection
   Configurable<bool> requireNoSameBunchPileup{"requireNoSameBunchPileup", true, "Require kNoSameBunchPileup selection"};
   Configurable<bool> requireGoodZvtxFT0vsPV{"requireGoodZvtxFT0vsPV", true, "Require kIsGoodZvtxFT0vsPV selection"};
 
   // Track analysis parameters
-  Configurable<int> minITSnCls{"minITSnCls", 4, "Minimum number of ITS clusters"};
-  Configurable<int> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70, "Minimum number of TPC crossed rows"};
-  Configurable<double> maxChi2TPC{"maxChi2TPC", 4.0f, "Maximum chi2 per cluster TPC"};
-  Configurable<double> etaMin{"etaMin", -0.8f, "Minimum eta"};
-  Configurable<double> etaMax{"etaMax", +0.8f, "Maximum eta"};
-  Configurable<double> ptMinV0Proton{"ptMinV0Proton", 0.0f, "Minimum pt of protons from V0"};
-  Configurable<double> ptMaxV0Proton{"ptMaxV0Proton", 100.0f, "Maximum pt of protons from V0"};
-  Configurable<double> ptMinV0Pion{"ptMinV0Pion", 0.0f, "Minimum pt of pions from V0"};
-  Configurable<double> ptMaxV0Pion{"ptMaxV0Pion", 100.0f, "Maximum pt of pions from V0"};
-  Configurable<double> ptMinK0Pion{"ptMinK0Pion", 0.0f, "Minimum pt of pions from K0"};
-  Configurable<double> ptMaxK0Pion{"ptMaxK0Pion", 100.0f, "Maximum pt of pions from K0"};
-  Configurable<double> nsigmaTPCmin{"nsigmaTPCmin", -3.0f, "Minimum nsigma TPC"};
-  Configurable<double> nsigmaTPCmax{"nsigmaTPCmax", +3.0f, "Maximum nsigma TPC"};
-  Configurable<double> nsigmaTOFmin{"nsigmaTOFmin", -3.0f, "Minimum nsigma TOF"};
-  Configurable<double> nsigmaTOFmax{"nsigmaTOFmax", +3.0f, "Maximum nsigma TOF"};
-  Configurable<bool> requireITS{"requireITS", false, "Require ITS hit"};
-  Configurable<bool> requireTOF{"requireTOF", false, "Require TOF hit"};
+  struct : ConfigurableGroup {
+    // std::string prefix = "configTracks"; // name in JSON
+    Configurable<int> minITSnCls{"minITSnCls", 4, "Minimum number of ITS clusters"};
+    Configurable<int> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70, "Minimum number of TPC crossed rows"};
+    Configurable<double> maxChi2TPC{"maxChi2TPC", 4.0f, "Maximum chi2 per cluster TPC"};
+    Configurable<double> etaMin{"etaMin", -0.8f, "Minimum eta"};
+    Configurable<double> etaMax{"etaMax", +0.8f, "Maximum eta"};
+    Configurable<double> ptMinV0Proton{"ptMinV0Proton", 0.0f, "Minimum pt of protons from V0"};
+    Configurable<double> ptMaxV0Proton{"ptMaxV0Proton", 100.0f, "Maximum pt of protons from V0"};
+    Configurable<double> ptMinV0Pion{"ptMinV0Pion", 0.0f, "Minimum pt of pions from V0"};
+    Configurable<double> ptMaxV0Pion{"ptMaxV0Pion", 100.0f, "Maximum pt of pions from V0"};
+    Configurable<double> ptMinK0Pion{"ptMinK0Pion", 0.0f, "Minimum pt of pions from K0"};
+    Configurable<double> ptMaxK0Pion{"ptMaxK0Pion", 100.0f, "Maximum pt of pions from K0"};
+    Configurable<double> nsigmaTPCmin{"nsigmaTPCmin", -3.0f, "Minimum nsigma TPC"};
+    Configurable<double> nsigmaTPCmax{"nsigmaTPCmax", +3.0f, "Maximum nsigma TPC"};
+    Configurable<double> nsigmaTOFmin{"nsigmaTOFmin", -3.0f, "Minimum nsigma TOF"};
+    Configurable<double> nsigmaTOFmax{"nsigmaTOFmax", +3.0f, "Maximum nsigma TOF"};
+    Configurable<bool> requireITS{"requireITS", false, "Require ITS hit"};
+    Configurable<bool> requireTOF{"requireTOF", false, "Require TOF hit"};
+  } configTracks;
 
   // V0 analysis parameters
-  Configurable<double> minimumV0Radius{"minimumV0Radius", 1.2f, "Minimum V0 Radius (cm)"};
-  Configurable<double> maximumV0Radius{"maximumV0Radius", 40.0f, "Maximum V0 Radius (cm)"};
-  Configurable<double> v0cospaMin{"v0cospaMin", 0.995f, "Minimum V0 cosine of pointing angle"};
-  Configurable<double> dcaV0DaughtersMax{"dcaV0DaughtersMax", 1.0f, "Maximum DCA between V0 daughters"};
-  Configurable<bool> requireV0type{"requireV0type", true, "Require V0 type Cut"};
-  Configurable<int> v0type{"v0type", 1, "0: solely for cascades (does not pass standard V0 cuts), 1: standard 2, 3: photon-like with TPC-only use. Regular analysis should always use type 1"};
-  // K0S parameters
-  Configurable<double> dcaNegToPVminK0s{"dcaNegToPVminK0s", 0.1f, "Minimum DCA of negative track to primary vertex in K0S decays (cm)"};
-  Configurable<double> dcaPosToPVminK0s{"dcaPosToPVminK0s", 0.1f, "Minimum DCA of positive track to primary vertex in K0S decays (cm)"};
-  Configurable<bool> requireArmenterosCut{"requireArmenterosCut", true, "Require Armenteros Cut"};
-  Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2f, "Parameter Armenteros Cut (K0S only). This parameters multiplies alphaArm (Check if: qtarm >= this * |alphaArm|)"};
-  Configurable<float> ctauK0s{"ctauK0s", 20.0f, "C tau K0S (cm)"};
-  // Lambda/anti-Lambda paramaters
-  Configurable<double> dcaProtonToPVmin{"dcaProtonToPVmin", 0.05f, "Minimum DCA of proton/anti-proton track to primary vertex in Lambda/anti-Lambda decays (cm)"};
-  Configurable<double> dcaPionToPVmin{"dcaPionToPVmin", 0.2f, "Minimum DCA of pion-/pion+ track to primary vertex in Lambda/anti-Lambda decays (cm)"};
-  Configurable<float> ctauLambda{"ctauLambda", 30.0f, "C tau Lambda (cm)"};
+  struct : ConfigurableGroup {
+    // std::string prefix = "configV0"; // name in JSON
+    Configurable<double> minimumV0Radius{"minimumV0Radius", 1.2f, "Minimum V0 Radius (cm)"};
+    // Configurable<double> maximumV0Radius{"maximumV0Radius", 40.0f, "Maximum V0 Radius (cm)"};
+    Configurable<double> v0cospaMin{"v0cospaMin", 0.995f, "Minimum V0 cosine of pointing angle"};
+    Configurable<double> dcaV0DaughtersMax{"dcaV0DaughtersMax", 1.0f, "Maximum DCA between V0 daughters"};
+    Configurable<bool> requireV0type{"requireV0type", true, "Require V0 type Cut"};
+    Configurable<int> v0type{"v0type", 1, "0: solely for cascades (does not pass standard V0 cuts), 1: standard 2, 3: photon-like with TPC-only use. Regular analysis should always use type 1"};
+    // K0S parameters
+    Configurable<double> dcaNegToPVminK0s{"dcaNegToPVminK0s", 0.1f, "Minimum DCA of negative track to primary vertex in K0S decays (cm)"};
+    Configurable<double> dcaPosToPVminK0s{"dcaPosToPVminK0s", 0.1f, "Minimum DCA of positive track to primary vertex in K0S decays (cm)"};
+    Configurable<bool> requireArmenterosCut{"requireArmenterosCut", true, "Require Armenteros Cut"};
+    Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2f, "Parameter Armenteros Cut (K0S only). This parameters multiplies alphaArm (Check if: qtarm >= this * |alphaArm|)"};
+    Configurable<float> ctauK0s{"ctauK0s", 20.0f, "C tau K0S (cm)"};
+    Configurable<bool> requireK0sMassCuts{"requireK0sMassCuts", true, "[K0S] Require mass window for K0S selection and for Lambda rejection"};
+    Configurable<double> lamRejWindow{"lamRejWindow", 0.005f, "[K0S] Mass window for Lambda rejection"};
+    Configurable<double> k0sMassWindow{"k0sMassWindow", 0.1f, "[K0S] Mass window for K0S selection"};
+    // Lambda/anti-Lambda paramaters
+    Configurable<double> dcaProtonToPVmin{"dcaProtonToPVmin", 0.05f, "Minimum DCA of proton/anti-proton track to primary vertex in Lambda/anti-Lambda decays (cm)"};
+    Configurable<double> dcaPionToPVmin{"dcaPionToPVmin", 0.2f, "Minimum DCA of pion-/pion+ track to primary vertex in Lambda/anti-Lambda decays (cm)"};
+    Configurable<float> ctauLambda{"ctauLambda", 30.0f, "C tau Lambda (cm)"};
+    Configurable<bool> requireLambdaMassCuts{"requireLambdaMassCuts", true, "[Lambda] Require mass window for Lambda selection and for K0S rejection"};
+    Configurable<double> k0sRejWindow{"k0sRejWindow", 0.010f, "[Lambda] Mass window for K0S rejection"};
+    Configurable<double> lamMassWindow{"lamMassWindow", 0.1f, "[Lambda] Mass window for Lambda selection"};
+  } configV0;
 
   // Cascade analysis parameters
-  Configurable<float> minimumCascRadius{"minimumCascRadius", 0.1f, "Minimum cascade radius"};
-  Configurable<float> maximumCascRadius{"maximumCascRadius", 40.0f, "Maximum cascade radius"};
-  Configurable<float> casccospaMin{"casccospaMin", 0.99f, "Minimum cascade cosine of pointing angle"};
-  Configurable<float> dcabachtopvMin{"dcabachtopvMin", 0.1f, "Minimum DCA of bachelor to primary vertex"};
-  Configurable<float> dcaV0topvMin{"dcaV0topvMin", 0.1f, "Minimum DCA of V0 to primary vertex"};
-  Configurable<float> dcaCascDaughtersMax{"dcaCascDaughtersMax", 0.5f, "Maximum DCA between daughters"};
-  Configurable<double> dcaNegToPVminV0{"dcaNegToPVminV0", 0.1f, "Minimum DCA of V0 negative track to primary vertex in cascades"};
-  Configurable<double> dcaPosToPVminV0{"dcaPosToPVminV0", 0.1f, "Minimum DCA of V0 positive track to primary vertex in cascades"};
-  Configurable<float> deltaMassXi{"deltaMassXi", 0.02f, "Mass window for Xi rejection"};
-  Configurable<float> deltaMassOmega{"deltaMassOmega", 0.02f, "Mass window for Omega rejection"};
-  Configurable<float> deltaMassLambda{"deltaMassLambda", 0.02f, "Mass window for Lambda inclusion"};
+  struct : ConfigurableGroup {
+    // std::string prefix = "configCasc"; // name in JSON
+    Configurable<float> minimumCascRadius{"minimumCascRadius", 0.1f, "Minimum cascade radius"};
+    // Configurable<float> maximumCascRadius{"maximumCascRadius", 40.0f, "Maximum cascade radius"};
+    Configurable<float> casccospaMin{"casccospaMin", 0.99f, "Minimum cascade cosine of pointing angle"};
+    Configurable<float> dcabachtopvMin{"dcabachtopvMin", 0.1f, "Minimum DCA of bachelor to primary vertex"};
+    Configurable<float> dcaV0topvMin{"dcaV0topvMin", 0.1f, "Minimum DCA of V0 to primary vertex"};
+    Configurable<float> dcaCascDaughtersMax{"dcaCascDaughtersMax", 0.5f, "Maximum DCA between daughters"};
+    Configurable<double> dcaNegToPVminV0{"dcaNegToPVminV0", 0.1f, "Minimum DCA of V0 negative track to primary vertex in cascades"};
+    Configurable<double> dcaPosToPVminV0{"dcaPosToPVminV0", 0.1f, "Minimum DCA of V0 positive track to primary vertex in cascades"};
+    Configurable<float> deltaMassXi{"deltaMassXi", 0.02f, "Mass window for Xi rejection"};
+    Configurable<float> deltaMassOmega{"deltaMassOmega", 0.02f, "Mass window for Omega rejection"};
+    Configurable<float> deltaMassLambda{"deltaMassLambda", 0.02f, "Mass window for Lambda inclusion"};
+  } configCasc;
 
   // Axes
   ConfigurableAxis multBinning{"multBinning", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, "Binning of the centrality axis"};
 
   struct : ConfigurableGroup {
+    // std::string prefix = "longLivedOptions"; // name in JSON
     ConfigurableAxis longLivedBinsNsigma{"longLivedBinsNsigma", {200, -10.f, 10.f}, "Binning of nSigma axis"};
     ConfigurableAxis longLivedBinsPt{"longLivedBinsPt", {VARIABLE_WIDTH, -5.0, -4.8, -4.6, -4.4, -4.2, -4.0, -3.8, -3.6, -3.4, -3.2, -3.0, -2.8, -2.6, -2.4, -2.2, -2.0, -1.9, -1.8, -1.7, -1.6, -1.5, -1.4, -1.3, -1.2, -1.1, -1.0, -0.95, -0.9, -0.85, -0.8, -0.75, -0.7, -0.65, -0.6, -0.55, -0.5, -0.45, -0.4, -0.35, -0.3, -0.25, -0.2, -0.18, -0.16, -0.14, -0.12, -0.1, 0.0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0}, "Binning of the pT axis"};
     ConfigurableAxis longLivedBinsDca{"longLivedBinsDca", {VARIABLE_WIDTH, -3.0, -2.95, -2.9, -2.85, -2.8, -2.75, -2.7, -2.65, -2.6, -2.55, -2.5, -2.45, -2.4, -2.35, -2.3, -2.25, -2.2, -2.15, -2.1, -2.05, -2.0, -1.975, -1.95, -1.925, -1.9, -1.875, -1.85, -1.825, -1.8, -1.775, -1.75, -1.725, -1.7, -1.675, -1.65, -1.625, -1.6, -1.575, -1.55, -1.525, -1.5, -1.475, -1.45, -1.425, -1.4, -1.375, -1.35, -1.325, -1.3, -1.275, -1.25, -1.225, -1.2, -1.175, -1.15, -1.125, -1.1, -1.075, -1.05, -1.025, -1.0, -0.99, -0.98, -0.97, -0.96, -0.95, -0.94, -0.93, -0.92, -0.91, -0.9, -0.89, -0.88, -0.87, -0.86, -0.85, -0.84, -0.83, -0.82, -0.81, -0.8, -0.79, -0.78, -0.77, -0.76, -0.75, -0.74, -0.73, -0.72, -0.71, -0.7, -0.69, -0.68, -0.67, -0.66, -0.65, -0.64, -0.63, -0.62, -0.61, -0.6, -0.59, -0.58, -0.57, -0.56, -0.55, -0.54, -0.53, -0.52, -0.51, -0.5, -0.49, -0.48, -0.47, -0.46, -0.45, -0.44, -0.43, -0.42, -0.41, -0.4, -0.396, -0.392, -0.388, -0.384, -0.38, -0.376, -0.372, -0.368, -0.364, -0.36, -0.356, -0.352, -0.348, -0.344, -0.34, -0.336, -0.332, -0.328, -0.324, -0.32, -0.316, -0.312, -0.308, -0.304, -0.3, -0.296, -0.292, -0.288, -0.284, -0.28, -0.276, -0.272, -0.268, -0.264, -0.26, -0.256, -0.252, -0.248, -0.244, -0.24, -0.236, -0.232, -0.228, -0.224, -0.22, -0.216, -0.212, -0.208, -0.204, -0.2, -0.198, -0.196, -0.194, -0.192, -0.19, -0.188, -0.186, -0.184, -0.182, -0.18, -0.178, -0.176, -0.174, -0.172, -0.17, -0.168, -0.166, -0.164, -0.162, -0.16, -0.158, -0.156, -0.154, -0.152, -0.15, -0.148, -0.146, -0.144, -0.142, -0.14, -0.138, -0.136, -0.134, -0.132, -0.13, -0.128, -0.126, -0.124, -0.122, -0.12, -0.118, -0.116, -0.114, -0.112, -0.11, -0.108, -0.106, -0.104, -0.102, -0.1, -0.099, -0.098, -0.097, -0.096, -0.095, -0.094, -0.093, -0.092, -0.091, -0.09, -0.089, -0.088, -0.087, -0.086, -0.085, -0.084, -0.083, -0.082, -0.081, -0.08, -0.079, -0.078, -0.077, -0.076, -0.075, -0.074, -0.073, -0.072, -0.071, -0.07, -0.069, -0.068, -0.067, -0.066, -0.065, -0.064, -0.063, -0.062, -0.061, -0.06, -0.059, -0.058, -0.057, -0.056, -0.055, -0.054, -0.053, -0.052, -0.051, -0.05, -0.049, -0.048, -0.047, -0.046, -0.045, -0.044, -0.043, -0.042, -0.041, -0.04, -0.039, -0.038, -0.037, -0.036, -0.035, -0.034, -0.033, -0.032, -0.031, -0.03, -0.029, -0.028, -0.027, -0.026, -0.025, -0.024, -0.023, -0.022, -0.021, -0.02, -0.019, -0.018, -0.017, -0.016, -0.015, -0.014, -0.013, -0.012, -0.011, -0.01, -0.009, -0.008, -0.007, -0.006, -0.005, -0.004, -0.003, -0.002, -0.001, -0.0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.019, 0.02, 0.021, 0.022, 0.023, 0.024, 0.025, 0.026, 0.027, 0.028, 0.029, 0.03, 0.031, 0.032, 0.033, 0.034, 0.035, 0.036, 0.037, 0.038, 0.039, 0.04, 0.041, 0.042, 0.043, 0.044, 0.045, 0.046, 0.047, 0.048, 0.049, 0.05, 0.051, 0.052, 0.053, 0.054, 0.055, 0.056, 0.057, 0.058, 0.059, 0.06, 0.061, 0.062, 0.063, 0.064, 0.065, 0.066, 0.067, 0.068, 0.069, 0.07, 0.071, 0.072, 0.073, 0.074, 0.075, 0.076, 0.077, 0.078, 0.079, 0.08, 0.081, 0.082, 0.083, 0.084, 0.085, 0.086, 0.087, 0.088, 0.089, 0.09, 0.091, 0.092, 0.093, 0.094, 0.095, 0.096, 0.097, 0.098, 0.099, 0.1, 0.102, 0.104, 0.106, 0.108, 0.11, 0.112, 0.114, 0.116, 0.118, 0.12, 0.122, 0.124, 0.126, 0.128, 0.13, 0.132, 0.134, 0.136, 0.138, 0.14, 0.142, 0.144, 0.146, 0.148, 0.15, 0.152, 0.154, 0.156, 0.158, 0.16, 0.162, 0.164, 0.166, 0.168, 0.17, 0.172, 0.174, 0.176, 0.178, 0.18, 0.182, 0.184, 0.186, 0.188, 0.19, 0.192, 0.194, 0.196, 0.198, 0.2, 0.204, 0.208, 0.212, 0.216, 0.22, 0.224, 0.228, 0.232, 0.236, 0.24, 0.244, 0.248, 0.252, 0.256, 0.26, 0.264, 0.268, 0.272, 0.276, 0.28, 0.284, 0.288, 0.292, 0.296, 0.3, 0.304, 0.308, 0.312, 0.316, 0.32, 0.324, 0.328, 0.332, 0.336, 0.34, 0.344, 0.348, 0.352, 0.356, 0.36, 0.364, 0.368, 0.372, 0.376, 0.38, 0.384, 0.388, 0.392, 0.396, 0.4, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.5, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.6, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.7, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.8, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.0, 1.025, 1.05, 1.075, 1.1, 1.125, 1.15, 1.175, 1.2, 1.225, 1.25, 1.275, 1.3, 1.325, 1.35, 1.375, 1.4, 1.425, 1.45, 1.475, 1.5, 1.525, 1.55, 1.575, 1.6, 1.625, 1.65, 1.675, 1.7, 1.725, 1.75, 1.775, 1.8, 1.825, 1.85, 1.875, 1.9, 1.925, 1.95, 1.975, 2.0, 2.05, 2.1, 2.15, 2.2, 2.25, 2.3, 2.35, 2.4, 2.45, 2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0}, "Binning of DCA xy and z axis"};
@@ -214,6 +228,7 @@ struct StrangenessInJetsIons {
     std::string multAxTitle;
     if (centrEstimator == 0) {
       multAxTitle = "FT0C percentile";
+      LOG(warning) << "FT0C ccdb object not available yet." << endl;
     } else if (centrEstimator == 1) {
       multAxTitle = "FT0M percentile";
     } else {
@@ -222,6 +237,8 @@ struct StrangenessInJetsIons {
     AxisSpec multAxis = {multBinning, multAxTitle};
 
     const AxisSpec ptAxis{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec ptJetAxis{101, 0.0, 100.0, "#it{p}_{T,jet} (GeV/#it{c})"};
+    const AxisSpec numJets{21, -0.5, 20.5, "Number of jets per collision"};
     const AxisSpec invMassK0sAxis{200, 0.44, 0.56, "m_{#pi#pi} (GeV/#it{c}^{2})"};
     const AxisSpec invMassLambdaAxis{200, 1.09, 1.14, "m_{p#pi} (GeV/#it{c}^{2})"};
     const AxisSpec invMassXiAxis{200, 1.28, 1.36, "m_{p#pi#pi} (GeV/#it{c}^{2})"};
@@ -250,7 +267,7 @@ struct StrangenessInJetsIons {
     }
 
     // Histograms for checks
-    registryQC.add("V0_type", "V0_type", HistType::kTH1F, {{10, -0.5, 9.5, "V0 type"}});
+    // registryQC.add("V0_type", "V0_type", HistType::kTH1F, {{10, -0.5, 9.5, "V0 type"}});
 
     // Histograms for real data
     if (doprocessData) {
@@ -268,8 +285,12 @@ struct StrangenessInJetsIons {
       registryData.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(7, "No empty events");
       registryData.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(8, "At least one jet");
 
+      // Jet counters
+      registryData.add("n_jets_vs_mult_pT", "n_jets_vs_mult_pT", HistType::kTH2F, {multAxis, ptJetAxis});
+      registryData.add("n_jets_vs_mult", "n_jets_vs_mult", HistType::kTH2F, {multAxis, numJets});
+
       // Armenteros-Podolanski plot
-      registryQC.add("ArmenterosPreSel_DATA", "ArmenterosPreSel_DATA", HistType::kTH2F, {alphaArmAxis, qtarmAxis});
+      // registryQC.add("ArmenterosPreSel_DATA", "ArmenterosPreSel_DATA", HistType::kTH2F, {alphaArmAxis, qtarmAxis});
 
       // Histograms for analysis of strange hadrons
       if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
@@ -318,6 +339,10 @@ struct StrangenessInJetsIons {
       // Add histogram to store multiplicity of the event
       registryMC.add("number_of_events_vsmultiplicity_gen", "number of events vs multiplicity", HistType::kTH1D, {{101, -0.5, 100.5, "Multiplicity percentile"}});
 
+      // Jet counters
+      registryMC.add("n_jets_vs_mult_pT_mc_gen", "n_jets_vs_mult_pT_mc_gen", HistType::kTH2F, {multAxis, ptJetAxis});
+      registryMC.add("n_jets_vs_mult_mc_gen", "n_jets_vs_mult_mc_gen", HistType::kTH2F, {multAxis, numJets});
+
       // Histograms for analysis
       if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
         registryMC.add("K0s_generated_jet", "K0s_generated_jet", HistType::kTH2F, {multAxis, ptAxis});
@@ -326,6 +351,11 @@ struct StrangenessInJetsIons {
         registryMC.add("Lambda_generated_ue", "Lambda_generated_ue", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("AntiLambda_generated_jet", "AntiLambda_generated_jet", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("AntiLambda_generated_ue", "AntiLambda_generated_ue", HistType::kTH2F, {multAxis, ptAxis});
+
+        // Histograms for the full event (without jets)
+        registryMC.add("K0s_generated_MB", "K0s_generated_MB", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("Lambda_generated_MB", "Lambda_generated_MB", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("AntiLambda_generated_MB", "AntiLambda_generated_MB", HistType::kTH2F, {multAxis, ptAxis});
       }
       if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
         registryMC.add("XiPos_generated_jet", "XiPos_generated_jet", HistType::kTH2F, {multAxis, ptAxis});
@@ -336,18 +366,42 @@ struct StrangenessInJetsIons {
         registryMC.add("OmegaPos_generated_ue", "OmegaPos_generated_ue", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("OmegaNeg_generated_jet", "OmegaNeg_generated_jet", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("OmegaNeg_generated_ue", "OmegaNeg_generated_ue", HistType::kTH2F, {multAxis, ptAxis});
+
+        // Histograms for the full event (without jets)
+        registryMC.add("XiPos_generated_MB", "XiPos_generated_MB", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("XiNeg_generated_MB", "XiNeg_generated_MB", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("OmegaPos_generated_MB", "OmegaPos_generated_MB", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("OmegaNeg_generated_MB", "OmegaNeg_generated_MB", HistType::kTH2F, {multAxis, ptAxis});
       }
       if (particleOfInterestDict[ParticleOfInterest::kPions]) {
-        registryMC.add("Pion_generated_jet", "Pion_generated_jet", HistType::kTH2F, {multAxis, ptAxisLongLived});
-        registryMC.add("Pion_generated_ue", "Pion_generated_ue", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("PionPos_generated_jet", "PionPos_generated_jet", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("PionNeg_generated_jet", "PionNeg_generated_jet", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("PionPos_generated_ue", "PionPos_generated_ue", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("PionNeg_generated_ue", "PionNeg_generated_ue", HistType::kTH2F, {multAxis, ptAxisLongLived});
+
+        // Histograms for the full event (without jets)
+        registryMC.add("PionPos_generated_MB", "PionPos_generated_MB", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("PionNeg_generated_MB", "PionNeg_generated_MB", HistType::kTH2F, {multAxis, ptAxisLongLived});
       }
       if (particleOfInterestDict[ParticleOfInterest::kKaons]) {
-        registryMC.add("Kaon_generated_jet", "Kaon_generated_jet", HistType::kTH2F, {multAxis, ptAxisLongLived});
-        registryMC.add("Kaon_generated_ue", "Kaon_generated_ue", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("KaonPos_generated_jet", "KaonPos_generated_jet", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("KaonNeg_generated_jet", "KaonNeg_generated_jet", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("KaonPos_generated_ue", "KaonPos_generated_ue", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("KaonNeg_generated_ue", "KaonNeg_generated_ue", HistType::kTH2F, {multAxis, ptAxisLongLived});
+
+        // Histograms for the full event (without jets)
+        registryMC.add("KaonPos_generated_MB", "KaonPos_generated_MB", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("KaonNeg_generated_MB", "KaonNeg_generated_MB", HistType::kTH2F, {multAxis, ptAxisLongLived});
       }
       if (particleOfInterestDict[ParticleOfInterest::kProtons]) {
-        registryMC.add("Proton_generated_jet", "Proton_generated_jet", HistType::kTH2F, {multAxis, ptAxisLongLived});
-        registryMC.add("Proton_generated_ue", "Proton_generated_ue", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("ProtonPos_generated_jet", "ProtonPos_generated_jet", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("ProtonNeg_generated_jet", "ProtonNeg_generated_jet", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("ProtonPos_generated_ue", "ProtonPos_generated_ue", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("ProtonNeg_generated_ue", "ProtonNeg_generated_ue", HistType::kTH2F, {multAxis, ptAxisLongLived});
+
+        // Histograms for the full event (without jets)
+        registryMC.add("ProtonPos_generated_MB", "ProtonPos_generated_MB", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("ProtonNeg_generated_MB", "ProtonNeg_generated_MB", HistType::kTH2F, {multAxis, ptAxisLongLived});
       }
     }
 
@@ -368,8 +422,12 @@ struct StrangenessInJetsIons {
       // Add histogram to store multiplicity of the event
       registryMC.add("number_of_events_vsmultiplicity_rec", "number of events vs multiplicity", HistType::kTH1D, {{101, -0.5, 100.5, "Multiplicity percentile"}});
 
+      // Jet counters
+      registryMC.add("n_jets_vs_mult_pT_mc_rec", "n_jets_vs_mult_pT_mc_rec", HistType::kTH2F, {multAxis, ptJetAxis});
+      registryMC.add("n_jets_vs_mult_mc_rec", "n_jets_vs_mult_mc_rec", HistType::kTH2F, {multAxis, numJets});
+
       // Armenteros-Podolanski plot
-      registryQC.add("ArmenterosPreSel_REC", "ArmenterosPreSel_REC", HistType::kTH2F, {alphaArmAxis, qtarmAxis});
+      // registryQC.add("ArmenterosPreSel_REC", "ArmenterosPreSel_REC", HistType::kTH2F, {alphaArmAxis, qtarmAxis});
 
       // Histograms for analysis
       if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
@@ -379,6 +437,7 @@ struct StrangenessInJetsIons {
         registryMC.add("Lambda_reconstructed_ue", "Lambda_reconstructed_ue", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("AntiLambda_reconstructed_jet", "AntiLambda_reconstructed_jet", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("AntiLambda_reconstructed_ue", "AntiLambda_reconstructed_ue", HistType::kTH2F, {multAxis, ptAxis});
+
         // Histograms for secondary hadrons
         registryMC.add("K0s_reconstructed_jet_incl", "K0s_reconstructed_jet_incl", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("K0s_reconstructed_ue_incl", "K0s_reconstructed_ue_incl", HistType::kTH2F, {multAxis, ptAxis});
@@ -386,6 +445,19 @@ struct StrangenessInJetsIons {
         registryMC.add("Lambda_reconstructed_ue_incl", "Lambda_reconstructed_ue_incl", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("AntiLambda_reconstructed_jet_incl", "AntiLambda_reconstructed_jet_incl", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("AntiLambda_reconstructed_ue_incl", "AntiLambda_reconstructed_ue_incl", HistType::kTH2F, {multAxis, ptAxis});
+
+        // Histograms for generated particles in reconstructed events
+        registryMC.add("K0s_gen_recoEvent_jet", "K0s_gen_recoEvent_jet", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("K0s_gen_recoEvent_ue", "K0s_gen_recoEvent_ue", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("Lambda_gen_recoEvent_jet", "Lambda_gen_recoEvent_jet", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("Lambda_gen_recoEvent_ue", "Lambda_gen_recoEvent_ue", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("AntiLambda_gen_recoEvent_jet", "AntiLambda_gen_recoEvent_jet", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("AntiLambda_gen_recoEvent_ue", "AntiLambda_gen_recoEvent_ue", HistType::kTH2F, {multAxis, ptAxis});
+
+        // Histograms for the full event (without jets)
+        registryMC.add("K0s_reconstructed_MB", "K0s_reconstructed_MB", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("Lambda_reconstructed_MB", "Lambda_reconstructed_MB", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("AntiLambda_reconstructed_MB", "AntiLambda_reconstructed_MB", HistType::kTH2F, {multAxis, ptAxis});
       }
       if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
         registryMC.add("XiPos_reconstructed_jet", "XiPos_reconstructed_jet", HistType::kTH2F, {multAxis, ptAxis});
@@ -396,71 +468,39 @@ struct StrangenessInJetsIons {
         registryMC.add("OmegaPos_reconstructed_ue", "OmegaPos_reconstructed_ue", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("OmegaNeg_reconstructed_jet", "OmegaNeg_reconstructed_jet", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("OmegaNeg_reconstructed_ue", "OmegaNeg_reconstructed_ue", HistType::kTH2F, {multAxis, ptAxis});
+
+        // Histograms for the full event (without jets)
+        registryMC.add("XiPos_reconstructed_MB", "XiPos_reconstructed_MB", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("XiNeg_reconstructed_MB", "XiNeg_reconstructed_MB", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("OmegaPos_reconstructed_MB", "OmegaPos_reconstructed_MB", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("OmegaNeg_reconstructed_MB", "OmegaNeg_reconstructed_MB", HistType::kTH2F, {multAxis, ptAxis});
       }
       if (particleOfInterestDict[ParticleOfInterest::kPions]) {
         registryMC.add("Pion_reconstructed_jet", "Pion_reconstructed_jet", HistType::kTH2F, {multAxis, ptAxisLongLived});
         registryMC.add("Pion_reconstructed_ue", "Pion_reconstructed_ue", HistType::kTH2F, {multAxis, ptAxisLongLived});
+
+        // Histograms for the full event (without jets)
+        registryMC.add("PionPos_reconstructed_MB", "PionPos_reconstructed_MB", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("PionNeg_reconstructed_MB", "PionNeg_reconstructed_MB", HistType::kTH2F, {multAxis, ptAxisLongLived});
       }
       if (particleOfInterestDict[ParticleOfInterest::kKaons]) {
         registryMC.add("Kaon_reconstructed_jet", "Kaon_reconstructed_jet", HistType::kTH2F, {multAxis, ptAxisLongLived});
         registryMC.add("Kaon_reconstructed_ue", "Kaon_reconstructed_ue", HistType::kTH2F, {multAxis, ptAxisLongLived});
+
+        // Histograms for the full event (without jets)
+        registryMC.add("KaonPos_reconstructed_MB", "KaonPos_reconstructed_MB", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("KaonNeg_reconstructed_MB", "KaonNeg_reconstructed_MB", HistType::kTH2F, {multAxis, ptAxisLongLived});
       }
       if (particleOfInterestDict[ParticleOfInterest::kProtons]) {
         registryMC.add("Proton_reconstructed_jet", "Proton_reconstructed_jet", HistType::kTH2F, {multAxis, ptAxisLongLived});
         registryMC.add("Proton_reconstructed_ue", "Proton_reconstructed_ue", HistType::kTH2F, {multAxis, ptAxisLongLived});
+
+        // Histograms for the full event (without jets)
+        registryMC.add("ProtonPos_reconstructed_MB", "ProtonPos_reconstructed_MB", HistType::kTH2F, {multAxis, ptAxisLongLived});
+        registryMC.add("ProtonNeg_reconstructed_MB", "ProtonNeg_reconstructed_MB", HistType::kTH2F, {multAxis, ptAxisLongLived});
       }
     }
   }
-
-  /*
-  // Calculation of perpendicular axes
-  void getPerpendicularAxis(TVector3 p, TVector3& u, double sign)
-  {
-    // initialization
-    double ux(0), uy(0), uz(0);
-
-    // components of vector p
-    const double px = p.X();
-    const double py = p.Y();
-    const double pz = p.Z();
-
-    // protection 1
-    if (px == 0 && py != 0) {
-      uy = -(pz * pz) / py;
-      ux = sign * std::sqrt(py * py - (pz * pz * pz * pz) / (py * py));
-      uz = pz;
-      u.SetXYZ(ux, uy, uz);
-      return;
-    }
-
-    // protection 2
-    if (py == 0 && px != 0) {
-      ux = -(pz * pz) / px;
-      uy = sign * std::sqrt(px * px - (pz * pz * pz * pz) / (px * px));
-      uz = pz;
-      u.SetXYZ(ux, uy, uz);
-      return;
-    }
-
-    // equation parameters
-    const double a = px * px + py * py;
-    const double b = 2.0 * px * pz * pz;
-    const double c = pz * pz * pz * pz - py * py * py * py - px * px * py * py;
-    const double delta = b * b - 4.0 * a * c;
-
-    // protection agains delta<0
-    if (delta < 0) {
-      return;
-    }
-
-    // solutions
-    ux = (-b + sign * std::sqrt(delta)) / (2.0 * a);
-    uy = (-pz * pz - px * ux) / py;
-    uz = pz;
-    u.SetXYZ(ux, uy, uz);
-    return;
-  }
-  */
 
   // Delta phi calculation
   double getDeltaPhi(double a1, double a2)
@@ -625,40 +665,49 @@ struct StrangenessInJetsIons {
     TVector3 pion(v0.pxneg(), v0.pyneg(), v0.pzneg());
 
     // Selection on pt of Lambda daughters
-    if (proton.Pt() < ptMinV0Proton || proton.Pt() > ptMaxV0Proton)
+    if (proton.Pt() < configTracks.ptMinV0Proton || proton.Pt() > configTracks.ptMaxV0Proton)
       return false;
-    if (pion.Pt() < ptMinV0Pion || pion.Pt() > ptMaxV0Pion)
+    if (pion.Pt() < configTracks.ptMinV0Pion || pion.Pt() > configTracks.ptMaxV0Pion)
       return false;
 
     // V0 selections
-    if (v0.v0cosPA() < v0cospaMin)
+    if (v0.v0cosPA() < configV0.v0cospaMin)
       return false;
-    if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
+    // if (v0.v0radius() < configV0.minimumV0Radius || v0.v0radius() > configV0.maximumV0Radius)
+    if (v0.v0radius() < configV0.minimumV0Radius)
       return false;
-    if (v0.distovertotmom(vtxPos.X(), vtxPos.Y(), vtxPos.Z()) * o2::constants::physics::MassLambda0 > ctauLambda)
+    if (v0.distovertotmom(vtxPos.X(), vtxPos.Y(), vtxPos.Z()) * o2::constants::physics::MassLambda0 > configV0.ctauLambda)
       return false;
-    if (std::fabs(v0.dcaV0daughters()) > dcaV0DaughtersMax)
+    if (std::fabs(v0.dcaV0daughters()) > configV0.dcaV0DaughtersMax)
       return false;
-    if (std::fabs(v0.dcapostopv()) < dcaProtonToPVmin)
+    if (std::fabs(v0.dcapostopv()) < configV0.dcaProtonToPVmin)
       return false;
-    if (std::fabs(v0.dcanegtopv()) < dcaPionToPVmin)
+    if (std::fabs(v0.dcanegtopv()) < configV0.dcaPionToPVmin)
       return false;
-    if (v0.v0Type() != v0type && requireV0type) {
-      registryQC.fill(HIST("V0_type"), v0.v0Type());
-      return false;
-    }
+    // if (v0.v0Type() != configV0.v0type && configV0.requireV0type) {
+    //   registryQC.fill(HIST("V0_type"), v0.v0Type());
+    //   return false;
+    // }
 
     // PID selections (TPC): positive track = proton, negative track = pion
-    if (ptrack.tpcNSigmaPr() < nsigmaTPCmin || ptrack.tpcNSigmaPr() > nsigmaTPCmax)
+    if (ptrack.tpcNSigmaPr() < configTracks.nsigmaTPCmin || ptrack.tpcNSigmaPr() > configTracks.nsigmaTPCmax)
       return false;
-    if (ntrack.tpcNSigmaPi() < nsigmaTPCmin || ntrack.tpcNSigmaPi() > nsigmaTPCmax)
+    if (ntrack.tpcNSigmaPi() < configTracks.nsigmaTPCmin || ntrack.tpcNSigmaPi() > configTracks.nsigmaTPCmax)
+      return false;
+
+    if (configV0.requireLambdaMassCuts &&
+        std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < configV0.k0sRejWindow)
+      return false;
+
+    if (configV0.requireLambdaMassCuts &&
+        std::abs(v0.mLambda() - o2::constants::physics::MassLambda) > configV0.lamMassWindow)
       return false;
 
     // PID selections (TOF): positive track = proton, negative track = pion
-    if (requireTOF) {
-      if (ptrack.tofNSigmaPr() < nsigmaTOFmin || ptrack.tofNSigmaPr() > nsigmaTOFmax)
+    if (configTracks.requireTOF) {
+      if (ptrack.tofNSigmaPr() < configTracks.nsigmaTOFmin || ptrack.tofNSigmaPr() > configTracks.nsigmaTOFmax)
         return false;
-      if (ntrack.tofNSigmaPi() < nsigmaTOFmin || ntrack.tofNSigmaPi() > nsigmaTOFmax)
+      if (ntrack.tofNSigmaPi() < configTracks.nsigmaTOFmin || ntrack.tofNSigmaPi() > configTracks.nsigmaTOFmax)
         return false;
     }
     return true;
@@ -677,40 +726,49 @@ struct StrangenessInJetsIons {
     TVector3 proton(v0.pxneg(), v0.pyneg(), v0.pzneg());
 
     // Selections on pt of Antilambda daughters
-    if (proton.Pt() < ptMinV0Proton || proton.Pt() > ptMaxV0Proton)
+    if (proton.Pt() < configTracks.ptMinV0Proton || proton.Pt() > configTracks.ptMaxV0Proton)
       return false;
-    if (pion.Pt() < ptMinV0Pion || pion.Pt() > ptMaxV0Pion)
+    if (pion.Pt() < configTracks.ptMinV0Pion || pion.Pt() > configTracks.ptMaxV0Pion)
       return false;
 
     // V0 selections
-    if (v0.v0cosPA() < v0cospaMin)
+    if (v0.v0cosPA() < configV0.v0cospaMin)
       return false;
-    if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
+    // if (v0.v0radius() < configV0.minimumV0Radius || v0.v0radius() > configV0.maximumV0Radius)
+    if (v0.v0radius() < configV0.minimumV0Radius)
       return false;
-    if (v0.distovertotmom(vtxPos.X(), vtxPos.Y(), vtxPos.Z()) * o2::constants::physics::MassLambda0 > ctauLambda)
+    if (v0.distovertotmom(vtxPos.X(), vtxPos.Y(), vtxPos.Z()) * o2::constants::physics::MassLambda0 > configV0.ctauLambda)
       return false;
-    if (std::fabs(v0.dcaV0daughters()) > dcaV0DaughtersMax)
+    if (std::fabs(v0.dcaV0daughters()) > configV0.dcaV0DaughtersMax)
       return false;
-    if (std::fabs(v0.dcapostopv()) < dcaPionToPVmin)
+    if (std::fabs(v0.dcapostopv()) < configV0.dcaPionToPVmin)
       return false;
-    if (std::fabs(v0.dcanegtopv()) < dcaProtonToPVmin)
+    if (std::fabs(v0.dcanegtopv()) < configV0.dcaProtonToPVmin)
       return false;
-    if (v0.v0Type() != v0type && requireV0type) {
-      registryQC.fill(HIST("V0_type"), v0.v0Type());
-      return false;
-    }
+    // if (v0.v0Type() != configV0.v0type && configV0.requireV0type) {
+    //   registryQC.fill(HIST("V0_type"), v0.v0Type());
+    //   return false;
+    // }
 
     // PID selections (TPC): negative track = proton, positive track = pion
-    if (ptrack.tpcNSigmaPi() < nsigmaTPCmin || ptrack.tpcNSigmaPi() > nsigmaTPCmax)
+    if (ptrack.tpcNSigmaPi() < configTracks.nsigmaTPCmin || ptrack.tpcNSigmaPi() > configTracks.nsigmaTPCmax)
       return false;
-    if (ntrack.tpcNSigmaPr() < nsigmaTPCmin || ntrack.tpcNSigmaPr() > nsigmaTPCmax)
+    if (ntrack.tpcNSigmaPr() < configTracks.nsigmaTPCmin || ntrack.tpcNSigmaPr() > configTracks.nsigmaTPCmax)
+      return false;
+
+    if (configV0.requireLambdaMassCuts &&
+        std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < configV0.k0sRejWindow)
+      return false;
+
+    if (configV0.requireLambdaMassCuts &&
+        std::abs(v0.mAntiLambda() - o2::constants::physics::MassLambda) > configV0.lamMassWindow)
       return false;
 
     // PID selections (TOF): negative track = proton, positive track = pion
-    if (requireTOF) {
-      if (ptrack.tofNSigmaPi() < nsigmaTOFmin || ptrack.tofNSigmaPi() > nsigmaTOFmax)
+    if (configTracks.requireTOF) {
+      if (ptrack.tofNSigmaPi() < configTracks.nsigmaTOFmin || ptrack.tofNSigmaPi() > configTracks.nsigmaTOFmax)
         return false;
-      if (ntrack.tofNSigmaPr() < nsigmaTOFmin || ntrack.tofNSigmaPr() > nsigmaTOFmax)
+      if (ntrack.tofNSigmaPr() < configTracks.nsigmaTOFmin || ntrack.tofNSigmaPr() > configTracks.nsigmaTOFmax)
         return false;
     }
     return true;
@@ -729,45 +787,55 @@ struct StrangenessInJetsIons {
     TVector3 pionNeg(v0.pxneg(), v0.pyneg(), v0.pzneg());
 
     // Selections on pt of K0s daughters
-    if (pionPos.Pt() < ptMinK0Pion || pionPos.Pt() > ptMaxK0Pion)
+    if (pionPos.Pt() < configTracks.ptMinK0Pion || pionPos.Pt() > configTracks.ptMaxK0Pion)
       return false;
-    if (pionNeg.Pt() < ptMinK0Pion || pionNeg.Pt() > ptMaxK0Pion)
+    if (pionNeg.Pt() < configTracks.ptMinK0Pion || pionNeg.Pt() > configTracks.ptMaxK0Pion)
       return false;
 
     // V0 selections
-    if (v0.v0cosPA() < v0cospaMin)
+    if (v0.v0cosPA() < configV0.v0cospaMin)
       return false;
-    if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
+    // if (v0.v0radius() < configV0.minimumV0Radius || v0.v0radius() > configV0.maximumV0Radius)
+    if (v0.v0radius() < configV0.minimumV0Radius)
       return false;
-    if (v0.distovertotmom(vtxPos.X(), vtxPos.Y(), vtxPos.Z()) * o2::constants::physics::MassK0Short > ctauK0s)
+    if (v0.distovertotmom(vtxPos.X(), vtxPos.Y(), vtxPos.Z()) * o2::constants::physics::MassK0Short > configV0.ctauK0s)
       return false;
-    if (std::fabs(v0.dcaV0daughters()) > dcaV0DaughtersMax)
+    if (std::fabs(v0.dcaV0daughters()) > configV0.dcaV0DaughtersMax)
       return false;
-    if (std::fabs(v0.dcapostopv()) < dcaPosToPVminK0s)
+    if (std::fabs(v0.dcapostopv()) < configV0.dcaPosToPVminK0s)
       return false;
-    if (std::fabs(v0.dcanegtopv()) < dcaNegToPVminK0s)
+    if (std::fabs(v0.dcanegtopv()) < configV0.dcaNegToPVminK0s)
       return false;
 
     // Armenteros-Podolanski cut
-    if (v0.qtarm() < (paramArmenterosCut * std::abs(v0.alpha())) && (requireArmenterosCut))
+    if (v0.qtarm() < (configV0.paramArmenterosCut * std::abs(v0.alpha())) && (configV0.requireArmenterosCut))
       return false;
 
-    if (v0.v0Type() != v0type && requireV0type) {
-      registryQC.fill(HIST("V0_type"), v0.v0Type());
-      return false;
-    }
+    // if (v0.v0Type() != configV0.v0type && configV0.requireV0type) {
+    //   registryQC.fill(HIST("V0_type"), v0.v0Type());
+    //   return false;
+    // }
 
     // PID selections (TPC)
-    if (ptrack.tpcNSigmaPi() < nsigmaTPCmin || ptrack.tpcNSigmaPi() > nsigmaTPCmax)
+    if (ptrack.tpcNSigmaPi() < configTracks.nsigmaTPCmin || ptrack.tpcNSigmaPi() > configTracks.nsigmaTPCmax)
       return false;
-    if (ntrack.tpcNSigmaPi() < nsigmaTPCmin || ntrack.tpcNSigmaPi() > nsigmaTPCmax)
+    if (ntrack.tpcNSigmaPi() < configTracks.nsigmaTPCmin || ntrack.tpcNSigmaPi() > configTracks.nsigmaTPCmax)
+      return false;
+
+    if (configV0.requireK0sMassCuts &&
+        (std::abs(v0.mLambda() - o2::constants::physics::MassLambda) < configV0.lamRejWindow ||
+         std::abs(v0.mAntiLambda() - o2::constants::physics::MassLambda) < configV0.lamRejWindow))
+      return false;
+
+    if (configV0.requireK0sMassCuts &&
+        std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) > configV0.k0sMassWindow)
       return false;
 
     // PID selections (TOF)
-    if (requireTOF) {
-      if (ptrack.tofNSigmaPi() < nsigmaTOFmin || ptrack.tofNSigmaPi() > nsigmaTOFmax)
+    if (configTracks.requireTOF) {
+      if (ptrack.tofNSigmaPi() < configTracks.nsigmaTOFmin || ptrack.tofNSigmaPi() > configTracks.nsigmaTOFmax)
         return false;
-      if (ntrack.tofNSigmaPi() < nsigmaTOFmin || ntrack.tofNSigmaPi() > nsigmaTOFmax)
+      if (ntrack.tofNSigmaPi() < configTracks.nsigmaTOFmin || ntrack.tofNSigmaPi() > configTracks.nsigmaTOFmax)
         return false;
     }
     return true;
@@ -787,22 +855,22 @@ struct StrangenessInJetsIons {
 
     // Xi+ selection (Xi+ -> antiL + pi+)
     if (btrack.sign() > 0) {
-      if (ntrack.pt() < ptMinV0Proton || ntrack.pt() > ptMaxV0Proton)
+      if (ntrack.pt() < configTracks.ptMinV0Proton || ntrack.pt() > configTracks.ptMaxV0Proton)
         return false;
-      if (ptrack.pt() < ptMinV0Pion || ptrack.pt() > ptMaxV0Pion)
+      if (ptrack.pt() < configTracks.ptMinV0Pion || ptrack.pt() > configTracks.ptMaxV0Pion)
         return false;
 
       // PID selections (TPC)
-      if (ntrack.tpcNSigmaPr() < nsigmaTPCmin || ntrack.tpcNSigmaPr() > nsigmaTPCmax)
+      if (ntrack.tpcNSigmaPr() < configTracks.nsigmaTPCmin || ntrack.tpcNSigmaPr() > configTracks.nsigmaTPCmax)
         return false;
-      if (ptrack.tpcNSigmaPi() < nsigmaTPCmin || ptrack.tpcNSigmaPi() > nsigmaTPCmax)
+      if (ptrack.tpcNSigmaPi() < configTracks.nsigmaTPCmin || ptrack.tpcNSigmaPi() > configTracks.nsigmaTPCmax)
         return false;
 
       // PID selections (TOF)
-      if (requireTOF) {
-        if (ntrack.tofNSigmaPr() < nsigmaTOFmin || ntrack.tofNSigmaPr() > nsigmaTOFmax)
+      if (configTracks.requireTOF) {
+        if (ntrack.tofNSigmaPr() < configTracks.nsigmaTOFmin || ntrack.tofNSigmaPr() > configTracks.nsigmaTOFmax)
           return false;
-        if (ptrack.tofNSigmaPi() < nsigmaTOFmin || ptrack.tofNSigmaPi() > nsigmaTOFmax)
+        if (ptrack.tofNSigmaPi() < configTracks.nsigmaTOFmin || ptrack.tofNSigmaPi() > configTracks.nsigmaTOFmax)
           return false;
       }
 
@@ -812,28 +880,28 @@ struct StrangenessInJetsIons {
       pProton.SetCoordinates(ntrack.px(), ntrack.py(), ntrack.pz(), o2::constants::physics::MassProton);
       pPion.SetCoordinates(ptrack.px(), ptrack.py(), ptrack.pz(), o2::constants::physics::MassPionCharged);
       double mLambda = (pProton + pPion).M();
-      if (std::fabs(mLambda - o2::constants::physics::MassLambda0) > deltaMassLambda)
+      if (std::fabs(mLambda - o2::constants::physics::MassLambda0) > configCasc.deltaMassLambda)
         return false;
     }
 
     // Xi- selection (Xi- -> L + pi-)
     if (btrack.sign() < 0) {
-      if (ptrack.pt() < ptMinV0Proton || ptrack.pt() > ptMaxV0Proton)
+      if (ptrack.pt() < configTracks.ptMinV0Proton || ptrack.pt() > configTracks.ptMaxV0Proton)
         return false;
-      if (ntrack.pt() < ptMinV0Pion || ntrack.pt() > ptMaxV0Pion)
+      if (ntrack.pt() < configTracks.ptMinV0Pion || ntrack.pt() > configTracks.ptMaxV0Pion)
         return false;
 
       // PID selections (TPC)
-      if (ptrack.tpcNSigmaPr() < nsigmaTPCmin || ptrack.tpcNSigmaPr() > nsigmaTPCmax)
+      if (ptrack.tpcNSigmaPr() < configTracks.nsigmaTPCmin || ptrack.tpcNSigmaPr() > configTracks.nsigmaTPCmax)
         return false;
-      if (ntrack.tpcNSigmaPi() < nsigmaTPCmin || ntrack.tpcNSigmaPi() > nsigmaTPCmax)
+      if (ntrack.tpcNSigmaPi() < configTracks.nsigmaTPCmin || ntrack.tpcNSigmaPi() > configTracks.nsigmaTPCmax)
         return false;
 
       // PID selections (TOF)
-      if (requireTOF) {
-        if (ptrack.tofNSigmaPr() < nsigmaTOFmin || ptrack.tofNSigmaPr() > nsigmaTOFmax)
+      if (configTracks.requireTOF) {
+        if (ptrack.tofNSigmaPr() < configTracks.nsigmaTOFmin || ptrack.tofNSigmaPr() > configTracks.nsigmaTOFmax)
           return false;
-        if (ntrack.tofNSigmaPi() < nsigmaTOFmin || ntrack.tofNSigmaPi() > nsigmaTOFmax)
+        if (ntrack.tofNSigmaPi() < configTracks.nsigmaTOFmin || ntrack.tofNSigmaPi() > configTracks.nsigmaTOFmax)
           return false;
       }
 
@@ -843,46 +911,48 @@ struct StrangenessInJetsIons {
       pProton.SetCoordinates(ptrack.px(), ptrack.py(), ptrack.pz(), o2::constants::physics::MassProton);
       pPion.SetCoordinates(ntrack.px(), ntrack.py(), ntrack.pz(), o2::constants::physics::MassPionCharged);
       const double mLambda = (pProton + pPion).M();
-      if (std::fabs(mLambda - o2::constants::physics::MassLambda0) > deltaMassLambda)
+      if (std::fabs(mLambda - o2::constants::physics::MassLambda0) > configCasc.deltaMassLambda)
         return false;
     }
 
     // V0 selections
-    if (casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()) < v0cospaMin)
+    if (casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()) < configV0.v0cospaMin)
       return false;
-    if (casc.v0radius() < minimumV0Radius || casc.v0radius() > maximumV0Radius)
+    // if (casc.v0radius() < configV0.minimumV0Radius || casc.v0radius() > configV0.maximumV0Radius)
+    if (casc.v0radius() < configV0.minimumV0Radius)
       return false;
-    if (std::fabs(casc.dcaV0daughters()) > dcaV0DaughtersMax)
+    if (std::fabs(casc.dcaV0daughters()) > configV0.dcaV0DaughtersMax)
       return false;
-    if (std::fabs(casc.dcapostopv()) < dcaPosToPVminV0)
+    if (std::fabs(casc.dcapostopv()) < configCasc.dcaPosToPVminV0)
       return false;
-    if (std::fabs(casc.dcanegtopv()) < dcaNegToPVminV0)
+    if (std::fabs(casc.dcanegtopv()) < configCasc.dcaNegToPVminV0)
       return false;
 
     // Cascade selections
-    if (casc.cascradius() < minimumCascRadius || casc.cascradius() > maximumCascRadius)
+    // if (casc.cascradius() < configCasc.minimumCascRadius || casc.cascradius() > configCasc.maximumCascRadius)
+    if (casc.cascradius() < configCasc.minimumCascRadius)
       return false;
-    if (casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()) < casccospaMin)
+    if (casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()) < configCasc.casccospaMin)
       return false;
-    if (std::fabs(casc.dcabachtopv()) < dcabachtopvMin)
+    if (std::fabs(casc.dcabachtopv()) < configCasc.dcabachtopvMin)
       return false;
-    if (std::fabs(casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ())) < dcaV0topvMin)
+    if (std::fabs(casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ())) < configCasc.dcaV0topvMin)
       return false;
-    if (std::fabs(casc.dcacascdaughters()) > dcaCascDaughtersMax)
+    if (std::fabs(casc.dcacascdaughters()) > configCasc.dcaCascDaughtersMax)
       return false;
 
     // PID selection on bachelor
-    if (btrack.tpcNSigmaPi() < nsigmaTPCmin || btrack.tpcNSigmaPi() > nsigmaTPCmax)
+    if (btrack.tpcNSigmaPi() < configTracks.nsigmaTPCmin || btrack.tpcNSigmaPi() > configTracks.nsigmaTPCmax)
       return false;
 
     // PID selections (TOF)
-    if (requireTOF) {
-      if (btrack.tofNSigmaPi() < nsigmaTOFmin || btrack.tofNSigmaPi() > nsigmaTOFmax)
+    if (configTracks.requireTOF) {
+      if (btrack.tofNSigmaPi() < configTracks.nsigmaTOFmin || btrack.tofNSigmaPi() > configTracks.nsigmaTOFmax)
         return false;
     }
 
     // Reject candidates compatible with Omega
-    if (std::fabs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) < deltaMassOmega)
+    if (std::fabs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) < configCasc.deltaMassOmega)
       return false;
     return true;
   }
@@ -901,22 +971,22 @@ struct StrangenessInJetsIons {
 
     // Omega+ selection (Omega+ -> antiL + K+)
     if (btrack.sign() > 0) {
-      if (ntrack.pt() < ptMinV0Proton || ntrack.pt() > ptMaxV0Proton)
+      if (ntrack.pt() < configTracks.ptMinV0Proton || ntrack.pt() > configTracks.ptMaxV0Proton)
         return false;
-      if (ptrack.pt() < ptMinV0Pion || ptrack.pt() > ptMaxV0Pion)
+      if (ptrack.pt() < configTracks.ptMinV0Pion || ptrack.pt() > configTracks.ptMaxV0Pion)
         return false;
 
       // PID selections (TPC)
-      if (ntrack.tpcNSigmaPr() < nsigmaTPCmin || ntrack.tpcNSigmaPr() > nsigmaTPCmax)
+      if (ntrack.tpcNSigmaPr() < configTracks.nsigmaTPCmin || ntrack.tpcNSigmaPr() > configTracks.nsigmaTPCmax)
         return false;
-      if (ptrack.tpcNSigmaPi() < nsigmaTPCmin || ptrack.tpcNSigmaPi() > nsigmaTPCmax)
+      if (ptrack.tpcNSigmaPi() < configTracks.nsigmaTPCmin || ptrack.tpcNSigmaPi() > configTracks.nsigmaTPCmax)
         return false;
 
       // PID selections (TOF)
-      if (requireTOF) {
-        if (ntrack.tofNSigmaPr() < nsigmaTOFmin || ntrack.tofNSigmaPr() > nsigmaTOFmax)
+      if (configTracks.requireTOF) {
+        if (ntrack.tofNSigmaPr() < configTracks.nsigmaTOFmin || ntrack.tofNSigmaPr() > configTracks.nsigmaTOFmax)
           return false;
-        if (ptrack.tofNSigmaPi() < nsigmaTOFmin || ptrack.tofNSigmaPi() > nsigmaTOFmax)
+        if (ptrack.tofNSigmaPi() < configTracks.nsigmaTOFmin || ptrack.tofNSigmaPi() > configTracks.nsigmaTOFmax)
           return false;
       }
 
@@ -926,28 +996,28 @@ struct StrangenessInJetsIons {
       pProton.SetCoordinates(ntrack.px(), ntrack.py(), ntrack.pz(), o2::constants::physics::MassProton);
       pPion.SetCoordinates(ptrack.px(), ptrack.py(), ptrack.pz(), o2::constants::physics::MassPionCharged);
       double mLambda = (pProton + pPion).M();
-      if (std::fabs(mLambda - o2::constants::physics::MassLambda0) > deltaMassLambda)
+      if (std::fabs(mLambda - o2::constants::physics::MassLambda0) > configCasc.deltaMassLambda)
         return false;
     }
 
     // Omega- selection (Omega- -> L + K-)
     if (btrack.sign() < 0) {
-      if (ptrack.pt() < ptMinV0Proton || ptrack.pt() > ptMaxV0Proton)
+      if (ptrack.pt() < configTracks.ptMinV0Proton || ptrack.pt() > configTracks.ptMaxV0Proton)
         return false;
-      if (ntrack.pt() < ptMinV0Pion || ntrack.pt() > ptMaxV0Pion)
+      if (ntrack.pt() < configTracks.ptMinV0Pion || ntrack.pt() > configTracks.ptMaxV0Pion)
         return false;
 
       // PID selections (TPC)
-      if (ptrack.tpcNSigmaPr() < nsigmaTPCmin || ptrack.tpcNSigmaPr() > nsigmaTPCmax)
+      if (ptrack.tpcNSigmaPr() < configTracks.nsigmaTPCmin || ptrack.tpcNSigmaPr() > configTracks.nsigmaTPCmax)
         return false;
-      if (ntrack.tpcNSigmaPi() < nsigmaTPCmin || ntrack.tpcNSigmaPi() > nsigmaTPCmax)
+      if (ntrack.tpcNSigmaPi() < configTracks.nsigmaTPCmin || ntrack.tpcNSigmaPi() > configTracks.nsigmaTPCmax)
         return false;
 
       // PID selections (TOF)
-      if (requireTOF) {
-        if (ptrack.tofNSigmaPr() < nsigmaTOFmin || ptrack.tofNSigmaPr() > nsigmaTOFmax)
+      if (configTracks.requireTOF) {
+        if (ptrack.tofNSigmaPr() < configTracks.nsigmaTOFmin || ptrack.tofNSigmaPr() > configTracks.nsigmaTOFmax)
           return false;
-        if (ntrack.tofNSigmaPi() < nsigmaTOFmin || ntrack.tofNSigmaPi() > nsigmaTOFmax)
+        if (ntrack.tofNSigmaPi() < configTracks.nsigmaTOFmin || ntrack.tofNSigmaPi() > configTracks.nsigmaTOFmax)
           return false;
       }
 
@@ -957,46 +1027,48 @@ struct StrangenessInJetsIons {
       pProton.SetCoordinates(ptrack.px(), ptrack.py(), ptrack.pz(), o2::constants::physics::MassProton);
       pPion.SetCoordinates(ntrack.px(), ntrack.py(), ntrack.pz(), o2::constants::physics::MassPionCharged);
       double mLambda = (pProton + pPion).M();
-      if (std::fabs(mLambda - o2::constants::physics::MassLambda0) > deltaMassLambda)
+      if (std::fabs(mLambda - o2::constants::physics::MassLambda0) > configCasc.deltaMassLambda)
         return false;
     }
 
     // V0 selections
-    if (casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()) < v0cospaMin)
+    if (casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()) < configV0.v0cospaMin)
       return false;
-    if (casc.v0radius() < minimumV0Radius || casc.v0radius() > maximumV0Radius)
+    // if (casc.v0radius() < configV0.minimumV0Radius || casc.v0radius() > configV0.maximumV0Radius)
+    if (casc.v0radius() < configV0.minimumV0Radius)
       return false;
-    if (std::fabs(casc.dcaV0daughters()) > dcaV0DaughtersMax)
+    if (std::fabs(casc.dcaV0daughters()) > configV0.dcaV0DaughtersMax)
       return false;
-    if (std::fabs(casc.dcapostopv()) < dcaPosToPVminV0)
+    if (std::fabs(casc.dcapostopv()) < configCasc.dcaPosToPVminV0)
       return false;
-    if (std::fabs(casc.dcanegtopv()) < dcaNegToPVminV0)
+    if (std::fabs(casc.dcanegtopv()) < configCasc.dcaNegToPVminV0)
       return false;
 
     // Cascade selections
-    if (casc.cascradius() < minimumCascRadius || casc.cascradius() > maximumCascRadius)
+    // if (casc.cascradius() < configCasc.minimumCascRadius || casc.cascradius() > configCasc.maximumCascRadius)
+    if (casc.cascradius() < configCasc.minimumCascRadius)
       return false;
-    if (casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()) < casccospaMin)
+    if (casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()) < configCasc.casccospaMin)
       return false;
-    if (std::fabs(casc.dcabachtopv()) < dcabachtopvMin)
+    if (std::fabs(casc.dcabachtopv()) < configCasc.dcabachtopvMin)
       return false;
-    if (std::fabs(casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ())) < dcaV0topvMin)
+    if (std::fabs(casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ())) < configCasc.dcaV0topvMin)
       return false;
-    if (std::fabs(casc.dcacascdaughters()) > dcaCascDaughtersMax)
+    if (std::fabs(casc.dcacascdaughters()) > configCasc.dcaCascDaughtersMax)
       return false;
 
     // PID selection on bachelor
-    if (btrack.tpcNSigmaKa() < nsigmaTPCmin || btrack.tpcNSigmaKa() > nsigmaTPCmax)
+    if (btrack.tpcNSigmaKa() < configTracks.nsigmaTPCmin || btrack.tpcNSigmaKa() > configTracks.nsigmaTPCmax)
       return false;
 
     // PID selections (TOF)
-    if (requireTOF) {
-      if (btrack.tofNSigmaKa() < nsigmaTOFmin || btrack.tofNSigmaKa() > nsigmaTOFmax)
+    if (configTracks.requireTOF) {
+      if (btrack.tofNSigmaKa() < configTracks.nsigmaTOFmin || btrack.tofNSigmaKa() > configTracks.nsigmaTOFmax)
         return false;
     }
 
     // Reject candidates compatible with Xi
-    if (std::fabs(casc.mXi() - o2::constants::physics::MassXiMinus) < deltaMassXi)
+    if (std::fabs(casc.mXi() - o2::constants::physics::MassXiMinus) < configCasc.deltaMassXi)
       return false;
     return true;
   }
@@ -1005,19 +1077,19 @@ struct StrangenessInJetsIons {
   template <typename Track>
   bool passedSingleTrackSelection(const Track& track)
   {
-    if (requireITS && (!track.hasITS()))
+    if (configTracks.requireITS && (!track.hasITS()))
       return false;
-    if (requireITS && track.itsNCls() < minITSnCls)
+    if (configTracks.requireITS && track.itsNCls() < configTracks.minITSnCls)
       return false;
     if (!track.hasTPC())
       return false;
-    if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC)
+    if (track.tpcNClsCrossedRows() < configTracks.minNCrossedRowsTPC)
       return false;
-    if (track.tpcChi2NCl() > maxChi2TPC)
+    if (track.tpcChi2NCl() > configTracks.maxChi2TPC)
       return false;
-    if (track.eta() < etaMin || track.eta() > etaMax)
+    if (track.eta() < configTracks.etaMin || track.eta() > configTracks.etaMax)
       return false;
-    if (requireTOF && (!track.hasTOF()))
+    if (configTracks.requireTOF && (!track.hasTOF()))
       return false;
     return true;
   }
@@ -1039,6 +1111,241 @@ struct StrangenessInJetsIons {
       return false;
 
     return true;
+  }
+
+  void FillFullEventHistoMCGEN(aod::McParticle const& particle,
+                               const double& genMultiplicity)
+  {
+    if (particle.isPhysicalPrimary()) {
+      switch (particle.pdgCode()) {
+        case kK0Short:
+          if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+            registryMC.fill(HIST("K0s_generated_MB"), genMultiplicity, particle.pt());
+          }
+          break;
+        case kLambda0:
+          if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+            registryMC.fill(HIST("Lambda_generated_MB"), genMultiplicity, particle.pt());
+          }
+          break;
+        case kLambda0Bar:
+          if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+            registryMC.fill(HIST("AntiLambda_generated_MB"), genMultiplicity, particle.pt());
+          }
+          break;
+        case kXiMinus:
+          if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+            registryMC.fill(HIST("XiNeg_generated_MB"), genMultiplicity, particle.pt());
+          }
+          break;
+        case kXiPlusBar:
+          if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+            registryMC.fill(HIST("XiPos_generated_MB"), genMultiplicity, particle.pt());
+          }
+          break;
+        case kOmegaMinus:
+          if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+            registryMC.fill(HIST("OmegaNeg_generated_MB"), genMultiplicity, particle.pt());
+          }
+          break;
+        case kOmegaPlusBar:
+          if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+            registryMC.fill(HIST("OmegaPos_generated_MB"), genMultiplicity, particle.pt());
+          }
+          break;
+        case kPiPlus:
+          if (particleOfInterestDict[ParticleOfInterest::kPions]) {
+            registryMC.fill(HIST("PionPos_generated_MB"), genMultiplicity, particle.pt());
+          }
+          break;
+        case kKPlus:
+          if (particleOfInterestDict[ParticleOfInterest::kKaons]) {
+            registryMC.fill(HIST("KaonPos_generated_MB"), genMultiplicity, particle.pt());
+          }
+          break;
+        case kProton:
+          if (particleOfInterestDict[ParticleOfInterest::kProtons]) {
+            registryMC.fill(HIST("ProtonPos_generated_MB"), genMultiplicity, particle.pt());
+          }
+          break;
+        case kPiMinus:
+          if (particleOfInterestDict[ParticleOfInterest::kPions]) {
+            registryMC.fill(HIST("PionNeg_generated_MB"), genMultiplicity, particle.pt());
+          }
+          break;
+        case kKMinus:
+          if (particleOfInterestDict[ParticleOfInterest::kKaons]) {
+            registryMC.fill(HIST("KaonNeg_generated_MB"), genMultiplicity, particle.pt());
+          }
+          break;
+        case kProtonBar:
+          if (particleOfInterestDict[ParticleOfInterest::kProtons]) {
+            registryMC.fill(HIST("ProtonNeg_generated_MB"), genMultiplicity, particle.pt());
+          }
+          break;
+        default:
+          break;
+      }
+    }
+  }
+
+  template <typename MCRecoCollision, typename V0PerColl, typename CascPerColl, typename TracksPerColl>
+  void FillFullEventHistoMCREC(MCRecoCollision collision,
+                               aod::McParticles const& mcParticles,
+                               V0PerColl const& v0sPerColl,
+                               CascPerColl const& cascPerColl,
+                               TracksPerColl const& tracksPerColl,
+                               const double& multiplicity)
+  {
+    // V0 particles
+    if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+      for (const auto& v0 : v0sPerColl) {
+        const auto& pos = v0.template posTrack_as<DaughterTracksMC>();
+        const auto& neg = v0.template negTrack_as<DaughterTracksMC>();
+        TVector3 v0dir(v0.px(), v0.py(), v0.pz());
+
+        // Get MC particles
+        if (!pos.has_mcParticle() || !neg.has_mcParticle())
+          continue;
+        auto posParticle = pos.template mcParticle_as<aod::McParticles>();
+        auto negParticle = neg.template mcParticle_as<aod::McParticles>();
+        if (!posParticle.has_mothers() || !negParticle.has_mothers())
+          continue;
+
+        // Get Mothers
+        auto motherPos = mcParticles.iteratorAt(posParticle.mothersIds()[0]);
+        auto motherNeg = mcParticles.iteratorAt(negParticle.mothersIds()[0]);
+        if (motherPos != motherNeg)
+          continue;
+        if (!motherPos.isPhysicalPrimary())
+          continue;
+
+        if (std::abs(motherPos.eta()) > 0.8)
+          continue;
+
+        // Vertex position vector
+        TVector3 vtxPos(collision.posX(), collision.posY(), collision.posZ());
+
+        // K0s
+        if (passedK0ShortSelection(v0, pos, neg, vtxPos) && motherPos.pdgCode() == kK0Short) {
+          registryMC.fill(HIST("K0s_reconstructed_MB"), multiplicity, v0.pt());
+        }
+        // Lambda
+        if (passedLambdaSelection(v0, pos, neg, vtxPos) && motherPos.pdgCode() == kLambda0) {
+          registryMC.fill(HIST("Lambda_reconstructed_MB"), multiplicity, v0.pt());
+        }
+        // AntiLambda
+        if (passedAntiLambdaSelection(v0, pos, neg, vtxPos) && motherPos.pdgCode() == kLambda0Bar) {
+          registryMC.fill(HIST("AntiLambda_reconstructed_MB"), multiplicity, v0.pt());
+        }
+      }
+    }
+
+    // Cascades
+    if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+      for (const auto& casc : cascPerColl) {
+        auto bach = casc.template bachelor_as<DaughterTracksMC>();
+        auto pos = casc.template posTrack_as<DaughterTracksMC>();
+        auto neg = casc.template negTrack_as<DaughterTracksMC>();
+
+        // Get MC particles
+        if (!bach.has_mcParticle() || !pos.has_mcParticle() || !neg.has_mcParticle())
+          continue;
+        auto posParticle = pos.template mcParticle_as<aod::McParticles>();
+        auto negParticle = neg.template mcParticle_as<aod::McParticles>();
+        auto bachParticle = bach.template mcParticle_as<aod::McParticles>();
+        if (!posParticle.has_mothers() || !negParticle.has_mothers() || !bachParticle.has_mothers())
+          continue;
+
+        // Select particles originating from the same parent
+        auto motherPos = mcParticles.iteratorAt(posParticle.mothersIds()[0]);
+        auto motherNeg = mcParticles.iteratorAt(negParticle.mothersIds()[0]);
+        auto motherBach = mcParticles.iteratorAt(bachParticle.mothersIds()[0]);
+        if (motherPos != motherNeg)
+          continue;
+        if (std::abs(motherPos.pdgCode()) != kLambda0)
+          continue;
+        if (!motherBach.isPhysicalPrimary())
+          continue;
+
+        if (std::abs(motherPos.eta()) > 0.8)
+          continue;
+
+        // Xi+
+        if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 && motherBach.pdgCode() == kXiPlusBar) {
+          registryMC.fill(HIST("XiPos_reconstructed_MB"), multiplicity, casc.pt());
+        }
+        // Xi-
+        if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 && motherBach.pdgCode() == kXiMinus) {
+          registryMC.fill(HIST("XiNeg_reconstructed_MB"), multiplicity, casc.pt());
+        }
+        // Omega+
+        if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0 && motherBach.pdgCode() == kOmegaPlusBar) {
+          registryMC.fill(HIST("OmegaPos_reconstructed_MB"), multiplicity, casc.pt());
+        }
+        // Omega-
+        if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0 && motherBach.pdgCode() == kOmegaMinus) {
+          registryMC.fill(HIST("OmegaNeg_reconstructed_MB"), multiplicity, casc.pt());
+        }
+      }
+    }
+
+    if (particleOfInterestDict[ParticleOfInterest::kPions] ||
+        particleOfInterestDict[ParticleOfInterest::kKaons] ||
+        particleOfInterestDict[ParticleOfInterest::kProtons]) {
+      for (const auto& trk : tracksPerColl) {
+
+        if (!trk.has_mcParticle()) {
+          continue;
+        }
+        if (!passedSingleTrackSelection(trk)) {
+          continue;
+        }
+        const auto& mcParticle = trk.template mcParticle_as<aod::McParticles>();
+        if (!mcParticle.isPhysicalPrimary()) {
+          continue;
+        }
+
+        if (std::abs(mcParticle.eta()) > 0.8) {
+          continue;
+        }
+
+        switch (mcParticle.pdgCode()) {
+          case kPiPlus:
+            if (particleOfInterestDict[ParticleOfInterest::kPions]) {
+              registryMC.fill(HIST("PionPos_reconstructed_MB"), multiplicity, trk.pt());
+            }
+            break;
+          case kPiMinus:
+            if (particleOfInterestDict[ParticleOfInterest::kPions]) {
+              registryMC.fill(HIST("PionNeg_reconstructed_MB"), multiplicity, trk.pt());
+            }
+            break;
+          case kKPlus:
+            if (particleOfInterestDict[ParticleOfInterest::kKaons]) {
+              registryMC.fill(HIST("KaonPos_reconstructed_MB"), multiplicity, trk.pt());
+            }
+            break;
+          case kKMinus:
+            if (particleOfInterestDict[ParticleOfInterest::kKaons]) {
+              registryMC.fill(HIST("KaonNeg_reconstructed_MB"), multiplicity, trk.pt());
+            }
+            break;
+          case kProton:
+            if (particleOfInterestDict[ParticleOfInterest::kProtons]) {
+              registryMC.fill(HIST("ProtonPos_reconstructed_MB"), multiplicity, trk.pt());
+            }
+            break;
+          case kProtonBar:
+            if (particleOfInterestDict[ParticleOfInterest::kProtons]) {
+              registryMC.fill(HIST("ProtonNeg_reconstructed_MB"), multiplicity, trk.pt());
+            }
+            break;
+          default:
+            break;
+        }
+      }
+    }
   }
 
   // Process data
@@ -1121,12 +1428,13 @@ struct StrangenessInJetsIons {
     std::vector<TVector3> selectedJet;
     std::vector<TVector3> ue1;
     std::vector<TVector3> ue2;
+    std::vector<double> jetPt;
 
     // Loop over reconstructed jets
     for (const auto& jet : jets) {
 
       // Jet must be fully contained in the acceptance
-      if ((std::fabs(jet.eta()) + rJet) > (etaMax - deltaEtaEdge))
+      if ((std::fabs(jet.eta()) + rJet) > (configTracks.etaMax - deltaEtaEdge))
         continue;
 
       // Jet pt must be larger than threshold
@@ -1148,6 +1456,7 @@ struct StrangenessInJetsIons {
       selectedJet.emplace_back(jetAxis);
       ue1.emplace_back(ueAxis1);
       ue2.emplace_back(ueAxis2);
+      jetPt.emplace_back(jetMinusBkg.pt());
     }
     if (!isAtLeastOneJetSelected)
       return;
@@ -1165,9 +1474,14 @@ struct StrangenessInJetsIons {
 
     // Fill event multiplicity
     registryData.fill(HIST("number_of_events_vsmultiplicity"), multiplicity);
+    registryData.fill(HIST("n_jets_vs_mult"), multiplicity, static_cast<int>(selectedJet.size()));
 
     // Loop over selected jets
     for (int i = 0; i < static_cast<int>(selectedJet.size()); i++) {
+
+      // Fill jet counter
+      registryData.fill(HIST("n_jets_vs_mult_pT"), multiplicity, jetPt[i]);
+
       if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) { // V0s
         for (const auto& v0 : fullV0s) {
 
@@ -1191,7 +1505,7 @@ struct StrangenessInJetsIons {
           TVector3 vtxPos(collision.posX(), collision.posY(), collision.posZ());
 
           // Fill Armenteros-Podolanski TH2
-          registryQC.fill(HIST("ArmenterosPreSel_DATA"), v0.alpha(), v0.qtarm());
+          // registryQC.fill(HIST("ArmenterosPreSel_DATA"), v0.alpha(), v0.qtarm());
 
           // K0s
           if (passedK0ShortSelection(v0, pos, neg, vtxPos)) {
@@ -1343,8 +1657,7 @@ struct StrangenessInJetsIons {
   Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
   Preslice<DaughterTracksMC> perCollisionTrk = o2::aod::track::collisionId;
 
-  void processMCgenerated(aod::McCollisions const& collisions,
-                          SimCollisions const& mcRecoCollisions,
+  void processMCgenerated(soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs> const& collisions,
                           aod::McParticles const& mcParticles)
   {
     // Define per-event particle containers
@@ -1358,7 +1671,7 @@ struct StrangenessInJetsIons {
 
     // Loop over MC collisions
     for (const auto& collision : collisions) {
-      // Get multiplicity from RECO MC
+      /* // Get multiplicity from RECO MC
       // Select RECO collisions for which "mcCollisionsID" = collision.globalIndex()
       float multiplicity = -999;
 
@@ -1385,7 +1698,7 @@ struct StrangenessInJetsIons {
       }
 
       if (multiplicity == -999)
-        continue;
+        continue; */
 
       // Clear containers at the start of the event loop
       fjParticles.clear();
@@ -1397,13 +1710,21 @@ struct StrangenessInJetsIons {
 
       // Require vertex position within the allowed z range
       if (std::fabs(collision.posZ()) > zVtx)
-        return;
+        continue;
 
       // Fill event counter after selection on z-vertex
       registryMC.fill(HIST("number_of_events_mc_gen"), 1.5);
 
       // Multiplicity of generated event retrived from corresponding MC RECO collision
-      float genMultiplicity = multiplicity;
+      // float genMultiplicity = multiplicity;
+
+      // Multiplicity of generated event
+      float genMultiplicity;
+      if (centrEstimator == 0) {
+        genMultiplicity = collision.centFT0C();
+      } else {
+        genMultiplicity = collision.centFT0M();
+      }
 
       // MC particles per collision
       auto mcParticlesPerColl = mcParticles.sliceBy(perMCCollision, collision.globalIndex());
@@ -1412,16 +1733,19 @@ struct StrangenessInJetsIons {
       for (const auto& particle : mcParticlesPerColl) {
         // Store properties of strange hadrons
         int pdgAbs = std::abs(particle.pdgCode());
-        if (particle.isPhysicalPrimary() && (pdgAbs == kK0Short || pdgAbs == kLambda0 || pdgAbs == kXiMinus || pdgAbs == kOmegaMinus)) {
+        if (particle.isPhysicalPrimary() && (pdgAbs == kK0Short || pdgAbs == kLambda0 || pdgAbs == kXiMinus || pdgAbs == kOmegaMinus)) { // TODO: add protons, kaons, pions
           pdg.emplace_back(particle.pdgCode());
           strHadronMomentum.emplace_back(particle.px(), particle.py(), particle.pz());
         }
-        // Select physical primary particles or HF decay products
-        if (!isPhysicalPrimaryOrFromHF(particle, mcParticles))
+
+        double minPtParticle = 0.1f;
+        if (particle.eta() < configTracks.etaMin || particle.eta() > configTracks.etaMax || particle.pt() < minPtParticle)
           continue;
 
-        double minPtParticle = 0.1;
-        if (particle.eta() < etaMin || particle.eta() > etaMax || particle.pt() < minPtParticle)
+        FillFullEventHistoMCGEN(particle, genMultiplicity);
+
+        // Select physical primary particles or HF decay products
+        if (!isPhysicalPrimaryOrFromHF(particle, mcParticles))
           continue;
 
         // Build 4-momentum assuming charged pion mass
@@ -1445,10 +1769,11 @@ struct StrangenessInJetsIons {
       auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(fjParticles, jets[0], rJet);
 
       // Loop over clustered jets
+      int countSelJet = 0; // number of selected jets
       for (const auto& jet : jets) {
 
         // Jet must be fully contained in acceptance
-        if ((std::fabs(jet.eta()) + rJet) > (etaMax - deltaEtaEdge))
+        if ((std::fabs(jet.eta()) + rJet) > (configTracks.etaMax - deltaEtaEdge))
           continue;
 
         // Subtract background energy from jet
@@ -1458,8 +1783,12 @@ struct StrangenessInJetsIons {
         // Apply jet pT threshold
         if (jetMinusBkg.pt() < minJetPt)
           continue;
+        countSelJet++;
         registryMC.fill(HIST("number_of_events_mc_gen"), 3.5);
         registryMC.fill(HIST("number_of_events_vsmultiplicity_gen"), genMultiplicity);
+
+        // Fill jet counter
+        registryMC.fill(HIST("n_jets_vs_mult_pT_mc_gen"), genMultiplicity, jetMinusBkg.pt());
 
         // Set up two perpendicular cone axes for underlying event estimation
         TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
@@ -1527,32 +1856,32 @@ struct StrangenessInJetsIons {
                 break;
               case kPiPlus:
                 if (particleOfInterestDict[ParticleOfInterest::kPions]) {
-                  registryMC.fill(HIST("Pion_generated_jet"), genMultiplicity, hadron.Pt());
+                  registryMC.fill(HIST("PionPos_generated_jet"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kKPlus:
                 if (particleOfInterestDict[ParticleOfInterest::kKaons]) {
-                  registryMC.fill(HIST("Kaon_generated_jet"), genMultiplicity, hadron.Pt());
+                  registryMC.fill(HIST("KaonPos_generated_jet"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kProton:
                 if (particleOfInterestDict[ParticleOfInterest::kProtons]) {
-                  registryMC.fill(HIST("Proton_generated_jet"), genMultiplicity, hadron.Pt());
+                  registryMC.fill(HIST("ProtonPos_generated_jet"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kPiMinus:
                 if (particleOfInterestDict[ParticleOfInterest::kPions]) {
-                  registryMC.fill(HIST("Pion_generated_jet"), genMultiplicity, hadron.Pt() * -1.f);
+                  registryMC.fill(HIST("PionNeg_generated_jet"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kKMinus:
                 if (particleOfInterestDict[ParticleOfInterest::kKaons]) {
-                  registryMC.fill(HIST("Kaon_generated_jet"), genMultiplicity, hadron.Pt() * -1.f);
+                  registryMC.fill(HIST("KaonNeg_generated_jet"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kProtonBar:
                 if (particleOfInterestDict[ParticleOfInterest::kProtons]) {
-                  registryMC.fill(HIST("Proton_generated_jet"), genMultiplicity, hadron.Pt() * -1.f);
+                  registryMC.fill(HIST("ProtonNeg_generated_jet"), genMultiplicity, hadron.Pt());
                 }
                 break;
               default:
@@ -1600,32 +1929,32 @@ struct StrangenessInJetsIons {
                 break;
               case kPiPlus:
                 if (particleOfInterestDict[ParticleOfInterest::kPions]) {
-                  registryMC.fill(HIST("Pion_generated_ue"), genMultiplicity, hadron.Pt());
+                  registryMC.fill(HIST("PionPos_generated_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kKPlus:
                 if (particleOfInterestDict[ParticleOfInterest::kKaons]) {
-                  registryMC.fill(HIST("Kaon_generated_ue"), genMultiplicity, hadron.Pt());
+                  registryMC.fill(HIST("KaonPos_generated_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kProton:
                 if (particleOfInterestDict[ParticleOfInterest::kProtons]) {
-                  registryMC.fill(HIST("Proton_generated_ue"), genMultiplicity, hadron.Pt());
+                  registryMC.fill(HIST("ProtonPos_generated_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kPiMinus:
                 if (particleOfInterestDict[ParticleOfInterest::kPions]) {
-                  registryMC.fill(HIST("Pion_generated_ue"), genMultiplicity, hadron.Pt() * -1.f);
+                  registryMC.fill(HIST("PionNeg_generated_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kKMinus:
                 if (particleOfInterestDict[ParticleOfInterest::kKaons]) {
-                  registryMC.fill(HIST("Kaon_generated_ue"), genMultiplicity, hadron.Pt() * -1.f);
+                  registryMC.fill(HIST("KaonNeg_generated_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
               case kProtonBar:
                 if (particleOfInterestDict[ParticleOfInterest::kProtons]) {
-                  registryMC.fill(HIST("Proton_generated_ue"), genMultiplicity, hadron.Pt() * -1.f);
+                  registryMC.fill(HIST("ProtonNeg_generated_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
               default:
@@ -1634,14 +1963,17 @@ struct StrangenessInJetsIons {
           }
         }
       }
+      // Fill jet counter
+      registryMC.fill(HIST("n_jets_vs_mult_mc_gen"), genMultiplicity, countSelJet);
     }
   }
   PROCESS_SWITCH(StrangenessInJetsIons, processMCgenerated, "Process MC generated events", false);
 
   // Reconstructed MC events
   void processMCreconstructed(SimCollisions const& collisions,
+                              soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs> const&,
                               DaughterTracksMC const& mcTracks, aod::V0Datas const& fullV0s,
-                              aod::CascDataExt const& Cascades, const aod::McParticles&)
+                              aod::CascDataExt const& Cascades, aod::McParticles const& mcParticles)
   {
     // Define per-event containers
     std::vector<fastjet::PseudoJet> fjParticles;
@@ -1658,6 +1990,8 @@ struct StrangenessInJetsIons {
       if (!collision.has_mcCollision()) {
         continue;
       }
+
+      const auto& mcCollision = collision.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs>>();
 
       // Clear containers at the start of the event loop
       fjParticles.clear();
@@ -1695,15 +2029,19 @@ struct StrangenessInJetsIons {
       // Event multiplicity
       float multiplicity;
       if (centrEstimator == 0) {
-        multiplicity = collision.centFT0C();
+        multiplicity = mcCollision.centFT0C();
       } else {
-        multiplicity = collision.centFT0M();
+        multiplicity = mcCollision.centFT0M();
       }
 
       // Number of V0 and cascades per collision
       auto v0sPerColl = fullV0s.sliceBy(perCollisionV0, collision.globalIndex());
       auto cascPerColl = Cascades.sliceBy(perCollisionCasc, collision.globalIndex());
       auto tracksPerColl = mcTracks.sliceBy(perCollisionTrk, collision.globalIndex());
+      const auto& mcParticlesPerColl = mcParticles.sliceBy(perMCCollision, mcCollision.globalIndex());
+
+      FillFullEventHistoMCREC(collision, mcParticles, v0sPerColl,
+                              cascPerColl, tracksPerColl, multiplicity);
 
       // Loop over reconstructed tracks
       for (auto const& track : tracksPerColl) {
@@ -1727,12 +2065,13 @@ struct StrangenessInJetsIons {
 
       // Jet selection
       bool isAtLeastOneJetSelected = false;
+      std::vector<double> jetPt;
 
       // Loop over clustered jets
       for (const auto& jet : jets) {
 
         // jet must be fully contained in the acceptance
-        if ((std::fabs(jet.eta()) + rJet) > (etaMax - deltaEtaEdge))
+        if ((std::fabs(jet.eta()) + rJet) > (configTracks.etaMax - deltaEtaEdge))
           continue;
 
         // jet pt must be larger than threshold
@@ -1754,6 +2093,7 @@ struct StrangenessInJetsIons {
         selectedJet.emplace_back(jetAxis);
         ue1.emplace_back(ueAxis1);
         ue2.emplace_back(ueAxis2);
+        jetPt.emplace_back(jetMinusBkg.pt());
       }
       if (!isAtLeastOneJetSelected)
         continue;
@@ -1761,9 +2101,82 @@ struct StrangenessInJetsIons {
       // Fill event counter for events with at least one selected jet
       registryMC.fill(HIST("number_of_events_mc_rec"), 6.5);
       registryMC.fill(HIST("number_of_events_vsmultiplicity_rec"), multiplicity);
+      registryMC.fill(HIST("n_jets_vs_mult_mc_rec"), multiplicity, static_cast<int>(selectedJet.size()));
 
       // Loop over selected jets
       for (int i = 0; i < static_cast<int>(selectedJet.size()); i++) {
+
+        // Fill jet counter
+        registryMC.fill(HIST("n_jets_vs_mult_pT_mc_rec"), multiplicity, jetPt[i]);
+
+        // ------------------------------------------------
+        // --- Generated hadrons in reconstructed jets ----
+        for (auto& particle : mcParticlesPerColl) {
+          if (!particle.isPhysicalPrimary() || std::abs(particle.eta()) > 0.8)
+            continue;
+
+          int absPdg = std::abs(particle.pdgCode());
+          if (absPdg != kK0Short && absPdg != kLambda0)
+            continue;
+
+          TVector3 momVec(particle.px(), particle.py(), particle.pz());
+
+          // Compute distance of particles from jet and UE axes
+          const double deltaEtaJet = momVec.Eta() - selectedJet[i].Eta();
+          const double deltaPhiJet = getDeltaPhi(momVec.Phi(), selectedJet[i].Phi());
+          const double deltaRJet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
+          const double deltaEtaUe1 = momVec.Eta() - ue1[i].Eta();
+          const double deltaPhiUe1 = getDeltaPhi(momVec.Phi(), ue1[i].Phi());
+          const double deltaRUe1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
+          const double deltaEtaUe2 = momVec.Eta() - ue2[i].Eta();
+          const double deltaPhiUe2 = getDeltaPhi(momVec.Phi(), ue2[i].Phi());
+          const double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
+
+          // Select particles inside jet
+          if (deltaRJet < rJet) {
+            switch (particle.pdgCode()) {
+              case kK0Short:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("K0s_gen_recoEvent_jet"), multiplicity, momVec.Pt());
+                }
+                break;
+              case kLambda0:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("Lambda_gen_recoEvent_jet"), multiplicity, momVec.Pt());
+                }
+                break;
+              case kLambda0Bar:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("AntiLambda_gen_recoEvent_jet"), multiplicity, momVec.Pt());
+                }
+                break;
+              default:
+                break;
+            }
+          }
+          if (deltaRUe1 < rJet || deltaRUe2 < rJet) {
+            switch (particle.pdgCode()) {
+              case kK0Short:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("K0s_gen_recoEvent_ue"), multiplicity, momVec.Pt());
+                }
+                break;
+              case kLambda0:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("Lambda_gen_recoEvent_ue"), multiplicity, momVec.Pt());
+                }
+                break;
+              case kLambda0Bar:
+                if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
+                  registryMC.fill(HIST("AntiLambda_gen_recoEvent_ue"), multiplicity, momVec.Pt());
+                }
+                break;
+              default:
+                break;
+            }
+          }
+        }
+        // ----------------------------------------
 
         // V0 particles
         if (particleOfInterestDict[ParticleOfInterest::kV0Particles]) {
@@ -1809,7 +2222,7 @@ struct StrangenessInJetsIons {
             TVector3 vtxPos(collision.posX(), collision.posY(), collision.posZ());
 
             // Fill Armenteros-Podolanski TH2
-            registryQC.fill(HIST("ArmenterosPreSel_REC"), v0.alpha(), v0.qtarm());
+            // registryQC.fill(HIST("ArmenterosPreSel_REC"), v0.alpha(), v0.qtarm());
 
             // K0s
             if (passedK0ShortSelection(v0, pos, neg, vtxPos) && pdgParent == kK0Short && isPhysPrim) {
@@ -1957,6 +2370,7 @@ struct StrangenessInJetsIons {
           }
         }
       }
+      jetPt.clear();
     }
   }
   PROCESS_SWITCH(StrangenessInJetsIons, processMCreconstructed, "process reconstructed events", false);
