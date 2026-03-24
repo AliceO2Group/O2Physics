@@ -1321,9 +1321,8 @@ struct AnalysisMuonSelection {
   template <uint32_t TEventFillMap, uint32_t TMuonFillMap, typename TEvents, typename TMuons>
   void runMuonSelection(BCsWithTimestamps const& bcs,
                         aod::FwdTrackAssoc const& assocs,
-                        TEvents const& events, TMuons const& muons)
+                        TEvents const& /*events*/, TMuons const& muons)
   {
-    (void)events;
     fNAssocsInBunch.clear();
     fNAssocsOutOfBunch.clear();
 
@@ -2003,11 +2002,9 @@ struct AnalysisSameEventPairing {
   template <bool TTwoProngFitter, int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap,
             typename TEvents, typename TTrackAssocs, typename TTracks, typename TMuonAssocs, typename TMuons>
   void runEmuSameEventPairing(TEvents const& events, BCsWithTimestamps const& bcs,
-                              Preslice<TTrackAssocs>& preslice1, TTrackAssocs const& assocs1, TTracks const& tracks1,
-                              Preslice<TMuonAssocs>& preslice2, TMuonAssocs const& assocs2, TMuons const& tracks2)
+                              Preslice<TTrackAssocs>& preslice1, TTrackAssocs const& assocs1, TTracks const& /*tracks1*/,
+                              Preslice<TMuonAssocs>& preslice2, TMuonAssocs const& assocs2, TMuons const& /*tracks2*/)
   {
-    (void)tracks1;
-    (void)tracks2;
     if (events.size() == 0) {
       LOG(warning) << "No events in this TF, going to the next one ...";
       return;
