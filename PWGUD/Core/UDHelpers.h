@@ -19,6 +19,7 @@
 #include "PWGUD/Core/DGCutparHolder.h"
 #include "PWGUD/Core/UPCHelpers.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -27,7 +28,6 @@
 #include "DataFormatsFIT/Triggers.h"
 #include "DataFormatsFT0/Digit.h"
 #include "Framework/Logger.h"
-#include "Common/Core/RecoDecay.h"
 
 #include "TLorentzVector.h"
 
@@ -583,18 +583,16 @@ inline void buildFT0FV0Words(TFT0 const& ft0, TFV0A const& fv0a,
   }
 }
 
-
-
 // -----------------------------------------------------------------------------
 // return eta and phi of a given FIT channel based on the bitset
 // Bit layout contract:
-constexpr int kFT0Bits = 208;        // FT0 total channels
-constexpr int kFV0Bits = 48;         // FV0A channels
-constexpr int kTotalBits = 256;      // 4*64
+constexpr int kFT0Bits = 208;   // FT0 total channels
+constexpr int kFV0Bits = 48;    // FV0A channels
+constexpr int kTotalBits = 256; // 4*64
 
 // FT0 side split
-constexpr int kFT0AChannels = 96;    // FT0A channels are [0..95]
-constexpr int kFT0CChannels = 112;   // FT0C channels are [96..207]
+constexpr int kFT0AChannels = 96;  // FT0A channels are [0..95]
+constexpr int kFT0CChannels = 112; // FT0C channels are [96..207]
 static_assert(kFT0AChannels + kFT0CChannels == kFT0Bits);
 
 using Bits256 = std::array<uint64_t, 4>;
@@ -606,14 +604,16 @@ inline Bits256 makeBits256(uint64_t w0, uint64_t w1, uint64_t w2, uint64_t w3)
 
 inline bool testBit(Bits256 const& w, int bit)
 {
-	if (bit < 0 || bit >= kTotalBits) {
+  if (bit < 0 || bit >= kTotalBits) {
     return false;
   }
   return (w[bit >> 6] >> (bit & 63)) & 1ULL;
 }
 
 struct FitBitRef {
-  enum class Det : uint8_t { FT0, FV0, Unknown };
+  enum class Det : uint8_t { FT0,
+                             FV0,
+                             Unknown };
   Det det = Det::Unknown;
   int ch = -1;      // FT0: 0..207, FV0: 0..47
   bool isC = false; // only meaningful for FT0
@@ -624,13 +624,13 @@ inline FitBitRef decodeFitBit(int bit)
   FitBitRef out;
   if (bit >= 0 && bit < kFT0Bits) {
     out.det = FitBitRef::Det::FT0;
-    out.ch  = bit;                         // FT0 channel id
-    out.isC = (bit >= kFT0AChannels);      // C side if in upper range
+    out.ch = bit;                     // FT0 channel id
+    out.isC = (bit >= kFT0AChannels); // C side if in upper range
     return out;
   }
   if (bit >= kFT0Bits && bit < kTotalBits) {
     out.det = FitBitRef::Det::FV0;
-    out.ch  = bit - kFT0Bits;              // FV0A channel id 0..47
+    out.ch = bit - kFT0Bits; // FV0A channel id 0..47
     return out;
   }
   return out;
@@ -677,19 +677,17 @@ inline bool getPhiEtaFromFitBit(FT0DetT& ft0Det,
                                 double& phi,
                                 double& eta)
 {
-  auto ref = decodeFitBit(bit);
+	auto ref = decodeFitBit(bit);
   if (ref.det != FitBitRef::Det::FT0) {
     return false;
   }
-	
+
   // FT0A: 0..95, FT0C: 96..207
   const int ft0Ch = bit;
   phi = getPhiFT0_fromChannel(ft0Det, ft0Ch, offsetFT0, iRunOffset);
   eta = getEtaFT0_fromChannel(ft0Det, ft0Ch, offsetFT0, iRunOffset);
   return true;
-	
 }
-
 
 // -----------------------------------------------------------------------------
 

@@ -1,18 +1,25 @@
-// UpcTestFITBitMapping.cxx
-// Minimal task to test FT0 bitset -> (eta,phi) mapping using udhelpers::getPhiEtaFromFitBit
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
 //
-// Run example (from O2Physics build dir):
-//   ./stage/bin/o2-pwgud-ud-fitbit-mapping --aod-file AO2D_UD.root -b
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
 //
-// Note: Add this file to PWGUD/Tasks/CMakeLists.txt.
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+//
+// \FIT bits to phi, eta mapping
+// \author Sandor Lokos, sandor.lokos@cern.ch
+// \since  March 2026
 
+#include "PWGUD/Core/UDHelpers.h"     // udhelpers::Bits256, makeBits256, testBit, getPhiEtaFromFitBit
+#include "PWGUD/DataModel/UDTables.h" // aod::UDCollisionFITBits
+
+#include "FT0Base/Geometry.h" // o2::ft0::Geometry
 #include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
-
-#include "PWGUD/DataModel/UDTables.h"     // aod::UDCollisionFITBits
-#include "PWGUD/Core/UDHelpers.h"         // udhelpers::Bits256, makeBits256, testBit, getPhiEtaFromFitBit
-#include "FT0Base/Geometry.h"             // o2::ft0::Geometry
+#include "Framework/runDataProcessing.h"
 
 #include <array>
 #include <cmath>
@@ -20,8 +27,7 @@
 using namespace o2;
 using namespace o2::framework;
 
-struct UpcTestFITBitMapping
-{
+struct UpcTestFITBitMapping {
   Configurable<int> whichThr{"whichThr", 1, "Use 1=Thr1 bits or 2=Thr2 bits"};
   Configurable<int> maxEvents{"maxEvents", -1, "Process at most this many rows (-1 = all)"};
 
@@ -41,13 +47,13 @@ struct UpcTestFITBitMapping
   HistogramRegistry registry{
     "registry",
     {
-      {"hPhiA",    "FT0A #varphi;#varphi;counts",                {HistType::kTH1F, {{18, 0.0,  2.*M_PI}}}},
-      {"hEtaA",    "FT0A #eta;#eta;counts",                      {HistType::kTH1F, {{8, 3.5, 5.0}}}},
-      {"hEtaPhiA", "FT0A #eta vs #varphi;#eta;#varphi",          {HistType::kTH2F, {{8, 3.5, 5.0}, {18, 0.0,  2.*M_PI}}}},
+      {"hPhiA", "FT0A #varphi;#varphi;counts", {HistType::kTH1F, {{18, 0.0, 2. * M_PI}}}},
+      {"hEtaA", "FT0A #eta;#eta;counts", {HistType::kTH1F, {{8, 3.5, 5.0}}}},
+      {"hEtaPhiA", "FT0A #eta vs #varphi;#eta;#varphi", {HistType::kTH2F, {{8, 3.5, 5.0}, {18, 0.0, 2. * M_PI}}}},
 
-      {"hPhiC",    "FT0C #varphi;#varphi;counts",                {HistType::kTH1F, {{18, 0.0,  2.*M_PI}}}},
-      {"hEtaC",    "FT0C #eta;#eta;counts",                      {HistType::kTH1F, {{8, -3.5, -2.0}}}},
-      {"hEtaPhiC", "FT0C #eta vs #varphi;#eta;#varphi",          {HistType::kTH2F, {{8, -3.5, -2.0}, {18, 0.0,  2.*M_PI}}}},
+      {"hPhiC", "FT0C #varphi;#varphi;counts", {HistType::kTH1F, {{18, 0.0, 2. * M_PI}}}},
+      {"hEtaC", "FT0C #eta;#eta;counts", {HistType::kTH1F, {{8, -3.5, -2.0}}}},
+      {"hEtaPhiC", "FT0C #eta vs #varphi;#eta;#varphi", {HistType::kTH2F, {{8, -3.5, -2.0}, {18, 0.0, 2. * M_PI}}}},
     }};
 
   void init(InitContext&)
@@ -103,6 +109,5 @@ struct UpcTestFITBitMapping
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<UpcTestFITBitMapping>(cfgc, TaskName{"fitbit-mapping"})
-  };
+    adaptAnalysisTask<UpcTestFITBitMapping>(cfgc, TaskName{"fitbit-mapping"})};
 }

@@ -12,15 +12,15 @@
 /// \file SGCandProducer.cxx
 /// \brief Produces PWGUD derived table from standard tables
 ///
-/// \author Alexander Bylinkin <roman.lavicka@cern.ch>, Uniersity of Bergen
+/// \author Alexander Bylinkin <roman.lavicka@cern.ch>, University of Bergen
 /// \since  23.11.2023
 /// \author Adam Matyja <adam.tomasz.matyja@cern.ch>, INP PAN Krakow, Poland
 /// \since  May 2025
 //
 
+#include "PWGUD/Core/FITCutParHolder.h"
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/Core/UPCHelpers.h"
-#include "PWGUD/Core/FITCutParHolder.h"
 #include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
@@ -42,11 +42,11 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Vertex.h"
 
+#include <algorithm>
 #include <cmath>
 #include <map>
 #include <string>
 #include <vector>
-#include <algorithm>
 
 using namespace o2;
 using namespace o2::framework;
@@ -325,23 +325,23 @@ struct SGCandProducer {
                            fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
       outputCollisionSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, occ, ir, trs, trofs, hmpr, tfb, itsROFb, sbp, zVtxFT0vPv, vtxITSTPC, collision.rct_raw());
       outputCollsLabels(collision.globalIndex());
-			
+
 			uint64_t w1[4] = {0ull, 0ull, 0ull, 0ull};
 			uint64_t w2[4] = {0ull, 0ull, 0ull, 0ull};
 
 			if (fitCuts.saveFITbitsets() && newbc.has_foundFT0() && newbc.has_fv0a()) {
 				udhelpers::buildFT0FV0Words(newbc.ft0(), newbc.fv0a(), w1, w2,
-																		fitCuts.thr1_FT0A(),
-																		fitCuts.thr1_FT0C(),
-																		fitCuts.thr1_FV0A(),
-																		fitCuts.thr2_FT0A(),
-																		fitCuts.thr2_FT0C(),
-																		fitCuts.thr2_FV0A());
-			}
+					fitCuts.thr1_FT0A(),
+					fitCuts.thr1_FT0C(),
+					fitCuts.thr1_FV0A(),
+					fitCuts.thr2_FT0A(),
+					fitCuts.thr2_FT0C(),
+					fitCuts.thr2_FV0A());
+				}
 
-			outputFITBits(w1[0], w1[1], w1[2], w1[3],
-										w2[0], w2[1], w2[2], w2[3]);
-			
+				outputFITBits(w1[0], w1[1], w1[2], w1[3],
+											w2[0], w2[1], w2[2], w2[3]);
+
       if (newbc.has_zdc()) {
         auto zdc = newbc.zdc();
         udZdcsReduced(outputCollisions.lastIndex(), zdc.timeZNA(), zdc.timeZNC(), zdc.energyCommonZNA(), zdc.energyCommonZNC());
