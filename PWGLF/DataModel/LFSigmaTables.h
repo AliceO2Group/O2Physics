@@ -502,6 +502,42 @@ DECLARE_SOA_TABLE(Sigma0PhotonExtras, "AOD", "SIGMA0PHOTON",
                   sigma0PhotonExtra::PhotonNegTrackCode,
                   sigma0PhotonExtra::PhotonV0Type);
 
+
+// For EMCal Photon extra info
+namespace sigma0EMPhoton
+{
+//______________________________________________________
+// REGULAR COLUMNS FOR SIGMA0EMPHOTON
+DECLARE_SOA_COLUMN(PhotonID, photonID, int);
+DECLARE_SOA_COLUMN(PhotonEnergy, photonEnergy, float);
+DECLARE_SOA_COLUMN(PhotonEta, photonEta, float);
+DECLARE_SOA_COLUMN(PhotonPhi, photonPhi, float);
+DECLARE_SOA_COLUMN(PhotonM02, photonM02, float);
+DECLARE_SOA_COLUMN(PhotonM20, photonM20, float);
+DECLARE_SOA_COLUMN(PhotonNCells, photonNCells, int);
+DECLARE_SOA_COLUMN(PhotonTime, photonTime, float);
+DECLARE_SOA_COLUMN(PhotonIsExotic, photonIsExotic, bool);
+DECLARE_SOA_COLUMN(PhotonDistToBad, photonDistToBad, float);
+DECLARE_SOA_COLUMN(PhotonNLM, photonNLM, int);
+DECLARE_SOA_COLUMN(PhotonDefinition, photonDefinition, int);
+
+} // namespace sigma0PhotonExtra
+
+DECLARE_SOA_TABLE(sigma0EMPhotons, "AOD", "SIGMA0EMPHOTON",
+                  sigma0EMPhoton::PhotonID,
+                  sigma0EMPhoton::PhotonEnergy,
+                  sigma0EMPhoton::PhotonEta,
+                  sigma0EMPhoton::PhotonPhi,
+                  sigma0EMPhoton::PhotonM02,
+                  sigma0EMPhoton::PhotonM20,
+                  sigma0EMPhoton::PhotonNCells,
+                  sigma0EMPhoton::PhotonTime,
+                  sigma0EMPhoton::PhotonIsExotic,
+                  sigma0EMPhoton::PhotonDistToBad,
+                  sigma0EMPhoton::PhotonNLM,
+                  sigma0EMPhoton::PhotonDefinition);
+
+
 // For Lambda extra info
 namespace sigma0LambdaExtra
 {
