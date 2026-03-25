@@ -315,15 +315,15 @@ struct FlowGfwV02 {
         registry.add("QA_PID/before/TofTpcNsigma_protons", "", {HistType::kTHnSparseD, {cfgPIDHistograms.cfgAxisNsigmaTPC, cfgPIDHistograms.cfgAxisNsigmaTOF, cfgPIDHistograms.cfgAxisPt}});
       }
 
-      registry.add("QA_PID/before/TpcdEdx_ptwise_pions", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
-      registry.add("QA_PID/before/ExpTpcdEdx_ptwise_pions", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
-      registry.add("QA_PID/before/ExpSigma_ptwise_pions", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
-      registry.add("QA_PID/before/TpcdEdx_ptwise_kaons", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
-      registry.add("QA_PID/before/ExpTpcdEdx_ptwise_kaons", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
-      registry.add("QA_PID/before/ExpSigma_ptwise_kaons", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
-      registry.add("QA_PID/before/TpcdEdx_ptwise_protons", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
-      registry.add("QA_PID/before/ExpTpcdEdx_ptwise_protons", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
-      registry.add("QA_PID/before/ExpSigma_ptwise_protons", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
+      registry.add("QA_PID/before/TpcdEdx_ptwise_pions", "", {HistType::kTHnSparseD, {{axisPt, axisTpcSignal, axisNsigmaTOF}}});
+      registry.add("QA_PID/before/ExpTpcdEdx_ptwise_pions", "", {HistType::kTHnSparseD, {{axisPt, axisTpcSignal, axisNsigmaTOF}}};
+      registry.add("QA_PID/before/ExpSigma_ptwise_pions", "", {HistType::kTHnSparseD, {{axisPt, axisSigma, axisNsigmaTOF}}});
+      registry.add("QA_PID/before/TpcdEdx_ptwise_kaons", "", {HistType::kTHnSparseD, {{axisPt, axisTpcSignal, axisNsigmaTOF}}});
+      registry.add("QA_PID/before/ExpTpcdEdx_ptwise_kaons", "", {HistType::kTHnSparseD, {{axisPt, axisTpcSignal, axisNsigmaTOF}}});
+      registry.add("QA_PID/before/ExpSigma_ptwise_kaons", "", {HistType::kTHnSparseD, {{axisPt, axisSigma, axisNsigmaTOF}}});
+      registry.add("QA_PID/before/TpcdEdx_ptwise_protons", "", {HistType::kTHnSparseD, {{axisPt, axisTpcSignal, axisNsigmaTOF}}});
+      registry.add("QA_PID/before/ExpTpcdEdx_ptwise_protons", "", {HistType::kTHnSparseD, {{axisPt, axisTpcSignal, axisNsigmaTOF}}});
+      registry.add("QA_PID/before/ExpSigma_ptwise_protons", "", {HistType::kTHnSparseD, {{axisPt, axisSigma, axisNsigmaTOF}}});
       registry.addClone("QA_PID/before/", "QA_PID/after/");
     }
 
