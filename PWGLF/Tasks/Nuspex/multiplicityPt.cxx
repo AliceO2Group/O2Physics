@@ -1097,6 +1097,12 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
             << (centAll.size() > 0 ? 100.0 * nPassINEL / centAll.size() : 0.0) << "%)";
   LOG(info) << "Pass all cuts: " << nPassAll << " ("
             << (centAll.size() > 0 ? 100.0 * nPassAll / centAll.size() : 0.0) << "%)";
+  LOG(info) << "Reco collisions: " << nRecoCollisions;
+  LOG(info) << "Selected Events: " << nSelectedEvents;
+  LOG(info) << "Rejected Events: " << nRejectedEvents;
+  LOG(info) << "No Match: " << nNoMCMatch;
+  LOG(info) << "No Cent: " << nNoCent;
+  LOG(info) << "Invalid Cent: " << nInvalidCent;
 
   // Calculate mean centrality at each stage
   if (!centAll.empty()) {
