@@ -197,7 +197,7 @@ struct HfResoConfigSingleTrackCuts : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> setTrackSelections{"setTrackSelections", 2, "flag to apply track selections: 0=none; 1=global track w/o DCA selection; 2=global track; 3=only ITS quality"};
   o2::framework::Configurable<float> maxEta{"maxEta", 0.8, "maximum pseudorapidity for single tracks to be paired with D mesons"};
   o2::framework::Configurable<float> minPt{"minPt", 0.1, "minimum pT for single tracks to be paired with D mesons"};
-  o2::framework::Configurable<float> forceTOF{"forceTOF", 0.1, "minimum pT for single tracks to be paired with D mesons"};
+  o2::framework::Configurable<bool> forceTOF{"forceTOF", false, "minimum pT for single tracks to be paired with D mesons"};
   o2::framework::Configurable<float> maxNsigmaTpcPi{"maxNsigmaTpcPi", -1., "maximum pion NSigma in TPC for single tracks to be paired with D mesons; set negative to reject"};
   o2::framework::Configurable<float> maxNsigmaTpcKa{"maxNsigmaTpcKa", -1., "maximum kaon NSigma in TPC for single tracks to be paired with D mesons; set negative to reject"};
   o2::framework::Configurable<float> maxNsigmaTpcPr{"maxNsigmaTpcPr", 3., "maximum proton NSigma in TPC for single tracks to be paired with D mesons; set negative to reject"};
@@ -743,9 +743,9 @@ bool isTrackSelected(const Tr& track, const std::array<int, 3>& dDaughtersIds, c
   bool isProtonTOF = hasTOF ? std::abs(track.tofNSigmaPr()) < cfgSingleTrackCuts.maxNsigmaTofPr.value : false;
 
   // --- Combined logic ---
-  bool isPion = isPionTPC && (!forceTOF || isPionTOF);
-  bool isKaon = isKaonTPC && (!forceTOF || isKaonTOF);
-  bool isProton = isProtonTPC && (!forceTOF || isProtonTOF);
+  bool isPion = isPionTPC && (!cfgSingleTrackCuts.forceTOF || isPionTOF);
+  bool isKaon = isKaonTPC && (!cfgSingleTrackCuts.forceTOF || isKaonTOF);
+  bool isProton = isProtonTPC && (!cfgSingleTrackCuts.forceTOF || isProtonTOF);
 
   return (isPion || isKaon || isProton); // we keep the track if is it compatible with at least one of the PID hypotheses selected
 }
