@@ -1458,6 +1458,7 @@ struct AnalysisSameEventPairing {
         histNames += Form("MCTruthGenSel_%s;", sig->GetName());
       } else if (sig->GetNProngs() == 2) {
         histNames += Form("MCTruthGenPairSel_%s;", sig->GetName());
+        histNames += Form("MCTruthGenPseudoPolPairSel_%s;", sig->GetName());
         fHasTwoProngGenMCsignals = true;
       }
     }
@@ -2070,6 +2071,7 @@ struct AnalysisSameEventPairing {
                   }
                 }
                 fHistMan->FillHistClass(Form("MCTruthGenPairSel_%s", sig->GetName()), VarManager::fgValues);
+                fHistMan->FillHistClass(Form("MCTruthGenPseudoPolPairSel_%s", sig->GetName()), VarManager::fgValues);
                 if (fConfigOptions.fConfigMiniTree) {
                   // WARNING! To be checked
                   dileptonMiniTreeGen(mcDecision, -999, t1_raw.pt(), t1_raw.eta(), t1_raw.phi(), t2_raw.pt(), t2_raw.eta(), t2_raw.phi());
@@ -3055,6 +3057,9 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses, const char
 
     if (classStr.Contains("MCTruthGenPair")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth_pair", histName);
+    }
+    if (classStr.Contains("MCTruthGenPseudoPolPair")) {
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "polarization-pseudoproper-gen", histName);
     }
 
     if (classStr.Contains("MCTruthGenSelBR")) {

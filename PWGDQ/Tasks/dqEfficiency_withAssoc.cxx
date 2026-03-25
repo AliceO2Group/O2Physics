@@ -1711,11 +1711,14 @@ struct AnalysisSameEventPairing {
         } else if (sig->GetNProngs() == 2) {
           histNames += Form("MCTruthGenPair_%s;", sig->GetName());
           histNames += Form("MCTruthGenPairSel_%s;", sig->GetName());
+          histNames += Form("MCTruthGenPseudoPolPair_%s;", sig->GetName());
+          histNames += Form("MCTruthGenPseudoPolPairSel_%s;", sig->GetName());
           fHasTwoProngGenMCsignals = true;
           // for these pair level signals, also add histograms for each MCgenAcc cut if specified
           if (fUseMCGenAccCut) {
             for (auto& cut : fMCGenAccCuts) {
               histNames += Form("MCTruthGenPairSel_%s_%s;", sig->GetName(), cut->GetName());
+              histNames += Form("MCTruthGenPseudoPolPairSel_%s_%s;", sig->GetName(), cut->GetName());
             }
           }
         }
@@ -2262,11 +2265,13 @@ struct AnalysisSameEventPairing {
                 VarManager::FillPairMC<TPairType>(t1_raw, t2_raw);
                 // cout << "      Filled VarManager for the pair." << endl;
                 fHistMan->FillHistClass(Form("MCTruthGenPairSel_%s", sig->GetName()), VarManager::fgValues);
+                fHistMan->FillHistClass(Form("MCTruthGenPseudoPolPairSel_%s", sig->GetName()), VarManager::fgValues);
                 // Fill also acceptance cut histograms if requested
                 if (fUseMCGenAccCut) {
                   for (auto& cut : fMCGenAccCuts) {
                     if (cut->IsSelected(VarManager::fgValues)) {
                       fHistMan->FillHistClass(Form("MCTruthGenPairSel_%s_%s", sig->GetName(), cut->GetName()), VarManager::fgValues);
+                      fHistMan->FillHistClass(Form("MCTruthGenPseudoPolPairSel_%s_%s", sig->GetName(), cut->GetName()), VarManager::fgValues);
                     }
                   }
                 }
@@ -4668,7 +4673,9 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses, const char
     if (classStr.Contains("MCTruthGenPair")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth_pair", histName);
     }
-
+    if (classStr.Contains("MCTruthGenPseudoPolPair")) {
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "polarization-pseudoproper-gen", histName);
+    }
     if (classStr.Contains("MCTruthGenSelBR")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth_triple");
     } else if (classStr.Contains("MCTruthGen")) {
