@@ -464,7 +464,7 @@ struct LongRangeDihadronCor {
     }
 
     if (cfgCumulantConfig.gfwOutput && doprocessSameTpcFt0a && doprocessSameTpcFt0c) {
-      LOGF(fatal, "If you enable gfwOutput, you can only enable processSameTpcFt0a or processSameTpcFt0c, NOT both." );
+      LOGF(fatal, "If you enable gfwOutput, you can only enable processSameTpcFt0a or processSameTpcFt0c, NOT both.");
     }
     if (cfgCumulantConfig.gfwOutput) {
       o2::framework::AxisSpec axis = axisPt;
@@ -522,7 +522,6 @@ struct LongRangeDihadronCor {
           }
         }
       }
-
 
       cfgCumulantConfig.fGFW->CreateRegions();
     }
@@ -820,7 +819,7 @@ struct LongRangeDihadronCor {
       getChannel(ft0, iCh, chanelid, ampl, corType, MixedEvent + 1);
       auto phi = getPhiFT0(chanelid, corType);
       auto eta = getEtaFT0(chanelid, corType);
-      for (float ihit = 0; ihit < ampl; ihit ++){
+      for (float ihit = 0; ihit < ampl; ihit++) {
         cfgCumulantConfig.fGFW->Fill(eta, 1, phi, 1., 1);
       }
     }
@@ -1200,9 +1199,9 @@ struct LongRangeDihadronCor {
         if (!trackSelected(track))
           continue;
         bool withinPtPOI = (0.2 < track.pt()) && (track.pt() < 10.0); // o2-linter: disable=magic-number (within POI pT range)
-        bool withinPtRef = (0.2 < track.pt()) && (track.pt() < 3.0); // o2-linter: disable=magic-number (within RF pT range)
+        bool withinPtRef = (0.2 < track.pt()) && (track.pt() < 3.0);  // o2-linter: disable=magic-number (within RF pT range)
         getAcceptanceWeight(wacc, track.phi(), track.eta(), collision.posZ());
-        if(!getEfficiencyCorrection(weff, track.eta(), track.pt(), collision.posZ()))
+        if (!getEfficiencyCorrection(weff, track.eta(), track.pt(), collision.posZ()))
           continue;
         if (withinPtRef)
           cfgCumulantConfig.fGFW->Fill(track.eta(), cfgCumulantConfig.fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
@@ -1354,9 +1353,9 @@ struct LongRangeDihadronCor {
         if (!trackSelected(track))
           continue;
         bool withinPtPOI = (0.2 < track.pt()) && (track.pt() < 10.0); // o2-linter: disable=magic-number (within POI pT range)
-        bool withinPtRef = (0.2 < track.pt()) && (track.pt() < 3.0); // o2-linter: disable=magic-number (within RF pT range)
+        bool withinPtRef = (0.2 < track.pt()) && (track.pt() < 3.0);  // o2-linter: disable=magic-number (within RF pT range)
         getAcceptanceWeight(wacc, track.phi(), track.eta(), collision.posZ());
-        if(!getEfficiencyCorrection(weff, track.eta(), track.pt(), collision.posZ()))
+        if (!getEfficiencyCorrection(weff, track.eta(), track.pt(), collision.posZ()))
           continue;
         if (withinPtRef)
           cfgCumulantConfig.fGFW->Fill(track.eta(), cfgCumulantConfig.fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
