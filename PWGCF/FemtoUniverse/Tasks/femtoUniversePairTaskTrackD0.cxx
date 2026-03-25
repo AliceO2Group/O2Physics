@@ -109,7 +109,7 @@ struct FemtoUniversePairTaskTrackD0 {
     // Particle identification
     Configurable<float> minMomPidTpcTofProton{"minMomPidTpcTofProton", 0.8, "Momentum threshold for change of the PID method (from using TPC to TPC and TOF)."};
     Configurable<float> minMomPidTpcTofPion{"minMomPidTpcTofPion", 0.7, "Momentum threshold for change of the PID method (from using TPC to TPC and TOF)."};
-    Configurable<float> minMomPidTpcTofKaonLF{"minMomPidTpcTofKaonLF", 0.5, "Momentum threshold for change of the PID method (from using TPC to TPC and TOF)."};
+    Configurable<float> minMomPidTpcTofKaon{"minMomPidTpcTofKaon", 0.5, "Momentum threshold for change of the PID method (from using TPC to TPC and TOF)."};
     // Configurables with nSigma values for particle selection
     Configurable<float> confNsigmaCombinedProton{"confNsigmaCombinedProton", 3.0, "TPC and TOF Proton Sigma (combined)"};
     Configurable<float> confNsigmaTPCProton{"confNsigmaTPCProton", 3.0, "TPC Proton Sigma"};
@@ -124,6 +124,8 @@ struct FemtoUniversePairTaskTrackD0 {
     Configurable<float> confNsigmaKaRejectPrNsigma{"confNsigmaKaRejectPrNsigma", 2.0, "Reject if kaon could be a proton within a givien nSigma value"};
     Configurable<float> confNsigmaPiRejectKaNsigma{"confNsigmaPiRejectKaNsigma", 2.0, "Reject if pion could be a kaon within a givien nSigma value"};
     Configurable<float> confNsigmaPiRejectPrNsigma{"confNsigmaPiRejectPrNsigma", 2.0, "Reject if pion could be a proton within a givien nSigma value"};
+    // Configurable to enable particle rejection
+    Configurable<bool> confDoPartNsigmaRejection{"confDoPartNsigmaRejection", false, "Enable particle nSigma rejection"};
   } ConfTrack;
 
   /// Particle 2 --- D0/D0bar meson
@@ -157,11 +159,11 @@ struct FemtoUniversePairTaskTrackD0 {
 
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
   Configurable<uint8_t> confChooseD0trackCorr{"confChooseD0trackCorr", 0, "If 0 correlations with D0s, if 1 with D0bars"};
+  // Correlated background for D0/D0bar candidates
+  Configurable<bool> fillCorrBkgs{"fillCorrBkgs", false, "Fill histograms with correlated background candidates"};
 
   // Efficiency
   Configurable<bool> doEfficiencyCorr{"doEfficiencyCorr", false, "Apply efficiency corrections"};
-  // Particle rejection
-  Configurable<bool> confDoPartNsigmaRejection{"confDoPartNsigmaRejection", false, "Enable particle nSigma rejection"};
 
   /// Partitions for particle 1
   Partition<FemtoFullParticles> partsTrack = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == int8_t(ConfTrack.confTrackSign)) && (aod::femtouniverseparticle::pt > ConfTrack.confTrackLowPtCut) && (aod::femtouniverseparticle::pt < ConfTrack.confTrackHighPtCut) && (nabs(aod::femtouniverseparticle::eta) < ConfTrack.confTrackEtaMax);
@@ -324,13 +326,13 @@ struct FemtoUniversePairTaskTrackD0 {
 
   bool isKaonNSigmaLF(float mom, float nsigmaTPCKa, float nsigmaTOFKa)
   {
-    if (mom < ConfTrack.minMomPidTpcTofKaonLF) {
+    if (mom < ConfTrack.minMomPidTpcTofKaon) {
       if (std::abs(nsigmaTPCKa) < ConfTrack.confNsigmaTPCKaon) {
         return true;
       } else {
         return false;
       }
-    } else if (mom > ConfTrack.minMomPidTpcTofKaonLF) {
+    } else if (mom > ConfTrack.minMomPidTpcTofKaon) {
       if (std::hypot(nsigmaTOFKa, nsigmaTPCKa) < ConfTrack.confNsigmaCombinedKaon) {
         return true;
       } else {
@@ -343,14 +345,14 @@ struct FemtoUniversePairTaskTrackD0 {
 
   bool isKaonNSigmaLFRejected(float mom, float nsigmaTPCPi, float nsigmaTOFPi, float nsigmaTPCPr, float nsigmaTOFPr)
   {
-    if (mom < ConfTrack.minMomPidTpcTofKaonLF) {
+    if (mom < ConfTrack.minMomPidTpcTofKaon) {
       if (std::abs(nsigmaTPCPi) < ConfTrack.confNsigmaKaRejectPiNsigma) {
         return true;
       } else if (std::abs(nsigmaTPCPr) < ConfTrack.confNsigmaKaRejectPrNsigma) {
         return true;
       }
     }
-    if (mom > ConfTrack.minMomPidTpcTofKaonLF) {
+    if (mom > ConfTrack.minMomPidTpcTofKaon) {
       if (std::hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfTrack.confNsigmaKaRejectPiNsigma) {
         return true;
       } else if (std::hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfTrack.confNsigmaKaRejectPrNsigma) {
@@ -554,6 +556,17 @@ struct FemtoUniversePairTaskTrackD0 {
     mcRecoRegistry.add("hMassVsPtD0barBkg", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     mcRecoRegistry.add("hMassVsPtD0barPrompt", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     mcRecoRegistry.add("hMassVsPtD0barNonPrompt", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    // Histograms for D0/D0bar correlated backgrounds
+    if (fillCorrBkgs) {
+      mcRecoRegistry.add("D0D0bar_corrBkgs/hMassVsPtD0ToPiKaPi", "2-prong candidates;inv. mass (#pi^{+} K^{-} #pi^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+      mcRecoRegistry.add("D0D0bar_corrBkgs/hMassVsPtD0ToPiPi", "2-prong candidates;inv. mass (#pi^{+} #pi^{-}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+      mcRecoRegistry.add("D0D0bar_corrBkgs/hMassVsPtD0ToPiPiPi", "2-prong candidates;inv. mass (#pi^{+} #pi^{-} #pi^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+      mcRecoRegistry.add("D0D0bar_corrBkgs/hMassVsPtD0ToKaKa", "2-prong candidates;inv. mass (K^{+} K^{-}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+      mcRecoRegistry.add("D0D0bar_corrBkgs/hMassVsPtD0barToPiKaPi", "2-prong candidates;inv. mass (#pi^{+} K^{-} #pi^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+      mcRecoRegistry.add("D0D0bar_corrBkgs/hMassVsPtD0barToPiPi", "2-prong candidates;inv. mass (#pi^{+} #pi^{-}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+      mcRecoRegistry.add("D0D0bar_corrBkgs/hMassVsPtD0barToPiPiPi", "2-prong candidates;inv. mass (#pi^{+} #pi^{-} #pi^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+      mcRecoRegistry.add("D0D0bar_corrBkgs/hMassVsPtD0barToKaKa", "2-prong candidates;inv. mass (K^{+} K^{-}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    }
     // Histograms for identified hadrons
     mcRecoRegistry.add("hMcRecKpPt", "MC Reco K+;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {{500, 0, 5}}});
     mcRecoRegistry.add("hMcRecKpPtGenEtaGen", "MC Reco K+;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
@@ -898,7 +911,7 @@ struct FemtoUniversePairTaskTrackD0 {
           if (!isParticleNSigma(track.p(), trackCuts.getNsigmaTPC(track, o2::track::PID::Proton), trackCuts.getNsigmaTOF(track, o2::track::PID::Proton), trackCuts.getNsigmaTPC(track, o2::track::PID::Pion), trackCuts.getNsigmaTOF(track, o2::track::PID::Pion), trackCuts.getNsigmaTPC(track, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(track, o2::track::PID::Kaon))) {
             continue;
           }
-          if (confDoPartNsigmaRejection && isParticleNSigmaRejected(track.p(), trackCuts.getNsigmaTPC(track, o2::track::PID::Pion), trackCuts.getNsigmaTOF(track, o2::track::PID::Pion), trackCuts.getNsigmaTPC(track, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(track, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(track, o2::track::PID::Proton), trackCuts.getNsigmaTOF(track, o2::track::PID::Proton))) {
+          if (ConfTrack.confDoPartNsigmaRejection && isParticleNSigmaRejected(track.p(), trackCuts.getNsigmaTPC(track, o2::track::PID::Pion), trackCuts.getNsigmaTOF(track, o2::track::PID::Pion), trackCuts.getNsigmaTPC(track, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(track, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(track, o2::track::PID::Proton), trackCuts.getNsigmaTOF(track, o2::track::PID::Proton))) {
             continue;
           }
         }
@@ -928,7 +941,7 @@ struct FemtoUniversePairTaskTrackD0 {
         if (!isParticleNSigma(track.p(), trackCuts.getNsigmaTPC(track, o2::track::PID::Proton), trackCuts.getNsigmaTOF(track, o2::track::PID::Proton), trackCuts.getNsigmaTPC(track, o2::track::PID::Pion), trackCuts.getNsigmaTOF(track, o2::track::PID::Pion), trackCuts.getNsigmaTPC(track, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(track, o2::track::PID::Kaon))) {
           continue;
         }
-        if (confDoPartNsigmaRejection && isParticleNSigmaRejected(track.p(), trackCuts.getNsigmaTPC(track, o2::track::PID::Pion), trackCuts.getNsigmaTOF(track, o2::track::PID::Pion), trackCuts.getNsigmaTPC(track, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(track, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(track, o2::track::PID::Proton), trackCuts.getNsigmaTOF(track, o2::track::PID::Proton))) {
+        if (ConfTrack.confDoPartNsigmaRejection && isParticleNSigmaRejected(track.p(), trackCuts.getNsigmaTPC(track, o2::track::PID::Pion), trackCuts.getNsigmaTOF(track, o2::track::PID::Pion), trackCuts.getNsigmaTPC(track, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(track, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(track, o2::track::PID::Proton), trackCuts.getNsigmaTOF(track, o2::track::PID::Proton))) {
           continue;
         }
       }
@@ -1128,7 +1141,7 @@ struct FemtoUniversePairTaskTrackD0 {
         if (!isParticleNSigma(track.p(), trackCuts.getNsigmaTPC(track, o2::track::PID::Proton), trackCuts.getNsigmaTOF(track, o2::track::PID::Proton), trackCuts.getNsigmaTPC(track, o2::track::PID::Pion), trackCuts.getNsigmaTOF(track, o2::track::PID::Pion), trackCuts.getNsigmaTPC(track, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(track, o2::track::PID::Kaon))) {
           continue;
         }
-        if (confDoPartNsigmaRejection && isParticleNSigmaRejected(track.p(), trackCuts.getNsigmaTPC(track, o2::track::PID::Pion), trackCuts.getNsigmaTOF(track, o2::track::PID::Pion), trackCuts.getNsigmaTPC(track, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(track, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(track, o2::track::PID::Proton), trackCuts.getNsigmaTOF(track, o2::track::PID::Proton))) {
+        if (ConfTrack.confDoPartNsigmaRejection && isParticleNSigmaRejected(track.p(), trackCuts.getNsigmaTPC(track, o2::track::PID::Pion), trackCuts.getNsigmaTOF(track, o2::track::PID::Pion), trackCuts.getNsigmaTPC(track, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(track, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(track, o2::track::PID::Proton), trackCuts.getNsigmaTOF(track, o2::track::PID::Proton))) {
           continue;
         }
       }
@@ -1486,6 +1499,17 @@ struct FemtoUniversePairTaskTrackD0 {
           } else {
             mcRecoRegistry.fill(HIST("hMassVsPtD0Bkg"), part.mLambda(), part.pt(), weight);
           }
+          if (fillCorrBkgs) {
+            if (part.sign() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0) { // D0 -> pi+K-pi0
+              mcRecoRegistry.fill(HIST("D0D0bar_corrBkgs/hMassVsPtD0ToPiKaPi"), part.mLambda(), part.pt(), weight);
+            } else if (part.sign() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiPi) { // D0 -> pi+pi-
+              mcRecoRegistry.fill(HIST("D0D0bar_corrBkgs/hMassVsPtD0ToPiPi"), part.mLambda(), part.pt(), weight);
+            } else if (part.sign() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiPiPi0) { // D0 -> pi+pi-pi0
+              mcRecoRegistry.fill(HIST("D0D0bar_corrBkgs/hMassVsPtD0ToPiPiPi"), part.mLambda(), part.pt(), weight);
+            } else if (part.sign() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToKK) { // D0 -> K+K-
+              mcRecoRegistry.fill(HIST("D0D0bar_corrBkgs/hMassVsPtD0ToKaKa"), part.mLambda(), part.pt(), weight);
+            }
+          }
           if (part.tpcNClsFound() == 0) { // prompt candidates
             mcRecoRegistry.fill(HIST("hMassVsPtD0Prompt"), part.mLambda(), part.pt(), weight);
           } else if (part.tpcNClsFound() == 1) { // non-prompt candidates
@@ -1498,6 +1522,17 @@ struct FemtoUniversePairTaskTrackD0 {
             mcRecoRegistry.fill(HIST("hMassVsPtD0barRefl"), part.mAntiLambda(), part.pt(), weight);
           } else {
             mcRecoRegistry.fill(HIST("hMassVsPtD0barBkg"), part.mAntiLambda(), part.pt(), weight);
+          }
+          if (fillCorrBkgs) {
+            if (part.sign() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0) { // D0 -> pi+K-pi0
+              mcRecoRegistry.fill(HIST("D0D0bar_corrBkgs/hMassVsPtD0barToPiKaPi"), part.mLambda(), part.pt(), weight);
+            } else if (part.sign() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiPi) { // D0 -> pi+pi-
+              mcRecoRegistry.fill(HIST("D0D0bar_corrBkgs/hMassVsPtD0barToPiPi"), part.mLambda(), part.pt(), weight);
+            } else if (part.sign() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiPiPi0) { // D0 -> pi+pi-pi0
+              mcRecoRegistry.fill(HIST("D0D0bar_corrBkgs/hMassVsPtD0barToPiPiPi"), part.mLambda(), part.pt(), weight);
+            } else if (part.sign() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToKK) { // D0 -> K+K-
+              mcRecoRegistry.fill(HIST("D0D0bar_corrBkgs/hMassVsPtD0barToKaKa"), part.mLambda(), part.pt(), weight);
+            }
           }
           if (part.tpcNClsFound() == 0) { // prompt candidates
             mcRecoRegistry.fill(HIST("hMassVsPtD0barPrompt"), part.mAntiLambda(), part.pt(), weight);
