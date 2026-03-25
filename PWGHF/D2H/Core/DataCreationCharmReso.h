@@ -732,19 +732,19 @@ bool isTrackSelected(const Tr& track, const std::array<int, 3>& dDaughtersIds, c
     return false;
   }
   // --- TPC PID ---
-  bool isPionTPC   = std::abs(track.tpcNSigmaPi()) < cfgSingleTrackCuts.maxNsigmaTpcPi.value;
-  bool isKaonTPC   = std::abs(track.tpcNSigmaKa()) < cfgSingleTrackCuts.maxNsigmaTpcKa.value;
+  bool isPionTPC = std::abs(track.tpcNSigmaPi()) < cfgSingleTrackCuts.maxNsigmaTpcPi.value;
+  bool isKaonTPC = std::abs(track.tpcNSigmaKa()) < cfgSingleTrackCuts.maxNsigmaTpcKa.value;
   bool isProtonTPC = std::abs(track.tpcNSigmaPr()) < cfgSingleTrackCuts.maxNsigmaTpcPr.value;
 
   // --- TOF PID ---
   bool hasTOF = track.hasTOF();
-  bool isPionTOF   = hasTOF ? std::abs(track.tofNSigmaPi()) < cfgSingleTrackCuts.maxNsigmaTofPi.value : false;
-  bool isKaonTOF   = hasTOF ? std::abs(track.tofNSigmaKa()) < cfgSingleTrackCuts.maxNsigmaTofKa.value : false;
+  bool isPionTOF = hasTOF ? std::abs(track.tofNSigmaPi()) < cfgSingleTrackCuts.maxNsigmaTofPi.value : false;
+  bool isKaonTOF = hasTOF ? std::abs(track.tofNSigmaKa()) < cfgSingleTrackCuts.maxNsigmaTofKa.value : false;
   bool isProtonTOF = hasTOF ? std::abs(track.tofNSigmaPr()) < cfgSingleTrackCuts.maxNsigmaTofPr.value : false;
 
   // --- Combined logic ---
-  bool isPion   = isPionTPC   && (!forceTOF || isPionTOF);
-  bool isKaon   = isKaonTPC   && (!forceTOF || isKaonTOF);
+  bool isPion = isPionTPC && (!forceTOF || isPionTOF);
+  bool isKaon = isKaonTPC && (!forceTOF || isKaonTOF);
   bool isProton = isProtonTPC && (!forceTOF || isProtonTOF);
 
   return (isPion || isKaon || isProton); // we keep the track if is it compatible with at least one of the PID hypotheses selected
