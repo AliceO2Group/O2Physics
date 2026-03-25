@@ -215,11 +215,7 @@ struct qaMatching {
   Configurable<int> fMftTrackMultiplicityMax{"cfgMftTrackMultiplicityMax", 1000, "Maximum number of MFT tracks per collision"};
   Configurable<int> fQaMatchingAodDebug{"cfgQaMatchingAodDebug", 0, "If >0, print AO2D filling debug (0=off, N=max collisions)"};
 
-<<<<<<< HEAD
-=======
   double mBzAtMftCenter{0};
-
->>>>>>> 597070af5 (mega linter issue)
   o2::globaltracking::MatchGlobalFwd mExtrap;
 
   using MatchingFunc_t = std::function<std::tuple<double, int>(const o2::dataformats::GlobalFwdTrack& mchtrack, const o2::track::TrackParCovFwd& mfttrack)>;
