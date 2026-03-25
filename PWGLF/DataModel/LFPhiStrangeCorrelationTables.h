@@ -148,6 +148,18 @@ DECLARE_SOA_COLUMN(NSigmaTOF, nSigmaTOF, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Y, y, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);
+
+DECLARE_SOA_DYNAMIC_COLUMN(InNSigmaRegion, inNSigmaRegion,
+                           [](float nSigmaTPC, float pt, bool hasTOF, float nSigmaTOF, float pidTPCMax, float tofPIDThreshold, float pidTOFMax) -> bool {
+                             if (std::abs(nSigmaTPC) >= pidTPCMax) {
+                               return false; // TPC check failed
+                             }
+                             if (pt >= tofPIDThreshold && hasTOF && std::abs(nSigmaTOF) >= pidTOFMax) {
+                               return false; // TOF check failed
+                             }
+                             return true;
+                           });
 } // namespace lf_selection_pion_track
 
 DECLARE_SOA_TABLE(PionTracksData, "AOD", "PITRACKSDATA",
@@ -157,7 +169,10 @@ DECLARE_SOA_TABLE(PionTracksData, "AOD", "PITRACKSDATA",
                   lf_selection_pion_track::NSigmaTOF,
                   lf_selection_pion_track::Pt,
                   lf_selection_pion_track::Y,
-                  lf_selection_pion_track::Phi);
+                  lf_selection_pion_track::Phi,
+                  lf_selection_pion_track::HasTOF,
+                  lf_selection_pion_track::InNSigmaRegion<lf_selection_pion_track::NSigmaTPC, lf_selection_pion_track::Pt,
+                                                          lf_selection_pion_track::HasTOF, lf_selection_pion_track::NSigmaTOF>);
 
 DECLARE_SOA_TABLE(PionTracksMcReco, "AOD", "PITRACKSMCRECO",
                   soa::Index<>,
@@ -166,7 +181,10 @@ DECLARE_SOA_TABLE(PionTracksMcReco, "AOD", "PITRACKSMCRECO",
                   lf_selection_pion_track::NSigmaTOF,
                   lf_selection_pion_track::Pt,
                   lf_selection_pion_track::Y,
-                  lf_selection_pion_track::Phi);
+                  lf_selection_pion_track::Phi,
+                  lf_selection_pion_track::HasTOF,
+                  lf_selection_pion_track::InNSigmaRegion<lf_selection_pion_track::NSigmaTPC, lf_selection_pion_track::Pt,
+                                                          lf_selection_pion_track::HasTOF, lf_selection_pion_track::NSigmaTOF>);
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFPHISTRANGECORRELATIONTABLES_H_

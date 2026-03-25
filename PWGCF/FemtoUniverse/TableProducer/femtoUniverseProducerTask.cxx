@@ -881,12 +881,17 @@ struct FemtoUniverseProducerTask {
   template <typename ParticleType>
   int32_t getMotherPDG(ParticleType particle)
   {
-    auto motherparticlesMC = particle.template mothers_as<aod::McParticles>();
-    if (!motherparticlesMC.empty()) {
+    if (particle.isPhysicalPrimary()) {
+      return 0;
+    } else if (particle.has_mothers()) {
+      if (particle.getProcess() == 20 || particle.getProcess() == 23) { // treat particles from hadronic scattering (20, 23) as primary
+        return 0;
+      }
+      auto motherparticlesMC = particle.template mothers_as<aod::McParticles>();
       auto motherparticleMC = motherparticlesMC.front();
-      return particle.isPhysicalPrimary() ? 0 : motherparticleMC.pdgCode();
+      return motherparticleMC.pdgCode();
     } else {
-      return 9999;
+      return 999;
     }
   }
 
@@ -926,7 +931,7 @@ struct FemtoUniverseProducerTask {
       outputPartsMCLabels(outputPartsMC.lastIndex());
     } else {
       outputPartsMCLabels(-1);
-      outputDebugPartsMC(9999);
+      outputDebugPartsMC(-999);
     }
   }
 
@@ -2140,6 +2145,7 @@ struct FemtoUniverseProducerTask {
       // instead of the bitmask, the PDG of the particle is stored as uint32_t
 
       int32_t variablePDG = confStoreMCmothers ? getMotherPDG(particle) : particle.pdgCode();
+      int32_t variableCut = confStoreMCmothers ? particle.getProcess() : 0;
 
       // now the table is filled
       if constexpr (resolveDaughs) {
@@ -2154,7 +2160,7 @@ struct FemtoUniverseProducerTask {
                   particle.eta(),
                   particle.phi(),
                   aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
-                  0,
+                  variableCut,
                   pdgCode,
                   variablePDG,
                   childIDs,
@@ -2169,7 +2175,7 @@ struct FemtoUniverseProducerTask {
       // aligned, so that they can be joined in the task.
       if constexpr (transientLabels) {
         outputPartsMCLabels(-1);
-        outputDebugPartsMC(9999);
+        outputDebugPartsMC(-999);
       }
     }
     if constexpr (resolveDaughs) {
@@ -2193,13 +2199,14 @@ struct FemtoUniverseProducerTask {
         }
 
         int32_t variablePDG = confStoreMCmothers ? getMotherPDG(particle) : particle.pdgCode();
+        int32_t variableCut = confStoreMCmothers ? particle.getProcess() : 0;
 
         outputParts(outputCollision.lastIndex(),
                     particle.pt(),
                     particle.eta(),
                     particle.phi(),
                     aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
-                    0,
+                    variableCut,
                     static_cast<uint32_t>(particle.pdgCode()),
                     variablePDG,
                     childIDs,
@@ -2214,7 +2221,7 @@ struct FemtoUniverseProducerTask {
         // aligned, so that they can be joined in the task.
         if constexpr (transientLabels) {
           outputPartsMCLabels(-1);
-          outputDebugPartsMC(9999);
+          outputDebugPartsMC(-999);
         }
       }
     }
@@ -2301,7 +2308,7 @@ struct FemtoUniverseProducerTask {
 
   template <bool isMC, typename V0Type, typename TrackType,
             typename CollisionType>
-  void fillCollisionsAndTracksAndV0AndPhi(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
+  bool fillCollisionsAndTracksAndV0AndPhi(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
   {
     const auto colcheck = fillCollisions<isMC>(col, tracks);
     if (colcheck) {
@@ -2313,6 +2320,7 @@ struct FemtoUniverseProducerTask {
         fillPhi<isMC>(col, tracks);
       }
     }
+    return colcheck;
   }
 
   void processFullData(aod::FemtoFullCollision const& col,
@@ -2582,8 +2590,10 @@ struct FemtoUniverseProducerTask {
           fillCascade<true>(col, groupedStrageParts, groupedTracks);
         }
       } else {
-        mcColIds.insert(col.mcCollisionId());
-        fillCollisionsAndTracksAndV0AndPhi<true>(col, groupedTracks, groupedStrageParts);
+        const auto colcheck = fillCollisionsAndTracksAndV0AndPhi<true>(col, groupedTracks, groupedStrageParts);
+        if (colcheck) {
+          mcColIds.insert(col.mcCollisionId());
+        }
       }
       for (const auto& track : groupedTracks) {
         if (trackCuts.isSelectedMinimal(track))

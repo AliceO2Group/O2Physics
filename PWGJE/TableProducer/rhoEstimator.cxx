@@ -79,10 +79,6 @@ struct RhoEstimatorTask {
     Configurable<int> jetAlgorithm{"jetAlgorithm", 0, "jet clustering algorithm. 0 = kT, 1 = C/A, 2 = Anti-kT"};
     Configurable<int> jetRecombScheme{"jetRecombScheme", 0, "jet recombination scheme. 0 = E-scheme, 1 = pT-scheme, 2 = pT2-scheme"};
     Configurable<float> bkgjetR{"bkgjetR", 0.2, "jet resolution parameter for determining background density"};
-    Configurable<float> bkgEtaMin{"bkgEtaMin", -0.7, "minimim pseudorapidity for determining background density"};
-    Configurable<float> bkgEtaMax{"bkgEtaMax", 0.7, "maximum pseudorapidity for determining background density"};
-    Configurable<float> bkgPhiMin{"bkgPhiMin", -6.283, "minimim phi for determining background density"};
-    Configurable<float> bkgPhiMax{"bkgPhiMax", 6.283, "maximum phi for determining background density"};
     Configurable<bool> doSparse{"doSparse", false, "perfom sparse estimation"};
     Configurable<double> ghostRapMax{"ghostRapMax", 0.9, "Ghost rapidity max"};
     Configurable<int> ghostRepeat{"ghostRepeat", 1, "Ghost tiling repeats"};
@@ -127,14 +123,14 @@ struct RhoEstimatorTask {
 
     bkgSub.setJetAlgorithmAndScheme(static_cast<fastjet::JetAlgorithm>(static_cast<int>(config.jetAlgorithm)), static_cast<fastjet::RecombinationScheme>(static_cast<int>(config.jetRecombScheme)));
     bkgSub.setJetBkgR(config.bkgjetR);
-    bkgSub.setEtaMinMax(config.bkgEtaMin, config.bkgEtaMax);
-    bkgPhiMax_ = config.bkgPhiMax;
-    bkgPhiMin_ = config.bkgPhiMin;
-    if (config.bkgPhiMax > 98.0) {
+    bkgSub.setEtaMinMax(config.trackEtaMin, config.trackEtaMax);
+    bkgPhiMax_ = config.trackPhiMax;
+    bkgPhiMin_ = config.trackPhiMin;
+    if (config.trackPhiMax > 98.0) {
       bkgPhiMax_ = 2.0 * M_PI;
     }
-    if (config.bkgPhiMin < -98.0) {
-      bkgPhiMin_ = -2.0 * M_PI;
+    if (config.trackPhiMin < -98.0) {
+      bkgPhiMin_ = -1.0 * M_PI;
     }
     bkgSub.setPhiMinMax(bkgPhiMin_, bkgPhiMax_);
 
@@ -223,7 +219,7 @@ struct RhoEstimatorTask {
 
   void processChargedMcCollisions(aod::JetMcCollision const& mcCollision, soa::Filtered<aod::JetParticles> const& particles)
   {
-    if (!jetderiveddatautilities::selectMcCollision(mcCollision, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
+    if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
       rhoChargedMcTable(0.0, 0.0);
       return;
     }
@@ -253,7 +249,7 @@ struct RhoEstimatorTask {
   void processD0McCollisions(aod::JetMcCollision const& mcCollision, soa::Filtered<aod::JetParticles> const& particles, aod::CandidatesD0MCP const& candidates)
   {
     for (auto& candidate : candidates) {
-      if (!jetderiveddatautilities::selectMcCollision(mcCollision, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
+      if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
         rhoD0McTable(0.0, 0.0);
         continue;
       }
@@ -286,7 +282,7 @@ struct RhoEstimatorTask {
   {
     for (auto& candidate : candidates) {
 
-      if (!jetderiveddatautilities::selectMcCollision(mcCollision, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
+      if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
         rhoDplusMcTable(0.0, 0.0);
         continue;
       }
@@ -318,7 +314,7 @@ struct RhoEstimatorTask {
   void processDsMcCollisions(aod::JetMcCollision const& mcCollision, soa::Filtered<aod::JetParticles> const& particles, aod::CandidatesDsMCP const& candidates)
   {
     for (auto& candidate : candidates) {
-      if (!jetderiveddatautilities::selectMcCollision(mcCollision, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
+      if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
         rhoDsMcTable(0.0, 0.0);
         continue;
       }
@@ -350,7 +346,7 @@ struct RhoEstimatorTask {
   void processDstarMcCollisions(aod::JetMcCollision const& mcCollision, soa::Filtered<aod::JetParticles> const& particles, aod::CandidatesDstarMCP const& candidates)
   {
     for (auto& candidate : candidates) {
-      if (!jetderiveddatautilities::selectMcCollision(mcCollision, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
+      if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
         rhoDstarMcTable(0.0, 0.0);
         continue;
       }
@@ -382,7 +378,7 @@ struct RhoEstimatorTask {
   void processLcMcCollisions(aod::JetMcCollision const& mcCollision, soa::Filtered<aod::JetParticles> const& particles, aod::CandidatesLcMCP const& candidates)
   {
     for (auto& candidate : candidates) {
-      if (!jetderiveddatautilities::selectMcCollision(mcCollision, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
+      if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
         rhoLcMcTable(0.0, 0.0);
         continue;
       }
@@ -414,7 +410,7 @@ struct RhoEstimatorTask {
   void processB0McCollisions(aod::JetMcCollision const& mcCollision, soa::Filtered<aod::JetParticles> const& particles, aod::CandidatesB0MCP const& candidates)
   {
     for (auto& candidate : candidates) {
-      if (!jetderiveddatautilities::selectMcCollision(mcCollision, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
+      if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
         rhoB0McTable(0.0, 0.0);
         continue;
       }
@@ -446,7 +442,7 @@ struct RhoEstimatorTask {
   void processBplusMcCollisions(aod::JetMcCollision const& mcCollision, soa::Filtered<aod::JetParticles> const& particles, aod::CandidatesBplusMCP const& candidates)
   {
     for (auto& candidate : candidates) {
-      if (!jetderiveddatautilities::selectMcCollision(mcCollision, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
+      if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
         rhoBplusMcTable(0.0, 0.0);
         continue;
       }
@@ -478,7 +474,7 @@ struct RhoEstimatorTask {
   void processXicToXiPiPiMcCollisions(aod::JetMcCollision const& mcCollision, soa::Filtered<aod::JetParticles> const& particles, aod::CandidatesXicToXiPiPiMCP const& candidates)
   {
     for (auto& candidate : candidates) {
-      if (!jetderiveddatautilities::selectMcCollision(mcCollision, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
+      if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
         rhoXicToXiPiPiMcTable(0.0, 0.0);
         continue;
       }
@@ -510,7 +506,7 @@ struct RhoEstimatorTask {
   void processDielectronMcCollisions(aod::JetMcCollision const& mcCollision, soa::Filtered<aod::JetParticles> const& particles, aod::CandidatesDielectronMCP const& candidates)
   {
     for (auto& candidate : candidates) {
-      if (!jetderiveddatautilities::selectMcCollision(mcCollision, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
+      if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, config.skipMBGapEvents, config.applyRCTSelections) || std::abs(mcCollision.posZ()) > config.vertexZCut) {
         rhoDielectronMcTable(0.0, 0.0);
         continue;
       }

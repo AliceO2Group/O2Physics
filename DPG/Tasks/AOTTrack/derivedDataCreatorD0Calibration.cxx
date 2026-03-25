@@ -41,6 +41,11 @@
 #include <MathUtils/detail/TypeTruncation.h>
 #include <ReconstructionDataFormats/DCA.h>
 
+#include <Math/GenVector/Boost.h>
+#include <Math/Vector3D.h> // IWYU pragma: keep (do not replace with Math/Vector3Dfwd.h)
+#include <Math/Vector3Dfwd.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 #include <TH1D.h>
 #include <TRandom3.h>
 
@@ -412,6 +417,7 @@ struct DerivedDataCreatorD0Calibration {
           }
 
           float invMassD0{0.f}, invMassD0bar{0.f};
+          float cosThetaStarD0{0.f}, cosThetaStarD0bar{0.f};
           std::vector<float> bdtScoresD0{0.f, 1.f, 1.f}, bdtScoresD0bar{0.f, 1.f, 1.f}; // always selected a priori
           if (massHypo == D0MassHypo::D0 || massHypo == D0MassHypo::D0AndD0Bar) {
             invMassD0 = RecoDecay::m(std::array{pVecPos, pVecNeg}, std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus});
@@ -424,6 +430,14 @@ struct DerivedDataCreatorD0Calibration {
                 std::vector<float> featuresCandD0 = {dcaPos.getY(), dcaNeg.getY(), chi2PCA, cosPaD0, cosPaXYD0, decLenXYD0, decLenD0, dcaPos.getY() * dcaNeg.getY(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaPi(), trackPos.tofNSigmaPi()), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaKa(), trackNeg.tofNSigmaKa()), trackPos.tpcNSigmaPi(), trackPos.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaKa(), trackPos.tofNSigmaKa()), trackNeg.tpcNSigmaPi(), trackNeg.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaPi(), trackNeg.tofNSigmaPi())};
                 if (!mlResponse.isSelectedMl(featuresCandD0, ptD0, bdtScoresD0)) {
                   massHypo -= D0MassHypo::D0;
+                } else { // selected, we compute cost*
+                  ROOT::Math::PxPyPzMVector const fourVecPi = ROOT::Math::PxPyPzMVector(pVecPos[0], pVecPos[1], pVecPos[2], o2::constants::physics::MassPiPlus);
+                  ROOT::Math::PxPyPzMVector const fourVecMother = ROOT::Math::PxPyPzMVector(pVecD0[0], pVecD0[1], pVecD0[2], invMassD0);
+                  ROOT::Math::Boost const boost{fourVecMother.BoostToCM()};
+                  ROOT::Math::PxPyPzMVector const fourVecPiCM = boost(fourVecPi);
+                  ROOT::Math::XYZVector const threeVecPiCM = fourVecPiCM.Vect();
+                  ROOT::Math::XYZVector const helicityVec = fourVecMother.Vect();
+                  cosThetaStarD0 = helicityVec.Dot(threeVecPiCM) / std::sqrt(threeVecPiCM.Mag2()) / std::sqrt(helicityVec.Mag2());
                 }
               }
             }
@@ -439,6 +453,14 @@ struct DerivedDataCreatorD0Calibration {
                 std::vector<float> featuresCandD0bar = {dcaPos.getY(), dcaNeg.getY(), chi2PCA, cosPaD0, cosPaXYD0, decLenXYD0, decLenD0, dcaPos.getY() * dcaNeg.getY(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaPi(), trackNeg.tofNSigmaPi()), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaKa(), trackPos.tofNSigmaKa()), trackNeg.tpcNSigmaPi(), trackNeg.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaKa(), trackNeg.tofNSigmaKa()), trackPos.tpcNSigmaPi(), trackPos.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaPi(), trackPos.tofNSigmaPi())};
                 if (!mlResponse.isSelectedMl(featuresCandD0bar, ptD0, bdtScoresD0bar)) {
                   massHypo -= D0MassHypo::D0Bar;
+                } else { // selected, we compute cost*
+                  ROOT::Math::PxPyPzMVector const fourVecPi = ROOT::Math::PxPyPzMVector(pVecNeg[0], pVecNeg[1], pVecNeg[2], o2::constants::physics::MassPiPlus);
+                  ROOT::Math::PxPyPzMVector const fourVecMother = ROOT::Math::PxPyPzMVector(pVecD0[0], pVecD0[1], pVecD0[2], invMassD0bar);
+                  ROOT::Math::Boost const boost{fourVecMother.BoostToCM()};
+                  ROOT::Math::PxPyPzMVector const fourVecPiCM = boost(fourVecPi);
+                  ROOT::Math::XYZVector const threeVecPiCM = fourVecPiCM.Vect();
+                  ROOT::Math::XYZVector const helicityVec = fourVecMother.Vect();
+                  cosThetaStarD0bar = helicityVec.Dot(threeVecPiCM) / std::sqrt(threeVecPiCM.Mag2()) / std::sqrt(helicityVec.Mag2());
                 }
               }
             }
@@ -813,6 +835,8 @@ struct DerivedDataCreatorD0Calibration {
                     phiD0,
                     invMassD0,
                     invMassD0bar,
+                    cosThetaStarD0,
+                    cosThetaStarD0bar,
                     getCompressedDecayLength(decLenD0),
                     getCompressedDecayLength(decLenXYD0),
                     getCompressedNormDecayLength(decLenD0 / errorDecayLengthD0),

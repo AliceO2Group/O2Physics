@@ -42,6 +42,8 @@ struct FemtoUniverseEfficiencyBase {
   Configurable<bool> confIsMCReco{"confIsMCReco", false, "Enable QA histograms for MC Reco"};
 
   Configurable<bool> confDoPartNsigmaRejection{"confDoPartNsigmaRejection", false, "Enable particle nSigma rejection"};
+  Configurable<bool> forceTof{"forceTof", false, "Enable to reject tracks without TOF for PID, set to false for processes with V0"};
+  Configurable<bool> checkIfTofAvailable{"checkIfTofAvailable", true, "Enable to check if TOF is available for PID, set to false for processes with V0"};
 
   // Collisions
   Configurable<float> confZVertex{"confZVertex", 10.f, "Event sel: Maximum z-Vertex (cm)"};
@@ -122,7 +124,7 @@ struct FemtoUniverseEfficiencyBase {
 
   /// Particle 1
   Configurable<int32_t> confPDGCodePartOne{"confPDGCodePartOne", 2212, "Particle 1 - PDG code"};
-  Configurable<uint> confParticleTypePartOne{"confParticleTypePartOne", aod::femtouniverseparticle::ParticleType::kTrack, "Particle 1 - particle type: 0 - track, 2 - V0, 6 - phi"};
+  Configurable<uint8_t> confParticleTypePartOne{"confParticleTypePartOne", aod::femtouniverseparticle::ParticleType::kTrack, "Particle 1 - particle type: 0 - track, 2 - V0, 6 - phi"};
   Configurable<bool> confNoPDGPartOne{"confNoPDGPartOne", false, "0: selecting part one by PDG, 1: no PID selection"};
   Configurable<float> confPtLowPart1{"confPtLowPart1", 0.2, "Lower limit for Pt for the first particle"};
   Configurable<float> confPtHighPart1{"confPtHighPart1", 2.5, "Higher limit for Pt for the first particle"};
@@ -143,7 +145,7 @@ struct FemtoUniverseEfficiencyBase {
   /// Particle 2
   Configurable<bool> confIsSame{"confIsSame", false, "Pairs of the same particle"};
   Configurable<int32_t> confPDGCodePartTwo{"confPDGCodePartTwo", 333, "Particle 2 - PDG code"};
-  Configurable<uint> confParticleTypePartTwo{"confParticleTypePartTwo", aod::femtouniverseparticle::ParticleType::kTrack, "Particle 2 - particle type:  0 - track, 2 - V0, 6 - phi"};
+  Configurable<uint8_t> confParticleTypePartTwo{"confParticleTypePartTwo", aod::femtouniverseparticle::ParticleType::kTrack, "Particle 2 - particle type:  0 - track, 2 - V0, 6 - phi"};
   Configurable<bool> confNoPDGPartTwo{"confNoPDGPartTwo", false, "0: selecting part two by PDG, 1: no PID selection"};
   Configurable<float> confPtLowPart2{"confPtLowPart2", 0.2, "Lower limit for Pt for the second particle"};
   Configurable<float> confPtHighPart2{"confPtHighPart2", 2.5, "Higher limit for Pt for the second particle"};
@@ -211,37 +213,50 @@ struct FemtoUniverseEfficiencyBase {
     }
   }
 
-  bool isProtonNSigma(float mom, float nsigmaTPCPr, float nsigmaTOFPr) // previous version from: https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoMJTrackCut.cxx
+  bool isProtonNSigma(bool partHasTof, float mom, float nsigmaTPCPr, float nsigmaTOFPr) // previous version from: https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoMJTrackCut.cxx
   {
-    if (mom < ConfBothTracks.confMomProton) {
+    if (forceTof && !partHasTof) {
+      return false;
+    }
+
+    if (mom <= ConfBothTracks.confMomProton) {
       if (std::abs(nsigmaTPCPr) < ConfBothTracks.confNsigmaTPCProton) {
         return true;
       } else {
         return false;
       }
-    } else {
-      if (std::hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfBothTracks.confNsigmaCombinedProton) {
-        return true;
+    }
+    if (mom > ConfBothTracks.confMomProton) {
+      if (checkIfTofAvailable && !partHasTof) {
+        return std::abs(nsigmaTPCPr) < ConfBothTracks.confNsigmaTPCProton;
+      } else if (checkIfTofAvailable && partHasTof) {
+        return std::sqrt(std::pow(nsigmaTPCPr, 2) + std::pow(nsigmaTOFPr, 2)) < ConfBothTracks.confNsigmaCombinedProton;
       } else {
-        return false;
+        return std::sqrt(std::pow(nsigmaTPCPr, 2) + std::pow(nsigmaTOFPr, 2)) < ConfBothTracks.confNsigmaCombinedProton;
       }
     }
     return false;
   }
 
-  bool isProtonNSigmaRejected(float mom, float nsigmaTPCPi, float nsigmaTOFPi, float nsigmaTPCKa, float nsigmaTOFKa)
+  bool isProtonNSigmaRejected(bool partHasTof, float mom, float nsigmaTPCPi, float nsigmaTOFPi, float nsigmaTPCKa, float nsigmaTOFKa)
   {
-    if (mom < ConfBothTracks.confMomProton) {
+    if (forceTof && !partHasTof) {
+      return true;
+    }
+
+    if (mom <= ConfBothTracks.confMomProton || !partHasTof) {
       if (std::abs(nsigmaTPCPi) < ConfBothTracks.confNsigmaPrRejectPiNsigma) {
         return true;
       } else if (std::abs(nsigmaTPCKa) < ConfBothTracks.confNsigmaPrRejectKaNsigma) {
         return true;
+      } else {
+        return false;
       }
     }
-    if (mom > ConfBothTracks.confMomProton) {
-      if (std::hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfBothTracks.confNsigmaPrRejectPiNsigma) {
+    if (mom > ConfBothTracks.confMomProton && partHasTof) {
+      if (std::sqrt(std::pow(nsigmaTPCPi, 2) + std::pow(nsigmaTOFPi, 2)) < ConfBothTracks.confNsigmaPrRejectPiNsigma) {
         return true;
-      } else if (std::hypot(nsigmaTOFKa, nsigmaTPCKa) < ConfBothTracks.confNsigmaPrRejectKaNsigma) {
+      } else if (std::sqrt(std::pow(nsigmaTPCKa, 2) + std::pow(nsigmaTOFKa, 2)) < ConfBothTracks.confNsigmaPrRejectKaNsigma) {
         return true;
       } else {
         return false;
@@ -304,38 +319,48 @@ struct FemtoUniverseEfficiencyBase {
     }
   }
 
-  bool isKaonNSigmaLF(float mom, float nsigmaTPCK, float nsigmaTOFK)
+  bool isKaonNSigmaLF(bool partHasTof, float mom, float nsigmaTPCK, float nsigmaTOFK)
   {
-    if (mom < ConfKaonSelection.confMomKaonLF) {
+    if (forceTof && !partHasTof) {
+      return false;
+    }
+
+    if (mom <= ConfKaonSelection.confMomKaonLF) {
       if (std::abs(nsigmaTPCK) < ConfKaonSelection.confNSigmaTPCKaonLF) {
         return true;
       } else {
         return false;
       }
     } else if (mom > ConfKaonSelection.confMomKaonLF) {
-      if (std::hypot(nsigmaTOFK, nsigmaTPCK) < ConfKaonSelection.confNSigmaCombKaonLF) {
-        return true;
+      if (checkIfTofAvailable && !partHasTof) {
+        return std::abs(nsigmaTPCK) < ConfKaonSelection.confNSigmaTPCKaonLF;
+      } else if (checkIfTofAvailable && partHasTof) {
+        return std::sqrt(std::pow(nsigmaTPCK, 2) + std::pow(nsigmaTOFK, 2)) < ConfKaonSelection.confNSigmaCombKaonLF;
       } else {
-        return false;
+        return std::sqrt(std::pow(nsigmaTPCK, 2) + std::pow(nsigmaTOFK, 2)) < ConfKaonSelection.confNSigmaCombKaonLF;
       }
     } else {
       return false;
     }
   }
 
-  bool isKaonNSigmaLFRejected(float mom, float nsigmaTPCPi, float nsigmaTOFPi, float nsigmaTPCPr, float nsigmaTOFPr)
+  bool isKaonNSigmaLFRejected(bool partHasTof, float mom, float nsigmaTPCPi, float nsigmaTOFPi, float nsigmaTPCPr, float nsigmaTOFPr)
   {
-    if (mom < ConfKaonSelection.confMomKaonLF) {
+    if (forceTof && !partHasTof) {
+      return true;
+    }
+
+    if (mom <= ConfKaonSelection.confMomKaonLF || !partHasTof) {
       if (std::abs(nsigmaTPCPi) < ConfKaonSelection.confNsigmaKaRejectPiNsigma) {
         return true;
       } else if (std::abs(nsigmaTPCPr) < ConfKaonSelection.confNsigmaKaRejectPrNsigma) {
         return true;
       }
     }
-    if (mom > ConfKaonSelection.confMomKaonLF) {
-      if (std::hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfKaonSelection.confNsigmaKaRejectPiNsigma) {
+    if (mom > ConfKaonSelection.confMomKaonLF && partHasTof) {
+      if (std::sqrt(std::pow(nsigmaTPCPi, 2) + std::pow(nsigmaTOFPi, 2)) < ConfKaonSelection.confNsigmaKaRejectPiNsigma) {
         return true;
-      } else if (std::hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfKaonSelection.confNsigmaKaRejectPrNsigma) {
+      } else if (std::sqrt(std::pow(nsigmaTPCPr, 2) + std::pow(nsigmaTOFPr, 2)) < ConfKaonSelection.confNsigmaKaRejectPrNsigma) {
         return true;
       } else {
         return false;
@@ -345,37 +370,48 @@ struct FemtoUniverseEfficiencyBase {
     }
   }
 
-  bool isPionNSigma(float mom, float nsigmaTPCPi, float nsigmaTOFPi)
+  bool isPionNSigma(bool partHasTof, float mom, float nsigmaTPCPi, float nsigmaTOFPi)
   {
-    if (mom < ConfBothTracks.confMomPion) {
+    if (forceTof && !partHasTof) {
+      return false;
+    }
+
+    if (mom <= ConfBothTracks.confMomPion) {
       if (std::abs(nsigmaTPCPi) < ConfBothTracks.confNsigmaTPCPion) {
         return true;
       } else {
         return false;
       }
-    } else {
-      if (std::hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfBothTracks.confNsigmaCombinedPion) {
-        return true;
+    } else if (mom > ConfBothTracks.confMomPion) {
+      if (checkIfTofAvailable && !partHasTof) {
+        return std::abs(nsigmaTPCPi) < ConfBothTracks.confNsigmaTPCPion;
+      } else if (checkIfTofAvailable && partHasTof) {
+        return std::sqrt(std::pow(nsigmaTPCPi, 2) + std::pow(nsigmaTOFPi, 2)) < ConfBothTracks.confNsigmaCombinedPion;
       } else {
-        return false;
+        return std::sqrt(std::pow(nsigmaTPCPi, 2) + std::pow(nsigmaTOFPi, 2)) < ConfBothTracks.confNsigmaCombinedPion;
       }
+    } else {
+      return false;
     }
-    return false;
   }
 
-  bool isPionNSigmaRejected(float mom, float nsigmaTPCKa, float nsigmaTOFKa, float nsigmaTPCPr, float nsigmaTOFPr)
+  bool isPionNSigmaRejected(bool partHasTof, float mom, float nsigmaTPCKa, float nsigmaTOFKa, float nsigmaTPCPr, float nsigmaTOFPr)
   {
-    if (mom < ConfBothTracks.confMomPion) {
+    if (forceTof && !partHasTof) {
+      return true;
+    }
+
+    if (mom <= ConfBothTracks.confMomPion || !partHasTof) {
       if (std::abs(nsigmaTPCKa) < ConfBothTracks.confNsigmaPiRejectKaNsigma) {
         return true;
       } else if (std::abs(nsigmaTPCPr) < ConfBothTracks.confNsigmaPiRejectPrNsigma) {
         return true;
       }
     }
-    if (mom > ConfBothTracks.confMomPion) {
-      if (std::hypot(nsigmaTOFKa, nsigmaTPCKa) < ConfBothTracks.confNsigmaPiRejectKaNsigma) {
+    if (mom > ConfBothTracks.confMomPion && partHasTof) {
+      if (std::sqrt(std::pow(nsigmaTPCKa, 2) + std::pow(nsigmaTOFKa, 2)) < ConfBothTracks.confNsigmaPiRejectKaNsigma) {
         return true;
-      } else if (std::hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfBothTracks.confNsigmaPiRejectPrNsigma) {
+      } else if (std::sqrt(std::pow(nsigmaTPCPr, 2) + std::pow(nsigmaTOFPr, 2)) < ConfBothTracks.confNsigmaPiRejectPrNsigma) {
         return true;
       } else {
         return false;
@@ -398,21 +434,21 @@ struct FemtoUniverseEfficiencyBase {
     }
   }
 
-  bool isParticleNSigma(int pdgCode, float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCPi, float nsigmaTOFPi, float nsigmaTPCK, float nsigmaTOFK, float nsigmaTPCDe, float nsigmaTOFDe)
+  bool isParticleNSigma(int pdgCode, bool partHasTof, float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCPi, float nsigmaTOFPi, float nsigmaTPCK, float nsigmaTOFK, float nsigmaTPCDe, float nsigmaTOFDe)
   {
     switch (pdgCode) {
       case 2212:  // Proton
       case -2212: // anty Proton
-        return isProtonNSigma(mom, nsigmaTPCPr, nsigmaTOFPr);
+        return isProtonNSigma(partHasTof, mom, nsigmaTPCPr, nsigmaTOFPr);
         break;
       case 211:  // Pion
       case -211: // Pion-
-        return isPionNSigma(mom, nsigmaTPCPi, nsigmaTOFPi);
+        return isPionNSigma(partHasTof, mom, nsigmaTPCPi, nsigmaTOFPi);
         break;
       case 321:  // Kaon+
       case -321: // Kaon-
         if (isKaonLF) {
-          return isKaonNSigmaLF(mom, nsigmaTPCK, nsigmaTOFK);
+          return isKaonNSigmaLF(partHasTof, mom, nsigmaTPCK, nsigmaTOFK);
         } else {
           return isKaonNSigma(mom, nsigmaTPCK, nsigmaTOFK);
         }
@@ -426,21 +462,21 @@ struct FemtoUniverseEfficiencyBase {
     }
   }
 
-  bool isParticleNSigmaRejected(int pdgCode, float mom, float nsigmaTPCPi, float nsigmaTOFPi, float nsigmaTPCKa, float nsigmaTOFKa, float nsigmaTPCPr, float nsigmaTOFPr)
+  bool isParticleNSigmaRejected(int pdgCode, bool partHasTof, float mom, float nsigmaTPCPi, float nsigmaTOFPi, float nsigmaTPCKa, float nsigmaTOFKa, float nsigmaTPCPr, float nsigmaTOFPr)
   {
     switch (pdgCode) {
       case 2212:  // Proton
       case -2212: // anty Proton
-        return isProtonNSigmaRejected(mom, nsigmaTPCPi, nsigmaTOFPi, nsigmaTPCKa, nsigmaTOFKa);
+        return isProtonNSigmaRejected(partHasTof, mom, nsigmaTPCPi, nsigmaTOFPi, nsigmaTPCKa, nsigmaTOFKa);
         break;
       case 211:  // Pion
       case -211: // Pion-
-        return isPionNSigmaRejected(mom, nsigmaTPCKa, nsigmaTOFKa, nsigmaTPCPr, nsigmaTOFPr);
+        return isPionNSigmaRejected(partHasTof, mom, nsigmaTPCKa, nsigmaTOFKa, nsigmaTPCPr, nsigmaTOFPr);
         break;
       case 321:  // Kaon+
       case -321: // Kaon-
         if (isKaonLF) {
-          return isKaonNSigmaLFRejected(mom, nsigmaTPCPi, nsigmaTOFPi, nsigmaTPCPr, nsigmaTOFPr);
+          return isKaonNSigmaLFRejected(partHasTof, mom, nsigmaTPCPi, nsigmaTOFPi, nsigmaTPCPr, nsigmaTOFPr);
         } else {
           return false; // in case of non LF kaon selecion
         }
@@ -515,11 +551,11 @@ struct FemtoUniverseEfficiencyBase {
       }
       registryCuts.fill(HIST("part1/cutsVspT"), part.pt(), 2);
 
-      if (!isParticleNSigma(confPDGCodePartOne, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron))) {
+      if (!isParticleNSigma(confPDGCodePartOne, static_cast<bool>(part.mLambda()), part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron))) {
         continue;
       }
 
-      if (confDoPartNsigmaRejection && isParticleNSigmaRejected(confPDGCodePartOne, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton))) {
+      if (confDoPartNsigmaRejection && isParticleNSigmaRejected(confPDGCodePartOne, static_cast<bool>(part.mLambda()), part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton))) {
         continue;
       }
       registryCuts.fill(HIST("part1/cutsVspT"), part.pt(), 3);
@@ -568,10 +604,10 @@ struct FemtoUniverseEfficiencyBase {
         }
         registryCuts.fill(HIST("part2/cutsVspT"), part.pt(), 2);
 
-        if (!isParticleNSigma(confPDGCodePartTwo, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron))) {
+        if (!isParticleNSigma(confPDGCodePartTwo, static_cast<bool>(part.mLambda()), part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron))) {
           continue;
         }
-        if (confDoPartNsigmaRejection && isParticleNSigmaRejected(confPDGCodePartTwo, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton))) {
+        if (confDoPartNsigmaRejection && isParticleNSigmaRejected(confPDGCodePartTwo, static_cast<bool>(part.mLambda()), part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton))) {
           continue;
         }
         registryCuts.fill(HIST("part2/cutsVspT"), part.pt(), 3);
@@ -618,7 +654,7 @@ struct FemtoUniverseEfficiencyBase {
   { // part1 is track and part2 is Phi
 
     for (const auto& part : grouppartsOneMCRec) {
-      if (part.partType() != confParticleTypePartOne || part.sign() != confChargePart1 || !isParticleNSigma(confPDGCodePartOne, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron))) {
+      if (part.partType() != confParticleTypePartOne || part.sign() != confChargePart1 || !isParticleNSigma(confPDGCodePartOne, static_cast<bool>(part.mLambda()), part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron))) {
         continue;
       }
       trackHistoPartOneRec.fillQA<isMC, isDebug>(part);
@@ -672,10 +708,10 @@ struct FemtoUniverseEfficiencyBase {
       const auto& posChild = parts.iteratorAt(part.index() - 2);
       const auto& negChild = parts.iteratorAt(part.index() - 1);
 
-      if (confPDGCodePartOne > 0 && (!isProtonNSigma(0, trackCuts.getNsigmaTPC(posChild, o2::track::PID::Proton), trackCuts.getNsigmaTOF(posChild, o2::track::PID::Proton)) || !isPionNSigma(0, trackCuts.getNsigmaTPC(negChild, o2::track::PID::Pion), trackCuts.getNsigmaTOF(negChild, o2::track::PID::Pion)))) { // give momentum as 0 to only check TPC nSigma, not combined with TOF
+      if (confPDGCodePartOne > 0 && (!isProtonNSigma(static_cast<bool>(posChild.mLambda()), 0, trackCuts.getNsigmaTPC(posChild, o2::track::PID::Proton), trackCuts.getNsigmaTOF(posChild, o2::track::PID::Proton)) || !isPionNSigma(static_cast<bool>(posChild.mLambda()), 0, trackCuts.getNsigmaTPC(negChild, o2::track::PID::Pion), trackCuts.getNsigmaTOF(negChild, o2::track::PID::Pion)))) { // give momentum as 0 to only check TPC nSigma, not combined with TOF
         continue;
       }
-      if (confPDGCodePartOne < 0 && (!isProtonNSigma(0, trackCuts.getNsigmaTPC(negChild, o2::track::PID::Proton), trackCuts.getNsigmaTOF(negChild, o2::track::PID::Proton)) || !isPionNSigma(0, trackCuts.getNsigmaTPC(posChild, o2::track::PID::Pion), trackCuts.getNsigmaTOF(posChild, o2::track::PID::Pion)))) { // give momentum as 0 to only check TPC nSigma, not combined with TOF
+      if (confPDGCodePartOne < 0 && (!isProtonNSigma(static_cast<bool>(negChild.mLambda()), 0, trackCuts.getNsigmaTPC(negChild, o2::track::PID::Proton), trackCuts.getNsigmaTOF(negChild, o2::track::PID::Proton)) || !isPionNSigma(static_cast<bool>(negChild.mLambda()), 0, trackCuts.getNsigmaTPC(posChild, o2::track::PID::Pion), trackCuts.getNsigmaTOF(posChild, o2::track::PID::Pion)))) { // give momentum as 0 to only check TPC nSigma, not combined with TOF
         continue;
       }
 
@@ -706,10 +742,10 @@ struct FemtoUniverseEfficiencyBase {
         const auto& posChild = parts.iteratorAt(part.index() - 2);
         const auto& negChild = parts.iteratorAt(part.index() - 1);
 
-        if (confPDGCodePartTwo > 0 && (!isProtonNSigma(0, trackCuts.getNsigmaTPC(posChild, o2::track::PID::Proton), trackCuts.getNsigmaTOF(posChild, o2::track::PID::Proton)) || !isPionNSigma(0, trackCuts.getNsigmaTPC(negChild, o2::track::PID::Pion), trackCuts.getNsigmaTOF(negChild, o2::track::PID::Pion)))) { // give momentum as 0 to only check TPC nSigma, not combined with TOF
+        if (confPDGCodePartTwo > 0 && (!isProtonNSigma(static_cast<bool>(posChild.mLambda()), 0, trackCuts.getNsigmaTPC(posChild, o2::track::PID::Proton), trackCuts.getNsigmaTOF(posChild, o2::track::PID::Proton)) || !isPionNSigma(static_cast<bool>(posChild.mLambda()), 0, trackCuts.getNsigmaTPC(negChild, o2::track::PID::Pion), trackCuts.getNsigmaTOF(negChild, o2::track::PID::Pion)))) { // give momentum as 0 to only check TPC nSigma, not combined with TOF
           continue;
         }
-        if (confPDGCodePartTwo < 0 && (!isProtonNSigma(0, trackCuts.getNsigmaTPC(negChild, o2::track::PID::Proton), trackCuts.getNsigmaTOF(negChild, o2::track::PID::Proton)) || !isPionNSigma(0, trackCuts.getNsigmaTPC(posChild, o2::track::PID::Pion), trackCuts.getNsigmaTOF(posChild, o2::track::PID::Pion)))) { // give momentum as 0 to only check TPC nSigma, not combined with TOF
+        if (confPDGCodePartTwo < 0 && (!isProtonNSigma(static_cast<bool>(negChild.mLambda()), 0, trackCuts.getNsigmaTPC(negChild, o2::track::PID::Proton), trackCuts.getNsigmaTOF(negChild, o2::track::PID::Proton)) || !isPionNSigma(static_cast<bool>(negChild.mLambda()), 0, trackCuts.getNsigmaTPC(posChild, o2::track::PID::Pion), trackCuts.getNsigmaTOF(posChild, o2::track::PID::Pion)))) { // give momentum as 0 to only check TPC nSigma, not combined with TOF
           continue;
         }
 
@@ -746,7 +782,7 @@ struct FemtoUniverseEfficiencyBase {
 
     /// Histogramming same event
     for (const auto& part : grouppartsOneMCRec) {
-      if (part.partType() != confParticleTypePartOne || part.sign() != confChargePart1 || !isParticleNSigma(confPDGCodePartOne, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron))) {
+      if (part.partType() != confParticleTypePartOne || part.sign() != confChargePart1 || !isParticleNSigma(confPDGCodePartOne, static_cast<bool>(part.mLambda()), part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron))) {
         continue;
       }
 
@@ -768,10 +804,10 @@ struct FemtoUniverseEfficiencyBase {
         const auto& posChild = parts.iteratorAt(part.index() - 2);
         const auto& negChild = parts.iteratorAt(part.index() - 1);
 
-        if (confPDGCodePartTwo > 0 && (!isProtonNSigma(0, trackCuts.getNsigmaTPC(posChild, o2::track::PID::Proton), trackCuts.getNsigmaTOF(posChild, o2::track::PID::Proton)) || !isPionNSigma(0, trackCuts.getNsigmaTPC(negChild, o2::track::PID::Pion), trackCuts.getNsigmaTOF(negChild, o2::track::PID::Pion)))) { // give momentum as 0 to only check TPC nSigma, not combined with TOF
+        if (confPDGCodePartTwo > 0 && (!isProtonNSigma(static_cast<bool>(posChild.mLambda()), 0, trackCuts.getNsigmaTPC(posChild, o2::track::PID::Proton), trackCuts.getNsigmaTOF(posChild, o2::track::PID::Proton)) || !isPionNSigma(static_cast<bool>(posChild.mLambda()), 0, trackCuts.getNsigmaTPC(negChild, o2::track::PID::Pion), trackCuts.getNsigmaTOF(negChild, o2::track::PID::Pion)))) { // give momentum as 0 to only check TPC nSigma, not combined with TOF
           continue;
         }
-        if (confPDGCodePartTwo < 0 && (!isProtonNSigma(0, trackCuts.getNsigmaTPC(negChild, o2::track::PID::Proton), trackCuts.getNsigmaTOF(negChild, o2::track::PID::Proton)) || !isPionNSigma(0, trackCuts.getNsigmaTPC(posChild, o2::track::PID::Pion), trackCuts.getNsigmaTOF(posChild, o2::track::PID::Pion)))) { // give momentum as 0 to only check TPC nSigma, not combined with TOF
+        if (confPDGCodePartTwo < 0 && (!isProtonNSigma(static_cast<bool>(negChild.mLambda()), 0, trackCuts.getNsigmaTPC(negChild, o2::track::PID::Proton), trackCuts.getNsigmaTOF(negChild, o2::track::PID::Proton)) || !isPionNSigma(static_cast<bool>(negChild.mLambda()), 0, trackCuts.getNsigmaTPC(posChild, o2::track::PID::Pion), trackCuts.getNsigmaTOF(posChild, o2::track::PID::Pion)))) { // give momentum as 0 to only check TPC nSigma, not combined with TOF
           continue;
         }
 

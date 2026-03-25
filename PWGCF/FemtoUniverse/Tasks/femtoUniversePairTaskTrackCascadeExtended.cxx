@@ -198,9 +198,9 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     }
   }
 
-  bool isNSigmaCombined(float mom, float nsigmaTPCParticle, float nsigmaTOFParticle)
+  bool isNSigmaCombined(float mom, float nsigmaTPCParticle, float nsigmaTOFParticle, bool hasTOF)
   {
-    if (mom <= confmom) {
+    if (mom <= confmom || hasTOF == 0) {
       return (std::abs(nsigmaTPCParticle) < confNsigmaTPCParticle);
     } else {
       return (TMath::Hypot(nsigmaTOFParticle, nsigmaTPCParticle) < confNsigmaCombinedParticle);
@@ -231,7 +231,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     const float tpcNSigmas[3] = {aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePi()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStoreKa())};
     const float tofNSigmas[3] = {aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePi()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStoreKa())};
 
-    return isNSigmaCombined(part.p(), tpcNSigmas[id], tofNSigmas[id]);
+    return isNSigmaCombined(part.p(), tpcNSigmas[id], tofNSigmas[id], (part.pidCut() & 512u) != 0);
   }
 
   void init(InitContext const&)
@@ -462,13 +462,13 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       rXiQA.fill(HIST("hInvMpTmult"), part.pt(), part.mLambda(), multCol);
     }
 
-    if constexpr (std::experimental::is_detected<hasSigma, typename TableType::iterator>::value) {
-      for (const auto& part : groupPartsOne) {
+    for (const auto& part : groupPartsOne) {
+      if constexpr (std::experimental::is_detected<hasSigma, typename TableType::iterator>::value) {
         /// PID plot for track particle
         const float tpcNSigmas[3] = {aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePi()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStoreKa())};
         const float tofNSigmas[3] = {aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePi()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStoreKa())};
 
-        if (!isNSigmaCombined(part.p(), tpcNSigmas[confTrackChoicePartOne], tofNSigmas[confTrackChoicePartOne]))
+        if (!isNSigmaCombined(part.p(), tpcNSigmas[confTrackChoicePartOne], tofNSigmas[confTrackChoicePartOne], (part.pidCut() & 512u) != 0))
           continue;
 
         if (part.mAntiLambda() > 0) {
@@ -480,8 +480,21 @@ struct femtoUniversePairTaskTrackCascadeExtended {
           qaRegistry.fill(HIST("Tracks_neg/nSigmaTOF"), part.p(), tofNSigmas[confTrackChoicePartOne]);
           trackHistoPartOneNeg.fillQA<false, false>(part);
         }
+      } else {
+        if ((part.pidCut() & 512u) != 0) {
+          if ((part.pidCut() & (64u << confTrackChoicePartOne)) == 0)
+            continue;
+        } else if ((part.pidCut() & (1u << confTrackChoicePartOne)) == 0) {
+          continue;
+        }
+        if (part.mAntiLambda() > 0) {
+          trackHistoPartOnePos.fillQA<false, false>(part);
+        } else if (part.mAntiLambda() < 0) {
+          trackHistoPartOneNeg.fillQA<false, false>(part);
+        }
       }
     }
+
     for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
       // Cascade inv mass cut (mLambda stores Xi mass, mAntiLambda stores Omega mass)
       if (!invMCascade(p2.mLambda(), p2.mAntiLambda(), confCascType1))
@@ -491,8 +504,12 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         if (!isParticleCombined(p1, confTrackChoicePartOne))
           continue;
       } else {
-        if ((p1.pidCut() & (64u << confTrackChoicePartOne)) == 0)
+        if ((p1.pidCut() & 512u) != 0) {
+          if ((p1.pidCut() & (64u << confTrackChoicePartOne)) == 0)
+            continue;
+        } else if ((p1.pidCut() & (1u << confTrackChoicePartOne)) == 0) {
           continue;
+        }
       }
       // track cleaning
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
@@ -734,8 +751,12 @@ struct femtoUniversePairTaskTrackCascadeExtended {
           if (!isParticleCombined(p1, confTrackChoicePartOne))
             continue;
         } else {
-          if ((p1.pidCut() & (64u << confTrackChoicePartOne)) == 0)
+          if ((p1.pidCut() & 512u) != 0) {
+            if ((p1.pidCut() & (64u << confTrackChoicePartOne)) == 0)
+              continue;
+          } else if ((p1.pidCut() & (1u << confTrackChoicePartOne)) == 0) {
             continue;
+          }
         }
 
         const auto& posChild = parts.iteratorAt(p2.globalIndex() - 3 - parts.begin().globalIndex());
@@ -1144,11 +1165,15 @@ struct femtoUniversePairTaskTrackCascadeExtended {
           if (mcpart.pdgMCTruth() != kProton)
             continue;
           if constexpr (std::experimental::is_detected<hasSigma, typename TableType::iterator>::value) {
-            if (!isNSigmaCombined(part.p(), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr())))
+            if (!isNSigmaCombined(part.p(), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), (part.pidCut() & 512u) != 0))
               continue;
           } else {
-            if ((part.pidCut() & 64u) == 0)
+            if ((part.pidCut() & 512u) != 0) {
+              if ((part.pidCut() & 64u) == 0)
+                continue;
+            } else if ((part.pidCut() & 1u) == 0) {
               continue;
+            }
           }
           registryMCreco.fill(HIST("plus/MCrecoPr"), mcpart.pt(), mcpart.eta());
           registryMCreco.fill(HIST("plus/MCrecoPrPt"), mcpart.pt());
@@ -1157,11 +1182,15 @@ struct femtoUniversePairTaskTrackCascadeExtended {
           if (mcpart.pdgMCTruth() != kProtonBar)
             continue;
           if constexpr (std::experimental::is_detected<hasSigma, typename TableType::iterator>::value) {
-            if (!isNSigmaCombined(part.p(), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr())))
+            if (!isNSigmaCombined(part.p(), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), (part.pidCut() & 512u) != 0))
               continue;
           } else {
-            if ((part.pidCut() & 64u) == 0)
+            if ((part.pidCut() & 512u) != 0) {
+              if ((part.pidCut() & 64u) == 0)
+                continue;
+            } else if ((part.pidCut() & 1u) == 0) {
               continue;
+            }
           }
           registryMCreco.fill(HIST("minus/MCrecoPr"), mcpart.pt(), mcpart.eta());
           registryMCreco.fill(HIST("minus/MCrecoPrPt"), mcpart.pt());

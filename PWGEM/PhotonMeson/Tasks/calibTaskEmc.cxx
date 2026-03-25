@@ -17,6 +17,7 @@
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
@@ -182,6 +183,11 @@ struct CalibTaskEmc {
     o2::framework::Configurable<bool> rejectV0onITSib{"rejectV0onITSib", true, "flag to reject V0s on ITSib"};
     o2::framework::Configurable<bool> applyPrefilter{"applyPrefilter", false, "flag to apply prefilter to V0"};
 
+    o2::framework::Configurable<uint> mTooCloseType{"mTooCloseType", 2, "type of cut for too close (0 = no, 1 = squared distance, 2 = opening angle + dR) "};
+    o2::framework::Configurable<float> mMinV0DistSquared{"mMinV0DistSquared", 4.f, "min squared distance for mTooCloseType == 1"};
+    o2::framework::Configurable<float> mDeltaR{"mDeltaR", 6.f, "deltaR for mTooCloseType == 2"};
+    o2::framework::Configurable<float> mMinOpeningAngle{"mMinOpeningAngle", 0.02, "min opening angle for mTooCloseType == 2"};
+
     o2::framework::Configurable<int> minNClusterTPC{"minNClusterTPC", 0, "min NCluster TPC"};
     o2::framework::Configurable<int> minNCrossedRowsTPC{"minNCrossedRowsTPC", 40, "min ncrossed rows in TPC"};
     o2::framework::Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "min fraction of crossed rows over findable clusters in TPC"};
@@ -228,12 +234,12 @@ struct CalibTaskEmc {
   Filter collisionFilter = (nabs(aod::collision::posZ) <= eventcuts.cfgZvtxMax) && (aod::evsel::ft0cOccupancyInTimeRange <= eventcuts.cfgFT0COccupancyMax) && (aod::evsel::ft0cOccupancyInTimeRange >= eventcuts.cfgFT0COccupancyMin);
   using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::MinClusters, aod::NonLinEmcClusters>;
   using PCMPhotons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds, aod::NonLinV0s>;
-  using FilteredCollsWithQvecs = soa::Filtered<soa::Join<aod::EMEvents_004, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000>>;
-  using CollsWithQvecs = soa::Join<aod::EMEvents_004, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000>;
-  using Colls = soa::Join<aod::EMEvents_004, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000>;
+  using FilteredCollsWithQvecs = soa::Filtered<soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000>>;
+  using CollsWithQvecs = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000>;
+  using Colls = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000>;
 
-  PresliceOptional<EMCalPhotons> perCollisionEMC = o2::aod::emccluster::emphotoneventId;
-  PresliceOptional<PCMPhotons> perCollisionPCM = aod::v0photonkf::emphotoneventId;
+  PresliceOptional<EMCalPhotons> perCollisionEMC = o2::aod::emccluster::pmeventId;
+  PresliceOptional<PCMPhotons> perCollisionPCM = aod::v0photonkf::pmeventId;
   PresliceOptional<MinMTracks> perEMCClusterMT = o2::aod::mintm::minClusterId;
   PresliceOptional<MinMSTracks> perEMCClusterMS = o2::aod::mintm::minClusterId;
 
@@ -323,6 +329,10 @@ struct CalibTaskEmc {
     fV0PhotonCut.SetRxyRange(pcmcuts.minRV0, pcmcuts.maxRV0);
     fV0PhotonCut.SetAPRange(pcmcuts.maxAlphaAP, pcmcuts.maxQtAP);
     fV0PhotonCut.RejectITSib(pcmcuts.rejectV0onITSib);
+    fV0PhotonCut.setTooCloseType(static_cast<V0PhotonCut::TooCloseCuts>(pcmcuts.mTooCloseType.value));
+    fV0PhotonCut.setMinV0DistSquared(pcmcuts.mMinV0DistSquared);
+    fV0PhotonCut.setDeltaR(pcmcuts.mDeltaR);
+    fV0PhotonCut.setMinOpeningAngle(pcmcuts.mMinOpeningAngle);
 
     // for track
     fV0PhotonCut.SetMinNClustersTPC(pcmcuts.minNClusterTPC);
@@ -363,20 +373,25 @@ struct CalibTaskEmc {
     const AxisSpec thAxisEnergy{1000, 0., 100., "#it{E}_{clus} (GeV)"};
     const AxisSpec thAxisEta{320, -0.8, 0.8, "#eta"};
     const AxisSpec thAxisPhi{500, 0, 2 * 3.14159, "phi"};
+    const AxisSpec thAxisOpeningAngle{180, 0, o2::constants::math::PI, "opening angle (rad)"};
 
     const AxisSpec thnAxisMixingVtx{mixingConfig.cfgVtxBins, "#it{z} (cm)"};
     const AxisSpec thnAxisMixingCent{mixingConfig.cfgCentBins, "Centrality (%)"};
 
     if (doprocessEMCal || doprocessEMCalPCMC) {
-      registry.add("hSparsePi0", "m_{inv} vs p_T vs cent for same event", HistType::kTH3D, {thnAxisInvMass, thAxisEnergyCalib, thnAxisCent});
+      registry.add("hSparsePi0", "m_{inv} vs E vs cent for same event", HistType::kTH3D, {thnAxisInvMass, thAxisEnergyCalib, thnAxisCent});
+      registry.add("hOpeningAngleSE", "opening vs E vs cent for same event", HistType::kTH3D, {thAxisOpeningAngle, thAxisEnergyCalib, thnAxisCent});
     } else if (doprocessPCM) {
       registry.add("hSparsePi0", "m_{inv} vs p_T vs cent for same event", HistType::kTH3D, {thnAxisInvMass, thnAxisPtCalib, thnAxisCent});
+      registry.add("hOpeningAngleSE", "opening vs p_T vs cent for same event", HistType::kTH3D, {thAxisOpeningAngle, thnAxisPtCalib, thnAxisCent});
     }
 
     if (doprocessEMCalMixed || doprocessEMCalPCMMixed) {
       registry.add("hSparseBkgMix", "m_{inv} vs p_T vs cent for mixed event", HistType::kTH3D, {thnAxisInvMass, thAxisEnergyCalib, thnAxisCent});
+      registry.add("hOpeningAngleME", "opening vs E vs cent for same event", HistType::kTH3D, {thAxisOpeningAngle, thAxisEnergyCalib, thnAxisCent});
     } else if (doprocessPCMMixed) {
       registry.add("hSparseBkgMix", "m_{inv} vs p_T vs cent for mixed event", HistType::kTH3D, {thnAxisInvMass, thnAxisPtCalib, thnAxisCent});
+      registry.add("hOpeningAngleME", "opening vs p_T vs cent for same event", HistType::kTH3D, {thAxisOpeningAngle, thnAxisPtCalib, thnAxisCent});
     }
 
     if (doprocessEMCalMixed || doprocessEMCalPCMMixed || doprocessPCMMixed) {
@@ -427,12 +442,22 @@ struct CalibTaskEmc {
   /// \param mass is the invariant mass of the candidate
   /// \param pt is the transverse momentum of the candidate
   /// \param cent is the centrality of the collision
-  /// \param sp is the scalar product
   template <const int histType>
   void fillThn(const float mass, const float pt, const float cent)
   {
     static constexpr std::string_view HistTypes[3] = {"hSparsePi0", "hSparseBkgRot", "hSparseBkgMix"};
     registry.fill(HIST(HistTypes[histType]), mass, pt, cent);
+  }
+
+  /// Fill THnSparse
+  /// \param openingAngle opening angle between the two photons
+  /// \param pt is the transverse momentum of the candidate
+  /// \param cent is the centrality of the collision
+  template <const int histType>
+  void fillOpeningAngleHisto(const float openingAngle, const float pt, const float cent)
+  {
+    static constexpr std::string_view HistTypes[3] = {"hOpeningAngleSE", "hOpeningAngleRot", "hOpeningAngleME"};
+    registry.fill(HIST(HistTypes[histType]), openingAngle, pt, cent);
   }
 
   /// Get the centrality
@@ -635,6 +660,8 @@ struct CalibTaskEmc {
         continue;
       }
       registry.fill(HIST("hMesonCuts"), 6);
+      float cent = getCentrality(collision);
+      fillOpeningAngleHisto<0>(openingAngle, vMeson.Pt(), cent);
       runFlowAnalysis<0>(collision, vMeson, g1.e());
     }
   }
@@ -746,6 +773,8 @@ struct CalibTaskEmc {
           continue;
         }
         registry.fill(HIST("hMesonCutsMixed"), 6);
+        float cent = getCentrality(c1);
+        fillOpeningAngleHisto<2>(openingAngle, vMeson.Pt(), cent);
         runFlowAnalysis<2>(c1, vMeson, g1.e());
       }
     }
@@ -822,6 +851,8 @@ struct CalibTaskEmc {
           registry.fill(HIST("hMesonCuts"), 5);
           continue;
         }
+        float cent = getCentrality(collision);
+        fillOpeningAngleHisto<0>(openingAngle, vMeson.Pt(), cent);
         runFlowAnalysis<0>(collision, vMeson, g1.corrE());
       }
     }
@@ -912,6 +943,8 @@ struct CalibTaskEmc {
           continue;
         }
         registry.fill(HIST("hMesonCutsMixed"), 6);
+        float cent = getCentrality(c1);
+        fillOpeningAngleHisto<2>(openingAngle, vMeson.Pt(), cent);
         runFlowAnalysis<2>(c1, vMeson, g1.corrE());
       }
     }
@@ -972,6 +1005,8 @@ struct CalibTaskEmc {
           registry.fill(HIST("mesonQA/hAlphaPt"), asymmetry, photon1Pt);
         }
         registry.fill(HIST("hMesonCuts"), 6);
+        float cent = getCentrality(collision);
+        fillOpeningAngleHisto<0>(openingAngle, vMeson.Pt(), cent);
         runFlowAnalysis<0>(collision, vMeson, photon1Pt);
       }
     } // end of loop over collisions
@@ -1046,6 +1081,8 @@ struct CalibTaskEmc {
           registry.fill(HIST("mesonQA/hAlphaPtMixed"), asymmetry, photon1Pt);
         }
         registry.fill(HIST("hMesonCutsMixed"), 6);
+        float cent = getCentrality(c1);
+        fillOpeningAngleHisto<2>(openingAngle, vMeson.Pt(), cent);
         runFlowAnalysis<2>(c1, vMeson, photon1Pt);
       }
     }

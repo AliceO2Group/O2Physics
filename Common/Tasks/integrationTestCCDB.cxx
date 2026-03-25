@@ -103,12 +103,12 @@ struct integrationTestCCDB {
     lut = 0x0;
     const AxisSpec axis{1, 0.0f, 1.0f, ""};
     histos.add<TH1>("hDFs", "hDFs", HistType::kTH1F, {axis});
+
+    mRunNumber = 0;
   }
 
   void process(aod::BCsWithTimestamps const& bcs)
   {
-    mRunNumber = 0;
-
     auto bc = bcs.begin(); // first element
     histos.fill(HIST("hDFs"), 0.5f);
 
