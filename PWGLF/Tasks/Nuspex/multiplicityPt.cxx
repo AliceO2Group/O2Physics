@@ -70,17 +70,17 @@ struct MultiplicityPt {
   // Service
   Service<o2::framework::O2DatabasePDG> pdg;
   static constexpr int CentBinMax = 100;
-    static constexpr int  MultBinMax = 200;
-    static constexpr int RecMultBinMax = 100;
-    static constexpr int DebugCountMax = 20;
-    static constexpr int CentMultClasses = 10;
-    
-    enum INELCutSelection : int {
-        INEL = 0,
-        INELgt0 = 1,
-        INELgt1 = 2
+  static constexpr int MultBinMax = 200;
+  static constexpr int RecMultBinMax = 100;
+  static constexpr int DebugCountMax = 20;
+  static constexpr int CentMultClasses = 10;
 
-    };
+  enum INELCutSelection : int {
+    INEL = 0,
+    INELgt0 = 1,
+    INELgt1 = 2
+
+  };
 
   //===========================================================================
   // Configurable Parameters
@@ -175,10 +175,9 @@ struct MultiplicityPt {
     kNSpecies = 3
   };
 
-   
-    static constexpr int PDGPion = kPiPlus;
-    static constexpr int PDGKaon = kKPlus;
-    static constexpr int PDGProton = kProton;
+  static constexpr int PDGPion = kPiPlus;
+  static constexpr int PDGKaon = kKPlus;
+  static constexpr int PDGProton = kProton;
 
   //===========================================================================
   // Helper Functions
@@ -420,7 +419,7 @@ void MultiplicityPt::init(InitContext const&)
   }
 
   // Axis definitions
-    ConfigurableAxis ptBinning{"ptBinning", {VARIABLE_WIDTH, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 18.0, 20.0}, "pT bin limits"};
+  ConfigurableAxis ptBinning{"ptBinning", {VARIABLE_WIDTH, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 18.0, 20.0}, "pT bin limits"};
 
   AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
 
