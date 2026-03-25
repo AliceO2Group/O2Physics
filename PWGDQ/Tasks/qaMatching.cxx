@@ -31,6 +31,7 @@
 #include <Math/ProbFunc.h>
 
 #include <algorithm>
+#include <cinttypes>
 #include <iostream>
 #include <limits>
 #include <map>
@@ -38,6 +39,7 @@
 #include <string>
 #include <tuple>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -211,8 +213,13 @@ struct qaMatching {
   ///    Variables for histograms configuration
   Configurable<int> fNCandidatesMax{"cfgNCandidatesMax", 5, "Number of matching candidates stored for each muon track"};
   Configurable<int> fMftTrackMultiplicityMax{"cfgMftTrackMultiplicityMax", 1000, "Maximum number of MFT tracks per collision"};
+  Configurable<int> fQaMatchingAodDebug{"cfgQaMatchingAodDebug", 0, "If >0, print AO2D filling debug (0=off, N=max collisions)"};
+
+<<<<<<< HEAD
+=======
   double mBzAtMftCenter{0};
 
+>>>>>>> 597070af5 (mega linter issue)
   o2::globaltracking::MatchGlobalFwd mExtrap;
 
   using MatchingFunc_t = std::function<std::tuple<double, int>(const o2::dataformats::GlobalFwdTrack& mchtrack, const o2::track::TrackParCovFwd& mfttrack)>;
@@ -2891,8 +2898,8 @@ struct qaMatching {
       static_cast<float>(collision.posZ()));
 
     if (fQaMatchingAodDebug > 0 && debugCounter < fQaMatchingAodDebug) {
-      LOGF(info, "[AO2D] reducedEvent=%lld mftMult=%d",
-           static_cast<long long>(reducedEventId),
+      LOGF(info, "[AO2D] reducedEvent=%" PRId64 " mftMult=%d",
+           reducedEventId,
            static_cast<int>(mftMultiplicity));
       debugCounter += 1;
     }
