@@ -213,7 +213,6 @@ struct qaMatching {
   Configurable<int> fMftTrackMultiplicityMax{"cfgMftTrackMultiplicityMax", 1000, "Maximum number of MFT tracks per collision"};
   double mBzAtMftCenter{0};
 
-
   o2::globaltracking::MatchGlobalFwd mExtrap;
 
   using MatchingFunc_t = std::function<std::tuple<double, int>(const o2::dataformats::GlobalFwdTrack& mchtrack, const o2::track::TrackParCovFwd& mfttrack)>;
@@ -2875,7 +2874,6 @@ struct qaMatching {
           static_cast<int32_t>(candidate.matchRanking));
       }
     }
-
   }
 
   template <class TCOLLISION>
