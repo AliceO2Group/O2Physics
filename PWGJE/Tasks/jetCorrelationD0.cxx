@@ -118,7 +118,7 @@ DECLARE_SOA_COLUMN(D0JetDeltaPhi, d0JetDeltaPhi, float);
 DECLARE_SOA_COLUMN(D0JetDeltaPhiP, d0JetDeltaPhiP, float);
 } // namespace jetInfo
 
-DECLARE_SOA_TABLE_STAGED(JetDataTables, "JETDATATABLE",
+DECLARE_SOA_TABLE_STAGED(JetDataTables, "JETTABLE",
                          o2::soa::Index<>,
                          collisionInfo::CollisionTableId,
                          jetInfo::D0DataTableId,
@@ -363,9 +363,9 @@ struct JetCorrelationD0 {
 
   void processMcParticle(aod::JetMcCollision const& collision,
                          aod::CandidatesD0MCP const& d0McPCandidates,
-                         soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>> const& jets)
+                         soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents> const& jets)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) { // build without this
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
     tableMcCollision(collision.posZ());
@@ -405,16 +405,14 @@ struct JetCorrelationD0 {
 
   void processMcMatched(soa::Filtered<aod::JetCollisions>::iterator const& collision,
                         aod::CandidatesD0MCD const& d0Candidates,
-                        //soa::Filtered<aod::JetTracks> const& tracks,
-                        //soa::Filtered<aod::JetParticles> const& particles,
-                        aod::JMcTrackLbs const& tracks,
+                        aod::JetTracksMCD const& tracks,
                         aod::JetParticles const& particles,
-                        soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets> const& McDJets)
+                        soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets> const& McDJets,
+                        aod::ChargedMCParticleLevelJets const&)
   {
     if (!applyCollisionSelections(collision)) {
       return;
     }
-    //const auto& mcCollision = collision.mcCollision_as<aod::JetMcCollision>();
     tableCollision(collision.posZ());
     for (const auto& d0Candidate : d0Candidates) {
       if (d0Candidate.pt() < d0PtCutMin) { // once settled on a mlcut, then add the lower bound of the systematics as a cut here
@@ -434,13 +432,19 @@ struct JetCorrelationD0 {
         if (dPhiD > o2::constants::math::PI) {
           dPhiD = 2 * o2::constants::math::PI - dPhiD;
         }
+        if (std::abs(dPhiD - o2::constants::math::PI) > (o2::constants::math::PI / 2)) {
+          continue;
+        }
         if (McDJet.has_matchedJetGeo()) { // geometric matching
           for (auto const& McPJet : McDJet.template matchedJetGeo_as<aod::ChargedMCParticleLevelJets>()) {
             float dPhiP = RecoDecay::constrainAngle(McPJet.phi() - d0Particle.phi());
             if (dPhiP > o2::constants::math::PI) {
               dPhiP = 2 * o2::constants::math::PI - dPhiP;
             }
-            tableJetMatched(tableCollision.lastIndex(), // add dPhi for both cases
+            //if (std::abs(dPhiD - o2::constants::math::PI) > (o2::constants::math::PI / 2)) {
+            //  continue;
+            //}
+            tableJetMatched(tableCollision.lastIndex(),
                             McDJet.pt(),
                             McDJet.eta(),
                             McDJet.phi(),
