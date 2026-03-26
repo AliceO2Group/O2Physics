@@ -5489,12 +5489,12 @@ void VarManager::FillQVectorFromCentralFW(C const& collision, float* values)
   values[kR2EP_FV0ATPCNEG] = TMath::Cos(2 * getDeltaPsiInRange(epFV0a, epBNegs, 2));
   
   float S21C = values[kS11C] * values[kS11C];
-  //complex<double> Q21C(values[kQ2X0C] * values[kS11C], values[kQ2Y0C] * values[kS11C]);
+  complex<double> Q21C(values[kQ2X0C] * values[kS11C], values[kQ2Y0C] * values[kS11C]);
       
   // Fill necessary quantities for cumulant calculations with weighted Q-vectors
   values[kM11REF] = S21C - values[kS12C];
-  //values[kCORR2REF] = (norm(Q21C) - values[kS12C]) / values[kM11REF];
-  //values[kCORR2REF] = std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) ? 0 : values[kCORR2REF];
+  values[kCORR2REF] = (norm(Q21C) - values[kS12C]) / values[kM11REF];
+  values[kCORR2REF] = std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) ? 0 : values[kCORR2REF];
   values[kM11REF] = std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) ? 0 : values[kM11REF];
 }
 
