@@ -640,7 +640,7 @@ class HfFilterHelper
       mSigmaPars3Prongs[1] = 0.00176f;
       mDeltaMassPars3Prongs[0] = -0.013f;
       mDeltaMassPars3Prongs[1] = 0.00029f;
-    }  else if (recoPass == "2026_pass1") {
+    } else if (recoPass == "2026_pass1") {
       mSigmaPars2Prongs[0] = 0.01424f;
       mSigmaPars2Prongs[1] = 0.00178f;
       mDeltaMassPars2Prongs[0] = 0.004f;
