@@ -17,28 +17,23 @@
 /// \author Monalisa Melo <monalisa.melo@cern.ch>
 //
 
-#include "PWGHF/Core/DecayChannels.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
-#include "PWGJE/DataModel/JetSubtraction.h"
 
-#include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/ConfigContext.h>
 #include <Framework/Configurable.h>
-#include <Framework/DataProcessorSpec.h>
+#include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include "TVector3.h"
+#include <TVector3.h>
 
 #include <cmath>
 #include <string>
