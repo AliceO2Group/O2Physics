@@ -160,7 +160,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
   ConfigurableAxis confmTBins3D{"confmTBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT binning for the 3D plot: k* vs multiplicity vs mT (set <confUse3D> to true in order to use)"};
   ConfigurableAxis confMultBins3D{"confMultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "multiplicity binning for the 3D plot: k* vs multiplicity vs mT (set <confUse3D> to true in order to use)"};
 
-  /// Helicity ranges (approximate) and configurables
+  /// Helicity ranges and configurables
   Configurable<bool> cfgProcessHel{"cfgProcessHel", true, "Process particle pairs from all helicity ranges"};
   Configurable<bool> cfgProcessHel1{"cfgProcessHel1", false, "Process particle pairs from the helicity range 1"}; // 1.0 >= cosineTheta >= 0.1
   Configurable<bool> cfgProcessHel2{"cfgProcessHel2", false, "Process particle pairs from the helicity range 2"}; // 0.1 > cosineTheta >= -0.1
