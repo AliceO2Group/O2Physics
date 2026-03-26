@@ -25,10 +25,6 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
 #include "Framework/runDataProcessing.h"
-#include <Framework/ASoA.h>
-#include <Framework/HistogramSpec.h>
-
-#include <fairlogger/Logger.h>
 
 #include <string>
 #include <type_traits>
