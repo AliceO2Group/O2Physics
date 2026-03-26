@@ -481,6 +481,9 @@ struct HfFilter { // Main struct for HF triggers
   {
     for (const auto& collision : collisions) {
 
+      // all processed collisions
+      hProcessedEvents->Fill(0);
+
       bool keepEvent[kNtriggersHF]{false};
       bool isSelectedTVX = evSel.applyTVX ? collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) : true;
       bool isSelectedTFBorder = evSel.applyTFBorderCut ? collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) : true;
@@ -526,8 +529,6 @@ struct HfFilter { // Main struct for HF triggers
 
         currentRun = bc.runNumber();
       }
-
-      hProcessedEvents->Fill(0);
 
       std::vector<std::vector<int64_t>> indicesDau2Prong{}, indicesDau2ProngPrompt{};
 
