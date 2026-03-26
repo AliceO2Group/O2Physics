@@ -19,15 +19,15 @@
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamSelection.h"
 
-#include "Framework/HistogramRegistry.h"
-#include "ReconstructionDataFormats/PID.h"
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+
+#include <TH1.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <string>
 #include <vector>
-
-using namespace o2;
-using namespace o2::framework;
 
 namespace o2::analysis
 {
@@ -52,7 +52,7 @@ class FemtoDreamObjectSelection
   void fillSelectionHistogram()
   {
     int nBins = mSelections.size();
-    mQAHistogramRegistry->add((static_cast<std::string>(o2::aod::femtodreamparticle::ParticleTypeName[part]) + "/cuthist").c_str(), "; Cut; Value", kTH1F, {{nBins, 0, static_cast<double>(nBins)}});
+    mQAHistogramRegistry->add((static_cast<std::string>(o2::aod::femtodreamparticle::ParticleTypeName[part]) + "/cuthist").c_str(), "; Cut; Value", o2::framework::kTH1F, {{nBins, 0, static_cast<double>(nBins)}});
     auto hist = mQAHistogramRegistry->get<TH1>(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/cuthist"));
     for (size_t i = 0; i < mSelections.size(); ++i) {
       hist->GetXaxis()->SetBinLabel(i + 1, Form("%u", mSelections.at(i).getSelectionVariable()));
@@ -190,8 +190,8 @@ class FemtoDreamObjectSelection
   }
 
  protected:
-  HistogramRegistry* mHistogramRegistry;                                     ///< For Analysis QA output
-  HistogramRegistry* mQAHistogramRegistry;                                   ///< For QA output
+  o2::framework::HistogramRegistry* mHistogramRegistry;                      ///< For Analysis QA output
+  o2::framework::HistogramRegistry* mQAHistogramRegistry;                    ///< For QA output
   std::vector<FemtoDreamSelection<selValDataType, selVariable>> mSelections; ///< Vector containing all selections
 };
 

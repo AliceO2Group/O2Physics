@@ -18,14 +18,22 @@
 
 #include "PWGCF/DataModel/FemtoDerived.h"
 
-#include "Framework/HistogramRegistry.h"
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
 
+#include <TH2.h>
+#include <THnSparse.h>
+#include <TVector2.h>
+
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
-
-using namespace o2;
-using namespace o2::framework;
 
 namespace o2::analysis
 {
@@ -45,7 +53,7 @@ class FemtoDreamDetaDphiStar
   virtual ~FemtoDreamDetaDphiStar() = default;
   /// Initialization of the histograms and setting required values
   // atWhichRadiiToCut - at which radii apply deta dphi cut; 0 - PV; 1 - average phi at given tpc radii, 2 - at 80 cm
-  void init(HistogramRegistry* registry, HistogramRegistry* registryQA, float ldeltaPhiMax, float ldeltaEtaMax, bool lplotForEveryRadii, int meORse = 0, bool oldversion = true, float Q3Limit = 8., bool isMELambda = false, int atWhichRadiiToCut = 1, float radiiTPCtoCut = 85., bool fillTHSparse = false)
+  void init(o2::framework::HistogramRegistry* registry, o2::framework::HistogramRegistry* registryQA, float ldeltaPhiMax, float ldeltaEtaMax, bool lplotForEveryRadii, int meORse = 0, bool oldversion = true, float Q3Limit = 8., bool isMELambda = false, int atWhichRadiiToCut = 1, float radiiTPCtoCut = 85., bool fillTHSparse = false)
   {
     deltaPhiMax = ldeltaPhiMax;
     deltaEtaMax = ldeltaEtaMax;
@@ -61,53 +69,53 @@ class FemtoDreamDetaDphiStar
 
     if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && (mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kTrack || mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCascadeV0Child || mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCascadeBachelor)) {
       std::string dirName = static_cast<std::string>(dirNames[0]);
-      histdetadpi[0][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][0]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
-      histdetadpi[0][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][0]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
-      histdetadpi[0][2] = mHistogramRegistry->add<TH2>((dirName + "at_PV_before" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
-      histdetadpi[0][3] = mHistogramRegistry->add<TH2>((dirName + "at_PV_after" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+      histdetadpi[0][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][0]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+      histdetadpi[0][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][0]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+      histdetadpi[0][2] = mHistogramRegistry->add<TH2>((dirName + "at_PV_before" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+      histdetadpi[0][3] = mHistogramRegistry->add<TH2>((dirName + "at_PV_after" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
       if (plotForEveryRadii) {
         for (int i = 0; i < 9; i++) {
-          histdetadpiRadii[0][i] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+          histdetadpiRadii[0][i] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
         }
       }
       if (fillQA) {
-        histdetadpi_eta[0] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Eta" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #eta_{1}; #eta_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, -0.8, 0.8}, {100, -0.8, 0.8}});
-        histdetadpi_phi[0] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Phi" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #phi_{1}; #phi_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, 0, 6.28}, {100, 0, 6.28}});
+        histdetadpi_eta[0] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Eta" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #eta_{1}; #eta_{2}", o2::framework::kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, -0.8, 0.8}, {100, -0.8, 0.8}});
+        histdetadpi_phi[0] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Phi" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #phi_{1}; #phi_{2}", o2::framework::kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, 0, 6.28}, {100, 0, 6.28}});
       }
     }
     if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kV0) {
       for (int i = 0; i < 2; i++) {
         std::string dirName = static_cast<std::string>(dirNames[1]);
-        histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
-        histdetadpi[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
-        histdetadpi[i][2] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_before" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
-        histdetadpi[i][3] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_after" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][2] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_before" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][3] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_after" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
         if (plotForEveryRadii) {
           for (int j = 0; j < 9; j++) {
-            histdetadpiRadii[i][j] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[i][j]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+            histdetadpiRadii[i][j] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[i][j]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
           }
         }
         if (fillQA) {
-          histdetadpi_eta[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Eta_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #eta_{1}; #eta_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, -0.8, 0.8}, {100, -0.8, 0.8}});
-          histdetadpi_phi[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Phi_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #phi_{1}; #phi_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, 0, 6.28}, {100, 0, 6.28}});
+          histdetadpi_eta[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Eta_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #eta_{1}; #eta_{2}", o2::framework::kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, -0.8, 0.8}, {100, -0.8, 0.8}});
+          histdetadpi_phi[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Phi_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #phi_{1}; #phi_{2}", o2::framework::kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, 0, 6.28}, {100, 0, 6.28}});
         }
       }
     }
     if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kV0 && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kV0) {
       for (int i = 0; i < 4; i++) {
         std::string dirName = static_cast<std::string>(dirNames[1]);
-        histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
-        histdetadpi[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
-        histdetadpi[i][2] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_before" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
-        histdetadpi[i][3] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_after" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][2] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_before" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][3] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_after" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
         if (plotForEveryRadii) {
           for (int j = 0; j < 9; j++) {
-            histdetadpiRadii[i][j] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[i][j]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+            histdetadpiRadii[i][j] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[i][j]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
           }
         }
         if (fillQA) {
-          histdetadpi_eta[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Eta_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #eta_{1}; #eta_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, -0.8, 0.8}, {100, -0.8, 0.8}});
-          histdetadpi_phi[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Phi_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #phi_{1}; #phi_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, 0, 6.28}, {100, 0, 6.28}});
+          histdetadpi_eta[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Eta_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #eta_{1}; #eta_{2}", o2::framework::kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, -0.8, 0.8}, {100, -0.8, 0.8}});
+          histdetadpi_phi[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Phi_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #phi_{1}; #phi_{2}", o2::framework::kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, 0, 6.28}, {100, 0, 6.28}});
         }
       }
     }
@@ -120,36 +128,36 @@ class FemtoDreamDetaDphiStar
 
       for (int i = 0; i < nProng; i++) {
         std::string dirName = static_cast<std::string>(dirNames[2]);
-        histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
-        histdetadpi[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
-        histdetadpi[i][2] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_before" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
-        histdetadpi[i][3] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_after" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][2] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_before" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][3] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_after" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
         if (plotForEveryRadii) {
           for (int j = 0; j < 9; j++) {
-            histdetadpiRadii[i][j] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[i][j]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+            histdetadpiRadii[i][j] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[i][j]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
           }
         }
         if (fillQA) {
-          histdetadpi_eta[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Eta_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #eta_{1}; #eta_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, -0.8, 0.8}, {100, -0.8, 0.8}});
-          histdetadpi_phi[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Phi_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #phi_{1}; #phi_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, 0, 6.28}, {100, 0, 6.28}});
+          histdetadpi_eta[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Eta_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #eta_{1}; #eta_{2}", o2::framework::kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, -0.8, 0.8}, {100, -0.8, 0.8}});
+          histdetadpi_phi[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Phi_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #phi_{1}; #phi_{2}", o2::framework::kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, 0, 6.28}, {100, 0, 6.28}});
         }
       }
     }
     if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCascade) {
       for (int i = 0; i < 3; i++) {
         std::string dirName = static_cast<std::string>(dirNames[3]);
-        histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
-        histdetadpi[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
-        histdetadpi[i][2] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_before" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
-        histdetadpi[i][3] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_after" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][2] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_before" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][3] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_after" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
         if (plotForEveryRadii) {
           for (int j = 0; j < 9; j++) {
-            histdetadpiRadii[i][j] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[i][j]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+            histdetadpiRadii[i][j] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[i][j]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
           }
         }
         if (fillQA) {
-          histdetadpi_eta[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Eta_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #eta_{1}; #eta_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, -0.8, 0.8}, {100, -0.8, 0.8}});
-          histdetadpi_phi[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Phi_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #phi_{1}; #phi_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, 0, 6.28}, {100, 0, 6.28}});
+          histdetadpi_eta[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Eta_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #eta_{1}; #eta_{2}", o2::framework::kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, -0.8, 0.8}, {100, -0.8, 0.8}});
+          histdetadpi_phi[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Phi_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #phi_{1}; #phi_{2}", o2::framework::kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, 0, 6.28}, {100, 0, 6.28}});
         }
       }
     }
@@ -157,18 +165,18 @@ class FemtoDreamDetaDphiStar
 
       for (int i = 0; i < 4; i++) {
         std::string dirName = static_cast<std::string>(dirNames[4]);
-        histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
-        histdetadpi[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
-        histdetadpi[i][2] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_before" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
-        histdetadpi[i][3] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_after" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][2] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_before" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadpi[i][3] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_after" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
         if (plotForEveryRadii) {
           for (int j = 0; j < 9; j++) {
-            histdetadpiRadii[i][j] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[i][j]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+            histdetadpiRadii[i][j] = mHistogramRegistryQA->add<TH2>((dirName + static_cast<std::string>(histNamesRadii[i][j]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", o2::framework::kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
           }
         }
         if (fillQA) {
-          histdetadpi_eta[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Eta_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #eta_{1}; #eta_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, -0.8, 0.8}, {100, -0.8, 0.8}});
-          histdetadpi_phi[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Phi_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #phi_{1}; #phi_{2}", kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, 0, 6.28}, {100, 0, 6.28}});
+          histdetadpi_eta[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Eta_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #eta_{1}; #eta_{2}", o2::framework::kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, -0.8, 0.8}, {100, -0.8, 0.8}});
+          histdetadpi_phi[i] = mHistogramRegistry->add<THnSparse>((dirName + "dEtadPhi_Phi_" + std::to_string(i) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}; #phi_{1}; #phi_{2}", o2::framework::kTHnSparseF, {{100, -0.15, 0.15}, {100, -0.15, 0.15}, {100, 0, 6.28}, {100, 0, 6.28}});
         }
       }
     }
@@ -738,8 +746,8 @@ class FemtoDreamDetaDphiStar
   }
 
  private:
-  HistogramRegistry* mHistogramRegistry = nullptr;   ///< For main output
-  HistogramRegistry* mHistogramRegistryQA = nullptr; ///< For QA output
+  o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;   ///< For main output
+  o2::framework::HistogramRegistry* mHistogramRegistryQA = nullptr; ///< For QA output
   static constexpr std::string_view dirNames[5] = {"kTrack_kTrack/", "kTrack_kV0/", "kTrack_kCharmHadron/", "kTrack_kCascade/", "kV0_kReso/"};
 
   static constexpr std::string_view histNameSEorME[3] = {"_SEandME", "_SE", "_ME"};

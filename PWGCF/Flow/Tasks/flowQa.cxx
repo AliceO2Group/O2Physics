@@ -14,36 +14,51 @@
 /// \since  Feb/23/2025
 /// \brief  jira: PWGCF-254, QA for flow analysis
 
-#include <CCDB/BasicCCDBManager.h>
-#include <cmath>
-#include <vector>
-#include <unordered_map>
-#include <string>
-#include <memory>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/CCDB/ctpRateFetcher.h"
-
-#include "GFWPowerArray.h"
-#include "GFW.h"
-#include "GFWCumulant.h"
-#include "GFWWeights.h"
 #include "FlowContainer.h"
-#include "TList.h"
+#include "GFW.h"
+#include "GFWWeights.h"
+
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/StringHelpers.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TF1.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TNamed.h>
+#include <TObjArray.h>
 #include <TProfile.h>
 #include <TRandom3.h>
-#include <TObjArray.h>
-#include <TF1.h>
+#include <TString.h>
+
+#include <sys/types.h>
+
+#include <RtypesCore.h>
+
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

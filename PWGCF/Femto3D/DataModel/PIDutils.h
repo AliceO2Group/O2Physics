@@ -22,6 +22,8 @@
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 
+#include <Framework/Logger.h>
+
 #include <type_traits>
 #include <utility>
 #include <vector>

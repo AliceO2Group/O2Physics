@@ -16,7 +16,7 @@
 #ifndef PWGCF_FEMTO_CORE_HISTMANAGER_H_
 #define PWGCF_FEMTO_CORE_HISTMANAGER_H_
 
-#include "Framework/HistogramSpec.h"
+#include <Framework/HistogramSpec.h>
 
 #include <string>
 #include <string_view>

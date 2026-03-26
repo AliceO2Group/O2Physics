@@ -15,23 +15,20 @@
 
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_FLOWCONTAINER_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_FLOWCONTAINER_H_
-#include <vector>
-#include "TH3F.h"
-#include "TProfile2D.h"
-#include "TProfile.h"
-#include "TNamed.h"
-#include "TH1.h"
-#include "TMath.h"
-#include "TFile.h"
-#include "TAxis.h"
-#include "TString.h"
-#include "TObjArray.h"
-#include "TRandom.h"
-#include "TString.h"
-#include "TCollection.h"
-#include "TAxis.h"
-#include "ProfileSubset.h"
-#include "Framework/HistogramSpec.h"
+#include <Framework/HistogramSpec.h>
+
+#include <TAxis.h>
+#include <TCollection.h>
+#include <TFile.h>
+#include <TH1.h>
+#include <TNamed.h>
+#include <TObjArray.h>
+#include <TProfile.h>
+#include <TProfile2D.h>
+#include <TString.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
 
 class FlowContainer : public TNamed
 {
