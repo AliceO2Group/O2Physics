@@ -8,13 +8,17 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+//
+// \FIT bit thresholds
+// \author Sandor Lokos, sandor.lokos@cern.ch
+// \since  March 2026
 
-#ifndef PWGUD_CORE_SGCUTPARHOLDERLINKDEF_H_
-#define PWGUD_CORE_SGCUTPARHOLDERLINKDEF_H_
+#ifndef PWGUD_CORE_FITCUTPARHOLDERLINKDEF_H_
+#define PWGUD_CORE_FITCUTPARHOLDERLINKDEF_H_
 
 #pragma link off all globals;
 #pragma link off all classes;
 #pragma link off all functions;
-#pragma link C++ class SGCutParHolder + ;
+#pragma link C++ class FITCutParHolder + ;
 
-#endif // PWGUD_CORE_SGCUTPARHOLDERLINKDEF_H_
+#endif // PWGUD_CORE_FITCUTPARHOLDERLINKDEF_H_

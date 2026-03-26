@@ -42,9 +42,11 @@ class EMTrackCut : public TNamed
     if (!IsSelectedTrack(track, EMTrackCuts::kTrackPtRange)) {
       return false;
     }
+
     if (!IsSelectedTrack(track, EMTrackCuts::kTrackEtaRange)) {
       return false;
     }
+
     if (!IsSelectedTrack(track, EMTrackCuts::kTrackPhiRange)) {
       return false;
     }
@@ -69,15 +71,8 @@ class EMTrackCut : public TNamed
       case EMTrackCuts::kTrackPhiRange:
         return track.phi() > mMinTrackPhi && track.phi() < mMaxTrackPhi;
 
-      case EMTrackCuts::kTrackBit: {
-        // for (int i = 0; i < 10; i++) {
-        //   if ((mTrackBit & (1 << i)) > 0 && !((track.trackBit() & (1 << i)) > 0)) {
-        //     return false;
-        //   }
-        // }
-        // return true;
+      case EMTrackCuts::kTrackBit:
         return (track.trackBit() & mTrackBit) >= mTrackBit;
-      }
 
       default:
         return false;
@@ -91,14 +86,10 @@ class EMTrackCut : public TNamed
   void SetTrackBit(uint16_t bits);
 
  private:
-  // kinematic cuts
   float mMinTrackPt{0.f}, mMaxTrackPt{1e10f};      // range in pT
   float mMinTrackEta{-1e10f}, mMaxTrackEta{1e10f}; // range in eta
   float mMinTrackPhi{0.f}, mMaxTrackPhi{6.3};      // range in phi
-
-  // track quality cuts
   uint16_t mTrackBit{0};
-  // std::function<float(float)> mMaxDcaXYPtDep{}; // max dca in xy plane as function of pT
 
   ClassDef(EMTrackCut, 1);
 };
