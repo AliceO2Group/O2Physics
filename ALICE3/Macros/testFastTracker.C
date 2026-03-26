@@ -17,8 +17,7 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
-
-#include <fairlogger/Logger.h>
+#include <Framework/Logger.h>
 
 void testFastTracker(std::string geometryFile = "a3geo.ini")
 {

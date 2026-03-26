@@ -11,24 +11,37 @@
 
 #include "FastTracker.h"
 
-#include "Common/Core/TableHelper.h"
+#include "DetLayer.h"
+#include "GeometryContainer.h"
 
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <Framework/Logger.h>
+#include <MathUtils/Utils.h>
+#include <ReconstructionDataFormats/Track.h>
 #include <ReconstructionDataFormats/TrackParametrization.h>
 
-#include <TEnv.h>
-#include <THashList.h>
-#include <TMath.h>
-#include <TMatrixD.h>
+#include <TFile.h>
+#include <TGraph.h>
+#include <TMathBase.h>
+#include <TMatrixD.h> // IWYU pragma: keep (do not replace with TMatrixDfwd.h)
 #include <TMatrixDSymEigen.h>
+#include <TMatrixDSymfwd.h>
+#include <TMatrixDfwd.h>
 #include <TObject.h>
 #include <TRandom.h>
-#include <TSystem.h>
+#include <TString.h>
+#include <TVectorDfwd.h>
 
-#include <chrono>
-#include <fstream>
-#include <map>
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <string>
-#include <thread>
 #include <vector>
 
 namespace o2
