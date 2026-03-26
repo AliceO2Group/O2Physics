@@ -100,8 +100,8 @@ DECLARE_SOA_TABLE(D0McPTables, "AOD", "D0MCPTABLE",
 namespace jetInfo
 {
 // D0 tables
-DECLARE_SOA_INDEX_COLUMN(D0DataTable, d0Data);
-DECLARE_SOA_INDEX_COLUMN(D0McPTable, d0MCP);
+DECLARE_SOA_INDEX_COLUMN(D0DataTable, d0DataTable);
+DECLARE_SOA_INDEX_COLUMN(D0McPTable, d0McPTable);
 // Jet
 DECLARE_SOA_COLUMN(JetPt, jetPt, float);
 DECLARE_SOA_COLUMN(JetEta, jetEta, float);
@@ -419,7 +419,6 @@ struct JetCorrelationD0 {
       if (!isMatched) {
         continue; 
       }
-      //const auto& d0ParticleId = jethfutilities::matchedHFParticle(d0Particle, tracks, particles);
       for (const auto& McDJet : McDJets) {
         if (McDJet.pt() < jetPtCutMin) {
           continue;
@@ -437,7 +436,7 @@ struct JetCorrelationD0 {
             if (dPhiP > o2::constants::math::PI) {
               dPhiP = 2 * o2::constants::math::PI - dPhiP;
             }
-            // if (std::abs(dPhiD - o2::constants::math::PI) > (o2::constants::math::PI / 2)) {
+            // if (std::abs(dPhiP - o2::constants::math::PI) > (o2::constants::math::PI / 2)) {
             //   continue;
             // }
             tableJetMatched(tableCollision.lastIndex(),
