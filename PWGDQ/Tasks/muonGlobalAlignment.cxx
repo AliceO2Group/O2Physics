@@ -16,29 +16,67 @@
 #include "PWGDQ/Core/VarManager.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/EventSelection.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "GlobalTracking/MatchGlobalFwd.h"
-#include "MFTTracking/Constants.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <DetectorsBase/Propagator.h>
+#include <Field/MagneticField.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+#include <GlobalTracking/MatchGlobalFwd.h>
 #include <MCHBase/TrackerParam.h>
 #include <MCHGeometryTransformer/Transformations.h>
 #include <MCHTracking/Track.h>
 #include <MCHTracking/TrackExtrap.h>
 #include <MCHTracking/TrackFitter.h>
 #include <MCHTracking/TrackParam.h>
+#include <MFTTracking/Constants.h>
+#include <MathUtils/Cartesian.h>
+#include <ReconstructionDataFormats/GlobalFwdTrack.h>
+#include <ReconstructionDataFormats/TrackFwd.h>
+
+#include <Math/MatrixFunctions.h>
+#include <Math/MatrixRepresentationsStatic.h>
+#include <Math/SMatrix.h>
+#include <Math/SVector.h>
+#include <TGeoGlobalMagField.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <THnSparse.h>
+#include <TMath.h>
+
+#include <GPUROOTCartesianFwd.h>
+#include <RtypesCore.h>
 
 #include <algorithm>
-#include <limits>
+#include <array>
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <exception>
+#include <format>
+#include <iterator>
 #include <map>
+#include <memory>
 #include <random>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::mch;
