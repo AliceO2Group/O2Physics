@@ -25,15 +25,7 @@
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
-<<<<<<< HEAD
-=======
 
-<<<<<<< HEAD
-#include "PWGHF/Core/DecayChannels.h"
->>>>>>> 8fcbef4d9 (Fix: clang-formatting done manually)
-
-=======
->>>>>>> ee38d6bf6 (Fix: formatting with automatic git-clang-format feature)
 #include "Common/Core/RecoDecay.h"
 
 #include <CommonConstants/MathConstants.h>
@@ -451,28 +443,6 @@ struct HfFragmentationFunction {
 
             // obtain leading HF candidate in jet
             auto mcdcand = mcdjet.template candidates_first_as<TCandidatesMCD>();
-
-            // reflection information for storage: HF = +1, HFbar = -1, neither = 0
-            int matchedFrom = 0;
-            int decayChannel = 0;
-            if (jethfutilities::isD0Table<TCandidatesMCD>()) {
-              decayChannel = o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK;
-            } else if (jethfutilities::isLcTable<TCandidatesMCD>()) {
-              decayChannel = o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi;
-            }
-            int selectedAs = 0;
-
-            if (mcdcand.flagMcMatchRec() == decayChannel) { // matched to HF on truth level
-              matchedFrom = 1;
-            } else if (mcdcand.flagMcMatchRec() == -decayChannel) { // matched to HFbar on truth level
-              matchedFrom = -1;
-            }
-            // bitwise AND operation: Checks whether BIT(i) is set, regardless of other bits
-            if (mcdcand.candidateSelFlag() & BIT(0)) { // CandidateSelFlag == BIT(0) -> selected as HF
-              selectedAs = 1;
-            } else if (mcdcand.candidateSelFlag() & BIT(1)) { // CandidateSelFlag == BIT(1) -> selected as HFbar
-              selectedAs = -1;
-            }
 
             // reflection information for storage: HF = +1, HFbar = -1, neither = 0
             int matchedFrom = 0;
