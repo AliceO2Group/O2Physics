@@ -417,7 +417,7 @@ struct JetCorrelationD0 {
       bool isMatched = false;
       const auto& d0Particle = jethfutilities::matchedHFParticle(d0Candidate, tracks, particles, isMatched);
       if (!isMatched) {
-        continue; 
+        continue;
       }
       for (const auto& McDJet : McDJets) {
         if (McDJet.pt() < jetPtCutMin) {
