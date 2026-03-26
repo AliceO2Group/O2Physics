@@ -16,9 +16,10 @@
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_PROFILESUBSET_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_PROFILESUBSET_H_
 
-#include "TProfile.h"
-#include "TProfile2D.h"
-#include "TError.h"
+#include <TProfile.h>
+#include <TProfile2D.h>
+
+#include <Rtypes.h>
 
 class ProfileSubset : public TProfile2D
 {

@@ -20,18 +20,17 @@
 #ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMCONTAINERTHREEBODY_H_
 #define PWGCF_FEMTODREAM_CORE_FEMTODREAMCONTAINERTHREEBODY_H_
 
-#include <fairlogger/Logger.h>
-#include <vector>
-#include <string>
-
-#include "Framework/HistogramRegistry.h"
+#include "PWGCF/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamMath.h"
 
-#include "Math/Vector4D.h"
-#include "TMath.h"
-#include "TDatabasePDG.h"
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 
-using namespace o2::framework;
+#include <TDatabasePDG.h>
+
+#include <string>
+#include <string_view>
+#include <vector>
 
 namespace o2::analysis::femtoDream
 {
@@ -72,12 +71,12 @@ class FemtoDreamContainerThreeBody
   void init_base(std::string folderName, std::string femtoObs, T femtoObsAxis, T multAxis)
   {
 
-    mHistogramRegistry->add((folderName + "/relTripletDist").c_str(), ("; " + femtoObs + "; Entries").c_str(), kTH1F, {femtoObsAxis});
-    mHistogramRegistry->add((folderName + "/relTripletQ3Mult").c_str(), ("; " + femtoObs + "; Multiplicity").c_str(), kTH2F, {femtoObsAxis, multAxis});
-    mHistogramRegistry->add((folderName + "/mT1").c_str(), ";mT; Q3", kTH2F, {{1000, 0, 25}, femtoObsAxis});
-    mHistogramRegistry->add((folderName + "/mT2").c_str(), ";mT; Q3", kTH2F, {{1000, 0, 25}, femtoObsAxis});
-    mHistogramRegistry->add((folderName + "/mT3").c_str(), ";mT; Q3", kTH2F, {{1000, 0, 25}, femtoObsAxis});
-    mHistogramRegistry->add((folderName + "/mTAverage").c_str(), ";mT; Q3", kTH2F, {{1000, 0, 25}, femtoObsAxis});
+    mHistogramRegistry->add((folderName + "/relTripletDist").c_str(), ("; " + femtoObs + "; Entries").c_str(), o2::framework::kTH1F, {femtoObsAxis});
+    mHistogramRegistry->add((folderName + "/relTripletQ3Mult").c_str(), ("; " + femtoObs + "; Multiplicity").c_str(), o2::framework::kTH2F, {femtoObsAxis, multAxis});
+    mHistogramRegistry->add((folderName + "/mT1").c_str(), ";mT; Q3", o2::framework::kTH2F, {{1000, 0, 25}, femtoObsAxis});
+    mHistogramRegistry->add((folderName + "/mT2").c_str(), ";mT; Q3", o2::framework::kTH2F, {{1000, 0, 25}, femtoObsAxis});
+    mHistogramRegistry->add((folderName + "/mT3").c_str(), ";mT; Q3", o2::framework::kTH2F, {{1000, 0, 25}, femtoObsAxis});
+    mHistogramRegistry->add((folderName + "/mTAverage").c_str(), ";mT; Q3", o2::framework::kTH2F, {{1000, 0, 25}, femtoObsAxis});
   }
 
   /// Initializes specialized Monte Carlo truth histograms for the task in case of three-body femtoscopy
@@ -88,11 +87,11 @@ class FemtoDreamContainerThreeBody
   template <typename T>
   void init_MC(std::string folderName, std::string femtoObs, T femtoObsAxis, T multAxis)
   {
-    mHistogramRegistry->add((folderName + "/relTripletDist_ReconNoFake").c_str(), ("; " + femtoObs + "; Entries").c_str(), kTH1F, {femtoObsAxis});
-    mHistogramRegistry->add((folderName + "/relTripletQ3Mult_ReconNoFake").c_str(), ("; " + femtoObs + "; Multiplicity").c_str(), kTH2F, {femtoObsAxis, multAxis});
-    mHistogramRegistry->add((folderName + "/hNoMCtruthTripletCounter").c_str(), "; Counter; Entries", kTH1I, {{1, 0, 1}});
-    mHistogramRegistry->add((folderName + "/hFakeTripletCounter").c_str(), "; Counter; Entries", kTH1I, {{1, 0, 1}});
-    mHistogramRegistry->add((folderName + "/Q3_resolution").c_str(), "; #it{Q}_{3} reconstructed (GeV/#it{c}); #it{Q}_{3} truth (GeV/#it{c})", kTH2F, {femtoObsAxis, femtoObsAxis});
+    mHistogramRegistry->add((folderName + "/relTripletDist_ReconNoFake").c_str(), ("; " + femtoObs + "; Entries").c_str(), o2::framework::kTH1F, {femtoObsAxis});
+    mHistogramRegistry->add((folderName + "/relTripletQ3Mult_ReconNoFake").c_str(), ("; " + femtoObs + "; Multiplicity").c_str(), o2::framework::kTH2F, {femtoObsAxis, multAxis});
+    mHistogramRegistry->add((folderName + "/hNoMCtruthTripletCounter").c_str(), "; Counter; Entries", o2::framework::kTH1I, {{1, 0, 1}});
+    mHistogramRegistry->add((folderName + "/hFakeTripletCounter").c_str(), "; Counter; Entries", o2::framework::kTH1I, {{1, 0, 1}});
+    mHistogramRegistry->add((folderName + "/Q3_resolution").c_str(), "; #it{Q}_{3} reconstructed (GeV/#it{c}); #it{Q}_{3} truth (GeV/#it{c})", o2::framework::kTH2F, {femtoObsAxis, femtoObsAxis});
   }
 
   /// Templated function to initialize the histograms for the task in case of three-body femtoscopy
@@ -104,7 +103,7 @@ class FemtoDreamContainerThreeBody
   /// \param multBins multiplicity binning for the histograms
   /// \param isMC add Monte Carlo truth histograms to the output file
   template <typename T>
-  void init(HistogramRegistry* registry, T& Q3Bins, T& multBins, bool isMC)
+  void init(o2::framework::HistogramRegistry* registry, T& Q3Bins, T& multBins, bool isMC)
   {
     mHistogramRegistry = registry;
     std::string femtoObs;
@@ -220,7 +219,7 @@ class FemtoDreamContainerThreeBody
   }
 
  protected:
-  HistogramRegistry* mHistogramRegistry = nullptr;                                  ///< For QA output
+  o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;                   ///< For QA output
   static constexpr std::string_view mFolderSuffix[2] = {"SameEvent", "MixedEvent"}; ///< Folder naming for the output according to mEventType
   static constexpr femtoDreamContainerThreeBody::Observable mFemtoObs = obs;        ///< Femtoscopic observable to be computed (according to femtoDreamContainerThreeBody::Observable)
   static constexpr int mEventType = eventType;                                      ///< Type of the event (same/mixed, according to femtoDreamContainerThreeBody::EventType)

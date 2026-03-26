@@ -13,6 +13,7 @@
 /// \brief Tasks that computes correlation between three tracks
 /// \author Anton Riedel, TU München, anton.riedel@cern.ch
 
+#include "PWGCF/Femto/Core/closePairRejection.h"
 #include "PWGCF/Femto/Core/closeTripletRejection.h"
 #include "PWGCF/Femto/Core/collisionBuilder.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
@@ -24,16 +25,17 @@
 #include "PWGCF/Femto/Core/tripletHistManager.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/BinningPolicy.h"
-#include "Framework/Configurable.h"
-#include "Framework/Expressions.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/InitContext.h"
-#include "Framework/OutputObjHeader.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
 #include <map>
 #include <vector>

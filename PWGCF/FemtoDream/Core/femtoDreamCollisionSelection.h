@@ -16,21 +16,22 @@
 #ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMCOLLISIONSELECTION_H_
 #define PWGCF_FEMTODREAM_CORE_FEMTODREAMCOLLISIONSELECTION_H_
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
-#include "Common/Core/EventPlaneHelper.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Qvectors.h"
 
-#include "Framework/HistogramRegistry.h"
-#include "Framework/Logger.h"
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
 
-#include "TMath.h"
+#include <TH1.h>
+#include <TMath.h>
+#include <TMathBase.h>
 
-#include <iostream>
+#include <cmath>
+#include <cstddef>
+#include <memory>
 #include <string>
 #include <vector>
-
-using namespace o2::framework;
 
 namespace o2::analysis::femtoDream
 {
@@ -63,19 +64,19 @@ class FemtoDreamCollisionSelection
 
   /// Initializes histograms for the task
   /// \param registry Histogram registry to be passed
-  void init(HistogramRegistry* registry)
+  void init(o2::framework::HistogramRegistry* registry)
   {
     if (!mCutsSet) {
       LOGF(error, "Event selection not set - quitting!");
     }
     mHistogramRegistry = registry;
-    mHistogramRegistry->add("Event/Zvtx", "; vtx_{z} (cm); Entries", kTH1F, {{300, -12.5, 12.5}});
-    mHistogramRegistry->add("Event/MultPercentile", "; Multiplicity Percentile; Entries", kTH1F, {{100, 0, 100}});
-    mHistogramRegistry->add("Event/MultPercentileVSMultNTracksPV", "; Multiplicity Percentile; MultNTracks", kTH2F, {{100, 0, 100}, {200, 0, 200}});
-    mHistogramRegistry->add("Event/MultNTracksPV", "; MultNTracksPV; Entries", kTH1F, {{200, 0, 200}});
-    mHistogramRegistry->add("Event/MultNTracklets", "; MultNTrackslets; Entries", kTH1F, {{300, 0, 300}});
-    mHistogramRegistry->add("Event/MultTPC", "; MultTPC; Entries", kTH1F, {{600, 0, 600}});
-    mHistogramRegistry->add("Event/Sphericity", "; Sphericity; Entries", kTH1F, {{100, 0, 1}});
+    mHistogramRegistry->add("Event/Zvtx", "; vtx_{z} (cm); Entries", o2::framework::kTH1F, {{300, -12.5, 12.5}});
+    mHistogramRegistry->add("Event/MultPercentile", "; Multiplicity Percentile; Entries", o2::framework::kTH1F, {{100, 0, 100}});
+    mHistogramRegistry->add("Event/MultPercentileVSMultNTracksPV", "; Multiplicity Percentile; MultNTracks", o2::framework::kTH2F, {{100, 0, 100}, {200, 0, 200}});
+    mHistogramRegistry->add("Event/MultNTracksPV", "; MultNTracksPV; Entries", o2::framework::kTH1F, {{200, 0, 200}});
+    mHistogramRegistry->add("Event/MultNTracklets", "; MultNTrackslets; Entries", o2::framework::kTH1F, {{300, 0, 300}});
+    mHistogramRegistry->add("Event/MultTPC", "; MultTPC; Entries", o2::framework::kTH1F, {{600, 0, 600}});
+    mHistogramRegistry->add("Event/Sphericity", "; Sphericity; Entries", o2::framework::kTH1F, {{100, 0, 1}});
   }
 
   /// Print some debug information
@@ -214,41 +215,41 @@ class FemtoDreamCollisionSelection
 
   /// Initializes histograms for qn bin
   /// \param registry Histogram registry to be passed
-  void initEPQA(HistogramRegistry* registry)
+  void initEPQA(o2::framework::HistogramRegistry* registry)
   {
     mHistogramQn = registry;
-    mHistogramQn->add("Event/centFT0CBeforeQn", "; cent", kTH1F, {{10, 0, 100}});
-    mHistogramQn->add("Event/centFT0CAfterQn", "; cent", kTH1F, {{10, 0, 100}});
-    mHistogramQn->add("Event/centVsqn", "; cent; qn", kTH2F, {{10, 0, 100}, {1000, 0, 1000}});
-    mHistogramQn->add("Event/centVsqnVsSpher", "; cent; qn; Sphericity", kTH3F, {{10, 0, 100}, {100, 0, 1000}, {100, 0, 1}});
-    mHistogramQn->add("Event/qnBin", "; qnBin; entries", kTH1F, {{20, 0, 20}});
-    mHistogramQn->add("Event/psiEP", "; #Psi_{EP} (deg); entries", kTH1F, {{100, 0, 180}});
-    mHistogramQn->add("Event/epReso_FT0CTPC", "; cent; qnBin; reso_ft0c_tpc", kTH2F, {{10, 0, 100}, {10, 0, 10}});
-    mHistogramQn->add("Event/epReso_FT0ATPC", "; cent; qnBin; reso_ft0a_tpc", kTH2F, {{10, 0, 100}, {10, 0, 10}});
-    mHistogramQn->add("Event/epReso_FT0CFT0A", "; cent; qnBin; reso_ft0c_ft0a", kTH2F, {{10, 0, 100}, {10, 0, 10}});
-    mHistogramQn->add("Event/epReso_count", "; cent; qnBin; count", kTH2F, {{10, 0, 100}, {10, 0, 10}});
+    mHistogramQn->add("Event/centFT0CBeforeQn", "; cent", o2::framework::kTH1F, {{10, 0, 100}});
+    mHistogramQn->add("Event/centFT0CAfterQn", "; cent", o2::framework::kTH1F, {{10, 0, 100}});
+    mHistogramQn->add("Event/centVsqn", "; cent; qn", o2::framework::kTH2F, {{10, 0, 100}, {1000, 0, 1000}});
+    mHistogramQn->add("Event/centVsqnVsSpher", "; cent; qn; Sphericity", o2::framework::kTH3F, {{10, 0, 100}, {100, 0, 1000}, {100, 0, 1}});
+    mHistogramQn->add("Event/qnBin", "; qnBin; entries", o2::framework::kTH1F, {{20, 0, 20}});
+    mHistogramQn->add("Event/psiEP", "; #Psi_{EP} (deg); entries", o2::framework::kTH1F, {{100, 0, 180}});
+    mHistogramQn->add("Event/epReso_FT0CTPC", "; cent; qnBin; reso_ft0c_tpc", o2::framework::kTH2F, {{10, 0, 100}, {10, 0, 10}});
+    mHistogramQn->add("Event/epReso_FT0ATPC", "; cent; qnBin; reso_ft0a_tpc", o2::framework::kTH2F, {{10, 0, 100}, {10, 0, 10}});
+    mHistogramQn->add("Event/epReso_FT0CFT0A", "; cent; qnBin; reso_ft0c_ft0a", o2::framework::kTH2F, {{10, 0, 100}, {10, 0, 10}});
+    mHistogramQn->add("Event/epReso_count", "; cent; qnBin; count", o2::framework::kTH2F, {{10, 0, 100}, {10, 0, 10}});
 
     return;
   }
 
   /// Initializes histograms for the flow calculation
   /// \param registry Histogram registry to be passed
-  void initFlow(HistogramRegistry* registry, bool doQnSeparation, int mumQnBins = 10, int centBins = 10)
+  void initFlow(o2::framework::HistogramRegistry* registry, bool doQnSeparation, int mumQnBins = 10, int centBins = 10)
   {
     if (!mCutsSet) {
       LOGF(error, "Event selection not set - quitting!");
     }
 
     mHistogramQn = registry;
-    mHistogramQn->add("Event/hN2allQn", ";centrality; #sum Re(Q_{2,A} Q_{2,B}^{*})", kTH1F, {{centBins, 0, 100}});
-    mHistogramQn->add("Event/hD2allQn", ";centrality; #sum (W_{A} W_{B})", kTH1F, {{centBins, 0, 100}});
+    mHistogramQn->add("Event/hN2allQn", ";centrality; #sum Re(Q_{2,A} Q_{2,B}^{*})", o2::framework::kTH1F, {{centBins, 0, 100}});
+    mHistogramQn->add("Event/hD2allQn", ";centrality; #sum (W_{A} W_{B})", o2::framework::kTH1F, {{centBins, 0, 100}});
     mHistogramQn->get<TH1>(HIST("Event/hN2allQn"))->Sumw2();
     mHistogramQn->get<TH1>(HIST("Event/hD2allQn"))->Sumw2();
 
     if (doQnSeparation) {
       for (int iqn(0); iqn < mumQnBins; ++iqn) {
-        hN2.push_back(mHistogramQn->add(("Qn/hN2_" + std::to_string(iqn)).c_str(), ";centrality; #sum Re(Q_{2,A} Q_{2,B}^{*})", kTH1F, {{centBins, 0, 100}}));
-        hD2.push_back(mHistogramQn->add(("Qn/hD2_" + std::to_string(iqn)).c_str(), ";centrality; #sum (W_{A} W_{B})", kTH1F, {{centBins, 0, 100}}));
+        hN2.push_back(mHistogramQn->add(("Qn/hN2_" + std::to_string(iqn)).c_str(), ";centrality; #sum Re(Q_{2,A} Q_{2,B}^{*})", o2::framework::kTH1F, {{centBins, 0, 100}}));
+        hD2.push_back(mHistogramQn->add(("Qn/hD2_" + std::to_string(iqn)).c_str(), ";centrality; #sum (W_{A} W_{B})", o2::framework::kTH1F, {{centBins, 0, 100}}));
       }
       for (int iqn(0); iqn < mumQnBins; ++iqn) {
         std::get<std::shared_ptr<TH1>>(hN2[iqn])->Sumw2();
@@ -532,20 +533,20 @@ class FemtoDreamCollisionSelection
   }
 
  private:
-  HistogramRegistry* mHistogramRegistry = nullptr; ///< For QA output
-  bool mCutsSet = false;                           ///< Protection against running without cuts
-  bool mCheckTrigger = false;                      ///< Check for trigger
-  bool mCheckOffline = false;                      ///< Check for offline criteria (might change)
-  bool mAddCheckOffline = false;                   ///< Additional check for offline criteria (added to sel8 soon)
-  bool mCheckIsRun3 = false;                       ///< Check if running on Pilot Beam
-  triggerAliases mTrigger = kINT7;                 ///< Trigger to check for
-  float mZvtxMax = 999.f;                          ///< Maximal deviation from nominal z-vertex (cm)
+  o2::framework::HistogramRegistry* mHistogramRegistry = nullptr; ///< For QA output
+  bool mCutsSet = false;                                          ///< Protection against running without cuts
+  bool mCheckTrigger = false;                                     ///< Check for trigger
+  bool mCheckOffline = false;                                     ///< Check for offline criteria (might change)
+  bool mAddCheckOffline = false;                                  ///< Additional check for offline criteria (added to sel8 soon)
+  bool mCheckIsRun3 = false;                                      ///< Check if running on Pilot Beam
+  triggerAliases mTrigger = kINT7;                                ///< Trigger to check for
+  float mZvtxMax = 999.f;                                         ///< Maximal deviation from nominal z-vertex (cm)
   float mMinSphericity = 0.f;
   float mSphericityPtmin = 0.f;
   int mQnBin = -999;
-  HistogramRegistry* mHistogramQn = nullptr; ///< For flow cumulant output
-  std::vector<HistPtr> hN2;                  ///< Histograms of c22 per Qn bin
-  std::vector<HistPtr> hD2;                  ///< Histograms of c22 per Qn bin
+  o2::framework::HistogramRegistry* mHistogramQn = nullptr; ///< For flow cumulant output
+  std::vector<o2::framework::HistPtr> hN2;                  ///< Histograms of c22 per Qn bin
+  std::vector<o2::framework::HistPtr> hD2;                  ///< Histograms of c22 per Qn bin
 };
 } // namespace o2::analysis::femtoDream
 

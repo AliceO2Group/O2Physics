@@ -15,46 +15,47 @@
 /// \since  Sep/10/2025
 
 #include "PWGCF/Core/CorrelationContainer.h"
-#include "PWGCF/Core/PairCuts.h"
-#include "PWGCF/DataModel/CorrelationsDerived.h"
-#include "PWGCF/GenericFramework/Core/FlowContainer.h"
-#include "PWGCF/GenericFramework/Core/GFW.h"
-#include "PWGCF/GenericFramework/Core/GFWCumulant.h"
-#include "PWGCF/GenericFramework/Core/GFWPowerArray.h"
-#include "PWGCF/GenericFramework/Core/GFWWeights.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/MathConstants.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsCommonDataFormats/AlignParam.h"
-#include "FT0Base/Geometry.h"
-#include "FV0Base/Geometry.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/PID.h"
-#include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <DetectorsCommonDataFormats/AlignParam.h>
+#include <FT0Base/Geometry.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/StepTHn.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include "TF1.h"
-#include "TRandom3.h"
-#include <TPDGCode.h>
+#include <TF1.h>
+#include <TFile.h>
+#include <TH3.h>
+#include <TRandom3.h>
+#include <TString.h>
 
+#include <algorithm>
+#include <array>
+#include <chrono>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <string>
@@ -64,6 +65,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace constants::math;
 
 // define the filtered collisions and tracks
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
@@ -157,19 +159,6 @@ struct LongRangeDihadronCor {
     O2_DEFINE_CONFIGURABLE(cfgMirrorFT0CDeadChannels, bool, false, "If true, mirror FT0C channels 177->145, 176->144, 178->146, 179->147, 139->115")
     O2_DEFINE_CONFIGURABLE(cfgRunbyRunAmplitudeFT0, bool, false, "Produce run-by-run FT0 amplitude distribution");
   } cfgFwdConfig;
-  struct : ConfigurableGroup {
-    O2_DEFINE_CONFIGURABLE(gfwOutput, bool, false, "produce cumulant results, off by default");
-    O2_DEFINE_CONFIGURABLE(gfwNbootstrap, int, 30, "Number of subsamples")
-    O2_DEFINE_CONFIGURABLE(gfwAcceptance, std::string, "", "CCDB path to acceptance object")
-    O2_DEFINE_CONFIGURABLE(gfwUseNch, bool, false, "use multiplicity as x axis");
-    ConfigurableAxis gfwAxisIndependent{"gfwAxisIndependent", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "X axis for histograms"};
-    Configurable<std::vector<std::string>> gfwCorr{"gfwCorr", std::vector<std::string>{"TPC {2} FT0A {-2}"}, "User defined GFW CorrelatorConfig"};
-    Configurable<std::vector<std::string>> gfwName{"gfwName", std::vector<std::string>{"TpcFt0A22"}, "User defined GFW Name"};
-    GFW* fGFW = new GFW();
-    std::vector<GFW::CorrConfig> corrconfigs;
-    TAxis* fPtAxis;
-    TRandom3* fRndm = new TRandom3(0);
-  } cfgCumulantConfig;
 
   SliceCache cache;
 
@@ -212,7 +201,6 @@ struct LongRangeDihadronCor {
   // Corrections
   TH3D* mEfficiency = nullptr;
   TH1D* mCentralityWeight = nullptr;
-  GFWWeights* mAcceptance = nullptr;
   bool correctionsLoaded = false;
 
   // Define the outputs
@@ -223,8 +211,6 @@ struct LongRangeDihadronCor {
   OutputObj<CorrelationContainer> sameFt0aFt0c{"sameEvent_FT0A_FT0C"};
   OutputObj<CorrelationContainer> mixedFt0aFt0c{"mixedEvent_FT0A_FT0C"};
   HistogramRegistry registry{"registry"};
-  OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
-  OutputObj<FlowContainer> fFCgen{FlowContainer("FlowContainer_gen")};
 
   // define global variables
   TRandom3* gRandom = new TRandom3();
@@ -282,10 +268,6 @@ struct LongRangeDihadronCor {
     kFT0CMirrorChannelStart = 144,
     kFT0CMirrorChannelEnd = 147,
     kFT0CMirrorChannelInnerRing = 115
-  };
-  enum DataType {
-    kReco,
-    kGen
   };
   std::array<float, 6> tofNsigmaCut;
   std::array<float, 6> itsNsigmaCut;
@@ -461,69 +443,6 @@ struct LongRangeDihadronCor {
     if (doprocessSameFt0aFt0c) {
       sameFt0aFt0c.setObject(new CorrelationContainer("sameEvent_FT0A_FT0C", "sameEvent_FT0A_FT0C", corrAxisFt0aFt0c, effAxis, userAxis));
       mixedFt0aFt0c.setObject(new CorrelationContainer("mixedEvent_FT0A_FT0C", "mixedEvent_FT0A_FT0C", corrAxisFt0aFt0c, effAxis, userAxis));
-    }
-
-    if (cfgCumulantConfig.gfwOutput && doprocessSameTpcFt0a && doprocessSameTpcFt0c) {
-      LOGF(fatal, "If you enable gfwOutput, you can only enable processSameTpcFt0a or processSameTpcFt0c, NOT both.");
-    }
-    if (cfgCumulantConfig.gfwOutput) {
-      o2::framework::AxisSpec axis = axisPt;
-      int nPtBins = axis.binEdges.size() - 1;
-      double* ptBins = &(axis.binEdges)[0];
-      cfgCumulantConfig.fPtAxis = new TAxis(nPtBins, ptBins);
-
-      std::vector<std::string> userDefineGFWCorr = cfgCumulantConfig.gfwCorr;
-      std::vector<std::string> userDefineGFWName = cfgCumulantConfig.gfwName;
-      TObjArray* oba = new TObjArray();
-      if (userDefineGFWName.size() != userDefineGFWCorr.size()) {
-        LOGF(fatal, "The GFWConfig names you provided are NOT matching with configurations. userDefineGFWName.size(): %d, userDefineGFWCorr.size(): %d", userDefineGFWName.size(), userDefineGFWCorr.size());
-      }
-      LOGF(info, "User adding FlowContainer Array:");
-      if (!userDefineGFWCorr.empty() && !userDefineGFWName.empty()) {
-        for (uint i = 0; i < userDefineGFWName.size(); i++) {
-          if (userDefineGFWCorr.at(i).find("poi") != std::string::npos) {
-            LOGF(info, "%d: pT-diff array %s", i, userDefineGFWName.at(i).c_str());
-            for (auto iPt = 0; iPt < cfgCumulantConfig.fPtAxis->GetNbins(); iPt++)
-              oba->Add(new TNamed(Form("%s_pt_%i", userDefineGFWName.at(i).c_str(), iPt + 1), Form("%s_pTDiff", userDefineGFWName.at(i).c_str())));
-          } else {
-            LOGF(info, "%d: %s", i, userDefineGFWName.at(i).c_str());
-            oba->Add(new TNamed(userDefineGFWName.at(i).c_str(), userDefineGFWName.at(i).c_str()));
-          }
-        }
-      }
-      fFC->SetName("FlowContainer");
-      fFC->SetXAxis(cfgCumulantConfig.fPtAxis);
-      fFC->Initialize(oba, cfgCumulantConfig.gfwAxisIndependent, cfgCumulantConfig.gfwNbootstrap);
-      fFCgen->SetName("FlowContainer_gen");
-      fFCgen->SetXAxis(cfgCumulantConfig.fPtAxis);
-      fFCgen->Initialize(oba, cfgCumulantConfig.gfwAxisIndependent, cfgCumulantConfig.gfwNbootstrap);
-
-      cfgCumulantConfig.fGFW->AddRegion("TPC", -0.8, 0.8, 1, 1);
-      cfgCumulantConfig.fGFW->AddRegion("TPCpoi", -0.8, 0.8, 1 + cfgCumulantConfig.fPtAxis->GetNbins(), 2);
-      cfgCumulantConfig.fGFW->AddRegion("TPCol", -0.8, 0.8, 1 + cfgCumulantConfig.fPtAxis->GetNbins(), 4);
-      cfgCumulantConfig.fGFW->AddRegion("FT0A", 3.5, 4.9, 1, 1);
-      cfgCumulantConfig.fGFW->AddRegion("FT0C", -3.3, -2.1, 1, 1);
-      cfgCumulantConfig.fGFW->AddRegion("FV0", 2.2, 5.1, 1, 1);
-
-      if (!userDefineGFWCorr.empty() && !userDefineGFWName.empty()) {
-        LOGF(info, "User adding GFW CorrelatorConfig:");
-        // attentaion: here we follow the index of cfgUserDefineGFWCorr
-        for (uint i = 0; i < userDefineGFWCorr.size(); i++) {
-          if (i >= userDefineGFWName.size()) {
-            LOGF(fatal, "The names you provided are more than configurations. userDefineGFWName.size(): %d > userDefineGFWCorr.size(): %d", userDefineGFWName.size(), userDefineGFWCorr.size());
-            break;
-          }
-          if (userDefineGFWCorr.at(i).find("poi") != std::string::npos) {
-            cfgCumulantConfig.corrconfigs.push_back(cfgCumulantConfig.fGFW->GetCorrelatorConfig(userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str(), kTRUE));
-            LOGF(info, "corrconfigs.at(%d): enable pt-Diff for %s %s", cfgCumulantConfig.corrconfigs.size() - 1, userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str());
-          } else {
-            cfgCumulantConfig.corrconfigs.push_back(cfgCumulantConfig.fGFW->GetCorrelatorConfig(userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str(), kFALSE));
-            LOGF(info, "corrconfigs.at(%d): %s %s", cfgCumulantConfig.corrconfigs.size() - 1, userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str());
-          }
-        }
-      }
-
-      cfgCumulantConfig.fGFW->CreateRegions();
     }
 
     LOGF(info, "End of init");
@@ -711,13 +630,6 @@ struct LongRangeDihadronCor {
       }
       LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgCentralityWeight.value.c_str(), (void*)mCentralityWeight);
     }
-    if (cfgCumulantConfig.gfwOutput && cfgCumulantConfig.gfwAcceptance.value.empty() == false) {
-      mAcceptance = ccdb->getForTimeStamp<GFWWeights>(cfgCumulantConfig.gfwAcceptance, timestamp);
-      if (mAcceptance)
-        LOGF(info, "Loaded acceptance weights from %s (%p)", cfgCumulantConfig.gfwAcceptance.value.c_str(), (void*)mAcceptance);
-      else
-        LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgCumulantConfig.gfwAcceptance.value.c_str(), (void*)mAcceptance);
-    }
     correctionsLoaded = true;
   }
 
@@ -749,80 +661,6 @@ struct LongRangeDihadronCor {
       return false;
     weightCent = weight;
     return true;
-  }
-
-  bool getAcceptanceWeight(float& weight_nua, float phi, float eta, float vtxz)
-  {
-    if (mAcceptance)
-      weight_nua = mAcceptance->getNUA(phi, eta, vtxz);
-    else
-      weight_nua = 1;
-    return true;
-  }
-
-  template <char... chars>
-  void fillProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent)
-  {
-    double dnx, val;
-    dnx = cfgCumulantConfig.fGFW->Calculate(corrconf, 0, kTRUE).real();
-    if (dnx == 0)
-      return;
-    if (!corrconf.pTDif) {
-      val = cfgCumulantConfig.fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
-      if (std::fabs(val) < 1)
-        registry.fill(tarName, cent, val, dnx);
-      return;
-    }
-    return;
-  }
-
-  template <DataType dt>
-  void fillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
-  {
-    double dnx, val;
-    dnx = cfgCumulantConfig.fGFW->Calculate(corrconf, 0, kTRUE).real();
-    if (!corrconf.pTDif) {
-      if (dnx == 0)
-        return;
-      val = cfgCumulantConfig.fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
-      if (std::fabs(val) < 1) {
-        (dt == kGen) ? fFCgen->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm) : fFC->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
-      }
-      return;
-    }
-    for (auto i = 1; i <= cfgCumulantConfig.fPtAxis->GetNbins(); i++) {
-      dnx = cfgCumulantConfig.fGFW->Calculate(corrconf, i - 1, kTRUE).real();
-      if (dnx == 0)
-        continue;
-      val = cfgCumulantConfig.fGFW->Calculate(corrconf, i - 1, kFALSE).real() / dnx;
-      if (std::fabs(val) < 1) {
-        (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
-      }
-    }
-    return;
-  }
-
-  template <typename TFT0s>
-  void fillGFWFT0(TFT0s const& ft0, int corType)
-  {
-    std::size_t channelSize = 0;
-    if (corType == kFT0C) {
-      channelSize = ft0.channelC().size();
-    } else if (corType == kFT0A) {
-      channelSize = ft0.channelA().size();
-    } else {
-      LOGF(fatal, "Cor Index %d out of range", corType);
-    }
-    for (std::size_t iCh = 0; iCh < channelSize; iCh++) {
-      int chanelid = 0;
-      float ampl = 0.;
-      getChannel(ft0, iCh, chanelid, ampl, corType, MixedEvent + 1);
-      auto phi = getPhiFT0(chanelid, corType);
-      auto eta = getEtaFT0(chanelid, corType);
-      for (float ihit = 0; ihit < ampl; ihit++) {
-        cfgCumulantConfig.fGFW->Fill(eta, 1, phi, 1., 1);
-      }
-    }
   }
 
   // fill multiple histograms
@@ -1186,40 +1024,6 @@ struct LongRangeDihadronCor {
     registry.fill(HIST("Nch"), tracks.size());
     registry.fill(HIST("zVtx"), collision.posZ());
 
-    if (cfgCumulantConfig.gfwOutput) {
-      cfgCumulantConfig.fGFW->Clear();
-      float lRandom = cfgCumulantConfig.fRndm->Rndm();
-      float weff = 1, wacc = 1;
-      float independent = cent;
-      if (cfgCumulantConfig.gfwUseNch)
-        independent = static_cast<float>(tracks.size());
-
-      // fill TPC Q-vector
-      for (const auto& track : tracks) {
-        if (!trackSelected(track))
-          continue;
-        bool withinPtPOI = (0.2 < track.pt()) && (track.pt() < 10.0); // o2-linter: disable=magic-number (within POI pT range)
-        bool withinPtRef = (0.2 < track.pt()) && (track.pt() < 3.0);  // o2-linter: disable=magic-number (within RF pT range)
-        getAcceptanceWeight(wacc, track.phi(), track.eta(), collision.posZ());
-        if (!getEfficiencyCorrection(weff, track.eta(), track.pt(), collision.posZ()))
-          continue;
-        if (withinPtRef)
-          cfgCumulantConfig.fGFW->Fill(track.eta(), cfgCumulantConfig.fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
-        if (withinPtPOI)
-          cfgCumulantConfig.fGFW->Fill(track.eta(), cfgCumulantConfig.fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 2);
-        if (withinPtPOI && withinPtRef)
-          cfgCumulantConfig.fGFW->Fill(track.eta(), cfgCumulantConfig.fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 4);
-      }
-      // fill FT0 Q-vector
-      const auto& ft0 = collision.foundFT0();
-      fillGFWFT0(ft0, kFT0A);
-
-      // Filling Flow Container
-      for (uint l_ind = 0; l_ind < cfgCumulantConfig.corrconfigs.size(); l_ind++) {
-        fillFC<kReco>(cfgCumulantConfig.corrconfigs.at(l_ind), independent, lRandom);
-      }
-    }
-
     if (cfgSelCollByNch && (tracks.size() < cfgCutMultMin || tracks.size() >= cfgCutMultMax)) {
       return;
     }
@@ -1339,40 +1143,6 @@ struct LongRangeDihadronCor {
     }
     registry.fill(HIST("Nch"), tracks.size());
     registry.fill(HIST("zVtx"), collision.posZ());
-
-    if (cfgCumulantConfig.gfwOutput) {
-      cfgCumulantConfig.fGFW->Clear();
-      float lRandom = cfgCumulantConfig.fRndm->Rndm();
-      float weff = 1, wacc = 1;
-      float independent = cent;
-      if (cfgCumulantConfig.gfwUseNch)
-        independent = static_cast<float>(tracks.size());
-
-      // fill TPC Q-vector
-      for (const auto& track : tracks) {
-        if (!trackSelected(track))
-          continue;
-        bool withinPtPOI = (0.2 < track.pt()) && (track.pt() < 10.0); // o2-linter: disable=magic-number (within POI pT range)
-        bool withinPtRef = (0.2 < track.pt()) && (track.pt() < 3.0);  // o2-linter: disable=magic-number (within RF pT range)
-        getAcceptanceWeight(wacc, track.phi(), track.eta(), collision.posZ());
-        if (!getEfficiencyCorrection(weff, track.eta(), track.pt(), collision.posZ()))
-          continue;
-        if (withinPtRef)
-          cfgCumulantConfig.fGFW->Fill(track.eta(), cfgCumulantConfig.fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
-        if (withinPtPOI)
-          cfgCumulantConfig.fGFW->Fill(track.eta(), cfgCumulantConfig.fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 2);
-        if (withinPtPOI && withinPtRef)
-          cfgCumulantConfig.fGFW->Fill(track.eta(), cfgCumulantConfig.fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 4);
-      }
-      // fill FT0 Q-vector
-      const auto& ft0 = collision.foundFT0();
-      fillGFWFT0(ft0, kFT0C);
-
-      // Filling Flow Container
-      for (uint l_ind = 0; l_ind < cfgCumulantConfig.corrconfigs.size(); l_ind++) {
-        fillFC<kReco>(cfgCumulantConfig.corrconfigs.at(l_ind), independent, lRandom);
-      }
-    }
 
     if (cfgSelCollByNch && (tracks.size() < cfgCutMultMin || tracks.size() >= cfgCutMultMax)) {
       return;
