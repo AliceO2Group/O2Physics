@@ -60,6 +60,7 @@
 
 #include <TH1.h>
 #include <TMCProcess.h>
+#include <TPDGCode.h>
 
 #include <array>
 #include <chrono>
