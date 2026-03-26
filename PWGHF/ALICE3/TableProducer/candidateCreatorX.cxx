@@ -22,11 +22,11 @@
 
 #include "Common/Core/trackUtilities.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisTask.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/V0.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <Framework/AnalysisTask.h>
+#include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/V0.h>
 
 #include <utility>
 #include <vector>
@@ -44,7 +44,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
   workflowOptions.push_back(optionDoMC);
 }
 
-#include "Framework/runDataProcessing.h"
+#include <Framework/runDataProcessing.h>
 
 /// Reconstruction of X candidates
 struct HfCandidateCreatorX {

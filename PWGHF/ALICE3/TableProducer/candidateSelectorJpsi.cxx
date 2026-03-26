@@ -24,8 +24,8 @@
 #include "ALICE3/DataModel/RICH.h"
 #include "Common/Core/TrackSelectorPID.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisTask.h>
 
 #include <vector>
 
@@ -59,7 +59,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
   workflowOptions.push_back(isAlice3);
 }
 
-#include "Framework/runDataProcessing.h"
+#include <Framework/runDataProcessing.h>
 
 /// Struct for applying J/ψ → e+ e−, μ+ μ− selection cuts
 struct HfCandidateSelectorJpsi {
