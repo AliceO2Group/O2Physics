@@ -353,6 +353,46 @@ struct DQEventQvector {
   }
 
   // Templated function instantianed for all of the process functions
+  template <uint32_t TEventFillMap, typename TEvent, typename TFT0s>
+  void runFillQvectorFromCentralFWWithFT0CCumulants(TEvent const& collision, TFT0s const& /*ft0s*/)
+  {
+    VarManager::ResetValues(0, VarManager::kNVars);
+    VarManager::FillEvent<TEventFillMap>(collision);
+
+
+    if (fConfigQA) {
+      fHistMan->FillHistClass("Event_BeforeCuts_centralFW", VarManager::fgValues);
+      if (fEventCut->IsSelected(VarManager::fgValues)) {
+        fHistMan->FillHistClass("Event_AfterCuts_centralFW", VarManager::fgValues);
+      }
+    }
+
+    if (fEventCut->IsSelected(VarManager::fgValues)) {
+      float S11C = collision.sumAmplFT0C();
+      float S12C = 0.f;
+
+      if (collision.has_foundFT0()) {
+        auto ft0 = collision.foundFT0();
+        auto const& ampC = ft0.amplitudeC();
+        for (auto amp : ampC) {
+          if (amp > 0.f) {
+            S12C += amp * amp;
+          }
+        }  
+      }      
+      VarManager::fgValues[VarManager::kS11C] = S11C;
+      VarManager::fgValues[VarManager::kS12C] = S12C;
+      VarManager::FillQVectorFromCentralFW(collision);
+
+      eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
+                        collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
+      eventQvectorCentrExtra(collision.qvecTPCallRe(), collision.qvecTPCallIm(), collision.nTrkTPCall());
+      eventRefFlow(VarManager::fgValues[VarManager::kM11REF], VarManager::fgValues[VarManager::kM11REFetagap], VarManager::fgValues[VarManager::kM1111REF], VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR2REFetagap], VarManager::fgValues[VarManager::kCORR4REF], VarManager::fgValues[VarManager::kCentFT0C]);
+      eventQvectorExtra(0.f, 0.f, 0.f, 0.f, S11C, S12C, 0.f, 0.f);
+    }
+  }
+
+  // Templated function instantianed for all of the process functions
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks>
   void runFillQvector(TEvent const& collision, MyBcs const&, TTracks const& tracks1, aod::Zdcs const&)
   {
@@ -574,6 +614,12 @@ struct DQEventQvector {
     runFillQvectorFromCentralFW<gkEventFillMapRun3>(collisions);
   }
 
+  // Process to fill Q vector using barrel tracks in a reduced event table for barrel/muon tracks flow related analyses Run 3
+  void processCentralQvectorWithFT0CCumulants(MyEventsWithCentQvectRun3::iterator const& collision, aod::FT0s const& ft0s)
+  {
+    runFillQvectorFromCentralFWWithFT0CCumulants<gkEventFillMapRun3>(collision, ft0s);
+  }
+
   // Process to fill Q vector using forward tracks in a reduced event table for barrel/muon tracks flow related analyses Run 3
   void processForwardQvector(MyEventsWithCentRun3::iterator const& collisions, MyBcs const& bcs, soa::Filtered<aod::MFTTracks> const& tracks, aod::Zdcs const& zdcs)
   {
@@ -590,6 +636,7 @@ struct DQEventQvector {
   PROCESS_SWITCH(DQEventQvector, processBarrelQvector, "Run q-vector task on barrel tracks for Run3", false);
   PROCESS_SWITCH(DQEventQvector, processAllQvector, "Run q-vector task on barrel tracks for Run3 and using central q-vector", false);
   PROCESS_SWITCH(DQEventQvector, processCentralQvector, "Run q-vector task using central q-vector", false);
+  PROCESS_SWITCH(DQEventQvector, processCentralQvectorWithFT0CCumulants, "Run q-vector task using central q-vector with FT0C cumulants", false);
   PROCESS_SWITCH(DQEventQvector, processForwardQvector, "Run q-vector task on forward tracks for Run3", false);
   PROCESS_SWITCH(DQEventQvector, processDummy, "Dummy function", false);
 };

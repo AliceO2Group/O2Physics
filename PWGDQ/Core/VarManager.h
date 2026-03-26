@@ -486,10 +486,11 @@ class VarManager : public TObject
     kV2ME_EP,
     kWV2ME_SP,
     kWV2ME_EP,
-    kTwoR2SP1, // Scalar product resolution of event1 for ME technique
-    kTwoR2SP2, // Scalar product resolution of event2 for ME technique
-    kTwoR2EP1, // Event plane resolution of event2 for ME technique
-    kTwoR2EP2, // Event plane resolution of event2 for ME technique
+    kTwoR2SP1,       // Scalar product resolution of event1 for ME technique
+    kTwoR2SP2,       // Scalar product resolution of event2 for ME technique
+    kTwoR2EP1,       // Event plane resolution of event2 for ME technique
+    kTwoR2EP2,       // Event plane resolution of event2 for ME technique
+    kNPairsPerEvent, // number of pairs per event in same-event or mixed-event pairing
 
     // Variables for event mixing with cumulant
     kV22m,
@@ -805,6 +806,8 @@ class VarManager : public TObject
     kS12A,
     kS13A,
     kS31A,
+    kS11C,
+    kS12C,
     kM11REF,
     kM11REFetagap,
     kM01POI,
@@ -1372,7 +1375,7 @@ class VarManager : public TObject
   template <typename T1, typename T2, typename T3>
   static void FillEnergyCorrelatorTriple(T1 const& lepton1, T2 const& lepton2, T3 const& hadron, float* values = nullptr, float Translow = 1. / 3, float Transhigh = 2. / 3, bool applyFitMass = false, float sidebandMass = 0.0f);
   template <int pairType, typename T1, typename T2, typename T3, typename T4, typename T5>
-  static void FillEnergyCorrelatorsUnfoldingTriple(T1 const& lepton1, T2 const& lepton2, T3 const& hadron, T4 const& track, T5 const& t1, float* values = nullptr);
+  static void FillEnergyCorrelatorsUnfoldingTriple(T1 const& lepton1, T2 const& lepton2, T3 const& hadron, T4 const& track, T5 const& t1, float* values = nullptr, bool applyFitMass = false);
   template <typename T1, typename T2>
   static void FillDileptonPhoton(T1 const& dilepton, T2 const& photon, float* values = nullptr);
   template <typename T>
@@ -5484,6 +5487,15 @@ void VarManager::FillQVectorFromCentralFW(C const& collision, float* values)
   values[kR2EP_FT0MTPCNEG] = TMath::Cos(2 * getDeltaPsiInRange(epFT0m, epBNegs, 2));
   values[kR2EP_FV0ATPCPOS] = TMath::Cos(2 * getDeltaPsiInRange(epFV0a, epBPoss, 2));
   values[kR2EP_FV0ATPCNEG] = TMath::Cos(2 * getDeltaPsiInRange(epFV0a, epBNegs, 2));
+  
+  float S21C = values[kS11C] * values[kS11C];
+  //complex<double> Q21C(values[kQ2X0C] * values[kS11C], values[kQ2Y0C] * values[kS11C]);
+      
+  // Fill necessary quantities for cumulant calculations with weighted Q-vectors
+  values[kM11REF] = S21C - values[kS12C];
+  //values[kCORR2REF] = (norm(Q21C) - values[kS12C]) / values[kM11REF];
+  //values[kCORR2REF] = std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) ? 0 : values[kCORR2REF];
+  values[kM11REF] = std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) ? 0 : values[kM11REF];
 }
 
 template <typename C>
@@ -5900,7 +5912,7 @@ void VarManager::FillEnergyCorrelatorTriple(T1 const& lepton1, T2 const& lepton2
 }
 
 template <int pairType, typename T1, typename T2, typename T3, typename T4, typename T5>
-void VarManager::FillEnergyCorrelatorsUnfoldingTriple(T1 const& lepton1, T2 const& lepton2, T3 const& hadron, T4 const& track, T5 const& t1, float* values)
+void VarManager::FillEnergyCorrelatorsUnfoldingTriple(T1 const& lepton1, T2 const& lepton2, T3 const& hadron, T4 const& track, T5 const& t1, float* values, bool applyFitMass)
 {
   if (fgUsedVars[kMCCosChi_gen] || fgUsedVars[kMCWeight_gen] || fgUsedVars[kMCdeltaeta_gen] || fgUsedVars[kMCCosChi_rec] || fgUsedVars[kMCWeight_rec] || fgUsedVars[kMCdeltaeta_rec]) {
     // energy correlators
@@ -5911,6 +5923,11 @@ void VarManager::FillEnergyCorrelatorsUnfoldingTriple(T1 const& lepton1, T2 cons
     ROOT::Math::PtEtaPhiMVector v_lepton1(lepton1.pt(), lepton1.eta(), lepton1.phi(), m1);
     ROOT::Math::PtEtaPhiMVector v_lepton2(lepton2.pt(), lepton2.eta(), lepton2.phi(), m2);
     ROOT::Math::PtEtaPhiMVector dilepton = v_lepton1 + v_lepton2;
+
+    float dileptonmass = o2::constants::physics::MassJPsi;
+    if (applyFitMass) {
+      dileptonmass = dilepton.mass();
+    }
 
     float MassHadron;
     if constexpr (pairType == kJpsiHadronMass) {
@@ -5927,7 +5944,7 @@ void VarManager::FillEnergyCorrelatorsUnfoldingTriple(T1 const& lepton1, T2 cons
     values[kMCWeight_gen] = E_boost_gen / o2::constants::physics::MassJPsi;
     values[kMCdeltaeta_gen] = track.eta() - t1.eta();
 
-    ROOT::Math::PtEtaPhiMVector v1_rec(dilepton.pt(), dilepton.eta(), dilepton.phi(), dilepton.mass());
+    ROOT::Math::PtEtaPhiMVector v1_rec(dilepton.pt(), dilepton.eta(), dilepton.phi(), dileptonmass);
     ROOT::Math::PtEtaPhiMVector v2_rec(hadron.pt(), hadron.eta(), hadron.phi(), o2::constants::physics::MassPionCharged);
     values[kMCCosChi_rec] = LorentzTransformJpsihadroncosChi("coschi", v1_rec, v2_rec);
     float E_boost_rec = LorentzTransformJpsihadroncosChi("weight_boost", v1_rec, v2_rec);
