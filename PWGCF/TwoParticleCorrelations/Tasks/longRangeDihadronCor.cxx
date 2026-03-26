@@ -17,6 +17,7 @@
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
 #include "PWGCF/DataModel/CorrelationsDerived.h"
+#include "PWGCF/GenericFramework/Core/FlowContainer.h"
 #include "PWGCF/GenericFramework/Core/GFW.h"
 #include "PWGCF/GenericFramework/Core/GFWCumulant.h"
 #include "PWGCF/GenericFramework/Core/GFWPowerArray.h"
@@ -98,6 +99,7 @@ struct LongRangeDihadronCor {
   O2_DEFINE_CONFIGURABLE(cfgEvSelkIsGoodZvtxFT0vsPV, bool, false, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference, use this cut at low multiplicities with caution")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoCollInTimeRangeStandard, bool, false, "no collisions in specified time range")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkIsGoodITSLayersAll, bool, true, "cut time intervals with dead ITS staves")
+  O2_DEFINE_CONFIGURABLE(cfgEvSelkIsGoodITSLayer0123, bool, false, "cut time intervals with dead ITS staves (layers 0-3 only, for pp)")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoCollInRofStandard, bool, false, "no other collisions in this Readout Frame with per-collision multiplicity above threshold")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoHighMultCollInPrevRof, bool, false, "veto an event if FT0C amplitude in previous ITS ROF is above threshold")
   O2_DEFINE_CONFIGURABLE(cfgEvSelMultCorrelation, bool, true, "Multiplicity correlation cut")
@@ -155,6 +157,19 @@ struct LongRangeDihadronCor {
     O2_DEFINE_CONFIGURABLE(cfgMirrorFT0CDeadChannels, bool, false, "If true, mirror FT0C channels 177->145, 176->144, 178->146, 179->147, 139->115")
     O2_DEFINE_CONFIGURABLE(cfgRunbyRunAmplitudeFT0, bool, false, "Produce run-by-run FT0 amplitude distribution");
   } cfgFwdConfig;
+  struct : ConfigurableGroup {
+    O2_DEFINE_CONFIGURABLE(gfwOutput, bool, false, "produce cumulant results, off by default");
+    O2_DEFINE_CONFIGURABLE(gfwNbootstrap, int, 30, "Number of subsamples")
+    O2_DEFINE_CONFIGURABLE(gfwAcceptance, std::string, "", "CCDB path to acceptance object")
+    O2_DEFINE_CONFIGURABLE(gfwUseNch, bool, false, "use multiplicity as x axis");
+    ConfigurableAxis gfwAxisIndependent{"gfwAxisIndependent", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "X axis for histograms"};
+    Configurable<std::vector<std::string>> gfwCorr{"gfwCorr", std::vector<std::string>{"TPC {2} FT0A {-2}"}, "User defined GFW CorrelatorConfig"};
+    Configurable<std::vector<std::string>> gfwName{"gfwName", std::vector<std::string>{"TpcFt0A22"}, "User defined GFW Name"};
+    GFW* fGFW = new GFW();
+    std::vector<GFW::CorrConfig> corrconfigs;
+    TAxis* fPtAxis;
+    TRandom3* fRndm = new TRandom3(0);
+  } cfgCumulantConfig;
 
   SliceCache cache;
 
@@ -197,6 +212,7 @@ struct LongRangeDihadronCor {
   // Corrections
   TH3D* mEfficiency = nullptr;
   TH1D* mCentralityWeight = nullptr;
+  GFWWeights* mAcceptance = nullptr;
   bool correctionsLoaded = false;
 
   // Define the outputs
@@ -207,6 +223,8 @@ struct LongRangeDihadronCor {
   OutputObj<CorrelationContainer> sameFt0aFt0c{"sameEvent_FT0A_FT0C"};
   OutputObj<CorrelationContainer> mixedFt0aFt0c{"mixedEvent_FT0A_FT0C"};
   HistogramRegistry registry{"registry"};
+  OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
+  OutputObj<FlowContainer> fFCgen{FlowContainer("FlowContainer_gen")};
 
   // define global variables
   TRandom3* gRandom = new TRandom3();
@@ -265,6 +283,10 @@ struct LongRangeDihadronCor {
     kFT0CMirrorChannelEnd = 147,
     kFT0CMirrorChannelInnerRing = 115
   };
+  enum DataType {
+    kReco,
+    kGen
+  };
   std::array<float, 6> tofNsigmaCut;
   std::array<float, 6> itsNsigmaCut;
   std::array<float, 6> tpcNsigmaCut;
@@ -312,7 +334,7 @@ struct LongRangeDihadronCor {
 
     // Event Counter
     if ((doprocessSameTpcFt0a || doprocessSameTpcFt0c || doprocessSameFt0aFt0c) && cfgUseAdditionalEventCut) {
-      registry.add("hEventCountSpecific", "Number of Event;; Count", {HistType::kTH1D, {{12, 0, 12}}});
+      registry.add("hEventCountSpecific", "Number of Event;; Count", {HistType::kTH1D, {{13, 0, 13}}});
       registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(1, "after sel8");
       registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(2, "kNoSameBunchPileup");
       registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(3, "kNoITSROFrameBorder");
@@ -320,11 +342,12 @@ struct LongRangeDihadronCor {
       registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(5, "kIsGoodZvtxFT0vsPV");
       registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(6, "kNoCollInTimeRangeStandard");
       registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(7, "kIsGoodITSLayersAll");
-      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(8, "kNoCollInRofStandard");
-      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(9, "kNoHighMultCollInPrevRof");
-      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(10, "occupancy");
-      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(11, "MultCorrelation");
-      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(12, "cfgEvSelV0AT0ACut");
+      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(8, "kIsGoodITSLayer0123");
+      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(9, "kNoCollInRofStandard");
+      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(10, "kNoHighMultCollInPrevRof");
+      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(11, "occupancy");
+      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(12, "MultCorrelation");
+      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(13, "cfgEvSelV0AT0ACut");
     }
 
     if (cfgEvSelMultCorrelation) {
@@ -438,6 +461,69 @@ struct LongRangeDihadronCor {
     if (doprocessSameFt0aFt0c) {
       sameFt0aFt0c.setObject(new CorrelationContainer("sameEvent_FT0A_FT0C", "sameEvent_FT0A_FT0C", corrAxisFt0aFt0c, effAxis, userAxis));
       mixedFt0aFt0c.setObject(new CorrelationContainer("mixedEvent_FT0A_FT0C", "mixedEvent_FT0A_FT0C", corrAxisFt0aFt0c, effAxis, userAxis));
+    }
+
+    if (cfgCumulantConfig.gfwOutput && doprocessSameTpcFt0a && doprocessSameTpcFt0c) {
+      LOGF(fatal, "If you enable gfwOutput, you can only enable processSameTpcFt0a or processSameTpcFt0c, NOT both.");
+    }
+    if (cfgCumulantConfig.gfwOutput) {
+      o2::framework::AxisSpec axis = axisPt;
+      int nPtBins = axis.binEdges.size() - 1;
+      double* ptBins = &(axis.binEdges)[0];
+      cfgCumulantConfig.fPtAxis = new TAxis(nPtBins, ptBins);
+
+      std::vector<std::string> userDefineGFWCorr = cfgCumulantConfig.gfwCorr;
+      std::vector<std::string> userDefineGFWName = cfgCumulantConfig.gfwName;
+      TObjArray* oba = new TObjArray();
+      if (userDefineGFWName.size() != userDefineGFWCorr.size()) {
+        LOGF(fatal, "The GFWConfig names you provided are NOT matching with configurations. userDefineGFWName.size(): %d, userDefineGFWCorr.size(): %d", userDefineGFWName.size(), userDefineGFWCorr.size());
+      }
+      LOGF(info, "User adding FlowContainer Array:");
+      if (!userDefineGFWCorr.empty() && !userDefineGFWName.empty()) {
+        for (uint i = 0; i < userDefineGFWName.size(); i++) {
+          if (userDefineGFWCorr.at(i).find("poi") != std::string::npos) {
+            LOGF(info, "%d: pT-diff array %s", i, userDefineGFWName.at(i).c_str());
+            for (auto iPt = 0; iPt < cfgCumulantConfig.fPtAxis->GetNbins(); iPt++)
+              oba->Add(new TNamed(Form("%s_pt_%i", userDefineGFWName.at(i).c_str(), iPt + 1), Form("%s_pTDiff", userDefineGFWName.at(i).c_str())));
+          } else {
+            LOGF(info, "%d: %s", i, userDefineGFWName.at(i).c_str());
+            oba->Add(new TNamed(userDefineGFWName.at(i).c_str(), userDefineGFWName.at(i).c_str()));
+          }
+        }
+      }
+      fFC->SetName("FlowContainer");
+      fFC->SetXAxis(cfgCumulantConfig.fPtAxis);
+      fFC->Initialize(oba, cfgCumulantConfig.gfwAxisIndependent, cfgCumulantConfig.gfwNbootstrap);
+      fFCgen->SetName("FlowContainer_gen");
+      fFCgen->SetXAxis(cfgCumulantConfig.fPtAxis);
+      fFCgen->Initialize(oba, cfgCumulantConfig.gfwAxisIndependent, cfgCumulantConfig.gfwNbootstrap);
+
+      cfgCumulantConfig.fGFW->AddRegion("TPC", -0.8, 0.8, 1, 1);
+      cfgCumulantConfig.fGFW->AddRegion("TPCpoi", -0.8, 0.8, 1 + cfgCumulantConfig.fPtAxis->GetNbins(), 2);
+      cfgCumulantConfig.fGFW->AddRegion("TPCol", -0.8, 0.8, 1 + cfgCumulantConfig.fPtAxis->GetNbins(), 4);
+      cfgCumulantConfig.fGFW->AddRegion("FT0A", 3.5, 4.9, 1, 1);
+      cfgCumulantConfig.fGFW->AddRegion("FT0C", -3.3, -2.1, 1, 1);
+      cfgCumulantConfig.fGFW->AddRegion("FV0", 2.2, 5.1, 1, 1);
+
+      if (!userDefineGFWCorr.empty() && !userDefineGFWName.empty()) {
+        LOGF(info, "User adding GFW CorrelatorConfig:");
+        // attentaion: here we follow the index of cfgUserDefineGFWCorr
+        for (uint i = 0; i < userDefineGFWCorr.size(); i++) {
+          if (i >= userDefineGFWName.size()) {
+            LOGF(fatal, "The names you provided are more than configurations. userDefineGFWName.size(): %d > userDefineGFWCorr.size(): %d", userDefineGFWName.size(), userDefineGFWCorr.size());
+            break;
+          }
+          if (userDefineGFWCorr.at(i).find("poi") != std::string::npos) {
+            cfgCumulantConfig.corrconfigs.push_back(cfgCumulantConfig.fGFW->GetCorrelatorConfig(userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str(), kTRUE));
+            LOGF(info, "corrconfigs.at(%d): enable pt-Diff for %s %s", cfgCumulantConfig.corrconfigs.size() - 1, userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str());
+          } else {
+            cfgCumulantConfig.corrconfigs.push_back(cfgCumulantConfig.fGFW->GetCorrelatorConfig(userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str(), kFALSE));
+            LOGF(info, "corrconfigs.at(%d): %s %s", cfgCumulantConfig.corrconfigs.size() - 1, userDefineGFWCorr.at(i).c_str(), userDefineGFWName.at(i).c_str());
+          }
+        }
+      }
+
+      cfgCumulantConfig.fGFW->CreateRegions();
     }
 
     LOGF(info, "End of init");
@@ -625,6 +711,13 @@ struct LongRangeDihadronCor {
       }
       LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgCentralityWeight.value.c_str(), (void*)mCentralityWeight);
     }
+    if (cfgCumulantConfig.gfwOutput && cfgCumulantConfig.gfwAcceptance.value.empty() == false) {
+      mAcceptance = ccdb->getForTimeStamp<GFWWeights>(cfgCumulantConfig.gfwAcceptance, timestamp);
+      if (mAcceptance)
+        LOGF(info, "Loaded acceptance weights from %s (%p)", cfgCumulantConfig.gfwAcceptance.value.c_str(), (void*)mAcceptance);
+      else
+        LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgCumulantConfig.gfwAcceptance.value.c_str(), (void*)mAcceptance);
+    }
     correctionsLoaded = true;
   }
 
@@ -656,6 +749,80 @@ struct LongRangeDihadronCor {
       return false;
     weightCent = weight;
     return true;
+  }
+
+  bool getAcceptanceWeight(float& weight_nua, float phi, float eta, float vtxz)
+  {
+    if (mAcceptance)
+      weight_nua = mAcceptance->getNUA(phi, eta, vtxz);
+    else
+      weight_nua = 1;
+    return true;
+  }
+
+  template <char... chars>
+  void fillProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent)
+  {
+    double dnx, val;
+    dnx = cfgCumulantConfig.fGFW->Calculate(corrconf, 0, kTRUE).real();
+    if (dnx == 0)
+      return;
+    if (!corrconf.pTDif) {
+      val = cfgCumulantConfig.fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
+      if (std::fabs(val) < 1)
+        registry.fill(tarName, cent, val, dnx);
+      return;
+    }
+    return;
+  }
+
+  template <DataType dt>
+  void fillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
+  {
+    double dnx, val;
+    dnx = cfgCumulantConfig.fGFW->Calculate(corrconf, 0, kTRUE).real();
+    if (!corrconf.pTDif) {
+      if (dnx == 0)
+        return;
+      val = cfgCumulantConfig.fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
+      if (std::fabs(val) < 1) {
+        (dt == kGen) ? fFCgen->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm) : fFC->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
+      }
+      return;
+    }
+    for (auto i = 1; i <= cfgCumulantConfig.fPtAxis->GetNbins(); i++) {
+      dnx = cfgCumulantConfig.fGFW->Calculate(corrconf, i - 1, kTRUE).real();
+      if (dnx == 0)
+        continue;
+      val = cfgCumulantConfig.fGFW->Calculate(corrconf, i - 1, kFALSE).real() / dnx;
+      if (std::fabs(val) < 1) {
+        (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
+      }
+    }
+    return;
+  }
+
+  template <typename TFT0s>
+  void fillGFWFT0(TFT0s const& ft0, int corType)
+  {
+    std::size_t channelSize = 0;
+    if (corType == kFT0C) {
+      channelSize = ft0.channelC().size();
+    } else if (corType == kFT0A) {
+      channelSize = ft0.channelA().size();
+    } else {
+      LOGF(fatal, "Cor Index %d out of range", corType);
+    }
+    for (std::size_t iCh = 0; iCh < channelSize; iCh++) {
+      int chanelid = 0;
+      float ampl = 0.;
+      getChannel(ft0, iCh, chanelid, ampl, corType, MixedEvent + 1);
+      auto phi = getPhiFT0(chanelid, corType);
+      auto eta = getEtaFT0(chanelid, corType);
+      for (float ihit = 0; ihit < ampl; ihit++) {
+        cfgCumulantConfig.fGFW->Fill(eta, 1, phi, 1., 1);
+      }
+    }
   }
 
   // fill multiple histograms
@@ -930,23 +1097,29 @@ struct LongRangeDihadronCor {
     }
     if (fillCounter && cfgEvSelkIsGoodITSLayersAll)
       registry.fill(HIST("hEventCountSpecific"), 6.5);
+    if (cfgEvSelkIsGoodITSLayer0123 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
+      // for pp: cut time intervals with dead ITS staves on layers 0-3 only
+      return 0;
+    }
+    if (fillCounter && cfgEvSelkIsGoodITSLayer0123)
+      registry.fill(HIST("hEventCountSpecific"), 7.5);
     if (cfgEvSelkNoCollInRofStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       // no other collisions in this Readout Frame with per-collision multiplicity above threshold
       return 0;
     }
     if (fillCounter && cfgEvSelkNoCollInRofStandard)
-      registry.fill(HIST("hEventCountSpecific"), 7.5);
+      registry.fill(HIST("hEventCountSpecific"), 8.5);
     if (cfgEvSelkNoHighMultCollInPrevRof && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
       // veto an event if FT0C amplitude in previous ITS ROF is above threshold
       return 0;
     }
     if (fillCounter && cfgEvSelkNoHighMultCollInPrevRof)
-      registry.fill(HIST("hEventCountSpecific"), 8.5);
+      registry.fill(HIST("hEventCountSpecific"), 9.5);
     auto occupancy = collision.trackOccupancyInTimeRange();
     if (cfgEvSelOccupancy && (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh))
       return 0;
     if (fillCounter && cfgEvSelOccupancy)
-      registry.fill(HIST("hEventCountSpecific"), 9.5);
+      registry.fill(HIST("hEventCountSpecific"), 10.5);
 
     auto multNTracksPV = collision.multNTracksPV();
     if (cfgEvSelMultCorrelation) {
@@ -976,14 +1149,14 @@ struct LongRangeDihadronCor {
       }
     }
     if (fillCounter && cfgEvSelMultCorrelation)
-      registry.fill(HIST("hEventCountSpecific"), 10.5);
+      registry.fill(HIST("hEventCountSpecific"), 11.5);
 
     // V0A T0A 5 sigma cut
     float sigma = 5.0;
     if (cfgEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - cfgFuncParas.fT0AV0AMean->Eval(collision.multFT0A())) > sigma * cfgFuncParas.fT0AV0ASigma->Eval(collision.multFT0A())))
       return 0;
     if (fillCounter && cfgEvSelV0AT0ACut)
-      registry.fill(HIST("hEventCountSpecific"), 11.5);
+      registry.fill(HIST("hEventCountSpecific"), 12.5);
 
     return 1;
   }
@@ -1012,6 +1185,40 @@ struct LongRangeDihadronCor {
     }
     registry.fill(HIST("Nch"), tracks.size());
     registry.fill(HIST("zVtx"), collision.posZ());
+
+    if (cfgCumulantConfig.gfwOutput) {
+      cfgCumulantConfig.fGFW->Clear();
+      float lRandom = cfgCumulantConfig.fRndm->Rndm();
+      float weff = 1, wacc = 1;
+      float independent = cent;
+      if (cfgCumulantConfig.gfwUseNch)
+        independent = static_cast<float>(tracks.size());
+
+      // fill TPC Q-vector
+      for (const auto& track : tracks) {
+        if (!trackSelected(track))
+          continue;
+        bool withinPtPOI = (0.2 < track.pt()) && (track.pt() < 10.0); // o2-linter: disable=magic-number (within POI pT range)
+        bool withinPtRef = (0.2 < track.pt()) && (track.pt() < 3.0);  // o2-linter: disable=magic-number (within RF pT range)
+        getAcceptanceWeight(wacc, track.phi(), track.eta(), collision.posZ());
+        if (!getEfficiencyCorrection(weff, track.eta(), track.pt(), collision.posZ()))
+          continue;
+        if (withinPtRef)
+          cfgCumulantConfig.fGFW->Fill(track.eta(), cfgCumulantConfig.fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
+        if (withinPtPOI)
+          cfgCumulantConfig.fGFW->Fill(track.eta(), cfgCumulantConfig.fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 2);
+        if (withinPtPOI && withinPtRef)
+          cfgCumulantConfig.fGFW->Fill(track.eta(), cfgCumulantConfig.fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 4);
+      }
+      // fill FT0 Q-vector
+      const auto& ft0 = collision.foundFT0();
+      fillGFWFT0(ft0, kFT0A);
+
+      // Filling Flow Container
+      for (uint l_ind = 0; l_ind < cfgCumulantConfig.corrconfigs.size(); l_ind++) {
+        fillFC<kReco>(cfgCumulantConfig.corrconfigs.at(l_ind), independent, lRandom);
+      }
+    }
 
     if (cfgSelCollByNch && (tracks.size() < cfgCutMultMin || tracks.size() >= cfgCutMultMax)) {
       return;
@@ -1132,6 +1339,40 @@ struct LongRangeDihadronCor {
     }
     registry.fill(HIST("Nch"), tracks.size());
     registry.fill(HIST("zVtx"), collision.posZ());
+
+    if (cfgCumulantConfig.gfwOutput) {
+      cfgCumulantConfig.fGFW->Clear();
+      float lRandom = cfgCumulantConfig.fRndm->Rndm();
+      float weff = 1, wacc = 1;
+      float independent = cent;
+      if (cfgCumulantConfig.gfwUseNch)
+        independent = static_cast<float>(tracks.size());
+
+      // fill TPC Q-vector
+      for (const auto& track : tracks) {
+        if (!trackSelected(track))
+          continue;
+        bool withinPtPOI = (0.2 < track.pt()) && (track.pt() < 10.0); // o2-linter: disable=magic-number (within POI pT range)
+        bool withinPtRef = (0.2 < track.pt()) && (track.pt() < 3.0);  // o2-linter: disable=magic-number (within RF pT range)
+        getAcceptanceWeight(wacc, track.phi(), track.eta(), collision.posZ());
+        if (!getEfficiencyCorrection(weff, track.eta(), track.pt(), collision.posZ()))
+          continue;
+        if (withinPtRef)
+          cfgCumulantConfig.fGFW->Fill(track.eta(), cfgCumulantConfig.fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
+        if (withinPtPOI)
+          cfgCumulantConfig.fGFW->Fill(track.eta(), cfgCumulantConfig.fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 2);
+        if (withinPtPOI && withinPtRef)
+          cfgCumulantConfig.fGFW->Fill(track.eta(), cfgCumulantConfig.fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 4);
+      }
+      // fill FT0 Q-vector
+      const auto& ft0 = collision.foundFT0();
+      fillGFWFT0(ft0, kFT0C);
+
+      // Filling Flow Container
+      for (uint l_ind = 0; l_ind < cfgCumulantConfig.corrconfigs.size(); l_ind++) {
+        fillFC<kReco>(cfgCumulantConfig.corrconfigs.at(l_ind), independent, lRandom);
+      }
+    }
 
     if (cfgSelCollByNch && (tracks.size() < cfgCutMultMin || tracks.size() >= cfgCutMultMax)) {
       return;

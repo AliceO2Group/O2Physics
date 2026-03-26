@@ -699,6 +699,33 @@ void defaultConfiguration()
     }
   }
 
+  // **) Differential multidimensional charge weights:
+  auto lWhichDiffChargeWeights = cf_pw.cfWhichDiffChargeWeights.value;
+  if (lWhichDiffChargeWeights.size() != eDiffChargeWeights_N) {
+    LOGF(info, "\033[1;31m lWhichDiffChargeWeights.size() = %d\033[0m", lWhichDiffChargeWeights.size());
+    LOGF(info, "\033[1;31m eDiffChargeWeights_N = %d\033[0m", static_cast<int>(eDiffChargeWeights_N));
+    LOGF(fatal, "\033[1;31m%s at line %d : Mismatch in the number of flags in configurable cfWhichDiffChargeWeights, and number of entries in enum eDiffChargeWeights_N \n \033[0m", __FUNCTION__, __LINE__);
+  }
+  for (int dpw = 0; dpw < eDiffChargeWeights_N; dpw++) { // "differential charge weight"
+    if (TString(lWhichDiffChargeWeights[dpw]).Contains("wCharge")) {
+      pw.fUseDiffChargeWeights[wChargeChargeAxis] = Alright(lWhichDiffChargeWeights[dpw]); // if I pass "1-Charge" => true, "0-Charge" => false
+    } else if (TString(lWhichDiffChargeWeights[dpw]).Contains("wPt")) {
+      pw.fUseDiffChargeWeights[wChargePtAxis] = Alright(lWhichDiffChargeWeights[dpw]) && pw.fUseDiffChargeWeights[wChargeChargeAxis];
+    } else if (TString(lWhichDiffChargeWeights[dpw]).Contains("wEta")) {
+      pw.fUseDiffChargeWeights[wChargeEtaAxis] = Alright(lWhichDiffChargeWeights[dpw]) && pw.fUseDiffChargeWeights[wChargeChargeAxis];
+    } else if (TString(lWhichDiffChargeWeights[dpw]).Contains("wCentrality")) {
+      pw.fUseDiffChargeWeights[wChargeCentralityAxis] = Alright(lWhichDiffChargeWeights[dpw]) && pw.fUseDiffChargeWeights[wChargeChargeAxis];
+    } else {
+      LOGF(fatal, "\033[1;31m%s at line %d : The setting %s in configurable cfWhichDiffChargeWeights is not supported yet. See enum eDiffChargeWeights . \n \033[0m", __FUNCTION__, __LINE__, TString(lWhichDiffChargeWeights[dpw]).Data());
+    }
+  }
+
+  // **) Only for debugging purposes, print all enabled weights:
+  if (tc.fVerbose) {
+    LOGF(info, "\033[1;31m%s at line %d : printing current status of all weights flags\033[0m", __FUNCTION__, __LINE__);
+    PrintAllWeightsFlags();
+  } // if (tc.fVerbose) {
+
   // **) File holding all particle weights:
   pw.fFileWithWeights = cf_pw.cfFileWithWeights;
 
@@ -726,9 +753,10 @@ void defaultConfiguration()
   nua.fApplyNUAPDF[ePhiNUAPDF] = static_cast<bool>(lApplyNUAPDF[ePhiNUAPDF]);
   nua.fApplyNUAPDF[ePtNUAPDF] = static_cast<bool>(lApplyNUAPDF[ePtNUAPDF]);
   nua.fApplyNUAPDF[eEtaNUAPDF] = static_cast<bool>(lApplyNUAPDF[eEtaNUAPDF]);
+  nua.fApplyNUAPDF[eChargeNUAPDF] = static_cast<bool>(lApplyNUAPDF[eChargeNUAPDF]);
 
   // **) Execute the lines below, only if toy NUA (either default or custom) is requested for at least one kine variable:
-  if (nua.fApplyNUAPDF[ePhiNUAPDF] || nua.fApplyNUAPDF[ePtNUAPDF] || nua.fApplyNUAPDF[eEtaNUAPDF]) {
+  if (nua.fApplyNUAPDF[ePhiNUAPDF] || nua.fApplyNUAPDF[ePtNUAPDF] || nua.fApplyNUAPDF[eEtaNUAPDF] || nua.fApplyNUAPDF[eChargeNUAPDF]) {
 
     auto lUseDefaultNUAPDF = (std::vector<int>)cf_nua.cfUseDefaultNUAPDF;
     if (lUseDefaultNUAPDF.size() != eNUAPDF_N) {
@@ -739,11 +767,13 @@ void defaultConfiguration()
     nua.fUseDefaultNUAPDF[ePhiNUAPDF] = static_cast<bool>(lUseDefaultNUAPDF[ePhiNUAPDF]);
     nua.fUseDefaultNUAPDF[ePtNUAPDF] = static_cast<bool>(lUseDefaultNUAPDF[ePtNUAPDF]);
     nua.fUseDefaultNUAPDF[eEtaNUAPDF] = static_cast<bool>(lUseDefaultNUAPDF[eEtaNUAPDF]);
+    nua.fUseDefaultNUAPDF[eChargeNUAPDF] = static_cast<bool>(lUseDefaultNUAPDF[eChargeNUAPDF]);
 
     // **) Execute the lines below, only if custom toy NUA is requested in at least one kine variable:
     if (!((nua.fApplyNUAPDF[ePhiNUAPDF] && nua.fUseDefaultNUAPDF[ePhiNUAPDF]) ||
           (nua.fApplyNUAPDF[ePtNUAPDF] && nua.fUseDefaultNUAPDF[ePtNUAPDF]) ||
-          (nua.fApplyNUAPDF[eEtaNUAPDF] && nua.fUseDefaultNUAPDF[eEtaNUAPDF]))) {
+          (nua.fApplyNUAPDF[eEtaNUAPDF] && nua.fUseDefaultNUAPDF[eEtaNUAPDF]) ||
+          (nua.fApplyNUAPDF[eChargeNUAPDF] && nua.fUseDefaultNUAPDF[eChargeNUAPDF]))) {
       // If the above conditon is true, as least one NUA is requested and is not default, i.e. it's custom NUA obtained from external file, which was requested to be used.
       // TBI 20240501 Can I simplify the logic above, it's a bit cryptic...
 
@@ -781,9 +811,16 @@ void defaultConfiguration()
           LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
         }
       }
-    } // if (!(nua.fUseDefaultNUAPDF[ePhiNUAPDF] || nua.fUseDefaultNUAPDF[ePtNUAPDF] || nua.fUseDefaultNUAPDF[eEtaNUAPDF])) {
+      if (!nua.fUseDefaultNUAPDF[eChargeNUAPDF]) {
+        nua.fCustomNUAPDFHistNames[eChargeNUAPDF] = new TString(lCustomNUAPDFHistNames[eChargeNUAPDF]);
+        this->GetHistogramWithCustomNUA(nua.fFileWithCustomNUA.Data(), eChargeNUAPDF);
+        if (!nua.fCustomNUAPDF[eChargeNUAPDF]) {
+          LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+        }
+      }
+    } // if (!(nua.fUseDefaultNUAPDF[ePhiNUAPDF] || nua.fUseDefaultNUAPDF[ePtNUAPDF] || nua.fUseDefaultNUAPDF[eEtaNUAPDF] || nua.fUseDefaultNUAPDF[eChargeNUAPDF])) {
 
-  } // if ( nua.fApplyNUAPDF[ePhiNUAPDF] || nua.fApplyNUAPDF[ePtNUAPDF] || nua.fApplyNUAPDF[eEtaNUAPDF] ) {
+  } // if ( nua.fApplyNUAPDF[ePhiNUAPDF] || nua.fApplyNUAPDF[ePtNUAPDF] || nua.fApplyNUAPDF[eEtaNUAPDF] || nua.fApplyNUAPDF[eChargeNUAPDF]) {
 
   // *) Internal validation:
   iv.fUseInternalValidation = cf_iv.cfUseInternalValidation;
@@ -1009,6 +1046,9 @@ void defaultConfiguration()
   ph.fParticleSparseHistogramsName[eDWEta] = "fParticleSparseHistograms_DWEta";
   ph.fParticleSparseHistogramsTitle[eDWEta] = "sparse histogram for differential #eta weights,";
 
+  ph.fParticleSparseHistogramsName[eDWCharge] = "fParticleSparseHistograms_DWCharge";
+  ph.fParticleSparseHistogramsTitle[eDWCharge] = "sparse histogram for differential charge weights,";
+
   // ...
 
   // ** Eta separations:
@@ -1133,6 +1173,31 @@ void defaultConfiguration()
   }
 
 } // void defaultConfiguration()
+
+//============================================================
+
+void PrintAllWeightsFlags()
+{
+  // Simple utility function, to print current status of all weights flags.
+
+  LOGF(info, "\033[1;33m Which multidimensional phi weights will be used (the ordering is the same as in enum eDiffPhiWeights):\033[0m");
+  for (int dpw = 0; dpw < eDiffPhiWeights_N; dpw++) {
+    LOGF(info, "\033[1;33m %d \033[0m", pw.fUseDiffPhiWeights[dpw]);
+  }
+  LOGF(info, "\033[1;33m Which multidimensional pt weights will be used (the ordering is the same as in enum eDiffPtWeights):\033[0m");
+  for (int dpw = 0; dpw < eDiffPtWeights_N; dpw++) {
+    LOGF(info, "\033[1;33m %d \033[0m", pw.fUseDiffPtWeights[dpw]);
+  }
+  LOGF(info, "\033[1;33m Which multidimensional eta weights will be used (the ordering is the same as in enum eDiffEtaWeights):\033[0m");
+  for (int dpw = 0; dpw < eDiffEtaWeights_N; dpw++) {
+    LOGF(info, "\033[1;33m %d \033[0m", pw.fUseDiffEtaWeights[dpw]);
+  }
+  LOGF(info, "\033[1;33m Which multidimensional charge weights will be used (the ordering is the same as in enum eDiffChargeWeights):\033[0m");
+  for (int dpw = 0; dpw < eDiffChargeWeights_N; dpw++) {
+    LOGF(info, "\033[1;33m %d \033[0m", pw.fUseDiffChargeWeights[dpw]);
+  }
+
+} // void PrintAllWeightsFlags()
 
 //============================================================
 
@@ -1324,16 +1389,22 @@ void defaultBooking()
   ph.fRebinSparse[eDWPhi][wPhiVertexZAxis] = lRebinSparse[wPhiVertexZAxis];
   // ...
 
-  ph.fRebinSparse[eDWPt][wPtPtAxis] = lRebinSparse[wPhiPtAxis]; // yes, wPhiPtAxis is on the RHS, becase I defined ordering of cfRebinSparse by using oredring in eDiffPhiWeights
+  ph.fRebinSparse[eDWPt][wPtPtAxis] = lRebinSparse[wPhiPtAxis]; // yes, wPhiPtAxis is on the RHS, becase I defined ordering of cfRebinSparse by using ordering in eDiffPhiWeights
   ph.fRebinSparse[eDWPt][wPtEtaAxis] = lRebinSparse[wPhiEtaAxis];
   ph.fRebinSparse[eDWPt][wPtChargeAxis] = lRebinSparse[wPhiChargeAxis];
   ph.fRebinSparse[eDWPt][wPtCentralityAxis] = lRebinSparse[wPhiCentralityAxis];
   // ...
 
-  ph.fRebinSparse[eDWEta][wEtaEtaAxis] = lRebinSparse[wPhiEtaAxis]; // yes, wPhiEtaAxis is on the RHS, becase I defined ordering of cfRebinSparse by using oredring in eDiffPhiWeights
+  ph.fRebinSparse[eDWEta][wEtaEtaAxis] = lRebinSparse[wPhiEtaAxis]; // yes, wPhiEtaAxis is on the RHS, becase I defined ordering of cfRebinSparse by using ordering in eDiffPhiWeights
   ph.fRebinSparse[eDWEta][wEtaPtAxis] = lRebinSparse[wPhiPtAxis];
   ph.fRebinSparse[eDWEta][wEtaChargeAxis] = lRebinSparse[wPhiChargeAxis];
   ph.fRebinSparse[eDWEta][wEtaCentralityAxis] = lRebinSparse[wPhiCentralityAxis];
+  // ...
+
+  ph.fRebinSparse[eDWCharge][wChargeChargeAxis] = lRebinSparse[wPhiChargeAxis]; // yes, wPhiChargeAxis is on the RHS, becase I defined ordering of cfRebinSparse by using ordering in eDiffPhiWeights
+  ph.fRebinSparse[eDWCharge][wChargePtAxis] = lRebinSparse[wPhiPtAxis];
+  ph.fRebinSparse[eDWCharge][wChargeEtaAxis] = lRebinSparse[wPhiEtaAxis];
+  ph.fRebinSparse[eDWCharge][wChargeCentralityAxis] = lRebinSparse[wPhiCentralityAxis];
   // ...
 
   // *) Categories of sparse histograms:
@@ -1363,6 +1434,7 @@ void defaultBooking()
   ph.fBookParticleSparseHistograms[eDWPhi] = Alright(lBookParticleSparseHistograms[eDWPhi]);
   ph.fBookParticleSparseHistograms[eDWPt] = Alright(lBookParticleSparseHistograms[eDWPt]);
   ph.fBookParticleSparseHistograms[eDWEta] = Alright(lBookParticleSparseHistograms[eDWEta]);
+  ph.fBookParticleSparseHistograms[eDWCharge] = Alright(lBookParticleSparseHistograms[eDWCharge]);
 
   // f) QA:
 
@@ -2889,7 +2961,7 @@ void insanityChecksBeforeBooking()
   }
 
   // **) Enforce that if the fixed number of randomly selected tracks is used that Toy NUA is disabled:
-  if (tc.fFixedNumberOfRandomlySelectedTracks > 0 && (nua.fApplyNUAPDF[ePhiNUAPDF] || nua.fApplyNUAPDF[ePtNUAPDF] || nua.fApplyNUAPDF[eEtaNUAPDF])) {
+  if (tc.fFixedNumberOfRandomlySelectedTracks > 0 && (nua.fApplyNUAPDF[ePhiNUAPDF] || nua.fApplyNUAPDF[ePtNUAPDF] || nua.fApplyNUAPDF[eEtaNUAPDF] || nua.fApplyNUAPDF[eChargeNUAPDF])) {
     LOGF(fatal, "\033[1;31m%s at line %d : Not supported at the moment: use FixedNumberOfRandomlySelectedTracks + Toy NUA enabled.\nI cannot in an easy way ensure that ParticleCuts behave exactly the same in the Main and Banishment loops, because e.g. I call consequtively for same partcile gRandom->Uniform(...) in ParticleCuts, and that can't work.\033[0m", __FUNCTION__, __LINE__);
   }
 
@@ -2982,6 +3054,9 @@ void insanityChecksBeforeBooking()
   }
   if (eDiffEtaWeights_N > gMaxNumberSparseDimensions) {
     LOGF(fatal, "\033[1;31m%s at line %d : set eDiffEtaWeights_N = %d is bigger than gMaxNumberSparseDimensions = %d\033[0m", __FUNCTION__, __LINE__, static_cast<int>(eDiffEtaWeights_N), gMaxNumberSparseDimensions);
+  }
+  if (eDiffChargeWeights_N > gMaxNumberSparseDimensions) {
+    LOGF(fatal, "\033[1;31m%s at line %d : set eDiffChargeWeights_N = %d is bigger than gMaxNumberSparseDimensions = %d\033[0m", __FUNCTION__, __LINE__, static_cast<int>(eDiffChargeWeights_N), gMaxNumberSparseDimensions);
   }
 
   // ** For simulated data when fDatabasePDG is NOT used, I have to disable cut on charge, since that info is not available:
@@ -3259,7 +3334,8 @@ void insanityChecksBeforeBooking()
           iv.fHarmonicsOptionInternalValidation->EqualTo("correlated", TString::kIgnoreCase) ||
           iv.fHarmonicsOptionInternalValidation->EqualTo("persistent", TString::kIgnoreCase) ||
           iv.fHarmonicsOptionInternalValidation->EqualTo("ptDependent", TString::kIgnoreCase) ||
-          iv.fHarmonicsOptionInternalValidation->EqualTo("ptEtaDependent", TString::kIgnoreCase))) {
+          iv.fHarmonicsOptionInternalValidation->EqualTo("ptEtaDependent", TString::kIgnoreCase) ||
+          iv.fHarmonicsOptionInternalValidation->EqualTo("ptEtaChargeDependent", TString::kIgnoreCase))) {
       LOGF(fatal, "\033[1;31m%s at line %d : fHarmonicsOptionInternalValidation = %s is not supported. \033[0m", __FUNCTION__, __LINE__, iv.fHarmonicsOptionInternalValidation->Data());
     }
 
@@ -3348,6 +3424,9 @@ void insanityChecksAfterBooking()
     }
     if (iv.fRescaleWithTheoreticalInput && iv.fHarmonicsOptionInternalValidation->EqualTo("ptEtaDependent")) {
       LOGF(fatal, "\033[1;31m%s at line %d : rescaling with theoretical input doesn't make sanse for fHarmonicsOptionInternalValidation = \"ptEtaDependent\". \033[0m", __FUNCTION__, __LINE__);
+    }
+    if (iv.fRescaleWithTheoreticalInput && iv.fHarmonicsOptionInternalValidation->EqualTo("ptEtaChargeDependent")) {
+      LOGF(fatal, "\033[1;31m%s at line %d : rescaling with theoretical input doesn't make sanse for fHarmonicsOptionInternalValidation = \"ptEtaChargeDependent\". \033[0m", __FUNCTION__, __LINE__);
     }
 
     // **) Print a warning if this histogram is not booked:
@@ -5379,6 +5458,54 @@ void bookParticleHistograms()
 
   // ...
 
+  // **) eDiffWeightCategory = eDWCharge:
+
+  // ***) charge-axis for diff charge weights - at the moment I support only fixed-length binning from control histograms, which optionally can be made finer or coarser with cfRebinSparse configurable:
+  ph.fParticleSparseHistogramsNBins[eDWCharge][wChargeChargeAxis] = static_cast<int>(ph.fParticleHistogramsBins[eCharge][0] / ph.fRebinSparse[eDWCharge][wChargeChargeAxis]);
+  lAxis = new TAxis(ph.fParticleSparseHistogramsNBins[eDWCharge][wChargeChargeAxis], ph.fParticleHistogramsBins[eCharge][1], ph.fParticleHistogramsBins[eCharge][2]);
+  ph.fParticleSparseHistogramsBinEdges[eDWCharge][wChargeChargeAxis] = new TArrayD(1 + ph.fParticleSparseHistogramsNBins[eDWCharge][wChargeChargeAxis]);
+  for (int bin = 1; bin <= lAxis->GetNbins(); bin++) {
+    ph.fParticleSparseHistogramsBinEdges[eDWCharge][wChargeChargeAxis]->AddAt(lAxis->GetBinLowEdge(bin), bin - 1);
+  }
+  ph.fParticleSparseHistogramsBinEdges[eDWCharge][wChargeChargeAxis]->AddAt(lAxis->GetBinLowEdge(1 + lAxis->GetNbins()), lAxis->GetNbins()); // special treatment for last bin
+  delete lAxis;
+  ph.fParticleSparseHistogramsAxisTitle[eDWCharge][wChargeChargeAxis] = FancyFormatting("charge");
+
+  // ***) pt-axis for diff charge weights - at the moment I support only fixed-length binning from control histograms, which optionally can be made finer or coarser with cfRebinSparse configurable:
+  ph.fParticleSparseHistogramsNBins[eDWCharge][wChargePtAxis] = static_cast<int>(ph.fParticleHistogramsBins[ePt][0] / ph.fRebinSparse[eDWCharge][wChargePtAxis]);
+  lAxis = new TAxis(ph.fParticleSparseHistogramsNBins[eDWCharge][wChargePtAxis], ph.fParticleHistogramsBins[ePt][1], ph.fParticleHistogramsBins[ePt][2]);
+  ph.fParticleSparseHistogramsBinEdges[eDWCharge][wChargePtAxis] = new TArrayD(1 + ph.fParticleSparseHistogramsNBins[eDWCharge][wChargePtAxis]);
+  for (int bin = 1; bin <= lAxis->GetNbins(); bin++) {
+    ph.fParticleSparseHistogramsBinEdges[eDWCharge][wChargePtAxis]->AddAt(lAxis->GetBinLowEdge(bin), bin - 1);
+  }
+  ph.fParticleSparseHistogramsBinEdges[eDWCharge][wChargePtAxis]->AddAt(lAxis->GetBinLowEdge(1 + lAxis->GetNbins()), lAxis->GetNbins()); // special treatment for last bin
+  delete lAxis;
+  ph.fParticleSparseHistogramsAxisTitle[eDWCharge][wChargePtAxis] = FancyFormatting("Pt");
+
+  // ***) eta-axis for diff charge weights - at the moment I support only fixed-length binning from control histograms, which optionally can be made finer or coarser with cfRebinSparse configurable:
+  ph.fParticleSparseHistogramsNBins[eDWCharge][wChargeEtaAxis] = static_cast<int>(ph.fParticleHistogramsBins[eEta][0] / ph.fRebinSparse[eDWCharge][wChargeEtaAxis]);
+  lAxis = new TAxis(ph.fParticleSparseHistogramsNBins[eDWCharge][wChargeEtaAxis], ph.fParticleHistogramsBins[eEta][1], ph.fParticleHistogramsBins[eEta][2]);
+  ph.fParticleSparseHistogramsBinEdges[eDWCharge][wChargeEtaAxis] = new TArrayD(1 + ph.fParticleSparseHistogramsNBins[eDWCharge][wChargeEtaAxis]);
+  for (int bin = 1; bin <= lAxis->GetNbins(); bin++) {
+    ph.fParticleSparseHistogramsBinEdges[eDWCharge][wChargeEtaAxis]->AddAt(lAxis->GetBinLowEdge(bin), bin - 1);
+  }
+  ph.fParticleSparseHistogramsBinEdges[eDWCharge][wChargeEtaAxis]->AddAt(lAxis->GetBinLowEdge(1 + lAxis->GetNbins()), lAxis->GetNbins()); // special treatment for last bin
+  delete lAxis;
+  ph.fParticleSparseHistogramsAxisTitle[eDWCharge][wChargeEtaAxis] = FancyFormatting("Eta");
+
+  // ***) centrality-axis for diff charge weights - at the moment I support only fixed-length binning from control histograms, which optionally can be made finer or coarser with cfRebinSparse configurable:
+  ph.fParticleSparseHistogramsNBins[eDWCharge][wChargeCentralityAxis] = static_cast<int>(eh.fEventHistogramsBins[eCentrality][0] / ph.fRebinSparse[eDWCharge][wChargeCentralityAxis]);
+  lAxis = new TAxis(ph.fParticleSparseHistogramsNBins[eDWCharge][wChargeCentralityAxis], eh.fEventHistogramsBins[eCentrality][1], eh.fEventHistogramsBins[eCentrality][2]);
+  ph.fParticleSparseHistogramsBinEdges[eDWCharge][wChargeCentralityAxis] = new TArrayD(1 + ph.fParticleSparseHistogramsNBins[eDWCharge][wChargeCentralityAxis]);
+  for (int bin = 1; bin <= lAxis->GetNbins(); bin++) {
+    ph.fParticleSparseHistogramsBinEdges[eDWCharge][wChargeCentralityAxis]->AddAt(lAxis->GetBinLowEdge(bin), bin - 1);
+  }
+  ph.fParticleSparseHistogramsBinEdges[eDWCharge][wChargeCentralityAxis]->AddAt(lAxis->GetBinLowEdge(1 + lAxis->GetNbins()), lAxis->GetNbins()); // special treatment for last bin
+  delete lAxis;
+  ph.fParticleSparseHistogramsAxisTitle[eDWCharge][wChargeCentralityAxis] = "Centrality"; // TBI 20250222 I cannot call here FancyFormatting for "Centrality", because ec.fsEventCuts[eCentralityEstimator] is still not fetched and set from configurable. Re-think how to proceed for this specific case.
+
+  // ...
+
   // e) Book specific particle sparse histograms (n-dimensions):
   if (ph.fBookParticleSparseHistograms[eDWPhi]) {
     BookParticleSparseHistograms(eDWPhi);
@@ -5390,6 +5517,10 @@ void bookParticleHistograms()
 
   if (ph.fBookParticleSparseHistograms[eDWEta]) {
     BookParticleSparseHistograms(eDWEta);
+  }
+
+  if (ph.fBookParticleSparseHistograms[eDWCharge]) {
+    BookParticleSparseHistograms(eDWCharge);
   }
 
   if (tc.fVerbose) {
@@ -5421,6 +5552,10 @@ void BookParticleSparseHistograms(eDiffWeightCategory dwc)
     }
     case eDWEta: {
       nDimensions = static_cast<int>(eDiffEtaWeights_N);
+      break;
+    }
+    case eDWCharge: {
+      nDimensions = static_cast<int>(eDiffChargeWeights_N);
       break;
     }
     default: {
@@ -5977,7 +6112,7 @@ void bookWeightsHistograms()
   }
 
   // a) Book the profile holding flags:
-  pw.fWeightsFlagsPro = new TProfile("fWeightsFlagsPro", "flags for particle weights", 17, 0., 17.);
+  pw.fWeightsFlagsPro = new TProfile("fWeightsFlagsPro", "flags for particle weights", 23, 0., 23.);
   pw.fWeightsFlagsPro->SetStats(false);
   pw.fWeightsFlagsPro->SetLineColor(eColor);
   pw.fWeightsFlagsPro->SetFillColor(eFillColor);
@@ -5991,7 +6126,7 @@ void bookWeightsHistograms()
     pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(4, "(w_{#varphi})_{| p_{T}}"); // TBI 20241019 not sure if this is the final notation, keep in sync with void SetDiffWeightsHist(...)
     pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(5, "(w_{#varphi})_{| #eta}");  // TBI 20241019 not sure if this is the final notation, keep in sync with void SetDiffWeightsHist(...)
 
-    // **) differential phi weights using sparse:
+    // **) differential phi weights using sparse (keep in sync with enum eDiffPhiWeights):
     pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(6, "(w_{#varphi})_{phi axis (sparse)}");
     pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(7, "(w_{#varphi})_{p_{T} axis (sparse)}");
     pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(8, "(w_{#varphi})_{#eta axis (sparse)}");
@@ -5999,11 +6134,23 @@ void bookWeightsHistograms()
     pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(10, "(w_{#varphi})_{centrality axis (sparse)}");
     pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(11, "(w_{#varphi})_{VertexZ axis (sparse)}");
 
-    // **) differential pt weights using sparse:
+    // **) differential pt weights using sparse (keep in sync with enum eDiffPtWeights):
     pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(12, "(w_{p_{T}})_{pt axis (sparse)}");
+    pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(13, "(w_{p_{T}})_{eta axis (sparse)}");
+    pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(14, "(w_{p_{T}})_{charge axis (sparse)}");
+    pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(15, "(w_{p_{T}})_{centrality axis (sparse)}");
 
-    // **) differential eta weights using sparse:
-    pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(13, "(w_{#eta})_{eta axis (sparse)}");
+    // **) differential eta weights using sparse (keep in sync with enum eDiffEtaWeights):
+    pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(16, "(w_{#eta})_{eta axis (sparse)}");
+    pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(17, "(w_{#eta})_{pt axis (sparse)}");
+    pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(18, "(w_{#eta})_{charge axis (sparse)}");
+    pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(19, "(w_{#eta})_{centrality axis (sparse)}");
+
+    // **) differential charge weights using sparse (keep in sync with enum eDiffChargeWeights):
+    pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(20, "(w_{charge})_{charge axis (sparse)}");
+    pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(21, "(w_{charge})_{pt axis (sparse)}");
+    pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(22, "(w_{charge})_{eta axis (sparse)}");
+    pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(23, "(w_{charge})_{centrality axis (sparse)}");
 
   } else {
 
@@ -6016,7 +6163,7 @@ void bookWeightsHistograms()
     yAxisTitle += TString::Format("%d:(w_{#varphi})_{| p_{T}}; ", 4);
     yAxisTitle += TString::Format("%d:(w_{#varphi})_{| #eta}; ", 5);
 
-    // **) differential phi weights using sparse:
+    // **) differential phi weights using sparse (keep in sync with enum eDiffPhiWeights):
     yAxisTitle += TString::Format("%d:(w_{#varphi})_{phi axis (sparse)}; ", 6);
     yAxisTitle += TString::Format("%d:(w_{#varphi})_{p_{T} axis (sparse)}; ", 7);
     yAxisTitle += TString::Format("%d:(w_{#varphi})_{#eta axis (sparse)}; ", 8);
@@ -6024,15 +6171,23 @@ void bookWeightsHistograms()
     yAxisTitle += TString::Format("%d:(w_{#varphi})_{centrality axis (sparse)}; ", 10);
     yAxisTitle += TString::Format("%d:(w_{#varphi})_{VertexZ axis (sparse)}; ", 11);
 
-    // **) differential pt weights using sparse:
+    // **) differential pt weights using sparse (keep in sync with enum eDiffPtWeights):
     yAxisTitle += TString::Format("%d:(w_{p_{T}})_{pt axis (sparse)}; ", 12);
-    yAxisTitle += TString::Format("%d:(w_{p_{T}})_{charge axis (sparse)}; ", 13);
-    yAxisTitle += TString::Format("%d:(w_{p_{T}})_{centrality axis (sparse)}; ", 14);
+    yAxisTitle += TString::Format("%d:(w_{p_{T}})_{eta axis (sparse)}; ", 13);
+    yAxisTitle += TString::Format("%d:(w_{p_{T}})_{charge axis (sparse)}; ", 14);
+    yAxisTitle += TString::Format("%d:(w_{p_{T}})_{centrality axis (sparse)}; ", 15);
 
-    // **) differential eta weights using sparse:
-    yAxisTitle += TString::Format("%d:(w_{#eta})_{eta axis (sparse)}; ", 15);
-    yAxisTitle += TString::Format("%d:(w_{#eta})_{charge axis (sparse)}; ", 16);
-    yAxisTitle += TString::Format("%d:(w_{#eta})_{centrality axis (sparse)}; ", 17);
+    // **) differential eta weights using sparse (keep in sync with enum eDiffEtaWeights):
+    yAxisTitle += TString::Format("%d:(w_{#eta})_{eta axis (sparse)}; ", 16);
+    yAxisTitle += TString::Format("%d:(w_{#eta})_{pt axis (sparse)}; ", 17);
+    yAxisTitle += TString::Format("%d:(w_{#eta})_{charge axis (sparse)}; ", 18);
+    yAxisTitle += TString::Format("%d:(w_{#eta})_{centrality axis (sparse)}; ", 19);
+
+    // **) differential charge weights using sparse (keep in sync with enum eDiffChargeWeights):
+    yAxisTitle += TString::Format("%d:(w_{charge})_{charge axis (sparse)}; ", 20);
+    yAxisTitle += TString::Format("%d:(w_{charge})_{pt axis (sparse)}; ", 21);
+    yAxisTitle += TString::Format("%d:(w_{charge})_{eta axis (sparse)}; ", 22);
+    yAxisTitle += TString::Format("%d:(w_{charge})_{centrality axis (sparse)}; ", 23);
 
     // ...
 
@@ -6089,22 +6244,42 @@ void bookWeightsHistograms()
   if (pw.fUseDiffPtWeights[wPtPtAxis]) {
     pw.fWeightsFlagsPro->Fill(11.5, 1.);
   }
-  if (pw.fUseDiffPhiWeights[wPtChargeAxis]) {
+  if (pw.fUseDiffPtWeights[wPtEtaAxis]) {
     pw.fWeightsFlagsPro->Fill(12.5, 1.);
   }
-  if (pw.fUseDiffPhiWeights[wPtCentralityAxis]) {
+  if (pw.fUseDiffPtWeights[wPtChargeAxis]) {
     pw.fWeightsFlagsPro->Fill(13.5, 1.);
+  }
+  if (pw.fUseDiffPtWeights[wPtCentralityAxis]) {
+    pw.fWeightsFlagsPro->Fill(14.5, 1.);
   }
 
   // **) differential eta weights using sparse:
   if (pw.fUseDiffEtaWeights[wEtaEtaAxis]) {
-    pw.fWeightsFlagsPro->Fill(14.5, 1.);
-  }
-  if (pw.fUseDiffPhiWeights[wEtaChargeAxis]) {
     pw.fWeightsFlagsPro->Fill(15.5, 1.);
   }
-  if (pw.fUseDiffPhiWeights[wEtaCentralityAxis]) {
+  if (pw.fUseDiffEtaWeights[wEtaPtAxis]) {
     pw.fWeightsFlagsPro->Fill(16.5, 1.);
+  }
+  if (pw.fUseDiffEtaWeights[wEtaChargeAxis]) {
+    pw.fWeightsFlagsPro->Fill(17.5, 1.);
+  }
+  if (pw.fUseDiffEtaWeights[wEtaCentralityAxis]) {
+    pw.fWeightsFlagsPro->Fill(18.5, 1.);
+  }
+
+  // **) differential charge weights using sparse:
+  if (pw.fUseDiffChargeWeights[wChargeChargeAxis]) {
+    pw.fWeightsFlagsPro->Fill(19.5, 1.);
+  }
+  if (pw.fUseDiffChargeWeights[wChargePtAxis]) {
+    pw.fWeightsFlagsPro->Fill(20.5, 1.);
+  }
+  if (pw.fUseDiffChargeWeights[wChargeEtaAxis]) {
+    pw.fWeightsFlagsPro->Fill(21.5, 1.);
+  }
+  if (pw.fUseDiffChargeWeights[wChargeCentralityAxis]) {
+    pw.fWeightsFlagsPro->Fill(22.5, 1.);
   }
 
   pw.fWeightsList->Add(pw.fWeightsFlagsPro);
@@ -6427,20 +6602,22 @@ void bookNUAHistograms()
   }
 
   // a) Book the profile holding flags:
-  nua.fNUAFlagsPro = new TProfile("fNUAFlagsPro", "flags for Toy NUA", 6, 0.5, 6.5);
+  nua.fNUAFlagsPro = new TProfile("fNUAFlagsPro", "flags for Toy NUA", 8, 0.5, 8.5);
   nua.fNUAFlagsPro->SetStats(false);
   nua.fNUAFlagsPro->SetLineColor(eColor);
   nua.fNUAFlagsPro->SetFillColor(eFillColor);
   nua.fNUAFlagsPro->GetXaxis()->SetLabelSize(0.03);
 
-  // TBI 20240429 the binning below is a bit fragile, but ok...
+  // TBI 20260312 the binning below is a bit fragile, but ok...
   if (tc.fUseSetBinLabel) {
     nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(1 + ePhiNUAPDF), "fApplyNUAPDF[phi]");
     nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(1 + ePtNUAPDF), "fApplyNUAPDF[pt]");
     nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(1 + eEtaNUAPDF), "fApplyNUAPDF[eta]");
-    nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(4 + ePhiNUAPDF), "fUseDefaultNUAPDF[phi]");
-    nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(4 + ePtNUAPDF), "fUseDefaultNUAPDF[pt]");
-    nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(4 + eEtaNUAPDF), "fUseDefaultNUAPDF[eta]");
+    nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(1 + eChargeNUAPDF), "fApplyNUAPDF[charge]");
+    nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(5 + ePhiNUAPDF), "fUseDefaultNUAPDF[phi]");
+    nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(5 + ePtNUAPDF), "fUseDefaultNUAPDF[pt]");
+    nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(5 + eEtaNUAPDF), "fUseDefaultNUAPDF[eta]");
+    nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(5 + eChargeNUAPDF), "fUseDefaultNUAPDF[charge]");
 
     // ...
 
@@ -6452,9 +6629,11 @@ void bookNUAHistograms()
     yAxisTitle += TString::Format("%d:fApplyNUAPDF[phi]; ", static_cast<int>(1 + ePhiNUAPDF));
     yAxisTitle += TString::Format("%d:fApplyNUAPDF[pt]; ", static_cast<int>(1 + ePtNUAPDF));
     yAxisTitle += TString::Format("%d:fApplyNUAPDF[eta]; ", static_cast<int>(1 + eEtaNUAPDF));
-    yAxisTitle += TString::Format("%d:fUseDefaultNUAPDF[phi]; ", static_cast<int>(4 + ePhiNUAPDF));
-    yAxisTitle += TString::Format("%d:fUseDefaultNUAPDF[pt]; ", static_cast<int>(4 + ePtNUAPDF));
-    yAxisTitle += TString::Format("%d:fUseDefaultNUAPDF[eta]; ", static_cast<int>(4 + eEtaNUAPDF));
+    yAxisTitle += TString::Format("%d:fApplyNUAPDF[charge]; ", static_cast<int>(1 + eChargeNUAPDF));
+    yAxisTitle += TString::Format("%d:fUseDefaultNUAPDF[phi]; ", static_cast<int>(5 + ePhiNUAPDF));
+    yAxisTitle += TString::Format("%d:fUseDefaultNUAPDF[pt]; ", static_cast<int>(5 + ePtNUAPDF));
+    yAxisTitle += TString::Format("%d:fUseDefaultNUAPDF[eta]; ", static_cast<int>(5 + eEtaNUAPDF));
+    yAxisTitle += TString::Format("%d:fUseDefaultNUAPDF[charge]; ", static_cast<int>(5 + eChargeNUAPDF));
 
     // ...
 
@@ -6481,26 +6660,32 @@ void bookNUAHistograms()
   if (nua.fApplyNUAPDF[eEtaNUAPDF]) {
     nua.fNUAFlagsPro->Fill(static_cast<int>(1 + eEtaNUAPDF), 1.);
   }
+  if (nua.fApplyNUAPDF[eChargeNUAPDF]) {
+    nua.fNUAFlagsPro->Fill(static_cast<int>(1 + eChargeNUAPDF), 1.);
+  }
   if (nua.fUseDefaultNUAPDF[ePhiNUAPDF]) {
-    nua.fNUAFlagsPro->Fill(static_cast<int>(4 + ePhiNUAPDF), 1.);
+    nua.fNUAFlagsPro->Fill(static_cast<int>(5 + ePhiNUAPDF), 1.);
   }
   if (nua.fUseDefaultNUAPDF[ePtNUAPDF]) {
-    nua.fNUAFlagsPro->Fill(static_cast<int>(4 + ePtNUAPDF), 1.);
+    nua.fNUAFlagsPro->Fill(static_cast<int>(5 + ePtNUAPDF), 1.);
   }
   if (nua.fUseDefaultNUAPDF[eEtaNUAPDF]) {
-    nua.fNUAFlagsPro->Fill(static_cast<int>(4 + eEtaNUAPDF), 1.);
+    nua.fNUAFlagsPro->Fill(static_cast<int>(5 + eEtaNUAPDF), 1.);
+  }
+  if (nua.fUseDefaultNUAPDF[eChargeNUAPDF]) {
+    nua.fNUAFlagsPro->Fill(static_cast<int>(5 + eChargeNUAPDF), 1.);
   }
   nua.fNUAList->Add(nua.fNUAFlagsPro);
 
-  if (!(nua.fApplyNUAPDF[ePhiNUAPDF] || nua.fApplyNUAPDF[ePtNUAPDF] || nua.fApplyNUAPDF[eEtaNUAPDF])) {
+  if (!(nua.fApplyNUAPDF[ePhiNUAPDF] || nua.fApplyNUAPDF[ePtNUAPDF] || nua.fApplyNUAPDF[eEtaNUAPDF] || nua.fApplyNUAPDF[eChargeNUAPDF])) {
     return;
   }
 
   // b) Common local labels:
-  TString sVariable[eNUAPDF_N] = {"#varphi", "p_{t}", "#eta"}; // has to be in sync with the ordering of enum eNUAPDF
+  TString sVariable[eNUAPDF_N] = {"#varphi", "p_{t}", "#eta", "charge"}; // has to be in sync with the ordering of enum eNUAPDF
 
   // c) Histograms:
-  for (int pdf = 0; pdf < eNUAPDF_N; pdf++) // use pdfs for NUA in (phi, pt, eta, ...)
+  for (int pdf = 0; pdf < eNUAPDF_N; pdf++) // use pdfs for NUA in (phi, pt, eta, charge, ...)
   {
     if (!nua.fCustomNUAPDF[pdf]) // yes, because these histos are cloned from the external ones, see void SetNUAPDF(TH1D* const hist, const char* variable);
     {
@@ -6547,7 +6732,7 @@ void bookNUAHistograms()
         if (!nua.fApplyNUAPDF[eEtaNUAPDF]) {
           continue;
         }
-        // Define default detector acceptance in pseudorapidity: One sectors, with probability < 1.
+        // Define default detector acceptance in pseudorapidity: One sector, with probability < 1.
         double dSector[2] = {0.2, 0.6}; // sector is defined as 0.2 < eta < 0.6
         double dProbability = 0.2;      // probability, so after being set this way, only 20% of particles in that sector are reconstructed
         nua.fDefaultNUAPDF[eEtaNUAPDF] = new TF1(TString::Format("fDefaultNUAPDF[%d]", eEtaNUAPDF), "1.-(x>=[0])*(1.-[2]) + (x>=[1])*(1.-[2])",
@@ -6556,6 +6741,21 @@ void bookNUAHistograms()
         nua.fDefaultNUAPDF[eEtaNUAPDF]->SetParameter(1, dSector[1]);
         nua.fDefaultNUAPDF[eEtaNUAPDF]->SetParameter(2, dProbability);
         nua.fNUAList->Add(nua.fDefaultNUAPDF[eEtaNUAPDF]);
+      } else if (sVariable[pdf].EqualTo("charge")) {
+
+        // *) default NUA for charge pdf:
+        if (!nua.fApplyNUAPDF[eChargeNUAPDF]) {
+          continue;
+        }
+        // Define default detector acceptance in charge: Particles with negative charge, I take with probability 50%
+        double dSector[2] = {-1., 0.}; // nua sector is defined for charge in the range -1. < charge < 0.
+        double dProbability = 0.5;     // probability, so after being set this way, only 50% of particles in that sector are reconstructed
+        nua.fDefaultNUAPDF[eChargeNUAPDF] = new TF1(TString::Format("fDefaultNUAPDF[%d]", eChargeNUAPDF), "1.-(x>=[0])*(1.-[2]) + (x>=[1])*(1.-[2])",
+                                                    ph.fParticleHistogramsBins[eCharge][1], ph.fParticleHistogramsBins[eCharge][2]);
+        nua.fDefaultNUAPDF[eChargeNUAPDF]->SetParameter(0, dSector[0]);
+        nua.fDefaultNUAPDF[eChargeNUAPDF]->SetParameter(1, dSector[1]);
+        nua.fDefaultNUAPDF[eChargeNUAPDF]->SetParameter(2, dProbability);
+        nua.fNUAList->Add(nua.fDefaultNUAPDF[eChargeNUAPDF]);
       } else {
         LOGF(fatal, "\033[1;31m%s at line %d : pdf = %s is not supported (yet)\n \033[0m", __FUNCTION__, __LINE__, sVariable[pdf].Data());
       }
@@ -6579,7 +6779,7 @@ void bookNUAHistograms()
       nua.fMaxValuePDF[pdf] = nua.fDefaultNUAPDF[pdf]->GetMaximum(ph.fParticleHistogramsBins[pdf][1], ph.fParticleHistogramsBins[pdf][2]);
     }
 
-  } // for(int pdf=0;pdf<eNUAPDF_N;pdf++) // use pdfs for NUA in (phi, pt, eta, ...).
+  } // for(int pdf=0;pdf<eNUAPDF_N;pdf++) // use pdfs for NUA in (phi, pt, eta, charge, ...).
 
   if (tc.fVerbose) {
     ExitFunction(__FUNCTION__);
@@ -6814,6 +7014,14 @@ void InternalValidation()
       pw.fParticleWeightsAreFetched = true;
     }
 
+    // differential charge weights:
+    if (pw.fUseDiffChargeWeights[wChargeChargeAxis]) { // Yes, I check only the first flag. This way, I can switch off all differential Charge weights by setting 0-wCharge in config.
+                                                       // On the other hand, it doesn't make sense to calculate differential charge weights without having charge axis.
+                                                       // At any point I shall be able to fall back to integrated charge weights, that corresponds to the case wheh "1-wCharge" and all others are "0-w..."
+      GetParticleWeights();
+      pw.fParticleWeightsAreFetched = true;
+    }
+
   } // if (!pw.fParticleWeightsAreFetched) {
 
   // a) Fourier like p.d.f. for azimuthal angles and flow amplitudes:
@@ -6922,12 +7130,19 @@ void InternalValidation()
     fPhiPDF->SetParameter(1, 0.04); // v1 = 0.04 = const in this parameterization
     fPhiPDF->SetParameter(3, 0.06); // v3 = 0.06 = const in this parameterization
     // Amplitude v2(pt) and reaction plane are pbyp set ebye in the loop below
-  } else if (iv.fHarmonicsOptionInternalValidation->EqualTo("ptEtaDependent")) {
-    // For this option, one selected vn harmonic (v2) depends both on pT and eta.
-    // pt dependence is the same as defined in Eq. (32) in arXiv:1312.3572
-    // eta dependence is defined as 0.4 - (1/4) eta^2, so that v2(eta) = 0.24 at eta = +-0.8, and v2(eta) = 0.4 at eta = 0 (keep in sync with details below, when I am sampling pt and eta)
-    // to increase significance, I multiply by factor of 2 the sampled v2(pt,eta) (see the formula below when sampling)
-    // I still use constant v1 = 0.04 and v3 = 0.06 in this example + one common reaction plane.
+  } else if (iv.fHarmonicsOptionInternalValidation->EqualTo("ptEtaDependent") || iv.fHarmonicsOptionInternalValidation->EqualTo("ptEtaChargeDependent")) {
+    // a) "ptEtaDependent":
+    //    For this option, one selected vn harmonic (v2) depends both on pT and eta.
+    //    pt dependence is the same as defined in Eq. (32) in arXiv:1312.3572
+    //    eta dependence is defined as 0.4 - (1/4) eta^2, so that v2(eta) = 0.24 at eta = +-0.8, and v2(eta) = 0.4 at eta = 0 (keep in sync with details below, when I am sampling pt and eta)
+    //    to increase significance, I multiply by factor of 2 the sampled v2(pt,eta) (see the formula below when sampling)
+    //    I still use constant v1 = 0.04 and v3 = 0.06 in this example + one common reaction plane.
+
+    // b) "ptEtaChargeDependent":
+    //    For this option, one selected vn harmonic (v2) depends on pT, eta and charge.
+    //    pt and eta dependence, and all other settings are the same as in the option "ptEtaDependent"
+    //    The only difference in this option that for particles with positive charge, I downscale their v2 by 25%, i.e. v2(positive) = 0.75 v2 (negative), everything else is the same.
+    //    Therefore, I can use the same config here both for "ptEtaDependent" and "ptEtaChargeDependent", the charge dependence I introduce later in the loop below
 
     // Azimuthal angles are sampled from this pdf:
     fPhiPDF = new TF1("fPhiPDF", "1 + 2.*[1]*std::cos(x-[0]) + 2.*[2]*std::cos(2.*(x-[0])) + 2.*[3]*std::cos(3.*(x-[0]))", 0., o2::constants::math::TwoPI);
@@ -6944,7 +7159,7 @@ void InternalValidation()
     // Set constant parameters here:
     fPhiPDF->SetParameter(1, 0.04); // v1 = 0.04 = const in this parameterization
     fPhiPDF->SetParameter(3, 0.06); // v3 = 0.06 = const in this parameterization
-    // Amplitude v2(pt,eta) and reaction plane are pbyp set ebye in the loop below
+    // Amplitude v2(pt,eta) for option "ptEtaDependent" and amplitude v2(pt,eta,charge) for option "ptEtaChargeDependent", and reaction plane are pbyp set ebye in the loop below
   }
 
   // b) Loop over on-the-fly events:
@@ -6969,7 +7184,7 @@ void InternalValidation()
       fPhiPDF->SetParameter(3, fReactionPlane);
     } else if (iv.fHarmonicsOptionInternalValidation->EqualTo("ptDependent")) {
       fPhiPDF->SetParameter(0, fReactionPlane);
-    } else if (iv.fHarmonicsOptionInternalValidation->EqualTo("ptEtaDependent")) {
+    } else if (iv.fHarmonicsOptionInternalValidation->EqualTo("ptEtaDependent") || iv.fHarmonicsOptionInternalValidation->EqualTo("ptEtaChargeDependent")) {
       fPhiPDF->SetParameter(0, fReactionPlane);
     }
     // Remark: I do not need here anything for option "persistent", because RP is not used for that case. See below how 3 symmetry planes are introduced with persistent correlation
@@ -7070,7 +7285,7 @@ void InternalValidation()
         float fV2vsPtMax = 0.3;
         // v2(pt): for pt < fV2vsPtCutOff v2 increases linearly, for pt >= fV2vsPtCutOff v2 = fV2vsPtMax, see Eq. (32) in arXiv:1312.3572
         pbyp.fPt < fV2vsPtCutOff ? fPhiPDF->SetParameter(2, pbyp.fPt * fV2vsPtMax / fV2vsPtCutOff) : fPhiPDF->SetParameter(2, fV2vsPtMax);
-      } else if (iv.fHarmonicsOptionInternalValidation->EqualTo("ptEtaDependent")) {
+      } else if (iv.fHarmonicsOptionInternalValidation->EqualTo("ptEtaDependent") || iv.fHarmonicsOptionInternalValidation->EqualTo("ptEtaChargeDependent")) {
         float fV2vsPtCutOff = 2.0; // TBI 20250729 I could add configurables for these 2 variables at some point, otherwise, simply hardwire the constants in the expression below
         float fV2vsPtMax = 0.3;    // TBI 20250729 I shall NOT use f to name these two variables, rename eventually
         // pt dependence: for pt < fV2vsPtCutOff v2 increases linearly, for pt >= fV2vsPtCutOff v2 = fV2vsPtMax, see Eq. (32) in arXiv:1312.3572
@@ -7081,7 +7296,14 @@ void InternalValidation()
         if (v2 < 0. || v2 > 0.5) {
           LOGF(fatal, "\033[1;31m%s at line %d : v2 = %f\033[0m", __FUNCTION__, __LINE__, v2);
         }
-        fPhiPDF->SetParameter(2, v2); // set v2(pt,eta) for this particle
+        if (iv.fHarmonicsOptionInternalValidation->EqualTo("ptEtaDependent")) {
+          fPhiPDF->SetParameter(2, v2); // set v2(pt,eta) for this particle
+        } else if (iv.fHarmonicsOptionInternalValidation->EqualTo("ptEtaChargeDependent")) {
+          if (pbyp.fCharge > 0.) {
+            v2 *= 0.75; // trim down by 25% only v2 of positive particles in this toy model
+          }
+          fPhiPDF->SetParameter(2, v2); // set v2(pt,eta,charge) for this particle
+        }
       }
 
       // Finally, sample particle angle:
@@ -7119,6 +7341,14 @@ void InternalValidation()
             double vector[eDiffEtaWeights_N] = {pbyp.fEta, pbyp.fPt, pbyp.fCharge, ebye.fCentrality};
             ph.fParticleSparseHistograms[eDWEta][eSim][eBefore]->Fill(vector);
           }
+
+          // **) eDWCharge : here the fundamental 0-th axis never to be projected out is "charge"
+          if (ph.fBookParticleSparseHistograms[eDWCharge]) {
+            // Remark: It is mandatory that ordering in initialization here resembles the ordering in enum eDiffChargeWeights
+            double vector[eDiffChargeWeights_N] = {pbyp.fCharge, pbyp.fPt, pbyp.fEta, ebye.fCentrality};
+            ph.fParticleSparseHistograms[eDWCharge][eSim][eBefore]->Fill(vector);
+          }
+
         } // ph.fFillParticleSparseHistogramsBeforeCuts
       } // if (ph.fFillParticleHistograms || ph.fFillParticleHistograms2D)
 
@@ -7156,6 +7386,9 @@ void InternalValidation()
       if (nua.fApplyNUAPDF[eEtaNUAPDF] && !Accept(pbyp.fEta, eEtaNUAPDF)) {
         continue;
       }
+      if (nua.fApplyNUAPDF[eChargeNUAPDF] && !Accept(pbyp.fCharge, eChargeNUAPDF)) {
+        continue;
+      }
 
       // *) Fill few selected particle histograms after cuts here directly here:
       // Remark: I do not call FillParticleHistograms<rs>(track, eAfter), as I do not want to bother to make here full 'track' object, etc., just to fill simple kine info:
@@ -7186,6 +7419,12 @@ void InternalValidation()
           // Remark: It is mandatory that ordering in initialization here resembles the ordering in enum eDiffEtaWeights
           double vector[eDiffEtaWeights_N] = {pbyp.fEta, pbyp.fPt, pbyp.fCharge, ebye.fCentrality};
           ph.fParticleSparseHistograms[eDWEta][eSim][eAfter]->Fill(vector);
+        }
+        // **) eDWCharge : here the fundamental 0-th axis never to be projected out is "charge"
+        if (ph.fBookParticleSparseHistograms[eDWCharge]) {
+          // Remark: It is mandatory that ordering in initialization here resembles the ordering in enum eDiffChargeWeights
+          double vector[eDiffChargeWeights_N] = {pbyp.fCharge, pbyp.fPt, pbyp.fEta, ebye.fCentrality};
+          ph.fParticleSparseHistograms[eDWCharge][eSim][eAfter]->Fill(vector);
         }
       } // if (ph.fFillParticleHistograms || ph.fFillParticleHistograms2D)
 
@@ -7295,8 +7534,8 @@ bool Accept(const double& value, int var)
   // Given the acceptance profile for this observable, accept or not that observable for the analysis.
   // Use in Toy NUA studies.
 
-  // Remark: var corresponds to the field in enum eNUAPDF { ePhiNUAPDF, ePtNUAPDF, eEtaNUAPDF };
-  //         Therefore, always call this function as e.g. Accept(someAngle, ePhiNUAPDF) or Accept(somePt, ePtNUAPDF)
+  // Remark: var corresponds to the field in enum eNUAPDF { ePhiNUAPDF, ePtNUAPDF, eEtaNUAPDF, eChargeNUAPDF };
+  //         Therefore, always call this function as e.g. Accept(someAngle, ePhiNUAPDF) or Accept(somePt, ePtNUAPDF), etc.
 
   if (tc.fVerboseForEachParticle) {
     LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
@@ -11082,7 +11321,7 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
   // *) Toy NUA:
   //    TBI 20250718 Check if can optimize here something by using new global pbyp.fPhi, pbyp.fPt, etc, variables. Most likely yes, since I would avoid calling again track.phi(), etc.
   //                 But I do not use Toy NUA in any case for real large-scale data analysis.
-  if (nua.fApplyNUAPDF[ePhiNUAPDF] || nua.fApplyNUAPDF[ePtNUAPDF] || nua.fApplyNUAPDF[eEtaNUAPDF]) {
+  if (nua.fApplyNUAPDF[ePhiNUAPDF] || nua.fApplyNUAPDF[ePtNUAPDF] || nua.fApplyNUAPDF[eEtaNUAPDF] || nua.fApplyNUAPDF[eChargeNUAPDF]) {
 
     // Remark: I do not for the time being add Toy NUA cuts to particle cut counters, since in this case I can inspect direcly from phi, pt and eta distributions.
 
@@ -11090,12 +11329,14 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
     double dPhi = 0.;
     double dPt = 0.;
     double dEta = 0.;
+    double dCharge = 0.;
 
     // *) Apply Toy NUA on info available in reconstructed (and the corresponding MC truth simulated track);
     if constexpr (rs == eRec || rs == eRecAndSim || rs == eRec_Run2 || rs == eRecAndSim_Run2 || rs == eRec_Run1 || rs == eRecAndSim_Run1) {
       dPhi = track.phi();
       dPt = track.pt();
       dEta = track.eta();
+      dCharge = track.sign();
 
       // Apply NUA on these kine variables:
       if (nua.fApplyNUAPDF[ePhiNUAPDF] && !Accept(dPhi, ePhiNUAPDF)) {
@@ -11105,6 +11346,9 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
         return false;
       }
       if (nua.fApplyNUAPDF[eEtaNUAPDF] && !Accept(dEta, eEtaNUAPDF)) {
+        return false;
+      }
+      if (nua.fApplyNUAPDF[eChargeNUAPDF] && !Accept(dCharge, eChargeNUAPDF)) {
         return false;
       }
 
@@ -11118,6 +11362,12 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
         dPhi = mcParticle.phi();
         dPt = mcParticle.pt();
         dEta = mcParticle.eta();
+        // special treatment for charge, because there is no getter mcParticle.sign()
+        dCharge = -44.; // yes, never initialize charge to 0.
+        if (tc.fDatabasePDG && tc.fDatabasePDG->GetParticle(mcParticle.pdgCode())) {
+          // Yes, I have to check the 2nd condition, because e.g. for PDG code 1000010020 (deuteron), GetParticle(...) returns NULL
+          dCharge = tc.fDatabasePDG->GetParticle(mcParticle.pdgCode())->Charge() / 3.; // yes, divided by 3. Fundamental unit of charge is associated with quarks
+        }
 
         // Apply NUA on these kine variables:
         if (nua.fApplyNUAPDF[ePhiNUAPDF] && !Accept(dPhi, ePhiNUAPDF)) {
@@ -11127,6 +11377,9 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
           return false;
         }
         if (nua.fApplyNUAPDF[eEtaNUAPDF] && !Accept(dEta, eEtaNUAPDF)) {
+          return false;
+        }
+        if (nua.fApplyNUAPDF[eChargeNUAPDF] && !Accept(dCharge, eChargeNUAPDF)) {
           return false;
         }
 
@@ -11139,6 +11392,12 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
       dPhi = track.phi();
       dPt = track.pt();
       dEta = track.eta();
+      // special treatment for charge, because there is no getter mcParticle.sign()
+      dCharge = -44.; // yes, never initialize charge to 0.
+      if (tc.fDatabasePDG && tc.fDatabasePDG->GetParticle(track.pdgCode())) {
+        // Yes, I have to check the 2nd condition, because e.g. for PDG code 1000010020 (deuteron), GetParticle(...) returns NULL
+        dCharge = tc.fDatabasePDG->GetParticle(track.pdgCode())->Charge() / 3.; // yes, divided by 3. Fundamental unit of charge is associated with quarks
+      }
 
       // Apply NUA on these kine variables:
       if (nua.fApplyNUAPDF[ePhiNUAPDF] && !Accept(dPhi, ePhiNUAPDF)) {
@@ -11150,9 +11409,12 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
       if (nua.fApplyNUAPDF[eEtaNUAPDF] && !Accept(dEta, eEtaNUAPDF)) {
         return false;
       }
+      if (nua.fApplyNUAPDF[eChargeNUAPDF] && !Accept(dCharge, eChargeNUAPDF)) {
+        return false;
+      }
     } // if constexpr (rs == eSim || rs == eSim_Run2 || rs == eSim_Run1) {
 
-  } // if(nua.fApplyNUAPDF[ePhiNUAPDF] || nua.fApplyNUAPDF[ePtNUAPDF] || nua.fApplyNUAPDF[eEtaNUAPDF]) {
+  } // if(nua.fApplyNUAPDF[ePhiNUAPDF] || nua.fApplyNUAPDF[ePtNUAPDF] || nua.fApplyNUAPDF[eEtaNUAPDF] || nua.fApplyNUAPDF[eChargeNUAPDF]) {
 
   return true;
 
@@ -11294,6 +11556,12 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba, int weight = 1)
         // Remark: It is mandatory that ordering in initialization here resembles the ordering in enum eDiffEtaWeights
         double vector[eDiffEtaWeights_N] = {track.eta(), track.pt(), static_cast<double>(track.sign()), ebye.fCentrality};
         ph.fParticleSparseHistograms[eDWEta][eRec][ba]->Fill(vector, weight);
+      }
+      // **) eDWCharge : here the fundamental 0-th axis never to be projected out is "charge"
+      if (ph.fBookParticleSparseHistograms[eDWCharge]) {
+        // Remark: It is mandatory that ordering in initialization here resembles the ordering in enum eDiffChargeWeights
+        double vector[eDiffChargeWeights_N] = {static_cast<double>(track.sign()), track.pt(), track.eta(), ebye.fCentrality};
+        ph.fParticleSparseHistograms[eDWCharge][eRec][ba]->Fill(vector, weight);
       }
     } // if (ba == eAfter ... ) {
 
@@ -11459,6 +11727,20 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba, int weight = 1)
           double vector[eDiffEtaWeights_N] = {mcParticle.eta(), mcParticle.pt(), charge, ebye.fCentralitySim};
           ph.fParticleSparseHistograms[eDWEta][eSim][ba]->Fill(vector, weight);
         }
+        // **) eDWCharge : here the fundamental 0-th axis never to be projected out is "charge"
+        if (ph.fBookParticleSparseHistograms[eDWCharge]) {
+          // Remark: It is mandatory that ordering in initialization here resembles the ordering in enum eDiffChargeWeights
+
+          // special treatment for charge, because there is no getter mcParticle.sign()
+          double charge = -44.; // yes, never initialize charge to 0.
+          if (tc.fDatabasePDG && tc.fDatabasePDG->GetParticle(mcParticle.pdgCode())) {
+            // Yes, I have to check the 2nd condition, because e.g. for PDG code 1000010020 (deuteron), GetParticle(...) returns NULL
+            charge = tc.fDatabasePDG->GetParticle(mcParticle.pdgCode())->Charge() / 3.; // yes, divided by 3. Fundamental unit of charge is associated with quarks
+          }
+          double vector[eDiffChargeWeights_N] = {charge, mcParticle.pt(), mcParticle.eta(), ebye.fCentralitySim};
+          ph.fParticleSparseHistograms[eDWCharge][eSim][ba]->Fill(vector, weight);
+        }
+
       } // if (ba == eAfter ... ) {
 
     } // if constexpr (rs == eRecAndSim || rs == eRecAndSim_Run2 || rs == eRecAndSim_Run1) {
@@ -13263,6 +13545,7 @@ void FillNestedLoopsContainers(const int& particleIndex)
     double wPhi = 1.;
     double wPt = 1.;
     double wEta = 1.;
+    double wCharge = 1.;
 
     if (pw.fUseDiffPhiWeights[wPhiPhiAxis]) { // yes, 0th axis serves as a common boolean for this category
       wPhi = WeightFromSparse(eDWPhi);
@@ -13274,6 +13557,10 @@ void FillNestedLoopsContainers(const int& particleIndex)
 
     if (pw.fUseDiffEtaWeights[wEtaEtaAxis]) { // yes, 0th axis serves as a common boolean for this category
       wEta = WeightFromSparse(eDWEta);
+    }
+
+    if (pw.fUseDiffChargeWeights[wChargeChargeAxis]) { // yes, 0th axis serves as a common boolean for this category
+      wCharge = WeightFromSparse(eDWCharge);
     }
 
     if (pw.fUseWeights[wPHI]) { // TBI 20260216 obsolete, remove eventually
@@ -13288,7 +13575,7 @@ void FillNestedLoopsContainers(const int& particleIndex)
       wEta = Weight(pbyp.fEta, wETA);
     }
 
-    nl.ftaNestedLoops[1]->AddAt(wPhi * wPt * wEta, particleIndex); // remember that the 2nd argument here must start from 0
+    nl.ftaNestedLoops[1]->AddAt(wPhi * wPt * wEta * wCharge, particleIndex); // remember that the 2nd argument here must start from 0
   }
 
   if (tc.fVerbose) {
@@ -14108,7 +14395,7 @@ void insanitizeDiffWeightsSparse(THnSparseF* const sparse)
         LOGF(fatal, "\033[1;31m%s at line %d : axis %d (#eta) of sparse %s has upper boundary %f, while upper cut on that variable is %f. This means that for some particles I won't be able to fetch weights from this sparse. \033[0m", __FUNCTION__, __LINE__, d, sparse->GetName(), sparse->GetAxis(d)->GetBinUpEdge(sparse->GetAxis(d)->GetNbins()), pc.fdParticleCuts[eEta][eMax]);
       }
 
-    } else if (!axisTitle.compare("Charge")) {
+    } else if (!axisTitle.compare("Charge") || !axisTitle.compare("charge")) {
 
       // check lower boundary:
       if ((pc.fdParticleCuts[eCharge][eMin] < sparse->GetAxis(d)->GetBinLowEdge(1)) && (std::abs(sparse->GetAxis(d)->GetBinLowEdge(1) - pc.fdParticleCuts[eCharge][eMin]) > tc.fFloatingPointPrecision)) {
@@ -14551,7 +14838,7 @@ THnSparseF* GetSparseHistogramWithWeights(const char* filePath, const char* runN
 
   // b) Basic protection for arguments:
   //    Remark: below I do one more specific check.
-  if (!(TString(whichCategory).EqualTo("phi") || TString(whichCategory).EqualTo("pt") || TString(whichCategory).EqualTo("eta"))) {
+  if (!(TString(whichCategory).EqualTo("phi") || TString(whichCategory).EqualTo("pt") || TString(whichCategory).EqualTo("eta") || TString(whichCategory).EqualTo("charge"))) {
     LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
   }
   if (TString(whichDimensions).EqualTo("")) {
@@ -14712,6 +14999,8 @@ THnSparseF* GetSparseHistogramWithWeights(const char* filePath, const char* runN
   }
 
   if (!sparseHist) {
+    LOGF(info, "\033[1;33m%s at line %d : filePath = \"%s\"\033[0m", __FUNCTION__, __LINE__, filePath);
+    LOGF(info, "\033[1;33m%s at line %d : runNumber = \"%s\"\033[0m", __FUNCTION__, __LINE__, runNumber);
     listWithRuns->ls();
     LOGF(fatal, "\033[1;31m%s at line %d : couldn't fetch sparse histogram with name = %s from this list\033[0m", __FUNCTION__, __LINE__, sparseHistName.Data());
   }
@@ -15763,7 +16052,10 @@ double WeightFromSparse(eDiffWeightCategory dwc)
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
-  }
+    LOGF(info, "\033[1;31m dwc = %d\033[0m", static_cast<int>(dwc));
+    LOGF(info, "\033[1;31m%s at line %d : printing current status of all weights flags\033[0m", __FUNCTION__, __LINE__);
+    PrintAllWeightsFlags();
+  } // if (tc.fVerbose) {
 
   // *) Reduce dimensionality if possible, i.e. look up only the dimensions in sparse histogram which were requested in this analysis:
   int dim = 1; // yes, because dimension 0 is always reserved for each category
@@ -15792,6 +16084,9 @@ double WeightFromSparse(eDiffWeightCategory dwc)
     case eDWPt: {
       pw.fFindBinVector[dwc]->AddAt(pbyp.fPt, 0); // special treatment for pt in eDWPt category
       // Remember that ordering here has to resemble ordering in eDiffPtWeights
+      if (pw.fUseDiffPtWeights[wPtEtaAxis]) {
+        pw.fFindBinVector[dwc]->AddAt(pbyp.fEta, dim++);
+      }
       if (pw.fUseDiffPtWeights[wPtChargeAxis]) {
         pw.fFindBinVector[dwc]->AddAt(pbyp.fCharge, dim++);
       }
@@ -15807,7 +16102,25 @@ double WeightFromSparse(eDiffWeightCategory dwc)
       if (pw.fUseDiffEtaWeights[wEtaChargeAxis]) {
         pw.fFindBinVector[dwc]->AddAt(pbyp.fCharge, dim++);
       }
+      if (pw.fUseDiffEtaWeights[wEtaPtAxis]) {
+        pw.fFindBinVector[dwc]->AddAt(pbyp.fPt, dim++);
+      }
       if (pw.fUseDiffEtaWeights[wEtaCentralityAxis]) {
+        pw.fFindBinVector[dwc]->AddAt(ebye.fCentrality, dim++);
+      }
+      // ...
+      break;
+    }
+    case eDWCharge: {
+      pw.fFindBinVector[dwc]->AddAt(pbyp.fCharge, 0); // special treatment for charge in eDWCharge category
+      // Remember that ordering here has to resemble ordering in eDiffChargeWeights
+      if (pw.fUseDiffChargeWeights[wChargePtAxis]) {
+        pw.fFindBinVector[dwc]->AddAt(pbyp.fPt, dim++);
+      }
+      if (pw.fUseDiffChargeWeights[wChargeEtaAxis]) {
+        pw.fFindBinVector[dwc]->AddAt(pbyp.fEta, dim++);
+      }
+      if (pw.fUseDiffChargeWeights[wChargeCentralityAxis]) {
         pw.fFindBinVector[dwc]->AddAt(ebye.fCentrality, dim++);
       }
       // ...
@@ -15972,7 +16285,8 @@ void GetParticleWeights()
   // b) Differential weights; => TBI 20250225 this is now obsolete and superseeded with c), where I use more general approach with sparse histograms
   // c) Differential phi weights using sparse histograms;
   // d) Differential pt weights using sparse histograms;
-  // e) Differential eta weights using sparse histograms.
+  // e) Differential eta weights using sparse histograms;
+  // f) Differential charge weights using sparse histograms.
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
@@ -16169,6 +16483,39 @@ void GetParticleWeights()
     SetDiffWeightsSparse(diffWeightsSparse, eDWEta);
 
   } // if (pw.fUseDiffEtaWeights[wEtaEtaAxis]) {
+
+  // f) Differential charge weights using sparse histograms:
+  if (pw.fUseDiffChargeWeights[wChargeChargeAxis]) { // yes, remember that flag for charge axis serves also as a common boolean to switch off all differential charge weights
+
+    TString whichCategory = "charge"; // differential charge weights
+
+    TString whichDimensions = ""; // differential charge weights as a function of particular dimension
+    // Remark: the naming convention hardwired here for axes dimensions have to be in sync with what I have in the macro to make these weights.
+    if (pw.fUseDiffChargeWeights[wChargePtAxis]) {
+      whichDimensions += "_pt";
+    }
+    if (pw.fUseDiffChargeWeights[wChargeEtaAxis]) {
+      whichDimensions += "_eta";
+    }
+    if (pw.fUseDiffChargeWeights[wChargeCentralityAxis]) {
+      whichDimensions += "_centrality";
+    }
+    // ...
+
+    THnSparseF* diffWeightsSparse = GetSparseHistogramWithWeights(pw.fFileWithWeights.Data(), tc.fRunNumber.Data(), whichCategory.Data(), whichDimensions.Data());
+    if (!diffWeightsSparse) {
+      LOGF(fatal, "\033[1;31m%s at line %d : diffWeightsSparse for category \"charge\" is NULL. Check the external file %s with particle weights\033[0m", __FUNCTION__, __LINE__, pw.fFileWithWeights.Data());
+    }
+
+    // Check if particle weights are avaiable for the phase window I have selected for each dimension with cuts.
+    // Basically, I check whether range of each axis is compatible with the cuts i used for variable on that axis.
+    // Since GetParticleWeights() is called only once, this check is also performed only once.
+    insanitizeDiffWeightsSparse(diffWeightsSparse);
+
+    // okay, just use this sparse histogram with weights:
+    SetDiffWeightsSparse(diffWeightsSparse, eDWCharge);
+
+  } // if (pw.fUseDiffChargeWeights[wChargeChargeAxis]) {
 
   if (tc.fVerbose) {
     ExitFunction(__FUNCTION__);
@@ -18146,13 +18493,14 @@ void FillQvectorFromSparse()
   double wPhi = 1.;      // differential multidimensional phi weight, its dimensions are defined via enum eDiffPhiWeights
   double wPt = 1.;       // differential multidimensional pt weight, its dimensions are defined via enum eDiffPtWeights
   double wEta = 1.;      // differential multidimensional eta weight, its dimensions are defined via enum eDiffEtaWeights
+  double wCharge = 1.;   // differential multidimensional charge weight, its dimensions are defined via enum eDiffChargeWeights
   double wToPowerP = 1.; // weight raised to power p
 
   // *) Multidimensional phi weights:
   if (pw.fUseDiffPhiWeights[wPhiPhiAxis]) { // yes, 0th axis serves as a common boolean for this category
     wPhi = WeightFromSparse(eDWPhi);
     if (!(wPhi > 0.)) {
-      LOGF(error, "\033[1;33m%s wPhi is not positive\033[0m", __FUNCTION__);
+      LOGF(error, "\033[1;33m%s at line %d : wPhi is not positive\033[0m", __FUNCTION__, __LINE__);
       LOGF(error, "pbyp.fPhi = %f", pbyp.fPhi);
       if (pw.fUseDiffPhiWeights[wPhiPtAxis]) {
         LOGF(fatal, "pbyp.fPt = %f", pbyp.fPt);
@@ -18177,8 +18525,11 @@ void FillQvectorFromSparse()
   if (pw.fUseDiffPtWeights[wPtPtAxis]) { // yes, 0th axis serves as a common boolean for this category
     wPt = WeightFromSparse(eDWPt);
     if (!(wPt > 0.)) {
-      LOGF(error, "\033[1;33m%s wPt is not positive\033[0m", __FUNCTION__);
+      LOGF(error, "\033[1;33m%s at line %d : wPt is not positive\033[0m", __FUNCTION__, __LINE__);
       LOGF(error, "pbyp.fPt = %f", pbyp.fPt);
+      if (pw.fUseDiffPtWeights[wPtEtaAxis]) {
+        LOGF(fatal, "pbyp.fEta = %f", pbyp.fEta);
+      }
       if (pw.fUseDiffPtWeights[wPtChargeAxis]) {
         LOGF(fatal, "pbyp.fCharge = %f", pbyp.fCharge);
       }
@@ -18193,8 +18544,11 @@ void FillQvectorFromSparse()
   if (pw.fUseDiffEtaWeights[wEtaEtaAxis]) { // yes, 0th axis serves as a common boolean for this category
     wEta = WeightFromSparse(eDWEta);
     if (!(wEta > 0.)) {
-      LOGF(error, "\033[1;33m%s wEta is not positive\033[0m", __FUNCTION__);
+      LOGF(error, "\033[1;33m%s at line %d : wEta is not positive\033[0m", __FUNCTION__, __LINE__);
       LOGF(error, "pbyp.fEta = %f", pbyp.fEta);
+      if (pw.fUseDiffEtaWeights[wEtaPtAxis]) {
+        LOGF(fatal, "pbyp.fPt = %f", pbyp.fPt);
+      }
       if (pw.fUseDiffEtaWeights[wEtaChargeAxis]) {
         LOGF(fatal, "pbyp.fCharge = %f", pbyp.fCharge);
       }
@@ -18205,11 +18559,30 @@ void FillQvectorFromSparse()
     }
   } // if(pw.fUseDiffEtaWeights[wEtaEtaAxis])
 
+  // *) Multidimensional charge weights:
+  if (pw.fUseDiffChargeWeights[wChargeChargeAxis]) { // yes, 0th axis serves as a common boolean for this category
+    wCharge = WeightFromSparse(eDWCharge);
+    if (!(wCharge > 0.)) {
+      LOGF(error, "\033[1;33m%s at line %d : wCharge is not positive\033[0m", __FUNCTION__, __LINE__);
+      LOGF(error, "pbyp.fCharge = %f", pbyp.fCharge);
+      if (pw.fUseDiffChargeWeights[wChargePtAxis]) {
+        LOGF(fatal, "pbyp.fPt = %f", pbyp.fPt);
+      }
+      if (pw.fUseDiffChargeWeights[wChargeEtaAxis]) {
+        LOGF(fatal, "pbyp.fEta = %f", pbyp.fEta);
+      }
+      if (pw.fUseDiffChargeWeights[wChargeCentralityAxis]) {
+        LOGF(fatal, "ebye.fCentrality = %f", ebye.fCentrality);
+      }
+      LOGF(fatal, "Multidimensional weight for enabled dimensions is wCharge = %f", wCharge);
+    }
+  } // if(pw.fUseDiffChargeWeights[wChargeChargeAxis])
+
   if (qv.fCalculateQvectors) {
     for (int h = 0; h < gMaxHarmonic * gMaxCorrelator + 1; h++) {
       for (int wp = 0; wp < gMaxCorrelator + 1; wp++) { // weight power
-        if (pw.fUseDiffPhiWeights[wPhiPhiAxis] || pw.fUseDiffPtWeights[wPtPtAxis] || pw.fUseDiffEtaWeights[wEtaEtaAxis]) {
-          wToPowerP = std::pow(wPhi * wPt * wEta, wp);
+        if (pw.fUseDiffPhiWeights[wPhiPhiAxis] || pw.fUseDiffPtWeights[wPtPtAxis] || pw.fUseDiffEtaWeights[wEtaEtaAxis] || pw.fUseDiffChargeWeights[wChargeChargeAxis]) {
+          wToPowerP = std::pow(wPhi * wPt * wEta * wCharge, wp);
           qv.fQvector[h][wp] += TComplex(wToPowerP * std::cos(h * pbyp.fPhi), wToPowerP * std::sin(h * pbyp.fPhi)); // Q-vector with weights, legacy code (TBI 20251027 remove this line)
           // qv.fQvector[h][wp] += std::complex<double>(wToPowerP * std::cos(h * pbyp.fPhi), wToPowerP * std::sin(h * pbyp.fPhi)); // Q-vector with weights, new code
           // TBI 20251028 I have to keep it this way for the time being, otherwise I have to change all over the place, e.g. in TComplex Q(int n, int wp), etc.
@@ -18227,12 +18600,12 @@ void FillQvectorFromSparse()
     if (pbyp.fEta < 0.) {
       for (int e = 0; e < gMaxNumberEtaSeparations; e++) {
         if (pbyp.fEta < -1. * es.fEtaSeparationsValues[e] / 2.) { // yes, if eta separation is 0.2, then separation interval runs from -0.1 to 0.1
-          qv.fMab[0][e] += wPhi * wPt * wEta;
+          qv.fMab[0][e] += wPhi * wPt * wEta * wCharge;
           for (int h = 0; h < gMaxHarmonic; h++) {
             if (es.fEtaSeparationsSkipHarmonics[h]) {
               continue;
             }
-            qv.fQabVector[0][h][e] += TComplex(wPhi * wPt * wEta * std::cos((h + 1) * pbyp.fPhi), wPhi * wPt * wEta * std::sin((h + 1) * pbyp.fPhi));
+            qv.fQabVector[0][h][e] += TComplex(wPhi * wPt * wEta * wCharge * std::cos((h + 1) * pbyp.fPhi), wPhi * wPt * wEta * wCharge * std::sin((h + 1) * pbyp.fPhi));
             // Remark: I can hardwire linear weights like this only for 2-p correlations
             // TBI 20251028 Replace TComplex with std::complex<double> (but it's a major modification, see the comment above within if (qv.fCalculateQvectors) )
           }
@@ -18241,13 +18614,13 @@ void FillQvectorFromSparse()
     } else if (pbyp.fEta > 0.) {
       for (int e = 0; e < gMaxNumberEtaSeparations; e++) {
         if (pbyp.fEta > es.fEtaSeparationsValues[e] / 2.) { // yes, if eta separation is 0.2, then separation interval runs from -0.1 to 0.1
-          qv.fMab[1][e] += wPhi * wPt * wEta;
+          qv.fMab[1][e] += wPhi * wPt * wEta * wCharge;
           for (int h = 0; h < gMaxHarmonic; h++) {
             {
               if (es.fEtaSeparationsSkipHarmonics[h]) {
                 continue;
               }
-              qv.fQabVector[1][h][e] += TComplex(wPhi * wPt * wEta * std::cos((h + 1) * pbyp.fPhi), wPhi * wPt * wEta * std::sin((h + 1) * pbyp.fPhi));
+              qv.fQabVector[1][h][e] += TComplex(wPhi * wPt * wEta * wCharge * std::cos((h + 1) * pbyp.fPhi), wPhi * wPt * wEta * wCharge * std::sin((h + 1) * pbyp.fPhi));
               // TBI 20251028 Replace TComplex with std::complex<double> (but it's a major modification, see the comment above within if (qv.fCalculateQvectors) )
               // Remark: I can hardwire linear weights like this only for 2-p correlations
             }
@@ -18898,7 +19271,7 @@ void Fillqvectors()
 {
   // In this function, I fill all requested differential q-vectors, by calling for each requested case a helper function FillqvectorFromSparse(...).
 
-  // :44
+  // :fqv
 
   if (tc.fVerboseForEachParticle) {
     StartFunction(__FUNCTION__);
@@ -18909,10 +19282,11 @@ void Fillqvectors()
   }
 
   // *) Local variables:
-  int bin = -1;     // global kine bin
-  double wPhi = 1.; // differential multidimensional phi weight, its dimensions are defined via enum eDiffPhiWeights
-  double wPt = 1.;  // differential multidimensional pt weight, its dimensions are defined via enum eDiffPtWeights
-  double wEta = 1.; // differential multidimensional eta weight, its dimensions are defined via enum eDiffEtaWeights
+  int bin = -1;        // global kine bin
+  double wPhi = 1.;    // differential multidimensional phi weight, its dimensions are defined via enum eDiffPhiWeights
+  double wPt = 1.;     // differential multidimensional pt weight, its dimensions are defined via enum eDiffPtWeights
+  double wEta = 1.;    // differential multidimensional eta weight, its dimensions are defined via enum eDiffEtaWeights
+  double wCharge = 1.; // differential multidimensional eta weight, its dimensions are defined via enum eDiffChargeWeights
 
   /* // TBT
         // TBI 20250528 check if the test below is computationally heavy. If so, add the flag tc.fInsanityCheckForEachParticle here.
@@ -18938,9 +19312,17 @@ void Fillqvectors()
     if (pw.fUseDiffPtWeights[wPtPtAxis]) {
       wPt = WeightFromSparse(eDWPt);
     }
+    // w_eta(pt):
+    if (pw.fUseDiffEtaWeights[wEtaPtAxis]) {
+      wEta = WeightFromSparse(eDWEta);
+    }
+    // w_charge(pt):
+    if (pw.fUseDiffChargeWeights[wChargePtAxis]) {
+      wCharge = WeightFromSparse(eDWCharge);
+    }
 
     // ****) finally, fill:
-    FillqvectorFromSparse(PTq, bin, wPhi * wPt * wEta); // weighted q(pT) filled for global bin to which this pT corresponds
+    FillqvectorFromSparse(PTq, bin, wPhi * wPt * wEta * wCharge); // weighted q(pT) filled for global bin to which this pT corresponds
 
   } // if(tc.fCalculateAsFunctionOf[AFO_PT])
 
@@ -18955,13 +19337,21 @@ void Fillqvectors()
     if (pw.fUseDiffPhiWeights[wPhiEtaAxis]) {
       wPhi = WeightFromSparse(eDWPhi);
     }
+    // w_pt(eta):
+    if (pw.fUseDiffPtWeights[wPtEtaAxis]) {
+      wPt = WeightFromSparse(eDWPt);
+    }
     // w_eta(eta):
     if (pw.fUseDiffEtaWeights[wEtaEtaAxis]) {
       wEta = WeightFromSparse(eDWEta);
     }
+    // w_charge(eta):
+    if (pw.fUseDiffChargeWeights[wChargeEtaAxis]) {
+      wCharge = WeightFromSparse(eDWCharge);
+    }
 
     // ****) finally, fill:
-    FillqvectorFromSparse(ETAq, bin, wPhi * wPt * wEta); // weighted q(eta) filled for global bin to which this eta corresponds
+    FillqvectorFromSparse(ETAq, bin, wPhi * wPt * wEta * wCharge); // weighted q(eta) filled for global bin to which this eta corresponds
 
   } // if (mupa.fCalculateCorrelationsAsFunctionOf[AFO_ETA] || t0.fCalculateTest0AsFunctionOf[AFO_ETA])
 
@@ -18978,15 +19368,19 @@ void Fillqvectors()
     }
     // w_pt(charge):
     if (pw.fUseDiffPtWeights[wPtChargeAxis]) {
-      wPt = WeightFromSparse(eDWPhi);
+      wPt = WeightFromSparse(eDWPt);
     }
     // w_eta(charge):
     if (pw.fUseDiffEtaWeights[wEtaChargeAxis]) {
-      wEta = WeightFromSparse(eDWPhi);
+      wEta = WeightFromSparse(eDWEta);
+    }
+    // w_charge(charge):
+    if (pw.fUseDiffChargeWeights[wChargeChargeAxis]) {
+      wCharge = WeightFromSparse(eDWCharge);
     }
 
     // ****) finally, fill:
-    FillqvectorFromSparse(CHARGEq, bin, wPhi * wPt * wEta); // weighted q(charge) filled for global bin to which this charge corresponds
+    FillqvectorFromSparse(CHARGEq, bin, wPhi * wPt * wEta * wCharge); // weighted q(charge) filled for global bin to which this charge corresponds
 
   } // if (mupa.fCalculateCorrelationsAsFunctionOf[AFO_CHARGE] || t0.fCalculateTest0AsFunctionOf[AFO_CHARGE])
 
@@ -19005,8 +19399,23 @@ void Fillqvectors()
       wPhi = WeightFromSparse(eDWPhi);
     }
 
+    // w_pt(pt,eta):
+    if (pw.fUseDiffPtWeights[wPtPtAxis] && pw.fUseDiffPtWeights[wPtEtaAxis]) {
+      wPt = WeightFromSparse(eDWPt);
+    }
+
+    // w_eta(pt,eta):
+    if (pw.fUseDiffEtaWeights[wEtaPtAxis] && pw.fUseDiffEtaWeights[wEtaEtaAxis]) {
+      wEta = WeightFromSparse(eDWEta);
+    }
+
+    // w_charge(pt,eta):
+    if (pw.fUseDiffChargeWeights[wChargePtAxis] && pw.fUseDiffChargeWeights[wChargeEtaAxis]) {
+      wCharge = WeightFromSparse(eDWCharge);
+    }
+
     // ****) finally, fill:
-    FillqvectorFromSparse(PT_ETAq, bin, wPhi * wPt * wEta); // weighted q(pt,eta) filled for global bin to which this (pt,eta) corresponds
+    FillqvectorFromSparse(PT_ETAq, bin, wPhi * wPt * wEta * wCharge); // weighted q(pt,eta) filled for global bin to which this (pt,eta) corresponds
 
   } // if (t0.fCalculate2DTest0AsFunctionOf[AFO_PT_ETA] || t0.fCalculate3DTest0AsFunctionOf[AFO_CENTRALITY_PT_ETA])
 
@@ -19021,9 +19430,21 @@ void Fillqvectors()
     if (pw.fUseDiffPhiWeights[wPhiPtAxis] && pw.fUseDiffPhiWeights[wPhiChargeAxis]) {
       wPhi = WeightFromSparse(eDWPhi);
     }
+    // w_pt(pt,charge):
+    if (pw.fUseDiffPtWeights[wPtPtAxis] && pw.fUseDiffPtWeights[wPtChargeAxis]) {
+      wPt = WeightFromSparse(eDWPt);
+    }
+    // w_eta(pt,charge):
+    if (pw.fUseDiffEtaWeights[wEtaPtAxis] && pw.fUseDiffEtaWeights[wEtaChargeAxis]) {
+      wEta = WeightFromSparse(eDWEta);
+    }
+    // w_charge(pt,charge):
+    if (pw.fUseDiffChargeWeights[wChargePtAxis] && pw.fUseDiffChargeWeights[wChargeChargeAxis]) {
+      wCharge = WeightFromSparse(eDWCharge);
+    }
 
     // ****) finally, fill:
-    FillqvectorFromSparse(PT_CHARGEq, bin, wPhi * wPt * wEta); // weighted q(pt,charge) filled for global bin to which this (pt,charge) corresponds
+    FillqvectorFromSparse(PT_CHARGEq, bin, wPhi * wPt * wEta * wCharge); // weighted q(pt,charge) filled for global bin to which this (pt,charge) corresponds
 
   } // if (t0.fCalculate2DTest0AsFunctionOf[AFO_PT_CHARGE] || t0.fCalculate3DTest0AsFunctionOf[AFO_CENTRALITY_PT_CHARGE])
 
@@ -19035,12 +19456,24 @@ void Fillqvectors()
 
     // ****) determine all supported particle weights:
     // w_phi(eta,charge):
-    if (pw.fUseDiffPhiWeights[wEtaChargeAxis] && pw.fUseDiffPhiWeights[wPhiChargeAxis]) {
+    if (pw.fUseDiffPhiWeights[wPhiEtaAxis] && pw.fUseDiffPhiWeights[wPhiChargeAxis]) {
       wPhi = WeightFromSparse(eDWPhi);
+    }
+    // w_pt(eta,charge):
+    if (pw.fUseDiffPtWeights[wPtEtaAxis] && pw.fUseDiffPtWeights[wPtChargeAxis]) {
+      wPt = WeightFromSparse(eDWPt);
+    }
+    // w_eta(eta,charge):
+    if (pw.fUseDiffEtaWeights[wEtaEtaAxis] && pw.fUseDiffEtaWeights[wEtaChargeAxis]) {
+      wEta = WeightFromSparse(eDWEta);
+    }
+    // w_charge(eta,charge):
+    if (pw.fUseDiffChargeWeights[wChargeEtaAxis] && pw.fUseDiffChargeWeights[wChargeChargeAxis]) {
+      wCharge = WeightFromSparse(eDWCharge);
     }
 
     // ****) finally, fill:
-    FillqvectorFromSparse(ETA_CHARGEq, bin, wPhi * wPt * wEta); // weighted q(eta,charge) filled in global bin to which this (eta,charge) corresponds
+    FillqvectorFromSparse(ETA_CHARGEq, bin, wPhi * wPt * wEta * wCharge); // weighted q(eta,charge) filled in global bin to which this (eta,charge) corresponds
 
   } // if (t0.fCalculate2DTest0AsFunctionOf[AFO_ETA_CHARGE] || t0.fCalculate3DTest0AsFunctionOf[AFO_CENTRALITY_ETA_CHARGE])
 
@@ -19059,9 +19492,21 @@ void Fillqvectors()
     if (pw.fUseDiffPhiWeights[wPhiPtAxis] && pw.fUseDiffPhiWeights[wPhiEtaAxis] && pw.fUseDiffPhiWeights[wPhiChargeAxis]) {
       wPhi = WeightFromSparse(eDWPhi);
     }
+    // w_pt(pt,eta,charge):
+    if (pw.fUseDiffPtWeights[wPtPtAxis] && pw.fUseDiffPtWeights[wPtEtaAxis] && pw.fUseDiffPtWeights[wPtChargeAxis]) {
+      wPt = WeightFromSparse(eDWPt);
+    }
+    // w_eta(pt,eta,charge):
+    if (pw.fUseDiffEtaWeights[wEtaPtAxis] && pw.fUseDiffEtaWeights[wEtaEtaAxis] && pw.fUseDiffEtaWeights[wEtaChargeAxis]) {
+      wEta = WeightFromSparse(eDWEta);
+    }
+    // w_charge(pt,eta,charge):
+    if (pw.fUseDiffChargeWeights[wChargePtAxis] && pw.fUseDiffChargeWeights[wChargeEtaAxis] && pw.fUseDiffChargeWeights[wChargeChargeAxis]) {
+      wCharge = WeightFromSparse(eDWCharge);
+    }
 
     // ****) finally, fill:
-    FillqvectorFromSparse(PT_ETA_CHARGEq, bin, wPhi * wPt * wEta); // weighted q(pt,eta,charge) filled in global bin to which this (pt,eta,charge) corresponds
+    FillqvectorFromSparse(PT_ETA_CHARGEq, bin, wPhi * wPt * wEta * wCharge); // weighted q(pt,eta,charge) filled in global bin to which this (pt,eta,charge) corresponds
   }
 
   if (tc.fVerboseForEachParticle) {
@@ -19087,10 +19532,10 @@ void FillqvectorFromSparse(const eqvectorKine& kineVarChoice, const int& bin, co
   double wToPowerP = 1.; // weight raised to power p
 
   for (int h = 0; h < gMaxHarmonic * gMaxCorrelator + 1; h++) {
-    for (int wp = 0; wp < gMaxCorrelator + 1; wp++) {                                                                                             // weight power
-      if (pw.fUseDiffPhiWeights[wPhiPhiAxis] || pw.fUseDiffPtWeights[wPtPtAxis] || pw.fUseDiffEtaWeights[wEtaEtaAxis]) {                          // yes, because the first enum serves as a boolean for that category
-        wToPowerP = std::pow(dWeight, wp);                                                                                                        // dWeight = wPhi * wPt * wEta
-        qv.fqvector[kineVarChoice][bin][h][wp] += std::complex<double>(wToPowerP * std::cos(h * pbyp.fPhi), wToPowerP * std::sin(h * pbyp.fPhi)); // q-vector with weights
+    for (int wp = 0; wp < gMaxCorrelator + 1; wp++) {                                                                                                                   // weight power
+      if (pw.fUseDiffPhiWeights[wPhiPhiAxis] || pw.fUseDiffPtWeights[wPtPtAxis] || pw.fUseDiffEtaWeights[wEtaEtaAxis] || pw.fUseDiffChargeWeights[wChargeChargeAxis]) { // yes, because the first enum serves as a boolean for that category
+        wToPowerP = std::pow(dWeight, wp);                                                                                                                              // dWeight = wPhi * wPt * wEta * wcharge
+        qv.fqvector[kineVarChoice][bin][h][wp] += std::complex<double>(wToPowerP * std::cos(h * pbyp.fPhi), wToPowerP * std::sin(h * pbyp.fPhi));                       // q-vector with weights
       } else {
         qv.fqvector[kineVarChoice][bin][h][wp] += std::complex<double>(std::cos(h * pbyp.fPhi), std::sin(h * pbyp.fPhi)); // bare q-vector without weights
       }
@@ -19100,7 +19545,7 @@ void FillqvectorFromSparse(const eqvectorKine& kineVarChoice, const int& bin, co
   // *) Differential nested loops:
   if (nl.fCalculateKineCustomNestedLoops) {
     nl.ftaNestedLoopsKine[kineVarChoice][bin][0]->AddAt(pbyp.fPhi, qv.fqvectorEntries[kineVarChoice][bin]);
-    nl.ftaNestedLoopsKine[kineVarChoice][bin][1]->AddAt(dWeight, qv.fqvectorEntries[kineVarChoice][bin]); // dWeight = wPhi * wPt * wEta
+    nl.ftaNestedLoopsKine[kineVarChoice][bin][1]->AddAt(dWeight, qv.fqvectorEntries[kineVarChoice][bin]); // dWeight = wPhi * wPt * wEta * wCharge
   }
 
   // *) Multiplicity counter in this bin:
@@ -19116,25 +19561,25 @@ void FillqvectorFromSparse(const eqvectorKine& kineVarChoice, const int& bin, co
     if (pbyp.fEta < 0.) {
       for (int e = 0; e < gMaxNumberEtaSeparations; e++) {
         if (pbyp.fEta < -1. * es.fEtaSeparationsValues[e] / 2.) { // yes, if eta separation is 0.2, then separation interval runs from -0.1 to 0.1
-          qv.fmab[0][kineVarChoice][bin][e] += dWeight;           // dWeight = wPhi * wPt * wEta => Remark: I can hardwire linear weight like this only for 2-p correlation
+          qv.fmab[0][kineVarChoice][bin][e] += dWeight;           // dWeight = wPhi * wPt * wEta * wCharge => Remark: I can hardwire linear weight like this only for 2-p correlation
           for (int h = 0; h < gMaxHarmonic; h++) {
             if (es.fEtaSeparationsSkipHarmonics[h]) {
               continue;
             }
-            qv.fqabVector[0][kineVarChoice][bin][h][e] += std::complex<double>(dWeight * std::cos((h + 1) * pbyp.fPhi), dWeight * std::sin((h + 1) * pbyp.fPhi)); // dWeight = wPhi * wPt * wEta => Remark: I can hardwire linear weight like this only for 2-p correlation
+            qv.fqabVector[0][kineVarChoice][bin][h][e] += std::complex<double>(dWeight * std::cos((h + 1) * pbyp.fPhi), dWeight * std::sin((h + 1) * pbyp.fPhi)); // dWeight = wPhi * wPt * wEta * wCharge => Remark: I can hardwire linear weight like this only for 2-p correlation
           }
         } // for (int h = 0; h < gMaxHarmonic; h++) {
       } // for (int e = 0; e < gMaxNumberEtaSeparations; e++) { // eta separation
     } else if (pbyp.fEta > 0.) {
       for (int e = 0; e < gMaxNumberEtaSeparations; e++) {
         if (pbyp.fEta > es.fEtaSeparationsValues[e] / 2.) { // yes, if eta separation is 0.2, then separation interval runs from -0.1 to 0.1
-          qv.fmab[1][kineVarChoice][bin][e] += dWeight;     // dWeight = wPhi * wPt * wEta => Remark: I can hardwire linear weight like this only for 2-p correlation
+          qv.fmab[1][kineVarChoice][bin][e] += dWeight;     // dWeight = wPhi * wPt * wEta * wCharge => Remark: I can hardwire linear weight like this only for 2-p correlation
           for (int h = 0; h < gMaxHarmonic; h++) {
             {
               if (es.fEtaSeparationsSkipHarmonics[h]) {
                 continue;
               }
-              qv.fqabVector[1][kineVarChoice][bin][h][e] += std::complex<double>(dWeight * std::cos((h + 1) * pbyp.fPhi), dWeight * std::sin((h + 1) * pbyp.fPhi)); // dWeight = wPhi * wPt * wEta => Remark: I can hardwire linear weight like this only for 2-p correlation
+              qv.fqabVector[1][kineVarChoice][bin][h][e] += std::complex<double>(dWeight * std::cos((h + 1) * pbyp.fPhi), dWeight * std::sin((h + 1) * pbyp.fPhi)); // dWeight = wPhi * wPt * wEta * wCharge => Remark: I can hardwire linear weight like this only for 2-p correlation
             }
           } // for (int h = 0; h < gMaxHarmonic; h++) {
         } // for (int e = 0; e < gMaxNumberEtaSeparations; e++) { // eta separation

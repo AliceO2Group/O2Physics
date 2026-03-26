@@ -72,7 +72,9 @@ using namespace o2::constants::math;
 using namespace o2::aod::rctsel;
 
 auto static constexpr CminCharge = 3.f;
+static constexpr float CnullInt = 0;
 static constexpr float Cnull = 0.0f;
+static constexpr float ConeInt = 1;
 static constexpr float Cone = 1.0f;
 
 // FV0 specific constants
@@ -104,6 +106,16 @@ static constexpr std::string_view CprefixCleanV0 = "Tracks/CleanV0/";
 static constexpr std::string_view CprefixV0qa = "Tracks/V0qa/";
 static constexpr std::string_view Cstatus[] = {"preSel/", "postSel/"};
 static constexpr std::string_view CstatCalib[] = {"preCalib/", "postCalib/"};
+static constexpr std::string_view CpTvsDCAxy = "/hPtVsDCAxy";
+static constexpr std::string_view CpTvsDCAxyF = "Tracks/{}/hPtVsDCAxy";
+static constexpr std::string_view CpTvsDCAxyAll = "/hPtVsDCAxyAll";
+static constexpr std::string_view CpTvsDCAxyAllF = "Tracks/{}/hPtVsDCAxyAll";
+static constexpr std::string_view CpTvsDCAxyPrimAll = "/hPtVsDCAxyPrimAll";
+static constexpr std::string_view CpTvsDCAxyPrimAllF = "Tracks/{}/hPtVsDCAxyPrimAll";
+static constexpr std::string_view CpTvsDCAxyWeakAll = "/hPtVsDCAxyWeakAll";
+static constexpr std::string_view CpTvsDCAxyWeakAllF = "Tracks/{}/hPtVsDCAxyWeakAll";
+static constexpr std::string_view CpTvsDCAxyMatAll = "/hPtVsDCAxyMatAll";
+static constexpr std::string_view CpTvsDCAxyMatAllF = "Tracks/{}/hPtVsDCAxyMatAll";
 static constexpr std::string_view CpTgenPrimSgn = "/hPtGenPrimSgn";
 static constexpr std::string_view CpTgenPrimSgnF = "Tracks/{}/hPtGenPrimSgn";
 static constexpr std::string_view CpTgenPrimSgnINEL = "/hPtGenPrimSgnINEL";
@@ -208,10 +220,6 @@ std::array<std::shared_ptr<TH2>, NpartChrg> hPtVsDCAxyMat{};
 std::array<std::shared_ptr<TH2>, NpartChrg> hDCAxyBadCollPrim{};
 std::array<std::shared_ptr<TH2>, NpartChrg> hDCAxyBadCollWeak{};
 std::array<std::shared_ptr<TH2>, NpartChrg> hDCAxyBadCollMat{};
-std::array<std::shared_ptr<TH2>, NpartChrg> hPtNsigmaTPC{};
-std::array<std::shared_ptr<THnSparse>, NpartChrg> hThPtNsigmaTPC{};
-std::array<std::shared_ptr<TH2>, NpartChrg> hPtNsigmaTOF{};
-std::array<std::shared_ptr<TH2>, NpartChrg> hPtNsigmaTPCTOF{};
 
 struct FlattenictyPikp {
 
@@ -233,7 +241,7 @@ struct FlattenictyPikp {
   Configurable<bool> cfgFillTrackQaHist{"cfgFillTrackQaHist", false, "fill track QA histograms"};
   Configurable<bool> cfgFilldEdxCalibHist{"cfgFilldEdxCalibHist", false, "fill dEdx calibration histograms"};
   Configurable<bool> cfgFilldEdxQaHist{"cfgFilldEdxQaHist", false, "fill dEdx QA histograms"};
-  Configurable<bool> cfgFillNsigmaQAHist{"cfgFillNsigmaQAHist", false, "fill nsigma QA histograms"};
+  Configurable<bool> cfgFillDCAxyHist{"cfgFillDCAxyHist", false, "fill nsigma QA histograms"};
   Configurable<bool> cfgFillV0Hist{"cfgFillV0Hist", false, "fill V0 histograms"};
   Configurable<bool> cfgFillChrgType{"cfgFillChrgType", false, "fill histograms per charge types"};
   Configurable<bool> cfgFillChrgTypeV0s{"cfgFillChrgTypeV0s", false, "fill V0s histograms per charge types"};
@@ -279,8 +287,8 @@ struct FlattenictyPikp {
     ConfigurableAxis axisMultPerc{"axisMultPerc", {20, 0, 100}, "Multiplicity percentiles binning"};
     ConfigurableAxis axisVertexZ{"axisVertexZ", {80, -20., 20.}, "Vertex z binning"};
     ConfigurableAxis axisMult{"axisMult", {301, -0.5, 300.5}, "Multiplicity binning"};
-    ConfigurableAxis axisDCAxy{"axisDCAxy", {200, -5, 5}, "DCAxy binning"};
-    ConfigurableAxis axisDCAz{"axisDCAz", {200, -5, 5}, "DCAz binning"};
+    ConfigurableAxis axisDCAxy{"axisDCAxy", {200, -5., 5.}, "DCAxy binning"};
+    ConfigurableAxis axisDCAz{"axisDCAz", {200, -5., 5.}, "DCAz binning"};
     ConfigurableAxis axisPhi = {"axisPhi", {60, 0, constants::math::TwoPI}, "#varphi binning"};
     ConfigurableAxis axisPhiMod = {"axisPhiMod", {100, 0, constants::math::PI / 9}, "fmod(#varphi,#pi/9)"};
     ConfigurableAxis axisEta = {"axisEta", {50, -1.0, 1.0}, "#eta binning"};
@@ -312,6 +320,7 @@ struct FlattenictyPikp {
     Configurable<float> cfgDeDxMIPMax{"cfgDeDxMIPMax", 60.0f, "Maximum range of MIP dedx"};
     Configurable<float> cfgDeDxMIPMin{"cfgDeDxMIPMin", 40.0f, "Maximum range of MIP dedx"};
     Configurable<float> cfgNsigmaMax{"cfgNsigmaMax", 100.0f, "Maximum range of nsgima for tracks"};
+    Configurable<float> cfgDcaNsigmaCombinedMax{"cfgDcaNsigmaCombinedMax", 3.0f, "Maximum range of combined nsgima of tracks for DCA"};
     Configurable<float> cfgMomSelPiTOF{"cfgMomSelPiTOF", 0.4f, "Minimum momentum cut for TOF pions"};
     Configurable<float> cfgNsigSelKaTOF{"cfgNsigSelKaTOF", 3.0f, "Nsigma cut for TOF kaons"};
     Configurable<float> cfgBetaPlateuMax{"cfgBetaPlateuMax", 0.1f, "Beta max for Plateau electrons"};
@@ -501,6 +510,7 @@ struct FlattenictyPikp {
       selTrkGlobal.SetMaxChi2PerClusterTPC(maxChi2PerClusterTPC.value);
       selTrkGlobal.SetMaxChi2PerClusterITS(maxChi2PerClusterITS.value);
       selTrkGlobal.SetMinNClustersITS(minITSnClusters.value);
+      selTrkGlobal.SetRequireHitsInITSLayers(1, {0, 1, 2}); // GlobalTrackRun3ITSMatching::Run3ITSibAny
       selTrkGlobal.SetMinNCrossedRowsTPC(minNCrossedRowsTPC.value);
       selTrkGlobal.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
       // //     selTrkGlobal.SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / pow(pt, 1.1f); });
@@ -588,7 +598,7 @@ struct FlattenictyPikp {
       flatchrg.add("Events/hVtxZ", "Measured vertex z position", kTH1F, {vtxzAxis});
       flatchrg.add("Events/hFlatVsMultEst", "hFlatVsMultEst", kTH2F, {flatAxis, multAxis});
       flatchrg.add("Tracks/postSel/hPVsPtEta", "; #it{p} (GeV/#it{c}); #it{p}_{T} (GeV/#it{c}); #eta;", {kTH3F, {pAxis, ptAxis, etaAxis}});
-      if (cfgFillTrackQaHist || cfgFilldEdxQaHist || cfgFillNsigmaQAHist) {
+      if (cfgFillTrackQaHist || cfgFilldEdxQaHist || cfgFillDCAxyHist) {
         if (cfgFillTrackQaHist) {
           flatchrg.add("Tracks/postSel/hPtPhi", "; #it{p}_{T} (GeV/#it{c}); fmod(#varphi,#pi/9)", {kTH2F, {ptAxis, phiAxisMod}});
           flatchrg.add("Tracks/postSel/hPtVsWOcutDCA", "hPtVsWOcutDCA", kTH2F, {ptAxis, dcaXYAxis});
@@ -612,6 +622,8 @@ struct FlattenictyPikp {
           flatchrg.add("Tracks/postSel/hShTpcClvsPt", "", {kTH2F, {ptAxis, shCluserAxis}});
           flatchrg.add("Tracks/postSel/hNclTPCFoundvsPt", "", {kTH2F, {ptAxis, clTpcAxis}});
           flatchrg.add("Tracks/postSel/hNClTPCPidvsPt", "", {kTH2F, {ptAxis, clTpcAxis}});
+          flatchrg.add("Tracks/postSel/hNclTPCFoundvsEta", "", {kTH2F, {etaAxis, clTpcAxis}});
+          flatchrg.add("Tracks/postSel/hNClTPCPidvsEta", "", {kTH2F, {etaAxis, clTpcAxis}});
           flatchrg.add("Tracks/postSel/hTPCCluster", "N_{cluster}", kTH1F, {clTpcAxis});
           flatchrg.add("Tracks/postSel/hTPCnClsShared", " ; # shared TPC clusters TPC", kTH1F, {{165, -0.5, 164.5}});
           flatchrg.add("Tracks/postSel/hTPCcrossedRows", " ; # crossed TPC rows", kTH1F, {{165, -0.5, 164.5}});
@@ -649,16 +661,9 @@ struct FlattenictyPikp {
             flatchrg.addClone("Tracks/preCalib/all/", "Tracks/preCalib/neg/");
           }
         }
-        if (cfgFillNsigmaQAHist) {
-          for (int i = 0; i < NpartChrg; i++) {
-            const std::string strID = Form("/%s/%s", (i < Npart) ? "pos" : "neg", Pid[i % Npart]);
-            if (cfgStoreThnSparse) {
-              hThPtNsigmaTPC[i] = flatchrg.add<THnSparse>("Tracks/hThPtNsigmaTPC" + strID, " ; p_{T} (GeV/c)", kTHnSparseF, {ptAxis, nSigmaTPCAxis, multAxis, flatAxis});
-            } else {
-              hPtNsigmaTPC[i] = flatchrg.add<TH2>("Tracks/hPtNsigmaTPC" + strID, " ; p_{T} (GeV/c)", kTH2F, {ptAxis, nSigmaTPCAxis});
-            }
-            hPtNsigmaTOF[i] = flatchrg.add<TH2>("Tracks/hPtNsigmaTOF" + strID, " ; p_{T} (GeV/c)", kTH2F, {ptAxis, nSigmaTOFAxis});
-            hPtNsigmaTPCTOF[i] = flatchrg.add<TH2>("Tracks/hPtNsigmaTPCTOF" + strID, PidChrg[i], kTH2F, {nSigmaTPCAxis, nSigmaTOFAxis});
+        if (cfgFillDCAxyHist) {
+          for (int i = 0; i < Npart; i++) {
+            flatchrg.add({fmt::format(CpTvsDCAxyF.data(), CspeciesAll[i]).c_str(), "; mult; flat; #it{p} (GeV/#it{c}); DCA_{xy} (cm)", {kTHnSparseF, {multAxis, flatAxis, ptAxis, dcaXYAxis}}});
           }
         }
       }
@@ -730,6 +735,22 @@ struct FlattenictyPikp {
       flatchrg.add("Events/hVtxZRec", "MC Rec vertex z position", kTH1F, {vtxzAxis});
       flatchrg.add("Events/hVtxZGen", "Generated vertex z position", kTH1F, {vtxzAxis});
 
+      if (cfgFillTrackQaHist) {
+        flatchrg.add("Tracks/postSel/hPtPhi", "; #it{p}_{T} (GeV/#it{c}); fmod(#varphi,#pi/9)", {kTH2F, {ptAxis, phiAxisMod}});
+        if (cfgStoreThnSparse) {
+          flatchrg.add("Tracks/postSel/hPtPhiNclTPC", "; #it{p}_{T} (GeV/#it{c}); fmod(#varphi,#pi/9); N_{cluster}", {kTHnSparseF, {ptAxis, phiAxisMod, clTpcAxis}});
+          flatchrg.add("Tracks/postSel/hPtPhiNclPIDTPC", "; #it{p}_{T} (GeV/#it{c}); fmod(#varphi,#pi/9); N_{PID cluster}", {kTHnSparseF, {ptAxis, phiAxisMod, clTpcAxis}});
+        } else {
+          flatchrg.add("Tracks/postSel/hPtPhiNclTPC", "; #it{p}_{T} (GeV/#it{c}); fmod(#varphi,#pi/9); N_{cluster}", {kTH3F, {ptAxis, phiAxisMod, clTpcAxis}});
+          flatchrg.add("Tracks/postSel/hPtPhiNclPIDTPC", "; #it{p}_{T} (GeV/#it{c}); fmod(#varphi,#pi/9); N_{PID cluster}", {kTH3F, {ptAxis, phiAxisMod, clTpcAxis}});
+        }
+        flatchrg.add("Tracks/postSel/hPtNclTPC", "; #it{p}_{T} (GeV/#it{c}); N_{cluster}", {kTH2F, {ptAxis, clTpcAxis}});
+        flatchrg.add("Tracks/postSel/pPtNclTPC", "; #it{p}_{T} (GeV/#it{c}); N_{cluster}", {kTProfile, {ptAxis}});
+        flatchrg.add("Tracks/postSel/hPtNclPIDTPC", "; #it{p}_{T} (GeV/#it{c}); N_{PID cluster}", {kTH2F, {ptAxis, clTpcAxis}});
+        flatchrg.add("Tracks/postSel/pPtNclPIDTPC", "; #it{p}_{T} (GeV/#it{c}); N_{PID cluster}", {kTProfile, {ptAxis}});
+      }
+      flatchrg.addClone("Tracks/postSel/", "Tracks/preSel/");
+
       for (int i = 0; i < NpartChrg; i++) {
         const std::string strID = Form("/%s/%s", (i < Npart) ? "pos" : "neg", Pid[i % Npart]);
         hPtGenRecEvt[i] = flatchrg.add<TH1>("Tracks/hPtGenRecEvt" + strID, " ; p_{T} (GeV/c)", kTH1F, {ptAxis});
@@ -748,14 +769,15 @@ struct FlattenictyPikp {
         hPtVsDCAxyMat[i] = flatchrg.add<TH2>("Tracks/hPtVsDCAxyMat" + strID, " ; p_{T} (GeV/c)", kTH2F, {ptAxis, dcaXYAxis});
       }
 
-      flatchrg.add({"hPtOut", " ; p_{T} (GeV/c)", {kTH1F, {ptAxis}}});
-      flatchrg.add({"hPtOutPrim", " ; p_{T} (GeV/c)", {kTH1F, {ptAxis}}});
+      for (int i = 0; i < Npart; i++) {
+        flatchrg.add({fmt::format(CpTvsDCAxyAllF.data(), CspeciesAll[i]).c_str(), "; mult; flat; #it{p} (GeV/#it{c}); DCA_{xy} (cm)", {kTHnSparseF, {multAxis, flatAxis, ptAxis, dcaXYAxis}}});
+        flatchrg.add({fmt::format(CpTvsDCAxyPrimAllF.data(), CspeciesAll[i]).c_str(), "; mult; flat; #it{p} (GeV/#it{c}); DCA_{xy} (cm)", {kTHnSparseF, {multAxis, flatAxis, ptAxis, dcaXYAxis}}});
+        flatchrg.add({fmt::format(CpTvsDCAxyWeakAllF.data(), CspeciesAll[i]).c_str(), "; mult; flat; #it{p} (GeV/#it{c}); DCA_{xy} (cm)", {kTHnSparseF, {multAxis, flatAxis, ptAxis, dcaXYAxis}}});
+        flatchrg.add({fmt::format(CpTvsDCAxyMatAllF.data(), CspeciesAll[i]).c_str(), "; mult; flat; #it{p} (GeV/#it{c}); DCA_{xy} (cm)", {kTHnSparseF, {multAxis, flatAxis, ptAxis, dcaXYAxis}}});
+      }
+
       flatchrg.add({"hPtOutNoEtaCut", " ; p_{T} (GeV/c)", {kTH1F, {ptAxis}}});
       flatchrg.add({"PtOutFakes", " ; p_{T} (GeV/c)", {kTH1F, {ptAxis}}});
-      flatchrg.add("hPtVsDCAxyPrimAll", "hPtVsDCAxyPrimAll", kTH2F, {ptAxis, dcaXYAxis});
-      flatchrg.add("hPtVsDCAxyWeakAll", "hPtVsDCAxyWeakAll", kTH2F, {ptAxis, dcaXYAxis});
-      flatchrg.add("hPtVsDCAxyMatAll", "hPtVsDCAxyMatAll", kTH2F, {ptAxis, dcaXYAxis});
-      flatchrg.add("hPtVsDCAxyAll", "hPtVsDCAxyAll", kTH2F, {ptAxis, dcaXYAxis});
       flatchrg.add({"ResponseGen", " ; N_{part}; F_{FV0};", {kTHnSparseF, {multAxis, flatAxis}}});
       flatchrg.add("h1flatencityFV0MCGen", "", kTH1F, {{102, -0.01, 1.01, "1-flatencityFV0"}});
 
@@ -903,21 +925,10 @@ struct FlattenictyPikp {
   template <int pidSgn, o2::track::PID::ID id, typename P>
   bool isPID(const P& mcParticle)
   {
-    static_assert(pidSgn == Cnull || pidSgn == 1);
-    static_assert(id > Cnull || id < Npart);
+    static_assert(pidSgn == CnullInt || pidSgn == ConeInt);
+    static_assert(id > CnullInt || id < Npart);
     constexpr int Cidx = id + pidSgn * Npart;
     return mcParticle.pdgCode() == PidSgn[Cidx];
-  }
-
-  template <typename T>
-  bool selTPCtrack(T const& track)
-  {
-    return (track.hasTPC() &&
-            track.passedTPCCrossedRowsOverNCls() &&
-            track.passedTPCChi2NDF() &&
-            track.passedTPCNCls() &&
-            track.passedTPCCrossedRows() &&
-            track.passedTPCRefit());
   }
 
   template <ChargeType chrg, typename T>
@@ -940,13 +951,41 @@ struct FlattenictyPikp {
     return false;
   }
 
-  template <o2::track::PID::ID id, typename T, typename C>
-  void fillNsigma(T const& tracks, C const& collision)
+  template <int id, typename T, typename C>
+  void fillDCA(T const& tracks, C const& collision, aod::BCsWithTimestamps const& /*bcs*/)
   {
+    if (trkSelOpt.cfgRejectTrkAtTPCSector) {
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      int currentRun = bc.runNumber();
+      if (runNumber != currentRun) {
+        initCCDB(bc);
+        runNumber = currentRun;
+      }
+    }
     const float mult = getMult(collision);
     const float flat = fillFlat<false>(collision);
     for (const auto& track : tracks) {
-      checkNsigma<id>(track, mult, flat);
+      if (std::abs(track.eta()) > trkSelOpt.cfgTrkEtaMax) {
+        continue;
+      }
+      if (track.pt() < trkSelOpt.cfgTrkPtMin) {
+        continue;
+      }
+      if (trkSelOpt.cfgApplyNcl && track.tpcNClsFound() < trkSelOpt.cfgNclTPCMin) {
+        continue;
+      }
+      if (trkSelOpt.cfgApplyNclPID && track.tpcNClsPID() < trkSelOpt.cfgNclPidTPCMin) {
+        continue;
+      }
+      if (trkSelOpt.cfgRejectTrkAtTPCSector && !phiCut(track, magField, fPhiCutLow, fPhiCutHigh)) {
+        continue;
+      }
+      if (!isDCAxyWoCut(track)) {
+        continue;
+      }
+      if (track.hasTOF() && (std::sqrt(std::pow(std::fabs(o2::aod::pidutils::tpcNSigma<id>(track)), 2) + std::pow(std::fabs(o2::aod::pidutils::tofNSigma<id>(track)), 2) < trkSelOpt.cfgDcaNsigmaCombinedMax))) {
+        flatchrg.fill(HIST(Cprefix) + HIST(CspeciesAll[id]) + HIST(CpTvsDCAxy), mult, flat, track.pt(), track.dcaXY());
+      }
     }
   }
 
@@ -1534,65 +1573,6 @@ struct FlattenictyPikp {
     return true;
   }
 
-  template <o2::track::PID::ID pid, typename T>
-  void checkNsigma(const T& track, const float mult, const float flat)
-  {
-    if (std::abs(track.rapidity(o2::track::PID::getMass(pid))) > trkSelOpt.cfgRapMax) {
-      return;
-    }
-
-    float valTPCnsigma = -999, valTOFnsigma = -999;
-    switch (pid) {
-      case o2::track::PID::Pion:
-        valTPCnsigma = track.tpcNSigmaPi();
-        valTOFnsigma = track.tofNSigmaPi();
-        break;
-      case o2::track::PID::Kaon:
-        valTPCnsigma = track.tpcNSigmaKa();
-        valTOFnsigma = track.tofNSigmaKa();
-        break;
-      case o2::track::PID::Proton:
-        valTPCnsigma = track.tpcNSigmaPr();
-        valTOFnsigma = track.tofNSigmaPr();
-        break;
-      case o2::track::PID::Electron:
-        valTPCnsigma = track.tpcNSigmaEl();
-        valTOFnsigma = track.tofNSigmaEl();
-        break;
-      case o2::track::PID::Muon:
-        valTPCnsigma = track.tpcNSigmaMu();
-        valTOFnsigma = track.tofNSigmaMu();
-        break;
-      default:
-        valTPCnsigma = -999, valTOFnsigma = -999;
-        break;
-    }
-
-    if (track.sign() > Cnull) {
-      if (cfgStoreThnSparse) {
-        hThPtNsigmaTPC[pid]->Fill(track.pt(), valTPCnsigma, mult, flat);
-      } else {
-        hPtNsigmaTPC[pid]->Fill(track.pt(), valTPCnsigma);
-      }
-    } else {
-      if (cfgStoreThnSparse) {
-        hThPtNsigmaTPC[pid + Npart]->Fill(track.pt(), valTPCnsigma, mult, flat);
-      } else {
-        hPtNsigmaTPC[pid + Npart]->Fill(track.pt(), valTPCnsigma);
-      }
-    }
-    if (!track.hasTOF()) {
-      return;
-    }
-    if (track.sign() > Cnull) {
-      hPtNsigmaTOF[pid]->Fill(track.pt(), valTOFnsigma);
-      hPtNsigmaTPCTOF[pid]->Fill(valTPCnsigma, valTOFnsigma);
-    } else {
-      hPtNsigmaTOF[pid + Npart]->Fill(track.pt(), valTOFnsigma);
-      hPtNsigmaTPCTOF[pid + Npart]->Fill(valTPCnsigma, valTOFnsigma);
-    }
-  }
-
   template <FillType ft, bool fillHist = false, typename T>
   inline void fillTrackQA(T const& track)
   {
@@ -1608,6 +1588,8 @@ struct FlattenictyPikp {
         flatchrg.fill(HIST(Cprefix) + HIST(Cstatus[ft]) + HIST("hShTpcClvsPt"), track.pt(), track.tpcFractionSharedCls());
         flatchrg.fill(HIST(Cprefix) + HIST(Cstatus[ft]) + HIST("hNclTPCFoundvsPt"), track.pt(), track.tpcNClsFound());
         flatchrg.fill(HIST(Cprefix) + HIST(Cstatus[ft]) + HIST("hNClTPCPidvsPt"), track.pt(), track.tpcNClsPID());
+        flatchrg.fill(HIST(Cprefix) + HIST(Cstatus[ft]) + HIST("hNclTPCFoundvsEta"), track.eta(), track.tpcNClsFound());
+        flatchrg.fill(HIST(Cprefix) + HIST(Cstatus[ft]) + HIST("hNClTPCPidvsEta"), track.eta(), track.tpcNClsPID());
         flatchrg.fill(HIST(Cprefix) + HIST(Cstatus[ft]) + HIST("hTPCnClsShared"), track.tpcNClsShared());
         flatchrg.fill(HIST(Cprefix) + HIST(Cstatus[ft]) + HIST("hTPCcrossedRows"), track.tpcNClsCrossedRows());
         flatchrg.fill(HIST(Cprefix) + HIST(Cstatus[ft]) + HIST("hTPCcrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
@@ -2011,10 +1993,10 @@ struct FlattenictyPikp {
       auto v0sPerCollision = v0s.sliceBy(perColV0s, collision.globalIndex());
       v0sPerCollision.bindExternalIndices(&tracks);
       filldEdx(tracksPerCollision, v0sPerCollision, collision, bcs);
-      if (cfgFillNsigmaQAHist) {
-        fillNsigma<o2::track::PID::Pion>(tracksPerCollision, collision);
-        fillNsigma<o2::track::PID::Kaon>(tracksPerCollision, collision);
-        fillNsigma<o2::track::PID::Proton>(tracksPerCollision, collision);
+      if (cfgFillDCAxyHist) {
+        static_for<0, 4>([&](auto i) {
+          fillDCA<i>(tracksPerCollision, collision, bcs);
+        });
       }
     }
   }
@@ -2099,7 +2081,7 @@ struct FlattenictyPikp {
     AxisSpec ptAxis{binOpt.axisPt, "#it{p}_{T} (GeV/#it{c})"};
     constexpr int ChistIdx = id + pidSgn * Npart;
     auto idx = static_cast<int>(id);
-    const std::string strID = Form("/%s/%s", (pidSgn == Cnull && id < Npart) ? "pos" : "neg", Pid[idx]);
+    const std::string strID = Form("/%s/%s", (pidSgn == CnullInt && id < Npart) ? "pos" : "neg", Pid[idx]);
     hPtEffRec[ChistIdx] = flatchrg.add<TH1>("Tracks/hPtEffRec" + strID, " ; p_{T} (GeV/c)", kTH1F, {ptAxis});
     hPtEffGen[ChistIdx] = flatchrg.add<TH1>("Tracks/hPtEffGen" + strID, " ; p_{T} (GeV/c)", kTH1F, {ptAxis});
   }
@@ -2107,8 +2089,8 @@ struct FlattenictyPikp {
   template <int pidSgn, o2::track::PID::ID id>
   void initEfficiency()
   {
-    static_assert(pidSgn == Cnull || pidSgn == 1);
-    static_assert(id > Cnull || id < Npart);
+    static_assert(pidSgn == CnullInt || pidSgn == ConeInt);
+    static_assert(id > CnullInt || id < Npart);
     constexpr int Cidx = id + pidSgn * Npart;
     const TString partName = PidChrg[Cidx];
     THashList* lhash = new THashList();
@@ -2130,7 +2112,7 @@ struct FlattenictyPikp {
   template <int pidSgn, o2::track::PID::ID id>
   void fillEfficiency()
   {
-    static_assert(pidSgn == Cnull || pidSgn == 1);
+    static_assert(pidSgn == CnullInt || pidSgn == ConeInt);
     constexpr int ChistIdx = id + pidSgn * Npart;
     const char* partName = PidChrg[ChistIdx];
     THashList* lhash = static_cast<THashList*>(listEfficiency->FindObject(partName));
@@ -2154,8 +2136,10 @@ struct FlattenictyPikp {
   template <int pidSgn, o2::track::PID::ID id>
   void fillMCRecTrack(MyLabeledPIDTracks::iterator const& track, const float mult, const float flat)
   {
-    static_assert(pidSgn == Cnull || pidSgn == 1);
+    static_assert(pidSgn == CnullInt || pidSgn == ConeInt);
     constexpr int ChistIdx = id + pidSgn * Npart;
+    constexpr int Cidx = id;
+    LOG(debug) << "fillMCRecTrack for pidSgn '" << pidSgn << "' and id '" << static_cast<int>(id) << " with index " << ChistIdx;
     const aod::McParticles::iterator& mcParticle = track.mcParticle();
     const CollsGen::iterator& collision = track.collision_as<CollsGen>();
 
@@ -2182,36 +2166,34 @@ struct FlattenictyPikp {
       }
     }
 
-    if (!isDCAxyCut(track)) {
-      return;
-    }
-    flatchrg.fill(HIST("hPtVsDCAxyAll"), track.pt(), track.dcaXY());
-
-    if (selTPCtrack(track)) {
-      hPtEffRec[ChistIdx]->Fill(mcParticle.pt());
-    }
-
-    if (!mcParticle.isPhysicalPrimary()) {
-      if (mcParticle.getProcess() == CprocessIdWeak) {
-        hPtEffRecWeak[ChistIdx]->Fill(mult, flat, track.pt());
-        hPtVsDCAxyWeak[ChistIdx]->Fill(track.pt(), track.dcaXY());
-        flatchrg.fill(HIST("hPtVsDCAxyWeakAll"), track.pt(), track.dcaXY());
-      } else {
-        hPtEffRecMat[ChistIdx]->Fill(mult, flat, track.pt());
-        hPtVsDCAxyMat[ChistIdx]->Fill(track.pt(), track.dcaXY());
-        flatchrg.fill(HIST("hPtVsDCAxyMatAll"), track.pt(), track.dcaXY());
+    if (collision.has_mcCollision() && (mcParticle.mcCollisionId() == collision.mcCollisionId())) {
+      if (std::sqrt(std::pow(std::fabs(o2::aod::pidutils::tpcNSigma<Cidx>(track)), 2) + std::pow(std::fabs(o2::aod::pidutils::tofNSigma<Cidx>(track)), 2) < trkSelOpt.cfgDcaNsigmaCombinedMax)) {
+        if (std::fabs(mcParticle.pdgCode()) == PDGs[Cidx]) {
+          if (!mcParticle.isPhysicalPrimary()) {
+            if (mcParticle.getProcess() == CprocessIdWeak) {
+              hPtEffRecWeak[ChistIdx]->Fill(mult, flat, track.pt());
+              hPtVsDCAxyWeak[ChistIdx]->Fill(track.pt(), track.dcaXY());
+              flatchrg.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyWeakAll), mult, flat, track.pt(), track.dcaXY());
+            } else {
+              hPtEffRecMat[ChistIdx]->Fill(mult, flat, track.pt());
+              hPtVsDCAxyMat[ChistIdx]->Fill(track.pt(), track.dcaXY());
+              flatchrg.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyMatAll), mult, flat, track.pt(), track.dcaXY());
+            }
+          } else {
+            hPtEffRecPrim[ChistIdx]->Fill(mult, flat, track.pt());
+            hPtVsDCAxyPrim[ChistIdx]->Fill(track.pt(), track.dcaXY());
+            flatchrg.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyPrimAll), mult, flat, track.pt(), track.dcaXY());
+          }
+          flatchrg.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyAll), mult, flat, track.pt(), track.dcaXY());
+        }
       }
-    } else {
-      hPtEffRecPrim[ChistIdx]->Fill(mult, flat, track.pt());
-      hPtVsDCAxyPrim[ChistIdx]->Fill(track.pt(), track.dcaXY());
-      flatchrg.fill(HIST("hPtVsDCAxyPrimAll"), track.pt(), track.dcaXY());
     }
   }
 
   template <int pidSgn, o2::track::PID::ID id, bool recoEvt = false>
   void fillMCGen(aod::McParticles::iterator const& mcParticle, const float mult, const float flat)
   {
-    static_assert(pidSgn == Cnull || pidSgn == 1);
+    static_assert(pidSgn == CnullInt || pidSgn == ConeInt);
     constexpr int ChistIdx = id + pidSgn * Npart;
 
     if (!isPID<pidSgn, id>(mcParticle)) {
@@ -2417,6 +2399,7 @@ struct FlattenictyPikp {
 
   void processMC(MCColls const& mcCollisions,
                  CollsGen const& collisions,
+                 aod::BCsWithTimestamps const& /*bcs*/,
                  MyLabeledPIDTracks const& tracks,
                  aod::McParticles const& mcparticles)
   {
@@ -2428,22 +2411,60 @@ struct FlattenictyPikp {
         flatchrg.fill(HIST("hEvtGenRec"), 3.f);
       }
       flatchrg.fill(HIST("hEvtMcGenColls"), 1);
+
       const auto groupedColls = collisions.sliceBy(perCollMcLabel, mcCollision.globalIndex());
       const auto groupedParts = mcparticles.sliceBy(perCollMcPart, mcCollision.globalIndex());
       const float flatMC = fillFlatMC<true>(groupedParts);
       const float multMC = getMultMC(mcCollision);
+
       if (groupedColls.size() < 1) { // if MC events have no rec collisions
         continue;
       }
+
+      auto maxNcontributors = -1;
+      auto bestCollIndex = -1;
+      for (const auto& collision : groupedColls) {
+        if (maxNcontributors < collision.numContrib()) {
+          maxNcontributors = collision.numContrib();
+          bestCollIndex = collision.globalIndex();
+        } else {
+          continue;
+        }
+      }
+
       flatchrg.fill(HIST("hEvtMcGenColls"), 2);
       for (const auto& collision : groupedColls) {
         flatchrg.fill(HIST("hEvtMcGenColls"), 3);
         if (!isGoodEvent<false>(collision)) {
           continue;
         }
+        // Select collisions with the largest number of contributors
+        if (bestCollIndex != collision.globalIndex()) {
+          continue;
+        }
         flatchrg.fill(HIST("hEvtMcGenColls"), 4);
         const auto groupedTrks = tracks.sliceBy(perCollTrk, collision.globalIndex());
         for (const auto& track : groupedTrks) {
+          if (!track.has_collision()) {
+            continue;
+          }
+          if (trkSelOpt.cfgRejectTrkAtTPCSector) {
+            auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+            int currentRun = bc.runNumber();
+            if (runNumber != currentRun) {
+              initCCDB(bc);
+              runNumber = currentRun;
+            }
+          }
+          if (trkSelOpt.cfgApplyNcl && track.tpcNClsFound() < trkSelOpt.cfgNclTPCMin) {
+            continue;
+          }
+          if (trkSelOpt.cfgApplyNclPID && track.tpcNClsPID() < trkSelOpt.cfgNclPidTPCMin) {
+            continue;
+          }
+          if (trkSelOpt.cfgRejectTrkAtTPCSector && !phiCut(track, magField, fPhiCutLow, fPhiCutHigh)) {
+            continue;
+          }
           if (!isDCAxyWoCut(track)) {
             continue;
           }
@@ -2453,9 +2474,6 @@ struct FlattenictyPikp {
           }
           const auto& mcParticle = track.mcParticle();
           if (std::abs(mcParticle.y()) > trkSelOpt.cfgRapMax) {
-            continue;
-          }
-          if (!track.has_collision()) {
             continue;
           }
           static_for<0, 1>([&](auto pidSgn) {

@@ -22,38 +22,50 @@
 #include <map>
 #include <ranges>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 //_______________________________________________________________________
 namespace o2::aod::pwgem::dilepton::utils::emtrackutil
 {
 
-enum class RefTrackBit : uint16_t { // This is not for leptons, but charged tracks for reference flow.
-  kNclsITS5 = 1,
-  kNclsITS6 = 2,
-  kNcrTPC70 = 4,
-  kNcrTPC90 = 8,
-  kNclsTPC50 = 16, // (not necessary, if ncr is used.)
-  kNclsTPC70 = 32, // (not necessary, if ncr is used.)
-  kNclsTPC90 = 64, // (not necessary, if ncr is used.)
-  kChi2TPC4 = 128,
-  kChi2TPC3 = 256,
-  kFracSharedTPC07 = 512,
-  kDCAxy05cm = 1024, // default is 1 cm
-  kDCAxy03cm = 2048,
-  kDCAz05cm = 4096, // default is 1cm
-  kDCAz03cm = 8192,
+enum class RefTrackType : int { // charged tracks for reference flow.
+  kCB = 0,
+  kMFTsa = 1,
 };
 
-enum class RefMFTTrackBit : uint16_t { // This is not for leptons, but charged tracks for reference flow.
-  kNclsMFT7 = 1,                       // default is 6
-  kNclsMFT8 = 2,
-  kChi2MFT4 = 4, // default is 5
-  kChi2MFT3 = 8,
-  kDCAxy004cm = 16, // default is 0.05 cm
-  kDCAxy003cm = 32,
-  kDCAxy002cm = 64,
-  kDCAxy001cm = 128,
+// This is not for leptons, but charged tracks for reference flow.
+enum class RefTrackBit : int {
+  kNclsITS5 = 0,
+  kNclsITS6,
+  kNcrTPC70,
+  kNcrTPC90,
+  kNclsTPC50, // (not necessary, if ncr is used.)
+  kNclsTPC70, // (not necessary, if ncr is used.)
+  kNclsTPC90, // (not necessary, if ncr is used.)
+  kChi2TPC4,
+  kChi2TPC3,
+  kFracSharedTPC07,
+  kDCAxy05cm, // default is 1 cm
+  kDCAxy03cm,
+  kDCAz05cm, // default is 1cm
+  kDCAz03cm,
+  kNCuts,
+};
+
+// This is not for leptons, but charged tracks for reference flow.
+enum class RefMFTTrackBit : int {
+  kNclsMFT6 = 0, // default is 5
+  kNclsMFT7,
+  kNclsMFT8,
+  kChi2MFT3, // default is 4
+  kChi2MFT2,
+  kDCAxy005cm, // default is 0.06 cm
+  kDCAxy004cm,
+  kDCAxy003cm,
+  kDCAxy002cm,
+  kDCAxy001cm,
+  kNCuts,
 };
 
 //_______________________________________________________________________
@@ -135,9 +147,11 @@ bool checkMFTHitMap(T const& track)
   return (clmap > 0);
 }
 //_______________________________________________________________________
-template <bool is_wo_acc = false, typename TTrack, typename TCut, typename TTracks>
+template <typename TTrack, typename TCut, typename TTracks>
 bool isBestMatch(TTrack const& track, TCut const& cut, TTracks const& tracks)
 {
+  // find the best glboal muon without pt, eta cut (ie. without single track acceptance cut) to keep possibility for unfolding.
+
   // this is only for global muons at forward rapidity
   // Be careful! tracks are fwdtracks per DF.
   if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
@@ -150,7 +164,7 @@ bool isBestMatch(TTrack const& track, TCut const& cut, TTracks const& tracks)
     for (const auto& glmuonId : track.globalMuonsWithSameMFTIds()) {
       auto candidate = tracks.rawIteratorAt(glmuonId);
       if (candidate.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && candidate.emeventId() == track.emeventId() && candidate.mchtrackId() != track.mchtrackId()) {
-        if (cut.template IsSelectedTrack<is_wo_acc>(candidate)) {
+        if (cut.template IsSelectedTrack<true>(candidate)) {
           map_chi2MCHMFT[candidate.globalIndex()] = candidate.chi2MatchMCHMFT();
         }
       }
@@ -169,7 +183,7 @@ bool isBestMatch(TTrack const& track, TCut const& cut, TTracks const& tracks)
     for (const auto& glmuonId : track.globalMuonsWithSameMCHMIDIds()) {
       auto candidate = tracks.rawIteratorAt(glmuonId);
       if (candidate.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && candidate.emeventId() == track.emeventId() && candidate.mfttrackId() != track.mfttrackId()) {
-        if (cut.template IsSelectedTrack<is_wo_acc>(candidate)) {
+        if (cut.template IsSelectedTrack<true>(candidate)) {
           map_chi2MCHMFT[candidate.globalIndex()] = candidate.chi2MatchMCHMFT();
         }
       }
@@ -187,6 +201,16 @@ bool isBestMatch(TTrack const& track, TCut const& cut, TTracks const& tracks)
   } else {
     return true;
   }
+}
+//_______________________________________________________________________
+template <typename TTracks, typename TCut>
+std::unordered_map<int, bool> findBestMatchMap(TTracks const& tracks, TCut const& cut)
+{
+  std::unordered_map<int, bool> map;
+  for (const auto& track : tracks) {
+    map[track.globalIndex()] = isBestMatch(track, cut, tracks);
+  }
+  return map;
 }
 //_______________________________________________________________________
 // template <typename T>

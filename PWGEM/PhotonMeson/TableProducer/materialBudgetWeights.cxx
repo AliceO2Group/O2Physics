@@ -8,20 +8,20 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
-// ========================
-//
-// This code loops over v0 photons and makes pairs for photon HBT analysis.
-//    Please write to: daiki.sekihata@cern.ch
+///
+/// \file MaterialBudgetWeights.h
+///
+/// \brief This code produces a table to retrieve material budget weights. The table is to be join with V0PhotonKF
+///
+/// \author Youssef El Mard (youssef.el.mard.bouziani@cern.ch)
 
-#include "PWGEM/PhotonMeson/Core/PhotonHBT.h"
+#include "PWGEM/PhotonMeson/Core/MaterialBudgetWeights.h"
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+
+using namespace o2::framework;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<PhotonHBT<o2::aod::pwgem::photon::core::photonhbt::ggHBTPairType::kPCMPCM, MyV0Photons, o2::aod::V0Legs>>(cfgc, TaskName{"photon-hbt-pcmpcm"})};
+  return WorkflowSpec{adaptAnalysisTask<MaterialBudgetWeights>(cfgc)};
 }

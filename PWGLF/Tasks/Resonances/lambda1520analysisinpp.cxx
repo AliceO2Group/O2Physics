@@ -218,7 +218,7 @@ struct Lambda1520analysisinpp {
   // Filter primarytrackFilter = requirePVContributor() && requirePrimaryTrack() && requireGlobalTrackWoDCA();
 
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>;
-  using TrackCandidates = soa::Filtered<soa::Join<aod::FullTracks, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::FullTracks, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension>>;
   using MCEventCandidates = soa::Join<EventCandidates, aod::McCollisionLabels>;
   using MCTrackCandidates = soa::Filtered<soa::Join<TrackCandidates, aod::McTrackLabels>>;
 
@@ -262,7 +262,7 @@ struct Lambda1520analysisinpp {
     AxisSpec axisTPCXrow{binsTPCXrows, "#Xrows_{TPC}"};
     AxisSpec axisPIDQA{binsnSigma, "#sigma"};
     AxisSpec axisTPCSignal{binsnTPCSignal, ""};
-    AxisSpec axisMClabel{6, -1.5f, 6.5f, "MC Label"};
+    AxisSpec axisMClabel{9, -1.f, 8.f, "MC Label"};
     AxisSpec axisEtaPhi{binsEtaPhi, ""};
     AxisSpec axisPhi{350, 0, 7, "#Phi"};
     AxisSpec axisMultMix{configBkg.cfgMultPercentileBins, "Multiplicity Percentile"};
@@ -276,7 +276,7 @@ struct Lambda1520analysisinpp {
         histos.add("QAevent/hPairsCounterSameE", "total valid no. of pairs sameE", HistType::kTH1F, {{1, 0.5f, 1.5f}});
         histos.add("QAevent/hnTrksSameE", "n tracks per event SameE", HistType::kTH1F, {{1000, 0.0, 1000.0}});
       }
-      // Test on Mixed event
+      // Gen on Mixed event
       if (doprocessME) {
 
         // Histograms for Mixed Event Pool characteristics
@@ -401,6 +401,7 @@ struct Lambda1520analysisinpp {
     // MC QA
     histos.add("Event/hMCEventIndices", "hMCEventIndices", kTH2D, {axisMult, idxMCAxis});
     if (doprocessMCGen) {
+      histos.add("QA/Gen", "Gen histogram", kTH1D, {{10, 0, 10, "index"}});
       histos.add("QA/MC/h2GenEtaPt_beforeanycut", " #eta-#it{p}_{T} distribution of Generated #Lambda(1520); #eta;  #it{p}_{T}; Counts;", HistType::kTHnSparseF, {axisEta, axisPtQA});
       histos.add("QA/MC/h2GenPhiRapidity_beforeanycut", " #phi-y distribution of Generated #Lambda(1520); #phi; y; Counts;", HistType::kTHnSparseF, {axisPhi, axisRap});
       histos.add("QA/MC/h2GenEtaPt_afterEtaRapCut", " #eta-#it{p}_{T} distribution of Generated #Lambda(1520); #eta;  #it{p}_{T}; Counts;", HistType::kTHnSparseF, {axisEta, axisPtQA});
@@ -1071,6 +1072,8 @@ struct Lambda1520analysisinpp {
       histos.fill(HIST("QAevent/hEventsMC"), 2);
     }
 
+    colCuts.fillQA(collision);
+
     fillHistograms<false, false, true, false>(collision, tracks, tracks);
   }
   PROCESS_SWITCH(Lambda1520analysisinpp, processMCRec, "Process Event for MC Rec without partition", false);
@@ -1136,21 +1139,23 @@ struct Lambda1520analysisinpp {
       histos.fill(HIST("QA/MC/h2GenEtaPt_afterEtaRapCut"), part.eta(), part.pt());
       histos.fill(HIST("QA/MC/h2GenPhiRapidity_afterEtaRapCut"), part.phi(), part.y());
 
-      // without any event selection
-      if (part.pdgCode() > 0)
+      histos.fill(HIST("QA/Gen"), 1);
+      if (part.pdgCode() > 0) // without any event selection
         histos.fill(HIST("Result/MC/Genlambda1520pt"), 0, part.pt(), centrality);
       else
         histos.fill(HIST("Result/MC/Genantilambda1520pt"), 0, part.pt(), centrality);
 
-      if (inVtx10) // INEL10
+      if (inVtx10) // vtx10
       {
+        histos.fill(HIST("QA/Gen"), 2);
         if (part.pdgCode() > 0)
           histos.fill(HIST("Result/MC/Genlambda1520pt"), 1, part.pt(), centrality);
         else
           histos.fill(HIST("Result/MC/Genantilambda1520pt"), 1, part.pt(), centrality);
       }
-      if (inVtx10 && isSel8) // INEL>10, vtx10
+      if (inVtx10 && isSel8) // vtx10, sel8
       {
+        histos.fill(HIST("QA/Gen"), 3);
         if (part.pdgCode() > 0)
           histos.fill(HIST("Result/MC/Genlambda1520pt"), 2, part.pt(), centrality);
         else
@@ -1158,24 +1163,35 @@ struct Lambda1520analysisinpp {
       }
       if (inVtx10 && isTriggerTVX) // vtx10, TriggerTVX
       {
+        histos.fill(HIST("QA/Gen"), 4);
         if (part.pdgCode() > 0)
           histos.fill(HIST("Result/MC/Genlambda1520pt"), 3, part.pt(), centrality);
         else
           histos.fill(HIST("Result/MC/Genantilambda1520pt"), 3, part.pt(), centrality);
       }
-      if (isInAfterAllCuts) // after all event selection
+      if (inVtx10 && isTrueINELgt0) // vtx10, INEL>0
       {
+        histos.fill(HIST("QA/Gen"), 5);
         if (part.pdgCode() > 0)
           histos.fill(HIST("Result/MC/Genlambda1520pt"), 4, part.pt(), centrality);
         else
           histos.fill(HIST("Result/MC/Genantilambda1520pt"), 4, part.pt(), centrality);
       }
-      if (isInAfterAllCuts && isTrueINELgt0) // after all event selection
+      if (isInAfterAllCuts) // after all event selection
       {
+        histos.fill(HIST("QA/Gen"), 6);
         if (part.pdgCode() > 0)
           histos.fill(HIST("Result/MC/Genlambda1520pt"), 5, part.pt(), centrality);
         else
           histos.fill(HIST("Result/MC/Genantilambda1520pt"), 5, part.pt(), centrality);
+      }
+      if (isInAfterAllCuts && isTrueINELgt0) // after all event selection && INEL>0
+      {
+        histos.fill(HIST("QA/Gen"), 7);
+        if (part.pdgCode() > 0)
+          histos.fill(HIST("Result/MC/Genlambda1520pt"), 6, part.pt(), centrality);
+        else
+          histos.fill(HIST("Result/MC/Genantilambda1520pt"), 6, part.pt(), centrality);
       }
     }
 

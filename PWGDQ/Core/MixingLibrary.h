@@ -11,16 +11,27 @@
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
-#include <TString.h>
+
+#ifndef PWGDQ_CORE_MIXINGLIBRARY_H_
+#define PWGDQ_CORE_MIXINGLIBRARY_H_
+
 #include "PWGDQ/Core/MixingHandler.h"
 #include "PWGDQ/Core/VarManager.h"
+
+#include <TString.h>
+
+#include "rapidjson/document.h"
 
 namespace o2::aod
 {
 namespace dqmixing
 {
 void SetUpMixing(MixingHandler* mh, const char* mixingVarible);
+void SetUpMixingFromJSON(MixingHandler* mh, const char* json);
 } // namespace dqmixing
 } // namespace o2::aod
 
 void o2::aod::dqmixing::SetUpMixing(MixingHandler* mh, const char* mixingVarible);
+void o2::aod::dqmixing::SetUpMixingFromJSON(MixingHandler* mh, const char* json);
+
+#endif // PWGDQ_CORE_MIXINGLIBRARY_H_
