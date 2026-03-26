@@ -93,11 +93,11 @@ struct tofSignal {
     }
 
     // Checking that the table is requested in the workflow and enabling it
-    enableTable = isTableRequiredInWorkflow(initContext, "TOFSignal");
+    enableTable = o2::common::core::isTableRequiredInWorkflow(initContext, "TOFSignal");
     if (enableTable) {
       LOG(info) << "Table TOFSignal enabled!";
     }
-    enableTableFlags = isTableRequiredInWorkflow(initContext, "pidTOFFlags");
+    enableTableFlags = o2::common::core::isTableRequiredInWorkflow(initContext, "pidTOFFlags");
     if (enableTableFlags) {
       LOG(info) << "Table pidTOFFlags enabled!";
     }
@@ -220,10 +220,10 @@ struct tofEventTime {
   void init(o2::framework::InitContext& initContext)
   {
     if (inheritFromBaseTask.value) {
-      if (!getTaskOptionValue(initContext, "tof-signal", "ccdb-url", url.value, true)) {
+      if (!o2::common::core::getTaskOptionValue(initContext, "tof-signal", "ccdb-url", url.value, true)) {
         LOG(fatal) << "Could not get ccdb-url from tof-signal task";
       }
-      if (!getTaskOptionValue(initContext, "tof-signal", "ccdb-timestamp", timestamp.value, true)) {
+      if (!o2::common::core::getTaskOptionValue(initContext, "tof-signal", "ccdb-timestamp", timestamp.value, true)) {
         LOG(fatal) << "Could not get ccdb-timestamp from tof-signal task";
       }
     }
@@ -253,14 +253,14 @@ struct tofEventTime {
       LOGF(fatal, "Cannot enable more process functions at the same time. Please choose one.");
     }
     // Checking that the table is requested in the workflow and enabling it
-    enableTable = isTableRequiredInWorkflow(initContext, "TOFEvTime");
+    enableTable = o2::common::core::isTableRequiredInWorkflow(initContext, "TOFEvTime");
     if (!enableTable) {
       LOG(info) << "Table for TOF Event time (TOFEvTime) is not required, disabling it";
       return;
     }
     LOG(info) << "Table TOFEvTime enabled!";
 
-    enableTableTOFOnly = isTableRequiredInWorkflow(initContext, "EvTimeTOFOnly");
+    enableTableTOFOnly = o2::common::core::isTableRequiredInWorkflow(initContext, "EvTimeTOFOnly");
     if (enableTableTOFOnly) {
       LOG(info) << "Table EvTimeTOFOnly enabled!";
     }

@@ -16,8 +16,8 @@
 /// \author M Puccio
 ///
 
-#ifndef EVENTFILTERING_ZORRO_H_
-#define EVENTFILTERING_ZORRO_H_
+#ifndef COMMON_CORE_ZORRO_H_
+#define COMMON_CORE_ZORRO_H_
 
 #include "ZorroHelper.h"
 #include "ZorroSummary.h"
@@ -103,4 +103,4 @@ class Zorro
   o2::ccdb::BasicCCDBManager* mCCDB = nullptr;
 };
 
-#endif // EVENTFILTERING_ZORRO_H_
+#endif // COMMON_CORE_ZORRO_H_
