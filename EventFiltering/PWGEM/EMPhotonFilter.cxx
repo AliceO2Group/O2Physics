@@ -14,17 +14,29 @@
 
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/CaloClusters.h"
+#include "Common/DataModel/EventSelection.h"
 #include "EventFiltering/filterTables.h"
 
-#include "DataFormatsPHOS/TriggerRecord.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Math/Vector4D.h"
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TH1.h>
+
+#include <cmath>
+#include <cstdint>
+#include <memory>
 
 using namespace o2;
 using namespace o2::soa;
