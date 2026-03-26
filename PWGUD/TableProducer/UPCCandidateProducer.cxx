@@ -18,17 +18,36 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/LHCConstants.h"
-#include "DataFormatsFIT/Triggers.h"
-#include "DataFormatsITSMFT/ROFRecord.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/LHCConstants.h>
+#include <DataFormatsFIT/Triggers.h>
+#include <DataFormatsITSMFT/ROFRecord.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TMath.h>
+
+#include <Rtypes.h>
 
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <limits>
 #include <map>
+#include <numeric>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
