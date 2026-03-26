@@ -22,6 +22,7 @@
 
 #include "Common/Core/RecoDecay.h"
 
+#include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
@@ -30,7 +31,6 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TMath.h>
 #include <TRandom3.h>
 
 #include <cmath>

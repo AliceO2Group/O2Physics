@@ -20,15 +20,10 @@
 
 #include "Common/Core/RecoDecay.h"
 
-#include <TKDTree.h>
+#include <TMath.h>
 
-#include <algorithm>
 #include <cmath>
-#include <cstddef>
-#include <limits>
-#include <stdexcept>
 #include <tuple>
-#include <vector>
 
 #include <math.h>
 
