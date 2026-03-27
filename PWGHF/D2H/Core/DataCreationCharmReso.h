@@ -743,9 +743,9 @@ bool isTrackSelected(const Tr& track, const std::array<int, 3>& dDaughtersIds, c
   bool isProtonTOF = hasTOF ? std::abs(track.tofNSigmaPr()) < cfgSingleTrackCuts.maxNsigmaTofPr.value : false;
 
   // --- Combined logic ---
-  bool isPion = isPionTPC && (!cfgSingleTrackCuts.forceTOF || isPionTOF);
-  bool isKaon = isKaonTPC && (!cfgSingleTrackCuts.forceTOF || isKaonTOF);
-  bool isProton = isProtonTPC && (!cfgSingleTrackCuts.forceTOF || isProtonTOF);
+  bool isPion = isPionTPC && (!cfgSingleTrackCuts.forceTOF.value || isPionTOF);
+  bool isKaon = isKaonTPC && (!cfgSingleTrackCuts.forceTOF.value || isKaonTOF);
+  bool isProton = isProtonTPC && (!cfgSingleTrackCuts.forceTOF.value || isProtonTOF);
 
   return (isPion || isKaon || isProton); // we keep the track if is it compatible with at least one of the PID hypotheses selected
 }
