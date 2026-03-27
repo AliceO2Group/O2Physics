@@ -78,21 +78,21 @@ struct strangederivedbuilder {
   struct : ProducesGroup {
     //__________________________________________________
     // fundamental building blocks of derived data
-    Produces<aod::StraCollision> strangeColl;           // characterises collisions
-    Produces<aod::StraCollLabels> strangeCollLabels;    // characterises collisions
-    Produces<aod::StraMCCollisions> strangeMCColl;      // characterises collisions / MC
-    Produces<aod::StraMCCollMults> strangeMCMults;      // characterises collisions / MC mults
-    Produces<aod::StraCents> strangeCents;              // characterises collisions / centrality in Run 3
-    Produces<aod::StraCentsRun2> strangeCentsRun2;      // characterises collisions / centrality in Run 2
-    Produces<aod::StraEvSels> strangeEvSels;            // characterises collisions / centrality / sel8 selection in Run 3
-    Produces<aod::StraEvSelExtras> strangeEvSelExtras;  // extra event selection variables in Run 3
-    Produces<aod::StraEvSelsRun2> strangeEvSelsRun2;    // characterises collisions / centrality / sel8 selection in Run 2
-    Produces<aod::StraStamps> strangeStamps;            // provides timestamps, run numbers
-    Produces<aod::StraEvTimes> straEvTimes;             // provides event times (FT0, TOF)
-    Produces<aod::V0CollRefs> v0collref;                // references collisions from V0s
-    Produces<aod::CascCollRefs> casccollref;            // references collisions from cascades
-    Produces<aod::KFCascCollRefs> kfcasccollref;        // references collisions from KF cascades
-    Produces<aod::TraCascCollRefs> tracasccollref;      // references collisions from tracked cascades
+    Produces<aod::StraCollision> strangeColl;          // characterises collisions
+    Produces<aod::StraCollLabels> strangeCollLabels;   // characterises collisions
+    Produces<aod::StraMCCollisions> strangeMCColl;     // characterises collisions / MC
+    Produces<aod::StraMCCollMults> strangeMCMults;     // characterises collisions / MC mults
+    Produces<aod::StraCents> strangeCents;             // characterises collisions / centrality in Run 3
+    Produces<aod::StraCentsRun2> strangeCentsRun2;     // characterises collisions / centrality in Run 2
+    Produces<aod::StraEvSels> strangeEvSels;           // characterises collisions / centrality / sel8 selection in Run 3
+    Produces<aod::StraEvSelExtras> strangeEvSelExtras; // extra event selection variables in Run 3
+    Produces<aod::StraEvSelsRun2> strangeEvSelsRun2;   // characterises collisions / centrality / sel8 selection in Run 2
+    Produces<aod::StraStamps> strangeStamps;           // provides timestamps, run numbers
+    Produces<aod::StraEvTimes> straEvTimes;            // provides event times (FT0, TOF)
+    Produces<aod::V0CollRefs> v0collref;               // references collisions from V0s
+    Produces<aod::CascCollRefs> casccollref;           // references collisions from cascades
+    Produces<aod::KFCascCollRefs> kfcasccollref;       // references collisions from KF cascades
+    Produces<aod::TraCascCollRefs> tracasccollref;     // references collisions from tracked cascades
 
     //__________________________________________________
     // track extra references
@@ -586,9 +586,9 @@ struct strangederivedbuilder {
                                  collision.flags(),
                                  collision.alias_raw(),
                                  collision.rct_raw());
-          products.strangeEvSelExtras(timeZNA, timeZNC, // ZDC info
-                                      timeFDDA, timeFDDC, // FDD info
-                                      timeFV0A, // FV0A info
+          products.strangeEvSelExtras(timeZNA, timeZNC,                    // ZDC info
+                                      timeFDDA, timeFDDC,                  // FDD info
+                                      timeFV0A,                            // FV0A info
                                       timeFT0A, timeFT0C, ft0TriggerMask); // FT0 info
         } else { // We are in Run 2
           products.strangeCentsRun2(collision.centRun2V0M(), collision.centRun2V0A(),
