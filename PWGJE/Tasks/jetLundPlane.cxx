@@ -13,39 +13,38 @@
 /// \brief Task for jet Lund plane. Creates histograms for offline unfolding (including QA histos), and optionally tables.
 /// \author Zoltan Varga <zoltan.varga@cern.ch>
 
-#include <cmath>
-#include <vector>
-#include <algorithm>
-#include <array>
-#include <unordered_map>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
-#include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/Core/FastJetUtilities.h"
+#include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+
 #include <THnSparse.h>
 
-#include <fastjet/PseudoJet.hh>
 #include <fastjet/ClusterSequenceArea.hh>
+#include <fastjet/PseudoJet.hh>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <unordered_map>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-
 // Mini-AOD (tables)
 namespace o2::aod
 {
-DECLARE_SOA_COLUMN(MiniCollId, miniCollId, uint64_t);   // collision global index
-DECLARE_SOA_COLUMN(MiniJetId, miniJetId, uint64_t);     // jet global index (within its table)
-DECLARE_SOA_COLUMN(Level, level, uint8_t);              // 0=reco(det), 1=truth(part)
-DECLARE_SOA_COLUMN(JetRint, jetRint, int32_t);          // jet.r() as stored (int R*100)
+DECLARE_SOA_COLUMN(MiniCollId, miniCollId, uint64_t); // collision global index
+DECLARE_SOA_COLUMN(MiniJetId, miniJetId, uint64_t);   // jet global index (within its table)
+DECLARE_SOA_COLUMN(Level, level, uint8_t);            // 0=reco(det), 1=truth(part)
+DECLARE_SOA_COLUMN(JetRint, jetRint, int32_t);        // jet.r() as stored (int R*100)
 DECLARE_SOA_COLUMN(JetPt, jetPt, float);
 DECLARE_SOA_COLUMN(JetEta, jetEta, float);
 DECLARE_SOA_COLUMN(JetPhi, jetPhi, float);
@@ -73,7 +72,6 @@ DECLARE_SOA_TABLE(MiniSplittings, "AOD", "MINISPL",
 DECLARE_SOA_TABLE(MiniJetMatches, "AOD", "MINIMCH",
                   MiniCollId, DetJetId, PartJetId, MatchDR, MatchRelPt);
 } // namespace o2::aod
-
 
 namespace
 {
@@ -221,8 +219,7 @@ std::vector<SplittingObs> primaryDeclusteringSplittings(fastjet::PseudoJet jetCA
 
 } // namespace
 
-struct JetLundPlaneUnfolding
-{
+struct JetLundPlaneUnfolding {
   // Config
   Configurable<float> vertexZCut{"vertexZCut", 10.f, "|z_vtx| cut"};
   Configurable<float> jetPtMin{"jetPtMin", 20.f, "min reco jet pT"};
@@ -367,11 +364,11 @@ struct JetLundPlaneUnfolding
   // Type aliases
   using RecoJets = soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>;
   using DetJetsMatched = soa::Join<aod::ChargedMCDetectorLevelJets,
-                                  aod::ChargedMCDetectorLevelJetConstituents,
-                                  aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>;
+                                   aod::ChargedMCDetectorLevelJetConstituents,
+                                   aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>;
   using PartJetsMatched = soa::Join<aod::ChargedMCParticleLevelJets,
-                                   aod::ChargedMCParticleLevelJetConstituents,
-                                   aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>;
+                                    aod::ChargedMCParticleLevelJetConstituents,
+                                    aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>;
 
   template <typename JetT>
   bool passJetFiducial(JetT const& jet, int rWanted) const
