@@ -33,6 +33,7 @@
 #include <cmath>
 #include <unordered_map>
 #include <vector>
+#include <utility>
 
 using namespace o2;
 using namespace o2::framework;
@@ -576,7 +577,7 @@ struct JetLundPlaneUnfolding {
         }
 
         const float dR = std::hypot(detJet.eta() - candPartJet.eta(),
-                                    std::remainder(detJet.phi() - candPartJet.phi(), 2.f * (float)M_PI));
+                                    std::remainder(detJet.phi() - candPartJet.phi(), 2.f * static_cast<float>(M_PI)));
         if (dR > matchMaxDR.value) {
           continue;
         }
