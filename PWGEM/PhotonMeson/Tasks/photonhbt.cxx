@@ -514,6 +514,7 @@ struct photonhbt {
     float opa = 0.f;
     float cosOA = 0.f;
     float drOverCosOA = 0.f;
+
     float deta = 0.f, dphi = 0.f;
     float pairEta = 0.f, pairPhi = 0.f;
     float kt = 0.f, qinv = 0.f;
@@ -1566,10 +1567,10 @@ struct photonhbt {
 
   PROCESS_SWITCH(photonhbt, processAnalysis, "pairing for analysis", true);
 
-  template <soa::is_table TCollisions,
-            soa::is_table TPhotons,
-            soa::is_table TLegs,
-            soa::is_table TMCParticles,
+  template <typename TCollisions,
+            typename TPhotons,
+            typename TLegs,
+            typename TMCParticles,
             typename TPreslice,
             typename TCut>
   void runPairingMC(TCollisions const& collisions,
