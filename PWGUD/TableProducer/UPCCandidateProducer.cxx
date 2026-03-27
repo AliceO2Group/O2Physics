@@ -614,7 +614,7 @@ struct UpcCandProducer {
       const auto& bcIds = ambTrk.bcIds();
       if (bcIds.size() == 0)
         continue;
-      
+
       const auto firstBcId = static_cast<int64_t>(*bcIds.begin());
       if (firstBcId < 0 || firstBcId >= static_cast<int64_t>(bcs.size())) {
         LOGP(debug,
@@ -713,7 +713,7 @@ struct UpcCandProducer {
         trackBC = ambIter->second;
         hasTrackBC = true;
       }
-      if (!hasTrackBC) 
+      if (!hasTrackBC)
         continue;
       int64_t tint = TMath::FloorNint(trk.trackTime() / o2::constants::lhc::LHCBunchSpacingNS + static_cast<float>(fMuonTrackTShift));
       uint64_t bc = trackBC + tint;
@@ -760,7 +760,7 @@ struct UpcCandProducer {
         trackBC = ambIter->second;
         hasTrackBC = true;
       }
-      if (!hasTrackBC) 
+      if (!hasTrackBC)
         continue;
       int64_t tint = TMath::FloorNint(trk.trackTime() / o2::constants::lhc::LHCBunchSpacingNS + static_cast<float>(fMuonTrackTShift));
       uint64_t bc = trackBC + tint;
@@ -1586,7 +1586,7 @@ struct UpcCandProducer {
 
     // trackID -> index in amb. track table
     std::unordered_map<int64_t, uint64_t> ambFwdTrBCs;
-    collectAmbTrackBCs<1, BCsWithBcSels>(ambFwdTrBCs, bcs,ambFwdTracks);
+    collectAmbTrackBCs<1, BCsWithBcSels>(ambFwdTrBCs, bcs, ambFwdTracks);
 
     collectForwardTracks(bcsMatchedTrIdsMID,
                          o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack,
