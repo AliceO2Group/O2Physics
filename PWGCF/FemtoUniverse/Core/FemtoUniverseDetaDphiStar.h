@@ -877,7 +877,7 @@ class FemtoUniverseDetaDphiStar
         badpoints++;
       }
     }
-    return badpoints / entries;
+    return (static_cast<float>(badpoints) / static_cast<float>(entries));
   }
 
   // Get particle charge from mask
