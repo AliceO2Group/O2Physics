@@ -284,7 +284,7 @@ struct JetCorrelationD0 {
         if (dPhi > o2::constants::math::PI) {
           dPhi = 2 * o2::constants::math::PI - dPhi;
         }
-        if (std::abs(dPhi - o2::constants::math::PI) > (o2::constants::math::PI / 2)) { 
+        if (std::abs(dPhi - o2::constants::math::PI) > (o2::constants::math::PI / 2)) {
           continue;
         }
         fillJetHistograms(jet, dPhi);
@@ -439,7 +439,7 @@ struct JetCorrelationD0 {
           }
         }
       }
-    } 
+    }
   }
   PROCESS_SWITCH(JetCorrelationD0, processMcMatched, "process matching of particle level jets to detector level jets", false);
 };
