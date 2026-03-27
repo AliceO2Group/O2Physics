@@ -1007,7 +1007,7 @@ struct FlowGfwV02 {
 
     if (!withinPtPOI && !withinPtRef)
       return;
-    double weff = getJTrackEfficiency(track);
+    double weff = getEfficiency(track, PidCharged);
     if (weff < 0)
       return;
 
