@@ -361,12 +361,12 @@ struct StudyPnch {
       auto recTracksPart = RecTracks.sliceBy(perCollision, RecCol.globalIndex());
       auto multrec = countNTracksMcCol(recTracksPart, RecCol);
       if (multrec > 0) {
-        histos.fill(HIST("hMultiplicityMCrec"), multrec);
+        histos.fill(HIST("hMultiplicityMCrecMod"), multrec);
       }
       auto multgen = countGenTracks(GenParticles, mcCollision);
       if (multgen > 0 && multrec > 0) {
-        histos.fill(HIST("hMultiplicityMCgen"), multgen);
-        histos.fill(HIST("hResponseMatrix"), multrec, multgen);
+        histos.fill(HIST("hMultiplicityMCgenMod"), multgen);
+        histos.fill(HIST("hResponseMatrixMod"), multrec, multgen);
       }
     }
   }
