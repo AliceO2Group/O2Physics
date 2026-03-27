@@ -274,6 +274,16 @@ DECLARE_SOA_TABLE_VERSIONED(StraEvSels_005, "AOD", "STRAEVSELS", 5,         //! 
                             // stracollision::EnergyCommonZNC<mult::MultZNC>,
                             stracollision::IsUPC<udcollision::GapSide>);
 
+DECLARE_SOA_TABLE(StraEvSelExtras, "AOD", "STRAEVSELEXTRAS",    //! debug information
+                  udzdc::TimeZNA, // UPC info: re-assigned ZN-A time, in case of SG event, from the most active bc
+                  udzdc::TimeZNC, // UPC info: re-assigned ZN-C time, in case of SG event, from the most active bc
+                  udcollision::TimeFDDA, // Average A-side time (ns)
+                  udcollision::TimeFDDC, // Average C-side time (ns)
+                  udcollision::TimeFV0A, // Average A-side time (ns)
+                  udcollision::TimeFT0A, // Average A-side time (ns)
+                  udcollision::TimeFT0C, // Average C-side time (ns)
+                  udcollision::TriggerMaskFT0); // 8 trigger bits: OrA, OrC, Semi-central, Central, Vertex, IsActiveA, IsActiveC, IsFlangeEvent
+
 DECLARE_SOA_TABLE(StraEvSelsRun2, "AOD", "STRAEVSELSRUN2",    //! debug information
                   evsel::Sel8, evsel::Sel7, evsel::Selection, //! event selection: sel8
                   mult::MultFT0A, mult::MultFT0C,             // FIT detectors
