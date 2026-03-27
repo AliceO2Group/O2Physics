@@ -152,7 +152,6 @@ struct StudyPnch {
       histos.add("hMultiplicityMCrecMod", "hMultiplicityMCrecMod", kTH1F, {axisMult}, true);
       histos.add("hMultiplicityMCgenMod", "hMultiplicityMCgenMod", kTH1F, {axisMult}, true);
       histos.add("hResponseMatrixMod", "hResponseMatrixMod", kTH2F, {axisMult, axisMult}, true);
-      histos.add("hCountNTracksMod", "hCountNTracksMod", kTH1F, {axisCountNumberTracks}, true);
     }
     if (doprocessEvtLossSigLossMC) {
       histos.add("MCEventHist", "MCEventHist", kTH1F, {axisEvent}, false);
