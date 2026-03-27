@@ -110,6 +110,7 @@ struct qVectorsTable {
   Configurable<bool> cfgUseTPCpos{"cfgUseTPCpos", false, "Initial value for using TPCpos. By default obtained from DataModel."};
   Configurable<bool> cfgUseTPCneg{"cfgUseTPCneg", false, "Initial value for using TPCneg. By default obtained from DataModel."};
   Configurable<bool> cfgUseTPCall{"cfgUseTPCall", false, "Initial value for using TPCall. By default obtained from DataModel."};
+  Configurable<bool> cfgProduceRedQVecs{"cfgProduceRedQVecs", false, "Produce reduced Q-vectors for Event-Shape Engineering"};
 
   // Table.
   Produces<aod::Qvectors> qVector;
@@ -128,6 +129,8 @@ struct qVectorsTable {
   Produces<aod::QvectorTPCposVecs> qVectorTPCposVec;
   Produces<aod::QvectorTPCnegVecs> qVectorTPCnegVec;
   Produces<aod::QvectorTPCallVecs> qVectorTPCallVec;
+
+  Produces<aod::QvectorsReds> qVectorRed;
 
   std::vector<float> FT0RelGainConst{};
   std::vector<float> FV0RelGainConst{};
@@ -727,6 +730,27 @@ struct qVectorsTable {
       qVectorTPCneg(IsCalibrated, qvecReTPCneg.at(0), qvecImTPCneg.at(0), qvecAmp[kTPCneg], TrkTPCnegLabel);
     if (useDetector["QvectorTPCalls"])
       qVectorTPCall(IsCalibrated, qvecReTPCall.at(0), qvecImTPCall.at(0), qvecAmp[kTPCall], TrkTPCallLabel);
+
+
+    double qVecRedFT0C{-999.}, qVecRedTpcPos{-999.}, qVecRedTpcNeg{-999.}, qVecRedTpcAll{-999.};
+    if (cfgProduceRedQVecs) {
+      // Correct normalization to remove multiplicity dependence,
+      // taking into account that the Q-vector is normalized by 1/M
+      // and the EsE reduced Q-vector must be normalized to 1/sqrt(M)
+      if (useDetector["QvectorFT0Cs"]) {
+        qVecRedFT0C = TMath::Sqrt(qvecReFT0C.at(0) * qvecReFT0C.at(0) + qvecImFT0C.at(0) * qvecImFT0C.at(0)) * TMath::Sqrt(qvecAmp[kFT0C]);
+      }
+      if (useDetector["QvectorTPCposs"]) {
+        qVecRedTpcPos = TMath::Sqrt(qvecReTPCpos.at(0) * qvecReTPCpos.at(0) + qvecImTPCpos.at(0) * qvecImTPCpos.at(0)) * TMath::Sqrt(qvecAmp[kTPCpos]);
+      }
+      if (useDetector["QvectorTPCnegs"]) {
+        qVecRedTpcNeg = TMath::Sqrt(qvecReTPCneg.at(0) * qvecReTPCneg.at(0) + qvecImTPCneg.at(0) * qvecImTPCneg.at(0)) * TMath::Sqrt(qvecAmp[kTPCneg]);
+      }
+      if (useDetector["QvectorTPCalls"]) {
+        qVecRedTpcAll = TMath::Sqrt(qvecReTPCall.at(0) * qvecReTPCall.at(0) + qvecImTPCall.at(0) * qvecImTPCall.at(0)) * TMath::Sqrt(qvecAmp[kTPCall]);
+      }
+    }
+    qVectorRed(qVecRedFT0C, qVecRedTpcPos, qVecRedTpcNeg, qVecRedTpcAll);
 
     qVectorFT0CVec(IsCalibrated, qvecReFT0C, qvecImFT0C, qvecAmp[kFT0C]);
     qVectorFT0AVec(IsCalibrated, qvecReFT0A, qvecImFT0A, qvecAmp[kFT0A]);
