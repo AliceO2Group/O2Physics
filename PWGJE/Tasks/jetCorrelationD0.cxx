@@ -52,10 +52,15 @@ DECLARE_SOA_TABLE(McCollisionTables, "AOD", "MCCOLLINFOTABLE",
                   o2::soa::Index<>,
                   d0collisionInfo::PosZ);
 
+DECLARE_SOA_TABLE(MatchCollTables, "AOD", "MATCHCOLLTABLE",
+                  o2::soa::Index<>,
+                  d0collisionInfo::PosZ);
+
 namespace collisionInfo
 {
 DECLARE_SOA_INDEX_COLUMN_CUSTOM(CollisionTable, collisionTable, "COLLINFOTABLES");
 DECLARE_SOA_INDEX_COLUMN_CUSTOM(McCollisionTable, mcCollisionTable, "MCCOLLINFOTABLES");
+DECLARE_SOA_INDEX_COLUMN_CUSTOM(MatchCollTable, matchCollTable, "MATCHCOLLTABLES");
 } // namespace collisionInfo
 namespace d0Info
 {
@@ -134,7 +139,7 @@ DECLARE_SOA_TABLE_STAGED(JetMcPTables, "JETMCPTABLE",
 
 DECLARE_SOA_TABLE_STAGED(JetMatchedTables, "JETMATCHEDTABLE",
                          o2::soa::Index<>,
-                         collisionInfo::CollisionTableId,
+                         collisionInfo::MatchCollTableId,
                          jetInfo::JetPt,
                          jetInfo::JetEta,
                          jetInfo::JetPhi,
@@ -142,13 +147,14 @@ DECLARE_SOA_TABLE_STAGED(JetMatchedTables, "JETMATCHEDTABLE",
                          jetInfo::PJetEta,
                          jetInfo::PJetPhi,
                          jetInfo::D0JetDeltaPhi,
-                         jetInfo::D0JetDeltaPhiP)
+                         jetInfo::D0JetDeltaPhiP);
 
 } // namespace o2::aod
 
 struct JetCorrelationD0 {
   // Define new table
   Produces<aod::CollisionTables> tableCollision;
+  Produces<aod::MatchCollTables> tableMatchedCollision;
   Produces<aod::McCollisionTables> tableMcCollision;
   Produces<aod::D0DataTables> tableD0;
   Produces<aod::D0McPTables> tableD0McParticle;
@@ -162,6 +168,8 @@ struct JetCorrelationD0 {
   Configurable<bool> applyRCTSelections{"applyRCTSelections", true, "decide to apply RCT selections"};
   Configurable<float> jetPtCutMin{"jetPtCutMin", 5.0, "minimum value of jet pt"};
   Configurable<float> d0PtCutMin{"d0PtCutMin", 1.0, "minimum value of d0 pt"};
+  Configurable<float> jetMcPtCutMin{"jetMcPtCutMin", 3.0, "minimum value of jet pt particle level"};
+  Configurable<float> d0McPtCutMin{"d0McPtCutMin", 0.5, "minimum value of d0 pt particle level"};
   Configurable<float> vertexZCut{"vertexZCut", 10.0, "Accepted z-vertex range"};
   Configurable<float> pTHatExponent{"pTHatExponent", 6.0, "exponent of the event weight for the calculation of pTHat"};
   Configurable<float> pTHatMaxMcD{"pTHatMaxMcD", 999.0, "maximum fraction of hard scattering for jet acceptance in detector MC"};
@@ -206,26 +214,6 @@ struct JetCorrelationD0 {
     registry.fill(HIST("hCollisions"), 1.5); // Selected collisions
     registry.fill(HIST("hZvtxSelected"), collision.posZ());
     return true;
-  }
-
-  template <typename T, typename U>
-  // Jetbase is an McD jet. We then loop through jettagv(McP jets) to test if they match
-  // void fillMatchedHistograms(T const& jetBase, float weight = 1.0) // float leadingTrackPtBase,
-  void fillMatchedHistograms(T const& jetsBase, U const& jetsTag, float weight = 1.0, float rho = 0.0)
-  {
-    for (const auto& jetBase : jetsBase) {
-      if (jetBase.has_matchedJetGeo()) { // geometric matching
-        for (auto const& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<U>>()) {
-          registry.fill(HIST("hPtMatched"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), weight);
-          registry.fill(HIST("hPtMatched1d"), jetTag.pt(), weight);
-          registry.fill(HIST("hPhiMatched"), jetBase.phi(), jetTag.phi(), weight);
-          registry.fill(HIST("hEtaMatched"), jetBase.eta(), jetTag.eta(), weight);
-          registry.fill(HIST("hPtResolution"), jetTag.pt(), (jetTag.pt() - (jetBase.pt() - (rho * jetBase.area()))) / jetTag.pt(), weight);
-          registry.fill(HIST("hPhiResolution"), jetTag.pt(), jetTag.phi() - jetBase.phi(), weight);
-          registry.fill(HIST("hEtaResolution"), jetTag.pt(), jetTag.eta() - jetBase.eta(), weight);
-        }
-      }
-    }
   }
   void init(InitContext const&)
   {
@@ -355,7 +343,7 @@ struct JetCorrelationD0 {
       }
     }
   }
-  PROCESS_SWITCH(JetCorrelationD0, processMcDetector, "charged particle level jet analysis", false);
+  PROCESS_SWITCH(JetCorrelationD0, processMcDetector, "charged detector level jet analysis", false);
 
   void processMcParticle(aod::JetMcCollision const& collision,
                          aod::CandidatesD0MCP const& d0McPCandidates,
@@ -366,10 +354,10 @@ struct JetCorrelationD0 {
     }
     tableMcCollision(collision.posZ());
     for (const auto& d0McPCandidate : d0McPCandidates) {
-      if (d0McPCandidate.pt() < d0PtCutMin) {
+      if (d0McPCandidate.pt() < d0McPtCutMin) {
         continue;
       }
-      tableD0McParticle(tableCollision.lastIndex(),
+      tableD0McParticle(tableMcCollision.lastIndex(),
                         d0McPCandidate.originMcGen(),
                         d0McPCandidate.pt(),
                         d0McPCandidate.eta(),
@@ -377,7 +365,7 @@ struct JetCorrelationD0 {
                         d0McPCandidate.y());
 
       for (const auto& jet : jets) {
-        if (jet.pt() < jetPtCutMin) {
+        if (jet.pt() < jetMcPtCutMin) {
           continue;
         }
         float dPhi = RecoDecay::constrainAngle(jet.phi() - d0McPCandidate.phi());
@@ -388,7 +376,7 @@ struct JetCorrelationD0 {
           continue;
         }
         fillJetHistograms(jet, dPhi);
-        tableJetMcParticle(tableCollision.lastIndex(),
+        tableJetMcParticle(tableMcCollision.lastIndex(),
                            tableD0McParticle.lastIndex(),
                            jet.pt(),
                            jet.eta(),
@@ -397,7 +385,7 @@ struct JetCorrelationD0 {
       }
     }
   }
-  PROCESS_SWITCH(JetCorrelationD0, processMcParticle, "process MC Particle jets", false);
+  PROCESS_SWITCH(JetCorrelationD0, processMcParticle, "charged MC Particle jets", false);
 
   void processMcMatched(soa::Filtered<aod::JetCollisions>::iterator const& collision,
                         aod::CandidatesD0MCD const& d0Candidates,
@@ -409,7 +397,7 @@ struct JetCorrelationD0 {
     if (!applyCollisionSelections(collision)) {
       return;
     }
-    tableCollision(collision.posZ());
+    tableMatchedCollision(collision.posZ());
     for (const auto& d0Candidate : d0Candidates) {
       if (d0Candidate.pt() < d0PtCutMin) { // once settled on a mlcut, then add the lower bound of the systematics as a cut here
         continue;
@@ -439,7 +427,7 @@ struct JetCorrelationD0 {
             // if (std::abs(dPhiP - o2::constants::math::PI) > (o2::constants::math::PI / 2)) {
             //   continue;
             // }
-            tableJetMatched(tableCollision.lastIndex(),
+            tableJetMatched(tableMatchedCollision.lastIndex(),
                             McDJet.pt(),
                             McDJet.eta(),
                             McDJet.phi(),
@@ -453,7 +441,7 @@ struct JetCorrelationD0 {
       }
     } 
   }
-  PROCESS_SWITCH(JetCorrelationD0, processMcMatched, "process matching of jets", false);
+  PROCESS_SWITCH(JetCorrelationD0, processMcMatched, "process matching of particle level jets to detector level jets", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
