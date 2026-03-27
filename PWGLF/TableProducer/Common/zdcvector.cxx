@@ -276,6 +276,8 @@ struct zdcvector {
       auto alphaZDC = 0.395;
       constexpr double x[4] = {-1.75, 1.75, -1.75, 1.75};
       constexpr double y[4] = {-1.75, -1.75, 1.75, 1.75};
+      double zncEnergycommonsum = 0.0;
+      double znaEnergycommonsum = 0.0;
 
       histos.fill(HIST("ZDCAmpCommon"), 0.5, vz, znaEnergycommon);
       histos.fill(HIST("ZDCAmpCommon"), 1.5, vz, zncEnergycommon);
@@ -284,6 +286,7 @@ struct zdcvector {
       constexpr std::size_t ntow = 8;
       for (std::size_t iChA = 0; iChA < ntow; iChA++) {
         auto chanelid = iChA;
+        gainequal = 1.0;
         if (useGainCallib && gainprofile) {
           gainequal = gainprofile->GetBinContent(gainprofile->FindBin(vz + 0.00001, chanelid + 0.5));
         }
@@ -296,6 +299,7 @@ struct zdcvector {
             return;
           } else {
             double ampl = gainequal * znaEnergy[iChA];
+            znaEnergycommonsum += ampl;
             if (followpub) {
               ampl = std::pow(ampl, alphaZDC);
             }
@@ -312,6 +316,7 @@ struct zdcvector {
             return;
           } else {
             double ampl = gainequal * zncEnergy[iChA - 4];
+            zncEnergycommonsum += ampl;
             if (followpub) {
               ampl = std::pow(ampl, alphaZDC);
             }
@@ -323,8 +328,6 @@ struct zdcvector {
         }
       }
 
-      auto znaEnergycommonsum = znaEnergy[0] + znaEnergy[1] + znaEnergy[2] + znaEnergy[3];
-      auto zncEnergycommonsum = zncEnergy[0] + zncEnergy[1] + zncEnergy[2] + zncEnergy[3];
       auto cZNC = 1.0;
       auto cZNA = 1.0;
 
