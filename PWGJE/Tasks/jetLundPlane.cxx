@@ -32,8 +32,8 @@
 #include <array>
 #include <cmath>
 #include <unordered_map>
-#include <vector>
 #include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
