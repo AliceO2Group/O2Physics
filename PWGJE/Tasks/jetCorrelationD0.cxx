@@ -14,9 +14,9 @@
 /// \author Matthew Ockleton matthew.ockleton@cern.ch, University of Liverpool
 
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetHFUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
-#include "PWGJE/Core/JetHFUtilities.h"
 
 #include "Common/Core/RecoDecay.h"
 
