@@ -404,9 +404,13 @@ if(FastJet_FOUND)
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
 
-  o2physics_add_dpl_workflow(qg-tree-creator
+o2physics_add_dpl_workflow(qg-tree-creator
   SOURCES qgTreeCreator.cxx
-  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
-  COMPONENT_NAME Analysis)
+  PUBLIC_LINK_LIBRARIES
+    O2::Framework
+    O2Physics::AnalysisCore
+    O2Physics::PWGJECore
+  COMPONENT_NAME Analysis
+)
   
 endif()
