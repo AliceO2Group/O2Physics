@@ -411,4 +411,5 @@ o2physics_add_dpl_workflow(qg-tree-creator
     O2Physics::AnalysisCore
     O2Physics::PWGJECore
   COMPONENT_NAME Analysis)
+
 endif()
