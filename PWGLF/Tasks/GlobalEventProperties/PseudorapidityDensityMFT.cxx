@@ -17,13 +17,20 @@
 
 #include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/McCollisionExtra.h"
 
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/GeomConstants.h"
 #include "CommonConstants/MathConstants.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DetectorsBase/Propagator.h"
+#include "Field/MagneticField.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -33,26 +40,14 @@
 #include "Framework/runDataProcessing.h"
 #include "MathUtils/Utils.h"
 #include "ReconstructionDataFormats/GlobalTrackID.h"
-#include "DetectorsBase/Propagator.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
 #include "ReconstructionDataFormats/TrackParametrization.h"
-#include "Math/SMatrix.h"
-#include "Math/SVector.h"
-
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/GeomConstants.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "Field/MagneticField.h"
 
 #include "Math/MatrixFunctions.h"
-#include "TGeoGlobalMagField.h"
-
-
-
+#include "Math/SMatrix.h"
+#include "Math/SVector.h"
 #include "TFile.h"
+#include "TGeoGlobalMagField.h"
 
 #include <algorithm>
 #include <chrono>
@@ -68,7 +63,6 @@ using namespace o2::framework::expressions;
 using namespace o2::aod::track;
 using namespace o2::aod::rctsel;
 
-
 AxisSpec ptAxis = {2001, -0.005, 20.005};
 AxisSpec deltazAxis = {6100, -6.1, 6.1};
 AxisSpec zAxis = {3001, -30.1, 30.1};
@@ -80,9 +74,9 @@ AxisSpec etaAxis = {18, -4.6, -1.};
 // AxisSpec dcaYAxis  = {2000, -10, 10};// previous AxisSpec dcaYAxis  = {2000, -10, 10};
 
 AxisSpec dcaXyAxis = {6000, -30, 30};
-AxisSpec dcaZAxis  = {6000, -30, 30};
-AxisSpec dcaXAxis  = {6000, -30, 30};
-AxisSpec dcaYAxis  = {6000, -30, 30};// previous AxisSpec dcaYAxis  = {2000, -10, 10};
+AxisSpec dcaZAxis = {6000, -30, 30};
+AxisSpec dcaXAxis = {6000, -30, 30};
+AxisSpec dcaYAxis = {6000, -30, 30}; // previous AxisSpec dcaYAxis  = {2000, -10, 10};
 
 // AxisSpec dcaXyAxis = {600, -0.15f, 0.15f};
 // AxisSpec dcaZAxis  = {600, -0.15f, 0.15f};
@@ -92,8 +86,7 @@ AxisSpec dcaYAxis  = {6000, -30, 30};// previous AxisSpec dcaYAxis  = {2000, -10
 // Keep bin width = 0.0005 cm (5 um): range [-1, 1] cm => 2.0/0.0005 = 4000 bins
 // AxisSpec axisBinsDCA = {600, -0.15f, 0.15f, "#it{dca}_{xy} (cm)"};
 
-
-AxisSpec centAxis  = {{0, 10, 20, 30, 40, 50, 60, 70, 80, 100}};
+AxisSpec centAxis = {{0, 10, 20, 30, 40, 50, 60, 70, 80, 100}};
 
 // Vertex position axes (cm)
 AxisSpec vxAxis = {200, -0.5, 0.5, "V_{x} (cm)"};
@@ -126,22 +119,22 @@ using FullBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
 //             /*aod::MFTTracks_001Extension, */ // exposes bestCollisionId, bestDCAXY, (and bestDCAZ if 3D)
 //             aod::McMFTTrackLabels>;
 using MFTTracksLabeled =
-  soa::Join<o2::aod::MFTTracks,aod::MFTTrkCompColls,aod::BestCollisionsFwd3d,
+  soa::Join<o2::aod::MFTTracks, aod::MFTTrkCompColls, aod::BestCollisionsFwd3d,
             /*aod::MFTTracks_001Extension, */ // exposes bestCollisionId, bestDCAXY, (and bestDCAZ if 3D)
-            aod::McMFTTrackLabels>;            
-  using MFTTracksLabeled2d =
+            aod::McMFTTrackLabels>;
+using MFTTracksLabeled2d =
   soa::Join<o2::aod::MFTTracks, aod::BestCollisionsFwd,
             aod::McMFTTrackLabels>;
 
- using MFTTracksLabeledOrg =
+using MFTTracksLabeledOrg =
   soa::Join<o2::aod::MFTTracks, aod::MFTTrkCompColls,
             /*aod::MFTTracks_001Extension, */ // exposes bestCollisionId, bestDCAXY, (and bestDCAZ if 3D)
-            aod::McMFTTrackLabels>;           
-//using McCollisionsWithExtra = soa::Join<aod::McCollisions, aod::McCollsExtra>;
+            aod::McMFTTrackLabels>;
+// using McCollisionsWithExtra = soa::Join<aod::McCollisions, aod::McCollsExtra>;
 using McCollisionsWithExtra = o2::soa::Join<o2::aod::McCollisions, o2::aod::McCollsExtra>;
 
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
-using SMatrix5  = ROOT::Math::SVector<double, 5>;
+using SMatrix5 = ROOT::Math::SVector<double, 5>;
 struct PseudorapidityDensityMFT {
   SliceCache cache;
   Preslice<aod::MFTTracks> perCol = o2::aod::fwdtrack::collisionId;
@@ -151,7 +144,7 @@ struct PseudorapidityDensityMFT {
   Service<o2::framework::O2DatabasePDG> pdg;
 
   // --- CCDB magnetic field (needed for propagateToDCAhelix in this device) ---
-Service<o2::ccdb::BasicCCDBManager> ccdbMgr;
+  Service<o2::ccdb::BasicCCDBManager> ccdbMgr;
   Configurable<std::string> ccdburlMag{"ccdburlMag", "http://alice-ccdb.cern.ch",
                                        "CCDB url for GRPMagField"};
   Configurable<std::string> grpmagPathMag{"grpmagPathMag", "GLO/Config/GRPMagField",
@@ -163,23 +156,23 @@ Service<o2::ccdb::BasicCCDBManager> ccdbMgr;
   static constexpr double CenterMft[3] = {0., 0., -61.4};
 
   enum class GenRecoCutBin : int {
-  AllRecoCollisions = 1,
-  UseContBestCollisionIndex,
-  HasMcCollision,
-  IsTriggerTVX,
-  NoTimeFrameBorder,
-  NoITSROFrameBorder,
-  NoSameBunchPileup,
-  GoodZvtxFT0vsPV,
-  NoCollInRofStandard,
-  NoCollInRofStrict,
-  NoCollInTimeRangeStandard,
-  NoCollInTimeRangeStrict,
-  NoHighMultCollInPrevRof,
-  RctMFT,
-  VzWindow,
-  InelGt0
-};
+    AllRecoCollisions = 1,
+    UseContBestCollisionIndex,
+    HasMcCollision,
+    IsTriggerTVX,
+    NoTimeFrameBorder,
+    NoITSROFrameBorder,
+    NoSameBunchPileup,
+    GoodZvtxFT0vsPV,
+    NoCollInRofStandard,
+    NoCollInRofStrict,
+    NoCollInTimeRangeStandard,
+    NoCollInTimeRangeStrict,
+    NoHighMultCollInPrevRof,
+    RctMFT,
+    VzWindow,
+    InelGt0
+  };
 
   enum class TrackLabelSummaryBin : int {
     AllTracks = 1,
@@ -190,86 +183,84 @@ Service<o2::ccdb::BasicCCDBManager> ccdbMgr;
     SecondaryTracks
   };
 
-enum class GenRecoTimeComTrackMode : int {
-  AllNonOrphan = 0,
-  NonOrphanNonAmbiguous,
-  NonOrphanAmbiguous
-};
+  enum class GenRecoTimeComTrackMode : int {
+    AllNonOrphan = 0,
+    NonOrphanNonAmbiguous,
+    NonOrphanAmbiguous
+  };
 
-enum class RightWrongBin : int {
-  Right = 1,
-  Wrong,
-  Neither,
-  Both
-};
-enum class EventSelectionBin : int {
-  All = 1,
-  Vz,
-  VzItsRof,
-  VzSelected,
-  Sel8VzInelGt0,
-  SelInelInelFwdGt0,
-  Rejected,
-  GoodBCs,
-  BCsWithCollisions,
-  BCsWithPileupSplitting,
-  PerCollisionSampleGt0,
-  MidtracksAndPerCollisionSampleGt0
-};
-enum class HashTableRowCountsBin : int {
-  RowsSaved = 1,
-  UniqueRecoColsSaved,
-  UniqueBestRecoCols
-};
-enum class WrongVertexRecoExistsBin : int {
-  RecoOfTrueExists = 1,
-  RecoOfTrueMissing
-};
-enum class BoolBin : int {
-  No = 0,
-  Yes = 1
-};
-enum class SingleCountBin : int {
-  Count = 1
-};
-enum class EventEfficiencyBin : int {
-  Generated = 1,
-  GeneratedInelGt0,
-  Reconstructed,
-  Selected,
-  SelectedInelGt0
-};
-enum class CentralitySelectionBin : int {
-  All = 1,
-  Selected,
-  Rejected
-};
-static constexpr float ForwardEtaMax = -2.0f;
-static constexpr float ForwardEtaMin = -3.9f;
+  enum class RightWrongBin : int {
+    Right = 1,
+    Wrong,
+    Neither,
+    Both
+  };
+  enum class EventSelectionBin : int {
+    All = 1,
+    Vz,
+    VzItsRof,
+    VzSelected,
+    Sel8VzInelGt0,
+    SelInelInelFwdGt0,
+    Rejected,
+    GoodBCs,
+    BCsWithCollisions,
+    BCsWithPileupSplitting,
+    PerCollisionSampleGt0,
+    MidtracksAndPerCollisionSampleGt0
+  };
+  enum class HashTableRowCountsBin : int {
+    RowsSaved = 1,
+    UniqueRecoColsSaved,
+    UniqueBestRecoCols
+  };
+  enum class WrongVertexRecoExistsBin : int {
+    RecoOfTrueExists = 1,
+    RecoOfTrueMissing
+  };
+  enum class BoolBin : int {
+    No = 0,
+    Yes = 1
+  };
+  enum class SingleCountBin : int {
+    Count = 1
+  };
+  enum class EventEfficiencyBin : int {
+    Generated = 1,
+    GeneratedInelGt0,
+    Reconstructed,
+    Selected,
+    SelectedInelGt0
+  };
+  enum class CentralitySelectionBin : int {
+    All = 1,
+    Selected,
+    Rejected
+  };
+  static constexpr float ForwardEtaMax = -2.0f;
+  static constexpr float ForwardEtaMin = -3.9f;
 
-static constexpr float PhiVetoLow = 0.02f;
-static constexpr float PhiVetoPiMin = 3.10f;
-static constexpr float PhiVetoPiMax = 3.23f;
-static constexpr float PhiVetoHigh = 6.21f;
+  static constexpr float PhiVetoLow = 0.02f;
+  static constexpr float PhiVetoPiMin = 3.10f;
+  static constexpr float PhiVetoPiMax = 3.23f;
+  static constexpr float PhiVetoHigh = 6.21f;
 
-static constexpr float NdfScale = 2.0f;
-static constexpr float NdfOffset = 5.0f;
-static constexpr float MinNdf = 1.0f;
+  static constexpr float NdfScale = 2.0f;
+  static constexpr float NdfOffset = 5.0f;
+  static constexpr float MinNdf = 1.0f;
 
+  template <typename TrackT>
+  static float getTrackNdf(TrackT const& track)
+  {
+    return std::max(NdfScale * track.nClusters() - NdfOffset, MinNdf);
+  }
+  static constexpr int NoCompatibleCollisions = 0;
+  static constexpr int SingleCompatibleCollision = 1;
 
-template <typename TrackT>
-static float getTrackNdf(TrackT const& track)
-{
-  return std::max(NdfScale * track.nClusters() - NdfOffset, MinNdf);
-}
-static constexpr int NoCompatibleCollisions = 0;
-static constexpr int SingleCompatibleCollision = 1;
+  static constexpr int OrphanAmbDegree = 0;
+  static constexpr int NonAmbiguousAmbDegree = 1;
 
-static constexpr int OrphanAmbDegree = 0;
-static constexpr int NonAmbiguousAmbDegree = 1;
-
-static constexpr int ChargeUnitTimesThree = 3;
-
+  static constexpr int ChargeUnitTimesThree = 3;
 
   void initMagField(FullBCs::iterator const& bc)
   {
@@ -299,13 +290,12 @@ static constexpr int ChargeUnitTimesThree = 3;
     }
   }
 
-
   RCTFlagsChecker rctChecker{"CBT"};
   RCTFlagsChecker myChecker{kFT0Bad, kITSBad, kTPCBadTracking, kTPCBadPID, kMFTBad};
   Configurable<int> maxGenRecoEvents{"maxGenRecoEvents", -1,
-                                   "Maximum number of MC collisions to process in processGenReco (-1 = all)"};
+                                     "Maximum number of MC collisions to process in processGenReco (-1 = all)"};
 
-int nProcessedGenReco = 0;
+  int nProcessedGenReco = 0;
 
   Configurable<float> estimatorEta{"estimatorEta", 1.0,
                                    "eta range for INEL>0 sample definition"};
@@ -358,9 +348,9 @@ int nProcessedGenReco = 0;
   Configurable<float> maxDCAz{"maxDCAz", 2.0f, "Cut on dcaZ"};
   Configurable<bool> useLostByCutVeto{"useLostByCutVeto", true, "Reject tracks with lostNoRecoOfTrue or lostRecoExistsButNotCompatible"};
 
-Configurable<int> cfgGenRecoTimeComTrackMode{"cfgGenRecoTimeComTrackMode",
-                                             static_cast<int>(GenRecoTimeComTrackMode::AllNonOrphan),
-                                             "processGenRecoTimeCom track mode: AllNonOrphan=0, NonOrphanNonAmbiguous=1, NonOrphanAmbiguous=2"};
+  Configurable<int> cfgGenRecoTimeComTrackMode{"cfgGenRecoTimeComTrackMode",
+                                               static_cast<int>(GenRecoTimeComTrackMode::AllNonOrphan),
+                                               "processGenRecoTimeCom track mode: AllNonOrphan=0, NonOrphanNonAmbiguous=1, NonOrphanAmbiguous=2"};
 
   HistogramRegistry registry{
     "registry",
@@ -390,9 +380,9 @@ Configurable<int> cfgGenRecoTimeComTrackMode{"cfgGenRecoTimeComTrackMode",
 
   void init(InitContext&)
   {
-ccdbMgr->setURL(ccdburlMag.value);   // or ccdburlMag.value (depending on your Configurable)
-ccdbMgr->setCaching(true);
-ccdbMgr->setLocalObjectValidityChecking();
+    ccdbMgr->setURL(ccdburlMag.value); // or ccdburlMag.value (depending on your Configurable)
+    ccdbMgr->setCaching(true);
+    ccdbMgr->setLocalObjectValidityChecking();
 
     if (static_cast<int>(doprocessMult) +
           static_cast<int>(doprocessMultReassoc) +
@@ -407,18 +397,18 @@ ccdbMgr->setLocalObjectValidityChecking();
     AxisSpec multAxis = {multBinning, "N_{trk}"};
     auto hstat = registry.get<TH1>(HIST("EventSelection"));
     auto* x = hstat->GetXaxis();
-x->SetBinLabel(static_cast<int>(EventSelectionBin::All), "All");
-x->SetBinLabel(static_cast<int>(EventSelectionBin::Vz), "Vz");
-x->SetBinLabel(static_cast<int>(EventSelectionBin::VzItsRof), "Vz+ITSRof");
-x->SetBinLabel(static_cast<int>(EventSelectionBin::VzSelected), "Vz+Selected");
-x->SetBinLabel(static_cast<int>(EventSelectionBin::Sel8VzInelGt0), "Sel8+Vz+INEL>0");
-x->SetBinLabel(static_cast<int>(EventSelectionBin::SelInelInelFwdGt0), "Sel INEL,INEL_fwd>0");
-x->SetBinLabel(static_cast<int>(EventSelectionBin::Rejected), "Rejected");
-x->SetBinLabel(static_cast<int>(EventSelectionBin::GoodBCs), "Good BCs");
-x->SetBinLabel(static_cast<int>(EventSelectionBin::BCsWithCollisions), "BCs with collisions");
-x->SetBinLabel(static_cast<int>(EventSelectionBin::BCsWithPileupSplitting), "BCs with pile-up/splitting");
-x->SetBinLabel(static_cast<int>(EventSelectionBin::PerCollisionSampleGt0), "percollisionSample>0");
-x->SetBinLabel(static_cast<int>(EventSelectionBin::MidtracksAndPerCollisionSampleGt0), "midtracks+percollisionSample>0");
+    x->SetBinLabel(static_cast<int>(EventSelectionBin::All), "All");
+    x->SetBinLabel(static_cast<int>(EventSelectionBin::Vz), "Vz");
+    x->SetBinLabel(static_cast<int>(EventSelectionBin::VzItsRof), "Vz+ITSRof");
+    x->SetBinLabel(static_cast<int>(EventSelectionBin::VzSelected), "Vz+Selected");
+    x->SetBinLabel(static_cast<int>(EventSelectionBin::Sel8VzInelGt0), "Sel8+Vz+INEL>0");
+    x->SetBinLabel(static_cast<int>(EventSelectionBin::SelInelInelFwdGt0), "Sel INEL,INEL_fwd>0");
+    x->SetBinLabel(static_cast<int>(EventSelectionBin::Rejected), "Rejected");
+    x->SetBinLabel(static_cast<int>(EventSelectionBin::GoodBCs), "Good BCs");
+    x->SetBinLabel(static_cast<int>(EventSelectionBin::BCsWithCollisions), "BCs with collisions");
+    x->SetBinLabel(static_cast<int>(EventSelectionBin::BCsWithPileupSplitting), "BCs with pile-up/splitting");
+    x->SetBinLabel(static_cast<int>(EventSelectionBin::PerCollisionSampleGt0), "percollisionSample>0");
+    x->SetBinLabel(static_cast<int>(EventSelectionBin::MidtracksAndPerCollisionSampleGt0), "midtracks+percollisionSample>0");
     registry.add({"EventsNtrkZvtx",
                   "; N_{trk}; #it{z}_{vtx} (cm); events",
                   {HistType::kTH2F, {multAxis, zAxis}}});
@@ -441,134 +431,127 @@ x->SetBinLabel(static_cast<int>(EventSelectionBin::MidtracksAndPerCollisionSampl
                   " ; DCA_{XY} (cm)",
                   {HistType::kTH1F, {dcaXyAxis}}});
 
-
     if (doprocessGenReco || doprocessGenRecoTimeCom) {
-            registry.add({"EventsRecoCuts_GenReco",
+      registry.add({"EventsRecoCuts_GenReco",
                     ";cut;events",
                     {HistType::kTH1F, {{16, 0.5, 16.5}}}});
       {
         auto h = registry.get<TH1>(HIST("EventsRecoCuts_GenReco"));
         auto* x = h->GetXaxis();
-x->SetBinLabel(static_cast<int>(GenRecoCutBin::AllRecoCollisions), "All reco collisions (loop entry)");
-x->SetBinLabel(static_cast<int>(GenRecoCutBin::UseContBestCollisionIndex), "useContBestcollisionIndex");
-x->SetBinLabel(static_cast<int>(GenRecoCutBin::HasMcCollision), "has_mcCollision()");
-x->SetBinLabel(static_cast<int>(GenRecoCutBin::IsTriggerTVX), "kIsTriggerTVX (if useEvSel)");
-x->SetBinLabel(static_cast<int>(GenRecoCutBin::NoTimeFrameBorder), "kNoTimeFrameBorder (if useEvSel)");
-x->SetBinLabel(static_cast<int>(GenRecoCutBin::NoITSROFrameBorder), "kNoITSROFrameBorder (if useEvSel)");
-x->SetBinLabel(static_cast<int>(GenRecoCutBin::NoSameBunchPileup), "kNoSameBunchPileup");
-x->SetBinLabel(static_cast<int>(GenRecoCutBin::GoodZvtxFT0vsPV), "kIsGoodZvtxFT0vsPV");
-x->SetBinLabel(static_cast<int>(GenRecoCutBin::NoCollInRofStandard), "kNoCollInRofStandard (cfg)");
-x->SetBinLabel(static_cast<int>(GenRecoCutBin::NoCollInRofStrict), "kNoCollInRofStrict (cfg)");
-x->SetBinLabel(static_cast<int>(GenRecoCutBin::NoCollInTimeRangeStandard), "kNoCollInTimeRangeStandard (cfg)");
-x->SetBinLabel(static_cast<int>(GenRecoCutBin::NoCollInTimeRangeStrict), "kNoCollInTimeRangeStrict (cfg)");
-x->SetBinLabel(static_cast<int>(GenRecoCutBin::NoHighMultCollInPrevRof), "kNoHighMultCollInPrevRof (cfg)");
-x->SetBinLabel(static_cast<int>(GenRecoCutBin::RctMFT), "myChecker (cfg)");
-x->SetBinLabel(static_cast<int>(GenRecoCutBin::VzWindow), "Vz window");
-x->SetBinLabel(static_cast<int>(GenRecoCutBin::InelGt0), "INEL>0 (midtracks>0)");
+        x->SetBinLabel(static_cast<int>(GenRecoCutBin::AllRecoCollisions), "All reco collisions (loop entry)");
+        x->SetBinLabel(static_cast<int>(GenRecoCutBin::UseContBestCollisionIndex), "useContBestcollisionIndex");
+        x->SetBinLabel(static_cast<int>(GenRecoCutBin::HasMcCollision), "has_mcCollision()");
+        x->SetBinLabel(static_cast<int>(GenRecoCutBin::IsTriggerTVX), "kIsTriggerTVX (if useEvSel)");
+        x->SetBinLabel(static_cast<int>(GenRecoCutBin::NoTimeFrameBorder), "kNoTimeFrameBorder (if useEvSel)");
+        x->SetBinLabel(static_cast<int>(GenRecoCutBin::NoITSROFrameBorder), "kNoITSROFrameBorder (if useEvSel)");
+        x->SetBinLabel(static_cast<int>(GenRecoCutBin::NoSameBunchPileup), "kNoSameBunchPileup");
+        x->SetBinLabel(static_cast<int>(GenRecoCutBin::GoodZvtxFT0vsPV), "kIsGoodZvtxFT0vsPV");
+        x->SetBinLabel(static_cast<int>(GenRecoCutBin::NoCollInRofStandard), "kNoCollInRofStandard (cfg)");
+        x->SetBinLabel(static_cast<int>(GenRecoCutBin::NoCollInRofStrict), "kNoCollInRofStrict (cfg)");
+        x->SetBinLabel(static_cast<int>(GenRecoCutBin::NoCollInTimeRangeStandard), "kNoCollInTimeRangeStandard (cfg)");
+        x->SetBinLabel(static_cast<int>(GenRecoCutBin::NoCollInTimeRangeStrict), "kNoCollInTimeRangeStrict (cfg)");
+        x->SetBinLabel(static_cast<int>(GenRecoCutBin::NoHighMultCollInPrevRof), "kNoHighMultCollInPrevRof (cfg)");
+        x->SetBinLabel(static_cast<int>(GenRecoCutBin::RctMFT), "myChecker (cfg)");
+        x->SetBinLabel(static_cast<int>(GenRecoCutBin::VzWindow), "Vz window");
+        x->SetBinLabel(static_cast<int>(GenRecoCutBin::InelGt0), "INEL>0 (midtracks>0)");
         // x->SetBinLabel(11, "rctChecker (cfg)");
-   
-        
+
         // x->SetBinLabel(15, "Passed all event cuts");
       }
 
-AxisSpec trackLabelAxis = {6, 0.5, 6.5, "Track label category"};
-registry.add({"Purity/TrackLabelSummary",
-              ";Track label category;Counts",
-              {HistType::kTH1D, {trackLabelAxis}}});
-{
-  auto h = registry.get<TH1>(HIST("Purity/TrackLabelSummary"));
-  auto* x = h->GetXaxis();
-  x->SetBinLabel(static_cast<int>(TrackLabelSummaryBin::AllTracks), "All tracks");
-  x->SetBinLabel(static_cast<int>(TrackLabelSummaryBin::NoMcLabel), "No MC label");
-  x->SetBinLabel(static_cast<int>(TrackLabelSummaryBin::FakeTracks), "Fake tracks");
-  x->SetBinLabel(static_cast<int>(TrackLabelSummaryBin::TrueTracks), "True tracks");
-  x->SetBinLabel(static_cast<int>(TrackLabelSummaryBin::PrimaryTracks), "Primary tracks");
-  x->SetBinLabel(static_cast<int>(TrackLabelSummaryBin::SecondaryTracks), "Secondary tracks");
-}
-registry.add({"Purity/TrackEtaCategorySparse",
-              ";#eta_{all};#eta_{noMC};#eta_{fake};#eta_{true};#eta_{primary};#eta_{secondary}",
-              {HistType::kTHnSparseF, {etaBinning, etaBinning, etaBinning,
-                                       etaBinning, etaBinning, etaBinning}}});
+      AxisSpec trackLabelAxis = {6, 0.5, 6.5, "Track label category"};
+      registry.add({"Purity/TrackLabelSummary",
+                    ";Track label category;Counts",
+                    {HistType::kTH1D, {trackLabelAxis}}});
+      {
+        auto h = registry.get<TH1>(HIST("Purity/TrackLabelSummary"));
+        auto* x = h->GetXaxis();
+        x->SetBinLabel(static_cast<int>(TrackLabelSummaryBin::AllTracks), "All tracks");
+        x->SetBinLabel(static_cast<int>(TrackLabelSummaryBin::NoMcLabel), "No MC label");
+        x->SetBinLabel(static_cast<int>(TrackLabelSummaryBin::FakeTracks), "Fake tracks");
+        x->SetBinLabel(static_cast<int>(TrackLabelSummaryBin::TrueTracks), "True tracks");
+        x->SetBinLabel(static_cast<int>(TrackLabelSummaryBin::PrimaryTracks), "Primary tracks");
+        x->SetBinLabel(static_cast<int>(TrackLabelSummaryBin::SecondaryTracks), "Secondary tracks");
+      }
+      registry.add({"Purity/TrackEtaCategorySparse",
+                    ";#eta_{all};#eta_{noMC};#eta_{fake};#eta_{true};#eta_{primary};#eta_{secondary}",
+                    {HistType::kTHnSparseF, {etaBinning, etaBinning, etaBinning, etaBinning, etaBinning, etaBinning}}});
 
+      registry.add({"Purity/WrongVertexRecoExists",
+                    ";status;Counts",
+                    {HistType::kTH1F, {{2, 0.5, 2.5}}}});
+      {
+        auto h = registry.get<TH1>(HIST("Purity/WrongVertexRecoExists"));
+        if (h) {
+          h->GetXaxis()->SetBinLabel(static_cast<int>(WrongVertexRecoExistsBin::RecoOfTrueExists), "Reco of true exists");
+          h->GetXaxis()->SetBinLabel(static_cast<int>(WrongVertexRecoExistsBin::RecoOfTrueMissing), "Reco of true missing");
+        }
+      }
 
-
-registry.add({"Purity/WrongVertexRecoExists",
-              ";status;Counts",
-              {HistType::kTH1F, {{2, 0.5, 2.5}}}});
-{
-  auto h = registry.get<TH1>(HIST("Purity/WrongVertexRecoExists"));
-  if (h) {
-h->GetXaxis()->SetBinLabel(static_cast<int>(WrongVertexRecoExistsBin::RecoOfTrueExists), "Reco of true exists");
-h->GetXaxis()->SetBinLabel(static_cast<int>(WrongVertexRecoExistsBin::RecoOfTrueMissing), "Reco of true missing");
-  }
-}
-
-registry.add({"Purity/HashTableRowCounts",
-              ";status;counts",
-              {HistType::kTH1F, {{3, 0.5, 3.5}}}});   
-auto hHashTableRowCounts = registry.get<TH1>(HIST("Purity/HashTableRowCounts"));
-auto* xHash = hHashTableRowCounts->GetXaxis();
-xHash->SetBinLabel(static_cast<int>(HashTableRowCountsBin::RowsSaved), "rows saved");
-xHash->SetBinLabel(static_cast<int>(HashTableRowCountsBin::UniqueRecoColsSaved), "unique recoCol saved");
-xHash->SetBinLabel(static_cast<int>(HashTableRowCountsBin::UniqueBestRecoCols), "unique bestRecoCol");
+      registry.add({"Purity/HashTableRowCounts",
+                    ";status;counts",
+                    {HistType::kTH1F, {{3, 0.5, 3.5}}}});
+      auto hHashTableRowCounts = registry.get<TH1>(HIST("Purity/HashTableRowCounts"));
+      auto* xHash = hHashTableRowCounts->GetXaxis();
+      xHash->SetBinLabel(static_cast<int>(HashTableRowCountsBin::RowsSaved), "rows saved");
+      xHash->SetBinLabel(static_cast<int>(HashTableRowCountsBin::UniqueRecoColsSaved), "unique recoCol saved");
+      xHash->SetBinLabel(static_cast<int>(HashTableRowCountsBin::UniqueBestRecoCols), "unique bestRecoCol");
       registry.add({"Purity/THnDCAChosenVsRight_Wrong",
-              ";#eta;DCA_{xy}^{chosen} (cm);DCA_{xy}^{calculated} (cm);DCA_{xy}^{right} (cm);DCA_{z}^{chosen} (cm);DCA_{z}^{calculated} (cm);DCA_{z}^{right} (cm)",
-              {HistType::kTHnSparseF, {etaBinning, dcaXyAxis, dcaXyAxis,dcaXyAxis,dcaZAxis, dcaZAxis,dcaZAxis}}});
+                    ";#eta;DCA_{xy}^{chosen} (cm);DCA_{xy}^{calculated} (cm);DCA_{xy}^{right} (cm);DCA_{z}^{chosen} (cm);DCA_{z}^{calculated} (cm);DCA_{z}^{right} (cm)",
+                    {HistType::kTHnSparseF, {etaBinning, dcaXyAxis, dcaXyAxis, dcaXyAxis, dcaZAxis, dcaZAxis, dcaZAxis}}});
       registry.add({"Purity/THnDCAChosenVsRight_Right",
-              ";#eta;DCA_{xy}^{chosen} (cm);DCA_{xy}^{calculated} (cm);DCA_{xy}^{right} (cm);DCA_{z}^{chosen} (cm);DCA_{z}^{calculated} (cm);DCA_{z}^{right} (cm)",
-              {HistType::kTHnSparseF, {etaBinning, dcaXyAxis, dcaXyAxis,dcaXyAxis,dcaZAxis, dcaZAxis,dcaZAxis}}});
+                    ";#eta;DCA_{xy}^{chosen} (cm);DCA_{xy}^{calculated} (cm);DCA_{xy}^{right} (cm);DCA_{z}^{chosen} (cm);DCA_{z}^{calculated} (cm);DCA_{z}^{right} (cm)",
+                    {HistType::kTHnSparseF, {etaBinning, dcaXyAxis, dcaXyAxis, dcaXyAxis, dcaZAxis, dcaZAxis, dcaZAxis}}});
       registry.add("Purity/RecoOfTrueExists",
-                 "Any reco collision exists for track true MC collision id;exists (0=no,1=yes);tracks",
-                 kTH1F, {{2, -0.5, 1.5}});
+                   "Any reco collision exists for track true MC collision id;exists (0=no,1=yes);tracks",
+                   kTH1F, {{2, -0.5, 1.5}});
       registry.add("Purity/RecoOfTrueInCompatible",
-                 "Reco collision(s) of true MC event present in track compatible collisions;inCompatible (0=no,1=yes);tracks",
-                 kTH1F, {{2, -0.5, 1.5}});
-    registry.add("Purity/RecoOfTrueExistsR",
-                 "Any reco collision exists for track true MC collision id;exists (0=no,1=yes);tracks",
-                 kTH1F, {{2, -0.5, 1.5}});
+                   "Reco collision(s) of true MC event present in track compatible collisions;inCompatible (0=no,1=yes);tracks",
+                   kTH1F, {{2, -0.5, 1.5}});
+      registry.add("Purity/RecoOfTrueExistsR",
+                   "Any reco collision exists for track true MC collision id;exists (0=no,1=yes);tracks",
+                   kTH1F, {{2, -0.5, 1.5}});
       registry.add("Purity/RecoOfTrueInCompatibleR",
-                 "Reco collision(s) of true MC event present in track compatible collisions;inCompatible (0=no,1=yes);tracks",
-                 kTH1F, {{2, -0.5, 1.5}});
-                 
-    registry.add("Purity/RecoOfTrueExistsW",
-                 "Any reco collision exists for track true MC collision id;exists (0=no,1=yes);tracks",
-                 kTH1F, {{2, -0.5, 1.5}});
-    registry.add("Purity/RecoOfTrueInCompatibleW",
-                 "Reco collision(s) of true MC event present in track compatible collisions;inCompatible (0=no,1=yes);tracks",
-                 kTH1F, {{2, -0.5, 1.5}});
+                   "Reco collision(s) of true MC event present in track compatible collisions;inCompatible (0=no,1=yes);tracks",
+                   kTH1F, {{2, -0.5, 1.5}});
 
-       registry.add("Purity/hCorrectRecoIDinTheListR",
-                 "Any reco collision exists for track true MC collision id;exists (0=no,1=yes);tracks",
-                 kTH1F, {{2, -0.5, 1.5}});
-        registry.add("Purity/hCorrectRecoIDinTheListW",
-                 "Any reco collision exists for track true MC collision id;exists (0=no,1=yes);tracks",
-                 kTH1F, {{2, -0.5, 1.5}});
+      registry.add("Purity/RecoOfTrueExistsW",
+                   "Any reco collision exists for track true MC collision id;exists (0=no,1=yes);tracks",
+                   kTH1F, {{2, -0.5, 1.5}});
+      registry.add("Purity/RecoOfTrueInCompatibleW",
+                   "Reco collision(s) of true MC event present in track compatible collisions;inCompatible (0=no,1=yes);tracks",
+                   kTH1F, {{2, -0.5, 1.5}});
 
-    // P(Nch): number of selected MFT tracks per accepted reco collision (after all event+track cuts)
-    // Tracks lost because of the OR cut ( !exists || !inCompatible )
-registry.add("Purity/LostByBoth",
-             "Tracks rejected by (!recoOfTrueExists || !recoOfTrueInCompatible);status (0=kept,1=lost);tracks",
-             kTH1F, {{2, -0.5, 1.5}});
-// Number of ITS-TPC contributors to the reconstructed collision (PV contributors)
-registry.add({"Purity/reco/CollisionNumContrib",
-              ";N_{contrib} ( PV contributors);collisions",
-              {HistType::kTH1F, {{3001, -0.5, 3000.5}}}});
+      registry.add("Purity/hCorrectRecoIDinTheListR",
+                   "Any reco collision exists for track true MC collision id;exists (0=no,1=yes);tracks",
+                   kTH1F, {{2, -0.5, 1.5}});
+      registry.add("Purity/hCorrectRecoIDinTheListW",
+                   "Any reco collision exists for track true MC collision id;exists (0=no,1=yes);tracks",
+                   kTH1F, {{2, -0.5, 1.5}});
 
-// Tracks that were WRONG (by your definition) BEFORE applying the cut
-registry.add("Purity/WrongBeforeRecoOfTrueCut",
-             "Tracks classified wrong BEFORE applying recoOfTrue cut;wrong (0=no,1=yes);tracks",
-             kTH1F, {{2, -0.5, 1.5}});
+      // P(Nch): number of selected MFT tracks per accepted reco collision (after all event+track cuts)
+      // Tracks lost because of the OR cut ( !exists || !inCompatible )
+      registry.add("Purity/LostByBoth",
+                   "Tracks rejected by (!recoOfTrueExists || !recoOfTrueInCompatible);status (0=kept,1=lost);tracks",
+                   kTH1F, {{2, -0.5, 1.5}});
+      // Number of ITS-TPC contributors to the reconstructed collision (PV contributors)
+      registry.add({"Purity/reco/CollisionNumContrib",
+                    ";N_{contrib} ( PV contributors);collisions",
+                    {HistType::kTH1F, {{3001, -0.5, 3000.5}}}});
 
-// Optional but very useful: intersection (lost AND wrong)
+      // Tracks that were WRONG (by your definition) BEFORE applying the cut
+      registry.add("Purity/WrongBeforeRecoOfTrueCut",
+                   "Tracks classified wrong BEFORE applying recoOfTrue cut;wrong (0=no,1=yes);tracks",
+                   kTH1F, {{2, -0.5, 1.5}});
 
+      // Optional but very useful: intersection (lost AND wrong)
 
-             
-registry.add({"Purity/reco/PNchMFT_afterCuts",
-              ";N_{trk}^{MFT} (selected);events",
-              {HistType::kTH1F, {multAxis}}});
-    registry.add({"Purity/DCAyVsDCAx_Right",
-              ";DCA_{x} (cm);DCA_{y} (cm)",
-              {HistType::kTH2F, {dcaXAxis, dcaYAxis}}});
+      registry.add({"Purity/reco/PNchMFT_afterCuts",
+                    ";N_{trk}^{MFT} (selected);events",
+                    {HistType::kTH1F, {multAxis}}});
+      registry.add({"Purity/DCAyVsDCAx_Right",
+                    ";DCA_{x} (cm);DCA_{y} (cm)",
+                    {HistType::kTH2F, {dcaXAxis, dcaYAxis}}});
       registry.add({"Purity/reco/woOrp/All",
                     ";bin;counts",
                     {HistType::kTH1F, {{1, 0.5, 1.5}}}});
@@ -587,21 +570,17 @@ registry.add({"Purity/reco/PNchMFT_afterCuts",
       registry.add({"EventsReco",
                     "; status; events",
                     {HistType::kTH1F, {{7, 0.5, 7.5}}}});
-      
-
-
-
 
       // Additional histograms for processGenReco (w/o orphan), grouped under Purity/reco/
       registry.add({"Purity/reco/weakStrange/SelectedTracksEta",
-              "; #eta; selected reco tracks from weak strange decays",
-              {HistType::kTH1F, {etaBinning}}});
-              registry.add({"Purity/reco/weakStrange/SelectedTracksEtaZvtx",
-              "; #eta; #it{z}_{vtx} (cm); selected reco tracks from weak strange decays",
-              {HistType::kTH2F, {etaBinning, zAxis}}});
-              registry.add({"Purity/reco/SelectedTracksEta",
-              "; #eta; selected reco tracks",
-              {HistType::kTH1F, {etaBinning}}});
+                    "; #eta; selected reco tracks from weak strange decays",
+                    {HistType::kTH1F, {etaBinning}}});
+      registry.add({"Purity/reco/weakStrange/SelectedTracksEtaZvtx",
+                    "; #eta; #it{z}_{vtx} (cm); selected reco tracks from weak strange decays",
+                    {HistType::kTH2F, {etaBinning, zAxis}}});
+      registry.add({"Purity/reco/SelectedTracksEta",
+                    "; #eta; selected reco tracks",
+                    {HistType::kTH1F, {etaBinning}}});
       registry.add({"Purity/reco/woOrp/nTrk",
                     " ; N_{Trk}^{all}",
                     {HistType::kTH1F, {{701, -0.5, 700.5}}}});
@@ -769,30 +748,30 @@ registry.add({"Purity/reco/PNchMFT_afterCuts",
                     {HistType::kTH2F, {phiAxis, etaBinning}}});
       // Fake reason breakdown: 1-INEL>0 true (vz), 2-Reco sel (woOrp), 3-has_mcParticle, 4-isPrimary, 5-rightVertex
 
-            // --- Purity calculation histograms (as profiles: purity = <isPrimary>) ---
+      // --- Purity calculation histograms (as profiles: purity = <isPrimary>) ---
       registry.add({"Purity/PurityOverall",
                     ";bin;purity",
                     {HistType::kTProfile, {{1, 0.5, 1.5}}}});
       registry.add({"Purity/PurityVsEta",
                     ";#eta;purity",
                     {HistType::kTProfile, {etaBinning}}});
-     registry.add({"RightWrong",
+      registry.add({"RightWrong",
                     ";category;counts",
                     {HistType::kTH1F, {{4, 0.5, 4.5}}}});
       auto hrw = registry.get<TH1>(HIST("RightWrong"));
-hrw->GetXaxis()->SetBinLabel(static_cast<int>(RightWrongBin::Right), "right");
-hrw->GetXaxis()->SetBinLabel(static_cast<int>(RightWrongBin::Wrong), "wrong");
-hrw->GetXaxis()->SetBinLabel(static_cast<int>(RightWrongBin::Neither), "neither");
-hrw->GetXaxis()->SetBinLabel(static_cast<int>(RightWrongBin::Both), "both");
+      hrw->GetXaxis()->SetBinLabel(static_cast<int>(RightWrongBin::Right), "right");
+      hrw->GetXaxis()->SetBinLabel(static_cast<int>(RightWrongBin::Wrong), "wrong");
+      hrw->GetXaxis()->SetBinLabel(static_cast<int>(RightWrongBin::Neither), "neither");
+      hrw->GetXaxis()->SetBinLabel(static_cast<int>(RightWrongBin::Both), "both");
 
-        registry.add({"Purity/RightWrongLater",
+      registry.add({"Purity/RightWrongLater",
                     ";category;counts",
                     {HistType::kTH1F, {{4, 0.5, 4.5}}}});
       auto hrw1 = registry.get<TH1>(HIST("Purity/RightWrongLater"));
-hrw1->GetXaxis()->SetBinLabel(static_cast<int>(RightWrongBin::Right), "right");
-hrw1->GetXaxis()->SetBinLabel(static_cast<int>(RightWrongBin::Wrong), "wrong");
-hrw1->GetXaxis()->SetBinLabel(static_cast<int>(RightWrongBin::Neither), "neither");
-hrw1->GetXaxis()->SetBinLabel(static_cast<int>(RightWrongBin::Both), "both");
+      hrw1->GetXaxis()->SetBinLabel(static_cast<int>(RightWrongBin::Right), "right");
+      hrw1->GetXaxis()->SetBinLabel(static_cast<int>(RightWrongBin::Wrong), "wrong");
+      hrw1->GetXaxis()->SetBinLabel(static_cast<int>(RightWrongBin::Neither), "neither");
+      hrw1->GetXaxis()->SetBinLabel(static_cast<int>(RightWrongBin::Both), "both");
 
       // Vertex-position difference for wrong-vertex associations (reco - true MC)
       registry.add({"deltaVZ_fromReco",
@@ -835,8 +814,7 @@ hrw1->GetXaxis()->SetBinLabel(static_cast<int>(RightWrongBin::Both), "both");
                     {HistType::kTHnSparseF, {vxAxis, vyAxis, zAxis}}});
       registry.add({"Purity/VtxXYZReco",
                     "; V_{x} (cm); V_{y} (cm); V_{z} (cm)",
-                    {HistType::kTHnSparseF, { vxAxis, vyAxis, zAxis}}});
-
+                    {HistType::kTHnSparseF, {vxAxis, vyAxis, zAxis}}});
 
       // Delta vertex positions (reco - true)
       registry.add({"Purity/DeltaVtxXYZ",
@@ -868,7 +846,6 @@ hrw1->GetXaxis()->SetBinLabel(static_cast<int>(RightWrongBin::Both), "both");
                     ";#eta;DCA_{xy} (cm);DCA_{z} (cm);DCA_{x} (cm);DCA_{y} (cm)",
                     {HistType::kTHnSparseF,
                      {etaBinning, dcaXyAxis, dcaZAxis, dcaXAxis, dcaYAxis}}});
-
 
       registry.add({"Purity/RecoSparsePrimary",
                     ";#eta;DCA_{xy} (cm);DCA_{z} (cm);DCA_{x} (cm);DCA_{y} (cm)",
@@ -981,19 +958,22 @@ hrw1->GetXaxis()->SetBinLabel(static_cast<int>(RightWrongBin::Both), "both");
                     ";#Delta DCA_{xy} (cm);#Delta DCA_{z} (cm);#Delta DCA_{x} (cm);#Delta DCA_{y} (cm) (secondary, wrong vertex)",
                     {HistType::kTHnSparseF,
                      {dcaXyAxis, dcaZAxis, dcaXAxis, dcaYAxis}}});
-                     
-    registry.add({"Purity/RecoSparseAll_EventCount",
-              ";events;counts", {HistType::kTH1F, {{1, 0.5, 1.5}}}});
-    registry.add({"Purity/RecoSparseAll_EventCountBest",
-              ";events;counts", {HistType::kTH1F, {{1, 0.5, 1.5}}}});
-registry.add({"Purity/RecoSparseRightAll_EventCount",
-              ";events;counts", {HistType::kTH1F, {{1, 0.5, 1.5}}}});
-registry.add({"Purity/RecoSparseWrongAll_EventCount",
-              ";events;counts", {HistType::kTH1F, {{1, 0.5, 1.5}}}});
-registry.add({"Purity/BestRecoColNotFound",
-              ";events;counts", {HistType::kTH1F, {{1, 0.5, 1.5}}}});
-              
 
+      registry.add({"Purity/RecoSparseAll_EventCount",
+                    ";events;counts",
+                    {HistType::kTH1F, {{1, 0.5, 1.5}}}});
+      registry.add({"Purity/RecoSparseAll_EventCountBest",
+                    ";events;counts",
+                    {HistType::kTH1F, {{1, 0.5, 1.5}}}});
+      registry.add({"Purity/RecoSparseRightAll_EventCount",
+                    ";events;counts",
+                    {HistType::kTH1F, {{1, 0.5, 1.5}}}});
+      registry.add({"Purity/RecoSparseWrongAll_EventCount",
+                    ";events;counts",
+                    {HistType::kTH1F, {{1, 0.5, 1.5}}}});
+      registry.add({"Purity/BestRecoColNotFound",
+                    ";events;counts",
+                    {HistType::kTH1F, {{1, 0.5, 1.5}}}});
     }
 
     if (doprocessGen) {
@@ -1061,11 +1041,11 @@ registry.add({"Purity/BestRecoColNotFound",
       registry.add({"EventsSplitMult", " ; N_{gen}", {HistType::kTH1F, {multAxis}}});
       auto heff = registry.get<TH1>(HIST("EventEfficiency"));
       x = heff->GetXaxis();
-x->SetBinLabel(static_cast<int>(EventEfficiencyBin::Generated), "Generated");
-x->SetBinLabel(static_cast<int>(EventEfficiencyBin::GeneratedInelGt0), "Generated INEL>0");
-x->SetBinLabel(static_cast<int>(EventEfficiencyBin::Reconstructed), "Reconstructed");
-x->SetBinLabel(static_cast<int>(EventEfficiencyBin::Selected), "Selected");
-x->SetBinLabel(static_cast<int>(EventEfficiencyBin::SelectedInelGt0), "Selected INEL>0");
+      x->SetBinLabel(static_cast<int>(EventEfficiencyBin::Generated), "Generated");
+      x->SetBinLabel(static_cast<int>(EventEfficiencyBin::GeneratedInelGt0), "Generated INEL>0");
+      x->SetBinLabel(static_cast<int>(EventEfficiencyBin::Reconstructed), "Reconstructed");
+      x->SetBinLabel(static_cast<int>(EventEfficiencyBin::Selected), "Selected");
+      x->SetBinLabel(static_cast<int>(EventEfficiencyBin::SelectedInelGt0), "Selected INEL>0");
     }
 
     if (doprocessMultReassoc || doprocessMultReassoc3d) {
@@ -1081,8 +1061,6 @@ x->SetBinLabel(static_cast<int>(EventEfficiencyBin::SelectedInelGt0), "Selected 
       registry.add({"Tracks/Control/TrackIsAmb",
                     " ; isAmbiguous",
                     {HistType::kTH1I, {{2, -0.5, 1.5}}}});
-
-
 
       registry.add({"Tracks/Control/ReassignedTracksEtaZvtx",
                     "; #eta; #it{z}_{vtx} (cm); tracks",
@@ -1214,9 +1192,9 @@ x->SetBinLabel(static_cast<int>(EventEfficiencyBin::SelectedInelGt0), "Selected 
                     {HistType::kTH2F, {{3, 0.5, 3.5}, centAxis}}});
       auto hstat = registry.get<TH2>(HIST("Events/Centrality/Selection"));
       auto* x = hstat->GetXaxis();
-x->SetBinLabel(static_cast<int>(CentralitySelectionBin::All), "All");
-x->SetBinLabel(static_cast<int>(CentralitySelectionBin::Selected), "Selected");
-x->SetBinLabel(static_cast<int>(CentralitySelectionBin::Rejected), "Rejected");
+      x->SetBinLabel(static_cast<int>(CentralitySelectionBin::All), "All");
+      x->SetBinLabel(static_cast<int>(CentralitySelectionBin::Selected), "Selected");
+      x->SetBinLabel(static_cast<int>(CentralitySelectionBin::Rejected), "Rejected");
 
       registry.add({"Events/Centrality/NtrkZvtx",
                     "; N_{trk}; Z_{vtx} (cm); centrality",
@@ -1295,7 +1273,7 @@ x->SetBinLabel(static_cast<int>(CentralitySelectionBin::Rejected), "Rejected");
       if (!useEvSel ||
           (useEvSel && ((bc.selection_bit(aod::evsel::kIsBBT0A) &&
                          bc.selection_bit(aod::evsel::kIsBBT0C)) != 0))) {
-registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::GoodBCs));
+        registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::GoodBCs));
         cols.clear();
         for (const auto& collision : collisions) {
           if (collision.has_foundBC()) {
@@ -1308,38 +1286,38 @@ registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::GoodBC
         }
         LOGP(debug, "BC {} has {} collisions", bc.globalBC(), cols.size());
         if (!cols.empty()) {
-registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::BCsWithCollisions));
+          registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::BCsWithCollisions));
           if (cols.size() > 1) {
-registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::BCsWithPileupSplitting));
+            registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::BCsWithPileupSplitting));
           }
         }
       }
     }
   }
 
-bool passGenRecoTrackMode(auto const& track) const
-{
-  const auto compatibleColls = track.compatibleCollIds();
-  const auto nCompatibleColls = compatibleColls.size();
+  bool passGenRecoTrackMode(auto const& track) const
+  {
+    const auto compatibleColls = track.compatibleCollIds();
+    const auto nCompatibleColls = compatibleColls.size();
 
-  if (nCompatibleColls == NoCompatibleCollisions) {
-    return false;
-  }
-
-  const auto mode =
-    static_cast<GenRecoTimeComTrackMode>(cfgGenRecoTimeComTrackMode.value);
-
-  switch (mode) {
-    case GenRecoTimeComTrackMode::AllNonOrphan:
-      return nCompatibleColls > NoCompatibleCollisions;
-    case GenRecoTimeComTrackMode::NonOrphanNonAmbiguous:
-      return nCompatibleColls == SingleCompatibleCollision;
-    case GenRecoTimeComTrackMode::NonOrphanAmbiguous:
-      return nCompatibleColls > SingleCompatibleCollision;
-    default:
+    if (nCompatibleColls == NoCompatibleCollisions) {
       return false;
+    }
+
+    const auto mode =
+      static_cast<GenRecoTimeComTrackMode>(cfgGenRecoTimeComTrackMode.value);
+
+    switch (mode) {
+      case GenRecoTimeComTrackMode::AllNonOrphan:
+        return nCompatibleColls > NoCompatibleCollisions;
+      case GenRecoTimeComTrackMode::NonOrphanNonAmbiguous:
+        return nCompatibleColls == SingleCompatibleCollision;
+      case GenRecoTimeComTrackMode::NonOrphanAmbiguous:
+        return nCompatibleColls > SingleCompatibleCollision;
+      default:
+        return false;
+    }
   }
-}
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processTagging,
                  "Collect event sample stats", true);
@@ -1348,7 +1326,7 @@ bool passGenRecoTrackMode(auto const& track) const
   static constexpr float SampleEtaMin = -3.2f;
 
   Partition<aod::MFTTracks> sample =
-  (aod::fwdtrack::eta < SampleEtaMax) && (aod::fwdtrack::eta > SampleEtaMin);
+    (aod::fwdtrack::eta < SampleEtaMax) && (aod::fwdtrack::eta > SampleEtaMin);
 
   static constexpr float CentralEtaMax = 1.f;
   Partition<aod::Tracks> sampleCentral = (nabs(aod::track::eta) < CentralEtaMax);
@@ -1361,7 +1339,7 @@ bool passGenRecoTrackMode(auto const& track) const
     (aod::fwdtrack::eta < ForwardEtaMax) &&
     (aod::fwdtrack::eta > ForwardEtaMin) &&
     (nabs(aod::fwdtrack::bestDCAXY) <= MaxBestDcaXy);
-    
+
   using CollwEv = soa::Join<aod::Collisions, aod::EvSels>;
 
   expressions::Filter trackSelectionCentral =
@@ -1383,9 +1361,9 @@ bool passGenRecoTrackMode(auto const& track) const
                    FiCentralTracks const& midtracks, aod::Tracks const&)
   {
 
-registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::All));
+    registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::All));
     if (!useEvSel || (useEvSel && collision.sel8())) {
-registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::VzSelected));
+      registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::VzSelected));
       auto z = collision.posZ();
       auto perCollisionSample = sampleCentral->sliceByCached(
         o2::aod::track::collisionId, collision.globalIndex(), cache);
@@ -1395,7 +1373,7 @@ registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::VzSele
 
       if (midtracks.size() > 0) // INEL>0
       {
-registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::Sel8VzInelGt0));
+        registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::Sel8VzInelGt0));
         registry.fill(HIST("EventsNtrkZvtx_gt0"), nTrk, z);
       }
 
@@ -1428,7 +1406,7 @@ registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::Sel8Vz
       }
 
     } else {
-registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::Rejected));
+      registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::Rejected));
     }
   }
 
@@ -1441,7 +1419,7 @@ registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::Reject
                                 RetracksT const& retracks,
                                 FiCentralTracks const& midtracks, aod::Tracks const&)
   {
-registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::All));
+    registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::All));
     auto perCollisionSample = sampleCentral->sliceByCached(
       o2::aod::track::collisionId, collision.globalIndex(), cache);
     auto nTrk = perCollisionSample.size();
@@ -1449,17 +1427,18 @@ registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::All));
     registry.fill(HIST("EventsNtrkZvtx"), nTrk, z);
     if ((z >= cfgVzCut1) && (z <= cfgVzCut2)) {
       registry.fill(HIST("Tracks/2Danalysis/EventsNtrkZvtx_all"), nTrk, z);
-registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::Vz));
+      registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::Vz));
       for (const auto& retrack : retracks) {
         auto track = retrack.mfttrack();
-float ndf = getTrackNdf(track);
+        float ndf = getTrackNdf(track);
         float chi2ndf = track.chi2() / ndf;
         float phi = track.phi();
         o2::math_utils::bringTo02Pi(phi);
         if (usePhiCut) {
-if ((phi <= PhiVetoLow) ||
-    ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
-    (phi >= PhiVetoHigh))            continue;
+          if ((phi <= PhiVetoLow) ||
+              ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
+              (phi >= PhiVetoHigh))
+            continue;
         }
         float dcaXyCut = retrack.bestDCAXY();
         if (useDCAxyCut) {
@@ -1480,9 +1459,9 @@ if ((phi <= PhiVetoLow) ||
       if (!disableITSROFCut && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
         return;
       }
-registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::VzItsRof));
+      registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::VzItsRof));
       if (!useEvSel || (useEvSel && collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoSameBunchPileup))) {
-registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::VzSelected));
+        registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::VzSelected));
         registry.fill(HIST("Tracks/2Danalysis/EventsNtrkZvtx_sel8"), nTrk, z);
         std::unordered_set<int> uniqueEvents;
         std::unordered_set<int> uniqueEventsAmb;
@@ -1491,27 +1470,29 @@ registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::VzSele
         std::unordered_set<int> eventsInelMFT;
         std::unordered_set<int> eventsInel;
         if (midtracks.size() > 0) {
-registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::Sel8VzInelGt0));
+          registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::Sel8VzInelGt0));
           registry.fill(HIST("EventsNtrkZvtx_gt0"), nTrk, z);
           registry.fill(HIST("Tracks/2Danalysis/EventsNtrkZvtx_sel8_inelgt0"), nTrk, z);
           eventsInel.insert(collision.globalIndex());
         }
         if (perCollisionSample.size() > 0) {
-registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::PerCollisionSampleGt0));
+          registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::PerCollisionSampleGt0));
         }
         if (midtracks.size() > 0 && perCollisionSample.size() > 0) {
-registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::MidtracksAndPerCollisionSampleGt0));        }
+          registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::MidtracksAndPerCollisionSampleGt0));
+        }
         int64_t i = 0.0, j = 0.0, k = 0.0;
         for (const auto& retrack : retracks) {
           auto track = retrack.mfttrack();
-float ndf = getTrackNdf(track);
+          float ndf = getTrackNdf(track);
           float chi2ndf = track.chi2() / ndf;
           float phi = track.phi();
           o2::math_utils::bringTo02Pi(phi);
           if (usePhiCut) {
-if ((phi <= PhiVetoLow) ||
-    ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
-    (phi >= PhiVetoHigh))              continue;
+            if ((phi <= PhiVetoLow) ||
+                ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
+                (phi >= PhiVetoHigh))
+              continue;
           }
           float dcaXyCut = retrack.bestDCAXY();
           if (useDCAxyCut) {
@@ -1534,13 +1515,13 @@ if ((phi <= PhiVetoLow) ||
           }
         }
         if (retracks.size() > 0) {
-registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::SelInelInelFwdGt0));
+          registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::SelInelInelFwdGt0));
           if (midtracks.size() > 0) {
             registry.fill(HIST("Tracks/2Danalysis/EventsNtrkZvtx_sel8_inelfwdgt0"), nTrk, z);
           }
           for (const auto& retrack : retracks) {
             auto track = retrack.mfttrack();
-float ndf = getTrackNdf(track);
+            float ndf = getTrackNdf(track);
             float chi2ndf = track.chi2() / ndf;
             float phi = track.phi();
             float dcaXyCut = retrack.bestDCAXY();
@@ -1548,9 +1529,10 @@ float ndf = getTrackNdf(track);
             // Declare dcaZCut only if needed below.
             if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && chi2ndf < cfgChi2NDFMax && (phi > cfgPhiCut1 && phi < cfgPhiCut2)) {
               if (usePhiCut) {
-if ((phi <= PhiVetoLow) ||
-    ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
-    (phi >= PhiVetoHigh))                  continue;
+                if ((phi <= PhiVetoLow) ||
+                    ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
+                    (phi >= PhiVetoHigh))
+                  continue;
               }
               if (useDCAxyCut) {
                 if (dcaXyCut > maxDCAxy)
@@ -1665,18 +1647,18 @@ if ((phi <= PhiVetoLow) ||
               }
               if ((retrack.ambDegree() > 1) || (retrack.ambDegree() <= 1))
 
-              if (retrack.ambDegree() != 0) {
-                registry.fill(HIST("Tracks/Control/woOrp/woOrpTracksEtaZvtx"),
-                              track.eta(), z);
-                registry.fill(HIST("Tracks/Control/woOrp/woOrpTracksPhiEta"), phi,
-                              track.eta());
-                registry.fill(HIST("Tracks/Control/woOrp/woOrpVertexCorr"),
-                              track.template collision_as<CollwEv>().posZ(), z);
-                registry.fill(HIST("Tracks/Control/woOrp/DCAxy_woOrp"), retrack.bestDCAXY());
-                if constexpr (std::is_same_v<RetracksT, soa::SmallGroups<aod::BestCollisionsFwd3d>>) {
-                  registry.fill(HIST("Tracks/Control/woOrp/DCAz_woOrp"), retrack.bestDCAZ());
+                if (retrack.ambDegree() != 0) {
+                  registry.fill(HIST("Tracks/Control/woOrp/woOrpTracksEtaZvtx"),
+                                track.eta(), z);
+                  registry.fill(HIST("Tracks/Control/woOrp/woOrpTracksPhiEta"), phi,
+                                track.eta());
+                  registry.fill(HIST("Tracks/Control/woOrp/woOrpVertexCorr"),
+                                track.template collision_as<CollwEv>().posZ(), z);
+                  registry.fill(HIST("Tracks/Control/woOrp/DCAxy_woOrp"), retrack.bestDCAXY());
+                  if constexpr (std::is_same_v<RetracksT, soa::SmallGroups<aod::BestCollisionsFwd3d>>) {
+                    registry.fill(HIST("Tracks/Control/woOrp/DCAz_woOrp"), retrack.bestDCAZ());
+                  }
                 }
-              }
             }
           }
           registry.fill(HIST("ambEventCounts"), 1, uniqueEventsAmb.size());
@@ -1691,7 +1673,7 @@ if ((phi <= PhiVetoLow) ||
         registry.fill(HIST("hNumCollisions_Inel"), 1, eventsInel.size());
       }
     } else {
-registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::Rejected));
+      registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::Rejected));
     }
   }
 
@@ -1812,7 +1794,7 @@ registry.fill(HIST("EventSelection"), static_cast<int>(EventSelectionBin::Reject
     }
     if ((mcCollision.posZ() >= cfgVzCut1) && (mcCollision.posZ() <= cfgVzCut2)) {
       if (nChargedCentral > 0) {
-registry.fill(HIST("EventEfficiency"), static_cast<int>(EventEfficiencyBin::GeneratedInelGt0));
+        registry.fill(HIST("EventEfficiency"), static_cast<int>(EventEfficiencyBin::GeneratedInelGt0));
         registry.fill(HIST("EventsNtrkZvtxGen_gt0t"), nCharged,
                       mcCollision.posZ());
       }
@@ -1825,7 +1807,7 @@ registry.fill(HIST("EventEfficiency"), static_cast<int>(EventEfficiencyBin::Gene
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(),
          collisions.size());
     for (const auto& collision : collisions) {
-registry.fill(HIST("EventEfficiency"), static_cast<int>(EventEfficiencyBin::Reconstructed));
+      registry.fill(HIST("EventEfficiency"), static_cast<int>(EventEfficiencyBin::Reconstructed));
       if (!disableITSROFCut && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
         return;
       }
@@ -1834,12 +1816,12 @@ registry.fill(HIST("EventEfficiency"), static_cast<int>(EventEfficiencyBin::Reco
         auto perCollisionSample = sample->sliceByCached(
           o2::aod::fwdtrack::collisionId, collision.globalIndex(), cache);
 
-      registry.fill(HIST("EventEfficiency"), static_cast<int>(EventEfficiencyBin::Selected));
+        registry.fill(HIST("EventEfficiency"), static_cast<int>(EventEfficiencyBin::Selected));
         auto perCollisionSampleCentral =
           midtracks.sliceBy(perColCentral, collision.globalIndex());
         if ((collision.posZ() >= cfgVzCut1) && (collision.posZ() <= cfgVzCut2) && (mcCollision.posZ() >= cfgVzCut1) && (mcCollision.posZ() <= cfgVzCut2)) {
           if (perCollisionSampleCentral.size() > 0) {
-registry.fill(HIST("EventEfficiency"), static_cast<int>(EventEfficiencyBin::SelectedInelGt0));
+            registry.fill(HIST("EventEfficiency"), static_cast<int>(EventEfficiencyBin::SelectedInelGt0));
             atLeastOneGt0 = true;
             registry.fill(HIST("EventsNtrkZvtxGen_gt0"),
                           perCollisionSample.size(), collision.posZ());
@@ -1880,9 +1862,10 @@ registry.fill(HIST("EventEfficiency"), static_cast<int>(EventEfficiencyBin::Sele
         float ptCut = particle.pt();
 
         if (usePhiCut) {
-if ((phi <= PhiVetoLow) ||
-    ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
-    (phi >= PhiVetoHigh))            continue;
+          if ((phi <= PhiVetoLow) ||
+              ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
+              (phi >= PhiVetoHigh))
+            continue;
         }
         if (usePtCut) {
           if (ptCut > cfgnPt)
@@ -2064,10 +2047,10 @@ if ((phi <= PhiVetoLow) ||
         ++nSavedRows;
         uniqueRecoColsSaved.insert(recoCol);
       }
-registry.fill(HIST("Purity/HashTableRowCounts"),
-              static_cast<int>(HashTableRowCountsBin::RowsSaved), nSavedRows);
-registry.fill(HIST("Purity/HashTableRowCounts"),
-              static_cast<int>(HashTableRowCountsBin::UniqueRecoColsSaved), uniqueRecoColsSaved.size());
+      registry.fill(HIST("Purity/HashTableRowCounts"),
+                    static_cast<int>(HashTableRowCountsBin::RowsSaved), nSavedRows);
+      registry.fill(HIST("Purity/HashTableRowCounts"),
+                    static_cast<int>(HashTableRowCountsBin::UniqueRecoColsSaved), uniqueRecoColsSaved.size());
 
       registry.fill(HIST("Purity/reco/CollisionNumContrib"), collision.numContrib());
 
@@ -2145,9 +2128,8 @@ registry.fill(HIST("Purity/HashTableRowCounts"),
         continue;
       }
       fillGenRecoCut(GenRecoCutBin::InelGt0);
-      
 
-     // constexpr uint8_t kFakeMcMask = 1u << 7;
+      // constexpr uint8_t kFakeMcMask = 1u << 7;
       for (const auto& track : tracks) {
         float ndf = getTrackNdf(track);
         const float chi2ndf = track.chi2() / ndf;
@@ -2182,7 +2164,7 @@ registry.fill(HIST("Purity/HashTableRowCounts"),
         const bool isPrimaryCharged = hasMcLabel && !isFakeByLabel && track.mcParticle().isPhysicalPrimary();
         const bool isSecondaryCharged = hasMcLabel && !isFakeByLabel && !track.mcParticle().isPhysicalPrimary();
         const float eta = track.eta();
-        if (!passGenRecoTrackMode(track)) { //0-> All nonorphans, 1->Non-Amb, 2->Amb
+        if (!passGenRecoTrackMode(track)) { // 0-> All nonorphans, 1->Non-Amb, 2->Amb
           continue;
         }
         int bin = static_cast<int>(RightWrongBin::Neither);
@@ -2212,7 +2194,7 @@ registry.fill(HIST("Purity/HashTableRowCounts"),
         registry.fill(HIST("RightWrong"), bin);
 
         if (bin == static_cast<int>(RightWrongBin::Wrong)) {
-          registry.fill(HIST("Purity/WrongVertexRecoExists"), recoOfTrueExists ? static_cast<int>(BoolBin::Yes)   : static_cast<int>(BoolBin::No));
+          registry.fill(HIST("Purity/WrongVertexRecoExists"), recoOfTrueExists ? static_cast<int>(BoolBin::Yes) : static_cast<int>(BoolBin::No));
         }
 
         const auto fillTrackLabelSummary = [&](TrackLabelSummaryBin bin) {
@@ -2290,19 +2272,18 @@ registry.fill(HIST("Purity/HashTableRowCounts"),
   }
   PROCESS_SWITCH(PseudorapidityDensityMFT, processGenRecoTimeCom,
                  "Process for MC time compatible", false);
-                 
 
   // using MFTTracksLabeled = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
   // using MFTTracksLabeled =soa::Join<o2::aod::MFTTracks,aod::BestCollisionsFwd3d,aod::McMFTTrackLabels>;
 
   // aod::MFTTracks const& tracks
-//soa::Join<aod::McCollisions, aod::McCollsExtra>::iterator const& mcCollision
-//aod::McCollisions::iterator const& mcCollision
-//McCollisionsWithExtra::iterator const& mcCollision
+  // soa::Join<aod::McCollisions, aod::McCollsExtra>::iterator const& mcCollision
+  // aod::McCollisions::iterator const& mcCollision
+  // McCollisionsWithExtra::iterator const& mcCollision
 
-  //void processMCeff(soa::Join<aod::McCollisions, aod::McCollsExtra>::iterator const& mcCollision, CollisionMCRecTable const& RecCols, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
-//soa::Join<aod::McCollisions, aod::McCollsExtra>::iterator const& mcCollision //This worked
-   void processGenReco(McCollisionsWithExtra::iterator const& mcCollision,
+  // void processMCeff(soa::Join<aod::McCollisions, aod::McCollsExtra>::iterator const& mcCollision, CollisionMCRecTable const& RecCols, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
+  // soa::Join<aod::McCollisions, aod::McCollsExtra>::iterator const& mcCollision //This worked
+  void processGenReco(McCollisionsWithExtra::iterator const& mcCollision,
                       o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions,
                       FullBCs const& bcs,
                       MFTTracksLabeled const& tracks,
@@ -2311,16 +2292,15 @@ registry.fill(HIST("Purity/HashTableRowCounts"),
 
   {
 
-const auto fillGenRecoCut = [&](GenRecoCutBin bin) {
+    const auto fillGenRecoCut = [&](GenRecoCutBin bin) {
       registry.fill(HIST("EventsRecoCuts_GenReco"), static_cast<int>(bin));
     };
     fillGenRecoCut(GenRecoCutBin::AllRecoCollisions);
 
-
-  // if (maxGenRecoEvents >= 0 && nProcessedGenReco >= maxGenRecoEvents) {
-  //   return;
-  // }
-  // ++nProcessedGenReco; // for HIR
+    // if (maxGenRecoEvents >= 0 && nProcessedGenReco >= maxGenRecoEvents) {
+    //   return;
+    // }
+    // ++nProcessedGenReco; // for HIR
     std::unordered_map<int, int> recoToMc;
     std::unordered_map<int, std::vector<int>> mcToReco; // MC collision id -> list of reco collision globalIndex
     std::unordered_map<float, float> recoToMcVZ;
@@ -2328,34 +2308,33 @@ const auto fillGenRecoCut = [&](GenRecoCutBin bin) {
     std::unordered_map<int, float> recoVtxY;
     std::unordered_map<int, float> recoVtxZ;
     std::unordered_map<int, std::array<double, 3>> recoVtxByRecoId;
-std::unordered_map<int, std::array<double, 3>> recoVtxByMcId;
+    std::unordered_map<int, std::array<double, 3>> recoVtxByMcId;
 
-recoVtxByRecoId.reserve(collisions.size());
-recoVtxByMcId.reserve(collisions.size());
-mcToReco.reserve(collisions.size());
+    recoVtxByRecoId.reserve(collisions.size());
+    recoVtxByMcId.reserve(collisions.size());
+    mcToReco.reserve(collisions.size());
 
-// --- Make sure magnetic field exists in THIS device before any propagation ---
-// IMPORTANT: calling collision.bc_as<FullBCs>() requires the BC table to be subscribed.
-// We subscribe by taking `FullBCs const& bcs` in the process signature and init once here.
-bool magInited = false;
-for (auto const& bc : bcs) {
-  initMagField(bc);
-  magInited = true;
-  break; // once is enough (initMagField is internally guarded)
-}
-if (!magInited) {
-  LOGF(fatal, "BC table is empty: cannot initialize magnetic field");
-}
-  
-//_______________________________________________________________________________
+    // --- Make sure magnetic field exists in THIS device before any propagation ---
+    // IMPORTANT: calling collision.bc_as<FullBCs>() requires the BC table to be subscribed.
+    // We subscribe by taking `FullBCs const& bcs` in the process signature and init once here.
+    bool magInited = false;
+    for (auto const& bc : bcs) {
+      initMagField(bc);
+      magInited = true;
+      break; // once is enough (initMagField is internally guarded)
+    }
+    if (!magInited) {
+      LOGF(fatal, "BC table is empty: cannot initialize magnetic field");
+    }
 
- for (const auto& collision : collisions) {
+    //_______________________________________________________________________________
+
+    for (const auto& collision : collisions) {
       int nSavedRows = 0;
       std::unordered_set<int> uniqueRecoColsSaved;
       int recoCol = collision.globalIndex(); // reconstructed vertex index
       int mcCol = collision.mcCollisionId(); // true MC collision index
 
-      
       if (mcCol >= 0) {
         recoToMc[recoCol] = mcCol;
         mcToReco[mcCol].push_back(recoCol);
@@ -2363,10 +2342,10 @@ if (!magInited) {
         ++nSavedRows;
         uniqueRecoColsSaved.insert(recoCol);
       }
-registry.fill(HIST("Purity/HashTableRowCounts"),
-              static_cast<int>(HashTableRowCountsBin::RowsSaved), nSavedRows);
-registry.fill(HIST("Purity/HashTableRowCounts"),
-              static_cast<int>(HashTableRowCountsBin::UniqueRecoColsSaved), uniqueRecoColsSaved.size());
+      registry.fill(HIST("Purity/HashTableRowCounts"),
+                    static_cast<int>(HashTableRowCountsBin::RowsSaved), nSavedRows);
+      registry.fill(HIST("Purity/HashTableRowCounts"),
+                    static_cast<int>(HashTableRowCountsBin::UniqueRecoColsSaved), uniqueRecoColsSaved.size());
 
       recoVtxX[recoCol] = collision.posX();
       recoVtxY[recoCol] = collision.posY();
@@ -2449,8 +2428,7 @@ registry.fill(HIST("Purity/HashTableRowCounts"),
       }
       fillGenRecoCut(GenRecoCutBin::InelGt0);
 
-
-//________________________________________________________________________________
+      //________________________________________________________________________________
 
       registry.fill(HIST("Purity/xReco"), collision.posX());
       registry.fill(HIST("Purity/xTrue"), mcCollision.posX());
@@ -2473,7 +2451,7 @@ registry.fill(HIST("Purity/HashTableRowCounts"),
       recoVtxByRecoId[collision.globalIndex()] = {collision.posX(), collision.posY(), collision.posZ()};
       recoVtxByMcId[collision.mcCollisionId()] = {mcCollision.posX(), mcCollision.posY(), mcCollision.posZ()};
 
-      int64_t woOrpCount  = 0;
+      int64_t woOrpCount = 0;
       bool filledRight = false;
       bool filledWrong = false;
       int nMftSelectedAfterCuts = 0;
@@ -2706,7 +2684,7 @@ registry.fill(HIST("Purity/HashTableRowCounts"),
             }
           }
 
-          ++woOrpCount ;
+          ++woOrpCount;
           // Category 2: all reco tracks after selections (woOrp)
 
           // --- Primary vs Fake accounting ---
@@ -2881,9 +2859,9 @@ registry.fill(HIST("Purity/HashTableRowCounts"),
         registry.fill(HIST("Purity/HashTableRowCounts"),
                       static_cast<int>(HashTableRowCountsBin::UniqueBestRecoCols), uniqueBestRecoCols.size());
       }
-      registry.fill(HIST("Purity/reco/woOrp/nTrk"), woOrpCount );
+      registry.fill(HIST("Purity/reco/woOrp/nTrk"), woOrpCount);
       registry.fill(HIST("Purity/reco/PNchMFT_afterCuts"), nMftSelectedAfterCuts);
- } // collision
+    } // collision
   }
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processGenReco,
