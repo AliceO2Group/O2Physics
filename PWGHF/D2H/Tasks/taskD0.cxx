@@ -94,6 +94,8 @@ struct HfTaskD0 {
   Configurable<bool> storeCentrality{"storeCentrality", false, "Flag to store centrality information"};
   Configurable<bool> storeOccupancyAndIR{"storeOccupancyAndIR", false, "Flag to store occupancy information and interaction rate"};
   Configurable<bool> storeTrackQuality{"storeTrackQuality", false, "Flag to store track quality information"};
+  Configurable<bool> storeZdcEnergy{"storeZdcEnergy", false, "Flag to store ZDC energy info"};
+  Configurable<bool> storeZdcTime{"storeZdcTime", true, "Flag to store ZDC time info"};
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -250,7 +252,10 @@ struct HfTaskD0 {
       LOGP(fatal, "DCAFitterN and KFParticle can not be enabled at a time.");
     }
     if ((storeCentrality || storeOccupancyAndIR) && !(doprocessDataWithDCAFitterNCent || doprocessMcWithDCAFitterNCent || doprocessDataWithDCAFitterNMlCent || doprocessMcWithDCAFitterNMlCent || doprocessDataWithDCAFitterNWithUpc || doprocessDataWithDCAFitterNMlWithUpc)) {
-      LOGP(fatal, "Can't enable the storeCentrality and storeOccupancu without cent process or UPC process");
+      LOGP(fatal, "Can't enable the storeCentrality and storeOccupancy without cent process or UPC process");
+    }
+    if ((storeZdcEnergy || storeZdcTime) && !(doprocessDataWithDCAFitterNWithUpc || doprocessDataWithDCAFitterNMlWithUpc)) {
+      LOGP(fatal, "Can't enable the storeZdcEnergy and storeZdcTime without UPC process");
     }
     auto vbins = (std::vector<double>)binsPt;
     registry.add("hMass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0., 5.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -311,8 +316,8 @@ struct HfTaskD0 {
     const AxisSpec thnAxisFV0A{thnConfigAxisFV0A, "FV0-A amplitude"};
     const AxisSpec thnAxisFDDA{thnConfigAxisFDD, "FDD-A amplitude"};
     const AxisSpec thnAxisFDDC{thnConfigAxisFDD, "FDD-C amplitude"};
-    const AxisSpec thnAxisZNA{thnConfigAxisZN, "ZNA energy"};
-    const AxisSpec thnAxisZNC{thnConfigAxisZN, "ZNC energy"};
+    const AxisSpec thnAxisEnergyZNA{thnConfigAxisZN, "ZNA energy"};
+    const AxisSpec thnAxisEnergyZNC{thnConfigAxisZN, "ZNC energy"};
     const AxisSpec thnAxisTimeZNA{thnConfigAxisTimeZN, "ZNA Time"};
     const AxisSpec thnAxisTimeZNC{thnConfigAxisTimeZN, "ZNC Time"};
 
@@ -371,11 +376,15 @@ struct HfTaskD0 {
       axes.push_back(thnAxisFV0A);
       axes.push_back(thnAxisFDDA);
       axes.push_back(thnAxisFDDC);
-      // axes.push_back(thnAxisZNA);
-      // axes.push_back(thnAxisZNC);
       axes.push_back(thnAxisNumPvContr);
-      axes.push_back(thnAxisTimeZNA);
-      axes.push_back(thnAxisTimeZNC);
+      if (storeZdcEnergy) {
+        axes.push_back(thnAxisEnergyZNA);
+        axes.push_back(thnAxisEnergyZNC);
+      }
+      if (storeZdcTime) {
+        axes.push_back(thnAxisTimeZNA);
+        axes.push_back(thnAxisTimeZNC);
+      }
     }
 
     if (applyMl) {
@@ -616,7 +625,8 @@ struct HfTaskD0 {
                                           aod::FT0s const& ft0s,
                                           aod::FV0As const& fv0as,
                                           aod::FDDs const& fdds,
-                                          TracksWPid const& tracks)
+                                          TracksWPid const&
+                                        )
   {
     for (const auto& collision : collisions) {
       float centrality{-1.f};
@@ -644,8 +654,8 @@ struct HfTaskD0 {
       const bool hasZdc = bcForUPC.has_zdc();
       float zdcEnergyZNA = -1.f;
       float zdcEnergyZNC = -1.f;
-      float zdcTimeZNA = -1.f;
-      float zdcTimeZNC = -1.f;
+      float zdcTimeZNA = -999.f;
+      float zdcTimeZNC = -999.f;
 
       if (hasZdc) {
         const auto& zdc = bcForUPC.zdc();
@@ -653,11 +663,9 @@ struct HfTaskD0 {
         zdcEnergyZNC = zdc.energyCommonZNC();
         zdcTimeZNA = zdc.timeZNA();
         zdcTimeZNC = zdc.timeZNC();
-
         registry.fill(HIST("Data/zdc/energyZNA_vs_energyZNC"), zdcEnergyZNA, zdcEnergyZNC);
         registry.fill(HIST("Data/zdc/timeZNA_vs_timeZNC"), zdcTimeZNA, zdcTimeZNC);
       }
-
       registry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
       registry.fill(HIST("Data/hUpcGapAfterSelection"), gap);
 
@@ -684,13 +692,8 @@ struct HfTaskD0 {
         auto track0 = candidate.template prong0_as<TracksWPid>();
         auto track1 = candidate.template prong1_as<TracksWPid>();
 
-        // 4. Fill your track eta histogram [3, 4]
-        // hTrackEta->Fill(track0.eta());
-        // hTrackEta->Fill(track1.eta());
-
         registry.fill(HIST("Data/hGapVsEtaTrack0"), gap, track0.eta());
         registry.fill(HIST("Data/hGapVsEtaTrack1"), gap, track1.eta());
-        // registry.fill(HIST("Data/timeZNA_vs_timeZNC"), gap, track1.eta());
         registry.fill(HIST("Data/hGapVsRap"), gap, HfHelper::yD0(candidate));
 
         if (gap == 0 && candidate.isSelD0() >= selectionFlagD0) { // A side // D0 --> K-Pi+
@@ -743,11 +746,13 @@ struct HfTaskD0 {
         // Fill THnSparse with structure matching histogram axes: [mass, pt, (mlScores if FillMl), rapidity, d0Type, (cent if storeCentrality), (occ, ir if storeOccupancyAndIR), gapType, FT0A, FT0C, FV0A, FDDA, FDDC, ZNA, ZNC]
         auto fillTHnData = [&](float mass, int d0Type) {
           // Pre-calculate vector size to avoid reallocations
-          constexpr int NAxesBase = 13;                       // mass, pt, rapidity, d0Type, gapType, FT0A, FT0C, FV0A, FDDA, FDDC, ZNA, ZNC, nPVcontr
+          constexpr int NAxesBase = 11;                       // mass, pt, rapidity, d0Type, gapType, FT0A, FT0C, FV0A, FDDA, FDDC, ZNA, ZNC, nPVcontr
           constexpr int NAxesMl = FillMl ? 3 : 0;             // 3 ML scores if FillMl
           int const nAxesCent = storeCentrality ? 1 : 0;      // centrality if storeCentrality
           int const nAxesOccIR = storeOccupancyAndIR ? 2 : 0; // occupancy and IR if storeOccupancyAndIR
-          int const nAxesTotal = NAxesBase + NAxesMl + nAxesCent + nAxesOccIR;
+          int const nAxesZdcEnergy = storeZdcEnergy ? 2 : 0;      // ZDC energy if storeZdcEnergy
+          int const nAxesZdcTime = storeZdcTime ? 2 : 0;      // ZDC time if storeZdctime
+          int const nAxesTotal = NAxesBase + NAxesMl + nAxesCent + nAxesOccIR + nAxesZdcEnergy + nAxesZdcTime;
 
           std::vector<double> valuesToFill;
           valuesToFill.reserve(nAxesTotal);
@@ -778,11 +783,15 @@ struct HfTaskD0 {
           valuesToFill.push_back(static_cast<double>(fitInfo.ampFV0A));
           valuesToFill.push_back(static_cast<double>(fitInfo.ampFDDA));
           valuesToFill.push_back(static_cast<double>(fitInfo.ampFDDC));
-          // valuesToFill.push_back(static_cast<double>(zdcEnergyZNA));
-          // valuesToFill.push_back(static_cast<double>(zdcEnergyZNC));
           valuesToFill.push_back(static_cast<double>(numPvContributors));
+          if (storeZdcEnergy) {
+          valuesToFill.push_back(static_cast<double>(zdcEnergyZNA));
+          valuesToFill.push_back(static_cast<double>(zdcEnergyZNC));
+          }
+          if (storeZdcTime) {
           valuesToFill.push_back(static_cast<double>(zdcTimeZNA));
           valuesToFill.push_back(static_cast<double>(zdcTimeZNC));
+          }
           if constexpr (FillMl) {
             registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"))->Fill(valuesToFill.data());
           } else {
@@ -1000,7 +1009,7 @@ struct HfTaskD0 {
           registry.fill(HIST("hMassSigD0"), massD0, ptCandidate, rapidityCandidate);
           if constexpr (ApplyMl) {
             if (storeCentrality && storeOccupancyAndIR) {
-              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent, occ, ir);
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors,  cent, occ, ir);
             } else if (storeCentrality && !storeOccupancyAndIR) {
               registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent);
             } else if (!storeCentrality && storeOccupancyAndIR) {
@@ -1273,7 +1282,7 @@ struct HfTaskD0 {
                                         aod::FDDs const& fdds,
                                         TracksWPid const& tracks,
                                         aod::Zdcs const& /*zdcs*/
-  )
+                                        )
   {
     runAnalysisPerCollisionDataWithUpc<false>(collisions, selectedD0Candidates, bcs, ft0s, fv0as, fdds, tracks);
   }
