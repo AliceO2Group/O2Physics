@@ -46,7 +46,7 @@ DECLARE_SOA_TABLE(QGJetTable, "AOD", "QGJET",
                   MatchDeltaR,
                   PtResponse,
                   QGLabel);
-} // namespace o2::aod
+} //namespace o2::aod
 
 //------------------------------------------------
 // helper functions
