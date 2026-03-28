@@ -46,7 +46,7 @@ DECLARE_SOA_TABLE(QGJetTable, "AOD", "QGJET",
                   MatchDeltaR,
                   PtResponse,
                   QGLabel);
-}
+}  // namespace o2::aod
 
 //------------------------------------------------
 // helper functions
@@ -97,8 +97,8 @@ int getInitiatingParton(auto const& particle,
 //------------------------------------------------
 struct QGTreeCreator {
 
-  Configurable<float> jetPtMin{"jetPtMin",10.f};
-  Configurable<float> maxMatchDeltaR{"maxMatchDeltaR",0.3f};
+  Configurable<float> jetPtMin{"jetPtMin", 10.f};
+  Configurable<float> maxMatchDeltaR{"maxMatchDeltaR", 0.3f};
 
   Produces<aod::QGJetTable> qgjets;
 
@@ -126,13 +126,13 @@ struct QGTreeCreator {
 
         nconst++;
         sumPt += pt;
-        sumPt2 += pt*pt;
-        sumPtDr += pt*dr;
+        sumPt2 += pt * pt;
+        sumPtDr += pt * dr;
       }
 
-      float girth = sumPt>0 ? sumPtDr/sumPt : -1;
-      float ptd   = sumPt>0 ? std::sqrt(sumPt2)/sumPt : -1;
-
+      float girth = sumPt > 0 ? sumPtDr / sumPt : -1;
+      float ptd   = sumPt > 0 ? std::sqrt(sumPt2) / sumPt : -1;
+      
       //----------------------------------
       // matching block
       //----------------------------------
@@ -174,7 +174,7 @@ struct QGTreeCreator {
             maxPt = tc.pt();
             pdg = getInitiatingParton(mc, mcParticles);
           }
-        }
+        } 
 
         //----------------------------------
         // assign q/g label
