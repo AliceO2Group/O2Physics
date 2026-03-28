@@ -132,7 +132,6 @@ struct QGTreeCreator {
 
       float girth = sumPt > 0 ? sumPtDr / sumPt : -1;
       float ptd   = sumPt > 0 ? std::sqrt(sumPt2) / sumPt : -1;
-      
       //----------------------------------
       // matching block
       //----------------------------------
@@ -174,8 +173,7 @@ struct QGTreeCreator {
             maxPt = tc.pt();
             pdg = getInitiatingParton(mc, mcParticles);
           }
-        } 
-
+        }
         //----------------------------------
         // assign q/g label
         //----------------------------------
