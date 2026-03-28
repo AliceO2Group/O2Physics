@@ -96,6 +96,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
     Configurable<std::vector<float>> confCPRdeltaEtaCutMaxVector{"confCPRdeltaEtaCutMaxVector", std::vector<float>{0.0, 0.0, 0.0, 0.0}, "Delta Eta max cut for Close Pair Rejection"};
     Configurable<std::vector<float>> confCPRdeltaEtaCutMinVector{"confCPRdeltaEtaCutMinVector", std::vector<float>{0.0, 0.0, 0.0, 0.0}, "Delta Eta min cut for Close Pair Rejection"};
     Configurable<bool> confIsCPRkT{"confIsCPRkT", true, "kT dependent deltaEta-deltaPhi cut for Close Pair Rejection"};
+    Configurable<float> confPairFracSharedTPCcls{"confPairFracSharedTPCcls", 1.0, "Max. fraction of TPC shared clusters between two closed tracks"};
     Configurable<float> confCPRChosenRadii{"confCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
     Configurable<bool> confUseCCImCut{"confUseCCImCut", false, "Fill SH within specific quadrants of qout-qside"};
     Configurable<float> confMinqTcut{"confMinqTcut", 0.005, "Min. qT cut on filling SH"};
@@ -542,6 +543,10 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
 
         if (kT < firstRealElement || kT > lastElement)
           continue;
+        float pairFractionTPCsCls = static_cast<float>((p1.tpcNClsShared() + p2.tpcNClsShared())) / static_cast<float>((p1.tpcNClsFound() + p2.tpcNClsFound()));
+        if (pairFractionTPCsCls > twotracksconfigs.confPairFracSharedTPCcls.value) {
+          continue;
+        }
 
         if (twotracksconfigs.confIsCPR.value) {
           if (twotracksconfigs.confCPRFracMax.value) {
@@ -584,6 +589,11 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
 
         if (kT < firstRealElement || kT > lastElement)
           continue;
+
+        float pairFractionTPCsCls = static_cast<float>((p1.tpcNClsShared() + p2.tpcNClsShared())) / static_cast<float>((p1.tpcNClsFound() + p2.tpcNClsFound()));
+        if (pairFractionTPCsCls > twotracksconfigs.confPairFracSharedTPCcls.value) {
+          continue;
+        }
 
         double rand;
         rand = randgen->Rndm();
