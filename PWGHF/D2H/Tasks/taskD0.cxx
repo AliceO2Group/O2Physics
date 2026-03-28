@@ -616,8 +616,7 @@ struct HfTaskD0 {
                                           aod::FT0s const& ft0s,
                                           aod::FV0As const& fv0as,
                                           aod::FDDs const& fdds,
-                                          TracksWPid const& tracks
-                                        )
+                                          TracksWPid const& tracks)
   {
     for (const auto& collision : collisions) {
       float centrality{-1.f};
@@ -694,7 +693,7 @@ struct HfTaskD0 {
         // registry.fill(HIST("Data/timeZNA_vs_timeZNC"), gap, track1.eta());
         registry.fill(HIST("Data/hGapVsRap"), gap, HfHelper::yD0(candidate));
 
-        if (gap==0 & candidate.isSelD0() >= selectionFlagD0) { // A side // D0 --> K-Pi+
+        if (gap == 0 & candidate.isSelD0() >= selectionFlagD0) { // A side // D0 --> K-Pi+
           registry.fill(HIST("Data/hTPCnSigProng0Pion_GapA"), track0.p(), track0.tpcNSigmaPi());
           registry.fill(HIST("Data/hTPCnSigProng1Kaon_GapA"), track1.p(), track1.tpcNSigmaKa());
           registry.fill(HIST("Data/hTOFnSigProng0Pion_GapA"), track0.p(), track0.tofNSigmaPi());
@@ -703,7 +702,7 @@ struct HfTaskD0 {
           registry.fill(HIST("Data/hTpcTofnSigProng1Kaon_GapA"), track1.p(), track1.tpcTofNSigmaKa());
         }
 
-        if (gap==0 & candidate.isSelD0bar() >= selectionFlagD0) { // A side // D0-bar --> K+Pi-
+        if (gap == 0 & candidate.isSelD0bar() >= selectionFlagD0) { // A side // D0-bar --> K+Pi-
           registry.fill(HIST("Data/hTPCnSigProng0Kaon_GapA"), track0.p(), track0.tpcNSigmaKa());
           registry.fill(HIST("Data/hTPCnSigProng1Pion_GapA"), track1.p(), track1.tpcNSigmaPi());
           registry.fill(HIST("Data/hTOFnSigProng0Kaon_GapA"), track0.p(), track0.tofNSigmaKa());
@@ -712,7 +711,7 @@ struct HfTaskD0 {
           registry.fill(HIST("Data/hTpcTofnSigProng1Pion_GapA"), track1.p(), track1.tpcTofNSigmaPi());
         }
 
-        if (gap==1 & candidate.isSelD0() >= selectionFlagD0) { // C side // D0 --> K-Pi+
+        if (gap == 1 & candidate.isSelD0() >= selectionFlagD0) { // C side // D0 --> K-Pi+
           registry.fill(HIST("Data/hTPCnSigProng0Pion_GapC"), track0.p(), track0.tpcNSigmaPi());
           registry.fill(HIST("Data/hTPCnSigProng1Kaon_GapC"), track1.p(), track1.tpcNSigmaKa());
           registry.fill(HIST("Data/hTOFnSigProng0Pion_GapC"), track0.p(), track0.tofNSigmaPi());
@@ -721,7 +720,7 @@ struct HfTaskD0 {
           registry.fill(HIST("Data/hTpcTofnSigProng1Kaon_GapC"), track1.p(), track1.tpcTofNSigmaKa());
         }
 
-        if (gap==1 & candidate.isSelD0bar() >= selectionFlagD0) { // C side // D0-bar --> K+Pi-
+        if (gap == 1 & candidate.isSelD0bar() >= selectionFlagD0) { // C side // D0-bar --> K+Pi-
           registry.fill(HIST("Data/hTPCnSigProng0Kaon_GapC"), track0.p(), track0.tpcNSigmaKa());
           registry.fill(HIST("Data/hTPCnSigProng1Pion_GapC"), track1.p(), track1.tpcNSigmaPi());
           registry.fill(HIST("Data/hTOFnSigProng0Kaon_GapC"), track0.p(), track0.tofNSigmaKa());
@@ -1001,7 +1000,7 @@ struct HfTaskD0 {
           registry.fill(HIST("hMassSigD0"), massD0, ptCandidate, rapidityCandidate);
           if constexpr (ApplyMl) {
             if (storeCentrality && storeOccupancyAndIR) {
-              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors,  cent, occ, ir);
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent, occ, ir);
             } else if (storeCentrality && !storeOccupancyAndIR) {
               registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent);
             } else if (!storeCentrality && storeOccupancyAndIR) {
@@ -1274,7 +1273,7 @@ struct HfTaskD0 {
                                         aod::FDDs const& fdds,
                                         TracksWPid const& tracks,
                                         aod::Zdcs const& /*zdcs*/
-                                        )
+  )
   {
     runAnalysisPerCollisionDataWithUpc<false>(collisions, selectedD0Candidates, bcs, ft0s, fv0as, fdds, tracks);
   }
