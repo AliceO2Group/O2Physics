@@ -1439,8 +1439,9 @@ struct PseudorapidityDensityMFT {
         if (usePhiCut) {
           if ((phi <= PhiVetoLow) ||
               ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
-              (phi >= PhiVetoHigh))
+              (phi >= PhiVetoHigh)){
             continue;
+          }
         }
         float dcaXyCut = retrack.bestDCAXY();
         if (useDCAxyCut) {
@@ -1493,8 +1494,9 @@ struct PseudorapidityDensityMFT {
           if (usePhiCut) {
             if ((phi <= PhiVetoLow) ||
                 ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
-                (phi >= PhiVetoHigh))
+                (phi >= PhiVetoHigh)){
               continue;
+            }
           }
           float dcaXyCut = retrack.bestDCAXY();
           if (useDCAxyCut) {
@@ -1533,8 +1535,9 @@ struct PseudorapidityDensityMFT {
               if (usePhiCut) {
                 if ((phi <= PhiVetoLow) ||
                     ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
-                    (phi >= PhiVetoHigh))
+                    (phi >= PhiVetoHigh)){
                   continue;
+                }
               }
               if (useDCAxyCut) {
                 if (dcaXyCut > maxDCAxy)
