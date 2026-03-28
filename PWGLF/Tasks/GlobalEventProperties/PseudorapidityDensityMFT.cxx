@@ -54,6 +54,8 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -270,7 +272,7 @@ struct PseudorapidityDensityMFT {
 
     grpmag = ccdbMgr->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPathMag.value, bc.timestamp());
     if (!grpmag) {
-      LOGF(warning, "GRPMagField not found in CCDB for ts=%lld", (long long)bc.timestamp());
+      LOGF(warning, "GRPMagField not found in CCDB for ts=%lld", static_cast<int64_t>(bc.timestamp()));
       bzMFT = 0.f;
       magRunNumber = bc.runNumber();
       return;
