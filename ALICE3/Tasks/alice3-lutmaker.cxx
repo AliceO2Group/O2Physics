@@ -13,10 +13,28 @@
 /// \brief Task to extract LUTs for the fast simulation from full simulation
 /// \since 27/04/2021
 
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/Track.h>
-#include <SimulationDataFormat/MCUtils.h>
+#include <ReconstructionDataFormats/PID.h>
+
+#include <TPDGCode.h>
+#include <TString.h>
+
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <optional>
+#include <string_view>
+#include <vector>
 
 struct Alice3LutMaker {
   static constexpr int nSpecies = 8;

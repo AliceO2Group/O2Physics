@@ -467,7 +467,7 @@ struct HeavyionMultiplicity {
     if (isApplyCentFT0C) {
       cent = col.multMCFT0C();
     } else if (isApplyCentFT0M) {
-      cent = (col.multMCFT0C() + col.multMCFT0A()) / 2.;
+      cent = col.multMCFT0C() + col.multMCFT0A();
     } else if (isApplyCentFV0A) {
       cent = col.multMCFV0A();
     }
