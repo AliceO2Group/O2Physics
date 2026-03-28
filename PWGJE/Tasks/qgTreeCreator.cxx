@@ -161,7 +161,6 @@ struct QGTreeCreator {
         float maxPt = -1;
         int pdg = 0;
     for (auto const& tc :truthJet.tracks_as<aod::ChargedMCParticleLevelJetConstituent>()){
-      
           if (!tc.has_mcParticle())
             continue;
 
