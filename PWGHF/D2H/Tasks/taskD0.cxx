@@ -693,7 +693,7 @@ struct HfTaskD0 {
         // registry.fill(HIST("Data/timeZNA_vs_timeZNC"), gap, track1.eta());
         registry.fill(HIST("Data/hGapVsRap"), gap, HfHelper::yD0(candidate));
 
-        if (gap == 0 & candidate.isSelD0() >= selectionFlagD0) { // A side // D0 --> K-Pi+
+        if (gap == 0 && candidate.isSelD0() >= selectionFlagD0) { // A side // D0 --> K-Pi+
           registry.fill(HIST("Data/hTPCnSigProng0Pion_GapA"), track0.p(), track0.tpcNSigmaPi());
           registry.fill(HIST("Data/hTPCnSigProng1Kaon_GapA"), track1.p(), track1.tpcNSigmaKa());
           registry.fill(HIST("Data/hTOFnSigProng0Pion_GapA"), track0.p(), track0.tofNSigmaPi());
@@ -702,7 +702,7 @@ struct HfTaskD0 {
           registry.fill(HIST("Data/hTpcTofnSigProng1Kaon_GapA"), track1.p(), track1.tpcTofNSigmaKa());
         }
 
-        if (gap == 0 & candidate.isSelD0bar() >= selectionFlagD0) { // A side // D0-bar --> K+Pi-
+        if (gap == 0 && candidate.isSelD0bar() >= selectionFlagD0) { // A side // D0-bar --> K+Pi-
           registry.fill(HIST("Data/hTPCnSigProng0Kaon_GapA"), track0.p(), track0.tpcNSigmaKa());
           registry.fill(HIST("Data/hTPCnSigProng1Pion_GapA"), track1.p(), track1.tpcNSigmaPi());
           registry.fill(HIST("Data/hTOFnSigProng0Kaon_GapA"), track0.p(), track0.tofNSigmaKa());
@@ -711,7 +711,7 @@ struct HfTaskD0 {
           registry.fill(HIST("Data/hTpcTofnSigProng1Pion_GapA"), track1.p(), track1.tpcTofNSigmaPi());
         }
 
-        if (gap == 1 & candidate.isSelD0() >= selectionFlagD0) { // C side // D0 --> K-Pi+
+        if (gap == 1 && candidate.isSelD0() >= selectionFlagD0) { // C side // D0 --> K-Pi+
           registry.fill(HIST("Data/hTPCnSigProng0Pion_GapC"), track0.p(), track0.tpcNSigmaPi());
           registry.fill(HIST("Data/hTPCnSigProng1Kaon_GapC"), track1.p(), track1.tpcNSigmaKa());
           registry.fill(HIST("Data/hTOFnSigProng0Pion_GapC"), track0.p(), track0.tofNSigmaPi());
@@ -720,7 +720,7 @@ struct HfTaskD0 {
           registry.fill(HIST("Data/hTpcTofnSigProng1Kaon_GapC"), track1.p(), track1.tpcTofNSigmaKa());
         }
 
-        if (gap == 1 & candidate.isSelD0bar() >= selectionFlagD0) { // C side // D0-bar --> K+Pi-
+        if (gap == 1 && candidate.isSelD0bar() >= selectionFlagD0) { // C side // D0-bar --> K+Pi-
           registry.fill(HIST("Data/hTPCnSigProng0Kaon_GapC"), track0.p(), track0.tpcNSigmaKa());
           registry.fill(HIST("Data/hTPCnSigProng1Pion_GapC"), track1.p(), track1.tpcNSigmaPi());
           registry.fill(HIST("Data/hTOFnSigProng0Kaon_GapC"), track0.p(), track0.tofNSigmaKa());
