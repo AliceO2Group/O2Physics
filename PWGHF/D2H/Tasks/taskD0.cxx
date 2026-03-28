@@ -625,8 +625,7 @@ struct HfTaskD0 {
                                           aod::FT0s const& ft0s,
                                           aod::FV0As const& fv0as,
                                           aod::FDDs const& fdds,
-                                          TracksWPid const&
-                                        )
+                                          TracksWPid const&)
   {
     for (const auto& collision : collisions) {
       float centrality{-1.f};
@@ -750,7 +749,7 @@ struct HfTaskD0 {
           constexpr int NAxesMl = FillMl ? 3 : 0;             // 3 ML scores if FillMl
           int const nAxesCent = storeCentrality ? 1 : 0;      // centrality if storeCentrality
           int const nAxesOccIR = storeOccupancyAndIR ? 2 : 0; // occupancy and IR if storeOccupancyAndIR
-          int const nAxesZdcEnergy = storeZdcEnergy ? 2 : 0;      // ZDC energy if storeZdcEnergy
+          int const nAxesZdcEnergy = storeZdcEnergy ? 2 : 0;  // ZDC energy if storeZdcEnergy
           int const nAxesZdcTime = storeZdcTime ? 2 : 0;      // ZDC time if storeZdctime
           int const nAxesTotal = NAxesBase + NAxesMl + nAxesCent + nAxesOccIR + nAxesZdcEnergy + nAxesZdcTime;
 
@@ -785,12 +784,12 @@ struct HfTaskD0 {
           valuesToFill.push_back(static_cast<double>(fitInfo.ampFDDC));
           valuesToFill.push_back(static_cast<double>(numPvContributors));
           if (storeZdcEnergy) {
-          valuesToFill.push_back(static_cast<double>(zdcEnergyZNA));
-          valuesToFill.push_back(static_cast<double>(zdcEnergyZNC));
+            valuesToFill.push_back(static_cast<double>(zdcEnergyZNA));
+            valuesToFill.push_back(static_cast<double>(zdcEnergyZNC));
           }
           if (storeZdcTime) {
-          valuesToFill.push_back(static_cast<double>(zdcTimeZNA));
-          valuesToFill.push_back(static_cast<double>(zdcTimeZNC));
+            valuesToFill.push_back(static_cast<double>(zdcTimeZNA));
+            valuesToFill.push_back(static_cast<double>(zdcTimeZNC));
           }
           if constexpr (FillMl) {
             registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"))->Fill(valuesToFill.data());
@@ -1009,7 +1008,7 @@ struct HfTaskD0 {
           registry.fill(HIST("hMassSigD0"), massD0, ptCandidate, rapidityCandidate);
           if constexpr (ApplyMl) {
             if (storeCentrality && storeOccupancyAndIR) {
-              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors,  cent, occ, ir);
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent, occ, ir);
             } else if (storeCentrality && !storeOccupancyAndIR) {
               registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent);
             } else if (!storeCentrality && storeOccupancyAndIR) {
@@ -1282,7 +1281,7 @@ struct HfTaskD0 {
                                         aod::FDDs const& fdds,
                                         TracksWPid const& tracks,
                                         aod::Zdcs const& /*zdcs*/
-                                        )
+  )
   {
     runAnalysisPerCollisionDataWithUpc<false>(collisions, selectedD0Candidates, bcs, ft0s, fv0as, fdds, tracks);
   }
