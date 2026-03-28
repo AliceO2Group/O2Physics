@@ -46,7 +46,7 @@ DECLARE_SOA_TABLE(QGJetTable, "AOD", "QGJET",
                   MatchDeltaR,
                   PtResponse,
                   QGLabel);
-} //namespace o2::aod
+} // namespace o2::aod
 
 //------------------------------------------------
 // helper functions
@@ -131,7 +131,7 @@ struct QGTreeCreator {
       }
 
       float girth = sumPt > 0 ? sumPtDr / sumPt : -1;
-      float ptd   = sumPt > 0 ? std::sqrt(sumPt2) / sumPt : -1;
+      float ptd  = sumPt > 0 ? std::sqrt(sumPt2) / sumPt : -1;
       //----------------------------------
       // matching block
       //----------------------------------
@@ -143,9 +143,9 @@ struct QGTreeCreator {
 
         if (match.chargedMCDetectorLevelJetId() != jet.globalIndex())
           continue;
-
+        
         auto truthJet = truthJets.iteratorAt(
-            match.chargedMCParticleLevelJetId());
+          match.chargedMCParticleLevelJetId());
 
         matchDr = deltaR(jet.eta(), jet.phi(),
                          truthJet.eta(), truthJet.phi());
@@ -160,10 +160,8 @@ struct QGTreeCreator {
         //----------------------------------
         float maxPt = -1;
         int pdg = 0;
-
-        for (auto const& tc :
-             truthJet.tracks_as<aod::ChargedMCParticleLevelJetConstituent>())
-        {
+    for (auto const& tc :truthJet.tracks_as<aod::ChargedMCParticleLevelJetConstituent>()){
+      
           if (!tc.has_mcParticle())
             continue;
 
