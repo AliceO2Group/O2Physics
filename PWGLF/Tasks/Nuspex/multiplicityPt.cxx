@@ -138,7 +138,7 @@ struct MultiplicityPt {
 
   // Custom track cuts matching spectraTOF
   TrackSelection customTrackCuts;
-  
+
   // TF1 pointers for phi cuts
   TF1* fphiCutLow = nullptr;
   TF1* fphiCutHigh = nullptr;
@@ -177,7 +177,6 @@ struct MultiplicityPt {
   static constexpr int PDGPion = kPiPlus;
   static constexpr int PDGKaon = kKPlus;
   static constexpr int PDGProton = kProton;
-
 
   // Get magnetic field from CCDB
   int getMagneticField(uint64_t timestamp)
@@ -335,7 +334,7 @@ struct MultiplicityPt {
 
     if (!passedNClTPCPIDCut(track))
       return false;
-    
+
     // Add phi cut with magnetic field
     if (!passedPhiCut(track, magField))
       return false;
@@ -411,7 +410,6 @@ struct MultiplicityPt {
     return true;
   }
 
- 
   void processData(CollisionTableData::iterator const& collision,
                    TrackTableData const& tracks,
                    BCsRun3 const& bcs);
@@ -425,7 +423,6 @@ struct MultiplicityPt {
                  aod::McCentFT0Ms const& centTable,
                  BCsRun3 const& bcs);
   PROCESS_SWITCH(MultiplicityPt, processMC, "process MC", true);
-
 
   void init(InitContext const&);
 
@@ -441,12 +438,10 @@ struct MultiplicityPt {
   }
 };
 
-
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<MultiplicityPt>(cfgc)};
 }
-
 
 void MultiplicityPt::init(InitContext const&)
 {
@@ -759,7 +754,6 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
   LOG(info) << "Total collision labels: " << labels.size();
   LOG(info) << "Total centrality entries: " << centTable.size();
 
-
   LOG(info) << "\n=== CENTRALITY DEBUG - RAW DATA ===";
   LOG(info) << "First 20 centrality values from centTable:";
   int debugCount = 0;
@@ -790,7 +784,6 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
   LOG(info) << "Checking if centrality might be inverted...";
   LOG(info) << "Will check correlation with multiplicity in the next step.";
 
- 
   std::map<int64_t, int> mcCollisionToNch;
   std::map<int64_t, float> mcCollisionVz;
   std::set<int64_t> physicsSelectedMCCollisions;
@@ -907,7 +900,6 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
   LOG(info) << "\n--- MAP SIZES ---";
   LOG(info) << "recoToMcMap size: " << recoToMcMap.size();
   LOG(info) << "recoToCentMap size: " << recoToCentMap.size();
-
 
   LOG(info) << "\n=== CENTRALITY VS MULTIPLICITY DEBUG ===";
 
