@@ -29,6 +29,8 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -62,13 +64,11 @@ using namespace constants::physics;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels,
                           aod::Run3MatchedToBCSparse>;
 
-//=============================================================================
-// Main Analysis Struct
-//=============================================================================
 struct MultiplicityPt {
 
   // Service
   Service<o2::framework::O2DatabasePDG> pdg;
+  Service<ccdb::BasicCCDBManager> ccdb;
   static constexpr int CentBinMax = 100;
   static constexpr int MultBinMax = 200;
   static constexpr int RecMultBinMax = 100;
@@ -82,9 +82,6 @@ struct MultiplicityPt {
 
   };
 
-  //===========================================================================
-  // Configurable Parameters
-  //===========================================================================
   Configurable<bool> isRun3{"isRun3", true, "is Run3 dataset"};
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<int> cfgINELCut{"cfgINELCut", 0, "INEL event selection: 0 no sel, 1 INEL>0, 2 INEL>1"};
@@ -123,7 +120,12 @@ struct MultiplicityPt {
   Configurable<bool> nClTPCPIDCut{"nClTPCPIDCut", true, "Apply TPC clusters for PID cut"};
 
   // Phi cut parameters
-  Configurable<bool> applyPhiCut{"applyPhiCut", false, "Apply phi sector cut"};
+  Configurable<bool> applyPhiCut{"applyPhiCut", false, "Apply phi sector cut to remove problematic TPC regions"};
+  Configurable<float> pTthresholdPhiCut{"pTthresholdPhiCut", 2.0f, "pT threshold above which to apply phi cut"};
+  Configurable<double> phiCutLowParam1{"phiCutLowParam1", 0.119297, "First parameter for low phi cut"};
+  Configurable<double> phiCutLowParam2{"phiCutLowParam2", 0.000379693, "Second parameter for low phi cut"};
+  Configurable<double> phiCutHighParam1{"phiCutHighParam1", 0.16685, "First parameter for high phi cut"};
+  Configurable<double> phiCutHighParam2{"phiCutHighParam2", 0.00981942, "Second parameter for high phi cut"};
 
   // Basic track cuts
   Configurable<float> cfgTrkEtaCut{"cfgTrkEtaCut", 0.8f, "Eta range for tracks"};
@@ -136,13 +138,13 @@ struct MultiplicityPt {
 
   // Custom track cuts matching spectraTOF
   TrackSelection customTrackCuts;
+  
+  // TF1 pointers for phi cuts
+  TF1* fphiCutLow = nullptr;
+  TF1* fphiCutHigh = nullptr;
 
   // Histogram Registry
   HistogramRegistry ue;
-
-  //===========================================================================
-  // Table Definitions - Using individual tables, not joined for MC
-  //===========================================================================
 
   // Data collisions (not used but kept for completeness)
   using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels, aod::McCentFT0Ms>;
@@ -165,9 +167,6 @@ struct MultiplicityPt {
   // Preslice for MC particles
   Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
 
-  //===========================================================================
-  // Constants
-  //===========================================================================
   enum ParticleSpecies : int {
     kPion = 0,
     kKaon = 1,
@@ -179,9 +178,69 @@ struct MultiplicityPt {
   static constexpr int PDGKaon = kKPlus;
   static constexpr int PDGProton = kProton;
 
-  //===========================================================================
-  // Helper Functions
-  //===========================================================================
+
+  // Get magnetic field from CCDB
+  int getMagneticField(uint64_t timestamp)
+  {
+    static o2::parameters::GRPMagField* grpo = nullptr;
+    if (grpo == nullptr) {
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
+      if (grpo == nullptr) {
+        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+        return 0;
+      }
+      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", timestamp, grpo->getNominalL3Field());
+    }
+    return grpo->getNominalL3Field();
+  }
+
+  // Get transformed phi for phi cut (with magnetic field)
+  float getTransformedPhi(const float phi, const int charge, const float magField) const
+  {
+    float transformedPhi = phi;
+    if (magField < 0) {
+      transformedPhi = o2::constants::math::TwoPI - transformedPhi;
+    }
+    if (charge < 0) {
+      transformedPhi = o2::constants::math::TwoPI - transformedPhi;
+    }
+    transformedPhi += o2::constants::math::PI / 18.0f;
+    transformedPhi = std::fmod(transformedPhi, o2::constants::math::PI / 9.0f);
+    return transformedPhi;
+  }
+
+  // Phi cut function (with magnetic field)
+  template <typename TrackType>
+  bool passedPhiCut(const TrackType& track, float magField) const
+  {
+    if (!applyPhiCut.value) {
+      return true;
+    }
+
+    if (track.pt() < pTthresholdPhiCut.value) {
+      return true;
+    }
+
+    float pt = track.pt();
+    float phi = track.phi();
+    int charge = track.sign();
+
+    if (magField < 0) {
+      phi = o2::constants::math::TwoPI - phi;
+    }
+    if (charge < 0) {
+      phi = o2::constants::math::TwoPI - phi;
+    }
+
+    phi += o2::constants::math::PI / 18.0f;
+    phi = std::fmod(phi, o2::constants::math::PI / 9.0f);
+
+    if (phi < fphiCutHigh->Eval(pt) && phi > fphiCutLow->Eval(pt)) {
+      return false;
+    }
+
+    return true;
+  }
 
   template <typename ParticleContainer>
   int countGeneratedChargedPrimaries(const ParticleContainer& particles, float etaMax, float ptMin) const
@@ -257,7 +316,7 @@ struct MultiplicityPt {
   }
 
   template <typename TrackType>
-  bool passesTrackSelection(TrackType const& track) const
+  bool passesTrackSelection(TrackType const& track, float magField = 0) const
   {
     if (track.eta() < cfgCutEtaMin.value || track.eta() > cfgCutEtaMax.value)
       return false;
@@ -275,6 +334,10 @@ struct MultiplicityPt {
       return false;
 
     if (!passedNClTPCPIDCut(track))
+      return false;
+    
+    // Add phi cut with magnetic field
+    if (!passedPhiCut(track, magField))
       return false;
 
     return true;
@@ -348,9 +411,7 @@ struct MultiplicityPt {
     return true;
   }
 
-  //===========================================================================
-  // Process Switches
-  //===========================================================================
+ 
   void processData(CollisionTableData::iterator const& collision,
                    TrackTableData const& tracks,
                    BCsRun3 const& bcs);
@@ -365,9 +426,7 @@ struct MultiplicityPt {
                  BCsRun3 const& bcs);
   PROCESS_SWITCH(MultiplicityPt, processMC, "process MC", true);
 
-  //===========================================================================
-  // Standard Framework Functions
-  //===========================================================================
+
   void init(InitContext const&);
 
   void endOfStream(EndOfStreamContext& /*eos*/)
@@ -382,23 +441,37 @@ struct MultiplicityPt {
   }
 };
 
-//=============================================================================
-// Workflow Definition
-//=============================================================================
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<MultiplicityPt>(cfgc)};
 }
 
-//=============================================================================
-// Implementation of Member Functions
-//=============================================================================
 
 void MultiplicityPt::init(InitContext const&)
 {
   LOG(info) << "==================================================";
   LOG(info) << "Initializing MultiplicityPt task with full centrality diagnostics";
   LOG(info) << "==================================================";
+
+  // Initialize phi cut functions
+  if (applyPhiCut.value) {
+    fphiCutLow = new TF1("StandardPhiCutLow",
+                         Form("%f/x/x+pi/18.0-%f",
+                              phiCutLowParam1.value, phiCutLowParam2.value),
+                         0, 50);
+    fphiCutHigh = new TF1("StandardPhiCutHigh",
+                          Form("%f/x+pi/18.0+%f",
+                               phiCutHighParam1.value, phiCutHighParam2.value),
+                          0, 50);
+
+    LOGF(info, "=== Phi Cut Parameters ===");
+    LOGF(info, "Low cut: %.6f/x² + pi/18 - %.6f",
+         phiCutLowParam1.value, phiCutLowParam2.value);
+    LOGF(info, "High cut: %.6f/x + pi/18 + %.6f",
+         phiCutHighParam1.value, phiCutHighParam2.value);
+    LOGF(info, "Applied for pT > %.1f GeV/c", pTthresholdPhiCut.value);
+  }
 
   if (useCustomTrackCuts.value) {
     LOG(info) << "Using custom track cuts matching spectraTOF approach";
@@ -447,10 +520,6 @@ void MultiplicityPt::init(InitContext const&)
     recoMultBins.push_back(static_cast<double>(i));
   }
   AxisSpec recoMultAxis = {recoMultBins, "N_{ch}^{reco}"};
-
-  //===========================================================================
-  // Comprehensive Histogram Registration
-  //===========================================================================
 
   // Centrality diagnostic histograms - USE FINE BINNING
   ue.add("Centrality/hCentRaw", "Raw FT0M Centrality (no cuts);Centrality (%);Counts",
@@ -578,6 +647,16 @@ void MultiplicityPt::init(InitContext const&)
   ue.add("Inclusive/hPtMeasuredVsCent", "All measured tracks (PID) vs centrality;#it{p}_{T} (GeV/#it{c});FT0M Centrality (%)",
          HistType::kTH2D, {ptAxis, centAxis});
 
+  // Phi cut monitoring histograms
+  if (applyPhiCut.value) {
+    ue.add("PhiCut/hPtVsPhiPrimeBefore", "pT vs φ' before cut;p_{T} (GeV/c);φ'",
+           HistType::kTH2F, {{100, 0, 10}, {100, 0, 0.4}});
+    ue.add("PhiCut/hPtVsPhiPrimeAfter", "pT vs φ' after cut;p_{T} (GeV/c);φ'",
+           HistType::kTH2F, {{100, 0, 10}, {100, 0, 0.4}});
+    ue.add("PhiCut/hRejectionRate", "Track rejection rate by phi cut;p_{T} (GeV/c);Rejection Rate",
+           HistType::kTProfile, {{100, 0, 10}});
+  }
+
   // Particle-specific histograms
   const std::array<std::string, kNSpecies> particleNames = {"Pion", "Kaon", "Proton"};
   const std::array<std::string, kNSpecies> particleSymbols = {"#pi^{#pm}", "K^{#pm}", "p+#bar{p}"};
@@ -654,11 +733,10 @@ void MultiplicityPt::init(InitContext const&)
   LOG(info) << "=== Initialized MultiplicityPt task with full centrality diagnostics ===";
   LOG(info) << "Standard centrality binning: " << centBinningStd.size() - 1 << " bins (0-100%)";
   LOG(info) << "Fine centrality binning: " << centBinningFine.size() - 1 << " bins (0-100%)";
+  if (applyPhiCut.value) {
+    LOG(info) << "Phi cut ENABLED for pT > " << pTthresholdPhiCut.value << " GeV/c";
+  }
 }
-
-//=============================================================================
-// Process Functions
-//=============================================================================
 
 void MultiplicityPt::processData(CollisionTableData::iterator const& /*collision*/,
                                  TrackTableData const& /*tracks*/,
@@ -681,9 +759,7 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
   LOG(info) << "Total collision labels: " << labels.size();
   LOG(info) << "Total centrality entries: " << centTable.size();
 
-  //===========================================================================
-  // DEBUG: Print raw centrality information first
-  //===========================================================================
+
   LOG(info) << "\n=== CENTRALITY DEBUG - RAW DATA ===";
   LOG(info) << "First 20 centrality values from centTable:";
   int debugCount = 0;
@@ -714,9 +790,7 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
   LOG(info) << "Checking if centrality might be inverted...";
   LOG(info) << "Will check correlation with multiplicity in the next step.";
 
-  //===========================================================================
-  // FIRST PASS: Build maps of MC collision ID to generated particle counts
-  //===========================================================================
+ 
   std::map<int64_t, int> mcCollisionToNch;
   std::map<int64_t, float> mcCollisionVz;
   std::set<int64_t> physicsSelectedMCCollisions;
@@ -797,9 +871,6 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
   LOG(info) << "INEL>1: " << mcINELgt1;
   LOG(info) << "Physics-selected MC collisions: " << physicsSelectedMCCollisions.size();
 
-  //===========================================================================
-  // Build maps for labels and centrality
-  //===========================================================================
   std::map<int64_t, int64_t> recoToMcMap;
   std::map<int64_t, float> recoToCentMap;
 
@@ -837,9 +908,7 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
   LOG(info) << "recoToMcMap size: " << recoToMcMap.size();
   LOG(info) << "recoToCentMap size: " << recoToCentMap.size();
 
-  //===========================================================================
-  // DEBUG: Check correlation between centrality and multiplicity
-  //===========================================================================
+
   LOG(info) << "\n=== CENTRALITY VS MULTIPLICITY DEBUG ===";
 
   // Create temporary vectors to check correlation
@@ -1003,6 +1072,13 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
     nSelectedEvents++;
     nPassAll++;
 
+    // Get magnetic field for phi cut
+    float magField = 0;
+    if (applyPhiCut.value) {
+      const auto& bc = collision.bc_as<BCsRun3>();
+      magField = getMagneticField(bc.timestamp());
+    }
+
     // Process tracks in selected events
     int nTracksInEvent = 0;
     for (const auto& track : tracks) {
@@ -1011,9 +1087,22 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
       if (track.collisionId() != collId)
         continue;
 
-      if (!passesTrackSelection(track)) {
+      // Fill phi cut monitoring before cut
+      if (applyPhiCut.value && track.pt() >= pTthresholdPhiCut.value) {
+        float phiPrime = getTransformedPhi(track.phi(), track.sign(), magField);
+        ue.fill(HIST("PhiCut/hPtVsPhiPrimeBefore"), track.pt(), phiPrime);
+      }
+
+      if (!passesTrackSelection(track, magField)) {
         continue;
       }
+
+      // Fill phi cut monitoring after cut
+      if (applyPhiCut.value && track.pt() >= pTthresholdPhiCut.value) {
+        float phiPrime = getTransformedPhi(track.phi(), track.sign(), magField);
+        ue.fill(HIST("PhiCut/hPtVsPhiPrimeAfter"), track.pt(), phiPrime);
+      }
+
       nTracksInEvent++;
 
       // Fill TPC cluster histograms
