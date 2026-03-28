@@ -131,7 +131,7 @@ struct QGTreeCreator {
       }
 
       float girth = sumPt > 0 ? sumPtDr / sumPt : -1;
-      float ptd  = sumPt > 0 ? std::sqrt(sumPt2) / sumPt : -1;
+      float ptd = sumPt > 0 ? std::sqrt(sumPt2) / sumPt : -1;
       //----------------------------------
       // matching block
       //----------------------------------
@@ -141,10 +141,11 @@ struct QGTreeCreator {
 
       for (auto const& match : matches) {
 
-        if (match.chargedMCDetectorLevelJetId() != jet.globalIndex())
+      
+      if (match.chargedMCDetectorLevelJetId() != jet.globalIndex())
           continue;
-        
-        auto truthJet = truthJets.iteratorAt(
+
+      auto truthJet = truthJets.iteratorAt(
           match.chargedMCParticleLevelJetId());
 
         matchDr = deltaR(jet.eta(), jet.phi(),
@@ -160,7 +161,10 @@ struct QGTreeCreator {
         //----------------------------------
         float maxPt = -1;
         int pdg = 0;
-    for (auto const& tc :truthJet.tracks_as<aod::ChargedMCParticleLevelJetConstituent>()){
+
+        for (auto const& tc :
+            truthJet.tracks_as<aod::ChargedMCParticleLevelJetConstituent>()) {
+  
           if (!tc.has_mcParticle())
             continue;
 
