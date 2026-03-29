@@ -8,10 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetMatching.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/MCTruthContainer.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -25,6 +25,19 @@
 using namespace o2;
 using namespace o2::framework;
 
+namespace
+{
+constexpr int kGluon = 21;
+constexpr int kQuarkMin = 1;
+constexpr int kQuarkMax = 6;
+
+float deltaR(float eta1, float phi1, float eta2, float phi2)
+{
+  const float deta = eta1 - eta2;
+  const float dphi = RecoDecay::constrainAngle(phi1 - phi2);
+  return std::sqrt(deta * deta + dphi * dphi);
+}
+} // namespace
 namespace o2::aod
 {
 DECLARE_SOA_COLUMN(JetPt, jetPt, float);
@@ -48,22 +61,6 @@ DECLARE_SOA_TABLE(QGJetTable, "AOD", "QGJET",
                   PtResponse,
                   QGLabel);
 } // namespace o2::aod
-
-//------------------------------------------------
-// helper functions
-//------------------------------------------------
-float deltaPhi(float phi1, float phi2)
-{
-  return std::remainder(phi1 - phi2, 2.f * static_cast<float>(M_PI));
-}
-
-float deltaR(float eta1, float phi1, float eta2, float phi2)
-{
-  float deta = eta1 - eta2;
-  float dphi = deltaPhi(phi1, phi2);
-  return std::sqrt(deta * deta + dphi * dphi);
-}
-
 //------------------------------------------------
 // find initiating parton by ancestry
 //------------------------------------------------
@@ -80,10 +77,10 @@ int getInitiatingParton(auto const& particle,
     }
 
     auto mom = mothers.iteratorAt(0);
-    int mpdg = mom.pdgCode();
+    const int mpdg = mom.pdgCode();
 
-    // stop at quark or gluon
-    if (std::abs(mpdg) == 21 || (std::abs(mpdg) >= 1 && std::abs(mpdg) <= 6)) {
+    if (std::abs(mpdg) == kGluon ||
+        (std::abs(mpdg) >= kQuarkMin && std::abs(mpdg) <= kQuarkMax)) {
       pdg = mpdg;
     }
 
@@ -92,7 +89,6 @@ int getInitiatingParton(auto const& particle,
 
   return pdg;
 }
-
 //------------------------------------------------
 // main task
 //------------------------------------------------
@@ -133,9 +129,9 @@ struct QGTreeCreator {
       float girth = sumPt > 0 ? sumPtDr / sumPt : -1;
       float ptd = sumPt > 0 ? std::sqrt(sumPt2) / sumPt : -1;
 
-      //----------------------------------
-      // matching block
-      //----------------------------------
+      //------------------------------------------------
+      // matching
+      //------------------------------------------------
       float matchDr = -1;
       float ptResp = -1;
       int qg = -1;
@@ -180,11 +176,11 @@ struct QGTreeCreator {
         //----------------------------------
         // assign q/g label
         //----------------------------------
-        if (std::abs(pdg) == 21) {
-          qg = 1; // gluon
-        } else if (std::abs(pdg) >= 1 && std::abs(pdg) <= 6) {
-          qg = 0; // quark
-        }
+        if (std::abs(pdg) == kGluon) {
+          qg = 1;
+        } else if (std::abs(pdg) >= kQuarkMin && std::abs(pdg) <= kQuarkMax) {
+          qg = 0;
+      }
 
         break;
       }
@@ -205,5 +201,5 @@ struct QGTreeCreator {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<QGTreeCreator>(cfgc, TaskName{"qg-tree-creator"})};
+    adaptAnalysisTask<QGTreeCreator>(cfgc)};
 }
