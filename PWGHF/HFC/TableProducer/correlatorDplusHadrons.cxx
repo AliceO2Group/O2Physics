@@ -316,6 +316,7 @@ struct HfCorrelatorDplusHadrons {
     registry.add("hEtaMcGen", "D+,Hadron particles - MC Gen", {HistType::kTH1F, {axisEta}});
     registry.add("hPhiMcGen", "D+,Hadron particles - MC Gen", {HistType::kTH1F, {axisPhi}});
     registry.add("hMultFT0AMcGen", "D+,Hadron multiplicity FT0A - MC Gen", {HistType::kTH1F, {axisMultiplicity}});
+    registry.add("hFakeCollision", "Fake collision counter", {HistType::kTH1F, {{1, -0.5, 0.5, "n fake coll"}}});
     corrBinning = {{binsZVtx, binsMultiplicity}, true};
   }
 
