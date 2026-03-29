@@ -94,6 +94,8 @@ struct HfTaskD0 {
   Configurable<bool> storeCentrality{"storeCentrality", false, "Flag to store centrality information"};
   Configurable<bool> storeOccupancyAndIR{"storeOccupancyAndIR", false, "Flag to store occupancy information and interaction rate"};
   Configurable<bool> storeTrackQuality{"storeTrackQuality", false, "Flag to store track quality information"};
+  Configurable<bool> storeZdcEnergy{"storeZdcEnergy", false, "Flag to store ZDC energy info"};
+  Configurable<bool> storeZdcTime{"storeZdcTime", true, "Flag to store ZDC time info"};
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -121,6 +123,7 @@ struct HfTaskD0 {
   using CollisionsWithMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
   using CollisionsWithMcLabelsCent = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>;
   using TracksSelQuality = soa::Join<aod::TracksExtra, aod::TracksWMc>;
+  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
   Filter filterD0Flag = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK))) != static_cast<uint8_t>(0);
 
@@ -161,6 +164,7 @@ struct HfTaskD0 {
   ConfigurableAxis thnConfigAxisFV0A{"thnConfigAxisFV0A", {2001, -1.5, 1999.5}, "axis for FV0-A amplitude (a.u.)"};
   ConfigurableAxis thnConfigAxisFDD{"thnConfigAxisFDD", {200, 0., 4000.}, "axis for FDD amplitude (a.u.)"};
   ConfigurableAxis thnConfigAxisZN{"thnConfigAxisZN", {510, -1.5, 49.5}, "axis for ZN energy (a.u.)"};
+  ConfigurableAxis thnConfigAxisTimeZN{"thnConfigAxisTimeZN", {700, -35., 35.}, "axis for ZN energy (a.u.)"};
 
   HistogramRegistry registry{
     "registry",
@@ -248,7 +252,10 @@ struct HfTaskD0 {
       LOGP(fatal, "DCAFitterN and KFParticle can not be enabled at a time.");
     }
     if ((storeCentrality || storeOccupancyAndIR) && !(doprocessDataWithDCAFitterNCent || doprocessMcWithDCAFitterNCent || doprocessDataWithDCAFitterNMlCent || doprocessMcWithDCAFitterNMlCent || doprocessDataWithDCAFitterNWithUpc || doprocessDataWithDCAFitterNMlWithUpc)) {
-      LOGP(fatal, "Can't enable the storeCentrality and storeOccupancu without cent process or UPC process");
+      LOGP(fatal, "Can't enable the storeCentrality and storeOccupancy without cent process or UPC process");
+    }
+    if ((storeZdcEnergy || storeZdcTime) && !(doprocessDataWithDCAFitterNWithUpc || doprocessDataWithDCAFitterNMlWithUpc)) {
+      LOGP(fatal, "Can't enable the storeZdcEnergy and storeZdcTime without UPC process");
     }
     auto vbins = (std::vector<double>)binsPt;
     registry.add("hMass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0., 5.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -309,8 +316,10 @@ struct HfTaskD0 {
     const AxisSpec thnAxisFV0A{thnConfigAxisFV0A, "FV0-A amplitude"};
     const AxisSpec thnAxisFDDA{thnConfigAxisFDD, "FDD-A amplitude"};
     const AxisSpec thnAxisFDDC{thnConfigAxisFDD, "FDD-C amplitude"};
-    const AxisSpec thnAxisZNA{thnConfigAxisZN, "ZNA energy"};
-    const AxisSpec thnAxisZNC{thnConfigAxisZN, "ZNC energy"};
+    const AxisSpec thnAxisEnergyZNA{thnConfigAxisZN, "ZNA energy"};
+    const AxisSpec thnAxisEnergyZNC{thnConfigAxisZN, "ZNC energy"};
+    const AxisSpec thnAxisTimeZNA{thnConfigAxisTimeZN, "ZNA Time"};
+    const AxisSpec thnAxisTimeZNC{thnConfigAxisTimeZN, "ZNC Time"};
 
     if (doprocessMcWithDCAFitterN || doprocessMcWithDCAFitterNCent || doprocessMcWithKFParticle || doprocessMcWithDCAFitterNMl || doprocessMcWithDCAFitterNMlCent || doprocessMcWithKFParticleMl) {
       std::vector<AxisSpec> axesAcc = {thnAxisGenPtD, thnAxisGenPtB, thnAxisY, thnAxisOrigin, thnAxisNumPvContr};
@@ -367,9 +376,15 @@ struct HfTaskD0 {
       axes.push_back(thnAxisFV0A);
       axes.push_back(thnAxisFDDA);
       axes.push_back(thnAxisFDDC);
-      axes.push_back(thnAxisZNA);
-      axes.push_back(thnAxisZNC);
       axes.push_back(thnAxisNumPvContr);
+      if (storeZdcEnergy) {
+        axes.push_back(thnAxisEnergyZNA);
+        axes.push_back(thnAxisEnergyZNC);
+      }
+      if (storeZdcTime) {
+        axes.push_back(thnAxisTimeZNA);
+        axes.push_back(thnAxisTimeZNC);
+      }
     }
 
     if (applyMl) {
@@ -381,9 +396,39 @@ struct HfTaskD0 {
     }
 
     registry.add("Data/fitInfo/ampFT0A_vs_ampFT0C", "FT0-A vs FT0-C amplitude;FT0-A amplitude (a.u.);FT0-C amplitude (a.u.)", {HistType::kTH2F, {{2500, 0., 250}, {2500, 0., 250}}});
-    registry.add("Data/zdc/energyZNA_vs_energyZNC", "ZNA vs ZNC common energy;E_{ZNA}^{common} (a.u.);E_{ZNC}^{common} (a.u.)", {HistType::kTH2F, {{200, 0., 20}, {200, 0., 20}}});
+    registry.add("Data/zdc/energyZNA_vs_energyZNC", "ZNA vs ZNC common energy;E_{ZNA}^{common} (a.u.);E_{ZNC}^{common} (a.u.)", {HistType::kTH2F, {{200, 0., 200}, {1000, 0., 2000}}});
+    registry.add("Data/zdc/timeZNA_vs_timeZNC", "ZNA vs ZNC time;ZNA Time;ZNC time", {HistType::kTH2F, {{700, -35., 35.}, {700, -35., 35.}}});
     registry.add("Data/hUpcGapAfterSelection", "UPC gap type after selection;Gap type;Counts", {HistType::kTH1F, {{7, -1.5, 5.5}}});
-    registry.add("Data/hGapVsEta", "UPC gap vs Eta;Gap type;Eta", {HistType::kTH2F, {{7, -1.5, 5.5}, {50, -1., 1.}}});
+    registry.add("Data/hGapVsEtaTrack0", "UPC gap vs Eta;Gap type;Eta", {HistType::kTH2F, {{7, -1.5, 5.5}, {50, -1., 1.}}});
+    registry.add("Data/hGapVsEtaTrack1", "UPC gap vs Eta;Gap type;Eta", {HistType::kTH2F, {{7, -1.5, 5.5}, {50, -1., 1.}}});
+
+    registry.add("Data/hTPCnSigProng0Pion_GapA", "Gap A Prong 0;P (GeV/c) ;TPC nSigma Pion", {HistType::kTH2F, {{100, 0, 50}, {120, -6., 6.}}});
+    registry.add("Data/hTPCnSigProng1Kaon_GapA", "Gap A Prong 1;P (GeV/c) ;TPC nSigma Kaon", {HistType::kTH2F, {{100, 0, 50}, {120, -6., 6.}}});
+    registry.add("Data/hTPCnSigProng0Kaon_GapA", "Gap A Prong 0;P (GeV/c) ;TPC nSigma Pion", {HistType::kTH2F, {{100, 0, 50}, {120, -6., 6.}}});
+    registry.add("Data/hTPCnSigProng1Pion_GapA", "Gap A Prong 1;P (GeV/c) ;TPC nSigma Kaon", {HistType::kTH2F, {{100, 0, 50}, {120, -6., 6.}}});
+    registry.add("Data/hTPCnSigProng0Pion_GapC", "Gap C Prong 0;P (GeV/c) ;TPC nSigma Pion", {HistType::kTH2F, {{100, 0, 50}, {120, -6., 6.}}});
+    registry.add("Data/hTPCnSigProng1Kaon_GapC", "Gap C Prong 1;P (GeV/c) ;TPC nSigma Kaon", {HistType::kTH2F, {{100, 0, 50}, {120, -6., 6.}}});
+    registry.add("Data/hTPCnSigProng0Kaon_GapC", "Gap C Prong 0;P (GeV/c) ;TPC nSigma Pion", {HistType::kTH2F, {{100, 0, 50}, {120, -6., 6.}}});
+    registry.add("Data/hTPCnSigProng1Pion_GapC", "Gap C Prong 1;P (GeV/c) ;TPC nSigma Kaon", {HistType::kTH2F, {{100, 0, 50}, {120, -6., 6.}}});
+
+    registry.add("Data/hTOFnSigProng0Pion_GapA", "Gap A Prong 0;P (GeV/c) ;TOF nSigma Pion", {HistType::kTH2F, {{100, 0, 50}, {120, -6., 6.}}});
+    registry.add("Data/hTOFnSigProng1Kaon_GapA", "Gap A Prong 1;P (GeV/c) ;TOF nSigma Kaon", {HistType::kTH2F, {{100, 0, 50}, {120, -6., 6.}}});
+    registry.add("Data/hTOFnSigProng0Kaon_GapA", "Gap A Prong 0;P (GeV/c) ;TOF nSigma Pion", {HistType::kTH2F, {{100, 0, 50}, {120, -6., 6.}}});
+    registry.add("Data/hTOFnSigProng1Pion_GapA", "Gap A Prong 1;P (GeV/c) ;TOF nSigma Kaon", {HistType::kTH2F, {{100, 0, 50}, {120, -6., 6.}}});
+    registry.add("Data/hTOFnSigProng0Pion_GapC", "Gap C Prong 0;P (GeV/c) ;TOF nSigma Pion", {HistType::kTH2F, {{100, 0, 50}, {120, -6., 6.}}});
+    registry.add("Data/hTOFnSigProng1Kaon_GapC", "Gap C Prong 1;P (GeV/c) ;TOF nSigma Kaon", {HistType::kTH2F, {{100, 0, 50}, {120, -6., 6.}}});
+    registry.add("Data/hTOFnSigProng0Kaon_GapC", "Gap C Prong 0;P (GeV/c) ;TOF nSigma Pion", {HistType::kTH2F, {{100, 0, 50}, {120, -6., 6.}}});
+    registry.add("Data/hTOFnSigProng1Pion_GapC", "Gap C Prong 1;P (GeV/c) ;TOF nSigma Kaon", {HistType::kTH2F, {{100, 0, 50}, {120, -6., 6.}}});
+
+    registry.add("Data/hTpcTofnSigProng0Pion_GapA", "Gap A Prong 0;P (GeV/c) ;TpcTof nSigma Pion", {HistType::kTH2F, {{100, 0, 50}, {50, 0., 10.}}});
+    registry.add("Data/hTpcTofnSigProng1Kaon_GapA", "Gap A Prong 1;P (GeV/c) ;TpcTof nSigma Kaon", {HistType::kTH2F, {{100, 0, 50}, {50, 0., 10.}}});
+    registry.add("Data/hTpcTofnSigProng0Kaon_GapA", "Gap A Prong 0;P (GeV/c) ;TpcTof nSigma Pion", {HistType::kTH2F, {{100, 0, 50}, {50, 0., 10.}}});
+    registry.add("Data/hTpcTofnSigProng1Pion_GapA", "Gap A Prong 1;P (GeV/c) ;TpcTof nSigma Kaon", {HistType::kTH2F, {{100, 0, 50}, {50, 0., 10.}}});
+    registry.add("Data/hTpcTofnSigProng0Pion_GapC", "Gap C Prong 0;P (GeV/c) ;TpcTof nSigma Pion", {HistType::kTH2F, {{100, 0, 50}, {50, 0., 10.}}});
+    registry.add("Data/hTpcTofnSigProng1Kaon_GapC", "Gap C Prong 1;P (GeV/c) ;TpcTof nSigma Kaon", {HistType::kTH2F, {{100, 0, 50}, {50, 0., 10.}}});
+    registry.add("Data/hTpcTofnSigProng0Kaon_GapC", "Gap C Prong 0;P (GeV/c) ;TpcTof nSigma Pion", {HistType::kTH2F, {{100, 0, 50}, {50, 0., 10.}}});
+    registry.add("Data/hTpcTofnSigProng1Pion_GapC", "Gap C Prong 1;P (GeV/c) ;TpcTof nSigma Kaon", {HistType::kTH2F, {{100, 0, 50}, {50, 0., 10.}}});
+
     registry.add("Data/hGapVsRap", "UPC gap vs Eta;Gap type;Eta", {HistType::kTH2F, {{7, -1.5, 5.5}, {50, -1., 1.}}});
 
     hfEvSel.addHistograms(registry);
@@ -579,7 +624,8 @@ struct HfTaskD0 {
                                           BCsType const& bcs,
                                           aod::FT0s const& ft0s,
                                           aod::FV0As const& fv0as,
-                                          aod::FDDs const& fdds)
+                                          aod::FDDs const& fdds,
+                                          TracksWPid const&)
   {
     for (const auto& collision : collisions) {
       float centrality{-1.f};
@@ -599,7 +645,6 @@ struct HfTaskD0 {
       if (gapResult.bc) {
         bcForUPC = *(gapResult.bc);
       }
-
       // Get FIT information from the UPC BC
       upchelpers::FITInfo fitInfo{};
       udhelpers::getFITinfo(fitInfo, bcForUPC, bcs, ft0s, fv0as, fdds);
@@ -608,13 +653,18 @@ struct HfTaskD0 {
       const bool hasZdc = bcForUPC.has_zdc();
       float zdcEnergyZNA = -1.f;
       float zdcEnergyZNC = -1.f;
+      float zdcTimeZNA = -999.f;
+      float zdcTimeZNC = -999.f;
+
       if (hasZdc) {
         const auto& zdc = bcForUPC.zdc();
         zdcEnergyZNA = zdc.energyCommonZNA();
         zdcEnergyZNC = zdc.energyCommonZNC();
+        zdcTimeZNA = zdc.timeZNA();
+        zdcTimeZNC = zdc.timeZNC();
         registry.fill(HIST("Data/zdc/energyZNA_vs_energyZNC"), zdcEnergyZNA, zdcEnergyZNC);
+        registry.fill(HIST("Data/zdc/timeZNA_vs_timeZNC"), zdcTimeZNA, zdcTimeZNC);
       }
-
       registry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
       registry.fill(HIST("Data/hUpcGapAfterSelection"), gap);
 
@@ -637,8 +687,49 @@ struct HfTaskD0 {
         const float massD0 = HfHelper::invMassD0ToPiK(candidate);
         const float massD0bar = HfHelper::invMassD0barToKPi(candidate);
         const auto ptCandidate = candidate.pt();
-        registry.fill(HIST("Data/hGapVsEta"), gap, candidate.eta());
+
+        auto track0 = candidate.template prong0_as<TracksWPid>();
+        auto track1 = candidate.template prong1_as<TracksWPid>();
+
+        registry.fill(HIST("Data/hGapVsEtaTrack0"), gap, track0.eta());
+        registry.fill(HIST("Data/hGapVsEtaTrack1"), gap, track1.eta());
         registry.fill(HIST("Data/hGapVsRap"), gap, HfHelper::yD0(candidate));
+
+        if (gap == 0 && candidate.isSelD0() >= selectionFlagD0) { // A side // D0 --> K-Pi+
+          registry.fill(HIST("Data/hTPCnSigProng0Pion_GapA"), track0.p(), track0.tpcNSigmaPi());
+          registry.fill(HIST("Data/hTPCnSigProng1Kaon_GapA"), track1.p(), track1.tpcNSigmaKa());
+          registry.fill(HIST("Data/hTOFnSigProng0Pion_GapA"), track0.p(), track0.tofNSigmaPi());
+          registry.fill(HIST("Data/hTOFnSigProng1Kaon_GapA"), track1.p(), track1.tofNSigmaKa());
+          registry.fill(HIST("Data/hTpcTofnSigProng0Pion_GapA"), track0.p(), track0.tpcTofNSigmaPi());
+          registry.fill(HIST("Data/hTpcTofnSigProng1Kaon_GapA"), track1.p(), track1.tpcTofNSigmaKa());
+        }
+
+        if (gap == 0 && candidate.isSelD0bar() >= selectionFlagD0) { // A side // D0-bar --> K+Pi-
+          registry.fill(HIST("Data/hTPCnSigProng0Kaon_GapA"), track0.p(), track0.tpcNSigmaKa());
+          registry.fill(HIST("Data/hTPCnSigProng1Pion_GapA"), track1.p(), track1.tpcNSigmaPi());
+          registry.fill(HIST("Data/hTOFnSigProng0Kaon_GapA"), track0.p(), track0.tofNSigmaKa());
+          registry.fill(HIST("Data/hTOFnSigProng1Pion_GapA"), track1.p(), track1.tofNSigmaPi());
+          registry.fill(HIST("Data/hTpcTofnSigProng0Kaon_GapA"), track0.p(), track0.tpcTofNSigmaKa());
+          registry.fill(HIST("Data/hTpcTofnSigProng1Pion_GapA"), track1.p(), track1.tpcTofNSigmaPi());
+        }
+
+        if (gap == 1 && candidate.isSelD0() >= selectionFlagD0) { // C side // D0 --> K-Pi+
+          registry.fill(HIST("Data/hTPCnSigProng0Pion_GapC"), track0.p(), track0.tpcNSigmaPi());
+          registry.fill(HIST("Data/hTPCnSigProng1Kaon_GapC"), track1.p(), track1.tpcNSigmaKa());
+          registry.fill(HIST("Data/hTOFnSigProng0Pion_GapC"), track0.p(), track0.tofNSigmaPi());
+          registry.fill(HIST("Data/hTOFnSigProng1Kaon_GapC"), track1.p(), track1.tofNSigmaKa());
+          registry.fill(HIST("Data/hTpcTofnSigProng0Pion_GapC"), track0.p(), track0.tpcTofNSigmaPi());
+          registry.fill(HIST("Data/hTpcTofnSigProng1Kaon_GapC"), track1.p(), track1.tpcTofNSigmaKa());
+        }
+
+        if (gap == 1 && candidate.isSelD0bar() >= selectionFlagD0) { // C side // D0-bar --> K+Pi-
+          registry.fill(HIST("Data/hTPCnSigProng0Kaon_GapC"), track0.p(), track0.tpcNSigmaKa());
+          registry.fill(HIST("Data/hTPCnSigProng1Pion_GapC"), track1.p(), track1.tpcNSigmaPi());
+          registry.fill(HIST("Data/hTOFnSigProng0Kaon_GapC"), track0.p(), track0.tofNSigmaKa());
+          registry.fill(HIST("Data/hTOFnSigProng1Pion_GapC"), track1.p(), track1.tofNSigmaPi());
+          registry.fill(HIST("Data/hTpcTofnSigProng0Kaon_GapC"), track0.p(), track0.tpcTofNSigmaKa());
+          registry.fill(HIST("Data/hTpcTofnSigProng1Pion_GapC"), track1.p(), track1.tpcTofNSigmaPi());
+        }
 
         if (candidate.isSelD0() >= selectionFlagD0) {
           registry.fill(HIST("hMass"), massD0, ptCandidate);
@@ -654,11 +745,13 @@ struct HfTaskD0 {
         // Fill THnSparse with structure matching histogram axes: [mass, pt, (mlScores if FillMl), rapidity, d0Type, (cent if storeCentrality), (occ, ir if storeOccupancyAndIR), gapType, FT0A, FT0C, FV0A, FDDA, FDDC, ZNA, ZNC]
         auto fillTHnData = [&](float mass, int d0Type) {
           // Pre-calculate vector size to avoid reallocations
-          constexpr int NAxesBase = 13;                       // mass, pt, rapidity, d0Type, gapType, FT0A, FT0C, FV0A, FDDA, FDDC, ZNA, ZNC, nPVcontr
+          constexpr int NAxesBase = 11;                       // mass, pt, rapidity, d0Type, gapType, FT0A, FT0C, FV0A, FDDA, FDDC, ZNA, ZNC, nPVcontr
           constexpr int NAxesMl = FillMl ? 3 : 0;             // 3 ML scores if FillMl
           int const nAxesCent = storeCentrality ? 1 : 0;      // centrality if storeCentrality
           int const nAxesOccIR = storeOccupancyAndIR ? 2 : 0; // occupancy and IR if storeOccupancyAndIR
-          int const nAxesTotal = NAxesBase + NAxesMl + nAxesCent + nAxesOccIR;
+          int const nAxesZdcEnergy = storeZdcEnergy ? 2 : 0;  // ZDC energy if storeZdcEnergy
+          int const nAxesZdcTime = storeZdcTime ? 2 : 0;      // ZDC time if storeZdctime
+          int const nAxesTotal = NAxesBase + NAxesMl + nAxesCent + nAxesOccIR + nAxesZdcEnergy + nAxesZdcTime;
 
           std::vector<double> valuesToFill;
           valuesToFill.reserve(nAxesTotal);
@@ -689,10 +782,15 @@ struct HfTaskD0 {
           valuesToFill.push_back(static_cast<double>(fitInfo.ampFV0A));
           valuesToFill.push_back(static_cast<double>(fitInfo.ampFDDA));
           valuesToFill.push_back(static_cast<double>(fitInfo.ampFDDC));
-          valuesToFill.push_back(static_cast<double>(zdcEnergyZNA));
-          valuesToFill.push_back(static_cast<double>(zdcEnergyZNC));
           valuesToFill.push_back(static_cast<double>(numPvContributors));
-
+          if (storeZdcEnergy) {
+            valuesToFill.push_back(static_cast<double>(zdcEnergyZNA));
+            valuesToFill.push_back(static_cast<double>(zdcEnergyZNC));
+          }
+          if (storeZdcTime) {
+            valuesToFill.push_back(static_cast<double>(zdcTimeZNA));
+            valuesToFill.push_back(static_cast<double>(zdcTimeZNC));
+          }
           if constexpr (FillMl) {
             registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"))->Fill(valuesToFill.data());
           } else {
@@ -1181,9 +1279,11 @@ struct HfTaskD0 {
                                         aod::FT0s const& ft0s,
                                         aod::FV0As const& fv0as,
                                         aod::FDDs const& fdds,
-                                        aod::Zdcs const& /*zdcs*/)
+                                        TracksWPid const& tracks,
+                                        aod::Zdcs const& /*zdcs*/
+  )
   {
-    runAnalysisPerCollisionDataWithUpc<false>(collisions, selectedD0Candidates, bcs, ft0s, fv0as, fdds);
+    runAnalysisPerCollisionDataWithUpc<false>(collisions, selectedD0Candidates, bcs, ft0s, fv0as, fdds, tracks);
   }
   PROCESS_SWITCH(HfTaskD0, processDataWithDCAFitterNWithUpc, "Process real data with DCAFitterN w/o ML with UPC", false);
 
@@ -1194,9 +1294,10 @@ struct HfTaskD0 {
                                           aod::FT0s const& ft0s,
                                           aod::FV0As const& fv0as,
                                           aod::FDDs const& fdds,
+                                          TracksWPid const& tracks,
                                           aod::Zdcs const& /*zdcs*/)
   {
-    runAnalysisPerCollisionDataWithUpc<true>(collisions, selectedD0CandidatesMl, bcs, ft0s, fv0as, fdds);
+    runAnalysisPerCollisionDataWithUpc<true>(collisions, selectedD0CandidatesMl, bcs, ft0s, fv0as, fdds, tracks);
   }
   PROCESS_SWITCH(HfTaskD0, processDataWithDCAFitterNMlWithUpc, "Process real data with DCAFitterN and ML with UPC", false);
 };
