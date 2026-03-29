@@ -23,6 +23,7 @@
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/PID/PIDTOFParamService.h"
 
+#include <CommonConstants/LHCConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/Logger.h>
