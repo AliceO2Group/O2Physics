@@ -32,6 +32,7 @@
 #include <TPDGCode.h>
 
 #include <algorithm>
+#include <string>
 #include <vector>
 
 using namespace o2;
@@ -1053,15 +1054,11 @@ struct NchCumulantsId {
     bool trackIsPion = false;
     bool trackIsKaon = false;
     bool trackIsProton = false;
-    bool trackIsElectron = false;
-    bool trackIsDeuteron = false;
 
     int trackIdTag = 0;
     int idMethodPi = kUnidentified;
     int idMethodKa = kUnidentified;
     int idMethodPr = kUnidentified;
-    int idMethodEl = kUnidentified;
-    int idMethodDe = kUnidentified;
 
     int ptEtaBin = -1;
 
@@ -1186,15 +1183,11 @@ struct NchCumulantsId {
           trackIsPion = false;
           trackIsKaon = false;
           trackIsProton = false;
-          trackIsElectron = false;
-          trackIsDeuteron = false;
 
           trackIdTag = 0;
           idMethodPi = kUnidentified;
           idMethodKa = kUnidentified;
           idMethodPr = kUnidentified;
-          idMethodEl = kUnidentified;
-          idMethodDe = kUnidentified;
 
           if (selPion(track, idMethodPi)) {
             trackIsPion = true;
