@@ -876,28 +876,6 @@ struct NchCumulantsId {
     fillIdentificationQA<mode, kPr, NoId>(hist, track); // Look at Proton
   }
 
-  //  template <int Mode, int pidMode, typename H, typename T>
-  //  void fillGenTrackQA(H& histReg, const T& mcTrack)
-  //  {
-  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h12_p"), mcTrack.p());
-  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h13_pt"), mcTrack.pt());
-  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h14_eta"), mcTrack.eta());
-  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h15_phi"), mcTrack.phi());
-  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h16_rapidity"), mcTrack.y());
-  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h20_pt_eta"), mcTrack.pt(), mcTrack.eta());
-  //  }
-  //
-  //  template <int Mode, int pidMode, typename H, typename T>
-  //  void fillRecoTrackQA(H& histReg, const T& track)
-  //  {
-  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h12_p"), track.p());
-  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h13_pt"), track.pt());
-  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h14_eta"), track.eta());
-  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h15_phi"), track.phi());
-  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h16_rapidity"), track.y());
-  //    histReg.fill(HIST(HistRegDire2[Mode]) + HIST(PidDire[pidMode]) + HIST("h20_pt_eta"), track.pt(), track.eta());
-  //  }
-
   template <HistRegEnum2 DIR, PidEnum P, ChargeEnum C, typename TrackType>
   void fillGenTrackQA(HistogramRegistry& r, const TrackType& t)
   {
@@ -1230,14 +1208,6 @@ struct NchCumulantsId {
             trackIsProton = true;
             BITSET(trackIdTag, ID_BIT_PR);
           }
-          // if (selElectron(track, idMethodEl)) {
-          //   trackIsElectron = true;
-          //   BITSET(trackIdTag, ID_BIT_EL);
-          // }
-          // if (selDeuteron(track, idMethodDe)) {
-          //   trackIsDeuteron = true;
-          //   BITSET(trackIdTag, ID_BIT_DE);
-          // }
 
           if constexpr (analysisType == doPurityProcessing) {
             if (trackIsPion) {
@@ -1350,7 +1320,6 @@ struct NchCumulantsId {
         int pdg = mcTrack.pdgCode();
 
         if (pdg == kPiPlus || pdg == kKPlus || pdg == kProton || pdg == kPositron || pdg == kMuonPlus || pdg == kDeuteron) {
-          // fillGenTrackQA<genAnalysisDir, kPos>(genAnalysis, mcTrack);
           nP++;
 
           genAnalysis.fill(HIST("genAnalysis/Charge/Pos/h12_p"), mcTrack.p());
@@ -1360,7 +1329,6 @@ struct NchCumulantsId {
           genAnalysis.fill(HIST("genAnalysis/Charge/Pos/h16_rapidity"), mcTrack.y());
           genAnalysis.fill(HIST("genAnalysis/Charge/Pos/h20_pt_eta"), mcTrack.pt(), mcTrack.eta());
         } else if (pdg == kPiMinus || pdg == kKMinus || pdg == kProtonBar || pdg == kElectron || pdg == kMuonMinus || pdg == -kDeuteron) {
-          // fillGenTrackQA<genAnalysisDir, kNeg>(genAnalysis, mcTrack);
           nM++;
 
           genAnalysis.fill(HIST("genAnalysis/Charge/Neg/h12_p"), mcTrack.p());
@@ -1372,33 +1340,21 @@ struct NchCumulantsId {
         }
         // ----- Pions -----
         if (pdg == kPiPlus) {
-          // fillGenTrackQA<genAnalysisDir, kPi>(genAnalysis, mcTrack);
           nPi++;
           fillGenTrackQA<genAnalysisDir, kPi, kPos>(genAnalysis, mcTrack);
         } else if (pdg == kPiMinus) {
-          // fillGenTrackQA<genAnalysisDir, kPi>(genAnalysis, mcTrack);
           nAPi++;
           fillGenTrackQA<genAnalysisDir, kPi, kNeg>(genAnalysis, mcTrack);
-        }
-
-        // ----- Kaons -----
-        else if (pdg == kKPlus) {
-          // fillGenTrackQA<genAnalysisDir, kKa>(genAnalysis, mcTrack);
+        } else if (pdg == kKPlus) {
           nKa++;
           fillGenTrackQA<genAnalysisDir, kKa, kPos>(genAnalysis, mcTrack);
         } else if (pdg == kKMinus) {
-          // fillGenTrackQA<genAnalysisDir, kKa>(genAnalysis, mcTrack);
           nAKa++;
           fillGenTrackQA<genAnalysisDir, kKa, kNeg>(genAnalysis, mcTrack);
-        }
-
-        // ----- Protons -----
-        else if (pdg == kProton) {
-          // fillGenTrackQA<genAnalysisDir, kPr>(genAnalysis, mcTrack);
+        } else if (pdg == kProton) {
           nPr++;
           fillGenTrackQA<genAnalysisDir, kPr, kPos>(genAnalysis, mcTrack);
         } else if (pdg == kProtonBar) {
-          // fillGenTrackQA<genAnalysisDir, kPr>(genAnalysis, mcTrack);
           nAPr++;
           fillGenTrackQA<genAnalysisDir, kPr, kNeg>(genAnalysis, mcTrack);
         }
@@ -1463,7 +1419,6 @@ struct NchCumulantsId {
         int pdg = mcTrack.pdgCode();
 
         if (pdg == kPiPlus || pdg == kKPlus || pdg == kProton || pdg == kPositron || pdg == kMuonPlus || pdg == kDeuteron) {
-          // fillGenTrackQA<genAnalysisDir, kPos>(genAnalysis, mcTrack);
           nPGen++;
 
           genAnalysis.fill(HIST("genAnalysis/Charge/Pos/h12_p"), mcTrack.p());
@@ -1473,7 +1428,6 @@ struct NchCumulantsId {
           genAnalysis.fill(HIST("genAnalysis/Charge/Pos/h16_rapidity"), mcTrack.y());
           genAnalysis.fill(HIST("genAnalysis/Charge/Pos/h20_pt_eta"), mcTrack.pt(), mcTrack.eta());
         } else if (pdg == kPiMinus || pdg == kKMinus || pdg == kProtonBar || pdg == kElectron || pdg == kMuonMinus || pdg == -kDeuteron) {
-          // fillGenTrackQA<genAnalysisDir, kNeg>(genAnalysis, mcTrack);
           nMGen++;
 
           genAnalysis.fill(HIST("genAnalysis/Charge/Neg/h12_p"), mcTrack.p());
@@ -1483,35 +1437,23 @@ struct NchCumulantsId {
           genAnalysis.fill(HIST("genAnalysis/Charge/Neg/h16_rapidity"), mcTrack.y());
           genAnalysis.fill(HIST("genAnalysis/Charge/Neg/h20_pt_eta"), mcTrack.pt(), mcTrack.eta());
         }
-        // ----- Pions -----
+
         if (pdg == kPiPlus) {
-          // fillGenTrackQA<genAnalysisDir, kPi>(genAnalysis, mcTrack);
           nPiGen++;
           fillGenTrackQA<genAnalysisDir, kPi, kPos>(genAnalysis, mcTrack);
         } else if (pdg == kPiMinus) {
-          // fillGenTrackQA<genAnalysisDir, kPi>(genAnalysis, mcTrack);
           nAPiGen++;
           fillGenTrackQA<genAnalysisDir, kPi, kNeg>(genAnalysis, mcTrack);
-        }
-
-        // ----- Kaons -----
-        else if (pdg == kKPlus) {
-          // fillGenTrackQA<genAnalysisDir, kKa>(genAnalysis, mcTrack);
+        } else if (pdg == kKPlus) {
           nKaGen++;
           fillGenTrackQA<genAnalysisDir, kKa, kPos>(genAnalysis, mcTrack);
         } else if (pdg == kKMinus) {
-          // fillGenTrackQA<genAnalysisDir, kKa>(genAnalysis, mcTrack);
           nAKaGen++;
           fillGenTrackQA<genAnalysisDir, kKa, kNeg>(genAnalysis, mcTrack);
-        }
-
-        // ----- Protons -----
-        else if (pdg == kProton) {
-          // fillGenTrackQA<genAnalysisDir, kPr>(genAnalysis, mcTrack);
+        } else if (pdg == kProton) {
           nPrGen++;
           fillGenTrackQA<genAnalysisDir, kPr, kPos>(genAnalysis, mcTrack);
         } else if (pdg == kProtonBar) {
-          // fillGenTrackQA<genAnalysisDir, kPr>(genAnalysis, mcTrack);
           nAPrGen++;
           fillGenTrackQA<genAnalysisDir, kPr, kNeg>(genAnalysis, mcTrack);
         }
