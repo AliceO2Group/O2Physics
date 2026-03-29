@@ -1621,8 +1621,6 @@ struct PseudorapidityDensityMFT {
                 if constexpr (std::is_same_v<RetracksT, soa::SmallGroups<aod::BestCollisionsFwd3d>>) {
                   registry.fill(HIST("Tracks/Control/amb/DCAz_amb"), retrack.bestDCAZ());
                 }
-                if (track.collisionId() == retrack.bestCollisionId()) {
-                }
                 uniqueEventsAmb.insert(retrack.bestCollisionId());
               }
               if (midtracks.size() > 0 && retrack.ambDegree() > 1 && retrack.ambDegree() != 0) {
@@ -1643,14 +1641,11 @@ struct PseudorapidityDensityMFT {
                 if constexpr (std::is_same_v<RetracksT, soa::SmallGroups<aod::BestCollisionsFwd3d>>) {
                   registry.fill(HIST("Tracks/Control/nonamb/DCAz_nonamb"), retrack.bestDCAZ());
                 }
-                if (track.collisionId() == retrack.bestCollisionId()) {
-                }
                 uniqueEvents.insert(retrack.bestCollisionId());
               }
               if (midtracks.size() > 0 && retrack.ambDegree() == 1 && retrack.ambDegree() != 0) {
                 uniqueCollisions.insert(collision.globalIndex());
               }
-              if ((retrack.ambDegree() > 1) || (retrack.ambDegree() <= 1))
 
                 if (retrack.ambDegree() != 0) {
                   registry.fill(HIST("Tracks/Control/woOrp/woOrpTracksEtaZvtx"),
