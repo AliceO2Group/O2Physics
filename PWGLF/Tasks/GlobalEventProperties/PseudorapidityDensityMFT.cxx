@@ -1647,18 +1647,18 @@ struct PseudorapidityDensityMFT {
                 uniqueCollisions.insert(collision.globalIndex());
               }
 
-                if (retrack.ambDegree() != 0) {
-                  registry.fill(HIST("Tracks/Control/woOrp/woOrpTracksEtaZvtx"),
-                                track.eta(), z);
-                  registry.fill(HIST("Tracks/Control/woOrp/woOrpTracksPhiEta"), phi,
-                                track.eta());
-                  registry.fill(HIST("Tracks/Control/woOrp/woOrpVertexCorr"),
-                                track.template collision_as<CollwEv>().posZ(), z);
-                  registry.fill(HIST("Tracks/Control/woOrp/DCAxy_woOrp"), retrack.bestDCAXY());
-                  if constexpr (std::is_same_v<RetracksT, soa::SmallGroups<aod::BestCollisionsFwd3d>>) {
-                    registry.fill(HIST("Tracks/Control/woOrp/DCAz_woOrp"), retrack.bestDCAZ());
-                  }
+              if (retrack.ambDegree() != 0) {
+                registry.fill(HIST("Tracks/Control/woOrp/woOrpTracksEtaZvtx"),
+                              track.eta(), z);
+                registry.fill(HIST("Tracks/Control/woOrp/woOrpTracksPhiEta"), phi,
+                              track.eta());
+                registry.fill(HIST("Tracks/Control/woOrp/woOrpVertexCorr"),
+                              track.template collision_as<CollwEv>().posZ(), z);
+                registry.fill(HIST("Tracks/Control/woOrp/DCAxy_woOrp"), retrack.bestDCAXY());
+                if constexpr (std::is_same_v<RetracksT, soa::SmallGroups<aod::BestCollisionsFwd3d>>) {
+                  registry.fill(HIST("Tracks/Control/woOrp/DCAz_woOrp"), retrack.bestDCAZ());
                 }
+              }
             }
           }
           registry.fill(HIST("ambEventCounts"), 1, uniqueEventsAmb.size());
