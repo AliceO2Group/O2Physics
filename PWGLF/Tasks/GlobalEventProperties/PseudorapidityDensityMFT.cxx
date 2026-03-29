@@ -1439,7 +1439,7 @@ struct PseudorapidityDensityMFT {
         if (usePhiCut) {
           if ((phi <= PhiVetoLow) ||
               ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
-              (phi >= PhiVetoHigh)){
+              (phi >= PhiVetoHigh)) {
             continue;
           }
         }
@@ -1494,7 +1494,7 @@ struct PseudorapidityDensityMFT {
           if (usePhiCut) {
             if ((phi <= PhiVetoLow) ||
                 ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
-                (phi >= PhiVetoHigh)){
+                (phi >= PhiVetoHigh)) {
               continue;
             }
           }
@@ -1535,7 +1535,7 @@ struct PseudorapidityDensityMFT {
               if (usePhiCut) {
                 if ((phi <= PhiVetoLow) ||
                     ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
-                    (phi >= PhiVetoHigh)){
+                    (phi >= PhiVetoHigh)) {
                   continue;
                 }
               }
@@ -2027,7 +2027,6 @@ struct PseudorapidityDensityMFT {
 
   void processGenRecoTimeCom(McCollisionsWithExtra::iterator const& mcCollision,
                              o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions,
-                             FullBCs const& bcs,
                              MFTTracksLabeledOrg const& tracks,
                              FiCentralTracks const& midtracks,
                              aod::McParticles const&)
