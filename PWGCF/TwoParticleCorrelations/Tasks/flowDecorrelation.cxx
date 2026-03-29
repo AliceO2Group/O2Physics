@@ -100,15 +100,17 @@ struct FlowDecorrelation {
   O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, bool, false, "Use local efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgUseEventWeights, bool, false, "Use event weights for mixed event")
   O2_DEFINE_CONFIGURABLE(cfgDrawEtaPhiDis, bool, false, "draw eta-phi distribution for detectors in used")
-  struct : ConfigurableGroup{
-             O2_DEFINE_CONFIGURABLE(nClustersMftTrack, int, 5, "Minimum number of clusters for MFT track")
-               O2_DEFINE_CONFIGURABLE(cfgCutChi2Mft, float, -1.0f, "max chi2 of MFT track")
-                 O2_DEFINE_CONFIGURABLE(cfgCutTrackTimeMft, float, -1.0f, "max deviation of MFT track wrt. bc in ns")} cfgMftCuts;
-  struct : ConfigurableGroup{
-             O2_DEFINE_CONFIGURABLE(cfgRejectFT0AInside, bool, false, "Rejection of inner ring channels of the FT0A detector")
-               O2_DEFINE_CONFIGURABLE(cfgRejectFT0AOutside, bool, false, "Rejection of outer ring channels of the FT0A detector")
-                 O2_DEFINE_CONFIGURABLE(cfgRejectFT0CInside, bool, false, "Rejection of inner ring channels of the FT0C detector")
-                   O2_DEFINE_CONFIGURABLE(cfgRejectFT0COutside, bool, false, "Rejection of outer ring channels of the FT0C detector")} cfgFt0RingRejections;
+  struct : ConfigurableGroup {
+    O2_DEFINE_CONFIGURABLE(nClustersMftTrack, int, 5, "Minimum number of clusters for MFT track")
+    O2_DEFINE_CONFIGURABLE(cfgCutChi2Mft, float, -1.0f, "max chi2 of MFT track")
+    O2_DEFINE_CONFIGURABLE(cfgCutTrackTimeMft, float, -1.0f, "max deviation of MFT track wrt. bc in ns");
+  } cfgMftCuts;
+  struct : ConfigurableGroup {
+    O2_DEFINE_CONFIGURABLE(cfgRejectFT0AInside, bool, false, "Rejection of inner ring channels of the FT0A detector")
+    O2_DEFINE_CONFIGURABLE(cfgRejectFT0AOutside, bool, false, "Rejection of outer ring channels of the FT0A detector")
+    O2_DEFINE_CONFIGURABLE(cfgRejectFT0CInside, bool, false, "Rejection of inner ring channels of the FT0C detector")
+    O2_DEFINE_CONFIGURABLE(cfgRejectFT0COutside, bool, false, "Rejection of outer ring channels of the FT0C detector");
+  } cfgFt0RingRejections;
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgEtaTpcCut, float, 0.8f, "Eta cut of TPC MC particles")
     O2_DEFINE_CONFIGURABLE(cfgMinEtaFt0cCut, float, -3.4f, "Min eta cut of FT0C MC particles")
