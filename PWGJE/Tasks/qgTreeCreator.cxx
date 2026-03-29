@@ -9,15 +9,16 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/Configurable.h"
-
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetMatching.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "Common/DataModel/MCTruthContainer.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/Configurable.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
 
 #include <cmath>
 
@@ -96,7 +97,6 @@ int getInitiatingParton(auto const& particle,
 // main task
 //------------------------------------------------
 struct QGTreeCreator {
-
   Configurable<float> jetPtMin{"jetPtMin", 10.f};
   Configurable<float> maxMatchDeltaR{"maxMatchDeltaR", 0.3f};
 
@@ -108,9 +108,9 @@ struct QGTreeCreator {
                aod::McParticles const& mcParticles)
   {
     for (auto const& jet : recoJets) {
-
-      if (jet.pt() < jetPtMin)
+      if (jet.pt() < jetPtMin) {
         continue;
+      }
 
       //----------------------------------
       // compute jet observables
@@ -132,6 +132,7 @@ struct QGTreeCreator {
 
       float girth = sumPt > 0 ? sumPtDr / sumPt : -1;
       float ptd = sumPt > 0 ? std::sqrt(sumPt2) / sumPt : -1;
+
       //----------------------------------
       // matching block
       //----------------------------------
@@ -140,19 +141,19 @@ struct QGTreeCreator {
       int qg = -1;
 
       for (auto const& match : matches) {
-
-      
-      if (match.chargedMCDetectorLevelJetId() != jet.globalIndex())
+        if (match.chargedMCDetectorLevelJetId() != jet.globalIndex()) {
           continue;
+        }
 
-      auto truthJet = truthJets.iteratorAt(
+        auto truthJet = truthJets.iteratorAt(
           match.chargedMCParticleLevelJetId());
 
         matchDr = deltaR(jet.eta(), jet.phi(),
                          truthJet.eta(), truthJet.phi());
 
-        if (matchDr > maxMatchDeltaR)
+        if (matchDr > maxMatchDeltaR) {
           continue;
+        }
 
         ptResp = jet.pt() / truthJet.pt();
 
@@ -163,10 +164,10 @@ struct QGTreeCreator {
         int pdg = 0;
 
         for (auto const& tc :
-            truthJet.tracks_as<aod::ChargedMCParticleLevelJetConstituent>()) {
-  
-          if (!tc.has_mcParticle())
+             truthJet.tracks_as<aod::ChargedMCParticleLevelJetConstituent>()) {
+          if (!tc.has_mcParticle()) {
             continue;
+          }
 
           auto mc = tc.mcParticle();
 
@@ -175,20 +176,19 @@ struct QGTreeCreator {
             pdg = getInitiatingParton(mc, mcParticles);
           }
         }
+
         //----------------------------------
         // assign q/g label
         //----------------------------------
-        if (std::abs(pdg) == 21)
+        if (std::abs(pdg) == 21) {
           qg = 1; // gluon
-        else if (std::abs(pdg) >= 1 && std::abs(pdg) <= 6)
+        } else if (std::abs(pdg) >= 1 && std::abs(pdg) <= 6) {
           qg = 0; // quark
+        }
 
         break;
       }
 
-      //----------------------------------
-      // store
-      //----------------------------------
       qgjets(jet.pt(),
              jet.eta(),
              jet.phi(),
