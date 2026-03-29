@@ -275,36 +275,36 @@ struct qVectorsCorrection {
 
     if (nmode == 2) {
       for (int ishift = 1; ishift <= 10; ishift++) {
-        histosQA.fill(HIST("histShiftV2"), vec.cent(), 2.0 * DetId + 0.5, ishift - 0.5, TMath::Sin(ishift * static_cast<float>(nmode) * TMath::ATan2(vec.qvecIm()[DetInd], vec.qvecRe()[DetInd]) / static_cast<float>(nmode)));
-        histosQA.fill(HIST("histShiftV2"), vec.cent(), 2.0 * DetId + 1.5, ishift - 0.5, TMath::Cos(ishift * static_cast<float>(nmode) * TMath::ATan2(vec.qvecIm()[DetInd], vec.qvecRe()[DetInd]) / static_cast<float>(nmode)));
+        histosQA.fill(HIST("histShiftV2"), vec.cent(), 2.0 * DetId + 0.5, ishift - 0.5, TMath::Sin(ishift * TMath::ATan2(vec.qvecIm()[DetInd], vec.qvecRe()[DetInd])));
+        histosQA.fill(HIST("histShiftV2"), vec.cent(), 2.0 * DetId + 1.5, ishift - 0.5, TMath::Cos(ishift * TMath::ATan2(vec.qvecIm()[DetInd], vec.qvecRe()[DetInd])));
 
-        histosQA.fill(HIST("histShiftV2"), vec.cent(), 2.0 * RefAId + 0.5, ishift - 0.5, TMath::Sin(ishift * static_cast<float>(nmode) * TMath::ATan2(vec.qvecIm()[RefAInd], vec.qvecRe()[RefAInd]) / static_cast<float>(nmode)));
-        histosQA.fill(HIST("histShiftV2"), vec.cent(), 2.0 * RefAId + 1.5, ishift - 0.5, TMath::Cos(ishift * static_cast<float>(nmode) * TMath::ATan2(vec.qvecIm()[RefAInd], vec.qvecRe()[RefAInd]) / static_cast<float>(nmode)));
+        histosQA.fill(HIST("histShiftV2"), vec.cent(), 2.0 * RefAId + 0.5, ishift - 0.5, TMath::Sin(ishift * TMath::ATan2(vec.qvecIm()[RefAInd], vec.qvecRe()[RefAInd])));
+        histosQA.fill(HIST("histShiftV2"), vec.cent(), 2.0 * RefAId + 1.5, ishift - 0.5, TMath::Cos(ishift * TMath::ATan2(vec.qvecIm()[RefAInd], vec.qvecRe()[RefAInd])));
 
-        histosQA.fill(HIST("histShiftV2"), vec.cent(), 2.0 * RefBId + 0.5, ishift - 0.5, TMath::Sin(ishift * static_cast<float>(nmode) * TMath::ATan2(vec.qvecIm()[RefBInd], vec.qvecRe()[RefBInd]) / static_cast<float>(nmode)));
-        histosQA.fill(HIST("histShiftV2"), vec.cent(), 2.0 * RefBId + 1.5, ishift - 0.5, TMath::Cos(ishift * static_cast<float>(nmode) * TMath::ATan2(vec.qvecIm()[RefBInd], vec.qvecRe()[RefBInd]) / static_cast<float>(nmode)));
+        histosQA.fill(HIST("histShiftV2"), vec.cent(), 2.0 * RefBId + 0.5, ishift - 0.5, TMath::Sin(ishift * TMath::ATan2(vec.qvecIm()[RefBInd], vec.qvecRe()[RefBInd])));
+        histosQA.fill(HIST("histShiftV2"), vec.cent(), 2.0 * RefBId + 1.5, ishift - 0.5, TMath::Cos(ishift * TMath::ATan2(vec.qvecIm()[RefBInd], vec.qvecRe()[RefBInd])));
       }
     } else if (nmode == 3) {
       for (int ishift = 1; ishift <= 10; ishift++) {
-        histosQA.fill(HIST("histShiftV3"), vec.cent(), 2.0 * DetId + 0.5, ishift - 0.5, TMath::Sin(ishift * static_cast<float>(nmode) * TMath::ATan2(vec.qvecIm()[DetInd], vec.qvecRe()[DetInd]) / static_cast<float>(nmode)));
-        histosQA.fill(HIST("histShiftV3"), vec.cent(), 2.0 * DetId + 1.5, ishift - 0.5, TMath::Cos(ishift * static_cast<float>(nmode) * TMath::ATan2(vec.qvecIm()[DetInd], vec.qvecRe()[DetInd]) / static_cast<float>(nmode)));
+        histosQA.fill(HIST("histShiftV3"), vec.cent(), 2.0 * DetId + 0.5, ishift - 0.5, TMath::Sin(ishift * TMath::ATan2(vec.qvecIm()[DetInd], vec.qvecRe()[DetInd])));
+        histosQA.fill(HIST("histShiftV3"), vec.cent(), 2.0 * DetId + 1.5, ishift - 0.5, TMath::Cos(ishift * TMath::ATan2(vec.qvecIm()[DetInd], vec.qvecRe()[DetInd])));
 
-        histosQA.fill(HIST("histShiftV3"), vec.cent(), 2.0 * RefAId + 0.5, ishift - 0.5, TMath::Sin(ishift * static_cast<float>(nmode) * TMath::ATan2(vec.qvecIm()[RefAInd], vec.qvecRe()[RefAInd]) / static_cast<float>(nmode)));
-        histosQA.fill(HIST("histShiftV3"), vec.cent(), 2.0 * RefAId + 1.5, ishift - 0.5, TMath::Cos(ishift * static_cast<float>(nmode) * TMath::ATan2(vec.qvecIm()[RefAInd], vec.qvecRe()[RefAInd]) / static_cast<float>(nmode)));
+        histosQA.fill(HIST("histShiftV3"), vec.cent(), 2.0 * RefAId + 0.5, ishift - 0.5, TMath::Sin(ishift * TMath::ATan2(vec.qvecIm()[RefAInd], vec.qvecRe()[RefAInd])));
+        histosQA.fill(HIST("histShiftV3"), vec.cent(), 2.0 * RefAId + 1.5, ishift - 0.5, TMath::Cos(ishift * TMath::ATan2(vec.qvecIm()[RefAInd], vec.qvecRe()[RefAInd])));
 
-        histosQA.fill(HIST("histShiftV3"), vec.cent(), 2.0 * RefBId + 0.5, ishift - 0.5, TMath::Sin(ishift * static_cast<float>(nmode) * TMath::ATan2(vec.qvecIm()[RefBInd], vec.qvecRe()[RefBInd]) / static_cast<float>(nmode)));
-        histosQA.fill(HIST("histShiftV3"), vec.cent(), 2.0 * RefBId + 1.5, ishift - 0.5, TMath::Cos(ishift * static_cast<float>(nmode) * TMath::ATan2(vec.qvecIm()[RefBInd], vec.qvecRe()[RefBInd]) / static_cast<float>(nmode)));
+        histosQA.fill(HIST("histShiftV3"), vec.cent(), 2.0 * RefBId + 0.5, ishift - 0.5, TMath::Sin(ishift * TMath::ATan2(vec.qvecIm()[RefBInd], vec.qvecRe()[RefBInd])));
+        histosQA.fill(HIST("histShiftV3"), vec.cent(), 2.0 * RefBId + 1.5, ishift - 0.5, TMath::Cos(ishift * TMath::ATan2(vec.qvecIm()[RefBInd], vec.qvecRe()[RefBInd])));
       }
     } else if (nmode == 4) {
       for (int ishift = 1; ishift <= 10; ishift++) {
-        histosQA.fill(HIST("histShiftV4"), vec.cent(), 2.0 * DetId + 0.5, ishift - 0.5, TMath::Sin(ishift * static_cast<float>(nmode) * TMath::ATan2(vec.qvecIm()[DetInd], vec.qvecRe()[DetInd]) / static_cast<float>(nmode)));
-        histosQA.fill(HIST("histShiftV4"), vec.cent(), 2.0 * DetId + 1.5, ishift - 0.5, TMath::Cos(ishift * static_cast<float>(nmode) * TMath::ATan2(vec.qvecIm()[DetInd], vec.qvecRe()[DetInd]) / static_cast<float>(nmode)));
+        histosQA.fill(HIST("histShiftV4"), vec.cent(), 2.0 * DetId + 0.5, ishift - 0.5, TMath::Sin(ishift * TMath::ATan2(vec.qvecIm()[DetInd], vec.qvecRe()[DetInd])));
+        histosQA.fill(HIST("histShiftV4"), vec.cent(), 2.0 * DetId + 1.5, ishift - 0.5, TMath::Cos(ishift * TMath::ATan2(vec.qvecIm()[DetInd], vec.qvecRe()[DetInd])));
 
-        histosQA.fill(HIST("histShiftV4"), vec.cent(), 2.0 * RefAId + 0.5, ishift - 0.5, TMath::Sin(ishift * static_cast<float>(nmode) * TMath::ATan2(vec.qvecIm()[RefAInd], vec.qvecRe()[RefAInd]) / static_cast<float>(nmode)));
-        histosQA.fill(HIST("histShiftV4"), vec.cent(), 2.0 * RefAId + 1.5, ishift - 0.5, TMath::Cos(ishift * static_cast<float>(nmode) * TMath::ATan2(vec.qvecIm()[RefAInd], vec.qvecRe()[RefAInd]) / static_cast<float>(nmode)));
+        histosQA.fill(HIST("histShiftV4"), vec.cent(), 2.0 * RefAId + 0.5, ishift - 0.5, TMath::Sin(ishift * TMath::ATan2(vec.qvecIm()[RefAInd], vec.qvecRe()[RefAInd])));
+        histosQA.fill(HIST("histShiftV4"), vec.cent(), 2.0 * RefAId + 1.5, ishift - 0.5, TMath::Cos(ishift * TMath::ATan2(vec.qvecIm()[RefAInd], vec.qvecRe()[RefAInd])));
 
-        histosQA.fill(HIST("histShiftV4"), vec.cent(), 2.0 * RefBId + 0.5, ishift - 0.5, TMath::Sin(ishift * static_cast<float>(nmode) * TMath::ATan2(vec.qvecIm()[RefBInd], vec.qvecRe()[RefBInd]) / static_cast<float>(nmode)));
-        histosQA.fill(HIST("histShiftV4"), vec.cent(), 2.0 * RefBId + 1.5, ishift - 0.5, TMath::Cos(ishift * static_cast<float>(nmode) * TMath::ATan2(vec.qvecIm()[RefBInd], vec.qvecRe()[RefBInd]) / static_cast<float>(nmode)));
+        histosQA.fill(HIST("histShiftV4"), vec.cent(), 2.0 * RefBId + 0.5, ishift - 0.5, TMath::Sin(ishift * TMath::ATan2(vec.qvecIm()[RefBInd], vec.qvecRe()[RefBInd])));
+        histosQA.fill(HIST("histShiftV4"), vec.cent(), 2.0 * RefBId + 1.5, ishift - 0.5, TMath::Cos(ishift * TMath::ATan2(vec.qvecIm()[RefBInd], vec.qvecRe()[RefBInd])));
       }
     }
   }
