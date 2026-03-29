@@ -1633,8 +1633,9 @@ struct FlowDecorrelation {
       if (!cfgMcTrue.cfgUseFt0cStructure) {
         if (std::abs(track1.eta()) < 0.9)
           continue;
-      } else if (!ft0cCollisionCourse(track1.eta(), track1.phi(), posZ))
+      } else if (!ft0cCollisionCourse(track1.eta(), track1.phi(), posZ)) {
         continue;
+      }
 
       if (step >= CorrelationContainer::kCFStepTrackedOnlyPrim && !track1.isPhysicalPrimary())
         continue;
