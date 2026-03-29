@@ -717,7 +717,7 @@ void processMcGen(CollisionsMc const& mcCollisions,
 
     } 
     else {
-    // MC particles without reconstructed-collision selection (preliminay approval approach)
+    // MC particles without reconstructed-collision selection (preliminary approval approach)
       runMcGenDplusHadronAnalysis(groupedMcParticles, groupedMcParticles, poolBin, counterDplusHadron);
     }
 
