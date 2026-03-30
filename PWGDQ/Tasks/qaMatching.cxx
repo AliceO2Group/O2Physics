@@ -18,8 +18,6 @@
 
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/EventSelection.h"
-<<<<<<< PWGDQ-QAMatchingDerivedTable
-
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "Framework/ASoAHelpers.h"
@@ -33,7 +31,6 @@
 
 #include <algorithm>
 #include <cinttypes>
-=======
 #include "Tools/ML/MlResponse.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -85,7 +82,6 @@
 #include <cstdint>
 #include <format>
 #include <functional>
->>>>>>> master
 #include <iostream>
 #include <map>
 #include <memory>
