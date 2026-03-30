@@ -21,6 +21,7 @@
 
 #include "ALICE3/DataModel/OTFCollision.h"
 #include "ALICE3/DataModel/OTFStrangeness.h"
+#include "ALICE3/DataModel/OTFMCParticle.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -49,7 +50,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::constants::math;
 
-using Alice3Tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels, aod::TracksDCA, aod::TracksExtraA3>;
+using Alice3Tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackWithDauLabels, aod::TracksDCA, aod::TracksExtraA3>;
 using FullV0Candidates = soa::Join<aod::V0CandidateIndices, aod::V0CandidateCores>;
 using FullCascadeCandidates = soa::Join<aod::StoredCascCores, aod::CascIndices>;
 using FullCollisions = soa::Join<aod::OTFLUTConfigId, aod::Collisions>;

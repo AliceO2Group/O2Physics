@@ -72,7 +72,7 @@ static const std::vector<int> pdgCodes{kK0Short,
                                        kOmegaPlusBar};
 
 struct OnTheFlyDecayer {
-  Produces<aod::McPartsWithDau> tableMcParticlesWithDau;
+  Produces<aod::McPartWithDaus> tableMcParticlesWithDau;
 
   o2::upgrade::Decayer decayer;
   Service<o2::framework::O2DatabasePDG> pdgDB;

@@ -124,6 +124,7 @@ struct OnTheFlyTracker {
   Produces<aod::StoredTracksCov> tableStoredTracksCov;
   Produces<aod::TracksCovExtension> tableTracksCovExtension;
   Produces<aod::McTrackLabels> tableMcTrackLabels;
+  Produces<aod::McTrackWithDauLabels> tableMcTrackWithDauLabels;
   Produces<aod::TracksDCA> tableTracksDCA;
   Produces<aod::TracksDCACov> tableTracksDCACov;
   Produces<aod::CollisionsAlice3> tableCollisionsAlice3;
@@ -1871,7 +1872,7 @@ struct OnTheFlyTracker {
     }
   }
 
-  void processConfigurationDev(aod::McCollision const& mcCollision, aod::McPartsWithDau const& mcParticles, const int icfg)
+  void processConfigurationDev(aod::McCollision const& mcCollision, aod::McPartWithDaus const& mcParticles, const int icfg)
   {
     // const int lastTrackIndex = tableStoredTracksCov.lastIndex() + 1; // bookkeep the last added track
     const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
@@ -2065,7 +2066,7 @@ struct OnTheFlyTracker {
                               trackParCov.getSigmaSnpZ(), trackParCov.getSigmaSnp2(), trackParCov.getSigmaTglY(), trackParCov.getSigmaTglZ(), trackParCov.getSigmaTglSnp(),
                               trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
                               trackParCov.getSigma1Pt2());
-      tableMcTrackLabels(trackParCov.mcLabel, 0);
+      tableMcTrackWithDauLabels(trackParCov.mcLabel, 0);
       tableTracksExtraA3(trackParCov.nSiliconHits, trackParCov.nTPCHits);
 
       // populate extra tables if required to do so
@@ -2111,7 +2112,7 @@ struct OnTheFlyTracker {
                               trackParCov.getSigmaSnpZ(), trackParCov.getSigmaSnp2(), trackParCov.getSigmaTglY(), trackParCov.getSigmaTglZ(), trackParCov.getSigmaTglSnp(),
                               trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
                               trackParCov.getSigma1Pt2());
-      tableMcTrackLabels(trackParCov.mcLabel, 0);
+      tableMcTrackWithDauLabels(trackParCov.mcLabel, 0);
       tableTracksExtraA3(trackParCov.nSiliconHits, trackParCov.nTPCHits);
 
       // populate extra tables if required to do so
@@ -2129,7 +2130,7 @@ struct OnTheFlyTracker {
     }
   }
 
-  void processDecayer(aod::McCollision const& mcCollision, aod::McPartsWithDau const& mcParticles)
+  void processDecayer(aod::McCollision const& mcCollision, aod::McPartWithDaus const& mcParticles)
   {
     for (size_t icfg = 0; icfg < mSmearer.size(); ++icfg) {
       processConfigurationDev(mcCollision, mcParticles, static_cast<int>(icfg));
