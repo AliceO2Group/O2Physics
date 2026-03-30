@@ -85,6 +85,8 @@ struct Chargedkstaranalysis {
     FT0C = 1,
     FT0M = 2
   };
+  std::unordered_set<int64_t> allowedMcIds;
+  std::unordered_map<int64_t, float> centTruthByAllowed;
 
   SliceCache cache;
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
@@ -570,10 +572,6 @@ struct Chargedkstaranalysis {
     LOG(info) << "Size of the histograms in chK(892) Analysis Task";
     histos.print();
   }
-  // For reco MC
-  std::unordered_set<int64_t> allowedMcIds;
-  std::unordered_map<int64_t, float> centTruthByAllowed;
-
   float lMultiplicity;
   template <typename CollisionType>
   float getCentrality(CollisionType const& collision)
@@ -1234,6 +1232,7 @@ struct Chargedkstaranalysis {
 
   void processMC(soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& mcCollisions, aod::McParticles& mcParticles, soa::Join<EventCandidates, aod::McCollisionLabels> const& events, MCV0Candidates const& v0s, MCTrackCandidates const& tracks)
   {
+
     // Event Selections
     allowedMcIds.clear();
     centTruthByAllowed.clear();
