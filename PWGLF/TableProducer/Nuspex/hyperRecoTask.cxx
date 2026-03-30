@@ -339,10 +339,10 @@ struct hyperRecoTask {
       hEvtMC->GetXaxis()->SetBinLabel(1, "All gen evts");
       hEvtMC->GetXaxis()->SetBinLabel(2, "Gen evts with al least one reconstructed");
       hEvtMC->GetXaxis()->SetBinLabel(3, "Gen evts with no reconstructed collisions");
-      hGenEventsNchEta05 = qaRegistry.add<TH2>("QAEvent/hGenEventsNchEta05", ";;",  HistType::kTH2D, {{multAxis}, {2, -0.5f, +1.5f}});
+      hGenEventsNchEta05 = qaRegistry.add<TH2>("QAEvent/hGenEventsNchEta05", ";;", HistType::kTH2D, {{multAxis}, {2, -0.5f, +1.5f}});
       hGenEventsNchEta05->GetYaxis()->SetBinLabel(1, "All gen. events");
       hGenEventsNchEta05->GetYaxis()->SetBinLabel(2, "Gen evts with at least 1 rec. collisions");
-      hGenEventsNchEta08 = qaRegistry.add<TH2>("QAEvent/hGenEventsNchEta08", ";;",  HistType::kTH2D, {{multAxis}, {2, -0.5f, +1.5f}});
+      hGenEventsNchEta08 = qaRegistry.add<TH2>("QAEvent/hGenEventsNchEta08", ";;", HistType::kTH2D, {{multAxis}, {2, -0.5f, +1.5f}});
       hGenEventsNchEta08->GetYaxis()->SetBinLabel(1, "All gen. events");
       hGenEventsNchEta08->GetYaxis()->SetBinLabel(2, "Gen evts with at least 1 rec. collisions");
       // Infomation for all generated collisions collisions
@@ -1145,7 +1145,6 @@ struct hyperRecoTask {
     }
   }
   PROCESS_SWITCH(hyperRecoTask, processEventLossMC, "Event loss analysis", false);
-
 };
 
 WorkflowSpec
