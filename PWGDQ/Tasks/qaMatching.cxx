@@ -2120,7 +2120,7 @@ struct qaMatching {
       // find the index of the matching candidate that corresponds to the true match
       // index=1 corresponds to the leading candidate
       // index=0 means no candidate was found that corresponds to the true match
-      int trueMatchIndex= GetTrueMatchIndexTrackType(muonTracks, muonTracks, mftTracks, globalTracksVector, matchablePairs);
+      int trueMatchIndex = GetTrueMatchIndexTrackType(muonTracks, muonTracks, mftTracks, globalTracksVector, matchablePairs);
       int trueMatchIndexProd = GetTrueMatchIndexTrackType(muonTracks, muonTracks, mftTracks, matchingCandidatesProd.at(mchIndex), matchablePairs);
 
       float mcParticleDz = -1000;
@@ -2887,7 +2887,6 @@ struct qaMatching {
           static_cast<int32_t>(candidate.matchRanking));
       }
     }
-
   }
 
   template <class TCOLLISION>
