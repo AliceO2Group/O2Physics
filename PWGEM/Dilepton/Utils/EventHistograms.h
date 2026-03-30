@@ -144,6 +144,25 @@ void addEventHistograms(HistogramRegistry* fRegistry)
   fRegistry->addClone("Event/before/", "Event/after/");
 }
 
+void addEventHistogramsBootstrap(HistogramRegistry* fRegistry, int nsamples = 1)
+{
+  fRegistry->add("Event/bootstrap/hPoissonWeights", "Poisson Weights per sample;sample;weight", kTH2D, {{nsamples, 0.5, nsamples + 0.5}, {210, -1, 20}}, false);
+  fRegistry->add("Event/bootstrap/hPrfQ2FT0MQ2BPos_CentFT0C_bootstrap", "Q_{2}^{FT0M} #upoint Q_{2}^{BPos};centrality FT0C (%);bootstrap sample;Q_{2}^{FT0M} #upoint Q_{2}^{BPos}", kTProfile2D, {{100, 0, 100}, {nsamples, 0.5, nsamples + 0.5}}, false);
+  fRegistry->add("Event/bootstrap/hPrfQ2FT0MQ2BNeg_CentFT0C_bootstrap", "Q_{2}^{FT0M} #upoint Q_{2}^{BNeg};centrality FT0C (%);bootstrap sample;Q_{2}^{FT0M} #upoint Q_{2}^{BNeg}", kTProfile2D, {{100, 0, 100}, {nsamples, 0.5, nsamples + 0.5}}, false);
+  fRegistry->add("Event/bootstrap/hPrfQ2BPosQ2BNeg_CentFT0C_bootstrap", "Q_{2}^{BPos} #upoint Q_{2}^{BNeg};centrality FT0C (%);bootstrap sample;Q_{2}^{BPos} #upoint Q_{2}^{BNeg}", kTProfile2D, {{100, 0, 100}, {nsamples, 0.5, nsamples + 0.5}}, false);
+  fRegistry->add("Event/bootstrap/hPrfQ2FT0CQ2BPos_CentFT0C_bootstrap", "Q_{2}^{FT0C} #upoint Q_{2}^{BPos};centrality FT0C (%);bootstrap sample;Q_{2}^{FT0C} #upoint Q_{2}^{BPos}", kTProfile2D, {{100, 0, 100}, {nsamples, 0.5, nsamples + 0.5}}, false);
+  fRegistry->add("Event/bootstrap/hPrfQ2FT0CQ2BNeg_CentFT0C_bootstrap", "Q_{2}^{FT0C} #upoint Q_{2}^{BNeg};centrality FT0C (%);bootstrap sample;Q_{2}^{FT0C} #upoint Q_{2}^{BNeg}", kTProfile2D, {{100, 0, 100}, {nsamples, 0.5, nsamples + 0.5}}, false);
+  fRegistry->add("Event/bootstrap/hPrfQ2FT0CQ2BTot_CentFT0C_bootstrap", "Q_{2}^{FT0C} #upoint Q_{2}^{BTot};centrality FT0C (%);bootstrap sample;Q_{2}^{FT0C} #upoint Q_{2}^{BTot}", kTProfile2D, {{100, 0, 100}, {nsamples, 0.5, nsamples + 0.5}}, false);
+  fRegistry->add("Event/bootstrap/hPrfQ2FT0AQ2BPos_CentFT0C_bootstrap", "Q_{2}^{FT0A} #upoint Q_{2}^{BPos};centrality FT0C (%);bootstrap sample;Q_{2}^{FT0A} #upoint Q_{2}^{BPos}", kTProfile2D, {{100, 0, 100}, {nsamples, 0.5, nsamples + 0.5}}, false);
+  fRegistry->add("Event/bootstrap/hPrfQ2FT0AQ2BNeg_CentFT0C_bootstrap", "Q_{2}^{FT0A} #upoint Q_{2}^{BNeg};centrality FT0C (%);bootstrap sample;Q_{2}^{FT0A} #upoint Q_{2}^{BNeg}", kTProfile2D, {{100, 0, 100}, {nsamples, 0.5, nsamples + 0.5}}, false);
+  fRegistry->add("Event/bootstrap/hPrfQ2FT0AQ2BTot_CentFT0C_bootstrap", "Q_{2}^{FT0A} #upoint Q_{2}^{BTot};centrality FT0C (%);bootstrap sample;Q_{2}^{FT0A} #upoint Q_{2}^{BTot}", kTProfile2D, {{100, 0, 100}, {nsamples, 0.5, nsamples + 0.5}}, false);
+  fRegistry->add("Event/bootstrap/hPrfQ2FT0AQ2FT0C_CentFT0C_bootstrap", "Q_{2}^{FT0A} #upoint Q_{2}^{FT0C};centrality FT0C (%);bootstrap sample;Q_{2}^{FT0A} #upoint Q_{2}^{FT0C}", kTProfile2D, {{100, 0, 100}, {nsamples, 0.5, nsamples + 0.5}}, false); 
+  fRegistry->add("Event/bootstrap/hPrfQ2FV0AQ2BPos_CentFT0C_bootstrap", "Q_{2}^{FV0A} #upoint Q_{2}^{BPos};centrality FT0C (%);bootstrap sample;Q_{2}^{FV0A} #upoint Q_{2}^{BPos}", kTProfile2D, {{100, 0, 100}, {nsamples, 0.5, nsamples + 0.5}}, false);
+  fRegistry->add("Event/bootstrap/hPrfQ2FV0AQ2BNeg_CentFT0C_bootstrap", "Q_{2}^{FV0A} #upoint Q_{2}^{BNeg};centrality FT0C (%);bootstrap sample;Q_{2}^{FV0A} #upoint Q_{2}^{BNeg}", kTProfile2D, {{100, 0, 100}, {nsamples, 0.5, nsamples + 0.5}}, false);
+  fRegistry->add("Event/bootstrap/hPrfQ2FV0AQ2BTot_CentFT0C_bootstrap", "Q_{2}^{FV0A} #upoint Q_{2}^{BTot};centrality FT0C (%);bootstrap sample;Q_{2}^{FV0A} #upoint Q_{2}^{BTot}", kTProfile2D, {{100, 0, 100}, {nsamples, 0.5, nsamples + 0.5}}, false);
+  fRegistry->add("Event/bootstrap/hPrfQ2FV0AQ2FT0C_CentFT0C_bootstrap", "Q_{2}^{FV0A} #upoint Q_{2}^{FT0C};centrality FT0C (%);bootstrap sample;Q_{2}^{FV0A} #upoint Q_{2}^{FT0C}", kTProfile2D, {{100, 0, 100}, {nsamples, 0.5, nsamples + 0.5}}, false); 
+}
+
 template <const int ev_id, const int nmod = -1, typename TCollision>
 void fillEventInfo(HistogramRegistry* fRegistry, TCollision const& collision, const float /*weight*/ = 1.f)
 {
@@ -310,6 +329,33 @@ void fillEventInfo(HistogramRegistry* fRegistry, TCollision const& collision, co
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ3FV0AQ3BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q3fv0a, q3bneg));
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ3FV0AQ3BTot_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q3fv0a, q3btot));
   }
+}
+template <typename TCollision>
+void fillEventInfoBootstrap(HistogramRegistry* fRegistry, TCollision const& collision, const int sample, const float weight)
+{
+  std::array<float, 2> q2ft0m = {collision.q2xft0m(), collision.q2yft0m()};
+  std::array<float, 2> q2ft0a = {collision.q2xft0a(), collision.q2yft0a()};
+  std::array<float, 2> q2ft0c = {collision.q2xft0c(), collision.q2yft0c()};
+  std::array<float, 2> q2fv0a = {collision.q2xfv0a(), collision.q2yfv0a()};
+  std::array<float, 2> q2bpos = {collision.q2xbpos(), collision.q2ybpos()};
+  std::array<float, 2> q2bneg = {collision.q2xbneg(), collision.q2ybneg()};
+  std::array<float, 2> q2btot = {collision.q2xbtot(), collision.q2ybtot()};
+
+  fRegistry->fill(HIST("Event/bootstrap/hPoissonWeights"), sample + 0.5, weight);
+  fRegistry->fill(HIST("Event/bootstrap/hPrfQ2FT0MQ2BPos_CentFT0C_bootstrap"), collision.centFT0C(), sample + 0.5, RecoDecay::dotProd(q2ft0m, q2bpos), weight);
+  fRegistry->fill(HIST("Event/bootstrap/hPrfQ2FT0MQ2BNeg_CentFT0C_bootstrap"), collision.centFT0C(), sample + 0.5, RecoDecay::dotProd(q2ft0m, q2bneg), weight);
+  fRegistry->fill(HIST("Event/bootstrap/hPrfQ2BPosQ2BNeg_CentFT0C_bootstrap"), collision.centFT0C(), sample + 0.5, RecoDecay::dotProd(q2bpos, q2bneg), weight);
+  fRegistry->fill(HIST("Event/bootstrap/hPrfQ2FT0CQ2BPos_CentFT0C_bootstrap"), collision.centFT0C(), sample + 0.5, RecoDecay::dotProd(q2ft0c, q2bpos), weight);
+  fRegistry->fill(HIST("Event/bootstrap/hPrfQ2FT0CQ2BNeg_CentFT0C_bootstrap"), collision.centFT0C(), sample + 0.5, RecoDecay::dotProd(q2ft0c, q2bneg), weight);
+  fRegistry->fill(HIST("Event/bootstrap/hPrfQ2FT0CQ2BTot_CentFT0C_bootstrap"), collision.centFT0C(), sample + 0.5, RecoDecay::dotProd(q2ft0c, q2btot), weight);
+  fRegistry->fill(HIST("Event/bootstrap/hPrfQ2FT0AQ2BPos_CentFT0C_bootstrap"), collision.centFT0C(), sample + 0.5, RecoDecay::dotProd(q2ft0a, q2bpos), weight);
+  fRegistry->fill(HIST("Event/bootstrap/hPrfQ2FT0AQ2BNeg_CentFT0C_bootstrap"), collision.centFT0C(), sample + 0.5, RecoDecay::dotProd(q2ft0a, q2bneg), weight);
+  fRegistry->fill(HIST("Event/bootstrap/hPrfQ2FT0AQ2BTot_CentFT0C_bootstrap"), collision.centFT0C(), sample + 0.5, RecoDecay::dotProd(q2ft0a, q2btot), weight);
+  fRegistry->fill(HIST("Event/bootstrap/hPrfQ2FT0AQ2FT0C_CentFT0C_bootstrap"), collision.centFT0C(), sample + 0.5, RecoDecay::dotProd(q2ft0a, q2ft0c), weight); 
+  fRegistry->fill(HIST("Event/bootstrap/hPrfQ2FV0AQ2BPos_CentFT0C_bootstrap"), collision.centFT0C(), sample + 0.5, RecoDecay::dotProd(q2fv0a, q2bpos), weight);
+  fRegistry->fill(HIST("Event/bootstrap/hPrfQ2FV0AQ2BNeg_CentFT0C_bootstrap"), collision.centFT0C(), sample + 0.5, RecoDecay::dotProd(q2fv0a, q2bneg), weight);
+  fRegistry->fill(HIST("Event/bootstrap/hPrfQ2FV0AQ2BTot_CentFT0C_bootstrap"), collision.centFT0C(), sample + 0.5, RecoDecay::dotProd(q2fv0a, q2btot), weight);
+  fRegistry->fill(HIST("Event/bootstrap/hPrfQ2FV0AQ2FT0C_CentFT0C_bootstrap"), collision.centFT0C(), sample + 0.5, RecoDecay::dotProd(q2fv0a, q2ft0c), weight); 
 }
 } // namespace o2::aod::pwgem::dilepton::utils::eventhistogram
 #endif // PWGEM_DILEPTON_UTILS_EVENTHISTOGRAMS_H_
