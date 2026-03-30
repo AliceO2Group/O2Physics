@@ -48,7 +48,7 @@ DECLARE_SOA_TABLE(SlimCollisions, "AOD", "SlimCollisions",
 using SlimCollision = SlimCollisions::iterator;
 namespace slmccollision
 {
-DECLARE_SOA_COLUMN(McWeight, weight, float);
+DECLARE_SOA_COLUMN(McWeight, mcWeight, float);
 }
 DECLARE_SOA_TABLE(SlMcCollisions, "AOD", "SlMcCollisions",
                   o2::soa::Index<>,
