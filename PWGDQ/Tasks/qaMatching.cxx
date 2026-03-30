@@ -18,6 +18,8 @@
 
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Tools/ML/MlResponse.h"
+
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "Framework/ASoAHelpers.h"
@@ -26,13 +28,6 @@
 #include "Framework/runDataProcessing.h"
 #include "GlobalTracking/MatchGlobalFwd.h"
 #include "MFTTracking/Constants.h"
-
-#include <Math/ProbFunc.h>
-
-#include <algorithm>
-#include <cinttypes>
-#include "Tools/ML/MlResponse.h"
-
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/LHCConstants.h>
@@ -61,6 +56,7 @@
 
 #include <Math/MatrixFunctions.h>
 #include <Math/MatrixRepresentationsStatic.h>
+#include <Math/ProbFunc.h>
 #include <Math/ProbFuncMathCore.h>
 #include <Math/SMatrix.h>
 #include <Math/SVector.h>
@@ -77,6 +73,7 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <cinttypes>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
