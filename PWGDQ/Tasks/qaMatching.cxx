@@ -216,6 +216,7 @@ struct qaMatching {
   Configurable<int> fQaMatchingAodDebug{"cfgQaMatchingAodDebug", 0, "If >0, print AO2D filling debug (0=off, N=max collisions)"};
 
   double mBzAtMftCenter{0};
+
   o2::globaltracking::MatchGlobalFwd mExtrap;
 
   using MatchingFunc_t = std::function<std::tuple<double, int>(const o2::dataformats::GlobalFwdTrack& mchtrack, const o2::track::TrackParCovFwd& mfttrack)>;
@@ -1709,8 +1710,6 @@ struct qaMatching {
       return kMatchTypeUndefined;
 
     auto const& mchTrack = muonTrack.template matchMCHTrack_as<TMUONS>();
-    auto const& mftTrack = muonTrack.template matchMFTTrack_as<TMFTS>();
-
     bool isPaired = IsMatchableMCH(mchTrack.globalIndex(), matchablePairs);
     bool isMuon = IsMuon(muonTrack, muonTracks, mftTracks);
     int decayRanking = GetDecayRanking(mchTrack, mftTracks);
@@ -2121,7 +2120,7 @@ struct qaMatching {
       // find the index of the matching candidate that corresponds to the true match
       // index=1 corresponds to the leading candidate
       // index=0 means no candidate was found that corresponds to the true match
-      int trueMatchIndex = GetTrueMatchIndexTrackType(muonTracks, muonTracks, mftTracks, globalTracksVector, matchablePairs);
+      int trueMatchIndex= GetTrueMatchIndexTrackType(muonTracks, muonTracks, mftTracks, globalTracksVector, matchablePairs);
       int trueMatchIndexProd = GetTrueMatchIndexTrackType(muonTracks, muonTracks, mftTracks, matchingCandidatesProd.at(mchIndex), matchablePairs);
 
       float mcParticleDz = -1000;
@@ -2377,6 +2376,17 @@ struct qaMatching {
           goodMatchFound = IsGoodGlobalMatching(muonTrack, matchingScore, matchingScoreCut);
           isTrueMatch = (mftIndex == matchableMftIndex);
         }
+      }
+
+      if (fQaMatchingAodDebug > 0 && goodMatchFound && isTrueMatch) {
+        LOGF(info,
+             "[good&true] mchId=%lld trackType=%d p=%.3f pt=%.3f eta=%.3f phi=%.3f",
+             static_cast<long long>(mchTrack.globalIndex()),
+             static_cast<int>(mchTrack.trackType()),
+             mchTrack.p(),
+             mchTrack.pt(),
+             mchTrack.eta(),
+             mchTrack.phi());
       }
 
       // ---- MC ancestry ----
@@ -2877,6 +2887,7 @@ struct qaMatching {
           static_cast<int32_t>(candidate.matchRanking));
       }
     }
+
   }
 
   template <class TCOLLISION>
