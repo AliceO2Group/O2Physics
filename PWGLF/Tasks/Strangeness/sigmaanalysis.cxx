@@ -1485,10 +1485,11 @@ struct sigmaanalysis {
         return false;
       }
     }
-
     // Has matched track?
     if (cand.photonHasAssocTrk() && EMCalPhotonSelections.RemoveMatchedTrack)
       return false;
+
+    return true;
   }
 
   // Apply specific selections for lambdas
