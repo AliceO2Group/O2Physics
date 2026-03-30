@@ -512,11 +512,6 @@ struct Alice3strangenessFinder {
                          v0cand.cosPA, v0cand.dcaToPV);
 
         o2::track::TrackParCov v0(v0cand.posSV, v0cand.p, v0cand.parentTrackCovMatrix, 0);
-
-        const float k0sMassHypothesis = RecoDecay::m(std::array{std::array{v0cand.pDau0[0], v0cand.pDau0[1], v0cand.pDau0[2]},
-                                                                std::array{v0cand.pDau1[0], v0cand.pDau1[1], v0cand.pDau1[2]}},
-                                                     std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged});
-
         const float lambdaMassHypothesis = RecoDecay::m(std::array{std::array{v0cand.pDau0[0], v0cand.pDau0[1], v0cand.pDau0[2]},
                                                                    std::array{v0cand.pDau1[0], v0cand.pDau1[1], v0cand.pDau1[2]}},
                                                         std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
