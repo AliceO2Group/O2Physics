@@ -25,6 +25,7 @@
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -101,6 +102,11 @@ struct TreeWriterTpcV0 {
   Configurable<float> maxPt4dwnsmplTsalisProtons{"maxPt4dwnsmplTsalisProtons", 100., "Maximum Pt for applying downsampling factor of protons"};
   Configurable<float> maxPt4dwnsmplTsalisElectrons{"maxPt4dwnsmplTsalisElectrons", 100., "Maximum Pt for applying  downsampling factor of electrons"};
   Configurable<float> maxPt4dwnsmplTsalisKaons{"maxPt4dwnsmplTsalisKaons", 100., "Maximum Pt for applying  downsampling factor of kaons"};
+  // Configurables for run condtion table
+  Configurable<std::string> rctLabel{"rctLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
+  Configurable<bool> checkZdc{"checkZdc", false, "set ZDC flag for PbPb"};
+  Configurable<bool> treatLimitedAcceptanceAsBad{"treatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
+  Configurable<bool> requireGoodRct{"requireGoodRct", false, "require good detector flag in run condtion table"};
 
   // an arbitrary value of N sigma TOF assigned by TOF task to tracks which are not matched to TOF hits
   constexpr static float NSigmaTofUnmatched{o2::aod::v0data::kNoTOFValue};
@@ -149,6 +155,8 @@ struct TreeWriterTpcV0 {
 
   ctpRateFetcher mRateFetcher;
 
+  o2::aod::rctsel::RCTFlagsChecker rctChecker;
+
   TRandom3* fRndm = new TRandom3(0);
 
   using Trks = soa::Join<aod::Tracks, aod::V0Bits, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TrackSelection>;
@@ -171,6 +179,8 @@ struct TreeWriterTpcV0 {
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setFatalWhenNull(false);
+
+    rctChecker.init(rctLabel, checkZdc, treatLimitedAcceptanceAsBad);
   }
 
   template <bool IsCorrectedDeDx, typename V0Casc, typename T>
@@ -413,6 +423,11 @@ struct TreeWriterTpcV0 {
       if (!isEventSelected(collision, applyEvSel)) {
         continue;
       }
+      const bool isGoodRctEvent = rctChecker.checkTable(collision);
+      if (requireGoodRct && !isGoodRctEvent) {
+        continue;
+      }
+
       const auto& v0s = myV0s.sliceBy(perCollisionV0s, static_cast<int>(collision.globalIndex()));
       const auto& cascs = myCascs.sliceBy(perCollisionCascs, static_cast<int>(collision.globalIndex()));
       const auto& bc = collision.bc_as<BCType>();
@@ -614,6 +629,11 @@ struct TreeWriterTpcTof {
   Configurable<float> downsamplingTsalisProtons{"downsamplingTsalisProtons", -1., "Downsampling factor to reduce the number of protons"};
   Configurable<float> downsamplingTsalisKaons{"downsamplingTsalisKaons", -1., "Downsampling factor to reduce the number of kaons"};
   Configurable<float> downsamplingTsalisPions{"downsamplingTsalisPions", -1., "Downsampling factor to reduce the number of pions"};
+  // Configurables for run condtion table
+  Configurable<std::string> rctLabel{"rctLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
+  Configurable<bool> checkZdc{"checkZdc", false, "set ZDC flag for PbPb"};
+  Configurable<bool> treatLimitedAcceptanceAsBad{"treatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
+  Configurable<bool> requireGoodRct{"requireGoodRct", false, "require good detector flag in run condtion table"};
 
   struct TofTrack {
     bool isApplyHardCutOnly;
@@ -635,6 +655,8 @@ struct TreeWriterTpcTof {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   ctpRateFetcher mRateFetcher;
+
+  o2::aod::rctsel::RCTFlagsChecker rctChecker;
 
   TRandom3* fRndm = new TRandom3(0);
 
@@ -665,6 +687,8 @@ struct TreeWriterTpcTof {
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setFatalWhenNull(false);
+
+    rctChecker.init(rctLabel, checkZdc, treatLimitedAcceptanceAsBad);
   }
 
   template <bool DoCorrectDeDx, int ModeId, typename T, typename C>
@@ -779,6 +803,11 @@ struct TreeWriterTpcTof {
       if (!isEventSelected(collision, applyEvSel)) {
         continue;
       }
+      const bool isGoodRctEvent = rctChecker.checkTable(collision);
+      if (requireGoodRct && !isGoodRctEvent) {
+        continue;
+      }
+
       auto tracksWithITSPid = soa::Attach<TrksType,
                                           aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr,
                                           aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr>(tracks);
