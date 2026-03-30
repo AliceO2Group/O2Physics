@@ -85,9 +85,6 @@ struct Chargedkstaranalysis {
     FT0C = 1,
     FT0M = 2
   };
-  std::unordered_set<int64_t> allowedMcIds;
-  std::unordered_map<int64_t, float> centTruthByAllowed;
-
   SliceCache cache;
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
 
@@ -1232,10 +1229,9 @@ struct Chargedkstaranalysis {
 
   void processMC(soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& mcCollisions, aod::McParticles& mcParticles, soa::Join<EventCandidates, aod::McCollisionLabels> const& events, MCV0Candidates const& v0s, MCTrackCandidates const& tracks)
   {
+    std::unordered_set<int64_t> allowedMcIds;
+    std::unordered_map<int64_t, float> centTruthByAllowed;
 
-    // Event Selections
-    allowedMcIds.clear();
-    centTruthByAllowed.clear();
     // To apply event selection and store the collision IDs of reconstructed tracks that pass the selection criteria
     for (const auto& coll : events) {
 
