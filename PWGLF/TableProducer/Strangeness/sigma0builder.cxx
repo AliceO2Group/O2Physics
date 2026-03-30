@@ -25,6 +25,7 @@
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
+#include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
@@ -69,13 +70,8 @@ using V0TOFDerivedMCDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extr
 
 using EMCalMCClusters = soa::Join<aod::EMCALMCClusters,aod::EMCALClusters>;
 
-// TODO: Should I filter the clusters?
-// we need to filter the emcal clusters, since we only want clusters from one specific clusterizer algorithm
-//using EMCalClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
-
 static const std::vector<std::string> DirList = {"V0BeforeSel", "PhotonSel", "LambdaSel", "KShortSel"};
 static const std::vector<std::string> DirList2 = {"EMCalPhotonBeforeSel", "EMCalPhotonSel"};
-
 
 struct sigma0builder {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -83,7 +79,6 @@ struct sigma0builder {
 
   //___________________________________________________
   // KStar Specific
-
   Produces<aod::KStarCores> kstarcores;               // kstar candidates info for analysis
   Produces<aod::KShortExtras> kshortExtras;           // lambdas from sigma0 candidates info
   Produces<aod::KStarPhotonExtras> kstarPhotonExtras; // photons from kstar candidates info
@@ -94,24 +89,22 @@ struct sigma0builder {
 
   //__________________________________________________
   // Sigma0 specific
-  Produces<aod::SigmaIndices> sigmaIndices;              // references V0Cores from sigma0Gens
   Produces<aod::Sigma0Cores> sigma0cores;                // sigma0 candidates info for analysis
   Produces<aod::Sigma0PhotonExtras> sigmaPhotonExtras;   // photons from sigma0 candidates info
-  Produces<aod::sigma0EMPhotons> sigmaEmCalPhotonExtras; // EMCAL photons from sigma0 candidates info
+  Produces<aod::Sigma0EMPhotons> sigmaEmCalPhotonExtras; // EMCAL photons from sigma0 candidates info
   Produces<aod::Sigma0LambdaExtras> sigmaLambdaExtras;   // lambdas from sigma0 candidates info
   Produces<aod::SigmaCollRef> sigma0CollRefs;            // references collisions from Sigma0Cores
-  Produces<aod::Sigma0MCCores> sigma0mccores;            // Reco sigma0 MC properties
-  Produces<aod::SigmaMCLabels> sigma0mclabel;            // Link of reco sigma0 to mcparticles
+  Produces<aod::Sigma0MCCores> sigma0mccores;            // Reco sigma0 MC properties  
   Produces<aod::Sigma0Gens> sigma0Gens;                  // Generated sigma0s
   Produces<aod::SigmaGenCollRef> sigma0GenCollRefs;      // references collisions from sigma0Gens
 
   //__________________________________________________
   // Pi0 specific
-  Produces<aod::Pi0Cores> pi0cores;            // pi0 candidates info for analysis
-  Produces<aod::Pi0CollRef> pi0coresRefs;      // references collisions from photonpair
-  Produces<aod::Pi0CoresMC> pi0coresmc;        // Reco pi0 MC properties
-  Produces<aod::Pi0Gens> pi0Gens;              // Generated pi0s
-  Produces<aod::Pi0GenCollRef> pi0GenCollRefs; // references collisions from pi0Gens
+  Produces<aod::Pi0Cores> pi0cores;                      // pi0 candidates info for analysis
+  Produces<aod::Pi0CollRef> pi0coresRefs;                // references collisions from photonpair
+  Produces<aod::Pi0CoresMC> pi0coresmc;                  // Reco pi0 MC properties
+  Produces<aod::Pi0Gens> pi0Gens;                        // Generated pi0s
+  Produces<aod::Pi0GenCollRef> pi0GenCollRefs;           // references collisions from pi0Gens
 
   //__________________________________________________
   // pack track quality but separte also afterburner
@@ -352,10 +345,6 @@ struct sigma0builder {
   ConfigurableAxis axisClrTime{"axisClrTime", {300, -30.0, 30.0}, "cluster time (ns)"};
   ConfigurableAxis axisClrShape{"axisClrShape", {100, 0.0, 1.0}, "cluster shape"};
 
-  // For manual sliceBy (necessary to calculate the correction factors)
-  // TODO: remove me!
-  PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
-
   void init(InitContext const&)
   {
     LOGF(info, "Initializing now: cross-checking correctness...");
@@ -413,7 +402,7 @@ struct sigma0builder {
       }
     }
 
-    bool fUsePCMPhoton = !doprocessRealDataWithEMCal && !doprocessMonteCarloWithEMCal;
+    bool fUsePCMPhoton = !doprocessRealDataWithEMCal && !doprocessMonteCarloWithEMCal && !doprocessPCMVsEMCalQA;
 
     for (const auto& histodir : DirList) {
       if ((histodir == "V0BeforeSel" && !fFillNoSelV0Histos) ||
@@ -466,7 +455,7 @@ struct sigma0builder {
         histos.add(histodir + "/h3dV0XYZ", "h3dV0XYZ", kTH3D, {axisXY, axisXY, axisZ});
     }
 
-    if (fUsePCMPhoton){
+    if (fUsePCMPhoton || doprocessPCMVsEMCalQA){
       histos.add("PhotonSel/hSelectionStatistics", "hSelectionStatistics", kTH1D, {axisCandSel});
       histos.get<TH1>(HIST("PhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(1, "No Sel");
       histos.get<TH1>(HIST("PhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(2, "Mass");
@@ -481,18 +470,6 @@ struct sigma0builder {
       histos.get<TH1>(HIST("PhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(11, "Phi");
       histos.get<TH1>(HIST("PhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(12, "TPCCR");
       histos.get<TH1>(HIST("PhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(13, "TPC NSigma");
-    }    
-    else{
-      for (const auto& histodir : DirList2) {
-        histos.add(histodir + "/hpT", "hpT", kTH1D, {axisPt});
-        histos.add(histodir + "/hDefinition", "hDefinition", kTH1D, {axisClrDefinition});
-        histos.add(histodir + "/hNCells", "hNCells", kTH1D, {axisClrNCells});
-        histos.add(histodir + "/hEnergy", "hEnergy", kTH1D, {axisClrEnergy});
-        histos.add(histodir + "/h2dEtaVsPhi", "h2dEtaVsPhi", kTH2D, {axisRapidity, axisPhi});
-        histos.add(histodir + "/hTime", "hTime", kTH1D, {axisClrTime});
-        histos.add(histodir + "/hExotic", "hExotic", kTH1D, {{2, -0.5f, 1.5f}});
-        histos.add(histodir + "/hShape", "hShape", kTH1D, {axisClrShape});      
-      }
 
       histos.add("EMCalPhotonSel/hSelectionStatistics", "hSelectionStatistics", kTH1D, {axisCandSel});
       histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(1, "No Sel");
@@ -504,6 +481,17 @@ struct sigma0builder {
       histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(7, "Exotic");
       histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(8, "Shape");
 
+    }    
+    else{
+      for (const auto& histodir : DirList2) {        
+        histos.add(histodir + "/hDefinition", "hDefinition", kTH1D, {axisClrDefinition});
+        histos.add(histodir + "/h2dNCells", "h2dNCells", kTH2D, {axisPt, axisClrNCells});
+        histos.add(histodir + "/h2dEnergy", "h2dEnergy", kTH2D, {axisPt, axisClrEnergy});
+        histos.add(histodir + "/h2dEtaVsPhi", "h2dEtaVsPhi", kTH2D, {axisRapidity, axisPhi});
+        histos.add(histodir + "/h2dTime", "h2dTime", kTH2D, {axisPt, axisClrTime});
+        histos.add(histodir + "/hExotic", "hExotic", kTH1D, {{2, -0.5f, 1.5f}});
+        histos.add(histodir + "/h2dShape", "h2dShape", kTH2D, {axisPt, axisClrShape});      
+      }
     }
     
     histos.add("LambdaSel/hSelectionStatistics", "hSelectionStatistics", kTH1D, {axisCandSel});
@@ -544,7 +532,8 @@ struct sigma0builder {
       histos.get<TH1>(HIST("SigmaSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(1, "No Sel");
       histos.get<TH1>(HIST("SigmaSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(2, "Sigma Mass Window");
       histos.get<TH1>(HIST("SigmaSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(3, "Sigma Y Window");
-
+      
+      histos.add("SigmaSel/hSigmaMassBeforeSel", "hSigmaMassBeforeSel", kTH1F, {axisSigmaMass});
       histos.add("SigmaSel/hSigmaMassSelected", "hSigmaMassSelected", kTH1F, {axisSigmaMass});
 
       histos.add("KStarSel/hSelectionStatistics", "hSelectionStatistics", kTH1D, {axisCandSel});
@@ -595,6 +584,31 @@ struct sigma0builder {
 
       histos.add("MCQA/hNoV0MCCores", "hNoV0MCCores", kTH1D, {{4, -0.5f, +3.5f}});
     }
+
+    if (doprocessPCMVsEMCalQA){
+      histos.add("PhotonMCQA/hPCMPhotonMCpT", "hPCMPhotonMCpT", kTH1D, {axisPt});
+      histos.add("PhotonMCQA/h2dPCMPhotonMCpTResolution", "h2dPCMPhotonMCpTResolution", kTH2D, {axisPt, {100, -2.0f, 2.0f}});      
+      histos.add("PhotonMCQA/hPCMSigma0PhotonMCpT", "hPCMSigma0PhotonMCpT", kTH1D, {axisPt});
+      histos.add("PhotonMCQA/h2dPCMSigma0PhotonMCpTResolution", "h2dPCMSigma0PhotonMCpTResolution", kTH2D, {axisPt, {100, -2.0f, 2.0f}});                                  
+
+      histos.add("PhotonMCQA/hEMCalPhotonMCpT", "hEMCalPhotonMCpT", kTH1D, {axisPt});
+      histos.add("PhotonMCQA/h2dEMCalPhotonMCpTResolution", "h2dEMCalPhotonMCpTResolution", kTH2D, {axisPt, {100, -2.0f, 2.0f}});                        
+      histos.add("PhotonMCQA/h2dEMCalPhotonMCEnergyResolution", "h2dEMCalPhotonMCEnergyResolution", kTH2D, {axisClrEnergy, {100, -2.0f, 2.0f}});
+      histos.add("PhotonMCQA/h2dEMCalPhotonMCEtaResolution", "h2dEMCalPhotonMCEtaResolution", kTH2D, {axisRapidity, {100, -2.0f, 2.0f}});
+      histos.add("PhotonMCQA/h2dEMCalPhotonMCPhiResolution", "h2dEMCalPhotonMCPhiResolution", kTH2D, {axisPhi, {100, -2.0f, 2.0f}});
+      histos.add("PhotonMCQA/h2dEMCalPhotonMCFractionEnergy", "h2dEMCalPhotonMCFractionEnergy", kTH2D, {axisPt, {100, -1.0f, 1.0f}});
+
+      histos.add("PhotonMCQA/hEMCalSigma0PhotonMCpT", "hEMCalSigma0PhotonMCpT", kTH1D, {axisPt});
+      histos.add("PhotonMCQA/h2dEMCalSigma0PhotonMCpTResolution", "h2dEMCalSigma0PhotonMCpTResolution", kTH2D, {axisPt, {100, -2.0f, 2.0f}});
+      histos.add("PhotonMCQA/h2dEMCalSigma0PhotonMCEnergyResolution", "h2dEMCalSigma0PhotonMCEnergyResolution", kTH2D, {axisClrEnergy, {100, -2.0f, 2.0f}});
+      histos.add("PhotonMCQA/h2dEMCalSigma0PhotonMCEtaResolution", "h2dEMCalSigma0PhotonMCEtaResolution", kTH2D, {axisRapidity, {100, -2.0f, 2.0f}});
+      histos.add("PhotonMCQA/h2dEMCalSigma0PhotonMCPhiResolution", "h2dEMCalSigma0PhotonMCPhiResolution", kTH2D, {axisPhi, {100, -2.0f, 2.0f}});
+      histos.add("PhotonMCQA/h2dEMCalSigma0PhotonMCFractionEnergy", "h2dEMCalSigma0PhotonMCFractionEnergy", kTH2D, {axisPt, {100, -1.0f, 1.0f}});
+
+      histos.add("PhotonMCQA/hGenPhoton", "hGenPhoton", kTH1D, {axisPt});
+      histos.add("PhotonMCQA/hGenSigma0Photon", "hGenSigma0Photon", kTH1D, {axisPt});
+    }
+    
 
     if (doprocessGeneratedRun3 && genSelections.doQA) {
 
@@ -772,6 +786,10 @@ struct sigma0builder {
     bool fIsV01Primary = false;
     bool fIsV02Primary = false;
     bool fV0PairProducedByGenerator = false;
+    int V01PDGCodePos = 0;    
+    int V02PDGCodePos = 0;
+    int V01PDGCodeNeg = 0;
+    int V02PDGCodeNeg = 0;
     int V01PDGCode = 0;
     int V02PDGCode = 0;
     int V01PDGCodeMother = 0;
@@ -787,6 +805,7 @@ struct sigma0builder {
     float V02MCpy = -999.f;
     float V02MCpz = -999.f;
     float V0PairMCRadius = -999.f;
+    float EMCalClusterAmplitude = -999.f;
   };
 
   // ______________________________________________________
@@ -898,6 +917,10 @@ struct sigma0builder {
     // MC association info
     MCinfo.fIsV01Primary = v01MC.isPhysicalPrimary();
     MCinfo.fIsV02Primary = v02MC.isPhysicalPrimary();
+    MCinfo.V01PDGCodePos = v01MC.pdgCodePositive();
+    MCinfo.V01PDGCodeNeg = v01MC.pdgCodeNegative();
+    MCinfo.V02PDGCodePos = v02MC.pdgCodePositive();
+    MCinfo.V02PDGCodeNeg = v02MC.pdgCodeNegative();
     MCinfo.V01PDGCode = v01MC.pdgCode();
     MCinfo.V02PDGCode = v02MC.pdgCode();
     MCinfo.V01PDGCodeMother = v01MC.pdgCodeMother();
@@ -999,89 +1022,168 @@ struct sigma0builder {
 
     return MCinfo;
   }
-
+  
   template <typename TEMCalCls, typename TV0, typename TCollision, typename TMCParticles>
-  V0PairMCInfo getClusterV0PairMCInfo(TEMCalCls const& cluster, TV0 const& v0, TCollision const& collision, TMCParticles const& mcparticles)
+  V0PairMCInfo getClusterV0PairMCInfo(TEMCalCls const& cluster,
+                                      TV0 const& v0,
+                                      TCollision const& collision,
+                                      TMCParticles const& mcparticles)
   {
-    // TODO: you need to improve/recheck this
+    // Output container
     V0PairMCInfo MCinfo;
 
-    // _________________________
-    // V0-specific treatment:    
-    if (!v0.has_v0MCCore()) {      
+    // ============================================================
+    // 1) --- V0 (Lambda/AntiLambda) MC information ---
+    // ============================================================
+
+    // Check if V0 has MC information
+    if (!v0.has_v0MCCore()) {
       return MCinfo;
     }
-  
-    auto v0MC = v0.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
-    auto MCParticle_v0 = mcparticles.rawIteratorAt(v0MC.particleIdMC());
-    auto const& MCMothersList_v0 = MCParticle_v0.template mothers_as<aod::McParticles>();
 
-    if (!MCMothersList_v0.empty())
-      return MCinfo; 
-    
+    auto v0MC = v0.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+    auto mcLambda = mcparticles.rawIteratorAt(v0MC.particleIdMC());
+
+    // Save basic Lambda MC info (always saved, independent of matching)
+    MCinfo.V02MCpx = v0MC.pxMC();
+    MCinfo.V02MCpy = v0MC.pyMC();
+    MCinfo.V02MCpz = v0MC.pzMC();
+    MCinfo.fIsV02Primary = v0MC.isPhysicalPrimary();
+    MCinfo.V02PDGCode = v0MC.pdgCode();
+    MCinfo.V02PDGCodeMother = v0MC.pdgCodeMother();
+    MCinfo.V02PDGCodePos = v0MC.pdgCodePositive();
+    MCinfo.V02PDGCodeNeg = v0MC.pdgCodeNegative();
+
+    // Check correct MC collision assignment (if available)
     if (collision.has_straMCCollision()) {
-      auto MCCollision = collision.template straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
-      MCinfo.fIsV02CorrectlyAssign = (v0MC.straMCCollisionId() == MCCollision.globalIndex());      
+      auto MCCollision = collision.template straMCCollision_as<
+        soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
+      MCinfo.fIsV02CorrectlyAssign = (v0MC.straMCCollisionId() == MCCollision.globalIndex());
     }
 
-    // Getting Lambda's mother
-    auto const& MCMother_v0 = MCMothersList_v0.front();         // First mother
+    // Retrieve Lambda mothers
+    auto const& lambdaMothers = mcLambda.template mothers_as<aod::McParticles>();
+    if (lambdaMothers.empty()) {
+      // No ancestry -> cannot match to any parent
+      return MCinfo;
+    }
 
-    // _________________________
-    // EMCalClusters-specific treatment:    
-    
-    // We loop over MC contributors to the cluster
-    for (size_t i = 0; i < cluster.amplitudeA().size(); i++) {
-      
-      // Get MC particle 
-      int clusterInducerId = cluster.mcParticleIds()[i];
-      auto mcClusterInducer = mcparticles.iteratorAt(clusterInducerId);
-      
-      // Get MC Mother
-      auto const& MCMothersList_Cluster = mcClusterInducer.template mothers_as<aod::McParticles>();
-  
-      if (MCMothersList_Cluster.empty())
+    // Assumption: first mother is the physical one
+    auto const& lambdaMother = lambdaMothers.front();
+    int lambdaMotherIndex = lambdaMother.globalIndex();
+
+    // ============================================================
+    // 2) --- EMCal cluster: loop over MC contributors ---
+    // ============================================================
+
+    int matchedPhotonId = -1;        // MC photon candidate
+    int matchedMotherIndex = -1;     // Common Sigma0 candidate
+
+    // Fallback: sum of all contributor momenta (useful for resolution studies, perhaps?)
+    float sumPx = 0.f, sumPy = 0.f, sumPz = 0.f;
+
+    // Loop over all MC contributors to the cluster
+    for (size_t i = 0; i < cluster.mcParticleIds().size(); i++) {
+
+      int mcId = cluster.mcParticleIds()[i];
+      auto mcPart = mcparticles.iteratorAt(mcId);
+
+      // Accumulate total momentum (fallback strategy)
+      sumPx += mcPart.px();
+      sumPy += mcPart.py();
+      sumPz += mcPart.pz();
+
+      // ------------------------------------------------------------
+      // Check 1:
+      // Does this contributor come from a Sigma0/AntiSigma0 somewhere in its ancestry?
+      // ------------------------------------------------------------
+      int daughterId = aod::pwgem::photonmeson::utils::mcutil::FindMotherInChain(mcPart, mcparticles, std::vector<int>{PDG_t::kSigma0, PDG_t::kSigma0Bar}); 
+
+      if (daughterId < 0)
+        continue; // Not from Sigma0 -> try next contributor
+
+      auto mcPhoton = mcparticles.iteratorAt(daughterId);      
+
+      // Sanity check: are we getting the correct particles?
+      auto dummy = mcparticles.rawIteratorAt(daughterId); 
+      if (mcPhoton.globalIndex() != dummy.globalIndex()) 
+        LOGF(fatal, "The behave of rawIteratorAt != iteratorAt. Index %i != %i. Please check. Aborting.", mcPhoton.globalIndex(), dummy.globalIndex());
+
+      // Require true photon, please
+      if (mcPhoton.pdgCode() != PDG_t::kGamma)
         continue;
 
-      auto const& MCMother_cluster = MCMothersList_Cluster.front();         // First mother      
+      // Get Sigma0 index from photon mother
+      auto mothers = mcPhoton.mothersIds();
+      if (mothers.empty()) // No mothers? Weird
+        continue;
 
-      if (MCMother_cluster.globalIndex() == MCMother_v0.globalIndex()){
-        // Is it the same mother?
-        MCinfo.fV0PairProducedByGenerator = MCMother_v0.producedByGenerator();
-        MCinfo.V0PairPDGCode = MCMother_v0.pdgCode();
-        MCinfo.V0PairMCProcess = MCMother_v0.getProcess();
-        MCinfo.V0PairMCParticleID = MCMother_v0.globalIndex();
-        MCinfo.V0PairMCRadius = std::hypot(MCMother_v0.vx(), MCMother_v0.vy()); // production position radius
+      int sigmaIndex = mothers[0];
 
-        auto const& v0pairmothers = MCMother_v0.template mothers_as<aod::McParticles>(); // Get mothers
-        if (!v0pairmothers.empty()) {
-          auto& v0PairMother = v0pairmothers.front(); // V0Pair mother, V0s grandmother
-          MCinfo.V0PairPDGCodeMother = v0PairMother.pdgCode();
-        }
-
-
-        // Basic kinematic info
-        MCinfo.V01MCpx = mcClusterInducer.px();
-        MCinfo.V01MCpy = mcClusterInducer.py();
-        MCinfo.V01MCpz = mcClusterInducer.pz();
-
-        MCinfo.V02MCpx = v0MC.pxMC();
-        MCinfo.V02MCpy = v0MC.pyMC();
-        MCinfo.V02MCpz = v0MC.pzMC();
-
-        // MC association info
-        MCinfo.fIsV01Primary = mcClusterInducer.isPhysicalPrimary();
-        MCinfo.fIsV02Primary = v0MC.isPhysicalPrimary();
-        MCinfo.V01PDGCode = mcClusterInducer.pdgCode();
-        MCinfo.V02PDGCode = v0MC.pdgCode();
-        MCinfo.V01PDGCodeMother = MCMother_cluster.pdgCode();
-        MCinfo.V02PDGCodeMother = v0MC.pdgCodeMother();
-
-        break; // we found what we were looking for!
-      }             
+      // ------------------------------------------------------------
+      // Check 2:
+      // Does this photon share the same mother as the Lambda?
+      // ------------------------------------------------------------
+      if (sigmaIndex == lambdaMotherIndex) {
+        matchedPhotonId = daughterId;
+        matchedMotherIndex = sigmaIndex;
+        MCinfo.EMCalClusterAmplitude = cluster.amplitudeA()[i];
+        break; // SUCCESS -> stop loop
+      }
     }
-  
-    return MCinfo;    
+
+    // ============================================================
+    // 3) --- SUCCESS: true Lambda–photon pair from same Sigma0 ---
+    // ============================================================
+
+    if (matchedPhotonId >= 0 && matchedMotherIndex >= 0) {
+
+      auto mcPhoton = mcparticles.iteratorAt(matchedPhotonId);
+      auto mcSigma  = mcparticles.iteratorAt(matchedMotherIndex);
+
+      // --- Pair (Sigma0) information
+      MCinfo.fV0PairProducedByGenerator = mcSigma.producedByGenerator();
+      MCinfo.V0PairPDGCode = mcSigma.pdgCode();
+      MCinfo.V0PairMCProcess = mcSigma.getProcess();
+      MCinfo.V0PairMCParticleID = mcSigma.globalIndex();
+      MCinfo.V0PairMCRadius = std::hypot(mcSigma.vx(), mcSigma.vy());
+
+      // Sigma0 mother (optional)
+      auto const& sigmaMothers = mcSigma.template mothers_as<aod::McParticles>();
+      if (!sigmaMothers.empty()) {
+        MCinfo.V0PairPDGCodeMother = sigmaMothers.front().pdgCode();
+      }
+
+      // --- Photon MC info
+      MCinfo.V01MCpx = mcPhoton.px();
+      MCinfo.V01MCpy = mcPhoton.py();
+      MCinfo.V01MCpz = mcPhoton.pz();
+      MCinfo.fIsV01Primary = mcPhoton.isPhysicalPrimary();
+      MCinfo.V01PDGCode = mcPhoton.pdgCode();      
+
+      if (!mcPhoton.mothersIds().empty()) {
+        auto mcMother = mcparticles.iteratorAt(mcPhoton.mothersIds()[0]);
+        MCinfo.V01PDGCodeMother = mcMother.pdgCode();
+      }
+
+      return MCinfo;
+    }
+
+    // ============================================================
+    // 4) --- FAILURE: no true matching photon found ---
+    // ============================================================
+
+    // Strategy:
+    // - Keep Lambda MC info (already filled)
+    // - For cluster:
+    //   use summed momentum of contributors (proxy for cluster truth)
+    // - Leave PDG / primary flags as default (dummy)
+
+    MCinfo.V01MCpx = sumPx;
+    MCinfo.V01MCpy = sumPy;
+    MCinfo.V01MCpz = sumPz;
+      
+    return MCinfo;
   }
 
   // ______________________________________________________
@@ -1230,12 +1332,21 @@ struct sigma0builder {
   std::vector<int> getListOfRecoCollIndices(TMCollisions const& mcCollisions, TCollisions const& collisions)
   {
     std::vector<int> listBestCollisionIdx(mcCollisions.size());
-    for (auto const& mcCollision : mcCollisions) {
-      auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex());
+
+    // Custom grouping
+    std::vector<std::vector<int>> groupedCollisions(mcCollisions.size());
+
+    for (const auto& coll : collisions) {
+      groupedCollisions[coll.straMCCollisionId()].push_back(coll.globalIndex());
+    }
+
+    for (auto const& mcCollision : mcCollisions) {      
       int biggestNContribs = -1;
       int bestCollisionIndex = -1;
-      for (auto const& collision : groupedCollisions) {
+      for (size_t i = 0; i < groupedCollisions[mcCollision.globalIndex()].size(); i++) {
         // consider event selections in the recoed <-> gen collision association, for the denominator (or numerator) of the efficiency (or signal loss)?
+        auto collision = collisions.rawIteratorAt(groupedCollisions[mcCollision.globalIndex()][i]);
+
         if (eventSelections.useEvtSelInDenomEff && eventSelections.fUseEventSelection) {
           if (!IsEventAccepted(collision, false))
             continue;
@@ -1259,6 +1370,14 @@ struct sigma0builder {
   void fillGeneratedEventProperties(TMCCollisions const& mcCollisions, TCollisions const& collisions)
   {
     std::vector<int> listBestCollisionIdx(mcCollisions.size());
+
+    // Custom grouping
+    std::vector<std::vector<int>> groupedCollisions(mcCollisions.size());
+
+    for (const auto& coll : collisions) {
+      groupedCollisions[coll.straMCCollisionId()].push_back(coll.globalIndex());
+    }
+
     for (auto const& mcCollision : mcCollisions) {
       // Apply selections on MC collisions
       if (eventSelections.applyZVtxSelOnMCPV && std::abs(mcCollision.posZ()) > eventSelections.maxZVtxPosition) {
@@ -1275,15 +1394,16 @@ struct sigma0builder {
       }
 
       histos.fill(HIST("V0QA/hGenEvents"), mcCollision.multMCNParticlesEta05(), 0 /* all gen. events*/);
-
-      auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex());
+      
       // Check if there is at least one of the reconstructed collisions associated to this MC collision
       // If so, we consider it
       bool atLeastOne = false;
       int biggestNContribs = -1;
       float centrality = 100.5f;
       int nCollisions = 0;
-      for (auto const& collision : groupedCollisions) {
+      for (size_t i = 0; i < groupedCollisions[mcCollision.globalIndex()].size(); i++) {
+        auto collision = collisions.rawIteratorAt(groupedCollisions[mcCollision.globalIndex()][i]);
+
         if (eventSelections.fUseEventSelection) {
           if (!IsEventAccepted(collision, false))
             continue;
@@ -1661,15 +1781,15 @@ struct sigma0builder {
 
     // calculate pT for cluster assuming they are photons (so no mass)
     float gammapT = sqrt(cluster.energy() * cluster.energy()) / std::cosh(cluster.eta());
-
-    histos.fill(HIST(MainDir2[mode]) + HIST("/hpT"), gammapT);
+        
     histos.fill(HIST(MainDir2[mode]) + HIST("/hDefinition"), cluster.definition());
-    histos.fill(HIST(MainDir2[mode]) + HIST("/hNCells"), cluster.nCells());
-    histos.fill(HIST(MainDir2[mode]) + HIST("/hEnergy"), cluster.energy());
+    histos.fill(HIST(MainDir2[mode]) + HIST("/h2dNCells"), gammapT, cluster.nCells());
+    histos.fill(HIST(MainDir2[mode]) + HIST("/h2dEnergy"), gammapT, cluster.energy());
+    histos.fill(HIST(MainDir2[mode]) + HIST("/h2dShape"), gammapT, cluster.m02());
     histos.fill(HIST(MainDir2[mode]) + HIST("/h2dEtaVsPhi"), cluster.eta(), cluster.phi());    
-    histos.fill(HIST(MainDir2[mode]) + HIST("/hTime"), cluster.time());
+    histos.fill(HIST(MainDir2[mode]) + HIST("/h2dTime"), gammapT, cluster.time());
     histos.fill(HIST(MainDir2[mode]) + HIST("/hExotic"), cluster.isExotic());
-    histos.fill(HIST(MainDir2[mode]) + HIST("/hShape"), cluster.m02());
+        
   }
 
   // Function to fill QA histograms. mode = 0 (before selections, all v0s), 1 (photon candidates), 2 (lambda/alambda candidates)
@@ -2143,11 +2263,15 @@ struct sigma0builder {
   bool buildPCMSigma0(TV0Object const& lambda, TV0Object const& gamma, TCollision const& collision, TMCParticles const& mcparticles)
   {
     //_______________________________________________
-    // TODO: Add Same index rejection
+    // Same index rejection
+    if (gamma.globalIndex() == lambda.globalIndex())
+      return false;
     
     // Checking if both V0s are made of the very same tracks
     if (gamma.posTrackExtraId() == lambda.posTrackExtraId() ||
-        gamma.negTrackExtraId() == lambda.negTrackExtraId()) { // TODO: Add extra conditions
+        gamma.negTrackExtraId() == lambda.negTrackExtraId() ||
+        gamma.posTrackExtraId() == lambda.negTrackExtraId() ||
+        gamma.negTrackExtraId() == lambda.posTrackExtraId()) { 
       return false;
     }
 
@@ -2181,27 +2305,24 @@ struct sigma0builder {
     // Sigma0 topological info
     auto sigma0TopoInfo = propagateV0PairToDCA(gamma, lambda);
 
-    sigma0cores(sigma0TopoInfo.X, sigma0TopoInfo.Y, sigma0TopoInfo.Z, sigma0TopoInfo.DCADau,
+    sigma0cores(gamma.globalIndex(), lambda.globalIndex(), sigma0TopoInfo.X, sigma0TopoInfo.Y, sigma0TopoInfo.Z, sigma0TopoInfo.DCADau,
                 gamma.px(), gamma.py(), gamma.pz(), gamma.mGamma(), lambda.px(), lambda.py(), lambda.pz(), lambda.mLambda(), lambda.mAntiLambda());
 
     // MC properties
     if constexpr (requires { gamma.motherMCPartId(); lambda.motherMCPartId(); }) {
       auto sigma0MCInfo = getV0PairMCInfo(gamma, lambda, collision, mcparticles);
-
-      // TODO: Include PDG of V0 Daughters
-      sigma0mccores(sigma0MCInfo.V0PairMCRadius, sigma0MCInfo.V0PairPDGCode, sigma0MCInfo.V0PairPDGCodeMother, sigma0MCInfo.V0PairMCProcess, sigma0MCInfo.fV0PairProducedByGenerator,
-                    sigma0MCInfo.V01MCpx, sigma0MCInfo.V01MCpy, sigma0MCInfo.V01MCpz,
-                    sigma0MCInfo.fIsV01Primary, sigma0MCInfo.V01PDGCode, sigma0MCInfo.V01PDGCodeMother, sigma0MCInfo.fIsV01CorrectlyAssign,
+      
+      sigma0mccores(sigma0MCInfo.V0PairMCParticleID, sigma0MCInfo.V0PairMCRadius, sigma0MCInfo.V0PairPDGCode, sigma0MCInfo.V0PairPDGCodeMother, sigma0MCInfo.V0PairMCProcess, sigma0MCInfo.fV0PairProducedByGenerator,
+                    sigma0MCInfo.V01MCpx, sigma0MCInfo.V01MCpy, sigma0MCInfo.V01MCpz, sigma0MCInfo.EMCalClusterAmplitude,
+                    sigma0MCInfo.V01PDGCodePos, sigma0MCInfo.V01PDGCodeNeg, sigma0MCInfo.fIsV01Primary, sigma0MCInfo.V01PDGCode, sigma0MCInfo.V01PDGCodeMother, sigma0MCInfo.fIsV01CorrectlyAssign,
                     sigma0MCInfo.V02MCpx, sigma0MCInfo.V02MCpy, sigma0MCInfo.V02MCpz,
-                    sigma0MCInfo.fIsV02Primary, sigma0MCInfo.V02PDGCode, sigma0MCInfo.V02PDGCodeMother, sigma0MCInfo.fIsV02CorrectlyAssign);
-
-      sigma0mclabel(sigma0MCInfo.V0PairMCParticleID); // TODO: Add this in sigma0mccores
+                    sigma0MCInfo.V02PDGCodePos, sigma0MCInfo.V02PDGCodeNeg, sigma0MCInfo.fIsV02Primary, sigma0MCInfo.V02PDGCode, sigma0MCInfo.V02PDGCodeMother, sigma0MCInfo.fIsV02CorrectlyAssign);
+      
     }
 
     // Sigma0s -> stracollisions link
     histos.fill(HIST("SigmaSel/hSigma0DauDeltaIndex"), gamma.globalIndex() - lambda.globalIndex());
-    sigma0CollRefs(collision.globalIndex());
-    sigmaIndices(gamma.globalIndex(), lambda.globalIndex()); // TODO: put these indices in sigma0core table
+    sigma0CollRefs(collision.globalIndex());    
 
     //_______________________________________________
     // Photon extra properties
@@ -2268,7 +2389,7 @@ struct sigma0builder {
 
   // Build sigma0 candidate
   template <typename TV0Object, typename TEMCalClsObject, typename TCollision, typename TMCParticles>
-  bool buildEMCalSigma0(TV0Object const& lambda, TEMCalClsObject const& gamma, TCollision const& collision, TMCParticles const& mcparticles)
+  bool buildEMCalSigma0(TV0Object const& lambda, TEMCalClsObject const& gamma, TCollision const& collision, TMCParticles const& mcparticles, std::vector<bool> const& emcaltracksmatched)
   {        
     // calculate pT for cluster assuming they are photons (so no mass)
     float gammapT = sqrt(gamma.energy() * gamma.energy()) / std::cosh(gamma.eta());
@@ -2284,18 +2405,14 @@ struct sigma0builder {
     std::array<float, 3> pVecLambda{lambda.px(), lambda.py(), lambda.pz()};
 
     auto arrMom = std::array{pVecPhotons, pVecLambda};
-    float sigmaMass = RecoDecay::m(arrMom, std::array{o2::constants::physics::MassPhoton, o2::constants::physics::MassLambda0});
-    float sigmaY = -999.f;
+    float sigmaMass = RecoDecay::m(arrMom, std::array{o2::constants::physics::MassPhoton, o2::constants::physics::MassLambda0});    
 
-    // TODO: do proper calculation of rapidity if MC
-    sigmaY = RecoDecay::y(std::array{gammapx + lambda.px(), gammapy + lambda.py(), gammapz + lambda.pz()}, o2::constants::physics::MassSigma0);
-
-    // if constexpr (requires { gamma.pxMC(); lambda.pxMC(); }) // If MC
-    //   sigmaY = RecoDecay::y(std::array{gamma.pxMC() + lambda.pxMC(), gamma.pyMC() + lambda.pyMC(), gamma.pzMC() + lambda.pzMC()}, o2::constants::physics::MassSigma0);
-    // else // If DATA
-    //   sigmaY = RecoDecay::y(std::array{gamma.px() + lambda.px(), gamma.py() + lambda.py(), gamma.pz() + lambda.pz()}, o2::constants::physics::MassSigma0);
+    // N.B. At this stage, we are only using the reconstructed rapidity (ideally with a very loose cut) 
+    // A proper selection should be done in the sigmaanalysis
+    float sigmaY = RecoDecay::y(std::array{gammapx + lambda.px(), gammapy + lambda.py(), gammapz + lambda.pz()}, o2::constants::physics::MassSigma0);
 
     histos.fill(HIST("SigmaSel/hSelectionStatistics"), 1.);
+    histos.fill(HIST("SigmaSel/hSigmaMassBeforeSel"), sigmaMass);
     if (TMath::Abs(sigmaMass - o2::constants::physics::MassSigma0) > Sigma0Window)
       return false;
 
@@ -2308,33 +2425,32 @@ struct sigma0builder {
     
     //_______________________________________________
     // Calculate properties & Fill tables
-    sigma0cores(0.0f, 0.0f, 0.0f, 0.0f, // N.B: Filling with dummy values for now
+    sigma0cores(gamma.globalIndex(), lambda.globalIndex(), 
+                0.0f, 0.0f, 0.0f, 0.0f, // N.B: Filling with dummy values for now
                 gammapx, gammapy, gammapz, 0.0f, 
                 lambda.px(), lambda.py(), lambda.pz(), lambda.mLambda(), lambda.mAntiLambda());
 
     // MC properties
-    if constexpr (requires { gamma.mcParticleIds(); lambda.motherMCPartId(); }) { // TODO: Solve MC treatment
+    if constexpr (requires { gamma.mcParticleIds(); lambda.motherMCPartId(); }) { 
             
       auto sigma0MCInfo = getClusterV0PairMCInfo(gamma, lambda, collision, mcparticles);
-
-      sigma0mccores(sigma0MCInfo.V0PairMCRadius, sigma0MCInfo.V0PairPDGCode, sigma0MCInfo.V0PairPDGCodeMother, sigma0MCInfo.V0PairMCProcess, sigma0MCInfo.fV0PairProducedByGenerator,
-                    sigma0MCInfo.V01MCpx, sigma0MCInfo.V01MCpy, sigma0MCInfo.V01MCpz,
-                    sigma0MCInfo.fIsV01Primary, sigma0MCInfo.V01PDGCode, sigma0MCInfo.V01PDGCodeMother, sigma0MCInfo.fIsV01CorrectlyAssign,
+        
+      sigma0mccores(sigma0MCInfo.V0PairMCParticleID, sigma0MCInfo.V0PairMCRadius, sigma0MCInfo.V0PairPDGCode, sigma0MCInfo.V0PairPDGCodeMother, sigma0MCInfo.V0PairMCProcess, sigma0MCInfo.fV0PairProducedByGenerator,
+                    sigma0MCInfo.V01MCpx, sigma0MCInfo.V01MCpy, sigma0MCInfo.V01MCpz, sigma0MCInfo.EMCalClusterAmplitude,
+                    sigma0MCInfo.V01PDGCodePos, sigma0MCInfo.V01PDGCodeNeg, sigma0MCInfo.fIsV01Primary, sigma0MCInfo.V01PDGCode, sigma0MCInfo.V01PDGCodeMother, sigma0MCInfo.fIsV01CorrectlyAssign,
                     sigma0MCInfo.V02MCpx, sigma0MCInfo.V02MCpy, sigma0MCInfo.V02MCpz,
-                    sigma0MCInfo.fIsV02Primary, sigma0MCInfo.V02PDGCode, sigma0MCInfo.V02PDGCodeMother, sigma0MCInfo.fIsV02CorrectlyAssign);
-
-      sigma0mclabel(sigma0MCInfo.V0PairMCParticleID);
+                    sigma0MCInfo.V02PDGCodePos, sigma0MCInfo.V02PDGCodeNeg, sigma0MCInfo.fIsV02Primary, sigma0MCInfo.V02PDGCode, sigma0MCInfo.V02PDGCodeMother, sigma0MCInfo.fIsV02CorrectlyAssign);
+      
     }
 
-    sigma0CollRefs(collision.globalIndex());
-    sigmaIndices(gamma.globalIndex(), lambda.globalIndex());
+    sigma0CollRefs(collision.globalIndex());    
 
     //_______________________________________________
-    // Photon extra properties
-    // TODO: include EMCal photons table in header!
+    // Photon extra properties    
+    bool hasAssociatedTrack = emcaltracksmatched[gamma.globalIndex()];
     sigmaEmCalPhotonExtras(gamma.id(), gamma.energy(), gamma.eta(), gamma.phi(),
                           gamma.m02(), gamma.m20(), gamma.nCells(), gamma.time(),
-                          gamma.isExotic(), gamma.distanceToBadChannel(), gamma.nlm(), gamma.definition());
+                          gamma.isExotic(), gamma.distanceToBadChannel(), gamma.nlm(), gamma.definition(), hasAssociatedTrack); 
     
     //_______________________________________________
     // Lambda extra properties
@@ -2499,8 +2615,8 @@ struct sigma0builder {
   }
 
   // Process photon and lambda candidates to build sigma0 candidates
-  template <typename TCollision, typename TV0s, typename TEMCal, typename TMCParticles>
-  void dataProcess(TCollision const& collisions, TV0s const& fullV0s, TEMCal const& fullEMCalClusters, TMCParticles const& mcparticles)
+  template <typename TCollision, typename TV0s, typename TEMCal, typename TEMCalTracks, typename TMCParticles>
+  void dataProcess(TCollision const& collisions, TV0s const& fullV0s, TEMCal const& fullEMCalClusters, TEMCalTracks const& emcaltracks, TMCParticles const& mcparticles)
   {
     //_______________________________________________
     // Initial setup
@@ -2513,15 +2629,23 @@ struct sigma0builder {
 
     // Custom grouping
     std::vector<std::vector<int>> v0grouped(collisions.size());    
-    std::vector<std::vector<int>> emclustersgrouped(collisions.size());
+    std::vector<std::vector<int>> emclustersgrouped(collisions.size());    
+    std::vector<bool> emcaltracksgrouped;
 
+    // Grouping step:
     for (const auto& v0 : fullV0s) {
       v0grouped[v0.straCollisionId()].push_back(v0.globalIndex());
     }
     
     if constexpr (soa::is_table<TEMCal>) {      
+      emcaltracksgrouped.resize(fullEMCalClusters.size(), false);
       for (const auto& cluster : fullEMCalClusters) {
         emclustersgrouped[cluster.collisionId()].push_back(cluster.globalIndex());
+      }
+
+      // Mapping emccluster to matched tracks 
+      for (const auto& calotrack : emcaltracks) {
+        emcaltracksgrouped[calotrack.emcalclusterId()] = true;
       }
     }
     
@@ -2533,8 +2657,7 @@ struct sigma0builder {
         if (!IsEventAccepted(coll, true))
           continue;
       }
-
-      // TODO: Check! Is this correct?
+      
       if constexpr (soa::is_table<TEMCal>) {
         if (emclustersgrouped[coll.globalIndex()].size()==0 && eventSelections.fSkipEmptyEMCal)
           continue;
@@ -2598,9 +2721,10 @@ struct sigma0builder {
           analyzeV0CollAssoc(coll, fullV0s, bestLambdasArray, false); // Lambda-analysis
         }
       }
-
+      
       //_______________________________________________
       // Photon-V0 nested loop
+      int nSigma0Candidates = 0;
       for (size_t i = 0; i < bestGammasArray.size(); ++i) {
                         
         //_______________________________________________
@@ -2612,12 +2736,14 @@ struct sigma0builder {
             // Building sigma0 candidate & filling tables
             if constexpr (soa::is_table<TEMCal>) {  // using EMCal photons 
               auto gamma1 = fullEMCalClusters.rawIteratorAt(bestGammasArray[i]);
-              if (!buildEMCalSigma0(lambda, gamma1, coll, mcparticles)) continue;
+              if (!buildEMCalSigma0(lambda, gamma1, coll, mcparticles, emcaltracksgrouped)) continue;
             } 
             else { // using PCM photons              
               auto gamma1 = fullV0s.rawIteratorAt(bestGammasArray[i]);
               if (!buildPCMSigma0(lambda, gamma1, coll, mcparticles)) continue;
-            }                                   
+            }          
+            
+            nSigma0Candidates++;
           }
         }
 
@@ -2652,6 +2778,8 @@ struct sigma0builder {
           }
         }        
       }
+
+      LOGF(info, "N. photons: %i, N. lambdas: %i, expected pairs: %i, got: %i", bestGammasArray.size(), bestLambdasArray.size(), bestGammasArray.size()*bestLambdasArray.size(), nSigma0Candidates);
     }
   }
 
@@ -2775,35 +2903,252 @@ struct sigma0builder {
       }
     }
   }
+
+  template <typename TCollision, typename TV0s, typename TEMCal, typename TEMCalTracks, typename TMCParticles>
+  void runPCMVsEMCalQA(TCollision const& collisions, TV0s const& fullV0s, TEMCal const& fullEMCalClusters, TEMCalTracks const& emcaltracks, TMCParticles const& mcparticles)
+  {
+    
+    // Custom grouping
+    std::vector<std::vector<int>> v0grouped(collisions.size());    
+    std::vector<std::vector<int>> emclustersgrouped(collisions.size());    
+    std::vector<bool> emcaltracksgrouped(collisions.size(), false);
+
+    // Grouping step:
+    for (const auto& v0 : fullV0s) {
+      v0grouped[v0.straCollisionId()].push_back(v0.globalIndex());
+    }
+
+    for (const auto& cluster : fullEMCalClusters) {
+      emclustersgrouped[cluster.collisionId()].push_back(cluster.globalIndex());
+    }
+
+    // Mapping emccluster to matched tracks 
+    for (const auto& calotrack : emcaltracks) {
+      emcaltracksgrouped[calotrack.emcalclusterId()] = true;
+    }
+
+    //_______________________________________________
+    // Collisions loop
+    for (const auto& coll : collisions) {
+      // Event selection
+      if (eventSelections.fUseEventSelection) {
+        if (!IsEventAccepted(coll, true))
+          continue;
+      }
+
+      float centrality = doPPAnalysis ? coll.centFT0M() : coll.centFT0C();
+      histos.fill(HIST("hEventCentrality"), centrality);
+
+      //_______________________________________________
+      // V0s loop
+      for (size_t i = 0; i < v0grouped[coll.globalIndex()].size(); i++) {
+        auto v0 = fullV0s.rawIteratorAt(v0grouped[coll.globalIndex()][i]);
+
+        if (processPhotonCandidate(v0)) { // selecting PCM photons
+
+          // Check if V0 has MC information
+          if (!v0.has_v0MCCore()) {
+            continue;
+          }
+
+          auto v0MC = v0.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+          auto mcv0Photon = mcparticles.rawIteratorAt(v0MC.particleIdMC());
+
+          if (mcv0Photon.pdgCode() != PDG_t::kGamma || !mcv0Photon.isPhysicalPrimary() || TMath::Abs(mcv0Photon.y()) > 0.5) 
+            continue;
+                
+          // MC pT histo
+          histos.fill(HIST("PhotonMCQA/hPCMPhotonMCpT"), mcv0Photon.pt());
+          
+          // pT resolution
+          histos.fill(HIST("PhotonMCQA/h2dPCMPhotonMCpTResolution"), mcv0Photon.pt(), 1 - v0.pt()/mcv0Photon.pt());
+
+          // photon from sigma0/asigma0
+          auto const& v0photonMothers = mcv0Photon.template mothers_as<aod::McParticles>();          
+          if (!v0photonMothers.empty()) {
+            // Assumption: first mother is the physical one
+            auto const& v0photonMother = v0photonMothers.front();
+            if (TMath::Abs(v0photonMother.pdgCode()) == PDG_t::kSigma0) { // Sigma0 or ASigma0
+              // For efficiency
+              histos.fill(HIST("PhotonMCQA/hPCMSigma0PhotonMCpT"), mcv0Photon.pt());
+          
+              // pT resolution
+              histos.fill(HIST("PhotonMCQA/h2dPCMSigma0PhotonMCpTResolution"), mcv0Photon.pt(), 1 - v0.pt()/mcv0Photon.pt());
+                            
+            }
+          }
+        }
+      }
+
+      // EMCal clusters loop
+      for (size_t icl = 0; icl < emclustersgrouped[coll.globalIndex()].size(); icl++) {
+        auto cluster = fullEMCalClusters.rawIteratorAt(emclustersgrouped[coll.globalIndex()][icl]);
+
+        if (!processEMCalPhotonCandidate(cluster))
+          continue;
+
+        // ============================================================
+        // --- Reco kinematics (assume photon mass = 0)
+        // ============================================================
+
+        float E   = cluster.energy();
+        float eta = cluster.eta();        
+
+        float pt  = E / std::cosh(eta);
+
+        // ============================================================
+        // --- MC matching
+        // ============================================================
+        // Map to avoid double counting of photons in case of conversions (one cluster can be matched to both e+ and e-)
+        std::unordered_set<int> uniquePhotonIds;
+
+        // Loop over cluster contributors
+        for (size_t i = 0; i < cluster.mcParticleIds().size(); i++) {
+
+          int mcId = cluster.mcParticleIds()[i];
+          auto mcPart = mcparticles.iteratorAt(mcId);
+
+          // ============================================================
+          // Find photon ancestor (including conversions)
+          // ============================================================
+
+          int photonId = -1;
+
+          // Case 1: particle itself is photon
+          if (mcPart.pdgCode() == PDG_t::kGamma) {
+            photonId = mcPart.globalIndex();
+          }
+          else {
+            // Case 2: climb ancestry to find photon
+            int candidateId =
+              aod::pwgem::photonmeson::utils::mcutil::FindMotherInChain(
+                mcPart, mcparticles, std::vector<int>{22});
+
+            if (candidateId >= 0)
+              photonId = candidateId;
+          }
+
+          if (photonId < 0)
+            continue;
+
+          // ============================================================
+          // Avoid double counting (conversion case!)
+          // ============================================================
+
+          if (uniquePhotonIds.find(photonId) != uniquePhotonIds.end())
+            continue;
+
+          uniquePhotonIds.insert(photonId);
+
+          auto mcPhoton = mcparticles.iteratorAt(photonId);
+
+          // ============================================================
+          // Select TRUE + PRIMARY photons
+          // ============================================================
+
+          if (mcPhoton.pdgCode() != PDG_t::kGamma || !mcPhoton.isPhysicalPrimary() || TMath::Abs(mcPhoton.y()) > 0.5) 
+            continue;
+          
+          // ============================================================
+          // Fill QA histos
+          // ============================================================
+
+          // MC pT histo
+          histos.fill(HIST("PhotonMCQA/hEMCalPhotonMCpT"), mcPhoton.pt());
+          
+          // pT resolution
+          histos.fill(HIST("PhotonMCQA/h2dEMCalPhotonMCpTResolution"), mcPhoton.pt(), 1 - pt/mcPhoton.pt());
+
+          // Energy resolution
+          histos.fill(HIST("PhotonMCQA/h2dEMCalPhotonMCEnergyResolution"), mcPhoton.e(), 1 - cluster.energy()/mcPhoton.e());
+
+          // Eta resolution
+          histos.fill(HIST("PhotonMCQA/h2dEMCalPhotonMCEtaResolution"), mcPhoton.eta(), cluster.eta() - mcPhoton.eta());
+          
+          // Phi resolution
+          histos.fill(HIST("PhotonMCQA/h2dEMCalPhotonMCPhiResolution"), mcPhoton.phi(), cluster.phi() - mcPhoton.phi());
+
+          // Fraction of energy Vs MC pT
+          histos.fill(HIST("PhotonMCQA/h2dEMCalPhotonMCFractionEnergy"), mcPhoton.pt(), cluster.amplitudeA()[i]);
+
+          // photon from sigma0/asigma0
+          auto const& photonMothers = mcPhoton.template mothers_as<aod::McParticles>();          
+          if (!photonMothers.empty()) {
+            // Assumption: first mother is the physical one
+            auto const& photonMother = photonMothers.front();
+            if (TMath::Abs(photonMother.pdgCode()) == PDG_t::kSigma0) { // Sigma0 or ASigma0
+              // For efficiency
+              histos.fill(HIST("PhotonMCQA/hEMCalSigma0PhotonMCpT"), mcPhoton.pt());
+          
+              // pT resolution
+              histos.fill(HIST("PhotonMCQA/h2dEMCalSigma0PhotonMCpTResolution"), mcPhoton.pt(), 1 - pt/mcPhoton.pt());
+
+              // Energy resolution
+              histos.fill(HIST("PhotonMCQA/h2dEMCalSigma0PhotonMCEnergyResolution"), mcPhoton.e(), 1 - cluster.energy()/mcPhoton.e());
+
+              // Eta resolution
+              histos.fill(HIST("PhotonMCQA/h2dEMCalSigma0PhotonMCEtaResolution"), mcPhoton.eta(), cluster.eta() - mcPhoton.eta());
+              
+              // Phi resolution
+              histos.fill(HIST("PhotonMCQA/h2dEMCalSigma0PhotonMCPhiResolution"), mcPhoton.phi(), cluster.phi() - mcPhoton.phi());
+
+              // Fraction of energy Vs MC pT
+              histos.fill(HIST("PhotonMCQA/h2dEMCalSigma0PhotonMCFractionEnergy"), mcPhoton.pt(), cluster.amplitudeA()[i]);
+            }
+          }                    
+        }
+      }
+          
+    } // end of collisions loop
+
+    // Process MC generated photons 
+    for (const auto& mcpart : mcparticles) {
+      if (mcpart.pdgCode() != PDG_t::kGamma || !mcpart.isPhysicalPrimary() || TMath::Abs(mcpart.y()) > 0.5) 
+        continue;
+      
+      histos.fill(HIST("PhotonMCQA/hGenPhoton"), mcpart.pt());
+
+      // photon from sigma0/asigma0
+      auto const& photonMothers = mcpart.template mothers_as<aod::McParticles>();          
+      if (!photonMothers.empty()) {
+        // Assumption: first mother is the physical one
+        auto const& photonMother = photonMothers.front();
+        if (TMath::Abs(photonMother.pdgCode()) == PDG_t::kSigma0) { // Sigma0 or ASigma0
+          histos.fill(HIST("PhotonMCQA/hGenSigma0Photon"), mcpart.pt());
+        } 
+      }
+    }
+  }
+
   // Sigma0 processing part
   void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, V0StandardDerivedDatas const& fullV0s, dauTracks const&)
   {
-    dataProcess(collisions, fullV0s, nullptr, nullptr);
+    dataProcess(collisions, fullV0s, nullptr, nullptr, nullptr);
   }
 
   void processRealDataWithTOF(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, V0TOFStandardDerivedDatas const& fullV0s, dauTracks const&)
   {
-    dataProcess(collisions, fullV0s, nullptr, nullptr);
+    dataProcess(collisions, fullV0s, nullptr, nullptr, nullptr);
   }
 
-  void processRealDataWithEMCal(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, V0StandardDerivedDatas const& fullV0s, dauTracks const&, aod::EMCALClusters const& fullEMCalClusters)
+  void processRealDataWithEMCal(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, V0StandardDerivedDatas const& fullV0s, dauTracks const&, aod::EMCALClusters const& fullEMCalClusters, aod::EMCALMatchedTracks const& emcmatchedtracks)
   {
-    dataProcess(collisions, fullV0s, fullEMCalClusters, nullptr);
+    dataProcess(collisions, fullV0s, fullEMCalClusters, emcmatchedtracks, nullptr);
   }
 
   void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels> const& collisions, V0DerivedMCDatas const& fullV0s, aod::McParticles const& mcParticles, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const&, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
   {
-    dataProcess(collisions, fullV0s, nullptr, mcParticles);
+    dataProcess(collisions, fullV0s, nullptr, nullptr, mcParticles);
   }
 
   void processMonteCarloWithTOF(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels> const& collisions, V0TOFDerivedMCDatas const& fullV0s, aod::McParticles const& mcParticles, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const&, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
   {
-    dataProcess(collisions, fullV0s, nullptr, mcParticles);
+    dataProcess(collisions, fullV0s, nullptr, nullptr, mcParticles);
   }
 
-  void processMonteCarloWithEMCal(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels> const& collisions, V0DerivedMCDatas const& fullV0s, aod::McParticles const& mcParticles, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const&, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&, EMCalMCClusters const& fullEMCalMCClusters)
+  void processMonteCarloWithEMCal(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels> const& collisions, V0DerivedMCDatas const& fullV0s, aod::McParticles const& mcParticles, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const&, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&, EMCalMCClusters const& fullEMCalMCClusters, aod::EMCALMatchedTracks const& emcmatchedtracks)
   {
-    dataProcess(collisions, fullV0s, fullEMCalMCClusters, mcParticles);
+    dataProcess(collisions, fullV0s, fullEMCalMCClusters, emcmatchedtracks, mcParticles);
   }
 
   void processGeneratedRun3(aod::McParticles const& mcParticles)
@@ -2827,6 +3172,11 @@ struct sigma0builder {
     runGenV0QA(mcCollisions, V0MCCores, collisions);
   }
 
+  void processPCMVsEMCalQA(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels> const& collisions, V0DerivedMCDatas const& fullV0s, aod::McParticles const& mcParticles, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const&, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&, EMCalMCClusters const& fullEMCalMCClusters, aod::EMCALMatchedTracks const& emcmatchedtracks)
+  {
+    runPCMVsEMCalQA(collisions, fullV0s, fullEMCalMCClusters, emcmatchedtracks, mcParticles);
+  }
+
   PROCESS_SWITCH(sigma0builder, processRealData, "process as if real data", true);
   PROCESS_SWITCH(sigma0builder, processRealDataWithTOF, "process as if real data, uses TOF PID info", false);
   PROCESS_SWITCH(sigma0builder, processRealDataWithEMCal, "process as if real data, uses EMCal clusters", false);
@@ -2837,6 +3187,7 @@ struct sigma0builder {
   PROCESS_SWITCH(sigma0builder, processV0QA, "process QA of lambdas and photons", false);
   PROCESS_SWITCH(sigma0builder, processV0MCQA, "process QA of lambdas and photons", false);
   PROCESS_SWITCH(sigma0builder, processV0Generated, "process QA of gen lambdas and photons", false);
+  PROCESS_SWITCH(sigma0builder, processPCMVsEMCalQA, "process QA of PCM and EMCal photons", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
