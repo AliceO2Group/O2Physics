@@ -91,7 +91,7 @@ struct StrangeCascTrack {
     ConfigurableAxis axisEta{"axisEta", {102, -2.01, 2.01}, "#eta"};
     ConfigurableAxis axisDCAxy{"axisDCAxy", {500, 0., 0.5}, "cm"};
     ConfigurableAxis axisDCAz{"axisDCAz", {500, 0., 0.5}, "cm"};
-    ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0,0.5,1,1.5,2,2.5,3,3.5,4,5,10}, "p_{T} (GeV/c)"};
+    ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5, 10}, "p_{T} (GeV/c)"};
     ConfigurableAxis axisMult{"axisMult", {VARIABLE_WIDTH, 0.0f, 5.0, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 70.0f, 100.0f}, "FT0 mult %"};
     ConfigurableAxis axisOmegaMass{"axisOmegaMass", {2000, 1.6, 1.8}, "#Omega M_{inv} (GeV/c^{2})"};
     ConfigurableAxis axisXiMass{"axisXiMass", {2000, 1.2, 1.4}, "#Xi M_{inv} (GeV/c^{2})"};
@@ -112,7 +112,7 @@ struct StrangeCascTrack {
   } eventCuts;
 
   // cascade selections
-  struct: ConfigurableGroup {
+  struct : ConfigurableGroup {
     std::string prefix = "cascadeSelections";
     Configurable<bool> cutDoPropagateDCA{"cutDoPropagateDCA", false, "choose events with sel8"};
     Configurable<float> cutPropDCAtoPVxy{"cutPropDCAtoPVxy", 0.02f, "max cascade dca to PV in xy - propagated"};
@@ -203,21 +203,21 @@ struct StrangeCascTrack {
     } else {
       passedAllSels = false;
     }
-    //* 
+    //*
     if (!eventCuts.doITSTPCVertexEventCut || collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
       if (fillHists)
         histos.fill(HIST("Rec-Events/EvFilter"), 5.5);
     } else {
       passedAllSels = false;
     }
-    //* 
+    //*
     if (!eventCuts.doNoCollInRofStandardCut || collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       if (fillHists)
         histos.fill(HIST("Rec-Events/EvFilter"), 6.5);
     } else {
       passedAllSels = false;
     }
-    //* 
+    //*
     if (!eventCuts.doTimeRangeStandardCut || collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       if (fillHists)
         histos.fill(HIST("Rec-Events/EvFilter"), 7.5);
@@ -1023,8 +1023,8 @@ struct StrangeCascTrack {
   void processDerivedMCGen(soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& genColls, DerMCGenCascades const& genCascs, DerMCRecCollisions const& recColls)
   {
     for (auto const& genColl : genColls) {
-      if (eventCuts.doINELMCGen && genColl.multMCNParticlesEta10() <=0)
-        continue; // skip zero gen mult events
+      if (eventCuts.doINELMCGen && genColl.multMCNParticlesEta10() <= 0)
+        continue;                                 // skip zero gen mult events
       histos.fill(HIST("MC/Gen/EvCounter"), 0.5); // generated events statistics
       double genMult = genColl.multMCNParticlesEta05();
       histos.fill(HIST("MC/Gen/Mult"), genMult);
@@ -1085,8 +1085,8 @@ struct StrangeCascTrack {
           recoCounter = true;
         }
         if (biggestNContribs < recColl.multPVTotalContributors()) {
-        biggestNContribs = recColl.multPVTotalContributors();
-        bestCentrality = (doProcessIons) ? recColl.centFT0C() : recColl.centFT0M();
+          biggestNContribs = recColl.multPVTotalContributors();
+          bestCentrality = (doProcessIons) ? recColl.centFT0C() : recColl.centFT0M();
         }
         // look at generated cascades within reconstructed events
         for (auto const& casc : slicedGenCascs) {
@@ -1125,8 +1125,8 @@ struct StrangeCascTrack {
       }
       // fill centrality exactly once for each rec gen event
       if (biggestNContribs >= 0) {
-      histos.fill(HIST("MC/EvRec/MultCent"), bestCentrality, genMult);
-      histos.fill(HIST("MC/EvRec/Cent"), bestCentrality);
+        histos.fill(HIST("MC/EvRec/MultCent"), bestCentrality, genMult);
+        histos.fill(HIST("MC/EvRec/Cent"), bestCentrality);
       }
     }
   }
