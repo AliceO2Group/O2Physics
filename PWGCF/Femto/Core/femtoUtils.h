@@ -16,22 +16,19 @@
 #ifndef PWGCF_FEMTO_CORE_FEMTOUTILS_H_
 #define PWGCF_FEMTO_CORE_FEMTOUTILS_H_
 
-#include "Common/Core/TableHelper.h"
+#include <Common/Core/TableHelper.h>
 
-#include "CommonConstants/MathConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/InitContext.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
 
-#include "TPDGCode.h"
-
-#include "fairlogger/Logger.h"
+#include <TPDGCode.h>
 
 #include <cmath>
+#include <concepts>
 #include <cstdint>
-#include <experimental/type_traits>
 #include <optional>
 #include <unordered_map>
-#include <utility>
 
 namespace o2::analysis::femto
 {
