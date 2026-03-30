@@ -109,6 +109,7 @@ struct CorrelationTask {
 
   O2_DEFINE_CONFIGURABLE(cfgPtDepMLbkg, std::vector<float>, {}, "pT interval for ML training")
   O2_DEFINE_CONFIGURABLE(cfgPtCentDepMLbkgSel, std::vector<float>, {}, "Bkg ML selection")
+  O2_DEFINE_CONFIGURABLE(cfgPtCentDepMLpromptSel, std::vector<float>, {}, "Prompt ML selection")
 
   ConfigurableAxis axisVertex{"axisVertex", {7, -7, 7}, "vertex axis for histograms"};
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
@@ -174,8 +175,14 @@ struct CorrelationTask {
 
   void init(o2::framework::InitContext&)
   {
-    if ((doprocessSame2ProngDerivedML || doprocessSame2Prong2ProngML || doprocessMixed2ProngDerivedML || doprocessMixed2Prong2ProngML) && (cfgPtDepMLbkg->empty() || cfgPtCentDepMLbkgSel->empty()))
-      LOGF(fatal, "cfgPtDepMLbkg or cfgPtCentDepMLbkgSel can not be empty when ML 2-prong selections are used.");
+    if (doprocessSame2ProngDerivedML || doprocessSame2Prong2ProngML || doprocessMixed2ProngDerivedML || doprocessMixed2Prong2ProngML || doprocessMCEfficiency2ProngML || doprocessMCReflection2ProngML) {
+      if (cfgPtDepMLbkg->empty() || cfgPtCentDepMLbkgSel->empty())
+        LOGF(fatal, "cfgPtDepMLbkg or cfgPtCentDepMLbkgSel can not be empty when ML 2-prong selections are used.");
+      if (cfgPtDepMLbkg->size() != cfgPtCentDepMLbkgSel->size())
+        LOGF(fatal, "cfgPtDepMLbkg and cfgPtCentDepMLbkgSel must be same size.");
+      if (!cfgPtCentDepMLpromptSel->empty() && cfgPtCentDepMLpromptSel->size() != cfgPtDepMLbkg->size())
+        LOGF(fatal, "cfgPtDepMLbkg and cfgPtCentDepMLpromptSel must be same size.");
+    }
     registry.add("yields", "multiplicity/centrality vs pT vs eta", {HistType::kTH3F, {{100, 0, 100, "/multiplicity/centrality"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
     registry.add("etaphi", "multiplicity/centrality vs eta vs phi", {HistType::kTH3F, {{100, 0, 100, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, o2::constants::math::TwoPI, "#varphi"}}});
     if (doprocessSame2ProngDerived || doprocessSame2ProngDerivedML || doprocessSame2Prong2Prong || doprocessSame2Prong2ProngML || doprocessMCSameDerived2Prong) {
@@ -326,7 +333,15 @@ struct CorrelationTask {
   {
     auto it = std::lower_bound(cfgPtDepMLbkg->begin(), cfgPtDepMLbkg->end(), track.pt());
     int idx = std::distance(cfgPtDepMLbkg->begin(), it) - 1;
-    return !((track.decay() == 0 && track.mlProbD0()[0] > cfgPtCentDepMLbkgSel->at(idx)) || (track.decay() == 1 && track.mlProbD0bar()[0] > cfgPtCentDepMLbkgSel->at(idx)));
+    return (track.decay() != aod::cf2prongtrack::D0ToPiK ||
+            (track.mlProbD0()[0] < cfgPtCentDepMLbkgSel->at(idx) && // not background
+             (cfgPtCentDepMLpromptSel->empty() ||
+              track.mlProbD0()[1] > cfgPtCentDepMLpromptSel->at(idx)))) && // prompt
+
+           ((track.decay() != aod::cf2prongtrack::D0barToKPi && track.decay() != aod::cf2prongtrack::D0barToKPiExclusive) ||
+            (track.mlProbD0bar()[0] < cfgPtCentDepMLbkgSel->at(idx) && // not background
+             (cfgPtCentDepMLpromptSel->empty() ||
+              track.mlProbD0bar()[1] > cfgPtCentDepMLpromptSel->at(idx)))); // prompt
   }
 
   template <class T>
@@ -571,7 +586,7 @@ struct CorrelationTask {
       }
 
       if constexpr (std::experimental::is_detected<HasMcDecay, typename TTracks1::iterator>::value) {
-        if (((track1.mcDecay() != aod::cf2prongtrack::D0ToPiK) && (track1.mcDecay() != aod::cf2prongtrack::D0barToKPiExclusive)) || (track1.decay() & aod::cf2prongmcpart::Prompt) == 0)
+        if (((track1.mcDecay() != aod::cf2prongtrack::D0ToPiK) && (track1.mcDecay() != aod::cf2prongtrack::D0barToKPiExclusive)) || (!cfgPtCentDepMLpromptSel->empty() && (track1.decay() & aod::cf2prongmcpart::Prompt) == 0))
           continue;
       } else if constexpr (std::experimental::is_detected<HasDecay, typename TTracks1::iterator>::value) {
         if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track1.decay()))) == 0u) {
@@ -654,7 +669,7 @@ struct CorrelationTask {
 
         // If decay attributes are found for the second track/particle, we assume 2p-2p correlation
         if constexpr (std::experimental::is_detected<HasMcDecay, typename TTracks2::iterator>::value) {
-          if ((((track2.mcDecay()) != aod::cf2prongtrack::D0ToPiK) && ((track2.mcDecay()) != aod::cf2prongtrack::D0barToKPiExclusive)) || (track2.decay() & aod::cf2prongmcpart::Prompt) == 0)
+          if ((((track2.mcDecay()) != aod::cf2prongtrack::D0ToPiK) && ((track2.mcDecay()) != aod::cf2prongtrack::D0barToKPiExclusive)) || (!cfgPtCentDepMLpromptSel->empty() && (track2.decay() & aod::cf2prongmcpart::Prompt) == 0))
             continue;
         } else if constexpr (std::experimental::is_detected<HasDecay, typename TTracks2::iterator>::value) {
           if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track2.decay()))) == 0u) {
@@ -1196,8 +1211,12 @@ struct CorrelationTask {
     p2indexCache.clear();
     for (const auto& mcParticle : mcParticles) {
       if (std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), mcParticle.pdgCode()) != cfgMcTriggerPDGs->end()) {
-        if (((mcParticle.mcDecay() != aod::cf2prongtrack::D0ToPiK) && (mcParticle.mcDecay() != aod::cf2prongtrack::D0barToKPiExclusive)) || (mcParticle.decay() & aod::cf2prongmcpart::Prompt) == 0)
+        if ((mcParticle.mcDecay() != aod::cf2prongtrack::D0ToPiK) && (mcParticle.mcDecay() != aod::cf2prongtrack::D0barToKPiExclusive))
           continue; // wrong decay channel
+        if constexpr (!reflectionSpec) {
+          if (!cfgPtCentDepMLpromptSel->empty() && (mcParticle.decay() & aod::cf2prongmcpart::Prompt) == 0)
+            continue;
+        }
         if (mcParticle.cfParticleDaugh0Id() < 0 && mcParticle.cfParticleDaugh1Id() < 0)
           continue; // daughters not found
         if constexpr (!reflectionSpec)

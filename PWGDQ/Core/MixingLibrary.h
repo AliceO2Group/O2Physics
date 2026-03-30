@@ -16,11 +16,6 @@
 #define PWGDQ_CORE_MIXINGLIBRARY_H_
 
 #include "PWGDQ/Core/MixingHandler.h"
-#include "PWGDQ/Core/VarManager.h"
-
-#include <TString.h>
-
-#include "rapidjson/document.h"
 
 namespace o2::aod
 {
