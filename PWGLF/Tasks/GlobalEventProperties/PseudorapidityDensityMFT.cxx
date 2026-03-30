@@ -84,9 +84,6 @@ AxisSpec dcaYAxis = {6000, -30, 30}; // previous AxisSpec dcaYAxis  = {2000, -10
 // AxisSpec dcaZAxis  = {600, -0.15f, 0.15f};
 // AxisSpec dcaXAxis  = {600, -0.15f, 0.15f};
 // AxisSpec dcaYAxis  = {600, -0.15f, 0.15f};
-// bin width 0.0005 cm: range [-30, 30] cm => 60/0.0005 = 120000 bins
-// Keep bin width = 0.0005 cm (5 um): range [-1, 1] cm => 2.0/0.0005 = 4000 bins
-// AxisSpec axisBinsDCA = {600, -0.15f, 0.15f, "#it{dca}_{xy} (cm)"};
 
 AxisSpec centAxis = {{0, 10, 20, 30, 40, 50, 60, 70, 80, 100}};
 
