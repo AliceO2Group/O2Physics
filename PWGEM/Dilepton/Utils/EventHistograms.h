@@ -156,11 +156,11 @@ void addEventHistogramsBootstrap(HistogramRegistry* fRegistry, int nsamples = 1)
   fRegistry->add("Event/bootstrap/hPrfQ2FT0AQ2BPos_CentFT0C_bootstrap", "Q_{2}^{FT0A} #upoint Q_{2}^{BPos};centrality FT0C (%);bootstrap sample;Q_{2}^{FT0A} #upoint Q_{2}^{BPos}", kTProfile2D, {{100, 0, 100}, {nsamples, 0.5, nsamples + 0.5}}, false);
   fRegistry->add("Event/bootstrap/hPrfQ2FT0AQ2BNeg_CentFT0C_bootstrap", "Q_{2}^{FT0A} #upoint Q_{2}^{BNeg};centrality FT0C (%);bootstrap sample;Q_{2}^{FT0A} #upoint Q_{2}^{BNeg}", kTProfile2D, {{100, 0, 100}, {nsamples, 0.5, nsamples + 0.5}}, false);
   fRegistry->add("Event/bootstrap/hPrfQ2FT0AQ2BTot_CentFT0C_bootstrap", "Q_{2}^{FT0A} #upoint Q_{2}^{BTot};centrality FT0C (%);bootstrap sample;Q_{2}^{FT0A} #upoint Q_{2}^{BTot}", kTProfile2D, {{100, 0, 100}, {nsamples, 0.5, nsamples + 0.5}}, false);
-  fRegistry->add("Event/bootstrap/hPrfQ2FT0AQ2FT0C_CentFT0C_bootstrap", "Q_{2}^{FT0A} #upoint Q_{2}^{FT0C};centrality FT0C (%);bootstrap sample;Q_{2}^{FT0A} #upoint Q_{2}^{FT0C}", kTProfile2D, {{100, 0, 100}, {nsamples, 0.5, nsamples + 0.5}}, false); 
+  fRegistry->add("Event/bootstrap/hPrfQ2FT0AQ2FT0C_CentFT0C_bootstrap", "Q_{2}^{FT0A} #upoint Q_{2}^{FT0C};centrality FT0C (%);bootstrap sample;Q_{2}^{FT0A} #upoint Q_{2}^{FT0C}", kTProfile2D, {{100, 0, 100}, {nsamples, 0.5, nsamples + 0.5}}, false);
   fRegistry->add("Event/bootstrap/hPrfQ2FV0AQ2BPos_CentFT0C_bootstrap", "Q_{2}^{FV0A} #upoint Q_{2}^{BPos};centrality FT0C (%);bootstrap sample;Q_{2}^{FV0A} #upoint Q_{2}^{BPos}", kTProfile2D, {{100, 0, 100}, {nsamples, 0.5, nsamples + 0.5}}, false);
   fRegistry->add("Event/bootstrap/hPrfQ2FV0AQ2BNeg_CentFT0C_bootstrap", "Q_{2}^{FV0A} #upoint Q_{2}^{BNeg};centrality FT0C (%);bootstrap sample;Q_{2}^{FV0A} #upoint Q_{2}^{BNeg}", kTProfile2D, {{100, 0, 100}, {nsamples, 0.5, nsamples + 0.5}}, false);
   fRegistry->add("Event/bootstrap/hPrfQ2FV0AQ2BTot_CentFT0C_bootstrap", "Q_{2}^{FV0A} #upoint Q_{2}^{BTot};centrality FT0C (%);bootstrap sample;Q_{2}^{FV0A} #upoint Q_{2}^{BTot}", kTProfile2D, {{100, 0, 100}, {nsamples, 0.5, nsamples + 0.5}}, false);
-  fRegistry->add("Event/bootstrap/hPrfQ2FV0AQ2FT0C_CentFT0C_bootstrap", "Q_{2}^{FV0A} #upoint Q_{2}^{FT0C};centrality FT0C (%);bootstrap sample;Q_{2}^{FV0A} #upoint Q_{2}^{FT0C}", kTProfile2D, {{100, 0, 100}, {nsamples, 0.5, nsamples + 0.5}}, false); 
+  fRegistry->add("Event/bootstrap/hPrfQ2FV0AQ2FT0C_CentFT0C_bootstrap", "Q_{2}^{FV0A} #upoint Q_{2}^{FT0C};centrality FT0C (%);bootstrap sample;Q_{2}^{FV0A} #upoint Q_{2}^{FT0C}", kTProfile2D, {{100, 0, 100}, {nsamples, 0.5, nsamples + 0.5}}, false);
 }
 
 template <const int ev_id, const int nmod = -1, typename TCollision>
@@ -351,11 +351,11 @@ void fillEventInfoBootstrap(HistogramRegistry* fRegistry, TCollision const& coll
   fRegistry->fill(HIST("Event/bootstrap/hPrfQ2FT0AQ2BPos_CentFT0C_bootstrap"), collision.centFT0C(), sample + 0.5, RecoDecay::dotProd(q2ft0a, q2bpos), weight);
   fRegistry->fill(HIST("Event/bootstrap/hPrfQ2FT0AQ2BNeg_CentFT0C_bootstrap"), collision.centFT0C(), sample + 0.5, RecoDecay::dotProd(q2ft0a, q2bneg), weight);
   fRegistry->fill(HIST("Event/bootstrap/hPrfQ2FT0AQ2BTot_CentFT0C_bootstrap"), collision.centFT0C(), sample + 0.5, RecoDecay::dotProd(q2ft0a, q2btot), weight);
-  fRegistry->fill(HIST("Event/bootstrap/hPrfQ2FT0AQ2FT0C_CentFT0C_bootstrap"), collision.centFT0C(), sample + 0.5, RecoDecay::dotProd(q2ft0a, q2ft0c), weight); 
+  fRegistry->fill(HIST("Event/bootstrap/hPrfQ2FT0AQ2FT0C_CentFT0C_bootstrap"), collision.centFT0C(), sample + 0.5, RecoDecay::dotProd(q2ft0a, q2ft0c), weight);
   fRegistry->fill(HIST("Event/bootstrap/hPrfQ2FV0AQ2BPos_CentFT0C_bootstrap"), collision.centFT0C(), sample + 0.5, RecoDecay::dotProd(q2fv0a, q2bpos), weight);
   fRegistry->fill(HIST("Event/bootstrap/hPrfQ2FV0AQ2BNeg_CentFT0C_bootstrap"), collision.centFT0C(), sample + 0.5, RecoDecay::dotProd(q2fv0a, q2bneg), weight);
   fRegistry->fill(HIST("Event/bootstrap/hPrfQ2FV0AQ2BTot_CentFT0C_bootstrap"), collision.centFT0C(), sample + 0.5, RecoDecay::dotProd(q2fv0a, q2btot), weight);
-  fRegistry->fill(HIST("Event/bootstrap/hPrfQ2FV0AQ2FT0C_CentFT0C_bootstrap"), collision.centFT0C(), sample + 0.5, RecoDecay::dotProd(q2fv0a, q2ft0c), weight); 
+  fRegistry->fill(HIST("Event/bootstrap/hPrfQ2FV0AQ2FT0C_CentFT0C_bootstrap"), collision.centFT0C(), sample + 0.5, RecoDecay::dotProd(q2fv0a, q2ft0c), weight);
 }
 } // namespace o2::aod::pwgem::dilepton::utils::eventhistogram
 #endif // PWGEM_DILEPTON_UTILS_EVENTHISTOGRAMS_H_

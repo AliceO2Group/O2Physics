@@ -46,8 +46,8 @@
 #include "MathUtils/Utils.h"
 
 #include "Math/Vector4D.h"
-#include "TString.h"
 #include "TRandom3.h"
+#include "TString.h"
 
 #include <algorithm>
 #include <array>
@@ -1096,7 +1096,7 @@ struct Dilepton {
         // LOGF(info, "collision.centFT0C() = %f, collision.trackOccupancyInTimeRange() = %d, getSPresolution = %f", collision.centFT0C(), collision.trackOccupancyInTimeRange(), getSPresolution(collision.centFT0C(), collision.trackOccupancyInTimeRange()));
 
         float sp = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v12.Phi())), static_cast<float>(std::sin(nmod * v12.Phi()))}, qvectors[nmod][cfgQvecEstimator]) / getSPresolution(collision.centFT0C(), collision.trackOccupancyInTimeRange());
-        for(int i = 0; i<cfgNumBootstrapSamples; i++){
+        for (int i = 0; i < cfgNumBootstrapSamples; i++) {
           if (t1.sign() * t2.sign() < 0) { // ULS
             fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), sp, i + 0.5, weightvector.at(i));
           } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
@@ -1311,17 +1311,16 @@ struct Dilepton {
 
       std::vector<float> bootstrapweights = {};
       int randomSeed = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-      TRandom3 randomNumber(randomSeed); 
-      if(cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kBootstrapv2)){ // bootstrapping for accepted events
-        for(int i = 0; i<cfgNumBootstrapSamples; i++){
+      TRandom3 randomNumber(randomSeed);
+      if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kBootstrapv2)) { // bootstrapping for accepted events
+        for (int i = 0; i < cfgNumBootstrapSamples; i++) {
           float poissonweight = 0.;
           poissonweight = static_cast<float>(randomNumber.PoissonD(1.0));
           bootstrapweights.push_back(poissonweight);
           o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfoBootstrap(&fRegistry, collision, i, poissonweight);
         }
-      }
-      else{
-        bootstrapweights.push_back(1.0); // to pass as non-empyt dummy to use 
+      } else {
+        bootstrapweights.push_back(1.0); // to pass as non-empyt dummy to use
       }
 
       if (nmod == 2) {
