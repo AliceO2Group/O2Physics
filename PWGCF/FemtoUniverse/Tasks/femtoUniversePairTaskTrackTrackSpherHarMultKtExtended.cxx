@@ -968,6 +968,12 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
 
       if (kT < firstRealElement || kT > lastElement)
         continue;
+
+      float pairFractionTPCsCls = static_cast<float>((p1.tpcNClsShared() + p2.tpcNClsShared())) / static_cast<float>((p1.tpcNClsFound() + p2.tpcNClsFound()));
+      if (pairFractionTPCsCls > twotracksconfigs.confPairFracSharedTPCcls.value) {
+        continue;
+      }
+
       double rand;
       rand = randgen->Rndm();
       auto part1 = p1;
