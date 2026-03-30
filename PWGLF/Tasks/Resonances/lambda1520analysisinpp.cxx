@@ -429,9 +429,9 @@ struct Lambda1520analysisinpp {
       histos.add("Result/MC/h3antilambda1520Recoinvmass", "Invariant mass of Reconstructed MC Anti-#Lambda(1520)0", kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});
     }
     if (doprocessdummy) {
-      histos.add("Result/dummy/Genprotonpt", "pT distribution of True MC Proton", kTH3F, {axisMClabel, axisPt, axisMult});
-      histos.add("Result/dummy/Genlambdapt", "pT distribution of True MC #Lambda(1520)", kTH3F, {axisMClabel, axisPt, axisMult});
-      histos.add("Result/dummy/Genxipt", "pT distribution of True MC #Xi(1520)", kTH3F, {axisMClabel, axisPt, axisMult});
+      histos.add("Result/dummy/Genprotonpt", "pT distribution of #Lambda(1520) from Proton", kTH3F, {axisMClabel, axisPt, axisMult});
+      histos.add("Result/dummy/Genlambdapt", "pT distribution of #Lambda(1520) from #Lambda", kTH3F, {axisMClabel, axisPt, axisMult});
+      histos.add("Result/dummy/Genxipt", "pT distribution of #Lambda(1520) from #Xi^{-}", kTH3F, {axisMClabel, axisPt, axisMult});
     }
 
     // Print output histograms statistics
