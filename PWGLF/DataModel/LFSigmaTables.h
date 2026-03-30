@@ -500,7 +500,6 @@ DECLARE_SOA_TABLE(Sigma0PhotonExtras, "AOD", "SIGMA0PHOTON",
                   sigma0PhotonExtra::PhotonNegTrackCode,
                   sigma0PhotonExtra::PhotonV0Type);
 
-
 // For EMCal Photon extra info
 namespace sigma0EMPhoton
 {
@@ -520,7 +519,7 @@ DECLARE_SOA_COLUMN(PhotonNLM, photonNLM, int);
 DECLARE_SOA_COLUMN(PhotonDefinition, photonDefinition, int);
 DECLARE_SOA_COLUMN(PhotonHasAssocTrk, photonHasAssocTrk, bool);
 
-} // namespace sigma0PhotonExtra
+} // namespace sigma0EMPhoton
 
 DECLARE_SOA_TABLE(Sigma0EMPhotons, "AOD", "SIGMA0EMPHOTON",
                   sigma0EMPhoton::PhotonID,
@@ -536,7 +535,6 @@ DECLARE_SOA_TABLE(Sigma0EMPhotons, "AOD", "SIGMA0EMPHOTON",
                   sigma0EMPhoton::PhotonNLM,
                   sigma0EMPhoton::PhotonDefinition,
                   sigma0EMPhoton::PhotonHasAssocTrk);
-
 
 // For Lambda extra info
 namespace sigma0LambdaExtra
@@ -603,7 +601,7 @@ DECLARE_SOA_TABLE(Sigma0LambdaExtras, "AOD", "SIGMA0LAMBDA",
 // for MC
 namespace sigma0MCCore
 {
-DECLARE_SOA_COLUMN(ParticleIdMC, particleIdMC, int);            //! V0 Particle ID
+DECLARE_SOA_COLUMN(ParticleIdMC, particleIdMC, int); //! V0 Particle ID
 DECLARE_SOA_COLUMN(MCradius, mcradius, float);
 DECLARE_SOA_COLUMN(PDGCode, pdgCode, int);
 DECLARE_SOA_COLUMN(PDGCodeMother, pdgCodeMother, int);
@@ -613,7 +611,7 @@ DECLARE_SOA_COLUMN(IsProducedByGenerator, isProducedByGenerator, bool);
 DECLARE_SOA_COLUMN(PhotonMCPx, photonmcpx, float);
 DECLARE_SOA_COLUMN(PhotonMCPy, photonmcpy, float);
 DECLARE_SOA_COLUMN(PhotonMCPz, photonmcpz, float);
-DECLARE_SOA_COLUMN(PhotonAmplitudeA, photonAmplitudeA, float); // Energy fraction deposited by a particle inside this calo cell. 
+DECLARE_SOA_COLUMN(PhotonAmplitudeA, photonAmplitudeA, float); // Energy fraction deposited by a particle inside this calo cell.
 DECLARE_SOA_COLUMN(PhotonPDGCodePos, photonPDGCodePos, int);
 DECLARE_SOA_COLUMN(PhotonPDGCodeNeg, photonPDGCodeNeg, int);
 DECLARE_SOA_COLUMN(IsPhotonPrimary, isPhotonPrimary, bool);
@@ -739,7 +737,7 @@ DECLARE_SOA_TABLE(Sigma0MCCores, "AOD", "SIGMA0MCCORES",
                   // Basic properties
                   sigma0MCCore::MCradius, sigma0MCCore::PDGCode, sigma0MCCore::PDGCodeMother, sigma0MCCore::MCprocess, sigma0MCCore::IsProducedByGenerator,
 
-                  sigma0MCCore::PhotonMCPx, sigma0MCCore::PhotonMCPy, sigma0MCCore::PhotonMCPz, sigma0MCCore::PhotonAmplitudeA, 
+                  sigma0MCCore::PhotonMCPx, sigma0MCCore::PhotonMCPy, sigma0MCCore::PhotonMCPz, sigma0MCCore::PhotonAmplitudeA,
                   sigma0MCCore::PhotonPDGCodePos, sigma0MCCore::PhotonPDGCodeNeg, sigma0MCCore::IsPhotonPrimary, sigma0MCCore::PhotonPDGCode, sigma0MCCore::PhotonPDGCodeMother, sigma0MCCore::PhotonIsCorrectlyAssoc,
 
                   sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy, sigma0MCCore::LambdaMCPz,
@@ -771,7 +769,6 @@ DECLARE_SOA_TABLE(Sigma0MCCores, "AOD", "SIGMA0MCCORES",
                   sigma0MCCore::LambdaMCEta<sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy, sigma0MCCore::LambdaMCPz>,
                   sigma0MCCore::LambdaMCY<sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy, sigma0MCCore::LambdaMCPz>,
                   sigma0MCCore::LambdaMCPhi<sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy>);
-
 
 // for MC
 namespace kstarMCCore

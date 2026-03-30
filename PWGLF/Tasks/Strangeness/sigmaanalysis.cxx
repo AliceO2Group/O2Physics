@@ -65,7 +65,6 @@ using MCSigma0s = soa::Join<aod::Sigma0Cores, aod::Sigma0PhotonExtras, aod::Sigm
 using Sigma0sWithEMCal = soa::Join<aod::Sigma0Cores, aod::Sigma0EMPhotons, aod::Sigma0LambdaExtras, aod::SigmaCollRef>;
 using MCSigma0sWithEMCal = soa::Join<aod::Sigma0Cores, aod::Sigma0EMPhotons, aod::Sigma0LambdaExtras, aod::Sigma0MCCores, aod::SigmaCollRef>;
 
-
 static const std::vector<std::string> PhotonSels = {"NoSel", "V0Type", "DCADauToPV",
                                                     "DCADau", "DauTPCCR", "TPCNSigmaEl", "V0pT",
                                                     "Y", "V0Radius", "RZCut", "Armenteros", "CosPA",
@@ -223,17 +222,17 @@ struct sigmaanalysis {
   struct : ConfigurableGroup {
     std::string prefix = "EMCalPhotonSelections"; // JSON group name
     Configurable<int> definition{"definition", 13, "Cluster definitions to be accepted (e.g. 13 for kV3MostSplitLowSeed)"};
-    Configurable<int> MinCells{"MinCells", 1, "Min number of cells in cluster"};    
-    Configurable<float> MinEnergy{"MinEnergy", 0.0, "Minimum energy of selected clusters (GeV)"};    
-    Configurable<float> MaxEnergy{"MaxEnergy", 5, "Max energy of selected clusters (GeV)"};      
-    Configurable<float> MaxEta{"MaxEta", 1.0, "Max absolute cluster Eta"};      
-    Configurable<float> MinTime{"MinTime", -50, "Minimum time of selected clusters (ns)"};    
-    Configurable<float> MaxTime{"MaxTime", 50, "Max time of selected clusters (ns)"};    
-    Configurable<bool> RemoveExotic{"RemoveExotic", false, "Flag to enable the removal of exotic clusters"};    
-    Configurable<float> MinM02{"MinM02", -1., "Minimum shower shape long axis"};    
-    Configurable<float> MaxM02{"MaxM02", 5., "Max shower shape long axis"};    
-    Configurable<bool> RemoveMatchedTrack{"RemoveMatchedTrack", true, "Flag to enable the removal of clusters matched to tracks"};    
-    
+    Configurable<int> MinCells{"MinCells", 1, "Min number of cells in cluster"};
+    Configurable<float> MinEnergy{"MinEnergy", 0.0, "Minimum energy of selected clusters (GeV)"};
+    Configurable<float> MaxEnergy{"MaxEnergy", 5, "Max energy of selected clusters (GeV)"};
+    Configurable<float> MaxEta{"MaxEta", 1.0, "Max absolute cluster Eta"};
+    Configurable<float> MinTime{"MinTime", -50, "Minimum time of selected clusters (ns)"};
+    Configurable<float> MaxTime{"MaxTime", 50, "Max time of selected clusters (ns)"};
+    Configurable<bool> RemoveExotic{"RemoveExotic", false, "Flag to enable the removal of exotic clusters"};
+    Configurable<float> MinM02{"MinM02", -1., "Minimum shower shape long axis"};
+    Configurable<float> MaxM02{"MaxM02", 5., "Max shower shape long axis"};
+    Configurable<bool> RemoveMatchedTrack{"RemoveMatchedTrack", true, "Flag to enable the removal of clusters matched to tracks"};
+
   } EMCalPhotonSelections;
 
   struct : ConfigurableGroup {
@@ -309,7 +308,7 @@ struct sigmaanalysis {
   void init(InitContext const&)
   {
     LOGF(info, "Initializing now: cross-checking correctness...");
-    if ((doprocessRealData + doprocessRealDataWithEMCal + doprocessMonteCarlo + doprocessMonteCarloWithEMCal+ doprocessPi0RealData + doprocessPi0MonteCarlo > 1) ||
+    if ((doprocessRealData + doprocessRealDataWithEMCal + doprocessMonteCarlo + doprocessMonteCarloWithEMCal + doprocessPi0RealData + doprocessPi0MonteCarlo > 1) ||
         (doprocessGeneratedRun3 + doprocessPi0GeneratedRun3 > 1)) {
       LOGF(fatal, "You have enabled more than one process function. Please check your configuration! Aborting now.");
     }
@@ -389,7 +388,6 @@ struct sigmaanalysis {
             histos.add(histodir + "/Photon/hMass", "hMass", kTH1D, {axisPhotonMass});
             histos.add(histodir + "/Photon/h3dPhotonYSigma0Mass", "h3dPhotonYSigma0Mass", kTH3D, {axisRapidity, axisPt, axisSigmaMass});
             histos.add(histodir + "/Photon/h3dPhotonRadiusSigma0Mass", "h3dPhotonRadiusSigma0Mass", kTH3D, {axisV0Radius, axisPt, axisSigmaMass});
-
           }
 
           if (doprocessRealDataWithEMCal || doprocessMonteCarloWithEMCal) {
@@ -401,7 +399,7 @@ struct sigmaanalysis {
             histos.add(histodir + "/EMCalPhotonSel/h2dEtaVsPhi", "h2dEtaVsPhi", kTH2D, {axisRapidity, axisPhi});
             histos.add(histodir + "/EMCalPhotonSel/hTime", "hTime", kTH1D, {axisClrTime});
             histos.add(histodir + "/EMCalPhotonSel/hExotic", "hExotic", kTH1D, {{2, -0.5f, 1.5f}});
-            histos.add(histodir + "/EMCalPhotonSel/hShape", "hShape", kTH1D, {axisClrShape});      
+            histos.add(histodir + "/EMCalPhotonSel/hShape", "hShape", kTH1D, {axisClrShape});
           }
 
           histos.add(histodir + "/Lambda/hTrackCode", "hTrackCode", kTH1D, {{11, 0.5f, 11.5f}});
@@ -442,7 +440,7 @@ struct sigmaanalysis {
         histos.add(histodir + "/Sigma0/hRadius", "hRadius", kTH1D, {axisV0PairRadius});
         histos.add(histodir + "/Sigma0/h2dRadiusVspT", "h2dRadiusVspT", kTH2D, {axisV0PairRadius, axisPt});
         histos.add(histodir + "/Sigma0/hDCAPairDau", "hDCAPairDau", kTH1D, {axisDCAdau});
-        histos.add(histodir + "/Sigma0/h3dMass", "h3dMass", kTH3D, {axisCentrality, axisPt, axisSigmaMass});        
+        histos.add(histodir + "/Sigma0/h3dMass", "h3dMass", kTH3D, {axisCentrality, axisPt, axisSigmaMass});
         histos.add(histodir + "/Sigma0/h3dOPAngleVsMass", "h3dOPAngleVsMass", kTH3D, {{140, 0.0f, +7.0f}, axisPt, axisSigmaMass});
 
         histos.add(histodir + "/ASigma0/hMass", "hMass", kTH1D, {axisSigmaMass});
@@ -451,7 +449,7 @@ struct sigmaanalysis {
         histos.add(histodir + "/ASigma0/hRadius", "hRadius", kTH1D, {axisV0PairRadius});
         histos.add(histodir + "/ASigma0/h2dRadiusVspT", "h2dRadiusVspT", kTH2D, {axisV0PairRadius, axisPt});
         histos.add(histodir + "/ASigma0/hDCAPairDau", "hDCAPairDau", kTH1D, {axisDCAdau});
-        histos.add(histodir + "/ASigma0/h3dMass", "h3dMass", kTH3D, {axisCentrality, axisPt, axisSigmaMass});        
+        histos.add(histodir + "/ASigma0/h3dMass", "h3dMass", kTH3D, {axisCentrality, axisPt, axisSigmaMass});
         histos.add(histodir + "/ASigma0/h3dOPAngleVsMass", "h3dOPAngleVsMass", kTH3D, {{140, 0.0f, +7.0f}, axisPt, axisSigmaMass});
 
         // Process MC
@@ -460,14 +458,14 @@ struct sigmaanalysis {
           if (fillSelhistos) {
             histos.add(histodir + "/MC/Photon/hV0ToCollAssoc", "hV0ToCollAssoc", kTH1D, {{2, 0.0f, 2.0f}});
             histos.add(histodir + "/MC/Photon/hPt", "hPt", kTH1D, {axisPt});
-            histos.add(histodir + "/MC/Photon/hMCPt", "hMCPt", kTH1D, {axisPt});            
+            histos.add(histodir + "/MC/Photon/hMCPt", "hMCPt", kTH1D, {axisPt});
 
-            if (doprocessMonteCarlo){
+            if (doprocessMonteCarlo) {
               histos.add(histodir + "/MC/Photon/h2dPAVsPt", "h2dPAVsPt", kTH2D, {axisPA, axisPt});
               histos.add(histodir + "/MC/Photon/hPt_BadCollAssig", "hPt_BadCollAssig", kTH1D, {axisPt});
               histos.add(histodir + "/MC/Photon/h2dPAVsPt_BadCollAssig", "h2dPAVsPt_BadCollAssig", kTH2D, {axisPA, axisPt});
             }
-            
+
             histos.add(histodir + "/MC/Lambda/hV0ToCollAssoc", "hV0ToCollAssoc", kTH1D, {{2, 0.0f, 2.0f}});
             histos.add(histodir + "/MC/Lambda/hPt", "hPt", kTH1D, {axisPt});
             histos.add(histodir + "/MC/Lambda/hMCPt", "hMCPt", kTH1D, {axisPt});
@@ -480,7 +478,7 @@ struct sigmaanalysis {
             histos.add(histodir + "/MC/ALambda/h3dTPCvsTOFNSigma_Pr", "h3dTPCvsTOFNSigma_Pr", kTH3D, {axisTPCNSigma, axisTOFNSigma, axisPt});
             histos.add(histodir + "/MC/ALambda/h3dTPCvsTOFNSigma_Pi", "h3dTPCvsTOFNSigma_Pi", kTH3D, {axisTPCNSigma, axisTOFNSigma, axisPt});
           }
-          
+
           histos.add(histodir + "/MC/Sigma0/hPt", "hPt", kTH1D, {axisPt});
           histos.add(histodir + "/MC/Sigma0/hMCPt", "hMCPt", kTH1D, {axisPt});
           histos.add(histodir + "/MC/Sigma0/hMass", "hMass", kTH1D, {axisSigmaMass});
@@ -797,7 +795,7 @@ struct sigmaanalysis {
       groupedCollisions[coll.straMCCollisionId()].push_back(coll.globalIndex());
     }
 
-    for (auto const& mcCollision : mcCollisions) {      
+    for (auto const& mcCollision : mcCollisions) {
       int biggestNContribs = -1;
       int bestCollisionIndex = -1;
       for (size_t i = 0; i < groupedCollisions[mcCollision.globalIndex()].size(); i++) {
@@ -852,13 +850,13 @@ struct sigmaanalysis {
       }
 
       histos.fill(HIST("Gen/hGenEvents"), mcCollision.multMCNParticlesEta05(), 0 /* all gen. events*/);
-      
+
       // Check if there is at least one of the reconstructed collisions associated to this MC collision
       // If so, we consider it
       bool atLeastOne = false;
       int biggestNContribs = -1;
       float centrality = 100.5f;
-      int nCollisions = 0;      
+      int nCollisions = 0;
       for (size_t i = 0; i < groupedCollisions[mcCollision.globalIndex()].size(); i++) {
         auto collision = collisions.rawIteratorAt(groupedCollisions[mcCollision.globalIndex()][i]);
 
@@ -981,7 +979,7 @@ struct sigmaanalysis {
     int TrkCode = 10; // 1: TPC-only, 2: TPC+Something, 3: ITS-Only, 4: ITS+TPC + Something, 10: anything else
 
     if (isGamma) {
-      if constexpr (requires { sigma.photonV0Type();}) {
+      if constexpr (requires { sigma.photonV0Type(); }) {
         if (sigma.photonPosTrackCode() == 1 && sigma.photonNegTrackCode() == 1)
           TrkCode = 1;
         if ((sigma.photonPosTrackCode() != 1 && sigma.photonNegTrackCode() == 1) || (sigma.photonPosTrackCode() == 1 && sigma.photonNegTrackCode() != 1))
@@ -1012,9 +1010,9 @@ struct sigmaanalysis {
     //_______________________________________
     // Gamma MC association
     if (sigma.photonPDGCode() == 22) {
-      if (sigma.photonmcpt() > 0) {        
-        histos.fill(HIST("BeforeSel/MC/Reso/h2dGammaPtResolution"), sigma.photonmcpt(), sigma.photonPt() - sigma.photonmcpt());                                        // pT resolution
-        histos.fill(HIST("BeforeSel/MC/Reso/h2dGammaInvPtResolution"), 1.f / sigma.photonmcpt(), 1.f / sigma.photonPt() - 1.f / sigma.photonmcpt());                                        // pT resolution
+      if (sigma.photonmcpt() > 0) {
+        histos.fill(HIST("BeforeSel/MC/Reso/h2dGammaPtResolution"), sigma.photonmcpt(), sigma.photonPt() - sigma.photonmcpt());                      // pT resolution
+        histos.fill(HIST("BeforeSel/MC/Reso/h2dGammaInvPtResolution"), 1.f / sigma.photonmcpt(), 1.f / sigma.photonPt() - 1.f / sigma.photonmcpt()); // pT resolution
       }
     }
 
@@ -1042,10 +1040,10 @@ struct sigmaanalysis {
     // Sigma and AntiSigma MC association
     if (sigma.isSigma0()) {
       histos.fill(HIST("BeforeSel/MC/Reso/h2dSigma0RadiusResolution"), sigma.mcpt(), sigma.radius() - sigma.mcradius()); // pT resolution
-      if (sigma.mcpt() > 0){
-        histos.fill(HIST("BeforeSel/MC/Reso/h2dSigma0PtResolution"), sigma.mcpt(), sigma.pt() - sigma.mcpt()); // pT resolution
+      if (sigma.mcpt() > 0) {
+        histos.fill(HIST("BeforeSel/MC/Reso/h2dSigma0PtResolution"), sigma.mcpt(), sigma.pt() - sigma.mcpt());                      // pT resolution
         histos.fill(HIST("BeforeSel/MC/Reso/h2dSigma0InvPtResolution"), 1.f / sigma.mcpt(), 1.f / sigma.pt() - 1.f / sigma.mcpt()); // pT resolution
-      }        
+      }
     }
     if (sigma.isAntiSigma0()) {
       histos.fill(HIST("BeforeSel/MC/Reso/h2dASigma0RadiusResolution"), sigma.mcpt(), sigma.radius() - sigma.mcradius()); // pT resolution
@@ -1101,15 +1099,15 @@ struct sigmaanalysis {
 
     // Check whether it is before or after selections
     static constexpr std::string_view MainDir[] = {"BeforeSel", "AfterSel"};
-          
+
     float centrality = getCentralityRun3(collision);
 
     if (fillSelhistos) {
-    
+
       // Get V0trackCode
       int LambdaTrkCode = retrieveV0TrackCode<false>(sigma);
-      
-      if constexpr (requires { sigma.photonV0Type();}) { // Processing PCM photon
+
+      if constexpr (requires { sigma.photonV0Type(); }) { // Processing PCM photon
 
         // Base properties
         int GammaTrkCode = retrieveV0TrackCode<true>(sigma);
@@ -1144,16 +1142,15 @@ struct sigmaanalysis {
         histos.fill(HIST(MainDir[mode]) + HIST("/h2dArmenteros"), sigma.photonAlpha(), sigma.photonQt());
         histos.fill(HIST(MainDir[mode]) + HIST("/Photon/h3dPhotonYSigma0Mass"), sigma.photonY(), sigma.pt(), sigma.sigma0Mass());
         histos.fill(HIST(MainDir[mode]) + HIST("/Photon/h3dPhotonRadiusSigma0Mass"), sigma.photonRadius(), sigma.pt(), sigma.sigma0Mass());
-        
       }
 
-      if constexpr (requires { sigma.photonDefinition();}) { // Processing EMCal photon
-              
+      if constexpr (requires { sigma.photonDefinition(); }) { // Processing EMCal photon
+
         histos.fill(HIST(MainDir[mode]) + HIST("/EMCalPhotonSel/hpT"), sigma.photonPt());
         histos.fill(HIST(MainDir[mode]) + HIST("/EMCalPhotonSel/hDefinition"), sigma.photonDefinition());
         histos.fill(HIST(MainDir[mode]) + HIST("/EMCalPhotonSel/hNCells"), sigma.photonNCells());
         histos.fill(HIST(MainDir[mode]) + HIST("/EMCalPhotonSel/hEnergy"), sigma.photonEnergy());
-        histos.fill(HIST(MainDir[mode]) + HIST("/EMCalPhotonSel/h2dEtaVsPhi"), sigma.photonEMCEta(), sigma.photonEMCPhi());    
+        histos.fill(HIST(MainDir[mode]) + HIST("/EMCalPhotonSel/h2dEtaVsPhi"), sigma.photonEMCEta(), sigma.photonEMCPhi());
         histos.fill(HIST(MainDir[mode]) + HIST("/EMCalPhotonSel/hTime"), sigma.photonTime());
         histos.fill(HIST(MainDir[mode]) + HIST("/EMCalPhotonSel/hExotic"), sigma.photonIsExotic());
         histos.fill(HIST(MainDir[mode]) + HIST("/EMCalPhotonSel/hShape"), sigma.photonM02());
@@ -1176,11 +1173,11 @@ struct sigmaanalysis {
       histos.fill(HIST(MainDir[mode]) + HIST("/Lambda/hNegChi2PerNc"), sigma.lambdaNegChi2PerNcl());
       histos.fill(HIST(MainDir[mode]) + HIST("/Lambda/hLifeTime"), sigma.lambdaLifeTime());
 
-      histos.fill(HIST(MainDir[mode]) + HIST("/h2dArmenteros"), sigma.lambdaAlpha(), sigma.lambdaQt());      
+      histos.fill(HIST(MainDir[mode]) + HIST("/h2dArmenteros"), sigma.lambdaAlpha(), sigma.lambdaQt());
     }
 
     //_______________________________________
-    // Sigmas and Lambdas        
+    // Sigmas and Lambdas
     if (sigma.lambdaAlpha() > 0) {
       if (fillSelhistos) {
         histos.fill(HIST(MainDir[mode]) + HIST("/Lambda/h2dTPCvsTOFNSigma_LambdaPr"), sigma.lambdaPosPrTPCNSigma(), sigma.lambdaPrTOFNSigma());
@@ -1198,7 +1195,7 @@ struct sigmaanalysis {
       histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/hRadius"), sigma.radius());
       histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/h2dRadiusVspT"), sigma.radius(), sigma.pt());
       histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/hDCAPairDau"), sigma.dcadaughters());
-      histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/h3dMass"), centrality, sigma.pt(), sigma.sigma0Mass());      
+      histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/h3dMass"), centrality, sigma.pt(), sigma.sigma0Mass());
       histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/h3dOPAngleVsMass"), sigma.opAngle(), sigma.pt(), sigma.sigma0Mass());
     } else {
       if (fillSelhistos) {
@@ -1217,7 +1214,7 @@ struct sigmaanalysis {
       histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/hRadius"), sigma.radius());
       histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/h2dRadiusVspT"), sigma.radius(), sigma.pt());
       histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/hDCAPairDau"), sigma.dcadaughters());
-      histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/h3dMass"), centrality, sigma.pt(), sigma.sigma0Mass());      
+      histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/h3dMass"), centrality, sigma.pt(), sigma.sigma0Mass());
       histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/h3dOPAngleVsMass"), sigma.opAngle(), sigma.pt(), sigma.sigma0Mass());
     }
 
@@ -1233,9 +1230,9 @@ struct sigmaanalysis {
 
             histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/hV0ToCollAssoc"), sigma.photonIsCorrectlyAssoc());
             histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/hPt"), sigma.photonPt());
-            histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/hMCPt"), sigma.photonmcpt());     
-            
-            if constexpr (requires { sigma.photonV0Type();}) { // Processing PCM photon              
+            histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/hMCPt"), sigma.photonmcpt());
+
+            if constexpr (requires { sigma.photonV0Type(); }) { // Processing PCM photon
               histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/h2dPAVsPt"), TMath::ACos(sigma.photonCosPA()), sigma.photonmcpt());
 
               if (!sigma.photonIsCorrectlyAssoc()) {
@@ -1267,7 +1264,7 @@ struct sigmaanalysis {
         }
         //_______________________________________
         // Sigma0 MC association
-        if (sigma.isSigma0()) {          
+        if (sigma.isSigma0()) {
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/Sigma0/hPt"), sigma.pt());
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/Sigma0/hMCPt"), sigma.mcpt());
 
@@ -1455,43 +1452,43 @@ struct sigmaanalysis {
 
   // Apply specific selections for photons
   template <typename TClusterObject>
-  bool selectEMCalPhoton(TClusterObject const& cand) 
+  bool selectEMCalPhoton(TClusterObject const& cand)
   {
-    // Clusterizer    
+    // Clusterizer
     if (cand.photonDefinition() != EMCalPhotonSelections.definition && EMCalPhotonSelections.definition > -1)
       return false;
 
-    // Number of Cells    
+    // Number of Cells
     if (cand.photonNCells() < EMCalPhotonSelections.MinCells)
       return false;
 
-    // Energy    
+    // Energy
     if (cand.photonEnergy() < EMCalPhotonSelections.MinEnergy || cand.photonEnergy() > EMCalPhotonSelections.MaxEnergy)
       return false;
-    
-    // Eta    
+
+    // Eta
     if (TMath::Abs(cand.photonEMCEta()) > EMCalPhotonSelections.MaxEta)
       return false;
-    
-    // Timing    
+
+    // Timing
     if (cand.photonTime() < EMCalPhotonSelections.MinTime || cand.photonTime() > EMCalPhotonSelections.MaxTime)
       return false;
 
-    // Exotic Clusters    
-    if (cand.photonIsExotic() && EMCalPhotonSelections.RemoveExotic) {        
+    // Exotic Clusters
+    if (cand.photonIsExotic() && EMCalPhotonSelections.RemoveExotic) {
       return false;
     }
 
-    // Shower shape long axis    
-    if (cand.photonNCells() > 1) { // Only if we have more than one 
-      if (cand.photonM02() < EMCalPhotonSelections.MinM02 || cand.photonM02() > EMCalPhotonSelections.MaxM02) {        
+    // Shower shape long axis
+    if (cand.photonNCells() > 1) { // Only if we have more than one
+      if (cand.photonM02() < EMCalPhotonSelections.MinM02 || cand.photonM02() > EMCalPhotonSelections.MaxM02) {
         return false;
       }
     }
 
     // Has matched track?
     if (cand.photonHasAssocTrk() && EMCalPhotonSelections.RemoveMatchedTrack)
-      return false;    
+      return false;
   }
 
   // Apply specific selections for lambdas
@@ -1603,13 +1600,13 @@ struct sigmaanalysis {
   template <typename TSigma0Object>
   bool processSigma0Candidate(TSigma0Object const& cand)
   {
-    // Photon specific selections    
-    if constexpr (requires { cand.photonV0Type();}) { // Processing PCM photon
+    // Photon specific selections
+    if constexpr (requires { cand.photonV0Type(); }) { // Processing PCM photon
       if (!selectPhoton(cand))
         return false;
     }
 
-    if constexpr (requires { cand.photonDefinition();}) { // Processing EMCal photon
+    if constexpr (requires { cand.photonDefinition(); }) { // Processing EMCal photon
       if (!selectEMCalPhoton(cand))
         return false;
     }
@@ -1678,7 +1675,7 @@ struct sigmaanalysis {
         fillHistos<0>(sigma0, coll);
 
         // Select sigma0 candidates
-        if (!processSigma0Candidate(sigma0)) 
+        if (!processSigma0Candidate(sigma0))
           continue;
 
         // Fill histos after all selections
