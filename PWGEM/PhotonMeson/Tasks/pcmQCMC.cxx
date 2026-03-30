@@ -233,9 +233,9 @@ struct PCMQCMC {
     const AxisSpec axis_rapidity{{0.0, +0.8, +0.9}, "rapidity |y_{#gamma}|"};
 
     if (doprocessGen) {
-      fRegistry.add("Generated/hPt", "pT;p_{T} (GeV/c)", kTH1F, {axis_pt}, true);
-      fRegistry.add("Generated/hPtY", "Generated info", kTH2F, {axis_pt, axis_rapidity}, true);
-      fRegistry.add("Generated/hPt_ConversionPhoton", "converted photon pT;p_{T} (GeV/c)", kTH1F, {axis_pt}, true);
+      fRegistry.add("Generated/hPt", "pT;p_{T} (GeV/c)", kTH1D, {axis_pt}, true);
+      fRegistry.add("Generated/hPtY", "Generated info", kTH2D, {axis_pt, axis_rapidity}, true);
+      fRegistry.add("Generated/hPt_ConversionPhoton", "converted photon pT;p_{T} (GeV/c)", kTH1D, {axis_pt}, true);
       fRegistry.add("Generated/hY_ConversionPhoton", "converted photon y;rapidity y", kTH1F, {{40, -2.0f, 2.0f}}, true);
       fRegistry.add("Generated/hPhi_ConversionPhoton", "converted photon #varphi;#varphi (rad.)", kTH1F, {{180, 0, o2::constants::math::TwoPI}}, true);
       fRegistry.add("Generated/hXY", "conversion point in XY MC;V_{x} (cm);V_{y} (cm)", kTH2F, {{800, -100.0f, 100.0f}, {800, -100.0f, 100.0f}}, true);
