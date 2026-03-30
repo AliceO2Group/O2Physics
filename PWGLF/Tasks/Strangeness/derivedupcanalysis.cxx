@@ -1269,15 +1269,15 @@ struct Derivedupcanalysis {
     auto znc = collision.energyCommonZNC();
     constexpr float inf_f = std::numeric_limits<float>::infinity();
 
-    if (zna == -inf_f)
+    if (zna == -inf_f) {
       histos.fill(HIST("eventQA/hZN"), -1, znc, gap);
-    else if (znc == -inf_f)
+    } else if (znc == -inf_f) {
       histos.fill(HIST("eventQA/hZN"), zna, -1, gap);
-    else if (zna == -999 && znc == -999)
+    } else if (zna == -999 && znc == -999) {
       histos.fill(HIST("eventQA/hZN"), -2, -2, gap);
-    else if (zna == -999 || znc == -999)
+    } else if (zna == -999 || znc == -999) {
       LOG(warning) << "Only one ZDC signal is -999";
-    else {
+    } else {
       histos.fill(HIST("eventQA/hZN"), zna, znc, gap);
     }
 
