@@ -70,6 +70,8 @@
 #include <cmath>
 #include <cstdlib>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 using namespace o2;
@@ -569,6 +571,10 @@ struct Chargedkstaranalysis {
     LOG(info) << "Size of the histograms in chK(892) Analysis Task";
     histos.print();
   }
+
+  std::unordered_set<int64_t> allowedMcIds;
+  std::unordered_map<int64_t, float> centTruthByAllowed;
+
   float lMultiplicity;
   template <typename CollisionType>
   float getCentrality(CollisionType const& collision)
@@ -1229,8 +1235,8 @@ struct Chargedkstaranalysis {
 
   void processMC(soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& mcCollisions, aod::McParticles& mcParticles, soa::Join<EventCandidates, aod::McCollisionLabels> const& events, MCV0Candidates const& v0s, MCTrackCandidates const& tracks)
   {
-    std::unordered_set<int64_t> allowedMcIds;
-    std::unordered_map<int64_t, float> centTruthByAllowed;
+    allowedMcIds.clear();
+    centTruthByAllowed.clear();
 
     // To apply event selection and store the collision IDs of reconstructed tracks that pass the selection criteria
     for (const auto& coll : events) {
