@@ -27,10 +27,10 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
+#include <Math/Vector4D.h>
 #include <TDatabasePDG.h>
 #include <TPDGCode.h>
 #include <TString.h>
-#include <Math/Vector4D.h>
 
 #include <Rtypes.h>
 
