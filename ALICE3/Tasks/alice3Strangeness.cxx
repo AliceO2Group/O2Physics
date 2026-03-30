@@ -20,8 +20,8 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "ALICE3/DataModel/OTFCollision.h"
-#include "ALICE3/DataModel/OTFStrangeness.h"
 #include "ALICE3/DataModel/OTFMCParticle.h"
+#include "ALICE3/DataModel/OTFStrangeness.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 

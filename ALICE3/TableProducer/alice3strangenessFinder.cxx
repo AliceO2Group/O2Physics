@@ -166,7 +166,6 @@ struct Alice3strangenessFinder {
   Partition<aod::McParticles> trueOmega = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kOmegaMinus);
   Partition<aod::McParticles> trueAntiOmega = aod::mcparticle::pdgCode == static_cast<int>(PDG_t::kOmegaPlusBar);
 
-
   // Partition<Alice3TracksWPid> negativeSecondaryPions = nabs(aod::upgrade_tof::nSigmaPionInnerTOF) < nSigmaTOF && nabs(aod::upgrade_tof::nSigmaPionOuterTOF) < nSigmaTOF && aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > dcaXYconstant + dcaXYpTdep* nabs(aod::track::signed1Pt);
   // Partition<Alice3TracksWPid> positiveSecondaryPions = nabs(aod::upgrade_tof::nSigmaPionInnerTOF) < nSigmaTOF && nabs(aod::upgrade_tof::nSigmaPionOuterTOF) < nSigmaTOF && aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > dcaXYconstant + dcaXYpTdep* nabs(aod::track::signed1Pt);
   // Partition<Alice3TracksWPid> secondaryProtons = nabs(aod::upgrade_tof::nSigmaProtonInnerTOF) < nSigmaTOF && nabs(aod::upgrade_tof::nSigmaProtonOuterTOF) < nSigmaTOF && aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > dcaXYconstant + dcaXYpTdep* nabs(aod::track::signed1Pt);
@@ -431,7 +430,6 @@ struct Alice3strangenessFinder {
       histos.fill(HIST("hGeneratedAntiOmega"), mcParticle.pt(), mcParticle.eta());
     }
   }
-
 
   template <typename TCollision, typename TTracksGrouped>
   void processFindV0CandidateNoPid(TCollision collision, TTracksGrouped negTracksGrouped, TTracksGrouped posTracksGrouped, TTracksGrouped bachTracksGrouped)

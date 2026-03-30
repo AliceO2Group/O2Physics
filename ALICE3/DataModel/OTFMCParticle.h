@@ -38,8 +38,8 @@ DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Mother0, mother0, int, "McPartsWithDau_Mother
 DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Mother1, mother1, int, "McPartsWithDau_Mother1");       //! Track index of the last mother
 DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Daughter0, daughter0, int, "McPartsWithDau_Daughter0"); //! Track index of the first daugther
 DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Daughter1, daughter1, int, "McPartsWithDau_Daughter1"); //! Track index of the last daugther
-DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(Mothers, mothers);                                  //! Mother tracks (possible empty) array. Iterate over mcParticle.mothers_as<aod::McParticles>())
-DECLARE_SOA_SELF_SLICE_INDEX_COLUMN(Daughters, daughters);                              //! Daughter tracks (possibly empty) slice. Check for non-zero with mcParticle.has_daughters(). Iterate over mcParticle.daughters_as<aod::McParticles>())
+DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(Mothers, mothers);                                     //! Mother tracks (possible empty) array. Iterate over mcParticle.mothers_as<aod::McParticles>())
+DECLARE_SOA_SELF_SLICE_INDEX_COLUMN(Daughters, daughters);                                 //! Daughter tracks (possibly empty) slice. Check for non-zero with mcParticle.has_daughters(). Iterate over mcParticle.daughters_as<aod::McParticles>())
 } // namespace otfmcparticle
 
 DECLARE_SOA_TABLE_FULL(McPartWithDaus, "McPartWithDaus", "AOD", "MCPARTSWITHDAU",
@@ -79,14 +79,13 @@ using McPartWithDau = McPartWithDaus::iterator;
 namespace otfmctracklable
 {
 DECLARE_SOA_INDEX_COLUMN(McPartWithDau, mcPartWithDau); //! MC particle
-DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);     //! Bit mask to indicate detector mismatches (bit ON means mismatch). Bit 0-6: mismatch at ITS layer. Bit 12: ITSAB tracklet mismatch. Bit 13: ITS-TPC mismatch. Bit 14: isNoise == True (global track), Bit 15: isFake == True (global track)
+DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);           //! Bit mask to indicate detector mismatches (bit ON means mismatch). Bit 0-6: mismatch at ITS layer. Bit 12: ITSAB tracklet mismatch. Bit 13: ITS-TPC mismatch. Bit 14: isNoise == True (global track), Bit 15: isFake == True (global track)
 } // namespace otfmctracklable
 
 DECLARE_SOA_TABLE(McTrackWithDauLabels, "AOD", "MCTRACKWithDAULABEL", //! Table joined to the track table containing the MC index
                   otfmctracklable::McPartWithDauId, otfmctracklable::McMask);
 
 using McTrackWithDauLabel = McTrackWithDauLabels::iterator;
-
 
 } // namespace o2::aod
 
