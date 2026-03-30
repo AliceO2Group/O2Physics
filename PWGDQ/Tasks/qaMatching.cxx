@@ -42,7 +42,6 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-#include <cinttypes>
 
 using namespace o2;
 using namespace o2::framework;
