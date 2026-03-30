@@ -13,11 +13,16 @@
 // Task performing basic track selection for the ALICE3.
 //
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/runDataProcessing.h>
+
+#include <array>
 
 using namespace o2;
 using namespace o2::framework;

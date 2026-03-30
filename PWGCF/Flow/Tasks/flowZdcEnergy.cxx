@@ -52,6 +52,7 @@ struct flowZdcEnergy {
 
   ConfigurableAxis axisCent{"axisCent", {90, 0, 90}, "Centrality (%)"};
   ConfigurableAxis axisMult{"axisMult", {100, 0, 100000}, "Multiplicity"};
+  ConfigurableAxis axisMultDivided{"axisMultDivided", {30, 0, 15000}, "Multiplicity bins for ZN energy"};
   ConfigurableAxis axisPt{"axisPt", {100, 0, 15}, "#P_{t}"};
   ConfigurableAxis axisEta{"axisEta", {64, -1.6, 1.6}, "#eta"};
   ConfigurableAxis axisEnergy{"axisEnergy", {300, 0, 300}, "Energy"};
@@ -120,6 +121,21 @@ struct flowZdcEnergy {
     registry.add("hEnergyWithCent_ZNA_SumSectors", "", {HistType::kTH2D, {axisEnergy, axisCent}});
     registry.add("hEnergyWithCent_ZNC_SumSectors", "", {HistType::kTH2D, {axisEnergy, axisCent}});
     registry.add("hEnergyWithCent_RescaledSumDiff", "", {HistType::kTH2D, {axisRescaledDiff, axisCent}});
+
+    registry.add("hEnergyWithMult_ZNA_Common", "", {HistType::kTH2D, {axisEnergy, axisMultDivided}});
+    registry.add("hEnergyWithMult_ZNC_Common", "", {HistType::kTH2D, {axisEnergy, axisMultDivided}});
+    registry.add("hEnergyWithMult_RescaledDiff", "", {HistType::kTH2D, {axisRescaledDiff, axisMultDivided}});
+    registry.add("hEnergyWithMult_ZNA_1", "", {HistType::kTH2D, {axisEnergy, axisMultDivided}});
+    registry.add("hEnergyWithMult_ZNA_2", "", {HistType::kTH2D, {axisEnergy, axisMultDivided}});
+    registry.add("hEnergyWithMult_ZNA_3", "", {HistType::kTH2D, {axisEnergy, axisMultDivided}});
+    registry.add("hEnergyWithMult_ZNA_4", "", {HistType::kTH2D, {axisEnergy, axisMultDivided}});
+    registry.add("hEnergyWithMult_ZNC_1", "", {HistType::kTH2D, {axisEnergy, axisMultDivided}});
+    registry.add("hEnergyWithMult_ZNC_2", "", {HistType::kTH2D, {axisEnergy, axisMultDivided}});
+    registry.add("hEnergyWithMult_ZNC_3", "", {HistType::kTH2D, {axisEnergy, axisMultDivided}});
+    registry.add("hEnergyWithMult_ZNC_4", "", {HistType::kTH2D, {axisEnergy, axisMultDivided}});
+    registry.add("hEnergyWithMult_ZNA_SumSectors", "", {HistType::kTH2D, {axisEnergy, axisMultDivided}});
+    registry.add("hEnergyWithMult_ZNC_SumSectors", "", {HistType::kTH2D, {axisEnergy, axisMultDivided}});
+    registry.add("hEnergyWithMult_RescaledSumDiff", "", {HistType::kTH2D, {axisRescaledDiff, axisMultDivided}});
   }
 
   // Helper: event selection
@@ -128,9 +144,6 @@ struct flowZdcEnergy {
   {
     if (!UseEvsel) {
       registry.fill(HIST("QA/hEventCount"), kAllEvents);
-      registry.fill(HIST("QA/hEventCount"), kSeln);
-      registry.fill(HIST("QA/hEventCount"), kZvtx);
-      registry.fill(HIST("QA/hEventCount"), kCentrality);
     } else {
       registry.fill(HIST("QA/hEventCount"), kAllEvents);
       if (runmode == 2 && !collision.sel7()) {
@@ -154,7 +167,7 @@ struct flowZdcEnergy {
 
   // Helper: fill ZDC observables
   template <typename TCollision, typename TBCs>
-  void fillZDCObservables(TCollision const& collision, float centrality)
+  void fillZDCObservables(TCollision const& collision, float centrality, float multiTPC)
   {
     const auto& foundBC = collision.template foundBC_as<TBCs>();
     if (!foundBC.has_zdc()) {
@@ -198,11 +211,26 @@ struct flowZdcEnergy {
     registry.fill(HIST("hEnergyWithCent_ZNA_SumSectors"), sumEnergyZNA, centrality);
     registry.fill(HIST("hEnergyWithCent_ZNC_SumSectors"), sumEnergyZNC, centrality);
 
+    registry.fill(HIST("hEnergyWithMult_ZNA_Common"), energyCommonZNA, multiTPC);
+    registry.fill(HIST("hEnergyWithMult_ZNC_Common"), energyCommonZNC, multiTPC);
+    registry.fill(HIST("hEnergyWithMult_ZNA_1"), energySectorZNA1, multiTPC);
+    registry.fill(HIST("hEnergyWithMult_ZNA_2"), energySectorZNA2, multiTPC);
+    registry.fill(HIST("hEnergyWithMult_ZNA_3"), energySectorZNA3, multiTPC);
+    registry.fill(HIST("hEnergyWithMult_ZNA_4"), energySectorZNA4, multiTPC);
+    registry.fill(HIST("hEnergyWithMult_ZNC_1"), energySectorZNC1, multiTPC);
+    registry.fill(HIST("hEnergyWithMult_ZNC_2"), energySectorZNC2, multiTPC);
+    registry.fill(HIST("hEnergyWithMult_ZNC_3"), energySectorZNC3, multiTPC);
+    registry.fill(HIST("hEnergyWithMult_ZNC_4"), energySectorZNC4, multiTPC);
+    registry.fill(HIST("hEnergyWithMult_ZNA_SumSectors"), sumEnergyZNA, multiTPC);
+    registry.fill(HIST("hEnergyWithMult_ZNC_SumSectors"), sumEnergyZNC, multiTPC);
+
     if (commonDen > 1.e-6f) {
       registry.fill(HIST("hEnergyWithCent_RescaledDiff"), (energyCommonZNA - energyCommonZNC) / commonDen, centrality);
+      registry.fill(HIST("hEnergyWithMult_RescaledDiff"), (energyCommonZNA - energyCommonZNC) / commonDen, multiTPC);
     }
     if (sumDen > 1.e-6f) {
       registry.fill(HIST("hEnergyWithCent_RescaledSumDiff"), (sumEnergyZNA - sumEnergyZNC) / sumDen, centrality);
+      registry.fill(HIST("hEnergyWithMult_RescaledSumDiff"), (sumEnergyZNA - sumEnergyZNC) / sumDen, multiTPC);
     }
   }
 
@@ -222,7 +250,7 @@ struct flowZdcEnergy {
     registry.fill(HIST("QA/hCentrality"), centrality);
     registry.fill(HIST("QA/hMultiplicity"), multi);
     registry.fill(HIST("QA/hMultiplicity_TPC"), multiTPC);
-    fillZDCObservables<CollisionsRun3::iterator, BCsRun3>(collision, centrality);
+    fillZDCObservables<CollisionsRun3::iterator, BCsRun3>(collision, centrality, multiTPC);
 
     for (const auto& track : tracks) {
       registry.fill(HIST("QA/hPt"), track.pt());
@@ -246,7 +274,7 @@ struct flowZdcEnergy {
     registry.fill(HIST("QA/hCentrality"), centrality);
     registry.fill(HIST("QA/hMultiplicity"), multi);
     registry.fill(HIST("QA/hMultiplicity_TPC"), multiTPC);
-    fillZDCObservables<CollisionsRun2::iterator, BCsRun2>(collision, centrality);
+    fillZDCObservables<CollisionsRun2::iterator, BCsRun2>(collision, centrality, multiTPC);
 
     for (const auto& track : tracks) {
       registry.fill(HIST("QA/hPt"), track.pt());

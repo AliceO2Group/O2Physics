@@ -19,13 +19,19 @@
 
 #include "Common/Core/TableHelper.h"
 
+#include <CCDB/BasicCCDBManager.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+
 #include <TEnv.h>
 #include <THashList.h>
+#include <TString.h>
 #include <TSystem.h>
 
 #include <sys/file.h>
 #include <sys/stat.h>
 
+#include <algorithm>
 #include <cerrno>
 #include <chrono>
 #include <cstdio>
@@ -35,6 +41,7 @@
 #include <thread>
 #include <vector>
 
+#include <fcntl.h>
 #include <unistd.h>
 
 namespace o2::fastsim

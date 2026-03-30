@@ -185,6 +185,7 @@ struct Chargedkstaranalysis {
     Configurable<bool> confincludeCentralityMC{"confincludeCentralityMC", false, "Include centrality in MC"};
     Configurable<bool> confEvtCollInTimeRangeStandard{"confEvtCollInTimeRangeStandard", true, "Evt sel: apply NoCollInTimeRangeStandard"};
     Configurable<bool> confEvtCollInTimeRangeNarrow{"confEvtCollInTimeRangeNarrow", false, "Evt sel: apply NoCollInTimeRangeNarrow"};
+
     Configurable<bool> confEvtCollInTimeRangeStrict{"confEvtCollInTimeRangeStrict", false, "Evt sel: apply NoCollInTimeRangeStrict"};
     Configurable<bool> confEvtNoCollInRofStandard{"confEvtNoCollInRofStandard", false, "Evt sel: apply NoCollInRofStandard"};
     Configurable<bool> confEvtNoCollInRofStrict{"confEvtNoCollInRofStrict", false, "Evt sel: apply NoCollInRofStrict"};
@@ -295,9 +296,7 @@ struct Chargedkstaranalysis {
   {
     centrality = -999;
 
-    rctCut.rctChecker.init(rctCut.cfgEvtRCTFlagCheckerLabel, rctCut.cfgEvtRCTFlagCheckerZDCCheck, rctCut.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
-
-    colCuts.setCuts(eventCutCfgs.confEvtZvtx, eventCutCfgs.confEvtTriggerCheck, eventCutCfgs.confEvtOfflineCheck, /*checkRun3*/ true, /*triggerTVXsel*/ false, eventCutCfgs.confEvtOccupancyInTimeRangeMax, eventCutCfgs.confEvtOccupancyInTimeRangeMin);
+    colCuts.setCuts(eventCutCfgs.confEvtZvtx, eventCutCfgs.confEvtTriggerCheck, eventCutCfgs.confEvtOfflineCheck, /*checkRun3*/ true, eventCutCfgs.confEvtTriggerTVXSel, eventCutCfgs.confEvtOccupancyInTimeRangeMax, eventCutCfgs.confEvtOccupancyInTimeRangeMin);
     colCuts.init(&histos);
     colCuts.setTriggerTVX(eventCutCfgs.confEvtTriggerTVXSel);
     colCuts.setApplyTFBorderCut(eventCutCfgs.confEvtTFBorderCut);
@@ -318,6 +317,8 @@ struct Chargedkstaranalysis {
     colCuts.setApplyBBT0A(eventCutCfgs.confEvtBBT0A);
     colCuts.setApplyBBT0C(eventCutCfgs.confEvtBBT0C);
 
+    rctCut.rctChecker.init(rctCut.cfgEvtRCTFlagCheckerLabel, rctCut.cfgEvtRCTFlagCheckerZDCCheck, rctCut.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
+
     AxisSpec centAxis = {axisCfgs.cfgBinsCent, "T0M (%)"};
     AxisSpec vtxzAxis = {axisCfgs.cfgBinsVtxZ, "Z Vertex (cm)"};
     AxisSpec ptAxis = {axisCfgs.cfgBinsPt, "#it{p}_{T} (GeV/#it{c})"};
@@ -329,7 +330,7 @@ struct Chargedkstaranalysis {
     AxisSpec dcaxyAxis = {200, 0, 2, "DCA_{#it{xy}} (cm)"};
     AxisSpec dcazAxis = {200, 0, 2, "DCA_{#it{z}} (cm)"};
     AxisSpec yAxis = {100, -1, 1, "Rapidity"};
-    AxisSpec invMassAxisK0s = {400 / cNbinsDiv, 0.3, 0.7, "Invariant Mass (GeV/#it{c}^2)"};    // K0s ~497.611
+    AxisSpec invMassAxisK0s = {800 / cNbinsDiv, 0.46, 0.54, "Invariant Mass (GeV/#it{c}^2)"};  // K0s ~497.611
     AxisSpec invMassAxisReso = {900 / cNbinsDiv, 0.5f, 1.4f, "Invariant Mass (GeV/#it{c}^2)"}; // chK(892) ~892
     AxisSpec invMassAxisScan = {150, 0, 1.5, "Invariant Mass (GeV/#it{c}^2)"};                 // For selection
     AxisSpec pidQAAxis = {130, -6.5, 6.5};
@@ -702,13 +703,13 @@ struct Chargedkstaranalysis {
   bool selectionK0s(CollisionType const& collision, K0sType const& candidate)
   {
     int ibin = 1;
-    auto dauDCA = candidate.dcaV0daughters();
-    auto dauPosDCAtoPV = candidate.dcapostopv();
-    auto dauNegDCAtoPV = candidate.dcanegtopv();
+    auto dauDCA = std::fabs(candidate.dcaV0daughters());
+    auto dauPosDCAtoPV = std::fabs(candidate.dcapostopv());
+    auto dauNegDCAtoPV = std::fabs(candidate.dcanegtopv());
     auto pT = candidate.pt();
     auto rapidity = candidate.yK0Short();
     auto v0Radius = candidate.v0radius();
-    auto dcaToPV = candidate.dcav0topv();
+    auto dcaToPV = std::fabs(candidate.dcav0topv());
     auto cosPA = candidate.v0cosPA();
     auto propTauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massK0s;
     auto mK0s = candidate.mK0Short();
@@ -717,20 +718,20 @@ struct Chargedkstaranalysis {
 
     bool returnFlag = true;
     histos.fill(HIST("QA/K0sCutCheck"), ibin);
-    if (dauDCA > secondaryCutsCfgs.cSecondaryDauDCAMax) {
+    if (std::fabs(dauDCA) > secondaryCutsCfgs.cSecondaryDauDCAMax) {
       returnFlag = false;
     }
     ibin++;
     if (returnFlag == true)
       histos.fill(HIST("QA/K0sCutCheck"), ibin);
-    if (dauPosDCAtoPV < secondaryCutsCfgs.cSecondaryDauPosDCAtoPVMin) {
+    if (std::fabs(dauPosDCAtoPV) < secondaryCutsCfgs.cSecondaryDauPosDCAtoPVMin) {
       returnFlag = false;
     }
     ibin++;
     if (returnFlag == true)
       histos.fill(HIST("QA/K0sCutCheck"), ibin);
 
-    if (dauNegDCAtoPV < secondaryCutsCfgs.cSecondaryDauNegDCAtoPVMin) {
+    if (std::fabs(dauNegDCAtoPV) < secondaryCutsCfgs.cSecondaryDauNegDCAtoPVMin) {
       returnFlag = false;
     }
     ibin++;

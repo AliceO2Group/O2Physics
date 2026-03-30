@@ -61,7 +61,7 @@ struct HfPidCreator {
   template <typename TFlag>
   void checkTableSwitch(InitContext& initContext, const std::string& table, TFlag& doprocess)
   {
-    auto isNeeded = isTableRequiredInWorkflow(initContext, table);
+    auto isNeeded = o2::common::core::isTableRequiredInWorkflow(initContext, table);
     if (isNeeded && !doprocess.value) {
       LOGF(fatal, "Table %s is needed but not requested. Enable the corresponding process function!", table);
     }
