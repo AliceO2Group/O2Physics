@@ -53,7 +53,7 @@ struct FemtoTwotrackresonanceQa {
   using FemtoPhis = o2::soa::Join<FPhis, FPhiMasks>;
   using FemtoRho0s = o2::soa::Join<FRho0s, FRho0Masks>;
   using FemtoKstar0s = o2::soa::Join<FKstar0s, FKstar0Masks>;
-  using FemtoTracks = o2::soa::Join<FTracks, FTrackDcas, FTrackExtras, FTrackPids>;
+  using FemtoTracks = o2::soa::Join<FTracks, FTrackMass, FTrackDcas, FTrackExtras, FTrackPids>;
 
   SliceCache cache;
 

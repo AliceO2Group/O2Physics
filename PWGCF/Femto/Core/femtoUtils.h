@@ -209,11 +209,16 @@ inline bool enableTable(const char* tableName, int userSetting, o2::framework::I
   return required;
 }
 
-template <typename T>
-using HasMass = decltype(std::declval<T&>().mass());
+// template <typename T>
+// using HasMass = decltype(std::declval<T&>().mass());
+//
+// template <typename T>
+// using HasSign = decltype(std::declval<T&>().sign());
 
 template <typename T>
-using HasSign = decltype(std::declval<T&>().sign());
+concept HasMass = requires(T t) {
+  { t.mass() } -> std::convertible_to<float>; // or double, whatever mass() returns
+};
 
 template <typename T>
 inline int signum(T x)

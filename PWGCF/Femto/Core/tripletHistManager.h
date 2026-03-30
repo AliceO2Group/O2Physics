@@ -109,9 +109,9 @@ struct ConfTripletBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis pt1{"pt1", {{100, 0, 6}}, "Pt binning for particle 1"};
   o2::framework::ConfigurableAxis pt2{"pt2", {{100, 0, 6}}, "Pt binning for particle 2"};
   o2::framework::ConfigurableAxis pt3{"pt3", {{100, 0, 6}}, "Pt binning for particle 3"};
-  o2::framework::ConfigurableAxis mass1{"mass1", {{100, 0, 2}}, "Mass binning for particle 1 (if particle has mass getter)"};
-  o2::framework::ConfigurableAxis mass2{"mass2", {{100, 0, 2}}, "Mass binning for particle 2 (if particle has mass getter)"};
-  o2::framework::ConfigurableAxis mass3{"mass3", {{100, 0, 2}}, "Mass binning for particle 3 (if particle has mass getter)"};
+  o2::framework::ConfigurableAxis mass1{"mass1", {{100, 0, 2}}, "Mass binning for particle 1 (if particle has mass getter, otherwise PDG mass)"};
+  o2::framework::ConfigurableAxis mass2{"mass2", {{100, 0, 2}}, "Mass binning for particle 2 (if particle has mass getter, otherwise PDG mass)"};
+  o2::framework::ConfigurableAxis mass3{"mass3", {{100, 0, 2}}, "Mass binning for particle 3 (if particle has mass getter, otherwise PDG mass)"};
   o2::framework::Configurable<int> transverseMassType{"transverseMassType", static_cast<int>(modes::TransverseMassType::kAveragePdgMass), "Type of transverse mass (0-> Average Pdg Mass, 1-> Reduced Pdg Mass, 2-> Mt from combined 4 vector)"};
 };
 
@@ -279,13 +279,13 @@ class TripletHistManager
     mQ3 = getQ3(mParticle1, mParticle2, mParticle3);
 
     // if one of the particles has a mass getter, we cache the value for the filling later
-    if constexpr (modes::hasMass(particleType1)) {
+    if constexpr (utils::HasMass<T1>) {
       mMass1 = particle1.mass();
     }
-    if constexpr (modes::hasMass(particleType2)) {
+    if constexpr (utils::HasMass<T2>) {
       mMass2 = particle2.mass();
     }
-    if constexpr (modes::hasMass(particleType3)) {
+    if constexpr (utils::HasMass<T3>) {
       mMass3 = particle3.mass();
     }
   }

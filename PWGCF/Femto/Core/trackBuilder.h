@@ -460,6 +460,7 @@ class TrackSelection : public BaseSelection<float, o2::aod::femtodatatypes::Trac
 
 struct TrackBuilderProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::FTracks> producedTracks;
+  o2::framework::Produces<o2::aod::FTrackMass> producedTrackMass;
   o2::framework::Produces<o2::aod::FTrackMasks> producedTrackMasks;
   o2::framework::Produces<o2::aod::FTrackDcas> producedTrackDcas;
   o2::framework::Produces<o2::aod::FTrackExtras> producedTrackExtras;
@@ -476,6 +477,7 @@ struct ConfTrackTables : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("TrackTables");
   o2::framework::Configurable<int> produceTracks{"produceTracks", -1, "Produce Tracks (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceTrackMasks{"produceTrackMasks", -1, "Produce TrackMasks (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceTrackMass{"produceTrackMass", -1, "Produce TrackMass (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceTrackDcas{"produceTrackDcas", -1, "Produce TrackDcas (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceTrackExtras{"produceTrackExtras", -1, "Produce TrackExtras (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceElectronPids{"produceElectronPids", -1, "Produce ElectronPids (-1: auto; 0 off; 1 on)"};
@@ -501,6 +503,7 @@ class TrackBuilder
 
     mProduceTracks = utils::enableTable("FTracks_001", table.produceTracks.value, initContext);
     mProduceTrackMasks = utils::enableTable("FTrackMasks_001", table.produceTrackMasks.value, initContext);
+    mProduceTrackMass = utils::enableTable("FTrackMass_001", table.produceTrackMass.value, initContext);
     mProduceTrackDcas = utils::enableTable("FTrackDcas_001", table.produceTrackDcas.value, initContext);
     mProduceTrackExtras = utils::enableTable("FTrackExtras_001", table.produceTrackExtras.value, initContext);
     mProduceElectronPids = utils::enableTable("FElectronPids_001", table.produceElectronPids.value, initContext);
@@ -511,7 +514,7 @@ class TrackBuilder
     mProduceTritonPids = utils::enableTable("FTritonPids_001", table.produceTritonPids.value, initContext);
     mProduceHeliumPids = utils::enableTable("FHeliumPids_001", table.produceHeliumPids.value, initContext);
 
-    if (mProduceTracks || mProduceTrackMasks || mProduceTrackDcas || mProduceTrackExtras || mProduceElectronPids || mProducePionPids || mProduceKaonPids || mProduceProtonPids || mProduceDeuteronPids || mProduceTritonPids || mProduceHeliumPids) {
+    if (mProduceTracks || mProduceTrackMasks || mProduceTrackMass || mProduceTrackDcas || mProduceTrackExtras || mProduceElectronPids || mProducePionPids || mProduceKaonPids || mProduceProtonPids || mProduceDeuteronPids || mProduceTritonPids || mProduceHeliumPids) {
       mFillAnyTable = true;
     } else {
       LOG(info) << "No tables configured, Selection object will not be configured...";
@@ -560,6 +563,9 @@ class TrackBuilder
         trackProducts.producedTrackMasks(static_cast<o2::aod::femtodatatypes::TrackMaskType>(0u));
       }
     }
+    if (mProduceTrackMass) {
+      trackProducts.producedTrackMass(track.mass());
+    }
     if (mProduceTrackDcas) {
       trackProducts.producedTrackDcas(track.dcaXY(), track.dcaZ());
     }
@@ -574,8 +580,7 @@ class TrackBuilder
                                         track.tpcNClsFound(),
                                         track.tpcNClsCrossedRows(),
                                         track.tpcNClsShared(),
-                                        track.beta(),
-                                        track.mass());
+                                        track.beta());
     }
     if (mProduceElectronPids) {
       trackProducts.producedElectronPids(track.itsNSigmaEl(), track.tpcNSigmaEl(), track.tofNSigmaEl());
@@ -670,6 +675,7 @@ class TrackBuilder
   bool mFillAnyTable = false;
   bool mProduceTracks = false;
   bool mProduceTrackMasks = false;
+  bool mProduceTrackMass = false;
   bool mProduceTrackDcas = false;
   bool mProduceTrackExtras = false;
   bool mProduceElectronPids = false;

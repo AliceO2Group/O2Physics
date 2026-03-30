@@ -58,7 +58,7 @@ using FCol = FCols::iterator;
 using StoredFCols = StoredFCols_001;
 
 // table for collisions selections
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FColMasks_001, "FCOLMASK", 1, //! track masks
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FColMasks_001, "FCOLMASK", 1, //! collision masks
                                    femtocollisions::Mask);
 using FColMasks = FColMasks_001;
 using StoredFColMasks = StoredFColMasks_001;
@@ -106,7 +106,6 @@ DECLARE_SOA_COLUMN(Pt, pt, float);             //! pt
 DECLARE_SOA_COLUMN(Eta, eta, float);           //! eta
 DECLARE_SOA_COLUMN(Phi, phi, float);           //! phi
 DECLARE_SOA_COLUMN(Mass, mass, float);         //! mass of particle
-DECLARE_SOA_COLUMN(MassAnti, massAnti, float); //! mass of antiparticle
 } // namespace stored
 
 namespace dynamic
@@ -175,7 +174,7 @@ DECLARE_SOA_COLUMN(TpcChi2NCl, tpcChi2NCl, float); //! Tpc chi2
 
 // tof related information
 DECLARE_SOA_COLUMN(TofBeta, tofBeta, float); //! Tof beta
-DECLARE_SOA_COLUMN(TofMass, tofMass, float); //! Tof mass
+// tof mass will be stored in mass column
 
 // PID information
 // ITS PID information
@@ -247,6 +246,11 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FTrackMasks_001, "FTRACKMASK", 1, //! track m
 using FTrackMasks = FTrackMasks_001;
 using StoredFTrackMasks = StoredFTrackMasks_001;
 
+// table for track mass (using tof mass
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FTrackMass_001, "FTRACKMASS", 1, //! track mass
+                                   femtobase::stored::Mass);
+using FTrackMass = FTrackMass_001;
+
 // table for track DCA
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FTrackDcas_001, "FTRACKDCAS", 1, //! track dcas
                                    femtotracks::DcaXY,
@@ -267,7 +271,6 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FTrackExtras_001, "FTRACKEXTRA", 1, //! track
                                    femtotracks::TpcNClsCrossedRows,
                                    femtotracks::TpcNClsShared,
                                    femtotracks::TofBeta,
-                                   femtotracks::TofMass,
                                    femtotracks::TpcCrossedRowsOverFound<femtotracks::TpcNClsFound, femtotracks::TpcNClsCrossedRows>,
                                    femtotracks::TpcSharedOverFound<femtotracks::TpcNClsFound, femtotracks::TpcNClsShared>);
 using FTrackExtras = FTrackExtras_001;
@@ -401,9 +404,10 @@ namespace femtov0s
 DECLARE_SOA_COLUMN(Mask, mask, femtodatatypes::V0MaskType); //! Bitmask for v0 selections
 
 // columns for debug information
-DECLARE_SOA_COLUMN(MassLambda, massLambda, float);         //! Mass of Lambda
-DECLARE_SOA_COLUMN(MassAntiLambda, massAntiLambda, float); //! Mass of AntiLambda
-DECLARE_SOA_COLUMN(MassK0short, massK0short, float);       //! Mass of K0short
+DECLARE_SOA_COLUMN(MassAnti, massAnti, float);             //! mass of particle using antiparticle hypothesis (for Lambda/AntiLambda extra table)
+DECLARE_SOA_COLUMN(MassLambda, massLambda, float);         //! Mass of Lambda (for k0short table)
+DECLARE_SOA_COLUMN(MassAntiLambda, massAntiLambda, float); //! Mass of AntiLambda (for k0short table)
+DECLARE_SOA_COLUMN(MassK0short, massK0short, float);       //! Mass of K0short (for lambda/antitlambda table)
 DECLARE_SOA_COLUMN(CosPa, cosPa, float);                   //! Lambda daughter DCA at decay vertex
 DECLARE_SOA_COLUMN(DauDca, dauDca, float);                 //! Lambda daughter DCA at decay vertex
 DECLARE_SOA_COLUMN(TransRadius, transRadius, float);       //! Lambda transvers radius
@@ -447,7 +451,7 @@ using FLambdaMasks = FLambdaMasks_001;
 using StoredFLambdaMasks = StoredFLambdaMasks_001;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdaExtras_001, "FLAMBDAEXTRA", 1, //! lambda extra information
-                                   femtobase::stored::MassAnti,          // put mass of antiparticle, i.e. antilambda mass for lambdas and vice versa
+                                   femtov0s::MassAnti,                   // put mass of antiparticle, i.e. antilambda mass for lambdas and vice versa
                                    femtov0s::MassK0short,
                                    femtov0s::CosPa,
                                    femtov0s::DauDca,

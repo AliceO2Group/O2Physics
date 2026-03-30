@@ -51,7 +51,7 @@ struct FemtoV0Qa {
 
   using FemtoLambdas = o2::soa::Join<o2::aod::FLambdas, o2::aod::FLambdaMasks, o2::aod::FLambdaExtras>;
   using FemtoK0shorts = o2::soa::Join<o2::aod::FK0shorts, o2::aod::FK0shortMasks, o2::aod::FK0shortExtras>;
-  using FemtoTracks = o2::soa::Join<o2::aod::FTracks, o2::aod::FTrackDcas, o2::aod::FTrackExtras, o2::aod::FTrackPids>;
+  using FemtoTracks = o2::soa::Join<o2::aod::FTracks, o2::aod::FTrackMass, o2::aod::FTrackDcas, o2::aod::FTrackExtras, o2::aod::FTrackPids>;
 
   using FemtoLambdasWithLabel = o2::soa::Join<FemtoLambdas, o2::aod::FLambdaLabels>;
   using FemtoK0shortsWithLabel = o2::soa::Join<FemtoK0shorts, o2::aod::FK0shortLabels>;

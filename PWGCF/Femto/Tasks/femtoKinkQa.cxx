@@ -54,7 +54,7 @@ struct FemtoKinkQa {
   // Define kink/sigma tables (joining tables for comprehensive information)
   using FemtoSigmas = o2::soa::Join<o2::aod::FSigmas, o2::aod::FSigmaMasks, o2::aod::FSigmaExtras>;
   using FemtoSigmaPlus = o2::soa::Join<o2::aod::FSigmaPlus, o2::aod::FSigmaPlusMasks, o2::aod::FSigmaPlusExtras>;
-  using FemtoTracks = o2::soa::Join<o2::aod::FTracks, o2::aod::FTrackDcas, o2::aod::FTrackExtras, o2::aod::FTrackPids>;
+  using FemtoTracks = o2::soa::Join<o2::aod::FTracks, o2::aod::FTrackMass, o2::aod::FTrackDcas, o2::aod::FTrackExtras, o2::aod::FTrackPids>;
 
   using FemtoSigmasWithLabel = o2::soa::Join<FemtoSigmas, o2::aod::FSigmaLabels>;
   using FemtoSigmaPlusWithLabel = o2::soa::Join<FemtoSigmaPlus, o2::aod::FSigmaPlusLabels>;
