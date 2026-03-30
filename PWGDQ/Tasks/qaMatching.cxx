@@ -18,6 +18,19 @@
 
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/EventSelection.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "GlobalTracking/MatchGlobalFwd.h"
+#include "MFTTracking/Constants.h"
+
+#include <Math/ProbFunc.h>
+
+#include <algorithm>
+#include <cinttypes>
 #include "Tools/ML/MlResponse.h"
 
 #include <CCDB/BasicCCDBManager.h>
