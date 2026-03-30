@@ -42,6 +42,7 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <cinttypes>
 
 using namespace o2;
 using namespace o2::framework;
@@ -2381,7 +2382,7 @@ struct qaMatching {
       if (fQaMatchingAodDebug > 0 && goodMatchFound && isTrueMatch) {
         LOGF(info,
              "[good&true] mchId=%lld trackType=%d p=%.3f pt=%.3f eta=%.3f phi=%.3f",
-             static_cast<long long>(mchTrack.globalIndex()),
+             static_cast<int64_t>(mchTrack.globalIndex()),
              static_cast<int>(mchTrack.trackType()),
              mchTrack.p(),
              mchTrack.pt(),
