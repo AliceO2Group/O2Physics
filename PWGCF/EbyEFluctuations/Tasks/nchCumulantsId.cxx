@@ -104,6 +104,14 @@ struct NchCumulantsId {
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "cut for eta"};
   Configurable<float> cfgCutPtMax{"cfgCutPtMax", 3.0, "max cut for pT"};
   Configurable<float> cfgCutPtMin{"cfgCutPtMin", 0.15, "min cut for pT"};
+  Configurable<int> netChBin{"netChBin", 160, "bins for netch"};
+  Configurable<float> netChMax{"netChMax", 80.0, "max for netch"};
+  Configurable<float> netChMin{"netChMin", -80.0, "min for netch"};
+  Configurable<int> chBins{"chBins", 501, "bins for ch"};
+  Configurable<float> chMax{"chMax", 500.0, "max for ch"};
+  Configurable<float> chMin{"chMin", -1.0, "min for ch"};
+  Configurable<float> midRapMax{"midRapMax", 1000.0, "max for midrapmult"};
+  Configurable<int> midRapBins{"midRapBins", 1001, "bins for midrapmult"};
 
   Configurable<bool> checkCollPosZMc{"checkCollPosZMc", false, "checkCollPosZMc"};
   Configurable<bool> flagUnusedVariableError{"flagUnusedVariableError", false, "flagUnusedVariableError"};
@@ -228,16 +236,16 @@ struct NchCumulantsId {
     const AxisSpec axisTOFNSigma = {200, -10.0, 10.0, "n#sigma_{TOF}"};
     const AxisSpec axisTOFExpMom = {200, 0.0f, 10.0f, "#it{p}_{tofExpMom} (GeV/#it{c})"};
 
-    const AxisSpec axisNch(100, -50, 50, "Net_charge_dN");
-    const AxisSpec axisPosCh(101, -1, 100, "Pos_charge");
-    const AxisSpec axisNegCh(101, -1, 100, "Neg_charge");
-    const AxisSpec axisNt(201, -1, 200, "Mult_midRap_Nch");
-    const AxisSpec axisPrCh(101, -1, 100, "Pr_charge");
-    const AxisSpec axisAPrCh(101, -1, 100, "APr_charge");
-    const AxisSpec axisKaCh(101, -1, 100, "Ka_charge");
-    const AxisSpec axisAKaCh(101, -1, 100, "AKa_charge");
-    const AxisSpec axisPiCh(101, -1, 100, "Pion_Positive");
-    const AxisSpec axisAPiCh(101, -1, 100, "Pion_Negative");
+    const AxisSpec axisNch(netChBin, netChMin, netChMax, "Net_charge_dN");
+    const AxisSpec axisPosCh(chBins, chMin, chMax, "Pos_charge");
+    const AxisSpec axisNegCh(chBins, chMin, chMax, "Neg_charge");
+    const AxisSpec axisNt(midRapBins, chMin, midRapMax, "Mult_midRap_Nch");
+    const AxisSpec axisPrCh(chBins, chMin, chMax, "Pr_charge");
+    const AxisSpec axisAPrCh(chBins, chMin, chMax, "APr_charge");
+    const AxisSpec axisKaCh(chBins, chMin, chMax, "Ka_charge");
+    const AxisSpec axisAKaCh(chBins, chMin, chMax, "AKa_charge");
+    const AxisSpec axisPiCh(chBins, chMin, chMax, "Pion_Positive");
+    const AxisSpec axisAPiCh(chBins, chMin, chMax, "Pion_Negative");
 
     HistogramConfigSpec qnHist1({HistType::kTHnSparseD, {axisNch, axisPosCh, axisNegCh, axisPrCh, axisAPrCh, axisKaCh, axisAKaCh, axisNt, axisCent}});
     HistogramConfigSpec qnHist2({HistType::kTHnSparseD, {axisNch, axisPosCh, axisNegCh, axisPiCh, axisAPiCh, axisKaCh, axisAKaCh, axisNt, axisCent}});
