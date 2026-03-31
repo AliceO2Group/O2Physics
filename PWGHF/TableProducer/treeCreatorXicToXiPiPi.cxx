@@ -78,6 +78,9 @@ DECLARE_SOA_COLUMN(PtPi1, ptPi1, float);                                        
 DECLARE_SOA_COLUMN(ImpactParameterPi1, impactParameterPi1, float);                     //! Normalised impact parameter of Pi1 (prong2)
 DECLARE_SOA_COLUMN(ImpactParameterNormalisedPi1, impactParameterNormalisedPi1, float); //! Normalised impact parameter of Pi1 (prong2)
 DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);                 //! Maximum normalized difference between measured and expected impact parameter of candidate prongs
+DECLARE_SOA_COLUMN(MlScoreBkg, mlScoreBkg, float);                //! ML score for background class
+DECLARE_SOA_COLUMN(MlScorePrompt, mlScorePrompt, float);          //! ML score for prompt signal class
+DECLARE_SOA_COLUMN(MlScoreNonPrompt, mlScoreNonPrompt, float);    //! ML score for non-prompt signal class (3-class model only, -1 otherwise)
 } // namespace full
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiLites, "AOD", "HFXICXI2PILITE",
@@ -117,7 +120,7 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiLites, "AOD", "HFXICXI2PILITE",
                   full::ImpactParameterNormalisedPi1,
                   full::MaxNormalisedDeltaIP);
 
-DECLARE_SOA_TABLE(HfCandXicToXiPiPiLiteKfs, "AOD", "HFXICXI2PILITEKF",
+DECLARE_SOA_TABLE(HfCandXicToXiPiPiLiteKfs, "AOD", "HFXICXI2PILITKF",
                   full::ParticleFlag,
                   hf_cand_mc_flag::OriginMcRec,
                   full::CandidateSelFlag,
@@ -186,7 +189,7 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiLiteKfs, "AOD", "HFXICXI2PILITEKF",
                   hf_cand_xic_to_xi_pi_pi::DcaXYPi0Xi,
                   hf_cand_xic_to_xi_pi_pi::DcaXYPi1Xi);
 
-DECLARE_SOA_TABLE(HfCandXicToXiPiPiLiteMLs, "AOD", "HFXICXI2PILITEML",
+DECLARE_SOA_TABLE(HfCandXicToXiPiPiLiteMLs, "AOD", "HFXICXI2PIMLITE",
                   full::ParticleFlag,
                   hf_cand_mc_flag::OriginMcRec,
                   full::CandidateSelFlag,
@@ -212,7 +215,10 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiLiteMLs, "AOD", "HFXICXI2PILITEML",
                   full::ImpactParameterNormalisedPi0,
                   full::ImpactParameterPi1,
                   full::ImpactParameterNormalisedPi1,
-                  full::MaxNormalisedDeltaIP);
+                  full::MaxNormalisedDeltaIP,
+                  full::MlScoreBkg,
+                  full::MlScorePrompt,
+                  full::MlScoreNonPrompt);
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiFulls, "AOD", "HFXICXI2PIFULL",
                   full::ParticleFlag,
@@ -378,7 +384,6 @@ struct HfTreeCreatorXicToXiPiPi {
 
   Configurable<int> selectionFlagXic{"selectionFlagXic", 1, "Selection Flag for Xic"};
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
-  Configurable<bool> fillCandidateMlLiteTable{"fillCandidateMlLiteTable", false, "Switch to fill lite table with ML related variables"};
   Configurable<bool> fillGenParticleTable{"fillGenParticleTable", false, "Switch to fill table with MC truth for generated particles"};
   // parameters for production of training samples
   Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "Flag to fill derived tables with signal for ML trainings"};
@@ -388,9 +393,10 @@ struct HfTreeCreatorXicToXiPiPi {
 
   using SelectedCandidates = soa::Filtered<soa::Join<aod::HfCandXic, aod::HfSelXicToXiPiPi>>;
   using SelectedCandidatesKf = soa::Filtered<soa::Join<aod::HfCandXic, aod::HfCandXicKF, aod::HfSelXicToXiPiPi>>;
-  using SelectedCandidatesML = soa::Filtered<soa::Join<aod::HfCandXic, aod::HfSelXicToXiPiPi>>;
+  using SelectedCandidatesML = soa::Filtered<soa::Join<aod::HfCandXic, aod::HfMlXicToXiPiPi, aod::HfSelXicToXiPiPi>>;
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCandXic, aod::HfCandXicMcRec, aod::HfSelXicToXiPiPi>>;
   using SelectedCandidatesKfMc = soa::Filtered<soa::Join<aod::HfCandXic, aod::HfCandXicKF, aod::HfCandXicMcRec, aod::HfSelXicToXiPiPi>>;
+  using SelectedCandidatesMcML = soa::Filtered<soa::Join<aod::HfCandXic, aod::HfMlXicToXiPiPi, aod::HfCandXicMcRec, aod::HfSelXicToXiPiPi>>;
   using MatchedGenXicToXiPiPi = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandXicMcGen>>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_xic::isSelXicToXiPiPi >= selectionFlagXic;
@@ -403,10 +409,7 @@ struct HfTreeCreatorXicToXiPiPi {
 
   void init(InitContext const&)
   {
-    std::array<bool, 5> doprocess{doprocessData, doprocessDataKf, doprocessDataWithML, doprocessMc, doprocessMcKf};
-    if(std::accumulate(doprocess.begin(), doprocess.end(),0) == 0) {
-      LOGP(fatal, "No process fuction enabled?");
-    }
+    std::array<bool, 6> doprocess{doprocessData, doprocessDataKf, doprocessDataWithML, doprocessMc, doprocessMcKf, doprocessMcWithML};
     if (std::accumulate(doprocess.begin(), doprocess.end(),0) != 1) {
       LOGP(fatal, "Only one process function can be enabled at a time.");
     }
@@ -421,7 +424,7 @@ struct HfTreeCreatorXicToXiPiPi {
       particleFlag = candidate.flagMcMatchRec();
       originMc = candidate.originMcRec();
     }
-    if constexpr (!DoKf) {
+    if constexpr (!DoKf && !DoMl) {
       if (fillCandidateLiteTable) {
         rowCandidateLite(
           particleFlag,
@@ -522,7 +525,7 @@ struct HfTreeCreatorXicToXiPiPi {
           candidate.nSigTofPiFromLambda(),
           candidate.nSigTofPrFromLambda());
       }
-    } else {
+    } else if constexpr (DoKf) {
       if (fillCandidateLiteTable) {
         rowCandidateLiteKf(
           particleFlag,
@@ -674,7 +677,16 @@ struct HfTreeCreatorXicToXiPiPi {
           candidate.dcaXYPi1Xi());
       }
     }
-    if constexpr (DoMl){
+    if constexpr (DoMl) {
+      float mlScoreBkg = -1.f, mlScorePrompt = -1.f, mlScoreNonPrompt = -1.f;
+      const int scoreSize = static_cast<int>(candidate.mlProbXicToXiPiPi().size());
+      if (scoreSize > 0) {
+        mlScoreBkg = candidate.mlProbXicToXiPiPi()[0];
+        mlScorePrompt = candidate.mlProbXicToXiPiPi()[1];
+        if (scoreSize > 2) {
+          mlScoreNonPrompt = candidate.mlProbXicToXiPiPi()[2];
+        }
+      }
       rowCandidateLiteMl(
           particleFlag,
           originMc,
@@ -701,7 +713,10 @@ struct HfTreeCreatorXicToXiPiPi {
           candidate.impactParameterNormalised1(),
           candidate.impactParameter2(),
           candidate.impactParameterNormalised2(),
-          candidate.maxNormalisedDeltaIP());
+          candidate.maxNormalisedDeltaIP(),
+          mlScoreBkg,
+          mlScorePrompt,
+          mlScoreNonPrompt);
     }
   }
 
@@ -751,16 +766,10 @@ struct HfTreeCreatorXicToXiPiPi {
     rowCandidateLiteMl.reserve(candidates.size());
 
     for (const auto& candidate : candidates) {
-      if (fillOnlyBackground && downSampleBkgFactor < 1.) {
-        float const pseudoRndm = candidate.ptProng1() * 1000. - static_cast<int64_t>(candidate.ptProng1() * 1000);
-        if (pseudoRndm >= downSampleBkgFactor && candidate.pt() < ptMaxForDownSample) {
-          continue;
-        }
-      }
       fillCandidateTable<false, false, true>(candidate);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processDataWithML, "Process data with DCAFitter reconstruction and ML", true);
+  PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processDataWithML, "Process data with DCAFitter reconstruction and ML", false);
 
   void processMc(SelectedCandidatesMc const& candidates,
                  MatchedGenXicToXiPiPi const& particles)
@@ -869,6 +878,52 @@ struct HfTreeCreatorXicToXiPiPi {
     }
   }
   PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processMcKf, "Process MC with KF Particle reconstruction", false);
+
+  void processMcWithML(SelectedCandidatesMcML const& candidates,
+                       MatchedGenXicToXiPiPi const& particles)
+  {
+    // Filling candidate properties
+    rowCandidateLiteMl.reserve(candidates.size());
+    if (fillOnlySignal) {
+      for (const auto& candidate : candidates) {
+        if (candidate.flagMcMatchRec() == int8_t(0)) {
+          continue;
+        }
+        fillCandidateTable<true, false, true>(candidate);
+      }
+    } else if (fillOnlyBackground) {
+      for (const auto& candidate : candidates) {
+        if (candidate.flagMcMatchRec() != int8_t(0)) {
+          continue;
+        }
+        float const pseudoRndm = candidate.ptProng1() * 1000. - static_cast<int64_t>(candidate.ptProng1() * 1000);
+        if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
+          continue;
+        }
+        fillCandidateTable<true, false, true>(candidate);
+      }
+    } else {
+      for (const auto& candidate : candidates) {
+        fillCandidateTable<true, false, true>(candidate);
+      }
+    }
+
+    if (fillGenParticleTable) {
+      rowCandidateFullParticles.reserve(particles.size());
+      for (const auto& particle : particles) {
+        rowCandidateFullParticles(
+          particle.flagMcMatchGen(),
+          particle.originMcGen(),
+          particle.pdgBhadMotherPart(),
+          particle.pt(),
+          particle.eta(),
+          particle.phi(),
+          RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus),
+          particle.decayLengthMcGen());
+      }
+    }
+  }
+  PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processMcWithML, "Process MC with DCAFitter reconstruction and ML", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
