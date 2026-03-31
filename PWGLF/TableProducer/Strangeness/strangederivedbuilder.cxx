@@ -555,8 +555,8 @@ struct strangederivedbuilder {
           }
 
           products.strangeCents(collision.centFT0M(), collision.centFT0A(),
-                                centrality, collision.centFV0A(), collision.centFT0CVariant1(),
-                                collision.centMFT(), collision.centNGlobal());
+                                centrality, collision.centFV0A(), collision.centFT0CVariant1(), collision.centFT0CVariant2(),
+                                collision.centMFT(), collision.centNGlobal(), collision.centNTPV());
           products.strangeEvSels(collision.sel8(), collision.selection_raw(),
                                  collision.multFT0A() * static_cast<float>(fillTruncationOptions.fillRawFT0A),
                                  collision.multFT0C() * static_cast<float>(fillTruncationOptions.fillRawFT0C),
