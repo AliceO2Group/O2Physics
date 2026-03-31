@@ -95,7 +95,7 @@ struct HfTaskD0 {
   Configurable<bool> storeOccupancyAndIR{"storeOccupancyAndIR", false, "Flag to store occupancy information and interaction rate"};
   Configurable<bool> storeTrackQuality{"storeTrackQuality", false, "Flag to store track quality information"};
   Configurable<bool> storeZdcEnergy{"storeZdcEnergy", false, "Flag to store ZDC energy info"};
-  Configurable<bool> storeZdcTime{"storeZdcTime", true, "Flag to store ZDC time info"};
+  Configurable<bool> storeZdcTime{"storeZdcTime", false, "Flag to store ZDC time info"};
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
