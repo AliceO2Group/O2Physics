@@ -48,7 +48,9 @@ using namespace o2::framework::expressions;
 namespace o2::aod
 {
 // Parent table: one row per collision stored in the MiniAOD
-DECLARE_SOA_TABLE(MiniCollisions, "AOD", "MINICOLL");
+DECLARE_SOA_COLUMN(MiniCollTag, miniCollTag, uint8_t);
+DECLARE_SOA_TABLE(MiniCollisions, "AOD", "MINICOLL",
+                  MiniCollTag);
 
 // MiniJets -> MiniCollisions
 DECLARE_SOA_INDEX_COLUMN(MiniCollision, miniCollision);
@@ -512,11 +514,11 @@ struct JetLundPlaneUnfolding {
   {
     registry.fill(HIST("hEventCount"), 0.5);
 
-    (void)collisions; // collision ids are used only transiently for grouping MiniJets by source event
+    (void)collision; // collision row is part of the process signature but not used directly here
 
     int miniCollIdx = -1;
     if (writeMiniAOD.value) {
-      outMiniCollisions();
+      outMiniCollisions(static_cast<uint8_t>(0));
       miniCollIdx = outMiniCollisions.lastIndex();
     }
     for (auto const& jet : jets) {
@@ -589,7 +591,7 @@ struct JetLundPlaneUnfolding {
         int partMiniCollIdx = -1;
         auto collIt = partMiniCollByKey.find(partCollKey);
         if (collIt == partMiniCollByKey.end()) {
-          outMiniCollisions();
+          outMiniCollisions(static_cast<uint8_t>(0));
           partMiniCollIdx = outMiniCollisions.lastIndex();
           partMiniCollByKey.emplace(partCollKey, partMiniCollIdx);
         } else {
@@ -656,7 +658,7 @@ struct JetLundPlaneUnfolding {
         int detMiniCollIdx = -1;
         auto collIt = detMiniCollByKey.find(detCollKey);
         if (collIt == detMiniCollByKey.end()) {
-          outMiniCollisions();
+          outMiniCollisions(static_cast<uint8_t>(0));
           detMiniCollIdx = outMiniCollisions.lastIndex();
           detMiniCollByKey.emplace(detCollKey, detMiniCollIdx);
         } else {
