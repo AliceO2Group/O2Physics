@@ -256,7 +256,6 @@ struct StudyPnch {
       if (!isGenTrackSelected(track)) {
         continue;
       }
-      // Verify that the track belongs to the given MC collision
       if (track.mcCollisionId() != McCol.globalIndex()) {
         continue;
       }
@@ -276,7 +275,6 @@ struct StudyPnch {
       if (!isTrackSelected(track)) {
         continue;
       }
-      // Verify that the track belongs to the given MC collision
       if (track.has_mcParticle()) {
         auto particle = track.mcParticle();
         if (particle.mcCollisionId() != McCol.mcCollisionId()) {
@@ -287,7 +285,7 @@ struct StudyPnch {
       }
       histos.fill(HIST("PhiVsEtaHist"), track.phi(), track.eta());
     }
-    // Once all the frequencies have been counted, a loop can be made to fill the histogram
+    // Loop to fill the histogram without cloned tracks
     for (const auto& [globalIndex, frequency] : recoFrequencies) {
       histos.fill(HIST("hCountNTracks"), frequency);
       // Fill histogram with not cloned tracks
@@ -355,18 +353,19 @@ struct StudyPnch {
       if (!isEventSelected(RecCol)) {
         continue;
       }
+      // Evaluation of reconstructed collisions with more than 1 contributor
       if (RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
         continue;
       }
       auto recTracksPart = RecTracks.sliceBy(perCollision, RecCol.globalIndex());
       auto multrec = countNTracksMcCol(recTracksPart, RecCol);
       if (multrec > 0) {
-        histos.fill(HIST("hMultiplicityMCrec"), multrec);
+        histos.fill(HIST("hMultiplicityMCrecMod"), multrec);
       }
       auto multgen = countGenTracks(GenParticles, mcCollision);
       if (multgen > 0 && multrec > 0) {
-        histos.fill(HIST("hMultiplicityMCgen"), multgen);
-        histos.fill(HIST("hResponseMatrix"), multrec, multgen);
+        histos.fill(HIST("hMultiplicityMCgenMod"), multgen);
+        histos.fill(HIST("hResponseMatrixMod"), multrec, multgen);
       }
     }
   }
