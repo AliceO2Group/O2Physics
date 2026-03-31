@@ -82,6 +82,11 @@ DECLARE_SOA_TABLE_VERSIONED(StraCents_001, "AOD", "STRACENTS", 1, //! centrality
                             cent::CentFT0C, cent::CentFV0A,
                             cent::CentFT0CVariant1, cent::CentMFT,
                             cent::CentNGlobal);
+DECLARE_SOA_TABLE_VERSIONED(StraCents_002, "AOD", "STRACENTS", 2, //! centrality percentiles in Run 3
+                            cent::CentFT0M, cent::CentFT0A,
+                            cent::CentFT0C, cent::CentFV0A,
+                            cent::CentFT0CVariant1, cent::CentFT0CVariant2,
+                            cent::CentMFT, cent::CentNGlobal, cent::CentNTPV);
 
 DECLARE_SOA_TABLE(StraCentsRun2, "AOD", "STRACENTSRUN2", //! centrality percentiles in Run 2
                   cent::CentRun2V0M, cent::CentRun2V0A,
@@ -325,11 +330,11 @@ DECLARE_SOA_TABLE(StraEvTimes, "AOD", "STRAEVTIMES", //! event time (FT0, TOF)
                   stracollision::EventTime);
 
 using StraRawCents = StraRawCents_004;
-using StraCents = StraCents_001;
+using StraCents = StraCents_002;
 using StraEvSels = StraEvSels_005;
 using StraStamps = StraStamps_001;
 using StraCollision = StraCollisions::iterator;
-using StraCent = StraCents_001::iterator;
+using StraCent = StraCents::iterator;
 
 namespace stramccollision
 {
