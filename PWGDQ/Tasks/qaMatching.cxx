@@ -2902,9 +2902,7 @@ struct qaMatching {
       static_cast<float>(collision.posZ()));
 
     if (fQaMatchingAodDebug > 0 && debugCounter < fQaMatchingAodDebug) {
-      LOGF(info, "[AO2D] reducedEvent=%" PRId64 " mftMult=%d",
-           reducedEventId,
-           static_cast<int>(mftMultiplicity));
+      LOGF(info, "[AO2D] reducedEvent=%", reducedEventId);
       debugCounter += 1;
     }
   }
