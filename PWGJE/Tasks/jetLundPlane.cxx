@@ -18,6 +18,10 @@
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 
+#include "Common/Core/RecoDecay.h"
+
+#include "CommonConstants/MathConstants.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -27,10 +31,6 @@
 
 #include <fastjet/ClusterSequenceArea.hh>
 #include <fastjet/PseudoJet.hh>
-
-#include "Common/Core/RecoDecay.h"
-#include "CommonConstants/MathConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
 
 #include <algorithm>
 #include <array>
