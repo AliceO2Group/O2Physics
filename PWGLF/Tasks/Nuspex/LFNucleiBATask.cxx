@@ -2392,7 +2392,7 @@ struct LFNucleiBATask {
         return;
     }
 
-    if (centFT0M <= cfgMultCutLow || centFT0M > cfgMultCutHigh) {
+    if (enableCentrality && (centFT0M <= cfgMultCutLow || centFT0M > cfgMultCutHigh)) {
       return;
     }
     if (enableCentrality)
@@ -2699,8 +2699,9 @@ struct LFNucleiBATask {
 
       isDeuteron = enableDe && deRapCut;
       isHelium = enableHe && heRapCut;
-      isDe = isDeuteron && track.sign() > 0;
-      isAntiDe = isDeuteron && track.sign() < 0;
+
+      bool passITSDeCut = !nsigmaITSvar.useITSDeCut || (nITSDe > nsigmaITSvar.nsigmaITSDe);
+      bool passITSHeCut = !nsigmaITSvar.useITSHeCut || (nITSHe > nsigmaITSvar.nsigmaITSHe);
 
       if constexpr (IsMC && !IsFilteredData) {
         int pdgCheck = track.mcParticle().pdgCode();
@@ -2710,25 +2711,19 @@ struct LFNucleiBATask {
           histos.fill(HIST("tracks/hItsDeHeChecker"), 1);
       }
 
-      // nSigmaITSHe cut
-      if (nsigmaITSvar.useITSDeCut && (nITSDe <= nsigmaITSvar.nsigmaITSDe)) {
-        continue;
-      }
-
-      if (nsigmaITSvar.useITSHeCut && (nITSHe <= nsigmaITSvar.nsigmaITSHe)) {
-        continue;
-      }
-
       if constexpr (IsMC && !IsFilteredData) {
         int pdgCheck = track.mcParticle().pdgCode();
-        if (std::abs(pdgCheck) == PDGDeuteron)
+        if ((std::abs(pdgCheck) == PDGDeuteron) && passITSDeCut)
           histos.fill(HIST("tracks/hItsDeHeChecker"), 2);
-        if (std::abs(pdgCheck) == PDGHelium)
+        if ((std::abs(pdgCheck) == PDGHelium) && passITSHeCut)
           histos.fill(HIST("tracks/hItsDeHeChecker"), 3);
       }
 
-      isHe = isHelium && track.sign() > 0;
-      isAntiHe = isHelium && track.sign() < 0;
+      isDe = isDeuteron && passITSDeCut && track.sign() > 0;
+      isAntiDe = isDeuteron && passITSDeCut && track.sign() < 0;
+
+      isHe = isHelium && passITSHeCut && track.sign() > 0;
+      isAntiHe = isHelium && passITSHeCut && track.sign() < 0;
 
       isDeWoDCAxy = isDe && passDCAzCutDe;
       isAntiDeWoDCAxy = isAntiDe && passDCAzCutAntiDe;
@@ -4913,7 +4908,8 @@ struct LFNucleiBATask {
         }
 
         if (isHeWTPCpid) {
-          histos.fill(HIST("tracks/helium/TOF/h2HeliumSpectraVsMult_Z2"), 2 * hePt, centFT0M);
+          if (enableCentrality)
+            histos.fill(HIST("tracks/helium/TOF/h2HeliumSpectraVsMult_Z2"), 2 * hePt, centFT0M);
           histos.fill(HIST("tracks/helium/h2HeliumTOFbetaVsP"), heP, track.beta());
           if (outFlagOptions.enableEffPlots) {
             histos.fill(HIST("tracks/eff/helium/h2pVsTOFExpMomentumHe"), track.tofExpMom(), heP);
@@ -4922,7 +4918,8 @@ struct LFNucleiBATask {
         }
 
         if (isAntiHeWTPCpid) {
-          histos.fill(HIST("tracks/helium/TOF/h2antiHeliumSpectraVsMult_Z2"), 2 * antihePt, centFT0M);
+          if (enableCentrality)
+            histos.fill(HIST("tracks/helium/TOF/h2antiHeliumSpectraVsMult_Z2"), 2 * antihePt, centFT0M);
           histos.fill(HIST("tracks/helium/h2antiHeliumTOFbetaVsP"), antiheP, track.beta());
           if (outFlagOptions.enableEffPlots) {
             histos.fill(HIST("tracks/eff/helium/h2pVsTOFExpMomentumantiHe"), track.tofExpMom(), antiheP);
@@ -6387,7 +6384,7 @@ struct LFNucleiBATask {
         return;
     }
 
-    if (mcCollision.centFT0M() < cfgMultCutLow || mcCollision.centFT0M() > cfgMultCutHigh)
+    if (enableCentrality && (mcCollision.centFT0M() < cfgMultCutLow || mcCollision.centFT0M() > cfgMultCutHigh))
       return;
 
     if (evselOptions.enableGenVzCut) {
