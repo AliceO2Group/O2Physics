@@ -28,10 +28,15 @@
 #include <fastjet/ClusterSequenceArea.hh>
 #include <fastjet/PseudoJet.hh>
 
+#include "Common/Core/RecoDecay.h"
+#include "CommonConstants/MathConstants.h"
+#include "CommonConstants/PhysicsConstants.h"
+
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -42,13 +47,24 @@ using namespace o2::framework::expressions;
 // Mini-AOD (tables)
 namespace o2::aod
 {
-DECLARE_SOA_COLUMN(MiniCollId, miniCollId, uint64_t); // collision global index
-DECLARE_SOA_COLUMN(MiniJetId, miniJetId, uint64_t);   // jet global index (within its table)
-DECLARE_SOA_COLUMN(Level, level, uint8_t);            // 0=reco(det), 1=truth(part)
-DECLARE_SOA_COLUMN(JetRint, jetRint, int32_t);        // jet.r() as stored (int R*100)
+// Parent table: one row per collision stored in the MiniAOD
+DECLARE_SOA_TABLE(MiniCollisions, "AOD", "MINICOLL");
+
+// MiniJets -> MiniCollisions
+DECLARE_SOA_INDEX_COLUMN(MiniCollision, miniCollision);
+
+// Jet payload
+DECLARE_SOA_COLUMN(Level, level, uint8_t);     // JetLevel::Det=reco(det), JetLevel::Part=truth(part)
+DECLARE_SOA_COLUMN(JetRint, jetRint, int32_t); // jet.r() as stored (int R*100)
 DECLARE_SOA_COLUMN(JetPt, jetPt, float);
 DECLARE_SOA_COLUMN(JetEta, jetEta, float);
 DECLARE_SOA_COLUMN(JetPhi, jetPhi, float);
+
+DECLARE_SOA_TABLE(MiniJets, "AOD", "MINIJET",
+                  MiniCollisionId, Level, JetRint, JetPt, JetEta, JetPhi);
+
+// MiniSplittings -> MiniJets
+DECLARE_SOA_INDEX_COLUMN(MiniJet, miniJet);
 
 // Per-splitting observables (primary branch)
 DECLARE_SOA_COLUMN(SplitId, splitId, uint16_t);
@@ -58,33 +74,38 @@ DECLARE_SOA_COLUMN(PtHard, ptHard, float);
 DECLARE_SOA_COLUMN(SoftEta, softEta, float);
 DECLARE_SOA_COLUMN(SoftPhi, softPhi, float);
 
+DECLARE_SOA_TABLE(MiniSplittings, "AOD", "MINISPL",
+                  MiniJetId, SplitId, DeltaR, PtSoft, PtHard, SoftEta, SoftPhi, JetPt);
+
 // Jet-jet matching (MC)
-DECLARE_SOA_COLUMN(DetJetId, detJetId, uint64_t);
-DECLARE_SOA_COLUMN(PartJetId, partJetId, uint64_t);
 DECLARE_SOA_COLUMN(MatchDR, matchDR, float);
 DECLARE_SOA_COLUMN(MatchRelPt, matchRelPt, float);
 
-DECLARE_SOA_TABLE(MiniJets, "AOD", "MINIJET",
-                  MiniCollId, MiniJetId, Level, JetRint, JetPt, JetEta, JetPhi);
-
-DECLARE_SOA_TABLE(MiniSplittings, "AOD", "MINISPL",
-                  MiniCollId, MiniJetId, Level, SplitId, DeltaR, PtSoft, PtHard, SoftEta, SoftPhi, JetPt);
+DECLARE_SOA_INDEX_COLUMN_FULL(DetMiniJet, detMiniJet, int, MiniJets, "_Det");
+DECLARE_SOA_INDEX_COLUMN_FULL(PartMiniJet, partMiniJet, int, MiniJets, "_Part");
 
 DECLARE_SOA_TABLE(MiniJetMatches, "AOD", "MINIMCH",
-                  MiniCollId, DetJetId, PartJetId, MatchDR, MatchRelPt);
+                  DetMiniJetId,
+                  PartMiniJetId,
+                  MatchDR,
+                  MatchRelPt);
 } // namespace o2::aod
 
 namespace
 {
 constexpr float kTiny = 1e-12f;
 
+struct JetLevel {
+  enum Type : uint8_t {
+    Det = 0,
+    Part = 1
+  };
+};
+
 template <typename JetT>
-float jetRfromTable(const JetT& jet, float fallbackR)
+float jetRfromTable(const JetT& jet)
 {
-  if constexpr (requires { jet.r(); }) {
-    return static_cast<float>(jet.r()) * 0.01f; // r stored as int(R*100)
-  }
-  return fallbackR;
+  return static_cast<float>(jet.r()) * 0.01f;
 }
 
 struct SplittingObs {
@@ -105,9 +126,16 @@ struct SplitMatchPair {
   float dR{};
 };
 
+struct JetMatchInfo {
+  uint64_t otherKey{};
+  float dR{1e9f};
+  float relPt{-1.f};
+  float otherPt{};
+};
+
 inline float deltaPhi(float phi1, float phi2)
 {
-  return std::remainder(phi1 - phi2, 2.f * static_cast<float>(M_PI));
+  return RecoDecay::constrainAngle(phi1 - phi2, -o2::constants::math::PI);
 }
 
 inline float splittingMatchDistance(const SplittingObs& a, const SplittingObs& b)
@@ -173,7 +201,7 @@ std::vector<fastjet::PseudoJet> buildFastJetInputs(ConstituentRangeT&& constitue
     if (c.pt() < trackPtMin) {
       continue;
     }
-    const float mPi = 0.13957f; // GeV/c^2
+    const float mPi = o2::constants::physics::MassPiPlus;
     const float e = std::sqrt(c.p() * c.p() + mPi * mPi);
     fjInputs.emplace_back(c.px(), c.py(), c.pz(), e);
   }
@@ -240,8 +268,6 @@ struct JetLundPlaneUnfolding {
 
   // switches (runtime)
   Configurable<bool> writeMiniAOD{"writeMiniAOD", true, "write mini-AOD tables (jets, splittings, matching)"};
-  Configurable<bool> doData{"doData", true, "run reco/data processing"};
-  Configurable<bool> doMC{"doMC", false, "run MC processing (det+part+response)"};
 
   // matching knobs (applied on top of matching relations)
   Configurable<float> matchMaxDR{"matchMaxDR", 0.2f, "max ΔR between det and part jet"};
@@ -253,6 +279,7 @@ struct JetLundPlaneUnfolding {
   HistogramRegistry registry{"registry"};
 
   // Mini-AOD outputs (optional)
+  Produces<aod::MiniCollisions> outMiniCollisions;
   Produces<aod::MiniJets> outMiniJets;
   Produces<aod::MiniSplittings> outMiniSplittings;
   Produces<aod::MiniJetMatches> outMiniJetMatches;
@@ -377,18 +404,6 @@ struct JetLundPlaneUnfolding {
     return (jet.r() == rWanted) && (jet.pt() > jetPtMin.value) && (jet.eta() > jetEtaMin.value) && (jet.eta() < jetEtaMax.value);
   }
 
-  template <typename JetT>
-  uint64_t getCollisionGlobalIndex(JetT const& jet, aod::JetCollisions const& collisions) const
-  {
-    if constexpr (requires { jet.collisionId(); }) {
-      return collisions.iteratorAt(jet.collisionId()).globalIndex();
-    } else if constexpr (requires { jet.mcCollisionId(); }) {
-      return static_cast<uint64_t>(jet.mcCollisionId());
-    } else {
-      return jet.globalIndex();
-    }
-  }
-
   void fillJetCountSummary(int bin)
   {
     registry.fill(HIST("hJetCountSummary"), static_cast<float>(bin));
@@ -410,7 +425,7 @@ struct JetLundPlaneUnfolding {
       return {};
     }
 
-    const float rjet = jetRfromTable(jet, jetR.value);
+    const float rjet = jetRfromTable(jet);
     return primaryDeclusteringSplittings(jetReclustered[0], rjet);
   }
 
@@ -495,10 +510,15 @@ struct JetLundPlaneUnfolding {
                    soa::Filtered<RecoJets> const& jets,
                    aod::JetTracks const& tracks)
   {
-    if (!doData.value) {
-      return;
-    }
     registry.fill(HIST("hEventCount"), 0.5);
+
+    (void)collisions; // collision ids are used only transiently for grouping MiniJets by source event
+
+    int miniCollIdx = -1;
+    if (writeMiniAOD.value) {
+      outMiniCollisions();
+      miniCollIdx = outMiniCollisions.lastIndex();
+    }
     for (auto const& jet : jets) {
       registry.fill(HIST("hJetPtRecoAll"), jet.pt());
       auto spl = getPrimarySplittings(jet, tracks);
@@ -506,12 +526,12 @@ struct JetLundPlaneUnfolding {
       fillSplittingQAHists(spl, /*isTruth*/ false, jet.pt());
 
       if (writeMiniAOD.value) {
-        const uint64_t collId = collision.globalIndex();
-        const uint64_t jetId = jet.globalIndex();
-        outMiniJets(collId, jetId, /*level*/ (uint8_t)0, jet.r(), jet.pt(), jet.eta(), jet.phi());
+        outMiniJets(miniCollIdx, /*level*/ JetLevel::Det, jet.r(), jet.pt(), jet.eta(), jet.phi());
+        const int miniJetIdx = outMiniJets.lastIndex();
+
         uint16_t sid = 0;
         for (auto const& s : spl) {
-          outMiniSplittings(collId, jetId, /*level*/ (uint8_t)0, sid++, s.deltaR, s.ptSoft, s.ptHard, s.softEta, s.softPhi, jet.pt());
+          outMiniSplittings(miniJetIdx, sid++, s.deltaR, s.ptSoft, s.ptHard, s.softEta, s.softPhi, jet.pt());
         }
       }
     }
@@ -519,22 +539,105 @@ struct JetLundPlaneUnfolding {
   PROCESS_SWITCH(JetLundPlaneUnfolding, processData, "Reco/data Lund + jet spectra", true);
 
   // MC PROCESSING (det + part + response)
+
   void processMC(DetJetsMatched const& detJets,
                  PartJetsMatched const& partJets,
                  aod::JetCollisions const& collisions,
                  aod::JetTracks const& tracks,
                  aod::JetParticles const& particles)
   {
-    if (!doMC.value) {
-      return;
-    }
     registry.fill(HIST("hEventCount"), 1.5);
+
+    (void)collisions; // collision ids are used only transiently for grouping MiniJets by source event
 
     const int rWanted = static_cast<int>(std::lround(jetR.value * 100.f));
     std::unordered_map<uint64_t, bool> truthMatchedById;
+    std::unordered_map<uint64_t, std::vector<SplittingObs>> truthSplittingsById;
+    std::unordered_map<uint64_t, JetMatchInfo> truthBestDet;
+    std::unordered_set<uint64_t> detSplittingsWritten;
+    std::unordered_set<uint64_t> truthSplittingsWritten;
     auto h6 = registry.get<THnSparse>(HIST("hLundResponse6D"));
 
-    // Loop over detector-level jets and select the best truth match from the already-produced matching relation
+    // Transient maps used only during this task execution to avoid duplicating
+    // MiniCollision / MiniJet rows and to translate framework-local indices into
+    // merge-safe MiniAOD row indices.
+    std::unordered_map<uint64_t, int> detMiniCollByKey;
+    std::unordered_map<uint64_t, int> partMiniCollByKey;
+    std::unordered_map<uint64_t, int> detJetToMiniJetIdx;
+    std::unordered_map<uint64_t, int> partJetToMiniJetIdx;
+
+    // --- Truth pass ---
+    // Fill inclusive truth histograms, cache truth splittings, write all accepted
+    // truth jets to MiniJets, and determine the best detector candidate for each truth jet.
+    for (auto const& partJet : partJets) {
+      if (!passJetFiducial(partJet, rWanted)) {
+        continue;
+      }
+
+      registry.fill(HIST("hJetPtTruthAll"), partJet.pt());
+      fillJetCountSummary(4);
+
+      const uint64_t truthJetKey = partJet.globalIndex();
+      auto spl = getPrimarySplittings(partJet, particles);
+      truthSplittingsById[truthJetKey] = spl;
+
+      fillPrimaryLund3DFromSplittings(spl, partJet.pt(), /*isTruth*/ true);
+      fillSplittingQAHists(spl, /*isTruth*/ true, partJet.pt());
+
+      if (writeMiniAOD.value) {
+        const uint64_t partCollKey = (static_cast<uint64_t>(partJet.mcCollisionId()) << 1U) | 1ULL;
+        int partMiniCollIdx = -1;
+        auto collIt = partMiniCollByKey.find(partCollKey);
+        if (collIt == partMiniCollByKey.end()) {
+          outMiniCollisions();
+          partMiniCollIdx = outMiniCollisions.lastIndex();
+          partMiniCollByKey.emplace(partCollKey, partMiniCollIdx);
+        } else {
+          partMiniCollIdx = collIt->second;
+        }
+
+        outMiniJets(partMiniCollIdx, /*level*/ JetLevel::Part, partJet.r(), partJet.pt(), partJet.eta(), partJet.phi());
+        partJetToMiniJetIdx[truthJetKey] = outMiniJets.lastIndex();
+      }
+
+      if (!partJet.has_matchedJetGeo()) {
+        continue;
+      }
+
+      JetMatchInfo bestDet{};
+      bool foundDet = false;
+      for (auto const& candDetJet : partJet.template matchedJetGeo_as<DetJetsMatched>()) {
+        if (!passJetFiducial(candDetJet, rWanted)) {
+          continue;
+        }
+
+        const float dR = std::hypot(candDetJet.eta() - partJet.eta(),
+                                    deltaPhi(candDetJet.phi(), partJet.phi()));
+        if (dR > matchMaxDR.value) {
+          continue;
+        }
+
+        const float rel = std::abs(candDetJet.pt() - partJet.pt()) / std::max(partJet.pt(), kTiny);
+        if (matchUseRelPt.value && rel > matchMaxRelPtDiff.value) {
+          continue;
+        }
+
+        if (!foundDet || dR < bestDet.dR) {
+          bestDet.otherKey = candDetJet.globalIndex();
+          bestDet.dR = dR;
+          bestDet.relPt = rel;
+          bestDet.otherPt = candDetJet.pt();
+          foundDet = true;
+        }
+      }
+      if (foundDet) {
+        truthBestDet[truthJetKey] = bestDet;
+      }
+    }
+
+    // --- Detector loop ---
+    // Write all accepted detector jets to MiniJets. A final matched pair is accepted only
+    // if the detector jet and truth jet are mutual best matches under the same cuts.
     for (auto const& detJet : detJets) {
       if (!passJetFiducial(detJet, rWanted)) {
         continue;
@@ -543,18 +646,25 @@ struct JetLundPlaneUnfolding {
       registry.fill(HIST("hJetPtRecoAll"), detJet.pt());
       fillJetCountSummary(1);
 
-      const uint64_t detCollId = getCollisionGlobalIndex(detJet, collisions);
-      const uint64_t detId = detJet.globalIndex();
+      const uint64_t detJetKey = detJet.globalIndex();
       auto detSpl = getPrimarySplittings(detJet, tracks);
       fillPrimaryLund3DFromSplittings(detSpl, detJet.pt(), /*isTruth*/ false);
       fillSplittingQAHists(detSpl, /*isTruth*/ false, detJet.pt());
 
       if (writeMiniAOD.value) {
-        outMiniJets(detCollId, detId, /*level*/ (uint8_t)0, detJet.r(), detJet.pt(), detJet.eta(), detJet.phi());
-        uint16_t sidTmp = 0;
-        for (auto const& s : detSpl) {
-          outMiniSplittings(detCollId, detId, /*level*/ (uint8_t)0, sidTmp++, s.deltaR, s.ptSoft, s.ptHard, s.softEta, s.softPhi, detJet.pt());
+        const uint64_t detCollKey = (static_cast<uint64_t>(detJet.collisionId()) << 1U);
+        int detMiniCollIdx = -1;
+        auto collIt = detMiniCollByKey.find(detCollKey);
+        if (collIt == detMiniCollByKey.end()) {
+          outMiniCollisions();
+          detMiniCollIdx = outMiniCollisions.lastIndex();
+          detMiniCollByKey.emplace(detCollKey, detMiniCollIdx);
+        } else {
+          detMiniCollIdx = collIt->second;
         }
+
+        outMiniJets(detMiniCollIdx, /*level*/ JetLevel::Det, detJet.r(), detJet.pt(), detJet.eta(), detJet.phi());
+        detJetToMiniJetIdx[detJetKey] = outMiniJets.lastIndex();
       }
 
       if (!detJet.has_matchedJetGeo()) {
@@ -563,12 +673,8 @@ struct JetLundPlaneUnfolding {
         continue;
       }
 
-      float bestDR = 1e9f;
-      float bestRelPt = -1.f;
+      JetMatchInfo bestTruth{};
       bool foundMatch = false;
-
-      uint64_t bestPartId = 0;
-      float bestPartPt = 0.f;
       std::vector<SplittingObs> bestPartSpl;
 
       for (auto const& candPartJet : detJet.template matchedJetGeo_as<PartJetsMatched>()) {
@@ -577,7 +683,7 @@ struct JetLundPlaneUnfolding {
         }
 
         const float dR = std::hypot(detJet.eta() - candPartJet.eta(),
-                                    std::remainder(detJet.phi() - candPartJet.phi(), 2.f * static_cast<float>(M_PI)));
+                                    deltaPhi(detJet.phi(), candPartJet.phi()));
         if (dR > matchMaxDR.value) {
           continue;
         }
@@ -587,12 +693,20 @@ struct JetLundPlaneUnfolding {
           continue;
         }
 
-        if (dR < bestDR) {
-          bestDR = dR;
-          bestRelPt = rel;
-          bestPartId = candPartJet.globalIndex();
-          bestPartPt = candPartJet.pt();
-          bestPartSpl = getPrimarySplittings(candPartJet, particles);
+        if (!foundMatch || dR < bestTruth.dR) {
+          const uint64_t candTruthKey = candPartJet.globalIndex();
+          bestTruth.otherKey = candTruthKey;
+          bestTruth.dR = dR;
+          bestTruth.relPt = rel;
+          bestTruth.otherPt = candPartJet.pt();
+
+          auto splIt = truthSplittingsById.find(candTruthKey);
+          if (splIt != truthSplittingsById.end()) {
+            bestPartSpl = splIt->second;
+          } else {
+            bestPartSpl = getPrimarySplittings(candPartJet, particles);
+            truthSplittingsById[candTruthKey] = bestPartSpl;
+          }
           foundMatch = true;
         }
       }
@@ -602,6 +716,18 @@ struct JetLundPlaneUnfolding {
         fillJetCountSummary(3);
         continue;
       }
+
+      const auto reverseIt = truthBestDet.find(bestTruth.otherKey);
+      if (reverseIt == truthBestDet.end() || reverseIt->second.otherKey != detJetKey) {
+        registry.fill(HIST("hJetPtRecoFake"), detJet.pt());
+        fillJetCountSummary(3);
+        continue;
+      }
+
+      const float bestDR = bestTruth.dR;
+      const float bestRelPt = bestTruth.relPt;
+      const uint64_t bestPartId = bestTruth.otherKey;
+      const float bestPartPt = bestTruth.otherPt;
 
       registry.fill(HIST("hJetPtRecoMatched"), detJet.pt());
       fillJetCountSummary(2);
@@ -614,7 +740,28 @@ struct JetLundPlaneUnfolding {
       truthMatchedById[bestPartId] = true;
 
       if (writeMiniAOD.value) {
-        outMiniJetMatches(detCollId, detId, bestPartId, bestDR, bestRelPt);
+        auto detIdxIt = detJetToMiniJetIdx.find(detJetKey);
+        auto partIdxIt = partJetToMiniJetIdx.find(bestPartId);
+        if (detIdxIt != detJetToMiniJetIdx.end() && partIdxIt != partJetToMiniJetIdx.end()) {
+          const int detMiniJetIdx = detIdxIt->second;
+          const int partMiniJetIdx = partIdxIt->second;
+
+          outMiniJetMatches(detMiniJetIdx, partMiniJetIdx, bestDR, bestRelPt);
+
+          if (detSplittingsWritten.insert(detJetKey).second) {
+            uint16_t sidTmp = 0;
+            for (auto const& s : detSpl) {
+              outMiniSplittings(detMiniJetIdx, sidTmp++, s.deltaR, s.ptSoft, s.ptHard, s.softEta, s.softPhi, detJet.pt());
+            }
+          }
+
+          if (truthSplittingsWritten.insert(bestPartId).second) {
+            uint16_t sid = 0;
+            for (auto const& s : bestPartSpl) {
+              outMiniSplittings(partMiniJetIdx, sid++, s.deltaR, s.ptSoft, s.ptHard, s.softEta, s.softPhi, bestPartPt);
+            }
+          }
+        }
       }
 
       const auto splitMatches = fillSplittingCorrectionHists(detSpl, bestPartSpl);
@@ -631,30 +778,14 @@ struct JetLundPlaneUnfolding {
       }
     }
 
-    // Loop over all truth jets to fill the inclusive truth spectra and identify misses
+    // --- Final truth pass for misses ---
     for (auto const& partJet : partJets) {
       if (!passJetFiducial(partJet, rWanted)) {
         continue;
       }
 
-      registry.fill(HIST("hJetPtTruthAll"), partJet.pt());
-      fillJetCountSummary(4);
-      auto spl = getPrimarySplittings(partJet, particles);
-      fillPrimaryLund3DFromSplittings(spl, partJet.pt(), /*isTruth*/ true);
-      fillSplittingQAHists(spl, /*isTruth*/ true, partJet.pt());
-
-      const uint64_t collId = getCollisionGlobalIndex(partJet, collisions);
-      const uint64_t jetId = partJet.globalIndex();
-
-      if (writeMiniAOD.value) {
-        outMiniJets(collId, jetId, /*level*/ (uint8_t)1, partJet.r(), partJet.pt(), partJet.eta(), partJet.phi());
-        uint16_t sid = 0;
-        for (auto const& s : spl) {
-          outMiniSplittings(collId, jetId, /*level*/ (uint8_t)1, sid++, s.deltaR, s.ptSoft, s.ptHard, s.softEta, s.softPhi, partJet.pt());
-        }
-      }
-
-      if (!truthMatchedById[jetId]) {
+      const uint64_t truthJetKey = partJet.globalIndex();
+      if (!truthMatchedById[truthJetKey]) {
         registry.fill(HIST("hJetPtTruthMiss"), partJet.pt());
         fillJetCountSummary(6);
       }
