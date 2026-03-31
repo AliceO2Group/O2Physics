@@ -1310,9 +1310,9 @@ struct Dilepton {
       }
 
       std::vector<float> bootstrapweights = {};
-      int randomSeed = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-      TRandom3 randomNumber(randomSeed);
       if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kBootstrapv2)) { // bootstrapping for accepted events
+        int randomSeed = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+        TRandom3 randomNumber(randomSeed);
         for (int i = 0; i < cfgNumBootstrapSamples; i++) {
           float poissonweight = 0.;
           poissonweight = static_cast<float>(randomNumber.PoissonD(1.0));
