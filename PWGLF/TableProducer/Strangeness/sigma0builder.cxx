@@ -56,8 +56,8 @@
 #include <cmath>
 #include <cstdlib>
 #include <string>
-#include <vector>
 #include <unordered_set>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -472,7 +472,7 @@ struct sigma0builder {
       histos.get<TH1>(HIST("PhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(12, "TPCCR");
       histos.get<TH1>(HIST("PhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(13, "TPC NSigma");
 
-      if (doprocessPCMVsEMCalQA){
+      if (doprocessPCMVsEMCalQA) {
         histos.add("EMCalPhotonSel/hSelectionStatistics", "hSelectionStatistics", kTH1D, {axisCandSel});
         histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(1, "No Sel");
         histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(2, "Definition");
@@ -2786,7 +2786,7 @@ struct sigma0builder {
             }
           }
         }
-      }      
+      }
     }
   }
 
