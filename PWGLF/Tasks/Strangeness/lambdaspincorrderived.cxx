@@ -760,7 +760,7 @@ struct lambdaspincorrderived {
         proton2 = ROOT::Math::PtEtaPhiMVector(v02.protonPt(), v02.protonEta(), v02.protonPhi(), o2::constants::physics::MassProton);
         lambda2 = ROOT::Math::PtEtaPhiMVector(v02.lambdaPt(), v02.lambdaEta(), v02.lambdaPhi(), v02.lambdaMass());
         histos.fill(HIST("deltaPhiSame"), RecoDecay::constrainAngle(v0.lambdaPhi() - v02.lambdaPhi(), -TMath::Pi(), harmonicDphi));
-        const int ptype = pairTypeCode(v0.v0Status(), v02.v0Status());
+        // const int ptype = pairTypeCode(v0.v0Status(), v02.v0Status());
         if (v0.v0Status() == 0 && v02.v0Status() == 0) {
           fillHistograms(0, 0, lambda, lambda2, proton, proton2, 0, 1.0);
         }
@@ -1301,7 +1301,7 @@ struct lambdaspincorrderived {
                     RecoDecay::constrainAngle(mcacc::lamPhi(v0) - mcacc::lamPhi(v02),
                                               -TMath::Pi(), harmonicDphi));
 
-        const int ptype = pairTypeCode(mcacc::v0Status(v0), mcacc::v0Status(v02));
+        // const int ptype = pairTypeCode(mcacc::v0Status(v0), mcacc::v0Status(v02));
         // datatype=0 (same event)
         fillHistograms(mcacc::v0Status(v0), mcacc::v0Status(v02),
                        lambda, lambda2, proton, proton2,
@@ -1748,7 +1748,7 @@ struct lambdaspincorrderived {
             auto proton2 = ROOT::Math::PtEtaPhiMVector(t2.protonPt(), t2.protonEta(), t2.protonPhi(), o2::constants::physics::MassProton);
             auto lambda2 = ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass());
 
-            const int ptype = pairTypeCode(tX.v0Status(), t2.v0Status());
+            // const int ptype = pairTypeCode(tX.v0Status(), t2.v0Status());
 
             const float meWeight = wSE;
             const float dPhi = deltaPhiMinusPiToPi((float)lambda.Phi(), (float)lambda2.Phi());
@@ -1781,7 +1781,7 @@ struct lambdaspincorrderived {
             auto proton2 = ROOT::Math::PtEtaPhiMVector(tY.protonPt(), tY.protonEta(), tY.protonPhi(), o2::constants::physics::MassProton);
             auto lambda2 = ROOT::Math::PtEtaPhiMVector(tY.lambdaPt(), tY.lambdaEta(), tY.lambdaPhi(), tY.lambdaMass());
 
-            const int ptype = pairTypeCode(t1.v0Status(), tY.v0Status());
+            // const int ptype = pairTypeCode(t1.v0Status(), tY.v0Status());
             const float meWeight = wSE;
             const float dPhi = deltaPhiMinusPiToPi((float)lambda.Phi(), (float)lambda2.Phi());
             histos.fill(HIST("deltaPhiMix"), dPhi, wSE);
@@ -2120,7 +2120,7 @@ struct lambdaspincorrderived {
             auto l2 = ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(t2), mcacc::lamEta(t2), mcacc::lamPhi(t2),
                                                   mcacc::lamMass(t2));
 
-            const int ptype = pairTypeCode(mcacc::v0Status(tX), mcacc::v0Status(t2));
+            // const int ptype = pairTypeCode(mcacc::v0Status(tX), mcacc::v0Status(t2));
             const float meWeight = wSE;
             const float dPhi = deltaPhiMinusPiToPi((float)lX.Phi(), (float)l2.Phi());
             histos.fill(HIST("deltaPhiMix"), dPhi, wSE);
@@ -2158,7 +2158,7 @@ struct lambdaspincorrderived {
             auto lY = ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(tY), mcacc::lamEta(tY), mcacc::lamPhi(tY),
                                                   mcacc::lamMass(tY));
 
-            const int ptype = pairTypeCode(mcacc::v0Status(t1), mcacc::v0Status(tY));
+            // const int ptype = pairTypeCode(mcacc::v0Status(t1), mcacc::v0Status(tY));
             const float meWeight = wSE;
             const float dPhi = deltaPhiMinusPiToPi((float)l1.Phi(), (float)lY.Phi());
             histos.fill(HIST("deltaPhiMix"), dPhi, wSE);
