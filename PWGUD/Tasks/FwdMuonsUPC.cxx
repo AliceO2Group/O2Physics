@@ -16,28 +16,17 @@
 
 /// \author Andrea Giovanni Riffero <andrea.giovanni.riffero@cern.ch>
 
+#include <vector>
+#include <unordered_map>
+
+#include "Framework/runDataProcessing.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/AnalysisDataModel.h"
 #include "PWGUD/DataModel/UDTables.h"
 
-#include <CommonConstants/MathConstants.h>
-#include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
-#include <Framework/AnalysisTask.h>
-#include <Framework/Configurable.h>
-#include <Framework/HistogramRegistry.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
-#include <Framework/O2DatabasePDGPlugin.h>
-#include <Framework/OutputObjHeader.h>
-#include <Framework/runDataProcessing.h>
-
-#include <TLorentzVector.h>
-#include <TRandom3.h>
-
-#include <cmath>
-#include <cstdint>
-#include <cstdlib>
-#include <unordered_map>
-#include <vector>
+#include "TLorentzVector.h"
+#include "TRandom3.h"
 
 // table for saving tree with info on data
 namespace dimu
@@ -183,7 +172,6 @@ const int kReqMatchMIDTracks = 2;
 const int kReqMatchMFTTracks = 2;
 const int kMaxChi2MFTMatch = 30;
 const float kMaxZDCTime = 2.;
-const float kMaxZDCTimeHisto = 10.;
 const int kMuonPDG = 13;
 
 struct FwdMuonsUPC {
@@ -201,11 +189,6 @@ struct FwdMuonsUPC {
 
   // defining histograms using histogram registry: different histos for the different process functions
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry reg0n0n{"reg0n0n", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry regXn0n{"regXn0n", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry regXnXn{"regXnXn", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry mcGenRegistry{"mcGenRegistry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry mcRecoRegistry{"mcRecoRegistry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // CONFIGURABLES
   static constexpr double Pi = o2::constants::math::PI;
@@ -217,34 +200,10 @@ struct FwdMuonsUPC {
   Configurable<int> nBinsMass{"nBinsMass", 500, "N bins in mass histo"};
   Configurable<float> lowMass{"lowMass", 0., "lower limit in mass histo"};
   Configurable<float> highMass{"highMass", 10., "upper limit in mass histo"};
-  // eta of muon pairs
-  Configurable<int> nBinsEta{"nBinsEta", 600, "N bins in eta histo"};
-  Configurable<float> lowEta{"lowEta", -10., "lower limit in eta histo"};
-  Configurable<float> highEta{"highEta", -2., "upper limit in eta histo"};
   // rapidity of muon pairs
   Configurable<int> nBinsRapidity{"nBinsRapidity", 250, "N bins in rapidity histo"};
   Configurable<float> lowRapidity{"lowRapidity", -4.5, "lower limit in rapidity histo"};
   Configurable<float> highRapidity{"highRapidity", -2., "upper limit in rapidity histo"};
-  // phi of muon pairs
-  Configurable<int> nBinsPhi{"nBinsPhi", 600, "N bins in phi histo"};
-  Configurable<float> lowPhi{"lowPhi", -Pi, "lower limit in phi histo"};
-  Configurable<float> highPhi{"highPhi", Pi, "upper limit in phi histo"};
-  // pT of single muons
-  Configurable<int> nBinsPtSingle{"nBinsPtSingle", 500, "N bins in pT histo single muon"};
-  Configurable<float> lowPtSingle{"lowPtSingle", 0., "lower limit in pT histo single muon"};
-  Configurable<float> highPtSingle{"highPtSingle", 2., "upper limit in pT histo single muon"};
-  // eta of single muons
-  Configurable<int> nBinsEtaSingle{"nBinsEtaSingle", 250, "N bins in eta histo single muon"};
-  Configurable<float> lowEtaSingle{"lowEtaSingle", -4.5, "lower limit in eta histo single muon"};
-  Configurable<float> highEtaSingle{"highEtaSingle", -2., "upper limit in eta histo single muon"};
-  // phi of single muons
-  Configurable<int> nBinsPhiSingle{"nBinsPhiSingle", 600, "N bins in phi histo single muon"};
-  Configurable<float> lowPhiSingle{"lowPhiSingle", -Pi, "lower limit in phi histo single muon"};
-  Configurable<float> highPhiSingle{"highPhiSingle", Pi, "upper limit in phi histo single muon"};
-  // ZDC
-  Configurable<int> nBinsZDCen{"nBinsZDCen", 200, "N bins in ZN energy"};
-  Configurable<float> lowEnZN{"lowEnZN", -50., "lower limit in ZN energy histo"};
-  Configurable<float> highEnZN{"highEnZN", 250., "upper limit in ZN energy histo"};
   // my track type
   // 0 = MCH-MID-MFT
   // 1 = MCH-MID
@@ -271,103 +230,14 @@ struct FwdMuonsUPC {
     // axis
     const AxisSpec axisPt{nBinsPt, lowPt, highPt, "#it{p}_{T} GeV/#it{c}"};
     const AxisSpec axisPtFit = {ptFitBinning, "#it{p}_{T} (GeV/c)"};
-    const AxisSpec axisPtFit2 = {ptFitBinningHalfWidth, "#it{p}_{T} (GeV/c)"};
     const AxisSpec axisMass{nBinsMass, lowMass, highMass, "m_{#mu#mu} GeV/#it{c}^{2}"};
-    const AxisSpec axisEta{nBinsEta, lowEta, highEta, "#eta"};
     const AxisSpec axisRapidity{nBinsRapidity, lowRapidity, highRapidity, "Rapidity"};
-    const AxisSpec axisPhi{nBinsPhi, lowPhi, highPhi, "#varphi"};
-    const AxisSpec axisPtSingle{nBinsPtSingle, lowPtSingle, highPtSingle, "#it{p}_{T}_{ trk} GeV/#it{c}"};
-    const AxisSpec axisTimeZN{200, -10, 10, "ZDC time (ns)"};
-    const AxisSpec axisEnergyZNA{nBinsZDCen, lowEnZN, highEnZN, "ZNA energy (TeV)"};
-    const AxisSpec axisEnergyZNC{nBinsZDCen, lowEnZN, highEnZN, "ZNC energy (TeV)"};
-    const AxisSpec axisEtaSingle{nBinsEtaSingle, lowEtaSingle, highEtaSingle, "#eta_{trk}"};
-    const AxisSpec axisPhiSingle{nBinsPhiSingle, lowPhiSingle, highPhiSingle, "#varphi_{trk}"};
 
     // histos
-    // data and reco MC
     registry.add("hMass", "Invariant mass of muon pairs;;#counts", kTH1D, {axisMass});
     registry.add("hPt", "Transverse momentum of muon pairs;;#counts", kTH1D, {axisPt});
     registry.add("hPtFit", "Transverse momentum of muon pairs;;#counts", kTH1D, {axisPtFit});
-    registry.add("hPtFit2", "Transverse momentum of muon pairs;;#counts", kTH1D, {axisPtFit2});
-    registry.add("hEta", "Pseudorapidty of muon pairs;;#counts", kTH1D, {axisEta});
     registry.add("hRapidity", "Rapidty of muon pairs;;#counts", kTH1D, {axisRapidity});
-    registry.add("hPhi", "#varphi of muon pairs;;#counts", kTH1D, {axisPhi});
-    registry.add("hCharge", "Charge;;;#counts", kTH1D, {{5, -2.5, 2.5}});
-    registry.add("hContrib", "hContrib;;#counts", kTH1D, {{6, -0.5, 5.5}});
-    registry.add("hEvSign", "Sum of the charges of all the tracks in each event;;#counts", kTH1D, {{5, -2.5, 2.5}});
-    registry.add("hPtTrkPos", "Pt of positive muons;;#counts", kTH1D, {axisPtSingle});
-    registry.add("hPtTrkNeg", "Pt of negative muons;;#counts", kTH1D, {axisPtSingle});
-    registry.add("hEtaTrkPos", "#eta of positive muons;;#counts", kTH1D, {axisEtaSingle});
-    registry.add("hEtaTrkNeg", "#eta of negative muons;;#counts", kTH1D, {axisEtaSingle});
-    registry.add("hPhiTrkPos", "#varphi of positive muons;;#counts", kTH1D, {axisPhiSingle});
-    registry.add("hPhiTrkNeg", "#varphi of negative muons;;#counts", kTH1D, {axisPhiSingle});
-    registry.add("hSameSign", "hSameSign;;#counts", kTH1D, {{6, -0.5, 5.5}});
-    registry.add("hPhiCharge", "#phi #it{charge}", kTH1D, {axisPhi});
-    registry.add("hPhiAverage", "#phi #it{average}", kTH1D, {axisPhi});
-
-    // data
-    registry.add("hTimeZNA", "ZNA Times;;#counts", kTH1D, {axisTimeZN});
-    registry.add("hTimeZNC", "ZNC Times;;#counts", kTH1D, {axisTimeZN});
-    registry.add("hEnergyZN", "ZNA vs ZNC energy", kTH2D, {axisEnergyZNA, axisEnergyZNC});
-
-    reg0n0n.add("hMass", "Invariant mass of muon pairs - 0n0n;;#counts", kTH1D, {axisMass});
-    reg0n0n.add("hPt", "Transverse momentum of muon pairs - 0n0n;;#counts", kTH1D, {axisPt});
-    reg0n0n.add("hEta", "Pseudorapidty of muon pairs - 0n0n;;#counts", kTH1D, {axisEta});
-    reg0n0n.add("hRapidity", "Rapidty of muon pairs - 0n0n;;#counts", kTH1D, {axisRapidity});
-    reg0n0n.add("hPtFit", "Transverse momentum of muon pairs - 0n0n;;#counts", kTH1D, {axisPtFit});
-
-    regXn0n.add("hMass", "Invariant mass of muon pairs - Xn0n;;#counts", kTH1D, {axisMass});
-    regXn0n.add("hPt", "Transverse momentum of muon pairs - Xn0n;;#counts", kTH1D, {axisPt});
-    regXn0n.add("hEta", "Pseudorapidty of muon pairs - Xn0n;;#counts", kTH1D, {axisEta});
-    regXn0n.add("hRapidity", "Rapidty of muon pairs - Xn0n;;#counts", kTH1D, {axisRapidity});
-    regXn0n.add("hPtFit", "Transverse momentum of muon pairs - Xn0n;;#counts", kTH1D, {axisPtFit});
-
-    regXnXn.add("hMass", "Invariant mass of muon pairs - XnXn;;#counts", kTH1D, {axisMass});
-    regXnXn.add("hPt", "Transverse momentum of muon pairs - XnXn;;#counts", kTH1D, {axisPt});
-    regXnXn.add("hEta", "Pseudorapidty of muon pairs - XnXn;;#counts", kTH1D, {axisEta});
-    regXnXn.add("hRapidity", "Rapidty of muon pairs - XnXn;;#counts", kTH1D, {axisRapidity});
-    regXnXn.add("hPtFit", "Transverse momentum of muon pairs - XnXn;;#counts", kTH1D, {axisPtFit});
-
-    // gen MC
-    mcGenRegistry.add("hMass", "Invariant mass of muon pairs;;#counts", kTH1D, {axisMass});
-    mcGenRegistry.add("hPt", "Transverse momentum of muon pairs;;#counts", kTH1D, {axisPt});
-    mcGenRegistry.add("hEta", "Pseudorapidty of muon pairs;;#counts", kTH1D, {axisEta});
-    mcGenRegistry.add("hRapidity", "Rapidty of muon pairs;;#counts", kTH1D, {axisRapidity});
-    mcGenRegistry.add("hPhi", "#varphi of muon pairs;;#counts", kTH1D, {axisPhi});
-    mcGenRegistry.add("hPtTrkPos", "Pt of positive muons;;#counts", kTH1D, {axisPtSingle});
-    mcGenRegistry.add("hPtTrkNeg", "Pt of negative muons;;#counts", kTH1D, {axisPtSingle});
-    mcGenRegistry.add("hEtaTrkPos", "#eta of positive muons;;#counts", kTH1D, {axisEtaSingle});
-    mcGenRegistry.add("hEtaTrkNeg", "#eta of negative muons;;#counts", kTH1D, {axisEtaSingle});
-    mcGenRegistry.add("hPhiTrkPos", "#varphi of positive muons;;#counts", kTH1D, {axisPhiSingle});
-    mcGenRegistry.add("hPhiTrkNeg", "#varphi of negative muons;;#counts", kTH1D, {axisPhiSingle});
-    mcGenRegistry.add("hPhiCharge", "#phi #it{charge}", kTH1D, {axisPhi});
-    mcGenRegistry.add("hPhiAverage", "#phi #it{average}", kTH1D, {axisPhi});
-
-    // reco MC
-    mcRecoRegistry.add("hMass", "Invariant mass of muon pairs;;#counts", kTH1D, {axisMass});
-    mcRecoRegistry.add("hPt", "Transverse momentum of muon pairs;;#counts", kTH1D, {axisPt});
-    mcRecoRegistry.add("hPtFit", "Transverse momentum of muon pairs;;#counts", kTH1D, {axisPtFit});
-    mcRecoRegistry.add("hPtFit2", "Transverse momentum of muon pairs;;#counts", kTH1D, {axisPtFit2});
-    mcRecoRegistry.add("hEta", "Pseudorapidty of muon pairs;;#counts", kTH1D, {axisEta});
-    mcRecoRegistry.add("hRapidity", "Rapidty of muon pairs;;#counts", kTH1D, {axisRapidity});
-    mcRecoRegistry.add("hPhi", "#varphi of muon pairs;;#counts", kTH1D, {axisPhi});
-    mcRecoRegistry.add("hCharge", "Charge;;;#counts", kTH1D, {{5, -2.5, 2.5}});
-    mcRecoRegistry.add("hContrib", "hContrib;;#counts", kTH1D, {{6, -0.5, 5.5}});
-    mcRecoRegistry.add("hEvSign", "Sum of the charges of all the tracks in each event;;#counts", kTH1D, {{5, -2.5, 2.5}});
-    mcRecoRegistry.add("hPtTrkPos", "Pt of positive muons;;#counts", kTH1D, {axisPtSingle});
-    mcRecoRegistry.add("hPtTrkNeg", "Pt of negative muons;;#counts", kTH1D, {axisPtSingle});
-    mcRecoRegistry.add("hEtaTrkPos", "#eta of positive muons;;#counts", kTH1D, {axisEtaSingle});
-    mcRecoRegistry.add("hEtaTrkNeg", "#eta of negative muons;;#counts", kTH1D, {axisEtaSingle});
-    mcRecoRegistry.add("hPhiTrkPos", "#varphi of positive muons;;#counts", kTH1D, {axisPhiSingle});
-    mcRecoRegistry.add("hPhiTrkNeg", "#varphi of negative muons;;#counts", kTH1D, {axisPhiSingle});
-    mcRecoRegistry.add("hSameSign", "hSameSign;;#counts", kTH1D, {{6, -0.5, 5.5}});
-    mcRecoRegistry.add("hPhiCharge", "#phi #it{charge}", kTH1D, {axisPhi});
-    mcRecoRegistry.add("hPhiAverage", "#phi #it{average}", kTH1D, {axisPhi});
-
-    // corr gen-reco
-    mcRecoRegistry.add("hPtcorr", "gen pT vs reco pT", kTH2D, {axisPt, axisPt});
-    mcRecoRegistry.add("hRapcorr", "gen rapidity vs reco rapidity", kTH2D, {axisRapidity, axisRapidity});
-    mcRecoRegistry.add("hPhicorr", "gen #phi vs reco #phi", kTH2D, {axisPhi, axisPhi});
   }
 
   // FUNCTIONS
@@ -403,6 +273,9 @@ struct FwdMuonsUPC {
     for (const auto& tr : tracks) {
       int32_t candId = tr.udMcCollisionId();
       if (candId < 0) {
+        continue;
+      }
+      if (std::abs(tr.pdgCode()) != kMuonPDG) {
         continue;
       }
       tracksPerCand[candId].push_back(tr.globalIndex());
@@ -531,15 +404,20 @@ struct FwdMuonsUPC {
     const auto& ampsV0A = cand.amplitudesV0A();
     const auto& ampsRelBCsV0A = cand.ampRelBCsV0A();
     for (unsigned int i = 0; i < ampsV0A.size(); ++i) {
-      if (std::abs(ampsRelBCsV0A[i]) <= 0) {
+      if (std::abs(ampsRelBCsV0A[i]) <= 1) {
         if (ampsV0A[i] > kMaxAmpV0A)
           return;
       }
     }
 
+    //select events with exactly 2 forward tracks
+    if (cand.numContrib() != 2) {
+      return;
+    }
+
     // select opposite charge events only
     if (cand.netCharge() != 0) {
-      registry.fill(HIST("hSameSign"), cand.numContrib());
+      //registry.fill(HIST("hSameSign"), cand.numContrib());
       return;
     }
 
@@ -602,13 +480,6 @@ struct FwdMuonsUPC {
     float phiCharge = 0;
     computePhiAnis(p1, p2, tr1.sign(), phiAverage, phiCharge);
 
-    // zdc info
-    if (std::abs(zdc.timeA) < kMaxZDCTimeHisto)
-      registry.fill(HIST("hTimeZNA"), zdc.timeA);
-    if (std::abs(zdc.timeC) < kMaxZDCTimeHisto)
-      registry.fill(HIST("hTimeZNC"), zdc.timeC);
-    registry.fill(HIST("hEnergyZN"), zdc.enA, zdc.enC);
-
     // divide the events in neutron classes
     bool neutronA = false;
     bool neutronC = false;
@@ -628,50 +499,20 @@ struct FwdMuonsUPC {
     // 0n0n
     if (neutronC == false && neutronA == false) {
       znClass = 1;
-      reg0n0n.fill(HIST("hMass"), p.M());
-      reg0n0n.fill(HIST("hPt"), p.Pt());
-      reg0n0n.fill(HIST("hPtFit"), p.Pt());
-      reg0n0n.fill(HIST("hEta"), p.Eta());
-      reg0n0n.fill(HIST("hRapidity"), p.Rapidity());
     } else if (neutronA ^ neutronC) { // Xn0n + 0nXn
       if (neutronA)
         znClass = 2;
       else if (neutronC)
         znClass = 3;
-      regXn0n.fill(HIST("hMass"), p.M());
-      regXn0n.fill(HIST("hPt"), p.Pt());
-      regXn0n.fill(HIST("hPtFit"), p.Pt());
-      regXn0n.fill(HIST("hEta"), p.Eta());
-      regXn0n.fill(HIST("hRapidity"), p.Rapidity());
     } else if (neutronA && neutronC) { // XnXn
       znClass = 4;
-      regXnXn.fill(HIST("hMass"), p.M());
-      regXnXn.fill(HIST("hPt"), p.Pt());
-      regXnXn.fill(HIST("hPtFit"), p.Pt());
-      regXnXn.fill(HIST("hEta"), p.Eta());
-      regXnXn.fill(HIST("hRapidity"), p.Rapidity());
     }
 
-    // fill the histos without looking at neutron emission
-    registry.fill(HIST("hContrib"), cand.numContrib());
-    registry.fill(HIST("hPtTrkPos"), p1.Pt());
-    registry.fill(HIST("hPtTrkNeg"), p2.Pt());
-    registry.fill(HIST("hEtaTrkPos"), p1.Eta());
-    registry.fill(HIST("hEtaTrkNeg"), p2.Eta());
-    registry.fill(HIST("hPhiTrkPos"), p1.Phi());
-    registry.fill(HIST("hPhiTrkNeg"), p2.Phi());
-    registry.fill(HIST("hEvSign"), cand.netCharge());
+    // fill the histos
     registry.fill(HIST("hMass"), p.M());
     registry.fill(HIST("hPt"), p.Pt());
     registry.fill(HIST("hPtFit"), p.Pt());
-    registry.fill(HIST("hPtFit2"), p.Pt());
-    registry.fill(HIST("hEta"), p.Eta());
     registry.fill(HIST("hRapidity"), p.Rapidity());
-    registry.fill(HIST("hPhi"), p.Phi());
-    registry.fill(HIST("hCharge"), tr1.sign());
-    registry.fill(HIST("hCharge"), tr2.sign());
-    registry.fill(HIST("hPhiAverage"), phiAverage);
-    registry.fill(HIST("hPhiCharge"), phiCharge);
 
     // store the event to save it into a tree
     if (tr1.sign() > 0) {
@@ -698,8 +539,13 @@ struct FwdMuonsUPC {
   {
 
     // check that all pairs are mu+mu-
-    if (std::abs(McPart1.pdgCode()) != kMuonPDG && std::abs(McPart2.pdgCode()) != kMuonPDG)
+    if (std::abs(McPart1.pdgCode()) != kMuonPDG || std::abs(McPart2.pdgCode()) != kMuonPDG){
       LOGF(debug, "PDG codes: %d | %d", McPart1.pdgCode(), McPart2.pdgCode());
+      return;
+    }
+    if (McPart1.pdgCode() + McPart2.pdgCode() != 0) {
+      return;
+    }
 
     // create Lorentz vectors
     TLorentzVector p1, p2;
@@ -731,19 +577,10 @@ struct FwdMuonsUPC {
     computePhiAnis(p1, p2, -McPart1.pdgCode(), phiAverage, phiCharge);
 
     // fill the histos
-    mcGenRegistry.fill(HIST("hPtTrkPos"), p1.Pt());
-    mcGenRegistry.fill(HIST("hPtTrkNeg"), p2.Pt());
-    mcGenRegistry.fill(HIST("hEtaTrkPos"), p1.Eta());
-    mcGenRegistry.fill(HIST("hEtaTrkNeg"), p2.Eta());
-    mcGenRegistry.fill(HIST("hPhiTrkPos"), p1.Phi());
-    mcGenRegistry.fill(HIST("hPhiTrkNeg"), p2.Phi());
-    mcGenRegistry.fill(HIST("hMass"), p.M());
-    mcGenRegistry.fill(HIST("hPt"), p.Pt());
-    mcGenRegistry.fill(HIST("hEta"), p.Eta());
-    mcGenRegistry.fill(HIST("hRapidity"), p.Rapidity());
-    mcGenRegistry.fill(HIST("hPhi"), p.Phi());
-    mcGenRegistry.fill(HIST("hPhiAverage"), phiAverage);
-    mcGenRegistry.fill(HIST("hPhiCharge"), phiCharge);
+    registry.fill(HIST("hMass"), p.M());
+    registry.fill(HIST("hPt"), p.Pt());
+    registry.fill(HIST("hPtFit"), p.Pt());
+    registry.fill(HIST("hRapidity"), p.Rapidity());
 
     // store the event to save it into a tree
     if (McPart1.pdgCode() < 0) {
@@ -767,14 +604,14 @@ struct FwdMuonsUPC {
   {
 
     // check that all pairs are mu+mu-
-    if (std::abs(McPart1.pdgCode()) != kMuonPDG && std::abs(McPart2.pdgCode()) != kMuonPDG)
+    if (std::abs(McPart1.pdgCode()) != kMuonPDG || std::abs(McPart2.pdgCode()) != kMuonPDG)
       LOGF(debug, "PDG codes: %d | %d", McPart1.pdgCode(), McPart2.pdgCode());
 
     // V0 selection
     const auto& ampsV0A = cand.amplitudesV0A();
     const auto& ampsRelBCsV0A = cand.ampRelBCsV0A();
     for (unsigned int i = 0; i < ampsV0A.size(); ++i) {
-      if (std::abs(ampsRelBCsV0A[i]) <= 0) {
+      if (std::abs(ampsRelBCsV0A[i]) <= 1) {
         if (ampsV0A[i] > kMaxAmpV0A)
           return;
       }
@@ -782,7 +619,7 @@ struct FwdMuonsUPC {
 
     // select opposite charge events only
     if (cand.netCharge() != 0) {
-      registry.fill(HIST("hSameSign"), cand.numContrib());
+      //registry.fill(HIST("hSameSign"), cand.numContrib());
       return;
     }
 
@@ -854,7 +691,7 @@ struct FwdMuonsUPC {
     // compute gen phi for azimuth anisotropy
     float phiGenAverage = 0;
     float phiGenCharge = 0;
-    computePhiAnis(p1, p2, -McPart1.pdgCode(), phiGenAverage, phiGenCharge);
+    computePhiAnis(p1Mc, p2Mc, -McPart1.pdgCode(), phiGenAverage, phiGenCharge);
 
     // print info in case of problems
     if (tr1.sign() * McPart1.pdgCode() > 0 || tr2.sign() * McPart2.pdgCode() > 0) {
@@ -865,46 +702,10 @@ struct FwdMuonsUPC {
     }
 
     // fill the histos
-    // reco info
-    mcRecoRegistry.fill(HIST("hContrib"), cand.numContrib());
-    mcRecoRegistry.fill(HIST("hPtTrkPos"), p1.Pt());
-    mcRecoRegistry.fill(HIST("hPtTrkNeg"), p2.Pt());
-    mcRecoRegistry.fill(HIST("hEtaTrkPos"), p1.Eta());
-    mcRecoRegistry.fill(HIST("hEtaTrkNeg"), p2.Eta());
-    mcRecoRegistry.fill(HIST("hPhiTrkPos"), p1.Phi());
-    mcRecoRegistry.fill(HIST("hPhiTrkNeg"), p2.Phi());
-    mcRecoRegistry.fill(HIST("hEvSign"), cand.netCharge());
-    mcRecoRegistry.fill(HIST("hMass"), p.M());
-    mcRecoRegistry.fill(HIST("hPt"), p.Pt());
-    mcRecoRegistry.fill(HIST("hPtFit"), p.Pt());
-    mcRecoRegistry.fill(HIST("hPtFit2"), p.Pt());
-    mcRecoRegistry.fill(HIST("hEta"), p.Eta());
-    mcRecoRegistry.fill(HIST("hRapidity"), p.Rapidity());
-    mcRecoRegistry.fill(HIST("hPhi"), p.Phi());
-    mcRecoRegistry.fill(HIST("hCharge"), tr1.sign());
-    mcRecoRegistry.fill(HIST("hCharge"), tr2.sign());
-    mcRecoRegistry.fill(HIST("hPhiAverage"), phiAverage);
-    mcRecoRegistry.fill(HIST("hPhiCharge"), phiCharge);
-
-    // gen info (of reco events)
-    mcGenRegistry.fill(HIST("hPtTrkPos"), p1Mc.Pt());
-    mcGenRegistry.fill(HIST("hPtTrkNeg"), p2Mc.Pt());
-    mcGenRegistry.fill(HIST("hEtaTrkPos"), p1Mc.Eta());
-    mcGenRegistry.fill(HIST("hEtaTrkNeg"), p2Mc.Eta());
-    mcGenRegistry.fill(HIST("hPhiTrkPos"), p1Mc.Phi());
-    mcGenRegistry.fill(HIST("hPhiTrkNeg"), p2Mc.Phi());
-    mcGenRegistry.fill(HIST("hMass"), pMc.M());
-    mcGenRegistry.fill(HIST("hPt"), pMc.Pt());
-    mcGenRegistry.fill(HIST("hEta"), pMc.Eta());
-    mcGenRegistry.fill(HIST("hRapidity"), pMc.Rapidity());
-    mcGenRegistry.fill(HIST("hPhi"), pMc.Phi());
-    mcGenRegistry.fill(HIST("hPhiAverage"), phiGenAverage);
-    mcGenRegistry.fill(HIST("hPhiCharge"), phiGenCharge);
-
-    // reco-gen correlations
-    mcRecoRegistry.fill(HIST("hPtcorr"), p.Pt(), pMc.Pt());
-    mcRecoRegistry.fill(HIST("hRapcorr"), p.Rapidity(), pMc.Rapidity());
-    mcRecoRegistry.fill(HIST("hPhicorr"), p.Phi(), pMc.Phi());
+    registry.fill(HIST("hMass"), p.M());
+    registry.fill(HIST("hPt"), p.Pt());
+    registry.fill(HIST("hPtFit"), p.Pt());
+    registry.fill(HIST("hRapidity"), p.Rapidity());
 
     // store the event to save it into a tree
     if (tr1.sign() > 0) {
@@ -946,6 +747,10 @@ struct FwdMuonsUPC {
 
     // loop over the candidates
     for (const auto& item : tracksPerCand) {
+      if (item.second.size() != 2) {
+        LOGF(debug, "number track = %d", item.second.size());
+        continue;
+      }
       int32_t trId1 = item.second[0];
       int32_t trId2 = item.second[1];
       int32_t candID = item.first;
@@ -973,13 +778,23 @@ struct FwdMuonsUPC {
   // process MC Truth
   void processMcGen(aod::UDMcCollisions const& mccollisions, aod::UDMcParticles const& McParts)
   {
-
     // map with the tracks
     std::unordered_map<int32_t, std::vector<int32_t>> tracksPerCand;
     collectMcCandIDs(tracksPerCand, McParts);
 
     // loop over the candidates
     for (const auto& item : tracksPerCand) {
+      if (item.second.size() != 2) {
+        LOGF(debug, "mc parts = %d", item.second.size());
+        for (auto id : item.second) {
+          auto p = McParts.iteratorAt(id);
+          LOGF(debug,
+               "  part %d: pdg=%d status=%d has_mothers=%d has_daughters=%d",
+               id, p.pdgCode(), p.statusCode(),
+               p.has_mothers(), p.has_daughters());
+        }
+        continue;
+      }
       int32_t trId1 = item.second[0];
       int32_t trId2 = item.second[1];
       int32_t candID = item.first;
@@ -995,7 +810,7 @@ struct FwdMuonsUPC {
   // process reco MC (gen info included)
   void processMcReco(CandidatesFwd const& eventCandidates,
                      CompleteFwdTracks const& fwdTracks,
-                     aod::UDMcCollisions const&,
+                     aod::UDMcCollisions const& /*mccollisions*/,
                      aod::UDMcParticles const& McParts)
   {
     std::unordered_map<int32_t, std::vector<int32_t>> tracksPerCandAll;
