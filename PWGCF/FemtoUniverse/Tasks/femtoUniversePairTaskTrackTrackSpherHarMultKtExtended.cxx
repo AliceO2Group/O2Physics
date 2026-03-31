@@ -86,6 +86,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
     Configurable<int> confPhiBins{"confPhiBins", 29, "Number of phi bins in deta dphi"};
     Configurable<int> confEtaBins{"confEtaBins", 29, "Number of eta bins in deta dphi"};
     Configurable<bool> confIsCPR{"confIsCPR", true, "Close Pair Rejection"};
+    Configurable<bool> confIsCPRatITS{"confIsCPRatITS", false, "Close Pair check at ITS"};
     Configurable<bool> confCPRPlotPerRadii{"confCPRPlotPerRadii", false, "Plot CPR per radii"};
     Configurable<float> confCPRdeltaPhiCutMax{"confCPRdeltaPhiCutMax", 0.0, "Delta Phi max cut for Close Pair Rejection"};
     Configurable<float> confCPRdeltaPhiCutMin{"confCPRdeltaPhiCutMin", 0., "Delta Phi min cut for Close Pair Rejection"};
@@ -564,7 +565,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         }
 
         if (twotracksconfigs.confIsCPR.value) {
-          if (twotracksconfigs.confCPRFracMax.value) {
+          if (twotracksconfigs.confIsCPRatITS && twotracksconfigs.confCPRFracMax.value) {
             if (pairCloseRejection.isClosePairAtITS(p1, p2, magFieldTesla, femto_universe_container::EventType::same)) {
               continue;
             }
@@ -622,7 +623,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         }
 
         if (twotracksconfigs.confIsCPR.value) {
-          if (twotracksconfigs.confCPRFracMax.value) {
+          if (twotracksconfigs.confIsCPRatITS && twotracksconfigs.confCPRFracMax.value) {
             if (pairCloseRejection.isClosePairAtITS(part1, part2, magFieldTesla, femto_universe_container::EventType::same)) {
               continue;
             }
@@ -985,7 +986,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
       }
 
       if (twotracksconfigs.confIsCPR.value) {
-        if (twotracksconfigs.confCPRFracMax.value) {
+        if (twotracksconfigs.confIsCPRatITS && twotracksconfigs.confCPRFracMax.value) {
           if (pairCloseRejection.isClosePairAtITS(part1, part2, magFieldTesla, femto_universe_container::EventType::mixed)) {
             continue;
           }
