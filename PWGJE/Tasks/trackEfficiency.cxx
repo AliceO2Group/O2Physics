@@ -86,6 +86,7 @@ struct TrackEfficiency {
   Configurable<float> ptHatMin{"ptHatMin", -999, "min pT hat of collisions"};
   Configurable<float> ptHatMax{"ptHatMax", 999, "max pT hat of collisions"};
   Configurable<float> pTHatExponent{"pTHatExponent", 4.0, "exponent of the event weight for the calculation of pTHat"};
+  Configurable<float> simPtRef{"simPtRef", 10.0, "reference pT for the back-calculation of pTHat from the event weight"};
   Configurable<float> pTHatMaxFractionMCD{"pTHatMaxFractionMCD", 999.0, "maximum fraction of hard scattering for reconstructed track acceptance in MC"};
   Configurable<float> pTHatMaxFractionMCP{"pTHatMaxFractionMCP", 999.0, "maximum fraction of hard scattering for particle acceptance in MC"};
 
@@ -105,7 +106,6 @@ struct TrackEfficiency {
 
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
-  float simPtRef = 10.;
 
   enum AcceptSplitCollisionsOptions {
     NonSplitOnly = 0,
