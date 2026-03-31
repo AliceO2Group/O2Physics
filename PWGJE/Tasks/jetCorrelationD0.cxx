@@ -282,7 +282,7 @@ struct JetCorrelationD0 {
         if (jet.pt() < jetPtCutMin) {
           continue;
         }
-        float dPhi = RecoDecay::constrainAngle(jet.phi() - d0Candidate.phi(), -M_PI);
+        float dPhi = RecoDecay::constrainAngle(jet.phi() - d0Candidate.phi(), -o2::constants::math::PI);
         if (std::abs(dPhi - o2::constants::math::PI) > (o2::constants::math::PI / 2)) {
           continue;
         }
@@ -325,7 +325,7 @@ struct JetCorrelationD0 {
         if (jet.pt() < jetPtCutMin) {
           continue;
         }
-        float dPhi = RecoDecay::constrainAngle(jet.phi() - d0Candidate.phi(), -M_PI);
+        float dPhi = RecoDecay::constrainAngle(jet.phi() - d0Candidate.phi(), -o2::constants::math::PI);
         if (std::abs(dPhi - o2::constants::math::PI) > (o2::constants::math::PI / 2)) {
           continue;
         }
@@ -364,7 +364,7 @@ struct JetCorrelationD0 {
         if (jet.pt() < jetMcPtCutMin) {
           continue;
         }
-        float dPhi = RecoDecay::constrainAngle(jet.phi() - d0McPCandidate.phi(), -M_PI);
+        float dPhi = RecoDecay::constrainAngle(jet.phi() - d0McPCandidate.phi(), -o2::constants::math::PI);
         if (std::abs(dPhi - o2::constants::math::PI) > (o2::constants::math::PI / 2)) {
           continue;
         }
