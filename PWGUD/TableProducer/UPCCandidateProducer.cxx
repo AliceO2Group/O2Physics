@@ -11,6 +11,8 @@
 /// \author Nazar Burmasov, nazar.burmasov@cern.ch
 /// \author Diana Krupova, diana.krupova@cern.ch
 /// \since 04.06.2024
+/// \author Andrea Riffero, andrea.giovanni.riffero@cern.ch
+/// \since 19.03.2026
 
 #include "PWGUD/Core/UPCCutparHolder.h"
 #include "PWGUD/Core/UPCHelpers.h"
@@ -622,17 +624,25 @@ struct UpcCandProducer {
   // "uncorrected" bcs
   template <int32_t tracksSwitch, typename TBCs, typename TAmbTracks>
   void collectAmbTrackBCs(std::unordered_map<int64_t, uint64_t>& ambTrIds,
+                          TBCs const& bcs,
                           TAmbTracks ambTracks)
   {
     for (const auto& ambTrk : ambTracks) {
       auto trkId = getAmbTrackId<tracksSwitch>(ambTrk);
-      const auto& bcSlice = ambTrk.template bc_as<TBCs>();
-      uint64_t trackBC = -1;
-      if (bcSlice.size() != 0) {
-        auto first = bcSlice.begin();
-        trackBC = first.globalBC();
+
+      const auto& bcIds = ambTrk.bcIds();
+      if (bcIds.size() == 0)
+        continue;
+
+      const auto firstBcId = static_cast<int64_t>(*bcIds.begin());
+      if (firstBcId < 0 || firstBcId >= static_cast<int64_t>(bcs.size())) {
+        LOGP(debug,
+             "Skipping ambiguous track {}: invalid first bcId {} (nBCs = {})",
+             trkId, firstBcId, bcs.size());
+        continue;
       }
-      ambTrIds[trkId] = trackBC;
+
+      ambTrIds[trkId] = bcs.iteratorAt(firstBcId).globalBC();
     }
   }
 
@@ -668,16 +678,22 @@ struct UpcCandProducer {
         continue;
       int64_t trkId = trk.globalIndex();
       int32_t nContrib = -1;
+      bool hasTrackBC = false;
       uint64_t trackBC = 0;
       if (trk.has_collision()) {
         const auto& col = trk.collision();
         nContrib = col.numContrib();
         trackBC = col.bc_as<TBCs>().globalBC();
+        hasTrackBC = true;
       } else {
         auto ambIter = ambBarrelTrBCs.find(trkId);
-        if (ambIter != ambBarrelTrBCs.end())
+        if (ambIter != ambBarrelTrBCs.end()) {
           trackBC = ambIter->second;
+          hasTrackBC = true;
+        }
       }
+      if (!hasTrackBC)
+        continue;
       int64_t tint = TMath::FloorNint(trk.trackTime() / o2::constants::lhc::LHCBunchSpacingNS + static_cast<float>(fBarrelTrackTShift));
       uint64_t bc = trackBC + tint;
       if (nContrib > upcCuts.getMaxNContrib())
@@ -702,15 +718,22 @@ struct UpcCandProducer {
         continue;
       int64_t trkId = trk.globalIndex();
       int32_t nContrib = -1;
+      bool hasTrackBC = false;
       uint64_t trackBC = 0;
       auto ambIter = ambFwdTrBCs.find(trkId);
       if (ambIter == ambFwdTrBCs.end()) {
+        if (!trk.has_collision())
+          continue;
         const auto& col = trk.collision();
         nContrib = col.numContrib();
         trackBC = col.bc_as<TBCs>().globalBC();
+        hasTrackBC = true;
       } else {
         trackBC = ambIter->second;
+        hasTrackBC = true;
       }
+      if (!hasTrackBC)
+        continue;
       int64_t tint = TMath::FloorNint(trk.trackTime() / o2::constants::lhc::LHCBunchSpacingNS + static_cast<float>(fMuonTrackTShift));
       uint64_t bc = trackBC + tint;
       if (nContrib > upcCuts.getMaxNContrib())
@@ -735,9 +758,12 @@ struct UpcCandProducer {
         continue;
       int64_t trkId = trk.globalIndex();
       int32_t nContrib = -1;
+      bool hasTrackBC = false;
       uint64_t trackBC = 0;
       auto ambIter = ambFwdTrBCs.find(trkId);
       if (ambIter == ambFwdTrBCs.end()) {
+        if (!trk.has_collision())
+          continue;
         const auto& col = trk.collision();
         nContrib = col.numContrib();
         trackBC = col.bc_as<TBCs>().globalBC();
@@ -748,9 +774,13 @@ struct UpcCandProducer {
         if (fRequireNoITSROFrameBorder && !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
           continue; // skip this track if the kNoITSROFrameBorder bit is required but not set
         }
+        hasTrackBC = true;
       } else {
         trackBC = ambIter->second;
+        hasTrackBC = true;
       }
+      if (!hasTrackBC)
+        continue;
       int64_t tint = TMath::FloorNint(trk.trackTime() / o2::constants::lhc::LHCBunchSpacingNS + static_cast<float>(fMuonTrackTShift));
       uint64_t bc = trackBC + tint;
       if (nContrib > upcCuts.getMaxNContrib())
@@ -819,7 +849,7 @@ struct UpcCandProducer {
     // trackID -> index in amb. track table
     std::unordered_map<int64_t, uint64_t> ambBarrelTrBCs;
     if (upcCuts.getAmbigSwitch() != 1)
-      collectAmbTrackBCs<0, BCsWithBcSels>(ambBarrelTrBCs, ambBarrelTracks);
+      collectAmbTrackBCs<0, BCsWithBcSels>(ambBarrelTrBCs, bcs, ambBarrelTracks);
 
     collectBarrelTracks(bcsMatchedTrIdsTOF,
                         0,
@@ -1120,10 +1150,10 @@ struct UpcCandProducer {
 
     // trackID -> index in amb. track table
     std::unordered_map<int64_t, uint64_t> ambBarrelTrBCs;
-    collectAmbTrackBCs<0, BCsWithBcSels>(ambBarrelTrBCs, ambBarrelTracks);
+    collectAmbTrackBCs<0, BCsWithBcSels>(ambBarrelTrBCs, bcs, ambBarrelTracks);
 
     std::unordered_map<int64_t, uint64_t> ambFwdTrBCs;
-    collectAmbTrackBCs<1, BCsWithBcSels>(ambFwdTrBCs, ambFwdTracks);
+    collectAmbTrackBCs<1, BCsWithBcSels>(ambFwdTrBCs, bcs, ambFwdTracks);
 
     collectForwardTracks(bcsMatchedTrIdsMID,
                          o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack,
@@ -1320,7 +1350,7 @@ struct UpcCandProducer {
 
     // trackID -> index in amb. track table
     std::unordered_map<int64_t, uint64_t> ambFwdTrBCs;
-    collectAmbTrackBCs<1, BCsWithBcSels>(ambFwdTrBCs, ambFwdTracks);
+    collectAmbTrackBCs<1, BCsWithBcSels>(ambFwdTrBCs, bcs, ambFwdTracks);
 
     collectForwardTracks(bcsMatchedTrIdsMID,
                          o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack,
@@ -1575,7 +1605,7 @@ struct UpcCandProducer {
 
     // trackID -> index in amb. track table
     std::unordered_map<int64_t, uint64_t> ambFwdTrBCs;
-    collectAmbTrackBCs<1, BCsWithBcSels>(ambFwdTrBCs, ambFwdTracks);
+    collectAmbTrackBCs<1, BCsWithBcSels>(ambFwdTrBCs, bcs, ambFwdTracks);
 
     collectForwardTracks(bcsMatchedTrIdsMID,
                          o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack,
