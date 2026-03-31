@@ -57,6 +57,7 @@
 #include <cstdlib>
 #include <string>
 #include <vector>
+#include <unordered_set>
 
 using namespace o2;
 using namespace o2::framework;
@@ -471,15 +472,17 @@ struct sigma0builder {
       histos.get<TH1>(HIST("PhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(12, "TPCCR");
       histos.get<TH1>(HIST("PhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(13, "TPC NSigma");
 
-      histos.add("EMCalPhotonSel/hSelectionStatistics", "hSelectionStatistics", kTH1D, {axisCandSel});
-      histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(1, "No Sel");
-      histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(2, "Definition");
-      histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(3, "MinCell");
-      histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(4, "Energy");
-      histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(5, "Eta");
-      histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(6, "Time");
-      histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(7, "Exotic");
-      histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(8, "Shape");
+      if (doprocessPCMVsEMCalQA){
+        histos.add("EMCalPhotonSel/hSelectionStatistics", "hSelectionStatistics", kTH1D, {axisCandSel});
+        histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(1, "No Sel");
+        histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(2, "Definition");
+        histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(3, "MinCell");
+        histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(4, "Energy");
+        histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(5, "Eta");
+        histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(6, "Time");
+        histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(7, "Exotic");
+        histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(8, "Shape");
+      }
 
     } else {
       for (const auto& histodir : DirList2) {
@@ -491,6 +494,16 @@ struct sigma0builder {
         histos.add(histodir + "/hExotic", "hExotic", kTH1D, {{2, -0.5f, 1.5f}});
         histos.add(histodir + "/h2dShape", "h2dShape", kTH2D, {axisPt, axisClrShape});
       }
+
+      histos.add("EMCalPhotonSel/hSelectionStatistics", "hSelectionStatistics", kTH1D, {axisCandSel});
+      histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(1, "No Sel");
+      histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(2, "Definition");
+      histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(3, "MinCell");
+      histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(4, "Energy");
+      histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(5, "Eta");
+      histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(6, "Time");
+      histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(7, "Exotic");
+      histos.get<TH1>(HIST("EMCalPhotonSel/hSelectionStatistics"))->GetXaxis()->SetBinLabel(8, "Shape");
     }
 
     histos.add("LambdaSel/hSelectionStatistics", "hSelectionStatistics", kTH1D, {axisCandSel});
@@ -2773,9 +2786,7 @@ struct sigma0builder {
             }
           }
         }
-      }
-
-      LOGF(info, "N. photons: %i, N. lambdas: %i, expected pairs: %i, got: %i", bestGammasArray.size(), bestLambdasArray.size(), bestGammasArray.size() * bestLambdasArray.size(), nSigma0Candidates);
+      }      
     }
   }
 
