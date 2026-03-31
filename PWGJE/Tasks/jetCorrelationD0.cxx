@@ -201,6 +201,7 @@ struct JetCorrelationD0 {
     registry.fill(HIST("hJetEta"), jet.eta());
     registry.fill(HIST("hJetPhi"), jet.phi());
     registry.fill(HIST("hJet3D"), jet.pt(), jet.eta(), jet.phi());
+    registry.fill(HIST("h_Jet_D0_Jet_dPhi"), dPhi);
     registry.fill(HIST("h_Jet_pT_D0_Jet_dPhi"), jet.pt(), dPhi);
   }
 
@@ -242,6 +243,7 @@ struct JetCorrelationD0 {
     registry.add("hJetEta", "jet #eta;#eta_{jet};entries", HistType::kTH1F, {axisEta});
     registry.add("hJetPhi", "jet #phi;#phi_{jet};entries", HistType::kTH1F, {axisPhi});
     registry.add("hJet3D", "3D jet distribution;p_{T};#eta;#phi", {HistType::kTH3F, {{500, -100, 400}, {100, -1.0, 1.0}, {100, 0.0, o2::constants::math::TwoPI}}});
+    registry.add("h_Jet_D0_Jet_dPhi", "#Delta #phi _{D^{0}, jet}", kTH1F, {{100, 0, o2::constants::math::TwoPI}});
     registry.add("h_Jet_pT_D0_Jet_dPhi", "p_{T, jet} vs #Delta #phi _{D^{0}, jet}", kTH2F, {{100, 0, 100}, {100, 0, o2::constants::math::TwoPI}});
 
     // Matching histograms
@@ -280,10 +282,7 @@ struct JetCorrelationD0 {
         if (jet.pt() < jetPtCutMin) {
           continue;
         }
-        float dPhi = RecoDecay::constrainAngle(jet.phi() - d0Candidate.phi());
-        if (dPhi > o2::constants::math::PI) {
-          dPhi = 2 * o2::constants::math::PI - dPhi;
-        }
+        float dPhi = RecoDecay::constrainAngle(jet.phi() - d0Candidate.phi(), -M_PI);
         if (std::abs(dPhi - o2::constants::math::PI) > (o2::constants::math::PI / 2)) {
           continue;
         }
@@ -326,10 +325,7 @@ struct JetCorrelationD0 {
         if (jet.pt() < jetPtCutMin) {
           continue;
         }
-        float dPhi = RecoDecay::constrainAngle(jet.phi() - d0Candidate.phi());
-        if (dPhi > o2::constants::math::PI) {
-          dPhi = 2 * o2::constants::math::PI - dPhi;
-        }
+        float dPhi = RecoDecay::constrainAngle(jet.phi() - d0Candidate.phi(), -M_PI);
         if (std::abs(dPhi - o2::constants::math::PI) > (o2::constants::math::PI / 2)) {
           continue;
         }
@@ -368,10 +364,7 @@ struct JetCorrelationD0 {
         if (jet.pt() < jetMcPtCutMin) {
           continue;
         }
-        float dPhi = RecoDecay::constrainAngle(jet.phi() - d0McPCandidate.phi());
-        if (dPhi > o2::constants::math::PI) {
-          dPhi = 2 * o2::constants::math::PI - dPhi;
-        }
+        float dPhi = RecoDecay::constrainAngle(jet.phi() - d0McPCandidate.phi(), -M_PI);
         if (std::abs(dPhi - o2::constants::math::PI) > (o2::constants::math::PI / 2)) {
           continue;
         }
@@ -411,19 +404,13 @@ struct JetCorrelationD0 {
         if (McDJet.pt() < jetPtCutMin) {
           continue;
         }
-        float dPhiD = RecoDecay::constrainAngle(McDJet.phi() - d0Candidate.phi());
-        if (dPhiD > o2::constants::math::PI) {
-          dPhiD = 2 * o2::constants::math::PI - dPhiD;
-        }
+        float dPhiD = RecoDecay::constrainAngle(McDJet.phi() - d0Candidate.phi(), -o2::constants::math::PI);
         if (std::abs(dPhiD - o2::constants::math::PI) > (o2::constants::math::PI / 2)) {
           continue;
         }
         if (McDJet.has_matchedJetGeo()) { // geometric matching
           for (auto const& McPJet : McDJet.template matchedJetGeo_as<aod::ChargedMCParticleLevelJets>()) {
-            float dPhiP = RecoDecay::constrainAngle(McPJet.phi() - d0Particle.phi());
-            if (dPhiP > o2::constants::math::PI) {
-              dPhiP = 2 * o2::constants::math::PI - dPhiP;
-            }
+            float dPhiP = RecoDecay::constrainAngle(McPJet.phi() - d0Particle.phi(), -o2::constants::math::PI);
             // if (std::abs(dPhiP - o2::constants::math::PI) > (o2::constants::math::PI / 2)) {
             //   continue;
             // }
