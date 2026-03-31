@@ -145,7 +145,7 @@ static const int defaultParameters[nTablesConst][nParameters]{
 
 // table index : match order above
 enum tableIndex { kFV0Mults,       // standard
-                  kFV0AOuterMults, // standard
+                  kFITExtraMults,  // standard
                   kFT0Mults,       // standard
                   kFDDMults,       // standard
                   kZDCMults,       // standard
@@ -191,7 +191,7 @@ struct products : o2::framework::ProducesGroup {
   //__________________________________________________
   // multiplicity tables
   o2::framework::Produces<aod::FV0Mults> tableFV0;
-  o2::framework::Produces<aod::FV0AOuterMults> tableFV0AOuter;
+  o2::framework::Produces<aod::FITExtraMults> tableFITExtraMults;
   o2::framework::Produces<aod::FT0Mults> tableFT0;
   o2::framework::Produces<aod::FDDMults> tableFDD;
   o2::framework::Produces<aod::ZDCMults> tableZDC;
@@ -256,6 +256,7 @@ struct multEntry {
   float multZPA = 0.0f;
   float multZPC = 0.0f;
   int multTracklets = 0;
+  uint8_t fitTriggerMask{};
 
   int multNContribs = 0;        // PVMult 0.8
   int multNContribsEta1 = 0;    // PVMult 1.0
@@ -705,6 +706,7 @@ class MultModule
     }
     if (collision.has_foundFT0()) {
       const auto& ft0 = collision.foundFT0();
+      mults.fitTriggerMask = ft0.triggerMask();
       for (const auto& amplitude : ft0.amplitudeA()) {
         mults.multFT0A += amplitude;
       }
@@ -750,8 +752,8 @@ class MultModule
     if (internalOpts.mEnabledTables[kFV0Mults]) {
       cursors.tableFV0(mults.multFV0A, mults.multFV0C);
     }
-    if (internalOpts.mEnabledTables[kFV0AOuterMults]) {
-      cursors.tableFV0AOuter(mults.multFV0AOuter);
+    if (internalOpts.mEnabledTables[kFITExtraMults]) {
+      cursors.tableFITExtraMults(mults.multFV0AOuter, mults.fitTriggerMask);
     }
     if (internalOpts.mEnabledTables[kFT0Mults]) {
       cursors.tableFT0(mults.multFT0A, mults.multFT0C);
