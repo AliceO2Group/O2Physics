@@ -210,10 +210,24 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
   bool isNSigmaCombined(float mom, float nsigmaTPCParticle, float nsigmaTOFParticle, bool hasTOF)
   {
-    if (mom <= confmom || hasTOF == 0) {
+    if (mom <= confmom) {
       return (std::abs(nsigmaTPCParticle) < confNsigmaTPCParticle);
-    } else {
+    } else if (hasTOF == 1) {
       return (std::hypot(nsigmaTOFParticle, nsigmaTPCParticle) < confNsigmaCombinedParticle);
+    } else {
+      return false;
+    }
+  }
+
+  template <typename T>
+  bool isNSigmaCombinedBitmask(float mom, const T& part)
+  {
+    if (mom <= confmom) {
+      return ((part.pidCut() & (1u << ConfTrkSelection.confTrackChoicePartOne)) != 0);
+    } else if ((part.pidCut() & 512u) != 0) {
+      return ((part.pidCut() & (64u << ConfTrkSelection.confTrackChoicePartOne)) != 0);
+    } else {
+      return false;
     }
   }
 
@@ -488,12 +502,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
           trackHistoPartOneNeg.fillQA<false, false>(part);
         }
       } else {
-        if ((part.pidCut() & 512u) != 0) {
-          if ((part.pidCut() & (64u << ConfTrkSelection.confTrackChoicePartOne)) == 0)
-            continue;
-        } else if ((part.pidCut() & (1u << ConfTrkSelection.confTrackChoicePartOne)) == 0) {
+        if (!isNSigmaCombinedBitmask(part.p(), part))
           continue;
-        }
         if (ConfTrkSelection.confChargePart1 > 0)
           trackHistoPartOnePos.fillQA<false, false>(part);
         if (ConfTrkSelection.confChargePart1 < 0)
@@ -511,12 +521,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
         if (!isParticleCombined(p1, ConfTrkSelection.confTrackChoicePartOne))
           continue;
       } else {
-        if ((p1.pidCut() & 512u) != 0) {
-          if ((p1.pidCut() & (64u << ConfTrkSelection.confTrackChoicePartOne)) == 0)
-            continue;
-        } else if ((p1.pidCut() & (1u << ConfTrkSelection.confTrackChoicePartOne)) == 0) {
+        if (!isNSigmaCombinedBitmask(p1.p(), p1))
           continue;
-        }
       }
       // track cleaning
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
@@ -986,12 +992,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
           if (!isParticleCombined(p1, ConfTrkSelection.confTrackChoicePartOne))
             continue;
         } else {
-          if ((p1.pidCut() & 512u) != 0) {
-            if ((p1.pidCut() & (64u << ConfTrkSelection.confTrackChoicePartOne)) == 0)
-              continue;
-          } else if ((p1.pidCut() & (1u << ConfTrkSelection.confTrackChoicePartOne)) == 0) {
+          if (!isNSigmaCombinedBitmask(p1.p(), p1))
             continue;
-          }
         }
 
         const auto& posChild = parts.iteratorAt(p2.globalIndex() - 2 - parts.begin().globalIndex());
@@ -1684,12 +1686,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
               if (!isNSigmaCombined(part.p(), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), (part.pidCut() & 512u) != 0))
                 continue;
             } else {
-              if ((part.pidCut() & 512u) != 0) {
-                if ((part.pidCut() & 64u) == 0) // 64 for proton combined
-                  continue;
-              } else if ((part.pidCut() & 1u) == 0) {
+              if (!isNSigmaCombinedBitmask(part.p(), part))
                 continue;
-              }
             }
             registryMCreco.fill(HIST("plus/MCrecoPr"), mcpart.pt(), mcpart.eta());
             registryMCreco.fill(HIST("plus/MCrecoPrPt"), mcpart.pt());
@@ -1715,12 +1713,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
               if (!isNSigmaCombined(part.p(), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), (part.pidCut() & 512u) != 0))
                 continue;
             } else {
-              if ((part.pidCut() & 512u) != 0) {
-                if ((part.pidCut() & 64u) == 0) // 64 for proton combined
-                  continue;
-              } else if ((part.pidCut() & 1u) == 0) {
+              if (!isNSigmaCombinedBitmask(part.p(), part))
                 continue;
-              }
             }
             registryMCreco.fill(HIST("minus/MCrecoPr"), mcpart.pt(), mcpart.eta());
             registryMCreco.fill(HIST("minus/MCrecoPrPt"), mcpart.pt());
