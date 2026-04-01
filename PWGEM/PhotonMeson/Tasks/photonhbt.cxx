@@ -278,6 +278,7 @@ struct photonhbt {
     Configurable<float> cfgEllipseSigEta{"cfgEllipseSigEta", 0.02f, "sigma_eta for ellipse cut"};
     Configurable<float> cfgEllipseSigPhi{"cfgEllipseSigPhi", 0.02f, "sigma_phi for ellipse cut"};
     Configurable<float> cfgEllipseR2{"cfgEllipseR2", 1.0f, "R^2 threshold: reject if ellipse value < R^2"};
+    Configurable<float> cfgMaxAsymmetry{"cfgMaxAsymmetry", -1.f, "max |p_{T, 1} - p_{T, 2}|/(p_{T, 1} + p_{T, 2}) asymmetry cut"};
   } ggpaircuts;
 
   EMPhotonEventCut fEMEventCut;
@@ -376,6 +377,16 @@ struct photonhbt {
     if (ggpaircuts.cfgDoZCut.value && std::fabs(deltaZ) < ggpaircuts.cfgMinDeltaZ.value)
       return false;
     return true;
+  }
+
+  inline bool passAsymmetryCut(float pt1, float pt2) const
+  {
+    if (ggpaircuts.cfgMaxAsymmetry.value < 0.f) // ← .value hinzufügen
+      return true;
+    const float sum = pt1 + pt2;
+    if (sum < 1e-9f)
+      return false;
+    return std::fabs(pt1 - pt2) / sum < ggpaircuts.cfgMaxAsymmetry.value; // ← hier auch
   }
 
   inline bool passQinvQAGate(float qinv) const
@@ -1442,7 +1453,10 @@ struct photonhbt {
         if (pos1.trackId() == pos2.trackId() || pos1.trackId() == ele2.trackId() ||
             ele1.trackId() == pos2.trackId() || ele1.trackId() == ele2.trackId())
           continue;
+        if (!passAsymmetryCut(g1.pt(), g2.pt()))
+          continue;
         auto obs = buildPairQAObservables(g1, g2);
+
         if (!obs.valid)
           continue;
         const bool doQA = passQinvQAGate(obs.qinv), doFR = passQinvFullRangeGate(obs.qinv);
@@ -1508,6 +1522,8 @@ struct photonhbt {
         auto poolPhotons = emh1->GetTracksPerCollision(mixID);
         for (const auto& g1 : selectedPhotons)
           for (const auto& g2 : poolPhotons) {
+            if (!passAsymmetryCut(g1.pt(), g2.pt()))
+              continue;
             auto obs = buildPairQAObservables(g1, g2);
             if (!obs.valid)
               continue;
@@ -1593,6 +1609,8 @@ struct photonhbt {
         auto truthType = classifyPairTruth(mc1, mc2);
         if (truthType == PairTruthType::TrueTrueDistinct && isPi0DaughterPair(mc1, mc2, mcParticles))
           truthType = PairTruthType::Pi0Daughters;
+        if (!passAsymmetryCut(g1.pt(), g2.pt()))
+          continue;
         auto obs = buildPairQAObservables(g1, g2);
         if (!obs.valid)
           continue;
@@ -1710,7 +1728,10 @@ struct photonhbt {
         auto poolPhotons = emh1->GetTracksPerCollision(mixID);
         for (const auto& g1 : selectedPhotons)
           for (const auto& g2 : poolPhotons) {
+            if (!passAsymmetryCut(g1.pt(), g2.pt()))
+              continue;
             auto obs = buildPairQAObservables(g1, g2);
+
             if (!obs.valid)
               continue;
             const bool doQA = passQinvQAGate(obs.qinv), doFR = passQinvFullRangeGate(obs.qinv);
