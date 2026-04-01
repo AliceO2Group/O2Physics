@@ -799,7 +799,6 @@ struct HfTaskLc {
         const auto decayLength = candidate.decayLength();
         const auto chi2PCA = candidate.chi2PCA();
         const auto cpa = candidate.cpa();
-        const auto rapidity = HfHelper::yLc(candidate);
         if (gap == o2::aod::sgselector::TrueGap::SingleGapA || gap == o2::aod::sgselector::TrueGap::SingleGapC) {
           qaRegistry.fill(HIST("Data/hUpcMulti"), collision.multNTracksPV());
           qaRegistry.fill(HIST("Data/hUpcVtz"), collision.posZ());
