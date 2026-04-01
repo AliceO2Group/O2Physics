@@ -703,8 +703,10 @@ void HFInvMassFitter::drawReflection(TVirtualPad* pad)
 // calculate signal yield via bin counting
 void HFInvMassFitter::countSignal(double& signal, double& signalErr) const
 {
-  const double binWidth = mResidualHist->GetX()[1] - mResidualHist->GetX()[0];
-  const double firstBinLowEdge = mResidualHist->GetX()[0] - binWidth / 2;
+  const auto& histoForCounting = mTypeOfBkgPdf == NoBkg ? mInvMassFrame->getHist("data_c") : mResidualHist;
+
+  const double binWidth = histoForCounting->GetX()[1] - histoForCounting->GetX()[0];
+  const double firstBinLowEdge = histoForCounting->GetX()[0] - binWidth / 2;
   const auto [minForSgn, maxForSgn] = getRangesOfSignal();
   const int binForMinSgn = static_cast<int>((minForSgn - firstBinLowEdge) / binWidth) + 1;
   const int binForMaxSgn = static_cast<int>((maxForSgn - firstBinLowEdge) / binWidth) + 1;
@@ -716,14 +718,14 @@ void HFInvMassFitter::countSignal(double& signal, double& signalErr) const
   auto square = [](double value) { return value * value; };
 
   double sumValues{}, sumErrorsSquare{};
-  sumValues += mResidualHist->GetY()[binForMinSgn - 1] * binForMinSgnFraction;
-  sumErrorsSquare += square(mResidualHist->GetErrorY(binForMinSgn - 1) * binForMinSgnFraction);
+  sumValues += histoForCounting->GetY()[binForMinSgn - 1] * binForMinSgnFraction;
+  sumErrorsSquare += square(histoForCounting->GetErrorY(binForMinSgn - 1) * binForMinSgnFraction);
   for (int iBin = binForMinSgn + 1; iBin <= binForMaxSgn - 1; iBin++) {
-    sumValues += mResidualHist->GetY()[iBin - 1];
-    sumErrorsSquare += square(mResidualHist->GetErrorY(iBin - 1));
+    sumValues += histoForCounting->GetY()[iBin - 1];
+    sumErrorsSquare += square(histoForCounting->GetErrorY(iBin - 1));
   }
-  sumValues += mResidualHist->GetY()[binForMaxSgn - 1] * binForMaxSgnFraction;
-  sumErrorsSquare += square(mResidualHist->GetErrorY(binForMaxSgn - 1) * binForMaxSgnFraction);
+  sumValues += histoForCounting->GetY()[binForMaxSgn - 1] * binForMaxSgnFraction;
+  sumErrorsSquare += square(histoForCounting->GetErrorY(binForMaxSgn - 1) * binForMaxSgnFraction);
 
   signal = sumValues;
   signalErr = std::sqrt(sumErrorsSquare);
