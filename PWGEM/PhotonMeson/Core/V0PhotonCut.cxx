@@ -15,8 +15,11 @@
 
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 
-#include <Framework/Array2D.h>
+#include "PWGEM/PhotonMeson/Core/V0PhotonCandidate.h"
+
 #include <Framework/Logger.h>
+
+#include <sys/types.h>
 
 #include <Rtypes.h>
 
