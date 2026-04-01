@@ -92,6 +92,10 @@ void runMassFitter(const std::string& configFileName)
   config.ParseStream(is);
   fclose(configFile);
 
+  if (config.HasParseError()) {
+    throw std::runtime_error("ERROR: Parsing the configuration json file failed. Check the config for correct formatting");
+  }
+
   bool const isMc = readJsonField<bool>(config, "IsMC");
   bool const writeSignalPar = readJsonField<bool>(config, "WriteSignalPar", true);
   std::string const particleName = readJsonField<std::string>(config, "Particle");
