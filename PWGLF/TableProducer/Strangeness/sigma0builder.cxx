@@ -873,9 +873,9 @@ struct sigma0builder {
     // Calculate properties and fill struct
     info.DCADau = (cross.Mag2() > 0) ? std::abs(posdiff.Dot(cross)) / cross.R() : 999.f;
     info.CosPA = v01momentumNorm.Dot(v02momentumNorm);
-    
-    float Min_threshold = 1e-5f; // Threshold to consider lines as parallel, can be tuned
-    if (d < Min_threshold) {                  // Parallel or nearly parallel lines
+
+    float Min_threshold = 1e-5f;      // Threshold to consider lines as parallel, can be tuned
+    if (d < Min_threshold) {          // Parallel or nearly parallel lines
       info.X = info.Y = info.Z = 0.f; // should we use another dummy value? Perhaps 999.f?
       return info;
     }
