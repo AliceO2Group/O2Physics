@@ -127,7 +127,7 @@ static constexpr TrackSelectionFlags::flagtype TrackSelectionDca =
 static constexpr TrackSelectionFlags::flagtype TrackSelectionDcaxyOnly =
   TrackSelectionFlags::kDCAxy;
 
-AxisSpec axisEvent{10, 0.5, 10.5, "#Event", "EventAxis"};
+AxisSpec axisEvent{15, 0.5, 15.5, "#Event", "EventAxis"};
 AxisSpec axisVtxZ{40, -20, 20, "Vertex Z", "VzAxis"};
 AxisSpec axisEta{40, -2, 2, "#eta", "EtaAxis"};
 AxisSpec axisEtaExtended{100, -5, 5, "#eta", "EtaAxisExtended"};
@@ -189,15 +189,14 @@ struct HeavyionMultiplicity {
   ConfigurableAxis binsMult{"binsMult", {500, 0.0f, +500.0f}, ""};
   ConfigurableAxis binsDCA{"binsDCA", {500, -10.0f, 10.0f}, ""};
 
+  Configurable<bool> isApplyTFcut{"isApplyTFcut", true, "Enable TimeFrameBorder cut"};
+  Configurable<bool> isApplyITSROcut{"isApplyITSROcut", true, "Enable ITS ReadOutFrameBorder cut"};
   Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", true, "Enable SameBunchPileup cut"};
   Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", true, "Enable GoodZvtxFT0vsPV cut"};
-  Configurable<bool> isApplyExtraCorrCut{"isApplyExtraCorrCut", false, "Enable extra NPVtracks vs FTOC correlation cut"};
-  Configurable<bool> isApplyExtraPhiCut{"isApplyExtraPhiCut", false, "Enable extra phi cut"};
-  Configurable<float> npvTracksCut{"npvTracksCut", 1.0f, "Apply extra NPVtracks cut"};
-  Configurable<float> ft0cCut{"ft0cCut", 1.0f, "Apply extra FT0C cut"};
   Configurable<bool> isApplyNoCollInTimeRangeStandard{"isApplyNoCollInTimeRangeStandard", true, "Enable NoCollInTimeRangeStandard cut"};
   Configurable<bool> isApplyNoCollInRofStandard{"isApplyNoCollInRofStandard", false, "Enable NoCollInRofStandard cut"};
   Configurable<bool> isApplyNoHighMultCollInPrevRof{"isApplyNoHighMultCollInPrevRof", false, "Enable NoHighMultCollInPrevRof cut"};
+  Configurable<bool> isApplyInelgt0{"isApplyInelgt0", false, "Enable INEL > 0 condition"};
   Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy", false, "Enable FT0CbasedOccupancy cut"};
   Configurable<bool> isApplyCentFT0C{"isApplyCentFT0C", true, "Centrality based on FT0C"};
   Configurable<bool> isApplyCentFV0A{"isApplyCentFV0A", false, "Centrality based on FV0A"};
@@ -206,8 +205,8 @@ struct HeavyionMultiplicity {
   Configurable<bool> isApplyCentFT0M{"isApplyCentFT0M", false, "Centrality based on FT0A + FT0C"};
   Configurable<bool> isApplyCentNGlobal{"isApplyCentNGlobal", false, "Centrality based on global tracks"};
   Configurable<bool> isApplyCentMFT{"isApplyCentMFT", false, "Centrality based on MFT tracks"};
-  Configurable<bool> isApplyInelgt0{"isApplyInelgt0", false, "Enable INEL > 0 condition"};
   Configurable<bool> isApplyTVX{"isApplyTVX", false, "Enable TVX trigger sel"};
+  Configurable<bool> isApplyExtraPhiCut{"isApplyExtraPhiCut", false, "Enable extra phi cut"};
 
   void init(InitContext const&)
   {
@@ -230,14 +229,15 @@ struct HeavyionMultiplicity {
     auto hstat = histos.get<TH1>(HIST("EventHist"));
     auto* x = hstat->GetXaxis();
     x->SetBinLabel(1, "All events");
-    x->SetBinLabel(2, "sel8");
-    x->SetBinLabel(3, "kNoSameBunchPileup"); // reject collisions in case of pileup with another collision in the same foundBC
-    x->SetBinLabel(4, "kIsGoodZvtxFT0vsPV"); // small difference between z-vertex from PV and from FT0
-    x->SetBinLabel(5, "ApplyExtraCorrCut");
-    x->SetBinLabel(6, "ApplyNoCollInTimeRangeStandard");
-    x->SetBinLabel(7, "ApplyNoCollInRofStandard");
-    x->SetBinLabel(8, "ApplyNoHighMultCollInPrevRof");
-    x->SetBinLabel(9, "INEL > 0");
+    x->SetBinLabel(2, "kIsTriggerTVX");
+    x->SetBinLabel(3, "kNoTimeFrameBorder");
+    x->SetBinLabel(4, "kNoITSROFrameBorder");
+    x->SetBinLabel(5, "kNoSameBunchPileup"); // reject collisions in case of pileup with another collision in the same foundBC
+    x->SetBinLabel(6, "kIsGoodZvtxFT0vsPV"); // small difference between z-vertex from PV and from FT0
+    x->SetBinLabel(7, "ApplyNoCollInTimeRangeStandard");
+    x->SetBinLabel(8, "ApplyNoCollInRofStandard");
+    x->SetBinLabel(9, "ApplyNoHighMultCollInPrevRof");
+    x->SetBinLabel(10, "INEL > 0");
 
     if (doprocessData) {
       histos.add("hdcaxy", "dca to pv in the xy plane", kTH1D, {dcaAxis}, false);
@@ -363,50 +363,42 @@ struct HeavyionMultiplicity {
   bool isEventSelected(CheckCol const& col)
   {
     histos.fill(HIST("EventHist"), 1);
-
-    if (!col.sel8()) {
+    if (!col.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
       return false;
     }
     histos.fill(HIST("EventHist"), 2);
-
-    if (isApplyTVX && !col.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
-      return false;
-    }
-
-    if (isApplySameBunchPileup && !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+    if (isApplyTFcut && !col.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       return false;
     }
     histos.fill(HIST("EventHist"), 3);
-
-    if (isApplyGoodZvtxFT0vsPV && !col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (isApplyITSROcut && !col.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       return false;
     }
     histos.fill(HIST("EventHist"), 4);
-
-    if (isApplyExtraCorrCut && col.multNTracksPV() > npvTracksCut && col.multFT0C() < (10 * col.multNTracksPV() - ft0cCut)) {
+    if (isApplySameBunchPileup && !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
     histos.fill(HIST("EventHist"), 5);
-
-    if (isApplyNoCollInTimeRangeStandard && !col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+    if (isApplyGoodZvtxFT0vsPV && !col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
     histos.fill(HIST("EventHist"), 6);
-
-    if (isApplyNoCollInRofStandard && !col.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+    if (isApplyNoCollInTimeRangeStandard && !col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return false;
     }
     histos.fill(HIST("EventHist"), 7);
-
-    if (isApplyNoHighMultCollInPrevRof && !col.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+    if (isApplyNoCollInRofStandard && !col.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       return false;
     }
     histos.fill(HIST("EventHist"), 8);
-
-    if (isApplyInelgt0 && !col.isInelGt0()) {
+    if (isApplyNoHighMultCollInPrevRof && !col.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
       return false;
     }
     histos.fill(HIST("EventHist"), 9);
+    if (isApplyInelgt0 && !col.isInelGt0()) {
+      return false;
+    }
+    histos.fill(HIST("EventHist"), 10);
     return true;
   }
 
