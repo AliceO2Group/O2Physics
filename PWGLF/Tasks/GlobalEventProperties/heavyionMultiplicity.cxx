@@ -87,6 +87,7 @@ enum {
   kSpOther,
   kSpStrangeDecay,
   kBkg,
+  kFake,
   kSpNotPrimary,
   kSpAll,
   kSpeciesend
@@ -207,7 +208,6 @@ struct HeavyionMultiplicity {
   Configurable<bool> isApplyCentFT0M{"isApplyCentFT0M", false, "Centrality based on FT0A + FT0C"};
   Configurable<bool> isApplyCentNGlobal{"isApplyCentNGlobal", false, "Centrality based on global tracks"};
   Configurable<bool> isApplyCentMFT{"isApplyCentMFT", false, "Centrality based on MFT tracks"};
-  Configurable<bool> isApplySplitRecCol{"isApplySplitRecCol", false, "Split MC reco collisions"};
   Configurable<bool> isApplyInelgt0{"isApplyInelgt0", false, "Enable INEL > 0 condition"};
   Configurable<bool> isApplyTVX{"isApplyTVX", false, "Enable TVX trigger sel"};
 
@@ -580,15 +580,13 @@ struct HeavyionMultiplicity {
     histos.fill(HIST("NPVtracks_vs_GlobalMult"), cols.multNTracksPV(), nchTracks);
   }
 
-  void processMonteCarlo(CollisionMCTrueTable::iterator const&, CollisionMCRecTable const& RecCols, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
+  void processMonteCarlo(soa::Join<CollisionMCTrueTable, aod::McCollsExtra>::iterator const& mcCollision, CollisionMCRecTable const& RecCols, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
   {
-
-    if (isApplySplitRecCol && (RecCols.size() == 0 || RecCols.size() > 1)) {
-      return;
-    }
-
     for (const auto& RecCol : RecCols) {
       if (!isEventSelected(RecCol)) {
+        continue;
+      }
+      if (RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
         continue;
       }
       histos.fill(HIST("VtxZHist"), RecCol.posZ());
@@ -598,6 +596,15 @@ struct HeavyionMultiplicity {
       std::vector<int> mclabels;
       for (const auto& Rectrack : recTracksPart) {
         if (!isTrackSelected(Rectrack)) {
+          continue;
+        }
+        if (!Rectrack.has_mcParticle()) {
+          histos.fill(HIST("hmcrecdndeta"), RecCol.posZ(), selColCent(RecCol), selColOccu(RecCol), Rectrack.eta(), Rectrack.phi(), static_cast<double>(kBkg), kGlobalplusITS);
+          histos.fill(HIST("hmcrecdndetaMB"), RecCol.posZ(), Rectrack.eta(), Rectrack.phi(), static_cast<double>(kBkg));
+          continue;
+        }
+        auto mcpart = Rectrack.mcParticle();
+        if (RecCol.mcCollisionId() != mcpart.mcCollisionId()) {
           continue;
         }
         histos.fill(HIST("hmcdcaxy"), Rectrack.dcaXY());
@@ -611,43 +618,37 @@ struct HeavyionMultiplicity {
           histos.fill(HIST("hmcrecdndeta"), RecCol.posZ(), selColCent(RecCol), selColOccu(RecCol), Rectrack.eta(), Rectrack.phi(), static_cast<double>(kSpAll), kITSonly);
         }
 
-        if (Rectrack.has_mcParticle()) {
-          int pid = kBkg;
-          auto mcpart = Rectrack.template mcParticle_as<aod::McParticles>();
-          if (mcpart.isPhysicalPrimary()) {
-            switch (std::abs(mcpart.pdgCode())) {
-              case PDG_t::kPiPlus:
-                pid = kSpPion;
-                break;
-              case PDG_t::kKPlus:
-                pid = kSpKaon;
-                break;
-              case PDG_t::kProton:
-                pid = kSpProton;
-                break;
-              default:
-                pid = kSpOther;
-                break;
-            }
-          } else {
-            pid = kSpNotPrimary;
+        int pid = kFake;
+        if (mcpart.isPhysicalPrimary()) {
+          switch (std::abs(mcpart.pdgCode())) {
+            case PDG_t::kPiPlus:
+              pid = kSpPion;
+              break;
+            case PDG_t::kKPlus:
+              pid = kSpKaon;
+              break;
+            case PDG_t::kProton:
+              pid = kSpProton;
+              break;
+            default:
+              pid = kSpOther;
+              break;
           }
-          if (mcpart.has_mothers()) {
-            auto mcpartMother = mcpart.template mothers_as<aod::McParticles>().front();
-            if (mcpartMother.pdgCode() == PDG_t::kK0Short || std::abs(mcpartMother.pdgCode()) == PDG_t::kLambda0) {
-              pid = kSpStrangeDecay;
-            }
-          }
-          if (find(mclabels.begin(), mclabels.end(), Rectrack.mcParticleId()) != mclabels.end()) {
-            pid = kBkg;
-          }
-          mclabels.push_back(Rectrack.mcParticleId());
-          histos.fill(HIST("hmcrecdndeta"), RecCol.posZ(), selColCent(RecCol), selColOccu(RecCol), Rectrack.eta(), Rectrack.phi(), static_cast<double>(pid), kGlobalplusITS);
-          histos.fill(HIST("hmcrecdndetaMB"), RecCol.posZ(), Rectrack.eta(), Rectrack.phi(), static_cast<double>(pid));
         } else {
-          histos.fill(HIST("hmcrecdndeta"), RecCol.posZ(), selColCent(RecCol), selColOccu(RecCol), Rectrack.eta(), Rectrack.phi(), static_cast<double>(kBkg), kGlobalplusITS);
-          histos.fill(HIST("hmcrecdndetaMB"), RecCol.posZ(), Rectrack.eta(), Rectrack.phi(), static_cast<double>(kBkg));
+          pid = kSpNotPrimary;
         }
+        if (mcpart.has_mothers()) {
+          auto mcpartMother = mcpart.template mothers_as<aod::McParticles>().front();
+          if (mcpartMother.pdgCode() == PDG_t::kK0Short || std::abs(mcpartMother.pdgCode()) == PDG_t::kLambda0) {
+            pid = kSpStrangeDecay;
+          }
+        }
+        if (find(mclabels.begin(), mclabels.end(), Rectrack.mcParticleId()) != mclabels.end()) {
+          pid = kFake;
+        }
+        mclabels.push_back(Rectrack.mcParticleId());
+        histos.fill(HIST("hmcrecdndeta"), RecCol.posZ(), selColCent(RecCol), selColOccu(RecCol), Rectrack.eta(), Rectrack.phi(), static_cast<double>(pid), kGlobalplusITS);
+        histos.fill(HIST("hmcrecdndetaMB"), RecCol.posZ(), Rectrack.eta(), Rectrack.phi(), static_cast<double>(pid));
       } // track (mcrec) loop
 
       for (const auto& particle : GenParticles) {
@@ -663,7 +664,6 @@ struct HeavyionMultiplicity {
           histos.fill(HIST("hmcgendndeta"), RecCol.posZ(), selColCent(RecCol), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTup);
           histos.fill(HIST("hmcgendndeta"), RecCol.posZ(), selColCent(RecCol), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTdown);
         }
-
         int pid = 0;
         switch (std::abs(particle.pdgCode())) {
           case PDG_t::kPiPlus:
@@ -824,10 +824,6 @@ struct HeavyionMultiplicity {
 
   void processppMonteCarlo(CollisionMCTrueTable::iterator const&, ColMCRecTablepp const& RecCols, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
   {
-    if (isApplySplitRecCol && (RecCols.size() == 0 || RecCols.size() > 1)) {
-      return;
-    }
-
     for (const auto& RecCol : RecCols) {
       if (!isEventSelected(RecCol)) {
         continue;
