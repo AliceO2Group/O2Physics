@@ -933,44 +933,48 @@ struct HeavyionMultiplicity {
         if (!isTrackSelected(Rectrack)) {
           continue;
         }
+        if (!Rectrack.has_mcParticle()) {
+          histos.fill(HIST("hRecMCdndeta"), RecCol.posZ(), selColCent(RecCol), selColOccu(RecCol), Rectrack.eta(), Rectrack.phi(), static_cast<double>(kRecoBkg));
+          continue;
+        }
+        auto mcpart = Rectrack.mcParticle();
+        if (RecCol.mcCollisionId() != mcpart.mcCollisionId()) {
+          continue;
+        }
         histos.fill(HIST("hRecMCphivseta"), Rectrack.phi(), Rectrack.eta());
         histos.fill(HIST("hRecMCdndeta"), RecCol.posZ(), selColCent(RecCol), selColOccu(RecCol), Rectrack.eta(), Rectrack.phi(), static_cast<double>(kRecoAll));
-        if (Rectrack.has_mcParticle()) {
-          int pid = 0;
-          auto mcpart = Rectrack.mcParticle();
-          histos.fill(HIST("etaResolution"), Rectrack.eta(), Rectrack.eta() - mcpart.eta());
-          if (mcpart.isPhysicalPrimary()) {
-            switch (std::abs(mcpart.pdgCode())) {
-              case PDG_t::kPiPlus:
-                pid = kRecoPion;
-                break;
-              case PDG_t::kKPlus:
-                pid = kRecoKaon;
-                break;
-              case PDG_t::kProton:
-                pid = kRecoProton;
-                break;
-              default:
-                pid = kRecoOther;
-                break;
-            }
-          } else {
-            pid = kRecoSecondary;
+
+        int pid = 0;
+        histos.fill(HIST("etaResolution"), Rectrack.eta(), Rectrack.eta() - mcpart.eta());
+        if (mcpart.isPhysicalPrimary()) {
+          switch (std::abs(mcpart.pdgCode())) {
+            case PDG_t::kPiPlus:
+              pid = kRecoPion;
+              break;
+            case PDG_t::kKPlus:
+              pid = kRecoKaon;
+              break;
+            case PDG_t::kProton:
+              pid = kRecoProton;
+              break;
+            default:
+              pid = kRecoOther;
+              break;
           }
-          if (mcpart.has_mothers()) {
-            auto mcpartMother = mcpart.template mothers_as<aod::McParticles>().front();
-            if (mcpartMother.pdgCode() == PDG_t::kK0Short || std::abs(mcpartMother.pdgCode()) == PDG_t::kLambda0) {
-              pid = kRecoWeakDecay;
-            }
-          }
-          if (find(mclabels.begin(), mclabels.end(), Rectrack.mcParticleId()) != mclabels.end()) {
-            pid = kRecoFake;
-          }
-          mclabels.push_back(Rectrack.mcParticleId());
-          histos.fill(HIST("hRecMCdndeta"), RecCol.posZ(), selColCent(RecCol), selColOccu(RecCol), mcpart.eta(), mcpart.phi(), static_cast<double>(pid));
         } else {
-          histos.fill(HIST("hRecMCdndeta"), RecCol.posZ(), selColCent(RecCol), selColOccu(RecCol), Rectrack.eta(), Rectrack.phi(), static_cast<double>(kRecoBkg));
+          pid = kRecoSecondary;
         }
+        if (mcpart.has_mothers()) {
+          auto mcpartMother = mcpart.template mothers_as<aod::McParticles>().front();
+          if (mcpartMother.pdgCode() == PDG_t::kK0Short || std::abs(mcpartMother.pdgCode()) == PDG_t::kLambda0) {
+            pid = kRecoWeakDecay;
+          }
+        }
+        if (find(mclabels.begin(), mclabels.end(), Rectrack.mcParticleId()) != mclabels.end()) {
+          pid = kRecoFake;
+        }
+        mclabels.push_back(Rectrack.mcParticleId());
+        histos.fill(HIST("hRecMCdndeta"), RecCol.posZ(), selColCent(RecCol), selColOccu(RecCol), mcpart.eta(), mcpart.phi(), static_cast<double>(pid));
       } // track (mcrec) loop
     } // collision loop
   }
