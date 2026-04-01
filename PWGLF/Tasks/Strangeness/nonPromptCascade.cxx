@@ -187,7 +187,6 @@ struct NonPromptCascadeTask {
   Produces<o2::aod::NPMCChargedTable> NPMCNTable;
   Produces<o2::aod::NPRecoChargedCandidate> NPRecoCandTable;
 
-
   using TracksExtData = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>;
   using TracksExtMC = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>;
   using CollisionCandidatesRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0Ms, aod::MultsGlobal>;
@@ -1007,18 +1006,18 @@ struct NonPromptCascadeTask {
           mRunNumber = bc.runNumber();
         }
         NPCollsTable(mRunNumber,
-          coll.bc().globalBC(),
-          coll.numContrib(),
-          coll.multNTracksGlobal(),
-          coll.centFT0M(),
-          coll.multFT0M());
+                     coll.bc().globalBC(),
+                     coll.numContrib(),
+                     coll.multNTracksGlobal(),
+                     coll.centFT0M(),
+                     coll.multFT0M());
 
         auto collIdx = NPCollsTable.lastIndex();
         auto tracksThisColl = tracks.sliceBy(perCollision, coll.globalIndex());
         for (auto const& track : tracksThisColl) {
           if (std::fabs(track.eta()) < 0.8 && track.tpcNClsFound() >= 80 && track.tpcNClsCrossedRows() >= 100) {
             if (track.isGlobalTrack()) {
-              //mults.multGlobalTracks++;
+              // mults.multGlobalTracks++;
               NPRecoCandTable(collIdx, track.pt());
             }
           }
@@ -1027,7 +1026,6 @@ struct NonPromptCascadeTask {
     }
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processdNdeta, "process dN/deta", false);
-
 
   void processPileUp(CollisionCandidatesRun3 const& collisions, aod::BCsWithTimestamps const&)
   {
