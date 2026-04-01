@@ -508,13 +508,11 @@ struct JetLundPlaneUnfolding {
   }
 
   // DATA / RECO PROCESSING
-  void processData(soa::Filtered<aod::JetCollisions>::iterator const& collision,
+  void processData(soa::Filtered<aod::JetCollisions>::iterator const&,
                    soa::Filtered<RecoJets> const& jets,
                    aod::JetTracks const& tracks)
   {
     registry.fill(HIST("hEventCount"), 0.5);
-
-    (void)collision; // collision row is part of the process signature but not used directly here
 
     int miniCollIdx = -1;
     if (writeMiniAOD.value) {
@@ -544,13 +542,11 @@ struct JetLundPlaneUnfolding {
 
   void processMC(DetJetsMatched const& detJets,
                  PartJetsMatched const& partJets,
-                 aod::JetCollisions const& collisions,
+                 aod::JetCollisions const&,
                  aod::JetTracks const& tracks,
                  aod::JetParticles const& particles)
   {
     registry.fill(HIST("hEventCount"), 1.5);
-
-    (void)collisions; // collision ids are used only transiently for grouping MiniJets by source event
 
     const int rWanted = static_cast<int>(std::lround(jetR.value * 100.f));
     std::unordered_map<uint64_t, bool> truthMatchedById;
