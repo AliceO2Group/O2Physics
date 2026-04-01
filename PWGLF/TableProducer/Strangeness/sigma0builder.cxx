@@ -45,10 +45,8 @@
 
 #include "Math/Vector3D.h"
 #include <Math/Vector4D.h>
-#include <TDatabasePDG.h>
 #include <TFile.h>
 #include <TH2F.h>
-#include <TLorentzVector.h>
 #include <TPDGCode.h>
 #include <TProfile.h>
 
@@ -875,8 +873,9 @@ struct sigma0builder {
     // Calculate properties and fill struct
     info.DCADau = (cross.Mag2() > 0) ? std::abs(posdiff.Dot(cross)) / cross.R() : 999.f;
     info.CosPA = v01momentumNorm.Dot(v02momentumNorm);
-
-    if (d < 1e-5f) {                  // Parallel or nearly parallel lines
+    
+    float Min_threshold = 1e-5f; // Threshold to consider lines as parallel, can be tuned
+    if (d < Min_threshold) {                  // Parallel or nearly parallel lines
       info.X = info.Y = info.Z = 0.f; // should we use another dummy value? Perhaps 999.f?
       return info;
     }
@@ -1540,7 +1539,7 @@ struct sigma0builder {
 
       auto v0MC = v0.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
 
-      float V0MCpT = RecoDecay::pt(array<float, 2>{v0MC.pxMC(), v0MC.pyMC()});
+      float V0MCpT = RecoDecay::pt(std::array<float, 2>{v0MC.pxMC(), v0MC.pyMC()});
       float V0PA = TMath::ACos(v0.v0cosPA());
       bool fIsV0CorrectlyAssigned = (v0MC.straMCCollisionId() == v0MCCollision.globalIndex());
       bool isPrimary = v0MC.isPhysicalPrimary();
@@ -1604,7 +1603,7 @@ struct sigma0builder {
         histos.fill(HIST("GenQA/h2dSigma0MCSourceVsPDGMother"), GenInfo.IsProducedByGenerator, GenInfo.PDGCodeMother);
 
         // Checking decay modes and getting daughter pTs
-        for (auto& daughter : daughters) {
+        for (auto const& daughter : daughters) {
           histos.fill(HIST("GenQA/h2dSigma0NDaughtersVsPDG"), daughters.size(), daughter.pdgCode());
 
           if (GenInfo.NDaughters == 2) {
@@ -1619,13 +1618,13 @@ struct sigma0builder {
 
       if ((GenInfo.IsKStar) && genSelections.doQA) {
         histos.fill(HIST("GenQA/h2dKStarMCSourceVsPDGMother"), GenInfo.IsProducedByGenerator, GenInfo.PDGCodeMother);
-        for (auto& daughter : daughters) // checking decay modes
+        for (auto const& daughter : daughters) // checking decay modes
           histos.fill(HIST("GenQA/h2dKStarNDaughtersVsPDG"), daughters.size(), daughter.pdgCode());
       }
 
       if (GenInfo.IsPi0 && genSelections.doQA) {
         histos.fill(HIST("GenQA/h2dPi0MCSourceVsPDGMother"), GenInfo.IsProducedByGenerator, GenInfo.PDGCodeMother);
-        for (auto& daughter : daughters) // checking decay modes
+        for (auto const& daughter : daughters) // checking decay modes
           histos.fill(HIST("GenQA/h2dPi0NDaughtersVsPDG"), daughters.size(), daughter.pdgCode());
       }
     }
@@ -1735,7 +1734,7 @@ struct sigma0builder {
   template <typename TMCParticles>
   void genProcess(TMCParticles const& mcParticles)
   {
-    for (auto& mcParticle : mcParticles) {
+    for (auto const& mcParticle : mcParticles) {
       // Rapidity selection
       if ((mcParticle.y() < genSelections.mc_rapidityMin) || (mcParticle.y() > genSelections.mc_rapidityMax))
         continue;
@@ -1791,7 +1790,7 @@ struct sigma0builder {
     static constexpr std::string_view MainDir2[] = {"EMCalPhotonBeforeSel", "EMCalPhotonSel"};
 
     // calculate pT for cluster assuming they are photons (so no mass)
-    float gammapT = sqrt(cluster.energy() * cluster.energy()) / std::cosh(cluster.eta());
+    float gammapT = std::sqrt(cluster.energy() * cluster.energy()) / std::cosh(cluster.eta());
 
     histos.fill(HIST(MainDir2[mode]) + HIST("/hDefinition"), cluster.definition());
     histos.fill(HIST(MainDir2[mode]) + HIST("/h2dNCells"), gammapT, cluster.nCells());
@@ -2401,7 +2400,7 @@ struct sigma0builder {
   bool buildEMCalSigma0(TV0Object const& lambda, TEMCalClsObject const& gamma, TCollision const& collision, TMCParticles const& mcparticles, std::vector<bool> const& emcaltracksmatched)
   {
     // calculate pT for cluster assuming they are photons (so no mass)
-    float gammapT = sqrt(gamma.energy() * gamma.energy()) / std::cosh(gamma.eta());
+    float gammapT = std::sqrt(gamma.energy() * gamma.energy()) / std::cosh(gamma.eta());
 
     // Momentum components
     float gammapx = gammapT * std::cos(gamma.phi());
