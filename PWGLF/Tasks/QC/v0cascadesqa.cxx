@@ -21,6 +21,7 @@
 
 #include <cmath>
 // #include <cstdlib>
+#include <string>
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
