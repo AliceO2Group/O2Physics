@@ -118,20 +118,6 @@ constexpr const char* mcOriginToString(McOrigin origin)
   }
 }
 
-constexpr bool
-  hasMass(Particle p)
-{
-  switch (p) {
-    case Particle::kV0:
-    case Particle::kTwoTrackResonance:
-    case Particle::kKink:
-    case Particle::kCascade:
-      return true;
-    default:
-      return false;
-  }
-}
-
 enum class Track : o2::aod::femtodatatypes::TrackType {
   kTrack,
   kV0Daughter,

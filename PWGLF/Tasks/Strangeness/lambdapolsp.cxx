@@ -90,6 +90,7 @@ struct lambdapolsp {
   TH1D* hwgtAL;
   TH1D* heffL;
   TH1D* heffAL;
+  TH1D* hwgtRESO;
   // fill output
   struct : ConfigurableGroup {
     Configurable<bool> additionalEvSel{"additionalEvSel", false, "additionalEvSel"};
@@ -154,13 +155,16 @@ struct lambdapolsp {
   Configurable<float> ConfDaughPIDCuts{"ConfDaughPIDCuts", 3, "PID selections for Lambda daughters"};
   Configurable<bool> usesubdet{"usesubdet", false, "use subdet"};
   Configurable<bool> useAccCorr{"useAccCorr", false, "use acceptance correction"};
+  Configurable<bool> useResoRBR{"useResoRBR", false, "use resolution correction RBR"};
   Configurable<bool> useyldwgt{"useyldwgt", false, "use yield weight"};
   Configurable<bool> useeffwgt{"useeffwgt", false, "use eff weight"};
+  Configurable<bool> usepsisubbeforeshift{"usepsisubbeforeshift", false, "use psi for sub detectors before shift modification"};
   Configurable<std::string> ConfAccPathL{"ConfAccPathL", "Users/p/prottay/My/Object/From379780/Fulldata/NewPbPbpass4_28032025/acccorrL", "Path to acceptance correction for Lambda"};
   Configurable<std::string> ConfAccPathAL{"ConfAccPathAL", "Users/p/prottay/My/Object/From379780/Fulldata/NewPbPbpass4_28032025/acccorrAL", "Path to acceptance correction for AntiLambda"};
   Configurable<std::string> ConfWgtPathAL{"ConfWgtPathAL", "Users/p/prottay/My/Object/From379780/Fulldata/NewPbPbpass4_10082025/yieldweight2050", "Path to yield weight correction for AntiLambda"};
   Configurable<std::string> ConfEffWgtPathL{"ConfEffWgtPathL", "Users/p/prottay/My/Object/From379780/Fulldata/NewPbPbpass4_10082025/yieldweight2050", "Path to eff weight correction for Lambda"};
   Configurable<std::string> ConfEffWgtPathAL{"ConfEffWgtPathAL", "Users/p/prottay/My/Object/From379780/Fulldata/NewPbPbpass4_10082025/yieldweight2050", "Path to eff weight correction for AntiLambda"};
+  Configurable<std::string> ConfResoPath{"ConfResoPath", "Users/p/prottay/My/Object/From379780/Fulldata/NewPbPbpass4_28032025/acccorrL", "Path to resolution correction run by run"};
 
   struct : ConfigurableGroup {
     Configurable<int> QxyNbins{"QxyNbins", 100, "Number of bins in QxQy histograms"};
@@ -213,12 +217,13 @@ struct lambdapolsp {
     ConfigurableAxis configthnAxisPol{"configthnAxisPol", {VARIABLE_WIDTH, -1.0, -0.6, -0.2, 0, 0.2, 0.4, 0.8}, "Pol"};
     ConfigurableAxis configbinAxis{"configbinAxis", {VARIABLE_WIDTH, -0.8, -0.4, -0.2, 0, 0.2, 0.4, 0.8}, "BA"};
   } axisGrp;
+  /*
   struct : ConfigurableGroup {
     ConfigurableAxis axisVertex{"axisVertex", {5, -10, 10}, "vertex axis for bin"};
     ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {8, 0, 80}, "multiplicity percentile for bin"};
     Configurable<int> nMix{"nMix", 5, "number of event mixing"};
   } meGrp;
-
+  */
   struct : ConfigurableGroup {
     ConfigurableAxis axisCosine{"axisCosine", {100, 0, 1}, "cosine axis"};
     ConfigurableAxis axisRadius{"axisRadius", {200, 0, 100}, "radius axis"};
@@ -230,6 +235,8 @@ struct lambdapolsp {
     Configurable<bool> filldist{"filldist", true, "fill topo distr"};
     Configurable<float> lowmasscut{"lowmasscut", 1.11, "low mass cut"};
     Configurable<float> highmasscut{"highmasscut", 1.12, "high mass cut"};
+    ConfigurableAxis axiscosphiminuspsi{"axiscosphiminuspsi", {200, -1, 1}, "cosphiminuspsi"};
+    ConfigurableAxis axiseta{"axiseta", {16, -0.8, 0.8}, "eta axis"};
   } distGrp;
 
   RCTFlagsChecker rctChecker;
@@ -436,7 +443,7 @@ struct lambdapolsp {
     }
 
     if (distGrp.filldist) {
-      histos.add("hcosinelambda", "hcosinelambda", HistType::kTH1D, {distGrp.axisCosine}, true);
+      /*histos.add("hcosinelambda", "hcosinelambda", HistType::kTH1D, {distGrp.axisCosine}, true);
       histos.add("hdcabwv0daughlambda", "hdcabwv0daughlambda", HistType::kTH1D, {distGrp.axisDca}, true);
       histos.add("hlifetimelambda", "hlifetimelambda", HistType::kTH1D, {distGrp.axisLT}, true);
       histos.add("hradiuslambda", "hradiuslambda", HistType::kTH1D, {distGrp.axisRadius}, true);
@@ -459,6 +466,13 @@ struct lambdapolsp {
       histos.add("htpcnegantilambda", "htpcnegantilambda", HistType::kTH1D, {distGrp.axisnsig}, true);
       histos.add("hptposantilambda", "hptposantilambda", HistType::kTH1D, {distGrp.axispt}, true);
       histos.add("hptnegantilambda", "hptnegantilambda", HistType::kTH1D, {distGrp.axispt}, true);
+      */
+      histos.add("hALcosphiminuspsiCvseta", "hALcosphiminuspsiCvseta", HistType::kTH2D, {{distGrp.axiscosphiminuspsi}, {distGrp.axiseta}});
+      histos.add("hALcosphiminuspsiAvseta", "hALcosphiminuspsiAvseta", HistType::kTH2D, {{distGrp.axiscosphiminuspsi}, {distGrp.axiseta}});
+      histos.add("hALcosphiminuspsivseta", "hALcosphiminuspsivseta", HistType::kTH2D, {{distGrp.axiscosphiminuspsi}, {distGrp.axiseta}});
+      histos.add("hLcosphiminuspsiCvseta", "hLcosphiminuspsiCvseta", HistType::kTH2D, {{distGrp.axiscosphiminuspsi}, {distGrp.axiseta}});
+      histos.add("hLcosphiminuspsiAvseta", "hLcosphiminuspsiAvseta", HistType::kTH2D, {{distGrp.axiscosphiminuspsi}, {distGrp.axiseta}});
+      histos.add("hLcosphiminuspsivseta", "hLcosphiminuspsivseta", HistType::kTH2D, {{distGrp.axiscosphiminuspsi}, {distGrp.axiseta}});
     }
 
     histos.add("hSparseGenLambda", "hSparseGenLambda", HistType::kTHnSparseF, runaxes2, true);
@@ -499,8 +513,12 @@ struct lambdapolsp {
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     LOGF(info, "Getting alignment offsets from the CCDB...");
     hwgtAL = ccdb->getForTimeStamp<TH1D>(ConfWgtPathAL.value, cfgCcdbParam.nolaterthan.value);
-    heffL = ccdb->getForTimeStamp<TH1D>(ConfEffWgtPathL.value, cfgCcdbParam.nolaterthan.value);
-    heffAL = ccdb->getForTimeStamp<TH1D>(ConfEffWgtPathAL.value, cfgCcdbParam.nolaterthan.value);
+    if (useeffwgt) {
+      heffL = ccdb->getForTimeStamp<TH1D>(ConfEffWgtPathL.value, cfgCcdbParam.nolaterthan.value);
+      heffAL = ccdb->getForTimeStamp<TH1D>(ConfEffWgtPathAL.value, cfgCcdbParam.nolaterthan.value);
+    }
+    if (useResoRBR)
+      hwgtRESO = ccdb->getForTimeStamp<TH1D>(ConfResoPath.value, cfgCcdbParam.nolaterthan.value);
   }
 
   template <typename T>
@@ -733,7 +751,7 @@ struct lambdapolsp {
   void fillHistograms(bool tag1, bool tag2, const ROOT::Math::PxPyPzMVector& particle,
                       const ROOT::Math::PxPyPzMVector& daughter,
                       double psiZDCC, double psiZDCA, double psiZDC, double centrality,
-                      double candmass, double candpt, float desbinvalue, double acvalue, double wgtfactor)
+                      double candmass, double candpt, float desbinvalue, double acvalue, double wgtfactor, double resowgt)
   {
     TRandom3 randPhi(0);
 
@@ -761,6 +779,11 @@ struct lambdapolsp {
     // auto phiphiStar = GetPhiInRange(particle.Phi() - phiangle);
 
     acvalue = (4 / 3.14) * acvalue;
+    if (useResoRBR) {
+      Pol = Pol / resowgt;
+      PolA = PolA / resowgt;
+      PolC = PolC / resowgt;
+    }
     // PolC = PolC / acvalue;
     // PolA = PolA / acvalue;
     // Pol = Pol / acvalue;
@@ -985,7 +1008,10 @@ struct lambdapolsp {
     auto qyZDCC = collision.qyZDCC();
     auto psiZDCC = collision.psiZDCC();
     auto psiZDCA = collision.psiZDCA();
-
+    if (usepsisubbeforeshift) {
+      psiZDCC = 1.0 * std::atan2(qyZDCC, qxZDCC);
+      psiZDCA = 1.0 * std::atan2(qyZDCA, qxZDCA);
+    }
     if (cqvas) {
       modqxZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Cos(psiZDCA);
       modqyZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Sin(psiZDCA);
@@ -999,6 +1025,7 @@ struct lambdapolsp {
     }
 
     auto psiZDC = TMath::ATan2((modqyZDCC - modqyZDCA), (modqxZDCC - modqxZDCA)); // full event plane*/
+
     /*if (useonlypsis) {
       psiZDC = psiZDCC - psiZDCA;
       }*/
@@ -1041,6 +1068,15 @@ struct lambdapolsp {
       } else {
         histos.fill(HIST("hpRes"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA - psiZDCC))));
       }
+    }
+
+    double resowgt = 1.0;
+
+    if (useResoRBR) {
+      int binxreso = hwgtRESO->GetXaxis()->FindBin(centrality + 0.000001);
+      resowgt = hwgtRESO->GetBinContent(binxreso);
+    } else {
+      resowgt = 1.0;
     }
 
     ///////////checking v1////////////////////////////////
@@ -1262,7 +1298,7 @@ struct lambdapolsp {
             acvalue = 1.0;
           }
           if (distGrp.filldist && aLambdaTag == 0 && Lambda.M() > distGrp.lowmasscut && Lambda.M() < distGrp.highmasscut) {
-            histos.fill(HIST("hcosinelambda"), v0.v0cosPA());
+            /*histos.fill(HIST("hcosinelambda"), v0.v0cosPA());
             histos.fill(HIST("hdcabwv0daughlambda"), v0.dcaV0daughters());
             histos.fill(HIST("hlifetimelambda"), TMath::Abs(v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massLambda));
             histos.fill(HIST("hradiuslambda"), v0.v0radius());
@@ -1272,9 +1308,16 @@ struct lambdapolsp {
             histos.fill(HIST("htpcposlambda"), postrack.tpcNSigmaPr());
             histos.fill(HIST("htpcneglambda"), negtrack.tpcNSigmaPi());
             histos.fill(HIST("hptposlambda"), Proton.Pt());
-            histos.fill(HIST("hptneglambda"), AntiPion.Pt());
+            histos.fill(HIST("hptneglambda"), AntiPion.Pt());*/
+            auto phiL = TMath::ATan2(v0.py(), v0.px());
+            auto LcosphiminuspsiC = TMath::Cos(GetPhiInRange(phiL - psiZDCC));
+            auto LcosphiminuspsiA = TMath::Cos(GetPhiInRange(phiL - psiZDCA));
+            auto Lcosphiminuspsi = TMath::Cos(GetPhiInRange(phiL - psiZDC));
+            histos.fill(HIST("hLcosphiminuspsiCvseta"), LcosphiminuspsiC, v0.eta());
+            histos.fill(HIST("hLcosphiminuspsiAvseta"), LcosphiminuspsiA, v0.eta());
+            histos.fill(HIST("hLcosphiminuspsivseta"), Lcosphiminuspsi, v0.eta());
           }
-          fillHistograms(taga, tagb, Lambda, Proton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mLambda(), v0.pt(), v0.eta(), acvalue, 1.0);
+          fillHistograms(taga, tagb, Lambda, Proton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mLambda(), v0.pt(), v0.eta(), acvalue, 1.0, resowgt);
         }
 
         tagb = aLambdaTag;
@@ -1289,7 +1332,7 @@ struct lambdapolsp {
             acvalue = 1.0;
           }
           if (distGrp.filldist && LambdaTag == 0 && AntiLambda.M() > distGrp.lowmasscut && AntiLambda.M() < distGrp.highmasscut) {
-            histos.fill(HIST("hcosineantilambda"), v0.v0cosPA());
+            /*histos.fill(HIST("hcosineantilambda"), v0.v0cosPA());
             histos.fill(HIST("hdcabwv0daughantilambda"), v0.dcaV0daughters());
             histos.fill(HIST("hlifetimeantilambda"), TMath::Abs(v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massLambda));
             histos.fill(HIST("hradiusantilambda"), v0.v0radius());
@@ -1299,9 +1342,16 @@ struct lambdapolsp {
             histos.fill(HIST("htpcposantilambda"), postrack.tpcNSigmaPi());
             histos.fill(HIST("htpcnegantilambda"), negtrack.tpcNSigmaPr());
             histos.fill(HIST("hptposantilambda"), Pion.Pt());
-            histos.fill(HIST("hptnegantilambda"), AntiProton.Pt());
+            histos.fill(HIST("hptnegantilambda"), AntiProton.Pt());*/
+            auto phiAL = TMath::ATan2(v0.py(), v0.px());
+            auto ALcosphiminuspsiC = TMath::Cos(GetPhiInRange(phiAL - psiZDCC));
+            auto ALcosphiminuspsiA = TMath::Cos(GetPhiInRange(phiAL - psiZDCA));
+            auto ALcosphiminuspsi = TMath::Cos(GetPhiInRange(phiAL - psiZDC));
+            histos.fill(HIST("hALcosphiminuspsiCvseta"), ALcosphiminuspsiC, v0.eta());
+            histos.fill(HIST("hALcosphiminuspsiAvseta"), ALcosphiminuspsiA, v0.eta());
+            histos.fill(HIST("hALcosphiminuspsivseta"), ALcosphiminuspsi, v0.eta());
           }
-          fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mAntiLambda(), v0.pt(), v0.eta(), acvalue, wgtvalue);
+          fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mAntiLambda(), v0.pt(), v0.eta(), acvalue, wgtvalue, resowgt);
         }
       }
     }
@@ -1374,7 +1424,10 @@ struct lambdapolsp {
     auto qyZDCC = collision.qyZDCC();
     auto psiZDCC = collision.psiZDCC();
     auto psiZDCA = collision.psiZDCA();
-
+    if (usepsisubbeforeshift) {
+      psiZDCC = 1.0 * std::atan2(qyZDCC, qxZDCC);
+      psiZDCA = 1.0 * std::atan2(qyZDCA, qxZDCA);
+    }
     if (cqvas) {
       modqxZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Cos(psiZDCA);
       modqyZDCA = TMath::Sqrt((qxZDCA * qxZDCA) + (qyZDCA * qyZDCA)) * TMath::Sin(psiZDCA);
@@ -1451,6 +1504,14 @@ struct lambdapolsp {
       }
     }
 
+    double resowgt = 1.0;
+    if (useResoRBR) {
+      int binxreso = hwgtRESO->GetXaxis()->FindBin(centrality + 0.000001);
+      resowgt = hwgtRESO->GetBinContent(binxreso);
+    } else {
+      resowgt = 1.0;
+    }
+
     //___________________________________________________________________________________________________
     // loop over V0s as necessary
     for (const auto& v0 : V0s) {
@@ -1509,7 +1570,7 @@ struct lambdapolsp {
       if (analyzeK0s && K0sTag) {
         K0s = Pion + AntiPion;
         double acvalue = 1.0;
-        fillHistograms(tagc, 0, K0s, Pion, psiZDCC, psiZDCA, psiZDC, centrality, v0.mK0Short(), v0.pt(), v0.eta(), acvalue, 1.0);
+        fillHistograms(tagc, 0, K0s, Pion, psiZDCC, psiZDCA, psiZDC, centrality, v0.mK0Short(), v0.pt(), v0.eta(), acvalue, 1.0, resowgt);
       }
 
       int binxwgt;
@@ -1544,8 +1605,18 @@ struct lambdapolsp {
         } else {
           acvalue = 1.0;
         }
-        // double acvalue = 1.0;
-        fillHistograms(taga, tagb, Lambda, Proton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mLambda(), v0.pt(), v0.eta(), acvalue, (1. / effwgtvalueL));
+
+        if (distGrp.filldist && aLambdaTag == 0 && Lambda.M() > distGrp.lowmasscut && Lambda.M() < distGrp.highmasscut) {
+          auto phiL = TMath::ATan2(v0.py(), v0.px());
+          auto LcosphiminuspsiC = TMath::Cos(GetPhiInRange(phiL - psiZDCC));
+          auto LcosphiminuspsiA = TMath::Cos(GetPhiInRange(phiL - psiZDCA));
+          auto Lcosphiminuspsi = TMath::Cos(GetPhiInRange(phiL - psiZDC));
+          histos.fill(HIST("hLcosphiminuspsiCvseta"), LcosphiminuspsiC, v0.eta());
+          histos.fill(HIST("hLcosphiminuspsiAvseta"), LcosphiminuspsiA, v0.eta());
+          histos.fill(HIST("hLcosphiminuspsivseta"), Lcosphiminuspsi, v0.eta());
+        }
+
+        fillHistograms(taga, tagb, Lambda, Proton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mLambda(), v0.pt(), v0.eta(), acvalue, (1. / effwgtvalueL), resowgt);
       }
 
       tagb = aLambdaTag;
@@ -1560,7 +1631,18 @@ struct lambdapolsp {
         } else {
           acvalue = 1.0;
         }
-        fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mAntiLambda(), v0.pt(), v0.eta(), acvalue, wgtvalue * (1. / effwgtvalueAL));
+
+        if (distGrp.filldist && LambdaTag == 0 && AntiLambda.M() > distGrp.lowmasscut && AntiLambda.M() < distGrp.highmasscut) {
+          auto phiAL = TMath::ATan2(v0.py(), v0.px());
+          auto ALcosphiminuspsiC = TMath::Cos(GetPhiInRange(phiAL - psiZDCC));
+          auto ALcosphiminuspsiA = TMath::Cos(GetPhiInRange(phiAL - psiZDCA));
+          auto ALcosphiminuspsi = TMath::Cos(GetPhiInRange(phiAL - psiZDC));
+          histos.fill(HIST("hALcosphiminuspsiCvseta"), ALcosphiminuspsiC, v0.eta());
+          histos.fill(HIST("hALcosphiminuspsiAvseta"), ALcosphiminuspsiA, v0.eta());
+          histos.fill(HIST("hALcosphiminuspsivseta"), ALcosphiminuspsi, v0.eta());
+        }
+
+        fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mAntiLambda(), v0.pt(), v0.eta(), acvalue, wgtvalue * (1. / effwgtvalueAL), resowgt);
       }
     }
     // lastRunNumber = currentRunNumber;

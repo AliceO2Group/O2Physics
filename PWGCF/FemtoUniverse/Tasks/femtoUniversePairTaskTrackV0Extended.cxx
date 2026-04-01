@@ -336,6 +336,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
     if (doprocessPairFractionsMCTruthV0 || doprocessPairFractionsMCTruth) {
       registryMCtruth.add("mothersTruth/motherParticle", "pair fractions;part1 mother PDG;part2 mother PDG", {HistType::kTH2F, {confMotherPDGBins, confMotherPDGBins}});
+      registryMCtruth.add("mothersTruth/mcProcess", "pair ; part1 VMC physics code; part2 VMC physics code", {HistType::kTH2F, {{50, 0, 50}, {50, 0, 50}}});
     }
 
     // MC reco
@@ -1547,6 +1548,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
           continue;
 
         registryMCtruth.fill(HIST("mothersTruth/motherParticle"), p1.tempFitVar(), p2.tempFitVar());
+        registryMCtruth.fill(HIST("mothersTruth/mcProcess"), p1.cut(), p2.cut());
       }
     };
 
@@ -1580,6 +1582,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
           continue;
 
         registryMCtruth.fill(HIST("mothersTruth/motherParticle"), p1.tempFitVar(), p2.tempFitVar());
+        registryMCtruth.fill(HIST("mothersTruth/mcProcess"), p1.cut(), p2.cut());
       }
     };
 

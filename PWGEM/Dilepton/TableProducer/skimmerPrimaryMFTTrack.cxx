@@ -15,6 +15,7 @@
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TableHelper.h"
 #include "Common/Core/fwdtrackUtilities.h"
 
@@ -183,7 +184,7 @@ struct skimmerPrimaryMFTTrack {
     float pt = trackPar.getPt();
     float eta = trackPar.getEta();
     float phi = trackPar.getPhi();
-    o2::math_utils::bringTo02Pi(phi);
+    phi = RecoDecay::constrainAngle(phi, 0, 1U);
 
     if (pt < cfgPtMin || cfgPtMax < pt) {
       return;
@@ -205,36 +206,36 @@ struct skimmerPrimaryMFTTrack {
     }
 
     if (mfttrack.nClusters() >= 6) {
-      trackBit |= static_cast<uint16_t>(RefMFTTrackBit::kNclsMFT6);
+      SETBIT(trackBit, static_cast<int>(o2::aod::pwgem::dilepton::utils::emtrackutil::RefMFTTrackBit::kNclsMFT6));
     }
     if (mfttrack.nClusters() >= 7) {
-      trackBit |= static_cast<uint16_t>(RefMFTTrackBit::kNclsMFT7);
+      SETBIT(trackBit, static_cast<int>(o2::aod::pwgem::dilepton::utils::emtrackutil::RefMFTTrackBit::kNclsMFT7));
     }
     if (mfttrack.nClusters() >= 8) {
-      trackBit |= static_cast<uint16_t>(RefMFTTrackBit::kNclsMFT8);
+      SETBIT(trackBit, static_cast<int>(o2::aod::pwgem::dilepton::utils::emtrackutil::RefMFTTrackBit::kNclsMFT8));
     }
 
     if (mfttrack.chi2() / ndf < 3.f) {
-      trackBit |= static_cast<uint16_t>(RefMFTTrackBit::kChi2MFT3);
+      SETBIT(trackBit, static_cast<int>(o2::aod::pwgem::dilepton::utils::emtrackutil::RefMFTTrackBit::kChi2MFT3));
     }
     if (mfttrack.chi2() / ndf < 2.f) {
-      trackBit |= static_cast<uint16_t>(RefMFTTrackBit::kChi2MFT2);
+      SETBIT(trackBit, static_cast<int>(o2::aod::pwgem::dilepton::utils::emtrackutil::RefMFTTrackBit::kChi2MFT2));
     }
 
     if (std::fabs(dcaXY) < 0.05) {
-      trackBit |= static_cast<uint16_t>(RefMFTTrackBit::kDCAxy005cm);
+      SETBIT(trackBit, static_cast<int>(o2::aod::pwgem::dilepton::utils::emtrackutil::RefMFTTrackBit::kDCAxy005cm));
     }
     if (std::fabs(dcaXY) < 0.04) {
-      trackBit |= static_cast<uint16_t>(RefMFTTrackBit::kDCAxy004cm);
+      SETBIT(trackBit, static_cast<int>(o2::aod::pwgem::dilepton::utils::emtrackutil::RefMFTTrackBit::kDCAxy004cm));
     }
     if (std::fabs(dcaXY) < 0.03) {
-      trackBit |= static_cast<uint16_t>(RefMFTTrackBit::kDCAxy003cm);
+      SETBIT(trackBit, static_cast<int>(o2::aod::pwgem::dilepton::utils::emtrackutil::RefMFTTrackBit::kDCAxy003cm));
     }
     if (std::fabs(dcaXY) < 0.02) {
-      trackBit |= static_cast<uint16_t>(RefMFTTrackBit::kDCAxy002cm);
+      SETBIT(trackBit, static_cast<int>(o2::aod::pwgem::dilepton::utils::emtrackutil::RefMFTTrackBit::kDCAxy002cm));
     }
     if (std::fabs(dcaXY) < 0.01) {
-      trackBit |= static_cast<uint16_t>(RefMFTTrackBit::kDCAxy001cm);
+      SETBIT(trackBit, static_cast<int>(o2::aod::pwgem::dilepton::utils::emtrackutil::RefMFTTrackBit::kDCAxy001cm));
     }
 
     emprimarytracks(mfttrack.sign() / pt, eta, phi, trackBit);

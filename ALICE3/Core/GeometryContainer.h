@@ -18,8 +18,6 @@
 #ifndef ALICE3_CORE_GEOMETRYCONTAINER_H_
 #define ALICE3_CORE_GEOMETRYCONTAINER_H_
 
-#include "DetLayer.h"
-
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>

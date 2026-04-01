@@ -19,16 +19,18 @@
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
@@ -435,7 +437,7 @@ struct TrackEfficiency {
     bool hasSel8Coll = false;
     bool centralityCheck = false;
     bool occupancyCheck = false;
-    if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly || acceptSplitCollisions == NonSplitOnly) {    // check only that the first reconstructed collision passes the check (for the NonSplitOnly case, there's only one associated collision)
+    if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly || acceptSplitCollisions == NonSplitOnly) {                        // check only that the first reconstructed collision passes the check (for the NonSplitOnly case, there's only one associated collision)
       if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents, applyRCTSelections)) { // Skipping MC events that have their first associated collision not reconstructed
         hasSel8Coll = true;
       }
@@ -621,7 +623,7 @@ struct TrackEfficiency {
     float centrality = -1;
     bool hasSel8Coll = false;
     bool centralityCheck = false;
-    if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly || acceptSplitCollisions == NonSplitOnly) {    // check only that the first reconstructed collision passes the check (for the NonSplitOnly case, there's only one associated collision)
+    if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly || acceptSplitCollisions == NonSplitOnly) {                        // check only that the first reconstructed collision passes the check (for the NonSplitOnly case, there's only one associated collision)
       if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents, applyRCTSelections)) { // Skipping MC events that have their first associated collision not reconstructed
         hasSel8Coll = true;
       }
@@ -683,7 +685,7 @@ struct TrackEfficiency {
 
       registry.fill(HIST("h3_particle_pt_high_particle_eta_particle_phi_mcpartofinterest"), jMcParticle.pt(), jMcParticle.eta(), jMcParticle.phi(), mcCollEventWeight);
 
-      if ((std::abs(jMcParticle.eta()) < trackEtaAcceptanceCountQA)) { // removed from actual cuts for now because all the histograms have an eta axis
+      if ((std::abs(jMcParticle.eta()) < trackEtaAcceptanceCountQA)) {       // removed from actual cuts for now because all the histograms have an eta axis
         registry.fill(HIST("hMcPartCutsCounts"), 3.5, mcCollision.weight()); // etaAccept // not actually applied here but it will give an idea of what will be done in the post processing
       }
     }
@@ -879,7 +881,7 @@ struct TrackEfficiency {
     float centrality = -1;
     bool hasSel8Coll = false;
     bool centralityCheck = false;
-    if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly || acceptSplitCollisions == NonSplitOnly) {    // check only that the first reconstructed collision passes the check (for the NonSplitOnly case, there's only one associated collision)
+    if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly || acceptSplitCollisions == NonSplitOnly) {                        // check only that the first reconstructed collision passes the check (for the NonSplitOnly case, there's only one associated collision)
       if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents, applyRCTSelections)) { // Skipping MC events that have their first associated collision not reconstructed
         hasSel8Coll = true;
       }
@@ -942,7 +944,7 @@ struct TrackEfficiency {
     float centrality = -1;
     bool hasSel8Coll = false;
     bool centralityCheck = false;
-    if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly || acceptSplitCollisions == NonSplitOnly) {    // check only that the first reconstructed collision passes the check (for the NonSplitOnly case, there's only one associated collision)
+    if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly || acceptSplitCollisions == NonSplitOnly) {                        // check only that the first reconstructed collision passes the check (for the NonSplitOnly case, there's only one associated collision)
       if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents, applyRCTSelections)) { // Skipping MC events that have their first associated collision not reconstructed
         hasSel8Coll = true;
       }
@@ -1086,8 +1088,8 @@ struct TrackEfficiency {
     float centrality = -1;
     bool hasSel8Coll = false;
     bool centralityCheck = false;
-    if (collisions.size() > 1) {                                                                                 // remove and move the if block below under if (collisions.size() < 1) { when mccoll.centFt0C has been fixed
-      if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly || acceptSplitCollisions == NonSplitOnly) {    // check only that the first reconstructed collision passes the check (for the NonSplitOnly case, there's only one associated collision)
+    if (collisions.size() > 1) {                                                                                                     // remove and move the if block below under if (collisions.size() < 1) { when mccoll.centFt0C has been fixed
+      if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly || acceptSplitCollisions == NonSplitOnly) {                        // check only that the first reconstructed collision passes the check (for the NonSplitOnly case, there's only one associated collision)
         if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents, applyRCTSelections)) { // Skipping MC events that have their first associated collision not reconstructed
           hasSel8Coll = true;
         }
@@ -1159,8 +1161,8 @@ struct TrackEfficiency {
     float centrality = -1;
     bool hasSel8Coll = false;
     bool centralityCheck = false;
-    if (collisions.size() > 1) {                                                                                 // remove and move the if block below under if (collisions.size() < 1) { when mccoll.centFt0C has been fixed
-      if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly || acceptSplitCollisions == NonSplitOnly) {    // check only that the first reconstructed collision passes the check (for the NonSplitOnly case, there's only one associated collision)
+    if (collisions.size() > 1) {                                                                                                     // remove and move the if block below under if (collisions.size() < 1) { when mccoll.centFt0C has been fixed
+      if (acceptSplitCollisions == SplitOkCheckFirstAssocCollOnly || acceptSplitCollisions == NonSplitOnly) {                        // check only that the first reconstructed collision passes the check (for the NonSplitOnly case, there's only one associated collision)
         if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents, applyRCTSelections)) { // Skipping MC events that have their first associated collision not reconstructed
           hasSel8Coll = true;
         }
