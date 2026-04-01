@@ -467,8 +467,8 @@ struct TreeWriterTpcV0 {
         const auto& dauTrackWithITSPid = tracksWithITSPid.rawIteratorAt(trackId);
         const auto v0Id = getAddId(v0);
         const V0Mother v0Mother = createV0Mother(v0Id);
-        const auto daighterId = isPositive ? v0Mother.posDaughterId : v0Mother.negDaughterId;
-        const V0Daughter daughter = createV0Daughter<IsCorrectedDeDx>(v0, dauTrackWithITSPid, v0Id, daighterId, isPositive);
+        const auto daughterId = isPositive ? v0Mother.posDaughterId : v0Mother.negDaughterId;
+        const V0Daughter daughter = createV0Daughter<IsCorrectedDeDx>(v0, dauTrackWithITSPid, v0Id, daughterId, isPositive);
 
         const bool passTrackSelection = isTrackSelected(dauTrack, trackSelection);
         const bool passDownsamplig = downsampleTsalisCharged(fRndm, dauTrack.pt(), daughter.downsamplingTsalis, daughter.mass, sqrtSNN, daughter.maxPt4dwnsmplTsalis);
