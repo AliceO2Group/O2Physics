@@ -537,13 +537,8 @@ struct photonhbt {
 
   void addSinglePhotonQAHistogramsForStep(const std::string& path)
   {
-    fRegistryPairQA.add((path + "hPt").c_str(), "p_{T};p_{T} (GeV/c);counts", kTH1D, {axisPt}, true);
-    fRegistryPairQA.add((path + "hEta").c_str(), "#eta;#eta;counts", kTH1D, {axisEta}, true);
-    fRegistryPairQA.add((path + "hPhi").c_str(), "#phi;#phi (rad);counts", kTH1D, {axisPhi}, true);
-    fRegistryPairQA.add((path + "hEtaVsPhi").c_str(), "acceptance;#phi (rad);#eta", kTH2D, {axisPhi, axisEta}, true);
-    fRegistryPairQA.add((path + "hR").c_str(), "R_{conv};R_{conv} (cm);counts", kTH1D, {axisR}, true);
-    fRegistryPairQA.add((path + "hZConv").c_str(), "z_{conv};z_{conv} (cm);counts", kTH1D, {axisZConv}, true);
-    fRegistryPairQA.add((path + "hRVsZConv").c_str(), "R_{conv} vs z_{conv};z_{conv} (cm);R_{conv} (cm)", kTH2D, {axisZConv, axisR}, true);
+    fRegistryPairQA.add((path + "hEtaVsPhiPt").c_str(), "acceptance;#phi (rad);#eta", kTH3D, {axisPhi, axisEta, axisPt}, true);
+    fRegistryPairQA.add((path + "hRVsZConvPt").c_str(), "R_{conv} vs z_{conv};z_{conv} (cm);R_{conv} (cm)", kTH2D, {axisZConv, axisR, axisPt}, true);
   }
 
   void addFullRangeHistograms(const std::string& path)
@@ -714,13 +709,8 @@ void addQAHistogramsForStep(const std::string& path)
       return;
     constexpr auto base = singlePhotonQAPrefix<step_id>();
     const float r = std::sqrt(g.vx() * g.vx() + g.vy() * g.vy());
-    fRegistryPairQA.fill(HIST(base) + HIST("hPt"), g.pt());
-    fRegistryPairQA.fill(HIST(base) + HIST("hEta"), g.eta());
-    fRegistryPairQA.fill(HIST(base) + HIST("hPhi"), g.phi());
-    fRegistryPairQA.fill(HIST(base) + HIST("hEtaVsPhi"), g.phi(), g.eta());
-    fRegistryPairQA.fill(HIST(base) + HIST("hR"), r);
-    fRegistryPairQA.fill(HIST(base) + HIST("hZConv"), g.vz());
-    fRegistryPairQA.fill(HIST(base) + HIST("hRVsZConv"), g.vz(), r);
+    fRegistryPairQA.fill(HIST(base) + HIST("hEtaVsPhiPt"), g.phi(), g.eta(), g.pt());
+    fRegistryPairQA.fill(HIST(base) + HIST("hRVsZConvPt"), g.vz(), r, g.pt());
   }
 
   template <int ev_id, typename TCollision>
@@ -907,7 +897,7 @@ void addQAHistogramsForStep(const std::string& path)
     fRegistryPairQA.fill(HIST(base) + HIST("hDeltaPhiPhiKt"), o.dphi, o.pairPhi, o.kt);
 
     // Delta Eta Dleta Phi Stuff
-    
+
     fRegistryPairQA.fill(HIST(base) + HIST("hDeltaPhiEtaKt"), o.dphi, o.pairEta, o.kt);
     fRegistryPairQA.fill(HIST(base) + HIST("hPhiVsEtaKt"), o.pairPhi, o.pairEta, o.kt);
 
