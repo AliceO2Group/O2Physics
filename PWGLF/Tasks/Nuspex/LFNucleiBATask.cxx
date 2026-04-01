@@ -2700,6 +2700,7 @@ struct LFNucleiBATask {
       isDeuteron = enableDe && deRapCut;
       isHelium = enableHe && heRapCut;
 
+      // ITS PID cut
       bool passITSDeCut = !nsigmaITSvar.useITSDeCut || (nITSDe > nsigmaITSvar.nsigmaITSDe);
       bool passITSHeCut = !nsigmaITSvar.useITSHeCut || (nITSHe > nsigmaITSvar.nsigmaITSHe);
 
@@ -4632,7 +4633,6 @@ struct LFNucleiBATask {
 
       //  TOF
       if (outFlagOptions.doTOFplots) {
-
         if (isDeWTPCpid) {
           switch (useHasTRDConfig) {
             case 0:
