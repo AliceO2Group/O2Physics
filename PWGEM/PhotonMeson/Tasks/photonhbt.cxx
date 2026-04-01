@@ -575,41 +575,33 @@ struct photonhbt {
     constexpr auto base = fullRangePrefix<ev_id>();
     fRegistry.fill(HIST(base) + HIST("hDeltaRCosOAVsQinv"), qinv, drOverCosOA);
   }
+void addQAHistogramsForStep(const std::string& path)
+{
+  //  Ellipse 
+  fRegistryPairQA.add((path + "hEllipseVal").c_str(), "(#Delta#eta/#sigma)^{2}+(#Delta#phi/#sigma)^{2};value;counts", kTH1D, {axisEllipseVal}, true);
 
-  void addQAHistogramsForStep(const std::string& path)
-  {
-    fRegistryPairQA.add((path + "hPairEta").c_str(), "pair #eta;#eta_{pair};counts", kTH1D, {axisEta}, true);
-    fRegistryPairQA.add((path + "hPairPhi").c_str(), "pair #phi;#phi_{pair} (rad);counts", kTH1D, {axisPhi}, true);
-    fRegistryPairQA.add((path + "hPairKt").c_str(), "pair k_{T};k_{T} (GeV/c);counts", kTH1D, {axisKt}, true);
-    fRegistryPairQA.add((path + "hQinv").c_str(), "q_{inv};q_{inv} (GeV/c);counts", kTH1D, {axisQinv}, true);
-    fRegistryPairQA.add((path + "hDeltaEta").c_str(), "#Delta#eta;#Delta#eta;counts", kTH1D, {axisDeltaEta}, true);
-    fRegistryPairQA.add((path + "hDeltaPhi").c_str(), "#Delta#phi;#Delta#phi (rad);counts", kTH1D, {axisDeltaPhi}, true);
-    fRegistryPairQA.add((path + "hCosTheta").c_str(), "cos(#theta*);cos(#theta*);counts", kTH1D, {axisCosTheta}, true);
-    fRegistryPairQA.add((path + "hOpeningAngle").c_str(), "Opening angle;#alpha (rad);counts", kTH1D, {axisOpeningAngle}, true);
-    fRegistryPairQA.add((path + "hEllipseVal").c_str(), "(#Delta#eta/#sigma)^{2}+(#Delta#phi/#sigma)^{2};value;counts", kTH1D, {axisEllipseVal}, true);
-    fRegistryPairQA.add((path + "hR1").c_str(), "R_{conv,1};R_{1} (cm);counts", kTH1D, {axisR}, true);
-    fRegistryPairQA.add((path + "hR2").c_str(), "R_{conv,2};R_{2} (cm);counts", kTH1D, {axisR}, true);
-    fRegistryPairQA.add((path + "hDeltaR").c_str(), "|R_{1}-R_{2}|;|R_{1}-R_{2}| (cm);counts", kTH1D, {axisDeltaR}, true);
-    fRegistryPairQA.add((path + "hDeltaZ").c_str(), "#Delta z;#Delta z (cm);counts", kTH1D, {axisDeltaZ}, true);
-    fRegistryPairQA.add((path + "hDeltaRxy").c_str(), "#Delta r_{xy};#Delta r_{xy} (cm);counts", kTH1D, {axisDeltaRxy}, true);
-    fRegistryPairQA.add((path + "hDeltaR3D").c_str(), "#Delta r_{3D};#Delta r_{3D} (cm);counts", kTH1D, {axisDeltaR3D}, true);
-    fRegistryPairQA.add((path + "hCent").c_str(), "centrality;centrality (%);counts", kTH1D, {axisCentQA}, true);
-    fRegistryPairQA.add((path + "hOccupancy").c_str(), "occupancy;occupancy;counts", kTH1D, {axisOccupancy}, true);
-    fRegistryPairQA.add((path + "hDEtaDPhi").c_str(), "#Delta#eta vs #Delta#phi;#Delta#eta;#Delta#phi (rad)", kTH2D, {axisDeltaEta, axisDeltaPhi}, true);
-    fRegistryPairQA.add((path + "hDeltaEtaVsPairEta").c_str(), "#Delta#eta vs #LT#eta#GT_{pair};#LT#eta#GT_{pair};#Delta#eta", kTH2D, {axisEta, axisDeltaEta}, true);
-    fRegistryPairQA.add((path + "hR1VsR2").c_str(), "R_{1} vs R_{2};R_{1} (cm);R_{2} (cm)", kTH2D, {axisR, axisR}, true);
-    fRegistryPairQA.add((path + "hDeltaRVsDeltaZ").c_str(), "|R_{1}-R_{2}| vs #Delta z;|R_{1}-R_{2}| (cm);#Delta z (cm)", kTH2D, {axisDeltaR, axisDeltaZ}, true);
-    fRegistryPairQA.add((path + "hDeltaRVsKt").c_str(), "|R_{1}-R_{2}| vs k_{T};k_{T} (GeV/c);|R_{1}-R_{2}| (cm)", kTH2D, {axisKt, axisDeltaR}, true);
-    fRegistryPairQA.add((path + "hDeltaZVsKt").c_str(), "#Delta z vs k_{T};k_{T} (GeV/c);#Delta z (cm)", kTH2D, {axisKt, axisDeltaZ}, true);
-    fRegistryPairQA.add((path + "hDeltaPhiVsDeltaR").c_str(), "#Delta#phi vs |R_{1}-R_{2}|;|R_{1}-R_{2}| (cm);#Delta#phi (rad)", kTH2D, {axisDeltaR, axisDeltaPhi}, true);
-    fRegistryPairQA.add((path + "hDeltaEtaVsDeltaR").c_str(), "#Delta#eta vs |R_{1}-R_{2}|;|R_{1}-R_{2}| (cm);#Delta#eta", kTH2D, {axisDeltaR, axisDeltaEta}, true);
-    fRegistryPairQA.add((path + "hDeltaPhiVsDeltaZ").c_str(), "#Delta#phi vs #Delta z;#Delta z (cm);#Delta#phi (rad)", kTH2D, {axisDeltaZ, axisDeltaPhi}, true);
-    fRegistryPairQA.add((path + "hDeltaEtaVsDeltaZ").c_str(), "#Delta#eta vs #Delta z;#Delta z (cm);#Delta#eta", kTH2D, {axisDeltaZ, axisDeltaEta}, true);
-    fRegistryPairQA.add((path + "hDeltaRVsCent").c_str(), "|R_{1}-R_{2}| vs centrality;centrality (%);|R_{1}-R_{2}| (cm)", kTH2D, {axisCentQA, axisDeltaR}, true);
-    fRegistryPairQA.add((path + "hDeltaRVsOccupancy").c_str(), "|R_{1}-R_{2}| vs occupancy;occupancy;|R_{1}-R_{2}| (cm)", kTH2D, {axisOccupancy, axisDeltaR}, true);
-    fRegistryPairQA.add((path + "hSparseDEtaDPhiKt").c_str(), "#Delta#eta,#Delta#phi,k_{T}", kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisKt}, true);
-    fRegistryPairQA.add((path + "hSparseDeltaRDeltaZKt").c_str(), "|R_{1}-R_{2}|,#Delta z,k_{T}", kTHnSparseD, {axisDeltaR, axisDeltaZ, axisKt}, true);
-  }
+  //  Conversion point
+  fRegistryPairQA.add((path + "hR1VsR2").c_str(), "R_{1} vs R_{2};R_{1} (cm);R_{2} (cm)", kTH2D, {axisR, axisR}, true);
+  fRegistryPairQA.add((path + "hDeltaRxyKt").c_str(), "#Delta r_{xy} vs k_{T};#Delta r_{xy} (cm);k_{T} (GeV/c)", kTH2D, {axisDeltaRxy, axisKt}, true);
+  fRegistryPairQA.add((path + "hDeltaR3DKt").c_str(), "#Delta r_{3D} vs k_{T};#Delta r_{3D} (cm);k_{T} (GeV/c)", kTH2D, {axisDeltaR3D, axisKt}, true);
+
+  //  Delta Eta QA
+  fRegistryPairQA.add((path + "hDeltaEtaDeltaRKt").c_str(), "#Delta#eta,|R_{1}-R_{2}|,k_{T}", kTHnSparseD, {axisDeltaEta, axisDeltaR, axisKt}, true);
+  fRegistryPairQA.add((path + "hDeltaEtaDeltaZKt").c_str(), "#Delta#eta,#Delta z,k_{T}", kTHnSparseD, {axisDeltaEta, axisDeltaZ, axisKt}, true);
+  fRegistryPairQA.add((path + "hDeltaEtaEtaKt").c_str(), "#Delta#eta,#eta_{pair},k_{T}", kTHnSparseD, {axisDeltaEta, axisEta, axisKt}, true);
+  fRegistryPairQA.add((path + "hDeltaEtaPhiKt").c_str(), "#Delta#eta,#phi_{pair},k_{T}", kTHnSparseD, {axisDeltaEta, axisPhi, axisKt}, true);
+
+  // Delta Phi QA
+  fRegistryPairQA.add((path + "hSparseDEtaDPhiKt").c_str(), "#Delta#eta,#Delta#phi,k_{T}", kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisKt}, true);
+  fRegistryPairQA.add((path + "hDeltaPhiDeltaRKt").c_str(), "#Delta#phi,|R_{1}-R_{2}|,k_{T}", kTHnSparseD, {axisDeltaPhi, axisDeltaR, axisKt}, true);
+  fRegistryPairQA.add((path + "hDeltaPhiDeltaZKt").c_str(), "#Delta#phi,#Delta z,k_{T}", kTHnSparseD, {axisDeltaPhi, axisDeltaZ, axisKt}, true);
+  fRegistryPairQA.add((path + "hDeltaPhiPhiKt").c_str(), "#Delta#phi,#phi_{pair},k_{T}", kTHnSparseD, {axisDeltaPhi, axisPhi, axisKt}, true);
+  fRegistryPairQA.add((path + "hDeltaPhiEtaKt").c_str(), "#Delta#phi,#eta_{pair},k_{T}", kTHnSparseD, {axisDeltaPhi, axisEta, axisKt}, true);
+
+  // Delta Eta Dleta Phi Stuff
+  fRegistryPairQA.add((path + "hPhiVsEtaKt").c_str(), "#phi_{pair},#eta_{pair},k_{T}", kTHnSparseD, {axisPhi, axisEta, axisKt}, true);
+  fRegistryPairQA.add((path + "hSparseDeltaRDeltaZKt").c_str(), "|R_{1}-R_{2}|,#Delta z,k_{T}", kTHnSparseD, {axisDeltaR, axisDeltaZ, axisKt}, true);
+}
 
   void addhistograms()
   {
@@ -899,39 +891,38 @@ struct photonhbt {
     if (!qaflags.doPairQa)
       return;
     constexpr auto base = qaPrefix<ev_id, step_id>();
-    fRegistryPairQA.fill(HIST(base) + HIST("hPairEta"), o.pairEta);
-    fRegistryPairQA.fill(HIST(base) + HIST("hPairPhi"), o.pairPhi);
-    fRegistryPairQA.fill(HIST(base) + HIST("hPairKt"), o.kt);
-    fRegistryPairQA.fill(HIST(base) + HIST("hQinv"), o.qinv);
-    fRegistryPairQA.fill(HIST(base) + HIST("hDeltaEta"), o.deta);
-    fRegistryPairQA.fill(HIST(base) + HIST("hDeltaPhi"), o.dphi);
-    fRegistryPairQA.fill(HIST(base) + HIST("hCosTheta"), o.cosTheta);
-    fRegistryPairQA.fill(HIST(base) + HIST("hOpeningAngle"), o.openingAngle);
-    fRegistryPairQA.fill(HIST(base) + HIST("hR1"), o.r1);
-    fRegistryPairQA.fill(HIST(base) + HIST("hR2"), o.r2);
-    fRegistryPairQA.fill(HIST(base) + HIST("hDeltaR"), o.deltaR);
-    fRegistryPairQA.fill(HIST(base) + HIST("hDeltaZ"), o.deltaZ);
-    fRegistryPairQA.fill(HIST(base) + HIST("hDeltaRxy"), o.deltaRxy);
-    fRegistryPairQA.fill(HIST(base) + HIST("hDeltaR3D"), o.deltaR3D);
-    fRegistryPairQA.fill(HIST(base) + HIST("hCent"), cent);
-    fRegistryPairQA.fill(HIST(base) + HIST("hOccupancy"), occupancy);
+
+    ///// Delta Eta QA
+
+    fRegistryPairQA.fill(HIST(base) + HIST("hDeltaEtaDeltaRKt"), o.deta, o.deltaR, o.kt);
+    fRegistryPairQA.fill(HIST(base) + HIST("hDeltaEtaEtaKt"), o.deta, o.pairEta, o.kt);
+    fRegistryPairQA.fill(HIST(base) + HIST("hDeltaEtaPhiKt"), o.deta, o.pairPhi, o.kt);
+    fRegistryPairQA.fill(HIST(base) + HIST("hDeltaEtaDeltaZKt"), o.deta, o.deltaZ, o.kt);
+
+    ///// Delta Phi QA
+
+    fRegistryPairQA.fill(HIST(base) + HIST("hDeltaPhiDeltaRKt"), o.dphi, o.deltaR, o.kt);
+    fRegistryPairQA.fill(HIST(base) + HIST("hDeltaPhiDeltaZKt"), o.dphi, o.deltaZ, o.kt);
+    fRegistryPairQA.fill(HIST(base) + HIST("hSparseDEtaDPhiKt"), o.deta, o.dphi, o.kt);
+    fRegistryPairQA.fill(HIST(base) + HIST("hDeltaPhiPhiKt"), o.dphi, o.pairPhi, o.kt);
+
+    // Delta Eta Dleta Phi Stuff
+    
+    fRegistryPairQA.fill(HIST(base) + HIST("hDeltaPhiEtaKt"), o.dphi, o.pairEta, o.kt);
+    fRegistryPairQA.fill(HIST(base) + HIST("hPhiVsEtaKt"), o.pairPhi, o.pairEta, o.kt);
+
+    //// Delta R (Conversion point) QA 
+
+    fRegistryPairQA.fill(HIST(base) + HIST("hR1VsR2"), o.r1, o.r2);
+    fRegistryPairQA.fill(HIST(base) + HIST("hSparseDeltaRDeltaZKt"), o.deltaR, o.deltaZ, o.kt);
+    fRegistryPairQA.fill(HIST(base) + HIST("hDeltaRxyKt"), o.deltaRxy, o.kt);
+    fRegistryPairQA.fill(HIST(base) + HIST("hDeltaR3DKt"), o.deltaR3D, o.kt);
+
+
     const float sE = ggpaircuts.cfgEllipseSigEta.value, sP = ggpaircuts.cfgEllipseSigPhi.value;
     if (sE > 1e-9f && sP > 1e-9f)
-      fRegistryPairQA.fill(HIST(base) + HIST("hEllipseVal"), (o.deta / sE) * (o.deta / sE) + (o.dphi / sP) * (o.dphi / sP));
-    fRegistryPairQA.fill(HIST(base) + HIST("hDEtaDPhi"), o.deta, o.dphi);
-    fRegistryPairQA.fill(HIST(base) + HIST("hDeltaEtaVsPairEta"), o.pairEta, o.deta);
-    fRegistryPairQA.fill(HIST(base) + HIST("hR1VsR2"), o.r1, o.r2);
-    fRegistryPairQA.fill(HIST(base) + HIST("hDeltaRVsDeltaZ"), o.deltaR, o.deltaZ);
-    fRegistryPairQA.fill(HIST(base) + HIST("hDeltaRVsKt"), o.kt, o.deltaR);
-    fRegistryPairQA.fill(HIST(base) + HIST("hDeltaZVsKt"), o.kt, o.deltaZ);
-    fRegistryPairQA.fill(HIST(base) + HIST("hDeltaPhiVsDeltaR"), o.deltaR, o.dphi);
-    fRegistryPairQA.fill(HIST(base) + HIST("hDeltaEtaVsDeltaR"), o.deltaR, o.deta);
-    fRegistryPairQA.fill(HIST(base) + HIST("hDeltaPhiVsDeltaZ"), o.deltaZ, o.dphi);
-    fRegistryPairQA.fill(HIST(base) + HIST("hDeltaEtaVsDeltaZ"), o.deltaZ, o.deta);
-    fRegistryPairQA.fill(HIST(base) + HIST("hDeltaRVsCent"), cent, o.deltaR);
-    fRegistryPairQA.fill(HIST(base) + HIST("hDeltaRVsOccupancy"), occupancy, o.deltaR);
-    fRegistryPairQA.fill(HIST(base) + HIST("hSparseDEtaDPhiKt"), o.deta, o.dphi, o.kt);
-    fRegistryPairQA.fill(HIST(base) + HIST("hSparseDeltaRDeltaZKt"), o.deltaR, o.deltaZ, o.kt);
+    fRegistryPairQA.fill(HIST(base) + HIST("hEllipseVal"), (o.deta / sE) * (o.deta / sE) + (o.dphi / sP) * (o.dphi / sP));
+
   }
 
   template <typename TPhoton, typename TLegs, typename TMCParticles>
