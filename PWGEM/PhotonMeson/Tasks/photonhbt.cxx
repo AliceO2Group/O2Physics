@@ -249,6 +249,8 @@ struct photonhbt {
     Configurable<float> cfgMCMaxQinv{"cfgMCMaxQinv", 0.3f, "max q_{inv}^{true} for MC truth efficiency pair loop (GeV/c); <=0 = no cut"};
     Configurable<float> cfgMCMinKt{"cfgMCMinKt", 0.0f, "min k_{T}^{true} for MC truth efficiency pair loop (GeV/c); <=0 = no cut"};
     Configurable<float> cfgMCMaxKt{"cfgMCMaxKt", 0.7f, "max k_{T}^{true} for MC truth efficiency pair loop (GeV/c); <=0 = no cut"};
+    Configurable<bool> cfgDoTruthMix{"cfgDoTruthMix", false, "enable truth-level event mixing for baseline CF"};
+    Configurable<int> cfgTruthMixDepth{"cfgTruthMixDepth", 10, "depth of truth-level mixing pool"};
   } mctruth;
 
   struct : ConfigurableGroup {
@@ -342,6 +344,7 @@ struct photonhbt {
     emh2 = nullptr;
     mapMixedEventIdToGlobalBC.clear();
     usedPhotonIdsPerCol.clear();
+    truthGammaPool.clear();
   }
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
@@ -523,6 +526,14 @@ struct photonhbt {
     float kt = 0.f, qinv = 0.f, cosTheta = 0.f, openingAngle = 0.f;
     bool valid = true;
   };
+
+    struct TruthGamma {
+    int id = -1, posId = -1, negId = -1;
+    float eta = 0.f, phi = 0.f, pt = 0.f, rTrue = -1.f, legDRtrue = -1.f;
+  };
+
+  std::map<std::tuple<int, int, int, int>, std::deque<std::vector<TruthGamma>>> truthGammaPool;
+
 
   void addSinglePhotonQAHistogramsForStep(const std::string& path)
   {
@@ -1104,6 +1115,21 @@ struct photonhbt {
                         kTHnSparseD, {axisDeltaEtaMC, axisDeltaPhiMC, axisQinv}, true);
 
     const AxisSpec axQinvMC{60, 0.f, 0.3f, "q_{inv}^{true} (GeV/c)"};
+
+    // Same-event truth CF
+    fRegistryMC.add("MC/TruthCF/hQinvVsKt_same",
+                    "truth-level same-event CF;k_{T} (GeV/c);q_{inv}^{true} (GeV/c)",
+                    kTH2D, {axisKt, axQinvMC}, true);
+    fRegistryMC.add("MC/TruthCF/hDEtaDPhi_same",
+                    "truth-level same-event #Delta#eta vs #Delta#phi",
+                    kTH2D, {axisDeltaEta, axisDeltaPhi}, true);
+    // Mixed-event truth CF
+    fRegistryMC.add("MC/TruthCF/hQinvVsKt_mix",
+                    "truth-level mixed-event CF;k_{T} (GeV/c);q_{inv}^{true} (GeV/c)",
+                    kTH2D, {axisKt, axQinvMC}, true);
+    fRegistryMC.add("MC/TruthCF/hDEtaDPhi_mix",
+                    "truth-level mixed-event #Delta#eta vs #Delta#phi",
+                    kTH2D, {axisDeltaEta, axisDeltaPhi}, true);
 
     fRegistryMC.add("MC/TruthAO2D/hSparse_DEtaDPhi_qinv_truthConverted",
                     "true converted pairs, denominator;"
@@ -1874,10 +1900,6 @@ struct photonhbt {
         info.passesCut = info.passesCut || passes;
       }
 
-      struct TruthGamma {
-        int id = -1, posId = -1, negId = -1;
-        float eta = 0.f, phi = 0.f, pt = 0.f, rTrue = -1.f, legDRtrue = -1.f;
-      };
       std::vector<TruthGamma> trueGammas;
       trueGammas.reserve(32);
 
@@ -2049,6 +2071,69 @@ struct photonhbt {
           }
         }
       }
+      // ─── Truth-level same-event pairs ────────────────────────────────────────
+      if (mctruth.cfgDoTruthMix.value) {
+        for (size_t i = 0; i < trueGammas.size(); ++i) {
+          for (size_t j = i + 1; j < trueGammas.size(); ++j) {
+            const auto& g1 = trueGammas[i];
+            const auto& g2 = trueGammas[j];
+            if (!passAsymmetryCut(g1.pt, g2.pt))
+              continue;
+            const float deta = g1.eta - g2.eta;
+            const float dphi = wrapPhi(g1.phi - g2.phi);
+            const float px1 = g1.pt * std::cos(g1.phi), py1 = g1.pt * std::sin(g1.phi);
+            const float px2 = g2.pt * std::cos(g2.phi), py2 = g2.pt * std::sin(g2.phi);
+            const float kt = 0.5f * std::sqrt((px1 + px2) * (px1 + px2) + (py1 + py2) * (py1 + py2));
+            const float e1 = g1.pt * std::cosh(g1.eta), e2 = g2.pt * std::cosh(g2.eta);
+            const float dot = e1 * e2 - (px1 * px2 + py1 * py2 + g1.pt * std::sinh(g1.eta) * g2.pt * std::sinh(g2.eta));
+            const float qinv_true = std::sqrt(std::max(0.f, 2.f * dot));
+            fRegistryMC.fill(HIST("MC/TruthCF/hQinvVsKt_same"), kt, qinv_true);
+            fRegistryMC.fill(HIST("MC/TruthCF/hDEtaDPhi_same"), deta, dphi);
+          }
+        }
+
+        // ─── Truth-level mixed-event pairs ─────────────────────────────────────
+        const float cent[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+        const float centForBin = cent[mixing.cfgCentEstimator.value];
+        const std::array<float, 7> epArr = {collision.ep2ft0m(), collision.ep2ft0a(), collision.ep2ft0c(),
+                                            collision.ep2fv0a(), collision.ep2btot(), collision.ep2bpos(), collision.ep2bneg()};
+        const float ep2 = epArr[mixing.cfgEP2EstimatorForMix.value];
+        const float occupancy = (mixing.cfgOccupancyEstimator.value == 1)
+                                  ? static_cast<float>(collision.trackOccupancyInTimeRange())
+                                  : collision.ft0cOccupancyInTimeRange();
+        auto keyBin = std::make_tuple(binOf(ztxBinEdges, collision.posZ()),
+                                      binOf(centBinEdges, centForBin),
+                                      binOf(epBinEgdes, ep2),
+                                      binOf(occBinEdges, occupancy));
+
+        if (truthGammaPool.count(keyBin)) {
+          for (const auto& poolEvent : truthGammaPool[keyBin]) {
+            for (const auto& g1 : trueGammas) {
+              for (const auto& g2 : poolEvent) {
+                if (!passAsymmetryCut(g1.pt, g2.pt))
+                  continue;
+                const float deta = g1.eta - g2.eta;
+                const float dphi = wrapPhi(g1.phi - g2.phi);
+                const float px1 = g1.pt * std::cos(g1.phi), py1 = g1.pt * std::sin(g1.phi);
+                const float px2 = g2.pt * std::cos(g2.phi), py2 = g2.pt * std::sin(g2.phi);
+                const float kt = 0.5f * std::sqrt((px1 + px2) * (px1 + px2) + (py1 + py2) * (py1 + py2));
+                const float e1 = g1.pt * std::cosh(g1.eta), e2 = g2.pt * std::cosh(g2.eta);
+                const float dot = e1 * e2 - (px1 * px2 + py1 * py2 + g1.pt * std::sinh(g1.eta) * g2.pt * std::sinh(g2.eta));
+                const float qinv_true = std::sqrt(std::max(0.f, 2.f * dot));
+                fRegistryMC.fill(HIST("MC/TruthCF/hQinvVsKt_mix"), kt, qinv_true);
+                fRegistryMC.fill(HIST("MC/TruthCF/hDEtaDPhi_mix"), deta, dphi);
+              }
+            }
+          }
+        }
+
+        if (!trueGammas.empty()) {
+          auto& poolBin = truthGammaPool[keyBin];
+          poolBin.push_back(trueGammas);
+          if (static_cast<int>(poolBin.size()) > mctruth.cfgTruthMixDepth.value)
+            poolBin.pop_front();
+        }
+      } // end cfgDoTruthMix
     }
   }
 
