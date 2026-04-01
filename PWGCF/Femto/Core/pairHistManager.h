@@ -646,7 +646,7 @@ class PairHistManager
     auto sum = part1 + part2;
     // Boost particle 1 to the pair rest frame (Prf) and calculate k* (would be equivalent using particle 2)
     // make a copy of particle 1
-    auto particle1Prf = ROOT::Math::PtEtaPhiMVector(mParticle1);
+    auto particle1Prf = ROOT::Math::PtEtaPhiMVector(part1);
     // get lorentz boost into pair rest frame
     ROOT::Math::Boost boostPrf(sum.BoostToCM());
     // boost particle 1 into pair rest frame and calculate its momentum, which has the same value as k*
