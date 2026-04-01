@@ -21,7 +21,6 @@
 
 #include <cmath>
 // #include <cstdlib>
-#include <string>
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
@@ -41,6 +40,8 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
+
+#include <string>
 
 using namespace o2::aod::rctsel;
 
