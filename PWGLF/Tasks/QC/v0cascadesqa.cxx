@@ -9,7 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
+/// \file v0cascadesqa.cxx
 /// \brief QA task for V0s and Cascades
+///
 ///
 /// In case of questions please write to:
 /// \author Aimeric Landou (aimeric.landou@cern.ch)
@@ -1078,7 +1080,7 @@ struct v0cascadesQA {
     }
     histos_event.fill(HIST("hEventCounter"), 1.5);
 
-    for (auto& v0 : fullV0s) {
+    for (auto const& v0 : fullV0s) {
       if (std::abs(v0.negativeeta()) > v0Selections.daughterEtaCut ||
           std::abs(v0.positiveeta()) > v0Selections.daughterEtaCut)
         continue; // remove acceptance that's badly reproduced by MC / superfluous in future
@@ -1131,7 +1133,7 @@ struct v0cascadesQA {
           histos_V0.fill(HIST("InvMassK0s_EtaDaughters"), posdau.eta(), negdau.eta(), v0.mK0Short());
           histos_V0.fill(HIST("InvMassK0s_PhiDaughters"), posdau.phi(), negdau.phi(), v0.mK0Short());
           histos_V0.fill(HIST("InvMassK0s_ITSMapDaughters"), posdau.itsNCls(), negdau.itsNCls(), v0.mK0Short());
-          histos_V0.fill(HIST("InvMassK0sVsPtVsPA"), v0.pt(), TMath::ACos(v0.v0cosPA()), v0.mK0Short());
+          histos_V0.fill(HIST("InvMassK0sVsPtVsPA"), v0.pt(), std::acos(v0.v0cosPA()), v0.mK0Short());
         }
       }
 
@@ -1155,7 +1157,7 @@ struct v0cascadesQA {
           histos_V0.fill(HIST("InvMassLambda_EtaDaughters"), posdau.eta(), negdau.eta(), v0.mLambda());
           histos_V0.fill(HIST("InvMassLambda_PhiDaughters"), posdau.phi(), negdau.phi(), v0.mLambda());
           histos_V0.fill(HIST("InvMassLambda_ITSMapDaughters"), posdau.itsNCls(), negdau.itsNCls(), v0.mLambda());
-          histos_V0.fill(HIST("InvMassLambdaVsPtVsPA"), v0.pt(), TMath::ACos(v0.v0cosPA()), v0.mLambda());
+          histos_V0.fill(HIST("InvMassLambdaVsPtVsPA"), v0.pt(), std::acos(v0.v0cosPA()), v0.mLambda());
         }
       }
 
@@ -1179,12 +1181,12 @@ struct v0cascadesQA {
           histos_V0.fill(HIST("InvMassAntiLambda_EtaDaughters"), posdau.eta(), negdau.eta(), v0.mAntiLambda());
           histos_V0.fill(HIST("InvMassAntiLambda_PhiDaughters"), posdau.phi(), negdau.phi(), v0.mAntiLambda());
           histos_V0.fill(HIST("InvMassAntiLambda_ITSMapDaughters"), posdau.itsNCls(), negdau.itsNCls(), v0.mAntiLambda());
-          histos_V0.fill(HIST("InvMassAntiLambdaVsPtVsPA"), v0.pt(), TMath::ACos(v0.v0cosPA()), v0.mAntiLambda());
+          histos_V0.fill(HIST("InvMassAntiLambdaVsPtVsPA"), v0.pt(), std::acos(v0.v0cosPA()), v0.mAntiLambda());
         }
       }
     }
 
-    for (auto& casc : fullCascades) {
+    for (auto const& casc : fullCascades) {
       if (std::abs(casc.negativeeta()) > cascSelections.daughterEtaCut ||
           std::abs(casc.positiveeta()) > cascSelections.daughterEtaCut ||
           std::abs(casc.bacheloreta()) > cascSelections.daughterEtaCut)
@@ -1193,7 +1195,7 @@ struct v0cascadesQA {
       histos_Casc.fill(HIST("CascCosPA"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()), casc.sign());
       histos_Casc.fill(HIST("V0CosPA"), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()), casc.sign());
 
-      double v0cospatoxi = RecoDecay::cpa(array{casc.x(), casc.y(), casc.z()}, array{casc.xlambda(), casc.ylambda(), casc.zlambda()}, array{casc.pxpos() + casc.pxneg(), casc.pypos() + casc.pyneg(), casc.pzpos() + casc.pzneg()});
+      double v0cospatoxi = RecoDecay::cpa(std::array{casc.x(), casc.y(), casc.z()}, array{casc.xlambda(), casc.ylambda(), casc.zlambda()}, array{casc.pxpos() + casc.pxneg(), casc.pypos() + casc.pyneg(), casc.pzpos() + casc.pzneg()});
 
       histos_Casc.fill(HIST("V0CosPAToXi"), v0cospatoxi, casc.sign());
       histos_Casc.fill(HIST("CascRadius"), casc.cascradius(), casc.sign());
@@ -1245,7 +1247,7 @@ struct v0cascadesQA {
   ////////// QA - MC /////////////
   ////////////////////////////////
 
-  void processMonteCarlo(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels>::iterator const& collision, soa::Join<aod::McCollisions, aod::MultsExtraMC> const&, soa::Join<aod::V0Datas, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0CoreMCLabels> const& fullV0s, soa::Join<aod::V0MCDatas, aod::V0MCCollRefs> const&, soa::Join<aod::CascDatas, aod::CascTOFPIDs, aod::CascTOFNSigmas, aod::CascCoreMCLabels> const& fullCascades, soa::Join<aod::CascMCDatas, aod::CascMCCollRefs> const&, DaughterTracks&, aod::BCsWithTimestamps const&)
+  void processMonteCarlo(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels>::iterator const& collision, soa::Join<aod::McCollisions, aod::MultsExtraMC> const&, soa::Join<aod::V0Datas, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0CoreMCLabels> const& fullV0s, soa::Join<aod::V0MCDatas, aod::V0MCCollRefs> const&, soa::Join<aod::CascDatas, aod::CascTOFPIDs, aod::CascTOFNSigmas, aod::CascCoreMCLabels> const& fullCascades, soa::Join<aod::CascMCDatas, aod::CascMCCollRefs> const&, DaughterTracks const&, aod::BCsWithTimestamps const&)
   {
     if (!isEventAccepted(collision, false)) {
       return;
@@ -1264,7 +1266,7 @@ struct v0cascadesQA {
       return;
     }
 
-    for (auto& v0 : fullV0s) {
+    for (auto const& v0 : fullV0s) {
       if (std::abs(v0.negativeeta()) > v0Selections.daughterEtaCut ||
           std::abs(v0.positiveeta()) > v0Selections.daughterEtaCut)
         continue; // remove acceptance that's badly reproduced by MC / superfluous in future
@@ -1291,7 +1293,7 @@ struct v0cascadesQA {
       }
     }
 
-    for (auto& casc : fullCascades) {
+    for (auto const& casc : fullCascades) {
       if (std::abs(casc.negativeeta()) > cascSelections.daughterEtaCut ||
           std::abs(casc.positiveeta()) > cascSelections.daughterEtaCut ||
           std::abs(casc.bacheloreta()) > cascSelections.daughterEtaCut)
@@ -1370,7 +1372,7 @@ struct v0cascadesQA {
 
     histos_event.fill(HIST("hEventCounterMC"), 1.5);
 
-    for (auto& mcparticle : mcParticles) {
+    for (auto const& mcparticle : mcParticles) {
 
       if (!mcparticle.has_daughters()) {
         continue;
@@ -1378,13 +1380,13 @@ struct v0cascadesQA {
 
       double vx = 0;
       double vy = 0;
-      for (auto& mcparticleDaughter0 : mcparticle.daughters_as<aod::McParticles>()) {
+      for (auto const& mcparticleDaughter0 : mcparticle.daughters_as<aod::McParticles>()) {
         vx = mcparticleDaughter0.vx();
         vy = mcparticleDaughter0.vy();
         if (vx != 0 && vy != 0)
           break;
       }
-      double R_Decay = TMath::Sqrt(vx * vx + vy * vy);
+      double R_Decay = std::sqrt(vx * vx + vy * vy);
 
       if (mcparticle.isPhysicalPrimary() && std::abs(mcparticle.y()) < v0Selections.rapidityCut) {
         if (mcparticle.pdgCode() == PDG_t::kK0Short)
