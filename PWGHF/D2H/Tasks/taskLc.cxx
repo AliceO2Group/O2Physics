@@ -127,6 +127,7 @@ struct HfTaskLc {
   ConfigurableAxis thnConfigAxisOccupancy{"thnConfigAxisOccupancy", {14, 0, 14000}, "axis for centrality"};
   ConfigurableAxis thnConfigAxisProperLifetime{"thnConfigAxisProperLifetime", {200, 0, 2}, "Proper lifetime, ps"};
   ConfigurableAxis thnConfigAxisGapType{"thnConfigAxisGapType", {7, -1.5, 5.5}, "axis for UPC gap type (see TrueGap enum in o2::aod::sgselector)"};
+  ConfigurableAxis thnConfigAxisFV0A{"thnConfigAxisFV0A", {1001, -1.5, 999.5}, "axis for FV0-A amplitude (a.u.)"};
   ConfigurableAxis thnConfigAxisFT0{"thnConfigAxisFT0", {1001, -1.5, 999.5}, "axis for FT0 amplitude (a.u.)"};
   ConfigurableAxis thnConfigAxisZN{"thnConfigAxisZN", {510, -1.5, 49.5}, "axis for ZN energy (a.u.)"};
   ConfigurableAxis thnConfigAxisZNTime{"thnConfigAxisZNTime", {200, -10, 10}, "axis for ZN energy (a.u.)"};
@@ -269,6 +270,8 @@ struct HfTaskLc {
       qaRegistry.add("Data/zdc/energyZNA_vs_energyZNC", "ZNA vs ZNC common energy;E_{ZNA}^{common} (a.u.);E_{ZNC}^{common} (a.u.)", {HistType::kTH2F, {{100, 0., 10}, {100, 0., 10}}});
       qaRegistry.add("Data/zdc/timeZNA_vs_timeZNC", "ZNA vs ZNC time;ZNA Time;ZNC time", {HistType::kTH2F, {{200, -10., 10}, {200, -10., 10}}});
       qaRegistry.add("Data/hUpcGapAfterSelection", "UPC gap type after selection;Gap side;Counts", {HistType::kTH1F, {{7, -1.5, 5.5}}});
+      qaRegistry.add("Data/hUpcMulti", "Multiplicity of UPC events;Multiplicity;Counts", {HistType::kTH1F, {{200, -0.5, 199.5}}});
+      qaRegistry.add("Data/hUpcVtz", "Vertex Z position of UPC events;Vz (cm);Counts", {HistType::kTH1F, {{200, -10., 10.}}});
     }
     if (fillTHn) {
       const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
@@ -289,6 +292,7 @@ struct HfTaskLc {
       const AxisSpec thnAxisTracklets{thnConfigAxisNumPvContr, "Number of PV contributors"};
       const AxisSpec thnAxisOccupancy{thnConfigAxisOccupancy, "Occupancy"};
       const AxisSpec thnAxisProperLifetime{thnConfigAxisProperLifetime, "T_{proper} (ps)"};
+      const AxisSpec thnAxisFV0A{thnConfigAxisFV0A, "FV0-A amplitude"};
       const AxisSpec thnAxisFT0A{thnConfigAxisFT0, "FT0-A amplitude"};
       const AxisSpec thnAxisFT0C{thnConfigAxisFT0, "FT0-C amplitude"};
       const AxisSpec thnAxisZNA{thnConfigAxisZN, "ZNA energy"};
@@ -307,7 +311,7 @@ struct HfTaskLc {
         axesStd = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisTracklets};
       }
       if (isDataStd && isUpc) {
-        axesUpc = {thnAxisMass, thnAxisPt, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisTracklets, thnAxisFT0A, thnAxisFT0C, thnAxisZNA, thnAxisZNC, thnAxisZNATime, thnAxisZNCTime};
+        axesUpc = {thnAxisMass, thnAxisPt, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisTracklets, thnAxisFV0A, thnAxisFT0A, thnAxisFT0C, thnAxisZNA, thnAxisZNC, thnAxisZNATime, thnAxisZNCTime};
       }
       if (isMcStd) {
         axesStd = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisTracklets, thnAxisPtB, thnAxisCanType};
@@ -319,7 +323,7 @@ struct HfTaskLc {
         axesWithBdt = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcPrompt, thnAxisBdtScoreLcNonPrompt, thnAxisTracklets};
       }
       if (isDataWithMl && isUpc) {
-        axesUpcWithBdt = {thnAxisMass, thnAxisPt, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcPrompt, thnAxisBdtScoreLcNonPrompt, thnAxisTracklets, thnAxisFT0A, thnAxisFT0C, thnAxisZNA, thnAxisZNC, thnAxisZNATime, thnAxisZNCTime};
+        axesUpcWithBdt = {thnAxisMass, thnAxisPt, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcPrompt, thnAxisBdtScoreLcNonPrompt, thnAxisTracklets, thnAxisFV0A, thnAxisFT0A, thnAxisFT0C, thnAxisZNA, thnAxisZNC, thnAxisZNATime, thnAxisZNCTime};
       }
       if (isMcWithMl) {
         axesWithBdt = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcPrompt, thnAxisBdtScoreLcNonPrompt, thnAxisTracklets, thnAxisPtB, thnAxisCanType};
@@ -796,6 +800,10 @@ struct HfTaskLc {
         const auto chi2PCA = candidate.chi2PCA();
         const auto cpa = candidate.cpa();
         const auto rapidity = HfHelper::yLc(candidate);
+        if (gap == o2::aod::sgselector::TrueGap::SingleGapA || gap == o2::aod::sgselector::TrueGap::SingleGapC) {
+          qaRegistry.fill(HIST("Data/hUpcMulti"), collision.multNTracksPV());
+          qaRegistry.fill(HIST("Data/hUpcVtz"), collision.posZ());
+        }
 
         if (fillTHn) {
           double outputBkg(-1), outputPrompt(-1), outputFD(-1);
@@ -813,22 +821,22 @@ struct HfTaskLc {
               /// Fill the ML outputScores and variables of candidate
               if (fillUPCTHnLite) {
                 if (gap == o2::aod::sgselector::TrueGap::SingleGapA || gap == o2::aod::sgselector::TrueGap::SingleGapC) {
-                  std::vector<double> valuesToFill{massLc, pt, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors), static_cast<double>(fitInfo.ampFT0A), static_cast<double>(fitInfo.ampFT0C), static_cast<double>(zdcEnergyZNA), static_cast<double>(zdcEnergyZNC), static_cast<double>(zdcTimeZNA), static_cast<double>(zdcTimeZNC)};
+                  std::vector<double> valuesToFill{massLc, pt, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors), static_cast<double>(fitInfo.ampFV0A), static_cast<double>(fitInfo.ampFT0A), static_cast<double>(fitInfo.ampFT0C), static_cast<double>(zdcEnergyZNA), static_cast<double>(zdcEnergyZNC), static_cast<double>(zdcTimeZNA), static_cast<double>(zdcTimeZNC)};
                   registry.get<THnSparse>(HIST("hnLcUpcVarsWithBdt"))->Fill(valuesToFill.data());
                 }
               } else {
-                std::vector<double> valuesToFill{massLc, pt, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors), static_cast<double>(fitInfo.ampFT0A), static_cast<double>(fitInfo.ampFT0C), static_cast<double>(zdcEnergyZNA), static_cast<double>(zdcEnergyZNC), static_cast<double>(zdcTimeZNA), static_cast<double>(zdcTimeZNC)};
+                std::vector<double> valuesToFill{massLc, pt, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors), static_cast<double>(fitInfo.ampFV0A), static_cast<double>(fitInfo.ampFT0A), static_cast<double>(fitInfo.ampFT0C), static_cast<double>(zdcEnergyZNA), static_cast<double>(zdcEnergyZNC), static_cast<double>(zdcTimeZNA), static_cast<double>(zdcTimeZNC)};
                 registry.get<THnSparse>(HIST("hnLcUpcVarsWithBdt"))->Fill(valuesToFill.data());
               }
 
             } else {
               if (fillUPCTHnLite) {
                 if (gap == o2::aod::sgselector::TrueGap::SingleGapA || gap == o2::aod::sgselector::TrueGap::SingleGapC) {
-                  std::vector<double> valuesToFill{massLc, pt, rapidity, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<double>(numPvContributors), static_cast<double>(fitInfo.ampFT0A), static_cast<double>(fitInfo.ampFT0C), static_cast<double>(zdcEnergyZNA), static_cast<double>(zdcEnergyZNC), static_cast<double>(zdcTimeZNA), static_cast<double>(zdcTimeZNC)};
+                  std::vector<double> valuesToFill{massLc, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<double>(numPvContributors), static_cast<double>(fitInfo.ampFV0A), static_cast<double>(fitInfo.ampFT0A), static_cast<double>(fitInfo.ampFT0C), static_cast<double>(zdcEnergyZNA), static_cast<double>(zdcEnergyZNC), static_cast<double>(zdcTimeZNA), static_cast<double>(zdcTimeZNC)};
                   registry.get<THnSparse>(HIST("hnLcUpcVars"))->Fill(valuesToFill.data());
                 }
               } else {
-                std::vector<double> valuesToFill{massLc, pt, rapidity, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<double>(numPvContributors), static_cast<double>(fitInfo.ampFT0A), static_cast<double>(fitInfo.ampFT0C), static_cast<double>(zdcEnergyZNA), static_cast<double>(zdcEnergyZNC), static_cast<double>(zdcTimeZNA), static_cast<double>(zdcTimeZNC)};
+                std::vector<double> valuesToFill{massLc, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<double>(numPvContributors), static_cast<double>(fitInfo.ampFV0A), static_cast<double>(fitInfo.ampFT0A), static_cast<double>(fitInfo.ampFT0C), static_cast<double>(zdcEnergyZNA), static_cast<double>(zdcEnergyZNC), static_cast<double>(zdcTimeZNA), static_cast<double>(zdcTimeZNC)};
                 registry.get<THnSparse>(HIST("hnLcUpcVars"))->Fill(valuesToFill.data());
               }
             }
@@ -908,7 +916,7 @@ struct HfTaskLc {
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMlWithFT0M, "Process real data with the ML method and with FT0M centrality", false);
 
-  void processDataWithMlWithUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processDataWithMlWithUpc(soa::Join<aod::Collisions, aod::EvSels, aod::Mults> const& collisions,
                                 aod::BcFullInfos const& bcs,
                                 LcCandidatesMl const& selectedLcCandidatesMl,
                                 aod::Tracks const&,
@@ -921,7 +929,7 @@ struct HfTaskLc {
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMlWithUpc, "Process real data with the ML method with UPC", false);
 
-  void processDataStdWithUpc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processDataStdWithUpc(soa::Join<aod::Collisions, aod::EvSels, aod::Mults> const& collisions,
                              aod::BcFullInfos const& bcs,
                              LcCandidatesMl const& selectedLcCandidatesMl,
                              aod::Tracks const&,
