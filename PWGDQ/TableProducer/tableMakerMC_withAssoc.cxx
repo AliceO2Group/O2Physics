@@ -194,6 +194,7 @@ struct TableMakerMC {
   // RCT selection
   struct : ConfigurableGroup {
     Configurable<bool> fConfigUseRCT{"cfgUseRCT", false, "Enable event selection with RCT flags"};
+    Configurable<bool> fCheckZDC{"cfgCheckZDC", false, "Check ZDC quality in the RCT flag checker"};
     Configurable<std::string> fConfigRCTLabel{"cfgRCTLabel", "CBT", "RCT flag labels : CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo"};
   } fConfigRCT;
 
@@ -454,7 +455,7 @@ struct TableMakerMC {
     }
 
     if (fConfigRCT.fConfigUseRCT.value) {
-      rctChecker.init(fConfigRCT.fConfigRCTLabel);
+      rctChecker.init(fConfigRCT.fConfigRCTLabel, fConfigRCT.fCheckZDC.value);
     }
   }
 
