@@ -626,9 +626,11 @@ struct photonhbt {
         fRegistry.add("Pair/same/CF_1D", "diphoton correlation 1D (qinv)", kTH2D, {axisQinv, axisKt}, true);
     }
 
-    fRegistry.add("Pair/same/hDeltaRCosOA",
-                  "distance between 2 conversion points / cos(#theta_{op}/2);#Delta r / cos(#theta_{op}/2) (cm);counts",
-                  kTH1D, {{100, 0, 100}}, true);
+    fRegistry.add("Pair/same/hDeltaRCosOA", "distance between 2 conversion points / cos(#theta_{op}/2);#Delta r / cos(#theta_{op}/2) (cm);counts", kTH1D, {{100, 0, 100}}, true);
+    fRegistry.add("Pair/same/hSparse_DEtaDPhi_kT",
+                  "same-event (#Delta#eta,#Delta#phi,q_{inv},k_{T}) for efficiency reweighting;"
+                  "#Delta#eta;#Delta#phi (rad);q_{inv} (GeV/c);k_{T} (GeV/c)",
+                  kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisKt}, true);
 
     addQAHistogramsForStep("Pair/same/QA/Before/");
     addQAHistogramsForStep("Pair/same/QA/AfterDRCosOA/");
@@ -750,6 +752,17 @@ struct photonhbt {
       fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("CF_1D"),
                      hbtanalysis.cfgUseLCMS ? qabs_lcms : qinv, kt, weight);
     }
+    float deta_pair = v1.Eta() - v2.Eta();
+    float dphi_pair = v1.Phi() - v2.Phi();
+    while (dphi_pair > o2::constants::math::PI)
+      dphi_pair -= o2::constants::math::TwoPI;
+    while (dphi_pair < -o2::constants::math::PI)
+      dphi_pair += o2::constants::math::TwoPI;
+    if constexpr (ev_id == 0) {
+      fRegistry.fill(HIST("Pair/same/hSparse_DEtaDPhi_qinv_kT"), deta_pair, dphi_pair, qinv, kt, weight);
+    } else {
+      fRegistry.fill(HIST("Pair/mix/hSparse_DEtaDPhi_qinv_kT"), deta_pair, dphi_pair, qinv, kt, weight);
+    }
   }
 
   template <int ev_id, PairTruthType TruthT, typename TCollision>
@@ -808,6 +821,17 @@ struct photonhbt {
         fRegistryPairMC.fill(HIST(mcDir) + HIST("CF_2D"), std::fabs(qout_lcms), std::fabs(qinv), kt, weight);
     } else {
       fRegistryPairMC.fill(HIST(mcDir) + HIST("CF_1D"), hbtanalysis.cfgUseLCMS ? qabs_lcms : qinv, kt, weight);
+    }
+    float deta_pair = v1.Eta() - v2.Eta();
+    float dphi_pair = v1.Phi() - v2.Phi();
+    while (dphi_pair > o2::constants::math::PI)
+      dphi_pair -= o2::constants::math::TwoPI;
+    while (dphi_pair < -o2::constants::math::PI)
+      dphi_pair += o2::constants::math::TwoPI;
+    if constexpr (ev_id == 0) {
+      fRegistry.fill(HIST("Pair/same/hSparse_DEtaDPhi_qinv_kT"), deta_pair, dphi_pair, qinv, kt, weight);
+    } else {
+      fRegistry.fill(HIST("Pair/mix/hSparse_DEtaDPhi_qinv_kT"), deta_pair, dphi_pair, qinv, kt, weight);
     }
   }
 
