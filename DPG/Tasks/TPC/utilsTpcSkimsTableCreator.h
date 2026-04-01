@@ -47,7 +47,7 @@ enum {
 
 /// Event selection
 template <typename CollisionType>
-inline bool isEventSelected(const CollisionType& collision, const int applyEvSel)
+bool isEventSelected(const CollisionType& collision, const int applyEvSel)
 {
   if ((applyEvSel == EventSelectionRun2 && !collision.sel7()) || (applyEvSel == EventSelectionRun3 && !collision.sel8())) {
     return false;
@@ -86,7 +86,7 @@ inline bool downsampleTsalisCharged(TRandom3* fRndm, const double pt, const doub
 
 // Track selection
 template <typename TrackType>
-inline bool isTrackSelected(const TrackType& track, const int trackSelection)
+bool isTrackSelected(const TrackType& track, const int trackSelection)
 {
   bool isSelected{false};
   isSelected |= trackSelection == TrackSelectionNoCut;
@@ -101,7 +101,7 @@ inline bool isTrackSelected(const TrackType& track, const int trackSelection)
 
 /// Evaluate tpcSignal with or without dEdx correction
 template <bool IsCorrectedDeDx, typename TrkType>
-inline double tpcSignalGeneric(const TrkType& track)
+double tpcSignalGeneric(const TrkType& track)
 {
   if constexpr (IsCorrectedDeDx) {
     return track.tpcSignalCorrected();
@@ -127,7 +127,7 @@ using TrackMeanOccs = soa::Join<aod::TmoTrackIds, aod::TmoToTrackQA, aod::TmoPri
 
 /// Evaluate occupancy-related variables
 template <typename TrkType>
-inline void evaluateOccupancyVariables(const TrkType& track, OccupancyValues& occValues)
+void evaluateOccupancyVariables(const TrkType& track, OccupancyValues& occValues)
 {
   if (track.tmoId() == -1) {
     return;
