@@ -1055,16 +1055,16 @@ struct v0cascadesQA {
     bool isNegativeProton = casc.pdgCodeNegative() == PDG_t::kProtonBar;
     bool isNegativePion = casc.pdgCodeNegative() == PDG_t::kPiMinus || (doTreatPiToMuon && casc.pdgCodeNegative() == PDG_t::kMuonMinus);
 
-    if (cascType == kXiM && casc.pdgCode() != PDG_t::kXiMinus || isPositiveProton || isNegativePion || isBachelorPionMinus) {
+    if (cascType == kXiM && casc.pdgCode() == PDG_t::kXiMinus && isPositiveProton && isNegativePion && isBachelorPionMinus) {
       return true;
     }
-    if (cascType == kXiP && casc.pdgCode() != PDG_t::kXiPlusBar || isPositivePion || isNegativeProton || isBachelorPionPlus) {
+    if (cascType == kXiP && casc.pdgCode() == PDG_t::kXiPlusBar && isPositivePion && isNegativeProton && isBachelorPionPlus) {
       return true;
     }
-    if (cascType == kOmegaM && casc.pdgCode() != PDG_t::kOmegaMinus || isPositiveProton || isNegativePion || isBachelorKaonMinus) {
+    if (cascType == kOmegaM && casc.pdgCode() == PDG_t::kOmegaMinus && isPositiveProton && isNegativePion && isBachelorKaonMinus) {
       return true;
     }
-    if (cascType == kOmegaP && casc.pdgCode() != PDG_t::kOmegaPlusBar || isPositivePion || isNegativeProton || isBachelorKaonPlus) {
+    if (cascType == kOmegaP && casc.pdgCode() == PDG_t::kOmegaPlusBar && isPositivePion && isNegativeProton && isBachelorKaonPlus) {
       return true;
     }
     return false;
