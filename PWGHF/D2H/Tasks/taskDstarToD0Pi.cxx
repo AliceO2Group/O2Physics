@@ -61,15 +61,16 @@ struct HfTaskDstarToD0Pi {
   Configurable<bool> isCentStudy{"isCentStudy", true, "Flag to select centrality study"};
   Configurable<bool> qaEnabled{"qaEnabled", true, "Flag to enable QA histograms"};
   Configurable<bool> studyD0ToPiKPi0{"studyD0ToPiKPi0", false, "Flag to study D*->D0(piKpi0)pi channel"};
+  Configurable<bool> ptShapeStudy{"ptShapeStudy", true, "Flag to enable pT shape study"};
 
   // CCDB configuration
-  Configurable<bool> useWeight{"useWeight", true, "Flag to use weights from CCDB"};
-  Configurable<int> nWeights{"nWeights", 6, "Number of weights to be used from CCDB"};
+  // Configurable<bool> useWeight{"useWeight", true, "Flag to use weights from CCDB"};
+  // Configurable<int> nWeights{"nWeights", 6, "Number of weights to be used from CCDB"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> ccdbPathForWeight{"ccdbPathForWeight", "Users/d/desharma/weights", "CCDB path for PVContrib weights"};
-  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "CCDB timestamp for the weights"};
-  Configurable<std::string> weightFileName{"weightFileName", "Weights.root", "Name of the weight file to be used for PVContrib"};
-  Configurable<std::vector<double>> centRangesForWeights{"centRangesForWeights", {0.0, 5.0, 10.0, 30.0, 50.0, 70.0, 100.0}, "Centrality ranges for weights. Size of ranges should be equal to nWeights + 1"};
+  Configurable<std::string> ccdbPathForWeight{"ccdbPathForWeight", "", "CCDB path for pt shape weights"};
+  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "CCDB timestamp for pt shape weights"};
+  Configurable<std::string> weightFileName{"weightFileName", "Weights.root", "Name of the weight file to be used for pt shape study"};
+  // Configurable<std::vector<double>> centRangesForWeights{"centRangesForWeights", {0.0, 5.0, 10.0, 30.0, 50.0, 70.0, 100.0}, "Centrality ranges for weights. Size of ranges should be equal to nWeights + 1"};
 
   Configurable<double> yCandDstarRecoMax{"yCandDstarRecoMax", 0.8, "max. candidate Dstar rapidity"};
   Configurable<double> yCandDstarGenMax{"yCandDstarGenMax", 0.5, "max. rapidity of Generator level Particle"};
@@ -80,7 +81,19 @@ struct HfTaskDstarToD0Pi {
 
   o2::ccdb::CcdbApi ccdbApi;
   SliceCache cache;
-  std::vector<TH2F*> hWeights;
+  std::vector<TH1D*> hWeights;
+  int const nWeights = 2; // prompt and non-prompt weights
+  std::vector<std::string> const weightHistNames = {"promptWeightVsPt", "nonPromptWeightVsPt"};
+  enum weightType {
+    Prompt = 0,
+    NonPrompt = 1
+  };
+
+  // follwing commented axes can be removed if not needed
+  // std::vector<AxisSpec> axesPtVsCentVsBDTVsPvContribVsPtB;
+  // std::vector<AxisSpec> axesPtVsCentVsPvContribVsPtB;
+  // std::vector<AxisSpec> axesPtVsBDTVsPtB;
+
   std::vector<AxisSpec> axesPtVsCentVsBDTVsPvContrib;
   std::vector<AxisSpec> axesPtVsCentVsPvContrib;
   std::vector<AxisSpec> axesPtVsBDT;
@@ -114,6 +127,8 @@ struct HfTaskDstarToD0Pi {
   ConfigurableAxis binningBkgBDTScore{"binningBkgBDTScore", {100, 0.0f, 1.0f}, "Bins for background BDT Score"};
   ConfigurableAxis binningSigBDTScore{"binningSigBDTScore", {100, 0.0f, 1.0f}, "Bins for Signal (Prompts + Non Prompt) BDT Score"};
   ConfigurableAxis binningPvContrib{"binningPvContrib", {100, 0.0f, 300.0f}, "Bins for PVContrib"};
+  // can be removed if not needed
+  // ConfigurableAxis binningPtFine{"binningPtFine", {100, 0.0f, 100.0f}, "Bins for pT shape study"};
 
   HistogramRegistry registry{"registry", {}};
 
@@ -136,9 +151,24 @@ struct HfTaskDstarToD0Pi {
     AxisSpec axisPvContrib = {binningPvContrib, "PV Contribution"};
     AxisSpec const axisPt = {vecPtBins, "#it{p}_{T} (GeV/#it{c})"};
 
+    // can be removed if not needed
+    // AxisSpec axisPtFine = {vecPtBins, "#it{p}_{T} (GeV/#it{c})"};
+    // if (ptShapeStudy){
+    //   axisPtFine = {binningPtFine, "pT (GeV/c)"};
+    // }
+    // // std::cout<< "fine pt bins for pt shape study: binningPtFine"<< binningPtFine->data() << std::endl;
+    // // std::cout<< "fine pt bins for pt shape study: axisPtFine"<< axisPtFine.binEdges[2] << std::endl;
+
     axesPtVsCentVsBDTVsPvContrib = {axisPt, axisCentrality, axisBDTScoreBackground, axisBDTScorePrompt, axisBDTScoreNonPrompt, axisPvContrib};
     axesPtVsCentVsPvContrib = {axisPt, axisCentrality, axisPvContrib};
     axesPtVsBDT = {axisPt, axisBDTScoreBackground, axisBDTScorePrompt, axisBDTScoreNonPrompt};
+
+    // can be removed if
+    // if (ptShapeStudy){
+    //   axesPtVsCentVsBDTVsPvContribVsPtB = {axisPt, axisCentrality, axisBDTScoreBackground, axisBDTScorePrompt, axisBDTScoreNonPrompt, axisPvContrib, axisPtFine};
+    //   axesPtVsCentVsPvContribVsPtB = {axisPt, axisCentrality, axisPvContrib, axisPtFine};
+    //   axesPtVsBDTVsPtB = {axisPt, axisBDTScoreBackground, axisBDTScorePrompt, axisBDTScoreNonPrompt, axisPtFine};
+    // }
 
     if (qaEnabled) {
       // only QA
@@ -289,8 +319,8 @@ struct HfTaskDstarToD0Pi {
       }
     }
 
-    // if weights to be applied
-    if (useWeight) {
+    // if weights to be applied for pt shape study
+    if (ptShapeStudy) {
       ccdbApi.init(ccdbUrl);
       std::map<std::string, std::string> const metadata;
       // Retrieve the file from CCDB
@@ -300,28 +330,30 @@ struct HfTaskDstarToD0Pi {
         return;
       }
 
-      if (isCentStudy) {
-        // Open the ROOT file
-        TFile* weightFile = TFile::Open(weightFileName.value.c_str(), "READ");
-        if ((weightFile != nullptr) && !weightFile->IsZombie()) {
-          // Ensure hWeights is properly sized
-          hWeights.resize(nWeights);
-          for (int ithWeight = 0; ithWeight < nWeights; ++ithWeight) {
-            std::string const histName = "hMult" + std::to_string(ithWeight + 1) + "_Weight";
-            hWeights[ithWeight] = dynamic_cast<TH2F*>(weightFile->Get(histName.c_str()));
-            if (hWeights[ithWeight] == nullptr) {
-              LOGF(fatal, "Histogram %s not found in weight file!", histName.c_str());
-              return;
-            }
-            hWeights[ithWeight]->SetDirectory(nullptr);
-            hWeights[ithWeight]->SetName(("hWeight" + std::to_string(ithWeight + 1)).c_str());
-          }
-          weightFile->Close();
-          delete weightFile;
-        } else {
-          LOGF(fatal, "Failed to open weight file from CCDB: %s", weightFileName.value.c_str());
+      // Open the ROOT file to intialise weight hists
+      TFile* weightFile = TFile::Open(weightFileName.value.c_str(), "READ");
+      if ((weightFile != nullptr) && !weightFile->IsZombie()) {
+        // Ensure hWeights is properly sized
+        hWeights.resize(nWeights); // prompt and non-prompt
+
+        hWeights[weightType::Prompt] = dynamic_cast<TH1D*>(weightFile->Get(weightHistNames[weightType::Prompt].c_str()));
+        hWeights[weightType::NonPrompt] = dynamic_cast<TH1D*>(weightFile->Get(weightHistNames[weightType::NonPrompt].c_str()));
+        if (hWeights[weightType::Prompt] == nullptr) {
+          LOGF(fatal, "Histogram %s not found in weight file!", weightHistNames[weightType::Prompt].c_str());
           return;
         }
+        if (hWeights[weightType::NonPrompt] == nullptr) {
+          LOGF(fatal, "Histogram %s not found in weight file!", weightHistNames[weightType::NonPrompt].c_str());
+          return;
+        }
+        hWeights[weightType::Prompt]->SetDirectory(nullptr);
+        hWeights[weightType::NonPrompt]->SetDirectory(nullptr);
+
+        weightFile->Close();
+        delete weightFile;
+      } else {
+        LOGF(fatal, "Failed to open weight file from CCDB: %s", weightFileName.value.c_str());
+        return;
       }
     }
   }
@@ -473,9 +505,10 @@ struct HfTaskDstarToD0Pi {
         auto prong0 = candDstarMcRec.template prong0_as<aod::TracksWMc>();
         auto indexMother = RecoDecay::getMother(rowsMcPartilces, prong0.template mcParticle_as<CandDstarMcGen>(), o2::constants::physics::Pdg::kDStar, true, &signDstar, 2);
         auto particleMother = rowsMcPartilces.rawIteratorAt(indexMother); // What is difference between rawIterator() or iteratorAt() methods?
+        auto ptMother = particleMother.pt();
         if (qaEnabled) {
-          registry.fill(HIST("QA/hPtSkimDstarGenSig"), particleMother.pt()); // generator level pt
-          registry.fill(HIST("QA/hPtVsCentSkimDstarGenSig"), particleMother.pt(), centrality);
+          registry.fill(HIST("QA/hPtSkimDstarGenSig"), ptMother); // generator level pt
+          registry.fill(HIST("QA/hPtVsCentSkimDstarGenSig"), ptMother, centrality);
           registry.fill(HIST("QA/hPtVsYSkimDstarRecSig"), ptDstarRecSig, yDstarRecSig); // Skimed at level of trackIndexSkimCreator
           if (candDstarMcRec.isRecoTopol()) {                                           // if Topological selection are passed
             registry.fill(HIST("QA/hPtVsYRecoTopolDstarRecSig"), ptDstarRecSig, yDstarRecSig);
@@ -487,18 +520,17 @@ struct HfTaskDstarToD0Pi {
 
         if (candDstarMcRec.isSelDstarToD0Pi()) { // if all selection passed
           float weightValue = 1.0;
-          if (useWeight && (hWeights.empty() || hWeights[0] == nullptr)) {
+          std::vector<float> ptShapeWeightValues(nWeights, 1.0); // Assuming two weights: one for prompt and one for non-prompt
+          if (ptShapeStudy && (hWeights.empty() || hWeights[0] == nullptr)) {
             LOGF(fatal, "Weight histograms are not initialized or empty. Check CCDB path or weight file.");
             return;
           }
-          if (useWeight && isCentStudy) {
-            for (int ithWeight = 0; ithWeight < nWeights; ++ithWeight) {
-              if (centrality > centRangesForWeights.value[ithWeight] && centrality <= centRangesForWeights.value[ithWeight + 1]) {
-                weightValue = hWeights[ithWeight]->GetBinContent(hWeights[ithWeight]->FindBin(nPVContributors));
-                break;
-              }
-            }
+
+          if (ptShapeStudy) {
+            ptShapeWeightValues[weightType::Prompt] = hWeights[weightType::Prompt]->GetBinContent(hWeights[weightType::Prompt]->FindBin(ptDstarRecSig));
+            ptShapeWeightValues[weightType::NonPrompt] = hWeights[weightType::NonPrompt]->GetBinContent(hWeights[weightType::NonPrompt]->FindBin(ptMother));
           }
+
           if (qaEnabled) {
             registry.fill(HIST("QA/hPtFullRecoDstarRecSig"), ptDstarRecSig);
           }
@@ -508,33 +540,33 @@ struct HfTaskDstarToD0Pi {
               auto bdtScore = candDstarMcRec.mlProbDstarToD0Pi();
               registry.fill(HIST("Efficiency/hPtVsCentVsBDTScoreVsPvContribRecSig"), ptDstarRecSig, centrality, bdtScore[0], bdtScore[1], bdtScore[2], nPVContributors, weightValue);
               if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::Prompt) {
-                registry.fill(HIST("Efficiency/hPtPromptVsCentVsBDTScorePvContribRecSig"), ptDstarRecSig, centrality, bdtScore[0], bdtScore[1], bdtScore[2], nPVContributors, weightValue);
+                registry.fill(HIST("Efficiency/hPtPromptVsCentVsBDTScorePvContribRecSig"), ptDstarRecSig, centrality, bdtScore[0], bdtScore[1], bdtScore[2], nPVContributors, ptShapeWeightValues[weightType::Prompt]);
               } else if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt) {
-                registry.fill(HIST("Efficiency/hPtNonPrompRectVsCentVsBDTScorePvContribRecSig"), ptDstarRecSig, centrality, bdtScore[0], bdtScore[1], bdtScore[2], nPVContributors, weightValue);
+                registry.fill(HIST("Efficiency/hPtNonPrompRectVsCentVsBDTScorePvContribRecSig"), ptDstarRecSig, centrality, bdtScore[0], bdtScore[1], bdtScore[2], nPVContributors, ptShapeWeightValues[weightType::NonPrompt]);
               }
             } else {
               auto bdtScore = candDstarMcRec.mlProbDstarToD0Pi();
               registry.fill(HIST("Efficiency/hPtVsBDTScoreRecSig"), ptDstarRecSig, bdtScore[0], bdtScore[1], bdtScore[2], weightValue);
               if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::Prompt) {
-                registry.fill(HIST("Efficiency/hPtPromptVsBDTScoreRecSig"), ptDstarRecSig, bdtScore[0], bdtScore[1], bdtScore[2], weightValue);
+                registry.fill(HIST("Efficiency/hPtPromptVsBDTScoreRecSig"), ptDstarRecSig, bdtScore[0], bdtScore[1], bdtScore[2], ptShapeWeightValues[weightType::Prompt]);
               } else if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt) {
-                registry.fill(HIST("Efficiency/hPtNonPromptVsBDTScoreRecSig"), ptDstarRecSig, bdtScore[0], bdtScore[1], bdtScore[2], weightValue);
+                registry.fill(HIST("Efficiency/hPtNonPromptVsBDTScoreRecSig"), ptDstarRecSig, bdtScore[0], bdtScore[1], bdtScore[2], ptShapeWeightValues[weightType::NonPrompt]);
               }
             }
           } else { // All efficiency histograms at reconstruction level w/o ml
             if (isCentStudy) {
               registry.fill(HIST("Efficiency/hPtVsCentVsPvContribRecSig"), ptDstarRecSig, centrality, nPVContributors, weightValue);
               if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::Prompt) {
-                registry.fill(HIST("Efficiency/hPtPromptVsCentVsPvContribRecSig"), ptDstarRecSig, centrality, nPVContributors, weightValue);
+                registry.fill(HIST("Efficiency/hPtPromptVsCentVsPvContribRecSig"), ptDstarRecSig, centrality, nPVContributors, ptShapeWeightValues[weightType::Prompt]);
               } else if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt) {
-                registry.fill(HIST("Efficiency/hPtNonPromptVsCentVsPvContribRecSig"), ptDstarRecSig, centrality, nPVContributors, weightValue);
+                registry.fill(HIST("Efficiency/hPtNonPromptVsCentVsPvContribRecSig"), ptDstarRecSig, centrality, nPVContributors, ptShapeWeightValues[weightType::NonPrompt]);
               }
             } else {
               registry.fill(HIST("Efficiency/hPtVsPvContribRecSig"), ptDstarRecSig, nPVContributors, weightValue);
               if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::Prompt) {
-                registry.fill(HIST("Efficiency/hPtPromptVsPvContribRecSig"), ptDstarRecSig, nPVContributors, weightValue);
+                registry.fill(HIST("Efficiency/hPtPromptVsPvContribRecSig"), ptDstarRecSig, nPVContributors, ptShapeWeightValues[weightType::Prompt]);
               } else if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt) {
-                registry.fill(HIST("Efficiency/hPtNonPromptVsPvContribRecSig"), ptDstarRecSig, nPVContributors, weightValue);
+                registry.fill(HIST("Efficiency/hPtNonPromptVsPvContribRecSig"), ptDstarRecSig, nPVContributors, ptShapeWeightValues[weightType::NonPrompt]);
               }
             }
           }
@@ -631,6 +663,12 @@ struct HfTaskDstarToD0Pi {
     for (auto const& mcParticle : rowsMcPartilces) {
       if (std::abs(mcParticle.flagMcMatchGen()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) { // MC Matching is successful at Generator Level
         auto ptGen = mcParticle.pt();
+
+        // mother information
+        auto idxBhadMotherPart = mcParticle.idxBhadMotherPart();
+        auto bMother = rowsMcPartilces.rawIteratorAt(idxBhadMotherPart);
+        auto ptBMother = bMother.pt();
+
         auto yGen = RecoDecay::y(mcParticle.pVector(), o2::constants::physics::MassDStar);
         if (yCandDstarGenMax >= 0. && std::abs(yGen) > yCandDstarGenMax) {
           continue;
@@ -668,17 +706,15 @@ struct HfTaskDstarToD0Pi {
         }
 
         float weightValue = 1.0;
-        if (useWeight && (hWeights.empty() || hWeights[0] == nullptr)) {
+        std::vector<float> ptShapeWeightValues(nWeights, 1.0); // Assuming two weights: one for prompt and one for non-prompt
+        if (ptShapeStudy && (hWeights.empty() || hWeights[0] == nullptr)) {
           LOGF(fatal, "Weight histograms are not initialized or empty. Check CCDB path or weight file.");
           return;
         }
-        if (useWeight && isCentStudy) {
-          for (int ithWeight = 0; ithWeight < nWeights; ++ithWeight) {
-            if (centFT0MGen > centRangesForWeights.value[ithWeight] && centFT0MGen <= centRangesForWeights.value[ithWeight + 1]) {
-              weightValue = hWeights[ithWeight]->GetBinContent(hWeights[ithWeight]->FindBin(centFT0MGen, pvContributors));
-              break;
-            }
-          }
+
+        if (ptShapeStudy) {
+          ptShapeWeightValues[weightType::Prompt] = hWeights[weightType::Prompt]->GetBinContent(hWeights[weightType::Prompt]->FindBin(ptGen));
+          ptShapeWeightValues[weightType::NonPrompt] = hWeights[weightType::NonPrompt]->GetBinContent(hWeights[weightType::NonPrompt]->FindBin(ptBMother));
         }
 
         registry.fill(HIST("Efficiency/hPtVsYDstarGen"), ptGen, yGen, weightValue);
@@ -693,20 +729,20 @@ struct HfTaskDstarToD0Pi {
 
         // Prompt
         if (mcParticle.originMcGen() == RecoDecay::OriginType::Prompt) {
-          registry.fill(HIST("Efficiency/hPtVsYPromptDstarGen"), ptGen, yGen, weightValue);
+          registry.fill(HIST("Efficiency/hPtVsYPromptDstarGen"), ptGen, yGen, ptShapeWeightValues[weightType::Prompt]);
           if (isCentStudy) {
-            registry.fill(HIST("Efficiency/hPtPromptVsCentVsPvContribGen"), ptGen, centFT0MGen, pvContributors, weightValue);
+            registry.fill(HIST("Efficiency/hPtPromptVsCentVsPvContribGen"), ptGen, centFT0MGen, pvContributors, ptShapeWeightValues[weightType::Prompt]);
           } else {
-            registry.fill(HIST("Efficiency/hPtPromptVsGen"), ptGen, weightValue);
+            registry.fill(HIST("Efficiency/hPtPromptVsGen"), ptGen, ptShapeWeightValues[weightType::Prompt]);
           }
           // Non-Prompt
         } else if (mcParticle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
-          registry.fill(HIST("Efficiency/hPtVsYNonPromptDstarGen"), ptGen, yGen, weightValue);
+          registry.fill(HIST("Efficiency/hPtVsYNonPromptDstarGen"), ptGen, yGen, ptShapeWeightValues[weightType::NonPrompt]);
           if (isCentStudy) {
-            registry.fill(HIST("Efficiency/hPtNonPromptVsCentVsPvContribGen"), ptGen, centFT0MGen, pvContributors, weightValue);
+            registry.fill(HIST("Efficiency/hPtNonPromptVsCentVsPvContribGen"), ptGen, centFT0MGen, pvContributors, ptShapeWeightValues[weightType::NonPrompt]);
 
           } else {
-            registry.fill(HIST("Efficiency/hPtNonPromptVsGen"), ptGen, weightValue);
+            registry.fill(HIST("Efficiency/hPtNonPromptVsGen"), ptGen, ptShapeWeightValues[weightType::NonPrompt]);
           }
         }
       }
