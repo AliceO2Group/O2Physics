@@ -2731,8 +2731,7 @@ struct sigma0builder {
       }
 
       //_______________________________________________
-      // Photon-V0 nested loop
-      int nSigma0Candidates = 0;
+      // Photon-V0 nested loop      
       for (size_t i = 0; i < bestGammasArray.size(); ++i) {
 
         //_______________________________________________
@@ -2750,9 +2749,7 @@ struct sigma0builder {
               auto gamma1 = fullV0s.rawIteratorAt(bestGammasArray[i]);
               if (!buildPCMSigma0(lambda, gamma1, coll, mcparticles))
                 continue;
-            }
-
-            nSigma0Candidates++;
+            }            
           }
         }
 
