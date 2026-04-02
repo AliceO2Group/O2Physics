@@ -14,41 +14,51 @@
 /// \since  Mar/2025
 /// \brief  jira: , task to measure flow observables with cumulant method
 
-#include "FlowContainer.h"
-#include "GFW.h"
-#include "GFWCumulant.h"
-#include "GFWPowerArray.h"
-#include "GFWWeights.h"
-
 #include "PWGUD/Core/SGSelector.h"
-#include "PWGUD/DataModel/SGTables.h"
 #include "PWGUD/DataModel/UDTables.h"
+//
+#include "PWGCF/GenericFramework/Core/FlowContainer.h"
+#include "PWGCF/GenericFramework/Core/GFW.h"
+#include "PWGCF/GenericFramework/Core/GFWWeights.h"
 
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/StringHelpers.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TList.h"
-#include "TVector3.h"
+#include <Math/GenVector/LorentzVector.h>
+#include <Math/GenVector/PxPyPzE4D.h>
 #include <TF1.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TNamed.h>
 #include <TObjArray.h>
 #include <TProfile.h>
 #include <TRandom3.h>
+#include <TString.h>
+
+#include <sys/types.h>
+
+#include <RtypesCore.h>
 
 #include <array>
+#include <chrono>
 #include <cmath>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -116,6 +126,7 @@ struct FlowCumulantsUpc {
   O2_DEFINE_CONFIGURABLE(cfgItsClusterSize, unsigned int, 5, "ITS cluster size")
   O2_DEFINE_CONFIGURABLE(cfgMaxTPCChi2NCl, int, 4, "tpcchi2")
   O2_DEFINE_CONFIGURABLE(cfgConsistentEventFlag, int, 0, "Flag to select consistent events - 0: off, 1: v2{2} gap calculable, 2: v2{4} full calculable, 4: v2{4} gap calculable, 8: v2{4} 3sub calculable")
+
   Configurable<std::vector<std::string>> cfgUserDefineGFWCorr{"cfgUserDefineGFWCorr", std::vector<std::string>{"refN02 {2} refP02 {-2}", "refN12 {2} refP12 {-2}"}, "User defined GFW CorrelatorConfig"};
   Configurable<std::vector<std::string>> cfgUserDefineGFWName{"cfgUserDefineGFWName", std::vector<std::string>{"Ch02Gap22", "Ch12Gap22"}, "User defined GFW Name"};
   Configurable<std::vector<int>> cfgRunRemoveList{"cfgRunRemoveList", std::vector<int>{-1}, "excluded run numbers"};
@@ -222,6 +233,7 @@ struct FlowCumulantsUpc {
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(4, "after pt selection");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(5, "after occupancy");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(6, "after consistency check");
+
     registry.add("hTrackCount", "Number of tracks;; Count", {HistType::kTH1D, {{7, 0, 7}}});
     registry.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(1, "after event selection");
     registry.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(2, "PVContributor");
@@ -1007,7 +1019,6 @@ struct FlowCumulantsUpc {
         if (eta > consistentEventVector[4] && eta < consistentEventVector[5])
           acceptedTracks.nPos += 1;
       }
-
       if (withinPtRef) {
         registry.fill(HIST("hPhi"), phi);
         registry.fill(HIST("hPhiWeighted"), phi, wacc);
@@ -1029,7 +1040,6 @@ struct FlowCumulantsUpc {
       registry.fill(HIST("hEtaNch2D"), eta, tracks.size());
     }
     registry.fill(HIST("hTrackCorrection2d"), tracks.size(), nTracksCorrected);
-
     if (cfgConsistentEventFlag) {
       if (cfgConsistentEventFlag & 1) {
         if (!acceptedTracks.nPos || !acceptedTracks.nNeg)
