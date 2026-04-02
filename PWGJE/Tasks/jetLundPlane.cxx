@@ -587,7 +587,7 @@ struct JetLundPlaneUnfolding {
 
       if (writeMiniAOD.value) {
         const uint64_t partCollKey =
-  (static_cast<uint64_t>(partJet.mcCollisionId()) << collisionKeyShift) | partCollisionKeyTag;
+          (static_cast<uint64_t>(partJet.mcCollisionId()) << collisionKeyShift) | partCollisionKeyTag;
         int partMiniCollIdx = -1;
         auto collIt = partMiniCollByKey.find(partCollKey);
         if (collIt == partMiniCollByKey.end()) {
@@ -655,7 +655,7 @@ struct JetLundPlaneUnfolding {
 
       if (writeMiniAOD.value) {
         const uint64_t detCollKey =
-  (static_cast<uint64_t>(detJet.collisionId()) << collisionKeyShift);
+          (static_cast<uint64_t>(detJet.collisionId()) << collisionKeyShift);
         int detMiniCollIdx = -1;
         auto collIt = detMiniCollByKey.find(detCollKey);
         if (collIt == detMiniCollByKey.end()) {
