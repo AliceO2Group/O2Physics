@@ -53,7 +53,7 @@ DECLARE_SOA_TABLE(MiniCollisions, "AOD", "MINICOLL",
                   MiniCollTag);
 
 // MiniJets -> MiniCollisions
-DECLARE_SOA_INDEX_COLUMN(MiniCollision, miniCollision);
+DECLARE_SOA_INDEX_COLUMN_CUSTOM(MiniCollision, miniCollision, "MINICOLLS");
 
 // Jet payload
 DECLARE_SOA_COLUMN(Level, level, uint8_t);     // JetLevel::Det=reco(det), JetLevel::Part=truth(part)
