@@ -20,12 +20,11 @@
 
 #include "Common/CCDB/TriggerAliases.h"
 
-#include "Framework/HistogramRegistry.h"
-#include "Framework/Logger.h"
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
 
-#include <string>
-
-using namespace o2::framework;
+#include <cmath>
 
 namespace o2::analysis::femto_universe
 {
@@ -61,19 +60,19 @@ class FemtoUniverseCollisionSelection
 
   /// Initializes histograms for the task
   /// \param registry Histogram registry to be passed
-  void init(HistogramRegistry* registry)
+  void init(o2::framework::HistogramRegistry* registry)
   {
     if (!mCutsSet) {
       LOGF(error, "Event selection not set - quitting!");
     }
     mHistogramRegistry = registry;
-    mHistogramRegistry->add("Event/zvtxhist", "; vtx_{z} (cm); Entries", kTH1F, {{300, -12.5, 12.5}});
-    mHistogramRegistry->add("Event/MultV0M", "; vMultV0M; Entries", kTH1F, {{16384, 0, 32768}});
-    mHistogramRegistry->add("Event/MultT0M", "; vMultT0M; Entries", kTH1F, {{4096, 0, 8192}});
-    mHistogramRegistry->add("Event/MultNTracksPV", "; vMultNTracksPV; Entries", kTH1F, {{120, 0, 120}});
-    mHistogramRegistry->add("Event/MultNTracklets", "; vMultNTrackslets; Entries", kTH1F, {{300, 0, 300}});
-    mHistogramRegistry->add("Event/MultTPC", "; vMultTPC; Entries", kTH1I, {{600, 0, 600}});
-    mHistogramRegistry->add("Event/Sphericity", "; Sphericity; Entries", kTH1I, {{200, 0, 3}});
+    mHistogramRegistry->add("Event/zvtxhist", "; vtx_{z} (cm); Entries", o2::framework::kTH1F, {{300, -12.5, 12.5}});
+    mHistogramRegistry->add("Event/MultV0M", "; vMultV0M; Entries", o2::framework::kTH1F, {{16384, 0, 32768}});
+    mHistogramRegistry->add("Event/MultT0M", "; vMultT0M; Entries", o2::framework::kTH1F, {{4096, 0, 8192}});
+    mHistogramRegistry->add("Event/MultNTracksPV", "; vMultNTracksPV; Entries", o2::framework::kTH1F, {{120, 0, 120}});
+    mHistogramRegistry->add("Event/MultNTracklets", "; vMultNTrackslets; Entries", o2::framework::kTH1F, {{300, 0, 300}});
+    mHistogramRegistry->add("Event/MultTPC", "; vMultTPC; Entries", o2::framework::kTH1I, {{600, 0, 600}});
+    mHistogramRegistry->add("Event/Sphericity", "; Sphericity; Entries", o2::framework::kTH1I, {{200, 0, 3}});
   }
 
   /// Print some debug information
@@ -206,15 +205,15 @@ class FemtoUniverseCollisionSelection
   }
 
  private:
-  HistogramRegistry* mHistogramRegistry = nullptr; ///< For QA output
-  bool mCutsSet = false;                           ///< Protection against running without cuts
-  bool mCheckTrigger = false;                      ///< Check for trigger
-  bool mCheckOffline = false;                      ///< Check for offline criteria (might change)
-  bool mCheckIsRun3 = false;                       ///< Check if running on Pilot Beam
-  triggerAliases mTrigger = kINT7;                 ///< Trigger to check for
-  float mZvtxMax = 999.f;                          ///< Maximal deviation from nominal z-vertex (cm)
-  float mCentMin = 0.0;                            ///< Minimum centrality value
-  float mCentMax = 100.0;                          ///< Maximum centrality value
+  o2::framework::HistogramRegistry* mHistogramRegistry = nullptr; ///< For QA output
+  bool mCutsSet = false;                                          ///< Protection against running without cuts
+  bool mCheckTrigger = false;                                     ///< Check for trigger
+  bool mCheckOffline = false;                                     ///< Check for offline criteria (might change)
+  bool mCheckIsRun3 = false;                                      ///< Check if running on Pilot Beam
+  triggerAliases mTrigger = kINT7;                                ///< Trigger to check for
+  float mZvtxMax = 999.f;                                         ///< Maximal deviation from nominal z-vertex (cm)
+  float mCentMin = 0.0;                                           ///< Minimum centrality value
+  float mCentMax = 100.0;                                         ///< Maximum centrality value
 };
 } // namespace o2::analysis::femto_universe
 
