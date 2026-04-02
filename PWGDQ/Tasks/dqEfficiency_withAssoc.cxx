@@ -40,6 +40,7 @@
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 
 #include <THashList.h>
 #include <TList.h>
@@ -1397,6 +1398,9 @@ struct AnalysisSameEventPairing {
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
+  // PDG database
+  Service<o2::framework::O2DatabasePDG> pdgDB;
+
   // Filter filterEventSelected = aod::dqanalysisflags::isEventSelected & uint32_t(1);
   Filter eventFilter = aod::dqanalysisflags::isEventSelected > static_cast<uint32_t>(0);
 
@@ -2275,6 +2279,16 @@ struct AnalysisSameEventPairing {
                 // cout << "      Signal matched!" << endl;
                 mcDecision |= (static_cast<uint32_t>(1) << isig);
                 VarManager::FillPairMC<TPairType>(t1_raw, t2_raw);
+		// check if t1_raw and t2_raw have same mother to compute decay length related variables
+		if(t1_raw.has_mothers() && t2_raw.has_mothers()){ 
+			auto motherMCParticle_t1 = t1_raw.template mothers_first_as<ReducedMCTracks>();
+                	auto motherMCParticle_t2 = t2_raw.template mothers_first_as<ReducedMCTracks>();
+                	if(motherMCParticle_t1 == motherMCParticle_t2){
+                	auto mcEvent = mcEvents.rawIteratorAt(motherMCParticle_t1.reducedMCeventId());
+                	std::array<double, 3> collVtxPos = {mcEvent.mcPosX(), mcEvent.mcPosY(), mcEvent.mcPosZ()};
+                	VarManager::FillTrackCollisionMC<TPairType>(motherMCParticle_t1,collVtxPos,pdgDB->Mass(motherMCParticle_t1.pdgCode()));
+               		}
+		}
                 // cout << "      Filled VarManager for the pair." << endl;
                 fHistMan->FillHistClass(Form("MCTruthGenPairSel_%s", sig->GetName()), VarManager::fgValues);
                 fHistMan->FillHistClass(Form("MCTruthGenPseudoPolPairSel_%s", sig->GetName()), VarManager::fgValues);
