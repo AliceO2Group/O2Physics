@@ -191,7 +191,7 @@ struct LumiStabilityLightIons {
               (iBCCategory == kBCNSLFDD && cfgDoBCNSLFDD) || (iBCCategory == kBCNSLFT0 && cfgDoBCNSLFT0)) {
             mHistManager.add(Form("%s", std::string(NBCsVsTimeHistNames[iTrigger][iBCCategory]).c_str()), "Time of triggered BCs since the start of fill;#bf{t-t_{SOF} (min)};#bf{#it{N}_{BC}}", HistType::kTH1D, {timeAxis});
             mHistManager.add(Form("%s", std::string(NBCsVsBCIDHistNames[iTrigger][iBCCategory]).c_str()), "BC ID of triggered BCs;#bf{BC ID in orbit};#bf{#it{N}_{BC}}", HistType::kTH1D, {bcIDAxis});
-            mInspectedHistos[iTrigger][iBCCategory] = mHistManager.add<TH1>(Form("%s", std::string(NBCsInspectedVsBCIDHistNames[iTrigger][iBCCategory]).c_str()),"Inspected BC ID (denominator for mu);#bf{BC ID in orbit};#bf{#it{N}_{BC}}",HistType::kTH1D, {bcIDAxis});
+            mInspectedHistos[iTrigger][iBCCategory] = mHistManager.add<TH1>(Form("%s", std::string(NBCsInspectedVsBCIDHistNames[iTrigger][iBCCategory]).c_str()), "Inspected BC ID (denominator for mu);#bf{BC ID in orbit};#bf{#it{N}_{BC}}", HistType::kTH1D, {bcIDAxis});
           }
         }
       }
@@ -472,9 +472,9 @@ struct LumiStabilityLightIons {
         }
       }
 
-      if (anyFDDTrigger) 
+      if (anyFDDTrigger)
         globalBCIdOfLastBCWithActivityFDD = globalBCFDD;
-      if (anyFT0Trigger) 
+      if (anyFT0Trigger)
         globalBCIdOfLastBCWithActivityFT0 = globalBC;
 
       globalBCLastInspectedBC = globalBC;
