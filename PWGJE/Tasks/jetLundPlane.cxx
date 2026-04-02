@@ -53,7 +53,7 @@ DECLARE_SOA_TABLE(MiniCollisions, "AOD", "MINICOLL",
                   MiniCollTag);
 
 // MiniJets -> MiniCollisions
-DECLARE_SOA_INDEX_COLUMN(MiniCollision, miniCollision);
+DECLARE_SOA_INDEX_COLUMN_CUSTOM(MiniCollision, miniCollision, "MINICOLLS");
 
 // Jet payload
 DECLARE_SOA_COLUMN(Level, level, uint8_t);     // JetLevel::Det=reco(det), JetLevel::Part=truth(part)
@@ -96,6 +96,9 @@ DECLARE_SOA_TABLE(MiniJetMatches, "AOD", "MINIMCH",
 namespace
 {
 constexpr float kTiny = 1e-12f;
+constexpr uint64_t collisionKeyShift = 1ULL;
+constexpr uint64_t partCollisionKeyTag = 1ULL;
+constexpr size_t MinConstituentsForJet = 2;
 
 struct JetLevel {
   enum Type : uint8_t {
@@ -416,7 +419,7 @@ struct JetLundPlaneUnfolding {
   std::vector<SplittingObs> getPrimarySplittings(JetRowT const& jet, ConstituentTableT const&)
   {
     auto fjInputs = buildFastJetInputs(jet.template tracks_as<ConstituentTableT>(), trackPtMin.value);
-    if (fjInputs.size() < 2) {
+    if (fjInputs.size() < MinConstituentsForJet) {
       return {};
     }
 
@@ -583,7 +586,8 @@ struct JetLundPlaneUnfolding {
       fillSplittingQAHists(spl, /*isTruth*/ true, partJet.pt());
 
       if (writeMiniAOD.value) {
-        const uint64_t partCollKey = (static_cast<uint64_t>(partJet.mcCollisionId()) << 1U) | 1ULL;
+        const uint64_t partCollKey =
+          (static_cast<uint64_t>(partJet.mcCollisionId()) << collisionKeyShift) | partCollisionKeyTag;
         int partMiniCollIdx = -1;
         auto collIt = partMiniCollByKey.find(partCollKey);
         if (collIt == partMiniCollByKey.end()) {
@@ -650,7 +654,8 @@ struct JetLundPlaneUnfolding {
       fillSplittingQAHists(detSpl, /*isTruth*/ false, detJet.pt());
 
       if (writeMiniAOD.value) {
-        const uint64_t detCollKey = (static_cast<uint64_t>(detJet.collisionId()) << 1U);
+        const uint64_t detCollKey =
+          (static_cast<uint64_t>(detJet.collisionId()) << collisionKeyShift);
         int detMiniCollIdx = -1;
         auto collIt = detMiniCollByKey.find(detCollKey);
         if (collIt == detMiniCollByKey.end()) {
@@ -795,5 +800,5 @@ struct JetLundPlaneUnfolding {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<JetLundPlaneUnfolding>(cfgc, TaskName{"jet-lund-plane"})};
+    adaptAnalysisTask<JetLundPlaneUnfolding>(cfgc)};
 }
