@@ -47,7 +47,6 @@
 #include <Math/Vector4Dfwd.h>
 #include <TH1.h>
 #include <TString.h>
-#include <TVector3.h>
 
 #include <algorithm>
 #include <climits>

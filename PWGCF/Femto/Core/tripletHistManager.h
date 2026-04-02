@@ -252,9 +252,9 @@ class TripletHistManager
 
   void setMass(int PdgParticle1, int PdgParticle2, int PdgParticle3)
   {
-    mPdgMass1 = o2::analysis::femto::utils::getMass(PdgParticle1);
-    mPdgMass2 = o2::analysis::femto::utils::getMass(PdgParticle2);
-    mPdgMass3 = o2::analysis::femto::utils::getMass(PdgParticle3);
+    mPdgMass1 = utils::getPdgMass(PdgParticle1);
+    mPdgMass2 = utils::getPdgMass(PdgParticle2);
+    mPdgMass3 = utils::getPdgMass(PdgParticle3);
   }
   void setCharge(int chargeAbsParticle1, int chargeAbsParticle2, int chargeAbsParticle3)
   {

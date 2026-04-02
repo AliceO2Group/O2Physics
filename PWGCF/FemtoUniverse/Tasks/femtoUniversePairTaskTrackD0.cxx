@@ -558,14 +558,14 @@ struct FemtoUniversePairTaskTrackD0 {
     mcRecoRegistry.add("hMassVsPtD0barNonPrompt", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     // Histograms for D0/D0bar correlated backgrounds
     if (fillCorrBkgs) {
-      mcRecoRegistry.add("D0D0bar_corrBkgs/hMassVsPtD0ToPiKaPi", "2-prong candidates;inv. mass (#pi^{+} K^{-} #pi^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-      mcRecoRegistry.add("D0D0bar_corrBkgs/hMassVsPtD0ToPiPi", "2-prong candidates;inv. mass (#pi^{+} #pi^{-}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-      mcRecoRegistry.add("D0D0bar_corrBkgs/hMassVsPtD0ToPiPiPi", "2-prong candidates;inv. mass (#pi^{+} #pi^{-} #pi^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-      mcRecoRegistry.add("D0D0bar_corrBkgs/hMassVsPtD0ToKaKa", "2-prong candidates;inv. mass (K^{+} K^{-}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-      mcRecoRegistry.add("D0D0bar_corrBkgs/hMassVsPtD0barToPiKaPi", "2-prong candidates;inv. mass (#pi^{+} K^{-} #pi^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-      mcRecoRegistry.add("D0D0bar_corrBkgs/hMassVsPtD0barToPiPi", "2-prong candidates;inv. mass (#pi^{+} #pi^{-}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-      mcRecoRegistry.add("D0D0bar_corrBkgs/hMassVsPtD0barToPiPiPi", "2-prong candidates;inv. mass (#pi^{+} #pi^{-} #pi^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-      mcRecoRegistry.add("D0D0bar_corrBkgs/hMassVsPtD0barToKaKa", "2-prong candidates;inv. mass (K^{+} K^{-}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+      mcRecoRegistry.add("hMassVsPtD0ToPiKaPi", "2-prong candidates;inv. mass (#pi^{+} K^{-} #pi^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+      mcRecoRegistry.add("hMassVsPtD0ToPiPi", "2-prong candidates;inv. mass (#pi^{+} #pi^{-}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+      mcRecoRegistry.add("hMassVsPtD0ToPiPiPi", "2-prong candidates;inv. mass (#pi^{+} #pi^{-} #pi^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+      mcRecoRegistry.add("hMassVsPtD0ToKaKa", "2-prong candidates;inv. mass (K^{+} K^{-}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+      mcRecoRegistry.add("hMassVsPtD0barToPiKaPi", "2-prong candidates;inv. mass (#pi^{+} K^{-} #pi^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+      mcRecoRegistry.add("hMassVsPtD0barToPiPi", "2-prong candidates;inv. mass (#pi^{+} #pi^{-}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+      mcRecoRegistry.add("hMassVsPtD0barToPiPiPi", "2-prong candidates;inv. mass (#pi^{+} #pi^{-} #pi^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+      mcRecoRegistry.add("hMassVsPtD0barToKaKa", "2-prong candidates;inv. mass (K^{+} K^{-}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {confInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     }
     // Histograms for identified hadrons
     mcRecoRegistry.add("hMcRecKpPt", "MC Reco K+;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {{500, 0, 5}}});
@@ -1501,13 +1501,13 @@ struct FemtoUniversePairTaskTrackD0 {
           }
           if (fillCorrBkgs) {
             if (part.sign() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0) { // D0 -> pi+K-pi0
-              mcRecoRegistry.fill(HIST("D0D0bar_corrBkgs/hMassVsPtD0ToPiKaPi"), part.mLambda(), part.pt(), weight);
+              mcRecoRegistry.fill(HIST("hMassVsPtD0ToPiKaPi"), part.mLambda(), part.pt(), weight);
             } else if (part.sign() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiPi) { // D0 -> pi+pi-
-              mcRecoRegistry.fill(HIST("D0D0bar_corrBkgs/hMassVsPtD0ToPiPi"), part.mLambda(), part.pt(), weight);
+              mcRecoRegistry.fill(HIST("hMassVsPtD0ToPiPi"), part.mLambda(), part.pt(), weight);
             } else if (part.sign() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiPiPi0) { // D0 -> pi+pi-pi0
-              mcRecoRegistry.fill(HIST("D0D0bar_corrBkgs/hMassVsPtD0ToPiPiPi"), part.mLambda(), part.pt(), weight);
+              mcRecoRegistry.fill(HIST("hMassVsPtD0ToPiPiPi"), part.mLambda(), part.pt(), weight);
             } else if (part.sign() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToKK) { // D0 -> K+K-
-              mcRecoRegistry.fill(HIST("D0D0bar_corrBkgs/hMassVsPtD0ToKaKa"), part.mLambda(), part.pt(), weight);
+              mcRecoRegistry.fill(HIST("hMassVsPtD0ToKaKa"), part.mLambda(), part.pt(), weight);
             }
           }
           if (part.tpcNClsFound() == 0) { // prompt candidates
@@ -1525,13 +1525,13 @@ struct FemtoUniversePairTaskTrackD0 {
           }
           if (fillCorrBkgs) {
             if (part.sign() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0) { // D0 -> pi+K-pi0
-              mcRecoRegistry.fill(HIST("D0D0bar_corrBkgs/hMassVsPtD0barToPiKaPi"), part.mLambda(), part.pt(), weight);
+              mcRecoRegistry.fill(HIST("hMassVsPtD0barToPiKaPi"), part.mLambda(), part.pt(), weight);
             } else if (part.sign() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiPi) { // D0 -> pi+pi-
-              mcRecoRegistry.fill(HIST("D0D0bar_corrBkgs/hMassVsPtD0barToPiPi"), part.mLambda(), part.pt(), weight);
+              mcRecoRegistry.fill(HIST("hMassVsPtD0barToPiPi"), part.mLambda(), part.pt(), weight);
             } else if (part.sign() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiPiPi0) { // D0 -> pi+pi-pi0
-              mcRecoRegistry.fill(HIST("D0D0bar_corrBkgs/hMassVsPtD0barToPiPiPi"), part.mLambda(), part.pt(), weight);
+              mcRecoRegistry.fill(HIST("hMassVsPtD0barToPiPiPi"), part.mLambda(), part.pt(), weight);
             } else if (part.sign() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToKK) { // D0 -> K+K-
-              mcRecoRegistry.fill(HIST("D0D0bar_corrBkgs/hMassVsPtD0barToKaKa"), part.mLambda(), part.pt(), weight);
+              mcRecoRegistry.fill(HIST("hMassVsPtD0barToKaKa"), part.mLambda(), part.pt(), weight);
             }
           }
           if (part.tpcNClsFound() == 0) { // prompt candidates
