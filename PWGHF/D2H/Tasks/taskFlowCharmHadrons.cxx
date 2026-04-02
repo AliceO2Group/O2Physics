@@ -778,9 +778,9 @@ struct HfTaskFlowCharmHadrons {
 
         if (qVecRedDetector.value == QvecEstimator::TPCTot || qVecRedDetector.value == QvecEstimator::TPCPos || qVecRedDetector.value == QvecEstimator::TPCNeg) {
           // Correct for track multiplicity
-          redQVec = TMath::Sqrt(xRedQVec * xRedQVec + yRedQVec * yRedQVec) * amplRedQVec / TMath::Sqrt(amplRedQVec - tracksRedQx.size());
+          redQVec = std::sqrt(xRedQVec * xRedQVec + yRedQVec * yRedQVec) * amplRedQVec / std::sqrt(amplRedQVec - tracksRedQx.size());
         } else {
-          redQVec = TMath::Sqrt(xRedQVec * xRedQVec + yRedQVec * yRedQVec) * TMath::Sqrt(amplRedQVec);
+          redQVec = std::sqrt(xRedQVec * xRedQVec + yRedQVec * yRedQVec) * std::sqrt(amplRedQVec);
         }
       }
       if (storeRedQVec) {
