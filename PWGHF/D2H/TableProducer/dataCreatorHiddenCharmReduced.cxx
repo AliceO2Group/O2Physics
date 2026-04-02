@@ -281,7 +281,7 @@ struct HfDataCreatorHiddenCharmReduced {
           }
         }
       }
-      if (selectedTrackIds.size() < nDaughtersCharmMeson) {
+      if (selectedTrackIds.size() < NDaughtersCharmMeson) {
         continue;
       }
       hfReducedCollision(collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), hfRejMap, bz);
