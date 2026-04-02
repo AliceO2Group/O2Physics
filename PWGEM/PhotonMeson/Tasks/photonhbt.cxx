@@ -633,12 +633,13 @@ struct photonhbt {
     }
 
     fRegistry.add("Pair/same/hDeltaRCosOA", "distance between 2 conversion points / cos(#theta_{op}/2);#Delta r / cos(#theta_{op}/2) (cm);counts", kTH1D, {{100, 0, 100}}, true);
-    fRegistry.add("Pair/same/hSparse_DEtaDPhi_kT", "same-event (#Delta#eta,#Delta#phi,q_{inv},k_{T}) for efficiency reweighting;" "#Delta#eta;#Delta#phi (rad);q_{inv} (GeV/c);k_{T} (GeV/c)",
+    fRegistry.add("Pair/same/hSparse_DEtaDPhi_kT",
+                  "same-event (#Delta#eta,#Delta#phi,q_{inv},k_{T}) for efficiency reweighting;"
+                  "#Delta#eta;#Delta#phi (rad);q_{inv} (GeV/c);k_{T} (GeV/c)",
                   kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisKt}, true);
 
-    fRegistry.add("Pair/same/hPhi_lowerPtV0",
-                  "azimuthal angle of lower-p_{T} V0 in pair;#phi (rad);counts",
-                  kTH1D, {axisPhi}, true);
+    fRegistry.add("Pair/same/hPhi_lowerPtV0", "azimuthal angle of lower-p_{T} V0 in pair;#phi (rad);counts", kTH1D, {axisPhi}, true);
+    fRegistry.add("Pair/same/hSparse_DEtaDPhi_qinv_kT", "azimuthal angle of lower-p_{T} V0 in pair;#phi (rad);counts", kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisQinv, axisKt}, true);
 
     addQAHistogramsForStep("Pair/same/QA/Before/");
     addQAHistogramsForStep("Pair/same/QA/AfterDRCosOA/");
@@ -651,10 +652,22 @@ struct photonhbt {
     addFullRangeHistograms("Pair/same/FullRange/");
     fRegistry.addClone("Pair/same/", "Pair/mix/");
 
-    fRegistry.add("Pair/same/EtaTopology/hSparse_DEtaDPhi_kT_sameSideV0_sameSideLegs", "both V0 same #eta-side, all legs same side;" "#Delta#eta;#Delta#phi (rad);k_{T} (GeV/c)", kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisKt}, true);
-    fRegistry.add("Pair/same/EtaTopology/hSparse_DEtaDPhi_kT_sameSideV0_mixedLegs", "both V0 same #eta-side, legs mixed sides;" "#Delta#eta;#Delta#phi (rad);k_{T} (GeV/c)", kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisKt}, true);
-    fRegistry.add("Pair/same/EtaTopology/hSparse_DEtaDPhi_kT_diffSideV0_matchingLegs", "V0 on opposite #eta-sides, legs match their V0 side;"  "#Delta#eta;#Delta#phi (rad);k_{T} (GeV/c)", kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisKt}, true);
-    fRegistry.add("Pair/same/EtaTopology/hSparse_DEtaDPhi_kT_diffSideV0_crossedLegs", "V0 on opposite #eta-sides, legs cross their V0 side;" "#Delta#eta;#Delta#phi (rad);k_{T} (GeV/c)", kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisKt}, true);
+    fRegistry.add("Pair/same/EtaTopology/hSparse_DEtaDPhi_kT_sameSideV0_sameSideLegs",
+                  "both V0 same #eta-side, all legs same side;"
+                  "#Delta#eta;#Delta#phi (rad);k_{T} (GeV/c)",
+                  kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisKt}, true);
+    fRegistry.add("Pair/same/EtaTopology/hSparse_DEtaDPhi_kT_sameSideV0_mixedLegs",
+                  "both V0 same #eta-side, legs mixed sides;"
+                  "#Delta#eta;#Delta#phi (rad);k_{T} (GeV/c)",
+                  kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisKt}, true);
+    fRegistry.add("Pair/same/EtaTopology/hSparse_DEtaDPhi_kT_diffSideV0_matchingLegs",
+                  "V0 on opposite #eta-sides, legs match their V0 side;"
+                  "#Delta#eta;#Delta#phi (rad);k_{T} (GeV/c)",
+                  kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisKt}, true);
+    fRegistry.add("Pair/same/EtaTopology/hSparse_DEtaDPhi_kT_diffSideV0_crossedLegs",
+                  "V0 on opposite #eta-sides, legs cross their V0 side;"
+                  "#Delta#eta;#Delta#phi (rad);k_{T} (GeV/c)",
+                  kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisKt}, true);
   }
 
   void DefineEMEventCut()
@@ -1073,7 +1086,7 @@ struct photonhbt {
 
     // fRegistryPairMC  — reco-level pair histograms, per MC truth type
 
-    //  Per-type CF + observables 
+    //  Per-type CF + observables
     static constexpr std::array<std::string_view, 6> kTypes = {
       "TrueTrueDistinct/", "TrueTrueSamePhoton/", "SharedMcLeg/",
       "TrueFake/", "FakeFake/", "Pi0Daughters/"};
@@ -1093,7 +1106,6 @@ struct photonhbt {
                             hbtanalysis.cfgUseLCMS ? "MC CF 1D LCMS" : "MC CF 1D (qinv)",
                             kTH2D, {hbtanalysis.cfgUseLCMS ? axisQabsLcms : axisQinv, axisKt}, true);
       }
-
 
       // 1D observables
       fRegistryPairMC.add((base + "hQinv").c_str(), "q_{inv};q_{inv} (GeV/c);counts", kTH1D, {axisQinv}, true);
