@@ -104,7 +104,8 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
     Configurable<float> confTrkTPCfracsClsMax{"confTrkTPCfracsClsMax", 1.0, "Max of fraction of TPC shared cluster "};
     Configurable<int> confTrkTPCnClsMin{"confTrkTPCnClsMin", 80, "Min number of TPC clusters"};
     Configurable<int> confTrkTPCsClsMax{"confTrkTPCsClsMax", 160, "Max number of TPC shared clusters"};
-    Configurable<float> confPairFracSharedTPCcls{"confPairFracSharedTPCcls", 1.0, "Max. fraction of TPC shared clusters between two closed tracks"};
+    Configurable<float> confPairFracSharedTPCclsMin{"confPairFracSharedTPCclsMin", 0.0, "Min. fraction of TPC shared clusters between two closed tracks"};
+    Configurable<float> confPairFracSharedTPCclsMax{"confPairFracSharedTPCclsMax", 1.0, "Miax. fraction of TPC shared clusters between two closed tracks"};
     Configurable<float> confCPRChosenRadii{"confCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
     Configurable<bool> confUseCCImCut{"confUseCCImCut", false, "Fill SH within specific quadrants of qout-qside"};
     Configurable<float> confMinqTcut{"confMinqTcut", 0.005, "Min. qT cut on filling SH"};
@@ -560,7 +561,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         if (kT < firstRealElement || kT > lastElement)
           continue;
         float pairFractionTPCsCls = static_cast<float>((p1.tpcNClsShared() + p2.tpcNClsShared())) / static_cast<float>((p1.tpcNClsFound() + p2.tpcNClsFound()));
-        if (pairFractionTPCsCls > twotracksconfigs.confPairFracSharedTPCcls.value) {
+        if (pairFractionTPCsCls < twotracksconfigs.confPairFracSharedTPCclsMin.value || pairFractionTPCsCls >= twotracksconfigs.confPairFracSharedTPCclsMax.value) {
           continue;
         }
 
@@ -607,7 +608,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
           continue;
 
         float pairFractionTPCsCls = static_cast<float>((p1.tpcNClsShared() + p2.tpcNClsShared())) / static_cast<float>((p1.tpcNClsFound() + p2.tpcNClsFound()));
-        if (pairFractionTPCsCls > twotracksconfigs.confPairFracSharedTPCcls.value) {
+        if (pairFractionTPCsCls < twotracksconfigs.confPairFracSharedTPCclsMin.value || pairFractionTPCsCls >= twotracksconfigs.confPairFracSharedTPCclsMax.value) {
           continue;
         }
 
@@ -971,7 +972,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         continue;
 
       float pairFractionTPCsCls = static_cast<float>((p1.tpcNClsShared() + p2.tpcNClsShared())) / static_cast<float>((p1.tpcNClsFound() + p2.tpcNClsFound()));
-      if (pairFractionTPCsCls > twotracksconfigs.confPairFracSharedTPCcls.value) {
+      if (pairFractionTPCsCls < twotracksconfigs.confPairFracSharedTPCclsMin.value || pairFractionTPCsCls >= twotracksconfigs.confPairFracSharedTPCclsMax.value) {
         continue;
       }
 
