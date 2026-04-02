@@ -13,11 +13,25 @@
 //
 #include "PWGDQ/Core/HistogramsLibrary.h"
 
+#include "HistogramManager.h"
 #include "VarManager.h"
 
-#include "CommonConstants/MathConstants.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/Logger.h>
+
+#include <TArrayD.h>
+#include <TMath.h>
+#include <TString.h>
+
+#include <rapidjson/document.h>
+#include <rapidjson/error/error.h>
+
+#include <RtypesCore.h>
 
 #include <algorithm>
+#include <array>
+#include <cstring>
+#include <ostream>
 #include <vector>
 
 void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* histClass, const char* groupName, const char* subGroupName)
@@ -42,7 +56,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "TF_NMFTs", "Number of MFT tracks per TF", false, 1000, 0.0, 200000.0, VarManager::kTFNMFTs);
   }
   if (!groupStr.CompareTo("event")) {
-    if (!subGroupStr.Contains("generator")) {
+    if (!subGroupStr.Contains("generator") && !subGroupStr.Contains("pairing")) {
       hm->AddHistogram(histClass, "VtxZ", "Vtx Z", false, 60, -15.0, 15.0, VarManager::kVtxZ);
       hm->AddHistogram(histClass, "VtxZ_Run", "Vtx Z", true, 1, -0.5, 0.5, VarManager::kRunNo, 60, -15.0, 15.0, VarManager::kVtxZ, 1, 0, 1, VarManager::kNothing, "", "", "", VarManager::kNothing, VarManager::kNothing, false, true);
       hm->AddHistogram(histClass, "BC", "Event per BC", false, 3564, 0.0, 3564.0, VarManager::kBCOrbit);
@@ -582,6 +596,14 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "NPeaksTrimmed2_NTracksTRD", "Number of peaks in DCAz distribution per event, trim 2, vs number of tracks with TRD", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTRD, 50, 0.0, 50.0, VarManager::kDCAzNPeaksTrimmed2);
       hm->AddHistogram(histClass, "FracAbove500um_NTracksTRD", "Fraction of tracks with DCAz > 500 um vs number of tracks with TRD", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTRD, 100, 0.0, 1.0, VarManager::kDCAzFracAbove500um);
       hm->AddHistogram(histClass, "FracAbove5mm_NTracksTRD", "Fraction of tracks with DCAz > 5 mm vs number of tracks with TRD", false, 100, 0.0, 1000.0, VarManager::kMultNTracksHasTRD, 100, 0.0, 1.0, VarManager::kDCAzFracAbove5mm);
+    }
+    if (subGroupStr.Contains("pairing")) {
+      if (subGroupStr.Contains("sameevent")) {
+        hm->AddHistogram(histClass, "NPairsPerEvent", "Number of track pairs per event", false, 100, 0.0, 100.0, VarManager::kNPairsPerEvent);
+      }
+      if (subGroupStr.Contains("mixedevent")) {
+        hm->AddHistogram(histClass, "NPairsPerEvent", "Number of track pairs per event", false, 500, 0.0, 500.0, VarManager::kNPairsPerEvent);
+      }
     }
   } // end "event"
 
@@ -2529,7 +2551,7 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
         str += json[i];
       }
     }
-    LOG(fatal) << "**** Parsing error is somewhere here: " << str.Data() << endl;
+    LOG(fatal) << "**** Parsing error is somewhere here: " << str.Data() << std::endl;
     return;
   }
 

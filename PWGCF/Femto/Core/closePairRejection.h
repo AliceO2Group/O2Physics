@@ -16,20 +16,24 @@
 #ifndef PWGCF_FEMTO_CORE_CLOSEPAIRREJECTION_H_
 #define PWGCF_FEMTO_CORE_CLOSEPAIRREJECTION_H_
 
-#include "RecoDecay.h"
-
 #include "PWGCF/Femto/Core/histManager.h"
 
-#include "Framework/Configurable.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/HistogramSpec.h"
+#include <Common/Core/RecoDecay.h>
+
+#include <CommonConstants/MathConstants.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
 
 #include <array>
 #include <chrono>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <map>
 #include <numeric>
+#include <optional>
 #include <random>
 #include <string>
 #include <vector>

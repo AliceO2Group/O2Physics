@@ -100,6 +100,7 @@ struct CorrSparse {
                O2_DEFINE_CONFIGURABLE(processFT0A, bool, true, "Process FT0A correlations")
                  O2_DEFINE_CONFIGURABLE(processFT0C, bool, true, "Process FT0C correlations")
                    O2_DEFINE_CONFIGURABLE(processMFT, bool, true, "Process MFT correlations")
+                     O2_DEFINE_CONFIGURABLE(withGain, bool, false, "Use gain for FT0A and FT0C")
 
            } cfgDetectorConfig;
 
@@ -143,9 +144,7 @@ struct CorrSparse {
                  O2_DEFINE_CONFIGURABLE(cfgRejectFT0CInside, bool, false, "Rejection of inner ring channels of the FT0C detector")
                    O2_DEFINE_CONFIGURABLE(cfgRejectFT0COutside, bool, false, "Rejection of outer ring channels of the FT0C detector")
                      O2_DEFINE_CONFIGURABLE(cfgRemapFT0ADeadChannels, bool, false, "If true, remap FT0A channels 60-63 to amplitudes from 92-95 respectively")
-                       O2_DEFINE_CONFIGURABLE(cfgRemapFT0CDeadChannels, bool, false, "If true, remap FT0C channels 177->145, 176->144, 178->146, 179->147, 139->115")
-
-           } cfgFITConfig;
+                       O2_DEFINE_CONFIGURABLE(cfgRemapFT0CDeadChannels, bool, false, "If true, remap FT0C channels 177->145, 176->144, 178->146, 179->147, 139->115")} cfgFITConfig;
 
   O2_DEFINE_CONFIGURABLE(cfgMinMixEventNum, int, 5, "Minimum number of events to mix")
   O2_DEFINE_CONFIGURABLE(cfgMergingCut, float, 0.02, "Merging cut on track merge")
@@ -157,7 +156,6 @@ struct CorrSparse {
   O2_DEFINE_CONFIGURABLE(cfgCentralityWeight, std::string, "", "CCDB path to centrality weight object")
   O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, bool, false, "Use local efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgUseEventWeights, bool, false, "Use event weights for mixed event")
-  O2_DEFINE_CONFIGURABLE(cfgCollType, int, 0, "Collision type: 0 = pp, 1 = pPb, 2 = pO, 3 = OO")
 
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgMultCentHighCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 10.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
@@ -190,6 +188,11 @@ struct CorrSparse {
     TF1* fT0AV0ASigma = nullptr;
   } cfgFuncParas;
 
+  Configurable<float> cfgCutFV0{"cfgCutFV0", 50., "FV0A threshold"};
+  Configurable<float> cfgCutFT0A{"cfgCutFT0A", 150., "FT0A threshold"};
+  Configurable<float> cfgCutFT0C{"cfgCutFT0C", 50., "FT0C threshold"};
+  Configurable<float> cfgCutZDC{"cfgCutZDC", 10., "ZDC threshold"};
+
   SliceCache cache;
   SliceCache cacheNch;
 
@@ -213,6 +216,7 @@ struct CorrSparse {
   ConfigurableAxis axisDeltaEtaMftFt0c{"axisDeltaEtaMFTFT0C", {48, -2.0, 0.6}, "delta eta axis for MFT-FT0C histograms"};
   ConfigurableAxis axisDeltaEtaMftFt0a{"axisDeltaEtaMFTFT0A", {48, -8.5, -5.9}, "delta eta axis for MFT-FT0A histograms"};
   ConfigurableAxis axisDeltaEtaMftFv0{"axisDeltaEtaMFTFV0", {48, -8.6, -4.7}, "delta eta axis for MFT-FV0 histograms"};
+  ConfigurableAxis axisDeltaEtaFt0s{"axisDeltaEtaFT0S", {48, -8.6, 5.0}, "delta eta axis for FT0S histograms"};
 
   ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
   ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt associated axis for histograms"};
@@ -236,7 +240,7 @@ struct CorrSparse {
 
   // make the filters and cuts.
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgZVtxCut);
-  Filter trackFilter = (nabs(aod::track::eta) < cfgTrackCuts.cfgEtaCut) && (cfgTrackCuts.cfgPtCutMin < aod::track::pt) && (cfgTrackCuts.cfgPtCutMax > aod::track::pt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgTrackCuts.cfgCutChi2prTPCcls) && (aod::track::dcaZ < cfgTrackCuts.cfgCutDCAz);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgTrackCuts.cfgEtaCut) && (cfgTrackCuts.cfgPtCutMin < aod::track::pt) && (cfgTrackCuts.cfgPtCutMax > aod::track::pt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < cfgTrackCuts.cfgCutChi2prTPCcls) && (aod::track::dcaZ < cfgTrackCuts.cfgCutDCAz);
 
   Filter mftTrackEtaFilter = ((aod::fwdtrack::eta < cfgMftConfig.etaMftTrackMaxFilter) && (aod::fwdtrack::eta > cfgMftConfig.etaMftTrackMinFilter));
 
@@ -340,7 +344,7 @@ struct CorrSparse {
     LOGF(info, "Starting init");
 
     // Event Counter
-    if ((doprocessSameTpcFIT || doprocessSameTpcMft || doprocessSameTPC || doprocessSameMFTFIT || doprocessSameTpcMftReassociated2D || doprocessSameTpcMftReassociated3D || doprocessSameMftReassociated2DFIT) && cfgUseAdditionalEventCut) {
+    if ((doprocessSameTpcFIT || doprocessSameTpcMft || doprocessSameTPC || doprocessSameMFTFIT || doprocessSameTpcMftReassociated2D || doprocessSameMftReassociated2DFIT || doprocessSameFT0s) && cfgUseAdditionalEventCut) {
       registry.add("hEventCountSpecific", "Number of Event;; Count", {HistType::kTH1D, {{13, 0, 13}}});
       registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(1, "after sel8");
       registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(2, "kNoSameBunchPileup");
@@ -357,7 +361,7 @@ struct CorrSparse {
       registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(13, "cfgEvSelV0AT0ACut");
     }
 
-    if (doprocessSameTpcMftReassociated2D || doprocessSameTpcMftReassociated3D || doprocessSameMftReassociated2DFIT) {
+    if (doprocessSameTpcMftReassociated2D || doprocessSameMftReassociated2DFIT) {
       registry.add("hEventCountMftReassoc", "Number of Events;; Count", {HistType::kTH1D, {{4, 0, 4}}});
       registry.get<TH1>(HIST("hEventCountMftReassoc"))->GetXaxis()->SetBinLabel(1, "all MFT tracks");
       registry.get<TH1>(HIST("hEventCountMftReassoc"))->GetXaxis()->SetBinLabel(2, "MFT tracks after selection");
@@ -370,12 +374,12 @@ struct CorrSparse {
     }
 
     // Make histograms to check the distributions after cuts
-    if (doprocessSameTpcFIT || doprocessSameTpcMft || doprocessSameTPC || doprocessSameMFTFIT || doprocessSameTpcMftReassociated2D || doprocessSameTpcMftReassociated3D || doprocessSameMftReassociated2DFIT) {
+    if (doprocessSameTpcFIT || doprocessSameTpcMft || doprocessSameTPC || doprocessSameMFTFIT || doprocessSameTpcMftReassociated2D || doprocessSameMftReassociated2DFIT || doprocessSameFT0s) {
       registry.add("Phi", "Phi", {HistType::kTH1D, {axisPhi}});
       if (doprocessSameMFTFIT) {
         registry.add("Eta", "EtaMFT", {HistType::kTH1D, {axisEtaMft}});
       }
-      if (doprocessSameTpcFIT || doprocessSameTpcMft || doprocessSameTPC || doprocessSameTpcMftReassociated2D || doprocessSameTpcMftReassociated3D) {
+      if (doprocessSameTpcFIT || doprocessSameTpcMft || doprocessSameTPC || doprocessSameTpcMftReassociated2D) {
         registry.add("Eta", "Eta", {HistType::kTH1D, {axisEta}});
       }
       registry.add("EtaCorrected", "EtaCorrected", {HistType::kTH1D, {axisEta}});
@@ -386,7 +390,7 @@ struct CorrSparse {
       registry.add("zVtx", "zVtx", {HistType::kTH1D, {axisVertex}});
       registry.add("zVtx_used", "zVtx_used", {HistType::kTH1D, {axisVertex}});
 
-      if (doprocessSameTpcFIT || doprocessSameMFTFIT || doprocessSameMftReassociated2DFIT) {
+      if (doprocessSameTpcFIT || doprocessSameMFTFIT || doprocessSameMftReassociated2DFIT || doprocessSameFT0s) {
         registry.add("FT0Amp", "", {HistType::kTH2F, {axisChID, axisFit}});
         registry.add("FV0Amp", "", {HistType::kTH2F, {axisChID, axisFit}});
         registry.add("FT0AmpCorrect", "", {HistType::kTH2F, {axisChID, axisFit}});
@@ -399,22 +403,22 @@ struct CorrSparse {
       if (cfgDetectorConfig.processFT0A) {
         registry.add("deltaEta_deltaPhi_same_TPC_FT0A", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFt0a}}); // check to see the delta eta and delta phi distribution
         registry.add("deltaEta_deltaPhi_mixed_TPC_FT0A", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFt0a}});
-        registry.add("Assoc_amp_same_TPC_FT0A", "", {HistType::kTH2D, {axisChannelFt0aAxis, axisAmplitudeFt0a}});
-        registry.add("Assoc_amp_mixed_TPC_FT0A", "", {HistType::kTH2D, {axisChannelFt0aAxis, axisAmplitudeFt0a}});
-        registry.add("Trig_hist_TPC_FT0A", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
+        registry.add("Assoc_amp_same", "", {HistType::kTH2D, {axisChannelFt0aAxis, axisAmplitudeFt0a}});
+        registry.add("Assoc_amp_mixed", "", {HistType::kTH2D, {axisChannelFt0aAxis, axisAmplitudeFt0a}});
+        registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
       }
       if (cfgDetectorConfig.processFT0C) {
         registry.add("deltaEta_deltaPhi_same_TPC_FT0C", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFt0c}}); // check to see the delta eta and delta phi distribution
         registry.add("deltaEta_deltaPhi_mixed_TPC_FT0C", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFt0c}});
-        registry.add("Assoc_amp_same_TPC_FT0C", "", {HistType::kTH2D, {axisChannelFt0aAxis, axisAmplitudeFt0a}});
-        registry.add("Assoc_amp_mixed_TPC_FT0C", "", {HistType::kTH2D, {axisChannelFt0aAxis, axisAmplitudeFt0a}});
-        registry.add("Trig_hist_TPC_FT0C", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
+        registry.add("Assoc_amp_same", "", {HistType::kTH2D, {axisChannelFt0aAxis, axisAmplitudeFt0a}});
+        registry.add("Assoc_amp_mixed", "", {HistType::kTH2D, {axisChannelFt0aAxis, axisAmplitudeFt0a}});
+        registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
       }
       if (cfgDetectorConfig.processFV0) {
         registry.add("deltaEta_deltaPhi_same_TPC_FV0", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFv0}}); // check to see the delta eta and delta phi distribution
         registry.add("deltaEta_deltaPhi_same_TPC_FV0", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFv0}}); // check to see the delta eta and delta phi distribution
         registry.add("deltaEta_deltaPhi_mixed_TPC_FV0", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFv0}});
-        registry.add("Trig_hist_FT0A_FT0C", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
+        registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
       }
     }
 
@@ -443,7 +447,7 @@ struct CorrSparse {
       }
     }
 
-    if (doprocessSameTpcMft || doprocessSameTpcMftReassociated2D || doprocessSameTpcMftReassociated3D) {
+    if (doprocessSameTpcMft || doprocessSameTpcMftReassociated2D) {
       registry.add("deltaEta_deltaPhi_same_TPC_MFT", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcMft}}); // check to see the delta eta and delta phi distribution
       registry.add("deltaEta_deltaPhi_mixed_TPC_MFT", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcMft}});
       registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
@@ -452,6 +456,12 @@ struct CorrSparse {
     if (doprocessSameTPC) {
       registry.add("deltaEta_deltaPhi_same_TPC_TPC", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}}); // check to see the delta eta and delta phi distribution
       registry.add("deltaEta_deltaPhi_mixed_TPC_TPC", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}});
+      registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
+    }
+
+    if (doprocessSameFT0s) {
+      registry.add("deltaEta_deltaPhi_same_FT0A_FT0C", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaFt0s}}); // check to see the delta eta and delta phi distribution
+      registry.add("deltaEta_deltaPhi_mixed_FT0A_FT0C", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaFt0s}});
       registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
     }
 
@@ -525,6 +535,13 @@ struct CorrSparse {
                                             {axisDeltaPhi, "#Delta#varphi (rad)"},
                                             {axisDeltaEtaMftFv0, "#Delta#eta"}};
 
+    std::vector<AxisSpec> corrAxisFT0s = {{axisSample, "Sample"},
+                                          {axisVertex, "z-vtx (cm)"},
+                                          {axisPtTrigger, "p_{T} (GeV/c)"},
+                                          {axisPtAssoc, "p_{T} (GeV/c)"},
+                                          {axisDeltaPhi, "#Delta#varphi (rad)"},
+                                          {axisDeltaEtaFt0s, "#Delta#eta"}};
+
     if (doprocessSameTpcFIT) {
       if (cfgDetectorConfig.processFT0A) {
         same.setObject(new CorrelationContainer("sameEvent_TPC_FT0A", "sameEvent_TPC_FT0A", corrAxisTpcFt0a, effAxis, userAxis));
@@ -585,9 +602,9 @@ struct CorrSparse {
       mixed.setObject(new CorrelationContainer("mixedEvent_TPC_MFT_Reassociated2D", "mixedEvent_TPC_MFT_Reassociated2D", corrAxisTpcMft, effAxis, userAxis));
     }
 
-    if (doprocessSameTpcMftReassociated3D) {
-      same.setObject(new CorrelationContainer("sameEvent_TPC_MFT_Reassociated3D", "sameEvent_TPC_MFT_Reassociated3D", corrAxisTpcMft, effAxis, userAxis));
-      mixed.setObject(new CorrelationContainer("mixedEvent_TPC_MFT_Reassociated3D", "mixedEvent_TPC_MFT_Reassociated3D", corrAxisTpcMft, effAxis, userAxis));
+    if (doprocessSameFT0s) {
+      same.setObject(new CorrelationContainer("sameEvent_FT0A_FT0C", "sameEvent_FT0A_FT0C", corrAxisTpcFt0c, effAxis, userAxis));
+      mixed.setObject(new CorrelationContainer("mixedEvent_FT0A_FT0C", "mixedEvent_FT0A_FT0C", corrAxisTpcFt0c, effAxis, userAxis));
     }
     LOGF(info, "End of init");
   }
@@ -1065,13 +1082,23 @@ struct CorrSparse {
           float deltaEta = track1.eta() - eta;
 
           if (system == SameEvent) {
+            if (cfgDetectorConfig.processMFT) {
+              registry.fill(HIST("deltaEta_deltaPhi_same_MFT_FV0"), deltaPhi, deltaEta, amplitude * triggerWeight);
+            } else {
+              registry.fill(HIST("deltaEta_deltaPhi_same_TPC_FV0"), deltaPhi, deltaEta, amplitude * triggerWeight);
+            }
+
             registry.fill(HIST("Assoc_amp_same"), channelID, amplitude);
             same->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track1.pt(), deltaPhi, deltaEta, amplitude * triggerWeight);
-            registry.fill(HIST("deltaEta_deltaPhi_same_MFT_FV0"), deltaPhi, deltaEta, amplitude * triggerWeight);
+
           } else if (system == MixedEvent) {
+            if (cfgDetectorConfig.processMFT) {
+              registry.fill(HIST("deltaEta_deltaPhi_mixed_MFT_FV0"), deltaPhi, deltaEta, amplitude);
+            } else {
+              registry.fill(HIST("deltaEta_deltaPhi_mixed_TPC_FV0"), deltaPhi, deltaEta, amplitude);
+            }
             registry.fill(HIST("Assoc_amp_mixed"), channelID, amplitude);
             mixed->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track1.pt(), deltaPhi, deltaEta, amplitude);
-            registry.fill(HIST("deltaEta_deltaPhi_mixed_MFT_FV0"), deltaPhi, deltaEta, amplitude);
           }
         }
       }
@@ -1091,7 +1118,11 @@ struct CorrSparse {
         for (std::size_t iCh = 0; iCh < channelSize; iCh++) {
           int channelID = 0;
           float amplitude = 0.;
-          getChannelWithGain(tracks2, iCh, channelID, amplitude, corType);
+          if (cfgDetectorConfig.withGain) {
+            getChannelWithGain(tracks2, iCh, channelID, amplitude, corType);
+          } else {
+            getChannelFT0(tracks2, iCh, channelID, amplitude, corType);
+          }
 
           // reject depending on FT0C/FT0A rings
           if (corType == kFT0C) {
@@ -1111,25 +1142,41 @@ struct CorrSparse {
 
           if (system == SameEvent) {
             if (corType == kFT0A) {
+              if (cfgDetectorConfig.processMFT) {
+                registry.fill(HIST("deltaEta_deltaPhi_same_MFT_FT0A"), deltaPhi, deltaEta, amplitude * triggerWeight);
+              } else {
+                registry.fill(HIST("deltaEta_deltaPhi_same_TPC_FT0A"), deltaPhi, deltaEta, amplitude * triggerWeight);
+              }
               registry.fill(HIST("Assoc_amp_same"), channelID, amplitude);
               same->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track1.pt(), deltaPhi, deltaEta, amplitude * triggerWeight);
-              registry.fill(HIST("deltaEta_deltaPhi_same_MFT_FT0A"), deltaPhi, deltaEta, amplitude * triggerWeight);
             }
             if (corType == kFT0C) {
+              if (cfgDetectorConfig.processMFT) {
+                registry.fill(HIST("deltaEta_deltaPhi_same_MFT_FT0C"), deltaPhi, deltaEta, amplitude * triggerWeight);
+              } else {
+                registry.fill(HIST("deltaEta_deltaPhi_same_TPC_FT0C"), deltaPhi, deltaEta, amplitude * triggerWeight);
+              }
               registry.fill(HIST("Assoc_amp_same"), channelID, amplitude);
               same->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track1.pt(), deltaPhi, deltaEta, amplitude * triggerWeight);
-              registry.fill(HIST("deltaEta_deltaPhi_same_MFT_FT0C"), deltaPhi, deltaEta, amplitude * triggerWeight);
             }
           } else if (system == MixedEvent) {
             if (corType == kFT0A) {
+              if (cfgDetectorConfig.processMFT) {
+                registry.fill(HIST("deltaEta_deltaPhi_mixed_MFT_FT0A"), deltaPhi, deltaEta, amplitude);
+              } else {
+                registry.fill(HIST("deltaEta_deltaPhi_mixed_TPC_FT0A"), deltaPhi, deltaEta, amplitude);
+              }
               registry.fill(HIST("Assoc_amp_mixed"), channelID, amplitude);
               mixed->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track1.pt(), deltaPhi, deltaEta, amplitude);
-              registry.fill(HIST("deltaEta_deltaPhi_mixed_MFT_FT0A"), deltaPhi, deltaEta, amplitude);
             }
             if (corType == kFT0C) {
+              if (cfgDetectorConfig.processMFT) {
+                registry.fill(HIST("deltaEta_deltaPhi_mixed_MFT_FT0C"), deltaPhi, deltaEta, amplitude);
+              } else {
+                registry.fill(HIST("deltaEta_deltaPhi_mixed_TPC_FT0C"), deltaPhi, deltaEta, amplitude);
+              }
               registry.fill(HIST("Assoc_amp_mixed"), channelID, amplitude);
               mixed->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track1.pt(), deltaPhi, deltaEta, amplitude);
-              registry.fill(HIST("deltaEta_deltaPhi_mixed_MFT_FT0C"), deltaPhi, deltaEta, amplitude);
             }
           }
         }
@@ -1460,6 +1507,64 @@ struct CorrSparse {
     }
   }
 
+  template <CorrelationContainer::CFStep step, typename TFT0s>
+  void fillCorrelationsFT0s(TFT0s const& ft01, TFT0s const& ft02, float posZ, int multiplicity, int system, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  {
+    int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
+
+    if (cfgQaCheck) {
+      if (system == SameEvent) {
+        registry.fill(HIST("zVtx_used"), posZ);
+        registry.fill(HIST("Nch"), multiplicity);
+        registry.fill(HIST("Nch_used_ft0c"), ft02.channelC().size());
+        registry.fill(HIST("Nch_used_ft0a"), ft01.channelA().size());
+      }
+    }
+
+    float triggerWeight = 1.0f;
+    std::size_t channelASize = ft01.channelA().size();
+    std::size_t channelCSize = ft02.channelC().size();
+    // loop over all tracks
+    for (std::size_t iChA = 0; iChA < channelASize; iChA++) {
+
+      int chanelAid = 0;
+      float amplA = 0.;
+      if (cfgDetectorConfig.withGain) {
+        getChannelWithGain(ft01, iChA, chanelAid, amplA, kFT0A);
+      } else {
+        getChannelFT0(ft01, iChA, chanelAid, amplA, kFT0A);
+      }
+      auto phiA = getPhiFT0(chanelAid, kFT0A);
+      auto etaA = getEtaFT0(chanelAid, kFT0A);
+
+      if (system == SameEvent) {
+        registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, 0.5, eventWeight * amplA);
+      }
+
+      for (std::size_t iChC = 0; iChC < channelCSize; iChC++) {
+        int chanelCid = 0;
+        float amplC = 0.;
+        if (cfgDetectorConfig.withGain) {
+          getChannelWithGain(ft02, iChC, chanelCid, amplC, kFT0C);
+        } else {
+          getChannelFT0(ft02, iChC, chanelCid, amplC, kFT0C);
+        }
+        auto phiC = getPhiFT0(chanelCid, kFT0C);
+        auto etaC = getEtaFT0(chanelCid, kFT0C);
+        float deltaPhi = RecoDecay::constrainAngle(phiA - phiC, -PIHalf);
+        float deltaEta = etaA - etaC;
+
+        // fill the right sparse and histograms
+        if (system == SameEvent) {
+          registry.fill(HIST("deltaEta_deltaPhi_same_FT0A_FT0C"), deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
+          same->getPairHist()->Fill(step, fSampleIndex, posZ, 0.5, 0.5, deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
+        } else if (system == MixedEvent) {
+          registry.fill(HIST("deltaEta_deltaPhi_mixed_FT0A_FT0C"), deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
+          mixed->getPairHist()->Fill(step, fSampleIndex, posZ, 0.5, 0.5, deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
+        }
+      }
+    }
+  }
   //////////////////////////////////////
   ////// Same event processing /////////
   //////////////////////////////////////
@@ -1482,7 +1587,10 @@ struct CorrSparse {
     if (!collision.has_foundFT0())
       return;
     loadAlignParam(bc.timestamp());
-    loadGain(bc);
+    if (cfgDetectorConfig.withGain) {
+      loadGain(bc);
+    }
+
     loadCorrection(bc.timestamp());
 
     if ((tpctracks.size() < cfgEventSelection.cfgMinMult || tpctracks.size() >= cfgEventSelection.cfgMaxMult)) {
@@ -1571,7 +1679,7 @@ struct CorrSparse {
       }
     }
   }
-  PROCESS_SWITCH(CorrSparse, processSameMftReassociated2DFIT, "Process same event for MFT-FIT correlation with reassociated tracks", true);
+  PROCESS_SWITCH(CorrSparse, processSameMftReassociated2DFIT, "Process same event for MFT-FIT correlation with reassociated tracks", false);
 
   /////////////////////////
   ////////Mid-Mid//////////
@@ -1588,14 +1696,15 @@ struct CorrSparse {
     if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), true))
       return;
 
-    registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
+    loadCorrection(bc.timestamp());
+
+    fillYield(collision, tracks);
 
     if (tracks.size() < cfgEventSelection.cfgMinMult || tracks.size() >= cfgEventSelection.cfgMaxMult) {
       return;
     }
 
-    loadCorrection(bc.timestamp());
-    fillYield(collision, tracks);
+    registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
 
     fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), tracks.size(), SameEvent, getMagneticField(bc.timestamp()));
   }
@@ -1623,7 +1732,10 @@ struct CorrSparse {
     }
 
     loadAlignParam(bc.timestamp());
-    // loadGain(bc);
+    if (cfgDetectorConfig.withGain) {
+      loadGain(bc);
+    }
+
     loadCorrection(bc.timestamp());
 
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
@@ -1700,29 +1812,37 @@ struct CorrSparse {
   }
   PROCESS_SWITCH(CorrSparse, processSameTpcMftReassociated2D, "Process same event for TPC-MFT correlation with reassociated tracks", false);
 
-  void processSameTpcMftReassociated3D(AodCollisions::iterator const& collision, AodTracks const& tracks,
-                                       soa::SmallGroups<aod::BestCollisionsFwd3d> const& reassociatedMftTracks,
-                                       aod::BCsWithTimestamps const&)
+  void processSameFT0s(AodCollisions::iterator const& collision, AodTracks const& tracks, aod::FT0s const&, aod::BCsWithTimestamps const&)
   {
     if (!collision.sel8())
       return;
+
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
 
-    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), true))
+    if (cfgUseAdditionalEventCut && !eventSelected(collision, 0, true))
       return;
 
-    registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
-    loadCorrection(bc.timestamp());
-    fillYield(collision, tracks);
+    if (!collision.has_foundFT0())
+      return;
 
-    if (tracks.size() < cfgEventSelection.cfgMinMult || tracks.size() >= cfgEventSelection.cfgMaxMult) {
+    loadAlignParam(bc.timestamp());
+    if (cfgDetectorConfig.withGain) {
+      loadGain(bc);
+    }
+    loadCorrection(bc.timestamp());
+
+    if ((tracks.size() < cfgEventSelection.cfgMinMult || tracks.size() >= cfgEventSelection.cfgMaxMult)) {
       return;
     }
 
-    fillCorrelationsMftReassociatedTracks<CorrelationContainer::kCFStepReconstructed>(tracks, reassociatedMftTracks, tracks.size(), collision.posZ(), SameEvent, getMagneticField(bc.timestamp()), false);
-  }
-  PROCESS_SWITCH(CorrSparse, processSameTpcMftReassociated3D, "Process same event for TPC-MFT correlation with reassociated tracks", false);
+    registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
 
+    const auto& ft0s = collision.foundFT0();
+    auto multiplicity = tracks.size();
+
+    fillCorrelationsFT0s<CorrelationContainer::kCFStepReconstructed>(ft0s, ft0s, collision.posZ(), multiplicity, SameEvent, 1.0f);
+  }
+  PROCESS_SWITCH(CorrSparse, processSameFT0s, "Process same event for FT0 correlation", false);
   ////////////////////////////////////
   ////// Mixed event processing //////
   ////////////////////////////////////
@@ -1943,6 +2063,57 @@ struct CorrSparse {
     }
   }
   PROCESS_SWITCH(CorrSparse, processMixedTpcMFT, "Process mixed events for TPC-MFT correlation", false);
+
+  void processMixedFT0s(AodCollisions const& collisions, AodTracks const& tracks, aod::FT0s const&, aod::BCsWithTimestamps const&)
+  {
+
+    auto getTracksSize = [&tracks, this](AodCollisions::iterator const& collision) {
+      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
+      auto mult = associatedTracks.size();
+      return mult;
+    };
+
+    using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
+
+    MixedBinning binningOnVtxAndMult{{getTracksSize}, {vtxMix, multMix}, true};
+
+    auto tracksTuple = std::make_tuple(tracks, tracks);
+    Pair<AodCollisions, AodTracks, AodTracks, MixedBinning> pair{binningOnVtxAndMult, cfgMinMixEventNum, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+
+    for (auto it = pair.begin(); it != pair.end(); it++) {
+      auto& [collision1, tracks1, collision2, tracks2] = *it;
+
+      if (!collision1.sel8() || !collision2.sel8())
+        continue;
+
+      if (collision1.globalIndex() == collision2.globalIndex()) {
+        continue;
+      }
+
+      if ((tracks1.size() < cfgEventSelection.cfgMinMult || tracks1.size() >= cfgEventSelection.cfgMaxMult))
+        continue;
+
+      if (cfgUseAdditionalEventCut && !eventSelected(collision1, tracks1.size(), false))
+        continue;
+      if (cfgUseAdditionalEventCut && !eventSelected(collision2, tracks2.size(), false))
+        continue;
+
+      if (!(collision1.has_foundFT0() && collision2.has_foundFT0()))
+        continue;
+
+      registry.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
+      auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
+      loadAlignParam(bc.timestamp());
+      loadCorrection(bc.timestamp());
+
+      auto multiplicity = tracks1.size();
+
+      const auto& ft0_1 = collision1.foundFT0();
+      const auto& ft0_2 = collision2.foundFT0();
+      fillCorrelationsFT0s<CorrelationContainer::kCFStepReconstructed>(ft0_1, ft0_2, collision1.posZ(), multiplicity, MixedEvent, 1.0f);
+    }
+  }
+  PROCESS_SWITCH(CorrSparse, processMixedFT0s, "Process mixed events for FT0 correlation", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

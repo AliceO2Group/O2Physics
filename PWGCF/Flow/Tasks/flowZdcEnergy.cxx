@@ -10,87 +10,76 @@
 // or submit itself to any jurisdiction.
 
 /// \file   flowZdcEnergy.cxx
-/// \author Kegang Xiong (kegang.xiong@cern.ch)
+/// \author Kegang Xiong
 /// \since  03/2026
-/// \brief  A try to use the znc energy.
+/// \brief  Study ZDC energy observables versus centrality for Run 2 / Run 3.
 
-#include "Common/Core/EventPlaneHelper.h"
-#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/runDataProcessing.h"
 
-#include "TF1.h"
-#include "TPDGCode.h"
-
-#include <algorithm>
-#include <map>
-#include <numeric>
-#include <string>
-#include <unordered_map>
-#include <utility>
-#include <vector>
+#include <chrono>
+#include <cmath>
+#include <cstdint>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::rctsel;
-// using namespace o2::analysis;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
 struct flowZdcEnergy {
 
-  struct : ConfigurableGroup {
-    // Additional event selections
-    O2_DEFINE_CONFIGURABLE(cfgCentMin, float, 0, "Minimum cenrality for selected events");
-    O2_DEFINE_CONFIGURABLE(cfgCentMax, float, 90, "Maximum cenrality for selected events");
-    O2_DEFINE_CONFIGURABLE(cfgVtxZ, float, 10.0f, "Accepted z-vertex range for selected events")
-  } EvSel;
+  struct : ConfigurableGroup{
+             O2_DEFINE_CONFIGURABLE(cfgUseEvsel, bool, true, "whether to enable event selection")
+               O2_DEFINE_CONFIGURABLE(cfgCentMin, float, 0.f, "Minimum centrality for selected events")
+                 O2_DEFINE_CONFIGURABLE(cfgCentMax, float, 90.f, "Maximum centrality for selected events")
+                   O2_DEFINE_CONFIGURABLE(cfgVtxZ, float, 10.f, "Accepted z-vertex range")} evsel;
 
-  // Configurables containing vector
   O2_DEFINE_CONFIGURABLE(cfgEtaMax, float, 0.8f, "Maximum track #eta")
   O2_DEFINE_CONFIGURABLE(cfgPtMin, float, 0.2f, "Minimum track #P_{t}")
   O2_DEFINE_CONFIGURABLE(cfgPtMax, float, 10.0f, "Maximum track #P_{t}")
   O2_DEFINE_CONFIGURABLE(cfgDcaXYMax, float, 0.2f, "Maximum DCAxy")
   O2_DEFINE_CONFIGURABLE(cfgDcaZMax, float, 2.0f, "Maximum DCAz")
 
-  enum SelectionCriteria {
-    evSel_AllEvent,
-    evSel_sel8,
-    evSel_Zvtx,
-    evSel_CentCuts,
-    evSel_BCHasZDC,
-    evSel_isSelectedZDC,
-    nEventSelections
+  ConfigurableAxis axisCent{"axisCent", {90, 0, 90}, "Centrality (%)"};
+  ConfigurableAxis axisMult{"axisMult", {100, 0, 100000}, "Multiplicity"};
+  ConfigurableAxis axisMultDivided{"axisMultDivided", {30, 0, 15000}, "Multiplicity bins for ZN energy"};
+  ConfigurableAxis axisPt{"axisPt", {100, 0, 15}, "#P_{t}"};
+  ConfigurableAxis axisEta{"axisEta", {64, -1.6, 1.6}, "#eta"};
+  ConfigurableAxis axisEnergy{"axisEnergy", {300, 0, 300}, "Energy"};
+  ConfigurableAxis axisRescaledDiff{"axisRescaledDiff", {400, -1, 1}, "(EA-EC)/(EA+EC)"};
+
+  // Event counter bins
+  enum SelectionCriteria : uint8_t {
+    kAllEvents = 0,
+    kSeln,
+    kZvtx,
+    kCentrality,
+    kBCHasZDC,
+    kSelectedZDC,
+    kNSelections
   };
 
-  ConfigurableAxis axisCent = {"axisCent", {100, 0, 100}, "Centrality(%)"};
-  ConfigurableAxis axisEnergy = {"axisEnergy", {300, 0, 300}, "Energy"};
-  ConfigurableAxis axisRescaledDiff = {"axisRescaledDiff", {400, -1, 1}, "(#E_{A}-#E_{C}) / (#E_{A}+#E_{C})"};
-
-  // Filter trackFilter = nabs(aod::track::eta) < cfgEtaMax && aod::track::pt > cfgPtMin&& aod::track::pt < cfgPtMax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDcaXYMax&& nabs(aod::track::dcaZ) < cfgDcaZMax;
-
-  // using UsedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
-  using ZDCCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>;
-  using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
-
-  //  Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
-
   HistogramRegistry registry{"registry"};
+
+  Filter trackFilter = nabs(aod::track::eta) < cfgEtaMax && aod::track::pt > cfgPtMin&& aod::track::pt < cfgPtMax&& nabs(aod::track::dcaXY) < cfgDcaXYMax&& nabs(aod::track::dcaZ) < cfgDcaZMax;
+  using UsedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
+  // Run 3
+  using CollisionsRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>;
+  using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
+  // Run 2
+  using CollisionsRun2 = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentRun2V0Ms>;
+  using BCsRun2 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run2MatchedToBCSparse>;
 
   void init(InitContext const&)
   {
@@ -98,18 +87,26 @@ struct flowZdcEnergy {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
+                 std::chrono::system_clock::now().time_since_epoch())
+                 .count();
     ccdb->setCreatedNotAfter(now);
 
-    // QA hist
-    registry.add("hEventCount", "Number of Event; Cut; #Events Passed Cut", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}});
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_AllEvent + 1, "All events");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_sel8 + 1, "Sel8");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_Zvtx + 1, "Z vertex cut event");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_CentCuts + 1, "Cenrality range");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_BCHasZDC + 1, "BCHasZDC");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_isSelectedZDC + 1, "isSelected");
-    // ana hist
+    registry.add("QA/hEventCount", "Event counter;Selection;Events", {HistType::kTH1D, {{kNSelections, 0, kNSelections}}});
+    auto hCount = registry.get<TH1>(HIST("QA/hEventCount"));
+    hCount->GetXaxis()->SetBinLabel(kAllEvents + 1, "All events");
+    hCount->GetXaxis()->SetBinLabel(kSeln + 1, "Sel7/8");
+    hCount->GetXaxis()->SetBinLabel(kZvtx + 1, "Zvtx");
+    hCount->GetXaxis()->SetBinLabel(kCentrality + 1, "Centrality");
+    hCount->GetXaxis()->SetBinLabel(kBCHasZDC + 1, "BC has ZDC");
+    hCount->GetXaxis()->SetBinLabel(kSelectedZDC + 1, "Selected ZDC");
+
+    registry.add("QA/hCentrality", "", {HistType::kTH1D, {axisCent}});
+    registry.add("QA/hMultiplicity", "", {HistType::kTH1D, {axisMult}});
+    registry.add("QA/hMultiplicity_TPC", "", {HistType::kTH1D, {axisMult}});
+    registry.add("QA/hPt", "", {HistType::kTH1D, {axisPt}});
+    registry.add("QA/hEta", "", {HistType::kTH1D, {axisEta}});
+
     registry.add("hEnergyWithCent_ZNA_Common", "", {HistType::kTH2D, {axisEnergy, axisCent}});
     registry.add("hEnergyWithCent_ZNC_Common", "", {HistType::kTH2D, {axisEnergy, axisCent}});
     registry.add("hEnergyWithCent_RescaledDiff", "", {HistType::kTH2D, {axisRescaledDiff, axisCent}});
@@ -124,67 +121,170 @@ struct flowZdcEnergy {
     registry.add("hEnergyWithCent_ZNA_SumSectors", "", {HistType::kTH2D, {axisEnergy, axisCent}});
     registry.add("hEnergyWithCent_ZNC_SumSectors", "", {HistType::kTH2D, {axisEnergy, axisCent}});
     registry.add("hEnergyWithCent_RescaledSumDiff", "", {HistType::kTH2D, {axisRescaledDiff, axisCent}});
+
+    registry.add("hEnergyWithMult_ZNA_Common", "", {HistType::kTH2D, {axisEnergy, axisMultDivided}});
+    registry.add("hEnergyWithMult_ZNC_Common", "", {HistType::kTH2D, {axisEnergy, axisMultDivided}});
+    registry.add("hEnergyWithMult_RescaledDiff", "", {HistType::kTH2D, {axisRescaledDiff, axisMultDivided}});
+    registry.add("hEnergyWithMult_ZNA_1", "", {HistType::kTH2D, {axisEnergy, axisMultDivided}});
+    registry.add("hEnergyWithMult_ZNA_2", "", {HistType::kTH2D, {axisEnergy, axisMultDivided}});
+    registry.add("hEnergyWithMult_ZNA_3", "", {HistType::kTH2D, {axisEnergy, axisMultDivided}});
+    registry.add("hEnergyWithMult_ZNA_4", "", {HistType::kTH2D, {axisEnergy, axisMultDivided}});
+    registry.add("hEnergyWithMult_ZNC_1", "", {HistType::kTH2D, {axisEnergy, axisMultDivided}});
+    registry.add("hEnergyWithMult_ZNC_2", "", {HistType::kTH2D, {axisEnergy, axisMultDivided}});
+    registry.add("hEnergyWithMult_ZNC_3", "", {HistType::kTH2D, {axisEnergy, axisMultDivided}});
+    registry.add("hEnergyWithMult_ZNC_4", "", {HistType::kTH2D, {axisEnergy, axisMultDivided}});
+    registry.add("hEnergyWithMult_ZNA_SumSectors", "", {HistType::kTH2D, {axisEnergy, axisMultDivided}});
+    registry.add("hEnergyWithMult_ZNC_SumSectors", "", {HistType::kTH2D, {axisEnergy, axisMultDivided}});
+    registry.add("hEnergyWithMult_RescaledSumDiff", "", {HistType::kTH2D, {axisRescaledDiff, axisMultDivided}});
   }
 
-  void process(ZDCCollisions::iterator const& collision, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcs*/)
+  // Helper: event selection
+  template <typename TCollision>
+  bool acceptEvent(TCollision const& collision, bool UseEvsel, float centrality, const int runmode)
   {
+    if (!UseEvsel) {
+      registry.fill(HIST("QA/hEventCount"), kAllEvents);
+    } else {
+      registry.fill(HIST("QA/hEventCount"), kAllEvents);
+      if (runmode == 2 && !collision.sel7()) {
+        return false;
+      }
+      if (runmode == 3 && !collision.sel8()) {
+        return false;
+      }
+      registry.fill(HIST("QA/hEventCount"), kSeln);
+      if (std::abs(collision.posZ()) > evsel.cfgVtxZ) {
+        return false;
+      }
+      registry.fill(HIST("QA/hEventCount"), kZvtx);
+      if (centrality < evsel.cfgCentMin || centrality > evsel.cfgCentMax) {
+        return false;
+      }
+      registry.fill(HIST("QA/hEventCount"), kCentrality);
+    }
+    return true;
+  }
 
-    double centrality = collision.centFT0C();
-    // event selection
-    registry.fill(HIST("hEventCount"), evSel_AllEvent);
-    if (!collision.sel8()) {
-      return;
-    }
-    registry.fill(HIST("hEventCount"), evSel_sel8);
-    if (std::abs(collision.posZ()) > EvSel.cfgVtxZ) {
-      return;
-    }
-    registry.fill(HIST("hEventCount"), evSel_Zvtx);
-    if (centrality < EvSel.cfgCentMin || centrality > EvSel.cfgCentMax) {
-      return;
-    }
-    registry.fill(HIST("hEventCount"), evSel_CentCuts);
-
-    const auto& foundBC = collision.foundBC_as<BCsRun3>();
+  // Helper: fill ZDC observables
+  template <typename TCollision, typename TBCs>
+  void fillZDCObservables(TCollision const& collision, float centrality, float multiTPC)
+  {
+    const auto& foundBC = collision.template foundBC_as<TBCs>();
     if (!foundBC.has_zdc()) {
       return;
     }
-    registry.fill(HIST("hEventCount"), evSel_BCHasZDC);
+    registry.fill(HIST("QA/hEventCount"), kBCHasZDC);
 
-    const auto& zdcCol = foundBC.zdc();
-    if (zdcCol.energyCommonZNA() <= 0 || zdcCol.energyCommonZNC() <= 0) {
+    const auto& zdc = foundBC.zdc();
+    if (zdc.energyCommonZNA() <= 1.f || zdc.energyCommonZNC() <= 1.f) {
       return;
     }
-    registry.fill(HIST("hEventCount"), evSel_isSelectedZDC);
+    registry.fill(HIST("QA/hEventCount"), kSelectedZDC);
 
-    double SumEnergyZNA = zdcCol.energySectorZNA()[0] + zdcCol.energySectorZNA()[1] + zdcCol.energySectorZNA()[2] + zdcCol.energySectorZNA()[3];
-    double SumEnergyZNC = zdcCol.energySectorZNC()[0] + zdcCol.energySectorZNC()[1] + zdcCol.energySectorZNC()[2] + zdcCol.energySectorZNC()[3];
-    double commonDen = zdcCol.energyCommonZNA() + zdcCol.energyCommonZNC();
-    double sumDen = SumEnergyZNA + SumEnergyZNC;
+    const float energyCommonZNA = zdc.energyCommonZNA();
+    const float energyCommonZNC = zdc.energyCommonZNC();
+    const float energySectorZNA1 = zdc.energySectorZNA()[0];
+    const float energySectorZNA2 = zdc.energySectorZNA()[1];
+    const float energySectorZNA3 = zdc.energySectorZNA()[2];
+    const float energySectorZNA4 = zdc.energySectorZNA()[3];
+    const float energySectorZNC1 = zdc.energySectorZNC()[0];
+    const float energySectorZNC2 = zdc.energySectorZNC()[1];
+    const float energySectorZNC3 = zdc.energySectorZNC()[2];
+    const float energySectorZNC4 = zdc.energySectorZNC()[3];
 
-    if (commonDen > 1e-3) {
-      registry.fill(HIST("hEnergyWithCent_RescaledDiff"),
-                    (zdcCol.energyCommonZNA() - zdcCol.energyCommonZNC()) / commonDen,
-                    centrality);
+    const float sumEnergyZNA = energySectorZNA1 + energySectorZNA2 + energySectorZNA3 + energySectorZNA4;
+    const float sumEnergyZNC = energySectorZNC1 + energySectorZNC2 + energySectorZNC3 + energySectorZNC4;
+
+    const float commonDen = energyCommonZNA + energyCommonZNC;
+    const float sumDen = sumEnergyZNA + sumEnergyZNC;
+
+    registry.fill(HIST("hEnergyWithCent_ZNA_Common"), energyCommonZNA, centrality);
+    registry.fill(HIST("hEnergyWithCent_ZNC_Common"), energyCommonZNC, centrality);
+    registry.fill(HIST("hEnergyWithCent_ZNA_1"), energySectorZNA1, centrality);
+    registry.fill(HIST("hEnergyWithCent_ZNA_2"), energySectorZNA2, centrality);
+    registry.fill(HIST("hEnergyWithCent_ZNA_3"), energySectorZNA3, centrality);
+    registry.fill(HIST("hEnergyWithCent_ZNA_4"), energySectorZNA4, centrality);
+    registry.fill(HIST("hEnergyWithCent_ZNC_1"), energySectorZNC1, centrality);
+    registry.fill(HIST("hEnergyWithCent_ZNC_2"), energySectorZNC2, centrality);
+    registry.fill(HIST("hEnergyWithCent_ZNC_3"), energySectorZNC3, centrality);
+    registry.fill(HIST("hEnergyWithCent_ZNC_4"), energySectorZNC4, centrality);
+    registry.fill(HIST("hEnergyWithCent_ZNA_SumSectors"), sumEnergyZNA, centrality);
+    registry.fill(HIST("hEnergyWithCent_ZNC_SumSectors"), sumEnergyZNC, centrality);
+
+    registry.fill(HIST("hEnergyWithMult_ZNA_Common"), energyCommonZNA, multiTPC);
+    registry.fill(HIST("hEnergyWithMult_ZNC_Common"), energyCommonZNC, multiTPC);
+    registry.fill(HIST("hEnergyWithMult_ZNA_1"), energySectorZNA1, multiTPC);
+    registry.fill(HIST("hEnergyWithMult_ZNA_2"), energySectorZNA2, multiTPC);
+    registry.fill(HIST("hEnergyWithMult_ZNA_3"), energySectorZNA3, multiTPC);
+    registry.fill(HIST("hEnergyWithMult_ZNA_4"), energySectorZNA4, multiTPC);
+    registry.fill(HIST("hEnergyWithMult_ZNC_1"), energySectorZNC1, multiTPC);
+    registry.fill(HIST("hEnergyWithMult_ZNC_2"), energySectorZNC2, multiTPC);
+    registry.fill(HIST("hEnergyWithMult_ZNC_3"), energySectorZNC3, multiTPC);
+    registry.fill(HIST("hEnergyWithMult_ZNC_4"), energySectorZNC4, multiTPC);
+    registry.fill(HIST("hEnergyWithMult_ZNA_SumSectors"), sumEnergyZNA, multiTPC);
+    registry.fill(HIST("hEnergyWithMult_ZNC_SumSectors"), sumEnergyZNC, multiTPC);
+
+    if (commonDen > 1.e-6f) {
+      registry.fill(HIST("hEnergyWithCent_RescaledDiff"), (energyCommonZNA - energyCommonZNC) / commonDen, centrality);
+      registry.fill(HIST("hEnergyWithMult_RescaledDiff"), (energyCommonZNA - energyCommonZNC) / commonDen, multiTPC);
     }
-    if (sumDen > 1e-3) {
-      registry.fill(HIST("hEnergyWithCent_RescaledSumDiff"),
-                    (SumEnergyZNA - SumEnergyZNC) / sumDen,
-                    centrality);
+    if (sumDen > 1.e-6f) {
+      registry.fill(HIST("hEnergyWithCent_RescaledSumDiff"), (sumEnergyZNA - sumEnergyZNC) / sumDen, centrality);
+      registry.fill(HIST("hEnergyWithMult_RescaledSumDiff"), (sumEnergyZNA - sumEnergyZNC) / sumDen, multiTPC);
     }
-    registry.fill(HIST("hEnergyWithCent_ZNA_Common"), zdcCol.energyCommonZNA(), centrality);
-    registry.fill(HIST("hEnergyWithCent_ZNC_Common"), zdcCol.energyCommonZNC(), centrality);
-    registry.fill(HIST("hEnergyWithCent_ZNA_1"), zdcCol.energySectorZNA()[0], centrality);
-    registry.fill(HIST("hEnergyWithCent_ZNA_2"), zdcCol.energySectorZNA()[1], centrality);
-    registry.fill(HIST("hEnergyWithCent_ZNA_3"), zdcCol.energySectorZNA()[2], centrality);
-    registry.fill(HIST("hEnergyWithCent_ZNA_4"), zdcCol.energySectorZNA()[3], centrality);
-    registry.fill(HIST("hEnergyWithCent_ZNC_1"), zdcCol.energySectorZNC()[0], centrality);
-    registry.fill(HIST("hEnergyWithCent_ZNC_2"), zdcCol.energySectorZNC()[1], centrality);
-    registry.fill(HIST("hEnergyWithCent_ZNC_3"), zdcCol.energySectorZNC()[2], centrality);
-    registry.fill(HIST("hEnergyWithCent_ZNC_4"), zdcCol.energySectorZNC()[3], centrality);
-    registry.fill(HIST("hEnergyWithCent_ZNA_SumSectors"), SumEnergyZNA, centrality);
-    registry.fill(HIST("hEnergyWithCent_ZNC_SumSectors"), SumEnergyZNC, centrality);
   }
+
+  // Run 3 process
+  void processRun3(CollisionsRun3::iterator const& collision,
+                   UsedTracks const& tracks,
+                   BCsRun3 const&,
+                   aod::Zdcs const&)
+  {
+    const float centrality = collision.centFT0C();
+    const float multi = collision.multFT0C();
+    const float multiTPC = collision.multTPC();
+
+    if (!acceptEvent(collision, evsel.cfgUseEvsel, centrality, 3)) {
+      return;
+    }
+    registry.fill(HIST("QA/hCentrality"), centrality);
+    registry.fill(HIST("QA/hMultiplicity"), multi);
+    registry.fill(HIST("QA/hMultiplicity_TPC"), multiTPC);
+    fillZDCObservables<CollisionsRun3::iterator, BCsRun3>(collision, centrality, multiTPC);
+
+    for (const auto& track : tracks) {
+      registry.fill(HIST("QA/hPt"), track.pt());
+      registry.fill(HIST("QA/hEta"), track.eta());
+    }
+  }
+
+  // Run 2 process
+  void processRun2(CollisionsRun2::iterator const& collision,
+                   UsedTracks const& tracks,
+                   BCsRun2 const&,
+                   aod::Zdcs const&)
+  {
+    const float centrality = collision.centRun2V0M();
+    const float multi = collision.multFV0M();
+    const float multiTPC = collision.multTPC();
+
+    if (!acceptEvent(collision, evsel.cfgUseEvsel, centrality, 2)) {
+      return;
+    }
+    registry.fill(HIST("QA/hCentrality"), centrality);
+    registry.fill(HIST("QA/hMultiplicity"), multi);
+    registry.fill(HIST("QA/hMultiplicity_TPC"), multiTPC);
+    fillZDCObservables<CollisionsRun2::iterator, BCsRun2>(collision, centrality, multiTPC);
+
+    for (const auto& track : tracks) {
+      registry.fill(HIST("QA/hPt"), track.pt());
+      registry.fill(HIST("QA/hEta"), track.eta());
+    }
+  }
+
+  // Process switches
+  PROCESS_SWITCH(flowZdcEnergy, processRun3, "Process Run 3 data", true);
+  PROCESS_SWITCH(flowZdcEnergy, processRun2, "Process Run 2 data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -11,7 +11,8 @@
 
 #ifndef PWGMM_MULT_CORE_INCLUDE_HISTOGRAMS_H_
 #define PWGMM_MULT_CORE_INCLUDE_HISTOGRAMS_H_
-#include "TPDGCode.h"
+#include <TPDGCode.h>
+
 #include <array>
 #include <string_view>
 

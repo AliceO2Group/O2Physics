@@ -15,8 +15,11 @@
 
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 
-#include <Framework/Array2D.h>
+#include "PWGEM/PhotonMeson/Core/V0PhotonCandidate.h"
+
 #include <Framework/Logger.h>
+
+#include <sys/types.h>
 
 #include <Rtypes.h>
 
@@ -115,6 +118,28 @@ void V0PhotonCut::RejectITSib(bool flag)
   mRejectITSib = flag;
   LOG(info) << "V0 Photon Cut, reject photon on ITSib: " << mRejectITSib;
 }
+
+void V0PhotonCut::setTooCloseType(V0PhotonCut::TooCloseCuts type)
+{
+  mTooCloseType = type;
+  LOG(info) << "V0 Photon Cut, TooCloseV0 cut type: " << static_cast<uint>(mTooCloseType);
+}
+void V0PhotonCut::setMinV0DistSquared(float value)
+{
+  mMinV0DistSquared = value;
+  LOG(info) << "V0 Photon Cut, min V0 distance squared: " << mMinV0DistSquared;
+}
+void V0PhotonCut::setDeltaR(float value)
+{
+  mDeltaR = value;
+  LOG(info) << "V0 Photon Cut, delta R for too close V0: " << mDeltaR;
+}
+void V0PhotonCut::setMinOpeningAngle(float value)
+{
+  mMinOpeningAngle = value;
+  LOG(info) << "V0 Photon Cut, min opening angle for too close V0: " << mMinOpeningAngle;
+}
+
 void V0PhotonCut::SetTPCNsigmaElRange(float min, float max)
 {
   mMinTPCNsigmaEl = min;

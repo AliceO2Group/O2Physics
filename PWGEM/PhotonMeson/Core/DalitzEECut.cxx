@@ -15,7 +15,7 @@
 
 #include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
 
-#include "Framework/Logger.h"
+#include <Framework/Logger.h>
 
 #include <Rtypes.h>
 

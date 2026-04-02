@@ -26,6 +26,7 @@
 #include <TH2.h>
 
 #include <cstddef>
+#include <string_view>
 
 namespace o2::aod::pwgem::photonmeson::utils::clusterhistogram
 {
