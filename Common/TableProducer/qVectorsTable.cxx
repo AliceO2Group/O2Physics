@@ -733,7 +733,6 @@ struct qVectorsTable {
     if (useDetector["QvectorTPCalls"])
       qVectorTPCall(IsCalibrated, qvecReTPCall.at(0), qvecImTPCall.at(0), qvecAmp[kTPCall], TrkTPCallLabel);
 
-
     double qVecRedFT0C{-999.}, qVecRedTpcPos{-999.}, qVecRedTpcNeg{-999.}, qVecRedTpcAll{-999.};
     if (cfgProduceRedQVecs) {
       // Correct normalization to remove multiplicity dependence,
