@@ -98,6 +98,7 @@ namespace
 constexpr float kTiny = 1e-12f;
 constexpr uint64_t collisionKeyShift = 1ULL;
 constexpr uint64_t partCollisionKeyTag = 1ULL;
+constexpr size_t MinConstituentsForJet = 2;
 
 struct JetLevel {
   enum Type : uint8_t {
@@ -418,7 +419,7 @@ struct JetLundPlaneUnfolding {
   std::vector<SplittingObs> getPrimarySplittings(JetRowT const& jet, ConstituentTableT const&)
   {
     auto fjInputs = buildFastJetInputs(jet.template tracks_as<ConstituentTableT>(), trackPtMin.value);
-    if (fjInputs.size() < 2) {
+    if (fjInputs.size() < MinConstituentsForJet) {
       return {};
     }
 
