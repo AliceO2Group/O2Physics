@@ -49,6 +49,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <deque>
 #include <map>
 #include <random>
 #include <string>
@@ -1572,23 +1573,30 @@ struct Photonhbt {
           obs.deta, obs.dphi, obs.kt);
         auto addToPool = [&](auto const& g) {
           if (usedPhotonIdsPerCol.insert(g.globalIndex()).second) {
-            EMPair gtmp(g.pt(),g.eta(),g.phi(),0.f); gtmp.setConversionPointXYZ(g.vx(),g.vy(),g.vz());
-            emh1->AddTrackToEventPool(keyDFCollision,gtmp);
-          } };
+            EMPair gtmp(g.pt(), g.eta(), g.phi(), 0.f);
+            gtmp.setConversionPointXYZ(g.vx(), g.vy(), g.vz());
+            emh1->AddTrackToEventPool(keyDFCollision, gtmp);
+          }
+        };
         addToPool(g1);
         addToPool(g2);
       }
-      if (qaflags.doSinglePhotonQa)
-        for (const auto& g : photons1Coll)
+      if (qaflags.doSinglePhotonQa) {
+        for (const auto& g : photons1Coll) {
           if (cut1.template IsSelected<decltype(g), TSubInfos1>(g)) {
             const int gid = g.globalIndex();
-            if (idsAfterDR.count(gid))
+            if (idsAfterDR.count(gid)) {
               fillSinglePhotonQAStep<1>(g);
-            if (idsAfterRZ.count(gid))
+            }
+            if (idsAfterRZ.count(gid)) {
               fillSinglePhotonQAStep<2>(g);
-            if (idsAfterEllipse.count(gid))
+            }
+            if (idsAfterEllipse.count(gid)) {
               fillSinglePhotonQAStep<3>(g);
+            }
           }
+        }
+      }
       usedPhotonIdsPerCol.clear();
       if (!mixing.cfgDoMix || ndiphoton == 0)
         continue;
@@ -1788,23 +1796,30 @@ struct Photonhbt {
 
         auto addToPool = [&](auto const& g) {
           if (usedPhotonIdsPerCol.insert(g.globalIndex()).second) {
-            EMPair gtmp(g.pt(),g.eta(),g.phi(),0.f); gtmp.setConversionPointXYZ(g.vx(),g.vy(),g.vz());
-            emh1->AddTrackToEventPool(keyDFCollision,gtmp);
-          } };
+            EMPair gtmp(g.pt(), g.eta(), g.phi(), 0.f);
+            gtmp.setConversionPointXYZ(g.vx(), g.vy(), g.vz());
+            emh1->AddTrackToEventPool(keyDFCollision, gtmp);
+          }
+        };
         addToPool(g1);
         addToPool(g2);
       }
-      if (qaflags.doSinglePhotonQa)
-        for (const auto& g : photonsColl)
+      if (qaflags.doSinglePhotonQa) {
+        for (const auto& g : photonsColl) {
           if (cut.template IsSelected<decltype(g), TLegs>(g)) {
             const int gid = g.globalIndex();
-            if (idsAfterDR.count(gid))
+            if (idsAfterDR.count(gid)) {
               fillSinglePhotonQAStep<1>(g);
-            if (idsAfterRZ.count(gid))
+            }
+            if (idsAfterRZ.count(gid)) {
               fillSinglePhotonQAStep<2>(g);
-            if (idsAfterEllipse.count(gid))
+            }
+            if (idsAfterEllipse.count(gid)) {
               fillSinglePhotonQAStep<3>(g);
+            }
           }
+        }
+      }
       usedPhotonIdsPerCol.clear();
       if (!mixing.cfgDoMix || ndiphoton == 0)
         continue;
@@ -1966,17 +1981,20 @@ struct Photonhbt {
         int posId = -1, negId = -1;
         float rTrue = -1.f;
         for (const auto& dId : g.daughtersIds()) {
-          if (dId < 0)
+          if (dId < 0) {
             continue;
+          }
           const auto d = emmcParticles.iteratorAt(dId);
           if (d.pdgCode() == kElectron) {
             posId = dId;
             rTrue = std::sqrt(d.vx() * d.vx() + d.vy() * d.vy());
-          } else if (d.pdgCode() == kPositron)
+          } else if (d.pdgCode() == kPositron) {
             negId = dId;
+          }
         }
-        if (posId < 0 || negId < 0)
+        if (posId < 0 || negId < 0) {
           continue;
+        }
 
         const auto mcPosE = emmcParticles.iteratorAt(posId);
         const auto mcNegE = emmcParticles.iteratorAt(negId);
