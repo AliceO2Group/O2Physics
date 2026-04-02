@@ -75,7 +75,7 @@ void drawFastTracker(float magneticField = 5.f, // in units of kGauss
     fastTracker.AddLayer("B11", 100., 250, x0OB, xrhoOB, resRPhiOB, resZOB, eff, 1);
   } else {
     std::vector<float> pixelRes{0.025, 0.025, 0.01, 0.01};
-    fastTracker.AddSiliconALICE3v4(pixelRes);
+    // fastTracker.AddSiliconALICE3v4(pixelRes); // FIXME
   }
 
   fastTracker.Print();
