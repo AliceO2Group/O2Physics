@@ -56,8 +56,6 @@
 #include <unordered_map>
 #include <vector>
 
-// add a temporary change
-
 using namespace o2;
 using namespace o2::aod::rctsel;
 using namespace o2::aod::track;
