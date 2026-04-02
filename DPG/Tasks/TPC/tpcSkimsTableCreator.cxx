@@ -151,11 +151,11 @@ struct TreeWriterTpcV0 {
     int negDaughterId{UndefValueInt};
   };
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
-  ctpRateFetcher mRateFetcher;
+  ctpRateFetcher mRateFetcher{};
 
-  o2::aod::rctsel::RCTFlagsChecker rctChecker;
+  o2::aod::rctsel::RCTFlagsChecker rctChecker{};
 
   TRandom3* fRndm = new TRandom3(0);
 
@@ -654,11 +654,11 @@ struct TreeWriterTpcTof {
     double nSigmaTpcTpctof;
   };
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
-  ctpRateFetcher mRateFetcher;
+  ctpRateFetcher mRateFetcher{};
 
-  o2::aod::rctsel::RCTFlagsChecker rctChecker;
+  o2::aod::rctsel::RCTFlagsChecker rctChecker{};
 
   TRandom3* fRndm = new TRandom3(0);
 
@@ -858,7 +858,7 @@ struct TreeWriterTpcTof {
 
         TofTrack tofPion(false, UndefValueDouble, maxMomTPCOnlyPi, trk.tpcNSigmaPi(), nSigmaTPCOnlyPi, downsamplingTsalisPions, MassPiPlus, trk.tofNSigmaPi(), trk.itsNSigmaPi(), trk.tpcExpSignalPi(tpcSignalGeneric<IsCorrectedDeDx>(trk)), PidPion, dwnSmplFactorPi, nSigmaTofTpctofPi, nSigmaTpcTpctofPi);
 
-        OccupancyValues occValues;
+        OccupancyValues occValues{};
         if constexpr (ModeId == ModeWithTrkQA) {
           evaluateOccupancyVariables(trk, occValues);
         }
