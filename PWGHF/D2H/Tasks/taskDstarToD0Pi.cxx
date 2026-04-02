@@ -61,16 +61,13 @@ struct HfTaskDstarToD0Pi {
   Configurable<bool> isCentStudy{"isCentStudy", true, "Flag to select centrality study"};
   Configurable<bool> qaEnabled{"qaEnabled", true, "Flag to enable QA histograms"};
   Configurable<bool> studyD0ToPiKPi0{"studyD0ToPiKPi0", false, "Flag to study D*->D0(piKpi0)pi channel"};
-  Configurable<bool> ptShapeStudy{"ptShapeStudy", true, "Flag to enable pT shape study"};
+  Configurable<bool> ptShapeStudy{"ptShapeStudy", false, "Flag to enable pT shape study"};
 
   // CCDB configuration
-  // Configurable<bool> useWeight{"useWeight", true, "Flag to use weights from CCDB"};
-  // Configurable<int> nWeights{"nWeights", 6, "Number of weights to be used from CCDB"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathForWeight{"ccdbPathForWeight", "", "CCDB path for pt shape weights"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "CCDB timestamp for pt shape weights"};
   Configurable<std::string> weightFileName{"weightFileName", "Weights.root", "Name of the weight file to be used for pt shape study"};
-  // Configurable<std::vector<double>> centRangesForWeights{"centRangesForWeights", {0.0, 5.0, 10.0, 30.0, 50.0, 70.0, 100.0}, "Centrality ranges for weights. Size of ranges should be equal to nWeights + 1"};
 
   Configurable<double> yCandDstarRecoMax{"yCandDstarRecoMax", 0.8, "max. candidate Dstar rapidity"};
   Configurable<double> yCandDstarGenMax{"yCandDstarGenMax", 0.5, "max. rapidity of Generator level Particle"};
@@ -89,7 +86,7 @@ struct HfTaskDstarToD0Pi {
     NonPrompt = 1
   };
 
-  // follwing commented axes can be removed if not needed
+  // follwing comment can be removed if extra axes not needed
   // std::vector<AxisSpec> axesPtVsCentVsBDTVsPvContribVsPtB;
   // std::vector<AxisSpec> axesPtVsCentVsPvContribVsPtB;
   // std::vector<AxisSpec> axesPtVsBDTVsPtB;
@@ -151,7 +148,7 @@ struct HfTaskDstarToD0Pi {
     AxisSpec axisPvContrib = {binningPvContrib, "PV Contribution"};
     AxisSpec const axisPt = {vecPtBins, "#it{p}_{T} (GeV/#it{c})"};
 
-    // can be removed if not needed
+    // follwing comment can be removed if extra axes not needed
     // AxisSpec axisPtFine = {vecPtBins, "#it{p}_{T} (GeV/#it{c})"};
     // if (ptShapeStudy){
     //   axisPtFine = {binningPtFine, "pT (GeV/c)"};
@@ -163,7 +160,7 @@ struct HfTaskDstarToD0Pi {
     axesPtVsCentVsPvContrib = {axisPt, axisCentrality, axisPvContrib};
     axesPtVsBDT = {axisPt, axisBDTScoreBackground, axisBDTScorePrompt, axisBDTScoreNonPrompt};
 
-    // can be removed if
+    // follwing comment can be removed if extra axes not needed
     // if (ptShapeStudy){
     //   axesPtVsCentVsBDTVsPvContribVsPtB = {axisPt, axisCentrality, axisBDTScoreBackground, axisBDTScorePrompt, axisBDTScoreNonPrompt, axisPvContrib, axisPtFine};
     //   axesPtVsCentVsPvContribVsPtB = {axisPt, axisCentrality, axisPvContrib, axisPtFine};
@@ -344,6 +341,15 @@ struct HfTaskDstarToD0Pi {
         }
         if (hWeights[weightType::NonPrompt] == nullptr) {
           LOGF(fatal, "Histogram %s not found in weight file!", weightHistNames[weightType::NonPrompt].c_str());
+          return;
+        }
+        // checking if bin wdith of weight histograms are not finner than pT axis of Dstar
+        if (hWeights[weightType::Prompt]->GetXaxis()->GetBinWidth(1) >= vecPtBins[1] - vecPtBins[0]) {
+          LOGF(fatal, "Bin width of weight histogram should be finer than pT axis of Dstar!");
+          return;
+        }
+        if (hWeights[weightType::NonPrompt]->GetXaxis()->GetBinWidth(1) >= vecPtBins[1] - vecPtBins[0]) {
+          LOGF(fatal, "Bin width of weight histogram should be finer than pT axis of Dstar!");
           return;
         }
         hWeights[weightType::Prompt]->SetDirectory(nullptr);
