@@ -167,6 +167,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
   Configurable<bool> cfgProcessHel3{"cfgProcessHel3", false, "Process particle pairs from the helicity range 3"}; // -0.1 > cosineTheta >= -0.5
   Configurable<bool> cfgProcessHel4{"cfgProcessHel4", false, "Process particle pairs from the helicity range 4"}; // -0.5 > cosineTheta >= -1.0
   ConfigurableAxis confInvMassMotherpTBinsHel{"confInvMassMotherpTBinsHel", {5, 0, 5}, "pT binning in the pT vs. InvMassMother plot for helicity"};
+  ConfigurableAxis confInvMassMotherBinsHel{"confInvMassMotherBinsHel", {1000, 0.8, 1.4}, "InvMassMother binning in the pT vs. InvMassMother plot for helicity"};
 
   /// Efficiency
   Configurable<std::string> confLocalEfficiency{"confLocalEfficiency", "", "Local path to efficiency .root file"};
@@ -296,10 +297,10 @@ struct FemtoUniversePairTaskTrackV0Helicity {
     thetaRegistry.add("Theta/NegativeChild/hThetaPt", " ; p_{T} (GeV/#it{c}); cos(#theta)", kTH2F, {{100, 0, 10}, {110, -1.1, 1.1}});
     thetaRegistry.add("Theta/NegativeChild/hThetaEta", " ; #eta; cos(#theta)", kTH2F, {{100, -1, 1}, {110, -1.1, 1.1}});
     thetaRegistry.add("Theta/NegativeChild/hThetaPhi", " ; #phi; cos(#theta)", kTH2F, {{100, -1, 7}, {110, -1.1, 1.1}});
-    thetaRegistry.add("Theta/Mother/hInvMassMotherHel1", " ; p_{T}, M_{#Lambda};", kTH2F, {confInvMassMotherpTBinsHel, {100, 0.5, 1.5}});
-    thetaRegistry.add("Theta/Mother/hInvMassMotherHel2", " ; p_{T}, M_{#Lambda};", kTH2F, {confInvMassMotherpTBinsHel, {100, 0.5, 1.5}});
-    thetaRegistry.add("Theta/Mother/hInvMassMotherHel3", " ; p_{T}, M_{#Lambda};", kTH2F, {confInvMassMotherpTBinsHel, {100, 0.5, 1.5}});
-    thetaRegistry.add("Theta/Mother/hInvMassMotherHel4", " ; p_{T}, M_{#Lambda};", kTH2F, {confInvMassMotherpTBinsHel, {100, 0.5, 1.5}});
+    thetaRegistry.add("Theta/Mother/hInvMassMotherHel1", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {confInvMassMotherpTBinsHel, {100, 0.5, 1.5}});
+    thetaRegistry.add("Theta/Mother/hInvMassMotherHel2", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {confInvMassMotherpTBinsHel, {100, 0.5, 1.5}});
+    thetaRegistry.add("Theta/Mother/hInvMassMotherHel3", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {confInvMassMotherpTBinsHel, {100, 0.5, 1.5}});
+    thetaRegistry.add("Theta/Mother/hInvMassMotherHel4", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {confInvMassMotherpTBinsHel, confInvMassMotherBinsHel});
 
     /// MC Truth
     registryMCtruth.add("plus/MCtruthLambda", "MC truth Lambdas;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
