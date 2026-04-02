@@ -65,6 +65,7 @@
 #include <TH2.h>
 #include <TList.h>
 #include <TString.h>
+#include <TRandom3.h>
 
 #include <sys/types.h>
 
@@ -113,7 +114,7 @@ struct Dilepton {
   o2::framework::Configurable<std::string> spresoPath{"spresoPath", "Users/d/dsekihat/PWGEM/dilepton/Qvector/resolution/LHC23zzh/pass3/test", "Path to SP resolution file"};
   o2::framework::Configurable<std::string> spresoHistName{"spresoHistName", "h1_R2_FT0M_BPos_BNeg", "histogram name of SP resolution file"};
 
-  o2::framework::Configurable<int> cfgAnalysisType{"cfgAnalysisType", static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kQC), "kQC:0, kUPC:1, kFlowV2:2, kFlowV3:3, kPolarization:4, kHFll:5"};
+  o2::framework::Configurable<int> cfgAnalysisType{"cfgAnalysisType", static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kQC), "kQC:0, kUPC:1, kFlowV2:2, kFlowV3:3, kPolarization:4, kHFll:5, kBootstrapv2:6"};
   o2::framework::Configurable<int> cfgEP2Estimator_for_Mix{"cfgEP2Estimator_for_Mix", 3, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5, FV0A:6"};
   o2::framework::Configurable<int> cfgQvecEstimator{"cfgQvecEstimator", 2, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5, FV0A:6"};
   o2::framework::Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
@@ -142,7 +143,7 @@ struct Dilepton {
   o2::framework::ConfigurableAxis ConfPolarizationPhiBins{"ConfPolarizationPhiBins", {1, -M_PI, M_PI}, "phi bins for polarization analysis"};
   o2::framework::ConfigurableAxis ConfPolarizationQuadMomBins{"ConfPolarizationQuadMomBins", {15, -0.5, 1}, "quadrupole moment bins for polarization analysis"}; // quardrupole moment <(3 x cos^2(theta) -1)/2>
 
-  Configurable<int> cfgNumBootstrapSamples{"cfgNumBootstrapSamples", 1, "Number of Bootstrap Samples"};
+  o2::framework::Configurable<int> cfgNumBootstrapSamples{"cfgNumBootstrapSamples", 1, "Number of Bootstrap Samples"};
 
   EMEventCut fEMEventCut;
   struct : o2::framework::ConfigurableGroup {
@@ -677,12 +678,12 @@ struct Dilepton {
       fRegistry.addClone("Pair/same/", "Pair/mix/");
     } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kBootstrapv2)) {
       nmod = 2;
-      const AxisSpec axis_sp{ConfSPBins, Form("#vec{u}_{%d,ll} #upoint #vec{Q}_{%d}^{%s}", nmod, nmod, qvec_det_names[cfgQvecEstimator].data())};
-      const AxisSpec axis_bootstrap{cfgNumBootstrapSamples, 0.5, static_cast<double>(cfgNumBootstrapSamples) + 0.5, "sample"}; // for bootstrap samples
-      fRegistry.add("Pair/same/uls/hs", "dilepton", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_y, axis_sp, axis_bootstrap}, true);
+      const o2::framework::AxisSpec axis_sp{ConfSPBins, Form("#vec{u}_{%d,ll} #upoint #vec{Q}_{%d}^{%s}", nmod, nmod, qvec_det_names[cfgQvecEstimator].data())};
+      const o2::framework::AxisSpec axis_bootstrap{cfgNumBootstrapSamples, 0.5, static_cast<double>(cfgNumBootstrapSamples) + 0.5, "sample"}; // for bootstrap samples
+      fRegistry.add("Pair/same/uls/hs", "dilepton", o2::framework::kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_y, axis_sp, axis_bootstrap}, true);
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
-      fRegistry.add("Pair/mix/uls/hs", "dilepton", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_y}, true);
+      fRegistry.add("Pair/mix/uls/hs", "dilepton", o2::framework::kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_y}, true);
       fRegistry.addClone("Pair/mix/uls/", "Pair/mix/lspp/");
       fRegistry.addClone("Pair/mix/uls/", "Pair/mix/lsmm/");
       o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistogramsBootstrap(&fRegistry, cfgNumBootstrapSamples);
@@ -1357,19 +1358,19 @@ struct Dilepton {
       used_trackIds_per_col.reserve(posTracks_per_coll.size() + negTracks_per_coll.size());
       int nuls = 0, nlspp = 0, nlsmm = 0;
       for (const auto& [pos, neg] : combinations(o2::soa::CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
-        bool is_pair_ok = fillPairInfo<0>(collision, pos, neg, cut, tracks);
+        bool is_pair_ok = fillPairInfo<0>(collision, pos, neg, cut, tracks, bootstrapweights);
         if (is_pair_ok) {
           nuls++;
         }
       }
       for (const auto& [pos1, pos2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
-        bool is_pair_ok = fillPairInfo<0>(collision, pos1, pos2, cut, tracks);
+        bool is_pair_ok = fillPairInfo<0>(collision, pos1, pos2, cut, tracks, bootstrapweights);
         if (is_pair_ok) {
           nlspp++;
         }
       }
       for (const auto& [neg1, neg2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) { // LS--
-        bool is_pair_ok = fillPairInfo<0>(collision, neg1, neg2, cut, tracks);
+        bool is_pair_ok = fillPairInfo<0>(collision, neg1, neg2, cut, tracks, bootstrapweights);
         if (is_pair_ok) {
           nlsmm++;
         }
