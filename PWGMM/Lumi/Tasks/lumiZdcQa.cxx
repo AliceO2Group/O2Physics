@@ -14,7 +14,7 @@
 ///
 /// \author Nicolas Strangmann (nicolas.strangmann@cern.ch) - Goethe University Frankfurt
 /// \author Stefanie Mrozinski (stefanie.mrozinski@cern.ch) - Goethe University Frankfurt
-/// \author Lorenzo Mattei (lorenzo.mattei@cern.ch) - Turin Frankfurt
+/// \author Lorenzo Mattei (lorenzo.mattei@cern.ch) - Turin University
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/MetadataHelper.h"
