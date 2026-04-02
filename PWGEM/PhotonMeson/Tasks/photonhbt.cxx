@@ -246,11 +246,15 @@ struct photonhbt {
 
   struct : ConfigurableGroup {
     std::string prefix = "mctruth_group";
-    Configurable<float> cfgMCMaxQinv{"cfgMCMaxQinv", 0.3f, "max q_{inv}^{true} for MC truth efficiency pair loop (GeV/c); <=0 = no cut"};
-    Configurable<float> cfgMCMinKt{"cfgMCMinKt", 0.0f, "min k_{T}^{true} for MC truth efficiency pair loop (GeV/c); <=0 = no cut"};
-    Configurable<float> cfgMCMaxKt{"cfgMCMaxKt", 0.7f, "max k_{T}^{true} for MC truth efficiency pair loop (GeV/c); <=0 = no cut"};
-    Configurable<bool> cfgDoTruthMix{"cfgDoTruthMix", false, "enable truth-level event mixing for baseline CF"};
-    Configurable<int> cfgTruthMixDepth{"cfgTruthMixDepth", 10, "depth of truth-level mixing pool"};
+    Configurable<float> cfgMCMaxQinv{"cfgMCMaxQinv", 0.3f, "..."};
+    Configurable<float> cfgMCMinKt{"cfgMCMinKt", 0.0f, "..."};
+    Configurable<float> cfgMCMaxKt{"cfgMCMaxKt", 0.7f, "..."};
+    Configurable<bool> cfgDoTruthMix{"cfgDoTruthMix", false, "..."};
+    Configurable<int> cfgTruthMixDepth{"cfgTruthMixDepth", 10, "..."};
+    Configurable<float> cfgMCMinV0Pt{"cfgMCMinV0Pt", 0.1f,
+                                     "min pT for true photons in truth-efficiency loop (GeV/c); "
+                                     "0 = fall back to pcmcuts.cfgMinPtV0"};
+    Configurable<float> cfgMCMinLegPt{"cfgMCMinLegPt", 0.0f, "min pT for true e^{+}/e^{-} legs in truth-efficiency loop (GeV/c);"};
   } mctruth;
 
   struct : ConfigurableGroup {
@@ -527,18 +531,22 @@ struct photonhbt {
     bool valid = true;
   };
 
-    struct TruthGamma {
+  struct TruthGamma {
     int id = -1, posId = -1, negId = -1;
-    float eta = 0.f, phi = 0.f, pt = 0.f, rTrue = -1.f, legDRtrue = -1.f;
+    float eta = 0.f, phi = 0.f, pt = 0.f;
+    float rTrue = -1.f;
+    float legDRtrue = -1.f;
+    float legDEta = 0.f; // ← neu
+    float legDPhi = 0.f; // ← neu
+    float alphaTrue = 0.f;
   };
 
   std::map<std::tuple<int, int, int, int>, std::deque<std::vector<TruthGamma>>> truthGammaPool;
 
-
   void addSinglePhotonQAHistogramsForStep(const std::string& path)
   {
     fRegistryPairQA.add((path + "hEtaVsPhiPt").c_str(), "acceptance;#phi (rad);#eta", kTH3D, {axisPhi, axisEta, axisPt}, true);
-    fRegistryPairQA.add((path + "hRVsZConvPt").c_str(), "R_{conv} vs z_{conv};z_{conv} (cm);R_{conv} (cm)", kTH2D, {axisZConv, axisR, axisPt}, true);
+    fRegistryPairQA.add((path + "hRVsZConvPt").c_str(), "R_{conv} vs z_{conv};z_{conv} (cm);R_{conv} (cm)", kTH3D, {axisZConv, axisR, axisPt}, true);
   }
 
   void addFullRangeHistograms(const std::string& path)
@@ -570,33 +578,33 @@ struct photonhbt {
     constexpr auto base = fullRangePrefix<ev_id>();
     fRegistry.fill(HIST(base) + HIST("hDeltaRCosOAVsQinv"), qinv, drOverCosOA);
   }
-void addQAHistogramsForStep(const std::string& path)
-{
-  //  Ellipse 
-  fRegistryPairQA.add((path + "hEllipseVal").c_str(), "(#Delta#eta/#sigma)^{2}+(#Delta#phi/#sigma)^{2};value;counts", kTH1D, {axisEllipseVal}, true);
+  void addQAHistogramsForStep(const std::string& path)
+  {
+    //  Ellipse
+    fRegistryPairQA.add((path + "hEllipseVal").c_str(), "(#Delta#eta/#sigma)^{2}+(#Delta#phi/#sigma)^{2};value;counts", kTH1D, {axisEllipseVal}, true);
 
-  //  Conversion point
-  fRegistryPairQA.add((path + "hR1VsR2").c_str(), "R_{1} vs R_{2};R_{1} (cm);R_{2} (cm)", kTH2D, {axisR, axisR}, true);
-  fRegistryPairQA.add((path + "hDeltaRxyKt").c_str(), "#Delta r_{xy} vs k_{T};#Delta r_{xy} (cm);k_{T} (GeV/c)", kTH2D, {axisDeltaRxy, axisKt}, true);
-  fRegistryPairQA.add((path + "hDeltaR3DKt").c_str(), "#Delta r_{3D} vs k_{T};#Delta r_{3D} (cm);k_{T} (GeV/c)", kTH2D, {axisDeltaR3D, axisKt}, true);
+    //  Conversion point
+    fRegistryPairQA.add((path + "hR1VsR2").c_str(), "R_{1} vs R_{2};R_{1} (cm);R_{2} (cm)", kTH2D, {axisR, axisR}, true);
+    fRegistryPairQA.add((path + "hDeltaRxyKt").c_str(), "#Delta r_{xy} vs k_{T};#Delta r_{xy} (cm);k_{T} (GeV/c)", kTH2D, {axisDeltaRxy, axisKt}, true);
+    fRegistryPairQA.add((path + "hDeltaR3DKt").c_str(), "#Delta r_{3D} vs k_{T};#Delta r_{3D} (cm);k_{T} (GeV/c)", kTH2D, {axisDeltaR3D, axisKt}, true);
 
-  //  Delta Eta QA
-  fRegistryPairQA.add((path + "hDeltaEtaDeltaRKt").c_str(), "#Delta#eta,|R_{1}-R_{2}|,k_{T}", kTHnSparseD, {axisDeltaEta, axisDeltaR, axisKt}, true);
-  fRegistryPairQA.add((path + "hDeltaEtaDeltaZKt").c_str(), "#Delta#eta,#Delta z,k_{T}", kTHnSparseD, {axisDeltaEta, axisDeltaZ, axisKt}, true);
-  fRegistryPairQA.add((path + "hDeltaEtaEtaKt").c_str(), "#Delta#eta,#eta_{pair},k_{T}", kTHnSparseD, {axisDeltaEta, axisEta, axisKt}, true);
-  fRegistryPairQA.add((path + "hDeltaEtaPhiKt").c_str(), "#Delta#eta,#phi_{pair},k_{T}", kTHnSparseD, {axisDeltaEta, axisPhi, axisKt}, true);
+    //  Delta Eta QA
+    fRegistryPairQA.add((path + "hDeltaEtaDeltaRKt").c_str(), "#Delta#eta,|R_{1}-R_{2}|,k_{T}", kTHnSparseD, {axisDeltaEta, axisDeltaR, axisKt}, true);
+    fRegistryPairQA.add((path + "hDeltaEtaDeltaZKt").c_str(), "#Delta#eta,#Delta z,k_{T}", kTHnSparseD, {axisDeltaEta, axisDeltaZ, axisKt}, true);
+    fRegistryPairQA.add((path + "hDeltaEtaEtaKt").c_str(), "#Delta#eta,#eta_{pair},k_{T}", kTHnSparseD, {axisDeltaEta, axisEta, axisKt}, true);
+    fRegistryPairQA.add((path + "hDeltaEtaPhiKt").c_str(), "#Delta#eta,#phi_{pair},k_{T}", kTHnSparseD, {axisDeltaEta, axisPhi, axisKt}, true);
 
-  // Delta Phi QA
-  fRegistryPairQA.add((path + "hSparseDEtaDPhiKt").c_str(), "#Delta#eta,#Delta#phi,k_{T}", kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisKt}, true);
-  fRegistryPairQA.add((path + "hDeltaPhiDeltaRKt").c_str(), "#Delta#phi,|R_{1}-R_{2}|,k_{T}", kTHnSparseD, {axisDeltaPhi, axisDeltaR, axisKt}, true);
-  fRegistryPairQA.add((path + "hDeltaPhiDeltaZKt").c_str(), "#Delta#phi,#Delta z,k_{T}", kTHnSparseD, {axisDeltaPhi, axisDeltaZ, axisKt}, true);
-  fRegistryPairQA.add((path + "hDeltaPhiPhiKt").c_str(), "#Delta#phi,#phi_{pair},k_{T}", kTHnSparseD, {axisDeltaPhi, axisPhi, axisKt}, true);
-  fRegistryPairQA.add((path + "hDeltaPhiEtaKt").c_str(), "#Delta#phi,#eta_{pair},k_{T}", kTHnSparseD, {axisDeltaPhi, axisEta, axisKt}, true);
+    // Delta Phi QA
+    fRegistryPairQA.add((path + "hSparseDEtaDPhiKt").c_str(), "#Delta#eta,#Delta#phi,k_{T}", kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisKt}, true);
+    fRegistryPairQA.add((path + "hDeltaPhiDeltaRKt").c_str(), "#Delta#phi,|R_{1}-R_{2}|,k_{T}", kTHnSparseD, {axisDeltaPhi, axisDeltaR, axisKt}, true);
+    fRegistryPairQA.add((path + "hDeltaPhiDeltaZKt").c_str(), "#Delta#phi,#Delta z,k_{T}", kTHnSparseD, {axisDeltaPhi, axisDeltaZ, axisKt}, true);
+    fRegistryPairQA.add((path + "hDeltaPhiPhiKt").c_str(), "#Delta#phi,#phi_{pair},k_{T}", kTHnSparseD, {axisDeltaPhi, axisPhi, axisKt}, true);
+    fRegistryPairQA.add((path + "hDeltaPhiEtaKt").c_str(), "#Delta#phi,#eta_{pair},k_{T}", kTHnSparseD, {axisDeltaPhi, axisEta, axisKt}, true);
 
-  // Delta Eta Dleta Phi Stuff
-  fRegistryPairQA.add((path + "hPhiVsEtaKt").c_str(), "#phi_{pair},#eta_{pair},k_{T}", kTHnSparseD, {axisPhi, axisEta, axisKt}, true);
-  fRegistryPairQA.add((path + "hSparseDeltaRDeltaZKt").c_str(), "|R_{1}-R_{2}|,#Delta z,k_{T}", kTHnSparseD, {axisDeltaR, axisDeltaZ, axisKt}, true);
-}
+    // Delta Eta Dleta Phi Stuff
+    fRegistryPairQA.add((path + "hPhiVsEtaKt").c_str(), "#phi_{pair},#eta_{pair},k_{T}", kTHnSparseD, {axisPhi, axisEta, axisKt}, true);
+    fRegistryPairQA.add((path + "hSparseDeltaRDeltaZKt").c_str(), "|R_{1}-R_{2}|,#Delta z,k_{T}", kTHnSparseD, {axisDeltaR, axisDeltaZ, axisKt}, true);
+  }
 
   void addhistograms()
   {
@@ -625,10 +633,12 @@ void addQAHistogramsForStep(const std::string& path)
     }
 
     fRegistry.add("Pair/same/hDeltaRCosOA", "distance between 2 conversion points / cos(#theta_{op}/2);#Delta r / cos(#theta_{op}/2) (cm);counts", kTH1D, {{100, 0, 100}}, true);
-    fRegistry.add("Pair/same/hSparse_DEtaDPhi_kT",
-                  "same-event (#Delta#eta,#Delta#phi,q_{inv},k_{T}) for efficiency reweighting;"
-                  "#Delta#eta;#Delta#phi (rad);q_{inv} (GeV/c);k_{T} (GeV/c)",
+    fRegistry.add("Pair/same/hSparse_DEtaDPhi_kT", "same-event (#Delta#eta,#Delta#phi,q_{inv},k_{T}) for efficiency reweighting;" "#Delta#eta;#Delta#phi (rad);q_{inv} (GeV/c);k_{T} (GeV/c)",
                   kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisKt}, true);
+
+    fRegistry.add("Pair/same/hPhi_lowerPtV0",
+                  "azimuthal angle of lower-p_{T} V0 in pair;#phi (rad);counts",
+                  kTH1D, {axisPhi}, true);
 
     addQAHistogramsForStep("Pair/same/QA/Before/");
     addQAHistogramsForStep("Pair/same/QA/AfterDRCosOA/");
@@ -640,6 +650,11 @@ void addQAHistogramsForStep(const std::string& path)
     fRegistryPairMC.addClone("Pair/same/MC/", "Pair/mix/MC/");
     addFullRangeHistograms("Pair/same/FullRange/");
     fRegistry.addClone("Pair/same/", "Pair/mix/");
+
+    fRegistry.add("Pair/same/EtaTopology/hSparse_DEtaDPhi_kT_sameSideV0_sameSideLegs", "both V0 same #eta-side, all legs same side;" "#Delta#eta;#Delta#phi (rad);k_{T} (GeV/c)", kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisKt}, true);
+    fRegistry.add("Pair/same/EtaTopology/hSparse_DEtaDPhi_kT_sameSideV0_mixedLegs", "both V0 same #eta-side, legs mixed sides;" "#Delta#eta;#Delta#phi (rad);k_{T} (GeV/c)", kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisKt}, true);
+    fRegistry.add("Pair/same/EtaTopology/hSparse_DEtaDPhi_kT_diffSideV0_matchingLegs", "V0 on opposite #eta-sides, legs match their V0 side;"  "#Delta#eta;#Delta#phi (rad);k_{T} (GeV/c)", kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisKt}, true);
+    fRegistry.add("Pair/same/EtaTopology/hSparse_DEtaDPhi_kT_diffSideV0_crossedLegs", "V0 on opposite #eta-sides, legs cross their V0 side;" "#Delta#eta;#Delta#phi (rad);k_{T} (GeV/c)", kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisKt}, true);
   }
 
   void DefineEMEventCut()
@@ -876,7 +891,7 @@ void addQAHistogramsForStep(const std::string& path)
   }
 
   template <int ev_id, int step_id>
-  inline void fillPairQAStep(PairQAObservables const& o, float cent, float occupancy)
+  inline void fillPairQAStep(PairQAObservables const& o, float /*cent*/, float /*occupancy*/)
   {
     if (!qaflags.doPairQa)
       return;
@@ -901,18 +916,16 @@ void addQAHistogramsForStep(const std::string& path)
     fRegistryPairQA.fill(HIST(base) + HIST("hDeltaPhiEtaKt"), o.dphi, o.pairEta, o.kt);
     fRegistryPairQA.fill(HIST(base) + HIST("hPhiVsEtaKt"), o.pairPhi, o.pairEta, o.kt);
 
-    //// Delta R (Conversion point) QA 
+    //// Delta R (Conversion point) QA
 
     fRegistryPairQA.fill(HIST(base) + HIST("hR1VsR2"), o.r1, o.r2);
     fRegistryPairQA.fill(HIST(base) + HIST("hSparseDeltaRDeltaZKt"), o.deltaR, o.deltaZ, o.kt);
     fRegistryPairQA.fill(HIST(base) + HIST("hDeltaRxyKt"), o.deltaRxy, o.kt);
     fRegistryPairQA.fill(HIST(base) + HIST("hDeltaR3DKt"), o.deltaR3D, o.kt);
 
-
     const float sE = ggpaircuts.cfgEllipseSigEta.value, sP = ggpaircuts.cfgEllipseSigPhi.value;
     if (sE > 1e-9f && sP > 1e-9f)
-    fRegistryPairQA.fill(HIST(base) + HIST("hEllipseVal"), (o.deta / sE) * (o.deta / sE) + (o.dphi / sP) * (o.dphi / sP));
-
+      fRegistryPairQA.fill(HIST(base) + HIST("hEllipseVal"), (o.deta / sE) * (o.deta / sE) + (o.dphi / sP) * (o.dphi / sP));
   }
 
   template <typename TPhoton, typename TLegs, typename TMCParticles>
@@ -960,6 +973,56 @@ void addQAHistogramsForStep(const std::string& path)
     return PairTruthType::TrueTrueDistinct;
   }
 
+  enum class EtaTopology : uint8_t {
+    SameSideV0SameSideLegs = 0, ///< both V0 eta same sign; all 4 legs same sign
+    SameSideV0MixedLegs = 1,    ///< both V0 eta same sign; legs not all on that sign
+    DiffSideV0MatchingLegs = 2, ///< V0s on opposite sides; each V0's legs match its own side
+    DiffSideV0CrossedLegs = 3,  ///< V0s on opposite sides; legs do NOT match their V0's side
+  };
+
+  /// Classify the eta-side topology of a photon pair from the 6 raw eta values.
+  static EtaTopology classifyEtaTopology(float v1eta, float v2eta,
+                                         float pos1eta, float neg1eta,
+                                         float pos2eta, float neg2eta)
+  {
+    const bool v1pos = v1eta >= 0.f;
+    const bool v2pos = v2eta >= 0.f;
+    if (v1pos == v2pos) { // same-side V0s
+      const bool allSame =
+        ((pos1eta >= 0.f) == v1pos) && ((neg1eta >= 0.f) == v1pos) &&
+        ((pos2eta >= 0.f) == v1pos) && ((neg2eta >= 0.f) == v1pos);
+      return allSame ? EtaTopology::SameSideV0SameSideLegs
+                     : EtaTopology::SameSideV0MixedLegs;
+    }
+    // different-side V0s
+    const bool v1match = ((pos1eta >= 0.f) == v1pos) && ((neg1eta >= 0.f) == v1pos);
+    const bool v2match = ((pos2eta >= 0.f) == v2pos) && ((neg2eta >= 0.f) == v2pos);
+    return (v1match && v2match) ? EtaTopology::DiffSideV0MatchingLegs
+                                : EtaTopology::DiffSideV0CrossedLegs;
+  }
+
+  inline void fillEtaTopologyHisto(EtaTopology topo, float deta, float dphi, float kt)
+  {
+    switch (topo) {
+      case EtaTopology::SameSideV0SameSideLegs:
+        fRegistry.fill(HIST("Pair/same/EtaTopology/hSparse_DEtaDPhi_kT_sameSideV0_sameSideLegs"),
+                       deta, dphi, kt);
+        break;
+      case EtaTopology::SameSideV0MixedLegs:
+        fRegistry.fill(HIST("Pair/same/EtaTopology/hSparse_DEtaDPhi_kT_sameSideV0_mixedLegs"),
+                       deta, dphi, kt);
+        break;
+      case EtaTopology::DiffSideV0MatchingLegs:
+        fRegistry.fill(HIST("Pair/same/EtaTopology/hSparse_DEtaDPhi_kT_diffSideV0_matchingLegs"),
+                       deta, dphi, kt);
+        break;
+      case EtaTopology::DiffSideV0CrossedLegs:
+        fRegistry.fill(HIST("Pair/same/EtaTopology/hSparse_DEtaDPhi_kT_diffSideV0_crossedLegs"),
+                       deta, dphi, kt);
+        break;
+    }
+  }
+
   template <typename TMCParticles>
   static bool isPi0DaughterPair(PhotonMCInfo const& m1, PhotonMCInfo const& m2,
                                 TMCParticles const& mcParticles)
@@ -995,259 +1058,232 @@ void addQAHistogramsForStep(const std::string& path)
         return "Unknown/";
     }
   }
-
   void addMCHistograms()
   {
+    // ─── Achsen die nur hier gebraucht werden ────────────────────────────────
     const AxisSpec axisTruthType{{0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5},
-                                 "truth type (1=TrueTrueDistinct,2=TrueTrueSamePhoton,3=SharedMcLeg,4=TrueFake,5=FakeFake,6=Pi0Daughters)"};
+                                 "truth type (1=TrueTrueDistinct,2=TrueTrueSamePhoton,3=SharedMcLeg,"
+                                 "4=TrueFake,5=FakeFake,6=Pi0Daughters)"};
     const AxisSpec axisDeltaEtaMC{90, -1.6f, +1.6f, "#Delta#eta"};
     const AxisSpec axisDeltaPhiMC{90, -o2::constants::math::PI, +o2::constants::math::PI, "#Delta#phi (rad)"};
+    const AxisSpec axQinvMC{60, 0.f, 0.3f, "q_{inv}^{true} (GeV/c)"};
+    const AxisSpec axRconv{180, 0.f, 90.f, "R_{conv}^{true} (cm)"};
+    const AxisSpec axAlpha{100, -1.f, 1.f, "#alpha^{true}"};
+    const AxisSpec axLegDR{100, 0.f, 0.3f, "leg #Delta R^{true}"};
 
+    // fRegistryPairMC  — reco-level pair histograms, per MC truth type
+
+    //  Per-type CF + observables 
     static constexpr std::array<std::string_view, 6> kTypes = {
-      "TrueTrueDistinct/", "TrueTrueSamePhoton/", "SharedMcLeg/", "TrueFake/", "FakeFake/", "Pi0Daughters/"};
+      "TrueTrueDistinct/", "TrueTrueSamePhoton/", "SharedMcLeg/",
+      "TrueFake/", "FakeFake/", "Pi0Daughters/"};
 
     for (const auto& label : kTypes) {
       const std::string base = std::string("Pair/same/MC/") + std::string(label);
+
+      // CF
       if (hbtanalysis.cfgDo3D) {
-        fRegistryPairMC.add((base + "CF_3D").c_str(), "MC CF 3D LCMS", kTHnSparseD, {axisQout, axisQside, axisQlong, axisKt}, true);
+        fRegistryPairMC.add((base + "CF_3D").c_str(), "MC CF 3D LCMS",
+                            kTHnSparseD, {axisQout, axisQside, axisQlong, axisKt}, true);
         if (hbtanalysis.cfgDo2D)
-          fRegistryPairMC.add((base + "CF_2D").c_str(), "MC CF 2D", kTHnSparseD, {axisQout, axisQinv, axisKt}, true);
+          fRegistryPairMC.add((base + "CF_2D").c_str(), "MC CF 2D",
+                              kTHnSparseD, {axisQout, axisQinv, axisKt}, true);
       } else {
-        if (hbtanalysis.cfgUseLCMS)
-          fRegistryPairMC.add((base + "CF_1D").c_str(), "MC CF 1D LCMS", kTH2D, {axisQabsLcms, axisKt}, true);
-        else
-          fRegistryPairMC.add((base + "CF_1D").c_str(), "MC CF 1D (qinv)", kTH2D, {axisQinv, axisKt}, true);
+        fRegistryPairMC.add((base + "CF_1D").c_str(),
+                            hbtanalysis.cfgUseLCMS ? "MC CF 1D LCMS" : "MC CF 1D (qinv)",
+                            kTH2D, {hbtanalysis.cfgUseLCMS ? axisQabsLcms : axisQinv, axisKt}, true);
       }
+
+
+      // 1D observables
       fRegistryPairMC.add((base + "hQinv").c_str(), "q_{inv};q_{inv} (GeV/c);counts", kTH1D, {axisQinv}, true);
-      fRegistryPairMC.add((base + "hDeltaEta").c_str(), "#Delta#eta;#Delta#eta;counts", kTH1D, {axisDeltaEta}, true);
-      fRegistryPairMC.add((base + "hDeltaPhi").c_str(), "#Delta#phi;#Delta#phi (rad);counts", kTH1D, {axisDeltaPhi}, true);
-      fRegistryPairMC.add((base + "hDEtaDPhi").c_str(), "#Delta#eta vs #Delta#phi", kTH2D, {axisDeltaEta, axisDeltaPhi}, true);
       fRegistryPairMC.add((base + "hDeltaR").c_str(), "|R_{1}-R_{2}|;|R_{1}-R_{2}| (cm);counts", kTH1D, {axisDeltaR}, true);
       fRegistryPairMC.add((base + "hDeltaZ").c_str(), "#Delta z;#Delta z (cm);counts", kTH1D, {axisDeltaZ}, true);
       fRegistryPairMC.add((base + "hDeltaR3D").c_str(), "#Delta r_{3D};#Delta r_{3D} (cm);counts", kTH1D, {axisDeltaR3D}, true);
-      fRegistryPairMC.add((base + "hKt").c_str(), "k_{T};k_{T} (GeV/c);counts", kTH1D, {axisKt}, true);
+
+      // 2D observables
+      fRegistryPairMC.add((base + "hDEtaDPhi").c_str(), "#Delta#eta vs #Delta#phi", kTH2D, {axisDeltaEta, axisDeltaPhi}, true);
       fRegistryPairMC.add((base + "hDeltaRVsQinv").c_str(), "|R_{1}-R_{2}| vs q_{inv}", kTH2D, {axisQinv, axisDeltaR}, true);
       fRegistryPairMC.add((base + "hDeltaZVsQinv").c_str(), "#Delta z vs q_{inv}", kTH2D, {axisQinv, axisDeltaZ}, true);
       fRegistryPairMC.add((base + "hDeltaR3DVsQinv").c_str(), "#Delta r_{3D} vs q_{inv}", kTH2D, {axisQinv, axisDeltaR3D}, true);
 
-      const bool addDEtaDPhiVsQinv =
-        (label == "TrueTrueDistinct/") ? mctruthSparse.cfgFillDEtaDPhiVsQinvTrueTrueDistinct.value : (label == "TrueTrueSamePhoton/") ? mctruthSparse.cfgFillDEtaDPhiVsQinvTrueTrueSamePhoton.value
-                                                                                                   : (label == "SharedMcLeg/")        ? mctruthSparse.cfgFillDEtaDPhiVsQinvSharedMcLeg.value
-                                                                                                   : (label == "TrueFake/")           ? mctruthSparse.cfgFillDEtaDPhiVsQinvTrueFake.value
-                                                                                                   : (label == "FakeFake/")           ? mctruthSparse.cfgFillDEtaDPhiVsQinvFakeFake.value
-                                                                                                                                      : mctruthSparse.cfgFillDEtaDPhiVsQinvPi0Daughters.value;
-      if (addDEtaDPhiVsQinv)
-        fRegistryPairMC.add((base + "hDEtaDPhiVsQinv").c_str(), "#Delta#eta vs #Delta#phi vs q_{inv}", kTHnSparseD, {axisDeltaEtaMC, axisDeltaPhiMC, axisQinv}, true);
-      const bool addDRDZQinv =
-        (label == "TrueTrueDistinct/") ? mctruthSparse.cfgFillDRDZQinvTrueTrueDistinct.value : (label == "TrueTrueSamePhoton/") ? mctruthSparse.cfgFillDRDZQinvTrueTrueSamePhoton.value
-                                                                                             : (label == "SharedMcLeg/")        ? mctruthSparse.cfgFillDRDZQinvSharedMcLeg.value
-                                                                                             : (label == "TrueFake/")           ? mctruthSparse.cfgFillDRDZQinvTrueFake.value
-                                                                                             : (label == "FakeFake/")           ? mctruthSparse.cfgFillDRDZQinvFakeFake.value
-                                                                                                                                : mctruthSparse.cfgFillDRDZQinvPi0Daughters.value;
-      if (addDRDZQinv)
-        fRegistryPairMC.add((base + "hSparseDeltaRDeltaZQinv").c_str(), "|R_{1}-R_{2}|,#Delta z,q_{inv}", kTHnSparseD, {axisDeltaR, axisDeltaZ, axisQinv}, true);
+      // Sparse (conditional)
       fRegistryPairMC.add((base + "hSparse_DEtaDPhi_kT").c_str(),
-                          "#Delta#eta vs #Delta#phi vs k_{T};#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad);k_{T} (GeV/c)",
+                          "#Delta#eta,#Delta#phi,k_{T};#Delta#eta;#Delta#phi (rad);k_{T} (GeV/c)",
                           kTHnSparseD, {axisDeltaEtaMC, axisDeltaPhiMC, axisKt}, true);
-    }
-    fRegistryPairMC.add("Pair/same/MC/hTruthTypeVsQinv", "truth type vs q_{inv};q_{inv} (GeV/c);truth type", kTH2D, {axisQinv, axisTruthType}, true);
-    fRegistryPairMC.add("Pair/same/MC/hTruthTypeVsKt", "truth type vs k_{T};k_{T} (GeV/c);truth type", kTH2D, {axisKt, axisTruthType}, true);
 
-    if (hbtanalysis.cfgDo3D) {
-      fRegistryPairMC.add("Pair/same/MC/NoLabel/CF_3D", "pairs with missing MC label — CF 3D LCMS", kTHnSparseD, {axisQout, axisQside, axisQlong, axisKt}, true);
-      if (hbtanalysis.cfgDo2D)
-        fRegistryPairMC.add("Pair/same/MC/NoLabel/CF_2D", "pairs with missing MC label — CF 2D", kTHnSparseD, {axisQout, axisQinv, axisKt}, true);
-    } else {
-      if (hbtanalysis.cfgUseLCMS)
-        fRegistryPairMC.add("Pair/same/MC/NoLabel/CF_1D", "pairs with missing MC label — CF 1D LCMS", kTH2D, {axisQabsLcms, axisKt}, true);
-      else
-        fRegistryPairMC.add("Pair/same/MC/NoLabel/CF_1D", "pairs with missing MC label — CF 1D (qinv)", kTH2D, {axisQinv, axisKt}, true);
+      const bool addDEtaDPhiVsQinv =
+        (label == "TrueTrueDistinct/")     ? mctruthSparse.cfgFillDEtaDPhiVsQinvTrueTrueDistinct.value
+        : (label == "TrueTrueSamePhoton/") ? mctruthSparse.cfgFillDEtaDPhiVsQinvTrueTrueSamePhoton.value
+        : (label == "SharedMcLeg/")        ? mctruthSparse.cfgFillDEtaDPhiVsQinvSharedMcLeg.value
+        : (label == "TrueFake/")           ? mctruthSparse.cfgFillDEtaDPhiVsQinvTrueFake.value
+        : (label == "FakeFake/")           ? mctruthSparse.cfgFillDEtaDPhiVsQinvFakeFake.value
+                                           : mctruthSparse.cfgFillDEtaDPhiVsQinvPi0Daughters.value;
+      if (addDEtaDPhiVsQinv)
+        fRegistryPairMC.add((base + "hDEtaDPhiVsQinv").c_str(),
+                            "#Delta#eta vs #Delta#phi vs q_{inv}", kTHnSparseD,
+                            {axisDeltaEtaMC, axisDeltaPhiMC, axisQinv}, true);
+
+      const bool addDRDZQinv =
+        (label == "TrueTrueDistinct/")     ? mctruthSparse.cfgFillDRDZQinvTrueTrueDistinct.value
+        : (label == "TrueTrueSamePhoton/") ? mctruthSparse.cfgFillDRDZQinvTrueTrueSamePhoton.value
+        : (label == "SharedMcLeg/")        ? mctruthSparse.cfgFillDRDZQinvSharedMcLeg.value
+        : (label == "TrueFake/")           ? mctruthSparse.cfgFillDRDZQinvTrueFake.value
+        : (label == "FakeFake/")           ? mctruthSparse.cfgFillDRDZQinvFakeFake.value
+                                           : mctruthSparse.cfgFillDRDZQinvPi0Daughters.value;
+      if (addDRDZQinv)
+        fRegistryPairMC.add((base + "hSparseDeltaRDeltaZQinv").c_str(),
+                            "|R_{1}-R_{2}|,#Delta z,q_{inv}", kTHnSparseD,
+                            {axisDeltaR, axisDeltaZ, axisQinv}, true);
     }
-    fRegistryPairMC.add("Pair/same/MC/NoLabel/hDEtaDPhi",
-                        "pairs with missing MC label: #Delta#eta vs #Delta#phi;"
-                        "#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad)",
-                        kTH2D, {axisDeltaEta, axisDeltaPhi}, true);
-    fRegistryPairMC.add("Pair/same/MC/NoLabel/hKt", "pairs with missing MC label: k_{T};k_{T} (GeV/c);counts", kTH1D, {axisKt}, true);
-    fRegistryPairMC.add("Pair/same/MC/NoLabel/hQinv", "pairs with missing MC label: q_{inv};q_{inv} (GeV/c);counts", kTH1D, {axisQinv}, true);
+
+    fRegistryPairMC.add("Pair/same/MC/hTruthTypeVsQinv",
+                        "truth type vs q_{inv};q_{inv} (GeV/c);truth type", kTH2D, {axisQinv, axisTruthType}, true);
+    fRegistryPairMC.add("Pair/same/MC/hTruthTypeVsKt",
+                        "truth type vs k_{T};k_{T} (GeV/c);truth type", kTH2D, {axisKt, axisTruthType}, true);
 
     fRegistryPairMC.add("Pair/same/MC/hDEtaDPhi_truePairs",
-                        "reco pairs where both photons are true (TrueTrueDistinct+SamePhoton+Pi0);"
+                        "true reco pairs (TrueTrueDistinct+SamePhoton+Pi0);"
                         "#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad)",
                         kTH2D, {axisDeltaEta, axisDeltaPhi}, true);
     fRegistryPairMC.add("Pair/same/MC/hDEtaDPhi_fakePairs",
-                        "reco pairs with at least one fake photon (FakeFake+TrueFake+SharedMcLeg);"
+                        "fake reco pairs (FakeFake+TrueFake+SharedMcLeg);"
                         "#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad)",
                         kTH2D, {axisDeltaEta, axisDeltaPhi}, true);
     fRegistryPairMC.add("Pair/same/MC/hSparse_DEtaDPhi_kT_truePairs",
-                        "reco true pairs: #Delta#eta × #Delta#phi × k_{T};"
+                        "true pairs: #Delta#eta,#Delta#phi,k_{T};"
+                        "#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad);k_{T} (GeV/c)",
+                        kTHnSparseD, {axisDeltaEtaMC, axisDeltaPhiMC, axisKt}, true);
+    fRegistryPairMC.add("Pair/same/MC/hSparse_DEtaDPhi_kT_fakePairs",
+                        "fake pairs: #Delta#eta,#Delta#phi,k_{T};"
                         "#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad);k_{T} (GeV/c)",
                         kTHnSparseD, {axisDeltaEtaMC, axisDeltaPhiMC, axisKt}, true);
     fRegistryPairMC.add("Pair/same/MC/hSparse_DEtaDPhi_qinv_truePairs",
-                        "reco true pairs: #Delta#eta × #Delta#phi × q_{inv};"
+                        "true pairs: #Delta#eta,#Delta#phi,q_{inv};"
                         "#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad);q_{inv} (GeV/c)",
                         kTHnSparseD, {axisDeltaEtaMC, axisDeltaPhiMC, axisQinv}, true);
-    fRegistryPairMC.add("Pair/same/MC/hSparse_DEtaDPhi_kT_fakePairs",
-                        "reco fake pairs: #Delta#eta × #Delta#phi × k_{T};"
-                        "#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad);k_{T} (GeV/c)",
-                        kTHnSparseD, {axisDeltaEtaMC, axisDeltaPhiMC, axisKt}, true);
     fRegistryPairMC.add("Pair/same/MC/hSparse_DEtaDPhi_qinv_fakePairs",
-                        "reco fake pairs: #Delta#eta × #Delta#phi × q_{inv};"
+                        "fake pairs: #Delta#eta,#Delta#phi,q_{inv};"
                         "#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad);q_{inv} (GeV/c)",
                         kTHnSparseD, {axisDeltaEtaMC, axisDeltaPhiMC, axisQinv}, true);
 
-    const AxisSpec axQinvMC{60, 0.f, 0.3f, "q_{inv}^{true} (GeV/c)"};
+    // ─── Pairs with missing MC label ─────────────────────────────────────────
+    if (hbtanalysis.cfgDo3D) {
+      fRegistryPairMC.add("Pair/same/MC/NoLabel/CF_3D",
+                          "missing MC label — CF 3D LCMS", kTHnSparseD, {axisQout, axisQside, axisQlong, axisKt}, true);
+      if (hbtanalysis.cfgDo2D)
+        fRegistryPairMC.add("Pair/same/MC/NoLabel/CF_2D",
+                            "missing MC label — CF 2D", kTHnSparseD, {axisQout, axisQinv, axisKt}, true);
+    } else {
+      fRegistryPairMC.add("Pair/same/MC/NoLabel/CF_1D",
+                          hbtanalysis.cfgUseLCMS ? "missing MC label — CF 1D LCMS" : "missing MC label — CF 1D (qinv)",
+                          kTH2D, {hbtanalysis.cfgUseLCMS ? axisQabsLcms : axisQinv, axisKt}, true);
+    }
+    fRegistryPairMC.add("Pair/same/MC/NoLabel/hDEtaDPhi",
+                        "missing MC label: #Delta#eta vs #Delta#phi;"
+                        "#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad)",
+                        kTH2D, {axisDeltaEta, axisDeltaPhi}, true);
+    fRegistryPairMC.add("Pair/same/MC/NoLabel/hQinv",
+                        "missing MC label: q_{inv};q_{inv} (GeV/c);counts", kTH1D, {axisQinv}, true);
+    fRegistryPairMC.add("Pair/same/MC/NoLabel/hKt",
+                        "missing MC label: k_{T};k_{T} (GeV/c);counts", kTH1D, {axisKt}, true);
 
-    // Same-event truth CF
-    fRegistryMC.add("MC/TruthCF/hQinvVsKt_same",
-                    "truth-level same-event CF;k_{T} (GeV/c);q_{inv}^{true} (GeV/c)",
-                    kTH2D, {axisKt, axQinvMC}, true);
+    // fRegistryMC  — truth-level histograms
+
+    // ─── Truth-level CF
+    fRegistryMC.add("MC/TruthCF/hQinvVsKt_same", "truth-level same-event CF;k_{T} (GeV/c);q_{inv}^{true} (GeV/c)", kTH2D, {axisKt, axQinvMC}, true);
     fRegistryMC.add("MC/TruthCF/hDEtaDPhi_same",
-                    "truth-level same-event #Delta#eta vs #Delta#phi",
+                    "truth-level same-event #Delta#eta vs #Delta#phi;"
+                    "#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad)",
                     kTH2D, {axisDeltaEta, axisDeltaPhi}, true);
-    // Mixed-event truth CF
-    fRegistryMC.add("MC/TruthCF/hQinvVsKt_mix",
-                    "truth-level mixed-event CF;k_{T} (GeV/c);q_{inv}^{true} (GeV/c)",
-                    kTH2D, {axisKt, axQinvMC}, true);
+    fRegistryMC.add("MC/TruthCF/hQinvVsKt_mix", "truth-level mixed-event CF;k_{T} (GeV/c);q_{inv}^{true} (GeV/c)", kTH2D, {axisKt, axQinvMC}, true);
     fRegistryMC.add("MC/TruthCF/hDEtaDPhi_mix",
-                    "truth-level mixed-event #Delta#eta vs #Delta#phi",
-                    kTH2D, {axisDeltaEta, axisDeltaPhi}, true);
-
-    fRegistryMC.add("MC/TruthAO2D/hSparse_DEtaDPhi_qinv_truthConverted",
-                    "true converted pairs, denominator;"
-                    "#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad);q_{inv}^{true} (GeV/c)",
-                    kTHnD, {axisDeltaEta, axisDeltaPhi, axQinvMC}, true);
-    fRegistryMC.add("MC/TruthAO2D/hSparse_DEtaDPhi_qinv_all4LegsThisColl",
-                    "all 4 legs found — #Delta#eta  #Delta#phi q_{inv};"
-                    "#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad);q_{inv}^{true} (GeV/c)",
-                    kTHnD, {axisDeltaEta, axisDeltaPhi, axQinvMC}, true);
-    fRegistryMC.add("MC/TruthAO2D/hSparse_DEtaDPhi_qinv_bothPhotonsBuilt",
-                    "both V0s built — #Delta#eta × #Delta#phi × q_{inv};"
-                    "#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad);q_{inv}^{true} (GeV/c)",
-                    kTHnD, {axisDeltaEta, axisDeltaPhi, axQinvMC}, true);
-    fRegistryMC.add("MC/TruthAO2D/hSparse_DEtaDPhi_qinv_bothPhotonsSelected",
-                    "both V0s pass cuts — numerator;"
-                    "#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad);q_{inv}^{true} (GeV/c)",
-                    kTHnD, {axisDeltaEta, axisDeltaPhi, axQinvMC}, true);
-
-    fRegistryMC.add("MC/TruthAO2D/hSparse_DEtaDPhi_kT_truthConverted",
-                    "true converted pairs — denominator;"
-                    "#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad);k_{T} (GeV/c)",
-                    kTHnD, {axisDeltaEta, axisDeltaPhi, axisKt}, true);
-    fRegistryMC.add("MC/TruthAO2D/hSparse_DEtaDPhi_kT_all4LegsThisColl",
-                    "all 4 legs found — #Delta#eta × #Delta#phi × k_{T};"
-                    "#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad);k_{T} (GeV/c)",
-                    kTHnD, {axisDeltaEta, axisDeltaPhi, axisKt}, true);
-    fRegistryMC.add("MC/TruthAO2D/hSparse_DEtaDPhi_kT_bothPhotonsBuilt",
-                    "both V0s built — #Delta#eta × #Delta#phi × k_{T};"
-                    "#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad);k_{T} (GeV/c)",
-                    kTHnD, {axisDeltaEta, axisDeltaPhi, axisKt}, true);
-    fRegistryMC.add("MC/TruthAO2D/hSparse_DEtaDPhi_kT_bothPhotonsSelected",
-                    "both V0s pass cuts — numerator;"
-                    "#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad);k_{T} (GeV/c)",
-                    kTHnD, {axisDeltaEta, axisDeltaPhi, axisKt}, true);
-    fRegistryMC.add("MC/TruthAO2D/hQinvVsKt_truthConverted",
-                    "true converted pairs: q_{inv}^{true} vs k_{T};"
-                    "k_{T} (GeV/c);q_{inv}^{true} (GeV/c)",
-                    kTH2D, {axisKt, axQinvMC}, true);
-    fRegistryMC.add("MC/TruthAO2D/hQinvVsKt_all4LegsThisColl",
-                    "all 4 legs found: q_{inv}^{true} vs k_{T};"
-                    "k_{T} (GeV/c);q_{inv}^{true} (GeV/c)",
-                    kTH2D, {axisKt, axQinvMC}, true);
-    fRegistryMC.add("MC/TruthAO2D/hQinvVsKt_bothPhotonsBuilt",
-                    "both V0s built: q_{inv}^{true} vs k_{T};"
-                    "k_{T} (GeV/c);q_{inv}^{true} (GeV/c)",
-                    kTH2D, {axisKt, axQinvMC}, true);
-    fRegistryMC.add("MC/TruthAO2D/hQinvVsKt_bothPhotonsSelected",
-                    "both V0s selected: q_{inv}^{true} vs k_{T};"
-                    "k_{T} (GeV/c);q_{inv}^{true} (GeV/c)",
-                    kTH2D, {axisKt, axQinvMC}, true);
-
-    fRegistryMC.add("MC/TruthAO2D/hDEtaDPhi_truthConverted",
-                    "true converted pairs — generator level #Delta#eta vs #Delta#phi;"
-                    "#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad)",
-                    kTH2D, {axisDeltaEta, axisDeltaPhi}, true);
-    fRegistryMC.add("MC/TruthAO2D/hDEtaDPhi_all4LegsThisColl",
-                    "all 4 legs found — #Delta#eta vs #Delta#phi;"
-                    "#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad)",
-                    kTH2D, {axisDeltaEta, axisDeltaPhi}, true);
-    fRegistryMC.add("MC/TruthAO2D/hDEtaDPhi_bothPhotonsBuilt",
-                    "both V0s built — #Delta#eta vs #Delta#phi;"
-                    "#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad)",
-                    kTH2D, {axisDeltaEta, axisDeltaPhi}, true);
-    fRegistryMC.add("MC/TruthAO2D/hDEtaDPhi_bothPhotonsSelected",
-                    "both V0s selected — #Delta#eta vs #Delta#phi;"
+                    "truth-level mixed-event #Delta#eta vs #Delta#phi;"
                     "#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad)",
                     kTH2D, {axisDeltaEta, axisDeltaPhi}, true);
 
+    // ─── Efficiency: stage vs observables ──────────────────────────
+    auto addStageHistos = [&](const char* suffix, const char* title, auto... axes) {
+      for (const char* stage : {"truthConverted", "all4LegsThisColl",
+                                "bothPhotonsBuilt", "bothPhotonsSelected"}) {
+        const std::string name = std::string("MC/TruthAO2D/") + suffix + std::string("_") + stage;
+        const std::string ttl = std::string(title) + std::string(" [") + stage + "]";
+        fRegistryMC.add(name.c_str(), ttl.c_str(), kTHnD, {axes...}, true);
+      }
+    };
+    auto addStageHistos2D = [&](const char* suffix, const char* title, auto ax1, auto ax2) {
+      for (const char* stage : {"truthConverted", "all4LegsThisColl",
+                                "bothPhotonsBuilt", "bothPhotonsSelected"}) {
+        const std::string name = std::string("MC/TruthAO2D/") + suffix + std::string("_") + stage;
+        fRegistryMC.add(name.c_str(), title, kTH2D, {ax1, ax2}, true);
+      }
+    };
+
+    addStageHistos("hSparse_DEtaDPhi_qinv",
+                   "#Delta#eta,#Delta#phi,q_{inv}^{true};"
+                   "#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad);q_{inv}^{true} (GeV/c)",
+                   axisDeltaEta, axisDeltaPhi, axQinvMC);
+
+    addStageHistos("hSparse_DEtaDPhi_kT",
+                   "#Delta#eta,#Delta#phi,k_{T};"
+                   "#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad);k_{T} (GeV/c)",
+                   axisDeltaEta, axisDeltaPhi, axisKt);
+
+    addStageHistos2D("hQinvVsKt",
+                     "q_{inv}^{true} vs k_{T};k_{T} (GeV/c);q_{inv}^{true} (GeV/c)",
+                     axisKt, axQinvMC);
+
+    addStageHistos2D("hDEtaDPhi",
+                     "#Delta#eta vs #Delta#phi;#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad)",
+                     axisDeltaEta, axisDeltaPhi);
+
+    // Rconv waterfall (nur converted + selected)
+    fRegistryMC.add("MC/TruthAO2D/hRconv1_vs_Rconv2_truthConverted",
+                    "denominator: R_{conv,1} vs R_{conv,2};R_{conv,1}^{true} (cm);R_{conv,2}^{true} (cm)",
+                    kTH2D, {axRconv, axRconv}, true);
+    fRegistryMC.add("MC/TruthAO2D/hRconv1_vs_Rconv2_bothPhotonsSelected",
+                    "numerator: R_{conv,1} vs R_{conv,2};R_{conv,1}^{true} (cm);R_{conv,2}^{true} (cm)",
+                    kTH2D, {axRconv, axRconv}, true);
+    fRegistryMC.add("MC/TruthAO2D/hMinRconv_vs_kT_truthConverted",
+                    "denominator: min(R_{conv}) vs k_{T};k_{T} (GeV/c);min(R_{conv}^{true}) (cm)",
+                    kTH2D, {axisKt, axRconv}, true);
+    fRegistryMC.add("MC/TruthAO2D/hMinRconv_vs_kT_bothPhotonsSelected",
+                    "numerator: min(R_{conv}) vs k_{T};k_{T} (GeV/c);min(R_{conv}^{true}) (cm)",
+                    kTH2D, {axisKt, axRconv}, true);
+
+    // Stage waterfall summary + consistency
     fRegistryMC.add("MC/TruthAO2D/hStage_vs_kT",
-                    "pair reco stage vs k_{T} — integrated efficiency waterfall;"
-                    "k_{T} (GeV/c);stage (0=converted,1=all4legs,2=bothBuilt,3=bothSel)",
+                    "efficiency waterfall;k_{T} (GeV/c);stage (0=converted,1=all4legs,2=bothBuilt,3=bothSel)",
                     kTH2D, {axisKt, AxisSpec{4, -0.5f, 3.5f, "stage"}}, true);
-
     fRegistryMC.add("MC/TruthAO2D/hStageConsistency",
-                    "stage consistency check (expect all entries at 0);"
-                    "N(V0 built but legs not found) per event;counts",
+                    "stage consistency (expect all at 0);N(V0 built but legs not found);counts",
                     kTH1D, {AxisSpec{20, -0.5f, 19.5f, "N_{bad}"}}, true);
 
-    {
-      const AxisSpec axRconv{180, 0.f, 90.f, "R_{conv}^{true} (cm)"};
+    // ─── Single-leg diagnostics ───────────────────────────────────────────────
+    fRegistryMC.add("MC/LegDiag/hLegDRtrue_vs_pt_legFound", "leg found: #Delta R^{true} vs p_{T};p_{T,#gamma}^{true} (GeV/c);#Delta R_{e^{+}e^{-}}^{true}", kTH2D, {axisPt, axLegDR}, true);
+    fRegistryMC.add("MC/LegDiag/hLegDRtrue_vs_pt_legMissing", "leg missing: #Delta R^{true} vs p_{T};p_{T,#gamma}^{true} (GeV/c);#Delta R_{e^{+}e^{-}}^{true}", kTH2D, {axisPt, axLegDR}, true);
+    fRegistryMC.add("MC/LegDiag/hLegDEta_legFound_vs_pt", "leg found: |#Delta#eta| vs p_{T};p_{T,#gamma}^{true} (GeV/c);|#Delta#eta_{e^{+}e^{-}}|", kTH2D, {axisPt, AxisSpec{100, 0.f, 0.5f, "|#Delta#eta_{legs}|"}}, true);
+    fRegistryMC.add("MC/LegDiag/hLegDEta_legMissing_vs_pt", "leg missing: |#Delta#eta| vs p_{T};p_{T,#gamma}^{true} (GeV/c);|#Delta#eta_{e^{+}e^{-}}|", kTH2D, {axisPt, AxisSpec{100, 0.f, 0.5f, "|#Delta#eta_{legs}|"}}, true);
+    fRegistryMC.add("MC/LegDiag/hLegDPhi_legFound_vs_pt", "leg found: |#Delta#phi| vs p_{T};p_{T,#gamma}^{true} (GeV/c);|#Delta#phi_{e^{+}e^{-}}| (rad)", kTH2D, {axisPt, AxisSpec{100, 0.f, 0.5f, "|#Delta#phi_{legs}|"}}, true);
+    fRegistryMC.add("MC/LegDiag/hLegDPhi_legMissing_vs_pt", "leg missing: |#Delta#phi| vs p_{T};p_{T,#gamma}^{true} (GeV/c);|#Delta#phi_{e^{+}e^{-}}| (rad)", kTH2D, {axisPt, AxisSpec{100, 0.f, 0.5f, "|#Delta#phi_{legs}|"}}, true);
+    fRegistryMC.add("MC/LegDiag/hAlphaTrue_legFound_vs_pt", "leg found: #alpha^{true} vs p_{T};p_{T,#gamma}^{true} (GeV/c);#alpha^{true}", kTH2D, {axisPt, axAlpha}, true);
+    fRegistryMC.add("MC/LegDiag/hAlphaTrue_legMissing_vs_pt", "leg missing: #alpha^{true} vs p_{T};p_{T,#gamma}^{true} (GeV/c);#alpha^{true}", kTH2D, {axisPt, axAlpha}, true);
+    fRegistryMC.add("MC/LegDiag/hAlpha_vs_legDR_legMissing", "leg missing: #alpha^{true} vs #Delta R^{true};#Delta R_{e^{+}e^{-}}^{true};#alpha^{true}", kTH2D, {axLegDR, axAlpha}, true);
 
-      fRegistryMC.add("MC/TruthAO2D/hRconv1_vs_Rconv2_truthConverted",
-                      "true pairs — denominator: R_{conv}(#gamma_{1}) vs R_{conv}(#gamma_{2});"
-                      "R_{conv,1}^{true} (cm);R_{conv,2}^{true} (cm)",
-                      kTH2D, {axRconv, axRconv}, true);
-      fRegistryMC.add("MC/TruthAO2D/hRconv1_vs_Rconv2_bothPhotonsSelected",
-                      "true pairs — numerator: R_{conv}(#gamma_{1}) vs R_{conv}(#gamma_{2});"
-                      "R_{conv,1}^{true} (cm);R_{conv,2}^{true} (cm)",
-                      kTH2D, {axRconv, axRconv}, true);
+    // ─── Pair-level leg diagnostics ───────────────────────────────────────────
+    fRegistryMC.add("MC/LegDiag/hNLegsPair_vs_kT", "N legs found per pair vs k_{T};k_{T} (GeV/c);N_{legs found} (0-4)", kTH2D, {axisKt, AxisSpec{5, -0.5f, 4.5f, "N_{legs found}"}}, true);
+    fRegistryMC.add("MC/LegDiag/hMissingLegPt_vs_kT", "missing leg p_{T}^{true} vs pair k_{T};k_{T} (GeV/c);p_{T,leg}^{true} (GeV/c)", kTH2D, {axisKt, AxisSpec{100, 0.f, 0.5f, "p_{T,leg}^{true} (GeV/c)"}}, true);
+    fRegistryMC.add("MC/LegDiag/hMissingLegRconv_vs_kT", "missing leg R_{conv}^{true} vs pair k_{T};k_{T} (GeV/c);R_{conv}^{true} (cm)", kTH2D, {axisKt, axisR}, true);
 
-      fRegistryMC.add("MC/TruthAO2D/hMinRconv_vs_kT_truthConverted",
-                      "true pairs — denominator: min(R_{conv}) vs k_{T};"
-                      "k_{T} (GeV/c);min(R_{conv}^{true}) (cm)",
-                      kTH2D, {axisKt, axRconv}, true);
-      fRegistryMC.add("MC/TruthAO2D/hMinRconv_vs_kT_bothPhotonsSelected",
-                      "true pairs — numerator: min(R_{conv}) vs k_{T};"
-                      "k_{T} (GeV/c);min(R_{conv}^{true}) (cm)",
-                      kTH2D, {axisKt, axRconv}, true);
-
-      fRegistryMC.add("MC/LegDiag/hRconv_legFound_vs_pt",
-                      "single photon leg found in this collision: R_{conv}^{true} vs photon p_{T};"
-                      "p_{T,#gamma}^{true} (GeV/c);R_{conv}^{true} (cm)",
-                      kTH2D, {axisPt, axRconv}, true);
-      fRegistryMC.add("MC/LegDiag/hRconv_legMissing_vs_pt",
-                      "single photon leg NOT found in this collision: R_{conv}^{true} vs photon p_{T};"
-                      "p_{T,#gamma}^{true} (GeV/c);R_{conv}^{true} (cm)",
-                      kTH2D, {axisPt, axRconv}, true);
-    }
-
+    // ─── Cross-built V0 pairs ─────────────────────────────────────────────────
     fRegistryMC.add("MC/PairCrossBuild/hSparse_DEtaDPhi_kT",
-                    "pairs with cross-built V0 (legs from two different true photons);"
+                    "cross-built V0 pairs: #Delta#eta,#Delta#phi,k_{T};"
                     "#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad);k_{T} (GeV/c)",
                     kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisKt}, true);
     fRegistryMC.add("MC/PairCrossBuild/hStageOut_vs_kT",
-                    "cross-built pairs: how many were correctly built despite the fake V0;"
+                    "cross-built pairs: N correctly built vs k_{T};"
                     "k_{T} (GeV/c);N photons correctly built (0/1/2)",
-                    kTH2D, {axisKt, AxisSpec{3, -0.5f, 2.5f, "N photons correctly built"}}, true);
-    fRegistryMC.add("MC/LegDiag/hNLegsPair_vs_kT",
-                    "N legs found per pair (collision-local) vs k_{T};"
-                    "k_{T} (GeV/c);N_{legs found} (0-4)",
-                    kTH2D, {axisKt, AxisSpec{5, -0.5f, 4.5f, "N_{legs found} (this collision)"}}, true);
-    fRegistryMC.add("MC/LegDiag/hMissingLegPt_vs_kT",
-                    "p_{T}^{true} of missing V0 legs vs pair k_{T};"
-                    "k_{T} (GeV/c);p_{T,leg}^{true} (GeV/c)",
-                    kTH2D, {axisKt, AxisSpec{100, 0.f, 0.5f, "p_{T,leg}^{true} (GeV/c)"}}, true);
-    fRegistryMC.add("MC/LegDiag/hMissingLegRconv_vs_kT",
-                    "parent R_{conv}^{true} of missing leg vs pair k_{T};"
-                    "k_{T} (GeV/c);R_{conv}^{true} (cm)",
-                    kTH2D, {axisKt, axisR}, true);
-    fRegistryMC.add("MC/LegDiag/hLegDRtrue_vs_pt_legFound",
-                    "single photon: leg found — leg #Delta R^{true} vs photon p_{T};"
-                    "p_{T,#gamma}^{true} (GeV/c);leg #Delta R^{true}",
-                    kTH2D, {axisPt, AxisSpec{100, 0.f, 0.3f, "leg #Delta R^{true}"}}, true);
-    fRegistryMC.add("MC/LegDiag/hLegDRtrue_vs_pt_legMissing",
-                    "single photon: leg NOT found — leg #Delta R^{true} vs photon p_{T};"
-                    "p_{T,#gamma}^{true} (GeV/c);leg #Delta R^{true}",
-                    kTH2D, {axisPt, AxisSpec{100, 0.f, 0.3f, "leg #Delta R^{true}"}}, true);
+                    kTH2D, {axisKt, AxisSpec{3, -0.5f, 2.5f, "N correctly built"}}, true);
   }
 
   template <PairTruthType TruthT, bool IsMix>
@@ -1283,12 +1319,9 @@ void addQAHistogramsForStep(const std::string& path)
     if (doMCQA) {
       fRegistryPairMC.fill(HIST(base) + HIST("hDEtaDPhi"), obs.deta, obs.dphi);
       fRegistryPairMC.fill(HIST(base) + HIST("hQinv"), obs.qinv);
-      fRegistryPairMC.fill(HIST(base) + HIST("hDeltaEta"), obs.deta);
-      fRegistryPairMC.fill(HIST(base) + HIST("hDeltaPhi"), obs.dphi);
       fRegistryPairMC.fill(HIST(base) + HIST("hDeltaR"), obs.deltaR);
       fRegistryPairMC.fill(HIST(base) + HIST("hDeltaZ"), obs.deltaZ);
       fRegistryPairMC.fill(HIST(base) + HIST("hDeltaR3D"), obs.deltaR3D);
-      fRegistryPairMC.fill(HIST(base) + HIST("hKt"), obs.kt);
     }
     if (doSparse)
       fRegistryPairMC.fill(HIST(base) + HIST("hSparse_DEtaDPhi_kT"), obs.deta, obs.dphi, obs.kt);
@@ -1518,6 +1551,14 @@ void addQAHistogramsForStep(const std::string& path)
           fillFullRangeQA<0>(obs, centForQA, occupancy);
         fillPairHistogram<0>(collision, obs.v1, obs.v2, 1.f);
         ndiphoton++;
+        fRegistry.fill(HIST("Pair/same/hPhi_lowerPtV0"),
+                       (g1.pt() < g2.pt()) ? g1.phi() : g2.phi());
+
+        fillEtaTopologyHisto(
+          classifyEtaTopology(g1.eta(), g2.eta(),
+                              pos1.eta(), ele1.eta(),
+                              pos2.eta(), ele2.eta()),
+          obs.deta, obs.dphi, obs.kt);
         auto addToPool = [&](auto const& g) {
           if (usedPhotonIdsPerCol.insert(g.globalIndex()).second) {
             EMPair gtmp(g.pt(),g.eta(),g.phi(),0.f); gtmp.setConversionPointXYZ(g.vx(),g.vy(),g.vz());
@@ -1579,6 +1620,8 @@ void addQAHistogramsForStep(const std::string& path)
             if (doFR)
               fillFullRangeQA<1>(obs, centForQA, occupancy);
             fillPairHistogram<1>(collision, obs.v1, obs.v2, 1.f);
+            fRegistry.fill(HIST("Pair/mix/hPhi_lowerPtV0"),
+                           (g1.pt() < g2.pt()) ? g1.phi() : g2.phi());
           }
       }
       if (ndiphoton > 0) {
@@ -1672,6 +1715,14 @@ void addQAHistogramsForStep(const std::string& path)
         if (doFR)
           fillFullRangeQA<0>(obs, centForQA, occupancy);
         fillPairHistogram<0>(collision, obs.v1, obs.v2, 1.f);
+        fRegistry.fill(HIST("Pair/same/hPhi_lowerPtV0"),
+                       (g1.pt() < g2.pt()) ? g1.phi() : g2.phi());
+
+        fillEtaTopologyHisto(
+          classifyEtaTopology(g1.eta(), g2.eta(),
+                              pos1.eta(), ele1.eta(),
+                              pos2.eta(), ele2.eta()),
+          obs.deta, obs.dphi, obs.kt);
         ndiphoton++;
         if (!mc1.hasMC || !mc2.hasMC) {
           fillPairHistogramNoLabel(collision, obs.v1, obs.v2);
@@ -1786,6 +1837,8 @@ void addQAHistogramsForStep(const std::string& path)
             if (doFR)
               fillFullRangeQA<1>(obs, centForQA, occupancy);
             fillPairHistogram<1>(collision, obs.v1, obs.v2, 1.f);
+            fRegistry.fill(HIST("Pair/mix/hPhi_lowerPtV0"),
+                           (g1.pt() < g2.pt()) ? g1.phi() : g2.phi());
           }
       }
       if (ndiphoton > 0) {
@@ -1823,7 +1876,8 @@ void addQAHistogramsForStep(const std::string& path)
       if (!fEMEventCut.IsSelected(collision))
         continue;
       const float cent[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
-      if (cent[mixing.cfgCentEstimator] < centralitySelection.cfgCentMin || centralitySelection.cfgCentMax < cent[mixing.cfgCentEstimator])
+      if (cent[mixing.cfgCentEstimator] < centralitySelection.cfgCentMin ||
+          centralitySelection.cfgCentMax < cent[mixing.cfgCentEstimator])
         continue;
       if (!collision.has_emmcevent())
         continue;
@@ -1837,10 +1891,9 @@ void addQAHistogramsForStep(const std::string& path)
 
       std::unordered_set<int> legIdsThisCollision;
       legIdsThisCollision.reserve(legsColl.size());
-      for (const auto& leg : legsColl) {
+      for (const auto& leg : legsColl)
         if (leg.has_emmcparticle())
           legIdsThisCollision.insert(leg.emmcparticleId());
-      }
 
       std::unordered_map<int, std::unordered_set<int>> crossBuildMap;
 
@@ -1853,8 +1906,7 @@ void addQAHistogramsForStep(const std::string& path)
       for (const auto& g : recoPhotonsColl) {
         const auto pos = g.template posTrack_as<TLegs>();
         const auto neg = g.template negTrack_as<TLegs>();
-        const bool wrongEvt = (pos.collisionId() != thisCollisionId || neg.collisionId() != thisCollisionId);
-        if (wrongEvt)
+        if (pos.collisionId() != thisCollisionId || neg.collisionId() != thisCollisionId)
           continue;
         if (!pos.has_emmcparticle() || !neg.has_emmcparticle())
           continue;
@@ -1881,6 +1933,7 @@ void addQAHistogramsForStep(const std::string& path)
         info.passesCut = info.passesCut || passes;
       }
 
+      // ─── Build true gamma list ────────────────────────────────────────────────
       std::vector<TruthGamma> trueGammas;
       trueGammas.reserve(32);
 
@@ -1891,10 +1944,14 @@ void addQAHistogramsForStep(const std::string& path)
           continue;
         if (std::fabs(g.eta()) > pcmcuts.cfgMaxEtaV0.value)
           continue;
-        if (g.pt() < pcmcuts.cfgMinPtV0.value)
+        const float mcV0PtMin = (mctruth.cfgMCMinV0Pt.value > 0.f)
+                                  ? mctruth.cfgMCMinV0Pt.value
+                                  : pcmcuts.cfgMinPtV0.value;
+        if (g.pt() < mcV0PtMin)
           continue;
         if (!g.has_daughters())
           continue;
+
         int posId = -1, negId = -1;
         float rTrue = -1.f;
         for (const int dId : g.daughtersIds()) {
@@ -1909,16 +1966,47 @@ void addQAHistogramsForStep(const std::string& path)
         }
         if (posId < 0 || negId < 0)
           continue;
+
         const auto mcPosE = emmcParticles.iteratorAt(posId);
         const auto mcNegE = emmcParticles.iteratorAt(negId);
+
+        if (mctruth.cfgMCMinLegPt.value > 0.f &&
+            (static_cast<float>(mcPosE.pt()) < mctruth.cfgMCMinLegPt.value ||
+             static_cast<float>(mcNegE.pt()) < mctruth.cfgMCMinLegPt.value))
+          continue;
+
         const float deTrE = static_cast<float>(mcPosE.eta() - mcNegE.eta());
         const float dpTrE = wrapPhi(static_cast<float>(mcPosE.phi() - mcNegE.phi()));
         const float legDRt = std::sqrt(deTrE * deTrE + dpTrE * dpTrE);
+
+        // ─── Armenteros-α auf Truth-Niveau ────────────────────────────────────
+        // pL = longitudinal momentum of each leg along photon direction
+        const float pxG = static_cast<float>(g.px()), pyG = static_cast<float>(g.py()),
+                    pzG = static_cast<float>(g.pz());
+        const float magG = std::sqrt(pxG * pxG + pyG * pyG + pzG * pzG);
+        float alphaTrue = 0.f;
+        if (magG > 1e-9f) {
+          const float ux = pxG / magG, uy = pyG / magG, uz = pzG / magG;
+          const float pLpos = static_cast<float>(mcPosE.px()) * ux +
+                              static_cast<float>(mcPosE.py()) * uy +
+                              static_cast<float>(mcPosE.pz()) * uz;
+          const float pLneg = static_cast<float>(mcNegE.px()) * ux +
+                              static_cast<float>(mcNegE.py()) * uy +
+                              static_cast<float>(mcNegE.pz()) * uz;
+          const float sumPL = pLpos + pLneg;
+          if (std::fabs(sumPL) > 1e-9f)
+            alphaTrue = (pLpos - pLneg) / sumPL;
+        }
+
         trueGammas.push_back({static_cast<int>(g.globalIndex()), posId, negId,
                               static_cast<float>(g.eta()), static_cast<float>(g.phi()),
-                              static_cast<float>(g.pt()), rTrue, legDRt});
+                              static_cast<float>(g.pt()), rTrue, legDRt,
+                              deTrE,
+                              dpTrE,
+                              alphaTrue});
       }
 
+      // ─── Stage consistency check ──────────────────────────────────────────────
       {
         int nBad = 0;
         for (const auto& tg : trueGammas) {
@@ -1933,22 +2021,34 @@ void addQAHistogramsForStep(const std::string& path)
       for (const auto& tg : trueGammas) {
         const bool posFound = legIdsThisCollision.count(tg.posId) > 0;
         const bool negFound = legIdsThisCollision.count(tg.negId) > 0;
+        const bool bothFound = posFound && negFound;
+
         for (const auto& [legId, legFound] :
              std::initializer_list<std::pair<int, bool>>{{tg.posId, posFound}, {tg.negId, negFound}}) {
           if (legId < 0)
             continue;
           if (legFound) {
             fRegistryMC.fill(HIST("MC/LegDiag/hLegDRtrue_vs_pt_legFound"), tg.pt, tg.legDRtrue);
-            if (tg.rTrue >= 0.f)
-              fRegistryMC.fill(HIST("MC/LegDiag/hRconv_legFound_vs_pt"), tg.pt, tg.rTrue);
+            fRegistryMC.fill(HIST("MC/LegDiag/hLegDEta_legFound_vs_pt"), tg.pt, std::fabs(tg.legDEta));
+            fRegistryMC.fill(HIST("MC/LegDiag/hLegDPhi_legFound_vs_pt"), tg.pt, std::fabs(tg.legDPhi));
           } else {
             fRegistryMC.fill(HIST("MC/LegDiag/hLegDRtrue_vs_pt_legMissing"), tg.pt, tg.legDRtrue);
-            if (tg.rTrue >= 0.f)
-              fRegistryMC.fill(HIST("MC/LegDiag/hRconv_legMissing_vs_pt"), tg.pt, tg.rTrue);
+            fRegistryMC.fill(HIST("MC/LegDiag/hLegDEta_legMissing_vs_pt"), tg.pt, std::fabs(tg.legDEta));
+            fRegistryMC.fill(HIST("MC/LegDiag/hLegDPhi_legMissing_vs_pt"), tg.pt, std::fabs(tg.legDPhi));
           }
+        }
+
+        // ─── Armenteros-α diagnostics per photon ─────────────────────────────
+        if (bothFound) {
+          fRegistryMC.fill(HIST("MC/LegDiag/hAlphaTrue_legFound_vs_pt"), tg.pt, tg.alphaTrue);
+        } else {
+          // At least one leg missing
+          fRegistryMC.fill(HIST("MC/LegDiag/hAlphaTrue_legMissing_vs_pt"), tg.pt, tg.alphaTrue);
+          fRegistryMC.fill(HIST("MC/LegDiag/hAlpha_vs_legDR_legMissing"), tg.legDRtrue, tg.alphaTrue);
         }
       }
 
+      // ─── Pair loop: efficiency  ─────────────────────────────────────
       for (size_t i = 0; i < trueGammas.size(); ++i) {
         for (size_t j = i + 1; j < trueGammas.size(); ++j) {
           const auto& g1 = trueGammas[i];
@@ -1965,7 +2065,8 @@ void addQAHistogramsForStep(const std::string& path)
             continue;
 
           const float e1 = g1.pt * std::cosh(g1.eta), e2 = g2.pt * std::cosh(g2.eta);
-          const float dot = e1 * e2 - (px1 * px2 + py1 * py2 + g1.pt * std::sinh(g1.eta) * g2.pt * std::sinh(g2.eta));
+          const float dot = e1 * e2 - (px1 * px2 + py1 * py2 +
+                                       g1.pt * std::sinh(g1.eta) * g2.pt * std::sinh(g2.eta));
           const float qinv_true = std::sqrt(std::max(0.f, 2.f * dot));
 
           if (mctruth.cfgMCMaxQinv > 0.f && qinv_true > mctruth.cfgMCMaxQinv)
@@ -1985,6 +2086,7 @@ void addQAHistogramsForStep(const std::string& path)
           fRegistryMC.fill(HIST("MC/TruthAO2D/hSparse_DEtaDPhi_kT_truthConverted"), deta, dphi, kt);
           fRegistryMC.fill(HIST("MC/TruthAO2D/hQinvVsKt_truthConverted"), kt, qinv_true);
           fRegistryMC.fill(HIST("MC/TruthAO2D/hDEtaDPhi_truthConverted"), deta, dphi);
+
           if (pairAll4LegsThisColl) {
             fRegistryMC.fill(HIST("MC/TruthAO2D/hSparse_DEtaDPhi_qinv_all4LegsThisColl"), deta, dphi, qinv_true);
             fRegistryMC.fill(HIST("MC/TruthAO2D/hSparse_DEtaDPhi_kT_all4LegsThisColl"), deta, dphi, kt);
@@ -2009,8 +2111,9 @@ void addQAHistogramsForStep(const std::string& path)
             if (g1Sel && g2Sel)
               fRegistryMC.fill(HIST("MC/TruthAO2D/hRconv1_vs_Rconv2_bothPhotonsSelected"), g1.rTrue, g2.rTrue);
           }
-          const float minRconv = (g1.rTrue >= 0.f && g2.rTrue >= 0.f) ? std::min(g1.rTrue, g2.rTrue)
-                                                                      : (g1.rTrue >= 0.f ? g1.rTrue : g2.rTrue);
+          const float minRconv = (g1.rTrue >= 0.f && g2.rTrue >= 0.f)
+                                   ? std::min(g1.rTrue, g2.rTrue)
+                                   : (g1.rTrue >= 0.f ? g1.rTrue : g2.rTrue);
           if (minRconv >= 0.f) {
             fRegistryMC.fill(HIST("MC/TruthAO2D/hMinRconv_vs_kT_truthConverted"), kt, minRconv);
             if (g1Sel && g2Sel)
@@ -2052,7 +2155,8 @@ void addQAHistogramsForStep(const std::string& path)
           }
         }
       }
-      // ─── Truth-level same-event pairs ────────────────────────────────────────
+
+      // ─── Truth-level CF mixing ────────────────────────────────────────────────
       if (mctruth.cfgDoTruthMix.value) {
         for (size_t i = 0; i < trueGammas.size(); ++i) {
           for (size_t j = i + 1; j < trueGammas.size(); ++j) {
@@ -2066,18 +2170,18 @@ void addQAHistogramsForStep(const std::string& path)
             const float px2 = g2.pt * std::cos(g2.phi), py2 = g2.pt * std::sin(g2.phi);
             const float kt = 0.5f * std::sqrt((px1 + px2) * (px1 + px2) + (py1 + py2) * (py1 + py2));
             const float e1 = g1.pt * std::cosh(g1.eta), e2 = g2.pt * std::cosh(g2.eta);
-            const float dot = e1 * e2 - (px1 * px2 + py1 * py2 + g1.pt * std::sinh(g1.eta) * g2.pt * std::sinh(g2.eta));
+            const float dot = e1 * e2 - (px1 * px2 + py1 * py2 +
+                                         g1.pt * std::sinh(g1.eta) * g2.pt * std::sinh(g2.eta));
             const float qinv_true = std::sqrt(std::max(0.f, 2.f * dot));
             fRegistryMC.fill(HIST("MC/TruthCF/hQinvVsKt_same"), kt, qinv_true);
             fRegistryMC.fill(HIST("MC/TruthCF/hDEtaDPhi_same"), deta, dphi);
           }
         }
 
-        // ─── Truth-level mixed-event pairs ─────────────────────────────────────
-        const float cent[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
         const float centForBin = cent[mixing.cfgCentEstimator.value];
         const std::array<float, 7> epArr = {collision.ep2ft0m(), collision.ep2ft0a(), collision.ep2ft0c(),
-                                            collision.ep2fv0a(), collision.ep2btot(), collision.ep2bpos(), collision.ep2bneg()};
+                                            collision.ep2fv0a(), collision.ep2btot(), collision.ep2bpos(),
+                                            collision.ep2bneg()};
         const float ep2 = epArr[mixing.cfgEP2EstimatorForMix.value];
         const float occupancy = (mixing.cfgOccupancyEstimator.value == 1)
                                   ? static_cast<float>(collision.trackOccupancyInTimeRange())
@@ -2099,7 +2203,8 @@ void addQAHistogramsForStep(const std::string& path)
                 const float px2 = g2.pt * std::cos(g2.phi), py2 = g2.pt * std::sin(g2.phi);
                 const float kt = 0.5f * std::sqrt((px1 + px2) * (px1 + px2) + (py1 + py2) * (py1 + py2));
                 const float e1 = g1.pt * std::cosh(g1.eta), e2 = g2.pt * std::cosh(g2.eta);
-                const float dot = e1 * e2 - (px1 * px2 + py1 * py2 + g1.pt * std::sinh(g1.eta) * g2.pt * std::sinh(g2.eta));
+                const float dot = e1 * e2 - (px1 * px2 + py1 * py2 +
+                                             g1.pt * std::sinh(g1.eta) * g2.pt * std::sinh(g2.eta));
                 const float qinv_true = std::sqrt(std::max(0.f, 2.f * dot));
                 fRegistryMC.fill(HIST("MC/TruthCF/hQinvVsKt_mix"), kt, qinv_true);
                 fRegistryMC.fill(HIST("MC/TruthCF/hDEtaDPhi_mix"), deta, dphi);
@@ -2115,8 +2220,8 @@ void addQAHistogramsForStep(const std::string& path)
             poolBin.pop_front();
         }
       } // end cfgDoTruthMix
-    }
-  }
+    } // end collision loop
+  } // end runTruthEfficiency
 
   using MyEMH = o2::aod::pwgem::dilepton::utils::EventMixingHandler<
     std::tuple<int, int, int, int>, std::pair<int, int>, EMPair>;
