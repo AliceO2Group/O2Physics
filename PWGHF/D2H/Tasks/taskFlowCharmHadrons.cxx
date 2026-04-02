@@ -779,8 +779,7 @@ struct HfTaskFlowCharmHadrons {
         if (qVecRedDetector.value == QvecEstimator::TPCTot || qVecRedDetector.value == QvecEstimator::TPCPos || qVecRedDetector.value == QvecEstimator::TPCNeg) {
           // Correct for track multiplicity
           redQVec = TMath::Sqrt(xRedQVec * xRedQVec + yRedQVec * yRedQVec) * amplRedQVec / TMath::Sqrt(amplRedQVec - tracksRedQx.size());
-        }
-        else {
+        } else {
           redQVec = TMath::Sqrt(xRedQVec * xRedQVec + yRedQVec * yRedQVec) * TMath::Sqrt(amplRedQVec);
         }
       }
@@ -788,7 +787,7 @@ struct HfTaskFlowCharmHadrons {
         rowRedQVecEsE(redQVec);
       }
       if (fillSparse) {
-        fillThn(massCand, ptCand, etaCand, signCand, cent, cosNPhi, sinNPhi, 
+        fillThn(massCand, ptCand, etaCand, signCand, cent, cosNPhi, sinNPhi,
                 cosDeltaPhi, scalprodCand, outputMl, occupancy, hfevflag, redQVec);
       }
     }
