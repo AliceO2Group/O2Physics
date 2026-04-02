@@ -16,20 +16,32 @@
 #include "PWGLF/DataModel/LFKinkDecayTables.h"
 #include "PWGLF/DataModel/LFSigmaHadTables.h"
 
-#include "Common/Core/PID/PIDTOF.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/PID.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
 
 #include <Math/GenVector/Boost.h>
-#include <Math/Vector4D.h>
 #include <TLorentzVector.h>
-#include <TMath.h>
 
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <numeric>
 #include <vector>
 
 using namespace o2;

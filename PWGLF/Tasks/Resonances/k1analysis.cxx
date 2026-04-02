@@ -15,23 +15,10 @@
 ///
 /// \author Su-Jeong Ji <su-jeong.ji@cern.ch>, Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 
-#include <TDirectory.h>
-#include <TFile.h>
-#include <TH1D.h>
-#include <TH1F.h>
-#include <TH2F.h>
-#include <THn.h>
-#include <TMath.h>
-#include <TObjArray.h>
-// #include <TDatabasePDG.h> // FIXME
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/collisionCuts.h"
-#include "PWGLF/Utils/inelGt.h"
 
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -39,50 +26,41 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "CommonConstants/MathConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/StaticFor.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Math/GenVector/Boost.h"
-#include "Math/RotationZ.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "TF1.h"
-#include "TParticlePDG.h"
-#include "TRandom3.h"
-#include "TVector2.h"
-#include <TMath.h>
-#include <TPDGCode.h> // FIXME
+#include <Math/GenVector/LorentzVector.h>
+#include <Math/GenVector/PxPyPzM4D.h>
+#include <Math/GenVector/RotationZ.h>
+#include <TH1.h>
+#include <TPDGCode.h>
 
-#include <array>
 #include <chrono>
-#include <cmath>
-#include <cstdlib>
+#include <cstdint>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
+#include <type_traits>
 #include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
-using namespace o2::constants::physics;
-using namespace o2::constants::math;
 using namespace o2::aod::rctsel;
+using namespace o2::constants::physics;
 
 struct K1analysis {
   enum BinType : unsigned int {

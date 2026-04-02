@@ -12,26 +12,31 @@
 // Authors: Rafael Manhart,
 // Date: 05.10.2023
 
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TPDGCode.h"
-#include <TH1F.h>
+#include <TH1.h>
 #include <TLorentzVector.h>
 #include <TMath.h>
-#include <TObjArray.h>
+#include <TString.h>
+
+#include <RtypesCore.h>
 
 #include <cmath>
 #include <string>

@@ -16,30 +16,37 @@
 #ifndef PWGLF_UTILS_STRANGENESSBUILDERMODULE_H_
 #define PWGLF_UTILS_STRANGENESSBUILDERMODULE_H_
 
-// simple checkers, but ensure 8 bit integers
-#define BITSET(var, nbit) ((var) |= (static_cast<uint8_t>(1) << static_cast<uint8_t>(nbit)))
-
-#include "TableHelper.h"
-
-#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h" // IWYU pragma: keep
 #include "PWGLF/Utils/strangenessBuilderHelper.h"
 
 #include "Common/Core/TPCVDriftManager.h"
 
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisHelpers.h"
-#include "Framework/Configurable.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/HistogramSpec.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/DeviceSpec.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
+#include <Framework/RunningWorkflowInfo.h>
+#include <ReconstructionDataFormats/PID.h>
+#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/TrackParametrization.h>
+
+#include <TH1.h>
+#include <TMCProcess.h>
+#include <TPDGCode.h>
+#include <TString.h>
 
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
-#include <memory>
 #include <string>
 #include <vector>
+
+// simple checkers, but ensure 8 bit integers
+#define BITSET(var, nbit) ((var) |= (static_cast<uint8_t>(1) << static_cast<uint8_t>(nbit)))
 
 //__________________________________________
 // strangeness builder module
