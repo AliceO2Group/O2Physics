@@ -62,6 +62,7 @@ struct HfTaskDstarToD0Pi {
   Configurable<bool> qaEnabled{"qaEnabled", true, "Flag to enable QA histograms"};
   Configurable<bool> studyD0ToPiKPi0{"studyD0ToPiKPi0", false, "Flag to study D*->D0(piKpi0)pi channel"};
   Configurable<bool> ptShapeStudy{"ptShapeStudy", false, "Flag to enable pT shape study"};
+  Configurable<bool> useWeightOnline{"useWeightOnline", false, "Flag to enable use of weights for pT shape study online"};
 
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -86,13 +87,15 @@ struct HfTaskDstarToD0Pi {
     NonPrompt = 1
   };
 
-  // follwing comment can be removed if extra axes not needed
-  // std::vector<AxisSpec> axesPtVsCentVsBDTVsPvContribVsPtB;
-  // std::vector<AxisSpec> axesPtVsCentVsPvContribVsPtB;
-  // std::vector<AxisSpec> axesPtVsBDTVsPtB;
+  // for offline weights
+  std::vector<AxisSpec> axesPtVsCentVsBDTVsPvContribVsPtB;
+  std::vector<AxisSpec> axesPtVsCentVsPvContribVsPtB;
+  std::vector<AxisSpec> axesPtVsPvContribVsPtB;
+  std::vector<AxisSpec> axesPtVsBDTVsPtB;
 
   std::vector<AxisSpec> axesPtVsCentVsBDTVsPvContrib;
   std::vector<AxisSpec> axesPtVsCentVsPvContrib;
+  std::vector<AxisSpec> axesPtVsPvContrib;
   std::vector<AxisSpec> axesPtVsBDT;
 
   using CandDstarWSelFlag = soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi>;
@@ -124,8 +127,7 @@ struct HfTaskDstarToD0Pi {
   ConfigurableAxis binningBkgBDTScore{"binningBkgBDTScore", {100, 0.0f, 1.0f}, "Bins for background BDT Score"};
   ConfigurableAxis binningSigBDTScore{"binningSigBDTScore", {100, 0.0f, 1.0f}, "Bins for Signal (Prompts + Non Prompt) BDT Score"};
   ConfigurableAxis binningPvContrib{"binningPvContrib", {100, 0.0f, 300.0f}, "Bins for PVContrib"};
-  // can be removed if not needed
-  // ConfigurableAxis binningPtFine{"binningPtFine", {100, 0.0f, 100.0f}, "Bins for pT shape study"};
+  ConfigurableAxis binningPtFine{"binningPtFine", {100, 0.0f, 100.0f}, "fine bins for pT shape offline study "}; // for offline pt shape study
 
   HistogramRegistry registry{"registry", {}};
 
@@ -148,24 +150,26 @@ struct HfTaskDstarToD0Pi {
     AxisSpec axisPvContrib = {binningPvContrib, "PV Contribution"};
     AxisSpec const axisPt = {vecPtBins, "#it{p}_{T} (GeV/#it{c})"};
 
-    // follwing comment can be removed if extra axes not needed
-    // AxisSpec axisPtFine = {vecPtBins, "#it{p}_{T} (GeV/#it{c})"};
-    // if (ptShapeStudy){
-    //   axisPtFine = {binningPtFine, "pT (GeV/c)"};
-    // }
+    // for offline weights
+    AxisSpec axisPtFine = {vecPtBins, "#it{p}_{T} (GeV/#it{c})"};
+    if (ptShapeStudy && !useWeightOnline) {
+      axisPtFine = {binningPtFine, "pT (GeV/c)"};
+    }
     // // std::cout<< "fine pt bins for pt shape study: binningPtFine"<< binningPtFine->data() << std::endl;
     // // std::cout<< "fine pt bins for pt shape study: axisPtFine"<< axisPtFine.binEdges[2] << std::endl;
 
     axesPtVsCentVsBDTVsPvContrib = {axisPt, axisCentrality, axisBDTScoreBackground, axisBDTScorePrompt, axisBDTScoreNonPrompt, axisPvContrib};
     axesPtVsCentVsPvContrib = {axisPt, axisCentrality, axisPvContrib};
+    axesPtVsPvContrib = {axisPt, axisPvContrib};
     axesPtVsBDT = {axisPt, axisBDTScoreBackground, axisBDTScorePrompt, axisBDTScoreNonPrompt};
 
-    // follwing comment can be removed if extra axes not needed
-    // if (ptShapeStudy){
-    //   axesPtVsCentVsBDTVsPvContribVsPtB = {axisPt, axisCentrality, axisBDTScoreBackground, axisBDTScorePrompt, axisBDTScoreNonPrompt, axisPvContrib, axisPtFine};
-    //   axesPtVsCentVsPvContribVsPtB = {axisPt, axisCentrality, axisPvContrib, axisPtFine};
-    //   axesPtVsBDTVsPtB = {axisPt, axisBDTScoreBackground, axisBDTScorePrompt, axisBDTScoreNonPrompt, axisPtFine};
-    // }
+    // for offline weights
+    if (ptShapeStudy && !useWeightOnline) {
+      axesPtVsCentVsBDTVsPvContribVsPtB = {axisPt, axisCentrality, axisBDTScoreBackground, axisBDTScorePrompt, axisBDTScoreNonPrompt, axisPvContrib, axisPtFine};
+      axesPtVsCentVsPvContribVsPtB = {axisPt, axisCentrality, axisPvContrib, axisPtFine};
+      axesPtVsPvContribVsPtB = {axisPt, axisPvContrib, axisPtFine};
+      axesPtVsBDTVsPtB = {axisPt, axisBDTScoreBackground, axisBDTScorePrompt, axisBDTScoreNonPrompt, axisPtFine};
+    }
 
     if (qaEnabled) {
       // only QA
@@ -250,7 +254,14 @@ struct HfTaskDstarToD0Pi {
     // Non Prmpt Gen
     registry.add("Efficiency/hPtVsYNonPromptDstarGen", "MC Matched Non-Prompt D* Candidates at Generator Level; #it{p}_{T} of  D*; #it{y}", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}}, true);
 
-    // Checking PV contributors from Data as well MC rec for calculation weights offline
+    if (ptShapeStudy && !useWeightOnline) {
+      // Prompt Gen
+      registry.add("Efficiency/PtShape/hPtVsYVsFinePtPromptDstarGen", "MC Matched Prompt D* Candidates at Generator Level; #it{p}_{T} of  D*; #it{y}; #it{p}_{T} of  D*", {HistType::kTH3F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}, {axisPtFine}}}, true);
+      // Non Prmpt Gen
+      registry.add("Efficiency/PtShape/hPtVsYVsFinePtBNonPromptDstarGen", "MC Matched Non-Prompt D* Candidates at Generator Level; #it{p}_{T} of  D*; #it{y}; #it{p}_{T} of B hadron", {HistType::kTH3F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}, {axisPtFine}}}, true);
+    }
+
+    // Checking PV contributors from Data as well MC rec for calculation of efficiency weights offline
     if (isCentStudy) {
       registry.add("Efficiency/hNumPvContributorsAll", "PV Contributors; PV Contributor; FT0M Centrality", {HistType::kTH2F, {{axisPvContrib}, {axisCentrality}}}, true);
       registry.add("Efficiency/hNumPvContributorsCand", "PV Contributors; PV Contributor; FT0M Centrality", {HistType::kTH2F, {{axisPvContrib}, {axisCentrality}}}, true);
@@ -262,10 +273,18 @@ struct HfTaskDstarToD0Pi {
       registry.add("Efficiency/hPtVsCentVsPvContribRecSig", "Pt Vs Cent Vs PvContrib", {HistType::kTHnSparseF, axesPtVsCentVsPvContrib}, true);
       registry.add("Efficiency/hPtPromptVsCentVsPvContribRecSig", "Pt Vs Cent Vs PvContrib", {HistType::kTHnSparseF, axesPtVsCentVsPvContrib}, true);
       registry.add("Efficiency/hPtNonPromptVsCentVsPvContribRecSig", "Pt Vs Cent Vs PvContrib", {HistType::kTHnSparseF, axesPtVsCentVsPvContrib}, true);
+      if (ptShapeStudy && !useWeightOnline) {
+        registry.add("Efficiency/PtShape/hPtPromptVsCentVsPvContribVsFinePtRecSig", "Pt Vs Cent Vs PvContrib Vs Fine Pt of D*", {HistType::kTHnSparseF, axesPtVsCentVsPvContribVsPtB}, true);
+        registry.add("Efficiency/PtShape/hPtNonPromptVsCentVsPvContribVsFinePtBRecSig", "Pt Vs Cent Vs PvContrib Vs Fine Pt of B  hadron", {HistType::kTHnSparseF, axesPtVsCentVsPvContribVsPtB}, true);
+      }
     } else if (doprocessMcWoMl && !isCentStudy) {
-      registry.add("Efficiency/hPtVsPvContribRecSig", "Pt Vs PvContrib", {HistType::kTHnSparseF, axesPtVsBDT}, true);
-      registry.add("Efficiency/hPtPromptVsPvContribRecSig", "Pt Vs PvContrib", {HistType::kTHnSparseF, axesPtVsBDT}, true);
-      registry.add("Efficiency/hPtNonPromptVsPvContribRecSig", "Pt Vs PvContrib", {HistType::kTHnSparseF, axesPtVsBDT}, true);
+      registry.add("Efficiency/hPtVsPvContribRecSig", "Pt Vs PvContrib", {HistType::kTHnSparseF, axesPtVsPvContrib}, true);
+      registry.add("Efficiency/hPtPromptVsPvContribRecSig", "Pt Vs PvContrib", {HistType::kTHnSparseF, axesPtVsPvContrib}, true);
+      registry.add("Efficiency/hPtNonPromptVsPvContribRecSig", "Pt Vs PvContrib", {HistType::kTHnSparseF, axesPtVsPvContrib}, true);
+      if (ptShapeStudy && !useWeightOnline) {
+        registry.add("Efficiency/PtShape/hPtPromptVsPvContribVsFinePtRecSig", "Pt Vs PvContrib Vs Fine Pt of D*", {HistType::kTHnSparseF, axesPtVsPvContribVsPtB}, true);
+        registry.add("Efficiency/PtShape/hPtNonPromptVsPvContribVsFinePtBRecSig", "Pt Vs PvContrib Vs Fine Pt of B  hadron", {HistType::kTHnSparseF, axesPtVsPvContribVsPtB}, true);
+      }
     }
 
     // Hists at Reco level W/ ML usefull for efficiency calculation
@@ -273,11 +292,19 @@ struct HfTaskDstarToD0Pi {
       registry.add("Efficiency/hPtVsCentVsBDTScoreVsPvContribRecSig", "Pt Vs Cent Vs BDTScore Vs PvContrib", {HistType::kTHnSparseF, axesPtVsCentVsBDTVsPvContrib}, true);
       registry.add("Efficiency/hPtPromptVsCentVsBDTScorePvContribRecSig", "Pt Vs Cent Vs BDTScore Vs PvContrib", {HistType::kTHnSparseF, axesPtVsCentVsBDTVsPvContrib}, true);
       registry.add("Efficiency/hPtNonPrompRectVsCentVsBDTScorePvContribRecSig", "Pt Vs Cent Vs BDTScore", {HistType::kTHnSparseF, axesPtVsCentVsBDTVsPvContrib}, true);
+      if (ptShapeStudy && !useWeightOnline) {
+        registry.add("Efficiency/PtShape/hPtPromptVsCentVsBDTScoreVsPvContribVsFinePtRecSig", "Pt Vs Cent Vs BDTScore Vs PvContrib Vs Fine Pt of D*", {HistType::kTHnSparseF, axesPtVsCentVsBDTVsPvContribVsPtB}, true);
+        registry.add("Efficiency/PtShape/hPtNonPromptVsCentVsBDTScorePvContribVsFinePtBRecSig", "Pt Vs Cent Vs BDTScore Vs PvContrib Vs Fine Pt of B hadron", {HistType::kTHnSparseF, axesPtVsCentVsBDTVsPvContribVsPtB}, true);
+      }
       // registry.add("Efficiency/hPtBkgVsCentVsBDTScore", "Pt Vs Cent Vs BDTScore", {HistType::kTHnSparseF, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}});
     } else if (doprocessMcWML && !isCentStudy) {
       registry.add("Efficiency/hPtVsBDTScoreRecSig", "Pt Vs BDTScore", {HistType::kTHnSparseF, axesPtVsBDT}, true);
       registry.add("Efficiency/hPtPromptVsBDTScoreRecSig", "Pt Vs BDTScore", {HistType::kTHnSparseF, axesPtVsBDT}, true);
       registry.add("Efficiency/hPtNonPromptVsBDTScoreRecSig", "Pt Vs BDTScore", {HistType::kTHnSparseF, axesPtVsBDT}, true);
+      if (ptShapeStudy && !useWeightOnline) {
+        registry.add("Efficiency/PtShape/hPtPromptVsBDTScoreVsFinePtRecSig", "Pt Vs BDTScore Vs Fine Pt of D*", {HistType::kTHnSparseF, axesPtVsBDTVsPtB}, true);
+        registry.add("Efficiency/PtShape/hPtNonPromptVsBDTScoreVsFinePtBRecSig", "Pt Vs BDTScore Vs Fine Pt of B hadron", {HistType::kTHnSparseF, axesPtVsBDTVsPtB}, true);
+      }
     }
 
     // Hists at Gen level usefull for efficiency calculation
@@ -287,10 +314,18 @@ struct HfTaskDstarToD0Pi {
         registry.add("Efficiency/hPtVsCentVsPvContribGen", "Pt Vs Cent Vs PvContrib", {HistType::kTHnSparseF, axesPtVsCentVsPvContrib}, true);
         registry.add("Efficiency/hPtPromptVsCentVsPvContribGen", "Pt Vs Cent Vs PvContrib", {HistType::kTHnSparseF, axesPtVsCentVsPvContrib}, true);
         registry.add("Efficiency/hPtNonPromptVsCentVsPvContribGen", "Pt Vs Cent Vs PvContrib", {HistType::kTHnSparseF, axesPtVsCentVsPvContrib}, true);
+        if (ptShapeStudy && !useWeightOnline) {
+          registry.add("Efficiency/PtShape/hPtPromptVsCentVsPvContribVsFinePtGen", "Pt Vs Cent Vs PvContrib Vs Fine Pt of D*", {HistType::kTHnSparseF, axesPtVsCentVsPvContribVsPtB}, true);
+          registry.add("Efficiency/PtShape/hPtNonPromptVsCentVsPvContribVsFinePtBGen", "Pt Vs Cent Vs PvContrib Vs Fine Pt of B hadron", {HistType::kTHnSparseF, axesPtVsCentVsPvContribVsPtB}, true);
+        }
       } else {
         registry.add("Efficiency/hPtGen", "MC Matched D* Candidates at Generator Level", {HistType::kTH1F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
         registry.add("Efficiency/hPtPromptVsGen", "MC Matched Prompt D* Candidates at Generator Level", {HistType::kTH1F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
         registry.add("Efficiency/hPtNonPromptVsGen", "MC Matched Non-Prompt D* Candidates at Generator Level", {HistType::kTH1F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
+        if (ptShapeStudy && !useWeightOnline) {
+          registry.add("Efficiency/PtShape/hPtPromptVsFinePtGen", "MC Matched Prompt D* Candidates at Generator Level; #it{p}_{T} of  D*; #it{p}_{T} of  D*", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisPtFine}}}, true);
+          registry.add("Efficiency/PtShape/hPtNonPromptVsFinePtBGen", "MC Matched Non-Prompt D* Candidates at Generator Level; #it{p}_{T} of  D*; #it{p}_{T} of B hadron", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisPtFine}}}, true);
+        }
       }
     }
 
@@ -317,7 +352,7 @@ struct HfTaskDstarToD0Pi {
     }
 
     // if weights to be applied for pt shape study
-    if (ptShapeStudy) {
+    if (ptShapeStudy && useWeightOnline) {
       ccdbApi.init(ccdbUrl);
       std::map<std::string, std::string> const metadata;
       // Retrieve the file from CCDB
@@ -527,12 +562,12 @@ struct HfTaskDstarToD0Pi {
         if (candDstarMcRec.isSelDstarToD0Pi()) { // if all selection passed
           float weightValue = 1.0;
           std::vector<float> ptShapeWeightValues(nWeights, 1.0); // Assuming two weights: one for prompt and one for non-prompt
-          if (ptShapeStudy && (hWeights.empty() || hWeights[0] == nullptr)) {
-            LOGF(fatal, "Weight histograms are not initialized or empty. Check CCDB path or weight file.");
-            return;
-          }
 
-          if (ptShapeStudy) {
+          if (ptShapeStudy && useWeightOnline) {
+            if (hWeights.empty() || hWeights[0] == nullptr) {
+              LOGF(fatal, "Weight histograms are not initialized or empty. Check CCDB path or weight file.");
+              return;
+            }
             ptShapeWeightValues[weightType::Prompt] = hWeights[weightType::Prompt]->GetBinContent(hWeights[weightType::Prompt]->FindBin(ptDstarRecSig));
             ptShapeWeightValues[weightType::NonPrompt] = hWeights[weightType::NonPrompt]->GetBinContent(hWeights[weightType::NonPrompt]->FindBin(ptMother));
           }
@@ -550,6 +585,13 @@ struct HfTaskDstarToD0Pi {
               } else if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt) {
                 registry.fill(HIST("Efficiency/hPtNonPrompRectVsCentVsBDTScorePvContribRecSig"), ptDstarRecSig, centrality, bdtScore[0], bdtScore[1], bdtScore[2], nPVContributors, ptShapeWeightValues[weightType::NonPrompt]);
               }
+              if (ptShapeStudy && !useWeightOnline) {
+                if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::Prompt) {
+                  registry.fill(HIST("Efficiency/PtShape/hPtPromptVsCentVsBDTScoreVsPvContribVsFinePtRecSig"), ptDstarRecSig, centrality, bdtScore[0], bdtScore[1], bdtScore[2], nPVContributors, ptDstarRecSig);
+                } else if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt) {
+                  registry.fill(HIST("Efficiency/PtShape/hPtNonPromptVsCentVsBDTScorePvContribVsFinePtBRecSig"), ptDstarRecSig, centrality, bdtScore[0], bdtScore[1], bdtScore[2], nPVContributors, ptMother);
+                }
+              }
             } else {
               auto bdtScore = candDstarMcRec.mlProbDstarToD0Pi();
               registry.fill(HIST("Efficiency/hPtVsBDTScoreRecSig"), ptDstarRecSig, bdtScore[0], bdtScore[1], bdtScore[2], weightValue);
@@ -557,6 +599,13 @@ struct HfTaskDstarToD0Pi {
                 registry.fill(HIST("Efficiency/hPtPromptVsBDTScoreRecSig"), ptDstarRecSig, bdtScore[0], bdtScore[1], bdtScore[2], ptShapeWeightValues[weightType::Prompt]);
               } else if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt) {
                 registry.fill(HIST("Efficiency/hPtNonPromptVsBDTScoreRecSig"), ptDstarRecSig, bdtScore[0], bdtScore[1], bdtScore[2], ptShapeWeightValues[weightType::NonPrompt]);
+              }
+              if (ptShapeStudy && !useWeightOnline) {
+                if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::Prompt) {
+                  registry.fill(HIST("Efficiency/PtShape/hPtPromptVsBDTScoreVsFinePtRecSig"), ptDstarRecSig, bdtScore[0], bdtScore[1], bdtScore[2], ptDstarRecSig);
+                } else if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt) {
+                  registry.fill(HIST("Efficiency/PtShape/hPtNonPromptVsBDTScoreVsFinePtBRecSig"), ptDstarRecSig, bdtScore[0], bdtScore[1], bdtScore[2], ptMother);
+                }
               }
             }
           } else { // All efficiency histograms at reconstruction level w/o ml
@@ -567,12 +616,26 @@ struct HfTaskDstarToD0Pi {
               } else if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt) {
                 registry.fill(HIST("Efficiency/hPtNonPromptVsCentVsPvContribRecSig"), ptDstarRecSig, centrality, nPVContributors, ptShapeWeightValues[weightType::NonPrompt]);
               }
+              if (ptShapeStudy && !useWeightOnline) {
+                if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::Prompt) {
+                  registry.fill(HIST("Efficiency/PtShape/hPtPromptVsCentVsPvContribVsFinePtRecSig"), ptDstarRecSig, centrality, nPVContributors, ptDstarRecSig);
+                } else if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt) {
+                  registry.fill(HIST("Efficiency/PtShape/hPtNonPromptVsCentVsPvContribVsFinePtBRecSig"), ptDstarRecSig, centrality, nPVContributors, ptMother);
+                }
+              }
             } else {
               registry.fill(HIST("Efficiency/hPtVsPvContribRecSig"), ptDstarRecSig, nPVContributors, weightValue);
               if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::Prompt) {
                 registry.fill(HIST("Efficiency/hPtPromptVsPvContribRecSig"), ptDstarRecSig, nPVContributors, ptShapeWeightValues[weightType::Prompt]);
               } else if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt) {
                 registry.fill(HIST("Efficiency/hPtNonPromptVsPvContribRecSig"), ptDstarRecSig, nPVContributors, ptShapeWeightValues[weightType::NonPrompt]);
+              }
+              if (ptShapeStudy && !useWeightOnline) {
+                if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::Prompt) {
+                  registry.fill(HIST("Efficiency/PtShape/hPtPromptVsPvContribVsFinePtRecSig"), ptDstarRecSig, nPVContributors, ptDstarRecSig);
+                } else if (candDstarMcRec.originMcRec() == RecoDecay::OriginType::NonPrompt) {
+                  registry.fill(HIST("Efficiency/PtShape/hPtNonPromptVsPvContribVsFinePtBRecSig"), ptDstarRecSig, nPVContributors, ptMother);
+                }
               }
             }
           }
@@ -713,12 +776,12 @@ struct HfTaskDstarToD0Pi {
 
         float weightValue = 1.0;
         std::vector<float> ptShapeWeightValues(nWeights, 1.0); // Assuming two weights: one for prompt and one for non-prompt
-        if (ptShapeStudy && (hWeights.empty() || hWeights[0] == nullptr)) {
-          LOGF(fatal, "Weight histograms are not initialized or empty. Check CCDB path or weight file.");
-          return;
-        }
 
-        if (ptShapeStudy) {
+        if (ptShapeStudy && useWeightOnline) {
+          if (hWeights.empty() || hWeights[0] == nullptr) {
+            LOGF(fatal, "Weight histograms are not initialized or empty. Check CCDB path or weight file.");
+            return;
+          }
           ptShapeWeightValues[weightType::Prompt] = hWeights[weightType::Prompt]->GetBinContent(hWeights[weightType::Prompt]->FindBin(ptGen));
           ptShapeWeightValues[weightType::NonPrompt] = hWeights[weightType::NonPrompt]->GetBinContent(hWeights[weightType::NonPrompt]->FindBin(ptBMother));
         }
@@ -749,6 +812,25 @@ struct HfTaskDstarToD0Pi {
 
           } else {
             registry.fill(HIST("Efficiency/hPtNonPromptVsGen"), ptGen, ptShapeWeightValues[weightType::NonPrompt]);
+          }
+        }
+        if (ptShapeStudy && !useWeightOnline) {
+          // prompt
+          if (mcParticle.originMcGen() == RecoDecay::OriginType::Prompt) {
+            registry.fill(HIST("Efficiency/PtShape/hPtVsYVsFinePtPromptDstarGen"), ptGen, yGen, ptGen);
+            if (isCentStudy) {
+              registry.fill(HIST("Efficiency/PtShape/hPtPromptVsCentVsPvContribVsFinePtGen"), ptGen, centFT0MGen, pvContributors, ptGen);
+            } else {
+              registry.fill(HIST("Efficiency/PtShape/hPtPromptVsFinePtGen"), ptGen, ptGen);
+            }
+            // Non-Prompt
+          } else if (mcParticle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
+            registry.fill(HIST("Efficiency/PtShape/hPtVsYVsFinePtBNonPromptDstarGen"), ptGen, yGen, ptBMother);
+            if (isCentStudy) {
+              registry.fill(HIST("Efficiency/PtShape/hPtNonPromptVsCentVsPvContribVsFinePtBGen"), ptGen, centFT0MGen, pvContributors, ptBMother);
+            } else {
+              registry.fill(HIST("Efficiency/PtShape/hPtNonPromptVsFinePtBGen"), ptGen, ptBMother);
+            }
           }
         }
       }
