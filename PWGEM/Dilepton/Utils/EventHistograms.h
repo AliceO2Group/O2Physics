@@ -203,7 +203,7 @@ void fillEventInfo(o2::framework::HistogramRegistry* fRegistry, TCollision const
   if (collision.sel8()) {
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 10.0);
   }
-  if (abs(collision.posZ()) < 10.0) {
+  if (std::abs(collision.posZ()) < 10.0) {
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 11.0);
   }
   if (collision.selection_bit(o2::aod::emevsel::kNoCollInTimeRangeStandard)) {
