@@ -203,7 +203,7 @@ struct HfTaskFlowCharmHadrons {
   ConfigurableAxis thnConfigAxisResoFV0aTPCtot{"thnConfigAxisResoFV0aTPCtot", {160, -8, 8}, ""};
   ConfigurableAxis thnConfigAxisCandidateEta{"thnConfigAxisCandidateEta", {100, -5, 5}, ""};
   ConfigurableAxis thnConfigAxisSign{"thnConfigAxisSign", {6, -3.0, 3.0}, ""};
-  ConfigurableAxis thnConfigAxisRedQVec = ConfigurableAxis{"thnConfigAxisRedQVec", {1000, 0, 100}, ""};
+  ConfigurableAxis thnConfigAxisRedQVec{"thnConfigAxisRedQVec", {1000, 0, 100}, ""};
 
   HistogramRegistry registry{"registry", {}};
 
