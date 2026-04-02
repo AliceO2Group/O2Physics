@@ -126,7 +126,7 @@ struct FlowMcUpc {
       for (auto const& mcParticle : mcParticles) {
         auto momentum = std::array<double, 3>{mcParticle.px(), mcParticle.py(), mcParticle.pz()};
         double pt = RecoDecay::pt(momentum);
-        double phi = RecoDecay::phi(momentum);
+        // double phi = RecoDecay::phi(momentum);
         double eta = RecoDecay::eta(momentum);
         // focus on bulk: e, mu, pi, k, p
         int pdgCode = std::abs(mcParticle.pdgCode());
@@ -166,7 +166,7 @@ struct FlowMcUpc {
     for (const auto& track : tracks) {
       auto momentum = std::array<double, 3>{track.px(), track.py(), track.pz()};
       double pt = RecoDecay::pt(momentum);
-      double phi = RecoDecay::phi(momentum);
+      // double phi = RecoDecay::phi(momentum);
       double eta = RecoDecay::eta(momentum);
       if (!trackSelected(track) || (!track.has_udMcParticle()))
         continue;
