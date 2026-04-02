@@ -417,9 +417,9 @@ struct TreeWriterTpcV0 {
       }
     }
 
-    const auto& tracksWithITSPid = soa::Attach<TrksType,
-                                               aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi,
-                                               aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr>(myTracks);
+    const auto tracksWithITSPid = soa::Attach<TrksType,
+                                              aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi,
+                                              aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr>(myTracks);
 
     for (const auto& collision : collisions) {
       if (!isEventSelected(collision, applyEvSel)) {
@@ -430,9 +430,9 @@ struct TreeWriterTpcV0 {
         continue;
       }
 
-      const auto& v0s = myV0s.sliceBy(perCollisionV0s, static_cast<int>(collision.globalIndex()));
-      const auto& cascs = myCascs.sliceBy(perCollisionCascs, static_cast<int>(collision.globalIndex()));
-      const auto& bc = collision.bc_as<BCType>();
+      const auto v0s = myV0s.sliceBy(perCollisionV0s, static_cast<int>(collision.globalIndex()));
+      const auto cascs = myCascs.sliceBy(perCollisionCascs, static_cast<int>(collision.globalIndex()));
+      const auto bc = collision.bc_as<BCType>();
       const int runnumber = bc.runNumber();
       const auto hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, irSource) * OneToKilo;
       const int bcGlobalIndex = bc.globalIndex();
@@ -464,7 +464,7 @@ struct TreeWriterTpcV0 {
       auto fillDaughterTrack = [&](const auto& mother, const TrksType::iterator& dauTrack, const auto& v0, const bool isPositive) {
         const auto [trackQAInstance, existTrkQA] = getTrackQA(dauTrack);
         const auto trackId = dauTrack.globalIndex();
-        const auto& dauTrackWithITSPid = tracksWithITSPid.rawIteratorAt(trackId);
+        const auto dauTrackWithITSPid = tracksWithITSPid.rawIteratorAt(trackId);
         const auto v0Id = getAddId(v0);
         const V0Mother v0Mother = createV0Mother(v0Id);
         const auto daughterId = isPositive ? v0Mother.posDaughterId : v0Mother.negDaughterId;
@@ -489,8 +489,8 @@ struct TreeWriterTpcV0 {
         if (v0Id == MotherUndef) {
           continue;
         }
-        const auto& posTrack = v0.posTrack_as<TrksType>();
-        const auto& negTrack = v0.negTrack_as<TrksType>();
+        const auto posTrack = v0.posTrack_as<TrksType>();
+        const auto negTrack = v0.negTrack_as<TrksType>();
 
         fillDaughterTrack(v0, posTrack, v0, true);
         fillDaughterTrack(v0, negTrack, v0, false);
@@ -502,7 +502,7 @@ struct TreeWriterTpcV0 {
         if (cascId == MotherUndef) {
           continue;
         }
-        const auto& bachTrack = casc.bachelor_as<TrksType>();
+        const auto bachTrack = casc.bachelor_as<TrksType>();
         // Omega and antiomega
         const auto isDaughterPositive = cascId == MotherAntiOmega ? true : false;
         fillDaughterTrack(casc, bachTrack, casc, isDaughterPositive);
@@ -803,7 +803,7 @@ struct TreeWriterTpcTof {
       }
     }
     for (const auto& collision : collisions) {
-      const auto& tracks = myTracks.sliceBy(perCollisionTracksType, collision.globalIndex());
+      const auto tracks = myTracks.sliceBy(perCollisionTracksType, collision.globalIndex());
       if (!isEventSelected(collision, applyEvSel)) {
         continue;
       }
@@ -820,7 +820,7 @@ struct TreeWriterTpcTof {
         tracksWithITSPid.bindExternalIndices(&trackMeanOccs);
       }
 
-      const auto& bc = collision.bc_as<BCType>();
+      const auto bc = collision.bc_as<BCType>();
       const int runnumber = bc.runNumber();
       const auto hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, irSource) * OneToKilo;
       const int bcGlobalIndex = bc.globalIndex();

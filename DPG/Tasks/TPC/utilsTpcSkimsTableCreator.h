@@ -132,7 +132,7 @@ void evaluateOccupancyVariables(const TrkType& track, OccupancyValues& occValues
   if (track.tmoId() == -1) {
     return;
   }
-  const auto& tmoFromTrack = track.template tmo_as<TrackMeanOccs>();
+  const auto tmoFromTrack = track.template tmo_as<TrackMeanOccs>();
   occValues.tmoPrimUnfm80 = tmoFromTrack.tmoPrimUnfm80();
   occValues.tmoFV0AUnfm80 = tmoFromTrack.tmoFV0AUnfm80();
   occValues.tmoFT0AUnfm80 = tmoFromTrack.tmoFT0AUnfm80();
