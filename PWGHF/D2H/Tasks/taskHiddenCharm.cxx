@@ -66,12 +66,12 @@ struct HfTaskHiddenCharm {
   Partition<aod::HcSelTracks> selectedProtons = aod::hf_track_vars_reduced::trackType == static_cast<uint8_t>(TrackType::Proton);
   Partition<aod::HcSelTracks> selectedPions = aod::hf_track_vars_reduced::trackType == static_cast<uint8_t>(TrackType::Pion);
   Partition<aod::HcSelTracks> selectedKaons = aod::hf_track_vars_reduced::trackType == static_cast<uint8_t>(TrackType::Kaon);
-  
+
   ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {1400, 2.8, 4.2}, ""};
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {100, 0., 10.}, ""};
   ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {100, 0., 100.}, ""};
   ConfigurableAxis thnConfigAxisSign{"thnConfigAxisSign", {2, -1., 1.}, ""};
-  
+
   HistogramRegistry registry{"registry", {}};
 
   void init(InitContext&)
