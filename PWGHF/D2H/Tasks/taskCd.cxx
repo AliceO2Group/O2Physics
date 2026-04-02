@@ -75,6 +75,7 @@ DECLARE_SOA_COLUMN(DecayLength, decayLength, float);            //! Decay length
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);        //! Decay length in transverse plane (cm)
 DECLARE_SOA_COLUMN(Cpa, cpa, float);                            //! Cosine of pointing angle (3D)
 DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                        //! Cosine of pointing angle in XY plane
+DECLARE_SOA_COLUMN(Chi2PCA, chi2PCA, float);                    //! chi2PCA
 DECLARE_SOA_COLUMN(NSigmaTpcDe, nSigmaTpcDe, float);            //! TPC nσ for deuteron hypothesis
 DECLARE_SOA_COLUMN(NSigmaTpcKa, nSigmaTpcKa, float);            //! TPC nσ for kaon hypothesis
 DECLARE_SOA_COLUMN(NSigmaTpcPi, nSigmaTpcPi, float);            //! TPC nσ for pion hypothesis
@@ -85,7 +86,9 @@ DECLARE_SOA_COLUMN(NSigmaTofPi, nSigmaTofPi, float);            //! TOF nσ for 
 DECLARE_SOA_COLUMN(NItsClusters, nItsClusters, int8_t);         //! Number of ITS clusters used in the track fit
 DECLARE_SOA_COLUMN(NItsNClusterSize, nItsNClusterSize, int8_t); //! Number of ITS clusters size used in the track fit
 DECLARE_SOA_COLUMN(NTpcClusters, nTpcClusters, int8_t);         //! Number of TPC clusters used in the track fit
-DECLARE_SOA_COLUMN(NTpcSignalsDe, nTpcSignalsDe, int8_t);       //! Number of TPC signas
+DECLARE_SOA_COLUMN(NTpcSignalsDe, nTpcSignalsDe, int8_t);       //! Number of TPC signas for deuteron
+DECLARE_SOA_COLUMN(NTpcSignalsPi, nTpcSignalsPi, int8_t);       //! Number of TPC signas for pion
+DECLARE_SOA_COLUMN(NTpcSignalsKa, nTpcSignalsKa, int8_t);       //! Number of TPC signas for kaon
 DECLARE_SOA_COLUMN(NItsSignalsDe, nItsSignalsDe, int8_t);       //! Number of ITS signas
 DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t); //! Candidates falg
 DECLARE_SOA_COLUMN(Cent, cent, float);                          //! Centrality
@@ -105,6 +108,7 @@ DECLARE_SOA_TABLE(HfCandCd, "AOD", "HFCANDCD",
                   full::ImpactParameter2,
                   full::DecayLength,
                   full::Cpa,
+                  full::Chi2PCA,
                   full::NSigmaTpcDe,
                   full::NSigmaItsDe,
                   full::NSigmaTofDe,
@@ -112,6 +116,8 @@ DECLARE_SOA_TABLE(HfCandCd, "AOD", "HFCANDCD",
                   full::NItsNClusterSize,
                   full::NTpcClusters,
                   full::NTpcSignalsDe,
+                  full::NTpcSignalsPi,
+                  full::NTpcSignalsKa,
                   full::NItsSignalsDe,
                   full::CandidateSelFlag,
                   full::Cent,
@@ -214,6 +220,8 @@ struct HfTaskCd {
     registry.add("Data/hNsigmaTOFDeVsP", "deuteron;#it{p} (GeV/#it{c}); n#sigma^{TOF}_{d}", {HistType::kTH2F, {{200, -10.f, 10.f}, {200, -6.f, 6.f}}});
     registry.add("Data/hNsigmaITSDeVsP", "deuteron;#it{p} (GeV/#it{c}); n#sigma^{ITS}_{d}", {HistType::kTH2F, {{200, -10.f, 10.f}, {200, -6.f, 6.f}}});
     registry.add("Data/hTPCSignalDeVsP", "deuteron;#it{p} (GeV/#it{c}); TPC signals", {HistType::kTH2F, {{200, -10.f, 10.f}, {2000, 0, 2000}}});
+    registry.add("Data/hTPCSignalPiVsP", "Pion;#it{p} (GeV/#it{c}); TPC signals", {HistType::kTH2F, {{200, -10.f, 10.f}, {2000, 0, 2000}}});
+    registry.add("Data/hTPCSignalKaVsP", "Kaon;#it{p} (GeV/#it{c}); TPC signals", {HistType::kTH2F, {{200, -10.f, 10.f}, {2000, 0, 2000}}});
     registry.add("Data/hITSSignalDeVsP", "deuteron;#it{p} (GeV/#it{c}); ITS signals", {HistType::kTH2F, {{200, -10.f, 10.f}, {20, 0, 20}}});
     registry.add("Data/hNsigmaTPCPiVsP", "Pion;#it{p} (GeV/#it{c});n#sigma^{TPC}_{pi};", {HistType::kTH2F, {{200, -10.f, 10.f}, {200, -6.f, 6.f}}});
     registry.add("Data/hNsigmaTOFPiVsP", "Pion;#it{p} (GeV/#it{c});n#sigma^{TOF}_{pi};", {HistType::kTH2F, {{200, -10.f, 10.f}, {200, -6.f, 6.f}}});
@@ -353,6 +361,9 @@ struct HfTaskCd {
         int tpcNClusterDe = 0;
 
         float tpcSignalsDe = 0.f;
+        float tpcSignalsPi = 0.f;
+        float tpcSignalsKa = 0.f;
+
         float itsSignalsDe = 0.f;
 
         float pSignedDe = -999.f;
@@ -371,6 +382,8 @@ struct HfTaskCd {
         auto prong0Its = tracksWithItsPid.iteratorAt(candidate.prong0Id() - tracksWithItsPid.offset());
         auto prong2Its = tracksWithItsPid.iteratorAt(candidate.prong2Id() - tracksWithItsPid.offset());
 
+        tpcSignalsKa = prong1.tpcSignal();
+
         if (selDeKPi) {
           candFlag = 1;
           pSignedDe = prong0.p() * prong0.sign();
@@ -384,6 +397,7 @@ struct HfTaskCd {
           itsNClusterSizeDe = prong0.itsClusterSizes();
           tpcNClusterDe = prong0.tpcNClsCrossedRows();
           tpcSignalsDe = prong0.tpcSignal();
+          tpcSignalsPi = prong2.tpcSignal();
           itsSignalsDe = itsSignal(prong0);
         } else if (selPiKDe) {
           candFlag = -1;
@@ -398,6 +412,7 @@ struct HfTaskCd {
           itsNClusterSizeDe = prong2.itsClusterSizes();
           tpcNClusterDe = prong2.tpcNClsCrossedRows();
           tpcSignalsDe = prong2.tpcSignal();
+          tpcSignalsPi = prong0.tpcSignal();
           itsSignalsDe = itsSignal(prong2);
         }
 
@@ -406,6 +421,8 @@ struct HfTaskCd {
         registry.fill(HIST("Data/hNsigmaTOFDeVsP"), pSignedDe, nSigmaTofDe);
         registry.fill(HIST("Data/hNsigmaITSDeVsP"), pSignedDe, nSigmaItsDe);
         registry.fill(HIST("Data/hTPCSignalDeVsP"), pSignedDe, tpcSignalsDe);
+        registry.fill(HIST("Data/hTPCSignalPiVsP"), pSignedPi, tpcSignalsPi);
+        registry.fill(HIST("Data/hTPCSignalKaVsP"), prong1.p() * prong1.sign(), tpcSignalsKa);
         registry.fill(HIST("Data/hITSSignalDeVsP"), pSignedDe, itsSignalsDe);
         registry.fill(HIST("Data/hNsigmaTPCPiVsP"), pSignedPi, nSigmaTpcPi);
         registry.fill(HIST("Data/hNsigmaTOFPiVsP"), pSignedPi, nSigmaTofPi);
@@ -423,6 +440,7 @@ struct HfTaskCd {
           candidate.impactParameter2(),
           decayLength,
           cpa,
+          chi2PCA,
           nSigmaTpcDe,
           nSigmaItsDe,
           nSigmaTofDe,
@@ -430,6 +448,8 @@ struct HfTaskCd {
           itsNClusterSizeDe,
           tpcNClusterDe,
           tpcSignalsDe,
+          tpcSignalsPi,
+          tpcSignalsKa,
           itsSignalsDe,
           candFlag,
           cent,
