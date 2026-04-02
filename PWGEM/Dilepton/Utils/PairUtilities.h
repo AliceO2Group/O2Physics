@@ -49,6 +49,7 @@ enum class DileptonAnalysisType : int {
   kFlowV3 = 3,
   kPolarization = 4,
   kHFll = 5,
+  kBootstrapv2 = 6,
 };
 
 enum class DileptonHadronAnalysisType : int {
