@@ -192,6 +192,7 @@ struct products : o2::framework::ProducesGroup {
   // multiplicity tables
   o2::framework::Produces<aod::FV0Mults> tableFV0;
   o2::framework::Produces<aod::FITExtraMults> tableFITExtraMults;
+  o2::framework::Produces<aod::FV0AOuterMults> tableFV0AOuterMults;
   o2::framework::Produces<aod::FT0Mults> tableFT0;
   o2::framework::Produces<aod::FDDMults> tableFDD;
   o2::framework::Produces<aod::ZDCMults> tableZDC;
@@ -754,6 +755,7 @@ class MultModule
     }
     if (internalOpts.mEnabledTables[kFITExtraMults]) {
       cursors.tableFITExtraMults(mults.multFV0AOuter, mults.fitTriggerMask);
+      cursors.tableFV0AOuterMults(mults.multFV0AOuter); // Keep for backwards compatibility
     }
     if (internalOpts.mEnabledTables[kFT0Mults]) {
       cursors.tableFT0(mults.multFT0A, mults.multFT0C);
