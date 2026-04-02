@@ -46,6 +46,7 @@
 #include <TF1.h>
 #include <TString.h>
 
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <string>

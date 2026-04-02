@@ -8,47 +8,41 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///
-/// \file materialBudgetWeights.cxx
-///
+
+/// \file MaterialBudgetWeights.h
 /// \brief This code produces a table to retrieve material budget weights. The table is to be join with V0PhotonKF
-///
 /// \author Youssef El Mard (youssef.el.mard.bouziani@cern.ch)
-///
 
 #ifndef PWGEM_PHOTONMESON_CORE_MATERIALBUDGETWEIGHTS_H_
 #define PWGEM_PHOTONMESON_CORE_MATERIALBUDGETWEIGHTS_H_
 
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/Logger.h"
-#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+
+#include <TH1.h>
 
 #include <map>
 #include <string>
-
-using namespace o2;
-using namespace o2::soa;
-using namespace o2::framework;
 
 using MyV0PhotonsMB = o2::soa::Join<o2::aod::V0PhotonsKF, o2::aod::V0KFEMEventIds>;
 using MyV0PhotonMB = MyV0PhotonsMB::iterator;
 
 struct MaterialBudgetWeights {
-  Produces<aod::V0PhotonOmegaMBWeights> omegaMBWeight;
+  o2::framework::Produces<o2::aod::V0PhotonOmegaMBWeights> omegaMBWeight;
 
-  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://ccdb-test.cern.ch:8080", "CCDB url"};
-  Configurable<std::string> mbWeightsPath{"mbWeightsPath", "Users/y/yelmard/MaterialBudget/OmegaMBWeights", "Path of the mb weights"};
+  o2::framework::Configurable<std::string> ccdbUrl{"ccdbUrl", "http://ccdb-test.cern.ch:8080", "CCDB url"};
+  o2::framework::Configurable<std::string> mbWeightsPath{"mbWeightsPath", "Users/y/yelmard/MaterialBudget/OmegaMBWeights", "Path of the mb weights"};
 
   o2::ccdb::CcdbApi ccdbApi;
   TH1F* hOmegaMBFromCCDB = nullptr;
 
-  void init(InitContext&)
+  void init(o2::framework::InitContext&)
   {
     // Load CCDB object only when the real process is enabled
     if (!doprocessMC) {

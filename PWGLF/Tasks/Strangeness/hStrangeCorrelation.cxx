@@ -90,6 +90,7 @@ struct HStrangeCorrelation {
     Configurable<int> mixingParameter{"mixingParameter", 10, "how many events are mixed"};
     Configurable<bool> doMCassociation{"doMCassociation", false, "fill everything only for MC associated"};
     Configurable<bool> doTriggPhysicalPrimary{"doTriggPhysicalPrimary", false, "require physical primary for trigger particles"};
+    Configurable<bool> applyNewMCSelection{"applyNewMCSelection", false, "apply new MC Generated selection"};
   } masterConfigurations;
 
   // master analysis switches
@@ -2532,7 +2533,7 @@ struct HStrangeCorrelation {
         }
 
         // Perform basic event selection on both collisions
-        if ((masterConfigurations.doPPAnalysis && (!isCollisionSelected(collision1) || !isCollisionSelected(collision2))) || (!masterConfigurations.doPPAnalysis && (!isCollisionSelectedPbPb(collision1, true) || (!isCollisionSelectedPbPb(collision2, true))))) {
+        if ((masterConfigurations.doPPAnalysis && (!isCollisionSelected(collision1) || !isCollisionSelected(collision2))) || (!masterConfigurations.doPPAnalysis && (!isCollisionSelectedPbPb(collision1, false) || (!isCollisionSelectedPbPb(collision2, false))))) {
           continue;
         }
         if (cent1 > axisRanges[5][1] || cent1 < axisRanges[5][0])
@@ -2588,7 +2589,7 @@ struct HStrangeCorrelation {
         }
 
         // Perform basic event selection on both collisions
-        if ((masterConfigurations.doPPAnalysis && (!isCollisionSelected(collision1) || !isCollisionSelected(collision2))) || (!masterConfigurations.doPPAnalysis && (!isCollisionSelectedPbPb(collision1, true) || (!isCollisionSelectedPbPb(collision2, true))))) {
+        if ((masterConfigurations.doPPAnalysis && (!isCollisionSelected(collision1) || !isCollisionSelected(collision2))) || (!masterConfigurations.doPPAnalysis && (!isCollisionSelectedPbPb(collision1, false) || (!isCollisionSelectedPbPb(collision2, false))))) {
           continue;
         }
         if (cent1 > axisRanges[5][1] || cent1 < axisRanges[5][0])
@@ -2706,6 +2707,7 @@ struct HStrangeCorrelation {
     float bestCollisionVtxZ = 0.0f;
     bool bestCollisionSel8 = false;
     bool bestCollisionINELgtZERO = false;
+    bool isCollisionSelect = false;
     uint32_t bestCollisionTriggerPresenceMap = 0;
 
     for (auto const& collision : collisions) {
@@ -2713,9 +2715,13 @@ struct HStrangeCorrelation {
         biggestNContribs = collision.numContrib();
         bestCollisionFT0Mpercentile = collision.centFT0M();
         bestCollisionFT0Cpercentile = collision.centFT0C();
-        bestCollisionSel8 = collision.sel8();
-        bestCollisionVtxZ = collision.posZ();
-        bestCollisionINELgtZERO = collision.isInelGt0();
+        if (masterConfigurations.applyNewMCSelection) {
+          isCollisionSelect = ((masterConfigurations.doPPAnalysis && isCollisionSelected(collision)) || (!masterConfigurations.doPPAnalysis && isCollisionSelectedPbPb(collision, false)));
+        } else {
+          bestCollisionSel8 = collision.sel8();
+          bestCollisionVtxZ = collision.posZ();
+          bestCollisionINELgtZERO = collision.isInelGt0();
+        }
         if (triggerPresenceMap.size() > 0)
           bestCollisionTriggerPresenceMap = triggerPresenceMap[collision.globalIndex()];
       }
@@ -2745,12 +2751,17 @@ struct HStrangeCorrelation {
     if (triggerPresenceMap.size() > 0 && !TESTBIT(bestCollisionTriggerPresenceMap, triggerBinToSelect)) {
       return;
     }
-    if (!bestCollisionSel8)
-      return;
-    if (std::abs(bestCollisionVtxZ) > masterConfigurations.zVertexCut)
-      return;
-    if (!bestCollisionINELgtZERO)
-      return;
+    if (masterConfigurations.applyNewMCSelection) {
+      if (!isCollisionSelect)
+        return;
+    } else {
+      if (!bestCollisionSel8)
+        return;
+      if (std::abs(bestCollisionVtxZ) > masterConfigurations.zVertexCut)
+        return;
+      if (!bestCollisionINELgtZERO)
+        return;
+    }
 
     histos.fill(HIST("hClosureTestEventCounter"), 3.5f);
 

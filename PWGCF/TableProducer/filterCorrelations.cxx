@@ -590,6 +590,9 @@ struct MultiplicitySelector {
     if (doprocessFT0CVariant1) {
       enabledFunctions++;
     }
+    if (doprocessFT0CVariant2) {
+      enabledFunctions++;
+    }
     if (doprocessFT0A) {
       enabledFunctions++;
     }
@@ -634,6 +637,14 @@ struct MultiplicitySelector {
     }
   }
   PROCESS_SWITCH(MultiplicitySelector, processFT0CVariant1, "Select FT0CVariant1 centrality as multiplicity", false);
+
+  void processFT0CVariant2(aod::CentFT0CVariant2s const& centralities)
+  {
+    for (auto& c : centralities) {
+      output(c.centFT0CVariant2());
+    }
+  }
+  PROCESS_SWITCH(MultiplicitySelector, processFT0CVariant2, "Select FT0CVariant2 centrality as multiplicity", false);
 
   void processFT0A(aod::CentFT0As const& centralities)
   {

@@ -14,19 +14,34 @@
 // This code is to study MC truth. e.g. evet selection bias
 //    Please write to: daiki.sekihata@cern.ch
 
-#include <string>
-#include "Math/Vector4D.h"
-
-#include "Framework/StaticFor.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/TableHelper.h"
-#include "Common/DataModel/EventSelection.h"
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/Dilepton/Utils/MCUtilities.h"
+
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+
+#include <sys/types.h>
+
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+#include <string_view>
 
 using namespace o2;
 using namespace o2::framework;

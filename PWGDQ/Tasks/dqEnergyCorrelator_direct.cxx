@@ -20,49 +20,44 @@
 #include "PWGDQ/Core/MCSignal.h"
 #include "PWGDQ/Core/MCSignalLibrary.h"
 #include "PWGDQ/Core/MixingHandler.h"
-#include "PWGDQ/Core/MixingLibrary.h"
 #include "PWGDQ/Core/VarManager.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
 
-#include "Common/Core/PID/PIDTOFParamService.h"
-#include "Common/Core/TableHelper.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Field/MagneticField.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TGeoGlobalMagField.h"
-#include <TH1F.h>
-#include <TH3F.h>
 #include <THashList.h>
-#include <TList.h>
-#include <TObjString.h>
 #include <TPDGCode.h>
 #include <TString.h>
 
-#include <algorithm>
-#include <iostream>
+#include <RtypesCore.h>
+
+#include <array>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <map>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
-using std::cout;
-using std::endl;
 using std::string;
 
 using namespace o2;
@@ -132,6 +127,7 @@ struct AnalysisEnergyCorrelator {
     Configurable<float> fConfigMCGenHadronEtaAbs{"cfgMCGenHadronEtaAbs", 0.9f, "eta abs range for the hadron"};
     Configurable<float> fConfigMCGenHadronPtMin{"cfgMCGenHadronPtMin", 0.1f, "minimum pt for the hadron"};
     Configurable<bool> fConfigContainlepton{"cfgContainlepton", false, "If true, require the hadron to contain the lepton in its decay tree for the energy correlator study"};
+    Configurable<bool> fConfigUsePionMass{"cfgUsePionMass", false, "If true, use pion mass for the hadron in the energy correlator study"};
   } fConfigDileptonHadronOptions;
 
   // Histogram configurables
@@ -223,6 +219,7 @@ struct AnalysisEnergyCorrelator {
       for (auto& t : addTrackCuts) {
         fTrackCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
         fTrackCutNames.push_back(t->GetName());
+        trackCutStr += Form(",%s", t->GetName());
       }
     }
 
@@ -295,6 +292,7 @@ struct AnalysisEnergyCorrelator {
       for (auto& t : addHadronCuts) {
         fHadronCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
         fHadronCutNames.push_back(t->GetName());
+        hadronCutStr += Form(",%s", t->GetName());
       }
     }
 
@@ -445,12 +443,15 @@ struct AnalysisEnergyCorrelator {
         mcDecision |= (static_cast<uint32_t>(1) << isig);
       }
     }
-
     auto motherParticle = lepton1MC.template mothers_first_as<McParticles>();
     // Fill dilepton-hadron variables
     std::vector<float> fTransRange = fConfigDileptonHadronOptions.fConfigTransRange;
     VarManager::FillEnergyCorrelatorTriple(track1, track2, hadron, VarManager::fgValues, fTransRange[0], fTransRange[1], fConfigDileptonHadronOptions.fConfigApplyMassEC.value);
-    VarManager::FillEnergyCorrelatorsUnfoldingTriple<VarManager::kJpsiHadronMass>(track1, track2, hadron, motherParticle, hadronMC, VarManager::fgValues);
+    if (fConfigDileptonHadronOptions.fConfigUsePionMass.value) {
+      VarManager::FillEnergyCorrelatorsUnfoldingTriple<VarManager::kJpsiPionMass>(track1, track2, hadron, motherParticle, hadronMC, VarManager::fgValues, fConfigDileptonHadronOptions.fConfigApplyMassEC.value);
+    } else {
+      VarManager::FillEnergyCorrelatorsUnfoldingTriple<VarManager::kJpsiHadronMass>(track1, track2, hadron, motherParticle, hadronMC, VarManager::fgValues, fConfigDileptonHadronOptions.fConfigApplyMassEC.value);
+    }
 
     int iHadronCut = 0;
     for (auto hCut = fHadronCuts.begin(); hCut != fHadronCuts.end(); hCut++, iHadronCut++) {
@@ -797,13 +798,13 @@ struct AnalysisEnergyCorrelator {
     groupedMCTracks1.bindInternalIndicesTo(&mcTracks);
     groupedMCTracks2.bindInternalIndicesTo(&mcTracks);
     for (auto& t1 : groupedMCTracks1) {
-      auto t1_raw = groupedMCTracks1.rawIteratorAt(t1.globalIndex());
+      auto t1_raw = mcTracks.rawIteratorAt(t1.globalIndex());
       for (auto& sig : fGenMCSignals) {
         if (sig->CheckSignal(true, t1_raw)) {
           if (t1.mcCollisionId() != event1.mcCollisionId()) { // check that the mc track belongs to the same mc collision as the reconstructed event
             continue;
           }
-          VarManager::FillTrackMC(groupedMCTracks1, t1_raw);
+          VarManager::FillTrackMC(mcTracks, t1_raw);
           if (!MixedEvent && !PionMass) {
             fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), VarManager::fgValues);
           }

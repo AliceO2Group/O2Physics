@@ -34,7 +34,9 @@
 #include <TPDGCode.h>
 
 #include <algorithm>
+#include <cmath>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -122,13 +124,48 @@ struct Cascqaanalysis {
   SliceCache cache;
 
   // Random number generator for event scaling
-  TRandom2* fRand = new TRandom2();
+  TRandom2 fRand;
 
   // Struct to select on event type
   typedef struct CollisionIndexAndType {
     int64_t index;
     uint8_t typeFlag;
   } CollisionIndexAndType;
+
+  template <typename TTrack>
+  static int countITSHits(TTrack const& track)
+  {
+    int nHits = 0;
+    for (unsigned int i = 0; i < 7; ++i) {
+      if (track.itsClusterMap() & (1 << i)) {
+        ++nHits;
+      }
+    }
+    return nHits;
+  }
+
+  template <typename TCollision>
+  static uint8_t buildRecoEventFlags(TCollision const& collision)
+  {
+    uint8_t evFlag = o2::aod::mycascades::EvFlags::EvINEL;
+    if (collision.isInelGt0()) {
+      evFlag |= o2::aod::mycascades::EvFlags::EvINELgt0;
+    }
+    if (collision.isInelGt1()) {
+      evFlag |= o2::aod::mycascades::EvFlags::EvINELgt1;
+    }
+    return evFlag;
+  }
+
+  template <typename TCascade, typename TCollision>
+  static std::pair<float, float> computeCascadeCtau(TCascade const& casc, TCollision const& collision)
+  {
+    const float decayLength = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
+    const float totalMomentum = std::hypot(casc.px(), casc.py(), casc.pz());
+    const float invMomentum = 1.f / (totalMomentum + 1.e-13f);
+    return {o2::constants::physics::MassXiMinus * decayLength * invMomentum,
+            o2::constants::physics::MassOmegaMinus * decayLength * invMomentum};
+  }
 
   void init(InitContext const&)
   {
@@ -210,17 +247,13 @@ struct Cascqaanalysis {
     auto bachelor = cascCand.template bachelor_as<TCascTracksTo>();
 
     // Basic set of selections
-    if (cascCand.cascradius() > cascradius &&
-        cascCand.v0radius() > v0radius &&
-        cascCand.casccosPA(pvx, pvy, pvz) > casccospa &&
-        cascCand.v0cosPA(pvx, pvy, pvz) > v0cospa &&
-        std::fabs(posdau.eta()) < etadau &&
-        std::fabs(negdau.eta()) < etadau &&
-        std::fabs(bachelor.eta()) < etadau) {
-      return true;
-    } else {
-      return false;
-    }
+    return cascCand.cascradius() > cascradius &&
+           cascCand.v0radius() > v0radius &&
+           cascCand.casccosPA(pvx, pvy, pvz) > casccospa &&
+           cascCand.v0cosPA(pvx, pvy, pvz) > v0cospa &&
+           std::fabs(posdau.eta()) < etadau &&
+           std::fabs(negdau.eta()) < etadau &&
+           std::fabs(bachelor.eta()) < etadau;
   }
 
   template <typename TMcParticles>
@@ -419,39 +452,16 @@ struct Cascqaanalysis {
         registry.fill(HIST("hCandidateCounter"), 1.5); // passed topo cuts
         nCandSel++;
         // Fill table
-        if (fRand->Rndm() < lEventScale) {
+        if (fRand.Rndm() < lEventScale) {
           auto posdau = casc.posTrack_as<DauTracks>();
           auto negdau = casc.negTrack_as<DauTracks>();
           auto bachelor = casc.bachelor_as<DauTracks>();
 
-          // ITS N hits
-          int posITSNhits = 0, negITSNhits = 0, bachITSNhits = 0;
-          for (unsigned int i = 0; i < 7; i++) {
-            if (posdau.itsClusterMap() & (1 << i)) {
-              posITSNhits++;
-            }
-            if (negdau.itsClusterMap() & (1 << i)) {
-              negITSNhits++;
-            }
-            if (bachelor.itsClusterMap() & (1 << i)) {
-              bachITSNhits++;
-            }
-          }
-
-          uint8_t evFlag = 0;
-          evFlag |= o2::aod::mycascades::EvFlags::EvINEL;
-          if (collision.multNTracksPVeta1() > 0) {
-            evFlag |= o2::aod::mycascades::EvFlags::EvINELgt0;
-          }
-          if (collision.multNTracksPVeta1() > 1) {
-            evFlag |= o2::aod::mycascades::EvFlags::EvINELgt1;
-          }
-
-          // c x tau
-          float cascpos = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
-          float cascptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
-          float ctauXi = o2::constants::physics::MassXiMinus * cascpos / (cascptotmom + 1e-13);
-          float ctauOmega = o2::constants::physics::MassOmegaMinus * cascpos / (cascptotmom + 1e-13);
+          const int posITSNhits = countITSHits(posdau);
+          const int negITSNhits = countITSHits(negdau);
+          const int bachITSNhits = countITSHits(bachelor);
+          const uint8_t evFlag = buildRecoEventFlags(collision);
+          const auto [ctauXi, ctauOmega] = computeCascadeCtau(casc, collision);
 
           mycascades(collision.posZ(),
                      collision.centFT0M(), collision.centFV0A(),
@@ -563,41 +573,17 @@ struct Cascqaanalysis {
             genY = cascmc.y();
           }
         }
-        if (fRand->Rndm() < lEventScale) {
+        if (fRand.Rndm() < lEventScale) {
           // Fill table
           auto posdau = casc.posTrack_as<DauTracks>();
           auto negdau = casc.negTrack_as<DauTracks>();
           auto bachelor = casc.bachelor_as<DauTracks>();
 
-          // ITS N hits
-          int posITSNhits = 0, negITSNhits = 0, bachITSNhits = 0;
-          for (unsigned int i = 0; i < 7; i++) {
-            if (posdau.itsClusterMap() & (1 << i)) {
-              posITSNhits++;
-            }
-            if (negdau.itsClusterMap() & (1 << i)) {
-              negITSNhits++;
-            }
-            if (bachelor.itsClusterMap() & (1 << i)) {
-              bachITSNhits++;
-            }
-          }
-
-          // Event type flag
-          uint8_t evFlag = 0;
-          evFlag |= o2::aod::mycascades::EvFlags::EvINEL;
-          if (collision.multNTracksPVeta1() > 0) {
-            evFlag |= o2::aod::mycascades::EvFlags::EvINELgt0;
-          }
-          if (collision.multNTracksPVeta1() > 1) {
-            evFlag |= o2::aod::mycascades::EvFlags::EvINELgt1;
-          }
-
-          // c x tau
-          float cascpos = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
-          float cascptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
-          float ctauXi = o2::constants::physics::MassXiMinus * cascpos / (cascptotmom + 1e-13);
-          float ctauOmega = o2::constants::physics::MassOmegaMinus * cascpos / (cascptotmom + 1e-13);
+          const int posITSNhits = countITSHits(posdau);
+          const int negITSNhits = countITSHits(negdau);
+          const int bachITSNhits = countITSHits(bachelor);
+          const uint8_t evFlag = buildRecoEventFlags(collision);
+          const auto [ctauXi, ctauOmega] = computeCascadeCtau(casc, collision);
 
           mycascades(collision.posZ(),
                      mcCollision.centFT0M(), 0, // mcCollision.centFV0A() to be added

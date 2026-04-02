@@ -297,9 +297,9 @@ struct FemtoUniversePairTaskTrackV0Helicity {
     thetaRegistry.add("Theta/NegativeChild/hThetaPt", " ; p_{T} (GeV/#it{c}); cos(#theta)", kTH2F, {{100, 0, 10}, {110, -1.1, 1.1}});
     thetaRegistry.add("Theta/NegativeChild/hThetaEta", " ; #eta; cos(#theta)", kTH2F, {{100, -1, 1}, {110, -1.1, 1.1}});
     thetaRegistry.add("Theta/NegativeChild/hThetaPhi", " ; #phi; cos(#theta)", kTH2F, {{100, -1, 7}, {110, -1.1, 1.1}});
-    thetaRegistry.add("Theta/Mother/hInvMassMotherHel1", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {confInvMassMotherpTBinsHel, {100, 0.5, 1.5}});
-    thetaRegistry.add("Theta/Mother/hInvMassMotherHel2", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {confInvMassMotherpTBinsHel, {100, 0.5, 1.5}});
-    thetaRegistry.add("Theta/Mother/hInvMassMotherHel3", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {confInvMassMotherpTBinsHel, {100, 0.5, 1.5}});
+    thetaRegistry.add("Theta/Mother/hInvMassMotherHel1", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {confInvMassMotherpTBinsHel, confInvMassMotherBinsHel});
+    thetaRegistry.add("Theta/Mother/hInvMassMotherHel2", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {confInvMassMotherpTBinsHel, confInvMassMotherBinsHel});
+    thetaRegistry.add("Theta/Mother/hInvMassMotherHel3", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {confInvMassMotherpTBinsHel, confInvMassMotherBinsHel});
     thetaRegistry.add("Theta/Mother/hInvMassMotherHel4", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {confInvMassMotherpTBinsHel, confInvMassMotherBinsHel});
 
     /// MC Truth

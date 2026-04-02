@@ -643,7 +643,7 @@ class FemtoUniverseDetaDphiStar
 
   ///  Check if pair is close or not
   template <typename Part>
-  bool isClosePairkT(Part const& part1, Part const& part2, uint8_t ChosenEventType, float ktval, bool CircCut)
+  bool isClosePairkT(Part const& part1, Part const& part2, uint8_t ChosenEventType, float ktval, bool CircCut, bool IsDphiAvgOrDist, float lmagfield, float DistMax, float FracMax)
   {
     /// Track-Track combination
     // check if provided particles are in agreement with the class instantiation
@@ -663,8 +663,11 @@ class FemtoUniverseDetaDphiStar
       ktbinval = 4;
     }
 
+    magfield = lmagfield;
+
     auto deta = part1.eta() - part2.eta();
     auto dphiAvg = averagePhiStar(part1, part2, 0);
+    auto distfrac = averagePhiStarFrac(part1, part2, DistMax);
     auto DeltaPhiStarMax = static_cast<float>(cutDeltaPhiStarMaxVector[ktbinval]);
     auto DeltaPhiStarMin = static_cast<float>(cutDeltaPhiStarMinVector[ktbinval]);
     auto DeltaEtaMax = static_cast<float>(cutDeltaEtaMaxVector[ktbinval]);
@@ -678,19 +681,35 @@ class FemtoUniverseDetaDphiStar
       LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
     }
 
-    if (CircCut && (std::pow(dphiAvg, 2) / std::pow(DeltaPhiStarMax, 2) + std::pow(deta, 2) / std::pow(DeltaEtaMax, 2) < 1.)) {
-      return true;
-    } else if (!CircCut && (dphiAvg > DeltaPhiStarMin) && (dphiAvg < DeltaPhiStarMax) && (deta > DeltaEtaMin) && (deta < DeltaEtaMax)) {
-      return true;
-    } else {
-      if (ChosenEventType == femto_universe_container::EventType::same) {
-        histdetadphisameafterkT[ktbinval]->Fill(deta, dphiAvg);
-      } else if (ChosenEventType == femto_universe_container::EventType::mixed) {
-        histdetadphimixedafterkT[ktbinval]->Fill(deta, dphiAvg);
+    if (IsDphiAvgOrDist) {
+      if (CircCut && (std::pow(dphiAvg, 2) / std::pow(DeltaPhiStarMax, 2) + std::pow(deta, 2) / std::pow(DeltaEtaMax, 2) < 1.)) {
+        // std::cout<<"1 "<<part1.globalIndex()<<" 2 "<<part2.globalIndex()<<" From the header CLOSED"<<std::endl;
+        return true;
+      } else if (!CircCut && (dphiAvg > DeltaPhiStarMin) && (dphiAvg < DeltaPhiStarMax) && (deta > DeltaEtaMin) && (deta < DeltaEtaMax)) {
+        return true;
       } else {
-        LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
+        if (ChosenEventType == femto_universe_container::EventType::same) {
+          histdetadphisameafterkT[ktbinval]->Fill(deta, dphiAvg);
+        } else if (ChosenEventType == femto_universe_container::EventType::mixed) {
+          histdetadphimixedafterkT[ktbinval]->Fill(deta, dphiAvg);
+        } else {
+          LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
+        }
+        return false;
       }
-      return false;
+    } else {
+      if (((deta > DeltaEtaMin) && (deta < DeltaEtaMax)) && (distfrac > FracMax)) {
+        return true;
+      } else {
+        if (ChosenEventType == femto_universe_container::EventType::same) {
+          histdetadphisameafterkT[ktbinval]->Fill(deta, dphiAvg);
+        } else if (ChosenEventType == femto_universe_container::EventType::mixed) {
+          histdetadphimixedafterkT[ktbinval]->Fill(deta, dphiAvg);
+        } else {
+          LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
+        }
+        return false;
+      }
     }
   }
 
@@ -877,7 +896,7 @@ class FemtoUniverseDetaDphiStar
         badpoints++;
       }
     }
-    return badpoints / entries;
+    return (static_cast<float>(badpoints) / static_cast<float>(entries));
   }
 
   // Get particle charge from mask

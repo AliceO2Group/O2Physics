@@ -166,9 +166,9 @@ o2physics_add_dpl_workflow(he3-lambda-derived-analysis
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(dedx-pid-analysis
-                    SOURCES dedxPidAnalysis.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
+    SOURCES dedxPidAnalysis.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(pikp-raa-analysis
     SOURCES piKpRAA.cxx
@@ -181,9 +181,9 @@ o2physics_add_dpl_workflow(chargedparticle-raa
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(multiplicity-pt
-                    SOURCES MultiplicityPt.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
+    SOURCES multiplicityPt.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(deuteron-in-jets-trg-pt
     SOURCES DeuteronInJetsTrgPt.cxx

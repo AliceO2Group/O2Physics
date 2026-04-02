@@ -70,6 +70,7 @@ struct V0PtInvMassPlots {
   HistogramRegistry rAntilambdaSplitMassPlotsPerPtBin{"AntiLambdaSplitMassPlotsPerPtBin", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rFeeddownMatrices{"FeeddownMatrices", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rMCCorrections{"MCCorrections", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry rNchAnalysis{"NchAnalysis", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // Configurable for histograms
   Configurable<int> nBins{"nBins", 100, "N bins in all histos"};
@@ -81,6 +82,7 @@ struct V0PtInvMassPlots {
   Configurable<float> nSigmaTPCProton{"nSigmaTPCProton", 4, "nSigmaTPCProton"};
   Configurable<float> compv0masscut{"compv0masscut", 0.01, "CompetitiveV0masscut (GeV)"};
   Configurable<float> etadau{"etadau", 0.8, "Eta Daughters"};
+  Configurable<float> etagen{"etagen", 0.8, "Eta Generated"};
   Configurable<float> rapidityCut{"rapidityCut", 0.5, "V0 Rapidity Window"};
   Configurable<float> itsMinHits{"itsMinHits", 1.0, "Minimum Hits of Daughter Tracks in the ITS"};
 
@@ -125,7 +127,7 @@ struct V0PtInvMassPlots {
   Configurable<bool> doLambdadcaposdautopv{"doLambdadcaposdautopv", true, "Enable Lambda DCA pos daughter to PV Topological Cut"};
   Configurable<bool> doLambdadcanegdautopv{"doLambdadcanegdautopv", true, "Enable Lambda DCA neg daughter to PV Topological Cut"};
 
-  // Configurables switches for Lambda selection
+  // Configurables switches for AntiLambda selection
   Configurable<bool> dotruthAntiLambda{"dotruthAntiLambda", true, "Enable AntiLambda MC Matching"};
   Configurable<bool> doAntilambdaTPCPID{"doAntilambdaTPCPID", true, "Enable AntiLambda TPC PID"};
   Configurable<bool> doAntilambdacomptmasscut{"doAntilambdacomptmasscut", true, "Enable AntiLambda Competitive V0 Mass Cut"};
@@ -164,10 +166,11 @@ struct V0PtInvMassPlots {
   Configurable<float> antilambdamaxct{"antilambdamaxct", 30.00, "AntiLambda maximum ct value"};
   Configurable<float> antilambdaparamArmenterosCut{"antilambdaparamArmenterosCut", 0.2, "AntiLambda Armenteros Cut on parameter"};
 
-  // Configurables for Specific V0s analysis
+  // Configurables for Specific Analysis
   Configurable<bool> kzeroAnalysis{"kzeroAnalysis", true, "Enable K0sh Pt Analysis"};
   Configurable<bool> lambdaAnalysis{"lambdaAnalysis", true, "Enable Lambda Pt Analysis"};
   Configurable<bool> antiLambdaAnalysis{"antiLambdaAnalysis", true, "Enable AntiLambda Pt Analysis"};
+  Configurable<bool> doNchAnalysis{"doNchAnalysis", true, "Enable Nch vs Centrality Analysis"};
 
   // Configurable string for Different Pt Bins
   Configurable<std::string> kzeroSettingPtBinsString{"kzeroSettingPtBinsString", {"0.0,0.15,0.3,0.45,0.6,0.75,0.9,1.05,1.2,1.35,1.5,1.65,1.8,1.95,2.1,2.25,2.4,2.55,2.7,2.85,3.0"}, "K0sh Pt Bin Values"};
@@ -215,6 +218,7 @@ struct V0PtInvMassPlots {
     AxisSpec lambdaPtAxis = {lambdaptedgevalues, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec antilambdaPtAxis = {antilambdaptedgevalues, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec centAxis = {100, 0.0f, 100.0f, "#it{Centrality} (%)"};
+    AxisSpec nchAxis = {100, 0.0f, 100.0f, "#it{N}_{ch} (%)"};
     AxisSpec armenterosQtAxis = {nBinsArmenteros, 0.0f, 0.3f, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec armenterosasymAxis = {nBinsArmenteros, -1.f, 1.f, "#it{p}^{+}_{||}-#it{p}^{-}_{||}/#it{p}^{+}_{||}+#it{p}^{-}_{||}"};
     AxisSpec vertexZAxis = {nBins, -11.0f, 11.0f, "vrtx_{Z} [cm]"};
@@ -344,6 +348,12 @@ struct V0PtInvMassPlots {
     rMCCorrections.add("hAntiXiZeroGeneratedPtSpectrum", "hAntiXiZeroGeneratedPtSpectrum", {HistType::kTH2D, {antilambdaPtAxis, centAxis}});
     rMCCorrections.add("hAntiOmegaGeneratedPtSpectrum", "hAntiOmegaGeneratedPtSpectrum", {HistType::kTH2D, {antilambdaPtAxis, centAxis}});
     rMCCorrections.add("hPhiGeneratedPtSpectrum", "hPhiGeneratedPtSpectrum", {HistType::kTH2D, {k0ShortPtAxis, centAxis}});
+    rMCCorrections.add("hGenPartcles", "hGenPartcles", {HistType::kTH2D, {nchAxis, centAxis}});
+
+    // NCh Analysis
+    rNchAnalysis.add("hNchCentralityGenerated", "hNchCentralityGenerated", {HistType::kTH2D, {centAxis, nchAxis}});                                       // Nch vs Centrality Generated
+    rNchAnalysis.add("hNchCentralityGeneratedAfterEventSelection", "hNchCentralityGeneratedAfterEventSelection", {HistType::kTH2D, {centAxis, nchAxis}}); // Nch vs Centrality Generated After Event Selection
+    rNchAnalysis.add("hNchCentrality", "hNchCentrality", {HistType::kTH2D, {centAxis, nchAxis}});                                                         // Nch vs Centrality
   }
 
   // Event selection function
@@ -385,6 +395,39 @@ struct V0PtInvMassPlots {
     rPtAnalysis.get<TH2>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(7, "isInelGt0");
     // Cut Plots
     rPtAnalysis.fill(HIST("hVertexZRec"), collision.posZ());
+    return true;
+  }
+
+  // Charged Particle Selection Function
+  template <typename TParticle, typename TCollision>
+  bool acceptGeneratedParticle(TParticle const& particle, TCollision const& mcCollision)
+  {
+    rMCCorrections.fill(HIST("hGenPartcles"), 0.5, mcCollision.centFT0M());
+    rMCCorrections.get<TH2>(HIST("hGenPartcles"))->GetXaxis()->SetBinLabel(1, "All Gen Particles");
+    if (!particle.isPhysicalPrimary()) { // Daughters Pseudorapidity Cut
+      return false;
+    }
+    rMCCorrections.fill(HIST("hGenPartcles"), 1.5, mcCollision.centFT0M());
+    rMCCorrections.get<TH2>(HIST("hGenPartcles"))->GetXaxis()->SetBinLabel(2, "Physical Primary");
+    if (!particle.producedByGenerator()) {
+      return false;
+    }
+    rMCCorrections.fill(HIST("hGenPartcles"), 2.5, mcCollision.centFT0M());
+    rMCCorrections.get<TH2>(HIST("hGenPartcles"))->GetXaxis()->SetBinLabel(3, "Produced by Generator");
+    if (std::abs(particle.eta()) > etagen) { // Eta cut
+      return false;
+    }
+    rMCCorrections.fill(HIST("hGenPartcles"), 3.5, mcCollision.centFT0M());
+    rMCCorrections.get<TH2>(HIST("hGenPartcles"))->GetXaxis()->SetBinLabel(4, "Eta Cut");
+    auto pdgParticle = pdgDB->GetParticle(particle.pdgCode());
+    if (pdgParticle == nullptr) {
+      return false;
+    }
+    if (std::abs(pdgParticle->Charge()) < 3) {
+      return false;
+    }
+    rMCCorrections.fill(HIST("hGenPartcles"), 4.5, mcCollision.centFT0M());
+    rMCCorrections.get<TH2>(HIST("hGenPartcles"))->GetXaxis()->SetBinLabel(4, "Charge Cut");
     return true;
   }
 
@@ -710,6 +753,7 @@ struct V0PtInvMassPlots {
       return;
     }
     rMCCorrections.fill(HIST("hNEvents_Corrections"), 1.5, mcCollision.centFT0M()); // Event Efficiency Denominator
+    int NParticlesPerCollision = 0;                                                 // Counter for the number of particles per collision for the Nch analysis
     // Particles (of interest) Generated Pt Spectrum and Signal Loss Denominator Loop
     for (const auto& mcParticle : mcParticles) {
       if (std::abs(mcParticle.y()) < rapidityCut) {
@@ -757,7 +801,11 @@ struct V0PtInvMassPlots {
           }
         }
       }
+      if (acceptGeneratedParticle(mcParticle, mcCollision)) {
+        NParticlesPerCollision++;
+      }
     }
+    rNchAnalysis.fill(HIST("hNchCentralityGenerated"), mcCollision.centFT0M(), NParticlesPerCollision);
     // Signal Loss Numenator Loop
     for (const auto& collision : collisions) {
       rMCCorrections.fill(HIST("hNEvents_Corrections"), 2.5, mcCollision.centFT0M()); // Number of Events Reconsctructed
@@ -766,6 +814,9 @@ struct V0PtInvMassPlots {
       }
       rMCCorrections.fill(HIST("hNEvents_Corrections"), 3.5, mcCollision.centFT0M()); // Event Split Denomimator and Event Efficiency Numenator
       for (const auto& mcParticle : mcParticles) {
+        if (acceptGeneratedParticle(mcParticle, mcCollision)) {
+          NParticlesPerCollision++; // Counter to fill the NchCerntralityPlot after the loop
+        }
         if (!mcParticle.isPhysicalPrimary()) {
           continue;
         }
@@ -786,11 +837,12 @@ struct V0PtInvMassPlots {
         }
       }
     }
+    rNchAnalysis.fill(HIST("hNchCentralityGeneratedAfterEventSelection"), mcCollision.centFT0M(), NParticlesPerCollision);
     // End of Signal Loss Numenator Loop
   }
   // This is the Process for the MC reconstructed Data
   // void recMCProcess(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults, aod::MultsExtraMC, aod::CentFT0Ms>::iterator const& collision,
-  void recMCProcess(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults, aod::MultsExtra, aod::CentFT0Ms>::iterator const& collision,
+  void recMCProcess(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::MultsGlobal, aod::PVMults, aod::MultsExtra, aod::CentFT0Ms>::iterator const& collision,
                     soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& /*mcCollisions*/,
                     soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s,
                     DaughterTracks const&, // no need to define a variable for tracks, if we don't access them directly
@@ -827,7 +879,8 @@ struct V0PtInvMassPlots {
     if (!acceptEvent(collision)) { // Event Selection
       return;
     }
-    rPtAnalysis.fill(HIST("hNRecEvents"), 0.5, mcCollision.centFT0M()); // Event Split Numenator
+    rPtAnalysis.fill(HIST("hNRecEvents"), 0.5, mcCollision.centFT0M());                               // Event Split Numenator
+    rNchAnalysis.fill(HIST("hNchCentrality"), mcCollision.centFT0M(), collision.multNTracksGlobal()); // Nch vs Centrality
     for (const auto& v0 : V0s) {
       // Checking that the V0 is a true K0s/Lambdas/Antilambdas and then filling the parameter histograms and the invariant mass plots for different cuts (which are taken from namespace)
       const auto& posDaughterTrack = v0.template posTrack_as<DaughterTracks>();
@@ -952,7 +1005,7 @@ struct V0PtInvMassPlots {
     }
   }
   // This is the process for Real Data
-  void dataProcess(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms, aod::MultsExtra /*,aod::CentNGlobals*/>::iterator const& collision,
+  void dataProcess(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::MultsGlobal, aod::CentFT0Ms, aod::MultsExtra /*,aod::CentNGlobals*/>::iterator const& collision,
                    aod::V0Datas const& V0s,
                    DaughterTracks const&)
   {
@@ -981,11 +1034,11 @@ struct V0PtInvMassPlots {
     for (int i = 0; i < nAntilambdaHistograms + 1; i++) {
       antilambdaptedgevalues[i] = std::stod(pthistos::antilambdaPtBins[i]);
     }
-
     if (!acceptEvent(collision)) { // Event Selection
       return;
     }
-    rPtAnalysis.fill(HIST("hNRecEvents"), 0.5, collision.centFT0M()); // Number of recorded events
+    rPtAnalysis.fill(HIST("hNRecEvents"), 0.5, collision.centFT0M());                               // Number of recorded events
+    rNchAnalysis.fill(HIST("hNchCentrality"), collision.centFT0M(), collision.multNTracksGlobal()); // Nch vs Centrality
     for (const auto& v0 : V0s) {
       // Checking that the V0 is a true K0s/Lambdas/Antilambdas and then filling the parameter histograms and the invariant mass plots for different cuts (which are taken from namespace)
       const auto& posDaughterTrack = v0.template posTrack_as<DaughterTracks>();

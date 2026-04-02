@@ -16,16 +16,14 @@
 #ifndef DPG_TASKS_AOTTRACK_D0CALIBTABLES_H_
 #define DPG_TASKS_AOTTRACK_D0CALIBTABLES_H_
 
-#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 
-#include <sys/types.h>
-
+#include <algorithm>
+#include <cmath>
 #include <cstdint>
-#include <limits>
 #include <string>
 #include <vector>
 
