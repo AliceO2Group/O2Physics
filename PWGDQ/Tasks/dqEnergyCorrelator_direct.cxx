@@ -497,7 +497,7 @@ struct AnalysisEnergyCorrelator {
 
     // Fill dilepton-hadron variables
     std::vector<float> fTransRange = fConfigDileptonHadronOptions.fConfigTransRange;
-    VarManager::FillEnergyCorrelatorTriple(track1, track2, hadron, VarManager::fgValues, 1. / Effweight_rec, fTransRange[0], fTransRange[1], fConfigDileptonHadronOptions.fConfigApplyMassEC.value);
+    VarManager::FillEnergyCorrelatorTriple(track1, track2, hadron, VarManager::fgValues, fTransRange[0], fTransRange[1], fConfigDileptonHadronOptions.fConfigApplyMassEC.value, -1, 1. / Effweight_rec);
     if (fConfigDileptonHadronOptions.fConfigUsePionMass.value) {
       VarManager::FillEnergyCorrelatorsUnfoldingTriple<VarManager::kJpsiPionMass>(track1, track2, hadron, motherParticle, hadronMC, VarManager::fgValues, fConfigDileptonHadronOptions.fConfigApplyMassEC.value, 1. / Effweight_rec, 1. / Accweight_gen);
     } else {
