@@ -19,6 +19,7 @@
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, INFN Bari
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "EventFiltering/PWGHF/HFFilterHelpers.h"
 #include "EventFiltering/filterTables.h"
 //
@@ -301,7 +302,7 @@ struct HfFilter { // Main struct for HF triggers
     helper.setPtRangeSoftPiSigmaC(ptCuts->get(0u, 4u), ptCuts->get(1u, 4u));
     helper.setPtDeltaMassRangeSigmaC(cutsPtDeltaMassCharmReso->get(0u, 6u), cutsPtDeltaMassCharmReso->get(1u, 6u), cutsPtDeltaMassCharmReso->get(0u, 7u), cutsPtDeltaMassCharmReso->get(1u, 7u), cutsPtDeltaMassCharmReso->get(0u, 8u), cutsPtDeltaMassCharmReso->get(1u, 8u), cutsPtDeltaMassCharmReso->get(0u, 9u), cutsPtDeltaMassCharmReso->get(1u, 9u), cutsPtDeltaMassCharmReso->get(2u, 6u), cutsPtDeltaMassCharmReso->get(2u, 7u), cutsPtDeltaMassCharmReso->get(2u, 8u), cutsPtDeltaMassCharmReso->get(2u, 9u));
     helper.setPtRangeSoftKaonXicResoToSigmaC(ptCuts->get(0u, 5u), ptCuts->get(1u, 5u));
-    helper.setVtxConfiguration(dfStrangeness, true); // (DCAFitterN, useAbsDCA)
+    helper.setVtxConfiguration(dfStrangeness, true);  // (DCAFitterN, useAbsDCA)
     helper.setVtxConfiguration(dfStrangeness3, true); // (DCAFitterN, useAbsDCA)
     helper.setParSigmaCPr(
       cutsPtDeltaMassCharmReso->get(0u, 13u), // min ΔM
@@ -481,6 +482,9 @@ struct HfFilter { // Main struct for HF triggers
   {
     for (const auto& collision : collisions) {
 
+      // all processed collisions
+      hProcessedEvents->Fill(0);
+
       bool keepEvent[kNtriggersHF]{false};
       bool isSelectedTVX = evSel.applyTVX ? collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) : true;
       bool isSelectedTFBorder = evSel.applyTFBorderCut ? collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) : true;
@@ -526,8 +530,6 @@ struct HfFilter { // Main struct for HF triggers
 
         currentRun = bc.runNumber();
       }
-
-      hProcessedEvents->Fill(0);
 
       std::vector<std::vector<int64_t>> indicesDau2Prong{}, indicesDau2ProngPrompt{};
 

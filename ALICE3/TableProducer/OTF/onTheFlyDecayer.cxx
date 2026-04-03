@@ -20,17 +20,30 @@
 #include "ALICE3/DataModel/OTFMCParticle.h"
 
 #include <CommonConstants/MathConstants.h>
-#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Track.h>
 
+#include <TH1.h>
 #include <TPDGCode.h>
 
+#include <sys/types.h>
+
+#include <algorithm>
+#include <cmath>
+#include <cstdlib>
 #include <gsl/span>
 #include <map>
+#include <ostream>
 #include <span>
 #include <string>
 #include <vector>
@@ -59,7 +72,7 @@ static const std::vector<int> pdgCodes{kK0Short,
                                        kOmegaPlusBar};
 
 struct OnTheFlyDecayer {
-  Produces<aod::McPartsWithDau> tableMcParticlesWithDau;
+  Produces<aod::McPartWithDaus> tableMcParticlesWithDau;
 
   o2::upgrade::Decayer decayer;
   Service<o2::framework::O2DatabasePDG> pdgDB;

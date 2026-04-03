@@ -14,37 +14,41 @@
 
 #include "PWGDQ/Core/VarManager.h"
 
-#include "Common/CCDB/TriggerAliases.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/FwdTrackReAlignTables.h"
-#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Field/MagneticField.h"
-#include "Framework/ASoA.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/DataTypes.h"
-#include "Framework/runDataProcessing.h"
-#include "GlobalTracking/MatchGlobalFwd.h"
-#include "MFTTracking/Constants.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/LHCConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+#include <GlobalTracking/MatchGlobalFwd.h>
+#include <MCHTracking/TrackExtrap.h>
+#include <ReconstructionDataFormats/GlobalFwdTrack.h>
+#include <ReconstructionDataFormats/TrackFwd.h>
 
-#include <TGeoGlobalMagField.h>
+#include <Math/MatrixRepresentationsStatic.h>
+#include <Math/SMatrix.h>
+#include <Math/SVector.h>
+#include <TMath.h>
 #include <TTree.h>
 
+#include <RtypesCore.h>
+
 #include <algorithm>
-#include <limits>
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <string>

@@ -58,10 +58,6 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   Configurable<float> confCascInvMassLowLimit{"confCascInvMassLowLimit", 1.315, "Lower limit of the Casc invariant mass"};
   Configurable<float> confCascInvMassUpLimit{"confCascInvMassUpLimit", 1.325, "Upper limit of the Casc invariant mass"};
 
-  // TODO: Add seperate selection for daughter particles
-  // Configurable<float> confNSigmaTPCPion{"confNSigmaTPCPion", 4, "NSigmaTPCPion"};
-  // Configurable<float> confNSigmaTPCProton{"confNSigmaTPCProton", 4, "NSigmaTPCProton"};
-
   /// applying narrow cut
   Configurable<float> confZVertexCut{"confZVertexCut", 10.f, "Event sel: Maximum z-Vertex (cm)"};
   Configurable<float> confEta{"confEta", 0.8, "Eta cut for the global track"};
@@ -200,10 +196,24 @@ struct femtoUniversePairTaskTrackCascadeExtended {
 
   bool isNSigmaCombined(float mom, float nsigmaTPCParticle, float nsigmaTOFParticle, bool hasTOF)
   {
-    if (mom <= confmom || hasTOF == 0) {
+    if (mom <= confmom) {
       return (std::abs(nsigmaTPCParticle) < confNsigmaTPCParticle);
-    } else {
+    } else if (hasTOF == 1) {
       return (TMath::Hypot(nsigmaTOFParticle, nsigmaTPCParticle) < confNsigmaCombinedParticle);
+    } else {
+      return false;
+    }
+  }
+
+  template <typename T>
+  bool isNSigmaCombinedBitmask(float mom, const T& part)
+  {
+    if (mom <= confmom) {
+      return ((part.pidCut() & (1u << confTrackChoicePartOne)) != 0);
+    } else if ((part.pidCut() & 512u) != 0) {
+      return ((part.pidCut() & (64u << confTrackChoicePartOne)) != 0);
+    } else {
+      return false;
     }
   }
 
@@ -481,10 +491,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
           trackHistoPartOneNeg.fillQA<false, false>(part);
         }
       } else {
-        if ((part.pidCut() & 512u) != 0) {
-          if ((part.pidCut() & (64u << confTrackChoicePartOne)) == 0)
-            continue;
-        } else if ((part.pidCut() & (1u << confTrackChoicePartOne)) == 0) {
+        if (!isNSigmaCombinedBitmask(part.p(), part)) {
           continue;
         }
         if (part.mAntiLambda() > 0) {
@@ -504,10 +511,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         if (!isParticleCombined(p1, confTrackChoicePartOne))
           continue;
       } else {
-        if ((p1.pidCut() & 512u) != 0) {
-          if ((p1.pidCut() & (64u << confTrackChoicePartOne)) == 0)
-            continue;
-        } else if ((p1.pidCut() & (1u << confTrackChoicePartOne)) == 0) {
+        if (!isNSigmaCombinedBitmask(p1.p(), p1)) {
           continue;
         }
       }
@@ -751,10 +755,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
           if (!isParticleCombined(p1, confTrackChoicePartOne))
             continue;
         } else {
-          if ((p1.pidCut() & 512u) != 0) {
-            if ((p1.pidCut() & (64u << confTrackChoicePartOne)) == 0)
-              continue;
-          } else if ((p1.pidCut() & (1u << confTrackChoicePartOne)) == 0) {
+          if (!isNSigmaCombinedBitmask(p1.p(), p1)) {
             continue;
           }
         }
@@ -1168,10 +1169,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
             if (!isNSigmaCombined(part.p(), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), (part.pidCut() & 512u) != 0))
               continue;
           } else {
-            if ((part.pidCut() & 512u) != 0) {
-              if ((part.pidCut() & 64u) == 0)
-                continue;
-            } else if ((part.pidCut() & 1u) == 0) {
+            if (!isNSigmaCombinedBitmask(part.p(), part)) {
               continue;
             }
           }
@@ -1185,10 +1183,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
             if (!isNSigmaCombined(part.p(), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), (part.pidCut() & 512u) != 0))
               continue;
           } else {
-            if ((part.pidCut() & 512u) != 0) {
-              if ((part.pidCut() & 64u) == 0)
-                continue;
-            } else if ((part.pidCut() & 1u) == 0) {
+            if (!isNSigmaCombinedBitmask(part.p(), part)) {
               continue;
             }
           }

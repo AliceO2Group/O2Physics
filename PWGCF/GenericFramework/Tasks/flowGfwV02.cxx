@@ -158,11 +158,12 @@ struct FlowGfwV02 {
   } cfgTrackCuts;
 
   struct : ConfigurableGroup {
-    ConfigurableAxis cfgAxisPt{"cfgPIDHistograms_cfgAxisPt", {VARIABLE_WIDTH, 0.2f, 0.5f, 1.f, 1.5f, 2.f, 3.f, 4.f, 6.f, 10.f}, "pt axis for histograms"};
-    ConfigurableAxis cfgAxisNsigmaTPC{"cfgPIDHistograms_cfgAxisNsigmaTPC", {80, -5.f, 5.f}, "nsigmaTPC axis"};
-    ConfigurableAxis cfgAxisNsigmaTOF{"cfgPIDHistograms_cfgAxisNsigmaTOF", {80, -5.f, 5.f}, "nsigmaTOF axis"};
-    ConfigurableAxis cfgAxisNsigmaITS{"cfgPIDHistograms_cfgAxisNsigmaITS", {80, -5.f, 5.f}, "nsigmaITS axis"};
-    ConfigurableAxis cfgAxisTpcSignal{"cfgPIDHistograms_cfgAxisTpcSignal", {250, 0.f, 250.f}, "dEdx axis for TPC"};
+    ConfigurableAxis cfgAxisPt{"cfgAxisPt", {VARIABLE_WIDTH, 0.2f, 0.5f, 1.f, 1.5f, 2.f, 3.f, 4.f, 6.f, 10.f}, "pt axis for histograms"};
+    ConfigurableAxis cfgAxisNsigmaTPC{"cfgAxisNsigmaTPC", {80, -5.f, 5.f}, "nsigmaTPC axis"};
+    ConfigurableAxis cfgAxisNsigmaTOF{"cfgAxisNsigmaTOF", {80, -5.f, 5.f}, "nsigmaTOF axis"};
+    ConfigurableAxis cfgAxisNsigmaITS{"cfgAxisNsigmaITS", {80, -5.f, 5.f}, "nsigmaITS axis"};
+    ConfigurableAxis cfgAxisTpcSignal{"cfgAxisTpcSignal", {250, 0.f, 250.f}, "dEdx axis for TPC"};
+    ConfigurableAxis cfgAxisSigma{"cfgAxisSigma", {200, 0, 20}, "sigma axis for TPC"};
   } cfgPIDHistograms;
 
   // GFW binning
@@ -315,15 +316,15 @@ struct FlowGfwV02 {
         registry.add("QA_PID/before/TofTpcNsigma_protons", "", {HistType::kTHnSparseD, {cfgPIDHistograms.cfgAxisNsigmaTPC, cfgPIDHistograms.cfgAxisNsigmaTOF, cfgPIDHistograms.cfgAxisPt}});
       }
 
-      registry.add("QA_PID/before/TpcdEdx_ptwise_pions", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
-      registry.add("QA_PID/before/ExpTpcdEdx_ptwise_pions", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
-      registry.add("QA_PID/before/ExpSigma_ptwise_pions", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
-      registry.add("QA_PID/before/TpcdEdx_ptwise_kaons", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
-      registry.add("QA_PID/before/ExpTpcdEdx_ptwise_kaons", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
-      registry.add("QA_PID/before/ExpSigma_ptwise_kaons", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
-      registry.add("QA_PID/before/TpcdEdx_ptwise_protons", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
-      registry.add("QA_PID/before/ExpTpcdEdx_ptwise_protons", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
-      registry.add("QA_PID/before/ExpSigma_ptwise_protons", "", {HistType::kTH2D, {cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisPt}});
+      registry.add("QA_PID/before/TpcdEdx_ptwise_pions", "", {HistType::kTHnSparseD, {{cfgPIDHistograms.cfgAxisPt, cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisNsigmaTOF}}});
+      registry.add("QA_PID/before/ExpTpcdEdx_ptwise_pions", "", {HistType::kTHnSparseD, {{cfgPIDHistograms.cfgAxisPt, cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisNsigmaTOF}}});
+      registry.add("QA_PID/before/ExpSigma_ptwise_pions", "", {HistType::kTHnSparseD, {{cfgPIDHistograms.cfgAxisPt, cfgPIDHistograms.cfgAxisSigma, cfgPIDHistograms.cfgAxisNsigmaTOF}}});
+      registry.add("QA_PID/before/TpcdEdx_ptwise_kaons", "", {HistType::kTHnSparseD, {{cfgPIDHistograms.cfgAxisPt, cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisNsigmaTOF}}});
+      registry.add("QA_PID/before/ExpTpcdEdx_ptwise_kaons", "", {HistType::kTHnSparseD, {{cfgPIDHistograms.cfgAxisPt, cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisNsigmaTOF}}});
+      registry.add("QA_PID/before/ExpSigma_ptwise_kaons", "", {HistType::kTHnSparseD, {{cfgPIDHistograms.cfgAxisPt, cfgPIDHistograms.cfgAxisSigma, cfgPIDHistograms.cfgAxisNsigmaTOF}}});
+      registry.add("QA_PID/before/TpcdEdx_ptwise_protons", "", {HistType::kTHnSparseD, {{cfgPIDHistograms.cfgAxisPt, cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisNsigmaTOF}}});
+      registry.add("QA_PID/before/ExpTpcdEdx_ptwise_protons", "", {HistType::kTHnSparseD, {{cfgPIDHistograms.cfgAxisPt, cfgPIDHistograms.cfgAxisTpcSignal, cfgPIDHistograms.cfgAxisNsigmaTOF}}});
+      registry.add("QA_PID/before/ExpSigma_ptwise_protons", "", {HistType::kTHnSparseD, {{cfgPIDHistograms.cfgAxisPt, cfgPIDHistograms.cfgAxisSigma, cfgPIDHistograms.cfgAxisNsigmaTOF}}});
       registry.addClone("QA_PID/before/", "QA_PID/after/");
     }
 
@@ -1006,7 +1007,7 @@ struct FlowGfwV02 {
 
     if (!withinPtPOI && !withinPtRef)
       return;
-    double weff = getJTrackEfficiency(track);
+    double weff = getEfficiency(track, PidCharged);
     if (weff < 0)
       return;
 
@@ -1015,13 +1016,13 @@ struct FlowGfwV02 {
     // Fill cumulants for different particles
     // ***Need to add proper weights for each particle!***
     if (withinPtRef)
-      fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 0);
+      fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 1);
     if (withinPtPOI && pidInd == PidPions)
-      fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, PidPions);
+      fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, PidPions + 1);
     if (withinPtPOI && pidInd == PidKaons)
-      fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, PidKaons);
+      fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, PidKaons + 1);
     if (withinPtPOI && pidInd == PidProtons)
-      fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, PidProtons);
+      fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, PidProtons + 1);
     return;
   }
 

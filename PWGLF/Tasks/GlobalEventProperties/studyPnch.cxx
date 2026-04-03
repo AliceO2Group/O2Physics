@@ -129,7 +129,7 @@ struct StudyPnch {
     x->SetBinLabel(6, "INEL > 0");
     x->SetBinLabel(7, "|vz| < 10");
 
-    if (doprocessData || doprocessCorrelation || doprocessMonteCarlo) {
+    if (doprocessData || doprocessCorrelation || doprocessMonteCarlo || doprocessModifiedMonteCarlo) {
       histos.add("PhiVsEtaHist", "PhiVsEtaHist", kTH2F, {axisPhi, axisEta}, false);
     }
     if (doprocessData) {
@@ -148,6 +148,12 @@ struct StudyPnch {
       histos.add("hResponseMatrix", "hResponseMatrix", kTH2F, {axisMult, axisMult}, true);
       histos.add("hCountNTracks", "hCountNTracks", kTH1F, {axisCountNumberTracks}, true);
     }
+    if (doprocessModifiedMonteCarlo) {
+      histos.add("hMultiplicityMCrecMod", "hMultiplicityMCrecMod", kTH1F, {axisMult}, true);
+      histos.add("hMultiplicityMCgenMod", "hMultiplicityMCgenMod", kTH1F, {axisMult}, true);
+      histos.add("hResponseMatrixMod", "hResponseMatrixMod", kTH2F, {axisMult, axisMult}, true);
+      histos.add("hCountNTracksMod", "hCountNTracksMod", kTH1F, {axisCountNumberTracks}, true);
+    }
     if (doprocessEvtLossSigLossMC) {
       histos.add("MCEventHist", "MCEventHist", kTH1F, {axisEvent}, false);
       auto hstat = histos.get<TH1>(HIST("MCEventHist"));
@@ -163,7 +169,7 @@ struct StudyPnch {
   bool isEventSelected(CheckCol const& col)
   {
     histos.fill(HIST("EventHist"), 1);
-    if (isApplyTVX && !col.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+    if (!col.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
       return false;
     }
     histos.fill(HIST("EventHist"), 2);
@@ -250,7 +256,6 @@ struct StudyPnch {
       if (!isGenTrackSelected(track)) {
         continue;
       }
-      // Verify that the track belongs to the given MC collision
       if (track.mcCollisionId() != McCol.globalIndex()) {
         continue;
       }
@@ -270,7 +275,6 @@ struct StudyPnch {
       if (!isTrackSelected(track)) {
         continue;
       }
-      // Verify that the track belongs to the given MC collision
       if (track.has_mcParticle()) {
         auto particle = track.mcParticle();
         if (particle.mcCollisionId() != McCol.mcCollisionId()) {
@@ -281,7 +285,7 @@ struct StudyPnch {
       }
       histos.fill(HIST("PhiVsEtaHist"), track.phi(), track.eta());
     }
-    // Once all the frequencies have been counted, a loop can be made to fill the histogram
+    // Loop to fill the histogram without cloned tracks
     for (const auto& [globalIndex, frequency] : recoFrequencies) {
       histos.fill(HIST("hCountNTracks"), frequency);
       // Fill histogram with not cloned tracks
@@ -343,6 +347,32 @@ struct StudyPnch {
     }
   }
 
+  void processModifiedMonteCarlo(soa::Join<aod::McCollisions, aod::McCollsExtra>::iterator const& mcCollision, ColMCRecTable const& RecCols, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
+  {
+    for (const auto& RecCol : RecCols) {
+      if (!isEventSelected(RecCol)) {
+        continue;
+      }
+      // Evaluation of reconstructed collisions with more than 1 contributor
+      if (RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
+        continue;
+      }
+      if (!RecCol.has_mcCollision()) {
+        continue;
+      }
+      auto recTracksPart = RecTracks.sliceBy(perCollision, RecCol.globalIndex());
+      auto multrec = countNTracksMcCol(recTracksPart, RecCol);
+      if (multrec > 0) {
+        histos.fill(HIST("hMultiplicityMCrecMod"), multrec);
+      }
+      auto multgen = countGenTracks(GenParticles, mcCollision);
+      if (multgen > 0 && multrec > 0) {
+        histos.fill(HIST("hMultiplicityMCgenMod"), multgen);
+        histos.fill(HIST("hResponseMatrixMod"), multrec, multgen);
+      }
+    }
+  }
+
   void processEvtLossSigLossMC(soa::Join<ColMCTrueTable, aod::MultMCExtras>::iterator const& mcCollision, ColMCRecTable const& RecCols, TrackMCTrueTable const& GenParticles)
   {
     if (isApplyInelgt0 && !mcCollision.isInelGt0()) {
@@ -387,6 +417,7 @@ struct StudyPnch {
   PROCESS_SWITCH(StudyPnch, processData, "process data CentFT0C", false);
   PROCESS_SWITCH(StudyPnch, processCorrelation, "do correlation study in data", false);
   PROCESS_SWITCH(StudyPnch, processMonteCarlo, "process MC CentFT0C", false);
+  PROCESS_SWITCH(StudyPnch, processModifiedMonteCarlo, "process MC CentFT0C", false);
   PROCESS_SWITCH(StudyPnch, processEvtLossSigLossMC, "process Signal Loss, Event Loss", false);
 };
 
