@@ -40,7 +40,6 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/Track.h>
-
 #include <TH1.h>
 #include <TMath.h>
 #include <TPDGCode.h>
@@ -66,7 +65,8 @@ using std::array;
 // #define bitcheck(var, nbit) ((var) & (static_cast<uint32_t>(1) << (nbit)))
 
 // For MC association in pre-selection
-using Alice3TracksWPid = soa::Join<aod::Tracks, aod::TracksCov, aod::Alice3DecayMaps, aod::McTrackLabels, aod::TracksDCA, aod::UpgradeTrkPids, aod::UpgradeTofs, aod::UpgradeRichs>;
+using Alice3TracksWPid = soa::Join<aod::Tracks, aod::TracksCov, aod::Alice3DecayMaps, aod::McTrackLabels, aod::TracksDCA, aod::UpgradeTofs, aod::UpgradeRichs>;
+using Alice3TracksWTrkPid = soa::Join<Alice3TracksWPid, aod::UpgradeTrkPids>;
 
 struct alice3decayFinder {
   SliceCache cache;
@@ -185,18 +185,17 @@ struct alice3decayFinder {
     ((aod::a3DecayMap::decayMap & trackSelectionKaMinusFromD) == trackSelectionKaMinusFromD) && aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > kaFromD_dcaXYconstant + kaFromD_dcaXYpTdep* nabs(aod::track::signed1Pt);
 
   // partitions for Lc baryons
-  Partition<Alice3TracksWPid> tracksPiPlusFromLc =
+  Partition<Alice3TracksWTrkPid> tracksPiPlusFromLc =
     ((aod::a3DecayMap::decayMap & trackSelectionPiPlusFromLc) == trackSelectionPiPlusFromLc) && aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > piFromLc_dcaXYconstant + piFromLc_dcaXYpTdep* nabs(aod::track::signed1Pt);
-  Partition<Alice3TracksWPid> tracksKaPlusFromLc =
+  Partition<Alice3TracksWTrkPid> tracksKaPlusFromLc =
     ((aod::a3DecayMap::decayMap & trackSelectionKaPlusFromLc) == trackSelectionKaPlusFromLc) && aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > kaFromLc_dcaXYconstant + kaFromLc_dcaXYpTdep* nabs(aod::track::signed1Pt);
-  Partition<Alice3TracksWPid> tracksPrPlusFromLc =
+  Partition<Alice3TracksWTrkPid> tracksPrPlusFromLc =
     ((aod::a3DecayMap::decayMap & trackSelectionPrPlusFromLc) == trackSelectionPrPlusFromLc) && aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > prFromLc_dcaXYconstant + prFromLc_dcaXYpTdep* nabs(aod::track::signed1Pt);
-  // partitions for Lc baryons
-  Partition<Alice3TracksWPid> tracksPiMinusFromLc =
+  Partition<Alice3TracksWTrkPid> tracksPiMinusFromLc =
     ((aod::a3DecayMap::decayMap & trackSelectionPiMinusFromLc) == trackSelectionPiMinusFromLc) && aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > piFromLc_dcaXYconstant + piFromLc_dcaXYpTdep* nabs(aod::track::signed1Pt);
-  Partition<Alice3TracksWPid> tracksKaMinusFromLc =
+  Partition<Alice3TracksWTrkPid> tracksKaMinusFromLc =
     ((aod::a3DecayMap::decayMap & trackSelectionKaMinusFromLc) == trackSelectionKaMinusFromLc) && aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > kaFromLc_dcaXYconstant + kaFromLc_dcaXYpTdep* nabs(aod::track::signed1Pt);
-  Partition<Alice3TracksWPid> tracksPrMinusFromLc =
+  Partition<Alice3TracksWTrkPid> tracksPrMinusFromLc =
     ((aod::a3DecayMap::decayMap & trackSelectionPrMinusFromLc) == trackSelectionPrMinusFromLc) && aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > prFromLc_dcaXYconstant + prFromLc_dcaXYpTdep* nabs(aod::track::signed1Pt);
 
   // Helper struct to pass candidate information
@@ -1068,7 +1067,7 @@ struct alice3decayFinder {
 
   void processFindLc(aod::Collision const& collision,
                      aod::McParticles const& mcParticles,
-                     Alice3TracksWPid const& tracks)
+                     Alice3TracksWTrkPid const& tracks)
   {
     LOG(debug) << "Processing Lc candidates for collision " << collision.globalIndex() << " with " << tracks.size() << " tracks";
     for (auto const& track : tracks) {
