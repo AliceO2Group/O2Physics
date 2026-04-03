@@ -985,17 +985,22 @@ struct LambdaTableProducer {
     histos.fill(HIST(SubDirRG[rg]) + HIST(SubDirPart[part]) + HIST("hPhi"), phi);
   }
 
-  template <typename T>
+  template <DMCType dmc, typename T>
   void getMatchEffHist(T const& tracks)
   {
     for (auto const& track : tracks) {
-      if (track.pt() <= cTrackMinPt && std::abs(track.eta()) >= cTrackEtaCut) {
+      if constexpr (dmc == kMC) { // Check corresponding MC particle
+        if (!track.has_mcParticle()) {
+          continue;
+        }
+      }
+      if (track.pt() <= cTrackMinPt && std::abs(track.eta()) >= cTrackEtaCut) { // Kinematic selection
         continue;
       }
-      if (track.hasITS()) {
+      if (track.hasITS()) { // ITS only track
         histos.fill(HIST("Tracks/h2f_itstrack_centpt"), cent, track.pt());
       }
-      if (track.hasITS() && track.hasTPC()) {
+      if (track.hasITS() && track.hasTPC()) { // ITS + TPC track
         histos.fill(HIST("Tracks/h2f_itstpctrack_centpt"), cent, track.pt());
       }
     }
@@ -1030,10 +1035,14 @@ struct LambdaTableProducer {
 
     // Loop over V0s
     for (auto const& v0 : v0tracks) {
+      // daugthers
+      auto postrack = v0.template posTrack_as<T>();
+      auto negtrack = v0.template negTrack_as<T>();
+
       // check for corresponding MCGen Particle
       if constexpr (dmc == kMC) {
         histos.fill(HIST("Tracks/h1f_tracks_info"), kTracksBeforeHasMcParticle);
-        if (!v0.has_mcParticle()) {
+        if (!v0.has_mcParticle() || !postrack.has_mcParticle() || !negtrack.has_mcParticle()) { // check corresponding MC particle
           continue;
         }
       }
@@ -1279,7 +1288,7 @@ struct LambdaTableProducer {
       return;
     }
     // Get Matching Efficiency
-    getMatchEffHist(tracks);
+    getMatchEffHist<kData>(tracks);
   }
 
   PROCESS_SWITCH(LambdaTableProducer, processMatchEffData, "Process for Matching Efficieny Calculation", false);
@@ -1315,7 +1324,7 @@ struct LambdaTableProducer {
       return;
     }
     // Get Matching Efficiency
-    getMatchEffHist(tracks);
+    getMatchEffHist<kData>(tracks);
   }
 
   PROCESS_SWITCH(LambdaTableProducer, processMatchEffMCReco, "Process for Matching Efficieny Calculation at MC Reconstructed Level", false);
