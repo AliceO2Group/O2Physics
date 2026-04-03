@@ -242,10 +242,7 @@ struct FlowGenericFramework {
 
   // Define output
   OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
-  OutputObj<FlowPtContainer> fFCpt_ch{FlowPtContainer("FlowPtContainer_ch")};
-  OutputObj<FlowPtContainer> fFCpt_pi{FlowPtContainer("FlowPtContainer_pi")};
-  OutputObj<FlowPtContainer> fFCpt_ka{FlowPtContainer("FlowPtContainer_ka")};
-  OutputObj<FlowPtContainer> fFCpt_pr{FlowPtContainer("FlowPtContainer_pr")};
+  OutputObj<FlowPtContainer> fFCpt{FlowPtContainer("FlowPtContainer")};
   OutputObj<FlowContainer> fFCgen{FlowContainer("FlowContainer_gen")};
   HistogramRegistry registry{"registry"};
 
@@ -254,8 +251,6 @@ struct FlowGenericFramework {
   std::array<float, 6> tofNsigmaCut;
   std::array<float, 6> itsNsigmaCut;
   std::array<float, 6> tpcNsigmaCut;
-
-  std::vector<FlowPtContainer*> fFCpts = {&(*fFCpt_ch), &(*fFCpt_pi), &(*fFCpt_ka), &(*fFCpt_pr)};
 
   // QA outputs
   std::map<int, std::vector<std::shared_ptr<TH1>>> th1sList;
@@ -675,11 +670,10 @@ struct FlowGenericFramework {
       fFCgen->Initialize(oba, multAxis, cfgNbootstrap);
     }
     delete oba;
-    for (auto& container : fFCpts) {
-      container->setUseCentralMoments(cfgUseCentralMoments);
-      container->setUseGapMethod(cfgUseGapMethod);
-      container->initialise(multAxis, cfgMpar, o2::analysis::gfw::configs, cfgNbootstrap);
-    }
+
+    fFCpt->setUseCentralMoments(cfgUseCentralMoments);
+    fFCpt->setUseGapMethod(cfgUseGapMethod);
+    fFCpt->initialise(multAxis, cfgMpar, o2::analysis::gfw::configs, cfgNbootstrap);
 
     // Multiplicity correlation cuts
     if (cfgMultCut) {
@@ -1227,13 +1221,11 @@ struct FlowGenericFramework {
   template <DataType dt>
   void fillOutputContainers(const float& centmult, const double& rndm, AcceptedTracks acceptedtracks)
   {
-    for (auto& container : fFCpts) {
-      container->calculateCorrelations();
-      container->fillPtProfiles(centmult, rndm);
-      container->fillCMProfiles(centmult, rndm);
-    }
+    fFCpt->calculateCorrelations();
+    fFCpt->fillPtProfiles(centmult, rndm);
+    fFCpt->fillCMProfiles(centmult, rndm);
     if (!cfgUseGapMethod)
-      fFCpts[0]->fillVnPtStdProfiles(centmult, rndm);
+      fFCpt->fillVnPtStdProfiles(centmult, rndm);
 
     for (uint l_ind = 0; l_ind < corrconfigs.size(); ++l_ind) {
       if (!corrconfigs.at(l_ind).pTDif) {
@@ -1244,7 +1236,7 @@ struct FlowGenericFramework {
         if (std::abs(val) < 1) {
           (dt == kGen) ? fFCgen->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, dnx, rndm) : fFC->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, dnx, rndm);
           if (cfgUseGapMethod) {
-            fFCpts[0]->fillVnPtProfiles(centmult, val, dnx, rndm, o2::analysis::gfw::configs.GetpTCorrMasks()[l_ind]);
+            fFCpt->fillVnPtProfiles(centmult, val, dnx, rndm, o2::analysis::gfw::configs.GetpTCorrMasks()[l_ind]);
           }
         }
         continue;
@@ -1308,14 +1300,12 @@ struct FlowGenericFramework {
 
     if (corrconfigsV0.size() < 4)
       return;
-
-    if (fFCpts[0]->corrDen[0] == 0.)
+    if (fFCpt->corrDen[0] == 0.)
       return;
-
     for (uint l_ind = 0; l_ind < 4; ++l_ind) {
-      double mpt = fFCpts[0]->corrNum[1] / fFCpts[0]->corrDen[1];
+      double mpt = fFCpt->corrNum[1] / fFCpt->corrDen[1];
       for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
-        (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centmult, mpt * fractions[l_ind][i - 1], 1., rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centmult, mpt * fractions[l_ind][i - 1], 1., rndm);
+        (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * fractions[l_ind][i - 1], 1., rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * fractions[l_ind][i - 1], 1., rndm);
       }
     }
     return;
@@ -1340,8 +1330,7 @@ struct FlowGenericFramework {
       th1sList[run][hCent]->Fill(centrality);
     }
     fGFW->Clear();
-    for (auto& container : fFCpts)
-      container->clearVector();
+    fFCpt->clearVector();
 
     float lRandom = fRndm->Rndm();
     // be cautious, this only works for Pb-Pb
@@ -1385,6 +1374,25 @@ struct FlowGenericFramework {
     }
     registry.fill(HIST("trackQA/after/Nch_corrected"), acceptedTracks.total);
     registry.fill(HIST("trackQA/after/Nch_uncorrected"), acceptedTracks.total_uncorr);
+
+    int multiplicity = 0;
+    switch (cfgUseNchCorrection) {
+      case 0:
+        multiplicity = tracks.size();
+        break;
+      case 1:
+        multiplicity = acceptedTracks.total;
+        break;
+      case 2:
+        multiplicity = acceptedTracks.total_uncorr;
+        break;
+      default:
+        multiplicity = tracks.size();
+        break;
+    }
+
+    if (!cfgFillWeights)
+      fillOutputContainers<dt>((cfgUseNch) ? multiplicity : centrality, lRandom, acceptedTracks);
 
     std::vector<std::vector<float>> npt_resonances(6, std::vector<float>(o2::analysis::gfw::ptbinning.size()));
     // Process V0s
@@ -1448,7 +1456,6 @@ struct FlowGenericFramework {
       registry.fill(HIST("npt_Lambda_sb2"), fPtAxis->GetBinCenter(i + 1), centrality, fractions_resonances[5][i]);
     for (std::size_t i = 0; i < fractions_resonances[4].size(); ++i)
       registry.fill(HIST("npt_Lambda_sig"), fPtAxis->GetBinCenter(i + 1), centrality, fractions_resonances[4][i]);
-
     for (uint l_ind = 4; l_ind < corrconfigsV02.size(); ++l_ind) {
       for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
         auto dnx = fGFW->Calculate(corrconfigsV02.at(l_ind), i - 1, kTRUE).real();
@@ -1459,32 +1466,15 @@ struct FlowGenericFramework {
           (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centrality, val * fractions_resonances[l_ind - 4][i - 1], dnx, lRandom) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centrality, val * fractions_resonances[l_ind - 4][i - 1], dnx, lRandom);
       }
     }
-
     for (uint l_ind = 4; l_ind < corrconfigsV0.size(); ++l_ind) {
-      double mpt = fFCpts[0]->corrNum[1] / fFCpts[0]->corrDen[1];
+      double dn = fFCpt->corrDen[1];
+      if (dn == 0.)
+        continue;
+      double mpt = fFCpt->corrNum[1] / dn;
       for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
         (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centrality, mpt * fractions_resonances[l_ind - 4][i - 1], 1.0, lRandom) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centrality, mpt * fractions_resonances[l_ind - 4][i - 1], 1.0, lRandom);
       }
     }
-
-    int multiplicity = 0;
-    switch (cfgUseNchCorrection) {
-      case 0:
-        multiplicity = tracks.size();
-        break;
-      case 1:
-        multiplicity = acceptedTracks.total;
-        break;
-      case 2:
-        multiplicity = acceptedTracks.total_uncorr;
-        break;
-      default:
-        multiplicity = tracks.size();
-        break;
-    }
-
-    if (!cfgFillWeights)
-      fillOutputContainers<dt>((cfgUseNch) ? multiplicity : centrality, lRandom, acceptedTracks);
   }
 
   template <typename TTrack>
@@ -1867,16 +1857,13 @@ struct FlowGenericFramework {
     double weff = (dt == kGen) ? 1. : getEfficiency(track);
     if (weff < 0)
       return;
-    if (std::abs(track.eta()) < cfgEtaPtPt) {
-      fFCpt_ch->fill(weff, track.pt());
-      if (pidIndex)
-        fFCpts[pidIndex]->fill(weff, track.pt());
-    }
+    if (std::abs(track.eta()) < cfgEtaPtPt)
+      fFCpt->fill(weff, track.pt());
     if (!cfgUseGapMethod) {
       std::complex<double> q2p = {weff * wacc * std::cos(2 * track.phi()), weff * wacc * std::sin(2 * track.phi())};
       std::complex<double> q2n = {weff * wacc * std::cos(-2 * track.phi()), weff * wacc * std::sin(-2 * track.phi())};
-      fFCpt_ch->fillArray(q2p, q2n, weff * track.pt(), weff);
-      fFCpt_ch->fillArray(weff * wacc, weff * wacc, weff, weff);
+      fFCpt->fillArray(q2p, q2n, weff * track.pt(), weff);
+      fFCpt->fillArray(weff * wacc, weff * wacc, weff, weff);
     }
   }
 
