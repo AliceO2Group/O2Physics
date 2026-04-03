@@ -733,6 +733,7 @@ struct AnalysisEnergyCorrelator {
     // CCDB initialization
     if (fCurrentRun != bcs.begin().runNumber()) {
       fCurrentRun = bcs.begin().runNumber();
+      initAccFromCCDB(bcs.begin().timestamp());
     }
 
     fSelMap.clear();
@@ -849,7 +850,6 @@ struct AnalysisEnergyCorrelator {
     auto groupedMCTracks2 = mcTracks.sliceBy(perReducedMcEvent, event2.mcCollisionId());
     groupedMCTracks1.bindInternalIndicesTo(&mcTracks);
     groupedMCTracks2.bindInternalIndicesTo(&mcTracks);
-
     for (auto& t1 : groupedMCTracks1) {
       auto t1_raw = mcTracks.rawIteratorAt(t1.globalIndex());
       for (auto& sig : fGenMCSignals) {
@@ -924,7 +924,7 @@ struct AnalysisEnergyCorrelator {
   }
 
   void processMCGenEnergyCorrelators(soa::Filtered<MyEvents>& events,
-                                     McCollisions const& /*mcEvents*/, McParticles const& mcTracks)
+                                     McCollisions const& /*mcEvents*/, McParticles const& mcTracks, BCsWithTimestamps const& bcs)
   {
     if (events.size() == 0) {
       LOG(warning) << "No events in this TF, going to the next one ...";
@@ -945,12 +945,13 @@ struct AnalysisEnergyCorrelator {
       if (fSavelessevents[0] > 1 && event.globalIndex() % fSavelessevents[0] == fSavelessevents[1]) {
         continue;
       }
+      initAccFromCCDB(bcs.begin().timestamp());
       runEnergyCorrelators<false, false, VarManager::kJpsiHadronMass>(event, event, mcTracks);
     }
   }
 
   void processMCGenEnergyCorrelatorsME(soa::Filtered<MyEvents>& events,
-                                       McCollisions const& /*mcEvents*/, McParticles const& mcTracks)
+                                       McCollisions const& /*mcEvents*/, McParticles const& mcTracks, BCsWithTimestamps const& bcs)
   {
     if (events.size() == 0) {
       LOG(warning) << "No events in this TF, going to the next one ...";
@@ -975,12 +976,13 @@ struct AnalysisEnergyCorrelator {
       if (fSavelessevents[0] > 1 && event1.globalIndex() % fSavelessevents[0] == fSavelessevents[1]) {
         continue;
       }
+      initAccFromCCDB(bcs.begin().timestamp());
       runEnergyCorrelators<true, false, VarManager::kJpsiHadronMass>(event1, event2, mcTracks);
     }
   }
 
   void processMCGenEnergyCorrelatorsPion(soa::Filtered<MyEvents>& events,
-                                         McCollisions const& /*mcEvents*/, McParticles const& mcTracks)
+                                         McCollisions const& /*mcEvents*/, McParticles const& mcTracks, BCsWithTimestamps const& bcs)
   {
     if (events.size() == 0) {
       LOG(warning) << "No events in this TF, going to the next one ...";
@@ -1001,12 +1003,13 @@ struct AnalysisEnergyCorrelator {
       if (fSavelessevents[0] > 1 && event.globalIndex() % fSavelessevents[0] == fSavelessevents[1]) {
         continue;
       }
+      initAccFromCCDB(bcs.begin().timestamp());
       runEnergyCorrelators<false, true, VarManager::kJpsiPionMass>(event, event, mcTracks);
     }
   }
 
   void processMCGenEnergyCorrelatorsPionME(soa::Filtered<MyEvents>& events,
-                                           McCollisions const& /*mcEvents*/, McParticles const& mcTracks)
+                                           McCollisions const& /*mcEvents*/, McParticles const& mcTracks, BCsWithTimestamps const& bcs)
   {
     if (events.size() == 0) {
       LOG(warning) << "No events in this TF, going to the next one ...";
@@ -1031,6 +1034,7 @@ struct AnalysisEnergyCorrelator {
       if (fSavelessevents[0] > 1 && event1.globalIndex() % fSavelessevents[0] == fSavelessevents[1]) {
         continue;
       }
+      initAccFromCCDB(bcs.begin().timestamp());
       runEnergyCorrelators<true, true, VarManager::kJpsiPionMass>(event1, event2, mcTracks);
     }
   }
