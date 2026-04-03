@@ -945,7 +945,10 @@ struct AnalysisEnergyCorrelator {
       if (fSavelessevents[0] > 1 && event.globalIndex() % fSavelessevents[0] == fSavelessevents[1]) {
         continue;
       }
-      initAccFromCCDB(bcs.begin().timestamp());
+      if (fCurrentRun != bcs.begin().runNumber()) {
+        fCurrentRun = bcs.begin().runNumber();
+        initAccFromCCDB(bcs.begin().timestamp());
+      }
       runEnergyCorrelators<false, false, VarManager::kJpsiHadronMass>(event, event, mcTracks);
     }
   }
@@ -976,7 +979,10 @@ struct AnalysisEnergyCorrelator {
       if (fSavelessevents[0] > 1 && event1.globalIndex() % fSavelessevents[0] == fSavelessevents[1]) {
         continue;
       }
-      initAccFromCCDB(bcs.begin().timestamp());
+      if (fCurrentRun != bcs.begin().runNumber()) {
+        fCurrentRun = bcs.begin().runNumber();
+        initAccFromCCDB(bcs.begin().timestamp());
+      }
       runEnergyCorrelators<true, false, VarManager::kJpsiHadronMass>(event1, event2, mcTracks);
     }
   }
@@ -1003,7 +1009,10 @@ struct AnalysisEnergyCorrelator {
       if (fSavelessevents[0] > 1 && event.globalIndex() % fSavelessevents[0] == fSavelessevents[1]) {
         continue;
       }
-      initAccFromCCDB(bcs.begin().timestamp());
+      if (fCurrentRun != bcs.begin().runNumber()) {
+        fCurrentRun = bcs.begin().runNumber();
+        initAccFromCCDB(bcs.begin().timestamp());
+      }
       runEnergyCorrelators<false, true, VarManager::kJpsiPionMass>(event, event, mcTracks);
     }
   }
@@ -1034,7 +1043,10 @@ struct AnalysisEnergyCorrelator {
       if (fSavelessevents[0] > 1 && event1.globalIndex() % fSavelessevents[0] == fSavelessevents[1]) {
         continue;
       }
-      initAccFromCCDB(bcs.begin().timestamp());
+      if (fCurrentRun != bcs.begin().runNumber()) {
+        fCurrentRun = bcs.begin().runNumber();
+        initAccFromCCDB(bcs.begin().timestamp());
+      }
       runEnergyCorrelators<true, true, VarManager::kJpsiPionMass>(event1, event2, mcTracks);
     }
   }
