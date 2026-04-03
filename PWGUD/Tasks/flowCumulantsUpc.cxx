@@ -14,41 +14,51 @@
 /// \since  Mar/2025
 /// \brief  jira: , task to measure flow observables with cumulant method
 
-#include "FlowContainer.h"
-#include "GFW.h"
-#include "GFWCumulant.h"
-#include "GFWPowerArray.h"
-#include "GFWWeights.h"
-
 #include "PWGUD/Core/SGSelector.h"
-#include "PWGUD/DataModel/SGTables.h"
 #include "PWGUD/DataModel/UDTables.h"
+//
+#include "PWGCF/GenericFramework/Core/FlowContainer.h"
+#include "PWGCF/GenericFramework/Core/GFW.h"
+#include "PWGCF/GenericFramework/Core/GFWWeights.h"
 
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/StringHelpers.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TList.h"
-#include "TVector3.h"
+#include <Math/GenVector/LorentzVector.h>
+#include <Math/GenVector/PxPyPzE4D.h>
 #include <TF1.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TNamed.h>
 #include <TObjArray.h>
 #include <TProfile.h>
 #include <TRandom3.h>
+#include <TString.h>
+
+#include <sys/types.h>
+
+#include <RtypesCore.h>
 
 #include <array>
+#include <chrono>
 #include <cmath>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -115,9 +125,18 @@ struct FlowCumulantsUpc {
   O2_DEFINE_CONFIGURABLE(cfgDcazCut, float, 10.0, "dcaz cut")
   O2_DEFINE_CONFIGURABLE(cfgItsClusterSize, unsigned int, 5, "ITS cluster size")
   O2_DEFINE_CONFIGURABLE(cfgMaxTPCChi2NCl, int, 4, "tpcchi2")
+  O2_DEFINE_CONFIGURABLE(cfgConsistentEventFlag, int, 0, "Flag to select consistent events - 0: off, 1: v2{2} gap calculable, 2: v2{4} full calculable, 4: v2{4} gap calculable, 8: v2{4} 3sub calculable")
+
   Configurable<std::vector<std::string>> cfgUserDefineGFWCorr{"cfgUserDefineGFWCorr", std::vector<std::string>{"refN02 {2} refP02 {-2}", "refN12 {2} refP12 {-2}"}, "User defined GFW CorrelatorConfig"};
   Configurable<std::vector<std::string>> cfgUserDefineGFWName{"cfgUserDefineGFWName", std::vector<std::string>{"Ch02Gap22", "Ch12Gap22"}, "User defined GFW Name"};
   Configurable<std::vector<int>> cfgRunRemoveList{"cfgRunRemoveList", std::vector<int>{-1}, "excluded run numbers"};
+  Configurable<std::vector<float>> cfgConsistentEventVector{"cfgConsistentEventVector", std::vector<float>{-0.8, -0.5, -0.4, 0.4, 0.5, 0.8}, "eta regions: left(min,max), mid(min,max), right(min,max)"};
+  struct AcceptedTracks {
+    int nNeg;
+    int nMid;
+    int nPos;
+    int nFull;
+  };
 
   ConfigurableAxis axisPtHist{"axisPtHist", {100, 0., 10.}, "pt axis for histograms"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10}, "pt axis for histograms"};
@@ -207,13 +226,15 @@ struct FlowCumulantsUpc {
 
     // Add some output objects to the histogram registry
     // Event QA
-    registry.add("hEventCount", "Number of Event;; Count", {HistType::kTH1D, {{5, 0, 5}}});
+    registry.add("hEventCount", "Number of Event;; Count", {HistType::kTH1D, {{6, 0, 6}}});
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(1, "Filtered event");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(2, "after gapside selection");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3, "after its selection");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(4, "after pt selection");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(5, "after occupancy");
-    registry.add("hTrackCount", "Number of tracks;; Count", {HistType::kTH1D, {{5, 0, 5}}});
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(6, "after consistency check");
+
+    registry.add("hTrackCount", "Number of tracks;; Count", {HistType::kTH1D, {{7, 0, 7}}});
     registry.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(1, "after event selection");
     registry.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(2, "PVContributor");
     registry.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(3, "dcaz");
@@ -945,7 +966,7 @@ struct FlowCumulantsUpc {
     registry.fill(HIST("hMult"), tracks.size());
     registry.fill(HIST("hCent"), cent);
     fGFW->Clear();
-    if (cfgIfVertex && abs(vtxz) > cfgCutVertex) {
+    if (cfgIfVertex && std::abs(vtxz) > cfgCutVertex) {
       return;
     }
     registry.fill(HIST("hEventCount"), 3.5);
@@ -961,6 +982,8 @@ struct FlowCumulantsUpc {
     if (cfgUseNch) {
       independent = static_cast<float>(tracks.size());
     }
+    AcceptedTracks acceptedTracks{0, 0, 0, 0};
+    std::vector<float> consistentEventVector = cfgConsistentEventVector;
 
     for (const auto& track : tracks) {
       registry.fill(HIST("hChi2prTPCcls"), track.tpcChi2NCl());
@@ -986,6 +1009,16 @@ struct FlowCumulantsUpc {
         continue;
       }
       registry.fill(HIST("hPt"), track.pt());
+
+      if (cfgConsistentEventFlag && consistentEventVector.size() == 6) { // o2-linter: disable=magic-number (size match)
+        acceptedTracks.nFull += 1;
+        if (eta > consistentEventVector[0] && eta < consistentEventVector[1])
+          acceptedTracks.nNeg += 1;
+        if (eta > consistentEventVector[2] && eta < consistentEventVector[3])
+          acceptedTracks.nMid += 1;
+        if (eta > consistentEventVector[4] && eta < consistentEventVector[5])
+          acceptedTracks.nPos += 1;
+      }
       if (withinPtRef) {
         registry.fill(HIST("hPhi"), phi);
         registry.fill(HIST("hPhiWeighted"), phi, wacc);
@@ -1007,6 +1040,23 @@ struct FlowCumulantsUpc {
       registry.fill(HIST("hEtaNch2D"), eta, tracks.size());
     }
     registry.fill(HIST("hTrackCorrection2d"), tracks.size(), nTracksCorrected);
+    if (cfgConsistentEventFlag) {
+      if (cfgConsistentEventFlag & 1) {
+        if (!acceptedTracks.nPos || !acceptedTracks.nNeg)
+          return;
+      } else if (cfgConsistentEventFlag & 2) {
+        if (acceptedTracks.nFull < 4) // o2-linter: disable=magic-number (at least four tracks in full acceptance)
+          return;
+      } else if (cfgConsistentEventFlag & 4) {
+        if (acceptedTracks.nPos < 2 || acceptedTracks.nNeg < 2) // o2-linter: disable=magic-number (at least two tracks in each subevent)
+          return;
+      }
+      if (cfgConsistentEventFlag & 8) {
+        if (acceptedTracks.nPos < 2 || acceptedTracks.nMid < 2 || acceptedTracks.nNeg < 2) // o2-linter: disable=magic-number (at least two tracks in all three subevents)
+          return;
+      }
+    }
+    registry.fill(HIST("hEventCount"), 5.5);
 
     // Filling Flow Container
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {

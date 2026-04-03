@@ -17,8 +17,7 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
-
-#include <fairlogger/Logger.h>
+#include <Framework/Logger.h>
 
 void testFastTracker(std::string geometryFile = "a3geo.ini")
 {
@@ -28,7 +27,7 @@ void testFastTracker(std::string geometryFile = "a3geo.ini")
   // auto& ccdb = o2::ccdb::BasicCCDBManager::instance();
   // ccdb.setURL("http://alice-ccdb.cern.ch");
   o2::fastsim::FastTracker fastTracker;
-  fastTracker.AddGenericDetector(geometryFile);
+  // fastTracker.AddGenericDetector(geometryFile); // FIXME
   // fastTracker.AddGenericDetector(geometryFile, &ccdb);
   fastTracker.Print();
 }

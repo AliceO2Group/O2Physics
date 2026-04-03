@@ -15,48 +15,55 @@
 #ifndef PWGEM_DILEPTON_UTILS_EMTRACKUTILITIES_H_
 #define PWGEM_DILEPTON_UTILS_EMTRACKUTILITIES_H_
 
-#include "Framework/DataTypes.h"
-#include "Framework/Logger.h"
+#include <Framework/DataTypes.h>
 
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
 #include <map>
-#include <ranges>
-#include <string>
 #include <unordered_map>
-#include <vector>
 
 //_______________________________________________________________________
 namespace o2::aod::pwgem::dilepton::utils::emtrackutil
 {
 
-enum class RefTrackBit : uint16_t { // This is not for leptons, but charged tracks for reference flow.
-  kNclsITS5 = 1,
-  kNclsITS6 = 2,
-  kNcrTPC70 = 4,
-  kNcrTPC90 = 8,
-  kNclsTPC50 = 16, // (not necessary, if ncr is used.)
-  kNclsTPC70 = 32, // (not necessary, if ncr is used.)
-  kNclsTPC90 = 64, // (not necessary, if ncr is used.)
-  kChi2TPC4 = 128,
-  kChi2TPC3 = 256,
-  kFracSharedTPC07 = 512,
-  kDCAxy05cm = 1024, // default is 1 cm
-  kDCAxy03cm = 2048,
-  kDCAz05cm = 4096, // default is 1cm
-  kDCAz03cm = 8192,
+enum class RefTrackType : int { // charged tracks for reference flow.
+  kCB = 0,
+  kMFTsa = 1,
 };
 
-enum class RefMFTTrackBit : uint16_t { // This is not for leptons, but charged tracks for reference flow.
-  kNclsMFT6 = 1,                       // default is 5
-  kNclsMFT7 = 2,
-  kNclsMFT8 = 4,
-  kChi2MFT3 = 8, // default is 4
-  kChi2MFT2 = 16,
-  kDCAxy005cm = 32, // default is 0.06 cm
-  kDCAxy004cm = 64,
-  kDCAxy003cm = 128,
-  kDCAxy002cm = 256,
-  kDCAxy001cm = 512,
+// This is not for leptons, but charged tracks for reference flow.
+enum class RefTrackBit : int {
+  kNclsITS5 = 0,
+  kNclsITS6,
+  kNcrTPC70,
+  kNcrTPC90,
+  kNclsTPC50, // (not necessary, if ncr is used.)
+  kNclsTPC70, // (not necessary, if ncr is used.)
+  kNclsTPC90, // (not necessary, if ncr is used.)
+  kChi2TPC4,
+  kChi2TPC3,
+  kFracSharedTPC07,
+  kDCAxy05cm, // default is 1 cm
+  kDCAxy03cm,
+  kDCAz05cm, // default is 1cm
+  kDCAz03cm,
+  kNCuts,
+};
+
+// This is not for leptons, but charged tracks for reference flow.
+enum class RefMFTTrackBit : int {
+  kNclsMFT6 = 0, // default is 5
+  kNclsMFT7,
+  kNclsMFT8,
+  kChi2MFT3, // default is 4
+  kChi2MFT2,
+  kDCAxy005cm, // default is 0.06 cm
+  kDCAxy004cm,
+  kDCAxy003cm,
+  kDCAxy002cm,
+  kDCAxy001cm,
+  kNCuts,
 };
 
 //_______________________________________________________________________

@@ -18,6 +18,7 @@
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 
+#include <CCDB/CcdbApi.h>
 #include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
@@ -27,8 +28,11 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TFile.h>
+#include <TH1.h>
 #include <TString.h>
 
+#include <cstdint>
 #include <map>
 #include <string>
 #include <vector>

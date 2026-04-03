@@ -19,17 +19,24 @@
 #include "PWGEM/PhotonMeson/Core/EMBitFlags.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
+#include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 
+#include <TH2.h>
 #include <TNamed.h>
+
+#include <sys/types.h>
 
 #include <Rtypes.h>
 
 #include <cmath>
 #include <concepts>
 #include <cstddef>
+#include <cstdint>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 template <typename T>
@@ -280,7 +287,7 @@ class EMCPhotonCut : public TNamed
   /// \param cluster cluster table to check
   /// \param matchedTracks matched primary tracks table
   /// \param matchedSecondaries matched secondary tracks table
-  /// \param fRegistry HistogramRegistry pointer of the main task
+  /// \param fRegistry  o2::framework::HistogramRegistry pointer of the main task
   void AreSelectedRunning(EMBitFlags& flags, o2::soa::is_table auto const& clusters, IsTrackContainer auto const& emcmatchedtracks, IsTrackContainer auto const& secondaries, o2::framework::HistogramRegistry* fRegistry = nullptr) const
   {
     if (clusters.size() <= 0) {

@@ -18,13 +18,14 @@
 
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
-#include <CCDB/BasicCCDBManager.h>
-#include <Framework/ASoAHelpers.h>
+#include <CCDB/CcdbApi.h>
 #include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisTask.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
+
+#include <TH1.h>
 
 #include <map>
 #include <string>

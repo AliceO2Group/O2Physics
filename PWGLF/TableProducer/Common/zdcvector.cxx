@@ -85,6 +85,7 @@ struct zdcvector {
   Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 0.0f, "Centrality cut Min"};
   Configurable<bool> additionalEvSel{"additionalEvSel", false, "additionalEvSel"};
   Configurable<bool> usemem{"usemem", true, "usemem"};
+  Configurable<bool> usecfactor{"usecfactor", false, "use c factor"};
 
   struct : ConfigurableGroup {
     Configurable<int> vzFineNbins{"vzFineNbins", 20, "Number of bins in Vz fine histograms"};
@@ -119,6 +120,7 @@ struct zdcvector {
     AxisSpec vzfineAxis = {configbins.vzFineNbins, configbins.lfinebinVz, configbins.hfinebinVz, "vzfine"};
     AxisSpec centfineAxis = {configbins.centFineNbins, configbins.lfinebinCent, configbins.hfinebinCent, "V0M (%) fine"};
     AxisSpec VxyAxis = {2, 0, 2, "Vxy"};
+    // AxisSpec EAxis = {500, 0, 1000, "Eaxis"};
 
     histos.add("htpcnsigmapi", "htpcnsigmapi", kTH1F, {{50, -10, 10.0}});
     histos.add("hEvtSelInfo", "hEvtSelInfo", kTH1F, {{10, 0, 10.0}});
@@ -128,6 +130,14 @@ struct zdcvector {
     histos.add("ZDCAmp", "ZDCAmp", kTProfile2D, {channelZDCAxis, vzfineAxis});
     histos.add("ZDCAmpCommon", "ZDCAmpCommon", kTProfile2D, {{2, 0.0, 2.0}, vzfineAxis});
     histos.add("AvgVxy", "AvgVxy", kTProfile, {VxyAxis});
+    /*histos.add("hZNA0", "hZNA0", kTH2D, {{centfineAxis}, {EAxis}}, true);
+    histos.add("hZNA1", "hZNA1", kTH2D, {{centfineAxis}, {EAxis}}, true);
+    histos.add("hZNA2", "hZNA2", kTH2D, {{centfineAxis}, {EAxis}}, true);
+    histos.add("hZNA3", "hZNA3", kTH2D, {{centfineAxis}, {EAxis}}, true);
+    histos.add("hZNC0", "hZNC0", kTH2D, {{centfineAxis}, {EAxis}}, true);
+    histos.add("hZNC1", "hZNC1", kTH2D, {{centfineAxis}, {EAxis}}, true);
+    histos.add("hZNC2", "hZNC2", kTH2D, {{centfineAxis}, {EAxis}}, true);
+    histos.add("hZNC3", "hZNC3", kTH2D, {{centfineAxis}, {EAxis}}, true);*/
 
     ccdb->setURL(cfgCcdbParam.cfgURL);
     ccdbApi.init("http://alice-ccdb.cern.ch");
@@ -140,6 +150,11 @@ struct zdcvector {
   int lastRunNumber = -999;
   TH2D* gainprofile;
   TProfile* gainprofilevxy;
+
+  // int lastRunNumberTimeRec = -999;
+  //  for time since start of run
+  // int runForStartTime = -999;
+  // uint64_t runStartTime = 0;
 
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::FT0sCorrected, aod::CentFT0Cs>;
   using AllTrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa>;
@@ -180,6 +195,14 @@ struct zdcvector {
       return;
     }
 
+    // -------- define time since run start --------
+    /*uint64_t ts = bc.timestamp();
+    if (currentRunNumber != runForStartTime) {
+      runStartTime = ts;
+      runForStartTime = currentRunNumber;
+    }
+    double tsec = 1.e-3 * static_cast<double>(ts - runStartTime);
+    */
     histos.fill(HIST("hEvtSelInfo"), 1.5);
 
     auto zdc = bc.zdc();
@@ -187,6 +210,7 @@ struct zdcvector {
     auto znaEnergy = zdc.energySectorZNA();
     auto zncEnergycommon = zdc.energyCommonZNC();
     auto znaEnergycommon = zdc.energyCommonZNA();
+    auto beamEne = 5.36 * 0.5;
 
     if (znaEnergycommon <= 0.0 || zncEnergycommon <= 0.0) {
       triggerevent = false;
@@ -222,6 +246,14 @@ struct zdcvector {
     }
 
     histos.fill(HIST("hEvtSelInfo"), 5.5);
+    /*histos.fill(HIST("hZNA0"), centrality, znaEnergy[0]);
+    histos.fill(HIST("hZNA1"), centrality, znaEnergy[1]);
+    histos.fill(HIST("hZNA2"), centrality, znaEnergy[2]);
+    histos.fill(HIST("hZNA3"), centrality, znaEnergy[3]);
+    histos.fill(HIST("hZNC0"), centrality, zncEnergy[0]);
+    histos.fill(HIST("hZNC1"), centrality, zncEnergy[1]);
+    histos.fill(HIST("hZNC2"), centrality, zncEnergy[2]);
+    histos.fill(HIST("hZNC3"), centrality, zncEnergy[3]);*/
 
     if (additionalEvSel && (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
       triggerevent = false;
@@ -244,6 +276,8 @@ struct zdcvector {
       auto alphaZDC = 0.395;
       constexpr double x[4] = {-1.75, 1.75, -1.75, 1.75};
       constexpr double y[4] = {-1.75, -1.75, 1.75, 1.75};
+      double zncEnergycommonsum = 0.0;
+      double znaEnergycommonsum = 0.0;
 
       histos.fill(HIST("ZDCAmpCommon"), 0.5, vz, znaEnergycommon);
       histos.fill(HIST("ZDCAmpCommon"), 1.5, vz, zncEnergycommon);
@@ -252,6 +286,7 @@ struct zdcvector {
       constexpr std::size_t ntow = 8;
       for (std::size_t iChA = 0; iChA < ntow; iChA++) {
         auto chanelid = iChA;
+        gainequal = 1.0;
         if (useGainCallib && gainprofile) {
           gainequal = gainprofile->GetBinContent(gainprofile->FindBin(vz + 0.00001, chanelid + 0.5));
         }
@@ -264,6 +299,7 @@ struct zdcvector {
             return;
           } else {
             double ampl = gainequal * znaEnergy[iChA];
+            znaEnergycommonsum += ampl;
             if (followpub) {
               ampl = std::pow(ampl, alphaZDC);
             }
@@ -280,6 +316,7 @@ struct zdcvector {
             return;
           } else {
             double ampl = gainequal * zncEnergy[iChA - 4];
+            zncEnergycommonsum += ampl;
             if (followpub) {
               ampl = std::pow(ampl, alphaZDC);
             }
@@ -291,13 +328,26 @@ struct zdcvector {
         }
       }
 
+      auto cZNC = 1.0;
+      auto cZNA = 1.0;
+
       if (sumA > 0) {
-        qxZDCA = qxZDCA / sumA;
-        qyZDCA = qyZDCA / sumA;
+        float nSpecnA = znaEnergycommonsum / beamEne;
+        if (usecfactor)
+          cZNA = 1.89358 - 0.71262 / (nSpecnA + 0.71789);
+        else
+          cZNA = 1.0;
+        qxZDCA = cZNA * (qxZDCA / sumA);
+        qyZDCA = cZNA * (qyZDCA / sumA);
       }
       if (sumC > 0) {
-        qxZDCC = qxZDCC / sumC;
-        qyZDCC = qyZDCC / sumC;
+        float nSpecnC = zncEnergycommonsum / beamEne;
+        if (usecfactor)
+          cZNC = 1.89358 - 0.71262 / (nSpecnC + 0.71789);
+        else
+          cZNC = 1.0;
+        qxZDCC = cZNC * (qxZDCC / sumC);
+        qyZDCC = cZNC * (qyZDCC / sumC);
       }
 
       if (sumA <= 1e-4 || sumC <= 1e-4) {
@@ -321,6 +371,8 @@ struct zdcvector {
       if (useCallibvertex && (currentRunNumber != lastRunNumber)) {
         gainprofilevxy = ccdb->getForTimeStamp<TProfile>(confGainPathVxy.value, bc.timestamp());
       }
+
+      // LOG(info)<<"*****time stamp is:"<<tsec;
 
       if (useCallibvertex) {
         vx = vx - gainprofilevxy->GetBinContent(1);
