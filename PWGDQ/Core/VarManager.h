@@ -1371,7 +1371,7 @@ class VarManager : public TObject
   template <typename T1, typename T2>
   static void FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float* values = nullptr, float hadronMass = 0.0f);
   template <typename T1, typename T2, typename T3>
-  static void FillEnergyCorrelatorTriple(T1 const& lepton1, T2 const& lepton2, T3 const& hadron, float* values = nullptr, float weight = 1.0, float Translow = 1. / 3, float Transhigh = 2. / 3, bool applyFitMass = false, float sidebandMass = 0.0f);
+  static void FillEnergyCorrelatorTriple(T1 const& lepton1, T2 const& lepton2, T3 const& hadron, float* values = nullptr, float Translow = 1. / 3, float Transhigh = 2. / 3, bool applyFitMass = false, float sidebandMass = 0.0f, float weight = 1.0f);
   template <int pairType, typename T1, typename T2, typename T3, typename T4, typename T5>
   static void FillEnergyCorrelatorsUnfoldingTriple(T1 const& lepton1, T2 const& lepton2, T3 const& hadron, T4 const& track, T5 const& t1, float* values = nullptr, bool applyFitMass = false, float Effweight_rec = 1.f, float Accweight_gen = 1.f);
   template <typename T1, typename T2>
@@ -5798,7 +5798,7 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
 }
 
 template <typename T1, typename T2, typename T3>
-void VarManager::FillEnergyCorrelatorTriple(T1 const& lepton1, T2 const& lepton2, T3 const& hadron, float* values, float Translow, float Transhigh, bool applyFitMass, float sidebandMass)
+void VarManager::FillEnergyCorrelatorTriple(T1 const& lepton1, T2 const& lepton2, T3 const& hadron, float* values, float Translow, float Transhigh, bool applyFitMass, float sidebandMass, float weight)
 {
   float m1 = o2::constants::physics::MassElectron;
   float m2 = o2::constants::physics::MassElectron;
