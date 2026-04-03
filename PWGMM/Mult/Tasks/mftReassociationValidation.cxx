@@ -1267,17 +1267,17 @@ struct MftReassociationValidation {
               registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisions"), MftIsTrueCollisionAmongCompatibleCollisionsStep::AllWronglyAssociatedTracks);
               registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisionsDcaNotReassociated"), MftIsTrueCollisionAmongCompatibleCollisionsStep::AllWronglyAssociatedTracks);
               hZVtxDiffNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::AllWronglyAssociatedTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociatedDeltaX, reassociatedDeltaY, reassociatedDeltaZ);
-              hDcaNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::AllWronglyAssociatedTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated2dMftTrack.bestDCAXY(), dcaXYtruth);
+              hDcaNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::AllWronglyAssociatedTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated2dMftTrack.bestDCAXY(), 0, dcaXYtruth, 0);
               if (isTrueCollisionAmongCompatibleCollisions(reassociated2dMftTrack)) {
                 registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisions"), MftIsTrueCollisionAmongCompatibleCollisionsStep::IsTrueCollisionAmongCompatibleCollisions);
                 registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisionsDcaNotReassociated"), MftIsTrueCollisionAmongCompatibleCollisionsStep::IsTrueCollisionAmongCompatibleCollisions);
                 hZVtxDiffNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsTrueCollisionAmongCompatibleCollisions]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociatedDeltaX, reassociatedDeltaY, reassociatedDeltaZ);
-                hDcaNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsTrueCollisionAmongCompatibleCollisions]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated2dMftTrack.bestDCAXY(), dcaXYtruth);
+                hDcaNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsTrueCollisionAmongCompatibleCollisions]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated2dMftTrack.bestDCAXY(), 0, dcaXYtruth, 0);
               } else {
                 registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisions"), MftIsTrueCollisionAmongCompatibleCollisionsStep::IsNotTrueCollisionAmongCompatibleCollisions);
                 registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisionsDcaNotReassociated"), MftIsTrueCollisionAmongCompatibleCollisionsStep::IsNotTrueCollisionAmongCompatibleCollisions);
                 hZVtxDiffNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsNotTrueCollisionAmongCompatibleCollisions]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociatedDeltaX, reassociatedDeltaY, reassociatedDeltaZ);
-                hDcaNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsNotTrueCollisionAmongCompatibleCollisions]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated2dMftTrack.bestDCAXY(), dcaXYtruth);
+                hDcaNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsNotTrueCollisionAmongCompatibleCollisions]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated2dMftTrack.bestDCAXY(), 0, dcaXYtruth, 0);
               }
             }
 
