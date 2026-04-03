@@ -57,33 +57,38 @@ template <class T>
 using hasTOFAl = decltype(std::declval<T&>().tofNSigmaAl());
 
 // PID index as template argument
-#define perSpeciesWrapper(functionName)                       \
-  template <o2::track::PID::ID index, typename TrackType>     \
-  auto functionName(const TrackType& track)                   \
-  {                                                           \
-    if constexpr (index == o2::track::PID::Electron) {        \
-      return track.functionName##El();                        \
-    } else if constexpr (index == o2::track::PID::Muon) {     \
-      return track.functionName##Mu();                        \
-    } else if constexpr (index == o2::track::PID::Pion) {     \
-      return track.functionName##Pi();                        \
-    } else if constexpr (index == o2::track::PID::Kaon) {     \
-      return track.functionName##Ka();                        \
-    } else if constexpr (index == o2::track::PID::Proton) {   \
-      return track.functionName##Pr();                        \
-    } else if constexpr (index == o2::track::PID::Deuteron) { \
-      return track.functionName##De();                        \
-    } else if constexpr (index == o2::track::PID::Triton) {   \
-      return track.functionName##Tr();                        \
-    } else if constexpr (index == o2::track::PID::Helium3) {  \
-      return track.functionName##He();                        \
-    } else if constexpr (index == o2::track::PID::Alpha) {    \
-      return track.functionName##Al();                        \
-    }                                                         \
+#define perSpeciesWrapper(functionName)                                                               \
+  template <o2::track::PID::ID index, typename TrackType>                                             \
+  auto functionName(const TrackType& track)                                                           \
+  {                                                                                                   \
+    if constexpr (index == o2::track::PID::Electron) {                                                \
+      return track.functionName##El();                                                                \
+    } else if constexpr (index == o2::track::PID::Muon) {                                             \
+      return track.functionName##Mu();                                                                \
+    } else if constexpr (index == o2::track::PID::Pion) {                                             \
+      return track.functionName##Pi();                                                                \
+    } else if constexpr (index == o2::track::PID::Kaon) {                                             \
+      return track.functionName##Ka();                                                                \
+    } else if constexpr (index == o2::track::PID::Proton) {                                           \
+      return track.functionName##Pr();                                                                \
+    } else if constexpr (index == o2::track::PID::Deuteron) {                                         \
+      return track.functionName##De();                                                                \
+    } else if constexpr (index == o2::track::PID::Triton) {                                           \
+      return track.functionName##Tr();                                                                \
+    } else if constexpr (index == o2::track::PID::Helium3) {                                          \
+      return track.functionName##He();                                                                \
+    } else if constexpr (index == o2::track::PID::Alpha) {                                            \
+      return track.functionName##Al();                                                                \
+    }                                                                                                 \
+    LOGF(fatal, "%s %i (%s) is not available", #functionName, index, o2::track::PID::getName(index)); \
+    return 0.f;                                                                                       \
   }
 
 perSpeciesWrapper(tofNSigma);
 perSpeciesWrapper(tofExpSigma);
+perSpeciesWrapper(tofExpSignalDiff);
+#undef perSpeciesWrapper
+
 template <o2::track::PID::ID index, typename TrackType>
 auto tofExpSignal(const TrackType& track)
 {
@@ -106,10 +111,35 @@ auto tofExpSignal(const TrackType& track)
   } else if constexpr (index == o2::track::PID::Alpha) {
     return track.tofExpSignalAl(track.tofSignal());
   }
+  LOGF(fatal, "tofExpSignal %i (%s) is not available", index, o2::track::PID::getName(index));
+  return 0.f;
 }
-perSpeciesWrapper(tofExpSignalDiff);
 
-#undef perSpeciesWrapper
+template <o2::track::PID::ID index, typename TrackType>
+auto tofExpTime(const TrackType& track)
+{
+  if constexpr (index == o2::track::PID::Electron) {
+    return track.tofExpTimeEl();
+  } else if constexpr (index == o2::track::PID::Muon) {
+    return track.tofExpTimeMu();
+  } else if constexpr (index == o2::track::PID::Pion) {
+    return track.tofExpTimePi();
+  } else if constexpr (index == o2::track::PID::Kaon) {
+    return track.tofExpTimeKa();
+  } else if constexpr (index == o2::track::PID::Proton) {
+    return track.tofExpTimePr();
+  } else if constexpr (index == o2::track::PID::Deuteron) {
+    return track.tofExpTimeDe();
+  } else if constexpr (index == o2::track::PID::Triton) {
+    return track.tofExpTimeTr();
+  } else if constexpr (index == o2::track::PID::Helium3) {
+    return track.tofExpTimeHe();
+  } else if constexpr (index == o2::track::PID::Alpha) {
+    return track.tofExpTimeAl();
+  }
+  LOGF(fatal, "tofExpTime %i (%s) is not available", index, o2::track::PID::getName(index));
+  return 0.f;
+}
 
 // PID index as function argument for TOF
 #define perSpeciesWrapper(functionName)                                                                             \
@@ -161,6 +191,9 @@ perSpeciesWrapper(tofExpSignalDiff);
 
 perSpeciesWrapper(tofNSigma);
 perSpeciesWrapper(tofExpSigma);
+perSpeciesWrapper(tofExpSignalDiff);
+#undef perSpeciesWrapper
+
 template <typename TrackType>
 auto tofExpSignal(const o2::track::PID::ID index, const TrackType& track)
 {
@@ -206,9 +239,6 @@ auto tofExpSignal(const o2::track::PID::ID index, const TrackType& track)
       return 0.f;
   }
 }
-perSpeciesWrapper(tofExpSignalDiff);
-
-#undef perSpeciesWrapper
 
 } // namespace pidutils
 
@@ -364,6 +394,38 @@ PERSPECIES_TOF_SIGMA_COLUMN(He, o2::track::PID::Helium3);
 PERSPECIES_TOF_SIGMA_COLUMN(Al, o2::track::PID::Alpha);
 #undef PERSPECIES_TOF_SIGMA_COLUMN
 
+DECLARE_SOA_DYNAMIC_COLUMN(TOFExpSigmaImp, tofExpSigmaDyn,
+                           [](float tofExpMom,
+                              float momentum,
+                              float eta,
+                              float tofSignal,
+                              float tofEvTimeErr,
+                              o2::track::PID::ID particleId) -> float {
+                             switch (particleId) {
+                               case o2::track::PID::Electron: // El
+                                 return o2::pid::tof::TOFResponseImpl::expectedSigma<o2::track::PID::Electron>(tofSignal, tofExpMom, momentum, eta, tofEvTimeErr);
+                               case o2::track::PID::Muon: // Mu
+                                 return o2::pid::tof::TOFResponseImpl::expectedSigma<o2::track::PID::Muon>(tofSignal, tofExpMom, momentum, eta, tofEvTimeErr);
+                               case o2::track::PID::Pion: // Pi
+                                 return o2::pid::tof::TOFResponseImpl::expectedSigma<o2::track::PID::Pion>(tofSignal, tofExpMom, momentum, eta, tofEvTimeErr);
+                               case o2::track::PID::Kaon: // Ka
+                                 return o2::pid::tof::TOFResponseImpl::expectedSigma<o2::track::PID::Kaon>(tofSignal, tofExpMom, momentum, eta, tofEvTimeErr);
+                               case o2::track::PID::Proton: // Pr
+                                 return o2::pid::tof::TOFResponseImpl::expectedSigma<o2::track::PID::Proton>(tofSignal, tofExpMom, momentum, eta, tofEvTimeErr);
+                               case o2::track::PID::Deuteron: // De
+                                 return o2::pid::tof::TOFResponseImpl::expectedSigma<o2::track::PID::Deuteron>(tofSignal, tofExpMom, momentum, eta, tofEvTimeErr);
+                               case o2::track::PID::Triton: // Tr
+                                 return o2::pid::tof::TOFResponseImpl::expectedSigma<o2::track::PID::Triton>(tofSignal, tofExpMom, momentum, eta, tofEvTimeErr);
+                               case o2::track::PID::Helium3: // He3
+                                 return o2::pid::tof::TOFResponseImpl::expectedSigma<o2::track::PID::Helium3>(tofSignal, tofExpMom, momentum, eta, tofEvTimeErr);
+                               case o2::track::PID::Alpha: // Al
+                                 return o2::pid::tof::TOFResponseImpl::expectedSigma<o2::track::PID::Alpha>(tofSignal, tofExpMom, momentum, eta, tofEvTimeErr);
+                               default:
+                                 LOGF(fatal, "TOFExpSigmaImp for PID index %i (%s) is not available", particleId, o2::track::PID::getName(particleId));
+                                 return 0.f;
+                             }
+                           });
+
 #define PERSPECIES_TOF_SEPARATION_COLUMN(name, id)                                             \
   DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigma##name##Imp, tofNSigmaDyn##name,                         \
                              [](const float tofExpMom,                                         \
@@ -393,8 +455,43 @@ PERSPECIES_TOF_SEPARATION_COLUMN(He, o2::track::PID::Helium3);
 PERSPECIES_TOF_SEPARATION_COLUMN(Al, o2::track::PID::Alpha);
 #undef PERSPECIES_TOF_SEPARATION_COLUMN
 
+DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaImp, tofNSigmaDyn,
+                           [](float tofExpMom,
+                              const float length,
+                              float momentum,
+                              float eta,
+                              float tofSignal,
+                              float tofEvTime,
+                              float tofEvTimeErr,
+                              o2::track::PID::ID particleId) -> float {
+                             switch (particleId) {
+                               case o2::track::PID::Electron: // El
+                                 return o2::pid::tof::TOFResponseImpl::nSigma<o2::track::PID::Electron>(tofSignal, tofExpMom, length, momentum, eta, tofEvTime, tofEvTimeErr);
+                               case o2::track::PID::Muon: // Mu
+                                 return o2::pid::tof::TOFResponseImpl::nSigma<o2::track::PID::Muon>(tofSignal, tofExpMom, length, momentum, eta, tofEvTime, tofEvTimeErr);
+                               case o2::track::PID::Pion: // Pi
+                                 return o2::pid::tof::TOFResponseImpl::nSigma<o2::track::PID::Pion>(tofSignal, tofExpMom, length, momentum, eta, tofEvTime, tofEvTimeErr);
+                               case o2::track::PID::Kaon: // Ka
+                                 return o2::pid::tof::TOFResponseImpl::nSigma<o2::track::PID::Kaon>(tofSignal, tofExpMom, length, momentum, eta, tofEvTime, tofEvTimeErr);
+                               case o2::track::PID::Proton: // Pr
+                                 return o2::pid::tof::TOFResponseImpl::nSigma<o2::track::PID::Proton>(tofSignal, tofExpMom, length, momentum, eta, tofEvTime, tofEvTimeErr);
+                               case o2::track::PID::Deuteron: // De
+                                 return o2::pid::tof::TOFResponseImpl::nSigma<o2::track::PID::Deuteron>(tofSignal, tofExpMom, length, momentum, eta, tofEvTime, tofEvTimeErr);
+                               case o2::track::PID::Triton: // Tr
+                                 return o2::pid::tof::TOFResponseImpl::nSigma<o2::track::PID::Triton>(tofSignal, tofExpMom, length, momentum, eta, tofEvTime, tofEvTimeErr);
+                               case o2::track::PID::Helium3: // He3
+                                 return o2::pid::tof::TOFResponseImpl::nSigma<o2::track::PID::Helium3>(tofSignal, tofExpMom, length, momentum, eta, tofEvTime, tofEvTimeErr);
+                               case o2::track::PID::Alpha: // Al
+                                 return o2::pid::tof::TOFResponseImpl::nSigma<o2::track::PID::Alpha>(tofSignal, tofExpMom, length, momentum, eta, tofEvTime, tofEvTimeErr);
+                               default:
+                                 LOGF(fatal, "TOFNSigmaImp for PID index %i (%s) is not available", particleId, o2::track::PID::getName(particleId));
+                                 return 0.f;
+                             }
+                           });
+
 } // namespace pidtof
 
+using TOFExpSigmaDyn = pidtof::TOFExpSigmaImp<track::TOFExpMom, track::P, track::Eta, pidtofsignal::TOFSignal, pidtofevtime::TOFEvTimeErr>;
 using TOFExpSigmaDynEl = pidtof::TOFExpSigmaElImp<track::TOFExpMom, track::P, track::Eta, pidtofsignal::TOFSignal, pidtofevtime::TOFEvTimeErr>;
 using TOFExpSigmaDynMu = pidtof::TOFExpSigmaMuImp<track::TOFExpMom, track::P, track::Eta, pidtofsignal::TOFSignal, pidtofevtime::TOFEvTimeErr>;
 using TOFExpSigmaDynPi = pidtof::TOFExpSigmaPiImp<track::TOFExpMom, track::P, track::Eta, pidtofsignal::TOFSignal, pidtofevtime::TOFEvTimeErr>;
@@ -405,6 +502,7 @@ using TOFExpSigmaDynTr = pidtof::TOFExpSigmaTrImp<track::TOFExpMom, track::P, tr
 using TOFExpSigmaDynHe = pidtof::TOFExpSigmaHeImp<track::TOFExpMom, track::P, track::Eta, pidtofsignal::TOFSignal, pidtofevtime::TOFEvTimeErr>;
 using TOFExpSigmaDynAl = pidtof::TOFExpSigmaAlImp<track::TOFExpMom, track::P, track::Eta, pidtofsignal::TOFSignal, pidtofevtime::TOFEvTimeErr>;
 
+using TOFNSigmaDyn = pidtof::TOFNSigmaImp<track::TOFExpMom, track::Length, track::P, track::Eta, pidtofsignal::TOFSignal, pidtofevtime::TOFEvTime, pidtofevtime::TOFEvTimeErr>;
 using TOFNSigmaDynEl = pidtof::TOFNSigmaElImp<track::TOFExpMom, track::Length, track::P, track::Eta, pidtofsignal::TOFSignal, pidtofevtime::TOFEvTime, pidtofevtime::TOFEvTimeErr>;
 using TOFNSigmaDynMu = pidtof::TOFNSigmaMuImp<track::TOFExpMom, track::Length, track::P, track::Eta, pidtofsignal::TOFSignal, pidtofevtime::TOFEvTime, pidtofevtime::TOFEvTimeErr>;
 using TOFNSigmaDynPi = pidtof::TOFNSigmaPiImp<track::TOFExpMom, track::Length, track::P, track::Eta, pidtofsignal::TOFSignal, pidtofevtime::TOFEvTime, pidtofevtime::TOFEvTimeErr>;
