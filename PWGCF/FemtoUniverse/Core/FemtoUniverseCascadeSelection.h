@@ -24,13 +24,15 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseObjectSelection.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseSelection.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
+#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
-#include "Common/Core/RecoDecay.h"
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
 
-#include "Framework/HistogramRegistry.h"
-#include "ReconstructionDataFormats/PID.h"
-
+#include <cstddef>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace o2::analysis::femto_universe
@@ -90,7 +92,7 @@ class FemtoUniverseCascadeSelection
 
   /// Initializes histograms for the task
   template <o2::aod::femtouniverseparticle::ParticleType part, o2::aod::femtouniverseparticle::ParticleType daugh, o2::aod::femtouniverseparticle::ParticleType bach, typename CutContainerType>
-  void init(HistogramRegistry* registry /*, bool isSelectCascOmega = false*/);
+  void init(o2::framework::HistogramRegistry* registry /*, bool isSelectCascOmega = false*/);
 
   template <typename Col, typename Casc, typename Track>
   bool isSelectedMinimal(Col const& col, Casc const& cascade, Track const& posTrack, Track const& negTrack, Track const& bachTrack);
@@ -290,7 +292,7 @@ class FemtoUniverseCascadeSelection
 }; // namespace femto_universe
 
 template <o2::aod::femtouniverseparticle::ParticleType part, o2::aod::femtouniverseparticle::ParticleType daugh, o2::aod::femtouniverseparticle::ParticleType bach, typename CutContainerType>
-void FemtoUniverseCascadeSelection::init(HistogramRegistry* registry)
+void FemtoUniverseCascadeSelection::init(o2::framework::HistogramRegistry* registry)
 {
 
   if (registry) {
@@ -299,15 +301,15 @@ void FemtoUniverseCascadeSelection::init(HistogramRegistry* registry)
     fillSelectionHistogram<daugh>(); // pos, neg
     fillSelectionHistogram<bach>();  // bach
 
-    AxisSpec massAxisCascade = {2200, 1.25f, 1.8f, "m_{Cascade} (GeV/#it{c}^{2})"};
-    AxisSpec massAxisV0 = {600, 0.0f, 3.0f, "m_{V0} (GeV/#it{c}^{2})"};
-    AxisSpec aDCADaughAxis = {1000, 0.0f, 2.0f, "DCA (cm)"};
-    AxisSpec aDCAToPVAxis = {1000, -10.0f, 10.0f, "DCA to PV (cm)"};
-    AxisSpec ptAxis = {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec etaAxis = {100, -2.0f, 2.0f, "#it{#eta}"};
-    AxisSpec phiAxis = {100, 0.0f, 6.0f, "#it{#phi}"};
-    AxisSpec aCPAAxis = {1000, 0.95f, 1.0f, "#it{cos #theta_{p}}"};
-    AxisSpec tranRadAxis = {1000, 0.0f, 100.0f, "#it{r}_{xy} (cm)"};
+    o2::framework::AxisSpec massAxisCascade = {2200, 1.25f, 1.8f, "m_{Cascade} (GeV/#it{c}^{2})"};
+    o2::framework::AxisSpec massAxisV0 = {600, 0.0f, 3.0f, "m_{V0} (GeV/#it{c}^{2})"};
+    o2::framework::AxisSpec aDCADaughAxis = {1000, 0.0f, 2.0f, "DCA (cm)"};
+    o2::framework::AxisSpec aDCAToPVAxis = {1000, -10.0f, 10.0f, "DCA to PV (cm)"};
+    o2::framework::AxisSpec ptAxis = {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
+    o2::framework::AxisSpec etaAxis = {100, -2.0f, 2.0f, "#it{#eta}"};
+    o2::framework::AxisSpec phiAxis = {100, 0.0f, 6.0f, "#it{#phi}"};
+    o2::framework::AxisSpec aCPAAxis = {1000, 0.95f, 1.0f, "#it{cos #theta_{p}}"};
+    o2::framework::AxisSpec tranRadAxis = {1000, 0.0f, 100.0f, "#it{r}_{xy} (cm)"};
 
     /// \todo this should be an automatic check in the parent class, and the
     /// return type should be templated
@@ -331,27 +333,27 @@ void FemtoUniverseCascadeSelection::init(HistogramRegistry* registry)
       mHistogramRegistry);
 
     // V0 (Lambda)
-    // mHistogramRegistry->add("CascadeQA/hInvMassV0NoCuts", "No cuts", kTH1F, {massAxisV0});
-    mHistogramRegistry->add("CascadeQA/hInvMassV0Cut", "Invariant mass cut", kTH1F, {massAxisV0});
-    mHistogramRegistry->add("CascadeQA/hDCAV0Daugh", "V0-daughters DCA", kTH1F, {aDCADaughAxis});
-    mHistogramRegistry->add("CascadeQA/hV0CPA", "V0 cos PA", kTH1F, {aCPAAxis});
-    mHistogramRegistry->add("CascadeQA/hV0TranRad", "V0 transverse radius", kTH1F, {tranRadAxis});
-    // mHistogramRegistry->add("CascadeQA/hV0DecVtxMax", "V0 maximum distance on decay vertex", kTH1F, {massAxisV0});
+    // mHistogramRegistry->add("CascadeQA/hInvMassV0NoCuts", "No cuts", o2::framework::kTH1F, {massAxisV0});
+    mHistogramRegistry->add("CascadeQA/hInvMassV0Cut", "Invariant mass cut", o2::framework::kTH1F, {massAxisV0});
+    mHistogramRegistry->add("CascadeQA/hDCAV0Daugh", "V0-daughters DCA", o2::framework::kTH1F, {aDCADaughAxis});
+    mHistogramRegistry->add("CascadeQA/hV0CPA", "V0 cos PA", o2::framework::kTH1F, {aCPAAxis});
+    mHistogramRegistry->add("CascadeQA/hV0TranRad", "V0 transverse radius", o2::framework::kTH1F, {tranRadAxis});
+    // mHistogramRegistry->add("CascadeQA/hV0DecVtxMax", "V0 maximum distance on decay vertex", o2::framework::kTH1F, {massAxisV0});
 
     // Cascade (Xi, Omega)
-    // mHistogramRegistry->add("CascadeQA/hInvMassCascadeNoCuts", "No cuts", kTH1F, {massAxisCascade});
-    mHistogramRegistry->add("CascadeQA/hInvMassXiCut", "Invariant mass with cut", kTH1F, {massAxisCascade});
-    mHistogramRegistry->add("CascadeQA/hInvMassOmegaCut", "Invariant mass with cut", kTH1F, {massAxisCascade});
-    mHistogramRegistry->add("CascadeQA/hCascadePt", "pT distribution", kTH1F, {ptAxis});
-    mHistogramRegistry->add("CascadeQA/hCascadeEta", "Eta distribution", kTH1F, {etaAxis});
-    mHistogramRegistry->add("CascadeQA/hCascadePhi", "Phi distribution", kTH1F, {phiAxis});
-    mHistogramRegistry->add("CascadeQA/hDCACascadeDaugh", "Cascade-daughters DCA", kTH1F, {aDCADaughAxis});
-    mHistogramRegistry->add("CascadeQA/hCascadeCPA", "Cos PA", kTH1F, {aCPAAxis});
-    mHistogramRegistry->add("CascadeQA/hCascadeTranRad", "Transverse radius", kTH1F, {tranRadAxis});
-    mHistogramRegistry->add("CascadeQA/hDCAPosToPV", "Pos V0 daughter DCA to primary vertex", kTH1F, {aDCAToPVAxis});
-    mHistogramRegistry->add("CascadeQA/hDCANegToPV", "Neg V0 daughter DCA to primary vertex", kTH1F, {aDCAToPVAxis});
-    mHistogramRegistry->add("CascadeQA/hDCABachToPV", "Bachelor DCA to primary vertex", kTH1F, {aDCAToPVAxis});
-    mHistogramRegistry->add("CascadeQA/hDCAV0ToPV", "V0 DCA to primary vertex", kTH1F, {aDCAToPVAxis});
+    // mHistogramRegistry->add("CascadeQA/hInvMassCascadeNoCuts", "No cuts", o2::framework::kTH1F, {massAxisCascade});
+    mHistogramRegistry->add("CascadeQA/hInvMassXiCut", "Invariant mass with cut", o2::framework::kTH1F, {massAxisCascade});
+    mHistogramRegistry->add("CascadeQA/hInvMassOmegaCut", "Invariant mass with cut", o2::framework::kTH1F, {massAxisCascade});
+    mHistogramRegistry->add("CascadeQA/hCascadePt", "pT distribution", o2::framework::kTH1F, {ptAxis});
+    mHistogramRegistry->add("CascadeQA/hCascadeEta", "Eta distribution", o2::framework::kTH1F, {etaAxis});
+    mHistogramRegistry->add("CascadeQA/hCascadePhi", "Phi distribution", o2::framework::kTH1F, {phiAxis});
+    mHistogramRegistry->add("CascadeQA/hDCACascadeDaugh", "Cascade-daughters DCA", o2::framework::kTH1F, {aDCADaughAxis});
+    mHistogramRegistry->add("CascadeQA/hCascadeCPA", "Cos PA", o2::framework::kTH1F, {aCPAAxis});
+    mHistogramRegistry->add("CascadeQA/hCascadeTranRad", "Transverse radius", o2::framework::kTH1F, {tranRadAxis});
+    mHistogramRegistry->add("CascadeQA/hDCAPosToPV", "Pos V0 daughter DCA to primary vertex", o2::framework::kTH1F, {aDCAToPVAxis});
+    mHistogramRegistry->add("CascadeQA/hDCANegToPV", "Neg V0 daughter DCA to primary vertex", o2::framework::kTH1F, {aDCAToPVAxis});
+    mHistogramRegistry->add("CascadeQA/hDCABachToPV", "Bachelor DCA to primary vertex", o2::framework::kTH1F, {aDCAToPVAxis});
+    mHistogramRegistry->add("CascadeQA/hDCAV0ToPV", "V0 DCA to primary vertex", o2::framework::kTH1F, {aDCAToPVAxis});
   }
 
   /// check whether the most open cuts are fulfilled - most of this should have

@@ -11,18 +11,27 @@
 
 #include "PIDSelectionFilterAndAnalysis.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
+#include "SelectionFilterAndAnalysis.h"
+#include "SkimmingConfigurableCuts.h"
 
-#include <TObjArray.h>
+#include <Framework/Logger.h>
 
-#include <boost/regex.hpp>
+#include <TString.h>
+
+#include <boost/regex/v5/regbase.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_fwd.hpp>
+#include <boost/regex/v5/regex_search.hpp>
+#include <sys/types.h>
+
+#include <Rtypes.h>
+
+#include <cstdint>
+#include <set>
+#include <string>
+#include <vector>
 
 using namespace o2;
-using namespace o2::framework;
-using namespace o2::soa;
-using namespace o2::framework::expressions;
 using namespace o2::analysis::PWGCF;
 using namespace boost;
 

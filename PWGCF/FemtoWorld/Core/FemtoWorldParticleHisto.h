@@ -17,12 +17,16 @@
 #ifndef PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPARTICLEHISTO_H_
 #define PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPARTICLEHISTO_H_
 
-#include <string>
 #include "PWGCF/FemtoWorld/DataModel/FemtoWorldDerived.h"
-#include "Framework/HistogramRegistry.h"
 
-using namespace o2::framework;
-// using namespace o2::aod::o2::aod;
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
+
+#include <string>
+#include <string_view>
+
+#include <math.h>
 
 namespace o2::analysis::femtoWorld
 {
@@ -39,8 +43,8 @@ class FemtoWorldParticleHisto
   virtual ~FemtoWorldParticleHisto() = default;
 
   /// Initialization of the QA histograms
-  /// \param registry HistogramRegistry
-  void init(HistogramRegistry* registry)
+  /// \param registry o2::framework::HistogramRegistry
+  void init(o2::framework::HistogramRegistry* registry)
   {
     if (registry) {
       mHistogramRegistry = registry;
@@ -49,32 +53,32 @@ class FemtoWorldParticleHisto
       folderName += static_cast<std::string>(mFolderSuffix[mFolderSuffixType]);
 
       /// Histograms of the kinematic properties
-      mHistogramRegistry->add((folderName + "/hPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{240, 0, 6}});
-      mHistogramRegistry->add((folderName + "/hEta").c_str(), "; #eta; Entries", kTH1F, {{200, -1.5, 1.5}});
-      mHistogramRegistry->add((folderName + "/hPhi").c_str(), "; #phi; Entries", kTH1F, {{200, 0, 2. * M_PI}});
-      mHistogramRegistry->add((folderName + "/dEdxTPCVsMomentum").c_str(), "; #it{p} (GeV/#it{c}); dE/dx (keV/cm)", kTH2F, {{200, 0., 5.}, {250, 0., 500.}});
-      mHistogramRegistry->add((folderName + "/TOFBetaVsMomentum").c_str(), "; #it{p} (GeV/#it{c}); TOF #beta", kTH2F, {{200, 0., 5.}, {250, 0.4, 1.1}});
+      mHistogramRegistry->add((folderName + "/hPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", o2::framework::kTH1F, {{240, 0, 6}});
+      mHistogramRegistry->add((folderName + "/hEta").c_str(), "; #eta; Entries", o2::framework::kTH1F, {{200, -1.5, 1.5}});
+      mHistogramRegistry->add((folderName + "/hPhi").c_str(), "; #phi; Entries", o2::framework::kTH1F, {{200, 0, 2. * M_PI}});
+      mHistogramRegistry->add((folderName + "/dEdxTPCVsMomentum").c_str(), "; #it{p} (GeV/#it{c}); dE/dx (keV/cm)", o2::framework::kTH2F, {{200, 0., 5.}, {250, 0., 500.}});
+      mHistogramRegistry->add((folderName + "/TOFBetaVsMomentum").c_str(), "; #it{p} (GeV/#it{c}); TOF #beta", o2::framework::kTH2F, {{200, 0., 5.}, {250, 0.4, 1.1}});
 
       /// Particle-type specific histograms
       if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kTrack) {
         /// Track histograms
-        mHistogramRegistry->add((folderName + "/hDCAxy").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{20, 0.5, 4.05}, {500, -5, 5}});
-        mHistogramRegistry->add((folderName + "/hDCAz").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{z} (cm)", kTH2F, {{20, 0.5, 4.05}, {500, -5, 5}});
+        mHistogramRegistry->add((folderName + "/hDCAxy").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::kTH2F, {{20, 0.5, 4.05}, {500, -5, 5}});
+        mHistogramRegistry->add((folderName + "/hDCAz").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{z} (cm)", o2::framework::kTH2F, {{20, 0.5, 4.05}, {500, -5, 5}});
       } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kV0) {
         /// V0 histograms
-        mHistogramRegistry->add((folderName + "/hCPA").c_str(), "; #it{p}_{T} (GeV/#it{c}); cos#alpha", kTH2F, {{8, 0.3, 4.3}, {1000, 0.9, 1}});
+        mHistogramRegistry->add((folderName + "/hCPA").c_str(), "; #it{p}_{T} (GeV/#it{c}); cos#alpha", o2::framework::kTH2F, {{8, 0.3, 4.3}, {1000, 0.9, 1}});
       } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kCascade) {
         /// Cascade histograms
       } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kPhi) {
         /// Phi histograms
         int mInvBins = 1000;
         framework::AxisSpec mInvAxis = {mInvBins, 0.5, 1.5};
-        mHistogramRegistry->add((folderName + "/InvariantMass").c_str(), ";M_{K^{+}K^{-}} (GeV/#it{c}^{2});", kTH1D, {mInvAxis});
-        mHistogramRegistry->add((folderName + "/EtaVsMultiplicity").c_str(), "; multiplicity; #eta", kTH2F, {{12, 0., 200.}, {29, -2., 2.}});
+        mHistogramRegistry->add((folderName + "/InvariantMass").c_str(), ";M_{K^{+}K^{-}} (GeV/#it{c}^{2});", o2::framework::kTH1D, {mInvAxis});
+        mHistogramRegistry->add((folderName + "/EtaVsMultiplicity").c_str(), "; multiplicity; #eta", o2::framework::kTH2F, {{12, 0., 200.}, {29, -2., 2.}});
       } else if constexpr (mParticleType == o2::aod::femtoworldparticle::ParticleType::kPhiChild) {
         /// Phi daughters histograms
-        mHistogramRegistry->add((folderName + "/TOFNSigmaKvsP").c_str(), "; #it{p} (GeV/#it{c}); n#sigma TOF vs p ", kTH2F, {{200, 0., 5.}, {80, -10, 10}});
-        mHistogramRegistry->add((folderName + "/TPCNSigmaKvsP").c_str(), "; #it{p} (GeV/#it{c}); n#sigma TPC vs p ", kTH2F, {{200, 0., 5.}, {80, -10, 10}});
+        mHistogramRegistry->add((folderName + "/TOFNSigmaKvsP").c_str(), "; #it{p} (GeV/#it{c}); n#sigma TOF vs p ", o2::framework::kTH2F, {{200, 0., 5.}, {80, -10, 10}});
+        mHistogramRegistry->add((folderName + "/TPCNSigmaKvsP").c_str(), "; #it{p} (GeV/#it{c}); n#sigma TPC vs p ", o2::framework::kTH2F, {{200, 0., 5.}, {80, -10, 10}});
       } else {
         LOG(fatal) << "FemtoWorldParticleHisto: Histogramming for requested object not defined - quitting!";
       }
@@ -158,7 +162,7 @@ class FemtoWorldParticleHisto
   }
 
  private:
-  HistogramRegistry* mHistogramRegistry;                                                                      ///< For QA output
+  o2::framework::HistogramRegistry* mHistogramRegistry;                                                       ///< For QA output
   static constexpr o2::aod::femtoworldparticle::ParticleType mParticleType = particleType;                    ///< Type of the particle under analysis
   static constexpr int mFolderSuffixType = suffixType;                                                        ///< Counter for the folder suffix specified below
   static constexpr std::string_view mFolderSuffix[5] = {"", "_one", "_one_rejected", "_two", "two_rejected"}; ///< Suffix for the folder name in case of analyses of pairs of the same kind (T-T, V-V, C-C)

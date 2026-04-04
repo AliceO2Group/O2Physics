@@ -18,7 +18,9 @@
 
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/MetadataHelper.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
@@ -28,26 +30,33 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "ReconstructionDataFormats/PID.h"
-#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/DataTypes.h>
+#include <Framework/Logger.h>
+#include <ReconstructionDataFormats/PID.h>
 
 #include <TF1.h>
 #include <TFormula.h>
+#include <TH1.h>
 #include <TList.h>
 #include <TMCProcess.h>
 #include <TPDGCode.h>
 
+#include <sys/types.h>
+
 #include <Rtypes.h>
 
+#include <algorithm>
 #include <bitset>
+#include <cstddef>
+#include <cstdint>
+#include <ctime>
 #include <fstream>
 #include <functional>
 #include <iomanip>
-#include <locale>
 #include <map>
-#include <ranges>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -1594,8 +1603,6 @@ struct TpcExcludeTrack {
 template <typename TrackObject>
 inline bool matchTrackType(TrackObject const& track)
 {
-  using namespace o2::aod::track;
-
   if (tracktype == TrackTypePWGMM) {
     // under tests MM track selection
     // see: https://indico.cern.ch/event/1383788/contributions/5816953/attachments/2805905/4896281/TrackSel_GlobalTracks_vs_MMTrackSel.pdf

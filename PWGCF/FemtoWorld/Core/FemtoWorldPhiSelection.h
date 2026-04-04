@@ -19,21 +19,26 @@
 #ifndef PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPHISELECTION_H_
 #define PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPHISELECTION_H_
 
-#include <string>
-#include <vector>
+#include "PWGCF/FemtoWorld/Core/FemtoWorldObjectSelection.h"
+#include "PWGCF/FemtoWorld/Core/FemtoWorldSelection.h"
+#include "PWGCF/FemtoWorld/Core/FemtoWorldTrackSelection.h"
+#include "PWGCF/FemtoWorld/DataModel/FemtoWorldDerived.h"
+
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
 
 #include <TDatabasePDG.h> // FIXME
+#include <TLorentzVector.h>
 
-#include "PWGCF/FemtoWorld/Core/FemtoWorldObjectSelection.h"
-#include "PWGCF/FemtoWorld/Core/FemtoWorldTrackSelection.h"
-#include "PWGCF/FemtoWorld/Core/FemtoWorldSelection.h"
+#include <array>
+#include <cstddef>
+#include <string>
+#include <string_view>
+#include <vector>
 
-#include "ReconstructionDataFormats/PID.h"
-#include "Common/Core/RecoDecay.h"
-#include "Framework/HistogramRegistry.h"
-#include "TLorentzVector.h"
-
-using namespace o2::framework;
+#include <math.h>
 
 namespace o2::analysis::femtoWorld
 {
@@ -88,10 +93,10 @@ class FemtoWorldPhiSelection : public FemtoWorldObjectSelection<float, femtoWorl
                              fInvMassKaonUpLimit(0.515) {}
   /// Initializes histograms for the task
   template <o2::aod::femtoworldparticle::ParticleType part, o2::aod::femtoworldparticle::ParticleType daugh, typename cutContainerType>
-  void init(HistogramRegistry* registry);
+  void init(o2::framework::HistogramRegistry* registry);
 
   template <o2::aod::femtoworldparticle::ParticleType part, o2::aod::femtoworldparticle::ParticleType daugh, typename cutContainerType>
-  void initPhi(HistogramRegistry* registry);
+  void initPhi(o2::framework::HistogramRegistry* registry);
 
   template <typename C, typename V, typename T>
   bool isSelectedMinimal(C const& col, V const& v0, T const& posTrack, T const& negTrack);
@@ -264,15 +269,15 @@ class FemtoWorldPhiSelection : public FemtoWorldObjectSelection<float, femtoWorl
 }; // namespace femtoWorld
 
 template <o2::aod::femtoworldparticle::ParticleType part, o2::aod::femtoworldparticle::ParticleType daugh, typename cutContainerType>
-void FemtoWorldPhiSelection::init(HistogramRegistry* registry)
+void FemtoWorldPhiSelection::init(o2::framework::HistogramRegistry* registry)
 {
   if (registry) {
     mHistogramRegistry = registry;
     fillSelectionHistogram<part>();
     fillSelectionHistogram<daugh>();
 
-    AxisSpec massAxisPhi = {60000, 0.0f, 3.0f, "m_{#Phi} (GeV/#it{c}^{2})"};
-    AxisSpec massAxisAntiPhi = {60000, 0.0f, 3.0f, "m_{#bar{#Phi}} (GeV/#it{c}^{2})"};
+    o2::framework::AxisSpec massAxisPhi = {60000, 0.0f, 3.0f, "m_{#Phi} (GeV/#it{c}^{2})"};
+    o2::framework::AxisSpec massAxisAntiPhi = {60000, 0.0f, 3.0f, "m_{#bar{#Phi}} (GeV/#it{c}^{2})"};
 
     /// \todo this should be an automatic check in the parent class, and the return type should be templated
     size_t nSelections = getNSelections();
@@ -281,32 +286,32 @@ void FemtoWorldPhiSelection::init(HistogramRegistry* registry)
     }
     std::string folderName = static_cast<std::string>(o2::aod::femtoworldparticle::ParticleTypeName[part]);
     /// \todo initialize histograms for children tracks of v0s
-    mHistogramRegistry->add((folderName + "/hPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{1000, 0, 10}});
-    mHistogramRegistry->add((folderName + "/hEta").c_str(), "; #eta; Entries", kTH1F, {{1000, -1, 1}});
-    mHistogramRegistry->add((folderName + "/hPhi").c_str(), "; #phi; Entries", kTH1F, {{1000, 0, 2. * M_PI}});
-    // mHistogramRegistry->add((folderName + "/hDaughDCA").c_str(), "; DCA^{daugh} (cm); Entries", kTH1F, {{1000, 0, 10}});
-    // mHistogramRegistry->add((folderName + "/hTransRadius").c_str(), "; #it{r}_{xy} (cm); Entries", kTH1F, {{1500, 0, 150}});
-    // mHistogramRegistry->add((folderName + "/hDecayVtxX").c_str(), "; #it{Vtx}_{x} (cm); Entries", kTH1F, {{2000, 0, 200}});
-    // mHistogramRegistry->add((folderName + "/hDecayVtxY").c_str(), "; #it{Vtx}_{y} (cm)); Entries", kTH1F, {{2000, 0, 200}});
-    // mHistogramRegistry->add((folderName + "/hDecayVtxZ").c_str(), "; #it{Vtx}_{z} (cm); Entries", kTH1F, {{2000, 0, 200}});
-    // mHistogramRegistry->add((folderName + "/hCPA").c_str(), "; #it{cos #theta_{p}}; Entries", kTH1F, {{1000, 0.9, 1.}});
-    // mHistogramRegistry->add((folderName + "/hCPAvsPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); #it{cos #theta_{p}}", kTH2F, {{8, 0.3, 4.3}, {1000, 0.9, 1.}});
-    mHistogramRegistry->add((folderName + "/hInvMassPhi").c_str(), "", kTH1F, {massAxisPhi});
-    // mHistogramRegistry->add((folderName + "/hInvMassAntiPhi").c_str(), "", kTH1F, {massAxisAntiPhi});
-    // mHistogramRegistry->add((folderName + "/hInvMassPhiPhi").c_str(), "", kTH2F, {massAxisPhi, massAxisPhi});
+    mHistogramRegistry->add((folderName + "/hPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", o2::framework::kTH1F, {{1000, 0, 10}});
+    mHistogramRegistry->add((folderName + "/hEta").c_str(), "; #eta; Entries", o2::framework::kTH1F, {{1000, -1, 1}});
+    mHistogramRegistry->add((folderName + "/hPhi").c_str(), "; #phi; Entries", o2::framework::kTH1F, {{1000, 0, 2. * M_PI}});
+    // mHistogramRegistry->add((folderName + "/hDaughDCA").c_str(), "; DCA^{daugh} (cm); Entries", o2::framework::kTH1F, {{1000, 0, 10}});
+    // mHistogramRegistry->add((folderName + "/hTransRadius").c_str(), "; #it{r}_{xy} (cm); Entries", o2::framework::kTH1F, {{1500, 0, 150}});
+    // mHistogramRegistry->add((folderName + "/hDecayVtxX").c_str(), "; #it{Vtx}_{x} (cm); Entries", o2::framework::kTH1F, {{2000, 0, 200}});
+    // mHistogramRegistry->add((folderName + "/hDecayVtxY").c_str(), "; #it{Vtx}_{y} (cm)); Entries", o2::framework::kTH1F, {{2000, 0, 200}});
+    // mHistogramRegistry->add((folderName + "/hDecayVtxZ").c_str(), "; #it{Vtx}_{z} (cm); Entries", o2::framework::kTH1F, {{2000, 0, 200}});
+    // mHistogramRegistry->add((folderName + "/hCPA").c_str(), "; #it{cos #theta_{p}}; Entries", o2::framework::kTH1F, {{1000, 0.9, 1.}});
+    // mHistogramRegistry->add((folderName + "/hCPAvsPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); #it{cos #theta_{p}}", o2::framework::kTH2F, {{8, 0.3, 4.3}, {1000, 0.9, 1.}});
+    mHistogramRegistry->add((folderName + "/hInvMassPhi").c_str(), "", o2::framework::kTH1F, {massAxisPhi});
+    // mHistogramRegistry->add((folderName + "/hInvMassAntiPhi").c_str(), "", o2::framework::kTH1F, {massAxisAntiPhi});
+    // mHistogramRegistry->add((folderName + "/hInvMassPhiPhi").c_str(), "", o2::framework::kTH2F, {massAxisPhi, massAxisPhi});
 
     PosDaughTrack.init<aod::femtoworldparticle::ParticleType::kPhiChild, aod::femtoworldparticle::TrackType::kPosChild, aod::femtoworldparticle::cutContainerType>(mHistogramRegistry);
     NegDaughTrack.init<aod::femtoworldparticle::ParticleType::kPhiChild, aod::femtoworldparticle::TrackType::kNegChild, aod::femtoworldparticle::cutContainerType>(mHistogramRegistry);
 
-    mHistogramRegistry->add("PhiQA/hInvMassPhiNoCuts", "No cuts Phi", kTH1F, {massAxisPhi});
-    mHistogramRegistry->add("PhiQA/hInvMassPhiInvMassCut", "Invariant mass cut Phi", kTH1F, {massAxisPhi});
-    mHistogramRegistry->add("PhiQA/hInvMassPhiPtMin", "Minimum Pt cut", kTH1F, {massAxisPhi});
-    mHistogramRegistry->add("PhiQA/hInvMassPhiPtMax", "Maximum Pt cut", kTH1F, {massAxisPhi});
-    mHistogramRegistry->add("PhiQA/hInvMassPhiDCAPhiDaugh", "Phi-daughters DCA cut", kTH1F, {massAxisPhi});
-    mHistogramRegistry->add("PhiQA/hInvMassPhiCPA", "CPA cut", kTH1F, {massAxisPhi});
-    mHistogramRegistry->add("PhiQA/hInvMassPhiTranRadMin", "Minimum transverse radius cut", kTH1F, {massAxisPhi});
-    mHistogramRegistry->add("PhiQA/hInvMassPhiTranRadMax", "Maximum transverse radius cut", kTH1F, {massAxisPhi});
-    mHistogramRegistry->add("PhiQA/hInvMassPhiDecVtxMax", "Maximum distance on  decay vertex cut", kTH1F, {massAxisPhi});
+    mHistogramRegistry->add("PhiQA/hInvMassPhiNoCuts", "No cuts Phi", o2::framework::kTH1F, {massAxisPhi});
+    mHistogramRegistry->add("PhiQA/hInvMassPhiInvMassCut", "Invariant mass cut Phi", o2::framework::kTH1F, {massAxisPhi});
+    mHistogramRegistry->add("PhiQA/hInvMassPhiPtMin", "Minimum Pt cut", o2::framework::kTH1F, {massAxisPhi});
+    mHistogramRegistry->add("PhiQA/hInvMassPhiPtMax", "Maximum Pt cut", o2::framework::kTH1F, {massAxisPhi});
+    mHistogramRegistry->add("PhiQA/hInvMassPhiDCAPhiDaugh", "Phi-daughters DCA cut", o2::framework::kTH1F, {massAxisPhi});
+    mHistogramRegistry->add("PhiQA/hInvMassPhiCPA", "CPA cut", o2::framework::kTH1F, {massAxisPhi});
+    mHistogramRegistry->add("PhiQA/hInvMassPhiTranRadMin", "Minimum transverse radius cut", o2::framework::kTH1F, {massAxisPhi});
+    mHistogramRegistry->add("PhiQA/hInvMassPhiTranRadMax", "Maximum transverse radius cut", o2::framework::kTH1F, {massAxisPhi});
+    mHistogramRegistry->add("PhiQA/hInvMassPhiDecVtxMax", "Maximum distance on  decay vertex cut", o2::framework::kTH1F, {massAxisPhi});
   }
   /// check whether the most open cuts are fulfilled - most of this should have already be done by the filters
   nPtPhiMinSel = getNSelections(femtoWorldPhiSelection::kpTPhiMin);
@@ -328,15 +333,15 @@ void FemtoWorldPhiSelection::init(HistogramRegistry* registry)
 
 // Phi initialization
 template <o2::aod::femtoworldparticle::ParticleType part, o2::aod::femtoworldparticle::ParticleType daugh, typename cutContainerType>
-void FemtoWorldPhiSelection::initPhi(HistogramRegistry* registry)
+void FemtoWorldPhiSelection::initPhi(o2::framework::HistogramRegistry* registry)
 {
   if (registry) {
     mHistogramRegistry = registry;
     fillSelectionHistogram<part>();
     fillSelectionHistogram<daugh>();
 
-    AxisSpec massAxisPhi = {60000, 0.0f, 3.0f, "m_{#Phi} (GeV/#it{c}^{2})"};
-    // AxisSpec massAxisAntiPhi = {600, 0.0f, 3.0f, "m_{#bar{#Phi}} (GeV/#it{c}^{2})"};
+    o2::framework::AxisSpec massAxisPhi = {60000, 0.0f, 3.0f, "m_{#Phi} (GeV/#it{c}^{2})"};
+    // o2::framework::AxisSpec massAxisAntiPhi = {600, 0.0f, 3.0f, "m_{#bar{#Phi}} (GeV/#it{c}^{2})"};
 
     /// \todo this should be an automatic check in the parent class, and the return type should be templated
     size_t nSelections = getNSelections();
@@ -345,29 +350,29 @@ void FemtoWorldPhiSelection::initPhi(HistogramRegistry* registry)
     }
     std::string folderName = static_cast<std::string>(o2::aod::femtoworldparticle::ParticleTypeName[part]);
     /// \todo initialize histograms for children tracks of v0s
-    mHistogramRegistry->add((folderName + "/hPtPhi").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{1000, 0, 10}});
-    mHistogramRegistry->add((folderName + "/hEtaPhi").c_str(), "; #eta; Entries", kTH1F, {{1000, -1, 1}});
-    mHistogramRegistry->add((folderName + "/hPhiPhi").c_str(), "; #phi; Entries", kTH1F, {{1000, 0, 2. * M_PI}});
-    // mHistogramRegistry->add((folderName + "/hDaughDCA").c_str(), "; DCA^{daugh} (cm); Entries", kTH1F, {{1000, 0, 10}});
-    // mHistogramRegistry->add((folderName + "/hTransRadius").c_str(), "; #it{r}_{xy} (cm); Entries", kTH1F, {{1500, 0, 150}});
-    // mHistogramRegistry->add((folderName + "/hDecayVtxX").c_str(), "; #it{Vtx}_{x} (cm); Entries", kTH1F, {{2000, 0, 200}});
-    // mHistogramRegistry->add((folderName + "/hDecayVtxY").c_str(), "; #it{Vtx}_{y} (cm)); Entries", kTH1F, {{2000, 0, 200}});
-    // mHistogramRegistry->add((folderName + "/hDecayVtxZ").c_str(), "; #it{Vtx}_{z} (cm); Entries", kTH1F, {{2000, 0, 200}});
-    // mHistogramRegistry->add((folderName + "/hCPA").c_str(), "; #it{cos #theta_{p}}; Entries", kTH1F, {{1000, 0.9, 1.}});
-    // mHistogramRegistry->add((folderName + "/hCPAvsPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); #it{cos #theta_{p}}", kTH2F, {{8, 0.3, 4.3}, {1000, 0.9, 1.}});
-    mHistogramRegistry->add((folderName + "/hInvMassPhi").c_str(), "", kTH1F, {massAxisPhi});
+    mHistogramRegistry->add((folderName + "/hPtPhi").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", o2::framework::kTH1F, {{1000, 0, 10}});
+    mHistogramRegistry->add((folderName + "/hEtaPhi").c_str(), "; #eta; Entries", o2::framework::kTH1F, {{1000, -1, 1}});
+    mHistogramRegistry->add((folderName + "/hPhiPhi").c_str(), "; #phi; Entries", o2::framework::kTH1F, {{1000, 0, 2. * M_PI}});
+    // mHistogramRegistry->add((folderName + "/hDaughDCA").c_str(), "; DCA^{daugh} (cm); Entries", o2::framework::kTH1F, {{1000, 0, 10}});
+    // mHistogramRegistry->add((folderName + "/hTransRadius").c_str(), "; #it{r}_{xy} (cm); Entries", o2::framework::kTH1F, {{1500, 0, 150}});
+    // mHistogramRegistry->add((folderName + "/hDecayVtxX").c_str(), "; #it{Vtx}_{x} (cm); Entries", o2::framework::kTH1F, {{2000, 0, 200}});
+    // mHistogramRegistry->add((folderName + "/hDecayVtxY").c_str(), "; #it{Vtx}_{y} (cm)); Entries", o2::framework::kTH1F, {{2000, 0, 200}});
+    // mHistogramRegistry->add((folderName + "/hDecayVtxZ").c_str(), "; #it{Vtx}_{z} (cm); Entries", o2::framework::kTH1F, {{2000, 0, 200}});
+    // mHistogramRegistry->add((folderName + "/hCPA").c_str(), "; #it{cos #theta_{p}}; Entries", o2::framework::kTH1F, {{1000, 0.9, 1.}});
+    // mHistogramRegistry->add((folderName + "/hCPAvsPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); #it{cos #theta_{p}}", o2::framework::kTH2F, {{8, 0.3, 4.3}, {1000, 0.9, 1.}});
+    mHistogramRegistry->add((folderName + "/hInvMassPhi").c_str(), "", o2::framework::kTH1F, {massAxisPhi});
     PosDaughTrack.init<aod::femtoworldparticle::ParticleType::kPhiChild, aod::femtoworldparticle::TrackType::kPosChild, aod::femtoworldparticle::cutContainerType>(mHistogramRegistry);
     NegDaughTrack.init<aod::femtoworldparticle::ParticleType::kPhiChild, aod::femtoworldparticle::TrackType::kNegChild, aod::femtoworldparticle::cutContainerType>(mHistogramRegistry);
 
-    mHistogramRegistry->add("PhiQA/hInvMasPhiNoCuts", "No cuts", kTH1F, {massAxisPhi});
-    mHistogramRegistry->add("PhiQA/hInvMassPhiInvMassCut", "Invariant mass cut", kTH1F, {massAxisPhi});
-    mHistogramRegistry->add("PhiQA/hInvMassPhiPtMin", "Minimum Pt cut", kTH1F, {massAxisPhi});
-    mHistogramRegistry->add("PhiQA/hInvMassPhiPtMax", "Maximum Pt cut", kTH1F, {massAxisPhi});
-    // mHistogramRegistry->add("PhiQA/hInvMassPhiDCAPhiDaugh", "Phi-daughters DCA cut", kTH1F, {massAxisPhi});
-    // mHistogramRegistry->add("PhiQA/hInvMassPhiCPA", "CPA cut", kTH1F, {massAxisPhi});
-    // mHistogramRegistry->add("PhiQA/hInvMassPhiTranRadMin", "Minimum transverse radius cut", kTH1F, {massAxisPhi});
-    // mHistogramRegistry->add("PhiQA/hInvMassPhiTranRadMax", "Maximum transverse radius cut", kTH1F, {massAxisPhi});
-    // mHistogramRegistry->add("PhiQA/hInvMassPhiDecVtxMax", "Maximum distance on  decay vertex cut", kTH1F, {massAxisPhi});
+    mHistogramRegistry->add("PhiQA/hInvMasPhiNoCuts", "No cuts", o2::framework::kTH1F, {massAxisPhi});
+    mHistogramRegistry->add("PhiQA/hInvMassPhiInvMassCut", "Invariant mass cut", o2::framework::kTH1F, {massAxisPhi});
+    mHistogramRegistry->add("PhiQA/hInvMassPhiPtMin", "Minimum Pt cut", o2::framework::kTH1F, {massAxisPhi});
+    mHistogramRegistry->add("PhiQA/hInvMassPhiPtMax", "Maximum Pt cut", o2::framework::kTH1F, {massAxisPhi});
+    // mHistogramRegistry->add("PhiQA/hInvMassPhiDCAPhiDaugh", "Phi-daughters DCA cut", o2::framework::kTH1F, {massAxisPhi});
+    // mHistogramRegistry->add("PhiQA/hInvMassPhiCPA", "CPA cut", o2::framework::kTH1F, {massAxisPhi});
+    // mHistogramRegistry->add("PhiQA/hInvMassPhiTranRadMin", "Minimum transverse radius cut", o2::framework::kTH1F, {massAxisPhi});
+    // mHistogramRegistry->add("PhiQA/hInvMassPhiTranRadMax", "Maximum transverse radius cut", o2::framework::kTH1F, {massAxisPhi});
+    // mHistogramRegistry->add("PhiQA/hInvMassPhiDecVtxMax", "Maximum distance on  decay vertex cut", o2::framework::kTH1F, {massAxisPhi});
   }
   /// check whether the most open cuts are fulfilled - most of this should have already be done by the filters
   nPtPhiMinSel = getNSelections(femtoWorldPhiSelection::kpTPhiMin);
@@ -557,8 +562,8 @@ std::array<cutContainerType, 5> FemtoWorldPhiSelection::getCutContainer(C const&
 
   TLorentzVector part1Vec;
   TLorentzVector part2Vec;
-  Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 321, "Particle 1 - PDG code"};
-  Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 321, "Particle 2 - PDG code"};
+  o2::framework::Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 321, "Particle 1 - PDG code"};
+  o2::framework::Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 321, "Particle 2 - PDG code"};
   float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartOne)->Mass(); // FIXME: Get from the PDG service of the common header
   float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartTwo)->Mass(); // FIXME: Get from the PDG service of the common header
   part1Vec.SetPtEtaPhiM(posTrack.pt(), posTrack.eta(), posTrack.phi(), mMassOne);
@@ -619,8 +624,8 @@ void FemtoWorldPhiSelection::fillQA(C const& /*col*/, V const& /*v0*/, T const& 
   if (mHistogramRegistry) {
     TLorentzVector part1Vec;
     TLorentzVector part2Vec;
-    Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 321, "Particle 1 - PDG code"};
-    Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 321, "Particle 2 - PDG code"};
+    o2::framework::Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 321, "Particle 1 - PDG code"};
+    o2::framework::Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 321, "Particle 2 - PDG code"};
     float mMassOne = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartOne)->Mass(); // FIXME: Get from the PDG service of the common header
     float mMassTwo = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartTwo)->Mass(); // FIXME: Get from the PDG service of the common header
     part1Vec.SetPtEtaPhiM(posTrack.pt(), posTrack.eta(), posTrack.phi(), mMassOne);

@@ -19,10 +19,12 @@
 
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
-#include "Framework/ASoAHelpers.h"
+#include <Framework/Logger.h>
 
 #include <algorithm>
+#include <cstdlib>
 #include <functional>
+#include <iterator>
 #include <vector>
 
 namespace o2::analysis::femto_universe

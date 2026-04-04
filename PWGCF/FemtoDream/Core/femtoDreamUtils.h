@@ -18,8 +18,13 @@
 
 #include "PWGCF/DataModel/FemtoDerived.h"
 
-#include "CommonConstants/PhysicsConstants.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/Logger.h>
 
+#include <TPDGCode.h>
+
+#include <cstdint>
+#include <cstdlib>
 #include <string>
 #include <vector>
 

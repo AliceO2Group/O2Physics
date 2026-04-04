@@ -10,6 +10,17 @@
 // or submit itself to any jurisdiction.
 
 #include "BootstrapProfile.h"
+
+#include <TCollection.h>
+#include <TH1.h>
+#include <TList.h>
+#include <TMath.h>
+#include <TProfile.h>
+#include <TString.h>
+
+#include <RtypesCore.h>
+
+#include <cstdio>
 BootstrapProfile::BootstrapProfile() : TProfile(),
                                        fListOfEntries(0),
                                        fProfInitialized(kFALSE),

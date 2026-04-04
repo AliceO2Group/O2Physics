@@ -13,15 +13,19 @@
 /// \brief FemtoWorldObjectSelection - Parent class of all selections
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 
-#ifndef FEMTOWORLDOBJECTSELECTION_H_
-#define FEMTOWORLDOBJECTSELECTION_H_
+#ifndef PWGCF_FEMTOWORLD_CORE_FEMTOWORLDOBJECTSELECTION_H_
+#define PWGCF_FEMTOWORLD_CORE_FEMTOWORLDOBJECTSELECTION_H_
 
 #include "PWGCF/FemtoWorld/Core/FemtoWorldSelection.h"
+#include "PWGCF/FemtoWorld/DataModel/FemtoWorldDerived.h"
 
-#include "ReconstructionDataFormats/PID.h"
-#include "Framework/HistogramRegistry.h"
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 
-using namespace o2::framework;
+#include <TH1.h>
+
+#include <cstddef>
+#include <string>
 
 namespace o2::analysis
 {
@@ -46,7 +50,7 @@ class FemtoWorldObjectSelection
   void fillSelectionHistogram()
   {
     int nBins = mSelections.size();
-    mHistogramRegistry->add((static_cast<std::string>(o2::aod::femtoworldparticle::ParticleTypeName[part]) + "/cuthist").c_str(), "; Cut; Value", kTH1F, {{nBins, 0, static_cast<double>(nBins)}});
+    mHistogramRegistry->add((static_cast<std::string>(o2::aod::femtoworldparticle::ParticleTypeName[part]) + "/cuthist").c_str(), "; Cut; Value", o2::framework::kTH1F, {{nBins, 0, static_cast<double>(nBins)}});
     auto hist = mHistogramRegistry->get<TH1>(HIST(o2::aod::femtoworldparticle::ParticleTypeName[part]) + HIST("/cuthist"));
     for (size_t i = 0; i < mSelections.size(); ++i) {
       hist->GetXaxis()->SetBinLabel(i + 1, Form("%u", mSelections.at(i).getSelectionVariable()));
@@ -182,11 +186,11 @@ class FemtoWorldObjectSelection
   }
 
  protected:
-  HistogramRegistry* mHistogramRegistry;                                     ///< For QA output
+  o2::framework::HistogramRegistry* mHistogramRegistry;                      ///< For QA output
   std::vector<FemtoWorldSelection<selValDataType, selVariable>> mSelections; ///< Vector containing all selections
 };
 
 } // namespace femtoWorld
 } // namespace o2::analysis
 
-#endif /* FEMTOWORLDOBJECTSELECTION_H_ */
+#endif // PWGCF_FEMTOWORLD_CORE_FEMTOWORLDOBJECTSELECTION_H_

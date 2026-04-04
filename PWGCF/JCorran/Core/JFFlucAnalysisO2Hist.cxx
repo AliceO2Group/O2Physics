@@ -13,10 +13,20 @@
 
 #include "JFFlucAnalysisO2Hist.h"
 
+#include "JFFlucAnalysis.h"
+
 #include "PWGCF/DataModel/CorrelationsDerived.h"
 
-#include "CommonConstants/MathConstants.h"
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 
+#include <TH1.h>
+#include <THnSparse.h>
+#include <TString.h>
+
+#include <RtypesCore.h>
+
+#include <cstdint>
 #include <memory>
 #include <vector>
 

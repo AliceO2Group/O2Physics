@@ -14,20 +14,19 @@
 /// \author Dawid Karpiński, WUT Warsaw, dawid.karpinski@cern.ch
 
 #include <TFile.h>
-#include <TFolder.h>
 #include <TGrid.h>
-#include <TGridResult.h>
-#include <TH1F.h>
-#include <TH2F.h>
-#include <TH3F.h>
-#include <TSystem.h>
-#include <unistd.h>
+#include <TH1.h>
+#include <TH3.h>
+
+#include <bits/getopt_core.h>
 
 #include <cassert>
+#include <chrono>
 #include <cmath>
+#include <cstdlib>
 #include <filesystem> // NOLINT
-#include <iostream>
 #include <format>
+#include <iostream>
 #include <string>
 
 namespace fs = std::filesystem;

@@ -20,16 +20,22 @@
 #ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMV0SELECTIONK0SHORT_H_
 #define PWGCF_FEMTODREAM_CORE_FEMTODREAMV0SELECTIONK0SHORT_H_
 
+#include "PWGCF/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamObjectSelection.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamSelection.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamTrackSelection.h"
 
-#include "Common/Core/RecoDecay.h"
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
 
-#include "Framework/HistogramRegistry.h"
-#include "ReconstructionDataFormats/PID.h"
-
+#include <array>
+#include <cstddef>
+#include <cstdlib>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace o2::analysis::femtoDream
@@ -74,7 +80,7 @@ class FemtoDreamV0Selection
 
   /// Initializes histograms for the task
   template <o2::aod::femtodreamparticle::ParticleType part, o2::aod::femtodreamparticle::ParticleType daugh, typename cutContainerType>
-  void init(HistogramRegistry* QAregistry, HistogramRegistry* Registry);
+  void init(o2::framework::HistogramRegistry* QAregistry, o2::framework::HistogramRegistry* Registry);
 
   template <typename C, typename V, typename T>
   bool isSelectedMinimal(C const& col, V const& v0, T const& posTrack,
@@ -287,7 +293,7 @@ class FemtoDreamV0Selection
 template <o2::aod::femtodreamparticle::ParticleType part,
           o2::aod::femtodreamparticle::ParticleType daugh,
           typename cutContainerType>
-void FemtoDreamV0Selection::init(HistogramRegistry* QAregistry, HistogramRegistry* Registry)
+void FemtoDreamV0Selection::init(o2::framework::HistogramRegistry* QAregistry, o2::framework::HistogramRegistry* Registry)
 {
   if (QAregistry && Registry) {
     mHistogramRegistry = Registry;
@@ -295,9 +301,9 @@ void FemtoDreamV0Selection::init(HistogramRegistry* QAregistry, HistogramRegistr
     fillSelectionHistogram<part>();
     fillSelectionHistogram<daugh>();
 
-    AxisSpec massAxisLambda = {600, 0.0f, 3.0f, "m_{#Lambda} (GeV/#it{c}^{2})"}; /// paramters for K0Short
-    AxisSpec massAxisAntiLambda = {600, 0.0f, 3.0f,
-                                   "m_{#bar{#Lambda}} (GeV/#it{c}^{2})"};
+    o2::framework::AxisSpec massAxisLambda = {600, 0.0f, 3.0f, "m_{#Lambda} (GeV/#it{c}^{2})"}; /// paramters for K0Short
+    o2::framework::AxisSpec massAxisAntiLambda = {600, 0.0f, 3.0f,
+                                                  "m_{#bar{#Lambda}} (GeV/#it{c}^{2})"};
 
     /// \todo this should be an automatic check in the parent class, and the
     /// return type should be templated
@@ -311,39 +317,39 @@ void FemtoDreamV0Selection::init(HistogramRegistry* QAregistry, HistogramRegistr
       o2::aod::femtodreamparticle::ParticleTypeName[part]);
     /// \todo initialize histograms for children tracks of v0s
     mQAHistogramRegistry->add((folderName + "/hPt").c_str(),
-                              "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F,
+                              "; #it{p}_{T} (GeV/#it{c}); Entries", o2::framework::kTH1F,
                               {{1000, 0, 10}});
     mQAHistogramRegistry->add((folderName + "/hEta").c_str(), "; #eta; Entries",
-                              kTH1F, {{1000, -1, 1}});
+                              o2::framework::kTH1F, {{1000, -1, 1}});
     mQAHistogramRegistry->add((folderName + "/hPhi").c_str(), "; #phi; Entries",
-                              kTH1F, {{1000, 0, o2::constants::math::TwoPI}});
+                              o2::framework::kTH1F, {{1000, 0, o2::constants::math::TwoPI}});
     mQAHistogramRegistry->add((folderName + "/hDaughDCA").c_str(),
-                              "; DCA^{daugh} (cm); Entries", kTH1F,
+                              "; DCA^{daugh} (cm); Entries", o2::framework::kTH1F,
                               {{1000, 0, 10}});
     mQAHistogramRegistry->add((folderName + "/hTransRadius").c_str(),
-                              "; #it{r}_{xy} (cm); Entries", kTH1F,
+                              "; #it{r}_{xy} (cm); Entries", o2::framework::kTH1F,
                               {{1500, 0, 150}});
     mQAHistogramRegistry->add((folderName + "/hDecayVtxX").c_str(),
-                              "; #it{Vtx}_{x} (cm); Entries", kTH1F,
+                              "; #it{Vtx}_{x} (cm); Entries", o2::framework::kTH1F,
                               {{2000, 0, 200}});
     mQAHistogramRegistry->add((folderName + "/hDecayVtxY").c_str(),
-                              "; #it{Vtx}_{y} (cm)); Entries", kTH1F,
+                              "; #it{Vtx}_{y} (cm)); Entries", o2::framework::kTH1F,
                               {{2000, 0, 200}});
     mQAHistogramRegistry->add((folderName + "/hDecayVtxZ").c_str(),
-                              "; #it{Vtx}_{z} (cm); Entries", kTH1F,
+                              "; #it{Vtx}_{z} (cm); Entries", o2::framework::kTH1F,
                               {{2000, 0, 200}});
     mQAHistogramRegistry->add((folderName + "/hCPA").c_str(),
-                              "; #it{cos #theta_{p}}; Entries", kTH1F,
+                              "; #it{cos #theta_{p}}; Entries", o2::framework::kTH1F,
                               {{1000, 0.9, 1.}});
     mQAHistogramRegistry->add((folderName + "/hCPAvsPt").c_str(),
                               "; #it{p}_{T} (GeV/#it{c}); #it{cos #theta_{p}}",
-                              kTH2F, {{8, 0.3, 4.3}, {1000, 0.9, 1.}});
-    mQAHistogramRegistry->add((folderName + "/hInvMassLambda").c_str(), "", kTH1F,
+                              o2::framework::kTH2F, {{8, 0.3, 4.3}, {1000, 0.9, 1.}});
+    mQAHistogramRegistry->add((folderName + "/hInvMassLambda").c_str(), "", o2::framework::kTH1F,
                               {massAxisLambda});
     mQAHistogramRegistry->add((folderName + "/hInvMassAntiLambda").c_str(), "",
-                              kTH1F, {massAxisAntiLambda});
+                              o2::framework::kTH1F, {massAxisAntiLambda});
     mQAHistogramRegistry->add((folderName + "/hInvMassLambdaAntiLambda").c_str(),
-                              "", kTH2F, {massAxisLambda, massAxisAntiLambda});
+                              "", o2::framework::kTH2F, {massAxisLambda, massAxisAntiLambda});
 
     posDaughTrack.init<daugh,
                        aod::femtodreamparticle::TrackType::kPosChild,
@@ -354,28 +360,28 @@ void FemtoDreamV0Selection::init(HistogramRegistry* QAregistry, HistogramRegistr
                        aod::femtodreamparticle::cutContainerType>(
       mQAHistogramRegistry, mHistogramRegistry);
 
-    mQAHistogramRegistry->add(folderName + "QA/hInvMassLambdaNoCuts", "No cuts", kTH1F,
+    mQAHistogramRegistry->add(folderName + "QA/hInvMassLambdaNoCuts", "No cuts", o2::framework::kTH1F,
                               {massAxisLambda});
     mQAHistogramRegistry->add(folderName + "QA/hInvMassLambdaInvMassCut",
-                              "Invariant mass cut", kTH1F, {massAxisLambda});
+                              "Invariant mass cut", o2::framework::kTH1F, {massAxisLambda});
     mQAHistogramRegistry->add(folderName + "QA/hInvMassLambdaPtMin", "Minimum Pt cut",
-                              kTH1F, {massAxisLambda});
+                              o2::framework::kTH1F, {massAxisLambda});
     mQAHistogramRegistry->add(folderName + "QA/hInvMassLambdaPtMax", "Maximum Pt cut",
-                              kTH1F, {massAxisLambda});
+                              o2::framework::kTH1F, {massAxisLambda});
     mQAHistogramRegistry->add(folderName + "QA/hInvMassLambdaEtaMax", "Maximum Eta cut",
-                              kTH1F, {massAxisLambda});
+                              o2::framework::kTH1F, {massAxisLambda});
     mQAHistogramRegistry->add(folderName + "QA/hInvMassLambdaDCAV0Daugh",
-                              "V0-daughters DCA cut", kTH1F, {massAxisLambda});
-    mQAHistogramRegistry->add(folderName + "QA/hInvMassLambdaCPA", "CPA cut", kTH1F,
+                              "V0-daughters DCA cut", o2::framework::kTH1F, {massAxisLambda});
+    mQAHistogramRegistry->add(folderName + "QA/hInvMassLambdaCPA", "CPA cut", o2::framework::kTH1F,
                               {massAxisLambda});
     mQAHistogramRegistry->add(folderName + "QA/hInvMassLambdaTranRadMin",
-                              "Minimum transverse radius cut", kTH1F,
+                              "Minimum transverse radius cut", o2::framework::kTH1F,
                               {massAxisLambda});
     mQAHistogramRegistry->add(folderName + "QA/hInvMassLambdaTranRadMax",
-                              "Maximum transverse radius cut", kTH1F,
+                              "Maximum transverse radius cut", o2::framework::kTH1F,
                               {massAxisLambda});
     mQAHistogramRegistry->add(folderName + "QA/hInvMassLambdaDecVtxMax",
-                              "Maximum distance on  decay vertex cut", kTH1F,
+                              "Maximum distance on  decay vertex cut", o2::framework::kTH1F,
                               {massAxisLambda});
   }
 
