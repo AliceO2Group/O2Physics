@@ -63,8 +63,8 @@ namespace o2::aod
 namespace full
 {
 // Candidate kinematics
-DECLARE_SOA_COLUMN(MCd, mcd, float);                            //! Invariant mass of cd candidate (GeV/c^2)
-DECLARE_SOA_COLUMN(MLc, mlc, float);                            //! Invariant mass of lc candidate (GeV/c^2)
+DECLARE_SOA_COLUMN(MassCd, massCd, float);                      //! Invariant mass of cd candidate (GeV/c^2)
+DECLARE_SOA_COLUMN(MassLc, massLc, float);                      //! Invariant mass of lc candidate (GeV/c^2)
 DECLARE_SOA_COLUMN(Pt, pt, float);                              //! Transverse momentum of candidate (GeV/c)
 DECLARE_SOA_COLUMN(Eta, eta, float);                            //! eta of candidate (GeV/c)
 DECLARE_SOA_COLUMN(Phi, phi, float);                            //! phi of candidate (GeV/c)
@@ -101,8 +101,8 @@ DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t);              //! Timestamp fo
 
 // Full table: include ALL columns declared above
 DECLARE_SOA_TABLE(HfCandCd, "AOD", "HFCANDCD",
-                  full::MCd,
-                  full::MLc,
+                  full::MassCd,
+                  full::MassLc,
                   full::Pt,
                   full::Eta,
                   full::Phi,
