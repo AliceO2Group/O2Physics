@@ -497,7 +497,6 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
     pairCleaner.init(&qaRegistry);
     if (twotracksconfigs.confIsCPR.value) {
       pairCloseRejection.init(&resultRegistry, &qaRegistry, twotracksconfigs.confCPRdeltaPhiCutMin.value, twotracksconfigs.confCPRdeltaPhiCutMax.value, twotracksconfigs.confCPRdeltaEtaCutMin.value, twotracksconfigs.confCPRdeltaEtaCutMax.value, twotracksconfigs.confCPRChosenRadii.value, twotracksconfigs.confCPRPlotPerRadii.value);
-      // pairCloseRejection.init_kT(&resultRegistry, confKtKstarBins, twotracksconfigs.confCPRdeltaPhiCutMinVector, twotracksconfigs.confCPRdeltaPhiCutMaxVector, twotracksconfigs.confCPRdeltaEtaCutMinVector, twotracksconfigs.confCPRdeltaEtaCutMaxVector, twotracksconfigs.confCPRdeltaPhiCutFractionMinVector, twotracksconfigs.confCPRdeltaPhiCutFractionMaxVector, twotracksconfigs.confCPRdeltaEtaCutFractionMinVector, twotracksconfigs.confCPRdeltaEtaCutFractionMaxVector);
       pairCloseRejection.init_kT(&resultRegistry, confKtKstarBins, twotracksconfigs.confCPRdeltaPhiCutMinVec.value, twotracksconfigs.confCPRdeltaPhiCutMaxVec.value, twotracksconfigs.confCPRdeltaEtaCutMinVec.value, twotracksconfigs.confCPRdeltaEtaCutMaxVec.value, twotracksconfigs.confCPRdeltaPhiCutFractionMinVec.value, twotracksconfigs.confCPRdeltaPhiCutFractionMaxVec.value, twotracksconfigs.confCPRdeltaEtaCutFractionMinVec.value, twotracksconfigs.confCPRdeltaEtaCutFractionMaxVec.value);
     }
 
