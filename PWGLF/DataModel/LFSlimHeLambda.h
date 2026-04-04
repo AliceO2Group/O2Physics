@@ -14,13 +14,15 @@
 /// \brief Slim nuclei tables
 ///
 
-#ifndef PWGLF_DATAMODEL_LFSLIMNUCLEITABLES_H_
-#define PWGLF_DATAMODEL_LFSLIMNUCLEITABLES_H_
+#ifndef PWGLF_DATAMODEL_LFSLIMHELAMBDA_H_
+#define PWGLF_DATAMODEL_LFSLIMHELAMBDA_H_
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
 
-#include <Math/Vector4D.h>
+#include <Math/GenVector/LorentzVector.h>
+#include <Math/GenVector/PtEtaPhiM4D.h>
+
+#include <cstdint>
 
 namespace o2::aod
 {
@@ -82,7 +84,7 @@ struct lambdaCandidate {
   float v0Radius = -1.f;          // V0 radius
   float protonNSigmaTPC = -999.f; // Proton TPC nSigma
   float pionNSigmaTPC = -999.f;   // Pion TPC nSigma
-  int8_t sign = 0; // Charge sign of the Lambda candidate
+  int8_t sign = 0;                // Charge sign of the Lambda candidate
 };
 
-#endif // PWGLF_DATAMODEL_LFSLIMNUCLEITABLES_H_
+#endif // PWGLF_DATAMODEL_LFSLIMHELAMBDA_H_

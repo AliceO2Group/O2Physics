@@ -14,8 +14,9 @@
 /// \brief Slim tables for Lithium4
 ///
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 
 #ifndef PWGLF_DATAMODEL_LFLITHIUM4TABLES_H_
 #define PWGLF_DATAMODEL_LFLITHIUM4TABLES_H_

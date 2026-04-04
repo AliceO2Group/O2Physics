@@ -17,10 +17,7 @@
 
 #include "PWGLF/DataModel/LFKinkDecayTables.h"
 
-#include "Common/Core/RecoDecay.h"
-
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
 
 #ifndef PWGLF_DATAMODEL_LFSIGMAHADTABLES_H_
 #define PWGLF_DATAMODEL_LFSIGMAHADTABLES_H_
