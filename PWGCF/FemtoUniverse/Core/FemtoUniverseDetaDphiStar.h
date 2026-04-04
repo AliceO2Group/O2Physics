@@ -187,8 +187,9 @@ class FemtoUniverseDetaDphiStar
     }
   }
 
-  template <typename t1>
-  void init_kT(HistogramRegistry* registry, t1& ktbins, std::vector<float> ldeltaphistarcutmin, std::vector<float> ldeltaphistarcutmax, std::vector<float> ldeltaetacutmin, std::vector<float> ldeltaetacutmax)
+  template <typename t1, typename t2>
+  // void init_kT(HistogramRegistry* registry, t1& ktbins, std::vector<float> ldeltaphistarcutmin, std::vector<float> ldeltaphistarcutmax, std::vector<float> ldeltaetacutmin, std::vector<float> ldeltaetacutmax, std::vector<float> ldeltaphistarcutFractionmin, std::vector<float> ldeltaphistarcutFractionmax, std::vector<float> ldeltaetacutFractionmin, std::vector<float> ldeltaetacutFractionmax)
+  void init_kT(HistogramRegistry* registry, t1& ktbins, t2& ldeltaphistarcutmin, t2& ldeltaphistarcutmax, t2& ldeltaetacutmin, t2& ldeltaetacutmax, t2& ldeltaphistarcutFractionmin, t2& ldeltaphistarcutFractionmax, t2& ldeltaetacutFractionmin, t2& ldeltaetacutFractionmax)
   {
     mHistogramRegistry = registry;
     ktBins = ktbins;
@@ -197,6 +198,11 @@ class FemtoUniverseDetaDphiStar
     cutDeltaPhiStarMinVector = ldeltaphistarcutmin;
     cutDeltaEtaMaxVector = ldeltaetacutmax;
     cutDeltaEtaMinVector = ldeltaetacutmin;
+
+    cutDeltaPhiStarFractionMaxVector = ldeltaphistarcutFractionmax;
+    cutDeltaPhiStarFractionMinVector = ldeltaphistarcutFractionmin;
+    cutDeltaEtaFractionMaxVector = ldeltaetacutFractionmax;
+    cutDeltaEtaFractionMinVector = ldeltaetacutFractionmin;
 
     if constexpr (kPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && kPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kTrack) {
       std::string dirName = static_cast<std::string>(DirNames[0]);
@@ -208,6 +214,8 @@ class FemtoUniverseDetaDphiStar
         histdetadphimixedbeforekT[j] = mHistogramRegistry->add<TH2>((dirName + histFolderkT + "detadphidetadphiBeforeMixed").c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
         histdetadphisameafterkT[j] = mHistogramRegistry->add<TH2>((dirName + histFolderkT + "detadphidetadphiAfterSame").c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
         histdetadphimixedafterkT[j] = mHistogramRegistry->add<TH2>((dirName + histFolderkT + "detadphidetadphiAfterMixed").c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadphisameafterFractionkT[j] = mHistogramRegistry->add<TH2>((dirName + histFolderkT + "detadphidetadphiAfterFractionSame").c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
+        histdetadphimixedafterFractionkT[j] = mHistogramRegistry->add<TH2>((dirName + histFolderkT + "detadphidetadphiAfterFractionMIxed").c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
       }
     }
   }
@@ -715,6 +723,55 @@ class FemtoUniverseDetaDphiStar
 
   ///  Check if pair is close or not
   template <typename Part>
+  bool isClosePairFractionkT(Part const& part1, Part const& part2, uint8_t ChosenEventType, float ktval, float lmagfield, float DistMax, float FracMax)
+  {
+    /// Track-Track combination
+    // check if provided particles are in agreement with the class instantiation
+    if (part1.partType() != o2::aod::femtouniverseparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtouniverseparticle::ParticleType::kTrack) {
+      LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar instantiation! Please provide kTrack,kTrack candidates.";
+      return false;
+    }
+
+    int ktbinval = 1;
+    if (ktval >= ktBins[1] && ktval < ktBins[2]) {
+      ktbinval = 1;
+    } else if (ktval >= ktBins[2] && ktval < ktBins[3]) {
+      ktbinval = 2;
+    } else if (ktval >= ktBins[3] && ktval < ktBins[4]) {
+      ktbinval = 3;
+    } else if (ktval >= ktBins[4] && ktval < ktBins[5]) {
+      ktbinval = 4;
+    }
+
+    magfield = lmagfield;
+
+    auto deta = part1.eta() - part2.eta();
+    auto dphiAvg = averagePhiStar(part1, part2, 0);
+    auto distfrac = averagePhiStarFrac(part1, part2, DistMax);
+    auto DeltaPhiStarMax = static_cast<float>(cutDeltaPhiStarFractionMaxVector[ktbinval]);
+    auto DeltaPhiStarMin = static_cast<float>(cutDeltaPhiStarFractionMinVector[ktbinval]);
+    auto DeltaEtaMax = static_cast<float>(cutDeltaEtaFractionMaxVector[ktbinval]);
+    auto DeltaEtaMin = static_cast<float>(cutDeltaEtaFractionMinVector[ktbinval]);
+
+    double outerVal = std::pow(dphiAvg, 2) / std::pow(DeltaPhiStarMax, 2) + std::pow(deta, 2) / std::pow(DeltaEtaMax, 2);
+    double innerVal = std::pow(dphiAvg, 2) / std::pow(DeltaPhiStarMin, 2) + std::pow(deta, 2) / std::pow(DeltaEtaMin, 2);
+
+    if ((innerVal >= 1.0) && (outerVal < 1.0) && (distfrac > FracMax)) {
+      return true;
+    } else {
+      if (ChosenEventType == femto_universe_container::EventType::same) {
+        histdetadphisameafterFractionkT[ktbinval]->Fill(deta, dphiAvg);
+      } else if (ChosenEventType == femto_universe_container::EventType::mixed) {
+        histdetadphimixedafterFractionkT[ktbinval]->Fill(deta, dphiAvg);
+      } else {
+        LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
+      }
+      return false;
+    }
+  }
+
+  ///  Check if pair is close or not
+  template <typename Part>
   void ClosePairqLCMS(Part const& part1, Part const& part2, float lmagfield, uint8_t ChosenEventType, double qlcms) // add typename Parts and variable parts for adding MClabels
   {
     magfield = lmagfield;
@@ -787,10 +844,15 @@ class FemtoUniverseDetaDphiStar
   float cutDeltaEtaMax;
   float cutDeltaEtaMin;
 
-  std::vector<float> cutDeltaPhiStarMaxVector;
-  std::vector<float> cutDeltaPhiStarMinVector;
-  std::vector<float> cutDeltaEtaMaxVector;
-  std::vector<float> cutDeltaEtaMinVector;
+  std::vector<double> cutDeltaPhiStarMaxVector;
+  std::vector<double> cutDeltaPhiStarMinVector;
+  std::vector<double> cutDeltaEtaMaxVector;
+  std::vector<double> cutDeltaEtaMinVector;
+
+  std::vector<double> cutDeltaPhiStarFractionMaxVector;
+  std::vector<double> cutDeltaPhiStarFractionMinVector;
+  std::vector<double> cutDeltaEtaFractionMaxVector;
+  std::vector<double> cutDeltaEtaFractionMinVector;
 
   float magfield;
   bool plotForEveryRadii = false;
@@ -805,6 +867,8 @@ class FemtoUniverseDetaDphiStar
   std::array<std::shared_ptr<TH2>, 4> histdetadphimixedbeforekT{};
   std::array<std::shared_ptr<TH2>, 4> histdetadphisameafterkT{};
   std::array<std::shared_ptr<TH2>, 4> histdetadphimixedafterkT{};
+  std::array<std::shared_ptr<TH2>, 4> histdetadphisameafterFractionkT{};
+  std::array<std::shared_ptr<TH2>, 4> histdetadphimixedafterFractionkT{};
 
   std::array<std::array<std::shared_ptr<TH2>, 9>, 7> histdetadpiRadii{};
 
