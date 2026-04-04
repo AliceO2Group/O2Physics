@@ -63,7 +63,8 @@ namespace o2::aod
 namespace full
 {
 // Candidate kinematics
-DECLARE_SOA_COLUMN(M, m, float);                                //! Invariant mass of candidate (GeV/c^2)
+DECLARE_SOA_COLUMN(MassCd, massCd, float);                      //! Invariant mass of cd candidate (GeV/c^2)
+DECLARE_SOA_COLUMN(MassLc, massLc, float);                      //! Invariant mass of lc candidate (GeV/c^2)
 DECLARE_SOA_COLUMN(Pt, pt, float);                              //! Transverse momentum of candidate (GeV/c)
 DECLARE_SOA_COLUMN(Eta, eta, float);                            //! eta of candidate (GeV/c)
 DECLARE_SOA_COLUMN(Phi, phi, float);                            //! phi of candidate (GeV/c)
@@ -79,6 +80,7 @@ DECLARE_SOA_COLUMN(Cpa, cpa, float);                            //! Cosine of po
 DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                        //! Cosine of pointing angle in XY plane
 DECLARE_SOA_COLUMN(Chi2PCA, chi2PCA, float);                    //! chi2PCA
 DECLARE_SOA_COLUMN(NSigmaTpcDe, nSigmaTpcDe, float);            //! TPC nσ for deuteron hypothesis
+DECLARE_SOA_COLUMN(NSigmaTpcPr, nSigmaTpcPr, float);            //! TPC nσ for proton hypothesis
 DECLARE_SOA_COLUMN(NSigmaTpcKa, nSigmaTpcKa, float);            //! TPC nσ for kaon hypothesis
 DECLARE_SOA_COLUMN(NSigmaTpcPi, nSigmaTpcPi, float);            //! TPC nσ for pion hypothesis
 DECLARE_SOA_COLUMN(NSigmaItsDe, nSigmaItsDe, float);            //! ITS nσ for deuteron hypothesis
@@ -100,7 +102,8 @@ DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t);              //! Timestamp fo
 
 // Full table: include ALL columns declared above
 DECLARE_SOA_TABLE(HfCandCd, "AOD", "HFCANDCD",
-                  full::M,
+                  full::MassCd,
+                  full::MassLc,
                   full::Pt,
                   full::Eta,
                   full::Phi,
@@ -114,15 +117,13 @@ DECLARE_SOA_TABLE(HfCandCd, "AOD", "HFCANDCD",
                   full::Cpa,
                   full::Chi2PCA,
                   full::NSigmaTpcDe,
+                  full::NSigmaTpcPr,
                   full::NSigmaItsDe,
                   full::NSigmaTofDe,
-                  full::NItsClusters,
                   full::NItsNClusterSize,
-                  full::NTpcClusters,
                   full::NTpcSignalsDe,
                   full::NTpcSignalsPi,
                   full::NTpcSignalsKa,
-                  full::NItsSignalsDe,
                   full::CandidateSelFlag,
                   full::Cent);
 } // namespace o2::aod
@@ -219,6 +220,7 @@ struct HfTaskCd {
     registry.add("Data/hImpParErrProng1", "3-prong candidates;prong 1 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("Data/hImpParErrProng2", "3-prong candidates;prong 2 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("Data/hNsigmaTPCDeVsP", "deuteron;#it{p} (GeV/#it{c}); n#sigma^{TPC}_{d}", {HistType::kTH2F, {{200, -10.f, 10.f}, {200, -6.f, 6.f}}});
+    registry.add("Data/hNsigmaTPCPrVsP", "proton;#it{p} (GeV/#it{c}); n#sigma^{TPC}_{p}", {HistType::kTH2F, {{200, -10.f, 10.f}, {200, -6.f, 6.f}}});
     registry.add("Data/hNsigmaTOFDeVsP", "deuteron;#it{p} (GeV/#it{c}); n#sigma^{TOF}_{d}", {HistType::kTH2F, {{200, -10.f, 10.f}, {200, -6.f, 6.f}}});
     registry.add("Data/hNsigmaITSDeVsP", "deuteron;#it{p} (GeV/#it{c}); n#sigma^{ITS}_{d}", {HistType::kTH2F, {{200, -10.f, 10.f}, {200, -6.f, 6.f}}});
     registry.add("Data/hTPCSignalDeVsP", "deuteron;#it{p} (GeV/#it{c}); TPC signals", {HistType::kTH2F, {{200, -10.f, 10.f}, {2000, 0, 2000}}});
@@ -290,11 +292,14 @@ struct HfTaskCd {
       const auto cpa = candidate.cpa();
       const auto cpaXY = candidate.cpaXY();
       float invMassCd = 0.f;
+      float invMassLc = 0.f;
       if (candidate.isSelCdToDeKPi() >= selectionFlagCd) {
         invMassCd = HfHelper::invMassCdToDeKPi(candidate);
+        invMassLc = HfHelper::invMassLcToPKPi(candidate);
       }
       if (candidate.isSelCdToPiKDe() >= selectionFlagCd) {
         invMassCd = HfHelper::invMassCdToPiKDe(candidate);
+        invMassLc = HfHelper::invMassLcToPiKP(candidate);
       }
 
       if (candidate.isSelCdToDeKPi() >= selectionFlagCd) {
@@ -356,13 +361,11 @@ struct HfTaskCd {
       if (fillTree) {
         int candFlag = -999;
 
-        float nSigmaTpcDe = 0.f, nSigmaTpcKa = 0.f, nSigmaTpcPi = 0.f;
+        float nSigmaTpcDe = 0.f, nSigmaTpcKa = 0.f, nSigmaTpcPi = 0.f, nSigmaTpcPr = 0.f;
         float nSigmaItsDe = 0.f;
         float nSigmaTofDe = 0.f, nSigmaTofKa = 0.f, nSigmaTofPi = 0.f;
 
-        int itsNClusterDe = 0;
         int itsNClusterSizeDe = 0;
-        int tpcNClusterDe = 0;
 
         float tpcSignalsDe = 0.f;
         float tpcSignalsPi = 0.f;
@@ -393,13 +396,12 @@ struct HfTaskCd {
           pSignedDe = prong0.tpcInnerParam() * prong0.sign();
           pSignedPi = prong2.tpcInnerParam() * prong2.sign();
           nSigmaTpcDe = candidate.nSigTpcDe0();
+          nSigmaTpcPr = candidate.nSigTpcPr0();
           nSigmaTofDe = candidate.nSigTofDe0();
           nSigmaTpcPi = candidate.nSigTpcPi2();
           nSigmaTofPi = candidate.nSigTofPi2();
           nSigmaItsDe = prong0Its.itsNSigmaDe();
-          itsNClusterDe = prong0.itsNCls();
           itsNClusterSizeDe = prong0.itsClusterSizes();
-          tpcNClusterDe = prong0.tpcNClsCrossedRows();
           tpcSignalsDe = prong0.tpcSignal();
           tpcSignalsPi = prong2.tpcSignal();
           itsSignalsDe = itsSignal(prong0);
@@ -408,13 +410,12 @@ struct HfTaskCd {
           pSignedDe = prong2.tpcInnerParam() * prong2.sign();
           pSignedPi = prong0.tpcInnerParam() * prong0.sign();
           nSigmaTpcDe = candidate.nSigTpcDe2();
+          nSigmaTpcPr = candidate.nSigTpcPr2();
           nSigmaTofDe = candidate.nSigTofDe2();
           nSigmaTpcPi = candidate.nSigTpcPi0();
           nSigmaTofPi = candidate.nSigTofPi0();
           nSigmaItsDe = prong2Its.itsNSigmaDe();
-          itsNClusterDe = prong2.itsNCls();
           itsNClusterSizeDe = prong2.itsClusterSizes();
-          tpcNClusterDe = prong2.tpcNClsCrossedRows();
           tpcSignalsDe = prong2.tpcSignal();
           tpcSignalsPi = prong0.tpcSignal();
           itsSignalsDe = itsSignal(prong2);
@@ -422,6 +423,7 @@ struct HfTaskCd {
 
         //  PID QA
         registry.fill(HIST("Data/hNsigmaTPCDeVsP"), pSignedDe, nSigmaTpcDe);
+        registry.fill(HIST("Data/hNsigmaTPCPrVsP"), pSignedDe, nSigmaTpcPr);
         registry.fill(HIST("Data/hNsigmaTOFDeVsP"), pSignedDe, nSigmaTofDe);
         registry.fill(HIST("Data/hNsigmaITSDeVsP"), pSignedDe, nSigmaItsDe);
         registry.fill(HIST("Data/hTPCSignalDeVsP"), pSignedDe, tpcSignalsDe);
@@ -435,6 +437,7 @@ struct HfTaskCd {
 
         rowCandCd(
           invMassCd,
+          invMassLc,
           pt,
           eta,
           phi,
@@ -448,15 +451,13 @@ struct HfTaskCd {
           cpa,
           chi2PCA,
           nSigmaTpcDe,
+          nSigmaTpcPr,
           nSigmaItsDe,
           nSigmaTofDe,
-          itsNClusterDe,
           itsNClusterSizeDe,
-          tpcNClusterDe,
           tpcSignalsDe,
           tpcSignalsPi,
           tpcSignalsKa,
-          itsSignalsDe,
           candFlag,
           cent);
       }
