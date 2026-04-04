@@ -73,6 +73,8 @@ struct lambdaspincorrelation {
   } rctCut;
   Configurable<bool> useNoCollInTimeRangeStandard{"useNoCollInTimeRangeStandard", false, "Apply kNoCollInTimeRangeStandard selection bit"};
   Configurable<bool> useGoodITSLayersAll{"useGoodITSLayersAll", true, "Apply kIsGoodITSLayersAll selection bit"};
+  Configurable<bool> useNoSameBunchPileup{"useNoSameBunchPileup", true, "Apply NoSameBunchPileup selection bit"};
+  Configurable<bool> useGoodZvtxFT0vsPV{"useGoodZvtxFT0vsPV", true, "Apply GoodZvtxFT0vsPV selection bit"};
   // mixing
   // Produce derived tables
   Configurable<int> cfgCutOccupancy{"cfgCutOccupancy", 2000, "Occupancy cut"};
@@ -270,7 +272,7 @@ struct lambdaspincorrelation {
     int occupancy = collision.trackOccupancyInTimeRange();
     histos.fill(HIST("hEvtSelInfo"), 0.5);
     // if ((!rctCut.requireRCTFlagChecker || rctChecker(collision)) && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) && collision.sel8() && collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll) && occupancy < cfgCutOccupancy) {
-    if ((!rctCut.requireRCTFlagChecker || rctChecker(collision)) && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && (!useNoCollInTimeRangeStandard || collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) && collision.sel8() && (!useGoodITSLayersAll || collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) && occupancy < cfgCutOccupancy) {
+    if ((!rctCut.requireRCTFlagChecker || rctChecker(collision)) && (!useNoSameBunchPileup || collision.selection_bit(aod::evsel::kNoSameBunchPileup)) && (!useGoodZvtxFT0vsPV || collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && (!useNoCollInTimeRangeStandard || collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) && collision.sel8() && (!useGoodITSLayersAll || collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) && occupancy < cfgCutOccupancy) {
       histos.fill(HIST("hEvtSelInfo"), 1.5);
       for (const auto& v0 : V0s) {
         // LOGF(info, "v0 index 0 : (%d)", v0.index());
