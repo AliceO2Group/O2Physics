@@ -120,9 +120,7 @@ DECLARE_SOA_TABLE(HfCandCd, "AOD", "HFCANDCD",
                   full::NTpcSignalsKa,
                   full::NItsSignalsDe,
                   full::CandidateSelFlag,
-                  full::Cent,
-                  full::GIndexCol,
-                  full::TimeStamp);
+                  full::Cent);
 } // namespace o2::aod
 
 struct HfTaskCd {
@@ -386,8 +384,8 @@ struct HfTaskCd {
 
         if (selDeKPi) {
           candFlag = 1;
-          pSignedDe = prong0.p() * prong0.sign();
-          pSignedPi = prong2.p() * prong2.sign();
+          pSignedDe = prong0.tpcInnerParam() * prong0.sign();
+          pSignedPi = prong2.tpcInnerParam() * prong2.sign();
           nSigmaTpcDe = candidate.nSigTpcDe0();
           nSigmaTofDe = candidate.nSigTofDe0();
           nSigmaTpcPi = candidate.nSigTpcPi2();
@@ -401,8 +399,8 @@ struct HfTaskCd {
           itsSignalsDe = itsSignal(prong0);
         } else if (selPiKDe) {
           candFlag = -1;
-          pSignedDe = prong2.p() * prong2.sign();
-          pSignedPi = prong0.p() * prong0.sign();
+          pSignedDe = prong2.tpcInnerParam() * prong2.sign();
+          pSignedPi = prong0.tpcInnerParam() * prong0.sign();
           nSigmaTpcDe = candidate.nSigTpcDe2();
           nSigmaTofDe = candidate.nSigTofDe2();
           nSigmaTpcPi = candidate.nSigTpcPi0();
@@ -422,12 +420,12 @@ struct HfTaskCd {
         registry.fill(HIST("Data/hNsigmaITSDeVsP"), pSignedDe, nSigmaItsDe);
         registry.fill(HIST("Data/hTPCSignalDeVsP"), pSignedDe, tpcSignalsDe);
         registry.fill(HIST("Data/hTPCSignalPiVsP"), pSignedPi, tpcSignalsPi);
-        registry.fill(HIST("Data/hTPCSignalKaVsP"), prong1.p() * prong1.sign(), tpcSignalsKa);
+        registry.fill(HIST("Data/hTPCSignalKaVsP"), prong1.tpcInnerParam() * prong1.sign(), tpcSignalsKa);
         registry.fill(HIST("Data/hITSSignalDeVsP"), pSignedDe, itsSignalsDe);
         registry.fill(HIST("Data/hNsigmaTPCPiVsP"), pSignedPi, nSigmaTpcPi);
         registry.fill(HIST("Data/hNsigmaTOFPiVsP"), pSignedPi, nSigmaTofPi);
-        registry.fill(HIST("Data/hNsigmaTPCKaVsP"), prong1.p() * prong1.sign(), nSigmaTpcKa);
-        registry.fill(HIST("Data/hNsigmaTOFKaVsP"), prong1.p() * prong1.sign(), nSigmaTofKa);
+        registry.fill(HIST("Data/hNsigmaTPCKaVsP"), prong1.tpcInnerParam() * prong1.sign(), nSigmaTpcKa);
+        registry.fill(HIST("Data/hNsigmaTOFKaVsP"), prong1.tpcInnerParam() * prong1.sign(), nSigmaTofKa);
 
         rowCandCd(
           invMassCd,
@@ -452,9 +450,7 @@ struct HfTaskCd {
           tpcSignalsKa,
           itsSignalsDe,
           candFlag,
-          cent,
-          collision.globalIndex(),
-          timeStamp);
+          cent);
       }
     }
   }
