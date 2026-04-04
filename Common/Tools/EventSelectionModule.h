@@ -54,6 +54,7 @@
 #include <iterator>
 #include <limits>
 #include <map>
+#include <numeric>
 #include <string>
 #include <utility>
 #include <vector>
@@ -181,8 +182,8 @@ class BcSelectionModule
     if (bcselOpts.amIneeded.value < 0) {
       int bcSelNeeded = -1, evSelNeeded = -1;
       bcselOpts.amIneeded.value = 0;
-      enableFlagIfTableRequired(context, "BcSels", bcSelNeeded);
-      enableFlagIfTableRequired(context, "EvSels", evSelNeeded);
+      o2::common::core::enableFlagIfTableRequired(context, "BcSels", bcSelNeeded);
+      o2::common::core::enableFlagIfTableRequired(context, "EvSels", evSelNeeded);
       if (bcSelNeeded == 1) {
         bcselOpts.amIneeded.value = 1;
         LOGF(info, "BC Selection / Autodetection for aod::BcSels: subscription present, will generate.");
@@ -728,7 +729,7 @@ class EventSelectionModule
     evselOpts = external_evselopts;
 
     if (evselOpts.amIneeded.value < 0) {
-      enableFlagIfTableRequired(context, "EvSels", evselOpts.amIneeded.value);
+      o2::common::core::enableFlagIfTableRequired(context, "EvSels", evselOpts.amIneeded.value);
       if (evselOpts.amIneeded.value == 0) {
         LOGF(info, "Event Selection / Autodetecting for aod::EvSels: not required, won't generate.");
         return;
@@ -1576,8 +1577,8 @@ class LumiModule
     if (lumiOpts.amIneeded.value < 0) {
       int bcSelNeeded = -1, evSelNeeded = -1;
       lumiOpts.amIneeded.value = 0;
-      enableFlagIfTableRequired(context, "BcSels", bcSelNeeded);
-      enableFlagIfTableRequired(context, "EvSels", evSelNeeded);
+      o2::common::core::enableFlagIfTableRequired(context, "BcSels", bcSelNeeded);
+      o2::common::core::enableFlagIfTableRequired(context, "EvSels", evSelNeeded);
       if (bcSelNeeded == 1) {
         lumiOpts.amIneeded.value = 1;
         LOGF(info, "Luminosity / Autodetection for aod::BcSels: subscription present, will generate.");

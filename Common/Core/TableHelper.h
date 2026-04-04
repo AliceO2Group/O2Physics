@@ -121,9 +121,4 @@ bool getTaskOptionValue(o2::framework::InitContext& initContext, const std::stri
 
 } // namespace o2::common::core
 
-using o2::common::core::enableFlagIfTableRequired;
-using o2::common::core::getTaskOptionValue;
-using o2::common::core::isTableRequiredInWorkflow;
-using o2::common::core::printTablesInWorkflow;
-
 #endif // COMMON_CORE_TABLEHELPER_H_
