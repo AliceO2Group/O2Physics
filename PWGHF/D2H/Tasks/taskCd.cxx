@@ -80,6 +80,7 @@ DECLARE_SOA_COLUMN(Cpa, cpa, float);                            //! Cosine of po
 DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                        //! Cosine of pointing angle in XY plane
 DECLARE_SOA_COLUMN(Chi2PCA, chi2PCA, float);                    //! chi2PCA
 DECLARE_SOA_COLUMN(NSigmaTpcDe, nSigmaTpcDe, float);            //! TPC nσ for deuteron hypothesis
+DECLARE_SOA_COLUMN(NSigmaTpcPr, nSigmaTpcPr, float);            //! TPC nσ for proton hypothesis
 DECLARE_SOA_COLUMN(NSigmaTpcKa, nSigmaTpcKa, float);            //! TPC nσ for kaon hypothesis
 DECLARE_SOA_COLUMN(NSigmaTpcPi, nSigmaTpcPi, float);            //! TPC nσ for pion hypothesis
 DECLARE_SOA_COLUMN(NSigmaItsDe, nSigmaItsDe, float);            //! ITS nσ for deuteron hypothesis
@@ -116,6 +117,7 @@ DECLARE_SOA_TABLE(HfCandCd, "AOD", "HFCANDCD",
                   full::Cpa,
                   full::Chi2PCA,
                   full::NSigmaTpcDe,
+                  full::NSigmaTpcPr,
                   full::NSigmaItsDe,
                   full::NSigmaTofDe,
                   full::NItsNClusterSize,
