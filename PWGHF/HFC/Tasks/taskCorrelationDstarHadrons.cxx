@@ -220,20 +220,20 @@ struct HfTaskCorrelationDstarHadrons {
         netEfficiencyWeight = 1.0 / (efficiencyWeightDstar * efficiencyWeightTracks);
       } else if (applyEfficiency && useCcdbEfficiency && nEfficiencyHist == 1) {
         float const ptEffLowEdgeDstar = vecHistEfficiencyDstar[0]->GetXaxis()->GetBinLowEdge(1);
-        if(ptDstar <= ptEffLowEdgeDstar){ // pT of current dstar candidate is lower than the lower edge of the pT axis
+        if (ptDstar <= ptEffLowEdgeDstar) { // pT of current dstar candidate is lower than the lower edge of the pT axis
           efficiencyWeightDstar = vecHistEfficiencyDstar[0]->GetBinContent(1);
-        }else{
+        } else {
           efficiencyWeightDstar = vecHistEfficiencyDstar[0]->GetBinContent(vecHistEfficiencyDstar[0]->GetXaxis()->FindBin(ptDstar));
-          if(!efficiencyWeightDstar){
+          if (!efficiencyWeightDstar) {
             LOGF(fatal, "Dstar efficiency weight can't be zero.");
           }
         }
         float const ptEffLowEdgeTrack = vecHistEfficiencyTracks[0]->GetBinLowEdge(1);
-        if(ptTrack <= ptEffLowEdgeTrack){ // pT of current track is lower than the lower edge of the pT axis
+        if (ptTrack <= ptEffLowEdgeTrack) { // pT of current track is lower than the lower edge of the pT axis
           efficiencyWeightTracks = vecHistEfficiencyTracks[0]->GetBinContent(1);
-        }else{
+        } else {
           efficiencyWeightTracks = vecHistEfficiencyTracks[0]->GetBinContent(vecHistEfficiencyTracks[0]->GetXaxis()->FindBin(ptTrack));
-          if(!efficiencyWeightTracks){
+          if (!efficiencyWeightTracks) {
             LOGF(fatal, "track efficiency weight can't be zero");
           }
         }
