@@ -65,6 +65,8 @@ namespace full
 // Candidate kinematics
 DECLARE_SOA_COLUMN(M, m, float);                                //! Invariant mass of candidate (GeV/c^2)
 DECLARE_SOA_COLUMN(Pt, pt, float);                              //! Transverse momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(Eta, eta, float);                            //! eta of candidate (GeV/c)
+DECLARE_SOA_COLUMN(Phi, phi, float);                            //! phi of candidate (GeV/c)
 DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);                  //! Transverse momentum of prong 0 (GeV/c)
 DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);                  //! Transverse momentum of prong 1 (GeV/c)
 DECLARE_SOA_COLUMN(PtProng2, ptProng2, float);                  //! Transverse momentum of prong 2 (GeV/c)
@@ -100,6 +102,8 @@ DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t);              //! Timestamp fo
 DECLARE_SOA_TABLE(HfCandCd, "AOD", "HFCANDCD",
                   full::M,
                   full::Pt,
+                  full::Eta,
+                  full::Phi,
                   full::PtProng0,
                   full::PtProng1,
                   full::PtProng2,
@@ -266,8 +270,8 @@ struct HfTaskCd {
     auto thisCollId = collision.globalIndex();
     auto groupedCdCandidates = candidates.sliceBy(candCdPerCollision, thisCollId);
     auto numPvContributors = collision.numContrib();
-    auto bc = collision.template bc_as<BcType>();
-    int64_t timeStamp = bc.timestamp();
+    // auto bc = collision.template bc_as<BcType>();
+    // int64_t timeStamp = bc.timestamp();
 
     for (const auto& candidate : groupedCdCandidates) {
       if (!TESTBIT(candidate.hfflag(), aod::hf_cand_3prong::DecayType::CdToDeKPi)) {
@@ -275,6 +279,8 @@ struct HfTaskCd {
       }
 
       const auto pt = candidate.pt();
+      const auto eta = candidate.eta();
+      const auto phi = candidate.phi();
       const auto ptProng0 = candidate.ptProng0();
       const auto ptProng1 = candidate.ptProng1();
       const auto ptProng2 = candidate.ptProng2();
@@ -321,10 +327,10 @@ struct HfTaskCd {
       registry.fill(HIST("Data/hCPAxyVsPt"), cpaXY, pt);
       registry.fill(HIST("Data/hDca2"), chi2PCA);
       registry.fill(HIST("Data/hDca2VsPt"), chi2PCA, pt);
-      registry.fill(HIST("Data/hEta"), candidate.eta());
-      registry.fill(HIST("Data/hEtaVsPt"), candidate.eta(), pt);
-      registry.fill(HIST("Data/hPhi"), candidate.phi());
-      registry.fill(HIST("Data/hPhiVsPt"), candidate.phi(), pt);
+      registry.fill(HIST("Data/hEta"), eta);
+      registry.fill(HIST("Data/hEtaVsPt"), eta, pt);
+      registry.fill(HIST("Data/hPhi"), phi);
+      registry.fill(HIST("Data/hPhiVsPt"), phi, pt);
       registry.fill(HIST("hSelectionStatus"), candidate.isSelCdToDeKPi(), pt);
       registry.fill(HIST("hSelectionStatus"), candidate.isSelCdToPiKDe(), pt);
       registry.fill(HIST("Data/hImpParErrProng0"), candidate.errorImpactParameter0(), pt);
@@ -430,6 +436,8 @@ struct HfTaskCd {
         rowCandCd(
           invMassCd,
           pt,
+          eta,
+          phi,
           ptProng0,
           ptProng1,
           ptProng2,
