@@ -267,7 +267,7 @@ struct HfCandidateCreator3Prong {
     fillProngPid<HfProngSpecies::Kaon>(track2, rowProng2PidKa);
 
     /// fill proton PID information only if necessary
-    if (createLc || createXic) {
+    if (createLc || createXic || createCharmNuclei) {
       fillProngPid<HfProngSpecies::Proton>(track0, rowProng0PidPr);
       fillProngPid<HfProngSpecies::Proton>(track1, rowProng1PidPr);
       fillProngPid<HfProngSpecies::Proton>(track2, rowProng2PidPr);
