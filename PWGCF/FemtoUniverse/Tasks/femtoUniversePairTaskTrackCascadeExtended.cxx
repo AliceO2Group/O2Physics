@@ -153,7 +153,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   FemtoUniverseDetaDphiStar<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kCascade> pairCloseRejection;
   FemtoUniverseDetaDphiStar<aod::femtouniverseparticle::ParticleType::kCascade, aod::femtouniverseparticle::ParticleType::kCascade> pairCloseRejectionCasc;
 
-  HistogramRegistry rXiQA{"xi", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry CascQAExtra{"CascQAExtra", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryMCgen{"MCgenHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
@@ -264,23 +264,23 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     AxisSpec multAxis = {multBinning, "Multiplicity"};
 
     // Histograms
-    rXiQA.add("hMassXi", "hMassXi", {HistType::kTH1F, {aXiMassAxis}});
-    rXiQA.add("hMassXiSelected", "hMassXiSelected", {HistType::kTH1F, {aXiMassAxis}});
-    rXiQA.add("hPtXi", "hPtXi", {HistType::kTH1F, {{ptAxis}}});
-    rXiQA.add("hEtaXi", "hEtaXi", {HistType::kTH1F, {{etaAxis}}});
-    rXiQA.add("hPhiXi", "hPhiXi", {HistType::kTH1F, {{phiAxis}}});
-    rXiQA.add("hDCAV0Daughters", "hDCAV0Daughters", {HistType::kTH1F, {aDCADaughAxis}});
-    rXiQA.add("hV0CosPA", "hV0CosPA", {HistType::kTH1F, {aCPAAxis}});
-    rXiQA.add("hV0TranRad", "hV0TranRad", {HistType::kTH1F, {tranRadAxis}});
-    rXiQA.add("hDCACascDaughters", "hDCACascDaughters", {HistType::kTH1F, {aDCADaughAxis}});
-    rXiQA.add("hCascCosPA", "hCascCosPA", {HistType::kTH1F, {aCPAAxis}});
-    rXiQA.add("hCascTranRad", "hCascTranRad", {HistType::kTH1F, {tranRadAxis}});
-    rXiQA.add("hDcaPostoPV", "hDcaPostoPV", {HistType::kTH1F, {aDCAToPVAxis}});
-    rXiQA.add("hDcaNegtoPV", "hDcaNegtoPV", {HistType::kTH1F, {aDCAToPVAxis}});
-    rXiQA.add("hDcaBachtoPV", "hDcaBachtoPV", {HistType::kTH1F, {aDCAToPVAxis}});
-    rXiQA.add("hDcaV0toPV", "hDcaV0toPV", {HistType::kTH1F, {aDCAToPVAxis}});
-    rXiQA.add("hInvMpT", "hInvMpT", kTH2F, {{ptAxis}, {aXiMassAxis}});
-    rXiQA.add("hInvMpTmult", "hInvMpTmult", kTH3F, {{ptAxis}, {aXiMassAxis}, {multAxis}});
+    CascQAExtra.add("hMassXi", "hMassXi", {HistType::kTH1F, {aXiMassAxis}});
+    CascQAExtra.add("hMassXiSelected", "hMassXiSelected", {HistType::kTH1F, {aXiMassAxis}});
+    CascQAExtra.add("hPtXi", "hPtXi", {HistType::kTH1F, {{ptAxis}}});
+    CascQAExtra.add("hEtaXi", "hEtaXi", {HistType::kTH1F, {{etaAxis}}});
+    CascQAExtra.add("hPhiXi", "hPhiXi", {HistType::kTH1F, {{phiAxis}}});
+    CascQAExtra.add("hDCAV0Daughters", "hDCAV0Daughters", {HistType::kTH1F, {aDCADaughAxis}});
+    CascQAExtra.add("hV0CosPA", "hV0CosPA", {HistType::kTH1F, {aCPAAxis}});
+    CascQAExtra.add("hV0TranRad", "hV0TranRad", {HistType::kTH1F, {tranRadAxis}});
+    CascQAExtra.add("hDCACascDaughters", "hDCACascDaughters", {HistType::kTH1F, {aDCADaughAxis}});
+    CascQAExtra.add("hCascCosPA", "hCascCosPA", {HistType::kTH1F, {aCPAAxis}});
+    CascQAExtra.add("hCascTranRad", "hCascTranRad", {HistType::kTH1F, {tranRadAxis}});
+    CascQAExtra.add("hDcaPostoPV", "hDcaPostoPV", {HistType::kTH1F, {aDCAToPVAxis}});
+    CascQAExtra.add("hDcaNegtoPV", "hDcaNegtoPV", {HistType::kTH1F, {aDCAToPVAxis}});
+    CascQAExtra.add("hDcaBachtoPV", "hDcaBachtoPV", {HistType::kTH1F, {aDCAToPVAxis}});
+    CascQAExtra.add("hDcaV0toPV", "hDcaV0toPV", {HistType::kTH1F, {aDCAToPVAxis}});
+    CascQAExtra.add("hInvMpT", "hInvMpT", kTH2F, {{ptAxis}, {aXiMassAxis}});
+    CascQAExtra.add("hInvMpTmult", "hInvMpTmult", kTH3F, {{ptAxis}, {aXiMassAxis}, {multAxis}});
 
     eventHisto.init(&qaRegistry);
     /// nSigma debug histograms for the selected particle species only i.e. not sigmas of all particles mixed together
@@ -376,44 +376,68 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     }
   }
 
-  void processCascadeQA([[maybe_unused]] const FilteredFDCollision& col, const FemtoFullParticles& parts, const aod::FDCascParticles& fdcascs)
+  template <class T>
+  using hasSigma = decltype(std::declval<T&>().tpcNSigmaStorePr());
+
+  // Additional cascade QA plots
+  template <class TableType, typename PartitionType>
+  void doCascadeQA([[maybe_unused]] const FilteredFDCollision& col, const TableType& parts, PartitionType& partsTwo, const aod::FDCascParticles& fdcascs)
   {
-    for (const auto& casc : fdcascs) {
-      const auto& part = casc.fdParticle_as<FemtoFullParticles>();
-      rXiQA.fill(HIST("hMassXi"), part.mLambda());
+    auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+
+    // Basic particle loop
+    for (const auto& part : groupPartsTwo) {
+      CascQAExtra.fill(HIST("hMassXi"), part.mLambda());
 
       const auto& posChild = parts.iteratorAt(part.globalIndex() - 3 - parts.begin().globalIndex());
       const auto& negChild = parts.iteratorAt(part.globalIndex() - 2 - parts.begin().globalIndex());
       const auto& bachelor = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
 
-      float posChildTPC, negChildTPC, bachelorTPC, posChildTOF, negChildTOF, bachelorTOF;
-      if (!isParticleTPC(posChild, CascChildTable[confCascType1][0], &posChildTPC) || !isParticleTPC(negChild, CascChildTable[confCascType1][1], &negChildTPC) || !isParticleTPC(bachelor, CascChildTable[confCascType1][2], &bachelorTPC))
-        continue;
+      if constexpr (std::experimental::is_detected<hasSigma, typename TableType::iterator>::value) {
+        float posChildTPC, negChildTPC, bachelorTPC, posChildTOF, negChildTOF, bachelorTOF;
+        if (!isParticleTPC(posChild, CascChildTable[confCascType1][0], &posChildTPC) || !isParticleTPC(negChild, CascChildTable[confCascType1][1], &negChildTPC) || !isParticleTPC(bachelor, CascChildTable[confCascType1][2], &bachelorTPC))
+          continue;
 
-      if (!isParticleTOF(posChild, CascChildTable[confCascType1][0], &posChildTOF) || !isParticleTOF(negChild, CascChildTable[confCascType1][1], &negChildTOF) || !isParticleTOF(bachelor, CascChildTable[confCascType1][2], &bachelorTOF))
-        continue;
+        if (!isParticleTOF(posChild, CascChildTable[confCascType1][0], &posChildTOF) || !isParticleTOF(negChild, CascChildTable[confCascType1][1], &negChildTOF) || !isParticleTOF(bachelor, CascChildTable[confCascType1][2], &bachelorTOF))
+          continue;
 
-      rXiQA.fill(HIST("hPtXi"), part.pt());
-      rXiQA.fill(HIST("hEtaXi"), part.eta());
-      rXiQA.fill(HIST("hPhiXi"), part.phi());
-      rXiQA.fill(HIST("hMassXiSelected"), part.mLambda());
-      rXiQA.fill(HIST("hDCAV0Daughters"), casc.dcaV0daughters());
-      rXiQA.fill(HIST("hV0CosPA"), casc.cpav0());
-      rXiQA.fill(HIST("hV0TranRad"), casc.v0radius());
-      rXiQA.fill(HIST("hCascCosPA"), casc.cpaCasc());
-      rXiQA.fill(HIST("hDCACascDaughters"), casc.dcacascdaughters());
-      rXiQA.fill(HIST("hCascTranRad"), casc.cascradius());
-      rXiQA.fill(HIST("hDcaPostoPV"), casc.dcapostopv());
-      rXiQA.fill(HIST("hDcaNegtoPV"), casc.dcanegtopv());
-      rXiQA.fill(HIST("hDcaBachtoPV"), casc.dcabachtopv());
-      rXiQA.fill(HIST("hDcaV0toPV"), casc.dcav0topv());
-      rXiQA.fill(HIST("hInvMpT"), part.pt(), part.mLambda());
+        CascQAExtra.fill(HIST("hPtXi"), part.pt());
+        CascQAExtra.fill(HIST("hEtaXi"), part.eta());
+        CascQAExtra.fill(HIST("hPhiXi"), part.phi());
+        CascQAExtra.fill(HIST("hMassXiSelected"), part.mLambda());
+        CascQAExtra.fill(HIST("hInvMpT"), part.pt(), part.mLambda());
+      }
+    }
+
+    // Cascade extended table loop
+    for (const auto& casc : fdcascs) {
+      const auto& part = casc.fdParticle_as<FemtoFullParticles>();
+
+      const auto& posChildExt = parts.iteratorAt(part.globalIndex() - 3 - parts.begin().globalIndex());
+      const auto& negChildExt = parts.iteratorAt(part.globalIndex() - 2 - parts.begin().globalIndex());
+      const auto& bachelorExt = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
+
+      if constexpr (std::experimental::is_detected<hasSigma, typename TableType::iterator>::value) {
+        float posChildTPCExt, negChildTPCExt, bachelorTPCExt, posChildTOFExt, negChildTOFExt, bachelorTOFExt;
+        if (!isParticleTPC(posChildExt, CascChildTable[confCascType1][0], &posChildTPCExt) || !isParticleTPC(negChildExt, CascChildTable[confCascType1][1], &negChildTPCExt) || !isParticleTPC(bachelorExt, CascChildTable[confCascType1][2], &bachelorTPCExt))
+          continue;
+
+        if (!isParticleTOF(posChildExt, CascChildTable[confCascType1][0], &posChildTOFExt) || !isParticleTOF(negChildExt, CascChildTable[confCascType1][1], &negChildTOFExt) || !isParticleTOF(bachelorExt, CascChildTable[confCascType1][2], &bachelorTOFExt))
+          continue;
+
+        CascQAExtra.fill(HIST("hDCAV0Daughters"), casc.dcaV0daughters());
+        CascQAExtra.fill(HIST("hV0CosPA"), casc.cpav0());
+        CascQAExtra.fill(HIST("hV0TranRad"), casc.v0radius());
+        CascQAExtra.fill(HIST("hCascCosPA"), casc.cpaCasc());
+        CascQAExtra.fill(HIST("hDCACascDaughters"), casc.dcacascdaughters());
+        CascQAExtra.fill(HIST("hCascTranRad"), casc.cascradius());
+        CascQAExtra.fill(HIST("hDcaPostoPV"), casc.dcapostopv());
+        CascQAExtra.fill(HIST("hDcaNegtoPV"), casc.dcanegtopv());
+        CascQAExtra.fill(HIST("hDcaBachtoPV"), casc.dcabachtopv());
+        CascQAExtra.fill(HIST("hDcaV0toPV"), casc.dcav0topv());
+      }
     }
   }
-  PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processCascadeQA, "Enable processing cascades", false);
-
-  template <class T>
-  using hasSigma = decltype(std::declval<T&>().tpcNSigmaStorePr());
 
   /// track - cascade correlations
   template <class TableType, typename PartitionType>
@@ -474,7 +498,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         bachHistos.fillQABase<false, false>(bachelor, HIST("hBachelor"));
         cascQAHistos.fillQA<false, false>(part);
       }
-      rXiQA.fill(HIST("hInvMpTmult"), part.pt(), part.mLambda(), multCol);
+      CascQAExtra.fill(HIST("hInvMpTmult"), part.pt(), part.mLambda(), multCol);
     }
 
     for (const auto& part : groupPartsOne) {
@@ -556,6 +580,12 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, weight);
     }
   }
+
+  void processCascadeQA([[maybe_unused]] const FilteredFDCollision& col, const FemtoFullParticles& parts, const aod::FDCascParticles& fdcascs)
+  {
+    doCascadeQA(col, parts, partsTwoFull, fdcascs);
+  }
+  PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processCascadeQA, "Enable additional QA for cascades", false);
 
   void processSameEvent(const FilteredFDCollision& col, const FemtoFullParticles& parts)
   {
