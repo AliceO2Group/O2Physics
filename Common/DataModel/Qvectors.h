@@ -77,6 +77,12 @@ DECLARE_SOA_COLUMN(LabelsTPCpos, labelsTPCpos, std::vector<int>);
 DECLARE_SOA_COLUMN(LabelsTPCneg, labelsTPCneg, std::vector<int>);
 DECLARE_SOA_COLUMN(LabelsTPCall, labelsTPCall, std::vector<int>);
 
+// Normalized amplitudes for Event-shape Engineering
+DECLARE_SOA_COLUMN(QVecRedFT0C, qVecRedFT0C, float);
+DECLARE_SOA_COLUMN(QVecRedTpcPos, qVecRedTpcPos, float);
+DECLARE_SOA_COLUMN(QVecRedTpcNeg, qVecRedTpcNeg, float);
+DECLARE_SOA_COLUMN(QVecRedTpcAll, qVecRedTpcAll, float);
+
 // Deprecated, will be removed in future after transition time //
 DECLARE_SOA_COLUMN(QvecBPosReVec, qvecBPosReVec, std::vector<float>);
 DECLARE_SOA_COLUMN(QvecBPosImVec, qvecBPosImVec, std::vector<float>);
@@ -121,6 +127,8 @@ DECLARE_SOA_TABLE(QvectorTPCposVecs, "AOD", "QVECTORSTPCPVEC", qvec::IsCalibrate
 DECLARE_SOA_TABLE(QvectorTPCnegVecs, "AOD", "QVECTORSTPCNVEC", qvec::IsCalibrated, qvec::QvecTPCnegReVec, qvec::QvecTPCnegImVec, qvec::NTrkTPCneg, qvec::LabelsTPCneg);
 DECLARE_SOA_TABLE(QvectorTPCallVecs, "AOD", "QVECTORSTPCAVEC", qvec::IsCalibrated, qvec::QvecTPCallReVec, qvec::QvecTPCallImVec, qvec::NTrkTPCall, qvec::LabelsTPCall);
 
+DECLARE_SOA_TABLE(QvectorsReds, "AOD", "QVECTORSRED", qvec::QVecRedFT0C, qvec::QVecRedTpcPos, qvec::QVecRedTpcNeg, qvec::QVecRedTpcAll);
+
 using QvectorFT0C = QvectorFT0Cs::iterator;
 using QvectorFT0A = QvectorFT0As::iterator;
 using QvectorFT0M = QvectorFT0Ms::iterator;
@@ -136,6 +144,8 @@ using QvectorFV0AVec = QvectorFV0AVecs::iterator;
 using QvectorTPCposVec = QvectorTPCposVecs::iterator;
 using QvectorTPCnegVec = QvectorTPCnegVecs::iterator;
 using QvectorTPCallVec = QvectorTPCallVecs::iterator;
+
+using QvectorRed = QvectorsReds::iterator;
 
 // Deprecated, will be removed in future after transition time //
 DECLARE_SOA_TABLE(QvectorBPoss, "AOD", "QVECTORSBPOS", qvec::IsCalibrated, qvec::QvecBPosRe, qvec::QvecBPosIm, qvec::NTrkBPos, qvec::LabelsBPos);
