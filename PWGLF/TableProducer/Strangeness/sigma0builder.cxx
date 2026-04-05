@@ -1081,7 +1081,7 @@ struct sigma0builder {
     // Assumption: first mother is the physical one
     auto const& lambdaMother = lambdaMothers.front();
     int lambdaMotherIndex = lambdaMother.globalIndex();
-    
+
     // ============================================================
     // 2) --- EMCal cluster: loop over MC contributors ---
     // ============================================================
@@ -1117,21 +1117,21 @@ struct sigma0builder {
       // Require true photon, please
       if (mcPhoton.pdgCode() != PDG_t::kGamma)
         continue;
-      
+
       // Get Sigma0 index from photon mother
-      auto const& photonMothers = mcPhoton.template mothers_as<aod::McParticles>();      
+      auto const& photonMothers = mcPhoton.template mothers_as<aod::McParticles>();
       if (photonMothers.empty()) // No mothers? Weird
         continue;
 
       // Assumption: first mother is the physical one
       auto const& photonMother = photonMothers.front();
-      int photonMotherIndex = photonMother.globalIndex();      
-            
+      int photonMotherIndex = photonMother.globalIndex();
+
       // ------------------------------------------------------------
       // Check 2:
       // Does this photon share the same mother as the Lambda?
       // ------------------------------------------------------------
-      if (photonMotherIndex == lambdaMotherIndex) {        
+      if (photonMotherIndex == lambdaMotherIndex) {
         matchedPhotonId = daughterId;
         matchedMotherIndex = photonMotherIndex;
         MCinfo.EMCalClusterAmplitude = cluster.amplitudeA()[i];
@@ -2402,7 +2402,7 @@ struct sigma0builder {
     // Momentum components
     float gammapx = gammapT * std::cos(gamma.phi());
     float gammapy = gammapT * std::sin(gamma.phi());
-    float gammapz = gammapT * std::sinh(gamma.eta());    
+    float gammapz = gammapT * std::sinh(gamma.eta());
 
     //_______________________________________________
     // Sigma0 pre-selections
@@ -2439,7 +2439,7 @@ struct sigma0builder {
     if constexpr (requires { gamma.mcParticleIds(); lambda.motherMCPartId(); }) {
 
       auto sigma0MCInfo = getClusterV0PairMCInfo(gamma, lambda, collision, mcparticles);
-      
+
       sigma0mccores(sigma0MCInfo.V0PairMCParticleID, sigma0MCInfo.V0PairMCRadius, sigma0MCInfo.V0PairPDGCode, sigma0MCInfo.V0PairPDGCodeMother, sigma0MCInfo.V0PairMCProcess, sigma0MCInfo.fV0PairProducedByGenerator,
                     sigma0MCInfo.V01MCpx, sigma0MCInfo.V01MCpy, sigma0MCInfo.V01MCpz, sigma0MCInfo.EMCalClusterAmplitude,
                     sigma0MCInfo.V01PDGCodePos, sigma0MCInfo.V01PDGCodeNeg, sigma0MCInfo.fIsV01Primary, sigma0MCInfo.V01PDGCode, sigma0MCInfo.V01PDGCodeMother, sigma0MCInfo.fIsV01CorrectlyAssign,
