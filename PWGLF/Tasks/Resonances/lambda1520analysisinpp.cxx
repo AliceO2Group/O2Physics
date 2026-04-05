@@ -178,6 +178,7 @@ struct Lambda1520analysisinpp {
   Configurable<float> cEtacutMC{"cEtacutMC", 0.5f, "MC eta cut"};
   Configurable<bool> cUseRapcutMC{"cUseRapcutMC", true, "MC eta cut"};
   Configurable<bool> cUseEtacutMC{"cUseEtacutMC", true, "MC eta cut"};
+  Configurable<bool> useWeight{"useWeight", false, "Use weight for signal loss calculation"};
 
   // cuts on mother
   Configurable<bool> cfgUseCutsOnMother{"cfgUseCutsOnMother", false, "Enable additional cuts on mother"};
@@ -431,7 +432,11 @@ struct Lambda1520analysisinpp {
     if (doprocessdummy) {
       histos.add("Result/dummy/Genprotonpt", "pT distribution of #Lambda(1520) from Proton", kTH3F, {axisMClabel, axisPt, axisMult});
       histos.add("Result/dummy/Genlambdapt", "pT distribution of #Lambda(1520) from #Lambda", kTH3F, {axisMClabel, axisPt, axisMult});
-      histos.add("Result/dummy/Genxipt", "pT distribution of #Lambda(1520) from #Xi^{-}", kTH3F, {axisMClabel, axisPt, axisMult});
+      histos.add("Result/dummy/Genxipt", "pT distribution of #Lambda(1520) from #Xi", kTH3F, {axisMClabel, axisPt, axisMult});
+
+      histos.add("Result/dummy/GenTrueprotonpt", "pT distribution of True MC Proton", kTH3F, {axisMClabel, axisPt, axisMult});
+      histos.add("Result/dummy/GenTruelambdapt", "pT distribution of True MC #Lambda", kTH3F, {axisMClabel, axisPt, axisMult});
+      histos.add("Result/dummy/GenTruexipt", "pT distribution of True MC #Xi", kTH3F, {axisMClabel, axisPt, axisMult});
     }
 
     // Print output histograms statistics
@@ -1316,88 +1321,168 @@ struct Lambda1520analysisinpp {
 
       float pt = part.pt();
 
+      float weight;
+
       if (cUseRapcutMC && std::abs(part.y()) > configTracks.cfgCutRapidity) // rapidity cut
         continue;
 
       if (std::abs(part.pdgCode()) == kProton) {
 
+        // true proton
+        histos.fill(HIST("Result/dummy/GenTrueprotonpt"), 0, pt, centrality);
+
+        if (inVtx10) // vtx10
+          histos.fill(HIST("Result/dummy/GenTrueprotonpt"), 1, pt, centrality);
+
+        if (inVtx10 && isSel8) // vtx10, sel8
+          histos.fill(HIST("Result/dummy/GenTrueprotonpt"), 2, pt, centrality);
+
+        if (inVtx10 && isTriggerTVX) // vtx10, TriggerTVX
+          histos.fill(HIST("Result/dummy/GenTrueprotonpt"), 3, pt, centrality);
+
+        if (inVtx10 && isTrueINELgt0) // vtx10, INEL>0
+          histos.fill(HIST("Result/dummy/GenTrueprotonpt"), 4, pt, centrality);
+
+        if (isInAfterAllCuts) // after all event selection
+          histos.fill(HIST("Result/dummy/GenTrueprotonpt"), 5, pt, centrality);
+
+        if (isInAfterAllCuts && isTrueINELgt0) // after all event selection && INEL>0
+          histos.fill(HIST("Result/dummy/GenTrueprotonpt"), 6, pt, centrality);
+
         float ptL = computePtL(pt, massPr);
         if (ptL < 0)
           continue;
 
-        histos.fill(HIST("Result/dummy/Genprotonpt"), 0, ptL, centrality);
+        if (useWeight)
+          weight = ptL / pt;
+        else
+          weight = 1.f;
+
+        histos.fill(HIST("Result/dummy/Genprotonpt"), 0, ptL, centrality, weight);
 
         if (inVtx10) // vtx10
-          histos.fill(HIST("Result/dummy/Genprotonpt"), 1, ptL, centrality);
+          histos.fill(HIST("Result/dummy/Genprotonpt"), 1, ptL, centrality, weight);
 
         if (inVtx10 && isSel8) // vtx10, sel8
-          histos.fill(HIST("Result/dummy/Genprotonpt"), 2, ptL, centrality);
+          histos.fill(HIST("Result/dummy/Genprotonpt"), 2, ptL, centrality, weight);
 
         if (inVtx10 && isTriggerTVX) // vtx10, TriggerTVX
-          histos.fill(HIST("Result/dummy/Genprotonpt"), 3, ptL, centrality);
+          histos.fill(HIST("Result/dummy/Genprotonpt"), 3, ptL, centrality, weight);
 
         if (inVtx10 && isTrueINELgt0) // vtx10, INEL>0
-          histos.fill(HIST("Result/dummy/Genprotonpt"), 4, ptL, centrality);
+          histos.fill(HIST("Result/dummy/Genprotonpt"), 4, ptL, centrality, weight);
 
         if (isInAfterAllCuts) // after all event selection
-          histos.fill(HIST("Result/dummy/Genprotonpt"), 5, ptL, centrality);
+          histos.fill(HIST("Result/dummy/Genprotonpt"), 5, ptL, centrality, weight);
 
         if (isInAfterAllCuts && isTrueINELgt0) // after all event selection && INEL>0
-          histos.fill(HIST("Result/dummy/Genprotonpt"), 6, ptL, centrality);
+          histos.fill(HIST("Result/dummy/Genprotonpt"), 6, ptL, centrality, weight);
       }
 
       if (std::abs(part.pdgCode()) == kLambda0) {
+
+        // true lambda
+        histos.fill(HIST("Result/dummy/GenTruelambdapt"), 0, pt, centrality);
+
+        if (inVtx10) // vtx10
+          histos.fill(HIST("Result/dummy/GenTruelambdapt"), 1, pt, centrality);
+
+        if (inVtx10 && isSel8) // vtx10, sel8
+          histos.fill(HIST("Result/dummy/GenTruelambdapt"), 2, pt, centrality);
+
+        if (inVtx10 && isTriggerTVX) // vtx10, TriggerTVX
+          histos.fill(HIST("Result/dummy/GenTruelambdapt"), 3, pt, centrality);
+
+        if (inVtx10 && isTrueINELgt0) // vtx10, INEL>0
+          histos.fill(HIST("Result/dummy/GenTruelambdapt"), 4, pt, centrality);
+
+        if (isInAfterAllCuts) // after all event selection
+          histos.fill(HIST("Result/dummy/GenTruelambdapt"), 5, pt, centrality);
+
+        if (isInAfterAllCuts && isTrueINELgt0) // after all event selection && INEL>0
+          histos.fill(HIST("Result/dummy/GenTruelambdapt"), 6, pt, centrality);
 
         float ptL = computePtL(pt, MassLambda0);
         if (ptL < 0)
           continue;
 
-        histos.fill(HIST("Result/dummy/Genlambdapt"), 0, ptL, centrality);
+        if (useWeight)
+          weight = ptL / pt;
+        else
+          weight = 1.f;
+
+        histos.fill(HIST("Result/dummy/Genlambdapt"), 0, ptL, centrality, weight);
 
         if (inVtx10) // vtx10
-          histos.fill(HIST("Result/dummy/Genlambdapt"), 1, ptL, centrality);
+          histos.fill(HIST("Result/dummy/Genlambdapt"), 1, ptL, centrality, weight);
 
         if (inVtx10 && isSel8) // vtx10, sel8
-          histos.fill(HIST("Result/dummy/Genlambdapt"), 2, ptL, centrality);
+          histos.fill(HIST("Result/dummy/Genlambdapt"), 2, ptL, centrality, weight);
 
         if (inVtx10 && isTriggerTVX) // vtx10, TriggerTVX
-          histos.fill(HIST("Result/dummy/Genlambdapt"), 3, ptL, centrality);
+          histos.fill(HIST("Result/dummy/Genlambdapt"), 3, ptL, centrality, weight);
 
         if (inVtx10 && isTrueINELgt0) // vtx10, INEL>0
-          histos.fill(HIST("Result/dummy/Genlambdapt"), 4, ptL, centrality);
+          histos.fill(HIST("Result/dummy/Genlambdapt"), 4, ptL, centrality, weight);
 
         if (isInAfterAllCuts) // after all event selection
-          histos.fill(HIST("Result/dummy/Genlambdapt"), 5, ptL, centrality);
+          histos.fill(HIST("Result/dummy/Genlambdapt"), 5, ptL, centrality, weight);
 
         if (isInAfterAllCuts && isTrueINELgt0) // after all event selection && INEL>0
-          histos.fill(HIST("Result/dummy/Genlambdapt"), 6, ptL, centrality);
+          histos.fill(HIST("Result/dummy/Genlambdapt"), 6, ptL, centrality, weight);
       }
 
       if (std::abs(part.pdgCode()) == PDG_t::kXiMinus) {
+
+        // true Xi
+        histos.fill(HIST("Result/dummy/GenTruexipt"), 0, pt, centrality);
+
+        if (inVtx10) // vtx10
+          histos.fill(HIST("Result/dummy/GenTruexipt"), 1, pt, centrality);
+
+        if (inVtx10 && isSel8) // vtx10, sel8
+          histos.fill(HIST("Result/dummy/GenTruexipt"), 2, pt, centrality);
+
+        if (inVtx10 && isTriggerTVX) // vtx10, TriggerTVX
+          histos.fill(HIST("Result/dummy/GenTruexipt"), 3, pt, centrality);
+
+        if (inVtx10 && isTrueINELgt0) // vtx10, INEL>0
+          histos.fill(HIST("Result/dummy/GenTruexipt"), 4, pt, centrality);
+
+        if (isInAfterAllCuts) // after all event selection
+          histos.fill(HIST("Result/dummy/GenTruexipt"), 5, pt, centrality);
+
+        if (isInAfterAllCuts && isTrueINELgt0) // after all event selection && INEL>0
+          histos.fill(HIST("Result/dummy/GenTruexipt"), 6, pt, centrality);
 
         float ptL = computePtL(pt, MassXiMinus);
         if (ptL < 0)
           continue;
 
-        histos.fill(HIST("Result/dummy/Genxipt"), 0, ptL, centrality);
+        if (useWeight)
+          weight = ptL / pt;
+        else
+          weight = 1.f;
+
+        histos.fill(HIST("Result/dummy/Genxipt"), 0, ptL, centrality, weight);
 
         if (inVtx10) // vtx10
-          histos.fill(HIST("Result/dummy/Genxipt"), 1, ptL, centrality);
+          histos.fill(HIST("Result/dummy/Genxipt"), 1, ptL, centrality, weight);
 
         if (inVtx10 && isSel8) // vtx10, sel8
-          histos.fill(HIST("Result/dummy/Genxipt"), 2, ptL, centrality);
+          histos.fill(HIST("Result/dummy/Genxipt"), 2, ptL, centrality, weight);
 
         if (inVtx10 && isTriggerTVX) // vtx10, TriggerTVX
-          histos.fill(HIST("Result/dummy/Genxipt"), 3, ptL, centrality);
+          histos.fill(HIST("Result/dummy/Genxipt"), 3, ptL, centrality, weight);
 
         if (inVtx10 && isTrueINELgt0) // vtx10, INEL>0
-          histos.fill(HIST("Result/dummy/Genxipt"), 4, ptL, centrality);
+          histos.fill(HIST("Result/dummy/Genxipt"), 4, ptL, centrality, weight);
 
         if (isInAfterAllCuts) // after all event selection
-          histos.fill(HIST("Result/dummy/Genxipt"), 5, ptL, centrality);
+          histos.fill(HIST("Result/dummy/Genxipt"), 5, ptL, centrality, weight);
 
         if (isInAfterAllCuts && isTrueINELgt0) // after all event selection && INEL>0
-          histos.fill(HIST("Result/dummy/Genxipt"), 6, ptL, centrality);
+          histos.fill(HIST("Result/dummy/Genxipt"), 6, ptL, centrality, weight);
       }
     }
   }
