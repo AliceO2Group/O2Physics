@@ -177,6 +177,9 @@ DECLARE_SOA_COLUMN(MultiplicityNContrib, multiplicityNContribJPsi2ee, float);
 DECLARE_SOA_COLUMN(AmbiguousInBunchPairs, AmbiguousJpsiPairsInBunch, bool);
 DECLARE_SOA_COLUMN(AmbiguousOutOfBunchPairs, AmbiguousJpsiPairsOutOfBunch, bool);
 DECLARE_SOA_COLUMN(Corrassoc, corrassoc, bool);
+DECLARE_SOA_BITMAP_COLUMN(IsMuonSelected, isMuonSelected, 32);                //! Muon track decisions (joinable to FwdTrackAssoc)
+DECLARE_SOA_COLUMN(MuonAmbiguityInBunch, muonAmbiguityInBunch, int8_t);       //! Muon track in-bunch ambiguity
+DECLARE_SOA_COLUMN(MuonAmbiguityOutOfBunch, muonAmbiguityOutOfBunch, int8_t); //! Muon track out of bunch ambiguity
 } // namespace dqanalysisflags
 
 DECLARE_SOA_TABLE(EventCuts, "AOD", "DQANAEVCUTS", dqanalysisflags::IsEventSelected);
@@ -184,6 +187,8 @@ DECLARE_SOA_TABLE(MixingHashes, "AOD", "DQANAMIXHASHA", dqanalysisflags::MixingH
 DECLARE_SOA_TABLE(BarrelTrackCuts, "AOD", "DQANATRKCUTS", dqanalysisflags::IsBarrelSelected);
 DECLARE_SOA_TABLE(BarrelAmbiguities, "AOD", "DQBARRELAMB", dqanalysisflags::BarrelAmbiguityInBunch, dqanalysisflags::BarrelAmbiguityOutOfBunch);
 DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTER", dqanalysisflags::IsBarrelSelectedPrefilter);
+DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTS", dqanalysisflags::IsMuonSelected);                                               //! joinable to FwdTrackAssoc
+DECLARE_SOA_TABLE(MuonAmbiguities, "AOD", "DQMUONAMB", dqanalysisflags::MuonAmbiguityInBunch, dqanalysisflags::MuonAmbiguityOutOfBunch); //! joinable to FwdTracks
 
 DECLARE_SOA_TABLE(JPsieeCandidates, "AOD", "DQPSEUDOPROPER",
                   dqanalysisflags::Massee, dqanalysisflags::Ptee, dqanalysisflags::Etaee, dqanalysisflags::Rapee,
@@ -215,6 +220,7 @@ DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS",
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra>;
 using MyEventsSelected = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::EventCuts>;
 using MyEventsHashSelected = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::EventCuts, aod::MixingHashes>;
+using MyEventsWithDqFilter = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::DQEventFilter>;
 
 using MyBarrelTracksWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA,
                                         aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
@@ -228,12 +234,16 @@ using MyBarrelTracksWithCovWithAmbiguities = soa::Join<aod::Tracks, aod::TracksE
                                                        aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                                        aod::pidTPCFullKa, aod::pidTPCFullPr, aod::BarrelAmbiguities>;
 
+using MyMuonTracksWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksDCA, aod::FwdTrackCovFwd>;
+using MyMuonTracksWithCovWithAmbiguities = soa::Join<aod::FwdTracks, aod::FwdTracksDCA, aod::FwdTrackCovFwd, aod::MuonAmbiguities>;
+
 using MyDielectronCandidates = soa::Join<aod::Dielectrons, aod::DielectronsExtra>;
 
 // bit maps used for the Fill functions of the VarManager
 constexpr static uint32_t gkEventFillMapWithMults = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::CollisionMultExtra;
 constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID;
 constexpr static uint32_t gkTrackFillMapWithCovNoTOF = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackTPCPID | VarManager::ObjTypes::TrackTOFService;
+constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov;
 
 // Global function used to define needed histogram classes
 void DefineHistograms(HistogramManager* histMan, TString histClasses, const char* histGroups); // defines histograms for all tasks
@@ -534,6 +544,136 @@ struct AnalysisEventSelection {
     cout << "AnalysisEventSelection::runEventSelection() completed" << endl;
   }
 
+  // Variant of runEventSelection that first checks the DqFilters EMu prefilter bit.
+  // Events not passing the EMu filter bit are skipped entirely, reducing track/muon
+  // propagation and PID computation for the majority of collisions.
+  template <uint32_t TEventFillMap, typename TEvents>
+  void runEventSelectionWithFilter(TEvents const& events, BCsWithTimestamps const& bcs)
+  {
+    cout << "AnalysisEventSelection::runEventSelectionWithFilter() called with " << events.size() << " events and " << bcs.size() << " BCs" << endl;
+
+    if (bcs.size() > 0 && fCurrentRun != bcs.begin().runNumber()) {
+      if (fConfigPostCalibTPC.fConfigComputeTPCpostCalib) {
+        auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCCDB.fConfigCcdbPathTPC.value, bcs.begin().timestamp());
+        VarManager::SetCalibrationObject(VarManager::kTPCElectronMean, calibList->FindObject("mean_map_electron"));
+        VarManager::SetCalibrationObject(VarManager::kTPCElectronSigma, calibList->FindObject("sigma_map_electron"));
+        VarManager::SetCalibrationObject(VarManager::kTPCPionMean, calibList->FindObject("mean_map_pion"));
+        VarManager::SetCalibrationObject(VarManager::kTPCPionSigma, calibList->FindObject("sigma_map_pion"));
+        VarManager::SetCalibrationObject(VarManager::kTPCProtonMean, calibList->FindObject("mean_map_proton"));
+        VarManager::SetCalibrationObject(VarManager::kTPCProtonSigma, calibList->FindObject("sigma_map_proton"));
+        if (fConfigPostCalibTPC.fConfigComputeTPCpostCalibKaon) {
+          VarManager::SetCalibrationObject(VarManager::kTPCKaonMean, calibList->FindObject("mean_map_kaon"));
+          VarManager::SetCalibrationObject(VarManager::kTPCKaonSigma, calibList->FindObject("sigma_map_kaon"));
+        }
+        if (fConfigPostCalibTPC.fConfigTPCpostCalibType == 2) {
+          VarManager::SetCalibrationObject(VarManager::kTPCElectronStatus, calibList->FindObject("status_map_electron"));
+          VarManager::SetCalibrationObject(VarManager::kTPCPionStatus, calibList->FindObject("status_map_pion"));
+          VarManager::SetCalibrationObject(VarManager::kTPCProtonStatus, calibList->FindObject("status_map_proton"));
+          if (fConfigPostCalibTPC.fConfigComputeTPCpostCalibKaon) {
+            VarManager::SetCalibrationObject(VarManager::kTPCKaonStatus, calibList->FindObject("status_map_kaon"));
+          }
+        }
+        VarManager::SetCalibrationType(fConfigPostCalibTPC.fConfigTPCpostCalibType, fConfigPostCalibTPC.fConfigTPCuseInterpolatedCalib);
+      }
+      if (fIsRun2 == true) {
+        fGrpMagRun2 = fCCDB->getForTimeStamp<o2::parameters::GRPObject>(fConfigCCDB.fConfigGrpMagPathRun2, bcs.begin().timestamp());
+        if (fGrpMagRun2 != nullptr) {
+          o2::base::Propagator::initFieldFromGRP(fGrpMagRun2);
+        }
+      } else {
+        fGrpMag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigCCDB.fConfigGrpMagPath, bcs.begin().timestamp());
+        auto* fZShift = fCCDB->getForTimeStamp<std::vector<float>>(fConfigCCDB.fZShiftPath, bcs.begin().timestamp());
+        if (fGrpMag != nullptr) {
+          o2::base::Propagator::initFieldFromGRP(fGrpMag);
+          VarManager::SetMagneticField(fGrpMag->getNominalL3Field());
+        }
+        if (fZShift != nullptr && !fZShift->empty()) {
+          VarManager::SetZShift((*fZShift)[0]);
+        }
+      }
+      std::map<std::string, std::string> metadataRCT, header;
+      header = fCCDBApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", bcs.begin().runNumber()), metadataRCT, -1);
+      uint64_t sor = std::atol(header["SOR"].c_str());
+      uint64_t eor = std::atol(header["EOR"].c_str());
+      VarManager::SetSORandEOR(sor, eor);
+
+      fCurrentRun = bcs.begin().runNumber();
+    } // end updating the CCDB quantities at change of run
+
+    cout << "Filling TimeFrame statistics histograms" << endl;
+    VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
+    VarManager::FillTimeFrame(bcs);
+    VarManager::FillTimeFrame(events);
+    if (fConfigQA) {
+      fHistMan->FillHistClass("TimeFrameStats", VarManager::fgValues);
+    }
+
+    fSelMap.clear();
+    fBCCollMap.clear();
+
+    cout << "Starting event loop for event selection with DqFilter" << endl;
+    for (auto& event : events) {
+      // Skip events that did not pass any filterPP selection.
+      // The bit position depends on filterPP config (fNBarrelCuts + fNMuonCuts + emu_index),
+      // so check eventFilter != 0 rather than a hardcoded bit.
+      if (event.eventFilter() == 0) {
+        continue;
+      }
+
+      auto bc = event.template bc_as<BCsWithTimestamps>();
+
+      VarManager::ResetValues(VarManager::kNTFWiseVariables, VarManager::kNEventWiseVariables);
+      VarManager::FillBC(bc);
+      VarManager::FillEvent<TEventFillMap>(event);
+
+      bool decision = false;
+      if (fConfigQA) {
+        fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
+      }
+
+      if (fConfigZorro.fConfigRunZorro) {
+        zorro.setBaseCCDBPath(fConfigZorro.fConfigCcdbPathZorro.value);
+        zorro.setBCtolerance(fConfigZorro.fBcTolerance);
+        zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), fConfigZorro.fConfigZorroTrigMask.value);
+        zorro.populateExternalHists(fCurrentRun, reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroInfo)), reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
+
+        if (!fEventCut->IsSelected(VarManager::fgValues) || (fConfigRCT.fConfigUseRCT.value && !rctChecker(event))) {
+          continue;
+        }
+
+        bool zorroSel = zorro.isSelected(bc.globalBC(), fConfigZorro.fBcTolerance, reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
+        if (fConfigZorro.fConfigRunZorroSel && (!zorroSel)) {
+          continue;
+        }
+      } else {
+
+        if (!fEventCut->IsSelected(VarManager::fgValues) || (fConfigRCT.fConfigUseRCT.value && !rctChecker(event))) {
+          continue;
+        }
+      }
+
+      decision = true;
+      if (fConfigQA) {
+        fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+      }
+
+      fSelMap[event.globalIndex()] = decision;
+      if (fBCCollMap.find(bc.globalBC()) == fBCCollMap.end()) {
+        std::vector<int64_t> evIndices = {event.globalIndex()};
+        fBCCollMap[bc.globalBC()] = evIndices;
+      } else {
+        auto& evIndices = fBCCollMap[bc.globalBC()];
+        evIndices.push_back(event.globalIndex());
+      }
+      if (fMixHandler != nullptr) {
+        int hh = fMixHandler->FindEventCategory(VarManager::fgValues);
+        hash(hh);
+      }
+    }
+
+    cout << "AnalysisEventSelection::runEventSelectionWithFilter() completed" << endl;
+  }
+
   template <uint32_t TEventFillMap, typename TEvents>
   void publishSelections(TEvents const& events)
   {
@@ -623,9 +763,18 @@ struct AnalysisEventSelection {
     cout << "AnalysisEventSelection::processDirect() completed" << endl;
   }
 
+  void processDirectWithFilter(MyEventsWithDqFilter const& events, BCsWithTimestamps const& bcs)
+  {
+    cout << "AnalysisEventSelection::processDirectWithFilter() called" << endl;
+    runEventSelectionWithFilter<gkEventFillMapWithMults>(events, bcs);
+    publishSelections<gkEventFillMapWithMults>(events);
+    cout << "AnalysisEventSelection::processDirectWithFilter() completed" << endl;
+  }
+
   void processDummy(aod::Collisions&) {}
 
   PROCESS_SWITCH(AnalysisEventSelection, processDirect, "Run event selection on framework AO2Ds", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processDirectWithFilter, "Run event selection on framework AO2Ds with DqFilters EMu prefilter", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy function", true);
 };
 
@@ -1084,6 +1233,209 @@ struct AnalysisPrefilterSelection {
   PROCESS_SWITCH(AnalysisPrefilterSelection, processDummy, "Do nothing", true);
 };
 
+// Produces a table with muon decisions (joinable to FwdTrackAssoc)
+struct AnalysisMuonSelection {
+  Produces<aod::MuonTrackCuts> muonSel;
+  Produces<aod::MuonAmbiguities> muonAmbiguities;
+  OutputObj<THashList> fOutputList{"output"};
+
+  Configurable<std::string> fConfigCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of muon cuts"};
+  Configurable<std::string> fConfigCutsJSON{"cfgMuonCutsJSON", "", "Additional list of muon cuts in JSON format"};
+  Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
+  Configurable<std::string> fConfigAddMuonHistogram{"cfgAddMuonHistogram", "", "Comma separated list of histograms"};
+  Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
+  Configurable<bool> fConfigPublishAmbiguity{"cfgPublishAmbiguity", true, "If true, publish ambiguity table and fill QA histograms"};
+
+  struct : ConfigurableGroup {
+    Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+    Configurable<std::string> grpMagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+    Configurable<int64_t> noLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+    Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  } fConfigCCDB;
+
+  Service<o2::ccdb::BasicCCDBManager> fCCDB;
+
+  HistogramManager* fHistMan = nullptr;
+  std::vector<AnalysisCompositeCut*> fMuonCuts;
+
+  int fCurrentRun = 0;
+
+  // key: FwdTrack global index, value: vector of collision global indices
+  std::map<int64_t, std::vector<int64_t>> fNAssocsInBunch;
+  std::map<int64_t, std::vector<int64_t>> fNAssocsOutOfBunch;
+
+  void init(o2::framework::InitContext& context)
+  {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+    VarManager::SetDefaultVarNames();
+
+    TString cutNamesStr = fConfigCuts.value;
+    if (!cutNamesStr.IsNull()) {
+      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
+      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
+        fMuonCuts.push_back(dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+      }
+    }
+    // extra cuts from JSON
+    TString addCutsStr = fConfigCutsJSON.value;
+    if (addCutsStr != "") {
+      std::vector<AnalysisCut*> addCuts = dqcuts::GetCutsFromJSON(addCutsStr.Data());
+      for (auto& t : addCuts) {
+        fMuonCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
+      }
+    }
+
+    VarManager::SetUseVars(AnalysisCut::fgUsedVars);
+
+    if (fConfigQA) {
+      if (fHistMan == nullptr) {
+        fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
+        fHistMan->SetUseDefaultVariableNames(kTRUE);
+        fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
+
+        TString histDirNames = "TrackMuon_BeforeCuts;";
+        for (auto& cut : fMuonCuts) {
+          histDirNames += Form("TrackMuon_%s;", cut->GetName());
+        }
+        if (fConfigPublishAmbiguity) {
+          histDirNames += "TrackMuon_AmbiguityInBunch;TrackMuon_AmbiguityOutOfBunch;";
+        }
+        DefineHistograms(fHistMan, histDirNames.Data(), fConfigAddMuonHistogram.value.data());
+        dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str());
+        VarManager::SetUseVars(fHistMan->GetUsedVars());
+        fOutputList.setObject(fHistMan->GetMainHistogramList());
+      }
+    }
+
+    fCCDB->setURL(fConfigCCDB.url.value);
+    fCCDB->setCaching(true);
+    fCCDB->setLocalObjectValidityChecking();
+    fCCDB->setCreatedNotAfter(fConfigCCDB.noLaterThan.value);
+    if (!o2::base::GeometryManager::isGeometryLoaded()) {
+      fCCDB->get<TGeoManager>(fConfigCCDB.geoPath);
+    }
+  }
+
+  template <uint32_t TEventFillMap, uint32_t TMuonFillMap, typename TEvents, typename TMuons>
+  void runMuonSelection(BCsWithTimestamps const& bcs,
+                        aod::FwdTrackAssoc const& assocs,
+                        TEvents const& /*events*/, TMuons const& muons)
+  {
+    fNAssocsInBunch.clear();
+    fNAssocsOutOfBunch.clear();
+
+    if (bcs.size() > 0 && fCurrentRun != bcs.begin().runNumber()) {
+      o2::parameters::GRPMagField* grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigCCDB.grpMagPath, bcs.begin().timestamp());
+      if (grpmag != nullptr) {
+        o2::base::Propagator::initFieldFromGRP(grpmag);
+        VarManager::SetMagneticField(grpmag->getNominalL3Field());
+      } else {
+        LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", bcs.begin().timestamp());
+      }
+      fCurrentRun = bcs.begin().runNumber();
+    }
+
+    muonSel.reserve(assocs.size());
+    if (fConfigPublishAmbiguity) {
+      muonAmbiguities.reserve(muons.size());
+    }
+    uint32_t filterMap = static_cast<uint32_t>(0);
+    int iCut = 0;
+
+    for (auto& assoc : assocs) {
+      auto event = assoc.template collision_as<TEvents>();
+      if (!event.isEventSelected_bit(0)) {
+        muonSel(0);
+        continue;
+      }
+      VarManager::ResetValues(0, VarManager::kNMuonTrackVariables);
+      VarManager::FillEvent<TEventFillMap>(event);
+
+      auto track = assoc.template fwdtrack_as<TMuons>();
+      filterMap = static_cast<uint32_t>(0);
+      VarManager::FillTrack<TMuonFillMap>(track);
+      if (fConfigQA) {
+        fHistMan->FillHistClass("TrackMuon_BeforeCuts", VarManager::fgValues);
+      }
+      iCut = 0;
+      for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, iCut++) {
+        if ((*cut)->IsSelected(VarManager::fgValues)) {
+          filterMap |= (static_cast<uint32_t>(1) << iCut);
+          if (fConfigQA) {
+            fHistMan->FillHistClass(Form("TrackMuon_%s", (*cut)->GetName()), VarManager::fgValues);
+          }
+        }
+      }
+      muonSel(filterMap);
+
+      if (fConfigPublishAmbiguity && filterMap > 0) {
+        if (event.isEventSelected_bit(1)) { // in-bunch pileup flag
+          if (fNAssocsInBunch.find(track.globalIndex()) == fNAssocsInBunch.end()) {
+            fNAssocsInBunch[track.globalIndex()] = {event.globalIndex()};
+          } else {
+            fNAssocsInBunch[track.globalIndex()].push_back(event.globalIndex());
+          }
+        } else {
+          if (fNAssocsOutOfBunch.find(track.globalIndex()) == fNAssocsOutOfBunch.end()) {
+            fNAssocsOutOfBunch[track.globalIndex()] = {event.globalIndex()};
+          } else {
+            fNAssocsOutOfBunch[track.globalIndex()].push_back(event.globalIndex());
+          }
+        }
+      }
+    } // end loop over assocs
+
+    if (fConfigPublishAmbiguity) {
+      if (fConfigQA) {
+        for (auto& [trackIdx, evIndices] : fNAssocsInBunch) {
+          if (evIndices.size() <= 1)
+            continue;
+          auto track = muons.rawIteratorAt(trackIdx);
+          VarManager::ResetValues(0, VarManager::kNMuonTrackVariables);
+          VarManager::FillTrack<TMuonFillMap>(track);
+          VarManager::fgValues[VarManager::kMuonNAssocsInBunch] = static_cast<float>(evIndices.size());
+          fHistMan->FillHistClass("TrackMuon_AmbiguityInBunch", VarManager::fgValues);
+        }
+        for (auto& [trackIdx, evIndices] : fNAssocsOutOfBunch) {
+          if (evIndices.size() <= 1)
+            continue;
+          auto track = muons.rawIteratorAt(trackIdx);
+          VarManager::ResetValues(0, VarManager::kNMuonTrackVariables);
+          VarManager::FillTrack<TMuonFillMap>(track);
+          VarManager::fgValues[VarManager::kMuonNAssocsOutOfBunch] = static_cast<float>(evIndices.size());
+          fHistMan->FillHistClass("TrackMuon_AmbiguityOutOfBunch", VarManager::fgValues);
+        }
+      }
+      // publish ambiguity table (one row per FwdTrack)
+      for (auto& track : muons) {
+        int8_t nInBunch = 0;
+        if (fNAssocsInBunch.find(track.globalIndex()) != fNAssocsInBunch.end()) {
+          nInBunch = static_cast<int8_t>(fNAssocsInBunch[track.globalIndex()].size());
+        }
+        int8_t nOutOfBunch = 0;
+        if (fNAssocsOutOfBunch.find(track.globalIndex()) != fNAssocsOutOfBunch.end()) {
+          nOutOfBunch = static_cast<int8_t>(fNAssocsOutOfBunch[track.globalIndex()].size());
+        }
+        muonAmbiguities(nInBunch, nOutOfBunch);
+      }
+    }
+  }
+
+  void processDirect(MyEventsSelected const& events, BCsWithTimestamps const& bcs,
+                     aod::FwdTrackAssoc const& assocs,
+                     MyMuonTracksWithCov const& muons)
+  {
+    runMuonSelection<gkEventFillMapWithMults, gkMuonFillMapWithCov>(bcs, assocs, events, muons);
+  }
+
+  void processDummy(MyEvents&) { /* do nothing */ }
+
+  PROCESS_SWITCH(AnalysisMuonSelection, processDirect, "Run muon selection on AO2D FwdTracks", false);
+  PROCESS_SWITCH(AnalysisMuonSelection, processDummy, "Dummy function", true);
+};
+
 struct AnalysisSameEventPairing {
   Produces<aod::Dielectrons> dielectronList;
   Produces<aod::DielectronsExtra> dielectronsExtraList;
@@ -1091,6 +1443,7 @@ struct AnalysisSameEventPairing {
   Produces<aod::DielectronsAll> dielectronAllList;
   Produces<aod::DileptonInfo> dileptonInfoList;
   Produces<aod::JPsieeCandidates> PromptNonPromptSepTable;
+  Produces<aod::ElectronMuons> electronmuonList;
 
   o2::base::MatLayerCylSet* fLUT = nullptr;
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
@@ -1146,6 +1499,7 @@ struct AnalysisSameEventPairing {
   // keep histogram class names in maps, so we don't have to buld their names in the pair loops
   std::map<int, std::vector<TString>> fTrackHistNames;
   std::map<int, std::vector<TString>> fMuonHistNames;
+  std::map<int, std::vector<TString>> fTrackMuonHistNames; // for electron-muon pairs: key = iTrack * fNCutsMuon + iMuon
 
   std::vector<AnalysisCompositeCut> fPairCuts;
   AnalysisCompositeCut fMCGenAccCut;
@@ -1159,9 +1513,14 @@ struct AnalysisSameEventPairing {
   bool fHasTwoProngGenMCsignals = false;
 
   bool fEnableBarrelHistos;
+  bool fEnableBarrelMuonHistos;
+
+  std::vector<TString> fTrackCuts; // barrel cut names, used in EMu histogram filling
+  std::vector<TString> fMuonCuts;  // muon cut names, used in EMu histogram filling
 
   Preslice<soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts, aod::Prefilter>> trackAssocsPerCollision = aod::track_association::collisionId;
-  // Preslice<soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts>> muonAssocsPerCollision = aod::reducedtrack_association::reducedeventId;
+  Preslice<soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts>> trackEmuAssocsPerCollision = aod::track_association::collisionId;
+  Preslice<soa::Join<aod::FwdTrackAssoc, aod::MuonTrackCuts>> muonAssocsPerCollision = aod::track_association::collisionId;
 
   void init(o2::framework::InitContext& context)
   {
@@ -1172,7 +1531,7 @@ struct AnalysisSameEventPairing {
     VarManager::SetDefaultVarNames();
 
     fEnableBarrelHistos = context.mOptions.get<bool>("processBarrelOnly");
-    // fEnableMuonHistos = context.mOptions.get<bool>("processMuonOnlySkimmed");
+    fEnableBarrelMuonHistos = context.mOptions.get<bool>("processElectronMuonDirect");
 
     // Keep track of all the histogram class names to avoid composing strings in the pairing loop
     TString histNames = "";
@@ -1191,11 +1550,11 @@ struct AnalysisSameEventPairing {
     if (!trackCutsStr.IsNull()) {
       objArrayTrackCuts = trackCutsStr.Tokenize(",");
     }
-    /*TString muonCutsStr = fConfigOptions.muon.value;
+    TString muonCutsStr = fConfigOptions.muon.value;
     TObjArray* objArrayMuonCuts = nullptr;
     if (!muonCutsStr.IsNull()) {
       objArrayMuonCuts = muonCutsStr.Tokenize(",");
-    }*/
+    }
 
     // get the barrel track selection cuts
     string tempCuts;
@@ -1222,6 +1581,7 @@ struct AnalysisSameEventPairing {
         // and assign histogram directories
         if (objArrayTrackCuts->FindObject(tempStr.Data()) != nullptr) {
           fTrackFilterMask |= (static_cast<uint32_t>(1) << icut);
+          fTrackCuts.push_back(tempStr);
 
           if (fEnableBarrelHistos) {
             // assign the pair hist directories for the current cut
@@ -1265,11 +1625,10 @@ struct AnalysisSameEventPairing {
       }
     }
 
-    /*
-    // get the muon track selection cuts
+    // get the muon track selection cuts (from analysis-muon-selection task)
     getTaskOptionValue<string>(context, "analysis-muon-selection", "cfgMuonCuts", tempCuts, false);
     tempCutsStr = tempCuts;
-    // check also the cuts added via JSON and add them to the string of cuts
+    // check also the cuts added via JSON
     getTaskOptionValue<string>(context, "analysis-muon-selection", "cfgMuonCutsJSON", tempCuts, false);
     TString addMuonCutsStr = tempCuts;
     if (addMuonCutsStr != "") {
@@ -1279,82 +1638,54 @@ struct AnalysisSameEventPairing {
       }
     }
 
-    // check that in this task we have specified muon cuts
+    // build fMuonFilterMask and, if needed, fTrackMuonHistNames for EMu pairing
     if (!muonCutsStr.IsNull()) {
-      // loop over the muon cuts computed by the muon selection task and build a filter mask for those required in this task
       std::unique_ptr<TObjArray> objArray(tempCutsStr.Tokenize(","));
       fNCutsMuon = objArray->GetEntries();
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
         TString tempStr = objArray->At(icut)->GetName();
         if (objArrayMuonCuts->FindObject(tempStr.Data()) != nullptr) {
-          // update the filter mask
           fMuonFilterMask |= (static_cast<uint32_t>(1) << icut);
+          fMuonCuts.push_back(tempStr);
 
-          if (fEnableMuonHistos) {
-            // assign pair hist directories for each required muon cut
-            std::vector<TString> names = {
-              Form("PairsMuonSEPM_%s", objArray->At(icut)->GetName()),
-              Form("PairsMuonSEPP_%s", objArray->At(icut)->GetName()),
-              Form("PairsMuonSEMM_%s", objArray->At(icut)->GetName())};
-            if (fConfigOptions.fConfigQA) {
-              // assign separate hist directories for ambiguous tracks
-              names.push_back(Form("PairsMuonSEPM_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
-              names.push_back(Form("PairsMuonSEPP_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
-              names.push_back(Form("PairsMuonSEMM_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
-              names.push_back(Form("PairsMuonSEPM_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
-              names.push_back(Form("PairsMuonSEPP_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
-              names.push_back(Form("PairsMuonSEMM_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
-            }
-            for (auto& n : names) {
-              histNames += Form("%s;", n.Data());
-            }
-            fMuonHistNames[icut] = names;
+          if (fEnableBarrelMuonHistos) {
+            // assign PairsEleMu histogram directories for each (barrel cut, muon cut) combination
+            int seqTrackIdx = 0; // sequential index into fTrackCuts (which contains only required cuts)
+            for (int iTrack = 0; iTrack < fNCutsBarrel; ++iTrack) {
+              // skip barrel cuts not required in this task
+              if (!(fTrackFilterMask & (static_cast<uint32_t>(1) << iTrack)))
+                continue;
+              TString trackCutName = fTrackCuts[seqTrackIdx];
+              seqTrackIdx++;
+              std::vector<TString> names = {
+                Form("PairsEleMuSEPM_%s_%s", trackCutName.Data(), tempStr.Data()),
+                Form("PairsEleMuSEPP_%s_%s", trackCutName.Data(), tempStr.Data()),
+                Form("PairsEleMuSEMM_%s_%s", trackCutName.Data(), tempStr.Data())};
+              histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
 
-            // if there are specified pair cuts, assign hist dirs for each muon cut - pair cut combination
-            TString cutNamesStr = fConfigOptions.pair.value;
-            if (!cutNamesStr.IsNull()) { // if pair cuts
-              std::unique_ptr<TObjArray> objArrayPair(cutNamesStr.Tokenize(","));
-              fNPairCuts = objArrayPair->GetEntries();
-              for (int iPairCut = 0; iPairCut < fNPairCuts; ++iPairCut) { // loop over pair cuts
-                names = {
-                  Form("PairsMuonSEPM_%s_%s", objArray->At(icut)->GetName(), objArrayPair->At(iPairCut)->GetName()),
-                  Form("PairsMuonSEPP_%s_%s", objArray->At(icut)->GetName(), objArrayPair->At(iPairCut)->GetName()),
-                  Form("PairsMuonSEMM_%s_%s", objArray->At(icut)->GetName(), objArrayPair->At(iPairCut)->GetName())};
-                histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
-                fMuonHistNames[fNCutsMuon + icut * fNCutsMuon + iPairCut] = names;
-              } // end loop (pair cuts)
-            } // end if (pair cuts)
-
-            // assign hist directories for pairs matched to MC signals for each (muon cut, MCrec signal) combination
-            if (!sigNamesStr.IsNull()) {
-              for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
-                auto sig = fRecMCSignals.at(isig);
-                names = {
-                  Form("PairsMuonSEPM_%s_%s", objArray->At(icut)->GetName(), sig->GetName()),
-                  Form("PairsMuonSEPP_%s_%s", objArray->At(icut)->GetName(), sig->GetName()),
-                  Form("PairsMuonSEMM_%s_%s", objArray->At(icut)->GetName(), sig->GetName()),
-                };
-                if (fConfigOptions.fConfigQA) {
-                  names.push_back(Form("PairsMuonSEPMCorrectAssoc_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
-                  names.push_back(Form("PairsMuonSEPMIncorrectAssoc_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
-                  names.push_back(Form("PairsMuonSEPM_ambiguousInBunch_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
-                  names.push_back(Form("PairsMuonSEPM_ambiguousInBunchCorrectAssoc_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
-                  names.push_back(Form("PairsMuonSEPM_ambiguousInBunchIncorrectAssoc_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
-                  names.push_back(Form("PairsMuonSEPM_ambiguousOutOfBunch_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
-                  names.push_back(Form("PairsMuonSEPM_ambiguousOutOfBunchCorrectAssoc_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
-                  names.push_back(Form("PairsMuonSEPM_ambiguousOutOfBunchIncorrectAssoc_%s_%s", objArray->At(icut)->GetName(), sig->GetName()));
+              // pair-cut variants
+              TString pairCutsStr = fConfigOptions.pair.value;
+              if (!pairCutsStr.IsNull()) {
+                std::unique_ptr<TObjArray> objArrayPair(pairCutsStr.Tokenize(","));
+                int nPairCuts = objArrayPair->GetEntries();
+                for (int iPairCut = 0; iPairCut < nPairCuts; ++iPairCut) {
+                  names = {
+                    Form("PairsEleMuSEPM_%s_%s_%s", trackCutName.Data(), tempStr.Data(), objArrayPair->At(iPairCut)->GetName()),
+                    Form("PairsEleMuSEPP_%s_%s_%s", trackCutName.Data(), tempStr.Data(), objArrayPair->At(iPairCut)->GetName()),
+                    Form("PairsEleMuSEMM_%s_%s_%s", trackCutName.Data(), tempStr.Data(), objArrayPair->At(iPairCut)->GetName())};
+                  histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+                  int index = iTrack * (fNCutsMuon * nPairCuts) + icut * nPairCuts + iPairCut;
+                  fTrackMuonHistNames[index] = names;
                 }
-                for (auto& n : names) {
-                  histNames += Form("%s;", n.Data());
-                }
-                fMuonHistNamesMCmatched.try_emplace(icut * fRecMCSignals.size() + isig, names);
-              } // end loop over MC signals
-            }
-          }
+              } else {
+                int index = iTrack * fNCutsMuon + icut;
+                fTrackMuonHistNames[index] = names;
+              }
+            } // end loop barrel cuts
+          } // end if fEnableBarrelMuonHistos
         }
-      } // end loop over cuts
+      } // end loop muon cuts
     } // end if (muonCutsStr)
-*/
 
     fCurrentRun = 0;
 
@@ -1667,6 +1998,121 @@ struct AnalysisSameEventPairing {
     cout << "AnalysisSameEventPairing::runSameEventPairing() completed" << endl;
   }
 
+  // Template function for electron-muon same-event pairing (barrel x muon, full index policy)
+  template <bool TTwoProngFitter, int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap,
+            typename TEvents, typename TTrackAssocs, typename TTracks, typename TMuonAssocs, typename TMuons>
+  void runEmuSameEventPairing(TEvents const& events, BCsWithTimestamps const& bcs,
+                              Preslice<TTrackAssocs>& preslice1, TTrackAssocs const& assocs1, TTracks const& /*tracks1*/,
+                              Preslice<TMuonAssocs>& preslice2, TMuonAssocs const& assocs2, TMuons const& /*tracks2*/)
+  {
+    if (events.size() == 0) {
+      LOG(warning) << "No events in this TF, going to the next one ...";
+      return;
+    }
+    if (fCurrentRun != bcs.begin().runNumber()) {
+      initParamsFromCCDB(bcs.begin().timestamp(), TTwoProngFitter);
+      fCurrentRun = bcs.begin().runNumber();
+    }
+
+    const auto& histNames = fTrackMuonHistNames;
+    int nPairCuts = (fPairCuts.size() > 0) ? static_cast<int>(fPairCuts.size()) : 1;
+
+    electronmuonList.reserve(1);
+
+    uint32_t twoTrackFilter = 0;
+    int sign1 = 0;
+    int sign2 = 0;
+
+    constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0);
+
+    for (auto& event : events) {
+      if (!event.isEventSelected_bit(0))
+        continue;
+      if (fConfigOptions.collSplitting && event.isEventSelected_bit(2))
+        continue;
+
+      VarManager::ResetValues(0, VarManager::kNVars);
+      VarManager::FillEvent<TEventFillMap>(event, VarManager::fgValues);
+
+      auto groupedAssocs1 = assocs1.sliceBy(preslice1, event.globalIndex());
+      if (groupedAssocs1.size() == 0)
+        continue;
+      auto groupedAssocs2 = assocs2.sliceBy(preslice2, event.globalIndex());
+      if (groupedAssocs2.size() == 0)
+        continue;
+
+      for (auto& [a1, a2] : o2::soa::combinations(soa::CombinationsFullIndexPolicy(groupedAssocs1, groupedAssocs2))) {
+        if (!(a1.isBarrelSelected_raw() & fTrackFilterMask))
+          continue;
+        if (!(a2.isMuonSelected_raw() & fMuonFilterMask))
+          continue;
+
+        auto t1 = a1.template track_as<TTracks>();
+        auto t2 = a2.template fwdtrack_as<TMuons>();
+        sign1 = t1.sign();
+        sign2 = t2.sign();
+
+        twoTrackFilter = 0;
+        int minCuts = std::min(fNCutsBarrel, fNCutsMuon);
+        for (int i = 0; i < minCuts; ++i) {
+          if ((a1.isBarrelSelected_raw() & (1u << i)) && (a2.isMuonSelected_raw() & (1u << i))) {
+            twoTrackFilter |= (1u << i);
+          }
+        }
+        // store ambiguity flags in bits 28-31
+        if (t1.barrelAmbiguityInBunch() > 1)
+          twoTrackFilter |= (1u << 28);
+        if (t2.muonAmbiguityInBunch() > 1)
+          twoTrackFilter |= (1u << 29);
+        if (t1.barrelAmbiguityOutOfBunch() > 1)
+          twoTrackFilter |= (1u << 30);
+        if (t2.muonAmbiguityOutOfBunch() > 1)
+          twoTrackFilter |= (1u << 31);
+
+        VarManager::FillPair<VarManager::kElectronMuon, TTrackFillMap>(t1, t2);
+        if (fConfigOptions.fPropTrack) {
+          VarManager::FillPairCollision<VarManager::kElectronMuon, TTrackFillMap>(event, t1, t2);
+        }
+        if constexpr (eventHasQvector) {
+          VarManager::FillPairVn<VarManager::kElectronMuon>(t1, t2);
+        }
+
+        electronmuonList(event.globalIndex(), VarManager::fgValues[VarManager::kMass],
+                         VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta],
+                         VarManager::fgValues[VarManager::kPhi],
+                         t1.sign() + t2.sign(), twoTrackFilter, 0);
+
+        for (int iTrack = 0; iTrack < fNCutsBarrel; ++iTrack) {
+          if (!(a1.isBarrelSelected_raw() & (1u << iTrack)))
+            continue;
+          for (int iMuon = 0; iMuon < fNCutsMuon; ++iMuon) {
+            if (!(a2.isMuonSelected_raw() & (1u << iMuon)))
+              continue;
+            for (unsigned int iPairCut = 0; iPairCut < (fPairCuts.empty() ? 1u : static_cast<unsigned int>(fPairCuts.size())); iPairCut++) {
+              if (!fPairCuts.empty()) {
+                AnalysisCompositeCut cut = fPairCuts.at(iPairCut);
+                if (!cut.IsSelected(VarManager::fgValues))
+                  continue;
+              }
+              int index = iTrack * (fNCutsMuon * nPairCuts) + iMuon * nPairCuts + static_cast<int>(iPairCut);
+              auto itHist = histNames.find(index);
+              if (itHist == histNames.end())
+                continue;
+              if (sign1 * sign2 < 0) {
+                fHistMan->FillHistClass(itHist->second[0].Data(), VarManager::fgValues);
+              } else if (sign1 > 0) {
+                fHistMan->FillHistClass(itHist->second[1].Data(), VarManager::fgValues);
+              } else {
+                fHistMan->FillHistClass(itHist->second[2].Data(), VarManager::fgValues);
+              }
+            } // end pair cut loop
+          } // end muon cut loop
+        } // end barrel cut loop
+
+      } // end combinations loop
+    } // end event loop
+  }
+
   void processBarrelOnly(MyEventsSelected const& events, BCsWithTimestamps const& bcs,
                          soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
                          MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
@@ -1676,9 +2122,24 @@ struct AnalysisSameEventPairing {
     cout << "AnalysisSameEventPairing::processBarrelOnly() completed" << endl;
   }
 
+  void processElectronMuonDirect(
+    MyEventsSelected const& events, BCsWithTimestamps const& bcs,
+    soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts> const& barrelAssocs,
+    MyBarrelTracksWithCovWithAmbiguities const& barrelTracks,
+    soa::Join<aod::FwdTrackAssoc, aod::MuonTrackCuts> const& muonAssocs,
+    MyMuonTracksWithCovWithAmbiguities const& muons)
+  {
+    runEmuSameEventPairing<true, VarManager::kElectronMuon,
+                           gkEventFillMapWithMults, gkTrackFillMapWithCov, gkMuonFillMapWithCov>(
+      events, bcs,
+      trackEmuAssocsPerCollision, barrelAssocs, barrelTracks,
+      muonAssocsPerCollision, muonAssocs, muons);
+  }
+
   void processDummy(MyEvents&) { /* do nothing */ }
 
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnly, "Run barrel only pairing", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processElectronMuonDirect, "Run electron-muon pairing on AO2D tracks/fwd-tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy function", true);
 };
 
@@ -1689,6 +2150,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<AnalysisEventSelection>(cfgc),
     adaptAnalysisTask<AnalysisTrackSelection>(cfgc),
+    adaptAnalysisTask<AnalysisMuonSelection>(cfgc),
     adaptAnalysisTask<AnalysisPrefilterSelection>(cfgc),
     adaptAnalysisTask<AnalysisSameEventPairing>(cfgc)};
   // adaptAnalysisTask<AnalysisDileptonTrack>(cfgc)};
