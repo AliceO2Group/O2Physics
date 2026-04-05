@@ -379,7 +379,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   void doCascadeQA([[maybe_unused]] const FilteredFDCollision& col, const TableType& parts, PartitionType& partsTwo, const aod::FDCascParticles& fdcascs)
   {
     auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    
+
     // Basic particle loop
     for (const auto& part : groupPartsTwo) {
       CascQAExtra.fill(HIST("hMassXi"), part.mLambda());
@@ -432,7 +432,6 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         CascQAExtra.fill(HIST("hDcaV0toPV"), casc.dcav0topv());
       }
     }
-
   }
 
   /// track - cascade correlations
