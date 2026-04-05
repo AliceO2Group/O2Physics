@@ -2239,6 +2239,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMCPdgCode"] = kMCPdgCode;
   fgVarNamesMap["kMCCosTheta"] = kMCCosTheta;
   fgVarNamesMap["kMCHadronPdgCode"] = kMCHadronPdgCode;
+  fgVarNamesMap["kMCAccweight"] = kMCAccweight;
   fgVarNamesMap["kMCCosChi"] = kMCCosChi;
   fgVarNamesMap["kMCHadronPt"] = kMCHadronPt;
   fgVarNamesMap["kMCWeight_before"] = kMCWeight_before;
@@ -2481,6 +2482,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kDeltaPhiSym"] = kDeltaPhiSym;
   fgVarNamesMap["kCosTheta"] = kCosTheta;
   fgVarNamesMap["kCosChi"] = kCosChi;
+  fgVarNamesMap["kWeight"] = kWeight;
   fgVarNamesMap["kECWeight"] = kECWeight;
   fgVarNamesMap["kEWeight_before"] = kEWeight_before;
   fgVarNamesMap["kPtDau"] = kPtDau;
