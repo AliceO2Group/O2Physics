@@ -458,6 +458,10 @@ struct StrangenessInJetsIons {
         registryMC.add("K0s_reconstructed_MB", "K0s_reconstructed_MB", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("Lambda_reconstructed_MB", "Lambda_reconstructed_MB", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("AntiLambda_reconstructed_MB", "AntiLambda_reconstructed_MB", HistType::kTH2F, {multAxis, ptAxis});
+
+        registryMC.add("K0s_reconstructed_MB_incl", "K0s_reconstructed_MB_incl", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("Lambda_reconstructed_MB_incl", "Lambda_reconstructed_MB_incl", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("AntiLambda_reconstructed_MB_incl", "AntiLambda_reconstructed_MB_incl", HistType::kTH2F, {multAxis, ptAxis});
       }
       if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
         registryMC.add("XiPos_reconstructed_jet", "XiPos_reconstructed_jet", HistType::kTH2F, {multAxis, ptAxis});
@@ -1217,8 +1221,6 @@ struct StrangenessInJetsIons {
         auto motherNeg = mcParticles.iteratorAt(negParticle.mothersIds()[0]);
         if (motherPos != motherNeg)
           continue;
-        if (!motherPos.isPhysicalPrimary())
-          continue;
 
         if (std::abs(motherPos.eta()) > 0.8)
           continue;
@@ -1228,13 +1230,30 @@ struct StrangenessInJetsIons {
 
         // K0s
         if (passedK0ShortSelection(v0, pos, neg, vtxPos) && motherPos.pdgCode() == kK0Short) {
-          registryMC.fill(HIST("K0s_reconstructed_MB"), multiplicity, v0.pt());
+          registryMC.fill(HIST("K0s_reconstructed_MB_incl"), multiplicity, v0.pt());
         }
         // Lambda
         if (passedLambdaSelection(v0, pos, neg, vtxPos) && motherPos.pdgCode() == kLambda0) {
-          registryMC.fill(HIST("Lambda_reconstructed_MB"), multiplicity, v0.pt());
+          registryMC.fill(HIST("Lambda_reconstructed_MB_incl"), multiplicity, v0.pt());
         }
         // AntiLambda
+        if (passedAntiLambdaSelection(v0, pos, neg, vtxPos) && motherPos.pdgCode() == kLambda0Bar) {
+          registryMC.fill(HIST("AntiLambda_reconstructed_MB_incl"), multiplicity, v0.pt());
+        }
+
+        if (!motherPos.isPhysicalPrimary())
+          continue;
+
+        // Histograms below are filled only for PhysicalPrimary particles
+        // K0s (primary)
+        if (passedK0ShortSelection(v0, pos, neg, vtxPos) && motherPos.pdgCode() == kK0Short) {
+          registryMC.fill(HIST("K0s_reconstructed_MB"), multiplicity, v0.pt());
+        }
+        // Lambda (primary)
+        if (passedLambdaSelection(v0, pos, neg, vtxPos) && motherPos.pdgCode() == kLambda0) {
+          registryMC.fill(HIST("Lambda_reconstructed_MB"), multiplicity, v0.pt());
+        }
+        // AntiLambda (primary)
         if (passedAntiLambdaSelection(v0, pos, neg, vtxPos) && motherPos.pdgCode() == kLambda0Bar) {
           registryMC.fill(HIST("AntiLambda_reconstructed_MB"), multiplicity, v0.pt());
         }
