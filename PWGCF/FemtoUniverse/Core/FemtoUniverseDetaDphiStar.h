@@ -844,15 +844,15 @@ class FemtoUniverseDetaDphiStar
   float cutDeltaEtaMax;
   float cutDeltaEtaMin;
 
-  std::vector<double> cutDeltaPhiStarMaxVector;
-  std::vector<double> cutDeltaPhiStarMinVector;
-  std::vector<double> cutDeltaEtaMaxVector;
-  std::vector<double> cutDeltaEtaMinVector;
+  std::vector<float> cutDeltaPhiStarMaxVector;
+  std::vector<float> cutDeltaPhiStarMinVector;
+  std::vector<float> cutDeltaEtaMaxVector;
+  std::vector<float> cutDeltaEtaMinVector;
 
-  std::vector<double> cutDeltaPhiStarFractionMaxVector;
-  std::vector<double> cutDeltaPhiStarFractionMinVector;
-  std::vector<double> cutDeltaEtaFractionMaxVector;
-  std::vector<double> cutDeltaEtaFractionMinVector;
+  std::vector<float> cutDeltaPhiStarFractionMaxVector;
+  std::vector<float> cutDeltaPhiStarFractionMinVector;
+  std::vector<float> cutDeltaEtaFractionMaxVector;
+  std::vector<float> cutDeltaEtaFractionMinVector;
 
   float magfield;
   bool plotForEveryRadii = false;

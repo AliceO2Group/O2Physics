@@ -118,15 +118,15 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
     Configurable<bool> confIsWeight{"confIsWeight", true, "Fill quantum weight"};
     Configurable<bool> confisIdenPRF{"confisIdenPRF", false, "Choosing identical or non-identical pairs in PRF"};
 
-    ConfigurableAxis confCPRdeltaEtaCutMaxVec{"confCPRdeltaEtaCutMaxVec", {VARIABLE_WIDTH, 0.0f, 0.0f, 0.0f, 0.0f}, "Bins for max delta eta cut in CPR"};
-    ConfigurableAxis confCPRdeltaEtaCutMinVec{"confCPRdeltaEtaCutMinVec", {VARIABLE_WIDTH, 0.0f, 0.0f, 0.0f, 0.0f}, "Bins for min delta eta cut in CPR"};
-    ConfigurableAxis confCPRdeltaPhiCutMaxVec{"confCPRdeltaPhiCutMaxVec", {VARIABLE_WIDTH, 0.0f, 0.0f, 0.0f, 0.0f}, "Bins for max delta phi cut in CPR"};
-    ConfigurableAxis confCPRdeltaPhiCutMinVec{"confCPRdeltaPhiCutMinVec", {VARIABLE_WIDTH, 0.0f, 0.0f, 0.0f, 0.0f}, "Bins for min delta phi cut in CPR"};
+    Configurable<std::vector<float>> confCPRdeltaEtaCutMaxVec{"confCPRdeltaEtaCutMaxVec", std::vector<float>{0.0f, 0.0f, 0.0f, 0.0f}, "Bins for max delta eta cut in CPR"};
+    Configurable<std::vector<float>> confCPRdeltaEtaCutMinVec{"confCPRdeltaEtaCutMinVec", std::vector<float>{0.0f, 0.0f, 0.0f, 0.0f}, "Bins for min delta eta cut in CPR"};
+    Configurable<std::vector<float>> confCPRdeltaPhiCutMaxVec{"confCPRdeltaPhiCutMaxVec", std::vector<float>{0.0f, 0.0f, 0.0f, 0.0f}, "Bins for max delta phi cut in CPR"};
+    Configurable<std::vector<float>> confCPRdeltaPhiCutMinVec{"confCPRdeltaPhiCutMinVec", std::vector<float>{0.0f, 0.0f, 0.0f, 0.0f}, "Bins for min delta phi cut in CPR"};
 
-    ConfigurableAxis confCPRdeltaEtaCutFractionMaxVec{"confCPRdeltaEtaCutFractionMaxVec", {VARIABLE_WIDTH, 0.0f, 0.0f, 0.0f, 0.0f}, "Bins for max delta eta cut in CPR Fraction"};
-    ConfigurableAxis confCPRdeltaEtaCutFractionMinVec{"confCPRdeltaEtaCutFractionMinVec", {VARIABLE_WIDTH, 0.0f, 0.0f, 0.0f, 0.0f}, "Bins for min delta eta cut in CPR Fraction"};
-    ConfigurableAxis confCPRdeltaPhiCutFractionMaxVec{"confCPRdeltaPhiCutFractionMaxVec", {VARIABLE_WIDTH, 0.0f, 0.0f, 0.0f, 0.0f}, "Bins for max delta phi cut in CPR Fraction"};
-    ConfigurableAxis confCPRdeltaPhiCutFractionMinVec{"confCPRdeltaPhiCutFractionMinVec", {VARIABLE_WIDTH, 0.0f, 0.0f, 0.0f, 0.0f}, "Bins for min delta phi cut in CPR Fraction"};
+    Configurable<std::vector<float>> confCPRdeltaEtaCutFractionMaxVec{"confCPRdeltaEtaCutFractionMaxVec", std::vector<float>{0.0f, 0.0f, 0.0f, 0.0f}, "Bins for max delta eta cut in CPR Fraction"};
+    Configurable<std::vector<float>> confCPRdeltaEtaCutFractionMinVec{"confCPRdeltaEtaCutFractionMinVec", std::vector<float>{0.0f, 0.0f, 0.0f, 0.0f}, "Bins for min delta eta cut in CPR Fraction"};
+    Configurable<std::vector<float>> confCPRdeltaPhiCutFractionMaxVec{"confCPRdeltaPhiCutFractionMaxVec", std::vector<float>{0.0f, 0.0f, 0.0f, 0.0f}, "Bins for max delta phi cut in CPR Fraction"};
+    Configurable<std::vector<float>> confCPRdeltaPhiCutFractionMinVec{"confCPRdeltaPhiCutFractionMinVec", std::vector<float>{0.0f, 0.0f, 0.0f, 0.0f}, "Bins for min delta phi cut in CPR Fraction"};
 
   } twotracksconfigs;
 
