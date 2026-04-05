@@ -128,6 +128,8 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
     Configurable<std::vector<float>> confCPRdeltaPhiCutFractionMaxVec{"confCPRdeltaPhiCutFractionMaxVec", std::vector<float>{0.0f, 0.0f, 0.0f, 0.0f}, "Bins for max delta phi cut in CPR Fraction"};
     Configurable<std::vector<float>> confCPRdeltaPhiCutFractionMinVec{"confCPRdeltaPhiCutFractionMinVec", std::vector<float>{0.0f, 0.0f, 0.0f, 0.0f}, "Bins for min delta phi cut in CPR Fraction"};
 
+    ConfigurableAxis confDeltaEtaAxis{"confDeltaEtaAxis", {100, -0.15, 0.15}, "DeltaEta"};
+    ConfigurableAxis confDeltaPhiStarAxis{"confDeltaPhiStarAxis", {100, -0.15, 0.15}, "DeltaPhiStar"};
   } twotracksconfigs;
 
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
@@ -496,8 +498,8 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
 
     pairCleaner.init(&qaRegistry);
     if (twotracksconfigs.confIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, twotracksconfigs.confCPRdeltaPhiCutMin.value, twotracksconfigs.confCPRdeltaPhiCutMax.value, twotracksconfigs.confCPRdeltaEtaCutMin.value, twotracksconfigs.confCPRdeltaEtaCutMax.value, twotracksconfigs.confCPRChosenRadii.value, twotracksconfigs.confCPRPlotPerRadii.value);
-      pairCloseRejection.init_kT(&resultRegistry, confKtKstarBins, twotracksconfigs.confCPRdeltaPhiCutMinVec.value, twotracksconfigs.confCPRdeltaPhiCutMaxVec.value, twotracksconfigs.confCPRdeltaEtaCutMinVec.value, twotracksconfigs.confCPRdeltaEtaCutMaxVec.value, twotracksconfigs.confCPRdeltaPhiCutFractionMinVec.value, twotracksconfigs.confCPRdeltaPhiCutFractionMaxVec.value, twotracksconfigs.confCPRdeltaEtaCutFractionMinVec.value, twotracksconfigs.confCPRdeltaEtaCutFractionMaxVec.value);
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, twotracksconfigs.confDeltaEtaAxis, twotracksconfigs.confDeltaPhiStarAxis, twotracksconfigs.confCPRdeltaPhiCutMin.value, twotracksconfigs.confCPRdeltaPhiCutMax.value, twotracksconfigs.confCPRdeltaEtaCutMin.value, twotracksconfigs.confCPRdeltaEtaCutMax.value, twotracksconfigs.confCPRChosenRadii.value, twotracksconfigs.confCPRPlotPerRadii.value);
+      pairCloseRejection.init_kT(&resultRegistry, confKtKstarBins, twotracksconfigs.confDeltaEtaAxis, twotracksconfigs.confDeltaPhiStarAxis, twotracksconfigs.confCPRdeltaPhiCutMinVec.value, twotracksconfigs.confCPRdeltaPhiCutMaxVec.value, twotracksconfigs.confCPRdeltaEtaCutMinVec.value, twotracksconfigs.confCPRdeltaEtaCutMaxVec.value, twotracksconfigs.confCPRdeltaPhiCutFractionMinVec.value, twotracksconfigs.confCPRdeltaPhiCutFractionMaxVec.value, twotracksconfigs.confCPRdeltaEtaCutFractionMinVec.value, twotracksconfigs.confCPRdeltaEtaCutFractionMaxVec.value);
     }
 
     vPIDPartOne = trackonefilter.confPIDPartOne.value;
