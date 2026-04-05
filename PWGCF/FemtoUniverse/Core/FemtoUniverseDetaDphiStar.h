@@ -189,8 +189,7 @@ class FemtoUniverseDetaDphiStar
   }
 
   template <typename t1, typename t2, typename t3>
-  // void init_kT(HistogramRegistry* registry, t1& ktbins, std::vector<float> ldeltaphistarcutmin, std::vector<float> ldeltaphistarcutmax, std::vector<float> ldeltaetacutmin, std::vector<float> ldeltaetacutmax, std::vector<float> ldeltaphistarcutFractionmin, std::vector<float> ldeltaphistarcutFractionmax, std::vector<float> ldeltaetacutFractionmin, std::vector<float> ldeltaetacutFractionmax)
-  void init_kT(HistogramRegistry* registry, t1& ktbins, t3& fDeltaEtaAxis, t3& fDeltaPhiStarAxis, t2& ldeltaphistarcutmin, t2& ldeltaphistarcutmax, t2& ldeltaetacutmin, t2& ldeltaetacutmax, t2& ldeltaphistarcutFractionmin, t2& ldeltaphistarcutFractionmax, t2& ldeltaetacutFractionmin, t2& ldeltaetacutFractionmax)
+  void init_kT(HistogramRegistry* registry, t1& ktbins, t3& fDeltaEtaAxis, t3& fDeltaPhiStarAxis, t2& ldeltaphistarcutmin, t2& ldeltaphistarcutmax, t2& ldeltaetacutmin, t2& ldeltaetacutmax, t2& ldeltaphistarcutFractionmin, t2& ldeltaphistarcutFractionmax, t2& ldeltaetacutFractionmin, t2& ldeltaetacutFractionmax, bool filldEtadPhiTPCcls)
   {
     mHistogramRegistry = registry;
     ktBins = ktbins;
@@ -217,6 +216,10 @@ class FemtoUniverseDetaDphiStar
         histdetadphimixedafterkT[j] = mHistogramRegistry->add<TH2>((dirName + histFolderkT + "detadphidetadphiAfterMixed").c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{fDeltaEtaAxis}, {fDeltaPhiStarAxis}});
         histdetadphisameafterFractionkT[j] = mHistogramRegistry->add<TH2>((dirName + histFolderkT + "detadphidetadphiAfterFractionSame").c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{fDeltaEtaAxis}, {fDeltaPhiStarAxis}});
         histdetadphimixedafterFractionkT[j] = mHistogramRegistry->add<TH2>((dirName + histFolderkT + "detadphidetadphiAfterFractionMIxed").c_str(), "; #Delta #eta; #Delta #phi", kTH2F, {{fDeltaEtaAxis}, {fDeltaPhiStarAxis}});
+        if (filldEtadPhiTPCcls) {
+          histdetadphiVsPairTPCFracSharedsamebefore[j] = mHistogramRegistry->add<TH3>((dirName + histFolderkT + "detadphiVsPairTPCFracSharedsamebefore").c_str(), "; PairTPCFracSharedCls; #Delta #eta; #Delta #phi", kTH3F, {{20, 0.0, 1.0}, {fDeltaEtaAxis}, {fDeltaPhiStarAxis}});
+          histdetadphiVsPairTPCFracSharedmixedbefore[j] = mHistogramRegistry->add<TH3>((dirName + histFolderkT + "detadphiVsPairTPCFracSharedmixedbefore").c_str(), "; PairTPCFracSharedCls; #Delta #eta; #Delta #phi", kTH3F, {{20, 0.0, 1.0}, {fDeltaEtaAxis}, {fDeltaPhiStarAxis}});
+        }
       }
     }
   }
@@ -652,7 +655,7 @@ class FemtoUniverseDetaDphiStar
 
   ///  Check if pair is close or not
   template <typename Part>
-  bool isClosePairkT(Part const& part1, Part const& part2, uint8_t ChosenEventType, float ktval, bool CircCut, bool IsDphiAvgOrDist, float lmagfield, float DistMax, float FracMax)
+  bool isClosePairkT(Part const& part1, Part const& part2, uint8_t ChosenEventType, float ktval, bool CircCut, bool IsDphiAvgOrDist, float lmagfield, float DistMax, float FracMax, bool filldEtadPhiTPCcls, float fPairTPCFracShared)
   {
     /// Track-Track combination
     // check if provided particles are in agreement with the class instantiation
@@ -684,8 +687,14 @@ class FemtoUniverseDetaDphiStar
 
     if (ChosenEventType == femto_universe_container::EventType::same) {
       histdetadphisamebeforekT[ktbinval]->Fill(deta, dphiAvg);
+      if (filldEtadPhiTPCcls) {
+        histdetadphiVsPairTPCFracSharedsamebefore[ktbinval]->Fill(fPairTPCFracShared, deta, dphiAvg);
+      }
     } else if (ChosenEventType == femto_universe_container::EventType::mixed) {
       histdetadphimixedbeforekT[ktbinval]->Fill(deta, dphiAvg);
+      if (filldEtadPhiTPCcls) {
+        histdetadphiVsPairTPCFracSharedmixedbefore[ktbinval]->Fill(fPairTPCFracShared, deta, dphiAvg);
+      }
     } else {
       LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
     }
@@ -872,6 +881,9 @@ class FemtoUniverseDetaDphiStar
   std::array<std::shared_ptr<TH2>, 4> histdetadphimixedafterFractionkT{};
 
   std::array<std::array<std::shared_ptr<TH2>, 9>, 7> histdetadpiRadii{};
+
+  std::array<std::shared_ptr<TH3>, 4> histdetadphiVsPairTPCFracSharedsamebefore{};
+  std::array<std::shared_ptr<TH3>, 4> histdetadphiVsPairTPCFracSharedmixedbefore{};
 
   std::shared_ptr<TH3> histdetadpiqlcmssame{};
   std::shared_ptr<TH3> histdetadpiqlcmsmixed{};
