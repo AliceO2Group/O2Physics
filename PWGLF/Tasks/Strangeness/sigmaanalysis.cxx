@@ -41,10 +41,8 @@
 #include "ReconstructionDataFormats/Track.h"
 
 #include <Math/Vector4D.h>
-#include <TDatabasePDG.h>
 #include <TFile.h>
 #include <TH2F.h>
-#include <TLorentzVector.h>
 #include <TPDGCode.h>
 #include <TProfile.h>
 
@@ -1011,7 +1009,7 @@ struct sigmaanalysis {
 
     //_______________________________________
     // Gamma MC association
-    if (sigma.photonPDGCode() == 22) {
+    if (sigma.photonPDGCode() == PDG_t::kGamma) {
       if (sigma.photonmcpt() > 0) {
         histos.fill(HIST(MainDir[mode]) + HIST("/MC/Reso/h2dGammaPtResolution"), sigma.photonmcpt(), (sigma.photonPt()/sigma.photonmcpt()) - 1.f);                      // pT resolution
         histos.fill(HIST(MainDir[mode]) + HIST("/MC/Reso/h2dGammaInvPtResolution"), 1.f / sigma.photonmcpt(), 1.f / sigma.photonPt() - 1.f / sigma.photonmcpt()); // pT resolution
@@ -1020,7 +1018,7 @@ struct sigmaanalysis {
 
     //_______________________________________
     // Lambda MC association
-    if (sigma.lambdaPDGCode() == 3122) {
+    if (sigma.lambdaPDGCode() == PDG_t::kLambda0) {
       if (sigma.lambdamcpt() > 0) {
         histos.fill(HIST(MainDir[mode]) + HIST("/MC/Reso/h2dLambdaPtResolution"), 1.f / sigma.lambdamcpt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdamcpt());                                        // 1/pT resolution
         histos.fill(HIST(MainDir[mode]) + HIST("/MC/Reso/h3dLambdaPtResoVsTPCCR"), 1.f / sigma.lambdamcpt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdamcpt(), -1 * sigma.lambdaNegTPCCrossedRows()); // 1/pT resolution
@@ -1030,7 +1028,7 @@ struct sigmaanalysis {
 
     //_______________________________________
     // AntiLambda MC association
-    if (sigma.lambdaPDGCode() == -3122) {
+    if (sigma.lambdaPDGCode() == PDG_t::kLambda0Bar) {
       if (sigma.lambdamcpt() > 0) {
         histos.fill(HIST(MainDir[mode]) + HIST("/MC/Reso/h2dAntiLambdaPtResolution"), 1.f / sigma.lambdamcpt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdamcpt());                                        // pT resolution
         histos.fill(HIST(MainDir[mode]) + HIST("/MC/Reso/h3dAntiLambdaPtResoVsTPCCR"), 1.f / sigma.lambdamcpt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdamcpt(), -1 * sigma.lambdaNegTPCCrossedRows()); // 1/pT resolution
@@ -1074,24 +1072,24 @@ struct sigmaanalysis {
 
     //_______________________________________
     // Real Gamma x Real Lambda - but not from the same sigma0/antisigma0!
-    if ((PhotonPDGCode == 22) && ((LambdaPDGCode == 3122) || (LambdaPDGCode == -3122)) && (!fIsSigma && !fIsAntiSigma)) {
+    if ((PhotonPDGCode == PDG_t::kGamma) && ((LambdaPDGCode == PDG_t::kLambda0) || (LambdaPDGCode == PDG_t::kLambda0Bar)) && (!fIsSigma && !fIsAntiSigma)) {
       histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassSigma_TrueDaughters"), sigmapT, sigmaMass);
       histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dTrueDaughtersMatrix"), LambdaPDGCodeMother, PhotonPDGCodeMother);
     }
 
     //_______________________________________
     // Real Gamma x fake Lambda
-    if ((PhotonPDGCode == 22) && (LambdaPDGCode != 3122) && (LambdaPDGCode != -3122))
+    if ((PhotonPDGCode == PDG_t::kGamma) && (LambdaPDGCode != PDG_t::kLambda0) && (LambdaPDGCode != PDG_t::kLambda0Bar))
       histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassSigma_TrueGammaFakeLambda"), sigmapT, sigmaMass);
 
     //_______________________________________
     // Fake Gamma x Real Lambda
-    if ((PhotonPDGCode != 22) && ((LambdaPDGCode == 3122) || (LambdaPDGCode == -3122)))
+    if ((PhotonPDGCode != PDG_t::kGamma) && ((LambdaPDGCode == PDG_t::kLambda0) || (LambdaPDGCode == PDG_t::kLambda0Bar)))
       histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassSigma_FakeGammaTrueLambda"), sigmapT, sigmaMass);
 
     //_______________________________________
     // Fake Gamma x Fake Lambda
-    if ((PhotonPDGCode != 22) && (LambdaPDGCode != 3122) && (LambdaPDGCode != -3122))
+    if ((PhotonPDGCode != PDG_t::kGamma) && (LambdaPDGCode != PDG_t::kLambda0) && (LambdaPDGCode != PDG_t::kLambda0Bar))
       histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassSigma_FakeDaughters"), sigmapT, sigmaMass);
   }
 
