@@ -247,7 +247,7 @@ struct HadNucleiFemto {
 
   HistogramRegistry mQaRegistry{
     "QA",
-    {// Event-level 
+    {// Event-level
      {"hVtxZ", "Vertex distribution in Z;Z (cm)", {HistType::kTH1F, {{400, -20.0, 20.0}}}},
      {"hNcontributor", "Number of primary vertex contributor", {HistType::kTH1F, {{2000, 0.0f, 2000.0f}}}},
      {"hCentrality", "Centrality", {HistType::kTH1F, {{100, 0.0f, 100.0f}}}},
@@ -257,62 +257,62 @@ struct HadNucleiFemto {
 
      // Candidate topology and kinematics
      {"hTrackSel", "Accepted tracks", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
-     
+
      {"hdcaxyNu", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
      {"hdcazNu", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
      {"hdcazNu_min", ";DCA_{z}-min (cm)", {HistType::kTH1F, {{20, -1.0f, 1.0f}}}},
      {"hNClsNuITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
-	   {"hNuPt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
-	   {"hSingleNuPt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
-	   {"hNuPin", "#it{p} distribution; #it{p} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
-	   {"hSingleNuPin", "#it{p} distribution; #it{p} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
+     {"hNuPt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
+     {"hSingleNuPt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
+     {"hNuPin", "#it{p} distribution; #it{p} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
+     {"hSingleNuPin", "#it{p} distribution; #it{p} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
      {"hNuEta", "eta distribution; #eta(Nu)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
      {"hNuPhi", "phi distribution; phi(Nu)", {HistType::kTH1F, {{600, -4.0f, 4.0f}}}},
 
      {"hdcaxyHad", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
      {"hdcazHad", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
      {"hNClsHadITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
-	   {"hHadPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
-	   {"hSingleHadPt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
+     {"hHadPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
+     {"hSingleHadPt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
      {"hHadPin", "P distribution; #it{p} (GeV/#it{c})", {HistType::kTH1F, {{120, -4.0f, 4.0f}}}},
      {"hHadEta", "eta distribution; #eta(had)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
      {"hHadPhi", "phi distribution; phi(had)", {HistType::kTH1F, {{600, -4.0f, 4.0f}}}},
 
-     // dE/dx 
+     // dE/dx
      {"h2dEdxNucandidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
      {"h2dEdxHadcandidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
      {"h2dEdx", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
 
-     // Deuteron PID 
-	   {"h2NsigmaNuTPC", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {200, -5.0f, 5.0f}}}},
-	   {"h2NsigmaNuComb", "NsigmaNu TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(Nu)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {100, 0.0f, 5.0f}}}},
-	   {"h2NsigmaNuTPC_preselection", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-	   {"h2NsigmaNuTPC_preselecComp", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-	   {"h2NSigmaNuITS_preselection", "NsigmaNu ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} Nu", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}}}},
-	   {"h2NSigmaNuITS", "NsigmaNu ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} Nu", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {120, -3.0f, 3.0f}}}},
-	   {"h2NsigmaNuTOF", "NsigmaNu TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(Nu)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
-	   {"h2NsigmaNuTOF_preselection", "NsigmaNu TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+     // Deuteron PID
+     {"h2NsigmaNuTPC", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {200, -5.0f, 5.0f}}}},
+     {"h2NsigmaNuComb", "NsigmaNu TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(Nu)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {100, 0.0f, 5.0f}}}},
+     {"h2NsigmaNuTPC_preselection", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+     {"h2NsigmaNuTPC_preselecComp", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+     {"h2NSigmaNuITS_preselection", "NsigmaNu ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} Nu", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}}}},
+     {"h2NSigmaNuITS", "NsigmaNu ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} Nu", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {120, -3.0f, 3.0f}}}},
+     {"h2NsigmaNuTOF", "NsigmaNu TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(Nu)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+     {"h2NsigmaNuTOF_preselection", "NsigmaNu TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
 
-     // Hadron PID 
-	   {"h2NsigmaHadComb", "NsigmaHad TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(had)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {100, 0.0f, 5.0f}}}},
-	   {"h2NsigmaHadTPC", "NsigmaHad TPC distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
-	   {"h2NsigmaHadTPC_preselection", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-	   {"h2NsigmaHadTOF", "NsigmaHad TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
-	   {"h2NsigmaHadTOF_preselection", "NsigmaHad TOF distribution; #iit{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+     // Hadron PID
+     {"h2NsigmaHadComb", "NsigmaHad TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(had)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {100, 0.0f, 5.0f}}}},
+     {"h2NsigmaHadTPC", "NsigmaHad TPC distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+     {"h2NsigmaHadTPC_preselection", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+     {"h2NsigmaHadTOF", "NsigmaHad TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+     {"h2NsigmaHadTOF_preselection", "NsigmaHad TOF distribution; #iit{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
      {"h2NsigmaHadPrTPC", "NsigmaHad TPC distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH1F, {{200, -5.0f, 5.0f}}}},
      {"h2NsigmaHadPiTPC", "NsigmaHad TPC distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(pi)", {HistType::kTH1F, {{200, -5.0f, 5.0f}}}},
      {"h2NsigmaHadPrTOF", "NsigmaHad TOF distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH1F, {{200, -5.0f, 5.0f}}}},
-	   {"h2NsigmaHadPiTOF", "NsigmaHad TOF distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(pi)", {HistType::kTH1F, {{200, -5.0f, 5.0f}}}},
+     {"h2NsigmaHadPiTOF", "NsigmaHad TOF distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(pi)", {HistType::kTH1F, {{200, -5.0f, 5.0f}}}},
 
-	   // Purity 
-	   {"purity/h2NsigmaNuTPC_preselection", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-	   {"purity/h2NsigmaNuTPC_preselecComp", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-	   {"purity/h2NSigmaNuITS_preselection", "NsigmaNu ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} Nu", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}}}},
-	   {"purity/h2NsigmaNuTOF_preselection", "NsigmaNu TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-	   {"purity/h2NsigmaHadTPC_preselection", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-	   {"purity/h2NsigmaHadTOF_preselection", "NsigmaHad TOF distribution; #iit{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+     // Purity
+     {"purity/h2NsigmaNuTPC_preselection", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+     {"purity/h2NsigmaNuTPC_preselecComp", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+     {"purity/h2NSigmaNuITS_preselection", "NsigmaNu ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} Nu", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}}}},
+     {"purity/h2NsigmaNuTOF_preselection", "NsigmaNu TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+     {"purity/h2NsigmaHadTPC_preselection", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+     {"purity/h2NsigmaHadTOF_preselection", "NsigmaHad TOF distribution; #iit{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
 
-	   // Hypertriton 
+     // Hypertriton
      {"hHe3TPCnsigma", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(He3)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {200, -5.0f, 5.0f}}}},
      {"hHe3P", "Pin distribution; p (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
      {"hHe3P_preselected", "Pin distribution_preselected; p (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
@@ -329,7 +329,7 @@ struct HadNucleiFemto {
      {"hkStaVsmT_US_A", ";kStar (GeV/c);mT (GeV/#it{c}^{2})", {HistType::kTH2F, {{300, 0.0f, 3.0f}, {2000, 0.8, 2.0}}}},
      {"hNuHadtInvMass", "; M(Nu + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{300, 3.74f, 4.34f}}}},
 
-     // Mixed-event 
+     // Mixed-event
      {"hisBkgEM", "; isBkgEM;", {HistType::kTH1F, {{3, -1, 2}}}}},
     OutputObjHandlingPolicy::AnalysisObject,
     false,
@@ -793,7 +793,7 @@ struct HadNucleiFemto {
 
     hadNucand.nTPCClustersNu = trackDe.tpcNClsFound();
     hadNucand.nSigmaNu = computeNSigmaDe(trackDe);
-    //hadNucand.nSigmaHad = trackHad.tpcNSigmaPi();
+    // hadNucand.nSigmaHad = trackHad.tpcNSigmaPi();
 
     hadNucand.chi2TPCNu = trackDe.tpcChi2NCl();
     hadNucand.chi2TPCHad = trackHad.tpcChi2NCl();
@@ -1421,7 +1421,6 @@ PROCESS_SWITCH(HadNucleiFemto, processMixedEventHyper, "Process Mixed event", fa
     }
   }
   PROCESS_SWITCH(HadNucleiFemto, processPurity, "Process for pion and deuteron purity QA", false);
-
 };
 
 WorkflowSpec defineDataProcessing(const ConfigContext& cfgc)
