@@ -33,6 +33,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/MathConstants.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DetectorsBase/GeometryManager.h"
@@ -48,14 +49,18 @@
 #include <TH1F.h>
 #include <TH2F.h>
 #include <TH3F.h>
-#include <THashList.h>
 #include <TList.h>
 #include <TObjString.h>
 #include <TPDGCode.h>
 #include <TString.h>
 
-#include <algorithm>
-#include <iostream>
+#include <RtypesCore.h>
+
+#include <array>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <map>
 #include <memory>
 #include <string>
@@ -63,8 +68,6 @@
 #include <vector>
 
 using std::cout;
-using std::endl;
-using std::string;
 
 using namespace o2;
 using namespace o2::framework;
