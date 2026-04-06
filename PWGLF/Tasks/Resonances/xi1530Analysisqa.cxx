@@ -405,7 +405,7 @@ struct Xi1530Analysisqa {
     histos.add("h3Xi1530invmassLSAnti", "Invariant mass of Anti-Xi(1530)0 same sign", kTHnSparseF, {centAxis, ptAxis, invMassAxis, flagAxis});
     histos.add("h3Xi1530invmassRotDSAnti", "Invariant mass of Anti-Xi(1530)0 rotated DS", kTHnSparseF, {centAxis, ptAxis, invMassAxis, flagAxis});
 
-    if (doprocessMEDF || doprocessMEMicro) {
+    if (doprocessMEMicro) {
       histos.add("h3Xi1530invmassME_DS", "Invariant mass of Xi(1530)0 mixed event DS", kTHnSparseF, {centAxis, ptAxis, invMassAxis, flagAxis});
       histos.add("h3Xi1530invmassME_DSAnti", "Invariant mass of Xi(1530)0 mixed event DSAnti", kTHnSparseF, {centAxis, ptAxis, invMassAxis, flagAxis});
     }
@@ -1406,8 +1406,8 @@ struct Xi1530Analysisqa {
       fillHistograms<true, false, true>(collision1, inCent, tracks1, tracks2);
     }
   }
-  void processMEDF(aod::ResoCollisionDFs const& resoCollisions, aod::ResoTrackDFs const& resotracks, aod::ResoCascadeDFs const& cascTracks)
-  {
+  // void processMEDF(aod::ResoCollisionDFs const& resoCollisions, aod::ResoTrackDFs const& resotracks, aod::ResoCascadeDFs const& cascTracks)
+  // {
 
     /* Will be implemented once the DataFrame for cascade is ready. */
 
@@ -1425,14 +1425,14 @@ struct Xi1530Analysisqa {
     //   }
     //   fillHistograms<false, false, true>(collision1, inCent, tracks1, tracks2);
     // }
-  }
+  // }
 
   PROCESS_SWITCH(Xi1530Analysisqa, processData, "Process Event for Data", false);
   PROCESS_SWITCH(Xi1530Analysisqa, processMC, "Process Event for MC (Reconstructed)", false);
   PROCESS_SWITCH(Xi1530Analysisqa, processMCTrue, "Process Event for MC (Generated)", false);
   PROCESS_SWITCH(Xi1530Analysisqa, processDataMicro, "Process Event for Data (MicroTrack)", false);
   PROCESS_SWITCH(Xi1530Analysisqa, processMEMicro, "Process EventMixing (MicroTrack) ", false);
-  PROCESS_SWITCH(Xi1530Analysisqa, processMEDF, "Process EventMixing (DataFrame) ", false);
+ // PROCESS_SWITCH(Xi1530Analysisqa, processMEDF, "Process EventMixing (DataFrame) ", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
