@@ -489,6 +489,7 @@ struct AnalysisEnergyCorrelator {
       float Effdilepton = hEfficiency_dilepton->Interpolate(VarManager::fgValues[VarManager::kPt]);
       float Masswindow = hMasswindow->Interpolate(VarManager::fgValues[VarManager::kPt]);
       float Effhadron = hEfficiency_hadron->Interpolate(hadron.pt());
+      Accweight_gen = Accweight_gen * Effdilepton * Effhadron;
       if (fConfigDileptonHadronOptions.fConfigApplyEfficiencyME) {
         Effweight_rec = Effdilepton * Effhadron * Masswindow; // for the moment, apply the efficiency correction also for the mixed event pairs, but this can be changed in case we want to apply it only for the same event pairs
       } else {
