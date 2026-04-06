@@ -339,5 +339,7 @@ struct JetDsSpecSubs {
   }
   PROCESS_SWITCH(JetDsSpecSubs, processDataChargedSubstructure, "charged HF jet substructure", false);
 };
-
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetDsSpecSubs>(cfgc, TaskName{"jet-ds-spectrum-subs"})}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{adaptAnalysisTask<JetDsSpecSubs>(cfgc)};
+}
