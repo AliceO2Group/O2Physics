@@ -289,9 +289,13 @@ struct JetDsSpecSubs {
 
         // --- output table ---
         auto scores = dsCandidate.mlScores();
-        const float s0 = (scores.size() > 0) ? scores[0] : -999.f;
-        const float s1 = (scores.size() > 1) ? scores[1] : -999.f;
-        const float s2 = (scores.size() > 2) ? scores[2] : -999.f;
+        constexpr int kScore0 = 0;
+        constexpr int kScore1 = 1;
+        constexpr int kScore2 = 2;
+
+        const float s0 = (scores.size() > kScore0) ? scores[kScore0] : -999.f;
+        const float s1 = (scores.size() > kScore1) ? scores[kScore1] : -999.f;
+        const float s2 = (scores.size() > kScore2) ? scores[kScore2] : -999.f;
 
         distJetTable(static_cast<float>(axisDistance),
                      jet.pt(), jet.eta(), jet.phi(),
