@@ -9,9 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// Jet substructure and spectrum task for Ds mesons
+// Jet substructure and spectrum task for D_s mesons
 //
-// This task is used to reconstruct and analyse jets containing charged Ds
+// This task is used to reconstruct and analyse jets containing charged D_s
 // mesons
 //
 /// \author Monalisa Melo <monalisa.melo@cern.ch>, Universidade de São Paulo
