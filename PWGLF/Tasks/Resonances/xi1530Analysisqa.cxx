@@ -1409,22 +1409,22 @@ struct Xi1530Analysisqa {
   // void processMEDF(aod::ResoCollisionDFs const& resoCollisions, aod::ResoTrackDFs const& resotracks, aod::ResoCascadeDFs const& cascTracks)
   // {
 
-    /* Will be implemented once the DataFrame for cascade is ready. */
+  /* Will be implemented once the DataFrame for cascade is ready. */
 
-    // auto tracksTuple = std::make_tuple(resotracks, cascTracks);
+  // auto tracksTuple = std::make_tuple(resotracks, cascTracks);
 
-    // BinningTypeVtxZT0M colBinning{{mixingConfig.cfgVtxBins, mixingConfig.cfgMultBins}, true};
-    // Pair<aod::ResoCollisionDFs, aod::ResoTrackDFs, aod::ResoCascadeDFs, BinningTypeVtxZT0M> pairs{colBinning, mixingConfig.nEvtMixing, -1, resoCollisions, tracksTuple, &cache};
+  // BinningTypeVtxZT0M colBinning{{mixingConfig.cfgVtxBins, mixingConfig.cfgMultBins}, true};
+  // Pair<aod::ResoCollisionDFs, aod::ResoTrackDFs, aod::ResoCascadeDFs, BinningTypeVtxZT0M> pairs{colBinning, mixingConfig.nEvtMixing, -1, resoCollisions, tracksTuple, &cache};
 
-    // for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
+  // for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
 
-    //   float multiplicity = 0.f;
-    //   auto inCent = collision1.cent();
-    //   if (histoConfig.multQA) {
-    //     histos.fill(HIST("multQA/h2MultCent"), inCent, multiplicity);
-    //   }
-    //   fillHistograms<false, false, true>(collision1, inCent, tracks1, tracks2);
-    // }
+  //   float multiplicity = 0.f;
+  //   auto inCent = collision1.cent();
+  //   if (histoConfig.multQA) {
+  //     histos.fill(HIST("multQA/h2MultCent"), inCent, multiplicity);
+  //   }
+  //   fillHistograms<false, false, true>(collision1, inCent, tracks1, tracks2);
+  // }
   // }
 
   PROCESS_SWITCH(Xi1530Analysisqa, processData, "Process Event for Data", false);
@@ -1432,7 +1432,7 @@ struct Xi1530Analysisqa {
   PROCESS_SWITCH(Xi1530Analysisqa, processMCTrue, "Process Event for MC (Generated)", false);
   PROCESS_SWITCH(Xi1530Analysisqa, processDataMicro, "Process Event for Data (MicroTrack)", false);
   PROCESS_SWITCH(Xi1530Analysisqa, processMEMicro, "Process EventMixing (MicroTrack) ", false);
- // PROCESS_SWITCH(Xi1530Analysisqa, processMEDF, "Process EventMixing (DataFrame) ", false);
+  // PROCESS_SWITCH(Xi1530Analysisqa, processMEDF, "Process EventMixing (DataFrame) ", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
