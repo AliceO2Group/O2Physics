@@ -118,7 +118,6 @@ DECLARE_SOA_TABLE(CFTrackRefs, "AOD", "CFTRACKREF", o2::soa::Index<>, track::Col
 using CFTrackRef = CFTrackRefs::iterator;
 
 // MC
-
 namespace cfmcparticleref
 {
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
@@ -198,6 +197,40 @@ DECLARE_SOA_TABLE(CF2ProngMcParts, "AOD", "CF2PRONGMCPART", //! Table for the da
                   cf2prongmcpart::Decay,
                   cf2prongmcpart::McDecay<cf2prongmcpart::Decay>)
 using CF2ProngMcPart = CF2ProngMcParts::iterator;
+
+namespace cfmixedphitrack
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(CFCollision1, cfCollision1, int, CFCollisions, "_1"); //! Index to first reduced collision
+DECLARE_SOA_INDEX_COLUMN_FULL(CFCollision2, cfCollision2, int, CFCollisions, "_2"); //! Index to second reduced collision
+DECLARE_SOA_INDEX_COLUMN_FULL(CFTrack1, cfTrack1, int, CFTracks, "_1");             //! Index to first kaon CFTrack
+DECLARE_SOA_INDEX_COLUMN_FULL(CFTrack2, cfTrack2, int, CFTracks, "_2");             //! Index to second kaon CFTrack
+DECLARE_SOA_COLUMN(Phi1, phi1, float);                                              //! phi 1st track
+DECLARE_SOA_COLUMN(Phi2, phi2, float);                                              //! phi 2nd track
+DECLARE_SOA_COLUMN(Pt, pt, float);                                                  //! pT (GeV/c)
+DECLARE_SOA_COLUMN(Eta, eta, float);                                                //! Pseudorapidity
+DECLARE_SOA_COLUMN(Phi, phi, float);                                                //! Phi angle
+DECLARE_SOA_COLUMN(InvMass, invMass, float);                                        //! Invariant mass
+                                             // DECLARE_SOA_COLUMN(Decay, decay, uint8_t);                                           //! Mixed-phi type
+/*enum ParticleDecay {
+PhiFromMixed
+};*/
+} // namespace cfmixedphitrack
+
+DECLARE_SOA_TABLE(CFMixedPhiTracks, "AOD", "CFMIXEDPHITRACK",
+                  o2::soa::Index<>,
+                  cfmixedphitrack::CFCollision1Id,
+                  cfmixedphitrack::CFCollision2Id,
+                  cfmixedphitrack::CFTrack1Id,
+                  cfmixedphitrack::CFTrack2Id,
+                  cfmixedphitrack::Phi1,
+                  cfmixedphitrack::Phi2,
+                  cfmixedphitrack::Pt,
+                  cfmixedphitrack::Eta,
+                  cfmixedphitrack::Phi,
+                  cfmixedphitrack::InvMass);
+// cfmixedphitrack::Decay);
+
+using CFMixedPhiTrack = CFMixedPhiTracks::iterator;
 
 } // namespace o2::aod
 

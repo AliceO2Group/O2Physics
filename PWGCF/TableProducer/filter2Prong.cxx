@@ -45,6 +45,13 @@ enum LambdaPid { kLambda = 0,
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
 struct Filter2Prong {
+  SliceCache cache;
+  struct MixEvent {
+    int collRefGlobalIndex;  // same convention as cfcollisions.begin().globalIndex()
+    int originalCollisionId; // needed to slice CFTrackRefs
+  };
+  std::vector<std::vector<MixEvent>> mixingPools;
+
   O2_DEFINE_CONFIGURABLE(cfgVerbosity, int, 0, "Verbosity level (0 = major, 1 = per collision)")
   O2_DEFINE_CONFIGURABLE(cfgYMax, float, -1.0f, "Maximum candidate rapidity")
   O2_DEFINE_CONFIGURABLE(cfgImPart1Mass, float, o2::constants::physics::MassKPlus, "Daughter particle 1 mass in GeV")
@@ -146,11 +153,17 @@ struct Filter2Prong {
     O2_DEFINE_CONFIGURABLE(applyTOF, bool, false, "Flag for applying TOF");
   } grpPhi;
 
+  O2_DEFINE_CONFIGURABLE(cfgNoMixedEvents, int, 5, "Number of mixed events per event for mixed phi building")
+  ConfigurableAxis axisVertexMix{"axisVertexMix", {7, -7, 7}, "vertex axis for phi event mixing"};
+  ConfigurableAxis axisMultiplicityMix{"axisMultiplicityMix", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity axis for phi event mixing"};
+
   HfHelper hfHelper;
   Produces<aod::CF2ProngTracks> output2ProngTracks;
   Produces<aod::CF2ProngTrackmls> output2ProngTrackmls;
 
   Produces<aod::CF2ProngMcParts> output2ProngMcParts;
+
+  Produces<aod::CFMixedPhiTracks> outputMixedPhiTracks;
 
   std::vector<float> mlvecd{};
   std::vector<float> mlvecdbar{};
@@ -172,6 +185,7 @@ struct Filter2Prong {
 
   void init(InitContext&)
   {
+
     if (doprocessDataInvMass) {
       sigmaFormula = std::make_unique<TFormula>("sigmaFormula", cfgImSigmaFormula.value.c_str());
       if (static_cast<std::size_t>(sigmaFormula->GetNpar()) > std::size(sigmaFormulaParamIndex))
@@ -187,6 +201,12 @@ struct Filter2Prong {
           LOGF(warning, "Unrecognized cfgImSigmaFormula parameter %s.", sigmaFormula->GetParName(i));
       }
     }
+  }
+  int getMixBin(float zvtx, float mult)
+  {
+    using BinningTypeDerived = ColumnBinningPolicy<aod::collision::PosZ, aod::cfcollision::Multiplicity>;
+    BinningTypeDerived configurableBinning{{axisVertexMix, axisMultiplicityMix}, true};
+    return configurableBinning.getBin({zvtx, mult});
   }
 
   template <class HFCandidatesType>
@@ -771,6 +791,125 @@ struct Filter2Prong {
     } // end of loop over first track
   }
   PROCESS_SWITCH(Filter2Prong, processDataPhiV0, "Process data Phi and V0 candidates with invariant mass method", false);
+
+  using MixCollisions = aod::CFCollisions;
+  Preslice<aod::CFTrackRefs> perCollisionCFTrackRef = aod::track::collisionId;
+  void processDataPhiMixed(aod::CFCollisions const& collisions,
+                           aod::CFCollRefs const& cfcollrefs,
+                           aod::CFTrackRefs const& cftracks,
+                           Filter2Prong::PIDTrack const& tracks)
+  {
+    const int nMixBins = AxisSpec(axisVertexMix).getNbins() * AxisSpec(axisMultiplicityMix).getNbins();
+    if (mixingPools.empty()) {
+      mixingPools.resize(nMixBins);
+    }
+
+    using BinningTypeDerived = ColumnBinningPolicy<aod::collision::PosZ, aod::cfcollision::Multiplicity>;
+    BinningTypeDerived configurableBinning{{axisVertexMix, axisMultiplicityMix}, true};
+
+    o2::aod::ITSResponse itsResponse;
+
+    for (const auto& collision : collisions) {
+      // int reducedCollisionId = collision.globalIndex();
+
+      int redIdx = collision.globalIndex() - collisions.begin().globalIndex();
+      const auto& collRef = cfcollrefs.iteratorAt(redIdx);
+      int originalCollisionId = collRef.collisionId();
+      int collRefGlobalIndex = collRef.globalIndex();
+
+      float zvtx = collision.posZ();
+      float mult = collision.multiplicity();
+      int mixBin = configurableBinning.getBin({zvtx, mult});
+      if (mixBin < 0 || mixBin >= nMixBins) {
+        continue;
+      }
+
+      auto tracksCurrentRefs = cftracks.sliceBy(perCollisionCFTrackRef, originalCollisionId);
+
+      for (const auto& prevEvent : mixingPools[mixBin]) {
+        if (prevEvent.originalCollisionId == originalCollisionId) {
+          continue;
+        }
+        auto tracksMixedRefs = cftracks.sliceBy(perCollisionCFTrackRef, prevEvent.originalCollisionId);
+
+        for (const auto& cftrack1 : tracksCurrentRefs) {
+          const auto& p1 = tracks.iteratorAt(cftrack1.trackId() - tracks.begin().globalIndex());
+
+          if (p1.sign() != 1) {
+            continue;
+          }
+          if (!selectionTrack(p1)) {
+            continue;
+          }
+          if (grpPhi.ITSPIDSelection &&
+              p1.p() < grpPhi.ITSPIDPthreshold.value &&
+              !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(p1) > grpPhi.lowITSPIDNsigma.value &&
+                itsResponse.nSigmaITS<o2::track::PID::Kaon>(p1) < grpPhi.highITSPIDNsigma.value)) {
+            continue;
+          }
+          if (grpPhi.removefaketrack && isFakeTrack(p1)) {
+            continue;
+          }
+
+          for (const auto& cftrack2 : tracksMixedRefs) {
+            const auto& p2 = tracks.iteratorAt(cftrack2.trackId() - tracks.begin().globalIndex());
+
+            if (p2.sign() != -1) {
+              continue;
+            }
+            if (!selectionTrack(p2)) {
+              continue;
+            }
+            if (grpPhi.ITSPIDSelection &&
+                p2.p() < grpPhi.ITSPIDPthreshold.value &&
+                !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(p2) > grpPhi.lowITSPIDNsigma.value &&
+                  itsResponse.nSigmaITS<o2::track::PID::Kaon>(p2) < grpPhi.highITSPIDNsigma.value)) {
+              continue;
+            }
+            if (grpPhi.removefaketrack && isFakeTrack(p2)) {
+              continue;
+            }
+            if (!selectionPair(p1, p2)) {
+              continue;
+            }
+
+            if (selectionPID3(p1) && selectionPID3(p2)) {
+              if (selectionSys(p1, false, false) && selectionSys(p2, false, false)) {
+
+                ROOT::Math::PtEtaPhiMVector vec1(p1.pt(), p1.eta(), p1.phi(), cfgImPart1Mass);
+                ROOT::Math::PtEtaPhiMVector vec2(p2.pt(), p2.eta(), p2.phi(), cfgImPart2Mass);
+                ROOT::Math::PtEtaPhiMVector s = vec1 + vec2;
+
+                if (s.M() < grpPhi.ImMinInvMassPhiMeson || s.M() > grpPhi.ImMaxInvMassPhiMeson) {
+                  continue;
+                }
+
+                float phi = RecoDecay::constrainAngle(s.Phi(), 0.0f);
+
+                outputMixedPhiTracks(collRefGlobalIndex,
+                                     prevEvent.collRefGlobalIndex,
+                                     cftrack1.globalIndex(),
+                                     cftrack2.globalIndex(),
+                                     p1.phi(),
+                                     p2.phi(),
+                                     s.pt(),
+                                     s.eta(),
+                                     phi,
+                                     s.M());
+              }
+            }
+          }
+        }
+      }
+
+      mixingPools[mixBin].push_back({collRefGlobalIndex, originalCollisionId});
+
+      if ((int)mixingPools[mixBin].size() > cfgNoMixedEvents) {
+        mixingPools[mixBin].erase(mixingPools[mixBin].begin());
+      }
+    }
+  }
+  PROCESS_SWITCH(Filter2Prong, processDataPhiMixed, "Process mixed-event phi candidates", false);
 
   // Phi and V0s invariant mass method candidate finder. Only works for non-identical daughters of opposite charge for now.
   void processDataV0(aod::Collisions::iterator const& collision, aod::BCsWithTimestamps const&, aod::CFCollRefs const& cfcollisions, aod::CFTrackRefs const& cftracks, Filter2Prong::PIDTrack const&, aod::V0Datas const& V0s)
