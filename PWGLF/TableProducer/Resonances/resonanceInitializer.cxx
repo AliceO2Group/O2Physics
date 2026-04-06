@@ -796,8 +796,8 @@ struct ResonanceInitializer {
                v0.dcapostopv(),
                v0.dcanegtopv(),
                v0.dcav0topv(),
-                static_cast<uint8_t>(v0.template posTrack_as<TrackType>().tpcNClsCrossedRows()),
-                static_cast<uint8_t>(v0.template negTrack_as<TrackType>().tpcNClsCrossedRows()),
+               static_cast<uint8_t>(v0.template posTrack_as<TrackType>().tpcNClsCrossedRows()),
+               static_cast<uint8_t>(v0.template negTrack_as<TrackType>().tpcNClsCrossedRows()),
                v0.mLambda(),
                v0.mAntiLambda(),
                v0.mK0Short(),
@@ -1741,7 +1741,7 @@ struct ResonanceInitializer {
     resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
     resoEvtPlCollisions(0, 0, 0, 0);
     fillMCCollision<false>(collision, mcParticles);
-        // Loop over all MC particles
+    // Loop over all MC particles
     auto mcParts = selectedMCParticles->sliceBy(perMcCollision, collision.mcCollision().globalIndex());
     fillMCParticles(mcParts, mcParticles);
 
@@ -1829,7 +1829,7 @@ struct ResonanceInitializer {
       mult = mcCollision.multMCNParticlesEta10();
 
     fillMCCollision<false>(collision, mcParticles, impactpar, mult);
-        // Loop over all MC particles
+    // Loop over all MC particles
     auto mcParts = selectedMCParticles->sliceBy(perMcCollision, mcId);
     fillMCParticles(mcParts, mcParticles);
 

@@ -183,7 +183,7 @@ struct Xi1530Analysisqa {
     Configurable<float> cMaxProperLifetimeCut{"cMaxProperLifetimeCut", 4.7, "Maximum proper lifetime cut for Xi- candidates"};
     Configurable<float> cMinNCrossedRowsTPCPos{"cMinNCrossedRowsTPCPos", 50, "Minimum number of crossed rows in TPC for positive track in cascade"};
     Configurable<float> cMinNCrossedRowsTPCNeg{"cMinNCrossedRowsTPCNeg", 50, "Minimum number of crossed rows in TPC for negative track in cascade"};
-    Configurable<float> cMinNCrossedRowsTPCBach{"cMinNCrossedRowsTPCBach", 50, "Minimum number of crossed rows in TPC for bachelor track in cascade"}; 
+    Configurable<float> cMinNCrossedRowsTPCBach{"cMinNCrossedRowsTPCBach", 50, "Minimum number of crossed rows in TPC for bachelor track in cascade"};
 
   } cascadeConfig;
 
@@ -564,11 +564,11 @@ struct Xi1530Analysisqa {
       return false;
     if (std::abs(track.pt()) <= primarytrackConfig.cMinPtcut)
       return false;
-    if(track.nCrossedRowsPos() <= cascadeConfig.cMinNCrossedRowsTPCPos)
+    if (track.nCrossedRowsPos() <= cascadeConfig.cMinNCrossedRowsTPCPos)
       return false;
-    if(track.nCrossedRowsNeg() <= cascadeConfig.cMinNCrossedRowsTPCNeg)
+    if (track.nCrossedRowsNeg() <= cascadeConfig.cMinNCrossedRowsTPCNeg)
       return false;
-    if(track.nCrossedRowsBach() <= cascadeConfig.cMinNCrossedRowsTPCBach)
+    if (track.nCrossedRowsBach() <= cascadeConfig.cMinNCrossedRowsTPCBach)
       return false;
     if (primarytrackConfig.cDCAxyToPVAsPtForCasc) {
       if (std::abs(track.dcaXYCascToPV()) >= (primarytrackConfig.cDCAxyToPVByPtCascP0 + primarytrackConfig.cDCAxyToPVByPtCascExp * track.pt()))
@@ -1353,7 +1353,6 @@ struct Xi1530Analysisqa {
         histos.fill(HIST("h3Xi1530Gen"), part.pt(), inCent, multiplicity);
       else
         histos.fill(HIST("h3Xi1530GenAnti"), part.pt(), inCent, multiplicity);
-    
     }
   }
 
@@ -1433,7 +1432,7 @@ struct Xi1530Analysisqa {
   PROCESS_SWITCH(Xi1530Analysisqa, processMCTrue, "Process Event for MC (Generated)", false);
   PROCESS_SWITCH(Xi1530Analysisqa, processDataMicro, "Process Event for Data (MicroTrack)", false);
   PROCESS_SWITCH(Xi1530Analysisqa, processMEMicro, "Process EventMixing (MicroTrack) ", false);
- PROCESS_SWITCH(Xi1530Analysisqa, processMEDF, "Process EventMixing (DataFrame) ", false);
+  PROCESS_SWITCH(Xi1530Analysisqa, processMEDF, "Process EventMixing (DataFrame) ", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
