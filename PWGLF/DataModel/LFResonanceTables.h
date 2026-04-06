@@ -231,9 +231,9 @@ DECLARE_SOA_COLUMN(DaughterTOFNSigmaNegPr10, daughterTOFNSigmaNegPr10, int8_t); 
 DECLARE_SOA_COLUMN(DaughterTOFNSigmaBachPi10, daughterTOFNSigmaBachPi10, int8_t); //! TOF PID x10 of the bachelor daughter as Pion
 DECLARE_SOA_COLUMN(DaughterTOFNSigmaBachKa10, daughterTOFNSigmaBachKa10, int8_t); //! TOF PID x10 of the bachelor daughter as Kaon
 DECLARE_SOA_COLUMN(DaughterTOFNSigmaBachPr10, daughterTOFNSigmaBachPr10, int8_t); //! TOF PID x10 of the bachelor daughter as Proton
-DECLARE_SOA_COLUMN(NCrossedRowsPos, nCrossedRowsPos, uint8_t);              //! Number of TPC crossed rows of the positive daughter
-DECLARE_SOA_COLUMN(NCrossedRowsNeg, nCrossedRowsNeg, uint8_t);              //! Number of TPC crossed rows of the negative daughter
-DECLARE_SOA_COLUMN(NCrossedRowsBach, nCrossedRowsBach, uint8_t);              //! Number of TPC crossed rows of the bachelor daughter
+DECLARE_SOA_COLUMN(NCrossedRowsPos, nCrossedRowsPos, uint8_t);                    //! Number of TPC crossed rows of the positive daughter
+DECLARE_SOA_COLUMN(NCrossedRowsNeg, nCrossedRowsNeg, uint8_t);                    //! Number of TPC crossed rows of the negative daughter
+DECLARE_SOA_COLUMN(NCrossedRowsBach, nCrossedRowsBach, uint8_t);                  //! Number of TPC crossed rows of the bachelor daughter
 // For MC
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! Index of the corresponding MC particle
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);
