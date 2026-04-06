@@ -105,6 +105,7 @@ struct HfTaskD0 {
   HfUpcGapThresholds upcThresholds; // UPC gap determination thresholds
   ctpRateFetcher mRateFetcher;
 
+
   SliceCache cache;
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
@@ -123,7 +124,8 @@ struct HfTaskD0 {
   using CollisionsWithMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
   using CollisionsWithMcLabelsCent = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>;
   using TracksSelQuality = soa::Join<aod::TracksExtra, aod::TracksWMc>;
-  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
+  using TracksWPid = soa::Join<o2::aod::FullTracks, aod::TracksDCA, o2::aod::TrackSelection, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
+  // using TracksWithExtra = o2::soa::Join<o2::aod::FullTracks, o2::aod::TrackSelection>;
 
   Filter filterD0Flag = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK))) != static_cast<uint8_t>(0);
 
@@ -140,6 +142,8 @@ struct HfTaskD0 {
   Partition<D0CandidatesMlKF> selectedD0CandidatesMlKF = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
   Partition<D0CandidatesMlMc> selectedD0CandidatesMlMc = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
   Partition<D0CandidatesMlMcKF> selectedD0CandidatesMlMcKF = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
+
+  Preslice<TracksWPid> perCol = aod::track::collisionId;
 
   // ThnSparse for ML outputScores and Vars
   ConfigurableAxis thnConfigAxisBkgScore{"thnConfigAxisBkgScore", {50, 0, 1}, "Bkg score bins"};
@@ -396,11 +400,13 @@ struct HfTaskD0 {
     }
 
     registry.add("Data/fitInfo/ampFT0A_vs_ampFT0C", "FT0-A vs FT0-C amplitude;FT0-A amplitude (a.u.);FT0-C amplitude (a.u.)", {HistType::kTH2F, {{2500, 0., 250}, {2500, 0., 250}}});
-    registry.add("Data/zdc/energyZNA_vs_energyZNC", "ZNA vs ZNC common energy;E_{ZNA}^{common} (a.u.);E_{ZNC}^{common} (a.u.)", {HistType::kTH2F, {{200, 0., 200}, {1000, 0., 2000}}});
-    registry.add("Data/zdc/timeZNA_vs_timeZNC", "ZNA vs ZNC time;ZNA Time;ZNC time", {HistType::kTH2F, {{700, -35., 35.}, {700, -35., 35.}}});
+    registry.add("Data/zdc/energyZNA_vs_energyZNC", "ZNA vs ZNC common energy;E_{ZNA}^{common} (a.u.);E_{ZNC}^{common} (a.u.)", {HistType::kTH2F, {{1000, 0., 20000}, {1000, 0., 20000}}});
+    registry.add("Data/zdc/timeZNA_vs_timeZNC", "ZNA vs ZNC time;ZNA Time;ZNC time", {HistType::kTH2F, {{200, -10., 10.}, {200, -10., 10.}}});
     registry.add("Data/hUpcGapAfterSelection", "UPC gap type after selection;Gap type;Counts", {HistType::kTH1F, {{7, -1.5, 5.5}}});
     registry.add("Data/hGapVsEtaTrack0", "UPC gap vs Eta;Gap type;Eta", {HistType::kTH2F, {{7, -1.5, 5.5}, {50, -1., 1.}}});
     registry.add("Data/hGapVsEtaTrack1", "UPC gap vs Eta;Gap type;Eta", {HistType::kTH2F, {{7, -1.5, 5.5}, {50, -1., 1.}}});
+    registry.add("QAtracks/hEtaTrackVsGap", "", {HistType::kTH2F, {{7, -1.5, 5.5}, {100, -1.8, 1.8}}});
+    registry.add("QAtracks/hPtTrackVsGap", "", {HistType::kTH2F, {{7, -1.5, 5.5}, {100, 0, 50}}});
 
     registry.add("Data/hTPCnSigProng0Pion_GapA", "Gap A Prong 0;P (GeV/c) ;TPC nSigma Pion", {HistType::kTH2F, {{100, 0, 50}, {120, -6., 6.}}});
     registry.add("Data/hTPCnSigProng1Kaon_GapA", "Gap A Prong 1;P (GeV/c) ;TPC nSigma Kaon", {HistType::kTH2F, {{100, 0, 50}, {120, -6., 6.}}});
@@ -428,8 +434,50 @@ struct HfTaskD0 {
     registry.add("Data/hTpcTofnSigProng1Kaon_GapC", "Gap C Prong 1;P (GeV/c) ;TpcTof nSigma Kaon", {HistType::kTH2F, {{100, 0, 50}, {50, 0., 10.}}});
     registry.add("Data/hTpcTofnSigProng0Kaon_GapC", "Gap C Prong 0;P (GeV/c) ;TpcTof nSigma Pion", {HistType::kTH2F, {{100, 0, 50}, {50, 0., 10.}}});
     registry.add("Data/hTpcTofnSigProng1Pion_GapC", "Gap C Prong 1;P (GeV/c) ;TpcTof nSigma Kaon", {HistType::kTH2F, {{100, 0, 50}, {50, 0., 10.}}});
-
     registry.add("Data/hGapVsRap", "UPC gap vs Eta;Gap type;Eta", {HistType::kTH2F, {{7, -1.5, 5.5}, {50, -1., 1.}}});
+    // QA histograms for Event level info
+    registry.add("QAevents/hPVcontrVsGap", " ;Gap ; N PV contributors", {HistType::kTH2F, {{7, -1.5, 5.5}, {800, 0., 200.}}});
+    registry.add("QAevents/ampFT0AVsC_GapA", "FT0-A vs FT0-C amplitude;FT0-A amplitude (a.u.);FT0-C amplitude (a.u.) Gap A", {HistType::kTH2F, {{2500, 0., 250}, {2500, 0., 250}}});
+    registry.add("QAevents/ampFT0AVsC_GapC", "FT0-A vs FT0-C amplitude;FT0-A amplitude (a.u.);FT0-C amplitude (a.u.) Gap C", {HistType::kTH2F, {{2500, 0., 250}, {2500, 0., 250}}});
+    registry.add("QAevents/energyZNAvsC_GapA", "ZNA vs ZNC common energy;E_{ZNA}^{common} (a.u.);E_{ZNC}^{common} (a.u.) Gap A", {HistType::kTH2F, {{1000, 0., 20000}, {1000, 0., 20000}}});
+    registry.add("QAevents/energyZNAvsC_GapC", "ZNA vs ZNC common energy;E_{ZNA}^{common} (a.u.);E_{ZNC}^{common} (a.u.) Gap A", {HistType::kTH2F, {{1000, 0., 20000}, {1000, 0., 20000}}});
+    registry.add("QAevents/timeZNAvsC_GapA", "ZNA vs ZNC time;ZNA Time;ZNC time Gap A", {HistType::kTH2F, {{200, -10., 10.}, {200, -10., 10.}}});
+    registry.add("QAevents/timeZNAvsC_GapC", "ZNA vs ZNC time;ZNA Time;ZNC time Gap C", {HistType::kTH2F, {{200, -10., 10.}, {200, -10., 10.}}});
+    // QA histograms for tracks
+    // A side gap
+    registry.add("QAtracks/hTPCnSigmaPi_GapA", "Gap A;P (GeV/c) ;TPC nSigma Pi", {HistType::kTH2F, {{360, 0, 36}, {120, -6., 6.}}});
+    registry.add("QAtracks/hTPCnSigmaKa_GapA", "Gap A;P (GeV/c) ;TPC nSigma Ka", {HistType::kTH2F, {{360, 0, 36}, {120, -6., 6.}}});
+    registry.add("QAtracks/hTPCnSigmaPr_GapA", "Gap A;P (GeV/c) ;TPC nSigma Pr", {HistType::kTH2F, {{360, 0, 36}, {120, -6., 6.}}});
+    registry.add("QAtracks/hTOFnSigmaPi_GapA", "Gap A;P (GeV/c) ;TOF nSigma Pi", {HistType::kTH2F, {{360, 0, 36}, {120, -6., 6.}}});
+    registry.add("QAtracks/hTOFnSigmaKa_GapA", "Gap A;P (GeV/c) ;TOF nSigma Ka", {HistType::kTH2F, {{360, 0, 36}, {120, -6., 6.}}});
+    registry.add("QAtracks/hTOFnSigmaPr_GapA", "Gap A;P (GeV/c) ;TOF nSigma Pr", {HistType::kTH2F, {{360, 0, 36}, {120, -6., 6.}}});
+    registry.add("QAtracks/hTPCTOFnSigmaPi_GapA", "Gap A;P (GeV/c) ;TPCTOF nSigma Pi", {HistType::kTH2F, {{360, 0, 36}, {120, 0., 6.}}});
+    registry.add("QAtracks/hTPCTOFnSigmaKa_GapA", "Gap A;P (GeV/c) ;TPCTOF nSigma Ka", {HistType::kTH2F, {{360, 0, 36}, {120, 0., 6.}}});
+    registry.add("QAtracks/hTPCTOFnSigmaPr_GapA", "Gap A;P (GeV/c) ;TPCTOF nSigma Pr", {HistType::kTH2F, {{360, 0, 36}, {120, 0., 6.}}});
+
+    registry.add("QAtracks/hTPCNCls_GapA", "Gap A; TPC Cls", {HistType::kTH1F, {{160, 0., 160.}}});
+    registry.add("QAtracks/hTPCChi2_GapA", "Gap A; TPC chi2", {HistType::kTH1F, {{24, 0., 6.}}});
+    registry.add("QAtracks/hITSNCls_GapA", "Gap A; TPC Cls", {HistType::kTH1F, {{8, -1., 7.}}});
+    registry.add("QAtracks/hDCAxy_GapA", "Gap A; DCA xy", {HistType::kTH1F, {{400, -2, 2.}}});
+    registry.add("QAtracks/hDCAz_GapA", "Gap A; DCA z", {HistType::kTH1F, {{400, -4, 4.}}});
+
+    // C side gap
+    registry.add("QAtracks/hTPCnSigmaPi_GapC", "Gap C;P (GeV/c) ;TPC nSigma Pi", {HistType::kTH2F, {{360, 0, 36}, {120, -6., 6.}}});
+    registry.add("QAtracks/hTPCnSigmaKa_GapC", "Gap C;P (GeV/c) ;TPC nSigma Ka", {HistType::kTH2F, {{360, 0, 36}, {120, -6., 6.}}});
+    registry.add("QAtracks/hTPCnSigmaPr_GapC", "Gap C;P (GeV/c) ;TPC nSigma Pr", {HistType::kTH2F, {{360, 0, 36}, {120, -6., 6.}}});
+    registry.add("QAtracks/hTOFnSigmaPi_GapC", "Gap C;P (GeV/c) ;TOF nSigma Pi", {HistType::kTH2F, {{360, 0, 36}, {120, -6., 6.}}});
+    registry.add("QAtracks/hTOFnSigmaKa_GapC", "Gap C;P (GeV/c) ;TOF nSigma Ka", {HistType::kTH2F, {{360, 0, 36}, {120, -6., 6.}}});
+    registry.add("QAtracks/hTOFnSigmaPr_GapC", "Gap C;P (GeV/c) ;TOF nSigma Pr", {HistType::kTH2F, {{360, 0, 36}, {120, -6., 6.}}});
+    registry.add("QAtracks/hTPCTOFnSigmaPi_GapC", "Gap C;P (GeV/c) ;TPCTOF nSigma Pi", {HistType::kTH2F, {{360, 0, 36}, {120, 0, 6.}}});
+    registry.add("QAtracks/hTPCTOFnSigmaKa_GapC", "Gap C;P (GeV/c) ;TPCTOF nSigma Ka", {HistType::kTH2F, {{360, 0, 36}, {120, 0., 6.}}});
+    registry.add("QAtracks/hTPCTOFnSigmaPr_GapC", "Gap C;P (GeV/c) ;TPCTOF nSigma Pr", {HistType::kTH2F, {{360, 0, 36}, {120, 0., 6.}}});
+
+    registry.add("QAtracks/hTPCNCls_GapC", "Gap C; TPC Cls", {HistType::kTH1F, {{160, 0., 160.}}});
+    registry.add("QAtracks/hTPCChi2_GapC", "Gap C; TPC chi2", {HistType::kTH1F, {{24, 0., 6.}}});
+    registry.add("QAtracks/hITSNCls_GapC", "Gap C; TPC Cls", {HistType::kTH1F, {{8, -1., 7.}}});
+    registry.add("QAtracks/hDCAxy_GapC", "Gap C; DCA xy", {HistType::kTH1F, {{400, -2, 2.}}});
+    registry.add("QAtracks/hDCAz_GapC", "Gap C; DCA z", {HistType::kTH1F, {{400, -4, 4.}}});
+
 
     hfEvSel.addHistograms(registry);
 
@@ -625,7 +673,7 @@ struct HfTaskD0 {
                                           aod::FT0s const& ft0s,
                                           aod::FV0As const& fv0as,
                                           aod::FDDs const& fdds,
-                                          TracksWPid const&)
+                                          TracksWPid const& tracks)
   {
     for (const auto& collision : collisions) {
       float centrality{-1.f};
@@ -667,6 +715,19 @@ struct HfTaskD0 {
       }
       registry.fill(HIST("Data/fitInfo/ampFT0A_vs_ampFT0C"), fitInfo.ampFT0A, fitInfo.ampFT0C);
       registry.fill(HIST("Data/hUpcGapAfterSelection"), gap);
+      registry.fill(HIST("QAevents/hPVcontrVsGap"), gap, collision.numContrib());
+
+      if (gap == 0) {
+        registry.fill(HIST("QAevents/ampFT0AVsC_GapA"), fitInfo.ampFT0A, fitInfo.ampFT0C);
+        registry.fill(HIST("QAevents/energyZNAvsC_GapA"), zdcEnergyZNA, zdcEnergyZNC);
+        registry.fill(HIST("QAevents/timeZNAvsC_GapA"), zdcTimeZNA, zdcTimeZNC);
+      }
+
+      if (gap == 1) {
+        registry.fill(HIST("QAevents/ampFT0AVsC_GapC"), fitInfo.ampFT0A, fitInfo.ampFT0C);
+        registry.fill(HIST("QAevents/energyZNAvsC_GapC"), zdcEnergyZNA, zdcEnergyZNC);
+        registry.fill(HIST("QAevents/timeZNAvsC_GapC"), zdcTimeZNA, zdcTimeZNC);
+      }
 
       const auto thisCollId = collision.globalIndex();
       const auto& groupedD0Candidates = candidates.sliceBy(candD0PerCollision, thisCollId);
@@ -677,6 +738,50 @@ struct HfTaskD0 {
       if (storeOccupancyAndIR && occEstimator != OccupancyEstimator::None) {
         occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
         ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource, true) * 1.e-3; // kHz
+      }
+
+      auto tracksample = tracks.sliceBy(perCol, collision.globalIndex());
+      if (collision.numContrib() > 1) {
+        for (const auto& track : tracksample) {
+          if (!track.isGlobalTrack()) {
+            continue;
+          }
+          registry.fill(HIST("QAtracks/hEtaTrackVsGap"), gap, track.eta());
+          registry.fill(HIST("QAtracks/hPtTrackVsGap"), gap, track.pt());
+
+          if (gap == 0) { // QA for Gap A
+            registry.fill(HIST("QAtracks/hTPCnSigmaPi_GapA"), track.p(), track.tpcNSigmaPi());
+            registry.fill(HIST("QAtracks/hTPCnSigmaKa_GapA"), track.p(), track.tpcNSigmaKa());
+            registry.fill(HIST("QAtracks/hTPCnSigmaPr_GapA"), track.p(), track.tpcNSigmaPr());
+            registry.fill(HIST("QAtracks/hTOFnSigmaPi_GapA"), track.p(), track.tofNSigmaPi());
+            registry.fill(HIST("QAtracks/hTOFnSigmaKa_GapA"), track.p(), track.tofNSigmaKa());
+            registry.fill(HIST("QAtracks/hTOFnSigmaPr_GapA"), track.p(), track.tofNSigmaPr());
+            registry.fill(HIST("QAtracks/hTPCTOFnSigmaPi_GapA"), track.p(), track.tpcTofNSigmaPi());
+            registry.fill(HIST("QAtracks/hTPCTOFnSigmaKa_GapA"), track.p(), track.tpcTofNSigmaKa());
+            registry.fill(HIST("QAtracks/hTPCTOFnSigmaPr_GapA"), track.p(), track.tpcTofNSigmaPr());
+            registry.fill(HIST("QAtracks/hTPCNCls_GapA"), track.tpcNClsFound());
+            registry.fill(HIST("QAtracks/hTPCChi2_GapA"), track.tpcChi2NCl());
+            registry.fill(HIST("QAtracks/hITSNCls_GapA"), track.itsNCls());
+            registry.fill(HIST("QAtracks/hDCAxy_GapA"), track.dcaXY());
+            registry.fill(HIST("QAtracks/hDCAz_GapA"), track.dcaZ());
+          }
+          if (gap == 1) { // QA for Gap C
+            registry.fill(HIST("QAtracks/hTPCnSigmaPi_GapC"), track.p(), track.tpcNSigmaPi());
+            registry.fill(HIST("QAtracks/hTPCnSigmaKa_GapC"), track.p(), track.tpcNSigmaKa());
+            registry.fill(HIST("QAtracks/hTPCnSigmaPr_GapC"), track.p(), track.tpcNSigmaPr());
+            registry.fill(HIST("QAtracks/hTOFnSigmaPi_GapC"), track.p(), track.tofNSigmaPi());
+            registry.fill(HIST("QAtracks/hTOFnSigmaKa_GapC"), track.p(), track.tofNSigmaKa());
+            registry.fill(HIST("QAtracks/hTOFnSigmaPr_GapC"), track.p(), track.tofNSigmaPr());
+            registry.fill(HIST("QAtracks/hTPCTOFnSigmaPi_GapC"), track.p(), track.tpcTofNSigmaPi());
+            registry.fill(HIST("QAtracks/hTPCTOFnSigmaKa_GapC"), track.p(), track.tpcTofNSigmaKa());
+            registry.fill(HIST("QAtracks/hTPCTOFnSigmaPr_GapC"), track.p(), track.tpcTofNSigmaPr());
+            registry.fill(HIST("QAtracks/hTPCNCls_GapC"), track.tpcNClsFound());
+            registry.fill(HIST("QAtracks/hTPCChi2_GapC"), track.tpcChi2NCl());
+            registry.fill(HIST("QAtracks/hITSNCls_GapC"), track.itsNCls());
+            registry.fill(HIST("QAtracks/hDCAxy_GapC"), track.dcaXY());
+            registry.fill(HIST("QAtracks/hDCAz_GapC"), track.dcaZ());
+          }
+        }
       }
 
       for (const auto& candidate : groupedD0Candidates) {
