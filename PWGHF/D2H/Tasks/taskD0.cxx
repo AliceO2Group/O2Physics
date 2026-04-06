@@ -864,7 +864,7 @@ struct HfTaskD0 {
           valuesToFill.push_back(static_cast<double>(ptCandidate));
           if constexpr (FillMl) {
             auto const& mlScores = candidate.mlProbD0();
-            if (mlScores.size() == 3) {
+            if (mlScores.size() == NAxesMl) {
               valuesToFill.push_back(mlScores[0]);
               valuesToFill.push_back(mlScores[1]);
               valuesToFill.push_back(mlScores[2]);
