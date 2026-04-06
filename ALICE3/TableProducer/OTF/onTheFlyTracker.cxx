@@ -23,6 +23,8 @@
 /// \author Roberto Preghenella preghenella@bo.infn.it
 ///
 
+#include "GeometryContainer.h"
+
 #include "ALICE3/Core/DelphesO2TrackSmearer.h"
 #include "ALICE3/Core/DetLayer.h"
 #include "ALICE3/Core/FastTracker.h"
@@ -35,36 +37,72 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
+#include <CommonDataFormat/InteractionRecord.h>
+#include <CommonDataFormat/TimeStamp.h>
+#include <CommonUtils/ConfigurableParam.h>
 #include <DCAFitter/DCAFitterN.h>
 #include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
 #include <DetectorsVertexing/PVertexer.h>
 #include <DetectorsVertexing/PVertexerHelpers.h>
 #include <DetectorsVertexing/PVertexerParams.h>
 #include <Field/MagneticField.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
-#include <Framework/StaticFor.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <MathUtils/Primitive2D.h>
+#include <MathUtils/Utils.h>
 #include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/GlobalTrackID.h>
 #include <ReconstructionDataFormats/PID.h>
+#include <ReconstructionDataFormats/PrimaryVertex.h>
+#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/TrackParametrization.h>
 #include <SimulationDataFormat/InteractionSampler.h>
+#include <SimulationDataFormat/MCCompLabel.h>
+#include <SimulationDataFormat/MCEventLabel.h>
 
 #include <TGenPhaseSpace.h>
 #include <TGeoGlobalMagField.h>
+#include <TH1.h>
+#include <TH2.h>
 #include <TLorentzVector.h>
+#include <TMCProcess.h>
+#include <TMath.h>
 #include <TPDGCode.h>
 #include <TRandom3.h>
+#include <TString.h>
 
+#include <sys/types.h>
+
+#include <RtypesCore.h>
+
+#include <algorithm>
 #include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <map>
+#include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -86,6 +124,7 @@ struct OnTheFlyTracker {
   Produces<aod::StoredTracksCov> tableStoredTracksCov;
   Produces<aod::TracksCovExtension> tableTracksCovExtension;
   Produces<aod::McTrackLabels> tableMcTrackLabels;
+  Produces<aod::McTrackWithDauLabels> tableMcTrackWithDauLabels;
   Produces<aod::TracksDCA> tableTracksDCA;
   Produces<aod::TracksDCACov> tableTracksDCACov;
   Produces<aod::CollisionsAlice3> tableCollisionsAlice3;
@@ -928,12 +967,12 @@ struct OnTheFlyTracker {
       const float timeResolutionUs = timeResolutionNs * nsToMus; // us
       const float time = (eventCollisionTimeNS + gRandom->Gaus(0., timeResolutionNs)) * nsToMus;
       static constexpr int kCascProngs = 3;
-      std::vector<o2::track::TrackParCov> xiDaughterTrackParCovsPerfect(3);
-      std::vector<o2::track::TrackParCov> xiDaughterTrackParCovsTracked(3);
-      std::vector<bool> isReco(kCascProngs);
-      std::vector<int> nHits(kCascProngs);        // total
-      std::vector<int> nSiliconHits(kCascProngs); // silicon type
-      std::vector<int> nTPCHits(kCascProngs);     // TPC type
+      std::array<o2::track::TrackParCov, kCascProngs> xiDaughterTrackParCovsPerfect;
+      std::array<o2::track::TrackParCov, kCascProngs> xiDaughterTrackParCovsTracked;
+      std::array<bool, kCascProngs> isReco;
+      std::array<int, kCascProngs> nHitsCascadeProngs;        // total
+      std::array<int, kCascProngs> nSiliconHitsCascadeProngs; // silicon type
+      std::array<int, kCascProngs> nTPCHitsCascadeProngs;     // TPC type
 
       bool tryKinkReco = false;
       if (cascadeDecaySettings.decayXi && isCascade) {
@@ -951,19 +990,19 @@ struct OnTheFlyTracker {
 
         for (int i = 0; i < kCascProngs; i++) {
           isReco[i] = false;
-          nHits[i] = 0;
-          nSiliconHits[i] = 0;
-          nTPCHits[i] = 0;
+          nHitsCascadeProngs[i] = 0;
+          nSiliconHitsCascadeProngs[i] = 0;
+          nTPCHitsCascadeProngs[i] = 0;
           if (enableSecondarySmearing) {
-            nHits[i] = fastTracker[icfg]->FastTrack(xiDaughterTrackParCovsPerfect[i], xiDaughterTrackParCovsTracked[i], dNdEta);
-            nSiliconHits[i] = fastTracker[icfg]->GetNSiliconPoints();
-            nTPCHits[i] = fastTracker[icfg]->GetNGasPoints();
+            nHitsCascadeProngs[i] = fastTracker[icfg]->FastTrack(xiDaughterTrackParCovsPerfect[i], xiDaughterTrackParCovsTracked[i], dNdEta);
+            nSiliconHitsCascadeProngs[i] = fastTracker[icfg]->GetNSiliconPoints();
+            nTPCHitsCascadeProngs[i] = fastTracker[icfg]->GetNGasPoints();
 
-            if (nHits[i] < 0 && cascadeDecaySettings.doXiQA) { // QA
-              getHist(TH1, histPath + "hFastTrackerQA")->Fill(o2::math_utils::abs(nHits[i]));
+            if (nHitsCascadeProngs[i] < 0 && cascadeDecaySettings.doXiQA) { // QA
+              getHist(TH1, histPath + "hFastTrackerQA")->Fill(o2::math_utils::abs(nHitsCascadeProngs[i]));
             }
 
-            if (nSiliconHits[i] >= fastTrackerSettings.minSiliconHits || (nSiliconHits[i] >= fastTrackerSettings.minSiliconHitsIfTPCUsed && nTPCHits[i] >= fastTrackerSettings.minTPCClusters)) {
+            if (nSiliconHitsCascadeProngs[i] >= fastTrackerSettings.minSiliconHits || (nSiliconHitsCascadeProngs[i] >= fastTrackerSettings.minSiliconHitsIfTPCUsed && nTPCHitsCascadeProngs[i] >= fastTrackerSettings.minTPCClusters)) {
               isReco[i] = true;
             } else {
               continue; // extra sure
@@ -982,7 +1021,7 @@ struct OnTheFlyTracker {
             histos.fill(HIST("hNaNBookkeeping"), i + 1, 1.0f);
           }
           if (isReco[i]) {
-            tracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovsTracked[i], mcParticle.globalIndex(), time, timeResolutionUs, true, true, i + 2, nSiliconHits[i], nTPCHits[i]});
+            tracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovsTracked[i], mcParticle.globalIndex(), time, timeResolutionUs, true, true, i + 2, nSiliconHitsCascadeProngs[i], nTPCHitsCascadeProngs[i]});
           } else {
             ghostTracksAlice3.push_back(TrackAlice3{xiDaughterTrackParCovsTracked[i], mcParticle.globalIndex(), time, timeResolutionUs, true, true, i + 2});
           }
@@ -1379,7 +1418,7 @@ struct OnTheFlyTracker {
           //   histos.fill(HIST("hNaNBookkeeping"), i + 1, 1.0f);
           // }
           if (isReco[i]) {
-            tracksAlice3.push_back(TrackAlice3{v0DaughterTrackParCovsTracked[i], mcParticle.globalIndex(), time, timeResolutionUs, true, true, i + 2, nSiliconHits[i], nTPCHits[i]});
+            tracksAlice3.push_back(TrackAlice3{v0DaughterTrackParCovsTracked[i], mcParticle.globalIndex(), time, timeResolutionUs, true, true, i + 2, nSiliconHitsCascadeProngs[i], nTPCHitsCascadeProngs[i]});
           } else {
             ghostTracksAlice3.push_back(TrackAlice3{v0DaughterTrackParCovsTracked[i], mcParticle.globalIndex(), time, timeResolutionUs, true, true, i + 2});
           }
@@ -1525,14 +1564,16 @@ struct OnTheFlyTracker {
       }
 
       bool reconstructed = true;
+      int nTrkHits = 0;
       if (enablePrimarySmearing && !fastPrimaryTrackerSettings.fastTrackPrimaries) {
         reconstructed = mSmearer[icfg]->smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
+        nTrkHits = fastTrackerSettings.minSiliconHits;
       } else if (fastPrimaryTrackerSettings.fastTrackPrimaries) {
         o2::track::TrackParCov o2Track;
         o2::upgrade::convertMCParticleToO2Track(mcParticle, o2Track, pdgDB);
         o2Track.setPID(pdgCodeToPID(mcParticle.pdgCode()));
-        const int nHits = fastTracker[icfg]->FastTrack(o2Track, trackParCov, dNdEta);
-        if (nHits < fastPrimaryTrackerSettings.minSiliconHits) {
+        nTrkHits = fastTracker[icfg]->FastTrack(o2Track, trackParCov, dNdEta);
+        if (nTrkHits < fastPrimaryTrackerSettings.minSiliconHits) {
           reconstructed = false;
         }
       }
@@ -1567,7 +1608,7 @@ struct OnTheFlyTracker {
 
       // populate vector with track if we reco-ed it
       if (reconstructed) {
-        tracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), time, timeResolutionUs, isDecayDaughter});
+        tracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), time, timeResolutionUs, isDecayDaughter, false, 0, nTrkHits});
       } else {
         ghostTracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), time, timeResolutionUs, isDecayDaughter});
       }
@@ -1831,7 +1872,7 @@ struct OnTheFlyTracker {
     }
   }
 
-  void processConfigurationDev(aod::McCollision const& mcCollision, aod::McPartsWithDau const& mcParticles, const int icfg)
+  void processConfigurationDev(aod::McCollision const& mcCollision, aod::McPartWithDaus const& mcParticles, const int icfg)
   {
     // const int lastTrackIndex = tableStoredTracksCov.lastIndex() + 1; // bookkeep the last added track
     const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
@@ -1927,15 +1968,17 @@ struct OnTheFlyTracker {
       const float time = (eventCollisionTimeNS + gRandom->Gaus(0., timeResolutionNs)) * nsToMus;
 
       bool reconstructed = false;
+      int nTrkHits = 0;
       if (enablePrimarySmearing && mcParticle.isPrimary()) {
         o2::upgrade::convertMCParticleToO2Track(mcParticle, trackParCov, pdgDB);
         reconstructed = mSmearer[icfg]->smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
+        nTrkHits = fastTrackerSettings.minSiliconHits;
       } else if (enableSecondarySmearing) {
         o2::track::TrackParCov perfectTrackParCov;
         o2::upgrade::convertMCParticleToO2Track(mcParticle, perfectTrackParCov, pdgDB);
         perfectTrackParCov.setPID(pdgCodeToPID(mcParticle.pdgCode()));
-        const int nHits = fastTracker[icfg]->FastTrack(perfectTrackParCov, trackParCov, dNdEta);
-        if (nHits < fastTrackerSettings.minSiliconHits) {
+        nTrkHits = fastTracker[icfg]->FastTrack(perfectTrackParCov, trackParCov, dNdEta);
+        if (nTrkHits < fastTrackerSettings.minSiliconHits) {
           reconstructed = false;
         } else {
           reconstructed = true;
@@ -1965,7 +2008,7 @@ struct OnTheFlyTracker {
       }
 
       if (reconstructed) {
-        tracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), time, timeResolutionUs, isDecayDaughter});
+        tracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), time, timeResolutionUs, isDecayDaughter, false, 0, nTrkHits});
       } else {
         ghostTracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), time, timeResolutionUs, isDecayDaughter});
       }
@@ -2023,7 +2066,7 @@ struct OnTheFlyTracker {
                               trackParCov.getSigmaSnpZ(), trackParCov.getSigmaSnp2(), trackParCov.getSigmaTglY(), trackParCov.getSigmaTglZ(), trackParCov.getSigmaTglSnp(),
                               trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
                               trackParCov.getSigma1Pt2());
-      tableMcTrackLabels(trackParCov.mcLabel, 0);
+      tableMcTrackWithDauLabels(trackParCov.mcLabel, 0);
       tableTracksExtraA3(trackParCov.nSiliconHits, trackParCov.nTPCHits);
 
       // populate extra tables if required to do so
@@ -2069,7 +2112,7 @@ struct OnTheFlyTracker {
                               trackParCov.getSigmaSnpZ(), trackParCov.getSigmaSnp2(), trackParCov.getSigmaTglY(), trackParCov.getSigmaTglZ(), trackParCov.getSigmaTglSnp(),
                               trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
                               trackParCov.getSigma1Pt2());
-      tableMcTrackLabels(trackParCov.mcLabel, 0);
+      tableMcTrackWithDauLabels(trackParCov.mcLabel, 0);
       tableTracksExtraA3(trackParCov.nSiliconHits, trackParCov.nTPCHits);
 
       // populate extra tables if required to do so
@@ -2087,7 +2130,7 @@ struct OnTheFlyTracker {
     }
   }
 
-  void processDecayer(aod::McCollision const& mcCollision, aod::McPartsWithDau const& mcParticles)
+  void processDecayer(aod::McCollision const& mcCollision, aod::McPartWithDaus const& mcParticles)
   {
     for (size_t icfg = 0; icfg < mSmearer.size(); ++icfg) {
       processConfigurationDev(mcCollision, mcParticles, static_cast<int>(icfg));

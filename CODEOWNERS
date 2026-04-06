@@ -31,15 +31,28 @@
 /EventFiltering/PWGJE @alibuild @fkrizek @nzardosh @raymondEhlers @mpuccio @lietava @fgrosa @ariedel-cern
 /EventFiltering/PWGEM @alibuild @dsekihat @nstrangm @mpuccio @lietava @fgrosa @ariedel-cern
 
-/PWGCF               @alibuild @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
-/PWGCF/Core          @alibuild @jgrosseo @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
-/PWGCF/DataModel     @alibuild @jgrosseo @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
-/PWGCF/TableProducer @alibuild @jgrosseo @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
-/PWGCF/Tasks         @alibuild @jgrosseo @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye @glromane
+/PWGCF @alibuild @victor-gonzalez @otonvd @shouqiye
+/PWGCF/Core @alibuild @jgrosseo
+/PWGCF/DataModel @alibuild @jgrosseo @jaelpark @victor-gonzalez @otonvd @shouqiye
+/PWGCF/TableProducer @alibuild @jgrosseo @jaelpark @victor-gonzalez @otonvd @shouqiye
+/PWGCF/Tasks @alibuild @jgrosseo @jaelpark @victor-gonzalez @otonvd @shouqiye
+/PWGCF/EbyEFluctuations @alibuild @SwatiSaha-1997 @isputows @victor-gonzalez @otonvd @shouqiye
+/PWGCF/Femto @alibuild @lauraser @ariedel-cern @dimihayl @victor-gonzalez @otonvd @shouqiye
+/PWGCF/FemtoDream @alibuild @lauraser @ariedel-cern @dimihayl @victor-gonzalez @otonvd @shouqiye
+/PWGCF/Femto3D @alibuild @glromane @sofiatomassini @lauraser @dimihayl @victor-gonzalez @otonvd @shouqiye
+/PWGCF/FemtoUniverse @alibuild @prchakra @lgraczykCern @majanik @lauraser @dimihayl @victor-gonzalez @otonvd @shouqiye
+/PWGCF/FemtoWorld @alibuild @prchakra @lgraczykCern @majanik @lauraser @dimihayl @victor-gonzalez @otonvd @shouqiye
+/PWGCF/Flow @alibuild @majanik @EmilGorm @jaelpark @wenyaCern @victor-gonzalez @otonvd @shouqiye
+/PWGCF/GenericFramework @alibuild @EmilGorm @jaelpark @wenyaCern @victor-gonzalez @otonvd @shouqiye
+/PWGCF/MultiparticleCorrelations @alibuild @abilandz @jaelpark @wenyaCern @victor-gonzalez @otonvd @shouqiye
+/PWGCF/JCorran @alibuild @jaelpark @wenyaCern @victor-gonzalez @otonvd @shouqiye
+/PWGCF/TwoParticleCorrelations @alibuild @Luzhiyongg @jaelpark @wenyaCern @victor-gonzalez @otonvd @shouqiye
+/PWGCF/Tutorial @alibuild @ariedel-cern @victor-gonzalez @otonvd @shouqiye
+
 /PWGDQ @alibuild @iarsene @mcoquet642 @lucamicheletti93 @XiaozhiBai
-/PWGEM @alibuild @feisenhu @dsekihat @ivorobye @jokonig
-/PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu @hscheid @jokonig
-/PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky @mhemmer-cern @dsekihat @jokonig
+/PWGEM @alibuild @feisenhu @dsekihat @jokonig @hscheid
+/PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @feisenhu @hscheid @jokonig
+/PWGEM/PhotonMeson @alibuild @mhemmer-cern @dsekihat @jokonig @hscheid @amaringarcia
 /PWGHF @alibuild @vkucera @fcolamar @fgrosa @fcatalan92 @mfaggin @mmazzilli @deepathoms @NicoleBastid @hahassan7 @jpxrk @apalasciano @zhangbiao-phy @gluparel @stefanopolitano @xinyepeng @singhra1994
 # PWG-LF
 /PWGLF @alibuild @omvazque @skundu692 @mpuccio

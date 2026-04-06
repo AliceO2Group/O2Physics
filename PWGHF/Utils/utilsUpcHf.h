@@ -81,6 +81,8 @@ inline auto determineGapType(TCollision const& collision,
                              float amplitudeThresholdFT0C = defaults::AmplitudeThresholdFT0C)
 {
   using BCType = std::decay_t<decltype(collision.template foundBC_as<TBCs>())>;
+  const float amplitudeThresholdsFDDA = -1.0f; // Not used in SGSelector, set to -1 to indicate unused
+  const float amplitudeThresholdsFDDC = -1.0f; // Not used in SGSelector, set to -1 to indicate unused
 
   // Configure SGSelector thresholds
   SGCutParHolder sgCuts;
@@ -88,7 +90,7 @@ inline auto determineGapType(TCollision const& collision,
   sgCuts.SetMinNBCs(nBcsMin);
   sgCuts.SetNTracks(nContributorsPvMin, nContributorsPvMax);
   sgCuts.SetMaxFITtime(timeFitMax);
-  sgCuts.SetFITAmpLimits({amplitudeThresholdFV0A, amplitudeThresholdFT0A, amplitudeThresholdFT0C});
+  sgCuts.SetFITAmpLimits({amplitudeThresholdFV0A, amplitudeThresholdFT0A, amplitudeThresholdFT0C, amplitudeThresholdsFDDA, amplitudeThresholdsFDDC});
 
   // Get BC and BC range
   if (!collision.has_foundBC()) {

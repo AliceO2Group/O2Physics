@@ -21,8 +21,6 @@
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/Core/JetFindingUtilities.h"
-#include "PWGJE/DataModel/EMCALClusterDefinition.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 
@@ -32,7 +30,6 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
-#include <Framework/Logger.h>
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h> // IWYU pragma: export
 
@@ -45,6 +42,8 @@
 #include <memory>
 #include <string>
 #include <vector>
+
+#include <math.h>
 
 template <typename JetTable, typename ConstituentTable, typename JetEvtWiseSubTable, typename ConstituentEvtWiseSubTable>
 struct JetFinderTask {
@@ -251,7 +250,7 @@ struct JetFinderTask {
 
   void processParticleLevelChargedJets(o2::soa::Filtered<o2::aod::JetMcCollisions>::iterator const& mcCollision, o2::soa::Filtered<o2::aod::JetParticles> const& particles)
   {
-    if (!jetderiveddatautilities::selectMcCollision(mcCollision, skipMBGapEvents, applyRCTSelections)) {
+    if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
     inputParticles.clear();
@@ -262,7 +261,7 @@ struct JetFinderTask {
 
   void processParticleLevelChargedEvtWiseSubJets(o2::soa::Filtered<o2::aod::JetMcCollisions>::iterator const& mcCollision, o2::soa::Filtered<o2::aod::JetParticlesSub> const& particles)
   {
-    if (!jetderiveddatautilities::selectMcCollision(mcCollision, skipMBGapEvents, applyRCTSelections)) {
+    if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
     inputParticles.clear();
@@ -273,7 +272,7 @@ struct JetFinderTask {
 
   void processParticleLevelNeutralJets(o2::soa::Filtered<o2::aod::JetMcCollisions>::iterator const& mcCollision, o2::soa::Filtered<o2::aod::JetParticles> const& particles)
   {
-    if (!jetderiveddatautilities::selectMcCollision(mcCollision, skipMBGapEvents, applyRCTSelections, "CBT_calo")) {
+    if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, "CBT_calo")) {
       return;
     }
     inputParticles.clear();
@@ -284,7 +283,7 @@ struct JetFinderTask {
 
   void processParticleLevelFullJets(o2::soa::Filtered<o2::aod::JetMcCollisions>::iterator const& mcCollision, o2::soa::Filtered<o2::aod::JetParticles> const& particles)
   {
-    if (!jetderiveddatautilities::selectMcCollision(mcCollision, skipMBGapEvents, applyRCTSelections, "CBT_calo")) {
+    if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, skipMBGapEvents, applyRCTSelections, "CBT_calo")) {
       return;
     }
     inputParticles.clear();

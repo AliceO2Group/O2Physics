@@ -194,6 +194,8 @@ struct FemtoUniversePairTaskTrackNucleus {
   Configurable<float> confCPRDeltaEtaCutMax{"confCPRDeltaEtaCutMax", 0.0, "Delta Eta max cut for Close Pair Rejection"};
   Configurable<float> confCPRDeltaEtaCutMin{"confCPRDeltaEtaCutMin", 0.0, "Delta Eta min cut for Close Pair Rejection"};
   Configurable<float> confCPRChosenRadii{"confCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
+  ConfigurableAxis confDeltaEtaAxis{"confDeltaEtaAxis", {100, -0.15, 0.15}, "DeltaEta"};
+  ConfigurableAxis confDeltaPhiStarAxis{"confDeltaPhiStarAxis", {100, -0.15, 0.15}, "DeltaPhiStar"};
 
   Configurable<bool> cfgProcessPP{"cfgProcessPP", true, "Process positively charged particles (plus-plus)"};
   Configurable<bool> cfgProcessMM{"cfgProcessMM", true, "Process negatively charged particles (minus-minus)"};
@@ -470,7 +472,7 @@ struct FemtoUniversePairTaskTrackNucleus {
 
     pairCleaner.init(&qaRegistry);
     if (confIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, confCPRDeltaPhiCutMin.value, confCPRDeltaPhiCutMax.value, confCPRDeltaEtaCutMin.value, confCPRDeltaEtaCutMax.value, confCPRChosenRadii.value, confCPRPlotPerRadii.value);
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, confDeltaEtaAxis, confDeltaPhiStarAxis, confCPRDeltaPhiCutMin.value, confCPRDeltaPhiCutMax.value, confCPRDeltaEtaCutMin.value, confCPRDeltaEtaCutMax.value, confCPRChosenRadii.value, confCPRPlotPerRadii.value);
     }
 
     vPIDTrack = trackfilter.confPIDTrack.value;

@@ -20,18 +20,19 @@
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetSubtraction.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/DataTypes.h>
 #include <Framework/InitContext.h>
-#include <Framework/Logger.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h>
 
+#include <fastjet/GhostedAreaSpec.hh>
 #include <fastjet/PseudoJet.hh>
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -141,7 +142,7 @@ struct eventWiseConstituentSubtractorTask {
   template <typename T, typename U, typename V, typename M>
   void analyseHFMc(T const& mcCollision, U const& particles, V const& candidates, M& particleSubTable)
   {
-    if (!jetderiveddatautilities::selectMcCollision(mcCollision, skipMBGapEvents, applyRCTSelections) || std::abs(mcCollision.posZ()) > vertexZCut) {
+    if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, skipMBGapEvents, applyRCTSelections) || std::abs(mcCollision.posZ()) > vertexZCut) {
       return;
     }
     for (auto& candidate : candidates) {
@@ -178,7 +179,7 @@ struct eventWiseConstituentSubtractorTask {
 
   void processMcCollisions(soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos>::iterator const& mcCollision, soa::Filtered<aod::JetParticles> const& particles)
   {
-    if (!jetderiveddatautilities::selectMcCollision(mcCollision, skipMBGapEvents, applyRCTSelections) || std::abs(mcCollision.posZ()) > vertexZCut) {
+    if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, skipMBGapEvents, applyRCTSelections) || std::abs(mcCollision.posZ()) > vertexZCut) {
       return;
     }
     inputParticles.clear();

@@ -15,30 +15,30 @@
 /// copied from Thor Jensen (thor.kjaersgaard.jensen@cern.ch) and Debojit Sarkar (debojit.sarkar@cern.ch)
 
 #include "PWGCF/Core/CorrelationContainer.h"
-#include "PWGCF/Core/PairCuts.h"
-#include "PWGCF/DataModel/CorrelationsDerived.h"
 #include "PWGUD/Core/SGSelector.h"
-#include "PWGUD/DataModel/SGTables.h"
 #include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/MathConstants.h"
-#include "Framework/ASoA.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TRandom3.h"
+#include <TRandom3.h>
+#include <TString.h>
 
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <vector>
 
 namespace o2::aod
@@ -46,25 +46,33 @@ namespace o2::aod
 namespace flowcorrupc
 {
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, int);
-}
+DECLARE_SOA_COLUMN(Truegapside, truegapside, int);
+} // namespace flowcorrupc
 DECLARE_SOA_TABLE(Multiplicity, "AOD", "MULTIPLICITY",
                   flowcorrupc::Multiplicity);
-
+DECLARE_SOA_TABLE(Truegapside, "AOD", "TRUEGAPSIDE", flowcorrupc::Truegapside);
 } // namespace o2::aod
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::constants::math;
 
 // define the filtered collisions and tracks
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
 struct CalcNchUpc {
   O2_DEFINE_CONFIGURABLE(cfgZVtxCut, float, 10.0f, "Accepted z-vertex range")
-  O2_DEFINE_CONFIGURABLE(cfgPtCutMin, float, 0.2f, "minimum accepted track pT")
-  O2_DEFINE_CONFIGURABLE(cfgPtCutMax, float, 10.0f, "maximum accepted track pT")
-  O2_DEFINE_CONFIGURABLE(cfgEtaCut, float, 0.8f, "Eta cut")
+  O2_DEFINE_CONFIGURABLE(cfgPtCutMin, float, 0.1f, "minimum accepted track pT")
+  O2_DEFINE_CONFIGURABLE(cfgEtaCut, float, 0.9f, "Eta cut")
   O2_DEFINE_CONFIGURABLE(cfgMinMixEventNum, int, 5, "Minimum number of events to mix")
+
+  // Added UPC Cuts
+  SGSelector sgSelector;
+  Configurable<float> cfgCutFV0{"cfgCutFV0", 50., "FV0A threshold"};
+  Configurable<float> cfgCutFT0A{"cfgCutFT0A", 150., "FT0A threshold"};
+  Configurable<float> cfgCutFT0C{"cfgCutFT0C", 50., "FT0C threshold"};
+  Configurable<float> cfgCutZDC{"cfgCutZDC", 10., "ZDC threshold"};
 
   // Filter trackFilter = (nabs(aod::track::eta) < cfgEtaCut) && (aod::track::pt > cfgPtCutMin) && (aod::track::pt < cfgPtCutMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
 
@@ -73,6 +81,7 @@ struct CalcNchUpc {
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::UDCollisionSelExtras>;
 
   Produces<aod::Multiplicity> multiplicityNch;
+  Produces<aod::Truegapside> truegapside;
 
   HistogramRegistry registry{"registry"};
 
@@ -80,18 +89,27 @@ struct CalcNchUpc {
   {
     AxisSpec axisNch = {100, 0, 100};
     AxisSpec axisVrtx = {10, -10, 10};
+    // AxisSpec axisgap = {12, -6, 6};
+    // std::vector<AxisSpec> trueGapBins = {-2, -1, 0, 1, 2, 3};
+    // AxisSpec axisgap = {trueGapBins, "true gap side"};
+
+    std::vector<double> binEdges = {-1.5, -0.5, 0.5, 1.5, 2.5, 3.5};
+    AxisSpec axisgap = {binEdges, "true gap side"};
+    registry.add("truegap", "truegap", {HistType::kTH1D, {axisgap}});
 
     registry.add("Ncharge", "N_{charge}", {HistType::kTH1D, {axisNch}});
     registry.add("zVtx_all", "zVtx_all", {HistType::kTH1D, {axisVrtx}});
     registry.add("Nch_vs_zVtx", "Nch vs zVtx", {HistType::kTH2D, {axisVrtx, axisNch}});
+    // registry.add("truegap", "truegap", {HistType::kTH1D, {axisgap}});
   }
 
   void process(UDCollisionsFull::iterator const& collision, UdTracksFull const& tracks)
   {
     multiplicityNch(tracks.size());
+    truegapside(sgSelector.trueGap(collision, cfgCutFV0, cfgCutFT0A, cfgCutFT0C, cfgCutZDC));
+    // LOG(info) << "truegapside=" <<  sgSelector.trueGap(collision, cfgCutFV0, cfgCutFT0A, cfgCutFT0C, cfgCutZDC);
     registry.fill(HIST("Ncharge"), tracks.size());
     registry.fill(HIST("zVtx_all"), collision.posZ());
-    registry.fill(HIST("Nch_vs_zVtx"), collision.posZ(), tracks.size());
   }
 };
 
@@ -100,7 +118,7 @@ struct FlowCorrelationsUpc {
   O2_DEFINE_CONFIGURABLE(cfgIfVertex, bool, false, "choose vertex or not")
   O2_DEFINE_CONFIGURABLE(cfgPtCutMin, float, 0.1f, "minimum accepted track pT")
   O2_DEFINE_CONFIGURABLE(cfgPtCutMax, float, 10.0f, "maximum accepted track pT")
-  O2_DEFINE_CONFIGURABLE(cfgEtaCut, float, 0.8f, "Eta cut")
+  O2_DEFINE_CONFIGURABLE(cfgEtaCut, float, 0.9f, "Eta cut")
   O2_DEFINE_CONFIGURABLE(cfgMinMixEventNum, int, 5, "Minimum number of events to mix")
   O2_DEFINE_CONFIGURABLE(cfgMinMult, int, 0, "Minimum multiplicity for collision")
   O2_DEFINE_CONFIGURABLE(cfgMaxMult, int, 10, "Maximum multiplicity for collision")
@@ -111,7 +129,7 @@ struct FlowCorrelationsUpc {
   O2_DEFINE_CONFIGURABLE(cfgRadiusLow, float, 0.8, "Low radius for merging cut")
   O2_DEFINE_CONFIGURABLE(cfgRadiusHigh, float, 2.5, "High radius for merging cut")
   O2_DEFINE_CONFIGURABLE(cfgIsGoodItsLayers, bool, false, "whether choose itslayers")
-  O2_DEFINE_CONFIGURABLE(cfgGapSide, int, 0, "0: gapside A;1:C")
+  O2_DEFINE_CONFIGURABLE(cfgGapSide, int, 1, "0: gapside A;1:C")
   O2_DEFINE_CONFIGURABLE(cfgGapSideMerge, bool, false, "whether merge A and C side together")
   O2_DEFINE_CONFIGURABLE(cfgDcaxy, bool, true, "choose dcaxy")
   O2_DEFINE_CONFIGURABLE(cfgDcaz, bool, false, "choose dcaz")
@@ -148,13 +166,12 @@ struct FlowCorrelationsUpc {
 
   // make the filters and cuts.
   Filter trackFilter = (aod::udtrack::isPVContributor == true);
-  Filter collisionFilter = (cfgGapSideMerge == false && aod::udcollision::gapSide == (uint8_t)cfgGapSide);
-  // Filter collisionFilter = (nabs(aod::collision::posZ) < cfgZVtxCut) && (aod::flowcorrupc::multiplicity) > cfgMinMult && (aod::flowcorrupc::multiplicity) < cfgMaxMult && (aod::evsel::sel8) == true;
-  // Filter trackFilter = (nabs(aod::track::eta) < cfgEtaCut) && (aod::track::pt > cfgPtCutMin) && (aod::track::pt < cfgPtCutMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
+  Filter collisionFilter = ((aod::udcollision::gapSide == (uint8_t)1 || aod::udcollision::gapSide == (uint8_t)0) && (cfgIfVertex == false || aod::collision::posZ < cfgZVtxCut) && (aod::udcollision::occupancyInTime > 0 && aod::udcollision::occupancyInTime < cfgCutOccupancyHigh) && (aod::flowcorrupc::truegapside == 1 || aod::flowcorrupc::truegapside == 0));
 
   using UdTracks = soa::Filtered<soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>>;
   using UdTracksFull = soa::Filtered<soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>>;
-  using UDCollisionsFull = soa::Filtered<soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::Multiplicity, aod::UDCollisionSelExtras>>;
+
+  using UDCollisionsFull = soa::Filtered<soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::Multiplicity, aod::Truegapside, aod::UDCollisionSelExtras>>;
 
   // Define the outputs
   OutputObj<CorrelationContainer> same{Form("sameEvent_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
@@ -164,6 +181,8 @@ struct FlowCorrelationsUpc {
 
   void init(InitContext&)
   {
+    LOG(info) << "cfgGapSide = " << cfgGapSide;
+    LOG(info) << "cfgGapSide value type: " << typeid(cfgGapSide).name();
     LOGF(info, "Starting init");
     // Make histograms to check the distributions after cuts
     registry.add("deltaEta_deltaPhi_same", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}}); // check to see the delta eta and delta phi distribution
@@ -174,10 +193,16 @@ struct FlowCorrelationsUpc {
     registry.add("Nch", "N_{ch}", {HistType::kTH1D, {axisMultiplicity}});
     registry.add("zVtx", "zVtx", {HistType::kTH1D, {axisVertex}});
     registry.add("Nch_vs_zVtx", "Nch vs zVtx", {HistType::kTH2D, {axisVertex, axisMultiplicity}});
+    registry.add("Nch_same", "Nch same event", {HistType::kTH1D, {axisMultiplicity}});
+    registry.add("Nch_mixed", "Nch mixed event", {HistType::kTH1D, {axisMultiplicity}});
 
     registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
 
-    registry.add("eventcount", "bin", {HistType::kTH1F, {{10, 0, 10, "bin"}}}); // histogram to see how many events are in the same and mixed event
+    registry.add("eventcount_same", "bin", {HistType::kTH1F, {{10, 0, 10, "bin"}}});  // histogram to see how many events are in the same and mixed event
+    registry.add("eventcount_mixed", "bin", {HistType::kTH1F, {{10, 0, 10, "bin"}}}); // histogram to see how many events are in the same and mixed event
+
+    registry.add("trackcount_same", "bin", {HistType::kTH1F, {{10, 0, 10, "bin"}}});  // histogram to see how many tracks are in the same and mixed event
+    registry.add("trackcount_mixed", "bin", {HistType::kTH1F, {{10, 0, 10, "bin"}}}); // histogram to see how many tracks are in the same and mixed event
 
     std::vector<AxisSpec> corrAxis = {{axisSample, "Sample"},
                                       {axisVertex, "z-vtx (cm)"},
@@ -197,8 +222,7 @@ struct FlowCorrelationsUpc {
   }
   enum EventType {
     SameEvent = 1,
-    MixedEvent = 3,
-    MixedFinal = 9
+    MixedEvent = 3
   };
 
   template <typename TTrack>
@@ -221,9 +245,6 @@ struct FlowCorrelationsUpc {
 
     if (dPhiStar > constants::math::PI)
       dPhiStar = constants::math::TwoPI - dPhiStar;
-    if (dPhiStar < -constants::math::PI)
-      dPhiStar = -constants::math::TwoPI - dPhiStar;
-
     return dPhiStar;
   }
 
@@ -233,9 +254,6 @@ struct FlowCorrelationsUpc {
     // registry.fill(HIST("hTrackCount"), 0.5);
     // UPC selection
     if (track.pt() < cfgPtCutMin || track.pt() > cfgPtCutMax) {
-      return false;
-    }
-    if (!track.isPVContributor()) {
       return false;
     }
     // registry.fill(HIST("hTrackCount"), 1.5);
@@ -342,42 +360,14 @@ struct FlowCorrelationsUpc {
 
   void processSame(UDCollisionsFull::iterator const& collision, UdTracksFull const& tracks)
   {
+    // LOG(info) << "Event passed filter: truegapside=" << collision.truegapside();
     if (tracks.size() < cfgMinMult || tracks.size() > cfgMaxMult) {
       return;
     }
-    if (cfgIsGoodItsLayers && collision.trs() == 0) {
-      return;
-    }
-
-    if (cfgGapSideMerge) {
-      int gapSide = collision.gapSide();
-      if (gapSide != 0 && gapSide != 1) {
-        return;
-      }
-      int trueGapSide = sgSelector.trueGap(collision, cfgCutFV0, cfgCutFT0A, cfgCutFT0C, cfgCutZDC);
-      int gapSide1 = trueGapSide;
-      if (gapSide1 != 0 && gapSide1 != 1) {
-        return;
-      }
-    }
-    if (!cfgGapSideMerge) {
-      int trueGapSide = sgSelector.trueGap(collision, cfgCutFV0, cfgCutFT0A, cfgCutFT0C, cfgCutZDC);
-      int gapSide1 = trueGapSide;
-      if (gapSide1 != cfgGapSide) {
-        return;
-      }
-    }
-    float vtxz = collision.posZ();
-    if (cfgIfVertex && abs(vtxz) > cfgZVtxCut) {
-      return;
-    }
-    int occupancy = collision.occupancyInTime();
-    if (cfgEvSelOccupancy && (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh)) {
-      return;
-    }
+    registry.fill(HIST("eventcount_same"), 3.5);
     int runIndex = collision.runNumber();
 
-    registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
+    // registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
     registry.fill(HIST("Nch_vs_zVtx"), collision.posZ(), tracks.size());
     fillYield(collision, tracks);
     fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent, runIndex); // fill the SE histogram and Sparse
@@ -387,80 +377,21 @@ struct FlowCorrelationsUpc {
   // event mixing
 
   SliceCache cache;
-  // using MixedBinning = FlexibleBinningPolicy<std::tuple<aod::flowcorrupc::Multiplicity>, aod::collision::PosZ, aod::flowcorrupc::Multiplicity>;
   using MixedBinning = ColumnBinningPolicy<aod::collision::PosZ, aod::flowcorrupc::Multiplicity>;
 
   // the process for filling the mixed events
   void processMixed(UDCollisionsFull const& collisions, UdTracksFull const& tracks)
   {
     MixedBinning binningOnVtxAndMult{{vtxMix, multMix}, true}; // true is for 'ignore overflows' (true by default)
-    auto tracksTuple = std::make_tuple(tracks, tracks);
-    Pair<UDCollisionsFull, UdTracksFull, UdTracksFull, MixedBinning> pairs{binningOnVtxAndMult, cfgMinMixEventNum, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+    auto tracksTuple = std::make_tuple(tracks);
+    SameKindPair<UDCollisionsFull, UdTracksFull, MixedBinning> pairs{binningOnVtxAndMult, cfgMinMixEventNum, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto const& [collision1, tracks1, collision2, tracks2] : pairs) {
-      registry.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
+      // registry.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
       if (tracks1.size() < cfgMinMult || tracks1.size() > cfgMaxMult || tracks2.size() < cfgMinMult || tracks2.size() > cfgMaxMult) {
         continue;
       }
-      registry.fill(HIST("eventcount"), 4.5);
-      if (cfgIsGoodItsLayers && (collision1.trs() == 0 || collision2.trs() == 0)) {
-        continue;
-      }
-      registry.fill(HIST("eventcount"), 5.5);
-      if (cfgGapSideMerge) {
-        int gapSide = collision1.gapSide();
-        if (gapSide != 0 && gapSide != 1) {
-          continue;
-        }
-        int trueGapSide = sgSelector.trueGap(collision1, cfgCutFV0, cfgCutFT0A, cfgCutFT0C, cfgCutZDC);
-        int gapSide1 = trueGapSide;
-        if (gapSide1 != 0 && gapSide1 != 1) {
-          continue;
-        }
-      }
-      if (!cfgGapSideMerge) {
-        int trueGapSide = sgSelector.trueGap(collision1, cfgCutFV0, cfgCutFT0A, cfgCutFT0C, cfgCutZDC);
-        int gapSide1 = trueGapSide;
-        if (gapSide1 != cfgGapSide) {
-          continue;
-        }
-      }
-      if (cfgGapSideMerge) {
-        int gapSide = collision2.gapSide();
-        if (gapSide != 0 && gapSide != 1) {
-          continue;
-        }
-        int trueGapSide = sgSelector.trueGap(collision2, cfgCutFV0, cfgCutFT0A, cfgCutFT0C, cfgCutZDC);
-        int gapSide2 = trueGapSide;
-        if (gapSide2 != 0 && gapSide2 != 1) {
-          continue;
-        }
-      }
-      if (!cfgGapSideMerge) {
-        int trueGapSide = sgSelector.trueGap(collision2, cfgCutFV0, cfgCutFT0A, cfgCutFT0C, cfgCutZDC);
-        int gapSide2 = trueGapSide;
-        if (gapSide2 != cfgGapSide) {
-          continue;
-        }
-      }
-      registry.fill(HIST("eventcount"), 6.5);
-      float vtxz = collision1.posZ();
-      if (cfgIfVertex && abs(vtxz) > cfgZVtxCut) {
-        continue;
-      }
-      int occupancy = collision1.occupancyInTime();
-      if (cfgEvSelOccupancy && (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh)) {
-        continue;
-      }
-      vtxz = collision2.posZ();
-      if (cfgIfVertex && abs(vtxz) > cfgZVtxCut) {
-        continue;
-      }
-      occupancy = collision2.occupancyInTime();
-      if (cfgEvSelOccupancy && (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh)) {
-        continue;
-      }
-      registry.fill(HIST("eventcount"), MixedFinal);
+      registry.fill(HIST("eventcount_same"), 4.5);
       fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks1, tracks2, collision1.posZ(), MixedEvent, collision1.runNumber()); // fill the ME histogram and Sparse
     }
   }

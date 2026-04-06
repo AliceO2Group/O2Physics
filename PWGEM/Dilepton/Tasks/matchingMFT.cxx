@@ -13,36 +13,50 @@
 /// \brief a task to study matching MFT-[MCH-MID] in MC
 /// \author daiki.sekihata@cern.ch
 
-#include "TableHelper.h"
-
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
-#include "Common/Core/RecoDecay.h"
 #include "Common/Core/fwdtrackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/Propagator.h"
-#include "Field/MagneticField.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/DataTypes.h"
-#include "Framework/runDataProcessing.h"
-#include "GlobalTracking/MatchGlobalFwd.h"
-#include "MCHTracking/TrackExtrap.h"
-#include "MCHTracking/TrackParam.h"
-#include "ReconstructionDataFormats/TrackFwd.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <DetectorsBase/Propagator.h>
+#include <Field/MagneticField.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
+#include <MCHTracking/TrackExtrap.h>
+#include <MathUtils/Utils.h>
+#include <ReconstructionDataFormats/GlobalFwdTrack.h>
+#include <ReconstructionDataFormats/TrackFwd.h>
 
-#include "TGeoGlobalMagField.h"
+#include <TGeoGlobalMagField.h>
+#include <TH1.h>
 
-#include <format>
+#include <array>
+#include <cmath>
+#include <cstdint>
 #include <map>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <unordered_map>
 #include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::soa;
@@ -52,7 +66,7 @@ using namespace o2::constants::physics;
 using namespace o2::aod::fwdtrackutils;
 
 struct matchingMFT {
-  using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::McCollisionLabels>;
+  using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs, aod::CentNGlobals, aod::McCollisionLabels>;
   using MyFwdTracks = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::McFwdTrackLabels>;
   using MyMFTTracks = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
 
@@ -97,17 +111,44 @@ struct matchingMFT {
   Configurable<float> matchingZ{"matchingZ", -77.5, "z position where matching is performed"};
   Configurable<bool> cfgApplyPreselectionInBestMatch{"cfgApplyPreselectionInBestMatch", false, "flag to apply preselection in find best match function"};
 
-  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
-  Configurable<float> cfgCentMin{"cfgCentMin", -1.f, "min. centrality"};
-  Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
-  Configurable<float> cfgZvtxMin{"cfgZvtxMin", -10.f, "min. Zvtx"};
-  Configurable<float> cfgZvtxMax{"cfgZvtxMax", 10.f, "max. Zvtx"};
+  struct : ConfigurableGroup {
+    std::string prefix = "eventcut_group";
+    Configurable<float> cfgZvtxMin{"cfgZvtxMin", -10.f, "min. Zvtx"};
+    Configurable<float> cfgZvtxMax{"cfgZvtxMax", +10.f, "max. Zvtx"};
+    Configurable<bool> cfgRequireSel8{"cfgRequireSel8", false, "require sel8 in event cut"};
+    Configurable<bool> cfgRequireFT0AND{"cfgRequireFT0AND", true, "require FT0AND in event cut"};
+    Configurable<bool> cfgRequireNoTFB{"cfgRequireNoTFB", true, "require No time frame border in event cut"};
+    Configurable<bool> cfgRequireNoITSROFB{"cfgRequireNoITSROFB", false, "require no ITS readout frame border in event cut"};
+    Configurable<bool> cfgRequireNoSameBunchPileup{"cfgRequireNoSameBunchPileup", false, "require no same bunch pileup in event cut"};
+    Configurable<bool> cfgRequireVertexITSTPC{"cfgRequireVertexITSTPC", false, "require Vertex ITSTPC in event cut"};             // ITS-TPC matched track contributes PV.
+    Configurable<bool> cfgRequireVertexTOFmatched{"cfgRequireVertexTOFmatched", false, "require Vertex TOFmatched in event cut"}; // ITS-TPC-TOF matched track contributes PV.
+    Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
+    Configurable<int> cfgTrackOccupancyMin{"cfgTrackOccupancyMin", -2, "min. occupancy"};
+    Configurable<int> cfgTrackOccupancyMax{"cfgTrackOccupancyMax", 1000000000, "max. occupancy"};
+    Configurable<float> cfgFT0COccupancyMin{"cfgFT0COccupancyMin", -2, "min. FT0C occupancy"};
+    Configurable<float> cfgFT0COccupancyMax{"cfgFT0COccupancyMax", 1000000000, "max. FT0C occupancy"};
 
-  // for RCT
-  Configurable<bool> cfgRequireGoodRCT{"cfgRequireGoodRCT", false, "require good detector flag in run condtion table"};
-  Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT_muon_glo", "select 1 [CBT_muon, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
-  Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "set ZDC flag for PbPb"};
-  Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
+    // Configurable<bool> cfgRequireNoCollInTimeRangeStandard{"cfgRequireNoCollInTimeRangeStandard", false, "require no collision in time range standard"};
+    // Configurable<bool> cfgRequireNoCollInTimeRangeStrict{"cfgRequireNoCollInTimeRangeStrict", false, "require no collision in time range strict"};
+    // Configurable<bool> cfgRequireNoCollInITSROFStandard{"cfgRequireNoCollInITSROFStandard", false, "require no collision in time range standard"};
+    // Configurable<bool> cfgRequireNoCollInITSROFStrict{"cfgRequireNoCollInITSROFStrict", false, "require no collision in time range strict"};
+    // Configurable<bool> cfgRequireNoHighMultCollInPrevRof{"cfgRequireNoHighMultCollInPrevRof", false, "require no HM collision in previous ITS ROF"};
+    // Configurable<bool> cfgRequireGoodITSLayer3{"cfgRequireGoodITSLayer3", false, "number of inactive chips on ITS layer 3 are below threshold "};
+    // Configurable<bool> cfgRequireGoodITSLayer0123{"cfgRequireGoodITSLayer0123", false, "number of inactive chips on ITS layers 0-3 are below threshold "};
+    // Configurable<bool> cfgRequireGoodITSLayersAll{"cfgRequireGoodITSLayersAll", false, "number of inactive chips on all ITS layers are below threshold "};
+
+    // for RCT
+    Configurable<bool> cfgRequireGoodRCT{"cfgRequireGoodRCT", false, "require good detector flag in run condtion table"};
+    Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT_muon_glo", "select 1 [CBT_muon, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
+    Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "set ZDC flag for PbPb"};
+    Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
+
+    Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2, NTPV:3, NGlobal:4"};
+    Configurable<float> cfgCentMin{"cfgCentMin", -1, "min. centrality"};
+    Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
+    // Configurable<uint16_t> cfgNumContribMin{"cfgNumContribMin", 0, "min. numContrib"};
+    // Configurable<uint16_t> cfgNumContribMax{"cfgNumContribMax", 65000, "max. numContrib"};
+  } eventcuts;
 
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
 
@@ -125,7 +166,7 @@ struct matchingMFT {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
     ccdbApi.init(ccdburl);
-    rctChecker.init(cfgRCTLabel.value, cfgCheckZDC.value, cfgTreatLimitedAcceptanceAsBad.value);
+    rctChecker.init(eventcuts.cfgRCTLabel.value, eventcuts.cfgCheckZDC.value, eventcuts.cfgTreatLimitedAcceptanceAsBad.value);
 
     addHistograms();
   }
@@ -186,6 +227,8 @@ struct matchingMFT {
     fRegistry.add("Event/hCentFT0A", "hCentFT0A;centrality FT0A (%)", kTH1F, {{110, 0, 110}}, false);
     fRegistry.add("Event/hCentFT0C", "hCentFT0C;centrality FT0C (%)", kTH1F, {{110, 0, 110}}, false);
     fRegistry.add("Event/hCentFT0M", "hCentFT0M;centrality FT0M (%)", kTH1F, {{110, 0, 110}}, false);
+    fRegistry.add("Event/hCentNTPV", "hCentNTPV;centrality NTPV (%)", kTH1F, {{110, 0, 110}}, false);
+    fRegistry.add("Event/hCentNGlo", "hCentNGlo;centrality NGlo (%)", kTH1F, {{110, 0, 110}}, false);
     fRegistry.add("Event/hCentFT0CvsMultNTracksPV", "hCentFT0CvsMultNTracksPV;centrality FT0C (%);N_{track} to PV", kTH2F, {{110, 0, 110}, {600, 0, 6000}}, false);
     fRegistry.add("Event/hMultFT0CvsMultNTracksPV", "hMultFT0CvsMultNTracksPV;mult. FT0C;N_{track} to PV", kTH2F, {{60, 0, 60000}, {600, 0, 6000}}, false);
 
@@ -199,8 +242,8 @@ struct matchingMFT {
     const AxisSpec axis_pt{{0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 9, 10}, "p_{T}^{gl} (GeV/c)"};
 
     fRegistry.add("MFTMCHMID/primary/correct/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{100, 0.0f, 10}}, false);
-    fRegistry.add("MFTMCHMID/primary/correct/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {80, -5.f, -1.f}}, false);
-    fRegistry.add("MFTMCHMID/primary/correct/hEtaPhi_MatchedMCHMID", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {80, -5.f, -1.f}}, false);
+    fRegistry.add("MFTMCHMID/primary/correct/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {200, -4.f, -2.f}}, false);
+    fRegistry.add("MFTMCHMID/primary/correct/hEtaPhi_MatchedMCHMID", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {200, -4.f, -2.f}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hsDelta", "diff. between GL and associated SA;p_{T}^{gl} (GeV/c);(p_{T}^{sa} - p_{T}^{gl})/p_{T}^{gl};#eta^{sa} - #eta^{gl};#varphi^{sa} - #varphi^{gl} (rad.);", kTHnSparseF, {axis_pt, {200, -0.5, +0.5}, {200, -1, +1}, {90, -M_PI / 4, M_PI / 4}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hsDeltaAtMP", "diff. XY between MFT and MCH-MID at MP;p_{T}^{gl} (GeV/c);X^{MCH-MID} - X^{MFT};Y^{MCH-MID} - Y^{MFT};", kTHnSparseF, {axis_pt, {100, -50, 50}, {100, -50, 50}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hDiffCollId", "difference in collision index;collisionId_{TTCA} - collisionId_{MP}", kTH1F, {{41, -20.5, +20.5}}, false);
@@ -214,7 +257,7 @@ struct matchingMFT {
     fRegistry.add("MFTMCHMID/primary/correct/hChi2MFT_Pt", "chi2 MFT/ndf;p_{T,#mu} (GeV/c);chi2 MFT/ndf", kTH2F, {{100, 0, 10}, {100, 0.0f, 10}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hChi2MatchMCHMID_Pt", "chi2 match MCH-MID;p_{T,#mu} (GeV/c);chi2", kTH2F, {{100, 0, 10}, {100, 0.0f, 100}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hChi2MatchMCHMFT_Pt", "chi2 match MCH-MFT;p_{T,#mu} (GeV/c);chi2", kTH2F, {{100, 0, 10}, {100, 0.0f, 100}}, false);
-    fRegistry.add("MFTMCHMID/primary/correct/hDCAxy2D", "DCA x vs. y;DCA_{x} (cm);DCA_{y} (cm)", kTH2F, {{200, -0.5, 0.5}, {200, -0.5, +0.5}}, false);
+    fRegistry.add("MFTMCHMID/primary/correct/hDCAxy2D", "DCA x vs. y;DCA_{x} (cm);DCA_{y} (cm)", kTH2F, {{200, -0.1, 0.1}, {200, -0.1, +0.1}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hDCAxy2DinSigma", "DCA x vs. y in sigma;DCA_{x} (#sigma);DCA_{y} (#sigma)", kTH2F, {{200, -10, 10}, {200, -10, +10}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hDCAxy", "DCAxy;DCA_{xy} (cm);", kTH1F, {{100, 0, 1}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hDCAxyinSigma", "DCAxy in sigma;DCA_{xy} (#sigma);", kTH1F, {{100, 0, 10}}, false);
@@ -227,7 +270,7 @@ struct matchingMFT {
     fRegistry.add("MFTMCHMID/primary/correct/hMIDBitMap", "MID bit map;MID bit map", kTH1F, {{256, -0.5, 255.5}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hdR_Chi2MatchMCHMFT", "dr vs. matching chi2 MCH-MFT;chi2 match MCH-MFT;#DeltaR;", kTH2F, {{200, 0, 50}, {200, 0, 0.5}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hCorrectAsocc", "correct fwdtrack-to-collision association", kTH1F, {{2, -0.5, +1.5}}, false);
-    fRegistry.add("MFTMCHMID/primary/correct/hIsCA", "cellular automaton;isCA", kTH1F, {{2, -0.5, 1.5}}, false);
+    fRegistry.add("MFTMCHMID/primary/correct/hIsCA", "cellular automaton;p_{T,#mu} (GeV/c);isCA", kTH2F, {{100, 0, 10}, {2, -0.5, 1.5}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hProdVtxZ", "prod. vtx Z of muon;V_{z} (cm)", kTH1F, {{200, -100, 100}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hRelDeltaPt", "pT resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{100, 0, 10}, {200, -1, +1}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hDeltaEta_Pos", "#eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{100, 0, 10}, {400, -0.2, +0.2}}, false);
@@ -238,12 +281,13 @@ struct matchingMFT {
     fRegistry.addClone("MFTMCHMID/primary/", "MFTMCHMID/secondary/");
 
     fRegistry.add("MFT/primary/hPt", "pT;p_{T} (GeV/c)", kTH1D, {{1000, 0.0f, 10}}, false);
-    fRegistry.add("MFT/primary/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2D, {{180, 0, 2 * M_PI}, {80, -5.f, -1.f}}, false);
+    fRegistry.add("MFT/primary/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2D, {{180, 0, 2 * M_PI}, {200, -4.f, -2.f}}, false);
+    fRegistry.add("MFT/primary/hXY", "inner most XY;X (cm);Y (cm)", kTH2D, {{300, -15, 15}, {300, -15, 15}}, false);
     fRegistry.add("MFT/primary/hSign", "sign;sign", kTH1D, {{3, -1.5, +1.5}}, false);
     fRegistry.add("MFT/primary/hChi2MFT", "chi2 MFT/ndf;chi2 MFT/ndf", kTH1D, {{100, 0.0f, 10}}, false);
     fRegistry.add("MFT/primary/hNclustersMFT", "NclustersMFT;Nclusters MFT", kTH1D, {{11, -0.5f, 10.5}}, false);
     fRegistry.add("MFT/primary/hMFTClusterMap", "MFT cluster map", kTH1D, {{1024, -0.5, 1023.5}}, false);
-    fRegistry.add("MFT/primary/hDCAxy2D", "DCA x vs. y;DCA_{x} (cm);DCA_{y} (cm)", kTH2D, {{200, -0.5, 0.5}, {200, -0.5, +0.5}}, false);
+    fRegistry.add("MFT/primary/hDCAxy2D", "DCA x vs. y;DCA_{x} (cm);DCA_{y} (cm)", kTH2D, {{200, -0.1, 0.1}, {200, -0.1, +0.1}}, false);
     fRegistry.add("MFT/primary/hDCAxy", "DCAxy;DCA_{xy} (cm);", kTH1D, {{100, 0, 1}}, false);
     fRegistry.add("MFT/primary/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm);", kTH2D, {{100, 0, 1}, {200, -0.1, 0.1}}, false);
     fRegistry.add("MFT/primary/hProdVtxZ", "prod. vtx Z of track;V_{z} (cm)", kTH1D, {{200, -100, 100}}, false);
@@ -253,8 +297,58 @@ struct matchingMFT {
     fRegistry.add("MFT/primary/hDeltaPhi_Pos", "#varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2D, {{200, 0, 10}, {400, -0.2, +0.2}}, false);
     fRegistry.add("MFT/primary/hDeltaPhi_Neg", "#varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2D, {{200, 0, 10}, {400, -0.2, +0.2}}, false);
     fRegistry.add("MFT/primary/hCorrectAsocc", "correct mfttrack-to-collision association", kTH1F, {{2, -0.5, +1.5}}, false);
-    fRegistry.add("MFT/primary/hIsCA", "cellular automaton;isCA", kTH1F, {{2, -0.5, 1.5}}, false);
+    fRegistry.add("MFT/primary/hIsCA", "cellular automaton;p_{T,#mu} (GeV/c);isCA", kTH2F, {{100, 0, 10}, {2, -0.5, 1.5}}, false);
     fRegistry.addClone("MFT/primary/", "MFT/secondary/");
+  }
+
+  template <typename TCollision>
+  bool isSelectedEvent(TCollision const& collision)
+  {
+    if (eventcuts.cfgRequireSel8 && !collision.sel8()) {
+      return false;
+    }
+
+    if (collision.posZ() < eventcuts.cfgZvtxMin || eventcuts.cfgZvtxMax < collision.posZ()) {
+      return false;
+    }
+
+    if (eventcuts.cfgRequireFT0AND && !collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+      return false;
+    }
+
+    if (eventcuts.cfgRequireNoTFB && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      return false;
+    }
+
+    if (eventcuts.cfgRequireNoITSROFB && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      return false;
+    }
+
+    if (eventcuts.cfgRequireNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      return false;
+    }
+
+    if (eventcuts.cfgRequireGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return false;
+    }
+
+    if (eventcuts.cfgRequireVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+      return false;
+    }
+
+    if (eventcuts.cfgRequireVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+      return false;
+    }
+
+    if (!(eventcuts.cfgTrackOccupancyMin <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < eventcuts.cfgTrackOccupancyMax)) {
+      return false;
+    }
+
+    if (!(eventcuts.cfgFT0COccupancyMin <= collision.ft0cOccupancyInTimeRange() && collision.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
+      return false;
+    }
+
+    return true;
   }
 
   bool isSelected(const float pt, const float eta, const float rAtAbsorberEnd, const float pDCA, const float chi2_per_ndf, const uint8_t trackType, const float dcaXY)
@@ -341,26 +435,6 @@ struct matchingMFT {
   //   } else {
   //     return 0.f;
   //   }
-  // }
-
-  // template <typename TCollision, typename TTrackParCovFwd>
-  // float cpaRZ(TCollision const& collision, TTrackParCovFwd const& fwdtrack)
-  // {
-  //   float lx = fwdtrack.getX() - collision.posX();  // flight length X
-  //   float ly = fwdtrack.getY() - collision.posY();  // flight length Y
-  //   float lz = fwdtrack.getZ() - collision.posZ();  // flight length Z
-  //   float lt = RecoDecay::sqrtSumOfSquares(lx, ly); // flight length R, i.e. transverse plane.
-
-  //   float pt = fwdtrack.getPt();
-  //   float pz = fwdtrack.getPz();
-
-  //   float cpaRZ = RecoDecay::dotProd(std::array{lt, lz}, std::array{pt, pz}) / (RecoDecay::sqrtSumOfSquares(lt, lz) * RecoDecay::sqrtSumOfSquares(pt, pz));
-  //   if (cpaRZ < -1.f) {
-  //     return -1.f;
-  //   } else if (cpaRZ > 1.f) {
-  //     return 1.f;
-  //   }
-  //   return cpaRZ;
   // }
 
   template <typename TFwdTracks, typename TMFTTracks, typename TCollision, typename TFwdTrack, typename TMFTrackCov>
@@ -584,7 +658,7 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hMCHBitMap"), fwdtrack.mchBitMap());
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hMIDBitMap"), fwdtrack.midBitMap());
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hCorrectAsocc"), mcParticle_MCHMID.mcCollisionId() == collision.mcCollisionId());
-        fRegistry.fill(HIST("MFTMCHMID/primary/correct/hIsCA"), mfttrack.isCA());
+        fRegistry.fill(HIST("MFTMCHMID/primary/correct/hIsCA"), pt, mfttrack.isCA());
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAxResolutionvsPt"), pt, std::sqrt(cXX) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAyResolutionvsPt"), pt, std::sqrt(cYY) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAxyResolutionvsPt"), pt, sigma_dcaXY * 1e+4);   // convert cm to um
@@ -624,7 +698,7 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hMCHBitMap"), fwdtrack.mchBitMap());
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hMIDBitMap"), fwdtrack.midBitMap());
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hCorrectAsocc"), mcParticle_MCHMID.mcCollisionId() == collision.mcCollisionId());
-        fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hIsCA"), mfttrack.isCA());
+        fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hIsCA"), pt, mfttrack.isCA());
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAxResolutionvsPt"), pt, std::sqrt(cXX) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAyResolutionvsPt"), pt, std::sqrt(cYY) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAxyResolutionvsPt"), pt, sigma_dcaXY * 1e+4);   // convert cm to um
@@ -666,7 +740,7 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hMCHBitMap"), fwdtrack.mchBitMap());
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hMIDBitMap"), fwdtrack.midBitMap());
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hCorrectAsocc"), mcParticle_MCHMID.mcCollisionId() == collision.mcCollisionId());
-        fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hIsCA"), mfttrack.isCA());
+        fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hIsCA"), pt, mfttrack.isCA());
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAxResolutionvsPt"), pt, std::sqrt(cXX) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAyResolutionvsPt"), pt, std::sqrt(cYY) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAxyResolutionvsPt"), pt, sigma_dcaXY * 1e+4);   // convert cm to um
@@ -706,7 +780,7 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hMCHBitMap"), fwdtrack.mchBitMap());
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hMIDBitMap"), fwdtrack.midBitMap());
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hCorrectAsocc"), mcParticle_MCHMID.mcCollisionId() == collision.mcCollisionId());
-        fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hIsCA"), mfttrack.isCA());
+        fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hIsCA"), pt, mfttrack.isCA());
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAxResolutionvsPt"), pt, std::sqrt(cXX) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAyResolutionvsPt"), pt, std::sqrt(cYY) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAxyResolutionvsPt"), pt, sigma_dcaXY * 1e+4);   // convert cm to um
@@ -734,6 +808,8 @@ struct matchingMFT {
     fRegistry.fill(HIST("Event/hCentFT0A"), collision.centFT0A());
     fRegistry.fill(HIST("Event/hCentFT0C"), collision.centFT0C());
     fRegistry.fill(HIST("Event/hCentFT0M"), collision.centFT0M());
+    fRegistry.fill(HIST("Event/hCentNTPV"), collision.centNTPV());
+    fRegistry.fill(HIST("Event/hCentNGlo"), collision.centNGlobal());
     fRegistry.fill(HIST("Event/hCentFT0CvsMultNTracksPV"), collision.centFT0C(), collision.multNTracksPV());
     fRegistry.fill(HIST("Event/hMultFT0CvsMultNTracksPV"), collision.multFT0C(), collision.multNTracksPV());
   }
@@ -872,11 +948,11 @@ struct matchingMFT {
       if (!collision.has_mcCollision()) {
         continue;
       }
-      if (cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
+      if (eventcuts.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
         continue;
       }
-      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
-      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+      float centralities[5] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV(), collision.centNGlobal()};
+      if (centralities[eventcuts.cfgCentEstimator] < eventcuts.cfgCentMin || eventcuts.cfgCentMax < centralities[eventcuts.cfgCentEstimator]) {
         continue;
       }
 
@@ -946,6 +1022,7 @@ struct matchingMFT {
         if (isPrimary) {
           fRegistry.fill(HIST("MFT/primary/hPt"), pt);
           fRegistry.fill(HIST("MFT/primary/hEtaPhi"), phi, eta);
+          fRegistry.fill(HIST("MFT/primary/hXY"), mfttrack.x(), mfttrack.y());
           fRegistry.fill(HIST("MFT/primary/hSign"), mfttrack.sign());
           fRegistry.fill(HIST("MFT/primary/hNclustersMFT"), mfttrack.nClusters());
           fRegistry.fill(HIST("MFT/primary/hChi2MFT"), mfttrack.chi2() / ndf);
@@ -954,7 +1031,7 @@ struct matchingMFT {
           fRegistry.fill(HIST("MFT/primary/hDCAxy"), dcaXY);
           fRegistry.fill(HIST("MFT/primary/hDCAxyz"), dcaXY, dcaZ);
           fRegistry.fill(HIST("MFT/primary/hCorrectAsocc"), mcParticle.mcCollisionId() == collision.mcCollisionId());
-          fRegistry.fill(HIST("MFT/primary/hIsCA"), mfttrack.isCA());
+          fRegistry.fill(HIST("MFT/primary/hIsCA"), pt, mfttrack.isCA());
 
           fRegistry.fill(HIST("MFT/primary/hProdVtxZ"), mcParticle.vz());
           fRegistry.fill(HIST("MFT/primary/hRelDeltaPt"), mcParticle.pt(), (pt - mcParticle.pt()) / mcParticle.pt());
@@ -969,6 +1046,7 @@ struct matchingMFT {
         } else {
           fRegistry.fill(HIST("MFT/secondary/hPt"), pt);
           fRegistry.fill(HIST("MFT/secondary/hEtaPhi"), phi, eta);
+          fRegistry.fill(HIST("MFT/secondary/hXY"), mfttrack.x(), mfttrack.y());
           fRegistry.fill(HIST("MFT/secondary/hSign"), mfttrack.sign());
           fRegistry.fill(HIST("MFT/secondary/hNclustersMFT"), mfttrack.nClusters());
           fRegistry.fill(HIST("MFT/secondary/hChi2MFT"), mfttrack.chi2() / ndf);
@@ -977,7 +1055,7 @@ struct matchingMFT {
           fRegistry.fill(HIST("MFT/secondary/hDCAxy"), dcaXY);
           fRegistry.fill(HIST("MFT/secondary/hDCAxyz"), dcaXY, dcaZ);
           fRegistry.fill(HIST("MFT/secondary/hCorrectAsocc"), mcParticle.mcCollisionId() == collision.mcCollisionId());
-          fRegistry.fill(HIST("MFT/secondary/hIsCA"), mfttrack.isCA());
+          fRegistry.fill(HIST("MFT/secondary/hIsCA"), pt, mfttrack.isCA());
 
           fRegistry.fill(HIST("MFT/secondary/hProdVtxZ"), mcParticle.vz());
           fRegistry.fill(HIST("MFT/secondary/hRelDeltaPt"), mcParticle.pt(), (pt - mcParticle.pt()) / mcParticle.pt());
@@ -1002,8 +1080,8 @@ struct matchingMFT {
   Preslice<aod::FwdTrackAssoc> fwdtrackIndicesPerCollision = aod::track_association::collisionId;
   PresliceUnsorted<aod::FwdTrackAssoc> fwdtrackIndicesPerFwdTrack = aod::track_association::fwdtrackId;
 
-  Filter collisionFilter_evsel = o2::aod::evsel::sel8 == true && (cfgZvtxMin < o2::aod::collision::posZ && o2::aod::collision::posZ < cfgZvtxMax);
-  Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
+  Filter collisionFilter_evsel = eventcuts.cfgZvtxMin < o2::aod::collision::posZ && o2::aod::collision::posZ < eventcuts.cfgZvtxMax;
+  Filter collisionFilter_centrality = (eventcuts.cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < eventcuts.cfgCentMax) || (eventcuts.cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < eventcuts.cfgCentMax) || (eventcuts.cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < eventcuts.cfgCentMax);
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 
   void processWithoutFTTCA(FilteredMyCollisions const& collisions, MyFwdTracks const& fwdtracks, MyMFTTracks const& mfttracks, aod::BCsWithTimestamps const&, aod::McParticles const&)
@@ -1028,11 +1106,16 @@ struct matchingMFT {
       if (!collision.has_mcCollision()) {
         continue;
       }
-      if (cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
+
+      if (!isSelectedEvent(collision)) {
         continue;
       }
-      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
-      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+
+      if (eventcuts.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
+        continue;
+      }
+      float centralities[5] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV(), collision.centNGlobal()};
+      if (centralities[eventcuts.cfgCentEstimator] < eventcuts.cfgCentMin || eventcuts.cfgCentMax < centralities[eventcuts.cfgCentEstimator]) {
         continue;
       }
       fRegistry.fill(HIST("Event/hCollisionCounter"), 1);
@@ -1081,11 +1164,14 @@ struct matchingMFT {
       if (!collision.has_mcCollision()) {
         continue;
       }
-      if (cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
+      if (!isSelectedEvent(collision)) {
         continue;
       }
-      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
-      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+      if (eventcuts.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
+        continue;
+      }
+      float centralities[5] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV(), collision.centNGlobal()};
+      if (centralities[eventcuts.cfgCentEstimator] < eventcuts.cfgCentMin || eventcuts.cfgCentMax < centralities[eventcuts.cfgCentEstimator]) {
         continue;
       }
       fRegistry.fill(HIST("Event/hCollisionCounter"), 1);
@@ -1141,11 +1227,14 @@ struct matchingMFT {
       if (!collision.has_mcCollision()) {
         continue;
       }
-      if (cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
+      if (!isSelectedEvent(collision)) {
         continue;
       }
-      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
-      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+      if (eventcuts.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
+        continue;
+      }
+      float centralities[5] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV(), collision.centNGlobal()};
+      if (centralities[eventcuts.cfgCentEstimator] < eventcuts.cfgCentMin || eventcuts.cfgCentMax < centralities[eventcuts.cfgCentEstimator]) {
         continue;
       }
       fRegistry.fill(HIST("Event/hCollisionCounter"), 1);

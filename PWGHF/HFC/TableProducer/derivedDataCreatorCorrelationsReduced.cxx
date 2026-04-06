@@ -46,6 +46,7 @@
 #include <TF1.h>
 #include <TString.h>
 
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <string>
@@ -263,6 +264,26 @@ struct HfDerivedDataCreatorCorrelationsReduced {
     return outputMl;
   }
 
+  /// Cut on rapidity of the candidate
+  /// \param candidate is the charm hadron candidate
+  template <CandidateType CandType, typename TCand>
+  bool cutCandRapidity(const TCand& candidate)
+  {
+    double y = 0.0;
+    if constexpr (CandType == CandidateType::DsToKKPi || CandType == CandidateType::DsToPiKK) {
+      y = HfHelper::yDs(candidate);
+    } else if constexpr (CandType == CandidateType::DplusToPiKPi) {
+      y = HfHelper::yDplus(candidate);
+    } else if constexpr (CandType == CandidateType::D0ToPiK || CandType == CandidateType::D0ToKPi) {
+      y = HfHelper::yD0(candidate);
+    } else if constexpr (CandType == CandidateType::LcToPKPi) {
+      y = HfHelper::yLc(candidate);
+    } else {
+      return true;
+    }
+    return std::fabs(y) < yCandMax;
+  }
+
   /// Check event selections for collision and fill the collision table
   /// \param collision is the collision
   template <typename Coll>
@@ -335,6 +356,9 @@ struct HfDerivedDataCreatorCorrelationsReduced {
                      const float collCentrality)
   {
     for (const auto& trigCand : trigCands) {
+      if (!cutCandRapidity<CandType>(trigCand)) {
+        continue;
+      }
       double trigCandPt = trigCand.pt();
       registry.fill(HIST("hPhiVsPtTrig"), RecoDecay::constrainAngle(trigCand.phi(), -o2::constants::math::PIHalf), trigCandPt);
       registry.fill(HIST("hEtaVsPtTrig"), trigCand.eta(), trigCandPt);
@@ -388,6 +412,9 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   void fillCharmMixedEvent(TTrigCands const& trigCands)
   {
     for (const auto& trigCand : trigCands) {
+      if (!cutCandRapidity<CandType>(trigCand)) {
+        continue;
+      }
       registry.fill(HIST("hPhiVsPtTrig"), RecoDecay::constrainAngle(trigCand.phi(), -o2::constants::math::PIHalf), trigCand.pt());
       registry.fill(HIST("hEtaVsPtTrig"), trigCand.eta(), trigCand.pt());
 

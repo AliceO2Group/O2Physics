@@ -34,7 +34,6 @@
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
-#include <MathUtils/BetheBlochAleph.h>
 #include <DetectorsBase/Propagator.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -43,6 +42,7 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
+#include <MathUtils/BetheBlochAleph.h>
 
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
@@ -640,6 +640,15 @@ class HfFilterHelper
       mSigmaPars3Prongs[1] = 0.00176f;
       mDeltaMassPars3Prongs[0] = -0.013f;
       mDeltaMassPars3Prongs[1] = 0.00029f;
+    } else if (recoPass == "2026_pass1") {
+      mSigmaPars2Prongs[0] = 0.01424f;
+      mSigmaPars2Prongs[1] = 0.00178f;
+      mDeltaMassPars2Prongs[0] = 0.004f;
+      mDeltaMassPars2Prongs[1] = 0.0001f;
+      mSigmaPars3Prongs[0] = 0.00796f;
+      mSigmaPars3Prongs[1] = 0.00176f;
+      mDeltaMassPars3Prongs[0] = 0.004f;
+      mDeltaMassPars3Prongs[1] = 0.0001f;
     } else {
       LOGP(fatal, "Mass resolution parametrisation {} not supported! Please set 2023_pass3", recoPass.data());
     }
