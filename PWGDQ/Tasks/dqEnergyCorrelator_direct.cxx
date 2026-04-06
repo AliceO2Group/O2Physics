@@ -728,7 +728,7 @@ struct AnalysisEnergyCorrelator {
   }
 
   Filter eventFilter = nabs(aod::collision::posZ) < fConfigEventOptions.fConfigEventfilterVtz && aod::evsel::sel8 == true;
-  void processBarrelMixedEvent(soa::Filtered<MyEvents>& events, aod::TrackAssoc const& assocs, MyBarrelTracksWithCov const& /*tracks*/, aod::McCollisions const& /*mcCollisions*/, aod::McParticles const& mcParticles, BCsWithTimestamps const& bcs)
+  void processBarrelMixedEvent(soa::Filtered<MyEvents> const& events, aod::TrackAssoc const& assocs, MyBarrelTracksWithCov const& /*tracks*/, aod::McCollisions const& /*mcCollisions*/, aod::McParticles const& mcParticles, BCsWithTimestamps const& bcs)
   {
     if (events.size() == 0) {
       return;
@@ -927,7 +927,7 @@ struct AnalysisEnergyCorrelator {
     }
   }
 
-  void processMCGenEnergyCorrelators(soa::Filtered<MyEvents>& events,
+  void processMCGenEnergyCorrelators(soa::Filtered<MyEvents> const& events,
                                      McCollisions const& /*mcEvents*/, McParticles const& mcTracks, BCsWithTimestamps const& bcs)
   {
     if (events.size() == 0) {
@@ -957,7 +957,7 @@ struct AnalysisEnergyCorrelator {
     }
   }
 
-  void processMCGenEnergyCorrelatorsME(soa::Filtered<MyEvents>& events,
+  void processMCGenEnergyCorrelatorsME(soa::Filtered<MyEvents> const& events,
                                        McCollisions const& /*mcEvents*/, McParticles const& mcTracks, BCsWithTimestamps const& bcs)
   {
     if (events.size() == 0) {
@@ -991,7 +991,7 @@ struct AnalysisEnergyCorrelator {
     }
   }
 
-  void processMCGenEnergyCorrelatorsPion(soa::Filtered<MyEvents>& events,
+  void processMCGenEnergyCorrelatorsPion(soa::Filtered<MyEvents> const& events,
                                          McCollisions const& /*mcEvents*/, McParticles const& mcTracks, BCsWithTimestamps const& bcs)
   {
     if (events.size() == 0) {
@@ -1021,7 +1021,7 @@ struct AnalysisEnergyCorrelator {
     }
   }
 
-  void processMCGenEnergyCorrelatorsPionME(soa::Filtered<MyEvents>& events,
+  void processMCGenEnergyCorrelatorsPionME(soa::Filtered<MyEvents> const& events,
                                            McCollisions const& /*mcEvents*/, McParticles const& mcTracks, BCsWithTimestamps const& bcs)
   {
     if (events.size() == 0) {
