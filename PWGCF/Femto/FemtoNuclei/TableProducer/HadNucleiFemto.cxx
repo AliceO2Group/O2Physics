@@ -1110,7 +1110,7 @@ struct HadNucleiFemto {
   }
 
   template <typename Tcoll>
-  void fillKstar(const HadNucandidate& hadNucand, const Tcoll& collision)
+  void fillKstar(const HadNucandidate& hadNucand, const Tcoll& /*collision*/)
   {
     if (hadNucand.isBkgUS == 0) {
       if (hadNucand.recoPtNu() > 0) {
