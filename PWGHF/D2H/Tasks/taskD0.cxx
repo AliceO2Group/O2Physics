@@ -105,7 +105,6 @@ struct HfTaskD0 {
   HfUpcGapThresholds upcThresholds; // UPC gap determination thresholds
   ctpRateFetcher mRateFetcher;
 
-
   SliceCache cache;
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
@@ -477,7 +476,6 @@ struct HfTaskD0 {
     registry.add("QAtracks/hITSNCls_GapC", "Gap C; TPC Cls", {HistType::kTH1F, {{8, -1., 7.}}});
     registry.add("QAtracks/hDCAxy_GapC", "Gap C; DCA xy", {HistType::kTH1F, {{400, -2, 2.}}});
     registry.add("QAtracks/hDCAz_GapC", "Gap C; DCA z", {HistType::kTH1F, {{400, -4, 4.}}});
-
 
     hfEvSel.addHistograms(registry);
 
