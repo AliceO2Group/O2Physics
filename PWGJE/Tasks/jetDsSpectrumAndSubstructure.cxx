@@ -221,7 +221,7 @@ struct JetDsSpecSubs {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
-    for (auto& jet : jets) {
+    for (const auto& jet : jets) {
       registry.fill(HIST("h_jet_pt"), jet.pt());
       registry.fill(HIST("h_jet_eta"), jet.eta());
       registry.fill(HIST("h_jet_phi"), jet.phi());
