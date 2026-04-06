@@ -14,7 +14,7 @@
 // This task is used to reconstruct and analyse jets containing charged D_s
 // mesons
 //
-/// \author Monalisa Melo <monalisa.melo@cern.ch>
+/// \author Monalisa Melo <monalisa.melo@cern.ch>, Universidade de São Paulo
 //
 
 #include "PWGHF/Core/DecayChannels.h"
@@ -105,13 +105,14 @@ struct JetDsSpecSubs {
       {"h_jet_eta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
       {"h_jet_phi", "jet #phi;#phi_{jet};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}},
       {"h_collision_counter", "# of collisions;", {HistType::kTH1F, {{200, 0., 200.}}}},
-      {"h_jet_counter", ";# of D_{S} jets;", {HistType::kTH1F, {{6, 0., 3.0}}}},
+      {"h_jet_counter", ";type;counts", {HistType::kTH1F, {{2, 0., 2.}}}},
       {"h_ds_jet_projection", ";z^{D_{S},jet}_{||};dN/dz^{D_{S},jet}_{||}", {HistType::kTH1F, {{1000, 0., 2.}}}},
       {"h_ds_jet_distance_vs_projection", ";#DeltaR_{D_{S},jet};z^{D_{S},jet}_{||}", {HistType::kTH2F, {{1000, 0., 1.}, {1000, 0., 2.}}}},
       {"h_ds_jet_distance", ";#DeltaR_{D_{S},jet};dN/d(#DeltaR)", {HistType::kTH1F, {{1000, 0., 1.}}}},
       {"h_ds_jet_pt", ";p_{T,D_{S} jet};dN/dp_{T,D_{S} jet}", {HistType::kTH1F, {{1000, 0., 100.}}}},
       {"h_ds_jet_eta", ";#eta_{D_{S} jet};entries", {HistType::kTH1F, {{250, -1., 1.}}}},
       {"h_ds_jet_phi", ";#phi_{D_{S} jet};entries", {HistType::kTH1F, {{250, -1., 7.}}}},
+      {"hSparse_ds", ";m_{D_{S}};p_{T,D_{S}};z^{D_{S},jet}_{||};#DeltaR_{D_{S},jet}", {HistType::kTHnSparseF, {{60, 1.7, 2.1}, {60, 0., 100.}, {60, 0., 2.}, {60, 0., 1.0}}}},
       {"h_ds_mass", ";m_{D_{S}} (GeV/c^{2});entries", {HistType::kTH1F, {{1000, 0., 6.}}}},
       {"h_ds_eta", ";#eta_{D_{S}};entries", {HistType::kTH1F, {{250, -1., 1.}}}},
       {"h_ds_phi", ";#phi_{D_{S}};entries", {HistType::kTH1F, {{250, -1., 7.}}}},
@@ -123,8 +124,6 @@ struct JetDsSpecSubs {
       {"h2_dsjet_pt_lambda12", ";#it{p}_{T,jet} (GeV/#it{c});#lambda_{2}^{1}", {HistType::kTH2F, {{100, 0., 100.}, {200, 0., 1.0}}}},
       {"h2_dsjet_pt_mass", ";#it{p}_{T,jet} (GeV/#it{c});m_{jet}^{ch} (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, 0., 100.}, {200, 0., 50.0}}}},
       {"h2_dsjet_pt_girth", ";#it{p}_{T,jet} (GeV/#it{c});g", {HistType::kTH2F, {{100, 0., 100.}, {200, 0., 0.5}}}},
-      {"h_ds_jet_lambda_extra", ";#lambda_{#alpha}^{#kappa};entries", {HistType::kTH1F, {{200, 0., 1.0}}}},
-      {"h2_dsjet_pt_lambda_extra", ";#it{p}_{T,jet} (GeV/#it{c});#lambda_{#alpha}^{#kappa}", {HistType::kTH2F, {{100, 0., 100.}, {200, 0., 1.0}}}},
     }};
 
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
@@ -133,12 +132,6 @@ struct JetDsSpecSubs {
 
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
-
-  // extra angularity knob
-  Configurable<float> kappa{"kappa", 1.0f, "angularity kappa"};
-  Configurable<float> alpha{"alpha", 1.0f, "angularity alpha"};
-
-  bool doExtraAngularity = false;
 
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
@@ -194,9 +187,9 @@ struct JetDsSpecSubs {
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
 
-    const bool is11 = (std::abs(kappa.value - 1.f) < 1e-6f) && (std::abs(alpha.value - 1.f) < 1e-6f);
-    const bool is12 = (std::abs(kappa.value - 1.f) < 1e-6f) && (std::abs(alpha.value - 2.f) < 1e-6f);
-    doExtraAngularity = !(is11 || is12);
+    auto h = registry.get<TH1>(HIST("h_jet_counter"));
+    h->GetXaxis()->SetBinLabel(1, "All jets");
+    h->GetXaxis()->SetBinLabel(2, "Ds-tagged jets");
   }
 
   Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r == nround(jetR.node() * 100.0f);
@@ -208,6 +201,7 @@ struct JetDsSpecSubs {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
+
     registry.fill(HIST("h_collisions"), 1.5);
 
     for (auto const& track : tracks) {
@@ -248,59 +242,52 @@ struct JetDsSpecSubs {
     registry.fill(HIST("h_collision_counter"), 3.0);
 
     for (const auto& jet : jets) {
+
       registry.fill(HIST("h_jet_counter"), 0.5);
+
+      bool hasDs = false;
 
       TVector3 jetVector(jet.px(), jet.py(), jet.pz());
 
+      // Compute jet-level quantities once (independent of Ds candidates)
+      auto jetTracks = jet.tracks_as<aod::JetTracks>();
+
+      const float lambda11 = computeLambda(jet, jetTracks, 1.f, 1.f);
+      const float lambda12 = computeLambda(jet, jetTracks, 2.f, 1.f);
+      const float mjet = computeJetMassFromTracksMass(jetTracks);
+
+      const float R = jet.r() / 100.f;
+      const float girth = (lambda11 >= 0.f) ? (lambda11 * R) : -1.f;
+
+      // Loop over Ds candidates (particle level)
       for (const auto& dsCandidate : jet.candidates_as<aod::CandidatesDsData>()) {
+
+        hasDs = true;
+
         TVector3 dsVector(dsCandidate.px(), dsCandidate.py(), dsCandidate.pz());
 
+        // zParallel defined as longitudinal momentum fraction along the jet axis
         const double zParallel = (jetVector * dsVector) / (jetVector * jetVector);
         const double axisDistance = jetutilities::deltaR(jet, dsCandidate);
 
+        // --- Ds-level observables ---
         registry.fill(HIST("h_ds_jet_projection"), zParallel);
         registry.fill(HIST("h_ds_jet_distance_vs_projection"), axisDistance, zParallel);
         registry.fill(HIST("h_ds_jet_distance"), axisDistance);
-        registry.fill(HIST("h_ds_jet_pt"), jet.pt());
-        registry.fill(HIST("h_ds_jet_eta"), jet.eta());
-        registry.fill(HIST("h_ds_jet_phi"), jet.phi());
+
         registry.fill(HIST("h_ds_mass"), dsCandidate.m());
         registry.fill(HIST("h_ds_eta"), dsCandidate.eta());
         registry.fill(HIST("h_ds_phi"), dsCandidate.phi());
 
-        auto jetTracks = jet.tracks_as<aod::JetTracks>();
+        const float mass = dsCandidate.m();
+        const float pt = dsCandidate.pt();
+        const float z = zParallel;
+        const float dR = axisDistance;
 
-        const float lambda11 = computeLambda(jet, jetTracks, 1.f, 1.f);
-        const float lambda12 = computeLambda(jet, jetTracks, 2.f, 1.f); // thrust = λ_2^1
-        const float mjet = computeJetMassFromTracksMass(jetTracks);
+        // Main THnSparse: invariant mass, pT, z, and ΔR
+        registry.fill(HIST("hSparse_ds"), mass, pt, z, dR);
 
-        const float R = jet.r() / 100.f;
-        const float girth = (lambda11 >= 0.f) ? (lambda11 * R) : -1.f;
-
-        if (lambda11 >= 0.f) {
-          registry.fill(HIST("h_ds_jet_lambda11"), lambda11);
-          registry.fill(HIST("h2_dsjet_pt_lambda11"), jet.pt(), lambda11);
-        }
-        if (lambda12 >= 0.f) {
-          registry.fill(HIST("h_ds_jet_lambda12"), lambda12);
-          registry.fill(HIST("h2_dsjet_pt_lambda12"), jet.pt(), lambda12);
-        }
-        registry.fill(HIST("h_ds_jet_mass"), mjet);
-        registry.fill(HIST("h2_dsjet_pt_mass"), jet.pt(), mjet);
-
-        if (girth >= 0.f) {
-          registry.fill(HIST("h_ds_jet_girth"), girth);
-          registry.fill(HIST("h2_dsjet_pt_girth"), jet.pt(), girth);
-        }
-
-        if (doExtraAngularity) {
-          const float lambdaExtra = computeLambda(jet, jetTracks, alpha.value, kappa.value);
-          if (lambdaExtra >= 0.f) {
-            registry.fill(HIST("h_ds_jet_lambda_extra"), lambdaExtra);
-            registry.fill(HIST("h2_dsjet_pt_lambda_extra"), jet.pt(), lambdaExtra);
-          }
-        }
-
+        // --- output table ---
         auto scores = dsCandidate.mlScores();
         const float s0 = (scores.size() > 0) ? scores[0] : -999.f;
         const float s1 = (scores.size() > 1) ? scores[1] : -999.f;
@@ -313,8 +300,36 @@ struct JetDsSpecSubs {
                      dsCandidate.m(), dsCandidate.y(),
                      s0, s1, s2,
                      mjet, girth, lambda12, lambda11);
+      }
 
-        break; // only first Ds per jet
+      // Jet-level quantities (filled once per jet containing at least one Ds)
+      if (hasDs) {
+
+        registry.fill(HIST("h_jet_counter"), 1.5);
+
+        // Jet properties
+        registry.fill(HIST("h_ds_jet_pt"), jet.pt());
+        registry.fill(HIST("h_ds_jet_eta"), jet.eta());
+        registry.fill(HIST("h_ds_jet_phi"), jet.phi());
+
+        // Jet substructure observables
+        if (lambda11 >= 0.f) {
+          registry.fill(HIST("h_ds_jet_lambda11"), lambda11);
+          registry.fill(HIST("h2_dsjet_pt_lambda11"), jet.pt(), lambda11);
+        }
+
+        if (lambda12 >= 0.f) {
+          registry.fill(HIST("h_ds_jet_lambda12"), lambda12);
+          registry.fill(HIST("h2_dsjet_pt_lambda12"), jet.pt(), lambda12);
+        }
+
+        registry.fill(HIST("h_ds_jet_mass"), mjet);
+        registry.fill(HIST("h2_dsjet_pt_mass"), jet.pt(), mjet);
+
+        if (girth >= 0.f) {
+          registry.fill(HIST("h_ds_jet_girth"), girth);
+          registry.fill(HIST("h2_dsjet_pt_girth"), jet.pt(), girth);
+        }
       }
     }
   }
