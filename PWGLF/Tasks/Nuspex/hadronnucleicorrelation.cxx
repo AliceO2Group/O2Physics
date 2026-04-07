@@ -62,6 +62,17 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+enum Modes {
+  kDbarPbar = 0,
+  kDP,
+  kDbarP,
+  kDPbar,
+  kPbarP,
+  kPbarPbar,
+  kPP,
+  kPPbar
+};
+
 struct hadronnucleicorrelation {
 
   static constexpr int betahasTOFthr = -100;
@@ -746,7 +757,7 @@ struct hadronnucleicorrelation {
       }
     }
 
-    if (mode == 5 || mode == 6) { // Identical particle combinations
+    if (mode == kPbarPbar || mode == kPP) { // Identical particle combinations
 
       for (const auto& [part0, part1] : combinations(CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
 
@@ -765,14 +776,14 @@ struct hadronnucleicorrelation {
           continue;
 
         // mode 6
-        if (mode == 6) {
+        if (mode == kPP) {
           if (!IsProton(part0, +1))
             continue;
           if (!IsProton(part1, +1))
             continue;
         }
         // mode 5
-        if (mode == 5) {
+        if (mode == kPbarPbar) {
           if (!IsProton(part0, -1))
             continue;
           if (!IsProton(part1, -1))
@@ -801,37 +812,37 @@ struct hadronnucleicorrelation {
           continue;
 
         // modes 0,1,2,3,4,7
-        if (mode == 0) {
+        if (mode == kDbarPbar) {
           if (!IsDeuteron(part0, -1))
             continue;
           if (!IsProton(part1, -1))
             continue;
         }
-        if (mode == 1) {
+        if (mode == kDP) {
           if (!IsDeuteron(part0, +1))
             continue;
           if (!IsProton(part1, +1))
             continue;
         }
-        if (mode == 2) {
+        if (mode == kDbarP) {
           if (!IsDeuteron(part0, -1))
             continue;
           if (!IsProton(part1, +1))
             continue;
         }
-        if (mode == 3) {
+        if (mode == kDPbar) {
           if (!IsDeuteron(part0, +1))
             continue;
           if (!IsProton(part1, -1))
             continue;
         }
-        if (mode == 4) {
+        if (mode == kPbarP) {
           if (!IsProton(part0, -1))
             continue;
           if (!IsProton(part1, +1))
             continue;
         }
-        if (mode == 7) {
+        if (mode == kPPbar) {
           if (!IsProton(part0, +1))
             continue;
           if (!IsProton(part1, -1))
@@ -878,49 +889,49 @@ struct hadronnucleicorrelation {
           continue;
 
         //{"mode", 0, "0: antid-antip, 1: d-p, 2: antid-p, 3: d-antip, 4: antip-p, 5: antip-antip, 6: p-p, 7: p-antip"};
-        if (mode == 0) {
+        if (mode == kDbarPbar) {
           if (!IsDeuteron(part0, -1))
             continue;
           if (!IsProton(part1, -1))
             continue;
         }
-        if (mode == 1) {
+        if (mode == kDP) {
           if (!IsDeuteron(part0, +1))
             continue;
           if (!IsProton(part1, +1))
             continue;
         }
-        if (mode == 2) {
+        if (mode == kDbarP) {
           if (!IsDeuteron(part0, -1))
             continue;
           if (!IsProton(part1, +1))
             continue;
         }
-        if (mode == 3) {
+        if (mode == kDPbar) {
           if (!IsDeuteron(part0, +1))
             continue;
           if (!IsProton(part1, -1))
             continue;
         }
-        if (mode == 4) {
+        if (mode == kPbarP) {
           if (!IsProton(part0, -1))
             continue;
           if (!IsProton(part1, +1))
             continue;
         }
-        if (mode == 5) {
+        if (mode == kPbarPbar) {
           if (!IsProton(part0, -1))
             continue;
           if (!IsProton(part1, -1))
             continue;
         }
-        if (mode == 6) {
+        if (mode == kPP) {
           if (!IsProton(part0, +1))
             continue;
           if (!IsProton(part1, +1))
             continue;
         }
-        if (mode == 7) {
+        if (mode == kPPbar) {
           if (!IsProton(part0, +1))
             continue;
           if (!IsProton(part1, -1))
@@ -928,7 +939,7 @@ struct hadronnucleicorrelation {
         }
 
         bool isIdentical = false;
-        if (mode == 5 || mode == 6)
+        if (mode == kPbarPbar || mode == kPP)
           isIdentical = true;
 
         fillHistograms(part0, part1, true, isIdentical);
@@ -939,7 +950,7 @@ struct hadronnucleicorrelation {
 
   void processMC(FilteredCollisions const&, FilteredTracksMC const& tracks)
   {
-    for (auto track : tracks) {
+    for (const auto& track : tracks) {
       if (std::abs(track.template singleCollSel_as<FilteredCollisions>().posZ()) > cutzvertex)
         continue;
 
@@ -1311,7 +1322,7 @@ struct hadronnucleicorrelation {
 
     registry.fill(HIST("Generated/hNEventsMC"), 0.5);
 
-    for (auto particle : mcParticles) {
+    for (const auto& particle : mcParticles) {
 
       if (particle.pdgCode() == PDG_t::kProton) {
         registry.fill(HIST("Generated/hQAProtons"), 0.5);
@@ -1361,19 +1372,19 @@ struct hadronnucleicorrelation {
       }
     }
 
-    if (mode == 5 || mode == 6) { // Identical particle combinations
+    if (mode == kPbarPbar || mode == kPP) { // Identical particle combinations
 
       for (const auto& [part0, part1] : combinations(CombinationsStrictlyUpperIndexPolicy(mcParticles, mcParticles))) {
 
         // mode 6
-        if (mode == 6) {
+        if (mode == kPP) {
           if (part0.pdgCode() != PDG_t::kProton)
             continue;
           if (part1.pdgCode() != PDG_t::kProton)
             continue;
         }
         // mode 5
-        if (mode == 5) {
+        if (mode == kPbarPbar) {
           if (part0.pdgCode() != -PDG_t::kProton)
             continue;
           if (part1.pdgCode() != -PDG_t::kProton)
@@ -1387,37 +1398,37 @@ struct hadronnucleicorrelation {
 
       for (const auto& [part0, part1] : combinations(CombinationsFullIndexPolicy(mcParticles, mcParticles))) {
 
-        if (mode == 0) {
+        if (mode == kDbarPbar) {
           if (part0.pdgCode() != -o2::constants::physics::Pdg::kDeuteron)
             continue;
           if (part1.pdgCode() != -PDG_t::kProton)
             continue;
         }
-        if (mode == 1) {
+        if (mode == kDP) {
           if (part0.pdgCode() != o2::constants::physics::Pdg::kDeuteron)
             continue;
           if (part1.pdgCode() != PDG_t::kProton)
             continue;
         }
-        if (mode == 2) {
+        if (mode == kDbarP) {
           if (part0.pdgCode() != -o2::constants::physics::Pdg::kDeuteron)
             continue;
           if (part1.pdgCode() != PDG_t::kProton)
             continue;
         }
-        if (mode == 3) {
+        if (mode == kDPbar) {
           if (part0.pdgCode() != o2::constants::physics::Pdg::kDeuteron)
             continue;
           if (part1.pdgCode() != -PDG_t::kProton)
             continue;
         }
-        if (mode == 4) {
+        if (mode == kPbarP) {
           if (part0.pdgCode() != -PDG_t::kProton)
             continue;
           if (part1.pdgCode() != PDG_t::kProton)
             continue;
         }
-        if (mode == 7) {
+        if (mode == kPPbar) {
           if (part0.pdgCode() != PDG_t::kProton)
             continue;
           if (part1.pdgCode() != -PDG_t::kProton)
@@ -1442,49 +1453,49 @@ struct hadronnucleicorrelation {
 
       for (const auto& [part0, part1] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
 
-        if (mode == 0) {
+        if (mode == kDbarPbar) {
           if (part0.pdgCode() != -o2::constants::physics::Pdg::kDeuteron)
             continue;
           if (part1.pdgCode() != -PDG_t::kProton)
             continue;
         }
-        if (mode == 1) {
+        if (mode == kDP) {
           if (part0.pdgCode() != o2::constants::physics::Pdg::kDeuteron)
             continue;
           if (part1.pdgCode() != PDG_t::kProton)
             continue;
         }
-        if (mode == 2) {
+        if (mode == kDbarP) {
           if (part0.pdgCode() != -o2::constants::physics::Pdg::kDeuteron)
             continue;
           if (part1.pdgCode() != PDG_t::kProton)
             continue;
         }
-        if (mode == 3) {
+        if (mode == kDPbar) {
           if (part0.pdgCode() != o2::constants::physics::Pdg::kDeuteron)
             continue;
           if (part1.pdgCode() != -PDG_t::kProton)
             continue;
         }
-        if (mode == 4) {
+        if (mode == kPbarP) {
           if (part0.pdgCode() != -PDG_t::kProton)
             continue;
           if (part1.pdgCode() != PDG_t::kProton)
             continue;
         }
-        if (mode == 5) {
+        if (mode == kPbarPbar) {
           if (part0.pdgCode() != -PDG_t::kProton)
             continue;
           if (part1.pdgCode() != -PDG_t::kProton)
             continue;
         }
-        if (mode == 6) {
+        if (mode == kPP) {
           if (part0.pdgCode() != PDG_t::kProton)
             continue;
           if (part1.pdgCode() != PDG_t::kProton)
             continue;
         }
-        if (mode == 7) {
+        if (mode == kPPbar) {
           if (part0.pdgCode() != PDG_t::kProton)
             continue;
           if (part1.pdgCode() != -PDG_t::kProton)
