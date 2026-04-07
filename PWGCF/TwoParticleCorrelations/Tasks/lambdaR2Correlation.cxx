@@ -242,8 +242,8 @@ struct LambdaTableProducer {
   Configurable<int> cCentEstimator{"cCentEstimator", 1, "Centrality Estimator : 0-FT0M, 1-FT0C"};
   Configurable<float> cMinZVtx{"cMinZVtx", -7.0, "Min VtxZ cut"};
   Configurable<float> cMaxZVtx{"cMaxZVtx", 7.0, "Max VtxZ cut"};
-  Configurable<float> cMinMult{"cMinMult", 0., "Minumum Multiplicity"};
-  Configurable<float> cMaxMult{"cMaxMult", 100.0, "Maximum Multiplicity"};
+  Configurable<float> cMinCent{"cMinCent", 0., "Minumum Centrality"};
+  Configurable<float> cMaxCent{"cMaxCent", 100.0, "Maximum Centrality"};
   Configurable<bool> cSel8Trig{"cSel8Trig", true, "Sel8 (T0A + T0C) Selection Run3"};
   Configurable<bool> cInt7Trig{"cInt7Trig", false, "kINT7 MB Trigger"};
   Configurable<bool> cSel7Trig{"cSel7Trig", false, "Sel7 (V0A + V0C) Selection Run2"};
@@ -262,7 +262,6 @@ struct LambdaTableProducer {
   Configurable<int> cMinTpcCrossedRows{"cMinTpcCrossedRows", 70, "TPC Min Crossed Rows"};
   Configurable<double> cTpcNsigmaCut{"cTpcNsigmaCut", 3.0, "TPC NSigma Selection Cut"};
   Configurable<bool> cRemoveAmbiguousTracks{"cRemoveAmbiguousTracks", false, "Remove Ambiguous Tracks"};
-  Configurable<bool> cMatchEfficiency{"cMatchEfficiency", false, "Get Matching Efficiency"};
 
   // V0s
   Configurable<double> cMinDcaProtonToPV{"cMinDcaProtonToPV", 0.02, "Minimum Proton DCAr to PV"};
@@ -293,8 +292,6 @@ struct LambdaTableProducer {
   Configurable<bool> cSelectTrueLambda{"cSelectTrueLambda", false, "Select True Lambda"};
   Configurable<bool> cSelMCPSV0{"cSelMCPSV0", false, "Select Primary/Secondary V0"};
   Configurable<bool> cCheckRecoDauFlag{"cCheckRecoDauFlag", true, "Check for reco daughter PID"};
-  Configurable<bool> cGenPrimaryLambda{"cGenPrimaryLambda", true, "Primary Generated Lambda"};
-  Configurable<bool> cGenSecondaryLambda{"cGenSecondaryLambda", false, "Secondary Generated Lambda"};
   Configurable<bool> cGenDecayChannel{"cGenDecayChannel", true, "Gen Level Decay Channel Flag"};
 
   // Efficiency Correction
@@ -380,9 +377,6 @@ struct LambdaTableProducer {
     histos.add("Tracks/h2f_armpod_after_sel", "Armentros-Podolanski Plot", kTH2F, {axisAlpha, axisQtarm});
     histos.add("Tracks/h1f_lambda_pt_vs_invm", "p_{T} vs M_{#Lambda}", kTH2F, {axisV0Mass, axisV0Pt});
     histos.add("Tracks/h1f_antilambda_pt_vs_invm", "p_{T} vs M_{#bar{#Lambda}}", kTH2F, {axisV0Mass, axisV0Pt});
-    histos.add("Tracks/h2f_track_tpccrossedrows", "Crossed rows TPC", kTH2F, {axisTrackPt, {260, 0, 260}});
-    histos.add("Tracks/h2f_track_chisqperclusterits", "#chi^{2}/cluster ITS", kTH2F, {axisTrackPt, {200, 0, 50}});
-    histos.add("Tracks/h2f_track_chisqperclustertpc", "#chi^{2}/cluster TPC", kTH2F, {axisTrackPt, {200, 0, 50}});
     histos.add("Tracks/h2f_itstrack_centpt", "h2f_itstrack_centpt", kTH2F, {axisVarCent, axisITSTPCTrackPt});
     histos.add("Tracks/h2f_itstpctrack_centpt", "h2f_itstpctrack_centpt", kTH2F, {axisVarCent, axisITSTPCTrackPt});
 
@@ -519,7 +513,7 @@ struct LambdaTableProducer {
       }
     }
 
-    if (cent <= cMinMult || cent >= cMaxMult) { // select centrality percentile class
+    if (cent <= cMinCent || cent >= cMaxCent) { // select centrality percentile class
       return false;
     }
 
@@ -902,6 +896,7 @@ struct LambdaTableProducer {
       float posTrackMatchEff = histMatchEff->GetBinContent(histMatchEff->FindBin(cent, posTrack.pt()));
       float negTrackMatchEff = histMatchEff->GetBinContent(histMatchEff->FindBin(cent, negTrack.pt()));
       matchEffFact = posTrackMatchEff * negTrackMatchEff;
+      delete histMatchEff;
     }
 
     return primFrac * effCorrFact * matchEffFact;
@@ -1324,7 +1319,7 @@ struct LambdaTableProducer {
       return;
     }
     // Get Matching Efficiency
-    getMatchEffHist<kData>(tracks);
+    getMatchEffHist<kMC>(tracks);
   }
 
   PROCESS_SWITCH(LambdaTableProducer, processMatchEffMCReco, "Process for Matching Efficieny Calculation at MC Reconstructed Level", false);
