@@ -5489,7 +5489,7 @@ void VarManager::FillQVectorFromCentralFW(C const& collision, float* values)
   values[kR2EP_FV0ATPCNEG] = TMath::Cos(2 * getDeltaPsiInRange(epFV0a, epBNegs, 2));
   
   float S21C = values[kS11C] * values[kS11C];
-  complex<double> Q21C(values[kQ2X0C] * values[kS11C], values[kQ2Y0C] * values[kS11C]);
+  std::complex<double> Q21C(values[kQ2X0C] * values[kS11C], values[kQ2Y0C] * values[kS11C]);
       
   // Fill necessary quantities for cumulant calculations with weighted Q-vectors
   values[kM11REF] = S21C - values[kS12C];
