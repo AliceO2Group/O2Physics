@@ -742,7 +742,7 @@ struct HfTaskFlowCharmHadrons {
         float yQVecDaugSubtr = yQVec - std::accumulate(tracksQy.begin(), tracksQy.end(), 0.0);
         scalprodCand = cosNPhi * xQVecDaugSubtr + sinNPhi * yQVecDaugSubtr;
       } else {
-        scalprodCand = cosNPhi * xQVec + sinNPhi * yQVec; 
+        scalprodCand = cosNPhi * xQVec + sinNPhi * yQVec;
       }
 
       if (fillMassPtMlTree || fillMassPtMlSpCentTree) {
