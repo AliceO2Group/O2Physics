@@ -13,7 +13,7 @@
 /// \file uecharged.cxx
 /// \brief Underlying event analysis task
 /// \since November 2021
-/// \last update: March 2026
+/// \last update: April 2026
 
 #include "PWGLF/Utils/inelGt.h"
 
@@ -61,6 +61,7 @@ struct ueCharged {
   Configurable<bool> sel8{"event_sel8", true, "Apply the sel8 event selection"};
   Configurable<bool> removeITSROFBorder{"event_removeITSROFBorder", false, "Remove ITS Read-Out Frame border and only apply kIsTriggerTVX & kNoTimeFrameBorder (recommended for MC)"};
   Configurable<int> cfgINELCut{"event_cfgINELCut", 0, "INEL event selection: 0 no sel, 1 INEL>0, 2 INEL>1"};
+  Configurable<float> CollPosZ{"event_CollPosZ", 10.f, "Cut on the z component of the vertex position"};
   Configurable<bool> analyzeEvandTracksel{"analyzeEvandTracksel", true, "Analyze the event and track selection"};
 
   // Track selection configurables
@@ -418,7 +419,7 @@ struct ueCharged {
     ue.fill(HIST("hCounter"), 4);
 
     ue.fill(HIST("hStat"), collision.size());
-    if ((std::abs(collision.posZ()) > 10.f)) {
+    if ((std::abs(collision.posZ()) > CollPosZ)) {
       return false;
     }
 
@@ -464,7 +465,7 @@ struct ueCharged {
     ue.fill(HIST("hCounter"), 4);
 
     ue.fill(HIST("hStat"), collision.size());
-    if ((std::abs(collision.posZ()) > 10.f)) {
+    if ((std::abs(collision.posZ()) > CollPosZ)) {
       return false;
     }
 
@@ -665,7 +666,7 @@ struct ueCharged {
     if (cfgINELCut == 2 && !o2::pwglf::isINELgt1mc(GenParticles, pdg)) {
       return;
     }
-    if (std::abs(mcCollision.posZ()) > 10.f) {
+    if (std::abs(mcCollision.posZ()) > CollPosZ) {
       return;
     }
     ue.fill(HIST("hStat"), mcCollision.size());
@@ -1010,7 +1011,7 @@ struct ueCharged {
     if (cfgINELCut == 2 && !o2::pwglf::isINELgt1mc(GenParticles, pdg)) {
       return;
     }
-    if (std::abs(mcCollision.posZ()) > 10.f) {
+    if (std::abs(mcCollision.posZ()) > CollPosZ) {
       return;
     }
 
@@ -1147,7 +1148,7 @@ struct ueCharged {
       ue.fill(HIST("hVtxFT0VsVtxCol_afterGoodZvtx"), foundBC.ft0().posZ(), collision.posZ());
     }
 
-    if (std::abs(collision.posZ()) > 10.f) {
+    if (std::abs(collision.posZ()) > CollPosZ) {
       return;
     }
 
