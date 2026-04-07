@@ -1096,7 +1096,7 @@ struct sigma0builder {
     for (size_t i = 0; i < cluster.mcParticleIds().size(); i++) {
 
       int mcId = cluster.mcParticleIds()[i];
-      auto mcPart = mcparticles.iteratorAt(mcId);
+      auto mcPart = mcparticles.rawIteratorAt(mcId);
 
       // Accumulate total momentum (fallback strategy)
       sumPx += mcPart.px();
@@ -1112,31 +1112,28 @@ struct sigma0builder {
       if (daughterId < 0)
         continue; // Not from Sigma0 -> try next contributor
 
-      auto mcPhoton = mcparticles.iteratorAt(daughterId);
-
-      // Sanity check: are we getting the correct particles?
-      auto dummy = mcparticles.rawIteratorAt(daughterId);
-      if (mcPhoton.globalIndex() != dummy.globalIndex())
-        LOGF(fatal, "The behave of rawIteratorAt != iteratorAt. Index %i != %i. Please check. Aborting.", mcPhoton.globalIndex(), dummy.globalIndex());
+      auto mcPhoton = mcparticles.rawIteratorAt(daughterId);
 
       // Require true photon, please
       if (mcPhoton.pdgCode() != PDG_t::kGamma)
         continue;
 
       // Get Sigma0 index from photon mother
-      auto mothers = mcPhoton.mothersIds();
-      if (mothers.empty()) // No mothers? Weird
+      auto const& photonMothers = mcPhoton.template mothers_as<aod::McParticles>();
+      if (photonMothers.empty()) // No mothers? Weird
         continue;
 
-      int sigmaIndex = mothers[0];
+      // Assumption: first mother is the physical one
+      auto const& photonMother = photonMothers.front();
+      int photonMotherIndex = photonMother.globalIndex();
 
       // ------------------------------------------------------------
       // Check 2:
       // Does this photon share the same mother as the Lambda?
       // ------------------------------------------------------------
-      if (sigmaIndex == lambdaMotherIndex) {
+      if (photonMotherIndex == lambdaMotherIndex) {
         matchedPhotonId = daughterId;
-        matchedMotherIndex = sigmaIndex;
+        matchedMotherIndex = photonMotherIndex;
         MCinfo.EMCalClusterAmplitude = cluster.amplitudeA()[i];
         break; // SUCCESS -> stop loop
       }
@@ -1148,8 +1145,8 @@ struct sigma0builder {
 
     if (matchedPhotonId >= 0 && matchedMotherIndex >= 0) {
 
-      auto mcPhoton = mcparticles.iteratorAt(matchedPhotonId);
-      auto mcSigma = mcparticles.iteratorAt(matchedMotherIndex);
+      auto mcPhoton = mcparticles.rawIteratorAt(matchedPhotonId);
+      auto mcSigma = mcparticles.rawIteratorAt(matchedMotherIndex);
 
       // --- Pair (Sigma0) information
       MCinfo.fV0PairProducedByGenerator = mcSigma.producedByGenerator();
@@ -1172,7 +1169,7 @@ struct sigma0builder {
       MCinfo.V01PDGCode = mcPhoton.pdgCode();
 
       if (!mcPhoton.mothersIds().empty()) {
-        auto mcMother = mcparticles.iteratorAt(mcPhoton.mothersIds()[0]);
+        auto mcMother = mcparticles.rawIteratorAt(mcPhoton.mothersIds()[0]);
         MCinfo.V01PDGCodeMother = mcMother.pdgCode();
       }
 
@@ -2405,7 +2402,7 @@ struct sigma0builder {
     // Momentum components
     float gammapx = gammapT * std::cos(gamma.phi());
     float gammapy = gammapT * std::sin(gamma.phi());
-    float gammapz = gammapT * std::sinh(gamma.phi());
+    float gammapz = gammapT * std::sinh(gamma.eta());
 
     //_______________________________________________
     // Sigma0 pre-selections

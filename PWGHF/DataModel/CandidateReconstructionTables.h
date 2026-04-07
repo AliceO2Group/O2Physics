@@ -837,7 +837,7 @@ DECLARE_SOA_TABLE(HfCand3Prong2PidAl, "AOD", "HFCAND3P2PIDAL", //!
 using HfCand3Prong = HfCand3ProngExt;
 using HfCand3ProngWPidPiKaPr = soa::Join<HfCand3Prong, HfCand3Prong0PidPi, HfCand3Prong0PidPr, HfCand3Prong0PidKa, HfCand3Prong1PidPi, HfCand3Prong1PidPr, HfCand3Prong1PidKa, HfCand3Prong2PidPi, HfCand3Prong2PidPr, HfCand3Prong2PidKa>;
 using HfCand3ProngWPidPiKa = soa::Join<HfCand3Prong, HfCand3Prong0PidPi, HfCand3Prong0PidKa, HfCand3Prong1PidPi, HfCand3Prong1PidKa, HfCand3Prong2PidPi, HfCand3Prong2PidKa>;
-using HfCand3ProngWPidPiKaDe = soa::Join<HfCand3Prong, HfCand3Prong0PidPi, HfCand3Prong0PidDe, HfCand3Prong0PidKa, HfCand3Prong1PidPi, HfCand3Prong1PidDe, HfCand3Prong1PidKa, HfCand3Prong2PidPi, HfCand3Prong2PidDe, HfCand3Prong2PidKa>;
+using HfCand3ProngWPidPiKaDe = soa::Join<HfCand3Prong, HfCand3Prong0PidPi, HfCand3Prong0PidDe, HfCand3Prong0PidPr, HfCand3Prong0PidKa, HfCand3Prong1PidPi, HfCand3Prong1PidDe, HfCand3Prong1PidKa, HfCand3Prong2PidPi, HfCand3Prong2PidDe, HfCand3Prong2PidPr, HfCand3Prong2PidKa>;
 using HfCand3ProngWPidPiKaTr = soa::Join<HfCand3Prong, HfCand3Prong0PidPi, HfCand3Prong0PidTr, HfCand3Prong0PidKa, HfCand3Prong1PidPi, HfCand3Prong1PidTr, HfCand3Prong1PidKa, HfCand3Prong2PidPi, HfCand3Prong2PidTr, HfCand3Prong2PidKa>;
 using HfCand3ProngWPidPiKaHe = soa::Join<HfCand3Prong, HfCand3Prong0PidPi, HfCand3Prong0PidHe, HfCand3Prong0PidKa, HfCand3Prong1PidPi, HfCand3Prong1PidHe, HfCand3Prong1PidKa, HfCand3Prong2PidPi, HfCand3Prong2PidHe, HfCand3Prong2PidKa>;
 using HfCand3ProngWPidPiKaAl = soa::Join<HfCand3Prong, HfCand3Prong0PidPi, HfCand3Prong0PidAl, HfCand3Prong0PidKa, HfCand3Prong1PidPi, HfCand3Prong1PidAl, HfCand3Prong1PidKa, HfCand3Prong2PidPi, HfCand3Prong2PidAl, HfCand3Prong2PidKa>;

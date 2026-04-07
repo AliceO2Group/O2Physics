@@ -143,7 +143,7 @@ struct HfCandidateCreator3Prong {
   Configurable<bool> applyTopoConstraint{"applyTopoConstraint", false, "apply origin from PV hypothesis for created candidate, works only in KF mode"};
   Configurable<bool> applyInvMassConstraint{"applyInvMassConstraint", false, "apply particle type hypothesis to recalculate created candidate's momentum, works only in KF mode"};
 
-  Configurable<LabeledArray<float>> tpcPidBBParamsLightNuclei{"tpcPidBBParamsLightNuclei", {hf_presel_lightnuclei::BetheBlochParams[0], hf_presel_lightnuclei::NParticleRows, hf_presel_lightnuclei::NBetheBlochParams, hf_presel_lightnuclei::labelsRowsNucleiType, hf_presel_lightnuclei::labelsBetheBlochParams}, "TPC PID Bethe–Bloch parameter configurations for light nuclei (deuteron, triton, helium-3)"};
+  Configurable<LabeledArray<float>> tpcPidBBParamsLightNuclei{"tpcPidBBParamsLightNuclei", {hf_presel_lightnuclei::BetheBlochParams[0], hf_presel_lightnuclei::NParticleRows, hf_presel_lightnuclei::NBetheBlochParams, hf_presel_lightnuclei::labelsRowsNucleiType, hf_presel_lightnuclei::labelsBetheBlochParams}, "TPC PID Bethe–Bloch parameter configurations for light nuclei (deuteron, triton, helium-3, alpha)"};
 
   HfEventSelection hfEvSel;        // event selection and monitoring
   o2::vertexing::DCAFitterN<3> df; // 3-prong vertex fitter
@@ -267,7 +267,7 @@ struct HfCandidateCreator3Prong {
     fillProngPid<HfProngSpecies::Kaon>(track2, rowProng2PidKa);
 
     /// fill proton PID information only if necessary
-    if (createLc || createXic) {
+    if (createLc || createXic || createCharmNuclei) {
       fillProngPid<HfProngSpecies::Proton>(track0, rowProng0PidPr);
       fillProngPid<HfProngSpecies::Proton>(track1, rowProng1PidPr);
       fillProngPid<HfProngSpecies::Proton>(track2, rowProng2PidPr);

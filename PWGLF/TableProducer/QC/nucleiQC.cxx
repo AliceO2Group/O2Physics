@@ -110,6 +110,7 @@ struct nucleiQC {
   Configurable<int> cfgTrackTunerConfigSource{"cfgTrackTunerConfigSource", aod::track_tuner::InputString, "1: input string; 2: TrackTuner Configurables"};
   ConfigurableAxis cfgAxisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
 
+  Configurable<bool> cfgRapidityToggle{"cfgRapidityToggle", false, "If true, cut on rapidity for reconstructed particles"};
   Configurable<float> cfgRapidityMin{"cfgRapidityMin", -1., "Minimum rapidity value"};
   Configurable<float> cfgRapidityMax{"cfgRapidityMax", 1., "Maximum rapidity value"};
   Configurable<float> cfgRapidityCenterMass{"cfgRapidityCenterMass", 0.0f, "Center of mass rapidity"};
@@ -347,10 +348,8 @@ struct nucleiQC {
     }
   }
 
-  template <typename Tcollision, typename Ttrack>
-  void fillNucleusFlagsPdgs(const int iSpecies, const Tcollision& collision, const Ttrack& track, nuclei::SlimCandidate& candidate)
+  void fillSpeciesFlags(const int iSpecies, nuclei::SlimCandidate& candidate)
   {
-    candidate.flags = static_cast<uint16_t>((track.pidForTracking() & 0xF) << 12);
 
     switch (iSpecies) {
       case nuclei::Species::kPr:
@@ -372,6 +371,14 @@ struct nucleiQC {
         candidate.flags |= 0;
         break;
     }
+  }
+
+  template <typename Tcollision, typename Ttrack>
+  void fillNucleusFlagsPdgs(const int iSpecies, const Tcollision& collision, const Ttrack& track, nuclei::SlimCandidate& candidate)
+  {
+    candidate.flags = static_cast<uint16_t>((track.pidForTracking() & 0xF) << 12);
+
+    fillSpeciesFlags(iSpecies, candidate);
 
     if (track.hasTOF())
       candidate.flags |= nuclei::Flags::kHasTOF;
@@ -508,110 +515,117 @@ struct nucleiQC {
     }
   }
 
-  void processMc(const Collision& collision, const TrackCandidatesMC& tracks, const aod::BCsWithTimestamps&, const aod::McParticles& mcParticles)
+  void processMc(const Collisions& collisions, const TrackCandidatesMC& tracks, const aod::BCsWithTimestamps&, const aod::McParticles& mcParticles)
   {
-
     gRandom->SetSeed(67);
     mNucleiCandidates.clear();
-    mFilledMcParticleIds.clear();
+    std::vector<bool> reconstructedMcParticles(mcParticles.size(), false);
 
-    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-    initCCDB(bc);
+    for (const auto& collision : collisions) {
 
-    if (!nuclei::eventSelection(collision, mHistograms, cfgEventSelections, cfgCutVertex))
-      return;
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
 
-    bool anyTrackTuner = false;
-    for (int iSpecies = 0; iSpecies < static_cast<int>(nuclei::Species::kNspecies); iSpecies++) {
-      anyTrackTuner = anyTrackTuner || cfgUseTrackTuner->get(iSpecies);
-    }
-    if (anyTrackTuner && mTrackTuner.autoDetectDcaCalib && !mTrackTuner.areGraphsConfigured) {
+      if (!nuclei::eventSelection(collision, mHistograms, cfgEventSelections, cfgCutVertex))
+        continue;
 
-      mTrackTuner.setRunNumber(mRunNumber);
+      bool anyTrackTuner = false;
+      for (int iSpecies = 0; iSpecies < static_cast<int>(nuclei::Species::kNspecies); iSpecies++) {
+        anyTrackTuner = anyTrackTuner || cfgUseTrackTuner->get(iSpecies);
+      }
+      if (anyTrackTuner && mTrackTuner.autoDetectDcaCalib && !mTrackTuner.areGraphsConfigured) {
 
-      /// setup the "auto-detected" path based on the run number
-      mTrackTuner.getPathInputFileAutomaticFromCCDB();
-      mHistTrackTunedTracks->SetTitle(mTrackTuner.outputString.c_str());
-      mTrackTuner.getDcaGraphs();
-    }
+        mTrackTuner.setRunNumber(mRunNumber);
 
-    auto tracksThisCollision = tracks.sliceBy(mTracksPerCollision, collision.globalIndex());
-    tracksThisCollision.bindExternalIndices(&tracks);
+        /// setup the "auto-detected" path based on the run number
+        mTrackTuner.getPathInputFileAutomaticFromCCDB();
+        mHistTrackTunedTracks->SetTitle(mTrackTuner.outputString.c_str());
+        mTrackTuner.getDcaGraphs();
+      }
 
-    for (const auto& track : tracks) {
+      auto tracksThisCollision = tracks.sliceBy(mTracksPerCollision, collision.globalIndex());
+      for (const auto& track : tracksThisCollision) {
 
-      static_for<0, nuclei::kNspecies - 1>([&](auto iSpecies) {
-        constexpr int kSpeciesCt = decltype(iSpecies)::value;
-        const int kSpeciesRt = kSpeciesCt;
+        static_for<0, nuclei::kNspecies - 1>([&](auto iSpecies) {
+          constexpr int kSpeciesCt = decltype(iSpecies)::value;
+          const int kSpeciesRt = kSpeciesCt;
 
-        if (std::find(mSpeciesToProcess.begin(), mSpeciesToProcess.end(), kSpeciesRt) == mSpeciesToProcess.end())
-          return;
-
-        if (!track.has_mcParticle())
-          return;
-
-        const auto& particle = track.mcParticle();
-        if (cfgDoCheckPdgCode) {
-          if (std::abs(particle.pdgCode()) != nuclei::pdgCodes[kSpeciesRt])
+          if (std::find(mSpeciesToProcess.begin(), mSpeciesToProcess.end(), kSpeciesRt) == mSpeciesToProcess.end())
             return;
-        }
 
-        if (cfgDownscalingFactor->get(kSpeciesRt) < 1.) {
-          if ((gRandom->Uniform()) > cfgDownscalingFactor->get(kSpeciesRt))
+          if (!track.has_mcParticle())
             return;
-        }
 
-        if ((particle.y() - cfgRapidityCenterMass) < cfgRapidityMin || (particle.y() - cfgRapidityCenterMass) > cfgRapidityMax)
-          return;
+          if (track.mcParticleId() < -1 || track.mcParticleId() >= mcParticles.size())
+            return;
+          const auto& particle = mcParticles.iteratorAt(track.mcParticleId());
 
-        if (cfgFillOnlyPhysicalPrimaries && !particle.isPhysicalPrimary())
-          return;
+          if (cfgDoCheckPdgCode) {
+            if (std::abs(particle.pdgCode()) != nuclei::pdgCodes[kSpeciesRt])
+              return;
+          }
 
-        mHistograms.fill(HIST(nuclei::cNames[kSpeciesCt]) + HIST("/hTrackSelections"), nuclei::trackSelection::kNoCuts);
-        if (!trackSelection<kSpeciesRt>(track))
-          return;
-        mHistograms.fill(HIST(nuclei::cNames[kSpeciesCt]) + HIST("/hTrackSelections"), nuclei::trackSelection::kTrackCuts);
+          if (cfgDownscalingFactor->get(kSpeciesRt) < 1.) {
+            if ((gRandom->Uniform()) > cfgDownscalingFactor->get(kSpeciesRt))
+              return;
+          }
 
-        if (!pidSelection<kSpeciesRt>(track, collision))
-          return;
-        mHistograms.fill(HIST(nuclei::cNames[kSpeciesCt]) + HIST("/hTrackSelections"), nuclei::trackSelection::kPidCuts);
+          if (cfgRapidityToggle && ((particle.y() - cfgRapidityCenterMass) < cfgRapidityMin || (particle.y() - cfgRapidityCenterMass) > cfgRapidityMax))
+            return;
 
-        nuclei::SlimCandidate candidate;
-        candidate = fillCandidate</*isMc*/ true>(kSpeciesCt, collision, track);
+          if (cfgFillOnlyPhysicalPrimaries && !particle.isPhysicalPrimary())
+            return;
 
-        mNucleiCandidates.emplace_back(candidate);
-        mFilledMcParticleIds.emplace_back(particle.globalIndex());
-        dispatchFillHistograms</*isGenerated*/ true>(kSpeciesRt, candidate);
-        dispatchFillHistograms</*isGenerated*/ false>(kSpeciesRt, candidate);
-      });
+          LOG(info) << "track passed physical primary cut";
+
+          mHistograms.fill(HIST(nuclei::cNames[kSpeciesCt]) + HIST("/hTrackSelections"), nuclei::trackSelection::kNoCuts);
+          if (!trackSelection<kSpeciesRt>(track))
+            return;
+          mHistograms.fill(HIST(nuclei::cNames[kSpeciesCt]) + HIST("/hTrackSelections"), nuclei::trackSelection::kTrackCuts);
+
+          if (!pidSelection<kSpeciesRt>(track, collision))
+            return;
+          mHistograms.fill(HIST(nuclei::cNames[kSpeciesCt]) + HIST("/hTrackSelections"), nuclei::trackSelection::kPidCuts);
+
+          nuclei::SlimCandidate candidate;
+          candidate = fillCandidate</*isMc*/ true>(kSpeciesCt, collision, track);
+
+          mNucleiCandidates.emplace_back(candidate);
+          reconstructedMcParticles[particle.globalIndex()] = true;
+
+          dispatchFillHistograms</*isGenerated*/ true>(kSpeciesRt, candidate);
+          dispatchFillHistograms</*isGenerated*/ false>(kSpeciesRt, candidate);
+        });
+      }
     }
 
-    const int mcCollisionId = collision.mcCollisionId();
-    auto mcParticlesThisCollision = mcParticles.sliceBy(mMcParticlesPerCollision, mcCollisionId);
-    mcParticlesThisCollision.bindExternalIndices(&mcParticles);
+    int mcIndex = -1;
+    for (const auto& particle : mcParticles) {
 
-    for (const auto& particle : mcParticlesThisCollision) {
-
-      if (std::find(mFilledMcParticleIds.begin(), mFilledMcParticleIds.end(), particle.globalIndex()) != mFilledMcParticleIds.end())
-        continue;
-
-      if (cfgFillOnlyPhysicalPrimaries && !particle.isPhysicalPrimary())
-        continue;
-
-      if ((particle.y() - cfgRapidityCenterMass) < cfgRapidityMin || (particle.y() - cfgRapidityCenterMass) > cfgRapidityMax)
-        continue;
+      mcIndex++;
 
       int iSpecies = nuclei::getSpeciesFromPdg(particle.pdgCode());
       if (std::find(mSpeciesToProcess.begin(), mSpeciesToProcess.end(), iSpecies) == mSpeciesToProcess.end())
         continue;
 
+      if ((particle.y() - cfgRapidityCenterMass) < cfgRapidityMin || (particle.y() - cfgRapidityCenterMass) > cfgRapidityMax)
+        continue;
+
+      if (reconstructedMcParticles[mcIndex])
+        continue;
+
+      if (cfgFillOnlyPhysicalPrimaries && !particle.isPhysicalPrimary())
+        continue;
+
       if (cfgDownscalingFactor->get(iSpecies) < 1.) {
         if ((gRandom->Uniform()) > cfgDownscalingFactor->get(iSpecies))
-          return;
+          continue;
       }
 
       nuclei::SlimCandidate candidate;
-      candidate.centrality = nuclei::getCentrality(collision, cfgCentralityEstimator, mHistFailCentrality);
+      // candidate.centrality = nuclei::getCentrality(collision, cfgCentralityEstimator, mHistFailCentrality);
+      candidate.centrality = -1.f; // centrality is not well defined for non-reconstructed particles, set to -1 for now
+      fillSpeciesFlags(iSpecies, candidate);
       fillNucleusFlagsPdgsMc(particle, candidate);
       fillNucleusGeneratedVariables(particle, candidate);
 

@@ -33,8 +33,8 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/runDataProcessing.h"
 
-#include <TH2F.h>
-#include <TH3F.h>
+#include <TH2D.h>
+#include <TH3D.h>
 #include <TPDGCode.h>
 
 #include <cmath>
@@ -337,32 +337,32 @@ struct ParticleOriginAnalysis {
       fhPromptVsPt[i] = registry.add<TH1>(
         FORMATSTRING("PromptVsPt_%s", tname),
         FORMATSTRING("Prompt %s;#it{p}_{T} (GeV/#it{c});counts", tname),
-        kTH1F, {ptAxis});
+        kTH1D, {ptAxis});
 
       fhDecayVsPt[i] = registry.add<TH1>(
         FORMATSTRING("DecayVsPt_%s", tname),
         FORMATSTRING("From decay %s;#it{p}_{T} (GeV/#it{c});counts", tname),
-        kTH1F, {ptAxis});
+        kTH1D, {ptAxis});
 
       fhPromptVsCentVsPt[i] = registry.add<TH2>(
         FORMATSTRING("PromptVsCentVsPt_%s", tname),
         FORMATSTRING("Prompt %s;centrality (%%);#it{p}_{T} (GeV/#it{c})", tname),
-        kTH2F, {centAxis, ptAxis});
+        kTH2D, {centAxis, ptAxis});
 
       fhDecayVsCentVsPt[i] = registry.add<TH2>(
         FORMATSTRING("DecayVsCentVsPt_%s", tname),
         FORMATSTRING("From decay %s;centrality (%%);#it{p}_{T} (GeV/#it{c})", tname),
-        kTH2F, {centAxis, ptAxis});
+        kTH2D, {centAxis, ptAxis});
 
       fhMotherVsPtVsCent[i] = registry.add<TH3>(
         FORMATSTRING("MotherVsPtVsCent_%s", tname),
         FORMATSTRING("Immediate mother of %s;mother;#it{p}_{T} (GeV/#it{c});centrality (%%)", tname),
-        kTH3F, {motherAxis, ptAxis, centAxis});
+        kTH3D, {motherAxis, ptAxis, centAxis});
 
       fhAncestorVsPtVsCent[i] = registry.add<TH3>(
         FORMATSTRING("AncestorVsPtVsCent_%s", tname),
         FORMATSTRING("Earliest ancestor of %s;ancestor;#it{p}_{T} (GeV/#it{c});centrality (%%)", tname),
-        kTH3F, {motherAxis, ptAxis, centAxis});
+        kTH3D, {motherAxis, ptAxis, centAxis});
 
       /* label the encoded mother/ancestor axis */
       for (int im = 0; im < KNMo; ++im) {
@@ -373,12 +373,12 @@ struct ParticleOriginAnalysis {
       fhMotherPDG[i] = registry.add<TH1>(
         FORMATSTRING("MotherPDG_%s", tname),
         FORMATSTRING("Immediate mother PDG of %s from decay;PDG code;counts", tname),
-        kTH1F, {pdgAxis});
+        kTH1D, {pdgAxis});
 
       fhAncestorPDG[i] = registry.add<TH1>(
         FORMATSTRING("AncestorPDG_%s", tname),
         FORMATSTRING("Earliest ancestor PDG of %s from decay;PDG code;counts", tname),
-        kTH1F, {pdgAxis});
+        kTH1D, {pdgAxis});
     }
   }
 
