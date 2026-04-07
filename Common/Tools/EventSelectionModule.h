@@ -27,6 +27,7 @@
 #include <DataFormatsCTP/Configuration.h>
 #include <DataFormatsCTP/Scalers.h>
 #include <DataFormatsFT0/Digit.h>
+#include <DataFormatsITSMFT/DPLAlpideParam.h>
 #include <DataFormatsITSMFT/TimeDeadMap.h>
 #include <DataFormatsParameters/AggregatedRunInfo.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
@@ -35,7 +36,6 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
-#include <ITSMFTBase/DPLAlpideParam.h>
 #include <ITSMFTReconstruction/ChipMappingITS.h>
 
 #include <TH1.h>

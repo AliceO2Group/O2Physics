@@ -31,6 +31,7 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/LHCConstants.h"
 #include "DataFormatsFT0/Digit.h"
+#include "DataFormatsITSMFT/DPLAlpideParam.h"
 #include "DataFormatsParameters/AggregatedRunInfo.h"
 #include "DataFormatsParameters/GRPECSObject.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
@@ -42,7 +43,6 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/StaticFor.h"
 #include "Framework/runDataProcessing.h"
-#include "ITSMFTBase/DPLAlpideParam.h"
 #include "ReconstructionDataFormats/Track.h"
 
 #include <TFile.h>
