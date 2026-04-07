@@ -132,7 +132,6 @@ struct hadronnucleicorrelation {
   using SimParticles = aod::McParticles;
   using FilteredTracks = soa::Filtered<soa::Join<aod::SingleTrackSels, aod::SingleTrkExtras, aod::SinglePIDEls, aod::SinglePIDPrs, aod::SinglePIDDes>>;                      // new tables (v3)
   using FilteredTracksMC = soa::Filtered<soa::Join<aod::SingleTrackSels, aod::SingleTrkMCs, aod::SingleTrkExtras, aod::SinglePIDEls, aod::SinglePIDPrs, aod::SinglePIDDes>>; // new tables (v3)
-  using CollisionCandidates = soa::Join<aod::Collisions, aod::EvSels>::iterator;
 
   HistogramRegistry registry{"registry"};
   HistogramRegistry QA{"QA"};
