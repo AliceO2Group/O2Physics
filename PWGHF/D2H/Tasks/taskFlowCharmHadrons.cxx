@@ -724,7 +724,7 @@ struct HfTaskFlowCharmHadrons {
       bool subtractDaugsFromQVec = (qVecDetector == QvecEstimator::TPCNeg ||
                                     qVecDetector == QvecEstimator::TPCPos ||
                                     qVecDetector == QvecEstimator::TPCTot);
-      float scalprodCand{-999.f}; 
+      float scalprodCand{-999.f};
       if (subtractDaugsFromQVec) {
 
         std::vector<float> tracksQx;
