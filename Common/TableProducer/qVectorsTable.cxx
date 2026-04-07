@@ -50,6 +50,7 @@
 #include <TString.h>
 
 #include <chrono>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -739,16 +740,16 @@ struct qVectorsTable {
       // taking into account that the Q-vector is normalized by 1/M
       // and the EsE reduced Q-vector must be normalized to 1/sqrt(M)
       if (useDetector["QvectorFT0Cs"]) {
-        qVecRedFT0C = TMath::Sqrt(qvecReFT0C.at(0) * qvecReFT0C.at(0) + qvecImFT0C.at(0) * qvecImFT0C.at(0)) * TMath::Sqrt(qvecAmp[kFT0C]);
+        qVecRedFT0C = std::hypot(qvecReFT0C.at(0), qvecImFT0C.at(0)) * std::sqrt(qvecAmp[kFT0C]);
       }
       if (useDetector["QvectorTPCposs"]) {
-        qVecRedTpcPos = TMath::Sqrt(qvecReTPCpos.at(0) * qvecReTPCpos.at(0) + qvecImTPCpos.at(0) * qvecImTPCpos.at(0)) * TMath::Sqrt(qvecAmp[kTPCpos]);
+        qVecRedTpcPos = std::hypot(qvecReTPCpos.at(0), qvecImTPCpos.at(0)) * std::sqrt(qvecAmp[kTPCpos]);
       }
       if (useDetector["QvectorTPCnegs"]) {
-        qVecRedTpcNeg = TMath::Sqrt(qvecReTPCneg.at(0) * qvecReTPCneg.at(0) + qvecImTPCneg.at(0) * qvecImTPCneg.at(0)) * TMath::Sqrt(qvecAmp[kTPCneg]);
+        qVecRedTpcNeg = std::hypot(qvecReTPCneg.at(0), qvecImTPCneg.at(0)) * std::sqrt(qvecAmp[kTPCneg]);
       }
       if (useDetector["QvectorTPCalls"]) {
-        qVecRedTpcAll = TMath::Sqrt(qvecReTPCall.at(0) * qvecReTPCall.at(0) + qvecImTPCall.at(0) * qvecImTPCall.at(0)) * TMath::Sqrt(qvecAmp[kTPCall]);
+        qVecRedTpcAll = std::hypot(qvecReTPCall.at(0), qvecImTPCall.at(0)) * std::sqrt(qvecAmp[kTPCall]);
       }
     }
     qVectorRed(qVecRedFT0C, qVecRedTpcPos, qVecRedTpcNeg, qVecRedTpcAll);
