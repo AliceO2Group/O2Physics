@@ -16,8 +16,9 @@
 #include "PWGLF/DataModel/LFPhotonDeuteronTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "Common/Core/PID/TPCPIDResponse.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "Framework/ASoAHelpers.h"
@@ -25,17 +26,13 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
-#include <TLorentzVector.h>
-#include <TVector3.h>
-
-#include <iostream>
 #include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct PhotonDeuteronCorrelation {
+struct PhotonDeuteron {
   // Histogram registry
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -58,11 +55,6 @@ struct PhotonDeuteronCorrelation {
   Configurable<float> cfgV0CosPA{"cfgV0CosPA", 0.995, "Minimum V0 cosine of pointing angle"};
   Configurable<float> cfgV0Radius{"cfgV0Radius", 5.0, "Minimum V0 radius (cm)"};
   Configurable<bool> cfgUsePhotonDaughterPIDTPCOnly{"cfgUsePhotonDaughterPIDTPCOnly", true, "Use TPC-only PID for photon daughters"};
-
-  // Particle masses (in GeV/c²)
-  static constexpr float massProton = o2::constants::physics::MassProton;
-  static constexpr float massNeutron = o2::constants::physics::MassNeutron;
-  static constexpr float massDeuteron = o2::constants::physics::MassDeuteron;
 
   // Initialize histograms
   void init(InitContext const&)
@@ -175,19 +167,6 @@ struct PhotonDeuteronCorrelation {
     return true;
   }
 
-  // range [-pi/2, 3pi/2]
-  float getDeltaPhi(float phi1, float phi2)
-  {
-    float dphi = phi1 - phi2;
-    if (dphi > 1.5 * M_PI) {
-      dphi -= 2.0 * M_PI;
-    }
-    if (dphi < -0.5 * M_PI) {
-      dphi += 2.0 * M_PI;
-    }
-    return dphi;
-  }
-
   // Calculate relative momentum k*_pn from the photon-deuteron invariant mass [Eq. 4.6]
   float calculateRelativeMomentum(float invMass)
   {
@@ -198,8 +177,8 @@ struct PhotonDeuteronCorrelation {
     float M = invMass;
     float M2 = M * M;
     float M4 = M2 * M2;
-    float mn2 = massNeutron * massNeutron;
-    float mp2 = massProton * massProton;
+    float mn2 = o2::constants::physics::MassNeutron * o2::constants::physics::MassNeutron;
+    float mp2 = o2::constants::physics::MassProton * o2::constants::physics::MassProton;
     float deltaMass2 = mn2 - mp2;
     float sumMass2 = mn2 + mp2;
 
@@ -241,10 +220,10 @@ struct PhotonDeuteronCorrelation {
       histos.fill(HIST("hV0Phi"), v0.phi());
       histos.fill(HIST("hPhotonPtEta"), v0.pt(), v0.eta());
 
-      if (v0.isPhotonTPConly())
+      if (v0.isPhotonTPConly()) {
         photonIndices.push_back(v0.index());
-      if (v0.isPhotonTPConly())
-        std::cout << " [main] global index photon: " << v0.globalIndex() << " v0 id: " << v0.index() << " pt " << v0.pt() << std::endl;
+        LOGF(debug, "[main] global index photon: %d v0 id: %d pt %.3f", v0.globalIndex(), v0.index(), v0.pt());
+      }
     }
 
     // Loop over tracks to find deuterons
@@ -281,7 +260,7 @@ struct PhotonDeuteronCorrelation {
         const auto& deuteron = tracks.iteratorAt(deuteronIdx);
 
         // Calculate angular correlations
-        float deltaPhi = getDeltaPhi(photon.phi(), deuteron.phi());
+        float deltaPhi = RecoDecay::constrainAngle(photon.phi() - deuteron.phi(), -0.5 * M_PI);
         float deltaEta = photon.eta() - deuteron.eta();
 
         // Fill correlation histograms
@@ -290,13 +269,10 @@ struct PhotonDeuteronCorrelation {
         histos.fill(HIST("hPhotonDeuteronCorrelation"), deltaPhi, deltaEta);
         histos.fill(HIST("hPhotonDeuteronPtCorr"), photon.pt(), deuteron.pt());
 
-        // Calculate invariant mass
-        TLorentzVector photonVec, deuteronVec;
-        photonVec.SetPtEtaPhiM(photon.pt(), photon.eta(), photon.phi(), 0.0);                  // Photon-mass = 0
-        deuteronVec.SetPtEtaPhiM(deuteron.pt(), deuteron.eta(), deuteron.phi(), massDeuteron); // Deuteron-mass
-
-        TLorentzVector combinedVec = photonVec + deuteronVec;
-        float invMass = combinedVec.M();
+        // Calculate invariant mass using RecoDecay
+        std::array<float, 3> pPhoton{photon.px(), photon.py(), photon.pz()};
+        std::array<float, 3> pDeuteron{deuteron.px(), deuteron.py(), deuteron.pz()};
+        float invMass = RecoDecay::m(std::array{pPhoton, pDeuteron}, std::array{0.0f, static_cast<float>(o2::constants::physics::MassDeuteron)});
         histos.fill(HIST("hPhotonDeuteronInvMass"), invMass);
 
         // Calculate relative momentum using Equation 4.6
@@ -340,5 +316,5 @@ struct PhotonDeuteronCorrelation {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<PhotonDeuteronCorrelation>(cfgc)};
+    adaptAnalysisTask<PhotonDeuteron>(cfgc)};
 }
