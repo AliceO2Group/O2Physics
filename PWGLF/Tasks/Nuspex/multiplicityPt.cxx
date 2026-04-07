@@ -149,15 +149,10 @@ struct MultiplicityPt {
   Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
 
   enum ParticleSpecies : int {
-    kPion = 0,
-    kKaon = 1,
-    kProton = 2,
-    kNSpecies = 3
+    PartPion = 0,
+    PartKaon = 1,
+    PartProton = 2,
   };
-
-  static constexpr int PDGPion = PDG_t::kPiPlus;   // Changed from kPiPlus
-  static constexpr int PDGKaon = PDG_t::kKPlus;    // Changed from kKPlus
-  static constexpr int PDGProton = PDG_t::kProton; // Changed from kProton
 
   int getMagneticField(uint64_t timestamp)
   {
@@ -298,19 +293,19 @@ struct MultiplicityPt {
   bool passesPIDSelection(TrackType const& track) const
   {
     float nsigmaTPC = 0.f;
-    if constexpr (species == kPion)
+    if constexpr (species == PartPion)
       nsigmaTPC = track.tpcNSigmaPi();
-    else if constexpr (species == kKaon)
+    else if constexpr (species == PartKaon)
       nsigmaTPC = track.tpcNSigmaKa();
-    else if constexpr (species == kProton)
+    else if constexpr (species == PartProton)
       nsigmaTPC = track.tpcNSigmaPr();
 
     float cutValue = cfgCutNsigma.value;
-    if constexpr (species == kPion)
+    if constexpr (species == PartPion)
       cutValue = cfgCutNsigmaPi.value;
-    if constexpr (species == kKaon)
+    if constexpr (species == PartKaon)
       cutValue = cfgCutNsigmaKa.value;
-    if constexpr (species == kProton)
+    if constexpr (species == PartProton)
       cutValue = cfgCutNsigmaPr.value;
 
     return (std::abs(nsigmaTPC) < cutValue);
@@ -328,15 +323,15 @@ struct MultiplicityPt {
 
     if (nsigmaPi < cfgCutNsigmaPi.value && nsigmaPi < minNSigma) {
       minNSigma = nsigmaPi;
-      bestSpecies = kPion;
+      bestSpecies = PartPion;
     }
     if (nsigmaKa < cfgCutNsigmaKa.value && nsigmaKa < minNSigma) {
       minNSigma = nsigmaKa;
-      bestSpecies = kKaon;
+      bestSpecies = PartKaon;
     }
     if (nsigmaPr < cfgCutNsigmaPr.value && nsigmaPr < minNSigma) {
       minNSigma = nsigmaPr;
-      bestSpecies = kProton;
+      bestSpecies = PartProton;
     }
     return bestSpecies;
   }
@@ -644,7 +639,7 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
           continue;
 
         int pdgCode = std::abs(particle.pdgCode());
-        if (pdgCode == PDGProton) {
+        if (pdgCode == PDG_t::kProton) {
           nProtonsRaw++; // Count ALL protons regardless of status
 
           if (!particle.isPhysicalPrimary())
@@ -701,11 +696,11 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
       // All generated (no cuts) - SIGNAL LOSS DENOMINATOR
       ue.fill(HIST("Inclusive/hPtPrimGenAll"), pt);
       ue.fill(HIST("MC/GenPtVsNch"), pt, nGenCharged);
-      if (pdgCode == PDGPion)
+      if (pdgCode == PDG_t::kPiPlus)
         ue.fill(HIST("Pion/hPtPrimGenAll"), pt);
-      else if (pdgCode == PDGKaon)
+      else if (pdgCode == PDG_t::kKPlus)
         ue.fill(HIST("Kaon/hPtPrimGenAll"), pt);
-      else if (pdgCode == PDGProton)
+      else if (pdgCode == PDG_t::kProton)
         ue.fill(HIST("Proton/hPtPrimGenAll"), pt);
 
       // Physics selected - SIGNAL LOSS NUMERATOR & EFFICIENCY DENOMINATOR
@@ -713,13 +708,13 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
         ue.fill(HIST("Inclusive/hPtPrimGen"), pt);
         ue.fill(HIST("Inclusive/hPtDenEff"), pt);
         ue.fill(HIST("MC/GenPtVsNch_PhysicsSelected"), pt, nGenCharged);
-        if (pdgCode == PDGPion) {
+        if (pdgCode == PDG_t::kPiPlus) {
           ue.fill(HIST("Pion/hPtPrimGen"), pt);
           ue.fill(HIST("Pion/hPtDenEff"), pt);
-        } else if (pdgCode == PDGKaon) {
+        } else if (pdgCode == PDG_t::kKPlus) {
           ue.fill(HIST("Kaon/hPtPrimGen"), pt);
           ue.fill(HIST("Kaon/hPtDenEff"), pt);
-        } else if (pdgCode == PDGProton) {
+        } else if (pdgCode == PDG_t::kProton) {
           ue.fill(HIST("Proton/hPtPrimGen"), pt);
           ue.fill(HIST("Proton/hPtDenEff"), pt);
         }
@@ -728,11 +723,11 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
       // Bad vertex for signal loss study
       if (std::abs(mcCollision.posZ()) > cfgCutVertex.value) {
         ue.fill(HIST("Inclusive/hPtPrimBadVertex"), pt);
-        if (pdgCode == PDGPion)
+        if (pdgCode == PDG_t::kPiPlus)
           ue.fill(HIST("Pion/hPtPrimBadVertex"), pt);
-        else if (pdgCode == PDGKaon)
+        else if (pdgCode == PDG_t::kKPlus)
           ue.fill(HIST("Kaon/hPtPrimBadVertex"), pt);
-        else if (pdgCode == PDGProton)
+        else if (pdgCode == PDG_t::kProton)
           ue.fill(HIST("Proton/hPtPrimBadVertex"), pt);
       }
     }
@@ -924,19 +919,19 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
           ue.fill(HIST("Inclusive/hPtPrimRecoEv"), particle.pt());
 
           // Per-species efficiency numerator - NO PID requirement!
-          if (pdgCode == PDGPion) {
+          if (pdgCode == PDG_t::kPiPlus) {
             ue.fill(HIST("Pion/hPtNumEff"), particle.pt());
             ue.fill(HIST("Pion/hPtNumEffVsCent"), particle.pt(), cent);
             ue.fill(HIST("Pion/hPtPrimReco"), track.pt());
             ue.fill(HIST("Pion/hPtPrimRecoVsCent"), track.pt(), cent);
             ue.fill(HIST("Pion/hPtPrimRecoEv"), particle.pt());
-          } else if (pdgCode == PDGKaon) {
+          } else if (pdgCode == PDG_t::kKPlus) {
             ue.fill(HIST("Kaon/hPtNumEff"), particle.pt());
             ue.fill(HIST("Kaon/hPtNumEffVsCent"), particle.pt(), cent);
             ue.fill(HIST("Kaon/hPtPrimReco"), track.pt());
             ue.fill(HIST("Kaon/hPtPrimRecoVsCent"), track.pt(), cent);
             ue.fill(HIST("Kaon/hPtPrimRecoEv"), particle.pt());
-          } else if (pdgCode == PDGProton) {
+          } else if (pdgCode == PDG_t::kProton) {
             ue.fill(HIST("Proton/hPtNumEff"), particle.pt());
             ue.fill(HIST("Proton/hPtNumEffVsCent"), particle.pt(), cent);
             ue.fill(HIST("Proton/hPtPrimReco"), track.pt());
@@ -946,32 +941,32 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
         } else {
           // Secondaries (non-primary particles)
           ue.fill(HIST("Inclusive/hPtSecReco"), track.pt());
-          if (pdgCode == PDGPion)
+          if (pdgCode == PDG_t::kPiPlus)
             ue.fill(HIST("Pion/hPtSecReco"), track.pt());
-          else if (pdgCode == PDGKaon)
+          else if (pdgCode == PDG_t::kKPlus)
             ue.fill(HIST("Kaon/hPtSecReco"), track.pt());
-          else if (pdgCode == PDGProton)
+          else if (pdgCode == PDG_t::kProton)
             ue.fill(HIST("Proton/hPtSecReco"), track.pt());
         }
       }
 
       // PID selection - fill denominator for primary fraction and measured spectra
       int bestSpecies = getBestPIDHypothesis(track);
-      if (bestSpecies == kPion) {
+      if (bestSpecies == PartPion) {
         // Denominator for pion primary fraction: all tracks identified as pions
         ue.fill(HIST("Pion/hPtAllReco"), track.pt());
         ue.fill(HIST("Pion/hPtAllRecoVsCent"), track.pt(), cent);
         ue.fill(HIST("Pion/hPtMeasuredVsCent"), track.pt(), cent);
         if (enablePIDHistograms)
           ue.fill(HIST("Pion/hNsigmaTPC"), track.pt(), track.tpcNSigmaPi());
-      } else if (bestSpecies == kKaon) {
+      } else if (bestSpecies == PartKaon) {
         // Denominator for kaon primary fraction: all tracks identified as kaons
         ue.fill(HIST("Kaon/hPtAllReco"), track.pt());
         ue.fill(HIST("Kaon/hPtAllRecoVsCent"), track.pt(), cent);
         ue.fill(HIST("Kaon/hPtMeasuredVsCent"), track.pt(), cent);
         if (enablePIDHistograms)
           ue.fill(HIST("Kaon/hNsigmaTPC"), track.pt(), track.tpcNSigmaKa());
-      } else if (bestSpecies == kProton) {
+      } else if (bestSpecies == PartProton) {
         // Denominator for proton primary fraction: all tracks identified as protons
         ue.fill(HIST("Proton/hPtAllReco"), track.pt());
         ue.fill(HIST("Proton/hPtAllRecoVsCent"), track.pt(), cent);
