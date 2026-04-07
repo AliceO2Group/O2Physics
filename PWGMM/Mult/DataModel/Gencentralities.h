@@ -12,7 +12,7 @@
 #ifndef PWGMM_MULT_DATAMODEL_GENCENTRALITIES_H_
 #define PWGMM_MULT_DATAMODEL_GENCENTRALITIES_H_
 
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
 namespace o2::aod
 {
 namespace gencents

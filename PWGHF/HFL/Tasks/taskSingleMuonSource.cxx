@@ -14,7 +14,6 @@
 // \author Maolin Zhang <maolin.zhang@cern.ch>, CCNU
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <Framework/ASoA.h>
@@ -28,6 +27,7 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
+#include <Math/Vector4D.h>
 #include <TDatabasePDG.h>
 #include <TPDGCode.h>
 #include <TString.h>
@@ -41,7 +41,7 @@
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
-using MyCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
+using MyCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels>;
 using McMuons = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
 
 namespace
@@ -74,15 +74,19 @@ struct HfTaskSingleMuonSource {
   Produces<aod::HfMuonSource> singleMuonSource;
 
   Configurable<int> mcMaskSelection{"mcMaskSelection", 0, "McMask for correct match, valid values are 0 and 128"};
-  Configurable<int> trackType{"trackType", 0, "Muon track type, validated values are 0, 1, 2, 3 and 4"};
-  Configurable<int> charge{"charge", -1, "Muon track charge, validated values are 0, 1 and -1, 0 represents both 1 and -1"};
+  Configurable<int> trackType{"trackType", 3, "Muon track type, validated values are 0, 1, 2, 3 and 4"};
+  Configurable<int> charge{"charge", 0, "Muon track charge, validated values are 0, 1 and -1, 0 represents both 1 and -1"};
+  Configurable<bool> pairSource{"pairSource", true, "check also the source of like-sign muon pairs"};
 
-  double pDcaMax = 594.0; // p*DCA maximum value for large Rabs
-  double rAbsMin = 26.5;  // R at absorber end minimum value
-  double rAbsMax = 89.5;  // R at absorber end maximum value
-  double etaLow = -3.6;   // low edge of eta acceptance
-  double etaUp = -2.5;    // up edge of eta acceptance
-  double edgeZ = 10.0;    // edge of event position Z
+  double pDcaMax = 594.0;  // p*DCA maximum value for small Rab
+  double pDcaMax2 = 324.0; // p*DCA maximum value for large Rabs
+  double rAbsMid = 26.5;   // R at absorber end minimum value
+  double rAbsMax = 89.5;   // R at absorber end maximum value
+  double rAbsMin = 17.6;   // R at absorber end maximum value
+  double etaLow = -4.0;    // low edge of eta acceptance
+  double etaUp = -2.5;     // up edge of eta acceptance
+  double edgeZ = 10.0;     // edge of event position Z
+  double ptLow = 1.0;      // low edge of pT for muon pairs
 
   HistogramRegistry registry{
     "registry",
@@ -108,14 +112,23 @@ struct HfTaskSingleMuonSource {
     AxisSpec const axisChi2{500, 0., 100., "#chi^{2} of MCH-MFT matching"};
     AxisSpec const axisPt{200, 0., 100., "#it{p}_{T,reco} (GeV/#it{c})"};
     AxisSpec const axisDeltaPt{1000, -50., 50., "#Delta #it{p}_{T} (GeV/#it{c})"};
+    AxisSpec const axisMass{200, 0., 20., "Inv.Mass (GeV/#it{c}^2)"};
 
     HistogramConfigSpec const h1ColNumber{HistType::kTH1F, {axisColNumber}};
     HistogramConfigSpec const h1Pt{HistType::kTH1F, {axisPt}};
+    HistogramConfigSpec h1Mass{HistType::kTH1F, {axisMass}};
     HistogramConfigSpec const h2PtDCA{HistType::kTH2F, {axisPt, axisDCA}};
     HistogramConfigSpec const h2PtChi2{HistType::kTH2F, {axisPt, axisChi2}};
     HistogramConfigSpec const h2PtDeltaPt{HistType::kTH2F, {axisPt, axisDeltaPt}};
 
     registry.add("h1ColNumber", "", h1ColNumber);
+    registry.add("h1MuBeforeCuts", "", h1Pt);
+    registry.add("h1MuonMass", "", h1Mass);
+    registry.add("h1BeautyMass", "", h1Mass);
+    registry.add("h1OtherMass", "", h1Mass);
+    registry.add("h1MuonMassGen", "", h1Mass);
+    registry.add("h1BeautyMassGen", "", h1Mass);
+    registry.add("h1OtherMassGen", "", h1Mass);
     for (const auto& src : muonSources) {
       registry.add(Form("h1%sPt", src.Data()), "", h1Pt);
       registry.add(Form("h2%sPtDCA", src.Data()), "", h2PtDCA);
@@ -146,8 +159,8 @@ struct HfTaskSingleMuonSource {
       mcPart = *(mcPart.mothers_first_as<aod::McParticles>());
 
       const auto pdgAbs(std::abs(mcPart.pdgCode()));
-      if (pdgAbs < 10) {
-        break; // Quark
+      if (pdgAbs < 10 || pdgAbs == 21) {
+        break; // Quark and gluon
       }
 
       if (!mcPart.producedByGenerator()) { // Produced in transport code
@@ -168,6 +181,9 @@ struct HfTaskSingleMuonSource {
       } // Beam particle
 
       if ((pdgRem < 100) || (pdgRem >= 10000)) {
+        continue;
+      }
+      if ((pdgRem % 100 == 1 || pdgRem % 100 == 3) && pdgRem > 1000) { // diquarks
         continue;
       }
       // compute the flavor of constituent quark
@@ -325,9 +341,113 @@ struct HfTaskSingleMuonSource {
     }
   }
 
+  int traceAncestor(const McMuons::iterator& muon, aod::McParticles const& mctracks)
+  {
+    int mcNum = 0;
+    if (!muon.has_mcParticle()) {
+      return 0;
+    }
+    auto mcPart(muon.mcParticle());
+    if (std::abs(mcPart.pdgCode()) != kMuonMinus) {
+      return 0;
+    }
+    while (mcPart.has_mothers()) { // the first hadron after hadronization
+      auto mother = mcPart.mothers_first_as<aod::McParticles>();
+      if (std::abs(mother.getGenStatusCode()) < 80) {
+        break;
+      }
+      mcPart = mother;
+    }
+    int flv = mcPart.pdgCode() / std::pow(10, static_cast<int>(std::log10(std::abs(mcPart.pdgCode()))));
+    if (abs(flv) == 5 && mcPart.pdgCode() < 1000)
+      flv = -flv;
+    for (int i = (mcPart.mothers_first_as<aod::McParticles>()).globalIndex(); i <= (mcPart.mothers_last_as<aod::McParticles>()).globalIndex(); i++) { // loop over the lund string
+      for (auto mctrack : mctracks) {
+        if (mctrack.globalIndex() != i) {
+          continue;
+        }
+        if ((mctrack.pdgCode() != flv) && (abs(mctrack.pdgCode()) < abs(flv) * 1000)) {
+          continue;
+        }
+        while (mctrack.has_mothers()) {
+          int motherflv = (mctrack.mothers_first_as<aod::McParticles>()).pdgCode() / std::pow(10, static_cast<int>(std::log10(abs((mctrack.mothers_first_as<aod::McParticles>()).pdgCode())))); // find the mother with same flavor
+          auto mother = (abs(motherflv) == abs(flv)) ? (mctrack.mothers_first_as<aod::McParticles>()) : (mctrack.mothers_last_as<aod::McParticles>());
+          if ((mother.pdgCode() != mctrack.pdgCode()) && (abs(mctrack.pdgCode()) < 10)) { // both mother is not the the quark with same flavor
+            mcNum = mctrack.globalIndex();
+            return mcNum;
+          }
+          mctrack = mother;
+        }
+      }
+    }
+    return 0;
+  }
+  bool Corr(const McMuons::iterator& muon1, const McMuons::iterator& muon2, aod::McParticles const& mcParts)
+  {
+
+    int moth11(0), moth12(0), moth21(1), moth22(1);
+    int anc1 = traceAncestor(muon1, mcParts);
+    int anc2 = traceAncestor(muon2, mcParts);
+    if (anc1 == 0 || anc2 == 0) {
+      return false;
+    }
+    for (auto mcPart : mcParts) {
+      if (mcPart.globalIndex() == anc1) {
+        moth11 = (mcPart.mothers_first_as<aod::McParticles>()).globalIndex();
+        moth12 = (mcPart.mothers_last_as<aod::McParticles>()).globalIndex();
+      }
+      if (mcPart.globalIndex() == anc2) {
+        moth21 = (mcPart.mothers_first_as<aod::McParticles>()).globalIndex();
+        moth22 = (mcPart.mothers_last_as<aod::McParticles>()).globalIndex();
+      }
+    }
+    if ((moth11 == moth21) && (moth12 == moth22)) {
+      return true;
+    }
+    return false; // uncorrelated
+  }
+  void fillPairs(const McMuons::iterator& muon, const McMuons::iterator& muon2, aod::McParticles const& mcParts)
+  {
+    if (trackType != 3) {
+      return;
+    }
+    float mm = o2::constants::physics::MassMuon;
+
+    const auto mask1(getMask(muon));
+    const auto mask2(getMask(muon2));
+
+    ROOT::Math::PtEtaPhiMVector mu1Vec(muon.pt(), muon.eta(), muon.phi(), mm);
+    ROOT::Math::PtEtaPhiMVector mu2Vec(muon2.pt(), muon2.eta(), muon2.phi(), mm);
+    ROOT::Math::PtEtaPhiMVector dimuVec = mu1Vec + mu2Vec;
+    auto InvM = dimuVec.M();
+
+    if (!muon.has_mcParticle() || !muon2.has_mcParticle()) {
+      return;
+    }
+    auto mcPart1(muon.mcParticle());
+    auto mcPart2(muon2.mcParticle());
+
+    ROOT::Math::PtEtaPhiMVector mu1VecGen(mcPart1.pt(), mcPart1.eta(), mcPart1.phi(), mm);
+    ROOT::Math::PtEtaPhiMVector mu2VecGen(mcPart2.pt(), mcPart2.eta(), mcPart2.phi(), mm);
+    ROOT::Math::PtEtaPhiMVector dimuVecGen = mu1VecGen + mu2VecGen;
+    auto InvMGen = dimuVecGen.M();
+
+    if (isMuon(mask1) && isMuon(mask2)) {
+      registry.fill(HIST("h1MuonMass"), InvM);
+      registry.fill(HIST("h1MuonMassGen"), InvMGen);
+    }
+    if (Corr(muon, muon2, mcParts) && isBeautyMu(mask1) && isBeautyMu(mask2)) {
+      registry.fill(HIST("h1BeautyMass"), InvM);
+      registry.fill(HIST("h1BeautyMassGen"), InvMGen);
+    } else {
+      registry.fill(HIST("h1OtherMass"), InvM);
+      registry.fill(HIST("h1OtherMassGen"), InvMGen);
+    }
+  }
+
   void process(MyCollisions::iterator const& collision,
                McMuons const& muons,
-               aod::McParticles const&)
+               aod::McParticles const& mcParts)
   {
     // event selections
     if (std::abs(collision.posZ()) > edgeZ) {
@@ -347,11 +467,15 @@ struct HfTaskSingleMuonSource {
       if ((eta >= etaUp) || (eta < etaLow)) {
         continue;
       }
-      if ((rAbs >= rAbsMax) || (rAbs < rAbsMin)) {
-        continue;
+      if ((rAbs >= rAbsMid) || (rAbs < rAbsMin)) {
+        if (pDca >= pDcaMax || pDca < 0) {
+          continue;
+        }
       }
-      if (pDca >= pDcaMax) {
-        continue;
+      if ((rAbs >= rAbsMax) || (rAbs < rAbsMid)) {
+        if (pDca >= pDcaMax2 || pDca < 0) {
+          continue;
+        }
       }
       if ((muon.chi2() >= 1e6) || (muon.chi2() < 0)) {
         continue;
@@ -360,6 +484,48 @@ struct HfTaskSingleMuonSource {
         continue;
       }
       fillHistograms(muon);
+      if (pairSource) {
+        if (muon.pt() < ptLow) {
+          continue;
+        }
+        for (const auto& muon2 : muons) {
+          if (muon2.sign() != muon.sign()) {
+            continue;
+          }
+          if (muon2.globalIndex() <= muon.globalIndex()) {
+            continue;
+          }
+          // muon selections
+          if (muon2.trackType() != trackType) {
+            continue;
+          }
+          if (muon2.pt() < ptLow) {
+            continue;
+          }
+          const auto eta2(muon2.eta()), pDca2(muon2.pDca()), rAbs2(muon2.rAtAbsorberEnd());
+          if ((eta2 >= etaUp) || (eta2 < etaLow)) {
+            continue;
+          }
+          if ((rAbs2 >= rAbsMid) || (rAbs2 < rAbsMin)) {
+            if (pDca2 >= pDcaMax || pDca2 < 0) {
+              continue;
+            }
+          }
+          if ((rAbs2 >= rAbsMax) || (rAbs2 < rAbsMid)) {
+            if (pDca2 >= pDcaMax2 || pDca2 < 0) {
+              continue;
+            }
+          }
+
+          if ((muon2.chi2() >= 1e6) || (muon2.chi2() < 0)) {
+            continue;
+          }
+          if ((muon2.chi2MatchMCHMID() >= 1e6) || (muon2.chi2MatchMCHMID() < 0)) {
+            continue;
+          }
+          fillPairs(muon, muon2, mcParts);
+        }
+      }
     } // loop over muons
   }
 };

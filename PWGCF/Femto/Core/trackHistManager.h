@@ -794,7 +794,7 @@ class TrackHistManager
     if constexpr (utils::HasMass<T>) {
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kMass, HistTable)), track.mass());
     } else {
-      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kMass, HistTable)), utils::getMass(mPdgCode));
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kMass, HistTable)), utils::getPdgMass(mPdgCode));
     }
   }
 

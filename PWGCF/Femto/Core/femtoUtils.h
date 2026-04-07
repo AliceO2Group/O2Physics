@@ -63,7 +63,7 @@ float itsSignal(T const& track)
   return static_cast<float>(signal);
 };
 
-inline double getMass(int pdgCode)
+inline double getPdgMass(int pdgCode)
 {
   // use this function instead of TDatabasePDG to return masses defined in the PhysicsConstants.h header
   // this approach saves a lot of memory and important partilces like deuteron are missing in TDatabasePDG anyway
@@ -119,7 +119,7 @@ inline double getMass(int pdgCode)
       mass = o2::constants::physics::MassOmegaMinus;
       break;
     default:
-      LOG(fatal) << "PDG code is not suppored";
+      LOG(warn) << "PDG code is not suppored. Return 0...";
   }
   return mass;
 }

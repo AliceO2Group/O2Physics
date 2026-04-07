@@ -357,6 +357,9 @@ struct StudyPnch {
       if (RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
         continue;
       }
+      if (!RecCol.has_mcCollision()) {
+        continue;
+      }
       auto recTracksPart = RecTracks.sliceBy(perCollision, RecCol.globalIndex());
       auto multrec = countNTracksMcCol(recTracksPart, RecCol);
       if (multrec > 0) {

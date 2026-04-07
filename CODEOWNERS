@@ -50,9 +50,9 @@
 /PWGCF/Tutorial @alibuild @ariedel-cern @victor-gonzalez @otonvd @shouqiye
 
 /PWGDQ @alibuild @iarsene @mcoquet642 @lucamicheletti93 @XiaozhiBai
-/PWGEM @alibuild @feisenhu @dsekihat @ivorobye @jokonig
-/PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu @hscheid @jokonig
-/PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky @mhemmer-cern @dsekihat @jokonig
+/PWGEM @alibuild @feisenhu @dsekihat @jokonig @hscheid
+/PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @feisenhu @hscheid @jokonig
+/PWGEM/PhotonMeson @alibuild @mhemmer-cern @dsekihat @jokonig @hscheid @amaringarcia
 /PWGHF @alibuild @vkucera @fcolamar @fgrosa @fcatalan92 @mfaggin @mmazzilli @deepathoms @NicoleBastid @hahassan7 @jpxrk @apalasciano @zhangbiao-phy @gluparel @stefanopolitano @xinyepeng @singhra1994
 # PWG-LF
 /PWGLF @alibuild @omvazque @skundu692 @mpuccio

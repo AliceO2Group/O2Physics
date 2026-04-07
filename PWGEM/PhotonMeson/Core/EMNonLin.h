@@ -16,9 +16,8 @@
 #ifndef PWGEM_PHOTONMESON_CORE_EMNONLIN_H_
 #define PWGEM_PHOTONMESON_CORE_EMNONLIN_H_
 
-#include <Framework/Configurable.h>
-
-#include <TMatrixD.h>
+#include <TMatrixD.h> // IWYU pragma: keep (do not replace with TMatrixDfwd.h)
+#include <TMatrixDfwd.h>
 
 #include <algorithm>
 #include <cstdint>

@@ -34,6 +34,8 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
 
+#include <TPDGCode.h>
+
 #include <chrono>
 #include <cstdint>
 #include <map>
@@ -595,13 +597,28 @@ class PairTrackV0Builder
     mTrackCleaner.init(confTrackCleaner);
     mV0Cleaner.init(confV0Cleaner);
 
+    int pdgCodePosDau = 0;
+    int pdgCodeNegDau = 0;
+    if (modes::isEqual(v0Type, modes::V0::kK0short)) {
+      pdgCodeNegDau = kPiPlus;
+      pdgCodeNegDau = kPiMinus;
+    } else if (modes::isEqual(v0Type, modes::V0::kLambda) || modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
+      if (confV0Selection.sign.value > 0) {
+        pdgCodeNegDau = kProton;
+        pdgCodeNegDau = kPiMinus;
+      } else {
+        pdgCodeNegDau = kProtonBar;
+        pdgCodeNegDau = kPiPlus;
+      }
+    }
+
     mPairHistManagerSe.template init<mode>(registry, pairHistSpec, confPairBinning, confPairCuts);
-    mPairHistManagerSe.setMass(confTrackSelection.pdgCodeAbs.value, confV0Selection.pdgCodeAbs.value);
+    mPairHistManagerSe.setMass(confTrackSelection.pdgCodeAbs.value, 0, 0, confV0Selection.pdgCodeAbs.value, pdgCodePosDau, pdgCodeNegDau);
     mPairHistManagerSe.setCharge(confTrackSelection.chargeAbs.value, 1);
     mCprSe.init(registry, cprHistSpec, confCpr, confTrackSelection.chargeAbs.value);
 
     mPairHistManagerMe.template init<mode>(registry, pairHistSpec, confPairBinning, confPairCuts);
-    mPairHistManagerMe.setMass(confTrackSelection.pdgCodeAbs.value, confV0Selection.pdgCodeAbs.value);
+    mPairHistManagerMe.setMass(confTrackSelection.pdgCodeAbs.value, 0, 0, confV0Selection.pdgCodeAbs.value, pdgCodePosDau, pdgCodeNegDau);
     mPairHistManagerMe.setCharge(confTrackSelection.chargeAbs.value, 1);
     mCprMe.init(registry, cprHistSpec, confCpr, confTrackSelection.chargeAbs.value);
     mPc.template init<mode>(confPairCuts);
