@@ -641,11 +641,11 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
             }
           } else {
             if (twotracksconfigs.confIsCPRkT) {
-              if (pairCloseRejection.isClosePairkT(p1, p2, femto_universe_container::EventType::same, kT, twotracksconfigs.confIsCircularCut, twotracksconfigs.confCPRDphiAvgOrDist, magFieldTesla, twotracksconfigs.confCPRDistMax, twotracksconfigs.confCPRFracMax, twotracksconfigs.confIsfilldEtadPhiTPCcls, pairFractionTPCsCls)) {
+              if (pairCloseRejection.isClosePairkT(part1, part2, femto_universe_container::EventType::same, kT, twotracksconfigs.confIsCircularCut, twotracksconfigs.confCPRDphiAvgOrDist, magFieldTesla, twotracksconfigs.confCPRDistMax, twotracksconfigs.confCPRFracMax, twotracksconfigs.confIsfilldEtadPhiTPCcls, pairFractionTPCsCls)) {
                 continue;
               }
               if (twotracksconfigs.confIsCPRFraction) {
-                if (pairCloseRejection.isClosePairFractionkT(p1, p2, femto_universe_container::EventType::same, kT, magFieldTesla, twotracksconfigs.confCPRDistMax, twotracksconfigs.confCPRFracMax)) {
+                if (pairCloseRejection.isClosePairFractionkT(part1, part2, femto_universe_container::EventType::same, kT, magFieldTesla, twotracksconfigs.confCPRDistMax, twotracksconfigs.confCPRFracMax)) {
                   continue;
                 }
               }
@@ -1009,11 +1009,11 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
           }
         } else {
           if (twotracksconfigs.confIsCPRkT) {
-            if (pairCloseRejection.isClosePairkT(p1, p2, femto_universe_container::EventType::mixed, kT, twotracksconfigs.confIsCircularCut, twotracksconfigs.confCPRDphiAvgOrDist, magFieldTesla, twotracksconfigs.confCPRDistMax, twotracksconfigs.confCPRFracMax, twotracksconfigs.confIsfilldEtadPhiTPCcls, pairFractionTPCsCls)) {
+            if (pairCloseRejection.isClosePairkT(part1, part2, femto_universe_container::EventType::mixed, kT, twotracksconfigs.confIsCircularCut, twotracksconfigs.confCPRDphiAvgOrDist, magFieldTesla, twotracksconfigs.confCPRDistMax, twotracksconfigs.confCPRFracMax, twotracksconfigs.confIsfilldEtadPhiTPCcls, pairFractionTPCsCls)) {
               continue;
             }
             if (twotracksconfigs.confIsCPRFraction) {
-              if (pairCloseRejection.isClosePairFractionkT(p1, p2, femto_universe_container::EventType::mixed, kT, magFieldTesla, twotracksconfigs.confCPRDistMax, twotracksconfigs.confCPRFracMax)) {
+              if (pairCloseRejection.isClosePairFractionkT(part1, part2, femto_universe_container::EventType::mixed, kT, magFieldTesla, twotracksconfigs.confCPRDistMax, twotracksconfigs.confCPRFracMax)) {
                 continue;
               }
             }
