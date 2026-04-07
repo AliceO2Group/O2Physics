@@ -381,10 +381,11 @@ void runMassFitter(const std::string& configFileName)
     ConfigFixSigma,
     ConfigBkgFunc,
     ConfigSgnFunc,
+    ConfigRandomSeed,
     NConfigsToSave
   };
   auto* hFitConfig = new TH2F("hfitConfig", "Fit Configurations", NConfigsToSave - 1, 0, NConfigsToSave - 1, nHistograms, sliceVarLimits.data());
-  const char* hFitConfigXLabel[NConfigsToSave - 1] = {"mass min", "mass max", "rebin num", "fix sigma", "bkg func", "sgn func"};
+  const char* hFitConfigXLabel[NConfigsToSave - 1] = {"mass min", "mass max", "rebin num", "fix sigma", "bkg func", "sgn func", "rnd seed"};
   hFitConfig->SetStats(false);
   for (int i = 0; i < NConfigsToSave - 1; i++) {
     hFitConfig->GetXaxis()->SetBinLabel(i + 1, hFitConfigXLabel[i]);
@@ -635,6 +636,7 @@ void runMassFitter(const std::string& configFileName)
     }
     hFitConfig->SetBinContent(ConfigBkgFunc, iSliceVar + 1, bkgFunc[iSliceVar]);
     hFitConfig->SetBinContent(ConfigSgnFunc, iSliceVar + 1, sgnFunc[iSliceVar]);
+    hFitConfig->SetBinContent(ConfigRandomSeed, iSliceVar + 1, randomSeed);
   }
 
   // save output histograms
