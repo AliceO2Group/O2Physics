@@ -60,10 +60,10 @@
 
 #include <RtypesCore.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstdint>
 #include <cstdlib>
-#include <iostream>
 #include <iterator>
 #include <map>
 #include <memory>
@@ -71,8 +71,6 @@
 #include <utility>
 #include <vector>
 
-using std::cout;
-using std::endl;
 using std::string;
 
 using namespace o2;
@@ -248,14 +246,6 @@ constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::Muon | Va
 // Global function used to define needed histogram classes
 void DefineHistograms(HistogramManager* histMan, TString histClasses, const char* histGroups); // defines histograms for all tasks
 
-template <typename TMap>
-void PrintBitMap(TMap map, int nbits)
-{
-  for (int i = 0; i < nbits; i++) {
-    cout << ((map & (TMap(1) << i)) > 0 ? "1" : "0");
-  }
-}
-
 // Enum containing the ordering of statistics histograms to be written in the QA file
 enum ZorroStatHist {
   kStatsZorroInfo = 0,
@@ -338,7 +328,6 @@ struct AnalysisEventSelection {
 
   void init(o2::framework::InitContext& context)
   {
-    cout << "AnalysisEventSelection::init() called" << endl;
     if (context.mOptions.get<bool>("processDummy")) {
       return;
     }
@@ -418,13 +407,11 @@ struct AnalysisEventSelection {
       rctChecker.init(fConfigRCT.fConfigRCTLabel, fConfigRCT.fCheckZDC.value);
     }
 
-    cout << "AnalysisEventSelection::init() completed" << endl;
   }
 
   template <uint32_t TEventFillMap, typename TEvents>
   void runEventSelection(TEvents const& events, BCsWithTimestamps const& bcs)
   {
-    cout << "AnalysisEventSelection::runEventSelection() called with " << events.size() << " events and " << bcs.size() << " BCs" << endl;
 
     if (bcs.size() > 0 && fCurrentRun != bcs.begin().runNumber()) {
       if (fConfigPostCalibTPC.fConfigComputeTPCpostCalib) {
@@ -477,7 +464,6 @@ struct AnalysisEventSelection {
       fCurrentRun = bcs.begin().runNumber();
     } // end updating the CCDB quantities at change of run
 
-    cout << "Filling TimeFrame statistics histograms" << endl;
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
     VarManager::FillTimeFrame(bcs);
     VarManager::FillTimeFrame(events);
@@ -488,7 +474,6 @@ struct AnalysisEventSelection {
     fSelMap.clear();
     fBCCollMap.clear();
 
-    cout << "Starting event loop for event selection" << endl;
     for (auto& event : events) {
       auto bc = event.template bc_as<BCsWithTimestamps>();
 
@@ -541,7 +526,6 @@ struct AnalysisEventSelection {
       }
     }
 
-    cout << "AnalysisEventSelection::runEventSelection() completed" << endl;
   }
 
   // Variant of runEventSelection that first checks the DqFilters EMu prefilter bit.
@@ -550,7 +534,6 @@ struct AnalysisEventSelection {
   template <uint32_t TEventFillMap, typename TEvents>
   void runEventSelectionWithFilter(TEvents const& events, BCsWithTimestamps const& bcs)
   {
-    cout << "AnalysisEventSelection::runEventSelectionWithFilter() called with " << events.size() << " events and " << bcs.size() << " BCs" << endl;
 
     if (bcs.size() > 0 && fCurrentRun != bcs.begin().runNumber()) {
       if (fConfigPostCalibTPC.fConfigComputeTPCpostCalib) {
@@ -600,7 +583,6 @@ struct AnalysisEventSelection {
       fCurrentRun = bcs.begin().runNumber();
     } // end updating the CCDB quantities at change of run
 
-    cout << "Filling TimeFrame statistics histograms" << endl;
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
     VarManager::FillTimeFrame(bcs);
     VarManager::FillTimeFrame(events);
@@ -611,7 +593,6 @@ struct AnalysisEventSelection {
     fSelMap.clear();
     fBCCollMap.clear();
 
-    cout << "Starting event loop for event selection with DqFilter" << endl;
     for (auto& event : events) {
       // Skip events that did not pass any filterPP selection.
       // The bit position depends on filterPP config (fNBarrelCuts + fNMuonCuts + emu_index),
@@ -671,13 +652,11 @@ struct AnalysisEventSelection {
       }
     }
 
-    cout << "AnalysisEventSelection::runEventSelectionWithFilter() completed" << endl;
   }
 
   template <uint32_t TEventFillMap, typename TEvents>
   void publishSelections(TEvents const& events)
   {
-    cout << "AnalysisEventSelection::publishSelections() called" << endl;
     std::map<int64_t, bool> collisionSplittingMap; // key: event global index, value: whether pileup event is a possible splitting
 
     // Reset the fValues array and fill event observables
@@ -752,23 +731,18 @@ struct AnalysisEventSelection {
       }
       eventSel(evSel);
     }
-    cout << "AnalysisEventSelection::publishSelections() completed" << endl;
   }
 
   void processDirect(MyEvents const& events, BCsWithTimestamps const& bcs)
   {
-    cout << "AnalysisEventSelection::processDirect() called" << endl;
     runEventSelection<gkEventFillMapWithMults>(events, bcs);
     publishSelections<gkEventFillMapWithMults>(events);
-    cout << "AnalysisEventSelection::processDirect() completed" << endl;
   }
 
   void processDirectWithFilter(MyEventsWithDqFilter const& events, BCsWithTimestamps const& bcs)
   {
-    cout << "AnalysisEventSelection::processDirectWithFilter() called" << endl;
     runEventSelectionWithFilter<gkEventFillMapWithMults>(events, bcs);
     publishSelections<gkEventFillMapWithMults>(events);
-    cout << "AnalysisEventSelection::processDirectWithFilter() completed" << endl;
   }
 
   void processDummy(aod::Collisions&) {}
@@ -810,7 +784,6 @@ struct AnalysisTrackSelection {
 
   void init(o2::framework::InitContext& context)
   {
-    cout << "AnalysisTrackSelection::init() called" << endl;
     if (context.mOptions.get<bool>("processDummy"))
       return;
 
@@ -867,13 +840,11 @@ struct AnalysisTrackSelection {
     fCCDB->setCreatedNotAfter(fConfigNoLaterThan.value);
     fTofResponse->initSetup(fCCDB, context);
 
-    cout << "AnalysisTrackSelection::init() completed" << endl;
   }
 
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTracks>
   void runTrackSelection(TrackAssoc const& assocs, BCsWithTimestamps const& bcs, TEvents const& events, TTracks const& tracks)
   {
-    cout << "AnalysisTrackSelection::runTrackSelection() called" << endl;
     // determine if TEvents table contains aod::Collisions
     // bool hasCollisions = std::is_same<typename TEvents::BaseType, aod::Collisions>::value;
 
@@ -909,7 +880,6 @@ struct AnalysisTrackSelection {
     trackSel.reserve(assocs.size());
     trackAmbiguities.reserve(tracks.size());
 
-    cout << "Starting loop over track associations" << endl;
 
     for (auto& assoc : assocs) {
       auto event = assoc.template collision_as<TEvents>();
@@ -1015,24 +985,19 @@ struct AnalysisTrackSelection {
       }
     }
 
-    cout << "AnalysisTrackSelection::runTrackSelection() completed" << endl;
   }
 
   void processWithCov(TrackAssoc const& assocs, BCsWithTimestamps const& bcs, MyEventsSelected const& events, MyBarrelTracksWithCov const& tracks)
   {
-    cout << "AnalysisTrackSelection::processWithCov() called" << endl;
     runTrackSelection<gkEventFillMapWithMults, gkTrackFillMapWithCov>(assocs, bcs, events, tracks);
-    cout << "AnalysisTrackSelection::processWithCov() completed" << endl;
   }
 
   void processWithCovTOFService(TrackAssoc const& assocs, BCsWithTimestamps const& bcs, MyEventsSelected const& events, MyBarrelTracksWithCovNoTOF const& tracks)
   {
-    cout << "AnalysisTrackSelection::processWithCovTOFService() called" << endl;
     fTofResponse->processSetup(bcs.iteratorAt(0));
     auto tracksWithTOFservice = soa::Attach<MyBarrelTracksWithCovNoTOF, o2::aod::TOFNSigmaDynEl, o2::aod::TOFNSigmaDynPi,
                                             o2::aod::TOFNSigmaDynKa, o2::aod::TOFNSigmaDynPr>(tracks);
     runTrackSelection<gkEventFillMapWithMults, gkTrackFillMapWithCovNoTOF>(assocs, bcs, events, tracksWithTOFservice);
-    cout << "AnalysisTrackSelection::processWithCovTOFService() completed" << endl;
   }
 
   void processDummy(MyEvents&) {}
@@ -1061,7 +1026,6 @@ struct AnalysisPrefilterSelection {
 
   void init(o2::framework::InitContext& context)
   {
-    cout << "AnalysisPrefilterSelection::init() called" << endl;
     if (context.mOptions.get<bool>("processDummy")) {
       return;
     }
@@ -1136,7 +1100,6 @@ struct AnalysisPrefilterSelection {
 
     VarManager::SetupTwoProngDCAFitter(5.0f, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, true); // TODO: get these parameters from Configurables
     VarManager::SetupTwoProngFwdDCAFitter(5.0f, true, 200.0f, 1.0e-3f, 0.9f, true);
-    cout << "AnalysisPrefilterSelection::init() completed" << endl;
   }
 
   template <typename T>
@@ -1187,7 +1150,6 @@ struct AnalysisPrefilterSelection {
 
   void processBarrel(MyEvents const& events, soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts> const& assocs, MyBarrelTracksWithCov const& tracks)
   {
-    cout << "AnalysisPrefilterSelection::processBarrel() called" << endl;
     fPrefilterMap.clear();
 
     for (auto& event : events) {
@@ -1221,7 +1183,6 @@ struct AnalysisPrefilterSelection {
         }
       }
     }
-    cout << "AnalysisPrefilterSelection::processBarrel() completed" << endl;
   }
 
   void processDummy(MyEvents&)
@@ -1524,7 +1485,6 @@ struct AnalysisSameEventPairing {
 
   void init(o2::framework::InitContext& context)
   {
-    cout << "AnalysisSameEventPairing::init() called" << endl;
     if (context.mOptions.get<bool>("processDummy")) {
       return;
     }
@@ -1715,12 +1675,10 @@ struct AnalysisSameEventPairing {
     VarManager::SetUseVars(fHistMan->GetUsedVars());                                                      // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
 
-    cout << "AnalysisSameEventPairing::init() completed" << endl;
   }
 
   void initParamsFromCCDB(uint64_t timestamp, bool withTwoProngFitter = true)
   {
-    cout << "AnalysisSameEventPairing::initParamsFromCCDB() called for timestamp " << timestamp << endl;
     if (fConfigOptions.useRemoteField.value) {
       o2::parameters::GRPMagField* grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigCCDB.grpMagPath, timestamp);
       o2::base::MatLayerCylSet* lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(fCCDB->get<o2::base::MatLayerCylSet>(fConfigCCDB.lutPath));
@@ -1754,7 +1712,6 @@ struct AnalysisSameEventPairing {
         VarManager::SetupTwoProngDCAFitter(fConfigOptions.magField.value, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, fConfigOptions.useAbsDCA.value); // needed because take in varmanager Bz from fgFitterTwoProngBarrel for PhiV calculations
       }
     }
-    cout << "AnalysisSameEventPairing::initParamsFromCCDB() completed" << endl;
   }
 
   template <typename Events, typename TTracks, typename Tracks>
@@ -1812,7 +1769,6 @@ struct AnalysisSameEventPairing {
   template <bool TTwoProngFitter, int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTracks>
   void runSameEventPairing(TEvents const& events, BCsWithTimestamps const& bcs, Preslice<soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts, aod::Prefilter>>& preslice, soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& assocs, TTracks const& tracks)
   {
-    cout << "AnalysisSameEventPairing::runSameEventPairing() called" << endl;
     if (events.size() == 0) {
       LOG(warning) << "No events in this TF, going to the next one ...";
       return;
@@ -1995,7 +1951,6 @@ struct AnalysisSameEventPairing {
       } // end loop over pairs of track associations
     } // end loop over events
 
-    cout << "AnalysisSameEventPairing::runSameEventPairing() completed" << endl;
   }
 
   // Template function for electron-muon same-event pairing (barrel x muon, full index policy)
@@ -2117,9 +2072,7 @@ struct AnalysisSameEventPairing {
                          soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
                          MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
   {
-    cout << "AnalysisSameEventPairing::processBarrelOnly() called" << endl;
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithMults, gkTrackFillMapWithCov>(events, bcs, trackAssocsPerCollision, barrelAssocs, barrelTracks);
-    cout << "AnalysisSameEventPairing::processBarrelOnly() completed" << endl;
   }
 
   void processElectronMuonDirect(
@@ -2286,7 +2239,6 @@ struct AnalysisDileptonTrack {
                      soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts> const& assocs,
                      MyBarrelTracksWithCov const& tracks, soa::Filtered<MyDielectronCandidates> const& dileptons)
   {
-    std::cout << "AnalysisDileptonTrack::processBarrel() called" << std::endl;
 
     if (events.size() == 0) return;
 
@@ -2308,7 +2260,6 @@ struct AnalysisDileptonTrack {
           event, bcs, groupedBarrelAssocs, tracks, groupedDielectrons);
     }
 
-    std::cout << "AnalysisDileptonTrack::processBarrel() completed" << std::endl;
   }
 
   void processDummy(MyEvents&) {
