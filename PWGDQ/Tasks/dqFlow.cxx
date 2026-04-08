@@ -142,7 +142,7 @@ struct DQEventQvector {
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100.1}, "multiplicity / centrality axis for histograms"};
 
   // Define the filter for barrel tracks and forward tracks
-  Filter trackFilter = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true);
+  Filter trackFilter = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true);
   Filter fwdFilter = (aod::fwdtrack::eta < -2.45f) && (aod::fwdtrack::eta > -3.6f);
 
   // Histograms used for optionnal efficiency and non-uniform acceptance corrections
@@ -359,6 +359,28 @@ struct DQEventQvector {
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<TEventFillMap>(collision);
 
+    float S11C = collision.sumAmplFT0C();
+    float S12C = 0.f;
+    float S21C = S11C * S11C;
+
+    // Compute sum of squares of amplitudes from FT0C for flow analysis
+    if (collision.has_foundFT0()) {
+      auto ft0 = collision.foundFT0();
+      auto const& ampC = ft0.amplitudeC();
+      for (auto amp : ampC) {
+        if (amp > 0.f) {
+          S12C += amp * amp;
+        }
+      }
+    }
+    VarManager::FillQVectorFromCentralFW(collision);
+    std::complex<double> Q21C(collision.qvecFT0CRe() * S11C, collision.qvecFT0CIm() * S11C);
+
+    // Fill necessary quantities for cumulant calculations with weighted Q-vectors
+    float M11REF = S21C - S12C;
+    float CORR2REF = (norm(Q21C) - S12C) / M11REF;
+    CORR2REF = std::isnan(M11REF) || std::isinf(M11REF) || std::isnan(CORR2REF) || std::isinf(CORR2REF) ? 0 : CORR2REF;
+    M11REF = std::isnan(M11REF) || std::isinf(M11REF) || std::isnan(CORR2REF) || std::isinf(CORR2REF) ? 0 : M11REF;
 
     if (fConfigQA) {
       fHistMan->FillHistClass("Event_BeforeCuts_centralFW", VarManager::fgValues);
@@ -368,27 +390,11 @@ struct DQEventQvector {
     }
 
     if (fEventCut->IsSelected(VarManager::fgValues)) {
-      float S11C = collision.sumAmplFT0C();
-      float S12C = 0.f;
-
-      if (collision.has_foundFT0()) {
-        auto ft0 = collision.foundFT0();
-        auto const& ampC = ft0.amplitudeC();
-        for (auto amp : ampC) {
-          if (amp > 0.f) {
-            S12C += amp * amp;
-          }
-        }  
-      }      
-      VarManager::fgValues[VarManager::kS11C] = S11C;
-      VarManager::fgValues[VarManager::kS12C] = S12C;
-      VarManager::FillQVectorFromCentralFW(collision);
-
       eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
                         collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
       eventQvectorCentrExtra(collision.qvecTPCallRe(), collision.qvecTPCallIm(), collision.nTrkTPCall());
-      eventRefFlow(VarManager::fgValues[VarManager::kM11REF], VarManager::fgValues[VarManager::kM11REFetagap], VarManager::fgValues[VarManager::kM1111REF], VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR2REFetagap], VarManager::fgValues[VarManager::kCORR4REF], VarManager::fgValues[VarManager::kCentFT0C]);
-      eventQvectorExtra(0.f, 0.f, 0.f, 0.f, S11C, S12C, 0.f, 0.f);
+      eventRefFlow(M11REF, -9999, -9999, CORR2REF, -9999, -9999, VarManager::fgValues[VarManager::kCentFT0C]);
+      eventQvectorExtra(-9999, -9999, -9999, -9999, S11C, S12C, -9999, -9999);
     }
   }
 

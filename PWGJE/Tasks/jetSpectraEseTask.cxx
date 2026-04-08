@@ -35,7 +35,6 @@
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 #include <Framework/O2DatabasePDGPlugin.h>
-#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
@@ -61,7 +60,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct JetSpectraEseTask {
-  Configurable<std::string> cfgEfficiency{"cfgEfficiency", "", "CCDB path to efficiency"};
   Configurable<std::string> cfgEfficiency{"cfgEfficiency", "", "CCDB path to efficiency"};
   Configurable<float> jetPtMin{"jetPtMin", 5.0, "minimum jet pT cut"};
   Configurable<float> jetR{"jetR", 0.2, "jet resolution parameter"};
@@ -149,12 +147,6 @@ struct JetSpectraEseTask {
     bool isLoaded = false;
   } cfg;
 
-  Service<ccdb::BasicCCDBManager> ccdb;
-  struct Efficiency {
-    TH1D* hEff = nullptr;
-    bool isLoaded = false;
-  } cfg;
-
   Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
   Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r == nround(jetR.node() * Scaler) && nabs(aod::jet::eta) < Acceptance - jetR;
   Filter colFilter = nabs(aod::jcollision::posZ) < vertexZCut;
@@ -163,12 +155,10 @@ struct JetSpectraEseTask {
   Preslice<ChargedMCDJets> mcdjetsPerJCollision = o2::aod::jet::collisionId;
   Preslice<aod::JetTracks> tracksPerJCollision = o2::aod::jtrack::collisionId;
   Preslice<aod::JetTracksMCD> mcdTracksPerJCollision = o2::aod::jtrack::collisionId;
-  Preslice<aod::JetParticles> particlesPerJMcCollision = o2::aod::jmcparticle::mcCollisionId;
 
   SliceCache cache;
   using BinningType = ColumnBinningPolicy<aod::jcollision::PosZ, aod::jcollision::CentFT0C>;
   BinningType corrBinning{{binsZVtx, binsCentrality}, true};
-  Service<o2::framework::O2DatabasePDG> pdg;
   Service<o2::framework::O2DatabasePDG> pdg;
 
   enum class DetID { FT0C,
@@ -420,19 +410,20 @@ struct JetSpectraEseTask {
     }
     if (doprocessMCGenTrack) {
       LOGF(info, "JetSpectraEseTask::init() - MCGen track");
-      registry.add("hTrackPtGen", "", {HistType::kTH1F, {{assocTrackPt}}});
-      registry.add("hTrackEtaGen", "", {HistType::kTH1F, {{etaAxis}}});
-      registry.add("hTrackPhiGen", "", {HistType::kTH1F, {{phiAxis}}});
+      registry.add("mcgen/hTrackPtGen", "", {HistType::kTH1F, {{assocTrackPt}}});
+      registry.add("mcgen/hTrackEtaGen", "", {HistType::kTH1F, {{etaAxis}}});
+      registry.add("mcgen/hTrackPhiGen", "", {HistType::kTH1F, {{phiAxis}}});
     }
     if (doprocessMCRecoTrack) {
       LOGF(info, "JetSpectraEseTask::init() - MCRec track");
-      registry.add("hTrackPtReco", "", {HistType::kTH1F, {{assocTrackPt}}});
-      registry.add("hTrackEtaReco", "", {HistType::kTH1F, {{etaAxis}}});
-      registry.add("hTrackPhiReco", "", {HistType::kTH1F, {{phiAxis}}});
+      registry.add("mcrec/hTrackPtReco", "", {HistType::kTH1F, {{assocTrackPt}}});
+      registry.add("mcrec/hTrackEtaReco", "", {HistType::kTH1F, {{etaAxis}}});
+      registry.add("mcrec/hTrackPhiReco", "", {HistType::kTH1F, {{phiAxis}}});
     }
   }
 
-  void loadEfficiency(aod::BCsWithTimestamps::iterator const& bc)
+  template <typename TBC>
+  void loadEfficiency(TBC const& bc)
   {
     uint64_t timestamp = bc.timestamp();
     if (cfg.isLoaded) {
@@ -536,13 +527,8 @@ struct JetSpectraEseTask {
         double weff = getEfficiency(track);
         if (weff < 0)
           continue;
-        double weff = getEfficiency(track);
-        if (weff < 0)
-          continue;
         auto deta = track.eta() - jet.eta();
         auto dphi = RecoDecay::constrainAngle(track.phi() - jet.phi(), -o2::constants::math::PIHalf);
-        registry.fill(HIST("thn_jethad_corr_same"), centrality, vCorrL, track.pt(), deta, dphi, dPhi, qPerc[0], weff);
-        hSameSub[lRndInd]->Fill(centrality, vCorrL, track.pt(), deta, dphi, dPhi, qPerc[0], weff);
         registry.fill(HIST("thn_jethad_corr_same"), centrality, vCorrL, track.pt(), deta, dphi, dPhi, qPerc[0], weff);
         hSameSub[lRndInd]->Fill(centrality, vCorrL, track.pt(), deta, dphi, dPhi, qPerc[0], weff);
       }
@@ -552,15 +538,10 @@ struct JetSpectraEseTask {
       if (weff < 0)
         continue;
       registry.fill(HIST("trackQA/before/hTrackPt"), centrality, track.pt(), weff);
-      double weff = getEfficiency(track);
-      if (weff < 0)
-        continue;
-      registry.fill(HIST("trackQA/before/hTrackPt"), centrality, track.pt(), weff);
       registry.fill(HIST("trackQA/before/hTrackEta"), centrality, track.eta());
       registry.fill(HIST("trackQA/before/hTrackPhi"), centrality, track.phi());
       if (!jetderiveddatautilities::selectTrack(track, trackSelection))
         continue;
-      registry.fill(HIST("trackQA/after/hTrackPt"), centrality, track.pt(), weff);
       registry.fill(HIST("trackQA/after/hTrackPt"), centrality, track.pt(), weff);
       registry.fill(HIST("trackQA/after/hTrackEta"), centrality, track.eta());
       registry.fill(HIST("trackQA/after/hTrackPhi"), centrality, track.phi());
@@ -576,9 +557,8 @@ struct JetSpectraEseTask {
     auto tracksTuple = std::make_tuple(jets, tracks);
     Pair<TCollisions, TJets, TTracks, BinningType> pairData{corrBinning, numberEventsMixed, -1, collisions, tracksTuple, &cache};
 
-
     for (const auto& [c1, jets1, c2, tracks2] : pairData) {
-      auto bc = c2.template bc_as<aod::BCsWithTimestamps>();
+      auto bc = c2.template bc_as<aod::JBCs>();
       loadEfficiency(bc);
       auto c1Tracks = tracks.sliceBy(tracksPerJCollision, c1.globalIndex());
       registry.fill(HIST("eventQA/before/hVtxZMixed"), c1.posZ());
@@ -639,19 +619,14 @@ struct JetSpectraEseTask {
         float dPhi{RecoDecay::constrainAngle(jet.phi() - psi.psi2, -o2::constants::math::PI)};
 
         registry.fill(HIST("hNtrigMixed"), centrality, vCorrL, dPhi, qPerc[0]);
-        registry.fill(HIST("hNtrigMixed"), centrality, vCorrL, dPhi, qPerc[0]);
         for (const auto& track : tracks2) {
           if (!jetderiveddatautilities::selectTrack(track, trackSelection))
             continue;
           double weff = getEfficiency(track);
           if (weff < 0)
             continue;
-          double weff = getEfficiency(track);
-          if (weff < 0)
-            continue;
           auto deta = track.eta() - jet.eta();
           auto dphi = RecoDecay::constrainAngle(track.phi() - jet.phi(), -o2::constants::math::PIHalf);
-          registry.fill(HIST("thn_jethad_corr_mixed"), centrality, vCorrL, track.pt(), deta, dphi, dPhi, qPerc[0], weff);
           registry.fill(HIST("thn_jethad_corr_mixed"), centrality, vCorrL, track.pt(), deta, dphi, dPhi, qPerc[0], weff);
         }
       }
@@ -661,15 +636,10 @@ struct JetSpectraEseTask {
         if (weff < 0)
           continue;
         registry.fill(HIST("trackQA/before/hTrackPtMixed"), centrality, track.pt(), weff);
-        double weff = getEfficiency(track);
-        if (weff < 0)
-          continue;
-        registry.fill(HIST("trackQA/before/hTrackPtMixed"), centrality, track.pt(), weff);
         registry.fill(HIST("trackQA/before/hTrackEtaMixed"), centrality, track.eta());
         registry.fill(HIST("trackQA/before/hTrackPhiMixed"), centrality, track.phi());
         if (!jetderiveddatautilities::selectTrack(track, trackSelection))
           continue;
-        registry.fill(HIST("trackQA/after/hTrackPtMixed"), centrality, track.pt(), weff);
         registry.fill(HIST("trackQA/after/hTrackPtMixed"), centrality, track.pt(), weff);
         registry.fill(HIST("trackQA/after/hTrackEtaMixed"), centrality, track.eta());
         registry.fill(HIST("trackQA/after/hTrackPhiMixed"), centrality, track.phi());
@@ -679,7 +649,7 @@ struct JetSpectraEseTask {
 
   void processESEDataCharged(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::Qvectors, aod::QPercentileFT0Cs>::iterator const& collision,
                              soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& jets,
-                             aod::JetTracks const& tracks, aod::BCsWithTimestamps const&)
+                             aod::JetTracks const& tracks, aod::JBCs const&)
   {
     registry.fill(HIST("eventQA/hEventCounter"), kFilteredInputEv);
     registry.fill(HIST("eventQA/before/hVtxZ"), collision.posZ());
@@ -691,7 +661,7 @@ struct JetSpectraEseTask {
       return;
     registry.fill(HIST("eventQA/hEventCounter"), kOccupancyCut);
 
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    auto bc = collision.bc_as<aod::JBCs>();
     loadEfficiency(bc);
     jetSpectra(collision, jets, tracks);
   }
@@ -699,7 +669,7 @@ struct JetSpectraEseTask {
 
   void processESEDataChargedMixed(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::Qvectors, aod::QPercentileFT0Cs> const& collisions,
                                   soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& jets,
-                                  aod::JetTracks const& tracks, aod::BCsWithTimestamps const&)
+                                  aod::JetTracks const& tracks, aod::JBCs const&)
   {
     jetMixed(collisions, jets, tracks);
   }
@@ -916,8 +886,10 @@ struct JetSpectraEseTask {
       return;
     }
 
-    auto particlesInCollision = particles.sliceBy(particlesPerJMcCollision, mcCollision.globalIndex());
-    for (const auto& particle : particlesInCollision) {
+    for (const auto& particle : particles) {
+      if (particle.mcCollisionId() != mcCollision.globalIndex()) {
+        continue;
+      }
       if (!isChargedParticle(particle.pdgCode())) {
         continue;
       }
@@ -931,9 +903,9 @@ struct JetSpectraEseTask {
         continue;
       }
 
-      registry.fill(HIST("hTrackPtGen"), particle.pt());
-      registry.fill(HIST("hTrackEtaGen"), particle.eta());
-      registry.fill(HIST("hTrackPhiGen"), particle.phi());
+      registry.fill(HIST("mcgen/hTrackPtGen"), particle.pt());
+      registry.fill(HIST("mcgen/hTrackEtaGen"), particle.eta());
+      registry.fill(HIST("mcgen/hTrackPhiGen"), particle.phi());
     }
   }
   PROCESS_SWITCH(JetSpectraEseTask, processMCGenTrack, "jet MC process: Generated track", false);
@@ -996,9 +968,9 @@ struct JetSpectraEseTask {
         }
         seenMcParticles.push_back(particle.globalIndex());
 
-        registry.fill(HIST("hTrackPtReco"), track.pt());
-        registry.fill(HIST("hTrackEtaReco"), track.eta());
-        registry.fill(HIST("hTrackPhiReco"), track.phi());
+        registry.fill(HIST("mcrec/hTrackPtReco"), track.pt());
+        registry.fill(HIST("mcrec/hTrackEtaReco"), track.eta());
+        registry.fill(HIST("mcrec/hTrackPhiReco"), track.phi());
       }
     }
   }
