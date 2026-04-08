@@ -87,7 +87,7 @@ struct HadronNucleiCorrelation {
   Configurable<bool> isMC{"isMC", false, "is MC"};
   Configurable<bool> isMCGen{"isMCGen", false, "is isMCGen"};
   Configurable<bool> isPrim{"isPrim", true, "is isPrim"};
-  Configurable<bool> docorrection{"docorrection", false, "do efficiency correction"};
+  Configurable<bool> doCorrection{"doCorrection", false, "do efficiency correction"};
 
   Configurable<std::string> fCorrectionPath{"fCorrectionPath", "", "Correction path to file"};
   Configurable<std::string> fCorrectionHisto{"fCorrectionHisto", "", "Correction histogram"};
@@ -103,9 +103,9 @@ struct HadronNucleiCorrelation {
   Configurable<float> min_TPC_nCrossedRowsOverFindableCls{"min_TPC_nCrossedRowsOverFindableCls", 0.8, "n TPC Crossed Rows Over Findable Cls"};
   Configurable<float> max_chi2_TPC{"max_chi2_TPC", 4.0f, "maximum TPC chi^2/Ncls"};
   Configurable<float> max_chi2_ITS{"max_chi2_ITS", 36.0f, "maximum ITS chi^2/Ncls"};
-  Configurable<float> etacut{"etacut", 0.8f, "eta cut"};
-  Configurable<float> max_dcaxy{"max_dcaxy", 0.14f, "Maximum DCAxy"};
-  Configurable<float> max_dcaz{"max_dcaz", 0.1f, "Maximum DCAz"};
+  Configurable<float> etaCut{"etaCut", 0.8f, "eta cut"};
+  Configurable<float> max_DCAxy{"max_DCAxy", 0.14f, "Maximum DCAxy"};
+  Configurable<float> max_DCAz{"max_DCAz", 0.1f, "Maximum DCAz"};
   Configurable<float> nsigmaTPC{"nsigmaTPC", 3.0f, "cut nsigma TPC"};
   Configurable<float> nsigmaElPr{"nsigmaElPr", 1.0f, "cut nsigma TPC El for protons"};
   Configurable<float> nsigmaElDe{"nsigmaElDe", 3.0f, "cut nsigma TPC El for protons"};
@@ -129,7 +129,7 @@ struct HadronNucleiCorrelation {
   ConfigurableAxis confMultBins{"confMultBins", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 50.0f, 100.0f, 99999.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis confVtxBins{"confVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   ColumnBinningPolicy<aod::singletrackselector::PosZ, aod::singletrackselector::Mult> colBinning{{confVtxBins, confMultBins}, true};
-  ColumnBinningPolicy<aod::mccollision::PosZ, o2::aod::mult::MultMCNParticlesEta05> colBinningGen{{confVtxBins, confMultBins}, true};
+  ColumnBinningPolicy<aod::mccollision::PosZ, o2::aod::mult::MultMCNParticlesEta10> colBinningGen{{confVtxBins, confMultBins}, true};
 
   // pT/A bins
   Configurable<std::vector<double>> pTBins{"pTBins", {0.6f, 1.0f, 1.2f, 2.f}, "p_{T} bins"};
@@ -179,7 +179,7 @@ struct HadronNucleiCorrelation {
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     ccdb->setFatalWhenNull(false);
 
-    if (docorrection) {
+    if (doCorrection) {
       GetCorrection(ccdb, TString(fCorrectionPath), TString(fCorrectionHisto));
     } else {
       hEffpTEta_proton = nullptr;
@@ -420,9 +420,9 @@ struct HadronNucleiCorrelation {
                        o2::aod::singletrackselector::unPack<singletrackselector::binning::chi2>(o2::aod::singletrackselector::storedTpcChi2NCl) <= max_chi2_TPC &&
                        o2::aod::singletrackselector::unPack<singletrackselector::binning::rowsOverFindable>(o2::aod::singletrackselector::storedTpcCrossedRowsOverFindableCls) >= min_TPC_nCrossedRowsOverFindableCls &&
                        o2::aod::singletrackselector::unPack<singletrackselector::binning::chi2>(o2::aod::singletrackselector::storedItsChi2NCl) <= max_chi2_ITS &&
-                       nabs(o2::aod::singletrackselector::unPack<singletrackselector::binning::dca>(o2::aod::singletrackselector::storedDcaXY)) <= max_dcaxy &&
-                       nabs(o2::aod::singletrackselector::unPack<singletrackselector::binning::dca>(o2::aod::singletrackselector::storedDcaXY)) <= max_dcaz &&
-                       nabs(o2::aod::singletrackselector::eta) <= etacut;
+                       nabs(o2::aod::singletrackselector::unPack<singletrackselector::binning::dca>(o2::aod::singletrackselector::storedDcaXY)) <= max_DCAxy &&
+                       nabs(o2::aod::singletrackselector::unPack<singletrackselector::binning::dca>(o2::aod::singletrackselector::storedDcaXY)) <= max_DCAz &&
+                       nabs(o2::aod::singletrackselector::eta) <= etaCut;
 
   template <typename Type>
   bool IsProton(Type const& track, int sign)
@@ -575,7 +575,7 @@ struct HadronNucleiCorrelation {
 
         float corr0 = 1, corr1 = 1;
 
-        if (docorrection) { // Apply corrections
+        if (doCorrection) { // Apply corrections
           switch (mode) {
             case 0:
               corr0 = hEffpTEta_antideuteron->Interpolate(part0.pt(), part0.eta());
@@ -1354,7 +1354,7 @@ struct HadronNucleiCorrelation {
         registry.fill(HIST("Generated/hAntiDeuteronsVsPt"), particle.pt());
       }
 
-      if (std::abs(particle.eta()) > etacut) {
+      if (std::abs(particle.eta()) > etaCut) {
         continue;
       }
       if (particle.pdgCode() == PDG_t::kProton) {
@@ -1447,15 +1447,19 @@ struct HadronNucleiCorrelation {
   }
   PROCESS_SWITCH(HadronNucleiCorrelation, processSameEventGen, "processSameEventGen", false);
 
+  Preslice<SimParticles> perMcCollision = o2::aod::mcparticle::mcCollisionId;
+
   void processMixedEventGen(SimCollisions const& mcCollisions, SimParticles const& mcParticles)
   {
 
     for (const auto& [collision1, collision2] : soa::selfCombinations(colBinningGen, 5, -1, mcCollisions, mcCollisions)) {
 
-      //LOGF(info, "Mixed event collisions: (%d, %d) zvtx (%.1f, %.1f) mult (%d, %d)", collision1.globalIndex(), collision2.globalIndex(), collision1.posZ(), collision2.posZ(), collision1.multMCNParticlesEta05(), collision2.multMCNParticlesEta05());
+      // LOGF(info, "Mixed event collisions: (%d, %d) zvtx (%.1f, %.1f) mult (%d, %d)", collision1.globalIndex(), collision2.globalIndex(), collision1.posZ(), collision2.posZ(), collision1.multMCNParticlesEta10(), collision2.multMCNParticlesEta10());
 
-      auto groupPartsOne = mcParticles.sliceByCached(o2::aod::mcparticle::mcCollisionId, collision1.globalIndex(), cache);
-      auto groupPartsTwo = mcParticles.sliceByCached(o2::aod::mcparticle::mcCollisionId, collision2.globalIndex(), cache);
+      auto groupPartsOne = mcParticles.sliceBy(perMcCollision, collision1.globalIndex());
+      auto groupPartsTwo = mcParticles.sliceBy(perMcCollision, collision2.globalIndex());
+
+      registry.fill(HIST("hMult"), collision1.multMCNParticlesEta10());
 
       for (const auto& [part0, part1] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
 
