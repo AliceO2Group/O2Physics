@@ -85,9 +85,9 @@ enum {
   kSpOther,
   kSpStrangeDecay,
   kBkg,
-  kFake,
   kSpNotPrimary,
   kSpAll,
+  kFake,
   kSpeciesend
 };
 
