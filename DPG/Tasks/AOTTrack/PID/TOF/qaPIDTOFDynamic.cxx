@@ -10,41 +10,31 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file   qaPIDTOF.cxx
+/// \file   qaPIDTOFDynamic.cxx
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \brief  Implementation for QA tasks of the TOF PID quantities
 ///
 
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/TableProducer/PID/pidTOFBase.h"
 
-#include <Framework/ASoA.h>
-#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/Configurable.h>
-#include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
-#include <Framework/OutputObjHeader.h>
 #include <Framework/StaticFor.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/PID.h>
-
-#include <TH1.h>
-#include <TMath.h>
-#include <TString.h>
-
-#include <string_view>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 
-/// Task to produce the TOF QA plots
-struct tofPidQa {
+/// Task to produce the TOF QA plots with dynamic columns
+struct tofPidQaDynamic {
+  Service<o2::pid::tof::TOFResponse> tofResponse;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
   static constexpr int Np = 9;
   static constexpr const char* pT[Np] = {"e", "#mu", "#pi", "K", "p", "d", "t", "^{3}He", "#alpha"};
   static constexpr std::string_view hexpected[Np] = {"expected/El", "expected/Mu", "expected/Pi",
@@ -276,8 +266,9 @@ struct tofPidQa {
     }
   }
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
+    tofResponse->initSetup(ccdb, context);
     const AxisSpec multAxis{100, 0, 100, "TOF multiplicity"};
     const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
     const AxisSpec contributorsAxis{100, 0, 1000, "PV contributors"};
@@ -344,6 +335,22 @@ struct tofPidQa {
     histos.add("event/pt", "", kTH1D, {ptAxis});
     histos.add("event/p", "", kTH1D, {pAxis});
     // histos.add("event/ptreso", "", kTH2F, {pAxis, ptResoAxis});
+
+    // Extra histograms for consistency with non Dynamic columns
+    histos.add("check/beta", "beta #Delta", kTH1D, {{1000, -10, 10, "beta #Delta"}});
+    histos.add("check/mass", "mass #Delta", kTH1D, {{1000, -10, 10, "mass #Delta"}});
+    histos.add("check/El/reso", "reso #Delta", kTH1D, {{1000, -10, 10, "Reso #Delta"}});
+    histos.add("check/El/exp", "exp #Delta", kTH1D, {{1000, -10, 10, "exp #Delta"}});
+    histos.add("check/El/delta", "#Delta #Delta", kTH1D, {{1000, -10, 10, "#Delta #Delta"}});
+    histos.add("check/El/nsigma", "nsigma #Delta", kTH1D, {{1000, -10, 10, "nsigma #Delta"}});
+    histos.addClone("check/El/", "check/Mu/");
+    histos.addClone("check/El/", "check/Pi/");
+    histos.addClone("check/El/", "check/Ka/");
+    histos.addClone("check/El/", "check/Pr/");
+    histos.addClone("check/El/", "check/De/");
+    histos.addClone("check/El/", "check/Tr/");
+    histos.addClone("check/El/", "check/He/");
+    histos.addClone("check/El/", "check/Al/");
 
     static_for<0, 8>([&](auto i) {
       initPerParticle<i>(pAxis, ptAxis, etaAxis, phiAxis, chargeAxis);
@@ -521,13 +528,16 @@ struct tofPidQa {
                        ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
                        ((trackSelection.node() == 5) && requireInAcceptanceTracksInFilter());
   using CollisionCandidate = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator;
-  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
+  using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TrackSelection,
                                     aod::pidEvTimeFlags, aod::TOFSignal, aod::TOFEvTime,
                                     aod::pidTOFFlags>;
 
   void process(CollisionCandidate const& collision,
-               soa::Filtered<TrackCandidates> const& tracks)
+               soa::Filtered<TrackCandidates> const& tracks,
+               o2::aod::BCsWithTimestamps const&)
   {
+    tofResponse->processSetup(collision.bc_as<o2::aod::BCsWithTimestamps>());
+
     isEventSelected<true>(collision, tracks);
     for (auto t : tracks) {
       isTrackSelected<true>(collision, t);
@@ -554,7 +564,7 @@ struct tofPidQa {
         }
       }
 
-      const auto nsigma = o2::aod::pidutils::tofNSigma<id>(t);
+      const auto nsigma = t.tofNSigmaDyn(id);
       histos.fill(HIST(hnsigma[id]), t.p(), nsigma);
       if (splitSignalPerCharge) {
         histos.fill(HIST(hnsigma_pt[id]), t.pt(), nsigma, t.sign());
@@ -596,7 +606,8 @@ struct tofPidQa {
 
       if constexpr (fillFullHistograms) {
         const float& tof = t.tofSignal() - t.tofEvTime();
-        const auto& diff = o2::aod::pidutils::tofExpSignalDiff<id>(t);
+        const auto& diff = o2::aod::pidutils::tofExpTime<id>(t);
+
         // Fill histograms
         histos.fill(HIST(hexpected[id]), t.p(), tof - diff);
         histos.fill(HIST(hdelta[id]), t.p(), diff);
@@ -611,7 +622,7 @@ struct tofPidQa {
             histos.fill(HIST(hdelta_etaphi[id]), t.eta(), t.phi(), diff);
           }
         }
-        histos.fill(HIST(hexpsigma[id]), t.p(), o2::aod::pidutils::tofExpSigma<id>(t));
+        histos.fill(HIST(hexpsigma[id]), t.p(), t.tofExpSigmaDyn(id));
 
         // Filling info split per ev. time
         if (enableEvTimeSplitting) {
@@ -666,47 +677,131 @@ struct tofPidQa {
   }
 
   // QA of nsigma only tables
-#define makeProcessFunction(inputPid, particleId)                                             \
-  void process##particleId(CollisionCandidate const& collision,                               \
-                           soa::Filtered<soa::Join<TrackCandidates, inputPid>> const& tracks) \
-  {                                                                                           \
-    processSingleParticle<PID::particleId, false>(collision, tracks);                         \
-  }                                                                                           \
-  PROCESS_SWITCH(tofPidQa, process##particleId, Form("Process for the %s hypothesis for TOF NSigma QA", #particleId), false);
+#define makeProcessFunction(inputPid, particleId)                                                                                                                  \
+  void process##particleId(CollisionCandidate const& collision,                                                                                                    \
+                           TrackCandidates const& tracks)                                                                                                          \
+  {                                                                                                                                                                \
+    auto tracksWithPid = soa::Attach<TrackCandidates, aod::TOFExpSigmaDyn##inputPid, aod::TOFNSigmaDyn##inputPid, aod::TOFExpSigmaDyn, aod::TOFNSigmaDyn>(tracks); \
+    processSingleParticle<PID::particleId, false>(collision, tracksWithPid);                                                                                       \
+  }                                                                                                                                                                \
+  PROCESS_SWITCH(tofPidQaDynamic, process##particleId, Form("Process for the %s hypothesis for TOF NSigma QA", #particleId), false);
 
-  makeProcessFunction(aod::pidTOFEl, Electron);
-  makeProcessFunction(aod::pidTOFMu, Muon);
-  makeProcessFunction(aod::pidTOFPi, Pion);
-  makeProcessFunction(aod::pidTOFKa, Kaon);
-  makeProcessFunction(aod::pidTOFPr, Proton);
-  makeProcessFunction(aod::pidTOFDe, Deuteron);
-  makeProcessFunction(aod::pidTOFTr, Triton);
-  makeProcessFunction(aod::pidTOFHe, Helium3);
-  makeProcessFunction(aod::pidTOFAl, Alpha);
+  makeProcessFunction(El, Electron);
+  makeProcessFunction(Mu, Muon);
+  makeProcessFunction(Pi, Pion);
+  makeProcessFunction(Ka, Kaon);
+  makeProcessFunction(Pr, Proton);
+  makeProcessFunction(De, Deuteron);
+  makeProcessFunction(Tr, Triton);
+  makeProcessFunction(He, Helium3);
+  makeProcessFunction(Al, Alpha);
 #undef makeProcessFunction
 
 // QA of full tables
-#define makeProcessFunction(inputPid, particleId)                                                 \
-  void processFull##particleId(CollisionCandidate const& collision,                               \
-                               soa::Filtered<soa::Join<TrackCandidates, inputPid>> const& tracks) \
-  {                                                                                               \
-    processSingleParticle<PID::particleId, true>(collision, tracks);                              \
-  }                                                                                               \
-  PROCESS_SWITCH(tofPidQa, processFull##particleId, Form("Process for the %s hypothesis for full TOF PID QA", #particleId), false);
+#define makeProcessFunction(inputPid, particleId)                                                                                                                  \
+  void processFull##particleId(CollisionCandidate const& collision,                                                                                                \
+                               soa::Filtered<TrackCandidates> const& tracks)                                                                                       \
+  {                                                                                                                                                                \
+    auto tracksWithPid = soa::Attach<TrackCandidates, aod::TOFNSigmaDyn##inputPid, aod::TOFExpSigmaDyn##inputPid, aod::TOFNSigmaDyn, aod::TOFExpSigmaDyn>(tracks); \
+    processSingleParticle<PID::particleId, true>(collision, tracksWithPid);                                                                                        \
+  }                                                                                                                                                                \
+  PROCESS_SWITCH(tofPidQaDynamic, processFull##particleId, Form("Process for the %s hypothesis for full TOF PID QA", #particleId), false);
 
-  makeProcessFunction(aod::pidTOFFullEl, Electron);
-  makeProcessFunction(aod::pidTOFFullMu, Muon);
-  makeProcessFunction(aod::pidTOFFullPi, Pion);
-  makeProcessFunction(aod::pidTOFFullKa, Kaon);
-  makeProcessFunction(aod::pidTOFFullPr, Proton);
-  makeProcessFunction(aod::pidTOFFullDe, Deuteron);
-  makeProcessFunction(aod::pidTOFFullTr, Triton);
-  makeProcessFunction(aod::pidTOFFullHe, Helium3);
-  makeProcessFunction(aod::pidTOFFullAl, Alpha);
+  makeProcessFunction(El, Electron);
+  makeProcessFunction(Mu, Muon);
+  makeProcessFunction(Pi, Pion);
+  makeProcessFunction(Ka, Kaon);
+  makeProcessFunction(Pr, Proton);
+  makeProcessFunction(De, Deuteron);
+  makeProcessFunction(Tr, Triton);
+  makeProcessFunction(He, Helium3);
+  makeProcessFunction(Al, Alpha);
 #undef makeProcessFunction
+
+  using TrkPID = soa::Join<TrackCandidates,
+                           aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
+                           aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe,
+                           aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
+                           aod::pidTOFbeta, aod::pidTOFmass>;
+  void processDiff(TrkPID const& tracks, aod::Collisions const&)
+  {
+    auto tracksWithPid = soa::Attach<TrkPID,
+                                     o2::aod::TOFExpSigmaDynEl, o2::aod::TOFNSigmaDynEl,
+                                     o2::aod::TOFExpSigmaDynMu, o2::aod::TOFNSigmaDynMu,
+                                     o2::aod::TOFExpSigmaDynPi, o2::aod::TOFNSigmaDynPi,
+                                     o2::aod::TOFExpSigmaDynKa, o2::aod::TOFNSigmaDynKa,
+                                     o2::aod::TOFExpSigmaDynPr, o2::aod::TOFNSigmaDynPr,
+                                     o2::aod::TOFExpSigmaDynDe, o2::aod::TOFNSigmaDynDe,
+                                     o2::aod::TOFExpSigmaDynTr, o2::aod::TOFNSigmaDynTr,
+                                     o2::aod::TOFExpSigmaDynHe, o2::aod::TOFNSigmaDynHe,
+                                     o2::aod::TOFExpSigmaDynAl, o2::aod::TOFNSigmaDynAl,
+                                     o2::aod::TOFBeta, o2::aod::TOFMass>(tracks);
+    if (tracks.size() != tracksWithPid.size()) {
+      LOG(fatal) << "Mismatch in track table size!" << tracks.size() << " vs " << tracksWithPid.size();
+    }
+    for (const auto& t : tracksWithPid) {
+      if (!t.has_collision()) { // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
+        continue;
+      }
+      histos.fill(HIST("check/beta"), t.beta() - t.tofBeta());
+      histos.fill(HIST("check/mass"), t.mass() - t.tofMass());
+      const float offset = tofResponse->parameters.getTimeShift(t.eta(), t.sign());
+
+      const auto& trk = tracks.iteratorAt(t.globalIndex());
+      if (!trk.hasTOF()) {
+        continue;
+      }
+      histos.fill(HIST("check/El/reso"), t.tofExpSigmaEl() - t.tofExpSigmaDynEl());
+      histos.fill(HIST("check/El/exp"), t.tofExpSignalEl(t.tofSignal() - t.tofEvTime()) - t.tofExpTimeEl() - offset);
+      histos.fill(HIST("check/El/delta"), t.tofExpSignalDiffEl() + t.tofExpTimeEl() - t.tofSignal() + t.tofEvTime());
+      histos.fill(HIST("check/El/nsigma"), t.tofNSigmaEl() - t.tofNSigmaDynEl());
+
+      histos.fill(HIST("check/Mu/reso"), t.tofExpSigmaMu() - t.tofExpSigmaDynMu());
+      histos.fill(HIST("check/Mu/exp"), t.tofExpSignalMu(t.tofSignal() - t.tofEvTime()) - t.tofExpTimeMu() - offset);
+      histos.fill(HIST("check/Mu/delta"), t.tofExpSignalDiffMu() + t.tofExpTimeMu() - t.tofSignal() + t.tofEvTime());
+      histos.fill(HIST("check/Mu/nsigma"), t.tofNSigmaMu() - t.tofNSigmaDynMu());
+
+      histos.fill(HIST("check/Pi/reso"), t.tofExpSigmaPi() - t.tofExpSigmaDynPi());
+      histos.fill(HIST("check/Pi/exp"), t.tofExpSignalPi(t.tofSignal() - t.tofEvTime()) - t.tofExpTimePi() - offset);
+      histos.fill(HIST("check/Pi/delta"), t.tofExpSignalDiffPi() + t.tofExpTimePi() - t.tofSignal() + t.tofEvTime());
+      histos.fill(HIST("check/Pi/nsigma"), t.tofNSigmaPi() - t.tofNSigmaDynPi());
+
+      histos.fill(HIST("check/Ka/reso"), t.tofExpSigmaKa() - t.tofExpSigmaDynKa());
+      histos.fill(HIST("check/Ka/exp"), t.tofExpSignalKa(t.tofSignal() - t.tofEvTime()) - t.tofExpTimeKa() - offset);
+      histos.fill(HIST("check/Ka/delta"), t.tofExpSignalDiffKa() + t.tofExpTimeKa() - t.tofSignal() + t.tofEvTime());
+      histos.fill(HIST("check/Ka/nsigma"), t.tofNSigmaKa() - t.tofNSigmaDynKa());
+
+      histos.fill(HIST("check/Pr/reso"), t.tofExpSigmaPr() - t.tofExpSigmaDynPr());
+      histos.fill(HIST("check/Pr/exp"), t.tofExpSignalPr(t.tofSignal() - t.tofEvTime()) - t.tofExpTimePr() - offset);
+      histos.fill(HIST("check/Pr/delta"), t.tofExpSignalDiffPr() + t.tofExpTimePr() - t.tofSignal() + t.tofEvTime());
+      histos.fill(HIST("check/Pr/nsigma"), t.tofNSigmaPr() - t.tofNSigmaDynPr());
+
+      histos.fill(HIST("check/De/reso"), t.tofExpSigmaDe() - t.tofExpSigmaDynDe());
+      histos.fill(HIST("check/De/exp"), t.tofExpSignalDe(t.tofSignal() - t.tofEvTime()) - t.tofExpTimeDe() - offset);
+      histos.fill(HIST("check/De/delta"), t.tofExpSignalDiffDe() + t.tofExpTimeDe() - t.tofSignal() + t.tofEvTime());
+      histos.fill(HIST("check/De/nsigma"), t.tofNSigmaDe() - t.tofNSigmaDynDe());
+
+      histos.fill(HIST("check/Tr/reso"), t.tofExpSigmaTr() - t.tofExpSigmaDynTr());
+      histos.fill(HIST("check/Tr/exp"), t.tofExpSignalTr(t.tofSignal() - t.tofEvTime()) - t.tofExpTimeTr() - offset);
+      histos.fill(HIST("check/Tr/delta"), t.tofExpSignalDiffTr() + t.tofExpTimeTr() - t.tofSignal() + t.tofEvTime());
+      histos.fill(HIST("check/Tr/nsigma"), t.tofNSigmaTr() - t.tofNSigmaDynTr());
+
+      histos.fill(HIST("check/He/reso"), t.tofExpSigmaHe() - t.tofExpSigmaDynHe());
+      histos.fill(HIST("check/He/exp"), t.tofExpSignalHe(t.tofSignal() - t.tofEvTime()) - t.tofExpTimeHe() - offset);
+      histos.fill(HIST("check/He/delta"), t.tofExpSignalDiffHe() + t.tofExpTimeHe() - t.tofSignal() + t.tofEvTime());
+      histos.fill(HIST("check/He/nsigma"), t.tofNSigmaHe() - t.tofNSigmaDynHe());
+
+      histos.fill(HIST("check/Al/reso"), t.tofExpSigmaAl() - t.tofExpSigmaDynAl());
+      histos.fill(HIST("check/Al/exp"), t.tofExpSignalAl(t.tofSignal() - t.tofEvTime()) - t.tofExpTimeAl() - offset);
+      histos.fill(HIST("check/Al/delta"), t.tofExpSignalDiffAl() + t.tofExpTimeAl() - t.tofSignal() + t.tofEvTime());
+      histos.fill(HIST("check/Al/nsigma"), t.tofNSigmaAl() - t.tofNSigmaDynAl());
+    }
+  }
+  PROCESS_SWITCH(tofPidQaDynamic, processDiff, "Process diff between Dyn and not Dyn", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<tofPidQa>(cfgc)};
+  o2::pid::tof::TOFResponseImpl::metadataInfo.initMetadata(cfgc);
+  return WorkflowSpec{adaptAnalysisTask<tofPidQaDynamic>(cfgc)};
 }

@@ -127,8 +127,9 @@ struct FlowSP {
   // Additional track Selections
   O2_DEFINE_CONFIGURABLE(cfgTrackSelsUseAdditionalTrackCut, bool, false, "Bool to enable Additional Track Cut");
   O2_DEFINE_CONFIGURABLE(cfgTrackSelsDoDCApt, bool, false, "Apply Pt dependent DCAz cut");
-  O2_DEFINE_CONFIGURABLE(cfgTrackSelsDCApt1, float, 0.1, "DcaZ < a * b / pt^1.1 -> this sets a");
-  O2_DEFINE_CONFIGURABLE(cfgTrackSelsDCApt2, float, 0.035, "DcaZ < a * b / pt^1.1 -> this sets b");
+  O2_DEFINE_CONFIGURABLE(cfgTrackSelsDCApt1, float, 0.1, "DcaZ < const + (a * b) / pt^1.1 -> this sets a");
+  O2_DEFINE_CONFIGURABLE(cfgTrackSelsDCApt2, float, 0.035, "DcaZ < const + (a * b) / pt^1.1 -> this sets b");
+  O2_DEFINE_CONFIGURABLE(cfgTrackSelsDCAptConsMin, float, 0.1, "DcaZ < const + (a * b) / pt^1.1 -> this sets const");
   O2_DEFINE_CONFIGURABLE(cfgTrackSelsPIDNsigma, float, 2.0, "nSigma cut for PID");
   O2_DEFINE_CONFIGURABLE(cfgTrackSelDoTrackQAvsCent, bool, true, "Do track selection QA plots as function of centrality");
   // harmonics for v coefficients
@@ -1000,7 +1001,7 @@ struct FlowSP {
     if (track.dcaZ() > cfgTrackSelsDCAz)
       return false;
 
-    if (cfgTrackSelsDoDCApt && std::fabs(track.dcaZ()) > (cfgTrackSelsDCApt1 * cfgTrackSelsDCApt2) / (std::pow(track.pt(), 1.1)))
+    if (cfgTrackSelsDoDCApt && std::fabs(track.dcaZ()) > (cfgTrackSelsDCAptConsMin + (cfgTrackSelsDCApt1 * cfgTrackSelsDCApt2) / (std::pow(track.pt(), 1.1))))
       return false;
 
     histos.fill(HIST("hTrackCount"), trackSel_DCAz);

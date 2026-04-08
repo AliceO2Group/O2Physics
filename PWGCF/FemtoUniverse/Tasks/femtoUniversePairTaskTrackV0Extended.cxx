@@ -176,6 +176,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
     Configurable<float> confCPRdeltaEtaCutMin{"confCPRdeltaEtaCutMin", 0.0, "Delta Eta min cut for Close Pair Rejection"};
     Configurable<float> confCPRChosenRadii{"confCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
     Configurable<bool> confRandomizeCPR{"confRandomizeCPR", false, "Fill Dete-Dphi histograms in random order: v01, v02 or v02, v01 - does not apply to track-V0"};
+    ConfigurableAxis confDeltaEtaAxis{"confDeltaEtaAxis", {100, -0.15, 0.15}, "DeltaEta"};
+    ConfigurableAxis confDeltaPhiStarAxis{"confDeltaPhiStarAxis", {100, -0.15, 0.15}, "DeltaPhiStar"};
   } ConfCPR;
 
   // Efficiency
@@ -387,8 +389,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
     pairCleaner.init(&qaRegistry);
     pairCleanerV0.init(&qaRegistry);
     if (ConfCPR.confIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPR.confCPRdeltaPhiCutMin.value, ConfCPR.confCPRdeltaPhiCutMax.value, ConfCPR.confCPRdeltaEtaCutMin.value, ConfCPR.confCPRdeltaEtaCutMax.value, ConfCPR.confCPRChosenRadii.value, ConfCPR.confCPRPlotPerRadii.value);
-      pairCloseRejectionV0.init(&resultRegistry, &qaRegistry, ConfCPR.confCPRdeltaPhiCutMin.value, ConfCPR.confCPRdeltaPhiCutMax.value, ConfCPR.confCPRdeltaEtaCutMin.value, ConfCPR.confCPRdeltaEtaCutMax.value, ConfCPR.confCPRChosenRadii.value, ConfCPR.confCPRPlotPerRadii.value);
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPR.confDeltaEtaAxis, ConfCPR.confDeltaPhiStarAxis, ConfCPR.confCPRdeltaPhiCutMin.value, ConfCPR.confCPRdeltaPhiCutMax.value, ConfCPR.confCPRdeltaEtaCutMin.value, ConfCPR.confCPRdeltaEtaCutMax.value, ConfCPR.confCPRChosenRadii.value, ConfCPR.confCPRPlotPerRadii.value);
+      pairCloseRejectionV0.init(&resultRegistry, &qaRegistry, ConfCPR.confDeltaEtaAxis, ConfCPR.confDeltaPhiStarAxis, ConfCPR.confCPRdeltaPhiCutMin.value, ConfCPR.confCPRdeltaPhiCutMax.value, ConfCPR.confCPRdeltaEtaCutMin.value, ConfCPR.confCPRdeltaEtaCutMax.value, ConfCPR.confCPRChosenRadii.value, ConfCPR.confCPRPlotPerRadii.value);
     }
 
     if (!confLocalEfficiency.value.empty()) {
