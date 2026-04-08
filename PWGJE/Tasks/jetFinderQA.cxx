@@ -1493,7 +1493,7 @@ struct JetFinderQATask {
 
   void processQcMultCutCheck(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JMcCollisionLbs>>::iterator const& collision,
                              soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const&,
-                             //  soa::Join<aod::McCollisions, aod::HepMCXSections> const& aodMcCollisions,
+                             soa::Join<aod::McCollisions, aod::HepMCXSections> const&,
                              soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& mcdjets,
                              soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JTrackPIs>> const& tracks,
                              soa::Filtered<aod::JetParticles> const& mcparticles)
