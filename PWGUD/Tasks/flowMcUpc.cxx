@@ -23,16 +23,17 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Track.h>
 
-#include <TF1.h>
 #include <TPDGCode.h>
 #include <TProfile.h>
 #include <TRandom3.h>
@@ -43,6 +44,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using LorentzVectorM = ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<double>>;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
@@ -96,10 +98,10 @@ struct FlowMcUpc {
   // }
 
   template <typename TTrack>
-  bool trackSelected(TTrack track)
+  bool trackSelected(TTrack const& track)
   {
-    auto momentum = std::array<double, 3>{track.px(), track.py(), track.pz()};
-    double pt = RecoDecay::pt(momentum);
+    // auto momentum = std::array<double, 3>{track.px(), track.py(), track.pz()};
+    double pt = track.pt();
     if (pt < cfgPtCutMin || pt > cfgPtCutMax) {
       return false;
     }
@@ -124,14 +126,27 @@ struct FlowMcUpc {
       histos.fill(HIST("hImpactParameter"), imp);
 
       for (auto const& mcParticle : mcParticles) {
-        auto momentum = std::array<double, 3>{mcParticle.px(), mcParticle.py(), mcParticle.pz()};
-        double pt = RecoDecay::pt(momentum);
-        double phi = RecoDecay::phi(momentum);
-        double eta = RecoDecay::eta(momentum);
-        // focus on bulk: e, mu, pi, k, p
+        // auto momentum = std::array<double, 3>{mcParticle.px(), mcParticle.py(), mcParticle.pz()};
+        LorentzVectorM pMC(mcParticle.px(), mcParticle.py(), mcParticle.pz(), 0); // double phi = RecoDecay::phi(momentum);        // focus on bulk: e, mu, pi, k, p
         int pdgCode = std::abs(mcParticle.pdgCode());
-        if (pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != kKPlus && pdgCode != PDG_t::kProton)
+        if (pdgCode == PDG_t::kElectron)
+          pMC.SetM(o2::constants::physics::MassElectron);
+        else if (pdgCode == PDG_t::kMuonMinus)
+          pMC.SetM(o2::constants::physics::MassMuon);
+        else if (pdgCode == PDG_t::kPiPlus)
+          pMC.SetM(o2::constants::physics::MassPionCharged);
+        else if (pdgCode == PDG_t::kKPlus)
+          pMC.SetM(o2::constants::physics::MassKaonCharged);
+        else if (pdgCode == PDG_t::kProton)
+          pMC.SetM(o2::constants::physics::MassProton);
+        else
           continue;
+
+        double pt = pMC.Pt();
+        double eta = pMC.Eta();
+
+        // if (pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != PDG_t::kKPlus && pdgCode != PDG_t::kProton)
+        //   continue;
 
         if (!mcParticle.isPhysicalPrimary())
           continue;
@@ -164,16 +179,34 @@ struct FlowMcUpc {
     float vtxz = collision.posZ();
 
     for (const auto& track : tracks) {
-      auto momentum = std::array<double, 3>{track.px(), track.py(), track.pz()};
-      double pt = RecoDecay::pt(momentum);
-      double phi = RecoDecay::phi(momentum);
-      double eta = RecoDecay::eta(momentum);
+      LorentzVectorM recoMC(track.px(), track.py(), track.pz(), 0);
+      // double phi = RecoDecay::phi(momentum);
+      // focus on bulk: e, mu, pi, k, p
+      // auto momentum = std::array<double, 3>{track.px(), track.py(), track.pz()};
+      // double pt = track.pt();
+      // double phi = RecoDecay::phi(momentum);
+      // double eta = track.eta();
       if (!trackSelected(track) || (!track.has_udMcParticle()))
         continue;
       auto mcParticle = track.udMcParticle();
       int pdgCode = std::abs(mcParticle.pdgCode());
-      if (pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != kKPlus && pdgCode != PDG_t::kProton)
+      if (pdgCode == PDG_t::kElectron)
+        recoMC.SetM(o2::constants::physics::MassElectron);
+      else if (pdgCode == PDG_t::kMuonMinus)
+        recoMC.SetM(o2::constants::physics::MassMuon);
+      else if (pdgCode == PDG_t::kPiPlus)
+        recoMC.SetM(o2::constants::physics::MassPionCharged);
+      else if (pdgCode == PDG_t::kKPlus)
+        recoMC.SetM(o2::constants::physics::MassKaonCharged);
+      else if (pdgCode == PDG_t::kProton)
+        recoMC.SetM(o2::constants::physics::MassProton);
+      else
         continue;
+
+      double pt = recoMC.Pt();
+      double eta = recoMC.Eta();
+      // if (pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != PDG_t::kKPlus && pdgCode != PDG_t::kProton)
+      //   continue;
       // if (std::fabs(mcParticle.eta()) > cfgCutEta) // main acceptance
       //   continue;
       if (!mcParticle.isPhysicalPrimary())
