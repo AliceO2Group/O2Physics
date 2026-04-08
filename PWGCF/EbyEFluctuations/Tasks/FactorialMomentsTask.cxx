@@ -535,7 +535,7 @@ struct FactorialMomentsTask {
       }
       double charge = pdgInfo->Charge();
       double physCharge = charge / 3.0;
-      if (mc.isPhysicalPrimary() && std::abs(mc.eta()) < 0.8 && std::abs(physCharge) >= kMinCharge) {
+      if (mc.isPhysicalPrimary() && std::abs(mc.eta()) < centralEta && std::abs(physCharge) >= kMinCharge) {
         histos.fill(HIST("mEta"), mc.eta());
         histos.fill(HIST("mPt"), mc.pt());
         histos.fill(HIST("mPhi"), mc.phi());
@@ -601,7 +601,7 @@ struct FactorialMomentsTask {
       checkpT(track);
     }
     for (int iPt = 0; iPt < numPt; ++iPt) {
-      if (countTracks[iPt] < 3705) {
+      if (countTracks[iPt] < 0) {
         mHistArrQA[iPt * 4 + 3]->Fill(countTracks[iPt]);
       }
     }
