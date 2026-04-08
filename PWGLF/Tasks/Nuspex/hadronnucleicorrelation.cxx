@@ -1,5 +1,5 @@
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
-// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// See https://alice-o2.web.cern.ch/copyright for drtails of the copyright holders.
 // All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
@@ -73,7 +73,7 @@ enum Modes {
   kPPbar
 };
 
-struct hadronnucleicorrelation {
+struct HadronNucleiCorrelation {
 
   static constexpr int betahasTOFthr = -100;
 
@@ -91,10 +91,10 @@ struct hadronnucleicorrelation {
 
   Configurable<std::string> fCorrectionPath{"fCorrectionPath", "", "Correction path to file"};
   Configurable<std::string> fCorrectionHisto{"fCorrectionHisto", "", "Correction histogram"};
-  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> cfgUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
   // Event selection
-  Configurable<float> cutzvertex{"cutzvertex", 10.0, "|vertexZ| value limit"};
+  Configurable<float> cutzVertex{"cutzVertex", 10.0, "|vertexZ| value limit"};
 
   // Track selection
   Configurable<double> par0{"par0", 0.004, "par 0"};
@@ -122,8 +122,8 @@ struct hadronnucleicorrelation {
   Configurable<int> min_itsNCls{"min_itsNCls", 0, "minimum allowed number of ITS clasters"};
   Configurable<int> maxmixcollsGen{"maxmixcollsGen", 100, "maxmixcollsGen"};
   Configurable<float> radiusTPC{"radiusTPC", 1.2, "TPC radius to calculate phi_star for"};
-  Configurable<float> deta{"deta", 0.01, "minimum allowed defference in eta between two tracks in a pair"};
-  Configurable<float> dphi{"dphi", 0.01, "minimum allowed defference in phi_star between two tracks in a pair"};
+  Configurable<float> dEta{"dEta", 0.01, "minimum allowed difference in eta between two tracks in a pair"};
+  Configurable<float> dPhi{"dPhi", 0.01, "minimum allowed difference in phi_star between two tracks in a pair"};
 
   // Mixing parameters
   ConfigurableAxis confMultBins{"confMultBins", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 50.0f, 100.0f, 99999.f}, "Mixing bins - multiplicity"};
@@ -147,12 +147,12 @@ struct hadronnucleicorrelation {
   HistogramRegistry QA{"QA"};
 
   using trkType = const FilteredTracks::iterator*;
-  using trkTypeMC = const FilteredTracksMC::iterator*;
+  // using trkTypeMC = const FilteredTracksMC::iterator*;
   // typedef std::shared_ptr<FilteredCollisions::iterator> colType;
   // typedef std::shared_ptr<SimCollisions::iterator> MCcolType;
 
   std::unique_ptr<o2::aod::singletrackselector::FemtoPair<trkType>> Pair = std::make_unique<o2::aod::singletrackselector::FemtoPair<trkType>>();
-  std::unique_ptr<o2::aod::singletrackselector::FemtoPair<trkTypeMC>> PairMC = std::make_unique<o2::aod::singletrackselector::FemtoPair<trkTypeMC>>();
+  // std::unique_ptr<o2::aod::singletrackselector::FemtoPair<trkTypeMC>> PairMC = std::make_unique<o2::aod::singletrackselector::FemtoPair<trkTypeMC>>();
 
   // Data histograms
   std::vector<std::shared_ptr<TH3>> hEtaPhi_SE;
@@ -173,7 +173,7 @@ struct hadronnucleicorrelation {
 
   void init(o2::framework::InitContext&)
   {
-    ccdb->setURL(url.value);
+    ccdb->setURL(cfgUrl.value);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
@@ -207,25 +207,25 @@ struct hadronnucleicorrelation {
 
     TString name = "AntiDeAntiPr";
     switch (mode) {
-      case 1:
+      case kDP:
         name = "DePr";
         break;
-      case 2:
+      case kDbarP:
         name = "AntiDePr";
         break;
-      case 3:
+      case kDPbar:
         name = "DeAntiPr";
         break;
-      case 4:
+      case kPbarP:
         name = "AntiPrPr";
         break;
-      case 5:
+      case kPbarPbar:
         name = "AntiPrAntiPr";
         break;
-      case 6:
+      case kPP:
         name = "PrPr";
         break;
-      case 7:
+      case kPPbar:
         name = "PrAntiPr";
         break;
     }
@@ -283,7 +283,7 @@ struct hadronnucleicorrelation {
       QA.add("QA/hnSigmaTOFVsPt_De", "n#sigma TOF vs p_{T} for d hypothesis (all tracks); p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2D, {pTAxis, AxisNSigma}});
       QA.add("QA/hnSigmaITSVsPt_Pr", "n#sigma ITS vs p_{T} for p hypothesis (all tracks); p_{T} (GeV/c); n#sigma ITS", {HistType::kTH2D, {pTAxis, AxisNSigma}});
       QA.add("QA/hnSigmaITSVsPt_De", "n#sigma ITS vs p_{T} for d hypothesis (all tracks); p_{T} (GeV/c); n#sigma ITS", {HistType::kTH2D, {pTAxis, AxisNSigma}});
-      QA.add("QA/hdetadphistar", ";dphi*;deta ", {HistType::kTH2D, {{101, -0.2, 0.2, "dphi*"}, {101, -0.2, 0.2, "deta"}}});
+      QA.add("QA/hdEtadPhistar", ";dPhi*;dEta ", {HistType::kTH2D, {{101, -0.2, 0.2, "dPhi*"}, {101, -0.2, 0.2, "dEta"}}});
 
       if (!isMC) {
         QA.add("QA/hEtaPr", Form("#eta ditribution for p"), {HistType::kTH1F, {etaAxis}});
@@ -415,7 +415,7 @@ struct hadronnucleicorrelation {
   }
 
   // Filters
-  Filter vertexFilter = nabs(o2::aod::singletrackselector::posZ) <= cutzvertex;
+  Filter vertexFilter = nabs(o2::aod::singletrackselector::posZ) <= cutzVertex;
   Filter trackFilter = o2::aod::singletrackselector::tpcNClsFound >= min_TPC_nClusters &&
                        o2::aod::singletrackselector::unPack<singletrackselector::binning::chi2>(o2::aod::singletrackselector::storedTpcChi2NCl) <= max_chi2_TPC &&
                        o2::aod::singletrackselector::unPack<singletrackselector::binning::rowsOverFindable>(o2::aod::singletrackselector::storedTpcCrossedRowsOverFindableCls) >= min_TPC_nCrossedRowsOverFindableCls &&
@@ -560,8 +560,8 @@ struct hadronnucleicorrelation {
   {
     Pair->SetPair(&part0, &part1);
     Pair->SetIdentical(isIdentical);
-    if (isIdentical && Pair->IsClosePair(deta, dphi, radiusTPC)) {
-      QA.fill(HIST("QA/hdetadphistar"), Pair->GetPhiStarDiff(radiusTPC), Pair->GetEtaDiff());
+    if (isIdentical && Pair->IsClosePair(dEta, dPhi, radiusTPC)) {
+      QA.fill(HIST("QA/hdEtadPhistar"), Pair->GetPhiStarDiff(radiusTPC), Pair->GetEtaDiff());
       return;
     }
 
@@ -684,7 +684,7 @@ struct hadronnucleicorrelation {
   void processSameEvent(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks)
   {
 
-    if (std::abs(collision.posZ()) > cutzvertex)
+    if (std::abs(collision.posZ()) > cutzVertex)
       return;
 
     registry.fill(HIST("hNEvents"), 0.5);
@@ -756,6 +756,9 @@ struct hadronnucleicorrelation {
         }
       }
     }
+
+    Pair->SetMagField1(collision.magField());
+    Pair->SetMagField2(collision.magField());
 
     if (mode == kPbarPbar || mode == kPP) { // Identical particle combinations
 
@@ -853,7 +856,7 @@ struct hadronnucleicorrelation {
       }
     }
   }
-  PROCESS_SWITCH(hadronnucleicorrelation, processSameEvent, "processSameEvent", true);
+  PROCESS_SWITCH(HadronNucleiCorrelation, processSameEvent, "processSameEvent", true);
 
   void processMixedEvent(FilteredCollisions const& collisions, FilteredTracks const& tracks)
   {
@@ -871,6 +874,9 @@ struct hadronnucleicorrelation {
       if (magFieldTesla1 != magFieldTesla2) {
         continue;
       }
+
+      Pair->SetMagField1(magFieldTesla1);
+      Pair->SetMagField2(magFieldTesla2);
 
       for (const auto& [part0, part1] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
 
@@ -946,12 +952,12 @@ struct hadronnucleicorrelation {
       }
     }
   }
-  PROCESS_SWITCH(hadronnucleicorrelation, processMixedEvent, "processMixedEvent", true);
+  PROCESS_SWITCH(HadronNucleiCorrelation, processMixedEvent, "processMixedEvent", true);
 
   void processMC(FilteredCollisions const&, FilteredTracksMC const& tracks)
   {
     for (const auto& track : tracks) {
-      if (std::abs(track.template singleCollSel_as<FilteredCollisions>().posZ()) > cutzvertex)
+      if (std::abs(track.template singleCollSel_as<FilteredCollisions>().posZ()) > cutzVertex)
         continue;
 
       if (track.tpcFractionSharedCls() > max_tpcSharedCls)
@@ -1312,12 +1318,12 @@ struct hadronnucleicorrelation {
       }
     } // track
   }
-  PROCESS_SWITCH(hadronnucleicorrelation, processMC, "processMC", false);
+  PROCESS_SWITCH(HadronNucleiCorrelation, processMC, "processMC", false);
 
   void processSameEventGen(SimCollisions::iterator const& mcCollision, SimParticles const& mcParticles)
   {
 
-    if (std::abs(mcCollision.posZ()) > cutzvertex)
+    if (std::abs(mcCollision.posZ()) > cutzVertex)
       return;
 
     registry.fill(HIST("Generated/hNEventsMC"), 0.5);
@@ -1439,14 +1445,14 @@ struct hadronnucleicorrelation {
       }
     }
   }
-  PROCESS_SWITCH(hadronnucleicorrelation, processSameEventGen, "processSameEventGen", false);
+  PROCESS_SWITCH(HadronNucleiCorrelation, processSameEventGen, "processSameEventGen", false);
 
   void processMixedEventGen(SimCollisions const& mcCollisions, SimParticles const& mcParticles)
   {
 
     for (const auto& [collision1, collision2] : soa::selfCombinations(colBinningGen, 5, -1, mcCollisions, mcCollisions)) {
 
-      // LOGF(info, "Mixed event collisions: (%d, %d) zvtx (%.1f, %.1f) mult (%d, %d)", collision1.globalIndex(), collision2.globalIndex(), collision1.posZ(), collision2.posZ(), collision1.mult(), collision2.mult());
+      //LOGF(info, "Mixed event collisions: (%d, %d) zvtx (%.1f, %.1f) mult (%d, %d)", collision1.globalIndex(), collision2.globalIndex(), collision1.posZ(), collision2.posZ(), collision1.multMCNParticlesEta05(), collision2.multMCNParticlesEta05());
 
       auto groupPartsOne = mcParticles.sliceByCached(o2::aod::mcparticle::mcCollisionId, collision1.globalIndex(), cache);
       auto groupPartsTwo = mcParticles.sliceByCached(o2::aod::mcparticle::mcCollisionId, collision2.globalIndex(), cache);
@@ -1506,10 +1512,10 @@ struct hadronnucleicorrelation {
       }
     }
   }
-  PROCESS_SWITCH(hadronnucleicorrelation, processMixedEventGen, "processMixedEventGen", false);
+  PROCESS_SWITCH(HadronNucleiCorrelation, processMixedEventGen, "processMixedEventGen", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<hadronnucleicorrelation>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HadronNucleiCorrelation>(cfgc)};
 }
