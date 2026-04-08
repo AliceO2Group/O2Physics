@@ -1034,6 +1034,8 @@ struct ResonanceDaughterInitializer {
                v0.dcapostopv(),
                v0.dcanegtopv(),
                v0.dcav0topv(),
+               0,
+               0,
                v0.mLambda(),
                v0.mAntiLambda(),
                v0.mK0Short(),
@@ -1206,6 +1208,9 @@ struct ResonanceDaughterInitializer {
                     casc.dcaXYCascToPV(),
                     casc.dcaZCascToPV(),
                     casc.sign(),
+                    0,
+                    0,
+                    0,
                     casc.mLambda(),
                     casc.mXi(),
                     casc.v0radius(), casc.cascradius(), casc.x(), casc.y(), casc.z());
