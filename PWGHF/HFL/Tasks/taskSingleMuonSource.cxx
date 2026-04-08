@@ -125,9 +125,11 @@ struct HfTaskSingleMuonSource {
     registry.add("h1MuBeforeCuts", "", h1Pt);
     registry.add("h1MuonMass", "", h1Mass);
     registry.add("h1BeautyMass", "", h1Mass);
+    registry.add("h1CorrBeautyMass", "", h1Mass);
     registry.add("h1OtherMass", "", h1Mass);
     registry.add("h1MuonMassGen", "", h1Mass);
     registry.add("h1BeautyMassGen", "", h1Mass);
+    registry.add("h1CorrBeautyMassGen", "", h1Mass);
     registry.add("h1OtherMassGen", "", h1Mass);
     for (const auto& src : muonSources) {
       registry.add(Form("h1%sPt", src.Data()), "", h1Pt);
@@ -436,9 +438,13 @@ struct HfTaskSingleMuonSource {
       registry.fill(HIST("h1MuonMass"), InvM);
       registry.fill(HIST("h1MuonMassGen"), InvMGen);
     }
-    if (Corr(muon, muon2, mcParts) && isBeautyMu(mask1) && isBeautyMu(mask2)) {
+    if (isBeautyMu(mask1) && isBeautyMu(mask2)) {
       registry.fill(HIST("h1BeautyMass"), InvM);
       registry.fill(HIST("h1BeautyMassGen"), InvMGen);
+      if (Corr(muon, muon2, mcParts)) {
+        registry.fill(HIST("h1CorrBeautyMass"), InvM);
+        registry.fill(HIST("h1CorrBeautyMassGen"), InvMGen);
+      }
     } else {
       registry.fill(HIST("h1OtherMass"), InvM);
       registry.fill(HIST("h1OtherMassGen"), InvMGen);
