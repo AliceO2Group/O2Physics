@@ -406,7 +406,6 @@ struct AnalysisEventSelection {
     if (fConfigRCT.fConfigUseRCT.value) {
       rctChecker.init(fConfigRCT.fConfigRCTLabel, fConfigRCT.fCheckZDC.value);
     }
-
   }
 
   template <uint32_t TEventFillMap, typename TEvents>
@@ -525,7 +524,6 @@ struct AnalysisEventSelection {
         hash(hh);
       }
     }
-
   }
 
   // Variant of runEventSelection that first checks the DqFilters EMu prefilter bit.
@@ -651,7 +649,6 @@ struct AnalysisEventSelection {
         hash(hh);
       }
     }
-
   }
 
   template <uint32_t TEventFillMap, typename TEvents>
@@ -839,7 +836,6 @@ struct AnalysisTrackSelection {
     fCCDB->setLocalObjectValidityChecking();
     fCCDB->setCreatedNotAfter(fConfigNoLaterThan.value);
     fTofResponse->initSetup(fCCDB, context);
-
   }
 
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTracks>
@@ -879,7 +875,6 @@ struct AnalysisTrackSelection {
 
     trackSel.reserve(assocs.size());
     trackAmbiguities.reserve(tracks.size());
-
 
     for (auto& assoc : assocs) {
       auto event = assoc.template collision_as<TEvents>();
@@ -984,7 +979,6 @@ struct AnalysisTrackSelection {
         trackAmbiguities(nInBunch, nOutOfBunch);
       }
     }
-
   }
 
   void processWithCov(TrackAssoc const& assocs, BCsWithTimestamps const& bcs, MyEventsSelected const& events, MyBarrelTracksWithCov const& tracks)
@@ -1674,7 +1668,6 @@ struct AnalysisSameEventPairing {
     dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigOptions.fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
     VarManager::SetUseVars(fHistMan->GetUsedVars());                                                      // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
-
   }
 
   void initParamsFromCCDB(uint64_t timestamp, bool withTwoProngFitter = true)
@@ -1950,7 +1943,6 @@ struct AnalysisSameEventPairing {
         } // end loop (cuts)
       } // end loop over pairs of track associations
     } // end loop over events
-
   }
 
   // Template function for electron-muon same-event pairing (barrel x muon, full index policy)
