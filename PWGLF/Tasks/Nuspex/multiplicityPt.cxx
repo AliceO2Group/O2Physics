@@ -84,7 +84,7 @@ struct MultiplicityPt {
   Configurable<float> cfgCutEtaMax{"cfgCutEtaMax", 0.8f, "Max eta range for tracks"};
   Configurable<float> cfgCutEtaMin{"cfgCutEtaMin", -0.8f, "Min eta range for tracks"};
   Configurable<float> cfgCutNsigma{"cfgCutNsigma", 3.0f, "nsigma cut range for tracks"};
-
+  
   Configurable<bool> enablePIDHistograms{"enablePIDHistograms", true, "Enable PID histograms"};
   Configurable<bool> useCustomTrackCuts{"useCustomTrackCuts", true, "Flag to use custom track cuts"};
   Configurable<int> itsPattern{"itsPattern", 0, "0 = Run3ITSibAny, 1 = Run3ITSallAny, 2 = Run3ITSall7Layers, 3 = Run3ITSibTwo"};
@@ -134,9 +134,9 @@ struct MultiplicityPt {
   Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
 
   enum ParticleSpecies : int {
-    PartPion = 0,
-    PartKaon = 1,
-    PartProton = 2,
+      PartPion = 0,
+      PartKaon = 1,
+      PartProton = 2,
   };
 
   int getMagneticField(uint64_t timestamp)
@@ -156,10 +156,8 @@ struct MultiplicityPt {
   float getTransformedPhi(const float phi, const int charge, const float magField) const
   {
     float transformedPhi = phi;
-    if (magField < 0)
-      transformedPhi = o2::constants::math::TwoPI - transformedPhi;
-    if (charge < 0)
-      transformedPhi = o2::constants::math::TwoPI - transformedPhi;
+    if (magField < 0) transformedPhi = o2::constants::math::TwoPI - transformedPhi;
+    if (charge < 0) transformedPhi = o2::constants::math::TwoPI - transformedPhi;
     transformedPhi += o2::constants::math::PI / 18.0f;
     transformedPhi = std::fmod(transformedPhi, o2::constants::math::PI / 9.0f);
     return transformedPhi;
@@ -168,23 +166,18 @@ struct MultiplicityPt {
   template <typename TrackType>
   bool passedPhiCut(const TrackType& track, float magField) const
   {
-    if (!applyPhiCut.value)
-      return true;
-    if (track.pt() < pTthresholdPhiCut.value)
-      return true;
+    if (!applyPhiCut.value) return true;
+    if (track.pt() < pTthresholdPhiCut.value) return true;
 
     float phi = track.phi();
     int charge = track.sign();
 
-    if (magField < 0)
-      phi = o2::constants::math::TwoPI - phi;
-    if (charge < 0)
-      phi = o2::constants::math::TwoPI - phi;
+    if (magField < 0) phi = o2::constants::math::TwoPI - phi;
+    if (charge < 0) phi = o2::constants::math::TwoPI - phi;
     phi += o2::constants::math::PI / 18.0f;
     phi = std::fmod(phi, o2::constants::math::PI / 9.0f);
 
-    if (phi < fphiCutHigh->Eval(track.pt()) && phi > fphiCutLow->Eval(track.pt()))
-      return false;
+    if (phi < fphiCutHigh->Eval(track.pt()) && phi > fphiCutLow->Eval(track.pt())) return false;
     return true;
   }
 
@@ -194,30 +187,20 @@ struct MultiplicityPt {
     int count = 0;
     for (const auto& particle : particles) {
       auto pdgParticle = pdg->GetParticle(particle.pdgCode());
-      if (!pdgParticle || pdgParticle->Charge() == 0.)
-        continue;
-      if (!particle.isPhysicalPrimary())
-        continue;
-      if (std::abs(particle.eta()) > etaMax)
-        continue;
-      if (particle.pt() < ptMin)
-        continue;
+      if (!pdgParticle || pdgParticle->Charge() == 0.) continue;
+      if (!particle.isPhysicalPrimary()) continue;
+      if (std::abs(particle.eta()) > etaMax) continue;
+      if (particle.pt() < ptMin) continue;
       count++;
     }
     return count;
   }
 
   template <typename T>
-  bool passedNClTPCFoundCut(const T& trk) const
-  {
-    return !nClTPCFoundCut.value || trk.tpcNClsFound() >= minTPCNClsFound.value;
-  }
+  bool passedNClTPCFoundCut(const T& trk) const { return !nClTPCFoundCut.value || trk.tpcNClsFound() >= minTPCNClsFound.value; }
 
   template <typename T>
-  bool passedNClTPCPIDCut(const T& trk) const
-  {
-    return !nClTPCPIDCut.value || trk.tpcNClsPID() >= minTPCNClsPID.value;
-  }
+  bool passedNClTPCPIDCut(const T& trk) const { return !nClTPCPIDCut.value || trk.tpcNClsPID() >= minTPCNClsPID.value; }
 
   template <typename TrackType>
   bool passesCutWoDCA(TrackType const& track) const
@@ -225,10 +208,8 @@ struct MultiplicityPt {
     if (useCustomTrackCuts.value) {
       for (int i = 0; i < static_cast<int>(TrackSelection::TrackCuts::kNCuts); i++) {
         if (i == static_cast<int>(TrackSelection::TrackCuts::kDCAxy) ||
-            i == static_cast<int>(TrackSelection::TrackCuts::kDCAz))
-          continue;
-        if (!customTrackCuts.IsSelected(track, static_cast<TrackSelection::TrackCuts>(i)))
-          return false;
+            i == static_cast<int>(TrackSelection::TrackCuts::kDCAz)) continue;
+        if (!customTrackCuts.IsSelected(track, static_cast<TrackSelection::TrackCuts>(i))) return false;
       }
       return true;
     }
@@ -239,8 +220,7 @@ struct MultiplicityPt {
   bool passesDCAxyCut(TrackType const& track) const
   {
     if (useCustomTrackCuts.value) {
-      if (!passesCutWoDCA(track))
-        return false;
+      if (!passesCutWoDCA(track)) return false;
       constexpr float DcaXYConst = 0.0105f;
       constexpr float DcaXYPtScale = 0.0350f;
       constexpr float DcaXYPtPower = 1.1f;
@@ -253,20 +233,13 @@ struct MultiplicityPt {
   template <typename TrackType>
   bool passesTrackSelection(TrackType const& track, float magField = 0) const
   {
-    if (track.eta() < cfgCutEtaMin.value || track.eta() > cfgCutEtaMax.value)
-      return false;
-    if (track.tpcChi2NCl() < minChi2PerClusterTPC.value || track.tpcChi2NCl() > maxChi2PerClusterTPC.value)
-      return false;
-    if (!passesCutWoDCA(track))
-      return false;
-    if (!passesDCAxyCut(track))
-      return false;
-    if (!passedNClTPCFoundCut(track))
-      return false;
-    if (!passedNClTPCPIDCut(track))
-      return false;
-    if (!passedPhiCut(track, magField))
-      return false;
+    if (track.eta() < cfgCutEtaMin.value || track.eta() > cfgCutEtaMax.value) return false;
+    if (track.tpcChi2NCl() < minChi2PerClusterTPC.value || track.tpcChi2NCl() > maxChi2PerClusterTPC.value) return false;
+    if (!passesCutWoDCA(track)) return false;
+    if (!passesDCAxyCut(track)) return false;
+    if (!passedNClTPCFoundCut(track)) return false;
+    if (!passedNClTPCPIDCut(track)) return false;
+    if (!passedPhiCut(track, magField)) return false;
     return true;
   }
 
@@ -275,7 +248,7 @@ struct MultiplicityPt {
   {
     float nsigmaTPC = 0.f;
     float cutValue = 0.f;
-
+    
     if (species == PartPion) {
       nsigmaTPC = track.tpcNSigmaPi();
       cutValue = cfgCutNsigmaPi.value;
@@ -286,7 +259,7 @@ struct MultiplicityPt {
       nsigmaTPC = track.tpcNSigmaPr();
       cutValue = cfgCutNsigmaPr.value;
     }
-
+    
     return std::abs(nsigmaTPC) < cutValue;
   }
 
@@ -294,14 +267,10 @@ struct MultiplicityPt {
   bool isGoodPrimary(ParticleType const& particle) const
   {
     auto pdgParticle = pdg->GetParticle(particle.pdgCode());
-    if (!pdgParticle || pdgParticle->Charge() == 0.)
-      return false;
-    if (!particle.isPhysicalPrimary())
-      return false;
-    if (std::abs(particle.eta()) >= cfgCutEtaMax.value)
-      return false;
-    if (particle.pt() < cfgTrkLowPtCut.value)
-      return false;
+    if (!pdgParticle || pdgParticle->Charge() == 0.) return false;
+    if (!particle.isPhysicalPrimary()) return false;
+    if (std::abs(particle.eta()) >= cfgCutEtaMax.value) return false;
+    if (particle.pt() < cfgTrkLowPtCut.value) return false;
     return true;
   }
 
@@ -353,25 +322,20 @@ void MultiplicityPt::init(InitContext const&)
 
   std::vector<double> centBinningStd = {0., 1., 5., 10., 15., 20., 30., 40., 50., 60., 70., 80., 90., 100.};
   AxisSpec centAxis = {centBinningStd, "FT0M Centrality (%)"};
-
+  
   std::vector<double> centBinningFine;
-  for (int i = 0; i <= CentBinMax; i++)
-    centBinningFine.push_back(static_cast<double>(i));
+  for (int i = 0; i <= CentBinMax; i++) centBinningFine.push_back(static_cast<double>(i));
   AxisSpec centFineAxis = {centBinningFine, "FT0M Centrality (%)"};
 
   std::vector<double> multBins;
-  for (int i = 0; i <= MultBinMax; i++)
-    multBins.push_back(static_cast<double>(i));
+  for (int i = 0; i <= MultBinMax; i++) multBins.push_back(static_cast<double>(i));
   AxisSpec multAxis = {multBins, "N_{ch}^{gen} (|#eta|<0.8)"};
 
   std::vector<double> recoMultBins;
-  for (int i = 0; i <= RecMultBinMax; i++)
-    recoMultBins.push_back(static_cast<double>(i));
+  for (int i = 0; i <= RecMultBinMax; i++) recoMultBins.push_back(static_cast<double>(i));
   AxisSpec recoMultAxis = {recoMultBins, "N_{ch}^{reco}"};
 
-  // ============================================================
-  // CENTRALITY HISTOGRAMS
-  // ============================================================
+ 
   ue.add("Centrality/hCentRaw", "Raw FT0M Centrality;Centrality (%);Counts", HistType::kTH1D, {centFineAxis});
   ue.add("Centrality/hCentAfterVtx", "Centrality after vertex cut;Centrality (%);Counts", HistType::kTH1D, {centFineAxis});
   ue.add("Centrality/hCentAfterAll", "Centrality after all cuts;Centrality (%);Counts", HistType::kTH1D, {centFineAxis});
@@ -379,9 +343,6 @@ void MultiplicityPt::init(InitContext const&)
   ue.add("Centrality/hMultVsCent", "Generated Multiplicity vs Centrality;N_{ch}^{gen};Centrality (%)", HistType::kTH2D, {multAxis, centFineAxis});
   ue.add("Centrality/hRecoMultVsCent", "Reconstructed Track Multiplicity vs Centrality;Centrality (%);N_{tracks}^{reco}", HistType::kTH2D, {centFineAxis, recoMultAxis});
 
-  // ============================================================
-  // EVENT SELECTION AND CUT FLOW
-  // ============================================================
   ue.add("CutFlow/hCutStats", "Cut Statistics;Cut Stage;Counts", HistType::kTH1D, {{5, 0.5, 5.5}});
   auto hCut = ue.get<TH1>(HIST("CutFlow/hCutStats"));
   hCut->GetXaxis()->SetBinLabel(1, "All collisions");
@@ -396,9 +357,6 @@ void MultiplicityPt::init(InitContext const&)
   hLoss->GetXaxis()->SetBinLabel(2, "Reconstructed");
   hLoss->GetXaxis()->SetBinLabel(3, "Selected");
 
-  // ============================================================
-  // MC TRUTH HISTOGRAMS
-  // ============================================================
   ue.add("MC/GenRecoCollisions", "Generated and Reconstructed MC Collisions", HistType::kTH1D, {{5, 0.5, 5.5}});
   auto hColl = ue.get<TH1>(HIST("MC/GenRecoCollisions"));
   hColl->GetXaxis()->SetBinLabel(1, "Collisions generated");
@@ -410,17 +368,13 @@ void MultiplicityPt::init(InitContext const&)
   ue.add("MC/EventLoss/GenMultVsCent", "Generated charged particles vs FT0M centrality;FT0M Centrality (%);N_{ch}^{gen}", HistType::kTH2D, {centAxis, multAxis});
   ue.add("MC/EventLoss/GenMultVsCent_Selected", "Generated vs FT0M centrality (selected events);FT0M Centrality (%);N_{ch}^{gen}", HistType::kTH2D, {centAxis, multAxis});
 
-  // ============================================================
-  // INCLUSIVE HISTOGRAMS (for reference)
-  // ============================================================
+
   ue.add("Inclusive/hPtGen", "Generated primaries (physics selected);#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {ptAxis});
   ue.add("Inclusive/hPtReco", "All reconstructed tracks (track selection only);#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {ptAxis});
   ue.add("Inclusive/hPtPrimReco", "Reconstructed primaries (MC matched);#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {ptAxis});
   ue.add("Inclusive/hPtSecReco", "Reconstructed secondaries (MC matched);#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {ptAxis});
 
-  // ============================================================
-  // PION HISTOGRAMS
-  // ============================================================
+ 
   ue.add("Pion/hPtPrimGenAll", "All generated #pi^{#pm} (no cuts);#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {ptAxis});
   ue.add("Pion/hPtGenINEL", "Generated #pi^{#pm} in INEL>0 events (|#eta|<0.8, p_{T}>0.15);#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {ptAxis});
   ue.add("Pion/hPtGenRecoEvent", "Generated #pi^{#pm} in reconstructed events (|#eta|<0.8, p_{T}>0.15);#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {ptAxis});
@@ -428,18 +382,16 @@ void MultiplicityPt::init(InitContext const&)
   ue.add("Pion/hPtReco", "Reconstructed #pi^{#pm} (MC matched, any status);#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {ptAxis});
   ue.add("Pion/hPtPrimReco", "Reconstructed primary #pi^{#pm} (MC matched);#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {ptAxis});
   ue.add("Pion/hPtMeasured", "Measured #pi^{#pm} (PID selected);#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {ptAxis});
+  
 
-  // NEW: Multiplicity-differential 2D histograms for Signal Loss (pT vs N_ch_gen)
   ue.add("Pion/hPtGenRecoEvent_Mult", "Generated #pi^{#pm} in reconstructed events vs multiplicity;#it{p}_{T} (GeV/#it{c});N_{ch}^{gen}", HistType::kTH2D, {ptAxis, multAxis});
   ue.add("Pion/hPtGenINEL_Mult", "Generated #pi^{#pm} in INEL>0 events vs multiplicity;#it{p}_{T} (GeV/#it{c});N_{ch}^{gen}", HistType::kTH2D, {ptAxis, multAxis});
-
+  
   if (enablePIDHistograms) {
     ue.add("Pion/hNsigmaTPC", "TPC n#sigma #pi^{#pm};#it{p}_{T} (GeV/#it{c});n#sigma_{TPC}", HistType::kTH2D, {ptAxis, {200, -10, 10}});
   }
 
-  // ============================================================
-  // KAON HISTOGRAMS
-  // ============================================================
+
   ue.add("Kaon/hPtPrimGenAll", "All generated K^{#pm} (no cuts);#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {ptAxis});
   ue.add("Kaon/hPtGenINEL", "Generated K^{#pm} in INEL>0 events (|#eta|<0.8, p_{T}>0.15);#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {ptAxis});
   ue.add("Kaon/hPtGenRecoEvent", "Generated K^{#pm} in reconstructed events (|#eta|<0.8, p_{T}>0.15);#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {ptAxis});
@@ -448,42 +400,34 @@ void MultiplicityPt::init(InitContext const&)
   ue.add("Kaon/hPtPrimReco", "Reconstructed primary K^{#pm} (MC matched);#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {ptAxis});
   ue.add("Kaon/hPtMeasured", "Measured K^{#pm} (PID selected);#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {ptAxis});
 
-  // NEW: Multiplicity-differential 2D histograms for Signal Loss (pT vs N_ch_gen)
   ue.add("Kaon/hPtGenRecoEvent_Mult", "Generated K^{#pm} in reconstructed events vs multiplicity;#it{p}_{T} (GeV/#it{c});N_{ch}^{gen}", HistType::kTH2D, {ptAxis, multAxis});
   ue.add("Kaon/hPtGenINEL_Mult", "Generated K^{#pm} in INEL>0 events vs multiplicity;#it{p}_{T} (GeV/#it{c});N_{ch}^{gen}", HistType::kTH2D, {ptAxis, multAxis});
-
+  
   if (enablePIDHistograms) {
     ue.add("Kaon/hNsigmaTPC", "TPC n#sigma K^{#pm};#it{p}_{T} (GeV/#it{c});n#sigma_{TPC}", HistType::kTH2D, {ptAxis, {200, -10, 10}});
   }
 
-  // ============================================================
-  // PROTON HISTOGRAMS
-  // ============================================================
-  ue.add("Proton/hPtPrimGenAll", "All generated p+#bar{p} (no cuts);#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {ptAxis});
+   ue.add("Proton/hPtPrimGenAll", "All generated p+#bar{p} (no cuts);#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {ptAxis});
   ue.add("Proton/hPtGenINEL", "Generated p+#bar{p} in INEL>0 events (|#eta|<0.8, p_{T}>0.15);#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {ptAxis});
   ue.add("Proton/hPtGenRecoEvent", "Generated p+#bar{p} in reconstructed events (|#eta|<0.8, p_{T}>0.15);#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {ptAxis});
   ue.add("Proton/hPtGen", "Generated p+#bar{p} (physics selected);#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {ptAxis});
   ue.add("Proton/hPtReco", "Reconstructed p+#bar{p} (MC matched, any status);#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {ptAxis});
   ue.add("Proton/hPtPrimReco", "Reconstructed primary p+#bar{p} (MC matched);#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {ptAxis});
   ue.add("Proton/hPtMeasured", "Measured p+#bar{p} (PID selected);#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {ptAxis});
-
-  // NEW: Multiplicity-differential 2D histograms for Signal Loss (pT vs N_ch_gen)
+  
+ 
   ue.add("Proton/hPtGenRecoEvent_Mult", "Generated p+#bar{p} in reconstructed events vs multiplicity;#it{p}_{T} (GeV/#it{c});N_{ch}^{gen}", HistType::kTH2D, {ptAxis, multAxis});
   ue.add("Proton/hPtGenINEL_Mult", "Generated p+#bar{p} in INEL>0 events vs multiplicity;#it{p}_{T} (GeV/#it{c});N_{ch}^{gen}", HistType::kTH2D, {ptAxis, multAxis});
-
+  
   if (enablePIDHistograms) {
     ue.add("Proton/hNsigmaTPC", "TPC n#sigma p+#bar{p};#it{p}_{T} (GeV/#it{c});n#sigma_{TPC}", HistType::kTH2D, {ptAxis, {200, -10, 10}});
   }
 
-  // ============================================================
-  // EVENT LOSS CENTRALITY-DIFFERENTIAL HISTOGRAMS
-  // ============================================================
+
   ue.add("hEventsReco_Cent", "Reconstructed events vs centrality;FT0M Centrality (%);Counts", HistType::kTH1D, {centAxis});
   ue.add("hEventsINEL_Cent", "INEL>0 events vs centrality;FT0M Centrality (%);Counts", HistType::kTH1D, {centAxis});
 
-  // ============================================================
-  // TRACK QUALITY HISTOGRAMS
-  // ============================================================
+
   ue.add("hNclFoundTPC", "Number of TPC found clusters", HistType::kTH1D, {{200, 0, 200}});
   ue.add("hNclPIDTPC", "Number of TPC PID clusters", HistType::kTH1D, {{200, 0, 200}});
   ue.add("hEta", "Track eta;#eta;Counts", HistType::kTH1D, {{20, -0.8, 0.8}});
@@ -501,15 +445,13 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
                                aod::McCentFT0Ms const& centTable,
                                BCsRun3 const& /*bcs*/)
 {
-  // ============================================================
-  // PROCESS MC COLLISIONS - GENERATED SPECTRA
-  // ============================================================
 
+  
   std::map<int64_t, int> mcCollisionToNch;
   std::set<int64_t> physicsSelectedMCCollisions;
   std::map<int64_t, int> mcCollisionToINELClass;
   std::set<int64_t> inel0MCCollisions;
-  std::map<int64_t, float> mcCollToCent; // Store centrality for each MC collision
+  std::map<int64_t, float> mcCollToCentFromReco;  // MC collision ID -> centrality from reco
 
   ue.fill(HIST("MC/GenRecoCollisions"), 1.f, mcCollisions.size());
 
@@ -521,18 +463,14 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
     bool hasParticleInAcceptance = false;
     for (const auto& particle : particlesInCollision) {
       auto pdgParticle = pdg->GetParticle(particle.pdgCode());
-      if (!pdgParticle || pdgParticle->Charge() == 0.)
-        continue;
-      if (!particle.isPhysicalPrimary())
-        continue;
-      if (std::abs(particle.eta()) >= cfgCutEtaMax.value)
-        continue;
-      if (particle.pt() < cfgTrkLowPtCut.value)
-        continue;
+      if (!pdgParticle || pdgParticle->Charge() == 0.) continue;
+      if (!particle.isPhysicalPrimary()) continue;
+      if (std::abs(particle.eta()) >= cfgCutEtaMax.value) continue;
+      if (particle.pt() < cfgTrkLowPtCut.value) continue;
       hasParticleInAcceptance = true;
       break;
     }
-
+    
     if (hasParticleInAcceptance) {
       inel0MCCollisions.insert(mcCollId);
     }
@@ -546,30 +484,24 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
     mcCollisionToINELClass[mcCollId] = inelClass;
 
     bool physicsSelected = (std::abs(mcCollision.posZ()) <= cfgCutVertex.value);
-    if (cfgINELCut.value == INELgt0 && !inel0)
-      physicsSelected = false;
-    if (cfgINELCut.value == INELgt1 && !inel1)
-      physicsSelected = false;
+    if (cfgINELCut.value == INELgt0 && !inel0) physicsSelected = false;
+    if (cfgINELCut.value == INELgt1 && !inel1) physicsSelected = false;
 
     if (physicsSelected) {
       physicsSelectedMCCollisions.insert(mcCollId);
-      if (inel0)
-        ue.fill(HIST("MC/GenRecoCollisions"), 2.f);
-      if (inel1)
-        ue.fill(HIST("MC/GenRecoCollisions"), 3.f);
+      if (inel0) ue.fill(HIST("MC/GenRecoCollisions"), 2.f);
+      if (inel1) ue.fill(HIST("MC/GenRecoCollisions"), 3.f);
     }
 
     // Fill generated particle spectra
     for (const auto& particle : particlesInCollision) {
       auto pdgParticle = pdg->GetParticle(particle.pdgCode());
-      if (!pdgParticle || pdgParticle->Charge() == 0.)
-        continue;
-      if (!particle.isPhysicalPrimary())
-        continue;
-
+      if (!pdgParticle || pdgParticle->Charge() == 0.) continue;
+      if (!particle.isPhysicalPrimary()) continue;
+      
       int pdgCode = std::abs(particle.pdgCode());
       float pt = particle.pt();
-
+      
       // Fill hPtPrimGenAll for ALL generated particles (NO CUTS)
       if (pdgCode == PDG_t::kPiPlus) {
         ue.fill(HIST("Pion/hPtPrimGenAll"), pt);
@@ -578,17 +510,15 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
       } else if (pdgCode == PDG_t::kProton) {
         ue.fill(HIST("Proton/hPtPrimGenAll"), pt);
       }
-
+      
       // Fill hPtGenINEL for particles in INEL>0 events (with acceptance cuts)
       if (hasParticleInAcceptance) {
-        if (std::abs(particle.eta()) >= cfgCutEtaMax.value)
-          continue;
-        if (particle.pt() < cfgTrkLowPtCut.value)
-          continue;
-
+        if (std::abs(particle.eta()) >= cfgCutEtaMax.value) continue;
+        if (particle.pt() < cfgTrkLowPtCut.value) continue;
+        
         if (pdgCode == PDG_t::kPiPlus) {
           ue.fill(HIST("Pion/hPtGenINEL"), pt);
-          ue.fill(HIST("Pion/hPtGenINEL_Mult"), pt, nGenCharged); // Fill with multiplicity!
+          ue.fill(HIST("Pion/hPtGenINEL_Mult"), pt, nGenCharged);
         } else if (pdgCode == PDG_t::kKPlus) {
           ue.fill(HIST("Kaon/hPtGenINEL"), pt);
           ue.fill(HIST("Kaon/hPtGenINEL_Mult"), pt, nGenCharged);
@@ -597,19 +527,15 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
           ue.fill(HIST("Proton/hPtGenINEL_Mult"), pt, nGenCharged);
         }
       }
-
+      
       // Apply acceptance cuts for physics-selected spectra
-      if (std::abs(particle.eta()) >= cfgCutEtaMax.value)
-        continue;
-      if (particle.pt() < cfgTrkLowPtCut.value)
-        continue;
-
-      int nch = mcCollisionToNch[mcCollId];
-
+      if (std::abs(particle.eta()) >= cfgCutEtaMax.value) continue;
+      if (particle.pt() < cfgTrkLowPtCut.value) continue;
+      
       // Fill generated spectra (physics selected only)
       if (physicsSelected) {
         ue.fill(HIST("Inclusive/hPtGen"), pt);
-
+        
         if (pdgCode == PDG_t::kPiPlus) {
           ue.fill(HIST("Pion/hPtGen"), pt);
         } else if (pdgCode == PDG_t::kKPlus) {
@@ -617,106 +543,89 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
         } else if (pdgCode == PDG_t::kProton) {
           ue.fill(HIST("Proton/hPtGen"), pt);
         }
+        
 
-        // Fill multiplicity correlations
-        ue.fill(HIST("Centrality/hCentVsMult"), 0, nch);
-        ue.fill(HIST("Centrality/hMultVsCent"), nch, 0);
-        ue.fill(HIST("MC/EventLoss/GenMultVsCent"), 0, nch);
       }
     }
   }
 
-  // ============================================================
-  // BUILD RECO TO MC AND CENTRALITY MAPS
-  // ============================================================
 
+  
   std::map<int64_t, int64_t> recoToMcMap;
   std::map<int64_t, float> recoToCentMap;
 
-  size_t iLabel = 0;
-  for (const auto& label : labels) {
-    if (iLabel < collisions.size()) {
-      const auto& collision = collisions.iteratorAt(iLabel);
-      recoToMcMap[collision.globalIndex()] = label.mcCollisionId();
-    }
-    iLabel++;
+  size_t nPairs = std::min(labels.size(), collisions.size());
+  for (size_t i = 0; i < nPairs; ++i) {
+    const auto& collision = collisions.iteratorAt(i);
+    const auto& label = labels.iteratorAt(i);
+    recoToMcMap[collision.globalIndex()] = label.mcCollisionId();
   }
 
-  size_t iCent = 0;
-  for (const auto& cent : centTable) {
-    if (iCent < collisions.size()) {
-      const auto& collision = collisions.iteratorAt(iCent);
-      float centValue = cent.centFT0M();
-      recoToCentMap[collision.globalIndex()] = centValue;
-      ue.fill(HIST("Centrality/hCentRaw"), centValue);
-    }
-    iCent++;
+  size_t nCentPairs = std::min(centTable.size(), collisions.size());
+  for (size_t i = 0; i < nCentPairs; ++i) {
+    const auto& collision = collisions.iteratorAt(i);
+    const auto& cent = centTable.iteratorAt(i);
+    float centValue = cent.centFT0M();
+    recoToCentMap[collision.globalIndex()] = centValue;
+    ue.fill(HIST("Centrality/hCentRaw"), centValue);
   }
 
-  // ============================================================
-  // PROCESS RECONSTRUCTED COLLISIONS
-  // ============================================================
 
+  
   std::set<int64_t> reconstructedMCCollisions;
   std::set<int64_t> selectedMCCollisions;
 
   for (const auto& collision : collisions) {
     ue.fill(HIST("CutFlow/hCutStats"), 1);
-
+    
     int64_t collId = collision.globalIndex();
 
     // MC matching
     auto mcIt = recoToMcMap.find(collId);
-    if (mcIt == recoToMcMap.end())
-      continue;
+    if (mcIt == recoToMcMap.end()) continue;
     ue.fill(HIST("CutFlow/hCutStats"), 2);
-
+    
     int64_t mcCollId = mcIt->second;
     auto nchIt = mcCollisionToNch.find(mcCollId);
-    if (nchIt == mcCollisionToNch.end())
-      continue;
+    if (nchIt == mcCollisionToNch.end()) continue;
     int nGenCharged = nchIt->second;
-
+    
     auto inelIt = mcCollisionToINELClass.find(mcCollId);
     int inelClass = (inelIt != mcCollisionToINELClass.end()) ? inelIt->second : 0;
 
     // Centrality
     auto centIt = recoToCentMap.find(collId);
-    if (centIt == recoToCentMap.end())
-      continue;
+    if (centIt == recoToCentMap.end()) continue;
     ue.fill(HIST("CutFlow/hCutStats"), 3);
-
+    
     float cent = centIt->second;
-    if (cent < 0 || cent > CentBinMax)
-      continue;
-
-    // Store centrality for this MC collision
-    mcCollToCent[mcCollId] = cent;
+    if (cent < 0 || cent > CentBinMax) continue;
+    
+    // Store centrality for this MC collision (used later for MC truth plots)
+    mcCollToCentFromReco[mcCollId] = cent;
 
     // Vertex cut
     bool passVertex = std::abs(collision.posZ()) <= cfgCutVertex.value;
-    if (!passVertex)
-      continue;
+    if (!passVertex) continue;
     ue.fill(HIST("CutFlow/hCutStats"), 4);
     ue.fill(HIST("Centrality/hCentAfterVtx"), cent);
 
     // INEL cut
     bool passINEL = true;
-    if (cfgINELCut.value == INELgt0 && inelClass < INELgt0)
-      passINEL = false;
-    if (cfgINELCut.value == INELgt1 && inelClass < INELgt1)
-      passINEL = false;
-    if (!passINEL)
-      continue;
+    if (cfgINELCut.value == INELgt0 && inelClass < INELgt0) passINEL = false;
+    if (cfgINELCut.value == INELgt1 && inelClass < INELgt1) passINEL = false;
+    if (!passINEL) continue;
 
     // Event passed all cuts
     ue.fill(HIST("CutFlow/hCutStats"), 5);
     ue.fill(HIST("Centrality/hCentAfterAll"), cent);
+    
+
     ue.fill(HIST("MC/EventLoss/GenMultVsCent_Selected"), cent, nGenCharged);
+    ue.fill(HIST("Centrality/hCentVsMult"), cent, nGenCharged);
+    ue.fill(HIST("Centrality/hMultVsCent"), nGenCharged, cent);
     ue.fill(HIST("hvtxZ"), collision.posZ());
-
-    ue.fill(HIST("Centrality/hRecoMultVsCent"), cent, 0);
-
+    
     selectedMCCollisions.insert(mcCollId);
     reconstructedMCCollisions.insert(mcCollId);
 
@@ -727,43 +636,27 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
       magField = getMagneticField(bc.timestamp());
     }
 
-    // ============================================================
-    // PROCESS TRACKS IN SELECTED EVENTS
-    // ============================================================
-
+    
     int nTracksInEvent = 0;
-
+    
     for (const auto& track : tracks) {
-      if (!track.has_collision())
-        continue;
-      if (track.collisionId() != collId)
-        continue;
-
-      // Apply track selection
-      if (!passesTrackSelection(track, magField))
-        continue;
-
+      if (!track.has_collision()) continue;
+      if (track.collisionId() != collId) continue;
+      
+      if (!passesTrackSelection(track, magField)) continue;
+      
       nTracksInEvent++;
-
-      // Fill track quality histograms
+      
       ue.fill(HIST("hNclFoundTPC"), track.tpcNClsFound());
       ue.fill(HIST("hNclPIDTPC"), track.tpcNClsPID());
       ue.fill(HIST("hEta"), track.eta());
       ue.fill(HIST("hPhi"), track.phi());
-
-      // ============================================================
-      // INCLUSIVE: Fill reconstructed spectra (all tracks)
-      // ============================================================
       ue.fill(HIST("Inclusive/hPtReco"), track.pt());
-
-      // ============================================================
-      // MC MATCHING FOR PARTICLE IDENTIFICATION
-      // ============================================================
+      
       if (track.has_mcParticle()) {
         const auto& particle = track.mcParticle();
         int pdgCode = std::abs(particle.pdgCode());
-
-        // Fill species-specific reconstructed spectra (MC matched, no PID)
+        
         if (pdgCode == PDG_t::kPiPlus) {
           ue.fill(HIST("Pion/hPtReco"), track.pt());
           if (particle.isPhysicalPrimary()) {
@@ -790,24 +683,21 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
           }
         }
       }
-
-      // ============================================================
-      // PID SELECTION FOR MEASURED SPECTRA
-      // ============================================================
+      
       if (passesPIDSelection(track, PartPion)) {
         ue.fill(HIST("Pion/hPtMeasured"), track.pt());
         if (enablePIDHistograms) {
           ue.fill(HIST("Pion/hNsigmaTPC"), track.pt(), track.tpcNSigmaPi());
         }
       }
-
+      
       if (passesPIDSelection(track, PartKaon)) {
         ue.fill(HIST("Kaon/hPtMeasured"), track.pt());
         if (enablePIDHistograms) {
           ue.fill(HIST("Kaon/hNsigmaTPC"), track.pt(), track.tpcNSigmaKa());
         }
       }
-
+      
       if (passesPIDSelection(track, PartProton)) {
         ue.fill(HIST("Proton/hPtMeasured"), track.pt());
         if (enablePIDHistograms) {
@@ -815,48 +705,39 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
         }
       }
     }
-
-    // Update reco multiplicity after processing tracks
+    
     ue.fill(HIST("Centrality/hRecoMultVsCent"), cent, nTracksInEvent);
   }
 
-  // ============================================================
-  // FILL hPtGenRecoEvent (particles in reconstructed events)
-  // This must be done AFTER reconstructedMCCollisions is filled
-  // ============================================================
 
+  
   for (const auto& mcCollision : mcCollisions) {
     int64_t mcCollId = mcCollision.globalIndex();
-
-    // Skip if this MC collision is NOT in reconstructed events
-    if (reconstructedMCCollisions.find(mcCollId) == reconstructedMCCollisions.end())
-      continue;
-
-    // float cent = mcCollToCent[mcCollId];
+    
+    if (reconstructedMCCollisions.find(mcCollId) == reconstructedMCCollisions.end()) continue;
+    
+    auto centIt = mcCollToCentFromReco.find(mcCollId);
+    if (centIt == mcCollToCentFromReco.end()) continue;
+    
     auto nchIt = mcCollisionToNch.find(mcCollId);
     int nGenCharged = (nchIt != mcCollisionToNch.end()) ? nchIt->second : 0;
-
+    
     auto particlesInCollision = particles.sliceBy(perMCCol, mcCollId);
-
+    
     for (const auto& particle : particlesInCollision) {
       auto pdgParticle = pdg->GetParticle(particle.pdgCode());
-      if (!pdgParticle || pdgParticle->Charge() == 0.)
-        continue;
-      if (!particle.isPhysicalPrimary())
-        continue;
-
-      // Apply acceptance cuts
-      if (std::abs(particle.eta()) >= cfgCutEtaMax.value)
-        continue;
-      if (particle.pt() < cfgTrkLowPtCut.value)
-        continue;
-
+      if (!pdgParticle || pdgParticle->Charge() == 0.) continue;
+      if (!particle.isPhysicalPrimary()) continue;
+      
+      if (std::abs(particle.eta()) >= cfgCutEtaMax.value) continue;
+      if (particle.pt() < cfgTrkLowPtCut.value) continue;
+      
       int pdgCode = std::abs(particle.pdgCode());
       float pt = particle.pt();
-
+      
       if (pdgCode == PDG_t::kPiPlus) {
         ue.fill(HIST("Pion/hPtGenRecoEvent"), pt);
-        ue.fill(HIST("Pion/hPtGenRecoEvent_Mult"), pt, nGenCharged); // Fill with multiplicity!
+        ue.fill(HIST("Pion/hPtGenRecoEvent_Mult"), pt, nGenCharged);
       } else if (pdgCode == PDG_t::kKPlus) {
         ue.fill(HIST("Kaon/hPtGenRecoEvent"), pt);
         ue.fill(HIST("Kaon/hPtGenRecoEvent_Mult"), pt, nGenCharged);
@@ -867,33 +748,41 @@ void MultiplicityPt::processMC(TrackTableMC const& tracks,
     }
   }
 
-  // ============================================================
-  // EVENT LOSS STATISTICS
-  // ============================================================
+  
+  for (const auto& mcCollId : inel0MCCollisions) {
+    auto centIt = mcCollToCentFromReco.find(mcCollId);
+    if (centIt != mcCollToCentFromReco.end()) {
+      float cent = centIt->second;
+      int nGenCharged = mcCollisionToNch[mcCollId];
+      ue.fill(HIST("MC/EventLoss/GenMultVsCent"), cent, nGenCharged);
+      ue.fill(HIST("hEventsINEL_Cent"), cent);
+    }
+  }
 
+
+  
+  for (const auto& mcCollId : reconstructedMCCollisions) {
+    auto centIt = mcCollToCentFromReco.find(mcCollId);
+    if (centIt != mcCollToCentFromReco.end()) {
+      ue.fill(HIST("hEventsReco_Cent"), centIt->second);
+    }
+  }
+
+
+  
   ue.fill(HIST("hEventLossBreakdown"), 1.f, physicsSelectedMCCollisions.size());
   ue.fill(HIST("hEventLossBreakdown"), 2.f, reconstructedMCCollisions.size());
   ue.fill(HIST("hEventLossBreakdown"), 3.f, selectedMCCollisions.size());
-
+  
   ue.fill(HIST("MC/GenRecoCollisions"), 4.f, reconstructedMCCollisions.size());
   ue.fill(HIST("MC/GenRecoCollisions"), 5.f, selectedMCCollisions.size());
-
-  // Fill event loss centrality histograms
-  for (const auto& mcCollId : inel0MCCollisions) {
-    float cent = mcCollToCent[mcCollId];
-    ue.fill(HIST("hEventsINEL_Cent"), cent);
-  }
-  for (const auto& mcCollId : reconstructedMCCollisions) {
-    float cent = mcCollToCent[mcCollId];
-    ue.fill(HIST("hEventsReco_Cent"), cent);
-  }
 
   LOG(info) << "\n=== EVENT STATISTICS ===";
   LOG(info) << "INEL>0 MC collisions: " << inel0MCCollisions.size();
   LOG(info) << "Physics selected MC collisions: " << physicsSelectedMCCollisions.size();
   LOG(info) << "Reconstructed collisions: " << reconstructedMCCollisions.size();
   LOG(info) << "Selected collisions: " << selectedMCCollisions.size();
-
+  
   if (physicsSelectedMCCollisions.size() > 0) {
     float efficiency = 100.f * selectedMCCollisions.size() / physicsSelectedMCCollisions.size();
     LOG(info) << "Final efficiency: " << efficiency << "%";
@@ -904,5 +793,5 @@ void MultiplicityPt::processData(CollisionTableData::iterator const& /*collision
                                  TrackTableData const& /*tracks*/,
                                  BCsRun3 const& /*bcs*/)
 {
-  // Data processing not implemented yet
+ 
 }
