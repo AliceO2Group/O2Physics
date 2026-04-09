@@ -101,6 +101,7 @@ struct NetProtCumulants {
   Configurable<bool> cfgIfRejectElectron{"cfgIfRejectElectron", true, "Remove electrons"};
   Configurable<bool> cfgIfMandatoryTOF{"cfgIfMandatoryTOF", true, "Mandatory TOF requirement to remove pileup"};
   Configurable<bool> cfgEvSelkIsVertexTOFmatched{"cfgEvSelkIsVertexTOFmatched", true, "If matched with TOF, for pileup"};
+  Configurable<bool> cfgEvSelkIsGoodZvtxFT0vsPV{"cfgEvSelkIsGoodZvtxFT0vsPV", false, "Apply kIsGoodZvtxFT0vsPV event selection"};
   ConfigurableAxis cfgCentralityBins{"cfgCentralityBins", {90, 0., 90.}, "Centrality/Multiplicity percentile bining"};
 
   // Connect to ccdb
@@ -987,6 +988,9 @@ struct NetProtCumulants {
       if (cfgEvSelkIsVertexTOFmatched && !(collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched))) {
         continue;
       }
+      if (cfgEvSelkIsGoodZvtxFT0vsPV && !(collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))) {
+        continue;
+      }
 
       cent = collision.centFT0C();
 
@@ -1078,7 +1082,7 @@ struct NetProtCumulants {
     }
     //-------------------------------------------------------------------------------------------
   }
-  PROCESS_SWITCH(NetProtCumulants, processMCGen, "Process Generated", false);
+  PROCESS_SWITCH(NetProtCumulants, processMCGen, "Process Generated", true);
 
   void processMCRec(MyMCRecCollision const& collision, MyMCTracks const& tracks, aod::McCollisions const&, aod::McParticles const&)
   {
@@ -1097,7 +1101,9 @@ struct NetProtCumulants {
     }
     if (cfgEvSelkIsVertexTOFmatched && !(collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched))) {
       return;
-      ;
+    }
+    if (cfgEvSelkIsGoodZvtxFT0vsPV && !(collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      return;
     }
 
     auto cent = collision.centFT0C();
@@ -2026,7 +2032,7 @@ struct NetProtCumulants {
       histos.get<TProfile2D>(HIST("Prof2D_Q112221_111"))->Fill(cent, sampleIndex, fQ112221_111);
     }
   }
-  PROCESS_SWITCH(NetProtCumulants, processMCRec, "Process Generated", false);
+  PROCESS_SWITCH(NetProtCumulants, processMCRec, "Process Generated", true);
 
   void processDataRec(AodCollisions::iterator const& coll, aod::BCsWithTimestamps const&, AodTracks const& inputTracks)
   {
@@ -2044,7 +2050,10 @@ struct NetProtCumulants {
 
     if (cfgEvSelkIsVertexTOFmatched && !(coll.selection_bit(o2::aod::evsel::kIsVertexTOFmatched))) {
       return;
-      ;
+    }
+
+    if (cfgEvSelkIsGoodZvtxFT0vsPV && !(coll.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      return;
     }
 
     histos.fill(HIST("hZvtx_after"), coll.posZ());
@@ -2978,7 +2987,7 @@ struct NetProtCumulants {
       histos.get<TProfile2D>(HIST("Prof2D_Q112221_111"))->Fill(cent, sampleIndex, fQ112221_111);
     }
   }
-  PROCESS_SWITCH(NetProtCumulants, processDataRec, "Process real data", true);
+  PROCESS_SWITCH(NetProtCumulants, processDataRec, "Process real data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
