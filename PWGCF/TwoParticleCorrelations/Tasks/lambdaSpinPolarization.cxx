@@ -258,7 +258,7 @@ enum ParticlePairType {
   kLambdaFakeAntiLambda = 4,
   kAntiLambdaFakeLambda = 5,
   kLambdaFakeLambda = 6,
-  kAntiLambdaFakeAntiLambda = 7 
+  kAntiLambdaFakeAntiLambda = 7
 };
 
 enum ShareDauLambda {
@@ -328,7 +328,6 @@ struct LambdaTableProducer {
   Configurable<float> cMaxChi2Tpc{"cMaxChi2Tpc", 4, "Max Chi2 Tpc"};
   Configurable<double> cTpcNsigmaCut{"cTpcNsigmaCut", 3.0, "TPC NSigma Selection Cut"};
   Configurable<bool> cRemoveAmbiguousTracks{"cRemoveAmbiguousTracks", false, "Remove Ambiguous Tracks"};
-  
   // LS (fake) background control variables
   Configurable<bool> cApplyFakeDcaCuts{"cApplyFakeDcaCuts", true, "Apply DCA-to-PV cuts on LS daughter tracks"};
   Configurable<float> cFakeDaughterMaxDEta{"cFakeDaughterMaxDEta", -1.f, "Max delta eta between LS daughters as topology proxy (-1=off)"};
@@ -1235,9 +1234,9 @@ struct LambdaTableProducer {
         if (tr1.sign() != tr2.sign()) {
           continue;
         }
-        
+
         if (cFakeDaughterMaxDEta > 0.f &&
-            std::abs(tr1.eta() - tr2.eta()) > cFakeDaughterMaxDEta) {
+          std::abs(tr1.eta() - tr2.eta()) > cFakeDaughterMaxDEta) {
           continue;
         }
         if (cFakeDaughterMaxOpenAngle > 0.f) {
@@ -2031,20 +2030,16 @@ struct LambdaSpinPolarization {
     analyzePairsStandard<kLambdaLambda, true>(lambdaTracks, lambdaTracks);
     analyzePairsStandard<kAntiLambdaAntiLambda, true>(antiLambdaTracks, antiLambdaTracks);
 
-    // ---------------------------------------------------------------------------
-    // US-LS combinatorial background pairs
-    // ---------------------------------------------------------------------------
     analyzePairsStandard<kLambdaFakeAntiLambda, false>(lambdaTracks, fakeAntiLambdaTracks);
     analyzePairsStandard<kLambdaFakeAntiLambda, false>(fakeLambdaTracks, antiLambdaTracks);
 
     analyzePairsStandard<kAntiLambdaFakeLambda, false>(antiLambdaTracks, fakeLambdaTracks);
     analyzePairsStandard<kAntiLambdaFakeLambda, false>(fakeAntiLambdaTracks, lambdaTracks);
 
-    analyzePairsStandard<kLambdaFakeLambda, false>(lambdaTracks, fakeLambdaTracks); 
-    analyzePairsStandard<kLambdaFakeLambda, false>(fakeLambdaTracks, lambdaTracks); 
-
-    analyzePairsStandard<kAntiLambdaFakeAntiLambda, false>(antiLambdaTracks, fakeAntiLambdaTracks); 
-    analyzePairsStandard<kAntiLambdaFakeAntiLambda, false>(fakeAntiLambdaTracks, antiLambdaTracks); 
+    analyzePairsStandard<kLambdaFakeLambda, false>(lambdaTracks, fakeLambdaTracks);
+    analyzePairsStandard<kLambdaFakeLambda, false>(fakeLambdaTracks, lambdaTracks);
+    analyzePairsStandard<kAntiLambdaFakeAntiLambda, false>(antiLambdaTracks, fakeAntiLambdaTracks);
+    analyzePairsStandard<kAntiLambdaFakeAntiLambda, false>(fakeAntiLambdaTracks, antiLambdaTracks);
   }
 
   PROCESS_SWITCH(LambdaSpinPolarization, processDataReco, "Process for Data and MCReco", true);
@@ -2102,10 +2097,9 @@ struct LambdaSpinPolarization {
       analyzePairsME<kAntiLambdaFakeLambda, false>(antiLambdaTracks_col1, fakeLambdaTracks_col2);
       analyzePairsME<kAntiLambdaFakeLambda, false>(fakeAntiLambdaTracks_col2, lambdaTracks_col1);
 
-      analyzePairsME<kLambdaFakeLambda, false>(lambdaTracks_col1, fakeLambdaTracks_col2); 
+      analyzePairsME<kLambdaFakeLambda, false>(lambdaTracks_col1, fakeLambdaTracks_col2);
       analyzePairsME<kLambdaFakeLambda, false>(fakeLambdaTracks_col2, lambdaTracks_col1);
-
-      analyzePairsME<kAntiLambdaFakeAntiLambda, false>(antiLambdaTracks_col1, fakeAntiLambdaTracks_col2); 
+      analyzePairsME<kAntiLambdaFakeAntiLambda, false>(antiLambdaTracks_col1, fakeAntiLambdaTracks_col2);
       analyzePairsME<kAntiLambdaFakeAntiLambda, false>(fakeAntiLambdaTracks_col2, antiLambdaTracks_col1);
     }
   }
