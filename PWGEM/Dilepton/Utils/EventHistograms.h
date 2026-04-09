@@ -32,6 +32,7 @@
 namespace o2::aod::pwgem::dilepton::utils::eventhistogram
 {
 const int nbin_ev = 21;
+static constexpr std::string_view event_types[2] = {"before/", "after/"};
 template <const int nmod = -1>
 void addEventHistograms(o2::framework::HistogramRegistry* fRegistry)
 {
@@ -110,6 +111,22 @@ void addEventHistograms(o2::framework::HistogramRegistry* fRegistry)
     fRegistry->add("Event/before/hPrfQ2FV0AQ2BNeg_CentFT0C", "Q_{2}^{FV0A} #upoint Q_{2}^{BNeg};centrality FT0C (%);Q_{2}^{FV0A} #upoint Q_{2}^{BNeg}", o2::framework::kTProfile, {{100, 0, 100}}, false);
     fRegistry->add("Event/before/hPrfQ2FV0AQ2BTot_CentFT0C", "Q_{2}^{FV0A} #upoint Q_{2}^{BTot};centrality FT0C (%);Q_{2}^{FV0A} #upoint Q_{2}^{BTot}", o2::framework::kTProfile, {{100, 0, 100}}, false);
     fRegistry->add("Event/before/hPrfQ2FV0AQ2FT0C_CentFT0C", "Q_{2}^{FV0A} #upoint Q_{2}^{FT0C};centrality FT0C (%);Q_{2}^{FV0A} #upoint Q_{2}^{FT0C}", o2::framework::kTProfile, {{100, 0, 100}}, false); // this is necessary for dimuons
+
+    fRegistry->add("Event/before/hPrfCos2_Psi2FT0M_Psi2BPos_CentFT0C", "cos(2(#Psi_{2}^{FT0M} - #Psi_{2}^{BPos}));centrality FT0C (%);cos(2(#Psi_{2}^{FT0M} - #Psi_{2}^{BPos}))", o2::framework::kTProfile, {{100, 0, 100}}, false);
+    fRegistry->add("Event/before/hPrfCos2_Psi2FT0M_Psi2BNeg_CentFT0C", "cos(2(#Psi_{2}^{FT0M} - #Psi_{2}^{BNeg}));centrality FT0C (%);cos(2(#Psi_{2}^{FT0M} - #Psi_{2}^{BNeg}))", o2::framework::kTProfile, {{100, 0, 100}}, false);
+    fRegistry->add("Event/before/hPrfCos2_Psi2BPos_Psi2BNeg_CentFT0C", "cos(2(#Psi_{2}^{BPos} - #Psi_{2}^{BNeg}));centrality FT0C (%);cos(2(#Psi_{2}^{BPos} - #Psi_{2}^{BNeg}))", o2::framework::kTProfile, {{100, 0, 100}}, false); // this is common for FT0M, FT0A, FT0C, FV0A resolution.
+    fRegistry->add("Event/before/hPrfCos2_Psi2FT0C_Psi2BPos_CentFT0C", "cos(2(#Psi_{2}^{FT0C} - #Psi_{2}^{BPos}));centrality FT0C (%);cos(2(#Psi_{2}^{FT0C} - #Psi_{2}^{BPos}))", o2::framework::kTProfile, {{100, 0, 100}}, false);
+    fRegistry->add("Event/before/hPrfCos2_Psi2FT0C_Psi2BNeg_CentFT0C", "cos(2(#Psi_{2}^{FT0C} - #Psi_{2}^{BNeg}));centrality FT0C (%);cos(2(#Psi_{2}^{FT0C} - #Psi_{2}^{BNeg}))", o2::framework::kTProfile, {{100, 0, 100}}, false);
+    fRegistry->add("Event/before/hPrfCos2_Psi2FT0C_Psi2BTot_CentFT0C", "cos(2(#Psi_{2}^{FT0C} - #Psi_{2}^{BTot}));centrality FT0C (%);cos(2(#Psi_{2}^{FT0C} - #Psi_{2}^{BTot}))", o2::framework::kTProfile, {{100, 0, 100}}, false);
+    fRegistry->add("Event/before/hPrfCos2_Psi2FT0A_Psi2BPos_CentFT0C", "cos(2(#Psi_{2}^{FT0A} - #Psi_{2}^{BPos}));centrality FT0C (%);cos(2(#Psi_{2}^{FT0A} - #Psi_{2}^{BPos}))", o2::framework::kTProfile, {{100, 0, 100}}, false);
+    fRegistry->add("Event/before/hPrfCos2_Psi2FT0A_Psi2BNeg_CentFT0C", "cos(2(#Psi_{2}^{FT0A} - #Psi_{2}^{BNeg}));centrality FT0C (%);cos(2(#Psi_{2}^{FT0A} - #Psi_{2}^{BNeg}))", o2::framework::kTProfile, {{100, 0, 100}}, false);
+    fRegistry->add("Event/before/hPrfCos2_Psi2FT0A_Psi2BTot_CentFT0C", "cos(2(#Psi_{2}^{FT0A} - #Psi_{2}^{BTot}));centrality FT0C (%);cos(2(#Psi_{2}^{FT0A} - #Psi_{2}^{BTot}))", o2::framework::kTProfile, {{100, 0, 100}}, false);
+    fRegistry->add("Event/before/hPrfCos2_Psi2FT0A_Psi2FT0C_CentFT0C", "cos(2(#Psi_{2}^{FT0A} - #Psi_{2}^{FT0C}));centrality FT0C (%);cos(2(#Psi_{2}^{FT0A} - #Psi_{2}^{FT0C}))", o2::framework::kTProfile, {{100, 0, 100}}, false); // this is necessary for dimuons
+    fRegistry->add("Event/before/hPrfCos2_Psi2FV0A_Psi2BPos_CentFT0C", "cos(2(#Psi_{2}^{FV0A} - #Psi_{2}^{BPos}));centrality FT0C (%);cos(2(#Psi_{2}^{FV0A} - #Psi_{2}^{BPos}))", o2::framework::kTProfile, {{100, 0, 100}}, false);
+    fRegistry->add("Event/before/hPrfCos2_Psi2FV0A_Psi2BNeg_CentFT0C", "cos(2(#Psi_{2}^{FV0A} - #Psi_{2}^{BNeg}));centrality FT0C (%);cos(2(#Psi_{2}^{FV0A} - #Psi_{2}^{BNeg}))", o2::framework::kTProfile, {{100, 0, 100}}, false);
+    fRegistry->add("Event/before/hPrfCos2_Psi2FV0A_Psi2BTot_CentFT0C", "cos(2(#Psi_{2}^{FV0A} - #Psi_{2}^{BTot}));centrality FT0C (%);cos(2(#Psi_{2}^{FV0A} - #Psi_{2}^{BTot}))", o2::framework::kTProfile, {{100, 0, 100}}, false);
+    fRegistry->add("Event/before/hPrfCos2_Psi2FV0A_Psi2FT0C_CentFT0C", "cos(2(#Psi_{2}^{FV0A} - #Psi_{2}^{FT0C}));centrality FT0C (%);cos(2(#Psi_{2}^{FV0A} - #Psi_{2}^{FT0C}))", o2::framework::kTProfile, {{100, 0, 100}}, false); // this is necessary for dimuons
+
   } else if constexpr (nmod == 3) {
     fRegistry->add("Event/before/hQ3xFT0M_CentFT0C", "hQ3xFT0M_CentFT0C;centrality FT0C (%);Q_{3,x}^{FT0M}", o2::framework::kTH2D, {{100, 0, 100}, {200, -10, +10}}, false);
     fRegistry->add("Event/before/hQ3yFT0M_CentFT0C", "hQ3yFT0M_CentFT0C;centrality FT0C (%);Q_{3,y}^{FT0M}", o2::framework::kTH2D, {{100, 0, 100}, {200, -10, +10}}, false);
@@ -148,6 +165,21 @@ void addEventHistograms(o2::framework::HistogramRegistry* fRegistry)
     fRegistry->add("Event/before/hPrfQ3FV0AQ3BNeg_CentFT0C", "Q_{3}^{FV0A} #upoint Q_{3}^{BNeg};centrality FT0C (%);Q_{3}^{FV0A} #upoint Q_{3}^{BNeg}", o2::framework::kTProfile, {{100, 0, 100}}, false);
     fRegistry->add("Event/before/hPrfQ3FV0AQ3BTot_CentFT0C", "Q_{3}^{FV0A} #upoint Q_{3}^{BTot};centrality FT0C (%);Q_{3}^{FV0A} #upoint Q_{3}^{BTot}", o2::framework::kTProfile, {{100, 0, 100}}, false);
     fRegistry->add("Event/before/hPrfQ3FV0AQ3FT0C_CentFT0C", "Q_{3}^{FV0A} #upoint Q_{3}^{FT0C};centrality FT0C (%);Q_{3}^{FV0A} #upoint Q_{3}^{FT0C}", o2::framework::kTProfile, {{100, 0, 100}}, false); // this is necessary for dimuons
+
+    fRegistry->add("Event/before/hPrfCos3_Psi3FT0M_Psi3BPos_CentFT0C", "cos(3(#Psi_{3}^{FT0M} - #Psi_{3}^{BPos}));centrality FT0C (%);cos(3(#Psi_{3}^{FT0M} - #Psi_{3}^{BPos}))", o2::framework::kTProfile, {{100, 0, 100}}, false);
+    fRegistry->add("Event/before/hPrfCos3_Psi3FT0M_Psi3BNeg_CentFT0C", "cos(3(#Psi_{3}^{FT0M} - #Psi_{3}^{BNeg}));centrality FT0C (%);cos(3(#Psi_{3}^{FT0M} - #Psi_{3}^{BNeg}))", o2::framework::kTProfile, {{100, 0, 100}}, false);
+    fRegistry->add("Event/before/hPrfCos3_Psi3BPos_Psi3BNeg_CentFT0C", "cos(3(#Psi_{3}^{BPos} - #Psi_{3}^{BNeg}));centrality FT0C (%);cos(3(#Psi_{3}^{BPos} - #Psi_{3}^{BNeg}))", o2::framework::kTProfile, {{100, 0, 100}}, false); // this is common for FT0M, FT0A, FT0C, FV0A resolution.
+    fRegistry->add("Event/before/hPrfCos3_Psi3FT0C_Psi3BPos_CentFT0C", "cos(3(#Psi_{3}^{FT0C} - #Psi_{3}^{BPos}));centrality FT0C (%);cos(3(#Psi_{3}^{FT0C} - #Psi_{3}^{BPos}))", o2::framework::kTProfile, {{100, 0, 100}}, false);
+    fRegistry->add("Event/before/hPrfCos3_Psi3FT0C_Psi3BNeg_CentFT0C", "cos(3(#Psi_{3}^{FT0C} - #Psi_{3}^{BNeg}));centrality FT0C (%);cos(3(#Psi_{3}^{FT0C} - #Psi_{3}^{BNeg}))", o2::framework::kTProfile, {{100, 0, 100}}, false);
+    fRegistry->add("Event/before/hPrfCos3_Psi3FT0C_Psi3BTot_CentFT0C", "cos(3(#Psi_{3}^{FT0C} - #Psi_{3}^{BTot}));centrality FT0C (%);cos(3(#Psi_{3}^{FT0C} - #Psi_{3}^{BTot}))", o2::framework::kTProfile, {{100, 0, 100}}, false);
+    fRegistry->add("Event/before/hPrfCos3_Psi3FT0A_Psi3BPos_CentFT0C", "cos(3(#Psi_{3}^{FT0A} - #Psi_{3}^{BPos}));centrality FT0C (%);cos(3(#Psi_{3}^{FT0A} - #Psi_{3}^{BPos}))", o2::framework::kTProfile, {{100, 0, 100}}, false);
+    fRegistry->add("Event/before/hPrfCos3_Psi3FT0A_Psi3BNeg_CentFT0C", "cos(3(#Psi_{3}^{FT0A} - #Psi_{3}^{BNeg}));centrality FT0C (%);cos(3(#Psi_{3}^{FT0A} - #Psi_{3}^{BNeg}))", o2::framework::kTProfile, {{100, 0, 100}}, false);
+    fRegistry->add("Event/before/hPrfCos3_Psi3FT0A_Psi3BTot_CentFT0C", "cos(3(#Psi_{3}^{FT0A} - #Psi_{3}^{BTot}));centrality FT0C (%);cos(3(#Psi_{3}^{FT0A} - #Psi_{3}^{BTot}))", o2::framework::kTProfile, {{100, 0, 100}}, false);
+    fRegistry->add("Event/before/hPrfCos3_Psi3FT0A_Psi3FT0C_CentFT0C", "cos(3(#Psi_{3}^{FT0A} - #Psi_{3}^{FT0C}));centrality FT0C (%);cos(3(#Psi_{3}^{FT0A} - #Psi_{3}^{FT0C}))", o2::framework::kTProfile, {{100, 0, 100}}, false); // this is necessary for dimuons
+    fRegistry->add("Event/before/hPrfCos3_Psi3FV0A_Psi3BPos_CentFT0C", "cos(3(#Psi_{3}^{FV0A} - #Psi_{3}^{BPos}));centrality FT0C (%);cos(3(#Psi_{3}^{FV0A} - #Psi_{3}^{BPos}))", o2::framework::kTProfile, {{100, 0, 100}}, false);
+    fRegistry->add("Event/before/hPrfCos3_Psi3FV0A_Psi3BNeg_CentFT0C", "cos(3(#Psi_{3}^{FV0A} - #Psi_{3}^{BNeg}));centrality FT0C (%);cos(3(#Psi_{3}^{FV0A} - #Psi_{3}^{BNeg}))", o2::framework::kTProfile, {{100, 0, 100}}, false);
+    fRegistry->add("Event/before/hPrfCos3_Psi3FV0A_Psi3BTot_CentFT0C", "cos(3(#Psi_{3}^{FV0A} - #Psi_{3}^{BTot}));centrality FT0C (%);cos(3(#Psi_{3}^{FV0A} - #Psi_{3}^{BTot}))", o2::framework::kTProfile, {{100, 0, 100}}, false);
+    fRegistry->add("Event/before/hPrfCos3_Psi3FV0A_Psi3FT0C_CentFT0C", "cos(3(#Psi_{3}^{FV0A} - #Psi_{3}^{FT0C}));centrality FT0C (%);cos(3(#Psi_{3}^{FV0A} - #Psi_{3}^{FT0C}))", o2::framework::kTProfile, {{100, 0, 100}}, false); // this is necessary for dimuons
   }
   fRegistry->addClone("Event/before/", "Event/after/");
 }
@@ -174,7 +206,6 @@ void addEventHistogramsBootstrap(o2::framework::HistogramRegistry* fRegistry, in
 template <const int ev_id, const int nmod = -1, typename TCollision>
 void fillEventInfo(o2::framework::HistogramRegistry* fRegistry, TCollision const& collision, const float /*weight*/ = 1.f)
 {
-  static constexpr std::string_view event_types[2] = {"before/", "after/"};
   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 1.0);
   if (collision.selection_bit(o2::aod::emevsel::kIsTriggerTVX)) {
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 2.0);
@@ -290,6 +321,22 @@ void fillEventInfo(o2::framework::HistogramRegistry* fRegistry, TCollision const
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ2FV0AQ2BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2fv0a, q2bneg));
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ2FV0AQ2BTot_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2fv0a, q2btot));
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ2FV0AQ2FT0C_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q2fv0a, q2ft0c));
+
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos2_Psi2FT0M_Psi2BPos_CentFT0C"), collision.centFT0C(), std::cos(2.f * (collision.ep2ft0m() - collision.ep2bpos())));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos2_Psi2FT0M_Psi2BNeg_CentFT0C"), collision.centFT0C(), std::cos(2.f * (collision.ep2ft0m() - collision.ep2bneg())));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos2_Psi2BPos_Psi2BNeg_CentFT0C"), collision.centFT0C(), std::cos(2.f * (collision.ep2bpos() - collision.ep2bneg())));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos2_Psi2FT0C_Psi2BPos_CentFT0C"), collision.centFT0C(), std::cos(2.f * (collision.ep2ft0c() - collision.ep2bpos())));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos2_Psi2FT0C_Psi2BNeg_CentFT0C"), collision.centFT0C(), std::cos(2.f * (collision.ep2ft0c() - collision.ep2bneg())));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos2_Psi2FT0C_Psi2BTot_CentFT0C"), collision.centFT0C(), std::cos(2.f * (collision.ep2ft0c() - collision.ep2btot())));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos2_Psi2FT0A_Psi2BPos_CentFT0C"), collision.centFT0C(), std::cos(2.f * (collision.ep2ft0a() - collision.ep2bpos())));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos2_Psi2FT0A_Psi2BNeg_CentFT0C"), collision.centFT0C(), std::cos(2.f * (collision.ep2ft0a() - collision.ep2bneg())));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos2_Psi2FT0A_Psi2BTot_CentFT0C"), collision.centFT0C(), std::cos(2.f * (collision.ep2ft0a() - collision.ep2btot())));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos2_Psi2FT0A_Psi2FT0C_CentFT0C"), collision.centFT0C(), std::cos(2.f * (collision.ep2ft0a() - collision.ep2ft0c())));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos2_Psi2FV0A_Psi2BPos_CentFT0C"), collision.centFT0C(), std::cos(2.f * (collision.ep2fv0a() - collision.ep2bpos())));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos2_Psi2FV0A_Psi2BNeg_CentFT0C"), collision.centFT0C(), std::cos(2.f * (collision.ep2fv0a() - collision.ep2bneg())));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos2_Psi2FV0A_Psi2BTot_CentFT0C"), collision.centFT0C(), std::cos(2.f * (collision.ep2fv0a() - collision.ep2btot())));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos2_Psi2FV0A_Psi2FT0C_CentFT0C"), collision.centFT0C(), std::cos(2.f * (collision.ep2fv0a() - collision.ep2ft0c())));
+
   } else if constexpr (nmod == 3) {
     std::array<float, 2> q3ft0m = {collision.q3xft0m(), collision.q3yft0m()};
     std::array<float, 2> q3ft0a = {collision.q3xft0a(), collision.q3yft0a()};
@@ -336,6 +383,21 @@ void fillEventInfo(o2::framework::HistogramRegistry* fRegistry, TCollision const
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ3FV0AQ3BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q3fv0a, q3bpos));
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ3FV0AQ3BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q3fv0a, q3bneg));
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ3FV0AQ3BTot_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q3fv0a, q3btot));
+
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos3_Psi3FT0M_Psi3BPos_CentFT0C"), collision.centFT0C(), std::cos(3.f * (collision.ep3ft0m() - collision.ep3bpos())));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos3_Psi3FT0M_Psi3BNeg_CentFT0C"), collision.centFT0C(), std::cos(3.f * (collision.ep3ft0m() - collision.ep3bneg())));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos3_Psi3BPos_Psi3BNeg_CentFT0C"), collision.centFT0C(), std::cos(3.f * (collision.ep3bpos() - collision.ep3bneg())));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos3_Psi3FT0C_Psi3BPos_CentFT0C"), collision.centFT0C(), std::cos(3.f * (collision.ep3ft0c() - collision.ep3bpos())));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos3_Psi3FT0C_Psi3BNeg_CentFT0C"), collision.centFT0C(), std::cos(3.f * (collision.ep3ft0c() - collision.ep3bneg())));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos3_Psi3FT0C_Psi3BTot_CentFT0C"), collision.centFT0C(), std::cos(3.f * (collision.ep3ft0c() - collision.ep3btot())));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos3_Psi3FT0A_Psi3BPos_CentFT0C"), collision.centFT0C(), std::cos(3.f * (collision.ep3ft0a() - collision.ep3bpos())));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos3_Psi3FT0A_Psi3BNeg_CentFT0C"), collision.centFT0C(), std::cos(3.f * (collision.ep3ft0a() - collision.ep3bneg())));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos3_Psi3FT0A_Psi3BTot_CentFT0C"), collision.centFT0C(), std::cos(3.f * (collision.ep3ft0a() - collision.ep3btot())));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos3_Psi3FT0A_Psi3FT0C_CentFT0C"), collision.centFT0C(), std::cos(3.f * (collision.ep3ft0a() - collision.ep3ft0c())));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos3_Psi3FV0A_Psi3BPos_CentFT0C"), collision.centFT0C(), std::cos(3.f * (collision.ep3fv0a() - collision.ep3bpos())));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos3_Psi3FV0A_Psi3BNeg_CentFT0C"), collision.centFT0C(), std::cos(3.f * (collision.ep3fv0a() - collision.ep3bneg())));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos3_Psi3FV0A_Psi3BTot_CentFT0C"), collision.centFT0C(), std::cos(3.f * (collision.ep3fv0a() - collision.ep3btot())));
+    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfCos3_Psi3FV0A_Psi3FT0C_CentFT0C"), collision.centFT0C(), std::cos(3.f * (collision.ep3fv0a() - collision.ep3ft0c())));
   }
 }
 template <typename TCollision>
