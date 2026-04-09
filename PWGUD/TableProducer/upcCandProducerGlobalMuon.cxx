@@ -114,10 +114,10 @@ struct UpcCandProducerGlobalMuon {
   float fZShift{0};                                       // z-vertex shift for forward track propagation
 
   // Named constants (avoid magic numbers in expressions)
-  static constexpr double kInvalidDCA = 999.;             // Sentinel for "no valid DCA computed yet"
-  static constexpr double kBcTimeRoundingOffset = 1.;     // Offset used when rounding trackTime to BC units
-  static constexpr uint16_t kMinTracksForPair = 2;        // Minimum tracks required to compute a pair invariant mass
-  static constexpr uint16_t kMinTracksForCandidate = 1;   // Minimum contributors required to save a candidate
+  static constexpr double kInvalidDCA = 999.;           // Sentinel for "no valid DCA computed yet"
+  static constexpr double kBcTimeRoundingOffset = 1.;   // Offset used when rounding trackTime to BC units
+  static constexpr uint16_t kMinTracksForPair = 2;      // Minimum tracks required to compute a pair invariant mass
+  static constexpr uint16_t kMinTracksForCandidate = 1; // Minimum contributors required to save a candidate
 
   void init(InitContext&)
   {
