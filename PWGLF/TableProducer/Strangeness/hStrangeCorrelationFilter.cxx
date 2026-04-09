@@ -83,7 +83,6 @@ struct HStrangeCorrelationFilter {
     Configurable<bool> requireGoodZvtxFT0vsPV{"requireGoodZvtxFT0vsPV", false, " require small difference between z-vertex from PV and from FT0"};
     Configurable<float> minCentPercent{"minCentPercent", 0, "minimum centrality percentage"};
     Configurable<float> maxCentPercent{"maxCentPercent", 100, "maximum centrality percentage"};
-    Configurable<bool> applyNewMCSelection{"applyNewMCSelection", false, "apply new MC Generated selection"};
   } eventSelections;
 
   struct : ConfigurableGroup {
