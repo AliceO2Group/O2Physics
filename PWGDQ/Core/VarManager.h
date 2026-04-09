@@ -2085,6 +2085,9 @@ void VarManager::FillEvent(T const& event, float* values)
     if (fgUsedVars[kIsNoSameBunch]) {
       values[kIsNoSameBunch] = (event.selection_bit(o2::aod::evsel::kNoSameBunchPileup) > 0);
     }
+    if (fgUsedVars[kIsTriggerZNAZNC]) {
+      values[kIsTriggerZNAZNC] = event.selection_bit(o2::aod::evsel::kIsBBZNA) && event.selection_bit(o2::aod::evsel::kIsBBZNC);
+    }
     if (fgUsedVars[kIsGoodZvtxFT0vsPV]) {
       values[kIsGoodZvtxFT0vsPV] = (event.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) > 0);
     }
