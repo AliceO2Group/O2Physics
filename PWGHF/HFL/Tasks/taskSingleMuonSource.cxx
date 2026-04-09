@@ -89,9 +89,6 @@ struct HfTaskSingleMuonSource {
   double etaUp = -2.5;     // up edge of eta acceptance
   double edgeZ = 10.0;     // edge of event position Z
   double ptLow = 1.0;      // low edge of pT for muon pairs
-  int pdgLow = 10;         // low edge of pdgCode for particle separation
-  int pdgMid = 1000;       // intermediate edge of pdgCode for particle separation
-  int pdgHigh = 10000;     // up edge of pdgCode for particle separation
 
   HistogramRegistry registry{
     "registry",
@@ -148,6 +145,8 @@ struct HfTaskSingleMuonSource {
   uint8_t getMask(const McMuons::iterator& muon)
   {
     uint8_t mask(0);
+    const int diquarkEdge = 1000;
+    const int hadronEdge = 10000;
     if (muon.has_mcParticle()) {
       SETBIT(mask, IsIdentified);
     } else {
@@ -186,10 +185,10 @@ struct HfTaskSingleMuonSource {
         continue;
       } // Beam particle
 
-      if ((pdgRem < pdgLow) || (pdgRem >= pdgHigh)) {
+      if ((pdgRem < kPi0) || (pdgRem >= hadronEdge)) {
         continue;
       }
-      if ((pdgRem % 100 == kDown || pdgRem % 100 == kStrange) && pdgRem > pdgMid) { // diquarks
+      if ((pdgRem % 100 == kDown || pdgRem % 100 == kStrange) && pdgRem > diquarkEdge) { // diquarks
         continue;
       }
       // compute the flavor of constituent quark
@@ -352,6 +351,7 @@ struct HfTaskSingleMuonSource {
   {
     int mcNum = 0;
     const int hadronStatus = 80;
+    const int diquarkEdge = 1000;
     if (!muon.has_mcParticle()) {
       return 0;
     }
@@ -367,7 +367,7 @@ struct HfTaskSingleMuonSource {
       mcPart = mother;
     }
     int flv = mcPart.pdgCode() / std::pow(10, static_cast<int>(std::log10(std::abs(mcPart.pdgCode()))));
-    if (std::abs(flv) == kBottom && mcPart.pdgCode() < pdgMid) {
+    if (std::abs(flv) == kBottom && mcPart.pdgCode() < diquarkEdge) {
       flv = -flv;
     }
     for (int i = (mcPart.mothers_first_as<aod::McParticles>()).globalIndex(); i <= (mcPart.mothers_last_as<aod::McParticles>()).globalIndex(); i++) { // loop over the lund string
