@@ -12,6 +12,7 @@
 #include "FlatLutEntry.h"
 
 #include <Framework/Logger.h>
+#include <Framework/RuntimeError.h>
 
 #include <cstring>
 
@@ -89,9 +90,9 @@ void FlatLutData::initialize(const lutHeader_t& header)
   size_t totalSize = headerSize + entriesSize;
 
   mData.resize(totalSize);
-
   // Write header at the beginning
   std::memcpy(mData.data(), &header, headerSize);
+  updateRef();
 }
 
 size_t FlatLutData::getEntryOffset(int nch_bin, int rad_bin, int eta_bin, int pt_bin) const
@@ -105,69 +106,95 @@ size_t FlatLutData::getEntryOffset(int nch_bin, int rad_bin, int eta_bin, int pt
   return headerSize + linearIdx * sizeof(lutEntry_t);
 }
 
+const lutEntry_t* FlatLutData::getEntryRef(int nch_bin, int rad_bin, int eta_bin, int pt_bin) const
+{
+  size_t offset = getEntryOffset(nch_bin, rad_bin, eta_bin, pt_bin);
+  return reinterpret_cast<const lutEntry_t*>(mDataRef.data() + offset);
+}
+
 lutEntry_t* FlatLutData::getEntry(int nch_bin, int rad_bin, int eta_bin, int pt_bin)
 {
   size_t offset = getEntryOffset(nch_bin, rad_bin, eta_bin, pt_bin);
   return reinterpret_cast<lutEntry_t*>(mData.data() + offset);
 }
 
-const lutEntry_t* FlatLutData::getEntry(int nch_bin, int rad_bin, int eta_bin, int pt_bin) const
+const lutHeader_t& FlatLutData::getHeaderRef() const
 {
-  size_t offset = getEntryOffset(nch_bin, rad_bin, eta_bin, pt_bin);
-  return reinterpret_cast<const lutEntry_t*>(mData.data() + offset);
+  return *reinterpret_cast<const lutHeader_t*>(mDataRef.data());
 }
 
-FlatLutData FlatLutData::fromBuffer(const uint8_t* buffer, size_t size)
+lutHeader_t& FlatLutData::getHeader()
 {
-  FlatLutData data;
+  return *reinterpret_cast<lutHeader_t*>(mData.data());
+}
+
+void FlatLutData::updateRef()
+{
+  mDataRef = std::span{mData.data(), mData.size()};
+}
+
+void FlatLutData::cacheDimensions()
+{
+  auto const& header = getHeaderRef();
+  mNchBins = header.nchmap.nbins;
+  mRadBins = header.radmap.nbins;
+  mEtaBins = header.etamap.nbins;
+  mPtBins = header.ptmap.nbins;
+}
+
+void FlatLutData::adopt(const uint8_t* buffer, size_t size)
+{
+  mData.resize(size);
+  std::memcpy(mData.data(), buffer, size);
+  updateRef();
+  cacheDimensions();
+}
+
+void FlatLutData::view(const uint8_t* buffer, size_t size)
+{
+  mData.clear();
+  mDataRef = std::span{buffer, size};
+  cacheDimensions();
+}
+
+void FlatLutData::validateBuffer(const uint8_t* buffer, size_t size)
+{
   // Validate buffer
   if (size < sizeof(lutHeader_t)) {
-    LOG(fatal) << "Buffer too small for LUT header";
+    throw framework::runtime_error_f("Buffer too small for LUT header: expected at least %zu, got %zu", sizeof(lutHeader_t), size);
   }
 
   const auto* header = reinterpret_cast<const lutHeader_t*>(buffer);
-  data.mNchBins = header->nchmap.nbins;
-  data.mRadBins = header->radmap.nbins;
-  data.mEtaBins = header->etamap.nbins;
-  data.mPtBins = header->ptmap.nbins;
+  auto mNchBins = header->nchmap.nbins;
+  auto mRadBins = header->radmap.nbins;
+  auto mEtaBins = header->etamap.nbins;
+  auto mPtBins = header->ptmap.nbins;
 
-  size_t expectedSize = sizeof(lutHeader_t) + static_cast<size_t>(data.mNchBins) * data.mRadBins * data.mEtaBins * data.mPtBins * sizeof(lutEntry_t);
+  size_t expectedSize = sizeof(lutHeader_t) + static_cast<size_t>(mNchBins) * mRadBins * mEtaBins * mPtBins * sizeof(lutEntry_t);
 
   if (size < expectedSize) {
-    LOG(fatal) << "Buffer size mismatch: expected " << expectedSize << ", got " << size;
+    throw framework::runtime_error_f("Buffer size mismatch: expected %zu, got %zu", expectedSize, size);
   }
+}
+
+FlatLutData FlatLutData::AdoptFromBuffer(const uint8_t* buffer, size_t size)
+{
+  validateBuffer(buffer, size);
+  FlatLutData data;
 
   // Copy buffer
-  data.mData.resize(size);
-  std::memcpy(data.mData.data(), buffer, size);
-
+  data.adopt(buffer, size);
   return data;
 }
 
-FlatLutData FlatLutData::fromExternalBuffer(uint8_t* buffer, size_t size)
+FlatLutData FlatLutData::ViewFromBuffer(const uint8_t* buffer, size_t size)
 {
+  validateBuffer(buffer, size);
   FlatLutData data;
-  // Validate buffer
-  if (size < sizeof(lutHeader_t)) {
-    LOG(fatal) << "Buffer too small for LUT header";
-  }
 
-  const auto* header = reinterpret_cast<const lutHeader_t*>(buffer);
-  data.mNchBins = header->nchmap.nbins;
-  data.mRadBins = header->radmap.nbins;
-  data.mEtaBins = header->etamap.nbins;
-  data.mPtBins = header->ptmap.nbins;
-
-  size_t expectedSize = sizeof(lutHeader_t) + static_cast<size_t>(data.mNchBins) * data.mRadBins * data.mEtaBins * data.mPtBins * sizeof(lutEntry_t);
-
-  if (size < expectedSize) {
-    LOG(fatal) << "Buffer size mismatch: expected " << expectedSize << " got " << size;
-  }
-
-  // Store reference to external buffer (no copy)
+  // Store reference to external buffer
   // WARNING: Caller must ensure buffer lifetime exceeds FlatLutData usage
-  data.mData.assign(buffer, buffer + size);
-
+  data.view(buffer, size);
   return data;
 }
 

@@ -14,6 +14,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <span>
 #include <vector>
 
 #define LUTCOVM_VERSION 20260408
@@ -100,43 +101,45 @@ class FlatLutData
   void initialize(const lutHeader_t& header);
 
   /**
-   * @brief Get LUT entry by bin indices
-   * O(1) access via linear index calculation
+   * @brief Get LUT entry by bin indices (view)
    */
-  lutEntry_t* getEntry(int nch_bin, int rad_bin, int eta_bin, int pt_bin);
-  const lutEntry_t* getEntry(int nch_bin, int rad_bin, int eta_bin, int pt_bin) const;
+  const lutEntry_t* getEntryRef(int nch_bin, int rad_bin, int eta_bin, int pt_bin) const;
 
   /**
-   * @brief Get raw data buffer (for serialization/shared memory)
+   * @brief Get LUT entry by bin indices (owned)
    */
-  uint8_t* data() { return mData.data(); }
-  const uint8_t* data() const { return mData.data(); }
+  lutEntry_t* getEntry(int nch_bin, int rad_bin, int eta_bin, int pt_bin);
+
+  /**
+   * @brief Get LUT header (view)
+   */
+  const lutHeader_t& getHeaderRef() const;
+
+  /**
+   * @brief Get LUT header (owned)
+   */
+  lutHeader_t& getHeader();
+
+  /**
+   * @brief Get raw data buffer
+   */
+  uint8_t* data() { return mData.data(); } // owned
+  const uint8_t* data() const { return mDataRef.data(); } //view
 
   /**
    * @brief Total size in bytes
    */
-  size_t bytes() const { return mData.size(); }
+  size_t bytes() const { return mDataRef.size(); }
 
   /**
-   * @brief Construct from external buffer (e.g., shared memory or file mapping)
+   * @brief Construct a new FlatLutData from external buffer as a copy
    */
-  static FlatLutData fromBuffer(const uint8_t* buffer, size_t size);
+  static FlatLutData AdoptFromBuffer(const uint8_t* buffer, size_t size);
 
   /**
-   * @brief Reference-based access without copying
-   * Useful when data is already in shared memory
+   * @brief Construct a new FlatLutData from external buffer as a view
    */
-  static FlatLutData fromExternalBuffer(uint8_t* buffer, size_t size);
-
-  const lutHeader_t& header() const
-  {
-    return *reinterpret_cast<const lutHeader_t*>(mData.data());
-  }
-
-  lutHeader_t& header()
-  {
-    return *reinterpret_cast<lutHeader_t*>(mData.data());
-  }
+  static FlatLutData ViewFromBuffer(const uint8_t* buffer, size_t size);
 
  private:
   /**
@@ -144,7 +147,30 @@ class FlatLutData
    */
   size_t getEntryOffset(int nch_bin, int rad_bin, int eta_bin, int pt_bin) const;
 
+  /**
+   * @brief Update dimensions from the current header
+   */
+  void cacheDimensions();
+
+  /**
+   * @brief Adopt a buffer by copying
+   */
+  void adopt(const uint8_t* buffer, size_t size);
+  /**
+   * @brief Adopt a buffer as a view
+   */
+  void view(const uint8_t* buffer, size_t size);
+  /**
+   * @brief Update mDataRef from mData
+   */
+  void updateRef();
+  /**
+   * @brief Validate external buffer
+   */
+  static void validateBuffer(const uint8_t* buffer, size_t size);
+
   std::vector<uint8_t> mData;
+  std::span<uint8_t const> mDataRef;
 
   // Cache dimensions for quick access
   int mNchBins = 0;
