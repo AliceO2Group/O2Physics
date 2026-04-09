@@ -11,7 +11,8 @@
 
 #include "FlatTrackSmearer.h"
 
-namespace o2::delphes {
+namespace o2::delphes
+{
 int TrackSmearer::getIndexPDG(int pdg) const
 {
   switch (std::abs(pdg)) {

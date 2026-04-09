@@ -17,7 +17,8 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <ReconstructionDataFormats/Track.h>
 
-namespace o2::delphes {
+namespace o2::delphes
+{
 /**
  * @brief Track smearing with flat LUT backend
  */
@@ -58,8 +59,8 @@ class TrackSmearer
 
  protected:
   static constexpr unsigned int nLUTs = 9; // Number of LUT available
-  lutHeader_t const* mHeaders[nLUTs]; // header references for quick access
-  FlatLutData mLUTData[nLUTs];  // NEW: Flat data storage
+  lutHeader_t const* mHeaders[nLUTs];      // header references for quick access
+  FlatLutData mLUTData[nLUTs];             // NEW: Flat data storage
 
   bool mUseEfficiency = true;
   bool mInterpolateEfficiency = false;
@@ -71,6 +72,6 @@ class TrackSmearer
   o2::ccdb::BasicCCDBManager* mCcdbManager = nullptr;
 };
 
-}
+} // namespace o2::delphes
 
 #endif // ALICE3_CORE_FLATTRACKSMEARER_H_
