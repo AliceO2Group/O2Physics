@@ -113,6 +113,12 @@ struct UpcCandProducerGlobalMuon {
   static constexpr double fCcenterMFT[3] = {0, 0, -61.4}; // Field evaluation point at center of MFT
   float fZShift{0};                                       // z-vertex shift for forward track propagation
 
+  // Named constants (avoid magic numbers in expressions)
+  static constexpr double kInvalidDCA = 999.;             // Sentinel for "no valid DCA computed yet"
+  static constexpr double kBcTimeRoundingOffset = 1.;     // Offset used when rounding trackTime to BC units
+  static constexpr uint16_t kMinTracksForPair = 2;        // Minimum tracks required to compute a pair invariant mass
+  static constexpr uint16_t kMinTracksForCandidate = 1;   // Minimum contributors required to save a candidate
+
   void init(InitContext&)
   {
     fUpcCuts = (UPCCutparHolder)fUpcCutsConf;
@@ -472,11 +478,11 @@ struct UpcCandProducerGlobalMuon {
     }
 
     int newId = 0;
-    for (auto trackId : trackIds) {
+    for (const auto& trackId : trackIds) {
       auto it = clustersPerTrack.find(trackId);
       if (it != clustersPerTrack.end()) {
         const auto& clusters = it->second;
-        for (auto clsId : clusters) {
+        for (const auto& clsId : clusters) {
           const auto& clsInfo = fwdTrkCls.iteratorAt(clsId);
           udFwdTrkClusters(newId, clsInfo.x(), clsInfo.y(), clsInfo.z(), clsInfo.clInfo());
         }
@@ -623,7 +629,7 @@ struct UpcCandProducerGlobalMuon {
 
       auto trackId = fwdTrack.globalIndex();
       int64_t indexBC = vAmbFwdTrackIndex[trackId] < 0 ? vColIndexBCs[fwdTrack.collisionId()] : vAmbFwdTrackIndexBCs[vAmbFwdTrackIndex[trackId]];
-      auto globalBC = vGlobalBCs[indexBC] + TMath::FloorNint(fwdTrack.trackTime() / o2::constants::lhc::LHCBunchSpacingNS + 1.);
+      auto globalBC = vGlobalBCs[indexBC] + TMath::FloorNint(fwdTrack.trackTime() / o2::constants::lhc::LHCBunchSpacingNS + kBcTimeRoundingOffset);
 
       if (trackType == MuonStandaloneTrack) { // MCH-MID
         mapGlobalBcsWithMCHMIDTrackIds[globalBC].push_back(trackId);
@@ -686,7 +692,7 @@ struct UpcCandProducerGlobalMuon {
 
         // Step 1: Find best collision vertex using DCA-based propagation
         float bestVtxX = 0., bestVtxY = 0., bestVtxZ = 0.;
-        double bestAvgDCA = 999.;
+        double bestAvgDCA = kInvalidDCA;
         bool hasVertex = false;
         int nCompatColls = 0;
 
@@ -695,7 +701,7 @@ struct UpcCandProducerGlobalMuon {
           auto itCol = mapGlobalBCtoCollisions.find(searchBC);
           if (itCol == mapGlobalBCtoCollisions.end())
             continue;
-          for (auto colIdx : itCol->second) {
+          for (const auto& colIdx : itCol->second) {
             nCompatColls++;
             const auto& col = collisions.iteratorAt(colIdx);
             double sumDCAxy = 0.;
@@ -706,7 +712,7 @@ struct UpcCandProducerGlobalMuon {
               sumDCAxy += dca[0];
               nTracks++;
             }
-            double avgDCA = nTracks > 0 ? sumDCAxy / nTracks : 999.;
+            double avgDCA = nTracks > 0 ? sumDCAxy / nTracks : kInvalidDCA;
             if (!hasVertex || avgDCA < bestAvgDCA) {
               bestAvgDCA = avgDCA;
               bestVtxX = col.posX();
@@ -746,7 +752,7 @@ struct UpcCandProducerGlobalMuon {
 
         // Fill invariant mass from MCH-MID-MFT anchors only
         uint16_t numContribAnch = numContrib;
-        if (numContribAnch >= 2) {
+        if (numContribAnch >= kMinTracksForPair) {
           double mass2 = sumE * sumE - sumPx * sumPx - sumPy * sumPy - sumPz * sumPz;
           histRegistry.fill(HIST("hMassGlobalMuon"), mass2 > 0. ? std::sqrt(mass2) : 0.);
         }
@@ -774,12 +780,12 @@ struct UpcCandProducerGlobalMuon {
         }
 
         // Fill invariant mass including MCH-MFT tracks (only if MCH-MFT tracks were added)
-        if (numContrib > numContribAnch && numContrib >= 2) {
+        if (numContrib > numContribAnch && numContrib >= kMinTracksForPair) {
           double mass2 = sumE * sumE - sumPx * sumPx - sumPy * sumPy - sumPz * sumPz;
           histRegistry.fill(HIST("hMassGlobalMuonWithMCHMFT"), mass2 > 0. ? std::sqrt(mass2) : 0.);
         }
 
-        if (numContrib < 1)
+        if (numContrib < kMinTracksForCandidate)
           continue;
 
         eventCandidates(globalBcAnchor, runNumber, bestVtxX, bestVtxY, bestVtxZ, 0, numContrib, 0, 0);
@@ -828,7 +834,7 @@ struct UpcCandProducerGlobalMuon {
         numContrib++;
         selTrackIds.push_back(imuon);
       }
-      if (numContrib < 1) // didn't save any MCH-MID tracks
+      if (numContrib < kMinTracksForCandidate) // didn't save any MCH-MID tracks
         continue;
       std::map<int64_t, uint64_t> mapMchIdBc{};
       getMchTrackIds(globalBcMid, mapGlobalBcsWithMCHTrackIds, fBcWindowMCH, mapMchIdBc);
