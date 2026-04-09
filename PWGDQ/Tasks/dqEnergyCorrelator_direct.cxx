@@ -147,7 +147,7 @@ struct AnalysisEnergyCorrelator {
   // CCDB configurables
   Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "CCDB url"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "CCDB timestamp"};
-  Configurable<std::string> fConfigAccCCDBPath{"AccCCDBPath", "GLO/Config/GeometryAligned", "Path of the efficiency corrections"};
+  Configurable<std::string> fConfigAccCCDBPath{"AccCCDBPath", "Users/y/yalin/pptest/test2", "Path of the efficiency corrections"};
   // Member variables
   HistogramManager* fHistMan = nullptr;
   MixingHandler* fMixHandler = nullptr;
