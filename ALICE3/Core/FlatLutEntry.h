@@ -93,6 +93,8 @@ class FlatLutData
 {
  public:
   FlatLutData() = default;
+  FlatLutData(FlatLutData&&) = default;
+  FlatLutData& operator=(FlatLutData&&) = default;
 
   /**
    * @brief Initialize from binning information
@@ -141,6 +143,21 @@ class FlatLutData
    */
   static FlatLutData ViewFromBuffer(const uint8_t* buffer, size_t size);
 
+  /**
+   * @brief Construct a new FlatLutData from a file
+   */
+  static FlatLutData loadFromFile(const char* filename);
+
+  /**
+   * @brief Check if the LUT is loaded
+   */
+  bool isLoaded() const;
+
+  /**
+   * @brief Reset LUT to empty
+   */
+  void reset();
+
  private:
   /**
    * @brief Linear index calculation for entry access
@@ -151,6 +168,10 @@ class FlatLutData
    * @brief Update dimensions from the current header
    */
   void cacheDimensions();
+  /**
+   * @brief Reset dimensions to 0
+   */
+  void resetDimensions();
 
   /**
    * @brief Adopt a buffer by copying

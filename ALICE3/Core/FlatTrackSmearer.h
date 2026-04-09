@@ -27,7 +27,6 @@ class TrackSmearer
 {
  public:
   TrackSmearer() = default;
-  ~TrackSmearer() = default;
 
   /** LUT methods **/
   bool loadTable(int pdg, const char* filename, bool forceReload = false);
@@ -60,7 +59,7 @@ class TrackSmearer
  protected:
   static constexpr unsigned int nLUTs = 9; // Number of LUT available
   lutHeader_t const* mHeaders[nLUTs];      // header references for quick access
-  FlatLutData mLUTData[nLUTs];             // NEW: Flat data storage
+  FlatLutData mLUTData[nLUTs];             // Flat data storage
 
   bool mUseEfficiency = true;
   bool mInterpolateEfficiency = false;

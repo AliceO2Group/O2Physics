@@ -142,6 +142,14 @@ void FlatLutData::cacheDimensions()
   mPtBins = header.ptmap.nbins;
 }
 
+void FlatLutData::resetDimensions()
+{
+  mNchBins = 0;
+  mRadBins = 0;
+  mEtaBins = 0;
+  mPtBins = 0;
+}
+
 void FlatLutData::adopt(const uint8_t* buffer, size_t size)
 {
   mData.resize(size);
@@ -196,6 +204,56 @@ FlatLutData FlatLutData::ViewFromBuffer(const uint8_t* buffer, size_t size)
   // WARNING: Caller must ensure buffer lifetime exceeds FlatLutData usage
   data.view(buffer, size);
   return data;
+}
+
+bool FlatLutData::isLoaded() const
+{
+  return ((!mData.empty()) || (!mDataRef.empty()));
+}
+
+FlatLutData FlatLutData::loadFromFile(const char* filename)
+{
+  std::ifstream lutFile(filename, std::ifstream::binary);
+  if (!lutFile.is_open()) {
+    throw framework::runtime_error_f("Cannot open LUT file: %s", filename);
+  }
+
+  // Read header first
+  lutHeader_t tempHeader;
+  lutFile.read(reinterpret_cast<char*>(&tempHeader), sizeof(lutHeader_t));
+  if (lutFile.gcount() != static_cast<std::streamsize>(sizeof(lutHeader_t))) {
+    throw framework::runtime_error_f("Failed to read LUT header from %s", filename);
+  }
+
+  if (!tempHeader.check_version()) {
+    throw framework::runtime_error_f("LUT header version mismatch: expected %d, got %d", LUTCOVM_VERSION, tempHeader.version);
+  }
+
+  FlatLutData data;
+
+  // Initialize flat data structure
+  data.initialize(tempHeader);
+
+  // Read all entries sequentially into flat buffer
+  size_t headerSize = sizeof(lutHeader_t);
+  size_t numEntries = static_cast<size_t>(data.mNchBins) * data.mRadBins * data.mEtaBins * data.mPtBins;
+  size_t entriesSize = numEntries * sizeof(lutEntry_t);
+
+  lutFile.read(reinterpret_cast<char*>(data.data() + headerSize), entriesSize);
+  if (lutFile.gcount() != static_cast<std::streamsize>(entriesSize)) {
+    throw framework::runtime_error_f("Failed to read LUT entries from %s: expected %zu bytes, got %zu", filename, entriesSize, static_cast<size_t>(lutFile.gcount()));
+  }
+
+  lutFile.close();
+  LOGF(info, "Successfully loaded LUT from %s: %zu entries", filename, numEntries);
+  return data;
+}
+
+void FlatLutData::reset()
+{
+  mData.clear();
+  updateRef();
+  resetDimensions();
 }
 
 } // namespace o2::delphes
