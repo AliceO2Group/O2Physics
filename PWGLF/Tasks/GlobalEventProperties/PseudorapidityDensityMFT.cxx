@@ -142,7 +142,6 @@ struct PseudorapidityDensityMFT {
   Preslice<aod::MFTTracks> perCol = o2::aod::fwdtrack::collisionId;
   Preslice<aod::McParticles> perMcCol = aod::mcparticle::mcCollisionId;
   Preslice<aod::Tracks> perColCentral = aod::track::collisionId;
-
   Service<o2::framework::O2DatabasePDG> pdg;
 
   // --- CCDB magnetic field (needed for propagateToDCAhelix in this device) ---
