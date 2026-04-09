@@ -107,7 +107,6 @@ struct StudyPnch {
   Configurable<bool> isApplyInelgt0{"isApplyInelgt0", false, "Enable INEL > 0 condition"};
   Configurable<bool> isApplyExtraPhiCut{"isApplyExtraPhiCut", false, "Enable extra phi cut"};
   Configurable<bool> isApplyTVX{"isApplyTVX", false, "Enable TVX trigger sel"};
-  Configurable<bool> isApplyNoTrackSel{"isApplyNoTrackSel", false, "Do not consider any criteria for track selection"};
   Configurable<bool> isApplyCheckID{"isApplyCheckID", true, "Select Tracks evaluating Collision ID"};
   Configurable<bool> isApplyDuplicatedTrack{"isApplyDuplicatedTrack", true, "Select tracks that are not duplicated"};
 
@@ -289,24 +288,18 @@ struct StudyPnch {
   int countNTracksMcCol(countTrk const& tracks, McColType const& McCol)
   {
     auto nTrk = 0;
-    std::unordered_map<int, int> recoFrequencies; // Map that stores globalIndex and the times it appears
     std::vector<int> mcRecIDs;
     for (const auto& track : tracks) {
       if (!isTrackSelected(track)) {
         continue;
       }
-      if (isApplyNoTrackSel) {
-        nTrk++;
-      }
-      if (isApplyCheckID && track.has_mcParticle()) {
+      if (track.has_mcParticle()) {
         auto particle = track.mcParticle();
-        if (particle.mcCollisionId() != McCol.mcCollisionId()) {
+        if (isApplyCheckID && particle.mcCollisionId() != McCol.mcCollisionId()) {
           continue;
         }
-        if (isApplyDuplicatedTrack) {
-          if (find(mcRecIDs.begin(), mcRecIDs.end(), particle.globalIndex()) != mcRecIDs.end()) {
-            continue;
-          }
+        if (isApplyDuplicatedTrack && find(mcRecIDs.begin(), mcRecIDs.end(), particle.globalIndex()) != mcRecIDs.end()) {
+          continue;
         }
         mcRecIDs.push_back(particle.globalIndex());
         nTrk++;
@@ -353,7 +346,6 @@ struct StudyPnch {
 
   void processMonteCarlo(soa::Join<aod::McCollisions, aod::McCollsExtra>::iterator const& mcCollision, ColMCRecTable const& RecCols, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
   {
-    std::vector<int> mclabels;
     for (const auto& RecCol : RecCols) {
       if (!isEventSelected(RecCol)) {
         continue;
