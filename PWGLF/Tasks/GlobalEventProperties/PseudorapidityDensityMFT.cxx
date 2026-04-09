@@ -2322,7 +2322,7 @@ struct PseudorapidityDensityMFT {
   void processGenReco(McCollisionsWithExtra::iterator const& mcCollision,
                       o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions,
                       FullBCs const& bcs,
-                      MFTTracksT const& tracks, Particles const& particles,
+                      MFTTracksT const& tracks,
                       FiCentralTracks const& midtracks,
                       aod::McParticles const&)
   {
