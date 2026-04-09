@@ -79,8 +79,11 @@ struct HStrangeCorrelationFilter {
     Configurable<float> zVertexCut{"zVertexCut", 10, "Cut on PV position"};
     Configurable<bool> selectINELgtZERO{"selectINELgtZERO", true, "select INEL>0 events"};
     Configurable<bool> requireAllGoodITSLayers{"requireAllGoodITSLayers", false, " require that in the event all ITS are good"};
+    Configurable<bool> requireGoodTriggerTVX{"requireGoodTriggerTVX", false, " require acceptable FT0C-FT0A time difference"};
+    Configurable<bool> requireGoodZvtxFT0vsPV{"requireGoodZvtxFT0vsPV", false, " require small difference between z-vertex from PV and from FT0"};
     Configurable<float> minCentPercent{"minCentPercent", 0, "minimum centrality percentage"};
     Configurable<float> maxCentPercent{"maxCentPercent", 100, "maximum centrality percentage"};
+    Configurable<bool> applyNewMCSelection{"applyNewMCSelection", false, "apply new MC Generated selection"};
   } eventSelections;
 
   struct : ConfigurableGroup {
@@ -366,11 +369,11 @@ struct HStrangeCorrelationFilter {
   template <typename TCollision>
   bool isCollisionSelectedPbPb(TCollision collision)
   {
-    if (!collision.selection_bit(aod::evsel::kIsTriggerTVX)) /* FT0 vertex (acceptable FT0C-FT0A time difference) collisions */
+    if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && eventSelections.requireGoodTriggerTVX) /* FT0 vertex (acceptable FT0C-FT0A time difference) collisions */
       return false;
-    if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) // cut time intervals with dead ITS staves
+    if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll) && eventSelections.requireAllGoodITSLayers) // cut time intervals with dead ITS staves
       return false;
-    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
+    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) && eventSelections.requireGoodZvtxFT0vsPV) // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
       return false;
     auto occupancy = collision.trackOccupancyInTimeRange();
     if (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh) /* Below min occupancy and Above max occupancy*/
