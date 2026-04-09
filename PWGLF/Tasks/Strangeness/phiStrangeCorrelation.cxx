@@ -998,35 +998,35 @@ struct PhiStrangenessCorrelation {
 
     std::vector<MiniParticle>* currentAssocParticles[] = {&k0sParticles, &pionParticles};
 
-    static_for<0, assocParticleLabels.size() - 1>([&](auto i_idx) {
-      constexpr unsigned int i = i_idx.value;
+    for (const auto& phiParticle : phiParticles) {
+      static_for<0, assocParticleLabels.size() - 1>([&](auto i_idx) {
+        constexpr unsigned int i = i_idx.value;
 
-      for (const auto& phiParticle : phiParticles) {
         for (const auto& assocParticle : *(currentAssocParticles[i])) {
           histos.fill(HIST("phi") + HIST(assocParticleLabels[i]) + HIST("/h5Phi") + HIST(assocParticleLabels[i]) + HIST("ClosureMCGen"),
                       multiplicity, phiParticle.pt, assocParticle.pt,
                       phiParticle.y - assocParticle.y,
                       getDeltaPhi(phiParticle.phi, assocParticle.phi));
         }
-      }
-    });
+      });
+    }
 
     for (const auto& pastEvent : eventBuffer[multBin]) {
       const std::vector<MiniParticle>* pastAssocParticles[] = {&pastEvent.k0sParticles, &pastEvent.pionParticles};
 
-      static_for<0, assocParticleLabels.size() - 1>([&](auto i_idx) {
-        constexpr unsigned int i = i_idx.value;
+      // Loop over past events in the same multiplicity bin and fill histograms with all combinations of current phi particles and past associated particles
+      for (const auto& phiParticle : phiParticles) {
+        static_for<0, assocParticleLabels.size() - 1>([&](auto i_idx) {
+          constexpr unsigned int i = i_idx.value;
 
-        // Loop over past events in the same multiplicity bin and fill histograms with all combinations of current phi particles and past associated particles
-        for (const auto& phiParticle : phiParticles) {
           for (const auto& assocParticle : *(pastAssocParticles[i])) {
             histos.fill(HIST("phi") + HIST(assocParticleLabels[i]) + HIST("/h5Phi") + HIST(assocParticleLabels[i]) + HIST("ClosureMCGenME"),
                         multiplicity, phiParticle.pt, assocParticle.pt,
                         phiParticle.y - assocParticle.y,
                         getDeltaPhi(phiParticle.phi, assocParticle.phi));
           }
-        }
-      });
+        });
+      }
     }
 
     MiniEvent currentEvent;
