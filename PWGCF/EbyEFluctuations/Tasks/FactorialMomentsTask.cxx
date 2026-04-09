@@ -247,7 +247,6 @@ struct FactorialMomentsTask {
       compSample = kTRUE;
       countSamples = 0;
     }
-    // Calculate the normalized factorial moments
     for (int iPt = 0; iPt < numPt; ++iPt) {
       for (int iM = 0; iM < nBins; ++iM) {
         binContent = 0;
@@ -462,7 +461,6 @@ struct FactorialMomentsTask {
       }
     }
     for (auto iPt = 0; iPt < numPt; ++iPt) {
-      // if (countTracks[iPt] > 0)countTracks = {0, 0, 0, 0, 0};
       if (countTracks[iPt] > 0) {
         mHistArrQA[iPt * 4 + 3]->Fill(countTracks[iPt]);
       }
@@ -605,7 +603,6 @@ struct FactorialMomentsTask {
         mHistArrQA[iPt * 4 + 3]->Fill(countTracks[iPt]);
       }
     }
-    // Calculate the normalized factorial moments
     calculateMoments(mHistArrReset);
   }
   PROCESS_SWITCH(FactorialMomentsTask, processRun2, "for RUN2", false);
