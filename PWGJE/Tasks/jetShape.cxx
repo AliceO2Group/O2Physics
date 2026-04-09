@@ -76,8 +76,8 @@ struct JetShapeTask {
   Configurable<float> tpcNSigmaPrMax{"tpcNSigmaPrMax", 0.5f, "Max value of tpcNsigmaProton"};
   Configurable<float> tpcNSigmaPiMin{"tpcNSigmaPiMin", -0.5f, "Min value of tpcNsigmaPion"};
   Configurable<float> tpcNSigmaPiMax{"tpcNSigmaPiMax", 3.5f, "Max value of tpcNsigmaPion"};
-  Configurable<float> randomConeDeltaPhiMin{"randomConeDeltaPhiMin", float(o2::constants::math::PIThird), "Minimum delta phi for random cone"};
-  Configurable<float> randomConeDeltaPhiMax{"randomConeDeltaPhiMax", float(2.0f * o2::constants::math::PIThird), "Maximum delta phi for random cone"};
+  Configurable<float> randomConeDeltaPhiMin{"randomConeDeltaPhiMin", static_cast<float>(o2::constants::math::PIThird), "Minimum delta phi for random cone"};
+  Configurable<float> randomConeDeltaPhiMax{"randomConeDeltaPhiMax", static_cast<float>(2.0f * o2::constants::math::PIThird), "Maximum delta phi for random cone"};
 
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
 
