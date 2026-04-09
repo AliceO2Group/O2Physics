@@ -374,10 +374,10 @@ struct SingleTrackQCMC {
         fRegistry.add("Track/PromptLF/positive/hNclsMCH", "number of MCH clusters", o2::framework::kTH1F, {{21, -0.5, 20.5}}, false);
         fRegistry.add("Track/PromptLF/positive/hNclsMFT", "number of MFT clusters", o2::framework::kTH1F, {{11, -0.5, 10.5}}, false);
         fRegistry.add("Track/PromptLF/positive/hPDCA", "pDCA;R at absorber (cm);p #times DCA (GeV/c #upoint cm)", o2::framework::kTH2F, {{100, 0, 100}, {100, 0.0f, 1000}}, false);
-        fRegistry.add("Track/PromptLF/positive/hChi2_Pt", "chi2;p_{T,#mu} (GeV/c);chi2/ndf", o2::framework::kTH2F, {{100, 0, 10}, {100, 0.0f, 10}}, false);
-        fRegistry.add("Track/PromptLF/positive/hChi2MFT_Pt", "chi2MFT;p_{T,#mu} (GeV/c);chi2/ndf", o2::framework::kTH2F, {{100, 0, 10}, {100, 0.0f, 10}}, false);
-        fRegistry.add("Track/PromptLF/positive/hChi2MatchMCHMID_Pt", "chi2 match MCH-MID;p_{T,#mu} (GeV/c);chi2/ndf", o2::framework::kTH2F, {{100, 0, 10}, {200, 0.0f, 20}}, false);
-        fRegistry.add("Track/PromptLF/positive/hChi2MatchMCHMFT_Pt", "chi2 match MCH-MFT;p_{T,#mu} (GeV/c);chi2/ndf", o2::framework::kTH2F, {{100, 0, 10}, {100, 0.0f, 50}}, false);
+        fRegistry.add("Track/PromptLF/positive/hChi2_Pt", "chi2;p_{T,#mu} (GeV/c);chi2/ndf", o2::framework::kTH2F, {{200, 0, 10}, {200, 0.0f, 20}}, false);
+        fRegistry.add("Track/PromptLF/positive/hChi2MFT_Pt", "chi2MFT;p_{T,#mu} (GeV/c);chi2/ndf", o2::framework::kTH2F, {{200, 0, 10}, {200, 0.0f, 20}}, false);
+        fRegistry.add("Track/PromptLF/positive/hChi2MatchMCHMID_Pt", "chi2 match MCH-MID;p_{T,#mu} (GeV/c);chi2/ndf", o2::framework::kTH2F, {{200, 0, 10}, {200, 0.0f, 20}}, false);
+        fRegistry.add("Track/PromptLF/positive/hChi2MatchMCHMFT_Pt", "chi2 match MCH-MFT;p_{T,#mu} (GeV/c);chi2/ndf", o2::framework::kTH2F, {{200, 0, 10}, {100, 0.0f, 50}}, false);
         fRegistry.add("Track/PromptLF/positive/hMFTClusterMap", "MFT cluster map", o2::framework::kTH1F, {{1024, -0.5, 1023.5}}, false);
         fRegistry.add("Track/PromptLF/positive/hPtGen_DeltaPtOverPtGen", "muon p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", o2::framework::kTH2F, {{200, 0, 10}, {200, -1.0f, 1.0f}}, true);
         fRegistry.add("Track/PromptLF/positive/hPtGen_DeltaEta", "muon #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", o2::framework::kTH2F, {{200, 0, 10}, {100, -0.05f, 0.05f}}, true);
