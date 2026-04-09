@@ -27,6 +27,7 @@
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h>
 
 #include <Rtypes.h>
@@ -106,11 +107,11 @@ struct SlimTablesProducer {
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "Event selection"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections; other option: uniformTracks"};
-  Configurable<int> minTPCNClsCrossedRows{"minTPCNClsCrossedRows", 80, "min TPC crossed rows"};
   Configurable<bool> skipMBGapEvents{"skipMBGapEvents", false, "flag to choose to reject min. bias gap events; jet-level rejection can also be applied at the jet finder level for jets only, here rejection is applied for collision and track process functions for the first time, and on jets in case it was set to false at the jet finder level"};
   Configurable<bool> applyRCTSelections{"applyRCTSelections", true, "decide to apply RCT selections"};
 
   std::vector<int> eventSelectionBits;
+  Service<o2::framework::O2DatabasePDG> pdgDatabase;
   int trackSelection = -1;
   bool doSumw2 = false;
 
@@ -181,32 +182,30 @@ struct SlimTablesProducer {
   }
   PROCESS_SWITCH(SlimTablesProducer, processData, "process collisions and tracks for data", false);
 
-  void processMC(soa::Filtered<aod::JetCollisionsMCD> const& collisions,
-                 aod::JetMcCollisions const&, // join the weight
+  void processMC(soa::Filtered<aod::JetMcCollisions>::iterator const& mccollision,
+                 soa::SmallGroups<aod::JetCollisionsMCD> const& collisions, // join the weight
                  soa::Filtered<aod::JetTracksMCD> const& tracks,
                  soa::Filtered<aod::JetParticles> const& particles)
   {
+    float eventWeightMC = mccollision.weight();
+    if (collisions.size() != 1) { // skip the mccollision if it has mre than 1 associated rec collision
+      return;
+    }
+    histos.fill(HIST("h_mcCollMCP_counts_weight"), 0.5, eventWeightMC);
+    if (std::abs(mccollision.posZ()) > vertexZCut)
+      histos.fill(HIST("h_mcCollMCP_counts_weight"), 1.5, eventWeightMC);
+    if (!jetderiveddatautilities::selectMcCollision(mccollision, skipMBGapEvents, applyRCTSelections)) {
+      return;
+    }
+    histos.fill(HIST("h_mcCollMCP_counts_weight"), 2.5, eventWeightMC);
     for (auto const& collision : collisions) {
       float eventWeight = collision.weight();
       if (!collision.has_mcCollision()) {
         continue;
       }
-      auto mcColl = collision.mcCollision(); // corresponding MC coll
-      histos.fill(HIST("h_mcCollMCD_counts_weight"), 0.5, eventWeight);
-      histos.fill(HIST("h_mcCollMCP_counts_weight"), 0.5, eventWeight);
       if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
         continue;
       }
-      if (!jetderiveddatautilities::selectMcCollision(mcColl, skipMBGapEvents, applyRCTSelections)) {
-        continue;
-      }
-      histos.fill(HIST("h_mcCollMCD_counts_weight"), 1.5, eventWeight);
-      histos.fill(HIST("h_mcCollMCP_counts_weight"), 1.5, eventWeight);
-      if (std::abs(mcColl.posZ()) > vertexZCut)
-        continue;
-      histos.fill(HIST("h_mcCollMCP_counts_weight"), 2.5, eventWeight);
-
-      float eventMCWeight = mcColl.weight();
       slimCollisions(collision.posZ(), collision.collisionTime(), eventWeight);
       auto slimCollIndex = slimCollisions.lastIndex();
       auto slicedTracks = tracks.sliceBy(perCollisionTracks, collision.globalIndex()); // tracks associated to the rec collision
@@ -218,11 +217,14 @@ struct SlimTablesProducer {
         float energy = std::sqrt(p * p + mass * mass);
         slimTracks(slimCollIndex, track.px(), track.py(), track.pz(), energy);
       }
-      slimMcCollisions(mcColl.posZ(), eventMCWeight);
+      slimMcCollisions(mccollision.posZ(), eventWeightMC);
       auto slimMcCollIndex = slimMcCollisions.lastIndex();
-      auto slicedParticles = particles.sliceBy(perMcCollisionParticles, mcColl.globalIndex()); // particles associated to the mc collision
-      for (const auto& particle : slicedParticles) {
+      for (const auto& particle : particles) {
         if (!particle.isPhysicalPrimary())
+          continue;
+        auto pdgParticle = pdgDatabase->GetParticle(particle.pdgCode());
+        auto pdgCharge = pdgParticle ? std::abs(pdgParticle->Charge()) : -1.0;
+        if (pdgCharge < 3.0) // keep charged particles, exclude neutrals
           continue;
         slimParticles(slimMcCollIndex, particle.px(), particle.py(), particle.pz(), particle.energy());
       }
