@@ -1340,7 +1340,7 @@ struct Lambda1520analysisinpp {
       return (ptL2 > 0) ? std::sqrt(ptL2) : -1.f;
     };
 
-    for (auto& part : mcPartsAll) {
+    for (const auto& part : mcPartsAll) {
 
       if (!part.isPhysicalPrimary())
         continue;
