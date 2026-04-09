@@ -1330,6 +1330,8 @@ class VarManager : public TObject
   static void FillTrackCollision(T const& track, C const& collision, float* values = nullptr);
   template <int candidateType, uint32_t fillMap, typename T1, typename T2, typename C>
   static void FillTrackCollisionMC(T1 const& track, T2 const& MotherTrack, C const& collision, float* values = nullptr);
+  template <int candidateType, typename T1>
+  static void FillTrackCollisionMC(T1 const& track, const std::array<double, 3>& collPos, float massHyp = -1., float* values = nullptr);
   template <uint32_t fillMap, typename T, typename C, typename M, typename P>
   static void FillTrackCollisionMatCorr(T const& track, C const& collision, M const& materialCorr, P const& propagator, float* values = nullptr);
   template <typename U, typename T>
@@ -3302,6 +3304,37 @@ void VarManager::FillTrackCollisionMC(T1 const& track, T2 const& MotherTrack, C 
   values[kMCVertexingTauxyProjected] = values[kMCVertexingLxyProjected] * m / (MotherTrack.pt());
   values[kMCVertexingTauzProjected] = values[kMCVertexingLzProjected] * m / TMath::Abs(MotherTrack.pz());
   values[kMCVertexingTauxyzProjected] = values[kMCVertexingLxyzProjected] * m / (MotherTrack.p());
+}
+
+template <int candidateType, typename T1>
+void VarManager::FillTrackCollisionMC(T1 const& track, const std::array<double, 3>& collPos, float massHyp, float* values)
+{
+
+  if (!values) {
+    values = fgValues;
+  }
+
+  float m = o2::constants::physics::MassJPsi;
+  if (massHyp)
+    m = massHyp;
+
+  // displaced vertex is computed with decay product (track) and vertex collPos
+  values[kMCVertexingLxy] = (collPos[0] - track.vx()) * (collPos[0] - track.vx()) +
+                            (collPos[1] - track.vy()) * (collPos[1] - track.vy());
+  values[kMCVertexingLz] = (collPos[2] - track.vz()) * (collPos[2] - track.vz());
+  values[kMCVertexingLxyz] = values[kMCVertexingLxy] + values[kMCVertexingLz];
+  values[kMCVertexingLxy] = std::sqrt(values[kMCVertexingLxy]);
+  values[kMCVertexingLz] = std::sqrt(values[kMCVertexingLz]);
+  values[kMCVertexingLxyz] = std::sqrt(values[kMCVertexingLxyz]);
+  values[kMCVertexingTauz] = (collPos[2] - track.vz()) * m / (TMath::Abs(track.pz()) * o2::constants::physics::LightSpeedCm2NS);
+  values[kMCVertexingTauxy] = values[kMCVertexingLxy] * m / (track.pt() * o2::constants::physics::LightSpeedCm2NS);
+
+  values[kMCVertexingLzProjected] = ((track.vz() - collPos[2]) * track.pz()) / TMath::Abs(track.pz());
+  values[kMCVertexingLxyProjected] = (((track.vx() - collPos[0]) * track.px()) + ((track.vy() - collPos[1]) * track.py())) / TMath::Abs(track.pt());
+  values[kMCVertexingLxyzProjected] = (((track.vx() - collPos[0]) * track.px()) + ((track.vy() - collPos[1]) * track.py()) + ((track.vz() - collPos[2]) * track.pz())) / track.p();
+  values[kMCVertexingTauxyProjected] = values[kMCVertexingLxyProjected] * m / (track.pt());
+  values[kMCVertexingTauzProjected] = values[kMCVertexingLzProjected] * m / TMath::Abs(track.pz());
+  values[kMCVertexingTauxyzProjected] = values[kMCVertexingLxyzProjected] * m / (track.p());
 }
 
 template <int pairType, typename T, typename T1>
