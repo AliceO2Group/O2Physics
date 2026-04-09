@@ -256,16 +256,15 @@ struct Lambda1520analysisinpp {
     AxisSpec idxMCAxis = {26, -0.5f, 25.5f, "Index"};
 
     histos.add("CollCutCounts", "No. of event after cuts", kTH1I, {{10, 0, 10}});
-    std::shared_ptr<TH1> hCutFlow = histos.get<TH1>(HIST("CollCutCounts"));
-    hCutFlow->GetXaxis()->SetBinLabel(1, "All Events");
-    hCutFlow->GetXaxis()->SetBinLabel(2, "|Vz| < cut");
-    hCutFlow->GetXaxis()->SetBinLabel(3, "kIsTriggerTVX");
-    hCutFlow->GetXaxis()->SetBinLabel(4, "kNoTimeFrameBorder");
-    hCutFlow->GetXaxis()->SetBinLabel(5, "kNoITSROFrameBorder");
-    hCutFlow->GetXaxis()->SetBinLabel(6, "rctChecker");
-    hCutFlow->GetXaxis()->SetBinLabel(7, "sel8");
-    hCutFlow->GetXaxis()->SetBinLabel(8, "IsINELgt0");
-    hCutFlow->GetXaxis()->SetBinLabel(9, "All Passed Events");
+    histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(1, "All Events");
+    histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(2, "|Vz| < cut");
+    histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(3, "kIsTriggerTVX");
+    histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(4, "kNoTimeFrameBorder");
+    histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(5, "kNoITSROFrameBorder");
+    histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(6, "rctChecker");
+    histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(7, "sel8");
+    histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(8, "IsINELgt0");
+    histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(9, "All Passed Events");
 
     histos.add("Event/posZ", "; vtx_{z} (cm); Entries", HistType::kTH1F, {{250, -12.5, 12.5}});
     histos.add("Event/centFT0M", "; FT0M Percentile; Entries", HistType::kTH1F, {{110, 0, 110}});
