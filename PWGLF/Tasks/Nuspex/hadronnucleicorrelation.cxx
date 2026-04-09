@@ -138,7 +138,7 @@ struct HadronNucleiCorrelation {
   ConfigurableAxis DeltaPhiAxis = {"DeltaPhiAxis", {46, -1 * o2::constants::math::PIHalf, 3 * o2::constants::math::PIHalf}, "#Delta#phi (rad)"};
 
   using FilteredCollisions = soa::Filtered<aod::SingleCollSels>;
-  using SimCollisions = soa::Join<aod::McCollisions, aod::MultsExtraMC>;
+  using SimCollisions = soa::Filtered<soa::Join<aod::McCollisions, aod::MultsExtraMC>>;
   using SimParticles = aod::McParticles;
   using FilteredTracks = soa::Filtered<soa::Join<aod::SingleTrackSels, aod::SingleTrkExtras, aod::SinglePIDEls, aod::SinglePIDPrs, aod::SinglePIDDes>>;                      // new tables (v3)
   using FilteredTracksMC = soa::Filtered<soa::Join<aod::SingleTrackSels, aod::SingleTrkMCs, aod::SingleTrkExtras, aod::SinglePIDEls, aod::SinglePIDPrs, aod::SinglePIDDes>>; // new tables (v3)
@@ -424,6 +424,8 @@ struct HadronNucleiCorrelation {
                        nabs(o2::aod::singletrackselector::unPack<singletrackselector::binning::dca>(o2::aod::singletrackselector::storedDcaXY)) <= max_DCAz &&
                        nabs(o2::aod::singletrackselector::eta) <= etaCut;
 
+  Filter simvertexFilter = nabs(o2::aod::mccollision::posZ) <= cutzVertex;
+
   template <typename Type>
   bool IsProton(Type const& track, int sign)
   {
@@ -683,9 +685,6 @@ struct HadronNucleiCorrelation {
 
   void processSameEvent(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks)
   {
-
-    if (std::abs(collision.posZ()) > cutzVertex)
-      return;
 
     registry.fill(HIST("hNEvents"), 0.5);
     registry.fill(HIST("hMult"), collision.mult());
@@ -1320,11 +1319,8 @@ struct HadronNucleiCorrelation {
   }
   PROCESS_SWITCH(HadronNucleiCorrelation, processMC, "processMC", false);
 
-  void processSameEventGen(SimCollisions::iterator const& mcCollision, SimParticles const& mcParticles)
+  void processSameEventGen(SimCollisions::iterator const&, SimParticles const& mcParticles)
   {
-
-    if (std::abs(mcCollision.posZ()) > cutzVertex)
-      return;
 
     registry.fill(HIST("Generated/hNEventsMC"), 0.5);
 
@@ -1382,6 +1378,19 @@ struct HadronNucleiCorrelation {
 
       for (const auto& [part0, part1] : combinations(CombinationsStrictlyUpperIndexPolicy(mcParticles, mcParticles))) {
 
+        if (isPrim && !part0.isPhysicalPrimary()) {
+          continue;
+        }
+        if (isPrim && !part1.isPhysicalPrimary()) {
+          continue;
+        }
+        if (std::abs(part0.eta()) > etaCut) {
+          continue;
+        }
+        if (std::abs(part1.eta()) > etaCut) {
+          continue;
+        }
+
         // mode 6
         if (mode == kPP) {
           if (part0.pdgCode() != PDG_t::kProton)
@@ -1403,6 +1412,19 @@ struct HadronNucleiCorrelation {
     } else {
 
       for (const auto& [part0, part1] : combinations(CombinationsFullIndexPolicy(mcParticles, mcParticles))) {
+
+        if (isPrim && !part0.isPhysicalPrimary()) {
+          continue;
+        }
+        if (isPrim && !part1.isPhysicalPrimary()) {
+          continue;
+        }
+        if (std::abs(part0.eta()) > etaCut) {
+          continue;
+        }
+        if (std::abs(part1.eta()) > etaCut) {
+          continue;
+        }
 
         if (mode == kDbarPbar) {
           if (part0.pdgCode() != -o2::constants::physics::Pdg::kDeuteron)
@@ -1462,6 +1484,19 @@ struct HadronNucleiCorrelation {
       registry.fill(HIST("hMult"), collision1.multMCNParticlesEta10());
 
       for (const auto& [part0, part1] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+
+        if (isPrim && !part0.isPhysicalPrimary()) {
+          continue;
+        }
+        if (isPrim && !part1.isPhysicalPrimary()) {
+          continue;
+        }
+        if (std::abs(part0.eta()) > etaCut) {
+          continue;
+        }
+        if (std::abs(part1.eta()) > etaCut) {
+          continue;
+        }
 
         if (mode == kDbarPbar) {
           if (part0.pdgCode() != -o2::constants::physics::Pdg::kDeuteron)
