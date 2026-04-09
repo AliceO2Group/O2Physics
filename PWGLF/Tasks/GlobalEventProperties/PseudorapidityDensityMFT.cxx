@@ -2976,21 +2976,21 @@ struct PseudorapidityDensityMFT {
   void processGenReco3d(McCollisionsWithExtra::iterator const& mcCollision,
                         o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions,
                         FullBCs const& bcs,
-                        MFTTracksLabeled3d const& tracks, Particles const& particles,
+                        MFTTracksLabeled3d const& tracks,
                         FiCentralTracks const& midtracks,
                         aod::McParticles const& mcParticles)
   {
-    processGenReco(mcCollision, collisions, bcs, tracks, particles, midtracks, mcParticles);
+    processGenReco(mcCollision, collisions, bcs, tracks, midtracks, mcParticles);
   }
 
   void processGenReco2d(McCollisionsWithExtra::iterator const& mcCollision,
                         o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions,
                         FullBCs const& bcs,
-                        MFTTracksLabeled2d const& tracks, Particles const& particles,
+                        MFTTracksLabeled2d const& tracks,
                         FiCentralTracks const& midtracks,
                         aod::McParticles const& mcParticles)
   {
-    processGenReco(mcCollision, collisions, bcs, tracks, particles, midtracks, mcParticles);
+    processGenReco(mcCollision, collisions, bcs, tracks, midtracks, mcParticles);
   }
   PROCESS_SWITCH(PseudorapidityDensityMFT, processGenReco3d,
                  "Process gen-reco info with BestCollisionsFwd3d", true);
