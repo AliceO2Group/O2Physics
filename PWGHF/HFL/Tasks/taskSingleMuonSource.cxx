@@ -8,10 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
-// \file taskSingleMuonSource.cxx
-// \brief Task used to seperate single muons source in Monte Carlo simulation.
-// \author Maolin Zhang <maolin.zhang@cern.ch>, CCNU
+///
+/// \file taskSingleMuonSource.cxx
+/// \brief Task used to seperate single muons source in Monte Carlo simulation.
+/// \author Maolin Zhang <maolin.zhang@cern.ch>, CCNU
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -393,7 +393,7 @@ struct HfTaskSingleMuonSource {
     }
     return 0;
   }
-  bool Corr(const McMuons::iterator& muon1, const McMuons::iterator& muon2, aod::McParticles const& mcParts)
+  bool isCorr(const McMuons::iterator& muon1, const McMuons::iterator& muon2, aod::McParticles const& mcParts)
   {
 
     int moth11(0), moth12(0), moth21(1), moth22(1);
@@ -431,7 +431,7 @@ struct HfTaskSingleMuonSource {
     ROOT::Math::PtEtaPhiMVector mu1Vec(muon.pt(), muon.eta(), muon.phi(), mm);
     ROOT::Math::PtEtaPhiMVector mu2Vec(muon2.pt(), muon2.eta(), muon2.phi(), mm);
     ROOT::Math::PtEtaPhiMVector dimuVec = mu1Vec + mu2Vec;
-    auto InvM = dimuVec.M();
+    auto invMass = dimuVec.M();
 
     if (!muon.has_mcParticle() || !muon2.has_mcParticle()) {
       return;
@@ -442,22 +442,22 @@ struct HfTaskSingleMuonSource {
     ROOT::Math::PtEtaPhiMVector mu1VecGen(mcPart1.pt(), mcPart1.eta(), mcPart1.phi(), mm);
     ROOT::Math::PtEtaPhiMVector mu2VecGen(mcPart2.pt(), mcPart2.eta(), mcPart2.phi(), mm);
     ROOT::Math::PtEtaPhiMVector dimuVecGen = mu1VecGen + mu2VecGen;
-    auto InvMGen = dimuVecGen.M();
+    auto invMassGen = dimuVecGen.M();
 
     if (isMuon(mask1) && isMuon(mask2)) {
-      registry.fill(HIST("h1MuonMass"), InvM);
-      registry.fill(HIST("h1MuonMassGen"), InvMGen);
+      registry.fill(HIST("h1MuonMass"), invMass);
+      registry.fill(HIST("h1MuonMassGen"), invMassGen);
     }
     if (isBeautyMu(mask1) && isBeautyMu(mask2)) {
-      registry.fill(HIST("h1BeautyMass"), InvM);
-      registry.fill(HIST("h1BeautyMassGen"), InvMGen);
-      if (Corr(muon, muon2, mcParts)) {
-        registry.fill(HIST("h1CorrBeautyMass"), InvM);
-        registry.fill(HIST("h1CorrBeautyMassGen"), InvMGen);
+      registry.fill(HIST("h1BeautyMass"), invMass);
+      registry.fill(HIST("h1BeautyMassGen"), invMassGen);
+      if (isCorr(muon, muon2, mcParts)) {
+        registry.fill(HIST("h1CorrBeautyMass"), invMass);
+        registry.fill(HIST("h1CorrBeautyMassGen"), invMassGen);
       }
     } else {
-      registry.fill(HIST("h1OtherMass"), InvM);
-      registry.fill(HIST("h1OtherMassGen"), InvMGen);
+      registry.fill(HIST("h1OtherMass"), invMass);
+      registry.fill(HIST("h1OtherMassGen"), invMassGen);
     }
   }
 
