@@ -17,9 +17,9 @@
 #define PWGCF_FEMTODREAM_CORE_FEMTODREAMPAIRCLEANER_H_
 
 #include "PWGCF/DataModel/FemtoDerived.h"
-#include "Framework/HistogramRegistry.h"
 
-using namespace o2::framework;
+#include <Framework/HistogramRegistry.h>
+#include <Framework/Logger.h>
 
 namespace o2::analysis::femtoDream
 {
@@ -36,8 +36,8 @@ class FemtoDreamPairCleaner
   virtual ~FemtoDreamPairCleaner() = default;
 
   /// Initialization of the QA histograms
-  /// \param registry HistogramRegistry
-  void init(HistogramRegistry* registry)
+  /// \param registry o2::framework::HistogramRegistry
+  void init(o2::framework::HistogramRegistry* registry)
   {
     if (registry) {
       mHistogramRegistry = registry;
@@ -116,7 +116,7 @@ class FemtoDreamPairCleaner
   }
 
  private:
-  HistogramRegistry* mHistogramRegistry;                                             ///< For QA output
+  o2::framework::HistogramRegistry* mHistogramRegistry;                              ///< For QA output
   static constexpr o2::aod::femtodreamparticle::ParticleType mPartOneType = partOne; ///< Type of particle 1
   static constexpr o2::aod::femtodreamparticle::ParticleType mPartTwoType = partTwo; ///< Type of particle 2
 };

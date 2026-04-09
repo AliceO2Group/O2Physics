@@ -9,8 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
+/// IMPORTANT: Cannot have header guard because it's included multiple times inside the code.
+// NOLINT(build/header_guard)
+
+#include <Framework/Configurable.h>
 
 #include <string>
 #include <vector>
