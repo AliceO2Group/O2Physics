@@ -14,15 +14,45 @@
 /// \author Paul Buehler, paul.buehler@oeaw.ac.at
 /// \since  30.09.2022
 
-#include <algorithm>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "ReconstructionDataFormats/Vertex.h"
-#include "PWGUD/DataModel/UDTables.h"
+#include "DGBCCandProducer.h"
+
+#include "PWGUD/Core/DGCutparHolder.h"
+#include "PWGUD/Core/DGSelector.h"
 #include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/Core/UPCHelpers.h"
-#include "PWGUD/Core/DGSelector.h"
-#include "DGBCCandProducer.h"
+#include "PWGUD/DataModel/UDTables.h"
+
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CommonConstants/LHCConstants.h>
+#include <CommonDataFormat/TimeStamp.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Vertex.h>
+
+#include <TH1.h>
+#include <TH2.h>
+
+#include <sys/types.h>
+
+#include <Rtypes.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <cstdlib>
+#include <map>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

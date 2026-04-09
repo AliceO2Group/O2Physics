@@ -809,6 +809,23 @@ struct DptDptTrackSelection {
   bool requirePvContributor = false;
 };
 
+SystemType fSystem = SystemNoSystem;
+MultRunType fLhcRun = MultRunRUN1RUN2;
+DataType fDataType = kData;
+CentMultEstimatorType fCentMultEstimator = CentMultV0M;
+OccupancyEstimationType fOccupancyEstimation = OccupancyNOOCC; /* the occupancy estimator to use */
+
+float fMinOccupancy = 0.0f; /* the minimum allowed occupancy */
+float fMaxOccupancy = 1e6f; /* the maximum allowed occupancy */
+
+/* adaptations for the pp nightly checks */
+analysis::CheckRangeCfg traceDCAOutliers;
+bool traceOutOfSpeciesParticles = false;
+int recoIdMethod = 0;
+float particleMaxDCAxy = 999.9f;
+float particleMaxDCAZ = 999.9f;
+bool traceCollId0 = false;
+
 inline TList* getCCDBInput(auto& ccdb, const char* ccdbpath, const char* ccdbdate, bool periodInPath = false, const std::string& suffix = "")
 {
   std::tm cfgtm = {};
@@ -826,13 +843,20 @@ inline TList* getCCDBInput(auto& ccdb, const char* ccdbpath, const char* ccdbdat
     return tmpStr;
   };
 
-  std::string actualPeriod = cleanPeriod(metadataInfo.get("LPMProductionTag"));
+  std::string actualPeriod;
+  if (fDataType != kOnTheFly) {
+    actualPeriod = cleanPeriod(metadataInfo.get("LPMProductionTag"));
+  } else {
+    actualPeriod = suffix;
+  }
   std::string actualPath = ccdbpath;
   if (periodInPath) {
     actualPath = actualPath + "/" + actualPeriod;
   }
-  if (suffix.length() > 0) {
-    actualPeriod = actualPeriod + "_" + suffix;
+  if (fDataType != kOnTheFly) {
+    if (suffix.length() > 0) {
+      actualPeriod = actualPeriod + "_" + suffix;
+    }
   }
 
   TList* lst = nullptr;
@@ -845,23 +869,6 @@ inline TList* getCCDBInput(auto& ccdb, const char* ccdbpath, const char* ccdbdat
   }
   return lst;
 }
-
-SystemType fSystem = SystemNoSystem;
-MultRunType fLhcRun = MultRunRUN1RUN2;
-DataType fDataType = kData;
-CentMultEstimatorType fCentMultEstimator = CentMultV0M;
-OccupancyEstimationType fOccupancyEstimation = OccupancyNOOCC; /* the occupancy estimator to use */
-
-float fMinOccupancy = 0.0f; /* the minimum allowed occupancy */
-float fMaxOccupancy = 1e6f; /* the maximum allowed occupancy */
-
-/* adaptations for the pp nightly checks */
-analysis::CheckRangeCfg traceDCAOutliers;
-bool traceOutOfSpeciesParticles = false;
-int recoIdMethod = 0;
-float particleMaxDCAxy = 999.9f;
-float particleMaxDCAZ = 999.9f;
-bool traceCollId0 = false;
 
 inline std::bitset<32> getTriggerSelection(std::string_view const& triggstr)
 {
@@ -937,7 +944,7 @@ inline DataType getDataType(std::string const& datastr)
     return kMC;
   } else if (datastr == "FastMC") {
     return kFastMC;
-  } else if (datastr == "OnTheFlyMC") {
+  } else if (datastr.starts_with("OnTheFlyMC")) {
     return kOnTheFly;
   } else {
     LOGF(fatal, "DptDptCorrelations::getDataType(). Wrong type of dat: %d", datastr.c_str());

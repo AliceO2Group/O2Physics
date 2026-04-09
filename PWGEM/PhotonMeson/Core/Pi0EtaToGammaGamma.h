@@ -20,6 +20,7 @@
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
 #include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
+#include "PWGEM/PhotonMeson/Core/V0PhotonCandidate.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 #include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
@@ -46,7 +47,6 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -56,7 +56,7 @@
 
 #include <Math/GenVector/AxisAngle.h>
 #include <Math/GenVector/Rotation3D.h>
-#include <Math/Vector4D.h> // IWYU pragma: keep
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 
 #include <algorithm>
@@ -69,6 +69,12 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+
+enum AlphaMesonCutOption {
+  Off = 0,
+  SpecificValue = 1,
+  PTDependent = 2
+};
 
 template <o2::aod::pwgem::photonmeson::photonpair::PairType pairtype, o2::soa::is_table... Types>
 struct Pi0EtaToGammaGamma {
@@ -91,6 +97,11 @@ struct Pi0EtaToGammaGamma {
   o2::framework::ConfigurableAxis ConfCentBins{"ConfCentBins", {o2::framework::VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f, 999.f}, "Mixing bins - centrality"};
   o2::framework::ConfigurableAxis ConfEPBins{"ConfEPBins", {o2::framework::VARIABLE_WIDTH, -o2::constants::math::PIHalf, -o2::constants::math::PIQuarter, 0.0f, +o2::constants::math::PIQuarter, +o2::constants::math::PIHalf}, "Mixing bins - event plane angle"};
   o2::framework::ConfigurableAxis ConfOccupancyBins{"ConfOccupancyBins", {o2::framework::VARIABLE_WIDTH, -1, 1e+10}, "Mixing bins - occupancy"};
+
+  o2::framework::Configurable<int> cfgAlphaMesonCut{"cfgAlphaMesonCut", 0, "flag for photon energy asymmetry distribution cut: 0: no cut, 1: cut specific value, 2: cut depending on pT"};
+  o2::framework::Configurable<float> cfgAlphaMeson{"cfgAlphaMeson", 0.65, "photon energy asymmetry distribution parameter for specific value cut"};
+  o2::framework::Configurable<float> cfgAlphaMesonA{"cfgAlphaMesonA", 0.65, "photon energy asymmetry distribution parameter A for pT dependent cut (A * tanh(B*pT))"};
+  o2::framework::Configurable<float> cfgAlphaMesonB{"cfgAlphaMesonB", 1.2, "photon energy asymmetry distribution parameter B for pT dependent cut (A * tanh(B*pT))"};
 
   EMPhotonEventCut fEMEventCut;
   struct : o2::framework::ConfigurableGroup {
@@ -227,7 +238,7 @@ struct Pi0EtaToGammaGamma {
   //---------------------------------------------------------------------------
   // Preslices and partitions
   o2::framework::SliceCache cache;
-  o2::framework::PresliceOptional<o2::soa::Filtered<o2::soa::Join<o2::aod::V0PhotonsKF, o2::aod::V0KFEMEventIds, o2::aod::V0PhotonsKFPrefilterBitDerived>>> perCollision_pcm = o2::aod::v0photonkf::pmeventId;
+  o2::framework::PresliceOptional<o2::soa::Filtered<o2::soa::Join<o2::aod::V0PhotonsKF, o2::aod::V0KFEMEventIds, o2::aod::V0PhotonsKFPrefilterBitDerived, o2::aod::V0PhotonOmegaMBWeights>>> perCollision_pcm = o2::aod::v0photonkf::pmeventId;
   o2::framework::PresliceOptional<o2::soa::Join<o2::aod::EmEmcClusters, o2::aod::EMCEMEventIds>> perCollision_emc = o2::aod::emccluster::pmeventId;
   o2::framework::PresliceOptional<o2::soa::Join<o2::aod::PHOSClusters, o2::aod::PHOSEMEventIds>> perCollision_phos = o2::aod::phoscluster::pmeventId;
   o2::framework::PresliceOptional<o2::soa::Filtered<o2::soa::Join<o2::aod::EMPrimaryElectronsFromDalitz, o2::aod::EMPrimaryElectronDaEMEventIds, o2::aod::EMPrimaryElectronsPrefilterBitDerived>>> perCollision_electron = o2::aod::emprimaryelectronda::pmeventId;
@@ -880,7 +891,35 @@ struct Pi0EtaToGammaGamma {
             continue;
           }
 
-          fRegistry.fill(HIST("Pair/same/hs"), v12.M(), v12.Pt(), weight);
+          float alphaMeson = std::fabs(g1.e() - g2.e()) / (g1.e() + g2.e());
+          float alphaCut = 999.f;
+          switch (static_cast<AlphaMesonCutOption>(cfgAlphaMesonCut.value)) {
+            case AlphaMesonCutOption::Off:
+              break;
+            case AlphaMesonCutOption::SpecificValue:
+              alphaCut = cfgAlphaMeson;
+              break;
+            case AlphaMesonCutOption::PTDependent: {
+              alphaCut = cfgAlphaMesonA * std::tanh(cfgAlphaMesonB * v12.pt());
+              break;
+            }
+            default:
+              LOGF(error, "Invalid option for alpha meson cut. No alpha cut will be applied.");
+          }
+          if (alphaMeson > alphaCut) {
+            continue;
+          }
+
+          float wpair = weight;
+
+          if constexpr (requires { g1.omegaMBWeight(); }) {
+            wpair *= g1.omegaMBWeight();
+          }
+          if constexpr (requires { g2.omegaMBWeight(); }) {
+            wpair *= g2.omegaMBWeight();
+          }
+
+          fRegistry.fill(HIST("Pair/same/hs"), v12.M(), v12.Pt(), wpair);
 
           if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g1.globalIndex()) == used_photonIds_per_col.end()) {
             emh1->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMTrack(g1.pt(), g1.eta(), g1.phi(), 0));

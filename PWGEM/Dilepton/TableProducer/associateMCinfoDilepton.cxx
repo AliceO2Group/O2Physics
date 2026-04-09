@@ -15,16 +15,22 @@
 //    Please write to: daiki.sekihata@cern.ch
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
-// #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
-#include "Common/Core/TableHelper.h"
+#include "Common/DataModel/EventSelection.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
+#include <TH1.h>
+
+#include <cstdint>
+#include <cstdlib>
 #include <iostream>
 #include <map>
 #include <random>
@@ -39,7 +45,6 @@ struct AssociateMCInfoDilepton {
   enum SubSystem {
     kElectron = 0x1,
     kFwdMuon = 0x2,
-    // kPCM = 0x4,
   };
 
   using MyCollisionsMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::EMEvSels, aod::EMEoIs>;
@@ -51,7 +56,6 @@ struct AssociateMCInfoDilepton {
   Produces<o2::aod::EMMCEventLabels> mceventlabels;
   Produces<o2::aod::EMMCParticles> emmcparticles;
   Produces<o2::aod::EMMCGenVectorMesons> emmcgenvms;
-  // Produces<o2::aod::V0LegMCLabels> v0legmclabels;
   Produces<o2::aod::EMPrimaryElectronMCLabels> emprimaryelectronmclabels;
   Produces<o2::aod::EMPrimaryMuonMCLabels> emprimarymuonmclabels;
   Produces<o2::aod::EMMFTMCLabels> emmftmclabels;
@@ -130,7 +134,6 @@ struct AssociateMCInfoDilepton {
 
   SliceCache cache;
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
-  // Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
   Preslice<aod::EMPrimaryElectrons> perCollision_el = aod::emprimaryelectron::collisionId;
   Preslice<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
 
@@ -683,23 +686,6 @@ struct AssociateMCInfoDilepton {
     skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, o2fwdtracks, o2mfttracks, nullptr, nullptr, emprimaryelectrons, emprimarymuons);
   }
 
-  // void processMC_Electron_FwdMuon_PCM(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, FwdTracksMC const& o2fwdtracks, MFTTracksMC const& o2mfttracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, aod::EMPrimaryElectrons const& emprimaryelectrons, aod::EMPrimaryMuons const& emprimarymuons)
-  // {
-  //   const uint8_t sysflag = kPCM | kElectron | kFwdMuon;
-  //   skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, o2fwdtracks, o2mfttracks, v0photons, v0legs, emprimaryelectrons, emprimarymuons);
-  // }
-
-  // void processMC_Electron_PCM(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, aod::EMPrimaryElectrons const& emprimaryelectrons)
-  // {
-  //   const uint8_t sysflag = kPCM | kElectron;
-  //   skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, nullptr, nullptr, v0photons, v0legs, emprimaryelectrons, nullptr);
-  // }
-
-  // void processMC_PCM(MyCollisionsMC const& collisions, aod::BCs const& bcs, aod::McCollisions const& mccollisions, aod::McParticles const& mcTracks, TracksMC const& o2tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs)
-  // {
-  //   skimmingMC<kPCM>(collisions, bcs, mccollisions, mcTracks, o2tracks, nullptr, nullptr, v0photons, v0legs, nullptr, nullptr);
-  // }
-
   void processGenDummy(MyCollisionsMC const&)
   {
     for (int i = 0; i < n_dummy_loop; i++) {
@@ -718,9 +704,6 @@ struct AssociateMCInfoDilepton {
   PROCESS_SWITCH(AssociateMCInfoDilepton, processMC_Electron, "create em mc event table for Electron", false);
   PROCESS_SWITCH(AssociateMCInfoDilepton, processMC_FwdMuon, "create em mc event table for Forward Muon", false);
   PROCESS_SWITCH(AssociateMCInfoDilepton, processMC_Electron_FwdMuon, "create em mc event table for Electron, FwdMuon", false);
-  // PROCESS_SWITCH(AssociateMCInfoDilepton, processMC_Electron_FwdMuon_PCM, "create em mc event table for PCM, Electron, FwdMuon", false);
-  // PROCESS_SWITCH(AssociateMCInfoDilepton, processMC_Electron_PCM, "create em mc event table for PCM, Electron", false);
-  // PROCESS_SWITCH(AssociateMCInfoDilepton, processMC_PCM, "create em mc event table for PCM", false);
   PROCESS_SWITCH(AssociateMCInfoDilepton, processGenDummy, "produce dummy data", false);
   PROCESS_SWITCH(AssociateMCInfoDilepton, processDummy, "processDummy", true);
 };

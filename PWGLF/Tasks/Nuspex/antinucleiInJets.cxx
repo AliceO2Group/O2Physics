@@ -137,6 +137,10 @@ struct JetMatching {
 
 struct AntinucleiInJets {
 
+  // Random engine
+  std::mt19937 rng;
+  std::uniform_int_distribution<int> generateRandomNr{0, 1};
+
   // Histogram registries for data, MC, quality control, multiplicity and correlations
   HistogramRegistry registryData{"registryData", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryMC{"registryMC", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -151,7 +155,7 @@ struct AntinucleiInJets {
   Configurable<bool> isppRefAnalysis{"isppRefAnalysis", false, "Is ppRef analysis"};
   Configurable<double> cfgAreaFrac{"cfgAreaFrac", 0.6, "fraction of jet area"};
   Configurable<double> cfgEtaJetMax{"cfgEtaJetMax", 0.5, "max jet eta"};
-  Configurable<double> cfgMinPtTrack{"cfgMinPtTrack", 0.15, "minimum pt of tracks for jet reconstruction"};
+  Configurable<double> cfgMinPtTrack{"cfgMinPtTrack", 0.1, "minimum pt of tracks for jet reconstruction"};
   Configurable<double> alpha{"alpha", 0.3, "parameter to control jet matching"};
 
   // Event selection criteria
@@ -168,7 +172,7 @@ struct AntinucleiInJets {
 
   // Jet selection and event filtering parameters
   Configurable<double> minJetPt{"minJetPt", 10.0, "Minimum pt of the jet after bkg subtraction"};
-  Configurable<double> maxJetPt{"maxJetPt", 1000.0, "Maximum pt of the jet after bkg subtraction"};
+  Configurable<double> maxJetPt{"maxJetPt", 1e+06, "Maximum pt of the jet after bkg subtraction"};
   Configurable<double> ptLeadingMin{"ptLeadingMin", 5.0, "pt Leading Min"};
   Configurable<double> rJet{"rJet", 0.4, "Jet resolution parameter R"};
   Configurable<double> zVtx{"zVtx", 10.0, "Maximum zVertex"};
@@ -275,6 +279,9 @@ struct AntinucleiInJets {
     // Initialize random seed using high-resolution clock to ensure unique sequences across parallel Grid jobs
     auto timeSeed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
     mRand.SetSeed(timeSeed);
+
+    // Set seed of random engine
+    rng.seed(12345);
 
     // Load reweighting histograms from CCDB if antinuclei efficiency processing is enabled
     if (doprocessAntinucleiEfficiency || doprocessJetsMCgen || doprocessJetsMCrec) {
@@ -389,6 +396,12 @@ struct AntinucleiInJets {
       registryMC.add("antiproton_gen_ue", "antiproton_gen_ue", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_gen_full", "antiproton_gen_full", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
 
+      // Generated spectra of antiprotons for closure test
+      registryMC.add("antiproton_gen_jet_data", "antiproton_gen_jet_data", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_gen_ue_data", "antiproton_gen_ue_data", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_gen_jet_mc", "antiproton_gen_jet_mc", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_gen_ue_mc", "antiproton_gen_ue_mc", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+
       // Normalization histogram
       registryMC.add("antiproton_deltay_deltaphi_jet", "antiproton_deltay_deltaphi_jet", HistType::kTH2F, {{2000, -1.0, 1.0, "#Delta#it{y}"}, {2000, 0.0, 2.0, "#Delta#phi"}});
       registryMC.add("antiproton_deltay_deltaphi_ue", "antiproton_deltay_deltaphi_ue", HistType::kTH2F, {{2000, -1.0, 1.0, "#Delta#it{y}"}, {2000, 0.0, 2.0, "#Delta#phi"}});
@@ -415,6 +428,16 @@ struct AntinucleiInJets {
       registryMC.add("antiproton_rec_tof_ue", "antiproton_rec_tof_ue", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_rec_tpc_full", "antiproton_rec_tpc_full", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_rec_tof_full", "antiproton_rec_tof_full", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+
+      // Reconstructed spectra of antiprotons for closure test
+      registryMC.add("antiproton_rec_tpc_jet_data", "antiproton_rec_tpc_jet_data", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_rec_tof_jet_data", "antiproton_rec_tof_jet_data", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_rec_tpc_ue_data", "antiproton_rec_tpc_ue_data", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_rec_tof_ue_data", "antiproton_rec_tof_ue_data", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_rec_tpc_jet_mc", "antiproton_rec_tpc_jet_mc", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_rec_tof_jet_mc", "antiproton_rec_tof_jet_mc", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_rec_tpc_ue_mc", "antiproton_rec_tpc_ue_mc", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_rec_tof_ue_mc", "antiproton_rec_tof_ue_mc", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
 
       // Fraction of primary antiprotons
       registryMC.add("antiproton_prim_jet", "antiproton_prim_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
@@ -511,7 +534,7 @@ struct AntinucleiInJets {
 
     // jet pt resolution
     if (doprocessJetPtResolution) {
-      registryMC.add("jetPtResolution", "jet Pt Resolution", HistType::kTH2F, {{200, 0, 20, "#it{p}^{jet}_{T,true} (GeV/#it{c})"}, {1000, -5, 5, "#Delta #it{p}^{jet}_{T} (GeV/#it{c})"}});
+      registryMC.add("jetPtResolution", "jet Pt Resolution", HistType::kTH2F, {{1000, 0, 100, "#it{p}^{jet}_{T,true} (GeV/#it{c})"}, {1000, -20, 20, "#Delta #it{p}^{jet}_{T} (GeV/#it{c})"}});
     }
 
     // Coalescence and Correlation analysis
@@ -2044,6 +2067,10 @@ struct AntinucleiInJets {
       // Get particles in this MC collision
       const auto mcParticlesThisMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, collision.globalIndex());
 
+      // Generate random number to decide if simulated event has to be considered as data or MC in the closure test
+      int sample = generateRandomNr(rng);
+      bool isPseudoData = (sample == 0);
+
       // Loop over MC particles
       for (const auto& particle : mcParticlesThisMcColl) {
 
@@ -2134,6 +2161,13 @@ struct AntinucleiInJets {
           // Fill histogram for generated antiprotons
           registryMC.fill(HIST("antiproton_gen_jet"), particle.pt(), weightJet);
 
+          // Fill histograms for generated antiprotons for closure test
+          if (isPseudoData) {
+            registryMC.fill(HIST("antiproton_gen_jet_data"), particle.pt());
+          } else {
+            registryMC.fill(HIST("antiproton_gen_jet_mc"), particle.pt());
+          }
+
           // Fill 2d (pt,eta) distribution of antiprotons
           registryMC.fill(HIST("antiproton_eta_pt_jet"), particle.pt(), particle.eta(), weightJet);
         }
@@ -2182,12 +2216,24 @@ struct AntinucleiInJets {
           // Fill histogram for antiprotons in the UE
           registryMC.fill(HIST("antiproton_gen_ue"), protonVec.Pt(), weightUe);
 
+          // Fill histograms for generated antiprotons for closure test
+          if (sample == 0) {
+            registryMC.fill(HIST("antiproton_gen_ue_data"), protonVec.Pt());
+          } else {
+            registryMC.fill(HIST("antiproton_gen_ue_mc"), protonVec.Pt());
+          }
+
           // Fill 2d (pt,eta) distribution of antiprotons
           registryMC.fill(HIST("antiproton_eta_pt_ue"), protonVec.Pt(), protonVec.Eta(), weightUe);
         }
       }
       if (isAtLeastOneJetSelected) {
         registryMC.fill(HIST("genEvents"), 3.5);
+        if (isPseudoData) {
+          registryMC.fill(HIST("genEvents"), 4.5);
+        } else {
+          registryMC.fill(HIST("genEvents"), 5.5);
+        }
       }
 
       // Shrink large vectors
@@ -2268,6 +2314,10 @@ struct AntinucleiInJets {
 
       // Get tracks in this MC collision
       const auto mcTracksThisMcColl = mcTracks.sliceBy(mcTracksPerMcCollision, collision.globalIndex());
+
+      // Generate random number to decide if simulated event has to be considered as data or MC in the closure test
+      int sample = generateRandomNr(rng);
+      bool isPseudoData = (sample == 0);
 
       // Loop over reconstructed tracks
       int id(-1);
@@ -2433,8 +2483,23 @@ struct AntinucleiInJets {
           // Fill histograms (TPC and TOF) only for selected candidates
           if (passedItsPidProt && nsigmaTPCPr > minNsigmaTpc && nsigmaTPCPr < maxNsigmaTpc) {
             registryMC.fill(HIST("antiproton_rec_tpc_jet"), pt, weightJet);
+
+            // Fill histograms for reconstructed antiprotons for closure test
+            if (isPseudoData) {
+              registryMC.fill(HIST("antiproton_rec_tpc_jet_data"), pt);
+            } else {
+              registryMC.fill(HIST("antiproton_rec_tpc_jet_mc"), pt);
+            }
+
             if (track.hasTOF() && nsigmaTOFPr > minNsigmaTof && nsigmaTOFPr < maxNsigmaTof) {
               registryMC.fill(HIST("antiproton_rec_tof_jet"), pt, weightJet);
+
+              // Fill histograms for reconstructed antiprotons for closure test
+              if (isPseudoData) {
+                registryMC.fill(HIST("antiproton_rec_tof_jet_data"), pt);
+              } else {
+                registryMC.fill(HIST("antiproton_rec_tof_jet_mc"), pt);
+              }
             }
           }
         }
@@ -2515,14 +2580,34 @@ struct AntinucleiInJets {
           // Fill histograms (TPC and TOF) only for selected candidates
           if (passedItsPidProt && nsigmaTPCPr > minNsigmaTpc && nsigmaTPCPr < maxNsigmaTpc) {
             registryMC.fill(HIST("antiproton_rec_tpc_ue"), pt, weightUe);
+
+            // Fill histograms for reconstructed antiprotons for closure test
+            if (isPseudoData) {
+              registryMC.fill(HIST("antiproton_rec_tpc_ue_data"), pt);
+            } else {
+              registryMC.fill(HIST("antiproton_rec_tpc_ue_mc"), pt);
+            }
+
             if (track.hasTOF() && nsigmaTOFPr > minNsigmaTof && nsigmaTOFPr < maxNsigmaTof) {
               registryMC.fill(HIST("antiproton_rec_tof_ue"), pt, weightUe);
+
+              // Fill histograms for reconstructed antiprotons for closure test
+              if (isPseudoData) {
+                registryMC.fill(HIST("antiproton_rec_tof_ue_data"), pt);
+              } else {
+                registryMC.fill(HIST("antiproton_rec_tof_ue_mc"), pt);
+              }
             }
           }
         }
       }
       if (isAtLeastOneJetSelected) {
         registryMC.fill(HIST("recEvents"), 9.5);
+        if (isPseudoData) {
+          registryMC.fill(HIST("recEvents"), 10.5);
+        } else {
+          registryMC.fill(HIST("recEvents"), 11.5);
+        }
       }
 
       // Shrink large vectors

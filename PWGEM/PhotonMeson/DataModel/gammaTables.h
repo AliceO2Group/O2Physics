@@ -254,7 +254,7 @@ DECLARE_SOA_COLUMN(NgPCM, ngpcm, int);
 DECLARE_SOA_COLUMN(Weight, weight, float); //! Weight of the event (e.g. for JJ MCs). Set to 1 for data and non-weighted MCs.
 } // namespace emevent
 
-DECLARE_SOA_TABLE(EMEventsNgPCM, "AOD", "EMEVENTNGPCM", emevent::NgPCM); // joinable to EMEvents or aod::Collisions
+DECLARE_SOA_TABLE(EMEventsNgPCM, "AOD", "EMEVENTNGPCM", emevent::NgPCM); // joinable to EMEvents or o2::aod::Collisions
 using EMEventNgPCM = EMEventsNgPCM::iterator;
 
 DECLARE_SOA_TABLE(EMEventsWeight, "AOD", "EMEVENTWEIGHT", //! table contanint the weight for eache event (for JJ MCs), joinable to EMEvents
@@ -719,6 +719,14 @@ DECLARE_SOA_TABLE(NonLinV0s, "AOD", "NONLINV0", //! table of non lin corrected v
 DECLARE_SOA_TABLE(NonLinEmcClusters, "AOD", "NONLINEMCCLUSTER", //! table of non lin corrected values for EMCal Photons (so far only E and pT)
                   nonlin::CorrE, nonlin::CorrPt);               //!
 
+namespace v0photonMBweights
+{
+DECLARE_SOA_COLUMN(OmegaMBWeight, omegaMBWeight, float);
+}
+
+DECLARE_SOA_TABLE(V0PhotonOmegaMBWeights, "AOD", "V0PHOTONMBW", v0photonMBweights::OmegaMBWeight); // store MB weights. To be joined with V0PhotonsKF table at analysis level.
+
+using V0PhotonOmegaMBWeight = V0PhotonOmegaMBWeights::iterator;
 } // namespace o2::aod
 
 #endif // PWGEM_PHOTONMESON_DATAMODEL_GAMMATABLES_H_

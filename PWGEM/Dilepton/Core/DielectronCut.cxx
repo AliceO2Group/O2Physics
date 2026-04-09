@@ -15,8 +15,12 @@
 
 #include "PWGEM/Dilepton/Core/DielectronCut.h"
 
-#include "Framework/Logger.h"
+#include <Framework/Logger.h>
 
+#include <Rtypes.h>
+
+#include <cstdint>
+#include <functional>
 #include <set>
 #include <utility>
 
@@ -355,4 +359,9 @@ void DielectronCut::IncludeITSsa(bool flag, float max)
   mIncludeITSsa = flag;
   mMaxPtITSsa = max;
   LOG(info) << "Dielectron Cut, include ITSsa tracks: " << mIncludeITSsa << ", mMaxPtITSsa = " << mMaxPtITSsa;
+}
+void DielectronCut::EnableTTCA(bool flag)
+{
+  mEnableTTCA = flag;
+  LOG(info) << "Dielectron Cut, enable TTCA: " << mEnableTTCA;
 }

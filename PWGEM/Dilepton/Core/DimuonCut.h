@@ -18,21 +18,22 @@
 
 #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/DataTypes.h"
-#include "Framework/Logger.h"
-#include "MathUtils/Utils.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/DataTypes.h>
+#include <MathUtils/Utils.h>
 
-#include "Math/Vector4D.h"
-#include "TNamed.h"
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TNamed.h>
 
-#include <algorithm>
-#include <set>
-#include <string>
-#include <utility>
+#include <Rtypes.h>
+
+#include <cmath>
+#include <cstdint>
+#include <functional>
 #include <vector>
 
-using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
+#include <math.h>
 
 class DimuonCut : public TNamed
 {
@@ -64,6 +65,7 @@ class DimuonCut : public TNamed
     kPDCA,
     kMFTHitMap,
     kDPtDEtaDPhiwrtMCHMID,
+    kTTCA,
     kNCuts
   };
 
@@ -91,8 +93,8 @@ class DimuonCut : public TNamed
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassMuon);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
-    float dca_xy_t1 = fwdDcaXYinSigma(t1);
-    float dca_xy_t2 = fwdDcaXYinSigma(t2);
+    float dca_xy_t1 = o2::aod::pwgem::dilepton::utils::emtrackutil::fwdDcaXYinSigma(t1);
+    float dca_xy_t2 = o2::aod::pwgem::dilepton::utils::emtrackutil::fwdDcaXYinSigma(t2);
     float pair_dca_xy = std::sqrt((dca_xy_t1 * dca_xy_t1 + dca_xy_t2 * dca_xy_t2) / 2.);
 
     if (v12.M() < mMinMass || mMaxMass < v12.M()) {
@@ -166,6 +168,9 @@ class DimuonCut : public TNamed
     if (!IsSelectedTrack(track, DimuonCuts::kRabs)) {
       return false;
     }
+    if (!IsSelectedTrack(track, DimuonCuts::kTTCA)) {
+      return false;
+    }
     if (mApplyMFTHitMap && track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && !IsSelectedTrack(track, DimuonCuts::kMFTHitMap)) {
       return false;
     }
@@ -220,8 +225,11 @@ class DimuonCut : public TNamed
       case DimuonCuts::kRabs:
         return mMinRabs < track.rAtAbsorberEnd() && track.rAtAbsorberEnd() < mMaxRabs;
 
+      case DimuonCuts::kTTCA:
+        return mEnableTTCA ? true : track.isAssociatedToMPC();
+
       case DimuonCuts::kMFTHitMap: {
-        std::vector<bool> mftHitMap{checkMFTHitMap<0, 1>(track), checkMFTHitMap<2, 3>(track), checkMFTHitMap<4, 5>(track), checkMFTHitMap<6, 7>(track), checkMFTHitMap<8, 9>(track)};
+        std::vector<bool> mftHitMap{o2::aod::pwgem::dilepton::utils::emtrackutil::checkMFTHitMap<0, 1>(track), o2::aod::pwgem::dilepton::utils::emtrackutil::checkMFTHitMap<2, 3>(track), o2::aod::pwgem::dilepton::utils::emtrackutil::checkMFTHitMap<4, 5>(track), o2::aod::pwgem::dilepton::utils::emtrackutil::checkMFTHitMap<6, 7>(track), o2::aod::pwgem::dilepton::utils::emtrackutil::checkMFTHitMap<8, 9>(track)};
         for (const auto& iDisk : mRequiredMFTDisks) {
           if (!mftHitMap[iDisk]) {
             return false;
@@ -261,6 +269,7 @@ class DimuonCut : public TNamed
   void SetMFTHitMap(bool flag, std::vector<int> hitMap);
   void SetMaxdPtdEtadPhiwrtMCHMID(float reldPtMax, float dEtaMax, float dPhiMax); // this is relevant for global muons
   void SetMaxMatchingChi2MCHMFTPtDep(std::function<float(float)> PtDepCut);
+  void EnableTTCA(bool flag);
 
  private:
   // pair cuts
@@ -271,6 +280,7 @@ class DimuonCut : public TNamed
   bool mApplydEtadPhi{false};                     // flag to apply deta, dphi cut between 2 tracks
   float mMinDeltaEta{0.f};
   float mMinDeltaPhi{0.f};
+  bool mEnableTTCA{true};
 
   // kinematic cuts
   float mMinTrackPt{0.f}, mMaxTrackPt{1e10f};        // range in pT

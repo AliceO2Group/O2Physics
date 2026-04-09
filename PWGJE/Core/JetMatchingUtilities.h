@@ -24,6 +24,8 @@
 #include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 
+#include "Common/Core/RecoDecay.h"
+
 #include <Framework/Logger.h>
 
 #include <TKDTree.h>
@@ -293,7 +295,7 @@ std::tuple<std::vector<int>, std::vector<int>> MatchJetsGeometrically(
 }
 
 template <typename T, typename U>
-void MatchGeo(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::vector<std::vector<int>>& baseToTagMatchingGeo, std::vector<std::vector<int>>& tagToBaseMatchingGeo, float maxMatchingDistance)
+void MatchGeo(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::vector<std::vector<int>>& baseToTagMatchingGeo, std::vector<std::vector<int>>& tagToBaseMatchingGeo, std::vector<double> const& jetRadiiForMatchingDistance, std::vector<double> const& maxMatchingDistancePerJetR)
 {
   std::vector<double> jetsR;
   for (const auto& jetBase : jetsBasePerCollision) {
@@ -307,6 +309,16 @@ void MatchGeo(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::
     }
   }
   for (auto jetR : jetsR) {
+    float effectiveMatchingDistance = -1.0f;
+    for (std::size_t i = 0; i < jetRadiiForMatchingDistance.size(); i++) {
+      if (std::round(jetRadiiForMatchingDistance[i] * 100.0) == std::round(jetR)) {
+        effectiveMatchingDistance = maxMatchingDistancePerJetR[i];
+        break;
+      }
+    }
+    if (effectiveMatchingDistance < 0.0f) {
+      LOGP(fatal, "No matching distance configured for jet R={:.2f}. Add it to jetRadiiForMatchingDistance and maxMatchingDistancePerJetR.", jetR / 100.0);
+    }
     std::vector<double> jetsBasePhi;
     std::vector<double> jetsBaseEta;
     std::vector<int> jetsBaseGlobalIndex;
@@ -332,7 +344,7 @@ void MatchGeo(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::
       jetsTagEta.emplace_back(jetTag.eta());
       jetsTagGlobalIndex.emplace_back(jetTag.globalIndex());
     }
-    std::tie(baseToTagMatchingGeoIndex, tagToBaseMatchingGeoIndex) = MatchJetsGeometrically(jetsBasePhi, jetsBaseEta, jetsTagPhi, jetsTagEta, maxMatchingDistance); // change max distnace to a function call
+    std::tie(baseToTagMatchingGeoIndex, tagToBaseMatchingGeoIndex) = MatchJetsGeometrically(jetsBasePhi, jetsBaseEta, jetsTagPhi, jetsTagEta, effectiveMatchingDistance);
     int jetBaseIndex = 0;
     int jetTagIndex = 0;
     for (const auto& jetBase : jetsBasePerCollision) {
@@ -564,11 +576,11 @@ void MatchPt(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::v
 
 // function that calls all the Match functions
 template <bool jetsBaseIsMc, bool jetsTagIsMc, typename T, typename U, typename V, typename M, typename N, typename O, typename P, typename R>
-void doAllMatching(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::vector<std::vector<int>>& baseToTagMatchingGeo, std::vector<std::vector<int>>& baseToTagMatchingPt, std::vector<std::vector<int>>& baseToTagMatchingHF, std::vector<std::vector<int>>& tagToBaseMatchingGeo, std::vector<std::vector<int>>& tagToBaseMatchingPt, std::vector<std::vector<int>>& tagToBaseMatchingHF, V const& candidatesBase, M const& tracksBase, N const& clustersBase, O const& candidatesTag, P const& tracksTag, R const& clustersTag, bool doMatchingGeo, bool doMatchingHf, bool doMatchingPt, float maxMatchingDistance, float minPtFraction)
+void doAllMatching(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::vector<std::vector<int>>& baseToTagMatchingGeo, std::vector<std::vector<int>>& baseToTagMatchingPt, std::vector<std::vector<int>>& baseToTagMatchingHF, std::vector<std::vector<int>>& tagToBaseMatchingGeo, std::vector<std::vector<int>>& tagToBaseMatchingPt, std::vector<std::vector<int>>& tagToBaseMatchingHF, V const& candidatesBase, M const& tracksBase, N const& clustersBase, O const& candidatesTag, P const& tracksTag, R const& clustersTag, bool doMatchingGeo, bool doMatchingHf, bool doMatchingPt, float minPtFraction, std::vector<double> const& jetRadiiForMatchingDistance, std::vector<double> const& maxMatchingDistancePerJetR)
 {
   // geometric matching
   if (doMatchingGeo) {
-    MatchGeo(jetsBasePerCollision, jetsTagPerCollision, baseToTagMatchingGeo, tagToBaseMatchingGeo, maxMatchingDistance);
+    MatchGeo(jetsBasePerCollision, jetsTagPerCollision, baseToTagMatchingGeo, tagToBaseMatchingGeo, jetRadiiForMatchingDistance, maxMatchingDistancePerJetR);
   }
   // pt matching
   if (doMatchingPt) {

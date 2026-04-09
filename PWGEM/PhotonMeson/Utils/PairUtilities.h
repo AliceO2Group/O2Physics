@@ -15,7 +15,7 @@
 #ifndef PWGEM_PHOTONMESON_UTILS_PAIRUTILITIES_H_
 #define PWGEM_PHOTONMESON_UTILS_PAIRUTILITIES_H_
 
-#include <Common/Core/RecoDecay.h>
+#include "Common/Core/RecoDecay.h"
 
 #include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>

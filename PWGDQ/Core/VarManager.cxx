@@ -8,17 +8,39 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
 #include "PWGDQ/Core/VarManager.h"
 
 #include "Tools/KFparticle/KFUtilities.h"
 
+#include <CommonConstants/LHCConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DCAFitter/FwdDCAFitterN.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
+#include <Framework/Logger.h>
+#include <GlobalTracking/MatchGlobalFwd.h>
+
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TH3.h>
+#include <THn.h>
+#include <TObject.h>
+#include <TString.h>
+
+#include <KFParticle.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
 #include <cmath>
-#include <iostream>
+#include <cstddef>
+#include <cstdint>
 #include <map>
+#include <numeric>
+#include <tuple>
 #include <vector>
 
-using std::cout;
-using std::endl;
 using namespace o2::constants::physics;
 
 ClassImp(VarManager);
@@ -1435,6 +1457,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kR3SP] = "";
   fgVariableNames[kR3EP] = "R_{3}^{EP} ";
   fgVariableUnits[kR3EP] = "";
+  fgVariableNames[kNPairsPerEvent] = "number of pairs per event";
+  fgVariableUnits[kNPairsPerEvent] = "";
   fgVariableNames[kPairMass] = "mass";
   fgVariableUnits[kPairMass] = "GeV/c2";
   fgVariableNames[kPairMassDau] = "mass dilepton";
@@ -2065,6 +2089,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kTwoR2SP2"] = kTwoR2SP2;
   fgVarNamesMap["kTwoR2EP1"] = kTwoR2EP1;
   fgVarNamesMap["kTwoR2EP2"] = kTwoR2EP2;
+  fgVarNamesMap["kNPairsPerEvent"] = kNPairsPerEvent;
   fgVarNamesMap["kNEventWiseVariables"] = kNEventWiseVariables;
   fgVarNamesMap["kX"] = kX;
   fgVarNamesMap["kY"] = kY;
@@ -2214,6 +2239,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMCPdgCode"] = kMCPdgCode;
   fgVarNamesMap["kMCCosTheta"] = kMCCosTheta;
   fgVarNamesMap["kMCHadronPdgCode"] = kMCHadronPdgCode;
+  fgVarNamesMap["kMCAccweight"] = kMCAccweight;
   fgVarNamesMap["kMCCosChi"] = kMCCosChi;
   fgVarNamesMap["kMCHadronPt"] = kMCHadronPt;
   fgVarNamesMap["kMCWeight_before"] = kMCWeight_before;
@@ -2456,6 +2482,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kDeltaPhiSym"] = kDeltaPhiSym;
   fgVarNamesMap["kCosTheta"] = kCosTheta;
   fgVarNamesMap["kCosChi"] = kCosChi;
+  fgVarNamesMap["kWeight"] = kWeight;
   fgVarNamesMap["kECWeight"] = kECWeight;
   fgVarNamesMap["kEWeight_before"] = kEWeight_before;
   fgVarNamesMap["kPtDau"] = kPtDau;

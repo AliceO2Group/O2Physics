@@ -26,24 +26,22 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/MathConstants.h"
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/Configurable.h"
-#include "Framework/Expressions.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/HistogramSpec.h"
-#include "Framework/InitContext.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/runDataProcessing.h>
 
-#include <TClonesArray.h>
-// #include <TLorentzVector.h> // o2-linter: disable= root/lorentz-vector (TLorentzVector is needed for TPythia8Decayer)
+#include <TH1.h>
+#include <THnSparse.h>
 #include <TPDGCode.h>
-// #include <TParticle.h>
-// #include <TPythia8Decayer.h>
 
 #include <cmath>
 #include <map>

@@ -139,7 +139,7 @@ struct ResonanceInitializer {
 
   // Pre-selection cuts
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
-  Configurable<float> pidnSigmaPreSelectionCut{"pidnSigmaPreSelectionCut", 5.0f, "TPC and TOF PID cut (loose, improve performance)"};
+  Configurable<float> pidnSigmaPreSelectionCut{"pidnSigmaPreSelectionCut", 5.0f, "TPC PID cut (loose, improve performance)"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
 
   /// DCA Selections for V0
@@ -181,6 +181,8 @@ struct ResonanceInitializer {
     Configurable<bool> cfgFillLambda0{"cfgFillLambda0", false, "Fill Lambda0"};
     Configurable<bool> cfgFillXi0{"cfgFillXi0", false, "Fill Xi0"};
     Configurable<bool> cfgFillOmega0{"cfgFillOmega0", false, "Fill Omega0"};
+    Configurable<bool> cfgBypassNoPairCascades{"cfgBypassNoPairCascades", true, "Bypass track fill if no pair cascade with track"};
+    Configurable<bool> cfgBypassNoPairV0s{"cfgBypassNoPairV0s", false, "Bypass if no pair V0 with track"};
   } FilterForDerivedTables;
 
   // Secondary cuts
@@ -221,7 +223,8 @@ struct ResonanceInitializer {
     ConfigurableAxis impactParameterAxis{"impactParameterAxis", {500, 0, 50}, "IP (fm)"};
 
     Configurable<bool> isDaughterCheck{"isDaughterCheck", 1, "Check if the mother has the correct daughters when it is considered"};
-    Configurable<float> cfgRapidityCutGen{"cfgRapidityCutGen", 0.5, "Rapidity cut for the truth particle"};
+    Configurable<float> cfgRapidityCutMinGen{"cfgRapidityCutMinGen", -0.5, "Rapidity cut for the truth particle"};
+    Configurable<float> cfgRapidityCutMaxGen{"cfgRapidityCutMaxGen", 0.5, "Rapidity cut for the truth particle"};
     Configurable<int> pdgTruthMother{"pdgTruthMother", 3324, "pdgcode for the truth mother e.g. Xi(1530) (3324)"};
     Configurable<int> pdgTruthDaughter1{"pdgTruthDaughter1", 3312, "pdgcode for the daughter 1, e.g. Xi- 3312"};
     Configurable<int> pdgTruthDaughter2{"pdgTruthDaughter2", 211, "pdgcode for the daughter 2, e.g. pi+ 211"};
@@ -267,8 +270,8 @@ struct ResonanceInitializer {
                                                     || (nabs(aod::mcparticle::pdgCode) == 123314)  // Xi(1820)0
                                                     || (nabs(aod::mcparticle::pdgCode) == 123324); // Xi(1820)-0
 
-  using ResoEvents = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>;
-  using ResoEvents001 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::MultsExtra, aod::PVMults>;
+  using ResoEvents = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As, aod::Mults>;
+  using ResoEvents001 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As, aod::Mults, aod::MultsExtra, aod::PVMults>;
   using ResoRun2Events = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
   using ResoEventsMC = soa::Join<ResoEvents, aod::McCollisionLabels>;
   using ResoRun2EventsMC = soa::Join<ResoEvents, aod::McCollisionLabels>;
@@ -381,7 +384,7 @@ struct ResonanceInitializer {
         return false;
       if (v0.qtarm() < SecondaryCuts.cfgSecondaryparamArmenterosCut * std::abs(v0.alpha()))
         return false;
-      if (std::fabs(v0.mLambda() - MassLambda0) < SecondaryCuts.cfgSecondaryMassWindow)
+      if (std::fabs(v0.mLambda() - MassLambda0) > SecondaryCuts.cfgSecondaryMassWindow)
         return false;
       if (SecondaryCuts.cfgSecondaryCrossMassHypothesisCut && (std::fabs(v0.mK0Short() - MassK0Short) < SecondaryCuts.cfgSecondaryCrossMassCutWindow))
         return false;
@@ -592,6 +595,9 @@ struct ResonanceInitializer {
       case 2:
         returnValue = ResoEvents.centFT0A();
         break;
+      case 3:
+        returnValue = ResoEvents.centFV0A();
+        break;
       default:
         returnValue = ResoEvents.centFT0M();
         break;
@@ -790,6 +796,8 @@ struct ResonanceInitializer {
                v0.dcapostopv(),
                v0.dcanegtopv(),
                v0.dcav0topv(),
+               static_cast<uint8_t>(v0.template posTrack_as<TrackType>().tpcNClsCrossedRows()),
+               static_cast<uint8_t>(v0.template negTrack_as<TrackType>().tpcNClsCrossedRows()),
                v0.mLambda(),
                v0.mAntiLambda(),
                v0.mK0Short(),
@@ -852,6 +860,9 @@ struct ResonanceInitializer {
                     casc.dcaXYCascToPV(),
                     casc.dcaZCascToPV(),
                     casc.sign(),
+                    static_cast<uint8_t>(casc.template posTrack_as<TrackType>().tpcNClsCrossedRows()),
+                    static_cast<uint8_t>(casc.template negTrack_as<TrackType>().tpcNClsCrossedRows()),
+                    static_cast<uint8_t>(casc.template bachelor_as<TrackType>().tpcNClsCrossedRows()),
                     casc.mLambda(),
                     casc.mXi(),
                     casc.v0radius(), casc.cascradius(), casc.x(), casc.y(), casc.z());
@@ -1192,7 +1203,9 @@ struct ResonanceInitializer {
   {
     for (auto const& mcPart : mcParticles) {
 
-      if (std::abs(mcPart.pdgCode()) != GenCuts.pdgTruthMother || std::abs(mcPart.y()) >= GenCuts.cfgRapidityCutGen)
+      if (std::abs(mcPart.pdgCode()) != GenCuts.pdgTruthMother)
+        continue;
+      if ((mcPart.y() >= GenCuts.cfgRapidityCutMaxGen) || (mcPart.y() <= GenCuts.cfgRapidityCutMinGen))
         continue;
       std::vector<int> daughterPDGs;
       if (mcPart.has_daughters()) {
@@ -1279,7 +1292,7 @@ struct ResonanceInitializer {
   {
     mRunNumber = 0;
     dBz = 0;
-    // Multiplicity estimator selection (0: FT0M, 1: FT0C, 2: FT0A, 99: FV0A)
+    // Multiplicity estimator selection (0: FT0M, 1: FT0C, 2: FT0A, 3: FV0A)
     if (cfgMultName.value == "FT0M") {
       multEstimator = 0;
     } else if (cfgMultName.value == "FT0C") {
@@ -1287,7 +1300,7 @@ struct ResonanceInitializer {
     } else if (cfgMultName.value == "FT0A") {
       multEstimator = 2;
     } else if (cfgMultName.value == "FV0A") {
-      multEstimator = 99;
+      multEstimator = 3;
     } else {
       multEstimator = 0;
     }
@@ -1337,6 +1350,7 @@ struct ResonanceInitializer {
       AxisSpec idxMCAxis = {26, -0.5, 25.5, "Index"};
       qaRegistry.add("Event/hMCEventIndices", "hMCEventIndices", kTH2D, {centAxis, idxMCAxis});
     }
+    qaRegistry.add("Event/CentFV0A", "; FV0A Percentile; Entries", o2::framework::kTH1F, {{110, 0, 110}});
     AxisSpec idxAxis = {8, 0, 8, "Index"};
     if (cfgFillQA) {
       qaRegistry.add("hGoodTrackIndices", "hGoodTrackIndices", kTH1F, {idxAxis});
@@ -1513,6 +1527,9 @@ struct ResonanceInitializer {
     }
     resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
     resoEvtPlCollisions(0, 0, 0, 0);
+    if (FilterForDerivedTables.cfgBypassNoPairV0s && (V0s.size() < 1)) {
+      return;
+    }
 
     fillTracks<false>(collision, tracks);
     if (cfgFillMicroTracks) {
@@ -1572,6 +1589,14 @@ struct ResonanceInitializer {
     }
     resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
     resoEvtPlCollisions(0, 0, 0, 0);
+    if (cfgMultName.value == "FV0A")
+      qaRegistry.fill(HIST("Event/CentFV0A"), centEst(collision));
+    if (FilterForDerivedTables.cfgBypassNoPairV0s && (V0s.size() < 1)) {
+      return;
+    }
+    if (FilterForDerivedTables.cfgBypassNoPairCascades && (Cascades.size() < 1)) {
+      return;
+    }
     fillTracks<false>(collision, tracks);
     if (cfgFillMicroTracks) {
       fillMicroTracks<false>(collision, tracks);
@@ -1716,17 +1741,19 @@ struct ResonanceInitializer {
     resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
     resoEvtPlCollisions(0, 0, 0, 0);
     fillMCCollision<false>(collision, mcParticles);
+    // Loop over all MC particles
+    auto mcParts = selectedMCParticles->sliceBy(perMcCollision, collision.mcCollision().globalIndex());
+    fillMCParticles(mcParts, mcParticles);
 
     // Loop over tracks
+    if (FilterForDerivedTables.cfgBypassNoPairV0s && (V0s.size() < 1)) {
+      return;
+    }
     fillTracks<true>(collision, tracks);
     if (cfgFillMicroTracks) {
       fillMicroTracks<true>(collision, tracks);
     }
     fillV0s<true>(collision, V0s, tracks);
-
-    // Loop over all MC particles
-    auto mcParts = selectedMCParticles->sliceBy(perMcCollision, collision.mcCollision().globalIndex());
-    fillMCParticles(mcParts, mcParticles);
   }
   PROCESS_SWITCH(ResonanceInitializer, processTrackV0MC, "Process for MC", false);
 
@@ -1782,6 +1809,8 @@ struct ResonanceInitializer {
       Cent = mcCollision.centFT0M();
     else
       Cent = centEst(collision);
+    if (cfgMultName.value == "FV0A")
+      qaRegistry.fill(HIST("Event/CentFV0A"), centEst(collision));
 
     bool isRecINELgt0 = 0;
     if (checkIsRecINELgt0)
@@ -1800,24 +1829,28 @@ struct ResonanceInitializer {
       mult = mcCollision.multMCNParticlesEta10();
 
     fillMCCollision<false>(collision, mcParticles, impactpar, mult);
+    // Loop over all MC particles
+    auto mcParts = selectedMCParticles->sliceBy(perMcCollision, mcId);
+    fillMCParticles(mcParts, mcParticles);
 
     // Loop over tracks
+    if (FilterForDerivedTables.cfgBypassNoPairV0s && (V0s.size() < 1)) {
+      return;
+    }
+    if (FilterForDerivedTables.cfgBypassNoPairCascades && (Cascades.size() < 1)) {
+      return;
+    }
     fillTracks<true>(collision, tracks);
     if (cfgFillMicroTracks) {
       fillMicroTracks<true>(collision, tracks);
     }
     fillV0s<true>(collision, V0s, tracks);
     fillCascades<true>(collision, Cascades, tracks);
-
-    // Loop over all MC particles
-    auto mcParts = selectedMCParticles->sliceBy(perMcCollision, mcId);
-    fillMCParticles(mcParts, mcParticles);
   }
   PROCESS_SWITCH(ResonanceInitializer, processTrackV0CascMC, "Process for MC", false);
 
   //  Following the discussions at the PAG meeting (https://indico.cern.ch/event/1583408/)
   //  we have introduced an auxiliary task that, when the resonanceInitializer.cxx is used,
-  // Only consider N_rec / N_gen i.e. not consider level of N_gen at least once
   void processMCgen(soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::MultMCExtras>::iterator const& mcCollision,
                     aod::McParticles const& mcParticles,
                     const soa::SmallGroups<o2::soa::Join<ResoEvents001, aod::McCollisionLabels>>& collisions,
@@ -1839,6 +1872,8 @@ struct ResonanceInitializer {
         return col.centFT0C();
       } else if (cfgMultName.value == "FT0A") {
         return col.centFT0A();
+      } else if (cfgMultName.value == "FV0A") {
+        return col.centFV0A();
       }
       return 100.5f;
     };
@@ -1875,7 +1910,7 @@ struct ResonanceInitializer {
     for (const auto& collision : collisions) {
       if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
         continue;
-      if (!colCuts.isSelected(collision)) // Bug is appeared in colCuts-> double counting in event QA histo, will be fixed later
+      if (!colCuts.isSelected(collision, false)) // Bug is appeared in colCuts-> double counting in event QA histo, will be fixed later
         continue;
       if (biggestNContribs < collision.multPVTotalContributors()) {
         biggestNContribs = collision.multPVTotalContributors();

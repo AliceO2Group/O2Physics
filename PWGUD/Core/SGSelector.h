@@ -24,16 +24,17 @@
 
 #include "Common/CCDB/RCTSelectionFlags.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/Logger.h"
+#include <Framework/DataTypes.h>
+#include <Framework/Logger.h>
 
 #include <cmath>
+#include <cstdint>
 #include <memory>
 #include <vector>
 
 template <typename BC>
 struct SelectionResult {
-  int value;    // The original integer return value
+  int value;              // The original integer return value
   std::shared_ptr<BC> bc; // Pointer to the BC object
 };
 

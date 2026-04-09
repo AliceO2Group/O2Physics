@@ -19,15 +19,16 @@
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetSubtraction.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
 #include <CommonConstants/MathConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TH2.h>
 #include <THn.h>
 
 #include <cmath>
@@ -62,6 +63,7 @@ struct JetSpectraCharged {
   Configurable<float> pTHatMaxMCD{"pTHatMaxMCD", 999.0, "maximum fraction of hard scattering for jet acceptance in detector MC"};
   Configurable<float> pTHatMaxMCP{"pTHatMaxMCP", 999.0, "maximum fraction of hard scattering for jet acceptance in particle MC"};
   Configurable<float> pTHatExponent{"pTHatExponent", 6.0, "exponent of the event weight for the calculation of pTHat"};
+  Configurable<float> simPtRef{"simPtRef", 10.0, "reference pT for the back-calculation of pTHat from the event weight"};
   Configurable<float> pTHatAbsoluteMin{"pTHatAbsoluteMin", -99.0, "minimum value of pTHat"};
   Configurable<double> jetPtMax{"jetPtMax", 200., "set jet pT bin max"};
   Configurable<float> jetEtaMin{"jetEtaMin", -0.7, "minimum jet pseudorapidity"};
@@ -260,6 +262,7 @@ struct JetSpectraCharged {
     if (doprocessJetsMatchedAreaSub || doprocessJetsMatchedAreaSubWeighted) {
       registry.add("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_rhoareasubtracted_mcdetaconstraint", "corr pT mcd vs. corr cpT mcp;#it{p}_{T,jet}^{mcd} (GeV/#it{c});#it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, jetPtAxisRhoAreaSub}}, doSumw2);
       registry.add("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_rhoareasubtracted_mcpetaconstraint", "corr pT mcd vs. corr cpT mcp;#it{p}_{T,jet}^{mcd} (GeV/#it{c});#it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, jetPtAxisRhoAreaSub}}, doSumw2);
+      registry.add("h2_jet_pt_mcd_rhoareasubtracted_jet_pt_mcp_matchedgeo_mcdetaconstraint", "UEsub pT mcd vs. raw pT mcp;#it{p}_{T,jet}^{mcd} - #rho#it{A} (GeV/#it{c});#it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, jetPtAxis}}, doSumw2);
       registry.add("h2_jet_pt_mcp_jet_pt_diff_matchedgeo_rhoareasubtracted", "jet mcp corr pT vs. corr delta pT / jet mcp corr pt;#it{p}_{T,jet}^{mcp} (GeV/#it{c}); (#it{p}_{T,jet}^{mcp} (GeV/#it{c}) - #it{p}_{T,jet}^{mcd} (GeV/#it{c})) / #it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, {1000, -5.0, 5.0}}}, doSumw2);
       registry.add("h2_jet_pt_mcd_jet_pt_diff_matchedgeo_rhoareasubtracted", "jet mcd corr pT vs. corr delta pT / jet mcd corr pt;#it{p}_{T,jet}^{mcd} (GeV/#it{c}); (#it{p}_{T,jet}^{mcd} (GeV/#it{c}) - #it{p}_{T,jet}^{mcp} (GeV/#it{c})) / #it{p}_{T,jet}^{mcd} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, {1000, -5.0, 5.0}}}, doSumw2);
       registry.add("h2_jet_pt_mcp_jet_pt_ratio_matchedgeo_rhoareasubtracted", "jet mcp corr pT vs. jet mcd corr pT / jet mcp corr pt;#it{p}_{T,jet}^{mcp} (GeV/#it{c}); #it{p}_{T,jet}^{mcd} (GeV/#it{c}) / #it{p}_{T,jet}^{mcp} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, {1000, -5.0, 5.0}}}, doSumw2);
@@ -463,9 +466,8 @@ struct JetSpectraCharged {
   }
 
   template <typename TJets>
-  void fillJetHistograms(TJets const& jet, float centrality, float weight = 1.0)
+  void fillJetHistograms(TJets const& jet, float centrality, float weight = 1.0, float pTHat = 999.0)
   {
-    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
     if (jet.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) {
       return;
     }
@@ -487,9 +489,8 @@ struct JetSpectraCharged {
   }
 
   template <typename TJets>
-  void fillJetAreaSubHistograms(TJets const& jet, float centrality, float rho, float weight = 1.0)
+  void fillJetAreaSubHistograms(TJets const& jet, float centrality, float rho, float weight = 1.0, float pTHat = 999.0)
   {
-    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
     if (jet.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) {
       return;
     }
@@ -516,9 +517,8 @@ struct JetSpectraCharged {
   }
 
   template <typename TJets>
-  void fillMCPHistograms(TJets const& jet, float weight = 1.0)
+  void fillMCPHistograms(TJets const& jet, float weight = 1.0, float pTHat = 999.0)
   {
-    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
     if (jet.pt() > pTHatMaxMCP * pTHat || pTHat < pTHatAbsoluteMin) {
       return;
     }
@@ -538,9 +538,8 @@ struct JetSpectraCharged {
   }
 
   template <typename TJets>
-  void fillMCPAreaSubHistograms(TJets const& jet, float rho = 0.0, float weight = 1.0)
+  void fillMCPAreaSubHistograms(TJets const& jet, float rho = 0.0, float weight = 1.0, float pTHat = 999.0)
   {
-    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
     if (jet.pt() > pTHatMaxMCP * pTHat || pTHat < pTHatAbsoluteMin) {
       return;
     }
@@ -559,9 +558,8 @@ struct JetSpectraCharged {
   }
 
   template <typename TJets>
-  void fillEventWiseConstituentSubtractedHistograms(TJets const& jet, float centrality, float weight = 1.0)
+  void fillEventWiseConstituentSubtractedHistograms(TJets const& jet, float centrality, float weight = 1.0, float pTHat = 999.0)
   {
-    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
     if (jet.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) {
       return;
     }
@@ -572,9 +570,8 @@ struct JetSpectraCharged {
   }
 
   template <typename TBase, typename TTag>
-  void fillMatchedHistograms(TBase const& jetMCD, float weight = 1.0)
+  void fillMatchedHistograms(TBase const& jetMCD, float weight = 1.0, float pTHat = 999.0)
   {
-    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
     if (jetMCD.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) {
       return;
     }
@@ -665,15 +662,14 @@ struct JetSpectraCharged {
   }
 
   template <typename TBase, typename TTag>
-  void fillGeoMatchedAreaSubHistograms(TBase const& jetMCD, float rho, float mcrho = 0.0, float weight = 1.0)
+  void fillGeoMatchedAreaSubHistograms(TBase const& jetMCD, float rho, float mcrho = 0.0, float weight = 1.0, float pTHat = 999.0)
   {
-    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
     if (jetMCD.pt() > pTHatMaxMCD * pTHat) {
       return;
     }
     if (jetMCD.has_matchedJetGeo()) {
       for (const auto& jetMCP : jetMCD.template matchedJetGeo_as<std::decay_t<TTag>>()) {
-        if (jetMCP.pt() > pTHatMaxMCD * pTHat) {
+        if (jetMCP.pt() > pTHatMaxMCP * pTHat) {
           continue;
         }
         if (jetMCD.r() == round(selectedJetsRadius * 100.0f)) {
@@ -682,6 +678,7 @@ struct JetSpectraCharged {
           double dcorrpt = corrBasejetpt - corrTagjetpt;
           if (jetfindingutilities::isInEtaAcceptance(jetMCD, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
             registry.fill(HIST("h2_jet_pt_mcd_jet_pt_mcp_matchedgeo_rhoareasubtracted_mcdetaconstraint"), corrBasejetpt, corrTagjetpt, weight);
+            registry.fill(HIST("h2_jet_pt_mcd_rhoareasubtracted_jet_pt_mcp_matchedgeo_mcdetaconstraint"), corrBasejetpt, jetMCP.pt(), weight);
             registry.fill(HIST("h2_jet_pt_mcd_jet_pt_diff_matchedgeo_rhoareasubtracted"), corrBasejetpt, dcorrpt / corrBasejetpt, weight);
           }
           if (jetfindingutilities::isInEtaAcceptance(jetMCP, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -721,7 +718,7 @@ struct JetSpectraCharged {
 
     registry.fill(HIST("h_collisions_zvertex"), collision.posZ(), eventWeight);
 
-    float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     registry.fill(HIST("h_coll_phat"), pTHat);
     registry.fill(HIST("h_coll_phat_weighted"), pTHat, eventWeight);
   }
@@ -750,7 +747,7 @@ struct JetSpectraCharged {
 
     registry.fill(HIST("h_mccollisions_zvertex"), mccollision.posZ(), eventWeight);
 
-    float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     registry.fill(HIST("h_mccoll_phat"), pTHat);
     registry.fill(HIST("h_mccoll_phat_weighted"), pTHat, eventWeight);
   }
@@ -848,9 +845,10 @@ struct JetSpectraCharged {
   }
   PROCESS_SWITCH(JetSpectraCharged, processSpectraAreaSubMCD, "jet spectra with rho-area subtraction for MCD", false);
 
-  void processSpectraMCDWeighted(soa::Filtered<aod::JetCollisions>::iterator const& collision,
+  void processSpectraMCDWeighted(soa::Filtered<aod::JetCollisionsMCD>::iterator const& collision,
                                  soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets,
-                                 aod::JetTracks const&)
+                                 aod::JetTracks const&,
+                                 aod::JetMcCollisions const&)
   {
     bool fillHistograms = false;
     bool isWeighted = true;
@@ -858,7 +856,7 @@ struct JetSpectraCharged {
     if (!applyCollisionCuts(collision, fillHistograms, isWeighted, eventWeight)) {
       return;
     }
-
+    float pTHat = collision.has_mcCollision() && collision.mcCollision().ptHard() < 999.0f ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     float centrality = -1.0;
     checkCentFT0M ? centrality = collision.centFT0M() : centrality = collision.centFT0C();
 
@@ -869,14 +867,15 @@ struct JetSpectraCharged {
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
       }
-      fillJetHistograms(jet, centrality, eventWeight);
+      fillJetHistograms(jet, centrality, eventWeight, pTHat);
     }
   }
   PROCESS_SWITCH(JetSpectraCharged, processSpectraMCDWeighted, "jet finder QA mcd with weighted events", false);
 
-  void processSpectraAreaSubMCDWeighted(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision,
+  void processSpectraAreaSubMCDWeighted(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>>::iterator const& collision,
                                         soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets,
-                                        aod::JetTracks const&)
+                                        aod::JetTracks const&,
+                                        aod::JetMcCollisions const&)
   {
     bool fillHistograms = false;
     bool isWeighted = true;
@@ -884,7 +883,7 @@ struct JetSpectraCharged {
     if (!applyCollisionCuts(collision, fillHistograms, isWeighted, eventWeight)) {
       return;
     }
-
+    float pTHat = collision.has_mcCollision() && collision.mcCollision().ptHard() < 999.0f ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     float centrality = -1.0;
     checkCentFT0M ? centrality = collision.centFT0M() : centrality = collision.centFT0C();
 
@@ -895,7 +894,7 @@ struct JetSpectraCharged {
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
       }
-      fillJetAreaSubHistograms(jet, centrality, collision.rho(), eventWeight);
+      fillJetAreaSubHistograms(jet, centrality, collision.rho(), eventWeight, pTHat);
     }
   }
   PROCESS_SWITCH(JetSpectraCharged, processSpectraAreaSubMCDWeighted, "jet spectra with rho-area subtraction for MCD", false);
@@ -1127,7 +1126,7 @@ struct JetSpectraCharged {
     if (!applyMCCollisionCuts(mccollision, collisions, fillHistograms, isWeighted, eventWeight)) {
       return;
     }
-
+    float pTHat = mccollision.ptHard() < 999.0f ? mccollision.ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
@@ -1135,14 +1134,13 @@ struct JetSpectraCharged {
       if (!isAcceptedJet<aod::JetParticles>(jet, mcLevelIsParticleLevel)) {
         continue;
       }
-      double pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
       int Nmax = 21;
       for (int N = 1; N < Nmax; N++) {
         if (jet.pt() < N * 0.25 * pTHat && jet.r() == round(selectedJetsRadius * 100.0f)) {
           registry.fill(HIST("h2_jet_ptcut_part"), jet.pt(), N * 0.25, eventWeight);
         }
       }
-      fillMCPHistograms(jet, eventWeight);
+      fillMCPHistograms(jet, eventWeight, pTHat);
     }
   }
   PROCESS_SWITCH(JetSpectraCharged, processSpectraMCPWeighted, "jet spectra for MC particle level weighted", false);
@@ -1160,6 +1158,7 @@ struct JetSpectraCharged {
     if (!applyMCCollisionCuts(mccollision, collisions, fillHistograms, isWeighted, eventWeight)) {
       return;
     }
+    float pTHat = mccollision.ptHard() < 999.0f ? mccollision.ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     registry.fill(HIST("h_mccollisions_rho"), mccollision.rho(), eventWeight);
 
     for (auto const& jet : jets) {
@@ -1169,7 +1168,7 @@ struct JetSpectraCharged {
       if (!isAcceptedJet<aod::JetParticles>(jet, mcLevelIsParticleLevel)) {
         continue;
       }
-      fillMCPAreaSubHistograms(jet, mccollision.rho(), eventWeight);
+      fillMCPAreaSubHistograms(jet, mccollision.rho(), eventWeight, pTHat);
     }
   }
   PROCESS_SWITCH(JetSpectraCharged, processSpectraAreaSubMCPWeighted, "jet spectra with area-based subtraction for MC particle level", false);
@@ -1238,10 +1237,11 @@ struct JetSpectraCharged {
   }
   PROCESS_SWITCH(JetSpectraCharged, processJetsMatched, "matched mcp and mcd jets", false);
 
-  void processJetsMatchedWeighted(soa::Filtered<aod::JetCollisions>::iterator const& collision,
+  void processJetsMatchedWeighted(soa::Filtered<aod::JetCollisionsMCD>::iterator const& collision,
                                   ChargedMCDMatchedJets const& mcdjets,
                                   ChargedMCPMatchedJets const&,
-                                  aod::JetTracks const&, aod::JetParticles const&)
+                                  aod::JetTracks const&, aod::JetParticles const&,
+                                  aod::JetMcCollisions const&)
   {
     bool fillHistograms = false;
     bool isWeighted = true;
@@ -1249,12 +1249,12 @@ struct JetSpectraCharged {
     if (!applyCollisionCuts(collision, fillHistograms, isWeighted, eventWeight)) {
       return;
     }
-
+    float pTHat = collision.has_mcCollision() && collision.mcCollision().ptHard() < 999.0f ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     for (const auto& mcdjet : mcdjets) {
       if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
         continue;
       }
-      fillMatchedHistograms<ChargedMCDMatchedJets::iterator, ChargedMCPMatchedJets>(mcdjet, eventWeight);
+      fillMatchedHistograms<ChargedMCDMatchedJets::iterator, ChargedMCPMatchedJets>(mcdjet, eventWeight, pTHat);
     }
   }
   PROCESS_SWITCH(JetSpectraCharged, processJetsMatchedWeighted, "matched mcp and mcd jets with weighted events", false);
@@ -1292,6 +1292,7 @@ struct JetSpectraCharged {
     if (!applyCollisionCuts(collision, fillHistograms, isWeighted, eventWeight)) {
       return;
     }
+    float pTHat = collision.has_mcCollision() && collision.mcCollision().ptHard() < 999.0f ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
 
     double mcrho = collision.has_mcCollision() ? collision.mcCollision_as<JetBkgRhoMcCollisions>().rho() : -1;
 
@@ -1299,7 +1300,7 @@ struct JetSpectraCharged {
       if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
         continue;
       }
-      fillGeoMatchedAreaSubHistograms<ChargedMCDMatchedJets::iterator, ChargedMCPMatchedJets>(mcdjet, collision.rho(), mcrho, eventWeight);
+      fillGeoMatchedAreaSubHistograms<ChargedMCDMatchedJets::iterator, ChargedMCPMatchedJets>(mcdjet, collision.rho(), mcrho, eventWeight, pTHat);
     }
   }
   PROCESS_SWITCH(JetSpectraCharged, processJetsMatchedAreaSubWeighted, "matched mcp and mcd jets after area-based pt subtraction with weighted events", false);

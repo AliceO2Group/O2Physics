@@ -18,6 +18,7 @@
 
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 
+#include <Framework/ASoA.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 
@@ -60,8 +61,8 @@ inline void addNMHistograms(o2::framework::HistogramRegistry* fRegistry, bool is
     fRegistry->add("Pair/Eta/hs_FromSameGamma", "Two clusters from same gamma that is a eta daughter (conversion)", o2::framework::kTHnSparseD, {axis_mass, axis_pt}, true);
 
     const o2::framework::AxisSpec axis_rapidity{{0.0, +0.8, +0.9}, "rapidity |y|"};
-    fRegistry->add("Generated/Pi0/hPt", "pT;p_{T} (GeV/c)", o2::framework::kTH1F, {axis_pt}, true);
-    fRegistry->add("Generated/Pi0/hPtY", "Generated info", o2::framework::kTH2F, {axis_pt, axis_rapidity}, true);
+    fRegistry->add("Generated/Pi0/hPt", "pT;p_{T} (GeV/c)", o2::framework::kTH1D, {axis_pt}, true);
+    fRegistry->add("Generated/Pi0/hPtY", "Generated info", o2::framework::kTH2D, {axis_pt, axis_rapidity}, true);
     fRegistry->addClone("Generated/Pi0/", "Generated/Eta/");
 
     fRegistry->get<TH1>(HIST("Generated/Pi0/hPt"))->SetXTitle("p_{T} (GeV/c)");

@@ -24,20 +24,29 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/Track.h>
-#include <ReconstructionDataFormats/TrackParametrizationWithError.h>
 
+#include <TCollection.h>
 #include <TFile.h>
 #include <TList.h>
+#include <TString.h>
 #include <TSystem.h>
 #include <TSystemDirectory.h>
 #include <TSystemFile.h>
 #include <TTree.h>
 
+#include <RtypesCore.h>
+
+#include <algorithm>
+#include <array>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <map>
 #include <string>
 #include <vector>
@@ -313,7 +322,7 @@ struct Alice3TrackingTranslator {
       float collisionY = 0.0f;
       float collisionZ = 0.0f;
 
-      tableOTFLUTConfigId(0);     // dummy for the moment
+      tableOTFLUTConfigId(0); // dummy for the moment
 
       // Determine the collision ID for the new entry.
       // If the table is empty, lastIndex() returns -1, so we start at 0.

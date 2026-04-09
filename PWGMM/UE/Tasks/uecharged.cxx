@@ -13,33 +13,37 @@
 /// \file uecharged.cxx
 /// \brief Underlying event analysis task
 /// \since November 2021
-/// \last update: March 2026
+/// \last update: April 2026
 
-#include "PWGLF/DataModel/mcCentrality.h"
-#include "PWGLF/Utils/collisionCuts.h"
 #include "PWGLF/Utils/inelGt.h"
-#include "PWGLF/Utils/mcParticle.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
 
 #include <TF1.h>
-#include <TH1F.h>
-#include <TH2F.h>
-#include <TMath.h>
 #include <TRandom.h>
 
 #include <cmath>
 #include <cstdint>
+#include <string_view>
 #include <vector>
 
 using namespace o2;
@@ -52,31 +56,32 @@ struct ueCharged {
 
   // Configurable for event selection
   Configurable<bool> isRun3{"isRun3", true, "is Run3 dataset"};
-  Configurable<bool> pileuprejection{"pileuprejection", true, "Pileup rejection"};
-  Configurable<bool> goodzvertex{"goodzvertex", true, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference"};
-  Configurable<bool> sel8{"sel8", true, "Apply the sel8 event selection"};
-  Configurable<bool> removeITSROFBorder{"removeITSROFBorder", false, "Remove ITS Read-Out Frame border and only apply kIsTriggerTVX & kNoTimeFrameBorder (recommended for MC)"};
-  Configurable<int> cfgINELCut{"cfgINELCut", 0, "INEL event selection: 0 no sel, 1 INEL>0, 2 INEL>1"};
+  Configurable<bool> pileuprejection{"event_pileuprejection", true, "Pileup rejection"};
+  Configurable<bool> goodzvertex{"event_goodzvertex", true, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference"};
+  Configurable<bool> sel8{"event_sel8", true, "Apply the sel8 event selection"};
+  Configurable<bool> removeITSROFBorder{"event_removeITSROFBorder", false, "Remove ITS Read-Out Frame border and only apply kIsTriggerTVX & kNoTimeFrameBorder (recommended for MC)"};
+  Configurable<int> cfgINELCut{"event_cfgINELCut", 0, "INEL event selection: 0 no sel, 1 INEL>0, 2 INEL>1"};
+  Configurable<float> CollPosZ{"event_CollPosZ", 10.f, "Cut on the z component of the vertex position"};
   Configurable<bool> analyzeEvandTracksel{"analyzeEvandTracksel", true, "Analyze the event and track selection"};
 
   // Track selection configurables
   TrackSelection myTrkSel;
   Configurable<float> cfgTrkLowPtCut{"cfgTrkLowPtCut", 0.15f, "Minimum constituent pT"};
-  Configurable<bool> isCustomTracks{"isCustomTracks", true, "Use custom track cuts"};
-  Configurable<int> setITSreq{"setITSreq", 0, "0 = Run3ITSibAny, 1 = Run3ITSallAny, 2 = Run3ITSall7Layers, 3 = Run3ITSibTwo"};
-  Configurable<float> minPt{"minPt", 0.1f, "Set minimum pT of tracks"};
-  Configurable<float> maxPt{"maxPt", 1e10f, "Set maximum pT of tracks"};
-  Configurable<float> requireEta{"requireEta", 0.8f, "Set eta range of tracks"};
-  Configurable<bool> requireITSRefit{"requireITSRefit", true, "Additional cut on the ITS requirement"};
-  Configurable<bool> requireTPCRefit{"requireTPCRefit", true, "Additional cut on the TPC requirement"};
-  Configurable<bool> requireGoldenChi2{"requireGoldenChi2", true, "Additional cut on the GoldenChi2"};
-  Configurable<float> maxChi2PerClusterTPC{"maxChi2PerClusterTPC", 4.f, "Additional cut on the maximum value of the chi2 per cluster in the TPC"};
-  Configurable<float> maxChi2PerClusterITS{"maxChi2PerClusterITS", 36.f, "Additional cut on the maximum value of the chi2 per cluster in the ITS"};
-  // Configurable<int> minITSnClusters{"minITSnClusters", 5, "minimum number of found ITS clusters"};
-  Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70.f, "Additional cut on the minimum number of crossed rows in the TPC"};
-  Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
-  Configurable<float> maxDcaXYFactor{"maxDcaXYFactor", 1.f, "Multiplicative factor on the maximum value of the DCA xy"};
-  Configurable<float> maxDcaZ{"maxDcaZ", 0.1f, "Additional cut on the maximum value of the DCA z"};
+  Configurable<bool> isCustomTracks{"trkcfg_isCustomTracks", true, "Use custom track cuts"};
+  Configurable<int> setITSreq{"trkcfg_setITSreq", 0, "0 = Run3ITSibAny, 1 = Run3ITSallAny, 2 = Run3ITSall7Layers, 3 = Run3ITSibTwo"};
+  Configurable<float> minPt{"trkcfg_minPt", 0.1f, "Set minimum pT of tracks"};
+  Configurable<float> maxPt{"trkcfg_maxPt", 1e10f, "Set maximum pT of tracks"};
+  Configurable<float> requireEta{"trkcfg_requireEta", 0.8f, "Set eta range of tracks"};
+  Configurable<bool> requireITSRefit{"trkcfg_requireITSRefit", true, "Additional cut on the ITS requirement"};
+  Configurable<bool> requireTPCRefit{"trkcfg_requireTPCRefit", true, "Additional cut on the TPC requirement"};
+  Configurable<bool> requireGoldenChi2{"trkcfg_requireGoldenChi2", true, "Additional cut on the GoldenChi2"};
+  Configurable<float> maxChi2PerClusterTPC{"trkcfg_maxChi2PerClusterTPC", 4.f, "Additional cut on the maximum value of the chi2 per cluster in the TPC"};
+  Configurable<float> maxChi2PerClusterITS{"trkcfg_maxChi2PerClusterITS", 36.f, "Additional cut on the maximum value of the chi2 per cluster in the ITS"};
+  // Configurable<int> minITSnClusters{"trkcfg_minITSnClusters", 5, "minimum number of found ITS clusters"};
+  Configurable<float> minNCrossedRowsTPC{"trkcfg_minNCrossedRowsTPC", 70.f, "Additional cut on the minimum number of crossed rows in the TPC"};
+  Configurable<float> minNCrossedRowsOverFindableClustersTPC{"trkcfg_minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
+  Configurable<float> maxDcaXYFactor{"trkcfg_maxDcaXYFactor", 1.f, "Multiplicative factor on the maximum value of the DCA xy"};
+  Configurable<float> maxDcaZ{"trkcfg_maxDcaZ", 0.1f, "Additional cut on the maximum value of the DCA z"};
 
   Service<o2::framework::O2DatabasePDG> pdg;
 
@@ -165,12 +170,13 @@ struct ueCharged {
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T}^{assoc} (GeV/#it{c})"};
 
     fEff.setObject(new TF1("fpara",
-                           "(x<0.3)*((0.402353)+x*(1.90824)+x*x*(-3.37295)) +"
-                           "(x>=0.3&&x<1.8)*((0.603846)+(0.30189)*x+(-0.240649)*"
-                           "x*x+(0.0635382)*x*x*x) +"
-                           "(x>=1.8&&x<14.)*((0.75982)+(-0.0241023)*x+"
-                           "(0.00560107)*x*x+(-0.00048451)*x*x*x+"
-                           "(1.43868e-05)*x*x*x*x)+(x>=14)*((0.755339)+(-0.000986326)*x)",
+                           "(x<0.33)*((0.384347)+x*(1.77554)+x*x*(-2.9172)) +"
+                           "(x>=0.33&&x<1.2)*((0.58547)+(0.293843)*x+(-0.293957)*"
+                           "x*x+(0.109855)*x*x*x) +"
+                           "(x>=1.2&&x<5.6)*((0.581232)+(0.205847)*x+"
+                           "(-0.12133)*x*x+(0.0347906)*x*x*x+"
+                           "(-0.0048334)*x*x*x*x+(0.000261644)*x*x*x*x*x)+(x>=5.6)*((0.711869)+(0.00364573)*x"
+                           "+(-0.00019009)*x*x+(3.09894e-06)*x*x*x+(-1.81785e-08)*x*x*x*x)",
                            0., 1e5));
 
     if (doprocessMC || doprocessMCTrue) {
@@ -413,7 +419,7 @@ struct ueCharged {
     ue.fill(HIST("hCounter"), 4);
 
     ue.fill(HIST("hStat"), collision.size());
-    if ((std::abs(collision.posZ()) > 10.f)) {
+    if ((std::abs(collision.posZ()) > CollPosZ)) {
       return false;
     }
 
@@ -459,7 +465,7 @@ struct ueCharged {
     ue.fill(HIST("hCounter"), 4);
 
     ue.fill(HIST("hStat"), collision.size());
-    if ((std::abs(collision.posZ()) > 10.f)) {
+    if ((std::abs(collision.posZ()) > CollPosZ)) {
       return false;
     }
 
@@ -660,7 +666,7 @@ struct ueCharged {
     if (cfgINELCut == 2 && !o2::pwglf::isINELgt1mc(GenParticles, pdg)) {
       return;
     }
-    if (std::abs(mcCollision.posZ()) > 10.f) {
+    if (std::abs(mcCollision.posZ()) > CollPosZ) {
       return;
     }
     ue.fill(HIST("hStat"), mcCollision.size());
@@ -1005,7 +1011,7 @@ struct ueCharged {
     if (cfgINELCut == 2 && !o2::pwglf::isINELgt1mc(GenParticles, pdg)) {
       return;
     }
-    if (std::abs(mcCollision.posZ()) > 10.f) {
+    if (std::abs(mcCollision.posZ()) > CollPosZ) {
       return;
     }
 
@@ -1142,7 +1148,7 @@ struct ueCharged {
       ue.fill(HIST("hVtxFT0VsVtxCol_afterGoodZvtx"), foundBC.ft0().posZ(), collision.posZ());
     }
 
-    if (std::abs(collision.posZ()) > 10.f) {
+    if (std::abs(collision.posZ()) > CollPosZ) {
       return;
     }
 
