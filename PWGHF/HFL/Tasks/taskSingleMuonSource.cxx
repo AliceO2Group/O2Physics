@@ -26,9 +26,9 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 
 #include <Math/Vector4D.h>
-#include <TDatabasePDG.h>
 #include <TPDGCode.h>
 #include <TString.h>
 
@@ -78,6 +78,8 @@ struct HfTaskSingleMuonSource {
   Configurable<int> charge{"charge", 0, "Muon track charge, validated values are 0, 1 and -1, 0 represents both 1 and -1"};
   Configurable<bool> pairSource{"pairSource", true, "check also the source of like-sign muon pairs"};
 
+  Service<o2::framework::O2DatabasePDG> pdgDB;
+
   double pDcaMax = 594.0;  // p*DCA maximum value for small Rab
   double pDcaMax2 = 324.0; // p*DCA maximum value for large Rabs
   double rAbsMid = 26.5;   // R at absorber end minimum value
@@ -87,6 +89,9 @@ struct HfTaskSingleMuonSource {
   double etaUp = -2.5;     // up edge of eta acceptance
   double edgeZ = 10.0;     // edge of event position Z
   double ptLow = 1.0;      // low edge of pT for muon pairs
+  int pdgLow = 10;         // low edge of pdgCode for particle separation
+  int pdgMid = 1000;       // intermediate edge of pdgCode for particle separation
+  int pdgHigh = 10000;     // up edge of pdgCode for particle separation
 
   HistogramRegistry registry{
     "registry",
@@ -116,7 +121,7 @@ struct HfTaskSingleMuonSource {
 
     HistogramConfigSpec const h1ColNumber{HistType::kTH1F, {axisColNumber}};
     HistogramConfigSpec const h1Pt{HistType::kTH1F, {axisPt}};
-    HistogramConfigSpec h1Mass{HistType::kTH1F, {axisMass}};
+    HistogramConfigSpec const h1Mass{HistType::kTH1F, {axisMass}};
     HistogramConfigSpec const h2PtDCA{HistType::kTH2F, {axisPt, axisDCA}};
     HistogramConfigSpec const h2PtChi2{HistType::kTH2F, {axisPt, axisChi2}};
     HistogramConfigSpec const h2PtDeltaPt{HistType::kTH2F, {axisPt, axisDeltaPt}};
@@ -161,7 +166,7 @@ struct HfTaskSingleMuonSource {
       mcPart = *(mcPart.mothers_first_as<aod::McParticles>());
 
       const auto pdgAbs(std::abs(mcPart.pdgCode()));
-      if (pdgAbs < 10 || pdgAbs == 21) {
+      if (pdgAbs < kElectron || pdgAbs == kGluon) {
         break; // Quark and gluon
       }
 
@@ -170,8 +175,7 @@ struct HfTaskSingleMuonSource {
         continue;
       }
 
-      if (pdgAbs == kTauMinus) {
-        // Tau
+      if (pdgAbs == kTauMinus) { // Tau
         SETBIT(mask, HasTauParent);
         continue;
       }
@@ -182,28 +186,27 @@ struct HfTaskSingleMuonSource {
         continue;
       } // Beam particle
 
-      if ((pdgRem < 100) || (pdgRem >= 10000)) {
+      if ((pdgRem < pdgLow) || (pdgRem >= pdgHigh)) {
         continue;
       }
-      if ((pdgRem % 100 == 1 || pdgRem % 100 == 3) && pdgRem > 1000) { // diquarks
+      if ((pdgRem % 100 == kDown || pdgRem % 100 == kStrange) && pdgRem > pdgMid) { // diquarks
         continue;
       }
       // compute the flavor of constituent quark
       const int flv(pdgRem / std::pow(10, static_cast<int>(std::log10(pdgRem))));
-      if (flv > 6) {
+      if (flv > kTop) {
         // no more than 6 flavors
         continue;
       }
-      if (flv < 4) {
+      if (flv < kCharm) {
         // light flavor
         SETBIT(mask, HasLightParent);
         continue;
       }
-
-      auto* pdgData(TDatabasePDG::Instance()->GetParticle(mcPart.pdgCode()));
+      auto* pdgData = pdgDB->GetParticle(mcPart.pdgCode());
       if ((pdgData != nullptr) && (pdgData->AntiParticle() == nullptr)) {
         SETBIT(mask, HasQuarkoniumParent);
-      } else if (flv == 4) {
+      } else if (flv == kCharm) {
         SETBIT(mask, HasCharmParent);
       } else {
         SETBIT(mask, HasBeautyParent);
@@ -276,11 +279,13 @@ struct HfTaskSingleMuonSource {
   // fill the histograms of each particle types
   void fillHistograms(const McMuons::iterator& muon)
   {
+    const int type0 = 0;
+    const int type2 = 2;
     const auto mask(getMask(muon));
     const auto pt(muon.pt()), chi2(muon.chi2MatchMCHMFT());
     const auto dca(RecoDecay::sqrtSumOfSquares(muon.fwdDcaX(), muon.fwdDcaY()));
 
-    if (trackType == 0 || trackType == 2) {
+    if (trackType == type0 || trackType == type2) {
       if (!muon.has_matchMCHTrack()) {
         return;
       }
@@ -346,6 +351,7 @@ struct HfTaskSingleMuonSource {
   int traceAncestor(const McMuons::iterator& muon, aod::McParticles const& mctracks)
   {
     int mcNum = 0;
+    const int hadronStatus = 80;
     if (!muon.has_mcParticle()) {
       return 0;
     }
@@ -355,30 +361,32 @@ struct HfTaskSingleMuonSource {
     }
     while (mcPart.has_mothers()) { // the first hadron after hadronization
       auto mother = mcPart.mothers_first_as<aod::McParticles>();
-      if (std::abs(mother.getGenStatusCode()) < 80) {
+      if (std::abs(mother.getGenStatusCode()) < hadronStatus) {
         break;
       }
       mcPart = mother;
     }
     int flv = mcPart.pdgCode() / std::pow(10, static_cast<int>(std::log10(std::abs(mcPart.pdgCode()))));
-    if (abs(flv) == 5 && mcPart.pdgCode() < 1000)
+    if (std::abs(flv) == kBottom && mcPart.pdgCode() < pdgMid) {
       flv = -flv;
+    }
     for (int i = (mcPart.mothers_first_as<aod::McParticles>()).globalIndex(); i <= (mcPart.mothers_last_as<aod::McParticles>()).globalIndex(); i++) { // loop over the lund string
-      for (auto mctrack : mctracks) {
+      for (const auto& mctrack : mctracks) {
         if (mctrack.globalIndex() != i) {
           continue;
         }
-        if ((mctrack.pdgCode() != flv) && (abs(mctrack.pdgCode()) < abs(flv) * 1000)) {
+        if ((mctrack.pdgCode() != flv) && (std::abs(mctrack.pdgCode()) < std::abs(flv) * 1000)) {
           continue;
         }
-        while (mctrack.has_mothers()) {
-          int motherflv = (mctrack.mothers_first_as<aod::McParticles>()).pdgCode() / std::pow(10, static_cast<int>(std::log10(abs((mctrack.mothers_first_as<aod::McParticles>()).pdgCode())))); // find the mother with same flavor
-          auto mother = (abs(motherflv) == abs(flv)) ? (mctrack.mothers_first_as<aod::McParticles>()) : (mctrack.mothers_last_as<aod::McParticles>());
-          if ((mother.pdgCode() != mctrack.pdgCode()) && (abs(mctrack.pdgCode()) < 10)) { // both mother is not the the quark with same flavor
-            mcNum = mctrack.globalIndex();
+        auto currentTrk = mctrack;
+        while (currentTrk.has_mothers()) {
+          int motherflv = (currentTrk.mothers_first_as<aod::McParticles>()).pdgCode() / std::pow(10, static_cast<int>(std::log10(std::abs((currentTrk.mothers_first_as<aod::McParticles>()).pdgCode())))); // find the mother with same flavor
+          auto mother = (std::abs(motherflv) == std::abs(flv)) ? (currentTrk.mothers_first_as<aod::McParticles>()) : (currentTrk.mothers_last_as<aod::McParticles>());
+          if ((mother.pdgCode() != currentTrk.pdgCode()) && (std::abs(currentTrk.pdgCode()) < kElectron)) { // both mother is not the the quark with same flavor
+            mcNum = currentTrk.globalIndex();
             return mcNum;
           }
-          mctrack = mother;
+          currentTrk = mother;
         }
       }
     }
@@ -393,7 +401,7 @@ struct HfTaskSingleMuonSource {
     if (anc1 == 0 || anc2 == 0) {
       return false;
     }
-    for (auto mcPart : mcParts) {
+    for (const auto& mcPart : mcParts) {
       if (mcPart.globalIndex() == anc1) {
         moth11 = (mcPart.mothers_first_as<aod::McParticles>()).globalIndex();
         moth12 = (mcPart.mothers_last_as<aod::McParticles>()).globalIndex();
@@ -410,7 +418,8 @@ struct HfTaskSingleMuonSource {
   }
   void fillPairs(const McMuons::iterator& muon, const McMuons::iterator& muon2, aod::McParticles const& mcParts)
   {
-    if (trackType != 3) {
+    const int type3 = 3;
+    if (trackType != type3) {
       return;
     }
     float mm = o2::constants::physics::MassMuon;
@@ -483,7 +492,10 @@ struct HfTaskSingleMuonSource {
           continue;
         }
       }
-      if ((muon.chi2() >= 1e6) || (muon.chi2() < 0)) {
+      if (muon.chi2() < 0) {
+        continue;
+      }
+      if (muon.chi2MatchMCHMID() < 0) {
         continue;
       }
       if (charge != 0 && muon.sign() != charge) {
@@ -523,10 +535,10 @@ struct HfTaskSingleMuonSource {
             }
           }
 
-          if ((muon2.chi2() >= 1e6) || (muon2.chi2() < 0)) {
+          if (muon2.chi2() < 0) {
             continue;
           }
-          if ((muon2.chi2MatchMCHMID() >= 1e6) || (muon2.chi2MatchMCHMID() < 0)) {
+          if (muon2.chi2MatchMCHMID() < 0) {
             continue;
           }
           fillPairs(muon, muon2, mcParts);
