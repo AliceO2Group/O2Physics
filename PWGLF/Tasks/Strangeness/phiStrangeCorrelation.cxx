@@ -63,6 +63,7 @@
 #include <array>
 #include <cmath>
 #include <cstdlib>
+#include <deque>
 #include <memory>
 #include <ranges>
 #include <string>
@@ -157,7 +158,7 @@ struct PhiStrangenessCorrelation {
   Configurable<int> eventSelectionType{"eventSelectionType", 0, "Event selection type: 0 - default selection only, 1 - default + phi meson selection"};
 
   // Configurable for analysis mode
-  Configurable<int> analysisMode{"analysisMode", kMassvsMass, "Analysis mode: 0 - old method with online normalization, 1 - new method with offline normlization, 2 - deltay vs deltaphi"};
+  Configurable<int> analysisMode{"analysisMode", kDeltaYvsDeltaPhi, "Analysis mode: 0 - old method with online normalization, 1 - new method with offline normlization, 2 - deltay vs deltaphi"};
 
   // Configurable for event selection
   Configurable<float> cutZVertex{"cutZVertex", 10.0f, "Accepted z-vertex range (cm)"}; // TO BE REMOVED
@@ -173,13 +174,13 @@ struct PhiStrangenessCorrelation {
 
   // Configurables for K0s selection
   struct : ConfigurableGroup {
-    Configurable<bool> selectK0sInSigRegion{"selectK0sInSigRegion", false, "Select K0s candidates in signal region"};
+    Configurable<bool> selectK0sInSigRegion{"selectK0sInSigRegion", true, "Select K0s candidates in signal region"};
     Configurable<std::pair<float, float>> rangeMK0sSignal{"rangeMK0sSignal", {0.47f, 0.53f}, "K0S mass range for signal extraction"};
   } k0sConfigs;
 
   // Configurables for Pions selection
   struct : ConfigurableGroup {
-    Configurable<bool> selectPionInSigRegion{"selectPionInSigRegion", false, "Select Pion candidates in signal region"};
+    Configurable<bool> selectPionInSigRegion{"selectPionInSigRegion", true, "Select Pion candidates in signal region"};
     Configurable<float> pidTPCMax{"pidTPCMax", 2.0f, "Maximum nSigma TPC"};
     Configurable<float> pidTOFMax{"pidTOFMax", 2.0f, "Maximum nSigma TOF"};
     Configurable<float> tofPIDThreshold{"tofPIDThreshold", 0.5f, "Minimum pT after which TOF PID is applicable"};
@@ -260,6 +261,24 @@ struct PhiStrangenessCorrelation {
 
   static constexpr std::array<std::string_view, 2> phiMassRegionLabels{"Signal", "Sideband"};
   static constexpr std::array<std::string_view, ParticleOfInterestSize> particleOfInterestLabels{"Phi", "K0S", "Pion" /*"PionTPC", "PionTPCTOF"*/};
+  static constexpr std::array<std::string_view, ParticleOfInterestSize - 1> assocParticleLabels{"K0S", "Pi"};
+
+  // Light structures to store only the necessary information for the correlation analysis at MCGen level
+  struct MiniParticle {
+    float pt;
+    float y;
+    float phi;
+  };
+
+  struct MiniEvent {
+    float multiplicity;
+    std::vector<MiniParticle> phiParticles;
+    std::vector<MiniParticle> k0sParticles;
+    std::vector<MiniParticle> pionParticles;
+  };
+
+  // Buffer for mixed event, organized as a vector of deques, one for each multiplicity bin, containing the past events with their particles of interest needed for mixing
+  std::vector<std::deque<MiniEvent>> eventBuffer;
 
   void init(InitContext&)
   {
@@ -316,6 +335,12 @@ struct PhiStrangenessCorrelation {
     histos.add("pi/h3PiMCGen", "Pion in MC Gen", kTH3F, {binnedmultAxis, binnedpTPiAxis, yAxis});
     histos.add("pi/h4PiMCGenAssocReco", "Pion in MC Gen Assoc Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, binnedpTPiAxis, yAxis});
 
+    histos.add("phiK0S/h5PhiK0SClosureMCGen", "Deltay vs deltaphi for Phi and K0Short in MCGen", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTK0SAxis, deltayAxis, deltaphiAxis});
+    histos.add("phiPi/h5PhiPiClosureMCGen", "Deltay vs deltaphi for Phi and Pion in MCGen", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTPiAxis, deltayAxis, deltaphiAxis});
+
+    histos.add("phiK0S/h5PhiK0SClosureMCGenME", "Deltay vs deltaphi for Phi and K0Short in MCGen ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTK0SAxis, deltayAxis, deltaphiAxis});
+    histos.add("phiPi/h5PhiPiClosureMCGenME", "Deltay vs deltaphi for Phi and Pion in MCGen ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTPiAxis, deltayAxis, deltaphiAxis});
+
     // Load efficiency maps from CCDB
     if (applyEfficiency) {
       ccdb->setURL(ccdbUrl);
@@ -327,6 +352,8 @@ struct PhiStrangenessCorrelation {
         loadEfficiencyMapFromCCDB(static_cast<ParticleOfInterest>(i));
       }
     }
+
+    eventBuffer.resize(binsMult->size() - 1);
   }
 
   void loadEfficiencyMapFromCCDB(ParticleOfInterest poi)
@@ -352,6 +379,15 @@ struct PhiStrangenessCorrelation {
   float getDeltaPhi(float phiTrigger, float phiAssociated)
   {
     return RecoDecay::constrainAngle(phiTrigger - phiAssociated, -o2::constants::math::PIHalf);
+  }
+
+  int getCentBin(float multiplicity)
+  {
+    if (multiplicity < binsMult->front() || multiplicity >= binsMult->back())
+      return -1;
+
+    auto it = std::upper_bound(binsMult->begin(), binsMult->end(), multiplicity);
+    return std::distance(binsMult->begin(), it) - 1;
   }
 
   template <typename TCollision, typename TPhiCands, typename TK0SCands, typename TPionCands>
@@ -798,6 +834,213 @@ struct PhiStrangenessCorrelation {
   }
 
   PROCESS_SWITCH(PhiStrangenessCorrelation, processParticleEfficiency, "Process function for Efficiency Computation for Particles of Interest", false);
+
+  /*void processMCGenClosureSE(MCCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles)
+  {
+    float multiplicity = mcCollision.centFT0M();
+
+    std::vector<int64_t> phiIndices;
+    std::vector<int64_t> k0sIndices;
+    std::vector<int64_t> pionIndices;
+    std::vector<std::vector<int64_t>> assocIndices;
+
+    auto inYAcceptance = [&](const auto& mcParticle) {
+      return std::abs(mcParticle.y()) <= yConfigs.cfgYAcceptance;
+    };
+
+    for (const auto& mcParticle : mcParticles) {
+      if (!inYAcceptance(mcParticle))
+        continue;
+
+      switch (std::abs(mcParticle.pdgCode())) {
+        case o2::constants::physics::Pdg::kPhi:
+          if (eventSelectionType == 0 && mcParticle.pt() >= minPtMcGenConfigs.minPhiPt)
+            phiIndices.push_back(mcParticle.globalIndex());
+          break;
+        case PDG_t::kK0Short:
+          if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= minPtMcGenConfigs.v0SettingMinPt)
+            k0sIndices.push_back(mcParticle.globalIndex());
+          break;
+        case PDG_t::kPiPlus:
+          if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= minPtMcGenConfigs.cMinPionPtcut)
+            pionIndices.push_back(mcParticle.globalIndex());
+          break;
+        default:
+          break;
+      }
+    }
+
+    assocIndices.push_back(k0sIndices);
+    assocIndices.push_back(pionIndices);
+
+    for (std::size_t iTrigg{0}; iTrigg < phiIndices.size(); ++iTrigg) {
+      auto& phiParticle = mcParticles.rawIteratorAt(phiIndices[iTrigg]);
+
+      static_for<0, assocIndices.size() - 1>([&](auto i_idx) {
+        constexpr unsigned int i = i_idx.value;
+
+        for (std::size_t iAssoc{0}; iAssoc < assocIndices[i].size(); ++iAssoc) {
+          auto& assocParticle = mcParticles.rawIteratorAt(assocIndices[i][iAssoc]);
+
+          histos.fill(HIST("mcGenClosure/h5Phi") + HIST(assocParticleLabels[i]) + HIST("ClosureGenSE"), multiplicity, phiParticle.pt(), assocParticle.pt(), phiParticle.y() - assocParticle.y(), getDeltaPhi(phiParticle.phi(), assocParticle.phi()));
+        }
+      });
+    }
+  }
+
+  PROCESS_SWITCH(PhiStrangenessCorrelation, processMCGenClosureSE, "Process function for MC Gen Closure Test in SE", false);
+
+  void processMCGenClosureME(MCCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles)
+  {
+    float multiplicity = mcCollision.centFT0M();
+
+    std::vector<MiniParticle> phiParticles;
+    std::vector<MiniParticle> k0sParticles;
+    std::vector<MiniParticle> pionParticles;
+
+    auto inYAcceptance = [&](const auto& mcParticle) {
+      return std::abs(mcParticle.y()) <= yConfigs.cfgYAcceptance;
+    };
+
+    for (const auto& mcParticle : mcParticles) {
+      if (!inYAcceptance(mcParticle))
+        continue;
+
+      switch (std::abs(mcParticle.pdgCode())) {
+        case o2::constants::physics::Pdg::kPhi:
+          if (eventSelectionType == 0 && mcParticle.pt() >= minPtMcGenConfigs.minPhiPt)
+            phiParticles.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
+          break;
+        case PDG_t::kK0Short:
+          if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= minPtMcGenConfigs.v0SettingMinPt)
+            k0sParticles.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
+          break;
+        case PDG_t::kPiPlus:
+          if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= minPtMcGenConfigs.cMinPionPtcut)
+            pionParticles.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
+          break;
+        default:
+          break;
+      }
+    }
+
+    if (phiParticles.empty() && k0sParticles.empty() && pionParticles.empty())
+      return;
+
+    int multBin = getCentBin(multiplicity);
+
+    // Loop over past events in the same multiplicity bin and fill histograms with all combinations of current phi particles and past K0S and pion particles
+    for (const auto& pastEvent : eventBuffer[multBin]) {
+      for (const auto& phiParticle : phiParticles) {
+        for (const auto& k0sParticle : pastEvent.k0sParticles) {
+          histos.fill(HIST("mcGenClosure/h5PhiK0SClosureGenME"), multiplicity, phiParticle.pt, k0sParticle.pt, phiParticle.y - k0sParticle.y, getDeltaPhi(phiParticle.phi, k0sParticle.phi));
+        }
+        for (const auto& pionParticle : pastEvent.pionParticles) {
+          histos.fill(HIST("mcGenClosure/h5PhiPiClosureGenME"), multiplicity, phiParticle.pt, pionParticle.pt, phiParticle.y - pionParticle.y, getDeltaPhi(phiParticle.phi, pionParticle.phi));
+        }
+      }
+    }
+
+    // Add current event to buffer
+    MiniEvent currentEvent;
+    currentEvent.multiplicity = multiplicity;
+    currentEvent.phiParticles = std::move(phiParticles);
+    currentEvent.k0sParticles = std::move(k0sParticles);
+    currentEvent.pionParticles = std::move(pionParticles);
+
+    eventBuffer[multBin].push_front(std::move(currentEvent));
+    if (eventBuffer[multBin].size() > static_cast<std::size_t>(cfgNoMixedEvents.value))
+      eventBuffer[multBin].pop_back();
+  }
+
+  PROCESS_SWITCH(PhiStrangenessCorrelation, processMCGenClosureME, "Process function for MC Gen Closure Test in ME", false);*/
+
+  void processMCGenClosure(MCCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles)
+  {
+    float multiplicity = mcCollision.centFT0M();
+
+    std::vector<MiniParticle> phiParticles;
+    std::vector<MiniParticle> k0sParticles;
+    std::vector<MiniParticle> pionParticles;
+
+    auto inYAcceptance = [&](const auto& mcParticle) {
+      return std::abs(mcParticle.y()) <= yConfigs.cfgYAcceptance;
+    };
+
+    for (const auto& mcParticle : mcParticles) {
+      if (!inYAcceptance(mcParticle))
+        continue;
+
+      switch (std::abs(mcParticle.pdgCode())) {
+        case o2::constants::physics::Pdg::kPhi:
+          if (eventSelectionType == 0 && mcParticle.pt() >= minPtMcGenConfigs.minPhiPt)
+            phiParticles.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
+          break;
+        case PDG_t::kK0Short:
+          if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= minPtMcGenConfigs.v0SettingMinPt)
+            k0sParticles.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
+          break;
+        case PDG_t::kPiPlus:
+          if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= minPtMcGenConfigs.cMinPionPtcut)
+            pionParticles.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
+          break;
+        default:
+          break;
+      }
+    }
+
+    if (phiParticles.empty() && k0sParticles.empty() && pionParticles.empty())
+      return;
+
+    int multBin = getCentBin(multiplicity);
+    if (multBin < 0)
+      return;
+
+    std::vector<MiniParticle>* currentAssocParticles[] = {&k0sParticles, &pionParticles};
+
+    static_for<0, assocParticleLabels.size() - 1>([&](auto i_idx) {
+      constexpr unsigned int i = i_idx.value;
+
+      for (const auto& phiParticle : phiParticles) {
+        for (const auto& assocParticle : *(currentAssocParticles[i])) {
+          histos.fill(HIST("phi") + HIST(assocParticleLabels[i]) + HIST("/h5Phi") + HIST(assocParticleLabels[i]) + HIST("ClosureMCGen"),
+                      multiplicity, phiParticle.pt, assocParticle.pt,
+                      phiParticle.y - assocParticle.y,
+                      getDeltaPhi(phiParticle.phi, assocParticle.phi));
+        }
+      }
+    });
+
+    for (const auto& pastEvent : eventBuffer[multBin]) {
+      const std::vector<MiniParticle>* pastAssocParticles[] = {&pastEvent.k0sParticles, &pastEvent.pionParticles};
+
+      static_for<0, assocParticleLabels.size() - 1>([&](auto i_idx) {
+        constexpr unsigned int i = i_idx.value;
+
+        // Loop over past events in the same multiplicity bin and fill histograms with all combinations of current phi particles and past associated particles
+        for (const auto& phiParticle : phiParticles) {
+          for (const auto& assocParticle : *(pastAssocParticles[i])) {
+            histos.fill(HIST("phi") + HIST(assocParticleLabels[i]) + HIST("/h5Phi") + HIST(assocParticleLabels[i]) + HIST("ClosureMCGenME"),
+                        multiplicity, phiParticle.pt, assocParticle.pt,
+                        phiParticle.y - assocParticle.y,
+                        getDeltaPhi(phiParticle.phi, assocParticle.phi));
+          }
+        }
+      });
+    }
+
+    MiniEvent currentEvent;
+    currentEvent.multiplicity = multiplicity;
+    currentEvent.phiParticles = std::move(phiParticles);
+    currentEvent.k0sParticles = std::move(k0sParticles);
+    currentEvent.pionParticles = std::move(pionParticles);
+
+    eventBuffer[multBin].push_front(std::move(currentEvent));
+    if (eventBuffer[multBin].size() > static_cast<std::size_t>(cfgNoMixedEvents.value))
+      eventBuffer[multBin].pop_back();
+  }
+
+  PROCESS_SWITCH(PhiStrangenessCorrelation, processMCGenClosure, "Process function for MC Gen Closure Test in SE and ME", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
