@@ -24,9 +24,9 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <Framework/O2DatabasePDGPlugin.h>
 
 #include <Math/Vector4D.h>
 #include <TPDGCode.h>
@@ -180,6 +180,7 @@ struct HfTaskSingleMuonSource {
       }
 
       const int pdgRem(pdgAbs % 100000);
+      const int pdgRemRem(pdgRem % 100);
 
       if (pdgRem == kProton) {
         continue;
@@ -188,7 +189,7 @@ struct HfTaskSingleMuonSource {
       if ((pdgRem < kPi0) || (pdgRem >= hadronEdge)) {
         continue;
       }
-      if ((pdgRem % 100 == kDown || pdgRem % 100 == kStrange) && pdgRem > diquarkEdge) { // diquarks
+      if ((pdgRemRem == kDown || pdgRemRem == kStrange) && pdgRem > diquarkEdge) { // diquarks
         continue;
       }
       // compute the flavor of constituent quark
