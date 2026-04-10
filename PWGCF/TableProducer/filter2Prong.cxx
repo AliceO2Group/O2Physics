@@ -44,17 +44,6 @@ enum LambdaPid { kLambda = 0,
 // #define FLOAT_PRECISION 0xFFFFFFF0
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-namespace o2::aod
-{
-namespace cfmultiplicity
-{
-DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
-}
-DECLARE_SOA_TABLE(CFMultiplicities, "AOD", "CFMULTIPLICITY", cfmultiplicity::Multiplicity);
-
-using CFMultiplicity = CFMultiplicities::iterator;
-} // namespace o2::aod
-
 struct Filter2Prong {
   SliceCache cache;
 
@@ -806,9 +795,7 @@ struct Filter2Prong {
 
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [collision1, tracks1, collision2, tracks2] = *it;
-      // float multiplicity = getMultiplicity(collision1);
-      // int bin = configurableBinningDerived.getBin(std::tuple(collision1.posZ(), multiplicity));
-      // float eventWeight = 1.0f / it.currentWindowNeighbours();
+
       if (!(collision1.sel8() &&
             collision1.selection_bit(aod::evsel::kNoSameBunchPileup) &&
             collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&

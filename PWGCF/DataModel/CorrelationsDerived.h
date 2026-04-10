@@ -46,6 +46,14 @@ DECLARE_SOA_TABLE(CFMcParticles, "AOD", "CFMCPARTICLE", //! Reduced MC particle 
                   mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
 using CFMcParticle = CFMcParticles::iterator;
 
+namespace cfmultiplicity
+{
+DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
+}
+DECLARE_SOA_TABLE(CFMultiplicities, "AOD", "CFMULTIPLICITY", cfmultiplicity::Multiplicity);
+
+using CFMultiplicity = CFMultiplicities::iterator;
+
 namespace cfcollision
 {
 DECLARE_SOA_INDEX_COLUMN(CFMcCollision, cfMcCollision); //! Index to reduced MC collision
