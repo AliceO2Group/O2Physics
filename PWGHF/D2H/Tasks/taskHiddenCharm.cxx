@@ -21,7 +21,9 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
@@ -31,6 +33,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <vector>
 
 using namespace o2;

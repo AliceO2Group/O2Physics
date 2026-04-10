@@ -40,7 +40,7 @@
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TH2.h>
+#include <TH1.h>
 
 #include <algorithm>
 #include <cstdint>
