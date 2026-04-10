@@ -207,6 +207,7 @@ struct HeavyionMultiplicity {
   Configurable<bool> isApplyCentMFT{"isApplyCentMFT", false, "Centrality based on MFT tracks"};
   Configurable<bool> isApplyTVX{"isApplyTVX", false, "Enable TVX trigger sel"};
   Configurable<bool> isApplyExtraPhiCut{"isApplyExtraPhiCut", false, "Enable extra phi cut"};
+  Configurable<bool> isApplyBestCollIndex{"isApplyBestCollIndex", true, ""};
 
   Configurable<bool> selectCollidingBCs{"selectCollidingBCs", true, "BC analysis: select colliding BCs"};
   Configurable<bool> selectTVX{"selectTVX", true, "BC analysis: select TVX"};
@@ -357,6 +358,7 @@ struct HeavyionMultiplicity {
       histos.add("hRecMCvertexZ", "hRecMCvertexZ", kTH1D, {axisVtxZ}, false);
       histos.add("hRecMCvtxzcent", "hRecMCvtxzcent", kTH3D, {axisVtxZ, centAxis, axisOccupancy}, false);
       histos.add("hRecMCcentrality", "hRecMCcentrality", kTH1D, {axisCent}, false);
+      histos.add("MCCentrality_vs_FT0C", "MCCentrality_vs_FT0C", kTH2F, {axisCent, axisFt0cMult}, true);
       histos.add("hRecMCphivseta", "hRecMCphivseta", kTH2D, {axisPhi2, axisEta}, false);
       histos.add("hRecMCdndeta", "hRecMCdndeta", kTHnSparseD, {axisVtxZ, centAxis, axisOccupancy, axisEta, axisPhi, axisRecTrkType}, false);
       histos.add("etaResolution", "etaResolution", kTH2D, {axisEta, axisDeltaEta});
@@ -875,7 +877,7 @@ struct HeavyionMultiplicity {
       if (!isEventSelected(RecCol)) {
         continue;
       }
-      if (RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
+      if (isApplyBestCollIndex && RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
         continue;
       }
       atLeastOne = true;
@@ -928,11 +930,12 @@ struct HeavyionMultiplicity {
       if (!isEventSelected(RecCol)) {
         continue;
       }
-      if (RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
+      if (isApplyBestCollIndex && RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
         continue;
       }
       histos.fill(HIST("hRecMCvertexZ"), RecCol.posZ());
       histos.fill(HIST("hRecMCcentrality"), selColCent(RecCol));
+      histos.fill(HIST("MCCentrality_vs_FT0C"), RecCol.centFT0C(), RecCol.multFT0C());
       histos.fill(HIST("hRecMCvtxzcent"), RecCol.posZ(), selColCent(RecCol), selColOccu(RecCol));
 
       auto recTracksPart = RecTracks.sliceBy(perCollision, RecCol.globalIndex());
