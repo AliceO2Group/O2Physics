@@ -54,9 +54,6 @@ namespace particleorigintask
 {
 using namespace o2::analysis::dptdptfilter;
 
-/// PDG codes below this threshold are mesons; at or above are baryons
-static constexpr int KPdgBaryonThreshold = 1000; // o2-linter: disable=pdg/explicit-code(not a PDG code)
-
 /// PDG codes above this threshold correspond to hadrons (mesons and baryons).
 /// Below are quarks (1-6), leptons (11-16), gauge bosons (21-25), and
 /// special/internal generator codes.
