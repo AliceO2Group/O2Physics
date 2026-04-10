@@ -346,7 +346,7 @@ struct FlowSP {
     AxisSpec axisdEdx = {300, 0, 300, "dEdx for PID"};
     AxisSpec axisBeta = {150, 0, 1.5, "Beta for PID"};
     AxisSpec axisCharge = {3, 0, 3, "Charge: 0 = inclusive, 1 = positive, 2 = negative"};
-    AxisSpec axisPx = {1000, -0.05, 0.05, "p_{x} (GeV/c)"};
+    AxisSpec axisPx = {100, -0.05, 0.05, "p_{x} (GeV/c)"};
 
     std::vector<double> ptbinning = {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10};
     AxisSpec axisPt = {ptbinning, "#it{p}_{T} GeV/#it{c}"};
@@ -1379,11 +1379,9 @@ struct FlowSP {
       }
       double centW = cfg.hCentrality->GetBinContent(cfg.hCentrality->FindBin(spm.centrality));
       if (centW < 0) {
-        spm.centWeight = 1. / centW;
-      } else {
+        spm.centWeight = 0.; 
         LOGF(fatal, "Centrality weight cannot be negative .. setting to 0. for (%.2f)", spm.centrality);
-        spm.centWeight = 0.;
-      }
+       }
     }
 
     fillEventQA<kAfter>(collision, tracks);
