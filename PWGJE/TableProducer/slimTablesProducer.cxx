@@ -224,7 +224,8 @@ struct SlimTablesProducer {
           continue;
         auto pdgParticle = pdgDatabase->GetParticle(particle.pdgCode());
         auto pdgCharge = pdgParticle ? std::abs(pdgParticle->Charge()) : -1.0;
-        if (pdgCharge < 3.0) // keep charged particles, exclude neutrals
+        constexpr float minChargedPdg = 3.0f;
+        if (pdgCharge < minChargedPdg) // keep charged particles, exclude neutrals
           continue;
         slimParticles(slimMcCollIndex, particle.px(), particle.py(), particle.pz(), particle.energy());
       }
