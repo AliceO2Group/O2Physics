@@ -30,6 +30,8 @@ class TrackSmearer
 
   /** LUT methods **/
   bool loadTable(int pdg, const char* filename, bool forceReload = false);
+  bool adoptTable(int pdg, const uint8_t* buffer, size_t size, bool forceReload = false);
+  bool viewTable(int pdg, const uint8_t* buffer, size_t size, bool forceReload = false);
   bool hasTable(int pdg) const;
 
   void useEfficiency(bool val) { mUseEfficiency = val; }
@@ -69,6 +71,8 @@ class TrackSmearer
 
  private:
   o2::ccdb::BasicCCDBManager* mCcdbManager = nullptr;
+
+  bool checkSpecialCase(int pdg, lutHeader_t const& header);
 };
 
 } // namespace o2::delphes

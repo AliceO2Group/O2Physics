@@ -146,7 +146,17 @@ class FlatLutData
   /**
    * @brief Construct a new FlatLutData from a file
    */
-  static FlatLutData loadFromFile(const char* filename);
+  static FlatLutData loadFromFile(std::ifstream& file, const char* filename);
+
+  /**
+   * @brief Preview buffer header for version and other compatibility checks
+   */
+  static lutHeader_t PreviewHeader(const uint8_t* buffer, size_t size);
+
+  /**
+   * @brief Preview file-stored header for version and other compatibility checks
+   */
+  static lutHeader_t PreviewHeader(std::ifstream& file, const char* filename);
 
   /**
    * @brief Check if the LUT is loaded

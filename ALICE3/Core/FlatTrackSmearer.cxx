@@ -77,25 +77,95 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
   }
 
   const auto ipdg = getIndexPDG(pdg);
-  LOGF(info, "Loading %s LUT file: '%s'", getParticleName(pdg), filename);
-
   if (mLUTData[ipdg].isLoaded() && !forceReload) {
     LOGF(info, "LUT table for PDG %d already loaded (index %d)", pdg, ipdg);
     return false;
   }
 
+  std::ifstream lutFile(filename, std::ifstream::binary);
+  if (!lutFile.is_open()) {
+    throw framework::runtime_error_f("Cannot open LUT file: %s", filename);
+  }
+
+  LOGF(info, "Loading %s LUT file: '%s'", getParticleName(pdg), filename);
   const std::string localFilename = o2::fastsim::GeometryEntry::accessFile(filename, "./.ALICE3/LUTs/", mCcdbManager, 10);
 
   try {
-    mLUTData[ipdg] = FlatLutData::loadFromFile(localFilename.c_str());
+    auto header = FlatLutData::PreviewHeader(lutFile, localFilename.c_str());
+    // Validate header
+    if (header.pdg != pdg && !checkSpecialCase(pdg, header)) {
+      LOGF(error, "LUT header PDG mismatch: expected %d, got %d; not loading", pdg, header.pdg);
+      return false;
+    }
+    mLUTData[ipdg] = FlatLutData::loadFromFile(lutFile, localFilename.c_str());
   } catch (framework::RuntimeErrorRef ref) {
     LOGF(error, "%s", framework::error_from_ref(ref).what);
     return false;
   }
+  mHeaders[ipdg] = &mLUTData[ipdg].getHeaderRef();
 
+  LOGF(info, "Successfully read LUT for PDG %d: %s", pdg, localFilename.c_str());
+  mHeaders[ipdg]->print();
+  return true;
+}
+
+bool TrackSmearer::adoptTable(int pdg, const uint8_t* buffer, size_t size, bool forceReload)
+{
+  const auto ipdg = getIndexPDG(pdg);
+  if (mLUTData[ipdg].isLoaded() && !forceReload) {
+    LOGF(info, "LUT table for PDG %d already loaded (index %d)", pdg, ipdg);
+    return false;
+  }
+  try {
+    auto header = FlatLutData::PreviewHeader(buffer, size);
+    if (header.pdg != pdg && !checkSpecialCase(pdg, header)) {
+      LOGF(error, "LUT header PDG mismatch: expected %d, got %d", pdg, header.pdg);
+      return false;
+    }
+    mLUTData[ipdg] = FlatLutData::AdoptFromBuffer(buffer, size);
+  } catch (framework::RuntimeErrorRef ref) {
+    LOGF(error, "%s", framework::error_from_ref(ref).what);
+  }
+  mHeaders[ipdg] = &mLUTData[ipdg].getHeaderRef();
+
+  LOGF(info, "Successfully adopted LUT for PDG %d", pdg);
+  mHeaders[ipdg]->print();
+  return true;
+}
+
+bool TrackSmearer::viewTable(int pdg, const uint8_t* buffer, size_t size, bool forceReload)
+{
+  const auto ipdg = getIndexPDG(pdg);
+  if (mLUTData[ipdg].isLoaded() && !forceReload) {
+    LOGF(info, "LUT table for PDG %d already loaded (index %d)", pdg, ipdg);
+    return false;
+  }
+  try {
+    auto header = FlatLutData::PreviewHeader(buffer, size);
+    if (header.pdg != pdg && !checkSpecialCase(pdg, header)) {
+      LOGF(error, "LUT header PDG mismatch: expected %d, got %d", pdg, header.pdg);
+      return false;
+    }
+    mLUTData[ipdg] = FlatLutData::ViewFromBuffer(buffer, size);
+  } catch (framework::RuntimeErrorRef ref) {
+    LOGF(error, "%s", framework::error_from_ref(ref).what);
+  }
+  mHeaders[ipdg] = &mLUTData[ipdg].getHeaderRef();
+
+  LOGF(info, "Successfully adopted LUT for PDG %d", pdg);
+  mHeaders[ipdg]->print();
+  return true;
+}
+
+bool TrackSmearer::hasTable(int pdg) const
+{
+  const int ipdg = getIndexPDG(pdg);
+  return mLUTData[ipdg].isLoaded();
+}
+
+bool TrackSmearer::checkSpecialCase(int pdg, lutHeader_t const& header)
+{
   // Validate header
-  const auto& header = mLUTData[ipdg].getHeaderRef();
-
   bool specialPdgCase = false;
   switch (pdg) {
     case o2::constants::physics::kAlpha:
@@ -108,23 +178,8 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
     default:
       break;
   }
-
-  if (header.pdg != pdg && !specialPdgCase) {
-    LOGF(error, "LUT header PDG mismatch: expected %d, got %d", pdg, header.pdg);
-    mLUTData[ipdg].reset();
-    return false;
-  }
-
-  LOGF(info, "Successfully read LUT for PDG %d: %s", pdg, localFilename.c_str());
-  header.print();
-
-  return true;
+  return specialPdgCase;
 }
 
-bool TrackSmearer::hasTable(int pdg) const
-{
-  const int ipdg = getIndexPDG(pdg);
-  return mLUTData[ipdg].isLoaded();
-}
 
 } // namespace o2::delphes

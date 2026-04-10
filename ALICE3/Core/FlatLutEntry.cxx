@@ -167,22 +167,32 @@ void FlatLutData::view(const uint8_t* buffer, size_t size)
 
 void FlatLutData::validateBuffer(const uint8_t* buffer, size_t size)
 {
-  // Validate buffer
-  if (size < sizeof(lutHeader_t)) {
-    throw framework::runtime_error_f("Buffer too small for LUT header: expected at least %zu, got %zu", sizeof(lutHeader_t), size);
+  auto header = PreviewHeader(buffer, size);
+  if (!header.check_version()) {
+    throw framework::runtime_error_f("LUT header version mismatch: expected %d, got %d", LUTCOVM_VERSION, header.version);
   }
-
-  const auto* header = reinterpret_cast<const lutHeader_t*>(buffer);
-  auto mNchBins = header->nchmap.nbins;
-  auto mRadBins = header->radmap.nbins;
-  auto mEtaBins = header->etamap.nbins;
-  auto mPtBins = header->ptmap.nbins;
+  auto mNchBins = header.nchmap.nbins;
+  auto mRadBins = header.radmap.nbins;
+  auto mEtaBins = header.etamap.nbins;
+  auto mPtBins = header.ptmap.nbins;
 
   size_t expectedSize = sizeof(lutHeader_t) + static_cast<size_t>(mNchBins) * mRadBins * mEtaBins * mPtBins * sizeof(lutEntry_t);
 
   if (size < expectedSize) {
     throw framework::runtime_error_f("Buffer size mismatch: expected %zu, got %zu", expectedSize, size);
   }
+}
+
+lutHeader_t FlatLutData::PreviewHeader(const uint8_t* buffer, size_t size)
+{
+  if (size < sizeof(lutHeader_t)) {
+    throw framework::runtime_error_f("Buffer too small for LUT header: expected at least %zu, got %zu", sizeof(lutHeader_t), size);
+  }
+  const auto* header = reinterpret_cast<const lutHeader_t*>(buffer);
+  if (!header->check_version()) {
+    throw framework::runtime_error_f("LUT header version mismatch: expected %d, got %d", LUTCOVM_VERSION, header->version);
+  }
+  return *header;
 }
 
 FlatLutData FlatLutData::AdoptFromBuffer(const uint8_t* buffer, size_t size)
@@ -211,23 +221,23 @@ bool FlatLutData::isLoaded() const
   return ((!mData.empty()) || (!mDataRef.empty()));
 }
 
-FlatLutData FlatLutData::loadFromFile(const char* filename)
+lutHeader_t FlatLutData::PreviewHeader(std::ifstream& file, const char* filename)
 {
-  std::ifstream lutFile(filename, std::ifstream::binary);
-  if (!lutFile.is_open()) {
-    throw framework::runtime_error_f("Cannot open LUT file: %s", filename);
-  }
-
-  // Read header first
   lutHeader_t tempHeader;
-  lutFile.read(reinterpret_cast<char*>(&tempHeader), sizeof(lutHeader_t));
-  if (lutFile.gcount() != static_cast<std::streamsize>(sizeof(lutHeader_t))) {
+  file.read(reinterpret_cast<char*>(&tempHeader), sizeof(lutHeader_t));
+  if (file.gcount() != static_cast<std::streamsize>(sizeof(lutHeader_t))) {
     throw framework::runtime_error_f("Failed to read LUT header from %s", filename);
   }
-
   if (!tempHeader.check_version()) {
     throw framework::runtime_error_f("LUT header version mismatch: expected %d, got %d", LUTCOVM_VERSION, tempHeader.version);
   }
+  return tempHeader;
+}
+
+FlatLutData FlatLutData::loadFromFile(std::ifstream& file, const char* filename)
+{
+  // Read header first
+  lutHeader_t tempHeader = PreviewHeader(file, filename);
 
   FlatLutData data;
 
@@ -239,12 +249,11 @@ FlatLutData FlatLutData::loadFromFile(const char* filename)
   size_t numEntries = static_cast<size_t>(data.mNchBins) * data.mRadBins * data.mEtaBins * data.mPtBins;
   size_t entriesSize = numEntries * sizeof(lutEntry_t);
 
-  lutFile.read(reinterpret_cast<char*>(data.data() + headerSize), entriesSize);
-  if (lutFile.gcount() != static_cast<std::streamsize>(entriesSize)) {
-    throw framework::runtime_error_f("Failed to read LUT entries from %s: expected %zu bytes, got %zu", filename, entriesSize, static_cast<size_t>(lutFile.gcount()));
+  file.read(reinterpret_cast<char*>(data.data() + headerSize), entriesSize);
+  if (file.gcount() != static_cast<std::streamsize>(entriesSize)) {
+    throw framework::runtime_error_f("Failed to read LUT entries from %s: expected %zu bytes, got %zu", filename, entriesSize, static_cast<size_t>(file.gcount()));
   }
 
-  lutFile.close();
   LOGF(info, "Successfully loaded LUT from %s: %zu entries", filename, numEntries);
   return data;
 }
