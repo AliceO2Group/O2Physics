@@ -774,6 +774,10 @@ class VarManager : public TObject
     kCosThetaStarTPC,
     kCosThetaStarFT0A,
     kCosThetaStarFT0C,
+    kAbsCosThetaStarFT0C,
+    kCos2ThetaStarFT0C,
+    kCosThetaStarRandom,
+    kCos2ThetaStarRandom,
     kCosPhiVP,
     kPhiVP,
     kDeltaPhiPair2,
@@ -879,6 +883,7 @@ class VarManager : public TObject
     kPsi2ANEG,
     kPsi2B,
     kPsi2C,
+    kRandomPsi2,
     kCos2DeltaPhi,
     kCos2DeltaPhiMu1, // cos(phi - phi1) for muon1
     kCos2DeltaPhiMu2, ////cos(phi - phi2) for muon2
@@ -2193,6 +2198,7 @@ void VarManager::FillEvent(T const& event, float* values)
     values[VarManager::kPsi2A] = Psi2A;
     values[VarManager::kPsi2B] = Psi2B;
     values[VarManager::kPsi2C] = Psi2C;
+    values[VarManager::kRandomPsi2] = gRandom->Uniform(-o2::constants::math::PIHalf, o2::constants::math::PIHalf);
 
     if constexpr ((fillMap & ReducedEventQvectorExtra) > 0) {
       values[kQ42XA] = event.q42xa();
@@ -5694,6 +5700,13 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
 
     ROOT::Math::XYZVector zaxisFT0C = ROOT::Math::XYZVector(TMath::Cos(Psi2C), TMath::Sin(Psi2C), 0).Unit();
     values[kCosThetaStarFT0C] = v_CM.Dot(zaxisFT0C);
+    values[kAbsCosThetaStarFT0C] = std::abs(values[kCosThetaStarFT0C]);
+    values[kCos2ThetaStarFT0C] = values[kCosThetaStarFT0C] * values[kCosThetaStarFT0C];
+
+    // Randomize the event plane angle to check the unpolarized contribution
+    ROOT::Math::XYZVector zaxisRandom = ROOT::Math::XYZVector(TMath::Cos(values[kRandomPsi2]), TMath::Sin(values[kRandomPsi2]), 0).Unit();
+    values[kCosThetaStarRandom] = v_CM.Dot(zaxisRandom);
+    values[kCos2ThetaStarRandom] = values[kCosThetaStarRandom] * values[kCosThetaStarRandom];
   }
 
   //  kV4, kC4POI, kC4REF etc.
