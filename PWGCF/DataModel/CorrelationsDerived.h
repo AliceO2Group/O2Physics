@@ -157,7 +157,8 @@ enum ParticleDecay {
   LambdaToPPiTight,
   AntiLambdaToPiPLoose,
   AntiLambdaToPiPTight,
-  D0barToKPiExclusive
+  D0barToKPiExclusive,
+  PhiToKKPID3Mixed
 };
 } // namespace cf2prongtrack
 DECLARE_SOA_TABLE(CF2ProngTracks, "AOD", "CF2PRONGTRACK", //! Reduced track table
