@@ -56,14 +56,14 @@ struct ThreeParticleCorrelations {
     std::string prefix = "EventSelection";
     Configurable<float> zvtxMax{"zvtxMax", 10.0, "Maximum collision Z-vertex position (cm)"};
     Configurable<int> occupMin{"occupMin", 0, "Minimum collision occupancy"};
-    Configurable<int> occupMax{"occupMax", 15000, "Maximum collision occupancy"};
+    Configurable<int> occupMax{"occupMax", 500, "Maximum collision occupancy"};
     Configurable<bool> useOccupCut{"useOccupCut", true, "Use the kNoCollInTimeRangeStandard cut"};
   } evSelGroup;
 
   // V0 filter parameters
   struct : ConfigurableGroup {
     std::string prefix = "V0Selection";
-    Configurable<float> v0PtMin{"v0PtMin", 0.6, "Minimum V0 transverse momentum"};
+    Configurable<float> v0PtMin{"v0PtMin", 1.6, "Minimum V0 transverse momentum"};
     Configurable<float> v0PtMax{"v0PtMax", 12.0, "Maximum V0 transverse momentum"};
     Configurable<float> tpcNCrossedRows{"tpcNCrossedRows", 70.0, "Minimum number of TPC crossed rows"};
     Configurable<float> decayR{"decayR", 1.2, "Minimum V0 decay radius (cm)"};
@@ -165,7 +165,7 @@ struct ThreeParticleCorrelations {
   struct : ConfigurableGroup {
     std::string prefix = "processSwitchBoard";
     Configurable<int> confBfieldSwitch{"confBfieldSwitch", 0, "Switch for the detector magnetic field (1 if Pos, -1 if Neg, 0 if both)"};
-    Configurable<bool> confRatioCorrectionSwitch{"confRatioCorrectionSwitch", false, "Switch for correcting the negative spectra back to the positive spectra"};
+    Configurable<bool> confRatioCorrectionSwitch{"confRatioCorrectionSwitch", true, "Switch for correcting the negative spectra back to the positive spectra"};
     Configurable<bool> confFakeV0Switch{"confFakeV0Switch", false, "Switch for the fakeV0Filter function"};
     Configurable<bool> confRDSwitch{"confRDSwitch", true, "Switch for the radialDistanceFilter function"};
   } switchGroup;
