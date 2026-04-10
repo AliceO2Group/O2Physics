@@ -988,9 +988,6 @@ struct NetProtCumulants {
       if (cfgEvSelkIsVertexTOFmatched && !(collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched))) {
         continue;
       }
-      if (cfgEvSelkIsGoodZvtxFT0vsPV && !(collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))) {
-        continue;
-      }
 
       cent = collision.centFT0C();
 
