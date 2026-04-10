@@ -1064,7 +1064,7 @@ struct LambdaTableProducer {
     if (!selTrackBasic(track))
       return false;
     if (cApplyFakeDcaCuts) {
-      float minDca = isProton ? (float)cMinDcaProtonToPV : (float)cMinDcaPionToPV;
+      float minDca = isProton ? static_cast<float>(cMinDcaProtonToPV) : static_cast<float>(cMinDcaPionToPV);
       if (std::abs(track.dcaXY()) < minDca)
         return false;
     }
@@ -1822,14 +1822,14 @@ struct LambdaSpinPolarization {
     static constexpr std::string_view SubDirHistUS[] = {"LaPLaM", "LaMLaP", "LaPLaP", "LaMLaM"};
     static constexpr std::string_view SubDirHistBkg[] = {"LaPFkLaM", "LaMLFkLaP", "LaPFkLaP", "LaMLFkLaM"};
 
-    constexpr bool isBkg = (part_pair == kLambdaFakeAntiLambda || part_pair == kAntiLambdaFakeLambda || part_pair == kLambdaFakeLambda || part_pair == kAntiLambdaFakeAntiLambda);
+    constexpr bool IsBkg = (part_pair == kLambdaFakeAntiLambda || part_pair == kAntiLambdaFakeLambda || part_pair == kLambdaFakeLambda || part_pair == kAntiLambdaFakeAntiLambda);
 
     // Fill pair invariant mass histogram
-    if constexpr (!isBkg) {
+    if constexpr (!IsBkg) {
       histos.fill(HIST("Reco/h2f_n2_mass_") + HIST(SubDirHistUS[part_pair]), p1.mass(), p2.mass(), p1.pt(), p2.pt());
     } else {
-      constexpr int bkgIdx = (int)part_pair - 4;
-      histos.fill(HIST("RecoBkg/h2f_n2_mass_") + HIST(SubDirHistBkg[bkgIdx]), p1.mass(), p2.mass(), p1.pt(), p2.pt());
+      constexpr int BkgIdx = static_cast<int>(part_pair) - 4;
+      histos.fill(HIST("RecoBkg/h2f_n2_mass_") + HIST(SubDirHistBkg[BkgIdx]), p1.mass(), p2.mass(), p1.pt(), p2.pt());
     }
 
     float drap = p1.rap() - p2.rap();
@@ -1842,71 +1842,71 @@ struct LambdaSpinPolarization {
     std::array<float, 4> pr2 = {p2.prPx(), p2.prPy(), p2.prPz(), MassProton};
 
     if (cDoAtlasMethod) {
-      std::array<float, 4> l1_atlas = l1;
-      std::array<float, 4> l2_atlas = l2;
-      std::array<float, 4> pr1_atlas = pr1;
-      std::array<float, 4> pr2_atlas = pr2;
+      std::array<float, 4> l1Atlas = l1;
+      std::array<float, 4> l2Atlas = l2;
+      std::array<float, 4> pr1Atlas = pr1;
+      std::array<float, 4> pr2Atlas = pr2;
 
       std::array<float, 4> llpair = {
-        l1_atlas[0] + l2_atlas[0],
-        l1_atlas[1] + l2_atlas[1],
-        l1_atlas[2] + l2_atlas[2],
-        l1_atlas[3] + l2_atlas[3]};
+        l1Atlas[0] + l2Atlas[0],
+        l1Atlas[1] + l2Atlas[1],
+        l1Atlas[2] + l2Atlas[2],
+        l1Atlas[3] + l2Atlas[3]};
 
       std::array<float, 3> vPair;
       getBoostVector(llpair, vPair, cInvBoostFlag);
-      boost(l1_atlas, vPair);
-      boost(l2_atlas, vPair);
-      boost(pr1_atlas, vPair);
-      boost(pr2_atlas, vPair);
+      boost(l1Atlas, vPair);
+      boost(l2Atlas, vPair);
+      boost(pr1Atlas, vPair);
+      boost(pr2Atlas, vPair);
 
-      std::array<float, 3> v1_pair, v2_pair;
-      getBoostVector(l1_atlas, v1_pair, cInvBoostFlag);
-      getBoostVector(l2_atlas, v2_pair, cInvBoostFlag);
-      boost(pr1_atlas, v1_pair);
-      boost(pr2_atlas, v2_pair);
+      std::array<float, 3> v1Pair, v2Pair;
+      getBoostVector(l1Atlas, v1Pair, cInvBoostFlag);
+      getBoostVector(l2Atlas, v2Pair, cInvBoostFlag);
+      boost(pr1Atlas, v1Pair);
+      boost(pr2Atlas, v2Pair);
 
-      std::array<float, 3> pr1tv_atlas = {pr1_atlas[0], pr1_atlas[1], pr1_atlas[2]};
-      std::array<float, 3> pr2tv_atlas = {pr2_atlas[0], pr2_atlas[1], pr2_atlas[2]};
+      std::array<float, 3> pr1tvAtlas = {pr1Atlas[0], pr1Atlas[1], pr1Atlas[2]};
+      std::array<float, 3> pr2tvAtlas = {pr2Atlas[0], pr2Atlas[1], pr2Atlas[2]};
       float ctheta =
-        RecoDecay::dotProd(pr1tv_atlas, pr2tv_atlas) /
-        (RecoDecay::sqrtSumOfSquares(pr1tv_atlas[0], pr1tv_atlas[1], pr1tv_atlas[2]) *
-         RecoDecay::sqrtSumOfSquares(pr2tv_atlas[0], pr2tv_atlas[1], pr2tv_atlas[2]));
+        RecoDecay::dotProd(pr1tvAtlas, pr2tvAtlas) /
+        (RecoDecay::sqrtSumOfSquares(pr1tvAtlas[0], pr1tvAtlas[1], pr1tvAtlas[2]) *
+         RecoDecay::sqrtSumOfSquares(pr2tvAtlas[0], pr2tvAtlas[1], pr2tvAtlas[2]));
 
-      if constexpr (!isBkg) {
+      if constexpr (!IsBkg) {
         histos.fill(HIST("RecoCorr/h2f_n2_ctheta_") + HIST(SubDirHistUS[part_pair]), cent, drap, dphi, ctheta);
         histos.fill(HIST("RecoCorr/h2f_n2_dltaR_") + HIST(SubDirHistUS[part_pair]), cent, dR, ctheta);
       } else {
-        constexpr int bkgIdx = (int)part_pair - 4;
-        histos.fill(HIST("RecoCorrBkg/h2f_n2_ctheta_") + HIST(SubDirHistBkg[bkgIdx]), cent, drap, dphi, ctheta);
-        histos.fill(HIST("RecoCorrBkg/h2f_n2_dltaR_") + HIST(SubDirHistBkg[bkgIdx]), cent, dR, ctheta);
+        constexpr int BkgIdx = static_cast<int>(part_pair) - 4;
+        histos.fill(HIST("RecoCorrBkg/h2f_n2_ctheta_") + HIST(SubDirHistBkg[BkgIdx]), cent, drap, dphi, ctheta);
+        histos.fill(HIST("RecoCorrBkg/h2f_n2_dltaR_") + HIST(SubDirHistBkg[BkgIdx]), cent, dR, ctheta);
       }
     }
 
     if (cDoStarMethod) {
-      std::array<float, 4> pr1_star = pr1;
-      std::array<float, 4> pr2_star = pr2;
+      std::array<float, 4> pr1Star = pr1;
+      std::array<float, 4> pr2Star = pr2;
 
-      std::array<float, 3> v1_lab, v2_lab;
-      getBoostVector(l1, v1_lab, cInvBoostFlag);
-      getBoostVector(l2, v2_lab, cInvBoostFlag);
-      boost(pr1_star, v1_lab);
-      boost(pr2_star, v2_lab);
+      std::array<float, 3> v1Lab, v2Lab;
+      getBoostVector(l1, v1Lab, cInvBoostFlag);
+      getBoostVector(l2, v2Lab, cInvBoostFlag);
+      boost(pr1Star, v1Lab);
+      boost(pr2Star, v2Lab);
 
-      std::array<float, 3> pr1tv_star = {pr1_star[0], pr1_star[1], pr1_star[2]};
-      std::array<float, 3> pr2tv_star = {pr2_star[0], pr2_star[1], pr2_star[2]};
+      std::array<float, 3> pr1tvStar = {pr1Star[0], pr1Star[1], pr1Star[2]};
+      std::array<float, 3> pr2tvStar = {pr2Star[0], pr2Star[1], pr2Star[2]};
       float ctheta =
-        RecoDecay::dotProd(pr1tv_star, pr2tv_star) /
-        (RecoDecay::sqrtSumOfSquares(pr1tv_star[0], pr1tv_star[1], pr1tv_star[2]) *
-         RecoDecay::sqrtSumOfSquares(pr2tv_star[0], pr2tv_star[1], pr2tv_star[2]));
+        RecoDecay::dotProd(pr1tvStar, pr2tvStar) /
+        (RecoDecay::sqrtSumOfSquares(pr1tvStar[0], pr1tvStar[1], pr1tvStar[2]) *
+         RecoDecay::sqrtSumOfSquares(pr2tvStar[0], pr2tvStar[1], pr2tvStar[2]));
 
-      if constexpr (!isBkg) {
+      if constexpr (!IsBkg) {
         histos.fill(HIST("RecoCorr/h2f_n2_ctheta_") + HIST(SubDirHistUS[part_pair]), cent, drap, dphi, ctheta);
         histos.fill(HIST("RecoCorr/h2f_n2_dltaR_") + HIST(SubDirHistUS[part_pair]), cent, dR, ctheta);
       } else {
-        constexpr int bkgIdx = (int)part_pair - 4;
-        histos.fill(HIST("RecoCorrBkg/h2f_n2_ctheta_") + HIST(SubDirHistBkg[bkgIdx]), cent, drap, dphi, ctheta);
-        histos.fill(HIST("RecoCorrBkg/h2f_n2_dltaR_") + HIST(SubDirHistBkg[bkgIdx]), cent, dR, ctheta);
+        constexpr int BkgIdx = static_cast<int>(part_pair) - 4;
+        histos.fill(HIST("RecoCorrBkg/h2f_n2_ctheta_") + HIST(SubDirHistBkg[BkgIdx]), cent, drap, dphi, ctheta);
+        histos.fill(HIST("RecoCorrBkg/h2f_n2_dltaR_") + HIST(SubDirHistBkg[BkgIdx]), cent, dR, ctheta);
       }
     }
   }
@@ -1949,7 +1949,7 @@ struct LambdaSpinPolarization {
 
       decltype(&*trks_2.begin()) currentPartner = nullptr;
 
-      for (auto const* trk_2 : candidates) {
+      for (auto const& trk_2 : candidates) {
 
         if constexpr (samelambda) {
           if (trk_1.index() == trk_2->index())
@@ -2071,36 +2071,36 @@ struct LambdaSpinPolarization {
       histos.fill(HIST("QA/ME/hPoolCentVz"), col1.cent(), col1.posZ());
 
       // Lambda slices
-      auto lambdaTracks_col1 = partLambdaTracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, col1.globalIndex(), cache);
-      auto lambdaTracks_col2 = partLambdaTracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, col2.globalIndex(), cache);
+      auto lambdaTracksCol1 = partLambdaTracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, col1.globalIndex(), cache);
+      auto lambdaTracksCol2 = partLambdaTracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, col2.globalIndex(), cache);
 
       // Anti-lambda slices
-      auto antiLambdaTracks_col1 = partAntiLambdaTracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, col1.globalIndex(), cache);
-      auto antiLambdaTracks_col2 = partAntiLambdaTracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, col2.globalIndex(), cache);
+      auto antiLambdaTracksCol1 = partAntiLambdaTracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, col1.globalIndex(), cache);
+      auto antiLambdaTracksCol2 = partAntiLambdaTracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, col2.globalIndex(), cache);
 
       // Fake lambda slices (LS background)
-      auto fakeLambdaTracks_col2 = partFakeLambdaTracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, col2.globalIndex(), cache);
-      auto fakeAntiLambdaTracks_col2 = partFakeAntiLambdaTracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, col2.globalIndex(), cache);
+      auto fakeLambdaTracksCol2 = partFakeLambdaTracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, col2.globalIndex(), cache);
+      auto fakeAntiLambdaTracksCol2 = partFakeAntiLambdaTracks->sliceByCached(aod::lambdatrack::lambdaCollisionId, col2.globalIndex(), cache);
 
       // QA: multiplicities
-      histos.fill(HIST("QA/ME/hLambdaMultVsCent"), col1.cent(), lambdaTracks_col1.size());
-      histos.fill(HIST("QA/ME/hAntiLambdaMultVsCent"), col1.cent(), antiLambdaTracks_col1.size());
+      histos.fill(HIST("QA/ME/hLambdaMultVsCent"), col1.cent(), lambdaTracksCol1.size());
+      histos.fill(HIST("QA/ME/hAntiLambdaMultVsCent"), col1.cent(), antiLambdaTracksCol1.size());
 
-      analyzePairsME<kLambdaAntiLambda, false>(lambdaTracks_col1, antiLambdaTracks_col2);
-      analyzePairsME<kAntiLambdaLambda, false>(antiLambdaTracks_col1, lambdaTracks_col2);
-      analyzePairsME<kLambdaLambda, true>(lambdaTracks_col1, lambdaTracks_col2);
-      analyzePairsME<kAntiLambdaAntiLambda, true>(antiLambdaTracks_col1, antiLambdaTracks_col2);
+      analyzePairsME<kLambdaAntiLambda, false>(lambdaTracksCol1, antiLambdaTracksCol2);
+      analyzePairsME<kAntiLambdaLambda, false>(antiLambdaTracksCol1, lambdaTracksCol2);
+      analyzePairsME<kLambdaLambda, true>(lambdaTracksCol1, lambdaTracksCol2);
+      analyzePairsME<kAntiLambdaAntiLambda, true>(antiLambdaTracksCol1, antiLambdaTracksCol2);
 
-      analyzePairsME<kLambdaFakeAntiLambda, false>(lambdaTracks_col1, fakeAntiLambdaTracks_col2);
-      analyzePairsME<kLambdaFakeAntiLambda, false>(fakeLambdaTracks_col2, antiLambdaTracks_col1);
+      analyzePairsME<kLambdaFakeAntiLambda, false>(lambdaTracksCol1, fakeAntiLambdaTracksCol2);
+      analyzePairsME<kLambdaFakeAntiLambda, false>(fakeLambdaTracksCol2, antiLambdaTracksCol1);
 
-      analyzePairsME<kAntiLambdaFakeLambda, false>(antiLambdaTracks_col1, fakeLambdaTracks_col2);
-      analyzePairsME<kAntiLambdaFakeLambda, false>(fakeAntiLambdaTracks_col2, lambdaTracks_col1);
+      analyzePairsME<kAntiLambdaFakeLambda, false>(antiLambdaTracksCol1, fakeLambdaTracksCol2);
+      analyzePairsME<kAntiLambdaFakeLambda, false>(fakeAntiLambdaTracksCol2, lambdaTracksCol1);
 
-      analyzePairsME<kLambdaFakeLambda, false>(lambdaTracks_col1, fakeLambdaTracks_col2);
-      analyzePairsME<kLambdaFakeLambda, false>(fakeLambdaTracks_col2, lambdaTracks_col1);
-      analyzePairsME<kAntiLambdaFakeAntiLambda, false>(antiLambdaTracks_col1, fakeAntiLambdaTracks_col2);
-      analyzePairsME<kAntiLambdaFakeAntiLambda, false>(fakeAntiLambdaTracks_col2, antiLambdaTracks_col1);
+      analyzePairsME<kLambdaFakeLambda, false>(lambdaTracksCol1, fakeLambdaTracksCol2);
+      analyzePairsME<kLambdaFakeLambda, false>(fakeLambdaTracksCol2, lambdaTracksCol1);
+      analyzePairsME<kAntiLambdaFakeAntiLambda, false>(antiLambdaTracksCol1, fakeAntiLambdaTracksCol2);
+      analyzePairsME<kAntiLambdaFakeAntiLambda, false>(fakeAntiLambdaTracksCol2, antiLambdaTracksCol1);
     }
   }
 
