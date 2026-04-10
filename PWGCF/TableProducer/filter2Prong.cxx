@@ -851,18 +851,18 @@ struct Filter2Prong {
             continue;
           }
 
-          ROOT::Math::PtEtaPhiMVector vec1(p1.pt(), p1.eta(), p1.phi(), cfgImPart1Mass);
-          ROOT::Math::PtEtaPhiMVector vec2(p2.pt(), p2.eta(), p2.phi(), cfgImPart2Mass);
-          ROOT::Math::PtEtaPhiMVector s = vec1 + vec2;
-
-          if (s.M() < grpPhi.ImMinInvMassPhiMeson || s.M() > grpPhi.ImMaxInvMassPhiMeson) {
-            continue;
-          }
-
-          float phi = RecoDecay::constrainAngle(s.Phi(), 0.0f);
-
           if (selectionPID3(p1) && selectionPID3(p2)) {
             if (selectionSys(p1, false, false) && selectionSys(p2, false, false)) {
+              ROOT::Math::PtEtaPhiMVector vec1(p1.pt(), p1.eta(), p1.phi(), cfgImPart1Mass);
+              ROOT::Math::PtEtaPhiMVector vec2(p2.pt(), p2.eta(), p2.phi(), cfgImPart2Mass);
+              ROOT::Math::PtEtaPhiMVector s = vec1 + vec2;
+
+              if (s.M() < grpPhi.ImMinInvMassPhiMeson || s.M() > grpPhi.ImMaxInvMassPhiMeson) {
+                continue;
+              }
+
+              float phi = RecoDecay::constrainAngle(s.Phi(), 0.0f);
+
               output2ProngTracks(collision1.globalIndex(),
                                  cftrack1.globalIndex(), cftrack2.globalIndex(),
                                  s.pt(), s.eta(), phi, s.M(),
