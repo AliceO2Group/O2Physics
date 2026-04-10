@@ -37,7 +37,7 @@ class TrackSmearer
   void useEfficiency(bool val) { mUseEfficiency = val; }
   void interpolateEfficiency(bool val) { mInterpolateEfficiency = val; }
   void skipUnreconstructed(bool val) { mSkipUnreconstructed = val; }
-  void setWhatEfficiency(int val) { mWhatEfficiency = val; }
+  void setWhatEfficiency(int val);
 
   const lutHeader_t* getLUTHeader(int pdg) const;
   const lutEntry_t* getLUTEntry(int pdg, float nch, float radius, float eta, float pt, float& interpolatedEff) const;
@@ -60,7 +60,6 @@ class TrackSmearer
 
  protected:
   static constexpr unsigned int nLUTs = 9; // Number of LUT available
-  lutHeader_t const* mHeaders[nLUTs];      // header references for quick access
   FlatLutData mLUTData[nLUTs];             // Flat data storage
 
   bool mUseEfficiency = true;
