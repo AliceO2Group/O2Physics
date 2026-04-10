@@ -53,7 +53,7 @@ struct PhotonDeuteron {
   Configurable<float> cfgDeuteronNSigmaTOFMax{"cfgDeuteronNSigmaTOFMax", 3.0, "Maximum NSigma TOF for deuteron"};
 
   Configurable<float> cfgV0CosPA{"cfgV0CosPA", 0.995, "Minimum V0 cosine of pointing angle"};
-  Configurable<float> cfgV0Radius{"cfgV0Radius", 5.0, "Minimum V0 radius (cm)"};
+  Configurable<float> cfgV0Radius{"cfgV0Radius", 5.0, "Minimum V0 radius in cm"};
   Configurable<bool> cfgUsePhotonDaughterPIDTPCOnly{"cfgUsePhotonDaughterPIDTPCOnly", true, "Use TPC-only PID for photon daughters"};
 
   // Initialize histograms
