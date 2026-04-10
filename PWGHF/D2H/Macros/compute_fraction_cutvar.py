@@ -16,6 +16,7 @@ import numpy as np  # pylint: disable=import-error
 import ROOT  # pylint: disable=import-error
 sys.path.insert(0, '..')
 from cut_variation import CutVarMinimiser
+from cut_variation import MinimisationStatus
 from style_formatter import set_object_style
 
 # pylint: disable=no-member,too-many-locals,too-many-statements
@@ -100,7 +101,8 @@ def main(config):
     hist_covariance_npnp = hist_rawy[0].Clone("hCovNonPromptNonPrompt")
     hist_corrfrac_prompt = hist_rawy[0].Clone("hCorrFracPrompt")
     hist_corrfrac_nonprompt = hist_rawy[0].Clone("hCorrFracNonPrompt")
-    for histo in hist_corry_prompt, hist_corry_nonprompt, hist_covariance_pnp, hist_covariance_pp, hist_covariance_npnp, hist_corrfrac_prompt, hist_corrfrac_nonprompt:
+    hist_minimisation_status = hist_rawy[0].Clone("hMinimizationStatus")
+    for histo in hist_corry_prompt, hist_corry_nonprompt, hist_covariance_pnp, hist_covariance_pp, hist_covariance_npnp, hist_corrfrac_prompt, hist_corrfrac_nonprompt, hist_minimisation_status:
         histo.Reset()
     hist_corry_prompt.GetYaxis().SetTitle("corrected yields prompt")
     hist_corry_nonprompt.GetYaxis().SetTitle("corrected yields non-prompt")
@@ -109,6 +111,12 @@ def main(config):
     hist_covariance_npnp.GetYaxis().SetTitle("#sigma(non-prompt, non-prompt)")
     hist_corrfrac_prompt.GetYaxis().SetTitle("corrected fraction prompt")
     hist_corrfrac_nonprompt.GetYaxis().SetTitle("corrected fraction non-prompt")
+    hist_minimisation_status.GetYaxis().SetTitle("minimisation status")
+    hist_minimisation_status_title = ""
+    for min_status in MinimisationStatus:
+        hist_minimisation_status_title += (str(min_status.value) + " = " + min_status.name + ", ")
+    hist_minimisation_status_title = hist_minimisation_status_title[:-2]
+    hist_minimisation_status.SetTitle(hist_minimisation_status_title)
     set_object_style(
         hist_corry_prompt,
         color=ROOT.kRed + 1,
@@ -124,6 +132,7 @@ def main(config):
     set_object_style(hist_covariance_pnp)
     set_object_style(hist_covariance_pp)
     set_object_style(hist_covariance_npnp)
+    set_object_style(hist_minimisation_status)
     set_object_style(
         hist_corrfrac_prompt,
         color=ROOT.kRed + 1,
@@ -168,6 +177,7 @@ def main(config):
     for ipt in range(hist_rawy[0].GetNbinsX()):
         if pt_bin_to_process !=-1 and ipt+1 != pt_bin_to_process:
             continue
+        all_vectors_monotonous = MinimisationStatus.Success
         pt_min = hist_rawy[0].GetXaxis().GetBinLowEdge(ipt + 1)
         pt_max = hist_rawy[0].GetXaxis().GetBinUpEdge(ipt + 1)
         print(f"\n\nINFO: processing pt range {ipt+1} from {pt_min} to {pt_max} {pt_axis_title}")
@@ -183,16 +193,18 @@ def main(config):
 
         if cfg["minimisation"]["correlated"]:
             if not (np.all(rawy[1:] > rawy[:-1]) or np.all(rawy[1:] < rawy[:-1])):
+                all_vectors_monotonous = MinimisationStatus.MonotonyViolation
                 print("\0\33[33mWARNING! main(): the raw yield vector is not monotonous. Check the input for stability.\0\33[0m")
                 print(f"raw yield vector elements = {rawy}\n")
             if not (np.all(unc_rawy[1:] > unc_rawy[:-1]) or np.all(unc_rawy[1:] < unc_rawy[:-1])):
+                all_vectors_monotonous = MinimisationStatus.MonotonyViolation
                 print("\0\33[33mWARNING! main(): the raw yield uncertainties vector is not monotonous. Check the input for stability.\0\33[0m")
                 print(f"raw yield uncertainties vector elements = {unc_rawy}\n")
 
         minimiser = CutVarMinimiser(rawy, effp, effnp, unc_rawy, unc_effp, unc_effnp)
         status = minimiser.minimise_system(cfg["minimisation"]["correlated"])
 
-        if status:
+        if status != MinimisationStatus.Fail:
             hist_corry_prompt.SetBinContent(ipt + 1, minimiser.get_prompt_yield_and_error()[0])
             hist_corry_prompt.SetBinError(ipt + 1, minimiser.get_prompt_yield_and_error()[1])
             hist_corry_nonprompt.SetBinContent(ipt + 1, minimiser.get_nonprompt_yield_and_error()[0])
@@ -209,6 +221,7 @@ def main(config):
             hist_corrfrac_prompt.SetBinError(ipt + 1, corr_frac_prompt[1])
             hist_corrfrac_nonprompt.SetBinContent(ipt + 1, corr_frac_nonprompt[0])
             hist_corrfrac_nonprompt.SetBinError(ipt + 1, corr_frac_nonprompt[1])
+            hist_minimisation_status.SetBinContent(ipt + 1, max(status, all_vectors_monotonous))
             if cfg["central_efficiency"]["computerawfrac"]:
                 raw_frac_prompt = minimiser.get_raw_prompt_fraction(
                     hist_central_effp.GetBinContent(ipt + 1), hist_central_effnp.GetBinContent(ipt + 1)
@@ -268,10 +281,12 @@ def main(config):
                 canv_cov.SaveAs(f"canv_cov_{ipt+1}.C")
         else:
             print(f"Minimization for pT {pt_min}, {pt_max} not successful")
+            hist_minimisation_status.SetBinContent(ipt + 1, MinimisationStatus.Fail)
             canv_rawy = ROOT.TCanvas("c_rawy_minimization_error", "Minimization error", 500, 500)
             canv_eff = ROOT.TCanvas("c_eff_minimization_error", "Minimization error", 500, 500)
             canv_frac = ROOT.TCanvas("c_frac_minimization_error", "Minimization error", 500, 500)
             canv_cov = ROOT.TCanvas("c_conv_minimization_error", "Minimization error", 500, 500)
+            canv_unc = ROOT.TCanvas("c_unc_minimization_error", "Minimization error", 500, 500)
 
         canv_combined = ROOT.TCanvas(f"canv_combined_{ipt}", "", 1000, 1000)
         canv_combined.Divide(2, 2)
@@ -316,6 +331,7 @@ def main(config):
     hist_covariance_npnp.Write()
     hist_corrfrac_prompt.Write()
     hist_corrfrac_nonprompt.Write()
+    hist_minimisation_status.Write()
     if cfg["central_efficiency"]["computerawfrac"]:
         hist_frac_raw_prompt.Write()
         hist_frac_raw_nonprompt.Write()
