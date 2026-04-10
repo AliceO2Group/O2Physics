@@ -57,7 +57,7 @@ using namespace o2::analysis::dptdptfilter;
 /// PDG codes above this threshold correspond to hadrons (mesons and baryons).
 /// Below are quarks (1-6), leptons (11-16), gauge bosons (21-25), and
 /// special/internal generator codes.
-static constexpr int KPdgHadronThreshold = 100; // o2-linter: disable=pdg/explicit-code(not a PDG code)
+static constexpr int KPdgHadronThreshold = 100; // o2-linter: disable=pdg/explicit-code (not a PDG code)
 
 /// the prompt origin label
 static constexpr std::string PromptStr = "prompt";
