@@ -17,16 +17,6 @@
 /// \brief  ...
 ///
 
-// C++/ROOT includes.
-#include <TString.h>
-#include <TVector2.h>
-
-#include <sys/types.h>
-
-#include <string>
-#include <vector>
-
-// o2Physics includes.
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/DataModel/EventSelection.h"
@@ -43,7 +33,14 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-// o2 includes.
+#include <TMath.h>
+#include <TString.h>
+#include <TVector2.h>
+
+#include <sys/types.h>
+
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
