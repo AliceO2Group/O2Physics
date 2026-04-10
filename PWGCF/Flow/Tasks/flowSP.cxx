@@ -1379,9 +1379,9 @@ struct FlowSP {
       }
       double centW = cfg.hCentrality->GetBinContent(cfg.hCentrality->FindBin(spm.centrality));
       if (centW < 0) {
-        spm.centWeight = 0.; 
+        spm.centWeight = 0.;
         LOGF(fatal, "Centrality weight cannot be negative .. setting to 0. for (%.2f)", spm.centrality);
-       }
+      }
     }
 
     fillEventQA<kAfter>(collision, tracks);
