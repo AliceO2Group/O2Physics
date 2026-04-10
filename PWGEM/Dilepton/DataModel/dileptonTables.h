@@ -1222,10 +1222,11 @@ using EMPrimaryTrackEMEventIdTMP = EMPrimaryTrackEMEventIdsTMP::iterator;
 namespace emthinevent
 {
 DECLARE_SOA_COLUMN(EP2, ep2, float); //!
+DECLARE_SOA_COLUMN(Centrality, centrality, float); //!
 } // namespace emthinevent
 DECLARE_SOA_TABLE_VERSIONED(EMThinEvents_000, "AOD", "EMTHINEVENT", 0, //! Thin event information table
                             o2::soa::Index<>, bc::RunNumber, bc::GlobalBC, timestamp::Timestamp, collision::PosZ,
-                            evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, cent::CentFT0C, emthinevent::EP2);
+                            evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, emthinevent::Centrality, emthinevent::EP2);
 using EMThinEvents = EMThinEvents_000;
 using EMThinEvent = EMThinEvents::iterator;
 

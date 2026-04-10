@@ -85,9 +85,9 @@ enum {
   kSpOther,
   kSpStrangeDecay,
   kBkg,
-  kFake,
   kSpNotPrimary,
   kSpAll,
+  kFake,
   kSpeciesend
 };
 
@@ -207,6 +207,10 @@ struct HeavyionMultiplicity {
   Configurable<bool> isApplyCentMFT{"isApplyCentMFT", false, "Centrality based on MFT tracks"};
   Configurable<bool> isApplyTVX{"isApplyTVX", false, "Enable TVX trigger sel"};
   Configurable<bool> isApplyExtraPhiCut{"isApplyExtraPhiCut", false, "Enable extra phi cut"};
+
+  Configurable<bool> selectCollidingBCs{"selectCollidingBCs", true, "BC analysis: select colliding BCs"};
+  Configurable<bool> selectTVX{"selectTVX", true, "BC analysis: select TVX"};
+  Configurable<bool> selectFV0OrA{"selectFV0OrA", true, "BC analysis: select FV0OrA"};
 
   void init(InitContext const&)
   {
@@ -356,6 +360,18 @@ struct HeavyionMultiplicity {
       histos.add("hRecMCphivseta", "hRecMCphivseta", kTH2D, {axisPhi2, axisEta}, false);
       histos.add("hRecMCdndeta", "hRecMCdndeta", kTHnSparseD, {axisVtxZ, centAxis, axisOccupancy, axisEta, axisPhi, axisRecTrkType}, false);
       histos.add("etaResolution", "etaResolution", kTH2D, {axisEta, axisDeltaEta});
+    }
+
+    if (doprocessBcData) {
+      histos.add("BcHist", "BcHist", kTH1D, {axisEvent}, false);
+      auto hstat = histos.get<TH1>(HIST("BcHist"));
+      auto* x = hstat->GetXaxis();
+      x->SetBinLabel(1, "All BCs");
+      x->SetBinLabel(2, "Colliding BCs");
+      x->SetBinLabel(3, "TVX");
+      x->SetBinLabel(4, "FV0OrA");
+      histos.add("BcCentFT0CHist", "BcCentFT0CHist", kTH1D, {axisCent}, false);
+      histos.add("BcCentFT0MHist", "BcCentFT0MHist", kTH1D, {axisCent}, false);
     }
   }
 
@@ -971,6 +987,22 @@ struct HeavyionMultiplicity {
     } // collision loop
   }
 
+  void processBcData(soa::Join<aod::BC2Mults, aod::MultBCs, aod::BCCentFT0Cs, aod::BCCentFT0Ms>::iterator const& multbc)
+  {
+    histos.fill(HIST("BcHist"), 1); // all BCs
+    if (selectCollidingBCs && !multbc.multCollidingBC())
+      return;
+    histos.fill(HIST("BcHist"), 2); // colliding
+    if (selectTVX && !multbc.multTVX())
+      return;
+    histos.fill(HIST("BcHist"), 3); // TVX
+    if (selectFV0OrA && !multbc.multFV0OrA())
+      return;
+    histos.fill(HIST("BcHist"), 4); // FV0OrA
+    histos.fill(HIST("BcCentFT0CHist"), multbc.centFT0C());
+    histos.fill(HIST("BcCentFT0MHist"), multbc.centFT0M());
+  }
+
   PROCESS_SWITCH(HeavyionMultiplicity, processData, "process data CentFT0C", false);
   PROCESS_SWITCH(HeavyionMultiplicity, processCorrelation, "do correlation study in data", false);
   PROCESS_SWITCH(HeavyionMultiplicity, processMonteCarlo, "process MC CentFT0C", false);
@@ -979,6 +1011,7 @@ struct HeavyionMultiplicity {
   PROCESS_SWITCH(HeavyionMultiplicity, processGen, "process pure MC gen", false);
   PROCESS_SWITCH(HeavyionMultiplicity, processEvtLossSigLossMC, "process Signal Loss, Event Loss", false);
   PROCESS_SWITCH(HeavyionMultiplicity, processMCeff, "process extra efficiency function", false);
+  PROCESS_SWITCH(HeavyionMultiplicity, processBcData, "process BC Centrality", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

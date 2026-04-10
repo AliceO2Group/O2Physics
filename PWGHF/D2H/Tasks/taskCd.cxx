@@ -87,13 +87,13 @@ DECLARE_SOA_COLUMN(NSigmaItsDe, nSigmaItsDe, float);            //! ITS nσ for 
 DECLARE_SOA_COLUMN(NSigmaTofDe, nSigmaTofDe, float);            //! TOF nσ for deuteron hypothesis
 DECLARE_SOA_COLUMN(NSigmaTofKa, nSigmaTofKa, float);            //! TOF nσ for kaon hypothesis
 DECLARE_SOA_COLUMN(NSigmaTofPi, nSigmaTofPi, float);            //! TOF nσ for pion hypothesis
-DECLARE_SOA_COLUMN(NItsClusters, nItsClusters, int8_t);         //! Number of ITS clusters used in the track fit
-DECLARE_SOA_COLUMN(NItsNClusterSize, nItsNClusterSize, int8_t); //! Number of ITS clusters size used in the track fit
-DECLARE_SOA_COLUMN(NTpcClusters, nTpcClusters, int8_t);         //! Number of TPC clusters used in the track fit
-DECLARE_SOA_COLUMN(NTpcSignalsDe, nTpcSignalsDe, int8_t);       //! Number of TPC signas for deuteron
-DECLARE_SOA_COLUMN(NTpcSignalsPi, nTpcSignalsPi, int8_t);       //! Number of TPC signas for pion
-DECLARE_SOA_COLUMN(NTpcSignalsKa, nTpcSignalsKa, int8_t);       //! Number of TPC signas for kaon
-DECLARE_SOA_COLUMN(NItsSignalsDe, nItsSignalsDe, int8_t);       //! Number of ITS signas
+DECLARE_SOA_COLUMN(NItsClusters, nItsClusters, float);          //! Number of ITS clusters used in the track fit
+DECLARE_SOA_COLUMN(NItsNClusterSize, nItsNClusterSize, float);  //! Number of ITS clusters size used in the track fit
+DECLARE_SOA_COLUMN(NTpcClusters, nTpcClusters, float);          //! Number of TPC clusters used in the track fit
+DECLARE_SOA_COLUMN(NTpcSignalsDe, nTpcSignalsDe, float);        //! Number of TPC signas for deuteron
+DECLARE_SOA_COLUMN(NTpcSignalsPi, nTpcSignalsPi, float);        //! Number of TPC signas for pion
+DECLARE_SOA_COLUMN(NTpcSignalsKa, nTpcSignalsKa, float);        //! Number of TPC signas for kaon
+DECLARE_SOA_COLUMN(NItsSignalsDe, nItsSignalsDe, float);        //! Number of ITS signas
 DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t); //! Candidates falg
 DECLARE_SOA_COLUMN(Cent, cent, float);                          //! Centrality
 DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);                  //! Global index for the collisionAdd commentMore actions

@@ -796,6 +796,8 @@ struct ResonanceInitializer {
                v0.dcapostopv(),
                v0.dcanegtopv(),
                v0.dcav0topv(),
+               static_cast<uint8_t>(v0.template posTrack_as<TrackType>().tpcNClsCrossedRows()),
+               static_cast<uint8_t>(v0.template negTrack_as<TrackType>().tpcNClsCrossedRows()),
                v0.mLambda(),
                v0.mAntiLambda(),
                v0.mK0Short(),
@@ -858,6 +860,9 @@ struct ResonanceInitializer {
                     casc.dcaXYCascToPV(),
                     casc.dcaZCascToPV(),
                     casc.sign(),
+                    static_cast<uint8_t>(casc.template posTrack_as<TrackType>().tpcNClsCrossedRows()),
+                    static_cast<uint8_t>(casc.template negTrack_as<TrackType>().tpcNClsCrossedRows()),
+                    static_cast<uint8_t>(casc.template bachelor_as<TrackType>().tpcNClsCrossedRows()),
                     casc.mLambda(),
                     casc.mXi(),
                     casc.v0radius(), casc.cascradius(), casc.x(), casc.y(), casc.z());
@@ -1736,6 +1741,9 @@ struct ResonanceInitializer {
     resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
     resoEvtPlCollisions(0, 0, 0, 0);
     fillMCCollision<false>(collision, mcParticles);
+    // Loop over all MC particles
+    auto mcParts = selectedMCParticles->sliceBy(perMcCollision, collision.mcCollision().globalIndex());
+    fillMCParticles(mcParts, mcParticles);
 
     // Loop over tracks
     if (FilterForDerivedTables.cfgBypassNoPairV0s && (V0s.size() < 1)) {
@@ -1746,10 +1754,6 @@ struct ResonanceInitializer {
       fillMicroTracks<true>(collision, tracks);
     }
     fillV0s<true>(collision, V0s, tracks);
-
-    // Loop over all MC particles
-    auto mcParts = selectedMCParticles->sliceBy(perMcCollision, collision.mcCollision().globalIndex());
-    fillMCParticles(mcParts, mcParticles);
   }
   PROCESS_SWITCH(ResonanceInitializer, processTrackV0MC, "Process for MC", false);
 
@@ -1825,6 +1829,9 @@ struct ResonanceInitializer {
       mult = mcCollision.multMCNParticlesEta10();
 
     fillMCCollision<false>(collision, mcParticles, impactpar, mult);
+    // Loop over all MC particles
+    auto mcParts = selectedMCParticles->sliceBy(perMcCollision, mcId);
+    fillMCParticles(mcParts, mcParticles);
 
     // Loop over tracks
     if (FilterForDerivedTables.cfgBypassNoPairV0s && (V0s.size() < 1)) {
@@ -1839,16 +1846,11 @@ struct ResonanceInitializer {
     }
     fillV0s<true>(collision, V0s, tracks);
     fillCascades<true>(collision, Cascades, tracks);
-
-    // Loop over all MC particles
-    auto mcParts = selectedMCParticles->sliceBy(perMcCollision, mcId);
-    fillMCParticles(mcParts, mcParticles);
   }
   PROCESS_SWITCH(ResonanceInitializer, processTrackV0CascMC, "Process for MC", false);
 
   //  Following the discussions at the PAG meeting (https://indico.cern.ch/event/1583408/)
   //  we have introduced an auxiliary task that, when the resonanceInitializer.cxx is used,
-  // Only consider N_rec / N_gen i.e. not consider level of N_gen at least once
   void processMCgen(soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::MultMCExtras>::iterator const& mcCollision,
                     aod::McParticles const& mcParticles,
                     const soa::SmallGroups<o2::soa::Join<ResoEvents001, aod::McCollisionLabels>>& collisions,

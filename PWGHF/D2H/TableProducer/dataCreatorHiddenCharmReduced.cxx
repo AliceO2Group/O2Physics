@@ -83,11 +83,19 @@ struct HfDataCreatorHiddenCharmReduced {
     Configurable<int> tpcNClsCrossedRowsMin{"tpcNClsCrossedRowsMin", 80, "Minimum number of crossed TPC rows"};
     Configurable<double> ptMinTrack{"ptMinTrack", 0.5, "Minimum proton-track pT"};
     Configurable<double> etaMaxTrack{"etaMaxTrack", 0.8, "Maximum proton-track |eta|"};
-    Configurable<float> momForCombinedPid{"momForCombinedPid", 0.75f, "Momentum threshold above which combined TPC+TOF proton PID is used"};
+    Configurable<float> trackChi2Cut{"trackChi2Cut", 4.f, "Maximum chi2/ncls in TPC"};
+    Configurable<float> trackMinChi2Cut{"trackMinChi2Cut", 0.f, "Minimum chi2/ncls in TPC"};
+    Configurable<float> trackMaxChi2ITS{"trackMaxChi2ITS", 36.f, "Maximum chi2/ncls in ITS"};
     Configurable<std::vector<double>> binsPtTrack{"binsPtTrack", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "Track pT bin limits for DCA cuts"};
     Configurable<LabeledArray<double>> cutsTrack{"cutsTrack", {hf_cuts_single_track::CutsTrack[0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track DCA selections per pT bin"};
+    // DCA
+    Configurable<std::vector<float>> paramsDCAxyPtDep{"paramsDCAxyPtDep", std::vector<float>{0.0010, 0.0080, 0.73}, "Parameters for pT-dependent DCAxy cut: p0, p1, p2 for cut = p0 + p1/pt^p2"};
+    Configurable<std::vector<float>> paramsDCAzPtDep{"paramsDCAzPtDep", std::vector<float>{-0.0044, 0.0152, 0.47}, "Parameters for pT-dependent DCAz cut: p0, p1, p2 for cut = p0 + p1/pt^p2"};
+    // PID
+    Configurable<float> momForCombinedPid{"momForCombinedPid", 0.75f, "Momentum threshold above which combined TPC+TOF proton PID is used"};
     Configurable<float> maxNsigmaTofPi{"maxNsigmaTofPi", 2.f, "Maximum pion n-sigma in TOF for proton rejection"};
     Configurable<float> maxNsigmaTofKa{"maxNsigmaTofKa", 2.f, "Maximum kaon n-sigma in TOF for proton rejection"};
+    Configurable<float> maxNsigmaTofPr{"maxNsigmaTofPr", 3.f, "Maximum proton n-sigma in TOF"};
     Configurable<float> maxNsigmaCombinedPr{"maxNsigmaCombinedPr", 3.f, "Maximum combined proton n-sigma from TPC and TOF"};
     Configurable<float> maxNsigmaTpcPi{"maxNsigmaTpcPi", 2.f, "Maximum pion n-sigma in TPC for proton rejection"};
     Configurable<float> maxNsigmaTpcKa{"maxNsigmaTpcKa", 2.f, "Maximum kaon n-sigma in TPC for proton rejection"};
@@ -148,6 +156,7 @@ struct HfDataCreatorHiddenCharmReduced {
       registry.add("hNSigmaTPCProton", "Selected proton tracks;#it{p}_{T}^{track} (GeV/#it{c});n#sigma_{TPC}", {HistType::kTH2D, {axisPt, axisNSigma}});
       registry.add("hNSigmaTOFProton", "Selected proton tracks;#it{p}_{T}^{track} (GeV/#it{c});n#sigma_{TOF}", {HistType::kTH2D, {axisPt, axisNSigma}});
       registry.add("hInvMass", "Invariant mass of selected proton with all other tracks in the event;#it{p}_{T}^{proton} (GeV/#it{c});invariant mass with other tracks (GeV/#it{c}^{2})", {HistType::kTH2D, {axisPt, AxisSpec{100, 2.85, 3.25, "invariant mass with other tracks (GeV/#it{c}^{2})"}}});
+      registry.add("hDeDxTPCProton", "Selected proton tracks;#it{p}_{T}^{track} (GeV/#it{c});TPC dE/dx (a.u.)", {HistType::kTH2D, {axisPt, AxisSpec{100, 0., 200., "TPC dE/dx (a.u.)"}}});
     }
 
     // init HF event selection helper
@@ -161,6 +170,11 @@ struct HfDataCreatorHiddenCharmReduced {
         break;
       }
     }
+  }
+
+  static float dcaSigma(float const& pt, float const& p0, float const& p1, float const& p2)
+  {
+    return p0 + p1 / std::pow(std::abs(pt), p2);
   }
 
   template <typename TTrack>
@@ -188,10 +202,17 @@ struct HfDataCreatorHiddenCharmReduced {
     bool rejectAsPion = false;
     bool rejectAsKaon = false;
 
-    if (mom < momForCombinedPid || !hasTOF) {
+    if (mom < momForCombinedPid) {
       isProton = std::abs(nSigmaTPCPr) < maxNsigmaTpcPr;
       rejectAsPion = std::abs(nSigmaTPCPi) < maxNsigmaTpcPi;
       rejectAsKaon = std::abs(nSigmaTPCKa) < maxNsigmaTpcKa;
+
+      if (hasTOF) {
+        rejectAsPion = rejectAsPion || std::abs(track.tofNSigmaPi()) < maxNsigmaTofPi;
+        rejectAsKaon = rejectAsKaon || std::abs(track.tofNSigmaKa()) < maxNsigmaTofKa;
+        isProton = isProton || std::abs(track.tofNSigmaPr()) < maxNsigmaCombinedPr;
+      }
+
     } else {
       const float nSigmaTOFPr = track.tofNSigmaPr();
       const float nSigmaTOFPi = track.tofNSigmaPi();
@@ -211,6 +232,11 @@ struct HfDataCreatorHiddenCharmReduced {
     const int itsNClsMin = config.itsNClsMin.value;
     const double etaMaxTrack = config.etaMaxTrack.value;
     const double ptMinTrack = config.ptMinTrack.value;
+    const float trackChi2Cut = config.trackChi2Cut.value;
+    const float trackMinChi2Cut = config.trackMinChi2Cut.value;
+    const float trackMaxChi2ITS = config.trackMaxChi2ITS.value;
+    const float dcaXY = track.dcaXY();
+    const float dcaZ = track.dcaZ();
 
     if (!track.isGlobalTrackWoDCA()) {
       return false;
@@ -224,6 +250,12 @@ struct HfDataCreatorHiddenCharmReduced {
     if (track.itsNCls() < itsNClsMin) {
       return false;
     }
+    if (track.tpcChi2NCl() > trackChi2Cut || track.tpcChi2NCl() < trackMinChi2Cut) {
+      return false;
+    }
+    if (track.itsChi2NCl() > trackMaxChi2ITS) {
+      return false;
+    }
     if (std::abs(track.eta()) > etaMaxTrack) {
       return false;
     }
@@ -231,6 +263,9 @@ struct HfDataCreatorHiddenCharmReduced {
       return false;
     }
     if (!isSelectedTrackDca(config.binsPtTrack, config.cutsTrack, track.pt(), track.dcaXY(), track.dcaZ())) {
+      return false;
+    }
+    if (dcaSigma(track.pt(), config.paramsDCAxyPtDep.value[0], config.paramsDCAxyPtDep.value[1], config.paramsDCAxyPtDep.value[2]) > std::abs(dcaXY) || dcaSigma(track.pt(), config.paramsDCAzPtDep.value[0], config.paramsDCAzPtDep.value[1], config.paramsDCAzPtDep.value[2]) > std::abs(dcaZ)) {
       return false;
     }
     return isSelectedPid(track);
@@ -276,6 +311,7 @@ struct HfDataCreatorHiddenCharmReduced {
           registry.fill(HIST("hEtaCutsProton"), trk.eta());
           registry.fill(HIST("hDCAToPrimXYVsPtCutsProton"), trk.pt(), trk.dcaXY());
           registry.fill(HIST("hNSigmaTPCProton"), trk.pt(), trk.tpcNSigmaPr());
+          registry.fill(HIST("hDeDxTPCProton"), trk.pt(), trk.tpcSignal());
           if (trk.hasTOF()) {
             registry.fill(HIST("hNSigmaTOFProton"), trk.pt(), trk.tofNSigmaPr());
           }
