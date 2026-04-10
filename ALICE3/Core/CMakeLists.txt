@@ -12,7 +12,7 @@
 o2physics_add_library(ALICE3Core
                       SOURCES TOFResoALICE3.cxx
                               TrackUtilities.cxx
-                              DelphesO2TrackSmearer.cxx
+                              FlatTrackSmearer.cxx
                               GeometryContainer.cxx
                       PUBLIC_LINK_LIBRARIES O2::Framework
                                             O2Physics::AnalysisCore)
@@ -20,7 +20,7 @@ o2physics_add_library(ALICE3Core
 o2physics_target_root_dictionary(ALICE3Core
                       HEADERS TOFResoALICE3.h
                               TrackUtilities.h
-                              DelphesO2TrackSmearer.h
+                              FlatLutEntry.h
                               GeometryContainer.h
                       LINKDEF ALICE3CoreLinkDef.h)
 
