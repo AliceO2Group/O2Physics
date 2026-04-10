@@ -363,8 +363,8 @@ struct DileptonMC {
   {
     // event info
     o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms(&fRegistry);
-    fRegistry.add("MCEvent/before/hZvtx", "mc vertex z; Z_{vtx} (cm)", o2::framework::kTH1F, {{100, -50, +50}}, false);
-    fRegistry.add("MCEvent/before/hZvtx_rec", "rec. mc vertex z; Z_{vtx} (cm)", o2::framework::kTH1F, {{100, -50, +50}}, false);
+    fRegistry.add("MCEvent/before/hZvtx", "mc vertex z; Z_{vtx} (cm)", o2::framework::HistType::kTH1F, {{100, -50, +50}}, false);
+    fRegistry.add("MCEvent/before/hZvtx_rec", "rec. mc vertex z; Z_{vtx} (cm)", o2::framework::HistType::kTH1F, {{100, -50, +50}}, false);
     fRegistry.addClone("MCEvent/before/", "MCEvent/after/");
 
     std::string mass_axis_title = "m_{ll} (GeV/c^{2})";
@@ -420,7 +420,7 @@ struct DileptonMC {
     const o2::framework::AxisSpec axis_dphi_e_ee{cfg_nbin_dphi_e_ee, 0, M_PI, "#Delta#varphi = #varphi_{l} - #varphi_{ll} (rad.)"};                 // for kUPC
 
     // generated info
-    fRegistry.add("Generated/sm/PromptPi0/uls/hs", "gen. dilepton", o2::framework::kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_deta_ee, axis_cos_theta_pol, axis_phi_pol, axis_quadmom, axis_aco, axis_asym_pt, axis_dphi_e_ee}, true);
+    fRegistry.add("Generated/sm/PromptPi0/uls/hs", "gen. dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_deta_ee, axis_cos_theta_pol, axis_phi_pol, axis_quadmom, axis_aco, axis_asym_pt, axis_dphi_e_ee}, true);
     fRegistry.addClone("Generated/sm/PromptPi0/uls/", "Generated/sm/PromptPi0/lspp/");
     fRegistry.addClone("Generated/sm/PromptPi0/uls/", "Generated/sm/PromptPi0/lsmm/");
 
@@ -440,7 +440,7 @@ struct DileptonMC {
     // fRegistry.addClone("Generated/sm/PromptPi0/", "Generated/sm/Upsilon2S/");
     // fRegistry.addClone("Generated/sm/PromptPi0/", "Generated/sm/Upsilon3S/");
 
-    fRegistry.add("Generated/ccbar/c2l_c2l/uls/hs", "generated dilepton", o2::framework::kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_deta_ee, axis_cos_theta_pol, axis_phi_pol, axis_quadmom, axis_aco, axis_asym_pt, axis_dphi_e_ee}, true);
+    fRegistry.add("Generated/ccbar/c2l_c2l/uls/hs", "generated dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_deta_ee, axis_cos_theta_pol, axis_phi_pol, axis_quadmom, axis_aco, axis_asym_pt, axis_dphi_e_ee}, true);
     fRegistry.addClone("Generated/ccbar/c2l_c2l/uls/", "Generated/ccbar/c2l_c2l/lspp/");
     fRegistry.addClone("Generated/ccbar/c2l_c2l/uls/", "Generated/ccbar/c2l_c2l/lsmm/");
 
@@ -484,7 +484,7 @@ struct DileptonMC {
     }
 
     // evaluate acceptance for polarization
-    fRegistry.add("Generated/VM/All/Phi/hs", "gen. VM #rightarrow ll", o2::framework::kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_cos_theta_pol, axis_phi_pol, axis_quadmom}, true);
+    fRegistry.add("Generated/VM/All/Phi/hs", "gen. VM #rightarrow ll", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_cos_theta_pol, axis_phi_pol, axis_quadmom}, true);
     fRegistry.addClone("Generated/VM/All/Phi/", "Generated/VM/All/Rho/");
     fRegistry.addClone("Generated/VM/All/Phi/", "Generated/VM/All/Omega/");
     fRegistry.addClone("Generated/VM/All/Phi/", "Generated/VM/All/PromptJPsi/");
@@ -492,7 +492,7 @@ struct DileptonMC {
     fRegistry.addClone("Generated/VM/All/", "Generated/VM/Acc/");
 
     // reconstructed pair info
-    fRegistry.add("Pair/sm/Photon/uls/hs", "rec. dilepton", o2::framework::kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_deta_ee, axis_cos_theta_pol, axis_phi_pol, axis_quadmom, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_dca}, true);
+    fRegistry.add("Pair/sm/Photon/uls/hs", "rec. dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_deta_ee, axis_cos_theta_pol, axis_phi_pol, axis_quadmom, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_dca}, true);
 
     fRegistry.addClone("Pair/sm/Photon/uls/", "Pair/sm/Photon/lspp/");
     fRegistry.addClone("Pair/sm/Photon/uls/", "Pair/sm/Photon/lsmm/");
@@ -514,39 +514,39 @@ struct DileptonMC {
     // fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/Upsilon3S/");
 
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-      fRegistry.add("Pair/sm/Photon/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", o2::framework::kTH2F, {{90, 0, M_PI}, {100, 0.0f, 1.0f}}, true);
-      fRegistry.add("Pair/sm/Photon/uls/hMvsRxy", "m_{ee} vs. r_{xy};r_{xy}^{true} (cm);m_{ee} (GeV/c^{2})", o2::framework::kTH2F, {{100, 0, 100}, {100, 0.0f, 1.0f}}, true);
+      fRegistry.add("Pair/sm/Photon/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", o2::framework::HistType::kTH2F, {{90, 0, M_PI}, {100, 0.0f, 1.0f}}, true);
+      fRegistry.add("Pair/sm/Photon/uls/hMvsRxy", "m_{ee} vs. r_{xy};r_{xy}^{true} (cm);m_{ee} (GeV/c^{2})", o2::framework::HistType::kTH2F, {{100, 0, 100}, {100, 0.0f, 1.0f}}, true);
       for (const auto& strSign : pair_sign_types) {
-        fRegistry.add(std::format("Pair/sm/PromptPi0/{0}hMvsPhiV", strSign), "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", o2::framework::kTH2F, {{90, 0, M_PI}, {100, 0.0f, 1.0f}}, true);
-        fRegistry.add(std::format("Pair/sm/PromptPi0/{0}hDeltaPtvsDCA", strSign), "#Delta p_{T,1}^{gen-rec} + #Delta p_{T,2}^{gen-rec} vs. DCA_{ee}", o2::framework::kTH2F, {axis_dca_narrow, axis_dpt}, true);
-        fRegistry.add(std::format("Pair/sm/PromptPi0/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+        fRegistry.add(std::format("Pair/sm/PromptPi0/{0}hMvsPhiV", strSign), "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", o2::framework::HistType::kTH2F, {{90, 0, M_PI}, {100, 0.0f, 1.0f}}, true);
+        fRegistry.add(std::format("Pair/sm/PromptPi0/{0}hDeltaPtvsDCA", strSign), "#Delta p_{T,1}^{gen-rec} + #Delta p_{T,2}^{gen-rec} vs. DCA_{ee}", o2::framework::HistType::kTH2F, {axis_dca_narrow, axis_dpt}, true);
+        fRegistry.add(std::format("Pair/sm/PromptPi0/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::HistType::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
 
-        fRegistry.add(std::format("Pair/sm/NonPromptPi0/{0}hMvsPhiV", strSign), "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", o2::framework::kTH2F, {{90, 0, M_PI}, {100, 0.0f, 1.0f}}, true);
-        fRegistry.add(std::format("Pair/sm/NonPromptPi0/{0}hDeltaPtvsDCA", strSign), "#Delta p_{T,1}^{gen-rec} + #Delta p_{T,2}^{gen-rec} vs. DCA_{ee}", o2::framework::kTH2F, {axis_dca_narrow, axis_dpt}, true);
-        fRegistry.add(std::format("Pair/sm/NonPromptPi0/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+        fRegistry.add(std::format("Pair/sm/NonPromptPi0/{0}hMvsPhiV", strSign), "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", o2::framework::HistType::kTH2F, {{90, 0, M_PI}, {100, 0.0f, 1.0f}}, true);
+        fRegistry.add(std::format("Pair/sm/NonPromptPi0/{0}hDeltaPtvsDCA", strSign), "#Delta p_{T,1}^{gen-rec} + #Delta p_{T,2}^{gen-rec} vs. DCA_{ee}", o2::framework::HistType::kTH2F, {axis_dca_narrow, axis_dpt}, true);
+        fRegistry.add(std::format("Pair/sm/NonPromptPi0/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::HistType::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
 
-        fRegistry.add(std::format("Pair/sm/Eta/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
-        // fRegistry.add(std::format("Pair/sm/EtaPrime/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
-        // fRegistry.add(std::format("Pair/sm/Rho/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
-        fRegistry.add(std::format("Pair/sm/Omega/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
-        fRegistry.add(std::format("Pair/sm/Omega2ll/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
-        fRegistry.add(std::format("Pair/sm/Phi/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
-        fRegistry.add(std::format("Pair/sm/Phi2ll/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+        fRegistry.add(std::format("Pair/sm/Eta/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::HistType::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+        // fRegistry.add(std::format("Pair/sm/EtaPrime/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::HistType::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+        // fRegistry.add(std::format("Pair/sm/Rho/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::HistType::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+        fRegistry.add(std::format("Pair/sm/Omega/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::HistType::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+        fRegistry.add(std::format("Pair/sm/Omega2ll/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::HistType::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+        fRegistry.add(std::format("Pair/sm/Phi/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::HistType::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+        fRegistry.add(std::format("Pair/sm/Phi2ll/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::HistType::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
 
-        fRegistry.add(std::format("Pair/sm/PromptJPsi/{0}hDeltaPtvsDCA", strSign), "#Delta p_{T,1}^{gen-rec} + #Delta p_{T,2}^{gen-rec} vs. DCA_{ee}", o2::framework::kTH2F, {axis_dca_narrow, axis_dpt}, true);
-        fRegistry.add(std::format("Pair/sm/PromptJPsi/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
-        fRegistry.add(std::format("Pair/sm/NonPromptJPsi/{0}hDeltaPtvsDCA", strSign), "#Delta p_{T,1}^{gen-rec} + #Delta p_{T,2}^{gen-rec} vs. DCA_{ee}", o2::framework::kTH2F, {axis_dca_narrow, axis_dpt}, true);
-        fRegistry.add(std::format("Pair/sm/NonPromptJPsi/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+        fRegistry.add(std::format("Pair/sm/PromptJPsi/{0}hDeltaPtvsDCA", strSign), "#Delta p_{T,1}^{gen-rec} + #Delta p_{T,2}^{gen-rec} vs. DCA_{ee}", o2::framework::HistType::kTH2F, {axis_dca_narrow, axis_dpt}, true);
+        fRegistry.add(std::format("Pair/sm/PromptJPsi/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::HistType::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+        fRegistry.add(std::format("Pair/sm/NonPromptJPsi/{0}hDeltaPtvsDCA", strSign), "#Delta p_{T,1}^{gen-rec} + #Delta p_{T,2}^{gen-rec} vs. DCA_{ee}", o2::framework::HistType::kTH2F, {axis_dca_narrow, axis_dpt}, true);
+        fRegistry.add(std::format("Pair/sm/NonPromptJPsi/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::HistType::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
       }
     }
 
-    fRegistry.add("Pair/ccbar/c2l_c2l/uls/hs", "rec. dilepton", o2::framework::kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_deta_ee, axis_cos_theta_pol, axis_phi_pol, axis_quadmom, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_dca}, true);
+    fRegistry.add("Pair/ccbar/c2l_c2l/uls/hs", "rec. dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_deta_ee, axis_cos_theta_pol, axis_phi_pol, axis_quadmom, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_dca}, true);
     fRegistry.addClone("Pair/ccbar/c2l_c2l/uls/", "Pair/ccbar/c2l_c2l/lspp/");
     fRegistry.addClone("Pair/ccbar/c2l_c2l/uls/", "Pair/ccbar/c2l_c2l/lsmm/");
 
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       for (const auto& strSign : pair_sign_types) {
-        fRegistry.add(std::format("Pair/ccbar/c2l_c2l/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+        fRegistry.add(std::format("Pair/ccbar/c2l_c2l/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::HistType::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
       }
     }
 
@@ -581,23 +581,23 @@ struct DileptonMC {
 
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       for (const auto& strSign : pair_sign_types) {
-        fRegistry.add(std::format("Pair/bbbar/b2l_b2l/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
-        fRegistry.add(std::format("Pair/bbbar/b2c2l_b2c2l/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
-        fRegistry.add(std::format("Pair/bbbar/b2c2l_b2l_sameb/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
-        fRegistry.add(std::format("Pair/bbbar/b2c2l_b2l_diffb/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+        fRegistry.add(std::format("Pair/bbbar/b2l_b2l/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::HistType::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+        fRegistry.add(std::format("Pair/bbbar/b2c2l_b2c2l/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::HistType::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+        fRegistry.add(std::format("Pair/bbbar/b2c2l_b2l_sameb/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::HistType::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+        fRegistry.add(std::format("Pair/bbbar/b2c2l_b2l_diffb/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::HistType::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
       }
     }
 
     // for correlated bkg due to mis-identified hadrons, and true combinatorial bkg
-    fRegistry.add("Pair/corr_bkg_lh/uls/hs", "rec. bkg", o2::framework::kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_deta_ee, axis_cos_theta_pol, axis_phi_pol, axis_quadmom, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_dca}, true);
+    fRegistry.add("Pair/corr_bkg_lh/uls/hs", "rec. bkg", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_deta_ee, axis_cos_theta_pol, axis_phi_pol, axis_quadmom, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_dca}, true);
     fRegistry.addClone("Pair/corr_bkg_lh/uls/", "Pair/corr_bkg_lh/lspp/");
     fRegistry.addClone("Pair/corr_bkg_lh/uls/", "Pair/corr_bkg_lh/lsmm/");
     fRegistry.addClone("Pair/corr_bkg_lh/", "Pair/corr_bkg_hh/");
     fRegistry.addClone("Pair/corr_bkg_lh/", "Pair/comb_bkg/");
 
     if (doprocessGen_VM) {
-      fRegistry.add("Generated/VM/Omega/hPtY", "pT vs. y of #omega", o2::framework::kTH2D, {axis_y_meson, axis_pt_meson}, true); // for pT spectrum
-      fRegistry.add("Generated/VM/Phi/hPtY", "pT vs. y of #phi", o2::framework::kTH2D, {axis_y_meson, axis_pt_meson}, true);     // for pT spectrum
+      fRegistry.add("Generated/VM/Omega/hPtY", "pT vs. y of #omega", o2::framework::HistType::kTH2D, {axis_y_meson, axis_pt_meson}, true); // for pT spectrum
+      fRegistry.add("Generated/VM/Phi/hPtY", "pT vs. y of #phi", o2::framework::HistType::kTH2D, {axis_y_meson, axis_pt_meson}, true);     // for pT spectrum
     }
 
     if (cfgFillUnfolding) {
@@ -606,9 +606,9 @@ struct DileptonMC {
       const o2::framework::AxisSpec axis_pt_gen{ConfPtllBins, "p_{T,ll}^{gen} (GeV/c)"};
       const o2::framework::AxisSpec axis_mass_rec{ConfMllBins, "m_{ll}^{rec} (GeV/c^{2})"};
       const o2::framework::AxisSpec axis_pt_rec{ConfPtllBins, "p_{T,ll}^{rec} (GeV/c)"};
-      fRegistry.add("Unfold/sm/uls/hsRM", "response matrix", o2::framework::kTHnSparseD, {axis_mass_gen, axis_pt_gen, axis_mass_rec, axis_pt_rec}, true);
-      fRegistry.add("Unfold/sm/uls/hMiss", "missing dilepton", o2::framework::kTH2D, {axis_mass_gen, axis_pt_gen}, true); // e.g. true eta is in acceptance, but reconstructed eta is out of acceptance.
-      fRegistry.add("Unfold/sm/uls/hFake", "fake dilepton", o2::framework::kTH2D, {axis_mass_rec, axis_pt_rec}, true);    // e.g. true eta is out of acceptance, but reconstructed eta is in acceptance.
+      fRegistry.add("Unfold/sm/uls/hsRM", "response matrix", o2::framework::HistType::kTHnSparseD, {axis_mass_gen, axis_pt_gen, axis_mass_rec, axis_pt_rec}, true);
+      fRegistry.add("Unfold/sm/uls/hMiss", "missing dilepton", o2::framework::HistType::kTH2D, {axis_mass_gen, axis_pt_gen}, true); // e.g. true eta is in acceptance, but reconstructed eta is out of acceptance.
+      fRegistry.add("Unfold/sm/uls/hFake", "fake dilepton", o2::framework::HistType::kTH2D, {axis_mass_rec, axis_pt_rec}, true);    // e.g. true eta is out of acceptance, but reconstructed eta is in acceptance.
       fRegistry.addClone("Unfold/sm/uls/", "Unfold/sm/lspp/");
       fRegistry.addClone("Unfold/sm/uls/", "Unfold/sm/lsmm/");
       fRegistry.addClone("Unfold/sm/", "Unfold/ccbar/");
@@ -659,7 +659,7 @@ struct DileptonMC {
       fRegistry.addClone("Event/before/hCollisionCounter", "Event/norm/hCollisionCounter");
     }
     if (doprocessBC) {
-      auto hTVXCounter = fRegistry.add<TH1>("BC/hTVXCounter", "TVX counter", o2::framework::kTH1D, {{6, -0.5f, 5.5f}});
+      auto hTVXCounter = fRegistry.add<TH1>("BC/hTVXCounter", "TVX counter", o2::framework::HistType::kTH1D, {{6, -0.5f, 5.5f}});
       hTVXCounter->GetXaxis()->SetBinLabel(1, "TVX");
       hTVXCounter->GetXaxis()->SetBinLabel(2, "TVX && NoTFB");
       hTVXCounter->GetXaxis()->SetBinLabel(3, "TVX && NoITSROFB");
