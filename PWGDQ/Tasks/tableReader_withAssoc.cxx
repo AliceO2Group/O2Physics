@@ -24,10 +24,12 @@
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TableHelper.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
+#include <CommonConstants/MathConstants.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/GeometryManager.h>
@@ -45,6 +47,8 @@
 #include <ITSMFTBase/DPLAlpideParam.h>
 
 #include <TF1.h>
+#include <TH1.h>
+#include <TH2.h>
 #include <THashList.h>
 #include <TList.h>
 #include <TMath.h>
