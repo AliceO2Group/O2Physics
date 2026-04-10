@@ -450,7 +450,7 @@ struct LambdaTableProducer {
     histos.add("Tracks/h1f_lambda_pt_vs_invm", "p_{T} vs M_{#Lambda}", kTH2F, {axisV0Mass, axisV0Pt});
     histos.add("Tracks/h1f_antilambda_pt_vs_invm", "p_{T} vs M_{#bar{#Lambda}}", kTH2F, {axisV0Mass, axisV0Pt});
 
-    //histogram for LS subsampling fraction (nKept/nTotal per event)
+    // histogram for LS subsampling fraction (nKept/nTotal per event)
     histos.add("Tracks/h1f_fake_subsample_fraction", "LS subsample fraction (nKept/nTotal)", kTH1F, {{110, 0., 1.1, "f_{subsample}"}});
 
     // QA Lambda
@@ -1236,7 +1236,7 @@ struct LambdaTableProducer {
         }
 
         if (cFakeDaughterMaxDEta > 0.f &&
-          std::abs(tr1.eta() - tr2.eta()) > cFakeDaughterMaxDEta) {
+            std::abs(tr1.eta() - tr2.eta()) > cFakeDaughterMaxDEta) {
           continue;
         }
         if (cFakeDaughterMaxOpenAngle > 0.f) {
