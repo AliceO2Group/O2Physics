@@ -197,6 +197,7 @@ struct HeavyionMultiplicity {
   Configurable<bool> isApplyNoCollInRofStandard{"isApplyNoCollInRofStandard", false, "Enable NoCollInRofStandard cut"};
   Configurable<bool> isApplyNoHighMultCollInPrevRof{"isApplyNoHighMultCollInPrevRof", false, "Enable NoHighMultCollInPrevRof cut"};
   Configurable<bool> isApplyInelgt0{"isApplyInelgt0", false, "Enable INEL > 0 condition"};
+  Configurable<bool> isApplyVtxCut{"isApplyVtxCut", false, "Enable vertex cut condition"};
   Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy", false, "Enable FT0CbasedOccupancy cut"};
   Configurable<bool> isApplyCentFT0C{"isApplyCentFT0C", true, "Centrality based on FT0C"};
   Configurable<bool> isApplyCentFV0A{"isApplyCentFV0A", false, "Centrality based on FV0A"};
@@ -417,6 +418,10 @@ struct HeavyionMultiplicity {
       return false;
     }
     histos.fill(HIST("EventHist"), 10);
+    if (isApplyVtxCut && std::abs(col.posZ()) >= vtxRange) {
+      return false;
+    }
+    histos.fill(HIST("EventHist"), 11);
     return true;
   }
 
