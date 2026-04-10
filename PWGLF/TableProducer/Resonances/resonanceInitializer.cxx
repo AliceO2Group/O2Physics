@@ -19,29 +19,38 @@
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/collisionCuts.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/EventPlaneHelper.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/McCollisionExtra.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/MathConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
+#include <TH1.h>
+#include <TString.h>
+
+#include <chrono>
+#include <cmath>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -1350,7 +1359,7 @@ struct ResonanceInitializer {
       AxisSpec idxMCAxis = {26, -0.5, 25.5, "Index"};
       qaRegistry.add("Event/hMCEventIndices", "hMCEventIndices", kTH2D, {centAxis, idxMCAxis});
     }
-    qaRegistry.add("Event/CentFV0A", "; FV0A Percentile; Entries", o2::framework::kTH1F, {{110, 0, 110}});
+    qaRegistry.add("Event/CentFV0A", "; FV0A Percentile; Entries", o2::framework::HistType::kTH1F, {{110, 0, 110}});
     AxisSpec idxAxis = {8, 0, 8, "Index"};
     if (cfgFillQA) {
       qaRegistry.add("hGoodTrackIndices", "hGoodTrackIndices", kTH1F, {idxAxis});

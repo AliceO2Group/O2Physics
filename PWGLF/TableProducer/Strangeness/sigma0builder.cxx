@@ -27,33 +27,37 @@
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/ASoA.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Math/Vector3D.h"
-#include <Math/Vector4D.h>
-#include <TFile.h>
-#include <TH2F.h>
+#include <Math/Vector3D.h> // IWYU pragma: keep (do not replace with Math/Vector3Dfwd.h)
+#include <Math/Vector3Dfwd.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TMath.h>
 #include <TPDGCode.h>
-#include <TProfile.h>
 
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <string>
+#include <string_view>
 #include <unordered_set>
 #include <vector>
 

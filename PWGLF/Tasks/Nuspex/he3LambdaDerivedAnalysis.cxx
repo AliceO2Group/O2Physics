@@ -11,14 +11,25 @@
 
 #include "PWGLF/DataModel/LFSlimHeLambda.h"
 
-#include <Framework/ASoAHelpers.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
+#include <Math/GenVector/LorentzVector.h>
+#include <Math/GenVector/PtEtaPhiM4D.h>
+#include <TH2.h>
+#include <TMath.h>
+#include <TString.h>
 
+#include <cstdlib>
+#include <iostream>
 #include <memory>
+#include <ostream>
+#include <vector>
 
 namespace
 {
