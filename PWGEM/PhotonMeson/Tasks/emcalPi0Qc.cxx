@@ -320,7 +320,7 @@ struct EmcalPi0Qc {
   void supermoduleHistHelperMeson(float minv, float timeSinceSOR)
   {
     static constexpr std::string_view MesonInvMassHistSM[20] = {"mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM0", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM1", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM2", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM3", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM4", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM5", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM6", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM7", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM8", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM9", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM10", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM11", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM12", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM13", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM14", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM15", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM16", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM17", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM18", "mesonInvMassVsTimeStamp/mesonInvMassVsTimeStampSM19"};
-    mHistManager.fill(HIST(MesonInvMassHistSM[supermoduleID]), minv, timeSinceSOR,mWeight);
+    mHistManager.fill(HIST(MesonInvMassHistSM[supermoduleID]), minv, timeSinceSOR, mWeight);
   }
 
   void fillSupermoduleHistogramsPhoton(int supermoduleID, float time, float m02, int NCell, float timeSinceSOR)
@@ -571,39 +571,39 @@ struct EmcalPi0Qc {
         }
       }
 
-      mHistManager.fill(HIST("events"), 1, mWeight); // Fill "All events" bin of event histogram
+      mHistManager.fill(HIST("events"), 1, mWeight);     // Fill "All events" bin of event histogram
       mHistManager.fill(HIST("eventsWithoutWeight"), 1); // Fill "All events" bin of event histogram without weight
-      if(collision.has_mcCollision()) {
+      if (collision.has_mcCollision()) {
         mHistManager.fill(HIST("eventsWithoutWeight"), 2); // Fill "Has MC collision" bin of event histogram without weight
       }
       if (mDoEventSel.value && (!collision.sel8())) { // Check sel8
         continue;
       }
 
-      mHistManager.fill(HIST("events"), 2, mWeight);                               // Fill sel8
-      mHistManager.fill(HIST("eventsWithoutWeight"), 3); // Fill sel8 bin of event histogram without weight
+      mHistManager.fill(HIST("events"), 2, mWeight);                      // Fill sel8
+      mHistManager.fill(HIST("eventsWithoutWeight"), 3);                  // Fill sel8 bin of event histogram without weight
       if (mRequireCaloReadout.value && !collision.alias_bit(kTVXinEMC)) { // Check whether EMC was read out
         continue;
       }
-      mHistManager.fill(HIST("events"), 3, mWeight); // Fill readout
-      mHistManager.fill(HIST("eventsWithoutWeight"), 4); // Fill readout bin of event histogram without weight
+      mHistManager.fill(HIST("events"), 3, mWeight);           // Fill readout
+      mHistManager.fill(HIST("eventsWithoutWeight"), 4);       // Fill readout bin of event histogram without weight
       if (mDoEventSel.value && collision.numContrib() < 0.5) { // Skip collisions without contributors
         continue;
       }
-      mHistManager.fill(HIST("events"), 4, mWeight); // Fill >1 vtx contr. bin of event histogram
+      mHistManager.fill(HIST("events"), 4, mWeight);     // Fill >1 vtx contr. bin of event histogram
       mHistManager.fill(HIST("eventsWithoutWeight"), 5); // Fill >1 vtx contr. bin of event histogram without weight
       mHistManager.fill(HIST("eventVertexZAll"), collision.posZ(), mWeight);
       if (mVertexCut > 0 && std::abs(collision.posZ()) > mVertexCut) {
         continue;
       }
-      mHistManager.fill(HIST("events"), 5, mWeight); // Fill z-Vertex selected bin of event histogram
+      mHistManager.fill(HIST("events"), 5, mWeight);     // Fill z-Vertex selected bin of event histogram
       mHistManager.fill(HIST("eventsWithoutWeight"), 6); // Fill z-Vertex selected bin of event histogram without weight
       mHistManager.fill(HIST("eventVertexZSelected"), collision.posZ(), mWeight);
 
       if (mDoEventSel.value && collision.ambiguous()) { // Skip ambiguous collisions (those that are in BCs including multiple collisions)
         continue;
       }
-      mHistManager.fill(HIST("events"), 6, mWeight); // Fill "One collision in BC" bin of event histogram
+      mHistManager.fill(HIST("events"), 6, mWeight);     // Fill "One collision in BC" bin of event histogram
       mHistManager.fill(HIST("eventsWithoutWeight"), 7); // Fill "One collision in BC" bin of event histogram without weight
       if (mDoEventSel.value) {
         auto found = cellGlobalBCs.find(collision.foundBC_as<MyBCs>().globalBC());
@@ -611,7 +611,7 @@ struct EmcalPi0Qc {
           continue;
         }
       }
-      mHistManager.fill(HIST("events"), 7, mWeight); // Fill at least one non0 cell in EMCal of event histogram (Selected)
+      mHistManager.fill(HIST("events"), 7, mWeight);     // Fill at least one non0 cell in EMCal of event histogram (Selected)
       mHistManager.fill(HIST("eventsWithoutWeight"), 8); // Fill at least one non0 cell in EMCal of event histogram (Selected) without weight
       // Get BC and run number
       int64_t foundBCId = collision.foundBCId();
@@ -812,7 +812,6 @@ struct EmcalPi0Qc {
       }
       // TODO: for now this part makes no sense when running JJ MC due to weights
       calculateMixedBack(mPhotons[ig1]);
-      
     }
 
     evtMix.addEvent(mPhotons);
