@@ -395,7 +395,7 @@ if(FastJet_FOUND)
                         SOURCES substructureDebug.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
-    o2physics_add_dpl_workflow(jet-ds-spec-subs
+    o2physics_add_dpl_workflow(jet-ds-spec-subs # o2-linter: disable=name/o2-workflow (pre-existing issues in file)
                         SOURCES jetDsSpectSubs.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
