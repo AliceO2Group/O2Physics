@@ -962,6 +962,7 @@ struct NonPromptCascadeTask {
       if (ds % cfgDownscaleMB == 0) {
         NPMCNTable(ptMC, ptReco, mult, multReco);
       }
+      ds++;
     }
 
     // ------------------------------------------------------------
