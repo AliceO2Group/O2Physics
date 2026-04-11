@@ -959,7 +959,7 @@ struct NonPromptCascadeTask {
       const float ptMC = mcPar.pt();
 
       mRegistrydNdeta.fill(HIST("hdNdetaRM/hdNdetaRM"), mult, multReco, ptMC, ptReco);
-      if(ds % cfgDownscaleMB == 0) {
+      if (ds % cfgDownscaleMB == 0) {
         NPMCNTable(ptMC, ptReco, mult, multReco);
       }
     }
