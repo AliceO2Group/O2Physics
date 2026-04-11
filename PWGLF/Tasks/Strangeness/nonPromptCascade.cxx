@@ -185,7 +185,7 @@ struct NonPromptCascadeTask {
   //
   Produces<o2::aod::NPCollisionTable> NPCollsTable;
   Produces<o2::aod::NPMCChargedTable> NPMCNTable;
-  Produces<o2::aod::NPRecoChargedCandidate> NPRecoCandTable;
+  Produces<o2::aod::NPRecoChargedCand> NPRecoCandTable;
 
   using TracksExtData = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>;
   using TracksExtMC = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>;
@@ -196,6 +196,7 @@ struct NonPromptCascadeTask {
 
   Preslice<TracksExtData> perCollision = aod::track::collisionId;
   Preslice<TracksExtMC> perCollisionMC = aod::track::collisionId;
+  Preslice<TracksWithSel> perCollisionSel = aod::track::collisionId;
 
   HistogramRegistry mRegistry;
 
@@ -331,8 +332,9 @@ struct NonPromptCascadeTask {
     // dN/deta
     //
     bool runMCdNdeta = context.options().get<bool>("processdNdetaMC");
+    bool rundNdeta = context.options().get<bool>("processdNdeta");
     // std::cout << "runMCdNdeta: " << runMCdNdeta << std::endl;
-    if (runMCdNdeta) {
+    if (runMCdNdeta || rundNdeta) {
       std::vector<double> ptBins;
       std::vector<std::string> tokens = o2::utils::Str::tokenize(cfgPtEdgesdNdeta, ',');
       for (auto const& pts : tokens) {
@@ -344,13 +346,14 @@ struct NonPromptCascadeTask {
         }
         ptBins.push_back(pt);
       }
-      AxisSpec ptAxisMC{ptBins, "pT MC"};
       AxisSpec ptAxisReco{ptBins, "pT Reco"};
+      AxisSpec ptAxisMC{ptBins, "pT MC"};
 
       // multMeasured, multMC, ptMeasured, ptMC
       mRegistrydNdeta.add("hdNdetaRM/hdNdetaRM", "hdNdetaRM", HistType::kTHnSparseF, {nTracksAxisMC, nTracksAxis, ptAxisMC, ptAxisReco});
       mRegistrydNdeta.add("hdNdetaRM/hdNdetaRMNotInRecoCol", "hdNdetaRMNotInRecoCol", HistType::kTHnSparseF, {nTracksAxisMC, ptAxisMC});
       mRegistrydNdeta.add("hdNdetaRM/hdNdetaRMNotInRecoTrk", "hdNdetaRMNotInRecoTrk", HistType::kTHnSparseF, {nTracksAxisMC, ptAxisMC});
+      mRegistrydNdeta.add("hdNdetaData", "hdNdetaData", HistType::kTH1F, {nTracksAxis});
     }
   }
 
@@ -810,6 +813,10 @@ struct NonPromptCascadeTask {
                        aod::McParticles const& mcParticles,
                        TracksWithLabel const& tracks)
   {
+    //------------------------------------------------------------
+    // Downscaling output table by BC as there is no pileup in MC
+    //------------------------------------------------------------
+    int ds = 1;
     //-------------------------------------------------------------
     // MC mult for all MC coll
     //--------------------------------------------------------------
@@ -952,7 +959,10 @@ struct NonPromptCascadeTask {
       const float ptMC = mcPar.pt();
 
       mRegistrydNdeta.fill(HIST("hdNdetaRM/hdNdetaRM"), mult, multReco, ptMC, ptReco);
-      NPMCNTable(ptMC, ptReco, mult, multReco);
+      if (ds % cfgDownscaleMB == 0) {
+        NPMCNTable(ptMC, ptReco, mult, multReco);
+      }
+      ds++;
     }
 
     // ------------------------------------------------------------
@@ -983,7 +993,7 @@ struct NonPromptCascadeTask {
 
   PROCESS_SWITCH(NonPromptCascadeTask, processdNdetaMC, "process mc dN/deta", false);
   //
-  void processdNdeta(CollisionCandidatesRun3 const& collisions, TracksWithSel const& tracks)
+  void processdNdeta(CollisionCandidatesRun3 const& collisions, TracksWithSel const& tracks, aod::BCsWithTimestamps const&)
   {
     int ds = 1;
     uint32_t orbitO = 0;
@@ -1006,22 +1016,26 @@ struct NonPromptCascadeTask {
           mRunNumber = bc.runNumber();
         }
         NPCollsTable(mRunNumber,
-                     coll.bc().globalBC(),
+                     globalBC,
                      coll.numContrib(),
                      coll.multNTracksGlobal(),
                      coll.centFT0M(),
                      coll.multFT0M());
 
         auto collIdx = NPCollsTable.lastIndex();
-        auto tracksThisColl = tracks.sliceBy(perCollision, coll.globalIndex());
+        auto tracksThisColl = tracks.sliceBy(perCollisionSel, coll.globalIndex());
+        float multreco = 0.;
+        // std::cout << "tracks:" << tracksThisColl.size() << std::endl;
         for (auto const& track : tracksThisColl) {
+          // std::cout << track.pt() << " tracks " << track.isGlobalTrack() << std::endl;
           if (std::fabs(track.eta()) < 0.8 && track.tpcNClsFound() >= 80 && track.tpcNClsCrossedRows() >= 100) {
             if (track.isGlobalTrack()) {
-              // mults.multGlobalTracks++;
+              multreco++;
               NPRecoCandTable(collIdx, track.pt());
             }
           }
         }
+        mRegistrydNdeta.fill(HIST("hdNdetaData"), multreco);
       }
     }
   }
