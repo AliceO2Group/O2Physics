@@ -395,8 +395,8 @@ if(FastJet_FOUND)
                         SOURCES substructureDebug.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
-    o2physics_add_dpl_workflow(jet-ds-spectrum-subs
-                        SOURCES jetDsSpectrumAndSubstructure.cxx
+    o2physics_add_dpl_workflow(jet-ds-spec-subs
+                        SOURCES jetDsSpectSubs.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-d0-ang-substructure
