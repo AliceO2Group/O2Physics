@@ -28,19 +28,19 @@ target_precompile_headers(JetSubstructureHFPCH PRIVATE
 )
 endif()
 
-o2physics_add_dpl_workflow(emc-cellmonitor
+o2physics_add_dpl_workflow(emc-cellmonitor # o2-linter: disable=name/o2-workflow (legacy)
                     SOURCES emcCellMonitor.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
-o2physics_add_dpl_workflow(emc-clustermonitor
+o2physics_add_dpl_workflow(emc-clustermonitor # o2-linter: disable=name/o2-workflow (legacy)
                     SOURCES emcClusterMonitor.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
-o2physics_add_dpl_workflow(emc-eventselection-qa
+o2physics_add_dpl_workflow(emc-eventselection-qa # o2-linter: disable=name/o2-workflow (legacy)
                     SOURCES emcEventSelectionQA.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
-o2physics_add_dpl_workflow(emc-vertexselection-qa
+o2physics_add_dpl_workflow(emc-vertexselection-qa # o2-linter: disable=name/o2-workflow (legacy)
                     SOURCES emcVertexSelectionQA.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
@@ -48,11 +48,11 @@ o2physics_add_dpl_workflow(emcal-gamma-gamma-bc-wise
                     SOURCES emcalGammaGammaBcWise.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
-o2physics_add_dpl_workflow(emc-pi0-energyscale-calib
+o2physics_add_dpl_workflow(emc-pi0-energyscale-calib # o2-linter: disable=name/o2-workflow (legacy)
                     SOURCES emcalPi0EnergyScaleCalib.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
-o2physics_add_dpl_workflow(emc-tmmonitor
+o2physics_add_dpl_workflow(emc-tmmonitor # o2-linter: disable=name/o2-workflow (legacy)
                     SOURCES emcTmMonitor.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
@@ -60,7 +60,7 @@ o2physics_add_dpl_workflow(mc-generator-studies
                     SOURCES mcGeneratorStudies.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
-o2physics_add_dpl_workflow(photon-isolation-qa
+o2physics_add_dpl_workflow(photon-isolation-qa # o2-linter: disable=name/o2-workflow (legacy)
                     SOURCES photonIsolationQA.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
