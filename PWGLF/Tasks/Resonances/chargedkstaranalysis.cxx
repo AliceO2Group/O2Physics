@@ -362,9 +362,9 @@ struct Chargedkstaranalysis {
       hCutFlow->GetXaxis()->SetBinLabel(4, "Multiplicity");
       hCutFlow->GetXaxis()->SetBinLabel(5, "IsINELgt0");
       if (isQaRequired) {
-        constexpr int kNTrackCuts = 22;
+        constexpr int KNTrackCuts = 22;
 
-        histos.add("QA/hTrackCutFlow", "Track cut flow", kTH1D, {{kNTrackCuts, 0.5, kNTrackCuts + 0.5}});
+        histos.add("QA/hTrackCutFlow", "Track cut flow", kTH1D, {{KNTrackCuts, 0.5, KNTrackCuts + 0.5}});
 
         auto hTrackCutFlow = histos.get<TH1>(HIST("QA/hTrackCutFlow"));
 
@@ -391,9 +391,9 @@ struct Chargedkstaranalysis {
         hTrackCutFlow->GetXaxis()->SetBinLabel(bin++, "pT-dep DCAxy");
         hTrackCutFlow->GetXaxis()->SetBinLabel(bin++, "pT-dep DCAz");
 
-        constexpr int kNK0sCuts = 14;
+        constexpr int KnK0sCuts = 14;
         int iK0sbin = 1;
-        histos.add("QA/K0sCutCheck", "K0s cut flow", kTH1D, {{kNK0sCuts, 0.5, kNK0sCuts + 0.5}});
+        histos.add("QA/K0sCutCheck", "K0s cut flow", kTH1D, {{KnK0sCuts, 0.5, KnK0sCuts + 0.5}});
         auto hK0sCut = histos.get<TH1>(HIST("QA/K0sCutCheck"));
         hK0sCut->GetXaxis()->SetBinLabel(iK0sbin++, "All PASS");
         hK0sCut->GetXaxis()->SetBinLabel(iK0sbin++, "DauDCA>max");
@@ -958,7 +958,7 @@ struct Chargedkstaranalysis {
             phiCSrot = RecoDecay::constrainAngle(phiCSrot, 0.0);
 
             if (std::abs(motherRot.Rapidity()) < helicityCfgs.rapidityMotherData) {
-              fillKstarHist(true, multiplicity, mother, cosThetaStarCS);
+              fillKstarHist(true, multiplicity, mother, cosThetaStarCSrot);
             }
           }
         }
@@ -1188,8 +1188,8 @@ struct Chargedkstaranalysis {
     // =========================
     // Pairing
     // =========================
-    for (auto tIdx : trackIndicies) {
-      for (auto kIdx : k0sIndicies) {
+    for (auto const& tIdx : trackIndicies) {
+      for (auto const& kIdx : k0sIndicies) {
 
         auto bTrack = dTracks1.rawIteratorAt(tIdx);
         auto k0s = dTracks2.rawIteratorAt(kIdx);
@@ -1301,7 +1301,7 @@ struct Chargedkstaranalysis {
   }
   PROCESS_SWITCH(Chargedkstaranalysis, processDataME, "Process Event for data without Partitioning", true);
 
-  void processMC(soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&, aod::McParticles& mcParticles, soa::Join<EventCandidates, aod::McCollisionLabels> const& events, MCV0Candidates const& v0s, MCTrackCandidates const& tracks)
+  void processMC(soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&, aod::McParticles const& mcParticles, soa::Join<EventCandidates, aod::McCollisionLabels> const& events, MCV0Candidates const& v0s, MCTrackCandidates const& tracks)
   {
     allowedMcIds.clear();
     centTruthByAllowed.clear();
