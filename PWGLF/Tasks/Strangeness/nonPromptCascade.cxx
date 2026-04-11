@@ -223,6 +223,7 @@ struct NonPromptCascadeTask {
   Configurable<float> cfgMaxMultFV0{"cfgMaxMultFV0", 10000.f, "Upper range of multiplicty FV0 histo"};
   Configurable<std::string> cfgPtEdgesdNdeta{"ptEdges", "0,0.2,0.4,0.6,0.8,1,1.2,1.6,2.0,2.4,2.8,3.2,3.6,4,4.5,5,5.5,6,7,8,10", "Pt bin edges (comma-separated)"};
   Configurable<int> cfgDownscaleMB{"cfgDownscaleMB", 1, "Downscaling for pile up study sample"};
+  Configurable<double> cfgEtaCutdNdeta{"cfgEtaCutdNdeta", 0.8, "Eta cut for charged tracks"};
 
   Zorro mZorro;
   OutputObj<ZorroSummary> mZorroSummary{"ZorroSummary"};
@@ -829,7 +830,7 @@ struct NonPromptCascadeTask {
       // apply your primary/eta/charge definition here
       if (!mcp.isPhysicalPrimary())
         continue;
-      if (std::abs(mcp.eta()) > 0.5f)
+      if (std::abs(mcp.eta()) > cfgEtaCutdNdeta)
         continue;
       int q = 0;
       if (auto pdg = pdgDB->GetParticle(mcp.pdgCode())) {
@@ -866,7 +867,7 @@ struct NonPromptCascadeTask {
     // ------------------------------------------------------------
     std::vector<int> recoMultDense(colls.size(), 0);
     for (auto const& trk : tracks) {
-      if (std::abs(trk.eta()) > 0.5f) {
+      if (std::abs(trk.eta()) > cfgEtaCutdNdeta) {
         continue;
       }
       const int collRowId = trk.collisionId();
@@ -894,7 +895,7 @@ struct NonPromptCascadeTask {
     // ------------------------------------------------------------
     for (auto const& trk : tracks) {
       // Accept reco track
-      if (std::abs(trk.eta()) > 0.5f) {
+      if (std::abs(trk.eta()) > cfgEtaCutdNdeta) {
         continue;
       }
 
@@ -938,7 +939,7 @@ struct NonPromptCascadeTask {
       if (!mcPar.isPhysicalPrimary()) {
         continue;
       }
-      if (std::abs(mcPar.eta()) > 0.5f) {
+      if (std::abs(mcPar.eta()) > cfgEtaCutdNdeta) {
         continue;
       }
 
@@ -1028,7 +1029,7 @@ struct NonPromptCascadeTask {
         // std::cout << "tracks:" << tracksThisColl.size() << std::endl;
         for (auto const& track : tracksThisColl) {
           // std::cout << track.pt() << " tracks " << track.isGlobalTrack() << std::endl;
-          if (std::fabs(track.eta()) < 0.8 && track.tpcNClsFound() >= 80 && track.tpcNClsCrossedRows() >= 100) {
+          if (std::fabs(track.eta()) < cfgEtaCutdNdeta && track.tpcNClsFound() >= 80 && track.tpcNClsCrossedRows() >= 100) {
             if (track.isGlobalTrack()) {
               multreco++;
               NPRecoCandTable(collIdx, track.pt());
