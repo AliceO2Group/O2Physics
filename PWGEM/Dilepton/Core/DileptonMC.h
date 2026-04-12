@@ -525,6 +525,14 @@ struct DileptonMC {
         fRegistry.add(std::format("Pair/sm/NonPromptPi0/{0}hDeltaPtvsDCA", strSign), "#Delta p_{T,1}^{gen-rec} + #Delta p_{T,2}^{gen-rec} vs. DCA_{ee}", o2::framework::kTH2F, {axis_dca_narrow, axis_dpt}, true);
         fRegistry.add(std::format("Pair/sm/NonPromptPi0/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
 
+        fRegistry.add(std::format("Pair/sm/Eta/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+        // fRegistry.add(std::format("Pair/sm/EtaPrime/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+        // fRegistry.add(std::format("Pair/sm/Rho/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+        fRegistry.add(std::format("Pair/sm/Omega/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+        fRegistry.add(std::format("Pair/sm/Omega2ll/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+        fRegistry.add(std::format("Pair/sm/Phi/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+        fRegistry.add(std::format("Pair/sm/Phi2ll/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+
         fRegistry.add(std::format("Pair/sm/PromptJPsi/{0}hDeltaPtvsDCA", strSign), "#Delta p_{T,1}^{gen-rec} + #Delta p_{T,2}^{gen-rec} vs. DCA_{ee}", o2::framework::kTH2F, {axis_dca_narrow, axis_dpt}, true);
         fRegistry.add(std::format("Pair/sm/PromptJPsi/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
         fRegistry.add(std::format("Pair/sm/NonPromptJPsi/{0}hDeltaPtvsDCA", strSign), "#Delta p_{T,1}^{gen-rec} + #Delta p_{T,2}^{gen-rec} vs. DCA_{ee}", o2::framework::kTH2F, {axis_dca_narrow, axis_dpt}, true);
@@ -535,6 +543,12 @@ struct DileptonMC {
     fRegistry.add("Pair/ccbar/c2l_c2l/uls/hs", "rec. dilepton", o2::framework::kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_deta_ee, axis_cos_theta_pol, axis_phi_pol, axis_quadmom, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_dca}, true);
     fRegistry.addClone("Pair/ccbar/c2l_c2l/uls/", "Pair/ccbar/c2l_c2l/lspp/");
     fRegistry.addClone("Pair/ccbar/c2l_c2l/uls/", "Pair/ccbar/c2l_c2l/lsmm/");
+
+    if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
+      for (const auto& strSign : pair_sign_types) {
+        fRegistry.add(std::format("Pair/ccbar/c2l_c2l/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+      }
+    }
 
     fRegistry.addClone("Pair/ccbar/c2l_c2l/", "Pair/bbbar/b2l_b2l/");
     fRegistry.addClone("Pair/ccbar/c2l_c2l/", "Pair/bbbar/b2c2l_b2c2l/");
@@ -562,6 +576,15 @@ struct DileptonMC {
         for (int ib = 0; ib < nb; ib++) {
           fRegistry.addClone("Pair/ccbar/c2l_c2l/", Form("Pair/ccbar/%s_%s/", sum_charmed_mesons[im].data(), sum_charmed_baryons[ib].data()));
         }
+      }
+    }
+
+    if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
+      for (const auto& strSign : pair_sign_types) {
+        fRegistry.add(std::format("Pair/bbbar/b2l_b2l/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+        fRegistry.add(std::format("Pair/bbbar/b2c2l_b2c2l/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+        fRegistry.add(std::format("Pair/bbbar/b2c2l_b2l_sameb/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
+        fRegistry.add(std::format("Pair/bbbar/b2c2l_b2l_diffb/{0}hDCAz1vsDCAz2", strSign), "DCA_{z,1} vs DCA_{z,2}", o2::framework::kTH2F, {axis_dca_track1, axis_dca_track2}, true);
       }
     }
 

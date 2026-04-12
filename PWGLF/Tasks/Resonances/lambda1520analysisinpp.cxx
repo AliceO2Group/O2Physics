@@ -13,7 +13,6 @@
 /// \brief This standalone task reconstructs track-track decay of lambda(1520) resonance candidate
 /// \author Hirak Kumar Koley <hirak.koley@cern.ch>
 
-#include "PWGLF/Utils/collisionCuts.h"
 #include "PWGLF/Utils/inelGt.h"
 
 #include "Common/DataModel/Centrality.h"
@@ -37,6 +36,7 @@
 using namespace o2;
 using namespace o2::soa;
 using namespace o2::aod;
+using namespace o2::aod::rctsel;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
@@ -85,23 +85,19 @@ struct Lambda1520analysisinpp {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Service<framework::O2DatabasePDG> pdg;
-
-  /// Event cuts
-  o2::analysis::CollisonCuts colCuts;
+  RCTFlagsChecker rctChecker;
 
   struct : ConfigurableGroup {
     Configurable<float> cfgEvtZvtx{"cfgEvtZvtx", 10.0f, "Evt sel: Max. z-Vertex (cm)"};
-    Configurable<int> cfgEvtOccupancyInTimeRangeMax{"cfgEvtOccupancyInTimeRangeMax", -1, "Evt sel: maximum track occupancy"};
-    Configurable<int> cfgEvtOccupancyInTimeRangeMin{"cfgEvtOccupancyInTimeRangeMin", -1, "Evt sel: minimum track occupancy"};
-    Configurable<bool> cfgEvtSel8{"cfgEvtSel8", false, "Evt Sel 8 check for offline selection"};
     Configurable<bool> cfgEvtTriggerTVXSel{"cfgEvtTriggerTVXSel", true, "Evt sel: triggerTVX selection (MB)"};
     Configurable<bool> cfgEvtNoTFBorderCut{"cfgEvtNoTFBorderCut", true, "Evt sel: apply TF border cut"};
-    Configurable<bool> cfgEvtIsVertexITSTPC{"cfgEvtIsVertexITSTPC", false, "Evt sel: use at lease on ITS-TPC track for vertexing"};
-    Configurable<bool> cfgEvtIsGoodZvtxFT0vsPV{"cfgEvtIsGoodZvtxFT0vsPV", true, "Evt sel: apply Z-vertex time difference"};
-    Configurable<bool> cfgEvtNoSameBunchPileup{"cfgEvtNoSameBunchPileup", false, "Evt sel: apply pileup rejection"};
     Configurable<bool> cfgEvtNoITSROFrameBorderCut{"cfgEvtNoITSROFrameBorderCut", false, "Evt sel: apply NoITSRO border cut"};
-    Configurable<bool> cfgEvtNoCollInTimeRangeStandard{"cfgEvtNoCollInTimeRangeStandard", false, "Evt sel: apply NoNoCollInTimeRangeStandard"};
-    Configurable<bool> cfgEvtIsVertexTOFmatched{"cfgEvtIsVertexTOFmatched", true, "kIsVertexTOFmatched: apply vertex TOF matched"};
+    Configurable<bool> cfgEvtIsRCTFlagpassed{"cfgEvtIsRCTFlagpassed", false, "Evt sel: apply RCT flag selection"};
+    Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT_hadronPID", "Evt sel: RCT flag checker label"};
+    Configurable<bool> cfgEvtRCTFlagCheckerZDCCheck{"cfgEvtRCTFlagCheckerZDCCheck", false, "Evt sel: RCT flag checker ZDC check"};
+    Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", true, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
+    Configurable<bool> cfgEvtSel8{"cfgEvtSel8", false, "Evt Sel 8 check for offline selection"};
+    Configurable<bool> cfgEvtIsINELgt0{"cfgEvtIsINELgt0", false, "Evt sel: apply INEL>0 selection"};
   } configEvents;
 
   struct : ConfigurableGroup {
@@ -238,18 +234,7 @@ struct Lambda1520analysisinpp {
 
   void init(framework::InitContext&)
   {
-    colCuts.setCuts(configEvents.cfgEvtZvtx, /* configEvents.cfgEvtTriggerCheck */ false, configEvents.cfgEvtSel8, /*checkRun3*/ true, /*triggerTVXsel*/ false, configEvents.cfgEvtOccupancyInTimeRangeMax, configEvents.cfgEvtOccupancyInTimeRangeMin);
-
-    colCuts.init(&histos);
-    colCuts.setTriggerTVX(configEvents.cfgEvtTriggerTVXSel);
-    colCuts.setApplyTFBorderCut(configEvents.cfgEvtNoTFBorderCut);
-    colCuts.setApplyITSTPCvertex(configEvents.cfgEvtIsVertexITSTPC);
-    colCuts.setApplyZvertexTimedifference(configEvents.cfgEvtIsGoodZvtxFT0vsPV);
-    colCuts.setApplyPileupRejection(configEvents.cfgEvtNoSameBunchPileup);
-    colCuts.setApplyNoITSROBorderCut(configEvents.cfgEvtNoITSROFrameBorderCut);
-    colCuts.setApplyCollInTimeRangeStandard(configEvents.cfgEvtNoCollInTimeRangeStandard);
-    colCuts.setApplyVertexTOFmatched(configEvents.cfgEvtIsVertexTOFmatched);
-    colCuts.printCuts();
+    rctChecker.init(configEvents.cfgEvtRCTFlagCheckerLabel, configEvents.cfgEvtRCTFlagCheckerZDCCheck, configEvents.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
 
     // axes
     AxisSpec axisPt{binsPt, "#it{p}_{T} (GeV/#it{c})"};
@@ -270,10 +255,23 @@ struct Lambda1520analysisinpp {
     AxisSpec axisVtxMix{configBkg.cfgVtxBins, "Vertex Z (cm)"};
     AxisSpec idxMCAxis = {26, -0.5f, 25.5f, "Index"};
 
+    histos.add("CollCutCounts", "No. of event after cuts", kTH1I, {{10, 0, 10}});
+    histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(1, "All Events");
+    histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(2, "|Vz| < cut");
+    histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(3, "kIsTriggerTVX");
+    histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(4, "kNoTimeFrameBorder");
+    histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(5, "kNoITSROFrameBorder");
+    histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(6, "rctChecker");
+    histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(7, "sel8");
+    histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(8, "IsINELgt0");
+    histos.get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(9, "All Passed Events");
+
+    histos.add("Event/posZ", "; vtx_{z} (cm); Entries", HistType::kTH1F, {{250, -12.5, 12.5}});
+    histos.add("Event/centFT0M", "; FT0M Percentile; Entries", HistType::kTH1F, {{110, 0, 110}});
+
     if (cFilladditionalQAeventPlots) {
       // event histograms
       if (doprocessData) {
-        histos.add("QAevent/hEvents", "INEL>0 Events", HistType::kTH1F, {{2, 0.5f, 2.5f}});
         histos.add("QAevent/hPairsCounterSameE", "total valid no. of pairs sameE", HistType::kTH1F, {{1, 0.5f, 1.5f}});
         histos.add("QAevent/hnTrksSameE", "n tracks per event SameE", HistType::kTH1F, {{1000, 0.0, 1000.0}});
       }
@@ -289,9 +287,6 @@ struct Lambda1520analysisinpp {
         histos.add("QAevent/hVertexZMixedE", "Collision Vertex Z position", HistType::kTH1F, {{100, -15.0f, 15.0f}});
         histos.add("QAevent/hMultiplicityPercentMixedE", "Multiplicity percentile of collision", HistType::kTH1F, {{120, 0.0f, 120.0f}});
         histos.add("QAevent/hnTrksMixedE", "n tracks per event MixedE", HistType::kTH1F, {{1000, 0.0f, 1000.0f}});
-      }
-      if (doprocessMCRec) {
-        histos.add("QAevent/hEventsMC", "INEL>0 Events MC", HistType::kTH1F, {{2, 0.5f, 2.5f}});
       }
     }
 
@@ -429,14 +424,14 @@ struct Lambda1520analysisinpp {
       histos.add("Result/MC/h3lambda1520Recoinvmass", "Invariant mass of Reconstructed MC #Lambda(1520)0", kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});
       histos.add("Result/MC/h3antilambda1520Recoinvmass", "Invariant mass of Reconstructed MC Anti-#Lambda(1520)0", kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});
     }
-    if (doprocessdummy) {
-      histos.add("Result/dummy/Genprotonpt", "pT distribution of #Lambda(1520) from Proton", kTH3F, {axisMClabel, axisPt, axisMult});
-      histos.add("Result/dummy/Genlambdapt", "pT distribution of #Lambda(1520) from #Lambda", kTH3F, {axisMClabel, axisPt, axisMult});
-      histos.add("Result/dummy/Genxipt", "pT distribution of #Lambda(1520) from #Xi", kTH3F, {axisMClabel, axisPt, axisMult});
+    if (doprocessSignalLoss) {
+      histos.add("Result/SignalLoss/Genprotonpt", "pT distribution of #Lambda(1520) from Proton", kTH3F, {axisMClabel, axisPt, axisMult});
+      histos.add("Result/SignalLoss/Genlambdapt", "pT distribution of #Lambda(1520) from #Lambda", kTH3F, {axisMClabel, axisPt, axisMult});
+      histos.add("Result/SignalLoss/Genxipt", "pT distribution of #Lambda(1520) from #Xi", kTH3F, {axisMClabel, axisPt, axisMult});
 
-      histos.add("Result/dummy/GenTrueprotonpt", "pT distribution of True MC Proton", kTH3F, {axisMClabel, axisPt, axisMult});
-      histos.add("Result/dummy/GenTruelambdapt", "pT distribution of True MC #Lambda", kTH3F, {axisMClabel, axisPt, axisMult});
-      histos.add("Result/dummy/GenTruexipt", "pT distribution of True MC #Xi", kTH3F, {axisMClabel, axisPt, axisMult});
+      histos.add("Result/SignalLoss/GenTrueprotonpt", "pT distribution of True MC Proton", kTH3F, {axisMClabel, axisPt, axisMult});
+      histos.add("Result/SignalLoss/GenTruelambdapt", "pT distribution of True MC #Lambda", kTH3F, {axisMClabel, axisPt, axisMult});
+      histos.add("Result/SignalLoss/GenTruexipt", "pT distribution of True MC #Xi", kTH3F, {axisMClabel, axisPt, axisMult});
     }
 
     // Print output histograms statistics
@@ -467,6 +462,52 @@ struct Lambda1520analysisinpp {
         break;
     }
     return returnValue;
+  }
+
+  template <typename Coll>
+  bool isSelected(const Coll& collision, bool fillHist = true)
+  {
+    auto applyCut = [&](bool enabled, bool condition, int bin) {
+      if (!enabled)
+        return true;
+      if (!condition)
+        return false;
+      if (fillHist)
+        histos.fill(HIST("CollCutCounts"), bin);
+      return true;
+    };
+
+    if (fillHist)
+      histos.fill(HIST("CollCutCounts"), 0);
+
+    if (!applyCut(true, std::abs(collision.posZ()) <= configEvents.cfgEvtZvtx, 1))
+      return false;
+
+    if (!applyCut(configEvents.cfgEvtTriggerTVXSel,
+                  collision.selection_bit(aod::evsel::kIsTriggerTVX), 2))
+      return false;
+
+    if (!applyCut(configEvents.cfgEvtNoTFBorderCut,
+                  collision.selection_bit(aod::evsel::kNoTimeFrameBorder), 3))
+      return false;
+
+    if (!applyCut(configEvents.cfgEvtNoITSROFrameBorderCut,
+                  collision.selection_bit(aod::evsel::kNoITSROFrameBorder), 4))
+      return false;
+
+    if (!applyCut(configEvents.cfgEvtIsRCTFlagpassed, rctChecker(collision), 5))
+      return false;
+
+    if (!applyCut(configEvents.cfgEvtSel8, collision.sel8(), 6))
+      return false;
+
+    if (!applyCut(configEvents.cfgEvtIsINELgt0, collision.isInelGt0(), 7))
+      return false;
+
+    if (fillHist)
+      histos.fill(HIST("CollCutCounts"), 8);
+
+    return true;
   }
 
   template <typename TrackType>
@@ -1032,21 +1073,13 @@ struct Lambda1520analysisinpp {
   void processData(EventCandidates::iterator const& collision,
                    TrackCandidates const& tracks)
   {
-    if (!colCuts.isSelected(collision)) // Default event selection
+    if (!isSelected(collision)) // Default event selection
       return;
 
-    if (cFilladditionalQAeventPlots) {
-      histos.fill(HIST("QAevent/hEvents"), 1);
-    }
+    auto centrality = centEst(collision);
 
-    if (!collision.isInelGt0()) // <--
-      return;
-
-    if (cFilladditionalQAeventPlots) {
-      histos.fill(HIST("QAevent/hEvents"), 2);
-    }
-
-    colCuts.fillQA(collision);
+    histos.fill(HIST("Event/posZ"), collision.posZ());
+    histos.fill(HIST("Event/centFT0M"), centrality);
 
     fillHistograms<true, false, false, false>(collision, tracks, tracks);
   }
@@ -1054,7 +1087,7 @@ struct Lambda1520analysisinpp {
 
   void processRotational(EventCandidates::iterator const& collision, TrackCandidates const& tracks)
   {
-    if (!colCuts.isSelected(collision, false)) // Default event selection
+    if (!isSelected(collision, false)) // Default event selection
       return;
 
     if (!collision.isInelGt0()) // <--
@@ -1068,21 +1101,13 @@ struct Lambda1520analysisinpp {
                     aod::McCollisions const&,
                     MCTrackCandidates const& tracks, aod::McParticles const&)
   {
-    if (!colCuts.isSelected(collision))
+    if (!isSelected(collision))
       return;
 
-    if (cFilladditionalQAeventPlots) {
-      histos.fill(HIST("QAevent/hEventsMC"), 1);
-    }
+    auto centrality = centEst(collision);
 
-    if (!collision.isInelGt0()) // <--
-      return;
-
-    if (cFilladditionalQAeventPlots) {
-      histos.fill(HIST("QAevent/hEventsMC"), 2);
-    }
-
-    colCuts.fillQA(collision);
+    histos.fill(HIST("Event/posZ"), collision.posZ());
+    histos.fill(HIST("Event/centFT0M"), centrality);
 
     fillHistograms<false, false, true, false>(collision, tracks, tracks);
   }
@@ -1092,7 +1117,7 @@ struct Lambda1520analysisinpp {
 
   void processMCGen(MCEventCandidates::iterator const& collision, aod::McCollisions const&, aod::McParticles const& mcParticles)
   {
-    bool isInAfterAllCuts = colCuts.isSelected(collision, false);
+    bool isInAfterAllCuts = isSelected(collision, false);
     bool inVtx10 = (std::abs(collision.mcCollision().posZ()) > configEvents.cfgEvtZvtx) ? false : true;
     bool isTriggerTVX = collision.selection_bit(aod::evsel::kIsTriggerTVX);
     bool isSel8 = collision.sel8();
@@ -1264,10 +1289,10 @@ struct Lambda1520analysisinpp {
       //  LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d)", t1.index(), t2.index(), collision1.index(), collision2.index());
       //  }
 
-      if (!colCuts.isSelected(collision1, false)) // Default event selection
+      if (!isSelected(collision1, false)) // Default event selection
         continue;
 
-      if (!colCuts.isSelected(collision2, false)) // Default event selection
+      if (!isSelected(collision2, false)) // Default event selection
         continue;
 
       if (!collision1.isInelGt0()) // <--
@@ -1295,9 +1320,9 @@ struct Lambda1520analysisinpp {
   }
   PROCESS_SWITCH(Lambda1520analysisinpp, processME, "Process EventMixing light without partition", false);
 
-  void processdummy(MCEventCandidates::iterator const& collision, aod::McCollisions const&, aod::McParticles const& mcParticles)
+  void processSignalLoss(MCEventCandidates::iterator const& collision, aod::McCollisions const&, aod::McParticles const& mcParticles)
   {
-    bool isInAfterAllCuts = colCuts.isSelected(collision, false);
+    bool isInAfterAllCuts = isSelected(collision, false);
     bool inVtx10 = (std::abs(collision.mcCollision().posZ()) > configEvents.cfgEvtZvtx) ? false : true;
     bool isTriggerTVX = collision.selection_bit(aod::evsel::kIsTriggerTVX);
     bool isSel8 = collision.sel8();
@@ -1329,25 +1354,25 @@ struct Lambda1520analysisinpp {
       if (std::abs(part.pdgCode()) == kProton) {
 
         // true proton
-        histos.fill(HIST("Result/dummy/GenTrueprotonpt"), 0, pt, centrality);
+        histos.fill(HIST("Result/SignalLoss/GenTrueprotonpt"), 0, pt, centrality);
 
         if (inVtx10) // vtx10
-          histos.fill(HIST("Result/dummy/GenTrueprotonpt"), 1, pt, centrality);
+          histos.fill(HIST("Result/SignalLoss/GenTrueprotonpt"), 1, pt, centrality);
 
         if (inVtx10 && isSel8) // vtx10, sel8
-          histos.fill(HIST("Result/dummy/GenTrueprotonpt"), 2, pt, centrality);
+          histos.fill(HIST("Result/SignalLoss/GenTrueprotonpt"), 2, pt, centrality);
 
         if (inVtx10 && isTriggerTVX) // vtx10, TriggerTVX
-          histos.fill(HIST("Result/dummy/GenTrueprotonpt"), 3, pt, centrality);
+          histos.fill(HIST("Result/SignalLoss/GenTrueprotonpt"), 3, pt, centrality);
 
         if (inVtx10 && isTrueINELgt0) // vtx10, INEL>0
-          histos.fill(HIST("Result/dummy/GenTrueprotonpt"), 4, pt, centrality);
+          histos.fill(HIST("Result/SignalLoss/GenTrueprotonpt"), 4, pt, centrality);
 
         if (isInAfterAllCuts) // after all event selection
-          histos.fill(HIST("Result/dummy/GenTrueprotonpt"), 5, pt, centrality);
+          histos.fill(HIST("Result/SignalLoss/GenTrueprotonpt"), 5, pt, centrality);
 
         if (isInAfterAllCuts && isTrueINELgt0) // after all event selection && INEL>0
-          histos.fill(HIST("Result/dummy/GenTrueprotonpt"), 6, pt, centrality);
+          histos.fill(HIST("Result/SignalLoss/GenTrueprotonpt"), 6, pt, centrality);
 
         float ptL = computePtL(pt, massPr);
         if (ptL < 0)
@@ -1358,49 +1383,49 @@ struct Lambda1520analysisinpp {
         else
           weight = 1.f;
 
-        histos.fill(HIST("Result/dummy/Genprotonpt"), 0, ptL, centrality, weight);
+        histos.fill(HIST("Result/SignalLoss/Genprotonpt"), 0, ptL, centrality, weight);
 
         if (inVtx10) // vtx10
-          histos.fill(HIST("Result/dummy/Genprotonpt"), 1, ptL, centrality, weight);
+          histos.fill(HIST("Result/SignalLoss/Genprotonpt"), 1, ptL, centrality, weight);
 
         if (inVtx10 && isSel8) // vtx10, sel8
-          histos.fill(HIST("Result/dummy/Genprotonpt"), 2, ptL, centrality, weight);
+          histos.fill(HIST("Result/SignalLoss/Genprotonpt"), 2, ptL, centrality, weight);
 
         if (inVtx10 && isTriggerTVX) // vtx10, TriggerTVX
-          histos.fill(HIST("Result/dummy/Genprotonpt"), 3, ptL, centrality, weight);
+          histos.fill(HIST("Result/SignalLoss/Genprotonpt"), 3, ptL, centrality, weight);
 
         if (inVtx10 && isTrueINELgt0) // vtx10, INEL>0
-          histos.fill(HIST("Result/dummy/Genprotonpt"), 4, ptL, centrality, weight);
+          histos.fill(HIST("Result/SignalLoss/Genprotonpt"), 4, ptL, centrality, weight);
 
         if (isInAfterAllCuts) // after all event selection
-          histos.fill(HIST("Result/dummy/Genprotonpt"), 5, ptL, centrality, weight);
+          histos.fill(HIST("Result/SignalLoss/Genprotonpt"), 5, ptL, centrality, weight);
 
         if (isInAfterAllCuts && isTrueINELgt0) // after all event selection && INEL>0
-          histos.fill(HIST("Result/dummy/Genprotonpt"), 6, ptL, centrality, weight);
+          histos.fill(HIST("Result/SignalLoss/Genprotonpt"), 6, ptL, centrality, weight);
       }
 
       if (std::abs(part.pdgCode()) == kLambda0) {
 
         // true lambda
-        histos.fill(HIST("Result/dummy/GenTruelambdapt"), 0, pt, centrality);
+        histos.fill(HIST("Result/SignalLoss/GenTruelambdapt"), 0, pt, centrality);
 
         if (inVtx10) // vtx10
-          histos.fill(HIST("Result/dummy/GenTruelambdapt"), 1, pt, centrality);
+          histos.fill(HIST("Result/SignalLoss/GenTruelambdapt"), 1, pt, centrality);
 
         if (inVtx10 && isSel8) // vtx10, sel8
-          histos.fill(HIST("Result/dummy/GenTruelambdapt"), 2, pt, centrality);
+          histos.fill(HIST("Result/SignalLoss/GenTruelambdapt"), 2, pt, centrality);
 
         if (inVtx10 && isTriggerTVX) // vtx10, TriggerTVX
-          histos.fill(HIST("Result/dummy/GenTruelambdapt"), 3, pt, centrality);
+          histos.fill(HIST("Result/SignalLoss/GenTruelambdapt"), 3, pt, centrality);
 
         if (inVtx10 && isTrueINELgt0) // vtx10, INEL>0
-          histos.fill(HIST("Result/dummy/GenTruelambdapt"), 4, pt, centrality);
+          histos.fill(HIST("Result/SignalLoss/GenTruelambdapt"), 4, pt, centrality);
 
         if (isInAfterAllCuts) // after all event selection
-          histos.fill(HIST("Result/dummy/GenTruelambdapt"), 5, pt, centrality);
+          histos.fill(HIST("Result/SignalLoss/GenTruelambdapt"), 5, pt, centrality);
 
         if (isInAfterAllCuts && isTrueINELgt0) // after all event selection && INEL>0
-          histos.fill(HIST("Result/dummy/GenTruelambdapt"), 6, pt, centrality);
+          histos.fill(HIST("Result/SignalLoss/GenTruelambdapt"), 6, pt, centrality);
 
         float ptL = computePtL(pt, MassLambda0);
         if (ptL < 0)
@@ -1411,49 +1436,49 @@ struct Lambda1520analysisinpp {
         else
           weight = 1.f;
 
-        histos.fill(HIST("Result/dummy/Genlambdapt"), 0, ptL, centrality, weight);
+        histos.fill(HIST("Result/SignalLoss/Genlambdapt"), 0, ptL, centrality, weight);
 
         if (inVtx10) // vtx10
-          histos.fill(HIST("Result/dummy/Genlambdapt"), 1, ptL, centrality, weight);
+          histos.fill(HIST("Result/SignalLoss/Genlambdapt"), 1, ptL, centrality, weight);
 
         if (inVtx10 && isSel8) // vtx10, sel8
-          histos.fill(HIST("Result/dummy/Genlambdapt"), 2, ptL, centrality, weight);
+          histos.fill(HIST("Result/SignalLoss/Genlambdapt"), 2, ptL, centrality, weight);
 
         if (inVtx10 && isTriggerTVX) // vtx10, TriggerTVX
-          histos.fill(HIST("Result/dummy/Genlambdapt"), 3, ptL, centrality, weight);
+          histos.fill(HIST("Result/SignalLoss/Genlambdapt"), 3, ptL, centrality, weight);
 
         if (inVtx10 && isTrueINELgt0) // vtx10, INEL>0
-          histos.fill(HIST("Result/dummy/Genlambdapt"), 4, ptL, centrality, weight);
+          histos.fill(HIST("Result/SignalLoss/Genlambdapt"), 4, ptL, centrality, weight);
 
         if (isInAfterAllCuts) // after all event selection
-          histos.fill(HIST("Result/dummy/Genlambdapt"), 5, ptL, centrality, weight);
+          histos.fill(HIST("Result/SignalLoss/Genlambdapt"), 5, ptL, centrality, weight);
 
         if (isInAfterAllCuts && isTrueINELgt0) // after all event selection && INEL>0
-          histos.fill(HIST("Result/dummy/Genlambdapt"), 6, ptL, centrality, weight);
+          histos.fill(HIST("Result/SignalLoss/Genlambdapt"), 6, ptL, centrality, weight);
       }
 
       if (std::abs(part.pdgCode()) == PDG_t::kXiMinus) {
 
         // true Xi
-        histos.fill(HIST("Result/dummy/GenTruexipt"), 0, pt, centrality);
+        histos.fill(HIST("Result/SignalLoss/GenTruexipt"), 0, pt, centrality);
 
         if (inVtx10) // vtx10
-          histos.fill(HIST("Result/dummy/GenTruexipt"), 1, pt, centrality);
+          histos.fill(HIST("Result/SignalLoss/GenTruexipt"), 1, pt, centrality);
 
         if (inVtx10 && isSel8) // vtx10, sel8
-          histos.fill(HIST("Result/dummy/GenTruexipt"), 2, pt, centrality);
+          histos.fill(HIST("Result/SignalLoss/GenTruexipt"), 2, pt, centrality);
 
         if (inVtx10 && isTriggerTVX) // vtx10, TriggerTVX
-          histos.fill(HIST("Result/dummy/GenTruexipt"), 3, pt, centrality);
+          histos.fill(HIST("Result/SignalLoss/GenTruexipt"), 3, pt, centrality);
 
         if (inVtx10 && isTrueINELgt0) // vtx10, INEL>0
-          histos.fill(HIST("Result/dummy/GenTruexipt"), 4, pt, centrality);
+          histos.fill(HIST("Result/SignalLoss/GenTruexipt"), 4, pt, centrality);
 
         if (isInAfterAllCuts) // after all event selection
-          histos.fill(HIST("Result/dummy/GenTruexipt"), 5, pt, centrality);
+          histos.fill(HIST("Result/SignalLoss/GenTruexipt"), 5, pt, centrality);
 
         if (isInAfterAllCuts && isTrueINELgt0) // after all event selection && INEL>0
-          histos.fill(HIST("Result/dummy/GenTruexipt"), 6, pt, centrality);
+          histos.fill(HIST("Result/SignalLoss/GenTruexipt"), 6, pt, centrality);
 
         float ptL = computePtL(pt, MassXiMinus);
         if (ptL < 0)
@@ -1464,29 +1489,29 @@ struct Lambda1520analysisinpp {
         else
           weight = 1.f;
 
-        histos.fill(HIST("Result/dummy/Genxipt"), 0, ptL, centrality, weight);
+        histos.fill(HIST("Result/SignalLoss/Genxipt"), 0, ptL, centrality, weight);
 
         if (inVtx10) // vtx10
-          histos.fill(HIST("Result/dummy/Genxipt"), 1, ptL, centrality, weight);
+          histos.fill(HIST("Result/SignalLoss/Genxipt"), 1, ptL, centrality, weight);
 
         if (inVtx10 && isSel8) // vtx10, sel8
-          histos.fill(HIST("Result/dummy/Genxipt"), 2, ptL, centrality, weight);
+          histos.fill(HIST("Result/SignalLoss/Genxipt"), 2, ptL, centrality, weight);
 
         if (inVtx10 && isTriggerTVX) // vtx10, TriggerTVX
-          histos.fill(HIST("Result/dummy/Genxipt"), 3, ptL, centrality, weight);
+          histos.fill(HIST("Result/SignalLoss/Genxipt"), 3, ptL, centrality, weight);
 
         if (inVtx10 && isTrueINELgt0) // vtx10, INEL>0
-          histos.fill(HIST("Result/dummy/Genxipt"), 4, ptL, centrality, weight);
+          histos.fill(HIST("Result/SignalLoss/Genxipt"), 4, ptL, centrality, weight);
 
         if (isInAfterAllCuts) // after all event selection
-          histos.fill(HIST("Result/dummy/Genxipt"), 5, ptL, centrality, weight);
+          histos.fill(HIST("Result/SignalLoss/Genxipt"), 5, ptL, centrality, weight);
 
         if (isInAfterAllCuts && isTrueINELgt0) // after all event selection && INEL>0
-          histos.fill(HIST("Result/dummy/Genxipt"), 6, ptL, centrality, weight);
+          histos.fill(HIST("Result/SignalLoss/Genxipt"), 6, ptL, centrality, weight);
       }
     }
   }
-  PROCESS_SWITCH(Lambda1520analysisinpp, processdummy, "Process dummy", false);
+  PROCESS_SWITCH(Lambda1520analysisinpp, processSignalLoss, "Process SignalLoss", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

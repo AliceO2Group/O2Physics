@@ -62,97 +62,13 @@ namespace particleorigintask
 {
 using namespace o2::analysis::dptdptfilter;
 
-// ============================================================================
-// Compact encoding of the mother resonance identity
-// ============================================================================
-enum MotherSpecies {
-  kMothPrompt = 0,  ///< not from decay (prompt from hadronization)
-  kMothRho0,        ///< rho0(770)        - PDG 113
-  kMothRhoCharged,  ///< rho+/-(770)      - PDG 213
-  kMothOmega782,    ///< omega(782)       - PDG 223
-  kMothEta,         ///< eta              - PDG 221
-  kMothEtaPrime,    ///< eta'(958)        - PDG 331
-  kMothKStar892Ch,  ///< K*(892)+/-       - PDG 323
-  kMothKStar892_0,  ///< K*(892)0         - PDG 313
-  kMothPhi1020,     ///< phi(1020)        - PDG 333
-  kMothDelta,       ///< Delta(1232) all  - PDG 1114,2114,2214,2224
-  kMothSigmaStar,   ///< Sigma*(1385)     - PDG 3114,3214,3224
-  kMothLambda1520,  ///< Lambda(1520)     - PDG 3124
-  kMothF0_980,      ///< f0(980)          - PDG 9010221
-  kMothOtherMeson,  ///< other meson mothers
-  kMothOtherBaryon, ///< other baryon mothers
-  kNMotherSpecies
-};
-
-static const char* motherLabel[kNMotherSpecies] = {
-  "prompt", "#rho^{0}", "#rho^{#pm}", "#omega", "#eta", "#eta'",
-  "K*^{#pm}", "K*^{0}", "#phi",
-  "#Delta", "#Sigma*", "#Lambda(1520)",
-  "f_{0}(980)", "other meson", "other baryon"};
-
-// PDG codes used from TPDGCode.h (ROOT):
-//   kRho770_0 (113), kRho770Plus (213), kLambda1520 (3124),
-//   kPiPlus (211), kKPlus (321), kProton (2212)
-// PDG codes used from CommonConstants/PhysicsConstants.h (O2):
-//   o2::constants::physics::Pdg::kEta (221), kOmega (223), kEtaPrime (331),
-//   kK0Star892 (313), kKPlusStar892 (323), kPhi (333)
-// PDG codes NOT in either header - defined here:
-static constexpr int KPdgDeltaMinusMinus = 1114; // o2-linter: disable=pdg/explicit-code(not existing)
-static constexpr int KPdgDelta0 = 2114;          // o2-linter: disable=pdg/explicit-code(not existing)
-static constexpr int KPdgDeltaPlus = 2214;       // o2-linter: disable=pdg/explicit-code(not existing)
-static constexpr int KPdgDeltaPlusPlus = 2224;   // o2-linter: disable=pdg/explicit-code(not existing)
-static constexpr int KPdgSigmaStarMinus = 3114;  // o2-linter: disable=pdg/explicit-code(not existing)
-static constexpr int KPdgSigmaStar0 = 3214;      // o2-linter: disable=pdg/explicit-code(not existing)
-static constexpr int KPdgSigmaStarPlus = 3224;   // o2-linter: disable=pdg/explicit-code(not existing)
-static constexpr int KPdgF0_980 = 9010221;       // o2-linter: disable=pdg/explicit-code(not existing),name/function-variable(clashes with f0),name/constexpr-constant(clashes with f0)
-
-/// PDG codes below this threshold are mesons; at or above are baryons
-static constexpr int KPdgBaryonThreshold = 1000; // o2-linter: disable=pdg/explicit-code(not a PDG code)
-
-/// \brief Encode absolute PDG code of a mother into compact bin index
-inline int encodeMotherPDG(int absPdg)
-{
-  using namespace o2::constants::physics;
-  switch (absPdg) {
-    case kRho770_0:
-      return kMothRho0;
-    case kRho770Plus: /* kRho770Minus is just -213, we use abs */
-      return kMothRhoCharged;
-    case Pdg::kOmega:
-      return kMothOmega782;
-    case Pdg::kEta:
-      return kMothEta;
-    case Pdg::kEtaPrime:
-      return kMothEtaPrime;
-    case Pdg::kKPlusStar892:
-      return kMothKStar892Ch;
-    case Pdg::kK0Star892:
-      return kMothKStar892_0;
-    case Pdg::kPhi:
-      return kMothPhi1020;
-    case KPdgDeltaMinusMinus:
-    case KPdgDelta0:
-    case KPdgDeltaPlus:
-    case KPdgDeltaPlusPlus:
-      return kMothDelta;
-    case KPdgSigmaStarMinus:
-    case KPdgSigmaStar0:
-    case KPdgSigmaStarPlus:
-      return kMothSigmaStar;
-    case kLambda1520:
-      return kMothLambda1520;
-    case KPdgF0_980:
-      return kMothF0_980;
-    default:
-      return (absPdg < KPdgBaryonThreshold) ? kMothOtherMeson : kMothOtherBaryon;
-  }
-}
-
 /// PDG codes above this threshold correspond to hadrons (mesons and baryons).
 /// Below are quarks (1-6), leptons (11-16), gauge bosons (21-25), and
 /// special/internal generator codes.
-static constexpr int KPdgHadronThreshold = 100; // o2-linter: disable=pdg/explicit-code(not a PDG code)
+static constexpr int KPdgHadronThreshold = 100; // o2-linter: disable=pdg/explicit-code (not a PDG code)
 
+/// the prompt origin label
+static constexpr std::string PromptStr = "prompt";
 // ============================================================================
 // Classification utilities
 // ============================================================================
@@ -234,8 +150,6 @@ struct ParticleOriginAnalysis {
 
   /* histogram pointers for direct access */
   /* per track id histograms: indexed by trackacceptedid */
-  static constexpr int KNMo = particleorigintask::kNMotherSpecies;
-
   std::vector<std::shared_ptr<TH1>> fhPromptVsPt;         ///< prompt counts vs pT, per track id
   std::vector<std::shared_ptr<TH1>> fhDecayVsPt;          ///< from-decay counts vs pT, per track id
   std::vector<std::shared_ptr<TH2>> fhPromptVsCentVsPt;   ///< prompt counts vs (cent, pT), per track id
@@ -324,7 +238,6 @@ struct ParticleOriginAnalysis {
     /* build the centrality axis with variable bin edges */
     const AxisSpec centAxis{centBinEdges, "centrality (%)"};
     const AxisSpec ptAxis{ptbins, ptlow, ptup, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec motherAxis{KNMo, -0.5f, KNMo - 0.5f, "mother species"};
     const AxisSpec pdgAxis{100, 0.5f, 100.5f, "species"};
     const AxisSpec zvtxAxis{zvtxbins, zvtxlow, zvtxup, "#it{z}_{vtx}"};
 
@@ -365,18 +278,12 @@ struct ParticleOriginAnalysis {
       fhMotherVsPtVsCent[i] = registry.add<TH3>(
         FORMATSTRING("MotherVsPtVsCent_%s", tname),
         FORMATSTRING("Immediate mother of %s;mother;#it{p}_{T} (GeV/#it{c});centrality (%%)", tname),
-        kTH3D, {motherAxis, ptAxis, centAxis});
+        kTH3D, {pdgAxis, ptAxis, centAxis});
 
       fhAncestorVsPtVsCent[i] = registry.add<TH3>(
         FORMATSTRING("AncestorVsPtVsCent_%s", tname),
         FORMATSTRING("Earliest ancestor of %s;ancestor;#it{p}_{T} (GeV/#it{c});centrality (%%)", tname),
-        kTH3D, {motherAxis, ptAxis, centAxis});
-
-      /* label the encoded mother/ancestor axis */
-      for (int im = 0; im < KNMo; ++im) {
-        fhMotherVsPtVsCent[i]->GetXaxis()->SetBinLabel(im + 1, motherLabel[im]);
-        fhAncestorVsPtVsCent[i]->GetXaxis()->SetBinLabel(im + 1, motherLabel[im]);
-      }
+        kTH3D, {pdgAxis, ptAxis, centAxis});
 
       fhMotherPDG[i] = registry.add<TH1>(
         FORMATSTRING("MotherPDG_%s", tname),
@@ -407,20 +314,20 @@ struct ParticleOriginAnalysis {
     if (isFromDecay) {
       fhDecayVsPt[tid]->Fill(pt);
       fhDecayVsCentVsPt[tid]->Fill(centmult, pt);
-      int encodedMother = encodeMotherPDG(std::abs(immediatePdg));
-      fhMotherVsPtVsCent[tid]->Fill(static_cast<float>(encodedMother), pt, centmult);
-      fhMotherPDG[tid]->Fill(TString::Format("%d", immediatePdg).Data(), 1.0);
+      TString strMother = TString::Format("%d", immediatePdg);
+      fhMotherVsPtVsCent[tid]->Fill(strMother.Data(), pt, centmult, 1.0);
+      fhMotherPDG[tid]->Fill(strMother.Data(), 1.0);
     } else {
       fhPromptVsPt[tid]->Fill(pt);
       fhPromptVsCentVsPt[tid]->Fill(centmult, pt);
-      fhMotherVsPtVsCent[tid]->Fill(static_cast<float>(kMothPrompt), pt, centmult);
+      fhMotherVsPtVsCent[tid]->Fill(PromptStr.c_str(), pt, centmult, 1.0);
     }
     if (isFromDecayFull) {
-      int encodedAncestor = encodeMotherPDG(std::abs(ancestorPdg));
-      fhAncestorVsPtVsCent[tid]->Fill(static_cast<float>(encodedAncestor), pt, centmult);
-      fhAncestorPDG[tid]->Fill(TString::Format("%d", ancestorPdg).Data(), 1.0);
+      TString strAncestor = TString::Format("%d", ancestorPdg);
+      fhAncestorVsPtVsCent[tid]->Fill(strAncestor.Data(), pt, centmult, 1.0);
+      fhAncestorPDG[tid]->Fill(strAncestor.Data(), 1.0);
     } else {
-      fhAncestorVsPtVsCent[tid]->Fill(static_cast<float>(kMothPrompt), pt, centmult);
+      fhAncestorVsPtVsCent[tid]->Fill(PromptStr.c_str(), pt, centmult, 1.0);
     }
   }
 
