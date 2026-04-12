@@ -67,7 +67,7 @@ class FlowJSPCObservables
           {0, 0, 0, 0, 0, 0, 0, 0}};
         memcpy(harmonicArray, harmonicArray02, sizeof(int) * maxNrComb * 8);
       } break;
-      case 3: {
+      case 2: {
         LOGF(info, "Computing five and six harmonic SPC");
         int harmonicArray03[maxNrComb][8] = {
           {5, 3, 3, -2, -2, -2, 0, 0},
@@ -83,6 +83,23 @@ class FlowJSPCObservables
           {6, 2, 2, 3, 3, -4, -6, 0},
           {0, 0, 0, 0, 0, 0, 0, 0}};
         memcpy(harmonicArray, harmonicArray03, sizeof(int) * maxNrComb * 8);
+      } break;
+      case 3: {
+        LOGF(info, "Computing slected five harmonic SPC");
+        int harmonicArray04[maxNrComb][8] = {
+          {5, 3, 3, -2, -2, -2, 0, 0},
+          {0, 2, 2, -3, 4, -5, 0, 0},
+          {5, 2, 3, 3, -4, -4, 0, 0},
+          {0, 3, 3, 3, -4, -5, 0, 0},
+          {0, 2, 3, -4, 5, -6, 0, 0},
+          {0, 8, -2, -2, -2, -2, 0, 0},
+          {0, 2, 2, 2, 2, -4, -4, 0},
+          {0, 2, 3, 4, 4, -6, -7, 0},
+          {0, 2, 2, 2, 2, -3, -5, 0},
+          {0, 2, 2, 2, 3, -4, -5, 0},
+          {0, 2, 2, 3, 3, -4, -6, 0},
+          {0, 0, 0, 0, 0, 0, 0, 0}};
+        memcpy(harmonicArray, harmonicArray04, sizeof(int) * maxNrComb * 8);
       } break;
       default:
         LOGF(error, "ERROR: Invalid configuration index. Skipping this element.");

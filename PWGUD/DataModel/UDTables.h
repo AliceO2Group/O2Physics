@@ -21,15 +21,17 @@
 #ifndef PWGUD_DATAMODEL_UDTABLES_H_
 #define PWGUD_DATAMODEL_UDTABLES_H_
 
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/DataTypes.h"
-#include "MathUtils/Utils.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+
+#include <Rtypes.h>
 
 #include <cmath>
+#include <cstdint>
 #include <vector>
 
 namespace o2::aod
@@ -405,6 +407,31 @@ DECLARE_SOA_TABLE(UDTracksFlags, "AOD", "UDTRACKFLAG",
 
 DECLARE_SOA_TABLE(UDTracksLabels, "AOD", "UDTRACKLABEL",
                   udtrack::TrackId);
+
+namespace udcollfitbits
+{
+DECLARE_SOA_COLUMN(Thr1W0, thr1W0, uint64_t); /// 1 MIP thresholds for FT0A ch 0 - ch 63
+DECLARE_SOA_COLUMN(Thr1W1, thr1W1, uint64_t); /// 1 MIP thresholds for FT0A ch 64 - ch 96 & FT0C ch 0 - ch 31
+DECLARE_SOA_COLUMN(Thr1W2, thr1W2, uint64_t); /// 1 MIP thresholds for FT0C ch 32 - ch 96
+DECLARE_SOA_COLUMN(Thr1W3, thr1W3, uint64_t); /// 1 MIP thresholds for FT0C ch 97 - 112 & FV0 0 - 47
+
+DECLARE_SOA_COLUMN(Thr2W0, thr2W0, uint64_t); /// 2 MIP thresholds for FT0A ch 0 - ch 63
+DECLARE_SOA_COLUMN(Thr2W1, thr2W1, uint64_t); /// 2 MIP thresholds for FT0A ch 63 - ch 96 & FT0C ch 0 - ch 31
+DECLARE_SOA_COLUMN(Thr2W2, thr2W2, uint64_t); /// 2 MIP thresholds for FT0C ch 32 - ch 96
+DECLARE_SOA_COLUMN(Thr2W3, thr2W3, uint64_t); /// 2 MIP thresholds for FT0C ch 97 - 112 & FV0 0 - 47
+} // namespace udcollfitbits
+
+DECLARE_SOA_TABLE(UDCollisionFITBits, "AOD", "UDCOLLFITBITS",
+                  o2::soa::Index<>,
+                  udcollfitbits::Thr1W0, /// 1 MIP thresholds for FT0A ch 0 - ch 63
+                  udcollfitbits::Thr1W1, /// 1 MIP thresholds for FT0A ch 63 - ch 96 & FT0C ch 0 - ch 31
+                  udcollfitbits::Thr1W2, /// 1 MIP thresholds for FT0C ch 32 - ch 96
+                  udcollfitbits::Thr1W3, /// 1 MIP thresholds for FT0C ch 97 - 112 & FV0 0 - 47
+                  udcollfitbits::Thr2W0, /// 2 MIP thresholds for FT0A ch 0 - ch 63
+                  udcollfitbits::Thr2W1, /// 2 MIP thresholds for FT0A ch 63 - ch 96 & FT0C ch 0 - ch 31
+                  udcollfitbits::Thr2W2, /// 2 MIP thresholds for FT0C ch 32 - ch 96
+                  udcollfitbits::Thr2W3  /// 2 MIP thresholds for FT0C ch 97 - 112 & FV0 0 - 47
+);
 
 using UDTrack = UDTracks::iterator;
 using UDTrackCov = UDTracksCov::iterator;

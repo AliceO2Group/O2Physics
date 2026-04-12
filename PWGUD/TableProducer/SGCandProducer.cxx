@@ -12,37 +12,49 @@
 /// \file SGCandProducer.cxx
 /// \brief Produces PWGUD derived table from standard tables
 ///
-/// \author Alexander Bylinkin <roman.lavicka@cern.ch>, Uniersity of Bergen
-/// \since  23.11.2023
+/// \author Alexander Bylinkin <roman.lavicka@cern.ch>, University of Bergen
+/// \since 23.11.2023
 /// \author Adam Matyja <adam.tomasz.matyja@cern.ch>, INP PAN Krakow, Poland
-/// \since  May 2025
+/// \since May 2025
 //
 
+#include "PWGUD/Core/FITCutParHolder.h"
+#include "PWGUD/Core/SGCutParHolder.h"
 #include "PWGUD/Core/SGSelector.h"
+#include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/LHCConstants.h"
-#include "DataFormatsFIT/Triggers.h"
-#include "DataFormatsParameters/AggregatedRunInfo.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/ASoA.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Vertex.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonDataFormat/TimeStamp.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Vertex.h>
 
+#include <TH1.h>
+
+#include <sys/types.h>
+
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -75,6 +87,8 @@ struct SGCandProducer {
   // get an SGCutparHolder
   SGCutParHolder sameCuts = SGCutParHolder(); // SGCutparHolder
   Configurable<SGCutParHolder> SGCuts{"SGCuts", {}, "SG event cuts"};
+  FITCutParHolder fitCuts = FITCutParHolder();
+  Configurable<FITCutParHolder> FITCuts{"FITCuts", {}, "FIT bitset cuts"};
   Configurable<bool> verboseInfo{"verboseInfo", false, "Print general info to terminal; default it false."};
   Configurable<bool> saveAllTracks{"saveAllTracks", true, "save only PV contributors or all tracks associated to a collision"};
   Configurable<bool> savenonPVCITSOnlyTracks{"savenonPVCITSOnlyTracks", false, "save non PV contributors with ITS only information"};
@@ -87,6 +101,8 @@ struct SGCandProducer {
   Configurable<bool> storeSG{"storeSG", true, "Store SG events in the output"};
   Configurable<bool> storeDG{"storeDG", true, "Store DG events in the output"};
 
+  Configurable<bool> saveFITbitsets{"saveFITbitsets", true, "Write FT0 and FV0 bitset tables to output"};
+
   Configurable<bool> isGoodRCTCollision{"isGoodRCTCollision", true, "Check RCT flags for FT0,ITS,TPC and tracking"};
   Configurable<bool> isGoodRCTZdc{"isGoodRCTZdc", false, "Check RCT flags for ZDC if present in run"};
 
@@ -94,7 +110,7 @@ struct SGCandProducer {
   Configurable<bool> fillTrackTables{"fillTrackTables", true, "Fill track tables"};
   Configurable<bool> fillFwdTrackTables{"fillFwdTrackTables", true, "Fill forward track tables"};
 
-  //  SG selector
+  // SG selector
   SGSelector sgSelector;
   ctpRateFetcher mRateFetcher;
 
@@ -119,6 +135,7 @@ struct SGCandProducer {
   Produces<aod::UDFwdTracks> outputFwdTracks;
   Produces<aod::UDFwdTracksExtra> outputFwdTracksExtra;
   Produces<aod::UDTracksLabels> outputTracksLabel;
+  Produces<aod::UDCollisionFITBits> outputFITBits;
 
   // initialize histogram registry
   HistogramRegistry registry{
@@ -205,78 +222,6 @@ struct SGCandProducer {
     outputTracksLabel(track.globalIndex());
   }
 
-  // function to process trigger counters, accounting for BC selection bits
-  void processCountersTrg(BCs const& bcs, aod::FT0s const&, aod::Zdcs const&)
-  {
-    const auto& firstBc = bcs.iteratorAt(0);
-    if (runNumber != firstBc.runNumber())
-      runNumber = firstBc.runNumber();
-
-    auto hCountersTrg = getHist(TH1, "reco/hCountersTrg");
-    auto hCountersTrgBcSel = getHist(TH1, "reco/hCountersTrgBcSel");
-    auto hLumi = getHist(TH1, "reco/hLumi");
-    auto hLumiBcSel = getHist(TH1, "reco/hLumiBcSel");
-
-    // Cross sections in ub. Using dummy -1 if lumi estimator is not reliable
-    float csTCE = 10.36e6;
-    const float csZEM = 415.2e6; // see AN: https://alice-notes.web.cern.ch/node/1515
-    const float csZNC = 214.5e6; // see AN: https://alice-notes.web.cern.ch/node/1515
-    if (runNumber > 543437 && runNumber < 543514) {
-      csTCE = 8.3e6;
-    }
-    if (runNumber >= 543514) {
-      csTCE = 4.10e6; // see AN: https://alice-notes.web.cern.ch/node/1515
-    }
-
-    for (const auto& bc : bcs) {
-      bool hasFT0 = bc.has_foundFT0();
-      bool hasZDC = bc.has_foundZDC();
-      if (!hasFT0 && !hasZDC)
-        continue;
-      bool isSelectedBc = true;
-      if (rejectAtTFBoundary && !bc.selection_bit(aod::evsel::kNoTimeFrameBorder))
-        isSelectedBc = false;
-      if (noITSROFrameBorder && !bc.selection_bit(aod::evsel::kNoITSROFrameBorder))
-        isSelectedBc = false;
-      if (hasFT0) {
-        auto ft0TrgMask = bc.ft0().triggerMask();
-        if (TESTBIT(ft0TrgMask, o2::fit::Triggers::bitVertex)) {
-          hCountersTrg->Fill("TVX", 1);
-          if (isSelectedBc)
-            hCountersTrgBcSel->Fill("TVX", 1);
-        }
-        if (TESTBIT(ft0TrgMask, o2::fit::Triggers::bitVertex) && TESTBIT(ft0TrgMask, o2::fit::Triggers::bitCen)) {
-          hCountersTrg->Fill("TCE", 1);
-          hLumi->Fill("TCE", 1. / csTCE);
-          if (isSelectedBc) {
-            hCountersTrgBcSel->Fill("TCE", 1);
-            hLumiBcSel->Fill("TCE", 1. / csTCE);
-          }
-        }
-      }
-      if (hasZDC) {
-        if (bc.selection_bit(aod::evsel::kIsBBZNA) || bc.selection_bit(aod::evsel::kIsBBZNC)) {
-          hCountersTrg->Fill("ZEM", 1);
-          hLumi->Fill("ZEM", 1. / csZEM);
-          if (isSelectedBc) {
-            hCountersTrgBcSel->Fill("ZEM", 1);
-            hLumiBcSel->Fill("ZEM", 1. / csZEM);
-          }
-        }
-        if (bc.selection_bit(aod::evsel::kIsBBZNC)) {
-          hCountersTrg->Fill("ZNC", 1);
-          hLumi->Fill("ZNC", 1. / csZNC);
-          if (isSelectedBc) {
-            hCountersTrgBcSel->Fill("ZNC", 1);
-            hLumiBcSel->Fill("ZNC", 1. / csZNC);
-          }
-        }
-      }
-    }
-  }
-
-  PROCESS_SWITCH(SGCandProducer, processCountersTrg, "Produce trigger counters and luminosity histograms", true);
-
   // function to process reconstructed data
   template <typename TCol>
   void processReco(std::string histdir, TCol const& collision, BCs const& bcs,
@@ -284,7 +229,7 @@ struct SGCandProducer {
                    aod::FV0As const& fv0as, aod::FT0s const& ft0s, aod::FDDs const& fdds)
   {
     if (verboseInfo)
-      LOGF(debug, "<SGCandProducer>  collision %d", collision.globalIndex());
+      LOGF(debug, "<SGCandProducer> collision %d", collision.globalIndex());
     getHist(TH1, histdir + "/Stat")->Fill(0., 1.);
     // reject collisions at TF boundaries
     if (rejectAtTFBoundary && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
@@ -389,7 +334,26 @@ struct SGCandProducer {
                            fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                            fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
       outputCollisionSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, occ, ir, trs, trofs, hmpr, tfb, itsROFb, sbp, zVtxFT0vPv, vtxITSTPC, collision.rct_raw());
+      if (verboseInfo)
+        LOGF(info, "%s Coll GID %d", histdir, collision.globalIndex());
       outputCollsLabels(collision.globalIndex());
+
+      uint64_t w1[4] = {0ull, 0ull, 0ull, 0ull};
+      uint64_t w2[4] = {0ull, 0ull, 0ull, 0ull};
+
+      if (fitCuts.saveFITbitsets() && newbc.has_foundFT0() && newbc.has_fv0a()) {
+        udhelpers::buildFT0FV0Words(newbc.ft0(), newbc.fv0a(), w1, w2,
+                                    fitCuts.thr1_FT0A(),
+                                    fitCuts.thr1_FT0C(),
+                                    fitCuts.thr1_FV0A(),
+                                    fitCuts.thr2_FT0A(),
+                                    fitCuts.thr2_FT0C(),
+                                    fitCuts.thr2_FV0A());
+      }
+
+      outputFITBits(w1[0], w1[1], w1[2], w1[3],
+                    w2[0], w2[1], w2[2], w2[3]);
+
       if (newbc.has_zdc()) {
         auto zdc = newbc.zdc();
         udZdcsReduced(outputCollisions.lastIndex(), zdc.timeZNA(), zdc.timeZNC(), zdc.energyCommonZNA(), zdc.energyCommonZNC());
@@ -405,7 +369,7 @@ struct SGCandProducer {
             } else if (saveAllTracks) {
               if (track.itsClusterSizes() && track.itsChi2NCl() > 0 && ((track.tpcNClsFindable() == 0 && savenonPVCITSOnlyTracks) || track.tpcNClsFindable() > 50))
                 updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
-              // if (track.isPVContributor())  updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
+              // if (track.isPVContributor()) updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
             }
           }
         }
@@ -428,6 +392,7 @@ struct SGCandProducer {
     ccdb->setCaching(true);
     ccdb->setFatalWhenNull(false);
     sameCuts = (SGCutParHolder)SGCuts;
+    fitCuts = (FITCutParHolder)FITCuts;
 
     // add histograms for the different process functions
     histPointers.clear();
@@ -481,7 +446,7 @@ struct SGCandProducer {
 
     if (std::find(generatorIds->begin(), generatorIds->end(), mccol.getGeneratorId()) != generatorIds->end()) {
       if (verboseInfo)
-        LOGF(info, "Event with good generatorId");
+        LOGF(info, "Event with good generatorId %d", mccol.getGeneratorId());
       processReco(std::string("MCreco"), collision, bcs, tracks, fwdtracks, fv0as, ft0s, fdds);
     }
   }
@@ -589,7 +554,7 @@ struct McSGCandProducer {
         for (const auto& oldmid : oldmids) {
           auto m = McParts.rawIteratorAt(oldmid);
           if (verboseInfoMC)
-            LOGF(debug, "    m %d", m.globalIndex());
+            LOGF(debug, "m %d", m.globalIndex());
           if (mcPartIsSaved.find(oldmid) != mcPartIsSaved.end()) {
             newval = mcPartIsSaved[oldmid];
           } else {
@@ -688,6 +653,8 @@ struct McSGCandProducer {
     // loop over McCollisions and UDCCs simultaneously
     auto mccol = mccols.iteratorAt(0);
     auto mcOfInterest = std::find(generatorIds->begin(), generatorIds->end(), mccol.getGeneratorId()) != generatorIds->end();
+    if (verboseInfoMC)
+      LOGF(info, "Is Generator ID OK %d, MCcoll GenId %d, SubGenID %d, SourceId %d, Set in json ID %d", mcOfInterest, mccol.getGeneratorId(), mccol.getSubGeneratorId(), mccol.getSourceId(), *(generatorIds->begin()));
     auto lastmccol = mccols.iteratorAt(mccols.size() - 1);
     auto mccolAtEnd = false;
 
@@ -701,6 +668,7 @@ struct McSGCandProducer {
     bool goon = true;
     while (goon) {
       auto globBC = mccol.bc_as<BCs>().globalBC();
+
       // check if dgcand has an associated McCollision
       if (sgcand.has_collision()) {
         auto sgcandCol = sgcand.collision_as<CCs>();
@@ -735,7 +703,7 @@ struct McSGCandProducer {
         if (mcsgId >= 0 && mcOfInterest) {
           if (mcColIsSaved.find(mcsgId) == mcColIsSaved.end()) {
             if (verboseInfoMC)
-              LOGF(info, "  Saving McCollision %d", mcsgId);
+              LOGF(info, "Saving McCollision %d", mcsgId);
             // update UDMcCollisions
             auto sgcandMcCol = sgcand.collision_as<CCs>().mcCollision();
             updateUDMcCollisions(sgcandMcCol, globBC);
@@ -756,7 +724,7 @@ struct McSGCandProducer {
           // If the sgcand has no associated McCollision then only the McParticles which are associated
           // with the tracks of the sgcand are saved
           if (verboseInfoMC)
-            LOGF(info, "  Saving McCollision %d", -1);
+            LOGF(info, "Saving McCollision %d", -1);
 
           // update UDMcColsLabels (for each UDCollision -> UDMcCollisions)
           outputMcCollsLabels(-1);
@@ -798,7 +766,7 @@ struct McSGCandProducer {
         // but only consider generated events of interest
         if (mcOfInterest && mcColIsSaved.find(mccolId) == mcColIsSaved.end()) {
           if (verboseInfoMC)
-            LOGF(info, "  Saving McCollision %d", mccolId);
+            LOGF(info, "Saving McCollision %d", mccolId);
           // update UDMcCollisions
           updateUDMcCollisions(mccol, globBC);
           mcColIsSaved[mccolId] = outputMcCollisions.lastIndex();
@@ -842,7 +810,7 @@ struct McSGCandProducer {
       // update UDMcCollisions and UDMcParticles
       if (mcColIsSaved.find(mccolId) == mcColIsSaved.end()) {
         if (verboseInfoMC)
-          LOGF(info, "  Saving McCollision %d", mccolId);
+          LOGF(info, "Saving McCollision %d", mccolId);
 
         // update UDMcCollisions
         updateUDMcCollisions(mccol, globBC);
@@ -875,6 +843,7 @@ struct McSGCandProducer {
       LOGF(info, "Number of McCollisions %d", mccols.size());
       LOGF(info, "Number of SG candidates %d", sgcands.size());
       LOGF(info, "Number of UD tracks %d", udtracks.size());
+      LOGF(info, "Number of McParticles %d", mcparts.size());
     }
     if (mccols.size() > 0) {
       if (sgcands.size() > 0) {

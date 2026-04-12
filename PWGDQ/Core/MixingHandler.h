@@ -14,18 +14,17 @@
 // Class to define and fill histograms
 //
 
-#ifndef MixingHandler_H
-#define MixingHandler_H
+#ifndef PWGDQ_CORE_MIXINGHANDLER_H_
+#define PWGDQ_CORE_MIXINGHANDLER_H_
 
-#include <TNamed.h>
-#include <TArrayF.h>
-#include <TArrayI.h>
-#include <TClonesArray.h>
-#include <TList.h>
-#include <TString.h>
-
-#include "PWGDQ/Core/HistogramManager.h"
 #include "PWGDQ/Core/VarManager.h"
+
+#include <TArrayF.h>
+#include <TNamed.h>
+
+#include <Rtypes.h>
+
+#include <vector>
 
 class MixingHandler : public TNamed
 {
@@ -61,4 +60,4 @@ class MixingHandler : public TNamed
   ClassDef(MixingHandler, 1);
 };
 
-#endif
+#endif // PWGDQ_CORE_MIXINGHANDLER_H_

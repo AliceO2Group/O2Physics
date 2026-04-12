@@ -16,7 +16,7 @@
 #ifndef PWGCF_FEMTO_CORE_HISTMANAGER_H_
 #define PWGCF_FEMTO_CORE_HISTMANAGER_H_
 
-#include "Framework/HistogramSpec.h"
+#include <Framework/HistogramSpec.h>
 
 #include <string>
 #include <string_view>
@@ -25,6 +25,13 @@ namespace o2::analysis::femto
 {
 namespace histmanager
 {
+
+// plot level for secondaries during mc processing
+enum SecondaryPlotLevel {
+  kSecondaryPlotLevel1 = 1,
+  kSecondaryPlotLevel2 = 2,
+  kSecondaryPlotLevel3 = 3
+};
 
 template <typename Hist>
 struct HistInfo {

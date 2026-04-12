@@ -22,6 +22,8 @@
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h> // IWYU pragma: keep
+#include <Framework/DataTypes.h>
+#include <SimulationDataFormat/MCGenProperties.h>
 
 #include <cmath>
 #include <cstdint>
@@ -36,19 +38,21 @@ DECLARE_SOA_INDEX_COLUMN(BC, bc);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);
 DECLARE_SOA_COLUMN(Timestamp, timestamp, uint64_t);
+DECLARE_SOA_COLUMN(TriggerMask, triggerMask, uint64_t);
 DECLARE_SOA_BITMAP_COLUMN(Alias, alias, 32);
 DECLARE_SOA_BITMAP_COLUMN(Selection, selection, 64);
 DECLARE_SOA_BITMAP_COLUMN(Rct, rct, 32);
-DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVX, readCountsWithTVX, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVXAndNoTFB, readCountsWithTVXAndNoTFB, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVXAndNoTFBAndNoITSROFB, readCountsWithTVXAndNoTFBAndNoITSROFB, std::vector<int>);
+DECLARE_SOA_COLUMN(Counts, counts, int);
+DECLARE_SOA_COLUMN(CountsWithTVX, countsWithTVX, int);
+DECLARE_SOA_COLUMN(CountsWithTVXAndNoTFB, countsWithTVXAndNoTFB, int);
+DECLARE_SOA_COLUMN(CountsWithTVXAndNoTFBAndNoITSROFB, countsWithTVXAndNoTFBAndNoITSROFB, int);
 } // namespace jbc
 
 DECLARE_SOA_TABLE_STAGED(JBCs, "JBC",
                          o2::soa::Index<>,
                          jbc::RunNumber,
                          jbc::GlobalBC,
+                         jbc::TriggerMask,
                          jbc::Timestamp,
                          jbc::Alias,
                          jbc::Selection,
@@ -61,10 +65,10 @@ DECLARE_SOA_TABLE_STAGED(JBCPIs, "JBCPI",
                          jbc::BCId);
 
 DECLARE_SOA_TABLE_STAGED(BCCounts, "BCCOUNT",
-                         jbc::ReadCounts,
-                         jbc::ReadCountsWithTVX,
-                         jbc::ReadCountsWithTVXAndNoTFB,
-                         jbc::ReadCountsWithTVXAndNoTFBAndNoITSROFB);
+                         jbc::Counts,
+                         jbc::CountsWithTVX,
+                         jbc::CountsWithTVXAndNoTFB,
+                         jbc::CountsWithTVXAndNoTFBAndNoITSROFB);
 
 namespace jcollision
 {
@@ -73,6 +77,7 @@ DECLARE_SOA_INDEX_COLUMN(JBC, bc);
 DECLARE_SOA_COLUMN(PosX, posX, float);
 DECLARE_SOA_COLUMN(PosY, posY, float);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
+DECLARE_SOA_COLUMN(CollisionTime, collisionTime, float);
 DECLARE_SOA_COLUMN(MultFV0A, multFV0A, float);
 DECLARE_SOA_COLUMN(MultFV0C, multFV0C, float);
 DECLARE_SOA_DYNAMIC_COLUMN(MultFV0M, multFV0M,
@@ -88,9 +93,14 @@ DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
 DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
 DECLARE_SOA_COLUMN(CentFT0CVariant1, centFT0CVariant1, float);
 DECLARE_SOA_COLUMN(CentralityVariant1, centralityVariant1, float);
+DECLARE_SOA_COLUMN(AmplitudesFV0, amplitudesFV0, std::vector<float>);
+DECLARE_SOA_COLUMN(AmplitudesFT0A, amplitudesFT0A, std::vector<float>);
+DECLARE_SOA_COLUMN(AmplitudesFT0C, amplitudesFT0C, std::vector<float>);
+DECLARE_SOA_COLUMN(AmplitudesFDDA, amplitudesFDDA, std::vector<float>);
+DECLARE_SOA_COLUMN(AmplitudesFDDC, amplitudesFDDC, std::vector<float>);
 DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, float);
 DECLARE_SOA_COLUMN(Weight, weight, float);
-DECLARE_SOA_COLUMN(SubGeneratorId, subGeneratorId, int);
+DECLARE_SOA_COLUMN(GetSubGeneratorId, getSubGeneratorId, int);
 DECLARE_SOA_COLUMN(EventSel, eventSel, uint16_t);
 DECLARE_SOA_BITMAP_COLUMN(Alias, alias, 32);
 DECLARE_SOA_BITMAP_COLUMN(Rct, rct, 32);
@@ -99,19 +109,19 @@ DECLARE_SOA_COLUMN(TriggerSel, triggerSel, uint64_t);
 DECLARE_SOA_COLUMN(ChargedTriggerSel, chargedTriggerSel, uint8_t);
 DECLARE_SOA_COLUMN(FullTriggerSel, fullTriggerSel, uint32_t);
 DECLARE_SOA_COLUMN(ChargedHFTriggerSel, chargedHFTriggerSel, uint8_t);
-DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVX, readCountsWithTVX, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel8, readCountsWithTVXAndZVertexAndSel8, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel8Full, readCountsWithTVXAndZVertexAndSel8Full, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel8FullPbPb, readCountsWithTVXAndZVertexAndSel8FullPbPb, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSelMC, readCountsWithTVXAndZVertexAndSelMC, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSelMCFull, readCountsWithTVXAndZVertexAndSelMCFull, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSelMCFullPbPb, readCountsWithTVXAndZVertexAndSelMCFullPbPb, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSelUnanchoredMC, readCountsWithTVXAndZVertexAndSelUnanchoredMC, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSelTVX, readCountsWithTVXAndZVertexAndSelTVX, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel7, readCountsWithTVXAndZVertexAndSel7, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel7KINT7, readCountsWithTVXAndZVertexAndSel7KINT7, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadCountsWithCustom, readCountsWithCustom, std::vector<int>);
+DECLARE_SOA_COLUMN(Counts, counts, int);
+DECLARE_SOA_COLUMN(CountsWithTVX, countsWithTVX, int);
+DECLARE_SOA_COLUMN(CountsWithTVXAndZVertexAndSel8, countsWithTVXAndZVertexAndSel8, int);
+DECLARE_SOA_COLUMN(CountsWithTVXAndZVertexAndSel8Full, countsWithTVXAndZVertexAndSel8Full, int);
+DECLARE_SOA_COLUMN(CountsWithTVXAndZVertexAndSel8FullPbPb, countsWithTVXAndZVertexAndSel8FullPbPb, int);
+DECLARE_SOA_COLUMN(CountsWithTVXAndZVertexAndSelMC, countsWithTVXAndZVertexAndSelMC, int);
+DECLARE_SOA_COLUMN(CountsWithTVXAndZVertexAndSelMCFull, countsWithTVXAndZVertexAndSelMCFull, int);
+DECLARE_SOA_COLUMN(CountsWithTVXAndZVertexAndSelMCFullPbPb, countsWithTVXAndZVertexAndSelMCFullPbPb, int);
+DECLARE_SOA_COLUMN(CountsWithTVXAndZVertexAndSelUnanchoredMC, countsWithTVXAndZVertexAndSelUnanchoredMC, int);
+DECLARE_SOA_COLUMN(CountsWithTVXAndZVertexAndSelTVX, countsWithTVXAndZVertexAndSelTVX, int);
+DECLARE_SOA_COLUMN(CountsWithTVXAndZVertexAndSel7, countsWithTVXAndZVertexAndSel7, int);
+DECLARE_SOA_COLUMN(CountsWithTVXAndZVertexAndSel7KINT7, countsWithTVXAndZVertexAndSel7KINT7, int);
+DECLARE_SOA_COLUMN(CountsWithCustomSelection, countsWithCustomSelection, int);
 DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, bool);
 DECLARE_SOA_COLUMN(IsEMCALReadout, isEmcalReadout, bool);
 DECLARE_SOA_COLUMN(IsOutlier, isOutlier, bool);
@@ -119,9 +129,11 @@ DECLARE_SOA_COLUMN(IsOutlier, isOutlier, bool);
 
 DECLARE_SOA_TABLE_STAGED(JCollisions, "JCOLLISION",
                          o2::soa::Index<>,
+                         jcollision::JBCId,
                          jcollision::PosX,
                          jcollision::PosY,
                          jcollision::PosZ,
+                         jcollision::CollisionTime,
                          jcollision::MultFV0A,
                          jcollision::MultFV0C,
                          jcollision::MultFV0M<jcollision::MultFV0A, jcollision::MultFV0C>,
@@ -144,9 +156,16 @@ DECLARE_SOA_TABLE_STAGED(JCollisions, "JCOLLISION",
 using JCollision = JCollisions::iterator;
 using StoredJCollision = StoredJCollisions::iterator;
 
+DECLARE_SOA_TABLE_STAGED(JCollisionUPCs, "JCOLLISIONUPC",
+                         jcollision::AmplitudesFV0,
+                         jcollision::AmplitudesFT0A,
+                         jcollision::AmplitudesFT0C,
+                         jcollision::AmplitudesFDDA,
+                         jcollision::AmplitudesFDDC);
+
 DECLARE_SOA_TABLE_STAGED(JCollisionMcInfos, "JCOLLISIONMCINFO",
                          jcollision::Weight,
-                         jcollision::SubGeneratorId);
+                         jcollision::GetSubGeneratorId);
 
 DECLARE_SOA_TABLE_STAGED(JCollisionOutliers, "JCOLLISIONOUTLR",
                          jcollision::IsOutlier);
@@ -160,9 +179,6 @@ using StoredJEMCCollisionLb = StoredJEMCCollisionLbs::iterator;
 DECLARE_SOA_TABLE_STAGED(JCollisionPIs, "JCOLLISIONPI",
                          jcollision::CollisionId);
 
-DECLARE_SOA_TABLE_STAGED(JCollisionBCs, "JCOLLISIONBC",
-                         jcollision::JBCId);
-
 DECLARE_SOA_TABLE(JChTrigSels, "AOD", "JCHTRIGSEL",
                   jcollision::ChargedTriggerSel);
 
@@ -173,23 +189,24 @@ DECLARE_SOA_TABLE(JChHFTrigSels, "AOD", "JCHHFTRIGSEL",
                   jcollision::ChargedHFTriggerSel);
 
 DECLARE_SOA_TABLE_STAGED(CollisionCounts, "COLLCOUNT",
-                         jcollision::ReadCounts,
-                         jcollision::ReadCountsWithTVX,
-                         jcollision::ReadCountsWithTVXAndZVertexAndSel8,
-                         jcollision::ReadCountsWithTVXAndZVertexAndSel8Full,
-                         jcollision::ReadCountsWithTVXAndZVertexAndSel8FullPbPb,
-                         jcollision::ReadCountsWithTVXAndZVertexAndSelMC,
-                         jcollision::ReadCountsWithTVXAndZVertexAndSelMCFull,
-                         jcollision::ReadCountsWithTVXAndZVertexAndSelMCFullPbPb,
-                         jcollision::ReadCountsWithTVXAndZVertexAndSelUnanchoredMC,
-                         jcollision::ReadCountsWithTVXAndZVertexAndSelTVX,
-                         jcollision::ReadCountsWithTVXAndZVertexAndSel7,
-                         jcollision::ReadCountsWithTVXAndZVertexAndSel7KINT7,
-                         jcollision::ReadCountsWithCustom);
+                         jcollision::Counts,
+                         jcollision::CountsWithTVX,
+                         jcollision::CountsWithTVXAndZVertexAndSel8,
+                         jcollision::CountsWithTVXAndZVertexAndSel8Full,
+                         jcollision::CountsWithTVXAndZVertexAndSel8FullPbPb,
+                         jcollision::CountsWithTVXAndZVertexAndSelMC,
+                         jcollision::CountsWithTVXAndZVertexAndSelMCFull,
+                         jcollision::CountsWithTVXAndZVertexAndSelMCFullPbPb,
+                         jcollision::CountsWithTVXAndZVertexAndSelUnanchoredMC,
+                         jcollision::CountsWithTVXAndZVertexAndSelTVX,
+                         jcollision::CountsWithTVXAndZVertexAndSel7,
+                         jcollision::CountsWithTVXAndZVertexAndSel7KINT7,
+                         jcollision::CountsWithCustomSelection);
 
 namespace jmccollision
 {
 DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);
+DECLARE_SOA_INDEX_COLUMN(JBC, bc);
 DECLARE_SOA_COLUMN(PosX, posX, float);
 DECLARE_SOA_COLUMN(PosY, posY, float);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
@@ -198,16 +215,24 @@ DECLARE_SOA_COLUMN(MultFT0A, multFT0A, float);
 DECLARE_SOA_COLUMN(MultFT0C, multFT0C, float);
 DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
 DECLARE_SOA_COLUMN(Weight, weight, float);
-DECLARE_SOA_COLUMN(SubGeneratorId, subGeneratorId, int);
 DECLARE_SOA_COLUMN(Accepted, accepted, uint64_t);
 DECLARE_SOA_COLUMN(Attempted, attempted, uint64_t);
 DECLARE_SOA_COLUMN(XsectGen, xsectGen, float);
 DECLARE_SOA_COLUMN(XsectErr, xsectErr, float);
 DECLARE_SOA_COLUMN(PtHard, ptHard, float);
 DECLARE_SOA_COLUMN(IsOutlier, isOutlier, bool);
+DECLARE_SOA_COLUMN(EventSel, eventSel, uint16_t);
+DECLARE_SOA_BITMAP_COLUMN(Rct, rct, 32);
+DECLARE_SOA_COLUMN(GetGeneratorId, getGeneratorId, int);
+DECLARE_SOA_COLUMN(GetSubGeneratorId, getSubGeneratorId, int);
+DECLARE_SOA_COLUMN(GetSourceId, getSourceId, int);
+DECLARE_SOA_COLUMN(ImpactParameter, impactParameter, float);
+DECLARE_SOA_COLUMN(EventPlaneAngle, eventPlaneAngle, float);
+
 } // namespace jmccollision
 DECLARE_SOA_TABLE_STAGED(JMcCollisions, "JMCCOLLISION",
                          o2::soa::Index<>,
+                         jmccollision::JBCId,
                          jmccollision::PosX,
                          jmccollision::PosY,
                          jmccollision::PosZ,
@@ -216,12 +241,18 @@ DECLARE_SOA_TABLE_STAGED(JMcCollisions, "JMCCOLLISION",
                          jmccollision::MultFT0C,
                          jmccollision::CentFT0M,
                          jmccollision::Weight,
-                         jmccollision::SubGeneratorId,
                          jmccollision::Accepted,
                          jmccollision::Attempted,
                          jmccollision::XsectGen,
                          jmccollision::XsectErr,
-                         jmccollision::PtHard);
+                         jmccollision::PtHard,
+                         jmccollision::EventSel,
+                         jmccollision::Rct,
+                         jmccollision::GetGeneratorId,
+                         jmccollision::GetSubGeneratorId,
+                         jmccollision::GetSourceId,
+                         jmccollision::ImpactParameter,
+                         jmccollision::EventPlaneAngle);
 
 using JMcCollision = JMcCollisions::iterator;
 using StoredJMcCollision = StoredJMcCollisions::iterator;

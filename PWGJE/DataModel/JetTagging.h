@@ -18,10 +18,10 @@
 #ifndef PWGJE_DATAMODEL_JETTAGGING_H_
 #define PWGJE_DATAMODEL_JETTAGGING_H_
 
-#include "RecoDecay.h"
-
 #include "PWGJE/Core/JetTaggingUtilities.h"
 #include "PWGJE/DataModel/Jet.h" // IWYU pragma: keep
+
+#include "Common/Core/RecoDecay.h"
 
 #include <Framework/ASoA.h>
 

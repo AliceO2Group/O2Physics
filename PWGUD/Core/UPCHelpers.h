@@ -14,15 +14,14 @@
 
 #include "UPCCutparHolder.h"
 
-#include "PWGUD/DataModel/UDTables.h"
-
-#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/LHCConstants.h"
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
 
-#include "TLorentzVector.h"
+#include <cstdint>
 
 using BCsWithBcSels = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>;
 
@@ -96,14 +95,16 @@ struct FITInfo {
   int32_t distClosestBcT0A = 999;
 };
 
+constexpr double AbsorberMid = 26.5;
+
 template <typename T, typename TSelectorsArray>
 void applyFwdCuts(UPCCutparHolder& upcCuts, const T& track, TSelectorsArray& fwdSelectors)
 {
-  fwdSelectors[kFwdSelPt] = track.pt() > upcCuts.getFwdPtLow() && track.pt() < upcCuts.getFwdPtHigh();                                                     // check pt
-  fwdSelectors[kFwdSelEta] = track.eta() > upcCuts.getFwdEtaLow() && track.eta() < upcCuts.getFwdEtaHigh();                                                // check pseudorapidity
-  fwdSelectors[kFwdSelRabs] = track.rAtAbsorberEnd() > upcCuts.getMuonRAtAbsorberEndLow() && track.rAtAbsorberEnd() < upcCuts.getMuonRAtAbsorberEndHigh(); // check muon R
-  fwdSelectors[kFwdSelpDCA] = track.pDca() < 26.5 ? track.pDca() < upcCuts.getMuonPDcaHighFirst() : track.pDca() < upcCuts.getMuonPDcaHighSecond();        // check pDCA
-  fwdSelectors[kFwdSelChi2] = track.chi2() > upcCuts.getFwdChi2Low() && track.chi2() < upcCuts.getFwdChi2High();                                           // check chi2
+  fwdSelectors[kFwdSelPt] = track.pt() > upcCuts.getFwdPtLow() && track.pt() < upcCuts.getFwdPtHigh();                                                               // check pt
+  fwdSelectors[kFwdSelEta] = track.eta() > upcCuts.getFwdEtaLow() && track.eta() < upcCuts.getFwdEtaHigh();                                                          // check pseudorapidity
+  fwdSelectors[kFwdSelRabs] = track.rAtAbsorberEnd() > upcCuts.getMuonRAtAbsorberEndLow() && track.rAtAbsorberEnd() < upcCuts.getMuonRAtAbsorberEndHigh();           // check muon R
+  fwdSelectors[kFwdSelpDCA] = track.rAtAbsorberEnd() < AbsorberMid ? track.pDca() < upcCuts.getMuonPDcaHighFirst() : track.pDca() < upcCuts.getMuonPDcaHighSecond(); // check pDCA
+  fwdSelectors[kFwdSelChi2] = track.chi2() > upcCuts.getFwdChi2Low() && track.chi2() < upcCuts.getFwdChi2High();                                                     // check chi2
 }
 
 template <typename T, typename TSelectorsArray>
@@ -131,7 +132,7 @@ void applyBarrelCuts(UPCCutparHolder& upcCuts, const T& track, TSelectorsArray& 
 
   if (upcCuts.getCheckMaxDcaXY()) {
     float dca = track.dcaXY();
-    float maxDCA = 0.0105f + 0.0350f / pow(track.pt(), 1.1f);
+    float maxDCA = 0.0105f + 0.0350f / std::pow(track.pt(), 1.1f);
     barrelSelectors[kBarrelSelDCAXY] = dca < maxDCA;
   } else {
     barrelSelectors[kBarrelSelDCAXY] = true;

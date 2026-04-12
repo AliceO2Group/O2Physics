@@ -49,12 +49,20 @@ def ask_user_selection(group):
     Prompt user to select bin(s) for this selection group.
     - If minimal selections contain exactly 1 entry → auto-select it.
     - Optional selections remain user-selectable.
+    - Neither minimal nor optional selections are shown with a warning — useful for rejection masks.
     """
     selection_name = group[0].get("SelectionName", "unknown")
 
-    # Separate minimal and optional bins
+    # Separate bins by type
     minimal_bins = [b for b in group if b.get("MinimalCut", "0") == "1" and b.get("OptionalCut", "0") == "0"]
     optional_bins = [b for b in group if b.get("OptionalCut", "0") == "1"]
+    neutral_bins = [
+        b
+        for b in group
+        if b.get("MinimalCut", "0") == "0"
+        and b.get("OptionalCut", "0") == "0"
+        and b.get("BitPosition", "X").upper() != "X"
+    ]
 
     selected_bins = []
 
@@ -107,7 +115,34 @@ def ask_user_selection(group):
                             b = optional_bins[i - 1]
                             selected_bins.append(b)
                             chosen.append(format_value_with_comment(b))
+                    print("Selected: " + ", ".join(chosen))
+                    break
+            except ValueError:
+                pass
 
+            print("Invalid input. Please enter valid indices separated by space.")
+
+    # ----- Neither minimal nor optional-----
+    if neutral_bins:
+        print(f"\nSelection: {selection_name} (Neither minimal nor optional, 0 to skip)")
+        for idx, b in enumerate(neutral_bins, start=1):
+            print(f"  [{idx}] {format_value_with_comment(b)}")
+
+        while True:
+            sel_input = input("Enter indices separated by space (0 to skip): ")
+            if not sel_input.strip() or sel_input.strip() == "0":
+                print("Selected: (skipped)")
+                break
+
+            try:
+                indices = [int(x) for x in sel_input.split()]
+                if all(0 <= i <= len(neutral_bins) for i in indices):
+                    chosen = []
+                    for i in indices:
+                        if i != 0:
+                            b = neutral_bins[i - 1]
+                            selected_bins.append(b)
+                            chosen.append(format_value_with_comment(b))
                     print("Selected: " + ", ".join(chosen))
                     break
             except ValueError:
@@ -139,7 +174,14 @@ def main(rootfile_path, tdir_path="femto-producer"):
     print("\nHistograms found in directory:")
     for i, hname in enumerate(histograms):
         print(f"  [{i}] {hname}")
-    hidx = int(input("\nSelect histogram index: "))
+    while True:
+        try:
+            hidx = int(input("\nSelect histogram index: "))
+            if 0 <= hidx < len(histograms):
+                break
+        except ValueError:
+            pass
+        print("Invalid index.")
     hname = histograms[hidx]
     hist = d.Get(hname)
     nbins = hist.GetNbinsX()

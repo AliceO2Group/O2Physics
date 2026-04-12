@@ -11,16 +11,24 @@
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
-#include <string>
-#include <vector>
-// #include <iostream>
-
 #include "PWGDQ/Core/MCSignalLibrary.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/Logger.h"
+#include "MCProng.h"
+#include "MCSignal.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/Logger.h>
 
 #include <TPDGCode.h>
+#include <TString.h>
+
+#include <rapidjson/document.h>
+#include <rapidjson/error/error.h>
+
+#include <cstdint>
+#include <cstring>
+#include <string>
+#include <vector>
 
 using namespace o2::constants::physics;
 // using std::cout;
@@ -193,7 +201,8 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
   if (!nameStr.compare("nonPromptJpsiFromBeauty")) {
-    MCProng prong(2, {443, 503}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prong(2, {503, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSignalInTime(true);
     signal = new MCSignal(name, "Non-prompt jpsi directly from beauty", {prong}, {-1});
     return signal;
   }

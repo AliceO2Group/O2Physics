@@ -12,14 +12,11 @@
 #ifndef PWGUD_DATAMODEL_SGTABLES_H_
 #define PWGUD_DATAMODEL_SGTABLES_H_
 
-#include <vector>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+
 #include <cmath>
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/DataTypes.h"
-#include "MathUtils/Utils.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include <cstdint>
 
 namespace o2::aod
 {

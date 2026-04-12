@@ -11,14 +11,16 @@
 
 /// \author Luca Micheletti <luca.micheletti@cern.ch>, CERN
 
-#ifndef EXPPDF
-#define EXPPDF
+#ifndef PWGDQ_MACROS_FIT_LIBRARY_EXPPDF_H_
+#define PWGDQ_MACROS_FIT_LIBRARY_EXPPDF_H_
 
-#include "RooAbsPdf.h"
-#include "RooRealProxy.h"
-#include "RooCategoryProxy.h"
-#include "RooAbsReal.h"
-#include "RooAbsCategory.h"
+#include <RooAbsPdf.h>
+#include <RooAbsReal.h>
+#include <RooRealProxy.h>
+#include <TObject.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
 
 class ExpPdf : public RooAbsPdf
 {
@@ -43,4 +45,4 @@ class ExpPdf : public RooAbsPdf
   ClassDef(ExpPdf, 1) // Your description goes here...
 };
 
-#endif
+#endif // PWGDQ_MACROS_FIT_LIBRARY_EXPPDF_H_

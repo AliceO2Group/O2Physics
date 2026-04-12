@@ -16,24 +16,19 @@
 #ifndef PWGCF_FEMTO_CORE_FEMTOUTILS_H_
 #define PWGCF_FEMTO_CORE_FEMTOUTILS_H_
 
-#include "RecoDecay.h"
+#include <Common/Core/TableHelper.h>
 
-#include "Common/Core/TableHelper.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
 
-#include "CommonConstants/MathConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/InitContext.h"
-
-#include "TPDGCode.h"
-
-#include "fairlogger/Logger.h"
+#include <TPDGCode.h>
 
 #include <cmath>
+#include <concepts>
 #include <cstdint>
-#include <experimental/type_traits>
 #include <optional>
 #include <unordered_map>
-#include <utility>
 
 namespace o2::analysis::femto
 {
@@ -63,55 +58,16 @@ float itsSignal(T const& track)
   auto clSizeLayer6 = (clsizeflag >> (6 * 4)) & 0xf;
   int numLayers = 7;
   int sumClusterSizes = clSizeLayer0 + clSizeLayer1 + clSizeLayer2 + clSizeLayer3 + clSizeLayer4 + clSizeLayer5 + clSizeLayer6;
-  float cosLamnda = 1. / std::cosh(track.eta());
-  return (static_cast<float>(sumClusterSizes) / numLayers) * cosLamnda;
+  double cosLamnda = 1. / std::cosh(track.eta());
+  double signal = (static_cast<double>(sumClusterSizes) / numLayers) * cosLamnda;
+  return static_cast<float>(signal);
 };
 
-template <typename T>
-float sphericity(T const& tracks)
-{
-
-  int minNumberTracks = 2;
-  float maxSphericity = 2.f;
-
-  if (tracks.size() <= minNumberTracks) {
-    return maxSphericity;
-  }
-
-  // Initialize the transverse momentum tensor components
-  float sxx = 0.f;
-  float syy = 0.f;
-  float sxy = 0.f;
-  float sumPt = 0.f;
-
-  // Loop over the tracks to compute the tensor components
-  for (const auto& track : tracks) {
-    sxx += (track.px() * track.px()) / track.pt();
-    syy += (track.py() * track.py()) / track.pt();
-    sxy += (track.px() * track.py()) / track.pt();
-    sumPt += track.pt();
-  }
-  sxx /= sumPt;
-  syy /= sumPt;
-  sxy /= sumPt;
-
-  // Compute the eigenvalues (real values)
-  float lambda1 = ((sxx + syy) + std::sqrt((sxx + syy) * (sxx + syy) - 4 * (sxx * syy - sxy * sxy))) / 2;
-  float lambda2 = ((sxx + syy) - std::sqrt((sxx + syy) * (sxx + syy) - 4 * (sxx * syy - sxy * sxy))) / 2;
-
-  if (lambda1 <= 0.f || lambda2 <= 0.f) {
-    return maxSphericity;
-  }
-
-  // Compute sphericity
-  return 2.f * lambda2 / (lambda1 + lambda2);
-}
-
-inline float getMass(int pdgCode)
+inline double getPdgMass(int pdgCode)
 {
   // use this function instead of TDatabasePDG to return masses defined in the PhysicsConstants.h header
   // this approach saves a lot of memory and important partilces like deuteron are missing in TDatabasePDG anyway
-  float mass = 0.f;
+  double mass = 0.f;
   // add new particles if necessary here
   switch (std::abs(pdgCode)) {
     case kPiPlus:
@@ -163,7 +119,7 @@ inline float getMass(int pdgCode)
       mass = o2::constants::physics::MassOmegaMinus;
       break;
     default:
-      LOG(fatal) << "PDG code is not suppored";
+      LOG(warn) << "PDG code is not suppored. Return 0...";
   }
   return mass;
 }
@@ -175,13 +131,62 @@ float qn(T const& col)
   return qn;
 }
 
-inline std::optional<float> dphistar(float magfield, float radius, float signedPt, float phi)
+/// Recalculate pT for Kinks (Sigmas) using kinematic constraints
+inline float calcPtnew(float pxMother, float pyMother, float pzMother, float pxDaughter, float pyDaughter, float pzDaughter)
 {
-  float arg = 0.3f * (0.1f * magfield) * (0.01 * radius) / (2.f * signedPt);
-  if (std::fabs(arg) <= 1.f) {
-    return RecoDecay::constrainAngle(phi - std::asin(arg));
-  }
-  return std::nullopt;
+  float almost0 = 1e-6f;
+  // Particle masses in GeV/c^2
+  auto massPion = o2::constants::physics::MassPionCharged;
+  auto massNeutron = o2::constants::physics::MassNeutron;
+  auto massSigmaMinus = o2::constants::physics::MassSigmaMinus;
+
+  // Calculate mother momentum and direction versor
+  float pMother = std::sqrt(pxMother * pxMother + pyMother * pyMother + pzMother * pzMother);
+  if (pMother < almost0)
+    return -999.f;
+
+  float versorX = pxMother / pMother;
+  float versorY = pyMother / pMother;
+  float versorZ = pzMother / pMother;
+
+  // Calculate daughter energy
+  float ePi = std::sqrt(massPion * massPion + pxDaughter * pxDaughter + pyDaughter * pyDaughter + pzDaughter * pzDaughter);
+
+  // Scalar product of versor with daughter momentum
+  float scalarProduct = versorX * pxDaughter + versorY * pyDaughter + versorZ * pzDaughter;
+
+  // Solve quadratic equation for momentum magnitude
+  float k = massSigmaMinus * massSigmaMinus + massPion * massPion - massNeutron * massNeutron;
+  float a = 4.f * (ePi * ePi - scalarProduct * scalarProduct);
+  float b = -4.f * scalarProduct * k;
+  float c = 4.f * ePi * ePi * massSigmaMinus * massSigmaMinus - k * k;
+
+  if (std::abs(a) < almost0)
+    return -999.f;
+
+  float d = b * b - 4.f * a * c;
+  if (d < 0.f)
+    return -999.f;
+
+  float sqrtD = std::sqrt(d);
+  float p1 = (-b + sqrtD) / (2.f * a);
+  float p2 = (-b - sqrtD) / (2.f * a);
+
+  // Pick physical solution: prefer P2 if positive, otherwise P1
+  if (p2 < 0.f && p1 < 0.f)
+    return -999.f;
+  if (p2 < 0.f)
+    return p1;
+
+  // Choose solution closest to original momentum
+  float p1Diff = std::abs(p1 - pMother);
+  float p2Diff = std::abs(p2 - pMother);
+  float p = (p1Diff < p2Diff) ? p1 : p2;
+
+  // Calculate pT from recalibrated momentum
+  float pxS = versorX * p;
+  float pyS = versorY * p;
+  return std::sqrt(pxS * pxS + pyS * pyS);
 }
 
 inline bool enableTable(const char* tableName, int userSetting, o2::framework::InitContext& initContext)
@@ -201,11 +206,22 @@ inline bool enableTable(const char* tableName, int userSetting, o2::framework::I
   return required;
 }
 
-template <typename T>
-using HasMass = decltype(std::declval<T&>().mass());
+// template <typename T>
+// using HasMass = decltype(std::declval<T&>().mass());
+//
+// template <typename T>
+// using HasSign = decltype(std::declval<T&>().sign());
 
 template <typename T>
-using HasSign = decltype(std::declval<T&>().sign());
+concept HasMass = requires(T t) {
+  { t.mass() } -> std::convertible_to<float>; // or double, whatever mass() returns
+};
+
+template <typename T>
+inline int signum(T x)
+{
+  return (T(0) < x) - (x < T(0));
+}
 
 }; // namespace utils
 }; // namespace o2::analysis::femto

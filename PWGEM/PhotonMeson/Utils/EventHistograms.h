@@ -19,6 +19,7 @@
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
 
+#include <Framework/ASoA.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 
@@ -28,10 +29,10 @@
 
 namespace o2::aod::pwgem::photonmeson::utils::eventhistogram
 {
-inline void addEventHistograms(o2::framework::HistogramRegistry* fRegistry)
+inline void addEventHistograms(o2::framework::HistogramRegistry* fRegistry, bool useWeight = false)
 {
   // event info
-  auto hCollisionCounter = fRegistry->add<TH1>("Event/before/hCollisionCounter", "collision counter;;Number of events", o2::framework::kTH1D, {{12, 0.5, 12.5}}, false);
+  auto hCollisionCounter = fRegistry->add<TH1>("Event/before/hCollisionCounter", "collision counter;;Number of events", o2::framework::kTH1D, {{12, 0.5, 12.5}}, useWeight);
   hCollisionCounter->GetXaxis()->SetBinLabel(1, "all");
   hCollisionCounter->GetXaxis()->SetBinLabel(2, "No TF border");
   hCollisionCounter->GetXaxis()->SetBinLabel(3, "No ITS ROF border");
@@ -66,66 +67,66 @@ inline void addEventHistograms(o2::framework::HistogramRegistry* fRegistry)
                                                 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110},
                                                "centrality FT0C (%)"};
 
-  fRegistry->add("Event/before/hZvtx", "vertex z; Z_{vtx} (cm)", o2::framework::kTH1F, {{100, -50, +50}}, false);
-  fRegistry->add("Event/before/hMultNTracksPV", "hMultNTracksPV; N_{track} to PV", o2::framework::kTH1F, {{6001, -0.5, 6000.5}}, false);
-  fRegistry->add("Event/before/hMultNTracksPVeta1", "hMultNTracksPVeta1; N_{track} to PV", o2::framework::kTH1F, {{6001, -0.5, 6000.5}}, false);
-  fRegistry->add("Event/before/hMultFT0", "hMultFT0;mult. FT0A;mult. FT0C", o2::framework::kTH2F, {{200, 0, 200000}, {60, 0, 60000}}, false);
-  fRegistry->add("Event/before/hCentFT0A", "hCentFT0A;centrality FT0A (%)", o2::framework::kTH1F, {{axis_cent_ft0a}}, false);
-  fRegistry->add("Event/before/hCentFT0C", "hCentFT0C;centrality FT0C (%)", o2::framework::kTH1F, {{axis_cent_ft0c}}, false);
-  fRegistry->add("Event/before/hCentFT0M", "hCentFT0M;centrality FT0M (%)", o2::framework::kTH1F, {{axis_cent_ft0m}}, false);
-  fRegistry->add("Event/before/hCentFT0CvsMultNTracksPV", "hCentFT0CvsMultNTracksPV;centrality FT0C (%);N_{track} to PV", o2::framework::kTH2F, {{110, 0, 110}, {500, 0, 5000}}, false);
-  fRegistry->add("Event/before/hMultFT0CvsMultNTracksPV", "hMultFT0CvsMultNTracksPV;mult. FT0C;N_{track} to PV", o2::framework::kTH2F, {{60, 0, 60000}, {500, 0, 5000}}, false);
-  fRegistry->add("Event/before/hMultFT0CvsOccupancy", "hMultFT0CvsOccupancy;mult. FT0C;N_{track} in time range", o2::framework::kTH2F, {{60, 0, 60000}, {2000, 0, 20000}}, false);
+  fRegistry->add("Event/before/hZvtx", "vertex z; Z_{vtx} (cm)", o2::framework::kTH1D, {{220, -11, +11}}, useWeight);
+  fRegistry->add("Event/before/hMultNTracksPV", "hMultNTracksPV; N_{track} to PV", o2::framework::kTH1F, {{6001, -0.5, 6000.5}}, useWeight);
+  fRegistry->add("Event/before/hMultNTracksPVeta1", "hMultNTracksPVeta1; N_{track} to PV", o2::framework::kTH1F, {{6001, -0.5, 6000.5}}, useWeight);
+  fRegistry->add("Event/before/hMultFT0", "hMultFT0;mult. FT0A;mult. FT0C", o2::framework::kTH2F, {{200, 0, 200000}, {60, 0, 60000}}, useWeight);
+  fRegistry->add("Event/before/hCentFT0A", "hCentFT0A;centrality FT0A (%)", o2::framework::kTH1F, {{axis_cent_ft0a}}, useWeight);
+  fRegistry->add("Event/before/hCentFT0C", "hCentFT0C;centrality FT0C (%)", o2::framework::kTH1F, {{axis_cent_ft0c}}, useWeight);
+  fRegistry->add("Event/before/hCentFT0M", "hCentFT0M;centrality FT0M (%)", o2::framework::kTH1F, {{axis_cent_ft0m}}, useWeight);
+  fRegistry->add("Event/before/hCentFT0CvsMultNTracksPV", "hCentFT0CvsMultNTracksPV;centrality FT0C (%);N_{track} to PV", o2::framework::kTH2F, {{110, 0, 110}, {500, 0, 5000}}, useWeight);
+  fRegistry->add("Event/before/hMultFT0CvsMultNTracksPV", "hMultFT0CvsMultNTracksPV;mult. FT0C;N_{track} to PV", o2::framework::kTH2F, {{60, 0, 60000}, {500, 0, 5000}}, useWeight);
+  fRegistry->add("Event/before/hMultFT0CvsOccupancy", "hMultFT0CvsOccupancy;mult. FT0C;N_{track} in time range", o2::framework::kTH2F, {{60, 0, 60000}, {500, 0, 10000}}, useWeight);
   fRegistry->addClone("Event/before/", "Event/after/");
 }
 
-template <const int ev_id, typename TCollision>
+template <const int ev_id, o2::soa::is_iterator TCollision>
 void fillEventInfo(o2::framework::HistogramRegistry* fRegistry, TCollision const& collision, float weight = 1.)
 {
   const float maxZ = 10.f;
-  static constexpr std::string_view kEventTypes[2] = {"before/", "after/"};
-  fRegistry->fill(HIST("Event/") + HIST(kEventTypes[ev_id]) + HIST("hCollisionCounter"), 1.0, weight);
+  static constexpr std::string_view EventTypes[2] = {"before/", "after/"};
+  fRegistry->fill(HIST("Event/") + HIST(EventTypes[ev_id]) + HIST("hCollisionCounter"), 1.0, weight);
   if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-    fRegistry->fill(HIST("Event/") + HIST(kEventTypes[ev_id]) + HIST("hCollisionCounter"), 2.0, weight);
+    fRegistry->fill(HIST("Event/") + HIST(EventTypes[ev_id]) + HIST("hCollisionCounter"), 2.0, weight);
   }
   if (collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
-    fRegistry->fill(HIST("Event/") + HIST(kEventTypes[ev_id]) + HIST("hCollisionCounter"), 3.0, weight);
+    fRegistry->fill(HIST("Event/") + HIST(EventTypes[ev_id]) + HIST("hCollisionCounter"), 3.0, weight);
   }
   if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-    fRegistry->fill(HIST("Event/") + HIST(kEventTypes[ev_id]) + HIST("hCollisionCounter"), 4.0, weight);
+    fRegistry->fill(HIST("Event/") + HIST(EventTypes[ev_id]) + HIST("hCollisionCounter"), 4.0, weight);
   }
   if (collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
-    fRegistry->fill(HIST("Event/") + HIST(kEventTypes[ev_id]) + HIST("hCollisionCounter"), 5.0, weight);
+    fRegistry->fill(HIST("Event/") + HIST(EventTypes[ev_id]) + HIST("hCollisionCounter"), 5.0, weight);
   }
   if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-    fRegistry->fill(HIST("Event/") + HIST(kEventTypes[ev_id]) + HIST("hCollisionCounter"), 6.0, weight);
+    fRegistry->fill(HIST("Event/") + HIST(EventTypes[ev_id]) + HIST("hCollisionCounter"), 6.0, weight);
   }
   if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
-    fRegistry->fill(HIST("Event/") + HIST(kEventTypes[ev_id]) + HIST("hCollisionCounter"), 7.0, weight);
+    fRegistry->fill(HIST("Event/") + HIST(EventTypes[ev_id]) + HIST("hCollisionCounter"), 7.0, weight);
   }
   if (collision.sel8()) {
-    fRegistry->fill(HIST("Event/") + HIST(kEventTypes[ev_id]) + HIST("hCollisionCounter"), 8.0, weight);
+    fRegistry->fill(HIST("Event/") + HIST(EventTypes[ev_id]) + HIST("hCollisionCounter"), 8.0, weight);
   }
   if (std::abs(collision.posZ()) < maxZ) {
-    fRegistry->fill(HIST("Event/") + HIST(kEventTypes[ev_id]) + HIST("hCollisionCounter"), 9.0, weight);
+    fRegistry->fill(HIST("Event/") + HIST(EventTypes[ev_id]) + HIST("hCollisionCounter"), 9.0, weight);
   }
-  fRegistry->fill(HIST("Event/") + HIST(kEventTypes[ev_id]) + HIST("hZvtx"), collision.posZ(), weight);
+  fRegistry->fill(HIST("Event/") + HIST(EventTypes[ev_id]) + HIST("hZvtx"), collision.posZ(), weight);
   if (collision.alias_bit(kTVXinEMC)) {
-    fRegistry->fill(HIST("Event/") + HIST(kEventTypes[ev_id]) + HIST("hCollisionCounter"), 10.0, weight);
+    fRegistry->fill(HIST("Event/") + HIST(EventTypes[ev_id]) + HIST("hCollisionCounter"), 10.0, weight);
   }
   if (collision.alias_bit(kEMC7) || collision.alias_bit(kDMC7)) {
-    fRegistry->fill(HIST("Event/") + HIST(kEventTypes[ev_id]) + HIST("hCollisionCounter"), 11.0, weight);
+    fRegistry->fill(HIST("Event/") + HIST(EventTypes[ev_id]) + HIST("hCollisionCounter"), 11.0, weight);
   }
 
-  fRegistry->fill(HIST("Event/") + HIST(kEventTypes[ev_id]) + HIST("hMultNTracksPV"), collision.multNTracksPV(), weight);
-  fRegistry->fill(HIST("Event/") + HIST(kEventTypes[ev_id]) + HIST("hMultNTracksPVeta1"), collision.multNTracksPVeta1(), weight);
-  fRegistry->fill(HIST("Event/") + HIST(kEventTypes[ev_id]) + HIST("hMultFT0"), collision.multFT0A(), collision.multFT0C(), weight);
-  fRegistry->fill(HIST("Event/") + HIST(kEventTypes[ev_id]) + HIST("hCentFT0A"), collision.centFT0A(), weight);
-  fRegistry->fill(HIST("Event/") + HIST(kEventTypes[ev_id]) + HIST("hCentFT0C"), collision.centFT0C(), weight);
-  fRegistry->fill(HIST("Event/") + HIST(kEventTypes[ev_id]) + HIST("hCentFT0M"), collision.centFT0M(), weight);
-  fRegistry->fill(HIST("Event/") + HIST(kEventTypes[ev_id]) + HIST("hCentFT0CvsMultNTracksPV"), collision.centFT0C(), collision.multNTracksPV(), weight);
-  fRegistry->fill(HIST("Event/") + HIST(kEventTypes[ev_id]) + HIST("hMultFT0CvsMultNTracksPV"), collision.multFT0C(), collision.multNTracksPV(), weight);
-  fRegistry->fill(HIST("Event/") + HIST(kEventTypes[ev_id]) + HIST("hMultFT0CvsOccupancy"), collision.multFT0C(), collision.trackOccupancyInTimeRange(), weight);
+  fRegistry->fill(HIST("Event/") + HIST(EventTypes[ev_id]) + HIST("hMultNTracksPV"), collision.multNTracksPV(), weight);
+  fRegistry->fill(HIST("Event/") + HIST(EventTypes[ev_id]) + HIST("hMultNTracksPVeta1"), collision.multNTracksPVeta1(), weight);
+  fRegistry->fill(HIST("Event/") + HIST(EventTypes[ev_id]) + HIST("hMultFT0"), collision.multFT0A(), collision.multFT0C(), weight);
+  fRegistry->fill(HIST("Event/") + HIST(EventTypes[ev_id]) + HIST("hCentFT0A"), collision.centFT0A(), weight);
+  fRegistry->fill(HIST("Event/") + HIST(EventTypes[ev_id]) + HIST("hCentFT0C"), collision.centFT0C(), weight);
+  fRegistry->fill(HIST("Event/") + HIST(EventTypes[ev_id]) + HIST("hCentFT0M"), collision.centFT0M(), weight);
+  fRegistry->fill(HIST("Event/") + HIST(EventTypes[ev_id]) + HIST("hCentFT0CvsMultNTracksPV"), collision.centFT0C(), collision.multNTracksPV(), weight);
+  fRegistry->fill(HIST("Event/") + HIST(EventTypes[ev_id]) + HIST("hMultFT0CvsMultNTracksPV"), collision.multFT0C(), collision.multNTracksPV(), weight);
+  fRegistry->fill(HIST("Event/") + HIST(EventTypes[ev_id]) + HIST("hMultFT0CvsOccupancy"), collision.multFT0C(), collision.trackOccupancyInTimeRange(), weight);
 }
 
 } // namespace o2::aod::pwgem::photonmeson::utils::eventhistogram

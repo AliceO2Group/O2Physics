@@ -20,6 +20,7 @@
 #include "Common/DataModel/Multiplicity.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsFIT/Triggers.h>
 #include <DataFormatsParameters/GRPECSObject.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -91,6 +92,7 @@ struct centralityStudy {
   Configurable<bool> requireIsVertexTOFmatched{"requireIsVertexTOFmatched", false, "require events with at least one of vertex contributors matched to TOF"};
   Configurable<bool> requireIsVertexTRDmatched{"requireIsVertexTRDmatched", false, "require events with at least one of vertex contributors matched to TRD"};
   Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", true, "reject collisions in case of pileup with another collision in the same foundBC"};
+  Configurable<bool> rejectIsFlangeEvent{"rejectIsFlangeEvent", false, "At least one channel with -350 TDC < time < -450 TDC"};
 
   Configurable<bool> rejectITSinROFpileupStandard{"rejectITSinROFpileupStandard", false, "reject collisions in case of in-ROF ITS pileup (standard)"};
   Configurable<bool> rejectITSinROFpileupStrict{"rejectITSinROFpileupStrict", false, "reject collisions in case of in-ROF ITS pileup (strict)"};
@@ -106,6 +108,7 @@ struct centralityStudy {
   Configurable<float> minTimeDelta{"minTimeDelta", -1.0f, "reject collision if another collision is this close or less in time"};
   Configurable<float> minFT0CforVertexZ{"minFT0CforVertexZ", -1.0f, "minimum FT0C for vertex-Z profile calculation"};
 
+  Configurable<float> scaleSignalFT0A{"scaleSignalFT0A", 1.00f, "scale FT0A signal for convenience"};
   Configurable<float> scaleSignalFT0C{"scaleSignalFT0C", 1.00f, "scale FT0C signal for convenience"};
   Configurable<float> scaleSignalFT0M{"scaleSignalFT0M", 1.00f, "scale FT0M signal for convenience"};
   Configurable<float> scaleSignalFV0A{"scaleSignalFV0A", 1.00f, "scale FV0A signal for convenience"};
@@ -150,6 +153,7 @@ struct centralityStudy {
   ConfigurableAxis axisMultUltraFineFV0A{"axisMultUltraFineFV0A", {60000, 0, 60000}, "FV0A amplitude"};
   ConfigurableAxis axisMultUltraFineFT0M{"axisMultUltraFineFT0M", {50000, 0, 200000}, "FT0M amplitude"};
   ConfigurableAxis axisMultUltraFineFT0C{"axisMultUltraFineFT0C", {60000, 0, 60000}, "FT0C amplitude"};
+  ConfigurableAxis axisMultUltraFineFT0A{"axisMultUltraFineFT0A", {60000, 0, 60000}, "FT0A amplitude"};
   ConfigurableAxis axisMultUltraFinePVContributors{"axisMultUltraFinePVContributors", {10000, 0, 10000}, "Number of PV Contributors"};
   ConfigurableAxis axisMultUltraFineGlobalTracks{"axisMultUltraFineGlobalTracks", {5000, 0, 5000}, "Number of global tracks"};
   ConfigurableAxis axisMultUltraFineMFTTracks{"axisMultUltraFineMFTTracks", {5000, 0, 5000}, "Number of MFT tracks"};
@@ -199,7 +203,12 @@ struct centralityStudy {
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(11, "Neighbour rejection");
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(12, "no ITS in-ROF pileup (standard)");
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(13, "no ITS in-ROF pileup (strict)");
+      histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(14, "is UPC event");
+      histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(15, "rejectCollInTimeRangeNarrow");
+      histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(16, "em/upc rejection");
+      histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(17, "isFlangeEvent");
 
+      histos.add("hFT0A_Collisions", "hFT0A_Collisions", kTH1D, {axisMultUltraFineFT0A});
       histos.add("hFT0C_Collisions", "hFT0C_Collisions", kTH1D, {axisMultUltraFineFT0C});
       histos.add("hFT0M_Collisions", "hFT0M_Collisions", kTH1D, {axisMultUltraFineFT0M});
       histos.add("hFV0A_Collisions", "hFV0A_Collisions", kTH1D, {axisMultUltraFineFV0A});
@@ -319,7 +328,7 @@ struct centralityStudy {
   }
 
   template <typename TCollision>
-  void initRun(TCollision collision)
+  void initRun(const TCollision& collision)
   {
     if (mRunNumber == collision.multRunNumber()) {
       return;
@@ -369,8 +378,13 @@ struct centralityStudy {
       getHist(TH1, histPath + "hCollisionSelection")->GetXaxis()->SetBinLabel(11, "Neighbour rejection");
       getHist(TH1, histPath + "hCollisionSelection")->GetXaxis()->SetBinLabel(12, "no ITS in-ROF pileup (standard)");
       getHist(TH1, histPath + "hCollisionSelection")->GetXaxis()->SetBinLabel(13, "no ITS in-ROF pileup (strict)");
+      getHist(TH1, histPath + "hCollisionSelection")->GetXaxis()->SetBinLabel(14, "is UPC event");
+      getHist(TH1, histPath + "hCollisionSelection")->GetXaxis()->SetBinLabel(15, "rejectCollInTimeRangeNarrow");
+      getHist(TH1, histPath + "hCollisionSelection")->GetXaxis()->SetBinLabel(16, "em/upc rejection");
+      getHist(TH1, histPath + "hCollisionSelection")->GetXaxis()->SetBinLabel(17, "isFlangeEvent");
 
       histPointers.insert({histPath + "hFT0C_Collisions", histos.add((histPath + "hFT0C_Collisions").c_str(), "hFT0C_Collisions", {kTH1D, {{axisMultUltraFineFT0C}}})});
+      histPointers.insert({histPath + "hFT0A_Collisions", histos.add((histPath + "hFT0A_Collisions").c_str(), "hFT0A_Collisions", {kTH1D, {{axisMultUltraFineFT0A}}})});
       histPointers.insert({histPath + "hFT0M_Collisions", histos.add((histPath + "hFT0M_Collisions").c_str(), "hFT0M_Collisions", {kTH1D, {{axisMultUltraFineFT0M}}})});
       histPointers.insert({histPath + "hFV0A_Collisions", histos.add((histPath + "hFV0A_Collisions").c_str(), "hFV0A_Collisions", {kTH1D, {{axisMultUltraFineFV0A}}})});
       histPointers.insert({histPath + "hNGlobalTracks", histos.add((histPath + "hNGlobalTracks").c_str(), "hNGlobalTracks", {kTH1D, {{axisMultUltraFineGlobalTracks}}})});
@@ -446,7 +460,7 @@ struct centralityStudy {
   }
 
   template <typename TCollision>
-  void genericProcessCollision(TCollision collision)
+  void genericProcessCollision(const TCollision& collision)
   // process this collisions
   {
     initRun(collision);
@@ -604,7 +618,7 @@ struct centralityStudy {
     if (!passRejectCollInTimeRangeNarrow) {
       return;
     }
-    histos.fill(HIST("hCollisionSelection"), 14 /* Not ITS ROF pileup (strict) */);
+    histos.fill(HIST("hCollisionSelection"), 14 /* Reject collision in narrow time range */);
     getHist(TH1, histPath + "hCollisionSelection")->Fill(14);
 
     if (collision.multFT0C() < upcRejection.maxFT0CforZNACselection &&
@@ -623,8 +637,21 @@ struct centralityStudy {
     histos.fill(HIST("hCollisionSelection"), 15 /* pass em/upc rejection */);
     getHist(TH1, histPath + "hCollisionSelection")->Fill(15);
 
+    if (rejectIsFlangeEvent) {
+      if constexpr (requires { collision.ft0TriggerMask(); }) {
+        constexpr int IsFlangeEventId = 7;
+        std::bitset<8> ft0TriggerMask = collision.ft0TriggerMask();
+        if (ft0TriggerMask[IsFlangeEventId]) {
+          return;
+        }
+      }
+    }
+    histos.fill(HIST("hCollisionSelection"), 16 /* reject flange events */);
+    getHist(TH1, histPath + "hCollisionSelection")->Fill(16);
+
     // if we got here, we also finally fill the FT0C histogram, please
     histos.fill(HIST("hNPVContributors"), collision.multNTracksPV());
+    histos.fill(HIST("hFT0A_Collisions"), collision.multFT0A() * scaleSignalFT0C);
     histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C() * scaleSignalFT0C);
     histos.fill(HIST("hFT0M_Collisions"), (collision.multFT0A() + collision.multFT0C()) * scaleSignalFT0M);
     histos.fill(HIST("hFV0A_Collisions"), collision.multFV0A() * scaleSignalFV0A);
@@ -637,6 +664,7 @@ struct centralityStudy {
 
     // save vertex-Z equalized
     getHist(TH1, histPath + "hNPVContributors")->Fill(multNTracksPV);
+    getHist(TH1, histPath + "hFT0A_Collisions")->Fill(multFT0A * scaleSignalFT0A);
     getHist(TH1, histPath + "hFT0C_Collisions")->Fill(multFT0C * scaleSignalFT0C);
     getHist(TH1, histPath + "hFT0M_Collisions")->Fill((multFT0A + multFT0C) * scaleSignalFT0M);
     getHist(TH1, histPath + "hFV0A_Collisions")->Fill(multFV0A * scaleSignalFV0A);
@@ -783,22 +811,22 @@ struct centralityStudy {
     }
   }
 
-  void processCollisions(soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultsGlobal, aod::MultSelections, aod::Mults2BC, aod::FV0AOuterMults>::iterator const& collision, aod::MultBCs const&)
+  void processCollisions(soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultsGlobal, aod::MultSelections, aod::Mults2BC, aod::FITExtraMults>::iterator const& collision, aod::MultBCs const&)
   {
     genericProcessCollision(collision);
   }
 
-  void processCollisionsWithResolutionStudy(soa::Join<aod::MultsRun3, aod::MFTMults, aod::Mult2MCExtras, aod::MultsExtra, aod::MultsGlobal, aod::MultSelections, aod::Mults2BC, aod::FV0AOuterMults>::iterator const& collision, soa::Join<aod::MultMCExtras, aod::MultHepMCHIs> const&)
+  void processCollisionsWithResolutionStudy(soa::Join<aod::MultsRun3, aod::MFTMults, aod::Mult2MCExtras, aod::MultsExtra, aod::MultsGlobal, aod::MultSelections, aod::Mults2BC, aod::FITExtraMults>::iterator const& collision, soa::Join<aod::MultMCExtras, aod::MultHepMCHIs> const&)
   {
     genericProcessCollision(collision);
   }
 
-  void processCollisionsWithCentrality(soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal, aod::Mults2BC, aod::FV0AOuterMults>::iterator const& collision, aod::MultBCs const&)
+  void processCollisionsWithCentrality(soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal, aod::Mults2BC, aod::FITExtraMults>::iterator const& collision, aod::MultBCs const&)
   {
     genericProcessCollision(collision);
   }
 
-  void processCollisionsWithCentralityWithNeighbours(soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal, aod::MultNeighs, aod::FV0AOuterMults>::iterator const& collision)
+  void processCollisionsWithCentralityWithNeighbours(soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal, aod::MultNeighs, aod::FITExtraMults>::iterator const& collision)
   {
     genericProcessCollision(collision);
   }

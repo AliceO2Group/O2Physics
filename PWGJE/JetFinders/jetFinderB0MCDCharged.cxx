@@ -13,9 +13,8 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include "PWGJE/JetFinders/jetFinderHF.cxx"
-
 #include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/JetFinders/jetFinderHF.h"
 
 #include <Framework/AnalysisTask.h>
 #include <Framework/ConfigContext.h>
@@ -23,6 +22,10 @@
 #include <Framework/runDataProcessing.h>
 
 #include <vector>
+
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
 
 using JetFinderB0MCDetectorLevelCharged = JetFinderHFTask<aod::CandidatesB0Data, aod::CandidatesB0MCD, aod::CandidatesB0MCP, aod::JetTracksSubB0, aod::JetParticlesSubB0, aod::B0ChargedMCDetectorLevelJets, aod::B0ChargedMCDetectorLevelJetConstituents, aod::B0ChargedMCDetectorLevelEventWiseSubtractedJets, aod::B0ChargedMCDetectorLevelEventWiseSubtractedJetConstituents>;
 

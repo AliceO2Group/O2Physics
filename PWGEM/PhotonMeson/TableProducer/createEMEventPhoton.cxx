@@ -13,6 +13,7 @@
 /// \brief This code produces reduced events for photon analyses.
 /// \author Daiki Sekihata, daiki.sekihata@cern.ch
 
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 //
 #include "PWGJE/DataModel/Jet.h"
@@ -24,9 +25,6 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Qvectors.h"
 
-#include <CCDB/BasicCCDBManager.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <DataFormatsParameters/GRPObject.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -66,14 +64,14 @@ using MyCollisionsMCCentQvec = soa::Join<MyCollisionsMCCent, MyQvectors>;
 
 struct CreateEMEventPhoton {
   // Produces<o2::aod::EMBCs> embc;
-  Produces<o2::aod::EMEvents> event;
+  Produces<o2::aod::PMEvents> event;
   Produces<o2::aod::EMEventsAlias> eventalias;
   // Produces<o2::aod::EMEventsCov> eventCov;
-  Produces<o2::aod::EMEventsMult> eventMult;
-  Produces<o2::aod::EMEventsCent> eventCent;
-  Produces<o2::aod::EMEventsQvec> eventQvec;
+  Produces<o2::aod::EMEventsMult_000> eventMult;
+  Produces<o2::aod::EMEventsCent_000> eventCent;
+  Produces<o2::aod::EMEventsQvec_001> eventQvec;
   Produces<o2::aod::EMSWTriggerBits> emswtbit;
-  Produces<o2::aod::EMEventNormInfos> event_norm_info;
+  Produces<o2::aod::EMEventNormInfos_001> event_norm_info;
   Produces<o2::aod::EMEventsWeight> eventWeights;
 
   enum class EMEventType : int {
@@ -84,11 +82,11 @@ struct CreateEMEventPhoton {
   };
 
   // CCDB options
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
-  Configurable<double> dBzInput{"d_bz", -999, "bz field, -999 is automatic"};
+  // Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  // Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+  // Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  // Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
+  // Configurable<double> dBzInput{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<bool> needEMCTrigger{"needEMCTrigger", false, "flag to only save events which have kTVXinEMC trigger bit. To reduce PbPb derived data size"};
   Configurable<bool> needPHSTrigger{"needPHSTrigger", false, "flag to only save events which have kTVXinPHOS trigger bit. To reduce PbPb derived data size"};
   Configurable<bool> enableJJHistograms{"enableJJHistograms", false, "flag to fill JJ QA histograms for outlier rejection"};
@@ -107,8 +105,8 @@ struct CreateEMEventPhoton {
   }
 
   int mRunNumber;
-  float dBz;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  // float dBz;
+  // Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   template <typename TBC>
   void initCCDB(TBC const& bc)
@@ -117,35 +115,35 @@ struct CreateEMEventPhoton {
       return;
     }
 
-    // In case override, don't proceed, please - no CCDB access required
-    if (dBzInput > -990) {
-      dBz = dBzInput;
-      o2::parameters::GRPMagField grpmag;
-      if (std::fabs(dBz) > 1e-5) {
-        grpmag.setL3Current(30000.f / (dBz / 5.0f));
-      }
-      mRunNumber = bc.runNumber();
-      return;
-    }
+    // // In case override, don't proceed, please - no CCDB access required
+    // if (dBzInput > -990) {
+    //   dBz = dBzInput;
+    //   o2::parameters::GRPMagField grpmag;
+    //   if (std::fabs(dBz) > 1e-5) {
+    //     grpmag.setL3Current(30000.f / (dBz / 5.0f));
+    //   }
+    //   mRunNumber = bc.runNumber();
+    //   return;
+    // }
 
-    auto run3GRPTimestamp = bc.timestamp();
-    o2::parameters::GRPObject* grpo = 0x0;
-    o2::parameters::GRPMagField* grpmag = 0x0;
-    if (!skipGRPOquery)
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3GRPTimestamp);
-    if (grpo) {
-      // Fetch magnetic field from ccdb for current collision
-      dBz = grpo->getNominalL3Field();
-      LOG(info) << "Retrieved GRP for timestamp " << run3GRPTimestamp << " with magnetic field of " << dBz << " kZG";
-    } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3GRPTimestamp);
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3GRPTimestamp;
-      }
-      // Fetch magnetic field from ccdb for current collision
-      dBz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      LOG(info) << "Retrieved GRP for timestamp " << run3GRPTimestamp << " with magnetic field of " << dBz << " kZG";
-    }
+    // auto run3GRPTimestamp = bc.timestamp();
+    // o2::parameters::GRPObject* grpo = 0x0;
+    // o2::parameters::GRPMagField* grpmag = 0x0;
+    // if (!skipGRPOquery)
+    //   grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3GRPTimestamp);
+    // if (grpo) {
+    //   // Fetch magnetic field from ccdb for current collision
+    //   dBz = grpo->getNominalL3Field();
+    //   LOG(info) << "Retrieved GRP for timestamp " << run3GRPTimestamp << " with magnetic field of " << dBz << " kZG";
+    // } else {
+    //   grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3GRPTimestamp);
+    //   if (!grpmag) {
+    //     LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3GRPTimestamp;
+    //   }
+    //   // Fetch magnetic field from ccdb for current collision
+    //   dBz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+    //   LOG(info) << "Retrieved GRP for timestamp " << run3GRPTimestamp << " with magnetic field of " << dBz << " kZG";
+    // }
     mRunNumber = bc.runNumber();
   }
 
@@ -165,7 +163,8 @@ struct CreateEMEventPhoton {
         }
       }
 
-      auto bc = collision.template foundBC_as<TBCs>();
+      // auto bc = collision.template foundBC_as<TBCs>();
+      auto bc = collision.template bc_as<TBCs>(); // use this for Zorro
       initCCDB(bc);
 
       if (needEMCTrigger && !collision.alias_bit(kTVXinEMC)) {
@@ -358,16 +357,16 @@ struct CreateEMEventPhoton {
 };
 struct AssociatePhotonToEMEvent {
   Produces<o2::aod::V0KFEMEventIds> v0kfeventid;
-  Produces<o2::aod::EMPrimaryElectronEMEventIds> prmeleventid;
+  Produces<o2::aod::EMPrimaryElectronDaEMEventIds> prmeleventid;
   Produces<o2::aod::PHOSEMEventIds> phoseventid;
   Produces<o2::aod::EMCEMEventIds> emceventid;
-  Produces<o2::aod::EMPrimaryTrackEMEventIds> prmtrackeventid;
+  // Produces<o2::aod::EMPrimaryTrackEMEventIds> prmtrackeventid;
 
   Preslice<aod::V0PhotonsKF> perCollisionPCM = aod::v0photonkf::collisionId;
   PresliceUnsorted<aod::EMPrimaryElectronsFromDalitz> perCollisionEl = aod::emprimaryelectron::collisionId;
   Preslice<aod::PHOSClusters> perCollisionPHOS = aod::skimmedcluster::collisionId;
   Preslice<aod::SkimEMCClusters> perCollisionEMC = aod::skimmedcluster::collisionId;
-  Preslice<aod::EMPrimaryTracks> perCollision_track = aod::emprimarytrack::collisionId;
+  // Preslice<aod::EMPrimaryTracks> perCollision_track = aod::emprimarytrack::collisionId;
 
   void init(o2::framework::InitContext&) {}
 
@@ -386,38 +385,38 @@ struct AssociatePhotonToEMEvent {
   // This struct is for both data and MC.
   // Note that reconstructed collisions without mc collisions are already rejected in CreateEMEventPhoton in MC.
 
-  void processPCM(aod::EMEvents const& collisions, aod::V0PhotonsKF const& photons)
+  void processPCM(aod::PMEvents const& collisions, aod::V0PhotonsKF const& photons)
   {
     fillEventId(collisions, photons, v0kfeventid, perCollisionPCM);
   }
 
-  void processElectronFromDalitz(aod::EMEvents const& collisions, aod::EMPrimaryElectronsFromDalitz const& tracks)
+  void processElectronFromDalitz(aod::PMEvents const& collisions, aod::EMPrimaryElectronsFromDalitz const& tracks)
   {
     fillEventId(collisions, tracks, prmeleventid, perCollisionEl);
   }
 
-  void processPHOS(aod::EMEvents const& collisions, aod::PHOSClusters const& photons)
+  void processPHOS(aod::PMEvents const& collisions, aod::PHOSClusters const& photons)
   {
     fillEventId(collisions, photons, phoseventid, perCollisionPHOS);
   }
 
-  void processEMC(aod::EMEvents const& collisions, aod::SkimEMCClusters const& photons)
+  void processEMC(aod::PMEvents const& collisions, aod::SkimEMCClusters const& photons)
   {
     fillEventId(collisions, photons, emceventid, perCollisionEMC);
   }
 
-  void processChargedTrack(aod::EMEvents const& collisions, aod::EMPrimaryTracks const& tracks)
-  {
-    fillEventId(collisions, tracks, prmtrackeventid, perCollision_track);
-  }
+  // void processChargedTrack(aod::PMEvents const& collisions, aod::EMPrimaryTracks const& tracks)
+  // {
+  //   fillEventId(collisions, tracks, prmtrackeventid, perCollision_track);
+  // }
 
-  void processDummy(aod::EMEvents const&) {}
+  void processDummy(aod::PMEvents const&) {}
 
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processPCM, "process pcm-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processElectronFromDalitz, "process dalitzee-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processPHOS, "process phos-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processEMC, "process emc-event indexing", false);
-  PROCESS_SWITCH(AssociatePhotonToEMEvent, processChargedTrack, "process indexing for charged tracks", false);
+  // PROCESS_SWITCH(AssociatePhotonToEMEvent, processChargedTrack, "process indexing for charged tracks", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processDummy, "process dummy", true);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

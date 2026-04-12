@@ -15,11 +15,11 @@
 #ifndef PWGEM_DILEPTON_UTILS_MCUTILITIES_H_
 #define PWGEM_DILEPTON_UTILS_MCUTILITIES_H_
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/Logger.h"
+#include <Framework/Logger.h>
+#include <SimulationDataFormat/MCGenProperties.h>
 
-#include <algorithm>
 #include <string>
+#include <utility>
 #include <vector>
 
 //_______________________________________________________________________
@@ -32,6 +32,9 @@ enum class EM_HFeeType : int {
   kBCe_BCe = 2,      // ULS
   kBCe_Be_SameB = 3, // ULS
   kBCe_Be_DiffB = 4, // LS
+  kBCCe_BCe = 5,     // ULS
+  kBCCe_BCCe = 6,    // ULS
+  kBCCee = 7,        // ULS
 };
 
 //_______________________________________________________________________
@@ -191,6 +194,50 @@ bool isWeakDecayFromBeautyHadron(T const& mcParticle, U const& mcParticles)
   }
 }
 //_______________________________________________________________________
+template <typename TMCParticle, typename TMCParticles>
+bool isDiquark(TMCParticle const& p1, TMCParticle const& p2, TMCParticles const& mcParticles)
+{
+  bool isDiquark = false;
+
+  int motherid1 = p1.mothersIds()[0]; // first mother index
+  while (motherid1 > -1) {
+    if (motherid1 < mcParticles.size()) { // protect against bad mother indices. why is this needed?
+      auto mp1 = mcParticles.iteratorAt(motherid1);
+      if (mp1.has_mothers()) {
+        motherid1 = mp1.mothersIds()[0];
+      } else {
+        motherid1 = -999;
+      }
+    } else {
+      LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid1, mcParticles.size());
+      break;
+    }
+
+    int motherid2 = p2.mothersIds()[0]; // first mother index
+    while (motherid2 > -1) {
+      if (motherid2 < mcParticles.size()) { // protect against bad mother indices. why is this needed?
+        auto mp2 = mcParticles.iteratorAt(motherid2);
+        if (mp2.has_mothers()) {
+          motherid2 = mp2.mothersIds()[0];
+        } else {
+          motherid2 = -999;
+        }
+      } else {
+        LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid2, mcParticles.size());
+        break;
+      }
+
+      if (motherid1 == motherid2) { // common mother is found.
+        auto common_mp = mcParticles.iteratorAt(motherid1);
+        int mp_pdg = common_mp.pdgCode();
+        isDiquark = (1100 < std::abs(mp_pdg) && std::abs(mp_pdg) < 5600) && std::to_string(mp_pdg)[std::to_string(mp_pdg).length() - 2] == '0';
+      }
+
+    } // end of motherid2
+  } // end of motherid1
+
+  return isDiquark;
+}
 //_______________________________________________________________________
 template <typename TMCParticle1, typename TMCParticle2>
 int FindCommonMotherFrom2ProngsWithoutPDG(TMCParticle1 const& p1, TMCParticle2 const& p2)
@@ -417,6 +464,56 @@ int IsFromCharm(TMCParticle const& p, TMCParticles const& mcparticles)
   return -999;
 }
 //_______________________________________________________________________
+template <typename T, typename U>
+std::pair<int, int> getBeautyHadronIDandNCharmHadronDaughters(T const& mcParticle, U const& mcParticles)
+{
+  if (!mcParticle.has_mothers()) {
+    return {-999, -999};
+  }
+  if (!IsFromBeauty(mcParticle, mcParticles)) {
+    return {-999, -999};
+  }
+
+  auto mp = mcParticles.iteratorAt(mcParticle.mothersIds()[0]);
+  if (!isCharmMeson(mp) && !isCharmBaryon(mp)) {
+    return {-999, -999};
+  }
+
+  int motherid = mcParticle.mothersIds()[0]; // first mother index
+  while (motherid > -1) {
+    if (motherid < mcParticles.size()) { // protect against bad mother indices. why is this needed?
+      mp = mcParticles.iteratorAt(motherid);
+      if (std::abs(mp.pdgCode()) < 1e+9 && (std::to_string(std::abs(mp.pdgCode()))[std::to_string(std::abs(mp.pdgCode())).length() - 3] == '5' || std::to_string(std::abs(mp.pdgCode()))[std::to_string(std::abs(mp.pdgCode())).length() - 4] == '5')) {
+        // check if mp has two charm hadrons as daughters
+        if (mp.has_daughters()) {
+          const auto& daughtersIds = mp.daughtersIds();
+          int count_charm_hadron = 0;
+          for (const auto& daughterId : daughtersIds) {
+            if (daughterId >= 0 && daughterId < mcParticles.size()) {
+              auto daughter = mcParticles.iteratorAt(daughterId);
+              if (isCharmMeson(daughter) || isCharmBaryon(daughter)) {
+                count_charm_hadron++;
+              }
+            }
+          }
+          return {motherid, count_charm_hadron};
+        } else {
+          LOGF(debug, "Something went wrong: Did not find any daughter for the current mother! Can't be a mother if there are no daughters\n");
+        }
+        return {-999, -999};
+      }
+      if (mp.has_mothers()) {
+        motherid = mp.mothersIds()[0];
+      } else {
+        return {-999, -999};
+      }
+    } else {
+      LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mcParticles.size());
+    }
+  }
+  return {-999, -999};
+}
+//_______________________________________________________________________
 template <typename TMCParticle>
 bool isFlavorOscillationB(TMCParticle const& mcParticle)
 {
@@ -507,7 +604,7 @@ int find1stHadron(TMCParticle const& mcParticle, TMCParticles const& mcParticles
   return hadronId;
 }
 //_______________________________________________________________________
-template <typename TMCParticle1, typename TMCParticle2, typename TMCParticles>
+template <bool doMoreDifferentially = false, typename TMCParticle1, typename TMCParticle2, typename TMCParticles>
 int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcparticles)
 {
   if (!p1.has_mothers() || !p2.has_mothers()) {
@@ -516,6 +613,10 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
 
   if (p1.mothersIds()[0] == p2.mothersIds()[0]) { // reject same mother. e.g. jspi 443
     return static_cast<int>(EM_HFeeType::kUndef); // this never happens in correlated HF->ee decays
+  }
+
+  if (isDiquark(p1, p2, mcparticles)) {
+    return static_cast<int>(EM_HFeeType::kUndef); // remove diquark
   }
 
   // store all mother1 relation
@@ -560,12 +661,10 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
     }
   }
 
-  // require correlation between q-qbar. (not q-q) // need statusCode
-
-  auto mpfh1 = mcparticles.iteratorAt(find1stHadron(p1, mcparticles));
-  auto mpfh2 = mcparticles.iteratorAt(find1stHadron(p2, mcparticles));
-  bool isFOat1stDecay1 = isFlavorOscillationB(mpfh1); // oscillation occured at 1st hb decay.
-  bool isFOat1stDecay2 = isFlavorOscillationB(mpfh2); // oscillation occured at 1st hb decay.
+  // auto mpfh1 = mcparticles.iteratorAt(find1stHadron(p1, mcparticles));
+  // auto mpfh2 = mcparticles.iteratorAt(find1stHadron(p2, mcparticles));
+  // bool isFOat1stDecay1 = isFlavorOscillationB(mpfh1); // oscillation occured at 1st hb decay.
+  // bool isFOat1stDecay2 = isFlavorOscillationB(mpfh2); // oscillation occured at 1st hb decay.
 
   bool is_direct_from_b1 = isWeakDecayFromBeautyHadron(p1, mcparticles);
   bool is_direct_from_b2 = isWeakDecayFromBeautyHadron(p2, mcparticles);
@@ -574,7 +673,7 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
   bool is_c_from_b1 = isWeakDecayFromCharmHadron(p1, mcparticles) && IsFromBeauty(p1, mcparticles) > 0;
   bool is_c_from_b2 = isWeakDecayFromCharmHadron(p2, mcparticles) && IsFromBeauty(p2, mcparticles) > 0;
 
-  if (is_prompt_c1 && is_prompt_c2 && mpfh1.pdgCode() * mpfh2.pdgCode() < 0) { // charmed mesons never oscillate. Be careful with D(2007)*0 -> D0 e+ e-
+  if (is_prompt_c1 && is_prompt_c2) { // don't check sign of first hadrons. // charmed mesons never oscillate. Be careful with D(2007)*0 -> D0 e+ e-
     mothers_id1.clear();
     mothers_pdg1.clear();
     mothers_id2.clear();
@@ -586,11 +685,11 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
     return static_cast<int>(EM_HFeeType::kCe_Ce); // cc->ee, decay type = 0
   }
 
-  bool b2l_b2l_case0 = is_direct_from_b1 && is_direct_from_b2 && mpfh1.pdgCode() * mpfh2.pdgCode() < 0 && !isFOat1stDecay1 && !isFOat1stDecay2;                 // bbbar -> ll ULS
-  bool b2l_b2l_case1 = is_direct_from_b1 && is_direct_from_b2 && mpfh1.pdgCode() * mpfh2.pdgCode() > 0 && static_cast<bool>(isFOat1stDecay1 ^ isFOat1stDecay2); // bbbar -> ll LS
-  bool b2l_b2l_case2 = is_direct_from_b1 && is_direct_from_b2 && mpfh1.pdgCode() * mpfh2.pdgCode() < 0 && isFOat1stDecay1 && isFOat1stDecay2;                   // bbbar -> ll ULS
+  // bool b2l_b2l_case0 = is_direct_from_b1 && is_direct_from_b2 && mpfh1.pdgCode() * mpfh2.pdgCode() < 0 && !isFOat1stDecay1 && !isFOat1stDecay2;                 // bbbar -> ll ULS
+  // bool b2l_b2l_case1 = is_direct_from_b1 && is_direct_from_b2 && mpfh1.pdgCode() * mpfh2.pdgCode() > 0 && static_cast<bool>(isFOat1stDecay1 ^ isFOat1stDecay2); // bbbar -> ll LS
+  // bool b2l_b2l_case2 = is_direct_from_b1 && is_direct_from_b2 && mpfh1.pdgCode() * mpfh2.pdgCode() < 0 && isFOat1stDecay1 && isFOat1stDecay2;                   // bbbar -> ll ULS
 
-  if (b2l_b2l_case0 || b2l_b2l_case1 || b2l_b2l_case2) {
+  if (is_direct_from_b1 && is_direct_from_b2) { // analyzer should do ULS - LS to take into flavor oscillation account.
     mothers_id1.clear();
     mothers_pdg1.clear();
     mothers_id2.clear();
@@ -602,11 +701,11 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
     return static_cast<int>(EM_HFeeType::kBe_Be); // bb->ee, decay type = 2
   }
 
-  bool b2c2l_b2c2l_case0 = is_c_from_b1 && is_c_from_b2 && mpfh1.pdgCode() * mpfh2.pdgCode() < 0 && !isFOat1stDecay1 && !isFOat1stDecay2;                 // bbbar -> ll ULS
-  bool b2c2l_b2c2l_case1 = is_c_from_b1 && is_c_from_b2 && mpfh1.pdgCode() * mpfh2.pdgCode() > 0 && static_cast<bool>(isFOat1stDecay1 ^ isFOat1stDecay2); // bbbar -> ll LS
-  bool b2c2l_b2c2l_case2 = is_c_from_b1 && is_c_from_b2 && mpfh1.pdgCode() * mpfh2.pdgCode() < 0 && isFOat1stDecay1 && isFOat1stDecay2;                   // bbbar -> ll ULS
+  // bool b2c2l_b2c2l_case0 = is_c_from_b1 && is_c_from_b2 && mpfh1.pdgCode() * mpfh2.pdgCode() < 0 && !isFOat1stDecay1 && !isFOat1stDecay2;                 // bbbar -> ll ULS
+  // bool b2c2l_b2c2l_case1 = is_c_from_b1 && is_c_from_b2 && mpfh1.pdgCode() * mpfh2.pdgCode() > 0 && static_cast<bool>(isFOat1stDecay1 ^ isFOat1stDecay2); // bbbar -> ll LS
+  // bool b2c2l_b2c2l_case2 = is_c_from_b1 && is_c_from_b2 && mpfh1.pdgCode() * mpfh2.pdgCode() < 0 && isFOat1stDecay1 && isFOat1stDecay2;                   // bbbar -> ll ULS
 
-  if (b2c2l_b2c2l_case0 || b2c2l_b2c2l_case1 || b2c2l_b2c2l_case2) {
+  if (is_c_from_b1 && is_c_from_b2) {
     mothers_id1.clear();
     mothers_pdg1.clear();
     mothers_id2.clear();
@@ -615,18 +714,38 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
     mothers_pdg1.shrink_to_fit();
     mothers_id2.shrink_to_fit();
     mothers_pdg2.shrink_to_fit();
-    return static_cast<int>(EM_HFeeType::kBCe_BCe); // b->c->e and b->c->e, decay type = 1
+
+    if constexpr (!doMoreDifferentially) {
+      return static_cast<int>(EM_HFeeType::kBCe_BCe); // default to b->c->e and b->c->e, decay type = 1
+    } else {
+      int beauty_motherid1 = getBeautyHadronIDandNCharmHadronDaughters(p1, mcparticles).first;
+      int beauty_motherid2 = getBeautyHadronIDandNCharmHadronDaughters(p2, mcparticles).first;
+      int n_c_from_b1 = getBeautyHadronIDandNCharmHadronDaughters(p1, mcparticles).second;
+      int n_c_from_b2 = getBeautyHadronIDandNCharmHadronDaughters(p2, mcparticles).second;
+      if (n_c_from_b1 == 1 && n_c_from_b2 == 1) {
+        return static_cast<int>(EM_HFeeType::kBCe_BCe); // b->c->e and b->c->e, decay type = 1
+      } else if (n_c_from_b1 == 2 && n_c_from_b2 == 2) {
+        if (beauty_motherid1 == beauty_motherid2) {     // same beauty hadron decays into 2 charm hadrons which then decay semileptonically
+          return static_cast<int>(EM_HFeeType::kBCCee); // b->cc->ee, decay type = 7
+        } else {
+          return static_cast<int>(EM_HFeeType::kBCCe_BCCe); // b->cc->e and b->cc->e, decay type = 6
+        }
+      } else if ((n_c_from_b1 == 1 && n_c_from_b2 == 2) || (n_c_from_b1 == 2 && n_c_from_b2 == 1)) {
+        return static_cast<int>(EM_HFeeType::kBCCe_BCe); // b->cc->e and b->c->e, decay type = 5
+      } else {
+        LOGF(debug, "Unexpected number of charm hadrons from beauty decay: n_c_from_b1 = %d, n_c_from_b2 = %d. Return kBCe_BCe as default.", n_c_from_b1, n_c_from_b2);
+        return static_cast<int>(EM_HFeeType::kBCe_BCe); // default to b->c->e and b->c->e, decay type = 1
+      }
+    }
   }
 
   if ((is_direct_from_b1 && is_c_from_b2) || (is_direct_from_b2 && is_c_from_b1)) {
-    // No pair sign oscillation due to B0(s) oscillation for the same mother.
     for (const auto& mid1 : mothers_id1) {
       for (const auto& mid2 : mothers_id2) {
         if (mid1 == mid2) {
           auto common_mp = mcparticles.iteratorAt(mid1);
           int mp_pdg = common_mp.pdgCode();
-          bool is_mp_diquark = (1100 < std::abs(mp_pdg) && std::abs(mp_pdg) < 5600) && std::to_string(mp_pdg)[std::to_string(mp_pdg).length() - 2] == '0';
-          if (!is_mp_diquark && std::abs(mp_pdg) < 1e+9 && (std::to_string(std::abs(mp_pdg))[std::to_string(std::abs(mp_pdg)).length() - 3] == '5' || std::to_string(std::abs(mp_pdg))[std::to_string(std::abs(mp_pdg)).length() - 4] == '5')) {
+          if (std::abs(mp_pdg) < 1e+9 && (std::to_string(std::abs(mp_pdg))[std::to_string(std::abs(mp_pdg)).length() - 3] == '5' || std::to_string(std::abs(mp_pdg))[std::to_string(std::abs(mp_pdg)).length() - 4] == '5')) {
             mothers_id1.clear();
             mothers_pdg1.clear();
             mothers_id2.clear();
@@ -635,27 +754,25 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
             mothers_pdg1.shrink_to_fit();
             mothers_id2.shrink_to_fit();
             mothers_pdg2.shrink_to_fit();
-            return static_cast<int>(EM_HFeeType::kBCe_Be_SameB); // b->c->e and b->e, decay type = 3
+            return static_cast<int>(EM_HFeeType::kBCe_Be_SameB); // b->c->e and b->e, decay type = 3 // No pair sign oscillation due to B0(s) oscillation for the same mother.
           }
         }
       } // end of motherid2
     } // end of motherid1
 
-    bool b2c2l_b2l_diffb_case0 = mpfh1.pdgCode() * mpfh2.pdgCode() < 0 && !isFOat1stDecay1 && !isFOat1stDecay2;                 // bbbar -> ll LS
-    bool b2c2l_b2l_diffb_case1 = mpfh1.pdgCode() * mpfh2.pdgCode() > 0 && static_cast<bool>(isFOat1stDecay1 ^ isFOat1stDecay2); // bbbar -> ll ULS
-    bool b2c2l_b2l_diffb_case2 = mpfh1.pdgCode() * mpfh2.pdgCode() < 0 && isFOat1stDecay1 && isFOat1stDecay2;                   // bbbar -> ll LS
+    // bool b2c2l_b2l_diffb_case0 = mpfh1.pdgCode() * mpfh2.pdgCode() < 0 && !isFOat1stDecay1 && !isFOat1stDecay2;                 // bbbar -> ll LS
+    // bool b2c2l_b2l_diffb_case1 = mpfh1.pdgCode() * mpfh2.pdgCode() > 0 && static_cast<bool>(isFOat1stDecay1 ^ isFOat1stDecay2); // bbbar -> ll ULS
+    // bool b2c2l_b2l_diffb_case2 = mpfh1.pdgCode() * mpfh2.pdgCode() < 0 && isFOat1stDecay1 && isFOat1stDecay2;                   // bbbar -> ll LS
 
-    if (b2c2l_b2l_diffb_case0 || b2c2l_b2l_diffb_case1 || b2c2l_b2l_diffb_case2) {
-      mothers_id1.clear();
-      mothers_pdg1.clear();
-      mothers_id2.clear();
-      mothers_pdg2.clear();
-      mothers_id1.shrink_to_fit();
-      mothers_pdg1.shrink_to_fit();
-      mothers_id2.shrink_to_fit();
-      mothers_pdg2.shrink_to_fit();
-      return static_cast<int>(EM_HFeeType::kBCe_Be_DiffB); // b->c->e and b->e, decay type = 4
-    }
+    mothers_id1.clear();
+    mothers_pdg1.clear();
+    mothers_id2.clear();
+    mothers_pdg2.clear();
+    mothers_id1.shrink_to_fit();
+    mothers_pdg1.shrink_to_fit();
+    mothers_id2.shrink_to_fit();
+    mothers_pdg2.shrink_to_fit();
+    return static_cast<int>(EM_HFeeType::kBCe_Be_DiffB); // b->c->e and b->e, decay type = 4
   }
 
   mothers_id1.clear();

@@ -83,8 +83,8 @@ struct HfTaskXic0ToXiPi {
   using McCollisionsCentFT0Ms = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
   Filter filterSelectXic0Candidates = aod::hf_sel_toxipi::resultSelections == true;
-  Filter filterXicMatchedRec = nabs(aod::hf_cand_xic0_omegac0::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi));
-  Filter filterXicMatchedGen = nabs(aod::hf_cand_xic0_omegac0::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi));
+  Filter filterXicMatchedRec = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi));
+  Filter filterXicMatchedGen = nabs(aod::hf_cand_mc_flag::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi));
   Preslice<Xic0Cands> candXicPerCollision = aod::hf_cand_xic0_omegac0::collisionId;
   Preslice<Xic0CandsKF> candXicKFPerCollision = aod::hf_cand_xic0_omegac0::collisionId;
   Preslice<Xic0CandsMl> candXicMlPerCollision = aod::hf_cand_xic0_omegac0::collisionId;
@@ -165,6 +165,19 @@ struct HfTaskXic0ToXiPi {
       registry.add("hMassVsPtVsYVsCentVsPtPion", "Thn for Xic0 candidates with Cent&pTpi", HistType::kTHnSparseD, axesWithCent);
       registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsYVsCentVsPtPion"))->Sumw2();
       registry.get<THnSparse>(HIST("hMassVsPtVsYVsCentVsPtPion"))->Sumw2();
+    } else {
+      const AxisSpec thnAxisPromptScore{thnConfigAxisPromptScore, "BDT score prompt."};
+      const AxisSpec thnAxisPtPion{thnConfigAxisPtPion, "Pt of Pion from Xic0."};
+      std::vector<AxisSpec> const axesWithBdtWithoutCent = {thnAxisPromptScore, thnAxisMass, thnAxisPt, thnAxisY, thnAxisPtPion, thnConfigAxisNumPvContr};
+      std::vector<AxisSpec> const axesWithoutCent = {thnAxisMass, thnAxisPt, thnAxisY, thnAxisPtPion, thnConfigAxisNumPvContr};
+      registry.add("hBdtScoreVsMassVsPtVsYVsPtPion", "Thn for Xic0 candidates with BDT&Cent&pTpi", HistType::kTHnSparseD, axesWithBdtWithoutCent);
+      registry.add("hMassVsPtVsYVsPtPion", "Thn for Xic0 candidates with Cent&pTpi", HistType::kTHnSparseD, axesWithoutCent);
+      registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsYVsPtPion"))->Sumw2();
+      registry.get<THnSparse>(HIST("hMassVsPtVsYVsPtPion"))->Sumw2();
+    }
+
+    if (yCandRecMax >= 0) {
+      registry.add("hNumRejCandidate_RapidityCut", "# of rejected candidate using rap cut;Rej;entries", {HistType::kTH1F, {thnAxisY}});
     }
   }
 
@@ -174,13 +187,14 @@ struct HfTaskXic0ToXiPi {
     if (candidate.resultSelections() != true) {
       return;
     }
-    double yCharmBaryon;
+    double yCharmBaryon{0.};
     if constexpr (UseKfParticle) {
       yCharmBaryon = candidate.kfRapXic();
     } else {
       yCharmBaryon = candidate.y(o2::constants::physics::MassXiC0);
     }
     if (yCandRecMax >= 0. && std::abs(yCharmBaryon) > yCandRecMax) {
+      registry.fill(HIST("hNumRejCandidate_RapidityCut"), yCharmBaryon);
       return;
     }
 
@@ -192,22 +206,41 @@ struct HfTaskXic0ToXiPi {
     double const ptXic = RecoDecay::pt(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
     double const ptPiFromXic = RecoDecay::pt(candidate.pxBachFromCharmBaryon(), candidate.pyBachFromCharmBaryon());
     if constexpr (ApplyMl) {
-      registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsCentVsPtPion"),
-                    candidate.mlProbToXiPi()[0],
-                    candidate.invMassCharmBaryon(),
-                    ptXic,
-                    yCharmBaryon,
-                    centrality,
-                    ptPiFromXic,
-                    numPvContributors);
+      if constexpr (UseCentrality) {
+        registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsCentVsPtPion"),
+                      candidate.mlProbToXiPi()[0],
+                      candidate.invMassCharmBaryon(),
+                      ptXic,
+                      yCharmBaryon,
+                      centrality,
+                      ptPiFromXic,
+                      numPvContributors);
+      } else {
+        registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsPtPion"),
+                      candidate.mlProbToXiPi()[0],
+                      candidate.invMassCharmBaryon(),
+                      ptXic,
+                      yCharmBaryon,
+                      ptPiFromXic,
+                      numPvContributors);
+      }
     } else {
-      registry.fill(HIST("hMassVsPtVsYVsCentVsPtPion"),
-                    candidate.invMassCharmBaryon(),
-                    ptXic,
-                    yCharmBaryon,
-                    centrality,
-                    ptPiFromXic,
-                    numPvContributors);
+      if constexpr (UseCentrality) {
+        registry.fill(HIST("hMassVsPtVsYVsCentVsPtPion"),
+                      candidate.invMassCharmBaryon(),
+                      ptXic,
+                      yCharmBaryon,
+                      centrality,
+                      ptPiFromXic,
+                      numPvContributors);
+      } else {
+        registry.fill(HIST("hMassVsPtVsYVsPtPion"),
+                      candidate.invMassCharmBaryon(),
+                      ptXic,
+                      yCharmBaryon,
+                      ptPiFromXic,
+                      numPvContributors);
+      }
     }
   }
 
@@ -223,7 +256,7 @@ struct HfTaskXic0ToXiPi {
       if (candidate.resultSelections() != true) {
         continue;
       }
-      double yCharmBaryon;
+      double yCharmBaryon{0.};
       if constexpr (UseKfParticle) {
         yCharmBaryon = candidate.kfRapXic();
       } else {
@@ -233,9 +266,10 @@ struct HfTaskXic0ToXiPi {
         continue;
       }
 
-      auto collision = candidate.template collision_as<CollisionsWithMcLabels>();
+      auto collision = candidate.template collision_as<CollType>();
+      auto numPvContributors = collision.numContrib();
       float const mcCent = o2::hf_centrality::getCentralityColl(collision.template mcCollision_as<McCollisionWithCents>());
-      auto numPvContributors = candidate.template collision_as<CollType>().numContrib();
+
       double const ptXic = RecoDecay::pt(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
       if constexpr (ApplyMl) {
         registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsXic0Type"),
@@ -270,12 +304,13 @@ struct HfTaskXic0ToXiPi {
       auto ptGen = particle.pt();
       auto yGen = particle.rapidityCharmBaryonGen();
 
-      float const mcCent = o2::hf_centrality::getCentralityColl(particle.template mcCollision_as<McCollisionWithCents>());
+      auto mcCollision = particle.template mcCollision_as<McCollisionWithCents>();
       unsigned maxNumContrib = 0;
-      const auto& recoCollsPerMcColl = collisions.sliceBy(colPerMcCollision, particle.mcCollision().globalIndex());
+      const auto& recoCollsPerMcColl = collisions.sliceBy(colPerMcCollision, mcCollision.globalIndex());
       for (const auto& recCol : recoCollsPerMcColl) {
         maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
       }
+      float const mcCent = o2::hf_centrality::getCentralityColl(mcCollision);
 
       if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
         registry.fill(HIST("hSparseAcc"),
@@ -346,7 +381,7 @@ struct HfTaskXic0ToXiPi {
       }
     }
   }
-  PROCESS_SWITCH(HfTaskXic0ToXiPi, processDataWithKFParticle, "process HfTaskXic0ToXiPi with KFParticle", true);
+  PROCESS_SWITCH(HfTaskXic0ToXiPi, processDataWithKFParticle, "process HfTaskXic0ToXiPi with KFParticle", false);
 
   void processDataWithDCAFitterMl(Xic0CandsMl const& candidates,
                                   CollisionsWithEvSels const& collisions)

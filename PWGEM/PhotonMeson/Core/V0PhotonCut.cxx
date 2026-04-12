@@ -15,14 +15,20 @@
 
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 
+#include "PWGEM/PhotonMeson/Core/V0PhotonCandidate.h"
+
 #include <Framework/Logger.h>
+
+#include <sys/types.h>
 
 #include <Rtypes.h>
 
 #include <cstdint>
 #include <functional>
 #include <set>
+#include <string>
 #include <utility>
+#include <vector>
 
 ClassImp(V0PhotonCut);
 
@@ -112,6 +118,28 @@ void V0PhotonCut::RejectITSib(bool flag)
   mRejectITSib = flag;
   LOG(info) << "V0 Photon Cut, reject photon on ITSib: " << mRejectITSib;
 }
+
+void V0PhotonCut::setTooCloseType(V0PhotonCut::TooCloseCuts type)
+{
+  mTooCloseType = type;
+  LOG(info) << "V0 Photon Cut, TooCloseV0 cut type: " << static_cast<uint>(mTooCloseType);
+}
+void V0PhotonCut::setMinV0DistSquared(float value)
+{
+  mMinV0DistSquared = value;
+  LOG(info) << "V0 Photon Cut, min V0 distance squared: " << mMinV0DistSquared;
+}
+void V0PhotonCut::setDeltaR(float value)
+{
+  mDeltaR = value;
+  LOG(info) << "V0 Photon Cut, delta R for too close V0: " << mDeltaR;
+}
+void V0PhotonCut::setMinOpeningAngle(float value)
+{
+  mMinOpeningAngle = value;
+  LOG(info) << "V0 Photon Cut, min opening angle for too close V0: " << mMinOpeningAngle;
+}
+
 void V0PhotonCut::SetTPCNsigmaElRange(float min, float max)
 {
   mMinTPCNsigmaEl = min;
@@ -238,4 +266,117 @@ void V0PhotonCut::SetDisableTPConly(bool flag)
 {
   mDisableTPConly = flag;
   LOG(info) << "V0 Photon Cut, disable TPC only track: " << mDisableTPConly;
+}
+
+void V0PhotonCut::SetApplyMlCuts(bool flag)
+{
+  mApplyMlCuts = flag;
+  LOG(info) << "V0 Photon Cut, set apply ML: " << mApplyMlCuts;
+}
+
+void V0PhotonCut::SetUse2DBinning(bool flag)
+{
+  mUse2DBinning = flag;
+  LOG(info) << "V0 Photon Cut, set use 2D binning for ML: " << mUse2DBinning;
+}
+
+void V0PhotonCut::SetCcdbUrl(const std::string& url)
+{
+  mCcdbUrl = url;
+  LOG(info) << "V0 Photon Cut, set CCDB URL: " << mCcdbUrl;
+}
+
+void V0PhotonCut::SetMlModelPathsCCDB(const std::vector<std::string>& modelPaths)
+{
+  mModelPathsCCDB = modelPaths;
+  LOG(info) << "V0 Photon Cut, set ML model paths CCDB with size:" << mModelPathsCCDB.size();
+}
+
+void V0PhotonCut::SetMlOnnxFileNames(const std::vector<std::string>& onnxFileNamesVec)
+{
+  mOnnxFileNames = onnxFileNamesVec;
+  LOG(info) << "V0 Photon Cut, set ML ONNX file names with size:" << mOnnxFileNames.size();
+}
+
+void V0PhotonCut::SetMlTimestampCCDB(int timestamp)
+{
+  mTimestampCCDB = timestamp;
+  LOG(info) << "V0 Photon Cut, set ML timestamp CCDB: " << mTimestampCCDB;
+}
+
+void V0PhotonCut::SetLoadMlModelsFromCCDB(bool flag)
+{
+  mLoadMlModelsFromCCDB = flag;
+  LOG(info) << "V0 Photon Cut, set load ML models from CCDB: " << mLoadMlModelsFromCCDB;
+}
+
+void V0PhotonCut::SetBinsPtMl(const std::vector<double>& binsPt)
+{
+  mBinsPtMl = binsPt;
+  LOG(info) << "V0 Photon Cut, set bins pT ML with size:" << mBinsPtMl.size();
+}
+
+void V0PhotonCut::SetBinsCentMl(const std::vector<double>& binsCent)
+{
+  mBinsCentMl = binsCent;
+  LOG(info) << "V0 Photon Cut, set bins centrality ML with size:" << mBinsCentMl.size();
+}
+
+void V0PhotonCut::SetCutsMl(const std::vector<double>& cuts)
+{
+  mCutsMlFlat = cuts;
+  LOG(info) << "V0 Photon Cut, set cuts ML with size:" << mCutsMlFlat.size();
+}
+
+void V0PhotonCut::SetNClassesMl(int nClasses)
+{
+  mNClassesMl = nClasses;
+  mOutputML.reserve(mNClassesMl);
+  LOG(info) << "V0 Photon Cut, set number of classes ML: " << mNClassesMl;
+}
+
+void V0PhotonCut::SetNamesInputFeatures(const std::vector<std::string>& featureNames)
+{
+  mNamesInputFeatures = featureNames;
+  mMlInputFeatures.reserve(mNamesInputFeatures.size());
+  LOG(info) << "V0 Photon Cut, set ML input feature names with size:" << mNamesInputFeatures.size();
+}
+
+void V0PhotonCut::SetCentrality(float cent)
+{
+  mCent = cent;
+}
+void V0PhotonCut::SetD_Bz(float d_bz)
+{
+  mD_Bz = d_bz;
+}
+
+void V0PhotonCut::SetCutDirMl(const std::vector<int>& cutDirMl)
+{
+  mCutDirMl = cutDirMl;
+  LOG(info) << "V0 Photon Cut, set ML cut directions with size:" << mCutDirMl.size();
+}
+
+void V0PhotonCut::SetCentralityTypeMl(CentType centType)
+{
+  mCentralityTypeMl = centType;
+  LOG(info) << "V0 Photon Cut, set centrality type ML: " << mCentralityTypeMl << " (0: CentFT0M, 1: CentFT0A, 2: CentFT0C)";
+}
+
+void V0PhotonCut::SetLabelsBinsMl(const std::vector<std::string>& labelsBins)
+{
+  mLabelsBinsMl = labelsBins;
+  LOG(info) << "V0 Photon Cut, set ML labels bins with size:" << mLabelsBinsMl.size();
+}
+
+void V0PhotonCut::SetLabelsCutScoresMl(const std::vector<std::string>& labelsCutScores)
+{
+  mLabelsCutScoresMl = labelsCutScores;
+  LOG(info) << "V0 Photon Cut, set ML labels cut scores with size:" << mLabelsCutScoresMl.size();
+}
+
+void V0PhotonCut::setDoQA(bool flag)
+{
+  mDoQA = flag;
+  LOG(info) << "V0 Photon Cut, set do QA flag to: " << mDoQA;
 }

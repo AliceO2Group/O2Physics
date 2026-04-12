@@ -24,15 +24,17 @@
 
 #include "Common/CCDB/RCTSelectionFlags.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/Logger.h"
+#include <Framework/DataTypes.h>
+#include <Framework/Logger.h>
 
 #include <cmath>
+#include <cstdint>
 #include <memory>
+#include <vector>
 
 template <typename BC>
 struct SelectionResult {
-  int value;    // The original integer return value
+  int value;              // The original integer return value
   std::shared_ptr<BC> bc; // Pointer to the BC object
 };
 
@@ -62,7 +64,7 @@ class SGSelector
   }
 
   template <typename CC, typename BCs, typename BC>
-  SelectionResult<BC> IsSelected(SGCutParHolder const& diffCuts, CC const& collision, BCs const& bcRange, BC const& oldbc)
+  SelectionResult<BC> IsSelected(SGCutParHolder const& diffCuts, CC const& collision, BCs const& bcRange, BC const& oldbc, std::vector<float>* amplitudesFV0 = nullptr, std::vector<float>* amplitudesFT0A = nullptr, std::vector<float>* amplitudesFT0C = nullptr, std::vector<float>* amplitudesFDDA = nullptr, std::vector<float>* amplitudesFDDC = nullptr)
   {
     //        LOGF(info, "Collision %f", collision.collisionTime());
     //        LOGF(info, "Number of close BCs: %i", bcRange.size());
@@ -101,6 +103,32 @@ class SGSelector
       result.bc = std::make_shared<BC>(oldbc);
       return result;
     }
+
+    if (amplitudesFV0 && amplitudesFT0A && amplitudesFDDA && gA) {
+      for (auto const& bc : bcRange) {
+        if (bc.has_foundFV0()) {
+          amplitudesFV0->push_back(udhelpers::FV0AmplitudeA(bc.foundFV0()));
+        }
+        if (bc.has_foundFT0()) {
+          amplitudesFT0A->push_back(udhelpers::FT0AmplitudeA(bc.foundFT0()));
+        }
+        if (bc.has_foundFDD()) {
+          amplitudesFDDA->push_back(udhelpers::FDDAmplitudeA(bc.foundFDD()));
+        }
+      }
+    }
+
+    if (amplitudesFT0C && amplitudesFDDC && gC) {
+      for (auto const& bc : bcRange) {
+        if (bc.has_foundFT0()) {
+          amplitudesFT0C->push_back(udhelpers::FT0AmplitudeC(bc.foundFT0()));
+        }
+        if (bc.has_foundFDD()) {
+          amplitudesFDDC->push_back(udhelpers::FDDAmplitudeC(bc.foundFDD()));
+        }
+      }
+    }
+
     if (gA && gC) { // loop once again for so-called DG events to get the most active FT0 BC
       for (auto const& bc : bcRange) {
         if (bc.has_foundFT0()) {

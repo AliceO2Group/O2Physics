@@ -19,10 +19,13 @@
 #ifndef DPG_TASKS_TOF_TOFSKIMSTABLECREATOR_H_
 #define DPG_TASKS_TOF_TOFSKIMSTABLECREATOR_H_
 
-#include "Common/TableProducer/PID/pidTOFBase.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/FT0Corrected.h"
-#include "Framework/AnalysisDataModel.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/TableProducer/PID/pidTOFBase.h"
+
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 
 namespace o2::aod
 {

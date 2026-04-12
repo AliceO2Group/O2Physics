@@ -15,22 +15,22 @@
 #ifndef PWGLF_DATAMODEL_REDUCEDHEPTAQUARKTABLES_H_
 #define PWGLF_DATAMODEL_REDUCEDHEPTAQUARKTABLES_H_
 
-#include <cmath>
-
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Framework/AnalysisDataModel.h"
+
 #include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+
+#include <cmath>
 
 namespace o2::aod
 {
 namespace redhqevent
 {
-DECLARE_SOA_COLUMN(NumPhi, numPhi, int);       //! Number of negative K
-DECLARE_SOA_COLUMN(NumLambda, numLambda, int); //! Number of lambda
+DECLARE_SOA_COLUMN(NumPhi, numPhi, int);           //! Number of negative K
+DECLARE_SOA_COLUMN(NumLambda, numLambda, int);     //! Number of lambda
 DECLARE_SOA_COLUMN(Centrality, centrality, float); //!
 } // namespace redhqevent
 DECLARE_SOA_TABLE(RedHQEvents, "AOD", "REDHQEVENT",
@@ -38,6 +38,8 @@ DECLARE_SOA_TABLE(RedHQEvents, "AOD", "REDHQEVENT",
                   bc::GlobalBC,
                   bc::RunNumber,
                   timestamp::Timestamp,
+                  collision::PosX,
+                  collision::PosY,
                   collision::PosZ,
                   collision::NumContrib,
                   redhqevent::Centrality,
@@ -58,6 +60,9 @@ DECLARE_SOA_COLUMN(HQd1Pz, hqd1Pz, float);         //! HQ d1 Pz
 DECLARE_SOA_COLUMN(HQd2Px, hqd2Px, float);         //! HQ d2 Px
 DECLARE_SOA_COLUMN(HQd2Py, hqd2Py, float);         //! HQ d2 Py
 DECLARE_SOA_COLUMN(HQd2Pz, hqd2Pz, float);         //! HQ d2 Pz
+DECLARE_SOA_COLUMN(HQx, hqx, float);               //! HQ x
+DECLARE_SOA_COLUMN(HQy, hqy, float);               //! HQ y
+DECLARE_SOA_COLUMN(HQz, hqz, float);               //! HQ z
 DECLARE_SOA_COLUMN(HQMass, hqMass, float);         //! HQ Mass
 DECLARE_SOA_COLUMN(HQd1Index, hqd1Index, int64_t); //! HQ d1 index
 DECLARE_SOA_COLUMN(HQd2Index, hqd2Index, int64_t); //! HQ d2 index
@@ -84,6 +89,9 @@ DECLARE_SOA_TABLE(HQTracks, "AOD", "HQTRACK",
                   hqtrack::HQd2Px,
                   hqtrack::HQd2Py,
                   hqtrack::HQd2Pz,
+                  hqtrack::HQx,
+                  hqtrack::HQy,
+                  hqtrack::HQz,
                   hqtrack::HQMass,
                   hqtrack::HQd1Index,
                   hqtrack::HQd2Index,

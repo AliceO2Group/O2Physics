@@ -20,25 +20,34 @@
 
 #include "qaEventTrack.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisDataModel.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "DataFormatsTPC/BetheBlochAleph.h"
-#include "ReconstructionDataFormats/PID.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+#include <MathUtils/BetheBlochAleph.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include "TF1.h"
+#include <TF1.h>
+#include <TH2.h>
+#include <TMathBase.h>
+#include <TString.h>
+
+#include <RtypesCore.h>
+
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <ostream>
+#include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::dataformats;
 
 // Lite version of the QA task to run on skimmed dataset
 struct qaEventTrackLite {
@@ -138,11 +147,11 @@ struct qaEventTrackLite {
       ///
       /// From A. Kalteyer:
       /// const float bethe = mMIP
-      ///                   * o2::tpc::BetheBlochAleph(track.tpcInnerParam() / o2::track::pid_constants::sMasses[id]
+      ///                   * o2::common::BetheBlochAleph(track.tpcInnerParam() / o2::track::pid_constants::sMasses[id]
       ///                   , mBetheBlochParams[0], mBetheBlochParams[1], mBetheBlochParams[2], mBetheBlochParams[3], mBetheBlochParams[4])
       ///                   * std::pow((float)o2::track::pid_constants::sCharges[id], mChargeFactor);
       ///
-      return initBBok ? mMip * o2::tpc::BetheBlochAleph(x[0] / par[0], mBetheBlockAleph[0], mBetheBlockAleph[1], mBetheBlockAleph[2], mBetheBlockAleph[3], mBetheBlockAleph[4]) * std::pow(par[1], mChargeFactor) : 0.;
+      return initBBok ? mMip * o2::common::BetheBlochAleph(x[0] / par[0], mBetheBlockAleph[0], mBetheBlockAleph[1], mBetheBlockAleph[2], mBetheBlockAleph[3], mBetheBlockAleph[4]) * std::pow(par[1], mChargeFactor) : 0.;
     }
     void setUpBetheBlockAleph(std::string str_case)
     {
