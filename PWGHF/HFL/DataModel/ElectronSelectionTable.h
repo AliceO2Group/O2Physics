@@ -146,4 +146,3 @@ DECLARE_SOA_TABLE(HfMcGenSelEl, "AOD", "HFMCGENSELEL", //! Electron Informations
 } // namespace o2::aod
 
 #endif // PWGHF_HFL_DATAMODEL_ELECTRONSELECTIONTABLE_H_
-
