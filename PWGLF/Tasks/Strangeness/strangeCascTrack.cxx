@@ -87,24 +87,33 @@ struct StrangeCascTrack {
 
   // axes
   struct : ConfigurableGroup {
+    std::string prefix = "axes";
     ConfigurableAxis axisEta{"axisEta", {102, -2.01, 2.01}, "#eta"};
     ConfigurableAxis axisDCAxy{"axisDCAxy", {500, 0., 0.5}, "cm"};
     ConfigurableAxis axisDCAz{"axisDCAz", {500, 0., 0.5}, "cm"};
-    ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 6.0, 10.0}, "p_{T} (GeV/c)"};
+    ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5, 10}, "p_{T} (GeV/c)"};
     ConfigurableAxis axisMult{"axisMult", {VARIABLE_WIDTH, 0.0f, 5.0, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 70.0f, 100.0f}, "FT0 mult %"};
     ConfigurableAxis axisOmegaMass{"axisOmegaMass", {2000, 1.6, 1.8}, "#Omega M_{inv} (GeV/c^{2})"};
     ConfigurableAxis axisXiMass{"axisXiMass", {2000, 1.2, 1.4}, "#Xi M_{inv} (GeV/c^{2})"};
   } axesConfig;
 
-  // event and dau track selection
+  // event selections
   struct : ConfigurableGroup {
-    // event cuts
+    std::string prefix = "eventSelections";
     Configurable<bool> cutDoINEL{"cutDoINEL", true, "choose events with INEL>0"};
     Configurable<float> cutZVertex{"cutZVertex", 10.0f, "max Z-vertex position"};
     Configurable<bool> cutDoSel8{"cutDoSel8", true, "choose events with sel8"};
     Configurable<bool> cutDoNoPileup{"cutDoNoPileup", true, "choose events with no bunch pileup"};
     Configurable<bool> cutDoGoodFT0{"cutDoGoodFT0", true, "choose events with IsGoodZvtxFT0VsPV"};
-    // cascade cuts
+    Configurable<bool> doINELMCGen{"doINELMCGen", true, "apply INEL>0 for gen MC events"};
+    Configurable<bool> doITSTPCVertexEventCut{"doITSTPCVertexEventCut", true, ">=1 ITS-TPC track"};
+    Configurable<bool> doNoCollInRofStandardCut{"doNoCollInRofStandardCut", true, "rejects if there are other events within the same ITS ROF with mult above threshold"};
+    Configurable<bool> doTimeRangeStandardCut{"doTimeRangeStandardCut", true, "rejects if there are events nearby in dtime +/- 2 μs, or mult above some threshold in -4..-2 μs"};
+  } eventCuts;
+
+  // cascade selections
+  struct : ConfigurableGroup {
+    std::string prefix = "cascadeSelections";
     Configurable<bool> cutDoPropagateDCA{"cutDoPropagateDCA", false, "choose events with sel8"};
     Configurable<float> cutPropDCAtoPVxy{"cutPropDCAtoPVxy", 0.02f, "max cascade dca to PV in xy - propagated"};
     Configurable<float> cutPropDCAtoPVz{"cutPropDCAtoPVz", 0.02f, "max cascade dca to PV in z - propagated"};
@@ -115,7 +124,7 @@ struct StrangeCascTrack {
     Configurable<float> cutMaxBachCosPA{"cutMaxBachCosPA", 1.1f, "max Bachelor cosPA"};
     Configurable<std::vector<float>> cutMinCascCosPaVsPt{
       "cutMinCascCosPaVsPt",
-      {0.993, 0.994, 0.995, 0.996, 0.997, 0.997, 0.998, 0.998, 0.999, 0.999, 0.999},
+      {0.993, 0.993, 0.994, 0.995, 0.996, 0.997, 0.997, 0.998, 0.998, 0.999, 0.999},
       "Min Casc CosPA per pT bin (same binning as axisPt)"};
     Configurable<float> cutRapidity{"cutRapidity", 0.5f, "max rapidity"};
     Configurable<float> cutDauEta{"cutDauEta", 1.0f, "max eta of dau tracks"};
@@ -136,7 +145,7 @@ struct StrangeCascTrack {
     // TOF PID selection
     Configurable<float> cutNSigmaTOFXi{"cutNSigmaTOFXi", 3, "cutNSigmaTOFXi"};
     Configurable<float> cutNSigmaTOFOmega{"cutNSigmaTOFOmega", 3, "cutNSigmaTOFOmega"};
-  } selCuts;
+  } cascCuts;
 
   // cascade reconstruction Types
   static constexpr std::string_view TypeNames[] = {"Standard", "Tracked"};
@@ -160,44 +169,65 @@ struct StrangeCascTrack {
   {
     bool passedAllSels = true;
     //* inel>0 cut
-    if (!selCuts.cutDoINEL || collision.multNTracksPVeta1() > 0) {
+    if (!eventCuts.cutDoINEL || collision.multNTracksPVeta1() > 0) {
       if (fillHists)
         histos.fill(HIST("Rec-Events/EvFilter"), 0.5);
     } else {
       passedAllSels = false;
     }
     //* pvz cut
-    if (std::abs(collision.posZ()) < selCuts.cutZVertex) {
+    if (std::abs(collision.posZ()) < eventCuts.cutZVertex) {
       if (fillHists)
         histos.fill(HIST("Rec-Events/EvFilter"), 1.5);
     } else {
       passedAllSels = false;
     }
     //* sel8 cut
-    if (!selCuts.cutDoSel8 || collision.sel8()) {
+    if (!eventCuts.cutDoSel8 || collision.sel8()) {
       if (fillHists)
         histos.fill(HIST("Rec-Events/EvFilter"), 2.5);
     } else {
       passedAllSels = false;
     }
     //* pileup cut
-    if (!selCuts.cutDoNoPileup || collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+    if (!eventCuts.cutDoNoPileup || collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       if (fillHists)
         histos.fill(HIST("Rec-Events/EvFilter"), 3.5);
     } else {
       passedAllSels = false;
     }
     //* good ft0 z-vertex vs pv cut
-    if (!selCuts.cutDoGoodFT0 || collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (!eventCuts.cutDoGoodFT0 || collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       if (fillHists)
         histos.fill(HIST("Rec-Events/EvFilter"), 4.5);
+    } else {
+      passedAllSels = false;
+    }
+    //*
+    if (!eventCuts.doITSTPCVertexEventCut || collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+      if (fillHists)
+        histos.fill(HIST("Rec-Events/EvFilter"), 5.5);
+    } else {
+      passedAllSels = false;
+    }
+    //*
+    if (!eventCuts.doNoCollInRofStandardCut || collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+      if (fillHists)
+        histos.fill(HIST("Rec-Events/EvFilter"), 6.5);
+    } else {
+      passedAllSels = false;
+    }
+    //*
+    if (!eventCuts.doTimeRangeStandardCut || collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      if (fillHists)
+        histos.fill(HIST("Rec-Events/EvFilter"), 7.5);
     } else {
       passedAllSels = false;
     }
     //* all cuts
     if (passedAllSels) {
       if (fillHists)
-        histos.fill(HIST("Rec-Events/EvFilter"), 5.5);
+        histos.fill(HIST("Rec-Events/EvFilter"), 8.5);
     }
     return passedAllSels;
   }
@@ -209,20 +239,20 @@ struct StrangeCascTrack {
     double ptMin = 0.0;
     double ptMax = 0.0;
     if (Type == 1 && particle == "Xi") {
-      ptMin = selCuts.cutMinPtXiTra;
-      ptMax = selCuts.cutMaxPtXiTra;
+      ptMin = cascCuts.cutMinPtXiTra;
+      ptMax = cascCuts.cutMaxPtXiTra;
     }
     if (Type == 1 && particle == "Omega") {
-      ptMin = selCuts.cutMinPtOmegaTra;
-      ptMax = selCuts.cutMaxPtOmegaTra;
+      ptMin = cascCuts.cutMinPtOmegaTra;
+      ptMax = cascCuts.cutMaxPtOmegaTra;
     }
     if (Type == 0 && particle == "Xi") {
-      ptMin = selCuts.cutMinPtXiStd;
-      ptMax = selCuts.cutMaxPtXiStd;
+      ptMin = cascCuts.cutMinPtXiStd;
+      ptMax = cascCuts.cutMaxPtXiStd;
     }
     if (Type == 0 && particle == "Omega") {
-      ptMin = selCuts.cutMinPtOmegaStd;
-      ptMax = selCuts.cutMaxPtOmegaStd;
+      ptMin = cascCuts.cutMinPtOmegaStd;
+      ptMax = cascCuts.cutMaxPtOmegaStd;
     }
     if (cascade.pt() < ptMin || cascade.pt() > ptMax)
       passedSel = false;
@@ -240,7 +270,7 @@ struct StrangeCascTrack {
       y = std::abs(cascade.yXi());
     else
       y = std::abs(cascade.yOmega());
-    if (y > selCuts.cutRapidity) {
+    if (y > cascCuts.cutRapidity) {
       passedRapidity = false;
       passedAllSels = false;
     }
@@ -249,7 +279,7 @@ struct StrangeCascTrack {
     double bachEta = std::abs(cascade.bacheloreta());
     double negEta = std::abs(cascade.negativeeta());
     double posEta = std::abs(cascade.positiveeta());
-    if (bachEta > selCuts.cutDauEta || negEta > selCuts.cutDauEta || posEta > selCuts.cutDauEta) {
+    if (bachEta > cascCuts.cutDauEta || negEta > cascCuts.cutDauEta || posEta > cascCuts.cutDauEta) {
       passedDauEta = false;
       passedAllSels = false;
     }
@@ -261,21 +291,21 @@ struct StrangeCascTrack {
     double posCls = posTrack.tpcClusters();
     double negCls = negTrack.tpcClusters();
     double bachCls = bachTrack.tpcClusters();
-    if (posCls < selCuts.cutNClsTPC || negCls < selCuts.cutNClsTPC || bachCls < selCuts.cutNClsTPC) {
+    if (posCls < cascCuts.cutNClsTPC || negCls < cascCuts.cutNClsTPC || bachCls < cascCuts.cutNClsTPC) {
       passedTPCCls = false;
       passedAllSels = false;
     }
     // V0 cosPA
     bool passedV0CosPA = true;
     double v0cospa = cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
-    if (v0cospa < selCuts.cutMinV0CosPA || v0cospa > selCuts.cutMaxV0CosPA) {
+    if (v0cospa < cascCuts.cutMinV0CosPA || v0cospa > cascCuts.cutMaxV0CosPA) {
       passedV0CosPA = false;
       passedAllSels = false;
     }
     // Bachelor cosPA
     bool passedBachCosPA = true;
     double bachcospa = stdcasc.bachBaryonCosPA();
-    if (bachcospa < selCuts.cutMinBachCosPA || bachcospa > selCuts.cutMaxBachCosPA) {
+    if (bachcospa < cascCuts.cutMinBachCosPA || bachcospa > cascCuts.cutMaxBachCosPA) {
       passedBachCosPA = false;
       passedAllSels = false;
     }
@@ -284,22 +314,22 @@ struct StrangeCascTrack {
     double casccospa = cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ());
     const auto& edges = axesConfig.axisPt.value;
     int ptBin = std::upper_bound(edges.begin(), edges.end(), cascade.pt()) - edges.begin() - 1;
-    if (ptBin < 0 || ptBin >= static_cast<int>(selCuts.cutMinCascCosPaVsPt->size())) {
+    if (ptBin < 0 || ptBin >= static_cast<int>(cascCuts.cutMinCascCosPaVsPt->size())) {
       ptBin = 1;
     } // safety check - if pt bin not determined, default to loosest cut
-    if (casccospa < selCuts.cutMinCascCosPaVsPt->at(ptBin)) {
+    if (casccospa < cascCuts.cutMinCascCosPaVsPt->at(ptBin)) {
       passedCascCosPA = false;
       passedAllSels = false;
     }
     // Propagated cacade DCAxy to PV
     bool passedPropDCAxy = true;
-    if (selCuts.cutDoPropagateDCA && cascade.dcaXYCascToPV() > selCuts.cutPropDCAtoPVxy) {
+    if (cascCuts.cutDoPropagateDCA && cascade.dcaXYCascToPV() > cascCuts.cutPropDCAtoPVxy) {
       passedPropDCAxy = false;
       passedAllSels = false;
     }
     // Propagated cacade DCAz to PV
     bool passedPropDCAz = true;
-    if (selCuts.cutDoPropagateDCA && cascade.dcaZCascToPV() > selCuts.cutPropDCAtoPVz) {
+    if (cascCuts.cutDoPropagateDCA && cascade.dcaZCascToPV() > cascCuts.cutPropDCAtoPVz) {
       passedPropDCAz = false;
       passedAllSels = false;
     }
@@ -314,25 +344,25 @@ struct StrangeCascTrack {
     const auto& negTrack = cascade.template negTrackExtra_as<DauTracks>();
     const auto& bachTrack = cascade.template bachTrackExtra_as<DauTracks>();
     if (cascade.sign() < 0) {
-      if (std::abs(posTrack.tpcNSigmaPr()) > selCuts.cutNSigmaTPCProton) {
+      if (std::abs(posTrack.tpcNSigmaPr()) > cascCuts.cutNSigmaTPCProton) {
         passedSel = false;
       }
-      if (std::abs(negTrack.tpcNSigmaPi()) > selCuts.cutNSigmaTPCPion) {
+      if (std::abs(negTrack.tpcNSigmaPi()) > cascCuts.cutNSigmaTPCPion) {
         passedSel = false;
       }
-      if ((particle == "Xi" && std::abs(bachTrack.tpcNSigmaPi()) > selCuts.cutNSigmaTPCPion) ||
-          (particle == "Omega" && std::abs(bachTrack.tpcNSigmaKa()) > selCuts.cutNSigmaTPCKaon)) {
+      if ((particle == "Xi" && std::abs(bachTrack.tpcNSigmaPi()) > cascCuts.cutNSigmaTPCPion) ||
+          (particle == "Omega" && std::abs(bachTrack.tpcNSigmaKa()) > cascCuts.cutNSigmaTPCKaon)) {
         passedSel = false;
       }
     } else {
-      if (std::abs(negTrack.tpcNSigmaPr()) > selCuts.cutNSigmaTPCProton) {
+      if (std::abs(negTrack.tpcNSigmaPr()) > cascCuts.cutNSigmaTPCProton) {
         passedSel = false;
       }
-      if (std::abs(posTrack.tpcNSigmaPi()) > selCuts.cutNSigmaTPCPion) {
+      if (std::abs(posTrack.tpcNSigmaPi()) > cascCuts.cutNSigmaTPCPion) {
         passedSel = false;
       }
-      if ((particle == "Xi" && std::abs(bachTrack.tpcNSigmaPi()) > selCuts.cutNSigmaTPCPion) ||
-          (particle == "Omega" && std::abs(bachTrack.tpcNSigmaKa()) > selCuts.cutNSigmaTPCKaon)) {
+      if ((particle == "Xi" && std::abs(bachTrack.tpcNSigmaPi()) > cascCuts.cutNSigmaTPCPion) ||
+          (particle == "Omega" && std::abs(bachTrack.tpcNSigmaKa()) > cascCuts.cutNSigmaTPCKaon)) {
         passedSel = false;
       }
     }
@@ -344,9 +374,9 @@ struct StrangeCascTrack {
   {
     bool passedSel = true;
     if (particle == "Xi")
-      passedSel = cascade.tofXiCompatibility(selCuts.cutNSigmaTOFXi);
+      passedSel = cascade.tofXiCompatibility(cascCuts.cutNSigmaTOFXi);
     if (particle == "Omega")
-      passedSel = cascade.tofOmegaCompatibility(selCuts.cutNSigmaTOFOmega);
+      passedSel = cascade.tofOmegaCompatibility(cascCuts.cutNSigmaTOFOmega);
     return passedSel;
   }
   // checks whether gen cascade corresponds to PDG code
@@ -374,18 +404,6 @@ struct StrangeCascTrack {
         return (pdg == PDG_t::kOmegaMinus);
     }
     return false;
-  }
-  // applies purities and efficiencies
-  void fillHist(std::shared_ptr<THn> hist, double binFillThn[], float efficiency, float effUncert, float purity, float purityUncert)
-  {
-    float previousContent, previousError2, currentContent, currentError2;
-    int bin = hist->GetBin(binFillThn);
-    previousContent = hist->GetBinContent(bin);
-    previousError2 = hist->GetBinError2(bin);
-    currentContent = previousContent + purity / (efficiency);
-    currentError2 = previousError2 + std::pow(purity / (efficiency), 2) + std::pow(purityUncert / (efficiency), 2) + std::pow(effUncert * purity, 2) / std::pow(efficiency, 4);
-    hist->SetBinContent(bin, currentContent);
-    hist->SetBinError2(bin, currentError2);
   }
 
   // applies selections for and fills histograms
@@ -421,15 +439,6 @@ struct StrangeCascTrack {
           return 0;
         }
       }();
-
-      float efficiencyOmega = 1.0f;
-      float efficiencyXi = 1.0f;
-      float efficiencyOmegaErr = 0.0f;
-      float efficiencyXiErr = 0.0f;
-      float purityOmega = 1.0f;
-      float purityXi = 1.0f;
-      float purityOmegaErr = 0.0f;
-      float purityXiErr = 0.0f;
 
       double mult = (doProcessIons) ? collision.centFT0C() : collision.centFT0M(); // ion collisions use FT0C for multiplicity, pp uses both
 
@@ -599,7 +608,7 @@ struct StrangeCascTrack {
       }
       // apply competing mass rej
       if (doCompetingMassRej) {
-        if ((std::abs(massXi - o2::constants::physics::MassXiMinus) > selCuts.cutCompMassRej)) {
+        if ((std::abs(massXi - o2::constants::physics::MassXiMinus) > cascCuts.cutCompMassRej)) {
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersOmega"), 4.5);
           if (fillTruthOmega)
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/FiltersOmega"), 4.5);
@@ -643,46 +652,49 @@ struct StrangeCascTrack {
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/Filters/RapidityOmega"), cascade.yOmega());
         }
       }
-      double binFillXi[3] = {massXi, pt, mult};
       if (passedAllSelsXi) {
         histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersXi"), 4.5);
         histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/MassXi"), massXi);
-        fillHist(histos.get<THn>(HIST(TypeNames[Type]) + HIST("/Rec/Xi")), binFillXi, efficiencyXi, efficiencyXiErr, purityXi, purityXiErr);
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/Xi"), massXi, pt, mult);
         // fill for particle-antiparticle type
         if (cascade.sign() < 0) {
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/MassXiMinus"), massXi);
-          fillHist(histos.get<THn>(HIST(TypeNames[Type]) + HIST("/Rec/XiMinus")), binFillXi, efficiencyXi, efficiencyXiErr, purityXi, purityXiErr);
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/XiMinus"), massXi, pt, mult);
         }
         if (cascade.sign() > 0) {
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/MassXiPlus"), massXi);
-          fillHist(histos.get<THn>(HIST(TypeNames[Type]) + HIST("/Rec/XiPlus")), binFillXi, efficiencyXi, efficiencyXiErr, purityXi, purityXiErr);
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/XiPlus"), massXi, pt, mult);
         }
         // fill truth
         if (fillTruthXi) {
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/FiltersXi"), 4.5);
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/MassXi"), massXi);
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/Xi"), massXi, pt, mult);
+          //
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/RapCheck_TH3_Truth_Xi"), pt, mult, cascade.yXi());
         }
       }
-      double binFillOmega[3] = {massOmega, pt, mult};
       if (passedAllSelsOmega) {
         histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersOmega"), 5.5);
         histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/MassOmega"), massOmega);
-        fillHist(histos.get<THn>(HIST(TypeNames[Type]) + HIST("/Rec/Omega")), binFillOmega, efficiencyOmega, efficiencyOmegaErr, purityOmega, purityOmegaErr);
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/Xi"), massXi, pt, mult);
+        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/Omega"), massOmega, pt, mult);
         // fill for particle-antiparticle type
         if (cascade.sign() < 0) {
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/MassOmegaMinus"), massOmega);
-          fillHist(histos.get<THn>(HIST(TypeNames[Type]) + HIST("/Rec/OmegaMinus")), binFillOmega, efficiencyOmega, efficiencyOmegaErr, purityOmega, purityOmegaErr);
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/OmegaMinus"), massOmega, pt, mult);
         }
         if (cascade.sign() > 0) {
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/MassOmegaPlus"), massOmega);
-          fillHist(histos.get<THn>(HIST(TypeNames[Type]) + HIST("/Rec/OmegaPlus")), binFillOmega, efficiencyOmega, efficiencyOmegaErr, purityOmega, purityOmegaErr);
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/OmegaPlus"), massOmega, pt, mult);
         }
         // fill truth
         if (fillTruthOmega) {
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/FiltersOmega"), 5.5);
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/MassOmega"), massOmega);
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/Omega"), massOmega, pt, mult);
+          //
+          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/RapCheck_TH3_Truth_Omega"), pt, mult, cascade.yOmega());
         }
       }
 
@@ -725,7 +737,7 @@ struct StrangeCascTrack {
   void init(InitContext const&)
   {
     // check if cut configuration is valid
-    if (selCuts.cutMinCascCosPaVsPt->size() != axesConfig.axisPt.value.size() - 1) {
+    if (cascCuts.cutMinCascCosPaVsPt->size() != axesConfig.axisPt.value.size() - 1) {
       LOGF(fatal, "cutMinCascCosPaVsPt size does not match axisPt binning");
     }
     // for all events processing
@@ -738,13 +750,16 @@ struct StrangeCascTrack {
     histos.add("Rec-Events/PVxy", "PV xy position", kTH2D, {{200, -0.1, 0.1}, {200, -0.1, 0.1}});
     histos.add("Rec-Events/PVz", "PV z position", kTH1D, {{100, -20, 20}});
     histos.add("Rec-Events/Mult", "Multiplicity", kTH1D, {axesConfig.axisMult});
-    histos.add("Rec-Events/EvFilter", "Event Filter", kTH1D, {{6, 0, 6}});
+    histos.add("Rec-Events/EvFilter", "Event Filter", kTH1D, {{9, 0, 9}});
     histos.get<TH1>(HIST("Rec-Events/EvFilter"))->GetXaxis()->SetBinLabel(1, "INEL>0");
     histos.get<TH1>(HIST("Rec-Events/EvFilter"))->GetXaxis()->SetBinLabel(2, "PVz cut");
     histos.get<TH1>(HIST("Rec-Events/EvFilter"))->GetXaxis()->SetBinLabel(3, "sel8");
     histos.get<TH1>(HIST("Rec-Events/EvFilter"))->GetXaxis()->SetBinLabel(4, "NoSameBunchPileup");
     histos.get<TH1>(HIST("Rec-Events/EvFilter"))->GetXaxis()->SetBinLabel(5, "IsGoodZvtxFT0VsPV");
-    histos.get<TH1>(HIST("Rec-Events/EvFilter"))->GetXaxis()->SetBinLabel(6, "all");
+    histos.get<TH1>(HIST("Rec-Events/EvFilter"))->GetXaxis()->SetBinLabel(6, "ITSTPCVertexEventCut");
+    histos.get<TH1>(HIST("Rec-Events/EvFilter"))->GetXaxis()->SetBinLabel(7, "NoCollInRofStandardCut");
+    histos.get<TH1>(HIST("Rec-Events/EvFilter"))->GetXaxis()->SetBinLabel(8, "TimeRangeStandardCut");
+    histos.get<TH1>(HIST("Rec-Events/EvFilter"))->GetXaxis()->SetBinLabel(9, "all");
     // for cascade processing
     static_for<0, 1>([&](auto Type) {
       // no selections applied
@@ -800,18 +815,18 @@ struct StrangeCascTrack {
       histos.add(Form("%s/Rec/MassXi", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisXiMass});
       histos.add(Form("%s/Rec/MassXiMinus", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisXiMass});
       histos.add(Form("%s/Rec/MassXiPlus", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisXiMass});
-      histos.add(Form("%s/Rec/Xi", TypeNames[Type].data()), "", kTHnD, {axesConfig.axisXiMass, axesConfig.axisPt, axesConfig.axisMult});
-      histos.add(Form("%s/Rec/XiMinus", TypeNames[Type].data()), "", kTHnD, {axesConfig.axisXiMass, axesConfig.axisPt, axesConfig.axisMult});
-      histos.add(Form("%s/Rec/XiPlus", TypeNames[Type].data()), "", kTHnD, {axesConfig.axisXiMass, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec/Xi", TypeNames[Type].data()), "", kTHnSparseD, {axesConfig.axisXiMass, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec/XiMinus", TypeNames[Type].data()), "", kTHnSparseD, {axesConfig.axisXiMass, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec/XiPlus", TypeNames[Type].data()), "", kTHnSparseD, {axesConfig.axisXiMass, axesConfig.axisPt, axesConfig.axisMult});
       // selected omega
       histos.add(Form("%s/Rec/FiltersOmega", TypeNames[Type].data()), "main cascade filters for Omega", kTH1D, {{6, 0, 6}});
       histos.add(Form("%s/Rec/GenFiltersOmega", TypeNames[Type].data()), "general cascade filters for Omega", kTH1D, {{9, 0, 9}});
       histos.add(Form("%s/Rec/MassOmega", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisOmegaMass});
       histos.add(Form("%s/Rec/MassOmegaMinus", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisOmegaMass});
       histos.add(Form("%s/Rec/MassOmegaPlus", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisOmegaMass});
-      histos.add(Form("%s/Rec/Omega", TypeNames[Type].data()), "", kTHnD, {axesConfig.axisOmegaMass, axesConfig.axisPt, axesConfig.axisMult});
-      histos.add(Form("%s/Rec/OmegaMinus", TypeNames[Type].data()), "", kTHnD, {axesConfig.axisOmegaMass, axesConfig.axisPt, axesConfig.axisMult});
-      histos.add(Form("%s/Rec/OmegaPlus", TypeNames[Type].data()), "", kTHnD, {axesConfig.axisOmegaMass, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec/Omega", TypeNames[Type].data()), "", kTHnSparseD, {axesConfig.axisOmegaMass, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec/OmegaMinus", TypeNames[Type].data()), "", kTHnSparseD, {axesConfig.axisOmegaMass, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec/OmegaPlus", TypeNames[Type].data()), "", kTHnSparseD, {axesConfig.axisOmegaMass, axesConfig.axisPt, axesConfig.axisMult});
       // mc truth for all passed selections
       // xi and omega truth selection statistics
       histos.add(Form("%s/Rec-Truth/Filters/PropDCAxy", TypeNames[Type].data()), "DCA to xy (propagated)", kTH1D, {axesConfig.axisDCAxy});
@@ -834,6 +849,9 @@ struct StrangeCascTrack {
       histos.add(Form("%s/Rec-Truth/GenFiltersOmega", TypeNames[Type].data()), "general cascade filters for Omega", kTH1D, {{9, 0, 9}});
       histos.add(Form("%s/Rec-Truth/MassOmega", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisOmegaMass});
       histos.add(Form("%s/Rec-Truth/Omega", TypeNames[Type].data()), "", kTHnD, {axesConfig.axisOmegaMass, axesConfig.axisPt, axesConfig.axisMult});
+      ///
+      histos.add(Form("%s/Rec-Truth/RapCheck_TH3_Truth_Xi", TypeNames[Type].data()), "Rapidity check (pt, mult, y)", kTHnD, {axesConfig.axisPt, axesConfig.axisMult, {200, -1.0, 1.0}});
+      histos.add(Form("%s/Rec-Truth/RapCheck_TH3_Truth_Omega", TypeNames[Type].data()), "Rapidity check (pt, mult, y)", kTHnD, {axesConfig.axisPt, axesConfig.axisMult, {200, -1.0, 1.0}});
     });
     // for MC-specific processing
     // all generated events:
@@ -855,6 +873,7 @@ struct StrangeCascTrack {
     histos.add("MC/EvRec/EvCounter", "Event Counter", kTH1D, {{1, 0, 1}});
     histos.add("MC/EvRec/Mult", "Event charged multiplicty (gen events with reco>=1)", kTH1D, {{1600, 0, 3200}});
     histos.add("MC/EvRec/MultCent", "Gen multiplicity vs reco centrality", kTH2D, {{100, 0, 100}, {1600, 0, 3200}});
+    histos.add("MC/EvRec/Cent", "FT0 Centality", kTH1D, {axesConfig.axisMult});
     histos.add("MC/EvRec/Xi", "Xi", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                                             // generated Xis in reco>=1
     histos.add("MC/EvRec/PrimaryXi", "Xi primaries", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});                            // generated primary Xis in reco>=1
     histos.add("MC/EvRec/PrimaryXiRapidity", "Xi primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});             // generated primary Xis in selected rapidity range in reco>=1
@@ -865,6 +884,8 @@ struct StrangeCascTrack {
     histos.add("MC/EvRec/PrimaryOmegaRapidity", "Omega primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});       // generated primary Omegas in selected rapidity range in reco>=1
     histos.add("MC/EvRec/PrimaryOmegaMinusRapidity", "Omega- primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult}); // generated primary Omega-minus in selected rapidity range in reco>=1
     histos.add("MC/EvRec/PrimaryOmegaPlusRapidity", "Omega+ primaries in |y|", kTH2D, {axesConfig.axisPt, axesConfig.axisMult});  // generated primary Omega-plus in selected rapidity range in reco>=1
+    histos.add("MC/EvRec/RapCheck_TH3_Gen_Xi", "Xi (primary, y<0.5) from pt, cent, rapidity", kTH3D, {axesConfig.axisPt, axesConfig.axisMult, {200, -1.0, 1.0}});
+    histos.add("MC/EvRec/RapCheck_TH3_Gen_Omega", "Omega (primary, y<0.5) from pt, cent, rapidity", kTH3D, {axesConfig.axisPt, axesConfig.axisMult, {200, -1.0, 1.0}});
     // label filter statistic bins for standard cascs
     histos.get<TH1>(HIST("Standard/Rec/FiltersXi"))->GetXaxis()->SetBinLabel(1, "p_{T}");
     histos.get<TH1>(HIST("Standard/Rec/FiltersXi"))->GetXaxis()->SetBinLabel(2, "gen");
@@ -1002,6 +1023,8 @@ struct StrangeCascTrack {
   void processDerivedMCGen(soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& genColls, DerMCGenCascades const& genCascs, DerMCRecCollisions const& recColls)
   {
     for (auto const& genColl : genColls) {
+      if (eventCuts.doINELMCGen && genColl.multMCNParticlesEta10() <= 0)
+        continue;                                 // skip zero gen mult events
       histos.fill(HIST("MC/Gen/EvCounter"), 0.5); // generated events statistics
       double genMult = genColl.multMCNParticlesEta05();
       histos.fill(HIST("MC/Gen/Mult"), genMult);
@@ -1023,7 +1046,7 @@ struct StrangeCascTrack {
           if (isValidPDG(casc, "Omega"))
             histos.fill(HIST("MC/Gen/PrimaryOmega"), genMult, cascPt);
           // fill generated primary Xi within rapidity for corrections
-          if (isValidPDG(casc, "Xi") && std::abs(casc.rapidityMC(0)) < selCuts.cutRapidity) {
+          if (isValidPDG(casc, "Xi") && std::abs(casc.rapidityMC(0)) < cascCuts.cutRapidity) {
             histos.fill(HIST("MC/Gen/PrimaryXiRapidity"), genMult, cascPt);
             if (casc.pdgCode() == PDG_t::kXiMinus)
               histos.fill(HIST("MC/Gen/PrimaryXiMinusRapidity"), genMult, cascPt);
@@ -1031,7 +1054,7 @@ struct StrangeCascTrack {
               histos.fill(HIST("MC/Gen/PrimaryXiPlusRapidity"), genMult, cascPt);
           }
           // fill generated primary Omega within rapidity for corrections
-          if (isValidPDG(casc, "Omega") && std::abs(casc.rapidityMC(2)) < selCuts.cutRapidity) {
+          if (isValidPDG(casc, "Omega") && std::abs(casc.rapidityMC(2)) < cascCuts.cutRapidity) {
             histos.fill(HIST("MC/Gen/PrimaryOmegaRapidity"), genMult, cascPt);
             if (casc.pdgCode() == PDG_t::kOmegaMinus)
               histos.fill(HIST("MC/Gen/PrimaryOmegaMinusRapidity"), genMult, cascPt);
@@ -1048,6 +1071,8 @@ struct StrangeCascTrack {
       // look at reco>= 1 for corrections
       auto slicedRecColls = recColls.sliceBy(perMcCollision, genColl.globalIndex());
       bool recoCounter = false;
+      int biggestNContribs = -1;
+      float bestCentrality = 100.5;
       for (auto const& recColl : slicedRecColls) {
         if (!isValidEvent(recColl, false))
           continue; // from this point on - only gen events (and cascades from such events) that were reconstructed
@@ -1059,41 +1084,49 @@ struct StrangeCascTrack {
           histos.fill(HIST("MC/EvRec/Mult"), genMult);
           recoCounter = true;
         }
-        // fill multiplicity-centrality distribution
-        double recoMult = (doProcessIons) ? recColl.centFT0C() : recColl.centFT0M();
-        histos.fill(HIST("MC/EvRec/MultCent"), recoMult, genMult);
+        if (biggestNContribs < recColl.multPVTotalContributors()) {
+          biggestNContribs = recColl.multPVTotalContributors();
+          bestCentrality = (doProcessIons) ? recColl.centFT0C() : recColl.centFT0M();
+        }
         // look at generated cascades within reconstructed events
         for (auto const& casc : slicedGenCascs) {
           if (casc.straMCCollisionId() != genCollId)
             continue; // check for cascades belonging to the correct reco collision
           double cascPt = casc.ptMC();
           if (isValidPDG(casc, "Xi"))
-            histos.fill(HIST("MC/EvRec/Xi"), cascPt, recoMult);
+            histos.fill(HIST("MC/EvRec/Xi"), cascPt, bestCentrality);
           if (isValidPDG(casc, "Omega"))
-            histos.fill(HIST("MC/EvRec/Omega"), cascPt, recoMult);
+            histos.fill(HIST("MC/EvRec/Omega"), cascPt, bestCentrality);
           if (casc.isPhysicalPrimary()) {
             if (isValidPDG(casc, "Xi")) {
-              histos.fill(HIST("MC/EvRec/PrimaryXi"), cascPt, recoMult);
-              if (std::abs(casc.rapidityMC(0)) < selCuts.cutRapidity) {
-                histos.fill(HIST("MC/EvRec/PrimaryXiRapidity"), cascPt, recoMult);
+              histos.fill(HIST("MC/EvRec/PrimaryXi"), cascPt, bestCentrality);
+              if (std::abs(casc.rapidityMC(0)) < cascCuts.cutRapidity) {
+                histos.fill(HIST("MC/EvRec/PrimaryXiRapidity"), cascPt, bestCentrality);
+                histos.fill(HIST("MC/EvRec/RapCheck_TH3_Gen_Xi"), cascPt, bestCentrality, casc.rapidityMC(0));
                 if (casc.pdgCode() == PDG_t::kXiMinus)
-                  histos.fill(HIST("MC/EvRec/PrimaryXiMinusRapidity"), cascPt, recoMult);
+                  histos.fill(HIST("MC/EvRec/PrimaryXiMinusRapidity"), cascPt, bestCentrality);
                 if (casc.pdgCode() == PDG_t::kXiPlusBar)
-                  histos.fill(HIST("MC/EvRec/PrimaryXiPlusRapidity"), cascPt, recoMult);
+                  histos.fill(HIST("MC/EvRec/PrimaryXiPlusRapidity"), cascPt, bestCentrality);
               }
             }
             if (isValidPDG(casc, "Omega")) {
-              histos.fill(HIST("MC/EvRec/PrimaryOmega"), cascPt, recoMult);
-              if (std::abs(casc.rapidityMC(2)) < selCuts.cutRapidity) {
-                histos.fill(HIST("MC/EvRec/PrimaryOmegaRapidity"), cascPt, recoMult);
+              histos.fill(HIST("MC/EvRec/PrimaryOmega"), cascPt, bestCentrality);
+              if (std::abs(casc.rapidityMC(2)) < cascCuts.cutRapidity) {
+                histos.fill(HIST("MC/EvRec/PrimaryOmegaRapidity"), cascPt, bestCentrality);
+                histos.fill(HIST("MC/EvRec/RapCheck_TH3_Gen_Omega"), cascPt, bestCentrality, casc.rapidityMC(2));
                 if (casc.pdgCode() == PDG_t::kOmegaMinus)
-                  histos.fill(HIST("MC/EvRec/PrimaryOmegaMinusRapidity"), cascPt, recoMult);
+                  histos.fill(HIST("MC/EvRec/PrimaryOmegaMinusRapidity"), cascPt, bestCentrality);
                 if (casc.pdgCode() == PDG_t::kOmegaPlusBar)
-                  histos.fill(HIST("MC/EvRec/PrimaryOmegaPlusRapidity"), cascPt, recoMult);
+                  histos.fill(HIST("MC/EvRec/PrimaryOmegaPlusRapidity"), cascPt, bestCentrality);
               }
             }
           }
         }
+      }
+      // fill centrality exactly once for each rec gen event
+      if (biggestNContribs >= 0) {
+        histos.fill(HIST("MC/EvRec/MultCent"), bestCentrality, genMult);
+        histos.fill(HIST("MC/EvRec/Cent"), bestCentrality);
       }
     }
   }

@@ -101,7 +101,7 @@ class FemtoUniverseSelection
   /// \param cutContainer Bit-wise container for the systematic variations
   /// \param counter Position in the bit-wise container for the systematic variations to be modified
   template <typename T>
-  void checkSelectionSetBit(selValDataType observable, T& cutContainer, size_t& counter)
+  void checkSelectionSetBit(selValDataType observable, T& cutContainer, std::size_t& counter)
   {
     /// If the selection is fulfilled the bit at the specified position (counter) within the bit-wise container is set to 1
     if (isSelected(observable)) {

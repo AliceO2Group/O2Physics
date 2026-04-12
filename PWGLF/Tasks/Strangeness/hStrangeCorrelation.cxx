@@ -86,6 +86,8 @@ struct HStrangeCorrelation {
     Configurable<bool> selectINELgtZERO{"selectINELgtZERO", true, "select INEL>0 events"};
     Configurable<float> zVertexCut{"zVertexCut", 10, "Cut on PV position"};
     Configurable<bool> requireAllGoodITSLayers{"requireAllGoodITSLayers", false, " require that in the event all ITS are good"};
+    Configurable<bool> requireGoodTriggerTVX{"requireGoodTriggerTVX", false, " require acceptable FT0C-FT0A time difference"};
+    Configurable<bool> requireGoodZvtxFT0vsPV{"requireGoodZvtxFT0vsPV", false, " require small difference between z-vertex from PV and from FT0"};
     Configurable<bool> skipUnderOverflowInTHn{"skipUnderOverflowInTHn", false, "skip under/overflow in THns"};
     Configurable<int> mixingParameter{"mixingParameter", 10, "how many events are mixed"};
     Configurable<bool> doMCassociation{"doMCassociation", false, "fill everything only for MC associated"};
@@ -1912,7 +1914,7 @@ struct HStrangeCorrelation {
     if (fillHists)
       histos.fill(HIST("hEventSelection"), 1.5 /* collisions  after sel8*/);
 
-    if (!collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
+    if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && masterConfigurations.requireGoodTriggerTVX) {
       return false;
     }
     if (fillHists)
@@ -1924,14 +1926,14 @@ struct HStrangeCorrelation {
     if (fillHists)
       histos.fill(HIST("hEventSelection"), 3.5 /* collisions  after sel pvz sel*/);
 
-    if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    if (!collision.selection_bit(aod::evsel::kIsGoodITSLayersAll) && masterConfigurations.requireAllGoodITSLayers) {
       // cut time intervals with dead ITS staves
       return false;
     }
     if (fillHists)
       histos.fill(HIST("hEventSelection"), 4.5 /* collisions  after cut time intervals with dead ITS staves*/);
 
-    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) && masterConfigurations.requireGoodZvtxFT0vsPV) {
       // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
       // use this cut at low multiplicities with caution
       return false;

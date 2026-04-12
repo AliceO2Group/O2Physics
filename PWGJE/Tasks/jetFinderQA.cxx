@@ -91,6 +91,7 @@ struct JetFinderQATask {
   Configurable<int> multCutCheck_analyseMBGapEvents{"multCutCheck_analyseMBGapEvents", 0, "flag to choose to reject min. bias gap events; -1: MBGap only, 0: skip MBGap events, 1: analyse all events"};
   Configurable<bool> doMultCutCheck{"doMultCutCheck", false, "decide to apply multCutCheck or not"};
   Configurable<bool> multCutCheck_applyRCTSelections{"multCutCheck_applyRCTSelections", true, "decide to apply RCT selections"};
+  Configurable<bool> multCutCheck_applyWeightCorrection{"multCutCheck_applyWeightCorrection", true, "decide to apply weight correction"};
 
   std::vector<bool> filledJetR_Both;
   std::vector<bool> filledJetR_Low;
@@ -99,6 +100,8 @@ struct JetFinderQATask {
 
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
+
+  float simPtRef = 10.;
 
   std::vector<double> jetPtBins;
   std::vector<double> jetPtBinsRhoAreaSub;
@@ -406,13 +409,15 @@ struct JetFinderQATask {
       AxisSpec jetPtAxisRhoAreaSub = {400, -200., 200., "#it{p}_{T} (GeV/#it{c})"};
       AxisSpec jetEtaAxis = {nBinsEta, -1.0, 1.0, "#eta"};
 
+      registry.add("h_fakecollisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
+
       registry.add("h_collisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
       registry.add("h2_centrality_collisions", "centrality vs collisions; centrality; collisions", {HistType::kTH2F, {centAxis, {4, 0.0, 4.0}}});
-      // registry.add("h2_mccollision_pthardfromweight_pthardfromhepmcxsection", "ptHard from weight vs ptHard from HepMCXSections; ptHard_weight; ptHard_hepmcxsections", {HistType::kTH2F, {{200, 0.0, 200.0}, {200, 0.0, 200.0}}});
+      registry.add("h2_mccollision_pthardfromweight_pthardfromhepmcxsection", "ptHard from weight vs ptHard from HepMCXSections; ptHard_weight; ptHard_hepmcxsections", {HistType::kTH2F, {{200, 0.0, 200.0}, {200, 0.0, 200.0}}});
 
       registry.add("h_collisions_weighted", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}}, doSumw2);
       registry.add("h2_centrality_collisions_weighted", "centrality vs collisions; centrality; collisions", {HistType::kTH2F, {centAxis, {4, 0.0, 4.0}}}, doSumw2);
-      // registry.add("h2_mccollision_pthardfromweight_pthardfromhepmcxsection_weighted", "ptHard from weight vs ptHard from HepMCXSections; ptHard_weight; ptHard_hepmcxsections", {HistType::kTH2F, {{200, 0.0, 200.0}, {200, 0.0, 200.0}}}, doSumw2);
+      registry.add("h2_mccollision_pthardfromweight_pthardfromhepmcxsection_weighted", "ptHard from weight vs ptHard from HepMCXSections; ptHard_weight; ptHard_hepmcxsections", {HistType::kTH2F, {{200, 0.0, 200.0}, {200, 0.0, 200.0}}}, doSumw2);
 
       registry.add("h_collisions_zvertex", "position of collision ;#it{Z} (cm)", {HistType::kTH1F, {{300, -15.0, 15.0}}}, doSumw2);
       registry.add("h_collisions_ntracks", "N_{tracks};", {HistType::kTH1F, {{10000, 0.0, 10000.0}}}, doSumw2);
@@ -430,6 +435,20 @@ struct JetFinderQATask {
       registry.add("h2_track_pt_track_sigma1overpt", "#sigma(1/#it{p}_{T}); #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{100, 0., 10.}, {10000, 0.0, 1.0}}});
       registry.add("h2_track_pt_high_track_sigma1overpt", "#sigma(1/#it{p}_{T}); #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{90, 10., 100.}, {10000, 0.0, 1.0}}});
 
+      registry.add("h_mccollision_processid", "mccollision process id;mccollision process id;entries", {HistType::kTH1D, {{200, 0.0, 200.0}}});
+
+      registry.add("h_particle_pdgcode", "particle pdgcode;particle pdgcode;entries", {HistType::kTH1D, {{3000, 0.0, 3000.0}}});
+      registry.add("h_particle_genstatuscode", "particle gen status code;particle gen status code;entries", {HistType::kTH1D, {{420, -210.0, 210.0}}});
+      registry.add("h_particle_hepmcstatuscode", "particle hep mc status code;particle hep mc status code;entries", {HistType::kTH1D, {{210, 0.0, 210.0}}});
+      registry.add("h_particle_process", "particle process;particle process;entries", {HistType::kTH1D, {{50, 0.0, 50.0}}});
+      registry.add("h_particle_producedbygenerator", "particle producedByGenerator status;particle producedByGenerator status;entries", {HistType::kTH1D, {{2, 0.0, 2}}});
+
+      registry.add("h_particle_primary_pdgcode", "primary particle pdgcode;primary particle pdgcode;entries", {HistType::kTH1D, {{3000, 0.0, 3000.0}}});
+      registry.add("h_particle_primary_genstatuscode", "primary particle gen status code;primary particle gen status code;entries", {HistType::kTH1D, {{420, -210.0, 210.0}}});
+      registry.add("h_particle_primary_hepmcstatuscode", "primary particle hep mc status code;primary particle hep mc status code;entries", {HistType::kTH1D, {{210, 0.0, 210.0}}});
+      registry.add("h_particle_primary_process", "primary particle process;primary particle process;entries", {HistType::kTH1D, {{50, 0.0, 50.0}}});
+      registry.add("h_particle_primary_producedbygenerator", "primary particle producedByGenerator status;primary particle producedByGenerator status;entries", {HistType::kTH1D, {{2, 0.0, 2}}});
+
       registry.add("h_jet_pt", "jet pT;#it{p}_{T,jet} (GeV/#it{c}); counts", {HistType::kTH1F, {jetPtAxis}}, doSumw2);
       registry.add("h_jet_eta", "jet eta;#eta; counts", {HistType::kTH1F, {jetEtaAxis}}, doSumw2);
       registry.add("h_jet_phi", "jet phi;#phi; counts", {HistType::kTH1F, {phiAxis}}, doSumw2);
@@ -444,6 +463,7 @@ struct JetFinderQATask {
   }
 
   Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
+  Filter particleCuts = (aod::jmcparticle::pt >= trackPtMin && aod::jmcparticle::pt < trackPtMax && aod::jmcparticle::eta > trackEtaMin && aod::jmcparticle::eta < trackEtaMax);
   Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut &&
                       ((checkCentFT0M ? aod::jcollision::centFT0M : aod::jcollision::centFT0C) >= centralityMin) &&
                       ((checkCentFT0M ? aod::jcollision::centFT0M : aod::jcollision::centFT0C) < centralityMax));
@@ -1471,17 +1491,14 @@ struct JetFinderQATask {
   }
   PROCESS_SWITCH(JetFinderQATask, processOccupancyQA, "occupancy QA on jet derived data", false);
 
-  void processQcMultCutCheck(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision,
+  void processQcMultCutCheck(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JMcCollisionLbs>>::iterator const& collision,
+                             soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const&,
+                             soa::Join<aod::McCollisions, aod::HepMCXSections> const&,
                              soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& mcdjets,
-                             soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JTrackPIs>> const& tracks)
+                             soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JTrackPIs>> const& tracks,
+                             soa::Filtered<aod::JetParticles> const& mcparticles)
   {
-    bool fillHistograms = true;
-    bool isWeighted = true;
-    float eventWeight = collision.weight();
-    if (!applyCollisionCuts_multCutCheck(collision, fillHistograms, isWeighted, eventWeight)) {
-      return;
-    }
-    registry.fill(HIST("h_collisions_zvertex"), collision.posZ(), eventWeight);
+    float eventWeight = multCutCheck_applyWeightCorrection ? collision.weight() : 1;
 
     bool hasJetAboveMultCut = false;
     for (auto const& mcdjet : mcdjets) {
@@ -1493,6 +1510,24 @@ struct JetFinderQATask {
       return;
     }
 
+    bool fillHistograms = true;
+    bool isWeighted = multCutCheck_applyWeightCorrection;
+    if (!applyCollisionCuts_multCutCheck(collision, fillHistograms, isWeighted, eventWeight)) {
+      return;
+    }
+    registry.fill(HIST("h_collisions_zvertex"), collision.posZ(), eventWeight);
+
+    if (collision.has_mcCollision()) { // the collision is not fake and has one associated mc coll; .mccollision() can be called
+      auto jetMcCollision = collision.mcCollision_as<soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>>();
+      auto aodMcCollision = jetMcCollision.mcCollision_as<soa::Join<aod::McCollisions, aod::HepMCXSections>>();
+
+      registry.fill(HIST("h2_mccollision_pthardfromweight_pthardfromhepmcxsection"), simPtRef / (std::pow(collision.weight(), 1.0 / pTHatExponent)), jetMcCollision.ptHard());
+      registry.fill(HIST("h2_mccollision_pthardfromweight_pthardfromhepmcxsection_weighted"), simPtRef / (std::pow(collision.weight(), 1.0 / pTHatExponent)), jetMcCollision.ptHard(), eventWeight);
+      registry.fill(HIST("h_mccollision_processid"), aodMcCollision.processId(), eventWeight);
+    } else {
+      registry.fill(HIST("h_fakecollisions"), 0.5);
+    }
+
     registry.fill(HIST("h_collisions_ntracks"), tracks.size(), eventWeight);
     registry.fill(HIST("h2_centrality_ntracks"), collision.centFT0M(), tracks.size(), eventWeight);
     registry.fill(HIST("h_collisions_njets"), mcdjets.size(), eventWeight);
@@ -1501,12 +1536,30 @@ struct JetFinderQATask {
     registry.fill(HIST("h2_centrality_rho"), collision.centFT0M(), collision.rho(), eventWeight);
 
     for (auto const& track : tracks) {
+      if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
+        continue;
+      }
       registry.fill(HIST("h2_centrality_track_pt"), collision.centFT0M(), track.pt(), eventWeight);
       registry.fill(HIST("h2_centrality_track_eta"), collision.centFT0M(), track.eta(), eventWeight);
       registry.fill(HIST("h2_track_pt_track_sigma1overpt"), track.pt(), track.sigma1Pt(), eventWeight);
       registry.fill(HIST("h2_track_pt_track_sigmapt"), track.pt(), track.sigma1Pt() * track.pt(), eventWeight);
       registry.fill(HIST("h2_track_pt_high_track_sigma1overpt"), track.pt(), track.sigma1Pt(), eventWeight);
       registry.fill(HIST("h2_track_pt_high_track_sigmapt"), track.pt(), track.sigma1Pt() * track.pt(), eventWeight);
+    }
+
+    for (auto const& mcparticle : mcparticles) {
+      registry.fill(HIST("h_particle_pdgcode"), mcparticle.pdgCode(), eventWeight);
+      registry.fill(HIST("h_particle_genstatuscode"), mcparticle.getGenStatusCode(), eventWeight);
+      registry.fill(HIST("h_particle_hepmcstatuscode"), mcparticle.getHepMCStatusCode(), eventWeight);
+      registry.fill(HIST("h_particle_process"), mcparticle.getProcess(), eventWeight);
+      registry.fill(HIST("h_particle_producedbygenerator"), mcparticle.producedByGenerator(), eventWeight);
+      if (mcparticle.isPhysicalPrimary()) {
+        registry.fill(HIST("h_particle_primary_pdgcode"), mcparticle.pdgCode(), eventWeight);
+        registry.fill(HIST("h_particle_primary_genstatuscode"), mcparticle.getGenStatusCode(), eventWeight);
+        registry.fill(HIST("h_particle_primary_hepmcstatuscode"), mcparticle.getHepMCStatusCode(), eventWeight);
+        registry.fill(HIST("h_particle_primary_process"), mcparticle.getProcess(), eventWeight);
+        registry.fill(HIST("h_particle_primary_producedbygenerator"), mcparticle.producedByGenerator(), eventWeight);
+      }
     }
 
     for (auto const& mcdjet : mcdjets) {

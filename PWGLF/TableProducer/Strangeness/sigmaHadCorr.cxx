@@ -87,25 +87,28 @@ struct sigmaHadCorrTask {
   // Configurable for event selection
   Configurable<float> cutzvertex{"cutZVertex", 10.0f, "Accepted z-vertex range (cm)"};
 
-  Configurable<float> minPtSigma{"minPtSigma", 1.f, "Minimum pT for Sigma candidates (GeV/c)"};
-  Configurable<float> cutEtaDaught{"cutEtaDaughter", 0.8f, "Eta cut for daughter tracks"};
-  Configurable<float> cutDCAtoPVSigma{"cutDCAtoPVSigma", 0.1f, "Max DCA to primary vertex for Sigma candidates (cm)"};
+  Configurable<bool> doSigmaPion{"doSigmaPion", false, "If true, pair Sigma with pions instead of protons"};
   Configurable<bool> doSigmaMinus{"doSigmaMinus", true, "If true, pair Sigma- candidates, else Sigma+"};
+  Configurable<float> cutMaxKStar{"cutMaxKStar", 1.5, "Maximum k* for Sigma-hadron pairs (GeV/c)"};
+
+  Configurable<float> minPtSigma{"minPtSigma", 1.f, "Minimum pT for Sigma candidates (GeV/c)"};
+  Configurable<bool> useRecalculatedSigmaMomentum{"useRecalculatedSigmaMomentum", true, "If true, compute k* using Sigma momentum recalculated from daughter kinematics"};
+  Configurable<float> cutDCAtoPVSigma{"cutDCAtoPVSigma", 0.1f, "Max DCA to primary vertex for Sigma candidates (cm)"};
   Configurable<float> cutSigmaRadius{"cutSigmaRadius", 20.f, "Minimum radius for Sigma candidates (cm)"};
   Configurable<float> cutSigmaMass{"cutSigmaMass", 0.3, "Sigma mass window (GeV/c^2)"};
   Configurable<float> alphaAPCut{"alphaAPCut", 0., "Alpha AP cut for Sigma candidates"};
   Configurable<float> qtAPCutLow{"qtAPCutLow", 0.15, "Lower qT AP cut for Sigma candidates (GeV/c)"};
   Configurable<float> qtAPCutHigh{"qtAPCutHigh", 0.2, "Upper qT AP cut for Sigma candidates (GeV/c)"};
+  Configurable<float> cutEtaDaught{"cutEtaDaughter", 0.8f, "Eta cut for daughter tracks"};
+  Configurable<float> ptMinTOFKinkDau{"ptMinTOFKinkDau", 0.75f, "Minimum pT to require TOF for kink daughter PID (GeV/c)"};
+  Configurable<bool> applyTOFPIDKinkDaughter{"applyTOFPIDKinkDaughter", false, "If true, apply TOF PID cut to the kink daughter track"};
 
-  Configurable<float> cutNITSClusPr{"cutNITSClusPr", 5, "Minimum number of ITS clusters for hadron track"};
-  Configurable<float> cutNTPCClusPr{"cutNTPCClusPr", 90, "Minimum number of TPC clusters for hadron track"};
+  Configurable<float> cutNITSClusHad{"cutNITSClusHad", 5, "Minimum number of ITS clusters for hadron track"};
+  Configurable<float> cutNTPCClusHad{"cutNTPCClusHad", 90, "Minimum number of TPC clusters for hadron track"};
+  Configurable<float> ptMinHad{"ptMinHad", 0.2f, "Minimum pT for hadron track (GeV/c)"};
+  Configurable<float> ptMinTOFHad{"ptMinTOFHad", 0.75f, "Minimum pT to require TOF for hadron PID (GeV/c)"};
   Configurable<float> cutNSigmaTPC{"cutNSigmaTPC", 3, "TPC nSigma cut for hadron track"};
   Configurable<float> cutNSigmaTOF{"cutNSigmaTOF", 3, "TOF nSigma cut for hadron track"};
-  Configurable<bool> applyTOFPIDKinkDaughter{"applyTOFPIDKinkDaughter", false, "If true, apply TOF PID cut to the kink daughter track"};
-  Configurable<bool> doSigmaPion{"doSigmaPion", false, "If true, pair Sigma with pions instead of protons"};
-
-  Configurable<float> cutMaxKStar{"cutMaxKStar", 1.5, "Maximum k* for Sigma-hadron pairs (GeV/c)"};
-  Configurable<bool> useRecalculatedSigmaMomentum{"useRecalculatedSigmaMomentum", true, "If true, compute k* using Sigma momentum recalculated from daughter kinematics"};
 
   Configurable<bool> fillOutputTree{"fillOutputTree", true, "If true, fill the output tree with Sigma-hadron candidates"};
   Configurable<bool> fillSparseInvMassKstar{"fillSparseInvMassKstar", false, "If true, fill THn with invmass, k*, sigma charge, proton charge, sigma decay radius, cosPA, sigma pt"};
@@ -126,9 +129,9 @@ struct sigmaHadCorrTask {
     const AxisSpec nSigmaHadAxis{100, -5, 5, "n#sigma_{had}"};
     const AxisSpec sigmaMassAxis{50, 1.1, 1.3, "m (GeV/#it{c}^{2})"};
     const AxisSpec kStarAxis{200, 0.0, 2., "k* (GeV/#it{c})"};
-    const AxisSpec ptHadAxis{100, 0.0, 10.0, "#it{p}_{T,had} (GeV/#it{c})"};
-    const AxisSpec sigmaPtAxis{100, 0.0, 10.0, "#it{p}_{T,#Sigma} (GeV/#it{c})"};
-    const AxisSpec sigmaPtAxisCoarse{20, 0.0, 10.0, "#it{p}_{T,#Sigma} (GeV/#it{c})"};
+    const AxisSpec ptHadAxis{100, 0.0, 6.0, "#it{p}_{T,had} (GeV/#it{c})"};
+    const AxisSpec sigmaPtAxis{100, 0.0, 6.0, "#it{p}_{T,#Sigma} (GeV/#it{c})"};
+    const AxisSpec sigmaPtAxisCoarse{30, 0.0, 6.0, "#it{p}_{T,#Sigma} (GeV/#it{c})"};
     const AxisSpec sigmaChargeAxis{2, -1.5, 1.5, "#Sigma charge"};
     const AxisSpec hadronChargeAxis{2, -1.5, 1.5, "Hadron charge"};
     const AxisSpec sigmaDecRadiusAxis{25, 14.5, 40.5, "#Sigma decay radius (cm)"};
@@ -191,25 +194,27 @@ struct sigmaHadCorrTask {
     return dotProduct / (momMotherMag * decayVecMag);
   }
 
-  float getRecalculatedSigmaMomentum(const sigmaHadCand& candidate)
+  float getRecalculatedSigmaMomentum(float sigmaPx, float sigmaPy, float sigmaPz, float sigmaDauPx, float sigmaDauPy, float sigmaDauPz)
   {
-    constexpr float massPion = o2::constants::physics::MassPionCharged;
-    constexpr float massNeutron = o2::constants::physics::MassNeutron;
+    // Sigma- -> n + pi-  (charged daughter = pion, neutral daughter = neutron)
+    // Sigma+ -> p + pi0  (charged daughter = proton, neutral daughter = pi0)
+    float massChargedDau = doSigmaMinus ? o2::constants::physics::MassPionCharged : o2::constants::physics::MassProton;
+    float massNeutralDau = doSigmaMinus ? o2::constants::physics::MassNeutron : o2::constants::physics::MassPionNeutral;
     float massSigma = doSigmaMinus ? o2::constants::physics::MassSigmaMinus : o2::constants::physics::MassSigmaPlus;
 
-    float pMother = std::sqrt(candidate.sigmaPx * candidate.sigmaPx + candidate.sigmaPy * candidate.sigmaPy + candidate.sigmaPz * candidate.sigmaPz);
+    float pMother = std::sqrt(sigmaPx * sigmaPx + sigmaPy * sigmaPy + sigmaPz * sigmaPz);
     if (pMother < 1e-6f) {
       return -999.f;
     }
-    float versorX = candidate.sigmaPx / pMother;
-    float versorY = candidate.sigmaPy / pMother;
-    float versorZ = candidate.sigmaPz / pMother;
-    float ePi = std::sqrt(massPion * massPion + candidate.sigmaDauPx * candidate.sigmaDauPx + candidate.sigmaDauPy * candidate.sigmaDauPy + candidate.sigmaDauPz * candidate.sigmaDauPz);
-    float a = versorX * candidate.sigmaDauPx + versorY * candidate.sigmaDauPy + versorZ * candidate.sigmaDauPz;
-    float K = massSigma * massSigma + massPion * massPion - massNeutron * massNeutron;
-    float A = 4.f * (ePi * ePi - a * a);
+    float versorX = sigmaPx / pMother;
+    float versorY = sigmaPy / pMother;
+    float versorZ = sigmaPz / pMother;
+    float eChDau = std::sqrt(massChargedDau * massChargedDau + sigmaDauPx * sigmaDauPx + sigmaDauPy * sigmaDauPy + sigmaDauPz * sigmaDauPz);
+    float a = versorX * sigmaDauPx + versorY * sigmaDauPy + versorZ * sigmaDauPz;
+    float K = massSigma * massSigma + massChargedDau * massChargedDau - massNeutralDau * massNeutralDau;
+    float A = 4.f * (eChDau * eChDau - a * a);
     float B = -4.f * a * K;
-    float C = 4.f * ePi * ePi * massSigma * massSigma - K * K;
+    float C = 4.f * eChDau * eChDau * massSigma * massSigma - K * K;
     if (std::abs(A) < 1e-6f) {
       return -999.f;
     }
@@ -231,19 +236,19 @@ struct sigmaHadCorrTask {
     return (p1Diff < p2Diff) ? P1 : P2;
   }
 
-  std::array<float, 3> getSigmaMomentumForKstar(const sigmaHadCand& candidate)
+  std::array<float, 3> getSigmaMomentumForKstar(float sigmaPx, float sigmaPy, float sigmaPz, float sigmaDauPx, float sigmaDauPy, float sigmaDauPz)
   {
-    std::array<float, 3> sigmaMomentum = {candidate.sigmaPx, candidate.sigmaPy, candidate.sigmaPz};
+    std::array<float, 3> sigmaMomentum = {sigmaPx, sigmaPy, sigmaPz};
     if (!useRecalculatedSigmaMomentum) {
       return sigmaMomentum;
     }
 
-    float pNew = getRecalculatedSigmaMomentum(candidate);
+    float pNew = getRecalculatedSigmaMomentum(sigmaPx, sigmaPy, sigmaPz, sigmaDauPx, sigmaDauPy, sigmaDauPz);
     if (pNew <= 0.f) {
       return sigmaMomentum;
     }
 
-    float pOld = std::sqrt(candidate.sigmaPx * candidate.sigmaPx + candidate.sigmaPy * candidate.sigmaPy + candidate.sigmaPz * candidate.sigmaPz);
+    float pOld = std::sqrt(sigmaPx * sigmaPx + sigmaPy * sigmaPy + sigmaPz * sigmaPz);
     if (pOld <= 0.f) {
       return sigmaMomentum;
     }
@@ -278,26 +283,6 @@ struct sigmaHadCorrTask {
   }
 
   TLorentzVector trackSum, PartOneCMS, PartTwoCMS, trackRelK;
-  float getKStar(const sigmaHadCand& candidate)
-  {
-    TLorentzVector part1; // Sigma
-    TLorentzVector part2; // Hadron track (proton/pion)
-    part1.SetXYZM(candidate.sigmaPx, candidate.sigmaPy, candidate.sigmaPz, getSigmaMassForKstar());
-    part2.SetXYZM(candidate.pxHad, candidate.pyHad, candidate.pzHad, getHadTrackMass());
-    trackSum = part1 + part2;
-    const float beta = trackSum.Beta();
-    const float betax = beta * std::cos(trackSum.Phi()) * std::sin(trackSum.Theta());
-    const float betay = beta * std::sin(trackSum.Phi()) * std::sin(trackSum.Theta());
-    const float betaz = beta * std::cos(trackSum.Theta());
-    PartOneCMS.SetXYZM(part1.Px(), part1.Py(), part1.Pz(), part1.M());
-    PartTwoCMS.SetXYZM(part2.Px(), part2.Py(), part2.Pz(), part2.M());
-    const ROOT::Math::Boost boostPRF = ROOT::Math::Boost(-betax, -betay, -betaz);
-    PartOneCMS = boostPRF(PartOneCMS);
-    PartTwoCMS = boostPRF(PartTwoCMS);
-    trackRelK = PartOneCMS - PartTwoCMS;
-    return 0.5 * trackRelK.P();
-  }
-
   float getKStar(float sigmaPx, float sigmaPy, float sigmaPz, float pxHad, float pyHad, float pzHad)
   {
     TLorentzVector part1; // Sigma
@@ -321,17 +306,15 @@ struct sigmaHadCorrTask {
   template <typename Ttrack>
   bool selectHadTrack(const Ttrack& candidate)
   {
-    if (std::abs(getTPCNSigmaHad(candidate)) > cutNSigmaTPC || candidate.tpcNClsFound() < cutNTPCClusPr || std::abs(candidate.eta()) > cutEtaDaught) {
+    if (candidate.pt() < ptMinHad) {
+      return false;
+    }
+    if (std::abs(getTPCNSigmaHad(candidate)) > cutNSigmaTPC || candidate.tpcNClsFound() < cutNTPCClusHad || std::abs(candidate.eta()) > cutEtaDaught) {
       return false;
     }
 
-    if (candidate.itsNCls() < cutNITSClusPr) {
+    if (candidate.itsNCls() < cutNITSClusHad) {
       return false;
-    }
-
-    float ptMinTOF = 0.75f; // Minimum pT to use TOF for hadron-track PID
-    if (candidate.pt() < ptMinTOF) {
-      return true; // No TOF cut for low pT
     }
 
     if (!candidate.hasTOF()) {
@@ -377,8 +360,7 @@ struct sigmaHadCorrTask {
     }
 
     if (applyTOFPIDKinkDaughter) {
-      constexpr float ptMinTOF = 0.75f;
-      if (kinkDauTrack.pt() >= ptMinTOF) {
+      if (kinkDauTrack.pt() >= ptMinTOFKinkDau) {
         if (!kinkDauTrack.hasTOF()) {
           return false;
         }
@@ -410,14 +392,8 @@ struct sigmaHadCorrTask {
       float qtAP = getQtAP(momMothAll, momDaugAll);
       rSigmaHad.fill(HIST("QA/h2QtAPvsAlphaAP"), alphaAP, qtAP);
 
-      sigmaHadCand sigmaForPt;
-      sigmaForPt.sigmaPx = sigmaCand.pxMoth();
-      sigmaForPt.sigmaPy = sigmaCand.pyMoth();
-      sigmaForPt.sigmaPz = sigmaCand.pzMoth();
-      sigmaForPt.sigmaDauPx = sigmaCand.pxDaug();
-      sigmaForPt.sigmaDauPy = sigmaCand.pyDaug();
-      sigmaForPt.sigmaDauPz = sigmaCand.pzDaug();
-      auto sigmaPRecal = getSigmaMomentumForKstar(sigmaForPt);
+      auto sigmaPRecal = getSigmaMomentumForKstar(sigmaCand.pxMoth(), sigmaCand.pyMoth(), sigmaCand.pzMoth(),
+                                                  sigmaCand.pxDaug(), sigmaCand.pyDaug(), sigmaCand.pzDaug());
       float sigmaPtRecal = std::hypot(sigmaPRecal[0], sigmaPRecal[1]);
       float sigmaMassForQa = doSigmaMinus ? sigmaCand.mSigmaMinus() : sigmaCand.mSigmaPlus();
 
@@ -608,7 +584,8 @@ struct sigmaHadCorrTask {
         float kStarGen = getKStar(mcPartSigma.px(), mcPartSigma.py(), mcPartSigma.pz(), mcPartHad.px(), mcPartHad.py(), mcPartHad.pz());
 
         if (fillSparseInvMassKstar) {
-          auto sigmaMomForKstar = getSigmaMomentumForKstar(candidate);
+          auto sigmaMomForKstar = getSigmaMomentumForKstar(candidate.sigmaPx, candidate.sigmaPy, candidate.sigmaPz,
+                                                           candidate.sigmaDauPx, candidate.sigmaDauPy, candidate.sigmaDauPz);
           float kStarRec = getKStar(sigmaMomForKstar[0], sigmaMomForKstar[1], sigmaMomForKstar[2], candidate.pxHad, candidate.pyHad, candidate.pzHad);
           float sigmaPtUsed = std::hypot(sigmaMomForKstar[0], sigmaMomForKstar[1]);
           rSigmaHad.fill(HIST("hSparseSigmaHadMC"),
@@ -689,7 +666,8 @@ struct sigmaHadCorrTask {
         float kStarGen = getKStar(mcPartSigma.px(), mcPartSigma.py(), mcPartSigma.pz(), mcPartHad.px(), mcPartHad.py(), mcPartHad.pz());
 
         if (fillSparseInvMassKstar) {
-          auto sigmaMomForKstar = getSigmaMomentumForKstar(candidate);
+          auto sigmaMomForKstar = getSigmaMomentumForKstar(candidate.sigmaPx, candidate.sigmaPy, candidate.sigmaPz,
+                                                           candidate.sigmaDauPx, candidate.sigmaDauPy, candidate.sigmaDauPz);
           float kStarRec = getKStar(sigmaMomForKstar[0], sigmaMomForKstar[1], sigmaMomForKstar[2], candidate.pxHad, candidate.pyHad, candidate.pzHad);
           float sigmaPtUsed = std::hypot(sigmaMomForKstar[0], sigmaMomForKstar[1]);
           rSigmaHad.fill(HIST("hSparseSigmaHadMC"),

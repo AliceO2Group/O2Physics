@@ -11,10 +11,16 @@
 
 #include "PWGDQ/Core/MCProng.h"
 
+#include <TString.h>
+
+#include <Rtypes.h>
+
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <iostream>
 #include <map>
 #include <vector>
-#include <cmath>
-#include <iostream>
 
 ClassImp(MCProng);
 

@@ -8,17 +8,39 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
 #include "PWGDQ/Core/VarManager.h"
 
 #include "Tools/KFparticle/KFUtilities.h"
 
+#include <CommonConstants/LHCConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DCAFitter/FwdDCAFitterN.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
+#include <Framework/Logger.h>
+#include <GlobalTracking/MatchGlobalFwd.h>
+
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TH3.h>
+#include <THn.h>
+#include <TObject.h>
+#include <TString.h>
+
+#include <KFParticle.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
 #include <cmath>
-#include <iostream>
+#include <cstddef>
+#include <cstdint>
 #include <map>
+#include <numeric>
+#include <tuple>
 #include <vector>
 
-using std::cout;
-using std::endl;
 using namespace o2::constants::physics;
 
 ClassImp(VarManager);
@@ -1403,6 +1425,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kPsi2B] = "";
   fgVariableNames[kPsi2C] = "#Psi_{2}^{C} ";
   fgVariableUnits[kPsi2C] = "";
+  fgVariableNames[kRandomPsi2] = "Random #Psi_{2} ";
+  fgVariableUnits[kRandomPsi2] = "";
   fgVariableNames[kR2SP_AB] = "R_{2}^{SP} (AB) ";
   fgVariableUnits[kR2SP_AB] = "";
   fgVariableNames[kR2SP_AC] = "R_{2}^{SP} (AC) ";
@@ -1499,6 +1523,14 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kCosThetaStarFT0A] = "";
   fgVariableNames[kCosThetaStarFT0C] = "cos#it{#theta}^{*}_{FT0C}";
   fgVariableUnits[kCosThetaStarFT0C] = "";
+  fgVariableNames[kAbsCosThetaStarFT0C] = "|cos#it{#theta}^{*}_{FT0C}|";
+  fgVariableUnits[kAbsCosThetaStarFT0C] = "";
+  fgVariableNames[kCos2ThetaStarFT0C] = "cos^{2}#it{#theta}^{*}_{FT0C}";
+  fgVariableUnits[kCos2ThetaStarFT0C] = "";
+  fgVariableNames[kCosThetaStarRandom] = "cos#it{#theta}^{*}_{Random}";
+  fgVariableUnits[kCosThetaStarRandom] = "";
+  fgVariableNames[kCos2ThetaStarRandom] = "cos^{2}#it{#theta}^{*}_{Random}";
+  fgVariableUnits[kCos2ThetaStarRandom] = "";
   fgVariableNames[kCosPhiVP] = "cos#it{#varphi}_{VP}";
   fgVariableUnits[kCosPhiVP] = "";
   fgVariableNames[kPhiVP] = "#varphi_{VP} - #Psi_{2}";
@@ -2217,6 +2249,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMCPdgCode"] = kMCPdgCode;
   fgVarNamesMap["kMCCosTheta"] = kMCCosTheta;
   fgVarNamesMap["kMCHadronPdgCode"] = kMCHadronPdgCode;
+  fgVarNamesMap["kMCAccweight"] = kMCAccweight;
   fgVarNamesMap["kMCCosChi"] = kMCCosChi;
   fgVarNamesMap["kMCHadronPt"] = kMCHadronPt;
   fgVarNamesMap["kMCWeight_before"] = kMCWeight_before;
@@ -2314,6 +2347,10 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kCosThetaStarTPC"] = kCosThetaStarTPC;
   fgVarNamesMap["kCosThetaStarFT0A"] = kCosThetaStarFT0A;
   fgVarNamesMap["kCosThetaStarFT0C"] = kCosThetaStarFT0C;
+  fgVarNamesMap["kAbsCosThetaStarFT0C"] = kAbsCosThetaStarFT0C;
+  fgVarNamesMap["kCos2ThetaStarFT0C"] = kCos2ThetaStarFT0C;
+  fgVarNamesMap["kCosThetaStarRandom"] = kCosThetaStarRandom;
+  fgVarNamesMap["kCos2ThetaStarRandom"] = kCos2ThetaStarRandom;
   fgVarNamesMap["kCosPhiVP"] = kCosPhiVP;
   fgVarNamesMap["kPhiVP"] = kPhiVP;
   fgVarNamesMap["kDeltaPhiPair2"] = kDeltaPhiPair2;
@@ -2412,6 +2449,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kPsi2ANEG"] = kPsi2ANEG;
   fgVarNamesMap["kPsi2B"] = kPsi2B;
   fgVarNamesMap["kPsi2C"] = kPsi2C;
+  fgVarNamesMap["kRandomPsi2"] = kRandomPsi2;
   fgVarNamesMap["kCos2DeltaPhi"] = kCos2DeltaPhi;
   fgVarNamesMap["kCos2DeltaPhiMu1"] = kCos2DeltaPhiMu1;
   fgVarNamesMap["kCos2DeltaPhiMu2"] = kCos2DeltaPhiMu2;
@@ -2459,6 +2497,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kDeltaPhiSym"] = kDeltaPhiSym;
   fgVarNamesMap["kCosTheta"] = kCosTheta;
   fgVarNamesMap["kCosChi"] = kCosChi;
+  fgVarNamesMap["kWeight"] = kWeight;
   fgVarNamesMap["kECWeight"] = kECWeight;
   fgVarNamesMap["kEWeight_before"] = kEWeight_before;
   fgVarNamesMap["kPtDau"] = kPtDau;

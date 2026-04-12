@@ -78,3 +78,8 @@ o2physics_add_dpl_workflow(radial-flow-decorr
                     SOURCES radialFlowDecorr.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(net-prot-cumulants
+                    SOURCES netprotcumulants.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                    COMPONENT_NAME Analysis)

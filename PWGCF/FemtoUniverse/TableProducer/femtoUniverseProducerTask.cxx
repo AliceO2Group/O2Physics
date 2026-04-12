@@ -341,7 +341,7 @@ struct FemtoUniverseProducerTask {
     Configurable<float> trackD0pTGenMax{"trackD0pTGenMax", 24.0, "MC Truth, max. pT for tracks and D0/D0bar cand."};
     Configurable<bool> useYCutD0Cand{"useYCutD0Cand", true, "True - apply cut on y of D0 cand./false - apply cut on eta"};
     Configurable<bool> storeD0D0barDoubleMassHypo{"storeD0D0barDoubleMassHypo", false, "Store D0/D0bar cand. which pass selection criteria for both, D0 and D0bar"};
-    Configurable<std::vector<int>> classMlD0D0bar{"classMlD0D0bar", {0, 1, 2}, "Indexes of ML scores to be stored. Three indexes max."};
+    Configurable<bool> fillCorrBkgsD0{"fillCorrBkgsD0", false, "Flag to fill derived tables with correlated background candidates"};
   } ConfD0Selection;
 
   // PID bitmask configurables
@@ -884,6 +884,9 @@ struct FemtoUniverseProducerTask {
     if (particle.isPhysicalPrimary()) {
       return 0;
     } else if (particle.has_mothers()) {
+      if (particle.getProcess() == 20 || particle.getProcess() == 23) { // treat particles from hadronic scattering (20, 23) as primary
+        return 0;
+      }
       auto motherparticlesMC = particle.template mothers_as<aod::McParticles>();
       auto motherparticleMC = motherparticlesMC.front();
       return motherparticleMC.pdgCode();
@@ -1832,8 +1835,10 @@ struct FemtoUniverseProducerTask {
 
     for (const auto& hfCand : hfCands) {
 
-      if (!(hfCand.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-        continue;
+      if (!ConfD0Selection.fillCorrBkgsD0) {
+        if (!(hfCand.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+          continue;
+        }
       }
 
       if (ConfD0Selection.useYCutD0Cand && std::abs(hfHelper.yD0(hfCand)) > ConfD0Selection.yD0CandMax) {
@@ -1850,11 +1855,11 @@ struct FemtoUniverseProducerTask {
       auto arrayDaughters = std::array{postrack, negtrack};
       indexMcRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign);
 
-      if (!(indexMcRec > -1)) {
+      if (!ConfD0Selection.fillCorrBkgsD0 && !(indexMcRec > -1)) {
         continue;
       }
 
-      if (std::abs(hfCand.flagMcMatchRec()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
+      if ((std::abs(hfCand.flagMcMatchRec()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) || (ConfD0Selection.fillCorrBkgsD0 && hfCand.flagMcMatchRec() != 0)) {
         int postrackID = hfCand.prong0Id(); // Index to first prong
         int rowInPrimaryTrackTablePos = -1;
         rowInPrimaryTrackTablePos = getRowDaughters(postrackID, tmpIDtrack);
@@ -2142,6 +2147,7 @@ struct FemtoUniverseProducerTask {
       // instead of the bitmask, the PDG of the particle is stored as uint32_t
 
       int32_t variablePDG = confStoreMCmothers ? getMotherPDG(particle) : particle.pdgCode();
+      int32_t variableCut = confStoreMCmothers ? particle.getProcess() : 0;
 
       // now the table is filled
       if constexpr (resolveDaughs) {
@@ -2156,7 +2162,7 @@ struct FemtoUniverseProducerTask {
                   particle.eta(),
                   particle.phi(),
                   aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
-                  0,
+                  variableCut,
                   pdgCode,
                   variablePDG,
                   childIDs,
@@ -2195,13 +2201,14 @@ struct FemtoUniverseProducerTask {
         }
 
         int32_t variablePDG = confStoreMCmothers ? getMotherPDG(particle) : particle.pdgCode();
+        int32_t variableCut = confStoreMCmothers ? particle.getProcess() : 0;
 
         outputParts(outputCollision.lastIndex(),
                     particle.pt(),
                     particle.eta(),
                     particle.phi(),
                     aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
-                    0,
+                    variableCut,
                     static_cast<uint32_t>(particle.pdgCode()),
                     variablePDG,
                     childIDs,

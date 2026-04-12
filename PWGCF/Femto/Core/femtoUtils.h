@@ -16,22 +16,19 @@
 #ifndef PWGCF_FEMTO_CORE_FEMTOUTILS_H_
 #define PWGCF_FEMTO_CORE_FEMTOUTILS_H_
 
-#include "Common/Core/TableHelper.h"
+#include <Common/Core/TableHelper.h>
 
-#include "CommonConstants/MathConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/InitContext.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
 
-#include "TPDGCode.h"
-
-#include "fairlogger/Logger.h"
+#include <TPDGCode.h>
 
 #include <cmath>
+#include <concepts>
 #include <cstdint>
-#include <experimental/type_traits>
 #include <optional>
 #include <unordered_map>
-#include <utility>
 
 namespace o2::analysis::femto
 {
@@ -66,7 +63,7 @@ float itsSignal(T const& track)
   return static_cast<float>(signal);
 };
 
-inline double getMass(int pdgCode)
+inline double getPdgMass(int pdgCode)
 {
   // use this function instead of TDatabasePDG to return masses defined in the PhysicsConstants.h header
   // this approach saves a lot of memory and important partilces like deuteron are missing in TDatabasePDG anyway
@@ -122,7 +119,7 @@ inline double getMass(int pdgCode)
       mass = o2::constants::physics::MassOmegaMinus;
       break;
     default:
-      LOG(fatal) << "PDG code is not suppored";
+      LOG(warn) << "PDG code is not suppored. Return 0...";
   }
   return mass;
 }
@@ -209,11 +206,16 @@ inline bool enableTable(const char* tableName, int userSetting, o2::framework::I
   return required;
 }
 
-template <typename T>
-using HasMass = decltype(std::declval<T&>().mass());
+// template <typename T>
+// using HasMass = decltype(std::declval<T&>().mass());
+//
+// template <typename T>
+// using HasSign = decltype(std::declval<T&>().sign());
 
 template <typename T>
-using HasSign = decltype(std::declval<T&>().sign());
+concept HasMass = requires(T t) {
+  { t.mass() } -> std::convertible_to<float>; // or double, whatever mass() returns
+};
 
 template <typename T>
 inline int signum(T x)
