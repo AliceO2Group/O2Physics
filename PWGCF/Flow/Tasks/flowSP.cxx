@@ -1526,7 +1526,7 @@ struct FlowSP {
     double meanPxAEvent = sumPxAEvent / meanPxEventCount;
     double meanPxCEvent = sumPxCEvent / meanPxEventCount;
 
-    if(cfgFillMeanPT) {
+    if (cfgFillMeanPT) {
       registry.fill(HIST("incl/meanPT/meanPxA"), spm.centrality, spm.psiA - spm.psiC, meanPxAEvent);
       registry.fill(HIST("incl/meanPT/meanPxC"), spm.centrality, spm.psiA - spm.psiC, meanPxCEvent);
     }
