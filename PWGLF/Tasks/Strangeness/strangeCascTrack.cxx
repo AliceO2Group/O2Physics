@@ -124,8 +124,8 @@ struct StrangeCascTrack {
     Configurable<float> cutMinBachCosPA{"cutMinBachCosPA", -1.1f, "min Bachelor cosPA"};
     Configurable<float> cutMaxBachCosPA{"cutMaxBachCosPA", 1.1f, "max Bachelor cosPA"};
     Configurable<std::vector<float>> cutMinCascCosPaVsPt{"cutMinCascCosPaVsPt",
-      {0.993, 0.993, 0.994, 0.995, 0.996, 0.997, 0.997, 0.998, 0.998, 0.999, 0.999},
-      "Min Casc CosPA per pT bin (same binning as axisPt)"};
+                                                         {0.993, 0.993, 0.994, 0.995, 0.996, 0.997, 0.997, 0.998, 0.998, 0.999, 0.999},
+                                                         "Min Casc CosPA per pT bin (same binning as axisPt)"};
     Configurable<float> cutRapidity{"cutRapidity", 0.5f, "max rapidity"};
     Configurable<float> cutDauEta{"cutDauEta", 1.0f, "max eta of dau tracks"};
     Configurable<float> cutCompMassRej{"cutCompMassRej", 0.008f, "Competing mass rejection"};
