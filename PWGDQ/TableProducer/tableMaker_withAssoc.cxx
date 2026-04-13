@@ -295,10 +295,10 @@ struct TableMaker {
     Configurable<bool> fConfigSaveElectronSample{"cfgSaveElectronSample", false, "If true, only save electron sample"};
   } fConfigPostCalibTPC;
 
-  //
+  // 
   struct : ConfigurableGroup {
-    Configurable<bool> fConfigFT0CCumulant{"cfgFT0CCumulant", false,
-                                           "If true, compute RefFlow cumulants from FT0C amplitudes (requires FT0s subscription)"};
+    Configurable<bool> fConfigFT0CCumulant{"cfgFT0CCumulant", false, "If true, compute RefFlow cumulants from FT0C amplitudes (requires FT0s subscription)"};
+    Configurable<std::string> fConfigQvecCalibPath{"cfgQvecCalibPath","Analysis/EventPlane/QVecCorrections","CCDB path for qvector calibration objects; used only to check availability per run"};
   } fConfigQvector;
 
   struct : ConfigurableGroup {
@@ -336,6 +336,7 @@ struct TableMaker {
 
   bool fDoDetailedQA = false; // Bool to set detailed QA true, if QA is set true
   int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
+  bool fQvectCalibAvailable = false; // Whether the Q-vector calibration is available for the current run 
 
   // maps used to store index info; NOTE: std::map are sorted in ascending order by default (needed for track to collision indices)
   std::map<uint32_t, uint32_t> fCollIndexMap;             // key: old collision index, value: skimmed collision index
@@ -480,7 +481,11 @@ struct TableMaker {
     }
 
     // Check whether we have to define barrel or muon histograms
+<<<<<<< HEAD
     bool enableBarrelHistos = (context.mOptions.get<bool>("processPP") || context.mOptions.get<bool>("processPPWithFilter") || context.mOptions.get<bool>("processPPWithFilterBarrelOnly") || context.mOptions.get<bool>("processPPBarrelOnly") ||
+=======
+    bool enableBarrelHistos = (context.mOptions.get<bool>("processPPWithFilter") || context.mOptions.get<bool>("processPPWithFilterBarrelOnly") || context.mOptions.get<bool>("processPPBarrelOnly") ||
+>>>>>>> daa02bd72 (Qvector-tables shall be filled for all PbPb processes (except for processPbPbWithFilterBarrelOnly). Added a configurable for Qvector calibration path. The tables shall only be filled if the calibrations are available)
                                context.mOptions.get<bool>("processPbPb") || context.mOptions.get<bool>("processPbPbBarrelOnly") || context.mOptions.get<bool>("processPbPbBarrelOnlyWithV0Bits") || context.mOptions.get<bool>("processPbPbBarrelOnlyWithV0BitsNoTOF")) ||
                               context.mOptions.get<bool>("processPbPbWithFilterBarrelOnly") || context.mOptions.get<bool>("processPPBarrelOnlyWithV0s") || context.mOptions.get<bool>("processPbPbBarrelOnlyNoTOF");
 
@@ -1191,38 +1196,39 @@ struct TableMaker {
       eventInfo(collision.globalIndex());
 
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionQvectCentr) > 0) {
-        qvecGroup.eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
-                                    collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
-        qvecGroup.eventQvectorCentrExtra(collision.qvecTPCallRe(), collision.qvecTPCallIm(), collision.nTrkTPCall());
+        if (fQvectCalibAvailable) {
+          qvecGroup.eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
+                          collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
+          qvecGroup.eventQvectorCentrExtra(collision.qvecTPCallRe(), collision.qvecTPCallIm(), collision.nTrkTPCall());
 
-        if (fConfigQvector.fConfigFT0CCumulant) {
-          // FT0C cumulants for RefFlow and QvectorExtra
-          float S11C = collision.sumAmplFT0C();
-          float S12C = 0.f;
-          if constexpr (!std::is_same_v<std::decay_t<TFt0s>, std::nullptr_t>) {
-            if (collision.has_foundFT0()) {
-              auto ft0 = collision.foundFT0();
-              for (auto amp : ft0.amplitudeC()) {
-                if (amp > 0.f) {
-                  S12C += amp * amp;
+          if (fConfigQvector.fConfigFT0CCumulant) {
+            // FT0C cumulants for RefFlow and QvectorExtra
+            float S11C = collision.sumAmplFT0C();
+            float S12C = 0.f;
+            if constexpr (!std::is_same_v<std::decay_t<TFt0s>, std::nullptr_t>) {
+              if (collision.has_foundFT0()) {
+                auto ft0 = collision.foundFT0();
+                for (auto amp : ft0.amplitudeC()) {
+                  if (amp > 0.f) {
+                    S12C += amp * amp;
+                  }
                 }
               }
             }
+            float S21C = S11C * S11C;
+            float M11REF = S21C - S12C;
+            std::complex<double> Q21C(collision.qvecFT0CRe() * S11C, collision.qvecFT0CIm() * S11C);
+            float CORR2REF = (std::norm(Q21C) - S12C) / M11REF;
+        
+            if (std::isnan(M11REF) || std::isinf(M11REF) || std::isnan(CORR2REF) || std::isinf(CORR2REF)) {
+              M11REF = 0.f;
+              CORR2REF = 0.f;
+            }
+            qvecGroup.eventRefFlow(M11REF, -9999, -9999, CORR2REF, -9999, -9999, VarManager::fgValues[VarManager::kCentFT0C]);
+            qvecGroup.eventQvectorExtra(-9999, -9999, -9999, -9999, S11C, S12C, -9999, -9999);
           }
-          float S21C = S11C * S11C;
-          float M11REF = S21C - S12C;
-          std::complex<double> Q21C(collision.qvecFT0CRe() * S11C, collision.qvecFT0CIm() * S11C);
-          float CORR2REF = (std::norm(Q21C) - S12C) / M11REF;
-
-          if (std::isnan(M11REF) || std::isinf(M11REF) || std::isnan(CORR2REF) || std::isinf(CORR2REF)) {
-            M11REF = 0.f;
-            CORR2REF = 0.f;
-          }
-          qvecGroup.eventRefFlow(M11REF, -9999, -9999, CORR2REF, -9999, -9999, VarManager::fgValues[VarManager::kCentFT0C]);
-          qvecGroup.eventQvectorExtra(-9999, -9999, -9999, -9999, S11C, S12C, -9999, -9999);
         }
       }
-
       if constexpr ((TEventFillMap & VarManager::ObjTypes::Zdc) > 0) {
         if constexpr ((TEventFillMap & VarManager::ObjTypes::RapidityGapFilter) > 0) {
           // The DQRapidityGapFilter contains the index of the bc we want to get ZDC info from
@@ -1772,6 +1778,29 @@ struct TableMaker {
       }
       std::map<std::string, std::string> metadataRCT, header;
       header = fCCDBApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", bcs.begin().runNumber()), metadataRCT, -1);
+      
+      // Check if qvector calibration objects are available in CCDB for this run
+      if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionQvectCentr) > 0) {
+        std::map<std::string, std::string> metadataQvect;
+        const std::array<std::string, 3> subfolders = {"v2", "v3", "v4"};
+        bool anyFound = false;
+        for (const auto& sub : subfolders) {
+          std::string fullPath = fConfigQvector.fConfigQvecCalibPath.value + "/" + sub;
+          auto headers = fCCDBApi.retrieveHeaders(fullPath, metadataQvect, bcs.begin().timestamp());
+            if (headers.empty()) {
+              LOG(warn) << "Qvector calibration not found at CCDB path '" << fullPath
+                        << "' for run " << bcs.begin().runNumber();
+            } else {
+            anyFound = true;
+          }
+        }
+        fQvectCalibAvailable = anyFound;
+        if (!fQvectCalibAvailable) {
+          LOG(warn) << "No qvector calibration found in any subfolder under '"
+                    << fConfigQvector.fConfigQvecCalibPath.value
+                    << "' — qvector tables will not be filled for this run.";
+        }
+      }
       uint64_t sor = std::atol(header["SOR"].c_str());
       uint64_t eor = std::atol(header["EOR"].c_str());
       VarManager::SetSORandEOR(sor, eor);
@@ -1957,43 +1986,33 @@ struct TableMaker {
   }
 
   // produce the full DQ skimmed data model typically for Pb-Pb (with centrality), no subscribtion to the DQ event filter
-  void processPbPb(MyEventsWithCentAndMults const& collisions, MyBCs const& bcs,
+  void processPbPb(MyEventsWithCentAndMultsQvect const& collisions, MyBCs const& bcs,
                    MyBarrelTracksWithCov const& tracksBarrel,
                    MyMuonsWithCov const& muons, MFTTracks const& mftTracks,
                    TrackAssoc const& trackAssocs, FwdTrackAssoc const& fwdTrackAssocs,
-                   MFTTrackAssoc const& mftAssocs)
+                   MFTTrackAssoc const& mftAssocs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
   {
-    fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMapWithCov, gkMuonFillMapWithCov, gkMFTFillMap>(collisions, bcs, nullptr, tracksBarrel, muons, mftTracks, trackAssocs, fwdTrackAssocs, mftAssocs, nullptr, nullptr, nullptr, nullptr);
+    fullSkimming<gkEventFillMapWithCentAndMultsQvect, gkTrackFillMapWithCov, gkMuonFillMapWithCov, gkMFTFillMap>(collisions, bcs, nullptr, tracksBarrel, muons, mftTracks, trackAssocs, fwdTrackAssocs, mftAssocs, nullptr, ft0s, fv0as, fdds);
   }
 
   // produce the barrel only DQ skimmed data model typically for Pb-Pb (with centrality), no subscribtion to the DQ event filter
-  void processPbPbBarrelOnly(MyEventsWithCentAndMults const& collisions, MyBCs const& bcs,
+  void processPbPbBarrelOnly(MyEventsWithCentAndMultsQvect const& collisions, MyBCs const& bcs,
                              MyBarrelTracksWithCov const& tracksBarrel,
-                             TrackAssoc const& trackAssocs)
+                             TrackAssoc const& trackAssocs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
   {
     computeOccupancyEstimators(collisions, tracksPosWithCov, tracksNegWithCov, presliceWithCov, bcs);
     computeCollMergingTag(collisions, tracksBarrel, presliceWithCov);
-    fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMapWithCov, 0u, 0u>(collisions, bcs, nullptr, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
-  }
-
-  // produce the barrel only DQ skimmed data model typically for Pb-Pb (with centrality), no subscribtion to the DQ event filter
-  void processPbPbBarrelOnlyWithQvect(MyEventsWithCentAndMultsQvect const& collisions, MyBCs const& bcs,
-                                      MyBarrelTracksWithCov const& tracksBarrel,
-                                      TrackAssoc const& trackAssocs, aod::FT0s& ft0s)
-  {
-    computeOccupancyEstimators(collisions, tracksPosWithCov, tracksNegWithCov, presliceWithCov, bcs);
-    computeCollMergingTag(collisions, tracksBarrel, presliceWithCov);
-    fullSkimming<gkEventFillMapWithCentAndMultsQvect, gkTrackFillMapWithCov, 0u, 0u>(collisions, bcs, nullptr, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr, nullptr, ft0s, nullptr, nullptr);
+    fullSkimming<gkEventFillMapWithCentAndMultsQvect, gkTrackFillMapWithCov, 0u, 0u>(collisions, bcs, nullptr, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr, nullptr, ft0s, fv0as, fdds);
   }
 
   // produce the barrel only DQ skimmed data model typically for Pb-Pb (with centrality), no TOF
-  void processPbPbBarrelOnlyNoTOF(MyEventsWithCentAndMults const& collisions, MyBCs const& bcs,
+  void processPbPbBarrelOnlyNoTOF(MyEventsWithCentAndMultsQvect const& collisions, MyBCs const& bcs,
                                   MyBarrelTracksWithCovNoTOF const& tracksBarrel,
-                                  TrackAssoc const& trackAssocs)
+                                  TrackAssoc const& trackAssocs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
   {
     computeOccupancyEstimators(collisions, tracksPosWithCovNoTOF, tracksNegWithCovNoTOF, presliceWithCovNoTOF, bcs);
     computeCollMergingTag(collisions, tracksBarrel, presliceWithCovNoTOF);
-    fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMapNoTOF, 0u, 0u>(collisions, bcs, nullptr, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+    fullSkimming<gkEventFillMapWithCentAndMultsQvect, gkTrackFillMapNoTOF, 0u, 0u>(collisions, bcs, nullptr, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr, nullptr, ft0s, fv0as, fdds);
   }
 
   // produce the barrel-only DQ skimmed data model typically for UPC Pb-Pb (no centrality), subscribe to the DQ rapidity gap event filter (filter-PbPb)
@@ -2007,23 +2026,23 @@ struct TableMaker {
   }
 
   // produce the barrel only DQ skimmed data model typically for Pb-Pb (with centrality), no subscribtion to the DQ event filter
-  void processPbPbBarrelOnlyWithV0Bits(MyEventsWithCentAndMults const& collisions, MyBCs const& bcs,
+  void processPbPbBarrelOnlyWithV0Bits(MyEventsWithCentAndMultsQvect const& collisions, MyBCs const& bcs,
                                        MyBarrelTracksWithV0Bits const& tracksBarrel,
-                                       TrackAssoc const& trackAssocs)
+                                       TrackAssoc const& trackAssocs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
   {
     computeOccupancyEstimators(collisions, tracksPos, tracksNeg, preslice, bcs);
     computeCollMergingTag(collisions, tracksBarrel, preslice);
-    fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMapWithV0Bits, 0u, 0u>(collisions, bcs, nullptr, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+    fullSkimming<gkEventFillMapWithCentAndMultsQvect, gkTrackFillMapWithV0Bits, 0u, 0u>(collisions, bcs, nullptr, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr, nullptr, ft0s, fv0as, fdds);
   }
 
   // produce the barrel only DQ skimmed data model typically for Pb-Pb (with centrality), no subscribtion to the DQ event filter
-  void processPbPbBarrelOnlyWithV0BitsNoTOF(MyEventsWithCentAndMults const& collisions, MyBCs const& bcs,
+  void processPbPbBarrelOnlyWithV0BitsNoTOF(MyEventsWithCentAndMultsQvect const& collisions, MyBCs const& bcs,
                                             MyBarrelTracksWithV0BitsNoTOF const& tracksBarrel,
-                                            TrackAssoc const& trackAssocs)
+                                            TrackAssoc const& trackAssocs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
   {
     computeOccupancyEstimators(collisions, tracksPosNoTOF, tracksNegNoTOF, presliceNoTOF, bcs);
     computeCollMergingTag(collisions, tracksBarrel, presliceNoTOF);
-    fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMapWithV0BitsNoTOF, 0u, 0u>(collisions, bcs, nullptr, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+    fullSkimming<gkEventFillMapWithCentAndMultsQvect, gkTrackFillMapWithV0BitsNoTOF, 0u, 0u>(collisions, bcs, nullptr, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr, nullptr, ft0s, fv0as, fdds);
   }
 
   // produce the muon only DQ skimmed data model typically for Pb-Pb (with centrality), no subscribtion to the DQ event filter
@@ -2089,7 +2108,6 @@ struct TableMaker {
   PROCESS_SWITCH(TableMaker, processPPMuonMFTWithMultsExtra, "Build muon + mft DQ skimmed data model typically for pp/p-Pb and UPC Pb-Pb", false);
   PROCESS_SWITCH(TableMaker, processPbPb, "Build full DQ skimmed data model typically for Pb-Pb, w/o event filtering", false);
   PROCESS_SWITCH(TableMaker, processPbPbBarrelOnly, "Build barrel only DQ skimmed data model typically for Pb-Pb, w/o event filtering", false);
-  PROCESS_SWITCH(TableMaker, processPbPbBarrelOnlyWithQvect, "Build barrel only DQ skimmed data model typically for Pb-Pb, w/o event filtering with event properties and flow", false);
   PROCESS_SWITCH(TableMaker, processPbPbBarrelOnlyNoTOF, "Build barrel only DQ skimmed data model typically for Pb-Pb, w/o event filtering, no TOF", false);
   PROCESS_SWITCH(TableMaker, processPbPbWithFilterBarrelOnly, "Build barrel only DQ skimmed data model typically for UPC Pb-Pb, w/ event filtering", false);
   PROCESS_SWITCH(TableMaker, processPbPbBarrelOnlyWithV0Bits, "Build barrel only DQ skimmed data model typically for Pb-Pb, w/ V0 bits, w/o event filtering", false);
