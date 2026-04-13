@@ -591,7 +591,7 @@ struct CascDerivedQAanalysis {
                     DauTracks const&,
                     aod::MotherMCParts const&,
                     soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/,
-                    soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const& cascMCCores)
+                    soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const& /*cascMCCores*/)
 
   // SONRA:
   {
