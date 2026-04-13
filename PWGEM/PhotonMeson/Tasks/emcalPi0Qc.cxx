@@ -541,7 +541,7 @@ struct EmcalPi0Qc {
       if (mDoEventSel.value && (!collision.sel8())) { // Check sel8
         continue;
       }
-      mHistManager.fill(HIST("events"), 2);            
+      mHistManager.fill(HIST("events"), 2);
       if (mRequireCaloReadout.value && !(collision.alias_bit(kTVXinEMC) || collision.alias_bit(kEMC7) || collision.alias_bit(kDMC7) || collision.alias_bit(kEG1) || collision.alias_bit(kEG2) || collision.alias_bit(kDG1) || collision.alias_bit(kDG2) || collision.alias_bit(kEJ1) || collision.alias_bit(kEJ2) || collision.alias_bit(kDJ1) || collision.alias_bit(kDJ2))) { // Check whether EMC was read out
         continue;
       }
@@ -671,8 +671,8 @@ struct EmcalPi0Qc {
         continue;
       }
 
-      mHistManager.fill(HIST("events"), 2, mWeight);                               // Fill sel8
-      mHistManager.fill(HIST("eventsWithoutWeight"), 3); // Fill sel8 bin of event histogram without weight
+      mHistManager.fill(HIST("events"), 2, mWeight);                                                                                                                                                                                                                                                                                                                            // Fill sel8
+      mHistManager.fill(HIST("eventsWithoutWeight"), 3);                                                                                                                                                                                                                                                                                                                        // Fill sel8 bin of event histogram without weight
       if (mRequireCaloReadout.value && !(collision.alias_bit(kTVXinEMC) || collision.alias_bit(kEMC7) || collision.alias_bit(kDMC7) || collision.alias_bit(kEG1) || collision.alias_bit(kEG2) || collision.alias_bit(kDG1) || collision.alias_bit(kDG2) || collision.alias_bit(kEJ1) || collision.alias_bit(kEJ2) || collision.alias_bit(kDJ1) || collision.alias_bit(kDJ2))) { // Check whether EMC was read out
         continue;
       }
