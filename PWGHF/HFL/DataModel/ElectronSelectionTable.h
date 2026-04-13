@@ -88,13 +88,13 @@ DECLARE_SOA_COLUMN(TpcNSigmaElTrack, tpcNSigmaElTrack, float);       //! tpcNSig
 DECLARE_SOA_COLUMN(TofNSigmaElTrack, tofNSigmaElTrack, float);       //! tofNSigma of the electron track(TOF PID)
 DECLARE_SOA_COLUMN(TpcNClsCrRowsTrack, tpcNClsCrRowsTrack, float);   //! Number of crossed TPC Rows in electron track
 DECLARE_SOA_COLUMN(TpcCrRowsRatioTrack, tpcCrRowsRatioTrack, float); //!  Ratio crossed rows over findable clusters electron track
-DECLARE_SOA_COLUMN(ITSChi2NClTrack, itsChi2NClTrack, float);         //!  Chi2 / cluster for the ITS electron track
-DECLARE_SOA_COLUMN(TPCChi2NClTrack, tpcChi2NClTrack, float);         //! Chi2 / cluster for the TPC electron track
+DECLARE_SOA_COLUMN(ItsChi2NClTrack, itsChi2NClTrack, float);         //!  Chi2 / cluster for the ITS electron track
+DECLARE_SOA_COLUMN(TpcChi2NClTrack, tpcChi2NClTrack, float);         //! Chi2 / cluster for the TPC electron track
 DECLARE_SOA_COLUMN(DcaXYTrack, dcaXYTrack, float);                   //! dca of the electron in xy direction
 DECLARE_SOA_COLUMN(DcaZTrack, dcaZTrack, float);                     //! dca of the electron in z direction
 
 DECLARE_SOA_COLUMN(M02El, m02El, float);                      //! M02 of the electron cluster
-DECLARE_SOA_COLUMN(EOPEl, eopEl, float);                      //! energy momentum ratio of the electron
+DECLARE_SOA_COLUMN(EopEl, eopEl, float);                      //! energy momentum ratio of the electron
 DECLARE_SOA_COLUMN(LSMassEE, lSMassEE, std::vector<float>);   //!  mass of the Like sign electron pair
 DECLARE_SOA_COLUMN(ULSMassEE, uLSMassEE, std::vector<float>); //! mass of UnLike sign electron pair
 DECLARE_SOA_COLUMN(NElPairLS, nElPairLS, int);                //! Number of Like sign electron pair
@@ -112,11 +112,11 @@ DECLARE_SOA_TABLE(HfCorrSelEl, "AOD", "HfCORRSELEL", //! Electron Informations
                   hf_corr_sel_electron::TofNSigmaElTrack,
                   hf_corr_sel_electron::TpcNClsCrRowsTrack,
                   hf_corr_sel_electron::TpcCrRowsRatioTrack,
-                  hf_corr_sel_electron::ITSChi2NClTrack,
-                  hf_corr_sel_electron::TPCChi2NClTrack,
+                  hf_corr_sel_electron::ItsChi2NClTrack,
+                  hf_corr_sel_electron::TpcChi2NClTrack,
                   hf_corr_sel_electron::DcaXYTrack,
                   hf_corr_sel_electron::DcaZTrack,
-                  hf_corr_sel_electron::EOPEl,
+                  hf_corr_sel_electron::EopEl,
                   hf_corr_sel_electron::M02El,
                   hf_corr_sel_electron::LSMassEE,
                   hf_corr_sel_electron::ULSMassEE,
