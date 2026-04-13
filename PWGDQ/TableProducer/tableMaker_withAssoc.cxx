@@ -295,10 +295,10 @@ struct TableMaker {
     Configurable<bool> fConfigSaveElectronSample{"cfgSaveElectronSample", false, "If true, only save electron sample"};
   } fConfigPostCalibTPC;
 
-  // 
+  //
   struct : ConfigurableGroup {
     Configurable<bool> fConfigFT0CCumulant{"cfgFT0CCumulant", false, "If true, compute RefFlow cumulants from FT0C amplitudes (requires FT0s subscription)"};
-    Configurable<std::string> fConfigQvecCalibPath{"cfgQvecCalibPath","Analysis/EventPlane/QVecCorrections","CCDB path for qvector calibration objects; used only to check availability per run"};
+    Configurable<std::string> fConfigQvecCalibPath{"cfgQvecCalibPath", "Analysis/EventPlane/QVecCorrections", "CCDB path for qvector calibration objects; used only to check availability per run"};
   } fConfigQvector;
 
   struct : ConfigurableGroup {
@@ -336,7 +336,7 @@ struct TableMaker {
 
   bool fDoDetailedQA = false; // Bool to set detailed QA true, if QA is set true
   int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
-  bool fQvectCalibAvailable = false; // Whether the Q-vector calibration is available for the current run 
+  bool fQvectCalibAvailable = false; // Whether the Q-vector calibration is available for the current run
 
   // maps used to store index info; NOTE: std::map are sorted in ascending order by default (needed for track to collision indices)
   std::map<uint32_t, uint32_t> fCollIndexMap;             // key: old collision index, value: skimmed collision index
@@ -1198,7 +1198,7 @@ struct TableMaker {
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionQvectCentr) > 0) {
         if (fQvectCalibAvailable) {
           qvecGroup.eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
-                          collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
+                                      collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
           qvecGroup.eventQvectorCentrExtra(collision.qvecTPCallRe(), collision.qvecTPCallIm(), collision.nTrkTPCall());
 
           if (fConfigQvector.fConfigFT0CCumulant) {
@@ -1219,7 +1219,7 @@ struct TableMaker {
             float M11REF = S21C - S12C;
             std::complex<double> Q21C(collision.qvecFT0CRe() * S11C, collision.qvecFT0CIm() * S11C);
             float CORR2REF = (std::norm(Q21C) - S12C) / M11REF;
-        
+
             if (std::isnan(M11REF) || std::isinf(M11REF) || std::isnan(CORR2REF) || std::isinf(CORR2REF)) {
               M11REF = 0.f;
               CORR2REF = 0.f;
@@ -1778,7 +1778,7 @@ struct TableMaker {
       }
       std::map<std::string, std::string> metadataRCT, header;
       header = fCCDBApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", bcs.begin().runNumber()), metadataRCT, -1);
-      
+
       // Check if qvector calibration objects are available in CCDB for this run
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionQvectCentr) > 0) {
         std::map<std::string, std::string> metadataQvect;
@@ -1787,10 +1787,10 @@ struct TableMaker {
         for (const auto& sub : subfolders) {
           std::string fullPath = fConfigQvector.fConfigQvecCalibPath.value + "/" + sub;
           auto headers = fCCDBApi.retrieveHeaders(fullPath, metadataQvect, bcs.begin().timestamp());
-            if (headers.empty()) {
-              LOG(warn) << "Qvector calibration not found at CCDB path '" << fullPath
-                        << "' for run " << bcs.begin().runNumber();
-            } else {
+          if (headers.empty()) {
+            LOG(warn) << "Qvector calibration not found at CCDB path '" << fullPath
+                      << "' for run " << bcs.begin().runNumber();
+          } else {
             anyFound = true;
           }
         }
