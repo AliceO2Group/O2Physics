@@ -123,8 +123,7 @@ struct StrangeCascTrack {
     Configurable<float> cutMaxV0CosPA{"cutMaxV0CosPA", 1.1f, "max V0 cosPA"};
     Configurable<float> cutMinBachCosPA{"cutMinBachCosPA", -1.1f, "min Bachelor cosPA"};
     Configurable<float> cutMaxBachCosPA{"cutMaxBachCosPA", 1.1f, "max Bachelor cosPA"};
-    Configurable<std::vector<float>> cutMinCascCosPaVsPt{
-      "cutMinCascCosPaVsPt",
+    Configurable<std::vector<float>> cutMinCascCosPaVsPt{"cutMinCascCosPaVsPt",
       {0.993, 0.993, 0.994, 0.995, 0.996, 0.997, 0.997, 0.998, 0.998, 0.999, 0.999},
       "Min Casc CosPA per pT bin (same binning as axisPt)"};
     Configurable<float> cutRapidity{"cutRapidity", 0.5f, "max rapidity"};
@@ -1143,7 +1142,7 @@ struct StrangeCascTrack {
         histos.fill(HIST("Rec-Events/Mult"), mult);
         analyseCascs(collision, allCascs); // process all cascades
         if (doCustomGroup) {
-          for (int const& idx : traCascsGrouped[collision.globalIndex()]) {
+          for (const int idx : traCascsGrouped[collision.globalIndex()]) {
             auto casc = traCascs.rawIteratorAt(idx);
             analyseCascade(collision, casc);
           }
