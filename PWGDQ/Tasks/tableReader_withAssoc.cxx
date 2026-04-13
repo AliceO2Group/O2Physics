@@ -2540,6 +2540,12 @@ struct AnalysisSameEventPairing {
     runSameSideMixing<pairTypeMuMu, gkEventFillMap>(events, muonAssocs, muons, muonAssocsPerCollision);
   }
 
+  void processMixingMuonSkimmedFlow(soa::Filtered<MyEventsVtxCovSelectedQvectorWithHash>& events,
+                                    soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
+  {
+    runSameSideMixing<pairTypeMuMu, gkEventFillMapWithMultExtraWithQVector>(events, muonAssocs, muons, muonAssocsPerCollision);
+  }
+
   void processDummy(MyEventsBasic&)
   {
     // do nothing

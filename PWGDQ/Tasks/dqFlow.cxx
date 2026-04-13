@@ -112,8 +112,8 @@ struct DQEventQvector {
 
   Produces<ReducedEventsQvector> eventQvector;
   Produces<ReducedEventsQvectorExtra> eventQvectorExtra;
-  Produces<ReducedEventsQvectorCentr> eventQvectorCentr;
-  Produces<ReducedEventsQvectorCentrExtra> eventQvectorCentrExtra;
+  //Produces<ReducedEventsQvectorCentr> eventQvectorCentr;           // temporarily removed --> this table is filled in the table-maker directly
+  //Produces<ReducedEventsQvectorCentrExtra> eventQvectorCentrExtra; // temporarily removed --> this table is filled in the table-maker directly
   Produces<ReducedEventsRefFlow> eventRefFlow;
   Produces<ReducedEventsQvectorZN> eventQvectorZN;
 
@@ -345,11 +345,12 @@ struct DQEventQvector {
     }
 
     // Fill the tree for the reduced event table with Q vector quantities
-    if (fEventCut->IsSelected(VarManager::fgValues)) {
-      eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
-                        collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
-      eventQvectorCentrExtra(collision.qvecTPCallRe(), collision.qvecTPCallIm(), collision.nTrkTPCall());
-    }
+    // temporarily removed --> this table is filled in the table-maker directly
+    //if (fEventCut->IsSelected(VarManager::fgValues)) {
+      //eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
+                        //collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
+      //eventQvectorCentrExtra(collision.qvecTPCallRe(), collision.qvecTPCallIm(), collision.nTrkTPCall());
+    //}
   }
 
   // Templated function instantianed for all of the process functions
@@ -538,9 +539,10 @@ struct DQEventQvector {
         }
       }
       if (fEventCut->IsSelected(VarManager::fgValues)) {
-        eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
-                          collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
-        eventQvectorCentrExtra(collision.qvecTPCallRe(), collision.qvecTPCallIm(), collision.nTrkTPCall());
+        // temporarily removed --> this table is filled in the table-maker directly
+        //eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
+                          //collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
+        //eventQvectorCentrExtra(collision.qvecTPCallRe(), collision.qvecTPCallIm(), collision.nTrkTPCall());
         if (bc.has_zdc()) {
           eventQvectorZN(VarManager::fgValues[VarManager::kQ1ZNAX], VarManager::fgValues[VarManager::kQ1ZNAY], VarManager::fgValues[VarManager::kQ1ZNCX], VarManager::fgValues[VarManager::kQ1ZNCY]);
         } else {
