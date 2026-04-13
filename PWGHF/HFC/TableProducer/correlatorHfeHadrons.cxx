@@ -71,7 +71,7 @@ struct HfCorrelatorHfeHadrons {
   Configurable<float> etaTrackMin{"etaTrackMin", -0.8f, "Eta range  for associated hadron tracks"};
   Configurable<float> dcaXYTrackMax{"dcaXYTrackMax", 0.5f, "DCA XY cut"};
   Configurable<float> dcaZTrackMax{"dcaZTrackMax", 1.0f, "DCA Z cut"};
-  Configurable<float> tpccrossCut{"TPCcrosscut", 70, "TPC crossrows cut"};
+  Configurable<float> tpccrossCut{"tpccrossCut", 70, "TPC crossrows cut"};
   Configurable<float> itsChi2{"itsChi2", 36, "ITS chi2 cluster cut"};
   Configurable<float> tpcChi2NCl{"tpcChi2NCl", 4, "TPC chi2 cluster cut"};
   Configurable<float> tpccrOverFindableRatio{"tpccrOverFindableRatio", 0.8f, "TPC chi2 cluster cut"};
