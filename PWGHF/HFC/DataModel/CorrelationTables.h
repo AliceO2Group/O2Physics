@@ -553,19 +553,19 @@ DECLARE_SOA_COLUMN(M02Electron, m02Electron, float);   //! M02 of Electron
 DECLARE_SOA_COLUMN(TpcNSigmaEle, tpcNSigmaEle, float); //! TPCn Sigma of Electron
 DECLARE_SOA_COLUMN(TofNSigmaEle, tofNSigmaEle, float); //! TOFn Sigma of Electron
 
-DECLARE_SOA_COLUMN(TpcNClsCrRowsEle, tpcNClsCrRowsEle, float); //! tpcNClsCrossedRows for Electron
-DECLARE_SOA_COLUMN(TpcCrRowsRatioEle, tpcCrRowsRatioEle, float);    //! Ratio crossed rows over findable clusters electron track
-DECLARE_SOA_COLUMN(ItsChi2NClEle, itsChi2NClEle, float);            //! itsChi2NCl of Electron
-DECLARE_SOA_COLUMN(TpcChi2NClEle, tpcChi2NClEle, float);            //! TPC Chi2NCl of electron;
-DECLARE_SOA_COLUMN(DcaXYEle, dcaXYEle, float);                      //! DCAXY  of Electron
-DECLARE_SOA_COLUMN(DcaZEle, dcaZEle, float);                        //! DCAZ of Electron
+DECLARE_SOA_COLUMN(TpcNClsCrRowsEle, tpcNClsCrRowsEle, float);   //! tpcNClsCrossedRows for Electron
+DECLARE_SOA_COLUMN(TpcCrRowsRatioEle, tpcCrRowsRatioEle, float); //! Ratio crossed rows over findable clusters electron track
+DECLARE_SOA_COLUMN(ItsChi2NClEle, itsChi2NClEle, float);         //! itsChi2NCl of Electron
+DECLARE_SOA_COLUMN(TpcChi2NClEle, tpcChi2NClEle, float);         //! TPC Chi2NCl of electron;
+DECLARE_SOA_COLUMN(DcaXYEle, dcaXYEle, float);                   //! DCAXY  of Electron
+DECLARE_SOA_COLUMN(DcaZEle, dcaZEle, float);                     //! DCAZ of Electron
 
-DECLARE_SOA_COLUMN(TpcNClsCrRowsHad, tpcNClsCrRowsHad, float); //! tpcNClsCrossedRows for Hadron
-DECLARE_SOA_COLUMN(TpcCrRowsRatioHad, tpcCrRowsRatioHad, float);    //! Ratio crossed rows over findable clusters Hadron track
-DECLARE_SOA_COLUMN(ItsChi2NClHad, itsChi2NClHad, float);            //! itsChi2NCl of Hadron
-DECLARE_SOA_COLUMN(TpcChi2NClHad, tpcChi2NClHad, float);            //! TPC Chi2NCl of Hadron;
-DECLARE_SOA_COLUMN(DcaXYHad, dcaXYHad, float);                      //! DCAXY  of Hadron
-DECLARE_SOA_COLUMN(DcaZHad, dcaZHad, float);                        //! DCAZ of Hadron
+DECLARE_SOA_COLUMN(TpcNClsCrRowsHad, tpcNClsCrRowsHad, float);   //! tpcNClsCrossedRows for Hadron
+DECLARE_SOA_COLUMN(TpcCrRowsRatioHad, tpcCrRowsRatioHad, float); //! Ratio crossed rows over findable clusters Hadron track
+DECLARE_SOA_COLUMN(ItsChi2NClHad, itsChi2NClHad, float);         //! itsChi2NCl of Hadron
+DECLARE_SOA_COLUMN(TpcChi2NClHad, tpcChi2NClHad, float);         //! TPC Chi2NCl of Hadron;
+DECLARE_SOA_COLUMN(DcaXYHad, dcaXYHad, float);                   //! DCAXY  of Hadron
+DECLARE_SOA_COLUMN(DcaZHad, dcaZHad, float);                     //! DCAZ of Hadron
 
 DECLARE_SOA_COLUMN(PoolBin, poolBin, int);   //! Pool Bin of event defined using zvtx and multiplicity
 DECLARE_SOA_COLUMN(NPairsLS, nPairsLS, int); //! number of like-sign electron-hadron pairs
@@ -595,6 +595,7 @@ DECLARE_SOA_TABLE(HfEHadronPair, "AOD", "HFEHADRONPAIR", //! Hfe-Hadrons pairs I
                   hf_correlation_electron_hadron::PoolBin,
                   hf_correlation_electron_hadron::NPairsLS,
                   hf_correlation_electron_hadron::NPairsUS);
+
 // Note: definition of columns and tables for Electron Hadron correlation pairs for MC Gen
 namespace hf_correlation_mcgenelectron_hadron
 {
