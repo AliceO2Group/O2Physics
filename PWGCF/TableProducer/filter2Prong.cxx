@@ -779,7 +779,7 @@ struct Filter2Prong {
   PROCESS_SWITCH(Filter2Prong, processDataPhiV0, "Process data Phi and V0 candidates with invariant mass method", false);
 
   using DerivedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities>;
-  void processDataPhiMixed(DerivedCollisions const& collisions, Filter2Prong::PIDTrack const& tracksP, aod::CFTrackRefs const& cftracks)
+  void processDataPhiMixed(DerivedCollisions const& collisions, aod::CFTrackRefs const& cftracks)
   {
     auto getMultiplicity = [](auto const& col) {
       return col.multiplicity();
