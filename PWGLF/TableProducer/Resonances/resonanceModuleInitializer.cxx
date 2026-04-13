@@ -475,7 +475,7 @@ struct ResonanceModuleInitializer {
     bool isTriggerTVX = mccol.selection_bit(aod::evsel::kIsTriggerTVX);
     bool isSel8 = mccol.sel8();
     bool isSelected = colCuts.isSelected(mccol);
-    resoMCCollisions(inVtx10, isTrueINELgt0, isTriggerTVX, isSel8, isSelected, mcCent);
+    resoMCCollisions(inVtx10, isTrueINELgt0, isTriggerTVX, isSel8, isSelected, mcCent, -1.0f);
 
     // QA for Trigger efficiency
     qaRegistry.fill(HIST("Event/hMCEventIndices"), mcCent, aod::resocollision::kINEL);
@@ -546,7 +546,7 @@ struct ResonanceModuleInitializer {
     colCuts.fillQA(collision);
     centrality = centEst(collision);
 
-    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centrality, dBz);
+    resoCollisions(0, 0, 0, collision.posX(), collision.posY(), collision.posZ(), centrality, dBz, 0);
     if (!cfgBypassCollIndexFill) {
       resoCollisionColls(collision.globalIndex());
     }
@@ -569,7 +569,7 @@ struct ResonanceModuleInitializer {
     colCuts.fillQARun2(collision);
     centrality = collision.centRun2V0M();
 
-    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centrality, dBz);
+    resoCollisions(0, 0, 0, collision.posX(), collision.posY(), collision.posZ(), centrality, dBz, 0);
     if (!cfgBypassCollIndexFill) {
       resoCollisionColls(collision.globalIndex());
     }
@@ -1034,10 +1034,13 @@ struct ResonanceDaughterInitializer {
                v0.dcapostopv(),
                v0.dcanegtopv(),
                v0.dcav0topv(),
+               0,
+               0,
                v0.mLambda(),
                v0.mAntiLambda(),
                v0.mK0Short(),
-               v0.v0radius(), v0.x(), v0.y(), v0.z());
+               v0.v0radius(), v0.x(), v0.y(), v0.z(),
+               v0.alpha(), v0.qtarm());
       if (!cfgBypassTrackIndexFill) {
         resoV0V0s(v0.globalIndex());
       }
@@ -1123,6 +1126,8 @@ struct ResonanceDaughterInitializer {
       reso2mcv0s(v0mc.pdgCode(),
                  mothers[0],
                  motherPDGs[0],
+                 0,
+                 0,
                  daughters[0],
                  daughters[1],
                  daughterPDGs[0],
@@ -1133,6 +1138,8 @@ struct ResonanceDaughterInitializer {
       reso2mcv0s(0,
                  mothers[0],
                  motherPDGs[0],
+                 0,
+                 0,
                  daughters[0],
                  daughters[1],
                  daughterPDGs[0],
@@ -1201,6 +1208,9 @@ struct ResonanceDaughterInitializer {
                     casc.dcaXYCascToPV(),
                     casc.dcaZCascToPV(),
                     casc.sign(),
+                    0,
+                    0,
+                    0,
                     casc.mLambda(),
                     casc.mXi(),
                     casc.v0radius(), casc.cascradius(), casc.x(), casc.y(), casc.z());
@@ -1289,6 +1299,8 @@ struct ResonanceDaughterInitializer {
       reso2mccascades(cascmc.pdgCode(),
                       mothers[0],
                       motherPDGs[0],
+                      0,
+                      0,
                       daughters[0],
                       daughters[1],
                       daughterPDGs[0],
@@ -1299,6 +1311,8 @@ struct ResonanceDaughterInitializer {
       reso2mccascades(0,
                       mothers[0],
                       motherPDGs[0],
+                      0,
+                      0,
                       daughters[0],
                       daughters[1],
                       daughterPDGs[0],

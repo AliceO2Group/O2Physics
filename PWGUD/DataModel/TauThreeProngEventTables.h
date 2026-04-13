@@ -19,7 +19,9 @@
 #ifndef PWGUD_DATAMODEL_TAUTHREEPRONGEVENTTABLES_H_
 #define PWGUD_DATAMODEL_TAUTHREEPRONGEVENTTABLES_H_
 
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 // derived tables for tautau->4 (=1+3) tracks
 namespace o2::aod
 {
@@ -84,7 +86,7 @@ DECLARE_SOA_COLUMN(TrkTOFnSigmaMu, trkTOFnSigmaMu, float[6]);
 DECLARE_SOA_COLUMN(TrkTOFchi2, trkTOFchi2, float[6]);
 // truth event
 DECLARE_SOA_COLUMN(TrueChannel, trueChannel, int);
-DECLARE_SOA_COLUMN(TrueHasRecoColl, trueHasRecoColl, bool);
+// DECLARE_SOA_COLUMN(TrueHasRecoColl, trueHasRecoColl, bool);
 // DECLARE_SOA_COLUMN(TruePosX, truePosX, float);
 // DECLARE_SOA_COLUMN(TruePosY, truePosY, float);
 DECLARE_SOA_COLUMN(TruePosZ, truePosZ, float);
@@ -145,7 +147,7 @@ DECLARE_SOA_TABLE(TrueTauFourTracks, "AOD", "TRUETAU",
                   tautree::TrkTOFbeta, tautree::TrkTOFnSigmaEl, tautree::TrkTOFnSigmaPi, tautree::TrkTOFnSigmaKa, tautree::TrkTOFnSigmaPr, tautree::TrkTOFnSigmaMu,
                   tautree::TrkTOFchi2,
                   tautree::TrueChannel,
-                  tautree::TrueHasRecoColl,
+                  // tautree::TrueHasRecoColl,
                   tautree::TruePosZ,
                   tautree::TrueTauPx, tautree::TrueTauPy, tautree::TrueTauPz,
                   tautree::TrueDaugPx, tautree::TrueDaugPy, tautree::TrueDaugPz,

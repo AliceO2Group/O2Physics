@@ -123,6 +123,10 @@ DECLARE_SOA_COLUMN(MultNTracksGlobal, multNTracksGlobal, int);
 DECLARE_SOA_COLUMN(ToiMask, toiMask, uint32_t);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(NoSameBunchPileup, noSameBunchPileup, bool);
+DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);
+DECLARE_SOA_COLUMN(PtGen, ptGen, float);
+DECLARE_SOA_COLUMN(PtRec, ptRec, float);
+DECLARE_SOA_COLUMN(MultGen, multGen, int);
 
 } // namespace NPCascadeTable
 DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
@@ -434,7 +438,6 @@ DECLARE_SOA_TABLE(NPCascTableMCNT, "AOD", "NPCASCTABLEMCNT",
                   NPCascadeTable::MultNTracksGlobal,
                   NPCascadeTable::ToiMask,
                   NPCascadeTable::NoSameBunchPileup)
-
 DECLARE_SOA_TABLE(NPCascTableGen, "AOD", "NPCASCTABLEGen",
                   NPCascadeTable::gPt,
                   NPCascadeTable::gEta,
@@ -447,7 +450,22 @@ DECLARE_SOA_TABLE(NPCascTableGen, "AOD", "NPCASCTABLEGen",
                   NPCascadeTable::IsFromBeauty,
                   NPCascadeTable::IsFromCharm,
                   NPCascadeTable::MotherDecayDaughters)
-
+DECLARE_SOA_TABLE(NPCollisionTable, "AOD", "NPCollisionTABLE",
+                  NPCascadeTable::RunNumber,
+                  NPCascadeTable::GlobalBC,
+                  aod::collision::NumContrib,
+                  NPCascadeTable::MultNTracksGlobal,
+                  NPCascadeTable::CentFT0M,
+                  NPCascadeTable::MultFT0M);
+DECLARE_SOA_TABLE(NPMCChargedTable, "AOD", "NPMCChargedTABLE",
+                  NPCascadeTable::PtGen,
+                  NPCascadeTable::PtRec,
+                  NPCascadeTable::MultNTracksGlobal,
+                  NPCascadeTable::MultGen);
+DECLARE_SOA_INDEX_COLUMN_FULL(NPCollision, npCollision, int32_t, NPCollisionTable, "");
+DECLARE_SOA_TABLE(NPRecoChargedCandidate, "AOD", "NPRecoChargedCandidate",
+                  NPCollisionId,
+                  NPCascadeTable::PtRec);
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFNONPROMPTCASCADETABLES_H_

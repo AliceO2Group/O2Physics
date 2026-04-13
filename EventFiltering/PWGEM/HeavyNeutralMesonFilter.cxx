@@ -14,6 +14,7 @@
 /// \author Nicolas Strangmann (nicolas.strangmann@cern.ch) - Goethe University Frankfurt; Maximilian Korwieser (maximilian.korwieser@cern.ch) - Technical University Munich
 ///
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "EventFiltering/filterTables.h"
 //
 #include "PWGEM/PhotonMeson/Utils/HNMUtilities.h"
@@ -44,7 +45,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <Math/GenVector/Boost.h>
-#include <Math/Vector4D.h> // IWYU pragma: keep
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 #include <TH1.h>
 #include <TString.h>
@@ -136,6 +137,9 @@ struct HeavyNeutralMesonFilter {
   Configurable<bool> confEvtSelectZvtx{"confEvtSelectZvtx", true, "Event selection includes max. z-Vertex"};
   Configurable<float> confEvtZvtx{"confEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
   Configurable<bool> confEvtRequireSel8{"confEvtRequireSel8", false, "Evt sel: check for offline selection (sel8)"};
+  Configurable<bool> confEvtRequireTVX{"confEvtRequireTVX", false, "Evt sel: require the TVX trigger"};
+  Configurable<bool> confEvtRequireNoTFBorder{"confEvtRequireNoTFBorder", false, "Evt sel: exclude time frame border edges"};
+  Configurable<bool> confEvtRequireNoITSROFBorder{"confEvtRequireNoITSROFBorder", false, "Evt sel: exclude ITS readout frame border edges"};
 
   // ---> Track selection
   Configurable<LabeledArray<float>> cfgPtCuts{"cfgPtCuts", {hnmtrigger::ptcutsTable[0], hnmtrigger::kNFemtoPartners, 3, hnmtrigger::speciesName, hnmtrigger::pTCutsName}, "Track pT selections"};
@@ -275,6 +279,12 @@ struct HeavyNeutralMesonFilter {
     if (confEvtSelectZvtx && std::abs(col.posZ()) > confEvtZvtx)
       return false;
     if (confEvtRequireSel8 && !col.sel8())
+      return false;
+    if (confEvtRequireTVX && !col.selection_bit(aod::evsel::kIsTriggerTVX))
+      return false;
+    if (confEvtRequireNoTFBorder && !col.selection_bit(aod::evsel::kNoTimeFrameBorder))
+      return false;
+    if (confEvtRequireNoITSROFBorder && !col.selection_bit(aod::evsel::kNoITSROFrameBorder))
       return false;
     return true;
   }

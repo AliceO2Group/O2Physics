@@ -26,28 +26,40 @@
 
 #include "Common/Core/TableHelper.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Field/MagneticField.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TGeoGlobalMagField.h"
-#include <TH1F.h>
-#include <TH3F.h>
 #include <THashList.h>
 #include <TList.h>
+#include <TMath.h>
+#include <TMathBase.h>
 #include <TObjString.h>
 #include <TString.h>
 
+#include <RtypesCore.h>
+
 #include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
 #include <iostream>
+#include <iterator>
 #include <map>
 #include <memory>
 #include <string>
@@ -62,6 +74,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
+using namespace o2::common::core;
 
 // Some definitions
 namespace o2::aod
@@ -961,7 +974,7 @@ struct AnalysisMuonSelection {
 
     for (auto& assoc : assocs) {
       auto event = assoc.template reducedevent_as<TEvents>();
-      if (!event.isEventSelected_bit(0)) {
+      if (!event.has_reducedMCevent() || !event.isEventSelected_bit(0)) { // condition on reducedMCevent to avoid rec. events with no generated event
         muonSel(0);
         continue;
       }
@@ -1370,6 +1383,7 @@ struct AnalysisSameEventPairing {
     Configurable<std::string> genSignalsJSON{"cfgMCGenSignalsJSON", "", "Additional list of MC signals (generated) via JSON"};
     Configurable<std::string> recSignals{"cfgBarrelMCRecSignals", "", "Comma separated list of MC signals (reconstructed)"};
     Configurable<std::string> recSignalsJSON{"cfgMCRecSignalsJSON", "", "Comma separated list of MC signals (reconstructed) via JSON"};
+    Configurable<std::string> finalStateSignals{"cfgBarrelMCFinalStateSignals", "eFromJpsi", "Comma separated list of MC signals (final state particles)"};
     Configurable<bool> skimSignalOnly{"cfgSkimSignalOnly", false, "Configurable to select only matched candidates"};
   } fConfigMC;
 
@@ -1384,6 +1398,9 @@ struct AnalysisSameEventPairing {
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
+  // PDG database
+  Service<o2::framework::O2DatabasePDG> pdgDB;
+
   // Filter filterEventSelected = aod::dqanalysisflags::isEventSelected & uint32_t(1);
   Filter eventFilter = aod::dqanalysisflags::isEventSelected > static_cast<uint32_t>(0);
 
@@ -1396,6 +1413,7 @@ struct AnalysisSameEventPairing {
   std::map<int, std::vector<TString>> fMuonHistNamesMCmatched;
   std::vector<MCSignal*> fRecMCSignals;
   std::vector<MCSignal*> fGenMCSignals;
+  std::vector<MCSignal*> fFinalStateMCSignals;
 
   std::vector<AnalysisCompositeCut> fPairCuts;
   std::vector<AnalysisCut*> fMCGenAccCuts;
@@ -1691,6 +1709,16 @@ struct AnalysisSameEventPairing {
       }
     }
 
+    // define final state MC signals
+    TString sigFinalStateNamesStr = fConfigMC.finalStateSignals.value;
+    std::unique_ptr<TObjArray> objFinalStateSigArray(sigFinalStateNamesStr.Tokenize(","));
+    for (int isig = 0; isig < objFinalStateSigArray->GetEntries(); isig++) {
+      MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(objFinalStateSigArray->At(isig)->GetName());
+      if (sig) {
+        fFinalStateMCSignals.push_back(sig);
+      }
+    }
+
     if (isMCGen) {
       for (auto& sig : fGenMCSignals) {
         if (sig->GetNProngs() == 1) {
@@ -1699,11 +1727,14 @@ struct AnalysisSameEventPairing {
         } else if (sig->GetNProngs() == 2) {
           histNames += Form("MCTruthGenPair_%s;", sig->GetName());
           histNames += Form("MCTruthGenPairSel_%s;", sig->GetName());
+          histNames += Form("MCTruthGenPseudoPolPair_%s;", sig->GetName());
+          histNames += Form("MCTruthGenPseudoPolPairSel_%s;", sig->GetName());
           fHasTwoProngGenMCsignals = true;
           // for these pair level signals, also add histograms for each MCgenAcc cut if specified
           if (fUseMCGenAccCut) {
             for (auto& cut : fMCGenAccCuts) {
               histNames += Form("MCTruthGenPairSel_%s_%s;", sig->GetName(), cut->GetName());
+              histNames += Form("MCTruthGenPseudoPolPairSel_%s_%s;", sig->GetName(), cut->GetName());
             }
           }
         }
@@ -1824,7 +1855,7 @@ struct AnalysisSameEventPairing {
     constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelCov) > 0);
 
     for (auto& event : events) {
-      if (!event.isEventSelected_bit(0)) {
+      if (!event.has_reducedMCevent() || !event.isEventSelected_bit(0)) { // condition on reducedMCevent to avoid rec. events with no generated event
         continue;
       }
       uint8_t evSel = event.isEventSelected_raw();
@@ -2011,6 +2042,7 @@ struct AnalysisSameEventPairing {
                             t1.reducedMCTrack().vx(), t1.reducedMCTrack().vy(), t1.reducedMCTrack().vz(), t1.reducedMCTrack().vt(),
                             t2.reducedMCTrack().vx(), t2.reducedMCTrack().vy(), t2.reducedMCTrack().vz(), t2.reducedMCTrack().vt(),
                             (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29)), (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31)),
+                            isCorrectAssoc_leg1, isCorrectAssoc_leg2,
                             -999.0, -999.0, -999.0, -999.0, -999.0,
                             -999.0, -999.0, -999.0, -999.0, -999.0,
                             -999.0, VarManager::fgValues[VarManager::kMultDimuons],
@@ -2161,23 +2193,26 @@ struct AnalysisSameEventPairing {
   PresliceUnsorted<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
 
   template <int TPairType>
-  void runMCGenWithGrouping(MyEventsVtxCovSelected const& events, ReducedMCEvents const& mcEvents, ReducedMCTracks const& mcTracks)
+  void runMCGen(MyEventsVtxCovSelected const& events, ReducedMCEvents const& mcEvents, ReducedMCTracks const& mcTracks)
   {
     uint32_t mcDecision = 0;
     int isig = 0;
 
+    // Loop over all MC single particles to fill generator level histograms, disregarding of whether they belong to selected reconstructed events or not
     for (auto& mctrack : mcTracks) {
-      VarManager::FillTrackMC(mcTracks, mctrack);
-      // NOTE: Signals are checked here mostly based on the skimmed MC stack, so depending on the requested signal, the stack could be incomplete.
-      // NOTE: However, the working model is that the decisions on MC signals are precomputed during skimming and are stored in the mcReducedFlags member.
-      // TODO:  Use the mcReducedFlags to select signals
       for (auto& sig : fGenMCSignals) {
         if (sig->CheckSignal(true, mctrack)) {
+          VarManager::FillTrackMC(mcTracks, mctrack);
           fHistMan->FillHistClass(Form("MCTruthGen_%s", sig->GetName()), VarManager::fgValues);
         }
       }
     }
-    // Fill Generated histograms taking into account selected collisions
+    // cout << "Filled single MC particle generator histograms." << endl;
+
+    // make a vector of global indices of mc particles which fulfill the selected track-level signal definition (to speed up the two mc particle combinatorics)
+    std::vector<uint64_t> FinalStateMcParticleIndices;
+
+    // Now loop over reconstructed events to select only MC particles belonging to the same MC collision as the reconstructed event
     for (auto& event : events) {
       if (!event.isEventSelected_bit(0)) {
         continue;
@@ -2186,16 +2221,21 @@ struct AnalysisSameEventPairing {
         continue;
       }
 
-      for (auto& track : mcTracks) {
-        if (track.reducedMCeventId() != event.reducedMCeventId()) {
-          continue;
-        }
-        VarManager::FillTrackMC(mcTracks, track);
+      FinalStateMcParticleIndices.clear();
+
+      auto groupedMCTracks = mcTracks.sliceBy(perReducedMcEvent, event.reducedMCeventId());
+      groupedMCTracks.bindInternalIndicesTo(&mcTracks);
+
+      for (auto& track : groupedMCTracks) {
         auto track_raw = mcTracks.rawIteratorAt(track.globalIndex());
         mcDecision = 0;
         isig = 0;
         for (auto& sig : fGenMCSignals) {
           if (sig->CheckSignal(true, track_raw)) {
+            if (track.reducedMCeventId() != event.reducedMCeventId()) { // check that the mc track belongs to the same mc collision as the reconstructed event
+              continue;
+            }
+            VarManager::FillTrackMC(mcTracks, track);
             mcDecision |= (static_cast<uint32_t>(1) << isig);
             fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), VarManager::fgValues);
             MCTruthTableEffi(VarManager::fgValues[VarManager::kMCPt], VarManager::fgValues[VarManager::kMCEta], VarManager::fgValues[VarManager::kMCY], VarManager::fgValues[VarManager::kMCPhi], VarManager::fgValues[VarManager::kMCVz], VarManager::fgValues[VarManager::kMCVtxZ], VarManager::fgValues[VarManager::kMultFT0A], VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kVtxNcontribReal]);
@@ -2207,70 +2247,72 @@ struct AnalysisSameEventPairing {
           }
           isig++;
         }
-      }
-    } // end loop over reconstructed events
-
-    if (fHasTwoProngGenMCsignals) {
-      for (auto& [t1, t2] : combinations(mcTracks, mcTracks)) {
-        auto t1_raw = mcTracks.rawIteratorAt(t1.globalIndex());
-        auto t2_raw = mcTracks.rawIteratorAt(t2.globalIndex());
-        if (t1_raw.reducedMCeventId() == t2_raw.reducedMCeventId()) {
-          for (auto& sig : fGenMCSignals) {
-            if (sig->GetNProngs() != 2) { // NOTE: 2-prong signals required here
-              continue;
-            }
-            if (sig->CheckSignal(true, t1_raw, t2_raw)) {
-              VarManager::FillPairMC<TPairType>(t1, t2);
-              fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig->GetName()), VarManager::fgValues);
-            }
+        for (auto& sig : fFinalStateMCSignals) {
+          if (sig->CheckSignal(true, track_raw)) {
+            FinalStateMcParticleIndices.push_back(track.globalIndex());
+            break; // if one of the final state signals is matched, no need to check the others
           }
         }
+        // cout << "Filled single MC particle generator histograms for reconstructed event." << endl;
       }
-    }
-    for (auto& event : events) {
-      if (!event.isEventSelected_bit(0)) {
-        continue;
-      }
-      if (!event.has_reducedMCevent()) {
-        continue;
-      }
-      // CURRENTLY ONLY FOR 1-GENERATION 2-PRONG SIGNALS
+
       if (fHasTwoProngGenMCsignals) {
-        auto groupedMCTracks = mcTracks.sliceBy(perReducedMcEvent, event.reducedMCeventId());
-        groupedMCTracks.bindInternalIndicesTo(&mcTracks);
-        for (auto& [t1, t2] : combinations(groupedMCTracks, groupedMCTracks)) {
-          auto t1_raw = mcTracks.rawIteratorAt(t1.globalIndex());
-          auto t2_raw = mcTracks.rawIteratorAt(t2.globalIndex());
-          if (t1_raw.reducedMCeventId() == t2_raw.reducedMCeventId()) {
+        // loop over combinations of the selected mc particles to fill generator level pair histograms
+        for (auto& t1 : FinalStateMcParticleIndices) {
+          auto t1_raw = mcTracks.rawIteratorAt(t1);
+          for (auto& t2 : FinalStateMcParticleIndices) {
+            if (t2 <= t1) {
+              continue; // avoid double counting and self-pairing
+            }
+            // for (auto& [t1, t2] : combinations(groupedMCTracks, groupedMCTracks)) {
+            // cout << "Processing pair of mcTracks with globalIndices = " << t1.globalIndex() << ", " << t2.globalIndex() << endl;
+            auto t2_raw = mcTracks.rawIteratorAt(t2);
+
             mcDecision = 0;
             isig = 0;
             for (auto& sig : fGenMCSignals) {
               if (sig->GetNProngs() != 2) { // NOTE: 2-prong signals required here
                 continue;
               }
+              // cout << "      Checking signal: " << sig->GetName() << endl;
               if (sig->CheckSignal(true, t1_raw, t2_raw)) {
+                // cout << "      Signal matched!" << endl;
                 mcDecision |= (static_cast<uint32_t>(1) << isig);
-                VarManager::FillPairMC<TPairType>(t1, t2);
+                VarManager::FillPairMC<TPairType>(t1_raw, t2_raw);
+                // check if t1_raw and t2_raw have same mother to compute decay length related variables
+                if (t1_raw.has_mothers() && t2_raw.has_mothers()) {
+                  auto motherMCParticle_t1 = t1_raw.template mothers_first_as<ReducedMCTracks>();
+                  auto motherMCParticle_t2 = t2_raw.template mothers_first_as<ReducedMCTracks>();
+                  if (motherMCParticle_t1 == motherMCParticle_t2) {
+                    auto mcEvent = mcEvents.rawIteratorAt(motherMCParticle_t1.reducedMCeventId());
+                    std::array<double, 3> collVtxPos = {mcEvent.mcPosX(), mcEvent.mcPosY(), mcEvent.mcPosZ()};
+                    VarManager::FillTrackCollisionMC<TPairType>(motherMCParticle_t1, collVtxPos, pdgDB->Mass(motherMCParticle_t1.pdgCode()));
+                  }
+                }
+                // cout << "      Filled VarManager for the pair." << endl;
                 fHistMan->FillHistClass(Form("MCTruthGenPairSel_%s", sig->GetName()), VarManager::fgValues);
+                fHistMan->FillHistClass(Form("MCTruthGenPseudoPolPairSel_%s", sig->GetName()), VarManager::fgValues);
                 // Fill also acceptance cut histograms if requested
                 if (fUseMCGenAccCut) {
                   for (auto& cut : fMCGenAccCuts) {
                     if (cut->IsSelected(VarManager::fgValues)) {
                       fHistMan->FillHistClass(Form("MCTruthGenPairSel_%s_%s", sig->GetName(), cut->GetName()), VarManager::fgValues);
+                      fHistMan->FillHistClass(Form("MCTruthGenPseudoPolPairSel_%s_%s", sig->GetName(), cut->GetName()), VarManager::fgValues);
                     }
                   }
                 }
                 if (useMiniTree.fConfigMiniTree) {
                   // WARNING! To be checked
-                  dileptonMiniTreeGen(mcDecision, -999, t1.pt(), t1.eta(), t1.phi(), t2.pt(), t2.eta(), t2.phi());
+                  dileptonMiniTreeGen(mcDecision, -999, t1_raw.pt(), t1_raw.eta(), t1_raw.phi(), t2_raw.pt(), t2_raw.eta(), t2_raw.phi());
                 }
               }
               isig++;
             }
-          }
-        }
-      } // end loop over reconstructed events
-    }
+          } // end loop over second mc particle
+        } // end loop over first mc particle
+      }
+    } // end loop over reconstructed events
+    //   cout << "AnalysisSameEventPairing::runMCGen() completed" << endl;
   }
 
   void processAllSkimmed(MyEventsVtxCovSelected const& events,
@@ -2292,7 +2334,7 @@ struct AnalysisSameEventPairing {
                                 MyBarrelTracksWithCovWithAmbiguities const& barrelTracks, ReducedMCEvents const& mcEvents, ReducedMCTracks const& mcTracks)
   {
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, mcEvents, mcTracks);
-    runMCGenWithGrouping<VarManager::kDecayToEE>(events, mcEvents, mcTracks);
+    runMCGen<VarManager::kDecayToEE>(events, mcEvents, mcTracks);
   }
 
   void processBarrelOnlyWithCollSkimmed(MyEventsVtxCovSelected const& events,
@@ -2300,7 +2342,7 @@ struct AnalysisSameEventPairing {
                                         MyBarrelTracksWithCovWithAmbiguitiesWithColl const& barrelTracks, ReducedMCEvents const& mcEvents, ReducedMCTracks const& mcTracks)
   {
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCovWithColl>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, mcEvents, mcTracks);
-    runMCGenWithGrouping<VarManager::kDecayToEE>(events, mcEvents, mcTracks);
+    runMCGen<VarManager::kDecayToEE>(events, mcEvents, mcTracks);
   }
 
   void processMuonOnlySkimmed(MyEventsVtxCovSelected const& events,
@@ -4657,7 +4699,9 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses, const char
     if (classStr.Contains("MCTruthGenPair")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth_pair", histName);
     }
-
+    if (classStr.Contains("MCTruthGenPseudoPolPair")) {
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "polarization-pseudoproper-gen", histName);
+    }
     if (classStr.Contains("MCTruthGenSelBR")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth_triple");
     } else if (classStr.Contains("MCTruthGen")) {

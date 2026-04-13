@@ -22,6 +22,7 @@
 
 #include "Common/Core/RecoDecay.h"
 
+#include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
@@ -30,7 +31,6 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TMath.h>
 #include <TRandom3.h>
 
 #include <cmath>
@@ -71,12 +71,14 @@ struct JetBackgroundAnalysisTask {
 
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
+  TRandom3 randomNumber{};
 
   void init(o2::framework::InitContext&)
   {
     // selection settings initialisation
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    randomNumber.SetSeed(0);
 
     // Axes definitions
     AxisSpec bkgFluctuationsAxis = {nBinsFluct, -100.0, 100.0, "#delta #it{p}_{T} (GeV/#it{c})"};
@@ -117,7 +119,6 @@ struct JetBackgroundAnalysisTask {
   template <typename TCollisions, typename TJets, typename TTracks>
   void bkgFluctuationsRandomCone(TCollisions const& collision, TJets const& jets, TTracks const& tracks, float centrality)
   {
-    TRandom3 randomNumber(0);
     float randomConeEta = randomNumber.Uniform(trackEtaMin + randomConeR, trackEtaMax - randomConeR);
     float randomConePhi = randomNumber.Uniform(0.0, o2::constants::math::TwoPI);
     float randomConePt = 0;
@@ -133,20 +134,23 @@ struct JetBackgroundAnalysisTask {
     registry.fill(HIST("h2_centrality_rhorandomcone"), centrality, randomConePt - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
 
     // randomised eta,phi for tracks, to assess part of fluctuations coming from statistically independently emitted particles
-    randomConePt = 0;
+    float randomConePtRandomTrackDirection = 0;
     for (auto const& track : tracks) {
       if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
         float dPhi = RecoDecay::constrainAngle(randomNumber.Uniform(0.0, o2::constants::math::TwoPI) - randomConePhi, static_cast<float>(-o2::constants::math::PI)); // ignores actual phi of track
         float dEta = randomNumber.Uniform(trackEtaMin, trackEtaMax) - randomConeEta;                                                                                 // ignores actual eta of track
         if (std::sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
-          randomConePt += track.pt();
+          randomConePtRandomTrackDirection += track.pt();
         }
       }
     }
-    registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirection"), centrality, randomConePt - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
+    registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirection"), centrality, randomConePtRandomTrackDirection - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
 
     // removing the leading jet from the random cone
-    if (jets.size() > 0) { // if there are no jets in the acceptance (from the jetfinder cuts) then there can be no leading jet
+    const bool hasLead = jets.size() >= 1;
+    const bool hasSub = jets.size() >= 2;
+    float randomConePtWithoutLeadingJet = randomConePt;
+    if (hasLead) {
       float dPhiLeadingJet = RecoDecay::constrainAngle(jets.iteratorAt(0).phi() - randomConePhi, static_cast<float>(-o2::constants::math::PI));
       float dEtaLeadingJet = jets.iteratorAt(0).eta() - randomConeEta;
 
@@ -159,32 +163,36 @@ struct JetBackgroundAnalysisTask {
         dEtaLeadingJet = jets.iteratorAt(0).eta() - randomConeEta;
       }
       if (jetWasInCone) {
-        randomConePt = 0.0;
+        randomConePtWithoutLeadingJet = 0.0;
         for (auto const& track : tracks) {
           if (jetderiveddatautilities::selectTrack(track, trackSelection)) { // if track selection is uniformTrack, dcaXY and dcaZ cuts need to be added as they aren't in the selection so that they can be studied here
             float dPhi = RecoDecay::constrainAngle(track.phi() - randomConePhi, static_cast<float>(-o2::constants::math::PI));
             float dEta = track.eta() - randomConeEta;
             if (std::sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
-              randomConePt += track.pt();
+              randomConePtWithoutLeadingJet += track.pt();
             }
           }
         }
       }
     }
-    registry.fill(HIST("h2_centrality_rhorandomconewithoutleadingjet"), centrality, randomConePt - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
+    registry.fill(HIST("h2_centrality_rhorandomconewithoutleadingjet"), centrality, randomConePtWithoutLeadingJet - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
 
     // randomised eta,phi for tracks, to assess part of fluctuations coming from statistically independently emitted particles, removing tracks from 2 leading jets
-    double randomConePtWithoutOneLeadJet = 0;
-    double randomConePtWithoutTwoLeadJet = 0;
-    if (jets.size() > 1) { // if there are no jets, or just one, in the acceptance (from the jetfinder cuts) then one cannot find 2 leading jets
+    double randomConePtWithoutOneLeadJet = randomConePtRandomTrackDirection;
+    double randomConePtWithoutTwoLeadJet = randomConePtRandomTrackDirection;
+    if (hasLead) {
+      randomConePtWithoutOneLeadJet = 0.0;
+      randomConePtWithoutTwoLeadJet = 0.0;
       for (auto const& track : tracks) {
         if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
           float dPhi = RecoDecay::constrainAngle(randomNumber.Uniform(0.0, o2::constants::math::TwoPI) - randomConePhi, static_cast<float>(-o2::constants::math::PI)); // ignores actual phi of track
           float dEta = randomNumber.Uniform(trackEtaMin, trackEtaMax) - randomConeEta;                                                                                 // ignores actual eta of track
           if (std::sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
-            if (!trackIsInJet(track, jets.iteratorAt(0))) {
+            const bool inLead = hasLead && trackIsInJet(track, jets.iteratorAt(0));
+            const bool inSub = hasSub && trackIsInJet(track, jets.iteratorAt(1));
+            if (!inLead) {
               randomConePtWithoutOneLeadJet += track.pt();
-              if (!trackIsInJet(track, jets.iteratorAt(1))) {
+              if (!hasSub || !inSub) {
                 randomConePtWithoutTwoLeadJet += track.pt();
               }
             }

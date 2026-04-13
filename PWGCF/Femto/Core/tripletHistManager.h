@@ -20,12 +20,13 @@
 #include "PWGCF/Femto/Core/histManager.h"
 #include "PWGCF/Femto/Core/modes.h"
 
-#include "Framework/Configurable.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/HistogramSpec.h"
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
 
-#include <Math/GenVector/Boost.h>
-#include <Math/Vector4D.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 
 #include <array>
 #include <cmath>
@@ -108,9 +109,9 @@ struct ConfTripletBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis pt1{"pt1", {{100, 0, 6}}, "Pt binning for particle 1"};
   o2::framework::ConfigurableAxis pt2{"pt2", {{100, 0, 6}}, "Pt binning for particle 2"};
   o2::framework::ConfigurableAxis pt3{"pt3", {{100, 0, 6}}, "Pt binning for particle 3"};
-  o2::framework::ConfigurableAxis mass1{"mass1", {{100, 0, 2}}, "Mass binning for particle 1 (if particle has mass getter)"};
-  o2::framework::ConfigurableAxis mass2{"mass2", {{100, 0, 2}}, "Mass binning for particle 2 (if particle has mass getter)"};
-  o2::framework::ConfigurableAxis mass3{"mass3", {{100, 0, 2}}, "Mass binning for particle 3 (if particle has mass getter)"};
+  o2::framework::ConfigurableAxis mass1{"mass1", {{100, 0, 2}}, "Mass binning for particle 1 (if particle has mass getter, otherwise PDG mass)"};
+  o2::framework::ConfigurableAxis mass2{"mass2", {{100, 0, 2}}, "Mass binning for particle 2 (if particle has mass getter, otherwise PDG mass)"};
+  o2::framework::ConfigurableAxis mass3{"mass3", {{100, 0, 2}}, "Mass binning for particle 3 (if particle has mass getter, otherwise PDG mass)"};
   o2::framework::Configurable<int> transverseMassType{"transverseMassType", static_cast<int>(modes::TransverseMassType::kAveragePdgMass), "Type of transverse mass (0-> Average Pdg Mass, 1-> Reduced Pdg Mass, 2-> Mt from combined 4 vector)"};
 };
 
@@ -251,9 +252,9 @@ class TripletHistManager
 
   void setMass(int PdgParticle1, int PdgParticle2, int PdgParticle3)
   {
-    mPdgMass1 = o2::analysis::femto::utils::getMass(PdgParticle1);
-    mPdgMass2 = o2::analysis::femto::utils::getMass(PdgParticle2);
-    mPdgMass3 = o2::analysis::femto::utils::getMass(PdgParticle3);
+    mPdgMass1 = utils::getPdgMass(PdgParticle1);
+    mPdgMass2 = utils::getPdgMass(PdgParticle2);
+    mPdgMass3 = utils::getPdgMass(PdgParticle3);
   }
   void setCharge(int chargeAbsParticle1, int chargeAbsParticle2, int chargeAbsParticle3)
   {
@@ -273,18 +274,18 @@ class TripletHistManager
     mParticle3 = ROOT::Math::PtEtaPhiMVector(mAbsCharge3 * particle3.pt(), particle3.eta(), particle3.phi(), mPdgMass3);
 
     // set mT
-    mMt = getMt(mParticle1, mPdgMass1, mParticle2, mPdgMass2, mParticle3, mPdgMass3);
+    mMt = getMt(mParticle1, mParticle2, mParticle3);
     // set Q3
-    mQ3 = getQ3(mParticle1, mPdgMass1, mParticle2, mPdgMass2, mParticle3, mPdgMass3);
+    mQ3 = getQ3(mParticle1, mParticle2, mParticle3);
 
     // if one of the particles has a mass getter, we cache the value for the filling later
-    if constexpr (modes::hasMass(particleType1)) {
+    if constexpr (utils::HasMass<T1>) {
       mMass1 = particle1.mass();
     }
-    if constexpr (modes::hasMass(particleType2)) {
+    if constexpr (utils::HasMass<T2>) {
       mMass2 = particle2.mass();
     }
-    if constexpr (modes::hasMass(particleType3)) {
+    if constexpr (utils::HasMass<T3>) {
       mMass3 = particle3.mass();
     }
   }
@@ -323,9 +324,9 @@ class TripletHistManager
     mTrueParticle3 = ROOT::Math::PtEtaPhiMVector(mAbsCharge3 * mcParticle3.pt(), mcParticle3.eta(), mcParticle3.phi(), mPdgMass3);
 
     // set true mT
-    mTrueMt = getMt(mTrueParticle1, mPdgMass1, mTrueParticle2, mPdgMass2, mTrueParticle3, mPdgMass3);
+    mTrueMt = getMt(mTrueParticle1, mTrueParticle2, mTrueParticle3);
     // set true Q3
-    mTrueQ3 = getQ3(mTrueParticle1, mPdgMass1, mTrueParticle2, mPdgMass2, mTrueParticle3, mPdgMass3);
+    mTrueQ3 = getQ3(mTrueParticle1, mTrueParticle2, mTrueParticle3);
   }
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
@@ -382,26 +383,25 @@ class TripletHistManager
   float getQ3() const { return mQ3; }
 
  private:
-  template <typename T>
-  T getqij(const T& vecparti, const T& vecpartj)
+  ROOT::Math::PxPyPzEVector getqij(ROOT::Math::PtEtaPhiMVector const& pi, ROOT::Math::PtEtaPhiMVector const& pj)
   {
-    T trackSum = vecparti + vecpartj;
-    T trackDifference = vecparti - vecpartj;
-    float scaling = trackDifference.Dot(trackSum) / trackSum.Dot(trackSum);
+    // Convert to PxPyPzEVector to get proper Lorentz dot product
+    ROOT::Math::PxPyPzEVector vi(pi);
+    ROOT::Math::PxPyPzEVector vj(pj);
+
+    auto trackSum = vi + vj;
+    auto trackDifference = vi - vj;
+    double scaling = trackDifference.Dot(trackSum) / trackSum.Dot(trackSum);
     return trackDifference - scaling * trackSum;
   }
 
-  template <typename T>
-  float getQ3(const T& part1, const float mass1, const T& part2, const float mass2, const T& part3, const float mass3)
+  float getQ3(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2, ROOT::Math::PtEtaPhiMVector const& part3)
   {
-    ROOT::Math::PtEtaPhiMVector vecpart1(part1.pt(), part1.eta(), part1.phi(), mass1);
-    ROOT::Math::PtEtaPhiMVector vecpart2(part2.pt(), part2.eta(), part2.phi(), mass2);
-    ROOT::Math::PtEtaPhiMVector vecpart3(part3.pt(), part3.eta(), part3.phi(), mass3);
-    auto q12 = getqij(vecpart1, vecpart2);
-    auto q23 = getqij(vecpart2, vecpart3);
-    auto q31 = getqij(vecpart3, vecpart1);
-    float q = q12.M2() + q23.M2() + q31.M2();
-    return std::sqrt(-q);
+    auto q12 = getqij(part1, part2);
+    auto q23 = getqij(part2, part3);
+    auto q31 = getqij(part3, part1);
+    double q = q12.M2() + q23.M2() + q31.M2();
+    return static_cast<float>(std::sqrt(-q));
   }
 
   void initAnalysis(std::map<TripletHist, std::vector<o2::framework::AxisSpec>> const& Specs)
@@ -497,22 +497,19 @@ class TripletHistManager
     }
   }
 
-  float getMt(ROOT::Math::PtEtaPhiMVector const& part1,
-              float pdgMass1,
-              ROOT::Math::PtEtaPhiMVector const& part2,
-              float pdgMass2)
+  double getMt(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2)
   {
     auto sum = part1 + part2;
-    float mt = 0;
-    float averageMass = 0;
-    float reducedMass = 0;
+    double mt = 0.;
+    double averageMass = 0.;
+    double reducedMass = 0.;
     switch (mMtType) {
       case modes::TransverseMassType::kAveragePdgMass:
-        averageMass = 0.5 * (pdgMass1 + pdgMass2);
+        averageMass = 0.5 * (part1.M() + part2.M());
         mt = std::hypot(0.5 * sum.Pt(), averageMass);
         break;
       case modes::TransverseMassType::kReducedPdgMass:
-        reducedMass = 2.f * (pdgMass1 * pdgMass2 / (pdgMass1 + pdgMass2));
+        reducedMass = 2. * (part1.M() * part2.M() / (part1.M() + part2.M()));
         mt = std::hypot(0.5 * sum.Pt(), reducedMass);
         break;
       case modes::TransverseMassType::kMt4Vector:
@@ -524,20 +521,15 @@ class TripletHistManager
     return mt;
   }
 
-  float getMt(ROOT::Math::PtEtaPhiMVector const& part1,
-              float mass1,
-              ROOT::Math::PtEtaPhiMVector const& part2,
-              float mass2,
-              ROOT::Math::PtEtaPhiMVector const& part3,
-              float mass3)
+  float getMt(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2, ROOT::Math::PtEtaPhiMVector const& part3)
   {
-    return (getMt(part1, mass1, part2, mass2) + getMt(part2, mass2, part3, mass3) + getMt(part1, mass1, part3, mass3)) / 3.;
+    return static_cast<float>((getMt(part1, part2) + getMt(part2, part3) + getMt(part1, part3)) / 3.);
   }
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
-  float mPdgMass1 = 0.f;
-  float mPdgMass2 = 0.f;
-  float mPdgMass3 = 0.f;
+  double mPdgMass1 = 0.;
+  double mPdgMass2 = 0.;
+  double mPdgMass3 = 0.;
 
   modes::TransverseMassType mMtType = modes::TransverseMassType::kAveragePdgMass;
 

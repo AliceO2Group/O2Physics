@@ -15,40 +15,51 @@
 //    Please write to: daiki.sekihata@cern.ch
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
-// #include "PWGEM/Dilepton/Utils/EMFwdTrack.h"
 #include "PWGEM/Dilepton/Utils/EMTrack.h"
-// #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
-// #include "PWGEM/Dilepton/Utils/EventMixingHandler.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
 #include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/LHCConstants.h"
-#include "DataFormatsParameters/GRPECSObject.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-// #include "DataFormatsParameters/GRPMagField.h"
-// #include "DataFormatsParameters/GRPObject.h"
-// #include "DetectorsBase/GeometryManager.h"
-// #include "DetectorsBase/Propagator.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "MathUtils/Utils.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
+#include <MathUtils/Utils.h>
 
-#include "Math/Vector4D.h"
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TH1.h>
+#include <TString.h>
 
 #include <algorithm>
 #include <array>
-#include <iterator>
+#include <cmath>
+#include <cstdint>
 #include <map>
 #include <random>
 #include <ranges>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::aod;
@@ -56,16 +67,11 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::pwgem::dilepton::utils;
-// using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 using namespace o2::aod::pwgem::dilepton::utils::pairutil;
 
 struct DileptonPolarization {
   // Configurables
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  // Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  // Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  // Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
-  // Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
 
   Configurable<int> cfgPairType{"cfgPairType", 0, "0:dielectron, 1:dimuon"};
   Configurable<int> cfgOccupancyEstimator{"cfgOccupancyEstimator", 0, "FT0C:0, Track:1"};
@@ -484,7 +490,7 @@ struct DileptonPolarization {
     } // end of pair1 loop
   }
 
-  Filter collisionFilter_centrality = eventcuts.cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < eventcuts.cfgCentMax;
+  Filter collisionFilter_centrality = eventcuts.cfgCentMin < o2::aod::emthinevent::centrality && o2::aod::emthinevent::centrality < eventcuts.cfgCentMax;
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using filteredCollisions = soa::Filtered<aod::EMThinEvents>;
@@ -510,7 +516,7 @@ struct DileptonPolarization {
   {
     for (const auto& collision : collisions) {
       initCCDB(collision);
-      float centrality = collision.centFT0C();
+      float centrality = collision.centrality();
       if (centrality < eventcuts.cfgCentMin || eventcuts.cfgCentMax < centrality) {
         continue;
       }
@@ -519,7 +525,7 @@ struct DileptonPolarization {
       fRegistry.fill(HIST("Event/after/hZvtx"), collision.posZ());
       fRegistry.fill(HIST("Event/after/hCollisionCounter"), 9);
       fRegistry.fill(HIST("Event/after/hCorrOccupancy"), collision.ft0cOccupancyInTimeRange(), collision.trackOccupancyInTimeRange());
-      fRegistry.fill(HIST("Event/after/hEP2_CentFT0C_forMix"), collision.centFT0C(), ep2);
+      fRegistry.fill(HIST("Event/after/hEP2_CentFT0C_forMix"), centrality, ep2);
 
       // event mixing
       int zbin = lower_bound(zvtx_bin_edges.begin(), zvtx_bin_edges.end(), collision.posZ()) - zvtx_bin_edges.begin() - 1;

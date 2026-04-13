@@ -117,35 +117,35 @@ struct LongrangecorrDerived {
   OutputObj<CorrelationContainer> same{"sameEvent"};
   OutputObj<CorrelationContainer> mixed{"mixedEvent"};
 
-  using CollsTable = aod::CollLRTables;
-  using TrksTable = aod::TrkLRTables;
-  using MftTrksTable = aod::MftTrkLRTables;
-  using Ft0aTrksTable = aod::Ft0aLRTables;
-  using Ft0cTrksTable = aod::Ft0cLRTables;
-  using MftbestTrksTable = aod::MftBestTrkLRTables;
-  using V0TrksTable = aod::V0TrkLRTables;
+  using CollsTable = aod::LRCollisions;
+  using TrksTable = aod::LRMidTracks;
+  using MftTrksTable = aod::LRMftTracks;
+  using Ft0aTrksTable = aod::LRFt0aTracks;
+  using Ft0cTrksTable = aod::LRFt0cTracks;
+  using MftbestTrksTable = aod::LRMftBestTracks;
+  using V0TrksTable = aod::LRV0Tracks;
 
-  using UpcCollsTable = soa::Join<aod::UpcCollLRTables, aod::UpcSgCollLRTables, aod::ZdcLRTables>;
-  using TrksUpcTable = aod::TrkLRUpcTables;
-  using MftTrksUpcTable = aod::MftTrkLRUpcTables;
-  using Ft0aTrksUpcTable = aod::Ft0aLRUpcTables;
-  using Ft0cTrksUpcTable = aod::Ft0cLRUpcTables;
-  using MftbestTrksUpcTable = aod::MftBestTrkLRUpcTables;
-  using V0TrksUpcTable = aod::V0TrkLRUpcTables;
+  using UpcCollsTable = soa::Join<aod::UpcLRCollisions, aod::UpcSgLRCollisions, aod::LRZdcs>;
+  using TrksUpcTable = aod::UpcLRMidTracks;
+  using MftTrksUpcTable = aod::UpcLRMftTracks;
+  using Ft0aTrksUpcTable = aod::UpcLRFt0aTracks;
+  using Ft0cTrksUpcTable = aod::UpcLRFt0cTracks;
+  using MftbestTrksUpcTable = aod::UpcLRMftBestTracks;
+  using V0TrksUpcTable = aod::UpcLRV0Tracks;
 
-  Preslice<TrksTable> perColTpc = aod::lrcorrtrktable::collLRTableId;
-  Preslice<MftTrksTable> perColMft = aod::lrcorrtrktable::collLRTableId;
-  Preslice<MftbestTrksTable> perColMftbest = aod::lrcorrtrktable::collLRTableId;
-  Preslice<Ft0aTrksTable> perColFt0a = aod::lrcorrtrktable::collLRTableId;
-  Preslice<Ft0cTrksTable> perColFt0c = aod::lrcorrtrktable::collLRTableId;
-  Preslice<V0TrksTable> perColV0 = aod::lrcorrtrktable::collLRTableId;
+  Preslice<TrksTable> perColTpc = aod::lrcorrtrktable::lrCollisionId;
+  Preslice<MftTrksTable> perColMft = aod::lrcorrtrktable::lrCollisionId;
+  Preslice<MftbestTrksTable> perColMftbest = aod::lrcorrtrktable::lrCollisionId;
+  Preslice<Ft0aTrksTable> perColFt0a = aod::lrcorrtrktable::lrCollisionId;
+  Preslice<Ft0cTrksTable> perColFt0c = aod::lrcorrtrktable::lrCollisionId;
+  Preslice<V0TrksTable> perColV0 = aod::lrcorrtrktable::lrCollisionId;
 
-  Preslice<TrksUpcTable> perUpcColTpc = aod::lrcorrtrktable::upcCollLRTableId;
-  Preslice<MftTrksUpcTable> perUpcColMft = aod::lrcorrtrktable::upcCollLRTableId;
-  Preslice<MftbestTrksUpcTable> perUpcColMftbest = aod::lrcorrtrktable::upcCollLRTableId;
-  Preslice<Ft0aTrksUpcTable> perUpcColFt0a = aod::lrcorrtrktable::upcCollLRTableId;
-  Preslice<Ft0cTrksUpcTable> perUpcColFt0c = aod::lrcorrtrktable::upcCollLRTableId;
-  Preslice<V0TrksUpcTable> perUpcColV0 = aod::lrcorrtrktable::upcCollLRTableId;
+  Preslice<TrksUpcTable> perUpcColTpc = aod::lrcorrtrktable::upcLRCollisionId;
+  Preslice<MftTrksUpcTable> perUpcColMft = aod::lrcorrtrktable::upcLRCollisionId;
+  Preslice<MftbestTrksUpcTable> perUpcColMftbest = aod::lrcorrtrktable::upcLRCollisionId;
+  Preslice<Ft0aTrksUpcTable> perUpcColFt0a = aod::lrcorrtrktable::upcLRCollisionId;
+  Preslice<Ft0cTrksUpcTable> perUpcColFt0c = aod::lrcorrtrktable::upcLRCollisionId;
+  Preslice<V0TrksUpcTable> perUpcColV0 = aod::lrcorrtrktable::upcLRCollisionId;
 
   void init(InitContext const&)
   {

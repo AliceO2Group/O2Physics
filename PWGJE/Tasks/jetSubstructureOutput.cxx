@@ -19,9 +19,9 @@
 #include "PWGJE/DataModel/JetSubstructure.h"
 #include "PWGJE/DataModel/JetSubtraction.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisTask.h"
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
@@ -37,8 +37,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-// NB: runDataProcessing.h must be included after customize!
 
 struct JetSubstructureOutputTask {
 
@@ -187,11 +185,11 @@ struct JetSubstructureOutputTask {
     std::copy(pairPerpCone1PerpCone2EnergySpan.begin(), pairPerpCone1PerpCone2EnergySpan.end(), std::back_inserter(pairPerpCone1PerpCone2EnergyVec));
     std::copy(pairPerpCone1PerpCone2ThetaSpan.begin(), pairPerpCone1PerpCone2ThetaSpan.end(), std::back_inserter(pairPerpCone1PerpCone2ThetaVec));
 
-    std::vector<int> splittingMatchesGeoVec;
-    std::vector<int> splittingMatchesPtVec;
-    std::vector<int> splittingMatchesHFVec;
-    std::vector<int> pairMatchesVec;
-    std::vector<int> dummyVec;
+    std::vector<int32_t> splittingMatchesGeoVec;
+    std::vector<int32_t> splittingMatchesPtVec;
+    std::vector<int32_t> splittingMatchesHFVec;
+    std::vector<int32_t> pairMatchesVec;
+    std::vector<int32_t> dummyVec;
     if (doprocessOutputSubstructureMatchingData || doprocessOutputSubstructureMatchingMC) {
       splittingMatchesGeoVec = splittingMatchesGeoVecVec[jet.globalIndex()];
       splittingMatchesPtVec = splittingMatchesPtVecVec[jet.globalIndex()];

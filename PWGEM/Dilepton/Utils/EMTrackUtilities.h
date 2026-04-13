@@ -15,33 +15,55 @@
 #ifndef PWGEM_DILEPTON_UTILS_EMTRACKUTILITIES_H_
 #define PWGEM_DILEPTON_UTILS_EMTRACKUTILITIES_H_
 
-#include "Framework/DataTypes.h"
-#include "Framework/Logger.h"
+#include <Framework/DataTypes.h>
 
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
 #include <map>
-#include <string>
-#include <vector>
+#include <unordered_map>
 
 //_______________________________________________________________________
 namespace o2::aod::pwgem::dilepton::utils::emtrackutil
 {
 
-enum class RefTrackBit : uint16_t { // This is not for leptons, but charged tracks for reference flow.
-  kNclsITS5 = 1,
-  kNclsITS6 = 2,
-  kNcrTPC70 = 4,
-  kNcrTPC90 = 8,
-  kNclsTPC50 = 16, // (not necessary, if ncr is used.)
-  kNclsTPC70 = 32, // (not necessary, if ncr is used.)
-  kNclsTPC90 = 64, // (not necessary, if ncr is used.)
-  kChi2TPC4 = 128,
-  kChi2TPC3 = 256,
-  kFracSharedTPC07 = 512,
-  kDCAxy05cm = 1024, // default is 1 cm
-  kDCAxy03cm = 2048,
-  kDCAz05cm = 4096, // default is 1cm
-  kDCAz03cm = 8192,
+enum class RefTrackType : int { // charged tracks for reference flow.
+  kCB = 0,
+  kMFTsa = 1,
+};
+
+// This is not for leptons, but charged tracks for reference flow.
+enum class RefTrackBit : int {
+  kNclsITS5 = 0,
+  kNclsITS6,
+  kNcrTPC70,
+  kNcrTPC90,
+  kNclsTPC50, // (not necessary, if ncr is used.)
+  kNclsTPC70, // (not necessary, if ncr is used.)
+  kNclsTPC90, // (not necessary, if ncr is used.)
+  kChi2TPC4,
+  kChi2TPC3,
+  kFracSharedTPC07,
+  kDCAxy05cm, // default is 1 cm
+  kDCAxy03cm,
+  kDCAz05cm, // default is 1cm
+  kDCAz03cm,
+  kNCuts,
+};
+
+// This is not for leptons, but charged tracks for reference flow.
+enum class RefMFTTrackBit : int {
+  kNclsMFT6 = 0, // default is 5
+  kNclsMFT7,
+  kNclsMFT8,
+  kChi2MFT3, // default is 4
+  kChi2MFT2,
+  kDCAxy005cm, // default is 0.06 cm
+  kDCAxy004cm,
+  kDCAxy003cm,
+  kDCAxy002cm,
+  kDCAxy001cm,
+  kNCuts,
 };
 
 //_______________________________________________________________________
@@ -86,9 +108,9 @@ float dcaZinSigma(T const& track)
 template <typename T>
 float fwdDcaXYinSigma(T const& track)
 {
-  float cXX = track.cXXatDCA();      // in cm^2
-  float cYY = track.cYYatDCA();      // in cm^2
-  float cXY = track.cXYatDCA();      // in cm^2
+  float cXX = track.cXX();           // in cm^2
+  float cYY = track.cYY();           // in cm^2
+  float cXY = track.cXY();           // in cm^2
   float dcaX = track.fwdDcaX();      // in cm
   float dcaY = track.fwdDcaY();      // in cm
   float det = cXX * cYY - cXY * cXY; // determinant
@@ -123,66 +145,71 @@ bool checkMFTHitMap(T const& track)
   return (clmap > 0);
 }
 //_______________________________________________________________________
-template <bool is_wo_acc = false, typename TTrack, typename TCut, typename TTracks>
+template <typename TTrack, typename TCut, typename TTracks>
 bool isBestMatch(TTrack const& track, TCut const& cut, TTracks const& tracks)
 {
-  // this is only for muon at forward rapidity
+  // find the best glboal muon without pt, eta cut (ie. without single track acceptance cut) to keep possibility for unfolding.
+
+  // this is only for global muons at forward rapidity
+  // Be careful! tracks are fwdtracks per DF.
   if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
+    bool isBestFromMCHMID2MFT = false;
+    bool isBestFromMFT2MCHMID = false;
     std::map<int64_t, float> map_chi2MCHMFT;
+
+    // 1 MFTsa track can match several MCH-MID tracks. find best global muon per MFTsa.
     map_chi2MCHMFT[track.globalIndex()] = track.chi2MatchMCHMFT(); // add myself
     for (const auto& glmuonId : track.globalMuonsWithSameMFTIds()) {
-      const auto& candidate = tracks.rawIteratorAt(glmuonId);
-      if (candidate.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
-        if (cut.template IsSelectedTrack<is_wo_acc>(candidate)) {
+      auto candidate = tracks.rawIteratorAt(glmuonId);
+      if (candidate.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && candidate.emeventId() == track.emeventId() && candidate.mchtrackId() != track.mchtrackId()) {
+        if (cut.template IsSelectedTrack<false>(candidate)) {
           map_chi2MCHMFT[candidate.globalIndex()] = candidate.chi2MatchMCHMFT();
         }
       }
-    }
+    } // end of glmuonId
 
-    auto it = std::min_element(map_chi2MCHMFT.begin(), map_chi2MCHMFT.end(), [](decltype(map_chi2MCHMFT)::value_type& l, decltype(map_chi2MCHMFT)::value_type& r) -> bool { return l.second < r.second; }); // search for minimum matching-chi2
-
-    if (it->first == track.globalIndex()) {
-      map_chi2MCHMFT.clear();
-      return true;
+    auto it0 = std::min_element(map_chi2MCHMFT.begin(), map_chi2MCHMFT.end(), [](decltype(map_chi2MCHMFT)::value_type& l, decltype(map_chi2MCHMFT)::value_type& r) -> bool { return l.second < r.second; }); // search for minimum matching-chi2
+    if (it0->first == track.globalIndex()) {
+      isBestFromMFT2MCHMID = true;
     } else {
-      map_chi2MCHMFT.clear();
-      return false;
+      isBestFromMFT2MCHMID = false;
     }
+    map_chi2MCHMFT.clear();
+
+    // find best global muon per MCH-MID tracks. Keep in mind that there are 5 global muons per MCH-MID in pp/OO and 20 global muons per MCH-MID in PbPb.
+    map_chi2MCHMFT[track.globalIndex()] = track.chi2MatchMCHMFT(); // add myself
+    for (const auto& glmuonId : track.globalMuonsWithSameMCHMIDIds()) {
+      auto candidate = tracks.rawIteratorAt(glmuonId);
+      if (candidate.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && candidate.emeventId() == track.emeventId() && candidate.mfttrackId() != track.mfttrackId()) {
+        if (cut.template IsSelectedTrack<false>(candidate)) {
+          map_chi2MCHMFT[candidate.globalIndex()] = candidate.chi2MatchMCHMFT();
+        }
+      }
+    } // end of glmuonId
+
+    auto it1 = std::min_element(map_chi2MCHMFT.begin(), map_chi2MCHMFT.end(), [](decltype(map_chi2MCHMFT)::value_type& l, decltype(map_chi2MCHMFT)::value_type& r) -> bool { return l.second < r.second; }); // search for minimum matching-chi2
+    if (it1->first == track.globalIndex()) {
+      isBestFromMCHMID2MFT = true;
+    } else {
+      isBestFromMCHMID2MFT = false;
+    }
+    map_chi2MCHMFT.clear();
+
+    return isBestFromMCHMID2MFT && isBestFromMFT2MCHMID;
   } else {
     return true;
   }
 }
 //_______________________________________________________________________
-// template <typename T>
-// float sigmaPt(T const& track)
-// {
-//   return std::sqrt(track.c1Pt21Pt2()) / std::pow(track.signed1Pt(), 2); // pT resolution
-// }
-// //_______________________________________________________________________
-// template <typename T>
-// float sigmaPhi(T const& track)
-// {
-//   return std::sqrt(track.cSnpSnp()) / std::sqrt(1.f - std::pow(track.snp(), 2)); // phi resolution
-// }
-// //_______________________________________________________________________
-// template <typename T>
-// float sigmaTheta(T const& track)
-// {
-//   return std::sqrt(track.cTglTgl()) / (1.f + std::pow(track.tgl(), 2)); // theta resolution = lambda resolution. // lambda = pi/2 - theta. theta is polar angle.
-// }
-// //_______________________________________________________________________
-// template <typename T>
-// float sigmaEta(T const& track)
-// {
-//   return std::sqrt(track.cTglTgl()) / std::sqrt(1.f + std::pow(track.tgl(), 2));
-// }
-// //_______________________________________________________________________
-// template <typename T>
-// float sigmaP(T const& track)
-// {
-//   // p = 1/1/pT x 1/cos(lambda);
-//   return std::sqrt(std::pow(1.f / track.signed1Pt(), 4) * ((1.f + std::pow(track.tgl(), 2)) * track.c1Pt21Pt2() + 1.f / (1.f + std::pow(track.tgl(), 2)) * std::pow(track.signed1Pt() * track.tgl(), 2) * track.cTglTgl() - 2.f * track.signed1Pt() * track.tgl() * track.c1PtTgl()));
-// }
+template <typename TTracks, typename TCut>
+std::unordered_map<int, bool> findBestMatchMap(TTracks const& tracks, TCut const& cut)
+{
+  std::unordered_map<int, bool> map;
+  for (const auto& track : tracks) {
+    map[track.globalIndex()] = isBestMatch(track, cut, tracks);
+  }
+  return map;
+}
 //_______________________________________________________________________
 } // namespace o2::aod::pwgem::dilepton::utils::emtrackutil
 #endif // PWGEM_DILEPTON_UTILS_EMTRACKUTILITIES_H_

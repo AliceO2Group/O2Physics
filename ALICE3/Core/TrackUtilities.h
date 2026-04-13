@@ -18,9 +18,9 @@
 #ifndef ALICE3_CORE_TRACKUTILITIES_H_
 #define ALICE3_CORE_TRACKUTILITIES_H_
 
-#include "ReconstructionDataFormats/Track.h"
+#include <ReconstructionDataFormats/Track.h>
 
-#include "TLorentzVector.h"
+#include <TLorentzVector.h>
 
 #include <vector>
 
@@ -54,7 +54,7 @@ struct OTFParticle {
 
   // Getters
   int pdgCode() const { return mPdgCode; }
-  int isAlive() const { return mIsAlive; }
+  bool isAlive() const { return mIsAlive; }
   float vx() const { return mVx; }
   float vy() const { return mVy; }
   float vz() const { return mVz; }

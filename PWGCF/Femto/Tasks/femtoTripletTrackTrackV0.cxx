@@ -13,6 +13,7 @@
 /// \brief Tasks that computes correlation between two tracks
 /// \author Anton Riedel, TU München, anton.riedel@cern.ch
 
+#include "PWGCF/Femto/Core/closePairRejection.h"
 #include "PWGCF/Femto/Core/closeTripletRejection.h"
 #include "PWGCF/Femto/Core/collisionBuilder.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
@@ -26,16 +27,17 @@
 #include "PWGCF/Femto/Core/v0HistManager.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/BinningPolicy.h"
-#include "Framework/Configurable.h"
-#include "Framework/Expressions.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/InitContext.h"
-#include "Framework/OutputObjHeader.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
 #include <map>
 #include <vector>
@@ -90,7 +92,6 @@ struct FemtoTripletTrackTrackV0 {
   // setup lambdas
   v0builder::ConfLambdaSelection1 confLambdaSelection;
   v0histmanager::ConfLambdaBinning1 confLambdaBinning;
-  particlecleaner::ConfLambdaCleaner1 confLambdaCleaner;
 
   o2::framework::Partition<FemtoLambdas> lambdaPartition = MAKE_LAMBDA_PARTITION(confLambdaSelection);
   o2::framework::Preslice<FemtoLambdas> perColLambdas = o2::aod::femtobase::stored::fColId;
@@ -168,7 +169,7 @@ struct FemtoTripletTrackTrackV0 {
       posDauSpec = trackhistmanager::makeTrackHistSpecMap(confPosDauBinning);
       negDauSpec = trackhistmanager::makeTrackHistSpecMap(confNegDauBinning);
       tripletHistSpec = triplethistmanager::makeTripletHistSpecMap(confTripletBinning);
-      tripletTrackTrackLambdaBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confTrackSelections1, confTrackSelections2, confLambdaSelection, confCtr, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, lambdaHistSpec, posDauSpec, negDauSpec, tripletHistSpec, ctrHistSpec);
+      tripletTrackTrackLambdaBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confLambdaSelection, confCtr, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, lambdaHistSpec, posDauSpec, negDauSpec, tripletHistSpec, ctrHistSpec);
     } else {
       colHistSpec = colhistmanager::makeColMcHistSpecMap(confCollisionBinning);
       trackHistSpec1 = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning1);
@@ -177,7 +178,7 @@ struct FemtoTripletTrackTrackV0 {
       posDauSpec = trackhistmanager::makeTrackMcHistSpecMap(confPosDauBinning);
       negDauSpec = trackhistmanager::makeTrackMcHistSpecMap(confNegDauBinning);
       tripletHistSpec = triplethistmanager::makeTripletMcHistSpecMap(confTripletBinning);
-      tripletTrackTrackLambdaBuilder.init<modes::Mode::kAnalysis_Mc>(&hRegistry, confTrackSelections1, confTrackSelections2, confLambdaSelection, confCtr, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, lambdaHistSpec, posDauSpec, negDauSpec, tripletHistSpec, ctrHistSpec);
+      tripletTrackTrackLambdaBuilder.init<modes::Mode::kAnalysis_Mc>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confLambdaSelection, confCtr, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, lambdaHistSpec, posDauSpec, negDauSpec, tripletHistSpec, ctrHistSpec);
     }
     hRegistry.print();
   };
