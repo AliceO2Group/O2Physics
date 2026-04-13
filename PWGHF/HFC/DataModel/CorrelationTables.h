@@ -519,29 +519,6 @@ DECLARE_SOA_TABLE(HfElectron, "AOD", "HFELECTRON", //! Hf Electron properties
                   aod::hf_electron::GIndexCol,
                   aod::hf_electron::TimeStamp);
 // Note: definition of columns and tables for Electron Hadron correlation pairs for Data
-namespace hf_electron
-{
-DECLARE_SOA_COLUMN(PhiElectron, phiElectron, float); //! Phi of electron
-DECLARE_SOA_COLUMN(EtaElectron, etaElectron, float); //! Eta of electron
-DECLARE_SOA_COLUMN(PtElectron, ptElectron, float);   //! Transverse momentum of electron
-DECLARE_SOA_COLUMN(NElectronsLS, nElectronsLS, int); //! number of like-sign
-DECLARE_SOA_COLUMN(NElectronsUS, nElectronsUS, int); //! number of Unlike-sign
-DECLARE_SOA_COLUMN(PoolBin, poolBin, int);           //! Pool Bin of event defined using zvtx and multiplicit
-DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);       //! Global index for the collision
-DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t);   //! Timestamp for the collision
-
-} // namespace hf_electron
-
-DECLARE_SOA_TABLE(HfElectron, "AOD", "HFELECTRON", //! Hf Electron properties
-                  aod::hf_electron::PhiElectron,
-                  aod::hf_electron::EtaElectron,
-                  aod::hf_electron::PtElectron,
-                  aod::hf_electron::NElectronsLS,
-                  aod::hf_electron::NElectronsUS,
-                  aod::hf_electron::PoolBin,
-                  aod::hf_electron::GIndexCol,
-                  aod::hf_electron::TimeStamp);
-// Note: definition of columns and tables for Electron Hadron correlation pairs for Data
 namespace hf_correlation_electron_hadron
 {
 DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);         //! DeltaPhi between Electron and Hadrons
