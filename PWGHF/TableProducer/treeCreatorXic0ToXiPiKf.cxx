@@ -148,7 +148,7 @@ struct TreeCreatorXic0ToXiPiKf {
   using MyEventTableWithNTracksPV = soa::Join<aod::Collisions, aod::EvSels, aod::CentNTPVs>;
   using MyMcCandidates = soa::Filtered<soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec>>;
 
-  Filter mcFilter = aod::hf_cand_mc_flag::originMcRec == 1;
+  Filter mcFilter = aod::hf_cand_mc_flag::originMcRec == RecoDecay::OriginType::NonPrompt || aod::hf_cand_mc_flag::originMcRec == RecoDecay::OriginType::Prompt;
 
   HistogramRegistry registry{"registry"}; // for QA of selections
 
@@ -247,7 +247,7 @@ struct TreeCreatorXic0ToXiPiKf {
       fillKfCandidate<false, MyEventTable>(candidate, -7, -7, RecoDecay::OriginType::None, false);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorXic0ToXiPiKf, processKfData, "Process KF data", false);
+  PROCESS_SWITCH(TreeCreatorXic0ToXiPiKf, processKfData, "Process KF data", false);
 
   void processKfDataWithFT0C(MyTrackTable const&, MyEventTableWithFT0C const&,
                              soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf> const& candidates)
@@ -257,7 +257,7 @@ struct TreeCreatorXic0ToXiPiKf {
       fillKfCandidate<true, MyEventTableWithFT0C>(candidate, -7, -7, RecoDecay::OriginType::None, false);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorXic0ToXiPiKf, processKfDataWithFT0C, "Process KF data with FT0C", false);
+  PROCESS_SWITCH(TreeCreatorXic0ToXiPiKf, processKfDataWithFT0C, "Process KF data with FT0C", false);
 
   void processKfDataWithFT0M(MyTrackTable const&, MyEventTableWithFT0M const&,
                              soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf> const& candidates)
@@ -267,7 +267,7 @@ struct TreeCreatorXic0ToXiPiKf {
       fillKfCandidate<true, MyEventTableWithFT0M>(candidate, -7, -7, RecoDecay::OriginType::None, false);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorXic0ToXiPiKf, processKfDataWithFT0M, "Process KF data with FT0M", false);
+  PROCESS_SWITCH(TreeCreatorXic0ToXiPiKf, processKfDataWithFT0M, "Process KF data with FT0M", false);
 
   void processDataLiteWithNTracksPV(MyTrackTable const&,
                                     soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf> const& candidates)
@@ -277,7 +277,7 @@ struct TreeCreatorXic0ToXiPiKf {
       fillKfCandidate<true, MyEventTableWithNTracksPV>(candidate, -7, -7, RecoDecay::OriginType::None, false);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorXic0ToXiPiKf, processDataLiteWithNTracksPV, "Process KF data with Ntracks", false);
+  PROCESS_SWITCH(TreeCreatorXic0ToXiPiKf, processDataLiteWithNTracksPV, "Process KF data with Ntracks", false);
 
   void processKfMcXic0(MyTrackTable const&,
                        MyMcCandidates const& candidates)
@@ -287,7 +287,7 @@ struct TreeCreatorXic0ToXiPiKf {
       fillKfCandidate<false, MyEventTable>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originMcRec(), candidate.collisionMatched());
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorXic0ToXiPiKf, processKfMcXic0, "Process MC with information for xic0", false);
+  PROCESS_SWITCH(TreeCreatorXic0ToXiPiKf, processKfMcXic0, "Process MC with information for xic0", false);
 
   void processKfMCWithFT0C(MyTrackTable const&,
                            MyMcCandidates const& candidates)
@@ -297,7 +297,7 @@ struct TreeCreatorXic0ToXiPiKf {
       fillKfCandidate<true, MyEventTableWithFT0C>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originMcRec(), candidate.collisionMatched());
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorXic0ToXiPiKf, processKfMCWithFT0C, "Process MC with information for xic0 at FT0C", false);
+  PROCESS_SWITCH(TreeCreatorXic0ToXiPiKf, processKfMCWithFT0C, "Process MC with information for xic0 at FT0C", false);
 
   void processKfMCWithFT0M(MyTrackTable const&,
                            MyMcCandidates const& candidates)
@@ -307,7 +307,7 @@ struct TreeCreatorXic0ToXiPiKf {
       fillKfCandidate<true, MyEventTableWithFT0M>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originMcRec(), candidate.collisionMatched());
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorXic0ToXiPiKf, processKfMCWithFT0M, "Process MC with information for xic0 at FT0M", false);
+  PROCESS_SWITCH(TreeCreatorXic0ToXiPiKf, processKfMCWithFT0M, "Process MC with information for xic0 at FT0M", false);
 
   void processMCLiteWithNTracksPV(MyTrackTable const&,
                                   MyMcCandidates const& candidates)
@@ -317,11 +317,11 @@ struct TreeCreatorXic0ToXiPiKf {
       fillKfCandidate<true, MyEventTableWithNTracksPV>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originMcRec(), candidate.collisionMatched());
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorXic0ToXiPiKf, processMCLiteWithNTracksPV, "Process MC with information for xic0 at Ntrack", false);
+  PROCESS_SWITCH(TreeCreatorXic0ToXiPiKf, processMCLiteWithNTracksPV, "Process MC with information for xic0 at Ntrack", false);
 }; // end of struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfTreeCreatorXic0ToXiPiKf>(cfgc)};
+    adaptAnalysisTask<TreeCreatorXic0ToXiPiKf>(cfgc)};
 }
