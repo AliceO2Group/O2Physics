@@ -71,6 +71,7 @@ struct StrangeCascTrack {
   // subprocess switches:
 
   Configurable<bool> doProcessIons{"doProcessIons", false, "true for PbPb and OO, false for pp and pO"};
+  Configurable<bool> doCustomGroup{"doCustomGroup", true, "custom group tracked cascades in case of table order bug"};
 
   Configurable<bool> doApplyEventCuts{"doApplyEventCuts", true, "apply general event cuts"}; // event filter - PVz, sel8, INEL>0
   // Xi selections
@@ -407,15 +408,16 @@ struct StrangeCascTrack {
   }
 
   // applies selections for and fills histograms
-  template <typename TEvent, typename TCascs>
-  void analyseCascs(TEvent collision, TCascs cascades)
+  template <typename TEvent, typename TCasc>
+  void analyseCascade(TEvent collision, TCasc cascade)
   {
-    int64_t casccollid = 0;
-    for (auto const& cascade : cascades) {
-
       if constexpr (requires { cascade.topologyChi2(); }) {
         if (!cascade.has_standardCascade())
-          continue; // safety check: dismisses tracked cascades without proper reference
+          return; // safety check: dismisses tracked cascades without proper reference
+      }
+
+      if (cascade.straCollisionId() != collision.globalIndex()) {
+        return; // safety check: the cascade must come from that event
       }
 
       // for tracked cascades, make a reference to standard table
@@ -441,17 +443,6 @@ struct StrangeCascTrack {
       }();
 
       double mult = (doProcessIons) ? collision.centFT0C() : collision.centFT0M(); // ion collisions use FT0C for multiplicity, pp uses both
-
-      // fill multiplicity for events with >=1 cascade
-      if (collision.index() != casccollid) {
-        histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel/EvMult"), mult);
-        if constexpr (requires { collision.straMCCollisionId(); }) {
-          if (isMCTruth(stdCasc, "Xi") || isMCTruth(stdCasc, "Omega")) {
-            histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/EvMult"), mult);
-          }
-        }
-        casccollid = collision.index();
-      }
 
       double massXi = cascade.mXi();
       double massOmega = cascade.mOmega();
@@ -619,7 +610,6 @@ struct StrangeCascTrack {
 
       // fil rec histograms
       if (passedAllSelsXi || passedAllSelsOmega) {
-        histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/EvMult"), mult);
         histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/Filters/PropDCAxy"), cascade.dcaXYCascToPV());
         histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/Filters/PropDCAz"), cascade.dcaZCascToPV());
         histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/Filters/BachCosPA"), stdCasc.bachBaryonCosPA());
@@ -637,7 +627,6 @@ struct StrangeCascTrack {
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/Filters/PtVsRapidityOmega"), pt, cascade.yOmega());
         }
         if (fillTruthXi || fillTruthOmega) {
-          histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/EvMult"), mult);
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/Filters/PropDCAxy"), cascade.dcaXYCascToPV());
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/Filters/PropDCAz"), cascade.dcaZCascToPV());
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/Filters/BachCosPA"), stdCasc.bachBaryonCosPA());
@@ -731,6 +720,13 @@ struct StrangeCascTrack {
           }
         }
       }
+  }
+
+  template <typename TEvent, typename TCascs>
+  void analyseCascs(TEvent const& collision, TCascs const& cascades)
+  {
+    for (auto const& cascade : cascades) {
+      analyseCascade(collision, cascade);
     }
   }
 
@@ -773,7 +769,6 @@ struct StrangeCascTrack {
       histos.add(Form("%s/NoSel/Filters/RapidityOmega", TypeNames[Type].data()), "y under Omega hypothesis", kTH1D, {{200, -1.0, 1.0}});
       histos.add(Form("%s/NoSel/Filters/PtVsRapidityOmega", TypeNames[Type].data()), "pt vs y under Xi hypothesis", kTH2D, {axesConfig.axisPt, {200, -1.0, 1.0}});
       histos.add(Form("%s/NoSel/Filters/EtaDau", TypeNames[Type].data()), "|#eta| of dau tracks", kTH1D, {axesConfig.axisEta});
-      histos.add(Form("%s/NoSel/EvMult", TypeNames[Type].data()), "Multiplicity of events with >=1 cascade", kTH1D, {axesConfig.axisMult});
       histos.add(Form("%s/NoSel/GenRecPt", TypeNames[Type].data()), "Generated vs reconstructed pt", kTH2D, {axesConfig.axisPt, axesConfig.axisPt});
       histos.add(Form("%s/NoSel/GenRecRapidityXi", TypeNames[Type].data()), "Generated vs reconstructed y (Xi)", kTH2D, {{200, -1.0, 1.0}, {200, -1.0, 1.0}});
       histos.add(Form("%s/NoSel/GenRecRapidityOmega", TypeNames[Type].data()), "Generated vs reconstructed y (Omega)", kTH2D, {{200, -1.0, 1.0}, {200, -1.0, 1.0}});
@@ -788,7 +783,6 @@ struct StrangeCascTrack {
       histos.add(Form("%s/NoSel-Truth/Filters/RapidityXi", TypeNames[Type].data()), "y under Xi hypothesis", kTH1D, {{200, -1.0, 1.0}});
       histos.add(Form("%s/NoSel-Truth/Filters/RapidityOmega", TypeNames[Type].data()), "y under Omega hypothesis", kTH1D, {{200, -1.0, 1.0}});
       histos.add(Form("%s/NoSel-Truth/Filters/EtaDau", TypeNames[Type].data()), "|#eta| of dau tracks", kTH1D, {axesConfig.axisEta});
-      histos.add(Form("%s/NoSel-Truth/EvMult", TypeNames[Type].data()), "Multiplicity of events with >=1 cascade", kTH1D, {axesConfig.axisMult});
       histos.add(Form("%s/NoSel-Truth/GenRecPt", TypeNames[Type].data()), "Generated vs reconstructed pt", kTH2D, {axesConfig.axisPt, axesConfig.axisPt});
       histos.add(Form("%s/NoSel-Truth/GenRecRapidityXi", TypeNames[Type].data()), "Generated vs reconstructed y (Xi)", kTH2D, {{200, -1.0, 1.0}, {200, -1.0, 1.0}});
       histos.add(Form("%s/NoSel-Truth/GenRecRapidityOmega", TypeNames[Type].data()), "Generated vs reconstructed y (Omega)", kTH2D, {{200, -1.0, 1.0}, {200, -1.0, 1.0}});
@@ -805,7 +799,6 @@ struct StrangeCascTrack {
       histos.add(Form("%s/Rec/Filters/RapidityOmega", TypeNames[Type].data()), "y under Omega hypothesis", kTH1D, {{200, -1.0, 1.0}});
       histos.add(Form("%s/Rec/Filters/PtVsRapidityOmega", TypeNames[Type].data()), "pt vs y under Omega hypothesis", kTH2D, {axesConfig.axisPt, {200, -1.0, 1.0}});
       histos.add(Form("%s/Rec/Filters/EtaDau", TypeNames[Type].data()), "|#eta| of dau tracks", kTH1D, {axesConfig.axisEta});
-      histos.add(Form("%s/Rec/EvMult", TypeNames[Type].data()), "Multiplicity of events with >=1 selected cascade", kTH1D, {axesConfig.axisMult});
       histos.add(Form("%s/Rec/GenRecPt", TypeNames[Type].data()), "Generated vs reconstructed pt", kTH2D, {axesConfig.axisPt, axesConfig.axisPt});
       histos.add(Form("%s/Rec/GenRecRapidityXi", TypeNames[Type].data()), "Generated vs reconstructed y (Xi)", kTH2D, {{200, -1.0, 1.0}, {200, -1.0, 1.0}});
       histos.add(Form("%s/Rec/GenRecRapidityOmega", TypeNames[Type].data()), "Generated vs reconstructed y (Omega)", kTH2D, {{200, -1.0, 1.0}, {200, -1.0, 1.0}});
@@ -837,7 +830,6 @@ struct StrangeCascTrack {
       histos.add(Form("%s/Rec-Truth/Filters/RapidityXi", TypeNames[Type].data()), "y under Xi hypothesis", kTH1D, {{200, -1.0, 1.0}});
       histos.add(Form("%s/Rec-Truth/Filters/RapidityOmega", TypeNames[Type].data()), "y under Omega hypothesis", kTH1D, {{200, -1.0, 1.0}});
       histos.add(Form("%s/Rec-Truth/Filters/EtaDau", TypeNames[Type].data()), "|#eta| of dau tracks", kTH1D, {axesConfig.axisEta});
-      histos.add(Form("%s/Rec-Truth/EvMult", TypeNames[Type].data()), "Multiplicity of events with >=1 cascade", kTH1D, {axesConfig.axisMult});
       histos.add(Form("%s/Rec-Truth/GenRecPt", TypeNames[Type].data()), "Generated vs reconstructed pt", kTH2D, {axesConfig.axisPt, axesConfig.axisPt});
       histos.add(Form("%s/Rec-Truth/GenRecRapidityXi", TypeNames[Type].data()), "Generated vs reconstructed y (Xi)", kTH2D, {{200, -1.0, 1.0}, {200, -1.0, 1.0}});
       histos.add(Form("%s/Rec-Truth/GenRecRapidityOmega", TypeNames[Type].data()), "Generated vs reconstructed y (Omega)", kTH2D, {{200, -1.0, 1.0}, {200, -1.0, 1.0}});
@@ -1131,8 +1123,17 @@ struct StrangeCascTrack {
     }
   }
 
-  void processDerivedMCRec(DerMCRecCollisions::iterator const& collision, DerMCRecCascDatas const& allCascs, DerMCRecTraCascDatas const& traCascs, DauTracks const&, DerMCGenCascades const&)
+  std::vector<std::vector<int64_t>> traCascsGrouped;
+  void processDerivedMCRec(DerMCRecCollisions const& collisions, DerMCRecCascDatas const& allCascs, DerMCRecTraCascDatas const& traCascs, DauTracks const&, DerMCGenCascades const&)
   {
+    if (doCustomGroup) {
+      traCascsGrouped.clear();
+      traCascsGrouped.resize(collisions.size());
+      for (const auto& casc : traCascs) {
+        traCascsGrouped[casc.straCollisionId()].push_back(casc.globalIndex());
+      }
+    }
+  for (const auto& collision : collisions) {
     fillEvents(collision); // save info about all processed events
     if (isValidEvent(collision, true)) {
       histos.fill(HIST("Rec-Events/EvCounter"), 0.5);
@@ -1141,8 +1142,16 @@ struct StrangeCascTrack {
       double mult = (doProcessIons) ? collision.centFT0C() : collision.centFT0M();
       histos.fill(HIST("Rec-Events/Mult"), mult);
       analyseCascs(collision, allCascs); // process all cascades
-      analyseCascs(collision, traCascs); // process tracked cascades
+      if (doCustomGroup) {
+        for (int idx : traCascsGrouped[collision.globalIndex()]) {
+          auto casc = traCascs.rawIteratorAt(idx);
+          analyseCascade(collision, casc);
+        }
+      } else {
+        analyseCascs(collision, traCascs);
+      }
     }
+  }
   }
 
   PROCESS_SWITCH(StrangeCascTrack, processDerivedData, "process derived data", true);
