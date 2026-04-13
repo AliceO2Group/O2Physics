@@ -11,16 +11,18 @@
 //
 // Author Roman Nepeivoda & Romain Schotter
 
-#include <algorithm>
-#include <vector>
-#include <TPDGCode.h>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/cascqaanalysis.h"
+
+#include "Framework/AnalysisTask.h"
 #include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
+
+#include <TPDGCode.h>
+
+#include <algorithm>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -155,9 +157,8 @@ struct CascDerivedQAanalysis {
     }
   }
 
- // Manual grouping to avoid iterator subscription over StraMCCollisions
+  // Manual grouping to avoid iterator subscription over StraMCCollisions
   std::vector<std::vector<int>> cascadesGrouped;
-
 
   template <typename TCascade, typename TCollision>
   bool isCascadeSelected(TCascade casc, TCollision collision, float rapidity, bool isXi)
@@ -531,7 +532,7 @@ struct CascDerivedQAanalysis {
     }
     histos.fill(HIST("hEventPVz"), collision.posZ());
 
-    for (const auto& cascade : Cascades) {              // loop over Cascades
+    for (const auto& cascade : Cascades) { // loop over Cascades
       if (std::abs(cascade.negativeeta()) > cascSelections.daughterEtaCut ||
           std::abs(cascade.positiveeta()) > cascSelections.daughterEtaCut ||
           std::abs(cascade.bacheloreta()) > cascSelections.daughterEtaCut)
@@ -564,34 +565,34 @@ struct CascDerivedQAanalysis {
         float ctauOmega = distOverTotMom * o2::constants::physics::MassOmegaMinus;
 
         mycascades(collision.posZ(),
-                    collision.centFT0M(), collision.centFV0A(),
-                    collision.multFT0A() + collision.multFT0C(), collision.multFV0A(),
-                    cascade.sign(), cascade.pt(), cascade.yXi(), cascade.yOmega(), cascade.eta(),
-                    cascade.mXi(), cascade.mOmega(), cascade.mLambda(), cascade.cascradius(), cascade.v0radius(),
-                    cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ()), cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
-                    cascade.dcapostopv(), cascade.dcanegtopv(), cascade.dcabachtopv(), cascade.dcacascdaughters(), cascade.dcaV0daughters(), cascade.dcav0topv(collision.posX(), collision.posY(), collision.posZ()),
-                    cascade.positiveeta(), cascade.negativeeta(), cascade.bacheloreta(), posITSNhits, negITSNhits, bachITSNhits,
-                    ctauXi, ctauOmega, negTrackExtra.tpcNSigmaPr(), posTrackExtra.tpcNSigmaPr(), negTrackExtra.tpcNSigmaPi(), posTrackExtra.tpcNSigmaPi(), bachTrackExtra.tpcNSigmaPi(), bachTrackExtra.tpcNSigmaKa(),
-                    -999.f/*negdau.tofNSigmaPr()*/, -999.f /*posdau.tofNSigmaPr()*/, -999.f/*negdau.tofNSigmaPi()*/, -999.f/*posdau.tofNSigmaPi()*/, cascade.bachTOFDeltaTXiPi(), cascade.bachTOFDeltaTOmKa(),
-                    posTrackExtra.tpcNClsFound(), negTrackExtra.tpcNClsFound(), bachTrackExtra.tpcNClsFound(),
-                    posTrackExtra.tpcCrossedRows(), negTrackExtra.tpcCrossedRows(), bachTrackExtra.tpcCrossedRows(),
-                    posTrackExtra.hasTOF(), negTrackExtra.hasTOF(), bachTrackExtra.hasTOF(),
-                    cascade.positivept(), cascade.negativept(), cascade.bachelorpt(), -1, -1, cascade.bachBaryonCosPA(), cascade.bachBaryonDCAxyToPV(), evFlag, 1e3, 1e3);
+                   collision.centFT0M(), collision.centFV0A(),
+                   collision.multFT0A() + collision.multFT0C(), collision.multFV0A(),
+                   cascade.sign(), cascade.pt(), cascade.yXi(), cascade.yOmega(), cascade.eta(),
+                   cascade.mXi(), cascade.mOmega(), cascade.mLambda(), cascade.cascradius(), cascade.v0radius(),
+                   cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ()), cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
+                   cascade.dcapostopv(), cascade.dcanegtopv(), cascade.dcabachtopv(), cascade.dcacascdaughters(), cascade.dcaV0daughters(), cascade.dcav0topv(collision.posX(), collision.posY(), collision.posZ()),
+                   cascade.positiveeta(), cascade.negativeeta(), cascade.bacheloreta(), posITSNhits, negITSNhits, bachITSNhits,
+                   ctauXi, ctauOmega, negTrackExtra.tpcNSigmaPr(), posTrackExtra.tpcNSigmaPr(), negTrackExtra.tpcNSigmaPi(), posTrackExtra.tpcNSigmaPi(), bachTrackExtra.tpcNSigmaPi(), bachTrackExtra.tpcNSigmaKa(),
+                   -999.f /*negdau.tofNSigmaPr()*/, -999.f /*posdau.tofNSigmaPr()*/, -999.f /*negdau.tofNSigmaPi()*/, -999.f /*posdau.tofNSigmaPi()*/, cascade.bachTOFDeltaTXiPi(), cascade.bachTOFDeltaTOmKa(),
+                   posTrackExtra.tpcNClsFound(), negTrackExtra.tpcNClsFound(), bachTrackExtra.tpcNClsFound(),
+                   posTrackExtra.tpcCrossedRows(), negTrackExtra.tpcCrossedRows(), bachTrackExtra.tpcCrossedRows(),
+                   posTrackExtra.hasTOF(), negTrackExtra.hasTOF(), bachTrackExtra.hasTOF(),
+                   cascade.positivept(), cascade.negativept(), cascade.bachelorpt(), -1, -1, cascade.bachBaryonCosPA(), cascade.bachBaryonDCAxyToPV(), evFlag, 1e3, 1e3);
       }
     }
   }
 
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
 
-// SONRA:
+  // SONRA:
   void processMCrec(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels> const& collisions,
                     CascMCCandidates const& Cascades,
                     DauTracks const&,
-                    aod::MotherMCParts const&, 
+                    aod::MotherMCParts const&,
                     soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/,
                     soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const& cascMCCores)
 
-// SONRA:
+  // SONRA:
   {
     // Manual grouping to avoid iterator subscription which would require
     // CascMCCollRefs to have a sorted fIndexStraMCCollisions index
@@ -607,87 +608,87 @@ struct CascDerivedQAanalysis {
       }
       histos.fill(HIST("hEventPVz"), collision.posZ());
 
-    if (!collision.has_straMCCollision()) {
-      continue;
-    }
-
-    const auto& mcCollision = collision.straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>(); // aod::McCentFV0As to be added
-    histos.fill(HIST("hEventPVzMC"), mcCollision.posZ());
-
-// SONRA:
-    for (auto const& idx : cascadesGrouped[collision.globalIndex()]) {
-      auto cascade = Cascades.rawIteratorAt(idx);
-
-      if (std::abs(cascade.negativeeta()) > cascSelections.daughterEtaCut ||
-          std::abs(cascade.positiveeta()) > cascSelections.daughterEtaCut ||
-          std::abs(cascade.bacheloreta()) > cascSelections.daughterEtaCut)
-        continue; // remove acceptance that's badly reproduced by MC / superfluous in future
-
-      if (!cascade.has_cascMCCore())
+      if (!collision.has_straMCCollision()) {
         continue;
-
-      // SONRA:
-      auto cascadeMC = cascade.cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
-
-      // Check mc association
-      float lPDG = 1e3;
-      float ptmc = 1e3;
-      float ymc = 1e3;
-      float isPrimary = -1;
-      if (std::abs(cascadeMC.pdgCode()) == PDG_t::kXiMinus || std::abs(cascadeMC.pdgCode()) == PDG_t::kOmegaMinus) {
-        lPDG = cascadeMC.pdgCode();
-        ptmc = RecoDecay::pt(cascadeMC.pxMC(), cascadeMC.pyMC());
-        if (std::fabs(cascadeMC.pdgCode()) == 3312)
-          ymc = RecoDecay::y(std::array{cascadeMC.pxMC(), cascadeMC.pyMC(), cascadeMC.pzMC()}, o2::constants::physics::MassXiMinus);
-        else if (std::fabs(cascadeMC.pdgCode()) == 3334)
-          ymc = RecoDecay::y(std::array{cascadeMC.pxMC(), cascadeMC.pyMC(), cascadeMC.pzMC()}, o2::constants::physics::MassOmegaMinus);
-        isPrimary = cascadeMC.isPhysicalPrimary() ? 1 : 0;
       }
 
-      if (isCascadeSelected(cascade, collision, ymc, true) ||
-          isCascadeSelected(cascade, collision, ymc, false)) {
+      const auto& mcCollision = collision.straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>(); // aod::McCentFV0As to be added
+      histos.fill(HIST("hEventPVzMC"), mcCollision.posZ());
 
-        auto bachTrackExtra = cascade.template bachTrackExtra_as<DauTracks>();
-        auto posTrackExtra = cascade.template posTrackExtra_as<DauTracks>();
-        auto negTrackExtra = cascade.template negTrackExtra_as<DauTracks>();
+      // SONRA:
+      for (auto const& idx : cascadesGrouped[collision.globalIndex()]) {
+        auto cascade = Cascades.rawIteratorAt(idx);
 
-        int bachITSNhits = bachTrackExtra.itsNCls();
-        int posITSNhits = posTrackExtra.itsNCls();
-        int negITSNhits = negTrackExtra.itsNCls();
+        if (std::abs(cascade.negativeeta()) > cascSelections.daughterEtaCut ||
+            std::abs(cascade.positiveeta()) > cascSelections.daughterEtaCut ||
+            std::abs(cascade.bacheloreta()) > cascSelections.daughterEtaCut)
+          continue; // remove acceptance that's badly reproduced by MC / superfluous in future
 
-        uint8_t evFlag = 0;
-        evFlag |= o2::aod::mycascades::EvFlags::EvINEL;
-        if (collision.multNTracksPVeta1() > 0) {
-          evFlag |= o2::aod::mycascades::EvFlags::EvINELgt0;
+        if (!cascade.has_cascMCCore())
+          continue;
+
+        // SONRA:
+        auto cascadeMC = cascade.cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
+
+        // Check mc association
+        float lPDG = 1e3;
+        float ptmc = 1e3;
+        float ymc = 1e3;
+        float isPrimary = -1;
+        if (std::abs(cascadeMC.pdgCode()) == PDG_t::kXiMinus || std::abs(cascadeMC.pdgCode()) == PDG_t::kOmegaMinus) {
+          lPDG = cascadeMC.pdgCode();
+          ptmc = RecoDecay::pt(cascadeMC.pxMC(), cascadeMC.pyMC());
+          if (std::fabs(cascadeMC.pdgCode()) == 3312)
+            ymc = RecoDecay::y(std::array{cascadeMC.pxMC(), cascadeMC.pyMC(), cascadeMC.pzMC()}, o2::constants::physics::MassXiMinus);
+          else if (std::fabs(cascadeMC.pdgCode()) == 3334)
+            ymc = RecoDecay::y(std::array{cascadeMC.pxMC(), cascadeMC.pyMC(), cascadeMC.pzMC()}, o2::constants::physics::MassOmegaMinus);
+          isPrimary = cascadeMC.isPhysicalPrimary() ? 1 : 0;
         }
-        if (collision.multNTracksPVeta1() > 1) {
-          evFlag |= o2::aod::mycascades::EvFlags::EvINELgt1;
-        }
 
-        // c x tau
-        float distOverTotMom = std::sqrt(std::pow(cascade.x() - collision.posX(), 2) + std::pow(cascade.y() - collision.posY(), 2) + std::pow(cascade.z() - collision.posZ(), 2)) / (cascade.p() + 1E-10);
-        float ctauXi = distOverTotMom * o2::constants::physics::MassXiMinus;
-        float ctauOmega = distOverTotMom * o2::constants::physics::MassOmegaMinus;
+        if (isCascadeSelected(cascade, collision, ymc, true) ||
+            isCascadeSelected(cascade, collision, ymc, false)) {
 
-        mycascades(collision.posZ(),
-                    collision.centFT0M(), collision.centFV0A(),
-                    collision.multFT0A() + collision.multFT0C(), collision.multFV0A(),
-                    cascade.sign(), cascade.pt(), cascade.yXi(), cascade.yOmega(), cascade.eta(),
-                    cascade.mXi(), cascade.mOmega(), cascade.mLambda(), cascade.cascradius(), cascade.v0radius(),
-                    cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ()), cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
-                    cascade.dcapostopv(), cascade.dcanegtopv(), cascade.dcabachtopv(), cascade.dcacascdaughters(), cascade.dcaV0daughters(), cascade.dcav0topv(collision.posX(), collision.posY(), collision.posZ()),
-                    cascade.positiveeta(), cascade.negativeeta(), cascade.bacheloreta(), posITSNhits, negITSNhits, bachITSNhits,
-                    ctauXi, ctauOmega, negTrackExtra.tpcNSigmaPr(), posTrackExtra.tpcNSigmaPr(), negTrackExtra.tpcNSigmaPi(), posTrackExtra.tpcNSigmaPi(), bachTrackExtra.tpcNSigmaPi(), bachTrackExtra.tpcNSigmaKa(),
-                    -999.f/*negdau.tofNSigmaPr()*/, -999.f /*posdau.tofNSigmaPr()*/, -999.f/*negdau.tofNSigmaPi()*/, -999.f/*posdau.tofNSigmaPi()*/, cascade.bachTOFDeltaTXiPi(), cascade.bachTOFDeltaTOmKa(),
-                    posTrackExtra.tpcNClsFound(), negTrackExtra.tpcNClsFound(), bachTrackExtra.tpcNClsFound(),
-                    posTrackExtra.tpcCrossedRows(), negTrackExtra.tpcCrossedRows(), bachTrackExtra.tpcCrossedRows(),
-                    posTrackExtra.hasTOF(), negTrackExtra.hasTOF(), bachTrackExtra.hasTOF(),
-                    cascadeMC.positiveptMC(), cascadeMC.negativeptMC(), cascadeMC.bachelorptMC(), lPDG, isPrimary, cascade.bachBaryonCosPA(), cascade.bachBaryonDCAxyToPV(), evFlag, ptmc, ymc);
+          auto bachTrackExtra = cascade.template bachTrackExtra_as<DauTracks>();
+          auto posTrackExtra = cascade.template posTrackExtra_as<DauTracks>();
+          auto negTrackExtra = cascade.template negTrackExtra_as<DauTracks>();
 
-        }   // isCascadeSelected kapanışı  ← girinti 8 boşluk
-      }     // end cascade loop            ← girinti 6 boşluk
-    }       // end collision loop          ← girinti 4 boşluk
-  }         // processMCrec kapanışı       ← girinti 2 boşluk
+          int bachITSNhits = bachTrackExtra.itsNCls();
+          int posITSNhits = posTrackExtra.itsNCls();
+          int negITSNhits = negTrackExtra.itsNCls();
+
+          uint8_t evFlag = 0;
+          evFlag |= o2::aod::mycascades::EvFlags::EvINEL;
+          if (collision.multNTracksPVeta1() > 0) {
+            evFlag |= o2::aod::mycascades::EvFlags::EvINELgt0;
+          }
+          if (collision.multNTracksPVeta1() > 1) {
+            evFlag |= o2::aod::mycascades::EvFlags::EvINELgt1;
+          }
+
+          // c x tau
+          float distOverTotMom = std::sqrt(std::pow(cascade.x() - collision.posX(), 2) + std::pow(cascade.y() - collision.posY(), 2) + std::pow(cascade.z() - collision.posZ(), 2)) / (cascade.p() + 1E-10);
+          float ctauXi = distOverTotMom * o2::constants::physics::MassXiMinus;
+          float ctauOmega = distOverTotMom * o2::constants::physics::MassOmegaMinus;
+
+          mycascades(collision.posZ(),
+                     collision.centFT0M(), collision.centFV0A(),
+                     collision.multFT0A() + collision.multFT0C(), collision.multFV0A(),
+                     cascade.sign(), cascade.pt(), cascade.yXi(), cascade.yOmega(), cascade.eta(),
+                     cascade.mXi(), cascade.mOmega(), cascade.mLambda(), cascade.cascradius(), cascade.v0radius(),
+                     cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ()), cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
+                     cascade.dcapostopv(), cascade.dcanegtopv(), cascade.dcabachtopv(), cascade.dcacascdaughters(), cascade.dcaV0daughters(), cascade.dcav0topv(collision.posX(), collision.posY(), collision.posZ()),
+                     cascade.positiveeta(), cascade.negativeeta(), cascade.bacheloreta(), posITSNhits, negITSNhits, bachITSNhits,
+                     ctauXi, ctauOmega, negTrackExtra.tpcNSigmaPr(), posTrackExtra.tpcNSigmaPr(), negTrackExtra.tpcNSigmaPi(), posTrackExtra.tpcNSigmaPi(), bachTrackExtra.tpcNSigmaPi(), bachTrackExtra.tpcNSigmaKa(),
+                     -999.f /*negdau.tofNSigmaPr()*/, -999.f /*posdau.tofNSigmaPr()*/, -999.f /*negdau.tofNSigmaPi()*/, -999.f /*posdau.tofNSigmaPi()*/, cascade.bachTOFDeltaTXiPi(), cascade.bachTOFDeltaTOmKa(),
+                     posTrackExtra.tpcNClsFound(), negTrackExtra.tpcNClsFound(), bachTrackExtra.tpcNClsFound(),
+                     posTrackExtra.tpcCrossedRows(), negTrackExtra.tpcCrossedRows(), bachTrackExtra.tpcCrossedRows(),
+                     posTrackExtra.hasTOF(), negTrackExtra.hasTOF(), bachTrackExtra.hasTOF(),
+                     cascadeMC.positiveptMC(), cascadeMC.negativeptMC(), cascadeMC.bachelorptMC(), lPDG, isPrimary, cascade.bachBaryonCosPA(), cascade.bachBaryonDCAxyToPV(), evFlag, ptmc, ymc);
+
+        } // isCascadeSelected kapanışı  ← girinti 8 boşluk
+      } // end cascade loop            ← girinti 6 boşluk
+    } // end collision loop          ← girinti 4 boşluk
+  } // processMCrec kapanışı       ← girinti 2 boşluk
 
   void processMCgen(soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& mcCollisions,
                     soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const& CascMCCores,
@@ -705,70 +706,70 @@ struct CascDerivedQAanalysis {
 
     for (const auto& mcCollision : mcCollisions) {
 
-    // Define the type of generated MC collision
-    histos.fill(HIST("hEventPVzMC"), mcCollision.posZ());
+      // Define the type of generated MC collision
+      histos.fill(HIST("hEventPVzMC"), mcCollision.posZ());
 
-    int evType = 0;
-    uint8_t flagsGen = 0;
-    flagsGen |= o2::aod::myMCcascades::EvFlags::EvINEL;
-    // Generated collision is INEL>0
-    if (mcCollision.multMCNParticlesEta10() > 0) {
-      flagsGen |= o2::aod::myMCcascades::EvFlags::EvINELgt0;
-      evType++;
-    }
-    // Generated collision is INEL>1
-    if (mcCollision.multMCNParticlesEta10() > 1) {
-      flagsGen |= o2::aod::myMCcascades::EvFlags::EvINELgt1;
-      evType++;
-    }
-
-    uint16_t nchFT0 = mcCollision.multMCFT0A() + mcCollision.multMCFT0C();
-    uint8_t flagsAssoc = 0;
-    int nAssocColl = 0;
-    int biggestNContribs = -1;
-    float centrality = 100.5f;
-    for (const auto& collision : collisions) {
-      if (!isEventAccepted(collision, false)) {
-        continue;
+      int evType = 0;
+      uint8_t flagsGen = 0;
+      flagsGen |= o2::aod::myMCcascades::EvFlags::EvINEL;
+      // Generated collision is INEL>0
+      if (mcCollision.multMCNParticlesEta10() > 0) {
+        flagsGen |= o2::aod::myMCcascades::EvFlags::EvINELgt0;
+        evType++;
+      }
+      // Generated collision is INEL>1
+      if (mcCollision.multMCNParticlesEta10() > 1) {
+        flagsGen |= o2::aod::myMCcascades::EvFlags::EvINELgt1;
+        evType++;
       }
 
-      if (biggestNContribs < collision.multPVTotalContributors()) {
-        biggestNContribs = collision.multPVTotalContributors();
-        centrality = collision.centFT0M();
-      }
-
-      if (collision.straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>().globalIndex() == mcCollision.globalIndex()) {
-        flagsAssoc |= o2::aod::myMCcascades::EvFlags::EvINEL;
-        if (collision.multNTracksPVeta1() > 0) {
-          flagsAssoc |= o2::aod::myMCcascades::EvFlags::EvINELgt0;
+      uint16_t nchFT0 = mcCollision.multMCFT0A() + mcCollision.multMCFT0C();
+      uint8_t flagsAssoc = 0;
+      int nAssocColl = 0;
+      int biggestNContribs = -1;
+      float centrality = 100.5f;
+      for (const auto& collision : collisions) {
+        if (!isEventAccepted(collision, false)) {
+          continue;
         }
-        if (collision.multNTracksPVeta1() > 1) {
-          flagsAssoc |= o2::aod::myMCcascades::EvFlags::EvINELgt1;
-        }
-        nAssocColl++;
-      }
-    }
 
-    for (auto const& idx : cascadesGrouped[mcCollision.globalIndex()]) {
+        if (biggestNContribs < collision.multPVTotalContributors()) {
+          biggestNContribs = collision.multPVTotalContributors();
+          centrality = collision.centFT0M();
+        }
+
+        if (collision.straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>().globalIndex() == mcCollision.globalIndex()) {
+          flagsAssoc |= o2::aod::myMCcascades::EvFlags::EvINEL;
+          if (collision.multNTracksPVeta1() > 0) {
+            flagsAssoc |= o2::aod::myMCcascades::EvFlags::EvINELgt0;
+          }
+          if (collision.multNTracksPVeta1() > 1) {
+            flagsAssoc |= o2::aod::myMCcascades::EvFlags::EvINELgt1;
+          }
+          nAssocColl++;
+        }
+      }
+
+      for (auto const& idx : cascadesGrouped[mcCollision.globalIndex()]) {
         auto cascMC = CascMCCores.rawIteratorAt(idx);
 
-      if (!cascMC.isPhysicalPrimary())
-        continue;
-      float sign = 0;
-      if (cascMC.pdgCode() == PDG_t::kXiPlusBar || cascMC.pdgCode() == PDG_t::kOmegaPlusBar) {
-        sign = 1;
-      } else if (cascMC.pdgCode() == PDG_t::kXiMinus || cascMC.pdgCode() == PDG_t::kOmegaMinus) {
-        sign = -1;
-      } else {
-        continue;
-      }
-      myMCcascades(mcCollision.posZ(), sign, cascMC.pdgCode(),
-                   std::abs(cascMC.pdgCode()) == PDG_t::kXiMinus ? cascMC.rapidityMC(0) : cascMC.rapidityMC(1), RecoDecay::eta(std::array{cascMC.pxMC(), cascMC.pyMC(), cascMC.pzMC()}), RecoDecay::phi(cascMC.pxMC(), cascMC.pyMC()), cascMC.ptMC(),
-                   cascMC.isPhysicalPrimary(), nAssocColl,
-                   nchFT0, 0,
-                   centrality, 0, // mcCollision.centFV0A() to be added
-                   flagsAssoc,
-                   flagsGen);
+        if (!cascMC.isPhysicalPrimary())
+          continue;
+        float sign = 0;
+        if (cascMC.pdgCode() == PDG_t::kXiPlusBar || cascMC.pdgCode() == PDG_t::kOmegaPlusBar) {
+          sign = 1;
+        } else if (cascMC.pdgCode() == PDG_t::kXiMinus || cascMC.pdgCode() == PDG_t::kOmegaMinus) {
+          sign = -1;
+        } else {
+          continue;
+        }
+        myMCcascades(mcCollision.posZ(), sign, cascMC.pdgCode(),
+                     std::abs(cascMC.pdgCode()) == PDG_t::kXiMinus ? cascMC.rapidityMC(0) : cascMC.rapidityMC(1), RecoDecay::eta(std::array{cascMC.pxMC(), cascMC.pyMC(), cascMC.pzMC()}), RecoDecay::phi(cascMC.pxMC(), cascMC.pyMC()), cascMC.ptMC(),
+                     cascMC.isPhysicalPrimary(), nAssocColl,
+                     nchFT0, 0,
+                     centrality, 0, // mcCollision.centFV0A() to be added
+                     flagsAssoc,
+                     flagsGen);
 
       } // end cascade loop
     } // end mcCollision loop
