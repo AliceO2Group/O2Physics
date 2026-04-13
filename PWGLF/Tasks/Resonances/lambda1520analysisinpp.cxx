@@ -13,6 +13,7 @@
 /// \brief This standalone task reconstructs track-track decay of lambda(1520) resonance candidate
 /// \author Hirak Kumar Koley <hirak.koley@cern.ch>
 
+#include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/inelGt.h"
 
 #include "Common/DataModel/Centrality.h"
@@ -216,8 +217,14 @@ struct Lambda1520analysisinpp {
 
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>;
   using TrackCandidates = soa::Filtered<soa::Join<aod::FullTracks, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension>>;
+
+  // for MC reco
   using MCEventCandidates = soa::Join<EventCandidates, aod::McCollisionLabels>;
   using MCTrackCandidates = soa::Filtered<soa::Join<TrackCandidates, aod::McTrackLabels>>;
+
+  // for MC truth
+  // using MCTrueEventCandidates = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
+  // using MCTrueTrackCandidates = aod::McParticles;
 
   /// Figures
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.12f, 0.14f, 0.16f, 0.18f, 0.2f, 0.25f, 0.3f, 0.35f, 0.4f, 0.45f, 0.5f, 0.55f, 0.6f, 0.65f, 0.7f, 0.75f, 0.8f, 0.85f, 0.9f, 0.95f, 1.0f, 1.1f, 1.2f, 1.25f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.75f, 1.8f, 1.9f, 2.0f, 2.1f, 2.2f, 2.3f, 2.4f, 2.5f, 2.6f, 2.7f, 2.8f, 2.9f, 3.0f, 3.1f, 3.2f, 3.3f, 3.4f, 3.6f, 3.7f, 3.8f, 3.9f, 4.0f, 4.1f, 4.2f, 4.5f, 4.6f, 4.8f, 4.9f, 5.0f, 5.5f, 5.6f, 6.0f, 6.4f, 6.5f, 7.0f, 7.2f, 8.0f, 9.0f, 9.5f, 9.6f, 10.0f, 11.0f, 11.5f, 12.0f, 13.0f, 14.0f, 14.4f, 15.0f, 16.0f, 18.0f, 19.2f, 20.0f}, "Binning of the pT axis"};
@@ -407,6 +414,15 @@ struct Lambda1520analysisinpp {
 
       histos.add("Result/MC/Genlambda1520pt", "pT distribution of True MC #Lambda(1520)0", kTH3F, {axisMClabel, axisPt, axisMult});
       histos.add("Result/MC/Genantilambda1520pt", "pT distribution of True MC Anti-#Lambda(1520)0", kTH3F, {axisMClabel, axisPt, axisMult});
+
+      histos.add("Result/SignalLoss/GenTrueprotonpt_num", "True proton (num)", kTH2F, {axisPt, axisMult});
+      histos.add("Result/SignalLoss/Genprotonpt_num", "Proton (num)", kTH2F, {axisPt, axisMult});
+
+      histos.add("Result/SignalLoss/GenTruelambdapt_num", "True lambda (num)", kTH2F, {axisPt, axisMult});
+      histos.add("Result/SignalLoss/Genlambdapt_num", "Lambda (num)", kTH2F, {axisPt, axisMult});
+
+      histos.add("Result/SignalLoss/GenTruexipt_num", "True xi (num)", kTH2F, {axisPt, axisMult});
+      histos.add("Result/SignalLoss/Genxipt_num", "Xi (num)", kTH2F, {axisPt, axisMult});
     }
     if (doprocessMCRec) {
       histos.add("QA/MC/h2RecoEtaPt_after", " #eta-#it{p}_{T} distribution of Reconstructed #Lambda(1520); #eta;  #it{p}_{T}; Counts;", HistType::kTHnSparseF, {axisEta, axisPt});
@@ -425,13 +441,14 @@ struct Lambda1520analysisinpp {
       histos.add("Result/MC/h3antilambda1520Recoinvmass", "Invariant mass of Reconstructed MC Anti-#Lambda(1520)0", kTHnSparseF, {axisMult, axisPt, axisMassLambda1520});
     }
     if (doprocessSignalLoss) {
-      histos.add("Result/SignalLoss/Genprotonpt", "pT distribution of #Lambda(1520) from Proton", kTH3F, {axisMClabel, axisPt, axisMult});
-      histos.add("Result/SignalLoss/Genlambdapt", "pT distribution of #Lambda(1520) from #Lambda", kTH3F, {axisMClabel, axisPt, axisMult});
-      histos.add("Result/SignalLoss/Genxipt", "pT distribution of #Lambda(1520) from #Xi", kTH3F, {axisMClabel, axisPt, axisMult});
+      histos.add("Result/SignalLoss/GenTrueprotonpt_den", "True proton (den)", kTH2F, {axisPt, axisMult});
+      histos.add("Result/SignalLoss/Genprotonpt_den", "Proton (den)", kTH2F, {axisPt, axisMult});
 
-      histos.add("Result/SignalLoss/GenTrueprotonpt", "pT distribution of True MC Proton", kTH3F, {axisMClabel, axisPt, axisMult});
-      histos.add("Result/SignalLoss/GenTruelambdapt", "pT distribution of True MC #Lambda", kTH3F, {axisMClabel, axisPt, axisMult});
-      histos.add("Result/SignalLoss/GenTruexipt", "pT distribution of True MC #Xi", kTH3F, {axisMClabel, axisPt, axisMult});
+      histos.add("Result/SignalLoss/GenTruelambdapt_den", "True lambda (den)", kTH2F, {axisPt, axisMult});
+      histos.add("Result/SignalLoss/Genlambdapt_den", "Lambda (den)", kTH2F, {axisPt, axisMult});
+
+      histos.add("Result/SignalLoss/GenTruexipt_den", "True xi (den)", kTH2F, {axisPt, axisMult});
+      histos.add("Result/SignalLoss/Genxipt_den", "Xi (den)", kTH2F, {axisPt, axisMult});
     }
 
     // Print output histograms statistics
@@ -1123,16 +1140,14 @@ struct Lambda1520analysisinpp {
     bool isSel8 = collision.sel8();
 
     auto mcPartsAll = mcParticles.sliceBy(perMcCollision, collision.mcCollision().globalIndex());
-
     bool isTrueINELgt0 = pwglf::isINELgt0mc(mcPartsAll, pdg);
-    // bool isTrueINELgt0 = collision.isInelGt0();
 
     auto centrality = centEst(collision);
 
     auto mcParts = selectedMCParticles->sliceBy(perMcCollision, collision.mcCollision().globalIndex());
 
     // Not related to the real collisions
-    for (const auto& part : mcParts) { // loop over all MC particles
+    for (const auto& part : mcParts) { // loop over all Lambda(1520) particles
 
       std::vector<int> daughterPDGs;
       if (part.has_daughters()) {
@@ -1230,44 +1245,67 @@ struct Lambda1520analysisinpp {
       }
     }
 
-    // QA for Trigger efficiency
-    histos.fill(HIST("Event/hMCEventIndices"), centrality, Inel);
-    if (inVtx10)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, Inel10);
-    if (isTrueINELgt0)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, Inelg0);
-    if (inVtx10 && isTrueINELgt0)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, Inelg010);
+    auto computePtL = [&](float pt, float m_ref) {
+      float ptL2 = pt * pt + m_ref * m_ref - MassLambda1520 * MassLambda1520;
+      return (ptL2 > 0) ? std::sqrt(ptL2) : -1.f;
+    };
 
-    // TVX MB trigger
-    if (isTriggerTVX)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, Trig);
-    if (isTriggerTVX && inVtx10)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, Trig10);
-    if (isTriggerTVX && isTrueINELgt0)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, TrigINELg0);
-    if (isTriggerTVX && isTrueINELgt0 && inVtx10)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, TrigINELg010);
+    // ===== NUM =====
+    if (!(inVtx10 && isTrueINELgt0))
+      return;
 
-    // Sel8 event selection
-    if (isSel8)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, Sel8);
-    if (isSel8 && inVtx10)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, Sel810);
-    if (isSel8 && isTrueINELgt0)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, Sel8INELg0);
-    if (isSel8 && isTrueINELgt0 && inVtx10)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, Sel8INELg010);
+    if (!isInAfterAllCuts)
+      return;
 
-    // CollisionCuts selection
-    if (isInAfterAllCuts)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, AllCuts);
-    if (isInAfterAllCuts && inVtx10)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, AllCuts10);
-    if (isInAfterAllCuts && isTrueINELgt0)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, AllCutsINELg0);
-    if (isInAfterAllCuts && isTrueINELgt0 && inVtx10)
-      histos.fill(HIST("Event/hMCEventIndices"), centrality, AllCutsINELg010);
+    if (!collision.has_mcCollision())
+      return;
+
+    for (const auto& part : mcPartsAll) {
+
+      if (!part.isPhysicalPrimary())
+        continue;
+
+      if (cUseRapcutMC && std::abs(part.y()) > configTracks.cfgCutRapidity)
+        continue;
+
+      if (cUseEtacutMC && std::abs(part.eta()) > cEtacutMC)
+        continue;
+
+      float pt = part.pt();
+
+      // proton
+      if (std::abs(part.pdgCode()) == kProton) {
+        histos.fill(HIST("Result/SignalLoss/GenTrueprotonpt_num"), pt, centrality);
+
+        float ptL = computePtL(pt, massPr);
+        if (ptL > 0) {
+          float w = useWeight ? ptL / pt : 1.f;
+          histos.fill(HIST("Result/SignalLoss/Genprotonpt_num"), ptL, centrality, w);
+        }
+      }
+
+      // lambda
+      if (std::abs(part.pdgCode()) == kLambda0) {
+        histos.fill(HIST("Result/SignalLoss/GenTruelambdapt_num"), pt, centrality);
+
+        float ptL = computePtL(pt, MassLambda0);
+        if (ptL > 0) {
+          float w = useWeight ? ptL / pt : 1.f;
+          histos.fill(HIST("Result/SignalLoss/Genlambdapt_num"), ptL, centrality, w);
+        }
+      }
+
+      // xi
+      if (std::abs(part.pdgCode()) == PDG_t::kXiMinus) {
+        histos.fill(HIST("Result/SignalLoss/GenTruexipt_num"), pt, centrality);
+
+        float ptL = computePtL(pt, MassXiMinus);
+        if (ptL > 0) {
+          float w = useWeight ? ptL / pt : 1.f;
+          histos.fill(HIST("Result/SignalLoss/Genxipt_num"), ptL, centrality, w);
+        }
+      }
+    }
   }
   PROCESS_SWITCH(Lambda1520analysisinpp, processMCGen, "Process Event for MC only", false);
 
@@ -1320,194 +1358,109 @@ struct Lambda1520analysisinpp {
   }
   PROCESS_SWITCH(Lambda1520analysisinpp, processME, "Process EventMixing light without partition", false);
 
-  void processSignalLoss(MCEventCandidates::iterator const& collision, aod::McCollisions const&, aod::McParticles const& mcParticles)
+  void processEventFactor(soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& mcCollisions, aod::McParticles const& mcParticles)
   {
-    bool isInAfterAllCuts = isSelected(collision, false);
-    bool inVtx10 = (std::abs(collision.mcCollision().posZ()) > configEvents.cfgEvtZvtx) ? false : true;
-    bool isTriggerTVX = collision.selection_bit(aod::evsel::kIsTriggerTVX);
-    bool isSel8 = collision.sel8();
+    for (const auto& mccolls : mcCollisions) {
+      float centrality = mccolls.centFT0M();
+      bool inVtx10 = std::abs(mccolls.posZ()) <= configEvents.cfgEvtZvtx;
 
-    auto mcPartsAll = mcParticles.sliceBy(perMcCollision, collision.mcCollision().globalIndex());
+      auto mcPartsThis = mcParticles.sliceBy(perMcCollision, mccolls.globalIndex());
+      bool isTrueINELgt0 = pwglf::isINELgt0mc(mcPartsThis, pdg); // QA for Trigger efficiency
 
-    bool isTrueINELgt0 = pwglf::isINELgt0mc(mcPartsAll, pdg);
-    // bool isTrueINELgt0 = collision.isInelGt0();
+      histos.fill(HIST("Event/hMCEventIndices"), centrality, Inel);
+      if (inVtx10)
+        histos.fill(HIST("Event/hMCEventIndices"), centrality, Inel10);
+      if (isTrueINELgt0)
+        histos.fill(HIST("Event/hMCEventIndices"), centrality, Inelg0);
+      if (inVtx10 && isTrueINELgt0)
+        histos.fill(HIST("Event/hMCEventIndices"), centrality, Inelg010);
+    }
+  }
+  PROCESS_SWITCH(Lambda1520analysisinpp, processEventFactor, "Process Event factor", false);
 
-    auto centrality = centEst(collision);
+  void processSignalLoss(soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& mcCollisions, aod::McParticles const& mcParticles)
+  {
+    for (const auto& mccolls : mcCollisions) {
+      float centrality = mccolls.centFT0M();
 
-    auto computePtL = [&](float pt, float m_ref) {
-      float ptL2 = pt * pt + m_ref * m_ref - MassLambda1520 * MassLambda1520;
-      return (ptL2 > 0) ? std::sqrt(ptL2) : -1.f;
-    };
+      bool inVtx10 = std::abs(mccolls.posZ()) <= configEvents.cfgEvtZvtx;
 
-    for (const auto& part : mcPartsAll) {
+      auto mcPartsThis = mcParticles.sliceBy(perMcCollision, mccolls.globalIndex());
+      bool isTrueINELgt0 = pwglf::isINELgt0mc(mcPartsThis, pdg);
 
-      if (!part.isPhysicalPrimary())
-        continue;
+      if (!(inVtx10 && isTrueINELgt0))
+        return;
 
-      float pt = part.pt();
+      auto computePtL = [&](float pt, float m_ref) {
+        float ptL2 = pt * pt + m_ref * m_ref - MassLambda1520 * MassLambda1520;
+        return (ptL2 > 0) ? std::sqrt(ptL2) : -1.f;
+      };
 
-      float weight;
+      for (auto& part : mcPartsThis) {
 
-      if (cUseRapcutMC && std::abs(part.y()) > configTracks.cfgCutRapidity) // rapidity cut
-        continue;
-
-      if (std::abs(part.pdgCode()) == kProton) {
-
-        // true proton
-        histos.fill(HIST("Result/SignalLoss/GenTrueprotonpt"), 0, pt, centrality);
-
-        if (inVtx10) // vtx10
-          histos.fill(HIST("Result/SignalLoss/GenTrueprotonpt"), 1, pt, centrality);
-
-        if (inVtx10 && isSel8) // vtx10, sel8
-          histos.fill(HIST("Result/SignalLoss/GenTrueprotonpt"), 2, pt, centrality);
-
-        if (inVtx10 && isTriggerTVX) // vtx10, TriggerTVX
-          histos.fill(HIST("Result/SignalLoss/GenTrueprotonpt"), 3, pt, centrality);
-
-        if (inVtx10 && isTrueINELgt0) // vtx10, INEL>0
-          histos.fill(HIST("Result/SignalLoss/GenTrueprotonpt"), 4, pt, centrality);
-
-        if (isInAfterAllCuts) // after all event selection
-          histos.fill(HIST("Result/SignalLoss/GenTrueprotonpt"), 5, pt, centrality);
-
-        if (isInAfterAllCuts && isTrueINELgt0) // after all event selection && INEL>0
-          histos.fill(HIST("Result/SignalLoss/GenTrueprotonpt"), 6, pt, centrality);
-
-        float ptL = computePtL(pt, massPr);
-        if (ptL < 0)
+        if (!part.has_mcCollision())
           continue;
 
-        if (useWeight)
-          weight = ptL / pt;
-        else
-          weight = 1.f;
-
-        histos.fill(HIST("Result/SignalLoss/Genprotonpt"), 0, ptL, centrality, weight);
-
-        if (inVtx10) // vtx10
-          histos.fill(HIST("Result/SignalLoss/Genprotonpt"), 1, ptL, centrality, weight);
-
-        if (inVtx10 && isSel8) // vtx10, sel8
-          histos.fill(HIST("Result/SignalLoss/Genprotonpt"), 2, ptL, centrality, weight);
-
-        if (inVtx10 && isTriggerTVX) // vtx10, TriggerTVX
-          histos.fill(HIST("Result/SignalLoss/Genprotonpt"), 3, ptL, centrality, weight);
-
-        if (inVtx10 && isTrueINELgt0) // vtx10, INEL>0
-          histos.fill(HIST("Result/SignalLoss/Genprotonpt"), 4, ptL, centrality, weight);
-
-        if (isInAfterAllCuts) // after all event selection
-          histos.fill(HIST("Result/SignalLoss/Genprotonpt"), 5, ptL, centrality, weight);
-
-        if (isInAfterAllCuts && isTrueINELgt0) // after all event selection && INEL>0
-          histos.fill(HIST("Result/SignalLoss/Genprotonpt"), 6, ptL, centrality, weight);
-      }
-
-      if (std::abs(part.pdgCode()) == kLambda0) {
-
-        // true lambda
-        histos.fill(HIST("Result/SignalLoss/GenTruelambdapt"), 0, pt, centrality);
-
-        if (inVtx10) // vtx10
-          histos.fill(HIST("Result/SignalLoss/GenTruelambdapt"), 1, pt, centrality);
-
-        if (inVtx10 && isSel8) // vtx10, sel8
-          histos.fill(HIST("Result/SignalLoss/GenTruelambdapt"), 2, pt, centrality);
-
-        if (inVtx10 && isTriggerTVX) // vtx10, TriggerTVX
-          histos.fill(HIST("Result/SignalLoss/GenTruelambdapt"), 3, pt, centrality);
-
-        if (inVtx10 && isTrueINELgt0) // vtx10, INEL>0
-          histos.fill(HIST("Result/SignalLoss/GenTruelambdapt"), 4, pt, centrality);
-
-        if (isInAfterAllCuts) // after all event selection
-          histos.fill(HIST("Result/SignalLoss/GenTruelambdapt"), 5, pt, centrality);
-
-        if (isInAfterAllCuts && isTrueINELgt0) // after all event selection && INEL>0
-          histos.fill(HIST("Result/SignalLoss/GenTruelambdapt"), 6, pt, centrality);
-
-        float ptL = computePtL(pt, MassLambda0);
-        if (ptL < 0)
+        if (cUseRapcutMC && std::abs(part.y()) > configTracks.cfgCutRapidity)
           continue;
 
-        if (useWeight)
-          weight = ptL / pt;
-        else
-          weight = 1.f;
-
-        histos.fill(HIST("Result/SignalLoss/Genlambdapt"), 0, ptL, centrality, weight);
-
-        if (inVtx10) // vtx10
-          histos.fill(HIST("Result/SignalLoss/Genlambdapt"), 1, ptL, centrality, weight);
-
-        if (inVtx10 && isSel8) // vtx10, sel8
-          histos.fill(HIST("Result/SignalLoss/Genlambdapt"), 2, ptL, centrality, weight);
-
-        if (inVtx10 && isTriggerTVX) // vtx10, TriggerTVX
-          histos.fill(HIST("Result/SignalLoss/Genlambdapt"), 3, ptL, centrality, weight);
-
-        if (inVtx10 && isTrueINELgt0) // vtx10, INEL>0
-          histos.fill(HIST("Result/SignalLoss/Genlambdapt"), 4, ptL, centrality, weight);
-
-        if (isInAfterAllCuts) // after all event selection
-          histos.fill(HIST("Result/SignalLoss/Genlambdapt"), 5, ptL, centrality, weight);
-
-        if (isInAfterAllCuts && isTrueINELgt0) // after all event selection && INEL>0
-          histos.fill(HIST("Result/SignalLoss/Genlambdapt"), 6, ptL, centrality, weight);
-      }
-
-      if (std::abs(part.pdgCode()) == PDG_t::kXiMinus) {
-
-        // true Xi
-        histos.fill(HIST("Result/SignalLoss/GenTruexipt"), 0, pt, centrality);
-
-        if (inVtx10) // vtx10
-          histos.fill(HIST("Result/SignalLoss/GenTruexipt"), 1, pt, centrality);
-
-        if (inVtx10 && isSel8) // vtx10, sel8
-          histos.fill(HIST("Result/SignalLoss/GenTruexipt"), 2, pt, centrality);
-
-        if (inVtx10 && isTriggerTVX) // vtx10, TriggerTVX
-          histos.fill(HIST("Result/SignalLoss/GenTruexipt"), 3, pt, centrality);
-
-        if (inVtx10 && isTrueINELgt0) // vtx10, INEL>0
-          histos.fill(HIST("Result/SignalLoss/GenTruexipt"), 4, pt, centrality);
-
-        if (isInAfterAllCuts) // after all event selection
-          histos.fill(HIST("Result/SignalLoss/GenTruexipt"), 5, pt, centrality);
-
-        if (isInAfterAllCuts && isTrueINELgt0) // after all event selection && INEL>0
-          histos.fill(HIST("Result/SignalLoss/GenTruexipt"), 6, pt, centrality);
-
-        float ptL = computePtL(pt, MassXiMinus);
-        if (ptL < 0)
+        if (cUseEtacutMC && std::abs(part.eta()) > cEtacutMC)
           continue;
 
-        if (useWeight)
-          weight = ptL / pt;
-        else
-          weight = 1.f;
+        float pt = part.pt();
+        float weight = 1.f;
 
-        histos.fill(HIST("Result/SignalLoss/Genxipt"), 0, ptL, centrality, weight);
+        // =========================
+        // ===== PROTON ============
+        // =========================
+        if (std::abs(part.pdgCode()) == kProton) {
 
-        if (inVtx10) // vtx10
-          histos.fill(HIST("Result/SignalLoss/Genxipt"), 1, ptL, centrality, weight);
+          // --- DENOMINATOR ONLY
+          histos.fill(HIST("Result/SignalLoss/GenTrueprotonpt_den"), pt, centrality);
 
-        if (inVtx10 && isSel8) // vtx10, sel8
-          histos.fill(HIST("Result/SignalLoss/Genxipt"), 2, ptL, centrality, weight);
+          float ptL = computePtL(pt, massPr);
+          if (ptL < 0)
+            continue;
 
-        if (inVtx10 && isTriggerTVX) // vtx10, TriggerTVX
-          histos.fill(HIST("Result/SignalLoss/Genxipt"), 3, ptL, centrality, weight);
+          if (useWeight)
+            weight = ptL / pt;
 
-        if (inVtx10 && isTrueINELgt0) // vtx10, INEL>0
-          histos.fill(HIST("Result/SignalLoss/Genxipt"), 4, ptL, centrality, weight);
+          histos.fill(HIST("Result/SignalLoss/Genprotonpt_den"), ptL, centrality, weight);
+        }
 
-        if (isInAfterAllCuts) // after all event selection
-          histos.fill(HIST("Result/SignalLoss/Genxipt"), 5, ptL, centrality, weight);
+        // =========================
+        // ===== LAMBDA ============
+        // =========================
+        if (std::abs(part.pdgCode()) == kLambda0) {
 
-        if (isInAfterAllCuts && isTrueINELgt0) // after all event selection && INEL>0
-          histos.fill(HIST("Result/SignalLoss/Genxipt"), 6, ptL, centrality, weight);
+          histos.fill(HIST("Result/SignalLoss/GenTruelambdapt_den"), pt, centrality);
+
+          float ptL = computePtL(pt, MassLambda0);
+          if (ptL < 0)
+            continue;
+
+          if (useWeight)
+            weight = ptL / pt;
+
+          histos.fill(HIST("Result/SignalLoss/Genlambdapt_den"), ptL, centrality, weight);
+        }
+
+        // =========================
+        // ===== XI =================
+        // =========================
+        if (std::abs(part.pdgCode()) == PDG_t::kXiMinus) {
+
+          histos.fill(HIST("Result/SignalLoss/GenTruexipt_den"), pt, centrality);
+
+          float ptL = computePtL(pt, MassXiMinus);
+          if (ptL < 0)
+            continue;
+
+          if (useWeight)
+            weight = ptL / pt;
+
+          histos.fill(HIST("Result/SignalLoss/Genxipt_den"), ptL, centrality, weight);
+        }
       }
     }
   }
