@@ -1526,8 +1526,10 @@ struct FlowSP {
     double meanPxAEvent = sumPxAEvent / meanPxEventCount;
     double meanPxCEvent = sumPxCEvent / meanPxEventCount;
 
-    registry.fill(HIST("incl/meanPT/meanPxA"), spm.centrality, spm.psiA - spm.psiC, meanPxAEvent);
-    registry.fill(HIST("incl/meanPT/meanPxC"), spm.centrality, spm.psiA - spm.psiC, meanPxCEvent);
+    if(cfgFillMeanPT) {
+      registry.fill(HIST("incl/meanPT/meanPxA"), spm.centrality, spm.psiA - spm.psiC, meanPxAEvent);
+      registry.fill(HIST("incl/meanPT/meanPxC"), spm.centrality, spm.psiA - spm.psiC, meanPxCEvent);
+    }
 
     // Now we want to fill the final relPt histogram
     // Loop over all eta and fill bins
