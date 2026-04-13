@@ -1396,7 +1396,7 @@ struct Lambda1520analysisinpp {
         return (ptL2 > 0) ? std::sqrt(ptL2) : -1.f;
       };
 
-      for (auto& part : mcPartsThis) {
+      for (const auto& part : mcPartsThis) {
 
         if (!part.has_mcCollision())
           continue;
