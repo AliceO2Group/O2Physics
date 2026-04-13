@@ -148,8 +148,7 @@ struct TreeCreatorXic0ToXiPiKf {
   using MyEventTableWithNTracksPV = soa::Join<aod::Collisions, aod::EvSels, aod::CentNTPVs>;
   using MyMcCandidates = soa::Filtered<soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec>>;
 
-  Filter mcFilter = aod::hf_cand_mc_flag::originMcRec == RecoDecay::OriginType::NonPrompt || aod::hf_cand_mc_flag::originMcRec == RecoDecay::OriginType::Prompt;
-
+  Filter mcFilter = (aod::hf_cand_mc_flag::originMcRec == static_cast<int>(RecoDecay::OriginType::NonPrompt)) || (aod::hf_cand_mc_flag::originMcRec == static_cast<int>(RecoDecay::OriginType::Prompt));
   HistogramRegistry registry{"registry"}; // for QA of selections
 
   void init(InitContext const&)
