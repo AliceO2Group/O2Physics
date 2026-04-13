@@ -1143,7 +1143,7 @@ struct StrangeCascTrack {
         histos.fill(HIST("Rec-Events/Mult"), mult);
         analyseCascs(collision, allCascs); // process all cascades
         if (doCustomGroup) {
-          for (int idx : traCascsGrouped[collision.globalIndex()]) {
+          for (int const& idx : traCascsGrouped[collision.globalIndex()]) {
             auto casc = traCascs.rawIteratorAt(idx);
             analyseCascade(collision, casc);
           }
