@@ -295,10 +295,10 @@ struct TableMaker {
     Configurable<bool> fConfigSaveElectronSample{"cfgSaveElectronSample", false, "If true, only save electron sample"};
   } fConfigPostCalibTPC;
 
-  // 
+  //
   struct : ConfigurableGroup {
     Configurable<bool> fConfigFT0CCumulant{"cfgFT0CCumulant", false,
-    "If true, compute RefFlow cumulants from FT0C amplitudes (requires FT0s subscription)"};
+                                           "If true, compute RefFlow cumulants from FT0C amplitudes (requires FT0s subscription)"};
   } fConfigQvector;
 
   struct : ConfigurableGroup {
@@ -1192,7 +1192,7 @@ struct TableMaker {
 
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionQvectCentr) > 0) {
         qvecGroup.eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
-                          collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
+                                    collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
         qvecGroup.eventQvectorCentrExtra(collision.qvecTPCallRe(), collision.qvecTPCallIm(), collision.nTrkTPCall());
 
         if (fConfigQvector.fConfigFT0CCumulant) {
@@ -1213,7 +1213,7 @@ struct TableMaker {
           float M11REF = S21C - S12C;
           std::complex<double> Q21C(collision.qvecFT0CRe() * S11C, collision.qvecFT0CIm() * S11C);
           float CORR2REF = (std::norm(Q21C) - S12C) / M11REF;
-        
+
           if (std::isnan(M11REF) || std::isinf(M11REF) || std::isnan(CORR2REF) || std::isinf(CORR2REF)) {
             M11REF = 0.f;
             CORR2REF = 0.f;
@@ -1978,8 +1978,8 @@ struct TableMaker {
 
   // produce the barrel only DQ skimmed data model typically for Pb-Pb (with centrality), no subscribtion to the DQ event filter
   void processPbPbBarrelOnlyWithQvect(MyEventsWithCentAndMultsQvect const& collisions, MyBCs const& bcs,
-                             MyBarrelTracksWithCov const& tracksBarrel,
-                             TrackAssoc const& trackAssocs, aod::FT0s& ft0s)
+                                      MyBarrelTracksWithCov const& tracksBarrel,
+                                      TrackAssoc const& trackAssocs, aod::FT0s& ft0s)
   {
     computeOccupancyEstimators(collisions, tracksPosWithCov, tracksNegWithCov, presliceWithCov, bcs);
     computeCollMergingTag(collisions, tracksBarrel, presliceWithCov);
