@@ -62,6 +62,8 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <map>
+#include <utility>
 
 using namespace o2;
 using namespace o2::framework;
