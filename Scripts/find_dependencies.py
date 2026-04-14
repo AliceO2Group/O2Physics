@@ -81,11 +81,11 @@ def load_workflows_from_json():
     return db_wf
 
 
-def format_table_name(description: str, subspec: int):
-    """Format table description name, including potential versions."""
-    if not subspec:
-        return description
-    return f"{description}_{subspec:03d}"
+def format_table_name(description: str, subspec: int, origin: str):
+    """Format table description name, including origin and potential versions."""
+    if subspec > 0:
+        description += f"_{subspec:03d}"
+    return f"{origin}/{description}"
 
 
 def get_devices(specs_wf: dict):
@@ -101,7 +101,7 @@ def get_inputs(specs_wf: dict, device=""):
         if device and dev["name"] != device:
             continue
         list_inputs += [
-            format_table_name(i["description"], i["subspec"]) for i in dev["inputs"] if i["origin"] == "AOD"
+            format_table_name(i["description"], i["subspec"], i["origin"]) for i in dev["inputs"] if i["origin"].startswith("AOD")
         ]
     return list(dict.fromkeys(list_inputs))  # Remove duplicities
 
@@ -115,7 +115,7 @@ def get_outputs(specs_wf: dict, device=""):
         if device and dev["name"] != device:
             continue
         list_outputs += [
-            format_table_name(i["description"], i["subspec"]) for i in dev["outputs"] if i["origin"] == "AOD"
+            format_table_name(i["description"], i["subspec"], i["origin"]) for i in dev["outputs"] if i["origin"].startswith("AOD")
         ]
     return list(dict.fromkeys(list_outputs))  # Remove duplicities
 
@@ -323,9 +323,11 @@ def main():
     for t, reverse in zip((tables, tables_rev), (False, True)):
         if t:
             for table in t:
-                print(f"\nTable: {table}\n")
                 if not table:
                     msg_fatal("Bad table")
+                if "/" not in table:
+                    table = "AOD/" + table
+                print(f"\nTable: {table}\n")
                 # producers = get_table_producers(table, dic_wf_all_simple, case_sensitive)
                 # if not producers:
                 #     print("No producers found")
