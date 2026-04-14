@@ -1355,7 +1355,7 @@ struct Lambda1520analysisinpp {
   }
   PROCESS_SWITCH(Lambda1520analysisinpp, processMCGen, "Process Event for MC only", false);
 
-  void processEventFactor(MCEventCandidates const& collisions, soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& mcCollisions, aod::McParticles const& mcParticles)
+  void processEventFactor(soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& mcCollisions, aod::McParticles const& mcParticles)
   {
     // Loop on generated collisions to fill the event factor for the INEL>0 correction
     for (const auto& mccolls : mcCollisions) {
