@@ -860,7 +860,7 @@ struct HfTaskD0 {
           int const nAxesOccIR = storeOccupancyAndIR ? 2 : 0; // occupancy and IR if storeOccupancyAndIR
           int const nAxesZdcEnergy = storeZdcEnergy ? 2 : 0;  // ZDC energy if storeZdcEnergy
           int const nAxesZdcTime = storeZdcTime ? 2 : 0;      // ZDC time if storeZdctime
-          int const nAxesEtaProngs = storeEtaProngs ? 2 : 0;      // Eta distributions of prong
+          int const nAxesEtaProngs = storeEtaProngs ? 2 : 0;  // Eta distributions of prong
           int const nAxesTotal = NAxesBase + NAxesMl + nAxesCent + nAxesOccIR + nAxesZdcEnergy + nAxesZdcTime + nAxesEtaProngs;
 
           std::vector<double> valuesToFill;
