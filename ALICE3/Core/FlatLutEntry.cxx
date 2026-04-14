@@ -168,9 +168,6 @@ void FlatLutData::view(const uint8_t* buffer, size_t size)
 void FlatLutData::validateBuffer(const uint8_t* buffer, size_t size)
 {
   auto header = PreviewHeader(buffer, size);
-  if (!header.check_version()) {
-    throw framework::runtime_error_f("LUT header version mismatch: expected %d, got %d", LUTCOVM_VERSION, header.version);
-  }
   auto mNchBins = header.nchmap.nbins;
   auto mRadBins = header.radmap.nbins;
   auto mEtaBins = header.etamap.nbins;
@@ -214,6 +211,11 @@ FlatLutData FlatLutData::ViewFromBuffer(const uint8_t* buffer, size_t size)
   // WARNING: Caller must ensure buffer lifetime exceeds FlatLutData usage
   data.view(buffer, size);
   return data;
+}
+
+FlatLutData FlatLutData::ViewFromBuffer(std::span<std::byte> const& span)
+{
+  return ViewFromBuffer(reinterpret_cast<const uint8_t*>(span.data()), span.size_bytes());
 }
 
 bool FlatLutData::isLoaded() const

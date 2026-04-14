@@ -32,6 +32,7 @@ class TrackSmearer
   bool loadTable(int pdg, const char* filename, bool forceReload = false);
   bool adoptTable(int pdg, const uint8_t* buffer, size_t size, bool forceReload = false);
   bool viewTable(int pdg, const uint8_t* buffer, size_t size, bool forceReload = false);
+  bool viewTable(int pdg, std::span<std::byte> const& span, bool forceReload = false);
   bool hasTable(int pdg) const;
 
   void useEfficiency(bool val) { mUseEfficiency = val; }
@@ -51,9 +52,8 @@ class TrackSmearer
   double getAbsEtaRes(int pdg, float nch, float eta, float pt) const;
   double getEfficiency(int pdg, float nch, float eta, float pt) const;
 
-  int getIndexPDG(int pdg) const;
-
-  const char* getParticleName(int pdg) const;
+  static int getIndexPDG(int pdg);
+  static const char* getParticleName(int pdg);
 
   void setdNdEta(float val) { mdNdEta = val; }
   void setCcdbManager(o2::ccdb::BasicCCDBManager* mgr) { mCcdbManager = mgr; }
@@ -71,7 +71,7 @@ class TrackSmearer
  private:
   o2::ccdb::BasicCCDBManager* mCcdbManager = nullptr;
 
-  bool checkSpecialCase(int pdg, lutHeader_t const& header);
+  static bool checkSpecialCase(int pdg, lutHeader_t const& header);
 };
 
 } // namespace o2::delphes

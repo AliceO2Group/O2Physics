@@ -144,6 +144,11 @@ class FlatLutData
   static FlatLutData ViewFromBuffer(const uint8_t* buffer, size_t size);
 
   /**
+   * @brief Construct a new FlatLutData from external span as a view
+   */
+  static FlatLutData ViewFromBuffer(std::span<std::byte> const& span);
+
+  /**
    * @brief Construct a new FlatLutData from a file
    */
   static FlatLutData loadFromFile(std::ifstream& file, const char* filename);

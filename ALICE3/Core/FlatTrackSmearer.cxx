@@ -19,7 +19,7 @@
 
 namespace o2::delphes
 {
-int TrackSmearer::getIndexPDG(int pdg) const
+int TrackSmearer::getIndexPDG(int pdg)
 {
   switch (std::abs(pdg)) {
     case 11:
@@ -45,7 +45,7 @@ int TrackSmearer::getIndexPDG(int pdg) const
   }
 }
 
-const char* TrackSmearer::getParticleName(int pdg) const
+const char* TrackSmearer::getParticleName(int pdg)
 {
   switch (std::abs(pdg)) {
     case 11:
@@ -165,6 +165,11 @@ bool TrackSmearer::viewTable(int pdg, const uint8_t* buffer, size_t size, bool f
   return true;
 }
 
+bool TrackSmearer::viewTable(int pdg, std::span<std::byte> const& span, bool forceReload)
+{
+  return viewTable(pdg, reinterpret_cast<const uint8_t*>(span.data()), span.size_bytes(), forceReload);
+}
+
 bool TrackSmearer::hasTable(int pdg) const
 {
   const int ipdg = getIndexPDG(pdg);
@@ -213,8 +218,8 @@ const lutEntry_t* TrackSmearer::getLUTEntry(const int pdg, const float nch, cons
   auto ipt = header.ptmap.find(pt);
 
   // Interpolate efficiency if requested
-  auto fraction = header.nchmap.fracPositionWithinBin(nch);
   if (mInterpolateEfficiency) {
+    auto fraction = header.nchmap.fracPositionWithinBin(nch);
     static constexpr float kFractionThreshold = 0.5f;
     if (fraction > kFractionThreshold) {
       switch (mWhatEfficiency) {
