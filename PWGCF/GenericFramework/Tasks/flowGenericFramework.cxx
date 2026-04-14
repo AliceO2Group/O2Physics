@@ -311,17 +311,7 @@ struct FlowGenericFramework {
     int histBin;
     int flag; // just store the enum
   };
-  std::vector<EventCut> eventcutflags = {
-    {cfgEventCutFlags.cfgNoSameBunchPileupCut, kNoSameBunchPileup, o2::aod::evsel::kNoSameBunchPileup},
-    {cfgEventCutFlags.cfgIsGoodZvtxFT0vsPV, kIsGoodZvtxFT0vsPV, o2::aod::evsel::kIsGoodZvtxFT0vsPV},
-    {cfgEventCutFlags.cfgNoCollInTimeRangeStandard, kNoCollInTimeRangeStandard, o2::aod::evsel::kNoCollInTimeRangeStandard},
-    {cfgEventCutFlags.cfgNoCollInRofStandard, kNoCollInRofStandard, o2::aod::evsel::kNoCollInRofStandard},
-    {cfgEventCutFlags.cfgNoHighMultCollInPrevRof, kNoHighMultCollInPrevRof, o2::aod::evsel::kNoHighMultCollInPrevRof},
-    {cfgEventCutFlags.cfgNoTimeFrameBorder, kNoTimeFrameBorder, o2::aod::evsel::kIsVertexITSTPC},
-    {cfgEventCutFlags.cfgNoITSROFrameBorder, kNoITSROFrameBorder, o2::aod::evsel::kIsGoodITSLayersAll},
-    {cfgEventCutFlags.cfgIsVertexITSTPC, kIsVertexITSTPC, o2::aod::evsel::kNoTimeFrameBorder},
-    {cfgEventCutFlags.cfgIsGoodITSLayersAll, kIsGoodITSLayersAll, o2::aod::evsel::kNoITSROFrameBorder},
-  };
+  std::vector<EventCut> eventcutflags;
   enum Particles {
     PIONS,
     KAONS,
@@ -481,6 +471,20 @@ struct FlowGenericFramework {
 
     for (const auto& [etamin, etamax] : o2::analysis::gfw::etagapsPtPt) {
       LOGF(info, "pt-pt subevent: {%.1f,%.1f}", etamin, etamax);
+    }
+
+    // Setup event cuts
+    eventcutflags.push_back({cfgEventCutFlags.cfgNoSameBunchPileupCut, kNoSameBunchPileup, o2::aod::evsel::kNoSameBunchPileup});
+    eventcutflags.push_back({cfgEventCutFlags.cfgIsGoodZvtxFT0vsPV, kIsGoodZvtxFT0vsPV, o2::aod::evsel::kIsGoodZvtxFT0vsPV});
+    eventcutflags.push_back({cfgEventCutFlags.cfgNoCollInTimeRangeStandard, kNoCollInTimeRangeStandard, o2::aod::evsel::kNoCollInTimeRangeStandard});
+    eventcutflags.push_back({cfgEventCutFlags.cfgNoCollInRofStandard, kNoCollInRofStandard, o2::aod::evsel::kNoCollInRofStandard});
+    eventcutflags.push_back({cfgEventCutFlags.cfgNoHighMultCollInPrevRof, kNoHighMultCollInPrevRof, o2::aod::evsel::kNoHighMultCollInPrevRof});
+    eventcutflags.push_back({cfgEventCutFlags.cfgNoTimeFrameBorder, kNoTimeFrameBorder, o2::aod::evsel::kIsVertexITSTPC});
+    eventcutflags.push_back({cfgEventCutFlags.cfgNoITSROFrameBorder, kNoITSROFrameBorder, o2::aod::evsel::kIsGoodITSLayersAll});
+    eventcutflags.push_back({cfgEventCutFlags.cfgIsVertexITSTPC, kIsVertexITSTPC, o2::aod::evsel::kNoTimeFrameBorder});
+    eventcutflags.push_back({cfgEventCutFlags.cfgIsGoodITSLayersAll, kIsGoodITSLayersAll, o2::aod::evsel::kNoITSROFrameBorder});
+    for (const auto& cut : eventcutflags) {
+      LOGF(info, "Flag %d is %senabled", cut.histBin, (cut.enabled) ? "" : "not ");
     }
 
     AxisSpec phiAxis = {o2::analysis::gfw::phibins, o2::analysis::gfw::philow, o2::analysis::gfw::phiup, "#phi"};
@@ -1771,13 +1775,13 @@ struct FlowGenericFramework {
     registry.fill(HIST("K0/PiMinusTPC_K0"), negtrack.pt(), negtrack.tpcNSigmaKa());
     registry.fill(HIST("K0/PiMinusTOF_K0"), negtrack.pt(), negtrack.tofNSigmaKa());
 
-    registry.fill(HIST("K0/hK0s"), 1);
+    registry.fill(HIST("K0/hK0s"), 0.5, 1);
     if (cfgUsePIDEfficiencies) {
       double weffDaughter1 = getEfficiency(postrack, 1);
       double weffDaughter2 = getEfficiency(negtrack, 1);
       weff = weffDaughter1 * weffDaughter2;
       if (weff > 0)
-        registry.fill(HIST("K0/hK0s_corrected"), weff);
+        registry.fill(HIST("K0/hK0s_corrected"), 0.5, weff);
     }
 
     return true;
@@ -1859,13 +1863,13 @@ struct FlowGenericFramework {
       registry.fill(HIST("Lambda/PiMinusTPC_L"), negtrack.pt(), negtrack.tpcNSigmaKa());
       registry.fill(HIST("Lambda/PiMinusTOF_L"), negtrack.pt(), negtrack.tofNSigmaKa());
 
-      registry.fill(HIST("Lambda/hLambdas"), 1);
+      registry.fill(HIST("Lambda/hLambdas"), 0.5, 1);
       if (cfgUsePIDEfficiencies) {
         double weffDaughter1 = getEfficiency(postrack, 3);
         double weffDaughter2 = getEfficiency(negtrack, 1);
         weff = weffDaughter1 * weffDaughter2;
         if (weff > 0)
-          registry.fill(HIST("Lambda/hLambdas_corrected"), weff);
+          registry.fill(HIST("Lambda/hLambdas_corrected"), 0.5, weff);
       }
     }
     if (isAL) {
@@ -1877,13 +1881,13 @@ struct FlowGenericFramework {
       registry.fill(HIST("Lambda/PrMinusTPC_AL"), negtrack.pt(), negtrack.tpcNSigmaKa());
       registry.fill(HIST("Lambda/PrMinusTOF_AL"), negtrack.pt(), negtrack.tofNSigmaKa());
 
-      registry.fill(HIST("Lambda/hLambdas"), 1);
+      registry.fill(HIST("Lambda/hLambdas"), 0.5, 1);
       if (cfgUsePIDEfficiencies) {
         double weffDaughter1 = getEfficiency(postrack, 1);
         double weffDaughter2 = getEfficiency(negtrack, 3);
         weff = weffDaughter1 * weffDaughter2;
         if (weff > 0)
-          registry.fill(HIST("Lambda/hLambdas_corrected"), weff);
+          registry.fill(HIST("Lambda/hLambdas_corrected"), 0.5, weff);
       }
     }
     return true;
