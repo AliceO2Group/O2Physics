@@ -723,18 +723,15 @@ struct CascDerivedQAanalysis {
       // Define the type of generated MC collision
       histos.fill(HIST("hEventPVzMC"), mcCollision.posZ());
 
-      int evType = 0;
       uint8_t flagsGen = 0;
       flagsGen |= o2::aod::myMCcascades::EvFlags::EvINEL;
       // Generated collision is INEL>0
       if (mcCollision.multMCNParticlesEta10() > 0) {
         flagsGen |= o2::aod::myMCcascades::EvFlags::EvINELgt0;
-        evType++;
       }
       // Generated collision is INEL>1
       if (mcCollision.multMCNParticlesEta10() > 1) {
         flagsGen |= o2::aod::myMCcascades::EvFlags::EvINELgt1;
-        evType++;
       }
 
       uint16_t nchFT0 = mcCollision.multMCFT0A() + mcCollision.multMCFT0C();
