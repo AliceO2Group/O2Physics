@@ -104,7 +104,7 @@ def get_inputs(specs_wf: dict, device=""):
         list_inputs += [
             format_table_name(i["description"], i["subspec"], i["origin"])
             for i in dev["inputs"]
-            if i["origin"].startswith("AOD")
+            if i["origin"].startswith(("AOD", "EMB"))
         ]
     return list(dict.fromkeys(list_inputs))  # Remove duplicities
 
@@ -120,7 +120,7 @@ def get_outputs(specs_wf: dict, device=""):
         list_outputs += [
             format_table_name(i["description"], i["subspec"], i["origin"])
             for i in dev["outputs"]
-            if i["origin"].startswith("AOD")
+            if i["origin"].startswith(("AOD", "EMB"))
         ]
     return list(dict.fromkeys(list_outputs))  # Remove duplicities
 
