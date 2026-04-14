@@ -87,7 +87,7 @@ struct PhotonResoTask {
   // configurable axis
   ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {400, 0.0, 0.8}, "invariant mass axis for the neutral meson"};
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {100, 0., 20.}, "pT axis for the neutral meson"};
-  ConfigurableAxis thnConfigAxisXRelative{"thnConfigAxisERelative", {800, -1., 19.}, "(X rec - X true) / X true axis"};
+  ConfigurableAxis thnConfigAxisXRelative{"thnConfigAxisXRelative", {800, -1., 19.}, "(X rec - X true) / X true axis"};
   ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {20, 0., 100.}, "centrality axis for the current event"};
   ConfigurableAxis thnConfigAxisMult{"thnConfigAxisMult", {60, 0., 60000.}, "multiplicity axis for the current event"};
   Configurable<bool> useCent{"useCent", 0, "flag to enable usage of centrality instead of multiplicity as axis."};
