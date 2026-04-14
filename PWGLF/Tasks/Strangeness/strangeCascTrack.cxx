@@ -65,13 +65,13 @@ struct StrangeCascTrack {
 
   PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCollLabels, aod::StraCents>> perMcCollision = aod::v0data::straMCCollisionId;
   PresliceUnsorted<DerMCGenCascades> cascsPerMcCollision = aod::cascdata::straMCCollisionId;
+  Preslice<DerMCRecCascDatas> cascsPerCollision = aod::cascdata::straCollisionId;
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // subprocess switches:
 
   Configurable<bool> doProcessIons{"doProcessIons", false, "true for PbPb and OO, false for pp and pO"};
-  Configurable<bool> doCustomGroup{"doCustomGroup", true, "custom group tracked cascades in case of table order bug"};
 
   Configurable<bool> doApplyEventCuts{"doApplyEventCuts", true, "apply general event cuts"}; // event filter - PVz, sel8, INEL>0
   // Xi selections
@@ -415,10 +415,6 @@ struct StrangeCascTrack {
         return; // safety check: dismisses tracked cascades without proper reference
     }
 
-    if (cascade.straCollisionId() != collision.globalIndex()) {
-      return; // safety check: the cascade must come from that event
-    }
-
     // for tracked cascades, make a reference to standard table
     auto stdCasc = [&]() {
       if constexpr (requires { cascade.topologyChi2(); }) {
@@ -703,19 +699,61 @@ struct StrangeCascTrack {
           if (fillTruthXi || fillTruthOmega)
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/GenRecPt"), genPt, pt);
         }
-        if (fillTruthXi)
+        if (fillTruthXi) {
           histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/GenRecRapidityXi"), genYXi, cascade.yXi());
+          histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAxyPrimaryXi"), cascade.dcaXYCascToPV(), pt, mult);
+          histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAzPrimaryXi"), cascade.dcaZCascToPV(), pt, mult);
+          if (std::abs(cascmccore.pdgCodeMother()) > 4000) {
+                histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAxyDecayXi"), cascade.dcaXYCascToPV(), pt, mult);
+                histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAzDecayXi"), cascade.dcaZCascToPV(), pt, mult);
+            } else {
+                histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAxyDirectXi"), cascade.dcaXYCascToPV(), pt, mult);
+                histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAzDirectXi"), cascade.dcaZCascToPV(), pt, mult);
+            }
+        }
         if (passedAllSelsXi) {
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/GenRecRapidityXi"), genYXi, cascade.yXi());
-          if (fillTruthXi)
+          if (fillTruthXi) {
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/GenRecRapidityXi"), genYXi, cascade.yXi());
+            histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAxyPrimaryXi"), cascade.dcaXYCascToPV(), pt, mult);
+            histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAzPrimaryXi"), cascade.dcaZCascToPV(), pt, mult);
+            histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/Radius/PrimaryXi"), cascade.cascradius(), pt);
+            if (std::abs(cascmccore.pdgCodeMother()) > 4000) {
+                histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAxyDecayXi"), cascade.dcaXYCascToPV(), pt, mult);
+                histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAzDecayXi"), cascade.dcaZCascToPV(), pt, mult);
+            } else {
+                histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAxyDirectXi"), cascade.dcaXYCascToPV(), pt, mult);
+                histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAzDirectXi"), cascade.dcaZCascToPV(), pt, mult);
+            }
+          }
         }
-        if (fillTruthOmega)
+        if (fillTruthOmega) {
           histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/GenRecRapidityOmega"), genYOmega, cascade.yOmega());
+          histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAxyPrimaryOmega"), cascade.dcaXYCascToPV(), pt, mult);
+          histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAzPrimaryOmega"), cascade.dcaZCascToPV(), pt, mult);
+          if (std::abs(cascmccore.pdgCodeMother()) > 4000) {
+                histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAxyDecayOmega"), cascade.dcaXYCascToPV(), pt, mult);
+                histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAzDecayOmega"), cascade.dcaZCascToPV(), pt, mult);
+            } else {
+                histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAxyDirectOmega"), cascade.dcaXYCascToPV(), pt, mult);
+                histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAzDirectOmega"), cascade.dcaZCascToPV(), pt, mult);
+            }
+        }
         if (passedAllSelsOmega) {
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/GenRecRapidityOmega"), genYOmega, cascade.yOmega());
-          if (fillTruthOmega)
+          if (fillTruthOmega) {
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/GenRecRapidityOmega"), genYOmega, cascade.yOmega());
+            histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAxyPrimaryOmega"), cascade.dcaXYCascToPV(), pt, mult);
+            histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAzPrimaryOmega"), cascade.dcaZCascToPV(), pt, mult);
+            histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/Radius/PrimaryOmega"), cascade.cascradius(), pt);
+            if (std::abs(cascmccore.pdgCodeMother()) > 4000) {
+                  histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAxyDecayOmega"), cascade.dcaXYCascToPV(), pt, mult);
+                  histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAzDecayOmega"), cascade.dcaZCascToPV(), pt, mult);
+              } else {
+                  histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAxyDirectOmega"), cascade.dcaXYCascToPV(), pt, mult);
+                  histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAzDirectOmega"), cascade.dcaZCascToPV(), pt, mult);
+              }
+          }
         }
       }
     }
@@ -787,6 +825,19 @@ struct StrangeCascTrack {
       histos.add(Form("%s/NoSel-Truth/GenRecRapidityOmega", TypeNames[Type].data()), "Generated vs reconstructed y (Omega)", kTH2D, {{200, -1.0, 1.0}, {200, -1.0, 1.0}});
       histos.add(Form("%s/NoSel-Truth/MassXi", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisXiMass});
       histos.add(Form("%s/NoSel-Truth/MassOmega", TypeNames[Type].data()), "Invariant mass hypothesis", kTH1D, {axesConfig.axisOmegaMass});
+      ///
+      histos.add(Form("%s/NoSel-Truth/DCA/DCAxyPrimaryXi", TypeNames[Type].data()), "DCA xy for primary Xi", kTHnD, {axesConfig.axisDCAxy, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/NoSel-Truth/DCA/DCAzPrimaryXi", TypeNames[Type].data()), "DCA z for primary Xi", kTHnD, {axesConfig.axisDCAz, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/NoSel-Truth/DCA/DCAxyDirectXi", TypeNames[Type].data()), "DCA xy for direct Xi (has no mothers)", kTHnD, {axesConfig.axisDCAxy, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/NoSel-Truth/DCA/DCAzDirectXi", TypeNames[Type].data()), "DCA z for direct Xi (has no mothers)", kTHnD, {axesConfig.axisDCAz, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/NoSel-Truth/DCA/DCAxyDecayXi", TypeNames[Type].data()), "DCA xy for decay Xi (has mothers)", kTHnD, {axesConfig.axisDCAxy, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/NoSel-Truth/DCA/DCAzDecayXi", TypeNames[Type].data()), "DCA z for decay Xi (has mothers)", kTHnD, {axesConfig.axisDCAz, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/NoSel-Truth/DCA/DCAxyPrimaryOmega", TypeNames[Type].data()), "DCA xy for primary Omega", kTHnD, {axesConfig.axisDCAxy, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/NoSel-Truth/DCA/DCAzPrimaryOmega", TypeNames[Type].data()), "DCA z for primary Omega", kTHnD, {axesConfig.axisDCAz, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/NoSel-Truth/DCA/DCAxyDirectOmega", TypeNames[Type].data()), "DCA xy for direct Omega (has no mothers)", kTHnD, {axesConfig.axisDCAxy, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/NoSel-Truth/DCA/DCAzDirectOmega", TypeNames[Type].data()), "DCA z for direct Omega (has no mothers)", kTHnD, {axesConfig.axisDCAz, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/NoSel-Truth/DCA/DCAxyDecayOmega", TypeNames[Type].data()), "DCA xy for decay Omega (has mothers)", kTHnD, {axesConfig.axisDCAxy, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/NoSel-Truth/DCA/DCAzDecayOmega", TypeNames[Type].data()), "DCA z for decay Omega (has mothers)", kTHnD, {axesConfig.axisDCAz, axesConfig.axisPt, axesConfig.axisMult});
       // xi and omega selection statistics
       histos.add(Form("%s/Rec/Filters/PropDCAxy", TypeNames[Type].data()), "DCA to xy (propagated)", kTH1D, {axesConfig.axisDCAxy});
       histos.add(Form("%s/Rec/Filters/PropDCAz", TypeNames[Type].data()), "DCA to z (propagated)", kTH1D, {axesConfig.axisDCAz});
@@ -843,6 +894,22 @@ struct StrangeCascTrack {
       ///
       histos.add(Form("%s/Rec-Truth/RapCheck_TH3_Truth_Xi", TypeNames[Type].data()), "Rapidity check (pt, mult, y)", kTHnD, {axesConfig.axisPt, axesConfig.axisMult, {200, -1.0, 1.0}});
       histos.add(Form("%s/Rec-Truth/RapCheck_TH3_Truth_Omega", TypeNames[Type].data()), "Rapidity check (pt, mult, y)", kTHnD, {axesConfig.axisPt, axesConfig.axisMult, {200, -1.0, 1.0}});
+      ///
+      histos.add(Form("%s/Rec-Truth/DCA/DCAxyPrimaryXi", TypeNames[Type].data()), "DCA xy for primary Xi", kTHnD, {axesConfig.axisDCAxy, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec-Truth/DCA/DCAzPrimaryXi", TypeNames[Type].data()), "DCA z for primary Xi", kTHnD, {axesConfig.axisDCAz, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec-Truth/DCA/DCAxyDirectXi", TypeNames[Type].data()), "DCA xy for direct Xi (has no mothers)", kTHnD, {axesConfig.axisDCAxy, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec-Truth/DCA/DCAzDirectXi", TypeNames[Type].data()), "DCA z for direct Xi (has no mothers)", kTHnD, {axesConfig.axisDCAz, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec-Truth/DCA/DCAxyDecayXi", TypeNames[Type].data()), "DCA xy for decay Xi (has mothers)", kTHnD, {axesConfig.axisDCAxy, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec-Truth/DCA/DCAzDecayXi", TypeNames[Type].data()), "DCA z for decay Xi (has mothers)", kTHnD, {axesConfig.axisDCAz, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec-Truth/DCA/DCAxyPrimaryOmega", TypeNames[Type].data()), "DCA xy for primary Omega", kTHnD, {axesConfig.axisDCAxy, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec-Truth/DCA/DCAzPrimaryOmega", TypeNames[Type].data()), "DCA z for primary Omega", kTHnD, {axesConfig.axisDCAz, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec-Truth/DCA/DCAxyDirectOmega", TypeNames[Type].data()), "DCA xy for direct Omega (has no mothers)", kTHnD, {axesConfig.axisDCAxy, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec-Truth/DCA/DCAzDirectOmega", TypeNames[Type].data()), "DCA z for direct Omega (has no mothers)", kTHnD, {axesConfig.axisDCAz, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec-Truth/DCA/DCAxyDecayOmega", TypeNames[Type].data()), "DCA xy for decay Omega (has mothers)", kTHnD, {axesConfig.axisDCAxy, axesConfig.axisPt, axesConfig.axisMult});
+      histos.add(Form("%s/Rec-Truth/DCA/DCAzDecayOmega", TypeNames[Type].data()), "DCA z for decay Omega (has mothers)", kTHnD, {axesConfig.axisDCAz, axesConfig.axisPt, axesConfig.axisMult});
+      ///
+      histos.add(Form("%s/Rec-Truth/Radius/PrimaryXi", TypeNames[Type].data()), "Cascade radius (primary Xi)", kTH2D, {{500, 0.0, 50.0}, axesConfig.axisPt});
+      histos.add(Form("%s/Rec-Truth/Radius/PrimaryOmega", TypeNames[Type].data()), "Cascade radius (primary Omega)", kTH2D, {{500, 0.0, 50.0}, axesConfig.axisPt});
     });
     // for MC-specific processing
     // all generated events:
@@ -1122,32 +1189,28 @@ struct StrangeCascTrack {
     }
   }
 
-  std::vector<std::vector<int64_t>> traCascsGrouped;
+  std::vector<std::vector<int>> traCascsGrouped;
   void processDerivedMCRec(DerMCRecCollisions const& collisions, DerMCRecCascDatas const& allCascs, DerMCRecTraCascDatas const& traCascs, DauTracks const&, DerMCGenCascades const&)
   {
-    if (doCustomGroup) {
+    // custom group tracked cascades - a temporary fix for wrong ordering in OO MC
       traCascsGrouped.clear();
       traCascsGrouped.resize(collisions.size());
       for (const auto& casc : traCascs) {
         traCascsGrouped[casc.straCollisionId()].push_back(casc.globalIndex());
       }
-    }
     for (const auto& collision : collisions) {
       fillEvents(collision); // save info about all processed events
+      auto slicedAllCascs = allCascs.sliceBy(cascsPerCollision, collision.globalIndex());
       if (isValidEvent(collision, true)) {
         histos.fill(HIST("Rec-Events/EvCounter"), 0.5);
         histos.fill(HIST("Rec-Events/PVxy"), collision.posX(), collision.posY());
         histos.fill(HIST("Rec-Events/PVz"), collision.posZ());
         double mult = (doProcessIons) ? collision.centFT0C() : collision.centFT0M();
         histos.fill(HIST("Rec-Events/Mult"), mult);
-        analyseCascs(collision, allCascs); // process all cascades
-        if (doCustomGroup) {
-          for (const int idx : traCascsGrouped[collision.globalIndex()]) {
+        analyseCascs(collision, slicedAllCascs); // process all cascades
+        for (int const& idx : traCascsGrouped[collision.globalIndex()]) {
             auto casc = traCascs.rawIteratorAt(idx);
             analyseCascade(collision, casc);
-          }
-        } else {
-          analyseCascs(collision, traCascs);
         }
       }
     }
