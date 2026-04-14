@@ -85,19 +85,20 @@ std::array<std::shared_ptr<TH2>, kNEtaHists> dEdxPrV0{};
 std::array<std::shared_ptr<TH2>, kNEtaHists> dEdxElV0{};
 std::array<std::shared_ptr<TH2>, kNEtaHists> dEdxPiMC{};
 std::array<std::shared_ptr<TH2>, kNEtaHists> dEdxMuMC{};
-std::array<std::shared_ptr<TH2>, kNEtaHists> dEdxPiMCLoSel{};
-std::array<std::shared_ptr<TH2>, kNEtaHists> dEdxMuMCLoSel{};
 std::array<std::shared_ptr<TH3>, kNEtaHists> dEdx{};
 std::array<std::shared_ptr<TH2>, kNEtaHists> pTVsP{};
 std::array<std::shared_ptr<TH2>, kNEtaHists> nClVsP{};
+std::array<std::shared_ptr<TH2>, kNEtaHists> nCrRoVsNcl{};
 std::array<std::shared_ptr<TH2>, kNEtaHists> nClVsPElV0{};
 std::array<std::shared_ptr<TH2>, kNEtaHists> nClVsPPiV0{};
 std::array<std::shared_ptr<TH2>, kNEtaHists> nClVsPPrV0{};
-std::array<std::shared_ptr<TH2>, kNEtaHists> nClVsPPiMC{};
+std::array<std::shared_ptr<TH2>, kNEtaHists> nClPIDVsnCl{};
 std::array<std::shared_ptr<TProfile>, kNEtaHists> nClVsPp{};
+std::array<std::shared_ptr<TProfile>, kNEtaHists> nCrRoVsNclp{};
 std::array<std::shared_ptr<TProfile>, kNEtaHists> nClVsPpElV0{};
 std::array<std::shared_ptr<TProfile>, kNEtaHists> nClVsPpPiV0{};
 std::array<std::shared_ptr<TProfile>, kNEtaHists> nClVsPpPrV0{};
+std::array<std::shared_ptr<TProfile>, kNEtaHists> nClPIDVsnClp{};
 
 struct PiKpRAA {
 
@@ -112,8 +113,6 @@ struct PiKpRAA {
   static constexpr float kMinPtNchSel{0.1f};
   static constexpr float kMaxPtNchSel{3.0f};
   static constexpr float kMinCharge{3.f};
-  static constexpr float kMinPElMIP{0.3f};
-  static constexpr float kMaxPElMIP{0.45f};
   static constexpr float kMinPMIP{0.4f};
   static constexpr float kMaxPMIP{0.6f};
   static constexpr float kMindEdxMIP{40.0f};
@@ -136,23 +135,24 @@ struct PiKpRAA {
     Configurable<float> maxEta{"maxEta", +0.8, "Daughter maximum-eta selection"};
     Configurable<float> minPt{"minPt", 0.1, "minimum pt of the tracks"};
     Configurable<float> maxPt{"maxPt", 10000000000.0, "maximum pt of the tracks"};
+    Configurable<float> nSigmaDCAxy{"nSigmaDCAxy", 1.0, "nSigma DCAxy selection"};
+    Configurable<float> nSigmaDCAz{"nSigmaDCAz", 1.0, "nSigma DCAz selection"};
 
     Configurable<int16_t> minNCrossedRows{"minNCrossedRows", 70, "minimum number of crossed rows"};
-    Configurable<float> minNCrossedRowsOverFindableCls{"minNCrossedRowsOverFindableCls", 0.8, "min N crossed rows over findable Cls"};
+    Configurable<int16_t> minNcls{"minNcls", 135, "minimum number of clusters for primary-particle selection"};
+    Configurable<uint8_t> minNClusITS{"minNClusITS", 7, "minimum number of ITS clusters"};
+    Configurable<float> minChi2ClsTPC{"minChi2ClsTPC", 0.5, "Max chi2 per Cls TPC"};
     Configurable<float> maxChi2ClsTPC{"maxChi2ClsTPC", 4.0, "Max chi2 per Cls TPC"};
-    Configurable<float> maxChi2ClsITS{"maxChi2ClsITS", 36.0, "chi2 per Cls ITS"};
-    Configurable<float> maxDCAZ{"maxDCAZ", 2.0, "Max DCA Z"};
-    Configurable<bool> itsRefit{"itsRefit", true, "Require ITS refit"};
-    Configurable<bool> tpcRefit{"tpcRefit", true, "Require TPC refit"};
-    Configurable<bool> chi2Golden{"chi2Golden", true, "Require Chi2 golde selection"};
-    Configurable<bool> its1HitIB{"its1HitIB", true, "Require one hit in the ITS IB"};
+    Configurable<float> chi2ClsITS{"chi2ClsITS", 36.0, "chi2 per Cls ITS selection"};
+    Configurable<float> maxElTOFBeta{"maxElTOFBeta", 0.1, "Maximum beta TOF selection"};
 
     // Phi cut
     Configurable<bool> applyPhiCut{"applyPhiCut", false, "Apply geometrical cut?"};
     Configurable<bool> applyEtaCal{"applyEtaCal", false, "Apply eta calibration?"};
     Configurable<bool> applyPlateauSel{"applyPlateauSel", false, "Apply eta calibration?"};
-    Configurable<bool> usePinPhiSelection{"usePinPhiSelection", true, "Uses Phi selection as a function of P or Pt?"};
-    Configurable<bool> applyNclSel{"applyNclSel", false, "Apply Min. found Ncl in TPC?"};
+    Configurable<bool> usePinPhiSelection{"usePinPhiSelection", true, "Uses Phi selection as a function of p or p at inner wall of TPC?"};
+    Configurable<bool> applyNclSel{"applyNclSel", false, "Apply Min. N clusters selection?"};
+    Configurable<bool> useNclsPID{"useNclsPID", true, "Use Ncl for PID?"};
   } trackSelections;
 
   struct : ConfigurableGroup {
@@ -162,8 +162,8 @@ struct PiKpRAA {
 
     // Selection criteria: acceptance
     Configurable<float> rapidityCut{"rapidityCut", 0.5, "rapidity"};
-    Configurable<bool> useNclsPID{"useNclsPID", true, "Use Ncl for PID?"};
-    Configurable<int16_t> minNcl{"minNcl", 135, "minimum found Ncl in TPC"};
+    Configurable<int16_t> minNcl{"minNcl", 135, "minimum number of clusters for V0 daughters"};
+    Configurable<uint8_t> nSharedClusTpc{"nSharedClusTpc", 5, "maximum number of shared clusters"};
 
     // Standard 5 topological criteria
     Configurable<float> v0cospa{"v0cospa", 0.995, "min V0 CosPA"};
@@ -220,7 +220,7 @@ struct PiKpRAA {
   Configurable<bool> selTVXMC{"selTVXMC", true, "apply TVX selection in MC?"};
   Configurable<bool> selINELgt0{"selINELgt0", true, "Select INEL > 0?"};
   Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy", false, "T0C Occu cut"};
-  Configurable<bool> applyNchSel{"applyNchSel", false, "Use mid-rapidity-based Nch selection"};
+  Configurable<bool> loadHisWithDCASel{"loadHisWithDCASel", false, "load histograms with DCA selections"};
 
   // Event selection
   Configurable<float> posZcut{"posZcut", +10.0, "z-vertex position cut"};
@@ -247,6 +247,7 @@ struct PiKpRAA {
   ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {200, -10.0f, 10.0f}, "N sigma TPC"};
   ConfigurableAxis axisdEdx{"axisdEdx", {140, 20.0, 160.0}, "dEdx binning"};
   ConfigurableAxis axisDCAxy{"axisDCAxy", {105, -1.05f, 1.05f}, "DCAxy axis"};
+  ConfigurableAxis axisPtFineFixedWidth{"axisPtFineFixedWidth", {250, 0.1f, 20.1f}, "DCAxy axis"};
   Configurable<int> nBinsNch{"nBinsNch", 400, "N bins Nch (|eta|<0.8)"};
   Configurable<int> nBinsNPV{"nBinsNPV", 600, "N bins ITS tracks"};
   Configurable<float> minNch{"minNch", 0, "Min Nch (|eta|<0.8)"};
@@ -255,8 +256,8 @@ struct PiKpRAA {
   Configurable<float> maxNpv{"maxNpv", 600, "Max NPV"};
 
   // CCDB paths
-  Configurable<std::string> pathMeanNch{"pathMeanNch", "Users/o/omvazque/MeanNch/OO/Pass2/PerTimeStamp/Aug20", "base path to the ccdb object"};
-  Configurable<std::string> pathSigmaNch{"pathSigmaNch", "Users/o/omvazque/SigmaNch/OO/Pass2/PerTimeStamp/Aug20", "base path to the ccdb object"};
+  Configurable<std::string> pathDCAxy{"pathDCAxy", "Users/o/omvazque/DCAxy/Test", "base path to the ccdb object"};
+  Configurable<std::string> pathDCAz{"pathDCAz", "Users/o/omvazque/DCAz/Test", "base path to the ccdb object"};
   Configurable<std::string> pathEtaCal{"pathEtaCal", "Users/o/omvazque/EtaCal/OO/Global", "base path to the ccdb object"};
   Configurable<std::string> pathEtaCalPlateau{"pathEtaCalPlateau", "Users/o/omvazque/EtaCal/OO/Global", "base path to the ccdb object"};
   Configurable<std::string> pathPhiCutHigh{"pathPhiCutHigh", "Users/o/omvazque/PhiCut/OO/Global/High", "base path to the ccdb object"};
@@ -319,11 +320,11 @@ struct PiKpRAA {
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   Service<ccdb::BasicCCDBManager> ccdb;
 
-  struct ConfigNch {
-    TH1F* hMeanNch = nullptr;
-    TH1F* hSigmaNch = nullptr;
-    bool calibrationsLoaded = false;
-  } cfgNch;
+  struct ConfigDCA {
+    TH1F* hDCAxy = nullptr;
+    TH1F* hDCAz = nullptr;
+    bool dcaSelectionsLoaded = false;
+  } cfgDCA;
 
   struct ConfigPhiCut {
     TH1F* hPhiCutHigh = nullptr;
@@ -338,51 +339,39 @@ struct PiKpRAA {
     bool isCalPlateauLoaded = false;
   } etaCal;
 
-  TrackSelection trkSelGlobalOpenDCAxy;
-  TrackSelection trkSelGlobal;
+  // TrackSelection trkSelGlobalOpenDCAxy;
+  // TrackSelection trkSelGlobal;
 
-  TrackSelection trkSelOpenDCAxy()
-  {
-    TrackSelection selectedTracks;
-    selectedTracks.SetTrackType(o2::aod::track::TrackTypeEnum::Track); // Run 3 track asked by default
-    selectedTracks.SetPtRange(trackSelections.minPt, trackSelections.maxPt);
-    selectedTracks.SetEtaRange(trackSelections.minEta, trackSelections.maxEta);
-    selectedTracks.SetRequireITSRefit(trackSelections.itsRefit);
-    selectedTracks.SetRequireTPCRefit(trackSelections.tpcRefit);
-    selectedTracks.SetRequireGoldenChi2(trackSelections.chi2Golden);
-    selectedTracks.SetMinNCrossedRowsTPC(trackSelections.minNCrossedRows);
-    selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(trackSelections.minNCrossedRowsOverFindableCls);
-    selectedTracks.SetMaxChi2PerClusterTPC(trackSelections.maxChi2ClsTPC);
-    if (trackSelections.its1HitIB)
-      selectedTracks.SetRequireHitsInITSLayers(1, {0, 1, 2}); // one hit in any layer of the inner barrel
-    if (!trackSelections.its1HitIB)
-      selectedTracks.SetRequireHitsInITSLayers(7, {0, 1, 2, 3, 4, 5, 6}); // one hit in every of the seven layers
-    selectedTracks.SetMaxChi2PerClusterITS(trackSelections.maxChi2ClsITS);
-    selectedTracks.SetMaxDcaZ(trackSelections.maxDCAZ);
-    return selectedTracks;
-  }
+  // TrackSelection trkSelOpenDCAxy() {
+  //     TrackSelection selectedTracks;
+  //     selectedTracks.SetTrackType(o2::aod::track::TrackTypeEnum::Track); // Run 3 track asked by default
+  //     // selectedTracks.SetPtRange(trackSelections.minPt, trackSelections.maxPt);
+  //     // selectedTracks.SetEtaRange(trackSelections.minEta, trackSelections.maxEta);
+  //     // selectedTracks.SetRequireITSRefit(trackSelections.itsRefit);
+  //     // selectedTracks.SetRequireTPCRefit(trackSelections.tpcRefit);
+  //     // selectedTracks.SetRequireGoldenChi2(trackSelections.chi2Golden);
+  //     // selectedTracks.SetMinNCrossedRowsTPC(trackSelections.minNCrossedRows);
+  //     // selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(trackSelections.minNCrossedRowsOverFindableCls);
+  //     // selectedTracks.SetRequireHitsInITSLayers(1, {0, 1, 2}); // one hit in any layer of the inner barrel
+  //     // selectedTracks.SetMaxDcaZ(trackSelections.maxDCAZ);
+  //     return selectedTracks;
+  // }
 
-  TrackSelection trkSelGlb()
-  {
-    TrackSelection selectedTracks;
-    selectedTracks.SetTrackType(o2::aod::track::TrackTypeEnum::Track); // Run 3 track asked by default
-    selectedTracks.SetPtRange(trackSelections.minPt, trackSelections.maxPt);
-    selectedTracks.SetEtaRange(trackSelections.minEta, trackSelections.maxEta);
-    selectedTracks.SetRequireITSRefit(trackSelections.itsRefit);
-    selectedTracks.SetRequireTPCRefit(trackSelections.tpcRefit);
-    selectedTracks.SetRequireGoldenChi2(trackSelections.chi2Golden);
-    selectedTracks.SetMinNCrossedRowsTPC(trackSelections.minNCrossedRows);
-    selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(trackSelections.minNCrossedRowsOverFindableCls);
-    selectedTracks.SetMaxChi2PerClusterTPC(trackSelections.maxChi2ClsTPC);
-    if (trackSelections.its1HitIB)
-      selectedTracks.SetRequireHitsInITSLayers(1, {0, 1, 2}); // one hit in any layer of the inner barrel
-    if (!trackSelections.its1HitIB)
-      selectedTracks.SetRequireHitsInITSLayers(7, {0, 1, 2, 3, 4, 5, 6}); // one hit in every of the seven layers
-    selectedTracks.SetMaxChi2PerClusterITS(trackSelections.maxChi2ClsITS);
-    selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / pow(pt, 1.1f); });
-    selectedTracks.SetMaxDcaZ(trackSelections.maxDCAZ);
-    return selectedTracks;
-  }
+  // TrackSelection trkSelGlb() {
+  //     TrackSelection selectedTracks;
+  //     selectedTracks.SetTrackType(o2::aod::track::TrackTypeEnum::Track); // Run 3 track asked by default
+  //     // selectedTracks.SetPtRange(trackSelections.minPt, trackSelections.maxPt);
+  //     // selectedTracks.SetEtaRange(trackSelections.minEta, trackSelections.maxEta);
+  //     // selectedTracks.SetRequireITSRefit(trackSelections.itsRefit);
+  //     // selectedTracks.SetRequireTPCRefit(trackSelections.tpcRefit);
+  //     // selectedTracks.SetRequireGoldenChi2(trackSelections.chi2Golden);
+  //     // selectedTracks.SetMinNCrossedRowsTPC(trackSelections.minNCrossedRows);
+  //     // selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(trackSelections.minNCrossedRowsOverFindableCls);
+  //     // selectedTracks.SetRequireHitsInITSLayers(1, {0, 1, 2}); // one hit in any layer of the inner barrel
+  //     // selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / pow(pt, 1.1f); });
+  //     // selectedTracks.SetMaxDcaZ(trackSelections.maxDCAZ);
+  //     return selectedTracks;
+  // }
 
   int currentRunNumberNchSel;
   int currentRunNumberPhiSel;
@@ -396,18 +385,18 @@ struct PiKpRAA {
 
     currentRunNumberNchSel = -1;
     currentRunNumberPhiSel = -1;
-    trkSelGlobalOpenDCAxy = trkSelOpenDCAxy();
-    trkSelGlobal = trkSelGlb();
+    // trkSelGlobalOpenDCAxy = trkSelOpenDCAxy();
+    // trkSelGlobal = trkSelGlb();
 
     // define axes you want to use
-    const std::string titlePorPt{trackSelections.usePinPhiSelection ? "#it{p} (GeV/#it{c})" : "#it{p}_{T} (GeV/#it{c})"};
+    const std::string titlePorPTPC{trackSelections.usePinPhiSelection ? "#it{p} (GeV/#it{c})" : "#it{p} inner TPC wall (GeV/#it{c})"};
     const AxisSpec axisZpos{binsZpos, "Vtx_{z} (cm)"};
     const AxisSpec axisEvent{22, 0.5, 22.5, ""};
-    const AxisSpec axisNcl{161, -0.5, 160.5, "#it{N}_{cl} TPC"};
+    const AxisSpec axisNcl{161, -0.5, 160.5, "#it{N}_{cl}"};
     const AxisSpec axisPt{binsPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisPtV0s{binsPtV0s, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec axisPtNcl{binsPtNcl, Form("%s", titlePorPt.data())};
-    const AxisSpec axisXPhiCut{binsPtPhiCut, Form("%s", titlePorPt.data())};
+    const AxisSpec axisPtNcl{binsPtNcl, titlePorPTPC.data()};
+    const AxisSpec axisXPhiCut{binsPtPhiCut, titlePorPTPC.data()};
     const AxisSpec axisCent{binsCent, "Centrality Perc."};
     const char* endingEta[kNEtaHists] = {"86", "64", "42", "20", "02", "24", "46", "68"};
     const char* latexEta[kNEtaHists] = {"-0.8<#eta<-0.6", "-0.6<#eta<-0.4", "-0.4<#eta<-0.2", "-0.2<#eta<0", "0<#eta<0.2", "0.2<#eta<0.4", "0.4<#eta<0.6", "0.6<#eta<0.8"};
@@ -421,15 +410,19 @@ struct PiKpRAA {
     registry.add("T0CcentVsFoundFT0", "Found(=1.5) NOT Found(=0.5);;Status;", kTH2F, {{{axisCent}, {2, 0, 2}}});
     registry.add("T0CcentVsBCVsFT0VsTVXVsEvSel", "All=1 | BC=2 | FT0=3 | TVX=4 | EvSel=5;;Status;", kTH2F, {{axisCent}, {5, 0.5, 5.5}});
     registry.add("NchVsCent", "Measured Nch v.s. Centrality (At least Once Rec. Coll. + Sel. criteria);;Nch", kTH2F, {{axisCent, {nBinsNch, minNch, maxNch}}});
-    registry.add("NclVsEtaPID", ";#eta;Ncl used for PID", kTH2F, {{{axisEta}, {161, -0.5, 160.5}}});
+    registry.add("NclVsEtaPID", ";#eta;Ncl used for PID", kTH2F, {axisEta, axisNcl});
     registry.add("NclVsEtaPIDp", ";#eta;#LTNcl#GT used for PID", kTProfile, {axisEta});
-    registry.add("NclVsEta", ";#eta;Found Ncl TPC", kTH2F, {{{axisEta}, {161, -0.5, 160.5}}});
+    registry.add("NclVsEta", ";#eta;Found Ncl TPC", kTH2F, {axisEta, axisNcl});
     registry.add("NclVsEtap", ";#eta;Found #LTNcl#GT TPC", kTProfile, {axisEta});
-    registry.add("NclVsPt", ";#eta;Found Ncl TPC", kTH2F, {{{axisPtNcl}, {161, -0.5, 160.5}}});
-    registry.add("NclVsPtPID", ";#eta;PID Ncl", kTH2F, {{{axisPtNcl}, {161, -0.5, 160.5}}});
+    registry.add("MomentumTPCVsP", ";Global track momentum (GeV/#it{c});Momentum at inner wall of the TPC (GeV/#it{c});", kTH2F, {axisPtV0s, axisPtV0s});
+    registry.add("DCAxyVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm);", kTH2F, {{250, 0.1, 20.1}, {axisDCAxy}});
+    registry.add("DCAzVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{z} (cm);", kTH2F, {{250, 0.1, 20.1}, {axisDCAxy}});
     registry.add("dcaVsPtPi", "Primary pions;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm);Centrality Perc.;", kTH3F, {axisPt, axisDCAxy, axisCent});
     registry.add("dcaVsPtPr", "Primary protons;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm);Centrality Perc.;", kTH3F, {axisPt, axisDCAxy, axisCent});
-    registry.add("TrackDaughterCounter", "itsrefit, and itshit NOT appplied for electrons sel.;Trk Sel.; Entries;", kTH1F, {{14, 0.5, 14.5}});
+
+    auto hPvsPTPC = registry.get<TH2>(HIST("MomentumTPCVsP"));
+    hPvsPTPC->GetXaxis()->SetTitle("p (GeV/#it{c})");
+    hPvsPTPC->GetYaxis()->SetTitle("p at TPC inner wall (GeV/#it{c})");
 
     auto hstat = registry.get<TH1>(HIST("EventCounter"));
     auto* x = hstat->GetXaxis();
@@ -468,8 +461,6 @@ struct PiKpRAA {
 
     if (doprocessCalibrationAndV0s) {
       registry.add("NchVsNPV", ";Nch; NPV;", kTH2F, {{{nBinsNPV, minNpv, maxNpv}, {nBinsNch, minNch, maxNch}}});
-      registry.add("ExcludedEvtVsNch", ";Nch;Entries;", kTH1F, {{nBinsNch, minNch, maxNch}});
-      registry.add("ExcludedEvtVsNPV", ";NPV;Entries;", kTH1F, {{nBinsNPV, minNpv, maxNpv}});
       registry.add("V0sCounter", ";V0 type; Entries;", kTH1F, {{4, 0.5, 4.5}});
       registry.add("dcaDauVsPt", ";V0 #it{p}_{T} (GeV/#it{c});DCA_{xy} (cm) daughters;", kTH2F, {axisPt, axisDCAxy});
       registry.add("nSigPiFromK0s", ";#it{n#sigma};;", kTH2F, {axisPtV0s, axisNsigmaTPC});
@@ -489,21 +480,16 @@ struct PiKpRAA {
       registry.add("MassLVsPt", ";;Inv. Mass (GeV/#it{c}^{2});", kTH2F, {axisPtV0s, axisLambdaMass});
       registry.add("MassALVsPt", ";;Inv. Mass (GeV/#it{c}^{2});", kTH2F, {axisPtV0s, axisLambdaMass});
       registry.add("MassGVsPt", ";;Inv. Mass (GeV/#it{c}^{2});", kTH2F, {axisPtV0s, axisGammaMass});
-
-      registry.add("NclVsPhipBeforeCut", Form("Found #LTNcl#GT TPC;%s (GeV/#it{c});#varphi", titlePorPt.data()), kTProfile2D, {{{axisXPhiCut}, {350, 0.0, 0.35}}});
-      registry.add("NclVsPhipBeforeCutPID", Form("#LTNcl#GT used for PID;%s (GeV/#it{c});#varphi", titlePorPt.data()), kTProfile2D, {{{axisXPhiCut}, {350, 0.0, 0.35}}});
-      registry.add("NclVsPhipAfterCut", Form("Found #LTNcl#GT TPC;%s (GeV/#it{c});#varphi", titlePorPt.data()), kTProfile2D, {{{axisXPhiCut}, {350, 0.0, 0.35}}});
-      registry.add("NclVsPhipAfterCutPID", Form("#LTNcl#GT used for PID;%s (GeV/#it{c});#varphi", titlePorPt.data()), kTProfile2D, {{{axisXPhiCut}, {350, 0.0, 0.35}}});
-
-      registry.add("NclVsEtaPiMIP", "MIP #pi^{+} + #pi^{-} (0.4 < #it{p} < 0.6 GeV/#it{c}, 40 < dE/dx < 60);#eta;Ncl TPC", kTH2F, {{{axisEta}, {161, -0.5, 160.5}}});
-      registry.add("NclVsEtaPiMIPp", "MIP #pi^{+} + #pi^{-} (0.4 < #it{p} < 0.6 GeV/#it{c}, 40 < dE/dx < 60);#eta;#LTNcl#GT TPC", kTProfile, {axisEta});
+      registry.add("NclVsPhip", Form("Found #LTNcl#GT TPC;%s (GeV/#it{c});#varphi", titlePorPTPC.data()), kTProfile2D, {{{axisXPhiCut}, {350, 0.0, 0.35}}});
+      registry.add("NclPIDVsPhip", Form("#LTNcl#GT used for PID;%s (GeV/#it{c});#varphi", titlePorPTPC.data()), kTProfile2D, {{{axisXPhiCut}, {350, 0.0, 0.35}}});
+      registry.add("NclVsEtaPiMIP", "MIP #pi^{+} + #pi^{-}: 0.4 < #it{p} < 0.6 [GeV/#it{c}], 40 < dE/dx < 60;#eta;Ncl TPC", kTH2F, {{{axisEta}, {161, -0.5, 160.5}}});
+      registry.add("NclVsEtaPiMIPp", "MIP #pi^{+} + #pi^{-}: 0.4 < #it{p} < 0.6 [GeV/#it{c}], 40 < dE/dx < 60;#eta;#LTNcl#GT TPC", kTProfile, {axisEta});
       registry.add("NclVsEtaPiV0", ";#eta;Ncl TPC", kTH2F, {axisEta, axisNcl});
       registry.add("NclVsEtaPiV0p", ";#eta;#LTNcl#GT TPC", kTProfile, {axisEta});
       registry.add("NclVsEtaPrV0", ";#eta;Ncl TPC", kTH2F, {axisEta, axisNcl});
       registry.add("NclVsEtaPrV0p", ";#eta;#LTNcl#GT TPC", kTProfile, {axisEta});
       registry.add("NclVsEtaElV0", ";#eta;Ncl TPC", kTH2F, {axisEta, axisNcl});
       registry.add("NclVsEtaElV0p", ";#eta;#LTNcl#GT TPC", kTProfile, {axisEta});
-
       registry.add("EtaVsPhi", ";#eta;#varphi;", kTH2F, {{axisEta}, {100, 0, o2::constants::math::TwoPI}});
       registry.add("EtaVsYK0s", ";#eta;#it{y};", kTH2F, {axisEta, axisY});
       registry.add("EtaVsYPiL", ";#eta;#it{y};", kTH2F, {axisEta, axisY});
@@ -511,20 +497,17 @@ struct PiKpRAA {
       registry.add("EtaVsYPiAL", ";#eta;#it{y};", kTH2F, {axisEta, axisY});
       registry.add("EtaVsYPrAL", ";#eta;#it{y};", kTH2F, {axisEta, axisY});
       registry.add("EtaVsYG", ";#eta;#it{y};", kTH2F, {axisEta, axisY});
-
-      registry.add("DCAxyPtPiK0s", ";DCA_{xy} (cm); p_{T} (GeV/c)", kTH2F, {axisDCAxy, axisPt});
-      registry.add("DCAxyPtPrL", ";DCA_{xy} (cm); p_{T} (GeV/c)", kTH2F, {axisDCAxy, axisPt});
-      registry.add("DCAxyPtPrAL", ";DCA_{xy} (cm); p_{T} (GeV/c)", kTH2F, {axisDCAxy, axisPt});
-
-      registry.add("dEdxVsEtaPiMIP", "MIP #pi^{+} + #pi^{-} (0.4 < #it{p} < 0.6 GeV/#it{c});#eta; dE/dx;", kTH2F, {{{axisEta}, {100, 0, 100}}});
-      registry.add("dEdxVsEtaPiMIPp", "MIP #pi^{+} + #pi^{-} (0.4 < #it{p} < 0.6 GeV/#it{c});#eta; #LTdE/dx#GT", kTProfile, {axisEta});
-      registry.add("dEdxVsEtaElMIP", "MIP e^{+} + e^{-} (0.3 < #it{p} < 0.45 GeV/#it{c});#eta; dE/dx;", kTH2F, {{{axisEta}, {100, 0, 100}}});
-      registry.add("dEdxVsEtaElMIPp", "MIP e^{+} + e^{-} (0.3 < #it{p} < 0.45 GeV/#it{c});#eta; #LTdE/dx#GT", kTProfile, {axisEta});
-      registry.add("dEdxVsEtaPiMIPV0", "MIP #pi^{+} + #pi^{-} (0.4 < #it{p} < 0.6 GeV/#it{c});#eta; dE/dx", kTH2F, {{{axisEta}, {100, 0, 100}}});
-      registry.add("dEdxVsEtaPiMIPV0p", "MIP #pi^{+} + #pi^{-} (0.4 < #it{p} < 0.6 GeV/#it{c});#eta; #LTdE/dx#GT", kTProfile, {axisEta});
-      registry.add("dEdxVsEtaElMIPV0", "e^{+} + e^{-} (0.15 <#it{p}_{T} < 50 GeV/#it{c});#eta; dE/dx", kTH2F, {{{axisEta}, {100, 0, 100}}});
-      registry.add("dEdxVsEtaElMIPV0p", "e^{+} + e^{-} (0.15 <#it{p}_{T} < 50 GeV/#it{c});#eta; #LTdE/dx#GT", kTProfile, {axisEta});
-
+      registry.add("DCAxyPtPiK0s", ";DCA_{xy} (cm); p_{T} [GeV/#it{c}]", kTH2F, {axisDCAxy, axisPt});
+      registry.add("DCAxyPtPrL", ";DCA_{xy} (cm); p_{T} [GeV/#it{c}]", kTH2F, {axisDCAxy, axisPt});
+      registry.add("DCAxyPtPrAL", ";DCA_{xy} (cm); p_{T} [GeV/#it{c}]", kTH2F, {axisDCAxy, axisPt});
+      registry.add("dEdxVsEtaPiMIP", "MIP #pi^{+} + #pi^{-}: 0.4 < #it{p} < 0.6 [GeV/#it{c}];#eta; dE/dx;", kTH2F, {{{axisEta}, {100, 0, 100}}});
+      registry.add("dEdxVsEtaPiMIPp", "MIP #pi^{+} + #pi^{-}: 0.4 < #it{p} < 0.6 [GeV/#it{c}];#eta; #LTdE/dx#GT", kTProfile, {axisEta});
+      registry.add("dEdxVsEtaElMIP", "MIP e^{+} + e^{-}: 0.4 < #it{p} < 0.6 [GeV/#it{c}];#eta; dE/dx;", kTH2F, {{{axisEta}, {100, 0, 100}}});
+      registry.add("dEdxVsEtaElMIPp", "MIP e^{+} + e^{-}: 0.4 < #it{p} < 0.6 [GeV/#it{c}];#eta; #LTdE/dx#GT", kTProfile, {axisEta});
+      registry.add("dEdxVsEtaPiMIPV0", "MIP #pi^{+} + #pi^{-}: 0.4 < #it{p} < 0.6 [GeV/#it{c}];#eta; dE/dx", kTH2F, {{{axisEta}, {100, 0, 100}}});
+      registry.add("dEdxVsEtaPiMIPV0p", "MIP #pi^{+} + #pi^{-}: 0.4 < #it{p} < 0.6 [GeV/#it{c}];#eta; #LTdE/dx#GT", kTProfile, {axisEta});
+      registry.add("dEdxVsEtaElMIPV0", "e^{+} + e^{-}: 0.4 <#it{p}_{T} < 0.6 [GeV/#it{c}];#eta; dE/dx", kTH2F, {{{axisEta}, {100, 0, 100}}});
+      registry.add("dEdxVsEtaElMIPV0p", "e^{+} + e^{-}: 0.4 <#it{p}_{T} < 0.6 [GeV/#it{c}];#eta; #LTdE/dx#GT", kTProfile, {axisEta});
       registry.add("pTVsCent", "", kTH2F, {axisPt, axisCent});
 
       for (int i = 0; i < kNEtaHists; ++i) {
@@ -534,29 +517,18 @@ struct PiKpRAA {
         dEdxPrV0[i] = registry.add<TH2>(Form("dEdxPrV0_%s", endingEta[i]), Form("p + #bar{p}, %s;Momentum (GeV/#it{c});dE/dx;", latexEta[i]), kTH2F, {axisPtV0s, axisdEdx});
         dEdxElV0[i] = registry.add<TH2>(Form("dEdxElV0_%s", endingEta[i]), Form("e^{+} + e^{-}, %s;Momentum (GeV/#it{c});dE/dx;", latexEta[i]), kTH2F, {axisPtV0s, axisdEdx});
         nClVsP[i] = registry.add<TH2>(Form("NclVsPPrimaries_%s", endingEta[i]), Form("%s;;Ncl TPC", latexEta[i]), kTH2F, {axisPtNcl, axisNcl});
+        nClPIDVsnCl[i] = registry.add<TH2>(Form("NclPIDVsNcl_%s", endingEta[i]), Form("Primaries, %s;;", latexEta[i]), kTH2F, {axisNcl, axisNcl});
+        nCrRoVsNcl[i] = registry.add<TH2>(Form("NCrRoVsNcl_%s", endingEta[i]), Form("%s;;N Crossed Rows", latexEta[i]), kTH2F, {axisNcl, axisNcl});
         nClVsPElV0[i] = registry.add<TH2>(Form("NclVsPElV0_%s", endingEta[i]), Form("%s;;Ncl TPC", latexEta[i]), kTH2F, {axisPtNcl, axisNcl});
         nClVsPPiV0[i] = registry.add<TH2>(Form("NclVsPPiV0_%s", endingEta[i]), Form("%s;;Ncl TPC", latexEta[i]), kTH2F, {axisPtNcl, axisNcl});
         nClVsPPrV0[i] = registry.add<TH2>(Form("NclVsPPrV0_%s", endingEta[i]), Form("%s;;Ncl TPC", latexEta[i]), kTH2F, {axisPtNcl, axisNcl});
         nClVsPp[i] = registry.add<TProfile>(Form("NclVsPrimariesp_%s", endingEta[i]), Form("%s;;#LT#it{N}_{cl}#GT TPC", latexEta[i]), kTProfile, {axisPtNcl});
+        nCrRoVsNclp[i] = registry.add<TProfile>(Form("NCrRoVsNclp_%s", endingEta[i]), Form("%s;;#LT#it{N}_{cro rows}#GT TPC", latexEta[i]), kTProfile, {axisNcl});
         nClVsPpElV0[i] = registry.add<TProfile>(Form("NclVsPElV0p_%s", endingEta[i]), Form("%s;;#LT#it{N}_{cl}#GT TPC", latexEta[i]), kTProfile, {axisPtNcl});
         nClVsPpPiV0[i] = registry.add<TProfile>(Form("NclVsPPiV0p_%s", endingEta[i]), Form("%s;;#LT#it{N}_{cl}#GT TPC", latexEta[i]), kTProfile, {axisPtNcl});
         nClVsPpPrV0[i] = registry.add<TProfile>(Form("NclVsPPrV0p_%s", endingEta[i]), Form("%s;;#LT#it{N}_{cl}#GT TPC", latexEta[i]), kTProfile, {axisPtNcl});
+        nClPIDVsnClp[i] = registry.add<TProfile>(Form("NclPIDVsNclp_%s", endingEta[i]), Form("%s;;#LT#it{N}_{cl} PID#GT TPC", latexEta[i]), kTProfile, {axisNcl});
       }
-
-      auto htrkSel = registry.get<TH1>(HIST("TrackDaughterCounter"));
-      auto* xtrkSel = htrkSel->GetXaxis();
-      xtrkSel->SetBinLabel(1, "All");
-      xtrkSel->SetBinLabel(2, "Eta");
-      xtrkSel->SetBinLabel(3, "Pt");
-      xtrkSel->SetBinLabel(4, "XRows");
-      xtrkSel->SetBinLabel(5, "XRowsOverFindableCls");
-      xtrkSel->SetBinLabel(6, "Chi2TPC");
-      xtrkSel->SetBinLabel(7, "Chi2ITS");
-      xtrkSel->SetBinLabel(8, "Itsrefit");
-      xtrkSel->SetBinLabel(9, "Tpcrefit");
-      xtrkSel->SetBinLabel(10, "Golden");
-      xtrkSel->SetBinLabel(11, "Itshit");
-      xtrkSel->SetBinLabel(12, "Passed all");
     }
 
     if (doprocessSim) {
@@ -565,7 +537,6 @@ struct PiKpRAA {
       registry.add("dcaVsPtPrDec", "Secondary protons from decays;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm);Centrality Perc.;", kTH3F, {axisPt, axisDCAxy, axisCent});
       registry.add("dcaVsPtPiMat", "Secondary pions from material interactions;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm);Centrality Perc.;", kTH3F, {axisPt, axisDCAxy, axisCent});
       registry.add("dcaVsPtPrMat", "Secondary protons from material interactions;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm);Centrality Perc.;", kTH3F, {axisPt, axisDCAxy, axisCent});
-      registry.add("NclVsPhip", Form("#LTNcl#GT used for PID;%s (GeV/#it{c});#varphi", titlePorPt.data()), kTProfile2D, {{{axisXPhiCut}, {350, 0.0, 0.35}}});
     }
 
     if (doprocessSim) {
@@ -609,10 +580,6 @@ struct PiKpRAA {
       registry.add("PtKaVsNchMC_WithRecoEvt", "Generated Events With at least One Rec. Collision;;Gen. Nch (|#eta|<0.8);", kTH2F, {{axisPt, {nBinsNch, minNch, maxNch}}});
       registry.add("PtPrVsNchMC_WithRecoEvt", "Generated Events With at least One Rec. Collision;;Gen. Nch (|#eta|<0.8);", kTH2F, {{axisPt, {nBinsNch, minNch, maxNch}}});
 
-      registry.add("PtPiVsNchMC_WithRecoEvt_has_FT0_and_TVX", "Generated Events With at least One Rec. Collision;;Gen. Nch (|#eta|<0.8);", kTH2F, {{axisPt, {nBinsNch, minNch, maxNch}}});
-      registry.add("PtKaVsNchMC_WithRecoEvt_has_FT0_and_TVX", "Generated Events With at least One Rec. Collision;;Gen. Nch (|#eta|<0.8);", kTH2F, {{axisPt, {nBinsNch, minNch, maxNch}}});
-      registry.add("PtPrVsNchMC_WithRecoEvt_has_FT0_and_TVX", "Generated Events With at least One Rec. Collision;;Gen. Nch (|#eta|<0.8);", kTH2F, {{axisPt, {nBinsNch, minNch, maxNch}}});
-
       // Needed to calculate the denominator of the Signal Loss correction
       registry.add("PtPiVsNchMC_AllGen", "All Generated Events;;Gen. Nch (|#eta|<0.8);", kTH2F, {{axisPt, {nBinsNch, minNch, maxNch}}});
       registry.add("PtKaVsNchMC_AllGen", "All Generated Events;;Gen. Nch (|#eta|<0.8);", kTH2F, {{axisPt, {nBinsNch, minNch, maxNch}}});
@@ -627,44 +594,35 @@ struct PiKpRAA {
       registry.add("MCclosure_PtPrVsNchMC", "Gen Evts With at least one Rec. Coll. + Sel. criteria 4 MC closure;;Gen. Nch (|#eta|<0.8);", kTH2F, {{axisPt, {nBinsNch, minNch, maxNch}}});
 
       for (int i = 0; i < kNEtaHists; ++i) {
-        nClVsPPiMC[i] = registry.add<TH2>(Form("NclVsPPi_%s", endingEta[i]), Form("%s;;Ncl", latexEta[i]), kTH2F, {axisPtNcl, axisNcl});
         dEdxPiMC[i] = registry.add<TH2>(Form("dEdxPi_%s", endingEta[i]), Form("%s;Momentum (GeV/#it{c});dE/dx;", latexEta[i]), kTH2F, {axisPtV0s, axisdEdx});
         dEdxMuMC[i] = registry.add<TH2>(Form("dEdxMu_%s", endingEta[i]), Form("%s;Momentum (GeV/#it{c});dE/dx;", latexEta[i]), kTH2F, {axisPtV0s, axisdEdx});
-        dEdxPiMCLoSel[i] = registry.add<TH2>(Form("dEdxPiLooseSel_%s", endingEta[i]), Form("%s;Momentum (GeV/#it{c});dE/dx;", latexEta[i]), kTH2F, {axisPtV0s, axisdEdx});
-        dEdxMuMCLoSel[i] = registry.add<TH2>(Form("dEdxMuLooseSel_%s", endingEta[i]), Form("%s;Momentum (GeV/#it{c});dE/dx;", latexEta[i]), kTH2F, {axisPtV0s, axisdEdx});
       }
     }
 
     LOG(info) << "\trequireGoodRct=" << requireGoodRct.value;
     LOG(info) << "\tccdbNoLaterThan=" << ccdbNoLaterThan.value;
-    LOG(info) << "\tapplyNchSel=" << applyNchSel.value;
     LOG(info) << "\tselINELgt0=" << selINELgt0.value;
     LOG(info) << "\tv0TypeSelection=" << static_cast<int>(v0Selections.v0TypeSelection);
     LOG(info) << "\tselElecFromGammas=" << v0Selections.selElecFromGammas;
     LOG(info) << "\tapplyInvMassSel=" << v0Selections.applyInvMassSel;
     LOG(info) << "\tminPt=" << trackSelections.minPt;
     LOG(info) << "\tmaxPt=" << trackSelections.maxPt;
-    LOG(info) << "\tuseNclsPID=" << v0Selections.useNclsPID;
+    LOG(info) << "\tuseNclsPID=" << trackSelections.useNclsPID;
     LOG(info) << "\tqTSel=" << v0Selections.qTSel;
     LOG(info) << "\tarmAlphaSel=" << v0Selections.armAlphaSel;
     LOG(info) << "\tapplyNclSel=" << trackSelections.applyNclSel;
     LOG(info) << "\tapplyPhiCut=" << trackSelections.applyPhiCut;
     LOG(info) << "\tusePinPhiSelection=" << trackSelections.usePinPhiSelection;
-    LOG(info) << "\ttitlePorPt=" << titlePorPt;
     LOG(info) << "\tcurrentRunNumberNchSel=" << currentRunNumberNchSel;
     LOG(info) << "\tcurrentRunNumberPhiSel=" << currentRunNumberPhiSel;
+    LOG(info) << "\tpathDCAxy=" << pathDCAxy.value;
+    LOG(info) << "\tpathDCAz=" << pathDCAz.value;
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
     ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
-
-    if (applyNchSel.value) {
-      LOG(info) << "\tLoading Nch-based selections!";
-      LOG(info) << "\tpathMeanNch=" << pathMeanNch.value;
-      LOG(info) << "\tpathSigmaNch=" << pathSigmaNch.value;
-    }
 
     if (trackSelections.applyPhiCut) {
       LOG(info) << "\tLoading Phi cut!";
@@ -686,8 +644,15 @@ struct PiKpRAA {
       LOG(info) << "\tisCalPlateauLoaded=" << etaCal.isCalPlateauLoaded;
     }
 
-    if (trackSelections.applyNclSel)
-      LOG(info) << "\t minNcl=" << v0Selections.minNcl;
+    if (trackSelections.applyNclSel) {
+      LOG(info) << "\ttrackSelections.minNcls=" << trackSelections.minNcls;
+      LOG(info) << "\tv0Selections.minNcl=" << v0Selections.minNcl;
+    }
+
+    if (loadHisWithDCASel) {
+      LOG(info) << "\tpathDCAxy.value=" << pathDCAxy.value;
+      LOG(info) << "\tpathDCAz.value=" << pathDCAz.value;
+    }
   }
 
   void processCalibrationAndV0s(ColEvSels::iterator const& collision, BCsRun3 const& /**/, aod::V0Datas const& v0s, aod::FV0As const& /**/, aod::FT0s const& /**/, TracksFull const& tracks)
@@ -745,65 +710,26 @@ struct PiKpRAA {
     //---------------------------
     // Control histogram
     //---------------------------
-    if (selHasFT0 && !collision.has_foundFT0()) {
+    if (selHasFT0 && !collision.has_foundFT0())
       registry.fill(HIST("T0CcentVsFoundFT0"), centrality, 0.5);
-    }
+
     registry.fill(HIST("T0CcentVsFoundFT0"), centrality, 1.5);
 
-    if (applyNchSel) {
+    if (loadHisWithDCASel) {
       const int nextRunNumber{foundBC.runNumber()};
       if (currentRunNumberNchSel != nextRunNumber) {
-        loadNchCalibrations(timeStamp);
+        loadDCAselections(timeStamp);
         currentRunNumberNchSel = nextRunNumber;
         LOG(info) << "\tcurrentRunNumberNchSel= " << currentRunNumberNchSel << " timeStamp = " << timeStamp;
       }
 
-      // return if Nch selection objects are nullptr
-      if (!(cfgNch.hMeanNch && cfgNch.hSigmaNch))
-        return;
-    }
-
-    int nch{0};
-    for (const auto& track : tracks) {
-      // Track Selection
-      if (!trkSelGlobal.IsSelected(track)) {
-        continue;
-      }
-      if (track.pt() < kMinPtNchSel || track.pt() > kMaxPtNchSel) {
-        continue;
-      }
-      nch++;
-    }
-
-    bool skipEvent{false};
-    if (applyNchSel) {
-      if (!cfgNch.calibrationsLoaded)
+      // return if DCA selection objects are nullptr
+      if (!(cfgDCA.hDCAxy && cfgDCA.hDCAz))
         return;
 
-      const double xEval{nPV};
-      const int bin4Calibration{cfgNch.hMeanNch->FindBin(xEval)};
-      const double meanNch{cfgNch.hMeanNch->GetBinContent(bin4Calibration)};
-      const double sigmaNch{cfgNch.hSigmaNch->GetBinContent(bin4Calibration)};
-      const double nSigmaSelection{nSigmaNchCut * sigmaNch};
-      const double diffMeanNch{meanNch - nch};
-
-      if (std::abs(diffMeanNch) > nSigmaSelection) {
-        registry.fill(HIST("ExcludedEvtVsNch"), nch);
-        registry.fill(HIST("ExcludedEvtVsNPV"), nPV);
-        skipEvent = true;
-      }
+      if (!cfgDCA.dcaSelectionsLoaded)
+        return;
     }
-
-    if (applyNchSel && skipEvent) {
-      return;
-    }
-
-    if (applyNchSel)
-      registry.fill(HIST("EventCounter"), EvCutLabel::NchSel);
-
-    registry.fill(HIST("NchVsNPV"), nPV, nch);
-    registry.fill(HIST("zPos"), collision.posZ());
-    registry.fill(HIST("NchVsCent"), centrality, nch);
 
     if (trackSelections.applyPhiCut) {
       const int nextRunNumber{foundBC.runNumber()};
@@ -818,36 +744,32 @@ struct PiKpRAA {
         return;
     }
 
+    registry.fill(HIST("zPos"), collision.posZ());
     registry.fill(HIST("T0Ccent"), centrality);
-    // Fill DCAxy vs pT for secondary-particle contamination correction
+
+    // ================
+    // Track selection WITHOUT DCAxy and DCAz selections
+    // ================
+    int nch{0};
     for (const auto& track : tracks) {
-      // Track Selection
-      if (!trkSelGlobalOpenDCAxy.IsSelected(track))
-        continue;
 
-      if (track.pt() < trackSelections.minPt || track.pt() > trackSelections.maxPt)
-        continue;
-
-      if (track.eta() < trackSelections.minEta || track.eta() > trackSelections.maxEta)
+      const bool applyDca{false};
+      if (!selectPrimary(track, applyDca))
         continue;
 
       const float momentum{track.p()};
+      const float pTPC{track.tpcInnerParam()};
       const float pt{track.pt()};
       const float phi{track.phi()};
-      const float pOrPt{trackSelections.usePinPhiSelection ? momentum : pt};
-      const int16_t nclFound{track.tpcNClsFound()};
-      const int16_t nclPID{track.tpcNClsPID()};
-      const int16_t ncl{v0Selections.useNclsPID ? nclPID : nclFound};
-
-      if (trackSelections.applyNclSel && ncl < v0Selections.minNcl)
-        continue;
+      const float dcaXy{track.dcaXY()};
+      const float pOrpTPC{trackSelections.usePinPhiSelection ? momentum : pTPC};
 
       float phiPrime{phi};
       const int charge{track.sign()};
       phiPrimeFunc(phiPrime, magField, charge);
 
       if (trackSelections.applyPhiCut) {
-        if (!passesPhiSelection(pOrPt, phiPrime))
+        if (!passesPhiSelection(pOrpTPC, phiPrime))
           continue;
       }
 
@@ -859,43 +781,44 @@ struct PiKpRAA {
       const double prRadiusNsigma{std::sqrt(std::pow(prTPCNsigma, 2.) + std::pow(prTOFNsigma, 2.))};
 
       if (piRadiusNsigma < kThree)
-        registry.fill(HIST("dcaVsPtPi"), track.pt(), track.dcaXY(), centrality);
+        registry.fill(HIST("dcaVsPtPi"), pt, dcaXy, centrality);
       if (prRadiusNsigma < kThree)
-        registry.fill(HIST("dcaVsPtPr"), track.pt(), track.dcaXY(), centrality);
+        registry.fill(HIST("dcaVsPtPr"), pt, dcaXy, centrality);
     }
 
+    // ================
+    // Track selection with DCAxy and DCAz selections
+    // ================
     for (const auto& track : tracks) {
 
-      if (!trkSelGlobal.IsSelected(track))
-        continue;
-
-      if (track.pt() < trackSelections.minPt || track.pt() > trackSelections.maxPt)
-        continue;
-
-      if (track.eta() < trackSelections.minEta || track.eta() > trackSelections.maxEta)
-        continue;
+      // if (!trkSelGlobal.IsSelected(track))
+      // continue;
 
       const float momentum{track.p()};
+      const float pTPC{track.tpcInnerParam()};
       const float pt{track.pt()};
       const float phi{track.phi()};
       const float eta{track.eta()};
       float dedx{track.tpcSignal()};
       const int charge{track.sign()};
-      const float pOrPt{trackSelections.usePinPhiSelection ? momentum : pt};
+      const float pOrpTPC{trackSelections.usePinPhiSelection ? momentum : pTPC};
       const int16_t nclFound{track.tpcNClsFound()};
       const int16_t nclPID{track.tpcNClsPID()};
-      const int16_t ncl{v0Selections.useNclsPID ? nclPID : nclFound};
+      const int16_t ncl{trackSelections.useNclsPID ? nclPID : nclFound};
+      const int16_t nCrossedRows{track.tpcNClsCrossedRows()};
 
-      if (trackSelections.applyNclSel && ncl < v0Selections.minNcl)
+      // ================
+      // DCAxy & DCAz Selections
+      // ================
+      const bool applyDca{true};
+      if (!selectPrimary(track, applyDca))
         continue;
 
       float phiPrime{phi};
       phiPrimeFunc(phiPrime, magField, charge);
-      registry.fill(HIST("NclVsPhipBeforeCut"), pOrPt, phiPrime, nclFound);
-      registry.fill(HIST("NclVsPhipBeforeCutPID"), pOrPt, phiPrime, nclPID);
 
       if (trackSelections.applyPhiCut) {
-        if (!passesPhiSelection(pOrPt, phiPrime))
+        if (!passesPhiSelection(pOrpTPC, phiPrime))
           continue;
       }
 
@@ -925,26 +848,43 @@ struct PiKpRAA {
         registry.fill(HIST("NclVsEtaPiMIPp"), eta, ncl);
       }
 
-      if (momentum > kMinPElMIP && momentum < kMaxPElMIP && dedx > kMindEdxMIPPlateau && dedx < kMaxdEdxMIPPlateau) {
-        registry.fill(HIST("dEdxVsEtaElMIP"), eta, dedx);
-        registry.fill(HIST("dEdxVsEtaElMIPp"), eta, dedx);
+      if (momentum > kMinPMIP && momentum < kMaxPMIP && dedx > kMindEdxMIPPlateau && dedx < kMaxdEdxMIPPlateau) {
+        if (track.hasTOF() && track.goodTOFMatch()) {
+          const float tTOF{track.tofSignal()};
+          const float trkLength{track.length()};
+          const float tExpElTOF{track.tofExpSignalEl(tTOF)};
+
+          if ((std::abs((tExpElTOF / tTOF) - kOne) < trackSelections.maxElTOFBeta) && tTOF > kZero && trkLength > kZero) {
+            registry.fill(HIST("dEdxVsEtaElMIP"), eta, dedx);
+            registry.fill(HIST("dEdxVsEtaElMIPp"), eta, dedx);
+          }
+        }
       }
 
       dEdx[indexEta]->Fill(momentum, dedx, centrality);
       pTVsP[indexEta]->Fill(momentum, pt);
-      nClVsP[indexEta]->Fill(pOrPt, ncl);
-      nClVsPp[indexEta]->Fill(pOrPt, ncl);
+      nClVsP[indexEta]->Fill(pOrpTPC, ncl);
+      nClVsPp[indexEta]->Fill(pOrpTPC, ncl);
+      nCrRoVsNcl[indexEta]->Fill(nCrossedRows, ncl);
+      nCrRoVsNclp[indexEta]->Fill(nCrossedRows, ncl);
+      nClPIDVsnCl[indexEta]->Fill(nclFound, nclPID);
+      nClPIDVsnClp[indexEta]->Fill(nclFound, nclPID);
+      registry.fill(HIST("DCAxyVsPt"), pt, track.dcaXY());
+      registry.fill(HIST("DCAzVsPt"), pt, track.dcaZ());
+      registry.fill(HIST("MomentumTPCVsP"), momentum, pTPC);
       registry.fill(HIST("pTVsCent"), pt, centrality);
       registry.fill(HIST("EtaVsPhi"), eta, track.phi());
       registry.fill(HIST("NclVsEta"), eta, nclFound);
       registry.fill(HIST("NclVsEtap"), eta, nclFound);
       registry.fill(HIST("NclVsEtaPID"), eta, nclPID);
       registry.fill(HIST("NclVsEtaPIDp"), eta, nclPID);
-      registry.fill(HIST("NclVsPhipAfterCut"), pOrPt, phiPrime, nclFound);
-      registry.fill(HIST("NclVsPhipAfterCutPID"), pOrPt, phiPrime, nclPID);
-      registry.fill(HIST("NclVsPt"), pt, nclFound);
-      registry.fill(HIST("NclVsPtPID"), pt, nclPID);
+      registry.fill(HIST("NclVsPhip"), pOrpTPC, phiPrime, nclFound);
+      registry.fill(HIST("NclPIDVsPhip"), pOrpTPC, phiPrime, nclPID);
+      nch++;
     }
+
+    registry.fill(HIST("NchVsCent"), centrality, nch);
+    registry.fill(HIST("NchVsNPV"), nPV, nch);
 
     for (const auto& v0 : v0s) {
 
@@ -961,6 +901,8 @@ struct PiKpRAA {
       const float negTrkP{negTrack.p()};
       const float posTrkPt{posTrack.pt()};
       const float negTrkPt{negTrack.pt()};
+      const float posTrkPTPC{posTrack.tpcInnerParam()};
+      const float negTrkPTPC{negTrack.tpcInnerParam()};
       const float posTrkEta{posTrack.eta()};
       const float negTrkEta{negTrack.eta()};
       float posTrkdEdx{posTrack.tpcSignal()};
@@ -971,13 +913,13 @@ struct PiKpRAA {
       const int16_t negNclFound{negTrack.tpcNClsFound()};
       const int16_t posNclPID{posTrack.tpcNClsPID()};
       const int16_t negNclPID{negTrack.tpcNClsPID()};
-      const int16_t posNcl = v0Selections.useNclsPID ? posNclPID : posNclFound;
-      const int16_t negNcl = v0Selections.useNclsPID ? negNclPID : negNclFound;
+      const int16_t posNcl{trackSelections.useNclsPID ? posNclPID : posNclFound};
+      const int16_t negNcl{trackSelections.useNclsPID ? negNclPID : negNclFound};
 
       phiPrimeFunc(posTrackPhiPrime, magField, posTrackCharge);
       phiPrimeFunc(negTrackPhiPrime, magField, negTrackCharge);
-      const float posPorPt{trackSelections.usePinPhiSelection ? posTrkP : posTrkPt};
-      const float negPorPt{trackSelections.usePinPhiSelection ? negTrkP : negTrkPt};
+      const float posPorPTPC{trackSelections.usePinPhiSelection ? posTrkP : posTrkPTPC};
+      const float negPorPTPC{trackSelections.usePinPhiSelection ? negTrkP : negTrkPTPC};
 
       // Skip v0s with like-sig daughters
       if (posTrack.sign() == negTrack.sign())
@@ -985,16 +927,12 @@ struct PiKpRAA {
 
       // Passes Geometrical (Phi) cut?
       if (trackSelections.applyPhiCut) {
-        if (!(passesPhiSelection(posPorPt, posTrackPhiPrime) && passesPhiSelection(negPorPt, negTrackPhiPrime)))
+        if (!(passesPhiSelection(posPorPTPC, posTrackPhiPrime) && passesPhiSelection(negPorPTPC, negTrackPhiPrime)))
           continue;
       }
 
       // Passes daughters track-selection?
-      if (!(passesTrackSelectionDaughters(posTrack) && passesTrackSelectionDaughters(negTrack)))
-        continue;
-
-      // Selection based on Ncl for PID
-      if (trackSelections.applyNclSel && !(posNcl >= v0Selections.minNcl && negNcl >= v0Selections.minNcl))
+      if (!(selectV0Daughter(posTrack) && selectV0Daughter(negTrack)))
         continue;
 
       // Eta calibration positive-charge track
@@ -1068,10 +1006,10 @@ struct PiKpRAA {
           registry.fill(HIST("NclVsEtaPiV0p"), posTrkEta, posNcl);
           registry.fill(HIST("NclVsEtaPiV0"), negTrkEta, negNcl);
           registry.fill(HIST("NclVsEtaPiV0p"), negTrkEta, negNcl);
-          nClVsPPiV0[posIndexEta]->Fill(posPorPt, posNcl);
-          nClVsPpPiV0[posIndexEta]->Fill(posPorPt, posNcl);
-          nClVsPPiV0[negIndexEta]->Fill(negPorPt, negNcl);
-          nClVsPpPiV0[negIndexEta]->Fill(negPorPt, negNcl);
+          nClVsPPiV0[posIndexEta]->Fill(posPorPTPC, posNcl);
+          nClVsPpPiV0[posIndexEta]->Fill(posPorPTPC, posNcl);
+          nClVsPPiV0[negIndexEta]->Fill(negPorPTPC, negNcl);
+          nClVsPpPiV0[negIndexEta]->Fill(negPorPTPC, negNcl);
           dEdxPiV0[posIndexEta]->Fill(posTrkP, posTrkdEdx);
           dEdxPiV0[negIndexEta]->Fill(negTrkP, negTrkdEdx);
 
@@ -1094,8 +1032,8 @@ struct PiKpRAA {
           registry.fill(HIST("nSigPrFromL"), posTrkPt, posTrack.tpcNSigmaPr());
           registry.fill(HIST("NclVsEtaPrV0"), posTrkEta, posNcl);
           registry.fill(HIST("NclVsEtaPrV0p"), posTrkEta, posNcl);
-          nClVsPPrV0[posIndexEta]->Fill(posPorPt, posNcl);
-          nClVsPpPrV0[posIndexEta]->Fill(posPorPt, posNcl);
+          nClVsPPrV0[posIndexEta]->Fill(posPorPTPC, posNcl);
+          nClVsPpPrV0[posIndexEta]->Fill(posPorPTPC, posNcl);
           dEdxPrV0[posIndexEta]->Fill(posTrkP, posTrkdEdx);
         }
         if (negTrackCharge < kZero) {
@@ -1124,8 +1062,8 @@ struct PiKpRAA {
           registry.fill(HIST("nSigPrFromAL"), negTrkPt, negTrack.tpcNSigmaPr());
           registry.fill(HIST("NclVsEtaPrV0"), negTrkEta, negNcl);
           registry.fill(HIST("NclVsEtaPrV0p"), negTrkEta, negNcl);
-          nClVsPPrV0[negIndexEta]->Fill(negPorPt, negNcl);
-          nClVsPpPrV0[negIndexEta]->Fill(negPorPt, negNcl);
+          nClVsPPrV0[negIndexEta]->Fill(negPorPTPC, negNcl);
+          nClVsPpPrV0[negIndexEta]->Fill(negPorPTPC, negNcl);
           dEdxPrV0[negIndexEta]->Fill(negTrkP, negTrkdEdx);
         }
       }
@@ -1149,14 +1087,18 @@ struct PiKpRAA {
           registry.fill(HIST("NclVsEtaElV0p"), posTrkEta, posNcl);
           registry.fill(HIST("NclVsEtaElV0"), negTrkEta, negNcl);
           registry.fill(HIST("NclVsEtaElV0p"), negTrkEta, negNcl);
-          nClVsPElV0[negIndexEta]->Fill(negPorPt, negNcl);
-          nClVsPpElV0[negIndexEta]->Fill(negPorPt, negNcl);
-          nClVsPElV0[posIndexEta]->Fill(posPorPt, posNcl);
-          nClVsPpElV0[posIndexEta]->Fill(posPorPt, posNcl);
-          registry.fill(HIST("dEdxVsEtaElMIPV0"), posTrkEta, posTrkdEdx);
-          registry.fill(HIST("dEdxVsEtaElMIPV0p"), posTrkEta, posTrkdEdx);
-          registry.fill(HIST("dEdxVsEtaElMIPV0"), negTrkEta, negTrkdEdx);
-          registry.fill(HIST("dEdxVsEtaElMIPV0p"), negTrkEta, negTrkdEdx);
+          nClVsPElV0[negIndexEta]->Fill(negPorPTPC, negNcl);
+          nClVsPpElV0[negIndexEta]->Fill(negPorPTPC, negNcl);
+          nClVsPElV0[posIndexEta]->Fill(posPorPTPC, posNcl);
+          nClVsPpElV0[posIndexEta]->Fill(posPorPTPC, posNcl);
+          if (posPorPTPC > kMinPMIP && posPorPTPC < kMaxPMIP && posTrkdEdx > kMindEdxMIPPlateau && posTrkdEdx < kMaxdEdxMIPPlateau) {
+            registry.fill(HIST("dEdxVsEtaElMIPV0"), posTrkEta, posTrkdEdx);
+            registry.fill(HIST("dEdxVsEtaElMIPV0p"), posTrkEta, posTrkdEdx);
+          }
+          if (negPorPTPC > kMinPMIP && negPorPTPC < kMaxPMIP && negTrkdEdx > kMindEdxMIPPlateau && negTrkdEdx < kMaxdEdxMIPPlateau) {
+            registry.fill(HIST("dEdxVsEtaElMIPV0"), negTrkEta, negTrkdEdx);
+            registry.fill(HIST("dEdxVsEtaElMIPV0p"), negTrkEta, negTrkdEdx);
+          }
           dEdxElV0[posIndexEta]->Fill(posTrkP, posTrkdEdx);
           dEdxElV0[negIndexEta]->Fill(negTrkP, negTrkdEdx);
         }
@@ -1170,7 +1112,6 @@ struct PiKpRAA {
 
   void processSim(aod::McCollisions::iterator const& mccollision, soa::SmallGroups<ColEvSelsMC> const& collisions, BCsRun3 const& /*bcs*/, aod::FT0s const& /*ft0s*/, aod::McParticles const& mcParticles, TracksMC const& tracksMC)
   {
-
     //---------------------------
     // Only INEL > 0 generated collisions
     // By counting number of primary charged particles in |eta| < 1
@@ -1527,62 +1468,16 @@ struct PiKpRAA {
           }
         } // Loop over generated particles per generated collision
 
-        // Generated events with FT0 information but not TVX triggered
-        if (selHasFT0 && collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
-          for (const auto& particle : mcParticles) {
-            if (particle.eta() < trackSelections.minEta || particle.eta() > trackSelections.maxEta)
-              continue;
-
-            if (particle.pt() < trackSelections.minPt || particle.pt() > trackSelections.maxPt)
-              continue;
-
-            auto charge{0.};
-            // Get the MC particle
-            auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
-            if (pdgParticle != nullptr) {
-              charge = pdgParticle->Charge();
-            } else {
-              continue;
-            }
-
-            // Is it a charged particle?
-            if (std::abs(charge) < kMinCharge)
-              continue;
-
-            // Is it a primary particle?
-            bool isPrimary{true};
-            if (!particle.isPhysicalPrimary())
-              isPrimary = false;
-
-            if (isPrimary) {
-              if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
-                registry.fill(HIST("PtPiVsNchMC_WithRecoEvt_has_FT0_and_TVX"), particle.pt(), nChMCEta08); // Numerator of signal loss
-              } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) {
-                registry.fill(HIST("PtKaVsNchMC_WithRecoEvt_has_FT0_and_TVX"), particle.pt(), nChMCEta08);
-              } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) {
-                registry.fill(HIST("PtPrVsNchMC_WithRecoEvt_has_FT0_and_TVX"), particle.pt(), nChMCEta08);
-              } else {
-                continue;
-              }
-            }
-          } // Loop over generated particles per generated collision
-        }
-
         const auto& groupedTracks{tracksMC.sliceBy(perCollision, collision.globalIndex())};
 
-        //---------------------------
-        // Track selection with Open DCAxy
-        //  This is needed for the Secondary Particle Correction
-        //---------------------------
+        // ================
+        // Track selection WITHOUT DCAxy and DCAz selections
+        // Needed for the Secondary Particle Correction
+        // ================
         for (const auto& track : groupedTracks) {
-          // Track Selection
-          if (track.eta() < trackSelections.minEta || track.eta() > trackSelections.maxEta)
-            continue;
 
-          if (track.pt() < trackSelections.minPt || track.pt() > trackSelections.maxPt)
-            continue;
-
-          if (!trkSelGlobalOpenDCAxy.IsSelected(track))
+          const bool applyDca{false};
+          if (!selectPrimary(track, applyDca))
             continue;
 
           if (!track.has_mcParticle())
@@ -1604,18 +1499,6 @@ struct PiKpRAA {
 
           float phiPrime{track.phi()};
           phiPrimeFunc(phiPrime, magField, charge);
-
-          const float pOrPt{trackSelections.usePinPhiSelection ? track.p() : track.pt()};
-          if (trackSelections.applyPhiCut) {
-            if (!passesPhiSelection(pOrPt, phiPrime))
-              continue;
-          }
-
-          const int16_t nclFound{track.tpcNClsFound()};
-          const int16_t nclPID{track.tpcNClsPID()};
-          const int16_t ncl = v0Selections.useNclsPID ? nclPID : nclFound;
-          if (trackSelections.applyNclSel && ncl < v0Selections.minNcl)
-            continue;
 
           bool isPrimary{false};
           bool isDecay{false};
@@ -1660,20 +1543,15 @@ struct PiKpRAA {
           }
         }
 
-        //---------------------------
-        // Needed for the number of the Tracking Efficiency
-        // Global track + DCAxy selections
-        //---------------------------
+        // ================
+        // Track selection WITH DCAxy and DCAz selections
+        // Needed for the numerator in the tracking efficiency
+        // ================
         int nCh{0};
         for (const auto& track : groupedTracks) {
-          // Track Selection
-          if (track.eta() < trackSelections.minEta || track.eta() > trackSelections.maxEta)
-            continue;
 
-          if (track.pt() < trackSelections.minPt || track.pt() > trackSelections.maxPt)
-            continue;
-
-          if (!trkSelGlobal.IsSelected(track))
+          const bool applyDca{true};
+          if (!selectPrimary(track, applyDca))
             continue;
 
           // Has MC particle?
@@ -1697,17 +1575,7 @@ struct PiKpRAA {
           float phiPrime{track.phi()};
           phiPrimeFunc(phiPrime, magField, charge);
 
-          const float pOrPt{trackSelections.usePinPhiSelection ? track.p() : track.pt()};
-          if (trackSelections.applyPhiCut) {
-            if (!passesPhiSelection(pOrPt, phiPrime))
-              continue;
-          }
-
-          const int16_t nclFound{track.tpcNClsFound()};
-          const int16_t nclPID{track.tpcNClsPID()};
-          const int16_t ncl = v0Selections.useNclsPID ? nclPID : nclFound;
-          if (trackSelections.applyNclSel && ncl < v0Selections.minNcl)
-            continue;
+          const float pOrpTPC{trackSelections.usePinPhiSelection ? track.p() : track.tpcInnerParam()};
 
           int indexEta{-999};
           const float eta{track.eta()};
@@ -1721,13 +1589,6 @@ struct PiKpRAA {
           if (indexEta < kZeroInt || indexEta > kSevenInt)
             continue;
 
-          registry.fill(HIST("NclVsPhip"), pOrPt, phiPrime, ncl);
-          registry.fill(HIST("NclVsEtaPID"), eta, ncl);
-          registry.fill(HIST("NclVsEtaPIDp"), eta, ncl);
-          registry.fill(HIST("NclVsEta"), eta, nclFound);
-          registry.fill(HIST("NclVsEtap"), eta, nclFound);
-          registry.fill(HIST("NclVsPt"), pOrPt, nclFound);
-          registry.fill(HIST("NclVsPtPID"), pOrPt, nclPID);
           nCh++;
 
           bool isPrimary{false};
@@ -1740,6 +1601,7 @@ struct PiKpRAA {
           bool isPi{false};
           bool isKa{false};
           bool isPr{false};
+          bool isMu{false};
 
           if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
             isPi = true;
@@ -1747,14 +1609,20 @@ struct PiKpRAA {
             isKa = true;
           } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) {
             isPr = true;
+          } else if (particle.pdgCode() == PDG_t::kMuonPlus || particle.pdgCode() == PDG_t::kMuonMinus) {
+            isMu = true;
           } else {
             continue;
           }
+
+          if (isMu && !isPi && !isKa && !isPr)
+            dEdxMuMC[indexEta]->Fill(pOrpTPC, track.tpcSignal());
 
           if (isPi && !isKa && !isPr) {
             registry.fill(HIST("PtPiVsCent_WithRecoEvt"), track.pt(), centrality);       // Numerator of tracking efficiency
             registry.fill(HIST("PtGenPiVsCent_WithRecoEvt"), particle.pt(), centrality); // Numerator of tracking efficiency
             registry.fill(HIST("MCclosure_PtPiVsNchMC"), track.pt(), nChMCEta08);
+            dEdxPiMC[indexEta]->Fill(pOrpTPC, track.tpcSignal());
           }
           if (isKa && !isPi && !isPr) {
             registry.fill(HIST("PtKaVsCent_WithRecoEvt"), track.pt(), centrality);
@@ -1768,98 +1636,6 @@ struct PiKpRAA {
           }
           registry.fill(HIST("PtResolution"), particle.pt(), (track.pt() - particle.pt()) / particle.pt());
         } // Loop over reconstructed tracks
-
-        //------------------------------
-        // Clean Pions and Muons
-        //------------------------------
-
-        for (const auto& track : groupedTracks) {
-          // Track Selection
-          if (track.eta() < trackSelections.minEta || track.eta() > trackSelections.maxEta)
-            continue;
-
-          if (track.pt() < trackSelections.minPt || track.pt() > trackSelections.maxPt)
-            continue;
-
-          // Has MC particle?
-          if (!track.has_mcParticle())
-            continue;
-
-          // Get the MC particle
-          const auto& particle{track.mcParticle()};
-          auto charge{0.};
-          auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
-          if (pdgParticle != nullptr) {
-            charge = pdgParticle->Charge();
-          } else {
-            continue;
-          }
-
-          // Is it a charged particle?
-          if (std::abs(charge) < kMinCharge)
-            continue;
-
-          float phiPrime{track.phi()};
-          phiPrimeFunc(phiPrime, magField, charge);
-
-          const float pOrPt{trackSelections.usePinPhiSelection ? track.p() : track.pt()};
-          if (trackSelections.applyPhiCut) {
-            if (!passesPhiSelection(pOrPt, phiPrime))
-              continue;
-          }
-
-          const int16_t nclFound{track.tpcNClsFound()};
-          const int16_t nclPID{track.tpcNClsPID()};
-          const int16_t ncl{v0Selections.useNclsPID ? nclPID : nclFound};
-          if (trackSelections.applyNclSel && ncl < v0Selections.minNcl)
-            continue;
-
-          int indexEta{-999};
-          const float eta{track.eta()};
-          for (int i = 0; i < kNEtaHists; ++i) {
-            if (eta >= kLowEta[i] && eta < kHighEta[i]) {
-              indexEta = i;
-              break;
-            }
-          }
-
-          if (indexEta < kZeroInt || indexEta > kSevenInt)
-            continue;
-
-          bool isPrimary{false};
-          if (particle.isPhysicalPrimary())
-            isPrimary = true;
-
-          if (!isPrimary)
-            continue;
-
-          bool isPi{false};
-          bool isMu{false};
-
-          if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus)
-            isPi = true;
-          else if (particle.pdgCode() == PDG_t::kMuonPlus || particle.pdgCode() == PDG_t::kMuonMinus)
-            isMu = true;
-          else
-            continue;
-
-          // Passes daughters track-selection?
-          if (passesTrackSelectionDaughters(track)) {
-            if (isPi && !isMu) {
-              nClVsPPiMC[indexEta]->Fill(track.p(), ncl);
-              dEdxPiMCLoSel[indexEta]->Fill(track.p(), track.tpcSignal());
-            }
-            if (isMu && !isPi)
-              dEdxMuMCLoSel[indexEta]->Fill(track.p(), track.tpcSignal());
-          }
-
-          if (trkSelGlobal.IsSelected(track)) {
-            if (isPi && !isMu)
-              dEdxPiMC[indexEta]->Fill(track.p(), track.tpcSignal());
-            if (isMu && !isPi)
-              dEdxMuMC[indexEta]->Fill(track.p(), track.tpcSignal());
-          }
-        } // Loop over reconstructed tracks
         registry.fill(HIST("NchVsCent"), centrality, nCh);
       } // Loop over Reco. Collisions: Only the collisions with the largest number of contributors
     } // If condition: Only simulated evets with at least one reconstrued collision
@@ -1869,7 +1645,6 @@ struct PiKpRAA {
   template <typename T, typename U>
   void getArmeterosVariables(const T& ppos, const T& pneg, U& alpha, U& qT)
   {
-
     alpha = 0., qT = 0.;
     TVector3 pV0 = ppos + pneg;
     double pV0mag = pV0.Mag();
@@ -1894,35 +1669,95 @@ struct PiKpRAA {
   }
 
   template <typename T>
-  bool passesTrackSelectionDaughters(const T& track)
+  bool selectPrimary(T const& track, const bool& applyDca)
+  {
+    const float dcaXY{track.dcaXY()};
+    const float dcaZ{track.dcaZ()};
+    const float pt{track.pt()};
+    const int16_t nclFound{track.tpcNClsFound()};
+    const int16_t nclPID{track.tpcNClsPID()};
+    const int16_t ncl{trackSelections.useNclsPID ? nclPID : nclFound};
+    double dcaXYcut{0.0};
+    double dcaZcut{0.0};
+
+    if (cfgDCA.dcaSelectionsLoaded) {
+      dcaXYcut = cfgDCA.hDCAxy->GetBinContent(1) + cfgDCA.hDCAxy->GetBinContent(2) / std::pow(std::abs(pt), cfgDCA.hDCAxy->GetBinContent(3));
+      dcaZcut = cfgDCA.hDCAz->GetBinContent(1) + cfgDCA.hDCAz->GetBinContent(2) / std::pow(std::abs(pt), cfgDCA.hDCAz->GetBinContent(3));
+      dcaXYcut *= trackSelections.nSigmaDCAxy;
+      dcaZcut *= trackSelections.nSigmaDCAz;
+    }
+
+    if (std::abs(track.eta()) > trackSelections.maxEta) {
+      return false;
+    }
+
+    if (pt < trackSelections.minPt || pt > trackSelections.maxPt) {
+      return false;
+    }
+
+    // If the track produces a hit in neither the first nor the second ITS layer, it is excluded
+    // The track must produce a hit in either the 1st or the 2nd ITS layer to be accepted
+    if (!(track.itsClusterMap() & 0x01) && !(track.itsClusterMap() & 0x02)) {
+      return false;
+    }
+
+    // std::cout << "track.itsClusterMap() = " << static_cast<int>(track.itsClusterMap()) << '\n';
+    // std::cout << "track.itsNCls() = " << static_cast<int>(track.itsNCls()) << '\n';
+
+    if (track.itsNCls() < trackSelections.minNClusITS ||
+        track.tpcNClsCrossedRows() < trackSelections.minNCrossedRows ||
+        track.tpcChi2NCl() > trackSelections.maxChi2ClsTPC ||
+        track.tpcChi2NCl() < trackSelections.minChi2ClsTPC ||
+        track.itsChi2NCl() > trackSelections.chi2ClsITS) {
+      return false;
+    }
+
+    // ==== Ncl selection ==== //
+    if (trackSelections.applyNclSel && ncl < trackSelections.minNcls)
+      return false;
+
+    // ==== DCAxy & DCAz selections ==== //
+    if (applyDca && cfgDCA.dcaSelectionsLoaded) {
+      if (std::abs(dcaZ) > dcaZcut || std::abs(dcaXY) > dcaXYcut)
+        return false;
+    }
+
+    return true;
+  }
+
+  template <typename T>
+  bool selectV0Daughter(const T& track)
   {
 
-    // Decay daughters used Global tracks excluding the DCAxy selection; this approach was used in the Run 2 analyses
-    // https://github.com/AliceO2Group/O2Physics/blob/b178c96d03ede873ee769ef8a4d7c1e21bf78332/Common/Core/TrackSelectionDefaults.cxx
-
-    // In the V0s analysis only the selection on eta (|eta|<0.8) and the selection on number of crossed rows was used: nCrossedRows >= 70
     const float eta{track.eta()};
+    const uint8_t nclShared{track.tpcNClsShared()};
     const int16_t nCrossedRows{track.tpcNClsCrossedRows()};
+    const int16_t nclFound{track.tpcNClsFound()};
+    const int16_t nclPID{track.tpcNClsPID()};
+    const int16_t ncl{trackSelections.useNclsPID ? nclPID : nclFound};
 
-    bool etaSel{false};
-    bool xRows{false};
-
-    registry.fill(HIST("TrackDaughterCounter"), TrkSelLabel::AllTrks);
-    if (eta > trackSelections.minEta && eta < trackSelections.maxEta) {
-      registry.fill(HIST("TrackDaughterCounter"), TrkSelLabel::Eta);
-      etaSel = true;
-    }
-    if (nCrossedRows >= trackSelections.minNCrossedRows) {
-      registry.fill(HIST("TrackDaughterCounter"), TrkSelLabel::XRows);
-      xRows = true;
+    if (std::abs(eta) > trackSelections.maxEta) {
+      return false;
     }
 
-    const bool isSelected{etaSel && xRows ? true : false};
+    if (track.pt() < trackSelections.minPt || track.pt() > trackSelections.maxPt) {
+      return false;
+    }
 
-    if (isSelected == true)
-      registry.fill(HIST("TrackDaughterCounter"), TrkSelLabel::PassedAll);
+    // ==== Crossed rows TPC ==== //
+    if (nCrossedRows < trackSelections.minNCrossedRows) {
+      return false;
+    }
 
-    return isSelected;
+    // ==== Ncl selection ==== //
+    if (trackSelections.applyNclSel && ncl < v0Selections.minNcl)
+      return false;
+
+    // ==== Ncl shared ==== //
+    if (nclShared > v0Selections.nSharedClusTpc)
+      return false;
+
+    return true;
   }
 
   // V0 topological selection:
@@ -1944,7 +1779,6 @@ struct PiKpRAA {
   template <typename C, typename T>
   bool passesK0Selection(const C& collision, const T& v0)
   {
-
     const auto& posTrack = v0.template posTrack_as<TracksFull>();
     const auto& negTrack = v0.template negTrack_as<TracksFull>();
 
@@ -1999,7 +1833,6 @@ struct PiKpRAA {
   template <typename C, typename T>
   bool passesLambdaSelection(const C& collision, const T& v0)
   {
-
     const auto& posTrack = v0.template posTrack_as<TracksFull>();
     const auto& negTrack = v0.template negTrack_as<TracksFull>();
 
@@ -2053,7 +1886,6 @@ struct PiKpRAA {
   template <typename C, typename T>
   bool passesAntiLambdaSelection(const C& collision, const T& v0)
   {
-
     const auto& posTrack = v0.template posTrack_as<TracksFull>();
     const auto& negTrack = v0.template negTrack_as<TracksFull>();
 
@@ -2158,7 +1990,6 @@ struct PiKpRAA {
 
   void phiPrimeFunc(float& phi, const int& magField, const int& charge)
   {
-
     if (magField < 0)
       phi = o2::constants::math::TwoPI - phi;
     if (charge < 0)
@@ -2170,7 +2001,6 @@ struct PiKpRAA {
 
   bool passesPhiSelection(const float& pt, const float& phi)
   {
-
     // Do not apply Phi Sel if pt < 2 GeV/c
     if (pt < kTwoPtGeVSel)
       return true;
@@ -2352,28 +2182,27 @@ struct PiKpRAA {
     }
   }
 
-  void loadNchCalibrations(uint64_t timeStamp)
+  void loadDCAselections(uint64_t timeStamp)
   {
-    if (pathMeanNch.value.empty() == false) {
-      cfgNch.hMeanNch = ccdb->getForTimeStamp<TH1F>(pathMeanNch, timeStamp);
-      if (cfgNch.hMeanNch == nullptr) {
-        LOGF(fatal, "Could not load hMeanNch histogram from %s", pathMeanNch.value.c_str());
+    if (pathDCAxy.value.empty() == false) {
+      cfgDCA.hDCAxy = ccdb->getForTimeStamp<TH1F>(pathDCAxy, timeStamp);
+      if (cfgDCA.hDCAxy == nullptr) {
+        LOGF(fatal, "Could not load hDCAxy histogram from %s", pathDCAxy.value.c_str());
       }
     }
 
-    if (pathSigmaNch.value.empty() == false) {
-      cfgNch.hSigmaNch = ccdb->getForTimeStamp<TH1F>(pathSigmaNch, timeStamp);
-      if (cfgNch.hSigmaNch == nullptr) {
-        LOGF(fatal, "Could not load hSigmaNch histogram from %s", pathSigmaNch.value.c_str());
+    if (pathDCAz.value.empty() == false) {
+      cfgDCA.hDCAz = ccdb->getForTimeStamp<TH1F>(pathDCAz, timeStamp);
+      if (cfgDCA.hDCAz == nullptr) {
+        LOGF(fatal, "Could not load hDCAz histogram from %s", pathDCAz.value.c_str());
       }
     }
-    if (cfgNch.hMeanNch && cfgNch.hSigmaNch)
-      cfgNch.calibrationsLoaded = true;
+    if (cfgDCA.hDCAxy && cfgDCA.hDCAz)
+      cfgDCA.dcaSelectionsLoaded = true;
   }
 
   void loadPhiCutSelections(const uint64_t& timeStamp)
   {
-
     if (pathPhiCutHigh.value.empty() == false) {
       phiCut.hPhiCutHigh = ccdb->getForTimeStamp<TH1F>(pathPhiCutHigh, timeStamp);
       if (phiCut.hPhiCutHigh == nullptr) {
