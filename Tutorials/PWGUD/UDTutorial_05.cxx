@@ -10,18 +10,28 @@
 // or submit itself to any jurisdiction.
 //
 
-#include <iostream>
-#include "TLorentzVector.h"
-#include "TDatabasePDG.h"
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/Core/SGTrackSelector.h"
+#include "PWGUD/DataModel/UDTables.h"
 
-// using namespace std;
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TLorentzVector.h>
+#include <TMath.h>
+#include <TString.h>
+
+#include <cmath>
+#include <vector>
+
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;

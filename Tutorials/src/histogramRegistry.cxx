@@ -13,12 +13,29 @@
 /// \author
 /// \since
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <THn.h>
 #include <TParameter.h>
 
-#include "Framework/StaticFor.h"
+#include <RtypesCore.h>
+
+#include <cstdlib>
+#include <string_view>
+#include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -30,7 +47,7 @@ struct EtaPhiHistograms {
     {
       {"eta", "#eta", {HistType::kTH1F, {{102, -2.01, 2.01}}}},     //
       {"phi", "#varphi", {HistType::kTH1F, {{100, 0., 2. * M_PI}}}} //
-    }                                                               //
+    } //
   };
 
   void process(aod::Tracks const& tracks)
@@ -49,7 +66,7 @@ struct FilteredHistograms {
     {
       {"eta", "#eta", {HistType::kTH1F, {{102, -2.01, 2.01}}}},                            //
       {"ptToPt", "#ptToPt", {HistType::kTH2F, {{100, -0.01, 10.01}, {100, -0.01, 10.01}}}} //
-    }                                                                                      //
+    } //
   };
 
   void process(aod::Tracks const& tracks)
@@ -259,7 +276,7 @@ struct TListTest {
     {
       {"eta", "#eta", {HistType::kTH1F, {{102, -2.01, 2.01}}}},     //
       {"phi", "#varphi", {HistType::kTH1F, {{100, 0., 2. * M_PI}}}} //
-    }                                                               //
+    } //
   };
 
   void init(InitContext const&)
