@@ -65,7 +65,7 @@ enum PIDCutType {
   CircularType,
 };
 
-struct Lambda1520analysisinpp {
+struct lambda1520analysisinOO {
   // Define slice per Resocollision
   SliceCache cache;
   Preslice<Tracks> perCollision = o2::aod::track::collisionId;
@@ -443,7 +443,7 @@ struct Lambda1520analysisinpp {
     }
 
     // Print output histograms statistics
-    LOG(info) << "Size of the histograms in Lambda1520analysisinpp:";
+    LOG(info) << "Size of the histograms in lambda1520analysisinOO:";
     histos.print();
   }
 
@@ -1091,7 +1091,7 @@ struct Lambda1520analysisinpp {
 
     fillHistograms<true, false, false, false>(collision, tracks, tracks);
   }
-  PROCESS_SWITCH(Lambda1520analysisinpp, processData, "Process Event for data without partition", false);
+  PROCESS_SWITCH(lambda1520analysisinOO, processData, "Process Event for data without partition", false);
 
   void processRotational(EventCandidates::iterator const& collision, TrackCandidates const& tracks)
   {
@@ -1103,7 +1103,7 @@ struct Lambda1520analysisinpp {
 
     fillHistograms<false, true, false, false>(collision, tracks, tracks);
   }
-  PROCESS_SWITCH(Lambda1520analysisinpp, processRotational, "Process Rotational Background", false);
+  PROCESS_SWITCH(lambda1520analysisinOO, processRotational, "Process Rotational Background", false);
 
   // Processing Event Mixing
   using BinningTypeVtxZT0M = ColumnBinningPolicy<collision::PosZ, cent::CentFT0M>;
@@ -1152,7 +1152,7 @@ struct Lambda1520analysisinpp {
       fillHistograms<false, false, false, true>(collision1, tracks1, tracks2);
     }
   }
-  PROCESS_SWITCH(Lambda1520analysisinpp, processME, "Process EventMixing light without partition", false);
+  PROCESS_SWITCH(lambda1520analysisinOO, processME, "Process EventMixing light without partition", false);
 
   void processMCRec(MCEventCandidates::iterator const& collision,
                     aod::McCollisions const&,
@@ -1168,7 +1168,7 @@ struct Lambda1520analysisinpp {
 
     fillHistograms<false, false, true, false>(collision, tracks, tracks);
   }
-  PROCESS_SWITCH(Lambda1520analysisinpp, processMCRec, "Process Event for MC Rec without partition", false);
+  PROCESS_SWITCH(lambda1520analysisinOO, processMCRec, "Process Event for MC Rec without partition", false);
 
   Partition<aod::McParticles> selectedMCParticles = (nabs(aod::mcparticle::pdgCode) == static_cast<int>(Pdg::kLambda1520_Py)); // Lambda(1520)
 
@@ -1348,7 +1348,7 @@ struct Lambda1520analysisinpp {
       }
     }
   }
-  PROCESS_SWITCH(Lambda1520analysisinpp, processMCGen, "Process Event for MC only", false);
+  PROCESS_SWITCH(lambda1520analysisinOO, processMCGen, "Process Event for MC only", false);
 
   void processEventFactor(soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& mcCollisions, aod::McParticles const& mcParticles)
   {
@@ -1368,7 +1368,7 @@ struct Lambda1520analysisinpp {
         histos.fill(HIST("Event/hMCEventIndices"), centrality, Inelg010);
     }
   }
-  PROCESS_SWITCH(Lambda1520analysisinpp, processEventFactor, "Process Event factor", false);
+  PROCESS_SWITCH(lambda1520analysisinOO, processEventFactor, "Process Event factor", false);
 
   void processSignalLoss(soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& mcCollisions, aod::McParticles const& mcParticles)
   {
@@ -1486,10 +1486,10 @@ struct Lambda1520analysisinpp {
       }
     }
   }
-  PROCESS_SWITCH(Lambda1520analysisinpp, processSignalLoss, "Process SignalLoss", false);
+  PROCESS_SWITCH(lambda1520analysisinOO, processSignalLoss, "Process SignalLoss", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<Lambda1520analysisinpp>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<lambda1520analysisinOO>(cfgc)};
 }
