@@ -396,12 +396,12 @@ def main():
             inputs = get_workflow_inputs(wf, dic_deps)
             outputs = get_workflow_outputs(wf, dic_deps)
             list_tables += inputs + outputs
-            nodes_in = " ".join(inputs)
-            nodes_out = " ".join(outputs)
+            nodes_in = " ".join(inputs).replace("/", "_")
+            nodes_out = " ".join(outputs).replace("/", "_")
             dot_deps += f"  {{{nodes_in}}} -> {node_wf} -> {{{nodes_out}}}\n"
         list_tables = list(dict.fromkeys(list_tables))  # Remove duplicities
         for table in list_tables:
-            dot_tables += f"    {table}\n"
+            dot_tables += f'    {table.replace("/", "_")} [label="{table}"]\n'
         dot_tables += "  }\n"
         dot_workflows += "  }\n"
         dot += dot_workflows + dot_tables + dot_deps
