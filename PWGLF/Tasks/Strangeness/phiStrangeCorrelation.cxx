@@ -242,7 +242,7 @@ struct PhiStrangenessCorrelation {
     Configurable<bool> selectPionInSigRegion{"selectPionInSigRegion", true, "Select Pion candidates in signal region"};
     Configurable<float> pidTPCMax{"pidTPCMax", 2.0f, "Maximum nSigma TPC"};
     Configurable<float> pidTOFMax{"pidTOFMax", 2.0f, "Maximum nSigma TOF"};
-    Configurable<float> tofPIDThreshold{"tofPIDThreshold", 0.5f, "Minimum pT after which TOF PID is applicable"};
+    // Configurable<float> tofPIDThreshold{"tofPIDThreshold", 0.5f, "Minimum pT after which TOF PID is applicable"};
   } pionConfigs;
 
   // Configurables on phi pT bins
@@ -515,10 +515,10 @@ struct PhiStrangenessCorrelation {
     const bool applyPionNSigmaCut = (analysisMode == kDeltaYvsDeltaPhi) && pionConfigs.selectPionInSigRegion;
     const float& pidTPCMax = pionConfigs.pidTPCMax;
     const float& pidTOFMax = pionConfigs.pidTOFMax;
-    const float& tofPIDThreshold = pionConfigs.tofPIDThreshold;
+    // const float& tofPIDThreshold = pionConfigs.tofPIDThreshold;
 
     auto isPionValid = [&](const auto& pion) {
-      return (!applyEfficiency || pion.pt() <= binspTPi->back()) && (!applyPionNSigmaCut || pion.inNSigmaRegion(pidTPCMax, tofPIDThreshold, pidTOFMax));
+      return (!applyEfficiency || pion.pt() <= binspTPi->back()) && (!applyPionNSigmaCut || pion.inNSigmaRegion(pidTPCMax, pidTOFMax));
     };
 
     for (const auto& phiCand : phiCandidates) {
@@ -741,10 +741,10 @@ struct PhiStrangenessCorrelation {
     const bool applyPionNSigmaCut = (analysisMode == kDeltaYvsDeltaPhi) && pionConfigs.selectPionInSigRegion;
     const float& pidTPCMax = pionConfigs.pidTPCMax;
     const float& pidTOFMax = pionConfigs.pidTOFMax;
-    const float& tofPIDThreshold = pionConfigs.tofPIDThreshold;
+    // const float& tofPIDThreshold = pionConfigs.tofPIDThreshold;
 
     auto isPionValid = [&](const auto& pion) {
-      return (!applyEfficiency || pion.pt() <= binspTPi->back()) && (!applyPionNSigmaCut || pion.inNSigmaRegion(pidTPCMax, tofPIDThreshold, pidTOFMax));
+      return (!applyEfficiency || pion.pt() <= binspTPi->back()) && (!applyPionNSigmaCut || pion.inNSigmaRegion(pidTPCMax, pidTOFMax));
     };
 
     auto tuplePhiPion = std::make_tuple(phiCandidates, pionTracks);
@@ -835,10 +835,10 @@ struct PhiStrangenessCorrelation {
     const bool applyPionNSigmaCut = (analysisMode == kDeltaYvsDeltaPhi) && pionConfigs.selectPionInSigRegion;
     const float& pidTPCMax = pionConfigs.pidTPCMax;
     const float& pidTOFMax = pionConfigs.pidTOFMax;
-    const float& tofPIDThreshold = pionConfigs.tofPIDThreshold;
+    // const float& tofPIDThreshold = pionConfigs.tofPIDThreshold;
 
     auto isPionValid = [&](const auto& pion) {
-      return !applyPionNSigmaCut || pion.inNSigmaRegion(pidTPCMax, tofPIDThreshold, pidTOFMax);
+      return !applyPionNSigmaCut || pion.inNSigmaRegion(pidTPCMax, pidTOFMax);
     };
 
     std::unordered_map<int, std::vector<int>> collsGrouped;
