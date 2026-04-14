@@ -84,14 +84,19 @@ enum AnalysisMode {
   kDeltaYvsDeltaPhi
 };
 
-enum ParticleOfInterest {
+enum AssociatedParticleType {
+  kK0S = 0,
+  kXi,
+  kPion,
+  kAssocPartSize
+};
+
+/*enum ParticleOfInterest {
   Phi = 0,
   K0S,
   Pion,
-  /*PionTPC,
-  PionTPCTOF*/
   ParticleOfInterestSize
-};
+};*/
 
 /*
 #define LIST_OF_PARTICLES_OF_INTEREST \
@@ -121,7 +126,9 @@ static constexpr auto particleOfInterestLabels = std::to_array<std::string_view>
 });
 */
 
-struct BoundEfficiencyMap {
+using EffMapPtr = std::variant<std::shared_ptr<TH2>, std::shared_ptr<TH3>>;
+
+/*struct BoundEfficiencyMap {
   using CoordsTuple = std::tuple<float, float, float>;
 
   const TH3* effMap;
@@ -148,6 +155,58 @@ struct BoundEfficiencyMap {
 
     const auto& [x, y, z] = coords;
     return effMap->Interpolate(x, y, z);
+  }
+};*/
+
+struct BoundEfficiencyMap {
+  using CoordsTuple = std::tuple<float, float, float>;
+
+  const EffMapPtr& effMap;
+  CoordsTuple coords;
+
+  BoundEfficiencyMap(const EffMapPtr& effMap, float x, float y, float z) : effMap(effMap), coords(x, y, z) {}
+  BoundEfficiencyMap(const EffMapPtr& effMap, const CoordsTuple& coords) : effMap(effMap), coords(coords) {}
+
+  float getBinEfficiency() const
+  {
+    return std::visit(
+      [this](auto&& mapPtr) -> float {
+        if (!mapPtr)
+          return 1.0f;
+
+        const auto& [x, y, z] = coords;
+
+        // Extract the actual histogram type (TH2 or TH3) held by the smart pointer
+        using HistoType = typename std::decay_t<decltype(mapPtr)>::element_type;
+
+        // Compile-time branching: generates the exact correct function call
+        if constexpr (std::is_same_v<HistoType, TH2>) {
+          return mapPtr->GetBinContent(mapPtr->FindFixBin(y, z)); // 2D case only
+        } else {
+          return mapPtr->GetBinContent(mapPtr->FindFixBin(x, y, z)); // Full 3D case
+        }
+      },
+      effMap);
+  }
+
+  float interpolateEfficiency() const
+  {
+    return std::visit(
+      [this](auto&& mapPtr) -> float {
+        if (!mapPtr)
+          return 1.0f;
+
+        const auto& [x, y, z] = coords;
+
+        using HistoType = typename std::decay_t<decltype(mapPtr)>::element_type;
+
+        if constexpr (std::is_same_v<HistoType, TH2>) {
+          return mapPtr->Interpolate(y, z); // Native 2D interpolation
+        } else {
+          return mapPtr->Interpolate(x, y, z); // Native 3D interpolation
+        }
+      },
+      effMap);
   }
 };
 
@@ -194,6 +253,12 @@ struct PhiStrangenessCorrelation {
 
   // Configurable on pion pT bins
   Configurable<std::vector<double>> binspTPi{"binspTPi", {0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0}, "pT bin limits for pions"};
+
+  struct : ConfigurableGroup {
+    Configurable<bool> doK0SCorrelation{"doK0SCorrelation", true, "Enable Phi-K0S correlation"};
+    Configurable<bool> doXiCorrelation{"doXiCorrelation", false, "Enable Phi-Xi correlation"};
+    Configurable<bool> doPionCorrelation{"doPionCorrelation", true, "Enable Phi-Pion correlation"};
+  } activeCorrelationConfigs;
 
   // Configurables for delta y selection
   struct : ConfigurableGroup {
@@ -250,18 +315,22 @@ struct PhiStrangenessCorrelation {
   // Necessary service to retrieve efficiency maps from CCDB
   Service<ccdb::BasicCCDBManager> ccdb;
 
-  std::array<std::shared_ptr<TH3>, ParticleOfInterestSize> effMaps{};
+  // std::shared_ptr<TH3> effMapPhi{};
+  // std::array<std::shared_ptr<TH3>, kAssocPartSize> effMapsAssoc{};
+
+  EffMapPtr effMapPhi{};
+  std::array<EffMapPtr, kAssocPartSize> effMapsAssoc{};
 
   // Binning policy and axes for mixed event
-  ConfigurableAxis axisVertexMixing{"axisVertexMixing", {20, -10, 10}, "Z vertex axis binning for mixing"};
-  ConfigurableAxis axisCentralityMixing{"axisCentralityMixing", {20, 0, 100}, "Multiplicity percentil binning for mixing"};
+  ConfigurableAxis axisVertexMixing{"axisVertexMixing", {10, -10.0f, 10.0f}, "Z vertex axis binning for mixing"};
+  ConfigurableAxis axisCentralityMixing{"axisCentralityMixing", {VARIABLE_WIDTH, 0.0f, 1.0f, 5.0f, 10.0f, 15.0f, 20.0f, 30.0f, 40.0f, 50.0f, 70.0f, 100.0f}, "Multiplicity percentage binning for mixing"};
 
   using BinningTypeVertexCent = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
   BinningTypeVertexCent binningOnVertexAndCent{{axisVertexMixing, axisCentralityMixing}, true};
 
   static constexpr std::array<std::string_view, 2> phiMassRegionLabels{"Signal", "Sideband"};
-  static constexpr std::array<std::string_view, ParticleOfInterestSize> particleOfInterestLabels{"Phi", "K0S", "Pion" /*"PionTPC", "PionTPCTOF"*/};
-  static constexpr std::array<std::string_view, ParticleOfInterestSize - 1> assocParticleLabels{"K0S", "Pi"};
+  // static constexpr std::array<std::string_view, ParticleOfInterestSize> particleOfInterestLabels{"Phi", "K0S", "Pion" /*"PionTPC", "PionTPCTOF"*/};
+  static constexpr std::array<std::string_view, kAssocPartSize> assocParticleLabels{"K0S", "Xi", "Pi"};
 
   // Light structures to store only the necessary information for the correlation analysis at MCGen level
   struct MiniParticle {
@@ -274,6 +343,7 @@ struct PhiStrangenessCorrelation {
     float multiplicity;
     std::vector<MiniParticle> phiParticles;
     std::vector<MiniParticle> k0sParticles;
+    std::vector<MiniParticle> xiParticles;
     std::vector<MiniParticle> pionParticles;
   };
 
@@ -348,21 +418,56 @@ struct PhiStrangenessCorrelation {
       ccdb->setLocalObjectValidityChecking();
       ccdb->setFatalWhenNull(false);
 
-      for (int i = 0; i < ParticleOfInterestSize; ++i) {
+      /*for (int i = 0; i < ParticleOfInterestSize; ++i) {
         loadEfficiencyMapFromCCDB(static_cast<ParticleOfInterest>(i));
-      }
+      }*/
+      loadEfficiencyMaps();
     }
 
     eventBuffer.resize(binsMult->size() - 1);
   }
 
-  void loadEfficiencyMapFromCCDB(ParticleOfInterest poi)
+  void fetchSingleEfficiencyMapFromCCDB(EffMapPtr& effMap, std::string_view particleName)
+  {
+    std::string path = fmt::format("{}{}", ccdbEfficiencyPath.value, particleName);
+
+    if (auto map3D = std::shared_ptr<TH3>(ccdb->get<TH3D>(path))) {
+      effMap = map3D;
+      LOG(info) << "Efficiency map (TH3) for " << particleName << " loaded from CCDB";
+      return;
+    }
+
+    if (auto map2D = std::shared_ptr<TH2>(ccdb->get<TH2D>(path))) {
+      effMap = map2D;
+      LOG(info) << "Efficiency map (TH2) for " << particleName << " loaded from CCDB";
+      return;
+    }
+
+    LOG(fatal) << "Could not load efficiency map (neither TH3 nor TH2) for " << particleName << " from CCDB!";
+  }
+
+  void loadEfficiencyMaps()
+  {
+    // Always load the Trigger (Phi) map
+    fetchSingleEfficiencyMapFromCCDB(effMapPhi, "Phi");
+
+    // Map the user configurations for the associated particles
+    bool doAssocCorrelations[kAssocPartSize] = {activeCorrelationConfigs.doK0SCorrelation, activeCorrelationConfigs.doXiCorrelation, activeCorrelationConfigs.doPionCorrelation};
+
+    // Only load the associated maps that are explicitly enabled
+    for (size_t i = 0; i < kAssocPartSize; ++i) {
+      if (doAssocCorrelations[i])
+        fetchSingleEfficiencyMapFromCCDB(effMapsAssoc[i], assocParticleLabels[i]);
+    }
+  }
+
+  /*void loadEfficiencyMapFromCCDB(ParticleOfInterest poi)
   {
     effMaps[poi] = std::shared_ptr<TH3>(ccdb->get<TH3D>(fmt::format("{}{}", ccdbEfficiencyPath.value, particleOfInterestLabels[poi])));
     if (!effMaps[poi])
       LOG(fatal) << "Could not load efficiency map for " << particleOfInterestLabels[poi] << "!";
     LOG(info) << "Efficiency map for " << particleOfInterestLabels[poi] << " loaded from CCDB";
-  }
+  }*/
 
   // Compute weight based on efficiencies
   template <typename... BoundEffMaps>
@@ -397,10 +502,14 @@ struct PhiStrangenessCorrelation {
 
     const std::array<std::pair<float, float>, 2> phiMassRegions = {phiConfigs.rangeMPhiSignal, phiConfigs.rangeMPhiSideband};
 
+    bool doAssocCorrelations[kAssocPartSize] = {activeCorrelationConfigs.doK0SCorrelation,
+                                                activeCorrelationConfigs.doXiCorrelation,
+                                                activeCorrelationConfigs.doPionCorrelation};
+
     const bool applyK0sMassCut = (analysisMode == kDeltaYvsDeltaPhi) && k0sConfigs.selectK0sInSigRegion;
     const auto& [minMassK0s, maxMassK0s] = k0sConfigs.rangeMK0sSignal.value;
     auto isK0sValid = [&](const auto& k0s) {
-      return !applyK0sMassCut || k0s.inMassRegion(minMassK0s, maxMassK0s);
+      return (!applyEfficiency || k0s.pt() <= binspTK0S->back()) && (!applyK0sMassCut || k0s.inMassRegion(minMassK0s, maxMassK0s));
     };
 
     const bool applyPionNSigmaCut = (analysisMode == kDeltaYvsDeltaPhi) && pionConfigs.selectPionInSigRegion;
@@ -409,33 +518,40 @@ struct PhiStrangenessCorrelation {
     const float& tofPIDThreshold = pionConfigs.tofPIDThreshold;
 
     auto isPionValid = [&](const auto& pion) {
-      return !applyPionNSigmaCut || pion.inNSigmaRegion(pidTPCMax, tofPIDThreshold, pidTOFMax);
+      return (!applyEfficiency || pion.pt() <= binspTPi->back()) && (!applyPionNSigmaCut || pion.inNSigmaRegion(pidTPCMax, tofPIDThreshold, pidTOFMax));
     };
 
     for (const auto& phiCand : phiCandidates) {
-      float weightPhi = computeWeight(BoundEfficiencyMap(effMaps[Phi], multiplicity, phiCand.pt(), phiCand.y()));
+      if (applyEfficiency && phiCand.pt() > binspTPhi->back())
+        continue;
+
+      float weightPhi = computeWeight(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()));
 
       histos.fill(HIST("phi/h3PhiData"), multiplicity, phiCand.pt(), phiCand.m(), weightPhi);
 
       auto processCorrelations = [&](auto fillK0S, auto fillPion) {
-        // Loop over all reduced K0S candidates
-        for (const auto& k0s : k0sReduced) {
-          if (!isK0sValid(k0s))
-            continue;
+        if (doAssocCorrelations[kK0S]) {
+          // Loop over all reduced K0S candidates
+          for (const auto& k0s : k0sReduced) {
+            if (!isK0sValid(k0s))
+              continue;
 
-          float weightPhiK0S = computeWeight(BoundEfficiencyMap(effMaps[Phi], multiplicity, phiCand.pt(), phiCand.y()),
-                                             BoundEfficiencyMap(effMaps[K0S], multiplicity, k0s.pt(), k0s.y()));
-          fillK0S(k0s, weightPhiK0S);
+            float weightPhiK0S = computeWeight(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()),
+                                               BoundEfficiencyMap(effMapsAssoc[kK0S], multiplicity, k0s.pt(), k0s.y()));
+            fillK0S(k0s, weightPhiK0S);
+          }
         }
 
-        // Loop over all primary pion candidates
-        for (const auto& pionTrack : pionTracks) {
-          if (!isPionValid(pionTrack))
-            continue;
+        if (doAssocCorrelations[kPion]) {
+          // Loop over all primary pion candidates
+          for (const auto& pionTrack : pionTracks) {
+            if (!isPionValid(pionTrack))
+              continue;
 
-          float weightPhiPion = computeWeight(BoundEfficiencyMap(effMaps[Phi], multiplicity, phiCand.pt(), phiCand.y()),
-                                              BoundEfficiencyMap(effMaps[Pion], multiplicity, pionTrack.pt(), pionTrack.y()));
-          fillPion(pionTrack, weightPhiPion);
+            float weightPhiPion = computeWeight(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()),
+                                                BoundEfficiencyMap(effMapsAssoc[kPion], multiplicity, pionTrack.pt(), pionTrack.y()));
+            fillPion(pionTrack, weightPhiPion);
+          }
         }
       };
 
@@ -533,7 +649,7 @@ struct PhiStrangenessCorrelation {
     const auto& [minMassK0s, maxMassK0s] = k0sConfigs.rangeMK0sSignal.value;
 
     auto isK0sValid = [&](const auto& k0s) {
-      return !applyK0sMassCut || k0s.inMassRegion(minMassK0s, maxMassK0s);
+      return (!applyEfficiency || k0s.pt() <= binspTK0S->back()) && (!applyK0sMassCut || k0s.inMassRegion(minMassK0s, maxMassK0s));
     };
 
     auto tuplePhiK0S = std::make_tuple(phiCandidates, k0sReduced);
@@ -544,12 +660,14 @@ struct PhiStrangenessCorrelation {
       float multiplicity = c1.centFT0M();
 
       for (const auto& [phiCand, k0s] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(phiCands, k0sRed))) {
+        if (applyEfficiency && phiCand.pt() > binspTPhi->back())
+          continue;
         if (!isK0sValid(k0s))
           continue;
 
         auto processCorrelations = [&](auto fillK0S) {
-          float weightPhiK0S = computeWeight(BoundEfficiencyMap(effMaps[Phi], multiplicity, phiCand.pt(), phiCand.y()),
-                                             BoundEfficiencyMap(effMaps[K0S], multiplicity, k0s.pt(), k0s.y()));
+          float weightPhiK0S = computeWeight(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()),
+                                             BoundEfficiencyMap(effMapsAssoc[kK0S], multiplicity, k0s.pt(), k0s.y()));
           fillK0S(k0s, weightPhiK0S);
         };
 
@@ -626,7 +744,7 @@ struct PhiStrangenessCorrelation {
     const float& tofPIDThreshold = pionConfigs.tofPIDThreshold;
 
     auto isPionValid = [&](const auto& pion) {
-      return !applyPionNSigmaCut || pion.inNSigmaRegion(pidTPCMax, tofPIDThreshold, pidTOFMax);
+      return (!applyEfficiency || pion.pt() <= binspTPi->back()) && (!applyPionNSigmaCut || pion.inNSigmaRegion(pidTPCMax, tofPIDThreshold, pidTOFMax));
     };
 
     auto tuplePhiPion = std::make_tuple(phiCandidates, pionTracks);
@@ -637,12 +755,14 @@ struct PhiStrangenessCorrelation {
       float multiplicity = c1.centFT0M();
 
       for (const auto& [phiCand, piTrack] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(phiCands, piTracks))) {
+        if (applyEfficiency && phiCand.pt() > binspTPhi->back())
+          continue;
         if (!isPionValid(piTrack))
           continue;
 
         auto processCorrelations = [&](auto fillPion) {
-          float weightPhiPion = computeWeight(BoundEfficiencyMap(effMaps[Phi], multiplicity, phiCand.pt(), phiCand.y()),
-                                              BoundEfficiencyMap(effMaps[Pion], multiplicity, piTrack.pt(), piTrack.y()));
+          float weightPhiPion = computeWeight(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()),
+                                              BoundEfficiencyMap(effMapsAssoc[kPion], multiplicity, piTrack.pt(), piTrack.y()));
           fillPion(piTrack, weightPhiPion);
         };
 
@@ -961,6 +1081,7 @@ struct PhiStrangenessCorrelation {
 
     std::vector<MiniParticle> phiParticles;
     std::vector<MiniParticle> k0sParticles;
+    std::vector<MiniParticle> xiParticles;
     std::vector<MiniParticle> pionParticles;
 
     auto inYAcceptance = [&](const auto& mcParticle) {
@@ -997,14 +1118,20 @@ struct PhiStrangenessCorrelation {
     if (multBin < 0)
       return;
 
+    bool doAssocCorrelations[kAssocPartSize] = {activeCorrelationConfigs.doK0SCorrelation,
+                                                activeCorrelationConfigs.doXiCorrelation,
+                                                activeCorrelationConfigs.doPionCorrelation};
+
     // Same Event Correlations
-    std::vector<MiniParticle>* currentAssocParticles[] = {&k0sParticles, &pionParticles};
+    std::vector<MiniParticle>* currentAssocParticles[] = {&k0sParticles, &xiParticles, &pionParticles};
 
     for (const auto& phiParticle : phiParticles) {
       histos.fill(HIST("phi/h3PhiMCGen"), multiplicity, phiParticle.pt, phiParticle.y);
 
       static_for<0, assocParticleLabels.size() - 1>([&](auto i_idx) {
         constexpr unsigned int i = i_idx.value;
+        if (!doAssocCorrelations[i])
+          return;
 
         for (const auto& assocParticle : *(currentAssocParticles[i])) {
           histos.fill(HIST("phi") + HIST(assocParticleLabels[i]) + HIST("/h5Phi") + HIST(assocParticleLabels[i]) + HIST("ClosureMCGen"),
@@ -1017,12 +1144,14 @@ struct PhiStrangenessCorrelation {
 
     // Mixed Event Correlations
     for (const auto& pastEvent : eventBuffer[multBin]) {
-      const std::vector<MiniParticle>* pastAssocParticles[] = {&pastEvent.k0sParticles, &pastEvent.pionParticles};
+      const std::vector<MiniParticle>* pastAssocParticles[] = {&pastEvent.k0sParticles, &pastEvent.xiParticles, &pastEvent.pionParticles};
 
       // Loop over past events in the same multiplicity bin and fill histograms with all combinations of current phi particles and past associated particles
       for (const auto& phiParticle : phiParticles) {
         static_for<0, assocParticleLabels.size() - 1>([&](auto i_idx) {
           constexpr unsigned int i = i_idx.value;
+          if (!doAssocCorrelations[i])
+            return;
 
           for (const auto& assocParticle : *(pastAssocParticles[i])) {
             histos.fill(HIST("phi") + HIST(assocParticleLabels[i]) + HIST("/h5Phi") + HIST(assocParticleLabels[i]) + HIST("ClosureMCGenME"),
@@ -1038,6 +1167,7 @@ struct PhiStrangenessCorrelation {
     currentEvent.multiplicity = multiplicity;
     currentEvent.phiParticles = std::move(phiParticles);
     currentEvent.k0sParticles = std::move(k0sParticles);
+    currentEvent.xiParticles = std::move(xiParticles);
     currentEvent.pionParticles = std::move(pionParticles);
 
     eventBuffer[multBin].push_front(std::move(currentEvent));
