@@ -155,7 +155,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(InNSigmaRegion, inNSigmaRegion,
                              if (std::abs(nSigmaTPC) >= pidTPCMax) {
                                return false; // TPC check failed
                              }
-                             if (pt >= tofPIDThreshold && hasTOF && std::abs(nSigmaTOF) >= pidTOFMax) {
+                             if (hasTOF && std::abs(nSigmaTOF) >= pidTOFMax) {
                                return false; // TOF check failed
                              }
                              return true;

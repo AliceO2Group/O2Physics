@@ -633,6 +633,22 @@ struct PionTrackProducer {
   template <typename T>
   bool pidHypothesesRejection(const T& track)
   {
+    // Electron rejection
+    auto nSigmaTPCEl = aod::pidutils::tpcNSigma(o2::track::PID::Electron, track);
+
+    if (nSigmaTPCEl > -3.0f && nSigmaTPCEl < 5.0f) {
+      auto nSigmaTPCPi = aod::pidutils::tpcNSigma(o2::track::PID::Pion, track);
+      auto nSigmaTPCKa = aod::pidutils::tpcNSigma(o2::track::PID::Kaon, track);
+      auto nSigmaTPCPr = aod::pidutils::tpcNSigma(o2::track::PID::Proton, track);
+
+      if (std::abs(nSigmaTPCPi) > 3.0f &&
+          std::abs(nSigmaTPCKa) > 3.0f &&
+          std::abs(nSigmaTPCPr) > 3.0f) {
+        return false;
+      }
+    }
+
+    // Other hadron species rejection
     for (size_t speciesIndex = 0; speciesIndex < trackConfigs.trkPIDspecies->size(); ++speciesIndex) {
       auto const& pid = trackConfigs.trkPIDspecies->at(speciesIndex);
       auto nSigmaTPC = aod::pidutils::tpcNSigma(pid, track);
