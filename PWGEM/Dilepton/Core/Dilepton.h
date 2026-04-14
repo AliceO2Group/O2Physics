@@ -118,7 +118,6 @@ struct Dilepton {
   o2::framework::Configurable<int> cfgAnalysisType{"cfgAnalysisType", static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kQC), "kQC:0, kUPC:1, kFlowV2SP:2, kFlowV3SP:3, kPolarization:4, kHFll:5, kBootstrapv2:6, kFlowV2EP:7, kFlowV3EP:8"};
   o2::framework::Configurable<int> cfgEP2Estimator_for_Mix{"cfgEP2Estimator_for_Mix", 3, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5, FV0A:6"};
   o2::framework::Configurable<int> cfgQvecEstimator{"cfgQvecEstimator", 2, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5, FV0A:6"};
-  o2::framework::Configurable<int> cfgEPEstimator{"cfgEPEstimator", 2, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5, FV0A:6"};
   o2::framework::Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   o2::framework::Configurable<int> cfgOccupancyEstimator{"cfgOccupancyEstimator", 0, "FT0C:0, Track:1"};
   o2::framework::Configurable<bool> cfgDoMix{"cfgDoMix", true, "flag for event mixing"};
@@ -1157,7 +1156,7 @@ struct Dilepton {
           {collision.ep3ft0m(), collision.ep3ft0a(), collision.ep3ft0c(), collision.ep3btot(), collision.ep3bpos(), collision.ep3bneg(), collision.ep3fv0a()}, // 3rd harmonics
         };
 
-        float ep = RecoDecay::constrainAngle(eventplanes[nmod][cfgEPEstimator], -o2::constants::math::PI / nmod, static_cast<uint>(nmod));
+        float ep = RecoDecay::constrainAngle(eventplanes[nmod][cfgQvecEstimator], -o2::constants::math::PI / nmod, static_cast<uint>(nmod));
         float phi_ll = RecoDecay::constrainAngle(v12.Phi(), -o2::constants::math::PI / nmod, 1U);
         float dphi_ll_ep = std::fabs(RecoDecay::constrainAngle(phi_ll - ep, 0.f, static_cast<uint>(nmod)));
 

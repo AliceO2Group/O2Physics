@@ -1139,7 +1139,10 @@ struct DileptonHadronMPC {
       std::pair<int, int> key_df_collision = std::make_pair(ndf, collision.globalIndex());
 
       if (nuls > 0 || nlspp > 0 || nlsmm > 0) { // at least 1 pair exists.
-        emh_ref->ReserveNTracksPerCollision(key_df_collision, refTracks_per_coll.size());
+        if (cfgDoMix) {
+          emh_ref->ReserveNTracksPerCollision(key_df_collision, refTracks_per_coll.size());
+        }
+
         for (const auto& track : refTracks_per_coll) {
           if (fEMTrackCut.IsSelected(track)) {
             fRegistry.fill(HIST("Hadron/hs"), track.pt(), track.eta(), track.phi());

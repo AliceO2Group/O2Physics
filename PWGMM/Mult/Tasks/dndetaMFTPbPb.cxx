@@ -19,57 +19,43 @@
 #include "Index.h"
 #include "bestCollisionTable.h"
 
-#include "Common/CCDB/EventSelectionParams.h"
-#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/fwdtrackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
-#include <CCDB/BasicCCDBManager.h>
-#include <CommonConstants/MathConstants.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <DetectorsBase/Propagator.h>
-#include <Field/MagneticField.h>
-#include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
-#include <Framework/AnalysisTask.h>
-#include <Framework/Configurable.h>
-#include <Framework/DataTypes.h>
-#include <Framework/HistogramRegistry.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
-#include <Framework/O2DatabasePDGPlugin.h>
-#include <Framework/OutputObjHeader.h>
-#include <Framework/runDataProcessing.h>
-#include <MathUtils/Utils.h>
-#include <ReconstructionDataFormats/TrackFwd.h>
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/GeomConstants.h"
+#include "CommonConstants/MathConstants.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DetectorsBase/Propagator.h"
+#include "Field/MagneticField.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/Configurable.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/RuntimeError.h"
+#include "Framework/runDataProcessing.h"
+#include "MathUtils/Utils.h"
+#include "ReconstructionDataFormats/GlobalTrackID.h"
+#include "ReconstructionDataFormats/TrackFwd.h"
 
-#include <Math/MatrixFunctions.h>
-#include <Math/MatrixRepresentationsStatic.h>
-#include <Math/SMatrix.h>
-#include <TGeoGlobalMagField.h>
-#include <TH1.h>
-#include <TH2.h>
-#include <THnSparse.h>
-#include <TMCProcess.h>
-#include <TString.h>
-
-#include <sys/types.h>
+#include "Math/MatrixFunctions.h"
+#include "Math/SMatrix.h"
+#include "TGeoGlobalMagField.h"
+#include "TMCProcess.h"
+#include "TPDGCode.h"
 
 #include <algorithm>
-#include <array>
 #include <chrono>
 #include <cmath>
-#include <cstddef>
-#include <cstdint>
-#include <format>
-#include <memory>
 #include <numeric>
 #include <string>
-#include <type_traits>
 #include <unordered_map>
 #include <vector>
 
@@ -96,8 +82,37 @@ auto static constexpr CmaxAccFT0A = 4.9f;
 auto static constexpr CminAccFT0C = -3.3f;
 auto static constexpr CmaxAccFT0C = -2.1f;
 
-enum TrkSel {
-  trkSelAll,
+constexpr int CevtSel = 15;
+constexpr int CtrkSel = 7;
+constexpr int CtrkTrkBestSel = 6;
+constexpr int CambTrkType = 7;
+constexpr int CselAmbTrkTypeAssocFlag = 16;
+constexpr int CtrackToCollEvtType = 5;
+constexpr int CreassocVtxType = 18;
+constexpr int CevtReAsReAssocMCEventStatus = 5;
+constexpr int CreAssocMCTrackStatus = 29;
+
+enum class EvtSel {
+  evtAll = 0,
+  evtSel,
+  evtIsGoodZvtx,
+  evtNoSameBunchPileup,
+  evtZvtxCut,
+  evtNoCollInTimeRangeStd,
+  evtNoCollInTimeRangeNarrow,
+  evtNoCollInTimeRangeStrict,
+  evtNoCollInRofStrict,
+  evtNoCollInRofStandard,
+  evtNoHighMultCollInPrevRof,
+  evtBelowMinOccup,
+  evtAboveMaxOccup,
+  evtRCTFlagChecker,
+  evtRCTFlagCheckerExtra,
+  nEvtSel
+};
+
+enum class TrkSel {
+  trkSelAll = 0,
   trkSelNCls,
   trkSelChi2Ncl,
   trkSelEta,
@@ -107,35 +122,169 @@ enum TrkSel {
   nTrkSel
 };
 
-enum TrkBestSel {
-  trkBestSelAll,
-  trkBestSelCollID,
-  trkBestSelDCAxyCut,
-  trkBestSelDCAzCut,
-  trkBestSelNumReassoc,
-  nTrkBestSel
+enum class TrkTrkBestSel {
+  trkTrkBestSelAll = 0,
+  trkTrkBestSelCollID,
+  trkTrkBestSelOrphan,
+  trkTrkBestSelDCAxyCut,
+  trkTrkBestSelDCAzCut,
+  trkTrkBestSelNumReassoc,
+  nTrkTrkBestSel
 };
 
-enum AmbTrkType {
-  kNonAmb = 0,
-  kOrphan = 1,
-  kNonAmbSame = 2,
-  kAmb = 3,
-  kAmbGt1 = 4,
+enum class AmbTrkType {
+  kAll = 0,
+  kNonAmb,
+  kOrphan,
+  kOrphanNull,
+  kNonAmbSame,
+  kAmb,
+  kAmbGt1,
   nAmbTrkType
 };
 
-std::unordered_map<int, float> mapVtxXrec;
-std::unordered_map<int, float> mapVtxYrec;
-std::unordered_map<int, float> mapVtxZrec;
-std::unordered_map<int, float> mapMcCollIdPerRecColl;
+enum AmbTrkTypeAssocFlag {
+  kSel = 0,
+  kSelGoodVtxTrue,
+  kSelGoodVtxBad,
+  kSelNonAmbAll,
+  kSelNonAmbGoodVtxTrue,
+  kSelNonAmbGoodVtxBad,
+  kSelNonAmbSameAll,
+  kSelNonAmbSameGoodVtxTrue,
+  kSelNonAmbSameGoodVtxBad,
+  kSelAmbAll,
+  kSelAmbGoodVtxTrue,
+  kSelAmbGoodVtxBad,
+  kSelAmbGt1All,
+  kSelAmbGt1GoodVtxTrue,
+  kSelAmbGt1GoodVtxBad,
+  kSelOrphanNull,
+  nSelAmbTrkTypeAssocFlag
+};
+
+enum class TrackToCollEvtType {
+  kAllRecColl = 0,
+  kIsInelGt0wMft,
+  kEvtSel,
+  kBestCollIdx,
+  kIsMcColl,
+  nTrackToCollEvtType
+};
+
+enum class VertexStatusMC {
+  kNull = 0,
+  kGood,
+  kBad
+};
+
+enum class ReassocCheckVtxType {
+  kIsTrueVtxAllTrue = 0,
+  kIsTrueVtxAllFalse,
+  kIsTrueVtxVsGoodVtxTrue,
+  kIsTrueVtxVsGoodVtxFalse,
+  kIsTrueVtxVsBadVtxTrue,
+  kIsTrueVtxVsBadVtxFalse,
+  kIsRecGoodAllTrue,
+  kIsRecGoodAllFalse,
+  kIsRecGoodMatchAllTrue,
+  kIsRecGoodMatchAllFalse,
+  kIsRecGoodVsGoodVtxTrue,
+  kIsRecGoodVsGoodVtxFalse,
+  kIsRecGoodMatchVsGoodVtxTrue,
+  kIsRecGoodMatchVsGoodVtxFalse,
+  kIsRecGoodVsBadVtxTrue,
+  kIsRecGoodVsBadVtxFalse,
+  kIsRecGoodMatchVsBadVtxTrue,
+  kIsRecGoodMatchVsBadVtxFalse,
+  nReassocVtxType
+};
+
+enum class ReAssocMCEventStatus {
+  kEvtReAsAll = 0,
+  kEvtReAsSelected,
+  kEvtReAsHasMcColl,
+  kEvtReAsSplitVtxRemoved,
+  kEvtReAsZVtxCutMC,
+  nEvtReAsReAssocMCEventStatus
+};
+
+enum class ReAssocMCTrackStatus {
+  kTrkReAssocAll = 0,
+  kTrkBestSel,
+  kTrkSel,
+  kTrkHasColl,
+  kTrkReassignedRemoved,
+  kTrkHasMcPart,
+  kTrkNonAmbAll,
+  kTrkNonAmbGood,
+  kTrkNonAmbBad,
+  kTrkAmbAll,
+  kTrkAmbGood,
+  kTrkAmbBad,
+  kTrkNonAmbAllE,
+  kTrkNonAmbGoodE,
+  kTrkNonAmbBadE,
+  kAssoc,
+  kAssocGood,
+  kAssocGoodIsCompTrue,
+  kAssocGoodIsCompFalse,
+  kAssocBad,
+  kAssocBadIsCompTrue,
+  kAssocBadIsCompFalse,
+  kReAssoc,
+  kReAssocGood,
+  kReAssocGoodIsCompTrue,
+  kReAssocGoodIsCompFalse,
+  kReAssocBad,
+  kReAssocBadIsCompTrue,
+  kReAssocBadIsCompFalse,
+  nReAssocMCTrackStatus
+};
+
+enum class HistStatusReAssocVtx {
+  kTrkNonAmbAll = 0,
+  kTrkNonAmbGood,
+  kTrkNonAmbBad,
+  kTrkAmbAll,
+  kTrkAmbGood,
+  kTrkAmbBad,
+  kTrkNonAmbAllE,
+  kTrkNonAmbGoodE,
+  kTrkNonAmbBadE,
+  kAssoc,
+  kAssocGood,
+  kAssocGoodIsCompTrue,
+  kAssocGoodIsCompFalse,
+  kAssocBad,
+  kAssocBadIsCompTrue,
+  kAssocBadIsCompFalse,
+  kReAssoc,
+  kReAssocGood,
+  kReAssocGoodIsCompTrue,
+  kReAssocGoodIsCompFalse,
+  kReAssocBad,
+  kReAssocBadIsCompTrue,
+  kReAssocBadIsCompFalse,
+  nHistStatusReAssocVtx
+};
+
+std::unordered_map<int64_t, float> mapVtxXrec;
+std::unordered_map<int64_t, float> mapVtxYrec;
+std::unordered_map<int64_t, float> mapVtxZrec;
+std::unordered_map<int64_t, float> mapVtxXgen;
+std::unordered_map<int64_t, float> mapVtxYgen;
+std::unordered_map<int64_t, float> mapVtxZgen;
+std::unordered_map<int64_t, float> mapMcCollIdPerRecColl;
 
 struct DndetaMFTPbPb {
   SliceCache cache;
 
   std::array<std::shared_ptr<THnSparse>, 4> hCollAssoc;
-  std::array<std::shared_ptr<THnSparse>, 4> hReAssoc;
-  std::array<std::shared_ptr<THnSparse>, 8> hDCAMc;
+  std::array<std::shared_ptr<THnSparse>, 23> hReAssocVtxRes;
+  std::array<std::shared_ptr<THnSparse>, 23> hReAssocDCA;
+  // std::array<std::shared_ptr<THnSparse>, 23> hReAssocDCAPrim;
+  std::array<std::shared_ptr<THnSparse>, 21> hTimeAssocWithReassocMC;
 
   enum OccupancyEst { TrkITS = 1,
                       Ft0C };
@@ -162,8 +311,12 @@ struct DndetaMFTPbPb {
     Configurable<std::string> cfgIRSource{"cfgIRSource", "ZNC hadronic", "Estimator of the interaction rate (Pb-Pb: ZNC hadronic)"};
     Configurable<bool> cfgUseTrackSel{"cfgUseTrackSel", false, "Flag to apply track selection"};
     Configurable<bool> cfgUseParticleSel{"cfgUseParticleSel", false, "Flag to apply particle selection"};
+    Configurable<bool> cfgUsePrimaries{"cfgUsePrimaries", false, "Select primary particles"};
     Configurable<bool> cfgRemoveTrivialAssoc{"cfgRemoveTrivialAssoc", false, "Skip trivial associations"};
+    Configurable<bool> cfgRemoveAmbiguousTracks{"cfgRemoveAmbiguousTracks", false, "Remove ambiguous tracks"};
+    Configurable<bool> cfgRemoveOrphanTracks{"cfgRemoveOrphanTracks", true, "Remove orphan tracks"};
     Configurable<bool> cfgRemoveReassigned{"cfgRemoveReassigned", false, "Remove reassgined tracks"};
+    Configurable<bool> cfgRemoveSplitVertex{"cfgRemoveSplitVertex", true, "Remove split vertices"};
     Configurable<bool> cfgUseTrackParExtra{"cfgUseTrackParExtra", false, "Use table with refitted track parameters"};
     Configurable<bool> cfgUseInelgt0{"cfgUseInelgt0", false, "Use INEL > 0 condition"};
     Configurable<bool> cfgUseInelgt0wMFT{"cfgUseInelgt0wMFT", false, "Use INEL > 0 condition with MFT acceptance"};
@@ -196,6 +349,7 @@ struct DndetaMFTPbPb {
 
   struct : ConfigurableGroup {
     Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", false, "Check event quality in run condition table"};
+    Configurable<bool> requireRCTFlagCheckerExtra{"requireRCTFlagCheckerExtra", true, "Check RCT flag extra"};
     Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT_fw", "Evt sel: RCT flag checker label"};
     Configurable<bool> cfgEvtRCTFlagCheckerZDCCheck{"cfgEvtRCTFlagCheckerZDCCheck", false, "Evt sel: RCT flag checker ZDC check"};
     Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", true, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
@@ -254,6 +408,7 @@ struct DndetaMFTPbPb {
   ctpRateFetcher rateFetcher;
   TH2* gCurrentHadronicRate;
   RCTFlagsChecker rctChecker;
+  RCTFlagsChecker rctCheckerExtra{kFT0Bad, kITSBad, kTPCBadTracking, kMFTBad};
 
   float bZ = 0;                                          // Magnetic field for MFT
   static constexpr double CcenterMFT[3] = {0, 0, -61.4}; // Field at center of MFT
@@ -352,38 +507,60 @@ struct DndetaMFTPbPb {
            "be enabled!");
     }
 
-    auto hev = registry.add<TH1>("Events/hEvtSel", "hEvtSel", HistType::kTH1F,
-                                 {{15, -0.5f, +14.5f}});
-    hev->GetXaxis()->SetBinLabel(1, "All collisions");
-    hev->GetXaxis()->SetBinLabel(2, "Ev. sel.");
-    hev->GetXaxis()->SetBinLabel(3, "kIsGoodZvtxFT0vsPV");
-    hev->GetXaxis()->SetBinLabel(4, "NoSameBunchPileup");
-    hev->GetXaxis()->SetBinLabel(5, "Z-vtx cut");
-    hev->GetXaxis()->SetBinLabel(6, "kNoCollInTimeRangeStd");
-    hev->GetXaxis()->SetBinLabel(7, "kNoCollInTimeRangeNarrow");
-    hev->GetXaxis()->SetBinLabel(8, "kNoCollInTimeRangeStrict");
-    hev->GetXaxis()->SetBinLabel(9, "kNoCollInRofStrict");
-    hev->GetXaxis()->SetBinLabel(10, "kNoCollInRofStandard");
-    hev->GetXaxis()->SetBinLabel(11, "kNoHighMultCollInPrevRof");
-    hev->GetXaxis()->SetBinLabel(12, "Below min occup.");
-    hev->GetXaxis()->SetBinLabel(13, "Above max occup.");
-    hev->GetXaxis()->SetBinLabel(14, "RCT Flag Checker");
+    // registry.add("Events/hRCTSel", "Event accepted if RCT not selected;RCT Status;", {HistType::kTH1F, {{2, 0.5, 2.5}}});
+    // auto hrctSel = registry.get<TH1>(HIST("Events/hRCTSel"));
+    // auto* x = hrctSel->GetXaxis();
+    // x->SetBinLabel(1, "All");
+    // x->SetBinLabel(2, "kFT0Bad");
 
-    registry.add("Tracks/hBestTrkSel", "Number of best tracks; Cut; #Tracks Passed Cut", {HistType::kTH1F, {{nTrkBestSel, -0.5, +nTrkBestSel - 0.5}}});
-    registry.get<TH1>(HIST("Tracks/hBestTrkSel"))->GetXaxis()->SetBinLabel(trkBestSelAll + 1, "All");
-    registry.get<TH1>(HIST("Tracks/hBestTrkSel"))->GetXaxis()->SetBinLabel(trkBestSelCollID + 1, "Assigned (ID>=0)");
-    registry.get<TH1>(HIST("Tracks/hBestTrkSel"))->GetXaxis()->SetBinLabel(trkBestSelDCAxyCut + 1, "DCA xy cut");
-    registry.get<TH1>(HIST("Tracks/hBestTrkSel"))->GetXaxis()->SetBinLabel(trkBestSelDCAzCut + 1, "DCA z cut");
-    registry.get<TH1>(HIST("Tracks/hBestTrkSel"))->GetXaxis()->SetBinLabel(trkBestSelNumReassoc + 1, "Reassociated");
+    registry.add("Events/hEvtSel", "Number of events; Cut; #Evt Passed Cut", {HistType::kTH1F, {{static_cast<int>(EvtSel::nEvtSel), -0.5, +static_cast<int>(EvtSel::nEvtSel) - 0.5}}});
+    std::string labelEvtSel[CevtSel];
+    labelEvtSel[static_cast<int>(EvtSel::evtAll)] = "All coll.";
+    labelEvtSel[static_cast<int>(EvtSel::evtSel)] = "Sel 8";
+    labelEvtSel[static_cast<int>(EvtSel::evtIsGoodZvtx)] = "kIsGoodZvtxFT0vsPV";
+    labelEvtSel[static_cast<int>(EvtSel::evtNoSameBunchPileup)] = "NoSameBunchPileup";
+    labelEvtSel[static_cast<int>(EvtSel::evtZvtxCut)] = "Z-vtx cut";
+    labelEvtSel[static_cast<int>(EvtSel::evtNoCollInTimeRangeStd)] = "kNoCollInTimeRangeStd";
+    labelEvtSel[static_cast<int>(EvtSel::evtNoCollInTimeRangeNarrow)] = "kNoCollInTimeRangeNarrow";
+    labelEvtSel[static_cast<int>(EvtSel::evtNoCollInTimeRangeStrict)] = "kNoCollInTimeRangeStrict";
+    labelEvtSel[static_cast<int>(EvtSel::evtNoCollInRofStrict)] = "kNoCollInRofStrict";
+    labelEvtSel[static_cast<int>(EvtSel::evtNoCollInRofStandard)] = "kNoCollInRofStandard";
+    labelEvtSel[static_cast<int>(EvtSel::evtNoHighMultCollInPrevRof)] = "kNoHighMultCollInPrevRof";
+    labelEvtSel[static_cast<int>(EvtSel::evtBelowMinOccup)] = "Below min occup.";
+    labelEvtSel[static_cast<int>(EvtSel::evtAboveMaxOccup)] = "Above max occup.";
+    labelEvtSel[static_cast<int>(EvtSel::evtRCTFlagChecker)] = "RCT Flag Checker";
+    labelEvtSel[static_cast<int>(EvtSel::evtRCTFlagCheckerExtra)] = "RCT Flag Checker Extra";
+    registry.get<TH1>(HIST("Events/hEvtSel"))->SetMinimum(0.1);
+    for (int iBin = 0; iBin < static_cast<int>(EvtSel::nEvtSel); iBin++) {
+      registry.get<TH1>(HIST("Events/hEvtSel"))->GetXaxis()->SetBinLabel(iBin + 1, labelEvtSel[iBin].data());
+    }
 
-    registry.add("Tracks/hTrkSel", "Number of tracks; Cut; #Tracks Passed Cut", {HistType::kTH1F, {{nTrkSel, -0.5, +nTrkSel - 0.5}}});
-    registry.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelAll + 1, "All");
-    registry.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelNCls + 1, "Ncl cut");
-    registry.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelChi2Ncl + 1, "#chi^{2}/Ncl cut");
-    registry.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelEta + 1, "#eta cut");
-    registry.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelPhiCut + 1, "#varphi cut");
-    registry.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelPt + 1, "#it{p}_{T} cut");
-    registry.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelCA + 1, "Tracking algorithm (CA)");
+    registry.add("Tracks/hBestTrkSel", "Number of best tracks; Cut; #Tracks Passed Cut", {HistType::kTH1F, {{static_cast<int>(TrkTrkBestSel::nTrkTrkBestSel), -0.5, +static_cast<int>(TrkTrkBestSel::nTrkTrkBestSel) - 0.5}}});
+    std::string labelTrkTrkBestSel[CtrkTrkBestSel];
+    labelTrkTrkBestSel[static_cast<int>(TrkTrkBestSel::trkTrkBestSelAll)] = "All";
+    labelTrkTrkBestSel[static_cast<int>(TrkTrkBestSel::trkTrkBestSelCollID)] = "Assigned (ID>=0)";
+    labelTrkTrkBestSel[static_cast<int>(TrkTrkBestSel::trkTrkBestSelOrphan)] = "No orphans";
+    labelTrkTrkBestSel[static_cast<int>(TrkTrkBestSel::trkTrkBestSelDCAxyCut)] = "DCA xy cut";
+    labelTrkTrkBestSel[static_cast<int>(TrkTrkBestSel::trkTrkBestSelDCAzCut)] = "DCA z cut";
+    labelTrkTrkBestSel[static_cast<int>(TrkTrkBestSel::trkTrkBestSelNumReassoc)] = "#Reassoc";
+    registry.get<TH1>(HIST("Tracks/hBestTrkSel"))->SetMinimum(0.1);
+    for (int iBin = 0; iBin < static_cast<int>(TrkTrkBestSel::nTrkTrkBestSel); iBin++) {
+      registry.get<TH1>(HIST("Tracks/hBestTrkSel"))->GetXaxis()->SetBinLabel(iBin + 1, labelTrkTrkBestSel[iBin].data());
+    }
+
+    registry.add("Tracks/hTrkSel", "Number of tracks; Cut; #Tracks Passed Cut", {HistType::kTH1F, {{static_cast<int>(TrkSel::nTrkSel), -0.5, +static_cast<int>(TrkSel::nTrkSel) - 0.5}}});
+    std::string labelTrkSel[CtrkSel];
+    labelTrkSel[static_cast<int>(TrkSel::trkSelAll)] = "All";
+    labelTrkSel[static_cast<int>(TrkSel::trkSelNCls)] = "Ncls";
+    labelTrkSel[static_cast<int>(TrkSel::trkSelChi2Ncl)] = "Chi2";
+    labelTrkSel[static_cast<int>(TrkSel::trkSelEta)] = "Eta";
+    labelTrkSel[static_cast<int>(TrkSel::trkSelPhiCut)] = "Phi cut";
+    labelTrkSel[static_cast<int>(TrkSel::trkSelPt)] = "Pt";
+    labelTrkSel[static_cast<int>(TrkSel::trkSelCA)] = "CA";
+    registry.get<TH1>(HIST("Tracks/hTrkSel"))->SetMinimum(0.1);
+    for (int iBin = 0; iBin < static_cast<int>(TrkSel::nTrkSel); iBin++) {
+      registry.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(iBin + 1, labelTrkSel[iBin].data());
+    }
 
     auto hBcSel = registry.add<TH1>("hBcSel", "hBcSel", HistType::kTH1F,
                                     {{3, -0.5f, +2.5f}});
@@ -918,77 +1095,155 @@ struct DndetaMFTPbPb {
       qaregistry.add({"Tracks/hMftTracksAmbDegreeWithTrivial",
                       " ; N_{coll}^{comp}",
                       {HistType::kTH1F, {{41, -0.5, 40.5}}}});
-      // qaregistry.add({"Tracks/hAmbTrackType",
-      //                 " ; Ambiguous track type",
-      //                 {HistType::kTH1F, {{5, -0.5, 4.5}}}});
 
-      qaregistry.add("Tracks/hAmbTrackType", "hAmbTrackType", {HistType::kTH1F, {{AmbTrkType::nAmbTrkType, -0.5, +AmbTrkType::nAmbTrkType - 0.5}}});
-      std::string labelAmbiguity[AmbTrkType::nAmbTrkType];
-      labelAmbiguity[AmbTrkType::kOrphan] = "orphan";
-      labelAmbiguity[AmbTrkType::kNonAmb] = "nonAmbiguous";
-      labelAmbiguity[AmbTrkType::kNonAmbSame] = "trkInCollTabHasSameAssoc";
-      labelAmbiguity[AmbTrkType::kAmb] = "trkInCollTabHasDiffAssoc";
-      labelAmbiguity[AmbTrkType::kAmbGt1] = "trkInCollTabHasGt1Assoc";
+      qaregistry.add("Tracks/hAmbTrackType", "hAmbTrackType", {HistType::kTH1F, {{static_cast<int>(AmbTrkType::nAmbTrkType), -0.5, +static_cast<int>(AmbTrkType::nAmbTrkType) - 0.5}}});
+      std::string labelAmbiguity[CambTrkType];
+      labelAmbiguity[static_cast<int>(AmbTrkType::kAll)] = "all";
+      labelAmbiguity[static_cast<int>(AmbTrkType::kOrphan)] = "orphan";
+      labelAmbiguity[static_cast<int>(AmbTrkType::kOrphanNull)] = "orphanNull";
+      labelAmbiguity[static_cast<int>(AmbTrkType::kNonAmb)] = "nonAmb";
+      labelAmbiguity[static_cast<int>(AmbTrkType::kNonAmbSame)] = "nonAmbSame";
+      labelAmbiguity[static_cast<int>(AmbTrkType::kAmb)] = "Amb";
+      labelAmbiguity[static_cast<int>(AmbTrkType::kAmbGt1)] = "AmbGt1";
       qaregistry.get<TH1>(HIST("Tracks/hAmbTrackType"))->SetMinimum(0.1);
-
-      for (int iBin = 0; iBin < AmbTrkType::nAmbTrkType; iBin++) {
+      for (int iBin = 0; iBin < static_cast<int>(AmbTrkType::nAmbTrkType); iBin++) {
         qaregistry.get<TH1>(HIST("Tracks/hAmbTrackType"))->GetXaxis()->SetBinLabel(iBin + 1, labelAmbiguity[iBin].data());
       }
     }
 
-    if (doprocessCollAssocMC) {
-
-      registry.add("Events/hNAssocColls", "Number of times generated collisions are reconstructed; N; Counts", HistType::kTH1F, {{10, -0.5, 9.5}});
+    if (doprocessAssocMC) {
+      registry.add("TrackToColl/hAmbTrackType", "hAmbTrackType", {HistType::kTH1F, {{static_cast<int>(AmbTrkType::nAmbTrkType), -0.5, +static_cast<int>(AmbTrkType::nAmbTrkType) - 0.5}}});
+      std::string labelAmbiguity[CambTrkType];
+      labelAmbiguity[static_cast<int>(AmbTrkType::kAll)] = "all";
+      labelAmbiguity[static_cast<int>(AmbTrkType::kOrphan)] = "orphan";
+      labelAmbiguity[static_cast<int>(AmbTrkType::kOrphanNull)] = "orphanNull";
+      labelAmbiguity[static_cast<int>(AmbTrkType::kNonAmb)] = "nonAmb";
+      labelAmbiguity[static_cast<int>(AmbTrkType::kNonAmbSame)] = "nonAmbSame";
+      labelAmbiguity[static_cast<int>(AmbTrkType::kAmb)] = "Amb";
+      labelAmbiguity[static_cast<int>(AmbTrkType::kAmbGt1)] = "AmbGt1";
+      registry.get<TH1>(HIST("TrackToColl/hAmbTrackType"))->SetMinimum(0.1);
+      for (int iBin = 0; iBin < static_cast<int>(AmbTrkType::nAmbTrkType); iBin++) {
+        registry.get<TH1>(HIST("TrackToColl/hAmbTrackType"))->GetXaxis()->SetBinLabel(iBin + 1, labelAmbiguity[iBin].data());
+      }
 
       // tracks not associated to any collision
-      hCollAssoc[0] = qaregistry.add<THnSparse>("TrackToColl/hNonAssocTracks", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hCollAssoc[0] = registry.add<THnSparse>("TrackToColl/hNonAssocTracks", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
       // tracks associasted to a collision
-      hCollAssoc[1] = qaregistry.add<THnSparse>("TrackToColl/hAssocTracks", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hCollAssoc[1] = registry.add<THnSparse>("TrackToColl/hAssocTracks", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
       // tracks associated to the correct collision considering only first reco collision (based on the MC collision index)
-      hCollAssoc[2] = qaregistry.add<THnSparse>("TrackToColl/hGoodAssocTracks", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hCollAssoc[2] = registry.add<THnSparse>("TrackToColl/hGoodAssocTracks", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
       // tracks associated to the correct collision considering all ambiguous reco collisions (based on the MC collision index)
-      hCollAssoc[3] = qaregistry.add<THnSparse>("TrackToColl/hGoodAssocTracksAmb", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hCollAssoc[3] = registry.add<THnSparse>("TrackToColl/hGoodAssocTracksAmb", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
 
-      qaregistry.add("TrackToColl/histFracTracksFakeMcColl", "Fraction of tracks originating from fake collision; fraction; entries", {HistType::kTH1F, {{101, 0., 1.01}}});
-      qaregistry.add("TrackToColl/histFracGoodTracks", "Fraction of tracks originating from the correct collision; fraction; entries", {HistType::kTH1F, {{101, 0., 1.01}}});
-      qaregistry.add("TrackToColl/histAmbTrackNumColls", "Number of collisions associated to an ambiguous track; no. collisions; entries", {HistType::kTH1F, {{30, -0.5, 29.5}}});
-      qaregistry.add("TrackToColl/histTrackNumColls", "Number of collisions associated to track; no. collisions; entries", {HistType::kTH1F, {{30, -0.5, 29.5}}});
-      qaregistry.add("TrackToColl/histNonAmbTrackNumColls", "Number of collisions associated to non-ambiguous track; no. collisions; entries", {HistType::kTH1F, {{30, -0.5, 29.5}}});
-      qaregistry.add("TrackToColl/histAmbTrackZvtxRMS", "RMS of #it{Z}^{reco} of collisions associated to a track; RMS(#it{Z}^{reco}) (cm); entries", {HistType::kTH1F, {{100, 0., 0.5}}});
+      registry.add("TrackToColl/histFracTracksFakeMcColl", "Fraction of tracks originating from fake collision; fraction; entries", {HistType::kTH1F, {{101, 0., 1.01}}});
+      registry.add("TrackToColl/histFracGoodTracks", "Fraction of tracks originating from the correct collision; fraction; entries", {HistType::kTH1F, {{101, 0., 1.01}}});
+      registry.add("TrackToColl/histAmbTrackNumColls", "Number of collisions associated to an ambiguous track; no. collisions; entries", {HistType::kTH1F, {{30, -0.5, 29.5}}});
+      registry.add("TrackToColl/histTrackNumColls", "Number of collisions associated to track; no. collisions; entries", {HistType::kTH1F, {{30, -0.5, 29.5}}});
+      registry.add("TrackToColl/histNonAmbTrackNumColls", "Number of collisions associated to non-ambiguous track; no. collisions; entries", {HistType::kTH1F, {{30, -0.5, 29.5}}});
+      registry.add("TrackToColl/histAmbTrackZvtxRMS", "RMS of #it{Z}^{reco} of collisions associated to a track; RMS(#it{Z}^{reco}) (cm); entries", {HistType::kTH1F, {{100, 0., 10.}}});
     }
 
-    if (doprocessReAssocMC) {
+    if (doprocessReAssoc3dMC) {
 
-      registry.add("Events/hNReAssocColls", "Number of times generated collisions are reconstructed; N; Counts", HistType::kTH1F, {{10, -0.5, 9.5}});
+      registry.add("ReAssocMC/hNReAssocRecoColls", "Number of times generated collisions are reconstructed; N; Counts", HistType::kTH1F, {{10, -0.5, 9.5}});
 
-      registry.add("Events/ReAssocMCStatus", ";status", {HistType::kTH1F, {{12, 0.5, 12.5}}});
-      auto hstat = registry.get<TH1>(HIST("Events/ReAssocMCStatus"));
-      hstat->GetXaxis()->SetBinLabel(1, "All compatible");
-      hstat->GetXaxis()->SetBinLabel(2, "Selected");
-      hstat->GetXaxis()->SetBinLabel(3, "Has collision");
-      hstat->GetXaxis()->SetBinLabel(4, "Reassigned");
-      hstat->GetXaxis()->SetBinLabel(5, "Has particle");
-      hstat->GetXaxis()->SetBinLabel(6, "Pos z MC cut");
-      hstat->GetXaxis()->SetBinLabel(7, "Associated");
-      hstat->GetXaxis()->SetBinLabel(8, "Associated true");
-      hstat->GetXaxis()->SetBinLabel(9, "Associated wrong");
-      hstat->GetXaxis()->SetBinLabel(10, "Reassociated");
-      hstat->GetXaxis()->SetBinLabel(11, "Reassociated true");
-      hstat->GetXaxis()->SetBinLabel(12, "Reassociated wrong");
+      registry.add("ReAssocMC/hReAssocMCEventStatus", ";status", {HistType::kTH1F, {{static_cast<int>(ReAssocMCEventStatus::nEvtReAsReAssocMCEventStatus), -0.5, +static_cast<int>(ReAssocMCEventStatus::nEvtReAsReAssocMCEventStatus) - 0.5}}});
+      std::string labelReAssocMCEventStatus[CevtReAsReAssocMCEventStatus];
+      labelReAssocMCEventStatus[static_cast<int>(ReAssocMCEventStatus::kEvtReAsAll)] = "All";
+      labelReAssocMCEventStatus[static_cast<int>(ReAssocMCEventStatus::kEvtReAsSelected)] = "Selected";
+      labelReAssocMCEventStatus[static_cast<int>(ReAssocMCEventStatus::kEvtReAsHasMcColl)] = "Has Mc Coll";
+      labelReAssocMCEventStatus[static_cast<int>(ReAssocMCEventStatus::kEvtReAsSplitVtxRemoved)] = "Split Vtx Removed";
+      labelReAssocMCEventStatus[static_cast<int>(ReAssocMCEventStatus::kEvtReAsZVtxCutMC)] = "Vtx-z cut MC";
+      registry.get<TH1>(HIST("ReAssocMC/hReAssocMCEventStatus"))->SetMinimum(0.1);
+      for (int iBin = 0; iBin < static_cast<int>(ReAssocMCEventStatus::nEvtReAsReAssocMCEventStatus); iBin++) {
+        registry.get<TH1>(HIST("ReAssocMC/hReAssocMCEventStatus"))->GetXaxis()->SetBinLabel(iBin + 1, labelReAssocMCEventStatus[iBin].data());
+      }
 
-      hReAssoc[0] = qaregistry.add<THnSparse>("ReAssoc/hAssocBestTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssoc[1] = qaregistry.add<THnSparse>("ReAssoc/hAssocBestWrong", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssoc[2] = qaregistry.add<THnSparse>("ReAssoc/hReAssocBestTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-      hReAssoc[3] = qaregistry.add<THnSparse>("ReAssoc/hReAssocBestWrong", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      registry.add("ReAssocMC/hReAssocMCTrackStatus", ";status", {HistType::kTH1F, {{static_cast<int>(ReAssocMCTrackStatus::nReAssocMCTrackStatus), -0.5, +static_cast<int>(ReAssocMCTrackStatus::nReAssocMCTrackStatus) - 0.5}}});
+      std::string labelReAssocMCTrackStatus[CreAssocMCTrackStatus];
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kTrkReAssocAll)] = "All";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kTrkBestSel)] = "Best sel";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kTrkSel)] = "Trk sel";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kTrkHasColl)] = "Has coll";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kTrkReassignedRemoved)] = "Reas rm";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kTrkHasMcPart)] = "Has part";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbAll)] = "Non-amb";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbGood)] = "Non-amb good coll.";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbBad)] = "Non-amb bad coll.";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kTrkAmbAll)] = "Amb";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kTrkAmbGood)] = "Amb good coll.";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kTrkAmbBad)] = "Amb bad coll.";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbAllE)] = "Non-amb (ex)";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbGoodE)] = "Non-amb good coll. (ex)";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbBadE)] = "Non-amb bad coll. (ex)";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kAssoc)] = "Assoc (gt1 amb)";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kAssocGood)] = "Assoc good";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kAssocGoodIsCompTrue)] = "Assoc good Comp True";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kAssocGoodIsCompFalse)] = "Assoc good Comp False";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kAssocBad)] = "Assoc bad";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kAssocBadIsCompTrue)] = "Assoc bad Comp True";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kAssocBadIsCompFalse)] = "Assoc bad Comp False";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kReAssoc)] = "ReAssoc";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kReAssocGood)] = "ReAssoc good";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kReAssocGoodIsCompTrue)] = "ReAssoc good Comp True";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kReAssocGoodIsCompFalse)] = "ReAssoc good Comp False";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kReAssocBad)] = "ReAssoc bad";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kReAssocBadIsCompTrue)] = "ReAssoc bad Comp True";
+      labelReAssocMCTrackStatus[static_cast<int>(ReAssocMCTrackStatus::kReAssocBadIsCompFalse)] = "ReAssoc bad Comp False";
+      registry.get<TH1>(HIST("ReAssocMC/hReAssocMCTrackStatus"))->SetMinimum(0.1);
+      for (int iBin = 0; iBin < static_cast<int>(ReAssocMCTrackStatus::nReAssocMCTrackStatus); iBin++) {
+        registry.get<TH1>(HIST("ReAssocMC/hReAssocMCTrackStatus"))->GetXaxis()->SetBinLabel(iBin + 1, labelReAssocMCTrackStatus[iBin].data());
+      }
 
-      hDCAMc[0] = qaregistry.add<THnSparse>("ReAssoc/hAssocBestTrueDCAPrim", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hDCAMc[1] = qaregistry.add<THnSparse>("ReAssoc/hAssocBestTrueDCASec", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hDCAMc[2] = qaregistry.add<THnSparse>("ReAssoc/hAssocBestWrongDCAPrim", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hDCAMc[3] = qaregistry.add<THnSparse>("ReAssoc/hAssocBestWrongDCASec", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hDCAMc[4] = qaregistry.add<THnSparse>("ReAssoc/hReAssocBestTrueDCAPrim", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hDCAMc[5] = qaregistry.add<THnSparse>("ReAssoc/hReAssocBestTrueDCASec", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hDCAMc[6] = qaregistry.add<THnSparse>("ReAssoc/hReAssocBestWrongDCAPrim", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
-      hDCAMc[7] = qaregistry.add<THnSparse>("ReAssoc/hReAssocBestWrongDCASec", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
+      // Vertex resolution
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbAll)] = registry.add<THnSparse>("ReAssocMC/hVtxResNonAmbAll", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbGood)] = registry.add<THnSparse>("ReAssocMC/hVtxResNonAmbGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbBad)] = registry.add<THnSparse>("ReAssocMC/hVtxResNonAmbBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkAmbAll)] = registry.add<THnSparse>("ReAssocMC/hVtxResAmbAll", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkAmbGood)] = registry.add<THnSparse>("ReAssocMC/hVtxResAmbGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkAmbBad)] = registry.add<THnSparse>("ReAssocMC/hVtxResAmbBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbAllE)] = registry.add<THnSparse>("ReAssocMC/hVtxResNonAmbAllE", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbGoodE)] = registry.add<THnSparse>("ReAssocMC/hVtxResNonAmbGoodE", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbBadE)] = registry.add<THnSparse>("ReAssocMC/hVtxResNonAmbBadE", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssoc)] = registry.add<THnSparse>("ReAssocMC/hVtxResAssoc", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocGood)] = registry.add<THnSparse>("ReAssocMC/hVtxResAssocGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocGoodIsCompTrue)] = registry.add<THnSparse>("ReAssocMC/hVtxResAssocGoodIsCompTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocGoodIsCompFalse)] = registry.add<THnSparse>("ReAssocMC/hVtxResAssocGoodIsCompFalse", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocBad)] = registry.add<THnSparse>("ReAssocMC/hVtxResAssocBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocBadIsCompTrue)] = registry.add<THnSparse>("ReAssocMC/hVtxResAssocBadIsCompTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocBadIsCompFalse)] = registry.add<THnSparse>("ReAssocMC/hVtxResAssocBadIsCompFalse", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssoc)] = registry.add<THnSparse>("ReAssocMC/hVtxResReAssoc", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocGood)] = registry.add<THnSparse>("ReAssocMC/hVtxResReAssocGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocGoodIsCompTrue)] = registry.add<THnSparse>("ReAssocMC/hVtxResReAssocGoodIsCompTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocGoodIsCompFalse)] = registry.add<THnSparse>("ReAssocMC/hVtxResReAssocGoodIsCompFalse", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocBad)] = registry.add<THnSparse>("ReAssocMC/hVtxResReAssocBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocBadIsCompTrue)] = registry.add<THnSparse>("ReAssocMC/hVtxResReAssocBadIsCompTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocBadIsCompFalse)] = registry.add<THnSparse>("ReAssocMC/hVtxResReAssocBadIsCompFalse", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
+
+      // DCA
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbAll)] = registry.add<THnSparse>("ReAssocMC/hDCANonAmbAll", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbGood)] = registry.add<THnSparse>("ReAssocMC/hDCANonAmbGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbBad)] = registry.add<THnSparse>("ReAssocMC/hDCANonAmbBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkAmbAll)] = registry.add<THnSparse>("ReAssocMC/hDCAAmbAll", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkAmbGood)] = registry.add<THnSparse>("ReAssocMC/hDCAAmbGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkAmbBad)] = registry.add<THnSparse>("ReAssocMC/hDCAAmbBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbAllE)] = registry.add<THnSparse>("ReAssocMC/hDCANonAmbAllE", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbGoodE)] = registry.add<THnSparse>("ReAssocMC/hDCANonAmbGoodE", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbBadE)] = registry.add<THnSparse>("ReAssocMC/hDCANonAmbBadE", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssoc)] = registry.add<THnSparse>("ReAssocMC/hDCAAssoc", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocGood)] = registry.add<THnSparse>("ReAssocMC/hDCAAssocGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocGoodIsCompTrue)] = registry.add<THnSparse>("ReAssocMC/hDCAAssocGoodIsCompTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocGoodIsCompFalse)] = registry.add<THnSparse>("ReAssocMC/hDCAAssocGoodIsCompFalse", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocBad)] = registry.add<THnSparse>("ReAssocMC/hDCAAssocBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocBadIsCompTrue)] = registry.add<THnSparse>("ReAssocMC/hDCAAssocBadIsCompTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocBadIsCompFalse)] = registry.add<THnSparse>("ReAssocMC/hDCAAssocBadIsCompFalse", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssoc)] = registry.add<THnSparse>("ReAssocMC/hDCAReAssoc", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocGood)] = registry.add<THnSparse>("ReAssocMC/hDCAReAssocGood", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocGoodIsCompTrue)] = registry.add<THnSparse>("ReAssocMC/hDCAReAssocGoodIsCompTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocGoodIsCompFalse)] = registry.add<THnSparse>("ReAssocMC/hDCAReAssocGoodIsCompFalse", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocBad)] = registry.add<THnSparse>("ReAssocMC/hDCAReAssocBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocBadIsCompTrue)] = registry.add<THnSparse>("ReAssocMC/hDCAReAssocBadIsCompTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
+      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocBadIsCompFalse)] = registry.add<THnSparse>("ReAssocMC/hDCAReAssocBadIsCompFalse", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
     }
 
     if (doprocessEfficiencyInclusive) {
@@ -1025,13 +1280,40 @@ struct DndetaMFTPbPb {
       auto hNevt = registry.add<TH1>("Events/hNGenRecColls", "Number of generated and reconstructed MC collisions", HistType::kTH1F, {{3, 0.5, 3.5}});
       hNevt->GetXaxis()->SetBinLabel(1, "Reconstructed collisions");
       hNevt->GetXaxis()->SetBinLabel(2, "Generated collisions");
+
       if (doprocessSecondariesMCInlcusive) {
-        registry.add({"Events/EvtGenRec", ";status", {HistType::kTH1F, {{3, 0.5, 3.5}}}});
-        auto heff = registry.get<TH1>(HIST("Events/EvtGenRec"));
-        auto* h = heff->GetXaxis();
-        h->SetBinLabel(1, "All generated");
-        h->SetBinLabel(2, "All reconstructed");
-        h->SetBinLabel(3, "Selected reconstructed");
+        qaregistry.add("Events/hTrackToCollEvtType", ";status", {HistType::kTH1F, {{static_cast<int>(TrackToCollEvtType::nTrackToCollEvtType), -0.5, +static_cast<int>(TrackToCollEvtType::nTrackToCollEvtType) - 0.5}}});
+        std::string labelTrkToCollEvt[CtrackToCollEvtType];
+        labelTrkToCollEvt[static_cast<int>(TrackToCollEvtType::kAllRecColl)] = "all rec";
+        labelTrkToCollEvt[static_cast<int>(TrackToCollEvtType::kIsInelGt0wMft)] = "inel>0 mft";
+        labelTrkToCollEvt[static_cast<int>(TrackToCollEvtType::kEvtSel)] = "evt sel";
+        labelTrkToCollEvt[static_cast<int>(TrackToCollEvtType::kBestCollIdx)] = "bestColl Idx (numContrib)";
+        labelTrkToCollEvt[static_cast<int>(TrackToCollEvtType::kIsMcColl)] = "is mc";
+        qaregistry.get<TH1>(HIST("Events/hTrackToCollEvtType"))->SetMinimum(0.1);
+        for (int iBin = 0; iBin < static_cast<int>(TrackToCollEvtType::nTrackToCollEvtType); iBin++) {
+          qaregistry.get<TH1>(HIST("Events/hTrackToCollEvtType"))->GetXaxis()->SetBinLabel(iBin + 1, labelTrkToCollEvt[iBin].data());
+        }
+        // registry.add({"Events/EvtGenRec", ";status", {HistType::kTH1F, {{3, 0.5, 3.5}}}});
+        // auto heff = registry.get<TH1>(HIST("Events/EvtGenRec"));
+        // auto* h = heff->GetXaxis();
+        // h->SetBinLabel(1, "All generated");
+        // h->SetBinLabel(2, "All reconstructed");
+        // h->SetBinLabel(3, "Selected reconstructed");
+
+        qaregistry.add("TrkCompColls/hAmbTrackType", ";status", {HistType::kTH1F, {{static_cast<int>(AmbTrkType::nAmbTrkType), -0.5, +static_cast<int>(AmbTrkType::nAmbTrkType) - 0.5}}});
+        std::string labelAmbiguity[CambTrkType];
+        labelAmbiguity[static_cast<int>(AmbTrkType::kAll)] = "all";
+        labelAmbiguity[static_cast<int>(AmbTrkType::kOrphan)] = "orphan";
+        labelAmbiguity[static_cast<int>(AmbTrkType::kOrphanNull)] = "orphanNull";
+        labelAmbiguity[static_cast<int>(AmbTrkType::kNonAmb)] = "nonAmb";
+        labelAmbiguity[static_cast<int>(AmbTrkType::kNonAmbSame)] = "nonAmbSame";
+        labelAmbiguity[static_cast<int>(AmbTrkType::kAmb)] = "Amb";
+        labelAmbiguity[static_cast<int>(AmbTrkType::kAmbGt1)] = "AmbGt1";
+        qaregistry.get<TH1>(HIST("TrkCompColls/hAmbTrackType"))->SetMinimum(0.1);
+        for (int iBin = 0; iBin < static_cast<int>(AmbTrkType::nAmbTrkType); iBin++) {
+          qaregistry.get<TH1>(HIST("TrkCompColls/hAmbTrackType"))->GetXaxis()->SetBinLabel(iBin + 1, labelAmbiguity[iBin].data());
+        }
+
         registry.add({"Tracks/THnRecAmb", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm)", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis}}});
         registry.add({"Tracks/THnRec", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm)", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis}}});
         registry.add({"Tracks/THnRecNonAmb", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm)", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis}}});
@@ -1046,12 +1328,38 @@ struct DndetaMFTPbPb {
         registry.add({"Tracks/THnGenSecMatAmb", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm)", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis}}});
       }
       if (doprocessSecondariesMCCentFT0C) {
-        registry.add({"Events/Centrality/EvtGenRec", ";status;centrality", {HistType::kTH2F, {{3, 0.5, 3.5}, centralityAxis}}});
-        auto heff = registry.get<TH2>(HIST("Events/Centrality/EvtGenRec"));
-        auto* h = heff->GetXaxis();
-        h->SetBinLabel(1, "All generated");
-        h->SetBinLabel(2, "All reconstructed");
-        h->SetBinLabel(3, "Selected reconstructed");
+        qaregistry.add("Events/Centrality/hTrackToCollEvtType", ";status;centrality", {HistType::kTH2F, {{static_cast<int>(TrackToCollEvtType::nTrackToCollEvtType), -0.5, +static_cast<int>(TrackToCollEvtType::nTrackToCollEvtType) - 0.5}, centralityAxis}});
+        std::string labelTrkToCollEvt[CtrackToCollEvtType];
+        labelTrkToCollEvt[static_cast<int>(TrackToCollEvtType::kAllRecColl)] = "all rec";
+        labelTrkToCollEvt[static_cast<int>(TrackToCollEvtType::kIsInelGt0wMft)] = "inel>0 mft";
+        labelTrkToCollEvt[static_cast<int>(TrackToCollEvtType::kEvtSel)] = "evt sel";
+        labelTrkToCollEvt[static_cast<int>(TrackToCollEvtType::kBestCollIdx)] = "bestColl Idx (numContrib)";
+        labelTrkToCollEvt[static_cast<int>(TrackToCollEvtType::kIsMcColl)] = "is mc";
+        qaregistry.get<TH1>(HIST("Events/Centrality/hTrackToCollEvtType"))->SetMinimum(0.1);
+        for (int iBin = 0; iBin < static_cast<int>(TrackToCollEvtType::nTrackToCollEvtType); iBin++) {
+          qaregistry.get<TH2>(HIST("Events/Centrality/hTrackToCollEvtType"))->GetXaxis()->SetBinLabel(iBin + 1, labelTrkToCollEvt[iBin].data());
+        }
+        // registry.add({"Events/Centrality/EvtGenRec", ";status;centrality", {HistType::kTH2F, {{3, 0.5, 3.5}, centralityAxis}}});
+        // auto heff = registry.get<TH2>(HIST("Events/Centrality/EvtGenRec"));
+        // auto* h = heff->GetXaxis();
+        // h->SetBinLabel(1, "All generated");
+        // h->SetBinLabel(2, "All reconstructed");
+        // h->SetBinLabel(3, "Selected reconstructed");
+
+        qaregistry.add("TrkCompColls/Centrality/hAmbTrackType", ";status;centrality", {HistType::kTH2F, {{static_cast<int>(AmbTrkType::nAmbTrkType), -0.5, +static_cast<int>(AmbTrkType::nAmbTrkType) - 0.5}, centralityAxis}});
+        std::string labelAmbiguity[CambTrkType];
+        labelAmbiguity[static_cast<int>(AmbTrkType::kAll)] = "all";
+        labelAmbiguity[static_cast<int>(AmbTrkType::kOrphan)] = "orphan";
+        labelAmbiguity[static_cast<int>(AmbTrkType::kOrphanNull)] = "orphanNull";
+        labelAmbiguity[static_cast<int>(AmbTrkType::kNonAmb)] = "nonAmb";
+        labelAmbiguity[static_cast<int>(AmbTrkType::kNonAmbSame)] = "nonAmbSame";
+        labelAmbiguity[static_cast<int>(AmbTrkType::kAmb)] = "Amb";
+        labelAmbiguity[static_cast<int>(AmbTrkType::kAmbGt1)] = "AmbGt1";
+        qaregistry.get<TH2>(HIST("TrkCompColls/Centrality/hAmbTrackType"))->SetMinimum(0.1);
+        for (int iBin = 0; iBin < static_cast<int>(AmbTrkType::nAmbTrkType); iBin++) {
+          qaregistry.get<TH2>(HIST("TrkCompColls/Centrality/hAmbTrackType"))->GetXaxis()->SetBinLabel(iBin + 1, labelAmbiguity[iBin].data());
+        }
+
         registry.add({"Tracks/Centrality/THnRecAmb", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, centralityAxis}}});
         registry.add({"Tracks/Centrality/THnRec", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, centralityAxis}}});
         registry.add({"Tracks/Centrality/THnRecNonAmb", ";  p_{T} (GeV/c); #eta; Z_{vtx} (cm); centrality", {HistType::kTHnSparseF, {ptAxis, etaAxis, zAxis, centralityAxis}}});
@@ -1146,6 +1454,156 @@ struct DndetaMFTPbPb {
       registry.add({"Tracks/Centrality/EtaGen_t", "; #eta; centrality; occupancy", {HistType::kTH2F, {etaAxis, centralityAxis}}});
       registry.add({"Tracks/Centrality/EtaGen", "; #eta; centrality; occupancy", {HistType::kTH2F, {etaAxis, centralityAxis}}});
     }
+
+    if (doprocessTimeAssocMC) {
+
+      registry.add("TimeAssocMC/hTimeAssocMCEventStatus", ";status", {HistType::kTH1F, {{static_cast<int>(ReAssocMCEventStatus::nEvtReAsReAssocMCEventStatus), -0.5, +static_cast<int>(ReAssocMCEventStatus::nEvtReAsReAssocMCEventStatus) - 0.5}}});
+      std::string labelTimeAssocMCEventStatus[CevtReAsReAssocMCEventStatus];
+      labelTimeAssocMCEventStatus[static_cast<int>(ReAssocMCEventStatus::kEvtReAsAll)] = "All";
+      labelTimeAssocMCEventStatus[static_cast<int>(ReAssocMCEventStatus::kEvtReAsSelected)] = "Selected";
+      labelTimeAssocMCEventStatus[static_cast<int>(ReAssocMCEventStatus::kEvtReAsHasMcColl)] = "Has Mc Coll";
+      labelTimeAssocMCEventStatus[static_cast<int>(ReAssocMCEventStatus::kEvtReAsSplitVtxRemoved)] = "Split Vtx Removed";
+      labelTimeAssocMCEventStatus[static_cast<int>(ReAssocMCEventStatus::kEvtReAsZVtxCutMC)] = "Vtx-z cut MC";
+      registry.get<TH1>(HIST("TimeAssocMC/hTimeAssocMCEventStatus"))->SetMinimum(0.1);
+      for (int iBin = 0; iBin < static_cast<int>(ReAssocMCEventStatus::nEvtReAsReAssocMCEventStatus); iBin++) {
+        registry.get<TH1>(HIST("TimeAssocMC/hTimeAssocMCEventStatus"))->GetXaxis()->SetBinLabel(iBin + 1, labelTimeAssocMCEventStatus[iBin].data());
+      }
+
+      registry.add("TimeAssocMC/VtxStatus", ";status", {HistType::kTH1F, {{2, 0.5, 2.5}}});
+      auto hstat = registry.get<TH1>(HIST("TimeAssocMC/VtxStatus"));
+      hstat->GetXaxis()->SetBinLabel(1, "Good vtx");
+      hstat->GetXaxis()->SetBinLabel(2, "Wrong vtx");
+
+      registry.add({"TimeAssocMC/hVertexResV1", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis}}});
+      registry.add({"TimeAssocMC/hVertexResV2", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis}}});
+
+      registry.add({"TimeAssocMC/hVTXkSelGoodVtxTrue", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis}}});
+      registry.add({"TimeAssocMC/hVTXkSelGoodVtxBad", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis}}});
+      registry.add({"TimeAssocMC/hVTXkSelNonAmbAll", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis}}});
+      registry.add({"TimeAssocMC/hVTXkSelNonAmbGoodVtxTrue", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis}}});
+      registry.add({"TimeAssocMC/hVTXkSelNonAmbGoodVtxBad", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis}}});
+      registry.add({"TimeAssocMC/hVTXkSelNonAmbSameAll", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis}}});
+      registry.add({"TimeAssocMC/hVTXkSelNonAmbSameGoodVtxTrue", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis}}});
+      registry.add({"TimeAssocMC/hVTXkSelNonAmbSameGoodVtxBad", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis}}});
+      registry.add({"TimeAssocMC/hVTXkSelAmbAll", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis}}});
+      registry.add({"TimeAssocMC/hVTXkSelAmbGoodVtxTrue", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis}}});
+      registry.add({"TimeAssocMC/hVTXkSelAmbGoodVtxBad", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis}}});
+      registry.add({"TimeAssocMC/hVTXkSelAmbGt1All", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis}}});
+      registry.add({"TimeAssocMC/hVTXkSelAmbGt1GoodVtxTrue", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis}}});
+      registry.add({"TimeAssocMC/hVTXkSelAmbGt1GoodVtxBad", "; #Delta X (cm); #Delta Y (cm); #Delta Z (cm)", {HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis}}});
+
+      registry.add("TimeAssocMC/hTimeAssocCheckVtxType", ";status", {HistType::kTH1F, {{static_cast<int>(ReassocCheckVtxType::nReassocVtxType), -0.5, +static_cast<int>(ReassocCheckVtxType::nReassocVtxType) - 0.5}}});
+      std::string labelReAssocVtxType[CreassocVtxType];
+      labelReAssocVtxType[static_cast<int>(ReassocCheckVtxType::kIsTrueVtxAllTrue)] = "kIsTrueVtxAll=True";
+      labelReAssocVtxType[static_cast<int>(ReassocCheckVtxType::kIsTrueVtxAllFalse)] = "kIsTrueVtxAll=False";
+      labelReAssocVtxType[static_cast<int>(ReassocCheckVtxType::kIsTrueVtxVsGoodVtxTrue)] = "kIsTrueVtxVsGoodVtx=True";
+      labelReAssocVtxType[static_cast<int>(ReassocCheckVtxType::kIsTrueVtxVsGoodVtxFalse)] = "kIsTrueVtxVsGoodVtx=False";
+      labelReAssocVtxType[static_cast<int>(ReassocCheckVtxType::kIsTrueVtxVsBadVtxTrue)] = "kIsTrueVtxVsBadVtx=True";
+      labelReAssocVtxType[static_cast<int>(ReassocCheckVtxType::kIsTrueVtxVsBadVtxFalse)] = "kIsTrueVtxVsBadVtx=False";
+      registry.get<TH1>(HIST("TimeAssocMC/hTimeAssocCheckVtxType"))->SetMinimum(0.1);
+      for (int iBin = 0; iBin < static_cast<int>(ReassocCheckVtxType::nReassocVtxType); iBin++) {
+        registry.get<TH1>(HIST("TimeAssocMC/hTimeAssocCheckVtxType"))->GetXaxis()->SetBinLabel(iBin + 1, labelReAssocVtxType[iBin].data());
+      }
+
+      registry.add("TimeAssocMC/hAmbTrackType", ";status", {HistType::kTH1F, {{static_cast<int>(AmbTrkType::nAmbTrkType), -0.5, +static_cast<int>(AmbTrkType::nAmbTrkType) - 0.5}}});
+      std::string labelAmbiguity[CambTrkType];
+      labelAmbiguity[static_cast<int>(AmbTrkType::kAll)] = "all";
+      labelAmbiguity[static_cast<int>(AmbTrkType::kOrphan)] = "orphan";
+      labelAmbiguity[static_cast<int>(AmbTrkType::kOrphanNull)] = "orphanNull";
+      labelAmbiguity[static_cast<int>(AmbTrkType::kNonAmb)] = "nonAmb";
+      labelAmbiguity[static_cast<int>(AmbTrkType::kNonAmbSame)] = "nonAmbSame";
+      labelAmbiguity[static_cast<int>(AmbTrkType::kAmb)] = "Amb";
+      labelAmbiguity[static_cast<int>(AmbTrkType::kAmbGt1)] = "AmbGt1";
+      registry.get<TH1>(HIST("TimeAssocMC/hAmbTrackType"))->SetMinimum(0.1);
+      for (int iBin = 0; iBin < static_cast<int>(AmbTrkType::nAmbTrkType); iBin++) {
+        registry.get<TH1>(HIST("TimeAssocMC/hAmbTrackType"))->GetXaxis()->SetBinLabel(iBin + 1, labelAmbiguity[iBin].data());
+      }
+
+      registry.add("TimeAssocMC/hAmbTrkTypeAssocFlag", ";status", {HistType::kTH1F, {{static_cast<int>(AmbTrkTypeAssocFlag::nSelAmbTrkTypeAssocFlag), -0.5, +static_cast<int>(AmbTrkTypeAssocFlag::nSelAmbTrkTypeAssocFlag) - 0.5}}});
+      std::string lAmbTrackType[CselAmbTrkTypeAssocFlag];
+      lAmbTrackType[static_cast<int>(AmbTrkTypeAssocFlag::kSel)] = "all sel";
+      lAmbTrackType[static_cast<int>(AmbTrkTypeAssocFlag::kSelGoodVtxTrue)] = "all good vtx";
+      lAmbTrackType[static_cast<int>(AmbTrkTypeAssocFlag::kSelGoodVtxBad)] = "all bad vtx";
+      lAmbTrackType[static_cast<int>(AmbTrkTypeAssocFlag::kSelNonAmbAll)] = "non-amb";
+      lAmbTrackType[static_cast<int>(AmbTrkTypeAssocFlag::kSelNonAmbGoodVtxTrue)] = "non-amb good vtx";
+      lAmbTrackType[static_cast<int>(AmbTrkTypeAssocFlag::kSelNonAmbGoodVtxBad)] = "non-amb bad vtx";
+      lAmbTrackType[static_cast<int>(AmbTrkTypeAssocFlag::kSelNonAmbSameAll)] = "non-amb (same)";
+      lAmbTrackType[static_cast<int>(AmbTrkTypeAssocFlag::kSelNonAmbSameGoodVtxTrue)] = "non-amb (same) good vtx";
+      lAmbTrackType[static_cast<int>(AmbTrkTypeAssocFlag::kSelNonAmbSameGoodVtxBad)] = "non-amb (same) bad vtx";
+      lAmbTrackType[static_cast<int>(AmbTrkTypeAssocFlag::kSelAmbAll)] = "amb";
+      lAmbTrackType[static_cast<int>(AmbTrkTypeAssocFlag::kSelAmbGoodVtxTrue)] = "amb good vtx";
+      lAmbTrackType[static_cast<int>(AmbTrkTypeAssocFlag::kSelAmbGoodVtxBad)] = "amb bad vtx";
+      lAmbTrackType[static_cast<int>(AmbTrkTypeAssocFlag::kSelAmbGt1All)] = "ambGt1";
+      lAmbTrackType[static_cast<int>(AmbTrkTypeAssocFlag::kSelAmbGt1GoodVtxTrue)] = "ambGt1 good vtx";
+      lAmbTrackType[static_cast<int>(AmbTrkTypeAssocFlag::kSelAmbGt1GoodVtxBad)] = "ambGt1 bad vtx";
+      lAmbTrackType[static_cast<int>(AmbTrkTypeAssocFlag::kSelOrphanNull)] = "orhpan null";
+      registry.get<TH1>(HIST("TimeAssocMC/hAmbTrkTypeAssocFlag"))->SetMinimum(0.1);
+      for (int iBin = 0; iBin < static_cast<int>(AmbTrkTypeAssocFlag::nSelAmbTrkTypeAssocFlag); iBin++) {
+        registry.get<TH1>(HIST("TimeAssocMC/hAmbTrkTypeAssocFlag"))->GetXaxis()->SetBinLabel(iBin + 1, lAmbTrackType[iBin].data());
+      }
+    }
+
+    if (doprocessTimeAssocWithReassocMC) {
+      registry.add("TimeAssocWithReassocMC/VtxStatus", ";status", {HistType::kTH1F, {{2, 0.5, 2.5}}});
+      auto hstat = registry.get<TH1>(HIST("TimeAssocWithReassocMC/VtxStatus"));
+      hstat->GetXaxis()->SetBinLabel(1, "Good vtx");
+      hstat->GetXaxis()->SetBinLabel(2, "Wrong vtx");
+
+      registry.add("TimeAssocWithReassocMC/hReassocCheckVtxType", ";status", {HistType::kTH1F, {{static_cast<int>(ReassocCheckVtxType::nReassocVtxType), -0.5, +static_cast<int>(ReassocCheckVtxType::nReassocVtxType) - 0.5}}});
+      std::string labelReAssocVtxType[CreassocVtxType];
+      labelReAssocVtxType[static_cast<int>(ReassocCheckVtxType::kIsTrueVtxAllTrue)] = "kIsTrueVtxAll=True";
+      labelReAssocVtxType[static_cast<int>(ReassocCheckVtxType::kIsTrueVtxAllFalse)] = "kIsTrueVtxAll=False";
+      labelReAssocVtxType[static_cast<int>(ReassocCheckVtxType::kIsRecGoodAllTrue)] = "IsRecGoodAll=True";
+      labelReAssocVtxType[static_cast<int>(ReassocCheckVtxType::kIsRecGoodAllFalse)] = "kIsRecGoodAll=False";
+      labelReAssocVtxType[static_cast<int>(ReassocCheckVtxType::kIsRecGoodMatchAllTrue)] = "kIsRecGoodMatchAll=True";
+      labelReAssocVtxType[static_cast<int>(ReassocCheckVtxType::kIsRecGoodMatchAllFalse)] = "kIsRecGoodMatchAll=False";
+      //
+      labelReAssocVtxType[static_cast<int>(ReassocCheckVtxType::kIsTrueVtxVsGoodVtxTrue)] = "kIsTrueVtxVsGoodVtx=True";
+      labelReAssocVtxType[static_cast<int>(ReassocCheckVtxType::kIsTrueVtxVsGoodVtxFalse)] = "kIsTrueVtxVsGoodVtx=False";
+      labelReAssocVtxType[static_cast<int>(ReassocCheckVtxType::kIsRecGoodVsGoodVtxTrue)] = "kIsRecGoodVsGoodVtx=True";
+      labelReAssocVtxType[static_cast<int>(ReassocCheckVtxType::kIsRecGoodVsGoodVtxFalse)] = "kIsRecGoodVsGoodVtx=False";
+      labelReAssocVtxType[static_cast<int>(ReassocCheckVtxType::kIsRecGoodMatchVsGoodVtxTrue)] = "kIsRecGoodMatchVsGoodVtx=True";
+      labelReAssocVtxType[static_cast<int>(ReassocCheckVtxType::kIsRecGoodMatchVsGoodVtxFalse)] = "kIsRecGoodMatchVsGoodVtx=False";
+      //
+      labelReAssocVtxType[static_cast<int>(ReassocCheckVtxType::kIsTrueVtxVsBadVtxTrue)] = "kIsTrueVtxVsBadVtx=True";
+      labelReAssocVtxType[static_cast<int>(ReassocCheckVtxType::kIsTrueVtxVsBadVtxFalse)] = "kIsTrueVtxVsBadVtx=False";
+      labelReAssocVtxType[static_cast<int>(ReassocCheckVtxType::kIsRecGoodVsBadVtxTrue)] = "kIsRecGoodVsBadVtx=True";
+      labelReAssocVtxType[static_cast<int>(ReassocCheckVtxType::kIsRecGoodVsBadVtxFalse)] = "kIsRecGoodVsBadVtx=False";
+      labelReAssocVtxType[static_cast<int>(ReassocCheckVtxType::kIsRecGoodMatchVsBadVtxTrue)] = "kIsRecGoodMatchVsBadVtx=True";
+      labelReAssocVtxType[static_cast<int>(ReassocCheckVtxType::kIsRecGoodMatchVsBadVtxFalse)] = "kIsRecGoodMatchVsBadVtx=False";
+      registry.get<TH1>(HIST("TimeAssocWithReassocMC/hReassocCheckVtxType"))->SetMinimum(0.1);
+      for (int iBin = 0; iBin < static_cast<int>(ReassocCheckVtxType::nReassocVtxType); iBin++) {
+        registry.get<TH1>(HIST("TimeAssocWithReassocMC/hReassocCheckVtxType"))->GetXaxis()->SetBinLabel(iBin + 1, labelReAssocVtxType[iBin].data());
+      }
+
+      hTimeAssocWithReassocMC[0] = registry.add<THnSparse>("TimeAssocWithReassocMC/hDCAReassocOrig", ";#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis});
+      hTimeAssocWithReassocMC[1] = registry.add<THnSparse>("TimeAssocWithReassocMC/hDCAReassocBest", ";#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis});
+      hTimeAssocWithReassocMC[2] = registry.add<THnSparse>("TimeAssocWithReassocMC/hDCAReassocTruth", ";#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis});
+
+      hTimeAssocWithReassocMC[3] = registry.add<THnSparse>("TimeAssocWithReassocMC/hDCAReassocOrigTrueVtx", ";#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis});
+      hTimeAssocWithReassocMC[4] = registry.add<THnSparse>("TimeAssocWithReassocMC/hDCAReassocOrigRecGood", ";#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis});
+      hTimeAssocWithReassocMC[5] = registry.add<THnSparse>("TimeAssocWithReassocMC/hDCAReassocOrigRecGoodMatch", ";#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis});
+
+      hTimeAssocWithReassocMC[6] = registry.add<THnSparse>("TimeAssocWithReassocMC/hDCAReassocOrigTrueVtxVtxFlagGood", ";#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis});
+      hTimeAssocWithReassocMC[7] = registry.add<THnSparse>("TimeAssocWithReassocMC/hDCAReassocOrigRecGoodVtxFlagGood", ";#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis});
+      hTimeAssocWithReassocMC[8] = registry.add<THnSparse>("TimeAssocWithReassocMC/hDCAReassocOrigRecGoodMatchVtxFlagGood", ";#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis});
+
+      hTimeAssocWithReassocMC[9] = registry.add<THnSparse>("TimeAssocWithReassocMC/hDCAReassocOrigTrueVtxVtxFlagBad", ";#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis});
+      hTimeAssocWithReassocMC[10] = registry.add<THnSparse>("TimeAssocWithReassocMC/hDCAReassocOrigRecGoodVtxFlagBad", ";#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis});
+      hTimeAssocWithReassocMC[11] = registry.add<THnSparse>("TimeAssocWithReassocMC/hDCAReassocOrigRecGoodMatchVtxFlagBad", ";#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis});
+
+      hTimeAssocWithReassocMC[12] = registry.add<THnSparse>("TimeAssocWithReassocMC/hDCAReassocBestTrueVtx", ";#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis});
+      hTimeAssocWithReassocMC[13] = registry.add<THnSparse>("TimeAssocWithReassocMC/hDCAReassocBestRecGood", ";#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis});
+      hTimeAssocWithReassocMC[14] = registry.add<THnSparse>("TimeAssocWithReassocMC/hDCAReassocBestRecGoodMatch", ";#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis});
+
+      hTimeAssocWithReassocMC[15] = registry.add<THnSparse>("TimeAssocWithReassocMC/hDCAReassocBestTrueVtxVtxFlagGood", ";#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis});
+      hTimeAssocWithReassocMC[16] = registry.add<THnSparse>("TimeAssocWithReassocMC/hDCAReassocBestRecGoodVtxFlagGood", ";#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis});
+      hTimeAssocWithReassocMC[17] = registry.add<THnSparse>("TimeAssocWithReassocMC/hDCAReassocBestRecGoodMatchVtxFlagGood", ";#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis});
+
+      hTimeAssocWithReassocMC[18] = registry.add<THnSparse>("TimeAssocWithReassocMC/hDCAReassocBestTrueVtxVtxFlagBad", ";#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis});
+      hTimeAssocWithReassocMC[19] = registry.add<THnSparse>("TimeAssocWithReassocMC/hDCAReassocBestRecGoodVtxFlagBad", ";#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis});
+      hTimeAssocWithReassocMC[20] = registry.add<THnSparse>("TimeAssocWithReassocMC/hDCAReassocBestRecGoodMatchVtxFlagBad", ";#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {deltaZAxis, deltaZAxis, deltaZAxis});
+    }
   }
 
   /// Filters - tracks
@@ -1160,10 +1618,10 @@ struct DndetaMFTPbPb {
 
   /// Joined tables
   using FullBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
-  using CollBCs = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
+  using CollBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using ExtBCs = soa::Join<aod::BCs, aod::Timestamps, aod::MatchedBCCollisionsSparseMulti>;
 
-  // Collisions
+  /// Collisions
   using Colls = soa::Join<aod::Collisions, aod::EvSels>;
   using Coll = Colls::iterator;
   using CollsCentFT0C = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>;
@@ -1179,13 +1637,16 @@ struct DndetaMFTPbPb {
   using CollisionsWithMCLabels = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using CollGenCent = CollsGenCentFT0C::iterator;
   using CollsCorr = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::PVMults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentNGlobals, aod::CentMFTs>;
-  using CollsMCExtra = soa::Join<aod::McCollisions, aod::MultMCExtras>;
+  using CollsMCExtra = soa::Join<aod::McCollisions, aod::McCollsExtra>;
+  using CollsMCExtraMult = soa::Join<aod::McCollisions, aod::MultMCExtras, aod::McCollsExtra>;
 
-  // Tracks
+  /// Tracks
   using MFTTracksLabeled = soa::Join<aod::MFTTracks, aod::McMFTTrackLabels>;
   using MftTracksWColls = soa::Join<aod::MFTTracks, aod::MFTTrkCompColls>;
   using MftTracksWCollsMC = soa::Join<aod::MFTTracks, aod::MFTTrkCompColls, aod::McMFTTrackLabels>;
   using BestTracksMC = soa::Join<aod::MFTTracks, aod::BestCollisionsFwd3d, aod::McMFTTrackLabels>;
+  using BestTracks3dWCollsMC = soa::Join<aod::MFTTracks, aod::MFTTrkCompColls, aod::BestCollisionsFwd3d, aod::McMFTTrackLabels>;
+  using BestTracks2dWCollsMC = soa::Join<aod::MFTTracks, aod::MFTTrkCompColls, aod::BestCollisionsFwd, aod::McMFTTrackLabels>;
 
   /// Filtered tables
   using FiltMftTracks = soa::Filtered<aod::MFTTracks>;
@@ -1247,25 +1708,31 @@ struct DndetaMFTPbPb {
   bool isBestTrackSelected(const B& besttrack)
   {
     if constexpr (fillHis) {
-      registry.fill(HIST("Tracks/hBestTrkSel"), trkBestSelAll);
+      registry.fill(HIST("Tracks/hBestTrkSel"), static_cast<int>(TrkTrkBestSel::trkTrkBestSelAll));
     }
     if (besttrack.bestCollisionId() < CintZero) {
       return false;
     }
     if constexpr (fillHis) {
-      registry.fill(HIST("Tracks/hBestTrkSel"), trkBestSelCollID);
+      registry.fill(HIST("Tracks/hBestTrkSel"), static_cast<int>(TrkTrkBestSel::trkTrkBestSelCollID));
+    }
+    if (besttrack.ambDegree() == CintZero) {
+      return false;
+    }
+    if constexpr (fillHis) {
+      registry.fill(HIST("Tracks/hBestTrkSel"), static_cast<int>(TrkTrkBestSel::trkTrkBestSelOrphan));
     }
     if (std::abs(besttrack.bestDCAXY()) >= trackCuts.maxDCAxy) {
       return false;
     }
     if constexpr (fillHis) {
-      registry.fill(HIST("Tracks/hBestTrkSel"), trkBestSelDCAxyCut);
+      registry.fill(HIST("Tracks/hBestTrkSel"), static_cast<int>(TrkTrkBestSel::trkTrkBestSelDCAxyCut));
     }
-    if (std::abs(besttrack.bestDCAZ()) >= trackCuts.maxDCAxy) {
+    if (std::abs(besttrack.bestDCAZ()) >= trackCuts.maxDCAz) {
       return false;
     }
     if constexpr (fillHis) {
-      registry.fill(HIST("Tracks/hBestTrkSel"), trkBestSelDCAzCut);
+      registry.fill(HIST("Tracks/hBestTrkSel"), static_cast<int>(TrkTrkBestSel::trkTrkBestSelDCAzCut));
     }
     return true;
   }
@@ -1274,13 +1741,13 @@ struct DndetaMFTPbPb {
   bool isTrackSelected(const T& track)
   {
     if constexpr (fillHis) {
-      registry.fill(HIST("Tracks/hTrkSel"), trkSelAll);
+      registry.fill(HIST("Tracks/hTrkSel"), static_cast<int>(TrkSel::trkSelAll));
     }
     if (track.nClusters() < trackCuts.minNclusterMft) {
       return false;
     }
     if constexpr (fillHis) {
-      registry.fill(HIST("Tracks/hTrkSel"), trkSelNCls);
+      registry.fill(HIST("Tracks/hTrkSel"), static_cast<int>(TrkSel::trkSelNCls));
     }
     if (trackCuts.useChi2Cut) {
       float nclMft = std::max(2.0f * track.nClusters() - 5.0f, 1.0f);
@@ -1289,13 +1756,13 @@ struct DndetaMFTPbPb {
         return false;
     }
     if constexpr (fillHis) {
-      registry.fill(HIST("Tracks/hTrkSel"), trkSelChi2Ncl);
+      registry.fill(HIST("Tracks/hTrkSel"), static_cast<int>(TrkSel::trkSelChi2Ncl));
     }
     if (track.eta() < trackCuts.minEta || track.eta() > trackCuts.maxEta) {
       return false;
     }
     if constexpr (fillHis) {
-      registry.fill(HIST("Tracks/hTrkSel"), trkSelEta);
+      registry.fill(HIST("Tracks/hTrkSel"), static_cast<int>(TrkSel::trkSelEta));
     }
     if (trackCuts.usephiCut) {
       float phi = track.phi();
@@ -1311,19 +1778,19 @@ struct DndetaMFTPbPb {
         return false;
     }
     if constexpr (fillHis) {
-      registry.fill(HIST("Tracks/hTrkSel"), trkSelPhiCut);
+      registry.fill(HIST("Tracks/hTrkSel"), static_cast<int>(TrkSel::trkSelPhiCut));
     }
     if (trackCuts.usePtCut && track.pt() < trackCuts.minPt) {
       return false;
     }
     if constexpr (fillHis) {
-      registry.fill(HIST("Tracks/hTrkSel"), trkSelPt);
+      registry.fill(HIST("Tracks/hTrkSel"), static_cast<int>(TrkSel::trkSelPt));
     }
     if (trackCuts.requireCA && !track.isCA()) {
       return false;
     }
     if constexpr (fillHis) {
-      registry.fill(HIST("Tracks/hTrkSel"), trkSelCA);
+      registry.fill(HIST("Tracks/hTrkSel"), static_cast<int>(TrkSel::trkSelCA));
     }
     return true;
   }
@@ -1451,7 +1918,7 @@ struct DndetaMFTPbPb {
       if (itrack.has_collision() && itrack.collisionId() != atrack.bestCollisionId()) {
         reassignedTrkIds.emplace_back(atrack.mfttrackId());
         if (fillHis) {
-          registry.fill(HIST("Tracks/hBestTrkSel"), trkBestSelNumReassoc);
+          registry.fill(HIST("Tracks/hBestTrkSel"), static_cast<int>(TrkTrkBestSel::trkTrkBestSelNumReassoc));
           float phi = itrack.phi();
           o2::math_utils::bringTo02Pi(phi);
           if (phi < Czero || TwoPI < phi) {
@@ -1585,6 +2052,9 @@ struct DndetaMFTPbPb {
   template <typename P>
   bool isParticleSelected(P const& particle)
   {
+    if (gConf.cfgUsePrimaries && !particle.isPhysicalPrimary()) {
+      return false;
+    }
     if (particle.eta() < trackCuts.minEta || particle.eta() > trackCuts.maxEta) {
       return false;
     }
@@ -1641,69 +2111,69 @@ struct DndetaMFTPbPb {
   bool isGoodEvent(C const& collision)
   {
     if constexpr (fillHis) {
-      registry.fill(HIST("Events/hEvtSel"), 0);
+      registry.fill(HIST("Events/hEvtSel"), static_cast<int>(EvtSel::evtAll));
     }
     if (!collision.sel8()) {
       return false;
     }
     if constexpr (fillHis) {
-      registry.fill(HIST("Events/hEvtSel"), 1);
+      registry.fill(HIST("Events/hEvtSel"), static_cast<int>(EvtSel::evtSel));
     }
     if (eventCuts.requireIsGoodZvtxFT0VsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
     if constexpr (fillHis) {
-      registry.fill(HIST("Events/hEvtSel"), 2);
+      registry.fill(HIST("Events/hEvtSel"), static_cast<int>(EvtSel::evtIsGoodZvtx));
     }
     if (eventCuts.requireRejectSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
     if constexpr (fillHis) {
-      registry.fill(HIST("Events/hEvtSel"), 3);
+      registry.fill(HIST("Events/hEvtSel"), static_cast<int>(EvtSel::evtNoSameBunchPileup));
     }
     if (collision.posZ() <= eventCuts.minZvtx || collision.posZ() >= eventCuts.maxZvtx) {
       return false;
     }
     if constexpr (fillHis) {
-      registry.fill(HIST("Events/hEvtSel"), 4);
+      registry.fill(HIST("Events/hEvtSel"), static_cast<int>(EvtSel::evtZvtxCut));
     }
     if (eventCuts.requireNoCollInTimeRangeStd &&
         !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return false;
     }
     if constexpr (fillHis) {
-      registry.fill(HIST("Events/hEvtSel"), 5);
+      registry.fill(HIST("Events/hEvtSel"), static_cast<int>(EvtSel::evtNoCollInTimeRangeStd));
     }
     if (eventCuts.requireNoCollInTimeRangeNarrow &&
         !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
       return false;
     }
     if constexpr (fillHis) {
-      registry.fill(HIST("Events/hEvtSel"), 6);
+      registry.fill(HIST("Events/hEvtSel"), static_cast<int>(EvtSel::evtNoCollInTimeRangeNarrow));
     }
     if (eventCuts.requireNoCollInTimeRangeStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
       return false;
     }
     if constexpr (fillHis) {
-      registry.fill(HIST("Events/hEvtSel"), 7);
+      registry.fill(HIST("Events/hEvtSel"), static_cast<int>(EvtSel::evtNoCollInTimeRangeStrict));
     }
     if (eventCuts.requireNoCollInRofStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
       return false;
     }
     if constexpr (fillHis) {
-      registry.fill(HIST("Events/hEvtSel"), 8);
+      registry.fill(HIST("Events/hEvtSel"), static_cast<int>(EvtSel::evtNoCollInRofStrict));
     }
     if (eventCuts.requireNoCollInRofStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       return false;
     }
     if constexpr (fillHis) {
-      registry.fill(HIST("Events/hEvtSel"), 9);
+      registry.fill(HIST("Events/hEvtSel"), static_cast<int>(EvtSel::evtNoCollInRofStandard));
     }
     if (eventCuts.requireNoHighMultCollInPrevRof && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
       return false;
     }
     if constexpr (fillHis) {
-      registry.fill(HIST("Events/hEvtSel"), 10);
+      registry.fill(HIST("Events/hEvtSel"), static_cast<int>(EvtSel::evtNoHighMultCollInPrevRof));
     }
     if (eventCuts.minOccupancy >= 0 &&
         getOccupancy(collision, eventCuts.occupancyEstimator) <
@@ -1711,7 +2181,7 @@ struct DndetaMFTPbPb {
       return false;
     }
     if constexpr (fillHis) {
-      registry.fill(HIST("Events/hEvtSel"), 11);
+      registry.fill(HIST("Events/hEvtSel"), static_cast<int>(EvtSel::evtBelowMinOccup));
     }
     if (eventCuts.maxOccupancy >= 0 &&
         getOccupancy(collision, eventCuts.occupancyEstimator) >
@@ -1719,14 +2189,19 @@ struct DndetaMFTPbPb {
       return false;
     }
     if constexpr (fillHis) {
-      registry.fill(HIST("Events/hEvtSel"), 12);
+      registry.fill(HIST("Events/hEvtSel"), static_cast<int>(EvtSel::evtAboveMaxOccup));
     }
-
     if (rctCuts.requireRCTFlagChecker && !rctChecker(collision)) {
       return false;
     }
     if constexpr (fillHis) {
-      registry.fill(HIST("Events/hEvtSel"), 13);
+      registry.fill(HIST("Events/hEvtSel"), static_cast<int>(EvtSel::evtRCTFlagChecker));
+    }
+    if (rctCuts.requireRCTFlagCheckerExtra && !rctCheckerExtra(collision)) {
+      return false;
+    }
+    if constexpr (fillHis) {
+      registry.fill(HIST("Events/hEvtSel"), static_cast<int>(EvtSel::evtRCTFlagCheckerExtra));
     }
     return true;
   }
@@ -1834,6 +2309,12 @@ struct DndetaMFTPbPb {
     } else {
       registry.fill(HIST("Events/Selection"), 1., occ);
     }
+
+    // const bool isFT0Bad = bc.rct_bit(kFT0Bad);
+    // registry.fill(HIST("Events/hRCTSel"), 1.0);
+    // if (!isFT0Bad) {
+    //   registry.fill(HIST("Events/hRCTSel"), 2.0);
+    // }
 
     if (!isGoodEvent<true>(collision)) {
       return;
@@ -2944,641 +3425,6 @@ struct DndetaMFTPbPb {
   PROCESS_SWITCH(DndetaMFTPbPb, processEfficiencyCentFT0C,
                  "Process efficiencies in FT0C centrality bins", false);
 
-  /// @brief process function to check ambiguous tracks
-  void processCheckAmbiguousMftTracks(aod::Collisions const&, MftTracksWColls const& tracks)
-  {
-    for (auto const& track : tracks) {
-      auto trkCollId = track.has_collision() ? track.collisionId() : -1;
-      auto ids = track.compatibleCollIds();
-      if (ids.empty() || (ids.size() == 1 && trkCollId == ids[0])) {
-        qaregistry.fill(HIST("Tracks/hMftTracksAmbDegreeWithTrivial"), track.compatibleCollIds().size());
-        if (ids.empty()) {
-          qaregistry.fill(HIST("Tracks/hAmbTrackType"), AmbTrkType::kOrphan);
-        }
-        if (ids.size() == 1 && trkCollId == ids[0]) {
-          qaregistry.fill(HIST("Tracks/hAmbTrackType"), AmbTrkType::kNonAmb);
-        }
-        continue;
-      }
-      qaregistry.fill(HIST("Tracks/hMftTracksAmbDegree"), track.compatibleCollIds().size());
-
-      if (track.compatibleCollIds().size() > 0) {
-        if (track.compatibleCollIds().size() == 1) {
-          if (track.collisionId() != track.compatibleCollIds()[0]) {
-            qaregistry.fill(HIST("Tracks/hAmbTrackType"), AmbTrkType::kAmb);
-          } else {
-            qaregistry.fill(HIST("Tracks/hAmbTrackType"), AmbTrkType::kNonAmbSame);
-          }
-        } else {
-          qaregistry.fill(HIST("Tracks/hAmbTrackType"), AmbTrkType::kAmbGt1);
-        }
-      }
-    }
-  }
-
-  PROCESS_SWITCH(DndetaMFTPbPb, processCheckAmbiguousMftTracks, "Process checks for Ambiguous MFT tracks (inclusive)", false);
-
-  Partition<MftTracksWCollsMC> tracksInAcc = (aod::fwdtrack::eta < trackCuts.maxEta) && (aod::fwdtrack::eta > trackCuts.minEta);
-
-  template <typename C>
-  void processCheckAssocMC(C const& collisions,
-                           MftTracksWCollsMC const& tracks,
-                           aod::McParticles const& /*particles*/,
-                           aod::McCollisions const& /*mccollisions*/
-  )
-  {
-    const auto& nRecoColls = collisions.size();
-    registry.fill(HIST("Events/hNAssocColls"), 1.f, nRecoColls);
-    // Generated evets with >= 1 reco collisions
-    if (nRecoColls > CintZero) {
-      auto maxNcontributors = -1;
-      auto bestCollIndex = -1;
-      for (const auto& collision : collisions) {
-        if (!isGoodEvent<false>(collision)) {
-          continue;
-        }
-        if (!collision.has_mcCollision()) {
-          continue;
-        }
-        if (maxNcontributors < collision.numContrib()) {
-          maxNcontributors = collision.numContrib();
-          bestCollIndex = collision.globalIndex();
-        }
-      }
-
-      for (const auto& collision : collisions) {
-        if (!isGoodEvent<false>(collision)) {
-          continue;
-        }
-        if (!collision.has_mcCollision()) {
-          continue;
-        }
-        // Select collisions with the largest number of contributors
-        if (bestCollIndex != collision.globalIndex()) {
-          continue;
-        }
-        // auto mcCollision = collision.template mcCollision_as<aod::McCollisions>();
-        auto tracksInColl = tracksInAcc->sliceByCached(aod::fwdtrack::collisionId, collision.globalIndex(), cache);
-        int nTrk = 0, nFakeTrk = 0, nGoodTrk = 0;
-        for (const auto& track : tracksInColl) {
-          if (!track.has_mcParticle()) {
-            continue;
-          }
-          nTrk++;
-          auto particle = track.mcParticle();
-
-          if ((particle.mcCollisionId() != collision.mcCollision().globalIndex())) {
-            nFakeTrk++;
-            continue;
-          }
-          if (collision.mcCollisionId() == particle.mcCollisionId()) {
-            nGoodTrk++;
-          }
-        }
-        float frac = (nTrk > 0) ? static_cast<float>(nGoodTrk) / nTrk : -1.;
-        qaregistry.fill(HIST("TrackToColl/histFracGoodTracks"), frac);
-        float fracFake = (nTrk > 0) ? static_cast<float>(nFakeTrk) / nTrk : -1.;
-        qaregistry.fill(HIST("TrackToColl/histFracTracksFakeMcColl"), fracFake);
-      }
-    }
-
-    for (const auto& track : tracks) {
-      uint index = uint(track.collisionId() >= 0);
-      if (track.has_mcParticle()) {
-        // auto particle = track.mcParticle_as<FiltParticles>();
-        const auto& particle = track.mcParticle();
-
-        qaregistry.fill(HIST("TrackToColl/histTrackNumColls"), track.compatibleCollIds().size());
-
-        if (gConf.cfgRemoveTrivialAssoc) {
-          if (track.compatibleCollIds().empty() || (track.compatibleCollIds().size() == 1 && track.collisionId() == track.compatibleCollIds()[0])) {
-            qaregistry.fill(HIST("TrackToColl/histNonAmbTrackNumColls"), track.compatibleCollIds().size());
-            continue;
-          }
-        }
-
-        bool isAmbiguous = (track.compatibleCollIds().size() > 1);
-        if (isAmbiguous) {
-          qaregistry.fill(HIST("TrackToColl/histAmbTrackNumColls"), track.compatibleCollIds().size());
-          std::vector<float> ambVtxZ{};
-          for (const auto& collIdx : track.compatibleCollIds()) {
-            const auto& ambColl = collisions.rawIteratorAt(collIdx);
-            ambVtxZ.push_back(ambColl.posZ());
-          }
-          if (!ambVtxZ.empty()) {
-            qaregistry.fill(HIST("TrackToColl/histAmbTrackZvtxRMS"), computeRMS(ambVtxZ));
-          }
-        }
-
-        float deltaX = -999.f;
-        float deltaY = -999.f;
-        float deltaZ = -999.f;
-        if (index) {
-          const auto& collision = track.collision_as<CollisionsWithMCLabels>();
-          const auto& mcCollision = particle.mcCollision_as<aod::McCollisions>();
-          deltaX = collision.posX() - mcCollision.posX();
-          deltaY = collision.posY() - mcCollision.posY();
-          deltaZ = collision.posZ() - mcCollision.posZ();
-          if (collision.has_mcCollision() && collision.mcCollisionId() == particle.mcCollisionId()) {
-            hCollAssoc[index + 1]->Fill(track.pt(), track.eta(), deltaX, deltaY, deltaZ);
-          } else {
-            if (isAmbiguous) {
-              for (const auto& collIdx : track.compatibleCollIds()) {
-                auto ambColl = collisions.rawIteratorAt(collIdx);
-                if (ambColl.has_mcCollision() && ambColl.mcCollisionId() == particle.mcCollisionId()) {
-                  hCollAssoc[index + 2]->Fill(track.pt(), track.eta(), deltaX, deltaY, deltaZ);
-                  // hCollAssoc[index + 2]->Fill(track.pt(), track.eta(), ambColl.posX() - mcCollision.posX(), ambColl.posY() - mcCollision.posY(), ambColl.posZ() - mcCollision.posZ());
-                  break;
-                }
-              }
-            }
-          }
-          hCollAssoc[index]->Fill(track.pt(), track.eta(), deltaX, deltaY, deltaZ);
-        }
-      } else {
-        hCollAssoc[index]->Fill(track.pt(), track.eta(), -999.f, -999.f, -999.f);
-      }
-    }
-  }
-
-  void processCollAssocMC(CollisionsWithMCLabels const& collisions,
-                          MftTracksWCollsMC const& tracks,
-                          aod::McParticles const& particles,
-                          aod::McCollisions const& mccollisions)
-  {
-    processCheckAssocMC<CollisionsWithMCLabels>(collisions, tracks, particles, mccollisions);
-  }
-  PROCESS_SWITCH(DndetaMFTPbPb, processCollAssocMC, "Process collision-association information, requires extra table from TrackToCollisionAssociation task (fillTableOfCollIdsPerTrack=true)", false);
-
-  template <typename C>
-  void processCheckReAssocMC(C const& collisions,
-                             soa::SmallGroups<aod::BestCollisionsFwd3d> const& besttracks,
-                             FiltMcMftTracks const& /*tracks*/,
-                             FiltParticles const& /*particles*/,
-                             aod::McCollisions const& /*mccollisions*/
-  )
-  {
-    const auto& nRecoColls = collisions.size();
-    registry.fill(HIST("Events/hNReAssocColls"), 1.f, nRecoColls);
-    // Generated evets with >= 1 reco collisions
-    if (nRecoColls > CintZero) {
-
-      mapVtxXrec.clear();
-      mapVtxYrec.clear();
-      mapVtxZrec.clear();
-      mapMcCollIdPerRecColl.clear();
-      mapVtxXrec.reserve(collisions.size());
-      mapVtxYrec.reserve(collisions.size());
-      mapVtxZrec.reserve(collisions.size());
-      mapMcCollIdPerRecColl.reserve(collisions.size());
-
-      auto maxNcontributors = -1;
-      auto bestCollIndex = -1;
-      for (auto const& collision : collisions) {
-        if (!isGoodEvent<false>(collision)) {
-          continue;
-        }
-        if (!collision.has_mcCollision()) {
-          continue;
-        }
-        if (maxNcontributors < collision.numContrib()) {
-          maxNcontributors = collision.numContrib();
-          bestCollIndex = collision.globalIndex();
-          mapVtxXrec.emplace(collision.globalIndex(), collision.posX());
-          mapVtxYrec.emplace(collision.globalIndex(), collision.posY());
-          mapVtxZrec.emplace(collision.globalIndex(), collision.posZ());
-          mapMcCollIdPerRecColl.emplace(collision.globalIndex(), collision.mcCollisionId());
-        }
-      }
-
-      for (const auto& collision : collisions) {
-        if (!isGoodEvent<false>(collision)) {
-          continue;
-        }
-        if (!collision.has_mcCollision()) {
-          continue;
-        }
-        // Select collisions with the largest number of contributors
-        if (bestCollIndex != collision.globalIndex()) {
-          continue;
-        }
-
-        auto perCollisionASample = besttracks.sliceBy(perColU, collision.globalIndex());
-        for (auto const& atrack : perCollisionASample) {
-          registry.fill(HIST("Events/ReAssocMCStatus"), 1);
-          if (!isBestTrackSelected<false>(atrack)) {
-            continue;
-          }
-          registry.fill(HIST("Events/ReAssocMCStatus"), 2);
-          auto itrack = atrack.template mfttrack_as<FiltMcMftTracks>();
-          if (!isTrackSelected<false>(itrack)) {
-            continue;
-          }
-          float phi = itrack.phi();
-          o2::math_utils::bringTo02Pi(phi);
-          if (phi < Czero || TwoPI < phi) {
-            continue;
-          }
-          if (!itrack.has_collision()) {
-            continue;
-          }
-          registry.fill(HIST("Events/ReAssocMCStatus"), 3);
-          if (gConf.cfgRemoveReassigned) {
-            if (itrack.collisionId() != atrack.bestCollisionId()) {
-              continue;
-            }
-            registry.fill(HIST("Events/ReAssocMCStatus"), 4);
-          }
-          if (itrack.has_mcParticle()) {
-            registry.fill(HIST("Events/ReAssocMCStatus"), 5);
-            auto particle = itrack.template mcParticle_as<FiltParticles>();
-            auto collision = itrack.template collision_as<CollisionsWithMCLabels>();
-            auto mcCollision = particle.template mcCollision_as<aod::McCollisions>();
-
-            if (eventCuts.useZVtxCutMC && (std::abs(mcCollision.posZ()) >= eventCuts.maxZvtx)) {
-              continue;
-            }
-
-            registry.fill(HIST("Events/ReAssocMCStatus"), 6);
-
-            float deltaX = -999.f;
-            float deltaY = -999.f;
-            float deltaZ = -999.f;
-
-            if (mapVtxXrec.find(atrack.bestCollisionId()) == mapVtxXrec.end()) {
-              continue;
-            }
-            if (mapVtxYrec.find(atrack.bestCollisionId()) == mapVtxYrec.end()) {
-              continue;
-            }
-            if (mapVtxZrec.find(atrack.bestCollisionId()) == mapVtxZrec.end()) {
-              continue;
-            }
-            if (mapMcCollIdPerRecColl.find(atrack.bestCollisionId()) == mapMcCollIdPerRecColl.end()) {
-              continue;
-            }
-            const float vtxXbest = mapVtxXrec.find(atrack.bestCollisionId())->second;
-            const float vtxYbest = mapVtxYrec.find(atrack.bestCollisionId())->second;
-            const float vtxZbest = mapVtxZrec.find(atrack.bestCollisionId())->second;
-            // LOGP(info, "\t ---> \t .... \t vtxZrec: {} - collision.posZ(): {}", vtxZrec, collision.posZ());
-            const float mcCollIdRec = mapMcCollIdPerRecColl.find(atrack.bestCollisionId())->second;
-            // LOGP(info, "\t ---> \t .... \t mcCollIdRec: {} - bestMCCol: {}", mcCollIdRec, bestMCCol);
-            deltaX = vtxXbest - mcCollision.posX();
-            deltaY = vtxYbest - mcCollision.posY();
-            deltaZ = vtxZbest - mcCollision.posZ();
-
-            const auto dcaXtruth(particle.vx() - particle.mcCollision().posX());
-            const auto dcaYtruth(particle.vy() - particle.mcCollision().posY());
-            const auto dcaZtruth(particle.vz() - particle.mcCollision().posZ());
-            auto dcaXYtruth = std::sqrt(dcaXtruth * dcaXtruth + dcaYtruth * dcaYtruth);
-
-            if (itrack.collisionId() == atrack.bestCollisionId()) { // associated
-              registry.fill(HIST("Events/ReAssocMCStatus"), 7);
-              if (collision.has_mcCollision() && mcCollIdRec == particle.mcCollisionId()) {
-                registry.fill(HIST("Events/ReAssocMCStatus"), 8);
-                hReAssoc[0]->Fill(particle.pt(), particle.eta(), deltaX, deltaY, deltaZ);
-                if (!particle.isPhysicalPrimary()) {
-                  hDCAMc[1]->Fill(particle.pt(), particle.eta(), atrack.bestDCAXY(), atrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
-                } else { // Primaries
-                  hDCAMc[0]->Fill(particle.pt(), particle.eta(), atrack.bestDCAXY(), atrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
-                }
-              } else {
-                registry.fill(HIST("Events/ReAssocMCStatus"), 9);
-                hReAssoc[1]->Fill(particle.pt(), particle.eta(), deltaX, deltaY, deltaZ);
-                if (!particle.isPhysicalPrimary()) {
-                  hDCAMc[3]->Fill(particle.pt(), particle.eta(), atrack.bestDCAXY(), atrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
-                } else { // Primaries
-                  hDCAMc[2]->Fill(particle.pt(), particle.eta(), atrack.bestDCAXY(), atrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
-                }
-              }
-            } else {
-              registry.fill(HIST("Events/ReAssocMCStatus"), 10);
-              if (collision.has_mcCollision() && mcCollIdRec == particle.mcCollisionId()) {
-                registry.fill(HIST("Events/ReAssocMCStatus"), 11);
-                hReAssoc[2]->Fill(particle.pt(), particle.eta(), deltaX, deltaY, deltaZ);
-                if (!particle.isPhysicalPrimary()) {
-                  hDCAMc[5]->Fill(particle.pt(), particle.eta(), atrack.bestDCAXY(), atrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
-                } else { // Primaries
-                  hDCAMc[4]->Fill(particle.pt(), particle.eta(), atrack.bestDCAXY(), atrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
-                }
-              } else {
-                registry.fill(HIST("Events/ReAssocMCStatus"), 12);
-                hReAssoc[3]->Fill(particle.pt(), particle.eta(), deltaX, deltaY, deltaZ);
-                if (!particle.isPhysicalPrimary()) {
-                  hDCAMc[7]->Fill(particle.pt(), particle.eta(), atrack.bestDCAXY(), atrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
-                } else { // Primaries
-                  hDCAMc[6]->Fill(particle.pt(), particle.eta(), atrack.bestDCAXY(), atrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
-                }
-              }
-            }
-          }
-        }
-      }
-      mapVtxXrec.clear();
-      mapVtxYrec.clear();
-      mapVtxZrec.clear();
-      mapMcCollIdPerRecColl.clear();
-    }
-  }
-
-  void processReAssocMC(CollisionsWithMCLabels const& collisions,
-                        soa::SmallGroups<aod::BestCollisionsFwd3d> const& besttracks,
-                        FiltMcMftTracks const& tracks,
-                        FiltParticles const& particles,
-                        aod::McCollisions const& mccollisions)
-  {
-    processCheckReAssocMC<CollisionsWithMCLabels>(collisions, besttracks, tracks, particles, mccollisions);
-  }
-  PROCESS_SWITCH(DndetaMFTPbPb, processReAssocMC, "Process re-association information based on BestCollisionsFwd3d table", false);
-
-  Preslice<FiltMftTracks> filtTrkperCol = o2::aod::fwdtrack::collisionId;
-
-  /// @brief process template function for MC QA checks
-  template <typename C>
-  void processMcQA(typename soa::Join<C, aod::McCollisionLabels> const& collisions,
-                   MFTTracksLabeled const& tracks,
-                   aod::AmbiguousMFTTracks const& atracks,
-                   aod::McCollisions const& mcCollisions,
-                   FiltParticles const& /*particles*/)
-  {
-    for (const auto& collision : collisions) {
-      float crec = getRecoCent(collision);
-      auto occrec = getOccupancy(collision, eventCuts.occupancyEstimator);
-
-      if constexpr (has_reco_cent<C>) {
-        qaregistry.fill(HIST("Events/Centrality/hRecPerGenColls"),
-                        static_cast<float>(collisions.size()) /
-                          mcCollisions.size(),
-                        crec, occrec);
-      } else {
-        qaregistry.fill(HIST("Events/hRecPerGenColls"),
-                        static_cast<float>(collisions.size()) /
-                          mcCollisions.size(),
-                        occrec);
-      }
-
-      if (!isGoodEvent<false>(collision)) {
-        return;
-      }
-
-      auto trkPerColl = tracks.sliceBy(filtTrkperCol, collision.globalIndex());
-      uint ntracks{0u}, nAtracks{0u};
-      for (const auto& track : trkPerColl) {
-        ntracks++;
-        for (const auto& atrack : atracks) {
-          if (atrack.mfttrackId() == track.globalIndex()) {
-            nAtracks++;
-            break;
-          }
-        }
-      }
-      if constexpr (has_reco_cent<C>) {
-        qaregistry.fill(HIST("Tracks/Centrality/hNmftTrks"), ntracks, crec,
-                        occrec);
-        qaregistry.fill(HIST("Tracks/Centrality/hFracAmbiguousMftTrks"),
-                        static_cast<float>(nAtracks) / ntracks, crec, occrec);
-      } else {
-        qaregistry.fill(HIST("Tracks/hNmftTrks"), ntracks, occrec);
-        qaregistry.fill(HIST("Tracks/hFracAmbiguousMftTrks"),
-                        static_cast<float>(nAtracks) / ntracks, occrec);
-      }
-    }
-  }
-
-  void processMcQAInclusive(
-    soa::Join<Colls, aod::McCollisionLabels> const& collisions,
-    MFTTracksLabeled const& tracks, aod::AmbiguousMFTTracks const& atracks,
-    aod::McCollisions const& mcCollisions, FiltParticles const& particles)
-  {
-    processMcQA<Colls>(collisions, tracks, atracks, mcCollisions, particles);
-  }
-
-  PROCESS_SWITCH(DndetaMFTPbPb, processMcQAInclusive,
-                 "Process MC QA checks (inclusive)", false);
-
-  void processMcQACentFT0C(
-    soa::Join<CollsCentFT0C, aod::McCollisionLabels> const& collisions,
-    MFTTracksLabeled const& tracks, aod::AmbiguousMFTTracks const& atracks,
-    aod::McCollisions const& mcCollisions, FiltParticles const& particles)
-  {
-    processMcQA<CollsCentFT0C>(collisions, tracks, atracks, mcCollisions,
-                               particles);
-  }
-
-  PROCESS_SWITCH(DndetaMFTPbPb, processMcQACentFT0C,
-                 "Process MC QA checks (in FT0 centrality bins)", false);
-
-  Preslice<MftTracksWCollsMC> mftTrkCompCollperCol = o2::aod::fwdtrack::collisionId;
-
-  /// @brief process template function for DCA MC checks
-  template <typename C, typename MC>
-  void processSecondariesMC(typename soa::Join<C, aod::McCollisionLabels> const& collisions,
-                            MftTracksWCollsMC const& tracks,
-                            MC const& mcCollisions,
-                            aod::McParticles const& /*particles*/
-  )
-  {
-    registry.fill(HIST("Events/hNGenRecColls"), 1.f, collisions.size());
-    registry.fill(HIST("Events/hNGenRecColls"), 2.f, mcCollisions.size());
-
-    float cGen = -1;
-    if constexpr (has_reco_cent<C>) {
-      float crecMin = 105.f;
-      for (const auto& collision : collisions) {
-        if (isGoodEvent<false>(collision)) {
-          float c = getRecoCent(collision);
-          if (c < crecMin) {
-            crecMin = c;
-          }
-        }
-      }
-      if (cGen < 0)
-        cGen = crecMin;
-    }
-
-    if constexpr (has_reco_cent<C>) {
-      registry.fill(HIST("Events/Centrality/EvtGenRec"), 1., cGen);
-    } else {
-      registry.fill(HIST("Events/EvtGenRec"), 1.);
-    }
-
-    for (const auto& collision : collisions) {
-      float crec = getRecoCent(collision);
-
-      if constexpr (has_reco_cent<C>) {
-        registry.fill(HIST("Events/Centrality/EvtGenRec"), 2., crec);
-      } else {
-        registry.fill(HIST("Events/EvtGenRec"), 2.);
-      }
-
-      if (!isGoodEvent<false>(collision)) {
-        continue;
-      }
-
-      if constexpr (has_reco_cent<C>) {
-        registry.fill(HIST("Events/Centrality/EvtGenRec"), 3., crec);
-      } else {
-        registry.fill(HIST("Events/EvtGenRec"), 3.);
-      }
-
-      if (!collision.has_mcCollision()) {
-        continue;
-      }
-
-      auto trkPerColl = tracks.sliceBy(mftTrkCompCollperCol, collision.globalIndex());
-      for (auto const& track : trkPerColl) {
-        if (!isTrackSelected<false>(track)) {
-          continue;
-        }
-        if (!track.has_collision()) {
-          continue;
-        }
-        auto trkCollId = track.has_collision() ? track.collisionId() : -1;
-        auto ids = track.compatibleCollIds();
-        bool isAmbiguous = (ids.size() != 1);
-
-        if (isAmbiguous) {
-          if constexpr (has_reco_cent<C>) {
-            registry.fill(HIST("Tracks/Centrality/THnRecAmb"), track.pt(), track.eta(), collision.posZ(), crec);
-          } else {
-            registry.fill(HIST("Tracks/THnRecAmb"), track.pt(), track.eta(), collision.posZ());
-          }
-        } else {
-          if constexpr (has_reco_cent<C>) {
-            registry.fill(HIST("Tracks/Centrality/THnRec"), track.pt(), track.eta(), collision.posZ(), crec);
-          } else {
-            registry.fill(HIST("Tracks/THnRec"), track.pt(), track.eta(), collision.posZ());
-          }
-          if (trkCollId == ids[0]) {
-            if constexpr (has_reco_cent<C>) {
-              registry.fill(HIST("Tracks/Centrality/THnRecNonAmb"), track.pt(), track.eta(), collision.posZ(), crec);
-            } else {
-              registry.fill(HIST("Tracks/THnRecNonAmb"), track.pt(), track.eta(), collision.posZ());
-            }
-          }
-          if (trkCollId != ids[0]) {
-            if constexpr (has_reco_cent<C>) {
-              registry.fill(HIST("Tracks/Centrality/THnRecAmbRest"), track.pt(), track.eta(), collision.posZ(), crec);
-            } else {
-              registry.fill(HIST("Tracks/THnRecAmbRest"), track.pt(), track.eta(), collision.posZ());
-            }
-          }
-        }
-
-        uint index = uint(track.collisionId() >= 0);
-
-        if (!track.has_mcParticle()) {
-          LOGP(debug, "No MC particle for track, skip...");
-          continue;
-        }
-
-        auto particle = track.template mcParticle_as<aod::McParticles>();
-        if (!isChrgParticle(particle.pdgCode())) {
-          continue;
-        }
-        if (particle.eta() <= trackCuts.minEta || particle.eta() >= trackCuts.maxEta) {
-          continue;
-        }
-        if (gConf.cfgUseParticleSel && !isParticleSelected(particle)) {
-          continue;
-        }
-
-        if (index) {
-          auto mcCollision = particle.template mcCollision_as<aod::McCollisions>();
-          if (eventCuts.useZDiffCut) {
-            if (std::abs(collision.posZ() - mcCollision.posZ()) > eventCuts.maxZvtxDiff) {
-              continue;
-            }
-          }
-
-          if (collision.has_mcCollision() && collision.mcCollisionId() == particle.mcCollisionId()) {
-            if (!particle.isPhysicalPrimary()) { // Secondaries (weak decays and material)
-              if constexpr (has_reco_cent<C>) {
-                registry.fill(HIST("Tracks/Centrality/THnGenSec"), particle.pt(), particle.eta(), particle.mcCollision().posZ(), crec);
-              } else {
-                registry.fill(HIST("Tracks/THnGenSec"), particle.pt(), particle.eta(), particle.mcCollision().posZ());
-              }
-              if (particle.getProcess() == TMCProcess::kPDecay) { // Particles from decay
-                if constexpr (has_reco_cent<C>) {
-                  registry.fill(HIST("Tracks/Centrality/THnGenSecWeak"), particle.pt(), particle.eta(), particle.mcCollision().posZ(), crec);
-                } else {
-                  registry.fill(HIST("Tracks/THnGenSecWeak"), particle.pt(), particle.eta(), particle.mcCollision().posZ());
-                }
-              } else { // Particles from the material
-                if constexpr (has_reco_cent<C>) {
-                  registry.fill(HIST("Tracks/Centrality/THnGenSecMat"), particle.pt(), particle.eta(), particle.mcCollision().posZ(), crec);
-                } else {
-                  registry.fill(HIST("Tracks/THnGenSecMat"), particle.pt(), particle.eta(), particle.mcCollision().posZ());
-                }
-              }
-            } else { // Primaries
-              if constexpr (has_reco_cent<C>) {
-                registry.fill(HIST("Tracks/Centrality/THnGenPrim"), particle.pt(), particle.eta(), particle.mcCollision().posZ(), crec);
-              } else {
-                registry.fill(HIST("Tracks/THnGenPrim"), particle.pt(), particle.eta(), particle.mcCollision().posZ());
-              }
-            }
-          } else {
-            if (isAmbiguous) {
-              for (const auto& collIdx : track.compatibleCollIds()) {
-                auto ambColl = collisions.rawIteratorAt(collIdx);
-                if (ambColl.has_mcCollision() && ambColl.mcCollisionId() == particle.mcCollisionId()) {
-                  if (!particle.isPhysicalPrimary()) { // Secondaries (weak decays and material)
-                    if constexpr (has_reco_cent<C>) {
-                      registry.fill(HIST("Tracks/Centrality/THnGenSecAmb"), particle.pt(), particle.eta(), particle.mcCollision().posZ(), crec);
-                    } else {
-                      registry.fill(HIST("Tracks/THnGenSecAmb"), particle.pt(), particle.eta(), particle.mcCollision().posZ());
-                    }
-                    if (particle.getProcess() == TMCProcess::kPDecay) { // Particles from decay
-                      if constexpr (has_reco_cent<C>) {
-                        registry.fill(HIST("Tracks/Centrality/THnGenSecWeakAmb"), particle.pt(), particle.eta(), particle.mcCollision().posZ(), crec);
-                      } else {
-                        registry.fill(HIST("Tracks/THnGenSecWeakAmb"), particle.pt(), particle.eta(), particle.mcCollision().posZ());
-                      }
-                    } else { // Particles from the material
-                      if constexpr (has_reco_cent<C>) {
-                        registry.fill(HIST("Tracks/Centrality/THnGenSecMatAmb"), particle.pt(), particle.eta(), particle.mcCollision().posZ(), crec);
-                      } else {
-                        registry.fill(HIST("Tracks/THnGenSecMatAmb"), particle.pt(), particle.eta(), particle.mcCollision().posZ());
-                      }
-                    }
-                  } else { // Primaries
-                    if constexpr (has_reco_cent<C>) {
-                      registry.fill(HIST("Tracks/Centrality/THnGenPrimAmb"), particle.pt(), particle.eta(), particle.mcCollision().posZ(), crec);
-                    } else {
-                      registry.fill(HIST("Tracks/THnGenPrimAmb"), particle.pt(), particle.eta(), particle.mcCollision().posZ());
-                    }
-                  }
-                  break;
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  void processSecondariesMCInlcusive(soa::Join<Colls, aod::McCollisionLabels> const& collisions,
-                                     MftTracksWCollsMC const& tracks,
-                                     aod::McCollisions const& mccollisions,
-                                     aod::McParticles const& particles)
-  {
-    processSecondariesMC<Colls, aod::McCollisions>(collisions, tracks, mccollisions, particles);
-  }
-
-  PROCESS_SWITCH(DndetaMFTPbPb, processSecondariesMCInlcusive, "Process secondaries checks (Inclusive)", false);
-
-  void processSecondariesMCCentFT0C(soa::Join<CollsCentFT0C, aod::McCollisionLabels> const& collisions,
-                                    MftTracksWCollsMC const& tracks,
-                                    aod::McCollisions const& mccollisions,
-                                    aod::McParticles const& particles)
-  {
-    processSecondariesMC<CollsCentFT0C, aod::McCollisions>(collisions, tracks, mccollisions, particles);
-  }
-
-  PROCESS_SWITCH(DndetaMFTPbPb, processSecondariesMCCentFT0C, "Process secondaries checks (in FT0C centrality bins)", false);
-
   template <typename C>
   void processCorrelationwBestTracks(typename C::iterator const& collision, FiltMftTracks const& /*tracks*/, soa::SmallGroups<aod::BestCollisionsFwd3d> const& besttracks)
   {
@@ -3689,10 +3535,1252 @@ struct DndetaMFTPbPb {
 
   PROCESS_SWITCH(DndetaMFTPbPb, processAlignmentInclusive, "Check MFT alignment using tracks based on BestCollisionsFwd3d table (inclusive)", false);
 
+  /// @brief process function to calculate signal loss based on MC
+  void processEventAndSignalLossCentFT0C(CollsMCExtraMult::iterator const& mcCollision,
+                                         soa::SmallGroups<soa::Join<CollsCentFT0C, aod::McCollisionLabels>> const& collisions,
+                                         FiltParticles const& particles)
+  {
+    registry.fill(HIST("Events/Centrality/hNRecCollsSigEvtLoss"), 1.f, collisions.size());
+
+    if (gConf.cfgUseInelgt0 && !mcCollision.isInelGt0()) {
+      return;
+    }
+    if (eventCuts.useZVtxCutMC && (std::abs(mcCollision.posZ()) >= eventCuts.maxZvtx)) {
+      return;
+    }
+
+    bool gtZeroColl = false;
+    auto maxNcontributors = -1;
+    auto centrality = -1;
+    for (auto const& collision : collisions) {
+      if (!isGoodEvent<false>(collision)) {
+        continue;
+      }
+      if (std::abs(collision.posZ()) >= eventCuts.maxZvtx) {
+        continue;
+      }
+      if (maxNcontributors < collision.numContrib()) {
+        maxNcontributors = collision.numContrib();
+        centrality = getRecoCent(collision);
+      }
+      gtZeroColl = true;
+    }
+
+    auto perCollMCsample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+    auto multMCNParticlesEtaMFT = countPart(perCollMCsample);
+
+    registry.fill(HIST("Events/Centrality/EvtSigLossStatus"), 1., centrality);
+    registry.fill(HIST("Events/Centrality/hMultGenVsCent"), centrality, mcCollision.multMCFT0C());
+    registry.fill(HIST("Events/Centrality/hMultGenVsCentNParticlesEta05"), centrality, mcCollision.multMCNParticlesEta05());
+    registry.fill(HIST("Events/Centrality/hMultGenVsCentNParticlesEtaMFT"), centrality, multMCNParticlesEtaMFT);
+
+    if (collisions.size() == 0) {
+      registry.fill(HIST("Events/Centrality/EvtSigLossStatus"), 3., centrality);
+    }
+
+    if (gtZeroColl) {
+      registry.fill(HIST("Events/Centrality/EvtSigLossStatus"), 2., centrality);
+      registry.fill(HIST("Events/Centrality/hMultGenVsCentRec"), centrality, mcCollision.multMCFT0C());
+      registry.fill(HIST("Events/Centrality/hMultGenVsCentRecNParticlesEta05"), centrality, mcCollision.multMCNParticlesEta05());
+      registry.fill(HIST("Events/Centrality/hMultGenVsCentRecNParticlesEtaMFT"), centrality, multMCNParticlesEtaMFT);
+    }
+
+    for (auto const& particle : particles) {
+      if (!isChrgParticle(particle.pdgCode())) {
+        continue;
+      }
+      if (gConf.cfgUseParticleSel && !isParticleSelected(particle)) {
+        continue;
+      }
+
+      float phi = particle.phi();
+      o2::math_utils::bringTo02Pi(phi);
+      if (phi < Czero || TwoPI < phi) {
+        continue;
+      }
+
+      registry.fill(HIST("Tracks/Centrality/EtaCentVsMultGen_t"), particle.eta(), centrality, mcCollision.multMCFT0C());
+      registry.fill(HIST("Tracks/Centrality/EtaGen_t"), particle.eta(), centrality);
+
+      if (gtZeroColl) {
+        float phi = particle.phi();
+        o2::math_utils::bringTo02Pi(phi);
+        if (phi < Czero || TwoPI < phi) {
+          continue;
+        }
+        registry.fill(HIST("Tracks/Centrality/EtaCentVsMultGen"), particle.eta(), centrality, mcCollision.multMCFT0C());
+        registry.fill(HIST("Tracks/Centrality/EtaGen"), particle.eta(), centrality);
+      }
+    }
+  }
+
+  PROCESS_SWITCH(DndetaMFTPbPb, processEventAndSignalLossCentFT0C, "Signal/event loss based on MC (in FT0C centrality bins)", false);
+
+  Preslice<FiltMftTracks> filtTrkperCol = o2::aod::fwdtrack::collisionId;
+
+  /// @brief process template function for MC QA checks
+  template <typename C>
+  void processMcQA(typename soa::Join<C, aod::McCollisionLabels> const& collisions,
+                   MFTTracksLabeled const& tracks,
+                   aod::AmbiguousMFTTracks const& atracks,
+                   aod::McCollisions const& mcCollisions,
+                   FiltParticles const& /*particles*/)
+  {
+    for (const auto& collision : collisions) {
+      float crec = getRecoCent(collision);
+      auto occrec = getOccupancy(collision, eventCuts.occupancyEstimator);
+
+      if constexpr (has_reco_cent<C>) {
+        qaregistry.fill(HIST("Events/Centrality/hRecPerGenColls"),
+                        static_cast<float>(collisions.size()) /
+                          mcCollisions.size(),
+                        crec, occrec);
+      } else {
+        qaregistry.fill(HIST("Events/hRecPerGenColls"),
+                        static_cast<float>(collisions.size()) /
+                          mcCollisions.size(),
+                        occrec);
+      }
+
+      if (!isGoodEvent<false>(collision)) {
+        return;
+      }
+
+      auto trkPerColl = tracks.sliceBy(filtTrkperCol, collision.globalIndex());
+      uint ntracks{0u}, nAtracks{0u};
+      for (const auto& track : trkPerColl) {
+        ntracks++;
+        for (const auto& atrack : atracks) {
+          if (atrack.mfttrackId() == track.globalIndex()) {
+            nAtracks++;
+            break;
+          }
+        }
+      }
+      if constexpr (has_reco_cent<C>) {
+        qaregistry.fill(HIST("Tracks/Centrality/hNmftTrks"), ntracks, crec,
+                        occrec);
+        qaregistry.fill(HIST("Tracks/Centrality/hFracAmbiguousMftTrks"),
+                        static_cast<float>(nAtracks) / ntracks, crec, occrec);
+      } else {
+        qaregistry.fill(HIST("Tracks/hNmftTrks"), ntracks, occrec);
+        qaregistry.fill(HIST("Tracks/hFracAmbiguousMftTrks"),
+                        static_cast<float>(nAtracks) / ntracks, occrec);
+      }
+    }
+  }
+
+  void processMcQAInclusive(
+    soa::Join<Colls, aod::McCollisionLabels> const& collisions,
+    MFTTracksLabeled const& tracks, aod::AmbiguousMFTTracks const& atracks,
+    aod::McCollisions const& mcCollisions, FiltParticles const& particles)
+  {
+    processMcQA<Colls>(collisions, tracks, atracks, mcCollisions, particles);
+  }
+
+  PROCESS_SWITCH(DndetaMFTPbPb, processMcQAInclusive,
+                 "Process MC QA checks (inclusive)", false);
+
+  void processMcQACentFT0C(
+    soa::Join<CollsCentFT0C, aod::McCollisionLabels> const& collisions,
+    MFTTracksLabeled const& tracks, aod::AmbiguousMFTTracks const& atracks,
+    aod::McCollisions const& mcCollisions, FiltParticles const& particles)
+  {
+    processMcQA<CollsCentFT0C>(collisions, tracks, atracks, mcCollisions,
+                               particles);
+  }
+
+  PROCESS_SWITCH(DndetaMFTPbPb, processMcQACentFT0C,
+                 "Process MC QA checks (in FT0 centrality bins)", false);
+
+  /// @brief process function to check ambiguous tracks
+  void processCheckAmbiguousMftTracks(aod::Collisions const&, MftTracksWColls const& tracks)
+  {
+    for (auto const& track : tracks) {
+      auto trkCollId = track.has_collision() ? track.collisionId() : -1;
+      auto ids = track.compatibleCollIds();
+      qaregistry.fill(HIST("Tracks/hAmbTrackType"), static_cast<int>(AmbTrkType::kAll));
+      if (ids.empty() || (ids.size() == 1 && trkCollId == ids[0])) {
+        qaregistry.fill(HIST("Tracks/hMftTracksAmbDegreeWithTrivial"), track.compatibleCollIds().size());
+        if (ids.empty()) {
+          qaregistry.fill(HIST("Tracks/hAmbTrackType"), static_cast<int>(AmbTrkType::kOrphan));
+        }
+        if (ids.size() == 1 && trkCollId == ids[0]) {
+          qaregistry.fill(HIST("Tracks/hAmbTrackType"), static_cast<int>(AmbTrkType::kNonAmb));
+        }
+        continue;
+      }
+      qaregistry.fill(HIST("Tracks/hMftTracksAmbDegree"), track.compatibleCollIds().size());
+
+      if (track.compatibleCollIds().size() > 0) {
+        if (track.compatibleCollIds().size() == 1) {
+          if (track.collisionId() != track.compatibleCollIds()[0]) {
+            qaregistry.fill(HIST("Tracks/hAmbTrackType"), static_cast<int>(AmbTrkType::kAmb));
+          } else {
+            qaregistry.fill(HIST("Tracks/hAmbTrackType"), static_cast<int>(AmbTrkType::kNonAmbSame));
+          }
+        } else {
+          qaregistry.fill(HIST("Tracks/hAmbTrackType"), static_cast<int>(AmbTrkType::kAmbGt1));
+        }
+      }
+    }
+  }
+
+  PROCESS_SWITCH(DndetaMFTPbPb, processCheckAmbiguousMftTracks, "Process checks for Ambiguous MFT tracks (inclusive)", false);
+
+  // Preslice<aod::McParticles> perColMc = aod::mcparticle::mcCollisionId;
+  void processTimeAssocMC(CollsMCExtra const& mcCollisions,
+                          CollisionsWithMCLabels const& collisions,
+                          MftTracksWCollsMC const& tracks,
+                          aod::McParticles const& /*particles*/,
+                          aod::McCollisionLabels const& labels)
+  {
+    const auto& nRecoColls = collisions.size();
+    LOG(info) << "reconstructed collisions: " << nRecoColls;
+    const auto& nMcColls = mcCollisions.size();
+    LOG(info) << "MC collisions: " << nMcColls;
+    const auto& nLabels = labels.size();
+    LOG(info) << "collision labels: " << nLabels;
+
+    std::unordered_map<int64_t, int64_t> mapRecToMc;
+    mapRecToMc.clear();
+    mapRecToMc.reserve(nRecoColls);
+
+    // std::unordered_map<int64_t, float> mapVtxXrec;
+    mapVtxXrec.clear();
+    mapVtxXrec.reserve(nRecoColls);
+    // std::unordered_map<int64_t, float> mapVtxYrec;
+    mapVtxYrec.clear();
+    mapVtxYrec.reserve(nRecoColls);
+    // std::unordered_map<int64_t, float> mapVtxZrec;
+    mapVtxZrec.clear();
+    mapVtxZrec.reserve(nRecoColls);
+
+    if (nRecoColls <= CintZero) {
+      return;
+    }
+
+    auto maxNcontributors = -1;
+    auto bestCollIndex = -1;
+    for (auto const& collision : collisions) {
+      if (maxNcontributors < collision.numContrib()) {
+        maxNcontributors = collision.numContrib();
+        bestCollIndex = collision.globalIndex();
+        mapVtxXrec.emplace(collision.globalIndex(), collision.posX());
+        mapVtxYrec.emplace(collision.globalIndex(), collision.posY());
+        mapVtxZrec.emplace(collision.globalIndex(), collision.posZ());
+        mapRecToMc.emplace(collision.globalIndex(), collision.mcCollisionId());
+      }
+    }
+    LOG(info) << "mapRecToMc size: " << mapRecToMc.size();
+    LOG(info) << "mapVtxXrec size: " << mapVtxXrec.size();
+
+    std::unordered_map<int64_t, float> mapVtxXgen;
+    mapVtxXgen.clear();
+    mapVtxXgen.reserve(nMcColls);
+    std::unordered_map<int64_t, float> mapVtxYgen;
+    mapVtxYgen.reserve(nMcColls);
+    mapVtxYgen.clear();
+    std::unordered_map<int64_t, float> mapVtxZgen;
+    mapVtxZgen.clear();
+    mapVtxZgen.reserve(nMcColls);
+
+    for (const auto& mcCollision : mcCollisions) {
+      mapVtxXgen.emplace(mcCollision.globalIndex(), mcCollision.posX());
+      mapVtxYgen.emplace(mcCollision.globalIndex(), mcCollision.posY());
+      mapVtxZgen.emplace(mcCollision.globalIndex(), mcCollision.posZ());
+    }
+    LOG(info) << "mapVtxXgen size: " << mapVtxXgen.size();
+
+    int nNoMC{0};
+    for (const auto& collision : collisions) {
+      registry.fill(HIST("TimeAssocMC/hTimeAssocMCEventStatus"), static_cast<int>(ReAssocMCEventStatus::kEvtReAsAll));
+      if (!isGoodEvent<true>(collision)) {
+        continue;
+      }
+      registry.fill(HIST("TimeAssocMC/hTimeAssocMCEventStatus"), static_cast<int>(ReAssocMCEventStatus::kEvtReAsSelected));
+      if (!collision.has_mcCollision()) {
+        continue;
+      }
+      registry.fill(HIST("TimeAssocMC/hTimeAssocMCEventStatus"), static_cast<int>(ReAssocMCEventStatus::kEvtReAsHasMcColl));
+
+      int64_t recCollId = collision.globalIndex();
+      auto itMC = mapRecToMc.find(recCollId);
+      if (itMC == mapRecToMc.end()) {
+        nNoMC++;
+        LOGP(debug, "collison {} has no MC coll", recCollId);
+        continue;
+      }
+      auto mcCollision = collision.mcCollision_as<CollsMCExtra>();
+      if (gConf.cfgRemoveSplitVertex && (bestCollIndex != collision.globalIndex())) {
+        continue;
+      }
+      registry.fill(HIST("TimeAssocMC/hTimeAssocMCEventStatus"), static_cast<int>(ReAssocMCEventStatus::kEvtReAsSplitVtxRemoved));
+      if (eventCuts.useZVtxCutMC && (std::abs(mcCollision.posZ()) >= eventCuts.maxZvtx)) {
+        continue;
+      }
+      registry.fill(HIST("TimeAssocMC/hTimeAssocMCEventStatus"), static_cast<int>(ReAssocMCEventStatus::kEvtReAsZVtxCutMC));
+
+      // Loop on collision compatible MFT tracks
+      // Check: (1) good/bad vertices (2) if bad true vertex is available among rec vertices
+      for (const auto& track : tracks) {
+        if (!track.has_collision()) {
+          continue;
+        }
+        auto trkCollId = track.has_collision() ? track.collisionId() : -1;
+        auto ids = track.compatibleCollIds();
+        if (trkCollId != recCollId) { // check if track is associated to rec coll
+          continue;
+        }
+        registry.fill(HIST("TimeAssocMC/hAmbTrackType"), static_cast<int>(AmbTrkType::kAll));
+        if (ids.empty()) {
+          registry.fill(HIST("TimeAssocMC/hAmbTrackType"), static_cast<int>(AmbTrkType::kOrphan));
+        }
+        if (gConf.cfgRemoveOrphanTracks && ids.empty()) {
+          continue;
+        }
+        if (gConf.cfgRemoveTrivialAssoc) {
+          if (ids.empty() || (ids.size() == 1 && trkCollId == ids[0])) {
+            continue;
+          }
+        }
+        if (gConf.cfgRemoveAmbiguousTracks && (track.compatibleCollIds().size() != 1)) {
+          continue;
+        }
+        if (ids.size() > 0) {
+          if (ids.size() == 1) {
+            if (trkCollId == ids[0]) {
+              registry.fill(HIST("TimeAssocMC/hAmbTrackType"), static_cast<int>(AmbTrkType::kNonAmb));
+            } else if (trkCollId != ids[0]) {
+              registry.fill(HIST("TimeAssocMC/hAmbTrackType"), static_cast<int>(AmbTrkType::kAmb));
+            } else {
+              registry.fill(HIST("TimeAssocMC/hAmbTrackType"), static_cast<int>(AmbTrkType::kNonAmbSame));
+            }
+          } else {
+            registry.fill(HIST("TimeAssocMC/hAmbTrackType"), static_cast<int>(AmbTrkType::kAmbGt1));
+          }
+        } else {
+          registry.fill(HIST("TimeAssocMC/hAmbTrackType"), static_cast<int>(AmbTrkType::kOrphanNull));
+        }
+        if (gConf.cfgUseTrackSel && !isTrackSelected<true>(track)) {
+          continue;
+        }
+
+        bool isTrueVtx = false;
+        int vtxFlag = static_cast<int>(VertexStatusMC::kNull);
+
+        float vtxX = -1.;
+        float vtxY = -1.;
+        float vtxZ = -1.;
+        float deltaXv1 = -1.;
+        float deltaYv1 = -1.;
+        float deltaZv1 = -1.;
+        float deltaXv2 = -1.;
+        float deltaYv2 = -1.;
+        float deltaZv2 = -1.;
+
+        if (track.collisionId() >= 0 && track.has_mcParticle() && track.mcMask() == 0) {
+          auto itMCTrk = mapRecToMc.find(trkCollId);
+          const auto& mcPart = track.mcParticle();
+          if (!isChrgParticle(mcPart.pdgCode())) {
+            continue;
+          }
+          if (gConf.cfgUseParticleSel && !isParticleSelected(mcPart)) {
+            continue;
+          }
+          int64_t mcPartId = mcPart.mcCollisionId();
+
+          // check if rec vertex is available in MC collisions
+          for (const auto& mcTrkId : mapRecToMc) {
+            if (mcTrkId.second == mcPartId) {
+              isTrueVtx = true;
+              break;
+            }
+          }
+
+          // check if there is good or bad collision
+          if (itMCTrk != mapRecToMc.end()) {
+            int mcTrkCollId = itMCTrk->second;
+            if (mcPartId == mcTrkCollId) { // particle.mcCollisionId == collision.mcCollisionId -> good vtx
+              vtxFlag = static_cast<int>(VertexStatusMC::kGood);
+            } else { // wrong vtx
+              vtxFlag = static_cast<int>(VertexStatusMC::kBad);
+            }
+          }
+
+          if (mapVtxXrec.find(trkCollId) == mapVtxXrec.end()) {
+            continue;
+          }
+          if (mapVtxYrec.find(trkCollId) == mapVtxYrec.end()) {
+            continue;
+          }
+          if (mapVtxZrec.find(trkCollId) == mapVtxZrec.end()) {
+            continue;
+          }
+          if (mapRecToMc.find(trkCollId) == mapRecToMc.end()) {
+            continue;
+          }
+          vtxX = mapVtxXrec.find(trkCollId)->second;
+          vtxY = mapVtxYrec.find(trkCollId)->second;
+          vtxZ = mapVtxZrec.find(trkCollId)->second;
+          // LOGP(info, "\t ---> \t .... \t vtxZrec: {} - collision.posZ(): {}", vtxZrec, collision.posZ());
+          int64_t mcCollIdRec = mapRecToMc.find(trkCollId)->second;
+          // int64_t mcCollId = itMC->second;
+          // LOGP(info, "\t ---> \t .... \t mcCollIdRec: {} - mcCollId: {} - bestMCCol: {}", mcCollIdRec, mcCollId, bestMCCol);
+          if (mapVtxXgen.find(mcCollIdRec) == mapVtxXgen.end()) {
+            continue;
+          }
+          if (mapVtxYgen.find(mcCollIdRec) == mapVtxYgen.end()) {
+            continue;
+          }
+          if (mapVtxZgen.find(mcCollIdRec) == mapVtxZgen.end()) {
+            continue;
+          }
+          // vertex resolution - ver 1
+          // rec coll vtx - mc associated to orig rec coll (first in time)
+          deltaXv1 = vtxX - mcCollision.posX();
+          deltaYv1 = vtxY - mcCollision.posY();
+          deltaZv1 = vtxZ - mcCollision.posZ();
+          // vertex resolution - ver 2
+          // rec coll vtx - mc associated to orig rec coll (first in time)
+          deltaXv2 = vtxX - mapVtxXgen.find(mcCollIdRec)->second;
+          deltaYv2 = vtxY - mapVtxYgen.find(mcCollIdRec)->second;
+          deltaZv2 = vtxZ - mapVtxZgen.find(mcCollIdRec)->second;
+        }
+
+        registry.fill(HIST("TimeAssocMC/VtxStatus"), vtxFlag);
+        registry.fill(HIST("TimeAssocMC/hVertexResV1"), deltaXv1, deltaYv1, deltaZv1);
+        registry.fill(HIST("TimeAssocMC/hVertexResV2"), deltaXv2, deltaYv2, deltaZv2);
+
+        registry.fill(HIST("TimeAssocMC/hAmbTrkTypeAssocFlag"), static_cast<int>(AmbTrkTypeAssocFlag::kSel));
+
+        if (isTrueVtx) {
+          registry.fill(HIST("TimeAssocMC/hTimeAssocCheckVtxType"), static_cast<int>(ReassocCheckVtxType::kIsTrueVtxAllTrue));
+        } else {
+          registry.fill(HIST("TimeAssocMC/hTimeAssocCheckVtxType"), static_cast<int>(ReassocCheckVtxType::kIsTrueVtxAllFalse));
+        }
+        if (vtxFlag == static_cast<int>(VertexStatusMC::kGood)) {
+          if (isTrueVtx) {
+            registry.fill(HIST("TimeAssocMC/hVTXkSelGoodVtxTrue"), deltaXv2, deltaYv2, deltaZv2);
+            registry.fill(HIST("TimeAssocMC/hAmbTrkTypeAssocFlag"), static_cast<int>(AmbTrkTypeAssocFlag::kSelGoodVtxTrue));
+            registry.fill(HIST("TimeAssocMC/hTimeAssocCheckVtxType"), static_cast<int>(ReassocCheckVtxType::kIsTrueVtxVsGoodVtxTrue));
+          } else {
+            registry.fill(HIST("TimeAssocMC/hTimeAssocCheckVtxType"), static_cast<int>(ReassocCheckVtxType::kIsTrueVtxVsGoodVtxFalse));
+          }
+        }
+        if (vtxFlag == static_cast<int>(VertexStatusMC::kBad)) {
+          if (isTrueVtx) {
+            registry.fill(HIST("TimeAssocMC/hVTXkSelGoodVtxBad"), deltaXv2, deltaYv2, deltaZv2);
+            registry.fill(HIST("TimeAssocMC/hAmbTrkTypeAssocFlag"), static_cast<int>(AmbTrkTypeAssocFlag::kSelGoodVtxBad));
+            registry.fill(HIST("TimeAssocMC/hTimeAssocCheckVtxType"), static_cast<int>(ReassocCheckVtxType::kIsTrueVtxVsBadVtxTrue));
+          } else {
+            registry.fill(HIST("TimeAssocMC/hTimeAssocCheckVtxType"), static_cast<int>(ReassocCheckVtxType::kIsTrueVtxVsBadVtxFalse));
+          }
+        }
+
+        if (ids.size() > 0) {
+          if (ids.size() == 1) {
+            if (trkCollId == ids[0]) { // non ambiguous
+              registry.fill(HIST("TimeAssocMC/hVTXkSelNonAmbAll"), deltaXv2, deltaYv2, deltaZv2);
+              registry.fill(HIST("TimeAssocMC/hAmbTrkTypeAssocFlag"), static_cast<int>(AmbTrkTypeAssocFlag::kSelNonAmbAll));
+              if (vtxFlag == static_cast<int>(VertexStatusMC::kGood)) {
+                if (isTrueVtx) {
+                  registry.fill(HIST("TimeAssocMC/hVTXkSelNonAmbGoodVtxTrue"), deltaXv2, deltaYv2, deltaZv2);
+                  registry.fill(HIST("TimeAssocMC/hAmbTrkTypeAssocFlag"), static_cast<int>(AmbTrkTypeAssocFlag::kSelNonAmbGoodVtxTrue));
+                }
+              }
+              if (vtxFlag == static_cast<int>(VertexStatusMC::kBad)) {
+                if (isTrueVtx) {
+                  registry.fill(HIST("TimeAssocMC/hVTXkSelNonAmbGoodVtxBad"), deltaXv2, deltaYv2, deltaZv2);
+                  registry.fill(HIST("TimeAssocMC/hAmbTrkTypeAssocFlag"), static_cast<int>(AmbTrkTypeAssocFlag::kSelNonAmbGoodVtxBad));
+                }
+              }
+            } else if (trkCollId != ids[0]) {
+              registry.fill(HIST("TimeAssocMC/hVTXkSelAmbAll"), deltaXv2, deltaYv2, deltaZv2);
+              registry.fill(HIST("TimeAssocMC/hAmbTrkTypeAssocFlag"), static_cast<int>(AmbTrkTypeAssocFlag::kSelAmbAll));
+              if (vtxFlag == static_cast<int>(VertexStatusMC::kGood)) {
+                if (isTrueVtx) {
+                  registry.fill(HIST("TimeAssocMC/hVTXkSelAmbGoodVtxTrue"), deltaXv2, deltaYv2, deltaZv2);
+                  registry.fill(HIST("TimeAssocMC/hAmbTrkTypeAssocFlag"), static_cast<int>(AmbTrkTypeAssocFlag::kSelAmbGoodVtxTrue));
+                }
+              }
+              if (vtxFlag == static_cast<int>(VertexStatusMC::kBad)) {
+                if (isTrueVtx) {
+                  registry.fill(HIST("TimeAssocMC/hVTXkSelAmbGoodVtxBad"), deltaXv2, deltaYv2, deltaZv2);
+                  registry.fill(HIST("TimeAssocMC/hAmbTrkTypeAssocFlag"), static_cast<int>(AmbTrkTypeAssocFlag::kSelAmbGoodVtxBad));
+                }
+              }
+            } else { // non ambiguous (extra)
+              registry.fill(HIST("TimeAssocMC/hVTXkSelNonAmbSameAll"), deltaXv2, deltaYv2, deltaZv2);
+              registry.fill(HIST("TimeAssocMC/hAmbTrkTypeAssocFlag"), static_cast<int>(AmbTrkTypeAssocFlag::kSelNonAmbSameAll));
+              if (vtxFlag == static_cast<int>(VertexStatusMC::kGood)) {
+                if (isTrueVtx) {
+                  registry.fill(HIST("TimeAssocMC/hVTXkSelNonAmbSameGoodVtxTrue"), deltaXv2, deltaYv2, deltaZv2);
+                  registry.fill(HIST("TimeAssocMC/hAmbTrkTypeAssocFlag"), static_cast<int>(AmbTrkTypeAssocFlag::kSelNonAmbSameGoodVtxTrue));
+                }
+              }
+              if (vtxFlag == static_cast<int>(VertexStatusMC::kBad)) {
+                if (isTrueVtx) {
+                  registry.fill(HIST("TimeAssocMC/hVTXkSelNonAmbSameGoodVtxBad"), deltaXv2, deltaYv2, deltaZv2);
+                  registry.fill(HIST("TimeAssocMC/hAmbTrkTypeAssocFlag"), static_cast<int>(AmbTrkTypeAssocFlag::kSelNonAmbSameGoodVtxBad));
+                }
+              }
+            }
+          } else { // ambiguous
+            registry.fill(HIST("TimeAssocMC/hVTXkSelAmbGt1All"), deltaXv2, deltaYv2, deltaZv2);
+            registry.fill(HIST("TimeAssocMC/hAmbTrkTypeAssocFlag"), static_cast<int>(AmbTrkTypeAssocFlag::kSelAmbGt1All));
+            if (vtxFlag == static_cast<int>(VertexStatusMC::kGood)) {
+              if (isTrueVtx) {
+                registry.fill(HIST("TimeAssocMC/hVTXkSelAmbGt1GoodVtxTrue"), deltaXv2, deltaYv2, deltaZv2);
+                registry.fill(HIST("TimeAssocMC/hAmbTrkTypeAssocFlag"), static_cast<int>(AmbTrkTypeAssocFlag::kSelAmbGt1GoodVtxTrue));
+              }
+            }
+            if (vtxFlag == static_cast<int>(VertexStatusMC::kBad)) {
+              if (isTrueVtx) {
+                registry.fill(HIST("TimeAssocMC/hVTXkSelAmbGt1GoodVtxBad"), deltaXv2, deltaYv2, deltaZv2);
+                registry.fill(HIST("TimeAssocMC/hAmbTrkTypeAssocFlag"), static_cast<int>(AmbTrkTypeAssocFlag::kSelAmbGt1GoodVtxBad));
+              }
+            }
+          }
+        } else {
+          registry.fill(HIST("TimeAssocMC/hAmbTrkTypeAssocFlag"), static_cast<int>(AmbTrkTypeAssocFlag::kSelOrphanNull));
+        }
+      }
+    }
+    LOG(info) << "No MC: " << nNoMC;
+  }
+  PROCESS_SWITCH(DndetaMFTPbPb, processTimeAssocMC, "process MC: check MFT tracks in compatible collisions (time-associasted)", false);
+
+  void processTimeAssocWithReassocMC(CollsMCExtra const& mcCollisions,
+                                     CollisionsWithMCLabels const& collisions,
+                                     FiltMftTracks const& /*tracks*/,
+                                     BestTracks3dWCollsMC const& besttracks,
+                                     aod::McParticles const& /*particles*/,
+                                     aod::McCollisionLabels const& labels,
+                                     ExtBCs const& bcs)
+  {
+    if (bcs.size() == 0) {
+      return;
+    }
+    auto bc = bcs.begin();
+    initCCDB(bc);
+
+    const auto& nRecoColls = collisions.size();
+    LOG(info) << "reconstructed collisions: " << nRecoColls;
+    const auto& nMcColls = mcCollisions.size();
+    LOG(info) << "MC collisions: " << nMcColls;
+    // LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
+    const auto& nLabels = labels.size();
+    LOG(info) << "collision labels: " << nLabels;
+
+    std::unordered_map<int64_t, int64_t> mapRecToMc;
+    mapRecToMc.reserve(nRecoColls);
+    std::unordered_map<int64_t, int64_t> mapMcToRec;
+    mapMcToRec.reserve(nRecoColls);
+    // std::unordered_map<int64_t, float> mapVtxXrec;
+    mapVtxXrec.reserve(nRecoColls);
+    // std::unordered_map<int64_t, float> mapVtxYrec;
+    mapVtxYrec.reserve(nRecoColls);
+    // std::unordered_map<int64_t, float> mapVtxZrec;
+    mapVtxZrec.reserve(nRecoColls);
+
+    if (nRecoColls <= CintZero) {
+      return;
+    }
+
+    auto maxNcontributors = -1;
+    auto bestCollIndex = -1;
+    for (auto const& collision : collisions) {
+      if (maxNcontributors < collision.numContrib()) {
+        maxNcontributors = collision.numContrib();
+        bestCollIndex = collision.globalIndex();
+        mapVtxXrec.emplace(collision.globalIndex(), collision.posX());
+        mapVtxYrec.emplace(collision.globalIndex(), collision.posY());
+        mapVtxZrec.emplace(collision.globalIndex(), collision.posZ());
+        mapRecToMc.emplace(collision.globalIndex(), collision.mcCollisionId());
+        mapMcToRec.emplace(collision.mcCollisionId(), collision.globalIndex());
+      }
+    }
+    LOG(info) << "mapRecToMc size: " << mapRecToMc.size();
+    LOG(info) << "mapVtxXrec size: " << mapVtxXrec.size();
+
+    std::unordered_map<int64_t, float> mapVtxXgen;
+    mapVtxXgen.reserve(nMcColls);
+    std::unordered_map<int64_t, float> mapVtxYgen;
+    mapVtxYgen.reserve(nMcColls);
+    std::unordered_map<int64_t, float> mapVtxZgen;
+    mapVtxZgen.reserve(nMcColls);
+
+    for (const auto& mcCollision : mcCollisions) {
+      mapVtxXgen.emplace(mcCollision.globalIndex(), mcCollision.posX());
+      mapVtxYgen.emplace(mcCollision.globalIndex(), mcCollision.posY());
+      mapVtxZgen.emplace(mcCollision.globalIndex(), mcCollision.posZ());
+    }
+    LOG(info) << "mapVtxXgen size: " << mapVtxXgen.size();
+
+    int nNoMC{0};
+    for (const auto& collision : collisions) {
+      int64_t recCollId = collision.globalIndex();
+      auto itMC = mapRecToMc.find(recCollId);
+      if (itMC == mapRecToMc.end()) {
+        nNoMC++;
+        LOGP(debug, "collison {} has no MC coll", recCollId);
+        continue;
+      }
+      if (!collision.has_mcCollision()) {
+        continue;
+      }
+      auto mcCollision = collision.mcCollision_as<CollsMCExtra>();
+      // if (collision.globalIndex() != mcCollision.bestCollisionIndex()) {
+      //   continue;
+      // }
+      if (gConf.cfgRemoveSplitVertex && (bestCollIndex != collision.globalIndex())) {
+        continue;
+      }
+
+      if (!isGoodEvent<true>(collision)) {
+        continue;
+      }
+      if (eventCuts.useZVtxCutMC && (std::abs(mcCollision.posZ()) >= eventCuts.maxZvtx)) {
+        continue;
+      }
+
+      for (auto const& atrack : besttracks) {
+        if (!isBestTrackSelected<true>(atrack)) {
+          continue;
+        }
+        // auto itrack = atrack.mfttrack_as<FiltMftTracks>();
+        // if (!isTrackSelected(itrack)) {
+        // continue;
+        // }
+        if (gConf.cfgUseTrackSel && !isTrackSelected<true>(atrack)) {
+          continue;
+        }
+        float phi = atrack.phi();
+        o2::math_utils::bringTo02Pi(phi);
+        if (phi < Czero || TwoPI < phi) {
+          continue;
+        }
+        auto trkBestCollId = atrack.has_collision() ? atrack.bestCollisionId() : -1;
+        // if (trkBestCollId != recCollId) { // check if best track is associated to original rec coll
+        //   continue;
+        // }
+
+        bool isTrueVtx = false;
+        bool isRecGoodMatch = false;
+        bool isRecGood = false;
+        int vtxFlag = static_cast<int>(VertexStatusMC::kNull);
+
+        float vtxXbest = -1.;
+        float vtxYbest = -1.;
+        float vtxZbest = -1.;
+        float deltaXOrigMc = -1.;
+        float deltaYOrigMc = -1.;
+        float deltaZOrigMc = -1.;
+        // dca best rec - dca mc associated to best rec coll
+        float deltaX = -1.;
+        float deltaY = -1.;
+        float deltaZ = -1.;
+
+        if (trkBestCollId >= 0 && atrack.has_mcParticle() && atrack.mcMask() == 0) {
+          auto itRecToMc = mapRecToMc.find(trkBestCollId); // try mfttrackId ???
+          int64_t mcPartId = atrack.mcParticle().mcCollisionId();
+          auto const& idCompColl = atrack.compatibleCollIds();
+
+          // check if rec vertex is available in MC collisions
+          for (const auto& mcTrkId : mapRecToMc) {
+            if (mcTrkId.second == mcPartId) {
+              isTrueVtx = true;
+              break;
+            }
+          }
+
+          // check good rec vertex of corresponding mc coll is available in compatible rec coll
+          if (!idCompColl.empty()) {
+            for (auto const& id : idCompColl) {
+              auto itMcCollId = mapRecToMc.find(id);
+              if (itMcCollId != mapRecToMc.end()) {
+                if (itMcCollId->second == mcPartId) {
+                  isRecGoodMatch = true;
+                  break;
+                }
+              }
+            }
+          }
+
+          // check if there is good or bad collision
+          if (itRecToMc != mapRecToMc.end()) {
+            int mcTrkCollId = itRecToMc->second;
+            if (mcPartId == mcTrkCollId) { // particle.mcCollisionId == collision.mcCollisionId -> good vtx
+              vtxFlag = static_cast<int>(VertexStatusMC::kGood);
+            } else { // wrong vtx
+              vtxFlag = static_cast<int>(VertexStatusMC::kBad);
+            }
+          }
+
+          //
+          // check: vertex resolution of time-to-coll reassoc: pos(rec coll best) - gen (mc coll)
+          //
+          // const auto& particle = atrack.mcParticle_as<aod::McParticles>();
+          // // // auto collision = atrack.collision_as<CollisionsWithMCLabels>();  // not in use
+          // const auto& mcColl = particle.mcCollision_as<McCollsEx>();
+          if (mapVtxXrec.find(trkBestCollId) == mapVtxXrec.end()) {
+            continue;
+          }
+          if (mapVtxYrec.find(trkBestCollId) == mapVtxYrec.end()) {
+            continue;
+          }
+          if (mapVtxZrec.find(trkBestCollId) == mapVtxZrec.end()) {
+            continue;
+          }
+          if (mapRecToMc.find(trkBestCollId) == mapRecToMc.end()) {
+            continue;
+          }
+          vtxXbest = mapVtxXrec.find(trkBestCollId)->second;
+          vtxYbest = mapVtxYrec.find(trkBestCollId)->second;
+          vtxZbest = mapVtxZrec.find(trkBestCollId)->second;
+          // LOGP(info, "\t ---> \t .... \t vtxZrec: {} - collision.posZ(): {}", vtxZrec, collision.posZ());
+          int64_t mcCollIdRec = mapRecToMc.find(trkBestCollId)->second;
+          // int64_t mcCollId = itMC->second;
+          // LOGP(info, "\t ---> \t .... \t mcCollIdRec: {} - mcCollId: {} - bestMCCol: {}", mcCollIdRec, mcCollId, bestMCCol);
+          if (mapVtxXgen.find(mcCollIdRec) == mapVtxXgen.end()) {
+            continue;
+          }
+          if (mapVtxYgen.find(mcCollIdRec) == mapVtxYgen.end()) {
+            continue;
+          }
+          if (mapVtxZgen.find(mcCollIdRec) == mapVtxZgen.end()) {
+            continue;
+          }
+          // vertex resolution: best rec - mc associated to orig rec coll (first in time)
+          deltaXOrigMc = vtxXbest - mcCollision.posX();
+          deltaYOrigMc = vtxYbest - mcCollision.posY();
+          deltaZOrigMc = vtxZbest - mcCollision.posZ();
+          // vertex resolution: best rec - mc associated to best rec coll
+          deltaX = vtxXbest - mapVtxXgen.find(mcCollIdRec)->second;
+          deltaY = vtxYbest - mapVtxYgen.find(mcCollIdRec)->second;
+          deltaZ = vtxZbest - mapVtxZgen.find(mcCollIdRec)->second;
+        } // has_mcParticle
+
+        registry.fill(HIST("TimeAssocWithReassocMC/VtxStatus"), vtxFlag);
+
+        hTimeAssocWithReassocMC[0]->Fill(deltaXOrigMc, deltaYOrigMc, deltaZOrigMc);
+        hTimeAssocWithReassocMC[1]->Fill(deltaX, deltaY, deltaZ);
+
+        if (isTrueVtx) {
+          hTimeAssocWithReassocMC[3]->Fill(deltaXOrigMc, deltaYOrigMc, deltaZOrigMc);
+          hTimeAssocWithReassocMC[12]->Fill(deltaX, deltaY, deltaZ);
+          registry.fill(HIST("TimeAssocWithReassocMC/hReassocCheckVtxType"), static_cast<int>(ReassocCheckVtxType::kIsTrueVtxAllTrue));
+        } else {
+          registry.fill(HIST("TimeAssocWithReassocMC/hReassocCheckVtxType"), static_cast<int>(ReassocCheckVtxType::kIsTrueVtxAllFalse));
+        }
+        if (isRecGood) {
+          hTimeAssocWithReassocMC[4]->Fill(deltaXOrigMc, deltaYOrigMc, deltaZOrigMc);
+          hTimeAssocWithReassocMC[13]->Fill(deltaX, deltaY, deltaZ);
+          registry.fill(HIST("TimeAssocWithReassocMC/hReassocCheckVtxType"), static_cast<int>(ReassocCheckVtxType::kIsRecGoodAllTrue));
+        } else {
+          registry.fill(HIST("TimeAssocWithReassocMC/hReassocCheckVtxType"), static_cast<int>(ReassocCheckVtxType::kIsRecGoodAllFalse));
+        }
+        if (isRecGoodMatch) {
+          hTimeAssocWithReassocMC[5]->Fill(deltaXOrigMc, deltaYOrigMc, deltaZOrigMc);
+          hTimeAssocWithReassocMC[14]->Fill(deltaX, deltaY, deltaZ);
+          registry.fill(HIST("TimeAssocWithReassocMC/hReassocCheckVtxType"), static_cast<int>(ReassocCheckVtxType::kIsRecGoodMatchAllTrue));
+        } else {
+          registry.fill(HIST("TimeAssocWithReassocMC/hReassocCheckVtxType"), static_cast<int>(ReassocCheckVtxType::kIsRecGoodMatchAllFalse));
+        }
+
+        if (vtxFlag == static_cast<int>(VertexStatusMC::kGood)) {
+          if (isTrueVtx) {
+            hTimeAssocWithReassocMC[6]->Fill(deltaXOrigMc, deltaYOrigMc, deltaZOrigMc);
+            hTimeAssocWithReassocMC[15]->Fill(deltaX, deltaY, deltaZ);
+            registry.fill(HIST("TimeAssocWithReassocMC/hReassocCheckVtxType"), static_cast<int>(ReassocCheckVtxType::kIsTrueVtxVsGoodVtxTrue));
+          } else {
+            registry.fill(HIST("TimeAssocWithReassocMC/hReassocCheckVtxType"), static_cast<int>(ReassocCheckVtxType::kIsTrueVtxVsGoodVtxFalse));
+          }
+          if (isRecGood) {
+            hTimeAssocWithReassocMC[7]->Fill(deltaXOrigMc, deltaYOrigMc, deltaZOrigMc);
+            hTimeAssocWithReassocMC[16]->Fill(deltaX, deltaY, deltaZ);
+            registry.fill(HIST("TimeAssocWithReassocMC/hReassocCheckVtxType"), static_cast<int>(ReassocCheckVtxType::kIsRecGoodVsGoodVtxTrue));
+          } else {
+            registry.fill(HIST("TimeAssocWithReassocMC/hReassocCheckVtxType"), static_cast<int>(ReassocCheckVtxType::kIsRecGoodVsGoodVtxFalse));
+          }
+          if (isRecGoodMatch) {
+            hTimeAssocWithReassocMC[8]->Fill(deltaXOrigMc, deltaYOrigMc, deltaZOrigMc);
+            hTimeAssocWithReassocMC[17]->Fill(deltaX, deltaY, deltaZ);
+            registry.fill(HIST("TimeAssocWithReassocMC/hReassocCheckVtxType"), static_cast<int>(ReassocCheckVtxType::kIsRecGoodMatchVsGoodVtxTrue));
+          } else {
+            registry.fill(HIST("TimeAssocWithReassocMC/hReassocCheckVtxType"), static_cast<int>(ReassocCheckVtxType::kIsRecGoodMatchVsGoodVtxFalse));
+          }
+        }
+
+        if (vtxFlag == static_cast<int>(VertexStatusMC::kBad)) {
+          if (isTrueVtx) {
+            hTimeAssocWithReassocMC[9]->Fill(deltaXOrigMc, deltaYOrigMc, deltaZOrigMc);
+            hTimeAssocWithReassocMC[18]->Fill(deltaX, deltaY, deltaZ);
+            registry.fill(HIST("TimeAssocWithReassocMC/hReassocCheckVtxType"), static_cast<int>(ReassocCheckVtxType::kIsTrueVtxVsBadVtxTrue));
+          } else {
+            registry.fill(HIST("TimeAssocWithReassocMC/hReassocCheckVtxType"), static_cast<int>(ReassocCheckVtxType::kIsTrueVtxVsBadVtxFalse));
+          }
+          if (isRecGood) {
+            hTimeAssocWithReassocMC[10]->Fill(deltaXOrigMc, deltaYOrigMc, deltaZOrigMc);
+            hTimeAssocWithReassocMC[19]->Fill(deltaX, deltaY, deltaZ);
+            registry.fill(HIST("TimeAssocWithReassocMC/hReassocCheckVtxType"), static_cast<int>(ReassocCheckVtxType::kIsRecGoodVsBadVtxTrue));
+          } else {
+            registry.fill(HIST("TimeAssocWithReassocMC/hReassocCheckVtxType"), static_cast<int>(ReassocCheckVtxType::kIsRecGoodVsBadVtxFalse));
+          }
+          if (isRecGoodMatch) {
+            hTimeAssocWithReassocMC[11]->Fill(deltaXOrigMc, deltaYOrigMc, deltaZOrigMc);
+            hTimeAssocWithReassocMC[20]->Fill(deltaX, deltaY, deltaZ);
+            registry.fill(HIST("TimeAssocWithReassocMC/hReassocCheckVtxType"), static_cast<int>(ReassocCheckVtxType::kIsRecGoodMatchVsBadVtxTrue));
+          } else {
+            registry.fill(HIST("TimeAssocWithReassocMC/hReassocCheckVtxType"), static_cast<int>(ReassocCheckVtxType::kIsRecGoodMatchVsBadVtxFalse));
+          }
+        }
+      }
+    }
+    LOG(info) << "No MC: " << nNoMC;
+  }
+  PROCESS_SWITCH(DndetaMFTPbPb, processTimeAssocWithReassocMC, "process MC: check MFT tracks in reassociation with compatible collisions", false);
+
+  Partition<MftTracksWCollsMC> tracksInAcc = (aod::fwdtrack::eta < trackCuts.maxEta) && (aod::fwdtrack::eta > trackCuts.minEta);
+
+  void processAssocMC(CollisionsWithMCLabels const& collisions,
+                      MftTracksWCollsMC const& tracks,
+                      aod::McParticles const& /*particles*/,
+                      aod::McCollisions const& /*mccollisions*/
+  )
+  {
+    const auto& nRecoColls = collisions.size();
+    // Generated evets with >= 1 reco collisions
+    if (nRecoColls > CintZero) {
+      auto maxNcontributors = -1;
+      auto bestCollIndex = -1;
+      for (const auto& collision : collisions) {
+        if (maxNcontributors < collision.numContrib()) {
+          maxNcontributors = collision.numContrib();
+          bestCollIndex = collision.globalIndex();
+        }
+      }
+      for (const auto& collision : collisions) {
+        if (!isGoodEvent<true>(collision)) {
+          continue;
+        }
+        // Select collisions with the largest number of contributors
+        if (gConf.cfgRemoveSplitVertex && (bestCollIndex != collision.globalIndex())) {
+          continue;
+        }
+        if (!collision.has_mcCollision()) {
+          continue;
+        }
+        auto mcCollision = collision.template mcCollision_as<aod::McCollisions>();
+
+        if (eventCuts.useZVtxCutMC && (std::abs(mcCollision.posZ()) >= eventCuts.maxZvtx)) {
+          continue;
+        }
+
+        int nTrk = 0, nFakeTrk = 0, nGoodTrk = 0;
+        for (const auto& track : tracks) {
+          uint index = uint(track.collisionId() >= 0);
+          if (track.has_mcParticle() && track.mcMask() == 0) {
+            // auto particle = track.mcParticle_as<FiltParticles>();
+            const auto& particle = track.mcParticle();
+            auto trkCollId = track.has_collision() ? track.collisionId() : -1;
+            auto ids = track.compatibleCollIds();
+            qaregistry.fill(HIST("TrackToColl/histTrackNumColls"), ids.size());
+            qaregistry.fill(HIST("TrackToColl/hAmbTrackType"), static_cast<int>(AmbTrkType::kAll));
+
+            if (ids.empty() || (ids.size() == 1 && trkCollId == ids[0])) {
+              if (ids.empty()) {
+                qaregistry.fill(HIST("TrackToColl/hAmbTrackType"), static_cast<int>(AmbTrkType::kOrphan));
+              }
+              if (ids.size() == 1 && trkCollId == ids[0]) {
+                qaregistry.fill(HIST("TrackToColl/hAmbTrackType"), static_cast<int>(AmbTrkType::kNonAmb));
+              }
+            }
+            if (gConf.cfgRemoveOrphanTracks && ids.empty()) {
+              continue;
+            }
+            if (gConf.cfgRemoveTrivialAssoc) {
+              if (ids.empty() || (ids.size() == 1 && trkCollId == ids[0])) {
+                qaregistry.fill(HIST("TrackToColl/histNonAmbTrackNumColls"), ids.size());
+                continue;
+              }
+            }
+            if (gConf.cfgRemoveAmbiguousTracks && (track.compatibleCollIds().size() != 1)) {
+              continue;
+            }
+            nTrk++;
+            if ((particle.mcCollisionId() != collision.mcCollision().globalIndex())) {
+              nFakeTrk++;
+              continue;
+            }
+            if (collision.mcCollisionId() == particle.mcCollisionId()) {
+              nGoodTrk++;
+            }
+            if (ids.size() > 0) {
+              if (ids.size() == 1) {
+                if (trkCollId != ids[0]) {
+                  qaregistry.fill(HIST("TrackToColl/hAmbTrackType"), static_cast<int>(AmbTrkType::kAmb));
+                } else {
+                  qaregistry.fill(HIST("TrackToColl/hAmbTrackType"), static_cast<int>(AmbTrkType::kNonAmbSame));
+                }
+              } else {
+                qaregistry.fill(HIST("TrackToColl/hAmbTrackType"), static_cast<int>(AmbTrkType::kAmbGt1));
+              }
+            }
+
+            bool isAmbiguous = (ids.size() > 1);
+            if (isAmbiguous) {
+              qaregistry.fill(HIST("TrackToColl/histAmbTrackNumColls"), ids.size());
+              std::vector<float> ambVtxZ{};
+              for (const auto& collIdx : ids) {
+                const auto& ambColl = collisions.rawIteratorAt(collIdx);
+                ambVtxZ.push_back(ambColl.posZ());
+              }
+              if (!ambVtxZ.empty()) {
+                qaregistry.fill(HIST("TrackToColl/histAmbTrackZvtxRMS"), computeRMS(ambVtxZ));
+              }
+            }
+
+            float deltaX = -999.f;
+            float deltaY = -999.f;
+            float deltaZ = -999.f;
+            if (index) {
+              const auto& collision = track.template collision_as<CollisionsWithMCLabels>();
+              const auto& mcCollision = particle.template mcCollision_as<aod::McCollisions>();
+              deltaX = collision.posX() - mcCollision.posX();
+              deltaY = collision.posY() - mcCollision.posY();
+              deltaZ = collision.posZ() - mcCollision.posZ();
+              if (collision.has_mcCollision() && collision.mcCollisionId() == particle.mcCollisionId()) {
+                hCollAssoc[index + 1]->Fill(track.pt(), track.eta(), deltaX, deltaY, deltaZ);
+              } else {
+                if (isAmbiguous) {
+                  for (const auto& collIdx : ids) {
+                    auto ambColl = collisions.rawIteratorAt(collIdx);
+                    if (ambColl.has_mcCollision() && ambColl.mcCollisionId() == particle.mcCollisionId()) {
+                      hCollAssoc[index + 2]->Fill(track.pt(), track.eta(), deltaX, deltaY, deltaZ);
+                      // hCollAssoc[index + 2]->Fill(track.pt(), track.eta(), ambColl.posX() - mcCollision.posX(), ambColl.posY() - mcCollision.posY(), ambColl.posZ() - mcCollision.posZ());
+                      break;
+                    }
+                  }
+                }
+              }
+              hCollAssoc[index]->Fill(track.pt(), track.eta(), deltaX, deltaY, deltaZ);
+            }
+          } else {
+            hCollAssoc[index]->Fill(track.pt(), track.eta(), -999.f, -999.f, -999.f);
+          }
+        }
+        float frac = (nTrk > 0) ? static_cast<float>(nGoodTrk) / nTrk : -1.;
+        qaregistry.fill(HIST("TrackToColl/histFracGoodTracks"), frac);
+        float fracFake = (nTrk > 0) ? static_cast<float>(nFakeTrk) / nTrk : -1.;
+        qaregistry.fill(HIST("TrackToColl/histFracTracksFakeMcColl"), fracFake);
+      }
+    }
+  }
+
+  PROCESS_SWITCH(DndetaMFTPbPb, processAssocMC, "Process collision-association information, requires extra table from TrackToCollisionAssociation task (fillTableOfCollIdsPerTrack=true)", false);
+
+  template <typename B>
+  void processReAssocMC(CollisionsWithMCLabels const& collisions,
+                        B const& besttracks,
+                        FiltMcMftTracks const& /*tracks*/,
+                        aod::McCollisions const& /*mcCollisions*/,
+                        aod::McParticles const& /*particles*/
+  )
+  {
+    const auto& nRecoColls = collisions.size();
+    registry.fill(HIST("ReAssocMC/hNReAssocRecoColls"), 1.f, nRecoColls);
+
+    if (nRecoColls > CintZero) {
+
+      mapVtxXrec.clear();
+      mapVtxYrec.clear();
+      mapVtxZrec.clear();
+      mapMcCollIdPerRecColl.clear();
+      mapVtxXrec.reserve(collisions.size());
+      mapVtxYrec.reserve(collisions.size());
+      mapVtxZrec.reserve(collisions.size());
+      mapMcCollIdPerRecColl.reserve(collisions.size());
+
+      auto maxNcontributors = -1;
+      auto bestCollIndex = -1;
+      for (auto const& collision : collisions) {
+        if (maxNcontributors < collision.numContrib()) {
+          maxNcontributors = collision.numContrib();
+          bestCollIndex = collision.globalIndex();
+          mapVtxXrec.emplace(collision.globalIndex(), collision.posX());
+          mapVtxYrec.emplace(collision.globalIndex(), collision.posY());
+          mapVtxZrec.emplace(collision.globalIndex(), collision.posZ());
+          mapMcCollIdPerRecColl.emplace(collision.globalIndex(), collision.mcCollisionId());
+        }
+      }
+
+      int nNoMC{0};
+      for (const auto& collision : collisions) {
+        registry.fill(HIST("ReAssocMC/hReAssocMCEventStatus"), static_cast<int>(ReAssocMCEventStatus::kEvtReAsAll));
+        if (!isGoodEvent<true>(collision)) {
+          continue;
+        }
+        registry.fill(HIST("ReAssocMC/hReAssocMCEventStatus"), static_cast<int>(ReAssocMCEventStatus::kEvtReAsSelected));
+        if (!collision.has_mcCollision()) {
+          continue;
+        }
+        registry.fill(HIST("ReAssocMC/hReAssocMCEventStatus"), static_cast<int>(ReAssocMCEventStatus::kEvtReAsHasMcColl));
+
+        int64_t recCollId = collision.globalIndex();
+        auto itMC = mapMcCollIdPerRecColl.find(recCollId);
+        if (itMC == mapMcCollIdPerRecColl.end()) {
+          nNoMC++;
+          continue;
+        }
+
+        auto mcColl = collision.template mcCollision_as<aod::McCollisions>();
+        // Select collisions with the largest number of contributors
+        if (gConf.cfgRemoveSplitVertex && (bestCollIndex != collision.globalIndex())) {
+          continue;
+        }
+        registry.fill(HIST("ReAssocMC/hReAssocMCEventStatus"), static_cast<int>(ReAssocMCEventStatus::kEvtReAsSplitVtxRemoved));
+        if (eventCuts.useZVtxCutMC && (std::abs(mcColl.posZ()) >= eventCuts.maxZvtx)) {
+          continue;
+        }
+        registry.fill(HIST("ReAssocMC/hReAssocMCEventStatus"), static_cast<int>(ReAssocMCEventStatus::kEvtReAsZVtxCutMC));
+
+        for (auto const& atrack : besttracks) {
+          registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkReAssocAll));
+          if (!isBestTrackSelected<true>(atrack)) {
+            continue;
+          }
+          registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkBestSel));
+
+          auto itrack = atrack.template mfttrack_as<FiltMcMftTracks>();
+
+          if (!isTrackSelected<true>(itrack)) {
+            continue;
+          }
+          registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkSel));
+          float phi = itrack.phi();
+          o2::math_utils::bringTo02Pi(phi);
+          if (phi < Czero || TwoPI < phi) {
+            continue;
+          }
+          if (!itrack.has_collision()) {
+            continue;
+          }
+          registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkHasColl));
+          if (gConf.cfgRemoveReassigned) {
+            if (itrack.collisionId() != atrack.bestCollisionId()) {
+              continue;
+            }
+            registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkReassignedRemoved));
+          }
+
+          if (itrack.collisionId() >= 0 && itrack.has_mcParticle() && itrack.mcMask() == 0) {
+
+            auto particle = itrack.template mcParticle_as<aod::McParticles>();
+            if (!isChrgParticle(particle.pdgCode())) {
+              continue;
+            }
+            if (gConf.cfgUseParticleSel && !isParticleSelected(particle)) {
+              continue;
+            }
+            auto collision = itrack.template collision_as<CollisionsWithMCLabels>();
+
+            float deltaX = -999.f;
+            float deltaY = -999.f;
+            float deltaZ = -999.f;
+
+            if (mapVtxXrec.find(atrack.bestCollisionId()) == mapVtxXrec.end()) {
+              continue;
+            }
+            if (mapVtxYrec.find(atrack.bestCollisionId()) == mapVtxYrec.end()) {
+              continue;
+            }
+            if (mapVtxZrec.find(atrack.bestCollisionId()) == mapVtxZrec.end()) {
+              continue;
+            }
+            if (mapMcCollIdPerRecColl.find(atrack.bestCollisionId()) == mapMcCollIdPerRecColl.end()) {
+              continue;
+            }
+            const float vtxXbest = mapVtxXrec.find(atrack.bestCollisionId())->second;
+            const float vtxYbest = mapVtxYrec.find(atrack.bestCollisionId())->second;
+            const float vtxZbest = mapVtxZrec.find(atrack.bestCollisionId())->second;
+            // LOGP(info, "\t ---> \t .... \t vtxZrec: {} - collision.posZ(): {}", vtxZrec, collision.posZ());
+            const float mcCollIdRec = mapMcCollIdPerRecColl.find(atrack.bestCollisionId())->second;
+            // LOGP(info, "\t ---> \t .... \t mcCollIdRec: {} - bestMCCol: {}", mcCollIdRec, bestMCCol);
+
+            auto vtxXtruth = atrack.mcParticle().mcCollision().posX();
+            auto vtxYtruth = atrack.mcParticle().mcCollision().posY();
+            auto vtxZtruth = atrack.mcParticle().mcCollision().posZ();
+
+            deltaX = vtxXbest - vtxXtruth;
+            deltaY = vtxYbest - vtxYtruth;
+            deltaZ = vtxZbest - vtxZtruth;
+
+            const auto dcaXtruth(particle.vx() - particle.mcCollision().posX());
+            const auto dcaYtruth(particle.vy() - particle.mcCollision().posY());
+            const auto dcaZtruth(particle.vz() - particle.mcCollision().posZ());
+            auto dcaXYtruth = std::sqrt(dcaXtruth * dcaXtruth + dcaYtruth * dcaYtruth);
+
+            // check good rec vertex of corresponding mc coll is available in compatible rec coll
+            auto const& ids = atrack.compatibleCollIds();
+            bool isInCoColl = false;
+            if (atrack.ambDegree() != 0) {
+              const int mcCollId = atrack.mcParticle().mcCollisionId();
+              if (!ids.empty()) {
+                for (auto const& id : ids) {
+                  auto itMcCollId = mapMcCollIdPerRecColl.find(id);
+                  if (itMcCollId != mapMcCollIdPerRecColl.end()) {
+                    if (itMcCollId->second == mcCollId) {
+                      isInCoColl = true;
+                      break;
+                    }
+                  }
+                }
+              }
+            }
+
+            registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkHasMcPart));
+
+            if (ids.size() > 0) {
+              if (ids.size() == 1) {
+                if (itrack.collisionId() == ids[0]) { // non ambiguous
+                  registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbAll));
+                  hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbAll)]->Fill(particle.pt(), particle.eta(), deltaX, deltaY, deltaZ);
+                  hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbAll)]->Fill(particle.pt(), particle.eta(), 0., 0., dcaXYtruth, dcaZtruth);
+                  if (collision.mcCollisionId() == particle.mcCollisionId()) {
+                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbGood));
+                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbGood)]->Fill(particle.pt(), particle.eta(), deltaX, deltaY, deltaZ);
+                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbGood)]->Fill(particle.pt(), particle.eta(), 0., 0., dcaXYtruth, dcaZtruth);
+                  } else {
+                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbBad));
+                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbBad)]->Fill(particle.pt(), particle.eta(), deltaX, deltaY, deltaZ);
+                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbBad)]->Fill(particle.pt(), particle.eta(), 0., 0., dcaXYtruth, dcaZtruth);
+                  }
+                } else if (itrack.collisionId() != ids[0]) { // ambiguous extra
+                  registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkAmbAll));
+                  hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkAmbAll)]->Fill(particle.pt(), particle.eta(), deltaX, deltaY, deltaZ);
+                  hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkAmbAll)]->Fill(particle.pt(), particle.eta(), atrack.bestDCAXY(), atrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
+
+                  if (collision.mcCollisionId() == particle.mcCollisionId()) {
+                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkAmbGood));
+                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkAmbGood)]->Fill(particle.pt(), particle.eta(), deltaX, deltaY, deltaZ);
+                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkAmbGood)]->Fill(particle.pt(), particle.eta(), atrack.bestDCAXY(), atrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
+                  } else {
+                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkAmbBad));
+                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkAmbBad)]->Fill(particle.pt(), particle.eta(), deltaX, deltaY, deltaZ);
+                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkAmbBad)]->Fill(particle.pt(), particle.eta(), atrack.bestDCAXY(), atrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
+                  }
+                } else { // non ambiguous (extra)
+                  registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbAllE));
+                  hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbAllE)]->Fill(particle.pt(), particle.eta(), deltaX, deltaY, deltaZ);
+                  hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbAllE)]->Fill(particle.pt(), particle.eta(), 0., 0., dcaXYtruth, dcaZtruth);
+
+                  if (collision.mcCollisionId() == particle.mcCollisionId()) {
+                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbGoodE));
+                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbGoodE)]->Fill(particle.pt(), particle.eta(), deltaX, deltaY, deltaZ);
+                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbGoodE)]->Fill(particle.pt(), particle.eta(), 0., 0., dcaXYtruth, dcaZtruth);
+                  } else {
+                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkNonAmbBadE));
+                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbBadE)]->Fill(particle.pt(), particle.eta(), deltaX, deltaY, deltaZ);
+                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkNonAmbBadE)]->Fill(particle.pt(), particle.eta(), 0., 0., dcaXYtruth, dcaZtruth);
+                  }
+                }
+              } else { // ambiguous
+
+                if (itrack.collisionId() == atrack.bestCollisionId()) { // associated
+                  registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kAssoc));
+                  hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssoc)]->Fill(particle.pt(), particle.eta(), deltaX, deltaY, deltaZ);
+                  hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssoc)]->Fill(particle.pt(), particle.eta(), atrack.bestDCAXY(), atrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
+
+                  if (collision.has_mcCollision() && mcCollIdRec == particle.mcCollisionId()) { // good coll
+                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kAssocGood));
+                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocGood)]->Fill(particle.pt(), particle.eta(), deltaX, deltaY, deltaZ);
+                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocGood)]->Fill(particle.pt(), particle.eta(), atrack.bestDCAXY(), atrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
+
+                    if (isInCoColl) { // coll vertex is among compatible colls
+                      registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kAssocGoodIsCompTrue));
+                      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocGoodIsCompTrue)]->Fill(particle.pt(), particle.eta(), deltaX, deltaY, deltaZ);
+                      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocGoodIsCompTrue)]->Fill(particle.pt(), particle.eta(), atrack.bestDCAXY(), atrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
+                    } else {
+                      registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kAssocGoodIsCompFalse));
+                      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocGoodIsCompFalse)]->Fill(particle.pt(), particle.eta(), deltaX, deltaY, deltaZ);
+                      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocGoodIsCompFalse)]->Fill(particle.pt(), particle.eta(), atrack.bestDCAXY(), atrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
+                    }
+                  } else {
+                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kAssocBad));
+                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocBad)]->Fill(particle.pt(), particle.eta(), deltaX, deltaY, deltaZ);
+                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocBad)]->Fill(particle.pt(), particle.eta(), atrack.bestDCAXY(), atrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
+
+                    if (isInCoColl) { // coll vertex is among compatible colls
+                      registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kAssocBadIsCompTrue));
+                      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocBadIsCompTrue)]->Fill(particle.pt(), particle.eta(), deltaX, deltaY, deltaZ);
+                      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocBadIsCompTrue)]->Fill(particle.pt(), particle.eta(), atrack.bestDCAXY(), atrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
+                    } else {
+                      registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kAssocBadIsCompFalse));
+                      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocBadIsCompFalse)]->Fill(particle.pt(), particle.eta(), deltaX, deltaY, deltaZ);
+                      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kAssocBadIsCompFalse)]->Fill(particle.pt(), particle.eta(), atrack.bestDCAXY(), atrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
+                    }
+                  }
+                } else { // reassociated
+                  registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kReAssoc));
+                  if (collision.has_mcCollision() && mcCollIdRec == particle.mcCollisionId()) { // good coll
+                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kReAssocGood));
+                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocGood)]->Fill(particle.pt(), particle.eta(), deltaX, deltaY, deltaZ);
+                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocGood)]->Fill(particle.pt(), particle.eta(), atrack.bestDCAXY(), atrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
+
+                    if (isInCoColl) { // coll vertex is among compatible colls
+                      registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kReAssocGoodIsCompTrue));
+                      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocGoodIsCompTrue)]->Fill(particle.pt(), particle.eta(), deltaX, deltaY, deltaZ);
+                      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocGoodIsCompTrue)]->Fill(particle.pt(), particle.eta(), atrack.bestDCAXY(), atrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
+                    } else {
+                      registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kReAssocGoodIsCompFalse));
+                      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocGoodIsCompFalse)]->Fill(particle.pt(), particle.eta(), deltaX, deltaY, deltaZ);
+                      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocGoodIsCompFalse)]->Fill(particle.pt(), particle.eta(), atrack.bestDCAXY(), atrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
+                    }
+                  } else {
+                    registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kReAssocBad));
+                    hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocBad)]->Fill(particle.pt(), particle.eta(), deltaX, deltaY, deltaZ);
+                    hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocBad)]->Fill(particle.pt(), particle.eta(), atrack.bestDCAXY(), atrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
+
+                    if (isInCoColl) { // coll vertex is among compatible colls
+                      registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kReAssocBadIsCompTrue));
+                      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocBadIsCompTrue)]->Fill(particle.pt(), particle.eta(), deltaX, deltaY, deltaZ);
+                      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocBadIsCompTrue)]->Fill(particle.pt(), particle.eta(), atrack.bestDCAXY(), atrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
+                    } else {
+                      registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kReAssocBadIsCompFalse));
+                      hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kReAssocBadIsCompFalse)]->Fill(particle.pt(), particle.eta(), deltaX, deltaY, deltaZ);
+                      hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kReAssocBadIsCompFalse)]->Fill(particle.pt(), particle.eta(), atrack.bestDCAXY(), atrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      mapVtxXrec.clear();
+      mapVtxYrec.clear();
+      mapVtxZrec.clear();
+      mapMcCollIdPerRecColl.clear();
+      LOG(info) << "No MC: " << nNoMC;
+    }
+  }
+
+  void processReAssoc3dMC(CollisionsWithMCLabels const& collisions,
+                          BestTracks3dWCollsMC const& besttracks,
+                          FiltMcMftTracks const& tracks,
+                          aod::McCollisions const& mcCollisions,
+                          aod::McParticles const& particles)
+  {
+    processReAssocMC<BestTracks3dWCollsMC>(collisions, besttracks, tracks, mcCollisions, particles);
+  }
+  PROCESS_SWITCH(DndetaMFTPbPb, processReAssoc3dMC, "Process re-association information based on BestCollisionsFwd3d table", false);
+
   Preslice<MftTracksWCollsMC> compCollPerCol = o2::aod::fwdtrack::collisionId;
 
   /// @brief process function to check reassociation efficiency
-  void processReassocEfficiency(CollsMCExtra::iterator const& mcCollision,
+  void processReassocEfficiency(CollsMCExtraMult::iterator const& mcCollision,
                                 soa::SmallGroups<CollsGenCentFT0C> const& collisions,
                                 MftTracksWCollsMC const& tracks,
                                 aod::McParticles const& particles,
@@ -3739,12 +4827,10 @@ struct DndetaMFTPbPb {
           continue;
         }
         // Select collisions with the largest number of contributors
-        if (bestCollIndex != collision.globalIndex()) {
+        if (gConf.cfgRemoveSplitVertex && (bestCollIndex != collision.globalIndex())) {
           continue;
         }
-
         registry.fill(HIST("Events/Centrality/ReEffStatus"), 1, crec);
-
         if (!collision.has_mcCollision()) {
           continue;
         }
@@ -3769,8 +4855,17 @@ struct DndetaMFTPbPb {
 
           auto bestCol = track.has_collision() ? track.collisionId() : -1;
           uint index = uint(track.collisionId() >= 0);
-          bool isAmbiguous = (track.compatibleCollIds().size() > 1);
+          auto ids = track.compatibleCollIds();
+          bool isAmbiguous = (ids.size() > 1);
 
+          if (gConf.cfgRemoveReassigned) {
+            if (ids.empty() || (ids.size() == 1 && bestCol == ids[0])) {
+              continue;
+            }
+          }
+          if (gConf.cfgRemoveOrphanTracks && ids.empty()) {
+            continue;
+          }
           if (!track.has_mcParticle()) {
             continue;
           }
@@ -3784,18 +4879,11 @@ struct DndetaMFTPbPb {
           if (gConf.cfgUseParticleSel && !isParticleSelected(particle)) {
             continue;
           }
-
-          if (gConf.cfgRemoveReassigned) {
-            if (track.compatibleCollIds().empty() || (track.compatibleCollIds().size() == 1 && bestCol == track.compatibleCollIds()[0])) {
-              continue;
-            }
-          }
-
           int bestMCCol = -1;
           o2::track::TrackParCovFwd trackPar = o2::aod::fwdtrackutils::getTrackParCovFwdShift(track, mZShift);
 
           if (index) {
-            auto mcCollision = particle.mcCollision_as<CollsMCExtra>();
+            auto mcCollision = particle.mcCollision_as<CollsMCExtraMult>();
             if (eventCuts.useZDiffCut) {
               if (std::abs(collision.posZ() - mcCollision.posZ()) > eventCuts.maxZvtxDiff) {
                 continue;
@@ -3909,86 +4997,302 @@ struct DndetaMFTPbPb {
 
   PROCESS_SWITCH(DndetaMFTPbPb, processReassocEfficiency, "Process collision-reassociation efficiency based on track propagation DCA 3D (in FT0C centrality bins)", false);
 
-  /// @brief process function to calculate signal loss based on MC
-  void processEventAndSignalLossCentFT0C(CollsMCExtra::iterator const& mcCollision,
-                                         soa::SmallGroups<soa::Join<CollsCentFT0C, aod::McCollisionLabels>> const& collisions,
-                                         FiltParticles const& particles)
+  Preslice<MftTracksWCollsMC> mftTrkCompCollperCol = o2::aod::fwdtrack::collisionId;
+
+  /// @brief process template function for DCA MC checks
+  template <typename C, typename MC>
+  void processSecondariesMC(typename soa::Join<C, aod::McCollisionLabels> const& collisions,
+                            MftTracksWCollsMC const& tracks,
+                            MC const& mcCollisions,
+                            aod::McParticles const& particles,
+                            ExtBCs const& bcs)
   {
-    registry.fill(HIST("Events/Centrality/hNRecCollsSigEvtLoss"), 1.f, collisions.size());
+    registry.fill(HIST("Events/hNGenRecColls"), 1.f, collisions.size());
+    registry.fill(HIST("Events/hNGenRecColls"), 2.f, mcCollisions.size());
 
-    if (gConf.cfgUseInelgt0 && !mcCollision.isInelGt0()) {
+    if (bcs.size() == 0) {
       return;
     }
-    if (eventCuts.useZVtxCutMC && (std::abs(mcCollision.posZ()) >= eventCuts.maxZvtx)) {
-      return;
-    }
+    auto bc = bcs.begin();
+    initCCDB(bc);
 
-    bool gtZeroColl = false;
-    auto maxNcontributors = -1;
-    auto centrality = -1;
-    for (auto const& collision : collisions) {
-      if (!isGoodEvent<false>(collision)) {
-        continue;
-      }
-      if (std::abs(collision.posZ()) >= eventCuts.maxZvtx) {
-        continue;
-      }
-      if (maxNcontributors < collision.numContrib()) {
-        maxNcontributors = collision.numContrib();
-        centrality = getRecoCent(collision);
-      }
-      gtZeroColl = true;
-    }
-
-    auto perCollMCsample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
-    auto multMCNParticlesEtaMFT = countPart(perCollMCsample);
-
-    registry.fill(HIST("Events/Centrality/EvtSigLossStatus"), 1., centrality);
-    registry.fill(HIST("Events/Centrality/hMultGenVsCent"), centrality, mcCollision.multMCFT0C());
-    registry.fill(HIST("Events/Centrality/hMultGenVsCentNParticlesEta05"), centrality, mcCollision.multMCNParticlesEta05());
-    registry.fill(HIST("Events/Centrality/hMultGenVsCentNParticlesEtaMFT"), centrality, multMCNParticlesEtaMFT);
-
-    if (collisions.size() == 0) {
-      registry.fill(HIST("Events/Centrality/EvtSigLossStatus"), 3., centrality);
-    }
-
-    if (gtZeroColl) {
-      registry.fill(HIST("Events/Centrality/EvtSigLossStatus"), 2., centrality);
-      registry.fill(HIST("Events/Centrality/hMultGenVsCentRec"), centrality, mcCollision.multMCFT0C());
-      registry.fill(HIST("Events/Centrality/hMultGenVsCentRecNParticlesEta05"), centrality, mcCollision.multMCNParticlesEta05());
-      registry.fill(HIST("Events/Centrality/hMultGenVsCentRecNParticlesEtaMFT"), centrality, multMCNParticlesEtaMFT);
-    }
-
-    for (auto const& particle : particles) {
-      if (!isChrgParticle(particle.pdgCode())) {
-        continue;
-      }
-      if (gConf.cfgUseParticleSel && !isParticleSelected(particle)) {
-        continue;
-      }
-
-      float phi = particle.phi();
-      o2::math_utils::bringTo02Pi(phi);
-      if (phi < Czero || TwoPI < phi) {
-        continue;
-      }
-
-      registry.fill(HIST("Tracks/Centrality/EtaCentVsMultGen_t"), particle.eta(), centrality, mcCollision.multMCFT0C());
-      registry.fill(HIST("Tracks/Centrality/EtaGen_t"), particle.eta(), centrality);
-
-      if (gtZeroColl) {
-        float phi = particle.phi();
-        o2::math_utils::bringTo02Pi(phi);
-        if (phi < Czero || TwoPI < phi) {
+    // Generated evets with >= 1 reco collisions
+    const auto& nRecoColls = collisions.size();
+    if (nRecoColls > CintZero) {
+      auto maxNcontributors = -1;
+      auto bestCollIndex = -1;
+      auto crec = -1;
+      for (auto const& collision : collisions) {
+        if (!isGoodEvent<false>(collision)) {
           continue;
         }
-        registry.fill(HIST("Tracks/Centrality/EtaCentVsMultGen"), particle.eta(), centrality, mcCollision.multMCFT0C());
-        registry.fill(HIST("Tracks/Centrality/EtaGen"), particle.eta(), centrality);
+        if (maxNcontributors < collision.numContrib()) {
+          maxNcontributors = collision.numContrib();
+          bestCollIndex = collision.globalIndex();
+          if constexpr (has_reco_cent<C>) {
+            crec = getRecoCent(collision);
+          }
+        }
+      }
+
+      for (const auto& collision : collisions) {
+        if constexpr (has_reco_cent<C>) {
+          qaregistry.fill(HIST("Events/Centrality/hTrackToCollEvtType"), static_cast<int>(TrackToCollEvtType::kAllRecColl), crec);
+        } else {
+          qaregistry.fill(HIST("Events/hTrackToCollEvtType"), static_cast<int>(TrackToCollEvtType::kAllRecColl));
+        }
+        // At least one generated primary in MFT acceptance + TVX triggered collisions
+        if (gConf.cfgUseInelgt0wMFT && !isInelGt0wMft(particles)) {
+          return;
+        }
+        if constexpr (has_reco_cent<C>) {
+          qaregistry.fill(HIST("Events/Centrality/hTrackToCollEvtType"), static_cast<int>(TrackToCollEvtType::kIsInelGt0wMft), crec);
+        } else {
+          qaregistry.fill(HIST("Events/hTrackToCollEvtType"), static_cast<int>(TrackToCollEvtType::kIsInelGt0wMft));
+        }
+        if (!isGoodEvent<true>(collision)) {
+          continue;
+        }
+        if constexpr (has_reco_cent<C>) {
+          qaregistry.fill(HIST("Events/Centrality/hTrackToCollEvtType"), static_cast<int>(TrackToCollEvtType::kEvtSel), crec);
+        } else {
+          qaregistry.fill(HIST("Events/hTrackToCollEvtType"), static_cast<int>(TrackToCollEvtType::kEvtSel));
+        }
+        // Select collisions with the largest number of contributors
+        if (gConf.cfgRemoveSplitVertex && (bestCollIndex != collision.globalIndex())) {
+          continue;
+        }
+        if constexpr (has_reco_cent<C>) {
+          qaregistry.fill(HIST("Events/Centrality/hTrackToCollEvtType"), static_cast<int>(TrackToCollEvtType::kBestCollIdx), crec);
+        } else {
+          qaregistry.fill(HIST("Events/hTrackToCollEvtType"), static_cast<int>(TrackToCollEvtType::kBestCollIdx));
+        }
+        if (!collision.has_mcCollision()) {
+          continue;
+        }
+        if constexpr (has_reco_cent<C>) {
+          qaregistry.fill(HIST("Events/Centrality/hTrackToCollEvtType"), static_cast<int>(TrackToCollEvtType::kIsMcColl), crec);
+        } else {
+          qaregistry.fill(HIST("Events/hTrackToCollEvtType"), static_cast<int>(TrackToCollEvtType::kIsMcColl));
+        }
+
+        auto trkPerColl = tracks.sliceBy(mftTrkCompCollperCol, collision.globalIndex());
+        for (auto const& track : trkPerColl) {
+          if (!isTrackSelected<false>(track)) {
+            continue;
+          }
+          if (!track.has_collision()) {
+            continue;
+          }
+          auto trkCollId = track.has_collision() ? track.collisionId() : -1;
+          auto ids = track.compatibleCollIds();
+          bool isAmbiguous = (ids.size() > 1);
+
+          if constexpr (has_reco_cent<C>) {
+            qaregistry.fill(HIST("TrkCompColls/Centrality/hAmbTrackType"), static_cast<int>(AmbTrkType::kAll), crec);
+          } else {
+            qaregistry.fill(HIST("TrkCompColls/hAmbTrackType"), static_cast<int>(AmbTrkType::kAll));
+          }
+          if (ids.empty()) {
+            if constexpr (has_reco_cent<C>) {
+              qaregistry.fill(HIST("TrkCompColls/Centrality/hAmbTrackType"), static_cast<int>(AmbTrkType::kOrphan), crec);
+            } else {
+              qaregistry.fill(HIST("TrkCompColls/hAmbTrackType"), static_cast<int>(AmbTrkType::kOrphan));
+            }
+          }
+          if (ids.size() > 0) {
+            if (ids.size() == 1) {
+              if (trkCollId == ids[0]) {
+                if constexpr (has_reco_cent<C>) {
+                  qaregistry.fill(HIST("TrkCompColls/Centrality/hAmbTrackType"), static_cast<int>(AmbTrkType::kNonAmb), crec);
+                } else {
+                  qaregistry.fill(HIST("TrkCompColls/hAmbTrackType"), static_cast<int>(AmbTrkType::kNonAmb));
+                }
+              } else if (trkCollId != ids[0]) {
+                if constexpr (has_reco_cent<C>) {
+                  qaregistry.fill(HIST("TrkCompColls/Centrality/hAmbTrackType"), static_cast<int>(AmbTrkType::kAmb), crec);
+                } else {
+                  qaregistry.fill(HIST("TrkCompColls/hAmbTrackType"), static_cast<int>(AmbTrkType::kAmb));
+                }
+              } else {
+                if constexpr (has_reco_cent<C>) {
+                  qaregistry.fill(HIST("TrkCompColls/Centrality/hAmbTrackType"), static_cast<int>(AmbTrkType::kNonAmbSame), crec);
+                } else {
+                  qaregistry.fill(HIST("TrkCompColls/hAmbTrackType"), static_cast<int>(AmbTrkType::kNonAmbSame));
+                }
+              }
+            } else {
+              if constexpr (has_reco_cent<C>) {
+                qaregistry.fill(HIST("TrkCompColls/Centrality/hAmbTrackType"), static_cast<int>(AmbTrkType::kAmbGt1), crec);
+              } else {
+                qaregistry.fill(HIST("TrkCompColls/hAmbTrackType"), static_cast<int>(AmbTrkType::kAmbGt1));
+              }
+            }
+          } else {
+            if constexpr (has_reco_cent<C>) {
+              qaregistry.fill(HIST("TrkCompColls/Centrality/hAmbTrackType"), static_cast<int>(AmbTrkType::kOrphanNull), crec);
+            } else {
+              qaregistry.fill(HIST("TrkCompColls/hAmbTrackType"), static_cast<int>(AmbTrkType::kOrphanNull));
+            }
+          }
+
+          if (gConf.cfgRemoveTrivialAssoc) {
+            if (ids.empty() || (ids.size() == 1 && trkCollId == ids[0])) {
+              qaregistry.fill(HIST("TrkCompColls/Centrality/histNonAmbTrackNumColls"), ids.size());
+              continue;
+            }
+          }
+
+          if (isAmbiguous) {
+            if constexpr (has_reco_cent<C>) {
+              registry.fill(HIST("Tracks/Centrality/THnRecAmb"), track.pt(), track.eta(), collision.posZ(), crec);
+            } else {
+              registry.fill(HIST("Tracks/THnRecAmb"), track.pt(), track.eta(), collision.posZ());
+            }
+          } else {
+            if constexpr (has_reco_cent<C>) {
+              registry.fill(HIST("Tracks/Centrality/THnRec"), track.pt(), track.eta(), collision.posZ(), crec);
+            } else {
+              registry.fill(HIST("Tracks/THnRec"), track.pt(), track.eta(), collision.posZ());
+            }
+            if (trkCollId == ids[0]) {
+              if constexpr (has_reco_cent<C>) {
+                registry.fill(HIST("Tracks/Centrality/THnRecNonAmb"), track.pt(), track.eta(), collision.posZ(), crec);
+              } else {
+                registry.fill(HIST("Tracks/THnRecNonAmb"), track.pt(), track.eta(), collision.posZ());
+              }
+            }
+            if (trkCollId != ids[0]) {
+              if constexpr (has_reco_cent<C>) {
+                registry.fill(HIST("Tracks/Centrality/THnRecAmbRest"), track.pt(), track.eta(), collision.posZ(), crec);
+              } else {
+                registry.fill(HIST("Tracks/THnRecAmbRest"), track.pt(), track.eta(), collision.posZ());
+              }
+            }
+          }
+
+          // remove orphan tracks
+          if (ids.empty()) {
+            continue;
+          }
+          // remove fake tracks
+          if (!track.has_mcParticle() || track.mcMask() != 0) {
+            continue;
+          }
+          // assigned collision index
+          uint index = uint(track.collisionId() >= 0);
+          auto particle = track.template mcParticle_as<aod::McParticles>();
+          if (!isChrgParticle(particle.pdgCode())) {
+            continue;
+          }
+          if (particle.eta() <= trackCuts.minEta || particle.eta() >= trackCuts.maxEta) {
+            continue;
+          }
+          if (gConf.cfgUseParticleSel && !isParticleSelected(particle)) {
+            continue;
+          }
+
+          if (index) {
+            auto mcCollision = particle.template mcCollision_as<aod::McCollisions>();
+            if (eventCuts.useZVtxCutMC && (std::abs(mcCollision.posZ()) >= eventCuts.maxZvtx)) {
+              continue;
+            }
+            if (eventCuts.useZDiffCut) {
+              if (std::abs(collision.posZ() - mcCollision.posZ()) > eventCuts.maxZvtxDiff) {
+                continue;
+              }
+            }
+
+            if (collision.has_mcCollision() && collision.mcCollisionId() == particle.mcCollisionId()) {
+              if (!particle.isPhysicalPrimary()) { // Secondaries (weak decays and material)
+                if constexpr (has_reco_cent<C>) {
+                  registry.fill(HIST("Tracks/Centrality/THnGenSec"), particle.pt(), particle.eta(), particle.mcCollision().posZ(), crec);
+                } else {
+                  registry.fill(HIST("Tracks/THnGenSec"), particle.pt(), particle.eta(), particle.mcCollision().posZ());
+                }
+                if (particle.getProcess() == TMCProcess::kPDecay) { // Particles from decay
+                  if constexpr (has_reco_cent<C>) {
+                    registry.fill(HIST("Tracks/Centrality/THnGenSecWeak"), particle.pt(), particle.eta(), particle.mcCollision().posZ(), crec);
+                  } else {
+                    registry.fill(HIST("Tracks/THnGenSecWeak"), particle.pt(), particle.eta(), particle.mcCollision().posZ());
+                  }
+                } else { // Particles from the material
+                  if constexpr (has_reco_cent<C>) {
+                    registry.fill(HIST("Tracks/Centrality/THnGenSecMat"), particle.pt(), particle.eta(), particle.mcCollision().posZ(), crec);
+                  } else {
+                    registry.fill(HIST("Tracks/THnGenSecMat"), particle.pt(), particle.eta(), particle.mcCollision().posZ());
+                  }
+                }
+              } else { // Primaries
+                if constexpr (has_reco_cent<C>) {
+                  registry.fill(HIST("Tracks/Centrality/THnGenPrim"), particle.pt(), particle.eta(), particle.mcCollision().posZ(), crec);
+                } else {
+                  registry.fill(HIST("Tracks/THnGenPrim"), particle.pt(), particle.eta(), particle.mcCollision().posZ());
+                }
+              }
+            } else {
+              if (isAmbiguous) {
+                for (const auto& collIdx : track.compatibleCollIds()) {
+                  auto ambColl = collisions.rawIteratorAt(collIdx);
+                  if (ambColl.has_mcCollision() && ambColl.mcCollisionId() == particle.mcCollisionId()) {
+                    if (!particle.isPhysicalPrimary()) { // Secondaries (weak decays and material)
+                      if constexpr (has_reco_cent<C>) {
+                        registry.fill(HIST("Tracks/Centrality/THnGenSecAmb"), particle.pt(), particle.eta(), particle.mcCollision().posZ(), crec);
+                      } else {
+                        registry.fill(HIST("Tracks/THnGenSecAmb"), particle.pt(), particle.eta(), particle.mcCollision().posZ());
+                      }
+                      if (particle.getProcess() == TMCProcess::kPDecay) { // Particles from decay
+                        if constexpr (has_reco_cent<C>) {
+                          registry.fill(HIST("Tracks/Centrality/THnGenSecWeakAmb"), particle.pt(), particle.eta(), particle.mcCollision().posZ(), crec);
+                        } else {
+                          registry.fill(HIST("Tracks/THnGenSecWeakAmb"), particle.pt(), particle.eta(), particle.mcCollision().posZ());
+                        }
+                      } else { // Particles from the material
+                        if constexpr (has_reco_cent<C>) {
+                          registry.fill(HIST("Tracks/Centrality/THnGenSecMatAmb"), particle.pt(), particle.eta(), particle.mcCollision().posZ(), crec);
+                        } else {
+                          registry.fill(HIST("Tracks/THnGenSecMatAmb"), particle.pt(), particle.eta(), particle.mcCollision().posZ());
+                        }
+                      }
+                    } else { // Primaries
+                      if constexpr (has_reco_cent<C>) {
+                        registry.fill(HIST("Tracks/Centrality/THnGenPrimAmb"), particle.pt(), particle.eta(), particle.mcCollision().posZ(), crec);
+                      } else {
+                        registry.fill(HIST("Tracks/THnGenPrimAmb"), particle.pt(), particle.eta(), particle.mcCollision().posZ());
+                      }
+                    }
+                    break;
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     }
   }
 
-  PROCESS_SWITCH(DndetaMFTPbPb, processEventAndSignalLossCentFT0C, "Signal/event loss based on MC (in FT0C centrality bins)", false);
+  void processSecondariesMCInlcusive(soa::Join<Colls, aod::McCollisionLabels> const& collisions,
+                                     MftTracksWCollsMC const& tracks,
+                                     aod::McCollisions const& mccollisions,
+                                     aod::McParticles const& particles,
+                                     ExtBCs const& bcs)
+  {
+    processSecondariesMC<Colls, aod::McCollisions>(collisions, tracks, mccollisions, particles, bcs);
+  }
+
+  PROCESS_SWITCH(DndetaMFTPbPb, processSecondariesMCInlcusive, "Process secondaries checks (Inclusive)", false);
+
+  void processSecondariesMCCentFT0C(soa::Join<CollsCentFT0C, aod::McCollisionLabels> const& collisions,
+                                    MftTracksWCollsMC const& tracks,
+                                    aod::McCollisions const& mccollisions,
+                                    aod::McParticles const& particles,
+                                    ExtBCs const& bcs)
+  {
+    processSecondariesMC<CollsCentFT0C, aod::McCollisions>(collisions, tracks, mccollisions, particles, bcs);
+  }
+
+  PROCESS_SWITCH(DndetaMFTPbPb, processSecondariesMCCentFT0C, "Process secondaries checks (in FT0C centrality bins)", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
