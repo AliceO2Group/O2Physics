@@ -2052,7 +2052,6 @@ struct HfTrackIndexSkimCreator {
             }
           }
         }
-
       }
     }
   }
