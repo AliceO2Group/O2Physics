@@ -1366,6 +1366,10 @@ void fillBplusCandidateTable(T const& candidate, U& BplusParTable, V& BplusParET
     candidate.pxProng1(),
     candidate.pyProng1(),
     candidate.pzProng1(),
+    candidate.pProng0(),
+    candidate.pxProng0(),
+    candidate.pyProng0(),
+    candidate.pzProng0(),
     candidate.errorImpactParameter1(),
     candidate.cosThetaStar(),
     candidate.ct());

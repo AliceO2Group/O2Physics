@@ -8,22 +8,25 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
 #ifndef EVENTFILTERING_FILTERTABLES_H_
 #define EVENTFILTERING_FILTERTABLES_H_
 
+#include <Framework/ASoA.h>
+
 #include <array>
-#include <unordered_map>
-#include <string>
-#include <vector>
+#include <concepts>
 #include <cstdint>
+#include <string>
+#include <type_traits>
+#include <unordered_map>
+#include <vector>
 
 namespace o2::aod
 {
 template <uint32_t T>
 struct Hash;
 }
-
-#include "Framework/ASoA.h"
 
 namespace o2::soa
 {
@@ -92,6 +95,7 @@ DECLARE_SOA_COLUMN(HfCharmBarToXi2Bach, hasHfCharmBarToXi2Bach, bool);          
 DECLARE_SOA_COLUMN(HfPrCharm2P, hasHfPrCharm2P, bool);                           //! Charm baryon to 2-prong + bachelors
 DECLARE_SOA_COLUMN(HfSigmaCPPK, hasHfSigmaCPPK, bool);                           //! SigmaC(2455)++K- and SigmaC(2520)++K- + c.c.
 DECLARE_SOA_COLUMN(HfSigmaC0K0, hasHfSigmaC0K0, bool);                           //! SigmaC(2455)0KS0 and SigmaC(2520)0KS0
+DECLARE_SOA_COLUMN(HfSigmaCPr, hasHfSigmaCPr, bool);                             //! SigmaC(2455)Proton corr
 DECLARE_SOA_COLUMN(HfPhotonCharm2P, hasHfPhotonCharm2P, bool);                   //! photon with 2-prong charm hadron
 DECLARE_SOA_COLUMN(HfPhotonCharm3P, hasHfPhotonCharm3P, bool);                   //! photon with 3-prong charm hadron
 DECLARE_SOA_COLUMN(HfSingleCharm2P, hasHfSingleCharm2P, bool);                   //! 2-prong charm hadron (for efficiency studies)
@@ -293,7 +297,8 @@ DECLARE_SOA_TABLE(HfFilters, "AOD", "HfFilters", //!
                   filtering::HfBtoJPsiKstar,
                   filtering::HfBtoJPsiPhi,
                   filtering::HfBtoJPsiPrKa,
-                  filtering::HfBtoJPsiPi);
+                  filtering::HfBtoJPsiPi,
+                  filtering::HfSigmaCPr);
 
 using HfFilter = HfFilters::iterator;
 

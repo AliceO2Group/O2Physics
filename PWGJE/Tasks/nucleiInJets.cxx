@@ -14,36 +14,39 @@
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/JetSubtraction.h"
+//
 #include "PWGLF/DataModel/LFParticleIdentification.h"
 #include "PWGLF/Utils/inelGt.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include "TDatabasePDG.h"
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
-#include <TMath.h>
+#include <THnSparse.h>
+#include <TMCProcess.h>
 #include <TRandom3.h>
 #include <TVector2.h>
 
@@ -1601,7 +1604,7 @@ struct nucleiInJets {
     ////////////////////////////////////////
   }
 
-  void processJetTracksData(soa::Join<aod::JetCollisions, aod::JCollisionBCs, aod::BkgChargedRhos>::iterator const& collision,
+  void processJetTracksData(soa::Join<aod::JetCollisions, aod::BkgChargedRhos>::iterator const& collision,
                             chargedJetstrack const& chargedjets, soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks, TrackCandidates const&, aod::JBCs const&)
   {
     auto bc = collision.bc_as<aod::JBCs>();
@@ -1665,7 +1668,7 @@ struct nucleiInJets {
     }
   }
 
-  void processJetTracksDataLfPid(soa::Join<aod::JetCollisions, aod::JCollisionBCs, aod::BkgChargedRhos>::iterator const& collision,
+  void processJetTracksDataLfPid(soa::Join<aod::JetCollisions, aod::BkgChargedRhos>::iterator const& collision,
                                  chargedJetstrack const& chargedjets, soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks, TrackCandidatesLfPid const&, aod::JBCs const&)
   {
     auto bc = collision.bc_as<aod::JBCs>();

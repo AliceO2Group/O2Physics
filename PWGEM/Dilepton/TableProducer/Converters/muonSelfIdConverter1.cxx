@@ -11,24 +11,35 @@
 //
 // ========================
 //
-// This code loops over photons and makes pairs for neutral mesons analyses.
+// This code produces muon table 001 from 000.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include "PWGEM/PhotonMeson/Core/DiphotonHadronMPC.h"
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
+#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+using namespace o2::soa;
+
+struct muonSelfIdConverter1 {
+  Produces<aod::EMGlobalMuonSelfIds_001> muon_001;
+
+  void process(aod::EMGlobalMuonSelfIds_000 const& muons)
+  {
+    for (const auto& muon : muons) {
+      muon_001(std::vector<int>{}, muon.globalMuonsWithSameMFTIds());
+    } // end of muon loop
+  }
+};
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<DiphotonHadronMPC<PairType::kPCMPCM, MyV0Photons, aod::V0Legs>>(cfgc, TaskName{"diphoton-hadron-mpc-pcmpcm"}),
-  };
+  return WorkflowSpec{adaptAnalysisTask<muonSelfIdConverter1>(cfgc, TaskName{"muon-selfid-converter1"})};
 }

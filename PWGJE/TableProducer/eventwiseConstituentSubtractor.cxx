@@ -20,18 +20,19 @@
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetSubtraction.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/DataTypes.h>
 #include <Framework/InitContext.h>
-#include <Framework/Logger.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h>
 
+#include <fastjet/GhostedAreaSpec.hh>
 #include <fastjet/PseudoJet.hh>
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -75,9 +76,6 @@ struct eventWiseConstituentSubtractorTask {
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum track eta"};
   Configurable<float> trackPhiMin{"trackPhiMin", -999, "minimum track phi"};
   Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
-  Configurable<bool> applyTrackingEfficiency{"applyTrackingEfficiency", {false}, "configurable to decide whether to apply artificial tracking efficiency (discarding tracks) in the collision analysed by this task"};
-  Configurable<std::vector<double>> trackingEfficiencyPtBinning{"trackingEfficiencyPtBinning", {0., 10, 999.}, "pt binning of tracking efficiency array if applyTrackingEfficiency is true"};
-  Configurable<std::vector<double>> trackingEfficiency{"trackingEfficiency", {1.0, 1.0}, "tracking efficiency array applied if applyTrackingEfficiency is true"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
 
   Configurable<std::string> particleSelections{"particleSelections", "PhysicalPrimary", "set particle selections"};
@@ -115,15 +113,6 @@ struct eventWiseConstituentSubtractorTask {
     fastjet::GhostedAreaSpec ghostAreaSpec(ghostRapMax, ghostRepeat, ghostArea,
                                            ghostGridScatter, ghostKtScatter, ghostMeanPt);
     eventWiseConstituentSubtractor.setGhostAreaSpec(ghostAreaSpec);
-
-    if (applyTrackingEfficiency) {
-      if (trackingEfficiencyPtBinning->size() < 2) {
-        LOGP(fatal, "eventWiseConstituentSubtractor workflow: trackingEfficiencyPtBinning configurable should have at least two bin edges");
-      }
-      if (trackingEfficiency->size() + 1 != trackingEfficiencyPtBinning->size()) {
-        LOGP(fatal, "eventWiseConstituentSubtractor workflow: trackingEfficiency configurable should have exactly one less entry than the number of bin edges set in trackingEfficiencyPtBinning configurable");
-      }
-    }
   }
 
   Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax && aod::jtrack::phi >= trackPhiMin && aod::jtrack::phi <= trackPhiMax);
@@ -141,7 +130,7 @@ struct eventWiseConstituentSubtractorTask {
       }
       inputParticles.clear();
       tracksSubtracted.clear();
-      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, applyTrackingEfficiency, trackingEfficiency, trackingEfficiencyPtBinning, &candidate);
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, &candidate);
 
       tracksSubtracted = eventWiseConstituentSubtractor.JetBkgSubUtils::doEventConstSub(inputParticles, candidate.rho(), candidate.rhoM());
       for (auto const& trackSubtracted : tracksSubtracted) {
@@ -153,7 +142,7 @@ struct eventWiseConstituentSubtractorTask {
   template <typename T, typename U, typename V, typename M>
   void analyseHFMc(T const& mcCollision, U const& particles, V const& candidates, M& particleSubTable)
   {
-    if (!jetderiveddatautilities::selectMcCollision(mcCollision, skipMBGapEvents, applyRCTSelections) || std::abs(mcCollision.posZ()) > vertexZCut) {
+    if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, skipMBGapEvents, applyRCTSelections) || std::abs(mcCollision.posZ()) > vertexZCut) {
       return;
     }
     for (auto& candidate : candidates) {
@@ -178,7 +167,7 @@ struct eventWiseConstituentSubtractorTask {
     }
     inputParticles.clear();
     tracksSubtracted.clear();
-    jetfindingutilities::analyseTracks<soa::Filtered<aod::JetTracks>, soa::Filtered<aod::JetTracks>::iterator>(inputParticles, tracks, trackSelection, applyTrackingEfficiency, trackingEfficiency, trackingEfficiencyPtBinning);
+    jetfindingutilities::analyseTracks<soa::Filtered<aod::JetTracks>, soa::Filtered<aod::JetTracks>::iterator>(inputParticles, tracks, trackSelection);
 
     tracksSubtracted = eventWiseConstituentSubtractor.JetBkgSubUtils::doEventConstSub(inputParticles, collision.rho(), collision.rhoM());
 
@@ -190,7 +179,7 @@ struct eventWiseConstituentSubtractorTask {
 
   void processMcCollisions(soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos>::iterator const& mcCollision, soa::Filtered<aod::JetParticles> const& particles)
   {
-    if (!jetderiveddatautilities::selectMcCollision(mcCollision, skipMBGapEvents, applyRCTSelections) || std::abs(mcCollision.posZ()) > vertexZCut) {
+    if (!jetderiveddatautilities::selectCollision(mcCollision, eventSelectionBits, skipMBGapEvents, applyRCTSelections) || std::abs(mcCollision.posZ()) > vertexZCut) {
       return;
     }
     inputParticles.clear();

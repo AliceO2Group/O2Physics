@@ -143,8 +143,8 @@ struct : ConfigurableGroup {
   Configurable<std::vector<std::string>> cfBookParticleHistograms{"cfBookParticleHistograms", {"1-Phi", "1-Pt", "1-Eta", "1-Charge", "1-tpcNClsFindable", "1-tpcNClsShared", "1-itsChi2NCl", "1-tpcNClsFound", "1-tpcNClsCrossedRows", "1-itsNCls", "1-itsNClsInnerBarrel", "1-tpcCrossedRowsOverFindableCls", "1-tpcFoundOverFindableCls", "1-tpcFractionSharedCls", "1-tpcChi2NCl", "1-dcaXY", "1-dcaZ", "0-PDG"}, "Book (1) or do not book (0) particle histogram"};
   Configurable<bool> cfFillParticleHistograms2D{"cfFillParticleHistograms2D", false, "if false, all 2D particle histograms are not filled. if kTRUE, the ones for which fBookParticleHistograms2D[...] is kTRUE, are filled"};
   Configurable<std::vector<std::string>> cfBookParticleHistograms2D{"cfBookParticleHistograms2D", {"1-Phi_vs_Pt", "1-Phi_vs_Eta"}, "Book (1) or do not book (0) 2D particle histograms"};
-  Configurable<int> cfRebinSparse{"cfRebinSparse", 1, "used only for all fixed-length bins which are implemented directly for sparse histograms (i.e. not inherited from results histograms)"};
-  Configurable<std::vector<std::string>> cfBookParticleSparseHistograms{"cfBookParticleSparseHistograms", {"0-DWPhi", "0-DWPt", "0-DWEta"}, "Book (1) or do not book (0) particular category of sparse histograms"};
+  Configurable<std::vector<float>> cfRebinSparse{"cfRebinSparse", {1., 1., 1., 1., 1., 1.}, "Ordering is the same as in eDiffPhiWeights. To make bins factor 2 finer use 0.5, to make bins factor 5 coarser use 5."};
+  Configurable<std::vector<std::string>> cfBookParticleSparseHistograms{"cfBookParticleSparseHistograms", {"0-DWPhi", "0-DWPt", "0-DWEta", "0-DWCharge"}, "Book (1) or do not book (0) particular category of sparse histograms"};
   Configurable<bool> cfFillParticleSparseHistogramsBeforeCuts{"cfFillParticleSparseHistogramsBeforeCuts", false, "I need sparse histograms before cuts only when testing pt and eta weights, in internal validation"};
   // TBI 20250223 add eventually configurable for FillParticleSparseHistogramsDimension
 } cf_ph;
@@ -157,7 +157,7 @@ struct : ConfigurableGroup {
   Configurable<std::vector<float>> cfPhi{"cfPhi", {0.0, o2::constants::math::TwoPI}, "phi range: {min, max}[rad], with convention: min <= phi < max"};
   Configurable<std::vector<float>> cfPt{"cfPt", {0.2, 5.0}, "pt range: {min, max}[GeV], with convention: min <= pt < max"};
   Configurable<std::vector<float>> cfEta{"cfEta", {-0.8, 0.8}, "eta range: {min, max}, with convention: min <= eta < max"};
-  Configurable<std::vector<float>> cfCharge{"cfCharge", {-1.5, 1.5}, "particle charge. {-1.5,0} = only negative, {0,1.5} = only positive"};
+  Configurable<std::vector<float>> cfCharge{"cfCharge", {-2.0, 2.0}, "particle charge. {-2.0,0} = only negative, {0,2.0} = only positive (keep in sync with res.fResultsProBinEdges[AFO_CHARGE])"};
   Configurable<std::vector<float>> cftpcNClsFindable{"cftpcNClsFindable", {-1000., 1000.}, "tpcNClsFindable range: {min, max}, with convention: min <= cftpcNClsFindable < max"};
   Configurable<std::vector<float>> cftpcNClsShared{"cftpcNClsShared", {-1000., 1000.}, "tpcNClsShared range: {min, max}, with convention: min <= cftpcNClsShared < max"};
   Configurable<std::vector<float>> cfitsChi2NCl{"cfitsChi2NCl", {-1000., 36.}, "itsChi2NCl range: {min, max}, with convention: min <= cfitsChi2NCl < max"};
@@ -231,8 +231,9 @@ struct : ConfigurableGroup {
   Configurable<bool> cfUseDiffPhiPtWeights{"cfUseDiffPhiPtWeights", false, "use or not differential phi(pt) weights"};
   Configurable<bool> cfUseDiffPhiEtaWeights{"cfUseDiffPhiEtaWeights", false, "use or not differential phi(eta) weights"};
   Configurable<std::vector<std::string>> cfWhichDiffPhiWeights{"cfWhichDiffPhiWeights", {"1-wPhi", "1-wPt", "1-wEta", "1-wCharge", "1-wCentrality", "1-wVertexZ"}, "use (1) or do not use (0) differential phi weight for particular dimension. If only phi is set to 1, integrated phi weights are used. If phi is set to 0, ALL dimensions are switched off (yes!)"};
-  Configurable<std::vector<std::string>> cfWhichDiffPtWeights{"cfWhichDiffPtWeights", {"0-wPt", "0-wCharge", "0-wCentrality"}, "use (1) or do not use (0) differential pt weight for particular dimension. If only pt is set to 1, integrated pt weights are used. If pt is set to 0, ALL dimensions are switched off (yes!)"};
-  Configurable<std::vector<std::string>> cfWhichDiffEtaWeights{"cfWhichDiffEtaWeights", {"0-wEta", "0-wCharge", "0-wCentrality"}, "use (1) or do not use (0) differential eta weight for particular dimension. If only eta is set to 1, integrated eta weights are used. If eta is set to 0, ALL dimensions are switched off (yes!)"};
+  Configurable<std::vector<std::string>> cfWhichDiffPtWeights{"cfWhichDiffPtWeights", {"0-wPt", "0-wEta", "0-wCharge", "0-wCentrality"}, "use (1) or do not use (0) differential pt weight for particular dimension. If only pt is set to 1, integrated pt weights are used. If pt is set to 0, ALL dimensions are switched off (yes!)"};
+  Configurable<std::vector<std::string>> cfWhichDiffEtaWeights{"cfWhichDiffEtaWeights", {"0-wEta", "0-wPt", "0-wCharge", "0-wCentrality"}, "use (1) or do not use (0) differential eta weight for particular dimension. If only eta is set to 1, integrated eta weights are used. If eta is set to 0, ALL dimensions are switched off (yes!)"};
+  Configurable<std::vector<std::string>> cfWhichDiffChargeWeights{"cfWhichDiffChargeWeights", {"0-wCharge", "0-wPt", "0-wEta", "0-wCentrality"}, "use (1) or do not use (0) differential charge weight for particular dimension. If only charge is set to 1, integrated charge weights are used. If charge is set to 0, ALL dimensions are switched off (yes!)"};
   Configurable<std::string> cfFileWithWeights{"cfFileWithWeights", "/home/abilandz/DatasetsO2/weights.root", "path to external ROOT file which holds all particle weights in O2 format"}; // for AliEn file prepend "/alice/cern.ch/", for CCDB prepend "/alice-ccdb.cern.ch"
 } cf_pw;
 
@@ -252,9 +253,9 @@ struct : ConfigurableGroup {
 
 // *) Toy NUA:
 struct : ConfigurableGroup {
-  Configurable<std::vector<int>> cfApplyNUAPDF{"cfApplyNUAPDF", {0, 0, 0}, "Apply (1) or do not apply (0) NUA on variable, ordering is the same as in enum eNUAPDF (phi, pt, eta)"};
-  Configurable<std::vector<int>> cfUseDefaultNUAPDF{"cfUseDefaultNUAPDF", {1, 1, 1}, "Use (1) or do not use (0) default NUA profile, ordering is the same as in enum eNUAPDF (phi, pt, eta)"};
-  Configurable<std::vector<std::string>> cfCustomNUAPDFHistNames{"cfCustomNUAPDFHistNames", {"a", "bb", "ccc"}, "the names of histograms holding custom NUA in an external file."};
+  Configurable<std::vector<int>> cfApplyNUAPDF{"cfApplyNUAPDF", {0, 0, 0, 0}, "Apply (1) or do not apply (0) NUA on variable, ordering is the same as in enum eNUAPDF (phi, pt, eta, charge)"};
+  Configurable<std::vector<int>> cfUseDefaultNUAPDF{"cfUseDefaultNUAPDF", {1, 1, 1, 1}, "Use (1) or do not use (0) default NUA profile, ordering is the same as in enum eNUAPDF (phi, pt, eta, charge)"};
+  Configurable<std::vector<std::string>> cfCustomNUAPDFHistNames{"cfCustomNUAPDFHistNames", {"a", "bb", "ccc", "dddd"}, "the names of histograms holding custom NUA in an external file."};
   Configurable<std::string> cfFileWithCustomNUA{"cfFileWithCustomNUA", "/home/abilandz/DatasetsO2/customNUA.root", "path to external ROOT file which holds all histograms with custom NUA"}; // for AliEn file prepend "/alice/cern.ch/", for CCDB prepend "/alice-ccdb.cern.ch"
 } cf_nua;
 
@@ -263,7 +264,7 @@ struct : ConfigurableGroup {
   Configurable<bool> cfUseInternalValidation{"cfUseInternalValidation", false, "perform internal validation using flow analysis on-the-fly"};
   Configurable<bool> cfInternalValidationForceBailout{"cfInternalValidationForceBailout", false, "force bailout (use only locally, since there is no graceful exit (yet))"};
   Configurable<unsigned int> cfnEventsInternalValidation{"cfnEventsInternalValidation", 0, "number of events simulated on-the-fly for internal validation"};
-  Configurable<std::string> cfHarmonicsOptionInternalValidation{"cfHarmonicsOptionInternalValidation", "constant", "for internal validation, supported options are \"constant\", \"correlated\", \"persistent\", \"ptDependent\", and \"ptEtaDependent\""};
+  Configurable<std::string> cfHarmonicsOptionInternalValidation{"cfHarmonicsOptionInternalValidation", "constant", "for internal validation, supported options are \"constant\", \"correlated\", \"persistent\", \"ptDependent\", \"ptEtaDependent\", and \"ptEtaChargeDependent\""};
   Configurable<bool> cfRescaleWithTheoreticalInput{"cfRescaleWithTheoreticalInput", false, "if kTRUE, all correlators are rescaled with theoretical input, so that all results in profiles are 1"};
   Configurable<bool> cfRandomizeReactionPlane{"cfRandomizeReactionPlane", true, "set to false only when validating against theoretical value the non-isotropic correlators"};
   Configurable<std::vector<float>> cfInternalValidationAmplitudes{"cfInternalValidationAmplitudes", {0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09}, "{v1, v2, v3, v4, ...} + has an effect only in combination with cfHarmonicsOptionInternalValidation = \"constant\". Max number of vn's is gMaxHarmonic."};

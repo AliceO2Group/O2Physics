@@ -17,11 +17,12 @@
 #ifndef PWGJE_DATAMODEL_GAMMAJETANALYSISTREE_H_
 #define PWGJE_DATAMODEL_GAMMAJETANALYSISTREE_H_
 
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
-#include "PWGJE/DataModel/Jet.h"
+#include <Framework/AnalysisDataModel.h>
 
-#include "Framework/AnalysisDataModel.h"
+#include <sys/types.h>
+
+#include <cstdint>
+#include <vector>
 
 namespace o2::aod::gjanalysis
 {

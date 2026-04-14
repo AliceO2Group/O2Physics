@@ -47,7 +47,6 @@ struct pidTpcServiceRun2 {
   // CCDB boilerplate declarations
   o2::framework::Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::ccdb::CcdbApi ccdbApi;
 
   o2::aod::pid::pidTPCProducts products;
   o2::aod::pid::pidTPCConfigurables pidTPCopts;
@@ -61,20 +60,19 @@ struct pidTpcServiceRun2 {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-    ccdbApi.init(ccdburl.value);
 
     // task-specific
-    pidTPC.init(ccdb, ccdbApi, initContext, pidTPCopts, metadataInfo);
+    pidTPC.init(ccdb, initContext, pidTPCopts, metadataInfo);
   }
 
   void processTracks(soa::Join<aod::Collisions, aod::EvSels> const& collisions, soa::Join<aod::Tracks, aod::TracksExtra> const& tracks, aod::BCsWithTimestamps const& bcs)
   {
-    pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, static_cast<TObject*>(nullptr), products);
+    pidTPC.process(ccdb, bcs, collisions, tracks, static_cast<TObject*>(nullptr), products);
   }
 
   void processTracksMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions, soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels> const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const&)
   {
-    pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, static_cast<TObject*>(nullptr), products);
+    pidTPC.process(ccdb, bcs, collisions, tracks, static_cast<TObject*>(nullptr), products);
   }
 
   PROCESS_SWITCH(pidTpcServiceRun2, processTracks, "Process Tracks", true);

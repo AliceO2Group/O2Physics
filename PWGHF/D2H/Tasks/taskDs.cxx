@@ -174,7 +174,7 @@ struct HfTaskDs {
   } ccdbConfig;
 
   SliceCache cache;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   using TH1Ptr = std::shared_ptr<TH1>;
   using TH2Ptr = std::shared_ptr<TH2>;

@@ -91,13 +91,14 @@ struct Kstarqa {
     Configurable<bool> isapplypTdepPIDTOF{"isapplypTdepPIDTOF", false, "Apply pT dependent PID for TOF"};
     Configurable<bool> isApplyParticleMID{"isApplyParticleMID", false, "Apply particle misidentification"};
     Configurable<bool> isApplyParticleMIDPtDep{"isApplyParticleMIDPtDep", false, "Apply pT dependent MID selection"};
+    Configurable<bool> AllGenEvents{"AllGenEvents", false, "Fill all generated events in MC for signal loss calculations"};
 
     Configurable<bool> checkVzEvSigLoss{"checkVzEvSigLoss", false, "Check Vz event signal loss"};
     Configurable<bool> isApplyDeepAngle{"isApplyDeepAngle", false, "Deep Angle cut"};
     Configurable<bool> isApplyMCchecksClosure{"isApplyMCchecksClosure", true, "Apply MC checks for closure test"};
     Configurable<float> deltaRCut{"deltaRCut", 0.0f, "Apply deltaR cut between two daughters"};
 
-    // Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
+    Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
     Configurable<float> configOccCut{"configOccCut", 1000., "Occupancy cut"};
 
     // Configurables for track selections
@@ -156,7 +157,7 @@ struct Kstarqa {
     float lowPtCutPID = 0.5;
     int noOfDaughters = 2;
     // float rapidityMotherData = 0.5;
-    float cutzvertex = 10.0f;
+    // float cutzvertex = 10.0f;
     float cfgCutEtaMax = 0.8f;
     float cfgCutPT = 0.2f;
     float cfgDeepAngle = 0.04;
@@ -252,7 +253,7 @@ struct Kstarqa {
 
     std::vector<std::string> eveCutLabels = {
       "All Events",
-      Form("|Vz| < %.1f", selectionConfig.cutzvertex),
+      "|Vz| < 10",
       "sel8",
       std::string("kNoTimeFrameBorder") + check(selectionConfig.isNoTimeFrameBorder.value),
       std::string("kNoITSROFrameBorder") + check(selectionConfig.isNoITSROFrameBorder.value),
@@ -2761,7 +2762,7 @@ struct Kstarqa {
 
     const auto evtReconstructedAndSelected = std::find(selectedEvents.begin(), selectedEvents.end(), mcCollision.globalIndex()) != selectedEvents.end();
     hInvMass.fill(HIST("hAllGenCollisions"), multiplicity);
-    if (!evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
+    if (!selectionConfig.AllGenEvents && !evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
       return;
     }
     double genMultiplicity = mcCollision.centFT0M();

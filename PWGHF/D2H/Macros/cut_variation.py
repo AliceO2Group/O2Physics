@@ -79,15 +79,15 @@ class CutVarMinimiser:
         """
 
         if len(self.eff_prompt) != self.n_sets or len(self.eff_nonprompt) != self.n_sets:
-            print("ERROR: number of raw yields and efficiencies not consistent! Exit")
+            print("33[31mERROR: number of raw yields and efficiencies not consistent! Exit\033[0m")
             sys.exit()
 
         if len(self.unc_raw_yields) != self.n_sets:
-            print("ERROR: number of raw yields and raw-yield uncertainties not consistent! Exit")
+            print("33[31mERROR: number of raw yields and raw-yield uncertainties not consistent! Exit\033[0m")
             sys.exit()
 
         if len(self.unc_eff_prompt) != self.n_sets or len(self.unc_eff_nonprompt) != self.n_sets:
-            print("ERROR: number of raw yields and efficiency uncertainties not consistent! Exit")
+            print("33[31mERROR: number of raw yields and efficiency uncertainties not consistent! Exit\033[0m")
             sys.exit()
 
     def __initialise_objects(self):
@@ -199,7 +199,7 @@ class CutVarMinimiser:
         if correlated:
             m_cov_sets_diag = np.diag(self.m_cov_sets)
             if not (np.all(m_cov_sets_diag[1:] > m_cov_sets_diag[:-1]) or np.all(m_cov_sets_diag[1:] < m_cov_sets_diag[:-1])):
-                print("WARNING! minimise_system(): the residual vector uncertainties elements are not monotonous. Check the input for stability.")
+                print("\033[33mWARNING! minimise_system(): the residual vector uncertainties elements are not monotonous. Check the input for stability.\033[0m")
                 print(f"residual vector uncertainties elements = {np.sqrt(m_cov_sets_diag)}\n")
 
         # chi2
@@ -484,6 +484,7 @@ class CutVarMinimiser:
         - leg: ROOT.TLegend
             needed otherwise it is destroyed
         """
+        suffix = suffix.replace(".", "_")
 
         set_global_style(padleftmargin=0.16, padbottommargin=0.12, padtopmargin=0.075, titleoffsety=1.6)
 
@@ -604,6 +605,7 @@ class CutVarMinimiser:
         - hist_corr_matrix: ROOT.TH2F
             histogram of correlation matrix
         """
+        suffix = suffix.replace(".", "_")
 
         set_global_style(
             padleftmargin=0.14,
@@ -667,6 +669,7 @@ class CutVarMinimiser:
         - leg: ROOT.TLegend
             needed otherwise it is destroyed
         """
+        suffix = suffix.replace(".", "_")
 
         set_global_style(padleftmargin=0.14, padbottommargin=0.12, titleoffset=1.2, padtopmargin = 0.075)
 
@@ -758,6 +761,7 @@ class CutVarMinimiser:
         - leg: ROOT.TLegend
             needed otherwise it is destroyed
         """
+        suffix = suffix.replace(".", "_")
 
         set_global_style(padleftmargin=0.14, padbottommargin=0.12, titleoffset=1.2, padtopmargin = 0.075)
 
@@ -844,6 +848,7 @@ class CutVarMinimiser:
         - leg: ROOT.TLegend
             needed otherwise it is destroyed
         """
+        suffix = suffix.replace(".", "_")
 
         set_global_style(padleftmargin=0.16, padbottommargin=0.12, padtopmargin=0.075, titleoffsety=1.6)
 

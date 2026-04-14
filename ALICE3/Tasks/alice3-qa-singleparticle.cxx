@@ -15,14 +15,29 @@
 /// \brief   Task to monitor the single particle QA, at the particle and track level, showing the tracked and the origin of particles
 ///
 
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TDatabasePDG.h>
+#include <TH1.h>
+#include <TH2.h>
 #include <TMCProcess.h>
+#include <TString.h>
 
+#include <RtypesCore.h>
+
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
 #include <vector>
 
 using namespace o2;

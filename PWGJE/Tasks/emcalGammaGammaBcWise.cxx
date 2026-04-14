@@ -22,20 +22,20 @@
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/EventSelection.h"
 
-#include "EMCALBase/Geometry.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
 #include <CommonConstants/MathConstants.h>
+#include <EMCALBase/Geometry.h>
 #include <EMCALBase/GeometryBase.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include "TLorentzVector.h"
-#include "TVector3.h"
+#include <TLorentzVector.h>
+#include <TVector3.h>
 
 #include <cmath>
 #include <vector>

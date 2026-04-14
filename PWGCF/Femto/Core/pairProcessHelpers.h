@@ -19,7 +19,9 @@
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
-#include "Framework/ASoAHelpers.h"
+#include <Framework/ASoAHelpers.h>
+
+#include <cstdint>
 
 namespace o2::analysis::femto
 {
@@ -65,13 +67,13 @@ void processSameEvent(T1 const& SliceParticle,
     // Randomize pair order if enabled
     switch (pairOrder) {
       case kOrder12:
-        PairHistManager.setPair(p1, p2, Collision);
+        PairHistManager.setPair(p1, p2, TrackTable, Collision);
         break;
       case kOrder21:
-        PairHistManager.setPair(p2, p1, Collision);
+        PairHistManager.setPair(p2, p1, TrackTable, Collision);
         break;
       default:
-        PairHistManager.setPair(p1, p2, Collision);
+        PairHistManager.setPair(p1, p2, TrackTable, Collision);
     }
     // fill deta-dphi histograms with kstar cutoff
     CprManager.fill(PairHistManager.getKstar());
@@ -134,13 +136,13 @@ void processSameEvent(T1 const& SliceParticle,
     // Randomize pair order if enabled
     switch (pairOrder) {
       case kOrder12:
-        PairHistManager.setPairMc(p1, p2, mcParticles, Collision, mcCollisions);
+        PairHistManager.setPairMc(p1, p2, TrackTable, mcParticles, Collision, mcCollisions);
         break;
       case kOrder21:
-        PairHistManager.setPairMc(p2, p1, mcParticles, Collision, mcCollisions);
+        PairHistManager.setPairMc(p2, p1, TrackTable, mcParticles, Collision, mcCollisions);
         break;
       default:
-        PairHistManager.setPairMc(p1, p2, mcParticles, Collision, mcCollisions);
+        PairHistManager.setPairMc(p1, p2, TrackTable, mcParticles, Collision, mcCollisions);
     }
     // fill deta-dphi histograms with kstar cutoff
     CprManager.fill(PairHistManager.getKstar());
@@ -189,7 +191,7 @@ void processSameEvent(T1 const& SliceParticle1,
     if (CprManager.isClosePair()) {
       continue;
     }
-    PairHistManager.setPair(p1, p2, Collision);
+    PairHistManager.setPair(p1, p2, TrackTable, Collision);
     CprManager.fill(PairHistManager.getKstar());
     if (PairHistManager.checkPairCuts()) {
       PairHistManager.template fill<mode>();
@@ -258,7 +260,7 @@ void processSameEvent(T1 const& SliceParticle1,
     if (CprManager.isClosePair()) {
       continue;
     }
-    PairHistManager.setPairMc(p1, p2, mcParticles, Collision, mcCollisions);
+    PairHistManager.setPairMc(p1, p2, TrackTable, mcParticles, Collision, mcCollisions);
     CprManager.fill(PairHistManager.getKstar());
     if (PairHistManager.checkPairCuts()) {
       PairHistManager.template fill<mode>();
@@ -309,7 +311,7 @@ void processMixedEvent(T1 const& Collisions,
       if (CprManager.isClosePair()) {
         continue;
       }
-      PairHistManager.setPair(p1, p2, collision1, collision2);
+      PairHistManager.setPair(p1, p2, TrackTable, collision1, collision2);
       CprManager.fill(PairHistManager.getKstar());
       if (PairHistManager.checkPairCuts()) {
         PairHistManager.template fill<mode>();
@@ -378,7 +380,7 @@ void processMixedEvent(T1 const& Collisions,
       if (CprManager.isClosePair()) {
         continue;
       }
-      PairHistManager.setPairMc(p1, p2, mcParticles, collision1, collision2, mcCollisions);
+      PairHistManager.setPairMc(p1, p2, TrackTable, mcParticles, collision1, collision2, mcCollisions);
       CprManager.fill(PairHistManager.getKstar());
       if (PairHistManager.checkPairCuts()) {
         PairHistManager.template fill<mode>();

@@ -254,6 +254,11 @@ o2physics_add_dpl_workflow(flow-correlations-upc
 			               PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::PWGCFCore
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(flow-mc-upc
+                           SOURCES flowMcUpc.cxx
+			               PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::GFWCore
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(analysis-mc-dpm-jet-sg-v3
                            SOURCES analysisMCDPMJetSGv3.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
@@ -268,3 +273,8 @@ o2physics_add_dpl_workflow(sg-exclusive-jpsi-midrapidity
                            SOURCES sgExclusiveJpsiMidrapidity.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(fitbit-mapping
+													 SOURCES upcTestFITBitMapping.cxx
+													 PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+													 COMPONENT_NAME Analysis)

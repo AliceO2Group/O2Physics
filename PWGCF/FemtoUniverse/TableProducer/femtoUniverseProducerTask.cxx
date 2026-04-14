@@ -136,6 +136,7 @@ struct FemtoUniverseProducerTask {
   Configurable<bool> confFillCollExt{"confFillCollExt", false, "Option to fill collision extended table"};
 
   Configurable<bool> confCollMCTruthOnlyReco{"confCollMCTruthOnlyReco", false, "Fill only MC truth collisions that were reconstructed and selected"};
+  Configurable<bool> confFillMCTruthV0Daugh{"confFillMCTruthV0Daugh", true, "Fill MC truth daughters of V0"};
 
   /// Event filtering (used for v0-cascade analysis)
   Configurable<std::string> zorroMask{"zorroMask", "", "zorro trigger class to select on (empty: none)"};
@@ -340,7 +341,7 @@ struct FemtoUniverseProducerTask {
     Configurable<float> trackD0pTGenMax{"trackD0pTGenMax", 24.0, "MC Truth, max. pT for tracks and D0/D0bar cand."};
     Configurable<bool> useYCutD0Cand{"useYCutD0Cand", true, "True - apply cut on y of D0 cand./false - apply cut on eta"};
     Configurable<bool> storeD0D0barDoubleMassHypo{"storeD0D0barDoubleMassHypo", false, "Store D0/D0bar cand. which pass selection criteria for both, D0 and D0bar"};
-    Configurable<std::vector<int>> classMlD0D0bar{"classMlD0D0bar", {0, 1, 2}, "Indexes of ML scores to be stored. Three indexes max."};
+    Configurable<bool> fillCorrBkgsD0{"fillCorrBkgsD0", false, "Flag to fill derived tables with correlated background candidates"};
   } ConfD0Selection;
 
   // PID bitmask configurables
@@ -880,12 +881,17 @@ struct FemtoUniverseProducerTask {
   template <typename ParticleType>
   int32_t getMotherPDG(ParticleType particle)
   {
-    auto motherparticlesMC = particle.template mothers_as<aod::McParticles>();
-    if (!motherparticlesMC.empty()) {
+    if (particle.isPhysicalPrimary()) {
+      return 0;
+    } else if (particle.has_mothers()) {
+      if (particle.getProcess() == 20 || particle.getProcess() == 23) { // treat particles from hadronic scattering (20, 23) as primary
+        return 0;
+      }
+      auto motherparticlesMC = particle.template mothers_as<aod::McParticles>();
       auto motherparticleMC = motherparticlesMC.front();
-      return particle.isPhysicalPrimary() ? 0 : motherparticleMC.pdgCode();
+      return motherparticleMC.pdgCode();
     } else {
-      return 9999;
+      return 999;
     }
   }
 
@@ -925,7 +931,7 @@ struct FemtoUniverseProducerTask {
       outputPartsMCLabels(outputPartsMC.lastIndex());
     } else {
       outputPartsMCLabels(-1);
-      outputDebugPartsMC(9999);
+      outputDebugPartsMC(-999);
     }
   }
 
@@ -1829,8 +1835,10 @@ struct FemtoUniverseProducerTask {
 
     for (const auto& hfCand : hfCands) {
 
-      if (!(hfCand.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-        continue;
+      if (!ConfD0Selection.fillCorrBkgsD0) {
+        if (!(hfCand.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+          continue;
+        }
       }
 
       if (ConfD0Selection.useYCutD0Cand && std::abs(hfHelper.yD0(hfCand)) > ConfD0Selection.yD0CandMax) {
@@ -1847,11 +1855,11 @@ struct FemtoUniverseProducerTask {
       auto arrayDaughters = std::array{postrack, negtrack};
       indexMcRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign);
 
-      if (!(indexMcRec > -1)) {
+      if (!ConfD0Selection.fillCorrBkgsD0 && !(indexMcRec > -1)) {
         continue;
       }
 
-      if (std::abs(hfCand.flagMcMatchRec()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
+      if ((std::abs(hfCand.flagMcMatchRec()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) || (ConfD0Selection.fillCorrBkgsD0 && hfCand.flagMcMatchRec() != 0)) {
         int postrackID = hfCand.prong0Id(); // Index to first prong
         int rowInPrimaryTrackTablePos = -1;
         rowInPrimaryTrackTablePos = getRowDaughters(postrackID, tmpIDtrack);
@@ -2139,6 +2147,7 @@ struct FemtoUniverseProducerTask {
       // instead of the bitmask, the PDG of the particle is stored as uint32_t
 
       int32_t variablePDG = confStoreMCmothers ? getMotherPDG(particle) : particle.pdgCode();
+      int32_t variableCut = confStoreMCmothers ? particle.getProcess() : 0;
 
       // now the table is filled
       if constexpr (resolveDaughs) {
@@ -2153,7 +2162,7 @@ struct FemtoUniverseProducerTask {
                   particle.eta(),
                   particle.phi(),
                   aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
-                  0,
+                  variableCut,
                   pdgCode,
                   variablePDG,
                   childIDs,
@@ -2168,7 +2177,7 @@ struct FemtoUniverseProducerTask {
       // aligned, so that they can be joined in the task.
       if constexpr (transientLabels) {
         outputPartsMCLabels(-1);
-        outputDebugPartsMC(9999);
+        outputDebugPartsMC(-999);
       }
     }
     if constexpr (resolveDaughs) {
@@ -2192,13 +2201,14 @@ struct FemtoUniverseProducerTask {
         }
 
         int32_t variablePDG = confStoreMCmothers ? getMotherPDG(particle) : particle.pdgCode();
+        int32_t variableCut = confStoreMCmothers ? particle.getProcess() : 0;
 
         outputParts(outputCollision.lastIndex(),
                     particle.pt(),
                     particle.eta(),
                     particle.phi(),
                     aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
-                    0,
+                    variableCut,
                     static_cast<uint32_t>(particle.pdgCode()),
                     variablePDG,
                     childIDs,
@@ -2213,7 +2223,7 @@ struct FemtoUniverseProducerTask {
         // aligned, so that they can be joined in the task.
         if constexpr (transientLabels) {
           outputPartsMCLabels(-1);
-          outputDebugPartsMC(9999);
+          outputDebugPartsMC(-999);
         }
       }
     }
@@ -2300,7 +2310,7 @@ struct FemtoUniverseProducerTask {
 
   template <bool isMC, typename V0Type, typename TrackType,
             typename CollisionType>
-  void fillCollisionsAndTracksAndV0AndPhi(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
+  bool fillCollisionsAndTracksAndV0AndPhi(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
   {
     const auto colcheck = fillCollisions<isMC>(col, tracks);
     if (colcheck) {
@@ -2312,6 +2322,7 @@ struct FemtoUniverseProducerTask {
         fillPhi<isMC>(col, tracks);
       }
     }
+    return colcheck;
   }
 
   void processFullData(aod::FemtoFullCollision const& col,
@@ -2564,7 +2575,11 @@ struct FemtoUniverseProducerTask {
     Preslice<StrangePartType>& ps)
   {
     // recos
-    std::set<int> recoMcIds;
+    static std::set<int> recoMcIds;
+    static std::set<int> mcColIds;
+    recoMcIds.clear();
+    mcColIds.clear();
+
     for (const auto& col : collisions) {
       auto groupedTracks = tracks.sliceBy(perCollisionTracks, col.globalIndex());
       auto groupedStrageParts = strangeParts.sliceBy(ps, col.globalIndex());
@@ -2572,11 +2587,15 @@ struct FemtoUniverseProducerTask {
       if constexpr (std::experimental::is_detected<HasBachelor, typename StrangePartType::iterator>::value) {
         const auto colcheck = fillCollisions<true>(col, groupedTracks);
         if (colcheck) {
+          mcColIds.insert(col.mcCollisionId());
           fillTracks<true>(groupedTracks);
           fillCascade<true>(col, groupedStrageParts, groupedTracks);
         }
       } else {
-        fillCollisionsAndTracksAndV0AndPhi<true>(col, groupedTracks, groupedStrageParts);
+        const auto colcheck = fillCollisionsAndTracksAndV0AndPhi<true>(col, groupedTracks, groupedStrageParts);
+        if (colcheck) {
+          mcColIds.insert(col.mcCollisionId());
+        }
       }
       for (const auto& track : groupedTracks) {
         if (trackCuts.isSelectedMinimal(track))
@@ -2587,6 +2606,9 @@ struct FemtoUniverseProducerTask {
     // truth
     for (const auto& mccol : mccols) {
       auto groupedMCParticles = mcParticles.sliceBy(perMCCollision, mccol.globalIndex());
+      if (confCollMCTruthOnlyReco && !mcColIds.contains(mccol.globalIndex())) {
+        continue;
+      }
       auto groupedCollisions = collisions.sliceBy(recoCollsPerMCColl, mccol.globalIndex());
       fillMCTruthCollisions(groupedCollisions, groupedMCParticles);                           // fills the reco collisions for mc collision
       fillParticles<decltype(groupedMCParticles), true, true>(groupedMCParticles, recoMcIds); // fills mc particles
@@ -2904,7 +2926,11 @@ struct FemtoUniverseProducerTask {
         const auto colcheck = fillMCTruthCollisionsCentRun3(col);
         if (colcheck) {
           outputCollExtra(1.0, 1.0);
-          fillV0MCTruth(groupedMCParticles); // fills MC V0s and its daughters
+          if (confFillMCTruthV0Daugh) {
+            fillV0MCTruth(groupedMCParticles); // fills MC V0s and its daughters
+          } else {
+            fillParticles<decltype(groupedMCParticles), true, true>(groupedMCParticles, recoMcIds); // fills mc particles
+          }
         }
       }
     }

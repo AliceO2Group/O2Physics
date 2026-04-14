@@ -53,6 +53,8 @@ DECLARE_SOA_COLUMN(CosPA, cosPA, double);                                 // Cos
 DECLARE_SOA_COLUMN(NSigma3H, nSigma3H, float);                            // Number of sigmas of the 3H daughter
 DECLARE_SOA_COLUMN(NTPCclus3H, nTPCclus3H, uint8_t);                      // Number of TPC clusters of the 3H daughter
 DECLARE_SOA_COLUMN(NTPCclusPi, nTPCclusPi, uint8_t);                      // Number of TPC clusters of the Pi daughter
+DECLARE_SOA_COLUMN(NTPCNClsCrossedRows3H, nTPCclsCrossedRows3H, uint8_t); // Number of TPC clusters crossed rows of the 3H daughter
+DECLARE_SOA_COLUMN(NTPCNClsCrossedRowsPi, nTPCclsCrossedRowsPi, uint8_t); // Number of TPC clusters crossed rows of the Pi daughter
 DECLARE_SOA_COLUMN(TPCsignal3H, tpcSignal3H, uint16_t);                   // TPC signal of the 3H daughter
 DECLARE_SOA_COLUMN(TPCsignalPi, tpcSignalPi, uint16_t);                   // TPC signal of the Pi daughter
 DECLARE_SOA_COLUMN(Flags, flags, uint8_t);                                // Flags for PID in tracking (bits [0, 3] for negative daughter, [4,7] for positive daughter)
@@ -88,7 +90,7 @@ DECLARE_SOA_TABLE(DataLnnCands, "AOD", "LNNCANDS",
                   lnnrec::PtPi, lnnrec::PhiPi, lnnrec::EtaPi,
                   lnnrec::XDecVtx, lnnrec::YDecVtx, lnnrec::ZDecVtx,
                   lnnrec::DcaV0Daug, lnnrec::Dca3H, lnnrec::DcaPi,
-                  lnnrec::NSigma3H, lnnrec::NTPCclus3H, lnnrec::NTPCclusPi,
+                  lnnrec::NSigma3H, lnnrec::NTPCclus3H, lnnrec::NTPCclusPi, lnnrec::NTPCNClsCrossedRows3H, lnnrec::NTPCNClsCrossedRowsPi,
                   lnnrec::TPCmom3H, lnnrec::TPCmomPi, lnnrec::TPCsignal3H, lnnrec::TPCsignalPi,
                   lnnrec::MassTrTOF, lnnrec::TPCchi3H,
                   lnnrec::ITSclusterSizes3H, lnnrec::ITSclusterSizesPi,
@@ -105,7 +107,7 @@ DECLARE_SOA_TABLE(MCLnnCands, "AOD", "MCLNNCANDS",
                   lnnrec::XDecVtx, lnnrec::YDecVtx, lnnrec::ZDecVtx,
                   lnnrec::DcaV0Daug, lnnrec::Dca3H, lnnrec::DcaPi,
                   lnnrec::NSigma3H, lnnrec::NTPCclus3H, lnnrec::NTPCclusPi,
-                  lnnrec::TPCmom3H, lnnrec::TPCmomPi, lnnrec::TPCsignal3H, lnnrec::TPCsignalPi,
+                  lnnrec::TPCmom3H, lnnrec::TPCmomPi, lnnrec::TPCsignal3H, lnnrec::TPCsignalPi, lnnrec::NTPCNClsCrossedRows3H, lnnrec::NTPCNClsCrossedRowsPi,
                   lnnrec::MassTrTOF, lnnrec::TPCchi3H,
                   lnnrec::ITSclusterSizes3H, lnnrec::ITSclusterSizesPi,
                   lnnrec::Flags,

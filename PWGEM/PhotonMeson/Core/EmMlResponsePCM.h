@@ -20,6 +20,7 @@
 
 #include "Tools/ML/MlResponse.h"
 
+#include <concepts>
 #include <cstdint>
 #include <vector>
 
@@ -53,20 +54,47 @@ namespace o2::analysis
 {
 
 enum class InputFeaturesPCM : uint8_t {
+  v0PhotonCandidatefVx,
+  v0PhotonCandidatefVy,
+  v0PhotonCandidatefVz,
   v0PhotonCandidatefDCAxyToPV,
   v0PhotonCandidatefDCAzToPV,
   v0PhotonCandidatefPCA,
   v0PhotonCandidatefAlpha,
   v0PhotonCandidatefQtArm,
   v0PhotonCandidatefChiSquareNDF,
+  v0PhotonCandidatefCosPARZ,
+  v0PhotonCandidatefCosPAXY,
   v0PhotonCandidatefCosPA,
+  v0PhotonCandidatefPsiPair,
+  v0PhotonCandidatefPhiV,
+  posV0LegfDCAXY,
+  posV0LegfDCAZ,
+  posV0LegfEta,
+  posV0LegfTPCNClsShared,
+  posV0LegfTPCNClsFindable,
+  posV0LegfTPCNClsFindableMinusFound,
+  posV0LegfTPCNClsFindableMinusCrossedRows,
+  posV0LegfTPCChi2NCl,
+  posV0LegfTPCSignal,
   posV0LegfTPCNSigmaEl,
   posV0LegfTPCNSigmaPi,
+  posV0LegfITSClusterSizes,
+  negV0LegfDCAXY,
+  negV0LegfDCAZ,
+  negV0LegfEta,
+  negV0LegfTPCNClsShared,
+  negV0LegfTPCNClsFindable,
+  negV0LegfTPCNClsFindableMinusFound,
+  negV0LegfTPCNClsFindableMinusCrossedRows,
+  negV0LegfTPCChi2NCl,
+  negV0LegfTPCSignal,
   negV0LegfTPCNSigmaEl,
-  negV0LegfTPCNSigmaPi
+  negV0LegfTPCNSigmaPi,
+  negV0LegfITSClusterSizes
 };
 
-template <typename TypeOutputScore = float>
+template <std::floating_point TypeOutputScore = float>
 class EmMlResponsePCM : public EmMlResponse<TypeOutputScore>
 {
  public:
@@ -85,17 +113,44 @@ class EmMlResponsePCM : public EmMlResponse<TypeOutputScore>
 
     for (const auto& idx : MlResponse<TypeOutputScore>::mCachedIndices) {
       switch (idx) {
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefVx, getConversionPointX);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefVy, getConversionPointY);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefVz, getConversionPointZ);
         CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefDCAxyToPV, getDcaXYToPV);
         CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefDCAzToPV, getDcaZToPV);
         CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefPCA, getPCA);
         CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefAlpha, getAlpha);
         CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefQtArm, getQt);
         CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefChiSquareNDF, getChi2NDF);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefCosPARZ, getCosPARZ);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefCosPAXY, getCosPAXY);
         CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefCosPA, getCosPA);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefPsiPair, getPsiPair);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, v0PhotonCandidatefPhiV, getPhiV);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, posV0LegfDCAXY, getPosDcaXY);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, posV0LegfDCAZ, getPosDcaZ);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, posV0LegfEta, getPosEta);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, posV0LegfTPCNClsShared, getPosTPCNClsShared);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, posV0LegfTPCNClsFindable, getPosTPCNClsFindable);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, posV0LegfTPCNClsFindableMinusFound, getPosTPCNClsFindableMinusShared);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, posV0LegfTPCNClsFindableMinusCrossedRows, getPosTPCNClsFindableMinusCrossedRows);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, posV0LegfTPCChi2NCl, getPosTPCChi2NCl);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, posV0LegfTPCSignal, getPosTPCSignal);
         CHECK_AND_FILL_VEC_PCM_FULL(posLeg, posV0LegfTPCNSigmaEl, tpcNSigmaEl);
         CHECK_AND_FILL_VEC_PCM_FULL(posLeg, posV0LegfTPCNSigmaPi, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, posV0LegfITSClusterSizes, getPosITSClusterSizes);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, negV0LegfDCAXY, getEleDcaXY);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, negV0LegfDCAZ, getEleDcaZ);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, negV0LegfEta, getEleEta);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, negV0LegfTPCNClsShared, getEleTPCNClsShared);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, negV0LegfTPCNClsFindable, getEleTPCNClsFindable);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, negV0LegfTPCNClsFindableMinusFound, getEleTPCNClsFindableMinusShared);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, negV0LegfTPCNClsFindableMinusCrossedRows, getEleTPCNClsFindableMinusCrossedRows);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, negV0LegfTPCChi2NCl, getEleTPCChi2NCl);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, negV0LegfTPCSignal, getEleTPCSignal);
         CHECK_AND_FILL_VEC_PCM_FULL(negLeg, negV0LegfTPCNSigmaEl, tpcNSigmaEl);
         CHECK_AND_FILL_VEC_PCM_FULL(negLeg, negV0LegfTPCNSigmaPi, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_PCM_FULL(candidate, negV0LegfITSClusterSizes, getEleITSClusterSizes);
       }
     }
     return inputFeatures;
@@ -106,17 +161,44 @@ class EmMlResponsePCM : public EmMlResponse<TypeOutputScore>
   void setAvailableInputFeatures()
   {
     MlResponse<TypeOutputScore>::mAvailableInputFeatures = {
+      FILL_MAP_PCM(v0PhotonCandidatefVx),
+      FILL_MAP_PCM(v0PhotonCandidatefVy),
+      FILL_MAP_PCM(v0PhotonCandidatefVz),
       FILL_MAP_PCM(v0PhotonCandidatefDCAxyToPV),
       FILL_MAP_PCM(v0PhotonCandidatefDCAzToPV),
       FILL_MAP_PCM(v0PhotonCandidatefPCA),
       FILL_MAP_PCM(v0PhotonCandidatefAlpha),
       FILL_MAP_PCM(v0PhotonCandidatefQtArm),
       FILL_MAP_PCM(v0PhotonCandidatefChiSquareNDF),
+      FILL_MAP_PCM(v0PhotonCandidatefCosPARZ),
+      FILL_MAP_PCM(v0PhotonCandidatefCosPAXY),
       FILL_MAP_PCM(v0PhotonCandidatefCosPA),
+      FILL_MAP_PCM(v0PhotonCandidatefPsiPair),
+      FILL_MAP_PCM(v0PhotonCandidatefPhiV),
+      FILL_MAP_PCM(posV0LegfDCAXY),
+      FILL_MAP_PCM(posV0LegfDCAZ),
+      FILL_MAP_PCM(posV0LegfEta),
+      FILL_MAP_PCM(posV0LegfTPCNClsShared),
+      FILL_MAP_PCM(posV0LegfTPCNClsFindable),
+      FILL_MAP_PCM(posV0LegfTPCNClsFindableMinusFound),
+      FILL_MAP_PCM(posV0LegfTPCNClsFindableMinusCrossedRows),
+      FILL_MAP_PCM(posV0LegfTPCChi2NCl),
+      FILL_MAP_PCM(posV0LegfTPCSignal),
       FILL_MAP_PCM(posV0LegfTPCNSigmaEl),
       FILL_MAP_PCM(posV0LegfTPCNSigmaPi),
+      FILL_MAP_PCM(posV0LegfITSClusterSizes),
+      FILL_MAP_PCM(negV0LegfDCAXY),
+      FILL_MAP_PCM(negV0LegfDCAZ),
+      FILL_MAP_PCM(negV0LegfEta),
+      FILL_MAP_PCM(negV0LegfTPCNClsShared),
+      FILL_MAP_PCM(negV0LegfTPCNClsFindable),
+      FILL_MAP_PCM(negV0LegfTPCNClsFindableMinusFound),
+      FILL_MAP_PCM(negV0LegfTPCNClsFindableMinusCrossedRows),
+      FILL_MAP_PCM(negV0LegfTPCChi2NCl),
+      FILL_MAP_PCM(negV0LegfTPCSignal),
       FILL_MAP_PCM(negV0LegfTPCNSigmaEl),
-      FILL_MAP_PCM(negV0LegfTPCNSigmaPi)};
+      FILL_MAP_PCM(negV0LegfTPCNSigmaPi),
+      FILL_MAP_PCM(negV0LegfITSClusterSizes)};
   }
 };
 

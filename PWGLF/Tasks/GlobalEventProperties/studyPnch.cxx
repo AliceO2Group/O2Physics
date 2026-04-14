@@ -12,7 +12,7 @@
 /// \file studyPnch.cxx
 ///
 /// \brief task for analysis of charged-particle multiplicity distributions
-/// \author Abhi Modak (abhi.modak@cern.ch)
+/// \author Abhi Modak (abhi.modak@cern.ch), Lucas José (lucas.jose.franco.da.silva@cern.ch)
 /// \since September 10, 2025
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -42,6 +42,7 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <unordered_map>
 #include <vector>
 
 using namespace o2;
@@ -75,6 +76,7 @@ AxisSpec axisEvent{10, 0.5, 10.5, "#Event", "EventAxis"};
 AxisSpec axisVtxZ{40, -20, 20, "Vertex Z", "VzAxis"};
 AxisSpec axisEta{40, -2, 2, "#eta", "EtaAxis"};
 AxisSpec axisPhi{629, 0, o2::constants::math::TwoPI, "#phi"};
+AxisSpec axisCollSel{5, 0.5, 5.5, "#Event", "CollSelAxis"};
 auto static constexpr kMinCharge = 3.f;
 
 struct StudyPnch {
@@ -96,12 +98,17 @@ struct StudyPnch {
   ConfigurableAxis ft0aMultHistBin{"ft0aMultHistBin", {501, -0.5, 500.5}, ""};
   ConfigurableAxis ft0cMultHistBin{"ft0cMultHistBin", {501, -0.5, 500.5}, ""};
   ConfigurableAxis ptHistBin{"ptHistBin", {200, 0., 20.}, ""};
+  ConfigurableAxis binsDCA{"binsDCA", {500, -10.0f, 10.0f}, ""};
+  ConfigurableAxis countNumberTracks{"countNumberTracks", {10, -0.5, 9.5}, ""};
 
   Configurable<bool> isApplyTFcut{"isApplyTFcut", true, "Enable TimeFrameBorder cut"};
   Configurable<bool> isApplyITSROcut{"isApplyITSROcut", true, "Enable ITS ReadOutFrameBorder cut"};
   Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", true, "Enable SameBunchPileup cut"};
   Configurable<bool> isApplyInelgt0{"isApplyInelgt0", false, "Enable INEL > 0 condition"};
   Configurable<bool> isApplyExtraPhiCut{"isApplyExtraPhiCut", false, "Enable extra phi cut"};
+  Configurable<bool> isApplyTVX{"isApplyTVX", false, "Enable TVX trigger sel"};
+  Configurable<bool> isApplyCheckID{"isApplyCheckID", true, "Select Tracks evaluating Collision ID"};
+  Configurable<bool> isApplyDuplicatedTrack{"isApplyDuplicatedTrack", true, "Select tracks that are not duplicated"};
 
   void init(InitContext const&)
   {
@@ -111,6 +118,8 @@ struct StudyPnch {
     AxisSpec axisFt0aMult = {ft0aMultHistBin, "ft0a", "FT0AMultAxis"};
     AxisSpec axisFt0cMult = {ft0cMultHistBin, "ft0c", "FT0CMultAxis"};
     AxisSpec axisPt = {ptHistBin, "pT", "pTAxis"};
+    AxisSpec axisCountNumberTracks = {countNumberTracks, "Count", "CountAxis"};
+    AxisSpec dcaAxis = {binsDCA, "DCA vs PV"};
 
     histos.add("EventHist", "EventHist", kTH1D, {axisEvent}, false);
     histos.add("VtxZHist", "VtxZHist", kTH1D, {axisVtxZ}, false);
@@ -125,8 +134,19 @@ struct StudyPnch {
     x->SetBinLabel(6, "INEL > 0");
     x->SetBinLabel(7, "|vz| < 10");
 
-    if (doprocessData || doprocessCorrelation || doprocessMonteCarlo || doprocessTreatedMonteCarlo) {
+    histos.add("SelCollsHist", "SelCollsHist", kTH1D, {axisCollSel}, false);
+    auto hstat_colls = histos.get<TH1>(HIST("SelCollsHist"));
+    auto* xColls = hstat_colls->GetXaxis();
+    xColls->SetBinLabel(1, "All collisions");
+    xColls->SetBinLabel(2, "Best Collision Selection");
+    xColls->SetBinLabel(3, "Has MC Collision Selection");
+
+    if (doprocessData || doprocessCorrelation || doprocessMonteCarlo) {
       histos.add("PhiVsEtaHist", "PhiVsEtaHist", kTH2F, {axisPhi, axisEta}, false);
+      histos.add("EtaHist", "EtaHist", kTH1D, {axisEta}, false);
+      histos.add("PhiHist", "PhiHist", kTH1D, {axisPhi}, false);
+      histos.add("hdcaxy", "dca to pv in the xy plane", kTH1D, {dcaAxis}, false);
+      histos.add("hdcaz", "dca to pv in the z axis", kTH1D, {dcaAxis}, false);
     }
     if (doprocessData) {
       histos.add("hMultiplicityData", "hMultiplicityData", kTH1F, {axisMult}, true);
@@ -139,14 +159,13 @@ struct StudyPnch {
       histos.add("NPVtracks_vs_GlobalMult", "NPVtracks_vs_GlobalMult", kTH2F, {axisPV, axisMult}, true);
     }
     if (doprocessMonteCarlo) {
+      histos.add("PhiVsEtaGenHist", "PhiVsEtaGenHist", kTH2F, {axisPhi, axisEta}, false);
+      histos.add("EtaGenHist", "EtaGenHist", kTH1D, {axisEta}, false);
+      histos.add("PhiGenHist", "PhiGenHist", kTH1D, {axisPhi}, false);
       histos.add("hMultiplicityMCrec", "hMultiplicityMCrec", kTH1F, {axisMult}, true);
       histos.add("hMultiplicityMCgen", "hMultiplicityMCgen", kTH1F, {axisMult}, true);
       histos.add("hResponseMatrix", "hResponseMatrix", kTH2F, {axisMult, axisMult}, true);
-    }
-    if (doprocessTreatedMonteCarlo) {
-      histos.add("hMultiplicityTreatMCrec", "hMultiplicityTreatMCrec", kTH1F, {axisMult}, true);
-      histos.add("hMultiplicityTreatMCgen", "hMultiplicityTreatMCgen", kTH1F, {axisMult}, true);
-      histos.add("hResponseMatrixTreat", "hResponseMatrixTreat", kTH2F, {axisMult, axisMult}, true);
+      histos.add("hCountNTracks", "hCountNTracks", kTH1F, {axisCountNumberTracks}, true);
     }
     if (doprocessEvtLossSigLossMC) {
       histos.add("MCEventHist", "MCEventHist", kTH1F, {axisEvent}, false);
@@ -236,6 +255,10 @@ struct StudyPnch {
       if (!isTrackSelected(track)) {
         continue;
       }
+      histos.fill(HIST("hdcaxy"), track.dcaXY());
+      histos.fill(HIST("hdcaz"), track.dcaZ());
+      histos.fill(HIST("EtaHist"), track.eta());
+      histos.fill(HIST("PhiHist"), track.phi());
       histos.fill(HIST("PhiVsEtaHist"), track.phi(), track.eta());
       nTrk++;
     }
@@ -250,12 +273,12 @@ struct StudyPnch {
       if (!isGenTrackSelected(track)) {
         continue;
       }
-      // Verify that the track belongs to the given MC collision
-      if (track.mcCollisionId() != McCol.globalIndex()) {
+      if (track.mcCollisionId() != McCol.mcCollisionId()) {
         continue;
       }
-
-      histos.fill(HIST("PhiVsEtaHist"), track.phi(), track.eta());
+      histos.fill(HIST("EtaGenHist"), track.eta());
+      histos.fill(HIST("PhiGenHist"), track.phi());
+      histos.fill(HIST("PhiVsEtaGenHist"), track.phi(), track.eta());
       nTrk++;
     }
     return nTrk;
@@ -265,19 +288,27 @@ struct StudyPnch {
   int countNTracksMcCol(countTrk const& tracks, McColType const& McCol)
   {
     auto nTrk = 0;
+    std::vector<int> mcRecIDs;
     for (const auto& track : tracks) {
       if (!isTrackSelected(track)) {
         continue;
       }
-      // Verify that the track belongs to the given MC collision
       if (track.has_mcParticle()) {
         auto particle = track.mcParticle();
-        if (particle.mcCollisionId() != McCol.mcCollisionId()) {
+        if (isApplyCheckID && particle.mcCollisionId() != McCol.mcCollisionId()) {
           continue;
         }
+        if (isApplyDuplicatedTrack && find(mcRecIDs.begin(), mcRecIDs.end(), particle.globalIndex()) != mcRecIDs.end()) {
+          continue;
+        }
+        mcRecIDs.push_back(particle.globalIndex());
+        nTrk++;
       }
+      histos.fill(HIST("hdcaxy"), track.dcaXY());
+      histos.fill(HIST("hdcaz"), track.dcaZ());
+      histos.fill(HIST("EtaHist"), track.eta());
+      histos.fill(HIST("PhiHist"), track.phi());
       histos.fill(HIST("PhiVsEtaHist"), track.phi(), track.eta());
-      nTrk++;
     }
     return nTrk;
   }
@@ -295,7 +326,9 @@ struct StudyPnch {
       return;
     }
     auto mult = countNTracks(tracks);
-    histos.fill(HIST("hMultiplicityData"), mult);
+    if (mult > 0) {
+      histos.fill(HIST("hMultiplicityData"), mult);
+    }
   }
 
   void processCorrelation(ColDataTable::iterator const& cols, FilTrackDataTable const& tracks)
@@ -311,38 +344,32 @@ struct StudyPnch {
     histos.fill(HIST("NPVtracks_vs_GlobalMult"), cols.multNTracksPV(), mult);
   }
 
-  void processMonteCarlo(ColMCTrueTable::iterator const& mcCollision, ColMCRecTable const& RecCols, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
+  void processMonteCarlo(soa::Join<aod::McCollisions, aod::McCollsExtra>::iterator const& mcCollision, ColMCRecTable const& RecCols, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
   {
     for (const auto& RecCol : RecCols) {
       if (!isEventSelected(RecCol)) {
         continue;
       }
-      auto recTracksPart = RecTracks.sliceBy(perCollision, RecCol.globalIndex());
-      auto multrec = countNTracksMcCol(recTracksPart, RecCol);
-      histos.fill(HIST("hMultiplicityMCrec"), multrec);
-      auto multgen = countGenTracks(GenParticles, mcCollision);
-      histos.fill(HIST("hMultiplicityMCgen"), multgen);
-      histos.fill(HIST("hResponseMatrix"), multrec, multgen);
-    }
-  }
-
-  void processTreatedMonteCarlo(ColMCTrueTable::iterator const& mcCollision, ColMCRecTable const& RecCols, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
-  {
-    // Count generated tracks at each iterator
-    auto multgen = countGenTracks(GenParticles, mcCollision);
-    histos.fill(HIST("hMultiplicityTreatMCgen"), multgen);
-    for (const auto& RecCol : RecCols) {
-      if (!isEventSelected(RecCol)) {
+      histos.fill(HIST("SelCollsHist"), 1);
+      // Evaluation of reconstructed collisions with more than 1 contributor
+      if (RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
         continue;
       }
-      // Verify that the reconstructed collision corresponds to the given MC collision
-      if (RecCol.mcCollisionId() != mcCollision.globalIndex()) {
+      histos.fill(HIST("SelCollsHist"), 2);
+      if (!RecCol.has_mcCollision()) {
         continue;
       }
+      histos.fill(HIST("SelCollsHist"), 3);
       auto recTracksPart = RecTracks.sliceBy(perCollision, RecCol.globalIndex());
       auto multrec = countNTracksMcCol(recTracksPart, RecCol);
-      histos.fill(HIST("hMultiplicityTreatMCrec"), multrec);
-      histos.fill(HIST("hResponseMatrixTreat"), multrec, multgen);
+      if (multrec > 0) {
+        histos.fill(HIST("hMultiplicityMCrec"), multrec);
+      }
+      auto multgen = countGenTracks(GenParticles, RecCol);
+      if (multgen > 0 && multrec > 0) {
+        histos.fill(HIST("hMultiplicityMCgen"), multgen);
+        histos.fill(HIST("hResponseMatrix"), multrec, multgen);
+      }
     }
   }
 
@@ -351,13 +378,24 @@ struct StudyPnch {
     if (isApplyInelgt0 && !mcCollision.isInelGt0()) {
       return;
     }
+    if (isApplyTVX && !(mcCollision.multMCFT0C() > 0 && mcCollision.multMCFT0A() > 0)) {
+      return;
+    }
     if (std::abs(mcCollision.posZ()) >= vtxRange) {
       return;
     }
     // All generated events
     histos.fill(HIST("MCEventHist"), 1);
-    auto multAll = countGenTracks(GenParticles, mcCollision);
-    histos.fill(HIST("hMultiplicityMCgenAll"), multAll);
+    auto nTrk_multAll = 0;
+    for (const auto& GenParticle : GenParticles) {
+      if (!isGenTrackSelected(GenParticle)) {
+        continue;
+      }
+      nTrk_multAll++;
+    }
+    if (nTrk_multAll > 0) {
+      histos.fill(HIST("hMultiplicityMCgenAll"), nTrk_multAll);
+    }
 
     bool atLeastOne = false;
     auto numcontributors = -999;
@@ -375,15 +413,22 @@ struct StudyPnch {
 
     if (atLeastOne) {
       histos.fill(HIST("MCEventHist"), 2);
-      auto multSel = countGenTracks(GenParticles, mcCollision);
-      histos.fill(HIST("hMultiplicityMCgenSel"), multSel);
+      auto nTrk_multSel = 0;
+      for (const auto& GenParticle : GenParticles) {
+        if (!isGenTrackSelected(GenParticle)) {
+          continue;
+        }
+        nTrk_multSel++;
+      }
+      if (nTrk_multSel > 0) {
+        histos.fill(HIST("hMultiplicityMCgenSel"), nTrk_multSel);
+      }
     }
   }
 
   PROCESS_SWITCH(StudyPnch, processData, "process data CentFT0C", false);
   PROCESS_SWITCH(StudyPnch, processCorrelation, "do correlation study in data", false);
   PROCESS_SWITCH(StudyPnch, processMonteCarlo, "process MC CentFT0C", false);
-  PROCESS_SWITCH(StudyPnch, processTreatedMonteCarlo, "process Treated MC CentFT0C", false);
   PROCESS_SWITCH(StudyPnch, processEvtLossSigLossMC, "process Signal Loss, Event Loss", false);
 };
 

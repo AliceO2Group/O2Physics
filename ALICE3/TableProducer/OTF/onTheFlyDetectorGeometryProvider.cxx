@@ -16,14 +16,23 @@
 /// \author Nicolò Jacazio <nicolo.jacazio@cern.ch>, Universita del Piemonte Orientale (IT)
 ///
 
-#include "ALICE3/Core/FastTracker.h"
+#include "GeometryContainer.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <map>
+#include <TH1.h>
+#include <TString.h>
+
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -39,6 +48,7 @@ struct OnTheFlyDetectorGeometryProvider {
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setTimestamp(-1);
     o2::fastsim::GeometryContainer geometryContainer; // Checking that the geometry files can be accessed and loaded
+    geometryContainer.setCcdbManager(ccdb.operator->());
     LOG(info) << "On-the-fly detector geometry provider running.";
     if (detectorConfiguration.value.empty()) {
       LOG(fatal) << "No detector configuration files provided.";
@@ -47,27 +57,8 @@ struct OnTheFlyDetectorGeometryProvider {
     int idx = 0;
     for (std::string& configFile : detectorConfiguration.value) {
       LOG(info) << "Loading detector geometry from configuration file: " << configFile;
-      histos.add<TH1>(Form("GeometryConfigFile_%d", idx), configFile.c_str(), o2::framework::HistType::kTH1D, {{1, 0, 1}})->Fill(0.5);
-      // If the filename starts with ccdb: then take the file from the ccdb
-      if (configFile.rfind("ccdb:", 0) == 0) {
-        std::string ccdbPath = configFile.substr(5); // remove "ccdb:" prefix
-        const std::string outPath = "./.ALICE3/Configuration/";
-        configFile = Form("%s/%s/snapshot.root", outPath.c_str(), ccdbPath.c_str());
-        std::ifstream checkFile(configFile); // Check if file already exists
-        if (!checkFile.is_open()) {          // File does not exist, retrieve from CCDB
-          LOG(info) << " --- CCDB source detected for detector geometry " << configFile;
-          std::map<std::string, std::string> metadata;
-          ccdb->getCCDBAccessor().retrieveBlob(ccdbPath, outPath, metadata, 1);
-          LOG(info) << " --- Now retrieving geometry configuration from CCDB to: " << configFile;
-        } else { // File exists, proceed to load
-          LOG(info) << " --- Geometry configuration file already exists: " << configFile << ". Skipping download.";
-          checkFile.close();
-        }
-        detectorConfiguration.value[idx] = configFile; // Update the filename to the local file
-      }
-      LOG(info) << "Adding " << configFile << " to geometry container";
+      histos.add<TH1>(Form("GeometryConfigFile_%d", idx++), configFile.c_str(), o2::framework::HistType::kTH1D, {{1, 0, 1}})->Fill(0.5);
       geometryContainer.addEntry(configFile);
-      idx++;
     }
 
     // First we check that the magnetic field is consistent
@@ -84,7 +75,7 @@ struct OnTheFlyDetectorGeometryProvider {
 
   void process(o2::aod::McCollisions const& mcCollisions, o2::aod::McParticles const& mcParticles)
   {
-    LOG(info) << "On-the-fly detector geometry provider processing " << mcCollisions.size() << " collisions and " << mcParticles.size() << " particles.";
+    LOG(debug) << "On-the-fly detector geometry provider processing " << mcCollisions.size() << " collisions and " << mcParticles.size() << " particles.";
   }
 };
 

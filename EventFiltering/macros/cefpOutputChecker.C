@@ -8,10 +8,15 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-// O2 includes
 
 #include <TFile.h>
+#include <TH1.h>
+#include <TString.h>
 #include <TTree.h>
+
+#include <RtypesCore.h>
+
+#include <string>
 
 void cefpOutputChecker(std::string histoFile = "AnalysisResults.root", std::string treeFile = "AO2D.root")
 {

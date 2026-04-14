@@ -93,7 +93,7 @@ struct phipbpb {
   Configurable<bool> fillSA{"fillSA", false, "fill spin alignment"};
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
-  Configurable<float> cfgCutCentrality{"cfgCutCentrality", 80.0f, "Accepted maximum Centrality"};
+  Configurable<float> cfgCutCentrality{"cfgCutCentrality", 100.0f, "Accepted maximum Centrality"};
   Configurable<int> cfgCutOccupancy{"cfgCutOccupancy", 3000, "Occupancy cut"};
   // track
   Configurable<bool> cqvas{"cqvas", false, "change q vectors after shift correction"};
@@ -198,6 +198,9 @@ struct phipbpb {
     AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
     AxisSpec occupancyAxis = {occupancyBinning, "Occupancy"};
     AxisSpec spAxis = {spNbins, lbinsp, hbinsp, "Sp"};
+    histos.add("hImpactParameterVsEvrStatusGen", "hImpactParameterVsEvrStatusGen", HistType::kTH2F, {{200, 0.0, 20.0}, {5, 0.0, 5.0}}, true);
+    histos.add("hImpactParameterVsEvrStatusRec", "hImpactParameterVsEvrStatusRec", HistType::kTH3F, {{200, 0.0, 20.0}, {100, 0.0, 100.0}, {10, 0.0, 10.0}}, true);
+    histos.add("hINumRecCollisionVsEvrStatusRec", "hINumRecCollisionVsEvrStatusRec", HistType::kTH3F, {{21, -0.5, 20.5}, {100, 0.0, 100.0}, {10, 0.0, 10.0}}, true);
 
     if (fillv1) {
       histos.add("hpQxtQxpvscent", "hpQxtQxpvscent", HistType::kTHnSparseF, {cnfgaxis.configThnAxisCentrality, spAxis}, true);
@@ -792,7 +795,7 @@ struct phipbpb {
       Npostrack = Npostrack + 1;
     }
   }
-  PROCESS_SWITCH(phipbpb, processSameEvent, "Process Same event", true);
+  PROCESS_SWITCH(phipbpb, processSameEvent, "Process Same event", false);
 
   void processSameEventv1(EventCandidatesv1::iterator const& collision, TrackCandidates const& /*tracks, aod::BCs const&*/, aod::BCsWithTimestamps const&)
   {
@@ -1045,7 +1048,7 @@ struct phipbpb {
       }
     }
   }
-  PROCESS_SWITCH(phipbpb, processMEAcc, "Process ME Acceptance", true);
+  PROCESS_SWITCH(phipbpb, processMEAcc, "Process ME Acceptance", false);
 
   void processMEAccv1(EventCandidatesv1 const& collisions, TrackCandidates const& tracks)
   {
@@ -1303,7 +1306,7 @@ struct phipbpb {
       }
     }
   }
-  PROCESS_SWITCH(phipbpb, processMixedEventOpti, "Process Mixed event new", true);
+  PROCESS_SWITCH(phipbpb, processMixedEventOpti, "Process Mixed event new", false);
 
   void processMixedEventOptiv1(EventCandidatesv1 const& collisions, TrackCandidates const& tracks)
   {
@@ -1877,6 +1880,47 @@ struct phipbpb {
 
   } // process MC
   PROCESS_SWITCH(phipbpb, processMCPhiWeight, "Process MC Phi Weight", false);
+
+  using McCollisionMults = soa::Join<aod::McCollisions, aod::MultMCExtras>;
+  using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::Mults, aod::PVMults>;
+  void processEvtLossMC(McCollisionMults::iterator const& mcCollision, const soa::SmallGroups<EventCandidatesMC>& recCollisions)
+  {
+    auto impactPar = mcCollision.impactParameter();
+    histos.fill(HIST("hImpactParameterVsEvrStatusGen"), impactPar, 0.5);
+    if (mcCollision.isInelGt0()) {
+      histos.fill(HIST("hImpactParameterVsEvrStatusGen"), impactPar, 1.5);
+    }
+    auto numberRecCollision = recCollisions.size();
+    for (const auto& RecCollision : recCollisions) {
+      auto isTVX = RecCollision.selection_bit(o2::aod::evsel::kIsTriggerTVX);
+      auto vz = TMath::Abs(RecCollision.posZ());
+      auto issel8 = RecCollision.sel8();
+      auto isITSGoodLayer = RecCollision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll);
+      auto isGoodVtxzFT0vsPV = RecCollision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
+      auto isSameBunchPileup = RecCollision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
+      auto centrality = RecCollision.centFT0C();
+      histos.fill(HIST("hImpactParameterVsEvrStatusRec"), impactPar, centrality, 0.5);
+      histos.fill(HIST("hINumRecCollisionVsEvrStatusRec"), numberRecCollision, centrality, 0.5);
+      if (isTVX) {
+        histos.fill(HIST("hImpactParameterVsEvrStatusRec"), impactPar, centrality, 1.5);
+        histos.fill(HIST("hINumRecCollisionVsEvrStatusRec"), numberRecCollision, centrality, 1.5);
+      }
+      if (isTVX && vz < 7) {
+        histos.fill(HIST("hImpactParameterVsEvrStatusRec"), impactPar, centrality, 2.5);
+        histos.fill(HIST("hINumRecCollisionVsEvrStatusRec"), numberRecCollision, centrality, 2.5);
+      }
+      if (isTVX && vz < 7 && issel8) {
+        histos.fill(HIST("hImpactParameterVsEvrStatusRec"), impactPar, centrality, 3.5);
+        histos.fill(HIST("hINumRecCollisionVsEvrStatusRec"), numberRecCollision, centrality, 3.5);
+      }
+      if (isTVX && vz < 7 && issel8 && isITSGoodLayer && isGoodVtxzFT0vsPV && isSameBunchPileup) {
+        histos.fill(HIST("hImpactParameterVsEvrStatusRec"), impactPar, centrality, 4.5);
+        histos.fill(HIST("hINumRecCollisionVsEvrStatusRec"), numberRecCollision, centrality, 4.5);
+      }
+    }
+    //}
+  }
+  PROCESS_SWITCH(phipbpb, processEvtLossMC, "Process to calculate Event Loss", true);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

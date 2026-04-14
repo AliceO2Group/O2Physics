@@ -21,9 +21,8 @@
 #include <EMCALBase/Geometry.h>
 #include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
-#include <Framework/HistogramRegistry.h>
+#include <Framework/Logger.h>
 
-#include <TH1.h>
 #include <TRandom3.h>
 
 #include <array>

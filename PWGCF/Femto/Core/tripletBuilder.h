@@ -19,16 +19,17 @@
 #include "PWGCF/Femto/Core/closeTripletRejection.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
 #include "PWGCF/Femto/Core/modes.h"
+#include "PWGCF/Femto/Core/pairHistManager.h"
 #include "PWGCF/Femto/Core/trackHistManager.h"
 #include "PWGCF/Femto/Core/tripletCleaner.h"
 #include "PWGCF/Femto/Core/tripletHistManager.h"
 #include "PWGCF/Femto/Core/tripletProcessHelpers.h"
+#include "PWGCF/Femto/Core/v0HistManager.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
-#include "Framework/HistogramRegistry.h"
-#include "Framework/HistogramSpec.h"
-
-#include "fairlogger/Logger.h"
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
 
 #include <chrono>
 #include <cstdint>

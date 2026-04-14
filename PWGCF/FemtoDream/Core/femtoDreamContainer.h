@@ -224,9 +224,25 @@ class FemtoDreamContainer
   }
 
   template <typename T>
+  void init_3Dqn_MC(std::string folderName, std::string femtoDKout, std::string femtoDKside, std::string femtoDKlong,
+                    T& femtoDKoutAxis, T& femtoDKsideAxis, T& femtoDKlongAxis, bool smearingByOrigin = false)
+  {
+    mHistogramRegistry->add((folderName + "/hNoMCtruthPairsCounter").c_str(), "; Counter; Entries", kTH1I, {{1, 0, 1}});
+    mHistogramRegistry->add((folderName + "/hFakePairsCounter").c_str(), "; Counter; Entries", kTH1I, {{1, 0, 1}});
+    if (smearingByOrigin) {
+      const int nOriginBins = o2::aod::femtodreamMCparticle::ParticleOriginMCTruth::kNOriginMCTruthTypes;
+      mHistogramRegistry->add((folderName + "/relPair3dresolution").c_str(), (";" + femtoDKout + "mctruth;" + femtoDKout + "_reco;" + femtoDKside + "mctruth;" + femtoDKside + "_reco;" + femtoDKlong + "mctruth;" + femtoDKlong + "_reco;" + "MC origin particle 1; MC origin particle 2;").c_str(),
+                              kTHnSparseF, {femtoDKoutAxis, femtoDKoutAxis, femtoDKsideAxis, femtoDKsideAxis, femtoDKlongAxis, femtoDKlongAxis, {nOriginBins, 0, nOriginBins}, {nOriginBins, 0, nOriginBins}});
+    } else {
+      mHistogramRegistry->add((folderName + "/relPair3dresolution").c_str(), (";" + femtoDKout + "mctruth;" + femtoDKside + "mctruth;" + femtoDKlong + "mctruth;" + femtoDKout + "_reco;" + femtoDKside + "_reco;" + femtoDKlong + "_reco;").c_str(),
+                              kTHnSparseF, {femtoDKoutAxis, femtoDKoutAxis, femtoDKsideAxis, femtoDKsideAxis, femtoDKlongAxis, femtoDKlongAxis});
+    }
+  }
+
+  template <typename T>
   void init_3Dqn(HistogramRegistry* registry,
                  T& DKoutBins, T& DKsideBins, T& DKlongBins, T& mTBins4D, T& multPercentileBins4D,
-                 bool isMC, ConfigurableAxis qnBins = {"qnBins", {10, 0, 10}, "qn binning"}, ConfigurableAxis pairPhiBins = {"phiBins", {10, 0 - 0.05, TMath::Pi() + 0.05}, "pair phi binning"})
+                 bool isMC, ConfigurableAxis qnBins = {"qnBins", {10, 0, 10}, "qn binning"}, ConfigurableAxis pairPhiBins = {"phiBins", {10, 0 - 0.05, TMath::Pi() + 0.05}, "pair phi binning"}, bool smearingByOrigin = false)
   {
     mHistogramRegistry = registry;
 
@@ -251,6 +267,8 @@ class FemtoDreamContainer
       folderName = static_cast<std::string>(mFolderSuffix[mEventType]) + static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + static_cast<std::string>("_3Dqn");
       init_base_3Dqn(folderName, femtoObsDKout, femtoObsDKside, femtoObsDKlong,
                      DKoutAxis, DKsideAxis, DKlongAxis, mTAxis4D, multPercentileAxis4D, qnAxis, pairPhiAxis);
+      init_3Dqn_MC(folderName, femtoObsDKout, femtoObsDKside, femtoObsDKlong,
+                   DKoutAxis, DKsideAxis, DKlongAxis, smearingByOrigin);
     }
   }
 
@@ -484,11 +502,26 @@ class FemtoDreamContainer
     mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("_3Dqn") + HIST("/relPair3dRmTMultPercentileQnPairphi"), femtoDKout, femtoDKside, femtoDKlong, mT, multPercentile, myQnBin, pairPhiEP);
   }
 
+  /// Called by setPair_3Dqn only in case of Monte Carlo truth
+  /// Fills resolution of DKout, DKside, DKlong
+  void setPair_3Dqn_MC(std::vector<double> k3dMC, std::vector<double> k3d, const int originPart1, const int originPart2, bool smearingByOrigin)
+  {
+    if (smearingByOrigin) {
+      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("_3Dqn") + HIST("/relPair3dresolution"), k3dMC[1], k3d[1], k3dMC[2], k3d[2], k3dMC[3], k3d[3], originPart1, originPart2);
+    } else {
+      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("_3Dqn") + HIST("/relPair3dresolution"), k3dMC[1], k3d[1], k3dMC[2], k3d[2], k3dMC[3], k3d[3]);
+    }
+  }
+
   template <bool isMC, typename T1, typename T2>
-  void setPair_3Dqn(T1 const& part1, T2 const& part2, const float multPercentile, bool IsSameSpecies, const float myQnBin, const float eventPlane)
+  void setPair_3Dqn(T1 const& part1, T2 const& part2, const float multPercentile, bool IsSameSpecies, const float myQnBin, const float eventPlane, bool smearingByOrigin = false)
   {
 
     std::vector<double> k3d = FemtoDreamMath::newpairfunc(part1, mMassOne, part2, mMassTwo, IsSameSpecies);
+    if (k3d.size() < 4) {
+      LOG(error) << "newpairfunc returned size=" << k3d.size();
+      return;
+    }
     float DKout = k3d[1];
     float DKside = k3d[2];
     float DKlong = k3d[3];
@@ -503,12 +536,17 @@ class FemtoDreamContainer
       if constexpr (isMC) {
         if (part1.has_fdMCParticle() && part2.has_fdMCParticle()) {
 
-          std::vector<double> k3dMC = FemtoDreamMath::newpairfunc(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo, IsSameSpecies);
+          std::vector<double> k3dMC = FemtoDreamMath::newpairfuncMC(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo, IsSameSpecies);
+          if (k3dMC.size() < 4) {
+            LOG(error) << "newpairfunc returned size=" << k3d.size();
+            return;
+          }
           const float mTMC = FemtoDreamMath::getmT(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo);
           const float pairPhiEPMC = FemtoDreamMath::getPairPhiEP(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo, eventPlane);
 
           if (std::abs(part1.fdMCParticle().pdgMCTruth()) == mPDGOne && std::abs(part2.fdMCParticle().pdgMCTruth()) == mPDGTwo) { // Note: all pair-histogramms are filled with MC truth information ONLY in case of non-fake candidates
             setPair_3Dqn_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(k3dMC[1], k3dMC[2], k3dMC[3], mTMC, multPercentile, myQnBin, pairPhiEPMC);
+            setPair_3Dqn_MC(k3dMC, k3d, part1.fdMCParticle().partOriginMCTruth(), part2.fdMCParticle().partOriginMCTruth(), smearingByOrigin);
           } else {
             mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("/hFakePairsCounter"), 0);
           }
@@ -521,10 +559,14 @@ class FemtoDreamContainer
   }
 
   template <bool isMC, typename T1, typename T2>
-  void setPair_3Dqn(T1 const& part1, T2 const& part2, const float multPercentile, bool IsSameSpecies, const float myQnBin, const float EP1, const float EP2)
+  void setPair_3Dqn(T1 const& part1, T2 const& part2, const float multPercentile, bool IsSameSpecies, const float myQnBin, const float EP1, const float EP2, bool smearingByOrigin = false)
   {
 
     std::vector<double> k3d = FemtoDreamMath::newpairfunc(part1, mMassOne, part2, mMassTwo, IsSameSpecies);
+    if (k3d.size() < 4) {
+      LOG(error) << "newpairfunc returned size=" << k3d.size();
+      return;
+    }
     float DKout = k3d[1];
     float DKside = k3d[2];
     float DKlong = k3d[3];
@@ -539,12 +581,17 @@ class FemtoDreamContainer
       if constexpr (isMC) {
         if (part1.has_fdMCParticle() && part2.has_fdMCParticle()) {
 
-          std::vector<double> k3dMC = FemtoDreamMath::newpairfunc(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo, IsSameSpecies);
+          std::vector<double> k3dMC = FemtoDreamMath::newpairfuncMC(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo, IsSameSpecies);
+          if (k3dMC.size() < 4) {
+            LOG(error) << "newpairfunc returned size=" << k3d.size();
+            return;
+          }
           const float mTMC = FemtoDreamMath::getmT(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo);
           const float pairPhiEPMC = FemtoDreamMath::getPairPhiEP(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo, EP1, EP2);
 
           if (std::abs(part1.fdMCParticle().pdgMCTruth()) == mPDGOne && std::abs(part2.fdMCParticle().pdgMCTruth()) == mPDGTwo) { // Note: all pair-histogramms are filled with MC truth information ONLY in case of non-fake candidates
             setPair_3Dqn_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(k3dMC[1], k3dMC[2], k3dMC[3], mTMC, multPercentile, myQnBin, pairPhiEPMC);
+            setPair_3Dqn_MC(k3dMC, k3d, part1.fdMCParticle().partOriginMCTruth(), part2.fdMCParticle().partOriginMCTruth(), smearingByOrigin);
           } else {
             mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("/hFakePairsCounter"), 0);
           }

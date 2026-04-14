@@ -210,6 +210,8 @@ DECLARE_SOA_COLUMN(CascTransRadius, cascTransRadius, float);                    
 DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);                                  //! X position of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);                                  //! Y position of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);                                  //! Z position of the decay vertex
+DECLARE_SOA_COLUMN(Alpha, alpha, float);                                          //! Alpha of the decay vertex
+DECLARE_SOA_COLUMN(QtArm, qtarm, float);                                          //! Armenteros Qt of the decay vertex
 DECLARE_SOA_COLUMN(TpcSignal10, tpcSignal10, int8_t);                             //! TPC signal of the track x10
 DECLARE_SOA_COLUMN(DaughterTPCNSigmaPosPi10, daughterTPCNSigmaPosPi10, int8_t);   //! TPC PID x10 of the positive daughter as Pion
 DECLARE_SOA_COLUMN(DaughterTPCNSigmaPosKa10, daughterTPCNSigmaPosKa10, int8_t);   //! TPC PID x10 of the positive daughter as Kaon
@@ -229,6 +231,9 @@ DECLARE_SOA_COLUMN(DaughterTOFNSigmaNegPr10, daughterTOFNSigmaNegPr10, int8_t); 
 DECLARE_SOA_COLUMN(DaughterTOFNSigmaBachPi10, daughterTOFNSigmaBachPi10, int8_t); //! TOF PID x10 of the bachelor daughter as Pion
 DECLARE_SOA_COLUMN(DaughterTOFNSigmaBachKa10, daughterTOFNSigmaBachKa10, int8_t); //! TOF PID x10 of the bachelor daughter as Kaon
 DECLARE_SOA_COLUMN(DaughterTOFNSigmaBachPr10, daughterTOFNSigmaBachPr10, int8_t); //! TOF PID x10 of the bachelor daughter as Proton
+DECLARE_SOA_COLUMN(NCrossedRowsPos, nCrossedRowsPos, uint8_t);                    //! Number of TPC crossed rows of the positive daughter
+DECLARE_SOA_COLUMN(NCrossedRowsNeg, nCrossedRowsNeg, uint8_t);                    //! Number of TPC crossed rows of the negative daughter
+DECLARE_SOA_COLUMN(NCrossedRowsBach, nCrossedRowsBach, uint8_t);                  //! Number of TPC crossed rows of the bachelor daughter
 // For MC
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! Index of the corresponding MC particle
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);
@@ -641,6 +646,8 @@ DECLARE_SOA_TABLE(ResoV0s, "AOD", "RESOV0",
                   v0data::DCAPosToPV,
                   v0data::DCANegToPV,
                   v0data::DCAV0ToPV,
+                  resodaughter::NCrossedRowsPos,
+                  resodaughter::NCrossedRowsNeg,
                   resodaughter::MLambda,
                   resodaughter::MAntiLambda,
                   resodaughter::MK0Short,
@@ -648,6 +655,8 @@ DECLARE_SOA_TABLE(ResoV0s, "AOD", "RESOV0",
                   resodaughter::DecayVtxX,
                   resodaughter::DecayVtxY,
                   resodaughter::DecayVtxZ,
+                  resodaughter::Alpha,
+                  resodaughter::QtArm,
                   // resodaughter::Pt<resodaughter::Px, resodaughter::Py>,
                   resodaughter::Eta<resodaughter::Px, resodaughter::Py, resodaughter::Pz>,
                   resodaughter::Phi<resodaughter::Px, resodaughter::Py>,
@@ -706,6 +715,9 @@ DECLARE_SOA_TABLE(ResoCascades, "AOD", "RESOCASCADE",
                   cascdata::DCAXYCascToPV,
                   cascdata::DCAZCascToPV,
                   cascdata::Sign,
+                  resodaughter::NCrossedRowsPos,
+                  resodaughter::NCrossedRowsNeg,
+                  resodaughter::NCrossedRowsBach,
                   resodaughter::MLambda,
                   resodaughter::MXi,
                   resodaughter::TransRadius,
@@ -870,7 +882,7 @@ using Reso2TracksMC = soa::Join<aod::FullTracks, McTrackLabels>;
 using Reso2TracksPID = soa::Join<aod::FullTracks, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
 using Reso2TracksPIDExt = soa::Join<Reso2TracksPID, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension>; // Without Extra
 
-using ResoCollisionCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>;
+using ResoCollisionCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As, aod::Mults>;
 using ResoRun2CollisionCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
 using ResoCollisionCandidatesMC = soa::Join<ResoCollisionCandidates, aod::McCollisionLabels>;
 using ResoRun2CollisionCandidatesMC = soa::Join<ResoRun2CollisionCandidates, aod::McCollisionLabels>;

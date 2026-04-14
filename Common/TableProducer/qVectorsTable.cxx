@@ -129,15 +129,6 @@ struct qVectorsTable {
   Produces<aod::QvectorTPCnegVecs> qVectorTPCnegVec;
   Produces<aod::QvectorTPCallVecs> qVectorTPCallVec;
 
-  Produces<aod::QvectorsShifteds> qVectorShifted;
-  Produces<aod::QvectorShiftedFT0CVecs> qVectorFT0CShiftedVec;
-  Produces<aod::QvectorShiftedFT0AVecs> qVectorFT0AShiftedVec;
-  Produces<aod::QvectorShiftedFT0MVecs> qVectorFT0MShiftedVec;
-  Produces<aod::QvectorShiftedFV0AVecs> qVectorFV0AShiftedVec;
-  Produces<aod::QvectorShiftedTPCposVecs> qVectorTPCposShiftedVec;
-  Produces<aod::QvectorShiftedTPCnegVecs> qVectorTPCnegShiftedVec;
-  Produces<aod::QvectorShiftedTPCallVecs> qVectorTPCallShiftedVec;
-
   std::vector<float> FT0RelGainConst{};
   std::vector<float> FV0RelGainConst{};
 
@@ -184,17 +175,7 @@ struct qVectorsTable {
     {"QvectorFV0As", cfgUseFV0A},
     {"QvectorFT0Ms", cfgUseFT0M},
     {"QvectorFT0As", cfgUseFT0A},
-    {"QvectorFT0Cs", cfgUseFT0C},
-    {"QvectorShiftedBTots", cfgUseBTot},
-    {"QvectorShiftedBNegs", cfgUseBNeg},
-    {"QvectorShiftedBPoss", cfgUseBPos},
-    {"QvectorShiftedTPCalls", cfgUseTPCall},
-    {"QvectorShiftedTPCnegs", cfgUseTPCneg},
-    {"QvectorShiftedTPCposs", cfgUseTPCpos},
-    {"QvectorShiftedFV0As", cfgUseFV0A},
-    {"QvectorShiftedFT0Ms", cfgUseFT0M},
-    {"QvectorShiftedFT0As", cfgUseFT0A},
-    {"QvectorShiftedFT0Cs", cfgUseFT0C}};
+    {"QvectorFT0Cs", cfgUseFT0C}};
 
   void init(InitContext& initContext)
   {
@@ -202,7 +183,7 @@ struct qVectorsTable {
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (DeviceSpec const& device : workflows.devices) {
       for (auto const& input : device.inputs) {
-        if (input.matcher.binding == "Qvectors" || input.matcher.binding == "QvectorsShifteds") {
+        if (input.matcher.binding == "Qvectors") {
           for (auto const& det : useDetector) {
             useDetector[det.first.data()] = true;
           }
@@ -596,25 +577,6 @@ struct qVectorsTable {
     std::vector<float> qvecReTPCall{};
     std::vector<float> qvecImTPCall{};
 
-    std::vector<float> qvecShiftedRe{};
-    std::vector<float> qvecShiftedIm{};
-    std::vector<float> qvecShiftedAmp{};
-
-    std::vector<float> qvecReShiftedFT0C{};
-    std::vector<float> qvecImShiftedFT0C{};
-    std::vector<float> qvecReShiftedFT0A{};
-    std::vector<float> qvecImShiftedFT0A{};
-    std::vector<float> qvecReShiftedFT0M{};
-    std::vector<float> qvecImShiftedFT0M{};
-    std::vector<float> qvecReShiftedFV0A{};
-    std::vector<float> qvecImShiftedFV0A{};
-    std::vector<float> qvecReShiftedTPCpos{};
-    std::vector<float> qvecImShiftedTPCpos{};
-    std::vector<float> qvecReShiftedTPCneg{};
-    std::vector<float> qvecImShiftedTPCneg{};
-    std::vector<float> qvecReShiftedTPCall{};
-    std::vector<float> qvecImShiftedTPCall{};
-
     auto bc = coll.bc_as<aod::BCsWithTimestamps>();
     int currentRun = bc.runNumber();
     if (runNumber != currentRun) {
@@ -701,36 +663,35 @@ struct qVectorsTable {
           deltapsiTPCneg *= static_cast<float>(nmode);
           deltapsiTPCall *= static_cast<float>(nmode);
 
-          qvecReShiftedFT0C.push_back(qvecRe[(kTPCall + 1) * 4 * id + kFT0C * 4 + 3] * TMath::Cos(deltapsiFT0C) - qvecIm[(kTPCall + 1) * 4 * id + kFT0C * 4 + 3] * TMath::Sin(deltapsiFT0C));
-          qvecImShiftedFT0C.push_back(qvecRe[(kTPCall + 1) * 4 * id + kFT0C * 4 + 3] * TMath::Sin(deltapsiFT0C) + qvecIm[(kTPCall + 1) * 4 * id + kFT0C * 4 + 3] * TMath::Cos(deltapsiFT0C));
-          qvecReShiftedFT0A.push_back(qvecRe[(kTPCall + 1) * 4 * id + kFT0A * 4 + 3] * TMath::Cos(deltapsiFT0A) - qvecIm[(kTPCall + 1) * 4 * id + kFT0A * 4 + 3] * TMath::Sin(deltapsiFT0A));
-          qvecImShiftedFT0A.push_back(qvecRe[(kTPCall + 1) * 4 * id + kFT0A * 4 + 3] * TMath::Sin(deltapsiFT0A) + qvecIm[(kTPCall + 1) * 4 * id + kFT0A * 4 + 3] * TMath::Cos(deltapsiFT0A));
-          qvecReShiftedFT0M.push_back(qvecRe[(kTPCall + 1) * 4 * id + kFT0M * 4 + 3] * TMath::Cos(deltapsiFT0M) - qvecIm[(kTPCall + 1) * 4 * id + kFT0M * 4 + 3] * TMath::Sin(deltapsiFT0M));
-          qvecImShiftedFT0M.push_back(qvecRe[(kTPCall + 1) * 4 * id + kFT0M * 4 + 3] * TMath::Sin(deltapsiFT0M) + qvecIm[(kTPCall + 1) * 4 * id + kFT0M * 4 + 3] * TMath::Cos(deltapsiFT0M));
-          qvecReShiftedFV0A.push_back(qvecRe[(kTPCall + 1) * 4 * id + kFV0A * 4 + 3] * TMath::Cos(deltapsiFV0A) - qvecIm[(kTPCall + 1) * 4 * id + kFV0A * 4 + 3] * TMath::Sin(deltapsiFV0A));
-          qvecImShiftedFV0A.push_back(qvecRe[(kTPCall + 1) * 4 * id + kFV0A * 4 + 3] * TMath::Sin(deltapsiFV0A) + qvecIm[(kTPCall + 1) * 4 * id + kFV0A * 4 + 3] * TMath::Cos(deltapsiFV0A));
-          qvecReShiftedTPCpos.push_back(qvecRe[(kTPCall + 1) * 4 * id + kTPCpos * 4 + 3] * TMath::Cos(deltapsiTPCpos) - qvecIm[(kTPCall + 1) * 4 * id + kTPCpos * 4 + 3] * TMath::Sin(deltapsiTPCpos));
-          qvecImShiftedTPCpos.push_back(qvecRe[(kTPCall + 1) * 4 * id + kTPCpos * 4 + 3] * TMath::Sin(deltapsiTPCpos) + qvecIm[(kTPCall + 1) * 4 * id + kTPCpos * 4 + 3] * TMath::Cos(deltapsiTPCpos));
-          qvecReShiftedTPCneg.push_back(qvecRe[(kTPCall + 1) * 4 * id + kTPCneg * 4 + 3] * TMath::Cos(deltapsiTPCneg) - qvecIm[(kTPCall + 1) * 4 * id + kTPCneg * 4 + 3] * TMath::Sin(deltapsiTPCneg));
-          qvecImShiftedTPCneg.push_back(qvecRe[(kTPCall + 1) * 4 * id + kTPCneg * 4 + 3] * TMath::Sin(deltapsiTPCneg) + qvecIm[(kTPCall + 1) * 4 * id + kTPCneg * 4 + 3] * TMath::Cos(deltapsiTPCneg));
-          qvecReShiftedTPCall.push_back(qvecRe[(kTPCall + 1) * 4 * id + kTPCall * 4 + 3] * TMath::Cos(deltapsiTPCall) - qvecIm[(kTPCall + 1) * 4 * id + kTPCall * 4 + 3] * TMath::Sin(deltapsiTPCall));
-          qvecImShiftedTPCall.push_back(qvecRe[(kTPCall + 1) * 4 * id + kTPCall * 4 + 3] * TMath::Sin(deltapsiTPCall) + qvecIm[(kTPCall + 1) * 4 * id + kTPCall * 4 + 3] * TMath::Cos(deltapsiTPCall));
+          float qvecReShiftedFT0C = qvecRe[(kTPCall + 1) * 4 * id + kFT0C * 4 + 3] * TMath::Cos(deltapsiFT0C) - qvecIm[(kTPCall + 1) * 4 * id + kFT0C * 4 + 3] * TMath::Sin(deltapsiFT0C);
+          float qvecImShiftedFT0C = qvecRe[(kTPCall + 1) * 4 * id + kFT0C * 4 + 3] * TMath::Sin(deltapsiFT0C) + qvecIm[(kTPCall + 1) * 4 * id + kFT0C * 4 + 3] * TMath::Cos(deltapsiFT0C);
+          float qvecReShiftedFT0A = qvecRe[(kTPCall + 1) * 4 * id + kFT0A * 4 + 3] * TMath::Cos(deltapsiFT0A) - qvecIm[(kTPCall + 1) * 4 * id + kFT0A * 4 + 3] * TMath::Sin(deltapsiFT0A);
+          float qvecImShiftedFT0A = qvecRe[(kTPCall + 1) * 4 * id + kFT0A * 4 + 3] * TMath::Sin(deltapsiFT0A) + qvecIm[(kTPCall + 1) * 4 * id + kFT0A * 4 + 3] * TMath::Cos(deltapsiFT0A);
+          float qvecReShiftedFT0M = qvecRe[(kTPCall + 1) * 4 * id + kFT0M * 4 + 3] * TMath::Cos(deltapsiFT0M) - qvecIm[(kTPCall + 1) * 4 * id + kFT0M * 4 + 3] * TMath::Sin(deltapsiFT0M);
+          float qvecImShiftedFT0M = qvecRe[(kTPCall + 1) * 4 * id + kFT0M * 4 + 3] * TMath::Sin(deltapsiFT0M) + qvecIm[(kTPCall + 1) * 4 * id + kFT0M * 4 + 3] * TMath::Cos(deltapsiFT0M);
+          float qvecReShiftedFV0A = qvecRe[(kTPCall + 1) * 4 * id + kFV0A * 4 + 3] * TMath::Cos(deltapsiFV0A) - qvecIm[(kTPCall + 1) * 4 * id + kFV0A * 4 + 3] * TMath::Sin(deltapsiFV0A);
+          float qvecImShiftedFV0A = qvecRe[(kTPCall + 1) * 4 * id + kFV0A * 4 + 3] * TMath::Sin(deltapsiFV0A) + qvecIm[(kTPCall + 1) * 4 * id + kFV0A * 4 + 3] * TMath::Cos(deltapsiFV0A);
+          float qvecReShiftedTPCpos = qvecRe[(kTPCall + 1) * 4 * id + kTPCpos * 4 + 3] * TMath::Cos(deltapsiTPCpos) - qvecIm[(kTPCall + 1) * 4 * id + kTPCpos * 4 + 3] * TMath::Sin(deltapsiTPCpos);
+          float qvecImShiftedTPCpos = qvecRe[(kTPCall + 1) * 4 * id + kTPCpos * 4 + 3] * TMath::Sin(deltapsiTPCpos) + qvecIm[(kTPCall + 1) * 4 * id + kTPCpos * 4 + 3] * TMath::Cos(deltapsiTPCpos);
+          float qvecReShiftedTPCneg = qvecRe[(kTPCall + 1) * 4 * id + kTPCneg * 4 + 3] * TMath::Cos(deltapsiTPCneg) - qvecIm[(kTPCall + 1) * 4 * id + kTPCneg * 4 + 3] * TMath::Sin(deltapsiTPCneg);
+          float qvecImShiftedTPCneg = qvecRe[(kTPCall + 1) * 4 * id + kTPCneg * 4 + 3] * TMath::Sin(deltapsiTPCneg) + qvecIm[(kTPCall + 1) * 4 * id + kTPCneg * 4 + 3] * TMath::Cos(deltapsiTPCneg);
+          float qvecReShiftedTPCall = qvecRe[(kTPCall + 1) * 4 * id + kTPCall * 4 + 3] * TMath::Cos(deltapsiTPCall) - qvecIm[(kTPCall + 1) * 4 * id + kTPCall * 4 + 3] * TMath::Sin(deltapsiTPCall);
+          float qvecImShiftedTPCall = qvecRe[(kTPCall + 1) * 4 * id + kTPCall * 4 + 3] * TMath::Sin(deltapsiTPCall) + qvecIm[(kTPCall + 1) * 4 * id + kTPCall * 4 + 3] * TMath::Cos(deltapsiTPCall);
 
-          qvecShiftedRe.push_back(qvecReShiftedFT0C[id]);
-          qvecShiftedRe.push_back(qvecReShiftedFT0A[id]);
-          qvecShiftedRe.push_back(qvecReShiftedFT0M[id]);
-          qvecShiftedRe.push_back(qvecReShiftedFV0A[id]);
-          qvecShiftedRe.push_back(qvecReShiftedTPCpos[id]);
-          qvecShiftedRe.push_back(qvecReShiftedTPCneg[id]);
-          qvecShiftedRe.push_back(qvecReShiftedTPCall[id]);
-
-          qvecShiftedIm.push_back(qvecImShiftedFT0C[id]);
-          qvecShiftedIm.push_back(qvecImShiftedFT0A[id]);
-          qvecShiftedIm.push_back(qvecImShiftedFT0M[id]);
-          qvecShiftedIm.push_back(qvecImShiftedFV0A[id]);
-          qvecShiftedIm.push_back(qvecImShiftedTPCpos[id]);
-          qvecShiftedIm.push_back(qvecImShiftedTPCneg[id]);
-          qvecShiftedIm.push_back(qvecImShiftedTPCall[id]);
+          qvecRe[(kTPCall + 1) * 4 * id + kFT0C * 4 + 3] = qvecReShiftedFT0C;
+          qvecIm[(kTPCall + 1) * 4 * id + kFT0C * 4 + 3] = qvecImShiftedFT0C;
+          qvecRe[(kTPCall + 1) * 4 * id + kFT0A * 4 + 3] = qvecReShiftedFT0A;
+          qvecIm[(kTPCall + 1) * 4 * id + kFT0A * 4 + 3] = qvecImShiftedFT0A;
+          qvecRe[(kTPCall + 1) * 4 * id + kFT0M * 4 + 3] = qvecReShiftedFT0M;
+          qvecIm[(kTPCall + 1) * 4 * id + kFT0M * 4 + 3] = qvecImShiftedFT0M;
+          qvecRe[(kTPCall + 1) * 4 * id + kFV0A * 4 + 3] = qvecReShiftedFV0A;
+          qvecIm[(kTPCall + 1) * 4 * id + kFV0A * 4 + 3] = qvecImShiftedFV0A;
+          qvecRe[(kTPCall + 1) * 4 * id + kTPCpos * 4 + 3] = qvecReShiftedTPCpos;
+          qvecIm[(kTPCall + 1) * 4 * id + kTPCpos * 4 + 3] = qvecImShiftedTPCpos;
+          qvecRe[(kTPCall + 1) * 4 * id + kTPCneg * 4 + 3] = qvecReShiftedTPCneg;
+          qvecIm[(kTPCall + 1) * 4 * id + kTPCneg * 4 + 3] = qvecImShiftedTPCneg;
+          qvecRe[(kTPCall + 1) * 4 * id + kTPCall * 4 + 3] = qvecReShiftedTPCall;
+          qvecIm[(kTPCall + 1) * 4 * id + kTPCall * 4 + 3] = qvecImShiftedTPCall;
         }
       }
       int CorrLevel = cfgCorrLevel == 0 ? 0 : cfgCorrLevel - 1;
@@ -774,17 +735,6 @@ struct qVectorsTable {
     qVectorTPCposVec(IsCalibrated, qvecReTPCpos, qvecImTPCpos, qvecAmp[kTPCpos], TrkTPCposLabel);
     qVectorTPCnegVec(IsCalibrated, qvecReTPCneg, qvecImTPCneg, qvecAmp[kTPCneg], TrkTPCnegLabel);
     qVectorTPCallVec(IsCalibrated, qvecReTPCall, qvecImTPCall, qvecAmp[kTPCall], TrkTPCallLabel);
-
-    if (cfgShiftCorr) {
-      qVectorShifted(cent, IsCalibrated, qvecShiftedRe, qvecShiftedIm, qvecAmp);
-      qVectorFT0CShiftedVec(IsCalibrated, qvecReShiftedFT0C, qvecImShiftedFT0C, qvecAmp[kFT0C]);
-      qVectorFT0AShiftedVec(IsCalibrated, qvecReShiftedFT0A, qvecImShiftedFT0A, qvecAmp[kFT0A]);
-      qVectorFT0MShiftedVec(IsCalibrated, qvecReShiftedFT0M, qvecImShiftedFT0M, qvecAmp[kFT0M]);
-      qVectorFV0AShiftedVec(IsCalibrated, qvecReShiftedFV0A, qvecImShiftedFV0A, qvecAmp[kFV0A]);
-      qVectorTPCposShiftedVec(IsCalibrated, qvecReShiftedTPCpos, qvecImShiftedTPCpos, qvecAmp[kTPCpos], TrkTPCposLabel);
-      qVectorTPCnegShiftedVec(IsCalibrated, qvecReShiftedTPCneg, qvecImShiftedTPCneg, qvecAmp[kTPCneg], TrkTPCnegLabel);
-      qVectorTPCallShiftedVec(IsCalibrated, qvecReShiftedTPCall, qvecImShiftedTPCall, qvecAmp[kTPCall], TrkTPCallLabel);
-    }
 
     // Deprecated, will be removed in future after transition time //
     if (useDetector["QvectorBPoss"])

@@ -21,12 +21,17 @@
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/trackHistManager.h"
 
-#include "CommonConstants/MathConstants.h"
-#include "Framework/Configurable.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/HistogramSpec.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
+
+#include <TH1.h>
+#include <TPDGCode.h>
 
 #include <array>
+#include <cstddef>
 #include <map>
 #include <string>
 #include <string_view>

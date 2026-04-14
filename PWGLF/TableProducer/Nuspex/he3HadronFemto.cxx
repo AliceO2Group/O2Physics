@@ -514,9 +514,9 @@ struct he3HadronFemto {
   float correctPtHe3TrackedAsTriton(const float pt, const uint32_t pidForTracking)
   {
     if (pt < 2.5 && pidForTracking == o2::track::PID::Triton)
-      return pt * 2. * (1. - kHePidTrkParams[0] - kHePidTrkParams[1] * pt * 2.);
+      return pt * (1. - kHePidTrkParams[0] - kHePidTrkParams[1] * pt);
 
-    return pt * 2.;
+    return pt;
   }
 
   float computeNsigmaDCA(const float pt, const float dca, const int iSpecies, const char* dcaType = "xy")
@@ -966,11 +966,11 @@ struct he3HadronFemto {
     mQaRegistry.fill(HIST("Had/hChi2NClHadITS"), he3Hadcand.chi2nclITSHad);
 
     if (isMc) {
-      const float correctedPtHe3 = correctPtHe3TrackedAsTriton(he3Hadcand.recoPtHe3(), he3Hadcand.pidtrkHe3);
-      const float kstarGen = getkstar(he3Hadcand.momHe3MC, he3Hadcand.etaHe3MC, he3Hadcand.phiHe3MC, o2::constants::physics::MassHelium3, 1.,
-                                      he3Hadcand.momHadMC, he3Hadcand.etaHadMC, he3Hadcand.phiHadMC, settingHadPDGCode == PDG_t::kPiPlus ? o2::constants::physics::MassPiPlus : o2::constants::physics::MassProton, 1.);
-      const float kstarRec = getkstar(correctedPtHe3, he3Hadcand.recoEtaHe3(), he3Hadcand.recoPhiHe3(), o2::constants::physics::MassHelium3, 1.,
-                                      he3Hadcand.recoPtHad(), he3Hadcand.recoEtaHad(), he3Hadcand.recoPhiHad(), settingHadPDGCode == PDG_t::kPiPlus ? o2::constants::physics::MassPiPlus : o2::constants::physics::MassProton, 1.);
+      const float correctedPtHe3 = correctPtHe3TrackedAsTriton(std::abs(he3Hadcand.recoPtHe3()), he3Hadcand.pidtrkHe3);
+      const float kstarGen = getkstar(std::abs(he3Hadcand.momHe3MC), he3Hadcand.etaHe3MC, he3Hadcand.phiHe3MC, o2::constants::physics::MassHelium3, 1.,
+                                      std::abs(he3Hadcand.momHadMC), he3Hadcand.etaHadMC, he3Hadcand.phiHadMC, settingHadPDGCode == PDG_t::kPiPlus ? o2::constants::physics::MassPiPlus : o2::constants::physics::MassProton, 1.);
+      const float kstarRec = getkstar(std::abs(correctedPtHe3), he3Hadcand.recoEtaHe3(), he3Hadcand.recoPhiHe3(), o2::constants::physics::MassHelium3, 1.,
+                                      std::abs(he3Hadcand.recoPtHad()), he3Hadcand.recoEtaHad(), he3Hadcand.recoPhiHad(), settingHadPDGCode == PDG_t::kPiPlus ? o2::constants::physics::MassPiPlus : o2::constants::physics::MassProton, 1.);
       mQaRegistry.fill(HIST("hKstarRecVsKstarGen"), kstarGen, kstarRec);
     }
   }

@@ -1034,10 +1034,13 @@ struct ResonanceDaughterInitializer {
                v0.dcapostopv(),
                v0.dcanegtopv(),
                v0.dcav0topv(),
+               0,
+               0,
                v0.mLambda(),
                v0.mAntiLambda(),
                v0.mK0Short(),
-               v0.v0radius(), v0.x(), v0.y(), v0.z());
+               v0.v0radius(), v0.x(), v0.y(), v0.z(),
+               v0.alpha(), v0.qtarm());
       if (!cfgBypassTrackIndexFill) {
         resoV0V0s(v0.globalIndex());
       }
@@ -1205,6 +1208,9 @@ struct ResonanceDaughterInitializer {
                     casc.dcaXYCascToPV(),
                     casc.dcaZCascToPV(),
                     casc.sign(),
+                    0,
+                    0,
+                    0,
                     casc.mLambda(),
                     casc.mXi(),
                     casc.v0radius(), casc.cascradius(), casc.x(), casc.y(), casc.z());

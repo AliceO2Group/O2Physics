@@ -17,9 +17,6 @@
 
 #include "PWGLF/DataModel/LFResonanceTables.h"
 
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisTask.h"
@@ -28,9 +25,6 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
-
-#include <TLorentzVector.h>
-#include <TRandom.h>
 
 #include <fairlogger/Logger.h>
 
@@ -44,19 +38,34 @@ struct lambdaAnalysis_pb {
   Preslice<aod::ResoTracks> perRCol = aod::resodaughter::resoCollisionId;
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   // Configurables.
-
+  aod::ResoMCParents const* mResoParents = nullptr;
   Configurable<bool> ConfEvtOccupancyInTimeRange{"ConfEvtOccupancyInTimeRange", false, "occupancy selection true or false"};
   Configurable<int> nBinsPt{"nBinsPt", 100, "N bins in pT histogram"};
   Configurable<int> nBinsInvM{"nBinsInvM", 120, "N bins in InvMass histogram"};
   Configurable<int> lambda1520id{"lambda1520id", 3124, "pdg"};
   Configurable<bool> doRotate{"doRotate", true, "rotated inv mass spectra"};
-
   // Tracks
   Configurable<float> cPtMin{"cPtMin", 0.15, "Minimum Track pT"};
   Configurable<float> cPMin{"cPMin", 0., "Minimum Track p"};
   Configurable<float> cEtaCut{"cEtaCut", 0.8, "Pseudorapidity cut"};
   Configurable<float> cDcaz{"cDcazMin", 1., "Minimum DCAz"};
-  Configurable<float> cDcaxy{"cDcaxyMin", 0.1, "Minimum DCAxy"};
+  Configurable<float> cfgRapidityShift{"cfgRapidityShift", 0., " rapidity shift"};
+  Configurable<float> cfgRapidityCut{"cfgRapidityCut", 0.5, "Rapidity window"};
+  // TPC crossed rows (absolute)
+  Configurable<int> cfgMinCrossedRows{"cfgMinCrossedRows", 70, "min TPC crossed rows"};
+  Configurable<bool> cfgUseCrossedRows{"cfgUseCrossedRows", false, "apply crossed rows cut"};
+
+  Configurable<int> cfgMinTPCcls{"cfgMinTPCcls", 70, "min TPC clusters found"};
+  Configurable<bool> cfgUseTPCcls{"cfgUseTPCcls", false, "apply TPC clusters cut"};
+
+  Configurable<std::vector<float>> cDcaPtBinsPr{"cDcaPtBinsPr", {0.0f, 0.5f, 1.0f, 2.0f, 3.0f, 5.0f, 1000.0f}, "Proton pT bin edges for DCAxy cut"};
+
+  Configurable<std::vector<float>> cDcaXYBinsPr{"cDcaXYBinsPr", {0.020f, 0.015f, 0.010f, 0.007f, 0.005f, 0.004f}, "Proton max |DCAxy| per pT bin (cm)"};
+
+  // Kaon DCAxy — pT binned
+  Configurable<std::vector<float>> cDcaPtBinsKa{"cDcaPtBinsKa", {0.0f, 0.3f, 0.6f, 1.0f, 2.0f, 1000.0f}, "Kaon pT bin edges for DCAxy cut"};
+
+  Configurable<std::vector<float>> cDcaXYBinsKa{"cDcaXYBinsKa", {0.025f, 0.018f, 0.012f, 0.008f, 0.004f}, "Kaon max |DCAxy| per pT bin (cm)"};
   Configurable<bool> isonlyQC{"isonlyQC", false, "only QC"};
   Configurable<bool> isDeepAngle{"isDeepAngle", false, "Deep Angle cut"};
   Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
@@ -108,6 +117,16 @@ struct lambdaAnalysis_pb {
   ConfigurableAxis cMixMultBins{"cMixMultBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 200.0f}, "Mixing bins - multiplicity"};
   ConfigurableAxis cMixEPAngle{"cMixEPAngle", {VARIABLE_WIDTH, -1.5708f, -1.25664f, -0.942478f, -0.628319f, 0.f, 0.628319f, 0.942478f, 1.25664f, 1.5708f}, "event plane"};
   ConfigurableAxis occupancy_bins{"occupancy_bins", {VARIABLE_WIDTH, 0.0, 100, 500, 600, 1000, 1100, 1500, 1600, 2000, 2100, 2500, 2600, 3000, 3100, 3500, 3600, 4000, 4100, 4500, 4600, 5000, 5100, 9999}, "Binning of the occupancy axis"};
+  Configurable<int> cNofRotations{"cNofRotations", 10, "Number of rotations for rotational background"};
+  Configurable<float> rotationalcut{"rotationalcut", 6.f, "Rotational background angle window: PI/rotationalcut"};
+
+  // ── MC Event Selection Configurables ─────────────────────────────────────
+  Configurable<bool> cEvtMCAfterAllCuts{"cEvtMCAfterAllCuts", false, "MC event sel: isInAfterAllCuts"};
+  Configurable<bool> cEvtMCINELgt0{"cEvtMCINELgt0", false, "MC event sel: isINELgt0"};
+  Configurable<bool> cEvtMCSel8{"cEvtMCSel8", false, "MC event sel: isInSel8"};
+  Configurable<bool> cEvtMCVtxIn10{"cEvtMCVtxIn10", false, "MC event sel: isVtxIn10"};
+  Configurable<bool> cEvtMCTriggerTVX{"cEvtMCTriggerTVX", false, "MC event sel: isTriggerTVX"};
+  Configurable<bool> cEvtMCRecINELgt0{"cEvtMCRecINELgt0", false, "MC event sel: isRecINELgt0"};
   // Histogram Registry.
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -126,15 +145,20 @@ struct lambdaAnalysis_pb {
     const AxisSpec axisdEdx(380, 10, 200, {"#frac{dE}{dx}"});
     const AxisSpec axisVz(120, -12, 12, {"vz"});
     const AxisSpec axisEP(120, -3.14, 3.14, {"#theta"});
-    const AxisSpec axisInvM(nBinsInvM, 1.2, 1.8, {"M_{inv} (GeV/c^{2})"});
+    const AxisSpec axisInvM(nBinsInvM, 1.4, 2.0, {"M_{inv} (GeV/c^{2})"});
     AxisSpec axisOccupancy = {occupancy_bins, "Occupancy [-40,100]"};
     AxisSpec axisDCAz = {cDCAzBins, "DCA_{z} (cm)"};
 
     histos.add("Event/h1d_ft0_mult_percentile", "FT0 (%)", kTH2F, {axisCent, axisOccupancy});
+    histos.add("Event/h_ft0_vz", "Collision Vertex Z position", kTH1F, {{100, -15., 15.}});
     if (doprocessMix || doprocessMixDF || doprocessMixepDF) {
       histos.add("Event/mixing_vzVsmultpercentile", "FT0(%)", kTH3F, {axisCent, axisVz, axisEP});
     }
-    // QA Before
+    // QA Beforei
+    histos.add("QAbefore/hEta_rec", "Reco dN/d#eta; #eta; dN/d#eta", kTH1F, {{50, -1.0, 1.0}});
+    histos.add("QAbefore/hPt_rec", "Reco pT; p_{T} (GeV/c); Tracks", kTH1F, {axisP_pid});
+    histos.add("QAbefore/hPhi_rec", "Reco #varphi; #varphi (rad); Tracks", kTH1F, {{72, 0, 6.2832}});
+    histos.add("QAbefore/hEtaPhi_rec", "Reco #eta vs #varphi; #eta; #varphi", kTH2F, {axisEta, {72, 0, 6.2832}});
     histos.add("QAbefore/Proton/h2d_pr_nsigma_tpc_p", "n#sigma^{TPC} Protons", kTH2F, {axisP_pid, axisTPCNsigma});
     histos.add("QAbefore/Proton/h2d_pr_nsigma_tof_p", "n#sigma^{TOF} Protons", kTH2F, {axisP_pid, axisTOFNsigma});
     histos.add("QAbefore/Proton/h2d_pr_nsigma_tof_vs_tpc", "n#sigma^{TPC} vs n#sigma^{TOF} Protons", kTH2F, {axisTPCNsigma, axisTOFNsigma});
@@ -156,6 +180,8 @@ struct lambdaAnalysis_pb {
     histos.add("QAafter/Proton/h2d_Prpi_nsigma_tof_p", " Protons pion", kTH2F, {axisP_pid, axisTOFNsigma});
     histos.add("QAafter/Proton/h2d_Prka_nsigma_tof_p", " Protons kaon", kTH2F, {axisP_pid, axisTOFNsigma});
     histos.add("QAafter/Proton/h2d_pr_nsigma_tof_vs_tpc", "n#sigma(TOF) vs n#sigma(TPC) Protons", kTH2F, {axisTPCNsigma, axisTOFNsigma});
+    histos.add("QAafter/Proton/hTPCNClsCrossedRowsVsPt", "TPC Crossed Rows vs pT;p_{T} (GeV/c);N_{cls,crossed};Counts", kTH2F, {axisPt_pid, {200, 0, 200}});
+    histos.add("QAafter/Proton/hTPCNClsFoundVsPt", "TPC Found Clusters vs pT;p_{T} (GeV/c);N_{cls,found};Counts", kTH2F, {axisPt_pid, {200, 0, 200}});
     histos.add("QAafter/Kaon/hd_ka_pt", "p_{T}-spectra Kaons", kTH2F, {axisPt_pid, axisCent});
     histos.add("QAafter/Kaon/h2d_ka_dca_z", "dca_{z} Kaons", kTH2F, {axisPt_pid, axisDCAz});
     histos.add("QAafter/Kaon/h2d_ka_dca_xy", "dca_{xy} Kaons", kTH2F, {axisPt_pid, axisDCAxy});
@@ -169,7 +195,8 @@ struct lambdaAnalysis_pb {
     histos.add("QAafter/Kaon/h2d_Kapi_nsigma_tof_p", " Kaons pion", kTH2F, {axisP_pid, axisTOFNsigma});
     histos.add("QAafter/Kaon/h2d_Kapr_nsigma_tof_p", " Kaons proton", kTH2F, {axisP_pid, axisTOFNsigma});
     histos.add("QAafter/Kaon/h2d_ka_nsigma_tof_vs_tpc", "n#sigma(TOF) vs n#sigma(TPC) Kaons", kTH2F, {axisTPCNsigma, axisTOFNsigma});
-
+    histos.add("QAafter/Kaon/hTPCNClsCrossedRowsVsPt", "TPC Crossed Rows vs pT;p_{T} (GeV/c);N_{cls,crossed};Counts", kTH2F, {axisPt_pid, {200, 0, 200}});
+    histos.add("QAafter/Kaon/hTPCNClsFoundVsPt", "TPC Found Clusters vs pT;p_{T} (GeV/c);N_{cls,found};Counts", kTH2F, {axisPt_pid, {200, 0, 200}});
     // Analysis
     // Lambda Invariant Mass
     if (!doprocessMC) {
@@ -177,7 +204,8 @@ struct lambdaAnalysis_pb {
       histos.add("Analysis/h4d_lstar_invm_US_MP", "THn #bar #Lambda(1520)", kTHnSparseF, {axisInvM, axisPt, axisCent, axisOccupancy});
       histos.add("Analysis/h4d_lstar_invm_PP", "THn Like Signs p K^{+}", kTHnSparseF, {axisInvM, axisPt, axisCent, axisOccupancy});
       histos.add("Analysis/h4d_lstar_invm_MM", "THn Like Signs #bar{p} K^{-}", kTHnSparseF, {axisInvM, axisPt, axisCent, axisOccupancy});
-      histos.add("Analysis/h4d_lstar_invm_rot", "THn Rotated", kTHnSparseF, {axisInvM, axisPt, axisCent, axisOccupancy});
+      histos.add("Analysis/h4d_lstar_invm_rot_PM", "THn Rotated", kTHnSparseF, {axisInvM, axisPt, axisCent, axisOccupancy});
+      histos.add("Analysis/h4d_lstar_invm_rot_MP", "THn Rotated", kTHnSparseF, {axisInvM, axisPt, axisCent, axisOccupancy});
       histos.add("Analysis/h4d_lstar_invm_US_PM_mix", "THn Mixed Events", kTHnSparseF, {axisInvM, axisPt, axisCent, axisOccupancy});
       histos.add("Analysis/h4d_lstar_invm_US_MP_mix", "THn anti Mixed Events", kTHnSparseF, {axisInvM, axisPt, axisCent, axisOccupancy});
       histos.add("Analysis/h4d_lstar_invm_LS_PP_mix", "THn Mixed Events PP", kTHnSparseF, {axisInvM, axisPt, axisCent, axisOccupancy});
@@ -185,7 +213,7 @@ struct lambdaAnalysis_pb {
     }
     // MC
     if (doprocessMC) {
-
+      histos.add("Event/hMCEventCutflow", "MC Event Cutflow", kTH1F, {{7, 0, 7}});
       histos.add("QAChecks/h1d_pr_rec_pt", "Reconstructed p_{T}-spectra Protons", kTH1F, {axisPt_pid});
       histos.add("QAChecks/h1d_ka_rec_pt", "Recondstucted p_{T}-spectra Kaons", kTH1F, {axisPt_pid});
       histos.add("QAChecks/h1d_pr_gen_pt", "Generated p_{T}-spectra Protons", kTH1F, {axisPt_pid});
@@ -195,23 +223,18 @@ struct lambdaAnalysis_pb {
       histos.add("Analysis/h3d_gen_lstar_MP", "Generated #bar{#Lambda}(1520) p_{T}", kTHnSparseF, {axisInvM, axisPt, axisCent});
       histos.add("Analysis/h3d_rec_lstar_PM", "Reconstructed #Lambda(1520) p_{T}", kTHnSparseF, {axisInvM, axisPt, axisCent});
       histos.add("Analysis/h3d_rec_lstar_MP", "Reconstructed #bar{#Lambda}(1520) p_{T}", kTHnSparseF, {axisInvM, axisPt, axisCent});
+      histos.add("Analysis/h3d_reso_lstar_PM", "Resolution #Lambda(1520) p_{T}", kTHnSparseF, {{200, -0.05, 0.05}, axisPt, axisCent});
+      histos.add("Analysis/h3d_reso_lstar_MP", "Resolution #bar{#Lambda}(1520) p_{T}", kTHnSparseF, {{200, -0.05, 0.05}, axisPt, axisCent});
     }
   }
 
   template <typename T>
   bool selTracks(T const& track)
   {
-
     if (track.pt() < cPtMin)
       return false;
 
     if (std::abs(track.eta()) > cEtaCut)
-      return false;
-
-    if (std::abs(track.dcaZ()) > cDcaz)
-      return false;
-
-    if (std::abs(track.dcaXY()) > cDcaxy)
       return false;
 
     if (cPrimaryTrack && !track.isPrimaryTrack())
@@ -221,6 +244,57 @@ struct lambdaAnalysis_pb {
       return false;
 
     if (cPVContributor && !track.isPVContributor())
+      return false;
+
+    if (cfgUseCrossedRows && track.tpcNClsCrossedRows() < cfgMinCrossedRows)
+      return false;
+
+    if (cfgUseTPCcls && track.tpcNClsFound() < cfgMinTPCcls)
+      return false;
+
+    return true;
+  }
+
+  template <typename T>
+  bool dcaSelectionProton(T const& track, float p)
+  {
+    auto ptBinsPr = static_cast<std::vector<float>>(cDcaPtBinsPr);
+    auto dcaXYPr = static_cast<std::vector<float>>(cDcaXYBinsPr);
+    int nBinsPr = static_cast<int>(ptBinsPr.size()) - 1;
+
+    bool dcaXYPassed = false;
+    for (int i = 0; i < nBinsPr; i++) {
+      if (p >= ptBinsPr[i] && p < ptBinsPr[i + 1] &&
+          std::abs(track.dcaXY()) < dcaXYPr[i])
+        dcaXYPassed = true;
+    }
+    if (!dcaXYPassed)
+      return false;
+
+    if (std::abs(track.dcaZ()) > cDcaz)
+      return false;
+
+    return true;
+  }
+
+  // ── Kaon DCA Selection ────────────────────────────────────────────────────
+  template <typename T>
+  bool dcaSelectionKaon(T const& track, float p)
+  {
+    auto ptBinsKa = static_cast<std::vector<float>>(cDcaPtBinsKa);
+    auto dcaXYKa = static_cast<std::vector<float>>(cDcaXYBinsKa);
+    int nBinsKa = static_cast<int>(ptBinsKa.size()) - 1;
+
+    bool dcaXYPassed = false;
+    for (int i = 0; i < nBinsKa; i++) {
+      if (p >= ptBinsKa[i] && p < ptBinsKa[i + 1] &&
+          std::abs(track.dcaXY()) < dcaXYKa[i])
+        dcaXYPassed = true;
+    }
+    if (!dcaXYPassed)
+      return false;
+
+    if (std::abs(track.dcaZ()) > cDcaz)
       return false;
 
     return true;
@@ -287,6 +361,7 @@ struct lambdaAnalysis_pb {
       }
     }
     if (tpcPIDPassed && tofPIDPassed) {
+
       return true;
     }
     return false;
@@ -353,6 +428,7 @@ struct lambdaAnalysis_pb {
       }
     }
     if (tpcPIDPassed && tofPIDPassed) {
+
       return true;
     }
     return false;
@@ -362,19 +438,16 @@ struct lambdaAnalysis_pb {
   void fillDataHistos(trackType const& trk1, trackType const& trk2, float mult, int occup = 100)
   {
 
-    TLorentzVector p1, p2, p;
-    TRandom* rn = new TRandom();
     float p_ptot = 0., k_ptot = 0.;
 
     for (auto const& [trkPr, trkKa] : soa::combinations(soa::CombinationsFullIndexPolicy(trk1, trk2))) {
-
       // Do not analyse same index tracks.
-      if (trkPr.index() == trkKa.index() && !mix)
+      if (trkPr.index() == trkKa.index()) // && !mix)
         continue;
-
       // pT, DCA, Global Tracks and PVcontrib selection.
       if (!selTracks(trkPr) || !selTracks(trkKa))
         continue;
+
       //  LOGF(info, "eork 4 %d, %d  %d  ",trkPr.index(),trk1.size(),trkPr.size());
       auto _pxPr = trkPr.px();
       auto _pyPr = trkPr.py();
@@ -389,7 +462,6 @@ struct lambdaAnalysis_pb {
       // Fill QA before track selection.
       if (!mix) {
         auto _tpcnsigmaPr = trkPr.tpcNSigmaPr();
-
         histos.fill(HIST("QAbefore/Proton/h2d_pr_nsigma_tpc_p"), p_ptot, _tpcnsigmaPr);
         if (trkPr.hasTOF()) {
           auto _tofnsigmaPr = trkPr.tofNSigmaPr();
@@ -412,6 +484,9 @@ struct lambdaAnalysis_pb {
         continue;
       if (!selectionPIDProton(trkPr, p_ptot) || !selectionPIDKaon(trkKa, k_ptot))
         continue;
+      if (!dcaSelectionProton(trkPr, p_ptot) || !dcaSelectionKaon(trkKa, k_ptot))
+        continue;
+
       if (isDeepAngle && TMath::ACos((trkPr.pt() * trkKa.pt() + _pzPr * _pzKa) / (p_ptot * k_ptot)) < cfgDeepAngle)
         continue;
 
@@ -429,6 +504,9 @@ struct lambdaAnalysis_pb {
         histos.fill(HIST("QAafter/Proton/h2d_Prka_nsigma_tpc_p"), p_ptot, trkPr.tpcNSigmaKa());
         histos.fill(HIST("QAafter/Proton/h2d_pr_nsigma_tpc_p"), p_ptot, _tpcnsigmaPr);
         histos.fill(HIST("QAafter/Proton/h2d_pr_nsigma_tpc_pt"), _ptPr, _tpcnsigmaPr);
+        histos.fill(HIST("QAafter/Proton/hTPCNClsCrossedRowsVsPt"), _ptPr, trkPr.tpcNClsCrossedRows());
+        histos.fill(HIST("QAafter/Proton/hTPCNClsFoundVsPt"), _ptPr, trkPr.tpcNClsFound());
+
         if (!cUseTpcOnly && trkPr.hasTOF()) {
           auto _tofnsigmaPr = trkPr.tofNSigmaPr();
           histos.fill(HIST("QAafter/Proton/h2d_pr_nsigma_tof_p"), p_ptot, _tofnsigmaPr);
@@ -449,6 +527,9 @@ struct lambdaAnalysis_pb {
         histos.fill(HIST("QAafter/Kaon/h2d_Kapr_nsigma_tpc_p"), k_ptot, trkKa.tpcNSigmaPr());
         histos.fill(HIST("QAafter/Kaon/h2d_ka_nsigma_tpc_p"), k_ptot, _tpcnsigmaKa);
         histos.fill(HIST("QAafter/Kaon/h2d_ka_nsigma_tpc_pt"), _ptKa, _tpcnsigmaKa);
+        histos.fill(HIST("QAafter/Kaon/hTPCNClsCrossedRowsVsPt"), _ptKa, trkKa.tpcNClsCrossedRows());
+        histos.fill(HIST("QAafter/Kaon/hTPCNClsFoundVsPt"), _ptKa, trkKa.tpcNClsFound());
+
         if (!cUseTpcOnly && trkKa.hasTOF()) {
           auto _tofnsigmaKa = trkKa.tofNSigmaKa();
           histos.fill(HIST("QAafter/Kaon/h2d_ka_nsigma_tof_p"), k_ptot, _tofnsigmaKa);
@@ -461,39 +542,73 @@ struct lambdaAnalysis_pb {
 
       if (isonlyQC)
         continue;
-      // Invariant mass reconstruction.
-      p1.SetXYZM(_pxPr, _pyPr, _pzPr, MassProton);
-      p2.SetXYZM(_pxKa, _pyKa, _pzKa, MassKaonCharged);
-      p = p1 + p2;
 
-      if (std::abs(p.Rapidity()) > 0.5)
+      std::array<float, 3> pvec0 = {_pxPr, _pyPr, _pzPr};
+      std::array<float, 3> pvec1 = {_pxKa, _pyKa, _pzKa};
+      std::array<std::array<float, 3>, 2> arrMomrec = {pvec0, pvec1};
+
+      float _M = RecoDecay::m(arrMomrec, std::array{MassProton, MassKaonCharged});
+      float _pt = RecoDecay::pt(std::array{_pxPr + _pxKa, _pyPr + _pyKa});
+
+      float _y = std::abs(RecoDecay::y(std::array{_pxPr + _pxKa, _pyPr + _pyKa, _pzPr + _pzKa}, _M));
+
+      float _yshift = _y - cfgRapidityShift;
+
+      if (std::abs(_yshift) > cfgRapidityCut)
         continue;
-
-      auto _M = p.M();
-      auto _pt = p.Pt();
-
       // Apply kinematic cuts.
-      if (cKinCuts) {
-        TVector3 v1(_pxPr, _pyPr, _pzPr);
-        TVector3 v2(_pxKa, _pyKa, _pzKa);
-        float alpha = v1.Angle(v2);
-        if (alpha > 1.4 && alpha < 2.4)
-          continue;
-      }
 
       // Fill Invariant Mass Histograms.
       if constexpr (!mix && !mc) {
         if (trkPr.sign() * trkKa.sign() < 0) {
+
           if (trkPr.sign() > 0)
             histos.fill(HIST("Analysis/h4d_lstar_invm_US_PM"), _M, _pt, mult, occup);
           else
             histos.fill(HIST("Analysis/h4d_lstar_invm_US_MP"), _M, _pt, mult, occup);
+
           if (doRotate) {
-            float theta = rn->Uniform(1.56, 1.58);
-            p1.RotateZ(theta);
-            p = p1 + p2;
-            if (std::abs(p.Rapidity()) < 0.5) {
-              histos.fill(HIST("Analysis/h4d_lstar_invm_rot"), p.M(), p.Pt(), mult, occup);
+            for (int i = 0; i < cNofRotations; i++) {
+
+              float delta = o2::constants::math::PI / rotationalcut;
+              float theta2;
+              if (cNofRotations == 1) {
+                // Single rotation â just rotate by exactly PI
+                theta2 = o2::constants::math::PI;
+              } else {
+                theta2 = (o2::constants::math::PI - delta) +
+                         i * (2.f * delta / (cNofRotations - 1));
+              }
+
+              float phiRot = trkKa.phi() + theta2;
+              if (phiRot > o2::constants::math::TwoPI)
+                phiRot -= o2::constants::math::TwoPI;
+              if (phiRot < 0.f)
+                phiRot += o2::constants::math::TwoPI;
+
+              float _pxKaRot = trkKa.pt() * std::cos(phiRot);
+              float _pyKaRot = trkKa.pt() * std::sin(phiRot);
+
+              std::array<float, 3> pvec0rot = {_pxPr, _pyPr, _pzPr};
+              std::array<float, 3> pvec1rot = {_pxKaRot, _pyKaRot, _pzKa};
+              std::array<std::array<float, 3>, 2> arrMomRot = {pvec0rot, pvec1rot};
+
+              float _Mrot = RecoDecay::m(arrMomRot, std::array{MassProton, MassKaonCharged});
+              float _ptRot = RecoDecay::pt(std::array{_pxPr + _pxKaRot, _pyPr + _pyKaRot});
+
+              float _yrot = std::abs(RecoDecay::y(std::array{_pxPr + _pxKaRot, _pyPr + _pyKaRot, _pzPr + _pzKa}, MassLambda1520));
+
+              float _yshiftrot = _yrot - cfgRapidityShift;
+
+              if (std::abs(_yshiftrot) > cfgRapidityCut)
+                continue;
+
+              if (trkPr.sign() * trkKa.sign() < 0) {
+                if (trkPr.sign() > 0)
+                  histos.fill(HIST("Analysis/h4d_lstar_invm_rot_PM"), _Mrot, _ptRot, mult, occup);
+                else
+                  histos.fill(HIST("Analysis/h4d_lstar_invm_rot_MP"), _Mrot, _ptRot, mult, occup);
+              }
             }
           }
         } else {
@@ -518,7 +633,6 @@ struct lambdaAnalysis_pb {
             histos.fill(HIST("Analysis/h4d_lstar_invm_LS_MM_mix"), _M, _pt, mult, occup);
         }
       }
-
       if constexpr (mc) {
         if (trkPr.sign() * trkKa.sign() < 0) {
           if (std::abs(trkPr.pdgCode()) != 2212 || std::abs(trkKa.pdgCode()) != 321)
@@ -526,15 +640,34 @@ struct lambdaAnalysis_pb {
 
           if (trkPr.motherId() != trkKa.motherId())
             continue;
+          if (trkPr.motherPDG() != trkKa.motherPDG())
+            continue;
+
+          if (trkPr.pdgCode() == 0 || trkKa.pdgCode() == 0)
+            continue;
+
+          if (trkPr.motherPDG() == -1 || trkKa.motherPDG() == -1)
+            continue;
 
           if (std::abs(trkPr.motherPDG()) != lambda1520id) // L* pdg_code = 3124
             continue;
 
-          // MC histograms
+          float massParent = 0.;
+          for (auto const& _part : *mResoParents) {
+            if (_part.mcParticleId() == trkPr.motherId()) {
+              std::array<float, 3> pvecParent = {_part.px(), _part.py(), _part.pz()};
+              massParent = RecoDecay::m(pvecParent, _part.e());
+              break;
+            }
+          }
+
+          float _MRes = _M - massParent;
           if (trkPr.motherPDG() > 0) {
             histos.fill(HIST("Analysis/h3d_rec_lstar_PM"), _M, _pt, mult);
+            histos.fill(HIST("Analysis/h3d_reso_lstar_PM"), _MRes, _pt, mult);
           } else {
             histos.fill(HIST("Analysis/h3d_rec_lstar_MP"), _M, _pt, mult);
+            histos.fill(HIST("Analysis/h3d_reso_lstar_MP"), _MRes, _pt, mult);
           }
         }
       }
@@ -542,56 +675,92 @@ struct lambdaAnalysis_pb {
   }
 
   using resoCols = soa::Join<aod::ResoCollisions, aod::ResoEvtPlCollisions>;
+  using resoMCCols = soa::Join<aod::ResoCollisions, aod::ResoMCCollisions>;
+
   using resoTracks = aod::ResoTracks;
 
   void processData(resoCols::iterator const& collision, resoTracks const& tracks)
   {
-
     // LOGF(info, " collisions: Index = %d %d", collision.globalIndex(),tracks.size());
     histos.fill(HIST("Event/h1d_ft0_mult_percentile"), collision.cent(), 100);
+    histos.fill(HIST("Event/h_ft0_vz"), collision.posZ());
+
     fillDataHistos<false, false>(tracks, tracks, collision.cent());
   }
 
   PROCESS_SWITCH(lambdaAnalysis_pb, processData, "Process for Same Event Data", true);
 
-  void processMC(resoCols::iterator const& collision,
+  void processMC(resoMCCols::iterator const& collision,
                  soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& tracks, aod::ResoMCParents const& resoParents)
   {
+    histos.fill(HIST("Event/hMCEventCutflow"), 0); // All collisions
+
+    if (cEvtMCTriggerTVX && !collision.isTriggerTVX())
+      return;
+    histos.fill(HIST("Event/hMCEventCutflow"), 1); // After TriggerTVX
+
+    if (cEvtMCVtxIn10 && !collision.isVtxIn10())
+      return;
+    histos.fill(HIST("Event/hMCEventCutflow"), 2); // After VtxIn10
+
+    if (cEvtMCINELgt0 && !collision.isINELgt0())
+      return;
+    histos.fill(HIST("Event/hMCEventCutflow"), 3); // After INELgt0
+
+    if (cEvtMCSel8 && !collision.isInSel8())
+      return;
+    histos.fill(HIST("Event/hMCEventCutflow"), 4); // After Sel8
+
+    if (cEvtMCRecINELgt0 && !collision.isRecINELgt0())
+      return;
+    histos.fill(HIST("Event/hMCEventCutflow"), 5); // After RecINELgt0
+
+    if (cEvtMCAfterAllCuts && !collision.isInAfterAllCuts())
+      return;
+    histos.fill(HIST("Event/hMCEventCutflow"), 6); // After AfterAllCuts    auto mult = collision.cent();
 
     auto mult = collision.cent();
     histos.fill(HIST("Event/h1d_ft0_mult_percentile"), mult, 100);
+    histos.fill(HIST("Event/h_ft0_vz"), collision.posZ());
+    mResoParents = &resoParents;
     fillDataHistos<false, true>(tracks, tracks, mult);
 
     // get MC pT-spectra
     for (auto const& track : tracks) {
+      histos.fill(HIST("QAbefore/hEta_rec"), track.eta());
+      histos.fill(HIST("QAbefore/hPt_rec"), track.pt());
+      histos.fill(HIST("QAbefore/hPhi_rec"), track.phi());
+      histos.fill(HIST("QAbefore/hEtaPhi_rec"), track.eta(), track.phi());
       // get the generated level pT spectra of protons and kaons
       if (std::abs(track.pdgCode()) == 321)
         histos.fill(HIST("QAChecks/h1d_ka_gen_pt"), track.pt());
-
       if (std::abs(track.pdgCode()) == 2212)
         histos.fill(HIST("QAChecks/h1d_pr_gen_pt"), track.pt());
-
       // get the reconstructed level pT spectra of protons and kaons
       if (!selTracks(track))
         continue;
 
       float p = TMath::Sqrt(track.px() * track.px() + track.py() * track.py() + track.pz() * track.pz());
 
-      if (selectionPIDKaon(track, p) && std::abs(track.pdgCode()) == 321) {
-        histos.fill(HIST("QAChecks/h1d_ka_rec_pt"), track.pt());
+      if (selectionPIDKaon(track, p)) {
+        if (std::abs(track.pdgCode()) == 321) {
+          histos.fill(HIST("QAChecks/h1d_ka_rec_pt"), track.pt());
+        }
       }
 
-      if (selectionPIDProton(track, p) && std::abs(track.pdgCode()) == 2212) {
-        histos.fill(HIST("QAChecks/h1d_pr_rec_pt"), track.pt());
+      if (selectionPIDProton(track, p)) {
+        if (std::abs(track.pdgCode()) == 2212) {
+          histos.fill(HIST("QAChecks/h1d_pr_rec_pt"), track.pt());
+        }
       }
     }
 
     for (auto const& part : resoParents) {
-      if (abs(part.pdgCode()) != lambda1520id) // // L* pdg_code = 3124
+      if (std::abs(part.pdgCode()) != lambda1520id) // // L* pdg_code = 3124
         continue;
-      if (abs(part.y()) > 0.5) { // rapidity cut
-        continue;
-      }
+      //  if (std::abs(part.y()) > 0.5) { // rapidity cut
+      //    continue;
+      //  }
 
       bool pass1 = false;
       bool pass2 = false;
@@ -605,10 +774,8 @@ struct lambdaAnalysis_pb {
 
       if (!pass1 || !pass2) // If we have both decay products
         continue;
-
-      TLorentzVector p4;
-      p4.SetPxPyPzE(part.px(), part.py(), part.pz(), part.e());
-      auto mass = p4.M();
+      std::array<float, 3> pvec = {part.px(), part.py(), part.pz()};
+      float mass = RecoDecay::m(pvec, part.e());
       if (part.pdgCode() > 0)
         histos.fill(HIST("Analysis/h3d_gen_lstar_PM"), mass, part.pt(), mult);
       else
@@ -621,7 +788,6 @@ struct lambdaAnalysis_pb {
 
   void processMix(resoCols& collisions, resoTracks const& tracks)
   {
-
     LOGF(debug, "Event Mixing Started");
 
     BinningType2 binningPositions2{{cMixVtxBins, cMixMultBins}, true};

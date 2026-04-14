@@ -15,8 +15,11 @@
 
 #include "PWGEM/Dilepton/Core/DimuonCut.h"
 
-#include "Framework/Logger.h"
+#include <Framework/Logger.h>
 
+#include <Rtypes.h>
+
+#include <functional>
 #include <vector>
 
 ClassImp(DimuonCut);
@@ -93,6 +96,11 @@ void DimuonCut::SetMatchingChi2MCHMFT(float min, float max)
   mMaxMatchingChi2MCHMFT = max;
   LOG(info) << "Dimuon Cut, set matching chi2 MFT-MCH range: " << mMinMatchingChi2MCHMFT << " - " << mMaxMatchingChi2MCHMFT;
 }
+void DimuonCut::SetMaxMatchingChi2MCHMFTPtDep(std::function<float(float)> PtDepCut)
+{
+  mMaxMatchingChi2MCHMFTPtDep = PtDepCut;
+  LOG(info) << "Dimuon Cut, set matching chi2 MFT-MCH range: " << mMaxMatchingChi2MCHMFTPtDep(0.5);
+}
 void DimuonCut::SetMatchingChi2MCHMID(float min, float max)
 {
   mMinMatchingChi2MCHMID = min;
@@ -123,6 +131,11 @@ void DimuonCut::SetDCAxy(float min, float max)
   mMaxDcaXY = max;
   LOG(info) << "Dimuon Cut, set DCAxy range: " << mMinDcaXY << " - " << mMaxDcaXY;
 }
+void DimuonCut::EnableTTCA(const bool flag)
+{
+  mEnableTTCA = flag;
+  LOG(info) << "Dimuon Cut, enable TTCA: " << mEnableTTCA;
+}
 void DimuonCut::SetMaxPDCARabsDep(std::function<float(float)> RabsDepCut)
 {
   mMaxPDCARabsDep = RabsDepCut;
@@ -146,11 +159,4 @@ void DimuonCut::SetMaxdPtdEtadPhiwrtMCHMID(float reldPtMax, float dEtaMax, float
   LOG(info) << "Dimuon Cut, set max rel. dpt between MFT-MCH-MID and associated MCH-MID: " << mMaxReldPtwrtMCHMID;
   LOG(info) << "Dimuon Cut, set max deta between MFT-MCH-MID and associated MCH-MID: " << mMaxdEtawrtMCHMID;
   LOG(info) << "Dimuon Cut, set max dphi between MFT-MCH-MID and associated MCH-MID: " << mMaxdPhiwrtMCHMID;
-}
-void DimuonCut::SetSlopeAndInterceptDRvsChi2MCHMFT(float slope, float intercept)
-{
-  mSlope_dr_chi2MatchMFTMCH = slope;
-  mIntercept_dr_chi2MatchMFTMCH = intercept;
-  LOG(info) << "Dimuon Cut, set slope between dr and chi2MCHMFT: " << mSlope_dr_chi2MatchMFTMCH;
-  LOG(info) << "Dimuon Cut, set intercept between dr and chi2MCHMFT: " << mIntercept_dr_chi2MatchMFTMCH;
 }

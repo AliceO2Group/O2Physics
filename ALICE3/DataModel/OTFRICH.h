@@ -19,8 +19,10 @@
 #ifndef ALICE3_DATAMODEL_OTFRICH_H_
 #define ALICE3_DATAMODEL_OTFRICH_H_
 
-// O2 includes
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/Logger.h>
+
+#include <cstdlib>
 
 namespace o2::aod
 {

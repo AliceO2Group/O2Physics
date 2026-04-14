@@ -19,9 +19,10 @@
 #ifndef PWGUD_DATAMODEL_UDINDEX_H_
 #define PWGUD_DATAMODEL_UDINDEX_H_
 
-#include "UDTables.h"
+#include "PWGUD/DataModel/UDTables.h" // IWYU pragma: keep
 
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
+
 namespace o2::aod
 {
 namespace udidx
@@ -32,4 +33,5 @@ DECLARE_SOA_ARRAY_INDEX_COLUMN(UDCollision, udcollisions);
 DECLARE_SOA_TABLE(UDMcParticlesToUDTracks, "AOD", "UDP2UDT", udidx::UDTrackIds);
 DECLARE_SOA_TABLE(UDMcCollisionsToUDCollisions, "AOD", "UDMCC2UDC", udidx::UDCollisionIds);
 } // namespace o2::aod
+
 #endif // PWGUD_DATAMODEL_UDINDEX_H_

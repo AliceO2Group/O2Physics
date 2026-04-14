@@ -98,14 +98,11 @@ struct HfCandidateCreatorBs {
 
   o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter
   o2::vertexing::DCAFitterN<3> df3; // 3-prong vertex fitter
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
   int runNumber{0};
-  double massPi{0.};
-  double massDs{0.};
-  double massBs{0.};
   double massDsPi{0.};
   double bz{0.};
 
@@ -130,10 +127,6 @@ struct HfCandidateCreatorBs {
 
   void init(InitContext const&)
   {
-    massPi = MassPiPlus;
-    massDs = MassDSBar;
-    massBs = MassBS;
-
     // Initialise fitter for Bs vertex (2-prong vertex fitter)
     df2.setPropagateToPCA(propagateToPCA);
     df2.setMaxR(maxR);
@@ -330,8 +323,8 @@ struct HfCandidateCreatorBs {
           df2.getTrack(1).getPxPyPzGlo(pVecPion); // momentum of Pi at the Bs vertex
 
           // calculate invariant mass and apply selection
-          massDsPi = RecoDecay::m(std::array{pVecDs, pVecPion}, std::array{massDs, massPi});
-          if (std::abs(massDsPi - massBs) > invMassWindowBs) {
+          massDsPi = RecoDecay::m(std::array{pVecDs, pVecPion}, std::array{MassDSBar, MassPiPlus});
+          if (std::abs(massDsPi - MassBS) > invMassWindowBs) {
             continue;
           }
 
@@ -342,7 +335,7 @@ struct HfCandidateCreatorBs {
           trackParCovPi.propagateToDCA(primaryVertex, bz, &dcaPion);
 
           // get uncertainty of the decay length
-          double phi, theta;
+          double phi{}, theta{};
           // getPointDirection modifies phi and theta
           getPointDirection(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertexBs, phi, theta);
           auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));

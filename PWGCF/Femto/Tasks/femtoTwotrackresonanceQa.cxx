@@ -22,17 +22,16 @@
 #include "PWGCF/Femto/Core/twoTrackResonanceHistManager.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/Configurable.h"
-#include "Framework/Expressions.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/InitContext.h"
-#include "Framework/OutputObjHeader.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include <map>
 #include <string>
 #include <vector>
 
@@ -53,7 +52,7 @@ struct FemtoTwotrackresonanceQa {
   using FemtoPhis = o2::soa::Join<FPhis, FPhiMasks>;
   using FemtoRho0s = o2::soa::Join<FRho0s, FRho0Masks>;
   using FemtoKstar0s = o2::soa::Join<FKstar0s, FKstar0Masks>;
-  using FemtoTracks = o2::soa::Join<FTracks, FTrackDcas, FTrackExtras, FTrackPids>;
+  using FemtoTracks = o2::soa::Join<FTracks, FTrackMass, FTrackDcas, FTrackExtras, FTrackPids>;
 
   SliceCache cache;
 

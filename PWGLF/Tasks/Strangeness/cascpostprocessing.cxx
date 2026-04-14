@@ -243,6 +243,8 @@ struct cascpostprocessing {
     bool isCorrectlyRec = 0;
 
     for (auto& candidate : mycascades) {
+      isCandidate = false;
+      isCorrectlyRec = false;
 
       switch (evSelFlag) {
         case 1: {

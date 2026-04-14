@@ -16,12 +16,9 @@
 
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsAnalysis.h"
 
 #include "ALICE3/DataModel/A3DecayFinderTables.h"
-#include "ALICE3/DataModel/OTFPIDTrk.h"
-#include "ALICE3/DataModel/OTFRICH.h"
-#include "ALICE3/DataModel/OTFTOF.h"
-#include "ALICE3/DataModel/RICH.h"
 #include "ALICE3/ML/HfMlResponse3Prong.h"
 #include "ALICE3/Utils/utilsHfAlice3.h"
 #include "ALICE3/Utils/utilsSelectionsAlice3.h"
@@ -36,14 +33,14 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
-#include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TH1.h>
 #include <TH2.h>
 
-#include <array>
+#include <Rtypes.h>
+
 #include <cstdint>
-#include <numeric>
 #include <string>
 #include <vector>
 

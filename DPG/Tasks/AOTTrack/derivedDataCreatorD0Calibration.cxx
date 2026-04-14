@@ -25,28 +25,41 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/OccupancyTables.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Tools/ML/MlResponse.h"
 
-#include "CommonDataFormat/InteractionRecord.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
 #include <CommonConstants/PhysicsConstants.h>
+#include <CommonDataFormat/InteractionRecord.h>
 #include <DCAFitter/DCAFitterN.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 #include <MathUtils/detail/TypeTruncation.h>
 #include <ReconstructionDataFormats/DCA.h>
 
-#include <TH1D.h>
+#include <Math/GenVector/Boost.h>
+#include <Math/Vector3D.h> // IWYU pragma: keep (do not replace with Math/Vector3Dfwd.h)
+#include <Math/Vector3Dfwd.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TH1.h>
 #include <TRandom3.h>
 
-#include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <map>
 #include <string>
 #include <vector>
@@ -412,6 +425,7 @@ struct DerivedDataCreatorD0Calibration {
           }
 
           float invMassD0{0.f}, invMassD0bar{0.f};
+          float cosThetaStarD0{0.f}, cosThetaStarD0bar{0.f};
           std::vector<float> bdtScoresD0{0.f, 1.f, 1.f}, bdtScoresD0bar{0.f, 1.f, 1.f}; // always selected a priori
           if (massHypo == D0MassHypo::D0 || massHypo == D0MassHypo::D0AndD0Bar) {
             invMassD0 = RecoDecay::m(std::array{pVecPos, pVecNeg}, std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus});
@@ -424,6 +438,14 @@ struct DerivedDataCreatorD0Calibration {
                 std::vector<float> featuresCandD0 = {dcaPos.getY(), dcaNeg.getY(), chi2PCA, cosPaD0, cosPaXYD0, decLenXYD0, decLenD0, dcaPos.getY() * dcaNeg.getY(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaPi(), trackPos.tofNSigmaPi()), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaKa(), trackNeg.tofNSigmaKa()), trackPos.tpcNSigmaPi(), trackPos.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaKa(), trackPos.tofNSigmaKa()), trackNeg.tpcNSigmaPi(), trackNeg.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaPi(), trackNeg.tofNSigmaPi())};
                 if (!mlResponse.isSelectedMl(featuresCandD0, ptD0, bdtScoresD0)) {
                   massHypo -= D0MassHypo::D0;
+                } else { // selected, we compute cost*
+                  ROOT::Math::PxPyPzMVector const fourVecPi = ROOT::Math::PxPyPzMVector(pVecPos[0], pVecPos[1], pVecPos[2], o2::constants::physics::MassPiPlus);
+                  ROOT::Math::PxPyPzMVector const fourVecMother = ROOT::Math::PxPyPzMVector(pVecD0[0], pVecD0[1], pVecD0[2], invMassD0);
+                  ROOT::Math::Boost const boost{fourVecMother.BoostToCM()};
+                  ROOT::Math::PxPyPzMVector const fourVecPiCM = boost(fourVecPi);
+                  ROOT::Math::XYZVector const threeVecPiCM = fourVecPiCM.Vect();
+                  ROOT::Math::XYZVector const helicityVec = fourVecMother.Vect();
+                  cosThetaStarD0 = helicityVec.Dot(threeVecPiCM) / std::sqrt(threeVecPiCM.Mag2()) / std::sqrt(helicityVec.Mag2());
                 }
               }
             }
@@ -439,6 +461,14 @@ struct DerivedDataCreatorD0Calibration {
                 std::vector<float> featuresCandD0bar = {dcaPos.getY(), dcaNeg.getY(), chi2PCA, cosPaD0, cosPaXYD0, decLenXYD0, decLenD0, dcaPos.getY() * dcaNeg.getY(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaPi(), trackNeg.tofNSigmaPi()), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaKa(), trackPos.tofNSigmaKa()), trackNeg.tpcNSigmaPi(), trackNeg.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaKa(), trackNeg.tofNSigmaKa()), trackPos.tpcNSigmaPi(), trackPos.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaPi(), trackPos.tofNSigmaPi())};
                 if (!mlResponse.isSelectedMl(featuresCandD0bar, ptD0, bdtScoresD0bar)) {
                   massHypo -= D0MassHypo::D0Bar;
+                } else { // selected, we compute cost*
+                  ROOT::Math::PxPyPzMVector const fourVecPi = ROOT::Math::PxPyPzMVector(pVecNeg[0], pVecNeg[1], pVecNeg[2], o2::constants::physics::MassPiPlus);
+                  ROOT::Math::PxPyPzMVector const fourVecMother = ROOT::Math::PxPyPzMVector(pVecD0[0], pVecD0[1], pVecD0[2], invMassD0bar);
+                  ROOT::Math::Boost const boost{fourVecMother.BoostToCM()};
+                  ROOT::Math::PxPyPzMVector const fourVecPiCM = boost(fourVecPi);
+                  ROOT::Math::XYZVector const threeVecPiCM = fourVecPiCM.Vect();
+                  ROOT::Math::XYZVector const helicityVec = fourVecMother.Vect();
+                  cosThetaStarD0bar = helicityVec.Dot(threeVecPiCM) / std::sqrt(threeVecPiCM.Mag2()) / std::sqrt(helicityVec.Mag2());
                 }
               }
             }
@@ -813,6 +843,8 @@ struct DerivedDataCreatorD0Calibration {
                     phiD0,
                     invMassD0,
                     invMassD0bar,
+                    cosThetaStarD0,
+                    cosThetaStarD0bar,
                     getCompressedDecayLength(decLenD0),
                     getCompressedDecayLength(decLenXYD0),
                     getCompressedNormDecayLength(decLenD0 / errorDecayLengthD0),

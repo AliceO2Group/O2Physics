@@ -16,7 +16,7 @@
 #ifndef PWGCF_FEMTO_CORE_PARTICLECLEANER_H_
 #define PWGCF_FEMTO_CORE_PARTICLECLEANER_H_
 
-#include "Framework/Configurable.h"
+#include <Framework/Configurable.h>
 
 #include <string>
 #include <vector>

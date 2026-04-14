@@ -16,12 +16,11 @@
 /// \brief  Set of tables for the ALICE3 RICH information
 ///
 
-#ifndef O2_ANALYSIS_ALICE3_RICH_H_
-#define O2_ANALYSIS_ALICE3_RICH_H_
+#ifndef ALICE3_DATAMODEL_RICH_H_
+#define ALICE3_DATAMODEL_RICH_H_
 
-// O2 includes
-#include "Framework/AnalysisDataModel.h"
-#include "ReconstructionDataFormats/PID.h"
+#include <Framework/AnalysisDataModel.h>
+#include <ReconstructionDataFormats/PID.h>
 
 namespace o2::aod
 {
@@ -176,4 +175,4 @@ using FRICH = FRICHs::iterator;
 
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_ALICE3_RICH_H_
+#endif // ALICE3_DATAMODEL_RICH_H_

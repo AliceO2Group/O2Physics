@@ -164,6 +164,12 @@ struct HfTaskCorrelationD0Hadrons {
     AxisSpec axisCentFT0M = {binsCentFt0m, "Centrality percentile (FT0M)"};
 
     // Histograms for data
+
+    registry.add("hBdtScorePrompt", "D0 BDT prompt score", {HistType::kTH1F, {axisBdtScore}});
+    registry.add("hBdtScoreBkg", "D0 BDT bkg score", {HistType::kTH1F, {axisBdtScore}});
+    registry.add("hMassD0VsPt", "D0 candidates massVsPt", {HistType::kTH2F, {{axisMassD}, {axisPtD}}});
+    registry.add("hMassD0VsPtWoEff", "D0 candidates massVsPt without efficiency", {HistType::kTH2F, {{axisMassD}, {axisPtD}}});
+
     registry.add("hDeltaEtaPtIntSignalRegion", "D0-h deltaEta signal region", {HistType::kTH1F, {axisDeltaEta}});
     registry.add("hDeltaPhiPtIntSignalRegion", "D0-h deltaPhi signal region", {HistType::kTH1F, {axisDeltaPhi}});
     registry.add("hCorrel2DPtIntSignalRegion", "D0-h deltaPhi vs deltaEta signal region", {HistType::kTH2F, {{axisDeltaPhi}, {axisDeltaEta}}});
@@ -308,6 +314,7 @@ struct HfTaskCorrelationD0Hadrons {
                    aod::D0CandRecoInfo const& candidates)
   {
     for (const auto& candidate : candidates) {
+      float const massD = candidate.mD();
       float const ptD = candidate.ptD();
       float const bdtScorePromptD0 = candidate.mlScorePromptD0();
       float const bdtScoreBkgD0 = candidate.mlScoreBkgD0();
@@ -324,6 +331,16 @@ struct HfTaskCorrelationD0Hadrons {
           (bdtScorePromptD0bar < mlOutputPromptD0bar->at(effBinD) || bdtScoreBkgD0bar > mlOutputBkgD0bar->at(effBinD))) {
         continue;
       }
+
+      double efficiencyWeightD = 1.;
+      if (applyEfficiency != 0) {
+        efficiencyWeightD = 1. / efficiencyDmeson->at(o2::analysis::findBin(binsPtEfficiencyD, ptD));
+      }
+
+      registry.fill(HIST("hMassD0VsPt"), massD, ptD, efficiencyWeightD);
+      registry.fill(HIST("hMassD0VsPtWoEff"), massD, ptD);
+      registry.fill(HIST("hBdtScorePrompt"), bdtScorePromptD0);
+      registry.fill(HIST("hBdtScoreBkg"), bdtScoreBkgD0);
     }
 
     for (const auto& pairEntry : pairEntries) {

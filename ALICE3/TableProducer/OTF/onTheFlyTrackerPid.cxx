@@ -20,43 +20,39 @@
 /// \since  May 22, 2025
 ///
 
-#include "ALICE3/Core/DelphesO2TrackSmearer.h"
-#include "ALICE3/Core/FastTracker.h"
+#include "GeometryContainer.h"
+
 #include "ALICE3/Core/TrackUtilities.h"
-#include "ALICE3/DataModel/OTFCollision.h"
 #include "ALICE3/DataModel/OTFPIDTrk.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
-#include <CommonConstants/GeomConstants.h>
-#include <CommonConstants/PhysicsConstants.h>
-#include <CommonUtils/NameConf.h>
-#include <DataFormatsCalibration/MeanVertexObject.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/Propagator.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
-#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/DCA.h>
-#include <ReconstructionDataFormats/HelixHelper.h>
+#include <MathUtils/Primitive2D.h>
+#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/Vertex.h>
 
 #include <TF1.h>
 #include <TFile.h>
-#include <TH1F.h>
-#include <TH2F.h>
+#include <TH1.h>
+#include <TH2.h>
 #include <TString.h>
-#include <TVector3.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <fstream>
 #include <map>
 #include <memory>
@@ -433,11 +429,12 @@ struct OnTheFlyTrackerPid {
   float mMagneticField = 0.0f;
   void init(o2::framework::InitContext& initContext)
   {
-    mGeoContainer.init(initContext);
-    mMagneticField = mGeoContainer.getFloatValue(0, "global", "magneticfield");
-
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setTimestamp(-1);
+
+    mGeoContainer.setCcdbManager(ccdb.operator->());
+    mGeoContainer.init(initContext);
+    mMagneticField = mGeoContainer.getFloatValue(0, "global", "magneticfield");
 
     if (static_cast<size_t>(maxBarrelLayers.value) > kTrackerRadii.size()) {
       LOG(fatal) << "Configured maxBarrelLayers (" << maxBarrelLayers.value

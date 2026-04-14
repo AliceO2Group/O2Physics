@@ -11,7 +11,7 @@
 ///
 /// \file jflucWeightsLoader.cxx
 /// \brief Task to load the NUA and NUE weights from local files or CCDB.
-/// \author Jasper Parkkila (jparkkil@cern.ch), Maxim Virta (maxim.virta@cern.ch)
+/// \author Jasper Parkkila (jparkkil@cern.ch), Maxim Virta (maxim.virta@cern.ch), Neelkamal Mallick (neelkamal.mallick@cern.ch)
 /// \since May 2024
 /// The weights are loaded from the local files or CCDB and stored in the JWeights table.
 
@@ -24,6 +24,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/MathConstants.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -36,6 +37,7 @@
 
 #include <experimental/type_traits>
 #include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -49,6 +51,20 @@ struct JflucWeightsLoader {
   O2_DEFINE_CONFIGURABLE(cfgPathPhiWeights, std::string, "Users/m/mavirta/corrections/NUA/LHC23zzh", "Local (local://) or CCDB path for the phi acceptance correction histogram");
   O2_DEFINE_CONFIGURABLE(cfgPathEffWeights, std::string, "Users/m/mavirta/corrections/NUE/LHC23zzh", "Local (local://) or CCDB path for the efficiency correction histogram");
   O2_DEFINE_CONFIGURABLE(cfgForRunNumber, bool, false, "Get CCDB object by run");
+  O2_DEFINE_CONFIGURABLE(cfgPtMin, float, 0.2f, "Minimum pT used for track selection.");
+  O2_DEFINE_CONFIGURABLE(cfgPtMax, float, 5.0f, "Maximum pT used for track selection.");
+  O2_DEFINE_CONFIGURABLE(cfgEtaMax, float, 1.0f, "Maximum eta used for track selection.");
+  O2_DEFINE_CONFIGURABLE(cfgMinMultiplicity, int, 5, "Minimum number of particles required for the event to have.");
+  O2_DEFINE_CONFIGURABLE(cfgTrackBitMask, uint16_t, 0, "Track selection bitmask to use as defined in the filterCorrelations.cxx task");
+
+  ConfigurableAxis cfgAxisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 2.0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 100.1}, "multiplicity / centrality axis for histograms"};
+  ConfigurableAxis cfgAxisPhi{"axisPhi", {50, 0.0, o2::constants::math::TwoPI}, "phi axis for histograms"};
+  ConfigurableAxis cfgAxisEta{"axisEta", {40, -2.0, 2.0}, "eta axis for histograms"};
+  ConfigurableAxis cfgAxisZVertex{"axisZVertex", {20, -10.0, 10.0}, "zvertex axis for histograms"};
+
+  HistogramRegistry qaHistRegistry{"qaHistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+
+  Filter derivedTracks = (nabs(aod::cftrack::eta) < cfgEtaMax) && (aod::cftrack::pt > cfgPtMin) && (aod::cftrack::pt < cfgPtMax) && ncheckbit(aod::track::trackType, as<uint8_t>(cfgTrackBitMask));
 
   THnF* ph = 0;
   TFile* pf = 0;
@@ -98,60 +114,73 @@ struct JflucWeightsLoader {
 
   void init(InitContext const&)
   {
-    if (!doprocessLoadWeights && !doprocessLoadWeightsCF) {
+    if (!doprocessLoadWeights && !doprocessLoadWeightsCF && !doprocessJNUACreatorCFDerived) {
       return;
     }
 
     if (doprocessLoadWeights && doprocessLoadWeightsCF)
       LOGF(fatal, "Only one of JTracks or CFTracks processing can be enabled at a time.");
 
-    // NUA corrections from local file or CCDB
-    if (cfgPathPhiWeights.value.substr(0, 8) == "local://") {
-      LOGF(info, "Using NUA corrections locally from: %s", cfgPathPhiWeights.value.substr(8).c_str());
-      pf = new TFile(cfgPathPhiWeights.value.substr(8).c_str(), "read");
-      if (!pf->IsOpen()) {
-        delete pf;
-        pf = 0;
-        LOGF(fatal, "NUA correction weights file not found: %s", cfgPathPhiWeights.value.substr(8).c_str());
-      }
-      useNUAFromCCDB = false;
-    } else if (cfgPathPhiWeights.value == "") {
-      LOGF(info, "No NUA corrections provided.");
-      useNUAFromCCDB = false;
-    } else {
-      LOGF(info, "Assuming NUA corrections from CCDB.");
-      useNUAFromCCDB = true;
-      ccdb->setURL(ccdbURL.data()); // default CCDB URL
-      ccdb->setCaching(true);
-      ccdb->setLocalObjectValidityChecking();
-      ccdb->setFatalWhenNull(false);
-    }
-
-    // Efficiency corrections from local file or CCDB
-    if (cfgPathEffWeights.value.substr(0, 8) == "local://") {
-      LOGF(info, "Using efficiency corrections locally from: %s", cfgPathEffWeights.value.substr(8).c_str());
-      pfeff = new TFile(cfgPathEffWeights.value.substr(8).c_str(), "read");
-      if (!pfeff->IsOpen()) {
-        delete pfeff;
-        pfeff = 0;
-        LOGF(fatal, "Efficiency correction weights file not found: %s", cfgPathEffWeights.value.substr(8).c_str());
+    if (doprocessLoadWeights || doprocessLoadWeightsCF) {
+      // NUA corrections from local file or CCDB
+      if (cfgPathPhiWeights.value.substr(0, 8) == "local://") {
+        LOGF(info, "Using NUA corrections locally from: %s", cfgPathPhiWeights.value.substr(8).c_str());
+        pf = new TFile(cfgPathPhiWeights.value.substr(8).c_str(), "read");
+        if (!pf->IsOpen()) {
+          delete pf;
+          pf = 0;
+          LOGF(fatal, "NUA correction weights file not found: %s", cfgPathPhiWeights.value.substr(8).c_str());
+        }
+        useNUAFromCCDB = false;
+      } else if (cfgPathPhiWeights.value == "") {
+        LOGF(info, "No NUA corrections provided.");
+        useNUAFromCCDB = false;
       } else {
-        LOGF(info, "Loaded efficiency correction histogram locally.");
-      }
-      useEffFromCCDB = false;
-    } else if (cfgPathEffWeights.value == "") {
-      LOGF(info, "No efficiency corrections provided.");
-      useEffFromCCDB = false;
-    } else {
-      LOGF(info, "Assuming efficiency corrections from CCDB.");
-      useEffFromCCDB = true;
-      // If NUA corrections are from CCDB, use the same CCDB URL for efficiency corrections
-      if (!useNUAFromCCDB) {
+        LOGF(info, "Assuming NUA corrections from CCDB.");
+        useNUAFromCCDB = true;
         ccdb->setURL(ccdbURL.data()); // default CCDB URL
         ccdb->setCaching(true);
         ccdb->setLocalObjectValidityChecking();
         ccdb->setFatalWhenNull(false);
       }
+
+      // Efficiency corrections from local file or CCDB
+      if (cfgPathEffWeights.value.substr(0, 8) == "local://") {
+        LOGF(info, "Using efficiency corrections locally from: %s", cfgPathEffWeights.value.substr(8).c_str());
+        pfeff = new TFile(cfgPathEffWeights.value.substr(8).c_str(), "read");
+        if (!pfeff->IsOpen()) {
+          delete pfeff;
+          pfeff = 0;
+          LOGF(fatal, "Efficiency correction weights file not found: %s", cfgPathEffWeights.value.substr(8).c_str());
+        } else {
+          LOGF(info, "Loaded efficiency correction histogram locally.");
+        }
+        useEffFromCCDB = false;
+      } else if (cfgPathEffWeights.value == "") {
+        LOGF(info, "No efficiency corrections provided.");
+        useEffFromCCDB = false;
+      } else {
+        LOGF(info, "Assuming efficiency corrections from CCDB.");
+        useEffFromCCDB = true;
+        // If NUA corrections are from CCDB, use the same CCDB URL for efficiency corrections
+        if (!useNUAFromCCDB) {
+          ccdb->setURL(ccdbURL.data()); // default CCDB URL
+          ccdb->setCaching(true);
+          ccdb->setLocalObjectValidityChecking();
+          ccdb->setFatalWhenNull(false);
+        }
+      }
+    } // doprocessLoadWeights || doprocessLoadWeightsCF
+
+    if (doprocessJNUACreatorCFDerived) {
+      qaHistRegistry.add("trackType", "trackType;trackType;counts", HistType::kTH1F, {{65, -0.5, 64.5}});
+      const AxisSpec axisMult{cfgAxisMultiplicity, "multiplicity/centrality"};
+      const AxisSpec axisType{2, -0.5, 1.5, "type"}; // 0 = all charged hadrons (matches loader partType)
+      const AxisSpec axisPhi{cfgAxisPhi, "#varphi"};
+      const AxisSpec axisEta{cfgAxisEta, "#eta"};
+      const AxisSpec axisZVertex{cfgAxisZVertex, "z_{vtx} [cm]"};
+
+      qaHistRegistry.add("NUACreation/h_phietaz", "(NUA) mult, type, phi, eta, z", HistType::kTHnF, {axisMult, axisType, axisPhi, axisEta, axisZVertex});
     }
   }
 
@@ -215,6 +244,7 @@ struct JflucWeightsLoader {
         // NUA corrections are a function of multiplicity, partType, phi, eta, and z-vertex
         const double nuaCoords[] = {collision.multiplicity(), static_cast<double>(partType), track.phi(), track.eta(), collision.posZ()};
         phiWeight = ph->GetBinContent(ph->GetBin(nuaCoords));
+        phiWeight = phiWeight == 0. ? 1.0f : phiWeight; // avoid division by zero later
       } else {
         phiWeight = 1.0f;
       }
@@ -227,7 +257,6 @@ struct JflucWeightsLoader {
       } else {
         effWeight = 1.0f;
       }
-
       outputT(phiWeight, effWeight);
     }
   }
@@ -251,6 +280,31 @@ struct JflucWeightsLoader {
     loadWeights(output2p, collision, tracks2p);
   }
   PROCESS_SWITCH(JflucWeightsLoader, processLoadWeightsCF2Prong, "Load weights histograms for CF derived 2-prong tracks data table", false);
+
+  // Create NUA histograms from CF derived data to be used in this loader
+  void processJNUACreatorCFDerived(aod::CFCollision const& collision, soa::Filtered<aod::CFTracks> const& tracks)
+  {
+
+    if (tracks.size() < cfgMinMultiplicity) {
+      return; // reject if not enough tracks
+    }
+
+    const auto multiplicity = collision.multiplicity(); // this comes from the filterCorrelations.cxx task
+    const float multAxisUpper = AxisSpec(cfgAxisMultiplicity, "").binEdges.back();
+    if (multiplicity < 0. || multiplicity > multAxisUpper) {
+      return;
+    }
+
+    const float posZ = collision.posZ();
+    // Fill NUA histogram with same coordinate order as loader: (mult, partType, phi, eta, z)
+    // partType = 0 for all charged hadrons (matches loader where partType is always 0 for now)
+    for (auto& track : tracks) {
+      qaHistRegistry.fill(HIST("NUACreation/h_phietaz"), multiplicity, 0.0f, track.phi(), track.eta(), posZ);
+      qaHistRegistry.fill(HIST("trackType"), track.trackType());
+    }
+  }
+
+  PROCESS_SWITCH(JflucWeightsLoader, processJNUACreatorCFDerived, "Create NUA histograms from CF derived data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

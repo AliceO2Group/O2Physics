@@ -249,6 +249,98 @@ class FemtoDreamMath
     return vect;
   }
 
+  /// Compute the 3d components of the pair momentum in LCMS and PRF
+  /// Copy from femto universe
+  /// \tparam T type of tracks
+  /// \param part1 Particle 1
+  /// \param mass1 Mass of particle 1
+  /// \param part2 Particle 2
+  /// \param mass2 Mass of particle 2
+  /// \param isiden Identical or non-identical particle pair
+  template <typename T>
+  static std::vector<double> newpairfuncMC(const T& part1, const float mass1, const T& part2, const float mass2, bool isiden)
+  {
+    const double trkPx1 = part1.pt() * std::cos(part1.phi());
+    const double trkPy1 = part1.pt() * std::sin(part1.phi());
+    const double trkPz1 = part1.pt() * std::sinh(part1.eta());
+
+    const double trkPx2 = part2.pt() * std::cos(part2.phi());
+    const double trkPy2 = part2.pt() * std::sin(part2.phi());
+    const double trkPz2 = part2.pt() * std::sinh(part2.eta());
+
+    const double e1 = std::sqrt(std::pow(trkPx1, 2) + std::pow(trkPy1, 2) + std::pow(trkPz1, 2) + std::pow(mass1, 2));
+    const double e2 = std::sqrt(std::pow(trkPx2, 2) + std::pow(trkPy2, 2) + std::pow(trkPz2, 2) + std::pow(mass2, 2));
+
+    const ROOT::Math::PxPyPzEVector vecpart1(trkPx1, trkPy1, trkPz1, e1);
+    const ROOT::Math::PxPyPzEVector vecpart2(trkPx2, trkPy2, trkPz2, e2);
+    const ROOT::Math::PxPyPzEVector trackSum = vecpart1 + vecpart2;
+
+    std::vector<double> vect;
+
+    const double tPx = trackSum.px();
+    const double tPy = trackSum.py();
+    const double tPz = trackSum.pz();
+    const double tE = trackSum.E();
+
+    const double tPtSq = (tPx * tPx + tPy * tPy);
+    const double tMtSq = (tE * tE - tPz * tPz);
+    const double tM = std::sqrt(tMtSq - tPtSq);
+    const double tMt = std::sqrt(tMtSq);
+    const double tPt = std::sqrt(tPtSq);
+
+    // Boost to LCMS
+
+    const double beta_LCMS = tPz / tE;
+    const double gamma_LCMS = tE / tMt;
+
+    const double fDKOut = (trkPx1 * tPx + trkPy1 * tPy) / tPt;
+    const double fDKSide = (-trkPx1 * tPy + trkPy1 * tPx) / tPt;
+    const double fDKLong = gamma_LCMS * (trkPz1 - beta_LCMS * e1);
+    const double fDE = gamma_LCMS * (e1 - beta_LCMS * trkPz1);
+
+    const double px1LCMS = fDKOut;
+    const double py1LCMS = fDKSide;
+    const double pz1LCMS = fDKLong;
+    const double pE1LCMS = fDE;
+
+    const double px2LCMS = (trkPx2 * tPx + trkPy2 * tPy) / tPt;
+    const double py2LCMS = (trkPy2 * tPx - trkPx2 * tPy) / tPt;
+    const double pz2LCMS = gamma_LCMS * (trkPz2 - beta_LCMS * e2);
+    const double pE2LCMS = gamma_LCMS * (e2 - beta_LCMS * trkPz2);
+
+    const double fDKOutLCMS = px1LCMS - px2LCMS;
+    const double fDKSideLCMS = py1LCMS - py2LCMS;
+    const double fDKLongLCMS = pz1LCMS - pz2LCMS;
+
+    // Boost to PRF
+
+    const double betaOut = tPt / tMt;
+    const double gammaOut = tMt / tM;
+
+    const double fDKOutPRF = gammaOut * (fDKOutLCMS - betaOut * (pE1LCMS - pE2LCMS));
+    const double fDKSidePRF = fDKSideLCMS;
+    const double fDKLongPRF = fDKLongLCMS;
+    const double fKOut = gammaOut * (fDKOut - betaOut * fDE);
+
+    const double qlcms = std::sqrt(fDKOutLCMS * fDKOutLCMS + fDKSideLCMS * fDKSideLCMS + fDKLongLCMS * fDKLongLCMS);
+    const double qinv = std::sqrt(fDKOutPRF * fDKOutPRF + fDKSidePRF * fDKSidePRF + fDKLongPRF * fDKLongPRF);
+    const double kstar = std::sqrt(fKOut * fKOut + fDKSide * fDKSide + fDKLong * fDKLong);
+
+    if (isiden) {
+      vect.push_back(qinv);
+      vect.push_back(fDKOutLCMS);
+      vect.push_back(fDKSideLCMS);
+      vect.push_back(fDKLongLCMS);
+      vect.push_back(qlcms);
+    } else {
+      vect.push_back(kstar);
+      vect.push_back(fDKOut);
+      vect.push_back(fDKSide);
+      vect.push_back(fDKLong);
+    }
+    return vect;
+  }
+
   /// Compute the phi angular of a pair with respect to the event plane
   /// \tparam T type of tracks
   /// \param part1 Particle 1
