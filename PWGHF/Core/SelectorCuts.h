@@ -251,6 +251,17 @@ static const std::vector<std::string> labelsPt{};
 
 // column labels
 static const std::vector<std::string> labelsCutVar = {"massMin", "massMax", "cosp", "decL"};
+
+// Single prong min pt selection
+static constexpr int NSpecies3Prong = 8; // number of species for 3-prong candidates
+static const float cutsProngMinPt3Prong[NSpecies3Prong] = {0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4};
+
+// 3-prong species labels
+static const std::vector<std::string> labelsSpecies3Prong = {"Dplus", "Lc", "Ds", "Xic", "Cd", "Ct", "Ch", "Ca"};
+
+// column label
+static const std::vector<std::string> labelsMinPt = {"Minimum track transverse momentum (GeV/c)"};
+
 } // namespace hf_cuts_presel_3prong
 
 namespace hf_cuts_presel_ds
