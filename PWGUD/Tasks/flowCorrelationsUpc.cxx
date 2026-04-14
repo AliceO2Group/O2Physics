@@ -377,12 +377,21 @@ struct FlowCorrelationsUpc {
   // event mixing
 
   SliceCache cache;
-  using MixedBinning = ColumnBinningPolicy<aod::collision::PosZ, aod::flowcorrupc::Multiplicity>;
+  // using MixedBinning = ColumnBinningPolicy<aod::collision::PosZ, aod::flowcorrupc::Multiplicity>;
 
   // the process for filling the mixed events
   void processMixed(UDCollisionsFull const& collisions, UdTracksFull const& tracks)
   {
-    MixedBinning binningOnVtxAndMult{{vtxMix, multMix}, true}; // true is for 'ignore overflows' (true by default)
+    auto getTracksSize = [&tracks, this](UDCollisionsFull::iterator const& collision) {
+      auto associatedTracks = tracks.sliceByCached(o2::aod::udtrack::udCollisionId, collision.udCollisionId(), this->cache);
+
+      auto mult = associatedTracks.size();
+      return mult;
+    };
+
+    using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
+    MixedBinning binningOnVtxAndMult{{getTracksSize}, {vtxMix, multMix}, true};
+    // MixedBinning binningOnVtxAndMult{{vtxMix, multMix}, true}; // true is for 'ignore overflows' (true by default)
     auto tracksTuple = std::make_tuple(tracks);
     SameKindPair<UDCollisionsFull, UdTracksFull, MixedBinning> pairs{binningOnVtxAndMult, cfgMinMixEventNum, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 

@@ -967,6 +967,7 @@ struct PhiStrangenessCorrelation {
       return std::abs(mcParticle.y()) <= yConfigs.cfgYAcceptance;
     };
 
+    // Preliminary loop to fill vectors of particles of interest for the current event, applying pt and y cuts
     for (const auto& mcParticle : mcParticles) {
       if (!inYAcceptance(mcParticle))
         continue;
@@ -996,9 +997,12 @@ struct PhiStrangenessCorrelation {
     if (multBin < 0)
       return;
 
+    // Same Event Correlations
     std::vector<MiniParticle>* currentAssocParticles[] = {&k0sParticles, &pionParticles};
 
     for (const auto& phiParticle : phiParticles) {
+      histos.fill(HIST("phi/h3PhiMCGen"), multiplicity, phiParticle.pt, phiParticle.y);
+
       static_for<0, assocParticleLabels.size() - 1>([&](auto i_idx) {
         constexpr unsigned int i = i_idx.value;
 
@@ -1011,6 +1015,7 @@ struct PhiStrangenessCorrelation {
       });
     }
 
+    // Mixed Event Correlations
     for (const auto& pastEvent : eventBuffer[multBin]) {
       const std::vector<MiniParticle>* pastAssocParticles[] = {&pastEvent.k0sParticles, &pastEvent.pionParticles};
 

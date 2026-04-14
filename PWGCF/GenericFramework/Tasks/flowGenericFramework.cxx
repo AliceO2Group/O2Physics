@@ -91,6 +91,7 @@ GFWRegions regions;
 GFWCorrConfigs configs;
 GFWCorrConfigs configsV02;
 GFWCorrConfigs configsV0;
+std::vector<std::pair<double, double>> etagapsPtPt;
 std::vector<double> multGlobalCorrCutPars;
 std::vector<double> multPVCorrCutPars;
 std::vector<double> multGlobalPVCorrCutPars;
@@ -122,6 +123,7 @@ auto readMatrix(Array2D<T> const& mat, P& array)
 
 static constexpr float LongArrayFloat[3][20] = {{1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}, {2.1, 2.2, 2.3, -2.1, -2.2, -2.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}, {3.1, 3.2, 3.3, -3.1, -3.2, -3.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}};
 static constexpr int LongArrayInt[3][20] = {{1, 1, 1, -1, -1, -1, 1, 1, 1, -1, -1, -1, 1, 1, 1, -1, -1, -1, 1, 1}, {2, 2, 2, -2, -2, -2, 1, 1, 1, -1, -1, -1, 1, 1, 1, -1, -1, -1, 1, 1}, {3, 3, 3, -3, -3, -3, 1, 1, 1, -1, -1, -1, 1, 1, 1, -1, -1, -1, 1, 1}};
+static constexpr double LongArrayDouble[4][2] = {{-0.8, -0.5}, {0.5, 0.8}, {-2, -2}, {-2, -2}};
 
 struct FlowGenericFramework {
 
@@ -145,6 +147,8 @@ struct FlowGenericFramework {
   O2_DEFINE_CONFIGURABLE(cfgEta, float, 0.8, "eta cut");
   O2_DEFINE_CONFIGURABLE(cfgEtaPtPt, float, 0.4, "eta cut for pt-pt correlations");
   O2_DEFINE_CONFIGURABLE(cfgEtaNch, float, 0.4, "eta cut for nch selection");
+  O2_DEFINE_CONFIGURABLE(cfgEtaV0Daughters, float, 0.5, "eta cut on V0 daughter particles");
+  Configurable<LabeledArray<double>> cfgPtPtGaps{"cfgPtPtGaps", {LongArrayDouble[0], 4, 2, {"subevent 1", "subevent 2", "subevent 3", "subevent 4"}, {"etamin", "etamax"}}, "{etamin,etamax} for all ptpt-subevents"};
   O2_DEFINE_CONFIGURABLE(cfgUsePIDTotal, bool, false, "use fraction of PID total");
   O2_DEFINE_CONFIGURABLE(cfgVtxZ, float, 10, "vertex cut (cm)");
   struct : ConfigurableGroup {
@@ -360,7 +364,7 @@ struct FlowGenericFramework {
     kUseV0Radius
   };
   enum V0Selection {
-    kFillCandidate = 0,
+    kFillCandidate = 1,
     kFillDaughterPt,
     kFillMassCut,
     kFillRapidityCut,
@@ -468,6 +472,16 @@ struct FlowGenericFramework {
     readMatrix(cfgPIDCuts.resonanceCuts->getData(), resoCutVals);
     readMatrix(cfgPIDCuts.resonanceSwitches->getData(), resoSwitchVals);
     printResoCuts();
+
+    for (int i = 0; i < 4; ++i) { // o2-linter: disable=magic-number (maximum of 4 subevents)
+      if (cfgPtPtGaps->getData()[i][0] < -1. || cfgPtPtGaps->getData()[i][1] < -1.)
+        continue;
+      o2::analysis::gfw::etagapsPtPt.push_back(std::make_pair(cfgPtPtGaps->getData()[i][0], cfgPtPtGaps->getData()[i][1]));
+    }
+
+    for (const auto& [etamin, etamax] : o2::analysis::gfw::etagapsPtPt) {
+      LOGF(info, "pt-pt subevent: {%.1f,%.1f}", etamin, etamax);
+    }
 
     AxisSpec phiAxis = {o2::analysis::gfw::phibins, o2::analysis::gfw::philow, o2::analysis::gfw::phiup, "#phi"};
     AxisSpec phiModAxis = {100, 0, constants::math::PI / 9, "fmod(#varphi,#pi/9)"};
@@ -681,6 +695,7 @@ struct FlowGenericFramework {
     fFCpt->setUseCentralMoments(cfgUseCentralMoments);
     fFCpt->setUseGapMethod(cfgUseGapMethod);
     fFCpt->initialise(multAxis, cfgMpar, o2::analysis::gfw::configs, cfgNbootstrap);
+    fFCpt->initialiseSubevent(multAxis, cfgMpar, o2::analysis::gfw::etagapsPtPt.size(), cfgNbootstrap);
 
     // Multiplicity correlation cuts
     if (cfgMultCut) {
@@ -1229,8 +1244,11 @@ struct FlowGenericFramework {
   void fillOutputContainers(const float& centmult, const double& rndm, AcceptedTracks acceptedtracks)
   {
     fFCpt->calculateCorrelations();
+    fFCpt->calculateSubeventCorrelations();
     fFCpt->fillPtProfiles(centmult, rndm);
+    fFCpt->fillSubeventPtProfiles(centmult, rndm);
     fFCpt->fillCMProfiles(centmult, rndm);
+    fFCpt->fillCMSubeventProfiles(centmult, rndm);
     if (!cfgUseGapMethod)
       fFCpt->fillVnPtStdProfiles(centmult, rndm);
 
@@ -1307,10 +1325,14 @@ struct FlowGenericFramework {
 
     if (corrconfigsV0.size() < SPECIESCOUNT)
       return;
-    if (fFCpt->corrDen[0] == 0.)
+    if (fFCpt->corrDenSub[0][1] == 0. || fFCpt->corrDenSub[1][1] == 0.)
+      return;
+    double mpt_sub1 = fFCpt->corrNumSub[0][1] / fFCpt->corrDenSub[0][1];
+    double mpt_sub2 = fFCpt->corrNumSub[1][1] / fFCpt->corrDenSub[1][1];
+    double mpt = 0.5 * (mpt_sub1 + mpt_sub2);
+    if (std::isnan(mpt))
       return;
     for (uint l_ind = 0; l_ind < SPECIESCOUNT; ++l_ind) {
-      double mpt = fFCpt->corrNum[1] / fFCpt->corrDen[1];
       for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
         (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * fractions[l_ind][i - 1], 1., rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * fractions[l_ind][i - 1], 1., rndm);
       }
@@ -1473,11 +1495,17 @@ struct FlowGenericFramework {
           (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centrality, val * fractions_resonances[l_ind - 4][i - 1], dnx, lRandom) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centrality, val * fractions_resonances[l_ind - 4][i - 1], dnx, lRandom);
       }
     }
+
+    if (fFCpt->corrDenSub[0][1] == 0. || fFCpt->corrDenSub[1][1] == 0.)
+      return;
+
+    double mpt_sub1 = fFCpt->corrNumSub[0][1] / fFCpt->corrDenSub[0][1];
+    double mpt_sub2 = fFCpt->corrNumSub[1][1] / fFCpt->corrDenSub[1][1];
+    double mpt = 0.5 * (mpt_sub1 + mpt_sub2);
+    if (std::isnan(mpt))
+      return;
+
     for (uint l_ind = 4; l_ind < corrconfigsV0.size(); ++l_ind) {
-      double dn = fFCpt->corrDen[1];
-      if (dn == 0.)
-        continue;
-      double mpt = fFCpt->corrNum[1] / dn;
       for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
         (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centrality, mpt * fractions_resonances[l_ind - 4][i - 1], 1.0, lRandom) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centrality, mpt * fractions_resonances[l_ind - 4][i - 1], 1.0, lRandom);
       }
@@ -1685,6 +1713,10 @@ struct FlowGenericFramework {
         return false;
     }
 
+    // Eta cuts on daughter particles to remove self-correlations with correlated observables
+    if (std::abs(track.eta()) > cfgEtaV0Daughters)
+      return false;
+
     return true;
   }
 
@@ -1864,8 +1896,19 @@ struct FlowGenericFramework {
     double weff = (dt == kGen) ? 1. : getEfficiency(track);
     if (weff < 0)
       return;
+
+    // Fill the nominal sums
     if (std::abs(track.eta()) < cfgEtaPtPt)
       fFCpt->fill(weff, track.pt());
+
+    // Fill the subevent sums
+    std::size_t index = 0;
+    for (const auto& [etamin, etamax] : o2::analysis::gfw::etagapsPtPt) {
+      if (etamin < track.eta() && track.eta() < etamax) {
+        fFCpt->fillSub(weff, track.pt(), index);
+      }
+      ++index;
+    }
     if (!cfgUseGapMethod) {
       std::complex<double> q2p = {weff * wacc * std::cos(2 * track.phi()), weff * wacc * std::sin(2 * track.phi())};
       std::complex<double> q2n = {weff * wacc * std::cos(-2 * track.phi()), weff * wacc * std::sin(-2 * track.phi())};
