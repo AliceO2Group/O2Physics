@@ -455,9 +455,9 @@ struct Dilepton {
 
     if (doprocessTriggerAnalysis) {
       LOGF(info, "Trigger analysis is enabled. Desired trigger name = %s", zorroGroup.cfg_swt_name.value.data());
-      fRegistry.add("Event/trigger/hInspectedTVX", "inspected TVX;run number;N_{TVX}", o2::framework::kTProfile, {{100000, 500000.5, 600000.5}}, true);                                                            // extend X range in Run 4/5
-      fRegistry.add("Event/trigger/hScaler", "trigger counter before DS;run number;counter", o2::framework::kTProfile, {{100000, 500000.5, 600000.5}}, true);                                                      // extend X range in Run 4/5
-      fRegistry.add("Event/trigger/hSelection", "trigger counter after DS;run number;counter", o2::framework::kTProfile, {{100000, 500000.5, 600000.5}}, true);                                                    // extend X range in Run 4/5
+      fRegistry.add("Event/trigger/hInspectedTVX", "inspected TVX;run number;N_{TVX}", o2::framework::HistType::kTProfile, {{100000, 500000.5, 600000.5}}, true);                                                  // extend X range in Run 4/5
+      fRegistry.add("Event/trigger/hScaler", "trigger counter before DS;run number;counter", o2::framework::HistType::kTProfile, {{100000, 500000.5, 600000.5}}, true);                                            // extend X range in Run 4/5
+      fRegistry.add("Event/trigger/hSelection", "trigger counter after DS;run number;counter", o2::framework::HistType::kTProfile, {{100000, 500000.5, 600000.5}}, true);                                          // extend X range in Run 4/5
       fRegistry.add("Event/trigger/hAnalysedTrigger", Form("analysed trigger %s;run number;counter", zorroGroup.cfg_swt_name.value.data()), o2::framework::HistType::kTH1D, {{100000, 500000.5, 600000.5}}, true); // extend X range in Run 4/5
       fRegistry.add("Event/trigger/hAnalysedToI", Form("analysed ToI %s;run number;counter", zorroGroup.cfg_swt_name.value.data()), o2::framework::HistType::kTH1D, {{100000, 500000.5, 600000.5}}, true);         // extend X range in Run 4/5
     }

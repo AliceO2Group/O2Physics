@@ -426,9 +426,9 @@ struct DileptonHadronMPC {
 
     if (doprocessTriggerAnalysis) {
       LOGF(info, "Trigger analysis is enabled. Desired trigger name = %s", zorroGroup.cfg_swt_name.value);
-      fRegistry.add("NormTrigger/hInspectedTVX", "inspected TVX;run number;N_{TVX}", o2::framework::kTProfile, {{80000, 520000.5, 600000.5}}, true);
-      fRegistry.add("NormTrigger/hScalers", "trigger counter before DS;run number;counter", o2::framework::kTProfile, {{80000, 520000.5, 600000.5}}, true);
-      fRegistry.add("NormTrigger/hSelections", "trigger counter after DS;run number;counter", o2::framework::kTProfile, {{80000, 520000.5, 600000.5}}, true);
+      fRegistry.add("NormTrigger/hInspectedTVX", "inspected TVX;run number;N_{TVX}", o2::framework::HistType::kTProfile, {{80000, 520000.5, 600000.5}}, true);
+      fRegistry.add("NormTrigger/hScalers", "trigger counter before DS;run number;counter", o2::framework::HistType::kTProfile, {{80000, 520000.5, 600000.5}}, true);
+      fRegistry.add("NormTrigger/hSelections", "trigger counter after DS;run number;counter", o2::framework::HistType::kTProfile, {{80000, 520000.5, 600000.5}}, true);
       auto hTriggerCounter = fRegistry.add<TH2>("NormTrigger/hTriggerCounter", Form("trigger counter of %s;run number;", zorroGroup.cfg_swt_name.value.data()), o2::framework::HistType::kTH2D, {{80000, 520000.5, 600000.5}, {2, -0.5, 1.5}}, false);
       hTriggerCounter->GetYaxis()->SetBinLabel(1, "Analyzed Trigger");
       hTriggerCounter->GetYaxis()->SetBinLabel(2, "Analyzed TOI");
