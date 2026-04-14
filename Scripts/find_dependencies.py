@@ -34,6 +34,7 @@ import glob
 import hashlib
 import json
 import os
+import re
 import subprocess as sp  # nosec B404
 import sys
 
@@ -101,7 +102,9 @@ def get_inputs(specs_wf: dict, device=""):
         if device and dev["name"] != device:
             continue
         list_inputs += [
-            format_table_name(i["description"], i["subspec"], i["origin"]) for i in dev["inputs"] if i["origin"].startswith("AOD")
+            format_table_name(i["description"], i["subspec"], i["origin"])
+            for i in dev["inputs"]
+            if i["origin"].startswith("AOD")
         ]
     return list(dict.fromkeys(list_inputs))  # Remove duplicities
 
@@ -115,7 +118,9 @@ def get_outputs(specs_wf: dict, device=""):
         if device and dev["name"] != device:
             continue
         list_outputs += [
-            format_table_name(i["description"], i["subspec"], i["origin"]) for i in dev["outputs"] if i["origin"].startswith("AOD")
+            format_table_name(i["description"], i["subspec"], i["origin"])
+            for i in dev["outputs"]
+            if i["origin"].startswith("AOD")
         ]
     return list(dict.fromkeys(list_outputs))  # Remove duplicities
 
@@ -229,7 +234,7 @@ def get_tree_for_table(tab: str, dic_wf_all: dict, dic_wf_tree=None, case_sensit
             for p in producers:
                 get_tree_for_workflow(p, dic_wf_all, dic_wf_tree, case_sensitive, 0, levels_max, reverse)
     else:
-        print(f'No {"consumers" if reverse else "producers"} found')
+        print(f"No {'consumers' if reverse else 'producers'} found")
     return dic_wf_tree
 
 
@@ -272,7 +277,7 @@ def main():
         dest="exclude",
         type=str,
         nargs="+",
-        help="tables and workflows to exclude",
+        help="name patterns of tables and workflows to exclude",
     )
     parser.add_argument(
         "-l",
@@ -299,7 +304,7 @@ def main():
     dic_wf_all_simple = {}
     for wf, dic_wf in dic_wf_all_full.items():
         # Skip excluded workflows
-        if list_exclude and wf in list_exclude:
+        if list_exclude and any(re.search(pattern, wf) for pattern in list_exclude):
             continue
         dic_wf_all_simple[wf] = {}
         list_dev = get_devices(dic_wf)
@@ -309,8 +314,8 @@ def main():
             list_outputs = get_outputs(dic_wf, dev)
             # Skip excluded tables
             if list_exclude:
-                list_inputs = [i for i in list_inputs if i not in list_exclude]
-                list_outputs = [o for o in list_outputs if o not in list_exclude]
+                list_inputs = [i for i in list_inputs if not any(re.search(pattern, i) for pattern in list_exclude)]
+                list_outputs = [o for o in list_outputs if not any(re.search(pattern, o) for pattern in list_exclude)]
             dic_wf_all_simple[wf][dev]["inputs"] = list_inputs
             dic_wf_all_simple[wf][dev]["outputs"] = list_outputs
     # print_workflows(dic_wf_all_simple)
