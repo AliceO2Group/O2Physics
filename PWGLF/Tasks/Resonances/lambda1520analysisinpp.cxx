@@ -66,10 +66,11 @@ enum PIDCutType {
 };
 
 struct Lambda1520analysisinpp {
-  // Define slice per Resocollision
-  SliceCache cache;
+  // Define slice per collision
   Preslice<Tracks> perCollision = o2::aod::track::collisionId;
+  SliceCache cache;
   Preslice<McParticles> perMcCollision = o2::aod::mcparticle::mcCollisionId;
+  SliceCache cacheMC;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -391,6 +392,7 @@ struct Lambda1520analysisinpp {
 
     // MC QA
     histos.add("Event/hMCEventIndices", "hMCEventIndices", kTH2D, {axisMult, idxMCAxis});
+
     if (doprocessMCGen) {
       histos.add("QA/Gen", "Gen histogram", kTH1D, {{10, 0, 10, "index"}});
       histos.add("QA/MC/h2GenEtaPt_beforeanycut", " #eta-#it{p}_{T} distribution of Generated #Lambda(1520); #eta;  #it{p}_{T}; Counts;", HistType::kTHnSparseF, {axisEta, axisPtQA});
@@ -1158,6 +1160,9 @@ struct Lambda1520analysisinpp {
                     aod::McCollisions const&,
                     MCTrackCandidates const& tracks, aod::McParticles const&)
   {
+    if (!collision.has_mcCollision())
+      return;
+
     if (!isSelected(collision))
       return;
 
@@ -1174,6 +1179,9 @@ struct Lambda1520analysisinpp {
 
   void processMCGen(MCEventCandidates::iterator const& collision, aod::McCollisions const&, aod::McParticles const& mcParticles)
   {
+    if (!collision.has_mcCollision())
+      return;
+
     bool isInAfterAllCuts = isSelected(collision, false);
     bool inVtx10 = (std::abs(collision.mcCollision().posZ()) > configEvents.cfgEvtZvtx) ? false : true;
     bool isTriggerTVX = collision.selection_bit(aod::evsel::kIsTriggerTVX);
@@ -1298,9 +1306,6 @@ struct Lambda1520analysisinpp {
     if (!isInAfterAllCuts)
       return;
 
-    // if (!collision.has_mcCollision())
-    // return;
-
     for (const auto& part : mcPartsAll) {
 
       if (!part.isPhysicalPrimary())
@@ -1350,14 +1355,15 @@ struct Lambda1520analysisinpp {
   }
   PROCESS_SWITCH(Lambda1520analysisinpp, processMCGen, "Process Event for MC only", false);
 
-  void processEventFactor(soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& mcCollisions, aod::McParticles const& mcParticles)
+  void processEventFactor(MCEventCandidates const& collisions, soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& mcCollisions, aod::McParticles const& mcParticles)
   {
+    // Loop on generated collisions to fill the event factor for the INEL>0 correction
     for (const auto& mccolls : mcCollisions) {
       float centrality = mccolls.centFT0M();
       bool inVtx10 = std::abs(mccolls.posZ()) <= configEvents.cfgEvtZvtx;
 
-      auto mcPartsThis = mcParticles.sliceBy(perMcCollision, mccolls.globalIndex());
-      bool isTrueINELgt0 = pwglf::isINELgt0mc(mcPartsThis, pdg); // QA for Trigger efficiency
+      const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mccolls.globalIndex(), cacheMC);
+      bool isTrueINELgt0 = pwglf::isINELgt0mc(particlesInCollision, pdg); // QA for Trigger efficiency
 
       histos.fill(HIST("Event/hMCEventIndices"), centrality, Inel);
       if (inVtx10)
@@ -1377,8 +1383,8 @@ struct Lambda1520analysisinpp {
 
       bool inVtx10 = std::abs(mccolls.posZ()) <= configEvents.cfgEvtZvtx;
 
-      auto mcPartsThis = mcParticles.sliceBy(perMcCollision, mccolls.globalIndex());
-      bool isTrueINELgt0 = pwglf::isINELgt0mc(mcPartsThis, pdg);
+      const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mccolls.globalIndex(), cacheMC);
+      bool isTrueINELgt0 = pwglf::isINELgt0mc(particlesInCollision, pdg);
 
       if (!(inVtx10 && isTrueINELgt0))
         continue;
@@ -1388,10 +1394,7 @@ struct Lambda1520analysisinpp {
         return (ptL2 > 0) ? std::sqrt(ptL2) : -1.f;
       };
 
-      for (const auto& part : mcPartsThis) {
-
-        // if (!part.has_mcCollision())
-        // continue;
+      for (const auto& part : particlesInCollision) {
 
         if (cUseRapcutMC && std::abs(part.y()) > configTracks.cfgCutRapidity)
           continue;
