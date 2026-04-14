@@ -72,6 +72,7 @@
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
+#include <variant>
 #include <vector>
 
 using namespace o2;
@@ -511,7 +512,7 @@ struct PhiStrangenessCorrelation {
     const bool applyK0sMassCut = (analysisMode == kDeltaYvsDeltaPhi) && k0sConfigs.selectK0sInSigRegion;
     const auto& [minMassK0s, maxMassK0s] = k0sConfigs.rangeMK0sSignal.value;
     auto isK0sValid = [&](const auto& k0s) {
-      return (!applyEfficiency || k0s.pt() <= binspTK0S->back()) && (!applyK0sMassCut || k0s.inMassRegion(minMassK0s, maxMassK0s));
+      return (!applyEfficiency || k0s.pt() < binspTK0S->back()) && (!applyK0sMassCut || k0s.inMassRegion(minMassK0s, maxMassK0s));
     };
 
     const bool applyPionNSigmaCut = (analysisMode == kDeltaYvsDeltaPhi) && pionConfigs.selectPionInSigRegion;
@@ -520,11 +521,11 @@ struct PhiStrangenessCorrelation {
     // const float& tofPIDThreshold = pionConfigs.tofPIDThreshold;
 
     auto isPionValid = [&](const auto& pion) {
-      return (!applyEfficiency || pion.pt() <= binspTPi->back()) && (!applyPionNSigmaCut || pion.inNSigmaRegion(pidTPCMax, pidTOFMax));
+      return (!applyEfficiency || pion.pt() < binspTPi->back()) && (!applyPionNSigmaCut || pion.inNSigmaRegion(pidTPCMax, pidTOFMax));
     };
 
     for (const auto& phiCand : phiCandidates) {
-      if (applyEfficiency && phiCand.pt() > binspTPhi->back())
+      if (applyEfficiency && phiCand.pt() >= binspTPhi->back())
         continue;
 
       float weightPhi = computeWeight(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()));
@@ -651,7 +652,7 @@ struct PhiStrangenessCorrelation {
     const auto& [minMassK0s, maxMassK0s] = k0sConfigs.rangeMK0sSignal.value;
 
     auto isK0sValid = [&](const auto& k0s) {
-      return (!applyEfficiency || k0s.pt() <= binspTK0S->back()) && (!applyK0sMassCut || k0s.inMassRegion(minMassK0s, maxMassK0s));
+      return (!applyEfficiency || k0s.pt() < binspTK0S->back()) && (!applyK0sMassCut || k0s.inMassRegion(minMassK0s, maxMassK0s));
     };
 
     auto tuplePhiK0S = std::make_tuple(phiCandidates, k0sReduced);
@@ -662,7 +663,7 @@ struct PhiStrangenessCorrelation {
       float multiplicity = c1.centFT0M();
 
       for (const auto& [phiCand, k0s] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(phiCands, k0sRed))) {
-        if (applyEfficiency && phiCand.pt() > binspTPhi->back())
+        if (applyEfficiency && phiCand.pt() >= binspTPhi->back())
           continue;
         if (!isK0sValid(k0s))
           continue;
@@ -746,7 +747,7 @@ struct PhiStrangenessCorrelation {
     // const float& tofPIDThreshold = pionConfigs.tofPIDThreshold;
 
     auto isPionValid = [&](const auto& pion) {
-      return (!applyEfficiency || pion.pt() <= binspTPi->back()) && (!applyPionNSigmaCut || pion.inNSigmaRegion(pidTPCMax, pidTOFMax));
+      return (!applyEfficiency || pion.pt() < binspTPi->back()) && (!applyPionNSigmaCut || pion.inNSigmaRegion(pidTPCMax, pidTOFMax));
     };
 
     auto tuplePhiPion = std::make_tuple(phiCandidates, pionTracks);
@@ -757,7 +758,7 @@ struct PhiStrangenessCorrelation {
       float multiplicity = c1.centFT0M();
 
       for (const auto& [phiCand, piTrack] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(phiCands, piTracks))) {
-        if (applyEfficiency && phiCand.pt() > binspTPhi->back())
+        if (applyEfficiency && phiCand.pt() >= binspTPhi->back())
           continue;
         if (!isPionValid(piTrack))
           continue;
