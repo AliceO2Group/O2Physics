@@ -704,12 +704,12 @@ struct StrangeCascTrack {
           histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAxyPrimaryXi"), cascade.dcaXYCascToPV(), pt, mult);
           histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAzPrimaryXi"), cascade.dcaZCascToPV(), pt, mult);
           if (std::abs(cascmccore.pdgCodeMother()) > 4000) {
-                histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAxyDecayXi"), cascade.dcaXYCascToPV(), pt, mult);
-                histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAzDecayXi"), cascade.dcaZCascToPV(), pt, mult);
-            } else {
-                histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAxyDirectXi"), cascade.dcaXYCascToPV(), pt, mult);
-                histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAzDirectXi"), cascade.dcaZCascToPV(), pt, mult);
-            }
+            histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAxyDecayXi"), cascade.dcaXYCascToPV(), pt, mult);
+            histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAzDecayXi"), cascade.dcaZCascToPV(), pt, mult);
+          } else {
+            histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAxyDirectXi"), cascade.dcaXYCascToPV(), pt, mult);
+            histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAzDirectXi"), cascade.dcaZCascToPV(), pt, mult);
+          }
         }
         if (passedAllSelsXi) {
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/GenRecRapidityXi"), genYXi, cascade.yXi());
@@ -719,11 +719,11 @@ struct StrangeCascTrack {
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAzPrimaryXi"), cascade.dcaZCascToPV(), pt, mult);
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/Radius/PrimaryXi"), cascade.cascradius(), pt);
             if (std::abs(cascmccore.pdgCodeMother()) > 4000) {
-                histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAxyDecayXi"), cascade.dcaXYCascToPV(), pt, mult);
-                histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAzDecayXi"), cascade.dcaZCascToPV(), pt, mult);
+              histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAxyDecayXi"), cascade.dcaXYCascToPV(), pt, mult);
+              histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAzDecayXi"), cascade.dcaZCascToPV(), pt, mult);
             } else {
-                histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAxyDirectXi"), cascade.dcaXYCascToPV(), pt, mult);
-                histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAzDirectXi"), cascade.dcaZCascToPV(), pt, mult);
+              histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAxyDirectXi"), cascade.dcaXYCascToPV(), pt, mult);
+              histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAzDirectXi"), cascade.dcaZCascToPV(), pt, mult);
             }
           }
         }
@@ -732,12 +732,12 @@ struct StrangeCascTrack {
           histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAxyPrimaryOmega"), cascade.dcaXYCascToPV(), pt, mult);
           histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAzPrimaryOmega"), cascade.dcaZCascToPV(), pt, mult);
           if (std::abs(cascmccore.pdgCodeMother()) > 4000) {
-                histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAxyDecayOmega"), cascade.dcaXYCascToPV(), pt, mult);
-                histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAzDecayOmega"), cascade.dcaZCascToPV(), pt, mult);
-            } else {
-                histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAxyDirectOmega"), cascade.dcaXYCascToPV(), pt, mult);
-                histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAzDirectOmega"), cascade.dcaZCascToPV(), pt, mult);
-            }
+            histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAxyDecayOmega"), cascade.dcaXYCascToPV(), pt, mult);
+            histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAzDecayOmega"), cascade.dcaZCascToPV(), pt, mult);
+          } else {
+            histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAxyDirectOmega"), cascade.dcaXYCascToPV(), pt, mult);
+            histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAzDirectOmega"), cascade.dcaZCascToPV(), pt, mult);
+          }
         }
         if (passedAllSelsOmega) {
           histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/GenRecRapidityOmega"), genYOmega, cascade.yOmega());
@@ -747,12 +747,12 @@ struct StrangeCascTrack {
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAzPrimaryOmega"), cascade.dcaZCascToPV(), pt, mult);
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/Radius/PrimaryOmega"), cascade.cascradius(), pt);
             if (std::abs(cascmccore.pdgCodeMother()) > 4000) {
-                  histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAxyDecayOmega"), cascade.dcaXYCascToPV(), pt, mult);
-                  histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAzDecayOmega"), cascade.dcaZCascToPV(), pt, mult);
-              } else {
-                  histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAxyDirectOmega"), cascade.dcaXYCascToPV(), pt, mult);
-                  histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAzDirectOmega"), cascade.dcaZCascToPV(), pt, mult);
-              }
+              histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAxyDecayOmega"), cascade.dcaXYCascToPV(), pt, mult);
+              histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAzDecayOmega"), cascade.dcaZCascToPV(), pt, mult);
+            } else {
+              histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAxyDirectOmega"), cascade.dcaXYCascToPV(), pt, mult);
+              histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAzDirectOmega"), cascade.dcaZCascToPV(), pt, mult);
+            }
           }
         }
       }
@@ -1193,11 +1193,11 @@ struct StrangeCascTrack {
   void processDerivedMCRec(DerMCRecCollisions const& collisions, DerMCRecCascDatas const& allCascs, DerMCRecTraCascDatas const& traCascs, DauTracks const&, DerMCGenCascades const&)
   {
     // custom group tracked cascades - a temporary fix for wrong ordering in OO MC
-      traCascsGrouped.clear();
-      traCascsGrouped.resize(collisions.size());
-      for (const auto& casc : traCascs) {
-        traCascsGrouped[casc.straCollisionId()].push_back(casc.globalIndex());
-      }
+    traCascsGrouped.clear();
+    traCascsGrouped.resize(collisions.size());
+    for (const auto& casc : traCascs) {
+      traCascsGrouped[casc.straCollisionId()].push_back(casc.globalIndex());
+    }
     for (const auto& collision : collisions) {
       fillEvents(collision); // save info about all processed events
       auto slicedAllCascs = allCascs.sliceBy(cascsPerCollision, collision.globalIndex());
@@ -1209,8 +1209,8 @@ struct StrangeCascTrack {
         histos.fill(HIST("Rec-Events/Mult"), mult);
         analyseCascs(collision, slicedAllCascs); // process all cascades
         for (int const& idx : traCascsGrouped[collision.globalIndex()]) {
-            auto casc = traCascs.rawIteratorAt(idx);
-            analyseCascade(collision, casc);
+          auto casc = traCascs.rawIteratorAt(idx);
+          analyseCascade(collision, casc);
         }
       }
     }
