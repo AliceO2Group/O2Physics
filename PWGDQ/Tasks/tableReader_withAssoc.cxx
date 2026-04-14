@@ -1658,10 +1658,10 @@ struct AnalysisSameEventPairing {
       DefineHistograms(fHistMan, histNames.Data(), fConfigAddSEPHistogram.value.data());                        // define all histograms
       if (fEnableBarrelHistos) {
         DefineHistograms(fHistMan, "PairingSEQA", "sameevent-pairing"); // histograms for QA of the pairing
-      };
+      }
       if (fEnableBarrelMixingHistos) {
         DefineHistograms(fHistMan, "PairingMEQA", "mixedevent-pairing"); // histograms for QA of the pairing
-      };
+      }
       dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
       VarManager::SetUseVars(fHistMan->GetUsedVars());                                       // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
@@ -2501,8 +2501,8 @@ struct AnalysisSameEventPairing {
                 }
               }
             } // end pair cut loop
-          }   // end muon cut loop
-        }     // end barrel cut loop
+          } // end muon cut loop
+        } // end barrel cut loop
       }
     }
   }
