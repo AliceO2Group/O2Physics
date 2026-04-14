@@ -297,7 +297,7 @@ struct TableMaker {
   //
   struct : ConfigurableGroup {
     Configurable<bool> fConfigFT0CCumulant{"cfgFT0CCumulant", false, "If true, compute RefFlow cumulants from FT0C amplitudes (requires FT0s subscription)"};
-    Configurable<std::string> fConfigQvecCalibPath{"cfgQvecCalibPath", "Analysis/EventPlane/QVecCorrections", "CCDB path for qvector calibration objects; used only to check availability per run"};
+    Configurable<bool> fConfigQvectCalibAvailable{"cfgQvectCalibAvailable", false, "If true, qvector calibration objects are available in CCDB for this run"};
   } fConfigQvector;
 
   struct : ConfigurableGroup {
@@ -335,7 +335,6 @@ struct TableMaker {
 
   bool fDoDetailedQA = false; // Bool to set detailed QA true, if QA is set true
   int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
-  bool fQvectCalibAvailable = false; // Whether the Q-vector calibration is available for the current run
 
   // maps used to store index info; NOTE: std::map are sorted in ascending order by default (needed for track to collision indices)
   std::map<uint32_t, uint32_t> fCollIndexMap;             // key: old collision index, value: skimmed collision index
@@ -1195,7 +1194,7 @@ struct TableMaker {
       eventInfo(collision.globalIndex());
 
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionQvectCentr) > 0) {
-        if (fQvectCalibAvailable) {
+        if (fConfigQvector.fConfigQvectCalibAvailable) {
           qvecGroup.eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
                                       collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
           qvecGroup.eventQvectorCentrExtra(collision.qvecTPCallRe(), collision.qvecTPCallIm(), collision.nTrkTPCall());
@@ -1777,29 +1776,6 @@ struct TableMaker {
       }
       std::map<std::string, std::string> metadataRCT, header;
       header = fCCDBApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", bcs.begin().runNumber()), metadataRCT, -1);
-
-      // Check if qvector calibration objects are available in CCDB for this run
-      if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionQvectCentr) > 0) {
-        std::map<std::string, std::string> metadataQvect;
-        const std::array<std::string, 3> subfolders = {"v2", "v3", "v4"};
-        bool anyFound = false;
-        for (const auto& sub : subfolders) {
-          std::string fullPath = fConfigQvector.fConfigQvecCalibPath.value + "/" + sub;
-          auto headers = fCCDBApi.retrieveHeaders(fullPath, metadataQvect, bcs.begin().timestamp());
-          if (headers.empty()) {
-            LOG(warn) << "Qvector calibration not found at CCDB path '" << fullPath
-                      << "' for run " << bcs.begin().runNumber();
-          } else {
-            anyFound = true;
-          }
-        }
-        fQvectCalibAvailable = anyFound;
-        if (!fQvectCalibAvailable) {
-          LOG(warn) << "No qvector calibration found in any subfolder under '"
-                    << fConfigQvector.fConfigQvecCalibPath.value
-                    << "' — qvector tables will not be filled for this run.";
-        }
-      }
       uint64_t sor = std::atol(header["SOR"].c_str());
       uint64_t eor = std::atol(header["EOR"].c_str());
       VarManager::SetSORandEOR(sor, eor);
