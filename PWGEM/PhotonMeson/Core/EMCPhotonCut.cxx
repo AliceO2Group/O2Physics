@@ -13,8 +13,8 @@
 /// \brief source of class for emcal photon selection.
 /// \author M. Hemmer, marvin.hemmer@cern.ch; N. Strangmann, nicolas.strangmann@cern.ch
 
-#include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
-//
+#include "EMCPhotonCut.h"
+
 #include "PWGJE/DataModel/EMCALClusters.h"
 
 #include <Framework/Logger.h>
