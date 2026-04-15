@@ -20,10 +20,10 @@
 #ifndef PWGLF_UTILS_MCPARTICLE_H_
 #define PWGLF_UTILS_MCPARTICLE_H_
 
+#include "ReconstructionDataFormats/PID.h"
+
 #include <string>
 #include <vector>
-
-#include "ReconstructionDataFormats/PID.h"
 
 namespace o2
 {
@@ -55,6 +55,7 @@ class PIDExtended
   static constexpr ID OmegaMinus = 16;
   static constexpr ID HyperHelium4 = 17;
   static constexpr ID HyperHelium5 = 18;
+  static constexpr ID Lambda1520 = 19;
 
   static_assert(Electron == o2::track::PID::Electron, "PID::Electron mismatch");
   static_assert(Muon == o2::track::PID::Muon, "PID::Muon mismatch");
@@ -79,11 +80,11 @@ class PIDExtended
   static constexpr ID PIDCountsUntilAl = 9; // Number of indices defined in PID.h equivalent to o2::track::PID::NIDs
   // static_assert(PIDCountsUntilAl == o2::track::PID::NIDs, "PID::NIDs mismatch");
 
-  static constexpr ID PIDCounts = 19; // Number of indices defined in PID.h
+  static constexpr ID PIDCounts = 20; // Number of indices defined in PID.h
   // static_assert(PIDCounts == o2::track::PID::NIDsTot, "PID::NIDsTot mismatch");
   // Define an array of IDs
   static constexpr std::array<ID, PIDCountsUntilAl> mIDsUntilAl = {Electron, Muon, Pion, Kaon, Proton, Deuteron, Triton, Helium3, Alpha};
-  static constexpr std::array<ID, PIDCounts> mIDs = {Electron, Muon, Pion, Kaon, Proton, Deuteron, Triton, Helium3, Alpha, PI0, Photon, K0, Lambda, HyperTriton, Hyperhydrog4, XiMinus, OmegaMinus, HyperHelium4, HyperHelium5};
+  static constexpr std::array<ID, PIDCounts> mIDs = {Electron, Muon, Pion, Kaon, Proton, Deuteron, Triton, Helium3, Alpha, PI0, Photon, K0, Lambda, HyperTriton, Hyperhydrog4, XiMinus, OmegaMinus, HyperHelium4, HyperHelium5, Lambda1520};
 
   // Define the antiparticles
   static constexpr ID Positron = PIDCounts;
@@ -126,7 +127,8 @@ class PIDExtended
   static constexpr ID XiCCPlusPlus = PIDCounts + 36;
   static constexpr ID XiCPlus = PIDCounts + 37;
   static constexpr ID XiC0 = PIDCounts + 38;
-  static constexpr ID NIDsTot = PIDCounts + 39;
+  static constexpr ID AntiLambda1520 = PIDCounts + 39;
+  static constexpr ID NIDsTot = PIDCounts + 40;
 
   static constexpr const char* sNames[NIDsTot + 1] = {
     o2::track::pid_constants::sNames[Electron],     // Electron
@@ -148,6 +150,7 @@ class PIDExtended
     o2::track::pid_constants::sNames[OmegaMinus],   // OmegaMinus
     "HyperHelium4",                                 // HyperHelium4
     "HyperHelium5",                                 // HyperHelium5
+    "Lambda1520",                                   // Lambda1520
     "Positron",                                     // Positron
     "MuonPlus",                                     // MuonPlus
     "PionMinus",                                    // PionMinus
@@ -187,6 +190,7 @@ class PIDExtended
     "XiCCPlusPlus",                                 // XiCCPlusPlus
     "XiCPlus",                                      // XiCPlus
     "XiC0",                                         // XiC0
+    "AntiLambda1520",                               // AntiLambda1520
     nullptr};
 
   static std::vector<std::string> arrayNames()
@@ -321,6 +325,10 @@ class PIDExtended
         return XiCPlus;
       case o2::constants::physics::Pdg::kXiC0:
         return XiC0;
+      case 3124:
+        return Lambda1520;
+      case -3124:
+        return AntiLambda1520;
       default:
         LOG(debug) << "Cannot identify particle with PDG code " << particle.pdgCode();
         break;
