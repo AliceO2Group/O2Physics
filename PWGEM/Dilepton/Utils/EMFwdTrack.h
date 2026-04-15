@@ -25,11 +25,9 @@ class EMFwdTrack
  public:
   EMFwdTrack(float pt, float eta, float phi, float mass, int8_t charge, float dcaX, float dcaY, float cXX, float cXY, float cYY)
   {
-    fPt = pt;
+    fSigned1Pt = static_cast<float>(charge) / pt;
     fEta = eta;
     fPhi = phi;
-    fMass = mass;
-    fCharge = charge;
     fDCAx = dcaX;
     fDCAy = dcaY;
     fCXX = cXX;
@@ -39,31 +37,28 @@ class EMFwdTrack
 
   ~EMFwdTrack() {}
 
-  float pt() const { return fPt; }
+  float pt() const { return 1.f / std::fabs(fSigned1Pt); }
   float eta() const { return fEta; }
   float phi() const { return fPhi; }
-  float mass() const { return fMass; }
-  int8_t sign() const { return fCharge; }
+  int8_t sign() const { return (fSigned1Pt > 0 ? +1 : -1); }
   float fwdDcaX() const { return fDCAx; }
   float fwdDcaY() const { return fDCAy; }
   float fwdDcaXY() const { return std::sqrt(std::pow(fDCAx, 2) + std::pow(fDCAy, 2)); }
-  float p() const { return fPt * std::cosh(fEta); }
-  float px() const { return fPt * std::cos(fPhi); }
-  float py() const { return fPt * std::sin(fPhi); }
-  float pz() const { return fPt * std::sinh(fEta); }
-  float e() const { return std::hypot(fPt * std::cosh(fEta), fMass); } // e2 = p2 + m2
-  float signed1Pt() const { return fCharge * 1.f / fPt; }
+  float p() const { return 1.f / std::fabs(fSigned1Pt) * std::cosh(fEta); }
+  float px() const { return 1.f / std::fabs(fSigned1Pt) * std::cos(fPhi); }
+  float py() const { return 1.f / std::fabs(fSigned1Pt) * std::sin(fPhi); }
+  float pz() const { return 1.f / std::fabs(fSigned1Pt) * std::sinh(fEta); }
+  // float e(const float mass) const { return std::hypot(fPt * std::cosh(fEta), mass); } // e2 = p2 + m2
+  float signed1Pt() const { return fSigned1Pt; }
 
   float cXX() const { return fCXX; }
   float cXY() const { return fCXY; }
   float cYY() const { return fCYY; }
 
  protected:
-  float fPt;
+  float fSigned1Pt;
   float fEta;
   float fPhi;
-  float fMass;
-  int8_t fCharge;
   float fDCAx;
   float fDCAy;
   float fCXX;
