@@ -140,7 +140,7 @@ struct DQEventSelectionTask {
 
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Comma separated list of event cuts; multiple cuts are applied with a logical AND"};
   Configurable<bool> fConfigQA{"cfgWithQA", false, "If true, fill QA histograms"};
-  Configurable<std::string> fConfigHistClasses{"cfgHistClasses", "event", "Comma separated list of histogram groups to be filled"};
+  Configurable<std::string> fConfigHistClasses{"cfgHistClasses", "vtxpp", "Comma separated list of histogram groups to be filled"};
   // TODO: configure the histogram classes to be filled by QA
 
   void init(o2::framework::InitContext&)
