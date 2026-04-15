@@ -989,13 +989,12 @@ struct LambdaTableProducer {
           continue;
         }
       }
-      if (track.pt() <= cTrackMinPt && std::abs(track.eta()) >= cTrackEtaCut) { // Kinematic selection
-        continue;
-      }
-      if (track.hasITS()) { // ITS only track
+      // ITS only track
+      if (track.pt() > cTrackMinPt && std::abs(track.eta()) < cTrackEtaCut && track.hasITS() && track.isQualityTrackITS()) {
         histos.fill(HIST("Tracks/h2f_itstrack_centpt"), cent, track.pt());
       }
-      if (track.hasITS() && track.hasTPC()) { // ITS + TPC track
+      // ITS+TPC track
+      if (track.pt() > cTrackMinPt && std::abs(track.eta()) < cTrackEtaCut && track.hasITS() && track.hasTPC() && track.isQualityTrackITS() && track.isQualityTrackTPC()) {
         histos.fill(HIST("Tracks/h2f_itstpctrack_centpt"), cent, track.pt());
       }
     }
