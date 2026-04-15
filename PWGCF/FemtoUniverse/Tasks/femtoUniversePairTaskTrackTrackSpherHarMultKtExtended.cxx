@@ -415,31 +415,6 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
     return false;
   }
 
-  template <typename PartType>
-  bool rejectGammaPair(PartType track1, PartType track2)
-  {
-    double me = o2::constants::physics::MassElectron;
-
-    double magTrack1 = track1.px() * track1.px() + track1.py() * track1.py() + track1.pz() * track1.pz();
-    double magTrack2 = track2.px() * track2.px() + track2.py() * track2.py() + track2.pz() * track2.pz();
-    double dotTr1Tr2 = track1.px() * track2.px() + track1.py() * track2.py() + track1.pz() * track2.pz();
-
-    if ((track1.sign() * track2.sign()) < 0.0) {
-      double theta1 = track1.theta();
-      double theta2 = track2.theta();
-      double dtheta = TMath::Abs(theta1 - theta2);
-
-      double e1 = TMath::Sqrt(me * me + magTrack1);
-      double e2 = TMath::Sqrt(me * me + magTrack2);
-
-      double minv = 2 * me * me + 2 * (e1 * e2 - dotTr1Tr2);
-      if ((TMath::Abs(minv) < confMaxEEMinv) && (dtheta < confMaxDTheta)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   void init(InitContext&)
   {
     eventHisto.init(&qaRegistry);
@@ -565,7 +540,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
           continue;
         }
 
-        if (confRejectGammaPair && !rejectGammaPair(p1, p2)) {
+        if (confRejectGammaPair && pairCloseRejection.isGammaPair(p1, p2, confMaxEEMinv, confMaxDTheta)) {
           continue;
         }
 
@@ -971,7 +946,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         continue;
       }
 
-      if (confRejectGammaPair && !rejectGammaPair(p1, p2)) {
+      if (confRejectGammaPair && pairCloseRejection.isGammaPair(p1, p2, confMaxEEMinv, confMaxDTheta)) {
         continue;
       }
 
