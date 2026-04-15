@@ -135,6 +135,10 @@ struct HmpidTableProducer {
 
       float centrality = col.centFV0A();
 
+      // check cluster size sign
+      if (t.hmpidClusSize() <= 0)
+        continue;
+
       float hmpidPhotsCharge2[o2::aod::kDimPhotonsCharge];
 
       for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {

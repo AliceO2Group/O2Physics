@@ -51,6 +51,7 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <random>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -120,6 +121,7 @@ DECLARE_SOA_COLUMN(TimeResMFT, timeResMFT, float);
 DECLARE_SOA_COLUMN(Chi2MFT, chi2MFT, float);
 DECLARE_SOA_COLUMN(McMaskMFT, mcMaskMFT, int);
 DECLARE_SOA_COLUMN(MftClusterSizesAndTrackFlags, mftClusterSizesAndTrackFlags, uint64_t);
+DECLARE_SOA_COLUMN(TrackTypeMFT, trackTypeMFT, int);
 
 DECLARE_SOA_COLUMN(CXXMFT, cXXMFT, float);
 DECLARE_SOA_COLUMN(CYYMFT, cYYMFT, float);
@@ -183,6 +185,7 @@ DECLARE_SOA_TABLE(FwdMatchMLCandidates, "AOD", "FWDMLCAND",
                   fwdmatchcandidates::TimeResMFT,
                   fwdmatchcandidates::Chi2MFT,
                   fwdmatchcandidates::MftClusterSizesAndTrackFlags,
+                  fwdmatchcandidates::TrackTypeMFT,
                   fwdmatchcandidates::CXXMFT,
                   fwdmatchcandidates::CYYMFT,
                   fwdmatchcandidates::CPhiPhiMFT,
@@ -236,6 +239,8 @@ struct mftMchMatcher {
   Configurable<bool> fKeepBestMatch{"cfgKeepBestMatch", false, "Keep only the best match global muons in the skimming"};
   Configurable<float> fzMatching{"cfgzMatching", -77.5f, "Plane for MFT-MCH matching"};
 
+  Configurable<float> fSamplingFraction{"cfgSamplingFraction", 1.f, "Fraction of randomly selected events to be processed"};
+
   ////   Variables for ccdb
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
@@ -262,6 +267,9 @@ struct mftMchMatcher {
   o2::ccdb::CcdbApi fCCDBApi;
 
   o2::parameters::GRPMagField* fGrpMag = nullptr;
+
+  std::uniform_real_distribution<double> mDistribution{0.0, 1.0};
+  std::mt19937 mGenerator;
 
   o2::globaltracking::MatchGlobalFwd mMatching;
 
@@ -403,8 +411,15 @@ struct mftMchMatcher {
       ccdbManager->get<TGeoManager>(geoPath);
     }
 
-    // int matchTypeMax = static_cast<int>(kMatchTypeUndefined);
-    AxisSpec matchTypeAxis = {static_cast<int>(kMatchTypeUndefined), 0, static_cast<double>(kMatchTypeUndefined), ""};
+    if (fSamplingFraction < 1.0) {
+      std::random_device rd;
+      mGenerator = std::mt19937(rd());
+    }
+    auto hAcceptedEvents = std::get<std::shared_ptr<TH1>>(registry.add("acceptedEvents", "Accepted events", {HistType::kTH1F, {{2, 0, 2.f, ""}}}));
+    hAcceptedEvents->GetXaxis()->SetBinLabel(1, "total");
+    hAcceptedEvents->GetXaxis()->SetBinLabel(2, "accepted");
+
+    AxisSpec matchTypeAxis = {static_cast<int>(kMatchTypeUndefined) + 1, 0, static_cast<double>(kMatchTypeUndefined) + 1, ""};
     auto hMatchType = std::get<std::shared_ptr<TH1>>(registry.add("matchType", "Match type", {HistType::kTH1F, {matchTypeAxis}}));
     hMatchType->GetXaxis()->SetBinLabel(1, "true (leading)");
     hMatchType->GetXaxis()->SetBinLabel(2, "wrong (leading)");
@@ -414,6 +429,7 @@ struct mftMchMatcher {
     hMatchType->GetXaxis()->SetBinLabel(6, "wrong (non leading)");
     hMatchType->GetXaxis()->SetBinLabel(7, "decay (non leading)");
     hMatchType->GetXaxis()->SetBinLabel(8, "fake (non leading)");
+    hMatchType->GetXaxis()->SetBinLabel(9, "undefined");
   }
 
   template <typename TMuons>
@@ -584,6 +600,16 @@ struct mftMchMatcher {
       VarManager::SetMatchingPlane(fzMatching.value);
     }
 
+    registry.get<TH1>(HIST("acceptedEvents"))->Fill(0);
+    // reject a randomly selected fraction of events
+    if (fSamplingFraction < 1.0) {
+      double rnd = mDistribution(mGenerator);
+      if (rnd > fSamplingFraction) {
+        return;
+      }
+    }
+    registry.get<TH1>(HIST("acceptedEvents"))->Fill(1);
+
     fillBestMuonMatches(muonTracks);
 
     std::vector<std::pair<int64_t, int64_t>> matchablePairs;
@@ -684,6 +710,7 @@ struct mftMchMatcher {
         mfttrack.trackTimeRes(),
         mfttrack.chi2(),
         mfttrack.mftClusterSizesAndTrackFlags(),
+        (mfttrack.isCA() ? 1 : 0),
         mftpropCov(0, 0),
         mftpropCov(1, 1),
         mftpropCov(2, 2),

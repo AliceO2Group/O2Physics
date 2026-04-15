@@ -63,10 +63,11 @@ using namespace o2::constants::physics;
 
 enum MyRecoProblem {
   NO_PROBLEM = 0,         // no problem
-  MANY_RECO = 1,          // more than 1 reconstructed collision
+  MANY_RECO = 1,          // more than 1 reconstructed collision, event not rejected
   TOO_MANY_DAUGHTERS = 2, // more than 6 daughters from 2 taus
   TWO_TRACKS = 3,         // more than 1 associated track to MC particle (tau daughter)
-  NO_TRACK = 4            // No associated track to MC particle (tau daughter)
+  NO_TRACK = 4,           // No associated track to MC particle (tau daughter)
+  MIXED_TRACKS = 5        // 4 (or 6) tracks reconstructed but from 2 collisions
 };
 
 enum MyParticle {
@@ -718,6 +719,8 @@ struct TauThreeProngEventTableProducer {
       energyZNA = -1.;
     if (energyZNC < 0)
       energyZNC = -1.;
+    float timeZNA = dgcand.timeZNA();
+    float timeZNC = dgcand.timeZNC();
 
     int nTofTrk = 0;
     int nEtaIn15 = 0;
@@ -872,6 +875,7 @@ struct TauThreeProngEventTableProducer {
                       dgcand.trs(), dgcand.trofs(), dgcand.hmpr(), // to test it
                       dgcand.tfb(), dgcand.itsROFb(), dgcand.sbp(), dgcand.zVtxFT0vPV(), dgcand.vtxITSTPC(),
                       energyZNA, energyZNC,
+                      timeZNA, timeZNC,
                       // qtot, <<-------- comment out
                       dgcand.totalFT0AmplitudeA(), dgcand.totalFT0AmplitudeC(), dgcand.totalFV0AmplitudeA(),
                       // dgcand.timeFT0A(), dgcand.timeFT0C(), dgcand.timeFV0A(),
@@ -1202,6 +1206,8 @@ struct TauThreeProngEventTableProducer {
       // zdc information - there i sno information in MC
       float energyZNA = -999.;
       float energyZNC = -999.;
+      float timeZNA = -999.;
+      float timeZNC = -999.;
 
       float amplitudesFIT[3] = {-999., -999., -999.}; // FT0A, FT0C, FV0
       // float timesFIT[3] = {-999., -999., -999.};      // FT0A, FT0C, FV0
@@ -1577,6 +1583,7 @@ struct TauThreeProngEventTableProducer {
                         bcSels[0], bcSels[1], bcSels[2], // to test it
                         bcSels[3], bcSels[4], bcSels[5], bcSels[6], bcSels[7],
                         energyZNA, energyZNC,
+                        timeZNA, timeZNC,
                         // qtot, <<-------- comment out
                         amplitudesFIT[0], amplitudesFIT[1], amplitudesFIT[2],
                         // timesFIT[0], timesFIT[1], timesFIT[2],

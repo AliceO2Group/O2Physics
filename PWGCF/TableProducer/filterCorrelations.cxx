@@ -42,17 +42,6 @@ using namespace o2::math_utils::detail;
 #define FLOAT_PRECISION 0xFFFFFFF0
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-namespace o2::aod
-{
-namespace cfmultiplicity
-{
-DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float); //! Centrality/multiplicity value
-} // namespace cfmultiplicity
-DECLARE_SOA_TABLE(CFMultiplicities, "AOD", "CFMULTIPLICITY", cfmultiplicity::Multiplicity); //! Transient multiplicity table
-
-using CFMultiplicity = CFMultiplicities::iterator;
-} // namespace o2::aod
-
 struct FilterCF {
   Service<o2::framework::O2DatabasePDG> pdg;
 
@@ -106,7 +95,7 @@ struct FilterCF {
 
   // TODO how to have this in the second task? For now they are copied
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt);
-  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true);
+  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true);
 
   Filter mcCollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVertex;
 
@@ -570,7 +559,7 @@ struct MultiplicitySelector {
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
 
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt);
-  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true);
+  Filter trackSelection = (requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true);
 
   void init(InitContext&)
   {

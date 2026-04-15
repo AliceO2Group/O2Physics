@@ -16,8 +16,6 @@
 #ifndef PWGEM_PHOTONMESON_CORE_TAGGINGPI0_H_
 #define PWGEM_PHOTONMESON_CORE_TAGGINGPI0_H_
 
-#include "PWGEM/Dilepton/Utils/EMTrack.h"
-#include "PWGEM/Dilepton/Utils/EventMixingHandler.h"
 #include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
@@ -26,6 +24,9 @@
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
+//
+#include "PWGEM/Dilepton/Utils/EMTrack.h"
+#include "PWGEM/Dilepton/Utils/EventMixingHandler.h"
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -326,11 +327,11 @@ struct TaggingPi0 {
     const o2::framework::AxisSpec axis_m{200, 0, 0.4, Form("m_{%s} (GeV/c^{2})", mggTitle.Data())};
     const o2::framework::AxisSpec axis_pt{ConfPtBins, "p_{T,#gamma} (GeV/c)"};
 
-    fRegistry.add("Photon/hPt", "p_{T,#gamma};p_{T,#gamma} (GeV/c)", o2::framework::kTH1D, {axis_pt}, true);
-    fRegistry.add("Photon/hEtaPhi", "#varphi vs. #eta;#varphi_{#gamma} (rad.);#eta_{#gamma}", o2::framework::kTH2D, {{90, 0, o2::constants::math::TwoPI}, {40, -1, +1}}, true);
-    fRegistry.add("Pair/same/hMvsPt", "mass vs. p_{T,#gamma}", o2::framework::kTH2D, {axis_m, axis_pt}, true);
+    fRegistry.add("Photon/hPt", "p_{T,#gamma};p_{T,#gamma} (GeV/c)", o2::framework::HistType::kTH1D, {axis_pt}, true);
+    fRegistry.add("Photon/hEtaPhi", "#varphi vs. #eta;#varphi_{#gamma} (rad.);#eta_{#gamma}", o2::framework::HistType::kTH2D, {{90, 0, o2::constants::math::TwoPI}, {40, -1, +1}}, true);
+    fRegistry.add("Pair/same/hMvsPt", "mass vs. p_{T,#gamma}", o2::framework::HistType::kTH2D, {axis_m, axis_pt}, true);
     fRegistry.addClone("Pair/same/", "Pair/mix/");
-    fRegistry.add("Pair/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", o2::framework::kTH1D, {{10001, -0.5, 10000.5}}, true);
+    fRegistry.add("Pair/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", o2::framework::HistType::kTH1D, {{10001, -0.5, 10000.5}}, true);
   }
 
   void DefineEMEventCut()

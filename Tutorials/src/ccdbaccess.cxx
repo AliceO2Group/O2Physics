@@ -18,12 +18,18 @@
 /// \author Nicolo' Jacazio
 /// \since 2020-06-22
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
 #include <CCDB/BasicCCDBManager.h>
-#include "CommonDataFormat/InteractionRecord.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH2.h>
 
 #include <chrono>
+#include <string>
 
 using namespace o2::framework;
 using namespace o2::header;
