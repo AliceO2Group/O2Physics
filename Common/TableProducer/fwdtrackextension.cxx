@@ -50,6 +50,7 @@ struct FwdTrackExtension {
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> configCcdbUrl{"configCcdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<bool> propInTheAbsorber{"propInTheAbsorber", false, "Propagate muon in the absober: false to minimize standalone muons DCA calculation"};
   Configurable<bool> refitGlobalMuon{"refitGlobalMuon", false, "Recompute parameters of global muons"};
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
@@ -63,7 +64,7 @@ struct FwdTrackExtension {
     fCCDB->setCaching(true);
     fCCDB->setLocalObjectValidityChecking();
 
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
+    if (propInTheAbsorber && !o2::base::GeometryManager::isGeometryLoaded()) {
       LOGF(info, "Load geometry from CCDB");
       fCCDB->get<TGeoManager>(geoPath);
     }
@@ -77,32 +78,44 @@ struct FwdTrackExtension {
       float dcaY = -999;
       if (track.has_collision()) {
         auto const& collision = track.collision();
-        auto bc = collision.template bc_as<o2::aod::BCsWithTimestamps>();
-        if (fCurrentRun != bc.runNumber()) {
-          grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
-          if (grpmag != nullptr) {
-            LOGF(info, "Init field from GRP");
-            o2::base::Propagator::initFieldFromGRP(grpmag);
+        if (propInTheAbsorber) {
+          auto bc = collision.template bc_as<o2::aod::BCsWithTimestamps>();
+          if (fCurrentRun != bc.runNumber()) {
+            grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
+            if (grpmag != nullptr) {
+              LOGF(info, "Init field from GRP");
+              o2::base::Propagator::initFieldFromGRP(grpmag);
+            }
+            LOGF(info, "Set field for muons");
+            o2::mch::TrackExtrap::setField();
+            fCurrentRun = bc.runNumber();
           }
-          LOGF(info, "Set field for muons");
-          o2::mch::TrackExtrap::setField();
-          fCurrentRun = bc.runNumber();
-        }
-        const float zField = grpmag->getNominalL3Field();
+          const float zField = grpmag->getNominalL3Field();
 
-        o2::track::TrackParCovFwd fwdtrack = o2::aod::fwdtrackutils::getTrackParCovFwdShift(track, 0.0);
-        if (refitGlobalMuon && (trackType == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack || trackType == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalForwardTrack)) {
-          auto muontrack = track.template matchMCHTrack_as<MuonsWithCov>();
-          auto mfttrack = track.template matchMFTTrack_as<aod::MFTTracks>();
-          o2::dataformats::GlobalFwdTrack propmuon = o2::aod::fwdtrackutils::propagateMuon(muontrack, muontrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, 0.f, zField);
-          SMatrix5 tpars(mfttrack.x(), mfttrack.y(), mfttrack.phi(), mfttrack.tgl(), mfttrack.signed1Pt());
-          SMatrix55 tcovs{};
-          o2::track::TrackParCovFwd mft{mfttrack.z(), tpars, tcovs, mfttrack.chi2()};
-          fwdtrack = o2::aod::fwdtrackutils::refitGlobalMuonCov(propmuon, mft);
+          o2::track::TrackParCovFwd fwdtrack = o2::aod::fwdtrackutils::getTrackParCovFwdShift(track, 0.0);
+          if (refitGlobalMuon && (trackType == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack || trackType == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalForwardTrack)) {
+            auto muontrack = track.template matchMCHTrack_as<MuonsWithCov>();
+            auto mfttrack = track.template matchMFTTrack_as<aod::MFTTracks>();
+            o2::dataformats::GlobalFwdTrack propmuon = o2::aod::fwdtrackutils::propagateMuon(muontrack, muontrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, 0.f, zField);
+            SMatrix5 tpars(mfttrack.x(), mfttrack.y(), mfttrack.phi(), mfttrack.tgl(), mfttrack.signed1Pt());
+            SMatrix55 tcovs{};
+            o2::track::TrackParCovFwd mft{mfttrack.z(), tpars, tcovs, mfttrack.chi2()};
+            fwdtrack = o2::aod::fwdtrackutils::refitGlobalMuonCov(propmuon, mft);
+          }
+          auto proptrack = o2::aod::fwdtrackutils::propagateTrackParCovFwd(fwdtrack, trackType, collision, o2::aod::fwdtrackutils::propagationPoint::kToDCA, 0.f, zField);
+          dcaX = (proptrack.getX() - collision.posX());
+          dcaY = (proptrack.getY() - collision.posY());
+        } else {
+          double chi2 = track.chi2();
+          SMatrix5 tpars(track.x(), track.y(), track.phi(), track.tgl(), track.signed1Pt());
+          std::vector<double> v1;
+          SMatrix55 tcovs(v1.begin(), v1.end());
+          o2::track::TrackParCovFwd pars1{track.z(), tpars, tcovs, chi2};
+          pars1.propagateToZlinear(collision.posZ());
+
+          dcaX = (pars1.getX() - collision.posX());
+          dcaY = (pars1.getY() - collision.posY());
         }
-        auto proptrack = o2::aod::fwdtrackutils::propagateTrackParCovFwd(fwdtrack, trackType, collision, o2::aod::fwdtrackutils::propagationPoint::kToDCA, 0.f, zField);
-        dcaX = (proptrack.getX() - collision.posX());
-        dcaY = (proptrack.getY() - collision.posY());
       }
       fwdDCA(dcaX, dcaY);
     }
