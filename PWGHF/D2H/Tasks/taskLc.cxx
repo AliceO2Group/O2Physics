@@ -79,13 +79,13 @@ DECLARE_SOA_COLUMN(M, m, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(BkgScore, bkgScore, float);
 DECLARE_SOA_COLUMN(PromptScore, promptScore, float);
-DECLARE_SOA_COLUMN(FDScore, fDScore, float);
+DECLARE_SOA_COLUMN(FdScore, fdScore, float);
 DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);
 DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);
 DECLARE_SOA_COLUMN(PtProng2, ptProng2, float);
 DECLARE_SOA_COLUMN(Chi2PCA, chi2PCA, float);
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float);
-DECLARE_SOA_COLUMN(CPA, cPA, float);
+DECLARE_SOA_COLUMN(Cpa, cpa, float);
 DECLARE_SOA_COLUMN(PvContributors, pvContributors, float);
 DECLARE_SOA_COLUMN(AmpFV0A, ampFV0A, float);
 DECLARE_SOA_COLUMN(AmpFT0A, ampFT0A, float);
@@ -101,7 +101,7 @@ DECLARE_SOA_TABLE(HfUpcLcBdtInfos, "AOD", "HFUPCLCBDTINFOS",
                   full::Pt,
                   full::BkgScore,
                   full::PromptScore,
-                  full::FDScore,
+                  full::FdScore,
                   full::PvContributors,
                   full::AmpFV0A,
                   full::AmpFT0A,
@@ -119,7 +119,7 @@ DECLARE_SOA_TABLE(HfUpcLcInfos, "AOD", "HFUPCLCINFOS",
                   full::PtProng2,
                   full::Chi2PCA,
                   full::DecayLength,
-                  full::CPA,
+                  full::Cpa,
                   full::PvContributors,
                   full::AmpFV0A,
                   full::AmpFT0A,
