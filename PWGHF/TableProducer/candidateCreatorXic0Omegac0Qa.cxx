@@ -773,7 +773,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                               impactParameterCasc.getZ(), impactParameterCharmBach.getZ(),
                               std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterCharmBach.getSigmaY2()),
                               cascAodElement.v0Id(), v0AodElement.posTrackId(), v0AodElement.negTrackId(),
-                              cand.cascadeId(), trackCharmBachelor.globalIndex(), cand.prong0Id(),
+                              cand.cascadeId(), trackCharmBachelor.globalIndex(), cascAodElement.bachelorId(),
                               mLambda, mCasc, massCharmBaryonCand,
                               cpaV0, cpaCharmBaryon, cpaCasc,
                               cpaxyV0, cpaxyCharmBaryon, cpaxyCasc,
@@ -802,7 +802,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                                  impactParameterCasc.getZ(), impactParameterCharmBach.getZ(),
                                  std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterCharmBach.getSigmaY2()),
                                  cascAodElement.v0Id(), v0AodElement.posTrackId(), v0AodElement.negTrackId(),
-                                 cand.cascadeId(), trackCharmBachelor.globalIndex(), cand.prong0Id(),
+                                 cand.cascadeId(), trackCharmBachelor.globalIndex(), cascAodElement.bachelorId(),
                                  mLambda, mCasc, massCharmBaryonCand,
                                  cpaV0, cpaCharmBaryon, cpaCasc,
                                  cpaxyV0, cpaxyCharmBaryon, cpaxyCasc,
@@ -831,7 +831,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                                  impactParameterCasc.getZ(), impactParameterCharmBach.getZ(),
                                  std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterCharmBach.getSigmaY2()),
                                  cascAodElement.v0Id(), v0AodElement.posTrackId(), v0AodElement.negTrackId(),
-                                 cand.cascadeId(), trackCharmBachelor.globalIndex(), cand.prong0Id(),
+                                 cand.cascadeId(), trackCharmBachelor.globalIndex(), cascAodElement.bachelorId(),
                                  mLambda, mCasc, massCharmBaryonCand,
                                  cpaV0, cpaCharmBaryon, cpaCasc,
                                  cpaxyV0, cpaxyCharmBaryon, cpaxyCasc,
@@ -1256,7 +1256,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                                 pVecV0DauPos[0], pVecV0DauPos[1], pVecV0DauPos[2],
                                 pVecV0DauNeg[0], pVecV0DauNeg[1], pVecV0DauNeg[2],
                                 cascAodElement.v0Id(), v0AodElement.posTrackId(), v0AodElement.negTrackId(),
-                                cand.cascadeId(), trackCharmBachelor.globalIndex(), cand.prong0Id(),
+                                cand.cascadeId(), trackCharmBachelor.globalIndex(), cascAodElement.bachelorId(),
                                 massLam, massCasc, massCharmBaryon,
                                 cosPaV0ToPv, cosPaCascToPv,
                                 ctCasc, ctV0, ctCharmBaryon,
@@ -1294,7 +1294,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                                  impactParameterCasc.getZ(), impactParameterCharmBachelor.getZ(),
                                  std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterCharmBachelor.getSigmaY2()),
                                  cascAodElement.v0Id(), v0AodElement.posTrackId(), v0AodElement.negTrackId(),
-                                 cand.cascadeId(), trackCharmBachelor.globalIndex(), cand.prong0Id(),
+                                 cand.cascadeId(), trackCharmBachelor.globalIndex(), cascAodElement.bachelorId(),
                                  massLam, massCasc, massCharmBaryon,
                                  cosPaV0ToPv, cosPaCharmBaryonToPv, cosPaCascToPv, cosPaXYV0ToPv, cosPaXYCharmBaryonToPv, cosPaXYCascToPv,
                                  ctCharmBaryon, ctCasc, ctV0,
@@ -1347,7 +1347,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                                    massLam, sigMassLam, massCasc, sigMassCasc, massCascRej, sigMassCascRej, massCharmBaryon, sigMassCharmBaryon,
                                    ptCharmBaryon, ptCharmBachelor, ptCasc,
                                    cosThetaStarKaFromOmegac0, cosThetaStarKaFromXic0, ctV0, ctCasc, ctCharmBaryon,
-                                   cascAodElement.v0Id(), v0AodElement.posTrackId(), v0AodElement.negTrackId(), cand.cascadeId(), cand.prong0Id(), trackCharmBachelor.globalIndex());
+                                   cascAodElement.v0Id(), v0AodElement.posTrackId(), v0AodElement.negTrackId(), cand.cascadeId(), cascAodElement.bachelorId(), trackCharmBachelor.globalIndex());
       }
     } // end candidate loop
   } // end of runCreator

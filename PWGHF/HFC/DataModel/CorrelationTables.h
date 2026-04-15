@@ -218,7 +218,8 @@ DECLARE_SOA_TABLE(LcRecoInfo, "AOD", "LCRECOINFO", //! Lc candidates Reconstruct
                   aod::hf_correlation_lc_hadron::MLc,
                   aod::hf_correlation_lc_hadron::PtLc,
                   aod::hf_correlation_lc_hadron::MlScoreBkg,
-                  aod::hf_correlation_lc_hadron::MlScorePrompt);
+                  aod::hf_correlation_lc_hadron::MlScorePrompt,
+                  aod::hf_correlation_lc_hadron::PoolBin);
 
 DECLARE_SOA_TABLE(LcGenInfo, "AOD", "LCGENOINFO", //! Lc candidates Generated Information
                   aod::hf_correlation_lc_hadron::IsPrompt);

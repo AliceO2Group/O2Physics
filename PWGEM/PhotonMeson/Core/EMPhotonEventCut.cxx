@@ -13,7 +13,7 @@
 // Class for em photon event selection
 //
 
-#include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
+#include "EMPhotonEventCut.h"
 
 #include <Framework/Logger.h>
 

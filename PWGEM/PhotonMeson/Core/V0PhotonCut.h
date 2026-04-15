@@ -241,30 +241,30 @@ class V0PhotonCut : public TNamed
       const o2::framework::AxisSpec thAxisChi2{100, 0., +50, "#chi^{2}_{KF}/ndf"};
       const o2::framework::AxisSpec thAxisPsiPair{200, -0.1, +0.1, "#Psi_{pair}"};
 
-      fRegistry->add("QA/V0Photon/before/hE", "p_{T};#it{p}_{T} (GeV/#it{c});#it{N}_{#gamma}", o2::framework::kTH1D, {thAxispT}, true);
-      fRegistry->add("QA/V0Photon/before/hPt", "Transverse momenta of clusters;#it{p}_{T} (GeV/c);#it{N}_{#gamma}", o2::framework::kTH1D, {thAxispT}, true);
-      fRegistry->add("QA/V0Photon/before/hNgamma", "Number of #gamma candidates per collision;#it{N}_{#gamma} per collision;#it{N}_{collisions}", o2::framework::kTH1D, {{1001, -0.5f, 1000.5f}}, true);
-      fRegistry->add("QA/V0Photon/before/hEtaPhi", "#eta vs #varphi;#eta;#varphi (rad.)", o2::framework::kTH2F, {thAxisEta, thAxisPhi}, true);
-      fRegistry->add("QA/V0Photon/before/hAP", "Armenteros-Podolanski #alpha vs qT", o2::framework::kTH2F, {thAxisAlpha, thAxisQt}, true);
-      fRegistry->add("QA/V0Photon/before/hConvXY", "Conversion point XY", o2::framework::kTH2F, {thAxisConvX, thAxisConvY}, true);
-      fRegistry->add("QA/V0Photon/before/hConvZR", "Conversion point ZR", o2::framework::kTH2F, {thAxisConvZ, thAxisConvR}, true);
-      fRegistry->add("QA/V0Photon/before/hChi2", "Chi2/ndf from KFParticle;#chi^{2}_{KF}/ndf;counts", o2::framework::kTH1D, {thAxisChi2}, true);
+      fRegistry->add("QA/V0Photon/before/hE", "p_{T};#it{p}_{T} (GeV/#it{c});#it{N}_{#gamma}", o2::framework::HistType::kTH1D, {thAxispT}, true);
+      fRegistry->add("QA/V0Photon/before/hPt", "Transverse momenta of clusters;#it{p}_{T} (GeV/c);#it{N}_{#gamma}", o2::framework::HistType::kTH1D, {thAxispT}, true);
+      fRegistry->add("QA/V0Photon/before/hNgamma", "Number of #gamma candidates per collision;#it{N}_{#gamma} per collision;#it{N}_{collisions}", o2::framework::HistType::kTH1D, {{1001, -0.5f, 1000.5f}}, true);
+      fRegistry->add("QA/V0Photon/before/hEtaPhi", "#eta vs #varphi;#eta;#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisEta, thAxisPhi}, true);
+      fRegistry->add("QA/V0Photon/before/hAP", "Armenteros-Podolanski #alpha vs qT", o2::framework::HistType::kTH2F, {thAxisAlpha, thAxisQt}, true);
+      fRegistry->add("QA/V0Photon/before/hConvXY", "Conversion point XY", o2::framework::HistType::kTH2F, {thAxisConvX, thAxisConvY}, true);
+      fRegistry->add("QA/V0Photon/before/hConvZR", "Conversion point ZR", o2::framework::HistType::kTH2F, {thAxisConvZ, thAxisConvR}, true);
+      fRegistry->add("QA/V0Photon/before/hChi2", "Chi2/ndf from KFParticle;#chi^{2}_{KF}/ndf;counts", o2::framework::HistType::kTH1D, {thAxisChi2}, true);
 
       // TODO: add psi_pair once available
-      // fRegistry->add("QA/V0Photon/before/hPsiPair", "Psi pair;#Psi_{pair};counts", o2::framework::kTH1D, {thAxisPsiPair}, true);
+      // fRegistry->add("QA/V0Photon/before/hPsiPair", "Psi pair;#Psi_{pair};counts", o2::framework::HistType::kTH1D, {thAxisPsiPair}, true);
 
-      fRegistry->add("QA/V0Photon/before/Pos/NSigmaE", "NSigmaE of pos leg vs momentum", o2::framework::kTH2F, {thAxisMomentum, thAxisNSigmaE}, true);
-      fRegistry->add("QA/V0Photon/before/Pos/NSigmaPi", "NSigmaE of pos leg vs momentum", o2::framework::kTH2F, {thAxisMomentum, thAxisNSigmaPi}, true);
-      fRegistry->add("QA/V0Photon/before/Pos/hEtaPhi", "eta vs phi of pos leg", o2::framework::kTH2F, {thAxisEta, thAxisPhi}, true);
-      fRegistry->add("QA/V0Photon/before/Pos/hTPCHits", "NCluster vs NFindable TPC", o2::framework::kTH2F, {thAxisNClusTPC, thAxisNCrossedTPC}, true);
-      fRegistry->add("QA/V0Photon/before/Neg/NSigmaE", "NSigmaE of neg leg vs momentum", o2::framework::kTH2F, {thAxisMomentum, thAxisNSigmaE}, true);
-      fRegistry->add("QA/V0Photon/before/Neg/NSigmaPi", "NSigmaE of neg leg vs momentum", o2::framework::kTH2F, {thAxisMomentum, thAxisNSigmaPi}, true);
-      fRegistry->add("QA/V0Photon/before/Neg/hEtaPhi", "eta vs phi of neg leg", o2::framework::kTH2F, {thAxisEta, thAxisPhi}, true);
-      fRegistry->add("QA/V0Photon/before/Neg/hTPCHits", "NCluster vs NFindable TPC", o2::framework::kTH2F, {thAxisNClusTPC, thAxisNCrossedTPC}, true);
+      fRegistry->add("QA/V0Photon/before/Pos/NSigmaE", "NSigmaE of pos leg vs momentum", o2::framework::HistType::kTH2F, {thAxisMomentum, thAxisNSigmaE}, true);
+      fRegistry->add("QA/V0Photon/before/Pos/NSigmaPi", "NSigmaE of pos leg vs momentum", o2::framework::HistType::kTH2F, {thAxisMomentum, thAxisNSigmaPi}, true);
+      fRegistry->add("QA/V0Photon/before/Pos/hEtaPhi", "eta vs phi of pos leg", o2::framework::HistType::kTH2F, {thAxisEta, thAxisPhi}, true);
+      fRegistry->add("QA/V0Photon/before/Pos/hTPCHits", "NCluster vs NFindable TPC", o2::framework::HistType::kTH2F, {thAxisNClusTPC, thAxisNCrossedTPC}, true);
+      fRegistry->add("QA/V0Photon/before/Neg/NSigmaE", "NSigmaE of neg leg vs momentum", o2::framework::HistType::kTH2F, {thAxisMomentum, thAxisNSigmaE}, true);
+      fRegistry->add("QA/V0Photon/before/Neg/NSigmaPi", "NSigmaE of neg leg vs momentum", o2::framework::HistType::kTH2F, {thAxisMomentum, thAxisNSigmaPi}, true);
+      fRegistry->add("QA/V0Photon/before/Neg/hEtaPhi", "eta vs phi of neg leg", o2::framework::HistType::kTH2F, {thAxisEta, thAxisPhi}, true);
+      fRegistry->add("QA/V0Photon/before/Neg/hTPCHits", "NCluster vs NFindable TPC", o2::framework::HistType::kTH2F, {thAxisNClusTPC, thAxisNCrossedTPC}, true);
 
       fRegistry->addClone("QA/V0Photon/before/", "QA/V0Photon/after/");
 
-      auto hPhotonQualityCuts = fRegistry->add<TH2>("QA/V0Photon/hPhotonQualityCuts", "pT at which v0 photons are removed by a given cut", o2::framework::kTH2F, {{static_cast<int>(V0PhotonCut::V0PhotonCuts::kNCuts) + 2, -0.5, static_cast<double>(V0PhotonCut::V0PhotonCuts::kNCuts) + 1.5}, thAxispT}, true);
+      auto hPhotonQualityCuts = fRegistry->add<TH2>("QA/V0Photon/hPhotonQualityCuts", "pT at which v0 photons are removed by a given cut", o2::framework::HistType::kTH2F, {{static_cast<int>(V0PhotonCut::V0PhotonCuts::kNCuts) + 2, -0.5, static_cast<double>(V0PhotonCut::V0PhotonCuts::kNCuts) + 1.5}, thAxispT}, true);
       hPhotonQualityCuts->GetXaxis()->SetBinLabel(1, "In");
       hPhotonQualityCuts->GetXaxis()->SetBinLabel(2, "#it{M}_{ee}");
       hPhotonQualityCuts->GetXaxis()->SetBinLabel(3, "#it{p}_{T}");
