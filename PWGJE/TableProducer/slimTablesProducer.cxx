@@ -69,8 +69,7 @@ DECLARE_SOA_TABLE(SlimTracks, "AOD", "SlimTracks",
                   slimtracks::SlimCollisionId,
                   slimtracks::Px,
                   slimtracks::Py,
-                  slimtracks::Pz,
-                  slimtracks::E);
+                  slimtracks::Pz);
 using SlimTrack = SlimTracks::iterator;
 namespace slimparticles
 {
@@ -174,10 +173,7 @@ struct SlimTablesProducer {
       if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
         continue;
       }
-      float mass = jetderiveddatautilities::mPion;
-      float p = track.pt() * std::cosh(track.eta());
-      float energy = std::sqrt(p * p + mass * mass);
-      slimTracks(slimCollIndex, track.px(), track.py(), track.pz(), energy);
+      slimTracks(slimCollIndex, track.px(), track.py(), track.pz());
     }
   }
   PROCESS_SWITCH(SlimTablesProducer, processData, "process collisions and tracks for data", false);
@@ -212,10 +208,7 @@ struct SlimTablesProducer {
       for (const auto& track : slicedTracks) {
         if (!jetderiveddatautilities::selectTrack(track, trackSelection))
           continue;
-        float mass = jetderiveddatautilities::mPion;
-        float p = track.pt() * std::cosh(track.eta());
-        float energy = std::sqrt(p * p + mass * mass);
-        slimTracks(slimCollIndex, track.px(), track.py(), track.pz(), energy);
+        slimTracks(slimCollIndex, track.px(), track.py(), track.pz());
       }
       slimMcCollisions(mccollision.posZ(), eventWeightMC);
       auto slimMcCollIndex = slimMcCollisions.lastIndex();
