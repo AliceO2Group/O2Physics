@@ -8,14 +8,13 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
-// Jet substructure and spectrum task for D_s mesons
 //
-// This task is used to reconstruct and analyse jets containing charged D_s
-// mesons
-//
+/// \file jetDsSpecSubs.cxx
+/// \brief Ds-tagged jet analysis with substructure histogram outputs
+///
+/// This task reconstructs and analyses jets containing charged D_s mesons.
+///
 /// \author Monalisa Melo <monalisa.melo@cern.ch>, Universidade de São Paulo
-//
 
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
@@ -198,7 +197,7 @@ struct JetDsSpecSubs {
 
       registry.fill(HIST("h_jet_counter"), 0.5);
 
-      bool hasDs = false;
+      bool hasDsCandidate = false;
 
       TVector3 jetVector(jet.px(), jet.py(), jet.pz());
 
@@ -215,13 +214,13 @@ struct JetDsSpecSubs {
       // Loop over Ds candidates (particle level)
       for (const auto& dsCandidate : jet.candidates_as<aod::CandidatesDsData>()) {
 
-        hasDs = true;
+        hasDsCandidate = true;
 
         TVector3 dsVector(dsCandidate.px(), dsCandidate.py(), dsCandidate.pz());
 
         // zParallel defined as longitudinal momentum fraction along the jet axis
         const double zParallel = (jetVector * dsVector) / (jetVector * jetVector);
-        const double axisDistance = jetutilities::deltaR(jet, dsCandidate);
+        const float axisDistance = jetutilities::deltaR(jet, dsCandidate);
 
         // --- Ds-level observables ---
         registry.fill(HIST("h_ds_jet_projection"), zParallel);
@@ -241,7 +240,7 @@ struct JetDsSpecSubs {
       }
 
       // Jet-level quantities (filled once per jet containing at least one Ds)
-      if (hasDs) {
+      if (hasDsCandidate) {
 
         registry.fill(HIST("h_jet_counter"), 1.5);
 
