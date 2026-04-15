@@ -24,8 +24,8 @@
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "CommonConstants/MathConstants.h"
 
+#include "CommonConstants/MathConstants.h"
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -222,7 +222,6 @@ static constexpr TrackSelectionFlags::flagtype TrackSelectionTPC =
 
 static constexpr TrackSelectionFlags::flagtype TrackSelectionDCA =
   TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
-
 
 struct DndetaHi {
   SliceCache cache;
@@ -685,8 +684,8 @@ struct DndetaHi {
             } else {
               pid = kNotPrimary;
             }
-            for (auto motherIDs = particle.mothersIds().front(); motherIDs <= particle.mothersIds().back(); motherIDs++) {
-              auto mother = mcParticles.rawIteratorAt(motherIDs);
+            for (auto motherIds = particle.mothersIds().front(); motherIds <= particle.mothersIds().back(); motherIds++) {
+              auto mother = mcParticles.rawIteratorAt(motherIds);
               auto pdg_mother = mother.pdgCode();
               if (pdg_mother == kK0Short || std::abs(pdg_mother) == kLambda0) {
                 pid = kMotherStrange;
@@ -870,11 +869,11 @@ struct DndetaHi {
 
   void processMCV0Counting(
     const soa::Join<MyCollisionsCent, aod::McCollisionLabels>& collisions,
-    const aod::McCollisions& /*MCCollisions*/,
+    const aod::McCollisions& /*mcCollisions*/,
     const Particles& /*mcParticles*/,
     const soa::Filtered<aod::V0Datas>& fullV0s,
     const soa::Filtered<LabeledTracksEx>& /*tracks*/,
-    const DaughterTracks& /*Dautrks*/)
+    const DaughterTracks& /*dauTrks*/)
   {
     for (const auto& collision : collisions) {
       auto cent = -1.f;
