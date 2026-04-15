@@ -53,7 +53,7 @@ class EMTrack
   float cZY() const { return fCZY; }
   float cZZ() const { return fCZZ; }
 
-  float p() const { return  1.f / std::fabs(fSigned1Pt) * std::cosh(fEta); }
+  float p() const { return 1.f / std::fabs(fSigned1Pt) * std::cosh(fEta); }
   float px() const { return 1.f / std::fabs(fSigned1Pt) * std::cos(fPhi); }
   float py() const { return 1.f / std::fabs(fSigned1Pt) * std::sin(fPhi); }
   float pz() const { return 1.f / std::fabs(fSigned1Pt) * std::sinh(fEta); }
@@ -163,7 +163,7 @@ class EMPair : public EMTrack
 
   ~EMPair() {}
   float mass() const { return fMass; }
-  float rapidity() const { return std::log((std::sqrt(std::pow(fMass, 2) + std::pow(1.f/ std::fabs(fSigned1Pt) * std::cosh(fEta), 2)) + 1.f/ std::fabs(fSigned1Pt) * std::sinh(fEta)) / std::sqrt(std::pow(fMass, 2) + std::pow(1.f/ std::fabs(fSigned1Pt), 2))); }
+  float rapidity() const { return std::log((std::sqrt(std::pow(fMass, 2) + std::pow(1.f / std::fabs(fSigned1Pt) * std::cosh(fEta), 2)) + 1.f / std::fabs(fSigned1Pt) * std::sinh(fEta)) / std::sqrt(std::pow(fMass, 2) + std::pow(1.f / std::fabs(fSigned1Pt), 2))); }
 
   void setPairDCA(float dca) { fPairDCA = dca; }
   float getPairDCA() const { return fPairDCA; }
