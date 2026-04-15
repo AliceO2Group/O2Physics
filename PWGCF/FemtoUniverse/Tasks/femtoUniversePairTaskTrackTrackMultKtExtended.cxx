@@ -189,6 +189,10 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
   Configurable<bool> cfgProcessKtBins{"cfgProcessKtBins", false, "Process kstar histograms in kT bins (if 'cfgProcessMultBins' is false, it will not be processed regardless of 'cfgProcessKtBins' state)"};
   Configurable<bool> cfgProcessKtMt3DCF{"cfgProcessKtMt3DCF", false, "Process 3D histograms in kT and MultBins"};
 
+  Configurable<bool> confRejectGammaPair{"confRejectGammaPair", false, "Additional check to reject e+e- pairs base on theta and minv"};
+  Configurable<double> confMaxEEMinv{"confMaxEEMinv", 0.002, "Max. minv of e-e+ pair for gamma pair rejection"};
+  Configurable<double> confMaxDTheta{"confMaxDTheta", 0.008, "Max. DeltaTheta of pair for gamma pair rejection"};
+
   FemtoUniverseFemtoContainer<femto_universe_femto_container::EventType::same, femto_universe_femto_container::Observable::kstar> sameEventCont;
   FemtoUniverseFemtoContainer<femto_universe_femto_container::EventType::mixed, femto_universe_femto_container::Observable::kstar> mixedEventCont;
 
@@ -330,6 +334,31 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
       LOGF(fatal, "Wrong number of particle chosen! It should be 1 or 2. It is -> %d", particle_number);
     }
     return false;
+  }
+
+  template <typename PartType>
+  bool rejectGammaPair(PartType track1, PartType track2)
+  {
+    double me = 0.000511;
+
+    double magTrack1 = track1.px() * track1.px() + track1.py() * track1.py() + track1.pz() * track1.pz();
+    double magTrack2 = track2.px() * track2.px() + track2.py() * track2.py() + track2.pz() * track2.pz();
+    double dotTr1Tr2 = track1.px() * track2.px() + track1.py() * track2.py() + track1.pz() * track2.pz();
+
+    if ((track1.sign() * track2.sign()) < 0.0) {
+      double theta1 = track1.theta();
+      double theta2 = track2.theta();
+      double dtheta = TMath::Abs(theta1 - theta2);
+
+      double e1 = TMath::Sqrt(me * me + magTrack1);
+      double e2 = TMath::Sqrt(me * me + magTrack2);
+
+      double minv = 2 * me * me + 2 * (e1 * e2 - dotTr1Tr2);
+      if ((TMath::Abs(minv) < confMaxEEMinv) && (dtheta < confMaxDTheta)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   void init(InitContext&)
@@ -474,6 +503,10 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
         }
 
         if (!isParticleNSigma((int8_t)2, p2.p(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p2, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p2, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p2, o2::track::PID::Pion), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon))) {
+          continue;
+        }
+
+        if (confRejectGammaPair && !rejectGammaPair(p1, p2)) {
           continue;
         }
 
@@ -670,6 +703,10 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
         continue;
       }
 
+      if (confRejectGammaPair && !rejectGammaPair(p1, p2)) {
+        continue;
+      }
+
       if (confIsCPR.value) {
         double rand;
         auto part1 = p1;
@@ -752,7 +789,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
   void processMixedEvent(soa::Filtered<o2::aod::FdCollisions> const& cols,
                          FilteredFemtoFullParticles const& parts)
   {
-    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
+    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, confNEventsMix, -1, cols, cols)) {
 
       const int multiplicityCol = collision1.multV0M();
       if (confFillDebug) {
@@ -793,7 +830,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
                            FemtoRecoParticles const& parts,
                            o2::aod::FdMCParticles const&)
   {
-    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
+    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, confNEventsMix, -1, cols, cols)) {
 
       const int multiplicityCol = collision1.multV0M();
       if (confFillDebug) {
@@ -902,7 +939,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
       }
     };
 
-    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
+    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, confNEventsMix, -1, cols, cols)) {
       const int multiplicityCol = collision1.multV0M();
       if (confFillDebug) {
         mixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), multiplicityCol}));
@@ -994,7 +1031,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
   void processFractionsMCTruth(o2::aod::FdCollisions const& cols,
                                FemtoTruthParticles const&)
   {
-    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
+    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, confNEventsMix, -1, cols, cols)) {
 
       const int multiplicityCol = collision1.multV0M();
       if (confFillDebug) {
