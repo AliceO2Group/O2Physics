@@ -558,7 +558,7 @@ class ClosePairRejectionTrackCascade
   bool
     isClosePair() const
   {
-    return mCtrBachelor.isClosePair() || mCtrBachelor.isClosePair();
+    return mCtrBachelor.isClosePair();
   }
 
   void fill(float kstar)

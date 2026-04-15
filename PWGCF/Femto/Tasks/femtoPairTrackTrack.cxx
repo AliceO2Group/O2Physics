@@ -142,51 +142,51 @@ struct FemtoPairTrackTrack {
       colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
       trackHistSpec1 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning1);
       trackHistSpec2 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning2);
-      pairHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
-      pairTrackTrackBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
+      pairHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confMixing);
+      pairTrackTrackBuilder.init<modes::Mode::kSe_Analysis, modes::Mode::kMe_Analysis>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
     } else {
       colHistSpec = colhistmanager::makeColMcHistSpecMap(confCollisionBinning);
       trackHistSpec1 = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning1);
       trackHistSpec2 = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning2);
-      pairHistSpec = pairhistmanager::makePairMcHistSpecMap(confPairBinning);
-      pairTrackTrackBuilder.init<modes::Mode::kAnalysis_Mc>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
+      pairHistSpec = pairhistmanager::makePairMcHistSpecMap(confPairBinning, confMixing);
+      pairTrackTrackBuilder.init<modes::Mode::kSe_Analysis_Mc, modes::Mode::kMe_Analysis_Mc>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
     }
     hRegistry.print();
   };
 
   void processSameEvent(FilteredFemtoCollision const& col, FemtoTracks const& tracks)
   {
-    pairTrackTrackBuilder.processSameEvent<modes::Mode::kAnalysis>(col, tracks, trackPartition1, trackPartition2, cache);
+    pairTrackTrackBuilder.processSameEvent<modes::Mode::kSe_Analysis>(col, tracks, trackPartition1, trackPartition2, cache);
   }
   PROCESS_SWITCH(FemtoPairTrackTrack, processSameEvent, "Enable processing same event processing", true);
 
   void processSameEventWithMass(FilteredFemtoCollision const& col, FemtoTracksWithMass const& tracks)
   {
-    pairTrackTrackBuilder.processSameEvent<modes::Mode::kAnalysis>(col, tracks, trackWithMassPartition1, trackWithMassPartition2, cache);
+    pairTrackTrackBuilder.processSameEvent<modes::Mode::kSe_Analysis>(col, tracks, trackWithMassPartition1, trackWithMassPartition2, cache);
   }
   PROCESS_SWITCH(FemtoPairTrackTrack, processSameEventWithMass, "Enable processing same event processing (with track masses)", false);
 
   void processSameEventMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    pairTrackTrackBuilder.processSameEvent<modes::Mode::kAnalysis_Mc>(col, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, mcParticles, mcMothers, mcPartonicMothers, cache);
+    pairTrackTrackBuilder.processSameEvent<modes::Mode::kSe_Analysis_Mc>(col, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, mcParticles, mcMothers, mcPartonicMothers, cache);
   }
   PROCESS_SWITCH(FemtoPairTrackTrack, processSameEventMc, "Enable processing same event processing", false);
 
   void processMixedEvent(FilteredFemtoCollisions const& cols, FemtoTracks const& tracks)
   {
-    pairTrackTrackBuilder.processMixedEvent<modes::Mode::kAnalysis>(cols, tracks, trackPartition1, trackPartition2, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+    pairTrackTrackBuilder.processMixedEvent<modes::Mode::kMe_Analysis>(cols, tracks, trackPartition1, trackPartition2, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
   PROCESS_SWITCH(FemtoPairTrackTrack, processMixedEvent, "Enable processing mixed event processing", true);
 
   void processMixedEventWithMass(FilteredFemtoCollisions const& cols, FemtoTracksWithMass const& tracks)
   {
-    pairTrackTrackBuilder.processMixedEvent<modes::Mode::kAnalysis>(cols, tracks, trackWithMassPartition1, trackWithMassPartition2, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+    pairTrackTrackBuilder.processMixedEvent<modes::Mode::kMe_Analysis>(cols, tracks, trackWithMassPartition1, trackWithMassPartition2, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
   PROCESS_SWITCH(FemtoPairTrackTrack, processMixedEventWithMass, "Enable processing mixed event processing (with track masses)", false);
 
   void processMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    pairTrackTrackBuilder.processMixedEvent<modes::Mode::kAnalysis_Mc>(cols, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, mcParticles, mcMothers, mcPartonicMothers, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+    pairTrackTrackBuilder.processMixedEvent<modes::Mode::kMe_Analysis_Mc>(cols, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, mcParticles, mcMothers, mcPartonicMothers, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
   PROCESS_SWITCH(FemtoPairTrackTrack, processMixedEventMc, "Enable processing mixed event processing", false);
 };

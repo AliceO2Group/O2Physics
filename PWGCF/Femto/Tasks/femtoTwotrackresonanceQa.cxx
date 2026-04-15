@@ -140,7 +140,7 @@ struct FemtoTwotrackresonanceQa {
 
   void processPhis(FilteredFemtoCollision const& col, FemtoPhis const& /*phis*/, FemtoTracks const& tracks)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col, 0, 0, 0);
+    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
     auto phiSlice = phiPartition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& phi : phiSlice) {
       phiHistManager.fill<modes::Mode::kAnalysis_Qa>(phi, tracks);
@@ -150,7 +150,7 @@ struct FemtoTwotrackresonanceQa {
 
   void processRho0s(FilteredFemtoCollision const& col, FemtoRho0s const& /*rho0s*/, FemtoTracks const& tracks)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col, 0, 0, 0);
+    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
     auto rho0Slice = rho0Partition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& rho0 : rho0Slice) {
       rho0HistManager.fill<modes::Mode::kAnalysis_Qa>(rho0, tracks);
@@ -160,7 +160,7 @@ struct FemtoTwotrackresonanceQa {
 
   void processKstar0s(FilteredFemtoCollision const& col, FemtoKstar0s const& /*kstar0s*/, FemtoTracks const& tracks)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col, 0, 0, 0);
+    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
     auto kstar0Slice = kstar0Partition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& kstar0 : kstar0Slice) {
       kstar0HistManager.fill<modes::Mode::kAnalysis_Qa>(kstar0, tracks);
