@@ -12,8 +12,8 @@
 /// \class to store minimal photon info
 /// \author daiki.sekihata@cern.ch
 
-#ifndef PWGEM_DILEPTON_UTILS_EMPHOTON_H_
-#define PWGEM_DILEPTON_UTILS_EMPHOTON_H_
+#ifndef PWGEM_PHOTONMESON_UTILS_EMPHOTON_H_
+#define PWGEM_PHOTONMESON_UTILS_EMPHOTON_H_
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
@@ -57,4 +57,4 @@ class EMPhoton
 };
 
 } // namespace o2::aod::pwgem::photonmeson::utils
-#endif // PWGEM_DILEPTON_UTILS_EMPHOTON_H_
+#endif // PWGEM_PHOTONMESON_UTILS_EMPHOTON_H_
