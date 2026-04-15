@@ -193,6 +193,9 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
   Configurable<double> confMaxEEMinv{"confMaxEEMinv", 0.002, "Max. minv of e-e+ pair for gamma pair rejection"};
   Configurable<double> confMaxDTheta{"confMaxDTheta", 0.008, "Max. DeltaTheta of pair for gamma pair rejection"};
 
+  ConfigurableAxis confDeltaEtaAxis{"confDeltaEtaAxis", {100, -0.15, 0.15}, "DeltaEta"};
+  ConfigurableAxis confDeltaPhiStarAxis{"confDeltaPhiStarAxis", {100, -0.15, 0.15}, "DeltaPhiStar"};
+
   FemtoUniverseFemtoContainer<femto_universe_femto_container::EventType::same, femto_universe_femto_container::Observable::kstar> sameEventCont;
   FemtoUniverseFemtoContainer<femto_universe_femto_container::EventType::mixed, femto_universe_femto_container::Observable::kstar> mixedEventCont;
 
@@ -339,7 +342,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
   template <typename PartType>
   bool rejectGammaPair(PartType track1, PartType track2)
   {
-    double me = 0.000511;
+    double me = o2::constants::physics::MassElectron;
 
     double magTrack1 = track1.px() * track1.px() + track1.py() * track1.py() + track1.pz() * track1.pz();
     double magTrack2 = track2.px() * track2.px() + track2.py() * track2.py() + track2.pz() * track2.pz();

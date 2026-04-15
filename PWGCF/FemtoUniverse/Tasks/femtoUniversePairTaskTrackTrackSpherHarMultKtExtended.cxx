@@ -418,7 +418,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   template <typename PartType>
   bool rejectGammaPair(PartType track1, PartType track2)
   {
-    double me = 0.000511;
+    double me = o2::constants::physics::MassElectron;
 
     double magTrack1 = track1.px() * track1.px() + track1.py() * track1.py() + track1.pz() * track1.pz();
     double magTrack2 = track2.px() * track2.px() + track2.py() * track2.py() + track2.pz() * track2.pz();
