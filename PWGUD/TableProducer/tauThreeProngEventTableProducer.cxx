@@ -23,40 +23,38 @@
 // oopts="--aod-writer-json saveDerivedConfigData.json"
 // o2-analysis-ud-tau-three-prong-event-table-producer $copts $oopts > output.log
 
-//// C++ headers
-#include "Math/Vector4D.h"
-
-#include <algorithm>
-#include <random>
-#include <set>
-#include <utility>
-#include <vector>
-//
-//// O2 headers
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-// #include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-//
-//// O2Physics headers
-#include "Common/CCDB/EventSelectionParams.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-// #include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
-#include "PWGUD/Core/DGPIDSelector.h"
 #include "PWGUD/Core/SGSelector.h"
-#include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/DataModel/TauThreeProngEventTables.h"
 #include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/Core/RecoDecay.h"
 
-#include "TPDGCode.h"
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <Math/GenVector/LorentzVector.h>
+#include <Math/GenVector/PxPyPzE4D.h>
+#include <TH1.h>
+#include <TPDGCode.h>
+#include <TVector3.h>
+
+#include <Rtypes.h>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <set>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -65,10 +63,11 @@ using namespace o2::constants::physics;
 
 enum MyRecoProblem {
   NO_PROBLEM = 0,         // no problem
-  MANY_RECO = 1,          // more than 1 reconstructed collision
+  MANY_RECO = 1,          // more than 1 reconstructed collision, event not rejected
   TOO_MANY_DAUGHTERS = 2, // more than 6 daughters from 2 taus
   TWO_TRACKS = 3,         // more than 1 associated track to MC particle (tau daughter)
-  NO_TRACK = 4            // No associated track to MC particle (tau daughter)
+  NO_TRACK = 4,           // No associated track to MC particle (tau daughter)
+  MIXED_TRACKS = 5        // 4 (or 6) tracks reconstructed but from 2 collisions
 };
 
 enum MyParticle {
@@ -720,6 +719,8 @@ struct TauThreeProngEventTableProducer {
       energyZNA = -1.;
     if (energyZNC < 0)
       energyZNC = -1.;
+    float timeZNA = dgcand.timeZNA();
+    float timeZNC = dgcand.timeZNC();
 
     int nTofTrk = 0;
     int nEtaIn15 = 0;
@@ -874,6 +875,7 @@ struct TauThreeProngEventTableProducer {
                       dgcand.trs(), dgcand.trofs(), dgcand.hmpr(), // to test it
                       dgcand.tfb(), dgcand.itsROFb(), dgcand.sbp(), dgcand.zVtxFT0vPV(), dgcand.vtxITSTPC(),
                       energyZNA, energyZNC,
+                      timeZNA, timeZNC,
                       // qtot, <<-------- comment out
                       dgcand.totalFT0AmplitudeA(), dgcand.totalFT0AmplitudeC(), dgcand.totalFV0AmplitudeA(),
                       // dgcand.timeFT0A(), dgcand.timeFT0C(), dgcand.timeFV0A(),
@@ -1204,6 +1206,8 @@ struct TauThreeProngEventTableProducer {
       // zdc information - there i sno information in MC
       float energyZNA = -999.;
       float energyZNC = -999.;
+      float timeZNA = -999.;
+      float timeZNC = -999.;
 
       float amplitudesFIT[3] = {-999., -999., -999.}; // FT0A, FT0C, FV0
       // float timesFIT[3] = {-999., -999., -999.};      // FT0A, FT0C, FV0
@@ -1579,6 +1583,7 @@ struct TauThreeProngEventTableProducer {
                         bcSels[0], bcSels[1], bcSels[2], // to test it
                         bcSels[3], bcSels[4], bcSels[5], bcSels[6], bcSels[7],
                         energyZNA, energyZNC,
+                        timeZNA, timeZNC,
                         // qtot, <<-------- comment out
                         amplitudesFIT[0], amplitudesFIT[1], amplitudesFIT[2],
                         // timesFIT[0], timesFIT[1], timesFIT[2],

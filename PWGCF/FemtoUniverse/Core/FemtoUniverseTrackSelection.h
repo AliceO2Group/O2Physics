@@ -23,6 +23,7 @@
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -135,6 +136,14 @@ class FemtoUniverseTrackSelection : public FemtoUniverseObjectSelection<float, f
   template <typename T>
   auto getNsigmaTOF(T const& track, o2::track::PID pid);
 
+  /// Computes the n_sigma for a track and a particle-type hypothesis in the TOF
+  /// \tparam T Data type of the track
+  /// \param track Track for which PID is evaluated
+  /// \param pid Particle species for which PID is evaluated
+  /// \return Value of n_{sigma, TOF}
+  template <typename T>
+  auto getNsigmaITS(T const& track, o2::track::PID pid);
+
   /// Checks whether the most open combination of all selection criteria is fulfilled
   /// \tparam T Data type of the track
   /// \param track Track
@@ -150,6 +159,18 @@ class FemtoUniverseTrackSelection : public FemtoUniverseObjectSelection<float, f
   /// \return The bit-wise container for the selections, separately with all selection criteria, and the PID
   template <typename CutContainerType, typename T>
   std::array<CutContainerType, 2> getCutContainer(T const& track);
+
+  /// Obtain the bit-wise container for the selections
+  /// \todo For the moment, PID is separated from the other selections, hence
+  /// instead of a single value an std::array of size two is returned
+  /// \tparam CutContainerType Data type of the bit-wise container for the
+  /// selections
+  /// \tparam T Data type of the track
+  /// \param track Track
+  /// \return The bit-wise container for the selections, separately with all
+  /// selection criteria, and the PID
+  template <typename CutContainerType, typename T>
+  std::array<CutContainerType, 2> getCutContainerWithITS(T const& track);
 
   /// Some basic QA histograms
   /// \tparam part Type of the particle for proper naming of the folders for QA
@@ -329,6 +350,11 @@ void FemtoUniverseTrackSelection::init(HistogramRegistry* registry)
     mHistogramRegistry->add((folderName + "/hDCAz").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{z} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
     mHistogramRegistry->add((folderName + "/hDCA").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA (cm)", kTH2F, {{100, 0, 10}, {301, 0., 1.5}});
     mHistogramRegistry->add((folderName + "/hTPCdEdX").c_str(), "; #it{p} (GeV/#it{c}); TPC Signal", kTH2F, {{100, 0, 10}, {1000, 0, 1000}});
+    mHistogramRegistry->add((folderName + "/nSigmaITS_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITS}^{e}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
+    mHistogramRegistry->add((folderName + "/nSigmaITS_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITS}^{#pi}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
+    mHistogramRegistry->add((folderName + "/nSigmaITS_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITS}^{K}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
+    mHistogramRegistry->add((folderName + "/nSigmaITS_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITS}^{p}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
+    mHistogramRegistry->add((folderName + "/nSigmaITS_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITS}^{d}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
     mHistogramRegistry->add((folderName + "/nSigmaTPC_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{e}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
     mHistogramRegistry->add((folderName + "/nSigmaTPC_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{#pi}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
     mHistogramRegistry->add((folderName + "/nSigmaTPC_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{K}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
@@ -392,6 +418,24 @@ auto FemtoUniverseTrackSelection::getNsigmaTOF(T const& track, o2::track::PID pi
   // }
 
   return o2::aod::pidutils::tofNSigma(pid, track);
+}
+
+template <typename T>
+auto FemtoUniverseTrackSelection::getNsigmaITS(T const& track, o2::track::PID pid)
+{
+  if (pid == o2::track::PID::Electron) {
+    return track.itsNSigmaEl();
+  } else if (pid == o2::track::PID::Pion) {
+    return track.itsNSigmaPi();
+  } else if (pid == o2::track::PID::Kaon) {
+    return track.itsNSigmaKa();
+  } else if (pid == o2::track::PID::Proton) {
+    return track.itsNSigmaPr();
+  } else if (pid == o2::track::PID::Deuteron) {
+    return track.itsNSigmaDe();
+  }
+  // if nothing matched, return default value
+  return -999.f;
 }
 
 template <typename T>
@@ -513,6 +557,101 @@ std::array<CutContainerType, 2> FemtoUniverseTrackSelection::getCutContainer(T c
         sel.checkSelectionSetBitPID(pidComb, outputPID);
       }
 
+    } else {
+      /// for the rest it's all the same
+      switch (selVariable) {
+        case (femto_universe_track_selection::kSign):
+          observable = sign;
+          break;
+        case (femto_universe_track_selection::kpTMin):
+        case (femto_universe_track_selection::kpTMax):
+          observable = pT;
+          break;
+        case (femto_universe_track_selection::kEtaMax):
+          observable = eta;
+          break;
+        case (femto_universe_track_selection::kTPCnClsMin):
+          observable = tpcNClsF;
+          break;
+        case (femto_universe_track_selection::kTPCfClsMin):
+          observable = tpcRClsC;
+          break;
+        case (femto_universe_track_selection::kTPCcRowsMin):
+          observable = tpcNClsC;
+          break;
+        case (femto_universe_track_selection::kTPCsClsMax):
+          observable = tpcNClsS;
+          break;
+        case (femto_universe_track_selection::kTPCfracsClsMax):
+          observable = tpcNClsFracS;
+          break;
+        case (femto_universe_track_selection::kITSnClsMin):
+          observable = itsNCls;
+          break;
+        case (femto_universe_track_selection::kITSnClsIbMin):
+          observable = itsNClsIB;
+          break;
+        case (femto_universe_track_selection::kDCAxyMax):
+          observable = dcaXY;
+          break;
+        case (femto_universe_track_selection::kDCAzMax):
+          observable = dcaZ;
+          break;
+        case (femto_universe_track_selection::kDCAMin):
+          observable = dca;
+          break;
+        case (femto_universe_track_selection::kPIDnSigmaMax):
+          break;
+      }
+      sel.checkSelectionSetBit(observable, output, counter);
+    }
+  }
+  return {output, outputPID};
+}
+
+template <typename CutContainerType, typename T>
+std::array<CutContainerType, 2>
+  FemtoUniverseTrackSelection::getCutContainerWithITS(T const& track)
+{
+  CutContainerType output = 0;
+  size_t counter = 0;
+  CutContainerType outputPID = 0;
+  const auto sign = track.sign();
+  const auto pT = track.pt();
+  const auto eta = track.eta();
+  const auto tpcNClsF = track.tpcNClsFound();
+  const auto tpcRClsC = track.tpcCrossedRowsOverFindableCls();
+  const auto tpcNClsC = track.tpcNClsCrossedRows();
+  const auto tpcNClsS = track.tpcNClsShared();
+  const auto tpcNClsFracS = track.tpcFractionSharedCls();
+  const auto itsNCls = track.itsNCls();
+  const auto itsNClsIB = track.itsNClsInnerBarrel();
+  const auto dcaXY = track.dcaXY();
+  const auto dcaZ = track.dcaZ();
+  const auto dca = std::sqrt(std::pow(dcaXY, 2.) + std::pow(dcaZ, 2.));
+
+  std::vector<float> pidTPC, pidTOF, pidITS;
+  for (auto it : kPIDspecies) {
+    pidTPC.push_back(getNsigmaTPC(track, it));
+    pidTOF.push_back(getNsigmaTOF(track, it));
+    pidITS.push_back(getNsigmaITS(track, it));
+  }
+
+  float observable = 0.;
+  for (auto& sel : mSelections) {
+    const auto selVariable = sel.getSelectionVariable();
+    if (selVariable == femto_universe_track_selection::kPIDnSigmaMax) {
+      /// PID needs to be handled a bit differently since we may need more than
+      /// one species
+      for (size_t i = 0; i < kPIDspecies.size(); ++i) {
+        auto pidITSVal = pidITS.at(i);
+        auto pidTPCVal = pidTPC.at(i) - nSigmaPIDOffsetTPC;
+        auto pidTOFVal = pidTOF.at(i) - nSigmaPIDOffsetTOF;
+        auto pidComb = std::sqrt(pidTPCVal * pidTPCVal + pidTOFVal * pidTOFVal);
+        sel.checkSelectionSetBitPID(pidTPCVal, outputPID);
+        sel.checkSelectionSetBitPID(pidComb, outputPID);
+        sel.checkSelectionSetBitPID(pidITSVal, outputPID);
+      }
     } else {
       /// for the rest it's all the same
       switch (selVariable) {

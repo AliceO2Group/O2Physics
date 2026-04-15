@@ -13,33 +13,37 @@
 /// \file uecharged.cxx
 /// \brief Underlying event analysis task
 /// \since November 2021
-/// \last update: March 2026
+/// \last update: April 2026
 
-#include "PWGLF/DataModel/mcCentrality.h"
-#include "PWGLF/Utils/collisionCuts.h"
 #include "PWGLF/Utils/inelGt.h"
-#include "PWGLF/Utils/mcParticle.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
 
 #include <TF1.h>
-#include <TH1F.h>
-#include <TH2F.h>
-#include <TMath.h>
 #include <TRandom.h>
 
 #include <cmath>
 #include <cstdint>
+#include <string_view>
 #include <vector>
 
 using namespace o2;
@@ -57,6 +61,7 @@ struct ueCharged {
   Configurable<bool> sel8{"event_sel8", true, "Apply the sel8 event selection"};
   Configurable<bool> removeITSROFBorder{"event_removeITSROFBorder", false, "Remove ITS Read-Out Frame border and only apply kIsTriggerTVX & kNoTimeFrameBorder (recommended for MC)"};
   Configurable<int> cfgINELCut{"event_cfgINELCut", 0, "INEL event selection: 0 no sel, 1 INEL>0, 2 INEL>1"};
+  Configurable<float> CollPosZ{"event_CollPosZ", 10.f, "Cut on the z component of the vertex position"};
   Configurable<bool> analyzeEvandTracksel{"analyzeEvandTracksel", true, "Analyze the event and track selection"};
 
   // Track selection configurables
@@ -414,7 +419,7 @@ struct ueCharged {
     ue.fill(HIST("hCounter"), 4);
 
     ue.fill(HIST("hStat"), collision.size());
-    if ((std::abs(collision.posZ()) > 10.f)) {
+    if ((std::abs(collision.posZ()) > CollPosZ)) {
       return false;
     }
 
@@ -460,7 +465,7 @@ struct ueCharged {
     ue.fill(HIST("hCounter"), 4);
 
     ue.fill(HIST("hStat"), collision.size());
-    if ((std::abs(collision.posZ()) > 10.f)) {
+    if ((std::abs(collision.posZ()) > CollPosZ)) {
       return false;
     }
 
@@ -661,7 +666,7 @@ struct ueCharged {
     if (cfgINELCut == 2 && !o2::pwglf::isINELgt1mc(GenParticles, pdg)) {
       return;
     }
-    if (std::abs(mcCollision.posZ()) > 10.f) {
+    if (std::abs(mcCollision.posZ()) > CollPosZ) {
       return;
     }
     ue.fill(HIST("hStat"), mcCollision.size());
@@ -1006,7 +1011,7 @@ struct ueCharged {
     if (cfgINELCut == 2 && !o2::pwglf::isINELgt1mc(GenParticles, pdg)) {
       return;
     }
-    if (std::abs(mcCollision.posZ()) > 10.f) {
+    if (std::abs(mcCollision.posZ()) > CollPosZ) {
       return;
     }
 
@@ -1143,7 +1148,7 @@ struct ueCharged {
       ue.fill(HIST("hVtxFT0VsVtxCol_afterGoodZvtx"), foundBC.ft0().posZ(), collision.posZ());
     }
 
-    if (std::abs(collision.posZ()) > 10.f) {
+    if (std::abs(collision.posZ()) > CollPosZ) {
       return;
     }
 

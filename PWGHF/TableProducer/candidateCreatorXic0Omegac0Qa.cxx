@@ -19,44 +19,59 @@
 #define HomogeneousField // o2-linter: disable=name/macro (required by KFParticle)
 #endif
 
+#include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannelsLegacy.h"
 #include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
-#include "PWGHF/Utils/utilsTrkCandHf.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/strangenessBuilderHelper.h" // -> Added to test removal of strangeness builder workflow
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DeviceSpec.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/PID.h>
+#include <ReconstructionDataFormats/Track.h>
 
+#include <TH1.h>
 #include <TPDGCode.h>
 
 #include <KFPTrack.h>
 #include <KFPVertex.h>
 #include <KFParticle.h>
-#include <KFParticleBase.h>
-#include <KFVertex.h>
 
-#include <algorithm>
+#include <Rtypes.h>
+
+#include <array>
+#include <cstdint>
+#include <cstdlib>
 #include <memory>
+#include <numeric>
+#include <stdexcept>
 #include <string>
-#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -758,7 +773,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                               impactParameterCasc.getZ(), impactParameterCharmBach.getZ(),
                               std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterCharmBach.getSigmaY2()),
                               cascAodElement.v0Id(), v0AodElement.posTrackId(), v0AodElement.negTrackId(),
-                              cand.cascadeId(), trackCharmBachelor.globalIndex(), cand.prong0Id(),
+                              cand.cascadeId(), trackCharmBachelor.globalIndex(), cascAodElement.bachelorId(),
                               mLambda, mCasc, massCharmBaryonCand,
                               cpaV0, cpaCharmBaryon, cpaCasc,
                               cpaxyV0, cpaxyCharmBaryon, cpaxyCasc,
@@ -787,7 +802,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                                  impactParameterCasc.getZ(), impactParameterCharmBach.getZ(),
                                  std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterCharmBach.getSigmaY2()),
                                  cascAodElement.v0Id(), v0AodElement.posTrackId(), v0AodElement.negTrackId(),
-                                 cand.cascadeId(), trackCharmBachelor.globalIndex(), cand.prong0Id(),
+                                 cand.cascadeId(), trackCharmBachelor.globalIndex(), cascAodElement.bachelorId(),
                                  mLambda, mCasc, massCharmBaryonCand,
                                  cpaV0, cpaCharmBaryon, cpaCasc,
                                  cpaxyV0, cpaxyCharmBaryon, cpaxyCasc,
@@ -816,7 +831,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                                  impactParameterCasc.getZ(), impactParameterCharmBach.getZ(),
                                  std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterCharmBach.getSigmaY2()),
                                  cascAodElement.v0Id(), v0AodElement.posTrackId(), v0AodElement.negTrackId(),
-                                 cand.cascadeId(), trackCharmBachelor.globalIndex(), cand.prong0Id(),
+                                 cand.cascadeId(), trackCharmBachelor.globalIndex(), cascAodElement.bachelorId(),
                                  mLambda, mCasc, massCharmBaryonCand,
                                  cpaV0, cpaCharmBaryon, cpaCasc,
                                  cpaxyV0, cpaxyCharmBaryon, cpaxyCasc,
@@ -994,6 +1009,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
         kfCasc.Construct(cascDaughters, 2);
       } catch (std::runtime_error& e) {
         LOG(debug) << "Failed to construct Cascade: " << e.what();
+        continue;
       }
 
       float massCasc, sigMassCasc, massCascRej, sigMassCascRej;
@@ -1002,7 +1018,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       if (sigMassCasc <= 0) {
         continue;
       }
-      if (std::abs(massCasc - massCasc) > configs.massToleranceCascade) {
+      if (std::abs(massCasc - massOfCascade) > configs.massToleranceCascade) {
         continue;
       }
       if (kfCasc.GetNDF() <= 0 || kfCasc.GetChi2() <= 0) {
@@ -1016,6 +1032,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
           kfCascRej.Construct(cascDaughtersRej, 2);
         } catch (std::runtime_error& e) {
           LOG(debug) << "Failed to construct Cascade_rej: " << e.what();
+          continue;
         }
 
         kfCascRej.GetMass(massCascRej, sigMassCascRej);
@@ -1041,6 +1058,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
         kfCharmBaryon.Construct(charmBaryonDaughters, 2);
       } catch (std::runtime_error& e) {
         LOG(debug) << "Failed to construct Charm baryon: " << e.what();
+        continue;
       }
 
       float massCharmBaryon, sigMassCharmBaryon;
@@ -1071,7 +1089,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       // To Casc
       KFParticle kfBachToCasc = kfBach;
       KFParticle kfV0ToCasc = kfV0;
-      kfBach.SetProductionVertex(kfCasc);
+      kfBachToCasc.SetProductionVertex(kfCasc);
       kfV0ToCasc.SetProductionVertex(kfCasc);
 
       // To Charm baryon
@@ -1099,7 +1117,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       std::array<float, 3> pVecV0 = {kfV0.GetPx(), kfV0.GetPy(), kfV0.GetPz()};
       std::array<float, 3> pVecBach = {kfBachToCasc.GetPx(), kfBachToCasc.GetPy(), kfBachToCasc.GetPz()};
       std::array<float, 3> pVecCharmBachelorAsD = {kfCharmBachToCharmBaryon.GetPx(), kfCharmBachToCharmBaryon.GetPy(), kfCharmBachToCharmBaryon.GetPz()};
-      std::array<float, 3> pVecCharmBaryon = {kfCharmBaryon.GetPx(), kfCharmBaryon.GetPy(), kfCharmBaryon.GetPy()};
+      std::array<float, 3> pVecCharmBaryon = {kfCharmBaryon.GetPx(), kfCharmBaryon.GetPy(), kfCharmBaryon.GetPz()};
 
       auto* covVtxCharmBaryon = kfCharmBaryon.CovarianceMatrix();
       float covMatrixPv[6];
@@ -1146,8 +1164,8 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       float chi2NdfTopoCharmBaryonToPv = kfCharmBaryonToPv.GetChi2() / kfCharmBaryonToPv.GetNDF();
       float chi2NdfTopoBachToCasc = kfBachToCasc.GetChi2() / kfBachToCasc.GetNDF();
       float chi2NdfTopoV0ToCasc = kfV0ToCasc.GetChi2() / kfV0ToCasc.GetNDF();
-      float chi2NdfTopoCharmBachToCharmBaryon = kfCharmBachToCharmBaryon.GetChi2() / kfCharmBachToCharmBaryon.GetChi2();
-      float chi2NdfTopoCascToCharmBaryon = kfCascToCharmBaryon.GetChi2() / kfCascToCharmBaryon.GetChi2();
+      float chi2NdfTopoCharmBachToCharmBaryon = kfCharmBachToCharmBaryon.GetChi2() / kfCharmBachToCharmBaryon.GetNDF();
+      float chi2NdfTopoCascToCharmBaryon = kfCascToCharmBaryon.GetChi2() / kfCascToCharmBaryon.GetNDF();
 
       // get ldl
       float ldlV0 = ldlFromKF(kfV0, kfPv);
@@ -1177,7 +1195,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       float decayLCharmBaryon = RecoDecay::distance(std::array<float, 3>{collision.posX(), collision.posY(), collision.posZ()}, std::array<float, 3>{kfCharmBaryon.GetX(), kfCharmBaryon.GetY(), kfCharmBaryon.GetZ()});
 
       double phiCharmBaryon, thetaCharmBaryon;
-      getPointDirection(std::array<float, 3>{kfV0.GetX(), kfV0.GetY(), kfV0.GetZ()}, std::array<float, 3>{kfCharmBaryon.GetX(), kfCharmBaryon.GetY(), kfCharmBaryon.GetZ()}, phiCharmBaryon, thetaCharmBaryon);
+      getPointDirection(std::array<float, 3>{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, std::array<float, 3>{kfCharmBaryon.GetX(), kfCharmBaryon.GetY(), kfCharmBaryon.GetZ()}, phiCharmBaryon, thetaCharmBaryon);
       float errDecayLCharmBaryon = std::sqrt(getRotatedCovMatrixXX(covMatrixPv, phiCharmBaryon, thetaCharmBaryon) + getRotatedCovMatrixXX(covVtxCharmBaryon, phiCharmBaryon, thetaCharmBaryon));
 
       // get cosine of pointing angle
@@ -1238,7 +1256,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                                 pVecV0DauPos[0], pVecV0DauPos[1], pVecV0DauPos[2],
                                 pVecV0DauNeg[0], pVecV0DauNeg[1], pVecV0DauNeg[2],
                                 cascAodElement.v0Id(), v0AodElement.posTrackId(), v0AodElement.negTrackId(),
-                                cand.cascadeId(), trackCharmBachelor.globalIndex(), cand.prong0Id(),
+                                cand.cascadeId(), trackCharmBachelor.globalIndex(), cascAodElement.bachelorId(),
                                 massLam, massCasc, massCharmBaryon,
                                 cosPaV0ToPv, cosPaCascToPv,
                                 ctCasc, ctV0, ctCharmBaryon,
@@ -1276,7 +1294,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                                  impactParameterCasc.getZ(), impactParameterCharmBachelor.getZ(),
                                  std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterCharmBachelor.getSigmaY2()),
                                  cascAodElement.v0Id(), v0AodElement.posTrackId(), v0AodElement.negTrackId(),
-                                 cand.cascadeId(), trackCharmBachelor.globalIndex(), cand.prong0Id(),
+                                 cand.cascadeId(), trackCharmBachelor.globalIndex(), cascAodElement.bachelorId(),
                                  massLam, massCasc, massCharmBaryon,
                                  cosPaV0ToPv, cosPaCharmBaryonToPv, cosPaCascToPv, cosPaXYV0ToPv, cosPaXYCharmBaryonToPv, cosPaXYCascToPv,
                                  ctCharmBaryon, ctCasc, ctV0,
@@ -1329,7 +1347,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
                                    massLam, sigMassLam, massCasc, sigMassCasc, massCascRej, sigMassCascRej, massCharmBaryon, sigMassCharmBaryon,
                                    ptCharmBaryon, ptCharmBachelor, ptCasc,
                                    cosThetaStarKaFromOmegac0, cosThetaStarKaFromXic0, ctV0, ctCasc, ctCharmBaryon,
-                                   cascAodElement.v0Id(), v0AodElement.posTrackId(), v0AodElement.negTrackId(), cand.cascadeId(), cand.prong0Id(), trackCharmBachelor.globalIndex());
+                                   cascAodElement.v0Id(), v0AodElement.posTrackId(), v0AodElement.negTrackId(), cand.cascadeId(), cascAodElement.bachelorId(), trackCharmBachelor.globalIndex());
       }
     } // end candidate loop
   } // end of runCreator

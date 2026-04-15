@@ -168,6 +168,8 @@ struct LnnCandidate {
   uint16_t tpcSignalPi = 0u;
   uint8_t nTPCClusters3H = 0u;
   uint8_t nTPCClustersPi = 0u;
+  uint8_t nTPCClustersCrossedRows3H = 0u;
+  uint8_t nTPCClustersCrossedRowsPi = 0u;
   uint32_t clusterSizeITS3H = 0u;
   uint32_t clusterSizeITSPi = 0u;
   bool isMatter = false;
@@ -481,6 +483,7 @@ struct lnnRecoTask {
       auto& h3track = lnnCand.isMatter ? posTrack : negTrack;
       auto& pitrack = lnnCand.isMatter ? negTrack : posTrack;
       auto& h3Rigidity = lnnCand.isMatter ? posRigidity : negRigidity;
+      auto& piRigidity = lnnCand.isMatter ? negRigidity : posRigidity;
 
       // fill QA track histogram studies to check track signal before selections
       h2FT0CnClusTPCtoTrBfSel->Fill(collision.centFT0C(), h3track.tpcNClsFound());
@@ -514,16 +517,20 @@ struct lnnRecoTask {
         continue;
       }
 
-      lnnCand.tpcChi3H = lnnCand.isMatter ? h3track.tpcChi2NCl() : negTrack.tpcChi2NCl();
+      lnnCand.tpcChi3H = h3track.tpcChi2NCl();
       lnnCand.nSigma3H = lnnCand.isMatter ? nSigmaTPCpos : nSigmaTPCneg;
-      lnnCand.nTPCClusters3H = lnnCand.isMatter ? h3track.tpcNClsFound() : negTrack.tpcNClsFound();
-      lnnCand.tpcSignal3H = lnnCand.isMatter ? h3track.tpcSignal() : negTrack.tpcSignal();
-      lnnCand.clusterSizeITS3H = lnnCand.isMatter ? h3track.itsClusterSizes() : negTrack.itsClusterSizes();
-      lnnCand.nTPCClustersPi = !lnnCand.isMatter ? h3track.tpcNClsFound() : negTrack.tpcNClsFound();
-      lnnCand.tpcSignalPi = !lnnCand.isMatter ? h3track.tpcSignal() : negTrack.tpcSignal();
-      lnnCand.clusterSizeITSPi = !lnnCand.isMatter ? h3track.itsClusterSizes() : negTrack.itsClusterSizes();
-      lnnCand.mom3HTPC = lnnCand.isMatter ? posRigidity : negRigidity;
-      lnnCand.momPiTPC = !lnnCand.isMatter ? posRigidity : negRigidity;
+      lnnCand.nTPCClusters3H = h3track.tpcNClsFound();
+      lnnCand.nTPCClustersCrossedRows3H = h3track.tpcNClsCrossedRows();
+      lnnCand.tpcSignal3H = h3track.tpcSignal();
+      lnnCand.clusterSizeITS3H = h3track.itsClusterSizes();
+
+      lnnCand.nTPCClustersPi = pitrack.tpcNClsFound();
+      lnnCand.nTPCClustersCrossedRowsPi = pitrack.tpcNClsCrossedRows();
+      lnnCand.tpcSignalPi = pitrack.tpcSignal();
+      lnnCand.clusterSizeITSPi = pitrack.itsClusterSizes();
+
+      lnnCand.mom3HTPC = h3Rigidity;
+      lnnCand.momPiTPC = piRigidity;
 
       lnnCand.flags |= lnnCand.isMatter ? static_cast<uint8_t>((posTrack.pidForTracking() & 0xF) << 4) : static_cast<uint8_t>((negTrack.pidForTracking() & 0xF) << 4);
       lnnCand.flags |= lnnCand.isMatter ? static_cast<uint8_t>(negTrack.pidForTracking() & 0xF) : static_cast<uint8_t>(posTrack.pidForTracking() & 0xF);
@@ -633,7 +640,9 @@ struct lnnRecoTask {
       // Fill 2D map after all selections
       hdEdx3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, h3track.tpcSignal());
       hdEdx3HPosTrack->Fill(lnnCand.mom3HTPC, h3track.tpcSignal());
-      hdEdx3HNegTrack->Fill(-lnnCand.mom3HTPC, h3track.tpcSignal());
+      if (!lnnCand.isMatter) {
+        hdEdx3HNegTrack->Fill(-lnnCand.mom3HTPC, h3track.tpcSignal());
+      }
       hNsigma3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, lnnCand.nSigma3H);
       if (h3track.hasTOF()) {
         h3HSignalPtTOF->Fill(chargeFactor * h3track.pt(), beta);
@@ -788,7 +797,7 @@ struct lnnRecoTask {
                         lnnCand.recoPtPi(), lnnCand.recoPhiPi(), lnnCand.recoEtaPi(),
                         lnnCand.decVtx[0], lnnCand.decVtx[1], lnnCand.decVtx[2],
                         lnnCand.dcaV0dau, lnnCand.h3DCAXY, lnnCand.piDCAXY,
-                        lnnCand.nSigma3H, lnnCand.nTPCClusters3H, lnnCand.nTPCClustersPi,
+                        lnnCand.nSigma3H, lnnCand.nTPCClusters3H, lnnCand.nTPCClustersPi, lnnCand.nTPCClustersCrossedRows3H, lnnCand.nTPCClustersCrossedRowsPi,
                         lnnCand.mom3HTPC, lnnCand.momPiTPC, lnnCand.tpcSignal3H, lnnCand.tpcSignalPi,
                         lnnCand.mass2TrTOF, lnnCand.tpcChi3H,
                         lnnCand.clusterSizeITS3H, lnnCand.clusterSizeITSPi, lnnCand.flags);
@@ -879,7 +888,7 @@ struct lnnRecoTask {
                       lnnCand.recoPtPi(), lnnCand.recoPhiPi(), lnnCand.recoEtaPi(),
                       lnnCand.decVtx[0], lnnCand.decVtx[1], lnnCand.decVtx[2],
                       lnnCand.dcaV0dau, lnnCand.h3DCAXY, lnnCand.piDCAXY,
-                      lnnCand.nSigma3H, lnnCand.nTPCClusters3H, lnnCand.nTPCClustersPi,
+                      lnnCand.nSigma3H, lnnCand.nTPCClusters3H, lnnCand.nTPCClustersPi, lnnCand.nTPCClustersCrossedRows3H, lnnCand.nTPCClustersCrossedRowsPi,
                       lnnCand.mom3HTPC, lnnCand.momPiTPC, lnnCand.tpcSignal3H, lnnCand.tpcSignalPi,
                       lnnCand.mass2TrTOF, lnnCand.tpcChi3H,
                       lnnCand.clusterSizeITS3H, lnnCand.clusterSizeITSPi, lnnCand.flags,
@@ -966,7 +975,7 @@ struct lnnRecoTask {
                     -1, -1, -1,
                     -1, -1, -1,
                     -1, -1, -1,
-                    -1, -1, -1,
+                    -1, -1, -1, -1, -1,
                     -1, -1, -1, -1,
                     -1, -1,
                     -1, -1, -1,

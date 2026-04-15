@@ -83,6 +83,8 @@ struct FemtoUniversePairTaskTrackPhi {
   Configurable<float> ConfCPRInvMassCutMin{"ConfCPRInvMassCutMin", 1.014, "Invariant mass (low) cut for Close Pair Rejection"};
   Configurable<float> ConfCPRInvMassCutMax{"ConfCPRInvMassCutMax", 1.026, "Invariant mass (high) cut for Close Pair Rejection"};
   Configurable<float> ConfCPRChosenRadii{"ConfCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
+  ConfigurableAxis confDeltaEtaAxis{"confDeltaEtaAxis", {100, -0.15, 0.15}, "DeltaEta"};
+  ConfigurableAxis confDeltaPhiStarAxis{"confDeltaPhiStarAxis", {100, -0.15, 0.15}, "DeltaPhiStar"};
 
   /// Table for both particles
   Configurable<float> ConfPIDProtonNsigmaCombined{"ConfPIDProtonNsigmaCombined", 3.0, "TPC and TOF Proton Sigma (combined) for momentum > 0.5"};
@@ -480,7 +482,7 @@ struct FemtoUniversePairTaskTrackPhi {
 
     pairCleaner.init(&qaRegistry);
     if (ConfCPRIsEnabled) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiCutMin, ConfCPRdeltaPhiCutMax, ConfCPRdeltaEtaCutMin, ConfCPRdeltaEtaCutMax, ConfCPRChosenRadii, ConfCPRPlotPerRadii, ConfCPRInvMassCutMin, ConfCPRInvMassCutMax);
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, confDeltaEtaAxis, confDeltaPhiStarAxis, ConfCPRdeltaPhiCutMin, ConfCPRdeltaPhiCutMax, ConfCPRdeltaEtaCutMin, ConfCPRdeltaEtaCutMax, ConfCPRChosenRadii, ConfCPRPlotPerRadii, ConfCPRInvMassCutMin, ConfCPRInvMassCutMax);
     }
   }
 

@@ -373,6 +373,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
       }
       if (doprocessFractionsMCTruth) {
         mixedMultRegistryPM.add("MCtruth/motherParticle", "pair fractions; part1 mother PDG; part2 mother PDG", {HistType::kTH2F, {{8001, -4000, 4000}, {8001, -4000, 4000}}});
+        mixedMultRegistryPM.add("MCtruth/mcProcess", "pair ; part1 VMC physics code; part2 VMC physics code", {HistType::kTH2F, {{50, 0, 50}, {50, 0, 50}}});
       }
     }
 
@@ -383,6 +384,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
       }
       if (doprocessFractionsMCTruth) {
         mixedMultRegistryPP.add("MCtruth/motherParticle", "pair fractions; part1 mother PDG; part2 mother PDG", {HistType::kTH2F, {{8001, -4000, 4000}, {8001, -4000, 4000}}});
+        mixedMultRegistryPP.add("MCtruth/mcProcess", "pair ; part1 VMC physics code; part2 VMC physics code", {HistType::kTH2F, {{50, 0, 50}, {50, 0, 50}}});
       }
       sameEventContPP.init(&resultRegistryPP, confkstarBins, confMultBins, confkTBins, confmTBins, confmultBins3D, confmTBins3D, twotracksconfigs.confIsMC, twotracksconfigs.confUse3D);
       mixedEventContPP.init(&resultRegistryPP, confkstarBins, confMultBins, confkTBins, confmTBins, confmultBins3D, confmTBins3D, twotracksconfigs.confIsMC, twotracksconfigs.confUse3D);
@@ -402,6 +404,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
       }
       if (doprocessFractionsMCTruth) {
         mixedMultRegistryMM.add("MCtruth/motherParticle", "pair fractions; part1 mother PDG; part2 mother PDG", {HistType::kTH2F, {{8001, -4000, 4000}, {8001, -4000, 4000}}});
+        mixedMultRegistryMM.add("MCtruth/mcProcess", "pair ; part1 VMC physics code; part2 VMC physics code", {HistType::kTH2F, {{50, 0, 50}, {50, 0, 50}}});
       }
       sameEventContMM.init(&resultRegistryMM, confkstarBins, confMultBins, confkTBins, confmTBins, confmultBins3D, confmTBins3D, twotracksconfigs.confIsMC, twotracksconfigs.confUse3D);
       mixedEventContMM.init(&resultRegistryMM, confkstarBins, confMultBins, confkTBins, confmTBins, confmultBins3D, confmTBins3D, twotracksconfigs.confIsMC, twotracksconfigs.confUse3D);
@@ -416,7 +419,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
 
     pairCleaner.init(&qaRegistry);
     if (confIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, confCPRdeltaPhiCutMin.value, confCPRdeltaPhiCutMax.value, confCPRdeltaEtaCutMin.value, confCPRdeltaEtaCutMax.value, confCPRChosenRadii.value, confCPRPlotPerRadii.value);
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, confDeltaEtaAxis, confDeltaPhiStarAxis, confCPRdeltaPhiCutMin.value, confCPRdeltaPhiCutMax.value, confCPRdeltaEtaCutMin.value, confCPRdeltaEtaCutMax.value, confCPRChosenRadii.value, confCPRPlotPerRadii.value);
     }
 
     vPIDPartOne = trackonefilter.confPIDPartOne.value;
@@ -970,6 +973,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
           const auto& pdgParticleTwo = pdg->GetParticle(pdgCodePartTwo);
           if (pdgParticleOne && pdgParticleTwo && (pdgCodePartOne == trackonefilter.confPDGCodePartOne) && (pdgCodePartTwo == tracktwofilter.confPDGCodePartTwo)) {
             mixedMultRegistryPM.fill(HIST("MCtruth/motherParticle"), p1.tempFitVar(), p2.tempFitVar());
+            mixedMultRegistryPM.fill(HIST("MCtruth/mcProcess"), p1.cut(), p2.cut());
           }
         }
         break;
@@ -982,6 +986,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
           const auto& pdgParticleTwo = pdg->GetParticle(pdgCodePartTwo);
           if (pdgParticleOne && pdgParticleTwo && (pdgCodePartOne == trackonefilter.confPDGCodePartOne) && (pdgCodePartTwo == trackonefilter.confPDGCodePartOne)) {
             mixedMultRegistryPP.fill(HIST("MCtruth/motherParticle"), p1.tempFitVar(), p2.tempFitVar());
+            mixedMultRegistryPP.fill(HIST("MCtruth/mcProcess"), p1.cut(), p2.cut());
           }
         }
         break;
@@ -994,6 +999,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
           const auto& pdgParticleTwo = pdg->GetParticle(pdgCodePartTwo);
           if (pdgParticleOne && pdgParticleTwo && (pdgCodePartOne == tracktwofilter.confPDGCodePartTwo) && (pdgCodePartTwo == tracktwofilter.confPDGCodePartTwo)) {
             mixedMultRegistryMM.fill(HIST("MCtruth/motherParticle"), p1.tempFitVar(), p2.tempFitVar());
+            mixedMultRegistryMM.fill(HIST("MCtruth/mcProcess"), p1.cut(), p2.cut());
           }
         }
         break;

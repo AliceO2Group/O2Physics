@@ -20,14 +20,16 @@
 #include "PWGCF/Femto/Core/histManager.h"
 #include "PWGCF/Femto/Core/modes.h"
 
-#include "CommonConstants/MathConstants.h"
-#include "Framework/Configurable.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/HistogramSpec.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
 
-#include "TH1.h"
+#include <TH1.h>
 
 #include <array>
+#include <cstddef>
 #include <map>
 #include <string>
 #include <string_view>
@@ -45,6 +47,7 @@ enum TrackHist {
   kEta,
   kPhi,
   kSign,
+  kMass,
   // qa variables
   kPAtPv,
   kPTpc,
@@ -145,6 +148,7 @@ struct ConfTrackBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis eta{"eta", {{300, -1.5, 1.5}}, "Eta"};
   o2::framework::ConfigurableAxis phi{"phi", {{720, 0, 1.f * o2::constants::math::TwoPI}}, "Phi"};
   o2::framework::ConfigurableAxis sign{"sign", {{3, -1.5, 1.5}}, "Sign"};
+  o2::framework::ConfigurableAxis mass{"mass", {{200, 0.f, 2.f}}, "Mass (if enabled, plot TOF mass, otherwise PDG mass)"};
   o2::framework::ConfigurableAxis pdgCodes{"pdgCodes", {{8001, -4000.5, 4000.5}}, "MC ONLY: PDG codes of selected tracks"};
 };
 
@@ -268,7 +272,8 @@ constexpr std::array<histmanager::HistInfo<TrackHist>, kTrackHistLast>
       {kPt, o2::framework::kTH1F, "hPt", "Transverse Momentum; p_{T} (GeV/#it{c}); Entries"},
       {kEta, o2::framework::kTH1F, "hEta", "Pseudorapidity; #eta; Entries"},
       {kPhi, o2::framework::kTH1F, "hPhi", "Azimuthal angle; #varphi; Entries"},
-      {kSign, o2::framework::kTH1F, "hSign", "Sign of charge ; Sign; Entries"},
+      {kSign, o2::framework::kTH1F, "hSign", "Sign of charge; Sign; Entries"},
+      {kMass, o2::framework::kTH1F, "hMass", "Mass; m (GeV/#it{c}^{2}); Entries"},
       {kPAtPv, o2::framework::kTH1F, "hPAtPv", "Momentum at Primary vertex; p_{vertex}; Entries"},
       {kPTpc, o2::framework::kTH1F, "hPTpc", "Momentum at inner wall of TPC; p_{TPC}; Entries"},
       {kItsCluster, o2::framework::kTH1F, "hItsCluster", "ITS cluster; ITS cluster; Entries"},
@@ -353,7 +358,8 @@ constexpr std::array<histmanager::HistInfo<TrackHist>, kTrackHistLast>
   {kPt, {conf.pt}},                   \
     {kEta, {conf.eta}},               \
     {kPhi, {conf.phi}},               \
-    {kSign, {conf.sign}},
+    {kSign, {conf.sign}},             \
+    {kMass, {conf.mass}},
 
 #define TRACK_HIST_QA_MAP(confAnalysis, confQa)                                            \
   {kPAtPv, {confQa.p}},                                                                    \
@@ -637,6 +643,7 @@ class TrackHistManager
     mHistogramRegistry->add(analysisDir + getHistNameV2(kEta, HistTable), getHistDesc(kEta, HistTable), getHistType(kEta, HistTable), {Specs.at(kEta)});
     mHistogramRegistry->add(analysisDir + getHistNameV2(kPhi, HistTable), getHistDesc(kPhi, HistTable), getHistType(kPhi, HistTable), {Specs.at(kPhi)});
     mHistogramRegistry->add(analysisDir + getHistNameV2(kSign, HistTable), getHistDesc(kSign, HistTable), getHistType(kSign, HistTable), {Specs.at(kSign)});
+    mHistogramRegistry->add(analysisDir + getHistNameV2(kMass, HistTable), getHistDesc(kMass, HistTable), getHistType(kMass, HistTable), {Specs.at(kMass)});
   }
 
   void initQa(std::map<TrackHist, std::vector<o2::framework::AxisSpec>> const& Specs)
@@ -784,6 +791,11 @@ class TrackHistManager
     mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kEta, HistTable)), track.eta());
     mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kPhi, HistTable)), track.phi());
     mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kSign, HistTable)), track.sign());
+    if constexpr (utils::HasMass<T>) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kMass, HistTable)), track.mass());
+    } else {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kMass, HistTable)), utils::getPdgMass(mPdgCode));
+    }
   }
 
   template <typename T>
@@ -831,7 +843,7 @@ class TrackHistManager
     mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(getHistName(kItsSignal, HistTable)), momentum, o2::analysis::femto::utils::itsSignal(track));
     mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(getHistName(kTpcSignal, HistTable)), momentum, track.tpcSignal());
     mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(getHistName(kTofBeta, HistTable)), momentum, track.tofBeta());
-    mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(getHistName(kTofMass, HistTable)), momentum, track.tofMass());
+    mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(getHistName(kTofMass, HistTable)), momentum, track.mass());
 
     if (mPlotElectronPid) {
       mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(getHistName(kItsElectron, HistTable)), momentum, track.itsNSigmaEl());

@@ -15,30 +15,30 @@
 /// copied from Thor Jensen (thor.kjaersgaard.jensen@cern.ch) and Debojit Sarkar (debojit.sarkar@cern.ch)
 
 #include "PWGCF/Core/CorrelationContainer.h"
-#include "PWGCF/Core/PairCuts.h"
-#include "PWGCF/DataModel/CorrelationsDerived.h"
 #include "PWGUD/Core/SGSelector.h"
-#include "PWGUD/DataModel/SGTables.h"
 #include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/MathConstants.h"
-#include "Framework/ASoA.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TRandom3.h"
+#include <TRandom3.h>
+#include <TString.h>
 
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <vector>
 
 namespace o2::aod
@@ -56,6 +56,7 @@ DECLARE_SOA_TABLE(Truegapside, "AOD", "TRUEGAPSIDE", flowcorrupc::Truegapside);
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::constants::math;
 
 // define the filtered collisions and tracks
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
@@ -165,7 +166,7 @@ struct FlowCorrelationsUpc {
 
   // make the filters and cuts.
   Filter trackFilter = (aod::udtrack::isPVContributor == true);
-  Filter collisionFilter = (aod::udcollision::gapSide == (uint8_t)cfgGapSide && (cfgIfVertex == false || aod::collision::posZ < cfgZVtxCut) && (aod::udcollision::occupancyInTime > 0 && aod::udcollision::occupancyInTime < cfgCutOccupancyHigh) && aod::flowcorrupc::truegapside == 1);
+  Filter collisionFilter = ((aod::udcollision::gapSide == (uint8_t)1 || aod::udcollision::gapSide == (uint8_t)0) && (cfgIfVertex == false || aod::collision::posZ < cfgZVtxCut) && (aod::udcollision::occupancyInTime > 0 && aod::udcollision::occupancyInTime < cfgCutOccupancyHigh) && (aod::flowcorrupc::truegapside == 1 || aod::flowcorrupc::truegapside == 0));
 
   using UdTracks = soa::Filtered<soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>>;
   using UdTracksFull = soa::Filtered<soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>>;
@@ -376,12 +377,21 @@ struct FlowCorrelationsUpc {
   // event mixing
 
   SliceCache cache;
-  using MixedBinning = ColumnBinningPolicy<aod::collision::PosZ, aod::flowcorrupc::Multiplicity>;
+  // using MixedBinning = ColumnBinningPolicy<aod::collision::PosZ, aod::flowcorrupc::Multiplicity>;
 
   // the process for filling the mixed events
   void processMixed(UDCollisionsFull const& collisions, UdTracksFull const& tracks)
   {
-    MixedBinning binningOnVtxAndMult{{vtxMix, multMix}, true}; // true is for 'ignore overflows' (true by default)
+    auto getTracksSize = [&tracks, this](UDCollisionsFull::iterator const& collision) {
+      auto associatedTracks = tracks.sliceByCached(o2::aod::udtrack::udCollisionId, collision.udCollisionId(), this->cache);
+
+      auto mult = associatedTracks.size();
+      return mult;
+    };
+
+    using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
+    MixedBinning binningOnVtxAndMult{{getTracksSize}, {vtxMix, multMix}, true};
+    // MixedBinning binningOnVtxAndMult{{vtxMix, multMix}, true}; // true is for 'ignore overflows' (true by default)
     auto tracksTuple = std::make_tuple(tracks);
     SameKindPair<UDCollisionsFull, UdTracksFull, MixedBinning> pairs{binningOnVtxAndMult, cfgMinMixEventNum, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 

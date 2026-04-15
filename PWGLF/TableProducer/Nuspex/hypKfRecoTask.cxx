@@ -16,6 +16,10 @@
 #include "MetadataHelper.h"
 
 #include "PWGLF/DataModel/LFHypernucleiKfTables.h"
+#include "PWGLF/DataModel/LFNucleiTables.h"
+#include "PWGLF/DataModel/LFPIDTOFGenericTables.h"
+#include "PWGLF/DataModel/LFParticleIdentification.h"
+#include "PWGLF/Utils/pidTOFGeneric.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
@@ -65,7 +69,7 @@ using namespace o2::framework::expressions;
 
 using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>;
 using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>;
-using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTOFmass, aod::pidTPCFullPr, aod::pidTPCFullPi>;
+using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TOFSignal, o2::aod::EvTimeTOFFT0ForTrack, aod::pidTPCFullPr, aod::pidTPCFullPi>;
 
 o2::common::core::MetadataHelper metadataInfo; // Metadata helper
 //----------------------------------------------------------------------------------------------------------------
@@ -146,17 +150,17 @@ enum HYPNUCDEFS { kEnabled,
                   kDsigns,
                   kUseV0for };
 static const std::vector<std::string> hypNucDefsLb{"Enabled", "PDGCode", "d1", "d2", "d3", "d4", "daughterSigns", "useV0for"};
-static const std::string hypNucDefs[nHyperNuclei][nHypNucDefs]{
-  {"0", "3122", "proton", "pion", "none", "none", "+-", ""},
-  {"0", "1010010030", "helion", "pion", "none", "none", "+-", ""},
-  {"0", "1010010030", "deuteron", "proton", "pion", "none", "++-", ""},
-  {"0", "1010010040", "alpha", "pion", "none", "none", "+-", ""},
-  {"0", "1010010040", "triton", "proton", "pion", "none", "++-", ""},
-  {"0", "1010020040", "helion", "proton", "pion", "none", "++-", ""},
-  {"0", "1010020050", "alpha", "proton", "pion", "none", "++-", ""},
-  {"0", "1010020050", "helion", "deuteron", "pion", "none", "++-", ""},
-  {"0", "0", "none", "none", "none", "none", "", ""},
-  {"0", "0", "none", "none", "none", "none", "", ""}}; // NOLINT: runtime/string
+const std::string hypNucDefs[nHyperNuclei][nHypNucDefs]{// NOLINT: runtime/string
+                                                        {"0", "3122", "proton", "pion", "none", "none", "+-", ""},
+                                                        {"0", "1010010030", "helion", "pion", "none", "none", "+-", ""},
+                                                        {"0", "1010010030", "deuteron", "proton", "pion", "none", "++-", ""},
+                                                        {"0", "1010010040", "alpha", "pion", "none", "none", "+-", ""},
+                                                        {"0", "1010010040", "triton", "proton", "pion", "none", "++-", ""},
+                                                        {"0", "1010020040", "helion", "proton", "pion", "none", "++-", ""},
+                                                        {"0", "1010020050", "alpha", "proton", "pion", "none", "++-", ""},
+                                                        {"0", "1010020050", "helion", "deuteron", "pion", "none", "++-", ""},
+                                                        {"0", "0", "none", "none", "none", "none", "", ""},
+                                                        {"0", "0", "none", "none", "none", "none", "", ""}};
 
 const int nSelPrim = 8;
 enum PRESELECTIONSPRIMARIES { kMinMass,
@@ -263,7 +267,6 @@ struct DaughterKf {
     dcaToPv = daughterKfp.GetDistanceFromVertex(&vtx[0]);
     dcaToPvZ = std::sqrt(dcaToPv * dcaToPv - dcaToPvXY * dcaToPvXY);
   }
-
   bool isTrack() { return daughterTrackId >= 0; }
 };
 int DaughterKf::uniqueId = 0;
@@ -429,6 +432,30 @@ struct IndexPairs {
   }
 }; // struct IndexPairs
 
+struct IndexPairsVec {
+  std::vector<std::vector<std::pair<int64_t, int>>> pairs;
+  IndexPairsVec()
+  {
+    pairs.resize(nDaughterParticles);
+  }
+  void add(int i, int64_t a, int b) { pairs.at(i).push_back({a, b}); }
+  void clear()
+  {
+    for (size_t i = 0; i < nDaughterParticles; i++)
+      pairs.at(i).clear();
+  }
+  bool getIndex(int i, int64_t a, int& b)
+  {
+    for (const auto& pair : pairs.at(i)) {
+      if (pair.first == a) {
+        b = pair.second;
+        return true;
+      }
+    }
+    return false;
+  }
+}; // struct IndexPairsVec
+
 struct McCollInfo {
   bool hasRecoColl;
   bool passedEvSel;
@@ -526,7 +553,8 @@ struct HypKfRecoTask {
   std::vector<HyperNucleus> singleHyperNuclei, cascadeHyperNuclei;
   std::vector<float> primVtx, cents;
   std::vector<McCollInfo> mcCollInfos;
-  IndexPairs trackIndices, mcPartIndices;
+  IndexPairsVec trackIndices;
+  IndexPairs mcPartIndices;
   KFPVertex kfPrimVtx;
   bool collHasCandidate, collHasMcTrueCandidate, collPassedEvSel, activeCascade, isMC;
   int64_t mcCollTableIndex;
@@ -610,8 +638,12 @@ struct HypKfRecoTask {
         const float itsNsigma = getITSnSigma(track, daughterParticles.at(i));
         if (daughterParticles.at(i).trkSettings[kMaxITSnSigma] >= 0 && std::abs(itsNsigma) > daughterParticles.at(i).trkSettings[kMaxITSnSigma])
           continue;
+        float tpcNsigmaNlp = NoVal;
+        if (daughterParticles.at(i).name == "alpha") {
+          tpcNsigmaNlp = getTPCnSigma(track, daughterParticles.at(i - 1));
+        }
         filldedx(track, i);
-        foundDaughterKfs.at(i).push_back(DaughterKf(i, track.globalIndex(), track.sign(), primVtx, 0, 0, 0));
+        foundDaughterKfs.at(i).push_back(DaughterKf(i, track.globalIndex(), track.sign(), primVtx, tpcNsigma, tpcNsigmaNlp, itsNsigma));
       }
     } // track loop
   }
@@ -865,14 +897,14 @@ struct HypKfRecoTask {
               continue;
             const auto& daughterTrackId = daughter->daughterTrackId;
             int trackTableId;
-            if (!trackIndices.getIndex(daughterTrackId, trackTableId)) {
+            if (!trackIndices.getIndex(daughter->species, daughterTrackId, trackTableId)) {
               const auto& track = tracks.rawIteratorAt(daughterTrackId);
               outputTrackTable(
                 daughter->species * track.sign(), track.pt(), track.eta(), track.phi(), daughter->dcaToPvXY, daughter->dcaToPvZ, track.tpcNClsFound(), track.tpcChi2NCl(),
                 track.itsClusterSizes(), track.itsChi2NCl(), getRigidity(track), track.tpcSignal(), daughter->tpcNsigma, daughter->tpcNsigmaNHP, daughter->tpcNsigmaNLP,
-                track.mass(), track.isPVContributor());
+                getMass2(track), track.isPVContributor());
               trackTableId = outputTrackTable.lastIndex();
-              trackIndices.add(daughterTrackId, trackTableId);
+              trackIndices.add(daughter->species, daughterTrackId, trackTableId);
             }
             vecDaugtherTracks.push_back(trackTableId);
           }
@@ -1162,7 +1194,7 @@ struct HypKfRecoTask {
       return false;
     if (getMeanItsClsSize(track) > particle.trkSettings[kMaxITSmeanClsSize])
       return false;
-    if (particle.trkSettings[kTOFrequiredabove] >= 0 && getRigidity(track) > particle.trkSettings[kTOFrequiredabove] && (track.mass() < particle.trkSettings[kMinTOFmass] || track.mass() > particle.trkSettings[kMaxTOFmass]))
+    if (particle.trkSettings[kTOFrequiredabove] >= 0 && getRigidity(track) > particle.trkSettings[kTOFrequiredabove] && (getMass2(track) < particle.trkSettings[kMinTOFmass] || getMass2(track) > particle.trkSettings[kMaxTOFmass]))
       return false;
     return true;
   }
@@ -1331,6 +1363,23 @@ struct HypKfRecoTask {
     return -1;
   }
   //----------------------------------------------------------------------------------------------------------------
+  template <class T>
+  float getMass2(const T& track)
+  {
+    const float p = track.p();
+    const float& tofStartTime = track.evTimeForTrack();
+    const float& tofTime = track.tofSignal();
+    constexpr float CInCmPs = 2.99792458e-2f;
+    const float& length = track.length();
+    const float time = tofTime - tofStartTime;
+    if (time > 0.f && length > 0.f) {
+      const float beta = length / (CInCmPs * time);
+      const float gamma = 1.f / std::sqrt(1.f - beta * beta);
+      const float mass = p / std::sqrt(gamma * gamma - 1.f);
+      return mass * mass;
+    }
+    return -1.f;
+  }
   //----------------------------------------------------------------------------------------------------------------
 };
 //----------------------------------------------------------------------------------------------------------------

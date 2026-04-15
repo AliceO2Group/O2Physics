@@ -8,22 +8,25 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
 #ifndef EVENTFILTERING_FILTERTABLES_H_
 #define EVENTFILTERING_FILTERTABLES_H_
 
+#include <Framework/ASoA.h>
+
 #include <array>
-#include <unordered_map>
-#include <string>
-#include <vector>
+#include <concepts>
 #include <cstdint>
+#include <string>
+#include <type_traits>
+#include <unordered_map>
+#include <vector>
 
 namespace o2::aod
 {
 template <uint32_t T>
 struct Hash;
 }
-
-#include "Framework/ASoA.h"
 
 namespace o2::soa
 {

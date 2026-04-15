@@ -18,6 +18,7 @@
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 
+#include <CCDB/CcdbApi.h>
 #include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
@@ -27,8 +28,11 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TFile.h>
+#include <TH1.h>
 #include <TString.h>
 
+#include <cstdint>
 #include <map>
 #include <string>
 #include <vector>
@@ -114,8 +118,8 @@ struct HfTaskCorrelationDstarHadrons {
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   o2::ccdb::CcdbApi ccdbApi;
-  std::vector<TH1F*> vecHistEfficiencyDstar;
-  std::vector<TH1D*> vecHistEfficiencyTracks;
+  std::vector<TH1*> vecHistEfficiencyDstar;
+  std::vector<TH1*> vecHistEfficiencyTracks;
 
   void init(InitContext&)
   {
@@ -162,12 +166,12 @@ struct HfTaskCorrelationDstarHadrons {
       vecHistEfficiencyTracks.resize(nEfficiencyHist);
 
       for (int iHist = 0; iHist < nEfficiencyHist; iHist++) {
-        vecHistEfficiencyDstar[iHist] = dynamic_cast<TH1F*>(efficiencyDstarRootFile->Get(Form("hEfficiencyDstar_%d", iHist)));
+        vecHistEfficiencyDstar[iHist] = dynamic_cast<TH1*>(efficiencyDstarRootFile->Get(Form("hEfficiencyDstar_%d", iHist)));
         if (!vecHistEfficiencyDstar[iHist]) {
           LOGF(fatal, "Failed to retrieve Dstar efficiency histogram hEfficiencyDstar_%d from file", iHist);
         }
 
-        vecHistEfficiencyTracks[iHist] = dynamic_cast<TH1D*>(efficiencyTracksRootFile->Get(Form("hEfficiencyTracks_%d", iHist)));
+        vecHistEfficiencyTracks[iHist] = dynamic_cast<TH1*>(efficiencyTracksRootFile->Get(Form("hEfficiencyTracks_%d", iHist)));
         if (!vecHistEfficiencyTracks[iHist]) {
           LOGF(fatal, "Failed to retrieve track efficiency histogram hEfficiencyTracks_%d from file", iHist);
         }
@@ -208,19 +212,31 @@ struct HfTaskCorrelationDstarHadrons {
       // if (ptTrack > 10.0) {
       //   ptTrack = 10.5;
       // }
-      float netEfficiencyWeight = 1.0;
+      float netEfficiencyWeight = 1.0, efficiencyWeightDstar = 1.0, efficiencyWeightTracks = 1.0;
 
       if (applyEfficiency && !useCcdbEfficiency) {
-        float const efficiencyWeightDstar = efficiencyDstar->at(effBinPtDstar);
-        // LOG(info)<<"efficiencyWeightDstar "<<efficiencyWeightDstar;
-        float const efficiencyWeightTracks = efficiencyTracks->at(effBinPtTrack);
-        // LOG(info)<<"efficiencyWeightTracks "<<efficiencyWeightTracks;
+        efficiencyWeightDstar = efficiencyDstar->at(effBinPtDstar);
+        efficiencyWeightTracks = efficiencyTracks->at(effBinPtTrack);
         netEfficiencyWeight = 1.0 / (efficiencyWeightDstar * efficiencyWeightTracks);
       } else if (applyEfficiency && useCcdbEfficiency && nEfficiencyHist == 1) {
-        float const efficiencyWeightDstar = vecHistEfficiencyDstar[0]->GetBinContent(vecHistEfficiencyDstar[0]->GetXaxis()->FindBin(ptDstar));
-        // LOG(info)<<"efficiencyWeightDstar "<<efficiencyWeightDstar;
-        float const efficiencyWeightTracks = vecHistEfficiencyTracks[0]->GetBinContent(vecHistEfficiencyTracks[0]->GetXaxis()->FindBin(ptTrack));
-        // LOG(info)<<"efficiencyWeightTracks "<<efficiencyWeightTracks;
+        float const ptEffLowEdgeDstar = vecHistEfficiencyDstar[0]->GetXaxis()->GetBinLowEdge(1);
+        if (ptDstar <= ptEffLowEdgeDstar) { // pT of current dstar candidate is lower than the lower edge of the pT axis
+          efficiencyWeightDstar = vecHistEfficiencyDstar[0]->GetBinContent(1);
+        } else {
+          efficiencyWeightDstar = vecHistEfficiencyDstar[0]->GetBinContent(vecHistEfficiencyDstar[0]->GetXaxis()->FindBin(ptDstar));
+          if (!efficiencyWeightDstar) {
+            LOGF(fatal, "Dstar efficiency weight can't be zero.");
+          }
+        }
+        float const ptEffLowEdgeTrack = vecHistEfficiencyTracks[0]->GetBinLowEdge(1);
+        if (ptTrack <= ptEffLowEdgeTrack) { // pT of current track is lower than the lower edge of the pT axis
+          efficiencyWeightTracks = vecHistEfficiencyTracks[0]->GetBinContent(1);
+        } else {
+          efficiencyWeightTracks = vecHistEfficiencyTracks[0]->GetBinContent(vecHistEfficiencyTracks[0]->GetXaxis()->FindBin(ptTrack));
+          if (!efficiencyWeightTracks) {
+            LOGF(fatal, "track efficiency weight can't be zero");
+          }
+        }
         netEfficiencyWeight = 1.0 / (efficiencyWeightDstar * efficiencyWeightTracks);
       } else if (applyEfficiency && useCcdbEfficiency && nEfficiencyHist > 1) {
         // to do

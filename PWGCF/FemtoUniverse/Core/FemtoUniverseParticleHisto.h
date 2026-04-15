@@ -70,7 +70,7 @@ class FemtoUniverseParticleHisto
 
   // comment
   template <o2::aod::femtouniverse_mc_particle::MCType mc, typename T>
-  void init_debug(std::string folderName, T& tempFitVarpTAxis) // o2-linter: disable=name/function-variable
+  void init_debug(std::string folderName, T& tempFitVarMomAxis, bool isFillITSNsigma) // o2-linter: disable=name/function-variable
   {
     std::string folderSuffix = static_cast<std::string>(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]).c_str();
     if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kTrack || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kV0Child || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kCascadeBachelor || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack) {
@@ -86,22 +86,34 @@ class FemtoUniverseParticleHisto
       mHistogramRegistry->add((folderName + folderSuffix + "/hITSclustersIB").c_str(), "; ITS clusters in IB; Entries", kTH1F, {{10, -0.5, 9.5}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hDCAz").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{z} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hDCA").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA (cm)", kTH2F, {{100, 0, 10}, {301, 0., 1.5}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/hTPCdEdX").c_str(), "; #it{p} (GeV/#it{c}); TPC Signal", kTH2F, {{tempFitVarpTAxis}, {1000, 0, 1000}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{e}", kTH2F, {{tempFitVarpTAxis}, {200, -4.975, 5.025}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{#pi}", kTH2F, {{tempFitVarpTAxis}, {200, -4.975, 5.025}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{K}", kTH2F, {{tempFitVarpTAxis}, {200, -4.975, 5.025}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{p}", kTH2F, {{tempFitVarpTAxis}, {200, -4.975, 5.025}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{d}", kTH2F, {{tempFitVarpTAxis}, {200, -4.975, 5.025}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{e}", kTH2F, {{tempFitVarpTAxis}, {200, -4.975, 5.025}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{#pi}", kTH2F, {{tempFitVarpTAxis}, {200, -4.975, 5.025}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{K}", kTH2F, {{tempFitVarpTAxis}, {200, -4.975, 5.025}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{p}", kTH2F, {{tempFitVarpTAxis}, {200, -4.975, 5.025}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{d}", kTH2F, {{tempFitVarpTAxis}, {200, -4.975, 5.025}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{e}", kTH2F, {{tempFitVarpTAxis}, {100, 0, 5}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{#pi}", kTH2F, {{tempFitVarpTAxis}, {100, 0, 5}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{K}", kTH2F, {{tempFitVarpTAxis}, {100, 0, 5}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{p}", kTH2F, {{tempFitVarpTAxis}, {100, 0, 5}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{d}", kTH2F, {{tempFitVarpTAxis}, {100, 0, 5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hTPCdEdX").c_str(), "; #it{p} (GeV/#it{c}); TPC Signal", kTH2F, {{tempFitVarMomAxis}, {1000, 0, 1000}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{e}", kTH2F, {{tempFitVarMomAxis}, {200, -4.975, 5.025}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{#pi}", kTH2F, {{tempFitVarMomAxis}, {200, -4.975, 5.025}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{K}", kTH2F, {{tempFitVarMomAxis}, {200, -4.975, 5.025}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{p}", kTH2F, {{tempFitVarMomAxis}, {200, -4.975, 5.025}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{d}", kTH2F, {{tempFitVarMomAxis}, {200, -4.975, 5.025}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{e}", kTH2F, {{tempFitVarMomAxis}, {200, -4.975, 5.025}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{#pi}", kTH2F, {{tempFitVarMomAxis}, {200, -4.975, 5.025}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{K}", kTH2F, {{tempFitVarMomAxis}, {200, -4.975, 5.025}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{p}", kTH2F, {{tempFitVarMomAxis}, {200, -4.975, 5.025}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{d}", kTH2F, {{tempFitVarMomAxis}, {200, -4.975, 5.025}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{e}", kTH2F, {{tempFitVarMomAxis}, {100, 0, 5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{#pi}", kTH2F, {{tempFitVarMomAxis}, {100, 0, 5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{K}", kTH2F, {{tempFitVarMomAxis}, {100, 0, 5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{p}", kTH2F, {{tempFitVarMomAxis}, {100, 0, 5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{d}", kTH2F, {{tempFitVarMomAxis}, {100, 0, 5}});
+      if (isFillITSNsigma) {
+        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaITS_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITS}^{e}", kTH2F, {{tempFitVarMomAxis}, {100, 0, 5}});
+        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaITS_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITS}^{#pi}", kTH2F, {{tempFitVarMomAxis}, {100, 0, 5}});
+        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaITS_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITS}^{K}", kTH2F, {{tempFitVarMomAxis}, {100, 0, 5}});
+        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaITS_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITS}^{p}", kTH2F, {{tempFitVarMomAxis}, {100, 0, 5}});
+        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaITS_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITS}^{d}", kTH2F, {{tempFitVarMomAxis}, {100, 0, 5}});
+        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaCombITSTPC_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITSTPC}^{e}", kTH2F, {{tempFitVarMomAxis}, {100, 0, 5}});
+        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaCombITSTPC_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITSTPC}^{#pi}", kTH2F, {{tempFitVarMomAxis}, {100, 0, 5}});
+        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaCombITSTPC_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITSTPC}^{K}", kTH2F, {{tempFitVarMomAxis}, {100, 0, 5}});
+        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaCombITSTPC_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITSTPC}^{p}", kTH2F, {{tempFitVarMomAxis}, {100, 0, 5}});
+        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaCombITSTPC_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITSTPC}^{d}", kTH2F, {{tempFitVarMomAxis}, {100, 0, 5}});
+      }
     } else if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kV0) {
       mHistogramRegistry->add((folderName + folderSuffix + "/hDaughDCA").c_str(), "; DCA^{daugh} (cm); Entries", kTH1F, {{1000, 0, 10}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hTransRadius").c_str(), "; #it{r}_{xy} (cm); Entries", kTH1F, {{1500, 0, 150}});
@@ -208,7 +220,7 @@ class FemtoUniverseParticleHisto
   /// \param tempFitVarBins binning of the tempFitVar (DCA_xy in case of tracks, CPA in case of V0s, etc.)
   /// \param isMC add Monte Carlo truth histograms to the output file
   template <typename T>
-  void init(HistogramRegistry* registry, T& tempFitVarpTBins, T& tempFitVarBins, bool isMC, int pdgCode, bool isDebug = false, std::optional<std::string> flexibleFolder = std::nullopt)
+  void init(HistogramRegistry* registry, T& tempFitVarpTBins, T& tempFitVarBins, bool isMC, int pdgCode, bool isDebug = false, std::optional<std::string> flexibleFolder = std::nullopt, bool isFillITSNsigma = false)
   {
     mPDG = pdgCode;
     if (registry) {
@@ -238,6 +250,7 @@ class FemtoUniverseParticleHisto
       }
 
       framework::AxisSpec tempFitVarpTAxis = {tempFitVarpTBins, "#it{p}_{T} (GeV/#it{c})"}; // the pT binning may vary
+      framework::AxisSpec tempFitVarMomAxis = {tempFitVarpTBins, "#it{p} (GeV/#it{c})"};    // the p binning
       framework::AxisSpec tempFitVarAxis = {tempFitVarBins, tempFitVarAxisTitle};
 
       // std::string folderName = (static_cast<std::string>(o2::aod::femtouniverseparticle::ParticleTypeName[mParticleType]).c_str() + static_cast<std::string>(mFolderSuffix[mFolderSuffixType])).c_str();
@@ -246,7 +259,7 @@ class FemtoUniverseParticleHisto
       // Fill here the actual histogramms by calling init_base and init_MC
       init_base<o2::aod::femtouniverse_mc_particle::MCType::kRecon>(folderName, tempFitVarAxisTitle, tempFitVarpTAxis, tempFitVarAxis);
       if (isDebug) {
-        init_debug<o2::aod::femtouniverse_mc_particle::MCType::kRecon>(folderName, tempFitVarpTAxis);
+        init_debug<o2::aod::femtouniverse_mc_particle::MCType::kRecon>(folderName, tempFitVarMomAxis, isFillITSNsigma);
       }
       if (isMC) {
         init_base<o2::aod::femtouniverse_mc_particle::MCType::kTruth>(folderName, tempFitVarAxisTitle, tempFitVarpTAxis, tempFitVarAxis);
@@ -509,6 +522,28 @@ class FemtoUniverseParticleHisto
         }
       }
     }
+  }
+
+  template <typename T>
+  void fillQAITSPID(T const& part)
+  {
+    fillQABaseITSPID<T>(part, HIST(o2::aod::femtouniverseparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]));
+  }
+
+  template <typename T, typename H>
+  void fillQABaseITSPID(T const& part, H const& histFolder)
+  {
+    // std::string tempFitVarName;
+    mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[o2::aod::femtouniverse_mc_particle::MCType::kRecon]) + HIST("/nSigmaITS_el"), part.p(), part.itsNSigmaEl());
+    mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[o2::aod::femtouniverse_mc_particle::MCType::kRecon]) + HIST("/nSigmaITS_pi"), part.p(), part.itsNSigmaPi());
+    mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[o2::aod::femtouniverse_mc_particle::MCType::kRecon]) + HIST("/nSigmaITS_K"), part.p(), part.itsNSigmaKa());
+    mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[o2::aod::femtouniverse_mc_particle::MCType::kRecon]) + HIST("/nSigmaITS_p"), part.p(), part.itsNSigmaPr());
+    mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[o2::aod::femtouniverse_mc_particle::MCType::kRecon]) + HIST("/nSigmaITS_d"), part.p(), part.itsNSigmaDe());
+    mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[o2::aod::femtouniverse_mc_particle::MCType::kRecon]) + HIST("/nSigmaCombITSTPC_el"), part.p(), std::sqrt(part.tpcNSigmaEl() * part.tpcNSigmaEl() + part.itsNSigmaEl() * part.itsNSigmaEl()));
+    mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[o2::aod::femtouniverse_mc_particle::MCType::kRecon]) + HIST("/nSigmaCombITSTPC_pi"), part.p(), std::sqrt(part.tpcNSigmaPi() * part.tpcNSigmaPi() + part.itsNSigmaPi() * part.itsNSigmaPi()));
+    mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[o2::aod::femtouniverse_mc_particle::MCType::kRecon]) + HIST("/nSigmaCombITSTPC_K"), part.p(), std::sqrt(part.tpcNSigmaKa() * part.tpcNSigmaKa() + part.itsNSigmaKa() * part.itsNSigmaKa()));
+    mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[o2::aod::femtouniverse_mc_particle::MCType::kRecon]) + HIST("/nSigmaCombITSTPC_p"), part.p(), std::sqrt(part.tpcNSigmaPr() * part.tpcNSigmaPr() + part.itsNSigmaPr() * part.itsNSigmaPr()));
+    mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[o2::aod::femtouniverse_mc_particle::MCType::kRecon]) + HIST("/nSigmaCombITSTPC_d"), part.p(), std::sqrt(part.tpcNSigmaDe() * part.tpcNSigmaDe() + part.itsNSigmaDe() * part.itsNSigmaDe()));
   }
 
   /// Templated function to fill particle histograms for data/ Monte Carlo reconstructed and Monte Carlo truth

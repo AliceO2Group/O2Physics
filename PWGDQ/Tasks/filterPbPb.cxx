@@ -11,15 +11,24 @@
 //
 #include "PWGDQ/Core/VarManager.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include "PWGUD/Core/SGCutParHolder.h"
 #include "PWGUD/Core/SGSelector.h"
+#include "PWGUD/Core/UDHelpers.h"
+#include "PWGUD/Core/UPCHelpers.h"
 
-#include "CommonConstants/LHCConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Vertex.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include <CommonDataFormat/TimeStamp.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Vertex.h>
 
-#include <fairlogger/Logger.h>
+#include <TH1.h>
+#include <TString.h>
 
 #include <cstdint>
 #include <string>

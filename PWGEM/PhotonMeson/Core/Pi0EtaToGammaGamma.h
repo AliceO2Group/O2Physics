@@ -20,6 +20,7 @@
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
 #include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
+#include "PWGEM/PhotonMeson/Core/V0PhotonCandidate.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 #include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
@@ -46,7 +47,6 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -56,7 +56,7 @@
 
 #include <Math/GenVector/AxisAngle.h>
 #include <Math/GenVector/Rotation3D.h>
-#include <Math/Vector4D.h> // IWYU pragma: keep
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 
 #include <algorithm>
@@ -402,7 +402,7 @@ struct Pi0EtaToGammaGamma {
       fRegistry.addClone("Pair/same/", "Pair/rotation/");
       emcalGeom = o2::emcal::Geometry::GetInstanceFromRunNumber(300000);
     }
-    fRegistry.add("Pair/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", o2::framework::kTH1D, {{10001, -0.5, 10000.5}}, true);
+    fRegistry.add("Pair/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", o2::framework::HistType::kTH1D, {{10001, -0.5, 10000.5}}, true);
 
     mRunNumber = 0;
     d_bz = 0;
