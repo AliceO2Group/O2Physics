@@ -71,6 +71,65 @@ using namespace o2::hf_occupancy;
 using namespace o2::hf_evsel;
 using namespace o2::analysis::hf_upc;
 
+namespace o2::aod
+{
+namespace full
+{
+DECLARE_SOA_COLUMN(M, m, float);
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(BkgScore, bkgScore, float);
+DECLARE_SOA_COLUMN(PromptScore, promptScore, float);
+DECLARE_SOA_COLUMN(FDScore, fDScore, float);
+DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);
+DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);
+DECLARE_SOA_COLUMN(PtProng2, ptProng2, float);
+DECLARE_SOA_COLUMN(Chi2PCA, chi2PCA, float);
+DECLARE_SOA_COLUMN(DecayLength, decayLength, float);
+DECLARE_SOA_COLUMN(CPA, cPA, float);
+DECLARE_SOA_COLUMN(PvContributors, pvContributors, float);
+DECLARE_SOA_COLUMN(AmpFV0A, ampFV0A, float);
+DECLARE_SOA_COLUMN(AmpFT0A, ampFT0A, float);
+DECLARE_SOA_COLUMN(AmpFT0C, ampFT0C, float);
+DECLARE_SOA_COLUMN(ZdcEnergyZNA, zdcEnergyZNA, float);
+DECLARE_SOA_COLUMN(ZdcEnergyZNC, zdcEnergyZNC, float);
+DECLARE_SOA_COLUMN(ZdcTimeZNA, zdcTimeZNA, float);
+DECLARE_SOA_COLUMN(ZdcTimeZNC, zdcTimeZNC, float);
+} // namespace full
+
+DECLARE_SOA_TABLE(HfUpcLcBdtInfos, "AOD", "HFUPCLCBDTINFOS",
+                  full::M,
+                  full::Pt,
+                  full::BkgScore,
+                  full::PromptScore,
+                  full::FDScore,
+                  full::PvContributors,
+                  full::AmpFV0A,
+                  full::AmpFT0A,
+                  full::AmpFT0C,
+                  full::ZdcEnergyZNA,
+                  full::ZdcEnergyZNC,
+                  full::ZdcTimeZNA,
+                  full::ZdcTimeZNC);
+
+DECLARE_SOA_TABLE(HfUpcLcInfos, "AOD", "HFUPCLCINFOS",
+                  full::M,
+                  full::Pt,
+                  full::PtProng0,
+                  full::PtProng1,
+                  full::PtProng2,
+                  full::Chi2PCA,
+                  full::DecayLength,
+                  full::CPA,
+                  full::PvContributors,
+                  full::AmpFV0A,
+                  full::AmpFT0A,
+                  full::AmpFT0C,
+                  full::ZdcEnergyZNA,
+                  full::ZdcEnergyZNC,
+                  full::ZdcTimeZNA,
+                  full::ZdcTimeZNC);
+} // namespace o2::aod
+
 /// Λc± → p± K∓ π± analysis task
 struct HfTaskLc {
   Produces<o2::aod::HfUpcLcBdtInfos> rowCandUpcBdt;
@@ -82,7 +141,7 @@ struct HfTaskLc {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
   // ThnSparse for ML outputScores and Vars
   Configurable<bool> fillTHn{"fillTHn", false, "fill THn"};
-  Configurable<bool> fillUPCTHnLite{"fillUPCTHnLite", false, "fill THn"};
+  Configurable<bool> fillUPCTreeLite{"fillUPCTreeLite", false, "fill THn"};
   Configurable<bool> storeOccupancy{"storeOccupancy", true, "Flag to store occupancy information"};
   Configurable<int> occEstimator{"occEstimator", 2, "Occupancy estimation (None: 0, ITS: 1, FT0C: 2)"};
   Configurable<bool> storeProperLifetime{"storeProperLifetime", false, "Flag to store proper lifetime"};
@@ -800,7 +859,7 @@ struct HfTaskLc {
                 outputFD = mlProb[MlClassNonPrompt];   /// non-prompt score
               }
               /// Fill the ML outputScores and variables of candidate
-              if (fillUPCTHnLite) {
+              if (fillUPCTreeLite) {
                 if (gap == o2::aod::sgselector::TrueGap::SingleGapA || gap == o2::aod::sgselector::TrueGap::SingleGapC) {
                   rowCandUpcBdt(massLc, pt, outputBkg, outputPrompt, outputFD, static_cast<float>(numPvContributors), static_cast<float>(fitInfo.ampFV0A), static_cast<float>(fitInfo.ampFT0A), static_cast<float>(fitInfo.ampFT0C), static_cast<float>(zdcEnergyZNA), static_cast<float>(zdcEnergyZNC), static_cast<float>(zdcTimeZNA), static_cast<float>(zdcTimeZNC));
                 }
@@ -809,7 +868,7 @@ struct HfTaskLc {
               }
 
             } else {
-              if (fillUPCTHnLite) {
+              if (fillUPCTreeLite) {
                 if (gap == o2::aod::sgselector::TrueGap::SingleGapA || gap == o2::aod::sgselector::TrueGap::SingleGapC) {
                   rowCandUpc(massLc, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<float>(numPvContributors), static_cast<float>(fitInfo.ampFV0A), static_cast<float>(fitInfo.ampFT0A), static_cast<float>(fitInfo.ampFT0C), static_cast<float>(zdcEnergyZNA), static_cast<float>(zdcEnergyZNC), static_cast<float>(zdcTimeZNA), static_cast<float>(zdcTimeZNC));
                 }
