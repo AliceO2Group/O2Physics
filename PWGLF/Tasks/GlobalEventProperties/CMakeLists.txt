@@ -19,7 +19,7 @@ o2physics_add_dpl_workflow(ucc-zdc
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(pseudorapidity-density-mft
+o2physics_add_dpl_workflow(pseudorapidity-density-mft # o2-linter: disable=name/o2-workflow
                     SOURCES PseudorapidityDensityMFT.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
