@@ -503,9 +503,9 @@ struct AnalysisEnergyCorrelator {
     std::vector<float> fTransRange = fConfigDileptonHadronOptions.fConfigTransRange;
     VarManager::FillEnergyCorrelatorTriple(track1, track2, hadron, VarManager::fgValues, fTransRange[0], fTransRange[1], fConfigDileptonHadronOptions.fConfigApplyMassEC.value, -1, 1. / Effweight_rec);
     if (fConfigDileptonHadronOptions.fConfigUsePionMass.value) {
-      VarManager::FillEnergyCorrelatorsUnfoldingTriple<VarManager::kJpsiPionMass>(track1, track2, hadron, motherParticle, hadronMC, VarManager::fgValues, fConfigDileptonHadronOptions.fConfigApplyMassEC.value, 1. / Effweight_rec, 1. / Accweight_gen);
+      VarManager::FillEnergyCorrelatorsUnfoldingTriple<VarManager::kJpsiPionMass>(track1, track2, hadron, motherParticle, hadronMC, VarManager::fgValues, fConfigDileptonHadronOptions.fConfigApplyMassEC.value, 1. / Effweight_rec, 1. / Accweight_gen, fTransRange[0], fTransRange[1]);
     } else {
-      VarManager::FillEnergyCorrelatorsUnfoldingTriple<VarManager::kJpsiHadronMass>(track1, track2, hadron, motherParticle, hadronMC, VarManager::fgValues, fConfigDileptonHadronOptions.fConfigApplyMassEC.value, 1. / Effweight_rec, 1. / Accweight_gen);
+      VarManager::FillEnergyCorrelatorsUnfoldingTriple<VarManager::kJpsiHadronMass>(track1, track2, hadron, motherParticle, hadronMC, VarManager::fgValues, fConfigDileptonHadronOptions.fConfigApplyMassEC.value, 1. / Effweight_rec, 1. / Accweight_gen, fTransRange[0], fTransRange[1]);
     }
 
     int iHadronCut = 0;
