@@ -97,7 +97,7 @@ struct K1analysis {
   Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
 
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::PVMults>;
-  using TrackCandidates = soa::Join<aod::FullTracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension, aod::pidTPCFullPi, aod::pidTOFFullPi>;
+  using TrackCandidates = soa::Join<aod::FullTracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>;
   using V0Candidates = aod::V0Datas;
 
   // for MC reco
@@ -162,12 +162,18 @@ struct K1analysis {
 
   /// PID Selections, pion
   struct : ConfigurableGroup {
-    Configurable<bool> cfgTPConly{"cfgTPConly", true, "Use only TPC for PID"};                                      // bool
-    Configurable<float> cfgMaxTPCnSigmaPion{"cfgMaxTPCnSigmaPion", 5.0, "TPC nSigma cut for Pion"};                 // TPC
-    Configurable<float> cfgMaxTOFnSigmaPion{"cfgMaxTOFnSigmaPion", 5.0, "TOF nSigma cut for Pion"};                 // TOF
-    Configurable<float> cfgNsigmaCutCombinedPion{"cfgNsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"}; // Combined
+    Configurable<bool> cfgTPConly{"cfgTPConly", true, "Use only TPC for PID"};                                                  // bool
+    Configurable<float> cfgMaxTPCnSigmaPion{"cfgMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"};                             // TPC
+    Configurable<float> cfgRejectTPCnSigmaKaon{"cfgRejectTPCnSigmaKaon", 3.0, "TPC nSigma reject cut for Kaon (reject)"};       // TPC
+    Configurable<float> cfgRejectTPCnSigmaProton{"cfgRejectTPCnSigmaProton", 3.0, "TPC nSigma reject cut for Proton (reject)"}; // TPC
+    Configurable<float> cfgMaxTOFnSigmaPion{"cfgMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"};                             // TOF
+    Configurable<float> cfgRejectTOFnSigmaKaon{"cfgRejectTOFnSigmaKaon", 3.0, "TOF nSigma reject cut for Kaon (reject)"};       // TOF
+    Configurable<float> cfgRejectTOFnSigmaProton{"cfgRejectTOFnSigmaProton", 3.0, "TOF nSigma reject cut for Proton (reject)"}; // TOF
+    Configurable<float> cfgNsigmaCutCombinedPion{"cfgNsigmaCutCombinedPion", 3.0, "Combined nSigma cut for Pion"};              // Combined
     Configurable<bool> cfgTOFVeto{"cfgTOFVeto", false, "TOF Veto, if false, TOF is nessessary for PID selection"};  // TOF Veto
-    Configurable<float> cfgTOFMinPt{"cfgTOFMinPt", 0.6, "Minimum TOF pT cut for Pion"};                             // TOF pT cut
+    Configurable<bool> cfgRequireTOFHighPt{"cfgRequireTOFHighPt", true, "Require TOF information for pT > cfgTOFMinPt"}; // TOF Require
+    Configurable<bool> cfgUseCircularCut{"cfgUseCircularCut", true, "Use combined TPC-TOF circular cut"};                // Use circular cut
+    Configurable<float> cfgTOFMinPt{"cfgTOFMinPt", 0.5, "Minimum TOF pT cut for Pion"};                                  // TOF pT cut
   } PIDCuts;
 
   // Track selections
@@ -253,10 +259,6 @@ struct K1analysis {
   float lCentrality;
 
   // PDG code
-  int kPDGK0s = kK0Short;
-  int kPDGK0 = kK0;
-  int kPDGKstarPlus = o2::constants::physics::Pdg::kKPlusStar892;
-  int kPDGPiPlus = kPiPlus;
   int kPDGK10 = 10313;
   double fMaxPosPV = 1e-2;
 
@@ -534,22 +536,48 @@ struct K1analysis {
   template <typename TrackType>
   bool selectionPIDPion(TrackType const& candidate)
   {
-    if (std::abs(candidate.tpcNSigmaPi()) >= PIDCuts.cfgMaxTPCnSigmaPion)
-      return false;
-    if (PIDCuts.cfgTPConly)
-      return true;
-    //  if (candidate.pt() <= PIDCuts.cfgTOFMinPt)
-    //    return true;
+    const float pt = candidate.pt();
 
-    if (candidate.hasTOF()) {
-      const bool tofPIDPassed = std::abs(candidate.tofNSigmaPi()) < PIDCuts.cfgMaxTOFnSigmaPion;
-      const bool combo = (PIDCuts.cfgNsigmaCutCombinedPion > 0) &&
-                         (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() +
-                            candidate.tofNSigmaPi() * candidate.tofNSigmaPi() <
-                          PIDCuts.cfgNsigmaCutCombinedPion * PIDCuts.cfgNsigmaCutCombinedPion);
-      return tofPIDPassed || combo;
+    const bool passTPCPi = std::abs(candidate.tpcNSigmaPi()) < PIDCuts.cfgMaxTPCnSigmaPion;
+    if (!passTPCPi) {
+      return false;
+    }
+
+    const bool rejectTPCKa = std::abs(candidate.tpcNSigmaKa()) > PIDCuts.cfgRejectTPCnSigmaKaon;
+    const bool rejectTPCPr = std::abs(candidate.tpcNSigmaPr()) > PIDCuts.cfgRejectTPCnSigmaProton;
+    if (!(rejectTPCKa && rejectTPCPr)) {
+      return false;
+    }
+
+    if (pt < PIDCuts.cfgTOFMinPt) {
+      if (PIDCuts.cfgTOFVeto && candidate.hasTOF()) {
+        return false;
+      }
+      return true;
+    }
+
+    if (!candidate.hasTOF()) {
+      return !PIDCuts.cfgRequireTOFHighPt;
+    }
+
+    const bool passTOFPi = std::abs(candidate.tofNSigmaPi()) < PIDCuts.cfgMaxTOFnSigmaPion;
+
+    const bool rejectTOFKa = std::abs(candidate.tofNSigmaKa()) > PIDCuts.cfgRejectTOFnSigmaKaon;
+    const bool rejectTOFPr = std::abs(candidate.tofNSigmaPr()) > PIDCuts.cfgRejectTOFnSigmaProton;
+
+    if (!(rejectTOFKa && rejectTOFPr)) {
+      return false;
+    }
+
+    const bool passCircularPi = (PIDCuts.cfgNsigmaCutCombinedPion > 0.f) &&
+                                (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() +
+                                   candidate.tofNSigmaPi() * candidate.tofNSigmaPi() <
+                                 PIDCuts.cfgNsigmaCutCombinedPion * PIDCuts.cfgNsigmaCutCombinedPion);
+
+    if (PIDCuts.cfgUseCircularCut) {
+      return (passTOFPi && passCircularPi);
     } else {
-      return PIDCuts.cfgTOFVeto;
+      return passTOFPi;
     }
   }
 
