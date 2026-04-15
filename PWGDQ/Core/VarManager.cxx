@@ -2273,6 +2273,10 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMCCosChi_rec"] = kMCCosChi_rec;
   fgVarNamesMap["kMCWeight_rec"] = kMCWeight_rec;
   fgVarNamesMap["kMCdeltaeta_rec"] = kMCdeltaeta_rec;
+  fgVarNamesMap["kMCCosChi_randomPhi_trans_rec"] = kMCCosChi_randomPhi_trans_rec;
+  fgVarNamesMap["kMCWeight_randomPhi_trans_rec"] = kMCWeight_randomPhi_trans_rec;
+  fgVarNamesMap["kMCCosChi_randomPhi_trans_gen"] = kMCCosChi_randomPhi_trans_gen;
+  fgVarNamesMap["kMCWeight_randomPhi_trans_gen"] = kMCWeight_randomPhi_trans_gen;
   fgVarNamesMap["kMCParticleWeight"] = kMCParticleWeight;
   fgVarNamesMap["kMCCosTheta"] = kMCCosTheta;
   fgVarNamesMap["kMCdeltaphi"] = kMCdeltaphi;
