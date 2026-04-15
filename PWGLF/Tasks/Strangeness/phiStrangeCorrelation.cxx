@@ -536,7 +536,7 @@ struct PhiStrangenessCorrelation {
     };
 
     for (const auto& phiCand : phiCandidates) {
-      if (efficiencyConfigs.applyEfficiency && phiCand.pt() >= binspTPhi->back())
+      if (efficiencyConfigs.applyEfficiency && efficiencyConfigs.applyPhiEfficiency && phiCand.pt() >= binspTPhi->back())
         continue;
 
       float weightPhi = computeWeight(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()));
@@ -674,7 +674,7 @@ struct PhiStrangenessCorrelation {
       float multiplicity = c1.centFT0M();
 
       for (const auto& [phiCand, k0s] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(phiCands, k0sRed))) {
-        if (efficiencyConfigs.applyEfficiency && phiCand.pt() >= binspTPhi->back())
+        if (efficiencyConfigs.applyEfficiency && efficiencyConfigs.applyPhiEfficiency && phiCand.pt() >= binspTPhi->back())
           continue;
         if (!isK0sValid(k0s))
           continue;
@@ -769,7 +769,7 @@ struct PhiStrangenessCorrelation {
       float multiplicity = c1.centFT0M();
 
       for (const auto& [phiCand, piTrack] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(phiCands, piTracks))) {
-        if (efficiencyConfigs.applyEfficiency && phiCand.pt() >= binspTPhi->back())
+        if (efficiencyConfigs.applyEfficiency && efficiencyConfigs.applyPhiEfficiency && phiCand.pt() >= binspTPhi->back())
           continue;
         if (!isPionValid(piTrack))
           continue;
