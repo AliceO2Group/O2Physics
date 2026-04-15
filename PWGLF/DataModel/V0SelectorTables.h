@@ -8,11 +8,14 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
 #ifndef PWGLF_DATAMODEL_V0SELECTORTABLES_H_
 #define PWGLF_DATAMODEL_V0SELECTORTABLES_H_
 
-#include <cstdint>
 #include <Framework/ASoA.h>
+
+#include <cstdint>
+
 namespace o2::aod
 {
 
