@@ -49,7 +49,6 @@
 #include <TPDGCode.h>
 
 #include <cmath>
-#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -86,8 +85,9 @@ struct PhotonResoTask {
 
   // configurable axis
   ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {400, 0.0, 0.8}, "invariant mass axis for the neutral meson"};
-  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {100, 0., 20.}, "pT axis for the neutral meson"};
-  ConfigurableAxis thnConfigAxisXRelative{"thnConfigAxisXRelative", {800, -1., 19.}, "(X rec - X true) / X true axis"};
+  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {400, 0., 20.}, "pT axis for the neutral meson"};
+  ConfigurableAxis thnConfigAxisERelative{"thnConfigAxisERelative", {400, -1., 19.}, "(E rec - E true) / E true axis"};
+  ConfigurableAxis thnConfigAxisPRelative{"thnConfigAxisPRelative", {60, -1., 2.}, "(P rec - P true) / P true axis"};
   ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {20, 0., 100.}, "centrality axis for the current event"};
   ConfigurableAxis thnConfigAxisMult{"thnConfigAxisMult", {60, 0., 60000.}, "multiplicity axis for the current event"};
   Configurable<bool> useCent{"useCent", 0, "flag to enable usage of centrality instead of multiplicity as axis."};
@@ -290,10 +290,10 @@ struct PhotonResoTask {
     const AxisSpec thnAxisPtRec{thnConfigAxisPt, "#it{p}_{T,Rec} (GeV/#it{c})"};
     const AxisSpec thnAxisPGen{thnConfigAxisPt, "#it{p}_{Gen} (GeV/#it{c})"};
     const AxisSpec thnAxisPRec{thnConfigAxisPt, "#it{p}_{Rec} (GeV/#it{c})"};
-    const AxisSpec thnAxisPRelative{thnConfigAxisXRelative, "#it{p}_{Rec} - #it{p}_{Gen} / #it{p}_{Gen}"};
+    const AxisSpec thnAxisPRelative{thnConfigAxisPRelative, "#it{p}_{Rec} - #it{p}_{Gen} / #it{p}_{Gen}"};
     const AxisSpec thnAxisEGen{thnConfigAxisPt, "#it{E}_{Gen} (GeV)"};
     const AxisSpec thnAxisERec{thnConfigAxisPt, "#it{E}_{Rec} (GeV)"};
-    const AxisSpec thnAxisERelative{thnConfigAxisXRelative, "#it{E}_{Rec} - #it{E}_{Gen} / #it{E}_{Gen}"};
+    const AxisSpec thnAxisERelative{thnConfigAxisERelative, "#it{E}_{Rec} - #it{E}_{Gen} / #it{E}_{Gen}"};
     const AxisSpec thnAxisInvMass{thnConfigAxisInvMass, "#it{M}_{#gamma#gamma} (GeV/#it{c}^{2})"};
 
     const AxisSpec thnAxisEtaGen{280, -0.7, 0.7, "#it{#eta}_{Gen}"};
