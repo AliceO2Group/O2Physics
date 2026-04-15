@@ -27,7 +27,6 @@
 #include <string>
 #include <type_traits>
 
-
 namespace o2::aod
 {
 namespace full
