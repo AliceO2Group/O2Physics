@@ -51,18 +51,18 @@ inline void addNMHistograms(o2::framework::HistogramRegistry* fRegistry, bool is
   const o2::framework::AxisSpec axis_mass{400, 0, 0.8, Form("m_{%s} (GeV/c^{2})", pairname)};
 
   if (isMC) {
-    fRegistry->add("Pair/Pi0/hs_Primary", "rec. true pi0", o2::framework::kTHnSparseD, {axis_mass, axis_pt}, true);
-    fRegistry->add("Pair/Pi0/hs_FromWD", "rec. true pi0 from weak decay", o2::framework::kTHnSparseD, {axis_mass, axis_pt}, true);
-    fRegistry->add("Pair/Pi0/hs_FromHS", "rec. true pi0 from hadronic shower in material", o2::framework::kTHnSparseD, {axis_mass, axis_pt}, true);
-    fRegistry->add("Pair/Pi0/hs_FromSameGamma", "Two clusters from same gamma that is a pi0 daughter (conversion)", o2::framework::kTHnSparseD, {axis_mass, axis_pt}, true);
-    fRegistry->add("Pair/Eta/hs_Primary", "rec. true eta", o2::framework::kTHnSparseD, {axis_mass, axis_pt}, true);
-    fRegistry->add("Pair/Eta/hs_FromWD", "rec. true eta from weak decay", o2::framework::kTHnSparseD, {axis_mass, axis_pt}, true);
-    fRegistry->add("Pair/Eta/hs_FromHS", "rec. true eta from hadronic shower in material", o2::framework::kTHnSparseD, {axis_mass, axis_pt}, true);
-    fRegistry->add("Pair/Eta/hs_FromSameGamma", "Two clusters from same gamma that is a eta daughter (conversion)", o2::framework::kTHnSparseD, {axis_mass, axis_pt}, true);
+    fRegistry->add("Pair/Pi0/hs_Primary", "rec. true pi0", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt}, true);
+    fRegistry->add("Pair/Pi0/hs_FromWD", "rec. true pi0 from weak decay", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt}, true);
+    fRegistry->add("Pair/Pi0/hs_FromHS", "rec. true pi0 from hadronic shower in material", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt}, true);
+    fRegistry->add("Pair/Pi0/hs_FromSameGamma", "Two clusters from same gamma that is a pi0 daughter (conversion)", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt}, true);
+    fRegistry->add("Pair/Eta/hs_Primary", "rec. true eta", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt}, true);
+    fRegistry->add("Pair/Eta/hs_FromWD", "rec. true eta from weak decay", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt}, true);
+    fRegistry->add("Pair/Eta/hs_FromHS", "rec. true eta from hadronic shower in material", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt}, true);
+    fRegistry->add("Pair/Eta/hs_FromSameGamma", "Two clusters from same gamma that is a eta daughter (conversion)", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt}, true);
 
     const o2::framework::AxisSpec axis_rapidity{{0.0, +0.8, +0.9}, "rapidity |y|"};
-    fRegistry->add("Generated/Pi0/hPt", "pT;p_{T} (GeV/c)", o2::framework::kTH1D, {axis_pt}, true);
-    fRegistry->add("Generated/Pi0/hPtY", "Generated info", o2::framework::kTH2D, {axis_pt, axis_rapidity}, true);
+    fRegistry->add("Generated/Pi0/hPt", "pT;p_{T} (GeV/c)", o2::framework::HistType::kTH1D, {axis_pt}, true);
+    fRegistry->add("Generated/Pi0/hPtY", "Generated info", o2::framework::HistType::kTH2D, {axis_pt, axis_rapidity}, true);
     fRegistry->addClone("Generated/Pi0/", "Generated/Eta/");
 
     fRegistry->get<TH1>(HIST("Generated/Pi0/hPt"))->SetXTitle("p_{T} (GeV/c)");
@@ -72,7 +72,7 @@ inline void addNMHistograms(o2::framework::HistogramRegistry* fRegistry, bool is
     fRegistry->get<TH2>(HIST("Generated/Eta/hPtY"))->SetXTitle("p_{T} (GeV/c)");
     fRegistry->get<TH2>(HIST("Generated/Eta/hPtY"))->SetYTitle("rapidity |y|");
   } else {
-    fRegistry->add("Pair/same/hs", "diphoton", o2::framework::kTHnSparseD, {axis_mass, axis_pt}, true);
+    fRegistry->add("Pair/same/hs", "diphoton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt}, true);
     fRegistry->addClone("Pair/same/", "Pair/mix/");
   }
 }

@@ -109,6 +109,8 @@ struct FlowMcUpc {
     return true;
   }
 
+  PresliceUnsorted<aod::UDMcParticles> partPerMcCollision = aod::udmcparticle::udMcCollisionId;
+
   void processMCTrue(aod::UDMcCollisions::iterator const& mcCollision, McParts const& mcParts, aod::BCs const& bcs)
   {
     if (bcs.size() == 0) {
@@ -122,7 +124,9 @@ struct FlowMcUpc {
       // event within range
       histos.fill(HIST("hImpactParameter"), imp);
 
-      for (auto const& mcParticle : mcParts) {
+      auto const& tempParts = mcParts.sliceBy(partPerMcCollision, static_cast<int64_t>(mcCollision.globalIndex()));
+
+      for (auto const& mcParticle : tempParts) {
         auto momentum = std::array<double, 3>{mcParticle.px(), mcParticle.py(), mcParticle.pz()};
         int pdgCode = std::abs(mcParticle.pdgCode());
 
@@ -147,6 +151,9 @@ struct FlowMcUpc {
   using MCRecoTracks = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA, aod::UDMcTrackLabels>;
   using MCRecoCollisions = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionSelExtras, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::UDMcCollsLabels>;
 
+  // PresliceUnsorted<MCRecoTracks> trackPerMcParticle = aod::udmctracklabel::udMcParticleId;
+  Preslice<MCRecoTracks> trackPerCollision = aod::udtrack::udCollisionId; // sorted preslice used because the pair track-collision is already sorted in processDataSG function
+
   void processReco(MCRecoCollisions::iterator const& collision, MCRecoTracks const& tracks)
   {
     histos.fill(HIST("RecoProcessEventCounter"), 0.5);
@@ -162,7 +169,9 @@ struct FlowMcUpc {
 
     float vtxz = collision.posZ();
 
-    for (const auto& track : tracks) {
+    auto const& tempTracks = tracks.sliceBy(trackPerCollision, static_cast<int64_t>(collision.globalIndex()));
+
+    for (const auto& track : tempTracks) {
       // focus on bulk: e, mu, pi, k, p
       auto momentum = std::array<double, 3>{track.px(), track.py(), track.pz()};
       double pt = RecoDecay::pt(momentum);
