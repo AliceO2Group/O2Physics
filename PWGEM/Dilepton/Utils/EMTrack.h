@@ -28,7 +28,7 @@ namespace o2::aod::pwgem::dilepton::utils
 class EMTrack
 {
  public:
-  EMTrack(float pt, float eta, float phi, float mass, int8_t charge = 0, float dcaXY = 0.f, float dcaZ = 0.f, float CYY = 0, float CZY = 0, float CZZ = 0)
+  EMTrack(float pt, float eta, float phi, float /*mass*/, int8_t charge = 0, float dcaXY = 0.f, float dcaZ = 0.f, float CYY = 0, float CZY = 0, float CZZ = 0)
   {
     fSigned1Pt = static_cast<float>(charge) / pt;
     fEta = eta;
