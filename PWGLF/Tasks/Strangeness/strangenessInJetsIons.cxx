@@ -2236,7 +2236,7 @@ struct StrangenessInJetsIons {
 
         // ------------------------------------------------
         // --- Generated hadrons in reconstructed jets ----
-        for (auto& particle : mcParticlesPerColl) {
+        for (const auto& particle : mcParticlesPerColl) {
           if (!particle.isPhysicalPrimary() || std::abs(particle.eta()) > 0.8)
             continue;
 
