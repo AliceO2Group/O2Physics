@@ -13,15 +13,17 @@
 /// \author Francesca Ercolessi (francesca.ercolessi@cern.ch)
 /// \since
 
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/v0qaanalysis.h"
 
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <TH1.h>
 
 using namespace o2;
 using namespace o2::framework;

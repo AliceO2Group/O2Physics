@@ -415,8 +415,8 @@ struct PiKpRAA {
     registry.add("NclVsEta", ";#eta;Found Ncl TPC", kTH2F, {axisEta, axisNcl});
     registry.add("NclVsEtap", ";#eta;Found #LTNcl#GT TPC", kTProfile, {axisEta});
     registry.add("MomentumTPCVsP", ";Global track momentum (GeV/#it{c});Momentum at inner wall of the TPC (GeV/#it{c});", kTH2F, {axisPtV0s, axisPtV0s});
-    registry.add("DCAxyVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm);", kTH2F, {{250, 0.1, 20.1}, {axisDCAxy}});
-    registry.add("DCAzVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{z} (cm);", kTH2F, {{250, 0.1, 20.1}, {axisDCAxy}});
+    registry.add("DCAxyVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm);", kTH2F, {{axisPtFineFixedWidth}, {axisDCAxy}});
+    registry.add("DCAzVsPt", ";#it{p}_{T} (GeV/#it{c});DCA_{z} (cm);", kTH2F, {{axisPtFineFixedWidth}, {axisDCAxy}});
     registry.add("dcaVsPtPi", "Primary pions;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm);Centrality Perc.;", kTH3F, {axisPt, axisDCAxy, axisCent});
     registry.add("dcaVsPtPr", "Primary protons;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm);Centrality Perc.;", kTH3F, {axisPt, axisDCAxy, axisCent});
 

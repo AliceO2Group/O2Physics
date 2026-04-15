@@ -14,62 +14,48 @@
 /// \author Stefano Cannito (stefano.cannito@cern.ch)
 
 #include "PWGLF/DataModel/LFPhiStrangeCorrelationTables.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
-#include "PWGLF/Utils/inelGt.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TableHelper.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/PID.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/SliceCache.h>
 #include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
-#include <TDirectory.h>
-#include <TF1.h>
-#include <TFile.h>
 #include <TH1.h>
-#include <TH2.h>
 #include <TH3.h>
-#include <THn.h>
-#include <TList.h>
-#include <TMCProcess.h>
-#include <TMath.h>
-#include <TObjArray.h>
 #include <TPDGCode.h>
-#include <TRandom.h>
+
+#include <fmt/format.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <deque>
+#include <iterator>
 #include <memory>
-#include <ranges>
 #include <string>
 #include <string_view>
 #include <tuple>
-#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <variant>
@@ -241,19 +227,22 @@ struct PhiStrangenessCorrelation {
   // Configurables for Pions selection
   struct : ConfigurableGroup {
     Configurable<bool> selectPionInSigRegion{"selectPionInSigRegion", true, "Select Pion candidates in signal region"};
-    Configurable<float> pidTPCMax{"pidTPCMax", 2.0f, "Maximum nSigma TPC"};
-    Configurable<float> pidTOFMax{"pidTOFMax", 2.0f, "Maximum nSigma TOF"};
+    Configurable<float> pidTPCMax{"pidTPCMax", 3.0f, "Maximum nSigma TPC"};
+    Configurable<float> pidTOFMax{"pidTOFMax", 3.0f, "Maximum nSigma TOF"};
     // Configurable<float> tofPIDThreshold{"tofPIDThreshold", 0.5f, "Minimum pT after which TOF PID is applicable"};
   } pionConfigs;
 
   // Configurables on phi pT bins
   Configurable<std::vector<double>> binspTPhi{"binspTPhi", {0.4, 0.8, 1.4, 2.0, 2.8, 4.0, 6.0, 10.0}, "pT bin limits for Phi"};
+  Configurable<std::vector<double>> binspTPhiExt{"binspTPhiExt", {0.0, 0.4, 0.8, 1.4, 2.0, 2.8, 4.0, 6.0, 10.0}, "pT bin limits for Phi extended for MC Gen"};
 
   // Configurable on K0S pT bins
   Configurable<std::vector<double>> binspTK0S{"binspTK0S", {0.1, 0.5, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for K0S"};
+  Configurable<std::vector<double>> binspTK0SExt{"binspTK0SExt", {0.0, 0.1, 0.5, 0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for K0S extended for MC Gen"};
 
   // Configurable on pion pT bins
-  Configurable<std::vector<double>> binspTPi{"binspTPi", {0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0}, "pT bin limits for pions"};
+  Configurable<std::vector<double>> binspTPi{"binspTPi", {0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0}, "pT bin limits for Pions"};
+  Configurable<std::vector<double>> binspTPiExt{"binspTPiExt", {0.0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0}, "pT bin limits for Pions extended for MC Gen"};
 
   struct : ConfigurableGroup {
     Configurable<bool> doK0SCorrelation{"doK0SCorrelation", true, "Enable Phi-K0S correlation"};
@@ -270,8 +259,11 @@ struct PhiStrangenessCorrelation {
   } yConfigs;
 
   // Configurables to apply efficiency online and how to
-  Configurable<bool> applyEfficiency{"applyEfficiency", false, "Use efficiency for filling histograms"};
-  Configurable<bool> useEffInterpolation{"useEffInterpolation", false, "If true, interpolates efficiency map, else uses bin center"};
+  struct : ConfigurableGroup {
+    Configurable<bool> applyEfficiency{"applyEfficiency", false, "Use efficiency for filling histograms"};
+    Configurable<bool> useEffInterpolation{"useEffInterpolation", false, "If true, interpolates efficiency map, else uses bin center"};
+    Configurable<bool> applyPhiEfficiency{"applyPhiEfficiency", true, "Apply efficiency for Phi candidates"};
+  } efficiencyConfigs;
 
   // Configurable for event mixing
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
@@ -285,6 +277,7 @@ struct PhiStrangenessCorrelation {
     Configurable<float> minPhiPt{"minPhiPt", 0.4f, "Minimum pT for Phi candidates"};
     Configurable<float> v0SettingMinPt{"v0SettingMinPt", 0.1f, "V0 min pt"};
     Configurable<float> cMinPionPtcut{"cMinPionPtcut", 0.2f, "Track minimum pt cut"};
+    Configurable<bool> bypassPtCut{"bypassPtCut", false, "Bypass the minimum pt cut at MCGen level"};
   } minPtMcGenConfigs;
 
   // Filter on phi selected collisions
@@ -362,12 +355,15 @@ struct PhiStrangenessCorrelation {
     AxisSpec massPhiAxis = {200, 0.9f, 1.2f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec pTPhiAxis = {120, 0.0f, 12.0f, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec binnedpTPhiAxis{(std::vector<double>)binspTPhi, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedpTPhiAxisExt{(std::vector<double>)binspTPhiExt, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec massK0SAxis = {200, 0.45f, 0.55f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec pTK0SAxis = {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec binnedpTK0SAxis{(std::vector<double>)binspTK0S, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedpTK0SAxisExt{(std::vector<double>)binspTK0SExt, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec nSigmaPiAxis = {100, -10.0f, 10.0f, "N#sigma #pi"};
     AxisSpec pTPiAxis = {50, 0.0f, 5.0f, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec binnedpTPiAxis{(std::vector<double>)binspTPi, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedpTPiAxisExt{(std::vector<double>)binspTPiExt, "#it{p}_{T} (GeV/#it{c})"};
 
     histos.add("phi/h3PhiData", "Invariant mass of Phi in Data", kTH3F, {binnedmultAxis, binnedpTPhiAxis, massPhiAxis});
 
@@ -406,16 +402,16 @@ struct PhiStrangenessCorrelation {
     histos.add("pi/h3PiMCGen", "Pion in MC Gen", kTH3F, {binnedmultAxis, binnedpTPiAxis, yAxis});
     histos.add("pi/h4PiMCGenAssocReco", "Pion in MC Gen Assoc Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, binnedpTPiAxis, yAxis});
 
-    histos.add("phi/h3PhiMCClosureGen", "Phi in MC Gen for MC Closure Test", kTH3F, {binnedmultAxis, binnedpTPhiAxis, yAxis});
+    histos.add("phi/h3PhiMCClosureGen", "Phi in MC Gen for MC Closure Test", kTH3F, {binnedmultAxis, binnedpTPhiAxisExt, yAxis});
 
-    histos.add("phiK0S/h5PhiK0SClosureMCGen", "Deltay vs deltaphi for Phi and K0Short in MCGen", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTK0SAxis, deltayAxis, deltaphiAxis});
-    histos.add("phiPi/h5PhiPiClosureMCGen", "Deltay vs deltaphi for Phi and Pion in MCGen", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTPiAxis, deltayAxis, deltaphiAxis});
+    histos.add("phiK0S/h5PhiK0SClosureMCGen", "Deltay vs deltaphi for Phi and K0Short in MCGen", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxisExt, binnedpTK0SAxisExt, deltayAxis, deltaphiAxis});
+    histos.add("phiPi/h5PhiPiClosureMCGen", "Deltay vs deltaphi for Phi and Pion in MCGen", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxisExt, binnedpTPiAxisExt, deltayAxis, deltaphiAxis});
 
-    histos.add("phiK0S/h5PhiK0SClosureMCGenME", "Deltay vs deltaphi for Phi and K0Short in MCGen ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTK0SAxis, deltayAxis, deltaphiAxis});
-    histos.add("phiPi/h5PhiPiClosureMCGenME", "Deltay vs deltaphi for Phi and Pion in MCGen ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxis, binnedpTPiAxis, deltayAxis, deltaphiAxis});
+    histos.add("phiK0S/h5PhiK0SClosureMCGenME", "Deltay vs deltaphi for Phi and K0Short in MCGen ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxisExt, binnedpTK0SAxisExt, deltayAxis, deltaphiAxis});
+    histos.add("phiPi/h5PhiPiClosureMCGenME", "Deltay vs deltaphi for Phi and Pion in MCGen ME", kTHnSparseF, {binnedmultAxis, binnedpTPhiAxisExt, binnedpTPiAxisExt, deltayAxis, deltaphiAxis});
 
     // Load efficiency maps from CCDB
-    if (applyEfficiency) {
+    if (efficiencyConfigs.applyEfficiency) {
       ccdb->setURL(ccdbUrl);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
@@ -451,8 +447,9 @@ struct PhiStrangenessCorrelation {
 
   void loadEfficiencyMaps()
   {
-    // Always load the Trigger (Phi) map
-    fetchSingleEfficiencyMapFromCCDB(effMapPhi, "Phi");
+    // Load the Trigger (Phi) map if requested by analysis method
+    if (efficiencyConfigs.applyPhiEfficiency)
+      fetchSingleEfficiencyMapFromCCDB(effMapPhi, "Phi");
 
     // Map the user configurations for the associated particles
     bool doAssocCorrelations[kAssocPartSize] = {activeCorrelationConfigs.doK0SCorrelation, activeCorrelationConfigs.doXiCorrelation, activeCorrelationConfigs.doPionCorrelation};
@@ -476,10 +473,10 @@ struct PhiStrangenessCorrelation {
   template <typename... BoundEffMaps>
   float computeWeight(const BoundEffMaps&... boundEffMaps)
   {
-    if (!applyEfficiency)
+    if (!efficiencyConfigs.applyEfficiency)
       return 1.0f;
 
-    float totalEfficiency = ((useEffInterpolation ? boundEffMaps.interpolateEfficiency() : boundEffMaps.getBinEfficiency()) * ...);
+    float totalEfficiency = ((efficiencyConfigs.useEffInterpolation ? boundEffMaps.interpolateEfficiency() : boundEffMaps.getBinEfficiency()) * ...);
 
     return totalEfficiency <= 0.0f ? 1.0f : 1.0f / totalEfficiency;
   }
@@ -512,7 +509,7 @@ struct PhiStrangenessCorrelation {
     const bool applyK0sMassCut = (analysisMode == kDeltaYvsDeltaPhi) && k0sConfigs.selectK0sInSigRegion;
     const auto& [minMassK0s, maxMassK0s] = k0sConfigs.rangeMK0sSignal.value;
     auto isK0sValid = [&](const auto& k0s) {
-      return (!applyEfficiency || k0s.pt() < binspTK0S->back()) && (!applyK0sMassCut || k0s.inMassRegion(minMassK0s, maxMassK0s));
+      return (!efficiencyConfigs.applyEfficiency || k0s.pt() < binspTK0S->back()) && (!applyK0sMassCut || k0s.inMassRegion(minMassK0s, maxMassK0s));
     };
 
     const bool applyPionNSigmaCut = (analysisMode == kDeltaYvsDeltaPhi) && pionConfigs.selectPionInSigRegion;
@@ -521,11 +518,11 @@ struct PhiStrangenessCorrelation {
     // const float& tofPIDThreshold = pionConfigs.tofPIDThreshold;
 
     auto isPionValid = [&](const auto& pion) {
-      return (!applyEfficiency || pion.pt() < binspTPi->back()) && (!applyPionNSigmaCut || pion.inNSigmaRegion(pidTPCMax, pidTOFMax));
+      return (!efficiencyConfigs.applyEfficiency || pion.pt() < binspTPi->back()) && (!applyPionNSigmaCut || pion.inNSigmaRegion(pidTPCMax, pidTOFMax));
     };
 
     for (const auto& phiCand : phiCandidates) {
-      if (applyEfficiency && phiCand.pt() >= binspTPhi->back())
+      if (efficiencyConfigs.applyEfficiency && efficiencyConfigs.applyPhiEfficiency && phiCand.pt() >= binspTPhi->back())
         continue;
 
       float weightPhi = computeWeight(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()));
@@ -652,7 +649,7 @@ struct PhiStrangenessCorrelation {
     const auto& [minMassK0s, maxMassK0s] = k0sConfigs.rangeMK0sSignal.value;
 
     auto isK0sValid = [&](const auto& k0s) {
-      return (!applyEfficiency || k0s.pt() < binspTK0S->back()) && (!applyK0sMassCut || k0s.inMassRegion(minMassK0s, maxMassK0s));
+      return (!efficiencyConfigs.applyEfficiency || k0s.pt() < binspTK0S->back()) && (!applyK0sMassCut || k0s.inMassRegion(minMassK0s, maxMassK0s));
     };
 
     auto tuplePhiK0S = std::make_tuple(phiCandidates, k0sReduced);
@@ -663,7 +660,7 @@ struct PhiStrangenessCorrelation {
       float multiplicity = c1.centFT0M();
 
       for (const auto& [phiCand, k0s] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(phiCands, k0sRed))) {
-        if (applyEfficiency && phiCand.pt() >= binspTPhi->back())
+        if (efficiencyConfigs.applyEfficiency && efficiencyConfigs.applyPhiEfficiency && phiCand.pt() >= binspTPhi->back())
           continue;
         if (!isK0sValid(k0s))
           continue;
@@ -747,7 +744,7 @@ struct PhiStrangenessCorrelation {
     // const float& tofPIDThreshold = pionConfigs.tofPIDThreshold;
 
     auto isPionValid = [&](const auto& pion) {
-      return (!applyEfficiency || pion.pt() < binspTPi->back()) && (!applyPionNSigmaCut || pion.inNSigmaRegion(pidTPCMax, pidTOFMax));
+      return (!efficiencyConfigs.applyEfficiency || pion.pt() < binspTPi->back()) && (!applyPionNSigmaCut || pion.inNSigmaRegion(pidTPCMax, pidTOFMax));
     };
 
     auto tuplePhiPion = std::make_tuple(phiCandidates, pionTracks);
@@ -758,7 +755,7 @@ struct PhiStrangenessCorrelation {
       float multiplicity = c1.centFT0M();
 
       for (const auto& [phiCand, piTrack] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(phiCands, piTracks))) {
-        if (applyEfficiency && phiCand.pt() >= binspTPhi->back())
+        if (efficiencyConfigs.applyEfficiency && efficiencyConfigs.applyPhiEfficiency && phiCand.pt() >= binspTPhi->back())
           continue;
         if (!isPionValid(piTrack))
           continue;
@@ -1098,15 +1095,15 @@ struct PhiStrangenessCorrelation {
 
       switch (std::abs(mcParticle.pdgCode())) {
         case o2::constants::physics::Pdg::kPhi:
-          if (eventSelectionType == 0 && mcParticle.pt() >= minPtMcGenConfigs.minPhiPt)
+          if (eventSelectionType == 0 && (minPtMcGenConfigs.bypassPtCut || mcParticle.pt() >= minPtMcGenConfigs.minPhiPt))
             phiParticles.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
           break;
         case PDG_t::kK0Short:
-          if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= minPtMcGenConfigs.v0SettingMinPt)
+          if (mcParticle.isPhysicalPrimary() && (minPtMcGenConfigs.bypassPtCut || mcParticle.pt() >= minPtMcGenConfigs.v0SettingMinPt))
             k0sParticles.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
           break;
         case PDG_t::kPiPlus:
-          if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= minPtMcGenConfigs.cMinPionPtcut)
+          if (mcParticle.isPhysicalPrimary() && (minPtMcGenConfigs.bypassPtCut || mcParticle.pt() >= minPtMcGenConfigs.cMinPionPtcut))
             pionParticles.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
           break;
         default:

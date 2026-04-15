@@ -261,6 +261,10 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   Configurable<bool> cfgProcessKtBins{"cfgProcessKtBins", true, "Process kstar histograms in kT bins (if cfgProcessMultBins is set false, this will not be processed regardless this Configurable state)"};
   Configurable<bool> cfgProcessKtMt3DCF{"cfgProcessKtMt3DCF", false, "Process 3D histograms in kT and Mult bins"};
 
+  Configurable<bool> confRejectGammaPair{"confRejectGammaPair", false, "Additional check to reject e+e- pairs base on theta and minv"};
+  Configurable<double> confMaxEEMinv{"confMaxEEMinv", 0.002, "Max. minv of e-e+ pair for gamma pair rejection"};
+  Configurable<double> confMaxDTheta{"confMaxDTheta", 0.008, "Max. DeltaTheta of pair for gamma pair rejection"};
+
   FemtoUniverseSHContainer<femto_universe_sh_container::EventType::same, femto_universe_sh_container::Observable::kstar> sameEventCont;
   FemtoUniverseSHContainer<femto_universe_sh_container::EventType::mixed, femto_universe_sh_container::Observable::kstar> mixedEventCont;
 
@@ -593,6 +597,10 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
           continue;
         }
 
+        if (confRejectGammaPair && pairCloseRejection.isGammaPair(p1, p2, confMaxEEMinv, confMaxDTheta)) {
+          continue;
+        }
+
         float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
         float lastElement = confKtKstarBins.value.back();
         float firstRealElement = confKtKstarBins.value[1];
@@ -626,6 +634,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
+
         sameEventMultCont.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::same, 2, multCol, kT, twotracksconfigs.confisIdenLCMS, twotracksconfigs.confIs1D, twotracksconfigs.confIsWeight, twotracksconfigs.confisIdenPRF);
       }
     } else {
@@ -1005,6 +1014,10 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
       }
 
       if (!IsParticleNSigma((int8_t)2, p2.p(), trackCuts.getNsigmaITS(p2, o2::track::PID::Pion), trackCuts.getNsigmaTPC(p2, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p2, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p2, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p2, o2::track::PID::Pion), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(p2, o2::track::PID::Electron))) {
+        continue;
+      }
+
+      if (confRejectGammaPair && pairCloseRejection.isGammaPair(p1, p2, confMaxEEMinv, confMaxDTheta)) {
         continue;
       }
 

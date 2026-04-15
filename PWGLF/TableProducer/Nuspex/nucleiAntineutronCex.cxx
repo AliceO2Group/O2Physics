@@ -15,28 +15,33 @@
 /// \author Fabiola Lugo
 ///
 
-#include <PWGLF/DataModel/LFAntinCexTables.h>
+#include "PWGLF/DataModel/LFAntinCexTables.h"
 
-#include <Common/DataModel/PIDResponseITS.h>
+#include "Common/DataModel/PIDResponseITS.h"
 
 #include <CommonConstants/MathConstants.h>
 #include <DCAFitter/DCAFitterN.h>
-#include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/Logger.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
+#include <ReconstructionDataFormats/Track.h>
 #include <ReconstructionDataFormats/TrackParametrization.h>
 
 #include <TDatabasePDG.h>
 #include <TMCProcess.h>
-#include <TMath.h>
 #include <TPDGCode.h>
 #include <TVector3.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <optional>
 
 using namespace o2;
