@@ -48,51 +48,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-namespace o2::aod
-{
-namespace jet_distance
-{
-DECLARE_SOA_COLUMN(JetHfDist, jetHfDist, float);
-DECLARE_SOA_COLUMN(JetPt, jetPt, float);
-DECLARE_SOA_COLUMN(JetEta, jetEta, float);
-DECLARE_SOA_COLUMN(JetPhi, jetPhi, float);
-DECLARE_SOA_COLUMN(JetNConst, jetNConst, int);
-DECLARE_SOA_COLUMN(HfPt, hfPt, float);
-DECLARE_SOA_COLUMN(HfEta, hfEta, float);
-DECLARE_SOA_COLUMN(HfPhi, hfPhi, float);
-DECLARE_SOA_COLUMN(HfMass, hfMass, float);
-DECLARE_SOA_COLUMN(HfY, hfY, float);
-DECLARE_SOA_COLUMN(HfMlScore0, hfMlScore0, float);
-DECLARE_SOA_COLUMN(HfMlScore1, hfMlScore1, float);
-DECLARE_SOA_COLUMN(HfMlScore2, hfMlScore2, float);
-
-// extra
-DECLARE_SOA_COLUMN(JetMass, jetMass, float);
-DECLARE_SOA_COLUMN(JetGirth, jetGirth, float);
-DECLARE_SOA_COLUMN(JetThrust, jetThrust, float);     // lambda_2^1
-DECLARE_SOA_COLUMN(JetLambda11, jetLambda11, float); // lambda_1^1
-} // namespace jet_distance
-
-DECLARE_SOA_TABLE(JetDistanceTable, "AOD", "JETDISTTABLE",
-                  jet_distance::JetHfDist,
-                  jet_distance::JetPt,
-                  jet_distance::JetEta,
-                  jet_distance::JetPhi,
-                  jet_distance::JetNConst,
-                  jet_distance::HfPt,
-                  jet_distance::HfEta,
-                  jet_distance::HfPhi,
-                  jet_distance::HfMass,
-                  jet_distance::HfY,
-                  jet_distance::HfMlScore0,
-                  jet_distance::HfMlScore1,
-                  jet_distance::HfMlScore2,
-                  jet_distance::JetMass,
-                  jet_distance::JetGirth,
-                  jet_distance::JetThrust,
-                  jet_distance::JetLambda11);
-} // namespace o2::aod
-
 struct JetDsSpecSubs {
   HistogramRegistry registry{
     "registry",
@@ -135,8 +90,6 @@ struct JetDsSpecSubs {
 
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
-
-  Produces<aod::JetDistanceTable> distJetTable;
 
   template <typename JET, typename TRACKS>
   float computeLambda(JET const& jet, TRACKS const& tracks, float a, float k)
@@ -279,31 +232,12 @@ struct JetDsSpecSubs {
         registry.fill(HIST("h_ds_eta"), dsCandidate.eta());
         registry.fill(HIST("h_ds_phi"), dsCandidate.phi());
 
-        const float mass = dsCandidate.m();
-        const float pt = dsCandidate.pt();
-        const float z = zParallel;
-        const float dR = axisDistance;
-
-        // Main THnSparse: invariant mass, pT, z, and ΔR
-        registry.fill(HIST("hSparse_ds"), mass, pt, z, dR);
-
-        // --- output table ---
-        auto scores = dsCandidate.mlScores();
-        constexpr int kScore0 = 0;
-        constexpr int kScore1 = 1;
-        constexpr int kScore2 = 2;
-
-        const float s0 = (scores.size() > kScore0) ? scores[kScore0] : -999.f;
-        const float s1 = (scores.size() > kScore1) ? scores[kScore1] : -999.f;
-        const float s2 = (scores.size() > kScore2) ? scores[kScore2] : -999.f;
-
-        distJetTable(static_cast<float>(axisDistance),
-                     jet.pt(), jet.eta(), jet.phi(),
-                     static_cast<int>(jetTracks.size()),
-                     dsCandidate.pt(), dsCandidate.eta(), dsCandidate.phi(),
-                     dsCandidate.m(), dsCandidate.y(),
-                     s0, s1, s2,
-                     mjet, girth, lambda12, lambda11);
+        // Main THnSparse: invariant mass, pT, z, and DeltaR
+        registry.fill(HIST("hSparse_ds"),
+                      dsCandidate.m(),
+                      dsCandidate.pt(),
+                      zParallel,
+                      axisDistance);
       }
 
       // Jet-level quantities (filled once per jet containing at least one Ds)
