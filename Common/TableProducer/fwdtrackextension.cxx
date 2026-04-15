@@ -109,7 +109,7 @@ struct FwdTrackExtension {
           dcaY = (proptrack.getY() - collision.posY());
         } else {
           dcaX = track.pDca() / sqrt(2) / track.p();
-	        dcaY = dcaX;
+          dcaY = dcaX;
         }
       }
       fwdDCA(dcaX, dcaY);
