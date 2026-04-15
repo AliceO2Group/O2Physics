@@ -42,7 +42,7 @@ class EMPhoton
   float eta() const { return fEta; }
   float phi() const { return fPhi; }
 
-  float p() const { return  fPt * std::cosh(fEta); }
+  float p() const { return fPt * std::cosh(fEta); }
   float px() const { return fPt * std::cos(fPhi); }
   float py() const { return fPt * std::sin(fPhi); }
   float pz() const { return fPt * std::sinh(fEta); }
