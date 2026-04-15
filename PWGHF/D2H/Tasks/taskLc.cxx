@@ -141,7 +141,7 @@ struct HfTaskLc {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
   // ThnSparse for ML outputScores and Vars
   Configurable<bool> fillTHn{"fillTHn", false, "fill THn"};
-  Configurable<bool> fillUPCTreeLite{"fillUPCTreeLite", false, "fill THn"};
+  Configurable<bool> fillTreeOnlySingleGap{"fillTreeOnlySingleGap", false, "fill THn"};
   Configurable<bool> storeOccupancy{"storeOccupancy", true, "Flag to store occupancy information"};
   Configurable<int> occEstimator{"occEstimator", 2, "Occupancy estimation (None: 0, ITS: 1, FT0C: 2)"};
   Configurable<bool> storeProperLifetime{"storeProperLifetime", false, "Flag to store proper lifetime"};
@@ -859,7 +859,7 @@ struct HfTaskLc {
                 outputFD = mlProb[MlClassNonPrompt];   /// non-prompt score
               }
               /// Fill the ML outputScores and variables of candidate
-              if (fillUPCTreeLite) {
+              if (fillTreeOnlySingleGap) {
                 if (gap == o2::aod::sgselector::TrueGap::SingleGapA || gap == o2::aod::sgselector::TrueGap::SingleGapC) {
                   rowCandUpcBdt(massLc, pt, outputBkg, outputPrompt, outputFD, static_cast<float>(numPvContributors), static_cast<float>(fitInfo.ampFV0A), static_cast<float>(fitInfo.ampFT0A), static_cast<float>(fitInfo.ampFT0C), static_cast<float>(zdcEnergyZNA), static_cast<float>(zdcEnergyZNC), static_cast<float>(zdcTimeZNA), static_cast<float>(zdcTimeZNC));
                 }
@@ -868,7 +868,7 @@ struct HfTaskLc {
               }
 
             } else {
-              if (fillUPCTreeLite) {
+              if (fillTreeOnlySingleGap) {
                 if (gap == o2::aod::sgselector::TrueGap::SingleGapA || gap == o2::aod::sgselector::TrueGap::SingleGapC) {
                   rowCandUpc(massLc, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<float>(numPvContributors), static_cast<float>(fitInfo.ampFV0A), static_cast<float>(fitInfo.ampFT0A), static_cast<float>(fitInfo.ampFT0C), static_cast<float>(zdcEnergyZNA), static_cast<float>(zdcEnergyZNC), static_cast<float>(zdcTimeZNA), static_cast<float>(zdcTimeZNC));
                 }
