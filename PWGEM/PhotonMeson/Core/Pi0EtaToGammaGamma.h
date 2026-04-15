@@ -402,7 +402,7 @@ struct Pi0EtaToGammaGamma {
       fRegistry.addClone("Pair/same/", "Pair/rotation/");
       emcalGeom = o2::emcal::Geometry::GetInstanceFromRunNumber(300000);
     }
-    fRegistry.add("Pair/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", o2::framework::kTH1D, {{10001, -0.5, 10000.5}}, true);
+    fRegistry.add("Pair/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", o2::framework::HistType::kTH1D, {{10001, -0.5, 10000.5}}, true);
 
     mRunNumber = 0;
     d_bz = 0;

@@ -404,33 +404,34 @@ struct FlowCumulantsUpc {
     delete oba;
 
     // eta region
-    fGFW->AddRegion("full", -0.8, 0.8, 1, 1);
-    fGFW->AddRegion("refN00", -0.8, 0., 1, 1);   // gap0 negative region
-    fGFW->AddRegion("refP00", 0., 0.8, 1, 1);    // gap0 positve region
-    fGFW->AddRegion("refN02", -0.8, -0.1, 1, 1); // gap2 negative region
-    fGFW->AddRegion("refP02", 0.1, 0.8, 1, 1);   // gap2 positve region
-    fGFW->AddRegion("refN04", -0.8, -0.2, 1, 1); // gap4 negative region
-    fGFW->AddRegion("refP04", 0.2, 0.8, 1, 1);   // gap4 positve region
-    fGFW->AddRegion("refN06", -0.8, -0.3, 1, 1); // gap6 negative region
-    fGFW->AddRegion("refP06", 0.3, 0.8, 1, 1);   // gap6 positve region
-    fGFW->AddRegion("refN08", -0.8, -0.4, 1, 1);
-    fGFW->AddRegion("refP08", 0.4, 0.8, 1, 1);
-    fGFW->AddRegion("refN10", -0.8, -0.5, 1, 1);
-    fGFW->AddRegion("refP10", 0.5, 0.8, 1, 1);
-    fGFW->AddRegion("refN12", -0.8, -0.6, 1, 1);
-    fGFW->AddRegion("refP12", 0.6, 0.8, 1, 1);
-    fGFW->AddRegion("refN14", -0.8, -0.7, 1, 1);
-    fGFW->AddRegion("refP14", 0.7, 0.8, 1, 1);
-    fGFW->AddRegion("refN", -0.8, -0.4, 1, 1);
-    fGFW->AddRegion("refP", 0.4, 0.8, 1, 1);
+    fGFW->AddRegion("full", -0.9, 0.9, 1, 1);
+    fGFW->AddRegion("refN00", -0.9, 0., 1, 1);   // gap0 negative region
+    fGFW->AddRegion("refP00", 0., 0.9, 1, 1);    // gap0 positve region
+    fGFW->AddRegion("refN02", -0.9, -0.1, 1, 1); // gap2 negative region
+    fGFW->AddRegion("refP02", 0.1, 0.9, 1, 1);   // gap2 positve region
+    fGFW->AddRegion("refN04", -0.9, -0.2, 1, 1); // gap4 negative region
+    fGFW->AddRegion("refP04", 0.2, 0.9, 1, 1);   // gap4 positve region
+    fGFW->AddRegion("refN06", -0.9, -0.3, 1, 1); // gap6 negative region
+    fGFW->AddRegion("refP06", 0.3, 0.9, 1, 1);   // gap6 positve region
+    fGFW->AddRegion("refN08", -0.9, -0.4, 1, 1);
+    fGFW->AddRegion("refP08", 0.4, 0.9, 1, 1);
+    fGFW->AddRegion("refN10", -0.9, -0.5, 1, 1);
+    fGFW->AddRegion("refP10", 0.5, 0.9, 1, 1);
+    fGFW->AddRegion("refN12", -0.9, -0.6, 1, 1);
+    fGFW->AddRegion("refP12", 0.6, 0.9, 1, 1);
+    fGFW->AddRegion("refN14", -0.9, -0.7, 1, 1);
+    fGFW->AddRegion("refP14", 0.7, 0.9, 1, 1);
+    fGFW->AddRegion("refN", -0.9, -0.4, 1, 1);
+    fGFW->AddRegion("refP", 0.4, 0.9, 1, 1);
     fGFW->AddRegion("refM", -0.4, 0.4, 1, 1);
-    fGFW->AddRegion("poiN", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 2);
-    fGFW->AddRegion("poiN10", -0.8, -0.5, 1 + fPtAxis->GetNbins(), 2);
-    fGFW->AddRegion("poifull", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 2);
-    fGFW->AddRegion("olN", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 4);
-    fGFW->AddRegion("olN10", -0.8, -0.5, 1 + fPtAxis->GetNbins(), 4);
-    fGFW->AddRegion("olfull", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("poiN", -0.9, -0.4, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN10", -0.9, -0.5, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poifull", -0.9, 0.9, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("olN", -0.9, -0.4, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN10", -0.9, -0.5, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olfull", -0.9, 0.9, 1 + fPtAxis->GetNbins(), 4);
 
+    // eta region for MC, can be different from data to study the effect of acceptance
     fGFWMC->AddRegion("full", -0.8, 0.8, 1, 1);
     fGFWMC->AddRegion("refN00", -0.8, 0., 1, 1);   // gap0 negative region
     fGFWMC->AddRegion("refP00", 0., 0.8, 1, 1);    // gap0 positve region

@@ -87,7 +87,10 @@ struct PhotonResoTask {
   // configurable axis
   ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {400, 0.0, 0.8}, "invariant mass axis for the neutral meson"};
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {100, 0., 20.}, "pT axis for the neutral meson"};
+  ConfigurableAxis thnConfigAxisXRelative{"thnConfigAxisXRelative", {800, -1., 19.}, "(X rec - X true) / X true axis"};
   ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {20, 0., 100.}, "centrality axis for the current event"};
+  ConfigurableAxis thnConfigAxisMult{"thnConfigAxisMult", {60, 0., 60000.}, "multiplicity axis for the current event"};
+  Configurable<bool> useCent{"useCent", 0, "flag to enable usage of centrality instead of multiplicity as axis."};
 
   EMPhotonEventCut fEMEventCut;
   struct : ConfigurableGroup {
@@ -314,7 +317,12 @@ struct PhotonResoTask {
 
     const AxisSpec thnAxisPtGen{thnConfigAxisPt, "#it{p}_{T,Gen} (GeV/#it{c})"};
     const AxisSpec thnAxisPtRec{thnConfigAxisPt, "#it{p}_{T,Rec} (GeV/#it{c})"};
-    const AxisSpec thnAxisCent{thnConfigAxisCent, "Centrality (%)"};
+    const AxisSpec thnAxisPGen{thnConfigAxisPt, "#it{p}_{Gen} (GeV/#it{c})"};
+    const AxisSpec thnAxisPRec{thnConfigAxisPt, "#it{p}_{Rec} (GeV/#it{c})"};
+    const AxisSpec thnAxisPRelative{thnConfigAxisXRelative, "#it{p}_{Rec} - #it{p}_{Gen} / #it{p}_{Gen}"};
+    const AxisSpec thnAxisEGen{thnConfigAxisPt, "#it{E}_{Rec} (GeV)"};
+    const AxisSpec thnAxisERec{thnConfigAxisPt, "#it{E}_{Rec} (GeV)"};
+    const AxisSpec thnAxisERelative{thnConfigAxisXRelative, "#it{E}_{Rec} - #it{E}_{Gen} / #it{E}_{Gen}"};
     const AxisSpec thnAxisInvMass{thnConfigAxisInvMass, "#it{M}_{#gamma#gamma} (GeV/#it{c}^{2})"};
 
     const AxisSpec thnAxisEtaGen{280, -0.7, 0.7, "#it{#eta}_{Gen}"};
@@ -323,25 +331,39 @@ struct PhotonResoTask {
     const AxisSpec thnAxisPhiGen{360, 0., o2::constants::math::TwoPI, "#it{#varphi}_{Gen} (rad)"};
     const AxisSpec thnAxisPhiRec{360, 0., o2::constants::math::TwoPI, "#it{#varphi}_{Rec} (rad)"};
 
-    registry.add("EMCal/hPhotonReso", "EMCal photon rec pT vs true pT vs cent", HistType::kTH3D, {thnAxisPtRec, thnAxisPtGen, thnAxisCent});
-    registry.add("EMCal/hConvPhotonReso", "EMCal conversion photon rec pT vs true pT vs cent ", HistType::kTH3D, {thnAxisPtRec, thnAxisPtGen, thnAxisCent});
+    AxisSpec thnAxisCentOrMult{1, 0., 1., "Centrality/Multiplicity"}; // placeholder, overwritten in init
+    if (useCent.value) {
+      // PbPb: use centrality
+      thnAxisCentOrMult = {thnConfigAxisCent, "Centrality (%)"};
+    } else {
+      // pp: use multiplicity
+      thnAxisCentOrMult = {thnConfigAxisMult, "FT0C Multiplicity"};
+    }
 
-    registry.add("EMCal/hPi0Reso", "EMCal pi0 rec pT vs true pT vs min vs cent ", HistType::kTHnSparseF, {thnAxisPtRec, thnAxisPtGen, thnConfigAxisInvMass, thnAxisCent});
-    registry.add("EMCal/hEtaReso", "EMCal eta rec pT vs true pT vs min vs cent ", HistType::kTHnSparseF, {thnAxisPtRec, thnAxisPtGen, thnConfigAxisInvMass, thnAxisCent});
+    registry.add("EMCal/hPhotonReso", "EMCal photon rec pT vs true pT vs cent", HistType::kTH3D, {thnAxisPtRec, thnAxisPtGen, thnAxisCentOrMult});
+    registry.add("EMCal/hConvPhotonReso", "EMCal conversion photon rec pT vs true pT vs cent ", HistType::kTH3D, {thnAxisPtRec, thnAxisPtGen, thnAxisCentOrMult});
 
-    registry.add("EMCal/hPhotonResoEta", "EMCal photon rec eta vs true eta vs cent", HistType::kTH3D, {thnAxisEtaRec, thnAxisEtaGen, thnAxisCent});
-    registry.add("EMCal/hConvPhotonResoEta", "EMCal conversion photon rec eta vs true eta vs cent ", HistType::kTH3D, {thnAxisEtaRec, thnAxisEtaGen, thnAxisCent});
+    registry.add("EMCal/hErecEmcPhotons", "EMCal photon rec E - true E vs true E vs cent", HistType::kTH3D, {thnAxisERelative, thnAxisEGen, thnAxisCentOrMult});
+    registry.add("EMCal/hErecEmcConvPhotons", "EMCal conversion photon rec E - true E vs true E vs cent ", HistType::kTH3D, {thnAxisERelative, thnAxisEGen, thnAxisCentOrMult});
 
-    registry.add("EMCal/hPi0ResoEta", "EMCal pi0 rec eta vs true eta vs min vs cent ", HistType::kTHnSparseF, {thnAxisEtaRec, thnAxisEtaGen, thnConfigAxisInvMass, thnAxisCent});
-    registry.add("EMCal/hEtaResoEta", "EMCal eta rec eta vs true eta vs min vs cent ", HistType::kTHnSparseF, {thnAxisEtaRec, thnAxisEtaGen, thnConfigAxisInvMass, thnAxisCent});
+    registry.add("EMCal/hPi0Reso", "EMCal pi0 rec pT vs true pT vs min vs cent ", HistType::kTHnSparseF, {thnAxisPtRec, thnAxisPtGen, thnConfigAxisInvMass, thnAxisCentOrMult});
+    registry.add("EMCal/hEtaReso", "EMCal eta rec pT vs true pT vs min vs cent ", HistType::kTHnSparseF, {thnAxisPtRec, thnAxisPtGen, thnConfigAxisInvMass, thnAxisCentOrMult});
 
-    registry.add("EMCal/hPhotonResoPhi", "EMCal photon rec phi vs true phi vs cent", HistType::kTH3D, {thnAxisPhiRec, thnAxisPhiGen, thnAxisCent});
-    registry.add("EMCal/hConvPhotonResoPhi", "EMCal conversion photon rec phi vs true phi vs cent ", HistType::kTH3D, {thnAxisPhiRec, thnAxisPhiGen, thnAxisCent});
+    registry.add("EMCal/hPhotonResoEta", "EMCal photon rec eta vs true eta vs cent", HistType::kTH3D, {thnAxisEtaRec, thnAxisEtaGen, thnAxisCentOrMult});
+    registry.add("EMCal/hConvPhotonResoEta", "EMCal conversion photon rec eta vs true eta vs cent ", HistType::kTH3D, {thnAxisEtaRec, thnAxisEtaGen, thnAxisCentOrMult});
 
-    registry.add("EMCal/hPi0ResoPhi", "EMCal pi0 rec phi vs true phi vs min vs cent ", HistType::kTHnSparseF, {thnAxisPhiRec, thnAxisPhiGen, thnConfigAxisInvMass, thnAxisCent});
-    registry.add("EMCal/hEtaResoPhi", "EMCal eta rec phi vs true phi vs min vs cent ", HistType::kTHnSparseF, {thnAxisPhiRec, thnAxisPhiGen, thnConfigAxisInvMass, thnAxisCent});
+    registry.add("EMCal/hPi0ResoEta", "EMCal pi0 rec eta vs true eta vs min vs cent ", HistType::kTHnSparseF, {thnAxisEtaRec, thnAxisEtaGen, thnConfigAxisInvMass, thnAxisCentOrMult});
+    registry.add("EMCal/hEtaResoEta", "EMCal eta rec eta vs true eta vs min vs cent ", HistType::kTHnSparseF, {thnAxisEtaRec, thnAxisEtaGen, thnConfigAxisInvMass, thnAxisCentOrMult});
 
-    registry.add("PCM/hPhotonReso", "PCM  photon rec pT vs true pT vs ", HistType::kTH3D, {thnAxisPtRec, thnAxisPtGen, thnAxisCent});
+    registry.add("EMCal/hPhotonResoPhi", "EMCal photon rec phi vs true phi vs cent", HistType::kTH3D, {thnAxisPhiRec, thnAxisPhiGen, thnAxisCentOrMult});
+    registry.add("EMCal/hConvPhotonResoPhi", "EMCal conversion photon rec phi vs true phi vs cent ", HistType::kTH3D, {thnAxisPhiRec, thnAxisPhiGen, thnAxisCentOrMult});
+
+    registry.add("EMCal/hPi0ResoPhi", "EMCal pi0 rec phi vs true phi vs min vs cent ", HistType::kTHnSparseF, {thnAxisPhiRec, thnAxisPhiGen, thnConfigAxisInvMass, thnAxisCentOrMult});
+    registry.add("EMCal/hEtaResoPhi", "EMCal eta rec phi vs true phi vs min vs cent ", HistType::kTHnSparseF, {thnAxisPhiRec, thnAxisPhiGen, thnConfigAxisInvMass, thnAxisCentOrMult});
+
+    registry.add("PCM/hPhotonReso", "PCM  photon rec pT vs true pT vs cent", HistType::kTH3D, {thnAxisPtRec, thnAxisPtGen, thnAxisCentOrMult});
+
+    registry.add("PCM/hPrecPmcPhotons", "PCM  photon rec p - true p vs true p vs cent", HistType::kTH3D, {thnAxisPRelative, thnAxisPGen, thnAxisCentOrMult});
 
     auto hMesonCuts = registry.add<TH1>("hMesonCuts", "hMesonCuts;;Counts", kTH1D, {{6, 0.5, 6.5}}, false);
     hMesonCuts->GetXaxis()->SetBinLabel(1, "in");
@@ -387,6 +409,16 @@ struct PhotonResoTask {
     mRunNumber = collision.runNumber();
   }
 
+  template <o2::soa::is_iterator TCollision>
+  float getCentralityOrMultiplicity(TCollision const& collision)
+  {
+    if (useCent.value) {
+      return getCentrality(collision);
+    }
+    // pp: use raw FT0C multiplicity
+    return collision.multFT0C();
+  }
+
   /// Get the centrality
   /// \param collision is the collision with the centrality information
   template <o2::soa::is_iterator TCollision>
@@ -428,8 +460,8 @@ struct PhotonResoTask {
       // occupancy selection
       return false;
     }
-    float cent = getCentrality(collision);
-    if (cent < eventcuts.cfgMinCent || cent > eventcuts.cfgMaxCent) {
+    float centOrMult = getCentralityOrMultiplicity(collision);
+    if (useCent && (centOrMult < eventcuts.cfgMinCent || centOrMult > eventcuts.cfgMaxCent)) {
       // event selection
       return false;
     }
@@ -473,7 +505,7 @@ struct PhotonResoTask {
       initCCDB(collision);
       isFullEventSelected(collision, true);
 
-      float cent = getCentrality(collision);
+      float centOrMult = getCentralityOrMultiplicity(collision);
 
       auto photonsEMCPerCollision = clusters.sliceBy(perCollisionEMC, collision.globalIndex());
       auto photonsPCMPerCollision = photons.sliceBy(perCollisionPCM, collision.globalIndex());
@@ -490,16 +522,18 @@ struct PhotonResoTask {
         mcPhoton1.setCursor(photonEMC.emmcparticleIds()[0]);
 
         if (std::abs(mcPhoton1.pdgCode()) == PDG_t::kGamma) {
-          registry.fill(HIST("EMCal/hPhotonReso"), photonEMC.pt(), mcPhoton1.pt(), cent);
-          registry.fill(HIST("EMCal/hPhotonResoEta"), photonEMC.eta(), mcPhoton1.eta(), cent);
-          registry.fill(HIST("EMCal/hPhotonResoPhi"), photonEMC.phi(), mcPhoton1.phi(), cent);
+          registry.fill(HIST("EMCal/hPhotonReso"), photonEMC.pt(), mcPhoton1.pt(), centOrMult);
+          registry.fill(HIST("EMCal/hPhotonResoEta"), photonEMC.eta(), mcPhoton1.eta(), centOrMult);
+          registry.fill(HIST("EMCal/hPhotonResoPhi"), photonEMC.phi(), mcPhoton1.phi(), centOrMult);
+          registry.fill(HIST("EMCal/hErecEmcPhotons"), (photonEMC.e() - mcPhoton1.e()) / mcPhoton1.e(), mcPhoton1.e(), centOrMult);
         } else if (std::abs(mcPhoton1.pdgCode()) == PDG_t::kElectron) {
           if (!o2::aod::pwgem::photonmeson::utils::mcutil::isMotherPDG(mcPhoton1, PDG_t::kGamma)) {
             continue;
           }
-          registry.fill(HIST("EMCal/hConvPhotonReso"), photonEMC.pt(), mcPhoton1.pt(), cent);
-          registry.fill(HIST("EMCal/hConvPhotonResoEta"), photonEMC.eta(), mcPhoton1.eta(), cent);
-          registry.fill(HIST("EMCal/hConvPhotonResoPhi"), photonEMC.phi(), mcPhoton1.phi(), cent);
+          registry.fill(HIST("EMCal/hConvPhotonReso"), photonEMC.pt(), mcPhoton1.pt(), centOrMult);
+          registry.fill(HIST("EMCal/hConvPhotonResoEta"), photonEMC.eta(), mcPhoton1.eta(), centOrMult);
+          registry.fill(HIST("EMCal/hConvPhotonResoPhi"), photonEMC.phi(), mcPhoton1.phi(), centOrMult);
+          registry.fill(HIST("EMCal/hErecEmcConvPhotons"), (photonEMC.e() - mcPhoton1.e()) / mcPhoton1.e(), mcPhoton1.e(), centOrMult);
         }
       }
 
@@ -527,8 +561,8 @@ struct PhotonResoTask {
         if (!fV0PhotonCut.IsConversionPointInAcceptance(mcPhoton1, trueConvRadius)) {
           continue;
         }
-
-        registry.fill(HIST("PCM/hPhotonReso"), photonPCM.pt(), mcPhoton1.pt(), cent);
+        registry.fill(HIST("PCM/hPhotonReso"), photonPCM.pt(), mcPhoton1.pt(), centOrMult);
+        registry.fill(HIST("PCM/hPrecPmcPhotons"), (photonPCM.p() - mcPhoton1.p()) / mcPhoton1.p(), mcPhoton1.p(), centOrMult);
 
       } // end of loop over pcm photons
 
@@ -590,15 +624,15 @@ struct PhotonResoTask {
 
         if (pi0id >= 0) {
           const auto pi0mc = mcParticles.iteratorAt(pi0id);
-          registry.fill(HIST("EMCal/hPi0Reso"), vMeson.Pt(), pi0mc.pt(), vMeson.M(), cent);
-          registry.fill(HIST("EMCal/hPi0ResoEta"), vMeson.Eta(), pi0mc.eta(), vMeson.M(), cent);
-          registry.fill(HIST("EMCal/hPi0ResoPhi"), RecoDecay::constrainAngle(vMeson.Phi()), pi0mc.phi(), vMeson.M(), cent);
+          registry.fill(HIST("EMCal/hPi0Reso"), vMeson.Pt(), pi0mc.pt(), vMeson.M(), centOrMult);
+          registry.fill(HIST("EMCal/hPi0ResoEta"), vMeson.Eta(), pi0mc.eta(), vMeson.M(), centOrMult);
+          registry.fill(HIST("EMCal/hPi0ResoPhi"), RecoDecay::constrainAngle(vMeson.Phi()), pi0mc.phi(), vMeson.M(), centOrMult);
         }
         if (etaid >= 0) {
           const auto etamc = mcParticles.iteratorAt(etaid);
-          registry.fill(HIST("EMCal/hEtaReso"), vMeson.Pt(), etamc.pt(), vMeson.M(), cent);
-          registry.fill(HIST("EMCal/hEtaResoEta"), vMeson.Eta(), etamc.eta(), vMeson.M(), cent);
-          registry.fill(HIST("EMCal/hEtaResoPhi"), RecoDecay::constrainAngle(vMeson.Phi()), etamc.phi(), vMeson.M(), cent);
+          registry.fill(HIST("EMCal/hEtaReso"), vMeson.Pt(), etamc.pt(), vMeson.M(), centOrMult);
+          registry.fill(HIST("EMCal/hEtaResoEta"), vMeson.Eta(), etamc.eta(), vMeson.M(), centOrMult);
+          registry.fill(HIST("EMCal/hEtaResoPhi"), RecoDecay::constrainAngle(vMeson.Phi()), etamc.phi(), vMeson.M(), centOrMult);
         }
       }
     }

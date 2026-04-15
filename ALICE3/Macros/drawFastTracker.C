@@ -14,6 +14,8 @@
 
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/Propagator.h>
+#include <Framework/Logger.h>
+#include <ReconstructionDataFormats/Track.h>
 #include <ReconstructionDataFormats/Vertex.h>
 
 #include <TAxis.h>
@@ -21,9 +23,16 @@
 #include <TDatabasePDG.h>
 #include <TEfficiency.h>
 #include <TGraph.h>
-#include <TH1F.h>
+#include <TH1.h>
 #include <TLatex.h>
 #include <TLorentzVector.h>
+#include <TParticlePDG.h>
+#include <TString.h>
+
+#include <RtypesCore.h>
+
+#include <cstddef>
+#include <vector>
 
 void drawFastTracker(float magneticField = 5.f, // in units of kGauss
                      const int nch = 100,       // number of charged particles per unit rapidity

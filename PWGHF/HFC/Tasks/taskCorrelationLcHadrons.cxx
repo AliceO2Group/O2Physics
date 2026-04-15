@@ -259,8 +259,8 @@ struct HfTaskCorrelationLcHadrons {
     }
     // Histograms for MC Reco analysis
     if (fillHistoMcRec) {
-      registry.add("hMassPromptLcVsPt", "Lc prompt candidates mass Vs Pt", {HistType::kTH2F, {{axisMassLc}, {axisPtLc}}});
-      registry.add("hMassNonPromptLcVsPt", "Lc non prompt candidates mass Vs Pt", {HistType::kTH2F, {{axisMassLc}, {axisPtLc}}});
+      registry.add("hMassPromptLcVsPt", "Lc prompt candidates mass Vs Pt", {HistType::kTH3F, {{axisMassLc}, {axisPtLc}, {axisPoolBin}}});
+      registry.add("hMassNonPromptLcVsPt", "Lc non prompt candidates mass Vs Pt", {HistType::kTH3F, {{axisMassLc}, {axisPtLc}, {axisPoolBin}}});
       registry.add("hDeltaEtaPtIntSignalRegionMcRec", stringLcHadron + stringSignal + stringDeltaEta + "entries", {HistType::kTH1D, {axisDeltaEta}});
       registry.add("hDeltaPhiPtIntSignalRegionMcRec", stringLcHadron + stringSignal + stringDeltaPhi + "entries", {HistType::kTH1D, {axisDeltaPhi}});
       registry.add("hDeltaEtaPtIntSidebandsMcRec", stringLcHadron + stringSideband + stringDeltaEta + "entries", {HistType::kTH1D, {axisDeltaEta}});
@@ -577,6 +577,7 @@ struct HfTaskCorrelationLcHadrons {
       float const ptLc = std::abs(candidate.ptLc());
       float const bdtScorePrompt = candidate.mlScorePrompt();
       float const bdtScoreBkg = candidate.mlScoreBkg();
+      int const poolBin = candidate.poolBin();
       int const effBinLc = o2::analysis::findBin(binsPtEfficiencyLc, ptLc);
       bool const isLcPrompt = candidate.isPrompt();
 
@@ -597,7 +598,7 @@ struct HfTaskCorrelationLcHadrons {
           }
           registry.fill(HIST("hMassLcVsPt"), massLc, ptLc, efficiencyWeightLc);
           registry.fill(HIST("hMassLcVsPtWoEff"), massLc, ptLc);
-          registry.fill(HIST("hMassPromptLcVsPt"), massLc, ptLc, efficiencyWeightLc);
+          registry.fill(HIST("hMassPromptLcVsPt"), massLc, ptLc, poolBin, efficiencyWeightLc);
           registry.fill(HIST("hBdtScorePrompt"), bdtScorePrompt);
           registry.fill(HIST("hBdtScoreBkg"), bdtScoreBkg);
         } else {
@@ -607,7 +608,7 @@ struct HfTaskCorrelationLcHadrons {
           }
           registry.fill(HIST("hMassLcVsPt"), massLc, ptLc, efficiencyWeightLc);
           registry.fill(HIST("hMassLcVsPtWoEff"), massLc, ptLc);
-          registry.fill(HIST("hMassNonPromptLcVsPt"), massLc, ptLc, efficiencyWeightLc);
+          registry.fill(HIST("hMassNonPromptLcVsPt"), massLc, ptLc, poolBin, efficiencyWeightLc);
           registry.fill(HIST("hBdtScorePrompt"), bdtScorePrompt);
           registry.fill(HIST("hBdtScoreBkg"), bdtScoreBkg);
         }

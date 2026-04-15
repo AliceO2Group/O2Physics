@@ -19,7 +19,6 @@
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 
 #include <CCDB/BasicCCDBManager.h>

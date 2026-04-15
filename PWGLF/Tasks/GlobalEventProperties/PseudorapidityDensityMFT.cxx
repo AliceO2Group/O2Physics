@@ -84,6 +84,9 @@ AxisSpec dcaYAxis = {6000, -30, 30}; // previous AxisSpec dcaYAxis  = {2000, -10
 // AxisSpec dcaZAxis  = {600, -0.15f, 0.15f};
 // AxisSpec dcaXAxis  = {600, -0.15f, 0.15f};
 // AxisSpec dcaYAxis  = {600, -0.15f, 0.15f};
+// bin width 0.0005 cm: range [-30, 30] cm => 60/0.0005 = 120000 bins
+// Keep bin width = 0.0005 cm (5 um): range [-1, 1] cm => 2.0/0.0005 = 4000 bins
+// AxisSpec axisBinsDCA = {600, -0.15f, 0.15f, "#it{dca}_{xy} (cm)"};
 
 AxisSpec centAxis = {{0, 10, 20, 30, 40, 50, 60, 70, 80, 100}};
 
@@ -113,16 +116,16 @@ static constexpr TrackSelectionFlags::flagtype TrackSelectionDca =
 //  replace your alias with the extension included:
 using FullBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
 
-// using MFTTracksLabeled =
-//   soa::Join<o2::aod::MFTTracks,aod::BestCollisionsFwd3d,
-//             /*aod::MFTTracks_001Extension, */ // exposes bestCollisionId, bestDCAXY, (and bestDCAZ if 3D)
-//             aod::McMFTTrackLabels>;
 using MFTTracksLabeled =
   soa::Join<o2::aod::MFTTracks, aod::MFTTrkCompColls, aod::BestCollisionsFwd3d,
             /*aod::MFTTracks_001Extension, */ // exposes bestCollisionId, bestDCAXY, (and bestDCAZ if 3D)
             aod::McMFTTrackLabels>;
+using MFTTracksLabeled3d =
+  soa::Join<o2::aod::MFTTracks, aod::MFTTrkCompColls, aod::BestCollisionsFwd3d,
+            aod::McMFTTrackLabels>;
+
 using MFTTracksLabeled2d =
-  soa::Join<o2::aod::MFTTracks, aod::BestCollisionsFwd,
+  soa::Join<o2::aod::MFTTracks, aod::MFTTrkCompColls, aod::BestCollisionsFwd,
             aod::McMFTTrackLabels>;
 
 using MFTTracksLabeledOrg =
@@ -139,7 +142,6 @@ struct PseudorapidityDensityMFT {
   Preslice<aod::MFTTracks> perCol = o2::aod::fwdtrack::collisionId;
   Preslice<aod::McParticles> perMcCol = aod::mcparticle::mcCollisionId;
   Preslice<aod::Tracks> perColCentral = aod::track::collisionId;
-
   Service<o2::framework::O2DatabasePDG> pdg;
 
   // --- CCDB magnetic field (needed for propagateToDCAhelix in this device) ---
@@ -236,6 +238,14 @@ struct PseudorapidityDensityMFT {
     Selected,
     Rejected
   };
+  enum class NeitherReasonBin : int {
+    NotTrueByLabel = 1,
+    BestColInvalid,
+    BestColMissingInRecoToMc,
+    ClassifiedRight,
+    ClassifiedWrong
+  };
+
   static constexpr float ForwardEtaMax = -2.0f;
   static constexpr float ForwardEtaMin = -3.9f;
 
@@ -430,7 +440,7 @@ struct PseudorapidityDensityMFT {
                   " ; DCA_{XY} (cm)",
                   {HistType::kTH1F, {dcaXyAxis}}});
 
-    if (doprocessGenReco || doprocessGenRecoTimeCom) {
+    if (doprocessGenReco3d || doprocessGenReco2d || doprocessGenRecoTimeCom) {
       registry.add({"EventsRecoCuts_GenReco",
                     ";cut;events",
                     {HistType::kTH1F, {{16, 0.5, 16.5}}}});
@@ -763,6 +773,15 @@ struct PseudorapidityDensityMFT {
       hrw->GetXaxis()->SetBinLabel(static_cast<int>(RightWrongBin::Neither), "neither");
       hrw->GetXaxis()->SetBinLabel(static_cast<int>(RightWrongBin::Both), "both");
 
+      registry.add("Purity/NeitherReason", "Purity/NeitherReason", kTH1D, {{5, 0.5, 5.5}}, false);
+      auto hNeitherReason = registry.get<TH1>(HIST("Purity/NeitherReason"));
+      auto* xNeitherReason = hNeitherReason->GetXaxis();
+      xNeitherReason->SetBinLabel(static_cast<int>(NeitherReasonBin::NotTrueByLabel), "NotTrueByLabel");
+      xNeitherReason->SetBinLabel(static_cast<int>(NeitherReasonBin::BestColInvalid), "BestColInvalid");
+      xNeitherReason->SetBinLabel(static_cast<int>(NeitherReasonBin::BestColMissingInRecoToMc), "BestColMissingInRecoToMc");
+      xNeitherReason->SetBinLabel(static_cast<int>(NeitherReasonBin::ClassifiedRight), "ClassifiedRight");
+      xNeitherReason->SetBinLabel(static_cast<int>(NeitherReasonBin::ClassifiedWrong), "ClassifiedWrong");
+
       registry.add({"Purity/RightWrongLater",
                     ";category;counts",
                     {HistType::kTH1F, {{4, 0.5, 4.5}}}});
@@ -971,6 +990,9 @@ struct PseudorapidityDensityMFT {
                     ";events;counts",
                     {HistType::kTH1F, {{1, 0.5, 1.5}}}});
       registry.add({"Purity/BestRecoColNotFound",
+                    ";events;counts",
+                    {HistType::kTH1F, {{1, 0.5, 1.5}}}});
+      registry.add({"Purity/TrueColNotFound",
                     ";events;counts",
                     {HistType::kTH1F, {{1, 0.5, 1.5}}}});
     }
@@ -1643,7 +1665,6 @@ struct PseudorapidityDensityMFT {
               if (midtracks.size() > 0 && retrack.ambDegree() == 1 && retrack.ambDegree() != 0) {
                 uniqueCollisions.insert(collision.globalIndex());
               }
-
               if (retrack.ambDegree() != 0) {
                 registry.fill(HIST("Tracks/Control/woOrp/woOrpTracksEtaZvtx"),
                               track.eta(), z);
@@ -2027,26 +2048,70 @@ struct PseudorapidityDensityMFT {
       registry.fill(HIST("EventsRecoCuts_GenReco"), static_cast<int>(bin));
     };
     fillGenRecoCut(GenRecoCutBin::AllRecoCollisions);
+
     std::unordered_map<int, int> recoToMc;
-    std::unordered_map<int, std::vector<int>> mcToReco; // MC collision id -> list of reco collision globalIndex
+    std::unordered_map<int, std::vector<int>> mcToReco;
+    std::unordered_set<int> acceptedRecoCols;
+    std::unordered_set<int> recoCollisionIds;
+    std::unordered_set<int> trueMCCollisionIds;
+
+    recoToMc.reserve(collisions.size());
+    mcToReco.reserve(collisions.size());
+    acceptedRecoCols.reserve(collisions.size());
+    recoCollisionIds.reserve(collisions.size());
+    trueMCCollisionIds.reserve(collisions.size());
+
+    const auto countAndPassEvSelGenReco = [&](auto const& collision) {
+      struct EvSelStep {
+        bool enabled;
+        decltype(aod::evsel::kIsTriggerTVX) bit;
+        GenRecoCutBin bin;
+      };
+
+      const std::array<EvSelStep, 10> steps = {{
+        {true, aod::evsel::kIsTriggerTVX, GenRecoCutBin::IsTriggerTVX},
+        {true, aod::evsel::kNoTimeFrameBorder, GenRecoCutBin::NoTimeFrameBorder},
+        {true, aod::evsel::kNoITSROFrameBorder, GenRecoCutBin::NoITSROFrameBorder},
+        {useNoSameBunchPileup, aod::evsel::kNoSameBunchPileup, GenRecoCutBin::NoSameBunchPileup},
+        {useGoodZvtxFT0vsPV, aod::evsel::kIsGoodZvtxFT0vsPV, GenRecoCutBin::GoodZvtxFT0vsPV},
+        {useNoCollInRofStandard, aod::evsel::kNoCollInRofStandard, GenRecoCutBin::NoCollInRofStandard},
+        {useNoCollInRofStrict, aod::evsel::kNoCollInRofStrict, GenRecoCutBin::NoCollInRofStrict},
+        {useNoCollInTimeRangeStandard, aod::evsel::kNoCollInTimeRangeStandard, GenRecoCutBin::NoCollInTimeRangeStandard},
+        {useNoCollInTimeRangeStrict, aod::evsel::kNoCollInTimeRangeStrict, GenRecoCutBin::NoCollInTimeRangeStrict},
+        {useNoHighMultCollInPrevRof, aod::evsel::kNoHighMultCollInPrevRof, GenRecoCutBin::NoHighMultCollInPrevRof},
+      }};
+
+      if (!useEvSel) {
+        for (const auto& step : steps) {
+          fillGenRecoCut(step.bin);
+        }
+        fillGenRecoCut(GenRecoCutBin::RctMFT);
+        return true;
+      }
+
+      for (const auto& step : steps) {
+        if (!step.enabled) {
+          fillGenRecoCut(step.bin);
+          continue;
+        }
+
+        if (!collision.selection_bit(step.bit)) {
+          return false;
+        }
+        fillGenRecoCut(step.bin);
+      }
+
+      if (useRctMFT && !myChecker(collision)) {
+        return false;
+      }
+      fillGenRecoCut(GenRecoCutBin::RctMFT);
+
+      return true;
+    };
 
     for (const auto& collision : collisions) {
       int nSavedRows = 0;
       std::unordered_set<int> uniqueRecoColsSaved;
-      int recoCol = collision.globalIndex(); // reconstructed vertex index
-      int mcCol = collision.mcCollisionId(); // true MC collision index
-
-      if (mcCol >= 0) {
-        recoToMc[recoCol] = mcCol;
-        mcToReco[mcCol].push_back(recoCol);
-
-        ++nSavedRows;
-        uniqueRecoColsSaved.insert(recoCol);
-      }
-      registry.fill(HIST("Purity/HashTableRowCounts"),
-                    static_cast<int>(HashTableRowCountsBin::RowsSaved), nSavedRows);
-      registry.fill(HIST("Purity/HashTableRowCounts"),
-                    static_cast<int>(HashTableRowCountsBin::UniqueRecoColsSaved), uniqueRecoColsSaved.size());
 
       registry.fill(HIST("Purity/reco/CollisionNumContrib"), collision.numContrib());
 
@@ -2056,58 +2121,10 @@ struct PseudorapidityDensityMFT {
       fillGenRecoCut(GenRecoCutBin::UseContBestCollisionIndex);
 
       if (!collision.has_mcCollision()) {
-        LOGF(warning, "No MC collision found...");
-        return;
+        LOGP(warning, "Reco collision {} has no MC collision label, skipping", collision.globalIndex());
+        continue;
       }
       fillGenRecoCut(GenRecoCutBin::HasMcCollision);
-
-      auto countAndPassEvSelGenReco = [&](auto const& collision) {
-        struct EvSelStep {
-          bool enabled;
-          decltype(aod::evsel::kIsTriggerTVX) bit;
-          GenRecoCutBin bin;
-        };
-
-        const std::array<EvSelStep, 10> steps = {{
-          {true, aod::evsel::kIsTriggerTVX, GenRecoCutBin::IsTriggerTVX},
-          {true, aod::evsel::kNoTimeFrameBorder, GenRecoCutBin::NoTimeFrameBorder},
-          {true, aod::evsel::kNoITSROFrameBorder, GenRecoCutBin::NoITSROFrameBorder},
-          {useNoSameBunchPileup, aod::evsel::kNoSameBunchPileup, GenRecoCutBin::NoSameBunchPileup},
-          {useGoodZvtxFT0vsPV, aod::evsel::kIsGoodZvtxFT0vsPV, GenRecoCutBin::GoodZvtxFT0vsPV},
-          {useNoCollInRofStandard, aod::evsel::kNoCollInRofStandard, GenRecoCutBin::NoCollInRofStandard},
-          {useNoCollInRofStrict, aod::evsel::kNoCollInRofStrict, GenRecoCutBin::NoCollInRofStrict},
-          {useNoCollInTimeRangeStandard, aod::evsel::kNoCollInTimeRangeStandard, GenRecoCutBin::NoCollInTimeRangeStandard},
-          {useNoCollInTimeRangeStrict, aod::evsel::kNoCollInTimeRangeStrict, GenRecoCutBin::NoCollInTimeRangeStrict},
-          {useNoHighMultCollInPrevRof, aod::evsel::kNoHighMultCollInPrevRof, GenRecoCutBin::NoHighMultCollInPrevRof},
-        }};
-
-        if (!useEvSel) {
-          for (const auto& step : steps) {
-            fillGenRecoCut(step.bin);
-          }
-          fillGenRecoCut(GenRecoCutBin::RctMFT);
-          return true;
-        }
-
-        for (const auto& step : steps) {
-          if (!step.enabled) {
-            fillGenRecoCut(step.bin);
-            continue;
-          }
-
-          if (!collision.selection_bit(step.bit)) {
-            return false;
-          }
-          fillGenRecoCut(step.bin);
-        }
-
-        if (useRctMFT && !myChecker(collision)) {
-          return false;
-        }
-        fillGenRecoCut(GenRecoCutBin::RctMFT);
-
-        return true;
-      };
 
       if (!countAndPassEvSelGenReco(collision)) {
         continue;
@@ -2125,146 +2142,163 @@ struct PseudorapidityDensityMFT {
       }
       fillGenRecoCut(GenRecoCutBin::InelGt0);
 
-      // constexpr uint8_t kFakeMcMask = 1u << 7;
-      for (const auto& track : tracks) {
-        float ndf = getTrackNdf(track);
-        const float chi2ndf = track.chi2() / ndf;
-        float phi = track.phi();
-        // const float dcaXyCut = track.bestDCAXY();
-        // const float dcaZCut = track.bestDCAZ();
-        const float ptCut = track.pt();
-        o2::math_utils::bringTo02Pi(phi);
+      const int recoCol = collision.globalIndex();
+      const int mcCol = collision.mcCollisionId();
 
-        const bool failTrackCuts =
-          track.nClusters() < cfgnCluster ||
-          track.eta() <= cfgnEta1 ||
-          track.eta() >= cfgnEta2 ||
-          chi2ndf >= cfgChi2NDFMax ||
-          phi <= cfgPhiCut1 ||
-          phi >= cfgPhiCut2 ||
-          (usePhiCut &&
-           ((phi <= PhiVetoLow) ||
-            ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
-            (phi >= PhiVetoHigh))) ||
-          // (useDCAxyCut && dcaxyCut > maxDCAxy) ||
-          // (useDCAzCut && std::abs(dcazCut) > maxDCAz) ||
-          (usePtCut && ptCut > cfgnPt);
+      acceptedRecoCols.insert(recoCol);
+      recoCollisionIds.insert(recoCol);
+      trueMCCollisionIds.insert(mcCol);
 
-        if (failTrackCuts) {
-          continue;
-        }
-        const bool hasMcLabel = track.has_mcParticle();
-        const bool isFakeByLabel = hasMcLabel ? (track.mcMask() != 0) : false;
-        const bool isTrueByLabel = hasMcLabel && !isFakeByLabel;
-        const bool hasNoMcLabel = !hasMcLabel;
-        const bool isPrimaryCharged = hasMcLabel && !isFakeByLabel && track.mcParticle().isPhysicalPrimary();
-        const bool isSecondaryCharged = hasMcLabel && !isFakeByLabel && !track.mcParticle().isPhysicalPrimary();
-        const float eta = track.eta();
-        if (!passGenRecoTrackMode(track)) { // 0-> All nonorphans, 1->Non-Amb, 2->Amb
-          continue;
-        }
-        int bin = static_cast<int>(RightWrongBin::Neither);
-        bool recoOfTrueExists = false;
+      if (mcCol >= 0) {
+        recoToMc[recoCol] = mcCol;
+        mcToReco[mcCol].push_back(recoCol);
+        ++nSavedRows;
+        uniqueRecoColsSaved.insert(recoCol);
+      }
 
-        if (isTrueByLabel) {
-          int recoCol = track.collisionId();
-          auto itRecoToMc = recoToMc.find(recoCol);
-          const int mcOfTrack = track.mcParticle().mcCollisionId();
+      registry.fill(HIST("Purity/HashTableRowCounts"),
+                    static_cast<int>(HashTableRowCountsBin::RowsSaved), nSavedRows);
+      registry.fill(HIST("Purity/HashTableRowCounts"),
+                    static_cast<int>(HashTableRowCountsBin::UniqueRecoColsSaved), uniqueRecoColsSaved.size());
+    }
 
-          // Check whether any reco vertex exists for the true MC collision of this track
-          for (const auto& [recoId, mcId] : recoToMc) {
-            if (mcId == mcOfTrack) {
-              recoOfTrueExists = true;
-              break;
-            }
-          }
+    for (const auto& track : tracks) {
+      float ndf = getTrackNdf(track);
+      const float chi2ndf = track.chi2() / ndf;
+      float phi = track.phi();
+      const float ptCut = track.pt();
+      o2::math_utils::bringTo02Pi(phi);
 
-          if (recoCol >= 0 && itRecoToMc != recoToMc.end()) {
-            int mcFromReco = itRecoToMc->second;
-            bin = (mcFromReco == mcOfTrack)
-                    ? static_cast<int>(RightWrongBin::Right)
-                    : static_cast<int>(RightWrongBin::Wrong);
-          }
-        }
+      const bool failTrackCuts =
+        track.nClusters() < cfgnCluster ||
+        track.eta() <= cfgnEta1 ||
+        track.eta() >= cfgnEta2 ||
+        chi2ndf >= cfgChi2NDFMax ||
+        phi <= cfgPhiCut1 ||
+        phi >= cfgPhiCut2 ||
+        (usePhiCut &&
+         ((phi <= PhiVetoLow) ||
+          ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
+          (phi >= PhiVetoHigh))) ||
+        (usePtCut && ptCut > cfgnPt);
 
-        registry.fill(HIST("RightWrong"), bin);
+      if (failTrackCuts) {
+        continue;
+      }
 
-        if (bin == static_cast<int>(RightWrongBin::Wrong)) {
-          registry.fill(HIST("Purity/WrongVertexRecoExists"), recoOfTrueExists ? static_cast<int>(BoolBin::Yes) : static_cast<int>(BoolBin::No));
-        }
+      if (!passGenRecoTrackMode(track)) {
+        continue;
+      }
 
-        const auto fillTrackLabelSummary = [&](TrackLabelSummaryBin bin) {
-          registry.fill(HIST("Purity/TrackLabelSummary"), static_cast<int>(bin));
-        };
-        const auto fillTrackEtaCategory = [&](TrackLabelSummaryBin bin) {
-          constexpr float EtaSentinel = -999.f;
+      const int recoCol = track.collisionId();
+      if (acceptedRecoCols.find(recoCol) == acceptedRecoCols.end()) {
+        continue;
+      }
 
-          float etaAll = EtaSentinel;
-          float etaNoMc = EtaSentinel;
-          float etaFake = EtaSentinel;
-          float etaTrue = EtaSentinel;
-          float etaPrimary = EtaSentinel;
-          float etaSecondary = EtaSentinel;
+      const bool hasMcLabel = track.has_mcParticle();
+      const bool isFakeByLabel = hasMcLabel ? (track.mcMask() != 0) : false;
+      const bool isTrueByLabel = hasMcLabel && !isFakeByLabel;
+      const bool hasNoMcLabel = !hasMcLabel;
+      const bool isPrimaryCharged = hasMcLabel && !isFakeByLabel && track.mcParticle().isPhysicalPrimary();
+      const bool isSecondaryCharged = hasMcLabel && !isFakeByLabel && !track.mcParticle().isPhysicalPrimary();
+      const float eta = track.eta();
 
-          switch (bin) {
-            case TrackLabelSummaryBin::AllTracks:
-              etaAll = eta;
-              break;
-            case TrackLabelSummaryBin::NoMcLabel:
-              etaNoMc = eta;
-              break;
-            case TrackLabelSummaryBin::FakeTracks:
-              etaFake = eta;
-              break;
-            case TrackLabelSummaryBin::TrueTracks:
-              etaTrue = eta;
-              break;
-            case TrackLabelSummaryBin::PrimaryTracks:
-              etaPrimary = eta;
-              break;
-            case TrackLabelSummaryBin::SecondaryTracks:
-              etaSecondary = eta;
-              break;
-          }
+      int bin = static_cast<int>(RightWrongBin::Neither);
+      bool recoOfTrueExists = false;
 
-          registry.fill(HIST("Purity/TrackEtaCategorySparse"),
-                        etaAll, etaNoMc, etaFake, etaTrue, etaPrimary, etaSecondary);
-        };
+      /// const int bestColID = track.bestCollisionId();
+      const int mcOfTrack = isTrueByLabel ? track.mcParticle().mcCollisionId() : InvalidCollisionId;
 
-        // registry.fill(HIST("Purity/TrackLabelStatus"), hasMcLabel ? 1.0 : 0.0);
-        // registry.fill(HIST("Purity/TrackFakeStatus"), isFakeByLabel ? 1.0 : 0.0);
-
-        fillTrackLabelSummary(TrackLabelSummaryBin::AllTracks);
-        fillTrackEtaCategory(TrackLabelSummaryBin::AllTracks);
-
-        if (hasNoMcLabel) {
-          fillTrackLabelSummary(TrackLabelSummaryBin::NoMcLabel);
-          fillTrackEtaCategory(TrackLabelSummaryBin::NoMcLabel);
-          continue;
+      if (isTrueByLabel) {
+        auto itRecoList = mcToReco.find(mcOfTrack);
+        if (itRecoList != mcToReco.end() && !itRecoList->second.empty()) {
+          recoOfTrueExists = true;
         }
 
-        if (isFakeByLabel) {
-          fillTrackLabelSummary(TrackLabelSummaryBin::FakeTracks);
-          fillTrackEtaCategory(TrackLabelSummaryBin::FakeTracks);
-          continue;
+        auto itRecoToMc = recoToMc.find(recoCol);
+        if (recoCol >= 0 && itRecoToMc != recoToMc.end()) {
+          const int mcFromReco = itRecoToMc->second;
+          bin = (mcFromReco == mcOfTrack)
+                  ? static_cast<int>(RightWrongBin::Right)
+                  : static_cast<int>(RightWrongBin::Wrong);
+        }
+      }
+
+      registry.fill(HIST("RightWrong"), bin);
+
+      if (bin == static_cast<int>(RightWrongBin::Wrong)) {
+        registry.fill(HIST("Purity/WrongVertexRecoExists"),
+                      recoOfTrueExists ? static_cast<int>(WrongVertexRecoExistsBin::RecoOfTrueExists)
+                                       : static_cast<int>(WrongVertexRecoExistsBin::RecoOfTrueMissing));
+      }
+
+      const auto fillTrackLabelSummary = [&](TrackLabelSummaryBin binSummary) {
+        registry.fill(HIST("Purity/TrackLabelSummary"), static_cast<int>(binSummary));
+      };
+
+      const auto fillTrackEtaCategory = [&](TrackLabelSummaryBin binSummary) {
+        constexpr float EtaSentinel = -999.f;
+
+        float etaAll = EtaSentinel;
+        float etaNoMc = EtaSentinel;
+        float etaFake = EtaSentinel;
+        float etaTrue = EtaSentinel;
+        float etaPrimary = EtaSentinel;
+        float etaSecondary = EtaSentinel;
+
+        switch (binSummary) {
+          case TrackLabelSummaryBin::AllTracks:
+            etaAll = eta;
+            break;
+          case TrackLabelSummaryBin::NoMcLabel:
+            etaNoMc = eta;
+            break;
+          case TrackLabelSummaryBin::FakeTracks:
+            etaFake = eta;
+            break;
+          case TrackLabelSummaryBin::TrueTracks:
+            etaTrue = eta;
+            break;
+          case TrackLabelSummaryBin::PrimaryTracks:
+            etaPrimary = eta;
+            break;
+          case TrackLabelSummaryBin::SecondaryTracks:
+            etaSecondary = eta;
+            break;
         }
 
-        fillTrackLabelSummary(TrackLabelSummaryBin::TrueTracks);
-        fillTrackEtaCategory(TrackLabelSummaryBin::TrueTracks);
+        registry.fill(HIST("Purity/TrackEtaCategorySparse"),
+                      etaAll, etaNoMc, etaFake, etaTrue, etaPrimary, etaSecondary);
+      };
 
-        if (isPrimaryCharged) {
-          fillTrackLabelSummary(TrackLabelSummaryBin::PrimaryTracks);
-          fillTrackEtaCategory(TrackLabelSummaryBin::PrimaryTracks);
-        }
+      fillTrackLabelSummary(TrackLabelSummaryBin::AllTracks);
+      fillTrackEtaCategory(TrackLabelSummaryBin::AllTracks);
 
-        if (isSecondaryCharged) {
-          fillTrackLabelSummary(TrackLabelSummaryBin::SecondaryTracks);
-          fillTrackEtaCategory(TrackLabelSummaryBin::SecondaryTracks);
-        }
-        // registry.fill(HIST("RightWrong"), bin);
+      if (hasNoMcLabel) {
+        fillTrackLabelSummary(TrackLabelSummaryBin::NoMcLabel);
+        fillTrackEtaCategory(TrackLabelSummaryBin::NoMcLabel);
+        continue;
+      }
 
-      } // Track loop 1
-    } // Collision
+      if (isFakeByLabel) {
+        fillTrackLabelSummary(TrackLabelSummaryBin::FakeTracks);
+        fillTrackEtaCategory(TrackLabelSummaryBin::FakeTracks);
+        continue;
+      }
+
+      fillTrackLabelSummary(TrackLabelSummaryBin::TrueTracks);
+      fillTrackEtaCategory(TrackLabelSummaryBin::TrueTracks);
+
+      if (isPrimaryCharged) {
+        fillTrackLabelSummary(TrackLabelSummaryBin::PrimaryTracks);
+        fillTrackEtaCategory(TrackLabelSummaryBin::PrimaryTracks);
+      }
+
+      if (isSecondaryCharged) {
+        fillTrackLabelSummary(TrackLabelSummaryBin::SecondaryTracks);
+        fillTrackEtaCategory(TrackLabelSummaryBin::SecondaryTracks);
+      }
+    }
   }
   PROCESS_SWITCH(PseudorapidityDensityMFT, processGenRecoTimeCom,
                  "Process for MC time compatible", false);
@@ -2277,75 +2311,99 @@ struct PseudorapidityDensityMFT {
   // aod::McCollisions::iterator const& mcCollision
   // McCollisionsWithExtra::iterator const& mcCollision
 
-  // void processMCeff(soa::Join<aod::McCollisions, aod::McCollsExtra>::iterator const& mcCollision, CollisionMCRecTable const& RecCols, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
-  // soa::Join<aod::McCollisions, aod::McCollsExtra>::iterator const& mcCollision //This worked
+  template <typename MFTTracksT>
   void processGenReco(McCollisionsWithExtra::iterator const& mcCollision,
                       o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions,
                       FullBCs const& bcs,
-                      MFTTracksLabeled const& tracks,
+                      MFTTracksT const& tracks,
                       FiCentralTracks const& midtracks,
                       aod::McParticles const&)
-
   {
-
     const auto fillGenRecoCut = [&](GenRecoCutBin bin) {
       registry.fill(HIST("EventsRecoCuts_GenReco"), static_cast<int>(bin));
     };
     fillGenRecoCut(GenRecoCutBin::AllRecoCollisions);
 
-    // if (maxGenRecoEvents >= 0 && nProcessedGenReco >= maxGenRecoEvents) {
-    //   return;
-    // }
-    // ++nProcessedGenReco; // for HIR
     std::unordered_map<int, int> recoToMc;
-    std::unordered_map<int, std::vector<int>> mcToReco; // MC collision id -> list of reco collision globalIndex
-    std::unordered_map<float, float> recoToMcVZ;
+    std::unordered_map<int, std::vector<int>> mcToReco;
+    std::unordered_set<int> acceptedRecoCols;
     std::unordered_map<int, float> recoVtxX;
     std::unordered_map<int, float> recoVtxY;
     std::unordered_map<int, float> recoVtxZ;
+    std::unordered_set<int> recoCollisionIds;
+    std::unordered_set<int> trueMCCollisionIds;
     std::unordered_map<int, std::array<double, 3>> recoVtxByRecoId;
     std::unordered_map<int, std::array<double, 3>> recoVtxByMcId;
 
+    recoToMc.reserve(collisions.size());
+    mcToReco.reserve(collisions.size());
+    acceptedRecoCols.reserve(collisions.size());
+    recoCollisionIds.reserve(collisions.size());
+    trueMCCollisionIds.reserve(collisions.size());
     recoVtxByRecoId.reserve(collisions.size());
     recoVtxByMcId.reserve(collisions.size());
-    mcToReco.reserve(collisions.size());
 
-    // --- Make sure magnetic field exists in THIS device before any propagation ---
-    // IMPORTANT: calling collision.bc_as<FullBCs>() requires the BC table to be subscribed.
-    // We subscribe by taking `FullBCs const& bcs` in the process signature and init once here.
     bool magInited = false;
     for (auto const& bc : bcs) {
       initMagField(bc);
       magInited = true;
-      break; // once is enough (initMagField is internally guarded)
+      break;
     }
     if (!magInited) {
       LOGF(fatal, "BC table is empty: cannot initialize magnetic field");
     }
 
-    //_______________________________________________________________________________
+    const auto countAndPassEvSelGenReco = [&](auto const& collision) {
+      struct EvSelStep {
+        bool enabled;
+        decltype(aod::evsel::kIsTriggerTVX) bit;
+        GenRecoCutBin bin;
+      };
+
+      const std::array<EvSelStep, 10> steps = {{
+        {true, aod::evsel::kIsTriggerTVX, GenRecoCutBin::IsTriggerTVX},
+        {true, aod::evsel::kNoTimeFrameBorder, GenRecoCutBin::NoTimeFrameBorder},
+        {true, aod::evsel::kNoITSROFrameBorder, GenRecoCutBin::NoITSROFrameBorder},
+        {useNoSameBunchPileup, aod::evsel::kNoSameBunchPileup, GenRecoCutBin::NoSameBunchPileup},
+        {useGoodZvtxFT0vsPV, aod::evsel::kIsGoodZvtxFT0vsPV, GenRecoCutBin::GoodZvtxFT0vsPV},
+        {useNoCollInRofStandard, aod::evsel::kNoCollInRofStandard, GenRecoCutBin::NoCollInRofStandard},
+        {useNoCollInRofStrict, aod::evsel::kNoCollInRofStrict, GenRecoCutBin::NoCollInRofStrict},
+        {useNoCollInTimeRangeStandard, aod::evsel::kNoCollInTimeRangeStandard, GenRecoCutBin::NoCollInTimeRangeStandard},
+        {useNoCollInTimeRangeStrict, aod::evsel::kNoCollInTimeRangeStrict, GenRecoCutBin::NoCollInTimeRangeStrict},
+        {useNoHighMultCollInPrevRof, aod::evsel::kNoHighMultCollInPrevRof, GenRecoCutBin::NoHighMultCollInPrevRof},
+      }};
+
+      if (!useEvSel) {
+        for (const auto& step : steps) {
+          fillGenRecoCut(step.bin);
+        }
+        fillGenRecoCut(GenRecoCutBin::RctMFT);
+        return true;
+      }
+
+      for (const auto& step : steps) {
+        if (!step.enabled) {
+          fillGenRecoCut(step.bin);
+          continue;
+        }
+
+        if (!collision.selection_bit(step.bit)) {
+          return false;
+        }
+        fillGenRecoCut(step.bin);
+      }
+
+      if (useRctMFT && !myChecker(collision)) {
+        return false;
+      }
+      fillGenRecoCut(GenRecoCutBin::RctMFT);
+
+      return true;
+    };
 
     for (const auto& collision : collisions) {
       int nSavedRows = 0;
       std::unordered_set<int> uniqueRecoColsSaved;
-      int recoCol = collision.globalIndex(); // reconstructed vertex index
-      int mcCol = collision.mcCollisionId(); // true MC collision index
-
-      if (mcCol >= 0) {
-        recoToMc[recoCol] = mcCol;
-        mcToReco[mcCol].push_back(recoCol);
-
-        ++nSavedRows;
-        uniqueRecoColsSaved.insert(recoCol);
-      }
-      registry.fill(HIST("Purity/HashTableRowCounts"),
-                    static_cast<int>(HashTableRowCountsBin::RowsSaved), nSavedRows);
-      registry.fill(HIST("Purity/HashTableRowCounts"),
-                    static_cast<int>(HashTableRowCountsBin::UniqueRecoColsSaved), uniqueRecoColsSaved.size());
-
-      recoVtxX[recoCol] = collision.posX();
-      recoVtxY[recoCol] = collision.posY();
-      recoVtxZ[recoCol] = collision.posZ();
 
       registry.fill(HIST("Purity/reco/CollisionNumContrib"), collision.numContrib());
 
@@ -2355,58 +2413,10 @@ struct PseudorapidityDensityMFT {
       fillGenRecoCut(GenRecoCutBin::UseContBestCollisionIndex);
 
       if (!collision.has_mcCollision()) {
-        LOGF(warning, "No MC collision found...");
-        return;
+        LOGP(warning, "Reco collision {} has no MC collision label, skipping", collision.globalIndex());
+        continue;
       }
       fillGenRecoCut(GenRecoCutBin::HasMcCollision);
-
-      auto countAndPassEvSelGenReco = [&](auto const& collision) {
-        struct EvSelStep {
-          bool enabled;
-          decltype(aod::evsel::kIsTriggerTVX) bit;
-          GenRecoCutBin bin;
-        };
-
-        const std::array<EvSelStep, 10> steps = {{
-          {true, aod::evsel::kIsTriggerTVX, GenRecoCutBin::IsTriggerTVX},
-          {true, aod::evsel::kNoTimeFrameBorder, GenRecoCutBin::NoTimeFrameBorder},
-          {true, aod::evsel::kNoITSROFrameBorder, GenRecoCutBin::NoITSROFrameBorder},
-          {useNoSameBunchPileup, aod::evsel::kNoSameBunchPileup, GenRecoCutBin::NoSameBunchPileup},
-          {useGoodZvtxFT0vsPV, aod::evsel::kIsGoodZvtxFT0vsPV, GenRecoCutBin::GoodZvtxFT0vsPV},
-          {useNoCollInRofStandard, aod::evsel::kNoCollInRofStandard, GenRecoCutBin::NoCollInRofStandard},
-          {useNoCollInRofStrict, aod::evsel::kNoCollInRofStrict, GenRecoCutBin::NoCollInRofStrict},
-          {useNoCollInTimeRangeStandard, aod::evsel::kNoCollInTimeRangeStandard, GenRecoCutBin::NoCollInTimeRangeStandard},
-          {useNoCollInTimeRangeStrict, aod::evsel::kNoCollInTimeRangeStrict, GenRecoCutBin::NoCollInTimeRangeStrict},
-          {useNoHighMultCollInPrevRof, aod::evsel::kNoHighMultCollInPrevRof, GenRecoCutBin::NoHighMultCollInPrevRof},
-        }};
-
-        if (!useEvSel) {
-          for (const auto& step : steps) {
-            fillGenRecoCut(step.bin);
-          }
-          fillGenRecoCut(GenRecoCutBin::RctMFT);
-          return true;
-        }
-
-        for (const auto& step : steps) {
-          if (!step.enabled) {
-            fillGenRecoCut(step.bin);
-            continue;
-          }
-
-          if (!collision.selection_bit(step.bit)) {
-            return false;
-          }
-          fillGenRecoCut(step.bin);
-        }
-
-        if (useRctMFT && !myChecker(collision)) {
-          return false;
-        }
-        fillGenRecoCut(GenRecoCutBin::RctMFT);
-
-        return true;
-      };
 
       if (!countAndPassEvSelGenReco(collision)) {
         continue;
@@ -2424,202 +2434,342 @@ struct PseudorapidityDensityMFT {
       }
       fillGenRecoCut(GenRecoCutBin::InelGt0);
 
-      //________________________________________________________________________________
+      const int recoCol = collision.globalIndex();
+      const int mcCol = collision.mcCollisionId();
+
+      acceptedRecoCols.insert(recoCol);
+      recoCollisionIds.insert(recoCol);
+      trueMCCollisionIds.insert(mcCol);
+
+      if (mcCol >= 0) {
+        recoToMc[recoCol] = mcCol;
+        mcToReco[mcCol].push_back(recoCol);
+        ++nSavedRows;
+        uniqueRecoColsSaved.insert(recoCol);
+      }
+
+      registry.fill(HIST("Purity/HashTableRowCounts"),
+                    static_cast<int>(HashTableRowCountsBin::RowsSaved), nSavedRows);
+      registry.fill(HIST("Purity/HashTableRowCounts"),
+                    static_cast<int>(HashTableRowCountsBin::UniqueRecoColsSaved), uniqueRecoColsSaved.size());
+
+      recoVtxX[recoCol] = collision.posX();
+      recoVtxY[recoCol] = collision.posY();
+      recoVtxZ[recoCol] = collision.posZ();
+      recoVtxByRecoId[recoCol] = {collision.posX(), collision.posY(), collision.posZ()};
+      recoVtxByMcId[mcCol] = {mcCollision.posX(), mcCollision.posY(), mcCollision.posZ()};
 
       registry.fill(HIST("Purity/xReco"), collision.posX());
       registry.fill(HIST("Purity/xTrue"), mcCollision.posX());
       registry.fill(HIST("Purity/yReco"), collision.posY());
-
       registry.fill(HIST("Purity/yTrue"), mcCollision.posY());
       registry.fill(HIST("Purity/zReco"), collision.posZ());
       registry.fill(HIST("Purity/zTrue"), mcCollision.posZ());
-
-      // --- Vertex position THnSparse: status axis (1=reco, 2=true) ---
       registry.fill(HIST("Purity/VtxXYZTruth"), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
       registry.fill(HIST("Purity/VtxXYZReco"), collision.posX(), collision.posY(), collision.posZ());
-
-      // --- Delta vertex THnSparse (reco - true) ---
       registry.fill(HIST("Purity/DeltaVtxXYZ"),
-                    collision.posX() - mcCollision.posX(), // Reco - Truth
+                    collision.posX() - mcCollision.posX(),
                     collision.posY() - mcCollision.posY(),
                     collision.posZ() - mcCollision.posZ());
+    }
 
-      recoVtxByRecoId[collision.globalIndex()] = {collision.posX(), collision.posY(), collision.posZ()};
-      recoVtxByMcId[collision.mcCollisionId()] = {mcCollision.posX(), mcCollision.posY(), mcCollision.posZ()};
+    int64_t woOrpCount = 0;
+    bool filledRight = false;
+    bool filledWrong = false;
+    int nMftSelectedAfterCuts = 0;
+    std::unordered_set<int> uniqueBestRecoCols;
 
-      int64_t woOrpCount = 0;
-      bool filledRight = false;
-      bool filledWrong = false;
-      int nMftSelectedAfterCuts = 0;
-      std::unordered_set<int> uniqueBestRecoCols;
-      // auto particle = templatedTrack.template mcParticle_as<aod::McParticles>();
+    if (tracks.size() > 0) {
+      bool countedPrimary = false;
+      for (const auto& track : tracks) {
+        float ndf = getTrackNdf(track);
+        float chi2ndf = track.chi2() / ndf;
+        float phi = track.phi();
+        float dcaXyCut = track.bestDCAXY();
+        float dcaZCut = 0.f;
+        bool failDCAzCut = false;
+        float ptCut = track.pt();
+        constexpr bool hasBestDCAZ = requires { track.bestDCAZ(); };
 
-      if (tracks.size() > 0) {
-        bool countedPrimary = false;
-        for (const auto& track : tracks) { // track loop starts
-          // All compatible collisions assigned by track-to-collision-associator
-          if (!(midtracks.size() > 0))
-            continue;
-          // std::cout <<" midtracks.size() " <<midtracks.size()<< std::endl; // "    track.globalIndex()  "<<track.globalIndex() This is track id
+        if constexpr (hasBestDCAZ) {
+          dcaZCut = track.bestDCAZ();
+          failDCAzCut = useDCAzCut && (std::abs(dcaZCut) > maxDCAz);
+        }
 
-          float ndf = getTrackNdf(track);
-          float chi2ndf = track.chi2() / ndf;
-          float phi = track.phi();
-          float dcaXyCut = track.bestDCAXY(); // UNCOMMENT THIS for tracks with reassociation 3d
-          float dcaZCut = track.bestDCAZ();   // UNCOMMENT THIS for tracks with reassociation 3d
-          float ptCut = track.pt();
+        o2::math_utils::bringTo02Pi(phi);
+        const float etaReco = track.eta();
+        const float dcaXYReco = dcaXyCut;
+        const float dcaZReco = hasBestDCAZ ? dcaZCut : 0.f;
+        const float dcaXReco = dcaXYReco * std::cos(phi);
+        const float dcaYReco = dcaXYReco * std::sin(phi);
 
-          o2::math_utils::bringTo02Pi(phi);
-          const float etaReco = track.eta();
-          const float dcaXYReco = dcaXyCut; // track.bestDCAXY()
-          const float dcaZReco = dcaZCut;   // track.bestDCAZ()
-          const float dcaXReco = dcaXYReco * std::cos(phi);
-          const float dcaYReco = dcaXYReco * std::sin(phi);
+        const bool failTrackCuts =
+          track.nClusters() < cfgnCluster ||
+          etaReco <= cfgnEta1 ||
+          etaReco >= cfgnEta2 ||
+          chi2ndf >= cfgChi2NDFMax ||
+          phi <= cfgPhiCut1 ||
+          phi >= cfgPhiCut2 ||
+          (usePhiCut &&
+           ((phi <= PhiVetoLow) ||
+            ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
+            (phi >= PhiVetoHigh))) ||
+          (useDCAxyCut && dcaXyCut > maxDCAxy) ||
+          failDCAzCut ||
+          (usePtCut && ptCut > cfgnPt);
 
-          const bool failTrackCuts =
-            track.nClusters() < cfgnCluster ||
-            etaReco <= cfgnEta1 ||
-            etaReco >= cfgnEta2 ||
-            chi2ndf >= cfgChi2NDFMax ||
-            phi <= cfgPhiCut1 ||
-            phi >= cfgPhiCut2 ||
-            (usePhiCut &&
-             ((phi <= PhiVetoLow) ||
-              ((phi >= PhiVetoPiMin) && (phi <= PhiVetoPiMax)) ||
-              (phi >= PhiVetoHigh))) ||
-            (useDCAxyCut && dcaXyCut > maxDCAxy) ||
-            (useDCAzCut && std::abs(dcaZCut) > maxDCAz) ||
-            (usePtCut && ptCut > cfgnPt);
+        if (failTrackCuts) {
+          continue;
+        }
 
-          if (failTrackCuts) {
-            continue;
+        if (!passGenRecoTrackMode(track)) {
+          continue;
+        }
+
+        const int recoCol = track.collisionId();
+        if (acceptedRecoCols.find(recoCol) == acceptedRecoCols.end()) {
+          continue;
+        }
+
+        auto itRecoVz = recoVtxZ.find(recoCol);
+        if (itRecoVz == recoVtxZ.end()) {
+          continue;
+        }
+        const float z = itRecoVz->second;
+
+        const bool hasMcLabel = track.has_mcParticle();
+        const bool isFakeByLabel = hasMcLabel ? (track.mcMask() != 0) : false;
+        const bool isTrueByLabel = hasMcLabel && !isFakeByLabel;
+        const bool hasNoMcLabel = !hasMcLabel;
+        const bool isPrimaryCharged = hasMcLabel && !isFakeByLabel && track.mcParticle().isPhysicalPrimary();
+        const bool isSecondaryCharged = hasMcLabel && !isFakeByLabel && !track.mcParticle().isPhysicalPrimary();
+        const auto fillTrackLabelSummary = [&](TrackLabelSummaryBin binSummary) {
+          registry.fill(HIST("Purity/TrackLabelSummary"), static_cast<int>(binSummary));
+        };
+
+        const auto fillTrackEtaCategory = [&](TrackLabelSummaryBin binSummary) {
+          constexpr float EtaSentinel = -999.f;
+
+          float etaAll = EtaSentinel;
+          float etaNoMc = EtaSentinel;
+          float etaFake = EtaSentinel;
+          float etaTrue = EtaSentinel;
+          float etaPrimary = EtaSentinel;
+          float etaSecondary = EtaSentinel;
+
+          switch (binSummary) {
+            case TrackLabelSummaryBin::AllTracks:
+              etaAll = etaReco;
+              break;
+            case TrackLabelSummaryBin::NoMcLabel:
+              etaNoMc = etaReco;
+              break;
+            case TrackLabelSummaryBin::FakeTracks:
+              etaFake = etaReco;
+              break;
+            case TrackLabelSummaryBin::TrueTracks:
+              etaTrue = etaReco;
+              break;
+            case TrackLabelSummaryBin::PrimaryTracks:
+              etaPrimary = etaReco;
+              break;
+            case TrackLabelSummaryBin::SecondaryTracks:
+              etaSecondary = etaReco;
+              break;
           }
 
-          const bool hasMcLabel = track.has_mcParticle();
-          const bool isFakeByLabel = hasMcLabel ? (track.mcMask() != 0) : false;
-          const bool isTrueByLabel = hasMcLabel && !isFakeByLabel;
-          const bool isPrimaryCharged = hasMcLabel && !isFakeByLabel && track.mcParticle().isPhysicalPrimary();
-          const bool isSecondaryCharged = hasMcLabel && !isFakeByLabel && !track.mcParticle().isPhysicalPrimary();
-          const auto mcColObj = track.mcParticle().mcCollision_as<McCollisionsWithExtra>();
-          const auto mcPart = track.mcParticle();
+          registry.fill(HIST("Purity/TrackEtaCategorySparse"),
+                        etaAll, etaNoMc, etaFake, etaTrue, etaPrimary, etaSecondary);
+        };
 
-          if (!passGenRecoTrackMode(track)) { //
-            continue;
+        fillTrackLabelSummary(TrackLabelSummaryBin::AllTracks);
+        fillTrackEtaCategory(TrackLabelSummaryBin::AllTracks);
+
+        if (hasMcLabel) {
+          const auto mcPartForMother = track.mcParticle();
+          if (!isPrimaryCharged && mcPartForMother.has_mothers()) {
+            auto mcpartMother = mcPartForMother.template mothers_as<aod::McParticles>().front();
+            if (mcpartMother.pdgCode() == PDG_t::kK0Short ||
+                std::abs(mcpartMother.pdgCode()) == PDG_t::kLambda0) {
+              registry.fill(HIST("Purity/reco/weakStrange/SelectedTracksEta"), track.eta());
+              registry.fill(HIST("Purity/reco/weakStrange/SelectedTracksEtaZvtx"), track.eta(), z);
+            }
           }
-          int bin = static_cast<int>(RightWrongBin::Neither);
-          bool recoOfTrueExists = false;
-          bool recoOfTrueInCompatible = false;
+        }
 
-          const int bestColID = track.bestCollisionId(); // same as track.collisionId();
-          if (isTrueByLabel) {
-            auto itRecoToMc = recoToMc.find(bestColID);
-            const int mcOfTrack = track.mcParticle().mcCollisionId();
-            const auto compatibleIds = track.compatibleCollIds();
-            auto itRecoList = mcToReco.find(mcOfTrack);
+        if (hasNoMcLabel) {
+          fillTrackLabelSummary(TrackLabelSummaryBin::NoMcLabel);
+          fillTrackEtaCategory(TrackLabelSummaryBin::NoMcLabel);
+        } else if (isFakeByLabel) {
+          fillTrackLabelSummary(TrackLabelSummaryBin::FakeTracks);
+          fillTrackEtaCategory(TrackLabelSummaryBin::FakeTracks);
+        } else {
+          fillTrackLabelSummary(TrackLabelSummaryBin::TrueTracks);
+          fillTrackEtaCategory(TrackLabelSummaryBin::TrueTracks);
 
-            // 1) First check whether the correct reco collision of the true MC collision
-            //    is present in the compatible-collision list.
-            if (!compatibleIds.empty() && itRecoList != mcToReco.end() && !itRecoList->second.empty()) {
-              for (const auto& trueRecoId : itRecoList->second) {
-                for (const auto& compatibleId : compatibleIds) {
-                  if (compatibleId == trueRecoId) {
-                    recoOfTrueInCompatible = true;
-                    break;
-                  }
-                }
-                if (recoOfTrueInCompatible) {
+          if (isPrimaryCharged) {
+            fillTrackLabelSummary(TrackLabelSummaryBin::PrimaryTracks);
+            fillTrackEtaCategory(TrackLabelSummaryBin::PrimaryTracks);
+          }
+
+          if (isSecondaryCharged) {
+            fillTrackLabelSummary(TrackLabelSummaryBin::SecondaryTracks);
+            fillTrackEtaCategory(TrackLabelSummaryBin::SecondaryTracks);
+          }
+        }
+
+        int bin = static_cast<int>(RightWrongBin::Neither);
+        bool recoOfTrueExists = false;
+        bool recoOfTrueInCompatible = false;
+
+        const int bestColID = track.bestCollisionId();
+        const int mcOfTrack = isTrueByLabel ? track.mcParticle().mcCollisionId() : InvalidCollisionId;
+
+        const bool foundRecoColInRecoList =
+          recoCollisionIds.find(recoCol) != recoCollisionIds.end();
+        const bool foundBestColInRecoList =
+          recoCollisionIds.find(bestColID) != recoCollisionIds.end();
+        const bool foundInMCTrueList =
+          isTrueByLabel && (trueMCCollisionIds.find(mcOfTrack) != trueMCCollisionIds.end());
+
+        static constexpr int RecoColMissingBin = 1;
+        static constexpr int BestRecoColMissingBin = 2;
+        static constexpr int TrueColMissingBin = 1;
+        if (!foundRecoColInRecoList) {
+          registry.fill(HIST("Purity/BestRecoColNotFound"), RecoColMissingBin);
+        }
+        if (!foundBestColInRecoList) {
+          registry.fill(HIST("Purity/BestRecoColNotFound"), BestRecoColMissingBin);
+        }
+        if (isTrueByLabel && !foundInMCTrueList) {
+          registry.fill(HIST("Purity/TrueColNotFound"), TrueColMissingBin);
+        }
+
+        if (!isTrueByLabel) {
+          registry.fill(HIST("Purity/NeitherReason"),
+                        static_cast<int>(NeitherReasonBin::NotTrueByLabel));
+        } else {
+          auto itRecoToMc = recoToMc.find(bestColID);
+          const auto compatibleIds = track.compatibleCollIds();
+          auto itRecoList = mcToReco.find(mcOfTrack);
+
+          if (!compatibleIds.empty() && itRecoList != mcToReco.end() && !itRecoList->second.empty()) {
+            for (const auto& trueRecoId : itRecoList->second) {
+              for (const auto& compatibleId : compatibleIds) {
+                if (compatibleId == trueRecoId) {
+                  recoOfTrueInCompatible = true;
                   break;
                 }
               }
-            }
-
-            // 2) Then check whether any reco collision for the true MC collision exists at all.
-            if (itRecoList != mcToReco.end() && !itRecoList->second.empty()) {
-              recoOfTrueExists = true;
-            }
-
-            // 3) Finally classify the actually chosen reco collision as right/wrong.
-            if (bestColID >= 0 && itRecoToMc != recoToMc.end()) {
-              const int mcFromReco = itRecoToMc->second;
-              bin = (mcFromReco == mcOfTrack)
-                      ? static_cast<int>(RightWrongBin::Right)
-                      : static_cast<int>(RightWrongBin::Wrong);
+              if (recoOfTrueInCompatible) {
+                break;
+              }
             }
           }
 
-          registry.fill(HIST("RightWrong"), bin);
-          registry.fill(HIST("Purity/RecoOfTrueExists"),
+          if (itRecoList != mcToReco.end() && !itRecoList->second.empty()) {
+            recoOfTrueExists = true;
+          }
+
+          if (bestColID < 0) {
+            registry.fill(HIST("Purity/NeitherReason"),
+                          static_cast<int>(NeitherReasonBin::BestColInvalid));
+          } else if (itRecoToMc == recoToMc.end()) {
+            registry.fill(HIST("Purity/NeitherReason"),
+                          static_cast<int>(NeitherReasonBin::BestColMissingInRecoToMc));
+          } else {
+            const int mcFromReco = itRecoToMc->second;
+            if (mcFromReco == mcOfTrack) {
+              bin = static_cast<int>(RightWrongBin::Right);
+              registry.fill(HIST("Purity/NeitherReason"),
+                            static_cast<int>(NeitherReasonBin::ClassifiedRight));
+            } else {
+              bin = static_cast<int>(RightWrongBin::Wrong);
+              registry.fill(HIST("Purity/NeitherReason"),
+                            static_cast<int>(NeitherReasonBin::ClassifiedWrong));
+            }
+          }
+        }
+
+        registry.fill(HIST("RightWrong"), bin);
+        registry.fill(HIST("Purity/RecoOfTrueExists"),
+                      recoOfTrueExists ? static_cast<int>(BoolBin::Yes)
+                                       : static_cast<int>(BoolBin::No));
+        registry.fill(HIST("Purity/RecoOfTrueInCompatible"),
+                      recoOfTrueInCompatible ? static_cast<int>(BoolBin::Yes)
+                                             : static_cast<int>(BoolBin::No));
+
+        if (bestColID >= 0) {
+          uniqueBestRecoCols.insert(bestColID);
+        }
+
+        if (bin == static_cast<int>(RightWrongBin::Wrong)) {
+          registry.fill(HIST("Purity/WrongVertexRecoExists"),
+                        recoOfTrueExists ? static_cast<int>(WrongVertexRecoExistsBin::RecoOfTrueExists)
+                                         : static_cast<int>(WrongVertexRecoExistsBin::RecoOfTrueMissing));
+          registry.fill(HIST("Purity/RecoOfTrueExistsW"),
                         recoOfTrueExists ? static_cast<int>(BoolBin::Yes)
                                          : static_cast<int>(BoolBin::No));
-          registry.fill(HIST("Purity/RecoOfTrueInCompatible"),
+          registry.fill(HIST("Purity/RecoOfTrueInCompatibleW"),
                         recoOfTrueInCompatible ? static_cast<int>(BoolBin::Yes)
                                                : static_cast<int>(BoolBin::No));
+        }
 
-          if (bin == static_cast<int>(RightWrongBin::Wrong)) {
-            registry.fill(HIST("Purity/WrongVertexRecoExists"),
-                          recoOfTrueExists ? static_cast<int>(WrongVertexRecoExistsBin::RecoOfTrueExists)
-                                           : static_cast<int>(WrongVertexRecoExistsBin::RecoOfTrueMissing));
-            registry.fill(HIST("Purity/RecoOfTrueExistsW"),
-                          recoOfTrueExists ? static_cast<int>(BoolBin::Yes)
-                                           : static_cast<int>(BoolBin::No));
-            registry.fill(HIST("Purity/RecoOfTrueInCompatibleW"),
-                          recoOfTrueInCompatible ? static_cast<int>(BoolBin::Yes)
-                                                 : static_cast<int>(BoolBin::No));
-          }
+        if (bin == static_cast<int>(RightWrongBin::Right)) {
+          registry.fill(HIST("Purity/RecoOfTrueExistsR"),
+                        recoOfTrueExists ? static_cast<int>(BoolBin::Yes)
+                                         : static_cast<int>(BoolBin::No));
+          registry.fill(HIST("Purity/RecoOfTrueInCompatibleR"),
+                        recoOfTrueInCompatible ? static_cast<int>(BoolBin::Yes)
+                                               : static_cast<int>(BoolBin::No));
+        }
 
-          if (bin == static_cast<int>(RightWrongBin::Right)) {
-            registry.fill(HIST("Purity/RecoOfTrueExistsR"),
-                          recoOfTrueExists ? static_cast<int>(BoolBin::Yes)
-                                           : static_cast<int>(BoolBin::No));
-            registry.fill(HIST("Purity/RecoOfTrueInCompatibleR"),
-                          recoOfTrueInCompatible ? static_cast<int>(BoolBin::Yes)
-                                                 : static_cast<int>(BoolBin::No));
-          }
+        registry.fill(HIST("Purity/RecoSparseAll"),
+                      etaReco, dcaXYReco, dcaZReco, dcaXReco, dcaYReco);
 
-          registry.fill(HIST("Purity/RecoSparseAll"),
+        if (isPrimaryCharged) {
+          registry.fill(HIST("Purity/RecoSparsePrimary"),
                         etaReco, dcaXYReco, dcaZReco, dcaXReco, dcaYReco);
-
-          if (isPrimaryCharged) {
-            registry.fill(HIST("Purity/RecoSparsePrimary"),
-                          etaReco, dcaXYReco, dcaZReco, dcaXReco, dcaYReco);
-          } else {
-            registry.fill(HIST("Purity/RecoSparseSecondary"),
-                          etaReco, dcaXYReco, dcaZReco, dcaXReco, dcaYReco);
-          }
-
-          registry.fill(HIST("RecoSparseAllBest"),
+        } else {
+          registry.fill(HIST("Purity/RecoSparseSecondary"),
                         etaReco, dcaXYReco, dcaZReco, dcaXReco, dcaYReco);
-          if (bin == static_cast<int>(RightWrongBin::Wrong)) {
-            float vzBest = 999.;
-            float vzTrue = 999.;
-            auto itVzBest = recoVtxZ.find(bestColID);
-            if (itVzBest != recoVtxZ.end()) {
-              vzBest = itVzBest->second;
-            }
-            auto itVzTrue = recoToMcVZ.find(vzBest);
-            if (itVzTrue != recoToMcVZ.end()) {
-              vzTrue = itVzBest->second;
-            }
-            double_t vztrueParticle = mcColObj.posZ();
-            double_t diff1 = vzBest - vztrueParticle;
-            double_t diff2 = vzBest - vzTrue;
-            registry.fill(HIST("deltaVZ_fromReco"), diff1);
-            registry.fill(HIST("deltaVZ_fromTrue"), diff2);
-            registry.fill(HIST("RecoSparseAllBestWrong"),
-                          etaReco, dcaXYReco, dcaZReco, dcaXReco, dcaYReco);
-          }
+        }
 
-          // Truth DCA components w.r.t. MC collision vertex
-          const auto dcaXtruth = mcPart.vx() - mcColObj.posX(); // here mcColObj -> mcPart.mcCollision()
+        registry.fill(HIST("RecoSparseAllBest"),
+                      etaReco, dcaXYReco, dcaZReco, dcaXReco, dcaYReco);
+
+        if (bin == static_cast<int>(RightWrongBin::Wrong)) {
+          float vzBest = 999.f;
+          float vzTrue = 999.f;
+          auto itVzBest = recoVtxZ.find(bestColID);
+          if (itVzBest != recoVtxZ.end()) {
+            vzBest = itVzBest->second;
+          }
+          auto itVzTrue = recoVtxZ.find(recoCol);
+          if (itVzTrue != recoVtxZ.end()) {
+            vzTrue = itVzTrue->second;
+          }
+          double_t vztrueParticle = track.mcParticle().template mcCollision_as<McCollisionsWithExtra>().posZ();
+          double_t diff1 = vzBest - vztrueParticle;
+          double_t diff2 = vzBest - vzTrue;
+          registry.fill(HIST("deltaVZ_fromReco"), diff1);
+          registry.fill(HIST("deltaVZ_fromTrue"), diff2);
+          registry.fill(HIST("RecoSparseAllBestWrong"),
+                        etaReco, dcaXYReco, dcaZReco, dcaXReco, dcaYReco);
+        }
+
+        if (hasMcLabel) {
+          const auto mcColObj = track.mcParticle().template mcCollision_as<McCollisionsWithExtra>();
+          const auto mcPart = track.mcParticle();
+
+          const auto dcaXtruth = mcPart.vx() - mcColObj.posX();
           const auto dcaYtruth = mcPart.vy() - mcColObj.posY();
-          const auto dcaZtruth = mcPart.vz() - mcColObj.posZ();
-          const auto dcaXYtruth = std::sqrt(dcaXtruth * dcaXtruth +
-                                            dcaYtruth * dcaYtruth);
+          const auto dcaZtruth = hasBestDCAZ ? (mcPart.vz() - mcColObj.posZ()) : 0.f;
+          const auto dcaXYtruth = std::sqrt(dcaXtruth * dcaXtruth + dcaYtruth * dcaYtruth);
 
           const float etaTruth = mcPart.eta();
           const bool isPrimaryTruth = mcPart.isPhysicalPrimary();
 
-          // Base truth histograms (independent of right/wrong vertex)
           registry.fill(HIST("Tracks/dca/Truth/THnDCAxyBestGenTruthAll"),
                         etaTruth, dcaXYtruth, dcaZtruth, dcaXtruth, dcaYtruth);
           if (isPrimaryTruth) {
@@ -2632,82 +2782,68 @@ struct PseudorapidityDensityMFT {
 
           registry.fill(HIST("Purity/reco/woOrp/woOrpTracksEtaZvtx"), track.eta(), z);
           registry.fill(HIST("Purity/reco/woOrp/woOrpTracksPtZvtx"), track.pt(), z);
-          if (perCollisionSampleCentral.size() > 0) {
-            registry.fill(HIST("Purity/reco/woOrp/woOrpEtaZvtx_gt0"), track.eta(), z);
-            registry.fill(HIST("Purity/reco/woOrp/woOrpPtZvtx_gt0"), track.pt(), z);
-            registry.fill(HIST("Purity/reco/woOrp/woOrpTracksDCAxyZvtx_gt0"), dcaXyCut, z);
-            registry.fill(HIST("Purity/reco/woOrp/woOrpTracksDCAzZvtx_gt0"), dcaZCut, z);
-          }
+          registry.fill(HIST("Purity/reco/woOrp/woOrpEtaZvtx_gt0"), track.eta(), z);
+          registry.fill(HIST("Purity/reco/woOrp/woOrpPtZvtx_gt0"), track.pt(), z);
+          registry.fill(HIST("Purity/reco/woOrp/woOrpTracksDCAxyZvtx_gt0"), dcaXyCut, z);
+          registry.fill(HIST("Purity/reco/woOrp/woOrpTracksDCAzZvtx_gt0"), dcaZCut, z);
           registry.fill(HIST("Purity/reco/woOrp/woOrpTracksPhiEta"), phi, track.eta());
 
           if (isFakeByLabel) {
-            //  std::cout << " track.eta() " <<track.eta()<<std::endl;
             registry.fill(HIST("Purity/reco/woOrp_fake/woOrpTracksEtaZvtx"), track.eta(), z);
             registry.fill(HIST("Purity/reco/woOrp_fake/woOrpTracksPtZvtx"), track.pt(), z);
             registry.fill(HIST("Purity/reco/woOrp_fake/woOrpTracksPhiEta"), phi, track.eta());
-            if (perCollisionSampleCentral.size() > 0) {
-              registry.fill(HIST("Purity/reco/woOrp_fake/woOrpEtaZvtx_gt0"), track.eta(), z);
-              registry.fill(HIST("Purity/reco/woOrp_fake/woOrpPtZvtx_gt0"), track.pt(), z);
-            }
+            registry.fill(HIST("Purity/reco/woOrp_fake/woOrpEtaZvtx_gt0"), track.eta(), z);
+            registry.fill(HIST("Purity/reco/woOrp_fake/woOrpPtZvtx_gt0"), track.pt(), z);
           }
           if (isTrueByLabel) {
-            // Has MC particle
-            //  std::cout << " track.eta() has mc particle " <<track.pt()<<std::endl;
             registry.fill(HIST("Purity/reco/woOrp_hasMC/woOrpTracksEtaZvtx"), track.eta(), z);
             registry.fill(HIST("Purity/reco/woOrp_hasMC/woOrpTracksPtZvtx"), track.pt(), z);
             registry.fill(HIST("Purity/reco/woOrp_hasMC/woOrpTracksPhiEta"), phi, track.eta());
-            if (perCollisionSampleCentral.size() > 0) {
-              registry.fill(HIST("Purity/reco/woOrp_hasMC/woOrpEtaZvtx_gt0"), track.eta(), z);
-              registry.fill(HIST("Purity/reco/woOrp_hasMC/woOrpPtZvtx_gt0"), track.pt(), z);
-            }
+            registry.fill(HIST("Purity/reco/woOrp_hasMC/woOrpEtaZvtx_gt0"), track.eta(), z);
+            registry.fill(HIST("Purity/reco/woOrp_hasMC/woOrpPtZvtx_gt0"), track.pt(), z);
           }
           if (isSecondaryCharged) {
             registry.fill(HIST("Purity/reco/woOrp_secondary/woOrpTracksEtaZvtx"), track.eta(), z);
             registry.fill(HIST("Purity/reco/woOrp_secondary/woOrpTracksPtZvtx"), track.pt(), z);
             registry.fill(HIST("Purity/reco/woOrp_secondary/woOrpTracksPhiEta"), phi, track.eta());
-            if (perCollisionSampleCentral.size() > 0) {
-              registry.fill(HIST("Purity/reco/woOrp_secondary/woOrpEtaZvtx_gt0"), track.eta(), z);
-              registry.fill(HIST("Purity/reco/woOrp_secondary/woOrpPtZvtx_gt0"), track.pt(), z);
-            }
+            registry.fill(HIST("Purity/reco/woOrp_secondary/woOrpEtaZvtx_gt0"), track.eta(), z);
+            registry.fill(HIST("Purity/reco/woOrp_secondary/woOrpPtZvtx_gt0"), track.pt(), z);
           }
           if (isPrimaryCharged) {
             registry.fill(HIST("Purity/reco/woOrp_primary/woOrpTracksEtaZvtx"), track.eta(), z);
             registry.fill(HIST("Purity/reco/woOrp_primary/woOrpTracksPtZvtx"), track.pt(), z);
             registry.fill(HIST("Purity/reco/woOrp_primary/woOrpTracksPhiEta"), phi, track.eta());
-            if (perCollisionSampleCentral.size() > 0) {
-              registry.fill(HIST("Purity/reco/woOrp_primary/woOrpEtaZvtx_gt0"), track.eta(), z);
-              registry.fill(HIST("Purity/reco/woOrp_primary/woOrpPtZvtx_gt0"), track.pt(), z);
-            }
+            registry.fill(HIST("Purity/reco/woOrp_primary/woOrpEtaZvtx_gt0"), track.eta(), z);
+            registry.fill(HIST("Purity/reco/woOrp_primary/woOrpPtZvtx_gt0"), track.pt(), z);
           }
 
           ++woOrpCount;
-          // Category 2: all reco tracks after selections (woOrp)
 
-          // --- Primary vs Fake accounting ---
           const float xTrue = mcColObj.posX();
           const float yTrue = mcColObj.posY();
           const float zTrue = mcColObj.posZ();
 
           std::array<double, 3> dcaInfOrig{999., 999., 999.};
-          std::array<double, 2> dcaChosen{999., 999.};          // (DCAxy, DCAz) to chosen reco vertex
-          std::array<double, 2> dcaRight{999., 999.};           // (DCAxy, DCAz) to truth MC vertex (reference)
-          std::array<double, 3> dcaChosenXYZ{999., 999., 999.}; // (DCAx, DCAy, DCAz) to chosen reco vertex
+          std::array<double, 2> dcaChosen{999., 999.};
+          std::array<double, 2> dcaRight{999., 999.};
+          std::array<double, 3> dcaChosenXYZ{999., 999., 999.};
 
           const double bZ = o2::base::Propagator::Instance()->getNominalBz();
 
-          // Build forward track parameters once per track, then use a fresh copy for each vertex propagation
-          std::vector<double> v1; // empty -> null cov
+          std::vector<double> v1;
           SMatrix55 tcovs(v1.begin(), v1.end());
           SMatrix5 tpars(track.x(), track.y(), track.phi(), track.tgl(), track.signed1Pt());
           o2::track::TrackParCovFwd trackPar0{track.z(), tpars, tcovs, track.chi2()};
 
-          auto trackPar = trackPar0; // copy
+          auto trackPar = trackPar0;
           dcaInfOrig = {999., 999., 999.};
-          const std::array<double, 3> vtxChosen{collision.posX(), collision.posY(), collision.posZ()};
-          trackPar.propagateToDCAhelix(bZ, vtxChosen, dcaInfOrig);
-          dcaChosenXYZ = dcaInfOrig; // store (DCAx, DCAy, DCAz)
-          dcaChosen[0] = std::sqrt(dcaInfOrig[0] * dcaInfOrig[0] + dcaInfOrig[1] * dcaInfOrig[1]);
-          dcaChosen[1] = dcaInfOrig[2];
+          auto itVtxChosen = recoVtxByRecoId.find(bestColID);
+          if (itVtxChosen != recoVtxByRecoId.end()) {
+            trackPar.propagateToDCAhelix(bZ, itVtxChosen->second, dcaInfOrig);
+            dcaChosenXYZ = dcaInfOrig;
+            dcaChosen[0] = std::sqrt(dcaInfOrig[0] * dcaInfOrig[0] + dcaInfOrig[1] * dcaInfOrig[1]);
+            dcaChosen[1] = dcaInfOrig[2];
+          }
 
           dcaInfOrig = {999., 999., 999.};
           const std::array<double, 3> vtxTruth{xTrue, yTrue, zTrue};
@@ -2716,30 +2852,21 @@ struct PseudorapidityDensityMFT {
           dcaRight[1] = dcaInfOrig[2];
 
           registry.fill(HIST("Purity/DCAyVsDCAx_Right"), dcaChosenXYZ[2], dcaChosenXYZ[1]);
-          // Fill only for WRONG-vertex tracks (the diagnostic you want)
           if (bin == static_cast<int>(RightWrongBin::Wrong)) {
-            //  std::cout <<"dcaxy choosen  " << dcaXyCut<<" dcaxy calculated  "<<dcaChosen[0]<<" dcaxy right "<<dcaRight[0]<< "dcaz choosen  " << dcaZCut<<" dcaz calculated  "<<dcaChosen[1]<<" dcaz right "<<dcaRight[1]<< std::endl; // "    track.globalIndex()  "<<track.globalIndex() This is track id
-
             registry.fill(HIST("Purity/THnDCAChosenVsRight_Wrong"),
                           etaReco, dcaXyCut, dcaChosen[0], dcaRight[0], dcaZCut, dcaChosen[1], dcaRight[1]);
           }
           if (bin == static_cast<int>(RightWrongBin::Right)) {
-            // std::cout <<"dcaxy choosen  " << dcaXyCut<<" dcaxy calculated  "<<dcaChosen[0]<<" dcaxy right "<<dcaRight[0]<< "dcaz choosen  " << dcaZCut<<" dcaz calculated  "<<dcaChosen[1]<<" dcaz right "<<dcaRight[1]<< std::endl; // "    track.globalIndex()  "<<track.globalIndex() This is track id
-
             registry.fill(HIST("Purity/THnDCAChosenVsRight_Right"),
                           etaReco, dcaXyCut, dcaChosen[0], dcaRight[0], dcaZCut, dcaChosen[1], dcaRight[1]);
-
             ++nMftSelectedAfterCuts;
           }
-          // --- end DCA-to-vertex diagnostic ---
 
           if (bin == static_cast<int>(RightWrongBin::Right)) {
-            // Right-vertex: all / primary / secondary
             registry.fill(HIST("Purity/RecoSparseRightAll"),
                           etaReco, dcaXYReco, dcaZReco, dcaXReco, dcaYReco);
             if (!filledRight) {
               registry.fill(HIST("Purity/RecoSparseRightAll_EventCount"), static_cast<int>(SingleCountBin::Count));
-
               filledRight = true;
             }
             if (isPrimaryCharged) {
@@ -2750,7 +2877,6 @@ struct PseudorapidityDensityMFT {
                             etaReco, dcaXYReco, dcaZReco, dcaXReco, dcaYReco);
             }
           } else if (bin == static_cast<int>(RightWrongBin::Wrong)) {
-            // Wrong-vertex: all / primary / secondary
             registry.fill(HIST("Purity/RecoSparseWrongAll"),
                           etaReco, dcaXYReco, dcaZReco, dcaXReco, dcaYReco);
             if (!filledWrong) {
@@ -2765,45 +2891,38 @@ struct PseudorapidityDensityMFT {
                             etaReco, dcaXYReco, dcaZReco, dcaXReco, dcaYReco);
             }
           }
-          // Reconstructed vertex position for bestbestColID, if available
+
           auto itVtxX = recoVtxX.find(bestColID);
-
           if (itVtxX != recoVtxX.end()) {
-
             const float xReco = itVtxX->second;
             const float yReco = recoVtxY[bestColID];
             const float zReco = recoVtxZ[bestColID];
             const bool recoVzIn = (zReco >= cfgVzCut1) && (zReco <= cfgVzCut2);
             const bool trueVzIn = (zTrue >= cfgVzCut1) && (zTrue <= cfgVzCut2);
 
-            if (!(recoVzIn && trueVzIn)) {
-              continue; // skip filling Delta* histos for this track
-            }
+            if (recoVzIn && trueVzIn) {
+              const float deltaXvtx = xReco - xTrue;
+              const float deltaYvtx = yReco - yTrue;
+              const float deltaZvtx = zReco - zTrue;
 
-            const float deltaXvtx = xReco - xTrue;
-            const float deltaYvtx = yReco - yTrue;
-            const float deltaZvtx = zReco - zTrue;
-
-            // We are interested in how far the WRONG collisions are from the true one
-            if (bin == static_cast<int>(RightWrongBin::Wrong)) {
-              registry.fill(HIST("Purity/DeltaXWrong"), deltaXvtx);
-              registry.fill(HIST("Purity/DeltaYWrong"), deltaYvtx);
-              registry.fill(HIST("Purity/DeltaZWrong"), deltaZvtx);
-            }
-            if (bin == static_cast<int>(RightWrongBin::Right)) {
-              registry.fill(HIST("Purity/DeltaXRight"), deltaXvtx);
-              registry.fill(HIST("Purity/DeltaYRight"), deltaYvtx);
-              registry.fill(HIST("Purity/DeltaZRight"), deltaZvtx);
+              if (bin == static_cast<int>(RightWrongBin::Wrong)) {
+                registry.fill(HIST("Purity/DeltaXWrong"), deltaXvtx);
+                registry.fill(HIST("Purity/DeltaYWrong"), deltaYvtx);
+                registry.fill(HIST("Purity/DeltaZWrong"), deltaZvtx);
+              }
+              if (bin == static_cast<int>(RightWrongBin::Right)) {
+                registry.fill(HIST("Purity/DeltaXRight"), deltaXvtx);
+                registry.fill(HIST("Purity/DeltaYRight"), deltaYvtx);
+                registry.fill(HIST("Purity/DeltaZRight"), deltaZvtx);
+              }
             }
           }
 
-          // --- Delta-DCA components: truth minus reco ---
           const float deltaDCAxy = dcaXYtruth - dcaXYReco;
           const float deltaDCAz = dcaZtruth - dcaZReco;
           const float deltaDCAx = dcaXtruth - dcaXReco;
           const float deltaDCAy = dcaYtruth - dcaYReco;
           if (bin == static_cast<int>(RightWrongBin::Right)) {
-            // Right-vertex: all / primary / secondary
             registry.fill(HIST("Tracks/dca/Truth/THnDeltaDCARightAll"),
                           deltaDCAxy, deltaDCAz, deltaDCAx, deltaDCAy);
             if (isPrimaryCharged) {
@@ -2814,7 +2933,6 @@ struct PseudorapidityDensityMFT {
                             deltaDCAxy, deltaDCAz, deltaDCAx, deltaDCAy);
             }
           } else {
-            // Wrong-vertex: all / primary / secondary
             registry.fill(HIST("Tracks/dca/Truth/THnDeltaDCAWrongAll"),
                           deltaDCAxy, deltaDCAz, deltaDCAx, deltaDCAy);
             if (isPrimaryCharged) {
@@ -2826,42 +2944,58 @@ struct PseudorapidityDensityMFT {
             }
           }
 
-          // auto mcColObj = track.mcParticle().mcCollision_as<McCollisionsWithExtra>();
-          // True primary match (purity numerator)
           registry.fill(HIST("Purity/mc/PrimaryAll"), static_cast<int>(SingleCountBin::Count));
           registry.fill(HIST("Purity/mc/PrimaryAllEta"), mcPart.eta());
           registry.fill(HIST("Purity/mc/PrimaryTracksEtaZvtx"), mcPart.eta(), mcCollision.posZ());
-          if (perCollisionSampleCentral.size() > 0) {
-            registry.fill(HIST("Purity/mc/PrimaryTracksEtaZvtx_gt0"), mcPart.eta(), mcCollision.posZ());
-            registry.fill(HIST("Purity/mc/PrimaryTracksPtZvtx_gt0"), mcPart.pt(), mcCollision.posZ());
-            registry.fill(HIST("Purity/mc/PrimaryTracksDCAxyZvtx_gt0"), dcaXyCut, mcCollision.posZ());
-            registry.fill(HIST("Purity/mc/PrimaryTracksDCAzZvtx_gt0"), dcaZCut, mcCollision.posZ());
-          }
+          registry.fill(HIST("Purity/mc/PrimaryTracksEtaZvtx_gt0"), mcPart.eta(), mcCollision.posZ());
+          registry.fill(HIST("Purity/mc/PrimaryTracksPtZvtx_gt0"), mcPart.pt(), mcCollision.posZ());
+          registry.fill(HIST("Purity/mc/PrimaryTracksDCAxyZvtx_gt0"), dcaXyCut, mcCollision.posZ());
+          registry.fill(HIST("Purity/mc/PrimaryTracksDCAzZvtx_gt0"), dcaZCut, mcCollision.posZ());
           registry.fill(HIST("Purity/mc/PrimaryTracksPhiEta"), mcPart.phi(), mcPart.eta());
           registry.fill(HIST("Purity/SelectedAfterDCAxy/PrimaryAll"), static_cast<int>(SingleCountBin::Count));
           registry.fill(HIST("Purity/SelectedAfterDCAxy/PrimaryAllEta"), mcPart.eta());
           countedPrimary = true;
 
-          // --- Purity profiles (mean of indicator gives purity) ---
           registry.fill(HIST("Purity/PurityOverall"),
                         static_cast<int>(SingleCountBin::Count),
                         countedPrimary ? static_cast<int>(BoolBin::Yes)
                                        : static_cast<int>(BoolBin::No));
-
           registry.fill(HIST("Purity/PurityVsEta"), track.eta(),
                         countedPrimary ? static_cast<int>(BoolBin::Yes)
                                        : static_cast<int>(BoolBin::No));
-        } // track loop
-        registry.fill(HIST("Purity/HashTableRowCounts"),
-                      static_cast<int>(HashTableRowCountsBin::UniqueBestRecoCols), uniqueBestRecoCols.size());
+        }
       }
-      registry.fill(HIST("Purity/reco/woOrp/nTrk"), woOrpCount);
-      registry.fill(HIST("Purity/reco/PNchMFT_afterCuts"), nMftSelectedAfterCuts);
-    } // collision
+    }
+
+    registry.fill(HIST("Purity/HashTableRowCounts"),
+                  static_cast<int>(HashTableRowCountsBin::UniqueBestRecoCols), uniqueBestRecoCols.size());
+    registry.fill(HIST("Purity/reco/woOrp/nTrk"), woOrpCount);
+    registry.fill(HIST("Purity/reco/PNchMFT_afterCuts"), nMftSelectedAfterCuts);
+  }
+  void processGenReco3d(McCollisionsWithExtra::iterator const& mcCollision,
+                        o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions,
+                        FullBCs const& bcs,
+                        MFTTracksLabeled3d const& tracks,
+                        FiCentralTracks const& midtracks,
+                        aod::McParticles const& mcParticles)
+  {
+    processGenReco(mcCollision, collisions, bcs, tracks, midtracks, mcParticles);
   }
 
-  PROCESS_SWITCH(PseudorapidityDensityMFT, processGenReco,
-                 "Process particle-level info of pt", false);
+  void processGenReco2d(McCollisionsWithExtra::iterator const& mcCollision,
+                        o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions,
+                        FullBCs const& bcs,
+                        MFTTracksLabeled2d const& tracks,
+                        FiCentralTracks const& midtracks,
+                        aod::McParticles const& mcParticles)
+  {
+    processGenReco(mcCollision, collisions, bcs, tracks, midtracks, mcParticles);
+  }
+  PROCESS_SWITCH(PseudorapidityDensityMFT, processGenReco3d,
+                 "Process gen-reco info with BestCollisionsFwd3d", true);
+
+  PROCESS_SWITCH(PseudorapidityDensityMFT, processGenReco2d,
+                 "Process gen-reco info with BestCollisionsFwd", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

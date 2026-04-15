@@ -81,7 +81,7 @@ DECLARE_SOA_COLUMN(D0PhiD, d0PhiD, float);
 DECLARE_SOA_COLUMN(D0Reflection, d0Reflection, int);
 } // namespace d0Info
 
-DECLARE_SOA_TABLE(D0DataTables, "AOD", "D0TABLE",
+DECLARE_SOA_TABLE(D0Tables, "AOD", "D0TABLE",
                   o2::soa::Index<>,
                   collisionInfo::CollisionTableId,
                   d0Info::D0PromptBDT,
@@ -105,7 +105,7 @@ DECLARE_SOA_TABLE(D0McPTables, "AOD", "D0MCPTABLE",
 namespace jetInfo
 {
 // D0 tables
-DECLARE_SOA_INDEX_COLUMN(D0DataTable, d0DataTable);
+DECLARE_SOA_INDEX_COLUMN(D0Table, d0Table);
 DECLARE_SOA_INDEX_COLUMN(D0McPTable, d0McPTable);
 // Jet
 DECLARE_SOA_COLUMN(JetPt, jetPt, float);
@@ -119,10 +119,10 @@ DECLARE_SOA_COLUMN(D0JetDeltaPhi, d0JetDeltaPhi, float);
 DECLARE_SOA_COLUMN(D0JetDeltaPhiP, d0JetDeltaPhiP, float);
 } // namespace jetInfo
 
-DECLARE_SOA_TABLE_STAGED(JetDataTables, "JETTABLE",
+DECLARE_SOA_TABLE_STAGED(JetTables, "JETTABLE",
                          o2::soa::Index<>,
                          collisionInfo::CollisionTableId,
-                         jetInfo::D0DataTableId,
+                         jetInfo::D0TableId,
                          jetInfo::JetPt,
                          jetInfo::JetEta,
                          jetInfo::JetPhi,
@@ -156,9 +156,9 @@ struct JetCorrelationD0 {
   Produces<aod::CollisionTables> tableCollision;
   Produces<aod::MatchCollTables> tableMatchedCollision;
   Produces<aod::McCollisionTables> tableMcCollision;
-  Produces<aod::D0DataTables> tableD0;
+  Produces<aod::D0Tables> tableD0;
   Produces<aod::D0McPTables> tableD0McParticle;
-  Produces<aod::JetDataTables> tableJet;
+  Produces<aod::JetTables> tableJet;
   Produces<aod::JetMcPTables> tableJetMcParticle;
   Produces<aod::JetMatchedTables> tableJetMatched;
 
