@@ -1677,7 +1677,7 @@ struct HStrangeCorrelation {
 
     if (doprocessMixedEventHV0sInBuffer || doprocessMixedEventHCascadesInBuffer) {
       validCollisions.resize(histos.get<TH1>(HIST("axes/hMultAxis"))->GetNbinsX() * histos.get<TH1>(HIST("axes/hVertexZAxis"))->GetNbinsX());
-      for (std::vector<ValidCollision>& inner_vec : validCollisions) {
+      for (std::vector<ValidCollision>& inner_vec : validCollisions) { // NOLINT: reserve() modifies the vector
         inner_vec.reserve(masterConfigurations.mixingParameter);
       }
     }
