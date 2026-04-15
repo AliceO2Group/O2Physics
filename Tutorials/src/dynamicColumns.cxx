@@ -13,8 +13,11 @@
 /// \author
 /// \since
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
 
 namespace o2::aod
 {

@@ -63,6 +63,8 @@ enum LambdaPid { kLambda = 0,
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
 struct Filter2Prong {
+  SliceCache cache;
+
   O2_DEFINE_CONFIGURABLE(cfgVerbosity, int, 0, "Verbosity level (0 = major, 1 = per collision)")
   O2_DEFINE_CONFIGURABLE(cfgYMax, float, -1.0f, "Maximum candidate rapidity")
   O2_DEFINE_CONFIGURABLE(cfgImPart1Mass, float, o2::constants::physics::MassKPlus, "Daughter particle 1 mass in GeV")
@@ -163,6 +165,10 @@ struct Filter2Prong {
     O2_DEFINE_CONFIGURABLE(removefaketrack, bool, true, "Flag to remove fake kaon");
     O2_DEFINE_CONFIGURABLE(applyTOF, bool, false, "Flag for applying TOF");
   } grpPhi;
+
+  O2_DEFINE_CONFIGURABLE(cfgNoMixedEvents, int, 5, "Number of mixed events per event for mixed phi building")
+  ConfigurableAxis axisVertexMix{"axisVertexMix", {7, -7, 7}, "vertex axis for phi event mixing"};
+  ConfigurableAxis axisMultiplicityMix{"axisMultiplicityMix", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity axis for phi event mixing"};
 
   HfHelper hfHelper;
   Produces<aod::CF2ProngTracks> output2ProngTracks;
@@ -306,8 +312,10 @@ struct Filter2Prong {
           }
         }
       }
+      uint8_t pcode =
+        (mcParticle.originMcGen() == RecoDecay::OriginType::Prompt) ? aod::cf2prongmcpart::Prompt : ((mcParticle.originMcGen() == RecoDecay::OriginType::NonPrompt) ? aod::cf2prongmcpart::NonPrompt : 0);
       output2ProngMcParts(prongCFId[0], prongCFId[1],
-                          (mcParticle.pdgCode() >= 0 ? aod::cf2prongtrack::D0ToPiK : aod::cf2prongtrack::D0barToKPiExclusive) | ((mcParticle.originMcGen() == RecoDecay::OriginType::Prompt) ? aod::cf2prongmcpart::Prompt : 0));
+                          (mcParticle.pdgCode() >= 0 ? aod::cf2prongtrack::D0ToPiK : aod::cf2prongtrack::D0barToKPiExclusive) | pcode);
     }
   }
   PROCESS_SWITCH(Filter2Prong, processMC, "Process MC 2-prong daughters", false);
@@ -789,6 +797,104 @@ struct Filter2Prong {
     } // end of loop over first track
   }
   PROCESS_SWITCH(Filter2Prong, processDataPhiV0, "Process data Phi and V0 candidates with invariant mass method", false);
+
+  using DerivedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities>;
+  void processDataPhiMixed(DerivedCollisions const& collisions, aod::CFTrackRefs const& cftracks)
+  {
+    auto getMultiplicity = [](auto const& col) {
+      return col.multiplicity();
+    };
+    using BinningTypeDerived = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
+    BinningTypeDerived configurableBinningDerived{{getMultiplicity}, {axisVertexMix, axisMultiplicityMix}, true};
+    auto tracksTuple = std::make_tuple(cftracks, cftracks);
+    using TA = std::tuple_element<0, decltype(tracksTuple)>::type;
+    using TB = std::tuple_element<std::tuple_size_v<decltype(tracksTuple)> - 1, decltype(tracksTuple)>::type;
+    Pair<DerivedCollisions, TA, TB, BinningTypeDerived> pairs{configurableBinningDerived, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+
+    o2::aod::ITSResponse itsResponse;
+
+    for (auto it = pairs.begin(); it != pairs.end(); it++) {
+      auto& [collision1, tracks1, collision2, tracks2] = *it;
+
+      if (!(collision1.sel8() &&
+            collision1.selection_bit(aod::evsel::kNoSameBunchPileup) &&
+            collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
+            collision1.selection_bit(aod::evsel::kIsGoodITSLayersAll))) {
+        continue;
+      }
+
+      if (!(collision2.sel8() &&
+            collision2.selection_bit(aod::evsel::kNoSameBunchPileup) &&
+            collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
+            collision2.selection_bit(aod::evsel::kIsGoodITSLayersAll))) {
+        continue;
+      }
+
+      for (const auto& cftrack1 : tracks1) {
+        const auto& p1 = cftrack1.track_as<Filter2Prong::PIDTrack>();
+
+        if (p1.sign() != 1) {
+          continue;
+        }
+        if (!selectionTrack(p1)) {
+          continue;
+        }
+        if (grpPhi.ITSPIDSelection &&
+            p1.p() < grpPhi.ITSPIDPthreshold.value &&
+            !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(p1) > grpPhi.lowITSPIDNsigma.value &&
+              itsResponse.nSigmaITS<o2::track::PID::Kaon>(p1) < grpPhi.highITSPIDNsigma.value)) {
+          continue;
+        }
+        if (grpPhi.removefaketrack && isFakeTrack(p1)) {
+          continue;
+        }
+
+        for (const auto& cftrack2 : tracks2) {
+          const auto& p2 = cftrack2.track_as<Filter2Prong::PIDTrack>();
+
+          if (p2.sign() != -1) {
+            continue;
+          }
+          if (!selectionTrack(p2)) {
+            continue;
+          }
+          if (grpPhi.ITSPIDSelection &&
+              p2.p() < grpPhi.ITSPIDPthreshold.value &&
+              !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(p2) > grpPhi.lowITSPIDNsigma.value &&
+                itsResponse.nSigmaITS<o2::track::PID::Kaon>(p2) < grpPhi.highITSPIDNsigma.value)) {
+            continue;
+          }
+          if (grpPhi.removefaketrack && isFakeTrack(p2)) {
+            continue;
+          }
+          if (!selectionPair(p1, p2)) {
+            continue;
+          }
+
+          if (selectionPID3(p1) && selectionPID3(p2)) {
+            if (selectionSys(p1, false, false) && selectionSys(p2, false, false)) {
+              ROOT::Math::PtEtaPhiMVector vec1(p1.pt(), p1.eta(), p1.phi(), cfgImPart1Mass);
+              ROOT::Math::PtEtaPhiMVector vec2(p2.pt(), p2.eta(), p2.phi(), cfgImPart2Mass);
+              ROOT::Math::PtEtaPhiMVector s = vec1 + vec2;
+
+              if (s.M() < grpPhi.ImMinInvMassPhiMeson || s.M() > grpPhi.ImMaxInvMassPhiMeson) {
+                continue;
+              }
+
+              float phi = RecoDecay::constrainAngle(s.Phi(), 0.0f);
+
+              output2ProngTracks(collision1.globalIndex(),
+                                 cftrack1.globalIndex(), cftrack2.globalIndex(),
+                                 s.pt(), s.eta(), phi, s.M(),
+                                 aod::cf2prongtrack::PhiToKKPID3Mixed);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  PROCESS_SWITCH(Filter2Prong, processDataPhiMixed, "Process mixed-event phi candidates using O2 framework", false);
 
   // Phi and V0s invariant mass method candidate finder. Only works for non-identical daughters of opposite charge for now.
   void processDataV0(aod::Collisions::iterator const& collision, aod::BCsWithTimestamps const&, aod::CFCollRefs const& cfcollisions, aod::CFTrackRefs const& cftracks, Filter2Prong::PIDTrack const&, aod::V0Datas const& V0s)

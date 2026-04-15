@@ -122,6 +122,15 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! Compute the overall momentum in GeV/c
                            [](float pt, float eta) -> float {
                              return pt * std::cosh(eta);
                            });
+
+DECLARE_SOA_COLUMN(ITSNSigmaEl, itsNSigmaEl, float); //! Nsigma separation with the Its detector for electron
+DECLARE_SOA_COLUMN(ITSNSigmaPi, itsNSigmaPi, float); //! Nsigma separation with the Its detector for pion
+DECLARE_SOA_COLUMN(ITSNSigmaKa, itsNSigmaKa, float); //! Nsigma separation with the Its detector for kaon
+DECLARE_SOA_COLUMN(ITSNSigmaPr, itsNSigmaPr, float); //! Nsigma separation with the Its detector for proton
+DECLARE_SOA_COLUMN(ITSNSigmaDe, itsNSigmaDe, float); //! Nsigma separation with the Its detector for deuteron
+DECLARE_SOA_COLUMN(ITSNSigmaTr, itsNSigmaTr, float); //! Nsigma separation with the Its detector for triton
+DECLARE_SOA_COLUMN(ITSNSigmaHe, itsNSigmaHe, float); //! Nsigma separation with the Its detector for helium3
+
 // debug variables
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                                  //! Sign of the track charge
 DECLARE_SOA_COLUMN(TpcNClsFound, tpcNClsFound, uint8_t);                                 //! Number of TPC clusters
@@ -220,6 +229,14 @@ DECLARE_SOA_TABLE(FDExtParticles, "AOD", "FDEXTPARTICLE",
                   pidtof_tiny::TOFNSigmaPr<pidtof_tiny::TOFNSigmaStorePr>,
                   pidtof_tiny::TOFNSigmaDe<pidtof_tiny::TOFNSigmaStoreDe>);
 using FDFullParticle = FDExtParticles::iterator;
+
+DECLARE_SOA_TABLE(FDItsParticles, "AOD", "FDITSPARTICLE",
+                  femtouniverseparticle::ITSNSigmaEl,
+                  femtouniverseparticle::ITSNSigmaPi,
+                  femtouniverseparticle::ITSNSigmaKa,
+                  femtouniverseparticle::ITSNSigmaPr,
+                  femtouniverseparticle::ITSNSigmaDe);
+using FDItsParticle = FDItsParticles::iterator;
 
 DECLARE_SOA_TABLE(FDCascParticles, "AOD", "FDCASCPARTICLE",
                   o2::soa::Index<>,
