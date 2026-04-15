@@ -550,8 +550,11 @@ struct PionTrackProducer {
     // Configurable<bool> forceTOF{"forceTOF", false, "force the TOF signal for the PID"};
     Configurable<float> tofPIDThreshold{"tofPIDThreshold", 0.5, "minimum pT after which TOF PID is applicable"};
     Configurable<std::vector<int>> trkPIDspecies{"trkPIDspecies", std::vector<int>{o2::track::PID::Kaon, o2::track::PID::Proton}, "Trk sel: Particles species for PID rejection, kaon, proton"};
-    Configurable<std::vector<float>> pidTPCMax{"pidTPCMax", std::vector<float>{2.0f, 2.0f}, "maximum nSigma TPC"};
-    Configurable<std::vector<float>> pidTOFMax{"pidTOFMax", std::vector<float>{2.0f, 2.0f}, "maximum nSigma TOF"};
+    Configurable<std::pair<float, float>> pidRangeTPCEl{"pidRangeTPCEl", {-3.0f, 5.0f}, "nSigma TPC range for electrons"};
+    Configurable<float> pidTPCMaxHadrons{"pidTPCMaxHadrons", 3.0f, "maximum nSigma TPC for hadrons"};
+    Configurable<float> pidTOFMaxHadrons{"pidTOFMaxHadrons", 3.0f, "maximum nSigma TOF for hadrons"};
+    Configurable<std::vector<float>> pidTPCMax{"pidTPCMax", std::vector<float>{3.0f, 3.0f}, "maximum nSigma TPC"};
+    Configurable<std::vector<float>> pidTOFMax{"pidTOFMax", std::vector<float>{3.0f, 3.0f}, "maximum nSigma TOF"};
 
     Configurable<float> cfgYAcceptance{"cfgYAcceptance", 0.5f, "Rapidity acceptance"};
   } trackConfigs;
@@ -636,20 +639,32 @@ struct PionTrackProducer {
     // Electron rejection
     auto nSigmaTPCEl = aod::pidutils::tpcNSigma(o2::track::PID::Electron, track);
 
-    if (nSigmaTPCEl > -3.0f && nSigmaTPCEl < 5.0f) {
+    if (nSigmaTPCEl > trackConfigs.pidRangeTPCEl->first && nSigmaTPCEl < trackConfigs.pidRangeTPCEl->second) {
       auto nSigmaTPCPi = aod::pidutils::tpcNSigma(o2::track::PID::Pion, track);
       auto nSigmaTPCKa = aod::pidutils::tpcNSigma(o2::track::PID::Kaon, track);
       auto nSigmaTPCPr = aod::pidutils::tpcNSigma(o2::track::PID::Proton, track);
 
-      if (std::abs(nSigmaTPCPi) > 3.0f &&
-          std::abs(nSigmaTPCKa) > 3.0f &&
-          std::abs(nSigmaTPCPr) > 3.0f) {
+      if (std::abs(nSigmaTPCPi) > trackConfigs.pidTPCMaxHadrons &&
+          std::abs(nSigmaTPCKa) > trackConfigs.pidTPCMaxHadrons &&
+          std::abs(nSigmaTPCPr) > trackConfigs.pidTPCMaxHadrons) {
         return false;
       }
     }
 
     // Other hadron species rejection
-    for (size_t speciesIndex = 0; speciesIndex < trackConfigs.trkPIDspecies->size(); ++speciesIndex) {
+    for (auto pid : {o2::track::PID::Kaon, o2::track::PID::Proton}) {
+      auto nSigmaTPC = aod::pidutils::tpcNSigma(pid, track);
+
+      if (std::abs(nSigmaTPC) < trackConfigs.pidTPCMaxHadrons) {
+        // Reject if only TPC is within threshold and TOF is unavailable or if both TPC and TOF are within thresholds
+        if (!track.hasTOF() || std::abs(aod::pidutils::tofNSigma(pid, track)) < trackConfigs.pidTOFMaxHadrons) {
+          return false;
+        }
+      }
+    }
+
+    // Other hadron species rejection
+    /*for (size_t speciesIndex = 0; speciesIndex < trackConfigs.trkPIDspecies->size(); ++speciesIndex) {
       auto const& pid = trackConfigs.trkPIDspecies->at(speciesIndex);
       auto nSigmaTPC = aod::pidutils::tpcNSigma(pid, track);
 
@@ -663,7 +678,7 @@ struct PionTrackProducer {
           return false; // Reject if only TPC is within threshold and TOF is unavailable
         }
       }
-    }
+    }*/
 
     return true;
   }
