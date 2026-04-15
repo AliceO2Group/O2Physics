@@ -23,7 +23,7 @@ namespace o2::aod::pwgem::dilepton::utils
 class EMFwdTrack
 {
  public:
-  EMFwdTrack(float pt, float eta, float phi, float /*mass*/, int8_t /*charge*/, float dcaX, float dcaY, float cXX, float cXY, float cYY)
+  EMFwdTrack(float pt, float eta, float phi, float /*mass*/, int8_t charge, float dcaX, float dcaY, float cXX, float cXY, float cYY)
   {
     fSigned1Pt = static_cast<float>(charge) / pt;
     fEta = eta;
