@@ -604,15 +604,15 @@ class PairTrackV0Builder
     int pdgCodePosDau = 0;
     int pdgCodeNegDau = 0;
     if (modes::isEqual(v0Type, modes::V0::kK0short)) {
-      pdgCodeNegDau = kPiPlus;
+      pdgCodePosDau = kPiPlus;
       pdgCodeNegDau = kPiMinus;
     } else if (modes::isEqual(v0Type, modes::V0::kLambda) || modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
       if (confV0Selection.sign.value > 0) {
-        pdgCodeNegDau = kProton;
+        pdgCodePosDau = kProton;
         pdgCodeNegDau = kPiMinus;
       } else {
+        pdgCodePosDau = kPiPlus;
         pdgCodeNegDau = kProtonBar;
-        pdgCodeNegDau = kPiPlus;
       }
     }
 

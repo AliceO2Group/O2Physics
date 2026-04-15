@@ -367,8 +367,8 @@ class CloseTrackRejection
   {
     double arg = 0.3 * (0.1 * magfield) * (0.01 * radius) / (2. * signedPt);
     if (std::fabs(arg) <= 1.) {
-      double phistar = phi - std::asin(arg);
-      return static_cast<float>(RecoDecay::constrainAngle(phistar));
+      double angle = phi - std::asin(arg);
+      return static_cast<float>(RecoDecay::constrainAngle(angle));
     }
     return std::nullopt;
   }

@@ -58,7 +58,7 @@ struct FemtoPairTrackTrack {
   // for analysis which require particles at high pt, add tof mass so sidebands can be used
   using FemtoTracksWithMass = o2::soa::Join<FemtoTracks, o2::aod::FTrackMass>;
 
-  using FemtoTracksWithLabel = o2::soa::Join<FemtoTracksWithMass, o2::aod::FTrackLabels>;
+  using FemtoTracksWithLabel = o2::soa::Join<FemtoTracks, o2::aod::FTrackLabels>;
 
   o2::framework::SliceCache cache;
 
@@ -84,8 +84,8 @@ struct FemtoPairTrackTrack {
   o2::framework::Partition<FemtoTracksWithMass> trackWithMassPartition2 = MAKE_TRACK_PARTITION_WITH_MASS(confTrackSelections2);
   o2::framework::Preslice<FemtoTracksWithMass> perColtracksWithMass = o2::aod::femtobase::stored::fColId;
 
-  o2::framework::Partition<FemtoTracksWithLabel> trackWithLabelPartition1 = MAKE_TRACK_PARTITION_WITH_MASS(confTrackSelections1);
-  o2::framework::Partition<FemtoTracksWithLabel> trackWithLabelPartition2 = MAKE_TRACK_PARTITION_WITH_MASS(confTrackSelections2);
+  o2::framework::Partition<FemtoTracksWithLabel> trackWithLabelPartition1 = MAKE_TRACK_PARTITION(confTrackSelections1);
+  o2::framework::Partition<FemtoTracksWithLabel> trackWithLabelPartition2 = MAKE_TRACK_PARTITION(confTrackSelections2);
   o2::framework::Preslice<FemtoTracksWithLabel> perColtracksWithLabel = o2::aod::femtobase::stored::fColId;
 
   // setup pairs

@@ -151,8 +151,8 @@ struct FemtoPairV0V0 {
   void init(o2::framework::InitContext&)
   {
     // TODO: implement lambda-k0short
-    bool processData = doprocessLambdaLambdaSameEvent || doprocessLambdaLambdaSameEvent || doprocessK0shortK0shortSameEvent || doprocessK0shortK0shortSameEvent;
-    bool processMc = doprocessLambdaLambdaSameEventMc || doprocessLambdaLambdaSameEventMc || doprocessK0shortK0shortSameEventMc || doprocessK0shortK0shortSameEventMc;
+    bool processData = doprocessLambdaLambdaSameEvent || doprocessLambdaLambdaMixedEvent || doprocessK0shortK0shortSameEvent || doprocessK0shortK0shortMixedEvent;
+    bool processMc = doprocessLambdaLambdaSameEventMc || doprocessLambdaLambdaMixedEventMc || doprocessK0shortK0shortSameEventMc || doprocessK0shortK0shortMixedEventMc;
 
     if (processData && processMc) {
       LOG(fatal) << "Both data and mc processing is enabled. Breaking...";
@@ -173,7 +173,6 @@ struct FemtoPairV0V0 {
 
     // setup histograms
     std::map<colhistmanager::ColHist, std::vector<o2::framework::AxisSpec>> colHistSpec;
-    std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> trackHistSpec;
     std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> posDauSpec;
     std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> negDauSpec;
     std::map<v0histmanager::V0Hist, std::vector<o2::framework::AxisSpec>> lambdaHistSpec;

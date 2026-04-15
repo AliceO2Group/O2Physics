@@ -32,8 +32,10 @@
 #include <array>
 #include <cmath>
 #include <map>
+#include <set>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 namespace o2::analysis::femto
@@ -98,9 +100,10 @@ enum PairHist {
 
   // mixing qa
   kSeNpart1VsNpart2,                         // number of particles 1 vs number of particles 2 in each same event
+  kMeMixingDepth,                            // mixing depth
+  kMeNpart1VsNpart2,                         // number of particles 1 vs number of particles 2 in each mixed event
   kMeNpart1,                                 // number of unique particles 1 in each mixing bin
   kMeNpart2,                                 // number of unique particles 2 in each mixing bin
-  kMeAverageNpart1VsAverageNpart2,           // average number of particles 1 vs average number of particles 2 in each mixing bin
   kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, // correlation of event properties in each mixing bin
 
   kPairHistogramLast
@@ -123,8 +126,8 @@ struct ConfMixing : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> policy{"policy", 0, "Binning policy for mixing (alywas in combination with z-vertex) -> 0: multiplicity, -> 1: centrality, -> 2: both"};
   o2::framework::Configurable<bool> sameSpecies{"sameSpecies", false, "Enable if particle 1 and particle 2 are the same"};
   o2::framework::Configurable<int> seed{"seed", -1, "Seed to randomize particle 1 and particle 2 (if they are identical). Set to negative value to deactivate. Set to 0 to generate unique seed in time."};
-  o2::framework::Configurable<bool> enableSameEventQa{"enableSameEventQa", false, "Enable qa plots for same event"};
-  o2::framework::Configurable<bool> enableMixedEventQa{"enableMixedEventQa", false, "Enable qa plots for mixed event"};
+  o2::framework::Configurable<bool> enablePairCorrelationQa{"enablePairCorrelationQa", true, "Enable pair-level correlation QA (same-event + mixed-event)"};
+  o2::framework::Configurable<bool> enableEventMixingQa{"enableEventMixingQa", false, "Enable QA of event properties used in event mixing (vtx, multiplicity, centrality)"};
   o2::framework::ConfigurableAxis particleBinning{"particleBinning", {50, -0.5f, 49.5f}, "Binning for particle number correlation in pairs"};
 };
 
@@ -225,10 +228,11 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
       {kTrueMinvVsMinv, o2::framework::kTH2F, "hTrueMinvVsMinv", "m_{Inv,True} vs m_{Inv}; m_{Inv,True} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2})"},
       {kTrueMultVsMult, o2::framework::kTH2F, "hTrueMultVsMult", "Multiplicity_{True} vs Multiplicity; Multiplicity_{True} ;  Multiplicity"},
       {kTrueCentVsCent, o2::framework::kTH2F, "hTrueCentVsCent", "Centrality_{True} vs Centrality; Centrality_{True} (%); Centrality (%)"},
-      {kSeNpart1VsNpart2, o2::framework::kTH2F, "hSeNpart1VsNpart2", "# particle 1 vs # particle in SE; # partilce 1; #particle 2"},
+      {kSeNpart1VsNpart2, o2::framework::kTH2F, "hSeNpart1VsNpart2", "# particle 1 vs # particle 2 in each same event; # partilce 1; # particle 2"},
+      {kMeMixingDepth, o2::framework::kTH1F, "hMeMixingDepth", "Mixing Depth; Mixing Depth ; Entries"},
+      {kMeNpart1VsNpart2, o2::framework::kTH2F, "hMeNpart1VsNpart2", "# particle 1 vs # particle 2 in each mixed event pair; # partilce 1; # particle 2"},
       {kMeNpart1, o2::framework::kTH1F, "hMeNpart1", "# particle 1 in each mixing bin; # partilce 1; Entries"},
       {kMeNpart2, o2::framework::kTH1F, "hMeNpart2", "# particle 2 in each mixing bin; # particle 2; Entries"},
-      {kMeAverageNpart1VsAverageNpart2, o2::framework::kTH2F, "hMeAverageNpart1VsAverageNpart2", "average # particle 1 vs average # particle in ME; Average # partilce 1; Average #particle 2"},
       {kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, o2::framework::kTHnSparseF, "hVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2", "Mixing bins; V_{z,1} (cm); multiplicity_{1}; centrality_{1} (%); V_{z,2} (cm); multiplicity_{2}; centrality_{2} (%)"},
     }};
 
@@ -267,9 +271,10 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
     {kKstarVsMtVsMass1VsMass2VsPt1VsPt2VsMultVsCent, {confAnalysis.kstar, confAnalysis.mt, confAnalysis.mass1, confAnalysis.mass2, confAnalysis.pt1, confAnalysis.pt2, confAnalysis.multiplicity, confAnalysis.centrality}}, \
     {kDalitz, {confAnalysis.kstar, confAnalysis.dalitzMtot, confAnalysis.dalitzM12, confAnalysis.dalitzM13}},                                                                                                                \
     {kSeNpart1VsNpart2, {confMixing.particleBinning, confMixing.particleBinning}},                                                                                                                                           \
+    {kMeMixingDepth, {confMixing.particleBinning}},                                                                                                                                                                          \
+    {kMeNpart1VsNpart2, {confMixing.particleBinning, confMixing.particleBinning}},                                                                                                                                           \
     {kMeNpart1, {confMixing.particleBinning}},                                                                                                                                                                               \
     {kMeNpart2, {confMixing.particleBinning}},                                                                                                                                                                               \
-    {kMeAverageNpart1VsAverageNpart2, {confMixing.particleBinning, confMixing.particleBinning}},                                                                                                                             \
     {kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, {confMixing.vtxBins, confMixing.multBins, confMixing.centBins, confMixing.vtxBins, confMixing.multBins, confMixing.centBins}},
 
 #define PAIR_HIST_MC_MAP(conf)                                 \
@@ -373,15 +378,8 @@ class PairHistManager
     mMassInvMin = ConfPairCuts.massInvMin.value;
     mMassInvMax = ConfPairCuts.massInvMax.value;
 
-    if constexpr (isFlagSet(mode, modes::Mode::kSe)) {
-      mSeMixingQa = ConfMixing.enableSameEventQa.value;
-      initSeMixingQa(Specs);
-    }
-
-    if constexpr (isFlagSet(mode, modes::Mode::kMe)) {
-      mMeMixingQa = ConfMixing.enableMixedEventQa.value;
-      initMeMixingQa(Specs);
-    }
+    mPairCorrelationQa = ConfMixing.enablePairCorrelationQa.value;
+    mEventMixingQa = ConfMixing.enableEventMixingQa.value;
 
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
       initAnalysis(Specs);
@@ -389,6 +387,14 @@ class PairHistManager
 
     if constexpr (isFlagSet(mode, modes::Mode::kMc)) {
       initMc(Specs);
+    }
+
+    if constexpr (isFlagSet(mode, modes::Mode::kSe)) {
+      initSeMixingQa(Specs);
+    }
+
+    if constexpr (isFlagSet(mode, modes::Mode::kMe)) {
+      initMeMixingQa(Specs);
     }
   }
 
@@ -565,14 +571,71 @@ class PairHistManager
     }
   }
 
-  template <modes::Mode mode, typename T1, typename T2>
-  void fillMixingQa(T1 const& particles1, T2 const& particles2)
+  template <typename T1, typename T2>
+  void trackParticlesPerMixingBin(T1 const& particle1, T2 const& particle2)
   {
-    if constexpr (isFlagSet(mode, modes::Mode::kSe)) {
-      fillMixingQaSe(particles1, particles2);
+    mUniqueParticles1PerMixingBin.emplace(particle1.globalIndex(), 0);
+    mUniqueParticles1PerMixingBin.at(particle1.globalIndex())++;
+    mUniqueParticles2PerMixingBin.emplace(particle2.globalIndex(), 0);
+    mUniqueParticles2PerMixingBin.at(particle2.globalIndex())++;
+  }
+
+  void resetTrackedParticlesPerMixingBin()
+  {
+    mUniqueParticles1PerMixingBin.clear();
+    mUniqueParticles2PerMixingBin.clear();
+  }
+
+  template <typename T1, typename T2>
+  void trackParticlesPerEvent(T1 const& particle1, T2 const& particle2)
+  {
+    mUniqueParticles1PerEvent.insert(particle1.globalIndex());
+    mUniqueParticles2PerEvent.insert(particle2.globalIndex());
+  }
+
+  template <typename T1, typename T2>
+  void fillMixingQaMe(T1 const& col1, T2 const& col2)
+  {
+    if (mEventMixingQa) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(MixingQaDir) + HIST(getHistName(kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, HistTable)), col1.posZ(), col1.mult(), col1.cent(), col2.posZ(), col2.mult(), col2.cent());
     }
-    if constexpr (isFlagSet(mode, modes::Mode::kMe)) {
-      // fillMc();
+  }
+
+  void resetTrackedParticlesPerEvent()
+  {
+    mUniqueParticles1PerEvent.clear();
+    mUniqueParticles2PerEvent.clear();
+  }
+
+  void fillMixingQaSe()
+  {
+    if (mPairCorrelationQa) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(MixingQaDir) + HIST(getHistName(kSeNpart1VsNpart2, HistTable)), mUniqueParticles1PerEvent.size(), mUniqueParticles2PerEvent.size());
+    }
+  }
+
+  void fillMixingQaMePerEvent()
+  {
+    if (mPairCorrelationQa) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(MixingQaDir) + HIST(getHistName(kMeNpart1VsNpart2, HistTable)), mUniqueParticles1PerEvent.size(), mUniqueParticles2PerEvent.size());
+    }
+  }
+
+  void fillMixingQaMePerMixingBin(int windowSize)
+  {
+    if (!mPairCorrelationQa || windowSize <= 0) {
+      return;
+    }
+    mHistogramRegistry->fill(HIST(prefix) + HIST(MixingQaDir) + HIST(getHistName(kMeMixingDepth, HistTable)), windowSize);
+    for (const auto& [_, nPart1] : mUniqueParticles1PerMixingBin) {
+      mHistogramRegistry->fill(
+        HIST(prefix) + HIST(MixingQaDir) + HIST(getHistName(kMeNpart1, HistTable)),
+        nPart1);
+    }
+    for (const auto& [_, nPart2] : mUniqueParticles2PerMixingBin) {
+      mHistogramRegistry->fill(
+        HIST(prefix) + HIST(MixingQaDir) + HIST(getHistName(kMeNpart2, HistTable)),
+        nPart2);
     }
   }
 
@@ -665,7 +728,7 @@ class PairHistManager
   void initSeMixingQa(std::map<PairHist, std::vector<o2::framework::AxisSpec>> const& Specs)
   {
     std::string mcDir = std::string(prefix) + std::string(MixingQaDir);
-    if (mSeMixingQa) {
+    if (mPairCorrelationQa) {
       mHistogramRegistry->add(mcDir + getHistNameV2(kSeNpart1VsNpart2, HistTable), getHistDesc(kSeNpart1VsNpart2, HistTable), getHistType(kSeNpart1VsNpart2, HistTable), {Specs.at(kSeNpart1VsNpart2)});
     }
   }
@@ -673,10 +736,13 @@ class PairHistManager
   void initMeMixingQa(std::map<PairHist, std::vector<o2::framework::AxisSpec>> const& Specs)
   {
     std::string mcDir = std::string(prefix) + std::string(MixingQaDir);
-    if (mMeMixingQa) {
+    if (mPairCorrelationQa) {
+      mHistogramRegistry->add(mcDir + getHistNameV2(kMeMixingDepth, HistTable), getHistDesc(kMeMixingDepth, HistTable), getHistType(kMeMixingDepth, HistTable), {Specs.at(kMeMixingDepth)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kMeNpart1VsNpart2, HistTable), getHistDesc(kMeNpart1VsNpart2, HistTable), getHistType(kMeNpart1VsNpart2, HistTable), {Specs.at(kMeNpart1VsNpart2)});
       mHistogramRegistry->add(mcDir + getHistNameV2(kMeNpart1, HistTable), getHistDesc(kMeNpart1, HistTable), getHistType(kMeNpart1, HistTable), {Specs.at(kMeNpart1)});
       mHistogramRegistry->add(mcDir + getHistNameV2(kMeNpart2, HistTable), getHistDesc(kMeNpart2, HistTable), getHistType(kMeNpart2, HistTable), {Specs.at(kMeNpart2)});
-      mHistogramRegistry->add(mcDir + getHistNameV2(kMeAverageNpart1VsAverageNpart2, HistTable), getHistDesc(kMeAverageNpart1VsAverageNpart2, HistTable), getHistType(kMeAverageNpart1VsAverageNpart2, HistTable), {Specs.at(kMeAverageNpart1VsAverageNpart2)});
+    }
+    if (mEventMixingQa) {
       mHistogramRegistry->add(mcDir + getHistNameV2(kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, HistTable), getHistDesc(kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, HistTable), getHistType(kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, HistTable), {Specs.at(kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2)});
     }
   }
@@ -763,14 +829,6 @@ class PairHistManager
     if (mHasMcCol) {
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueMultVsMult, HistTable)), mTrueMult, mMult);
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueCentVsCent, HistTable)), mTrueCent, mCent);
-    }
-  }
-
-  template <typename T1, typename T2>
-  void fillMixingQaSe(T1 const& particles1, T2 const& particles2)
-  {
-    if (mSeMixingQa) {
-      mHistogramRegistry->fill(HIST(prefix) + HIST(MixingQaDir) + HIST(getHistName(kSeNpart1VsNpart2, HistTable)), particles1.size(), particles2.size());
     }
   }
 
@@ -894,8 +952,14 @@ class PairHistManager
   bool mPlotDalitz = false;
 
   // qa
-  bool mSeMixingQa = false;
-  bool mMeMixingQa = false;
+  bool mPairCorrelationQa = false;
+  bool mEventMixingQa = false;
+
+  std::set<int64_t> mUniqueParticles1PerEvent = {};
+  std::set<int64_t> mUniqueParticles2PerEvent = {};
+
+  std::unordered_map<int64_t, int> mUniqueParticles1PerMixingBin = {};
+  std::unordered_map<int64_t, int> mUniqueParticles2PerMixingBin = {};
 };
 
 }; // namespace pairhistmanager
