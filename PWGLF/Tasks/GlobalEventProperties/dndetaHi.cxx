@@ -13,8 +13,6 @@
 /// \brief Task for dN/deta analysis in heavy ion collisions
 /// \author hyungjun lee <leehy@cern.ch>, joonsuk bae <jbae@cern.ch>
 
-#include "Index.h"
-
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
