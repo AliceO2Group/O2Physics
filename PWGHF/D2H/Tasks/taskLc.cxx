@@ -73,6 +73,9 @@ using namespace o2::analysis::hf_upc;
 
 /// Λc± → p± K∓ π± analysis task
 struct HfTaskLc {
+  Produces<o2::aod::HfUpcLcBdtInfos> rowCandUpcBdt;
+  Produces<o2::aod::HfUpcLcInfos> rowCandUpc;
+
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
   Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
@@ -110,9 +113,6 @@ struct HfTaskLc {
   Filter filterSelectCandidates = aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc;
   Preslice<aod::HfCand3Prong> candLcPerCollision = aod::hf_cand::collisionId;
   PresliceUnsorted<aod::McCollisionLabels> colPerMcCollision = aod::mcparticle::mcCollisionId;
-
-  Produces<o2::aod::HfUpcLcBdtInfos> rowCandUpcBdt;
-  Produces<o2::aod::HfUpcLcInfos> rowCandUpc;
 
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {72, 0, 36}, ""};
   ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {300, 1.98, 2.58}, ""};
