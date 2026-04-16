@@ -206,6 +206,8 @@ struct skimmerPrimaryMuon {
     fRegistry.add("MFTMCHMID/hDCAy_PosZ", "DCAy vs. posZ;Z_{vtx} (cm);DCA_{y} (cm)", kTH2F, {{200, -10, +10}, {400, -0.2, +0.2}}, false);
     fRegistry.add("MFTMCHMID/hDCAx_Phi", "DCAx vs. #varphi;#varphi (rad.);DCA_{x} (cm)", kTH2F, {{90, 0, 2 * M_PI}, {400, -0.2, +0.2}}, false);
     fRegistry.add("MFTMCHMID/hDCAy_Phi", "DCAy vs. #varphi;#varphi (rad.);DCA_{y} (cm)", kTH2F, {{90, 0, 2 * M_PI}, {400, -0.2, +0.2}}, false);
+    fRegistry.add("MFTMCHMID/hMeanDCAx", "<DCAy>;X_{IU} (cm);Y_IU} (cm);<DCA_{x}> (cm)", kTProfile2D, {{240, -12, +12}, {240, -12, +12}}, false);
+    fRegistry.add("MFTMCHMID/hMeanDCAy", "<DCAy>;X_{IU} (cm);Y_IU} (cm);<DCA_{y}> (cm)", kTProfile2D, {{240, -12, +12}, {240, -12, +12}}, false);
     fRegistry.add("MFTMCHMID/hNmu", "#mu multiplicity;N_{#mu} per collision", kTH1F, {{21, -0.5, 20.5}}, false);
 
     fRegistry.addClone("MFTMCHMID/", "MCHMID/");
@@ -518,6 +520,8 @@ struct skimmerPrimaryMuon {
           fRegistry.fill(HIST("MFTMCHMID/hDCAy_PosZ"), collision.posZ(), dcaY);
           fRegistry.fill(HIST("MFTMCHMID/hDCAx_Phi"), phi, dcaX);
           fRegistry.fill(HIST("MFTMCHMID/hDCAy_Phi"), phi, dcaY);
+          fRegistry.fill(HIST("MFTMCHMID/hMeanDCAx"), fwdtrack.x(), fwdtrack.y(), dcaX);
+          fRegistry.fill(HIST("MFTMCHMID/hMeanDCAy"), fwdtrack.x(), fwdtrack.y(), dcaY);
         } else if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
           fRegistry.fill(HIST("MCHMID/hPt"), pt);
           fRegistry.fill(HIST("MCHMID/hEtaPhi"), phi, eta);
