@@ -97,6 +97,7 @@ struct centralityStudy {
   Configurable<bool> rejectITSinROFpileupStandard{"rejectITSinROFpileupStandard", false, "reject collisions in case of in-ROF ITS pileup (standard)"};
   Configurable<bool> rejectITSinROFpileupStrict{"rejectITSinROFpileupStrict", false, "reject collisions in case of in-ROF ITS pileup (strict)"};
   Configurable<bool> rejectCollInTimeRangeNarrow{"rejectCollInTimeRangeNarrow", false, "reject if extra colls in time range (narrow)"};
+  Configurable<bool> rejectZNAC{"rejectZNAC", false, "reject if !(kIsBBZNA && kIsBBZNC)"};
 
   Configurable<bool> selectUPCcollisions{"selectUPCcollisions", false, "select collisions tagged with UPC flag"};
 
@@ -225,6 +226,13 @@ struct centralityStudy {
 
     if (doprocessBCs) {
       histos.add("hBCSelection", "hBCSelection", kTH1D, {{20, -0.5, 19.5f}});
+      histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(1, "All BCs");
+      histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(2, "Colliding BCs");
+      histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(3, "TVX");
+      histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(4, "FV0OrA");
+      histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(5, "upc rej");
+      histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(6, "zdc rej");
+
       histos.add("hFT0C_BCs", "hFT0C_BCs", kTH1D, {axisMultUltraFineFT0C});
       histos.add("hFT0M_BCs", "hFT0M_BCs", kTH1D, {axisMultUltraFineFT0M});
       histos.add("hFV0A_BCs", "hFV0A_BCs", kTH1D, {axisMultUltraFineFV0A});
@@ -831,27 +839,31 @@ struct centralityStudy {
     genericProcessCollision(collision);
   }
 
-  void processBCs(soa::Join<aod::BC2Mults, aod::MultBCs>::iterator const& multbc, soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal> const&)
+  void processBCs(soa::Join<aod::BC2Mults, aod::MultBCs, aod::MultBcSel>::iterator const& multbc, soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal> const&)
   {
     // process BCs, calculate FT0C distribution
     // conditionals suggested by FIT team (Jacek O. et al)
     histos.fill(HIST("hBCSelection"), 0); // all BCs
+
     if (selectCollidingBCs && !multbc.multCollidingBC())
       return;
     histos.fill(HIST("hBCSelection"), 1); // colliding
+
     if (selectTVX && !multbc.multTVX())
       return;
     histos.fill(HIST("hBCSelection"), 2); // TVX
+
     if (selectFV0OrA && !multbc.multFV0OrA())
       return;
     histos.fill(HIST("hBCSelection"), 3); // FV0OrA
+
     if (vertexZwithT0 < 100.0f) {
       if (!multbc.multFT0PosZValid())
         return;
       if (TMath::Abs(multbc.multFT0PosZ()) > vertexZwithT0)
         return;
     }
-    histos.fill(HIST("hBCSelection"), 4); // FV0OrA
+    histos.fill(HIST("hBCSelection"), 4); // FT0PosZ
 
     if (multbc.multFT0C() < upcRejection.maxFT0CforZNACselection &&
         multbc.multZNA() < upcRejection.minZNACsignal &&
@@ -866,8 +878,11 @@ struct centralityStudy {
         multbc.multFDDA() < upcRejection.minFDDAsignal) {
       return;
     }
-
-    histos.fill(HIST("hBCSelection"), 5); // znac
+    histos.fill(HIST("hBCSelection"), 5); // znac amp
+    if (rejectZNAC && !multbc.selection_bit(o2::aod::evsel::kIsBBZNA) && !multbc.selection_bit(o2::aod::evsel::kIsBBZNC)) {
+      return;
+    }
+    histos.fill(HIST("hBCSelection"), 6); // znac time
 
     // if we got here, we also finally fill the FT0C histogram, please
     histos.fill(HIST("hFT0C_BCs"), multbc.multFT0C() * scaleSignalFT0C);
