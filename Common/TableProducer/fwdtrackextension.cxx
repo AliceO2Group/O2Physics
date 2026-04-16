@@ -33,9 +33,9 @@
 #include <Math/MatrixRepresentationsStatic.h>
 #include <Math/SMatrix.h>
 
+#include <numbers>
 #include <string>
 #include <vector>
-#include <numbers>
 
 using namespace o2;
 using namespace o2::framework;
