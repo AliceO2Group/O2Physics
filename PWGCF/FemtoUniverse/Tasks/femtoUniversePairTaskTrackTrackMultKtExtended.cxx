@@ -341,6 +341,8 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
 
   void init(InitContext&)
   {
+    colBinning = ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M>{{confVtxBins, confMultBins}, true};
+
     eventHisto.init(&qaRegistry);
 
     trackHistoPartOne.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarBins, twotracksconfigs.confIsMC, trackonefilter.confPDGCodePartOne, true);
