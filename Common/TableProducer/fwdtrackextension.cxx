@@ -35,6 +35,7 @@
 
 #include <string>
 #include <vector>
+#include <numbers>
 
 using namespace o2;
 using namespace o2::framework;
