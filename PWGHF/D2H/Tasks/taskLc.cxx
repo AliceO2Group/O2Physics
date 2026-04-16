@@ -87,14 +87,23 @@ DECLARE_SOA_COLUMN(Chi2PCA, chi2PCA, float);
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float);
 DECLARE_SOA_COLUMN(Cpa, cpa, float);
 DECLARE_SOA_COLUMN(PvContributors, pvContributors, float);
+DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
+DECLARE_SOA_COLUMN(Vtz, vtz, float);
 DECLARE_SOA_COLUMN(AmpFV0A, ampFV0A, float);
 DECLARE_SOA_COLUMN(AmpFT0A, ampFT0A, float);
 DECLARE_SOA_COLUMN(AmpFT0C, ampFT0C, float);
-DECLARE_SOA_COLUMN(ZdcEnergyZNA, zdcEnergyZNA, float);
-DECLARE_SOA_COLUMN(ZdcEnergyZNC, zdcEnergyZNC, float);
 DECLARE_SOA_COLUMN(ZdcTimeZNA, zdcTimeZNA, float);
 DECLARE_SOA_COLUMN(ZdcTimeZNC, zdcTimeZNC, float);
 } // namespace full
+DECLARE_SOA_TABLE(HfUpcQa, "AOD", "HFUPCQA",
+                  full::PvContributors,
+                  full::Multiplicity,
+                  full::Vtz,
+                  full::AmpFV0A,
+                  full::AmpFT0A,
+                  full::AmpFT0C,
+                  full::ZdcTimeZNA,
+                  full::ZdcTimeZNC);
 
 DECLARE_SOA_TABLE(HfUpcLcBdtInfos, "AOD", "HFUPCLCBDTINFOS",
                   full::M,
@@ -102,12 +111,9 @@ DECLARE_SOA_TABLE(HfUpcLcBdtInfos, "AOD", "HFUPCLCBDTINFOS",
                   full::BkgScore,
                   full::PromptScore,
                   full::FdScore,
-                  full::PvContributors,
                   full::AmpFV0A,
                   full::AmpFT0A,
                   full::AmpFT0C,
-                  full::ZdcEnergyZNA,
-                  full::ZdcEnergyZNC,
                   full::ZdcTimeZNA,
                   full::ZdcTimeZNC);
 
@@ -120,12 +126,9 @@ DECLARE_SOA_TABLE(HfUpcLcInfos, "AOD", "HFUPCLCINFOS",
                   full::Chi2PCA,
                   full::DecayLength,
                   full::Cpa,
-                  full::PvContributors,
                   full::AmpFV0A,
                   full::AmpFT0A,
                   full::AmpFT0C,
-                  full::ZdcEnergyZNA,
-                  full::ZdcEnergyZNC,
                   full::ZdcTimeZNA,
                   full::ZdcTimeZNC);
 } // namespace o2::aod
@@ -134,6 +137,7 @@ DECLARE_SOA_TABLE(HfUpcLcInfos, "AOD", "HFUPCLCINFOS",
 struct HfTaskLc {
   Produces<o2::aod::HfUpcLcBdtInfos> rowCandUpcBdt;
   Produces<o2::aod::HfUpcLcInfos> rowCandUpc;
+  Produces<o2::aod::HfUpcQa> rowCandUpcQa;
 
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
@@ -142,6 +146,7 @@ struct HfTaskLc {
   // ThnSparse for ML outputScores and Vars
   Configurable<bool> fillTHn{"fillTHn", false, "fill THn"};
   Configurable<bool> fillTreeOnlySingleGap{"fillTreeOnlySingleGap", false, "fill THn"};
+  Configurable<bool> fillTreeUPCQa{"fillTreeUPCQa", false, "fill THn"};
   Configurable<bool> storeOccupancy{"storeOccupancy", true, "Flag to store occupancy information"};
   Configurable<int> occEstimator{"occEstimator", 2, "Occupancy estimation (None: 0, ITS: 1, FT0C: 2)"};
   Configurable<bool> storeProperLifetime{"storeProperLifetime", false, "Flag to store proper lifetime"};
@@ -861,20 +866,24 @@ struct HfTaskLc {
               /// Fill the ML outputScores and variables of candidate
               if (fillTreeOnlySingleGap) {
                 if (gap == o2::aod::sgselector::TrueGap::SingleGapA || gap == o2::aod::sgselector::TrueGap::SingleGapC) {
-                  rowCandUpcBdt(massLc, pt, outputBkg, outputPrompt, outputFD, static_cast<float>(numPvContributors), static_cast<float>(fitInfo.ampFV0A), static_cast<float>(fitInfo.ampFT0A), static_cast<float>(fitInfo.ampFT0C), static_cast<float>(zdcEnergyZNA), static_cast<float>(zdcEnergyZNC), static_cast<float>(zdcTimeZNA), static_cast<float>(zdcTimeZNC));
+                  rowCandUpcBdt(massLc, pt, outputBkg, outputPrompt, outputFD, static_cast<float>(fitInfo.ampFV0A), static_cast<float>(fitInfo.ampFT0A), static_cast<float>(fitInfo.ampFT0C), static_cast<float>(zdcTimeZNA), static_cast<float>(zdcTimeZNC));
                 }
               } else {
-                rowCandUpcBdt(massLc, pt, outputBkg, outputPrompt, outputFD, static_cast<float>(numPvContributors), static_cast<float>(fitInfo.ampFV0A), static_cast<float>(fitInfo.ampFT0A), static_cast<float>(fitInfo.ampFT0C), static_cast<float>(zdcEnergyZNA), static_cast<float>(zdcEnergyZNC), static_cast<float>(zdcTimeZNA), static_cast<float>(zdcTimeZNC));
+                rowCandUpcBdt(massLc, pt, outputBkg, outputPrompt, outputFD, static_cast<float>(fitInfo.ampFV0A), static_cast<float>(fitInfo.ampFT0A), static_cast<float>(fitInfo.ampFT0C), static_cast<float>(zdcTimeZNA), static_cast<float>(zdcTimeZNC));
               }
 
             } else {
               if (fillTreeOnlySingleGap) {
                 if (gap == o2::aod::sgselector::TrueGap::SingleGapA || gap == o2::aod::sgselector::TrueGap::SingleGapC) {
-                  rowCandUpc(massLc, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<float>(numPvContributors), static_cast<float>(fitInfo.ampFV0A), static_cast<float>(fitInfo.ampFT0A), static_cast<float>(fitInfo.ampFT0C), static_cast<float>(zdcEnergyZNA), static_cast<float>(zdcEnergyZNC), static_cast<float>(zdcTimeZNA), static_cast<float>(zdcTimeZNC));
+                  rowCandUpc(massLc, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<float>(fitInfo.ampFV0A), static_cast<float>(fitInfo.ampFT0A), static_cast<float>(fitInfo.ampFT0C), static_cast<float>(zdcTimeZNA), static_cast<float>(zdcTimeZNC));
                 }
               } else {
-                rowCandUpc(massLc, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<float>(numPvContributors), static_cast<float>(fitInfo.ampFV0A), static_cast<float>(fitInfo.ampFT0A), static_cast<float>(fitInfo.ampFT0C), static_cast<float>(zdcEnergyZNA), static_cast<float>(zdcEnergyZNC), static_cast<float>(zdcTimeZNA), static_cast<float>(zdcTimeZNC));
+                rowCandUpc(massLc, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<float>(fitInfo.ampFV0A), static_cast<float>(fitInfo.ampFT0A), static_cast<float>(fitInfo.ampFT0C), static_cast<float>(zdcTimeZNA), static_cast<float>(zdcTimeZNC));
               }
+            }
+
+            if (fillTreeUPCQa) {
+              rowCandUpcQa(static_cast<float>(numPvContributors), collision.multNTracksPV(), collision.posZ(), static_cast<float>(fitInfo.ampFV0A), static_cast<float>(fitInfo.ampFT0A), static_cast<float>(fitInfo.ampFT0C), static_cast<float>(zdcTimeZNA), static_cast<float>(zdcTimeZNC));
             }
           };
 
