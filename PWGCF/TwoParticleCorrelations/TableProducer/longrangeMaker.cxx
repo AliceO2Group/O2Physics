@@ -72,9 +72,6 @@ using namespace o2::constants::math;
 
 auto static constexpr CintZero = 0;
 auto static constexpr KminFt0cCell = 96;
-auto static constexpr PionTrackN = 1;
-auto static constexpr KaonTrackN = 2;
-auto static constexpr ProtonTrackN = 3;
 AxisSpec axisEvent{15, 0.5, 15.5, "#Event", "EventAxis"};
 auto static constexpr KminCharge = 3.0f;
 
