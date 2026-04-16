@@ -60,7 +60,6 @@
 
 #include <RtypesCore.h>
 
-#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
