@@ -757,7 +757,7 @@ struct LongrangeMaker {
     std::array<float, 3> nSigmaTOF = {track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr()};
     std::array<float, 3> nSigmaITS = {itsResponse.nSigmaITS<o2::track::PID::Pion>(track), itsResponse.nSigmaITS<o2::track::PID::Kaon>(track), itsResponse.nSigmaITS<o2::track::PID::Proton>(track)};
     std::array<float, 3> nSigmaToUse = isUseItsPid ? nSigmaITS : nSigmaTPC;            // Choose which nSigma to use: TPC or ITS
-    std::vector<double> detectorNsigmaCut = isUseItsPid ? itsNsigmaCut : tpcNsigmaCut; // Choose which nSigma to use: TPC or ITS    
+    std::vector<double> detectorNsigmaCut = isUseItsPid ? itsNsigmaCut : tpcNsigmaCut; // Choose which nSigma to use: TPC or ITS
     bool isPion, isKaon, isProton;
     bool isDetectedPion = nSigmaToUse[0] < detectorNsigmaCut[0] && nSigmaToUse[0] > detectorNsigmaCut[0 + 3];
     bool isDetectedKaon = nSigmaToUse[1] < detectorNsigmaCut[1] && nSigmaToUse[1] > detectorNsigmaCut[1 + 3];
