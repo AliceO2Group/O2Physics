@@ -513,6 +513,25 @@ struct BjetCentMultTask {
   }
   PROCESS_SWITCH(BjetCentMultTask, processSV3ProngData, "Fill 3prong imformation for data jets", false);
 
+  void processRhoAreaSubSV3ProngData(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Join<JetTableData, TagTableData, aod::DataSecondaryVertex3ProngIndices> const& jets, aod::DataSecondaryVertex3Prongs const& prongs)
+  {
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
+    float centrality = collision.centFT0M();
+    registry.fill(HIST("h_event_centrality"), centrality);
+    for (auto const& jet : jets) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaCuts->at(0), jetEtaCuts->at(1), trackCuts->at(2), trackCuts->at(3))) {
+        continue;
+      }
+      if (!isAcceptedJet<aod::JetTracks>(jet)) {
+        continue;
+      }
+      fillHistogramSV3ProngData(jet, prongs, centrality);
+    }
+  }
+  PROCESS_SWITCH(BjetCentMultTask, processRhoAreaSubSV3ProngData, "Fill 3prong imformation for data jets with background subtraction", false);
+
   void processSV3ProngMCD(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JCollisionOutliers>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, aod::MCDSecondaryVertex3ProngIndices> const& mcdjets, aod::MCDSecondaryVertex3Prongs const& prongs)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
