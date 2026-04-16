@@ -47,11 +47,11 @@ using namespace o2::framework;
 
 // correlation derived data ===================================================================================================================================================================
 
-template<typename T>
+template <typename T>
 concept IsJetMcCollision = std::same_as<std::remove_cvref_t<T>, aod::JetMcCollision>;
-template<typename T>
+template <typename T>
 concept IsJetCollisionMCD = std::same_as<std::remove_cvref_t<T>, aod::JetCollisionMCD>;
-template<typename T>
+template <typename T>
 concept HasTrueCollision = IsJetMcCollision<T> || IsJetCollisionMCD<T>;
 
 struct PhotonChargedTriggerProducer {
@@ -75,7 +75,7 @@ struct PhotonChargedTriggerProducer {
 
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "JE framework - event selection"};
   Configurable<bool> skipMBGapEvents{"skipMBGapEvents", true, "skip MB gap events"};
-  Configurable<bool> applyRctSelection{"applyRCTSelection", true, "apply RCT selection"};
+  Configurable<bool> applyRctSelection{"applyRctSelection", true, "apply RCT selection"};
   Configurable<std::string> rctLabel{"rctLabel", "CBT_hadronPID", "RCT selection label"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "JE framework - track selections"};
   Configurable<std::string> triggerMasks{"triggerMasks", "", "JE framework - skimmed data trigger masks (relevent for correlation: fTrackLowPt,fTrackHighPt)"};
@@ -129,7 +129,7 @@ struct PhotonChargedTriggerProducer {
   }
 
   // mc split event selection based in the thrid decimal of mc-true posZ
-  template<HasTrueCollision T_collision>
+  template <HasTrueCollision T_collision>
   int getThirdDecimalTruePosZ(T_collision const& collision)
   {
     // get third decimal
