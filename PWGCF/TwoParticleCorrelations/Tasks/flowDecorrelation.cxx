@@ -62,20 +62,22 @@ using namespace o2::framework::expressions;
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 struct FlowDecorrelation {
   Service<ccdb::BasicCCDBManager> ccdb;
-
-  O2_DEFINE_CONFIGURABLE(cfgCutVtxZ, float, 10.0f, "Accepted z-vertex range")
-  O2_DEFINE_CONFIGURABLE(cfgCutPtMin, float, 0.2f, "minimum accepted track pT")
-  O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 10.0f, "maximum accepted track pT")
-  O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5f, "max chi2 per TPC clusters")
-  O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 50.0f, "minimum TPC clusters")
-  O2_DEFINE_CONFIGURABLE(cfgCutTPCCrossedRows, float, 70.0f, "minimum TPC crossed rows")
-  O2_DEFINE_CONFIGURABLE(cfgCutITSclu, float, 5.0f, "minimum ITS clusters")
-  O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "max DCA to vertex z")
+  struct : ConfigurableGroup {
+    O2_DEFINE_CONFIGURABLE(cfgCutVtxZ, float, 10.0f, "Accepted z-vertex range")
+    O2_DEFINE_CONFIGURABLE(cfgCutPtMin, float, 0.2f, "minimum accepted track pT")
+    O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 10.0f, "maximum accepted track pT")
+    O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5f, "max chi2 per TPC clusters")
+    O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 50.0f, "minimum TPC clusters")
+    O2_DEFINE_CONFIGURABLE(cfgCutTPCCrossedRows, float, 70.0f, "minimum TPC crossed rows")
+    O2_DEFINE_CONFIGURABLE(cfgCutITSclu, float, 5.0f, "minimum ITS clusters")
+    O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "max DCA to vertex z")
+    O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 7.0f, "max DCA to vertex xy")
+    O2_DEFINE_CONFIGURABLE(cfgCutMultMin, int, 0, "Minimum multiplicity for collision")
+    O2_DEFINE_CONFIGURABLE(cfgCutMultMax, int, 10, "Maximum multiplicity for collision")
+    O2_DEFINE_CONFIGURABLE(cfgCutCentMin, float, 60.0f, "Minimum centrality for collision")
+    O2_DEFINE_CONFIGURABLE(cfgCutCentMax, float, 80.0f, "Maximum centrality for collision");
+  } cfgGeneralCuts;
   O2_DEFINE_CONFIGURABLE(cfgSelCollByNch, bool, true, "Select collisions by Nch or centrality")
-  O2_DEFINE_CONFIGURABLE(cfgCutMultMin, int, 0, "Minimum multiplicity for collision")
-  O2_DEFINE_CONFIGURABLE(cfgCutMultMax, int, 10, "Maximum multiplicity for collision")
-  O2_DEFINE_CONFIGURABLE(cfgCutCentMin, float, 60.0f, "Minimum centrality for collision")
-  O2_DEFINE_CONFIGURABLE(cfgCutCentMax, float, 80.0f, "Maximum centrality for collision")
   O2_DEFINE_CONFIGURABLE(cfgMixEventNumMin, int, 5, "Minimum number of events to mix")
   O2_DEFINE_CONFIGURABLE(cfgSampleSize, double, 10, "Sample size for mixed event")
   O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FT0A")
@@ -113,9 +115,9 @@ struct FlowDecorrelation {
   } cfgFt0RingRejections;
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgEtaTpcCut, float, 0.8f, "Eta cut of TPC MC particles")
-    O2_DEFINE_CONFIGURABLE(cfgMinEtaFt0cCut, float, -3.4f, "Min eta cut of FT0C MC particles")
-    O2_DEFINE_CONFIGURABLE(cfgMaxEtaFt0cCut, float, -2.0f, "Max eta cut of FT0C MC particles")
-    O2_DEFINE_CONFIGURABLE(cfgUseFt0cStructure, bool, true, "Use the true structure of FT0C in MC-true");
+    O2_DEFINE_CONFIGURABLE(cfgMinEtaFt0Cut, float, -3.4f, "Min eta cut of FT0 MC particles")
+    O2_DEFINE_CONFIGURABLE(cfgMaxEtaFt0Cut, float, -2.0f, "Max eta cut of FT0 MC particles")
+    O2_DEFINE_CONFIGURABLE(cfgUseFt0Structure, bool, true, "Use the true structure of FT0 in MC-true");
     O2_DEFINE_CONFIGURABLE(cfgUseCFStepAll, bool, true, "Use CFStepAll in addition to primry");
   } cfgMcTrue;
   struct : ConfigurableGroup {
@@ -177,16 +179,16 @@ struct FlowDecorrelation {
   AxisSpec axisFit{cfgaxisFITamp, "fit amplitude"};
   AxisSpec axisChID = {220, 0, 220};
   // make the filters and cuts.
-  Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVtxZ);
-  Filter trackFilter = (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true))) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
+  Filter collisionFilter = (nabs(aod::collision::posZ) < cfgGeneralCuts.cfgCutVtxZ);
+  Filter trackFilter = (aod::track::pt > cfgGeneralCuts.cfgCutPtMin) && (aod::track::pt < cfgGeneralCuts.cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true))) && (aod::track::tpcChi2NCl < cfgGeneralCuts.cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgGeneralCuts.cfgCutDCAz) && (nabs(aod::track::dcaXY) < cfgGeneralCuts.cfgCutDCAxy);
   using FilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
   using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
 
-  Filter particleFilter = (nabs(aod::mcparticle::eta) < cfgMcTrue.cfgEtaTpcCut || ((aod::mcparticle::eta > cfgMcTrue.cfgMinEtaFt0cCut) && (aod::mcparticle::eta < cfgMcTrue.cfgMaxEtaFt0cCut))) && (aod::mcparticle::pt > cfgCutPtMin) && (aod::mcparticle::pt < cfgCutPtMax);
+  Filter particleFilter = (nabs(aod::mcparticle::eta) < cfgMcTrue.cfgEtaTpcCut || ((aod::mcparticle::eta > cfgMcTrue.cfgMinEtaFt0Cut) && (aod::mcparticle::eta < cfgMcTrue.cfgMaxEtaFt0Cut))) && (aod::mcparticle::pt > cfgGeneralCuts.cfgCutPtMin) && (aod::mcparticle::pt < cfgGeneralCuts.cfgCutPtMax);
   using FilteredMcParticles = soa::Filtered<aod::McParticles>;
 
   // Filter for MCcollisions
-  Filter mccollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVtxZ;
+  Filter mccollisionFilter = nabs(aod::mccollision::posZ) < cfgGeneralCuts.cfgCutVtxZ;
   using FilteredMcCollisions = soa::Filtered<aod::McCollisions>;
 
   using SmallGroupMcCollisions = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
@@ -291,7 +293,7 @@ struct FlowDecorrelation {
       registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(12, "MultCorrelation");
       registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(13, "cfgEvSelV0AT0ACut");
     }
-    if (doprocessMcSameTpcFt0c) {
+    if (doprocessMcSameTpcFt0c || doprocessMcSameTpcFt0a) {
       registry.add("MCTrue/MCeventcount", "MCeventcount", {HistType::kTH1F, {{5, 0, 5, "bin"}}}); // histogram to see how many events are in the same and mixed event
       registry.get<TH1>(HIST("MCTrue/MCeventcount"))->GetXaxis()->SetBinLabel(2, "same all");
       registry.get<TH1>(HIST("MCTrue/MCeventcount"))->GetXaxis()->SetBinLabel(3, "same reco");
@@ -305,8 +307,14 @@ struct FlowDecorrelation {
       registry.add("MCTrue/MCEtaTrueShape", "MCEta", {HistType::kTH1D, {axisEtaFull}});
       registry.add("MCTrue/MCpT", "MCpT", {HistType::kTH1D, {axisPtEfficiency}});
       registry.add("MCTrue/MCTrig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtEfficiency}}});
-      registry.add("MCTrue/MCdeltaEta_deltaPhi_same", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFt0c}}); // check to see the delta eta and delta phi distribution
-      registry.add("MCTrue/MCdeltaEta_deltaPhi_mixed", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFt0c}});
+      if (doprocessMcSameTpcFt0c) {
+        registry.add("MCTrue/MCdeltaEta_deltaPhi_same", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFt0c}}); // check to see the delta eta and delta phi distribution
+        registry.add("MCTrue/MCdeltaEta_deltaPhi_mixed", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFt0c}});
+      }
+      if (doprocessMcSameTpcFt0a) {
+        registry.add("MCTrue/MCdeltaEta_deltaPhi_same", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFt0a}}); // check to see the delta eta and delta phi distribution
+        registry.add("MCTrue/MCdeltaEta_deltaPhi_mixed", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFt0a}});
+      }
     }
     if (cfgEvSelMultCorrelation) {
       cfgFuncParas.multT0CCutPars = cfgFuncParas.cfgMultT0CCutPars;
@@ -461,8 +469,12 @@ struct FlowDecorrelation {
       mixed.setObject(new CorrelationContainer("mixedEvent_TPC_FV0", "mixedEvent_TPC_FV0", corrAxisTpcFv0, effAxis, userAxis));
     }
     if (doprocessMcSameTpcFt0c) {
-      same.setObject(new CorrelationContainer("sameEvent_TPC_FV0", "sameEvent_TPC_FV0", corrAxisTpcFt0c, effAxis, userAxis));
-      mixed.setObject(new CorrelationContainer("mixedEvent_TPC_FV0", "mixedEvent_TPC_FV0", corrAxisTpcFt0c, effAxis, userAxis));
+      same.setObject(new CorrelationContainer("sameEvent_TPC_FV0", "sameEvent_TPC_FT0C", corrAxisTpcFt0c, effAxis, userAxis));
+      mixed.setObject(new CorrelationContainer("mixedEvent_TPC_FV0", "mixedEvent_TPC_FT0C", corrAxisTpcFt0c, effAxis, userAxis));
+    }
+    if (doprocessMcSameTpcFt0a) {
+      same.setObject(new CorrelationContainer("sameEvent_TPC_FV0", "sameEvent_TPC_FT0A", corrAxisTpcFt0a, effAxis, userAxis));
+      mixed.setObject(new CorrelationContainer("mixedEvent_TPC_FV0", "mixedEvent_TPC_FT0A", corrAxisTpcFt0a, effAxis, userAxis));
     }
     LOGF(info, "End of init");
   }
@@ -585,7 +597,7 @@ struct FlowDecorrelation {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
-    return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.tpcNClsCrossedRows() >= cfgCutTPCCrossedRows) && (track.itsNCls() >= cfgCutITSclu));
+    return ((track.tpcNClsFound() >= cfgGeneralCuts.cfgCutTPCclu) && (track.tpcNClsCrossedRows() >= cfgGeneralCuts.cfgCutTPCCrossedRows) && (track.itsNCls() >= cfgGeneralCuts.cfgCutITSclu));
   }
 
   void loadAlignParam(uint64_t timestamp)
@@ -1033,15 +1045,88 @@ struct FlowDecorrelation {
     double vy = std::sin(theta) * std::sin(phi); // veloctiy component along y
     double vz = std::cos(theta);                 // veloctiy component along z
 
+    if (vz > 0.)
+      return false;
+
     double x = vx * ((-83.44 - vtxZ) / vz); // location of particle on x at FT0C distance from vertex
     double y = vy * ((-83.44 - vtxZ) / vz); // location of particle on x at FT0C distance from vertex
 
-    if (std::abs(x) < 24 && (std::abs(y) > 6.825 && std::abs(y) < 18.25))
+    if (std::abs(x) < 24. && (std::abs(y) > 6.825 && std::abs(y) < 18.25))
       return true;
-    else if (std::abs(y) < 24 && (std::abs(x) > 6.675 && std::abs(x) < 18.175))
+    if (std::abs(y) < 24. && (std::abs(x) > 6.675 && std::abs(x) < 18.175))
       return true;
-    else
+    if (std::abs(x) < 6.825 && (std::abs(y) < 24. && std::abs(y) > 6.675))
+      return true;
+    if (std::abs(y) < 6.675 && (std::abs(x) < 24. && std::abs(x) > 6.675))
+      return true;
+    return false;
+  }
+
+  bool ft0aCollisionCourse(float eta, float phi, float vtxZ)
+  {
+    double offSetX = 0.588;
+    double offSetY = 1.468;
+    double blockFar = 14.875;
+    double blockClose = 2.65;
+    double rectOffSet = 1.325;
+
+    double theta = 2 * std::atan(std::exp(-eta));
+    double vx = std::sin(theta) * std::cos(phi); // veloctiy component along x
+    double vy = std::sin(theta) * std::sin(phi); // veloctiy component along y
+    double vz = std::cos(theta);                 // veloctiy component along z
+
+    if (vz < 0.)
       return false;
+
+    double x = vx * ((338.43 - vtxZ) / vz); // location of particle on x at FT0C distance from vertex
+    double y = vy * ((338.43 - vtxZ) / vz); // location of particle on x at FT0C distance from vertex
+
+    if (x < (blockFar + offSetX) && x > (blockClose + offSetX)) {
+      if (y < (blockFar + offSetY) && y > (blockClose + offSetY)) {
+        return true;
+      }
+    }
+    if (x < (blockFar + offSetX) && x > (blockClose + offSetX)) {
+      if (y > (-blockFar + offSetY) && y < (-blockClose + offSetY)) {
+        return true;
+      }
+    }
+
+    if (x > (-blockFar + offSetX) && x < (-blockClose + offSetX)) {
+      if (y < (blockFar + offSetY) && y > (blockClose + offSetY)) {
+        return true;
+      }
+    }
+    if (x > (-blockFar + offSetX) && x < (-blockClose + offSetX)) {
+      if (y > (-blockFar + offSetY) && y < (-blockClose + offSetY)) {
+        return true;
+      }
+    }
+
+    if (x < (blockClose + offSetX) && x > (-blockClose + offSetX)) {
+      if (y > (-blockFar + offSetY - rectOffSet) && y < (-blockClose + offSetY - rectOffSet)) {
+        return true;
+      }
+    }
+
+    if (x < (blockClose + offSetX) && x > (-blockClose + offSetX)) {
+      if (y < (blockFar + offSetY + rectOffSet) && y > (blockClose + offSetY + rectOffSet)) {
+        return true;
+      }
+    }
+
+    if (y < (blockClose + offSetY) && y > (-blockClose + offSetY)) {
+      if (x > (-blockFar + offSetX - rectOffSet) && x < (-blockClose + offSetX - rectOffSet)) {
+        return true;
+      }
+    }
+
+    if (y < (blockClose + offSetY) && y > (-blockClose + offSetY)) {
+      if (x < (blockFar + offSetX + rectOffSet) && x > (blockClose + offSetX + rectOffSet)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   void processSameTpcFt0a(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks, aod::FT0s const&, aod::BCsWithTimestamps const&)
@@ -1069,10 +1154,10 @@ struct FlowDecorrelation {
     registry.fill(HIST("Nch"), tracks.size());
     registry.fill(HIST("zVtx"), collision.posZ());
 
-    if (cfgSelCollByNch && (tracks.size() < cfgCutMultMin || tracks.size() >= cfgCutMultMax)) {
+    if (cfgSelCollByNch && (tracks.size() < cfgGeneralCuts.cfgCutMultMin || tracks.size() >= cfgGeneralCuts.cfgCutMultMax)) {
       return;
     }
-    if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgCutCentMin || cent >= cfgCutCentMax)) {
+    if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgGeneralCuts.cfgCutCentMin || cent >= cfgGeneralCuts.cfgCutCentMax)) {
       return;
     }
 
@@ -1106,10 +1191,10 @@ struct FlowDecorrelation {
       if (!collision1.sel8() || !collision2.sel8())
         continue;
 
-      if (cfgSelCollByNch && (tracks1.size() < cfgCutMultMin || tracks1.size() >= cfgCutMultMax))
+      if (cfgSelCollByNch && (tracks1.size() < cfgGeneralCuts.cfgCutMultMin || tracks1.size() >= cfgGeneralCuts.cfgCutMultMax))
         continue;
 
-      if (cfgSelCollByNch && (tracks2.size() < cfgCutMultMin || tracks2.size() >= cfgCutMultMax))
+      if (cfgSelCollByNch && (tracks2.size() < cfgGeneralCuts.cfgCutMultMin || tracks2.size() >= cfgGeneralCuts.cfgCutMultMax))
         continue;
 
       float cent1 = -1;
@@ -1123,10 +1208,10 @@ struct FlowDecorrelation {
       if (cfgUseAdditionalEventCut && !eventSelected(collision2, tracks2.size(), cent2, false))
         continue;
 
-      if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent1 < cfgCutCentMin || cent1 >= cfgCutCentMax))
+      if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent1 < cfgGeneralCuts.cfgCutCentMin || cent1 >= cfgGeneralCuts.cfgCutCentMax))
         continue;
 
-      if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent2 < cfgCutCentMin || cent2 >= cfgCutCentMax))
+      if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent2 < cfgGeneralCuts.cfgCutCentMin || cent2 >= cfgGeneralCuts.cfgCutCentMax))
         continue;
 
       if (!(collision1.has_foundFT0() && collision2.has_foundFT0()))
@@ -1174,10 +1259,10 @@ struct FlowDecorrelation {
     registry.fill(HIST("Nch"), tracks.size());
     registry.fill(HIST("zVtx"), collision.posZ());
 
-    if (cfgSelCollByNch && (tracks.size() < cfgCutMultMin || tracks.size() >= cfgCutMultMax)) {
+    if (cfgSelCollByNch && (tracks.size() < cfgGeneralCuts.cfgCutMultMin || tracks.size() >= cfgGeneralCuts.cfgCutMultMax)) {
       return;
     }
-    if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgCutCentMin || cent >= cfgCutCentMax)) {
+    if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgGeneralCuts.cfgCutCentMin || cent >= cfgGeneralCuts.cfgCutCentMax)) {
       return;
     }
 
@@ -1211,10 +1296,10 @@ struct FlowDecorrelation {
       if (!collision1.sel8() || !collision2.sel8())
         continue;
 
-      if (cfgSelCollByNch && (tracks1.size() < cfgCutMultMin || tracks1.size() >= cfgCutMultMax))
+      if (cfgSelCollByNch && (tracks1.size() < cfgGeneralCuts.cfgCutMultMin || tracks1.size() >= cfgGeneralCuts.cfgCutMultMax))
         continue;
 
-      if (cfgSelCollByNch && (tracks2.size() < cfgCutMultMin || tracks2.size() >= cfgCutMultMax))
+      if (cfgSelCollByNch && (tracks2.size() < cfgGeneralCuts.cfgCutMultMin || tracks2.size() >= cfgGeneralCuts.cfgCutMultMax))
         continue;
 
       float cent1 = -1;
@@ -1228,10 +1313,10 @@ struct FlowDecorrelation {
       if (cfgUseAdditionalEventCut && !eventSelected(collision2, tracks2.size(), cent2, false))
         continue;
 
-      if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent1 < cfgCutCentMin || cent1 >= cfgCutCentMax))
+      if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent1 < cfgGeneralCuts.cfgCutCentMin || cent1 >= cfgGeneralCuts.cfgCutCentMax))
         continue;
 
-      if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent2 < cfgCutCentMin || cent2 >= cfgCutCentMax))
+      if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent2 < cfgGeneralCuts.cfgCutCentMin || cent2 >= cfgGeneralCuts.cfgCutCentMax))
         continue;
 
       if (!(collision1.has_foundFT0() && collision2.has_foundFT0()))
@@ -1279,10 +1364,10 @@ struct FlowDecorrelation {
     registry.fill(HIST("Nch"), tracks.size());
     registry.fill(HIST("zVtx"), collision.posZ());
 
-    if (cfgSelCollByNch && (tracks.size() < cfgCutMultMin || tracks.size() >= cfgCutMultMax)) {
+    if (cfgSelCollByNch && (tracks.size() < cfgGeneralCuts.cfgCutMultMin || tracks.size() >= cfgGeneralCuts.cfgCutMultMax)) {
       return;
     }
-    if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgCutCentMin || cent >= cfgCutCentMax)) {
+    if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgGeneralCuts.cfgCutCentMin || cent >= cfgGeneralCuts.cfgCutCentMax)) {
       return;
     }
 
@@ -1313,10 +1398,10 @@ struct FlowDecorrelation {
       if (!collision1.sel8() || !collision2.sel8())
         continue;
 
-      if (cfgSelCollByNch && (tracks1.size() < cfgCutMultMin || tracks1.size() >= cfgCutMultMax))
+      if (cfgSelCollByNch && (tracks1.size() < cfgGeneralCuts.cfgCutMultMin || tracks1.size() >= cfgGeneralCuts.cfgCutMultMax))
         continue;
 
-      if (cfgSelCollByNch && (tracks2.size() < cfgCutMultMin || tracks2.size() >= cfgCutMultMax))
+      if (cfgSelCollByNch && (tracks2.size() < cfgGeneralCuts.cfgCutMultMin || tracks2.size() >= cfgGeneralCuts.cfgCutMultMax))
         continue;
 
       float cent1 = -1;
@@ -1330,10 +1415,10 @@ struct FlowDecorrelation {
       if (cfgUseAdditionalEventCut && !eventSelected(collision2, tracks2.size(), cent2, false))
         continue;
 
-      if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent1 < cfgCutCentMin || cent1 >= cfgCutCentMax))
+      if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent1 < cfgGeneralCuts.cfgCutCentMin || cent1 >= cfgGeneralCuts.cfgCutCentMax))
         continue;
 
-      if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent2 < cfgCutCentMin || cent2 >= cfgCutCentMax))
+      if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent2 < cfgGeneralCuts.cfgCutCentMin || cent2 >= cfgGeneralCuts.cfgCutCentMax))
         continue;
 
       if (!(collision1.has_foundFT0() && collision2.has_foundFT0()))
@@ -1429,10 +1514,10 @@ struct FlowDecorrelation {
     registry.fill(HIST("Nch"), tracks.size());
     registry.fill(HIST("zVtx"), collision.posZ());
 
-    if (cfgSelCollByNch && (tracks.size() < cfgCutMultMin || tracks.size() >= cfgCutMultMax)) {
+    if (cfgSelCollByNch && (tracks.size() < cfgGeneralCuts.cfgCutMultMin || tracks.size() >= cfgGeneralCuts.cfgCutMultMax)) {
       return;
     }
-    if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgCutCentMin || cent >= cfgCutCentMax)) {
+    if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgGeneralCuts.cfgCutCentMin || cent >= cfgGeneralCuts.cfgCutCentMax)) {
       return;
     }
 
@@ -1465,9 +1550,9 @@ struct FlowDecorrelation {
 
       if (!collision1.sel8() || !collision2.sel8())
         continue;
-      if (cfgSelCollByNch && (tracks1.size() < cfgCutMultMin || tracks1.size() >= cfgCutMultMax))
+      if (cfgSelCollByNch && (tracks1.size() < cfgGeneralCuts.cfgCutMultMin || tracks1.size() >= cfgGeneralCuts.cfgCutMultMax))
         continue;
-      if (cfgSelCollByNch && (tracks2.size() < cfgCutMultMin || tracks2.size() >= cfgCutMultMax))
+      if (cfgSelCollByNch && (tracks2.size() < cfgGeneralCuts.cfgCutMultMin || tracks2.size() >= cfgGeneralCuts.cfgCutMultMax))
         continue;
 
       float cent1 = -1;
@@ -1486,9 +1571,9 @@ struct FlowDecorrelation {
       if (cfgUseAdditionalEventCut && !eventSelected(collision2, tracks2.size(), cent2, false))
         continue;
 
-      if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent1 < cfgCutCentMin || cent1 >= cfgCutCentMax))
+      if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent1 < cfgGeneralCuts.cfgCutCentMin || cent1 >= cfgGeneralCuts.cfgCutCentMax))
         continue;
-      if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent2 < cfgCutCentMin || cent2 >= cfgCutCentMax))
+      if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent2 < cfgGeneralCuts.cfgCutCentMin || cent2 >= cfgGeneralCuts.cfgCutCentMax))
         continue;
 
       registry.fill(HIST("eventcount"), MixedEvent);
@@ -1540,10 +1625,10 @@ struct FlowDecorrelation {
     registry.fill(HIST("Nch"), tracks.size());
     registry.fill(HIST("zVtx"), collision.posZ());
 
-    if (cfgSelCollByNch && (tracks.size() < cfgCutMultMin || tracks.size() >= cfgCutMultMax)) {
+    if (cfgSelCollByNch && (tracks.size() < cfgGeneralCuts.cfgCutMultMin || tracks.size() >= cfgGeneralCuts.cfgCutMultMax)) {
       return;
     }
-    if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgCutCentMin || cent >= cfgCutCentMax)) {
+    if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgGeneralCuts.cfgCutCentMin || cent >= cfgGeneralCuts.cfgCutCentMax)) {
       return;
     }
 
@@ -1577,10 +1662,10 @@ struct FlowDecorrelation {
       if (!collision1.sel8() || !collision2.sel8())
         continue;
 
-      if (cfgSelCollByNch && (tracks1.size() < cfgCutMultMin || tracks1.size() >= cfgCutMultMax))
+      if (cfgSelCollByNch && (tracks1.size() < cfgGeneralCuts.cfgCutMultMin || tracks1.size() >= cfgGeneralCuts.cfgCutMultMax))
         continue;
 
-      if (cfgSelCollByNch && (tracks2.size() < cfgCutMultMin || tracks2.size() >= cfgCutMultMax))
+      if (cfgSelCollByNch && (tracks2.size() < cfgGeneralCuts.cfgCutMultMin || tracks2.size() >= cfgGeneralCuts.cfgCutMultMax))
         continue;
 
       float cent1 = -1;
@@ -1594,10 +1679,10 @@ struct FlowDecorrelation {
       if (cfgUseAdditionalEventCut && !eventSelected(collision2, tracks2.size(), cent2, false))
         continue;
 
-      if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent1 < cfgCutCentMin || cent1 >= cfgCutCentMax))
+      if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent1 < cfgGeneralCuts.cfgCutCentMin || cent1 >= cfgGeneralCuts.cfgCutCentMax))
         continue;
 
-      if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent2 < cfgCutCentMin || cent2 >= cfgCutCentMax))
+      if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent2 < cfgGeneralCuts.cfgCutCentMin || cent2 >= cfgGeneralCuts.cfgCutCentMax))
         continue;
 
       if (!(collision1.has_foundFV0() && collision2.has_foundFV0()))
@@ -1621,19 +1706,27 @@ struct FlowDecorrelation {
   PROCESS_SWITCH(FlowDecorrelation, processMixedTpcFv0, "Process mixed events for TPC-FV0 correlation", false);
 
   template <CorrelationContainer::CFStep step, typename TTracks, typename TTracksAssoc>
-  void fillMCCorrelations(TTracks tracks1, TTracksAssoc tracks2, float posZ, int system, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillMCCorrelations(TTracks tracks1, TTracksAssoc tracks2, float posZ, int system, float eventWeight, int corType) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
     int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
 
     float triggerWeight = 1.0f;
     float associatedWeight = 1.0f;
-    // loop over all FT0C tracks
+    // loop over all FT0 tracks
     for (auto const& track1 : tracks1) {
 
-      if (!cfgMcTrue.cfgUseFt0cStructure) {
+      if (corType == kFT0C && !cfgMcTrue.cfgUseFt0Structure) {
         if (std::abs(track1.eta()) < 0.9)
           continue;
-      } else if (!ft0cCollisionCourse(track1.eta(), track1.phi(), posZ)) {
+      }
+      if (corType == kFT0C && cfgMcTrue.cfgUseFt0Structure && !ft0cCollisionCourse(track1.eta(), track1.phi(), posZ)) {
+        continue;
+      }
+      if (corType == kFT0A && !cfgMcTrue.cfgUseFt0Structure) {
+        if (std::abs(track1.eta()) < 0.9)
+          continue;
+      }
+      if (corType == kFT0A && cfgMcTrue.cfgUseFt0Structure && !ft0aCollisionCourse(track1.eta(), track1.phi(), posZ)) {
         continue;
       }
 
@@ -1643,7 +1736,7 @@ struct FlowDecorrelation {
       if (step >= CorrelationContainer::kCFStepTrackedOnlyPrim && system == SameEvent)
         registry.fill(HIST("MCTrue/MCEtaTrueShape"), track1.eta());
 
-      if (system == SameEvent && doprocessMcSameTpcFt0c)
+      if (system == SameEvent && (doprocessMcSameTpcFt0c || doprocessMcSameTpcFt0a))
         registry.fill(HIST("MCTrue/MCTrig_hist"), fSampleIndex, posZ, track1.pt(), eventWeight * triggerWeight);
 
       // loop over all TPC tracks
@@ -1682,10 +1775,10 @@ struct FlowDecorrelation {
       }
     }
 
-    if (cfgSelCollByNch && (mcParticles.size() < cfgCutMultMin || mcParticles.size() >= cfgCutMultMax)) {
+    if (cfgSelCollByNch && (mcParticles.size() < cfgGeneralCuts.cfgCutMultMin || mcParticles.size() >= cfgGeneralCuts.cfgCutMultMax)) {
       return;
     }
-    if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgCutCentMin || cent >= cfgCutCentMax)) {
+    if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgGeneralCuts.cfgCutCentMin || cent >= cfgGeneralCuts.cfgCutCentMax)) {
       return;
     }
 
@@ -1703,16 +1796,16 @@ struct FlowDecorrelation {
     }
     if (cfgMcTrue.cfgUseCFStepAll) {
       same->fillEvent(mcParticles.size(), CorrelationContainer::kCFStepAll);
-      fillMCCorrelations<CorrelationContainer::kCFStepAll>(mcParticles, mcParticles, mcCollision.posZ(), SameEvent, 1.0f);
+      fillMCCorrelations<CorrelationContainer::kCFStepAll>(mcParticles, mcParticles, mcCollision.posZ(), SameEvent, 1.0f, kFT0C);
     }
 
     registry.fill(HIST("MCTrue/MCeventcount"), 2.5);
     same->fillEvent(mcParticles.size(), CorrelationContainer::kCFStepTrackedOnlyPrim);
-    fillMCCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(mcParticles, mcParticles, mcCollision.posZ(), SameEvent, 1.0f);
+    fillMCCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(mcParticles, mcParticles, mcCollision.posZ(), SameEvent, 1.0f, kFT0C);
   }
   PROCESS_SWITCH(FlowDecorrelation, processMcSameTpcFt0c, "Process MC same event", false);
 
-  void processMcMixed(FilteredMcCollisions const& mcCollisions, FilteredMcParticles const& mcParticles, SmallGroupMcCollisions const& collisions)
+  void processMcMixedTpcFt0c(FilteredMcCollisions const& mcCollisions, FilteredMcParticles const& mcParticles, SmallGroupMcCollisions const& collisions)
   {
     auto getTracksSize = [&mcParticles, this](FilteredMcCollisions::iterator const& mcCollision) {
       auto associatedTracks = mcParticles.sliceByCached(o2::aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), this->cache);
@@ -1729,10 +1822,10 @@ struct FlowDecorrelation {
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [collision1, tracks1, collision2, tracks2] = *it;
 
-      if (cfgSelCollByNch && (tracks1.size() < cfgCutMultMin || tracks1.size() >= cfgCutMultMax))
+      if (cfgSelCollByNch && (tracks1.size() < cfgGeneralCuts.cfgCutMultMin || tracks1.size() >= cfgGeneralCuts.cfgCutMultMax))
         continue;
 
-      if (cfgSelCollByNch && (tracks2.size() < cfgCutMultMin || tracks2.size() >= cfgCutMultMax))
+      if (cfgSelCollByNch && (tracks2.size() < cfgGeneralCuts.cfgCutMultMin || tracks2.size() >= cfgGeneralCuts.cfgCutMultMax))
         continue;
 
       auto groupedCollisions = collisions.sliceBy(collisionPerMCCollision, collision1.globalIndex());
@@ -1744,7 +1837,7 @@ struct FlowDecorrelation {
         }
       }
 
-      if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgCutCentMin || cent >= cfgCutCentMax))
+      if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgGeneralCuts.cfgCutCentMin || cent >= cfgGeneralCuts.cfgCutCentMax))
         continue;
 
       registry.fill(HIST("MCTrue/MCeventcount"), MixedEvent); // fill the mixed event in the 3 bin
@@ -1754,14 +1847,104 @@ struct FlowDecorrelation {
       }
 
       if (cfgMcTrue.cfgUseCFStepAll) {
-        fillMCCorrelations<CorrelationContainer::kCFStepAll>(tracks1, tracks2, collision1.posZ(), MixedEvent, eventWeight);
+        fillMCCorrelations<CorrelationContainer::kCFStepAll>(tracks1, tracks2, collision1.posZ(), MixedEvent, eventWeight, kFT0C);
       }
 
       registry.fill(HIST("MCTrue/MCeventcount"), 4.5);
-      fillMCCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(tracks1, tracks2, collision1.posZ(), MixedEvent, eventWeight);
+      fillMCCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(tracks1, tracks2, collision1.posZ(), MixedEvent, eventWeight, kFT0C);
     }
   }
-  PROCESS_SWITCH(FlowDecorrelation, processMcMixed, "Process MC mixed events", false);
+  PROCESS_SWITCH(FlowDecorrelation, processMcMixedTpcFt0c, "Process MC mixed events", false);
+
+  void processMcSameTpcFt0a(FilteredMcCollisions::iterator const& mcCollision, FilteredMcParticles const& mcParticles, SmallGroupMcCollisions const& collisions)
+  {
+    float cent = -1;
+    if (!cfgCentTableUnavailable) {
+      for (const auto& collision : collisions) {
+        cent = getCentrality(collision);
+      }
+    }
+
+    if (cfgSelCollByNch && (mcParticles.size() < cfgGeneralCuts.cfgCutMultMin || mcParticles.size() >= cfgGeneralCuts.cfgCutMultMax)) {
+      return;
+    }
+    if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgGeneralCuts.cfgCutCentMin || cent >= cfgGeneralCuts.cfgCutCentMax)) {
+      return;
+    }
+
+    registry.fill(HIST("MCTrue/MCeventcount"), SameEvent); // because its same event i put it in the 1 bin
+    if (!cfgCentTableUnavailable)
+      registry.fill(HIST("MCTrue/MCCentrality"), cent);
+    registry.fill(HIST("MCTrue/MCNch"), mcParticles.size());
+    registry.fill(HIST("MCTrue/MCzVtx"), mcCollision.posZ());
+    for (const auto& mcParticle : mcParticles) {
+      if (mcParticle.isPhysicalPrimary()) {
+        registry.fill(HIST("MCTrue/MCPhi"), mcParticle.phi());
+        registry.fill(HIST("MCTrue/MCEta"), mcParticle.eta());
+        registry.fill(HIST("MCTrue/MCpT"), mcParticle.pt());
+      }
+    }
+    if (cfgMcTrue.cfgUseCFStepAll) {
+      same->fillEvent(mcParticles.size(), CorrelationContainer::kCFStepAll);
+      fillMCCorrelations<CorrelationContainer::kCFStepAll>(mcParticles, mcParticles, mcCollision.posZ(), SameEvent, 1.0f, kFT0A);
+    }
+
+    registry.fill(HIST("MCTrue/MCeventcount"), 2.5);
+    same->fillEvent(mcParticles.size(), CorrelationContainer::kCFStepTrackedOnlyPrim);
+    fillMCCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(mcParticles, mcParticles, mcCollision.posZ(), SameEvent, 1.0f, kFT0A);
+  }
+  PROCESS_SWITCH(FlowDecorrelation, processMcSameTpcFt0a, "Process MC same event", false);
+
+  void processMcMixedTpcFt0a(FilteredMcCollisions const& mcCollisions, FilteredMcParticles const& mcParticles, SmallGroupMcCollisions const& collisions)
+  {
+    auto getTracksSize = [&mcParticles, this](FilteredMcCollisions::iterator const& mcCollision) {
+      auto associatedTracks = mcParticles.sliceByCached(o2::aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), this->cache);
+      auto mult = associatedTracks.size();
+      return mult;
+    };
+
+    using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, o2::aod::mccollision::PosZ, decltype(getTracksSize)>;
+
+    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxMix, axisMultMix}, true};
+
+    auto tracksTuple = std::make_tuple(mcParticles, mcParticles);
+    Pair<FilteredMcCollisions, FilteredMcParticles, FilteredMcParticles, MixedBinning> pairs{binningOnVtxAndMult, cfgMixEventNumMin, -1, mcCollisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+    for (auto it = pairs.begin(); it != pairs.end(); it++) {
+      auto& [collision1, tracks1, collision2, tracks2] = *it;
+
+      if (cfgSelCollByNch && (tracks1.size() < cfgGeneralCuts.cfgCutMultMin || tracks1.size() >= cfgGeneralCuts.cfgCutMultMax))
+        continue;
+
+      if (cfgSelCollByNch && (tracks2.size() < cfgGeneralCuts.cfgCutMultMin || tracks2.size() >= cfgGeneralCuts.cfgCutMultMax))
+        continue;
+
+      auto groupedCollisions = collisions.sliceBy(collisionPerMCCollision, collision1.globalIndex());
+
+      float cent = -1;
+      if (!cfgCentTableUnavailable) {
+        for (const auto& collision : groupedCollisions) {
+          cent = getCentrality(collision);
+        }
+      }
+
+      if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgGeneralCuts.cfgCutCentMin || cent >= cfgGeneralCuts.cfgCutCentMax))
+        continue;
+
+      registry.fill(HIST("MCTrue/MCeventcount"), MixedEvent); // fill the mixed event in the 3 bin
+      float eventWeight = 1.0f;
+      if (cfgUseEventWeights) {
+        eventWeight = 1.0f / it.currentWindowNeighbours();
+      }
+
+      if (cfgMcTrue.cfgUseCFStepAll) {
+        fillMCCorrelations<CorrelationContainer::kCFStepAll>(tracks1, tracks2, collision1.posZ(), MixedEvent, eventWeight, kFT0A);
+      }
+
+      registry.fill(HIST("MCTrue/MCeventcount"), 4.5);
+      fillMCCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(tracks1, tracks2, collision1.posZ(), MixedEvent, eventWeight, kFT0A);
+    }
+  }
+  PROCESS_SWITCH(FlowDecorrelation, processMcMixedTpcFt0a, "Process MC mixed events", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
