@@ -42,7 +42,6 @@
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/PID.h>
 
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector3Dfwd.h>
@@ -53,8 +52,6 @@
 #include <TPDGCode.h>
 #include <TRandom.h>
 #include <TRandom3.h>
-#include <TString.h>
-#include <TVector2.h>
 
 #include <algorithm>
 #include <array>
