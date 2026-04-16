@@ -68,6 +68,8 @@ using namespace o2::framework::expressions;
 
 struct PidFlowPtCorr {
   // configurable
+  double minVal4Float = 1e-3;
+  double pidParticleNumber = 3;
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
@@ -855,15 +857,6 @@ struct PidFlowPtCorr {
     return resultKaon;
   }
 
-  /**
-   * @brief Particle Identification using circular cut on TPC-TOF nSigma plane
-   *
-   * @param track Input track object to be identified
-   * @return int  PID code (-1=unknown, 1=pion, 2=kaon, 3=proton)
-   * @note  Cuts on sqrt(nsigmaTPC^2 + nsigmaTOF^2) < 2 when TOF is available
-   *        Falls back to |nsigmaTPC| < 2 when TOF is not in valid pt range
-   *        Rejects tracks that satisfy multiple particle hypotheses
-   */
   template <typename TrackObject>
   int getPidWithCircleCut(TrackObject const& track)
   {
@@ -1078,7 +1071,7 @@ struct PidFlowPtCorr {
 
         if (switchsOpts.cfgClosureTest.value != 0) {
           double npair4c22pure = fGFW->Calculate(corrconfigs.at(29), 0, kTRUE).real();
-          if (npair4c22pure > 1e-3)
+          if (npair4c22pure > minVal4Float)
             registry.fill(HIST("meanptCentNbs/hPionMeanptWeightC22pure"),
                           pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap,
                           pidPtSum / nPid,
@@ -1383,7 +1376,7 @@ struct PidFlowPtCorr {
           LOGF(warning, "eff path pid 1d size != 3, skip pid eff 1d load");
           break;
         }
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < pidParticleNumber; i++) {
           mEfficiency.push_back(ccdb->getForTimeStamp<TH1>(effPathPid[i], timestamp));
         }
         if (mEfficiency.size() == static_cast<uint64_t>(3)) {
@@ -1398,7 +1391,7 @@ struct PidFlowPtCorr {
           LOGF(warning, "eff path for its pid 1d size != 3, skip its pid eff 1d load");
           break;
         }
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < pidParticleNumber; i++) {
           mEfficiency4ITSOnly.push_back(ccdb->getForTimeStamp<TH1>(effPathPid4ITSOnly[i], timestamp));
         }
         if (mEfficiency4ITSOnly.size() == static_cast<uint64_t>(3)) {
@@ -1501,9 +1494,9 @@ struct PidFlowPtCorr {
 
       /// @todo add pid NUE eff
       case 3: // pid
-        if (sizeOfEffVec != 3)
+        if (sizeOfEffVec != pidParticleNumber)
           break;
-        if (sizeOfEffVec4ITS != 3)
+        if (sizeOfEffVec4ITS != pidParticleNumber)
           break;
 
         break;
@@ -2255,7 +2248,7 @@ struct PidFlowPtCorr {
         fFCPr->FillProfile("hMeanPt", cent, (protonPtSum / nProtonWeighted), nProtonWeighted, rndm);
 
       double nchDiff = nch * nch - nchSquare;
-      if (nchDiff > 1e-3) {
+      if (nchDiff > minVal4Float) {
         fFCCh->FillProfile("ptSquareAve", cent,
                            (ptSum * ptSum - ptSquareSum) / nchDiff,
                            nchDiff, rndm);
@@ -2266,7 +2259,7 @@ struct PidFlowPtCorr {
       }
 
       double pionDiff = nPionWeighted * nPionWeighted - nPionSquare;
-      if (pionDiff > 1e-3) {
+      if (pionDiff > minVal4Float) {
         fFCPi->FillProfile("ptSquareAve", cent,
                            (pionPtSum * pionPtSum - pionPtSquareSum) / pionDiff,
                            pionDiff, rndm);
@@ -2277,7 +2270,7 @@ struct PidFlowPtCorr {
       }
 
       double kaonDiff = nKaonWeighted * nKaonWeighted - nKaonSquare;
-      if (kaonDiff > 1e-3) {
+      if (kaonDiff > minVal4Float) {
         fFCKa->FillProfile("ptSquareAve", cent,
                            (kaonPtSum * kaonPtSum - kaonPtSquareSum) / kaonDiff,
                            kaonDiff, rndm);
@@ -2288,7 +2281,7 @@ struct PidFlowPtCorr {
       }
 
       double protonDiff = nProtonWeighted * nProtonWeighted - nProtonSquare;
-      if (protonDiff > 1e-3) {
+      if (protonDiff > minVal4Float) {
         fFCPr->FillProfile("ptSquareAve", cent,
                            (protonPtSum * protonPtSum - protonPtSquareSum) / protonDiff,
                            protonDiff, rndm);
