@@ -14,51 +14,34 @@
 /// \since  Feb/5/2025
 /// \brief  QC of synthetic flow exercise
 
-#include "PWGCF/GenericFramework/Core/FlowContainer.h"
-#include "PWGCF/GenericFramework/Core/GFW.h"
-#include "PWGCF/GenericFramework/Core/GFWWeights.h"
-#include "PWGMM/Mult/DataModel/Index.h" // for Particles2Tracks table
-
-#include "Common/CCDB/EventSelectionParams.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <vector>
+#include <string>
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include <CCDB/BasicCCDBManager.h>
-#include <CommonConstants/MathConstants.h>
-#include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
-#include <Framework/AnalysisTask.h>
-#include <Framework/Configurable.h>
-#include <Framework/HistogramRegistry.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
-#include <Framework/OutputObjHeader.h>
-#include <Framework/runDataProcessing.h>
-
-#include <TF1.h>
-#include <TH1.h>
-#include <TH2.h>
-#include <TH3.h>
-#include <TNamed.h>
-#include <TObjArray.h>
-#include <TPDGCode.h>
+#include "Common/Core/trackUtilities.h"
+#include "ReconstructionDataFormats/Track.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGMM/Mult/DataModel/Index.h" // for Particles2Tracks table
+#include "GFWPowerArray.h"
+#include "GFW.h"
+#include "GFWCumulant.h"
+#include "GFWWeights.h"
+#include "FlowContainer.h"
 #include <TProfile.h>
 #include <TRandom3.h>
-#include <TString.h>
-
-#include <sys/types.h>
-
-#include <RtypesCore.h>
-
-#include <chrono>
-#include <cmath>
-#include <cstdint>
-#include <cstdlib>
-#include <string>
-#include <vector>
+#include <TPDGCode.h>
+#include <TF1.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -103,6 +86,7 @@ struct FlowMc {
   O2_DEFINE_CONFIGURABLE(cfgRecoEvRejectMC, bool, false, "reject both MC and Reco events when reco do not pass")
   O2_DEFINE_CONFIGURABLE(cfgRecoEvSel8, bool, false, "require sel8 for reconstruction events")
   O2_DEFINE_CONFIGURABLE(cfgRecoEvkIsGoodITSLayersAll, bool, false, "require kIsGoodITSLayersAll for reconstruction events")
+  O2_DEFINE_CONFIGURABLE(cfgRecoEvkIsGoodITSLayer0123, bool, false, "require kIsGoodITSLayer0123 for reconstruction events")
   O2_DEFINE_CONFIGURABLE(cfgRecoEvkNoSameBunchPileup, bool, false, "require kNoSameBunchPileup for reconstruction events")
   O2_DEFINE_CONFIGURABLE(cfgRecoEvSelkIsGoodZvtxFT0vsPV, bool, false, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference, use this cut at low multiplicities with caution")
   O2_DEFINE_CONFIGURABLE(cfgRecoEvSelkNoITSROFrameBorder, bool, false, "reject events at ITS ROF border")
@@ -428,6 +412,10 @@ struct FlowMc {
     }
     if (cfgRecoEvkIsGoodITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       // from Jan 9 2025 AOT meeting
+      // cut time intervals with dead ITS staves
+      return 0;
+    }
+    if (cfgRecoEvkIsGoodITSLayer0123 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
       // cut time intervals with dead ITS staves
       return 0;
     }
