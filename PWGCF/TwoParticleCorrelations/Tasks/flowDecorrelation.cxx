@@ -1040,6 +1040,13 @@ struct FlowDecorrelation {
 
   bool ft0cCollisionCourse(float eta, float phi, float vtxZ)
   {
+    double zFt0cDistance = -83.44;
+    double maxWidth = 24.;
+    double minWidthX = 18.25;
+    double minWidhtY = 18.175;
+    double insideWidthX = 6.825;
+    double insideWidthY = 6.675;
+
     double theta = 2 * std::atan(std::exp(-eta));
     double vx = std::sin(theta) * std::cos(phi); // veloctiy component along x
     double vy = std::sin(theta) * std::sin(phi); // veloctiy component along y
@@ -1048,22 +1055,23 @@ struct FlowDecorrelation {
     if (vz > 0.)
       return false;
 
-    double x = vx * ((-83.44 - vtxZ) / vz); // location of particle on x at FT0C distance from vertex
-    double y = vy * ((-83.44 - vtxZ) / vz); // location of particle on x at FT0C distance from vertex
+    double x = vx * ((zFt0cDistance - vtxZ) / vz); // location of particle on x at FT0C distance from vertex
+    double y = vy * ((zFt0cDistance - vtxZ) / vz); // location of particle on x at FT0C distance from vertex
 
-    if (std::abs(x) < 24. && (std::abs(y) > 6.825 && std::abs(y) < 18.25))
+    if (std::abs(x) < maxWidth && (std::abs(y) > insideWidthX && std::abs(y) < minWidthX))
       return true;
-    if (std::abs(y) < 24. && (std::abs(x) > 6.675 && std::abs(x) < 18.175))
+    if (std::abs(y) < maxWidth && (std::abs(x) > insideWidthY && std::abs(x) < minWidhtY))
       return true;
-    if (std::abs(x) < 6.825 && (std::abs(y) < 24. && std::abs(y) > 6.675))
+    if (std::abs(x) < insideWidthX && (std::abs(y) < maxWidth && std::abs(y) > insideWidthY))
       return true;
-    if (std::abs(y) < 6.675 && (std::abs(x) < 24. && std::abs(x) > 6.675))
+    if (std::abs(y) < insideWidthY && (std::abs(x) < maxWidth && std::abs(x) > insideWidthX))
       return true;
     return false;
   }
 
   bool ft0aCollisionCourse(float eta, float phi, float vtxZ)
   {
+    double zFt0aDistance = 338.43;
     double offSetX = 0.588;
     double offSetY = 1.468;
     double blockFar = 14.875;
@@ -1078,8 +1086,8 @@ struct FlowDecorrelation {
     if (vz < 0.)
       return false;
 
-    double x = vx * ((338.43 - vtxZ) / vz); // location of particle on x at FT0C distance from vertex
-    double y = vy * ((338.43 - vtxZ) / vz); // location of particle on x at FT0C distance from vertex
+    double x = vx * ((zFt0aDistance - vtxZ) / vz); // location of particle on x at FT0C distance from vertex
+    double y = vy * ((zFt0aDistance - vtxZ) / vz); // location of particle on x at FT0C distance from vertex
 
     if (x < (blockFar + offSetX) && x > (blockClose + offSetX)) {
       if (y < (blockFar + offSetY) && y > (blockClose + offSetY)) {
@@ -1709,6 +1717,7 @@ struct FlowDecorrelation {
   void fillMCCorrelations(TTracks tracks1, TTracksAssoc tracks2, float posZ, int system, float eventWeight, int corType) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
     int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
+    double tpcEtaAcceptance = 0.9;
 
     float triggerWeight = 1.0f;
     float associatedWeight = 1.0f;
@@ -1716,14 +1725,14 @@ struct FlowDecorrelation {
     for (auto const& track1 : tracks1) {
 
       if (corType == kFT0C && !cfgMcTrue.cfgUseFt0Structure) {
-        if (std::abs(track1.eta()) < 0.9)
+        if (std::abs(track1.eta()) < tpcEtaAcceptance)
           continue;
       }
       if (corType == kFT0C && cfgMcTrue.cfgUseFt0Structure && !ft0cCollisionCourse(track1.eta(), track1.phi(), posZ)) {
         continue;
       }
       if (corType == kFT0A && !cfgMcTrue.cfgUseFt0Structure) {
-        if (std::abs(track1.eta()) < 0.9)
+        if (std::abs(track1.eta()) < tpcEtaAcceptance)
           continue;
       }
       if (corType == kFT0A && cfgMcTrue.cfgUseFt0Structure && !ft0aCollisionCourse(track1.eta(), track1.phi(), posZ)) {
