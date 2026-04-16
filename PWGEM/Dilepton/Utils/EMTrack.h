@@ -57,7 +57,6 @@ class EMTrack
   float px() const { return 1.f / std::fabs(fSigned1Pt) * std::cos(fPhi); }
   float py() const { return 1.f / std::fabs(fSigned1Pt) * std::sin(fPhi); }
   float pz() const { return 1.f / std::fabs(fSigned1Pt) * std::sinh(fEta); }
-  // float e() const { return std::hypot(fPt * std::cosh(fEta), fMass); } // e2 = p2 + m2
   float signed1Pt() const { return fSigned1Pt; }
 
  protected:
@@ -238,6 +237,35 @@ class EMPair : public EMTrack
   float fVx;
   float fVy;
   float fVz;
+};
+
+class EMTrackUL // ultra-light track. Use this when you don't care charge or DCA. e.g. dilepton-hadron correlation.
+{
+ public:
+  EMTrackUL(float pt, float eta, float phi)
+  {
+    fPt = pt;
+    fEta = eta;
+    fPhi = phi;
+  }
+
+  ~EMTrackUL() {}
+
+  float pt() const { return fPt; }
+  float eta() const { return fEta; }
+  float phi() const { return fPhi; }
+
+  float p() const { return fPt * std::cosh(fEta); }
+  float px() const { return fPt * std::cos(fPhi); }
+  float py() const { return fPt * std::sin(fPhi); }
+  float pz() const { return fPt * std::sinh(fEta); }
+  float e(const float mass) const { return std::hypot(fPt * std::cosh(fEta), mass); } // e2 = p2 + m2
+  float rapidity(const float mass) const { return std::log((std::sqrt(std::pow(mass, 2) + std::pow(fPt * std::cosh(fEta), 2)) + fPt * std::sinh(fEta)) / std::sqrt(std::pow(mass, 2) + std::pow(fPt, 2))); }
+
+ protected:
+  float fPt;
+  float fEta;
+  float fPhi;
 };
 
 } // namespace o2::aod::pwgem::dilepton::utils
