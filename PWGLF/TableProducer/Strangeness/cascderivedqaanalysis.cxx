@@ -34,6 +34,7 @@
 #include <TString.h>
 
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <string>
 #include <vector>
