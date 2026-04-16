@@ -285,6 +285,9 @@ DECLARE_SOA_TABLE(MultBCs, "AOD", "MULTBC", //!
                   bc::Flags);
 using MultBC = MultBCs::iterator;
 
+DECLARE_SOA_TABLE(MultBcSel, "AOD", "MULTBCSEL", //! BC selection bits joinable with multBCs
+                  evsel::Selection);
+
 // crosslinks
 namespace mult
 {
