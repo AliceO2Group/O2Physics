@@ -108,7 +108,7 @@ struct FwdTrackExtension {
           dcaX = (proptrack.getX() - collision.posX());
           dcaY = (proptrack.getY() - collision.posY());
         } else {
-          dcaX = track.pDca() / sqrt(2) / track.p();
+          dcaX = track.pDca() / std::numbers::sqrt2 / track.p();
           dcaY = dcaX;
         }
       }
