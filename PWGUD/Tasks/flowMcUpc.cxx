@@ -65,7 +65,7 @@ struct FlowMcUpc {
 
   double epsilon = 1e-6;
 
-  using McParts = soa::Join<aod::UDMcParticles, aod::UDMcTrackLabels>;
+  // using McParts = soa::Join<aod::UDMcParticles, aod::UDMcTrackLabels>;
 
   void init(InitContext&)
   {
@@ -111,7 +111,7 @@ struct FlowMcUpc {
 
   PresliceUnsorted<aod::UDMcParticles> partPerMcCollision = aod::udmcparticle::udMcCollisionId;
 
-  void processMCTrue(aod::UDMcCollisions::iterator const& mcCollision, McParts const& mcParts, aod::BCs const& bcs)
+  void processMCTrue(aod::UDMcCollisions::iterator const& mcCollision, aod::UDMcParticles const& mcParts, aod::BCs const& bcs)
   {
     if (bcs.size() == 0) {
       return;
