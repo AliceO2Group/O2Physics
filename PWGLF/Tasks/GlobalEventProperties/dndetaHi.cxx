@@ -78,61 +78,66 @@ using Bool1d = std::vector<bool>;
 // Alias for const-ref-in-process linter issue
 using MyCollisionsMcLabels = soa::Join<MyCollisions, aod::McCollisionLabels>;
 
-enum {
-  kECbegin = 0,
-  kDATA = 1,
-  kINEL,
-  kINELg0,
-  kDD,
-  kSD,
-  kND,
-  kECend
-};
-enum {
-  kTrigbegin = 0,
-  kSel8 = 1,
-  kSel8g0,
-  kTrigend
-};
-enum {
-  kSpeciesbegin = 0,
-  kK0short = 1,
-  kLambda,
-  kAntilambda,
-  kSpeciesend
-};
-enum {
-  kSignbegin = 0,
-  kPositive = 1,
-  kNegative,
-  kSignend
-};
-enum {
-  kStepbegin = 0,
-  kAll = 1,
-  kBasiccut,
-  kMasscut,
-  kStepend
+enum class EventCategory {
+  Begin = 0,
+  Data,
+  Inel,
+  Inelg0,
+  Dd,
+  Sd,
+  Nd,
+  End
 };
 
-enum {
-  kParTypebegin = 0,
-  kParDATA = 1,
-  kMotherStrange,
-  kBkg,
-  kNotPrimary,
-  kPion,
-  kKaon,
-  kProtonMy,
-  kOPar,
-  kParTypeend
+enum class TriggerClass {
+  Begin = 0,
+  Sel8,
+  Sel8g0,
+  End
 };
-enum {
-  kPtVarbegin = 0,
-  kNoPtVar = 1,
-  kPtUp,
-  kPtDw,
-  kPtVarend
+
+enum class Species {
+  Begin = 0,
+  K0short,
+  Lambda,
+  Antilambda,
+  End
+};
+
+enum class TrackSign {
+  Begin = 0,
+  Positive,
+  Negative,
+  End
+};
+
+enum class AnalysisStep {
+  Begin = 0,
+  All,
+  Basiccut,
+  Masscut,
+  End
+};
+
+enum class ParticleType {
+  Begin = 0,
+  Data,
+  MotherStrange,
+  Bkg,
+  NotPrimary,
+  Pion,
+  Kaon,
+  Proton,
+  Other,
+  End
+};
+
+enum class PtVariation {
+  Begin = 0,
+  None,
+  Up,
+  Down,
+  End
 };
 
 namespace
@@ -165,6 +170,10 @@ constexpr int ProcIdSD2 = 104;
 constexpr int ProcIdDD1 = 105;
 constexpr int ProcIdDD2 = 106;
 
+// Scoped-enum → int helper
+template <typename E>
+constexpr int toInt(E e) { return static_cast<int>(e); }
+
 // Weights and Fill values magic numbers
 constexpr float W1 = -10.0f;
 constexpr float W2 = 2.0f;
@@ -195,14 +204,14 @@ AxisSpec dcaAxis = {601, -3.01, 3.01, "", "DCA axis"};
 AxisSpec etaAxis = {80, -4.0, 4.0, "#eta", "eta axis"};
 AxisSpec v0EtaAxis = {20, -1.0, 1.0, "#etav0", "eta axis"};
 AxisSpec phiAxis = {629, 0, 2 * o2::constants::math::PI, "Rad", "phi axis"};
-AxisSpec ptVarAxis = {kPtVarend - 1, +kPtVarbegin + 0.5, +kPtVarend - 0.5, "", "ptvar axis"};
-AxisSpec evtClassAxis = {kECend - 1, +kECbegin + 0.5, +kECend - 0.5, "", "event class"};
-AxisSpec trigClassAxis = {kTrigend - 1, +kTrigbegin + 0.5, +kTrigend - 0.5, "", "trigger class"};
-AxisSpec particleTypeAxis = {kParTypeend - 1, +kParTypebegin + 0.5, +kParTypeend - 0.5, "", "Particle type"};
-AxisSpec speciesAxis = {kSpeciesend - 1, +kSpeciesbegin + 0.5, +kSpeciesend - 0.5, "", "species class"};
+AxisSpec ptVarAxis = {toInt(PtVariation::End) - 1, toInt(PtVariation::Begin) + 0.5, toInt(PtVariation::End) - 0.5, "", "ptvar axis"};
+AxisSpec evtClassAxis = {toInt(EventCategory::End) - 1, toInt(EventCategory::Begin) + 0.5, toInt(EventCategory::End) - 0.5, "", "event class"};
+AxisSpec trigClassAxis = {toInt(TriggerClass::End) - 1, toInt(TriggerClass::Begin) + 0.5, toInt(TriggerClass::End) - 0.5, "", "trigger class"};
+AxisSpec particleTypeAxis = {toInt(ParticleType::End) - 1, toInt(ParticleType::Begin) + 0.5, toInt(ParticleType::End) - 0.5, "", "Particle type"};
+AxisSpec speciesAxis = {toInt(Species::End) - 1, toInt(Species::Begin) + 0.5, toInt(Species::End) - 0.5, "", "species class"};
 AxisSpec massAxis = {600, 0.3f, 1.3f, "Mass (GeV/c^{2})", "Inv. Mass (GeV/c^{2})"};
-AxisSpec signAxis = {kSignend - 1, +kSignbegin + 0.5, +kSignend - 0.5, "", "sign"};
-AxisSpec stepAxis = {kStepend - 1, +kStepbegin + 0.5, +kStepend - 0.5, "", "step"};
+AxisSpec signAxis = {toInt(TrackSign::End) - 1, toInt(TrackSign::Begin) + 0.5, toInt(TrackSign::End) - 0.5, "", "sign"};
+AxisSpec stepAxis = {toInt(AnalysisStep::End) - 1, toInt(AnalysisStep::Begin) + 0.5, toInt(AnalysisStep::End) - 0.5, "", "step"};
 AxisSpec testAxis = {101, -0.5, 100.5, "", "test"};
 AxisSpec multAxis = {1001, -0.5, 1000.5, "", "Ntrks"};
 AxisSpec statusCodeAxis = {3, -1.5, 2.5, "", "StatusCode"};
@@ -365,7 +374,7 @@ struct DndetaHi {
   {
 
     for (const auto& collision : collisions) {
-      Bool1d btrigc(kTrigend, false);
+      Bool1d btrigc(toInt(TriggerClass::End), false);
       registry.fill(HIST("Selection"), Fill1);
       auto z = collision.posZ();
       auto pertracks = tSample3->sliceBy(perCol, collision.globalIndex());
@@ -374,13 +383,13 @@ struct DndetaHi {
       // if (collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       // if (collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
       if (collision.sel8()) {
-        btrigc[kSel8] = true;
+        btrigc[toInt(TriggerClass::Sel8)] = true;
         registry.fill(HIST("Selection"), Fill2);
         if (std::abs(z) < CutZ) {
           registry.fill(HIST("Selection"), Fill3);
         }
       }
-      if (btrigc[kSel8] && std::abs(z) < CutZ)
+      if (btrigc[toInt(TriggerClass::Sel8)] && std::abs(z) < CutZ)
         registry.fill(HIST("hft0multiplicity"), collision.multFT0C());
 
       for (const auto& track : pertracks) {
@@ -390,10 +399,10 @@ struct DndetaHi {
       }
       if (nTrk > 0) {
         // registry.fill(HIST("Selection"), 3.);
-        if (btrigc[kSel8])
-          btrigc[kSel8g0] = true;
+        if (btrigc[toInt(TriggerClass::Sel8)])
+          btrigc[toInt(TriggerClass::Sel8g0)] = true;
       }
-      if (btrigc[kSel8g0])
+      if (btrigc[toInt(TriggerClass::Sel8g0)])
         registry.fill(HIST("reczINELg0Sel8"), z);
 
       auto cent = -1.f;
@@ -407,29 +416,29 @@ struct DndetaHi {
       }
 
       if (isPbPb) {
-        if (std::abs(z) < CutZ && btrigc[kSel8])
+        if (std::abs(z) < CutZ && btrigc[toInt(TriggerClass::Sel8)])
           registry.fill(HIST("hcentrality"), cent);
       } else {
-        if (std::abs(z) < CutZ && btrigc[kSel8g0])
+        if (std::abs(z) < CutZ && btrigc[toInt(TriggerClass::Sel8g0)])
           registry.fill(HIST("hcentrality"), cent);
-        if (std::abs(z) < CutZ && btrigc[kSel8g0])
+        if (std::abs(z) < CutZ && btrigc[toInt(TriggerClass::Sel8g0)])
           registry.fill(HIST("hcentralityvscentraldndeta"), cent, nTrk);
       }
-      for (auto itrigc = 1u; itrigc < kTrigend; itrigc++) {
+      for (auto itrigc = 1u; itrigc < static_cast<unsigned>(TriggerClass::End); itrigc++) {
         if (btrigc[itrigc])
-          registry.fill(HIST("hreczvtx"), double(kDATA), double(itrigc), z, cent);
+          registry.fill(HIST("hreczvtx"), toInt(EventCategory::Data), itrigc, z, cent);
       }
 
       for (const auto& track : pertracks) {
-        if (btrigc[kSel8] && std::abs(track.eta()) < CutEta08 && std::abs(z) < CutZ)
+        if (btrigc[toInt(TriggerClass::Sel8)] && std::abs(track.eta()) < CutEta08 && std::abs(z) < CutZ)
           registry.fill(HIST("hrecdndpt"), track.pt());
-        if (btrigc[kSel8])
+        if (btrigc[toInt(TriggerClass::Sel8)])
           registry.fill(HIST("recetaINELg0Sel8recz10"), track.eta(), z);
 
-        for (auto itrigc = 1u; itrigc < kTrigend; itrigc++) {
+        for (auto itrigc = 1u; itrigc < static_cast<unsigned>(TriggerClass::End); itrigc++) {
           if (btrigc[itrigc]) {
-            registry.fill(HIST("hphieta"), double(kDATA), double(itrigc), track.phi(), track.eta(), cent);
-            registry.fill(HIST("hrecdndeta"), double(kDATA), double(itrigc), z, track.eta(), cent, double(kParDATA), track.phi());
+            registry.fill(HIST("hphieta"), toInt(EventCategory::Data), itrigc, track.phi(), track.eta(), cent);
+            registry.fill(HIST("hrecdndeta"), toInt(EventCategory::Data), itrigc, z, track.eta(), cent, toInt(ParticleType::Data), track.phi());
           }
         }
       }
@@ -445,15 +454,15 @@ struct DndetaHi {
     const FiLTracks& tracks)
   {
     for (const auto& mcCollision : mcCollisions) {
-      Bool1d bevtc(kECend, false);
-      bevtc[kINEL] = true;
+      Bool1d bevtc(toInt(EventCategory::End), false);
+      bevtc[toInt(EventCategory::Inel)] = true;
       auto procId = mcCollision.processId();
       if (procId == ProcIdND) {
-        bevtc[kND] = true;
+        bevtc[toInt(EventCategory::Nd)] = true;
       } else if (procId == ProcIdSD1 || procId == ProcIdSD2) {
-        bevtc[kSD] = true;
+        bevtc[toInt(EventCategory::Sd)] = true;
       } else if (procId == ProcIdDD1 || procId == ProcIdDD2) {
-        bevtc[kDD] = true;
+        bevtc[toInt(EventCategory::Dd)] = true;
       }
       registry.fill(HIST("Selection"), Fill1);
 
@@ -476,15 +485,15 @@ struct DndetaHi {
       }
       if (nTrkGen > 0) {
         registry.fill(HIST("Selection"), Fill4);
-        bevtc[kINELg0] = true;
+        bevtc[toInt(EventCategory::Inelg0)] = true;
       }
-      if (bevtc[kINEL])
+      if (bevtc[toInt(EventCategory::Inel)])
         registry.fill(HIST("Selection"), Fill9);
-      if (bevtc[kINEL] && std::abs(mcz) < CutZ)
+      if (bevtc[toInt(EventCategory::Inel)] && std::abs(mcz) < CutZ)
         registry.fill(HIST("Selection"), Fill11);
-      if (bevtc[kINELg0])
+      if (bevtc[toInt(EventCategory::Inelg0)])
         registry.fill(HIST("Selection"), Fill10);
-      if (bevtc[kINELg0] && std::abs(mcz) < CutZ)
+      if (bevtc[toInt(EventCategory::Inelg0)] && std::abs(mcz) < CutZ)
         registry.fill(HIST("Selection"), Fill12);
       for (const auto& particle : particles) {
         if (!particle.isPhysicalPrimary())
@@ -492,7 +501,7 @@ struct DndetaHi {
         auto kp = pdg->GetParticle(particle.pdgCode());
         if (kp != nullptr) {
           if (std::abs(kp->Charge()) >= CutCharge) {
-            if (bevtc[kINEL] && std::abs(particle.eta()) < CutEta08 && std::abs(mcz) < CutZ) {
+            if (bevtc[toInt(EventCategory::Inel)] && std::abs(particle.eta()) < CutEta08 && std::abs(mcz) < CutZ) {
               registry.fill(HIST("hgendndpt"), particle.pt());
               if (particle.pt() < CutPt) {
                 registry.fill(HIST("hgendndpt2"), particle.pt(), W1 * particle.pt() + W2);
@@ -530,9 +539,9 @@ struct DndetaHi {
           }
         }
       }
-      for (auto ievtc = 1u; ievtc < kECend; ievtc++) {
+      for (auto ievtc = 1u; ievtc < static_cast<unsigned>(EventCategory::End); ievtc++) {
         if (bevtc[ievtc])
-          registry.fill(HIST("hgenzvtx"), double(ievtc), genz, cent);
+          registry.fill(HIST("hgenzvtx"), ievtc, genz, cent);
       }
       int pid = 0;
       std::vector<double> particleetas;
@@ -545,35 +554,35 @@ struct DndetaHi {
         }
         switch (std::abs(particle.pdgCode())) {
           case 211:
-            pid = kPion;
+            pid = toInt(ParticleType::Pion);
             break;
           case 321:
-            pid = kKaon;
+            pid = toInt(ParticleType::Kaon);
             break;
           case 2212:
-            pid = kProtonMy;
+            pid = toInt(ParticleType::Proton);
             break;
           default:
-            pid = kOPar;
+            pid = toInt(ParticleType::Other);
             break;
         }
 
         if (p != nullptr) {
           if (std::abs(p->Charge()) >= CutCharge) {
-            for (auto ievtc = 1u; ievtc < kECend; ievtc++) {
+            for (auto ievtc = 1u; ievtc < static_cast<unsigned>(EventCategory::End); ievtc++) {
               if (bevtc[ievtc]) {
-                registry.fill(HIST("hgendndeta"), double(ievtc), genz, particle.eta(), cent, double(pid), kNoPtVar, particle.phi());
+                registry.fill(HIST("hgendndeta"), ievtc, genz, particle.eta(), cent, pid, toInt(PtVariation::None), particle.phi());
                 if (particle.pt() < CutPt) {
-                  registry.fill(HIST("hgendndeta"), double(ievtc), genz, particle.eta(), cent, double(pid), kPtUp, particle.phi(), W1 * particle.pt() + W2);
-                  registry.fill(HIST("hgendndeta"), double(ievtc), genz, particle.eta(), cent, double(pid), kPtDw, particle.phi(), W3 * particle.pt() + W4);
+                  registry.fill(HIST("hgendndeta"), ievtc, genz, particle.eta(), cent, pid, toInt(PtVariation::Up), particle.phi(), W1 * particle.pt() + W2);
+                  registry.fill(HIST("hgendndeta"), ievtc, genz, particle.eta(), cent, pid, toInt(PtVariation::Down), particle.phi(), W3 * particle.pt() + W4);
 
                 } else {
-                  registry.fill(HIST("hgendndeta"), double(ievtc), genz, particle.eta(), cent, double(pid), kPtUp, particle.phi());
-                  registry.fill(HIST("hgendndeta"), double(ievtc), genz, particle.eta(), cent, double(pid), kPtDw, particle.phi());
+                  registry.fill(HIST("hgendndeta"), ievtc, genz, particle.eta(), cent, pid, toInt(PtVariation::Up), particle.phi());
+                  registry.fill(HIST("hgendndeta"), ievtc, genz, particle.eta(), cent, pid, toInt(PtVariation::Down), particle.phi());
                 }
               }
             }
-            if (pid >= kPion && pid <= kOPar)
+            if (pid >= toInt(ParticleType::Pion) && pid <= toInt(ParticleType::Other))
               particleetas.push_back(particle.eta());
           }
         }
@@ -596,20 +605,20 @@ struct DndetaHi {
           // }
         }
 
-        Bool1d btrigc(kTrigend, false);
+        Bool1d btrigc(toInt(TriggerClass::End), false);
         auto z = collision.posZ();
         // if (collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
         // if (collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
         if (collision.sel8()) {
-          btrigc[kSel8] = true;
+          btrigc[toInt(TriggerClass::Sel8)] = true;
           registry.fill(HIST("Selection"), Fill2);
           if (std::abs(z) < CutZ) {
             registry.fill(HIST("Selection"), Fill3);
           }
         }
-        if (bevtc[kINEL] && btrigc[kSel8] && std::abs(z) < CutZ)
+        if (bevtc[toInt(EventCategory::Inel)] && btrigc[toInt(TriggerClass::Sel8)] && std::abs(z) < CutZ)
           registry.fill(HIST("hft0multiplicity"), collision.multFT0C());
-        if (collisionsample.size() == 1 && bevtc[kINELg0] && btrigc[kSel8]) {
+        if (collisionsample.size() == 1 && bevtc[toInt(EventCategory::Inelg0)] && btrigc[toInt(TriggerClass::Sel8)]) {
           for (const auto& eta : particleetas) {
             registry.fill(HIST("genetaINELg0Sel8recz10"), eta, z);
             registry.fill(HIST("genetaINELg0Sel8genz10"), eta, mcz);
@@ -617,7 +626,7 @@ struct DndetaHi {
           registry.fill(HIST("reczINELg0Sel8"), z);
           registry.fill(HIST("genzINELg0Sel8"), genz);
         }
-        if (collisionsample.size() == 1 && bevtc[kINELg0]) {
+        if (collisionsample.size() == 1 && bevtc[toInt(EventCategory::Inelg0)]) {
           for (const auto& eta : particleetas) {
             registry.fill(HIST("genetaINELg0genz10"), eta, mcz);
           }
@@ -633,85 +642,85 @@ struct DndetaHi {
         }
 
         if (nTrkRec > 0) {
-          if (btrigc[kSel8])
-            btrigc[kSel8g0] = true;
+          if (btrigc[toInt(TriggerClass::Sel8)])
+            btrigc[toInt(TriggerClass::Sel8g0)] = true;
         }
         if (isPbPb) {
-          if (std::abs(z) < CutZ && btrigc[kSel8])
+          if (std::abs(z) < CutZ && btrigc[toInt(TriggerClass::Sel8)])
             registry.fill(HIST("hcentrality"), cent);
         } else {
-          if (std::abs(z) < CutZ && btrigc[kSel8g0])
+          if (std::abs(z) < CutZ && btrigc[toInt(TriggerClass::Sel8g0)])
             registry.fill(HIST("hcentrality"), cent);
         }
 
-        if (bevtc[kINEL] && btrigc[kSel8])
+        if (bevtc[toInt(EventCategory::Inel)] && btrigc[toInt(TriggerClass::Sel8)])
           registry.fill(HIST("Selection"), Fill13);
-        if (bevtc[kINEL] && btrigc[kSel8] && std::abs(z) < CutZ)
+        if (bevtc[toInt(EventCategory::Inel)] && btrigc[toInt(TriggerClass::Sel8)] && std::abs(z) < CutZ)
           registry.fill(HIST("Selection"), Fill15);
-        if (bevtc[kINELg0] && btrigc[kSel8g0])
+        if (bevtc[toInt(EventCategory::Inelg0)] && btrigc[toInt(TriggerClass::Sel8g0)])
           registry.fill(HIST("Selection"), Fill14);
-        if (bevtc[kINELg0] && btrigc[kSel8g0] && std::abs(z) < CutZ)
+        if (bevtc[toInt(EventCategory::Inelg0)] && btrigc[toInt(TriggerClass::Sel8g0)] && std::abs(z) < CutZ)
           registry.fill(HIST("Selection"), Fill16);
 
-        for (auto ievtc = 1u; ievtc < kECend; ievtc++) {
-          for (auto itrigc = 1u; itrigc < kTrigend; itrigc++) {
+        for (auto ievtc = 1u; ievtc < static_cast<unsigned>(EventCategory::End); ievtc++) {
+          for (auto itrigc = 1u; itrigc < static_cast<unsigned>(TriggerClass::End); itrigc++) {
             if (bevtc[ievtc] && btrigc[itrigc]) {
-              registry.fill(HIST("hreczvtx"), double(ievtc), double(itrigc), z, cent);
+              registry.fill(HIST("hreczvtx"), ievtc, itrigc, z, cent);
             }
           }
         }
         std::vector<int> mclabels;
         for (const auto& track : trackspart) {
           if (track.has_mcParticle()) {
-            int pid = kBkg;
+            int pid = toInt(ParticleType::Bkg);
             auto particle = track.template mcParticle_as<Particles>();
             if (particle.isPhysicalPrimary()) {
               switch (std::abs(particle.pdgCode())) {
                 case 211:
-                  pid = kPion;
+                  pid = toInt(ParticleType::Pion);
                   break;
                 case 321:
-                  pid = kKaon;
+                  pid = toInt(ParticleType::Kaon);
                   break;
                 case 2212:
-                  pid = kProtonMy;
+                  pid = toInt(ParticleType::Proton);
                   break;
                 default:
-                  pid = kOPar;
+                  pid = toInt(ParticleType::Other);
                   break;
               }
             } else {
-              pid = kNotPrimary;
+              pid = toInt(ParticleType::NotPrimary);
             }
             for (auto motherIds = particle.mothersIds().front(); motherIds <= particle.mothersIds().back(); motherIds++) {
               auto mother = mcParticles.rawIteratorAt(motherIds);
               auto pdg_mother = mother.pdgCode();
               if (pdg_mother == kK0Short || std::abs(pdg_mother) == kLambda0) {
-                pid = kMotherStrange;
+                pid = toInt(ParticleType::MotherStrange);
               }
             }
             if (find(mclabels.begin(), mclabels.end(), track.mcParticleId()) != mclabels.end())
-              pid = kBkg;
+              pid = toInt(ParticleType::Bkg);
             mclabels.push_back(track.mcParticleId());
             registry.fill(HIST("hetaresponse"), particle.eta(), track.eta(), cent);
-            if (bevtc[kINEL] && btrigc[kSel8] && std::abs(track.eta()) < CutEta08 && std::abs(z) < CutZ && pid != kBkg && pid != kNotPrimary)
+            if (bevtc[toInt(EventCategory::Inel)] && btrigc[toInt(TriggerClass::Sel8)] && std::abs(track.eta()) < CutEta08 && std::abs(z) < CutZ && pid != toInt(ParticleType::Bkg) && pid != toInt(ParticleType::NotPrimary))
               registry.fill(HIST("hdndptefficiency"), particle.pt());
-            if (btrigc[kSel8] && bevtc[kINELg0])
+            if (btrigc[toInt(TriggerClass::Sel8)] && bevtc[toInt(EventCategory::Inelg0)])
               registry.fill(HIST("recetaINELg0Sel8recz10"), track.eta(), z);
-            for (auto ievtc = 1u; ievtc < kECend; ievtc++) {
-              for (auto itrigc = 1u; itrigc < kTrigend; itrigc++) {
+            for (auto ievtc = 1u; ievtc < static_cast<unsigned>(EventCategory::End); ievtc++) {
+              for (auto itrigc = 1u; itrigc < static_cast<unsigned>(TriggerClass::End); itrigc++) {
                 if (bevtc[ievtc] && btrigc[itrigc]) {
-                  registry.fill(HIST("hrecdndeta"), double(ievtc), double(itrigc), z, particle.eta(), cent, double(pid), particle.phi());
-                  registry.fill(HIST("hphieta"), double(ievtc), double(itrigc), track.phi(), track.eta(), cent);
+                  registry.fill(HIST("hrecdndeta"), ievtc, itrigc, z, particle.eta(), cent, pid, particle.phi());
+                  registry.fill(HIST("hphieta"), ievtc, itrigc, track.phi(), track.eta(), cent);
                 }
               }
             }
 
           } else {
-            for (auto ievtc = 1u; ievtc < kECend; ievtc++) {
-              for (auto itrigc = 1u; itrigc < kTrigend; itrigc++) {
+            for (auto ievtc = 1u; ievtc < static_cast<unsigned>(EventCategory::End); ievtc++) {
+              for (auto itrigc = 1u; itrigc < static_cast<unsigned>(TriggerClass::End); itrigc++) {
                 if (bevtc[ievtc] && btrigc[itrigc]) {
-                  registry.fill(HIST("hrecdndeta"), double(ievtc), double(itrigc), z, track.eta(), cent, double(kBkg), track.phi());
+                  registry.fill(HIST("hrecdndeta"), ievtc, itrigc, z, track.eta(), cent, toInt(ParticleType::Bkg), track.phi());
                 }
               }
             }
@@ -755,8 +764,8 @@ struct DndetaHi {
   {
 
     auto genz = mcCollision.posZ();
-    Bool1d bevtc(kECend, false);
-    bevtc[kINEL] = true;
+    Bool1d bevtc(toInt(EventCategory::End), false);
+    bevtc[toInt(EventCategory::Inel)] = true;
     for (const auto& particle : mcParticles) {
       if (!particle.isPhysicalPrimary())
         continue;
@@ -764,13 +773,13 @@ struct DndetaHi {
       if (p != nullptr) {
         if (std::abs(p->Charge()) >= CutCharge) {
           if (std::abs(particle.eta()) < CutEta1)
-            bevtc[kINELg0] = true;
+            bevtc[toInt(EventCategory::Inelg0)] = true;
         }
       }
     }
-    for (auto ievtc = 1u; ievtc < kECend; ievtc++) {
+    for (auto ievtc = 1u; ievtc < static_cast<unsigned>(EventCategory::End); ievtc++) {
       if (bevtc[ievtc])
-        registry.fill(HIST("hgenzvtx"), double(ievtc), genz, FillM1);
+        registry.fill(HIST("hgenzvtx"), ievtc, genz, FillM1);
     }
     int pid = 0;
     for (const auto& particle : mcParticles) {
@@ -782,31 +791,31 @@ struct DndetaHi {
       }
       switch (std::abs(particle.pdgCode())) {
         case 211:
-          pid = kPion;
+          pid = toInt(ParticleType::Pion);
           break;
         case 321:
-          pid = kKaon;
+          pid = toInt(ParticleType::Kaon);
           break;
         case 2212:
-          pid = kProtonMy;
+          pid = toInt(ParticleType::Proton);
           break;
         default:
-          pid = kOPar;
+          pid = toInt(ParticleType::Other);
           break;
       }
 
       if (p != nullptr) {
         if (std::abs(p->Charge()) >= CutCharge) {
-          for (auto ievtc = 1u; ievtc < kECend; ievtc++) {
+          for (auto ievtc = 1u; ievtc < static_cast<unsigned>(EventCategory::End); ievtc++) {
             if (bevtc[ievtc]) {
-              registry.fill(HIST("hgendndeta"), double(ievtc), genz, particle.eta(), FillM1, double(pid), kNoPtVar, particle.phi());
+              registry.fill(HIST("hgendndeta"), ievtc, genz, particle.eta(), FillM1, pid, toInt(PtVariation::None), particle.phi());
               if (particle.pt() < CutPt) {
-                registry.fill(HIST("hgendndeta"), double(ievtc), genz, particle.eta(), FillM1, double(pid), kPtUp, particle.phi(), W2);
-                registry.fill(HIST("hgendndeta"), double(ievtc), genz, particle.eta(), FillM1, double(pid), kPtDw, particle.phi(), W4);
+                registry.fill(HIST("hgendndeta"), ievtc, genz, particle.eta(), FillM1, pid, toInt(PtVariation::Up), particle.phi(), W2);
+                registry.fill(HIST("hgendndeta"), ievtc, genz, particle.eta(), FillM1, pid, toInt(PtVariation::Down), particle.phi(), W4);
 
               } else {
-                registry.fill(HIST("hgendndeta"), double(ievtc), genz, particle.eta(), FillM1, double(pid), kPtUp, particle.phi());
-                registry.fill(HIST("hgendndeta"), double(ievtc), genz, particle.eta(), FillM1, double(pid), kPtDw, particle.phi());
+                registry.fill(HIST("hgendndeta"), ievtc, genz, particle.eta(), FillM1, pid, toInt(PtVariation::Up), particle.phi());
+                registry.fill(HIST("hgendndeta"), ievtc, genz, particle.eta(), FillM1, pid, toInt(PtVariation::Down), particle.phi());
               }
             }
           }
@@ -857,9 +866,9 @@ struct DndetaHi {
 
           if (std::fabs(v0.eta()) < CutEta05)
             registry.fill(HIST("hv0k0s"), v0.mK0Short());
-          registry.fill(HIST("hv0mass"), cent, double(kK0short), v0.eta(), double(v0.mK0Short()));
-          registry.fill(HIST("hv0mass"), cent, double(kLambda), v0.eta(), double(v0.mLambda()));
-          registry.fill(HIST("hv0mass"), cent, double(kAntilambda), v0.eta(), double(v0.mAntiLambda()));
+          registry.fill(HIST("hv0mass"), cent, toInt(Species::K0short), v0.eta(), v0.mK0Short());
+          registry.fill(HIST("hv0mass"), cent, toInt(Species::Lambda), v0.eta(), v0.mLambda());
+          registry.fill(HIST("hv0mass"), cent, toInt(Species::Antilambda), v0.eta(), v0.mAntiLambda());
         }
       }
     }
@@ -870,41 +879,16 @@ struct DndetaHi {
     const soa::Join<MyCollisionsCent, aod::McCollisionLabels>& collisions,
     const aod::McCollisions& /*mcCollisions*/,
     const Particles& /*mcParticles*/,
-    const soa::Filtered<aod::V0Datas>& fullV0s,
+    const soa::Filtered<aod::V0Datas>& /*fullV0s*/,
     const soa::Filtered<LabeledTracksEx>& /*tracks*/,
     const DaughterTracks& /*dauTrks*/)
   {
     for (const auto& collision : collisions) {
-      auto cent = -1.f;
-
-      if (isPbPb) {
-        if constexpr (MyCollisionsCent::template contains<aod::CentFT0Cs>())
-          cent = collision.centFT0C();
-      } else {
-        if constexpr (MyCollisionsCent::template contains<aod::CentFT0Ms>())
-          cent = collision.centFT0M();
-      }
-
       if (useEvSel && !collision.sel8()) // event selection cut
         continue;
       if (!collision.has_mcCollision()) // check mc particle
         continue;
 
-      for (const auto& v0 : fullV0s) {
-
-        auto pTrack = v0.template posTrack_as<DaughterTracks>();
-        auto nTrack = v0.template negTrack_as<DaughterTracks>();
-
-        if (0 && v0.v0radius() > v0Radius &&
-            v0.v0cosPA() > v0CosPA &&
-            std::abs(pTrack.eta()) < etaDau &&
-            std::abs(nTrack.eta()) < etaDau) {
-
-          registry.fill(HIST("hv0mass"), cent, double(kK0short), v0.eta(), double(v0.mK0Short()));
-          registry.fill(HIST("hv0mass"), cent, double(kLambda), v0.eta(), double(v0.mLambda()));
-          registry.fill(HIST("hv0mass"), cent, double(kAntilambda), v0.eta(), double(v0.mAntiLambda()));
-        }
-      }
     }
   }
   PROCESS_SWITCH(DndetaHi, processMCV0Counting, "MC V0Count tracks without Centrality", false);
