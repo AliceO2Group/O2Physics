@@ -105,16 +105,16 @@ class FemtoUniverseParticleHisto
       mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{p}", o2::framework::HistType::kTH2F, {{tempFitVarMomAxis}, {100, 0, 5}});
       mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{d}", o2::framework::HistType::kTH2F, {{tempFitVarMomAxis}, {100, 0, 5}});
       if (isFillITSNsigma) {
-        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaITS_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITS}^{e}", kTH2F, {{tempFitVarMomAxis}, {200, -4.975, 5.025}});
-        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaITS_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITS}^{#pi}", kTH2F, {{tempFitVarMomAxis}, {200, -4.975, 5.025}});
-        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaITS_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITS}^{K}", kTH2F, {{tempFitVarMomAxis}, {200, -4.975, 5.025}});
-        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaITS_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITS}^{p}", kTH2F, {{tempFitVarMomAxis}, {200, -4.975, 5.025}});
-        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaITS_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITS}^{d}", kTH2F, {{tempFitVarMomAxis}, {200, -4.975, 5.025}});
-        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaCombITSTPC_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITSTPC}^{e}", kTH2F, {{tempFitVarMomAxis}, {100, 0, 5}});
-        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaCombITSTPC_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITSTPC}^{#pi}", kTH2F, {{tempFitVarMomAxis}, {100, 0, 5}});
-        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaCombITSTPC_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITSTPC}^{K}", kTH2F, {{tempFitVarMomAxis}, {100, 0, 5}});
-        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaCombITSTPC_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITSTPC}^{p}", kTH2F, {{tempFitVarMomAxis}, {100, 0, 5}});
-        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaCombITSTPC_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITSTPC}^{d}", kTH2F, {{tempFitVarMomAxis}, {100, 0, 5}});
+        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaITS_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITS}^{e}", o2::framework::HistType::kTH2F, {{tempFitVarMomAxis}, {200, -4.975, 5.025}});
+        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaITS_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITS}^{#pi}", o2::framework::HistType::kTH2F, {{tempFitVarMomAxis}, {200, -4.975, 5.025}});
+        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaITS_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITS}^{K}", o2::framework::HistType::kTH2F, {{tempFitVarMomAxis}, {200, -4.975, 5.025}});
+        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaITS_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITS}^{p}", o2::framework::HistType::kTH2F, {{tempFitVarMomAxis}, {200, -4.975, 5.025}});
+        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaITS_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITS}^{d}", o2::framework::HistType::kTH2F, {{tempFitVarMomAxis}, {200, -4.975, 5.025}});
+        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaCombITSTPC_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITSTPC}^{e}", o2::framework::HistType::kTH2F, {{tempFitVarMomAxis}, {100, 0, 5}});
+        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaCombITSTPC_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITSTPC}^{#pi}", o2::framework::HistType::kTH2F, {{tempFitVarMomAxis}, {100, 0, 5}});
+        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaCombITSTPC_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITSTPC}^{K}", o2::framework::HistType::kTH2F, {{tempFitVarMomAxis}, {100, 0, 5}});
+        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaCombITSTPC_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITSTPC}^{p}", o2::framework::HistType::kTH2F, {{tempFitVarMomAxis}, {100, 0, 5}});
+        mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaCombITSTPC_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{ITSTPC}^{d}", o2::framework::HistType::kTH2F, {{tempFitVarMomAxis}, {100, 0, 5}});
       }
     } else if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kV0) {
       mHistogramRegistry->add((folderName + folderSuffix + "/hDaughDCA").c_str(), "; DCA^{daugh} (cm); Entries", o2::framework::HistType::kTH1F, {{1000, 0, 10}});
