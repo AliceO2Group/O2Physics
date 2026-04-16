@@ -890,7 +890,7 @@ struct PidFlowPtCorr {
       const float ptMax = pidPtRangeOpts.cfgPtMax4TOFPiKa.value;
 
       if (pt > ptMin && pt < ptMax) {
-        
+
         isPionBool = std::hypot(tpcNsigma, tofNsigma) < circleCutOpts.cfgCircleCutSigmaPi.value;
       } else {
         // Fallback: TPC only cut
