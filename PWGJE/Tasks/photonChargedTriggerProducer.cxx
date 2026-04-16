@@ -47,6 +47,13 @@ using namespace o2::framework;
 
 // correlation derived data ===================================================================================================================================================================
 
+template<typename T>
+concept IsJetMcCollision = std::same_as<std::remove_cvref_t<T>, aod::JetMcCollision>;
+template<typename T>
+concept IsJetCollisionMCD = std::same_as<std::remove_cvref_t<T>, aod::JetCollisionMCD>;
+template<typename T>
+concept HasTrueCollision = IsJetMcCollision<T> || IsJetCollisionMCD<T>;
+
 struct PhotonChargedTriggerProducer {
   // reco
   Produces<aod::CollisionsExtraCorr> collisionExtraCorrTable;
@@ -59,12 +66,17 @@ struct PhotonChargedTriggerProducer {
   Produces<aod::McCollisionsExtraCorr> mcCollisionExtraCorrTable;
   Produces<aod::TriggerParticles> triggerParticleTable;
 
+  // Configurable<bool> isMc{"isMc", false, "running over MC dataset"};
+
   Configurable<double> zPvMax{"zPvMax", 7, "maximum absZ primary-vertex cut"};
   Configurable<int> occupancyMin{"occupancyMin", 0, "minimum occupancy cut"};
   Configurable<int> occupancyMax{"occupancyMax", 2000, "maximum occupancy cut"};
   Configurable<double> etaMax{"etaMax", 0.8, "maximum absEta cut"};
 
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "JE framework - event selection"};
+  Configurable<bool> skipMBGapEvents{"skipMBGapEvents", true, "skip MB gap events"};
+  Configurable<bool> applyRctSelection{"applyRCTSelection", true, "apply RCT selection"};
+  Configurable<std::string> rctLabel{"rctLabel", "CBT_hadronPID", "RCT selection label"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "JE framework - track selections"};
   Configurable<std::string> triggerMasks{"triggerMasks", "", "JE framework - skimmed data trigger masks (relevent for correlation: fTrackLowPt,fTrackHighPt)"};
 
@@ -75,7 +87,10 @@ struct PhotonChargedTriggerProducer {
   Configurable<std::vector<double>> nSigmaPiTof{"nSigmaPiTof", {-1, 2}, "minimum-maximum nSigma for pipm in tof"};
   Configurable<std::vector<double>> nSigmaPiRelRise{"nSigmaPiRelRise", {0, 2}, "minimum-maximum nSigma pipm tpc at high pt"};
 
+  Configurable<std::vector<double>> pcmAbsDcaZLim{"pcmAbsDcaZLim", {0, 5}, "absolute values of DCAz limits for PCM"};
+
   Configurable<float> ptTrigMin{"ptTrigMin", 5, "minimum pT of triggers"};
+  Configurable<bool> oneTriggerPerEvent{"oneTriggerPerEvent", false, "use only one trigger (of highest pt) in an event"};
 
   // derivatives of configurables
 
@@ -104,13 +119,28 @@ struct PhotonChargedTriggerProducer {
   {
     if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits))
       return false;
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRctSelection, rctLabel))
       return false;
     if (std::abs(collision.posZ()) > zPvMax)
       return false;
     if (collision.trackOccupancyInTimeRange() < occupancyMin || collision.trackOccupancyInTimeRange() > occupancyMax)
       return false;
     return true;
+  }
+
+  // mc split event selection based in the thrid decimal of mc-true posZ
+  template<HasTrueCollision T_collision>
+  int getThirdDecimalTruePosZ(T_collision const& collision)
+  {
+    // get third decimal
+    double absPosZ;
+    if constexpr (IsJetCollisionMCD<T_collision>) {
+      absPosZ = std::abs(collision.template mcCollision_as<aod::JetMcCollisions>().posZ());
+    } else {
+      absPosZ = std::abs(collision.posZ());
+    }
+    int const thirdDecimalPosZ = static_cast<int>(1000 * absPosZ) % 10;
+    return thirdDecimalPosZ;
   }
 
   // checks global track cuts
@@ -174,12 +204,23 @@ struct PhotonChargedTriggerProducer {
     triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(triggerMasks);
   }
 
-  void processRecoCollisionTrigger(aod::JetCollision const& collision, aod::JetTracks const& tracks)
+  template <typename T_collision, typename T_tracks>
+  void fillRecoCollisionTrigger(T_collision const& collision, T_tracks const& tracks)
   {
     // event selection
-    const bool isSelectedEvent = checkEventSelection(collision);
-    // trigger event check
-    bool isTriggerEvent = false;
+    bool isSelectedEvent = checkEventSelection(collision);
+    // mc split event selection
+    // default -1 for data reconstruction
+    int thirdDecimalTruePosZ = -1;
+    if constexpr (IsJetCollisionMCD<T_collision>) {
+      thirdDecimalTruePosZ = getThirdDecimalTruePosZ(collision);
+    }
+    // maximum track pt
+    float maxTrackPt = -1;
+    int maxTriggerCollisionId = -1;
+    int maxTriggerGlobalIndex = -1;
+    float maxTriggerPhi = 0;
+    float maxTriggerEta = 0;
     // number global tracks
     int nGlobalTracks = 0;
 
@@ -190,22 +231,44 @@ struct PhotonChargedTriggerProducer {
         continue;
 
       nGlobalTracks++;
+      if (track.pt() > maxTrackPt) {
+        maxTrackPt = track.pt();
+        maxTriggerCollisionId = track.collisionId();
+        maxTriggerGlobalIndex = track.globalIndex();
+        maxTriggerPhi = track.phi();
+        maxTriggerEta = track.eta();
+      }
 
       if (!isSelectedEvent)
         continue;
       if (track.pt() < ptTrigMin)
         continue;
-
-      isTriggerEvent = true;
+      if (oneTriggerPerEvent)
+        continue;
 
       // trigger info
       triggerTable(track.collisionId(), track.globalIndex(), track.pt(), track.phi(), track.eta());
     }
+    bool const isTriggerEvent = maxTrackPt > ptTrigMin;
+    if (oneTriggerPerEvent && isSelectedEvent && isTriggerEvent) {
+      triggerTable(maxTriggerCollisionId, maxTriggerGlobalIndex, maxTrackPt, maxTriggerPhi, maxTriggerEta);
+    }
 
     // collision info
-    collisionExtraCorrTable(isSelectedEvent, isTriggerEvent, nGlobalTracks);
+    collisionExtraCorrTable(isSelectedEvent, thirdDecimalTruePosZ, isTriggerEvent, maxTrackPt, nGlobalTracks);
+  }
+
+  void processRecoCollisionTrigger(aod::JetCollision const& collision, aod::JetTracks const& tracks)
+  {
+    fillRecoCollisionTrigger(collision, tracks);
   }
   PROCESS_SWITCH(PhotonChargedTriggerProducer, processRecoCollisionTrigger, "process correlation collision_extra and trigger table (reconstructed)", false);
+
+  void processMcRecoCollisionTrigger(aod::JetCollisionMCD const& collision, aod::JetTracks const& tracks, aod::JetMcCollisions const&)
+  {
+    fillRecoCollisionTrigger(collision, tracks);
+  }
+  PROCESS_SWITCH(PhotonChargedTriggerProducer, processMcRecoCollisionTrigger, "process correlation collision_extra and trigger table (reconstructed MC)", false);
 
   void processRecoPipmTPCTOF(aod::JetCollision const& collision,
                              soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks, soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCPi, aod::pidTOFPi> const&)
@@ -276,6 +339,9 @@ struct PhotonChargedTriggerProducer {
       // photon selection
       if (std::abs(v0Photon.eta()) > etaMax)
         continue;
+      if (std::abs(v0Photon.dcaZtopv()) < pcmAbsDcaZLim.value[0] || std::abs(v0Photon.dcaZtopv()) > pcmAbsDcaZLim.value[1]) {
+        continue;
+      }
 
       // photon PCM
       photonPCMTable(v0Photon.collisionId(), v0Photon.globalIndex(),
@@ -301,10 +367,16 @@ struct PhotonChargedTriggerProducer {
   }
   PROCESS_SWITCH(PhotonChargedTriggerProducer, processRecoPhotonPCM, "process photonPCM table (reconstructed)", false);
 
-  void processMcCorrTables(aod::JetMcCollision const&, aod::JetParticles const& mcParticles)
+  void processMcCorrTables(aod::JetMcCollision const& mcCollision, aod::JetParticles const& mcParticles)
   {
-    // trigger event check
-    bool isTriggerEvent = false;
+    // mc split event selection
+    int const thirdDecimalTruePosZ = getThirdDecimalTruePosZ(mcCollision);
+    // maximum charged particle pt
+    float maxChargedPt = -1;
+    int maxTriggerCollisionId = -1;
+    int maxTriggerGlobalIndex = -1;
+    float maxTriggerPhi = 0;
+    float maxTriggerEta = 0;
     // number charged particles in eta range
     int nCharged = 0;
 
@@ -320,19 +392,30 @@ struct PhotonChargedTriggerProducer {
         continue;
 
       nCharged++;
+      if (mcParticle.pt() > maxChargedPt) {
+        maxChargedPt = mcParticle.pt();
+        maxTriggerCollisionId = mcParticle.mcCollisionId();
+        maxTriggerGlobalIndex = mcParticle.globalIndex();
+        maxTriggerPhi = mcParticle.phi();
+        maxTriggerEta = mcParticle.eta();
+      }
 
       // trigger selection
       if (mcParticle.pt() < ptTrigMin)
         continue;
-
-      isTriggerEvent = true;
+      if (oneTriggerPerEvent)
+        continue;
 
       // trigger info
       triggerParticleTable(mcParticle.mcCollisionId(), mcParticle.globalIndex(), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
     }
+    bool const isTriggerEvent = maxChargedPt > ptTrigMin;
+    if (oneTriggerPerEvent && isTriggerEvent) {
+      triggerParticleTable(maxTriggerCollisionId, maxTriggerGlobalIndex, maxChargedPt, maxTriggerPhi, maxTriggerEta);
+    }
 
     // collision info
-    mcCollisionExtraCorrTable(isTriggerEvent, nCharged);
+    mcCollisionExtraCorrTable(thirdDecimalTruePosZ, isTriggerEvent, maxChargedPt, nCharged);
   }
   PROCESS_SWITCH(PhotonChargedTriggerProducer, processMcCorrTables, "process table production (mc)", false);
 };
