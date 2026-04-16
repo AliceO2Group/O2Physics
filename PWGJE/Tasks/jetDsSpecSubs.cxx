@@ -101,8 +101,8 @@ struct JetDsSpecSubs {
       const float dr = jetutilities::deltaR(jet, trk);
       sum += std::pow(trk.pt(), k) * std::pow(dr, a);
     }
-    const float R = jet.r() / 100.f;
-    const float denom = std::pow(jet.pt(), k) * std::pow(R, a);
+    const float jetR = jet.r() / 100.f;
+    const float denom = std::pow(jet.pt(), k) * std::pow(jetR, a);
     if (denom <= 0.f) {
       return -1.f;
     }
@@ -208,8 +208,8 @@ struct JetDsSpecSubs {
       const float lambda12 = computeLambda(jet, jetTracks, 2.f, 1.f);
       const float mjet = computeJetMassFromTracksMass(jetTracks);
 
-      const float R = jet.r() / 100.f;
-      const float girth = (lambda11 >= 0.f) ? (lambda11 * R) : -1.f;
+      const float jetR = jet.r() / 100.f;
+      const float girth = (lambda11 >= 0.f) ? (lambda11 * jetR) : -1.f;
 
       // Loop over Ds candidates (particle level)
       for (const auto& dsCandidate : jet.candidates_as<aod::CandidatesDsData>()) {
