@@ -47,7 +47,6 @@
 #include <Math/GenVector/PxPyPzM4D.h>
 #include <Math/GenVector/RotationZ.h>
 #include <TH1.h>
-#include <TPDGCode.h>
 
 #include <chrono>
 #include <cstdint>
@@ -170,10 +169,10 @@ struct K1analysis {
     Configurable<float> cfgRejectTOFnSigmaKaon{"cfgRejectTOFnSigmaKaon", 3.0, "TOF nSigma reject cut for Kaon (reject)"};       // TOF
     Configurable<float> cfgRejectTOFnSigmaProton{"cfgRejectTOFnSigmaProton", 3.0, "TOF nSigma reject cut for Proton (reject)"}; // TOF
     Configurable<float> cfgNsigmaCutCombinedPion{"cfgNsigmaCutCombinedPion", 3.0, "Combined nSigma cut for Pion"};              // Combined
-    Configurable<bool> cfgTOFVeto{"cfgTOFVeto", false, "TOF Veto, if false, TOF is nessessary for PID selection"};  // TOF Veto
-    Configurable<bool> cfgRequireTOFHighPt{"cfgRequireTOFHighPt", true, "Require TOF information for pT > cfgTOFMinPt"}; // TOF Require
-    Configurable<bool> cfgUseCircularCut{"cfgUseCircularCut", true, "Use combined TPC-TOF circular cut"};                // Use circular cut
-    Configurable<float> cfgTOFMinPt{"cfgTOFMinPt", 0.5, "Minimum TOF pT cut for Pion"};                                  // TOF pT cut
+    Configurable<bool> cfgTOFVeto{"cfgTOFVeto", false, "TOF Veto, if false, TOF is nessessary for PID selection"};              // TOF Veto
+    Configurable<bool> cfgRequireTOFHighPt{"cfgRequireTOFHighPt", true, "Require TOF information for pT > cfgTOFMinPt"};        // TOF Require
+    Configurable<bool> cfgUseCircularCut{"cfgUseCircularCut", true, "Use combined TPC-TOF circular cut"};                       // Use circular cut
+    Configurable<float> cfgTOFMinPt{"cfgTOFMinPt", 0.5, "Minimum TOF pT cut for Pion"};                                         // TOF pT cut
   } PIDCuts;
 
   // Track selections
