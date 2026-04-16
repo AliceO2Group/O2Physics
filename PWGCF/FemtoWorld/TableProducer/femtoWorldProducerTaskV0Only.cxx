@@ -26,17 +26,17 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Track.h>
 
-#include "Math/Vector4D.h"
-#include "TMath.h"
+#include <Math/Vector4D.h>
+#include <TMath.h>
 
 using namespace o2;
 using namespace o2::analysis::femtoWorld;

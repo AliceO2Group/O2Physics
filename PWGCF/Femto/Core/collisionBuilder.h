@@ -23,9 +23,9 @@
 #include "PWGCF/Femto/Core/selectionContainer.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
-#include <Common/CCDB/EventSelectionParams.h>
-#include <Common/CCDB/RCTSelectionFlags.h>
-#include <Common/Core/Zorro.h>
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/Core/Zorro.h"
 
 #include <DataFormatsParameters/GRPMagField.h>
 #include <Framework/AnalysisHelpers.h>

@@ -13,23 +13,49 @@
 /// \brief Task for producing particle correlations
 /// \author Joey Staa <joey.staa@fysik.lu.se>
 
-#include "RecoDecay.h"
-
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TPDGCode.h"
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <TList.h>
+#include <TPDGCode.h>
+#include <TString.h>
 
 #include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -1122,7 +1148,7 @@ struct ThreeParticleCorrelations {
       return false;
     }
 
-    if (trackPID(track)[0] == pionID) { // Pions
+    if (trackPID(track)[0] == pionID) {                                            // Pions
       if (std::abs(track.tpcNSigmaPi()) >= nSigma4 + trackSelGroup.nSigmaTPCvar) { // TPC
         return false;
       }
@@ -1144,7 +1170,7 @@ struct ThreeParticleCorrelations {
         return false;
       }
 
-    } else if (trackPID(track)[0] == kaonID) { // Kaons
+    } else if (trackPID(track)[0] == kaonID) {                                     // Kaons
       if (std::abs(track.tpcNSigmaKa()) >= nSigma4 + trackSelGroup.nSigmaTPCvar) { // TPC
         return false;
       }
@@ -1166,7 +1192,7 @@ struct ThreeParticleCorrelations {
         return false;
       }
 
-    } else if (trackPID(track)[0] == protonID) { // Protons
+    } else if (trackPID(track)[0] == protonID) {                                   // Protons
       if (std::abs(track.tpcNSigmaPr()) >= nSigma4 + trackSelGroup.nSigmaTPCvar) { // TPC
         return false;
       }
