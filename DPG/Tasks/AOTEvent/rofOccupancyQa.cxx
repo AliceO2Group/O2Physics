@@ -19,6 +19,7 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/LHCConstants.h>
+#include <DataFormatsITSMFT/DPLAlpideParam.h>
 #include <DataFormatsParameters/AggregatedRunInfo.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -30,7 +31,6 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <ITSMFTBase/DPLAlpideParam.h>
 
 #include <cmath>
 #include <cstdint>
