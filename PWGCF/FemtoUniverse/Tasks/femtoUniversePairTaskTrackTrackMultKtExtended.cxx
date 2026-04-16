@@ -189,6 +189,10 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
   Configurable<bool> cfgProcessKtBins{"cfgProcessKtBins", false, "Process kstar histograms in kT bins (if 'cfgProcessMultBins' is false, it will not be processed regardless of 'cfgProcessKtBins' state)"};
   Configurable<bool> cfgProcessKtMt3DCF{"cfgProcessKtMt3DCF", false, "Process 3D histograms in kT and MultBins"};
 
+  Configurable<bool> confRejectGammaPair{"confRejectGammaPair", false, "Additional check to reject e+e- pairs base on theta and minv"};
+  Configurable<double> confMaxEEMinv{"confMaxEEMinv", 0.002, "Max. minv of e-e+ pair for gamma pair rejection"};
+  Configurable<double> confMaxDTheta{"confMaxDTheta", 0.008, "Max. DeltaTheta of pair for gamma pair rejection"};
+
   ConfigurableAxis confDeltaEtaAxis{"confDeltaEtaAxis", {100, -0.15, 0.15}, "DeltaEta"};
   ConfigurableAxis confDeltaPhiStarAxis{"confDeltaPhiStarAxis", {100, -0.15, 0.15}, "DeltaPhiStar"};
 
@@ -483,6 +487,15 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
           continue;
         }
 
+        if (confRejectGammaPair && pairCloseRejection.isGammaPair(p1, p2, confMaxEEMinv, confMaxDTheta)) {
+          continue;
+        }
+
+        // track cleaning
+        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+          continue;
+        }
+
         if (confIsCPR.value) {
           double rand;
           auto part1 = p1;
@@ -501,11 +514,6 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
           if (pairCloseRejection.isClosePair(part1, part2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
             continue;
           }
-        }
-
-        // track cleaning
-        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
-          continue;
         }
 
         float kstar = FemtoUniverseMath::getkstar(p1, mass1, p2, mass2);
@@ -676,6 +684,10 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
         continue;
       }
 
+      if (confRejectGammaPair && pairCloseRejection.isGammaPair(p1, p2, confMaxEEMinv, confMaxDTheta)) {
+        continue;
+      }
+
       if (confIsCPR.value) {
         double rand;
         auto part1 = p1;
@@ -758,7 +770,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
   void processMixedEvent(soa::Filtered<o2::aod::FdCollisions> const& cols,
                          FilteredFemtoFullParticles const& parts)
   {
-    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
+    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, confNEventsMix, -1, cols, cols)) {
 
       const int multiplicityCol = collision1.multV0M();
       if (confFillDebug) {
@@ -799,7 +811,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
                            FemtoRecoParticles const& parts,
                            o2::aod::FdMCParticles const&)
   {
-    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
+    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, confNEventsMix, -1, cols, cols)) {
 
       const int multiplicityCol = collision1.multV0M();
       if (confFillDebug) {
@@ -908,7 +920,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
       }
     };
 
-    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
+    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, confNEventsMix, -1, cols, cols)) {
       const int multiplicityCol = collision1.multV0M();
       if (confFillDebug) {
         mixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), multiplicityCol}));
@@ -1003,7 +1015,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
   void processFractionsMCTruth(o2::aod::FdCollisions const& cols,
                                FemtoTruthParticles const&)
   {
-    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
+    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, confNEventsMix, -1, cols, cols)) {
 
       const int multiplicityCol = collision1.multV0M();
       if (confFillDebug) {

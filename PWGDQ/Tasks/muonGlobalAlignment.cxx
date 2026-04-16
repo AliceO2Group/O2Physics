@@ -58,7 +58,8 @@
 #include <THnSparse.h>
 #include <TMath.h>
 
-#include "rapidjson/document.h"
+#include <rapidjson/document.h>
+#include <rapidjson/error/error.h>
 
 #include <GPUROOTCartesianFwd.h>
 #include <RtypesCore.h>

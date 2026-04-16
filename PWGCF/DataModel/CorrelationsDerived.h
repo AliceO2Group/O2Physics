@@ -195,9 +195,10 @@ namespace cf2prongmcpart
 DECLARE_SOA_INDEX_COLUMN_FULL(CFParticleDaugh0, cfParticleDaugh0, int, CFMcParticles, "_0");         //! Index to prong 1 CFMcParticle
 DECLARE_SOA_INDEX_COLUMN_FULL(CFParticleDaugh1, cfParticleDaugh1, int, CFMcParticles, "_1");         //! Index to prong 2 CFMcParticle
 DECLARE_SOA_COLUMN(Decay, decay, uint8_t);                                                           //! Particle decay and flags
-DECLARE_SOA_DYNAMIC_COLUMN(McDecay, mcDecay, [](uint8_t decay) -> uint8_t { return decay & 0x7f; }); //! MC particle decay
+DECLARE_SOA_DYNAMIC_COLUMN(McDecay, mcDecay, [](uint8_t decay) -> uint8_t { return decay & 0x3f; }); //! MC particle decay
 enum ParticleDecayFlags {
-  Prompt = 0x80
+  Prompt = 0x40,
+  NonPrompt = 0x80
 };
 } // namespace cf2prongmcpart
 DECLARE_SOA_TABLE(CF2ProngMcParts, "AOD", "CF2PRONGMCPART", //! Table for the daughter particles of a 2-prong particle, to be joined with CFMcParticles

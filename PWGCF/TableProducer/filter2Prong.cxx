@@ -294,8 +294,10 @@ struct Filter2Prong {
           }
         }
       }
+      uint8_t pcode =
+        (mcParticle.originMcGen() == RecoDecay::OriginType::Prompt) ? aod::cf2prongmcpart::Prompt : ((mcParticle.originMcGen() == RecoDecay::OriginType::NonPrompt) ? aod::cf2prongmcpart::NonPrompt : 0);
       output2ProngMcParts(prongCFId[0], prongCFId[1],
-                          (mcParticle.pdgCode() >= 0 ? aod::cf2prongtrack::D0ToPiK : aod::cf2prongtrack::D0barToKPiExclusive) | ((mcParticle.originMcGen() == RecoDecay::OriginType::Prompt) ? aod::cf2prongmcpart::Prompt : 0));
+                          (mcParticle.pdgCode() >= 0 ? aod::cf2prongtrack::D0ToPiK : aod::cf2prongtrack::D0barToKPiExclusive) | pcode);
     }
   }
   PROCESS_SWITCH(Filter2Prong, processMC, "Process MC 2-prong daughters", false);
