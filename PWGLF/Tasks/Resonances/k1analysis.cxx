@@ -15,23 +15,10 @@
 ///
 /// \author Su-Jeong Ji <su-jeong.ji@cern.ch>, Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 
-#include <TDirectory.h>
-#include <TFile.h>
-#include <TH1D.h>
-#include <TH1F.h>
-#include <TH2F.h>
-#include <THn.h>
-#include <TMath.h>
-#include <TObjArray.h>
-// #include <TDatabasePDG.h> // FIXME
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/collisionCuts.h"
-#include "PWGLF/Utils/inelGt.h"
 
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -39,50 +26,41 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "CommonConstants/MathConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/StaticFor.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Math/GenVector/Boost.h"
-#include "Math/RotationZ.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "TF1.h"
-#include "TParticlePDG.h"
-#include "TRandom3.h"
-#include "TVector2.h"
-#include <TMath.h>
-#include <TPDGCode.h> // FIXME
+#include <Math/GenVector/LorentzVector.h>
+#include <Math/GenVector/PxPyPzM4D.h>
+#include <Math/GenVector/RotationZ.h>
+#include <TH1.h>
+#include <TPDGCode.h>
 
-#include <array>
 #include <chrono>
-#include <cmath>
-#include <cstdlib>
+#include <cstdint>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
+#include <type_traits>
 #include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
-using namespace o2::constants::physics;
-using namespace o2::constants::math;
 using namespace o2::aod::rctsel;
+using namespace o2::constants::physics;
 
 struct K1analysis {
   enum BinType : unsigned int {
@@ -119,7 +97,7 @@ struct K1analysis {
   Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
 
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::PVMults>;
-  using TrackCandidates = soa::Join<aod::FullTracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension, aod::pidTPCFullPi, aod::pidTOFFullPi>;
+  using TrackCandidates = soa::Join<aod::FullTracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>;
   using V0Candidates = aod::V0Datas;
 
   // for MC reco
@@ -184,12 +162,18 @@ struct K1analysis {
 
   /// PID Selections, pion
   struct : ConfigurableGroup {
-    Configurable<bool> cfgTPConly{"cfgTPConly", true, "Use only TPC for PID"};                                      // bool
-    Configurable<float> cfgMaxTPCnSigmaPion{"cfgMaxTPCnSigmaPion", 5.0, "TPC nSigma cut for Pion"};                 // TPC
-    Configurable<float> cfgMaxTOFnSigmaPion{"cfgMaxTOFnSigmaPion", 5.0, "TOF nSigma cut for Pion"};                 // TOF
-    Configurable<float> cfgNsigmaCutCombinedPion{"cfgNsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"}; // Combined
+    Configurable<bool> cfgTPConly{"cfgTPConly", true, "Use only TPC for PID"};                                                  // bool
+    Configurable<float> cfgMaxTPCnSigmaPion{"cfgMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"};                             // TPC
+    Configurable<float> cfgRejectTPCnSigmaKaon{"cfgRejectTPCnSigmaKaon", 3.0, "TPC nSigma reject cut for Kaon (reject)"};       // TPC
+    Configurable<float> cfgRejectTPCnSigmaProton{"cfgRejectTPCnSigmaProton", 3.0, "TPC nSigma reject cut for Proton (reject)"}; // TPC
+    Configurable<float> cfgMaxTOFnSigmaPion{"cfgMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"};                             // TOF
+    Configurable<float> cfgRejectTOFnSigmaKaon{"cfgRejectTOFnSigmaKaon", 3.0, "TOF nSigma reject cut for Kaon (reject)"};       // TOF
+    Configurable<float> cfgRejectTOFnSigmaProton{"cfgRejectTOFnSigmaProton", 3.0, "TOF nSigma reject cut for Proton (reject)"}; // TOF
+    Configurable<float> cfgNsigmaCutCombinedPion{"cfgNsigmaCutCombinedPion", 3.0, "Combined nSigma cut for Pion"};              // Combined
     Configurable<bool> cfgTOFVeto{"cfgTOFVeto", false, "TOF Veto, if false, TOF is nessessary for PID selection"};  // TOF Veto
-    Configurable<float> cfgTOFMinPt{"cfgTOFMinPt", 0.6, "Minimum TOF pT cut for Pion"};                             // TOF pT cut
+    Configurable<bool> cfgRequireTOFHighPt{"cfgRequireTOFHighPt", true, "Require TOF information for pT > cfgTOFMinPt"}; // TOF Require
+    Configurable<bool> cfgUseCircularCut{"cfgUseCircularCut", true, "Use combined TPC-TOF circular cut"};                // Use circular cut
+    Configurable<float> cfgTOFMinPt{"cfgTOFMinPt", 0.5, "Minimum TOF pT cut for Pion"};                                  // TOF pT cut
   } PIDCuts;
 
   // Track selections
@@ -275,10 +259,6 @@ struct K1analysis {
   float lCentrality;
 
   // PDG code
-  int kPDGK0s = kK0Short;
-  int kPDGK0 = kK0;
-  int kPDGKstarPlus = o2::constants::physics::Pdg::kKPlusStar892;
-  int kPDGPiPlus = kPiPlus;
   int kPDGK10 = 10313;
   double fMaxPosPV = 1e-2;
 
@@ -556,22 +536,48 @@ struct K1analysis {
   template <typename TrackType>
   bool selectionPIDPion(TrackType const& candidate)
   {
-    if (std::abs(candidate.tpcNSigmaPi()) >= PIDCuts.cfgMaxTPCnSigmaPion)
-      return false;
-    if (PIDCuts.cfgTPConly)
-      return true;
-    //  if (candidate.pt() <= PIDCuts.cfgTOFMinPt)
-    //    return true;
+    const float pt = candidate.pt();
 
-    if (candidate.hasTOF()) {
-      const bool tofPIDPassed = std::abs(candidate.tofNSigmaPi()) < PIDCuts.cfgMaxTOFnSigmaPion;
-      const bool combo = (PIDCuts.cfgNsigmaCutCombinedPion > 0) &&
-                         (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() +
-                            candidate.tofNSigmaPi() * candidate.tofNSigmaPi() <
-                          PIDCuts.cfgNsigmaCutCombinedPion * PIDCuts.cfgNsigmaCutCombinedPion);
-      return tofPIDPassed || combo;
+    const bool passTPCPi = std::abs(candidate.tpcNSigmaPi()) < PIDCuts.cfgMaxTPCnSigmaPion;
+    if (!passTPCPi) {
+      return false;
+    }
+
+    const bool rejectTPCKa = std::abs(candidate.tpcNSigmaKa()) > PIDCuts.cfgRejectTPCnSigmaKaon;
+    const bool rejectTPCPr = std::abs(candidate.tpcNSigmaPr()) > PIDCuts.cfgRejectTPCnSigmaProton;
+    if (!(rejectTPCKa && rejectTPCPr)) {
+      return false;
+    }
+
+    if (pt < PIDCuts.cfgTOFMinPt) {
+      if (PIDCuts.cfgTOFVeto && candidate.hasTOF()) {
+        return false;
+      }
+      return true;
+    }
+
+    if (!candidate.hasTOF()) {
+      return !PIDCuts.cfgRequireTOFHighPt;
+    }
+
+    const bool passTOFPi = std::abs(candidate.tofNSigmaPi()) < PIDCuts.cfgMaxTOFnSigmaPion;
+
+    const bool rejectTOFKa = std::abs(candidate.tofNSigmaKa()) > PIDCuts.cfgRejectTOFnSigmaKaon;
+    const bool rejectTOFPr = std::abs(candidate.tofNSigmaPr()) > PIDCuts.cfgRejectTOFnSigmaProton;
+
+    if (!(rejectTOFKa && rejectTOFPr)) {
+      return false;
+    }
+
+    const bool passCircularPi = (PIDCuts.cfgNsigmaCutCombinedPion > 0.f) &&
+                                (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() +
+                                   candidate.tofNSigmaPi() * candidate.tofNSigmaPi() <
+                                 PIDCuts.cfgNsigmaCutCombinedPion * PIDCuts.cfgNsigmaCutCombinedPion);
+
+    if (PIDCuts.cfgUseCircularCut) {
+      return (passTOFPi && passCircularPi);
     } else {
-      return PIDCuts.cfgTOFVeto;
+      return passTOFPi;
     }
   }
 

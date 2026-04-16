@@ -12,15 +12,22 @@
 #ifndef PWGLF_UTILS_SVPOOLCREATOR_H_
 #define PWGLF_UTILS_SVPOOLCREATOR_H_
 
+#include <CommonConstants/LHCConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/DataTypes.h>
+#include <Framework/Logger.h>
+#include <MathUtils/Primitive2D.h>
+
+#include <Rtypes.h>
+
 #include <array>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <unordered_map>
-#include <vector>
 #include <utility>
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/Core/trackUtilities.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisDataModel.h"
+#include <vector>
 
 using CollBracket = o2::math_utils::Bracket<int>;
 

@@ -14,20 +14,21 @@
 #ifndef PWGCF_JCORRAN_CORE_JEPFLOWANALYSIS_H_
 #define PWGCF_JCORRAN_CORE_JEPFLOWANALYSIS_H_
 
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
+
 #include <TComplex.h>
+#include <TMath.h>
 
-// O2 headers. //
-#include "Framework/HistogramRegistry.h"
-
-using namespace o2;
-using namespace o2::framework;
-using namespace std;
+#include <Rtypes.h>
+#include <RtypesCore.h>
 
 class JEPFlowAnalysis
 {
  public:
   JEPFlowAnalysis() = default;
-  void SetHistRegistry(HistogramRegistry* histReg) { mHistRegistry = histReg; }
+  void SetHistRegistry(o2::framework::HistogramRegistry* histReg) { mHistRegistry = histReg; }
 
   void FillHistograms(const Int_t fCentBin, Float_t det, Float_t v2, Float_t v3, Float_t v4);
   void FillVnHistograms(const Int_t harmN, Float_t fCent, Float_t det, Float_t pT, Float_t vn, Float_t vn_sin);
@@ -41,21 +42,21 @@ class JEPFlowAnalysis
       return;
     }
 
-    mHistRegistry->add("FullCentrality", "FullCentrality", HistType::kTH1D, {{100, 0., 100.}}, true);
-    mHistRegistry->add("fV2EP", "", {HistType::kTHnD, {{200, -1.05, 1.05}, {3, 0.5, 3.5}, {100, 0.2, 12.}, {20, 0., 100.}}}, true);     // x: v2_cos, y: detector, z: pT, t: centrality
-    mHistRegistry->add("fV3EP", "", {HistType::kTHnD, {{200, -1.05, 1.05}, {3, 0.5, 3.5}, {100, 0.2, 12.}, {20, 0., 100.}}}, true);     // x: v2_cos, y: detector, z: pT, t: centrality
-    mHistRegistry->add("fV4EP", "", {HistType::kTHnD, {{200, -1.05, 1.05}, {3, 0.5, 3.5}, {100, 0.2, 12.}, {20, 0., 100.}}}, true);     // x: v2_cos, y: detector, z: pT, t: centrality
-    mHistRegistry->add("fV2EP_sin", "", {HistType::kTHnD, {{200, -1.05, 1.05}, {3, 0.5, 3.5}, {100, 0.2, 12.}, {20, 0., 100.}}}, true); // x: v2_sin, y: detector, z: pT, t: centrality
-    mHistRegistry->add("fV3EP_sin", "", {HistType::kTHnD, {{200, -1.05, 1.05}, {3, 0.5, 3.5}, {100, 0.2, 12.}, {20, 0., 100.}}}, true); // x: v2_sin, y: detector, z: pT, t: centrality
-    mHistRegistry->add("fV4EP_sin", "", {HistType::kTHnD, {{200, -1.05, 1.05}, {3, 0.5, 3.5}, {100, 0.2, 12.}, {20, 0., 100.}}}, true); // x: v2_sin, y: detector, z: pT, t: centrality
-    mHistRegistry->add("fResNumA", "", {HistType::kTH3D, {{100, -1.05, 1.05}, {3, 1.5, 4.5}, {20, 0., 100.}}}, true);                   // x: resolution, y: harmonic, t: centrality
-    mHistRegistry->add("fResNumB", "", {HistType::kTH3D, {{100, -1.05, 1.05}, {3, 1.5, 4.5}, {20, 0., 100.}}}, true);                   // x: resolution, y: harmonic, t: centrality
-    mHistRegistry->add("fResDenom", "", {HistType::kTH3D, {{100, -1.05, 1.05}, {3, 1.5, 4.5}, {20, 0., 100.}}}, true);                  // x: resolution, y: harmonic, t: centrality
-    mHistRegistry->add("phi", "Phi", {HistType::kTH1D, {{100, 0., TMath::TwoPi()}}}, true);
+    mHistRegistry->add("FullCentrality", "FullCentrality", o2::framework::HistType::kTH1D, {{100, 0., 100.}}, true);
+    mHistRegistry->add("fV2EP", "", {o2::framework::HistType::kTHnD, {{200, -1.05, 1.05}, {3, 0.5, 3.5}, {100, 0.2, 12.}, {20, 0., 100.}}}, true);     // x: v2_cos, y: detector, z: pT, t: centrality
+    mHistRegistry->add("fV3EP", "", {o2::framework::HistType::kTHnD, {{200, -1.05, 1.05}, {3, 0.5, 3.5}, {100, 0.2, 12.}, {20, 0., 100.}}}, true);     // x: v2_cos, y: detector, z: pT, t: centrality
+    mHistRegistry->add("fV4EP", "", {o2::framework::HistType::kTHnD, {{200, -1.05, 1.05}, {3, 0.5, 3.5}, {100, 0.2, 12.}, {20, 0., 100.}}}, true);     // x: v2_cos, y: detector, z: pT, t: centrality
+    mHistRegistry->add("fV2EP_sin", "", {o2::framework::HistType::kTHnD, {{200, -1.05, 1.05}, {3, 0.5, 3.5}, {100, 0.2, 12.}, {20, 0., 100.}}}, true); // x: v2_sin, y: detector, z: pT, t: centrality
+    mHistRegistry->add("fV3EP_sin", "", {o2::framework::HistType::kTHnD, {{200, -1.05, 1.05}, {3, 0.5, 3.5}, {100, 0.2, 12.}, {20, 0., 100.}}}, true); // x: v2_sin, y: detector, z: pT, t: centrality
+    mHistRegistry->add("fV4EP_sin", "", {o2::framework::HistType::kTHnD, {{200, -1.05, 1.05}, {3, 0.5, 3.5}, {100, 0.2, 12.}, {20, 0., 100.}}}, true); // x: v2_sin, y: detector, z: pT, t: centrality
+    mHistRegistry->add("fResNumA", "", {o2::framework::HistType::kTH3D, {{100, -1.05, 1.05}, {3, 1.5, 4.5}, {20, 0., 100.}}}, true);                   // x: resolution, y: harmonic, t: centrality
+    mHistRegistry->add("fResNumB", "", {o2::framework::HistType::kTH3D, {{100, -1.05, 1.05}, {3, 1.5, 4.5}, {20, 0., 100.}}}, true);                   // x: resolution, y: harmonic, t: centrality
+    mHistRegistry->add("fResDenom", "", {o2::framework::HistType::kTH3D, {{100, -1.05, 1.05}, {3, 1.5, 4.5}, {20, 0., 100.}}}, true);                  // x: resolution, y: harmonic, t: centrality
+    mHistRegistry->add("phi", "Phi", {o2::framework::HistType::kTH1D, {{100, 0., TMath::TwoPi()}}}, true);
   }
 
  private:
-  HistogramRegistry* mHistRegistry;
+  o2::framework::HistogramRegistry* mHistRegistry;
 
   ClassDefNV(JEPFlowAnalysis, 1);
 };

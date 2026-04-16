@@ -14,6 +14,7 @@
 /// \remark This file is inherited from ~/FemtoUniverse/Tasks/femtoUniversePairTaskTrackTrack3DMultKtExtended.cxx on 17/06/2024
 /// \author Pritam Chakraborty, WUT Warsaw, pritam.chakraborty@pw.edu.pl
 
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseContainer.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseDetaDphiStar.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseEventHisto.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseMath.h"
@@ -22,20 +23,33 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseSHContainer.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
-#include "PWGCF/FemtoUniverse/Core/femtoUtils.h"
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/PID.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "TRandom2.h"
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
+#include <TRandom2.h>
+
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -247,6 +261,10 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   Configurable<bool> cfgProcessKtBins{"cfgProcessKtBins", true, "Process kstar histograms in kT bins (if cfgProcessMultBins is set false, this will not be processed regardless this Configurable state)"};
   Configurable<bool> cfgProcessKtMt3DCF{"cfgProcessKtMt3DCF", false, "Process 3D histograms in kT and Mult bins"};
 
+  Configurable<bool> confRejectGammaPair{"confRejectGammaPair", false, "Additional check to reject e+e- pairs base on theta and minv"};
+  Configurable<double> confMaxEEMinv{"confMaxEEMinv", 0.002, "Max. minv of e-e+ pair for gamma pair rejection"};
+  Configurable<double> confMaxDTheta{"confMaxDTheta", 0.008, "Max. DeltaTheta of pair for gamma pair rejection"};
+
   FemtoUniverseSHContainer<femto_universe_sh_container::EventType::same, femto_universe_sh_container::Observable::kstar> sameEventCont;
   FemtoUniverseSHContainer<femto_universe_sh_container::EventType::mixed, femto_universe_sh_container::Observable::kstar> mixedEventCont;
 
@@ -450,6 +468,10 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
 
   void init(InitContext&)
   {
+
+    colBinningCent = ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M>{{confVtxBins, confMultBinsCent}, true};
+    colBinningNtr = ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr>{{confVtxBins, confMultBinsMult}, true};
+
     eventHisto.init(&qaRegistry);
     trackHistoPartOne.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarBins, twotracksconfigs.confIsMC, trackonefilter.confPDGCodePartOne, true, std::nullopt, twotracksconfigs.confIsAddITSNsigma);
 
@@ -579,6 +601,10 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
           continue;
         }
 
+        if (confRejectGammaPair && pairCloseRejection.isGammaPair(p1, p2, confMaxEEMinv, confMaxDTheta)) {
+          continue;
+        }
+
         float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
         float lastElement = confKtKstarBins.value.back();
         float firstRealElement = confKtKstarBins.value[1];
@@ -612,6 +638,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
+
         sameEventMultCont.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::same, 2, multCol, kT, twotracksconfigs.confisIdenLCMS, twotracksconfigs.confIs1D, twotracksconfigs.confIsWeight, twotracksconfigs.confisIdenPRF);
       }
     } else {
@@ -991,6 +1018,10 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
       }
 
       if (!IsParticleNSigma((int8_t)2, p2.p(), trackCuts.getNsigmaITS(p2, o2::track::PID::Pion), trackCuts.getNsigmaTPC(p2, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p2, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p2, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p2, o2::track::PID::Pion), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(p2, o2::track::PID::Electron))) {
+        continue;
+      }
+
+      if (confRejectGammaPair && pairCloseRejection.isGammaPair(p1, p2, confMaxEEMinv, confMaxDTheta)) {
         continue;
       }
 

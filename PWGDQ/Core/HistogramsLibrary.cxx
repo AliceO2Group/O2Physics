@@ -2343,6 +2343,40 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "Mass_Pt", "", false, 500, 0.0, 5.0, VarManager::kMassDau, 200, 0.0, 20.0, VarManager::kPt);
     hm->AddHistogram(histClass, "Rapidity", "", false, 400, -4.0, 4.0, VarManager::kRap);
   }
+
+  // specific group/subgroups for trigger
+  if (!groupStr.CompareTo("software-trigger")) {
+    if (subGroupStr.Contains("vtxpp")) {
+      hm->AddHistogram(histClass, "VtxZ", "Vtx Z", false, 60, -15.0, 15.0, VarManager::kVtxZ);
+      hm->AddHistogram(histClass, "VtxX", "Vtx X", false, 200, -0.1, 0.1, VarManager::kVtxX);
+      hm->AddHistogram(histClass, "VtxY", "Vtx Y", false, 200, -0.1, 0.1, VarManager::kVtxY);
+      hm->AddHistogram(histClass, "VtxNContrib", "Vtx n contributors", false, 100, 0.0, 100.0, VarManager::kVtxNcontrib);
+    }
+    if (subGroupStr.Contains("muon")) {
+      hm->AddHistogram(histClass, "Pt", "p_{T} distribution", false, 200, 0.0, 20.0, VarManager::kPt);
+      hm->AddHistogram(histClass, "Eta", "#eta distribution", false, 30, -5.0, -2.0, VarManager::kEta);
+      hm->AddHistogram(histClass, "Phi", "#varphi distribution", false, 180, -2. * o2::constants::math::PI, 2. * o2::constants::math::PI, VarManager::kPhi);
+      hm->AddHistogram(histClass, "Chi2", "", false, 100, 0.0, 200.0, VarManager::kMuonChi2);
+      hm->AddHistogram(histClass, "Chi2MCHMID", "", false, 100, 0.0, 200.0, VarManager::kMuonChi2MatchMCHMID);
+      hm->AddHistogram(histClass, "Chi2MCHMFT", "", false, 100, 0.0, 200.0, VarManager::kMuonChi2MatchMCHMFT);
+      hm->AddHistogram(histClass, "Chi2MatchScoreMCHMFT", "", false, 100, 0.0, 200.0, VarManager::kMuonMatchScoreMCHMFT);
+      hm->AddHistogram(histClass, "MuonDcaX_vs_phi", "", false, 100, -10.0, 10.0, VarManager::kMuonDCAx, 18, -o2::constants::math::PI, o2::constants::math::PI, VarManager::kPhi);
+      hm->AddHistogram(histClass, "MuonDcaY_vs_phi", "", false, 100, -10.0, 10.0, VarManager::kMuonDCAy, 18, -o2::constants::math::PI, o2::constants::math::PI, VarManager::kPhi);
+      hm->AddHistogram(histClass, "MuonDcaX_vs_eta", "", false, 100, -10.0, 10.0, VarManager::kMuonDCAx, 30, -5.0, -2.0, VarManager::kEta);
+      hm->AddHistogram(histClass, "MuonDcaY_vs_eta", "", false, 100, -10.0, 10.0, VarManager::kMuonDCAy, 30, -5.0, -2.0, VarManager::kEta);
+      hm->AddHistogram(histClass, "pdca", "", false, 100, 0.0, 1000., VarManager::kMuonPDca);
+      hm->AddHistogram(histClass, "RAtAbsorberEnd", "", false, 100, 0.0, 200., VarManager::kMuonRAtAbsorberEnd);
+    }
+    if (subGroupStr.Contains("track-barrel")) {
+      hm->AddHistogram(histClass, "Pt", "p_{T} distribution", false, 200, 0.0, 20.0, VarManager::kPt);
+      hm->AddHistogram(histClass, "Eta", "#eta distribution", false, 24, -1.2, 1.2, VarManager::kEta);
+      hm->AddHistogram(histClass, "Phi", "#varphi distribution", false, 180, 0., 2. * o2::constants::math::PI, VarManager::kPhi);
+      hm->AddHistogram(histClass, "ITSncls", "Number of cluster in ITS", false, 8, -0.5, 7.5, VarManager::kITSncls);
+      hm->AddHistogram(histClass, "TPCncls", "Number of cluster in TPC", false, 160, -0.5, 159.5, VarManager::kTPCncls);
+      hm->AddHistogram(histClass, "TPCdedx_pIN", "TPC dE/dx vs pIN", false, 100, 0.0, 20.0, VarManager::kPin, 150, 0.0, 150., VarManager::kTPCsignal);
+      hm->AddHistogram(histClass, "TPCnSigEle_pIN", "TPC n-#sigma(e) vs pIN", false, 100, 0.0, 20.0, VarManager::kPin, 100, -5.0, 5.0, VarManager::kTPCnSigmaEl);
+    }
+  }
 }
 
 //__________________________________________________________________

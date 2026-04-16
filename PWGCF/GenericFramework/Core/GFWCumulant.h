@@ -16,6 +16,8 @@
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_GFWCUMULANT_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_GFWCUMULANT_H_
 
+#include <sys/types.h>
+
 #include <cmath>
 #include <complex>
 #include <vector>

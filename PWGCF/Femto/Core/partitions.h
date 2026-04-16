@@ -27,7 +27,7 @@
 
 // macro for track momentum, i.e. ||q|*pT/q| * cosh(eta)
 // there is no ncosh function, so we have to make our own, i.e. cosh(x) = (exp(x)+exp(-x))/2
-#define TRACK_MOMENTUM(chargeAbs, signedPt, eta) nabs((chargeAbs) * (signedPt)) * (nexp(eta) + nexp(-1.f * (eta))) / 2.f
+#define TRACK_MOMENTUM(chargeAbs, signedPt, eta) (nabs((chargeAbs) * (signedPt)) * (nexp(eta) + nexp(-1.f * (eta))) / 2.f)
 
 // standard track partition
 #define MAKE_TRACK_PARTITION(selection)                                                                                                                                              \

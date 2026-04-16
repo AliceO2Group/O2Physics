@@ -614,7 +614,7 @@ bool buildAndSelectGamma(const Coll& collision, const std::array<int, 3>& dDaugh
   }
 
   const float minRadTpcOnly{16.f};
-  if ((!trackNeg.hasITS() && !trackNeg.hasITS()) && v0.radius < minRadTpcOnly) { // TPConly tracks can detect conversion points larger than minRadTpcOnly.
+  if ((!trackNeg.hasITS() && !trackPos.hasITS()) && v0.radius < minRadTpcOnly) { // TPConly tracks can detect conversion points larger than minRadTpcOnly.
     return false;
   }
 

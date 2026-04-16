@@ -15,9 +15,32 @@
 
 #include "FlowPtContainer.h"
 
+#include "PWGCF/GenericFramework/Core/BootstrapProfile.h"
+#include "PWGCF/GenericFramework/Core/GFWConfig.h"
+
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
+
+#include <TCollection.h>
+#include <TH1.h>
+#include <TList.h>
+#include <TNamed.h>
+#include <TString.h>
+
+#include <RtypesCore.h>
+
 #include <algorithm>
+#include <cassert>
+#include <cmath>
+#include <complex>
+#include <cstddef>
+#include <cstdint>
 #include <string>
+#include <variant>
 #include <vector>
+
+using namespace o2::analysis::genericframework;
+using namespace o2::analysis::genericframework::eventweight;
 
 FlowPtContainer::FlowPtContainer() : fCMTermList(0),
                                      fCorrList(0),
