@@ -16,8 +16,8 @@
 /// \author Yeghishe Hambardzumyan, MIPT
 /// \since Apr, 2024
 
-#include "Common/CCDB/TriggerAliases.h"
-#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CaloClusters.h"
 #include "Common/DataModel/Centrality.h"
@@ -28,33 +28,27 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include <CCDB/BasicCCDBManager.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <DetectorsBase/Propagator.h>
-#include <Framework/ASoA.h>
-#include <Framework/ASoAHelpers.h>
-#include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
-#include <Framework/AnalysisTask.h>
-#include <Framework/Configurable.h>
-#include <Framework/HistogramRegistry.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
-#include <Framework/runDataProcessing.h>
-#include <PHOSBase/Geometry.h>
-#include <ReconstructionDataFormats/TrackParametrization.h>
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "CommonDataFormat/InteractionRecord.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/ASoA.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/ConfigParamSpec.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+#include "PHOSBase/Geometry.h"
+#include "ReconstructionDataFormats/TrackParametrization.h"
 
-#include <Math/GenVector/LorentzVector.h>
-#include <Math/GenVector/PxPyPzE4D.h>
-#include <TF1.h>
-#include <TMath.h>
-#include <TPDGCode.h>
-#include <TString.h>
+#include "TF1.h"
+#include "TPDGCode.h"
 
 #include <climits>
 #include <cmath>
-#include <cstddef>
-#include <cstdint>
 #include <iterator>
 #include <map>
 #include <memory>
@@ -168,7 +162,9 @@ struct PhosElId {
     TOFNSigmaElMin{"TOFNSigmaElMin", {-3.f}, "min TOF nsigma e for inclusion"},
     TOFNSigmaElMax{"TOFNSigmaElMax", {3.f}, "max TOF nsigma e for inclusion"},
     NsigmaTrackMatch{"NsigmaTrackMatch", {2.f}, "PHOS Track Matching Nsigma for inclusion"},
-    mShowerShapeCutValue{"mShowerShapeCutValue", 4.f, "Cut threshold for testLambda shower shape"};
+    mShowerShapeCutValue{"mShowerShapeCutValue", 4.f, "Cut threshold for testLambda shower shape"},
+    mEpMinCut{"mEpMinCut", 0.95f, "Min E/p cut for coordinate matching"},
+    mEpMaxCut{"mEpMaxCut", 1.15f, "Max E/p cut for coordinate matching"};
 
   Configurable<int> mEvSelTrig{"mEvSelTrig", kTVXinPHOS, "Select events with this trigger"},
     mAmountOfModules{"mAmountOfModules", 4, "amount of modules for PHOS"},
@@ -260,6 +256,25 @@ struct PhosElId {
     mHistManager.add("coordinateMatching/hdXpmod", "dx,p_{tr},module", HistType::kTH3F, {axisdX, axisPt, axisModes});
     mHistManager.add("coordinateMatching/hdXpmod_pos", "dx,p_{tr},module positive tracks", HistType::kTH3F, {axisdX, axisPt, axisModes});
     mHistManager.add("coordinateMatching/hdXpmod_neg", "dx,p_{tr},module negative tracks", HistType::kTH3F, {axisdX, axisPt, axisModes});
+
+    const char* coordHistos[][3] = {
+      {"hdZpmod", "dz,p_{tr},module", "1"}, {"hdZpmod_pos", "dz,p_{tr},module positive tracks", "1"}, {"hdZpmod_neg", "dz,p_{tr},module negative tracks", "1"}, {"hdXpmod", "dx,p_{tr},module", "0"}, {"hdXpmod_pos", "dx,p_{tr},module positive tracks", "0"}, {"hdXpmod_neg", "dx,p_{tr},module negative tracks", "0"}};
+    const char* flagSuffixes[] = {"_TPCel", "_disp", "_Ep", "_TPCel_disp", "_TPCel_Ep", "_disp_Ep", "_TPCel_disp_Ep"};
+    const char* flagTitles[] = {" | TPCel", " | DispOK", " | EpOK", " | TPCel + DispOK", " | TPCel + EpOK", " | DispOK + EpOK", " | TPCel + DispOK + EpOK"};
+
+    for (size_t i = 0; i < std::size(coordHistos); ++i) {
+      AxisSpec axis = (coordHistos[i][2][0] == '1') ? axisdZ : axisdX;
+      for (size_t j = 0; j < std::size(flagSuffixes); ++j) {
+        mHistManager.add(Form("coordinateMatching/%s%s", coordHistos[i][0], flagSuffixes[j]),
+                         Form("%s%s", coordHistos[i][1], flagTitles[j]),
+                         HistType::kTH3F, {axis, axisPt, axisModes});
+        if (isMC) {
+          mHistManager.add(Form("TrueEl/coordinateMatching/%s%s", coordHistos[i][0], flagSuffixes[j]),
+                           Form("%s%s | TrueEl", coordHistos[i][1], flagTitles[j]),
+                           HistType::kTH3F, {axis, axisPt, axisModes});
+        }
+      }
+    }
 
     mHistManager.add("clusterSpectra/hCluE_v_pt_disp", "Cluster energy vs p | OK dispersion", HistType::kTH3F, {axisE, axisPt, axisModes});
     mHistManager.add("clusterSpectra/hCluE_v_pt_Nsigma", "Cluster energy vs p within trackmatch Nsigma", HistType::kTH3F, {axisE, axisPt, axisModes});
@@ -433,6 +448,7 @@ struct PhosElId {
         else
           isDispOK = testLambda(cluE, clu.m20(), clu.m02(), mShowerShapeCutValue, mUseNegativeCrossTerm);
         float posX = clu.x(), posZ = clu.z(), dX = trackX - posX, dZ = trackZ - posZ, Ep = cluE / trackMom;
+        bool isEpOK = (Ep >= mEpMinCut && Ep <= mEpMaxCut);
 
         mHistManager.fill(HIST("coordinateMatching/hdZpmod"), dZ, trackPT, module);
         mHistManager.fill(HIST("coordinateMatching/hdXpmod"), dX, trackPT, module);
@@ -442,6 +458,90 @@ struct PhosElId {
         } else {
           mHistManager.fill(HIST("coordinateMatching/hdZpmod_neg"), dZ, trackPT, module);
           mHistManager.fill(HIST("coordinateMatching/hdXpmod_neg"), dX, trackPT, module);
+        }
+
+        if (isElectron) {
+          mHistManager.fill(HIST("coordinateMatching/hdZpmod_TPCel"), dZ, trackPT, module);
+          mHistManager.fill(HIST("coordinateMatching/hdXpmod_TPCel"), dX, trackPT, module);
+          if (posTrack) {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_pos_TPCel"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_pos_TPCel"), dX, trackPT, module);
+          } else {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_neg_TPCel"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_neg_TPCel"), dX, trackPT, module);
+          }
+        }
+
+        if (isDispOK) {
+          mHistManager.fill(HIST("coordinateMatching/hdZpmod_disp"), dZ, trackPT, module);
+          mHistManager.fill(HIST("coordinateMatching/hdXpmod_disp"), dX, trackPT, module);
+          if (posTrack) {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_pos_disp"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_pos_disp"), dX, trackPT, module);
+          } else {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_neg_disp"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_neg_disp"), dX, trackPT, module);
+          }
+        }
+
+        if (isEpOK) {
+          mHistManager.fill(HIST("coordinateMatching/hdZpmod_Ep"), dZ, trackPT, module);
+          mHistManager.fill(HIST("coordinateMatching/hdXpmod_Ep"), dX, trackPT, module);
+          if (posTrack) {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_pos_Ep"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_pos_Ep"), dX, trackPT, module);
+          } else {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_neg_Ep"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_neg_Ep"), dX, trackPT, module);
+          }
+        }
+
+        if (isElectron && isDispOK) {
+          mHistManager.fill(HIST("coordinateMatching/hdZpmod_TPCel_disp"), dZ, trackPT, module);
+          mHistManager.fill(HIST("coordinateMatching/hdXpmod_TPCel_disp"), dX, trackPT, module);
+          if (posTrack) {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_pos_TPCel_disp"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_pos_TPCel_disp"), dX, trackPT, module);
+          } else {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_neg_TPCel_disp"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_neg_TPCel_disp"), dX, trackPT, module);
+          }
+        }
+
+        if (isElectron && isEpOK) {
+          mHistManager.fill(HIST("coordinateMatching/hdZpmod_TPCel_Ep"), dZ, trackPT, module);
+          mHistManager.fill(HIST("coordinateMatching/hdXpmod_TPCel_Ep"), dX, trackPT, module);
+          if (posTrack) {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_pos_TPCel_Ep"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_pos_TPCel_Ep"), dX, trackPT, module);
+          } else {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_neg_TPCel_Ep"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_neg_TPCel_Ep"), dX, trackPT, module);
+          }
+        }
+
+        if (isDispOK && isEpOK) {
+          mHistManager.fill(HIST("coordinateMatching/hdZpmod_disp_Ep"), dZ, trackPT, module);
+          mHistManager.fill(HIST("coordinateMatching/hdXpmod_disp_Ep"), dX, trackPT, module);
+          if (posTrack) {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_pos_disp_Ep"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_pos_disp_Ep"), dX, trackPT, module);
+          } else {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_neg_disp_Ep"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_neg_disp_Ep"), dX, trackPT, module);
+          }
+        }
+
+        if (isElectron && isDispOK && isEpOK) {
+          mHistManager.fill(HIST("coordinateMatching/hdZpmod_TPCel_disp_Ep"), dZ, trackPT, module);
+          mHistManager.fill(HIST("coordinateMatching/hdXpmod_TPCel_disp_Ep"), dX, trackPT, module);
+          if (posTrack) {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_pos_TPCel_disp_Ep"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_pos_TPCel_disp_Ep"), dX, trackPT, module);
+          } else {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_neg_TPCel_disp_Ep"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_neg_TPCel_disp_Ep"), dX, trackPT, module);
+          }
         }
 
         if (isDispOK) {
@@ -702,6 +802,7 @@ struct PhosElId {
         else
           isDispOK = testLambda(cluE, clu.m20(), clu.m02(), mShowerShapeCutValue, mUseNegativeCrossTerm);
         float posX = clu.x(), posZ = clu.z(), dX = trackX - posX, dZ = trackZ - posZ, Ep = cluE / trackMom;
+        bool isEpOK = (Ep >= mEpMinCut && Ep <= mEpMaxCut);
 
         mHistManager.fill(HIST("coordinateMatching/hdZpmod"), dZ, trackPT, module);
         mHistManager.fill(HIST("coordinateMatching/hdXpmod"), dX, trackPT, module);
@@ -711,6 +812,174 @@ struct PhosElId {
         } else {
           mHistManager.fill(HIST("coordinateMatching/hdZpmod_neg"), dZ, trackPT, module);
           mHistManager.fill(HIST("coordinateMatching/hdXpmod_neg"), dX, trackPT, module);
+        }
+
+        if (isElectron) {
+          mHistManager.fill(HIST("coordinateMatching/hdZpmod_TPCel"), dZ, trackPT, module);
+          mHistManager.fill(HIST("coordinateMatching/hdXpmod_TPCel"), dX, trackPT, module);
+          if (posTrack) {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_pos_TPCel"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_pos_TPCel"), dX, trackPT, module);
+          } else {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_neg_TPCel"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_neg_TPCel"), dX, trackPT, module);
+          }
+
+          if (isTrueElectron) {
+            mHistManager.fill(HIST("TrueEl/coordinateMatching/hdZpmod_TPCel"), dZ, trackPT, module);
+            mHistManager.fill(HIST("TrueEl/coordinateMatching/hdXpmod_TPCel"), dX, trackPT, module);
+            if (posTrack) {
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdZpmod_pos_TPCel"), dZ, trackPT, module);
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdXpmod_pos_TPCel"), dX, trackPT, module);
+            } else {
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdZpmod_neg_TPCel"), dZ, trackPT, module);
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdXpmod_neg_TPCel"), dX, trackPT, module);
+            }
+          }
+        }
+
+        if (isDispOK) {
+          mHistManager.fill(HIST("coordinateMatching/hdZpmod_disp"), dZ, trackPT, module);
+          mHistManager.fill(HIST("coordinateMatching/hdXpmod_disp"), dX, trackPT, module);
+          if (posTrack) {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_pos_disp"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_pos_disp"), dX, trackPT, module);
+          } else {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_neg_disp"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_neg_disp"), dX, trackPT, module);
+          }
+
+          if (isTrueElectron) {
+            mHistManager.fill(HIST("TrueEl/coordinateMatching/hdZpmod_disp"), dZ, trackPT, module);
+            mHistManager.fill(HIST("TrueEl/coordinateMatching/hdXpmod_disp"), dX, trackPT, module);
+            if (posTrack) {
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdZpmod_pos_disp"), dZ, trackPT, module);
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdXpmod_pos_disp"), dX, trackPT, module);
+            } else {
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdZpmod_neg_disp"), dZ, trackPT, module);
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdXpmod_neg_disp"), dX, trackPT, module);
+            }
+          }
+        }
+
+        if (isEpOK) {
+          mHistManager.fill(HIST("coordinateMatching/hdZpmod_Ep"), dZ, trackPT, module);
+          mHistManager.fill(HIST("coordinateMatching/hdXpmod_Ep"), dX, trackPT, module);
+          if (posTrack) {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_pos_Ep"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_pos_Ep"), dX, trackPT, module);
+          } else {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_neg_Ep"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_neg_Ep"), dX, trackPT, module);
+          }
+
+          if (isTrueElectron) {
+            mHistManager.fill(HIST("TrueEl/coordinateMatching/hdZpmod_Ep"), dZ, trackPT, module);
+            mHistManager.fill(HIST("TrueEl/coordinateMatching/hdXpmod_Ep"), dX, trackPT, module);
+            if (posTrack) {
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdZpmod_pos_Ep"), dZ, trackPT, module);
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdXpmod_pos_Ep"), dX, trackPT, module);
+            } else {
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdZpmod_neg_Ep"), dZ, trackPT, module);
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdXpmod_neg_Ep"), dX, trackPT, module);
+            }
+          }
+        }
+
+        if (isElectron && isDispOK) {
+          mHistManager.fill(HIST("coordinateMatching/hdZpmod_TPCel_disp"), dZ, trackPT, module);
+          mHistManager.fill(HIST("coordinateMatching/hdXpmod_TPCel_disp"), dX, trackPT, module);
+          if (posTrack) {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_pos_TPCel_disp"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_pos_TPCel_disp"), dX, trackPT, module);
+          } else {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_neg_TPCel_disp"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_neg_TPCel_disp"), dX, trackPT, module);
+          }
+
+          if (isTrueElectron) {
+            mHistManager.fill(HIST("TrueEl/coordinateMatching/hdZpmod_TPCel_disp"), dZ, trackPT, module);
+            mHistManager.fill(HIST("TrueEl/coordinateMatching/hdXpmod_TPCel_disp"), dX, trackPT, module);
+            if (posTrack) {
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdZpmod_pos_TPCel_disp"), dZ, trackPT, module);
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdXpmod_pos_TPCel_disp"), dX, trackPT, module);
+            } else {
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdZpmod_neg_TPCel_disp"), dZ, trackPT, module);
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdXpmod_neg_TPCel_disp"), dX, trackPT, module);
+            }
+          }
+        }
+
+        if (isElectron && isEpOK) {
+          mHistManager.fill(HIST("coordinateMatching/hdZpmod_TPCel_Ep"), dZ, trackPT, module);
+          mHistManager.fill(HIST("coordinateMatching/hdXpmod_TPCel_Ep"), dX, trackPT, module);
+          if (posTrack) {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_pos_TPCel_Ep"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_pos_TPCel_Ep"), dX, trackPT, module);
+          } else {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_neg_TPCel_Ep"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_neg_TPCel_Ep"), dX, trackPT, module);
+          }
+
+          if (isTrueElectron) {
+            mHistManager.fill(HIST("TrueEl/coordinateMatching/hdZpmod_TPCel_Ep"), dZ, trackPT, module);
+            mHistManager.fill(HIST("TrueEl/coordinateMatching/hdXpmod_TPCel_Ep"), dX, trackPT, module);
+            if (posTrack) {
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdZpmod_pos_TPCel_Ep"), dZ, trackPT, module);
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdXpmod_pos_TPCel_Ep"), dX, trackPT, module);
+            } else {
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdZpmod_neg_TPCel_Ep"), dZ, trackPT, module);
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdXpmod_neg_TPCel_Ep"), dX, trackPT, module);
+            }
+          }
+        }
+
+        if (isDispOK && isEpOK) {
+          mHistManager.fill(HIST("coordinateMatching/hdZpmod_disp_Ep"), dZ, trackPT, module);
+          mHistManager.fill(HIST("coordinateMatching/hdXpmod_disp_Ep"), dX, trackPT, module);
+          if (posTrack) {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_pos_disp_Ep"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_pos_disp_Ep"), dX, trackPT, module);
+          } else {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_neg_disp_Ep"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_neg_disp_Ep"), dX, trackPT, module);
+          }
+
+          if (isTrueElectron) {
+            mHistManager.fill(HIST("TrueEl/coordinateMatching/hdZpmod_disp_Ep"), dZ, trackPT, module);
+            mHistManager.fill(HIST("TrueEl/coordinateMatching/hdXpmod_disp_Ep"), dX, trackPT, module);
+            if (posTrack) {
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdZpmod_pos_disp_Ep"), dZ, trackPT, module);
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdXpmod_pos_disp_Ep"), dX, trackPT, module);
+            } else {
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdZpmod_neg_disp_Ep"), dZ, trackPT, module);
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdXpmod_neg_disp_Ep"), dX, trackPT, module);
+            }
+          }
+        }
+
+        if (isElectron && isDispOK && isEpOK) {
+          mHistManager.fill(HIST("coordinateMatching/hdZpmod_TPCel_disp_Ep"), dZ, trackPT, module);
+          mHistManager.fill(HIST("coordinateMatching/hdXpmod_TPCel_disp_Ep"), dX, trackPT, module);
+          if (posTrack) {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_pos_TPCel_disp_Ep"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_pos_TPCel_disp_Ep"), dX, trackPT, module);
+          } else {
+            mHistManager.fill(HIST("coordinateMatching/hdZpmod_neg_TPCel_disp_Ep"), dZ, trackPT, module);
+            mHistManager.fill(HIST("coordinateMatching/hdXpmod_neg_TPCel_disp_Ep"), dX, trackPT, module);
+          }
+
+          if (isTrueElectron) {
+            mHistManager.fill(HIST("TrueEl/coordinateMatching/hdZpmod_TPCel_disp_Ep"), dZ, trackPT, module);
+            mHistManager.fill(HIST("TrueEl/coordinateMatching/hdXpmod_TPCel_disp_Ep"), dX, trackPT, module);
+            if (posTrack) {
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdZpmod_pos_TPCel_disp_Ep"), dZ, trackPT, module);
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdXpmod_pos_TPCel_disp_Ep"), dX, trackPT, module);
+            } else {
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdZpmod_neg_TPCel_disp_Ep"), dZ, trackPT, module);
+              mHistManager.fill(HIST("TrueEl/coordinateMatching/hdXpmod_neg_TPCel_disp_Ep"), dX, trackPT, module);
+            }
+          }
         }
 
         if (isDispOK) {
