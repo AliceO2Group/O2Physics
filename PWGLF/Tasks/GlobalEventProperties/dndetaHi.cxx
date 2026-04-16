@@ -14,6 +14,7 @@
 /// \author hyungjun lee <leehy@cern.ch>, joonsuk bae <jbae@cern.ch>
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGMM/Mult/DataModel/Index.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
@@ -193,7 +194,7 @@ AxisSpec deltaZAxis = {61, -6.1, 6.1, "", "deltaz axis"};
 AxisSpec dcaAxis = {601, -3.01, 3.01, "", "DCA axis"};
 AxisSpec etaAxis = {80, -4.0, 4.0, "#eta", "eta axis"};
 AxisSpec v0EtaAxis = {20, -1.0, 1.0, "#etav0", "eta axis"};
-AxisSpec phiAxis = {629, 0, 2 * o2::constants::math::pi, "Rad", "phi axis"};
+AxisSpec phiAxis = {629, 0, 2 * o2::constants::math::PI, "Rad", "phi axis"};
 AxisSpec ptVarAxis = {kPtVarend - 1, +kPtVarbegin + 0.5, +kPtVarend - 0.5, "", "ptvar axis"};
 AxisSpec evtClassAxis = {kECend - 1, +kECbegin + 0.5, +kECend - 0.5, "", "event class"};
 AxisSpec trigClassAxis = {kTrigend - 1, +kTrigbegin + 0.5, +kTrigend - 0.5, "", "trigger class"};
@@ -207,7 +208,7 @@ AxisSpec multAxis = {1001, -0.5, 1000.5, "", "Ntrks"};
 AxisSpec statusCodeAxis = {3, -1.5, 2.5, "", "StatusCode"};
 AxisSpec processCodeAxis = {45, -1.5, 44.5, "", "StatusCode"};
 
-AxisSpec phibin = {{0, o2::constants::math::pi / 2, o2::constants::math::pi, o2::constants::math::pi * 3. / 2, 2 * o2::constants::math::pi}, "#phi", "phi bin"};
+AxisSpec phibin = {{0, o2::constants::math::PI / 2, o2::constants::math::PI, o2::constants::math::PI * 3. / 2, 2 * o2::constants::math::PI}, "#phi", "phi bin"};
 
 static constexpr TrackSelectionFlags::flagtype TrackSelectionITS =
   TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
@@ -460,7 +461,7 @@ struct DndetaHi {
       auto genz = mcz;
 
       auto nTrkGen = 0;
-      auto particles = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+      auto particles = mcParticles.sliceBy(perMCCol, mcCollision.globalIndex());
       for (const auto& particle : particles) {
         if (!particle.isPhysicalPrimary())
           continue;
