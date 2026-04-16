@@ -24,11 +24,11 @@
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 #include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "PWGEM/PhotonMeson/Utils/EMPhoton.h"
 #include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
 #include "PWGEM/PhotonMeson/Utils/NMHistograms.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 // Dilepton headers
-#include "PWGEM/Dilepton/Utils/EMTrack.h"
 #include "PWGEM/Dilepton/Utils/EventMixingHandler.h"
 
 #include "Common/CCDB/TriggerAliases.h"
@@ -249,8 +249,8 @@ struct Pi0EtaToGammaGamma {
   o2::framework::Partition<o2::soa::Filtered<o2::soa::Join<o2::aod::EMPrimaryElectronsFromDalitz, o2::aod::EMPrimaryElectronDaEMEventIds, o2::aod::EMPrimaryElectronsPrefilterBitDerived>>> positrons = o2::aod::emprimaryelectron::sign > int8_t(0) && dileptoncuts.cfg_min_pt_track < o2::aod::track::pt&& nabs(o2::aod::track::eta) < dileptoncuts.cfg_max_eta_track;
   o2::framework::Partition<o2::soa::Filtered<o2::soa::Join<o2::aod::EMPrimaryElectronsFromDalitz, o2::aod::EMPrimaryElectronDaEMEventIds, o2::aod::EMPrimaryElectronsPrefilterBitDerived>>> electrons = o2::aod::emprimaryelectron::sign < int8_t(0) && dileptoncuts.cfg_min_pt_track < o2::aod::track::pt && nabs(o2::aod::track::eta) < dileptoncuts.cfg_max_eta_track;
 
-  o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, o2::aod::pwgem::dilepton::utils::EMTrack>* emh1 = nullptr;
-  o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, o2::aod::pwgem::dilepton::utils::EMTrack>* emh2 = nullptr;
+  o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, o2::aod::pwgem::photonmeson::utils::EMPhoton>* emh1 = nullptr;
+  o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, o2::aod::pwgem::photonmeson::utils::EMPhoton>* emh2 = nullptr;
   //---------------------------------------------------------------------------
 
   std::vector<int> used_photonIds_per_col;                   // <ndf, trackId>
@@ -383,8 +383,8 @@ struct Pi0EtaToGammaGamma {
     occ_bin_edges = std::vector<float>(ConfOccupancyBins.value.begin(), ConfOccupancyBins.value.end());
     occ_bin_edges.erase(occ_bin_edges.begin());
 
-    emh1 = new o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, o2::aod::pwgem::dilepton::utils::EMTrack>(ndepth);
-    emh2 = new o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, o2::aod::pwgem::dilepton::utils::EMTrack>(ndepth);
+    emh1 = new o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, o2::aod::pwgem::photonmeson::utils::EMPhoton>(ndepth);
+    emh2 = new o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, o2::aod::pwgem::photonmeson::utils::EMPhoton>(ndepth);
 
     o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry);
     if constexpr (pairtype == o2::aod::pwgem::photonmeson::photonpair::PairType::kPCMDalitzEE) {
@@ -402,7 +402,7 @@ struct Pi0EtaToGammaGamma {
       fRegistry.addClone("Pair/same/", "Pair/rotation/");
       emcalGeom = o2::emcal::Geometry::GetInstanceFromRunNumber(300000);
     }
-    fRegistry.add("Pair/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", o2::framework::kTH1D, {{10001, -0.5, 10000.5}}, true);
+    fRegistry.add("Pair/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", o2::framework::HistType::kTH1D, {{10001, -0.5, 10000.5}}, true);
 
     mRunNumber = 0;
     d_bz = 0;
@@ -843,11 +843,11 @@ struct Pi0EtaToGammaGamma {
 
             std::pair<int, int> tuple_tmp_id2 = std::make_pair(pos2.trackId(), ele2.trackId());
             if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g1.globalIndex()) == used_photonIds_per_col.end()) {
-              emh1->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMTrack(g1.pt(), g1.eta(), g1.phi(), 0));
+              emh1->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::photonmeson::utils::EMPhoton(g1.pt(), g1.eta(), g1.phi(), 0));
               used_photonIds_per_col.emplace_back(g1.globalIndex());
             }
             if (std::find(used_dileptonIds_per_col.begin(), used_dileptonIds_per_col.end(), tuple_tmp_id2) == used_dileptonIds_per_col.end()) {
-              emh2->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMTrack(v_ee.Pt(), v_ee.Eta(), v_ee.Phi(), v_ee.M()));
+              emh2->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::photonmeson::utils::EMPhoton(v_ee.Pt(), v_ee.Eta(), v_ee.Phi(), v_ee.M()));
               used_dileptonIds_per_col.emplace_back(tuple_tmp_id2);
             }
             ndiphoton++;
@@ -922,11 +922,11 @@ struct Pi0EtaToGammaGamma {
           fRegistry.fill(HIST("Pair/same/hs"), v12.M(), v12.Pt(), wpair);
 
           if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g1.globalIndex()) == used_photonIds_per_col.end()) {
-            emh1->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMTrack(g1.pt(), g1.eta(), g1.phi(), 0));
+            emh1->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::photonmeson::utils::EMPhoton(g1.pt(), g1.eta(), g1.phi(), 0));
             used_photonIds_per_col.emplace_back(g1.globalIndex());
           }
           if (std::find(used_photonIds_per_col.begin(), used_photonIds_per_col.end(), g2.globalIndex()) == used_photonIds_per_col.end()) {
-            emh2->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMTrack(g2.pt(), g2.eta(), g2.phi(), 0));
+            emh2->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::photonmeson::utils::EMPhoton(g2.pt(), g2.eta(), g2.phi(), 0));
             used_photonIds_per_col.emplace_back(g2.globalIndex());
           }
           ndiphoton++;

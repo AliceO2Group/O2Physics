@@ -21,6 +21,8 @@
 
 #include "Common/DataModel/PIDResponseTPC.h"
 
+#include <Framework/ASoA.h>
+
 namespace o2::aod
 {
 DECLARE_SOA_TABLE(pidTPCLfFullEl, "AOD", "pidTPCLfFullEl", //! Table of the TPC (full) response with expected signal, expected resolution and Nsigma for electron

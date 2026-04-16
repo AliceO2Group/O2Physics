@@ -50,6 +50,8 @@ DECLARE_SOA_COLUMN(ZvtxFT0vsPv, zvtxFT0vsPv, int8_t);
 DECLARE_SOA_COLUMN(VtxITSTPC, vtxITSTPC, int8_t);
 DECLARE_SOA_COLUMN(ZdcAenergy, zdcAenergy, float);
 DECLARE_SOA_COLUMN(ZdcCenergy, zdcCenergy, float);
+DECLARE_SOA_COLUMN(ZdcAtime, zdcAtime, float);
+DECLARE_SOA_COLUMN(ZdcCtime, zdcCtime, float);
 // DECLARE_SOA_COLUMN(Qtot, qtot, int8_t);
 // FIT info
 DECLARE_SOA_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, float);
@@ -113,6 +115,7 @@ DECLARE_SOA_TABLE(DataTauFourTracks, "AOD", "TAUFOURTRACK",
                   tautree::Trs, tautree::Trofs, tautree::Hmpr,
                   tautree::Tfb, tautree::ItsRofb, tautree::Sbp, tautree::ZvtxFT0vsPv, tautree::VtxITSTPC,
                   tautree::ZdcAenergy, tautree::ZdcCenergy,
+                  tautree::ZdcAtime, tautree::ZdcCtime,
                   // tautree::Qtot,
                   tautree::TotalFT0AmplitudeA, tautree::TotalFT0AmplitudeC, tautree::TotalFV0AmplitudeA,
                   // tautree::TimeFT0A, tautree::TimeFT0C, tautree::TimeFV0A,
@@ -135,6 +138,7 @@ DECLARE_SOA_TABLE(TrueTauFourTracks, "AOD", "TRUETAU",
                   tautree::Trs, tautree::Trofs, tautree::Hmpr,
                   tautree::Tfb, tautree::ItsRofb, tautree::Sbp, tautree::ZvtxFT0vsPv, tautree::VtxITSTPC,
                   tautree::ZdcAenergy, tautree::ZdcCenergy,
+                  tautree::ZdcAtime, tautree::ZdcCtime,
                   // tautree::Qtot,
                   tautree::TotalFT0AmplitudeA, tautree::TotalFT0AmplitudeC, tautree::TotalFV0AmplitudeA,
                   // tautree::TimeFT0A, tautree::TimeFT0C, tautree::TimeFV0A,

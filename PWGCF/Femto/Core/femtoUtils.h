@@ -16,7 +16,7 @@
 #ifndef PWGCF_FEMTO_CORE_FEMTOUTILS_H_
 #define PWGCF_FEMTO_CORE_FEMTOUTILS_H_
 
-#include <Common/Core/TableHelper.h>
+#include "Common/Core/TableHelper.h"
 
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/InitContext.h>

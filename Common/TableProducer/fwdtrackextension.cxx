@@ -36,6 +36,7 @@
 #include <Math/MatrixRepresentationsStatic.h>
 #include <Math/SMatrix.h>
 
+#include <numbers>
 #include <string>
 
 using namespace o2;
@@ -52,6 +53,7 @@ struct FwdTrackExtension {
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> configCcdbUrl{"configCcdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<bool> propInTheAbsorber{"propInTheAbsorber", false, "Propagate muon in the absober: false to minimize standalone muons DCA calculation"};
   Configurable<bool> refitGlobalMuon{"refitGlobalMuon", false, "Recompute parameters of global muons"};
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
@@ -65,7 +67,7 @@ struct FwdTrackExtension {
     fCCDB->setCaching(true);
     fCCDB->setLocalObjectValidityChecking();
 
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
+    if (propInTheAbsorber && !o2::base::GeometryManager::isGeometryLoaded()) {
       LOGF(info, "Load geometry from CCDB");
       fCCDB->get<TGeoManager>(geoPath);
     }
@@ -86,8 +88,10 @@ struct FwdTrackExtension {
             LOGF(info, "Init field from GRP");
             o2::base::Propagator::initFieldFromGRP(grpmag);
           }
-          LOGF(info, "Set field for muons");
-          o2::mch::TrackExtrap::setField();
+          if (propInTheAbsorber) {
+            LOGF(info, "Set field for muons");
+            o2::mch::TrackExtrap::setField();
+          }
           fCurrentRun = bc.runNumber();
         }
         const float zField = grpmag->getNominalL3Field();
@@ -102,9 +106,14 @@ struct FwdTrackExtension {
           o2::track::TrackParCovFwd mft{mfttrack.z(), tpars, tcovs, mfttrack.chi2()};
           fwdtrack = o2::aod::fwdtrackutils::refitGlobalMuonCov(propmuon, mft);
         }
-        auto proptrack = o2::aod::fwdtrackutils::propagateTrackParCovFwd(fwdtrack, trackType, collision, o2::aod::fwdtrackutils::propagationPoint::kToDCA, 0.f, zField);
-        dcaX = (proptrack.getX() - collision.posX());
-        dcaY = (proptrack.getY() - collision.posY());
+        if (!propInTheAbsorber && (trackType == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack || trackType == o2::aod::fwdtrack::ForwardTrackTypeEnum::MCHStandaloneTrack)) {
+          auto proptrack = o2::aod::fwdtrackutils::propagateTrackParCovFwd(fwdtrack, trackType, collision, o2::aod::fwdtrackutils::propagationPoint::kToDCA, 0.f, zField);
+          dcaX = (proptrack.getX() - collision.posX());
+          dcaY = (proptrack.getY() - collision.posY());
+        } else {
+          dcaX = track.pDca() / std::numbers::sqrt2 / track.p();
+          dcaY = dcaX;
+        }
       }
       fwdDCA(dcaX, dcaY);
     }

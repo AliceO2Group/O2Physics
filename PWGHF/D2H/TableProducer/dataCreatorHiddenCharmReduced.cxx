@@ -19,16 +19,12 @@
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 #include "PWGHF/D2H/Utils/utilsRedDataFormat.h"
-#include "PWGHF/DataModel/AliasTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
-#include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TPCVDriftManager.h"
 #include "Common/Core/ZorroSummary.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTOF.h"
@@ -37,21 +33,26 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
 #include <Framework/DeviceSpec.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
-#include <Framework/Logger.h>
+#include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
 
 #include <array>
+#include <chrono>
 #include <cmath>
-#include <numeric>
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 

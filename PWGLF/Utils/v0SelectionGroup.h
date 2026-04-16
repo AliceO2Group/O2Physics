@@ -12,12 +12,9 @@
 #ifndef PWGLF_UTILS_V0SELECTIONGROUP_H_
 #define PWGLF_UTILS_V0SELECTIONGROUP_H_
 
-#include <iosfwd>
 #include <Rtypes.h>
-#include <TMath.h>
-#include "v0SelectionBits.h"
-#include "Framework/Logger.h"
-#include "CommonConstants/PhysicsConstants.h"
+
+#include <cstdint>
 
 class v0SelectionGroup
 {

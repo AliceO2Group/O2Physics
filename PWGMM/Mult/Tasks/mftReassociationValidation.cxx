@@ -28,11 +28,11 @@
 #include <CommonConstants/MathConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/Propagator.h>
+#include <Field/MagneticField.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
-#include <Framework/DataTypes.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
@@ -41,6 +41,7 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/TrackFwd.h>
 
+#include <TGeoGlobalMagField.h>
 #include <THn.h>
 #include <TString.h>
 

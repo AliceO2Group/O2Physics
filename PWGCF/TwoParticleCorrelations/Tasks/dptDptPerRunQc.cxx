@@ -14,23 +14,30 @@
 /// \author victor.gonzalez.sebastian@gmail.com
 
 #include "PWGCF/DataModel/DptDptFiltered.h"
-#include "PWGCF/TableProducer/dptDptFilter.h"
 
 #include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/DataModel/EventSelection.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsITSMFT/NoiseMap.h" // missing include in TimeDeadMap.h
-#include "DataFormatsITSMFT/TimeDeadMap.h"
-#include "DataFormatsParameters/AggregatedRunInfo.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "ITSMFTReconstruction/ChipMappingITS.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
+#include <DataFormatsITSMFT/TimeDeadMap.h>
+#include <DataFormatsParameters/AggregatedRunInfo.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include <array>
+#include <TH1.h>
+#include <TH2.h>
+#include <TString.h>
+
 #include <cmath>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -69,7 +76,6 @@ struct DptDptPerRunQc {
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
     using namespace perrunqctask;
-    using namespace analysis::dptdptfilter;
 
     if (mRunNumber == bc.runNumber()) {
       return;
@@ -116,7 +122,6 @@ struct DptDptPerRunQc {
   void process(soa::Join<aod::Collisions, aod::EvSels, aod::DptDptCFCollisionsInfo>::iterator const& collision, aod::BCsWithTimestamps const&)
   {
     using namespace perrunqctask;
-    using namespace analysis::dptdptfilter;
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);

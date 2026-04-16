@@ -426,10 +426,10 @@ struct DileptonHadronMPC {
 
     if (doprocessTriggerAnalysis) {
       LOGF(info, "Trigger analysis is enabled. Desired trigger name = %s", zorroGroup.cfg_swt_name.value);
-      fRegistry.add("NormTrigger/hInspectedTVX", "inspected TVX;run number;N_{TVX}", o2::framework::kTProfile, {{80000, 520000.5, 600000.5}}, true);
-      fRegistry.add("NormTrigger/hScalers", "trigger counter before DS;run number;counter", o2::framework::kTProfile, {{80000, 520000.5, 600000.5}}, true);
-      fRegistry.add("NormTrigger/hSelections", "trigger counter after DS;run number;counter", o2::framework::kTProfile, {{80000, 520000.5, 600000.5}}, true);
-      auto hTriggerCounter = fRegistry.add<TH2>("NormTrigger/hTriggerCounter", Form("trigger counter of %s;run number;", zorroGroup.cfg_swt_name.value.data()), o2::framework::kTH2D, {{80000, 520000.5, 600000.5}, {2, -0.5, 1.5}}, false);
+      fRegistry.add("NormTrigger/hInspectedTVX", "inspected TVX;run number;N_{TVX}", o2::framework::HistType::kTProfile, {{80000, 520000.5, 600000.5}}, true);
+      fRegistry.add("NormTrigger/hScalers", "trigger counter before DS;run number;counter", o2::framework::HistType::kTProfile, {{80000, 520000.5, 600000.5}}, true);
+      fRegistry.add("NormTrigger/hSelections", "trigger counter after DS;run number;counter", o2::framework::HistType::kTProfile, {{80000, 520000.5, 600000.5}}, true);
+      auto hTriggerCounter = fRegistry.add<TH2>("NormTrigger/hTriggerCounter", Form("trigger counter of %s;run number;", zorroGroup.cfg_swt_name.value.data()), o2::framework::HistType::kTH2D, {{80000, 520000.5, 600000.5}, {2, -0.5, 1.5}}, false);
       hTriggerCounter->GetYaxis()->SetBinLabel(1, "Analyzed Trigger");
       hTriggerCounter->GetYaxis()->SetBinLabel(2, "Analyzed TOI");
     }
@@ -504,7 +504,7 @@ struct DileptonHadronMPC {
     static constexpr std::string_view qvec_det_names[7] = {"FT0M", "FT0A", "FT0C", "BTot", "BPos", "BNeg", "FV0A"};
     // event info
     o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms<-1>(&fRegistry);
-    fRegistry.add("Event/after/hMultNTracksPV_RefTracks", "Track mult. correlation;N_{track}^{PV};N_{track} for ref. flow", o2::framework::kTH2D, {{501, -0.5, 500.5}, {501, -0.5, 500.5}}, false);
+    fRegistry.add("Event/after/hMultNTracksPV_RefTracks", "Track mult. correlation;N_{track}^{PV};N_{track} for ref. flow", o2::framework::HistType::kTH2D, {{501, -0.5, 500.5}, {501, -0.5, 500.5}}, false);
 
     std::string mass_axis_title = "m_{ll} (GeV/c^{2})";
     std::string pair_pt_axis_title = "p_{T,ll} (GeV/c)";
@@ -552,10 +552,10 @@ struct DileptonHadronMPC {
     const o2::framework::AxisSpec axis_pt_trg{ConfPtHadronBins, "p_{T,h} (GeV/c)"};
     const o2::framework::AxisSpec axis_eta_trg{40, -2, +2, "#eta_{h}"};
     const o2::framework::AxisSpec axis_phi_trg{36, 0, 2 * M_PI, "#varphi_{h} (rad.)"};
-    fRegistry.add("Hadron/hs", "hadron", o2::framework::kTHnSparseD, {axis_pt_trg, axis_eta_trg, axis_phi_trg}, false);
-    fRegistry.add("Hadron/hTrackBit", "track bit", o2::framework::kTH1D, {{65536, -0.5, 65535.5}}, false);
+    fRegistry.add("Hadron/hs", "hadron", o2::framework::HistType::kTHnSparseD, {axis_pt_trg, axis_eta_trg, axis_phi_trg}, false);
+    fRegistry.add("Hadron/hTrackBit", "track bit", o2::framework::HistType::kTH1D, {{65536, -0.5, 65535.5}}, false);
 
-    fRegistry.add("Dilepton/same/uls/hs", "dilepton", o2::framework::kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_y}, true);
+    fRegistry.add("Dilepton/same/uls/hs", "dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_y}, true);
     fRegistry.addClone("Dilepton/same/uls/", "Dilepton/same/lspp/");
     fRegistry.addClone("Dilepton/same/uls/", "Dilepton/same/lsmm/");
     fRegistry.addClone("Dilepton/same/", "Dilepton/mix/");
@@ -563,34 +563,34 @@ struct DileptonHadronMPC {
     if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonHadronAnalysisType::kAzimuthalCorrelation)) {
       const o2::framework::AxisSpec axis_dphi{cfgNbinsDPhi, -M_PI / 2, 3 * M_PI / 2, dphi_axis_title};
       // dilepton-hadron
-      fRegistry.add("DileptonHadron/same/uls/hs", "dilepton-hadron 2PC", o2::framework::kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_y, axis_deta, axis_dphi}, true);
+      fRegistry.add("DileptonHadron/same/uls/hs", "dilepton-hadron 2PC", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_y, axis_deta, axis_dphi}, true);
       fRegistry.addClone("DileptonHadron/same/uls/", "DileptonHadron/same/lspp/");
       fRegistry.addClone("DileptonHadron/same/uls/", "DileptonHadron/same/lsmm/");
       fRegistry.addClone("DileptonHadron/same/", "DileptonHadron/mix/");
-      fRegistry.add("DileptonHadron/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", o2::framework::kTH1D, {{10001, -0.5, 10000.5}}, true);
+      fRegistry.add("DileptonHadron/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", o2::framework::HistType::kTH1D, {{10001, -0.5, 10000.5}}, true);
 
       // hadron-hadron
       const o2::framework::AxisSpec axis_dphi_hh{90, -M_PI / 2, 3 * M_PI / 2, "#Delta#varphi = #varphi_{h}^{ref1} - #varphi_{h}^{ref2} (rad.)"};
-      fRegistry.add("HadronHadron/same/hDEtaDPhi", "hadron-hadron 2PC", o2::framework::kTH2D, {axis_dphi_hh, axis_deta_hh}, true);
+      fRegistry.add("HadronHadron/same/hDEtaDPhi", "hadron-hadron 2PC", o2::framework::HistType::kTH2D, {axis_dphi_hh, axis_deta_hh}, true);
       fRegistry.addClone("HadronHadron/same/", "HadronHadron/mix/");
-      fRegistry.add("HadronHadron/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", o2::framework::kTH1D, {{10001, -0.5, 10000.5}}, true);
+      fRegistry.add("HadronHadron/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", o2::framework::HistType::kTH1D, {{10001, -0.5, 10000.5}}, true);
     } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonHadronAnalysisType::kCumulant)) {
       const o2::framework::AxisSpec axis_cos_ndphi{cfgNbinsCosNDPhi, -1, +1, cosndphi_axis_title};
 
       // dilepton-hadron
-      fRegistry.add("DileptonHadron/same/uls/hs", "dilepton-hadron 2PC", o2::framework::kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_y, axis_deta, axis_cos_ndphi}, true);
+      fRegistry.add("DileptonHadron/same/uls/hs", "dilepton-hadron 2PC", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_y, axis_deta, axis_cos_ndphi}, true);
       fRegistry.addClone("DileptonHadron/same/uls/", "DileptonHadron/same/lspp/");
       fRegistry.addClone("DileptonHadron/same/uls/", "DileptonHadron/same/lsmm/");
       fRegistry.addClone("DileptonHadron/same/", "DileptonHadron/mix/");
 
       // hadron-hadron
       const o2::framework::AxisSpec axis_cosndphi_hh{cfgNbinsCosNDPhi, -1, +1, std::format("cos({0:d}(#varphi_{{h}}^{{ref1}} - #varphi_{{h}}^{{ref2}}))", cfgNmod.value)};
-      fRegistry.add("HadronHadron/same/hDEtaCosNDPhi", "hadron-hadron 2PC", o2::framework::kTH2D, {axis_cosndphi_hh, axis_deta_hh}, true);
+      fRegistry.add("HadronHadron/same/hDEtaCosNDPhi", "hadron-hadron 2PC", o2::framework::HistType::kTH2D, {axis_cosndphi_hh, axis_deta_hh}, true);
     }
-    fRegistry.add("Dilepton/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", o2::framework::kTH1D, {{10001, -0.5, 10000.5}}, true);
+    fRegistry.add("Dilepton/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", o2::framework::HistType::kTH1D, {{10001, -0.5, 10000.5}}, true);
 
-    fRegistry.add("Event/before/hEP2_CentFT0C_forMix", Form("2nd harmonics event plane for mix;centrality FT0C (%%);#Psi_{2}^{%s} (rad.)", qvec_det_names[cfgEP2Estimator_for_Mix].data()), o2::framework::kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
-    fRegistry.add("Event/after/hEP2_CentFT0C_forMix", Form("2nd harmonics event plane for mix;centrality FT0C (%%);#Psi_{2}^{%s} (rad.)", qvec_det_names[cfgEP2Estimator_for_Mix].data()), o2::framework::kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
+    fRegistry.add("Event/before/hEP2_CentFT0C_forMix", Form("2nd harmonics event plane for mix;centrality FT0C (%%);#Psi_{2}^{%s} (rad.)", qvec_det_names[cfgEP2Estimator_for_Mix].data()), o2::framework::HistType::kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
+    fRegistry.add("Event/after/hEP2_CentFT0C_forMix", Form("2nd harmonics event plane for mix;centrality FT0C (%%);#Psi_{2}^{%s} (rad.)", qvec_det_names[cfgEP2Estimator_for_Mix].data()), o2::framework::HistType::kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
   }
 
   void DefineEMEventCut()
@@ -1139,7 +1139,10 @@ struct DileptonHadronMPC {
       std::pair<int, int> key_df_collision = std::make_pair(ndf, collision.globalIndex());
 
       if (nuls > 0 || nlspp > 0 || nlsmm > 0) { // at least 1 pair exists.
-        emh_ref->ReserveNTracksPerCollision(key_df_collision, refTracks_per_coll.size());
+        if (cfgDoMix) {
+          emh_ref->ReserveNTracksPerCollision(key_df_collision, refTracks_per_coll.size());
+        }
+
         for (const auto& track : refTracks_per_coll) {
           if (fEMTrackCut.IsSelected(track)) {
             fRegistry.fill(HIST("Hadron/hs"), track.pt(), track.eta(), track.phi());
