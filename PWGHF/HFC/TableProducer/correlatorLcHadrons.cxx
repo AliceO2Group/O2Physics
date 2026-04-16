@@ -356,8 +356,8 @@ struct HfCorrelatorLcHadrons {
     registry.add("hcountLctriggersMcGen", "Lc trigger particles - MC gen;;N of trigger Lc", {HistType::kTH2F, {{1, -0.5, 0.5}, {axisPtLc}}});
     registry.add("hPtCandMcGen", "Lc,Hadron particles - MC gen;particle #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {axisPtLc}});
     registry.add("hYMcGen", "Lc,Hadron candidates - MC gen;candidate #it{#y};entries", {HistType::kTH1D, {axisRapidity}});
-    registry.add("hPtCandMcGenPrompt", "Lc,Hadron particles - MC Gen Prompt", {HistType::kTH1D, {axisPtLc}});
-    registry.add("hPtCandMcGenNonPrompt", "Lc,Hadron particles - MC Gen Non Prompt", {HistType::kTH1D, {axisPtLc}});
+    registry.add("hPtCandMcGenPrompt", "Lc,Hadron particles - MC Gen Prompt", {HistType::kTH2D, {{axisPtLc}, {axisPoolBin}}});
+    registry.add("hPtCandMcGenNonPrompt", "Lc,Hadron particles - MC Gen Non Prompt", {HistType::kTH2D, {{axisPtLc}, {axisPoolBin}}});
     registry.add("hPtParticleAssocMcGen", "Associated Particle - MC Gen", {HistType::kTH1D, {axisPtHadron}});
     registry.add("hEtaMcGen", "Lc,Hadron particles - MC Gen", {HistType::kTH1D, {axisEta}});
     registry.add("hPhiMcGen", "Lc,Hadron particles - MC Gen", {HistType::kTH1D, {axisPhi}});
@@ -439,7 +439,7 @@ struct HfCorrelatorLcHadrons {
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
           outputMl[iclass] = candidate.mlProbLcToPKPi()[classMl->at(iclass)];
         }
-        entryLcCandRecoInfo(HfHelper::invMassLcToPKPi(candidate), candidate.pt() * chargeLc, outputMl[0], outputMl[1]); // 0: BkgBDTScore, 1:PromptBDTScore
+        entryLcCandRecoInfo(HfHelper::invMassLcToPKPi(candidate), candidate.pt() * chargeLc, outputMl[0], outputMl[1], poolBin); // 0: BkgBDTScore, 1:PromptBDTScore
         if (!skipMixedEventTableFilling) {
           entryLc(candidate.phi(), candidate.eta(), candidate.pt() * chargeLc, HfHelper::invMassLcToPKPi(candidate), poolBin, gCollisionId, timeStamp);
         }
@@ -451,7 +451,7 @@ struct HfCorrelatorLcHadrons {
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
           outputMl[iclass] = candidate.mlProbLcToPiKP()[classMl->at(iclass)];
         }
-        entryLcCandRecoInfo(HfHelper::invMassLcToPiKP(candidate), candidate.pt() * chargeLc, outputMl[0], outputMl[1]); // 0: BkgBDTScore, 1:PromptBDTScore
+        entryLcCandRecoInfo(HfHelper::invMassLcToPiKP(candidate), candidate.pt() * chargeLc, outputMl[0], outputMl[1], poolBin); // 0: BkgBDTScore, 1:PromptBDTScore
         if (!skipMixedEventTableFilling) {
           entryLc(candidate.phi(), candidate.eta(), candidate.pt() * chargeLc, HfHelper::invMassLcToPiKP(candidate), poolBin, gCollisionId, timeStamp);
         }
@@ -611,7 +611,7 @@ struct HfCorrelatorLcHadrons {
           registry.fill(HIST("hMassLcMcRecSig"), HfHelper::invMassLcToPKPi(candidate), candidate.pt(), efficiencyWeightLc);
           registry.fill(HIST("hMassLcVsPtMcRec"), HfHelper::invMassLcToPKPi(candidate), candidate.pt(), efficiencyWeightLc);
           registry.fill(HIST("hSelectionStatusLcToPKPiMcRec"), candidate.isSelLcToPKPi());
-          entryLcCandRecoInfo(HfHelper::invMassLcToPKPi(candidate), candidate.pt() * chargeLc, outputMl[0], outputMl[1]); // 0: BkgBDTScore, 1:PromptBDTScore
+          entryLcCandRecoInfo(HfHelper::invMassLcToPKPi(candidate), candidate.pt() * chargeLc, outputMl[0], outputMl[1], poolBin); // 0: BkgBDTScore, 1:PromptBDTScore
           entryLcCandGenInfo(isLcPrompt);
         }
         if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
@@ -629,7 +629,7 @@ struct HfCorrelatorLcHadrons {
           registry.fill(HIST("hMassLcMcRecSig"), HfHelper::invMassLcToPiKP(candidate), candidate.pt(), efficiencyWeightLc);
           registry.fill(HIST("hMassLcVsPtMcRec"), HfHelper::invMassLcToPiKP(candidate), candidate.pt(), efficiencyWeightLc);
           registry.fill(HIST("hSelectionStatusLcToPiKPMcRec"), candidate.isSelLcToPiKP());
-          entryLcCandRecoInfo(HfHelper::invMassLcToPiKP(candidate), candidate.pt() * chargeLc, outputMl[0], outputMl[1]); // 0: BkgBDTScore, 1:PromptBDTScore
+          entryLcCandRecoInfo(HfHelper::invMassLcToPiKP(candidate), candidate.pt() * chargeLc, outputMl[0], outputMl[1], poolBin); // 0: BkgBDTScore, 1:PromptBDTScore
           entryLcCandGenInfo(isLcPrompt);
         }
       } else {
@@ -855,9 +855,9 @@ struct HfCorrelatorLcHadrons {
       isLcPrompt = particle.originMcGen() == RecoDecay::OriginType::Prompt;
       isLcNonPrompt = particle.originMcGen() == RecoDecay::OriginType::NonPrompt;
       if (isLcPrompt) {
-        registry.fill(HIST("hPtCandMcGenPrompt"), particle.pt());
+        registry.fill(HIST("hPtCandMcGenPrompt"), particle.pt(), poolBin);
       } else if (isLcNonPrompt) {
-        registry.fill(HIST("hPtCandMcGenNonPrompt"), particle.pt());
+        registry.fill(HIST("hPtCandMcGenNonPrompt"), particle.pt(), poolBin);
       }
 
       // prompt and non-prompt division

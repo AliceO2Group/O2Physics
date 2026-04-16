@@ -250,7 +250,7 @@ struct Pi0EtaToGammaGammaMC {
 
     f1fd_k0s_to_pi0 = new TF1("f1fd_k0s_to_pi0", TString(fd_k0s_to_pi0), 0.f, 100.f);
 
-    fRegistry.add("Event/hNrecPerMCCollision", "Nrec per mc collision;N_{rec} collisions per MC collision", o2::framework::kTH1F, {{21, -0.5f, 20.5f}}, false);
+    fRegistry.add("Event/hNrecPerMCCollision", "Nrec per mc collision;N_{rec} collisions per MC collision", o2::framework::HistType::kTH1F, {{21, -0.5f, 20.5f}}, false);
 
     mRunNumber = 0;
     d_bz = 0;

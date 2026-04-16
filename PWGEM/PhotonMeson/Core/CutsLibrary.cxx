@@ -13,7 +13,7 @@
 /// \brief Source of class for EM photon selection.
 /// \author daiki.sekihata@cern.ch
 
-#include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
+#include "CutsLibrary.h"
 
 #include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"

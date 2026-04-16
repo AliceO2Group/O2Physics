@@ -13,28 +13,34 @@
 /// \brief Task for jet Lund plane. Creates histograms for offline unfolding (including QA histos), and optionally tables.
 /// \author Zoltan Varga <zoltan.varga@cern.ch>
 
-#include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 
 #include "Common/Core/RecoDecay.h"
 
-#include "CommonConstants/MathConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
 #include <THnSparse.h>
 
+#include <fastjet/AreaDefinition.hh>
 #include <fastjet/ClusterSequenceArea.hh>
+#include <fastjet/JetDefinition.hh>
 #include <fastjet/PseudoJet.hh>
 
 #include <algorithm>
-#include <array>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>

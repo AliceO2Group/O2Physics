@@ -349,7 +349,7 @@ class TripletHistManager
   {
     setTriplet(particle1, particle2, particle3, col1, col2, col3);
     setTripletMc(particle1, particle2, particle3, mcParticles);
-    if (!col1.has_fMcCol() || !col2.has_fMcCol() || !col2.has_fMcCol()) {
+    if (!col1.has_fMcCol() || !col2.has_fMcCol() || !col3.has_fMcCol()) {
       mHasMcCol = false;
       return;
     }

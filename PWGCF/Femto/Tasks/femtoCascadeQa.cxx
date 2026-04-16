@@ -171,7 +171,7 @@ struct FemtoCascadeQa {
 
   void processXi(FilteredFemtoCollision const& col, FemtoXis const& /*xis*/, FemtoTracks const& tracks)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col, 0, 0, 0);
+    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
     auto xiSlice = xiPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& xi : xiSlice) {
       xiHistManager.fill<modes::Mode::kAnalysis_Qa>(xi, tracks);
@@ -181,7 +181,7 @@ struct FemtoCascadeQa {
 
   void processXiMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoXisWithLabel const& /*xis*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols, 0, 0, 0);
+    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
     auto xiSlice = xiWithLabelPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& xi : xiSlice) {
       if (!xiCleaner.isClean(xi, mcParticles, mcMothers, mcPartonicMothers)) {
@@ -194,7 +194,7 @@ struct FemtoCascadeQa {
 
   void processOmega(FilteredFemtoCollision const& col, FemtoOmegas const& /*omegas*/, FemtoTracks const& tracks)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col, 0, 0, 0);
+    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
     auto omegaSlice = omegaPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& omega : omegaSlice) {
       omegaHistManager.fill<modes::Mode::kAnalysis_Qa>(omega, tracks);
@@ -204,7 +204,7 @@ struct FemtoCascadeQa {
 
   void processOmegaMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoOmegasWithLabel const& /*omegas*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols, 0, 0, 0);
+    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
     auto omegaSlice = omegaWithLabelPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& omega : omegaSlice) {
       if (!omegaCleaner.isClean(omega, mcParticles, mcMothers, mcPartonicMothers)) {

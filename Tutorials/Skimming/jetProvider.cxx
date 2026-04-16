@@ -10,21 +10,19 @@
 // or submit itself to any jurisdiction.
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
 
-// O2 includes
-#include "ReconstructionDataFormats/Track.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "DataModel/JEDerived.h"
+
 #include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/Core/JetFinder.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-#include "Framework/runDataProcessing.h"
 
 struct JetProviderTask {
 
