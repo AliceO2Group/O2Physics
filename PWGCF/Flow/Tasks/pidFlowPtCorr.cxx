@@ -78,7 +78,7 @@ using namespace o2::framework::expressions;
 struct PidFlowPtCorr {
   // configurable
   double minVal4Float = 1e-3;
-  double pidParticleNumber = 3;
+  static constexpr std::size_t NSpecies{3};
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
@@ -194,9 +194,9 @@ struct PidFlowPtCorr {
     O2_DEFINE_CONFIGURABLE(cfgCircleCutTofPtCut, float, 0.5, "TOF pT threshold for requiring TOF signal");
 
     // Circular cut (TPC+TOF) values (radius squared, default = 2^2 = 4)
-    O2_DEFINE_CONFIGURABLE(cfgCircleCutSigmaSquarePi, float, 4.0, "Circular cut radius squared for Pion (TPC+TOF)");
-    O2_DEFINE_CONFIGURABLE(cfgCircleCutSigmaSquareKa, float, 4.0, "Circular cut radius squared for Kaon (TPC+TOF)");
-    O2_DEFINE_CONFIGURABLE(cfgCircleCutSigmaSquarePr, float, 4.0, "Circular cut radius squared for Proton (TPC+TOF)");
+    O2_DEFINE_CONFIGURABLE(cfgCircleCutSigmaPi, float, 4.0, "Circular cut radius squared for Pion (TPC+TOF)");
+    O2_DEFINE_CONFIGURABLE(cfgCircleCutSigmaKa, float, 4.0, "Circular cut radius squared for Kaon (TPC+TOF)");
+    O2_DEFINE_CONFIGURABLE(cfgCircleCutSigmaPr, float, 4.0, "Circular cut radius squared for Proton (TPC+TOF)");
 
     // TPC-only fallback cut values (|nsigma| < cut)
     O2_DEFINE_CONFIGURABLE(cfgCircleCutTPCPi, float, 2.0, "TPC-only nsigma cut for Pion");
@@ -647,50 +647,50 @@ struct PidFlowPtCorr {
 
     // pushback
     // Data
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP08 {2} refN08 {-2}", "Ref08Gap22", kFALSE)); // 0
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN {2 2} refP {-2 -2}", "Ref0Gap24", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN {2} refP {-2}", "Ref0Gap22", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP08 {3} refN08 {-3}", "Ref08Gap32", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP08 {3 3} refN08 {-3 -3}", "Ref08Gap34", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP08 {2} refN08 {-2}", "Ref08Gap22", false)); // 0
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN {2 2} refP {-2 -2}", "Ref0Gap24", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN {2} refP {-2}", "Ref0Gap22", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP08 {3} refN08 {-3}", "Ref08Gap32", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP08 {3 3} refN08 {-3 -3}", "Ref08Gap34", false));
 
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN08 {2} refP08 {-2}", "Pion08gap22a", kFALSE)); // 5
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP08 {2} refN08 {-2}", "Pion08gap22b", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {2} refP08 {-2}", "Kaon08gap22a", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP08 {2} refN08 {-2}", "Kaon08gap22b", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN08 {2} refP08 {-2}", "Prot08gap22a", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP08 {2} refN08 {-2}", "Prot08gap22b", kFALSE)); // 10
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN refN | olPiN {2 2} refP {-2 -2}", "Pion0gap24a", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP refP | olPiP {2 2} refN {-2 -2}", "Pion0gap24b", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN refN | olKaN {2 2} refP {-2 -2}", "Kaon0gap24a", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP refP | olKaP {2 2} refN {-2 -2}", "Kaon0gap24b", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN refN | olPrN {2 2} refP {-2 -2}", "Prot0gap24a", kFALSE)); // 15
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP refP | olPrP {2 2} refN {-2 -2}", "Prot0gap24b", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN08 {3} refP08 {-3}", "Pion08gap32a", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP08 {3} refN08 {-3}", "Pion08gap32b", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {3} refP08 {-3}", "Kaon08gap32a", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP08 {3} refN08 {-3}", "Kaon08gap32b", kFALSE)); // 20
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN08 {3} refP08 {-3}", "Prot08gap32a", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP08 {3} refN08 {-3}", "Prot08gap32b", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN refN | olPiN {3 3} refP {-3 -3}", "Pion0gap34a", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP refP | olPiP {3 3} refN {-3 -3}", "Pion0gap34b", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN refN | olKaN {3 3} refP {-3 -3}", "Kaon0gap34a", kFALSE)); // 25
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP refP | olKaP {3 3} refN {-3 -3}", "Kaon0gap34b", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN refN | olPrN {3 3} refP {-3 -3}", "Prot0gap34a", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP refP | olPrP {3 3} refN {-3 -3}", "Prot0gap34b", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN08 {2} refP08 {-2}", "Pion08gap22a", false)); // 5
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP08 {2} refN08 {-2}", "Pion08gap22b", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {2} refP08 {-2}", "Kaon08gap22a", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP08 {2} refN08 {-2}", "Kaon08gap22b", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN08 {2} refP08 {-2}", "Prot08gap22a", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP08 {2} refN08 {-2}", "Prot08gap22b", false)); // 10
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN refN | olPiN {2 2} refP {-2 -2}", "Pion0gap24a", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP refP | olPiP {2 2} refN {-2 -2}", "Pion0gap24b", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN refN | olKaN {2 2} refP {-2 -2}", "Kaon0gap24a", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP refP | olKaP {2 2} refN {-2 -2}", "Kaon0gap24b", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN refN | olPrN {2 2} refP {-2 -2}", "Prot0gap24a", false)); // 15
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP refP | olPrP {2 2} refN {-2 -2}", "Prot0gap24b", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN08 {3} refP08 {-3}", "Pion08gap32a", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP08 {3} refN08 {-3}", "Pion08gap32b", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {3} refP08 {-3}", "Kaon08gap32a", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP08 {3} refN08 {-3}", "Kaon08gap32b", false)); // 20
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN08 {3} refP08 {-3}", "Prot08gap32a", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP08 {3} refN08 {-3}", "Prot08gap32b", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN refN | olPiN {3 3} refP {-3 -3}", "Pion0gap34a", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP refP | olPiP {3 3} refN {-3 -3}", "Pion0gap34b", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN refN | olKaN {3 3} refP {-3 -3}", "Kaon0gap34a", false)); // 25
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP refP | olKaP {3 3} refN {-3 -3}", "Kaon0gap34b", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN refN | olPrN {3 3} refP {-3 -3}", "Prot0gap34a", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP refP | olPrP {3 3} refN {-3 -3}", "Prot0gap34b", false));
 
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN08 {2} poiPiP08 {-2}", "PiPi08gap22", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {2} poiKaP08 {-2}", "KaKa08gap22", kFALSE)); // 30
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN08 {2} poiPrP08 {-2}", "PrPr08gap22", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN08 {3} poiPiP08 {-3}", "PiPi08gap22", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {3} poiKaP08 {-3}", "KaKa08gap22", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN08 {3} poiPrP08 {-3}", "PrPr08gap22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN08 {2} poiPiP08 {-2}", "PiPi08gap22", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {2} poiKaP08 {-2}", "KaKa08gap22", false)); // 30
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN08 {2} poiPrP08 {-2}", "PrPr08gap22", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN08 {3} poiPiP08 {-3}", "PiPi08gap22", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {3} poiKaP08 {-3}", "KaKa08gap22", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN08 {3} poiPrP08 {-3}", "PrPr08gap22", false));
 
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN {2} refP {-2}", "Pion0gap22a", kFALSE)); // 35
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP {2} refN {-2}", "Pion0gap22b", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN {2} refP {-2}", "Kaon0gap22a", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP {2} refN {-2}", "Kaon0gap22b", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN {2} refP {-2}", "Prot0gap22a", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP {2} refN {-2}", "Prot0gap22b", kFALSE)); // 40
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN {2} refP {-2}", "Pion0gap22a", false)); // 35
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP {2} refN {-2}", "Pion0gap22b", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN {2} refP {-2}", "Kaon0gap22a", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP {2} refN {-2}", "Kaon0gap22b", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN {2} refP {-2}", "Prot0gap22a", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP {2} refN {-2}", "Prot0gap22b", false)); // 40
 
     fGFW->CreateRegions(); // finalize the initialization
 
@@ -876,9 +876,9 @@ struct PidFlowPtCorr {
       return -1;
     }
 
-    bool isPion = false;
-    bool isKaon = false;
-    bool isProton = false;
+    bool isPionBool = false;
+    bool isKaonBool = false;
+    bool isProtonBool = false;
 
     // ------------------------------
     // Pion hypothesis
@@ -890,11 +890,11 @@ struct PidFlowPtCorr {
       const float ptMax = pidPtRangeOpts.cfgPtMax4TOFPiKa.value;
 
       if (pt > ptMin && pt < ptMax) {
-        // Circular cut: sqrt(TPC^2 + TOF^2) < 2
-        isPion = (tpcNsigma * tpcNsigma + tofNsigma * tofNsigma) < circleCutOpts.cfgCircleCutSigmaSquarePi.value;
+        
+        isPionBool = std::hypot(tpcNsigma, tofNsigma) < circleCutOpts.cfgCircleCutSigmaPi.value;
       } else {
         // Fallback: TPC only cut
-        isPion = std::fabs(tpcNsigma) < circleCutOpts.cfgCircleCutTPCPi.value;
+        isPionBool = std::fabs(tpcNsigma) < circleCutOpts.cfgCircleCutTPCPi.value;
       }
     }
 
@@ -913,9 +913,9 @@ struct PidFlowPtCorr {
       const float ptMax = std::min(ptMaxPiKa, ptMaxKaPr);
 
       if (pt > ptMin && pt < ptMax) {
-        isKaon = (tpcNsigma * tpcNsigma + tofNsigma * tofNsigma) < circleCutOpts.cfgCircleCutSigmaSquareKa.value;
+        isKaonBool = std::hypot(tpcNsigma, tofNsigma) < circleCutOpts.cfgCircleCutSigmaKa.value;
       } else {
-        isKaon = std::fabs(tpcNsigma) < circleCutOpts.cfgCircleCutTPCKa.value;
+        isKaonBool = std::fabs(tpcNsigma) < circleCutOpts.cfgCircleCutTPCKa.value;
       }
     }
 
@@ -929,16 +929,16 @@ struct PidFlowPtCorr {
       const float ptMax = pidPtRangeOpts.cfgPtMax4TOFKaPr.value;
 
       if (pt > ptMin && pt < ptMax) {
-        isProton = (tpcNsigma * tpcNsigma + tofNsigma * tofNsigma) < circleCutOpts.cfgCircleCutSigmaSquarePr.value;
+        isProtonBool = std::hypot(tpcNsigma, tofNsigma) < circleCutOpts.cfgCircleCutSigmaPr.value;
       } else {
-        isProton = std::fabs(tpcNsigma) < circleCutOpts.cfgCircleCutTPCPr.value;
+        isProtonBool = std::fabs(tpcNsigma) < circleCutOpts.cfgCircleCutTPCPr.value;
       }
     }
 
     // ------------------------------
     // Ambiguity rejection
     // ------------------------------
-    int nCandidates = isPion + isKaon + isProton;
+    int nCandidates = isPionBool + isKaonBool + isProtonBool;
     if (nCandidates > 1) {
       return -1; // Reject if multiple hypotheses satisfied
     }
@@ -946,11 +946,11 @@ struct PidFlowPtCorr {
     // ------------------------------
     // Final PID assignment
     // ------------------------------
-    if (isPion) {
+    if (isPionBool) {
       return MyParticleType::kPion;
-    } else if (isKaon) {
+    } else if (isKaonBool) {
       return MyParticleType::kKaon;
-    } else if (isProton) {
+    } else if (isProtonBool) {
       return MyParticleType::kProton;
     } else {
       return -1;
@@ -1025,12 +1025,12 @@ struct PidFlowPtCorr {
   {
     double dnx, val;
 
-    dnx = fGFW->Calculate(corrconfigs.at(0), 0, kTRUE).real();
+    dnx = fGFW->Calculate(corrconfigs.at(0), 0, true).real();
     if (dnx == 0)
       return;
 
     // <2>
-    val = fGFW->Calculate(corrconfigs.at(0), 0, kFALSE).real() / dnx;
+    val = fGFW->Calculate(corrconfigs.at(0), 0, false).real() / dnx;
     if (std::fabs(val) >= 1)
       return;
 
@@ -1052,12 +1052,12 @@ struct PidFlowPtCorr {
     // <2>
     double dnx, val;
 
-    dnx = fGFW->Calculate(corrconfigs.at(0), 0, kTRUE).real();
+    dnx = fGFW->Calculate(corrconfigs.at(0), 0, true).real();
     if (dnx == 0)
       return;
 
     // <2>
-    val = fGFW->Calculate(corrconfigs.at(0), 0, kFALSE).real() / dnx;
+    val = fGFW->Calculate(corrconfigs.at(0), 0, false).real() / dnx;
     if (std::fabs(val) >= 1)
       return;
 
@@ -1069,7 +1069,7 @@ struct PidFlowPtCorr {
         if (pidc22 == 0)
           return;
 
-        npairPid = fGFW->Calculate(corrconfigs.at(5), 0, kTRUE).real() + fGFW->Calculate(corrconfigs.at(6), 0, kTRUE).real();
+        npairPid = fGFW->Calculate(corrconfigs.at(5), 0, true).real() + fGFW->Calculate(corrconfigs.at(6), 0, true).real();
         if (npairPid == 0)
           return;
 
@@ -1079,12 +1079,12 @@ struct PidFlowPtCorr {
         registry.fill(HIST("meanptCentNbs/hPionMeanptWeightPidflow"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidPtSum / nPid, nPid * npairPid * pidc22 * pidc22 / val);
 
         if (switchsOpts.cfgClosureTest.value != 0) {
-          double npair4c22pure = fGFW->Calculate(corrconfigs.at(29), 0, kTRUE).real();
+          double npair4c22pure = fGFW->Calculate(corrconfigs.at(29), 0, true).real();
           if (npair4c22pure > minVal4Float)
             registry.fill(HIST("meanptCentNbs/hPionMeanptWeightC22pure"),
                           pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap,
                           pidPtSum / nPid,
-                          nPid * npairPid * fGFW->Calculate(corrconfigs.at(29), 0, kFALSE).real() / npair4c22pure);
+                          nPid * npairPid * fGFW->Calculate(corrconfigs.at(29), 0, false).real() / npair4c22pure);
 
           registry.fill(HIST("meanptCentNbs/hPionMeanptWeightMeanpt"),
                         pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap,
@@ -1104,7 +1104,7 @@ struct PidFlowPtCorr {
         if (pidc22 == 0)
           return;
 
-        npairPid = fGFW->Calculate(corrconfigs.at(7), 0, kTRUE).real() + fGFW->Calculate(corrconfigs.at(8), 0, kTRUE).real();
+        npairPid = fGFW->Calculate(corrconfigs.at(7), 0, true).real() + fGFW->Calculate(corrconfigs.at(8), 0, true).real();
         if (npairPid == 0)
           return;
 
@@ -1121,7 +1121,7 @@ struct PidFlowPtCorr {
         if (pidc22 == 0)
           return;
 
-        npairPid = fGFW->Calculate(corrconfigs.at(9), 0, kTRUE).real() + fGFW->Calculate(corrconfigs.at(10), 0, kTRUE).real();
+        npairPid = fGFW->Calculate(corrconfigs.at(9), 0, true).real() + fGFW->Calculate(corrconfigs.at(10), 0, true).real();
         if (npairPid == 0)
           return;
 
@@ -1145,12 +1145,12 @@ struct PidFlowPtCorr {
     double dnx, val;
     // calculate #sum exp{i * 0 (#phi_{i} - #phi_{j})} == N_{pairs}
     // note that weight is ignored in the formula but not in the calculation, for c24 is similar
-    dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
+    dnx = fGFW->Calculate(corrconf, 0, true).real();
     if (dnx == 0)
       return false;
     if (!corrconf.pTDif) {
       // #sum exp{i * 2 * (#phi_{i} - #phi_{j})} / N_{pairs} == < 2 >
-      val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
+      val = fGFW->Calculate(corrconf, 0, false).real() / dnx;
       if (std::fabs(val) < 1) {
         // NOTE that dnx is WEIGHT
         switch (type) {
@@ -1192,12 +1192,12 @@ struct PidFlowPtCorr {
     double dnx, val;
     // calculate #sum exp{i * 0 (#phi_{i} - #phi_{j})} == N_{pairs}
     // note that weight is ignored in the formula but not in the calculation, for c24 is similar
-    dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
+    dnx = fGFW->Calculate(corrconf, 0, true).real();
     if (dnx == 0)
       return;
     if (!corrconf.pTDif) {
       // #sum exp{i * 2 * (#phi_{i} - #phi_{j})} / N_{pairs} == < 2 >
-      val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
+      val = fGFW->Calculate(corrconf, 0, false).real() / dnx;
       if (std::fabs(val) < 1) {
         // NOTE that dnx is WEIGHT
         registry.fill(tarName, cent, val, dnx);
@@ -1210,10 +1210,10 @@ struct PidFlowPtCorr {
   void fillFCvnpt(MyParticleType type, const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, const double& ptSum, const double& nch, const char* tarName)
   {
     double dnx, val;
-    dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
+    dnx = fGFW->Calculate(corrconf, 0, true).real();
     if (dnx == 0)
       return;
-    val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
+    val = fGFW->Calculate(corrconf, 0, false).real() / dnx;
     if (std::fabs(val) < 1) {
       switch (type) {
         case MyParticleType::kCharged:
@@ -1256,10 +1256,10 @@ struct PidFlowPtCorr {
   void fillProfilevnpt(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent, const double& ptSum, const double& nch, const double& meanPt = 0)
   {
     double dnx, val;
-    dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
+    dnx = fGFW->Calculate(corrconf, 0, true).real();
     if (dnx == 0)
       return;
-    val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
+    val = fGFW->Calculate(corrconf, 0, false).real() / dnx;
     if (std::fabs(val) < 1)
       registry.fill(tarName, cent, val * (ptSum / nch - meanPt), dnx * nch);
     return;
@@ -1269,10 +1269,10 @@ struct PidFlowPtCorr {
   void fillProfilePOIvnpt(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent, const double& ptSum, const double& nch)
   {
     double dnx, val;
-    dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
+    dnx = fGFW->Calculate(corrconf, 0, true).real();
     if (dnx == 0)
       return;
-    val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
+    val = fGFW->Calculate(corrconf, 0, false).real() / dnx;
 
     if (std::fabs(val) < 1)
       registry.fill(tarName, cent, ptSum / nch, val, dnx);
@@ -1385,7 +1385,7 @@ struct PidFlowPtCorr {
           LOGF(warning, "eff path pid 1d size != 3, skip pid eff 1d load");
           break;
         }
-        for (int i = 0; i < pidParticleNumber; i++) {
+        for (std::size_t i = 0; i < NSpecies; i++) {
           mEfficiency.push_back(ccdb->getForTimeStamp<TH1>(effPathPid[i], timestamp));
         }
         if (mEfficiency.size() == static_cast<uint64_t>(3)) {
@@ -1400,7 +1400,7 @@ struct PidFlowPtCorr {
           LOGF(warning, "eff path for its pid 1d size != 3, skip its pid eff 1d load");
           break;
         }
-        for (int i = 0; i < pidParticleNumber; i++) {
+        for (std::size_t i = 0; i < NSpecies; i++) {
           mEfficiency4ITSOnly.push_back(ccdb->getForTimeStamp<TH1>(effPathPid4ITSOnly[i], timestamp));
         }
         if (mEfficiency4ITSOnly.size() == static_cast<uint64_t>(3)) {
@@ -1503,11 +1503,6 @@ struct PidFlowPtCorr {
 
       /// @todo add pid NUE eff
       case 3: // pid
-        if (sizeOfEffVec != pidParticleNumber)
-          break;
-        if (sizeOfEffVec4ITS != pidParticleNumber)
-          break;
-
         break;
         // end pid
 
