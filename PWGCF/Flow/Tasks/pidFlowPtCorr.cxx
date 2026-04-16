@@ -14,58 +14,50 @@
 /// \since  Nov/24/2025
 /// \brief  This task is to caculate vn-[pt] correlation of PID particles
 
-#include "PWGCF/GenericFramework/Core/FlowContainer.h"
-#include "PWGCF/GenericFramework/Core/GFW.h"
-#include "PWGCF/GenericFramework/Core/GFWWeights.h"
+#include "FlowContainer.h"
+#include "GFW.h"
+#include "GFWCumulant.h"
+#include "GFWPowerArray.h"
+#include "GFWWeights.h"
 
-#include "Common/CCDB/EventSelectionParams.h"
-#include "Common/CCDB/TriggerAliases.h"
+#include "PWGMM/Mult/DataModel/Index.h"
+
 #include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/Core/EventPlaneHelper.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
-#include <CommonConstants/MathConstants.h>
-#include <Framework/ASoA.h>
-#include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
-#include <Framework/AnalysisTask.h>
-#include <Framework/Configurable.h>
-#include <Framework/Expressions.h>
-#include <Framework/HistogramRegistry.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
-#include <Framework/StringHelpers.h>
-#include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/PID.h>
 
+#include "TList.h"
 #include <TF1.h>
-#include <TH1.h>
-#include <TH2.h>
-#include <TH3.h>
-#include <THnSparse.h>
-#include <TNamed.h>
-#include <TObjArray.h>
+#include <TF2.h>
 #include <TPDGCode.h>
 #include <TProfile.h>
 #include <TRandom3.h>
-#include <TString.h>
 
-#include <sys/types.h>
-
-#include <RtypesCore.h>
-
-#include <chrono>
+#include <algorithm>
 #include <cmath>
-#include <cstdint>
 #include <map>
 #include <memory>
 #include <string>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -181,6 +173,25 @@ struct PidFlowPtCorr {
   } pidPtRangeOpts;
   // end separate k-p
   // end cfg for PID pt range
+
+  struct : ConfigurableGroup {
+    std::string prefix = "circleCutOpts";
+    // Switch to enable/disable circular cut PID
+    O2_DEFINE_CONFIGURABLE(cfgUseCircleCutPID, bool, true, "Enable circular cut PID method");
+
+    // TOF pT threshold: above this pt, TOF signal is required
+    O2_DEFINE_CONFIGURABLE(cfgCircleCutTofPtCut, float, 0.5, "TOF pT threshold for requiring TOF signal");
+
+    // Circular cut (TPC+TOF) values (radius squared, default = 2^2 = 4)
+    O2_DEFINE_CONFIGURABLE(cfgCircleCutSigmaSquarePi, float, 4.0, "Circular cut radius squared for Pion (TPC+TOF)");
+    O2_DEFINE_CONFIGURABLE(cfgCircleCutSigmaSquareKa, float, 4.0, "Circular cut radius squared for Kaon (TPC+TOF)");
+    O2_DEFINE_CONFIGURABLE(cfgCircleCutSigmaSquarePr, float, 4.0, "Circular cut radius squared for Proton (TPC+TOF)");
+
+    // TPC-only fallback cut values (|nsigma| < cut)
+    O2_DEFINE_CONFIGURABLE(cfgCircleCutTPCPi, float, 2.0, "TPC-only nsigma cut for Pion");
+    O2_DEFINE_CONFIGURABLE(cfgCircleCutTPCKa, float, 2.0, "TPC-only nsigma cut for Kaon");
+    O2_DEFINE_CONFIGURABLE(cfgCircleCutTPCPr, float, 2.0, "TPC-only nsigma cut for Proton");
+  } circleCutOpts;
 
   struct : ConfigurableGroup {
     std::string prefix = "particleAbundanceOpts";
@@ -385,29 +396,24 @@ struct PidFlowPtCorr {
     registry.add("hMult", "", {HistType::kTH1D, {cfgaxisNch}});
     registry.add("hMultTPC", "", {HistType::kTH1D, {cfgaxisNch}});
     registry.add("hCent", "", {HistType::kTH1D, {{90, 0, 90}}});
-    registry.add("hCentvsNch", "", {HistType::kTH2D, {{18, 0, 90}, cfgaxisNch}});
-    registry.add("MC/hCentvsNchMC", "", {HistType::kTH2D, {{18, 0, 90}, cfgaxisNch}});
-    registry.add("hCentvsMultTPC", "", {HistType::kTH2D, {{18, 0, 90}, cfgaxisNch}});
-    registry.add("MC/hCentvsMultTPCMC", "", {HistType::kTH2D, {{18, 0, 90}, cfgaxisNch}});
     registry.add("hPt", "", {HistType::kTH1D, {cfgaxisPt}});
-    registry.add("hEtaPhiVtxzREF", "", {HistType::kTH3D, {cfgaxisPhi, cfgaxisEta, {20, -10, 10}}});
     registry.add("hNTracksPVvsCentrality", "", {HistType::kTH2D, {{5000, 0, 5000}, axisMultiplicity}});
 
     registry.add("hNchUnCorrectedVSNchCorrected", "", {HistType::kTH2D, {cfgaxisNch, cfgaxisNch}});
     runNumbers = cfgRunNumbers;
     // TPC vs TOF vs its, comparation graphs, check the PID performance in difference pt
     if (switchsOpts.cfgOutputQA.value) {
-      registry.add("DetectorPidPerformace/TPCvsTOF/Pi", "", {HistType::kTH3D, {{600, -30, 30}, {600, -30, 30}, cfgaxisPt}});
-      registry.add("DetectorPidPerformace/TPCvsTOF/Pr", "", {HistType::kTH3D, {{600, -30, 30}, {600, -30, 30}, cfgaxisPt}});
-      registry.add("DetectorPidPerformace/TPCvsTOF/Ka", "", {HistType::kTH3D, {{600, -30, 30}, {600, -30, 30}, cfgaxisPt}});
+      registry.add("DetectorPidPerformace/TPCvsTOF/Pi", "", {HistType::kTH3D, {{320, -20, 20}, {320, -20, 20}, cfgaxisPt}});
+      registry.add("DetectorPidPerformace/TPCvsTOF/Pr", "", {HistType::kTH3D, {{320, -20, 20}, {320, -20, 20}, cfgaxisPt}});
+      registry.add("DetectorPidPerformace/TPCvsTOF/Ka", "", {HistType::kTH3D, {{320, -20, 20}, {320, -20, 20}, cfgaxisPt}});
 
-      registry.add("DetectorPidPerformace/TPCvsITS/Pi", "", {HistType::kTH3D, {{600, -30, 30}, {600, -30, 30}, cfgaxisPt}});
-      registry.add("DetectorPidPerformace/TPCvsITS/Pr", "", {HistType::kTH3D, {{600, -30, 30}, {600, -30, 30}, cfgaxisPt}});
-      registry.add("DetectorPidPerformace/TPCvsITS/Ka", "", {HistType::kTH3D, {{600, -30, 30}, {600, -30, 30}, cfgaxisPt}});
+      registry.add("DetectorPidPerformace/TPCvsITS/Pi", "", {HistType::kTH3D, {{320, -20, 20}, {320, -20, 20}, cfgaxisPt}});
+      registry.add("DetectorPidPerformace/TPCvsITS/Pr", "", {HistType::kTH3D, {{320, -20, 20}, {320, -20, 20}, cfgaxisPt}});
+      registry.add("DetectorPidPerformace/TPCvsITS/Ka", "", {HistType::kTH3D, {{320, -20, 20}, {320, -20, 20}, cfgaxisPt}});
 
-      registry.add("DetectorPidPerformace/ITSvsTOF/Pi", "", {HistType::kTH3D, {{600, -30, 30}, {600, -30, 30}, cfgaxisPt}});
-      registry.add("DetectorPidPerformace/ITSvsTOF/Pr", "", {HistType::kTH3D, {{600, -30, 30}, {600, -30, 30}, cfgaxisPt}});
-      registry.add("DetectorPidPerformace/ITSvsTOF/Ka", "", {HistType::kTH3D, {{600, -30, 30}, {600, -30, 30}, cfgaxisPt}});
+      registry.add("DetectorPidPerformace/ITSvsTOF/Pi", "", {HistType::kTH3D, {{320, -20, 20}, {320, -20, 20}, cfgaxisPt}});
+      registry.add("DetectorPidPerformace/ITSvsTOF/Pr", "", {HistType::kTH3D, {{320, -20, 20}, {320, -20, 20}, cfgaxisPt}});
+      registry.add("DetectorPidPerformace/ITSvsTOF/Ka", "", {HistType::kTH3D, {{320, -20, 20}, {320, -20, 20}, cfgaxisPt}});
       // end TPC vs TOF vs its, comparation graphs
 
       // run by run QA hists
@@ -450,16 +456,6 @@ struct PidFlowPtCorr {
       registry.add("correction/hPtCentMcRecPr", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
       registry.add("correction/hPtCentMcGenPr", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
     } // cfgoutputMC
-
-    // debug hists
-    if (switchsOpts.cfgDebugMyCode.value) {
-      debugHist.hPtEffWeight = registry.add<TH1>("debug/hPtEffWeight", "", {HistType::kTH1D, {cfgaxisPt}});
-      debugHist.hPtCentEffWeight = registry.add<TH2>("debug/hPtCentEffWeight", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
-      debugHist.hRunNumberPhiEtaVertexWeight = registry.add<THnSparse>("debug/hRunNumberPhiEtaVertexWeight", "", {HistType::kTHnSparseF, {cfgaxisRun, cfgaxisPhi, cfgaxisEta, cfgaxisVertex}});
-      for (uint64_t idx = 1; idx <= runNumbers.size(); idx++) {
-        registry.get<THnSparse>(HIST("debug/hRunNumberPhiEtaVertexWeight"))->GetAxis(0)->SetBinLabel(idx, std::to_string(runNumbers[idx - 1]).c_str());
-      }
-    } // cfgdebugmycode
 
     if (switchsOpts.cfgOutPutPtSpectra.value) {
       registry.add("ptSpectra/hPtCentData", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
@@ -857,6 +853,106 @@ struct PidFlowPtCorr {
     // end TPC
 
     return resultKaon;
+  }
+
+  /**
+   * @brief Particle Identification using circular cut on TPC-TOF nSigma plane
+   *
+   * @param track Input track object to be identified
+   * @return int  PID code (-1=unknown, 1=pion, 2=kaon, 3=proton)
+   * @note  Cuts on sqrt(nsigmaTPC^2 + nsigmaTOF^2) < 2 when TOF is available
+   *        Falls back to |nsigmaTPC| < 2 when TOF is not in valid pt range
+   *        Rejects tracks that satisfy multiple particle hypotheses
+   */
+  template <typename TrackObject>
+  int getPidWithCircleCut(TrackObject const& track)
+  {
+    const float pt = track.pt();
+
+    // If above TOF pt threshold but no TOF signal, reject
+    if (pt > circleCutOpts.cfgCircleCutTofPtCut.value && !track.hasTOF()) {
+      return -1;
+    }
+
+    bool isPion = false;
+    bool isKaon = false;
+    bool isProton = false;
+
+    // ------------------------------
+    // Pion hypothesis
+    // ------------------------------
+    {
+      const float tpcNsigma = track.tpcNSigmaPi();
+      const float tofNsigma = track.tofNSigmaPi();
+      const float ptMin = pidPtRangeOpts.cfgPtMin4TOFPiKa.value;
+      const float ptMax = pidPtRangeOpts.cfgPtMax4TOFPiKa.value;
+
+      if (pt > ptMin && pt < ptMax) {
+        // Circular cut: sqrt(TPC^2 + TOF^2) < 2
+        isPion = (tpcNsigma * tpcNsigma + tofNsigma * tofNsigma) < circleCutOpts.cfgCircleCutSigmaSquarePi.value;
+      } else {
+        // Fallback: TPC only cut
+        isPion = std::fabs(tpcNsigma) < circleCutOpts.cfgCircleCutTPCPi.value;
+      }
+    }
+
+    // ------------------------------
+    // Kaon hypothesis (overlap region)
+    // ------------------------------
+    {
+      const float tpcNsigma = track.tpcNSigmaKa();
+      const float tofNsigma = track.tofNSigmaKa();
+      const float ptMinPiKa = pidPtRangeOpts.cfgPtMin4TOFPiKa.value;
+      const float ptMaxPiKa = pidPtRangeOpts.cfgPtMax4TOFPiKa.value;
+      const float ptMinKaPr = pidPtRangeOpts.cfgPtMin4TOFKaPr.value;
+      const float ptMaxKaPr = pidPtRangeOpts.cfgPtMax4TOFKaPr.value;
+
+      const float ptMin = std::max(ptMinPiKa, ptMinKaPr);
+      const float ptMax = std::min(ptMaxPiKa, ptMaxKaPr);
+
+      if (pt > ptMin && pt < ptMax) {
+        isKaon = (tpcNsigma * tpcNsigma + tofNsigma * tofNsigma) < circleCutOpts.cfgCircleCutSigmaSquareKa.value;
+      } else {
+        isKaon = std::fabs(tpcNsigma) < circleCutOpts.cfgCircleCutTPCKa.value;
+      }
+    }
+
+    // ------------------------------
+    // Proton hypothesis
+    // ------------------------------
+    {
+      const float tpcNsigma = track.tpcNSigmaPr();
+      const float tofNsigma = track.tofNSigmaPr();
+      const float ptMin = pidPtRangeOpts.cfgPtMin4TOFKaPr.value;
+      const float ptMax = pidPtRangeOpts.cfgPtMax4TOFKaPr.value;
+
+      if (pt > ptMin && pt < ptMax) {
+        isProton = (tpcNsigma * tpcNsigma + tofNsigma * tofNsigma) < circleCutOpts.cfgCircleCutSigmaSquarePr.value;
+      } else {
+        isProton = std::fabs(tpcNsigma) < circleCutOpts.cfgCircleCutTPCPr.value;
+      }
+    }
+
+    // ------------------------------
+    // Ambiguity rejection
+    // ------------------------------
+    int nCandidates = isPion + isKaon + isProton;
+    if (nCandidates > 1) {
+      return -1; // Reject if multiple hypotheses satisfied
+    }
+
+    // ------------------------------
+    // Final PID assignment
+    // ------------------------------
+    if (isPion) {
+      return MyParticleType::kPion;
+    } else if (isKaon) {
+      return MyParticleType::kKaon;
+    } else if (isProton) {
+      return MyParticleType::kProton;
+    } else {
+      return -1;
+    }
   }
 
   // pid util function
@@ -1836,27 +1932,51 @@ struct PidFlowPtCorr {
         ptSumw2 += weff * weff * track.pt();
         ptSquareSum += weff * weff * track.pt() * track.pt();
 
-        if (isPion(track)) {
+        // ------------------------------
+        // Unified PID logic (configurable)
+        // ------------------------------
+        int pid = -1;
+        if (circleCutOpts.cfgUseCircleCutPID.value) {
+          // Use circular cut (already handles ambiguity rejection)
+          pid = getPidWithCircleCut(track);
+        } else {
+          // Use normal cut (with manual ambiguity rejection)
+          bool isPi = isPion(track);
+          bool isKa = isKaon(track);
+          bool isPr = isProton(track);
+          int nCandidates = isPi + isKa + isPr;
+          if (nCandidates == 1) {
+            if (isPi)
+              pid = MyParticleType::kPion;
+            else if (isKa)
+              pid = MyParticleType::kKaon;
+            else if (isPr)
+              pid = MyParticleType::kProton;
+          }
+          // else: pid remains -1 (ambiguous or none)
+        }
+
+        // Fill PID variables based on unified result
+        if (pid == MyParticleType::kPion) {
           nPionWeighted += weff;
           nPionSquare += weff * weff;
           pionPtSum += weff * track.pt();
           pionPtSumw2 += weff * weff * track.pt();
           pionPtSquareSum += weff * weff * track.pt() * track.pt();
-        }
-        if (isKaon(track)) {
+        } else if (pid == MyParticleType::kKaon) {
           nKaonWeighted += weff;
           nKaonSquare += weff * weff;
           kaonPtSum += weff * track.pt();
           kaonPtSumw2 += weff * weff * track.pt();
           kaonPtSquareSum += weff * weff * track.pt() * track.pt();
-        }
-        if (isProton(track)) {
+        } else if (pid == MyParticleType::kProton) {
           nProtonWeighted += weff;
           nProtonSquare += weff * weff;
           protonPtSum += weff * track.pt();
           protonPtSumw2 += weff * weff * track.pt();
           protonPtSquareSum += weff * weff * track.pt() * track.pt();
         }
+        // else: do nothing (ambiguous or not identified)
       }
       // end calculate nch and pt
 
@@ -1906,46 +2026,6 @@ struct PidFlowPtCorr {
         }
       } // cfgDoLocDenCorr
 
-      if (switchsOpts.cfgDebugMyCode.value) {
-        // pt eff weight graph
-        {
-          int ptBin = debugHist.hPtEffWeight->GetXaxis()->FindBin(track.pt());
-          debugHist.hPtEffWeight->SetBinContent(ptBin, weff);
-        }
-        // end pt eff weight graph
-
-        // pt eff 2D weight graph
-        {
-          int ptBin = debugHist.hPtCentEffWeight->GetXaxis()->FindBin(track.pt());
-          int centBin = debugHist.hPtCentEffWeight->GetYaxis()->FindBin(cent);
-          debugHist.hPtCentEffWeight->SetBinContent(ptBin, centBin, weff);
-        }
-        // end pt eff 2D weight graph
-
-        // THn wacc graph
-        {
-          // loop the vector, find the place to put (phi eta Vz)
-          int matchedPosition = -1;
-          for (uint64_t idxPosition = 0; idxPosition < runNumbers.size(); idxPosition++) {
-            if (runNumbers[idxPosition] == runNumber) {
-              matchedPosition = idxPosition;
-              break;
-            }
-          }
-          if (matchedPosition == -1) {
-            return;
-          }
-          // end find place to put run data
-
-          int phiBin = debugHist.hRunNumberPhiEtaVertexWeight->GetAxis(1)->FindBin(track.phi());
-          int etaBin = debugHist.hRunNumberPhiEtaVertexWeight->GetAxis(2)->FindBin(track.eta());
-          int vzBin = debugHist.hRunNumberPhiEtaVertexWeight->GetAxis(3)->FindBin(vtxz);
-          int Bins[4] = {matchedPosition + 1, phiBin, etaBin, vzBin};
-          debugHist.hRunNumberPhiEtaVertexWeight->SetBinContent(Bins, wacc);
-        }
-        // end thn wacc graph
-      } // cfgDebugMycode
-
       // track cut, global + ITS + TPC
       if (!trackSelectedGlobal(track))
         continue;
@@ -1973,7 +2053,6 @@ struct PidFlowPtCorr {
       registry.fill(HIST("hPhi"), track.phi());
       registry.fill(HIST("hPhicorr"), track.phi(), wacc);
       registry.fill(HIST("hEta"), track.eta());
-      registry.fill(HIST("hEtaPhiVtxzREF"), track.phi(), track.eta(), vtxz, wacc);
       registry.fill(HIST("hPt"), track.pt());
       // end fill QA hist
 
@@ -1986,26 +2065,45 @@ struct PidFlowPtCorr {
       // bit mask 1: fill CHARGED PARTICLES
       fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, 1); //(eta, ptbin, phi, wacc*weff, bitmask)
 
-      if (isPion(track)) {
+      // ------------------------------
+      // Unified PID logic (configurable)
+      // ------------------------------
+      int pid = -1;
+      if (circleCutOpts.cfgUseCircleCutPID.value) {
+        // Use circular cut (already handles ambiguity rejection)
+        pid = getPidWithCircleCut(track);
+      } else {
+        // Use normal cut (with manual ambiguity rejection)
+        bool isPi = isPion(track);
+        bool isKa = isKaon(track);
+        bool isPr = isProton(track);
+        int nCandidates = isPi + isKa + isPr;
+        if (nCandidates == 1) {
+          if (isPi)
+            pid = MyParticleType::kPion;
+          else if (isKa)
+            pid = MyParticleType::kKaon;
+          else if (isPr)
+            pid = MyParticleType::kProton;
+        }
+        // else: pid remains -1 (ambiguous or none)
+      }
+
+      // Fill GFW and counters based on unified result
+      if (pid == MyParticleType::kPion) {
         // bitmask 18: 0010010
         fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, 18);
-        // fill PIONS and overlap Pions
         numOfPi++;
-      }
-
-      if (isKaon(track)) {
+      } else if (pid == MyParticleType::kKaon) {
         // bitmask 36: 0100100
         fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, 36);
-        // fill KAONS and overlap Kaons
         numOfKa++;
-      }
-
-      if (isProton(track)) {
+      } else if (pid == MyParticleType::kProton) {
         // bitmask 72: 1001000
         fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, 72);
-        // fill PROTONS and overlap Protons
         numOfPr++;
       }
+      // else: do nothing (ambiguous or not identified)
       // end fill GFW
     } // end track loop for v2 calculation
 
@@ -2414,16 +2512,39 @@ struct PidFlowPtCorr {
             // graph for all particles
             registry.fill(HIST("correction/hPtCentMcRec"), track.pt(), cent);
 
-            // identify particle and fill graph
-            if (isPion(track)) {
+            // ------------------------------
+            // Unified PID logic (configurable)
+            // ------------------------------
+            int pid = -1;
+            if (circleCutOpts.cfgUseCircleCutPID.value) {
+              // Use circular cut (already handles ambiguity rejection)
+              pid = getPidWithCircleCut(track);
+            } else {
+              // Use normal cut (with manual ambiguity rejection)
+              bool isPi = isPion(track);
+              bool isKa = isKaon(track);
+              bool isPr = isProton(track);
+              int nCandidates = isPi + isKa + isPr;
+              if (nCandidates == 1) {
+                if (isPi)
+                  pid = MyParticleType::kPion;
+                else if (isKa)
+                  pid = MyParticleType::kKaon;
+                else if (isPr)
+                  pid = MyParticleType::kProton;
+              }
+              // else: pid remains -1 (ambiguous or none)
+            }
+
+            // Fill MC reco histograms based on unified result
+            if (pid == MyParticleType::kPion) {
               registry.fill(HIST("correction/hPtCentMcRecPi"), track.pt(), cent);
-            }
-            if (isKaon(track)) {
+            } else if (pid == MyParticleType::kKaon) {
               registry.fill(HIST("correction/hPtCentMcRecKa"), track.pt(), cent);
-            }
-            if (isProton(track)) {
+            } else if (pid == MyParticleType::kProton) {
               registry.fill(HIST("correction/hPtCentMcRecPr"), track.pt(), cent);
             }
+            // else: do nothing (ambiguous or not identified)
             // end identify particle and fill graph
           }
           // end global track, fill rec hist
