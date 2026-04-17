@@ -401,5 +401,5 @@ struct SecondaryVertexReconstruction {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<SecondaryVertexReconstruction>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<SecondaryVertexReconstruction>(cfgc, TaskName{"jet-sv-reconstruction-charged"})}; // o2-linter: disable=name/o2-task (templated struct)
 }
