@@ -1946,7 +1946,7 @@ struct qaMatching {
       }*/
 
       // fill collision information for global muon tracks (MFT-MCH-MID matches)
-      for (auto muonTrack : muonTracks) {
+      for (const auto& muonTrack : muonTracks) {
         if (!muonTrack.has_collision())
           continue;
 
@@ -2014,7 +2014,7 @@ struct qaMatching {
       }
 
       // fill collision information for MFT standalone tracks
-      for (auto mftTrack : mftTracks) {
+      for (const auto& mftTrack : mftTracks) {
         if (!mftTrack.has_collision())
           continue;
 
@@ -2246,7 +2246,7 @@ struct qaMatching {
       }
     }
 
-    for (auto [mchIndex, globalTracksVector] : matchingCandidates) {
+    for (const auto& [mchIndex, globalTracksVector] : matchingCandidates) {
       if (globalTracksVector.size() < 1)
         continue;
 
@@ -2277,7 +2277,7 @@ struct qaMatching {
 
     // ====================================
     // Matching purity
-    for (auto [mchIndex, globalTracksVector] : matchingCandidates) {
+    for (const auto& [mchIndex, globalTracksVector] : matchingCandidates) {
       if (globalTracksVector.size() < 1)
         continue;
 
@@ -2416,7 +2416,7 @@ struct qaMatching {
       }
     }
 
-    for (auto& [muon1, muon2] : globalMuonPairs) {
+    for (const auto& [muon1, muon2] : globalMuonPairs) {
       auto& candidates1 = muon1.second;
       auto& candidates2 = muon2.second;
 
@@ -2493,7 +2493,7 @@ struct qaMatching {
       return;
     auto matchingFunc = mMatchingFunctionMap.at(funcName);
 
-    for (auto& [mchIndex, globalTracksVector] : matchingCandidates) {
+    for (const auto& [mchIndex, globalTracksVector] : matchingCandidates) {
       auto const& mchTrack = muonTracks.rawIteratorAt(mchIndex);
 
       for (const auto& candidate : globalTracksVector) {
