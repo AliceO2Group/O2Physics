@@ -1300,7 +1300,7 @@ struct qaMatching {
 
   bool IsMatchableMCH(int64_t mchTrackId, const std::vector<std::pair<int64_t, int64_t>>& matchablePairs)
   {
-    for (auto [id1, id2] : matchablePairs) {
+    for (const auto& [id1, id2] : matchablePairs) {
       if (mchTrackId == id1)
         return true;
     }
@@ -1309,7 +1309,7 @@ struct qaMatching {
 
   std::optional<std::pair<int64_t, int64_t>> GetMatchablePairForMCH(int64_t mchTrackId, const std::vector<std::pair<int64_t, int64_t>>& matchablePairs)
   {
-    for (auto pair : matchablePairs) {
+    for (const auto& pair : matchablePairs) {
       if (mchTrackId == pair.first)
         return pair;
     }
@@ -1459,8 +1459,8 @@ struct qaMatching {
       // extrapolation with MCH tools
       auto mchTrackAtVertex = VarManager::PropagateMuon(mchTrack, collision, VarManager::kToVertex);
       double pMCH = mchTrackAtVertex.getP();
-      double px = pMCH * sin(M_PI / 2 - atan(mftTrack.tgl())) * cos(mftTrack.phi());
-      double py = pMCH * sin(M_PI / 2 - atan(mftTrack.tgl())) * sin(mftTrack.phi());
+      double px = pMCH * std::sin(o2::constants::math::PI / 2. - std::atan(mftTrack.tgl())) * std::cos(mftTrack.phi());
+      double py = pMCH * std::sin(o2::constants::math::PI / 2. - std::atan(mftTrack.tgl())) * std::sin(mftTrack.phi());
       double pt = std::hypot(px, py);
       double sign = mchTrack.sign();
 
@@ -1725,7 +1725,7 @@ struct qaMatching {
                         std::vector<int64_t>& selectedMuons)
   {
     selectedMuons.clear();
-    for (auto muonTrack : muonTracks) {
+    for (const auto& muonTrack : muonTracks) {
 
       // only consider MCH-MID matches
       if (static_cast<int>(muonTrack.trackType()) != 3) {
@@ -1783,7 +1783,7 @@ struct qaMatching {
                       std::vector<int64_t>& taggedMuons)
   {
     taggedMuons.clear();
-    for (auto [mchIndex, globalTracksVector] : collisionInfo.matchingCandidates) {
+    for (const auto& [mchIndex, globalTracksVector] : collisionInfo.matchingCandidates) {
 
       // check if the current muon is selected
       if (std::find(selectedMuons.begin(), selectedMuons.end(), mchIndex) == selectedMuons.end())
@@ -1811,10 +1811,10 @@ struct qaMatching {
                     std::vector<GlobalMuonPair>& globalMuonPairs)
   {
     // outer loop over muon tracks
-    for (auto mchIndex1 : collisionInfo.mchTracks) {
+    for (const auto& mchIndex1 : collisionInfo.mchTracks) {
 
       // inner loop over muon tracks
-      for (auto mchIndex2 : collisionInfo.mchTracks) {
+      for (const auto& mchIndex2 : collisionInfo.mchTracks) {
         // avoid double-counting of muon pairs
         if (mchIndex2 <= mchIndex1)
           continue;
@@ -1825,10 +1825,10 @@ struct qaMatching {
     }
 
     // outer loop over global muon tracks
-    for (auto& [mchIndex1, matchingCandidates1] : collisionInfo.matchingCandidates) {
+    for (const auto& [mchIndex1, matchingCandidates1] : collisionInfo.matchingCandidates) {
 
       // inner loop over global muon tracks
-      for (auto& [mchIndex2, matchingCandidates2] : collisionInfo.matchingCandidates) {
+      for (const auto& [mchIndex2, matchingCandidates2] : collisionInfo.matchingCandidates) {
         // avoid double-counting of muon pairs
         if (mchIndex2 <= mchIndex1)
           continue;
