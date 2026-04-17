@@ -1459,7 +1459,7 @@ struct qaMatching {
       double pMCH = mchTrackAtVertex.getP();
       double px = pMCH * sin(M_PI / 2 - atan(mftTrack.tgl())) * cos(mftTrack.phi());
       double py = pMCH * sin(M_PI / 2 - atan(mftTrack.tgl())) * sin(mftTrack.phi());
-      double pt = std::sqrt(std::pow(px, 2) + std::pow(py, 2));
+      double pt = std::hypot(px, py);
       double sign = mchTrack.sign();
 
       o2::dataformats::GlobalFwdTrack track = FwdToTrackPar(mftTrack, mftTrackCov);
