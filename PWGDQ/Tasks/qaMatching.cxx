@@ -2038,7 +2038,7 @@ struct qaMatching {
       return (track1.matchScore > track2.matchScore);
     };
 
-    for (auto& [collisionIndex, collisionInfo] : collisionInfos) {
+    for (const auto& [collisionIndex, collisionInfo] : collisionInfos) {
       for (auto& [mchIndex, globalTracksVector] : collisionInfo.matchingCandidates) {
         std::sort(globalTracksVector.begin(), globalTracksVector.end(), compareMatchingScore);
 
@@ -2215,7 +2215,7 @@ struct qaMatching {
     // ====================================
     // Matching properties
 
-    for (auto [mchIndex, globalTracksVector] : matchingCandidates) {
+    for (const auto& [mchIndex, globalTracksVector] : matchingCandidates) {
       if (globalTracksVector.size() < 1)
         continue;
 
@@ -2319,7 +2319,7 @@ struct qaMatching {
     // Matching efficiencies
 
     // outer loop on matchable pairs
-    for (auto [matchableMchIndex, matchableMftIndex] : matchablePairs) {
+      for (const auto& [matchableMchIndex, matchableMftIndex] : matchablePairs) {
       // get the standalone MCH track
       auto const& mchTrack = muonTracks.rawIteratorAt(matchableMchIndex);
 
@@ -2393,7 +2393,7 @@ struct qaMatching {
 
     GetMuonPairs(collisionInfo, muonPairs, globalMuonPairs);
 
-    for (auto& [muon1, muon2] : muonPairs) {
+    for (const auto& [muon1, muon2] : muonPairs) {
       auto const& collision = collisions.rawIteratorAt(muon1.first);
 
       auto mchIndex1 = muon1.second;
