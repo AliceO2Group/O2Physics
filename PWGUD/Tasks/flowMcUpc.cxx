@@ -111,88 +111,92 @@ struct FlowMcUpc {
 
   PresliceUnsorted<aod::UDMcParticles> partPerMcCollision = aod::udmcparticle::udMcCollisionId;
 
-  void processMCTrue(aod::UDMcCollisions::iterator const& mcCollision, aod::UDMcParticles const& mcParts, aod::BCs const& bcs)
+  void processMCTrue(aod::UDMcCollisions const& mcCollisions, aod::UDMcParticles const& mcParts, aod::BCs const& bcs)
   {
     if (bcs.size() == 0) {
       return;
     }
-    histos.fill(HIST("mcEventCounter"), 0.5);
-    float imp = mcCollision.impactParameter();
-    float vtxz = mcCollision.posZ();
+    for (const auto& mcCollision : mcCollisions) {
+      histos.fill(HIST("mcEventCounter"), 0.5);
+      float imp = mcCollision.impactParameter();
+      float vtxz = mcCollision.posZ();
 
-    if (imp >= minB && imp <= maxB) {
-      // event within range
-      histos.fill(HIST("hImpactParameter"), imp);
+      if (imp >= minB && imp <= maxB) {
+        // event within range
+        histos.fill(HIST("hImpactParameter"), imp);
 
-      auto const& tempParts = mcParts.sliceBy(partPerMcCollision, static_cast<int64_t>(mcCollision.globalIndex()));
+        auto const& tempParts = mcParts.sliceBy(partPerMcCollision, static_cast<int64_t>(mcCollision.globalIndex()));
 
-      for (auto const& mcParticle : tempParts) {
-        auto momentum = std::array<double, 3>{mcParticle.px(), mcParticle.py(), mcParticle.pz()};
-        int pdgCode = std::abs(mcParticle.pdgCode());
+        for (auto const& mcParticle : tempParts) {
+          auto momentum = std::array<double, 3>{mcParticle.px(), mcParticle.py(), mcParticle.pz()};
+          int pdgCode = std::abs(mcParticle.pdgCode());
 
-        double pt = RecoDecay::pt(momentum);
-        double eta = RecoDecay::eta(momentum);
+          double pt = RecoDecay::pt(momentum);
+          double eta = RecoDecay::eta(momentum);
 
-        if (pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != PDG_t::kKPlus && pdgCode != PDG_t::kProton)
-          continue;
+          if (pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != PDG_t::kKPlus && pdgCode != PDG_t::kProton)
+            continue;
 
-        if (!mcParticle.isPhysicalPrimary())
-          continue;
-        if (std::fabs(eta) > cfgCutEta) // main acceptance
-          continue;
+          if (!mcParticle.isPhysicalPrimary())
+            continue;
+          if (std::fabs(eta) > cfgCutEta) // main acceptance
+            continue;
 
-        histos.fill(HIST("hPtMCGen"), pt);
-        histos.fill(HIST("hEtaPtVtxzMCGen"), eta, pt, vtxz);
+          histos.fill(HIST("hPtMCGen"), pt);
+          histos.fill(HIST("hEtaPtVtxzMCGen"), eta, pt, vtxz);
+        }
       }
     }
   }
   PROCESS_SWITCH(FlowMcUpc, processMCTrue, "process pure simulation information", true);
 
   using MCRecoTracks = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA, aod::UDMcTrackLabels>;
-  using MCRecoCollisions = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionSelExtras, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::UDMcCollsLabels>;
+  using MCRecoCollisions = soa::Join<aod::UDCollisions, aod::UDCollisionSelExtras, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::UDMcCollsLabels>;
 
   // PresliceUnsorted<MCRecoTracks> trackPerMcParticle = aod::udmctracklabel::udMcParticleId;
   Preslice<MCRecoTracks> trackPerCollision = aod::udtrack::udCollisionId; // sorted preslice used because the pair track-collision is already sorted in processDataSG function
 
-  void processReco(MCRecoCollisions::iterator const& collision, MCRecoTracks const& tracks)
+  void processReco(MCRecoCollisions const& collisions, MCRecoTracks const& tracks)
   {
-    histos.fill(HIST("RecoProcessEventCounter"), 0.5);
-    // if (!eventSelected(collision))
-    //   return;
-    histos.fill(HIST("RecoProcessEventCounter"), 1.5);
-    if (!collision.has_udMcCollision())
-      return;
-    histos.fill(HIST("RecoProcessEventCounter"), 2.5);
-    if (tracks.size() < 1)
-      return;
-    histos.fill(HIST("RecoProcessEventCounter"), 3.5);
+    for (const auto& collision : collisions) {
+      histos.fill(HIST("RecoProcessEventCounter"), 0.5);
+      // if (!eventSelected(collision))
+      //   return;
+      histos.fill(HIST("RecoProcessEventCounter"), 1.5);
+      if (!collision.has_udMcCollision())
+        return;
+      histos.fill(HIST("RecoProcessEventCounter"), 2.5);
+      if (tracks.size() < 1)
+        return;
+      histos.fill(HIST("RecoProcessEventCounter"), 3.5);
 
-    float vtxz = collision.posZ();
+      float vtxz = collision.posZ();
 
-    auto const& tempTracks = tracks.sliceBy(trackPerCollision, static_cast<int64_t>(collision.globalIndex()));
+      auto const& tempTracks = tracks.sliceBy(trackPerCollision, static_cast<int64_t>(collision.globalIndex()));
 
-    for (const auto& track : tempTracks) {
-      // focus on bulk: e, mu, pi, k, p
-      auto momentum = std::array<double, 3>{track.px(), track.py(), track.pz()};
-      double pt = RecoDecay::pt(momentum);
-      double eta = RecoDecay::eta(momentum);
-      // double phi = RecoDecay::phi(momentum);
-      if (!trackSelected(track) || (!track.has_udMcParticle()))
-        continue;
-      auto mcParticle = track.udMcParticle();
-      int pdgCode = std::abs(mcParticle.pdgCode());
+      for (const auto& track : tempTracks) {
+        // focus on bulk: e, mu, pi, k, p
+        auto momentum = std::array<double, 3>{track.px(), track.py(), track.pz()};
+        double pt = RecoDecay::pt(momentum);
+        double eta = RecoDecay::eta(momentum);
+        // double phi = RecoDecay::phi(momentum);
+        if (!trackSelected(track) || (!track.has_udMcParticle()))
+          continue;
+        auto mcParticle = track.udMcParticle();
+        int pdgCode = std::abs(mcParticle.pdgCode());
 
-      // double pt = recoMC.Pt();
-      // double eta = recoMC.Eta();
-      if (pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != PDG_t::kKPlus && pdgCode != PDG_t::kProton)
-        continue;
-      if (std::fabs(eta) > cfgCutEta) // main acceptance
-        continue;
-      if (!mcParticle.isPhysicalPrimary())
-        continue;
+        // double pt = recoMC.Pt();
+        // double eta = recoMC.Eta();
+        if (pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != PDG_t::kKPlus && pdgCode != PDG_t::kProton)
+          continue;
+        if (std::fabs(eta) > cfgCutEta) // main acceptance
+          continue;
+        if (!mcParticle.isPhysicalPrimary())
+          continue;
 
-      histos.fill(HIST("hPtReco"), pt);
-      histos.fill(HIST("hEtaPtVtxzMCReco"), eta, pt, vtxz);
+        histos.fill(HIST("hPtReco"), pt);
+        histos.fill(HIST("hEtaPtVtxzMCReco"), eta, pt, vtxz);
+      }
     }
   }
   PROCESS_SWITCH(FlowMcUpc, processReco, "process reconstructed information", true);
