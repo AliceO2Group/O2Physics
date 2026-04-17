@@ -159,7 +159,7 @@ struct ResonanceMergeDF {
         (int8_t)(track.tofNSigmaPi() * 10),
         (int8_t)(track.tofNSigmaKa() * 10),
         (int8_t)(track.tofNSigmaPr() * 10),
-        (int8_t)(track.tpcSignal() * 10),
+        static_cast<int16_t>(track.tpcSignal() * 100),
         track.trackFlags()));
     }
 
@@ -271,7 +271,7 @@ struct ResonanceMergeDF {
         (int8_t)(track.tofNSigmaPi() * 10),
         (int8_t)(track.tofNSigmaKa() * 10),
         (int8_t)(track.tofNSigmaPr() * 10),
-        (int8_t)(track.tpcSignal() * 10),
+        static_cast<int16_t>(track.tpcSignal() * 100),
         track.trackFlags()));
     }
 
@@ -458,7 +458,7 @@ struct ResonanceMergeDF {
                   (int8_t)(track.tofNSigmaPi() * 10),
                   (int8_t)(track.tofNSigmaKa() * 10),
                   (int8_t)(track.tofNSigmaPr() * 10),
-                  (int8_t)(track.tpcSignal() * 10),
+                  static_cast<int16_t>(track.tpcSignal() * 100),
                   track.trackFlags());
     }
   }
@@ -521,7 +521,7 @@ struct ResonanceMergeDF {
                   (int8_t)(track.tofNSigmaPi() * 10),
                   (int8_t)(track.tofNSigmaKa() * 10),
                   (int8_t)(track.tofNSigmaPr() * 10),
-                  (int8_t)(track.tpcSignal() * 10),
+                  static_cast<int16_t>(track.tpcSignal() * 100),
                   track.trackFlags());
     }
     // Cascade candidate

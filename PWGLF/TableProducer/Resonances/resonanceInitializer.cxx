@@ -106,7 +106,6 @@ struct ResonanceInitializer {
   Configurable<double> dBzInput{"dBzInput", -999, "bz field, -999 is automatic"};
   Configurable<bool> cfgFillQA{"cfgFillQA", false, "Fill QA histograms"};
   Configurable<bool> cfgBypassCCDB{"cfgBypassCCDB", true, "Bypass loading CCDB part to save CPU time and memory"}; // will be affected to b_z value.
-
   // Track filter from tpcSkimsTableCreator
   Configurable<int> trackSelection{"trackSelection", 0, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
   Configurable<int> trackSphDef{"trackSphDef", 0, "Spherocity Definition: |pT| = 1 -> 0, otherwise -> 1"};
@@ -237,6 +236,7 @@ struct ResonanceInitializer {
     Configurable<int> pdgTruthMother{"pdgTruthMother", 3324, "pdgcode for the truth mother e.g. Xi(1530) (3324)"};
     Configurable<int> pdgTruthDaughter1{"pdgTruthDaughter1", 3312, "pdgcode for the daughter 1, e.g. Xi- 3312"};
     Configurable<int> pdgTruthDaughter2{"pdgTruthDaughter2", 211, "pdgcode for the daughter 2, e.g. pi+ 211"};
+    Configurable<bool> cfgDoSignalLoss{"cfgDoSignalLoss", false, "Save reference particles for mT scaling signal loss"};
   } GenCuts;
   Configurable<bool> checkIsRecINELgt0{"checkIsRecINELgt0", true, "Check rec INEL>0 for the Rec. Collision"};
 
@@ -277,8 +277,13 @@ struct ResonanceInitializer {
                                                     || (nabs(aod::mcparticle::pdgCode) == 3324)    // Xi(1530)0
                                                     || (nabs(aod::mcparticle::pdgCode) == 10323)   // K1(1270)+
                                                     || (nabs(aod::mcparticle::pdgCode) == 123314)  // Xi(1820)0
-                                                    || (nabs(aod::mcparticle::pdgCode) == 123324); // Xi(1820)-0
-
+                                                    || (nabs(aod::mcparticle::pdgCode) == 123324)  // Xi(1820)-0
+                                                    || (nabs(aod::mcparticle::pdgCode) == 2212)    // Proton
+                                                    || (nabs(aod::mcparticle::pdgCode) == 3122)    // Lambda0
+                                                    || (nabs(aod::mcparticle::pdgCode) == 3312)    // Xi-
+                                                    || (nabs(aod::mcparticle::pdgCode) == 3322)    // Xi0
+                                                    || (nabs(aod::mcparticle::pdgCode) == 3334);   // Omega-
+                                                                                                   //
   using ResoEvents = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As, aod::Mults>;
   using ResoEvents001 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As, aod::Mults, aod::MultsExtra, aod::PVMults>;
   using ResoRun2Events = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
@@ -759,7 +764,7 @@ struct ResonanceInitializer {
                 static_cast<int8_t>(std::round(track.tofNSigmaPi() * 10)),
                 static_cast<int8_t>(std::round(track.tofNSigmaKa() * 10)),
                 static_cast<int8_t>(std::round(track.tofNSigmaPr() * 10)),
-                static_cast<int8_t>(std::round(track.tpcSignal() * 10)),
+                static_cast<int16_t>(std::round(track.tpcSignal() * 100)),
                 trackFlags);
       if (!cfgBypassTrackIndexFill) {
         resoTrackTracks(track.globalIndex());
@@ -1182,6 +1187,12 @@ struct ResonanceInitializer {
   void fillMCParticles(SelectedMCPartType const& mcParts, TotalMCParts const& mcParticles)
   {
     for (auto const& mcPart : mcParts) {
+      if (!GenCuts.cfgDoSignalLoss) {
+        int absPdg = std::abs(mcPart.pdgCode());
+        if (absPdg == 2212 || absPdg == 3122 || absPdg == 3312 || absPdg == 3322 || absPdg == 3334) {
+          continue;
+        }
+      }
       std::vector<int> daughterPDGs;
       if (mcPart.has_daughters()) {
         auto daughter01 = mcParticles.rawIteratorAt(mcPart.daughtersIds()[0] - mcParticles.offset());
