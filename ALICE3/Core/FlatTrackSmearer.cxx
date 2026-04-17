@@ -98,7 +98,7 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
 
   std::ifstream lutFile(localFilename, std::ifstream::binary);
   if (!lutFile.is_open()) {
-    throw framework::runtime_error_f("Cannot open LUT file: %s", localFilename);
+    throw framework::runtime_error_f("Cannot open LUT file: %s", localFilename.c_str());
   }
 
   try {
