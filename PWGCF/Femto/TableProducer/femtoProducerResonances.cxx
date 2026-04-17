@@ -18,17 +18,14 @@
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/partitions.h"
 #include "PWGCF/Femto/Core/trackBuilder.h"
-#include "PWGCF/Femto/Core/trackHistManager.h"
 #include "PWGCF/Femto/Core/twoTrackResonanceBuilder.h"
+#include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
-#include <Framework/HistogramRegistry.h>
 #include <Framework/InitContext.h>
-#include <Framework/Logger.h>
-#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
 using namespace o2::analysis::femto;
@@ -76,10 +73,6 @@ struct FemtoProducerResonances {
   twotrackresonancebuilder::TwoTrackResonanceBuilder<modes::TwoTrackResonance::kKstar0> kstar0Builder;
   twotrackresonancebuilder::TwoTrackResonanceBuilder<modes::TwoTrackResonance::kKstar0Bar> kstar0BarBuilder;
 
-  // histogramming
-  // add histograms in next iteration
-  o2::framework::HistogramRegistry hRegistry{"femtoProducerResonances", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
-
   void init(o2::framework::InitContext& context)
   {
     // init builders
@@ -87,8 +80,6 @@ struct FemtoProducerResonances {
     phiBuilder.init(confPhiFilter, confKaonPlusSelection, confKaonMinusSelection, confTwoTrackResonanceTables, context);
     kstar0Builder.init(confKstarFilter, confKaonPlusSelection, confPionMinusSelection, confTwoTrackResonanceTables, context);
     kstar0BarBuilder.init(confKstarFilter, confPionPlusSelection, confKaonMinusSelection, confTwoTrackResonanceTables, context);
-
-    hRegistry.print();
   }
 
   // proccess functions
@@ -109,7 +100,7 @@ struct FemtoProducerResonances {
     kstar0Builder.fillResonances(col, twoTrackResonanceBuilderProducts, kaonPlusPartition, pionMinusPartition, tracks, cache);
     kstar0BarBuilder.fillResonances(col, twoTrackResonanceBuilderProducts, pionPlusPartition, kaonMinusPartition, tracks, cache);
   }
-  PROCESS_SWITCH(FemtoProducerResonances, processKstar0, "Build Phi candidates", true);
+  PROCESS_SWITCH(FemtoProducerResonances, processKstar0, "Build Kstar0/Kstar0bar candidates", true);
 };
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)

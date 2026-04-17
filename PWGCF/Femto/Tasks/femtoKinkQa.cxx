@@ -23,7 +23,6 @@
 #include "PWGCF/Femto/Core/partitions.h"
 #include "PWGCF/Femto/Core/trackHistManager.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
-#include "PWGLF/DataModel/LFKinkDecayTables.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>

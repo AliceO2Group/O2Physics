@@ -28,7 +28,6 @@
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
-#include <Framework/HistogramRegistry.h>
 #include <Framework/Logger.h>
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
