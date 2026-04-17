@@ -160,10 +160,21 @@ constexpr const char PrefixTrackSelection1[] = "TrackSelection1";
 constexpr const char PrefixTrackSelection2[] = "TrackSelection2";
 constexpr const char PrefixTrackSelection3[] = "TrackSelection3";
 
+// for resonances builder
+constexpr const char PrefixPionPlus[] = "PionPlusSelection";
+constexpr const char PrefixPionMinus[] = "PionMinusSelection";
+constexpr const char PrefixKaonPlus[] = "KaonPlusSelection";
+constexpr const char PrefixKaonMinus[] = "KaonMinusSelection";
+
 // Instantiate different instances with unique prefixes
 using ConfTrackSelection1 = ConfTrackSelection<PrefixTrackSelection1>;
 using ConfTrackSelection2 = ConfTrackSelection<PrefixTrackSelection2>;
 using ConfTrackSelection3 = ConfTrackSelection<PrefixTrackSelection3>;
+
+using ConfPionPlusSelection = ConfTrackSelection<PrefixPionPlus>;
+using ConfPionMinusSelection = ConfTrackSelection<PrefixPionMinus>;
+using ConfKaonPlusSelection = ConfTrackSelection<PrefixKaonPlus>;
+using ConfKaonMinusSelection = ConfTrackSelection<PrefixKaonMinus>;
 
 /// enum for all track selections
 enum TrackSels {

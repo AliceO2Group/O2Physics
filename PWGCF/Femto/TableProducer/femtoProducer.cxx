@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file femtoProducer.cxx
-/// \brief Tasks that produces all femto tables
+/// \brief Tasks that produces most femto tables
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 
 #include "PWGCF/Femto/Core/cascadeBuilder.h"
