@@ -29,6 +29,7 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/GeometryManager.h>
+#include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -304,7 +305,7 @@ struct DQTrackSelection {
         DefineHistograms(fHistMan, cutName.Data(), fConfigHistClassesMu.value); // define all histograms
       }
 
-      VarManager::SetUseVars(fHistMan->GetUsedVars());                       // provide the list of required variables so that VarManager knows what to fill
+      VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
 
