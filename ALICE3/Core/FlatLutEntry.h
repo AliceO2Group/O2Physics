@@ -14,9 +14,9 @@
 
 #include <cmath>
 #include <cstdint>
+#include <fstream>
 #include <span>
 #include <vector>
-#include <fstream>
 
 #define LUTCOVM_VERSION 20210801
 
