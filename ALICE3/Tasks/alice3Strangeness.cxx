@@ -20,44 +20,37 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "ALICE3/DataModel/OTFCollision.h"
+#include "ALICE3/DataModel/OTFMCParticle.h"
 #include "ALICE3/DataModel/OTFStrangeness.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
-#include <DCAFitter/DCAFitterN.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <DetectorsBase/Propagator.h>
-#include <DetectorsVertexing/PVertexer.h>
-#include <DetectorsVertexing/PVertexerHelpers.h>
-#include <Field/MagneticField.h>
 #include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/StaticFor.h>
-#include <ReconstructionDataFormats/DCA.h>
-#include <SimulationDataFormat/InteractionSampler.h>
+#include <Framework/runDataProcessing.h>
 
-#include <TGenPhaseSpace.h>
-#include <TGeoGlobalMagField.h>
-#include <TPDGCode.h>
-#include <TRandom3.h>
+#include <Rtypes.h>
 
-#include <RtypesCore.h>
-
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::constants::math;
 
-using Alice3Tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels, aod::TracksDCA, aod::TracksExtraA3>;
+using Alice3Tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackWithDauLabels, aod::TracksDCA, aod::TracksExtraA3>;
 using FullV0Candidates = soa::Join<aod::V0CandidateIndices, aod::V0CandidateCores>;
 using FullCascadeCandidates = soa::Join<aod::StoredCascCores, aod::CascIndices>;
 using FullCollisions = soa::Join<aod::OTFLUTConfigId, aod::Collisions>;
@@ -246,10 +239,12 @@ struct Alice3Strangeness {
   {
     // if(collision.lutConfigId()!=idGeometry)
     // return;
+    float collisionZ = collision.posZ();
+    histos.fill(HIST("hPVz"), collisionZ);
     for (auto const& v0 : v0Candidates) {
-      bool isK0 = (v0.mK0Short() - o2::constants::physics::MassK0Short) < selectionValues.acceptedK0MassWindow;
-      bool isLambda = (v0.mLambda() - o2::constants::physics::MassLambda0) < selectionValues.acceptedLambdaMassWindow;
-      bool isAntiLambda = (v0.mAntiLambda() - o2::constants::physics::MassLambda0) < selectionValues.acceptedLambdaMassWindow;
+      bool isK0 = std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < selectionValues.acceptedK0MassWindow;
+      bool isLambda = std::abs(v0.mLambda() - o2::constants::physics::MassLambda0) < selectionValues.acceptedLambdaMassWindow;
+      bool isAntiLambda = std::abs(v0.mAntiLambda() - o2::constants::physics::MassLambda0) < selectionValues.acceptedLambdaMassWindow;
 
       histos.fill(HIST("reconstructedCandidates/hArmeterosBeforeAllSelections"), v0.alpha(), v0.qtArm());
       histos.fill(HIST("hV0CandidateCounter"), 0.5);

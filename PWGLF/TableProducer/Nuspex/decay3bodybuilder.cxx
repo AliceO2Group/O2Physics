@@ -15,7 +15,9 @@
 /// \author Carolina Reetz <c.reetz@cern.ch>
 // ========================
 
-#include "TableHelper.h"
+#ifndef HomogeneousField
+#define HomogeneousField
+#endif
 
 #include "PWGLF/DataModel/LFPIDTOFGenericTables.h"
 #include "PWGLF/DataModel/Reduced3BodyTables.h"
@@ -23,45 +25,50 @@
 #include "PWGLF/Utils/decay3bodyBuilderHelper.h"
 #include "PWGLF/Utils/pidTOFGeneric.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/MetadataHelper.h"
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTPC.h"
-#include "Tools/KFparticle/KFUtilities.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include <algorithm>
+#include <TH1.h>
+#include <TH2.h>
+#include <TObject.h>
+#include <TPDGCode.h>
+
+#include <KFParticle.h>
+
 #include <array>
 #include <cmath>
 #include <cstdlib>
 #include <memory>
+#include <ostream>
 #include <string>
 #include <unordered_map>
 #include <vector>
-
-#ifndef HomogeneousField
-#define HomogeneousField
-#endif
-
-// includes KFParticle
-#include "KFPTrack.h"
-#include "KFPVertex.h"
-#include "KFParticle.h"
-#include "KFParticleBase.h"
-#include "KFVertex.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -122,6 +129,9 @@ struct decay3bodyBuilder {
   Configurable<bool> doTrackQA{"doTrackQA", false, "Flag to fill QA histograms for daughter tracks of (selected) decay3body candidates."};
   Configurable<bool> doVertexQA{"doVertexQA", false, "Flag to fill QA histograms for PV of (selected) events."};
   Configurable<bool> disableITSROFCut{"disableITSROFCut", false, "Disable ITS ROF border cut"};
+
+  // MC processing options
+  Configurable<bool> doStoreMcBkg{"doStoreMcBkg", false, "Flag to store candidates which were not matched to true H3L/Anti-H3L decaying via three-body decay in MC (i.e. MC background) in the output table"};
 
   // data processing options
   Configurable<bool> doSkimmedProcessing{"doSkimmedProcessing", false, "Apply Zoroo counting in case of skimmed data input"};
@@ -794,47 +804,56 @@ struct decay3bodyBuilder {
 
         // check if daughters have MC particle
         if (!trackProton.has_mcParticle() || !trackPion.has_mcParticle() || !trackDeuteron.has_mcParticle()) {
-          continue;
-        }
+          if (!doStoreMcBkg) {
+            continue; // if not storing MC background, skip candidates where at least one daughter is not matched to MC particle
+          } else {
+            this3BodyMCInfo.label = -5; // at least one non-matched daughter
+            // fill analysis table (only McVtx3BodyDatas is filled here)
+            fillAnalysisTables();
+          }
+        } else { // all daughters are matched to MC particles, get their MC info
+          // get MC daughter particles
+          auto mcTrackProton = trackProton.template mcParticle_as<aod::McParticles>();
+          auto mcTrackPion = trackPion.template mcParticle_as<aod::McParticles>();
+          auto mcTrackDeuteron = trackDeuteron.template mcParticle_as<aod::McParticles>();
 
-        // get MC daughter particles
-        auto mcTrackProton = trackProton.template mcParticle_as<aod::McParticles>();
-        auto mcTrackPion = trackPion.template mcParticle_as<aod::McParticles>();
-        auto mcTrackDeuteron = trackDeuteron.template mcParticle_as<aod::McParticles>();
+          // set daughter MC info (also for non-matched mothers)
+          this3BodyMCInfo.daughterPrPdgCode = mcTrackProton.pdgCode();
+          this3BodyMCInfo.daughterPiPdgCode = mcTrackPion.pdgCode();
+          this3BodyMCInfo.daughterDePdgCode = mcTrackDeuteron.pdgCode();
+          this3BodyMCInfo.isDeuteronPrimary = mcTrackDeuteron.isPhysicalPrimary();
+          this3BodyMCInfo.genMomProton = mcTrackProton.p();
+          this3BodyMCInfo.genMomPion = mcTrackPion.p();
+          this3BodyMCInfo.genMomDeuteron = mcTrackDeuteron.p();
+          this3BodyMCInfo.genPtProton = mcTrackProton.pt();
+          this3BodyMCInfo.genPtPion = mcTrackPion.pt();
+          this3BodyMCInfo.genPtDeuteron = mcTrackDeuteron.pt();
 
-        // set daughter MC info (also for non-matched candidates)
-        this3BodyMCInfo.daughterPrPdgCode = mcTrackProton.pdgCode();
-        this3BodyMCInfo.daughterPiPdgCode = mcTrackPion.pdgCode();
-        this3BodyMCInfo.daughterDePdgCode = mcTrackDeuteron.pdgCode();
-        this3BodyMCInfo.isDeuteronPrimary = mcTrackDeuteron.isPhysicalPrimary();
-        this3BodyMCInfo.genMomProton = mcTrackProton.p();
-        this3BodyMCInfo.genMomPion = mcTrackPion.p();
-        this3BodyMCInfo.genMomDeuteron = mcTrackDeuteron.p();
-        this3BodyMCInfo.genPtProton = mcTrackProton.pt();
-        this3BodyMCInfo.genPtPion = mcTrackPion.pt();
-        this3BodyMCInfo.genPtDeuteron = mcTrackDeuteron.pt();
+          // daughters are matched to MC, now we check if reco mother is true H3L/Anti-H3l and decayed via three-body decay
+          this3BodyMCInfo.label = checkH3LTruth(mcTrackProton, mcTrackPion, mcTrackDeuteron); // returns global index of mother if true H3L/Anti-H3L mother decaying via three-body decay, otherwise negative value
 
-        // check if reco mother is true H3L/Anti-H3l
-        bool isMuonReco;
-        int motherID = checkH3LTruth(mcTrackProton, mcTrackPion, mcTrackDeuteron, isMuonReco);
+          // if not storing MC background, skip candidates where mother is not true H3L/Anti-H3L decaying via three-body decay
+          if (!doStoreMcBkg && this3BodyMCInfo.label <= 0) {
+            continue;
+          }
 
-        // get generated mother MC info
-        if (motherID > 0) {
-          auto mcTrackH3L = mcParticles.rawIteratorAt(motherID);
-          this3BodyMCInfo.motherPdgCode = mcTrackH3L.pdgCode();
-          this3BodyMCInfo.label = motherID;
-          this3BodyMCInfo.genMomentum = {mcTrackH3L.px(), mcTrackH3L.py(), mcTrackH3L.pz()};
-          this3BodyMCInfo.genDecVtx = {mcTrackProton.vx(), mcTrackProton.vy(), mcTrackProton.vz()};
-          this3BodyMCInfo.genCt = RecoDecay::sqrtSumOfSquares(mcTrackProton.vx() - mcTrackH3L.vx(), mcTrackProton.vy() - mcTrackH3L.vy(), mcTrackProton.vz() - mcTrackH3L.vz()) * o2::constants::physics::MassHyperTriton / mcTrackH3L.p();
-          this3BodyMCInfo.genPhi = mcTrackH3L.phi();
-          this3BodyMCInfo.genEta = mcTrackH3L.eta();
-          this3BodyMCInfo.genRapidity = mcTrackH3L.y();
-          this3BodyMCInfo.isTrueH3L = this3BodyMCInfo.motherPdgCode > 0 ? true : false;
-          this3BodyMCInfo.isTrueAntiH3L = this3BodyMCInfo.motherPdgCode < 0 ? true : false;
-        }
+          // get generated mother MC info for matched candidates
+          if (this3BodyMCInfo.label > -1) {
+            auto mcTrackH3L = mcParticles.rawIteratorAt(this3BodyMCInfo.label);
+            this3BodyMCInfo.motherPdgCode = mcTrackH3L.pdgCode();
+            this3BodyMCInfo.genMomentum = {mcTrackH3L.px(), mcTrackH3L.py(), mcTrackH3L.pz()};
+            this3BodyMCInfo.genDecVtx = {mcTrackProton.vx(), mcTrackProton.vy(), mcTrackProton.vz()};
+            this3BodyMCInfo.genCt = RecoDecay::sqrtSumOfSquares(mcTrackProton.vx() - mcTrackH3L.vx(), mcTrackProton.vy() - mcTrackH3L.vy(), mcTrackProton.vz() - mcTrackH3L.vz()) * o2::constants::physics::MassHyperTriton / mcTrackH3L.p();
+            this3BodyMCInfo.genPhi = mcTrackH3L.phi();
+            this3BodyMCInfo.genEta = mcTrackH3L.eta();
+            this3BodyMCInfo.genRapidity = mcTrackH3L.y();
+            this3BodyMCInfo.isTrueH3L = this3BodyMCInfo.motherPdgCode > 0 ? true : false;
+            this3BodyMCInfo.isTrueAntiH3L = this3BodyMCInfo.motherPdgCode < 0 ? true : false;
+          }
 
-        // fill analysis tables (only McVtx3BodyDatas is filled here)
-        fillAnalysisTables();
+          // fill analysis tables (only McVtx3BodyDatas is filled here)
+          fillAnalysisTables();
+        } // end of check if daughters have MC particle
 
         // mark mcParticle as reconstructed
         if (this3BodyMCInfo.label > -1) {
@@ -1179,30 +1198,23 @@ struct decay3bodyBuilder {
   // ______________________________________________________________
   // function to check if a reconstructed mother is a true H3L/Anti-H3L (returns -1 if not)
   template <typename MCTrack3B>
-  int checkH3LTruth(MCTrack3B const& mcParticlePr, MCTrack3B const& mcParticlePi, MCTrack3B const& mcParticleDe, bool& isMuonReco)
+  int checkH3LTruth(MCTrack3B const& mcParticlePr, MCTrack3B const& mcParticlePi, MCTrack3B const& mcParticleDe)
   {
-    if (std::abs(mcParticlePr.pdgCode()) != PDG_t::kProton || std::abs(mcParticleDe.pdgCode()) != o2::constants::physics::Pdg::kDeuteron) {
-      return -1;
-    }
-    // check proton and deuteron mother
-    int prDeMomID = -1;
-    for (const auto& motherPr : mcParticlePr.template mothers_as<aod::McParticles>()) {
-      for (const auto& motherDe : mcParticleDe.template mothers_as<aod::McParticles>()) {
-        if (motherPr.globalIndex() == motherDe.globalIndex() && std::abs(motherPr.pdgCode()) == o2::constants::physics::Pdg::kHyperTriton) {
-          prDeMomID = motherPr.globalIndex();
-          break;
-        }
-      }
-    }
-    if (prDeMomID == -1) {
-      return -1;
-    }
-    if (std::abs(mcParticlePi.pdgCode()) != PDG_t::kPiPlus && std::abs(mcParticlePi.pdgCode()) != PDG_t::kMuonMinus) {
-      return -1;
+    // return legend
+    // -4: proton, pion, or deuteron have wrong identity
+    // -3: proton and pion have a common mother which is a Lambda (i.e., not a direct daughter of hypertriton)
+    // -2: proton, pion, and deuteron don't have a common mother
+    // -1: proton, pion, and deuteron have common mother but it's NOT a hypertriton
+    // global mother ID: proton, pion, and deuteron have common mother and it's a hypertriton
+
+    // first, check identity of MC daughters
+    if (std::abs(mcParticlePr.pdgCode()) != PDG_t::kProton || std::abs(mcParticleDe.pdgCode()) != o2::constants::physics::Pdg::kDeuteron || (std::abs(mcParticlePi.pdgCode()) != PDG_t::kPiPlus && std::abs(mcParticlePi.pdgCode()) != PDG_t::kMuonMinus)) {
+      return -4;
     }
     // check if the pion track is a muon coming from a pi -> mu + vu decay, if yes, take the mother pi
     auto mcParticlePiTmp = mcParticlePi;
     if (std::abs(mcParticlePiTmp.pdgCode()) == PDG_t::kMuonMinus) {
+      bool isMuonReco = false;
       for (const auto& motherPi : mcParticlePiTmp.template mothers_as<aod::McParticles>()) {
         if (std::abs(motherPi.pdgCode()) == PDG_t::kPiPlus) {
           mcParticlePiTmp = motherPi;
@@ -1210,14 +1222,45 @@ struct decay3bodyBuilder {
           break;
         }
       }
-    }
-    // now loop over the pion mother
-    for (const auto& motherPi : mcParticlePiTmp.template mothers_as<aod::McParticles>()) {
-      if (motherPi.globalIndex() == prDeMomID) {
-        return motherPi.globalIndex();
+      // If the track is a muon but none of its mothers is a pi+, treat as wrong identity
+      if (!isMuonReco) {
+        return -4;
       }
     }
-    return -1;
+
+    // now first check if the proton and pion have the same mother and it is a Lambda
+    for (const auto& motherPr : mcParticlePr.template mothers_as<aod::McParticles>()) {
+      for (const auto& motherPi : mcParticlePiTmp.template mothers_as<aod::McParticles>()) {
+        if (motherPr.globalIndex() == motherPi.globalIndex() && std::abs(motherPr.pdgCode()) == PDG_t::kLambda0) {
+          return -3;
+        }
+      }
+    }
+
+    // now check if all three daughters have the same mother
+    int momID = -1;
+    int momPdgCode = 0;
+    for (const auto& motherPr : mcParticlePr.template mothers_as<aod::McParticles>()) {
+      for (const auto& motherDe : mcParticleDe.template mothers_as<aod::McParticles>()) {
+        for (const auto& motherPi : mcParticlePiTmp.template mothers_as<aod::McParticles>()) {
+          if (motherPr.globalIndex() == motherDe.globalIndex() && motherPr.globalIndex() == motherPi.globalIndex()) {
+            momID = motherPr.globalIndex();
+            momPdgCode = motherPr.pdgCode();
+            break;
+          }
+        }
+      }
+    }
+    if (momID == -1) {
+      return -2;
+    }
+
+    // check if the common mother is a hypertriton
+    if (std::abs(momPdgCode) == o2::constants::physics::Pdg::kHyperTriton) {
+      return momID;
+    } else {
+      return -1; // common mother found but not a hypertriton
+    }
   }
 
   // ______________________________________________________________

@@ -17,9 +17,22 @@
 
 #include "Common/Core/RecoDecay.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <vector>
 
 using namespace o2;
@@ -302,6 +315,8 @@ struct HypKfTreeCreator {
     cand.occu = coll.occupancy();
     cand.runNumber = coll.runNumber();
     cand.passedEvSel = coll.passedEvSel();
+    cand.ct = ct(coll, hypNuc);
+    cand.cpaPv = cpa(coll, hypNuc);
     cand.mass = hypNuc.mass();
     cand.y = hypNuc.y();
     cand.pt = hypNuc.pt();

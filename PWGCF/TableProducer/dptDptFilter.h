@@ -18,7 +18,9 @@
 
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/MetadataHelper.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
@@ -28,26 +30,33 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "ReconstructionDataFormats/PID.h"
-#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/DataTypes.h>
+#include <Framework/Logger.h>
+#include <ReconstructionDataFormats/PID.h>
 
 #include <TF1.h>
 #include <TFormula.h>
+#include <TH1.h>
 #include <TList.h>
 #include <TMCProcess.h>
 #include <TPDGCode.h>
 
+#include <sys/types.h>
+
 #include <Rtypes.h>
 
+#include <algorithm>
 #include <bitset>
+#include <cstddef>
+#include <cstdint>
+#include <ctime>
 #include <fstream>
 #include <functional>
 #include <iomanip>
-#include <locale>
 #include <map>
-#include <ranges>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -809,6 +818,23 @@ struct DptDptTrackSelection {
   bool requirePvContributor = false;
 };
 
+SystemType fSystem = SystemNoSystem;
+MultRunType fLhcRun = MultRunRUN1RUN2;
+DataType fDataType = kData;
+CentMultEstimatorType fCentMultEstimator = CentMultV0M;
+OccupancyEstimationType fOccupancyEstimation = OccupancyNOOCC; /* the occupancy estimator to use */
+
+float fMinOccupancy = 0.0f; /* the minimum allowed occupancy */
+float fMaxOccupancy = 1e6f; /* the maximum allowed occupancy */
+
+/* adaptations for the pp nightly checks */
+analysis::CheckRangeCfg traceDCAOutliers;
+bool traceOutOfSpeciesParticles = false;
+int recoIdMethod = 0;
+float particleMaxDCAxy = 999.9f;
+float particleMaxDCAZ = 999.9f;
+bool traceCollId0 = false;
+
 inline TList* getCCDBInput(auto& ccdb, const char* ccdbpath, const char* ccdbdate, bool periodInPath = false, const std::string& suffix = "")
 {
   std::tm cfgtm = {};
@@ -826,13 +852,20 @@ inline TList* getCCDBInput(auto& ccdb, const char* ccdbpath, const char* ccdbdat
     return tmpStr;
   };
 
-  std::string actualPeriod = cleanPeriod(metadataInfo.get("LPMProductionTag"));
+  std::string actualPeriod;
+  if (fDataType != kOnTheFly) {
+    actualPeriod = cleanPeriod(metadataInfo.get("LPMProductionTag"));
+  } else {
+    actualPeriod = suffix;
+  }
   std::string actualPath = ccdbpath;
   if (periodInPath) {
     actualPath = actualPath + "/" + actualPeriod;
   }
-  if (suffix.length() > 0) {
-    actualPeriod = actualPeriod + "_" + suffix;
+  if (fDataType != kOnTheFly) {
+    if (suffix.length() > 0) {
+      actualPeriod = actualPeriod + "_" + suffix;
+    }
   }
 
   TList* lst = nullptr;
@@ -845,23 +878,6 @@ inline TList* getCCDBInput(auto& ccdb, const char* ccdbpath, const char* ccdbdat
   }
   return lst;
 }
-
-SystemType fSystem = SystemNoSystem;
-MultRunType fLhcRun = MultRunRUN1RUN2;
-DataType fDataType = kData;
-CentMultEstimatorType fCentMultEstimator = CentMultV0M;
-OccupancyEstimationType fOccupancyEstimation = OccupancyNOOCC; /* the occupancy estimator to use */
-
-float fMinOccupancy = 0.0f; /* the minimum allowed occupancy */
-float fMaxOccupancy = 1e6f; /* the maximum allowed occupancy */
-
-/* adaptations for the pp nightly checks */
-analysis::CheckRangeCfg traceDCAOutliers;
-bool traceOutOfSpeciesParticles = false;
-int recoIdMethod = 0;
-float particleMaxDCAxy = 999.9f;
-float particleMaxDCAZ = 999.9f;
-bool traceCollId0 = false;
 
 inline std::bitset<32> getTriggerSelection(std::string_view const& triggstr)
 {
@@ -896,27 +912,31 @@ inline std::bitset<32> getTriggerSelection(std::string_view const& triggstr)
 
 inline SystemType getSystemType(auto const& periodsForSysType)
 {
-  auto period = metadataInfo.get("LPMProductionTag");
-  auto anchoredPeriod = metadataInfo.get("AnchorProduction");
-  bool checkAnchor = anchoredPeriod.length() > 0;
+  if (fDataType != kOnTheFly) {
+    auto period = metadataInfo.get("LPMProductionTag");
+    auto anchoredPeriod = metadataInfo.get("AnchorProduction");
+    bool checkAnchor = anchoredPeriod.length() > 0;
 
-  for (SystemType sT = SystemNoSystem; sT < SystemNoOfSystems; ++sT) {
-    const std::string& periods = periodsForSysType[static_cast<int>(sT)][0];
-    auto contains = [periods](auto const& period) {
-      if (periods.find(period) != std::string::npos) {
-        return true;
-      }
-      return false;
-    };
-    if (periods.length() > 0) {
-      if (contains(period) || (checkAnchor && contains(anchoredPeriod))) {
-        LOGF(info, "DptDptCorrelations::getSystemType(). Assigned system type %s for period %s", systemExternalNamesMap.at(static_cast<int>(sT)).data(), period.c_str());
-        return sT;
+    for (SystemType sT = SystemNoSystem; sT < SystemNoOfSystems; ++sT) {
+      const std::string& periods = periodsForSysType[static_cast<int>(sT)][0];
+      auto contains = [periods](auto const& period) {
+        if (periods.find(period) != std::string::npos) {
+          return true;
+        }
+        return false;
+      };
+      if (periods.length() > 0) {
+        if (contains(period) || (checkAnchor && contains(anchoredPeriod))) {
+          LOGF(info, "DptDptCorrelations::getSystemType(). Assigned system type %s for period %s", systemExternalNamesMap.at(static_cast<int>(sT)).data(), period.c_str());
+          return sT;
+        }
       }
     }
+    LOGF(fatal, "DptDptCorrelations::getSystemType(). No system type for period: %s", period.c_str());
+    return SystemPbPb;
+  } else {
+    return SystemNeNeRun3;
   }
-  LOGF(fatal, "DptDptCorrelations::getSystemType(). No system type for period: %s", period.c_str());
-  return SystemPbPb;
 }
 
 /// \brief Type of data according to the configuration string
@@ -933,7 +953,7 @@ inline DataType getDataType(std::string const& datastr)
     return kMC;
   } else if (datastr == "FastMC") {
     return kFastMC;
-  } else if (datastr == "OnTheFlyMC") {
+  } else if (datastr.starts_with("OnTheFlyMC")) {
     return kOnTheFly;
   } else {
     LOGF(fatal, "DptDptCorrelations::getDataType(). Wrong type of dat: %d", datastr.c_str());
@@ -1583,8 +1603,6 @@ struct TpcExcludeTrack {
 template <typename TrackObject>
 inline bool matchTrackType(TrackObject const& track)
 {
-  using namespace o2::aod::track;
-
   if (tracktype == TrackTypePWGMM) {
     // under tests MM track selection
     // see: https://indico.cern.ch/event/1383788/contributions/5816953/attachments/2805905/4896281/TrackSel_GlobalTracks_vs_MMTrackSel.pdf

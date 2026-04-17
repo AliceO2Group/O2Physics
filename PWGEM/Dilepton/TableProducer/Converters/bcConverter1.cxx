@@ -11,26 +11,33 @@
 //
 // ========================
 //
-// This code loops over photons and makes pairs for neutral mesons analyses.
+// This code runs loop over ULS ee pars for virtual photon QC.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include "PWGEM/PhotonMeson/Core/DiphotonHadronMPC.h"
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
+#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 
-#include "Common/Core/RecoDecay.h"
-
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::aod;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+using namespace o2::soa;
+
+struct bcConverter1 {
+  Produces<aod::EMBCs_001> bc_001;
+
+  void process(aod::EMBCs_000 const& bcs)
+  {
+    for (const auto& bc : bcs) {
+      bc_001(o2::aod::emevsel::reduceSelectionBit(bc), bc.rct_raw());
+    } // end of bc loop
+  }
+};
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<DiphotonHadronMPC<PairType::kPCMDalitzEE, MyV0Photons, aod::V0Legs, MyPrimaryElectrons>>(cfgc, TaskName{"diphoton-hadron-mpc-pcmdalitzee"}),
-  };
+  return WorkflowSpec{adaptAnalysisTask<bcConverter1>(cfgc, TaskName{"bc-converter1"})};
 }

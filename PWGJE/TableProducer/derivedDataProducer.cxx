@@ -13,9 +13,6 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include "PWGHF/DataModel/DerivedTables.h"
-#include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGJE/Core/JetDQUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetV0Utilities.h"
@@ -25,10 +22,15 @@
 #include "PWGJE/DataModel/JetReducedDataDQ.h"
 #include "PWGJE/DataModel/JetReducedDataHF.h"
 #include "PWGJE/DataModel/JetReducedDataV0.h"
+//
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include "PWGHF/DataModel/DerivedTables.h"
+#include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGUD/Core/SGCutParHolder.h"
 #include "PWGUD/Core/SGSelector.h"
+#include "PWGUD/Core/UDHelpers.h"
 
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
@@ -40,25 +42,26 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "ReconstructionDataFormats/Vertex.h"
+#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/Vertex.h>
 
 #include <TRandom3.h>
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <iterator>
 #include <map>
@@ -193,6 +196,7 @@ struct JetDerivedDataProducerTask {
 
   std::vector<bool> trackMCSelection;
 
+  std::vector<uint16_t> bcSelMapping;
   std::vector<uint32_t> bcRctMapping;
 
   ctpRateFetcher rateFetcher;
@@ -267,11 +271,14 @@ struct JetDerivedDataProducerTask {
 
   void processBunchCrossings(soa::Join<aod::BCs, aod::Timestamps, aod::BcSels> const& bcs)
   {
+    bcSelMapping.clear();
+    bcSelMapping.resize(bcs.size(), ~uint16_t{0});
     bcRctMapping.clear();
     bcRctMapping.resize(bcs.size(), ~uint32_t{0});
     for (const auto& bc : bcs) {
       products.jBCsTable(bc.runNumber(), bc.globalBC(), bc.triggerMask(), bc.timestamp(), bc.alias_raw(), bc.selection_raw(), bc.rct_raw());
       products.jBCParentIndexTable(bc.globalIndex());
+      bcSelMapping[bc.globalIndex()] = jetderiveddatautilities::setMCEventSelectionBit(bc);
       bcRctMapping[bc.globalIndex()] = bc.rct_raw();
     }
   }
@@ -279,6 +286,8 @@ struct JetDerivedDataProducerTask {
 
   void processBunchCrossingsWithoutSels(soa::Join<aod::BCs, aod::Timestamps> const& bcs)
   {
+    bcSelMapping.clear();
+    bcSelMapping.resize(bcs.size(), ~uint16_t{0});
     bcRctMapping.clear();
     bcRctMapping.resize(bcs.size(), ~uint32_t{0});
     for (const auto& bc : bcs) {
@@ -377,64 +386,73 @@ struct JetDerivedDataProducerTask {
 
   void processMcCollisions(soa::Join<aod::McCollisions, aod::HepMCXSections, aod::MultsExtraMC, aod::McCentFT0Ms>::iterator const& mcCollision)
   {
+    uint32_t selDecision = ~uint16_t{0};
     uint32_t rctDecision = ~uint32_t{0};
     int32_t bcId = -1;
     if (!config.isMCGenOnly) {
       bcId = mcCollision.bcId();
+      selDecision = bcSelMapping[bcId];
       rctDecision = bcRctMapping[bcId];
     } else {
       products.jBCsTable(-1, -1, -1, -1, ~uint32_t{0}, ~uint32_t{0}, ~uint32_t{0});
       bcId = products.jBCsTable.lastIndex();
     }
-    products.jMcCollisionsTable(bcId, mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.multMCFV0A(), mcCollision.multMCFT0A(), mcCollision.multMCFT0C(), mcCollision.centFT0M(), mcCollision.weight(), mcCollision.accepted(), mcCollision.attempted(), mcCollision.xsectGen(), mcCollision.xsectErr(), mcCollision.ptHard(), rctDecision, mcCollision.getGeneratorId(), mcCollision.getSubGeneratorId(), mcCollision.getSourceId(), mcCollision.impactParameter(), mcCollision.eventPlaneAngle());
+    products.jMcCollisionsTable(bcId, mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.multMCFV0A(), mcCollision.multMCFT0A(), mcCollision.multMCFT0C(), mcCollision.centFT0M(), mcCollision.weight(), mcCollision.accepted(), mcCollision.attempted(), mcCollision.xsectGen(), mcCollision.xsectErr(), mcCollision.ptHard(), selDecision, rctDecision, mcCollision.getGeneratorId(), mcCollision.getSubGeneratorId(), mcCollision.getSourceId(), mcCollision.impactParameter(), mcCollision.eventPlaneAngle());
     products.jMcCollisionsParentIndexTable(mcCollision.globalIndex());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcCollisions, "produces derived MC collision table", false);
 
   void processMcCollisionsWithoutCentralityAndMultiplicity(soa::Join<aod::McCollisions, aod::HepMCXSections>::iterator const& mcCollision)
   {
+
+    uint32_t selDecision = ~uint16_t{0};
     uint32_t rctDecision = ~uint32_t{0};
     int32_t bcId = -1;
     if (!config.isMCGenOnly) {
       bcId = mcCollision.bcId();
+      selDecision = bcSelMapping[bcId];
       rctDecision = bcRctMapping[bcId];
     } else {
       products.jBCsTable(-1, -1, -1, -1, ~uint32_t{0}, ~uint32_t{0}, ~uint32_t{0});
       bcId = products.jBCsTable.lastIndex();
     }
-    products.jMcCollisionsTable(bcId, mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), -1.0, -1.0, -1.0, -1.0, mcCollision.weight(), mcCollision.accepted(), mcCollision.attempted(), mcCollision.xsectGen(), mcCollision.xsectErr(), mcCollision.ptHard(), rctDecision, mcCollision.getGeneratorId(), mcCollision.getSubGeneratorId(), mcCollision.getSourceId(), mcCollision.impactParameter(), mcCollision.eventPlaneAngle());
+    products.jMcCollisionsTable(bcId, mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), -1.0, -1.0, -1.0, -1.0, mcCollision.weight(), mcCollision.accepted(), mcCollision.attempted(), mcCollision.xsectGen(), mcCollision.xsectErr(), mcCollision.ptHard(), selDecision, rctDecision, mcCollision.getGeneratorId(), mcCollision.getSubGeneratorId(), mcCollision.getSourceId(), mcCollision.impactParameter(), mcCollision.eventPlaneAngle());
     products.jMcCollisionsParentIndexTable(mcCollision.globalIndex());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcCollisionsWithoutCentralityAndMultiplicity, "produces derived MC collision table without centraility and multiplicity", false);
 
   void processMcCollisionsWithoutXsection(soa::Join<aod::McCollisions, aod::MultsExtraMC, aod::McCentFT0Ms>::iterator const& mcCollision)
   {
+    uint32_t selDecision = ~uint16_t{0};
     uint32_t rctDecision = ~uint32_t{0};
     int32_t bcId = -1;
     if (!config.isMCGenOnly) {
       bcId = mcCollision.bcId();
+      selDecision = bcSelMapping[bcId];
       rctDecision = bcRctMapping[bcId];
     } else {
       products.jBCsTable(-1, -1, -1, -1, ~uint32_t{0}, ~uint32_t{0}, ~uint32_t{0});
       bcId = products.jBCsTable.lastIndex();
     }
-    products.jMcCollisionsTable(bcId, mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.multMCFV0A(), mcCollision.multMCFT0A(), mcCollision.multMCFT0C(), mcCollision.centFT0M(), mcCollision.weight(), 1, 1, 1.0, 1.0, 999.0, rctDecision, mcCollision.getGeneratorId(), mcCollision.getSubGeneratorId(), mcCollision.getSourceId(), mcCollision.impactParameter(), mcCollision.eventPlaneAngle());
+    products.jMcCollisionsTable(bcId, mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.multMCFV0A(), mcCollision.multMCFT0A(), mcCollision.multMCFT0C(), mcCollision.centFT0M(), mcCollision.weight(), 1, 1, 1.0, 1.0, 999.0, selDecision, rctDecision, mcCollision.getGeneratorId(), mcCollision.getSubGeneratorId(), mcCollision.getSourceId(), mcCollision.impactParameter(), mcCollision.eventPlaneAngle());
     products.jMcCollisionsParentIndexTable(mcCollision.globalIndex());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcCollisionsWithoutXsection, "produces derived MC collision table without cross section information", false);
 
   void processMcCollisionsWithoutCentralityAndMultiplicityAndXsection(aod::McCollision const& mcCollision)
   {
+    uint32_t selDecision = ~uint16_t{0};
     uint32_t rctDecision = ~uint32_t{0};
     int32_t bcId = -1;
     if (!config.isMCGenOnly) {
       bcId = mcCollision.bcId();
+      selDecision = bcSelMapping[bcId];
       rctDecision = bcRctMapping[bcId];
     } else {
       products.jBCsTable(-1, -1, -1, -1, ~uint32_t{0}, ~uint32_t{0}, ~uint32_t{0});
       bcId = products.jBCsTable.lastIndex();
     }
-    products.jMcCollisionsTable(bcId, mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), -1.0, -1.0, -1.0, -1.0, mcCollision.weight(), 1, 1, 1.0, 1.0, 999.0, rctDecision, mcCollision.getGeneratorId(), mcCollision.getSubGeneratorId(), mcCollision.getSourceId(), mcCollision.impactParameter(), mcCollision.eventPlaneAngle());
+    products.jMcCollisionsTable(bcId, mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), -1.0, -1.0, -1.0, -1.0, mcCollision.weight(), 1, 1, 1.0, 1.0, 999.0, selDecision, rctDecision, mcCollision.getGeneratorId(), mcCollision.getSubGeneratorId(), mcCollision.getSourceId(), mcCollision.impactParameter(), mcCollision.eventPlaneAngle());
     products.jMcCollisionsParentIndexTable(mcCollision.globalIndex());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcCollisionsWithoutCentralityAndMultiplicityAndXsection, "produces derived MC collision table without centrality, multiplicity and cross section information", false);

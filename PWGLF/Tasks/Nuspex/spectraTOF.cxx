@@ -17,36 +17,52 @@
 ///        Depending on the configuration it can also run on tiny tables.
 ///
 
-// O2 includes
-
 #include "PWGLF/DataModel/spectraTOF.h"
 
-#include "PWGLF/DataModel/LFParticleIdentification.h"
+#include "PWGLF/DataModel/LFParticleIdentification.h" // IWYU pragma: keep
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/inelGt.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/StaticFor.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include "TPDGCode.h"
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <TMCProcess.h>
+#include <TPDGCode.h>
+#include <TString.h>
 
+#include <array>
+#include <cstddef>
+#include <memory>
 #include <string>
 #include <vector>
+
 using namespace o2;
 using namespace o2::track;
 using namespace o2::framework;
@@ -96,7 +112,7 @@ static constexpr float DcaPhiPtMax = 1.1f;
 static constexpr int kD0 = 421;
 
 // Spectra task
-struct SpectraTOF {
+struct tofSpectra {
   struct : ConfigurableGroup {
     Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
     Configurable<int> cfgINELCut{"cfgINELCut", 0, "INEL event selection: 0 no sel, 1 INEL>0, 2 INEL>1"};
@@ -877,7 +893,7 @@ struct SpectraTOF {
     histos.fill(HIST("Mult/PerBC/sel8/FT0AvsFT0C"), ft0.sumAmpA(), ft0.sumAmpC());
 
   } // end of the process function
-  PROCESS_SWITCH(SpectraTOF, processBC, "Processor of BCs for the FT0 calibration", true);
+  PROCESS_SWITCH(tofSpectra, processBC, "Processor of BCs for the FT0 calibration", true);
 
   template <bool fillFullInfo, PID::ID id, typename T, typename C>
   void fillParticleHistos(const T& track, const C& collision)
@@ -1619,7 +1635,7 @@ struct SpectraTOF {
       }
     }
   }
-  PROCESS_SWITCH(SpectraTOF, processMCclosure, "MC closure test", false);
+  PROCESS_SWITCH(tofSpectra, processMCclosure, "MC closure test", false);
 
   void processOccupancy(CollisionCandidates::iterator const& collision,
                         soa::Join<TrackCandidates,
@@ -1722,7 +1738,7 @@ struct SpectraTOF {
     histos.fill(HIST("test_occupancy/tpcCount"), tpcCount);
     histos.fill(HIST("test_occupancy/tofCount"), tofCount);
   } // process function
-  PROCESS_SWITCH(SpectraTOF, processOccupancy, "check for occupancy plots", true);
+  PROCESS_SWITCH(tofSpectra, processOccupancy, "check for occupancy plots", true);
 
   void processStandard(CollisionCandidates::iterator const& collision,
                        TrackCandidates const& tracks)
@@ -1737,7 +1753,7 @@ struct SpectraTOF {
       }
     }
   } // end of the process function
-  PROCESS_SWITCH(SpectraTOF, processStandard, "Standard processor from AO2D", true);
+  PROCESS_SWITCH(tofSpectra, processStandard, "Standard processor from AO2D", true);
 
   Preslice<aod::SpTracks> spPerCol = aod::spectra::collisionId;
   SliceCache cacheTrk;
@@ -1759,7 +1775,7 @@ struct SpectraTOF {
       }
     }
   } // end of the process function
-  PROCESS_SWITCH(SpectraTOF, processDerived, "Derived data processor", false);
+  PROCESS_SWITCH(tofSpectra, processDerived, "Derived data processor", false);
 
 #define MAKE_PROCESS_FUNCTION(processorName, inputPid, particleId, isFull, tofTable, tpcTable) \
   void process##processorName##inputPid(CollisionCandidates::iterator const& collision,        \
@@ -1777,7 +1793,7 @@ struct SpectraTOF {
       fillParticleHistos<isFull, PID::particleId>(track, collision);                           \
     }                                                                                          \
   }                                                                                            \
-  PROCESS_SWITCH(SpectraTOF, process##processorName##inputPid, Form("Process for the %s hypothesis from %s tables", #particleId, #processorName), false);
+  PROCESS_SWITCH(tofSpectra, process##processorName##inputPid, Form("Process for the %s hypothesis from %s tables", #particleId, #processorName), false);
 
 // Full tables
 #define MAKE_PROCESS_FUNCTION_FULL(inputPid, particleId) MAKE_PROCESS_FUNCTION(Full, inputPid, particleId, true, TOFFull, TPCFull)
@@ -2700,7 +2716,7 @@ struct SpectraTOF {
       }
     }
   }
-  PROCESS_SWITCH(SpectraTOF, processMC, "Process MC", false);
+  PROCESS_SWITCH(tofSpectra, processMC, "Process MC", false);
 
   void processMCgen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
@@ -2732,7 +2748,7 @@ struct SpectraTOF {
       }
     }
   }
-  PROCESS_SWITCH(SpectraTOF, processMCgen, "process generated MC", false);
+  PROCESS_SWITCH(tofSpectra, processMCgen, "process generated MC", false);
   void processMCgenRecoEvs(soa::Join<TrackCandidates,
                                      aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                                      aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr> const& tracks,
@@ -2831,7 +2847,7 @@ struct SpectraTOF {
       }
     }
   }
-  PROCESS_SWITCH(SpectraTOF, processMCgenRecoEvs, "process generated MC (reconstructed events)", false);
+  PROCESS_SWITCH(tofSpectra, processMCgenRecoEvs, "process generated MC (reconstructed events)", false);
   void processTrackMCLabels(CollisionCandidates::iterator const& collisions,
                             soa::Join<TrackCandidates,
                                       aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -2871,8 +2887,8 @@ struct SpectraTOF {
       });
     }
   }
-  PROCESS_SWITCH(SpectraTOF, processTrackMCLabels, "Fill track histograms using MC matched PDG labels", false);
+  PROCESS_SWITCH(tofSpectra, processTrackMCLabels, "Fill track histograms using MC matched PDG labels", false);
 
 }; // end of spectra task
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<SpectraTOF>(cfgc)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<tofSpectra>(cfgc)}; }

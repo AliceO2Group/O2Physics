@@ -19,7 +19,9 @@
 #ifndef PWGMM_MULT_DATAMODEL_BESTCOLLISIONTABLE_H_
 #define PWGMM_MULT_DATAMODEL_BESTCOLLISIONTABLE_H_
 
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 
 namespace o2::aod
 {

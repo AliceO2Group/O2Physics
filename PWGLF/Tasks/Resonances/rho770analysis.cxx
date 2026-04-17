@@ -12,27 +12,29 @@
 /// \file rho770analysis.cxx
 /// \brief rho(770)0 analysis in pp 13 & 13.6 TeV
 /// \author Hyunji Lim (hyunji.lim@cern.ch)
-/// \since 08/02/2026
+/// \since 10/03/2026
 
 #include "PWGLF/DataModel/LFResonanceTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
-#include "PWGLF/Utils/inelGt.h"
 
-#include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/Multiplicity.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Math/Vector4D.h"
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TPDGCode.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -64,9 +66,9 @@ struct rho770analysis {
 
   // DCA cuts
   Configurable<bool> cDCAxyToPVAsPt{"cDCAxyToPVAsPt", true, "DCAxy to PV selection as pt"};
-  Configurable<bool> cDCAzToPVAsPt{"cDCAzToPVAsPt", false, "DCAz to PV selection as pt"};
-  Configurable<float> cfgMaxDCAxyToPVcut{"cfgMaxDCAxyToPVcut", 0.15, "Maximum transverse DCA"};
-  Configurable<float> cfgMaxDCAzToPVcut{"cfgMaxDCAzToPVcut", 2.0, "Maximum longitudinal DCA"};
+  Configurable<bool> cDCAzToPVAsPt{"cDCAzToPVAsPt", true, "DCAz to PV selection as pt"};
+  Configurable<float> cfgMaxDCAxyToPVcut{"cfgMaxDCAxyToPVcut", 0.10, "Maximum transverse DCA"};
+  Configurable<float> cfgMaxDCAzToPVcut{"cfgMaxDCAzToPVcut", 0.10, "Maximum longitudinal DCA"};
   Configurable<float> cDCAxytoPVByPtPiFirstP0{"cDCAxytoPVByPtPiFirstP0", 0.0105, "Coeff. Track DCAxy cut to PV by pt for Pion First (p0)"};
   Configurable<float> cDCAxyToPVByPtPiFirstExp{"cDCAxyToPVByPtPiFirstExp", 0.035, "Coeff. Track DCAxy cut to PV by pt for Pion First (exp)"};
   Configurable<float> cDCAztoPVByPtPiFirstP0{"cDCAztoPVByPtPiFirstP0", 0.0105, "Coeff. Track DCAz cut to PV by pt for Pion First (p0)"};
@@ -84,7 +86,7 @@ struct rho770analysis {
                                                                                                              // kEtaRange)
   Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};           // PV Contriuibutor
   Configurable<bool> cfgGlobalTrack{"cfgGlobalTrack", false, "Global track selection"};                      // kGoldenChi2 | kDCAxy | kDCAz
-  Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", false, "Require TPC Refit"}; // refit is included in global track selection
+  Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", false, "Require TPC Refit"};                           // refit is included in global track selection
   Configurable<bool> cfgUseITSRefit{"cfgUseITSRefit", false, "Require ITS Refit"};
   Configurable<bool> cfgHasTOF{"cfgHasTOF", false, "Require TOF"};
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 1, "Number of TPC cluster"};
@@ -102,7 +104,7 @@ struct rho770analysis {
   ConfigurableAxis massK0sAxis{"massK0sAxis", {200, 0.46, 0.54}, "K0s Invariant mass axis"};
   ConfigurableAxis massKstarAxis{"massKstarAxis", {200, 0.6, 1.3}, "Kstar Invariant mass axis"};
   ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10.0, 13.0, 20.0}, "Transverse momentum Binning"};
-  ConfigurableAxis centAxis{"centAxis", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 95.0, 100.0, 105.0, 110.0}, "Centrality  Binning"};
+  ConfigurableAxis centAxis{"centAxis", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0}, "Centrality  Binning"};
 
   void init(o2::framework::InitContext&)
   {
@@ -197,7 +199,7 @@ struct rho770analysis {
     const auto mode = static_cast<TrackPIDMode>(selectTypeInt.value);
 
     if (mode == TrackPIDMode::TPCOrTOF) { // TPC or TOF
-      if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPion || std::fabs(track.tofNSigmaPi()) >= cMaxTOFnSigmaPion)
+      if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPion && std::fabs(track.tofNSigmaPi()) >= cMaxTOFnSigmaPion)
         return false;
     }
     if (mode == TrackPIDMode::OnlyTPC) { // only TPC
@@ -226,7 +228,7 @@ struct rho770analysis {
     const auto mode = static_cast<TrackPIDMode>(selectTypeInt.value);
 
     if (mode == TrackPIDMode::TPCOrTOF) {
-      if (std::fabs(track.tpcNSigmaKa()) >= cMaxTPCnSigmaPion || std::fabs(track.tofNSigmaKa()) >= cMaxTOFnSigmaPion)
+      if (std::fabs(track.tpcNSigmaKa()) >= cMaxTPCnSigmaPion && std::fabs(track.tofNSigmaKa()) >= cMaxTOFnSigmaPion)
         return false;
     }
     if (mode == TrackPIDMode::OnlyTPC) {

@@ -15,10 +15,12 @@
 /// dependencies: skimmer-gamma-calo
 
 #include "PWGEM/PhotonMeson/Core/EMNonLin.h"
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/emcalHistoDefinitions.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -28,7 +30,11 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TMatrixD.h> // IWYU pragma: keep (do not replace with TMatrixDfwd.h)
+#include <TMatrixDfwd.h>
+
 #include <cstdint>
+#include <string>
 #include <vector>
 
 using namespace o2;
@@ -53,19 +59,27 @@ struct NonLinProducer {
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3)"};
   Configurable<int> emcIteration{"emcIteration", 0, "iteration number of the non lin correction for EMCal. 0 means first iteration 1 means second and so on!"};
   Configurable<int> pcmIteration{"pcmIteration", 0, "iteration number of the non lin correction for PCM. 0 means first iteration 1 means second and so on!"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathEmcal{"ccdbPathEmcal", "Users/m/mhemmer/EM/NonLin/EMC", "CCDB Path to Non Lin TMatrixD for EMCal"};
+  Configurable<std::string> ccdbPathPcm{"ccdbPathPcm", "Users/m/mhemmer/EM/NonLin/PCM", "CCDB Path to Non Lin TMatrixD for PCM"};
 
   HistogramRegistry historeg{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
   using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::MinClusters>;
   using PcmPhotons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 
-  using Colls = soa::Join<aod::EMEvents, aod::EMEventsCent>;
+  using Colls = soa::Join<aod::PMEvents, aod::EMEventsCent_000>;
 
   EMNonLin emNonLinEMC;
   EMNonLin emNonLinPCM;
 
   EMNonLin::Context emNonLinContextEMC;
   EMNonLin::Context emNonLinContextPCM;
+
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
+
+  TMatrixD* emcalMatrix = nullptr;
+  TMatrixD* pcmMatrix = nullptr;
 
   void init(o2::framework::InitContext&)
   {
@@ -80,6 +94,26 @@ struct NonLinProducer {
 
     emNonLinContextEMC.setIter(emcIteration);
     emNonLinContextPCM.setIter(pcmIteration);
+
+    ccdb->setURL(ccdbUrl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false);
+  }
+
+  template <o2::soa::is_iterator TCollision>
+  void initCCDB(TCollision const& collision)
+  {
+    if (doprocessEMC) {
+      emcalMatrix = ccdb->getForTimeStamp<TMatrixD>(ccdbPathEmcal, collision.timestamp());
+      emNonLinEMC.getFromCCDBObject(emcalMatrix, o2::pwgem::nonlin::EMNonLin::PhotonType::kEMC);
+      emNonLinContextEMC.setParams(emNonLinEMC.resolveParams(o2::pwgem::nonlin::EMNonLin::PhotonType::kEMC));
+    }
+    if (doprocessPCM) {
+      pcmMatrix = ccdb->getForTimeStamp<TMatrixD>(ccdbPathPcm, collision.timestamp());
+      emNonLinPCM.getFromCCDBObject(pcmMatrix, o2::pwgem::nonlin::EMNonLin::PhotonType::kPCM);
+      emNonLinContextPCM.setParams(emNonLinPCM.resolveParams(o2::pwgem::nonlin::EMNonLin::PhotonType::kPCM));
+    }
   }
 
   /// Get the centrality
@@ -109,32 +143,30 @@ struct NonLinProducer {
   template <o2::soa::is_table TClusters, o2::soa::is_iterator TCollisio>
   void runEMC(TClusters const& clusters, TCollisio& collision)
   {
-    float cent = getCentrality(collision);
 
     int32_t collIndex = collision.globalIndex();
+    float cent = getCentrality(collision);
+    emNonLinContextEMC.setCent(cent);
+
     for (const auto& cluster : clusters) {
-      float nonLinE = 0.f;
-      float nonLinPt = 0.f;
-      float nonLinFactor = 1.f;
 
       // check that we are at the correct collision
-      if (cluster.emeventId() != collIndex) {
-        collIndex = cluster.emeventId();
+      if (cluster.pmeventId() != collIndex) {
+        collIndex = cluster.pmeventId();
         collision.setCursor(collIndex);
         cent = getCentrality(collision);
+        emNonLinContextEMC.setCent(cent);
       }
-
-      emNonLinContextEMC.setParams(emNonLinEMC.resolveParams(o2::pwgem::nonlin::EMNonLin::PhotonType::kEMC, cent));
 
       // fill before non lin histograms
       historeg.fill(HIST("QA/EMC/EIn"), cluster.e());
       historeg.fill(HIST("QA/EMC/PtIn"), cluster.pt());
 
       // get NonLin factor from class dependent on the centrality
-      nonLinFactor = emNonLinEMC.getCorrectionFactor(cluster.e(), emNonLinContextEMC);
+      float nonLinFactor = emNonLinEMC.getCorrectionFactor(cluster.e(), emNonLinContextEMC);
 
-      nonLinE = nonLinFactor * cluster.e();
-      nonLinPt = nonLinFactor * cluster.pt();
+      float nonLinE = nonLinFactor * cluster.e();
+      float nonLinPt = nonLinFactor * cluster.pt();
 
       // fill after non lin histograms
       historeg.fill(HIST("QA/EMC/EOut"), nonLinE);
@@ -147,29 +179,27 @@ struct NonLinProducer {
   template <o2::soa::is_table TV0, o2::soa::is_iterator TCollisio>
   void runPCM(TV0 const& v0s, TCollisio& collision)
   {
-    float cent = getCentrality(collision);
 
     int32_t collIndex = collision.globalIndex();
+    float cent = getCentrality(collision);
+    emNonLinContextPCM.setCent(cent);
     for (const auto& v0 : v0s) {
-      float nonLinPt = 0.f;
-      float nonLinFactor = 1.f;
 
       // check that we are at the correct collision
-      if (v0.emeventId() != collIndex) {
-        collIndex = v0.emeventId();
+      if (v0.pmeventId() != collIndex) {
+        collIndex = v0.pmeventId();
         collision.setCursor(collIndex);
         cent = getCentrality(collision);
+        emNonLinContextPCM.setCent(cent);
       }
-
-      emNonLinContextPCM.setParams(emNonLinPCM.resolveParams(o2::pwgem::nonlin::EMNonLin::PhotonType::kPCM, cent));
 
       // fill before non lin histograms
       historeg.fill(HIST("QA/PCM/PtIn"), v0.pt());
 
       // get NonLin factor from class dependent on the centrality
-      nonLinFactor = emNonLinEMC.getCorrectionFactor(v0.pt(), emNonLinContextPCM);
+      float nonLinFactor = emNonLinPCM.getCorrectionFactor(v0.pt(), emNonLinContextPCM);
 
-      nonLinPt = nonLinFactor * v0.pt();
+      float nonLinPt = nonLinFactor * v0.pt();
 
       // fill after non lin histograms
       historeg.fill(HIST("QA/PCM/PtOut"), nonLinPt);
@@ -186,6 +216,7 @@ struct NonLinProducer {
     }
 
     auto collision = collisions.begin();
+    initCCDB(collision);
     runEMC(emcclusters, collision);
   }
   PROCESS_SWITCH(NonLinProducer, processEMC, "Create Non Lin table for EMC.", false);
@@ -196,6 +227,7 @@ struct NonLinProducer {
       return;
     }
     auto collision = collisions.begin();
+    initCCDB(collision);
     runPCM(pcmPhotons, collision);
   }
   PROCESS_SWITCH(NonLinProducer, processPCM, "Create Non Lin table for PCM.", false);

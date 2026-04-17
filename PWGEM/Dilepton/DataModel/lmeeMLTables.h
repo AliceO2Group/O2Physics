@@ -9,16 +9,14 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
 
-#include <vector>
+#include <cstdint>
 
 #ifndef PWGEM_DILEPTON_DATAMODEL_LMEEMLTABLES_H_
 #define PWGEM_DILEPTON_DATAMODEL_LMEEMLTABLES_H_
@@ -55,6 +53,10 @@ DECLARE_SOA_COLUMN(TPCNClsPID, tpcNClsPID, uint8_t);                 //!
 DECLARE_SOA_COLUMN(IsForValidation, isForValidation, bool);          //!
 DECLARE_SOA_COLUMN(Sign, sign, short);                               //!
 DECLARE_SOA_COLUMN(P, p, float);                                     //!
+DECLARE_SOA_COLUMN(PtGen, ptGen, float);                             //!
+DECLARE_SOA_COLUMN(EtaGen, etaGen, float);                           //!
+DECLARE_SOA_COLUMN(PhiGen, phiGen, float);                           //!
+
 // DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITS, meanClusterSizeITS, [](uint32_t itsClusterSizes) -> float {
   int total_cluster_size = 0, nl = 0;
@@ -140,7 +142,8 @@ DECLARE_SOA_TABLE_VERSIONED(EMFwdTracksForML_000, "AOD", "EMFWDTRKML", 0, //!
                             fwdtrack::NClusters, fwdtrack::PDca, fwdtrack::RAtAbsorberEnd,
                             fwdtrack::Chi2, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT,
                             // fwdtrack::MCHBitMap, fwdtrack::MIDBitMap, fwdtrack::MIDBoards,
-                            fwdtrack::MFTClusterSizesAndTrackFlags, emmlfwdtrack::Chi2MFT, emmlfwdtrack::NClustersMFT, mcparticle::PdgCode, emmlfwdtrack::IsPrimary, emmlfwdtrack::IsCorrectMatchMFTMCH);
+                            fwdtrack::MFTClusterSizesAndTrackFlags, emmlfwdtrack::Chi2MFT, emmlfwdtrack::NClustersMFT, mcparticle::PdgCode, emmlfwdtrack::IsPrimary, emmlfwdtrack::IsCorrectMatchMFTMCH,
+                            emmltrack::PtGen, emmltrack::EtaGen, emmltrack::PhiGen);
 
 using EMFwdTracksForML = EMFwdTracksForML_000;
 // iterators

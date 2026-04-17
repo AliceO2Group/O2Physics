@@ -14,10 +14,8 @@
 /// \author Subhadeep Mandal <subhadeep.mandal@cern.ch>
 /// \since 22/11/2025
 
-#include "PWGLF/Utils/inelGt.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -25,32 +23,34 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Math/GenVector/Boost.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "TRandom3.h"
-#include <TDirectory.h>
-#include <TFile.h>
-#include <TH1F.h>
-#include <TH2F.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 #include <THn.h>
-#include <TMath.h>
-#include <TObjArray.h>
 #include <TPDGCode.h>
+#include <TRandom.h>
+#include <TString.h>
 
-#include <memory>
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -58,7 +58,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
-using std::array;
 using namespace o2::aod::rctsel;
 
 struct Kstar892LightIon {
@@ -175,8 +174,6 @@ struct Kstar892LightIon {
 
   Configurable<int> selectCentEstimator{"selectCentEstimator", 0, "Select centrality estimator: 0 - FT0M, 1 - FT0A, 2 - FT0C, 3 - FV0A"};
 
-  Configurable<int> reflectionType{"reflectionType", 0, "Reflection: 0=Rho, 1=Omega, 2=Phi, 3=Kstar (for processRecReflection)"};
-
   Configurable<float> nchAcceptance{"nchAcceptance", 0.5, "Eta window to measure Nch MC for Nch vs Cent distribution"};
 
   Configurable<int> nBinsNch{"nBinsNch", 400, "N bins Nch (|eta|<0.8)"};
@@ -206,13 +203,6 @@ struct Kstar892LightIon {
     kPion,
     kKaon,
     kProton
-  };
-
-  enum PartReflection {
-    kRho,
-    kOmega,
-    kPhi,
-    kKstar
   };
 
   int noOfDaughters = 2;
@@ -384,7 +374,10 @@ struct Kstar892LightIon {
     }
 
     if (doprocessRecReflection) {
-      hMC.add("Reflections/hReflection", "Refelction template of Rho", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("Reflections/hRhoToKpi", "Refelction template of Rho", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("Reflections/hOmegaToKpi", "Refelction template of Omega", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("Reflections/hPhiToKpi", "Refelction template of Phi", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("Reflections/hKstarSelf", "Refelction template of Kstar", kTH3F, {ptAxis, centralityAxis, invmassAxis});
     }
 
     if (doprocessMCCheck) {
@@ -1905,6 +1898,8 @@ struct Kstar892LightIon {
     if (!selectionEvent(collision, false))
       return;
 
+    centrality = -1.f;
+
     if (selectCentEstimator == kFT0M) {
       centrality = collision.centFT0M();
     } else if (selectCentEstimator == kFT0A) {
@@ -1914,10 +1909,11 @@ struct Kstar892LightIon {
     } else if (selectCentEstimator == kFV0A) {
       centrality = collision.centFV0A();
     } else {
-      centrality = collision.centFT0M(); // default
+      centrality = collision.centFT0M();
     }
 
-    for (const auto& [track1, track2] : combinations(CombinationsFullIndexPolicy(tracks, tracks))) {
+    for (const auto& [track1, track2] :
+         combinations(CombinationsFullIndexPolicy(tracks, tracks))) {
 
       if (!selectionTrack(track1) || !selectionTrack(track2))
         continue;
@@ -1943,8 +1939,8 @@ struct Kstar892LightIon {
       for (const auto& m1 : mc1.mothers_as<aod::McParticles>()) {
         for (const auto& m2 : mc2.mothers_as<aod::McParticles>()) {
           if (m1.globalIndex() == m2.globalIndex()) {
-            motherPDG = std::abs(m1.pdgCode());
             sameMother = true;
+            motherPDG = std::abs(m1.pdgCode());
             break;
           }
         }
@@ -1955,101 +1951,92 @@ struct Kstar892LightIon {
       if (!sameMother)
         continue;
 
-      if (reflectionType == kRho) { // Rho0 (770) -> pi pi -> K pi
-        if (motherPDG != PDG_t::kRho770_0)
-          continue;
+      int pdg1 = std::abs(mc1.pdgCode());
+      int pdg2 = std::abs(mc2.pdgCode());
 
-        if (std::abs(mc1.pdgCode()) != PDG_t::kPiPlus ||
-            std::abs(mc2.pdgCode()) != PDG_t::kPiPlus)
-          continue;
+      // =====================================================
+      // Rho0 (770) -> pi pi -> K pi
+      // =====================================================
+      if (motherPDG == PDG_t::kRho770_0 && pdg1 == PDG_t::kPiPlus && pdg2 == PDG_t::kPiPlus) {
 
-        // ---- permutation 1: track1 -> K
+        // track 1 -> K
         ROOT::Math::PxPyPzMVector p1K(track1.px(), track1.py(), track1.pz(), massKa);
         ROOT::Math::PxPyPzMVector p2Pi(track2.px(), track2.py(), track2.pz(), massPi);
-
         auto fake1 = p1K + p2Pi;
 
         if (fake1.Rapidity() > selectionConfig.motherRapidityMin && fake1.Rapidity() < selectionConfig.motherRapidityMax)
-          hMC.fill(HIST("Reflections/hReflection"), fake1.Pt(), centrality, fake1.M());
+          hMC.fill(HIST("Reflections/hRhoToKpi"), fake1.Pt(), centrality, fake1.M());
 
-        // ---- permutation 2: track2 -> K
+        // track 2 -> K
         ROOT::Math::PxPyPzMVector p1Pi(track1.px(), track1.py(), track1.pz(), massPi);
         ROOT::Math::PxPyPzMVector p2K(track2.px(), track2.py(), track2.pz(), massKa);
-
         auto fake2 = p1Pi + p2K;
 
         if (fake2.Rapidity() > selectionConfig.motherRapidityMin && fake2.Rapidity() < selectionConfig.motherRapidityMax)
-          hMC.fill(HIST("Reflections/hReflection"), fake2.Pt(), centrality, fake2.M());
+          hMC.fill(HIST("Reflections/hRhoToKpi"), fake2.Pt(), centrality, fake2.M());
+      }
 
-      } else if (reflectionType == kOmega) { // Omega (782) -> pi pi (pi0) -> K pi
-        if (motherPDG != o2::constants::physics::kOmega)
-          continue;
+      // =====================================================
+      // Omega (782) -> pi pi(pi0) -> K pi
+      // =====================================================
+      if (motherPDG == o2::constants::physics::kOmega && pdg1 == PDG_t::kPiPlus && pdg2 == PDG_t::kPiPlus) {
 
-        if (std::abs(mc1.pdgCode()) != PDG_t::kPiPlus ||
-            std::abs(mc2.pdgCode()) != PDG_t::kPiPlus)
-          continue;
-
-        // same two permutations as rho
+        // track 1 -> K
         ROOT::Math::PxPyPzMVector p1K(track1.px(), track1.py(), track1.pz(), massKa);
         ROOT::Math::PxPyPzMVector p2Pi(track2.px(), track2.py(), track2.pz(), massPi);
-
         auto fake1 = p1K + p2Pi;
 
         if (fake1.Rapidity() > selectionConfig.motherRapidityMin && fake1.Rapidity() < selectionConfig.motherRapidityMax)
-          hMC.fill(HIST("Reflections/hReflection"), fake1.Pt(), centrality, fake1.M());
+          hMC.fill(HIST("Reflections/hOmegaToKpi"), fake1.Pt(), centrality, fake1.M());
 
+        // track 2 -> K
         ROOT::Math::PxPyPzMVector p1Pi(track1.px(), track1.py(), track1.pz(), massPi);
         ROOT::Math::PxPyPzMVector p2K(track2.px(), track2.py(), track2.pz(), massKa);
-
         auto fake2 = p1Pi + p2K;
 
         if (fake2.Rapidity() > selectionConfig.motherRapidityMin && fake2.Rapidity() < selectionConfig.motherRapidityMax)
-          hMC.fill(HIST("Reflections/hReflection"), fake2.Pt(), centrality, fake2.M());
+          hMC.fill(HIST("Reflections/hOmegaToKpi"), fake2.Pt(), centrality, fake2.M());
+      }
 
-      } else if (reflectionType == kPhi) { // Phi (1020) -> K K -> K pi
-        if (motherPDG != o2::constants::physics::kPhi)
-          continue;
+      // =====================================================
+      // Phi (1020) -> KK -> K pi
+      // =====================================================
+      if (motherPDG == o2::constants::physics::kPhi && pdg1 == PDG_t::kKPlus && pdg2 == PDG_t::kKPlus) {
 
-        if (std::abs(mc1.pdgCode()) != PDG_t::kKPlus || std::abs(mc2.pdgCode()) != PDG_t::kKPlus)
-          continue;
-
-        // ---- permutation 1: track1 -> π
+        // track 1 -> pi
         ROOT::Math::PxPyPzMVector p1Pi(track1.px(), track1.py(), track1.pz(), massPi);
         ROOT::Math::PxPyPzMVector p2K(track2.px(), track2.py(), track2.pz(), massKa);
-
         auto fake1 = p1Pi + p2K;
 
         if (fake1.Rapidity() > selectionConfig.motherRapidityMin && fake1.Rapidity() < selectionConfig.motherRapidityMax)
-          hMC.fill(HIST("Reflections/hReflection"), fake1.Pt(), centrality, fake1.M());
+          hMC.fill(HIST("Reflections/hPhiToKpi"), fake1.Pt(), centrality, fake1.M());
 
-        // ---- permutation 2: track2 -> π
+        // track 2 -> pi
         ROOT::Math::PxPyPzMVector p1K(track1.px(), track1.py(), track1.pz(), massKa);
         ROOT::Math::PxPyPzMVector p2Pi(track2.px(), track2.py(), track2.pz(), massPi);
-
         auto fake2 = p1K + p2Pi;
 
         if (fake2.Rapidity() > selectionConfig.motherRapidityMin && fake2.Rapidity() < selectionConfig.motherRapidityMax)
-          hMC.fill(HIST("Reflections/hReflection"), fake2.Pt(), centrality, fake2.M());
-      } else if (reflectionType == kKstar) { //  K*0 (892) Self-Reflection (swap)
+          hMC.fill(HIST("Reflections/hPhiToKpi"), fake2.Pt(), centrality, fake2.M());
+      }
 
-        if (motherPDG != o2::constants::physics::kK0Star892)
-          continue;
+      // =====================================================
+      // K*0 Self-reflection
+      // =====================================================
+      if (motherPDG == o2::constants::physics::kK0Star892 && ((pdg1 == PDG_t::kPiPlus && pdg2 == PDG_t::kKPlus) || (pdg1 == PDG_t::kKPlus && pdg2 == PDG_t::kPiPlus))) {
 
-        if (!((std::abs(mc1.pdgCode()) == PDG_t::kPiPlus && std::abs(mc2.pdgCode()) == PDG_t::kKPlus) || (std::abs(mc1.pdgCode()) == PDG_t::kKPlus && std::abs(mc2.pdgCode()) == PDG_t::kPiPlus)))
-          continue;
+        ROOT::Math::PxPyPzMVector p1Swap(track1.px(), track1.py(), track1.pz(), pdg1 == PDG_t::kKPlus ? massPi : massKa);
 
-        ROOT::Math::PxPyPzMVector p1Swap(track1.px(), track1.py(), track1.pz(), std::abs(mc1.pdgCode()) == PDG_t::kKPlus ? massPi : massKa);
-
-        ROOT::Math::PxPyPzMVector p2Swap(track2.px(), track2.py(), track2.pz(), std::abs(mc2.pdgCode()) == PDG_t::kKPlus ? massPi : massKa);
+        ROOT::Math::PxPyPzMVector p2Swap(track2.px(), track2.py(), track2.pz(), pdg2 == PDG_t::kKPlus ? massPi : massKa);
 
         auto fake = p1Swap + p2Swap;
 
         if (fake.Rapidity() > selectionConfig.motherRapidityMin && fake.Rapidity() < selectionConfig.motherRapidityMax)
-          hMC.fill(HIST("Reflections/hReflection"), fake.Pt(), centrality, fake.M());
+          hMC.fill(HIST("Reflections/hKstarSelf"), fake.Pt(), centrality, fake.M());
       }
     }
   }
-  PROCESS_SWITCH(Kstar892LightIon, processRecReflection, "Process particle reflection", false);
+  PROCESS_SWITCH(Kstar892LightIon, processRecReflection, "Process reconstructed reflections", false);
 
   Service<o2::framework::O2DatabasePDG> pdg;
 

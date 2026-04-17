@@ -13,7 +13,7 @@
 /// \brief Source of class for phos photon selection.
 /// \author D. Sekihata, daiki.sekihata@cern.ch
 
-#include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
+#include "PHOSPhotonCut.h"
 
 #include <Framework/Logger.h>
 

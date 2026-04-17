@@ -131,11 +131,6 @@ o2physics_add_dpl_workflow(pi0eta-to-gammagamma-mc-emcemc
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(photon-hbt-pcmpcm
-                    SOURCES PhotonHBTPCMPCM.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(tag-and-probe
                     SOURCES TagAndProbe.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore
@@ -181,19 +176,8 @@ o2physics_add_dpl_workflow(tagging-pi0-mc-pcmdalitzee
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(diphoton-hadron-mpc-pcmpcm
-                    SOURCES diphotonHadronMPCPCMPCM.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
-                    COMPONENT_NAME Analysis)
-
-
 o2physics_add_dpl_workflow(compconvbuilder
                     SOURCES compconvbuilder.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(diphoton-hadron-mpc-pcmdalitzee
-                    SOURCES diphotonHadronMPCPCMDalitzEE.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
                     COMPONENT_NAME Analysis)
 
@@ -210,4 +194,9 @@ o2physics_add_dpl_workflow(test-task-emc
 o2physics_add_dpl_workflow(photon-reso-task
                     SOURCES photonResoTask.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::EMCALBase O2::EMCALCalib O2Physics::PWGEMPhotonMesonCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(photonhbt
+                    SOURCES photonhbt.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
                     COMPONENT_NAME Analysis)

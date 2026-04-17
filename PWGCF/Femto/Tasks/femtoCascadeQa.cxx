@@ -23,15 +23,16 @@
 #include "PWGCF/Femto/Core/trackHistManager.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/Configurable.h"
-#include "Framework/Expressions.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/InitContext.h"
-#include "Framework/OutputObjHeader.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
 #include <map>
 #include <vector>
@@ -50,7 +51,7 @@ struct FemtoCascadeQa {
 
   using FemtoXis = o2::soa::Join<o2::aod::FXis, o2::aod::FXiMasks, o2::aod::FXiExtras>;
   using FemtoOmegas = o2::soa::Join<o2::aod::FOmegas, o2::aod::FOmegaMasks, o2::aod::FOmegaExtras>;
-  using FemtoTracks = o2::soa::Join<o2::aod::FTracks, o2::aod::FTrackDcas, o2::aod::FTrackExtras, o2::aod::FTrackPids>;
+  using FemtoTracks = o2::soa::Join<o2::aod::FTracks, o2::aod::FTrackMass, o2::aod::FTrackDcas, o2::aod::FTrackExtras, o2::aod::FTrackPids>;
 
   using FemtoXisWithLabel = o2::soa::Join<FemtoXis, o2::aod::FXiLabels>;
   using FemtoOmegasWithLabel = o2::soa::Join<FemtoOmegas, o2::aod::FOmegaLabels>;
@@ -170,7 +171,7 @@ struct FemtoCascadeQa {
 
   void processXi(FilteredFemtoCollision const& col, FemtoXis const& /*xis*/, FemtoTracks const& tracks)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col, 0, 0, 0);
+    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
     auto xiSlice = xiPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& xi : xiSlice) {
       xiHistManager.fill<modes::Mode::kAnalysis_Qa>(xi, tracks);
@@ -180,7 +181,7 @@ struct FemtoCascadeQa {
 
   void processXiMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoXisWithLabel const& /*xis*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols, 0, 0, 0);
+    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
     auto xiSlice = xiWithLabelPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& xi : xiSlice) {
       if (!xiCleaner.isClean(xi, mcParticles, mcMothers, mcPartonicMothers)) {
@@ -193,7 +194,7 @@ struct FemtoCascadeQa {
 
   void processOmega(FilteredFemtoCollision const& col, FemtoOmegas const& /*omegas*/, FemtoTracks const& tracks)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col, 0, 0, 0);
+    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
     auto omegaSlice = omegaPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& omega : omegaSlice) {
       omegaHistManager.fill<modes::Mode::kAnalysis_Qa>(omega, tracks);
@@ -203,7 +204,7 @@ struct FemtoCascadeQa {
 
   void processOmegaMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoOmegasWithLabel const& /*omegas*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols, 0, 0, 0);
+    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
     auto omegaSlice = omegaWithLabelPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& omega : omegaSlice) {
       if (!omegaCleaner.isClean(omega, mcParticles, mcMothers, mcPartonicMothers)) {

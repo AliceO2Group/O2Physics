@@ -14,11 +14,12 @@
 /// \brief Slim hypernuclei tables
 ///
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-
 #ifndef PWGLF_DATAMODEL_LFHYPERNUCLEITABLES_H_
 #define PWGLF_DATAMODEL_LFHYPERNUCLEITABLES_H_
+
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 
 namespace o2::aod
 {
@@ -59,6 +60,8 @@ DECLARE_SOA_COLUMN(NTPCclusHe, nTPCclusHe, uint8_t);                  // Number 
 DECLARE_SOA_COLUMN(NTPCclusPi, nTPCclusPi, uint8_t);                  // Number of TPC clusters of the Pi daughter
 DECLARE_SOA_COLUMN(NTPCpidClusHe, nTPCpidClusHe, uint8_t);            // Number of TPC clusters with PID information of the He daughter
 DECLARE_SOA_COLUMN(NTPCpidClusPi, nTPCpidClusPi, uint8_t);            // Number of TPC clusters with PID information of the Pi daughter
+DECLARE_SOA_COLUMN(NTPCCrossedRowsHe, nTPCCrossedRowsHe, uint8_t);    // Number of TPC crossed rows of the He daughter
+DECLARE_SOA_COLUMN(NTPCCrossedRowsPi, nTPCCrossedRowsPi, uint8_t);    // Number of TPC crossed rows of the Pi daughter
 DECLARE_SOA_COLUMN(TPCsignalHe, tpcSignalHe, uint16_t);               // TPC signal of the He daughter
 DECLARE_SOA_COLUMN(TPCsignalPi, tpcSignalPi, uint16_t);               // TPC signal of the Pi daughter
 DECLARE_SOA_COLUMN(TPCChi2He, tpcChi2He, float);                      // TPC chi2 of the He daughter
@@ -99,7 +102,7 @@ DECLARE_SOA_TABLE(DataHypCands, "AOD", "HYPCANDS",
                   hyperrec::PtPi, hyperrec::PhiPi, hyperrec::EtaPi,
                   hyperrec::XDecVtx, hyperrec::YDecVtx, hyperrec::ZDecVtx,
                   hyperrec::DcaV0Daug, hyperrec::DcaHe, hyperrec::DcaPi,
-                  hyperrec::NSigmaHe, hyperrec::NTPCclusHe, hyperrec::NTPCclusPi, hyperrec::NTPCpidClusHe, hyperrec::NTPCpidClusPi,
+                  hyperrec::NSigmaHe, hyperrec::NTPCclusHe, hyperrec::NTPCclusPi, hyperrec::NTPCpidClusHe, hyperrec::NTPCpidClusPi, hyperrec::NTPCCrossedRowsHe, hyperrec::NTPCCrossedRowsPi,
                   hyperrec::TPCmomHe, hyperrec::TPCmomPi, hyperrec::TPCsignalHe, hyperrec::TPCsignalPi, hyperrec::TPCChi2He, hyperrec::ITSChi2He, hyperrec::ITSChi2Pi,
                   hyperrec::TOFMass,
                   hyperrec::ITSclusterSizesHe, hyperrec::ITSclusterSizesPi,
@@ -118,7 +121,7 @@ DECLARE_SOA_TABLE(DataHypCandsFlow, "AOD", "HYPCANDSFLOW",
                   hyperrec::PtPi, hyperrec::PhiPi, hyperrec::EtaPi,
                   hyperrec::XDecVtx, hyperrec::YDecVtx, hyperrec::ZDecVtx,
                   hyperrec::DcaV0Daug, hyperrec::DcaHe, hyperrec::DcaPi,
-                  hyperrec::NSigmaHe, hyperrec::NTPCclusHe, hyperrec::NTPCclusPi, hyperrec::NTPCpidClusHe, hyperrec::NTPCpidClusPi,
+                  hyperrec::NSigmaHe, hyperrec::NTPCclusHe, hyperrec::NTPCclusPi, hyperrec::NTPCpidClusHe, hyperrec::NTPCpidClusPi, hyperrec::NTPCCrossedRowsHe, hyperrec::NTPCCrossedRowsPi,
                   hyperrec::TPCmomHe, hyperrec::TPCmomPi, hyperrec::TPCsignalHe, hyperrec::TPCsignalPi, hyperrec::TPCChi2He, hyperrec::ITSChi2He, hyperrec::ITSChi2Pi,
                   hyperrec::TOFMass,
                   hyperrec::ITSclusterSizesHe, hyperrec::ITSclusterSizesPi,
@@ -134,7 +137,7 @@ DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
                   hyperrec::PtPi, hyperrec::PhiPi, hyperrec::EtaPi,
                   hyperrec::XDecVtx, hyperrec::YDecVtx, hyperrec::ZDecVtx,
                   hyperrec::DcaV0Daug, hyperrec::DcaHe, hyperrec::DcaPi,
-                  hyperrec::NSigmaHe, hyperrec::NTPCclusHe, hyperrec::NTPCclusPi, hyperrec::NTPCpidClusHe, hyperrec::NTPCpidClusPi,
+                  hyperrec::NSigmaHe, hyperrec::NTPCclusHe, hyperrec::NTPCclusPi, hyperrec::NTPCpidClusHe, hyperrec::NTPCpidClusPi, hyperrec::NTPCCrossedRowsHe, hyperrec::NTPCCrossedRowsPi,
                   hyperrec::TPCmomHe, hyperrec::TPCmomPi, hyperrec::TPCsignalHe, hyperrec::TPCsignalPi, hyperrec::TPCChi2He, hyperrec::ITSChi2He, hyperrec::ITSChi2Pi,
                   hyperrec::TOFMass,
                   hyperrec::ITSclusterSizesHe, hyperrec::ITSclusterSizesPi,
@@ -163,7 +166,7 @@ DECLARE_SOA_TABLE(DataHypCandsWColl, "AOD", "HYPCANDSWCOLL",
                   hyperrec::PtPi, hyperrec::PhiPi, hyperrec::EtaPi,
                   hyperrec::XDecVtx, hyperrec::YDecVtx, hyperrec::ZDecVtx,
                   hyperrec::DcaV0Daug, hyperrec::DcaHe, hyperrec::DcaPi,
-                  hyperrec::NSigmaHe, hyperrec::NTPCclusHe, hyperrec::NTPCclusPi, hyperrec::NTPCpidClusHe, hyperrec::NTPCpidClusPi,
+                  hyperrec::NSigmaHe, hyperrec::NTPCclusHe, hyperrec::NTPCclusPi, hyperrec::NTPCpidClusHe, hyperrec::NTPCpidClusPi, hyperrec::NTPCCrossedRowsHe, hyperrec::NTPCCrossedRowsPi,
                   hyperrec::TPCmomHe, hyperrec::TPCmomPi, hyperrec::TPCsignalHe, hyperrec::TPCsignalPi, hyperrec::TPCChi2He, hyperrec::ITSChi2He, hyperrec::ITSChi2Pi,
                   hyperrec::TOFMass,
                   hyperrec::ITSclusterSizesHe, hyperrec::ITSclusterSizesPi,

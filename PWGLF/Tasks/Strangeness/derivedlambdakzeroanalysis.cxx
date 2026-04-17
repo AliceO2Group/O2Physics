@@ -33,35 +33,41 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGUD/Core/SGSelector.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/CCDB/ctpRateFetcher.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Tools/ML/MlResponse.h"
+#include "Common/Core/RecoDecay.h"
 #include "Tools/ML/model.h"
 
-#include "CommonConstants/MathConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
-#include <TFile.h>
-#include <TH2D.h>
-#include <TLorentzVector.h>
+#include <TH1.h>
+#include <TH2.h>
 #include <TPDGCode.h>
 #include <TProfile.h>
+
+#include <sys/types.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <map>
 #include <string>
@@ -125,6 +131,7 @@ struct derivedlambdakzeroanalysis {
   Configurable<bool> doMCAssociation{"doMCAssociation", true, "if MC, do MC association"};
   Configurable<bool> doTreatPiToMuon{"doTreatPiToMuon", false, "Take pi decay into muon into account in MC"};
   Configurable<bool> doCollisionAssociationQA{"doCollisionAssociationQA", true, "check collision association"};
+  Configurable<bool> doSecondaryV0s{"doSecondaryV0s", false, "Look at secondary V0s?"};
 
   struct : ConfigurableGroup {
     std::string prefix = "eventSelections"; // JSON group name
@@ -215,6 +222,9 @@ struct derivedlambdakzeroanalysis {
     Configurable<bool> rejectNegITSafterburner{"rejectNegITSafterburner", false, "reject negative track formed out of afterburner ITS tracks"};
     Configurable<bool> requirePosITSafterburnerOnly{"requirePosITSafterburnerOnly", false, "require positive track formed out of afterburner ITS tracks"};
     Configurable<bool> requireNegITSafterburnerOnly{"requireNegITSafterburnerOnly", false, "require negative track formed out of afterburner ITS tracks"};
+    Configurable<bool> requireAtLeastOneHasTOF{"requireAtLeastOneHasTOF", false, "require that at least one of daughter tracks has an associated TOF signal"};
+    Configurable<bool> requirePosHasTOF{"requirePosHasTOF", false, "require that positive track has an associated TOF signal. On false, TOF requirement (if any) is only applied IF the track has an associated TOF signal."};
+    Configurable<bool> requireNegHasTOF{"requireNegHasTOF", false, "require that negative track has an associated TOF signal. On false, TOF requirement (if any) is only applied IF the track has an associated TOF signal."};
     Configurable<bool> rejectTPCsectorBoundary{"rejectTPCsectorBoundary", false, "reject tracks close to the TPC sector boundaries"};
     Configurable<std::string> phiLowCut{"phiLowCut", "0.06/x+pi/18.0-0.06", "Low azimuth cut parametrisation"};
     Configurable<std::string> phiHighCut{"phiHighCut", "0.1/x+pi/18.0+0.06", "High azimuth cut parametrisation"};
@@ -527,15 +537,15 @@ struct derivedlambdakzeroanalysis {
         BITSET(maskAntiLambdaSpecific, selTPCPIDPositivePion);
       }
       // TOF PID
-      if (v0Selections.tofPidNsigmaCutK0Pi < 1e+5) { // safeguard for no cut
+      if (v0Selections.requireAtLeastOneHasTOF || v0Selections.requirePosHasTOF || v0Selections.tofPidNsigmaCutK0Pi < 1e+5 || v0Selections.maxDeltaTimePion < 1e+6) { // safeguard for no cut
         BITSET(maskK0ShortSpecific, selTOFNSigmaPositivePionK0Short);
         BITSET(maskK0ShortSpecific, selTOFDeltaTPositivePionK0Short);
       }
-      if (v0Selections.tofPidNsigmaCutLaPr < 1e+5) { // safeguard for no cut
+      if (v0Selections.requireAtLeastOneHasTOF || v0Selections.requirePosHasTOF || v0Selections.tofPidNsigmaCutLaPr < 1e+5 || v0Selections.maxDeltaTimeProton < 1e+6) { // safeguard for no cut
         BITSET(maskLambdaSpecific, selTOFNSigmaPositiveProtonLambda);
         BITSET(maskLambdaSpecific, selTOFDeltaTPositiveProtonLambda);
       }
-      if (v0Selections.tofPidNsigmaCutLaPi < 1e+5) { // safeguard for no cut
+      if (v0Selections.requireAtLeastOneHasTOF || v0Selections.requirePosHasTOF || v0Selections.tofPidNsigmaCutLaPi < 1e+5 || v0Selections.maxDeltaTimePion < 1e+6) { // safeguard for no cut
         BITSET(maskAntiLambdaSpecific, selTOFNSigmaPositivePionLambda);
         BITSET(maskAntiLambdaSpecific, selTOFDeltaTPositivePionLambda);
       }
@@ -553,15 +563,15 @@ struct derivedlambdakzeroanalysis {
         BITSET(maskAntiLambdaSpecific, selTPCPIDNegativeProton);
       }
       // TOF PID
-      if (v0Selections.tofPidNsigmaCutK0Pi < 1e+5) { // safeguard for no cut
+      if (v0Selections.requireAtLeastOneHasTOF || v0Selections.requireNegHasTOF || v0Selections.tofPidNsigmaCutK0Pi < 1e+5 || v0Selections.maxDeltaTimePion < 1e+6) { // safeguard for no cut
         BITSET(maskK0ShortSpecific, selTOFNSigmaNegativePionK0Short);
         BITSET(maskK0ShortSpecific, selTOFDeltaTNegativePionK0Short);
       }
-      if (v0Selections.tofPidNsigmaCutLaPi < 1e+5) { // safeguard for no cut
+      if (v0Selections.requireAtLeastOneHasTOF || v0Selections.requireNegHasTOF || v0Selections.tofPidNsigmaCutLaPi < 1e+5 || v0Selections.maxDeltaTimePion < 1e+6) { // safeguard for no cut
         BITSET(maskLambdaSpecific, selTOFNSigmaNegativePionLambda);
         BITSET(maskLambdaSpecific, selTOFDeltaTNegativePionLambda);
       }
-      if (v0Selections.tofPidNsigmaCutLaPr < 1e+5) { // safeguard for no cut
+      if (v0Selections.requireAtLeastOneHasTOF || v0Selections.requireNegHasTOF || v0Selections.tofPidNsigmaCutLaPr < 1e+5 || v0Selections.maxDeltaTimeProton < 1e+6) { // safeguard for no cut
         BITSET(maskAntiLambdaSpecific, selTOFNSigmaNegativeProtonLambda);
         BITSET(maskAntiLambdaSpecific, selTOFDeltaTNegativeProtonLambda);
       }
@@ -999,10 +1009,18 @@ struct derivedlambdakzeroanalysis {
     if (analyseLambda && calculateFeeddownMatrix && (doprocessMonteCarloRun3 || doprocessMonteCarloRun2)) {
       histos.add("h3dLambdaFeeddown", "h3dLambdaFeeddown", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPtXi});
       histos.add("h3dLambdaFeeddownFromXi0", "h3dLambdaFeeddownFromXi0", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPtXi});
+      if (doSecondaryV0s) {
+        histos.add("h3dMassSecLambdaFromXi", "h3dMassSecLambdaFromXi", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+        histos.add("h3dMassSecLambdaFromXiAndXi0", "h3dMassSecLambdaFromXiAndXi0", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+      }
     }
     if (analyseAntiLambda && calculateFeeddownMatrix && (doprocessMonteCarloRun3 || doprocessMonteCarloRun2)) {
       histos.add("h3dAntiLambdaFeeddown", "h3dAntiLambdaFeeddown", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPtXi});
       histos.add("h3dAntiLambdaFeeddownFromXi0", "h3dAntiLambdaFeeddownFromXi0", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPtXi});
+      if (doSecondaryV0s) {
+        histos.add("h3dMassSecAntiLambdaFromXi", "h3dMassSecAntiLambdaFromXi", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+        histos.add("h3dMassSecAntiLambdaFromXiAndXi0", "h3dMassSecAntiLambdaFromXiAndXi0", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+      }
     }
 
     if (analyseK0Short)
@@ -1123,6 +1141,29 @@ struct derivedlambdakzeroanalysis {
       histos.add("h2dGenXiPlusVsMultMC", "h2dGenXiPlusVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
       histos.add("h2dGenOmegaMinusVsMultMC", "h2dGenOmegaMinusVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
       histos.add("h2dGenOmegaPlusVsMultMC", "h2dGenOmegaPlusVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+
+      if (doSecondaryV0s) {
+        histos.add("h2dGenSecLambda", "h2dGenSecLambda", kTH2D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt});
+        histos.add("h2dGenSecAntiLambda", "h2dGenSecAntiLambda", kTH2D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt});
+        histos.add("h2dGenSecLambdaFromXi", "h2dGenSecLambdaFromXi", kTH2D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt});
+        histos.add("h2dGenSecAntiLambdaFromXi", "h2dGenSecAntiLambdaFromXi", kTH2D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt});
+        histos.add("h2dGenSecLambdaFromOmega", "h2dGenSecLambdaFromOmega", kTH2D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt});
+        histos.add("h2dGenSecAntiLambdaFromOmega", "h2dGenSecAntiLambdaFromOmega", kTH2D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt});
+
+        histos.add("h2dGenSecLambda_VsRecoedEvt", "h2dGenSecLambda_VsRecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+        histos.add("h2dGenSecAntiLambda_VsRecoedEvt", "h2dGenSecAntiLambda_VsRecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+        histos.add("h2dGenSecLambdaFromXiVsMultMC_VsRecoedEvt", "h2dGenSecLambdaFromXiVsMultMC_VsRecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+        histos.add("h2dGenSecAntiLambdaFromXiVsMultMC_VsRecoedEvt", "h2dGenSecAntiLambdaFromXiVsMultMC_VsRecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+        histos.add("h2dGenSecLambdaFromOmegaVsMultMC_VsRecoedEvt", "h2dGenSecLambdaFromOmegaVsMultMC_VsRecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+        histos.add("h2dGenSecAntiLambdaFromOmegaVsMultMC_VsRecoedEvt", "h2dGenSecAntiLambdaFromOmegaVsMultMC_VsRecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+
+        histos.add("h2dGenSecLambdaVsMultMC", "h2dGenSecLambdaVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+        histos.add("h2dGenSecAntiLambdaVsMultMC", "h2dGenSecAntiLambdaVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+        histos.add("h2dGenSecLambdaFromXiVsMultMC", "h2dGenSecLambdaFromXiVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+        histos.add("h2dGenSecAntiLambdaFromXiVsMultMC", "h2dGenSecAntiLambdaFromXiVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+        histos.add("h2dGenSecLambdaFromOmegaVsMultMC", "h2dGenSecLambdaFromOmegaVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+        histos.add("h2dGenSecAntiLambdaFromOmegaVsMultMC", "h2dGenSecAntiLambdaFromOmegaVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+      }
     }
     if (doprocessBinnedGenerated) {
       histos.add("h2dGeneratedK0Short", "h2dGeneratedK0Short", kTH2D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt});
@@ -1312,35 +1353,119 @@ struct derivedlambdakzeroanalysis {
 
     // TOF PID in DeltaT
     // Positive track
-    if (!posTrackExtra.hasTOF() || std::fabs(v0.posTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
-      BITSET(bitMap, selTOFDeltaTPositiveProtonLambda);
-    if (!posTrackExtra.hasTOF() || std::fabs(v0.posTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
-      BITSET(bitMap, selTOFDeltaTPositivePionLambda);
-    if (!posTrackExtra.hasTOF() || std::fabs(v0.posTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
-      BITSET(bitMap, selTOFDeltaTPositivePionK0Short);
+    if (v0Selections.requirePosHasTOF || v0Selections.requireAtLeastOneHasTOF) {
+      if (v0.positiveHasTOF() && std::fabs(v0.posTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton) {
+        BITSET(bitMap, selTOFDeltaTPositiveProtonLambda);
+        if (v0Selections.requireAtLeastOneHasTOF) { // positive has a TOF hit --> no need to check for negative
+          BITSET(bitMap, selTOFDeltaTNegativePionLambda);
+        }
+      }
+      if (v0.positiveHasTOF() && std::fabs(v0.posTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion) {
+        BITSET(bitMap, selTOFDeltaTPositivePionLambda);
+        if (v0Selections.requireAtLeastOneHasTOF) { // positive has a TOF hit --> no need to check for negative
+          BITSET(bitMap, selTOFDeltaTNegativeProtonLambda);
+        }
+      }
+      if (v0.positiveHasTOF() && std::fabs(v0.posTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion) {
+        BITSET(bitMap, selTOFDeltaTPositivePionK0Short);
+        if (v0Selections.requireAtLeastOneHasTOF) { // positive has a TOF hit --> no need to check for negative
+          BITSET(bitMap, selTOFDeltaTNegativePionK0Short);
+        }
+      }
+    } else { // only apply TOF requirement if available
+      if (!v0.positiveHasTOF() || std::fabs(v0.posTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
+        BITSET(bitMap, selTOFDeltaTPositiveProtonLambda);
+      if (!v0.positiveHasTOF() || std::fabs(v0.posTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
+        BITSET(bitMap, selTOFDeltaTPositivePionLambda);
+      if (!v0.positiveHasTOF() || std::fabs(v0.posTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
+        BITSET(bitMap, selTOFDeltaTPositivePionK0Short);
+    }
     // Negative track
-    if (!negTrackExtra.hasTOF() || std::fabs(v0.negTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
-      BITSET(bitMap, selTOFDeltaTNegativeProtonLambda);
-    if (!negTrackExtra.hasTOF() || std::fabs(v0.negTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
-      BITSET(bitMap, selTOFDeltaTNegativePionLambda);
-    if (!negTrackExtra.hasTOF() || std::fabs(v0.negTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
-      BITSET(bitMap, selTOFDeltaTNegativePionK0Short);
+    if (v0Selections.requireNegHasTOF || v0Selections.requireAtLeastOneHasTOF) {
+      if (v0.negativeHasTOF() && std::fabs(v0.negTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton) {
+        BITSET(bitMap, selTOFDeltaTNegativeProtonLambda);
+        if (v0Selections.requireAtLeastOneHasTOF) { // negative has a TOF hit --> no need to check for positive
+          BITSET(bitMap, selTOFDeltaTPositivePionLambda);
+        }
+      }
+      if (v0.negativeHasTOF() && std::fabs(v0.negTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion) {
+        BITSET(bitMap, selTOFDeltaTNegativePionLambda);
+        if (v0Selections.requireAtLeastOneHasTOF) { // negative has a TOF hit --> no need to check for positive
+          BITSET(bitMap, selTOFDeltaTPositiveProtonLambda);
+        }
+      }
+      if (v0.negativeHasTOF() && std::fabs(v0.negTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion) {
+        BITSET(bitMap, selTOFDeltaTNegativePionK0Short);
+        if (v0Selections.requireAtLeastOneHasTOF) { // negative has a TOF hit --> no need to check for positive
+          BITSET(bitMap, selTOFDeltaTPositivePionK0Short);
+        }
+      }
+    } else { // only apply TOF requirement if available
+      if (!v0.negativeHasTOF() || std::fabs(v0.negTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
+        BITSET(bitMap, selTOFDeltaTNegativeProtonLambda);
+      if (!v0.negativeHasTOF() || std::fabs(v0.negTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
+        BITSET(bitMap, selTOFDeltaTNegativePionLambda);
+      if (!v0.negativeHasTOF() || std::fabs(v0.negTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
+        BITSET(bitMap, selTOFDeltaTNegativePionK0Short);
+    }
 
     // TOF PID in NSigma
     // Positive track
-    if (!posTrackExtra.hasTOF() || std::fabs(v0.tofNSigmaLaPr()) < v0Selections.tofPidNsigmaCutLaPr)
-      BITSET(bitMap, selTOFNSigmaPositiveProtonLambda);
-    if (!posTrackExtra.hasTOF() || std::fabs(v0.tofNSigmaALaPi()) < v0Selections.tofPidNsigmaCutLaPi)
-      BITSET(bitMap, selTOFNSigmaPositivePionLambda);
-    if (!posTrackExtra.hasTOF() || std::fabs(v0.tofNSigmaK0PiPlus()) < v0Selections.tofPidNsigmaCutK0Pi)
-      BITSET(bitMap, selTOFNSigmaPositivePionK0Short);
+    if (v0Selections.requirePosHasTOF || v0Selections.requireAtLeastOneHasTOF) {
+      if (v0.positiveHasTOF() && std::fabs(v0.tofNSigmaLaPr()) < v0Selections.tofPidNsigmaCutLaPr) {
+        BITSET(bitMap, selTOFNSigmaPositiveProtonLambda);
+        if (v0Selections.requireAtLeastOneHasTOF) { // positive has a TOF hit --> no need to check for negative
+          BITSET(bitMap, selTOFNSigmaNegativePionLambda);
+        }
+      }
+      if (v0.positiveHasTOF() && std::fabs(v0.tofNSigmaALaPi()) < v0Selections.tofPidNsigmaCutLaPi) {
+        BITSET(bitMap, selTOFNSigmaPositivePionLambda);
+        if (v0Selections.requireAtLeastOneHasTOF) { // positive has a TOF hit --> no need to check for negative
+          BITSET(bitMap, selTOFNSigmaNegativeProtonLambda);
+        }
+      }
+      if (v0.positiveHasTOF() && std::fabs(v0.tofNSigmaK0PiPlus()) < v0Selections.tofPidNsigmaCutK0Pi) {
+        BITSET(bitMap, selTOFNSigmaPositivePionK0Short);
+        if (v0Selections.requireAtLeastOneHasTOF) { // positive has a TOF hit --> no need to check for negative
+          BITSET(bitMap, selTOFNSigmaNegativePionK0Short);
+        }
+      }
+    } else { // only apply TOF requirement if available
+      if (!v0.positiveHasTOF() || std::fabs(v0.tofNSigmaLaPr()) < v0Selections.tofPidNsigmaCutLaPr)
+        BITSET(bitMap, selTOFNSigmaPositiveProtonLambda);
+      if (!v0.positiveHasTOF() || std::fabs(v0.tofNSigmaALaPi()) < v0Selections.tofPidNsigmaCutLaPi)
+        BITSET(bitMap, selTOFNSigmaPositivePionLambda);
+      if (!v0.positiveHasTOF() || std::fabs(v0.tofNSigmaK0PiPlus()) < v0Selections.tofPidNsigmaCutK0Pi)
+        BITSET(bitMap, selTOFNSigmaPositivePionK0Short);
+    }
     // Negative track
-    if (!negTrackExtra.hasTOF() || std::fabs(v0.tofNSigmaALaPr()) < v0Selections.tofPidNsigmaCutLaPr)
-      BITSET(bitMap, selTOFNSigmaNegativeProtonLambda);
-    if (!negTrackExtra.hasTOF() || std::fabs(v0.tofNSigmaLaPi()) < v0Selections.tofPidNsigmaCutLaPi)
-      BITSET(bitMap, selTOFNSigmaNegativePionLambda);
-    if (!negTrackExtra.hasTOF() || std::fabs(v0.tofNSigmaK0PiMinus()) < v0Selections.tofPidNsigmaCutK0Pi)
-      BITSET(bitMap, selTOFNSigmaNegativePionK0Short);
+    if (v0Selections.requireNegHasTOF || v0Selections.requireAtLeastOneHasTOF) {
+      if (v0.negativeHasTOF() && std::fabs(v0.tofNSigmaALaPr()) < v0Selections.tofPidNsigmaCutLaPr) {
+        BITSET(bitMap, selTOFNSigmaNegativeProtonLambda);
+        if (v0Selections.requireAtLeastOneHasTOF) { // negative has a TOF hit --> no need to check for positive
+          BITSET(bitMap, selTOFNSigmaPositivePionLambda);
+        }
+      }
+      if (v0.negativeHasTOF() && std::fabs(v0.tofNSigmaLaPi()) < v0Selections.tofPidNsigmaCutLaPi) {
+        BITSET(bitMap, selTOFNSigmaNegativePionLambda);
+        if (v0Selections.requireAtLeastOneHasTOF) { // negative has a TOF hit --> no need to check for positive
+          BITSET(bitMap, selTOFNSigmaPositiveProtonLambda);
+        }
+      }
+      if (v0.negativeHasTOF() && std::fabs(v0.tofNSigmaK0PiMinus()) < v0Selections.tofPidNsigmaCutK0Pi) {
+        BITSET(bitMap, selTOFNSigmaNegativePionK0Short);
+        if (v0Selections.requireAtLeastOneHasTOF) { // negative has a TOF hit --> no need to check for positive
+          BITSET(bitMap, selTOFNSigmaPositivePionK0Short);
+        }
+      }
+    } else { // only apply TOF requirement if available
+      if (!v0.negativeHasTOF() || std::fabs(v0.tofNSigmaALaPr()) < v0Selections.tofPidNsigmaCutLaPr)
+        BITSET(bitMap, selTOFNSigmaNegativeProtonLambda);
+      if (!v0.negativeHasTOF() || std::fabs(v0.tofNSigmaLaPi()) < v0Selections.tofPidNsigmaCutLaPi)
+        BITSET(bitMap, selTOFNSigmaNegativePionLambda);
+      if (!v0.negativeHasTOF() || std::fabs(v0.tofNSigmaK0PiMinus()) < v0Selections.tofPidNsigmaCutK0Pi)
+        BITSET(bitMap, selTOFNSigmaNegativePionK0Short);
+    }
 
     // ITS only tag
     if (posTrackExtra.tpcCrossedRows() < 1)
@@ -1975,25 +2100,46 @@ struct derivedlambdakzeroanalysis {
       return; // does not have mother particle in record, skip
 
     auto v0mother = v0.motherMCPart();
-    float rapidityXi = RecoDecay::y(std::array{v0mother.px(), v0mother.py(), v0mother.pz()}, o2::constants::physics::MassXiMinus);
+    float rapidityXi = 999.;
+    if (std::abs(v0mother.pdgCode()) == PDG_t::kXiMinus)
+      rapidityXi = RecoDecay::y(std::array{v0mother.px(), v0mother.py(), v0mother.pz()}, o2::constants::physics::MassXiMinus);
+    if (std::abs(v0mother.pdgCode()) == o2::constants::physics::Pdg::kXi0)
+      rapidityXi = RecoDecay::y(std::array{v0mother.px(), v0mother.py(), v0mother.pz()}, o2::constants::physics::MassXi0);
+
     if (std::fabs(rapidityXi) > 0.5f)
       return; // not a valid mother rapidity (PDG selection is later)
 
     // __________________________________________
     if (verifyMask(selMap, secondaryMaskSelectionLambda) && analyseLambda) {
       if (v0mother.isPhysicalPrimary()) {
-        if (v0mother.pdgCode() == PDG_t::kXiMinus)
+        if (v0mother.pdgCode() == PDG_t::kXiMinus) {
           histos.fill(HIST("h3dLambdaFeeddown"), centrality, pt, std::hypot(v0mother.px(), v0mother.py()));
-        if (v0mother.pdgCode() == PDG_t::kXiMinus || v0mother.pdgCode() == o2::constants::physics::Pdg::kXi0)
+          if (doSecondaryV0s) {
+            histos.fill(HIST("h3dMassSecLambdaFromXi"), centrality, pt, v0.mLambda());
+          }
+        }
+        if (v0mother.pdgCode() == PDG_t::kXiMinus || v0mother.pdgCode() == o2::constants::physics::Pdg::kXi0) {
           histos.fill(HIST("h3dLambdaFeeddownFromXi0"), centrality, pt, std::hypot(v0mother.px(), v0mother.py()));
+          if (doSecondaryV0s) {
+            histos.fill(HIST("h3dMassSecLambdaFromXiAndXi0"), centrality, pt, v0.mLambda());
+          }
+        }
       }
     }
     if (verifyMask(selMap, secondaryMaskSelectionAntiLambda) && analyseAntiLambda) {
       if (v0mother.isPhysicalPrimary()) {
-        if (v0mother.pdgCode() == PDG_t::kXiPlusBar)
+        if (v0mother.pdgCode() == PDG_t::kXiPlusBar) {
           histos.fill(HIST("h3dAntiLambdaFeeddown"), centrality, pt, std::hypot(v0mother.px(), v0mother.py()));
-        if (v0mother.pdgCode() == PDG_t::kXiPlusBar || v0mother.pdgCode() == -o2::constants::physics::Pdg::kXi0)
+          if (doSecondaryV0s) {
+            histos.fill(HIST("h3dMassSecAntiLambdaFromXi"), centrality, pt, v0.mAntiLambda());
+          }
+        }
+        if (v0mother.pdgCode() == PDG_t::kXiPlusBar || v0mother.pdgCode() == -o2::constants::physics::Pdg::kXi0) {
           histos.fill(HIST("h3dAntiLambdaFeeddownFromXi0"), centrality, pt, std::hypot(v0mother.px(), v0mother.py()));
+          if (doSecondaryV0s) {
+            histos.fill(HIST("h3dMassSecAntiLambdaFromXiAndXi0"), centrality, pt, v0.mAntiLambda());
+          }
+        }
       }
     }
   }
@@ -2810,6 +2956,28 @@ struct derivedlambdakzeroanalysis {
         if (cascMC.pdgCode() == PDG_t::kOmegaPlusBar) {
           histos.fill(HIST("h2dGenOmegaPlusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
         }
+
+        if (doSecondaryV0s && std::abs(cascMC.pdgCodeV0()) == kLambda0) {
+          float v0PtMc = std::hypot(cascMC.pxPosMC() + cascMC.pxNegMC(), cascMC.pyPosMC() + cascMC.pyNegMC());
+          if (cascMC.pdgCodeV0() == kLambda0) {
+            histos.fill(HIST("h2dGenSecLambda_VsRecoedEvt"), mcCollision.multMCNParticlesEta05(), v0PtMc);
+          }
+          if (cascMC.pdgCodeV0() == kLambda0Bar) {
+            histos.fill(HIST("h2dGenSecAntiLambda_VsRecoedEvt"), mcCollision.multMCNParticlesEta05(), v0PtMc);
+          }
+          if (cascMC.pdgCode() == PDG_t::kXiMinus && cascMC.pdgCodeV0() == kLambda0) {
+            histos.fill(HIST("h2dGenSecLambdaFromXiVsMultMC_VsRecoedEvt"), mcCollision.multMCNParticlesEta05(), v0PtMc);
+          }
+          if (cascMC.pdgCode() == PDG_t::kXiPlusBar && cascMC.pdgCodeV0() == kLambda0Bar) {
+            histos.fill(HIST("h2dGenSecAntiLambdaFromXiVsMultMC_VsRecoedEvt"), mcCollision.multMCNParticlesEta05(), v0PtMc);
+          }
+          if (cascMC.pdgCode() == PDG_t::kOmegaMinus && cascMC.pdgCodeV0() == kLambda0) {
+            histos.fill(HIST("h2dGenSecLambdaFromOmegaVsMultMC_VsRecoedEvt"), mcCollision.multMCNParticlesEta05(), v0PtMc);
+          }
+          if (cascMC.pdgCode() == PDG_t::kOmegaPlusBar && cascMC.pdgCodeV0() == kLambda0Bar) {
+            histos.fill(HIST("h2dGenSecAntiLambdaFromOmegaVsMultMC_VsRecoedEvt"), mcCollision.multMCNParticlesEta05(), v0PtMc);
+          }
+        }
       }
 
       if (cascMC.pdgCode() == PDG_t::kXiMinus) {
@@ -2827,6 +2995,34 @@ struct derivedlambdakzeroanalysis {
       if (cascMC.pdgCode() == PDG_t::kOmegaPlusBar) {
         histos.fill(HIST("h2dGenOmegaPlus"), centrality, ptmc);
         histos.fill(HIST("h2dGenOmegaPlusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+      }
+
+      if (doSecondaryV0s && std::abs(cascMC.pdgCodeV0()) == kLambda0) {
+        float v0PtMc = std::hypot(cascMC.pxPosMC() + cascMC.pxNegMC(), cascMC.pyPosMC() + cascMC.pyNegMC());
+        if (cascMC.pdgCodeV0() == kLambda0) {
+          histos.fill(HIST("h2dGenSecLambda"), centrality, v0PtMc);
+          histos.fill(HIST("h2dGenSecLambdaVsMultMC"), mcCollision.multMCNParticlesEta05(), v0PtMc);
+        }
+        if (cascMC.pdgCodeV0() == kLambda0Bar) {
+          histos.fill(HIST("h2dGenSecAntiLambda"), centrality, v0PtMc);
+          histos.fill(HIST("h2dGenSecAntiLambdaVsMultMC"), mcCollision.multMCNParticlesEta05(), v0PtMc);
+        }
+        if (cascMC.pdgCode() == PDG_t::kXiMinus && cascMC.pdgCodeV0() == kLambda0) {
+          histos.fill(HIST("h2dGenSecLambdaFromXi"), centrality, v0PtMc);
+          histos.fill(HIST("h2dGenSecLambdaFromXiVsMultMC"), mcCollision.multMCNParticlesEta05(), v0PtMc);
+        }
+        if (cascMC.pdgCode() == PDG_t::kXiPlusBar && cascMC.pdgCodeV0() == kLambda0Bar) {
+          histos.fill(HIST("h2dGenSecAntiLambdaFromXi"), centrality, v0PtMc);
+          histos.fill(HIST("h2dGenSecAntiLambdaFromXiVsMultMC"), mcCollision.multMCNParticlesEta05(), v0PtMc);
+        }
+        if (cascMC.pdgCode() == PDG_t::kOmegaMinus && cascMC.pdgCodeV0() == kLambda0) {
+          histos.fill(HIST("h2dGenSecLambdaFromOmega"), centrality, v0PtMc);
+          histos.fill(HIST("h2dGenSecLambdaFromOmegaVsMultMC"), mcCollision.multMCNParticlesEta05(), v0PtMc);
+        }
+        if (cascMC.pdgCode() == PDG_t::kOmegaPlusBar && cascMC.pdgCodeV0() == kLambda0Bar) {
+          histos.fill(HIST("h2dGenSecAntiLambdaFromOmega"), centrality, v0PtMc);
+          histos.fill(HIST("h2dGenSecAntiLambdaFromOmegaVsMultMC"), mcCollision.multMCNParticlesEta05(), v0PtMc);
+        }
       }
     }
   }

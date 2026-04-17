@@ -24,6 +24,7 @@
 /// o2-analysis-pid-tpc-full,  o2-analysis-trackextension,
 /// o2-analysis-pid-tof-full, o2-analysis-id-raa
 
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
@@ -32,7 +33,21 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/AnalysisTask.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/Variant.h>
+
+#include <array>
+#include <cstddef>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -44,7 +59,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
   std::vector<ConfigParamSpec> options{{"MC", VariantType::Int, 0, {"1 for MC, 0 for data"}}};
   std::swap(workflowOptions, options);
 }
-#include "Framework/runDataProcessing.h"
+#include <Framework/runDataProcessing.h>
 
 struct identifiedraaTask {
   TrackSelection globalTrackswoPrim; // Track without cut for primaries

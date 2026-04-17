@@ -17,45 +17,41 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
-#include "Common/Core/RecoDecay.h"
+#include "Common/Core/fwdtrackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/MathConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
-#include <Framework/ASoAHelpers.h>
+#include <DetectorsBase/Propagator.h>
+#include <Field/MagneticField.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/Array2D.h>
-#include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
-#include <Framework/DataTypes.h>
-#include <Framework/GroupedCombinations.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h>
-#include <MathUtils/Utils.h>
+#include <ReconstructionDataFormats/TrackFwd.h>
 
+#include <TGeoGlobalMagField.h>
 #include <THn.h>
-#include <TPDGCode.h>
 #include <TString.h>
 
-#include <sys/types.h>
-
-#include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -97,6 +93,7 @@ enum DataType {
 enum SpecificEventSelectionStep {
   AllEventsPrecise = 0,
   HasMcCollision,
+  IsNotSplitVertex,
   IsSel8,
   IsNoSameBunchPileup,
   IsGoodItsLayersAll,
@@ -107,7 +104,29 @@ enum SpecificEventSelectionStep {
   IsNoCollInTimeRangeStrict,
   IsNoHighMultCollInPrevRof,
   IsRctFlagChecked,
+  IsWithinZvtxWindow,
   NSpecificEventSelectionSteps
+};
+
+enum SpecificTrackSelectionStep {
+  AllTracksPrecise = 0,
+  IsTrueTrack,
+  AfterOrphanCut,
+  AfterEtaCut,
+  AfterClusterCut,
+  AfterPtCut,
+  AfterDcaXYCut,
+  AfterDcaZCut,
+  IsCATrack,
+  IsLTFTrack,
+  HasMcParticle,
+  NSpecificTrackSelectionSteps
+};
+
+enum TrackAmbiguityCheckStep {
+  AllTracksCheck = 0,
+  IsAmbDegreeEqualToCompatibleCollIdsSize,
+  NTrackAmbiguityCheckSteps
 };
 
 enum MonteCarloEventSelectionStep {
@@ -176,11 +195,20 @@ enum MftNot3dReassociatedAndMatchedToTrueCollisionStep {
   NMftNot3dReassociatedAndMatchedToTrueCollisionSteps
 };
 
+enum MftIsTrueCollisionAmongCompatibleCollisionsStep {
+  AllWronglyAssociatedTracks = 0,
+  IsTrueCollisionAmongCompatibleCollisions,
+  IsNotTrueCollisionAmongCompatibleCollisions,
+  NMftIsTrueCollisionAmongCompatibleCollisionsSteps
+};
+
 enum MftTrackSelectionStep {
   NoSelection = 0,
   Eta,
   Cluster,
   Pt,
+  IsCA,
+  IsLTF,
   NMftTrackSelectionSteps
 };
 
@@ -197,6 +225,7 @@ std::unordered_map<int, float> recoVtxX;
 std::unordered_map<int, float> recoVtxY;
 std::unordered_map<int, float> recoVtxZ;
 std::unordered_map<int, float> recoMcCollisionId;
+std::unordered_map<int, float> recoMcCollBestCollisionIndex;
 
 struct MftReassociationValidation {
 
@@ -211,6 +240,12 @@ struct MftReassociationValidation {
   struct : ConfigurableGroup {
     std::string prefix = "ConfigTask_group";
     Configurable<bool> centralityBinsForMc{"centralityBinsForMc", false, "falsce = OFF, true = ON for data like multiplicity/centrality bins for MC steps"};
+    Configurable<bool> keepOnlyPhysicalPrimary{"keepOnlyPhysicalPrimary", true, "Keep only physical primary particles"};
+    Configurable<bool> keepOnlySecondaries{"keepOnlySecondaries", false, "Keep only secondary particles"};
+    Configurable<bool> cfgApplyZShiftFromCCDB{"cfgApplyZShiftFromCCDB", true, "flag to apply z shift from CCDB"};
+    Configurable<std::string> cfgZShiftPath{"cfgZShiftPath", "Users/m/mcoquet/ZShift", "CCDB path for z shift to apply to forward tracks"};
+    Configurable<float> cfgManualZShift{"cfgManualZShift", 0.0f, "manual z-shift for propagation of global muon to PV"};
+    Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   } configTask;
 
   //   configurables for collisions
@@ -227,9 +262,11 @@ struct MftReassociationValidation {
     Configurable<bool> isApplyNoCollInRofStrict{"isApplyNoCollInRofStrict", false, ""};
     Configurable<bool> isApplyNoCollInRofStandard{"isApplyNoCollInRofStandard", false, ""};
     Configurable<bool> isApplyNoHighMultCollInPrevRof{"isApplyNoHighMultCollInPrevRof", false, ""};
+    Configurable<float> zVertexMaxInFilter{"zVertexMaxInFilter", 30.0f, "Accepted z-vertex range"};
     Configurable<float> zVertexMax{"zVertexMax", 10.0f, "Accepted z-vertex range"};
     Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", false, "Check event quality in run condition table"};
     Configurable<bool> requireCorrelationAnalysisRCTFlagChecker{"requireCorrelationAnalysisRCTFlagChecker", false, "Check event quality in run condition table for correlation analysis"};
+    Configurable<bool> requireMcCollBestCollIndex{"requireMcCollBestCollIndex", false, "check for split vertices"};
     Configurable<std::string> setRCTFlagCheckerLabel{"setRCTFlagCheckerLabel", "CBT_muon_global", "Evt sel: RCT flag checker label"};
     Configurable<bool> requireRCTFlagCheckerLimitAcceptanceAsBad{"requireRCTFlagCheckerLimitAcceptanceAsBad", true, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
     Configurable<bool> requireZDCCheck{"requireZDCCheck", false, "Evt sel: RCT flag checker ZDC check"};
@@ -239,6 +276,12 @@ struct MftReassociationValidation {
   struct : ConfigurableGroup {
     std::string prefix = "ConfigMft_group";
     Configurable<int> cutBestCollisionId{"cutBestCollisionId", 0, "cut on the best collision Id used in a filter"};
+    Configurable<bool> cutFakeTracks{"cutFakeTracks", false, "if true, cut fake tracks using McMask"};
+    Configurable<bool> cutOrphanTracksExplicitly{"cutOrphanTracksExplicitly", false, "if true, cut orphan tracks explicitly"};
+    Configurable<bool> cutOnDcaXY{"cutOnDcaXY", false, "if true, cut on DCA XY"};
+    Configurable<bool> cutOnDcaZ{"cutOnDcaZ", false, "if true, cut on DCA Z"};
+    Configurable<float> dcaXYMax{"dcaXYMax", 2.0f, "Maximum value for DCA XY"};
+    Configurable<float> dcaZMax{"dcaZMax", 10.0f, "Maximum value for DCA Z"};
     Configurable<float> etaMftTrackMax{"etaMftTrackMax", -2.4f, "Maximum value for the eta of MFT tracks when used in cut function"};
     Configurable<float> etaMftTrackMin{"etaMftTrackMin", -3.36f, "Minimum value for the eta of MFT tracks when used in cut function"};
     Configurable<float> etaMftTrackMaxFilter{"etaMftTrackMaxFilter", -2.0f, "Maximum value for the eta of MFT tracks when used in filter"};
@@ -249,22 +292,34 @@ struct MftReassociationValidation {
     Configurable<float> ptMftTrackMax{"ptMftTrackMax", 10.0f, "max value of MFT tracks pT when used in cut function"};
     Configurable<float> ptMftTrackMin{"ptMftTrackMin", 0.f, "min value of MFT tracks pT when used in cut function"};
     Configurable<bool> useMftPtCut{"useMftPtCut", false, "if true, use the Mft pt function cut"};
+    Configurable<bool> useOnlyCATracks{"useOnlyCATracks", false, "if true, use strictly MFT tracks reconstructed with CA algo."};
+    Configurable<bool> useOnlyLTFTracks{"useOnlyLTFTracks", false, "if true, use strictly MFT tracks reconstructed with LTF algo."};
   } configMft;
 
-  TF1* fPtDepDCAxy = nullptr;
-
+  float mZShift = 0;                                     // z-vertex shift
+  float bZ = 0;                                          // Magnetic field for MFT
+  static constexpr double CcenterMFT[3] = {0, 0, -61.4}; // Field at center of MFT
   SliceCache cache;
   Service<o2::framework::O2DatabasePDG> pdg;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::ccdb::CcdbApi ccdbApi;
+  o2::parameters::GRPMagField* grpmag = nullptr;
   RCTFlagsChecker rctChecker;
-  RCTFlagsChecker correlationAnalysisRctChecker{kFT0Bad, kITSBad, kTPCBadTracking, kMFTBad};
+  RCTFlagsChecker correlationAnalysisRctChecker{kFT0Bad, kITSBad, kTPCBadTracking, kTPCBadPID, kMFTBad};
   std::array<std::shared_ptr<THnSparse>, MatchedToTrueCollisionStep::NMatchedToTrueCollisionSteps> hZVtxDiffAmbiguousTracks;
   std::array<std::shared_ptr<THnSparse>, MatchedToTrueCollisionStep::NMatchedToTrueCollisionSteps> hZVtxDiffNonAmbiguousTracks;
   std::array<std::shared_ptr<THnSparse>, MatchedToTrueCollisionStep::NMatchedToTrueCollisionSteps> hZVtxDiff2dReassociatedTracks;
   std::array<std::shared_ptr<THnSparse>, MatchedToTrueCollisionStep::NMatchedToTrueCollisionSteps> hZVtxDiffNot2dReassociatedTracks;
   std::array<std::shared_ptr<THnSparse>, MatchedToTrueCollisionStep::NMatchedToTrueCollisionSteps> hZVtxDiff3dReassociatedTracks;
   std::array<std::shared_ptr<THnSparse>, MatchedToTrueCollisionStep::NMatchedToTrueCollisionSteps> hZVtxDiffNot3dReassociatedTracks;
+  std::array<std::shared_ptr<THnSparse>, MatchedToTrueCollisionStep::NMatchedToTrueCollisionSteps> hZVtxDiffNotMatchedTracks;
+  std::array<std::shared_ptr<THnSparse>, MatchedToTrueCollisionStep::NMatchedToTrueCollisionSteps> hDcaAmbiguousTracks;
+  std::array<std::shared_ptr<THnSparse>, MatchedToTrueCollisionStep::NMatchedToTrueCollisionSteps> hDcaNonAmbiguousTracks;
+  std::array<std::shared_ptr<THnSparse>, MatchedToTrueCollisionStep::NMatchedToTrueCollisionSteps> hDca2dReassociatedTracks;
+  std::array<std::shared_ptr<THnSparse>, MatchedToTrueCollisionStep::NMatchedToTrueCollisionSteps> hDcaNot2dReassociatedTracks;
+  std::array<std::shared_ptr<THnSparse>, MatchedToTrueCollisionStep::NMatchedToTrueCollisionSteps> hDca3dReassociatedTracks;
+  std::array<std::shared_ptr<THnSparse>, MatchedToTrueCollisionStep::NMatchedToTrueCollisionSteps> hDcaNot3dReassociatedTracks;
+  std::array<std::shared_ptr<THnSparse>, MatchedToTrueCollisionStep::NMatchedToTrueCollisionSteps> hDcaNotMatchedTracks;
 
   // =========================
   //      using declarations : DATA
@@ -291,19 +346,19 @@ struct MftReassociationValidation {
   // =========================
 
   //  Collision filters
-  Filter collisionVtxZFilter = nabs(aod::collision::posZ) < configCollision.zVertexMax;
+  Filter collisionVtxZFilter = nabs(aod::collision::posZ) < configCollision.zVertexMaxInFilter;
 
   Filter mftTrackEtaFilter = ((aod::fwdtrack::eta < configMft.etaMftTrackMaxFilter) && (aod::fwdtrack::eta > configMft.etaMftTrackMinFilter));
 
   Filter mftTrackCollisionIdFilter = (aod::fwdtrack::bestCollisionId >= 0);
-  Filter mftTrackDcaXYFilter = (nabs(aod::fwdtrack::bestDCAXY) < configMft.mftMaxDCAxy);
+  // Filter mftTrackDcaXYFilter = (nabs(aod::fwdtrack::bestDCAXY) < configMft.mftMaxDCAxy);
   // Filter mftTrackDcaZFilter = (nabs(aod::fwdtrack::bestDCAZ) < configMft.mftMaxDCAz);
 
   // =========================
   //      Filters & partitions : MONTE-CARLO
   // =========================
 
-  Filter primaries = (aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary && (aod::mcparticle::eta < configMft.etaMftTrackMaxFilter) && (aod::mcparticle::eta > configMft.etaMftTrackMinFilter);
+  Filter mcParticleEtaFilter = (aod::mcparticle::eta < configMft.etaMftTrackMaxFilter) && (aod::mcparticle::eta > configMft.etaMftTrackMinFilter);
 
   Partition<FilteredMcParticles> mcParticlesSample = (aod::mcparticle::eta < configMft.etaMftTrackMaxFilter) && (aod::mcparticle::eta > configMft.etaMftTrackMinFilter);
 
@@ -349,6 +404,8 @@ struct MftReassociationValidation {
     labelsMftTracksSelection[MftTrackSelectionStep::Eta] = "MFT tracks after eta selection";
     labelsMftTracksSelection[MftTrackSelectionStep::Cluster] = "MFT tracks after clusters selection";
     labelsMftTracksSelection[MftTrackSelectionStep::Pt] = "MFT tracks after pT selection";
+    labelsMftTracksSelection[MftTrackSelectionStep::IsCA] = "MFT tracks reconstructed with CA";
+    labelsMftTracksSelection[MftTrackSelectionStep::IsLTF] = "MFT tracks reconstructed with LTF";
     registry.get<TH1>(HIST(WhatDataType[DataType]) + HIST("hMftTracksSelection"))->SetMinimum(0);
 
     for (int iBin = 0; iBin < MftTrackSelectionStep::NMftTrackSelectionSteps; iBin++) {
@@ -405,7 +462,39 @@ struct MftReassociationValidation {
 
     hZVtxDiffNot3dReassociatedTracks[MatchedToTrueCollisionStep::AllTracks] = registry.add<THnSparse>("MC/hZVtxDiffNot3dReassociatedTracks", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaY, configAxis.axisDcaZ});
     hZVtxDiffNot3dReassociatedTracks[MatchedToTrueCollisionStep::IsNotMatchedToTrueCollision] = registry.add<THnSparse>("MC/hZVtxDiffNot3dReassociatedTracksNotMatchedToTrueCollision", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaY, configAxis.axisDcaZ});
-    hZVtxDiffNot3dReassociatedTracks[MatchedToTrueCollisionStep::IsMatchedToTrueCollision] = registry.add<THnSparse>("MC/hZVtxDhZVtxDiffNot3dReassociatedTracksMatchedToTrueCollisioniffAmbiguousTracks", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaY, configAxis.axisDcaZ});
+    hZVtxDiffNot3dReassociatedTracks[MatchedToTrueCollisionStep::IsMatchedToTrueCollision] = registry.add<THnSparse>("MC/hZVtxDiffNot3dReassociatedTracksMatchedToTrueCollision", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaY, configAxis.axisDcaZ});
+
+    hZVtxDiffNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::AllWronglyAssociatedTracks] = registry.add<THnSparse>("MC/hZVtxDiffNotMatchedTracks", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaY, configAxis.axisDcaZ});
+    hZVtxDiffNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsNotTrueCollisionAmongCompatibleCollisions] = registry.add<THnSparse>("MC/hZVtxDiffNotMatchedTracksWithCollAmongCompatible", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaY, configAxis.axisDcaZ});
+    hZVtxDiffNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsTrueCollisionAmongCompatibleCollisions] = registry.add<THnSparse>("MC/hZVtxDiffNotMatchedTracksWithoutCollAmongCompatible", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaY, configAxis.axisDcaZ});
+
+    hDcaAmbiguousTracks[MatchedToTrueCollisionStep::AllTracks] = registry.add<THnSparse>("MC/hDcaAmbiguousTracks", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY}^{reco} (cm);  DCA_{Z}^{reco} (cm); DCA_{XY}^{gen} (cm);  DCA_{Z}^{gen} (cm)", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaZ, configAxis.axisDcaX, configAxis.axisDcaZ});
+    hDcaAmbiguousTracks[MatchedToTrueCollisionStep::IsNotMatchedToTrueCollision] = registry.add<THnSparse>("MC/hDcaAmbiguousTracksNotMatchedToTrueCollision", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY}^{reco} (cm);  DCA_{Z}^{reco} (cm); DCA_{XY}^{gen} (cm);  DCA_{Z}^{gen} (cm)", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaZ, configAxis.axisDcaX, configAxis.axisDcaZ});
+    hDcaAmbiguousTracks[MatchedToTrueCollisionStep::IsMatchedToTrueCollision] = registry.add<THnSparse>("MC/hDcaAmbiguousTracksMatchedToTrueCollision", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY}^{reco} (cm);  DCA_{Z}^{reco} (cm); DCA_{XY}^{gen} (cm);  DCA_{Z}^{gen} (cm)", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaZ, configAxis.axisDcaX, configAxis.axisDcaZ});
+
+    hDcaNonAmbiguousTracks[MatchedToTrueCollisionStep::AllTracks] = registry.add<THnSparse>("MC/hDcaNonAmbiguousTracks", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY}^{reco} (cm);  DCA_{Z}^{reco} (cm); DCA_{XY}^{gen} (cm);  DCA_{Z}^{gen} (cm)", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaZ, configAxis.axisDcaX, configAxis.axisDcaZ});
+    hDcaNonAmbiguousTracks[MatchedToTrueCollisionStep::IsNotMatchedToTrueCollision] = registry.add<THnSparse>("MC/hDcaNonAmbiguousTracksNotMatchedToTrueCollision", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY}^{reco} (cm);  DCA_{Z}^{reco} (cm); DCA_{XY}^{gen} (cm);  DCA_{Z}^{gen} (cm)", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaZ, configAxis.axisDcaX, configAxis.axisDcaZ});
+    hDcaNonAmbiguousTracks[MatchedToTrueCollisionStep::IsMatchedToTrueCollision] = registry.add<THnSparse>("MC/hDcaNonAmbiguousTracksMatchedToTrueCollision", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY}^{reco} (cm);  DCA_{Z}^{reco} (cm); DCA_{XY}^{gen} (cm);  DCA_{Z}^{gen} (cm)", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaZ, configAxis.axisDcaX, configAxis.axisDcaZ});
+
+    hDca2dReassociatedTracks[MatchedToTrueCollisionStep::AllTracks] = registry.add<THnSparse>("MC/hDca2dReassociatedTracks", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY}^{reco} (cm);  DCA_{XY}^{gen} (cm);", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaX});
+    hDca2dReassociatedTracks[MatchedToTrueCollisionStep::IsNotMatchedToTrueCollision] = registry.add<THnSparse>("MC/hDca2dReassociatedTracksNotMatchedToTrueCollision", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY}^{reco} (cm);  DCA_{XY}^{gen} (cm);", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaX});
+    hDca2dReassociatedTracks[MatchedToTrueCollisionStep::IsMatchedToTrueCollision] = registry.add<THnSparse>("MC/hDca2dReassociatedTracksMatchedToTrueCollision", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY}^{reco} (cm);  DCA_{XY}^{gen} (cm);", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaX});
+
+    hDcaNot2dReassociatedTracks[MatchedToTrueCollisionStep::AllTracks] = registry.add<THnSparse>("MC/hDcaNot2dReassociatedTracks", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY}^{reco} (cm);  DCA_{XY}^{gen} (cm);", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaX});
+    hDcaNot2dReassociatedTracks[MatchedToTrueCollisionStep::IsNotMatchedToTrueCollision] = registry.add<THnSparse>("MC/hDcaNot2dReassociatedTracksNotMatchedToTrueCollision", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY}^{reco} (cm);  DCA_{XY}^{gen} (cm);", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaX});
+    hDcaNot2dReassociatedTracks[MatchedToTrueCollisionStep::IsMatchedToTrueCollision] = registry.add<THnSparse>("MC/hDcaNot2dReassociatedTracksMatchedToTrueCollision", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY}^{reco} (cm);  DCA_{XY}^{gen} (cm);", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaX});
+
+    hDca3dReassociatedTracks[MatchedToTrueCollisionStep::AllTracks] = registry.add<THnSparse>("MC/hDca3dReassociatedTracks", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY}^{reco} (cm);  DCA_{Z}^{reco} (cm); DCA_{XY}^{gen} (cm);  DCA_{Z}^{gen} (cm)", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaZ, configAxis.axisDcaX, configAxis.axisDcaZ});
+    hDca3dReassociatedTracks[MatchedToTrueCollisionStep::IsNotMatchedToTrueCollision] = registry.add<THnSparse>("MC/hDca3dReassociatedTracksNotMatchedToTrueCollision", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY}^{reco} (cm);  DCA_{Z}^{reco} (cm); DCA_{XY}^{gen} (cm);  DCA_{Z}^{gen} (cm)", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaZ, configAxis.axisDcaX, configAxis.axisDcaZ});
+    hDca3dReassociatedTracks[MatchedToTrueCollisionStep::IsMatchedToTrueCollision] = registry.add<THnSparse>("MC/hDca3dReassociatedTracksMatchedToTrueCollision", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY}^{reco} (cm);  DCA_{Z}^{reco} (cm); DCA_{XY}^{gen} (cm);  DCA_{Z}^{gen} (cm)", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaZ, configAxis.axisDcaX, configAxis.axisDcaZ});
+
+    hDcaNot3dReassociatedTracks[MatchedToTrueCollisionStep::AllTracks] = registry.add<THnSparse>("MC/hDcaNot3dReassociatedTracks", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY}^{reco} (cm);  DCA_{Z}^{reco} (cm); DCA_{XY}^{gen} (cm);  DCA_{Z}^{gen} (cm)", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaZ, configAxis.axisDcaX, configAxis.axisDcaZ});
+    hDcaNot3dReassociatedTracks[MatchedToTrueCollisionStep::IsNotMatchedToTrueCollision] = registry.add<THnSparse>("MC/hDcaNot3dReassociatedTracksNotMatchedToTrueCollision", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY}^{reco} (cm);  DCA_{Z}^{reco} (cm); DCA_{XY}^{gen} (cm);  DCA_{Z}^{gen} (cm)", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaZ, configAxis.axisDcaX, configAxis.axisDcaZ});
+    hDcaNot3dReassociatedTracks[MatchedToTrueCollisionStep::IsMatchedToTrueCollision] = registry.add<THnSparse>("MC/hDcaNot3dReassociatedTracksMatchedToTrueCollision", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY}^{reco} (cm);  DCA_{Z}^{reco} (cm); DCA_{XY}^{gen} (cm);  DCA_{Z}^{gen} (cm)", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaZ, configAxis.axisDcaX, configAxis.axisDcaZ});
+
+    hDcaNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::AllWronglyAssociatedTracks] = registry.add<THnSparse>("MC/hDcaNotMatchedTracks", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY}^{reco} (cm);  DCA_{Z}^{reco} (cm); DCA_{XY}^{gen} (cm);  DCA_{Z}^{gen} (cm)", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaZ, configAxis.axisDcaX, configAxis.axisDcaZ});
+    hDcaNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsNotTrueCollisionAmongCompatibleCollisions] = registry.add<THnSparse>("MC/hDcaNotMatchedTracksWithCollAmongCompatible", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY}^{reco} (cm);  DCA_{Z}^{reco} (cm); DCA_{XY}^{gen} (cm);  DCA_{Z}^{gen} (cm)", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaZ, configAxis.axisDcaX, configAxis.axisDcaZ});
+    hDcaNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsTrueCollisionAmongCompatibleCollisions] = registry.add<THnSparse>("MC/hDcaNotMatchedTracksWithoutCollAmongCompatible", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY}^{reco} (cm);  DCA_{Z}^{reco} (cm); DCA_{XY}^{gen} (cm);  DCA_{Z}^{gen} (cm)", HistType::kTHnSparseF, {configAxis.axisPt, configAxis.axisEta, configAxis.axisDcaX, configAxis.axisDcaZ, configAxis.axisDcaX, configAxis.axisDcaZ});
 
     registry.add("MC/hIsAmbiguousTrackMatchedToTrueCollision", "hIsAmbiguousTrackMatchedToTrueCollision", {HistType::kTH1D, {{MftAmbiguousAndMatchedToTrueCollisionStep::NMftAmbiguousAndMatchedToTrueCollisionSteps, -0.5, +MftAmbiguousAndMatchedToTrueCollisionStep::NMftAmbiguousAndMatchedToTrueCollisionSteps - 0.5}}});
     std::string labelsMftAmbiguousAndMatchedToTrueCollisionStep[MftAmbiguousAndMatchedToTrueCollisionStep::NMftAmbiguousAndMatchedToTrueCollisionSteps];
@@ -429,48 +518,65 @@ struct MftReassociationValidation {
       registry.get<TH1>(HIST("MC/hIsNonAmbiguousTrackMatchedToTrueCollision"))->GetXaxis()->SetBinLabel(iBin + 1, labelsMftNonAmbiguousAndMatchedToTrueCollisionStep[iBin].data());
     }
 
-    registry.add("MC/Is2dReassociatedAndMatchedToTrueCollision", "Is2dReassociatedAndMatchedToTrueCollision", {HistType::kTH1D, {{Mft2dReassociatedAndMatchedToTrueCollisionStep::NMft2dReassociatedAndMatchedToTrueCollisionSteps, -0.5, +Mft2dReassociatedAndMatchedToTrueCollisionStep::NMft2dReassociatedAndMatchedToTrueCollisionSteps - 0.5}}});
+    registry.add("MC/hIs2dReassociatedAndMatchedToTrueCollision", "Is2dReassociatedAndMatchedToTrueCollision", {HistType::kTH1D, {{Mft2dReassociatedAndMatchedToTrueCollisionStep::NMft2dReassociatedAndMatchedToTrueCollisionSteps, -0.5, +Mft2dReassociatedAndMatchedToTrueCollisionStep::NMft2dReassociatedAndMatchedToTrueCollisionSteps - 0.5}}});
     std::string labelsMft2dReassociatedAndMatchedToTrueCollisionStep[Mft2dReassociatedAndMatchedToTrueCollisionStep::NMft2dReassociatedAndMatchedToTrueCollisionSteps];
     labelsMft2dReassociatedAndMatchedToTrueCollisionStep[Mft2dReassociatedAndMatchedToTrueCollisionStep::Is2dReassociated] = "number of MFT 2d reassociated tracks";
     labelsMft2dReassociatedAndMatchedToTrueCollisionStep[Mft2dReassociatedAndMatchedToTrueCollisionStep::Is2dReassociatedAndMatchedToTrueCollision] = "number of MFT 2d reassociated tracks matched to true collision";
     labelsMft2dReassociatedAndMatchedToTrueCollisionStep[Mft2dReassociatedAndMatchedToTrueCollisionStep::Is2dReassociatedAndNotMatchedToTrueCollision] = "number of MFT 2d reassociated tracks NOT matched to true collision";
-    registry.get<TH1>(HIST("MC/Is2dReassociatedAndMatchedToTrueCollision"))->SetMinimum(0);
+    registry.get<TH1>(HIST("MC/hIs2dReassociatedAndMatchedToTrueCollision"))->SetMinimum(0);
 
     for (int iBin = 0; iBin < Mft2dReassociatedAndMatchedToTrueCollisionStep::NMft2dReassociatedAndMatchedToTrueCollisionSteps; iBin++) {
-      registry.get<TH1>(HIST("MC/Is2dReassociatedAndMatchedToTrueCollision"))->GetXaxis()->SetBinLabel(iBin + 1, labelsMft2dReassociatedAndMatchedToTrueCollisionStep[iBin].data());
+      registry.get<TH1>(HIST("MC/hIs2dReassociatedAndMatchedToTrueCollision"))->GetXaxis()->SetBinLabel(iBin + 1, labelsMft2dReassociatedAndMatchedToTrueCollisionStep[iBin].data());
     }
 
-    registry.add("MC/IsNot2dReassociatedAndMatchedToTrueCollision", "IsNot2dReassociatedAndMatchedToTrueCollision", {HistType::kTH1D, {{MftNot2dReassociatedAndMatchedToTrueCollisionStep::NMftNot2dReassociatedAndMatchedToTrueCollisionSteps, -0.5, +MftNot2dReassociatedAndMatchedToTrueCollisionStep::NMftNot2dReassociatedAndMatchedToTrueCollisionSteps - 0.5}}});
+    registry.add("MC/hIsNot2dReassociatedAndMatchedToTrueCollision", "IsNot2dReassociatedAndMatchedToTrueCollision", {HistType::kTH1D, {{MftNot2dReassociatedAndMatchedToTrueCollisionStep::NMftNot2dReassociatedAndMatchedToTrueCollisionSteps, -0.5, +MftNot2dReassociatedAndMatchedToTrueCollisionStep::NMftNot2dReassociatedAndMatchedToTrueCollisionSteps - 0.5}}});
     std::string labelsMftNot2dReassociatedAndMatchedToTrueCollisionStep[MftNot2dReassociatedAndMatchedToTrueCollisionStep::NMftNot2dReassociatedAndMatchedToTrueCollisionSteps];
     labelsMftNot2dReassociatedAndMatchedToTrueCollisionStep[MftNot2dReassociatedAndMatchedToTrueCollisionStep::IsNot2dReassociated] = "number of MFT NOT 2d reassociated tracks";
     labelsMftNot2dReassociatedAndMatchedToTrueCollisionStep[MftNot2dReassociatedAndMatchedToTrueCollisionStep::IsNot2dReassociatedAndMatchedToTrueCollision] = "number of MFT NOT 2d reassociated tracks matched to true collision";
     labelsMftNot2dReassociatedAndMatchedToTrueCollisionStep[MftNot2dReassociatedAndMatchedToTrueCollisionStep::IsNot2dReassociatedAndNotMatchedToTrueCollision] = "number of MFT NOT 2d reassociated tracks NOT matched to true collision";
-    registry.get<TH1>(HIST("MC/IsNot2dReassociatedAndMatchedToTrueCollision"))->SetMinimum(0);
+    registry.get<TH1>(HIST("MC/hIsNot2dReassociatedAndMatchedToTrueCollision"))->SetMinimum(0);
 
     for (int iBin = 0; iBin < MftNot2dReassociatedAndMatchedToTrueCollisionStep::NMftNot2dReassociatedAndMatchedToTrueCollisionSteps; iBin++) {
-      registry.get<TH1>(HIST("MC/IsNot2dReassociatedAndMatchedToTrueCollision"))->GetXaxis()->SetBinLabel(iBin + 1, labelsMftNot2dReassociatedAndMatchedToTrueCollisionStep[iBin].data());
+      registry.get<TH1>(HIST("MC/hIsNot2dReassociatedAndMatchedToTrueCollision"))->GetXaxis()->SetBinLabel(iBin + 1, labelsMftNot2dReassociatedAndMatchedToTrueCollisionStep[iBin].data());
     }
 
-    registry.add("MC/Is3dReassociatedAndMatchedToTrueCollision", "Is3dReassociatedAndMatchedToTrueCollision", {HistType::kTH1D, {{Mft3dReassociatedAndMatchedToTrueCollisionStep::NMft3dReassociatedAndMatchedToTrueCollisionSteps, -0.5, +Mft3dReassociatedAndMatchedToTrueCollisionStep::NMft3dReassociatedAndMatchedToTrueCollisionSteps - 0.5}}});
+    registry.add("MC/hIs3dReassociatedAndMatchedToTrueCollision", "Is3dReassociatedAndMatchedToTrueCollision", {HistType::kTH1D, {{Mft3dReassociatedAndMatchedToTrueCollisionStep::NMft3dReassociatedAndMatchedToTrueCollisionSteps, -0.5, +Mft3dReassociatedAndMatchedToTrueCollisionStep::NMft3dReassociatedAndMatchedToTrueCollisionSteps - 0.5}}});
     std::string labelsMft3dReassociatedAndMatchedToTrueCollisionStep[Mft3dReassociatedAndMatchedToTrueCollisionStep::NMft3dReassociatedAndMatchedToTrueCollisionSteps];
     labelsMft3dReassociatedAndMatchedToTrueCollisionStep[Mft3dReassociatedAndMatchedToTrueCollisionStep::Is3dReassociated] = "number of MFT 3d reassociated tracks";
     labelsMft3dReassociatedAndMatchedToTrueCollisionStep[Mft3dReassociatedAndMatchedToTrueCollisionStep::Is3dReassociatedAndMatchedToTrueCollision] = "number of MFT 3d reassociated tracks matched to true collision";
     labelsMft3dReassociatedAndMatchedToTrueCollisionStep[Mft3dReassociatedAndMatchedToTrueCollisionStep::Is3dReassociatedAndNotMatchedToTrueCollision] = "number of MFT 3d reassociated tracks NOT matched to true collision";
-    registry.get<TH1>(HIST("MC/Is3dReassociatedAndMatchedToTrueCollision"))->SetMinimum(0);
+    registry.get<TH1>(HIST("MC/hIs3dReassociatedAndMatchedToTrueCollision"))->SetMinimum(0);
 
     for (int iBin = 0; iBin < Mft3dReassociatedAndMatchedToTrueCollisionStep::NMft3dReassociatedAndMatchedToTrueCollisionSteps; iBin++) {
-      registry.get<TH1>(HIST("MC/Is3dReassociatedAndMatchedToTrueCollision"))->GetXaxis()->SetBinLabel(iBin + 1, labelsMft3dReassociatedAndMatchedToTrueCollisionStep[iBin].data());
+      registry.get<TH1>(HIST("MC/hIs3dReassociatedAndMatchedToTrueCollision"))->GetXaxis()->SetBinLabel(iBin + 1, labelsMft3dReassociatedAndMatchedToTrueCollisionStep[iBin].data());
     }
 
-    registry.add("MC/IsNot3dReassociatedAndMatchedToTrueCollision", "IsNot3dReassociatedAndMatchedToTrueCollision", {HistType::kTH1D, {{MftNot3dReassociatedAndMatchedToTrueCollisionStep::NMftNot3dReassociatedAndMatchedToTrueCollisionSteps, -0.5, +MftNot3dReassociatedAndMatchedToTrueCollisionStep::NMftNot3dReassociatedAndMatchedToTrueCollisionSteps - 0.5}}});
+    registry.add("MC/hIsNot3dReassociatedAndMatchedToTrueCollision", "IsNot3dReassociatedAndMatchedToTrueCollision", {HistType::kTH1D, {{MftNot3dReassociatedAndMatchedToTrueCollisionStep::NMftNot3dReassociatedAndMatchedToTrueCollisionSteps, -0.5, +MftNot3dReassociatedAndMatchedToTrueCollisionStep::NMftNot3dReassociatedAndMatchedToTrueCollisionSteps - 0.5}}});
     std::string labelsMftNot3dReassociatedAndMatchedToTrueCollisionStep[MftNot3dReassociatedAndMatchedToTrueCollisionStep::NMftNot3dReassociatedAndMatchedToTrueCollisionSteps];
     labelsMftNot3dReassociatedAndMatchedToTrueCollisionStep[MftNot3dReassociatedAndMatchedToTrueCollisionStep::IsNot3dReassociated] = "number of MFT NOT 3d reassociated tracks";
     labelsMftNot3dReassociatedAndMatchedToTrueCollisionStep[MftNot3dReassociatedAndMatchedToTrueCollisionStep::IsNot3dReassociatedAndMatchedToTrueCollision] = "number of MFT NOT 3d reassociated tracks matched to true collision";
     labelsMftNot3dReassociatedAndMatchedToTrueCollisionStep[MftNot3dReassociatedAndMatchedToTrueCollisionStep::IsNot3dReassociatedAndNotMatchedToTrueCollision] = "number of MFT NOT 3d reassociated tracks NOT matched to true collision";
-    registry.get<TH1>(HIST("MC/IsNot3dReassociatedAndMatchedToTrueCollision"))->SetMinimum(0);
+    registry.get<TH1>(HIST("MC/hIsNot3dReassociatedAndMatchedToTrueCollision"))->SetMinimum(0);
 
     for (int iBin = 0; iBin < MftNot3dReassociatedAndMatchedToTrueCollisionStep::NMftNot3dReassociatedAndMatchedToTrueCollisionSteps; iBin++) {
-      registry.get<TH1>(HIST("MC/IsNot3dReassociatedAndMatchedToTrueCollision"))->GetXaxis()->SetBinLabel(iBin + 1, labelsMftNot3dReassociatedAndMatchedToTrueCollisionStep[iBin].data());
+      registry.get<TH1>(HIST("MC/hIsNot3dReassociatedAndMatchedToTrueCollision"))->GetXaxis()->SetBinLabel(iBin + 1, labelsMftNot3dReassociatedAndMatchedToTrueCollisionStep[iBin].data());
+    }
+
+    registry.add("MC/hIsTrueCollisionAmongCompatibleCollisions", "IsTrueCollisionAmongCompatibleCollisions", {HistType::kTH1D, {{MftIsTrueCollisionAmongCompatibleCollisionsStep::NMftIsTrueCollisionAmongCompatibleCollisionsSteps, -0.5, +MftIsTrueCollisionAmongCompatibleCollisionsStep::NMftIsTrueCollisionAmongCompatibleCollisionsSteps - 0.5}}});
+    registry.add("MC/hIsTrueCollisionAmongCompatibleCollisionsDcaReassociated", "hIsTrueCollisionAmongCompatibleCollisionsDcaReassociated", {HistType::kTH1D, {{MftIsTrueCollisionAmongCompatibleCollisionsStep::NMftIsTrueCollisionAmongCompatibleCollisionsSteps, -0.5, +MftIsTrueCollisionAmongCompatibleCollisionsStep::NMftIsTrueCollisionAmongCompatibleCollisionsSteps - 0.5}}});
+    registry.add("MC/hIsTrueCollisionAmongCompatibleCollisionsDcaNotReassociated", "hIsTrueCollisionAmongCompatibleCollisionsDcaNotReassociated", {HistType::kTH1D, {{MftIsTrueCollisionAmongCompatibleCollisionsStep::NMftIsTrueCollisionAmongCompatibleCollisionsSteps, -0.5, +MftIsTrueCollisionAmongCompatibleCollisionsStep::NMftIsTrueCollisionAmongCompatibleCollisionsSteps - 0.5}}});
+    std::string labelsMftIsTrueCollisionAmongCompatibleCollisionsStep[MftIsTrueCollisionAmongCompatibleCollisionsStep::NMftIsTrueCollisionAmongCompatibleCollisionsSteps];
+    labelsMftIsTrueCollisionAmongCompatibleCollisionsStep[MftIsTrueCollisionAmongCompatibleCollisionsStep::AllWronglyAssociatedTracks] = "number of wrongly associated tracks";
+    labelsMftIsTrueCollisionAmongCompatibleCollisionsStep[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsTrueCollisionAmongCompatibleCollisions] = "number of MFT tracks with True Coll. among Compatible";
+    labelsMftIsTrueCollisionAmongCompatibleCollisionsStep[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsNotTrueCollisionAmongCompatibleCollisions] = "number of MFT tracks WITHOUT True Coll. among Compatible";
+    registry.get<TH1>(HIST("MC/hIsTrueCollisionAmongCompatibleCollisions"))->SetMinimum(0);
+    registry.get<TH1>(HIST("MC/hIsTrueCollisionAmongCompatibleCollisionsDcaReassociated"))->SetMinimum(0);
+    registry.get<TH1>(HIST("MC/hIsTrueCollisionAmongCompatibleCollisionsDcaNotReassociated"))->SetMinimum(0);
+
+    for (int iBin = 0; iBin < MftIsTrueCollisionAmongCompatibleCollisionsStep::NMftIsTrueCollisionAmongCompatibleCollisionsSteps; iBin++) {
+      registry.get<TH1>(HIST("MC/hIsTrueCollisionAmongCompatibleCollisions"))->GetXaxis()->SetBinLabel(iBin + 1, labelsMftIsTrueCollisionAmongCompatibleCollisionsStep[iBin].data());
+      registry.get<TH1>(HIST("MC/hIsTrueCollisionAmongCompatibleCollisionsDcaReassociated"))->GetXaxis()->SetBinLabel(iBin + 1, labelsMftIsTrueCollisionAmongCompatibleCollisionsStep[iBin].data());
+      registry.get<TH1>(HIST("MC/hIsTrueCollisionAmongCompatibleCollisionsDcaNotReassociated"))->GetXaxis()->SetBinLabel(iBin + 1, labelsMftIsTrueCollisionAmongCompatibleCollisionsStep[iBin].data());
     }
   }
 
@@ -484,8 +590,8 @@ struct MftReassociationValidation {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-    rctChecker.init(configCollision.setRCTFlagCheckerLabel, configCollision.requireZDCCheck, configCollision.requireRCTFlagCheckerLimitAcceptanceAsBad);
-    correlationAnalysisRctChecker.init({kFT0Bad, kITSBad, kTPCBadTracking, kMFTBad}, configCollision.requireZDCCheck, configCollision.requireRCTFlagCheckerLimitAcceptanceAsBad);
+    rctChecker.init(configCollision.setRCTFlagCheckerLabel, configCollision.requireZDCCheck, configCollision.requireRCTFlagCheckerLimitAcceptanceAsBad, true);
+    correlationAnalysisRctChecker.init({kFT0Bad, kITSBad, kTPCBadTracking, kTPCBadPID, kMFTBad}, configCollision.requireZDCCheck, configCollision.requireRCTFlagCheckerLimitAcceptanceAsBad, true);
 
     //  =========================
     //      Event histograms
@@ -499,6 +605,7 @@ struct MftReassociationValidation {
     std::string labels[SpecificEventSelectionStep::NSpecificEventSelectionSteps];
     labels[SpecificEventSelectionStep::AllEventsPrecise] = "all";
     labels[SpecificEventSelectionStep::HasMcCollision] = "has MC coll?";
+    labels[SpecificEventSelectionStep::IsNotSplitVertex] = "Is not split vertex (BestCollisionIndex)";
     labels[SpecificEventSelectionStep::IsSel8] = "sel8";
     labels[SpecificEventSelectionStep::IsNoSameBunchPileup] = "IsNoSameBunchPileup";
     labels[SpecificEventSelectionStep::IsGoodItsLayersAll] = "IsGoodItsLayersAll";
@@ -509,10 +616,40 @@ struct MftReassociationValidation {
     labels[SpecificEventSelectionStep::IsNoCollInTimeRangeStrict] = "IsNoCollInTimeRangeStrict";
     labels[SpecificEventSelectionStep::IsNoHighMultCollInPrevRof] = "IsNoHighMultCollInPrevRof";
     labels[SpecificEventSelectionStep::IsRctFlagChecked] = "IsRctFlagChecked";
+    labels[SpecificEventSelectionStep::IsWithinZvtxWindow] = "IsWithinZvtxWindow";
     registry.get<TH1>(HIST("hPreciseEventCounter"))->SetMinimum(0);
 
     for (int iBin = 0; iBin < SpecificEventSelectionStep::NSpecificEventSelectionSteps; iBin++) {
       registry.get<TH1>(HIST("hPreciseEventCounter"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
+    }
+
+    registry.add("MC/hPreciseTrackSelectionCounter", "hPreciseTrackSelectionCounter", {HistType::kTH1D, {{SpecificTrackSelectionStep::NSpecificTrackSelectionSteps, -0.5, +SpecificTrackSelectionStep::NSpecificTrackSelectionSteps - 0.5}}});
+    std::string labelsTrackSelection[SpecificTrackSelectionStep::NSpecificTrackSelectionSteps];
+    labelsTrackSelection[SpecificTrackSelectionStep::AllTracksPrecise] = "all tracks";
+    labelsTrackSelection[SpecificTrackSelectionStep::IsTrueTrack] = "true tracks";
+    labelsTrackSelection[SpecificTrackSelectionStep::AfterOrphanCut] = "after orphan cut";
+    labelsTrackSelection[SpecificTrackSelectionStep::AfterEtaCut] = "after eta cut";
+    labelsTrackSelection[SpecificTrackSelectionStep::AfterClusterCut] = "after cluster cut";
+    labelsTrackSelection[SpecificTrackSelectionStep::AfterPtCut] = "after pt cut";
+    labelsTrackSelection[SpecificTrackSelectionStep::AfterDcaXYCut] = "after DCA XY cut";
+    labelsTrackSelection[SpecificTrackSelectionStep::AfterDcaZCut] = "after DCA Z cut";
+    labelsTrackSelection[SpecificTrackSelectionStep::IsCATrack] = "is CA track";
+    labelsTrackSelection[SpecificTrackSelectionStep::IsLTFTrack] = "is LTF track";
+    labelsTrackSelection[SpecificTrackSelectionStep::HasMcParticle] = "has MC particle";
+    registry.get<TH1>(HIST("MC/hPreciseTrackSelectionCounter"))->SetMinimum(0);
+
+    for (int iBin = 0; iBin < SpecificTrackSelectionStep::NSpecificTrackSelectionSteps; iBin++) {
+      registry.get<TH1>(HIST("MC/hPreciseTrackSelectionCounter"))->GetXaxis()->SetBinLabel(iBin + 1, labelsTrackSelection[iBin].data());
+    }
+
+    registry.add("MC/hTrackAmbiguityCheck", "hTrackAmbiguityCheck", {HistType::kTH1D, {{TrackAmbiguityCheckStep::NTrackAmbiguityCheckSteps, -0.5, +TrackAmbiguityCheckStep::NTrackAmbiguityCheckSteps - 0.5}}});
+    std::string labelsTrackAmbiguityCheck[TrackAmbiguityCheckStep::NTrackAmbiguityCheckSteps];
+    labelsTrackAmbiguityCheck[TrackAmbiguityCheckStep::AllTracksCheck] = "all tracks";
+    labelsTrackAmbiguityCheck[TrackAmbiguityCheckStep::IsAmbDegreeEqualToCompatibleCollIdsSize] = "ambDegree == compatibleCollIds.size";
+    registry.get<TH1>(HIST("MC/hTrackAmbiguityCheck"))->SetMinimum(0);
+
+    for (int iBin = 0; iBin < TrackAmbiguityCheckStep::NTrackAmbiguityCheckSteps; iBin++) {
+      registry.get<TH1>(HIST("MC/hTrackAmbiguityCheck"))->GetXaxis()->SetBinLabel(iBin + 1, labelsTrackAmbiguityCheck[iBin].data());
     }
 
     registry.add("MC/hMonteCarloEventCounter", "hMonteCarloEventCounter", {HistType::kTH1D, {{MonteCarloEventSelectionStep::NMonteCarloEventSelectionSteps, -0.5, +MonteCarloEventSelectionStep::NMonteCarloEventSelectionSteps - 0.5}}});
@@ -607,6 +744,68 @@ struct MftReassociationValidation {
     return grpo->getNominalL3Field();
   }
 
+  template <typename TTrack>
+  bool isTrueCollisionAmongCompatibleCollisions(TTrack track)
+  {
+
+    auto const& compatibleIds = track.compatibleCollIds();
+
+    // For this track, check if *any* reco collision that corresponds to its TRUE MC collision
+    // is present among the compatible collisions.
+    bool recoOfTrueInCompatible = false;
+    if (track.ambDegree() != 0) {
+      const int mcTrueCollisionId = track.mcParticle().mcCollisionId();
+      // Fast membership test using compatibleCollIds() if available.
+      // If compatibleIds is empty, it means the table is missing or no compatible collisions were stored.
+      if (!compatibleIds.empty()) {
+        for (auto const& id : compatibleIds) {
+
+          auto iterator = recoMcCollisionId.find(id);
+
+          if (iterator != recoMcCollisionId.end()) {
+            if (iterator->second == mcTrueCollisionId) {
+
+              recoOfTrueInCompatible = true;
+              return recoOfTrueInCompatible;
+            }
+          } else {
+            return recoOfTrueInCompatible;
+          }
+        }
+      }
+    }
+    return recoOfTrueInCompatible;
+  }
+
+  template <typename TBc>
+  void loadZVertexShiftCorrection(TBc const& bc)
+  {
+
+    grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(configTask.grpmagPath, bc.timestamp());
+    LOG(info) << "Setting magnetic field to current " << grpmag->getL3Current()
+              << " A for run " << bc.runNumber()
+              << " from its GRPMagField CCDB object";
+    o2::base::Propagator::initFieldFromGRP(grpmag);
+
+    o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+    bZ = field->getBz(CcenterMFT);
+    LOG(info) << "The field at the center of the MFT is bZ = " << bZ;
+
+    if (configTask.cfgApplyZShiftFromCCDB) {
+      auto* zShift = ccdb->getForTimeStamp<std::vector<float>>(configTask.cfgZShiftPath, bc.timestamp());
+      if (zShift != nullptr && !zShift->empty()) {
+        LOGF(info, "reading z shift %f from %s", (*zShift)[0], configTask.cfgZShiftPath.value);
+        mZShift = (*zShift)[0];
+      } else {
+        LOGF(info, "z shift is not found in ccdb path %s. set to 0 cm", configTask.cfgZShiftPath.value);
+        mZShift = 0;
+      }
+    } else {
+      LOGF(info, "z shift is manually set to %f cm", configTask.cfgManualZShift.value);
+      mZShift = configTask.cfgManualZShift;
+    }
+  }
+
   // =========================
   //      Cuts with functions
   // =========================
@@ -679,6 +878,12 @@ struct MftReassociationValidation {
     if (fillHistograms) {
       registry.fill(HIST("hPreciseEventCounter"), SpecificEventSelectionStep::IsRctFlagChecked);
     }
+    if (collision.posZ() > configCollision.zVertexMax || collision.posZ() < (-configCollision.zVertexMax)) {
+      return false;
+    }
+    if (fillHistograms) {
+      registry.fill(HIST("hPreciseEventCounter"), SpecificEventSelectionStep::IsWithinZvtxWindow);
+    }
 
     registry.fill(HIST("Data/hVtxZ"), collision.posZ());
 
@@ -689,7 +894,7 @@ struct MftReassociationValidation {
   // I tried to put it as a filter, but filters for normal TPC tracks also apply to MFT tracks I think
   // and it seems that they are not compatible
   template <typename TTrack>
-  bool isAcceptedMftTrack(TTrack const& mftTrack, bool fillHistograms)
+  bool isAcceptedMftTrack(TTrack const& mftTrack, bool fillHistograms, bool isData, float dcaXY, float dcaZ)
   {
     // cut on the eta of MFT tracks
     if (mftTrack.eta() > configMft.etaMftTrackMax || mftTrack.eta() < configMft.etaMftTrackMin) {
@@ -697,7 +902,11 @@ struct MftReassociationValidation {
     }
 
     if (fillHistograms) {
-      registry.fill(HIST("Data/hMftTracksSelection"), MftTrackSelectionStep::Eta);
+      if (isData) {
+        registry.fill(HIST("Data/hMftTracksSelection"), MftTrackSelectionStep::Eta);
+      } else {
+        registry.fill(HIST("MC/hPreciseTrackSelectionCounter"), SpecificTrackSelectionStep::AfterEtaCut);
+      }
     }
 
     // cut on the number of clusters of the reconstructed MFT track
@@ -706,7 +915,11 @@ struct MftReassociationValidation {
     }
 
     if (fillHistograms) {
-      registry.fill(HIST("Data/hMftTracksSelection"), MftTrackSelectionStep::Cluster);
+      if (isData) {
+        registry.fill(HIST("Data/hMftTracksSelection"), MftTrackSelectionStep::Cluster);
+      } else {
+        registry.fill(HIST("MC/hPreciseTrackSelectionCounter"), SpecificTrackSelectionStep::AfterClusterCut);
+      }
     }
 
     // cut on the pT of MFT tracks (for test purposes)
@@ -715,7 +928,48 @@ struct MftReassociationValidation {
     }
 
     if (fillHistograms) {
-      registry.fill(HIST("Data/hMftTracksSelection"), MftTrackSelectionStep::Pt);
+      if (isData) {
+        registry.fill(HIST("Data/hMftTracksSelection"), MftTrackSelectionStep::Pt);
+      } else {
+        registry.fill(HIST("MC/hPreciseTrackSelectionCounter"), SpecificTrackSelectionStep::AfterPtCut);
+      }
+    }
+
+    if (configMft.cutOnDcaXY && std::abs(dcaXY) > configMft.dcaXYMax) {
+      return false;
+    }
+    registry.fill(HIST("MC/hPreciseTrackSelectionCounter"), SpecificTrackSelectionStep::AfterDcaXYCut);
+    if (configMft.cutOnDcaZ && std::abs(dcaZ) > configMft.dcaZMax) {
+      return false;
+    }
+    registry.fill(HIST("MC/hPreciseTrackSelectionCounter"), SpecificTrackSelectionStep::AfterDcaZCut);
+
+    // cut on the track algorithm of MFT tracks
+    if (mftTrack.isCA()) {
+      if (fillHistograms) {
+        if (isData) {
+          registry.fill(HIST("Data/hMftTracksSelection"), MftTrackSelectionStep::IsCA);
+        } else {
+          registry.fill(HIST("MC/hPreciseTrackSelectionCounter"), SpecificTrackSelectionStep::IsCATrack);
+        }
+      }
+
+      if (configMft.useOnlyLTFTracks) {
+        return false;
+      }
+
+    } else {
+      if (fillHistograms) {
+        if (isData) {
+          registry.fill(HIST("Data/hMftTracksSelection"), MftTrackSelectionStep::IsLTF);
+        } else {
+          registry.fill(HIST("MC/hPreciseTrackSelectionCounter"), SpecificTrackSelectionStep::IsLTFTrack);
+        }
+      }
+
+      if (configMft.useOnlyCATracks) {
+        return false;
+      }
     }
 
     return true;
@@ -760,6 +1014,8 @@ struct MftReassociationValidation {
                    soa::SmallGroups<aod::BestCollisionsFwd> const& reassociated2dMftTracks,
                    aod::BCsWithTimestamps const&)
   {
+    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    loadZVertexShiftCorrection(bc);
 
     if (!(isAcceptedCollision(collision, true))) {
       return;
@@ -772,7 +1028,13 @@ struct MftReassociationValidation {
       registry.fill(HIST("Data/hAmbiguityOfMftTracks"), MftTrackAmbiguityStep::AllMftTracks);
       auto templatedMftTrack = reassociated2dMftTrack.template mfttrack_as<FilteredMftTracks>();
 
-      if (!isAcceptedMftTrack(templatedMftTrack, false)) {
+      o2::track::TrackParCovFwd trackPar = o2::aod::fwdtrackutils::getTrackParCovFwdShift(templatedMftTrack, mZShift);
+      std::array<double, 3> dcaInfOrig;
+      trackPar.propagateToDCAhelix(bZ, {collision.posX(), collision.posY(), collision.posZ()}, dcaInfOrig);
+      auto dcaXYoriginal = 999.f;
+      dcaXYoriginal = std::sqrt(dcaInfOrig[0] * dcaInfOrig[0] + dcaInfOrig[1] * dcaInfOrig[1]);
+
+      if (!isAcceptedMftTrack(templatedMftTrack, false, true, dcaXYoriginal, dcaInfOrig[2])) {
         continue;
       }
 
@@ -788,12 +1050,19 @@ struct MftReassociationValidation {
   }
   PROCESS_SWITCH(MftReassociationValidation, processData, "Process MFT reassociation validation for DATA", false);
 
-  void processCreateLookupTable(FilteredCollisionsWSelMultMcLabels const& collisions)
+  void processCreateLookupTable(FilteredCollisionsWSelMultMcLabels const& collisions, soa::Join<aod::McCollisions, aod::McCollsExtra> const& mcCollisions)
   {
+    recoVtxX.clear();
+    recoVtxY.clear();
+    recoVtxZ.clear();
+    recoMcCollisionId.clear();
+    recoMcCollBestCollisionIndex.clear();
+
     recoVtxX.reserve(collisions.size());
     recoVtxY.reserve(collisions.size());
     recoVtxZ.reserve(collisions.size());
     recoMcCollisionId.reserve(collisions.size());
+    recoMcCollBestCollisionIndex.reserve(mcCollisions.size());
 
     for (auto const& col : collisions) {
       recoVtxX.emplace(col.globalIndex(), col.posX());
@@ -801,15 +1070,23 @@ struct MftReassociationValidation {
       recoVtxZ.emplace(col.globalIndex(), col.posZ());
       recoMcCollisionId.emplace(col.globalIndex(), col.mcCollisionId());
     }
+
+    for (auto const& mcCol : mcCollisions) {
+      recoMcCollBestCollisionIndex.emplace(mcCol.globalIndex(), mcCol.bestCollisionIndex());
+    }
   }
   PROCESS_SWITCH(MftReassociationValidation, processCreateLookupTable, "Process look uptable creation", false);
 
   void processMcReassociated2d(FilteredCollisionsWSelMultMcLabels::iterator const& collision,
                                FilteredMftTracksWCollsMcLabels const& /*mftTracks*/,
-                               soa::SmallGroups<soa::Join<aod::BestCollisionsFwd, aod::McMFTTrackLabels>> const& reassociated2dMftTracks,
+                               soa::SmallGroups<soa::Join<aod::BestCollisionsFwd, aod::McMFTTrackLabels, aod::MFTTrkCompColls>> const& reassociated2dMftTracks,
                                aod::McCollisions const& /*mcCollisions*/,
-                               aod::McParticles const& /*particles*/)
+                               aod::McParticles const& /*particles*/,
+                               aod::BCsWithTimestamps const& /*bcs*/)
   {
+    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    loadZVertexShiftCorrection(bc);
+
     registry.fill(HIST("MC/hMonteCarloEventCounter"), MonteCarloEventSelectionStep::AllMonteCarloEvents);
     registry.fill(HIST("hPreciseEventCounter"), SpecificEventSelectionStep::AllEventsPrecise);
 
@@ -821,6 +1098,19 @@ struct MftReassociationValidation {
     registry.fill(HIST("MC/hMonteCarloEventCounter"), MonteCarloEventSelectionStep::HasMonteCarloCollision);
     registry.fill(HIST("hPreciseEventCounter"), SpecificEventSelectionStep::HasMcCollision);
 
+    const int mcCollisionId = collision.mcCollisionId();
+    auto iteratorMcCollisionBestCollIndex = recoMcCollBestCollisionIndex.find(mcCollisionId);
+    if (iteratorMcCollisionBestCollIndex == recoMcCollBestCollisionIndex.end()) {
+      return;
+    }
+    const float mcCollisionBestCollIndex = iteratorMcCollisionBestCollIndex->second;
+
+    if (configCollision.requireMcCollBestCollIndex && (collision.globalIndex() != mcCollisionBestCollIndex)) {
+      return;
+    }
+
+    registry.fill(HIST("hPreciseEventCounter"), SpecificEventSelectionStep::IsNotSplitVertex);
+
     if (!isAcceptedCollision(collision, true)) {
       return;
     }
@@ -829,13 +1119,43 @@ struct MftReassociationValidation {
 
     for (auto const& reassociated2dMftTrack : reassociated2dMftTracks) {
 
+      if (reassociated2dMftTrack.has_mcParticle()) {
+        if (configTask.keepOnlyPhysicalPrimary && !reassociated2dMftTrack.mcParticle().isPhysicalPrimary()) {
+          continue;
+        }
+        if (configTask.keepOnlySecondaries && reassociated2dMftTrack.mcParticle().isPhysicalPrimary()) {
+          continue;
+        }
+      }
+
       registry.fill(HIST("MC/hAmbiguityOfMftTracks"), MftTrackAmbiguityStep::AllMftTracks);
       registry.fill(HIST("MC/hMonteCarloTrackCounter"), MonteCarloTrackSelectionStep::AllMonteCarloTracks);
+      registry.fill(HIST("MC/hTrackAmbiguityCheck"), TrackAmbiguityCheckStep::AllTracksCheck);
+      registry.fill(HIST("MC/hPreciseTrackSelectionCounter"), SpecificTrackSelectionStep::AllTracksPrecise);
 
       auto templatedTrack = reassociated2dMftTrack.template mfttrack_as<FilteredMftTracksWCollsMcLabels>();
 
-      if (!isAcceptedMftTrack(templatedTrack, false)) {
+      o2::track::TrackParCovFwd trackPar = o2::aod::fwdtrackutils::getTrackParCovFwdShift(templatedTrack, mZShift);
+      std::array<double, 3> dcaInfOrig;
+      trackPar.propagateToDCAhelix(bZ, {collision.posX(), collision.posY(), collision.posZ()}, dcaInfOrig);
+      auto dcaXYoriginal = 999.f;
+      dcaXYoriginal = std::sqrt(dcaInfOrig[0] * dcaInfOrig[0] + dcaInfOrig[1] * dcaInfOrig[1]);
+
+      if (configMft.cutFakeTracks && templatedTrack.mcMask() != 0) {
         continue;
+      }
+      registry.fill(HIST("MC/hPreciseTrackSelectionCounter"), SpecificTrackSelectionStep::IsTrueTrack);
+      if (configMft.cutOrphanTracksExplicitly && reassociated2dMftTrack.ambDegree() == 0) {
+        continue;
+      }
+      registry.fill(HIST("MC/hPreciseTrackSelectionCounter"), SpecificTrackSelectionStep::AfterOrphanCut);
+
+      if (!isAcceptedMftTrack(templatedTrack, true, false, dcaXYoriginal, dcaInfOrig[2])) {
+        continue;
+      }
+
+      if (reassociated2dMftTrack.ambDegree() == static_cast<int>(reassociated2dMftTrack.compatibleCollIds().size())) {
+        registry.fill(HIST("MC/hTrackAmbiguityCheck"), TrackAmbiguityCheckStep::IsAmbDegreeEqualToCompatibleCollIdsSize);
       }
 
       registry.fill(HIST("MC/hAmbiguityOfMftTracks"), MftTrackAmbiguityStep::AfterTrackSelection);
@@ -843,6 +1163,7 @@ struct MftReassociationValidation {
 
       if (templatedTrack.has_mcParticle()) {
         registry.fill(HIST("MC/hMonteCarloTrackCounter"), MonteCarloTrackSelectionStep::HasMonteCarloParticle);
+        registry.fill(HIST("MC/hPreciseTrackSelectionCounter"), SpecificTrackSelectionStep::HasMcParticle);
 
         auto particle = templatedTrack.template mcParticle_as<aod::McParticles>();
         float deltaX = -999.f;
@@ -852,89 +1173,147 @@ struct MftReassociationValidation {
         float reassociatedDeltaY = -999.f;
         float reassociatedDeltaZ = -999.f;
         auto collision = templatedTrack.collision_as<FilteredCollisionsWSelMultMcLabels>();
-        // auto mcCollision = particle.mcCollision_as<aod::McCollisions>();
-        // deltaZ = collision.posZ() - mcCollision.posZ();
         auto xPosTrue = reassociated2dMftTrack.mcParticle().mcCollision().posX();
         auto yPosTrue = reassociated2dMftTrack.mcParticle().mcCollision().posY();
         auto zPosTrue = reassociated2dMftTrack.mcParticle().mcCollision().posZ();
 
-        const int bestRecoCol = reassociated2dMftTrack.bestCollisionId();
-        // if (bestRecoCol < 0) {
-        //   // no associated reco collision -> skip or count separately
-        //   continue;
-        // }
+        const int bestRecoColl = reassociated2dMftTrack.bestCollisionId();
+        const int originalRecoColl = templatedTrack.collisionId();
 
-        auto iteratorRecoVtxX = recoVtxX.find(bestRecoCol);
-        auto iteratorRecoVtxY = recoVtxY.find(bestRecoCol);
-        auto iteratorRecoVtxZ = recoVtxZ.find(bestRecoCol);
-        auto iteratorRecoMcCollisionId = recoMcCollisionId.find(bestRecoCol);
-        if (iteratorRecoVtxX == recoVtxX.end()) {
-          // bestRecoCol not found in reco collisions map -> skip or count separately
+        auto iteratorOriginalCollVtxX = recoVtxX.find(originalRecoColl);
+        auto iteratorOriginalCollVtxY = recoVtxY.find(originalRecoColl);
+        auto iteratorOriginalCollVtxZ = recoVtxZ.find(originalRecoColl);
+        auto iteratorBestCollVtxX = recoVtxX.find(bestRecoColl);
+        auto iteratorBestCollVtxY = recoVtxY.find(bestRecoColl);
+        auto iteratorBestCollVtxZ = recoVtxZ.find(bestRecoColl);
+        auto iteratorRecoMcCollisionId = recoMcCollisionId.find(bestRecoColl);
+
+        if (iteratorOriginalCollVtxX == recoVtxX.end()) {
+          // bestRecoColl not found in reco collisions map -> skip or count separately
           continue;
         }
-        if (iteratorRecoVtxY == recoVtxY.end()) {
-          // bestRecoCol not found in reco collisions map -> skip or count separately
+        if (iteratorOriginalCollVtxY == recoVtxY.end()) {
           continue;
         }
-        if (iteratorRecoVtxZ == recoVtxZ.end()) {
-          // bestRecoCol not found in reco collisions map -> skip or count separately
+        if (iteratorOriginalCollVtxZ == recoVtxZ.end()) {
+          continue;
+        }
+        if (iteratorBestCollVtxX == recoVtxX.end()) {
+          continue;
+        }
+        if (iteratorBestCollVtxY == recoVtxY.end()) {
+          continue;
+        }
+        if (iteratorBestCollVtxZ == recoVtxZ.end()) {
           continue;
         }
         if (iteratorRecoMcCollisionId == recoMcCollisionId.end()) {
-          // bestRecoCol not found in reco collisions map -> skip or count separately
           continue;
         }
 
-        const float xReco = iteratorRecoVtxX->second;
-        const float yReco = iteratorRecoVtxY->second;
-        const float zReco = iteratorRecoVtxZ->second;
+        const float xPosOriginalColl = iteratorOriginalCollVtxX->second;
+        const float yPosOriginalColl = iteratorOriginalCollVtxY->second;
+        const float zPosOriginalColl = iteratorOriginalCollVtxZ->second;
+        const float xPosBestColl = iteratorBestCollVtxX->second;
+        const float yPosBestColl = iteratorBestCollVtxY->second;
+        const float zPosBestColl = iteratorBestCollVtxZ->second;
         const int mcCollisionIdReco = iteratorRecoMcCollisionId->second;
 
-        reassociatedDeltaX = xReco - xPosTrue;
-        reassociatedDeltaY = yReco - yPosTrue;
-        reassociatedDeltaZ = zReco - zPosTrue;
+        deltaX = xPosOriginalColl - xPosTrue;
+        deltaY = yPosOriginalColl - yPosTrue;
+        deltaZ = zPosOriginalColl - zPosTrue;
+
+        reassociatedDeltaX = xPosBestColl - xPosTrue;
+        reassociatedDeltaY = yPosBestColl - yPosTrue;
+        reassociatedDeltaZ = zPosBestColl - zPosTrue;
+
+        const auto dcaXtruth(particle.vx() - particle.mcCollision().posX());
+        const auto dcaYtruth(particle.vy() - particle.mcCollision().posY());
+        const auto dcaZtruth(particle.vz() - particle.mcCollision().posZ());
+        auto dcaXYtruth = std::sqrt(dcaXtruth * dcaXtruth + dcaYtruth * dcaYtruth);
 
         if (reassociated2dMftTrack.ambDegree() > 1) { // AMBIGUOUS TRACKS
           registry.fill(HIST("MC/hAmbiguityOfMftTracks"), MftTrackAmbiguityStep::NumberOfAmbiguousTracks);
           registry.fill(HIST("MC/hIsAmbiguousTrackMatchedToTrueCollision"), MftAmbiguousAndMatchedToTrueCollisionStep::IsAmbiguous);
           registry.fill(HIST("MC/hReassociation2dMftTracks"), Reassociation2dMftTracks::AllAmbiguousTracksAfterTrackSelectionsFor2d);
           hZVtxDiffAmbiguousTracks[MatchedToTrueCollisionStep::AllTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), deltaX, deltaY, deltaZ);
+          hDcaAmbiguousTracks[MatchedToTrueCollisionStep::AllTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), dcaXYoriginal, dcaInfOrig[2], dcaXYtruth, dcaZtruth);
 
           if (collision.mcCollisionId() == particle.mcCollisionId()) {
             registry.fill(HIST("MC/hIsAmbiguousTrackMatchedToTrueCollision"), MftAmbiguousAndMatchedToTrueCollisionStep::IsAmbiguousAndMatchedToTrueCollision);
             hZVtxDiffAmbiguousTracks[MatchedToTrueCollisionStep::IsMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), deltaX, deltaY, deltaZ);
+            hDcaAmbiguousTracks[MatchedToTrueCollisionStep::IsMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), dcaXYoriginal, dcaInfOrig[2], dcaXYtruth, dcaZtruth);
           } else {
             registry.fill(HIST("MC/hIsAmbiguousTrackMatchedToTrueCollision"), MftAmbiguousAndMatchedToTrueCollisionStep::IsAmbiguousAndNotMatchedToTrueCollision);
             hZVtxDiffAmbiguousTracks[MatchedToTrueCollisionStep::IsNotMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), deltaX, deltaY, deltaZ);
+            hDcaAmbiguousTracks[MatchedToTrueCollisionStep::IsNotMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), dcaXYoriginal, dcaInfOrig[2], dcaXYtruth, dcaZtruth);
           }
 
           if (templatedTrack.collisionId() == reassociated2dMftTrack.bestCollisionId()) { // IS NOT 2D REASSOCIATED
 
             registry.fill(HIST("MC/hReassociation2dMftTracks"), Reassociation2dMftTracks::NotReassociated2dMftTracks);
-            registry.fill(HIST("MC/IsNot2dReassociatedAndMatchedToTrueCollision"), MftNot2dReassociatedAndMatchedToTrueCollisionStep::IsNot2dReassociated);
+            registry.fill(HIST("MC/hIsNot2dReassociatedAndMatchedToTrueCollision"), MftNot2dReassociatedAndMatchedToTrueCollisionStep::IsNot2dReassociated);
             hZVtxDiffNot2dReassociatedTracks[MatchedToTrueCollisionStep::AllTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociatedDeltaX, reassociatedDeltaY, reassociatedDeltaZ);
+            hDcaNot2dReassociatedTracks[MatchedToTrueCollisionStep::AllTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated2dMftTrack.bestDCAXY(), dcaXYtruth);
 
             if (mcCollisionIdReco == particle.mcCollisionId()) {
-              registry.fill(HIST("MC/IsNot2dReassociatedAndMatchedToTrueCollision"), MftNot2dReassociatedAndMatchedToTrueCollisionStep::IsNot2dReassociatedAndMatchedToTrueCollision);
+              registry.fill(HIST("MC/hIsNot2dReassociatedAndMatchedToTrueCollision"), MftNot2dReassociatedAndMatchedToTrueCollisionStep::IsNot2dReassociatedAndMatchedToTrueCollision);
               hZVtxDiffNot2dReassociatedTracks[MatchedToTrueCollisionStep::IsMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociatedDeltaX, reassociatedDeltaY, reassociatedDeltaZ);
+              hDcaNot2dReassociatedTracks[MatchedToTrueCollisionStep::IsMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated2dMftTrack.bestDCAXY(), dcaXYtruth);
             } else {
-              registry.fill(HIST("MC/IsNot2dReassociatedAndMatchedToTrueCollision"), MftNot2dReassociatedAndMatchedToTrueCollisionStep::IsNot2dReassociatedAndNotMatchedToTrueCollision);
+              registry.fill(HIST("MC/hIsNot2dReassociatedAndMatchedToTrueCollision"), MftNot2dReassociatedAndMatchedToTrueCollisionStep::IsNot2dReassociatedAndNotMatchedToTrueCollision);
               hZVtxDiffNot2dReassociatedTracks[MatchedToTrueCollisionStep::IsNotMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociatedDeltaX, reassociatedDeltaY, reassociatedDeltaZ);
+              hDcaNot2dReassociatedTracks[MatchedToTrueCollisionStep::IsNotMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated2dMftTrack.bestDCAXY(), dcaXYtruth);
+
+              registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisions"), MftIsTrueCollisionAmongCompatibleCollisionsStep::AllWronglyAssociatedTracks);
+              registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisionsDcaNotReassociated"), MftIsTrueCollisionAmongCompatibleCollisionsStep::AllWronglyAssociatedTracks);
+              hZVtxDiffNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::AllWronglyAssociatedTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociatedDeltaX, reassociatedDeltaY, reassociatedDeltaZ);
+              hDcaNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::AllWronglyAssociatedTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated2dMftTrack.bestDCAXY(), 0, dcaXYtruth, 0);
+              if (isTrueCollisionAmongCompatibleCollisions(reassociated2dMftTrack)) {
+                registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisions"), MftIsTrueCollisionAmongCompatibleCollisionsStep::IsTrueCollisionAmongCompatibleCollisions);
+                registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisionsDcaNotReassociated"), MftIsTrueCollisionAmongCompatibleCollisionsStep::IsTrueCollisionAmongCompatibleCollisions);
+                hZVtxDiffNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsTrueCollisionAmongCompatibleCollisions]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociatedDeltaX, reassociatedDeltaY, reassociatedDeltaZ);
+                hDcaNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsTrueCollisionAmongCompatibleCollisions]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated2dMftTrack.bestDCAXY(), 0, dcaXYtruth, 0);
+              } else {
+                registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisions"), MftIsTrueCollisionAmongCompatibleCollisionsStep::IsNotTrueCollisionAmongCompatibleCollisions);
+                registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisionsDcaNotReassociated"), MftIsTrueCollisionAmongCompatibleCollisionsStep::IsNotTrueCollisionAmongCompatibleCollisions);
+                hZVtxDiffNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsNotTrueCollisionAmongCompatibleCollisions]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociatedDeltaX, reassociatedDeltaY, reassociatedDeltaZ);
+                hDcaNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsNotTrueCollisionAmongCompatibleCollisions]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated2dMftTrack.bestDCAXY(), 0, dcaXYtruth, 0);
+              }
             }
 
           } else { // IS 2D REASSOCIATED
 
             registry.fill(HIST("MC/hReassociation2dMftTracks"), Reassociation2dMftTracks::Reassociated2dMftTracks);
-            registry.fill(HIST("MC/Is2dReassociatedAndMatchedToTrueCollision"), Mft2dReassociatedAndMatchedToTrueCollisionStep::Is2dReassociated);
-            hZVtxDiff2dReassociatedTracks[MatchedToTrueCollisionStep::AllTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), deltaX, deltaY, deltaZ);
+            registry.fill(HIST("MC/hIs2dReassociatedAndMatchedToTrueCollision"), Mft2dReassociatedAndMatchedToTrueCollisionStep::Is2dReassociated);
+            hZVtxDiff2dReassociatedTracks[MatchedToTrueCollisionStep::AllTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociatedDeltaX, reassociatedDeltaY, reassociatedDeltaZ);
+            hDca2dReassociatedTracks[MatchedToTrueCollisionStep::AllTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated2dMftTrack.bestDCAXY(), dcaXYtruth);
 
             // is collision.mcCollisionId() the reassociated collision vertex ? or the initial collision
             if (mcCollisionIdReco == particle.mcCollisionId()) {
-              registry.fill(HIST("MC/Is2dReassociatedAndMatchedToTrueCollision"), Mft2dReassociatedAndMatchedToTrueCollisionStep::Is2dReassociatedAndMatchedToTrueCollision);
-              hZVtxDiff2dReassociatedTracks[MatchedToTrueCollisionStep::IsMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), deltaX, deltaY, deltaZ);
+              registry.fill(HIST("MC/hIs2dReassociatedAndMatchedToTrueCollision"), Mft2dReassociatedAndMatchedToTrueCollisionStep::Is2dReassociatedAndMatchedToTrueCollision);
+              hZVtxDiff2dReassociatedTracks[MatchedToTrueCollisionStep::IsMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociatedDeltaX, reassociatedDeltaY, reassociatedDeltaZ);
+              hDca2dReassociatedTracks[MatchedToTrueCollisionStep::IsMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated2dMftTrack.bestDCAXY(), dcaXYtruth);
             } else {
-              registry.fill(HIST("MC/Is2dReassociatedAndMatchedToTrueCollision"), Mft2dReassociatedAndMatchedToTrueCollisionStep::Is2dReassociatedAndNotMatchedToTrueCollision);
-              hZVtxDiff2dReassociatedTracks[MatchedToTrueCollisionStep::IsNotMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), deltaX, deltaY, deltaZ);
+              registry.fill(HIST("MC/hIs2dReassociatedAndMatchedToTrueCollision"), Mft2dReassociatedAndMatchedToTrueCollisionStep::Is2dReassociatedAndNotMatchedToTrueCollision);
+              hZVtxDiff2dReassociatedTracks[MatchedToTrueCollisionStep::IsNotMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociatedDeltaX, reassociatedDeltaY, reassociatedDeltaZ);
+              hDca2dReassociatedTracks[MatchedToTrueCollisionStep::IsNotMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated2dMftTrack.bestDCAXY(), dcaXYtruth);
+
+              registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisions"), MftIsTrueCollisionAmongCompatibleCollisionsStep::AllWronglyAssociatedTracks);
+              registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisionsDcaReassociated"), MftIsTrueCollisionAmongCompatibleCollisionsStep::AllWronglyAssociatedTracks);
+              hZVtxDiffNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::AllWronglyAssociatedTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociatedDeltaX, reassociatedDeltaY, reassociatedDeltaZ);
+              hDcaNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::AllWronglyAssociatedTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated2dMftTrack.bestDCAXY(), 0, dcaXYtruth, 0);
+              if (isTrueCollisionAmongCompatibleCollisions(reassociated2dMftTrack)) {
+                registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisions"), MftIsTrueCollisionAmongCompatibleCollisionsStep::IsTrueCollisionAmongCompatibleCollisions);
+                registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisionsDcaReassociated"), MftIsTrueCollisionAmongCompatibleCollisionsStep::IsTrueCollisionAmongCompatibleCollisions);
+                hZVtxDiffNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsTrueCollisionAmongCompatibleCollisions]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociatedDeltaX, reassociatedDeltaY, reassociatedDeltaZ);
+                hDcaNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsTrueCollisionAmongCompatibleCollisions]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated2dMftTrack.bestDCAXY(), 0, dcaXYtruth, 0);
+              } else {
+                registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisions"), MftIsTrueCollisionAmongCompatibleCollisionsStep::IsNotTrueCollisionAmongCompatibleCollisions);
+                registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisionsDcaReassociated"), MftIsTrueCollisionAmongCompatibleCollisionsStep::IsNotTrueCollisionAmongCompatibleCollisions);
+                hZVtxDiffNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsNotTrueCollisionAmongCompatibleCollisions]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociatedDeltaX, reassociatedDeltaY, reassociatedDeltaZ);
+                hDcaNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsNotTrueCollisionAmongCompatibleCollisions]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated2dMftTrack.bestDCAXY(), 0, dcaXYtruth, 0);
+              }
             }
           }
 
@@ -943,13 +1322,16 @@ struct MftReassociationValidation {
           registry.fill(HIST("MC/hAmbiguityOfMftTracks"), MftTrackAmbiguityStep::NumberOfNonAmbiguousTracks);
           registry.fill(HIST("MC/hIsNonAmbiguousTrackMatchedToTrueCollision"), MftNonAmbiguousAndMatchedToTrueCollisionStep::IsNonAmbiguous);
           hZVtxDiffNonAmbiguousTracks[MatchedToTrueCollisionStep::AllTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), deltaX, deltaY, deltaZ);
+          hDcaNonAmbiguousTracks[MatchedToTrueCollisionStep::AllTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), dcaXYoriginal, dcaInfOrig[2], dcaXYtruth, dcaZtruth);
 
           if (collision.mcCollisionId() == particle.mcCollisionId()) {
             registry.fill(HIST("MC/hIsNonAmbiguousTrackMatchedToTrueCollision"), MftNonAmbiguousAndMatchedToTrueCollisionStep::IsNonAmbiguousAndMatchedToTrueCollision);
             hZVtxDiffNonAmbiguousTracks[MatchedToTrueCollisionStep::IsMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), deltaX, deltaY, deltaZ);
+            hDcaNonAmbiguousTracks[MatchedToTrueCollisionStep::IsMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), dcaXYoriginal, dcaInfOrig[2], dcaXYtruth, dcaZtruth);
           } else {
             registry.fill(HIST("MC/hIsNonAmbiguousTrackMatchedToTrueCollision"), MftNonAmbiguousAndMatchedToTrueCollisionStep::IsNonAmbiguousAndNotMatchedToTrueCollision);
             hZVtxDiffNonAmbiguousTracks[MatchedToTrueCollisionStep::IsNotMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), deltaX, deltaY, deltaZ);
+            hDcaNonAmbiguousTracks[MatchedToTrueCollisionStep::IsNotMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), dcaXYoriginal, dcaInfOrig[2], dcaXYtruth, dcaZtruth);
           }
 
         } // end of if non ambi
@@ -962,10 +1344,14 @@ struct MftReassociationValidation {
 
   void processMcReassociated3d(FilteredCollisionsWSelMultMcLabels::iterator const& collision,
                                FilteredMftTracksWCollsMcLabels const& /*mftTracks*/,
-                               soa::SmallGroups<soa::Join<aod::BestCollisionsFwd3d, aod::McMFTTrackLabels>> const& reassociated3dMftTracks,
+                               soa::SmallGroups<soa::Join<aod::BestCollisionsFwd3d, aod::McMFTTrackLabels, aod::MFTTrkCompColls>> const& reassociated3dMftTracks,
                                aod::McCollisions const& /*mcCollisions*/,
-                               aod::McParticles const& /*particles*/)
+                               aod::McParticles const& /*particles*/,
+                               aod::BCsWithTimestamps const& /*bcs*/)
   {
+    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    loadZVertexShiftCorrection(bc);
+
     registry.fill(HIST("MC/hMonteCarloEventCounter"), MonteCarloEventSelectionStep::AllMonteCarloEvents);
     registry.fill(HIST("hPreciseEventCounter"), SpecificEventSelectionStep::AllEventsPrecise);
 
@@ -977,6 +1363,19 @@ struct MftReassociationValidation {
     registry.fill(HIST("MC/hMonteCarloEventCounter"), MonteCarloEventSelectionStep::HasMonteCarloCollision);
     registry.fill(HIST("hPreciseEventCounter"), SpecificEventSelectionStep::HasMcCollision);
 
+    const int mcCollisionId = collision.mcCollisionId();
+    auto iteratorMcCollisionBestCollIndex = recoMcCollBestCollisionIndex.find(mcCollisionId);
+    if (iteratorMcCollisionBestCollIndex == recoMcCollBestCollisionIndex.end()) {
+      return;
+    }
+    const float mcCollisionBestCollIndex = iteratorMcCollisionBestCollIndex->second;
+
+    if (configCollision.requireMcCollBestCollIndex && (collision.globalIndex() != mcCollisionBestCollIndex)) {
+      return;
+    }
+
+    registry.fill(HIST("hPreciseEventCounter"), SpecificEventSelectionStep::IsNotSplitVertex);
+
     if (!isAcceptedCollision(collision, true)) {
       return;
     }
@@ -985,13 +1384,43 @@ struct MftReassociationValidation {
 
     for (auto const& reassociated3dMftTrack : reassociated3dMftTracks) {
 
+      if (reassociated3dMftTrack.has_mcParticle()) {
+        if (configTask.keepOnlyPhysicalPrimary && !reassociated3dMftTrack.mcParticle().isPhysicalPrimary()) {
+          continue;
+        }
+        if (configTask.keepOnlySecondaries && reassociated3dMftTrack.mcParticle().isPhysicalPrimary()) {
+          continue;
+        }
+      }
+
       registry.fill(HIST("MC/hAmbiguityOfMftTracks"), MftTrackAmbiguityStep::AllMftTracks);
       registry.fill(HIST("MC/hMonteCarloTrackCounter"), MonteCarloTrackSelectionStep::AllMonteCarloTracks);
+      registry.fill(HIST("MC/hTrackAmbiguityCheck"), TrackAmbiguityCheckStep::AllTracksCheck);
+      registry.fill(HIST("MC/hPreciseTrackSelectionCounter"), SpecificTrackSelectionStep::AllTracksPrecise);
 
       auto templatedTrack = reassociated3dMftTrack.template mfttrack_as<FilteredMftTracksWCollsMcLabels>();
 
-      if (!isAcceptedMftTrack(templatedTrack, false)) {
+      o2::track::TrackParCovFwd trackPar = o2::aod::fwdtrackutils::getTrackParCovFwdShift(templatedTrack, mZShift);
+      std::array<double, 3> dcaInfOrig;
+      trackPar.propagateToDCAhelix(bZ, {collision.posX(), collision.posY(), collision.posZ()}, dcaInfOrig);
+      auto dcaXYoriginal = 999.f;
+      dcaXYoriginal = std::sqrt(dcaInfOrig[0] * dcaInfOrig[0] + dcaInfOrig[1] * dcaInfOrig[1]);
+
+      if (configMft.cutFakeTracks && templatedTrack.mcMask() != 0) {
         continue;
+      }
+      registry.fill(HIST("MC/hPreciseTrackSelectionCounter"), SpecificTrackSelectionStep::IsTrueTrack);
+      if (configMft.cutOrphanTracksExplicitly && reassociated3dMftTrack.ambDegree() == 0) {
+        continue;
+      }
+      registry.fill(HIST("MC/hPreciseTrackSelectionCounter"), SpecificTrackSelectionStep::AfterOrphanCut);
+
+      if (!isAcceptedMftTrack(templatedTrack, true, false, dcaXYoriginal, dcaInfOrig[2])) {
+        continue;
+      }
+
+      if (reassociated3dMftTrack.ambDegree() == static_cast<int>(reassociated3dMftTrack.compatibleCollIds().size())) {
+        registry.fill(HIST("MC/hTrackAmbiguityCheck"), TrackAmbiguityCheckStep::IsAmbDegreeEqualToCompatibleCollIdsSize);
       }
 
       registry.fill(HIST("MC/hAmbiguityOfMftTracks"), MftTrackAmbiguityStep::AfterTrackSelection);
@@ -999,6 +1428,7 @@ struct MftReassociationValidation {
 
       if (templatedTrack.has_mcParticle()) {
         registry.fill(HIST("MC/hMonteCarloTrackCounter"), MonteCarloTrackSelectionStep::HasMonteCarloParticle);
+        registry.fill(HIST("MC/hPreciseTrackSelectionCounter"), SpecificTrackSelectionStep::HasMcParticle);
 
         auto particle = templatedTrack.template mcParticle_as<aod::McParticles>();
         float deltaX = -999.f;
@@ -1008,89 +1438,146 @@ struct MftReassociationValidation {
         float reassociatedDeltaY = -999.f;
         float reassociatedDeltaZ = -999.f;
         auto collision = templatedTrack.collision_as<FilteredCollisionsWSelMultMcLabels>();
-        // auto mcCollision = particle.mcCollision_as<aod::McCollisions>();
-        // deltaZ = collision.posZ() - mcCollision.posZ();
         auto xPosTrue = reassociated3dMftTrack.mcParticle().mcCollision().posX();
         auto yPosTrue = reassociated3dMftTrack.mcParticle().mcCollision().posY();
         auto zPosTrue = reassociated3dMftTrack.mcParticle().mcCollision().posZ();
 
-        const int bestRecoCol = reassociated3dMftTrack.bestCollisionId();
-        // if (bestRecoCol < 0) {
-        //   // no associated reco collision -> skip or count separately
-        //   continue;
-        // }
+        const int bestRecoColl = reassociated3dMftTrack.bestCollisionId();
+        const int originalRecoColl = templatedTrack.collisionId();
 
-        auto iteratorRecoVtxX = recoVtxX.find(bestRecoCol);
-        auto iteratorRecoVtxY = recoVtxY.find(bestRecoCol);
-        auto iteratorRecoVtxZ = recoVtxZ.find(bestRecoCol);
-        auto iteratorRecoMcCollisionId = recoMcCollisionId.find(bestRecoCol);
-        if (iteratorRecoVtxX == recoVtxX.end()) {
-          // bestRecoCol not found in reco collisions map -> skip or count separately
+        auto iteratorOriginalCollVtxX = recoVtxX.find(originalRecoColl);
+        auto iteratorOriginalCollVtxY = recoVtxY.find(originalRecoColl);
+        auto iteratorOriginalCollVtxZ = recoVtxZ.find(originalRecoColl);
+        auto iteratorBestCollVtxX = recoVtxX.find(bestRecoColl);
+        auto iteratorBestCollVtxY = recoVtxY.find(bestRecoColl);
+        auto iteratorBestCollVtxZ = recoVtxZ.find(bestRecoColl);
+        auto iteratorRecoMcCollisionId = recoMcCollisionId.find(bestRecoColl);
+
+        if (iteratorOriginalCollVtxX == recoVtxX.end()) {
+          // bestRecoColl not found in reco collisions map -> skip or count separately
           continue;
         }
-        if (iteratorRecoVtxY == recoVtxY.end()) {
-          // bestRecoCol not found in reco collisions map -> skip or count separately
+        if (iteratorOriginalCollVtxY == recoVtxY.end()) {
           continue;
         }
-        if (iteratorRecoVtxZ == recoVtxZ.end()) {
-          // bestRecoCol not found in reco collisions map -> skip or count separately
+        if (iteratorOriginalCollVtxZ == recoVtxZ.end()) {
+          continue;
+        }
+        if (iteratorBestCollVtxX == recoVtxX.end()) {
+          continue;
+        }
+        if (iteratorBestCollVtxY == recoVtxY.end()) {
+          continue;
+        }
+        if (iteratorBestCollVtxZ == recoVtxZ.end()) {
           continue;
         }
         if (iteratorRecoMcCollisionId == recoMcCollisionId.end()) {
-          // bestRecoCol not found in reco collisions map -> skip or count separately
           continue;
         }
 
-        const float xReco = iteratorRecoVtxX->second;
-        const float yReco = iteratorRecoVtxY->second;
-        const float zReco = iteratorRecoVtxZ->second;
+        const float xPosOriginalColl = iteratorOriginalCollVtxX->second;
+        const float yPosOriginalColl = iteratorOriginalCollVtxY->second;
+        const float zPosOriginalColl = iteratorOriginalCollVtxZ->second;
+        const float xPosBestColl = iteratorBestCollVtxX->second;
+        const float yPosBestColl = iteratorBestCollVtxY->second;
+        const float zPosBestColl = iteratorBestCollVtxZ->second;
         const int mcCollisionIdReco = iteratorRecoMcCollisionId->second;
 
-        reassociatedDeltaX = xReco - xPosTrue;
-        reassociatedDeltaY = yReco - yPosTrue;
-        reassociatedDeltaZ = zReco - zPosTrue;
+        deltaX = xPosOriginalColl - xPosTrue;
+        deltaY = yPosOriginalColl - yPosTrue;
+        deltaZ = zPosOriginalColl - zPosTrue;
+
+        reassociatedDeltaX = xPosBestColl - xPosTrue;
+        reassociatedDeltaY = yPosBestColl - yPosTrue;
+        reassociatedDeltaZ = zPosBestColl - zPosTrue;
+
+        const auto dcaXtruth(particle.vx() - particle.mcCollision().posX());
+        const auto dcaYtruth(particle.vy() - particle.mcCollision().posY());
+        const auto dcaZtruth(particle.vz() - particle.mcCollision().posZ());
+        auto dcaXYtruth = std::sqrt(dcaXtruth * dcaXtruth + dcaYtruth * dcaYtruth);
 
         if (reassociated3dMftTrack.ambDegree() > 1) { // AMBIGUOUS TRACKS
           registry.fill(HIST("MC/hAmbiguityOfMftTracks"), MftTrackAmbiguityStep::NumberOfAmbiguousTracks);
           registry.fill(HIST("MC/hIsAmbiguousTrackMatchedToTrueCollision"), MftAmbiguousAndMatchedToTrueCollisionStep::IsAmbiguous);
           registry.fill(HIST("MC/hReassociation3dMftTracks"), Reassociation3dMftTracks::AllAmbiguousTracksAfterTrackSelectionsFor3d);
           hZVtxDiffAmbiguousTracks[MatchedToTrueCollisionStep::AllTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), deltaX, deltaY, deltaZ);
+          hDcaAmbiguousTracks[MatchedToTrueCollisionStep::AllTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), dcaXYoriginal, dcaInfOrig[2], dcaXYtruth, dcaZtruth);
 
           if (collision.mcCollisionId() == particle.mcCollisionId()) {
             registry.fill(HIST("MC/hIsAmbiguousTrackMatchedToTrueCollision"), MftAmbiguousAndMatchedToTrueCollisionStep::IsAmbiguousAndMatchedToTrueCollision);
             hZVtxDiffAmbiguousTracks[MatchedToTrueCollisionStep::IsMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), deltaX, deltaY, deltaZ);
+            hDcaAmbiguousTracks[MatchedToTrueCollisionStep::IsMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), dcaXYoriginal, dcaInfOrig[2], dcaXYtruth, dcaZtruth);
           } else {
             registry.fill(HIST("MC/hIsAmbiguousTrackMatchedToTrueCollision"), MftAmbiguousAndMatchedToTrueCollisionStep::IsAmbiguousAndNotMatchedToTrueCollision);
             hZVtxDiffAmbiguousTracks[MatchedToTrueCollisionStep::IsNotMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), deltaX, deltaY, deltaZ);
+            hDcaAmbiguousTracks[MatchedToTrueCollisionStep::IsNotMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), dcaXYoriginal, dcaInfOrig[2], dcaXYtruth, dcaZtruth);
           }
 
           if (templatedTrack.collisionId() == reassociated3dMftTrack.bestCollisionId()) { // IS NOT 3D REASSOCIATED
 
             registry.fill(HIST("MC/hReassociation3dMftTracks"), Reassociation3dMftTracks::NotReassociated3dMftTracks);
-            registry.fill(HIST("MC/IsNot3dReassociatedAndMatchedToTrueCollision"), MftNot3dReassociatedAndMatchedToTrueCollisionStep::IsNot3dReassociated);
+            registry.fill(HIST("MC/hIsNot3dReassociatedAndMatchedToTrueCollision"), MftNot3dReassociatedAndMatchedToTrueCollisionStep::IsNot3dReassociated);
             hZVtxDiffNot3dReassociatedTracks[MatchedToTrueCollisionStep::AllTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociatedDeltaX, reassociatedDeltaY, reassociatedDeltaZ);
+            hDcaNot3dReassociatedTracks[MatchedToTrueCollisionStep::AllTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated3dMftTrack.bestDCAXY(), reassociated3dMftTrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
 
             if (mcCollisionIdReco == particle.mcCollisionId()) {
-              registry.fill(HIST("MC/IsNot3dReassociatedAndMatchedToTrueCollision"), MftNot3dReassociatedAndMatchedToTrueCollisionStep::IsNot3dReassociatedAndMatchedToTrueCollision);
+              registry.fill(HIST("MC/hIsNot3dReassociatedAndMatchedToTrueCollision"), MftNot3dReassociatedAndMatchedToTrueCollisionStep::IsNot3dReassociatedAndMatchedToTrueCollision);
               hZVtxDiffNot3dReassociatedTracks[MatchedToTrueCollisionStep::IsMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociatedDeltaX, reassociatedDeltaY, reassociatedDeltaZ);
+              hDcaNot3dReassociatedTracks[MatchedToTrueCollisionStep::IsMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated3dMftTrack.bestDCAXY(), reassociated3dMftTrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
             } else {
-              registry.fill(HIST("MC/IsNot3dReassociatedAndMatchedToTrueCollision"), MftNot3dReassociatedAndMatchedToTrueCollisionStep::IsNot3dReassociatedAndNotMatchedToTrueCollision);
+              registry.fill(HIST("MC/hIsNot3dReassociatedAndMatchedToTrueCollision"), MftNot3dReassociatedAndMatchedToTrueCollisionStep::IsNot3dReassociatedAndNotMatchedToTrueCollision);
               hZVtxDiffNot3dReassociatedTracks[MatchedToTrueCollisionStep::IsNotMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociatedDeltaX, reassociatedDeltaY, reassociatedDeltaZ);
+              hDcaNot3dReassociatedTracks[MatchedToTrueCollisionStep::IsNotMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated3dMftTrack.bestDCAXY(), reassociated3dMftTrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
+
+              registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisions"), MftIsTrueCollisionAmongCompatibleCollisionsStep::AllWronglyAssociatedTracks);
+              registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisionsDcaNotReassociated"), MftIsTrueCollisionAmongCompatibleCollisionsStep::AllWronglyAssociatedTracks);
+              hZVtxDiffNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::AllWronglyAssociatedTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociatedDeltaX, reassociatedDeltaY, reassociatedDeltaZ);
+              hDcaNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::AllWronglyAssociatedTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated3dMftTrack.bestDCAXY(), reassociated3dMftTrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
+              if (isTrueCollisionAmongCompatibleCollisions(reassociated3dMftTrack)) {
+                registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisions"), MftIsTrueCollisionAmongCompatibleCollisionsStep::IsTrueCollisionAmongCompatibleCollisions);
+                registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisionsDcaNotReassociated"), MftIsTrueCollisionAmongCompatibleCollisionsStep::IsTrueCollisionAmongCompatibleCollisions);
+                hZVtxDiffNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsTrueCollisionAmongCompatibleCollisions]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociatedDeltaX, reassociatedDeltaY, reassociatedDeltaZ);
+                hDcaNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsTrueCollisionAmongCompatibleCollisions]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated3dMftTrack.bestDCAXY(), reassociated3dMftTrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
+              } else {
+                registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisions"), MftIsTrueCollisionAmongCompatibleCollisionsStep::IsNotTrueCollisionAmongCompatibleCollisions);
+                registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisionsDcaNotReassociated"), MftIsTrueCollisionAmongCompatibleCollisionsStep::IsNotTrueCollisionAmongCompatibleCollisions);
+                hZVtxDiffNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsNotTrueCollisionAmongCompatibleCollisions]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociatedDeltaX, reassociatedDeltaY, reassociatedDeltaZ);
+                hDcaNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsNotTrueCollisionAmongCompatibleCollisions]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated3dMftTrack.bestDCAXY(), reassociated3dMftTrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
+              }
             }
 
           } else { // IS 3D REASSOCIATED
 
             registry.fill(HIST("MC/hReassociation3dMftTracks"), Reassociation3dMftTracks::Reassociated3dMftTracks);
-            registry.fill(HIST("MC/Is3dReassociatedAndMatchedToTrueCollision"), Mft3dReassociatedAndMatchedToTrueCollisionStep::Is3dReassociated);
-            hZVtxDiff3dReassociatedTracks[MatchedToTrueCollisionStep::AllTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), deltaX, deltaY, deltaZ);
+            registry.fill(HIST("MC/hIs3dReassociatedAndMatchedToTrueCollision"), Mft3dReassociatedAndMatchedToTrueCollisionStep::Is3dReassociated);
+            hZVtxDiff3dReassociatedTracks[MatchedToTrueCollisionStep::AllTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociatedDeltaX, reassociatedDeltaY, reassociatedDeltaZ);
+            hDca3dReassociatedTracks[MatchedToTrueCollisionStep::AllTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated3dMftTrack.bestDCAXY(), reassociated3dMftTrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
 
-            // is collision.mcCollisionId() the reassociated collision vertex ? or the initial collision
             if (mcCollisionIdReco == particle.mcCollisionId()) {
-              registry.fill(HIST("MC/Is3dReassociatedAndMatchedToTrueCollision"), Mft3dReassociatedAndMatchedToTrueCollisionStep::Is3dReassociatedAndMatchedToTrueCollision);
-              hZVtxDiff3dReassociatedTracks[MatchedToTrueCollisionStep::IsMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), deltaX, deltaY, deltaZ);
+              registry.fill(HIST("MC/hIs3dReassociatedAndMatchedToTrueCollision"), Mft3dReassociatedAndMatchedToTrueCollisionStep::Is3dReassociatedAndMatchedToTrueCollision);
+              hZVtxDiff3dReassociatedTracks[MatchedToTrueCollisionStep::IsMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociatedDeltaX, reassociatedDeltaY, reassociatedDeltaZ);
+              hDca3dReassociatedTracks[MatchedToTrueCollisionStep::IsMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated3dMftTrack.bestDCAXY(), reassociated3dMftTrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
             } else {
-              registry.fill(HIST("MC/Is3dReassociatedAndMatchedToTrueCollision"), Mft3dReassociatedAndMatchedToTrueCollisionStep::Is3dReassociatedAndNotMatchedToTrueCollision);
-              hZVtxDiff3dReassociatedTracks[MatchedToTrueCollisionStep::IsNotMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), deltaX, deltaY, deltaZ);
+              registry.fill(HIST("MC/hIs3dReassociatedAndMatchedToTrueCollision"), Mft3dReassociatedAndMatchedToTrueCollisionStep::Is3dReassociatedAndNotMatchedToTrueCollision);
+              hZVtxDiff3dReassociatedTracks[MatchedToTrueCollisionStep::IsNotMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociatedDeltaX, reassociatedDeltaY, reassociatedDeltaZ);
+              hDca3dReassociatedTracks[MatchedToTrueCollisionStep::IsNotMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated3dMftTrack.bestDCAXY(), reassociated3dMftTrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
+
+              registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisions"), MftIsTrueCollisionAmongCompatibleCollisionsStep::AllWronglyAssociatedTracks);
+              registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisionsDcaReassociated"), MftIsTrueCollisionAmongCompatibleCollisionsStep::AllWronglyAssociatedTracks);
+              hZVtxDiffNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::AllWronglyAssociatedTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociatedDeltaX, reassociatedDeltaY, reassociatedDeltaZ);
+              hDcaNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::AllWronglyAssociatedTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated3dMftTrack.bestDCAXY(), reassociated3dMftTrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
+              if (isTrueCollisionAmongCompatibleCollisions(reassociated3dMftTrack)) {
+                registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisions"), MftIsTrueCollisionAmongCompatibleCollisionsStep::IsTrueCollisionAmongCompatibleCollisions);
+                registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisionsDcaReassociated"), MftIsTrueCollisionAmongCompatibleCollisionsStep::IsTrueCollisionAmongCompatibleCollisions);
+                hZVtxDiffNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsTrueCollisionAmongCompatibleCollisions]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociatedDeltaX, reassociatedDeltaY, reassociatedDeltaZ);
+                hDcaNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsTrueCollisionAmongCompatibleCollisions]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated3dMftTrack.bestDCAXY(), reassociated3dMftTrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
+              } else {
+                registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisions"), MftIsTrueCollisionAmongCompatibleCollisionsStep::IsNotTrueCollisionAmongCompatibleCollisions);
+                registry.fill(HIST("MC/hIsTrueCollisionAmongCompatibleCollisionsDcaReassociated"), MftIsTrueCollisionAmongCompatibleCollisionsStep::IsNotTrueCollisionAmongCompatibleCollisions);
+                hZVtxDiffNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsNotTrueCollisionAmongCompatibleCollisions]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociatedDeltaX, reassociatedDeltaY, reassociatedDeltaZ);
+                hDcaNotMatchedTracks[MftIsTrueCollisionAmongCompatibleCollisionsStep::IsNotTrueCollisionAmongCompatibleCollisions]->Fill(templatedTrack.pt(), templatedTrack.eta(), reassociated3dMftTrack.bestDCAXY(), reassociated3dMftTrack.bestDCAZ(), dcaXYtruth, dcaZtruth);
+              }
             }
           }
 
@@ -1099,13 +1586,16 @@ struct MftReassociationValidation {
           registry.fill(HIST("MC/hAmbiguityOfMftTracks"), MftTrackAmbiguityStep::NumberOfNonAmbiguousTracks);
           registry.fill(HIST("MC/hIsNonAmbiguousTrackMatchedToTrueCollision"), MftNonAmbiguousAndMatchedToTrueCollisionStep::IsNonAmbiguous);
           hZVtxDiffNonAmbiguousTracks[MatchedToTrueCollisionStep::AllTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), deltaX, deltaY, deltaZ);
+          hDcaNonAmbiguousTracks[MatchedToTrueCollisionStep::AllTracks]->Fill(templatedTrack.pt(), templatedTrack.eta(), dcaXYoriginal, dcaInfOrig[2], dcaXYtruth, dcaZtruth);
 
           if (collision.mcCollisionId() == particle.mcCollisionId()) {
             registry.fill(HIST("MC/hIsNonAmbiguousTrackMatchedToTrueCollision"), MftNonAmbiguousAndMatchedToTrueCollisionStep::IsNonAmbiguousAndMatchedToTrueCollision);
             hZVtxDiffNonAmbiguousTracks[MatchedToTrueCollisionStep::IsMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), deltaX, deltaY, deltaZ);
+            hDcaNonAmbiguousTracks[MatchedToTrueCollisionStep::IsMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), dcaXYoriginal, dcaInfOrig[2], dcaXYtruth, dcaZtruth);
           } else {
             registry.fill(HIST("MC/hIsNonAmbiguousTrackMatchedToTrueCollision"), MftNonAmbiguousAndMatchedToTrueCollisionStep::IsNonAmbiguousAndNotMatchedToTrueCollision);
             hZVtxDiffNonAmbiguousTracks[MatchedToTrueCollisionStep::IsNotMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), deltaX, deltaY, deltaZ);
+            hDcaNonAmbiguousTracks[MatchedToTrueCollisionStep::IsNotMatchedToTrueCollision]->Fill(templatedTrack.pt(), templatedTrack.eta(), dcaXYoriginal, dcaInfOrig[2], dcaXYtruth, dcaZtruth);
           }
 
         } // end of if non ambi

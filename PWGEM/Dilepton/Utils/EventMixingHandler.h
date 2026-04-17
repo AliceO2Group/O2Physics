@@ -16,7 +16,6 @@
 #define PWGEM_DILEPTON_UTILS_EVENTMIXINGHANDLER_H_
 
 #include <map>
-#include <utility>
 #include <vector>
 
 namespace o2::aod::pwgem::dilepton::utils

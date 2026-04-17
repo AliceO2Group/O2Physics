@@ -30,7 +30,6 @@
 #include <Framework/O2DatabasePDGPlugin.h>
 
 #include <THn.h>
-#include <TRandom3.h>
 
 #include <fastjet/ClusterSequenceArea.hh>
 #include <fastjet/PseudoJet.hh>
@@ -97,12 +96,12 @@ bool isTrackSelected(T const& track, int trackSelection, const U* candidate = nu
   if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
     return false;
   }
-    if (candidate != nullptr) {
-      if (jetcandidateutilities::isDaughterTrack(track, *candidate)) {
-        return false;
-      }
+  if (candidate != nullptr) {
+    if (jetcandidateutilities::isDaughterTrack(track, *candidate)) {
+      return false;
     }
-    return true;
+  }
+  return true;
 }
 
 /**

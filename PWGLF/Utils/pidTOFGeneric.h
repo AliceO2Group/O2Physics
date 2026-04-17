@@ -17,14 +17,25 @@
 
 #ifndef PWGLF_UTILS_PIDTOFGENERIC_H_
 #define PWGLF_UTILS_PIDTOFGENERIC_H_
-#include "CollisionTypeHelper.h"
-#include "MetadataHelper.h"
-#include "TableHelper.h"
 
+#include "Common/Core/CollisionTypeHelper.h"
+#include "Common/Core/MetadataHelper.h"
 #include "Common/Core/PID/PIDTOF.h"
+#include "Common/Core/TableHelper.h"
 
-#include "CommonDataFormat/InteractionRecord.h"
+#include <CommonDataFormat/InteractionRecord.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
+#include <DataFormatsTOF/ParameterContainers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <ReconstructionDataFormats/PID.h>
 
+#include <TGraph.h>
+#include <TMath.h>
+
+#include <chrono>
+#include <cstdint>
 #include <map>
 #include <string>
 
@@ -59,7 +70,7 @@ struct TOFCalibConfig {
   template <typename VType>
   void getCfg(o2::framework::InitContext& initContext, const std::string name, VType& v, const std::string task)
   {
-    if (!getTaskOptionValue(initContext, task, name, v, false)) {
+    if (!o2::common::core::getTaskOptionValue(initContext, task, name, v, false)) {
       LOG(fatal) << "Could not get " << name << " from " << task << " task";
     }
   }
