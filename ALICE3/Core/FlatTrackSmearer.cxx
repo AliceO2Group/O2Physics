@@ -93,22 +93,23 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
     return false;
   }
 
-  std::ifstream lutFile(filename, std::ifstream::binary);
-  if (!lutFile.is_open()) {
-    throw framework::runtime_error_f("Cannot open LUT file: %s", filename);
-  }
-
   LOGF(info, "Loading %s LUT file: '%s'", getParticleName(pdg), filename);
   const std::string localFilename = o2::fastsim::GeometryEntry::accessFile(filename, "./.ALICE3/LUTs/", mCcdbManager, 10);
 
+  std::ifstream lutFile(localFilename, std::ifstream::binary);
+  if (!lutFile.is_open()) {
+    throw framework::runtime_error_f("Cannot open LUT file: %s", localFilename);
+  }
+
   try {
-    auto header = FlatLutData::PreviewHeader(lutFile, localFilename.c_str());
+    mLUTData[ipdg] = FlatLutData::loadFromFile(lutFile, localFilename.c_str());
+
     // Validate header
+    auto header = mLUTData[ipdg].getHeader();
     if (header.pdg != pdg && !checkSpecialCase(pdg, header)) {
       LOGF(error, "LUT header PDG mismatch: expected %d, got %d; not loading", pdg, header.pdg);
       return false;
     }
-    mLUTData[ipdg] = FlatLutData::loadFromFile(lutFile, localFilename.c_str());
   } catch (framework::RuntimeErrorRef ref) {
     LOGF(error, "%s", framework::error_from_ref(ref).what);
     return false;
