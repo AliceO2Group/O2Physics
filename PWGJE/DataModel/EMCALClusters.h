@@ -19,7 +19,7 @@
 #include "EMCALClusterDefinition.h"
 
 #include <Framework/ASoA.h>
-#include <Framework/AnalysisDataModel.h> // IWYU pragma: keep
+#include <Framework/AnalysisDataModel.h>
 
 #include <stdexcept>
 #include <string>
