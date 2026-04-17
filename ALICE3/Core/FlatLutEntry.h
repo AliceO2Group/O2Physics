@@ -125,8 +125,8 @@ class FlatLutData
   /**
    * @brief Get raw data buffer
    */
-  uint8_t* data() { return mData.data(); } // owned
-  const uint8_t* data() const { return mDataRef.data(); } //view
+  uint8_t* data() { return mData.data(); }                // owned
+  const uint8_t* data() const { return mDataRef.data(); } // view
 
   /**
    * @brief Total size in bytes

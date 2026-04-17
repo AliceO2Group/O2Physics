@@ -304,7 +304,7 @@ bool TrackSmearer::smearTrack(O2Track& o2track, const lutEntry_t* lutEntry, floa
     if (mInterpolateEfficiency) {
       eff = interpolatedEff;
     }
-    if (gRandom->Uniform() > eff) {//FIXME: use a fixed RNG instead of whatever ROOT has as a default
+    if (gRandom->Uniform() > eff) { // FIXME: use a fixed RNG instead of whatever ROOT has as a default
       isReconstructed = false;
     }
   }
@@ -381,9 +381,9 @@ double TrackSmearer::getEtaRes(const int pdg, const float nch, const float eta, 
 {
   float dummy = 0.0f;
   const lutEntry_t* lutEntry = getLUTEntry(pdg, nch, 0.f, eta, pt, dummy);
-  auto sigmatgl = std::sqrt(lutEntry->covm[9]);                                   // sigmatgl2
-  auto etaRes = std::fabs(std::sin(2.0 * std::atan(std::exp(-eta)))) * sigmatgl;  // propagate tgl to eta uncertainty
-  etaRes /= lutEntry->eta;                                                        // relative uncertainty
+  auto sigmatgl = std::sqrt(lutEntry->covm[9]);                                  // sigmatgl2
+  auto etaRes = std::fabs(std::sin(2.0 * std::atan(std::exp(-eta)))) * sigmatgl; // propagate tgl to eta uncertainty
+  etaRes /= lutEntry->eta;                                                       // relative uncertainty
   return etaRes;
 }
 
