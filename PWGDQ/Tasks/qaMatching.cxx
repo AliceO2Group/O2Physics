@@ -30,14 +30,12 @@
 #include <Math/ProbFunc.h>
 
 #include <algorithm>
-#include <iostream>
 #include <limits>
 #include <map>
 #include <memory>
 #include <string>
 #include <tuple>
 #include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -1675,13 +1673,6 @@ struct qaMatching {
     } else {
       result = (ranking == 1) ? kMatchTypeFakeLeading : kMatchTypeFakeNonLeading;
     }
-
-    if (result == kMatchTypeUndefined) {
-      std::cout << std::format("[GetMatchType] isPaired={} decayRanking={} result={}",
-                               isPaired, decayRanking, static_cast<int>(result))
-                << std::endl;
-    }
-
     return result;
   }
 
