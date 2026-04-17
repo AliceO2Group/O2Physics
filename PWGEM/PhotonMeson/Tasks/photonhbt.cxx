@@ -91,7 +91,6 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::pwgem::dilepton::utils;
 
-// EMMCEventLabels needed for processMC truth-efficiency loop
 using MyCollisions = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000,
                                aod::EMEventsCent_000, aod::EMEventsQvec_001>;
 using MyCollisionsMC = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000,
@@ -2296,14 +2295,13 @@ struct Photonhbt {
   PROCESS_SWITCH(Photonhbt, processAnalysis, "pairing for analysis", true);
 
   void processMC(FilteredMyMCCollisions const& mccollisions,
-                 FilteredMyCollisions const& collisions,
                  MyV0Photons const& v0photons,
                  MyMCV0Legs const& v0legs,
                  aod::EMMCParticles const& mcParticles,
                  aod::EMMCEvents const& mcEvents)
   {
 
-    runPairingMC(collisions, v0photons, v0legs, mcParticles,
+    runPairingMC(mccollisions, v0photons, v0legs, mcParticles,
                  perCollisionPCM, fV0PhotonCut);
     runTruthEfficiency(mccollisions, v0photons, v0legs, mcParticles, mcEvents,
                        perMCCollisionEMMCParts, perCollisionV0Legs, fV0PhotonCut);
