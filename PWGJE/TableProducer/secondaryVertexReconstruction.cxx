@@ -101,8 +101,8 @@ struct SecondaryVertexReconstruction {
   int runNumber{0};
   float toMicrometers = 10000.; // from cm to µm
   double bz{0.};
-  constexpr int TwoProngCount = 2;
-  constexpr int ThreeProngCount = 3;
+  static constexpr int TwoProngCount = 2;
+  static constexpr int ThreeProngCount = 3;
 
   void init(InitContext const&)
   {
