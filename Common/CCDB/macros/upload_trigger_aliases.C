@@ -9,12 +9,17 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "CCDB/CcdbApi.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "TObjArray.h"
-#include "TriggerAliases.h"
-#include "TTree.h"
-#include "TString.h"
+#include "Common/CCDB/TriggerAliases.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <Framework/Logger.h>
+
+#include <TObjArray.h>
+#include <TString.h>
+
+#include <RtypesCore.h>
+
 #include <fstream>
 #include <map>
 #include <string>

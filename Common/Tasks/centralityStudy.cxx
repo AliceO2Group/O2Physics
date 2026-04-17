@@ -13,14 +13,12 @@
 // Run 3 Pb-Pb centrality selections in 2023 data. It is compatible with
 // derived data.
 
-#include "EventSelectionParams.h"
-
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <DataFormatsFIT/Triggers.h>
 #include <DataFormatsParameters/GRPECSObject.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -37,6 +35,7 @@
 #include <TList.h>
 #include <TProfile.h>
 
+#include <bitset>
 #include <cstdint>
 #include <format>
 #include <map>
