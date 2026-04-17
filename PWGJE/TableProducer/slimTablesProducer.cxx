@@ -190,7 +190,7 @@ struct SlimTablesProducer {
     histos.fill(HIST("h_mcCollMCP_counts_weight"), 0.5, eventWeightMC);
     if (std::abs(mccollision.posZ()) > vertexZCut)
       histos.fill(HIST("h_mcCollMCP_counts_weight"), 1.5, eventWeightMC);
-    if (!jetderiveddatautilities::selectMcCollision(mccollision, skipMBGapEvents, applyRCTSelections)) {
+    if (!jetderiveddatautilities::selectCollision(mccollision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
     histos.fill(HIST("h_mcCollMCP_counts_weight"), 2.5, eventWeightMC);
