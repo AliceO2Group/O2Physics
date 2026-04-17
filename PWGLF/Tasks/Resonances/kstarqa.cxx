@@ -441,7 +441,8 @@ struct Kstarqa {
     hGenTracks->GetXaxis()->SetBinLabel(2, "INELgt0+vtz");
     hGenTracks->GetXaxis()->SetBinLabel(3, "INELgt0");
     hGenTracks->GetXaxis()->SetBinLabel(4, "All Collisions");
-    hGenTracks->GetXaxis()->SetBinLabel(5, "Event Reconstructed");
+    hGenTracks->GetXaxis()->SetBinLabel(5, "Gen events with at least 1 rec event");
+    hGenTracks->GetXaxis()->SetBinLabel(6, "Rec events");
 
     // Multplicity distribution
     if (cQAevents) {
@@ -2036,6 +2037,7 @@ struct Kstarqa {
       return;
     }
 
+    rEventSelection.fill(HIST("eventsCheckGen"), 5.5);
     hInvMass.fill(HIST("h1RecMult"), multiplicity);
     hInvMass.fill(HIST("h1RecMult2"), multiplicityRec);
 
@@ -3002,6 +3004,7 @@ struct Kstarqa {
       return;
     }
 
+    rEventSelection.fill(HIST("eventsCheckGen"), 5.5);
     hInvMass.fill(HIST("h1RecMult"), multiplicity);
     hInvMass.fill(HIST("h1RecMult2"), multiplicityRec);
 
