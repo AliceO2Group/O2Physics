@@ -862,6 +862,8 @@ struct TauThreeProngEventTableProducer {
       counterTmp++;
     }
 
+    // Vertex::Flags::UPCMode
+    // UPCMode = 0x1 << 1
     dataTauFourTracks(dgcand.runNumber(),
                       dgcand.globalBC(), // is it necessary
                       dgtracks.size(),
