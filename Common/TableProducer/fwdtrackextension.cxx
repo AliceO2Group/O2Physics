@@ -82,37 +82,37 @@ struct FwdTrackExtension {
       if (track.has_collision()) {
         auto const& collision = track.collision();
         auto bc = collision.template bc_as<o2::aod::BCsWithTimestamps>();
-        if (propInTheAbsorber) {
-          if (fCurrentRun != bc.runNumber()) {
-            grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
-            if (grpmag != nullptr) {
-              LOGF(info, "Init field from GRP");
-              o2::base::Propagator::initFieldFromGRP(grpmag);
-            }
+        if (fCurrentRun != bc.runNumber()) {
+          grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
+          if (grpmag != nullptr) {
+            LOGF(info, "Init field from GRP");
+            o2::base::Propagator::initFieldFromGRP(grpmag);
+          }
+          if (propInTheAbsorber) {
             LOGF(info, "Set field for muons");
             o2::mch::TrackExtrap::setField();
-            fCurrentRun = bc.runNumber();
           }
-          const float zField = grpmag->getNominalL3Field();
+          fCurrentRun = bc.runNumber();
+        }
+        const float zField = grpmag->getNominalL3Field();
 
-          o2::track::TrackParCovFwd fwdtrack = o2::aod::fwdtrackutils::getTrackParCovFwdShift(track, 0.0);
-          if (refitGlobalMuon && (trackType == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack || trackType == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalForwardTrack)) {
-            auto muontrack = track.template matchMCHTrack_as<MuonsWithCov>();
-            auto mfttrack = track.template matchMFTTrack_as<aod::MFTTracks>();
-            o2::dataformats::GlobalFwdTrack propmuon = o2::aod::fwdtrackutils::propagateMuon(muontrack, muontrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, 0.f, zField);
-            SMatrix5 tpars(mfttrack.x(), mfttrack.y(), mfttrack.phi(), mfttrack.tgl(), mfttrack.signed1Pt());
-            SMatrix55 tcovs{};
-            o2::track::TrackParCovFwd mft{mfttrack.z(), tpars, tcovs, mfttrack.chi2()};
-            fwdtrack = o2::aod::fwdtrackutils::refitGlobalMuonCov(propmuon, mft);
-          }
-          if (trackType == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack || trackType == o2::aod::fwdtrack::ForwardTrackTypeEnum::MCHStandaloneTrack) {
-            auto proptrack = o2::aod::fwdtrackutils::propagateTrackParCovFwd(fwdtrack, trackType, collision, o2::aod::fwdtrackutils::propagationPoint::kToDCA, 0.f, zField);
-            dcaX = (proptrack.getX() - collision.posX());
-            dcaY = (proptrack.getY() - collision.posY());
-          }
-        } else {
+        o2::track::TrackParCovFwd fwdtrack = o2::aod::fwdtrackutils::getTrackParCovFwdShift(track, 0.0);
+        if (refitGlobalMuon && (trackType == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack || trackType == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalForwardTrack)) {
+          auto muontrack = track.template matchMCHTrack_as<MuonsWithCov>();
+          auto mfttrack = track.template matchMFTTrack_as<aod::MFTTracks>();
+          o2::dataformats::GlobalFwdTrack propmuon = o2::aod::fwdtrackutils::propagateMuon(muontrack, muontrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, 0.f, zField);
+          SMatrix5 tpars(mfttrack.x(), mfttrack.y(), mfttrack.phi(), mfttrack.tgl(), mfttrack.signed1Pt());
+          SMatrix55 tcovs{};
+          o2::track::TrackParCovFwd mft{mfttrack.z(), tpars, tcovs, mfttrack.chi2()};
+          fwdtrack = o2::aod::fwdtrackutils::refitGlobalMuonCov(propmuon, mft);
+        }
+        if (!propInTheAbsorber && (trackType == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack || trackType == o2::aod::fwdtrack::ForwardTrackTypeEnum::MCHStandaloneTrack)) {
           dcaX = track.pDca() / std::numbers::sqrt2 / track.p();
           dcaY = dcaX;
+        } else {
+          auto proptrack = o2::aod::fwdtrackutils::propagateTrackParCovFwd(fwdtrack, trackType, collision, o2::aod::fwdtrackutils::propagationPoint::kToDCA, 0.f, zField);
+          dcaX = (proptrack.getX() - collision.posX());
+          dcaY = (proptrack.getY() - collision.posY());
         }
       }
       fwdDCA(dcaX, dcaY);
