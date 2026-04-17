@@ -2236,8 +2236,6 @@ struct qaMatching {
 
     // ====================================
     // Matching purity
-    if (verbose)
-      std::cout << std::format("  Filling matching purity plots with score cut {}", matchingScoreCut) << std::endl;
     for (auto [mchIndex, globalTracksVector] : matchingCandidates) {
       if (globalTracksVector.size() < 1)
         continue;
@@ -2268,15 +2266,6 @@ struct qaMatching {
       int motherPDG = 0;
       if (motherParticles.size() > 1) {
         motherPDG = motherParticles[1].first;
-      }
-
-      if (verbose) {
-        std::cout << std::format("    MCH track #{} -> Muon track #{}, isTrueMatch={}", mchIndex, globalTracksVector[0].globalTrackId, isTrueMatch) << std::endl;
-        std::cout << "      MC ancestry (pdg): ";
-        for (auto const& [pdg, idx] : motherParticles) {
-          std::cout << "(" << pdg << ") ";
-        }
-        std::cout << std::endl;
       }
       // fill matching purity plots
       plotter->fMatchingPurityPlotter.Fill(mchTrack, isTrueMatch);
@@ -2334,14 +2323,6 @@ struct qaMatching {
       int motherPDG = 0;
       if (motherParticles.size() > 1) {
         motherPDG = motherParticles[1].first;
-      }
-
-      if (verbose) {
-        std::cout << "      MC ancestry (pdg): ";
-        for (auto const& [pdg, idx] : motherParticles) {
-          std::cout << "(" << pdg << ") ";
-        }
-        std::cout << std::endl;
       }
 
       // fill matching efficiency plots
