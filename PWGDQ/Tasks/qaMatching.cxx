@@ -90,23 +90,23 @@ DECLARE_SOA_COLUMN(P, p, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
-DECLARE_SOA_COLUMN(MatchLabel, matchlabel, int8_t);
-DECLARE_SOA_COLUMN(TrackId, trackid, int64_t);
+DECLARE_SOA_COLUMN(MatchLabel, matchLabel, int8_t);
+DECLARE_SOA_COLUMN(TrackId, trackId, int64_t);
 DECLARE_SOA_COLUMN(MatchType, matchType, int8_t);
 DECLARE_SOA_COLUMN(MatchScore, matchScore, float);
 DECLARE_SOA_COLUMN(MatchRanking, matchRanking, int32_t);
 DECLARE_SOA_COLUMN(MftMultiplicity, mftMultiplicity, int32_t);
-DECLARE_SOA_COLUMN(TrackType, tracktype, int8_t);
-DECLARE_SOA_COLUMN(MftMatchAttempts, mftmatchattempts, int32_t);
-DECLARE_SOA_COLUMN(X_atVtx, x_atVtx, float);
-DECLARE_SOA_COLUMN(Y_atVtx, y_atVtx, float);
-DECLARE_SOA_COLUMN(Z_atVtx, z_atVtx, float);
-DECLARE_SOA_COLUMN(Px_atVtx, px_atVtx, float);
-DECLARE_SOA_COLUMN(Py_atVtx, py_atVtx, float);
-DECLARE_SOA_COLUMN(Pz_atVtx, pz_atVtx, float);
-DECLARE_SOA_COLUMN(ColX, colx, float);
-DECLARE_SOA_COLUMN(ColY, coly, float);
-DECLARE_SOA_COLUMN(ColZ, colz, float);
+DECLARE_SOA_COLUMN(TrackType, trackType, int8_t);
+DECLARE_SOA_COLUMN(MftMatchAttempts, mftMatchAttempts, int32_t);
+DECLARE_SOA_COLUMN(XAtVtx, xAtVtx, float);
+DECLARE_SOA_COLUMN(YAtVtx, yAtVtx, float);
+DECLARE_SOA_COLUMN(ZAtVtx, zAtVtx, float);
+DECLARE_SOA_COLUMN(PxAtVtx, pxAtVtx, float);
+DECLARE_SOA_COLUMN(PyAtVtx, pyAtVtx, float);
+DECLARE_SOA_COLUMN(PzAtVtx, pzAtVtx, float);
+DECLARE_SOA_COLUMN(ColX, colX, float);
+DECLARE_SOA_COLUMN(ColY, colY, float);
+DECLARE_SOA_COLUMN(ColZ, colZ, float);
 } // namespace qamatching
 
 namespace o2::aod
@@ -121,7 +121,7 @@ DECLARE_SOA_TABLE(QaMatchingEvents, "AOD", "QAMEVT",
 
 namespace qamatching
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(ReducedEvent, reducedevent, int32_t, o2::aod::QaMatchingEvents, "");
+DECLARE_SOA_INDEX_COLUMN_FULL(ReducedEvent, reducedEvent, int32_t, o2::aod::QaMatchingEvents, "");
 } // namespace qamatching
 
 namespace o2::aod
@@ -135,24 +135,24 @@ DECLARE_SOA_TABLE(QaMatchingMCHTrack, "AOD", "QAMCHTRK",
                   qamatching::Eta,
                   qamatching::Phi,
                   qamatching::MftMatchAttempts,
-                  qamatching::X_atVtx,
-                  qamatching::Y_atVtx,
-                  qamatching::Z_atVtx,
-                  qamatching::Px_atVtx,
-                  qamatching::Py_atVtx,
-                  qamatching::Pz_atVtx);
+                  qamatching::XAtVtx,
+                  qamatching::YAtVtx,
+                  qamatching::ZAtVtx,
+                  qamatching::PxAtVtx,
+                  qamatching::PyAtVtx,
+                  qamatching::PzAtVtx);
 DECLARE_SOA_TABLE(QaMatchingCandidates, "AOD", "QAMCAND",
                   qamatching::ReducedEventId,
                   qamatching::MatchLabel,
                   qamatching::TrackId,
                   qamatching::P, qamatching::Pt, qamatching::Eta, qamatching::Phi,
                   qamatching::MatchType, qamatching::MatchScore, qamatching::MatchRanking,
-                  qamatching::X_atVtx,
-                  qamatching::Y_atVtx,
-                  qamatching::Z_atVtx,
-                  qamatching::Px_atVtx,
-                  qamatching::Py_atVtx,
-                  qamatching::Pz_atVtx);
+                  qamatching::XAtVtx,
+                  qamatching::YAtVtx,
+                  qamatching::ZAtVtx,
+                  qamatching::PxAtVtx,
+                  qamatching::PyAtVtx,
+                  qamatching::PzAtVtx);
 } // namespace o2::aod
 
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
