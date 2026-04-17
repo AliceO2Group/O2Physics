@@ -1010,7 +1010,7 @@ struct QaMatching {
 
       SMatrix55Sym hK, vK;
       SVector5 mK(mftTrack.getX(), mftTrack.getY(), mftTrack.getPhi(),
-                   mftTrack.getTanl(), mftTrack.getInvQPt()),
+                  mftTrack.getTanl(), mftTrack.getInvQPt()),
         rKKminus1;
       SVector5 globalMuonTrackParameters = mchTrack.getParameters();
       SMatrix55Sym globalMuonTrackCovariances = mchTrack.getCovariances();
@@ -1045,7 +1045,7 @@ struct QaMatching {
       SMatrix45 hK;
       SMatrix44 vK;
       SVector4 mK(mftTrack.getX(), mftTrack.getY(), mftTrack.getPhi(),
-                   mftTrack.getTanl()),
+                  mftTrack.getTanl()),
         rKKminus1;
       SVector5 globalMuonTrackParameters = mchTrack.getParameters();
       SMatrix55Sym globalMuonTrackCovariances = mchTrack.getCovariances();
@@ -2332,7 +2332,7 @@ struct QaMatching {
     // Matching efficiencies
 
     // outer loop on matchable pairs
-      for (const auto& [matchableMchIndex, matchableMftIndex] : matchablePairs) {
+    for (const auto& [matchableMchIndex, matchableMftIndex] : matchablePairs) {
       // get the standalone MCH track
       auto const& mchTrack = muonTracks.rawIteratorAt(matchableMchIndex);
 
