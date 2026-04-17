@@ -146,7 +146,7 @@ struct HfTaskLc {
   // ThnSparse for ML outputScores and Vars
   Configurable<bool> fillTHn{"fillTHn", false, "fill THn"};
   Configurable<bool> fillTreeOnlySingleGap{"fillTreeOnlySingleGap", false, "fill THn"};
-  Configurable<bool> fillTreeUPCQa{"fillTreeUPCQa", false, "fill THn"};
+  Configurable<bool> fillTreeUpcQa{"fillTreeUpcQa", false, "fill THn"};
   Configurable<bool> storeOccupancy{"storeOccupancy", true, "Flag to store occupancy information"};
   Configurable<int> occEstimator{"occEstimator", 2, "Occupancy estimation (None: 0, ITS: 1, FT0C: 2)"};
   Configurable<bool> storeProperLifetime{"storeProperLifetime", false, "Flag to store proper lifetime"};
@@ -882,7 +882,7 @@ struct HfTaskLc {
               }
             }
 
-            if (fillTreeUPCQa) {
+            if (fillTreeUpcQa) {
               rowCandUpcQa(static_cast<float>(numPvContributors), collision.multNTracksPV(), collision.posZ(), static_cast<float>(fitInfo.ampFV0A), static_cast<float>(fitInfo.ampFT0A), static_cast<float>(fitInfo.ampFT0C), static_cast<float>(zdcTimeZNA), static_cast<float>(zdcTimeZNC));
             }
           };
