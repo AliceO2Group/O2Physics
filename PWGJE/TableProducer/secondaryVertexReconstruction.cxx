@@ -22,22 +22,22 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include "CommonConstants/PhysicsConstants.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "ReconstructionDataFormats/DCA.h"
 #include <CCDB/BasicCCDBManager.h>
-#include <CommonConstants/PhysicsConstants.h>
-#include <DCAFitter/DCAFitterN.h>
 #include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
-#include <Framework/ASoA.h>
-#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
-#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/TrackParametrizationWithError.h>
 #include <ReconstructionDataFormats/Vertex.h>
 
@@ -74,12 +74,12 @@ struct SecondaryVertexReconstruction {
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
-  Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
-  Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
-  Configurable<double> maxRsv{"maxRsv", 999., "max. radius of the reconstruced SV"};
-  Configurable<double> maxZsv{"maxZsv", 999., "max. Z coordinates of the reconstruced SV"};
-  Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
-  Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+  Configurable<float> maxR{"maxR", 200., "reject PCA's above this radius"};
+  Configurable<float> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
+  Configurable<float> maxRsv{"maxRsv", 999., "max. radius of the reconstruced SV"};
+  Configurable<float> maxZsv{"maxZsv", 999., "max. Z coordinates of the reconstruced SV"};
+  Configurable<float> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
+  Configurable<float> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
   Configurable<float> ptMinTrack{"ptMinTrack", -1., "min. track pT"};
   Configurable<float> etaMinTrack{"etaMinTrack", -99999., "min. pseudorapidity"};
   Configurable<float> etaMaxTrack{"etaMaxTrack", 4., "max. pseudorapidity"};
@@ -94,7 +94,7 @@ struct SecondaryVertexReconstruction {
   o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter
   o2::vertexing::DCAFitterN<3> df3; // 3-prong vertex fitter
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::base::MatLayerCylSet* lut;
+  o2::base::MatLayerCylSet* lut = nullptr;
 
   HistogramRegistry registry{"registry"};
 
@@ -216,7 +216,7 @@ struct SecondaryVertexReconstruction {
       auto covMatrixPV = primaryVertex.getCov();
 
       // Get track momenta and impact parameters
-      std::array<std::array<float, 3>, numProngs> arrayMomenta;
+      std::array<std::array<float, 3>, numProngs> arrayMomenta{};
       std::array<o2::dataformats::DCA, numProngs> impactParameters;
       for (unsigned int inum = 0; inum < numProngs; ++inum) {
         trackParVars[inum].getPxPyPzGlo(arrayMomenta[inum]);
@@ -236,9 +236,9 @@ struct SecondaryVertexReconstruction {
       auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
       // calculate invariant mass
-      std::array<double, numProngs> massArray;
+      std::array<double, numProngs> massArray{};
       std::fill(massArray.begin(), massArray.end(), o2::constants::physics::MassPiPlus);
-      double massSV = RecoDecay::m(std::move(arrayMomenta), massArray);
+      double massSV = RecoDecay::m(arrayMomenta, massArray);
 
       // fill candidate table rows
       if ((doprocessData3Prongs || doprocessData3ProngsExternalMagneticField) && numProngs == 3) {
