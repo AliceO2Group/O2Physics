@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file corrFT0Nch.cxx
+/// \file corrFt0Nch.cxx
 /// \brief Ultra long range correlation using forward FIT detectors and TPC, with foxus on multiplicity dependence
 /// \author Thor Jensen (thor.kjaersgaard.jensen@cern.ch)
 
@@ -64,7 +64,7 @@ using namespace constants::math;
 // define the filtered collisions and tracks
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-struct corrFT0Nch {
+struct CorrFt0Nch {
 
   Service<ccdb::BasicCCDBManager> ccdb;
 
@@ -678,7 +678,7 @@ struct corrFT0Nch {
   }
 
   template <typename TTracks>
-  void TrackCounter(TTracks tracks, int& multiplicity) // function to count the number of tracks in the event and fill the histogram
+  void trackCounter(TTracks tracks, int& multiplicity) // function to count the number of tracks in the event and fill the histogram
   {
     int mult = 0;
     for (auto const& track : tracks) {
@@ -922,7 +922,7 @@ struct corrFT0Nch {
     const auto& ft0 = collision.foundFT0();
     fillCorrelationsTPCFT0<CorrelationContainer::kCFStepReconstructed>(tracks, ft0, collision.posZ(), SameEvent, kFT0A, tracks.size(), eventWeight);
   }
-  PROCESS_SWITCH(corrFT0Nch, processSameTpcFt0a, "Process same event for TPC-FT0 correlation", false);
+  PROCESS_SWITCH(CorrFt0Nch, processSameTpcFt0a, "Process same event for TPC-FT0 correlation", false);
 
   void processMixedTpcFt0a(FilteredCollisions const& collisions, FilteredTracks const& tracks, aod::FT0s const&, aod::BCsWithTimestamps const&)
   {
@@ -962,7 +962,7 @@ struct corrFT0Nch {
       fillCorrelationsTPCFT0<CorrelationContainer::kCFStepReconstructed>(tracks1, ft0, collision1.posZ(), MixedEvent, kFT0A, tracks1.size(), eventWeight);
     }
   }
-  PROCESS_SWITCH(corrFT0Nch, processMixedTpcFt0a, "Process mixed events for TPC-FT0A correlation", false);
+  PROCESS_SWITCH(CorrFt0Nch, processMixedTpcFt0a, "Process mixed events for TPC-FT0A correlation", false);
 
   void processSameTpcFt0c(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks, aod::FT0s const&, aod::BCsWithTimestamps const&)
   {
@@ -985,11 +985,11 @@ struct corrFT0Nch {
     const auto& ft0 = collision.foundFT0();
 
     int multiplicity = 0;
-    TrackCounter(tracks, multiplicity);
+    trackCounter(tracks, multiplicity);
 
     fillCorrelationsTPCFT0<CorrelationContainer::kCFStepReconstructed>(tracks, ft0, collision.posZ(), SameEvent, kFT0C, multiplicity, 1.0f);
   }
-  PROCESS_SWITCH(corrFT0Nch, processSameTpcFt0c, "Process same event for TPC-FT0C correlation", true);
+  PROCESS_SWITCH(CorrFt0Nch, processSameTpcFt0c, "Process same event for TPC-FT0C correlation", true);
 
   void processMixedTpcFt0c(FilteredCollisions const& collisions, FilteredTracks const& tracks, aod::FT0s const&, aod::BCsWithTimestamps const&)
   {
@@ -1029,12 +1029,12 @@ struct corrFT0Nch {
       const auto& ft0 = collision2.foundFT0();
 
       int multiplicity = 0;
-      TrackCounter(tracks1, multiplicity);
+      trackCounter(tracks1, multiplicity);
 
       fillCorrelationsTPCFT0<CorrelationContainer::kCFStepReconstructed>(tracks1, ft0, collision1.posZ(), MixedEvent, kFT0C, multiplicity, eventWeight);
     }
   }
-  PROCESS_SWITCH(corrFT0Nch, processMixedTpcFt0c, "Process mixed events for TPC-FT0C correlation", true);
+  PROCESS_SWITCH(CorrFt0Nch, processMixedTpcFt0c, "Process mixed events for TPC-FT0C correlation", true);
 
   void processSameFt0aFt0c(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks, aod::FT0s const&, aod::BCsWithTimestamps const&)
   {
@@ -1055,13 +1055,13 @@ struct corrFT0Nch {
 
     const auto& ft0 = collision.foundFT0();
     int multiplicity = 0;
-    TrackCounter(tracks, multiplicity);
+    trackCounter(tracks, multiplicity);
 
     fillYield(collision, tracks);
 
     fillCorrelationsFT0AFT0C<CorrelationContainer::kCFStepReconstructed>(ft0, ft0, collision.posZ(), SameEvent, multiplicity, eventWeight);
   }
-  PROCESS_SWITCH(corrFT0Nch, processSameFt0aFt0c, "Process same event for FT0A-FT0C correlation", false);
+  PROCESS_SWITCH(CorrFt0Nch, processSameFt0aFt0c, "Process same event for FT0A-FT0C correlation", false);
 
   void processMixedFt0aFt0c(FilteredCollisions const& collisions, FilteredTracks const& tracks, aod::FT0s const&, aod::BCsWithTimestamps const&)
   {
@@ -1103,12 +1103,12 @@ struct corrFT0Nch {
 
       int multiplicity = 0;
 
-      TrackCounter(tracks, multiplicity);
+      trackCounter(tracks, multiplicity);
 
       fillCorrelationsFT0AFT0C<CorrelationContainer::kCFStepReconstructed>(ft0Col1, ft0Col2, collision1.posZ(), MixedEvent, multiplicity, eventWeight);
     }
   }
-  PROCESS_SWITCH(corrFT0Nch, processMixedFt0aFt0c, "Process mixed events for FT0A-FT0C correlation", false);
+  PROCESS_SWITCH(CorrFt0Nch, processMixedFt0aFt0c, "Process mixed events for FT0A-FT0C correlation", false);
 
   void processSameTPC(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks, aod::BCsWithTimestamps const&)
   {
@@ -1123,13 +1123,13 @@ struct corrFT0Nch {
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
 
     int multiplicity = 0;
-    TrackCounter(tracks, multiplicity);
+    trackCounter(tracks, multiplicity);
 
     fillYield(collision, tracks);
 
     fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), multiplicity, SameEvent, getMagneticField(bc.timestamp()));
   }
-  PROCESS_SWITCH(corrFT0Nch, processSameTPC, "Process same event for TPC-TPC correlation", false);
+  PROCESS_SWITCH(CorrFt0Nch, processSameTPC, "Process same event for TPC-TPC correlation", false);
 
   void processMixedTPC(FilteredCollisions const& collisions, FilteredTracks const& tracks, aod::BCsWithTimestamps const&)
   {
@@ -1159,16 +1159,16 @@ struct corrFT0Nch {
       registry.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
 
       int multiplicity = 0;
-      TrackCounter(tracks1, multiplicity);
+      trackCounter(tracks1, multiplicity);
 
       fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks1, tracks2, collision1.posZ(), multiplicity, MixedEvent, getMagneticField(collision1.bc_as<aod::BCsWithTimestamps>().timestamp()));
     }
   }
-  PROCESS_SWITCH(corrFT0Nch, processMixedTPC, "Process mixed events for TPC-TPC correlation", false);
+  PROCESS_SWITCH(CorrFt0Nch, processMixedTPC, "Process mixed events for TPC-TPC correlation", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<corrFT0Nch>(cfgc),
+    adaptAnalysisTask<CorrFt0Nch>(cfgc),
   };
 }
