@@ -31,6 +31,7 @@
 
 #include <TH1.h>
 #include <TH2.h>
+#include <TProfile2D.h>
 #include <TString.h>
 
 #include <map>
