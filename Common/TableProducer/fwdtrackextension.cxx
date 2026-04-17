@@ -89,10 +89,8 @@ struct FwdTrackExtension {
               LOGF(info, "Init field from GRP");
               o2::base::Propagator::initFieldFromGRP(grpmag);
             }
-            if (propInTheAbsorber) {
-              LOGF(info, "Set field for muons");
-              o2::mch::TrackExtrap::setField();
-            }
+            LOGF(info, "Set field for muons");
+            o2::mch::TrackExtrap::setField();
             fCurrentRun = bc.runNumber();
           }
           const float zField = grpmag->getNominalL3Field();
