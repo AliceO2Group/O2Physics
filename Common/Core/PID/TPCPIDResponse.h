@@ -17,8 +17,8 @@
 #ifndef COMMON_CORE_PID_TPCPIDRESPONSE_H_
 #define COMMON_CORE_PID_TPCPIDRESPONSE_H_
 
-#include <MathUtils/BetheBlochAleph.h>
 #include <Framework/Logger.h>
+#include <MathUtils/BetheBlochAleph.h>
 #include <ReconstructionDataFormats/PID.h>
 
 #include <Rtypes.h>

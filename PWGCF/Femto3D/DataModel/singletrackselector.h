@@ -16,18 +16,21 @@
 #ifndef PWGCF_FEMTO3D_DATAMODEL_SINGLETRACKSELECTOR_H_
 #define PWGCF_FEMTO3D_DATAMODEL_SINGLETRACKSELECTOR_H_
 
-// #include <experimental/type_traits>
-#include "PWGCF/Femto3D/DataModel/PIDutils.h"
+#include "PWGCF/Femto3D/DataModel/PIDutils.h" // IWYU pragma: keep (until PWGLF gets fixed)
 
-#include "Common/DataModel/Multiplicity.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseITS.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/Logger.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/Logger.h>
 
+#include <Rtypes.h>
+
+#include <cmath>
+#include <cstdint>
 #include <utility>
-#include <vector>
 
 namespace o2::aod
 {

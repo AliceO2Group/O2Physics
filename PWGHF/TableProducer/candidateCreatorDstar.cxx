@@ -720,7 +720,7 @@ struct HfCandidateCreatorDstarExpressions {
 
       // check wether the particle is non-promt (from a B0 hadron)
       if (flagDstar != 0) {
-        auto particleDstar = mcParticles.iteratorAt(indexRecDstar);
+        auto particleDstar = mcParticles.rawIteratorAt(indexRecDstar);
         originDstar = RecoDecay::getCharmHadronOrigin(mcParticles, particleDstar, false, &idxBhadMothers);
       }
       if (originDstar == RecoDecay::OriginType::NonPrompt) {

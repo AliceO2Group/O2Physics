@@ -14,10 +14,14 @@
 // Cut class manipulating groups of cuts
 //
 
-#ifndef AnalysisCompositeCut_H
-#define AnalysisCompositeCut_H
+#ifndef PWGDQ_CORE_ANALYSISCOMPOSITECUT_H_
+#define PWGDQ_CORE_ANALYSISCOMPOSITECUT_H_
 
 #include "PWGDQ/Core/AnalysisCut.h"
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
 #include <vector>
 
 //_________________________________________________________________________
@@ -52,4 +56,4 @@ class AnalysisCompositeCut : public AnalysisCut
   ClassDef(AnalysisCompositeCut, 2);
 };
 
-#endif
+#endif // PWGDQ_CORE_ANALYSISCOMPOSITECUT_H_

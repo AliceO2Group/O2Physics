@@ -13,42 +13,35 @@
 /// \author Sofia Tomassini
 /// \since July 2025
 
-#include "Common/CCDB/ctpRateFetcher.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/Zorro.h"
-#include "Common/Core/ZorroSummary.h"
-#include "Common/DataModel/Centrality.h"
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/MathConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/Configurable.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StaticFor.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Math/GenVector/Boost.h"
-#include "Math/Vector4D.h"
-#include "TMath.h"
-#include "TRandom3.h"
-#include <TParameter.h>
+#include <TH2.h>
+#include <TString.h>
 
-#include "fairlogger/Logger.h"
-
-#include <iostream>
-#include <iterator>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::framework;

@@ -14,10 +14,18 @@
 ///
 /// \author Christian Sonnabend <christian.sonnabend@cern.ch>, GSI
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/Logger.h"
 #include "Tools/ML/model.h"
+
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/ControlService.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/ProcessingContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

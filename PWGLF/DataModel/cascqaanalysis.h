@@ -16,19 +16,9 @@
 #ifndef PWGLF_DATAMODEL_CASCQAANALYSIS_H_
 #define PWGLF_DATAMODEL_CASCQAANALYSIS_H_
 
-#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include <Framework/ASoA.h>
 
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Math/Boost.h"
-#include "Math/Vector4D.h"
-#include "TRandom.h"
+#include <cstdint>
 
 namespace o2::aod
 {

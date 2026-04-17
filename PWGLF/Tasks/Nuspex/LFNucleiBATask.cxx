@@ -25,7 +25,6 @@
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -34,23 +33,34 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/PID.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include "TMCProcess.h"
 #include <TF1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <TMCProcess.h>
+#include <TPDGCode.h>
 
+#include <bitset>
+#include <cmath>
+#include <cstdint>
 #include <gsl/span>
 #include <memory>
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -2392,7 +2402,7 @@ struct LFNucleiBATask {
         return;
     }
 
-    if (centFT0M <= cfgMultCutLow || centFT0M > cfgMultCutHigh) {
+    if (enableCentrality && (centFT0M <= cfgMultCutLow || centFT0M > cfgMultCutHigh)) {
       return;
     }
     if (enableCentrality)
@@ -2699,8 +2709,10 @@ struct LFNucleiBATask {
 
       isDeuteron = enableDe && deRapCut;
       isHelium = enableHe && heRapCut;
-      isDe = isDeuteron && track.sign() > 0;
-      isAntiDe = isDeuteron && track.sign() < 0;
+
+      // ITS PID cut
+      bool passITSDeCut = !nsigmaITSvar.useITSDeCut || (nITSDe > nsigmaITSvar.nsigmaITSDe);
+      bool passITSHeCut = !nsigmaITSvar.useITSHeCut || (nITSHe > nsigmaITSvar.nsigmaITSHe);
 
       if constexpr (IsMC && !IsFilteredData) {
         int pdgCheck = track.mcParticle().pdgCode();
@@ -2710,25 +2722,19 @@ struct LFNucleiBATask {
           histos.fill(HIST("tracks/hItsDeHeChecker"), 1);
       }
 
-      // nSigmaITSHe cut
-      if (nsigmaITSvar.useITSDeCut && (nITSDe <= nsigmaITSvar.nsigmaITSDe)) {
-        continue;
-      }
-
-      if (nsigmaITSvar.useITSHeCut && (nITSHe <= nsigmaITSvar.nsigmaITSHe)) {
-        continue;
-      }
-
       if constexpr (IsMC && !IsFilteredData) {
         int pdgCheck = track.mcParticle().pdgCode();
-        if (std::abs(pdgCheck) == PDGDeuteron)
+        if ((std::abs(pdgCheck) == PDGDeuteron) && passITSDeCut)
           histos.fill(HIST("tracks/hItsDeHeChecker"), 2);
-        if (std::abs(pdgCheck) == PDGHelium)
+        if ((std::abs(pdgCheck) == PDGHelium) && passITSHeCut)
           histos.fill(HIST("tracks/hItsDeHeChecker"), 3);
       }
 
-      isHe = isHelium && track.sign() > 0;
-      isAntiHe = isHelium && track.sign() < 0;
+      isDe = isDeuteron && passITSDeCut && track.sign() > 0;
+      isAntiDe = isDeuteron && passITSDeCut && track.sign() < 0;
+
+      isHe = isHelium && passITSHeCut && track.sign() > 0;
+      isAntiHe = isHelium && passITSHeCut && track.sign() < 0;
 
       isDeWoDCAxy = isDe && passDCAzCutDe;
       isAntiDeWoDCAxy = isAntiDe && passDCAzCutAntiDe;
@@ -4637,7 +4643,6 @@ struct LFNucleiBATask {
 
       //  TOF
       if (outFlagOptions.doTOFplots) {
-
         if (isDeWTPCpid) {
           switch (useHasTRDConfig) {
             case 0:
@@ -4913,7 +4918,8 @@ struct LFNucleiBATask {
         }
 
         if (isHeWTPCpid) {
-          histos.fill(HIST("tracks/helium/TOF/h2HeliumSpectraVsMult_Z2"), 2 * hePt, centFT0M);
+          if (enableCentrality)
+            histos.fill(HIST("tracks/helium/TOF/h2HeliumSpectraVsMult_Z2"), 2 * hePt, centFT0M);
           histos.fill(HIST("tracks/helium/h2HeliumTOFbetaVsP"), heP, track.beta());
           if (outFlagOptions.enableEffPlots) {
             histos.fill(HIST("tracks/eff/helium/h2pVsTOFExpMomentumHe"), track.tofExpMom(), heP);
@@ -4922,7 +4928,8 @@ struct LFNucleiBATask {
         }
 
         if (isAntiHeWTPCpid) {
-          histos.fill(HIST("tracks/helium/TOF/h2antiHeliumSpectraVsMult_Z2"), 2 * antihePt, centFT0M);
+          if (enableCentrality)
+            histos.fill(HIST("tracks/helium/TOF/h2antiHeliumSpectraVsMult_Z2"), 2 * antihePt, centFT0M);
           histos.fill(HIST("tracks/helium/h2antiHeliumTOFbetaVsP"), antiheP, track.beta());
           if (outFlagOptions.enableEffPlots) {
             histos.fill(HIST("tracks/eff/helium/h2pVsTOFExpMomentumantiHe"), track.tofExpMom(), antiheP);
@@ -6387,7 +6394,7 @@ struct LFNucleiBATask {
         return;
     }
 
-    if (mcCollision.centFT0M() < cfgMultCutLow || mcCollision.centFT0M() > cfgMultCutHigh)
+    if (enableCentrality && (mcCollision.centFT0M() < cfgMultCutLow || mcCollision.centFT0M() > cfgMultCutHigh))
       return;
 
     if (evselOptions.enableGenVzCut) {

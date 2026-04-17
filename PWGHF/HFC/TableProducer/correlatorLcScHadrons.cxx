@@ -931,7 +931,7 @@ struct HfCorrelatorLcScHadrons {
           registry.fill(HIST("hPtVsMultiplicityMcRecNonPrompt"), ptCand, multiplicityFT0M);
         }
 
-        entryCandCandRecoInfo(massCandPKPi, ptCand, outputMlPKPi[0], outputMlPKPi[1]);
+        entryCandCandRecoInfo(massCandPKPi, ptCand, outputMlPKPi[0], outputMlPKPi[1], poolBin);
         entryCandCandGenInfo(isPrompt);
         if (!skipMixedEventTableFilling) {
           entryCand(candidate.phi(), etaCand, ptCand, massCandPKPi, poolBin, gCollisionId, timeStamp);
@@ -952,7 +952,7 @@ struct HfCorrelatorLcScHadrons {
           registry.fill(HIST("hPtCandSigNonPrompt"), ptCand);
           registry.fill(HIST("hPtVsMultiplicityMcRecNonPrompt"), ptCand, multiplicityFT0M);
         }
-        entryCandCandRecoInfo(massCandPiKP, ptCand, outputMlPiKP[0], outputMlPiKP[1]);
+        entryCandCandRecoInfo(massCandPiKP, ptCand, outputMlPiKP[0], outputMlPiKP[1], poolBin);
         entryCandCandGenInfo(isPrompt);
         if (!skipMixedEventTableFilling) {
           entryCand(candidate.phi(), etaCand, ptCand, massCandPiKP, poolBin, gCollisionId, timeStamp);

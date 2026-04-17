@@ -19,7 +19,9 @@
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
-#include "Framework/ASoAHelpers.h"
+#include <Framework/ASoAHelpers.h>
+
+#include <cstdint>
 
 namespace o2::analysis::femto
 {
@@ -49,6 +51,7 @@ void processSameEvent(T1 const& SliceParticle,
                       T7& PcManager,
                       PairOrder pairOrder)
 {
+  PairHistManager.resetTrackedParticlesPerEvent();
   for (auto const& part : SliceParticle) {
     ParticleHistManager.template fill<mode>(part, TrackTable);
   }
@@ -65,21 +68,23 @@ void processSameEvent(T1 const& SliceParticle,
     // Randomize pair order if enabled
     switch (pairOrder) {
       case kOrder12:
-        PairHistManager.setPair(p1, p2, Collision);
+        PairHistManager.setPair(p1, p2, TrackTable, Collision);
         break;
       case kOrder21:
-        PairHistManager.setPair(p2, p1, Collision);
+        PairHistManager.setPair(p2, p1, TrackTable, Collision);
         break;
       default:
-        PairHistManager.setPair(p1, p2, Collision);
+        PairHistManager.setPair(p1, p2, TrackTable, Collision);
     }
     // fill deta-dphi histograms with kstar cutoff
     CprManager.fill(PairHistManager.getKstar());
     // if pair cuts are configured check them before filling
     if (PairHistManager.checkPairCuts()) {
       PairHistManager.template fill<mode>();
+      PairHistManager.trackParticlesPerEvent(p1, p2);
     }
   }
+  PairHistManager.fillMixingQaSe();
 }
 
 // process same event for identical particles with mc information
@@ -110,6 +115,7 @@ void processSameEvent(T1 const& SliceParticle,
                       T12& PcManager,
                       PairOrder pairOrder)
 {
+  PairHistManager.resetTrackedParticlesPerEvent();
   for (auto const& part : SliceParticle) {
     if (!ParticleCleaner.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
       continue;
@@ -134,21 +140,23 @@ void processSameEvent(T1 const& SliceParticle,
     // Randomize pair order if enabled
     switch (pairOrder) {
       case kOrder12:
-        PairHistManager.setPairMc(p1, p2, mcParticles, Collision, mcCollisions);
+        PairHistManager.setPairMc(p1, p2, TrackTable, mcParticles, Collision, mcCollisions);
         break;
       case kOrder21:
-        PairHistManager.setPairMc(p2, p1, mcParticles, Collision, mcCollisions);
+        PairHistManager.setPairMc(p2, p1, TrackTable, mcParticles, Collision, mcCollisions);
         break;
       default:
-        PairHistManager.setPairMc(p1, p2, mcParticles, Collision, mcCollisions);
+        PairHistManager.setPairMc(p1, p2, TrackTable, mcParticles, Collision, mcCollisions);
     }
     // fill deta-dphi histograms with kstar cutoff
     CprManager.fill(PairHistManager.getKstar());
     // if pair cuts are configured check them before filling
     if (PairHistManager.checkPairCuts()) {
       PairHistManager.template fill<mode>();
+      PairHistManager.trackParticlesPerEvent(p1, p2);
     }
   }
+  PairHistManager.fillMixingQaSe();
 }
 
 // process same event for non-identical particles
@@ -172,6 +180,7 @@ void processSameEvent(T1 const& SliceParticle1,
                       T8& CprManager,
                       T9& PcManager)
 {
+  PairHistManager.resetTrackedParticlesPerEvent();
   // Fill single particle histograms
   for (auto const& part : SliceParticle1) {
     ParticleHistManager1.template fill<mode>(part, TrackTable);
@@ -189,12 +198,14 @@ void processSameEvent(T1 const& SliceParticle1,
     if (CprManager.isClosePair()) {
       continue;
     }
-    PairHistManager.setPair(p1, p2, Collision);
+    PairHistManager.setPair(p1, p2, TrackTable, Collision);
     CprManager.fill(PairHistManager.getKstar());
     if (PairHistManager.checkPairCuts()) {
       PairHistManager.template fill<mode>();
+      PairHistManager.trackParticlesPerEvent(p1, p2);
     }
   }
+  PairHistManager.fillMixingQaSe();
 }
 
 // process same event for non-identical particles with mc information
@@ -230,6 +241,7 @@ void processSameEvent(T1 const& SliceParticle1,
                       T14& CprManager,
                       T15& PcManager)
 {
+  PairHistManager.resetTrackedParticlesPerEvent();
   // Fill single particle histograms
   for (auto const& part : SliceParticle1) {
     if (!ParticleCleaner1.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
@@ -258,12 +270,14 @@ void processSameEvent(T1 const& SliceParticle1,
     if (CprManager.isClosePair()) {
       continue;
     }
-    PairHistManager.setPairMc(p1, p2, mcParticles, Collision, mcCollisions);
+    PairHistManager.setPairMc(p1, p2, TrackTable, mcParticles, Collision, mcCollisions);
     CprManager.fill(PairHistManager.getKstar());
     if (PairHistManager.checkPairCuts()) {
       PairHistManager.template fill<mode>();
+      PairHistManager.trackParticlesPerEvent(p1, p2);
     }
   }
+  PairHistManager.fillMixingQaSe();
 }
 
 // process mixed event
@@ -289,7 +303,21 @@ void processMixedEvent(T1 const& Collisions,
                        T9& CprManager,
                        T10& PcManager)
 {
-  for (auto const& [collision1, collision2] : o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions)) {
+  bool firstBin = true;
+  int windowSize = 0;
+  PairHistManager.resetTrackedParticlesPerEvent();
+  PairHistManager.resetTrackedParticlesPerMixingBin();
+  auto pairGenerator = o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions);
+  for (auto pairIterator = pairGenerator.begin(); pairIterator != pairGenerator.end(); pairIterator++) {
+    auto const& [collision1, collision2] = *pairIterator;
+    if (pairIterator.isNewWindow()) { // is true for the first bin, so we skip
+      if (!firstBin) {
+        PairHistManager.fillMixingQaMePerMixingBin(windowSize);
+        PairHistManager.resetTrackedParticlesPerMixingBin();
+      }
+      windowSize = pairIterator.currentWindowNeighbours();
+      firstBin = false;
+    }
     if (collision1.magField() != collision2.magField()) {
       continue;
     }
@@ -299,6 +327,9 @@ void processMixedEvent(T1 const& Collisions,
     if (sliceParticle1.size() == 0 || sliceParticle2.size() == 0) {
       continue;
     }
+
+    PairHistManager.resetTrackedParticlesPerEvent();
+    PairHistManager.fillMixingQaMe(collision1, collision2);
     for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(sliceParticle1, sliceParticle2))) {
       // pair cleaning
       if (!PcManager.isCleanPair(p1, p2, TrackTable)) {
@@ -309,16 +340,20 @@ void processMixedEvent(T1 const& Collisions,
       if (CprManager.isClosePair()) {
         continue;
       }
-      PairHistManager.setPair(p1, p2, collision1, collision2);
+      PairHistManager.setPair(p1, p2, TrackTable, collision1, collision2);
       CprManager.fill(PairHistManager.getKstar());
       if (PairHistManager.checkPairCuts()) {
         PairHistManager.template fill<mode>();
+        PairHistManager.trackParticlesPerEvent(p1, p2);
+        PairHistManager.trackParticlesPerMixingBin(p1, p2);
       }
     }
+    PairHistManager.fillMixingQaMePerEvent();
   }
+  PairHistManager.fillMixingQaMePerMixingBin(windowSize); // fill last window
 }
 
-// process mixed event  with mc information
+// process mixed event with mc information
 template <modes::Mode mode,
           typename T1,
           typename T2,
@@ -353,18 +388,46 @@ void processMixedEvent(T1 const& Collisions,
                        T15& CprManager,
                        T16& PcManager)
 {
-  for (auto const& [collision1, collision2] : o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions)) {
+  bool firstBin = true;
+  int windowSize = 0;
+  PairHistManager.resetTrackedParticlesPerEvent();
+  PairHistManager.resetTrackedParticlesPerMixingBin();
+
+  auto pairGenerator = o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions);
+  for (auto pairIterator = pairGenerator.begin(); pairIterator != pairGenerator.end(); ++pairIterator) {
+    auto const& [collision1, collision2] = *pairIterator;
+    //  handle mixing windows (same as data)
+    if (pairIterator.isNewWindow()) {
+      if (!firstBin) {
+        PairHistManager.fillMixingQaMePerMixingBin(windowSize);
+        PairHistManager.resetTrackedParticlesPerMixingBin();
+      }
+      windowSize = pairIterator.currentWindowNeighbours();
+      firstBin = false;
+    }
     if (collision1.magField() != collision2.magField()) {
       continue;
     }
     CprManager.setMagField(collision1.magField());
-    auto sliceParticle1 = Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache);
-    auto sliceParticle2 = Partition2->sliceByCached(o2::aod::femtobase::stored::fColId, collision2.globalIndex(), cache);
+
+    auto sliceParticle1 = Partition1->sliceByCached(
+      o2::aod::femtobase::stored::fColId,
+      collision1.globalIndex(),
+      cache);
+    auto sliceParticle2 = Partition2->sliceByCached(
+      o2::aod::femtobase::stored::fColId,
+      collision2.globalIndex(),
+      cache);
+
     if (sliceParticle1.size() == 0 || sliceParticle2.size() == 0) {
       continue;
     }
-    for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(sliceParticle1, sliceParticle2))) {
-      // particle cleaning
+
+    PairHistManager.resetTrackedParticlesPerEvent();
+    PairHistManager.fillMixingQaMe(collision1, collision2);
+    for (auto const& [p1, p2] :
+         o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(sliceParticle1, sliceParticle2))) {
+      // particle cleaning (MC-specific)
       if (!ParticleCleaner1.isClean(p1, mcParticles, mcMothers, mcPartonicMothers) ||
           !ParticleCleaner2.isClean(p2, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
@@ -373,18 +436,23 @@ void processMixedEvent(T1 const& Collisions,
       if (!PcManager.isCleanPair(p1, p2, TrackTable)) {
         continue;
       }
-      // Close pair rejection
+      // close pair rejection
       CprManager.setPair(p1, p2, TrackTable);
       if (CprManager.isClosePair()) {
         continue;
       }
-      PairHistManager.setPairMc(p1, p2, mcParticles, collision1, collision2, mcCollisions);
+      PairHistManager.setPairMc(p1, p2, TrackTable, mcParticles, collision1, collision2, mcCollisions);
       CprManager.fill(PairHistManager.getKstar());
       if (PairHistManager.checkPairCuts()) {
         PairHistManager.template fill<mode>();
+        PairHistManager.trackParticlesPerEvent(p1, p2);
+        PairHistManager.trackParticlesPerMixingBin(p1, p2);
       }
     }
+    PairHistManager.fillMixingQaMePerEvent();
   }
+  //  final window
+  PairHistManager.fillMixingQaMePerMixingBin(windowSize);
 }
 
 } // namespace pairprocesshelpers

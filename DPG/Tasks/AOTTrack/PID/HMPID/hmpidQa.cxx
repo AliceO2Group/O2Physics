@@ -11,30 +11,28 @@
 
 #include "tableHMPID.h"
 
-#include "Common/Core/PID/PIDTOF.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/TableProducer/PID/pidTOFBase.h"
-
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/DCA.h>
-#include <ReconstructionDataFormats/PID.h>
-#include <ReconstructionDataFormats/Track.h>
-#include <ReconstructionDataFormats/TrackParametrization.h>
 
 #include <TF1.h>
 #include <TMath.h>
+#include <TMathBase.h>
 #include <TRandom.h>
-#include <TTree.h>
+#include <TString.h>
 
 #include <HMPIDBase/Param.h>
+
+#include <RtypesCore.h>
+
+#include <cmath>
 
 using namespace o2;
 using namespace o2::framework;

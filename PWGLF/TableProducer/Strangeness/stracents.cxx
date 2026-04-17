@@ -15,25 +15,30 @@
 /// \author ALICE
 //
 
-#include <string>
-#include <vector>
-#include <algorithm>
-#include <map>
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Common/Core/MetadataHelper.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <TH1F.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
 #include <TFormula.h>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "Framework/HistogramRegistry.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "MetadataHelper.h"
-#include "TableHelper.h"
-#include "TList.h"
+#include <TH1.h>
+#include <TList.h>
+#include <TProfile.h>
+
+#include <cmath>
+#include <map>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -131,6 +136,7 @@ struct straCents {
   CalibrationInfo ft0aInfo = CalibrationInfo("FT0A");
   CalibrationInfo ft0cInfo = CalibrationInfo("FT0C");
   CalibrationInfo ft0cVariant1Info = CalibrationInfo("FT0Cvar1");
+  CalibrationInfo ft0cVariant2Info = CalibrationInfo("FT0Cvar2");
   CalibrationInfo fddmInfo = CalibrationInfo("FDD");
   CalibrationInfo ntpvInfo = CalibrationInfo("NTracksPV");
   CalibrationInfo nGlobalInfo = CalibrationInfo("NGlobal");
@@ -243,6 +249,7 @@ struct straCents {
     ft0aInfo.mCalibrationStored = false;
     ft0cInfo.mCalibrationStored = false;
     ft0cVariant1Info.mCalibrationStored = false;
+    ft0cVariant2Info.mCalibrationStored = false;
     fddmInfo.mCalibrationStored = false;
     ntpvInfo.mCalibrationStored = false;
     nGlobalInfo.mCalibrationStored = false;
@@ -371,6 +378,7 @@ struct straCents {
         getccdb(ft0aInfo, ccdbConfig.genName, ccdbConfig.doNotCrashOnNull);
         getccdb(ft0cInfo, ccdbConfig.genName, ccdbConfig.doNotCrashOnNull);
         getccdb(ft0cVariant1Info, ccdbConfig.genName, ccdbConfig.doNotCrashOnNull);
+        getccdb(ft0cVariant2Info, ccdbConfig.genName, ccdbConfig.doNotCrashOnNull);
         getccdb(fddmInfo, ccdbConfig.genName, ccdbConfig.doNotCrashOnNull);
         getccdb(ntpvInfo, ccdbConfig.genName, ccdbConfig.doNotCrashOnNull);
         getccdb(nGlobalInfo, ccdbConfig.genName, ccdbConfig.doNotCrashOnNull);
@@ -533,12 +541,14 @@ struct straCents {
       float centFT0C = getCentrality(ft0cInfo, multZeqFT0C);
       float centFV0A = getCentrality(fv0aInfo, multZeqFV0A);
       float centFT0CVariant1 = getCentrality(ft0cVariant1Info, multZeqFT0C);
+      float centFT0CVariant2 = getCentrality(ft0cVariant2Info, multZeqFT0C);
       float centMFT = 100.5f; // missing mftNtracks in strangeness data model
       float centNGlobal = getCentrality(nGlobalInfo, collision.multNTracksGlobal());
+      float centNTPV = 100.5f; // missing multNContribs in strangeness data model
 
       strangeCents(centFT0M, centFT0A,
-                   centFT0C, centFV0A, centFT0CVariant1,
-                   centMFT, centNGlobal);
+                   centFT0C, centFV0A, centFT0CVariant1, centFT0CVariant2,
+                   centMFT, centNGlobal, centNTPV);
 
       if (produceHistograms.value) {
         histos.fill(HIST("FT0M/Mult"), multZeqFT0A + multZeqFT0C);

@@ -19,29 +19,38 @@
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/collisionCuts.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/EventPlaneHelper.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/McCollisionExtra.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/MathConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
+#include <TH1.h>
+#include <TString.h>
+
+#include <chrono>
+#include <cmath>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -796,6 +805,8 @@ struct ResonanceInitializer {
                v0.dcapostopv(),
                v0.dcanegtopv(),
                v0.dcav0topv(),
+               static_cast<uint8_t>(v0.template posTrack_as<TrackType>().tpcNClsCrossedRows()),
+               static_cast<uint8_t>(v0.template negTrack_as<TrackType>().tpcNClsCrossedRows()),
                v0.mLambda(),
                v0.mAntiLambda(),
                v0.mK0Short(),
@@ -858,6 +869,9 @@ struct ResonanceInitializer {
                     casc.dcaXYCascToPV(),
                     casc.dcaZCascToPV(),
                     casc.sign(),
+                    static_cast<uint8_t>(casc.template posTrack_as<TrackType>().tpcNClsCrossedRows()),
+                    static_cast<uint8_t>(casc.template negTrack_as<TrackType>().tpcNClsCrossedRows()),
+                    static_cast<uint8_t>(casc.template bachelor_as<TrackType>().tpcNClsCrossedRows()),
                     casc.mLambda(),
                     casc.mXi(),
                     casc.v0radius(), casc.cascradius(), casc.x(), casc.y(), casc.z());
@@ -1345,7 +1359,7 @@ struct ResonanceInitializer {
       AxisSpec idxMCAxis = {26, -0.5, 25.5, "Index"};
       qaRegistry.add("Event/hMCEventIndices", "hMCEventIndices", kTH2D, {centAxis, idxMCAxis});
     }
-    qaRegistry.add("Event/CentFV0A", "; FV0A Percentile; Entries", o2::framework::kTH1F, {{110, 0, 110}});
+    qaRegistry.add("Event/CentFV0A", "; FV0A Percentile; Entries", o2::framework::HistType::kTH1F, {{110, 0, 110}});
     AxisSpec idxAxis = {8, 0, 8, "Index"};
     if (cfgFillQA) {
       qaRegistry.add("hGoodTrackIndices", "hGoodTrackIndices", kTH1F, {idxAxis});
@@ -1736,6 +1750,9 @@ struct ResonanceInitializer {
     resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
     resoEvtPlCollisions(0, 0, 0, 0);
     fillMCCollision<false>(collision, mcParticles);
+    // Loop over all MC particles
+    auto mcParts = selectedMCParticles->sliceBy(perMcCollision, collision.mcCollision().globalIndex());
+    fillMCParticles(mcParts, mcParticles);
 
     // Loop over tracks
     if (FilterForDerivedTables.cfgBypassNoPairV0s && (V0s.size() < 1)) {
@@ -1746,10 +1763,6 @@ struct ResonanceInitializer {
       fillMicroTracks<true>(collision, tracks);
     }
     fillV0s<true>(collision, V0s, tracks);
-
-    // Loop over all MC particles
-    auto mcParts = selectedMCParticles->sliceBy(perMcCollision, collision.mcCollision().globalIndex());
-    fillMCParticles(mcParts, mcParticles);
   }
   PROCESS_SWITCH(ResonanceInitializer, processTrackV0MC, "Process for MC", false);
 
@@ -1825,6 +1838,9 @@ struct ResonanceInitializer {
       mult = mcCollision.multMCNParticlesEta10();
 
     fillMCCollision<false>(collision, mcParticles, impactpar, mult);
+    // Loop over all MC particles
+    auto mcParts = selectedMCParticles->sliceBy(perMcCollision, mcId);
+    fillMCParticles(mcParts, mcParticles);
 
     // Loop over tracks
     if (FilterForDerivedTables.cfgBypassNoPairV0s && (V0s.size() < 1)) {
@@ -1839,16 +1855,11 @@ struct ResonanceInitializer {
     }
     fillV0s<true>(collision, V0s, tracks);
     fillCascades<true>(collision, Cascades, tracks);
-
-    // Loop over all MC particles
-    auto mcParts = selectedMCParticles->sliceBy(perMcCollision, mcId);
-    fillMCParticles(mcParts, mcParticles);
   }
   PROCESS_SWITCH(ResonanceInitializer, processTrackV0CascMC, "Process for MC", false);
 
   //  Following the discussions at the PAG meeting (https://indico.cern.ch/event/1583408/)
   //  we have introduced an auxiliary task that, when the resonanceInitializer.cxx is used,
-  // Only consider N_rec / N_gen i.e. not consider level of N_gen at least once
   void processMCgen(soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::MultMCExtras>::iterator const& mcCollision,
                     aod::McParticles const& mcParticles,
                     const soa::SmallGroups<o2::soa::Join<ResoEvents001, aod::McCollisionLabels>>& collisions,

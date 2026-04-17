@@ -16,10 +16,18 @@
 /// \since
 
 #include "IntermediateTables.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ConfigParamSpec.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/ConfigParamSpec.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/runDataProcessing.h>
+
+#include <algorithm>
+#include <cstdlib>
 
 using namespace o2;
 using namespace o2::framework;

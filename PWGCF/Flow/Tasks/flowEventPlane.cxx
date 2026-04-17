@@ -15,6 +15,7 @@
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
@@ -24,15 +25,32 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH2.h>
+#include <THnSparse.h>
+#include <TList.h>
+#include <TProfile.h>
 
 #include <array>
+#include <cmath>
 #include <map>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using namespace o2;
@@ -355,17 +373,70 @@ struct SpectatorPlaneTableProducer {
     return true;
   }
 
-  void gainCalib(bool const& loadGainCalib, float const& vz, std::array<float, 4>& eA, std::array<float, 4>& eC)
+  // Load Gain Calibrations and ZDC Q-Vector Recentering Corrections
+  void loadCorrections()
   {
-    // Store gain calibration histograms per run number
-    if (loadGainCalib) {
+    // Load ZDC gain calibration
+    if (cDoGainCalib) {
       std::string ccdbPath = static_cast<std::string>(cCcdbPath) + "/GainCalib" + "/Run" + std::to_string(cRunNum);
       auto ccdbObj = ccdbService->getForTimeStamp<TList>(ccdbPath, -1);
       CorrectionHistContainer.hGainCalib[0] = reinterpret_cast<TH2F*>(ccdbObj->FindObject("hZNASignal"));
       CorrectionHistContainer.hGainCalib[1] = reinterpret_cast<TH2F*>(ccdbObj->FindObject("hZNCSignal"));
     }
 
-    // Apply gain calibration
+    // Load shift corrections for ZDC Q-Vectors
+    if (cApplyRecentCorr) {
+      std::vector<int> vCorrFlags = static_cast<std::vector<int>>(cCorrFlagVector);
+      int nitr = vCorrFlags.size();
+      CorrectionType corrType = kFineCorr;
+
+      for (int i = 0; i < nitr; ++i) {
+        // Skip correction if corrFlag != 1
+        if (vCorrFlags[i] != 1) {
+          continue;
+        }
+
+        // Set correction type
+        if (i % kNCorr == 0) {
+          corrType = kCoarseCorr;
+        } else {
+          corrType = kFineCorr;
+        }
+
+        // Set ccdb path
+        std::string ccdbPath = static_cast<std::string>(cCcdbPath) + "/CorrItr_" + std::to_string(i + 1) + "/Run" + std::to_string(cRunNum);
+
+        // Get object from CCDB
+        auto ccdbObject = ccdbService->getForTimeStamp<TList>(ccdbPath, -1);
+
+        // Check CCDB Object
+        if (!ccdbObject) {
+          LOGF(warning, "CCDB OBJECT NOT FOUND");
+          return;
+        }
+
+        // Store histograms in Hist Container
+        std::vector<std::vector<std::string>> vHistNames = corrTypeHistNameMap.at(corrType);
+        int cntrx = 0;
+        for (auto const& x : vHistNames) {
+          int cntry = 0;
+          for (auto const& y : x) {
+            if (corrType == kFineCorr) {
+              CorrectionHistContainer.vFineCorrHist[i][cntrx][cntry] = reinterpret_cast<TProfile*>(ccdbObject->FindObject(y.c_str()));
+            } else {
+              CorrectionHistContainer.vCoarseCorrHist[i][cntrx][cntry] = reinterpret_cast<THnSparseF*>(ccdbObject->FindObject(y.c_str()));
+            }
+            ++cntry;
+          }
+          ++cntrx;
+        }
+      }
+    }
+  }
+
+  // Apply gain calibrations
+  void gainCalib(float const& vz, std::array<float, 4>& eA, std::array<float, 4>& eC)
+  {
     float vA = 0., vC = 0.;
     for (int i = 0; i < static_cast<int>(eA.size()); ++i) {
       vA = CorrectionHistContainer.hGainCalib[0]->GetBinContent(CorrectionHistContainer.hGainCalib[0]->FindBin(i + 0.5, vz + 0.00001));
@@ -406,12 +477,11 @@ struct SpectatorPlaneTableProducer {
     return vAvgOutput;
   }
 
-  void applyCorrection(bool const& loadShiftCorr, std::array<float, 4> const& inputParam, std::array<float, 4>& outputParam)
+  void applyCorrection(std::array<float, 4> const& inputParam, std::array<float, 4>& outputParam)
   {
     std::vector<int> vCorrFlags = static_cast<std::vector<int>>(cCorrFlagVector);
     int nitr = vCorrFlags.size();
     CorrectionType corrType = kFineCorr;
-    std::string ccdbPath;
 
     // Correction iterations
     for (int i = 0; i < nitr; ++i) {
@@ -425,37 +495,6 @@ struct SpectatorPlaneTableProducer {
         corrType = kCoarseCorr;
       } else {
         corrType = kFineCorr;
-      }
-
-      // Check current and last run number, fetch ccdb object and store corrections in container
-      if (loadShiftCorr) {
-        // Set ccdb path
-        ccdbPath = static_cast<std::string>(cCcdbPath) + "/CorrItr_" + std::to_string(i + 1) + "/Run" + std::to_string(cRunNum);
-
-        // Get object from CCDB
-        auto ccdbObject = ccdbService->getForTimeStamp<TList>(ccdbPath, -1);
-
-        // Check CCDB Object
-        if (!ccdbObject) {
-          LOGF(warning, "CCDB OBJECT NOT FOUND");
-          return;
-        }
-
-        // Store histograms in Hist Container
-        std::vector<std::vector<std::string>> vHistNames = corrTypeHistNameMap.at(corrType);
-        int cntrx = 0;
-        for (auto const& x : vHistNames) {
-          int cntry = 0;
-          for (auto const& y : x) {
-            if (corrType == kFineCorr) {
-              CorrectionHistContainer.vFineCorrHist[i][cntrx][cntry] = reinterpret_cast<TProfile*>(ccdbObject->FindObject(y.c_str()));
-            } else {
-              CorrectionHistContainer.vCoarseCorrHist[i][cntrx][cntry] = reinterpret_cast<THnSparseF*>(ccdbObject->FindObject(y.c_str()));
-            }
-            ++cntry;
-          }
-          ++cntrx;
-        }
       }
 
       // Get averages
@@ -497,8 +536,8 @@ struct SpectatorPlaneTableProducer {
     histos.fill(HIST("CorrHist/hYZNCVsVz"), vCollParam[kVz], vSP[kYc]);
   }
 
-  template <typename C>
-  bool analyzeCollision(C const& collision, std::array<float, 4>& vSP)
+  template <typename C, typename B>
+  bool analyzeCollision(B const& bc, C const& collision, std::array<float, 4>& vSP)
   {
     // Event selection
     if (!selCollision(collision)) {
@@ -514,17 +553,6 @@ struct SpectatorPlaneTableProducer {
     histos.fill(HIST("Event/hVx"), posX);
     histos.fill(HIST("Event/hVy"), posY);
     histos.fill(HIST("Event/hVz"), posZ);
-
-    // Get bunch crossing
-    auto bc = collision.template foundBC_as<BCsRun3>();
-    cRunNum = collision.template foundBC_as<BCsRun3>().runNumber();
-
-    // Load calibration flags
-    bool loadGainCalib = false, loadShiftCorr = false;
-    if (cRunNum != lRunNum) {
-      loadGainCalib = true;
-      loadShiftCorr = true;
-    }
 
     // check zdc
     if (!bc.has_zdc()) {
@@ -552,7 +580,7 @@ struct SpectatorPlaneTableProducer {
 
     // Do gain calibration
     if (cDoGainCalib) {
-      gainCalib(loadGainCalib, vCollParam[kVz], znaEnergy, zncEnergy);
+      gainCalib(vCollParam[kVz], znaEnergy, zncEnergy);
     }
 
     // Fill zdc signal
@@ -599,7 +627,7 @@ struct SpectatorPlaneTableProducer {
 
     // Do corrections
     if (cApplyRecentCorr) {
-      applyCorrection(loadShiftCorr, vCollParam, vSP);
+      applyCorrection(vCollParam, vSP);
     }
 
     // Fill X and Y histograms for corrections after each iteration
@@ -675,9 +703,17 @@ struct SpectatorPlaneTableProducer {
 
   void processSpectatorPlane(CollisionsRun3::iterator const& collision, BCsRun3 const&, aod::Zdcs const&)
   {
+    // Get bunch crossing
+    auto bc = collision.template foundBC_as<BCsRun3>();
+    cRunNum = collision.template foundBC_as<BCsRun3>().runNumber();
+
+    if (lRunNum != cRunNum) {
+      loadCorrections();
+    }
+
     // Analyze collision and get Spectator Plane Vector
     std::array<float, 4> vSP = {0., 0., 0., 0.};
-    bool colSPExtFlag = analyzeCollision(collision, vSP);
+    bool colSPExtFlag = analyzeCollision(bc, collision, vSP);
 
     // Update run number
     lRunNum = cRunNum;
@@ -870,6 +906,7 @@ struct FlowEventPlane {
       histos.add("V0/Lambda/Flow/hQuA", "hQuA", kTProfile3D, {axisCent, axisTrackRap, axisLambdaInvMass});
       histos.add("V0/Lambda/Flow/hQuC", "hQuC", kTProfile3D, {axisCent, axisTrackRap, axisLambdaInvMass});
       histos.addClone("V0/Lambda/", "V0/AntiLambda/");
+      histos.addClone("V0/Lambda/", "V0/LambdaAntiLambda/");
       histos.add("V0/K0Short/hMassVsRap", "hMassVsRap", kTH3F, {axisCent, axisK0ShortInvMass, axisTrackEta});
       histos.add("V0/K0Short/Flow/hQuA", "hQuA", kTProfile3D, {axisCent, axisTrackRap, axisK0ShortInvMass});
       histos.add("V0/K0Short/Flow/hQuC", "hQuC", kTProfile3D, {axisCent, axisTrackRap, axisK0ShortInvMass});
@@ -1208,6 +1245,9 @@ struct FlowEventPlane {
         histos.fill(HIST("V0/Lambda/hMassVsRap"), cent, v0.mLambda(), v0.eta());
         histos.fill(HIST("V0/Lambda/Flow/hQuA"), cent, v0.eta(), v0.mLambda(), v1a);
         histos.fill(HIST("V0/Lambda/Flow/hQuC"), cent, v0.eta(), v0.mLambda(), v1c);
+        histos.fill(HIST("V0/LambdaAntiLambda/hMassVsRap"), cent, v0.mLambda(), v0.eta());
+        histos.fill(HIST("V0/LambdaAntiLambda/Flow/hQuA"), cent, v0.eta(), v0.mLambda(), v1a);
+        histos.fill(HIST("V0/LambdaAntiLambda/Flow/hQuC"), cent, v0.eta(), v0.mLambda(), v1c);
       }
 
       // AntiLambda
@@ -1216,6 +1256,9 @@ struct FlowEventPlane {
         histos.fill(HIST("V0/AntiLambda/hMassVsRap"), cent, v0.mAntiLambda(), v0.eta());
         histos.fill(HIST("V0/AntiLambda/Flow/hQuA"), cent, v0.eta(), v0.mAntiLambda(), v1a);
         histos.fill(HIST("V0/AntiLambda/Flow/hQuC"), cent, v0.eta(), v0.mAntiLambda(), v1c);
+        histos.fill(HIST("V0/LambdaAntiLambda/hMassVsRap"), cent, v0.mAntiLambda(), v0.eta());
+        histos.fill(HIST("V0/LambdaAntiLambda/Flow/hQuA"), cent, v0.eta(), v0.mAntiLambda(), v1a);
+        histos.fill(HIST("V0/LambdaAntiLambda/Flow/hQuC"), cent, v0.eta(), v0.mAntiLambda(), v1c);
       }
     }
   }

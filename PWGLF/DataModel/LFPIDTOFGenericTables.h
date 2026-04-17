@@ -13,14 +13,10 @@
 /// \brief Table for event time without remving track bias
 /// \author Yuanzhe Wang <yuanzhe.wang@cern.ch>
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-
 #ifndef PWGLF_DATAMODEL_LFPIDTOFGENERICTABLES_H_
 #define PWGLF_DATAMODEL_LFPIDTOFGENERICTABLES_H_
-#include "Common/Core/PID/PIDTOF.h"
 
-#include "CommonDataFormat/InteractionRecord.h"
+#include <Framework/AnalysisDataModel.h>
 
 namespace o2::aod
 {

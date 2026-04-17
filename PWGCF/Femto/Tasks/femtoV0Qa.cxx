@@ -23,15 +23,16 @@
 #include "PWGCF/Femto/Core/v0HistManager.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/Configurable.h"
-#include "Framework/Expressions.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/InitContext.h"
-#include "Framework/OutputObjHeader.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
 #include <map>
 #include <vector>
@@ -51,7 +52,7 @@ struct FemtoV0Qa {
 
   using FemtoLambdas = o2::soa::Join<o2::aod::FLambdas, o2::aod::FLambdaMasks, o2::aod::FLambdaExtras>;
   using FemtoK0shorts = o2::soa::Join<o2::aod::FK0shorts, o2::aod::FK0shortMasks, o2::aod::FK0shortExtras>;
-  using FemtoTracks = o2::soa::Join<o2::aod::FTracks, o2::aod::FTrackDcas, o2::aod::FTrackExtras, o2::aod::FTrackPids>;
+  using FemtoTracks = o2::soa::Join<o2::aod::FTracks, o2::aod::FTrackMass, o2::aod::FTrackDcas, o2::aod::FTrackExtras, o2::aod::FTrackPids>;
 
   using FemtoLambdasWithLabel = o2::soa::Join<FemtoLambdas, o2::aod::FLambdaLabels>;
   using FemtoK0shortsWithLabel = o2::soa::Join<FemtoK0shorts, o2::aod::FK0shortLabels>;
@@ -165,7 +166,7 @@ struct FemtoV0Qa {
 
   void processK0short(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoK0shorts const& /*k0shorts*/)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col, 0, 0, 0);
+    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
     auto k0shortSlice = k0shortPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& k0short : k0shortSlice) {
       k0shortHistManager.fill<modes::Mode::kAnalysis_Qa>(k0short, tracks);
@@ -175,7 +176,7 @@ struct FemtoV0Qa {
 
   void processK0shortMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoK0shortsWithLabel const& /*k0shorts*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols, 0, 0, 0);
+    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
     auto k0shortSlice = k0shortWithLabelPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& k0short : k0shortSlice) {
       if (!k0shortCleaner.isClean(k0short, mcParticles, mcMothers, mcPartonicMothers)) {
@@ -188,7 +189,7 @@ struct FemtoV0Qa {
 
   void processLambda(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoLambdas const& /*lambdas*/)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col, 0, 0, 0);
+    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
     auto lambdaSlice = lambdaPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& lambda : lambdaSlice) {
       lambdaHistManager.fill<modes::Mode::kAnalysis_Qa>(lambda, tracks);
@@ -198,7 +199,7 @@ struct FemtoV0Qa {
 
   void processLambdaMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoLambdasWithLabel const& /*lambdas*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols, 0, 0, 0);
+    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
     auto lambdaSlice = lambdaWithLabelPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     for (auto const& lambda : lambdaSlice) {
       if (!lambdaCleaner.isClean(lambda, mcParticles, mcMothers, mcPartonicMothers)) {

@@ -9,10 +9,17 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <vector>
-#include <iostream>
-
 #include "PWGDQ/Core/MCSignal.h"
+
+#include "MCProng.h"
+
+#include <TNamed.h>
+
+#include <Rtypes.h>
+
+#include <cstdint>
+#include <iostream>
+#include <vector>
 
 using std::cout;
 using std::endl;

@@ -14,13 +14,14 @@
 
 #include "UPCCutparHolder.h"
 
-#include "PWGUD/DataModel/UDTables.h"
-
-#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/LHCConstants.h"
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 
 using BCsWithBcSels = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>;
 

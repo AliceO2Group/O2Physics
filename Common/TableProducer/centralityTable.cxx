@@ -216,7 +216,7 @@ struct CentralityTable {
     /* Checking the tables which are requested in the workflow and enabling them */
     for (int i = 0; i < NTables; i++) {
       int f = enabledTables->get(tableNames[i].c_str(), "Enable");
-      enableFlagIfTableRequired(context, tableNames[i], f);
+      o2::common::core::enableFlagIfTableRequired(context, tableNames[i], f);
       if (f == 1) {
         if (tableNames[i].find("Run2") != std::string::npos) {
           if (doprocessRun3) {

@@ -13,6 +13,15 @@
 // merge all trees into one tree to construct event by event log-likelihood
 // function.
 
+#include <TCollection.h>
+#include <TDirectoryFile.h>
+#include <TFile.h>
+#include <TList.h>
+#include <TString.h>
+#include <TTree.h>
+
+#include <RtypesCore.h>
+
 void merger()
 {
   TFile* fin = new TFile("../data/PbPb_NF/AnalysisResults_trees.root", "read");

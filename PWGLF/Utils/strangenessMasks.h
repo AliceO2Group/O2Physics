@@ -16,6 +16,8 @@
 #ifndef PWGLF_UTILS_STRANGENESSMASKS_H_
 #define PWGLF_UTILS_STRANGENESSMASKS_H_
 
+#include <bitset>
+
 enum SelectionsCombined : int { selV0CosPA = 0,
                                 selV0Radius,
                                 selV0RadiusMax,

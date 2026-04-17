@@ -27,7 +27,7 @@
 
 // macro for track momentum, i.e. ||q|*pT/q| * cosh(eta)
 // there is no ncosh function, so we have to make our own, i.e. cosh(x) = (exp(x)+exp(-x))/2
-#define TRACK_MOMENTUM(chargeAbs, signedPt, eta) nabs((chargeAbs) * (signedPt)) * (nexp(eta) + nexp(-1.f * (eta))) / 2.f
+#define TRACK_MOMENTUM(chargeAbs, signedPt, eta) (nabs((chargeAbs) * (signedPt)) * (nexp(eta) + nexp(-1.f * (eta))) / 2.f)
 
 // standard track partition
 #define MAKE_TRACK_PARTITION(selection)                                                                                                                                              \
@@ -43,6 +43,12 @@
              (o2::aod::femtotracks::mask & selection.rejectionMaskLowMomentum) == static_cast<o2::aod::femtodatatypes::TrackMaskType>(0),                                            \
            ncheckbit(o2::aod::femtotracks::mask, selection.maskHighMomentum) &&                                                                                                      \
              (o2::aod::femtotracks::mask & selection.rejectionMaskHighMomentum) == static_cast<o2::aod::femtodatatypes::TrackMaskType>(0))
+
+// track partition with optional mass cut
+#define MAKE_TRACK_PARTITION_WITH_MASS(selection)             \
+  MAKE_TRACK_PARTITION(selection) &&                          \
+    (o2::aod::femtobase::stored::mass > selection.massMin) && \
+    (o2::aod::femtobase::stored::mass < selection.massMax)
 
 // partition for phis and rhos, i.e. resonance that are their own antiparticle
 #define MAKE_RESONANCE_0_PARTITON(selection)                                                     \

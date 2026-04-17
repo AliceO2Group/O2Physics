@@ -16,9 +16,17 @@
 #ifndef PWGUD_CORE_UPCJPSICENTRALBARRELCORRHELPER_H_
 #define PWGUD_CORE_UPCJPSICENTRALBARRELCORRHELPER_H_
 
-#include "CommonConstants/MathConstants.h"
+#include <CommonConstants/MathConstants.h>
+
+#include <TLorentzVector.h>
+
+#include <RtypesCore.h>
 
 #include <algorithm>
+#include <array>
+#include <chrono>
+#include <cmath>
+#include <cstdlib>
 #include <random>
 #include <vector>
 

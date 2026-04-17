@@ -20,25 +20,34 @@
 
 #include "qaEventTrack.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisDataModel.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "MathUtils/BetheBlochAleph.h"
-#include "ReconstructionDataFormats/PID.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+#include <MathUtils/BetheBlochAleph.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include "TF1.h"
+#include <TF1.h>
+#include <TH2.h>
+#include <TMathBase.h>
+#include <TString.h>
+
+#include <RtypesCore.h>
+
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <ostream>
+#include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::dataformats;
 
 // Lite version of the QA task to run on skimmed dataset
 struct qaEventTrackLite {

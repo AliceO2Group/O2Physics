@@ -28,13 +28,12 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
 
-#include <algorithm>
 #include <cstdint>
-#include <iterator>
 #include <string>
 #include <vector>
 

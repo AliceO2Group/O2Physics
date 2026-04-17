@@ -22,7 +22,10 @@
 /// \author Zhongbao Yin (Zhong-Bao.Yin@cern.ch)
 
 #include "PWGLF/DataModel/LFHStrangeCorrelationTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
 #include "Common/DataModel/Centrality.h"
@@ -30,19 +33,44 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/StaticFor.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
 
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <THn.h>
+#include <TList.h>
 #include <TPDGCode.h>
+#include <TString.h>
 
-#include <iostream>
+#include <fmt/format.h>
+
+#include <Rtypes.h>
+
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <string>
+#include <string_view>
+#include <variant>
 #include <vector>
 
 using namespace o2;
@@ -86,6 +114,8 @@ struct HStrangeCorrelation {
     Configurable<bool> selectINELgtZERO{"selectINELgtZERO", true, "select INEL>0 events"};
     Configurable<float> zVertexCut{"zVertexCut", 10, "Cut on PV position"};
     Configurable<bool> requireAllGoodITSLayers{"requireAllGoodITSLayers", false, " require that in the event all ITS are good"};
+    Configurable<bool> requireGoodTriggerTVX{"requireGoodTriggerTVX", false, " require acceptable FT0C-FT0A time difference"};
+    Configurable<bool> requireGoodZvtxFT0vsPV{"requireGoodZvtxFT0vsPV", false, " require small difference between z-vertex from PV and from FT0"};
     Configurable<bool> skipUnderOverflowInTHn{"skipUnderOverflowInTHn", false, "skip under/overflow in THns"};
     Configurable<int> mixingParameter{"mixingParameter", 10, "how many events are mixed"};
     Configurable<bool> doMCassociation{"doMCassociation", false, "fill everything only for MC associated"};
@@ -1675,7 +1705,7 @@ struct HStrangeCorrelation {
 
     if (doprocessMixedEventHV0sInBuffer || doprocessMixedEventHCascadesInBuffer) {
       validCollisions.resize(histos.get<TH1>(HIST("axes/hMultAxis"))->GetNbinsX() * histos.get<TH1>(HIST("axes/hVertexZAxis"))->GetNbinsX());
-      for (auto& inner_vec : validCollisions) {
+      for (std::vector<ValidCollision>& inner_vec : validCollisions) {
         inner_vec.reserve(masterConfigurations.mixingParameter);
       }
     }
@@ -1912,7 +1942,7 @@ struct HStrangeCorrelation {
     if (fillHists)
       histos.fill(HIST("hEventSelection"), 1.5 /* collisions  after sel8*/);
 
-    if (!collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
+    if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && masterConfigurations.requireGoodTriggerTVX) {
       return false;
     }
     if (fillHists)
@@ -1924,14 +1954,14 @@ struct HStrangeCorrelation {
     if (fillHists)
       histos.fill(HIST("hEventSelection"), 3.5 /* collisions  after sel pvz sel*/);
 
-    if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    if (!collision.selection_bit(aod::evsel::kIsGoodITSLayersAll) && masterConfigurations.requireAllGoodITSLayers) {
       // cut time intervals with dead ITS staves
       return false;
     }
     if (fillHists)
       histos.fill(HIST("hEventSelection"), 4.5 /* collisions  after cut time intervals with dead ITS staves*/);
 
-    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) && masterConfigurations.requireGoodZvtxFT0vsPV) {
       // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
       // use this cut at low multiplicities with caution
       return false;
@@ -2792,9 +2822,9 @@ struct HStrangeCorrelation {
       double gpt = mcParticle.pt();
       if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus || std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus || std::abs(mcParticle.pdgCode()) == PDG_t::kProton || std::abs(mcParticle.pdgCode()) == PDG_t::kElectron || std::abs(mcParticle.pdgCode()) == PDG_t::kMuonMinus) {
         if (efficiencyFlags.applyEffAsFunctionOfMultAndPhi) {
-          histos.fill(HIST("GeneratedWithPV/hTrigger"), gpt, geta, mcParticle.phi(), bestCollisionFT0Mpercentile);
+          histos.fill(HIST("GeneratedWithPV/hTrigger"), gpt, geta, mcParticle.phi(), bestCollisionFT0Cpercentile);
         } else {
-          histos.fill(HIST("GeneratedWithPV/hTrigger"), gpt, geta, bestCollisionFT0Cpercentile);
+          histos.fill(HIST("GeneratedWithPV/hTrigger"), gpt, geta, bestCollisionFT0Mpercentile);
         }
         if (mcParticle.pdgCode() > 0)
           histos.fill(HIST("GeneratedWithPV/hPositiveTrigger"), gpt, geta, bestCollisionFT0Mpercentile);
@@ -3159,7 +3189,7 @@ struct HStrangeCorrelation {
     }
 
     // Perform basic event selection on both collisions
-    if (((masterConfigurations.doPPAnalysis && !isCollisionSelected(collision))) || (!masterConfigurations.doPPAnalysis && !isCollisionSelectedPbPb(collision, true))) {
+    if (((masterConfigurations.doPPAnalysis && !isCollisionSelected(collision))) || (!masterConfigurations.doPPAnalysis && !isCollisionSelectedPbPb(collision, false))) {
       return;
     }
     if (cent > axisRanges[5][1] || cent < axisRanges[5][0])
@@ -3186,7 +3216,7 @@ struct HStrangeCorrelation {
       return;
     }
     // Perform basic event selection on both collisions
-    if ((masterConfigurations.doPPAnalysis && !isCollisionSelected(collision)) || (!masterConfigurations.doPPAnalysis && (!isCollisionSelectedPbPb(collision, true)))) {
+    if ((masterConfigurations.doPPAnalysis && !isCollisionSelected(collision)) || (!masterConfigurations.doPPAnalysis && (!isCollisionSelectedPbPb(collision, false)))) {
       return;
     }
     if (cent > axisRanges[5][1] || cent < axisRanges[5][0])

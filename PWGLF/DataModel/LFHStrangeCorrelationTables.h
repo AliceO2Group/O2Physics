@@ -23,13 +23,11 @@
 #define PWGLF_DATAMODEL_LFHSTRANGECORRELATIONTABLES_H_
 
 /// this data model uses the LF one, add here
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "Common/Core/RecoDecay.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h" // IWYU pragma: keep
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisDataModel.h"
 #include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 
 // Simple checker
 #define bitcheck(var, nbit) ((var) & (1 << (nbit)))

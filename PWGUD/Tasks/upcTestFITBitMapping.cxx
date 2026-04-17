@@ -16,13 +16,19 @@
 #include "PWGUD/Core/UDHelpers.h"     // udhelpers::Bits256, makeBits256, testBit, getPhiEtaFromFitBit
 #include "PWGUD/DataModel/UDTables.h" // aod::UDCollisionFITBits
 
-#include "FT0Base/Geometry.h" // o2::ft0::Geometry
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include <FT0Base/Geometry.h> // o2::ft0::Geometry
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
 #include <array>
 #include <cmath>
+#include <cstdint>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::framework;

@@ -20,10 +20,14 @@
 #ifndef PWGLF_UTILS_MCPARTICLE_H_
 #define PWGLF_UTILS_MCPARTICLE_H_
 
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/Logger.h>
+#include <ReconstructionDataFormats/PID.h>
+
+#include <array>
+#include <cstdint>
 #include <string>
 #include <vector>
-
-#include "ReconstructionDataFormats/PID.h"
 
 namespace o2
 {

@@ -8,20 +8,39 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-// O2 includes
 //
 // \brief A filter task for diffractive events
 // \author P. Buehler, paul.buehler@oeaw.ac.at
 // \since June 1, 2021
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/StaticFor.h"
-#include "Common/DataModel/EventSelection.h"
+#include "../filterTables.h"
+
 #include "PWGUD/Core/DGCutparHolder.h"
 #include "PWGUD/Core/DGSelector.h"
 #include "PWGUD/Core/UDHelpers.h"
-#include "../filterTables.h"
+
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TH2.h>
+
+#include <cstdint>
+#include <string_view>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

@@ -18,9 +18,11 @@
 
 #include "PWGCF/Femto/Core/selectionContainer.h"
 
-#include "Framework/HistogramRegistry.h"
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
 
-#include "fairlogger/Logger.h"
+#include <TH1.h>
 
 #include <climits>
 #include <cstddef>
@@ -392,7 +394,7 @@ class BaseSelection
     mHistRegistry = registry;
     // create histogram with one bin per selection, plus two summary bins (all analyzed, all passed)
     int nBins = mNSelection + 2;
-    mHistRegistry->add(HistName, "; Selection Bits; Entries", o2::framework::kTH1F, {{nBins, -0.5, nBins - 0.5}});
+    mHistRegistry->add(HistName, "; Selection Bits; Entries", o2::framework::HistType::kTH1F, {{nBins, -0.5, nBins - 0.5}});
 
     int binIndex = 0;
     int offset = 0;

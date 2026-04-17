@@ -82,6 +82,11 @@ DECLARE_SOA_TABLE_VERSIONED(StraCents_001, "AOD", "STRACENTS", 1, //! centrality
                             cent::CentFT0C, cent::CentFV0A,
                             cent::CentFT0CVariant1, cent::CentMFT,
                             cent::CentNGlobal);
+DECLARE_SOA_TABLE_VERSIONED(StraCents_002, "AOD", "STRACENTS", 2, //! centrality percentiles in Run 3
+                            cent::CentFT0M, cent::CentFT0A,
+                            cent::CentFT0C, cent::CentFV0A,
+                            cent::CentFT0CVariant1, cent::CentFT0CVariant2,
+                            cent::CentMFT, cent::CentNGlobal, cent::CentNTPV);
 
 DECLARE_SOA_TABLE(StraCentsRun2, "AOD", "STRACENTSRUN2", //! centrality percentiles in Run 2
                   cent::CentRun2V0M, cent::CentRun2V0A,
@@ -274,6 +279,16 @@ DECLARE_SOA_TABLE_VERSIONED(StraEvSels_005, "AOD", "STRAEVSELS", 5,         //! 
                             // stracollision::EnergyCommonZNC<mult::MultZNC>,
                             stracollision::IsUPC<udcollision::GapSide>);
 
+DECLARE_SOA_TABLE(StraEvSelExtras, "AOD", "STRAEVSELEXTRAS", //! debug information
+                  udzdc::TimeZNA,                            // UPC info: re-assigned ZN-A time, in case of SG event, from the most active bc
+                  udzdc::TimeZNC,                            // UPC info: re-assigned ZN-C time, in case of SG event, from the most active bc
+                  udcollision::TimeFDDA,                     // Average A-side time (ns)
+                  udcollision::TimeFDDC,                     // Average C-side time (ns)
+                  udcollision::TimeFV0A,                     // Average A-side time (ns)
+                  udcollision::TimeFT0A,                     // Average A-side time (ns)
+                  udcollision::TimeFT0C,                     // Average C-side time (ns)
+                  udcollision::TriggerMaskFT0);              // 8 trigger bits: OrA, OrC, Semi-central, Central, Vertex, IsActiveA, IsActiveC, IsFlangeEvent
+
 DECLARE_SOA_TABLE(StraEvSelsRun2, "AOD", "STRAEVSELSRUN2",    //! debug information
                   evsel::Sel8, evsel::Sel7, evsel::Selection, //! event selection: sel8
                   mult::MultFT0A, mult::MultFT0C,             // FIT detectors
@@ -315,11 +330,11 @@ DECLARE_SOA_TABLE(StraEvTimes, "AOD", "STRAEVTIMES", //! event time (FT0, TOF)
                   stracollision::EventTime);
 
 using StraRawCents = StraRawCents_004;
-using StraCents = StraCents_001;
+using StraCents = StraCents_002;
 using StraEvSels = StraEvSels_005;
 using StraStamps = StraStamps_001;
 using StraCollision = StraCollisions::iterator;
-using StraCent = StraCents_001::iterator;
+using StraCent = StraCents::iterator;
 
 namespace stramccollision
 {

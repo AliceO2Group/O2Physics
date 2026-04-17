@@ -12,7 +12,6 @@
 #ifndef PWGUD_CORE_UDFSPARSER_H_
 #define PWGUD_CORE_UDFSPARSER_H_
 
-// #include <gandiva/projector.h>
 #include <string>
 #include <vector>
 

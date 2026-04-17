@@ -142,7 +142,7 @@ struct ITSResponse {
     float p0_res = 0, p1_res = 0, p2_res = 0;
     float p0_res_Z2 = 0, p1_res_Z2 = 0, p2_res_Z2 = 0;
     o2::framework::LabeledArray<float> itsParams;
-    getTaskOptionValue(initContext, "its-pid", "itsParams", itsParams, true);
+    o2::common::core::getTaskOptionValue(initContext, "its-pid", "itsParams", itsParams, true);
     auto data = itsParams.getData();
     const int col = isMC ? 1 : 0; // 0 for Data, 1 for MC
     if (data.rows != 2 || data.cols != 12) {

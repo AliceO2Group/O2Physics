@@ -14,11 +14,12 @@
 /// \brief Non prompt cascade tables
 ///
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-
 #ifndef PWGLF_DATAMODEL_LFNONPROMPTCASCADETABLES_H_
 #define PWGLF_DATAMODEL_LFNONPROMPTCASCADETABLES_H_
+
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 
 namespace o2::aod
 {
@@ -195,7 +196,7 @@ DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
                   NPCascadeTable::CentFT0M,
                   NPCascadeTable::MultNTracksGlobal,
                   NPCascadeTable::ToiMask,
-                  NPCascadeTable::NoSameBunchPileup)
+                  NPCascadeTable::NoSameBunchPileup);
 
 DECLARE_SOA_TABLE(NPCascTableNT, "AOD", "NPCASCTABLENT",
                   NPCascadeTable::RunNumber,
@@ -263,7 +264,7 @@ DECLARE_SOA_TABLE(NPCascTableNT, "AOD", "NPCASCTABLENT",
                   NPCascadeTable::CentFT0M,
                   NPCascadeTable::MultNTracksGlobal,
                   NPCascadeTable::ToiMask,
-                  NPCascadeTable::NoSameBunchPileup)
+                  NPCascadeTable::NoSameBunchPileup);
 
 DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::RunNumber,
@@ -350,7 +351,7 @@ DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::MotherDecayDaughters,
                   NPCascadeTable::MultNTracksGlobal,
                   NPCascadeTable::ToiMask,
-                  NPCascadeTable::NoSameBunchPileup)
+                  NPCascadeTable::NoSameBunchPileup);
 
 DECLARE_SOA_TABLE(NPCascTableMCNT, "AOD", "NPCASCTABLEMCNT",
                   NPCascadeTable::RunNumber,
@@ -437,8 +438,7 @@ DECLARE_SOA_TABLE(NPCascTableMCNT, "AOD", "NPCASCTABLEMCNT",
                   NPCascadeTable::MotherDecayDaughters,
                   NPCascadeTable::MultNTracksGlobal,
                   NPCascadeTable::ToiMask,
-                  NPCascadeTable::NoSameBunchPileup)
-
+                  NPCascadeTable::NoSameBunchPileup);
 DECLARE_SOA_TABLE(NPCascTableGen, "AOD", "NPCASCTABLEGen",
                   NPCascadeTable::gPt,
                   NPCascadeTable::gEta,
@@ -450,19 +450,23 @@ DECLARE_SOA_TABLE(NPCascTableGen, "AOD", "NPCASCTABLEGen",
                   NPCascadeTable::DCAzMC,
                   NPCascadeTable::IsFromBeauty,
                   NPCascadeTable::IsFromCharm,
-                  NPCascadeTable::MotherDecayDaughters)
-DECLARE_SOA_TABLE(NPPileUpTable, "AOD", "NPPileUpTABLE",
+                  NPCascadeTable::MotherDecayDaughters);
+DECLARE_SOA_TABLE(NPMCChargedTable, "AOD", "NPMCChargedTABLE",
+                  NPCascadeTable::PtGen,
+                  NPCascadeTable::PtRec,
+                  NPCascadeTable::MultNTracksGlobal,
+                  NPCascadeTable::MultGen);
+DECLARE_SOA_TABLE(NPCollisionTable, "AOD", "NPCollisionTABLE",
                   NPCascadeTable::RunNumber,
                   NPCascadeTable::GlobalBC,
                   aod::collision::NumContrib,
                   NPCascadeTable::MultNTracksGlobal,
                   NPCascadeTable::CentFT0M,
-                  NPCascadeTable::MultFT0M)
-DECLARE_SOA_TABLE(NPMCNegativesTable, "AOD", "NPMCNegativesTABLE",
-                  NPCascadeTable::PtGen,
-                  NPCascadeTable::PtRec,
-                  NPCascadeTable::MultNTracksGlobal,
-                  NPCascadeTable::MultGen);
+                  NPCascadeTable::MultFT0M);
+DECLARE_SOA_INDEX_COLUMN_FULL(NPCollision, npCollision, int32_t, NPCollisionTable, "");
+DECLARE_SOA_TABLE(NPRecoChargedCand, "AOD", "NPRecoChargedCand",
+                  NPCollisionId,
+                  NPCascadeTable::PtRec);
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFNONPROMPTCASCADETABLES_H_

@@ -22,7 +22,7 @@
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 
-#include <Math/Vector4D.h> // IWYU pragma: keep
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 #include <TNamed.h>
 
@@ -33,8 +33,6 @@
 #include <functional>
 #include <set>
 #include <utility>
-
-using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 
 class DalitzEECut : public TNamed
 {
@@ -256,7 +254,7 @@ class DalitzEECut : public TNamed
         return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
 
       case DalitzEECuts::kDCA3Dsigma:
-        return mMinDca3D < dca3DinSigma(track) && dca3DinSigma(track) < mMaxDca3D; // in sigma for single leg
+        return mMinDca3D < o2::aod::pwgem::dilepton::utils::emtrackutil::dca3DinSigma(track) && o2::aod::pwgem::dilepton::utils::emtrackutil::dca3DinSigma(track) < mMaxDca3D; // in sigma for single leg
 
       case DalitzEECuts::kDCAxy:
         return std::fabs(track.dcaXY()) < ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);

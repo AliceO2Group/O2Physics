@@ -20,7 +20,6 @@
 #define PWGLF_UTILS_INELGT_H_
 
 #include <Framework/AnalysisDataModel.h>
-#include <Framework/O2DatabasePDGPlugin.h>
 
 #include <TParticlePDG.h>
 

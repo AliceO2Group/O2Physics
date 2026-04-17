@@ -21,6 +21,7 @@
 #define PWGLF_DATAMODEL_LAMBDAJETPOLARIZATIONIONS_H_
 
 #include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 
 #include <cmath>
 

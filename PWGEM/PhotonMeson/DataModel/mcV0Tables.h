@@ -15,7 +15,9 @@
 #ifndef PWGEM_PHOTONMESON_DATAMODEL_MCV0TABLES_H_
 #define PWGEM_PHOTONMESON_DATAMODEL_MCV0TABLES_H_
 
-#include "Framework/ASoA.h"
+#include <Framework/ASoA.h>
+
+#include <cstdint>
 
 namespace o2::aod
 {

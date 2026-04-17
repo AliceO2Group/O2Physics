@@ -83,7 +83,7 @@ struct Run2TinyToFullPID {
     for (int i = 0; i < nTables; i++) {
       LOGF(info, "test %i", i);
       int f = enabledTables->get(tableNames[i].c_str(), "enable");
-      enableFlagIfTableRequired(context, tableNames[i], f);
+      o2::common::core::enableFlagIfTableRequired(context, tableNames[i], f);
       if (f == 1) {
         mEnabledTables.push_back(i);
       }

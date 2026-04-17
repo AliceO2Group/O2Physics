@@ -21,18 +21,16 @@
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEFEMTOCONTAINER_H_
 
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseMath.h"
+#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
-#include "Framework/HistogramRegistry.h"
-#include <Framework/Logger.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 
-#include "Math/Vector4D.h"
-#include "TDatabasePDG.h"
-#include "TMath.h"
+#include <TDatabasePDG.h>
 
 #include <string>
+#include <string_view>
 #include <vector>
-
-using namespace o2::framework;
 
 namespace o2::analysis::femto_universe
 {
@@ -74,18 +72,18 @@ class FemtoUniverseFemtoContainer
   template <typename T>
   void initBase(std::string folderName, std::string femtoObs, T femtoObsAxis, T multAxis, T kTAxis, T mTAxis, T multAxis3D, T mTAxis3D, bool use3dplots)
   {
-    kHistogramRegistry->add((folderName + "/relPairDist").c_str(), ("; " + femtoObs + "; Entries").c_str(), kTH1F, {femtoObsAxis});
-    kHistogramRegistry->add((folderName + "/relPairkT").c_str(), "; #it{k}_{T} (GeV/#it{c}); Entries", kTH1F, {kTAxis});
-    kHistogramRegistry->add((folderName + "/relPairkstarkT").c_str(), ("; " + femtoObs + "; #it{k}_{T} (GeV/#it{c})").c_str(), kTH2F, {femtoObsAxis, kTAxis});
-    kHistogramRegistry->add((folderName + "/relPairkstarmT").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2})").c_str(), kTH2F, {femtoObsAxis, mTAxis});
-    kHistogramRegistry->add((folderName + "/relPairkstarMult").c_str(), ("; " + femtoObs + "; Multiplicity").c_str(), kTH2F, {femtoObsAxis, multAxis});
-    kHistogramRegistry->add((folderName + "/kstarPtPart1").c_str(), ("; " + femtoObs + "; #it{p} _{T} Particle 1 (GeV/#it{c})").c_str(), kTH2F, {femtoObsAxis, {375, 0., 7.5}});
-    kHistogramRegistry->add((folderName + "/kstarPtPart2").c_str(), ("; " + femtoObs + "; #it{p} _{T} Particle 2 (GeV/#it{c})").c_str(), kTH2F, {femtoObsAxis, {375, 0., 7.5}});
-    kHistogramRegistry->add((folderName + "/MultPtPart1").c_str(), "; #it{p} _{T} Particle 1 (GeV/#it{c}); Multiplicity", kTH2F, {{375, 0., 7.5}, multAxis});
-    kHistogramRegistry->add((folderName + "/MultPtPart2").c_str(), "; #it{p} _{T} Particle 2 (GeV/#it{c}); Multiplicity", kTH2F, {{375, 0., 7.5}, multAxis});
-    kHistogramRegistry->add((folderName + "/PtPart1PtPart2").c_str(), "; #it{p} _{T} Particle 1 (GeV/#it{c}); #it{p} _{T} Particle 2 (GeV/#it{c})", kTH2F, {{375, 0., 7.5}, {375, 0., 7.5}});
+    kHistogramRegistry->add((folderName + "/relPairDist").c_str(), ("; " + femtoObs + "; Entries").c_str(), o2::framework::HistType::kTH1F, {femtoObsAxis});
+    kHistogramRegistry->add((folderName + "/relPairkT").c_str(), "; #it{k}_{T} (GeV/#it{c}); Entries", o2::framework::HistType::kTH1F, {kTAxis});
+    kHistogramRegistry->add((folderName + "/relPairkstarkT").c_str(), ("; " + femtoObs + "; #it{k}_{T} (GeV/#it{c})").c_str(), o2::framework::HistType::kTH2F, {femtoObsAxis, kTAxis});
+    kHistogramRegistry->add((folderName + "/relPairkstarmT").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2})").c_str(), o2::framework::HistType::kTH2F, {femtoObsAxis, mTAxis});
+    kHistogramRegistry->add((folderName + "/relPairkstarMult").c_str(), ("; " + femtoObs + "; Multiplicity").c_str(), o2::framework::HistType::kTH2F, {femtoObsAxis, multAxis});
+    kHistogramRegistry->add((folderName + "/kstarPtPart1").c_str(), ("; " + femtoObs + "; #it{p} _{T} Particle 1 (GeV/#it{c})").c_str(), o2::framework::HistType::kTH2F, {femtoObsAxis, {375, 0., 7.5}});
+    kHistogramRegistry->add((folderName + "/kstarPtPart2").c_str(), ("; " + femtoObs + "; #it{p} _{T} Particle 2 (GeV/#it{c})").c_str(), o2::framework::HistType::kTH2F, {femtoObsAxis, {375, 0., 7.5}});
+    kHistogramRegistry->add((folderName + "/MultPtPart1").c_str(), "; #it{p} _{T} Particle 1 (GeV/#it{c}); Multiplicity", o2::framework::HistType::kTH2F, {{375, 0., 7.5}, multAxis});
+    kHistogramRegistry->add((folderName + "/MultPtPart2").c_str(), "; #it{p} _{T} Particle 2 (GeV/#it{c}); Multiplicity", o2::framework::HistType::kTH2F, {{375, 0., 7.5}, multAxis});
+    kHistogramRegistry->add((folderName + "/PtPart1PtPart2").c_str(), "; #it{p} _{T} Particle 1 (GeV/#it{c}); #it{p} _{T} Particle 2 (GeV/#it{c})", o2::framework::HistType::kTH2F, {{375, 0., 7.5}, {375, 0., 7.5}});
     if (use3dplots) {
-      kHistogramRegistry->add((folderName + "/relPairkstarmTMult").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2}); Multiplicity").c_str(), kTH3F, {femtoObsAxis, mTAxis3D, multAxis3D});
+      kHistogramRegistry->add((folderName + "/relPairkstarmTMult").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2}); Multiplicity").c_str(), o2::framework::HistType::kTH3F, {femtoObsAxis, mTAxis3D, multAxis3D});
     }
   }
 
@@ -97,12 +95,12 @@ class FemtoUniverseFemtoContainer
   template <typename T>
   void initMC(std::string folderName, std::string femtoObs, T femtoObsAxis, T multAxis, T mTAxis)
   {
-    kHistogramRegistry->add((folderName + "/relPairDist_ReconNoFake").c_str(), ("; " + femtoObs + "; Entries").c_str(), kTH1F, {femtoObsAxis});
-    kHistogramRegistry->add((folderName + "/relPairkstarmT_ReconNoFake").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2})").c_str(), kTH2F, {femtoObsAxis, mTAxis});
-    kHistogramRegistry->add((folderName + "/relPairkstarMult_ReconNoFake").c_str(), ("; " + femtoObs + "; Multiplicity").c_str(), kTH2F, {femtoObsAxis, multAxis});
-    kHistogramRegistry->add((folderName + "/hNoMCtruthPairsCounter").c_str(), "; Counter; Entries", kTH1I, {{1, 0, 1}});
-    kHistogramRegistry->add((folderName + "/hFakePairsCounter").c_str(), "; Counter; Entries", kTH1I, {{1, 0, 1}});
-    kHistogramRegistry->add((folderName + "/kstar_resolution").c_str(), "; #it{k} _{T} reconstructed (GeV/#it{c}); #it{k} _{T} truth (GeV/#it{c})", kTH2F, {femtoObsAxis, femtoObsAxis});
+    kHistogramRegistry->add((folderName + "/relPairDist_ReconNoFake").c_str(), ("; " + femtoObs + "; Entries").c_str(), o2::framework::HistType::kTH1F, {femtoObsAxis});
+    kHistogramRegistry->add((folderName + "/relPairkstarmT_ReconNoFake").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2})").c_str(), o2::framework::HistType::kTH2F, {femtoObsAxis, mTAxis});
+    kHistogramRegistry->add((folderName + "/relPairkstarMult_ReconNoFake").c_str(), ("; " + femtoObs + "; Multiplicity").c_str(), o2::framework::HistType::kTH2F, {femtoObsAxis, multAxis});
+    kHistogramRegistry->add((folderName + "/hNoMCtruthPairsCounter").c_str(), "; Counter; Entries", o2::framework::HistType::kTH1I, {{1, 0, 1}});
+    kHistogramRegistry->add((folderName + "/hFakePairsCounter").c_str(), "; Counter; Entries", o2::framework::HistType::kTH1I, {{1, 0, 1}});
+    kHistogramRegistry->add((folderName + "/kstar_resolution").c_str(), "; #it{k} _{T} reconstructed (GeV/#it{c}); #it{k} _{T} truth (GeV/#it{c})", o2::framework::HistType::kTH2F, {femtoObsAxis, femtoObsAxis});
   }
 
   /// Templated function to initialize the histograms for the task
@@ -116,7 +114,7 @@ class FemtoUniverseFemtoContainer
   /// \param mTBins mT binning for the histograms
   /// \param isMC add Monte Carlo truth histograms to the output file
   template <typename T>
-  void init(HistogramRegistry* registry, T& kstarBins, T& multBins, T& kTBins, T& mTBins, T& multBins3D, T& mTBins3D, bool isMC, bool use3dplots)
+  void init(o2::framework::HistogramRegistry* registry, T& kstarBins, T& multBins, T& kTBins, T& mTBins, T& multBins3D, T& mTBins3D, bool isMC, bool use3dplots)
   {
     kHistogramRegistry = registry;
     std::string femtoObs;
@@ -242,7 +240,7 @@ class FemtoUniverseFemtoContainer
   }
 
  protected:
-  HistogramRegistry* kHistogramRegistry = nullptr;                                  ///< For QA output
+  o2::framework::HistogramRegistry* kHistogramRegistry = nullptr;                   ///< For QA output
   static constexpr std::string_view kFolderSuffix[2] = {"SameEvent", "MixedEvent"}; ///< Folder naming for the output according to kEventType
   static constexpr femto_universe_femto_container::Observable kFemtoObs = obs;      ///< Femtoscopic observable to be computed (according to femto_universe_femto_container::Observable)
   static constexpr int kEventType = eventType;                                      ///< Type of the event (same/mixed, according to femto_universe_femto_container::EventType)

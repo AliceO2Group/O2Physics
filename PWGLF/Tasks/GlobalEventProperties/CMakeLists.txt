@@ -19,8 +19,8 @@ o2physics_add_dpl_workflow(ucc-zdc
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(dndeta-mft-pp
-                    SOURCES dndeta-mft-pp.cxx
+o2physics_add_dpl_workflow(pseudorapidity-density-mft
+                    SOURCES PseudorapidityDensityMFT.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -36,5 +36,10 @@ o2physics_add_dpl_workflow(study-pnch
 
 o2physics_add_dpl_workflow(ptmult-corr
     SOURCES ptmultCorr.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(nch-studypp
+    SOURCES nchStudypp.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)

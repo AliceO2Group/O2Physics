@@ -11,22 +11,17 @@
 #ifndef PWGCF_DATAMODEL_FEMTODERIVED_H_
 #define PWGCF_DATAMODEL_FEMTODERIVED_H_
 
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/DataTypes.h"
-#include "Framework/Expressions.h"
-#include "MathUtils/Utils.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/Expressions.h>
 
 #include <cmath>
+#include <cstdint>
+#include <string_view>
 
 namespace o2::aod
 {

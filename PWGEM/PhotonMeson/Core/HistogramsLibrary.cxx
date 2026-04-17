@@ -13,7 +13,7 @@
 /// \brief Small histogram library for photon and meson analysis.
 /// \author D. Sekihata, daiki.sekihata@cern.ch
 
-#include "PWGEM/PhotonMeson/Core/HistogramsLibrary.h"
+#include "HistogramsLibrary.h"
 
 #include <Framework/Logger.h>
 

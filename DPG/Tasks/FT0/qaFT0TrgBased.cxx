@@ -13,26 +13,28 @@
 /// \author Uliana Dmitrieva uliana.dmitrieva@cern.ch
 /// \brief  FT0 QA
 
-#include <bitset>
-#include <cstddef>
-#include <cstdint>
-#include <map>
-#include <string>
-#include <vector>
-
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "DataFormatsFT0/Digit.h"
 
-#include "CommonConstants/LHCConstants.h"
-#include "DataFormatsFIT/Triggers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/HistogramSpec.h"
-#include "Framework/InitContext.h"
-#include "Framework/runDataProcessing.h"
+#include <DataFormatsFT0/Digit.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+
+#include <bitset>
+#include <cstddef>
+#include <limits>
+#include <map>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

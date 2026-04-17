@@ -15,25 +15,29 @@
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
-#ifndef FEMTOWORLDTRACKSELECTION_H_
-#define FEMTOWORLDTRACKSELECTION_H_
+#ifndef PWGCF_FEMTOWORLD_CORE_FEMTOWORLDTRACKSELECTION_H_
+#define PWGCF_FEMTOWORLD_CORE_FEMTOWORLDTRACKSELECTION_H_
 
 #include "PWGCF/FemtoWorld/Core/FemtoWorldObjectSelection.h"
+#include "PWGCF/FemtoWorld/Core/FemtoWorldSelection.h"
 #include "PWGCF/FemtoWorld/DataModel/FemtoWorldDerived.h"
 
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/HistogramRegistry.h"
-#include "ReconstructionDataFormats/PID.h"
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
+#include <ReconstructionDataFormats/PID.h>
 
+#include <array>
 #include <cmath>
-#include <iostream>
+#include <cstddef>
+#include <string>
+#include <string_view>
+#include <vector>
 
-using namespace o2::framework;
+#include <math.h>
 
 namespace o2::analysis::femtoWorld
 {
@@ -92,15 +96,15 @@ class FemtoWorldTrackSelection : public FemtoWorldObjectSelection<float, femtoWo
                                dcaXYMax(-9999999.),
                                dcaZMax(-9999999.),
                                dcaMin(9999999.),
-                               nSigmaPIDMax(9999999.){};
+                               nSigmaPIDMax(9999999.) {};
 
   /// Initializes histograms for the task
   /// \tparam part Type of the particle for proper naming of the folders for QA
   /// \tparam tracktype Type of track (track, positive child, negative child) for proper naming of the folders for QA
   /// \tparam cutContainerType Data type of the bit-wise container for the selections
-  /// \param registry HistogramRegistry for QA output
+  /// \param registry o2::framework::HistogramRegistry for QA output
   template <o2::aod::femtoworldparticle::ParticleType part, o2::aod::femtoworldparticle::TrackType tracktype, typename cutContainerType>
-  void init(HistogramRegistry* registry);
+  void init(o2::framework::HistogramRegistry* registry);
 
   /// Passes the species to the task for which PID needs to be stored
   /// \tparam T Data type of the configurable passed to the functions
@@ -285,7 +289,7 @@ class FemtoWorldTrackSelection : public FemtoWorldObjectSelection<float, femtoWo
 }; // namespace femtoWorld
 
 template <o2::aod::femtoworldparticle::ParticleType part, o2::aod::femtoworldparticle::TrackType tracktype, typename cutContainerType>
-void FemtoWorldTrackSelection::init(HistogramRegistry* registry)
+void FemtoWorldTrackSelection::init(o2::framework::HistogramRegistry* registry)
 {
   if (registry) {
     mHistogramRegistry = registry;
@@ -297,36 +301,36 @@ void FemtoWorldTrackSelection::init(HistogramRegistry* registry)
       LOG(fatal) << "FemtoWorldTrackCuts: Number of selections too large for your container - quitting!";
     }
 
-    mHistogramRegistry->add((folderName + "/hPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{240, 0, 6}});
-    mHistogramRegistry->add((folderName + "/hEta").c_str(), "; #eta; Entries", kTH1F, {{200, -1.5, 1.5}});
-    mHistogramRegistry->add((folderName + "/hPhi").c_str(), "; #phi; Entries", kTH1F, {{200, 0, 2. * M_PI}});
-    mHistogramRegistry->add((folderName + "/hTPCfindable").c_str(), "; TPC findable clusters; Entries", kTH1F, {{163, -0.5, 162.5}});
-    mHistogramRegistry->add((folderName + "/hTPCfound").c_str(), "; TPC found clusters; Entries", kTH1F, {{163, -0.5, 162.5}});
-    mHistogramRegistry->add((folderName + "/hTPCcrossedOverFindalbe").c_str(), "; TPC ratio findable; Entries", kTH1F, {{100, 0.5, 1.5}});
-    mHistogramRegistry->add((folderName + "/hTPCcrossedRows").c_str(), "; TPC crossed rows; Entries", kTH1F, {{163, 0, 163}});
-    mHistogramRegistry->add((folderName + "/hTPCfindableVsCrossed").c_str(), ";TPC findable clusters ; TPC crossed rows;", kTH2F, {{163, 0, 163}, {163, 0, 163}});
-    mHistogramRegistry->add((folderName + "/hTPCshared").c_str(), "; TPC shared clusters; Entries", kTH1F, {{163, -0.5, 162.5}});
-    mHistogramRegistry->add((folderName + "/hITSclusters").c_str(), "; ITS clusters; Entries", kTH1F, {{10, -0.5, 9.5}});
-    mHistogramRegistry->add((folderName + "/hITSclustersIB").c_str(), "; ITS clusters in IB; Entries", kTH1F, {{10, -0.5, 9.5}});
-    mHistogramRegistry->add((folderName + "/hDCAxy").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
-    mHistogramRegistry->add((folderName + "/hDCAz").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{z} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
-    mHistogramRegistry->add((folderName + "/hDCA").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA (cm)", kTH2F, {{100, 0, 10}, {301, 0., 1.5}});
-    mHistogramRegistry->add((folderName + "/hTPCdEdX").c_str(), "; #it{p} (GeV/#it{c}); TPC Signal", kTH2F, {{100, 0, 10}, {1000, 0, 1000}});
-    mHistogramRegistry->add((folderName + "/nSigmaTPC_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{e}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-    mHistogramRegistry->add((folderName + "/nSigmaTPC_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{#pi}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-    mHistogramRegistry->add((folderName + "/nSigmaTPC_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{K}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-    mHistogramRegistry->add((folderName + "/nSigmaTPC_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{p}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-    mHistogramRegistry->add((folderName + "/nSigmaTPC_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{d}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-    mHistogramRegistry->add((folderName + "/nSigmaTOF_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{e}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-    mHistogramRegistry->add((folderName + "/nSigmaTOF_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{#pi}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-    mHistogramRegistry->add((folderName + "/nSigmaTOF_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{K}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-    mHistogramRegistry->add((folderName + "/nSigmaTOF_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{p}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-    mHistogramRegistry->add((folderName + "/nSigmaTOF_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{d}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-    mHistogramRegistry->add((folderName + "/nSigmaComb_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{e}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-    mHistogramRegistry->add((folderName + "/nSigmaComb_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{#pi}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-    mHistogramRegistry->add((folderName + "/nSigmaComb_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{K}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-    mHistogramRegistry->add((folderName + "/nSigmaComb_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{p}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-    mHistogramRegistry->add((folderName + "/nSigmaComb_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{d}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/hPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", o2::framework::HistType::kTH1F, {{240, 0, 6}});
+    mHistogramRegistry->add((folderName + "/hEta").c_str(), "; #eta; Entries", o2::framework::HistType::kTH1F, {{200, -1.5, 1.5}});
+    mHistogramRegistry->add((folderName + "/hPhi").c_str(), "; #phi; Entries", o2::framework::HistType::kTH1F, {{200, 0, 2. * M_PI}});
+    mHistogramRegistry->add((folderName + "/hTPCfindable").c_str(), "; TPC findable clusters; Entries", o2::framework::HistType::kTH1F, {{163, -0.5, 162.5}});
+    mHistogramRegistry->add((folderName + "/hTPCfound").c_str(), "; TPC found clusters; Entries", o2::framework::HistType::kTH1F, {{163, -0.5, 162.5}});
+    mHistogramRegistry->add((folderName + "/hTPCcrossedOverFindalbe").c_str(), "; TPC ratio findable; Entries", o2::framework::HistType::kTH1F, {{100, 0.5, 1.5}});
+    mHistogramRegistry->add((folderName + "/hTPCcrossedRows").c_str(), "; TPC crossed rows; Entries", o2::framework::HistType::kTH1F, {{163, 0, 163}});
+    mHistogramRegistry->add((folderName + "/hTPCfindableVsCrossed").c_str(), ";TPC findable clusters ; TPC crossed rows;", o2::framework::HistType::kTH2F, {{163, 0, 163}, {163, 0, 163}});
+    mHistogramRegistry->add((folderName + "/hTPCshared").c_str(), "; TPC shared clusters; Entries", o2::framework::HistType::kTH1F, {{163, -0.5, 162.5}});
+    mHistogramRegistry->add((folderName + "/hITSclusters").c_str(), "; ITS clusters; Entries", o2::framework::HistType::kTH1F, {{10, -0.5, 9.5}});
+    mHistogramRegistry->add((folderName + "/hITSclustersIB").c_str(), "; ITS clusters in IB; Entries", o2::framework::HistType::kTH1F, {{10, -0.5, 9.5}});
+    mHistogramRegistry->add((folderName + "/hDCAxy").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {{100, 0, 10}, {500, -5, 5}});
+    mHistogramRegistry->add((folderName + "/hDCAz").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{z} (cm)", o2::framework::HistType::kTH2F, {{100, 0, 10}, {500, -5, 5}});
+    mHistogramRegistry->add((folderName + "/hDCA").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA (cm)", o2::framework::HistType::kTH2F, {{100, 0, 10}, {301, 0., 1.5}});
+    mHistogramRegistry->add((folderName + "/hTPCdEdX").c_str(), "; #it{p} (GeV/#it{c}); TPC Signal", o2::framework::HistType::kTH2F, {{100, 0, 10}, {1000, 0, 1000}});
+    mHistogramRegistry->add((folderName + "/nSigmaTPC_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{e}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaTPC_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{#pi}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaTPC_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{K}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaTPC_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{p}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaTPC_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{d}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaTOF_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{e}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaTOF_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{#pi}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaTOF_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{K}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaTOF_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{p}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaTOF_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{d}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaComb_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{e}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaComb_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{#pi}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaComb_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{K}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaComb_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{p}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    mHistogramRegistry->add((folderName + "/nSigmaComb_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{d}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
   }
   /// set cuts
   nPtMinSel = getNSelections(femtoWorldTrackSelection::kpTMin);
@@ -578,4 +582,4 @@ void FemtoWorldTrackSelection::fillQA(T const& track)
 
 } // namespace o2::analysis::femtoWorld
 
-#endif /* FEMTOWORLDTRACKSELECTION_H_ */
+#endif // PWGCF_FEMTOWORLD_CORE_FEMTOWORLDTRACKSELECTION_H_

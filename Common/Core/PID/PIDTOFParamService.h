@@ -24,14 +24,16 @@
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/TableHelper.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsTOF/ParameterContainers.h"
-#include "Framework/DataTypes.h"
-#include "Framework/PID.h"
-#include "Framework/Plugins.h"
-#include "ReconstructionDataFormats/PID.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/PID.h>
+#include <Framework/Plugins.h>
+#include <ReconstructionDataFormats/PID.h>
 
+#include <cmath>
+#include <cstdint>
 #include <string>
 
 namespace o2::pid::tof
@@ -188,7 +190,7 @@ struct TOFResponseImpl {
   template <typename VType>
   void getCfg(o2::framework::InitContext& initContext, const std::string name, VType& v, const std::string task)
   {
-    if (!getTaskOptionValue(initContext, task, name, v, false)) {
+    if (!o2::common::core::getTaskOptionValue(initContext, task, name, v, false)) {
       LOG(fatal) << "Could not get " << name << " from " << task << " task";
     }
   }
