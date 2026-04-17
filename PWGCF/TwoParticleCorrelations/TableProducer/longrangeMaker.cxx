@@ -75,9 +75,6 @@ using namespace o2::constants::math;
 
 auto static constexpr CintZero = 0;
 auto static constexpr KminFt0cCell = 96;
-auto static constexpr PionTrackN = 1;
-auto static constexpr KaonTrackN = 2;
-auto static constexpr ProtonTrackN = 3;
 AxisSpec axisEvent{15, 0.5, 15.5, "#Event", "EventAxis"};
 auto static constexpr KminCharge = 3.0f;
 static constexpr std::string_view species[] = {"Pi", "Ka", "Pr", "K0s", "L0s"};
@@ -920,7 +917,6 @@ struct LongrangeMaker {
     std::array<float, 3> nSigmaITS = {itsResponse.nSigmaITS<o2::track::PID::Pion>(track), itsResponse.nSigmaITS<o2::track::PID::Kaon>(track), itsResponse.nSigmaITS<o2::track::PID::Proton>(track)};
     std::array<float, 3> nSigmaToUse = isUseItsPid ? nSigmaITS : nSigmaTPC;            // Choose which nSigma to use: TPC or ITS
     std::vector<double> detectorNsigmaCut = isUseItsPid ? itsNsigmaCut : tpcNsigmaCut; // Choose which nSigma to use: TPC or ITS
-    int pid = -1;
     bool isPion, isKaon, isProton;
     bool isDetectedPion = nSigmaToUse[0] < detectorNsigmaCut[0] && nSigmaToUse[0] > detectorNsigmaCut[0 + 3];
     bool isDetectedKaon = nSigmaToUse[1] < detectorNsigmaCut[1] && nSigmaToUse[1] > detectorNsigmaCut[1 + 3];
