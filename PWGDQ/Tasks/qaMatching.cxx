@@ -1010,7 +1010,7 @@ struct QaMatching {
 
       SMatrix55Sym hK, vK;
       SVector5 mK(mftTrack.getX(), mftTrack.getY(), mftTrack.getPhi(),
-                  mftTrack.getTanl(), mftTrack.getInvQPt()),
+                   mftTrack.getTanl(), mftTrack.getInvQPt()),
         rKKminus1;
       SVector5 globalMuonTrackParameters = mchTrack.getParameters();
       SMatrix55Sym globalMuonTrackCovariances = mchTrack.getCovariances();
@@ -1045,7 +1045,7 @@ struct QaMatching {
       SMatrix45 hK;
       SMatrix44 vK;
       SVector4 mK(mftTrack.getX(), mftTrack.getY(), mftTrack.getPhi(),
-                  mftTrack.getTanl()),
+                   mftTrack.getTanl()),
         rKKminus1;
       SVector5 globalMuonTrackParameters = mchTrack.getParameters();
       SMatrix55Sym globalMuonTrackCovariances = mchTrack.getCovariances();
@@ -2048,7 +2048,7 @@ struct QaMatching {
     };
 
     for (auto collisionInfoIt = collisionInfos.begin(); collisionInfoIt != collisionInfos.end(); ++collisionInfoIt) {
-      const auto& collisionInfo = collisionInfoIt->second;
+      auto& collisionInfo = collisionInfoIt->second;
       for (auto matchingCandidatesIt = collisionInfo.matchingCandidates.begin(); matchingCandidatesIt != collisionInfo.matchingCandidates.end(); ++matchingCandidatesIt) {
         auto& mchIndex = matchingCandidatesIt->first;
         auto& globalTracksVector = matchingCandidatesIt->second;
@@ -2081,7 +2081,7 @@ struct QaMatching {
                            const std::vector<std::pair<int64_t, int64_t>>& matchablePairs,
                            double matchingScoreCut,
                            MatchingPlotter* plotter,
-                           bool verbose = false)
+                           bool /*verbose*/ = false)
   {
     int mftTrackMult = collisionInfo.mftTracks.size();
 
@@ -2332,7 +2332,7 @@ struct QaMatching {
     // Matching efficiencies
 
     // outer loop on matchable pairs
-    for (const auto& [matchableMchIndex, matchableMftIndex] : matchablePairs) {
+      for (const auto& [matchableMchIndex, matchableMftIndex] : matchablePairs) {
       // get the standalone MCH track
       auto const& mchTrack = muonTracks.rawIteratorAt(matchableMchIndex);
 
