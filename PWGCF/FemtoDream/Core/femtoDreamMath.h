@@ -16,14 +16,13 @@
 #ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMMATH_H_
 #define PWGCF_FEMTODREAM_CORE_FEMTODREAMMATH_H_
 
-#include "Math/Boost.h"
-#include "Math/Vector4D.h"
-#include "TLorentzVector.h"
-#include "TMath.h"
-#include "TVector2.h"
-#include <Math/VectorUtil.h>
+#include <Math/GenVector/Boost.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TMathBase.h>
+#include <TVector2.h>
 
-#include <iostream>
+#include <cmath>
 #include <vector>
 
 namespace o2::analysis::femtoDream

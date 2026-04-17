@@ -15,7 +15,9 @@
 #include "JFFlucAnalysis.h"
 
 #include <TComplex.h>
-#include <TMath.h>
+#include <TNamed.h>
+
+#include <RtypesCore.h>
 
 #include <algorithm>
 
