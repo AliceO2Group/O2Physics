@@ -161,7 +161,7 @@ struct corrFT0Nch {
   SliceCache cache;
 
   ConfigurableAxis axisVertex{"axisVertex", {10, -10, 10}, "vertex axis for histograms"};
-  ConfigurableAxis axisMult{"axisMultiplicity", {10, 0, 100}, "multiplicity axis for histograms"};
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {10, 0, 100}, "multiplicity axis for histograms"};
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {72, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt axis for histograms"};
@@ -299,7 +299,7 @@ struct corrFT0Nch {
       registry.add("EtaCorrected", "EtaCorrected", {HistType::kTH1D, {axisEta}});
       registry.add("pT", "pT", {HistType::kTH1D, {axisPtTrigger}});
       registry.add("pTCorrected", "pTCorrected", {HistType::kTH1D, {axisPtTrigger}});
-      registry.add("Nch", "N_{ch}", {HistType::kTH1D, {axisMult}});
+      registry.add("Nch", "N_{ch}", {HistType::kTH1D, {axisMultiplicity}});
       registry.add("zVtx", "zVtx", {HistType::kTH1D, {axisVertex}});
       if (doprocessSameFt0aFt0c || doprocessSameTpcFt0a || doprocessSameTpcFt0c) {
         registry.add("FT0Amp", "", {HistType::kTH2F, {axisChID, axisFit}});
@@ -341,7 +341,7 @@ struct corrFT0Nch {
     std::vector<AxisSpec> corrAxisTpcFt0a = {{axisSample, "Sample"},
                                              {axisVertex, "z-vtx (cm)"},
                                              {axisPtTrigger, "p_{T} (GeV/c)"},
-                                             {axisMult, "N_{ch}"},
+                                             {axisMultiplicity, "N_{ch}"},
                                              {axisDeltaPhi, "#Delta#varphi (rad)"},
                                              {axisDeltaEtaTpcFt0a, "#Delta#eta"}};
     std::vector<AxisSpec> effAxis = {
@@ -354,21 +354,21 @@ struct corrFT0Nch {
     std::vector<AxisSpec> corrAxisTpcFt0c = {{axisSample, "Sample"},
                                              {axisVertex, "z-vtx (cm)"},
                                              {axisPtTrigger, "p_{T} (GeV/c)"},
-                                             {axisMult, "N_{ch}"},
+                                             {axisMultiplicity, "N_{ch}"},
                                              {axisDeltaPhi, "#Delta#varphi (rad)"},
                                              {axisDeltaEtaTpcFt0c, "#Delta#eta"}};
 
     std::vector<AxisSpec> corrAxisFt0aFt0c = {{axisSample, "Sample"},
                                               {axisVertex, "z-vtx (cm)"},
                                               {axisPtTrigger, "p_{T} (GeV/c)"},
-                                              {axisMult, "N_{ch}"},
+                                              {axisMultiplicity, "N_{ch}"},
                                               {axisDeltaPhi, "#Delta#varphi (rad)"},
                                               {axisDeltaEtaFt0aFt0c, "#Delta#eta"}};
 
     std::vector<AxisSpec> corrAxisTPC = {{axisSample, "Sample"},
                                          {axisVertex, "z-vtx (cm)"},
                                          {axisPtTrigger, "p_{T} (GeV/c)"},
-                                         {axisMult, "N_{ch}"},
+                                         {axisMultiplicity, "N_{ch}"},
                                          {axisDeltaPhi, "#Delta#varphi (rad)"},
                                          {axisDeltaEtaTpcFt0a, "#Delta#eta"}}; // use the same delta eta axis for TPC-TPC correlation
 
