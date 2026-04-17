@@ -202,38 +202,52 @@ struct DQEventSelectionTask {
   PROCESS_SWITCH(DQEventSelectionTask, processDummy, "Dummy function", false);
 };
 
-struct DQBarrelTrackSelection {
-  Produces<aod::DQBarrelTrackCuts> trackSel;
-  Produces<aod::DQEMuBarrelTrackCuts> emuSel;
+struct DQTrackSelection {
+  Produces<aod::DQBarrelTrackCuts> trackBarrelSel;
+  Produces<aod::DQEMuBarrelTrackCuts> emuBarrelSel;
+  Produces<aod::DQMuonsCuts> trackMuSel;
+  Produces<aod::DQEMuMuonsCuts> emuMuSel;
   OutputObj<THashList> fOutputList{"output"};
   HistogramManager* fHistMan;
 
-  Configurable<std::string> fConfigCuts{"cfgBarrelTrackCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
-  Configurable<std::string> fConfigCutsForEMu{"cfgBarrelTrackCutsForEMu", "jpsiPID1", "Comma separated list of barrel track cuts"};
+  std::vector<AnalysisCompositeCut> fTrackCuts;
+  std::vector<AnalysisCompositeCut> fMuonCuts;
+  std::vector<AnalysisCompositeCut> fEMuTrackCuts;
+  std::vector<AnalysisCompositeCut> fEMuMuonCuts;
+
+  Configurable<std::string> fConfigCutsMu{"cfgMuonsCuts", "muonQualityCuts", "Comma separated list of ADDITIONAL muon track cuts"};
+  Configurable<std::string> fConfigCutsBarrel{"cfgBarrelTrackCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
+  Configurable<std::string> fConfigCutsMuForEMu{"cfgMuonsCutsForEMu", "muonQualityCuts", "Comma separated list of ADDITIONAL muon track cuts"};
+  Configurable<std::string> fConfigCutsBarelForEMu{"cfgBarrelTrackCutsForEMu", "jpsiPID1", "Comma separated list of barrel track cuts"};
   Configurable<bool> fConfigQA{"cfgWithQA", false, "If true, fill QA histograms"};
-  Configurable<std::string> fConfigHistClasses{"cfgHistClasses", "its,tpcpid,dca", "If true, fill QA histograms"};
+  Configurable<std::string> fConfigHistClassesBarrel{"fConfigHistClassesBarrel", "track-barrel", "If true, fill QA histograms"};
+  Configurable<std::string> fConfigHistClassesMu{"fConfigHistClassesMu", "muon", "If true, fill QA histograms"};
+  Configurable<bool> fPropMuon{"cfgPropMuon", false, "Propgate muon tracks through absorber"};
   Configurable<bool> fPropTrack{"cfgPropTrack", true, "Propgate tracks to associated collision to recalculate DCA and momentum vector"};
   Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/i/iarsene/Calib/TPCpostCalib", "base path to the ccdb object"};
+  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
+  o2::parameters::GRPMagField* grpmag = nullptr; // for run 3, we access GRPMagField from GLO/Config/GRPMagField
+  o2::base::MatLayerCylSet* lut = nullptr;
 
+  Preslice<aod::FwdTrackAssoc> fwdtrackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::TrackAssoc> barrelTrackIndicesPerCollision = aod::track_association::collisionId;
-
-  std::vector<AnalysisCompositeCut> fTrackCuts;
-  std::vector<AnalysisCompositeCut> fEMuTrackCuts;
-  std::vector<TString> fCutHistNames;
 
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
 
   void init(o2::framework::InitContext&)
   {
-    TString cutNamesStr = fConfigCuts.value;
-    TString cutEMuNamesStr = fConfigCutsForEMu.value;
-    if (!cutNamesStr.IsNull()) {
-      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
+    TString cutNamesStrBarrel = fConfigCutsBarrel.value;
+    TString cutEMuNamesStrBarrel = fConfigCutsBarelForEMu.value;
+    TString cutNamesStrMu = fConfigCutsMu.value;
+    TString cutEMuNamesStrMu = fConfigCutsMuForEMu.value;
+    if (!cutNamesStrBarrel.IsNull()) {
+      std::unique_ptr<TObjArray> objArray(cutNamesStrBarrel.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
         AnalysisCompositeCut* cut = dqcuts::GetCompositeCut(objArray->At(icut)->GetName());
         if (cut) {
@@ -243,8 +257,8 @@ struct DQBarrelTrackSelection {
         }
       }
     }
-    if (!cutEMuNamesStr.IsNull()) {
-      std::unique_ptr<TObjArray> objArray2(cutEMuNamesStr.Tokenize(","));
+    if (!cutEMuNamesStrBarrel.IsNull()) {
+      std::unique_ptr<TObjArray> objArray2(cutEMuNamesStrBarrel.Tokenize(","));
       for (int icut = 0; icut < objArray2->GetEntries(); ++icut) {
         AnalysisCompositeCut* cut2 = dqcuts::GetCompositeCut(objArray2->At(icut)->GetName());
         if (cut2) {
@@ -254,6 +268,18 @@ struct DQBarrelTrackSelection {
         }
       }
     }
+    if (!cutNamesStrMu.IsNull()) {
+      std::unique_ptr<TObjArray> objArray(cutNamesStrMu.Tokenize(","));
+      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
+        fMuonCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+      }
+    }
+    if (!cutEMuNamesStrMu.IsNull()) {
+      std::unique_ptr<TObjArray> objArray2(cutEMuNamesStrMu.Tokenize(","));
+      for (int icut = 0; icut < objArray2->GetEntries(); ++icut) {
+        fEMuMuonCuts.push_back(*dqcuts::GetCompositeCut(objArray2->At(icut)->GetName()));
+      }
+    }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
 
     if (fConfigQA) {
@@ -261,22 +287,38 @@ struct DQBarrelTrackSelection {
       fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
       fHistMan->SetUseDefaultVariableNames(kTRUE);
       fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
-
-      TString cutNames = "TrackBarrel_BeforeCuts;";
-      for (auto& cut : fTrackCuts) {
-        cutNames += Form("TrackBarrel_%s;", cut.GetName());
-        fCutHistNames.push_back(Form("TrackBarrel_%s", cut.GetName()));
+      for (auto const& cut : fTrackCuts) {
+        TString cutName = Form("TrackBarrel_%s", cut.GetName());
+        DefineHistograms(fHistMan, cutName.Data(), fConfigHistClassesBarrel.value); // define all histograms
+      }
+      for (auto const& cut : fEMuTrackCuts) {
+        TString cutName = Form("TrackBarrel_%s", cut.GetName());
+        DefineHistograms(fHistMan, cutName.Data(), fConfigHistClassesBarrel.value); // define all histograms
+      }
+      for (auto const& cut : fMuonCuts) {
+        TString cutName = Form("Muon_%s", cut.GetName());
+        DefineHistograms(fHistMan, cutName.Data(), fConfigHistClassesMu.value); // define all histograms
+      }
+      for (auto const& cut : fEMuMuonCuts) {
+        TString cutName = Form("Muon_%s", cut.GetName());
+        DefineHistograms(fHistMan, cutName.Data(), fConfigHistClassesMu.value); // define all histograms
       }
 
-      DefineHistograms(fHistMan, cutNames.Data(), fConfigHistClasses.value); // define all histograms
       VarManager::SetUseVars(fHistMan->GetUsedVars());                       // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
+    }
 
-      // CCDB configuration
-      fCCDB->setURL(fConfigCcdbUrl.value);
-      fCCDB->setCaching(true);
-      fCCDB->setLocalObjectValidityChecking();
-      fCCDB->setCreatedNotAfter(fConfigNoLaterThan.value);
+    // CCDB configuration
+    fCCDB->setURL(fConfigCcdbUrl);
+    fCCDB->setCaching(true);
+    fCCDB->setLocalObjectValidityChecking();
+    fCCDB->setCreatedNotAfter(fConfigNoLaterThan.value);
+
+    if (fPropMuon) {
+      LOGF(info, "TGeo correction requested, loading geometry");
+      if (!o2::base::GeometryManager::isGeometryLoaded()) {
+        fCCDB->get<TGeoManager>(geoPath);
+      }
     }
   }
 
@@ -288,7 +330,7 @@ struct DQBarrelTrackSelection {
     if (fCurrentRun != bc.runNumber()) {
       fCurrentRun = bc.runNumber();
 
-      o2::parameters::GRPMagField* grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", bc.timestamp());
+      grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", bc.timestamp());
       if (grpmag != nullptr) {
         VarManager::SetMagneticField(grpmag->getNominalL3Field());
       } else {
@@ -312,11 +354,11 @@ struct DQBarrelTrackSelection {
 
     uint32_t filterMap = static_cast<uint32_t>(0);
     uint32_t filterMapEMu = static_cast<uint32_t>(0);
-    trackSel.reserve(tracksBarrel.size());
-    emuSel.reserve(tracksBarrel.size());
+    trackBarrelSel.reserve(tracksBarrel.size());
+    emuBarrelSel.reserve(tracksBarrel.size());
 
     VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
-    for (auto& trackAssoc : trackAssocs) {
+    for (auto const& trackAssoc : trackAssocs) {
       filterMap = static_cast<uint32_t>(0);
       filterMapEMu = static_cast<uint32_t>(0);
 
@@ -327,15 +369,12 @@ struct DQBarrelTrackSelection {
       if (fPropTrack && (track.collisionId() != collision.globalIndex())) {
         VarManager::FillTrackCollision<TTrackFillMap>(track, collision);
       }
-      if (fConfigQA) {
-        fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
-      }
       int i = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); ++cut, ++i) {
         if ((*cut).IsSelected(VarManager::fgValues)) {
           filterMap |= (static_cast<uint32_t>(1) << i);
           if (fConfigQA) {
-            fHistMan->FillHistClass(fCutHistNames[i].Data(), VarManager::fgValues);
+            fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut).GetName()), VarManager::fgValues);
           }
         }
       }
@@ -343,110 +382,14 @@ struct DQBarrelTrackSelection {
       for (auto cut = fEMuTrackCuts.begin(); cut != fEMuTrackCuts.end(); ++cut, ++j) {
         if ((*cut).IsSelected(VarManager::fgValues)) {
           filterMapEMu |= (static_cast<uint32_t>(1) << j);
+          if (fConfigQA) {
+            fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut).GetName()), VarManager::fgValues);
+          }
         }
       }
-      trackSel(filterMap);
-      emuSel(filterMapEMu);
+      trackBarrelSel(filterMap);
+      emuBarrelSel(filterMapEMu);
     } // end loop over tracks
-  }
-
-  void processSelection(Collisions const& collisions, aod::BCsWithTimestamps const& bcs, MyBarrelTracks const& tracks, aod::TrackAssoc const& trackAssocs)
-  {
-    for (auto& collision : collisions) {
-      auto trackIdsThisCollision = trackAssocs.sliceBy(barrelTrackIndicesPerCollision, collision.globalIndex());
-      runTrackSelection<gkTrackFillMap>(collision, bcs, tracks, trackIdsThisCollision);
-    }
-  }
-
-  void processSelectionTPCPID(Collisions const& collisions, aod::BCsWithTimestamps const& bcs, MyBarrelTracksTPCPID const& tracks, aod::TrackAssoc const& trackAssocs)
-  {
-    for (auto& collision : collisions) {
-      auto trackIdsThisCollision = trackAssocs.sliceBy(barrelTrackIndicesPerCollision, collision.globalIndex());
-      runTrackSelection<gkTrackFillMapTPCPID>(collision, bcs, tracks, trackIdsThisCollision);
-    }
-  }
-
-  void processDummy(MyBarrelTracks&)
-  {
-    // do nothing
-  }
-
-  PROCESS_SWITCH(DQBarrelTrackSelection, processSelection, "Run barrel track selection", false);
-  PROCESS_SWITCH(DQBarrelTrackSelection, processSelectionTPCPID, "Run barrel track selection, just TPC PID (no TOF)", false);
-  PROCESS_SWITCH(DQBarrelTrackSelection, processDummy, "Dummy function", false);
-};
-
-struct DQMuonsSelection {
-  Produces<aod::DQMuonsCuts> trackSel;
-  Produces<aod::DQEMuMuonsCuts> emuSel;
-  OutputObj<THashList> fOutputList{"output"};
-  HistogramManager* fHistMan;
-
-  Configurable<std::string> fConfigCuts{"cfgMuonsCuts", "muonQualityCuts", "Comma separated list of ADDITIONAL muon track cuts"};
-  Configurable<std::string> fConfigCutsForEMu{"cfgMuonsCutsForEMu", "muonQualityCuts", "Comma separated list of ADDITIONAL muon track cuts"};
-  Configurable<bool> fConfigQA{"cfgWithQA", false, "If true, fill QA histograms"};
-  Configurable<std::string> fConfigHistClasses{"cfgHistClasses", "muon", "If true, fill QA histograms"};
-  Configurable<bool> fPropMuon{"cfgPropMuon", false, "Propgate muon tracks through absorber"};
-  Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-
-  Service<o2::ccdb::BasicCCDBManager> fCCDB;
-  o2::parameters::GRPMagField* grpmag = nullptr; // for run 3, we access GRPMagField from GLO/Config/GRPMagField
-
-  Preslice<aod::FwdTrackAssoc> fwdtrackIndicesPerCollision = aod::track_association::collisionId;
-
-  int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
-
-  // TODO: configure the histogram classes to be filled by QA
-
-  std::vector<AnalysisCompositeCut> fTrackCuts;
-  std::vector<AnalysisCompositeCut> fEMuTrackCuts;
-  std::vector<TString> fCutHistNames;
-
-  void init(o2::framework::InitContext&)
-  {
-    fCCDB->setURL(fConfigCcdbUrl);
-    fCCDB->setCaching(true);
-    fCCDB->setLocalObjectValidityChecking();
-    if (fPropMuon) {
-      if (!o2::base::GeometryManager::isGeometryLoaded()) {
-        fCCDB->get<TGeoManager>(geoPath);
-      }
-    }
-
-    TString cutNamesStr = fConfigCuts.value;
-    TString cutEMuNamesStr = fConfigCutsForEMu.value;
-    if (!cutNamesStr.IsNull()) {
-      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
-      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fTrackCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
-      }
-    }
-    if (!cutEMuNamesStr.IsNull()) {
-      std::unique_ptr<TObjArray> objArray2(cutEMuNamesStr.Tokenize(","));
-      for (int icut = 0; icut < objArray2->GetEntries(); ++icut) {
-        fEMuTrackCuts.push_back(*dqcuts::GetCompositeCut(objArray2->At(icut)->GetName()));
-      }
-    }
-    VarManager::SetUseVars(AnalysisCut::fgUsedVars);
-
-    if (fConfigQA) {
-      VarManager::SetDefaultVarNames();
-      fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
-      fHistMan->SetUseDefaultVariableNames(kTRUE);
-      fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
-
-      TString cutNames = "Muon_BeforeCuts;";
-      for (unsigned int i = 0; i < fTrackCuts.size(); i++) {
-        cutNames += Form("Muon_%s;", fTrackCuts[i].GetName());
-        fCutHistNames.push_back(Form("Muon_%s", fTrackCuts[i].GetName()));
-      }
-
-      DefineHistograms(fHistMan, cutNames.Data(), fConfigHistClasses.value); // define all histograms
-      VarManager::SetUseVars(fHistMan->GetUsedVars());                       // provide the list of required variables so that VarManager knows what to fill
-      fOutputList.setObject(fHistMan->GetMainHistogramList());
-    }
   }
 
   template <uint32_t TMuonFillMap, typename TEvent, typename TMuons, typename AssocMuons>
@@ -466,12 +409,12 @@ struct DQMuonsSelection {
 
     uint32_t filterMap = static_cast<uint32_t>(0);
     uint32_t filterMapEMu = static_cast<uint32_t>(0);
-    trackSel.reserve(muons.size());
-    emuSel.reserve(muons.size());
+    trackMuSel.reserve(muons.size());
+    emuMuSel.reserve(muons.size());
 
     VarManager::ResetValues(0, VarManager::kNMuonTrackVariables);
 
-    for (auto& muonAssoc : muonAssocs) {
+    for (auto const& muonAssoc : muonAssocs) {
       filterMap = static_cast<uint32_t>(0);
       filterMapEMu = static_cast<uint32_t>(0);
       auto muon = muonAssoc.template fwdtrack_as<TMuons>();
@@ -479,43 +422,62 @@ struct DQMuonsSelection {
       if (fPropMuon) {
         VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
       }
-      if (fConfigQA) {
-        fHistMan->FillHistClass("Muon_BeforeCuts", VarManager::fgValues);
-      }
       int i = 0;
-      for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); ++cut, ++i) {
+      for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); ++cut, ++i) {
         if ((*cut).IsSelected(VarManager::fgValues)) {
           filterMap |= (static_cast<uint32_t>(1) << i);
           if (fConfigQA) {
-            fHistMan->FillHistClass(fCutHistNames[i].Data(), VarManager::fgValues);
+            fHistMan->FillHistClass(Form("Muon_%s", (*cut).GetName()), VarManager::fgValues);
           }
         }
       }
       int j = 0;
-      for (auto cut = fEMuTrackCuts.begin(); cut != fEMuTrackCuts.end(); ++cut, ++j) {
+      for (auto cut = fEMuMuonCuts.begin(); cut != fEMuMuonCuts.end(); ++cut, ++j) {
         if ((*cut).IsSelected(VarManager::fgValues)) {
           filterMapEMu |= (static_cast<uint32_t>(1) << j);
+          if (fConfigQA) {
+            fHistMan->FillHistClass(Form("Muon_%s", (*cut).GetName()), VarManager::fgValues);
+          }
         }
       }
-      trackSel(filterMap);
-      emuSel(filterMapEMu);
+      trackMuSel(filterMap);
+      emuMuSel(filterMapEMu);
     } // end loop over muons
   }
 
-  void processSelection(Collisions const& collisions, BCsWithTimestamps const& bcstimestamps, MyMuons const& muons, aod::FwdTrackAssoc const& muonAssocs)
+  void processSelection(Collisions const& collisions, aod::BCsWithTimestamps const& bcs, MyBarrelTracks const& tracks, aod::TrackAssoc const& trackAssocs)
   {
-    for (auto& collision : collisions) {
+    for (auto const& collision : collisions) {
+      auto trackIdsThisCollision = trackAssocs.sliceBy(barrelTrackIndicesPerCollision, collision.globalIndex());
+      runTrackSelection<gkTrackFillMap>(collision, bcs, tracks, trackIdsThisCollision);
+    }
+  }
+
+  void processSelectionTPCPID(Collisions const& collisions, aod::BCsWithTimestamps const& bcs, MyBarrelTracksTPCPID const& tracks, aod::TrackAssoc const& trackAssocs)
+  {
+    for (auto const& collision : collisions) {
+      auto trackIdsThisCollision = trackAssocs.sliceBy(barrelTrackIndicesPerCollision, collision.globalIndex());
+      runTrackSelection<gkTrackFillMapTPCPID>(collision, bcs, tracks, trackIdsThisCollision);
+    }
+  }
+
+  void processSelectionMu(Collisions const& collisions, BCsWithTimestamps const& bcstimestamps, MyMuons const& muons, aod::FwdTrackAssoc const& muonAssocs)
+  {
+    for (auto const& collision : collisions) {
       auto muonIdsThisCollision = muonAssocs.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
       runMuonSelection<gkMuonFillMap>(collision, bcstimestamps, muons, muonIdsThisCollision);
     }
   }
-  void processDummy(MyMuons&)
+
+  void processDummy(MyBarrelTracks&)
   {
     // do nothing
   }
 
-  PROCESS_SWITCH(DQMuonsSelection, processSelection, "Run muon selection", false);
-  PROCESS_SWITCH(DQMuonsSelection, processDummy, "Dummy function", false);
+  PROCESS_SWITCH(DQTrackSelection, processSelection, "Run barrel track selection", false);
+  PROCESS_SWITCH(DQTrackSelection, processSelectionTPCPID, "Run barrel track selection, just TPC PID (no TOF)", false);
+  PROCESS_SWITCH(DQTrackSelection, processSelectionMu, "Run muon track selection", false);
+  PROCESS_SWITCH(DQTrackSelection, processDummy, "Dummy function", false);
 };
 
 struct DQFilterPPTask {
@@ -539,6 +501,7 @@ struct DQFilterPPTask {
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
   o2::parameters::GRPMagField* grpmag = nullptr; // for run 3, we access GRPMagField from GLO/Config/GRPMagField
+  o2::base::MatLayerCylSet* lut = nullptr;
 
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
 
@@ -662,6 +625,7 @@ struct DQFilterPPTask {
     fCCDB->setCaching(true);
     fCCDB->setLocalObjectValidityChecking();
     if (fPropMuon) {
+      LOGF(info, "TGeo correction requested, loading geometry");
       if (!o2::base::GeometryManager::isGeometryLoaded()) {
         fCCDB->get<TGeoManager>(geoPath);
       }
@@ -782,7 +746,7 @@ struct DQFilterPPTask {
       // run pairing if there is at least one selection that requires it
       if (pairingMask > 0) {
         // run pairing on the collision grouped associations
-        for (auto& [a1, a2] : combinations(barrelAssocs, barrelAssocs)) {
+        for (auto const& [a1, a2] : combinations(barrelAssocs, barrelAssocs)) {
 
           // get the tracks from the index stored in the association
           auto t1 = a1.template track_as<TTracks>();
@@ -831,7 +795,7 @@ struct DQFilterPPTask {
     std::vector<int> objCountersMuon(fNMuonCuts, 0); // init all counters to zero
     if constexpr (static_cast<bool>(TMuonFillMap)) {
       // count the number of muon-collision associations fulfilling each selection
-      for (auto muon : muonAssocs) {
+      for (auto const& muon : muonAssocs) {
         for (int i = 0; i < fNMuonCuts; ++i) {
           if (muon.isDQMuonSelected() & (static_cast<uint32_t>(1) << i)) {
             objCountersMuon[i] += 1;
@@ -860,7 +824,7 @@ struct DQFilterPPTask {
       pairFilter = 0;
       if (pairingMask > 0) {
         // pairing is done using the collision grouped muon associations
-        for (auto& [a1, a2] : combinations(muonAssocs, muonAssocs)) {
+        for (auto const& [a1, a2] : combinations(muonAssocs, muonAssocs)) {
 
           // check the pairing mask and that the tracks share a cut bit
           pairFilter = pairingMask & a1.isDQMuonSelected() & a2.isDQMuonSelected();
@@ -912,7 +876,7 @@ struct DQFilterPPTask {
     std::vector<int> objCountersElectronMuon(fNElectronMuonCuts, 0); // init all counters to zero
     if constexpr (static_cast<bool>(TTrackFillMap) && static_cast<bool>(TMuonFillMap)) {
       pairingMask = 0;
-      for (auto& [trackAssoc, muon] : combinations(barrelAssocs, muonAssocs)) {
+      for (auto const& [trackAssoc, muon] : combinations(barrelAssocs, muonAssocs)) {
         for (int i = 0; i < fNElectronMuonCuts; ++i) {
           if (trackAssoc.isDQEMuBarrelSelected() & muon.isDQEMuMuonSelected() & (static_cast<uint32_t>(1) << i)) {
             if (fElectronMuonRunPairing[i]) {
@@ -926,7 +890,7 @@ struct DQFilterPPTask {
       pairFilter = 0;
       if (pairingMask > 0) {
         // pairing is done using the collision grouped electron and muon associations
-        for (auto& [a1, a2] : combinations(barrelAssocs, muonAssocs)) {
+        for (auto const& [a1, a2] : combinations(barrelAssocs, muonAssocs)) {
           // check the pairing mask and that the tracks share a cut bit
           pairFilter = pairingMask & a1.isDQEMuBarrelSelected() & a2.isDQEMuMuonSelected();
           if (pairFilter == 0) {
@@ -1038,7 +1002,7 @@ struct DQFilterPPTask {
       // The reason is that in the tagged collisions we include also those collisions which did not fired the trigger conditions, but they contain
       //   tracks which in other associations contributed to fired triggers in other events.
       for (int iTrig = 0; iTrig < fNBarrelCuts + fNMuonCuts + fNElectronMuonCuts; iTrig++) {
-        for (auto& [collId, aValue] : taggedCollisions[iTrig]) {
+        for (auto const& [collId, aValue] : taggedCollisions[iTrig]) {
           if (fFiltersMap.find(collId) == fFiltersMap.end()) {
             fFiltersMap[collId] = (static_cast<uint64_t>(1) << iTrig);
             std::vector<bool> decisionsAdds(kNTriggersDQ, false); // event decisions to be transmitted to CEFP
@@ -1181,7 +1145,7 @@ struct DQFilterPPTask {
 
       // Do the same for muons
       if (filter & muonMask) {
-        for (auto& a : groupedMuonIndices) {
+        for (auto const& a : groupedMuonIndices) {
           auto t = a.template fwdtrack_as<MyMuons>();
           if (!t.has_collision()) {
             continue;
@@ -1256,8 +1220,8 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<DQEventSelectionTask>(cfgc),
-    adaptAnalysisTask<DQBarrelTrackSelection>(cfgc),
-    adaptAnalysisTask<DQMuonsSelection>(cfgc),
+    adaptAnalysisTask<DQTrackSelection>(cfgc),
+    // adaptAnalysisTask<DQMuonsSelection>(cfgc),
     // adaptAnalysisTask<DQTrackToCollisionAssociation>(cfgc),
     adaptAnalysisTask<DQFilterPPTask>(cfgc)};
 }
@@ -1273,15 +1237,15 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses, TString su
     histMan->AddHistClass(classStr.Data());
 
     if (classStr.Contains("Event")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", subgroups.Data());
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "software-trigger", subgroups.Data());
     }
 
     if (classStr.Contains("Track")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", subgroups.Data());
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "software-trigger", subgroups.Data());
     }
 
     if (classStr.Contains("Muon") && !classStr.Contains("Electron")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", subgroups.Data());
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "software-trigger", subgroups.Data());
     }
 
     if (classStr.Contains("Pairs")) {

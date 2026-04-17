@@ -12,27 +12,34 @@
 #ifndef PWGLF_UTILS_STRANGENESSBUILDERHELPER_H_
 #define PWGLF_UTILS_STRANGENESSBUILDERHELPER_H_
 
-#include <cstdlib>
-#include <cmath>
-#include <array>
-#include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisDataModel.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/Core/trackUtilities.h"
-#include "Tools/KFparticle/KFUtilities.h"
-
 #ifndef HomogeneousField
 #define HomogeneousField
 #endif
 
-/// includes KFParticle
-#include "KFParticle.h"
-#include "KFPTrack.h"
-#include "KFPVertex.h"
-#include "KFParticleBase.h"
-#include "KFVertex.h"
+#include "Common/Core/trackUtilities.h"
+#include "Tools/KFparticle/KFUtilities.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <Framework/Logger.h>
+#include <ReconstructionDataFormats/PID.h>
+#include <ReconstructionDataFormats/Track.h>
+
+#include <TMath.h> // IWYU pragma: keep
+
+#include <KFPTrack.h>
+#include <KFPVertex.h>
+#include <KFParticle.h>
+#include <KFParticleBase.h>
+#include <KFVertex.h>
+
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <stdexcept>
+#include <vector>
 
 namespace o2
 {

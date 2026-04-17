@@ -93,7 +93,7 @@ using FilteredMyMuon = FilteredMyMuons::iterator;
 
 using MyEMH_electron = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, o2::aod::pwgem::dilepton::utils::EMTrack>;
 using MyEMH_muon = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, o2::aod::pwgem::dilepton::utils::EMFwdTrack>;
-using MyEMH_track = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, o2::aod::pwgem::dilepton::utils::EMTrack>; // for charged track
+using MyEMH_track = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, o2::aod::pwgem::dilepton::utils::EMTrackUL>; // for charged track
 
 template <o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType pairtype, typename TEMH, typename... Types>
 struct DileptonHadronMPC {
@@ -110,7 +110,7 @@ struct DileptonHadronMPC {
   o2::framework::Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   o2::framework::Configurable<int> cfgOccupancyEstimator{"cfgOccupancyEstimator", 0, "FT0C:0, Track:1"};
   o2::framework::Configurable<bool> cfgDoMix{"cfgDoMix", true, "flag for event mixing between 2 leptons (i.e. R factor)"};
-  o2::framework::Configurable<int> ndepth_lepton{"ndepth_lepton", 100, "depth for event mixing between lepton-lepton"};
+  o2::framework::Configurable<int> ndepth_lepton{"ndepth_lepton", 1, "depth for event mixing between lepton-lepton"};
   o2::framework::Configurable<int> ndepth_hadron{"ndepth_hadron", 10, "depth for event mixing between hadron-hadron"};
   o2::framework::Configurable<uint64_t> ndiff_bc_mix{"ndiff_bc_mix", 594, "difference in global BC required in mixed events"};
   o2::framework::ConfigurableAxis ConfVtxBins{"ConfVtxBins", {o2::framework::VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
@@ -121,6 +121,7 @@ struct DileptonHadronMPC {
   // Configurable<int> cfgNtracksPV08Max{"cfgNtracksPV08Max", static_cast<int>(1e+9), "max. multNTracksPV"};
   o2::framework::Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", false, "flag to apply weighting by 1/N"};
   o2::framework::Configurable<uint> cfgDCAType{"cfgDCAType", 0, "type of DCA for output. 0:3D, 1:XY, 2:Z, else:3D"};
+  o2::framework::Configurable<bool> cfgDoLS{"cfgDoLS", false, "flag to analyze LS"}; // ULS is always analyzed.
 
   o2::framework::ConfigurableAxis ConfMllBins{"ConfMllBins", {o2::framework::VARIABLE_WIDTH, 0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.10, 1.11, 1.12, 1.13, 1.14, 1.15, 1.16, 1.17, 1.18, 1.19, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.05, 3.10, 3.15, 3.20, 3.25, 3.30, 3.35, 3.40, 3.45, 3.50, 3.55, 3.60, 3.65, 3.70, 3.75, 3.80, 3.85, 3.90, 3.95, 4.00}, "mll bins for output histograms"};
   o2::framework::ConfigurableAxis ConfPtllBins{"ConfPtllBins", {o2::framework::VARIABLE_WIDTH, 0.00, 0.15, 0.50, 1.00, 1.50, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.00}, "pTll bins for output histograms"};
@@ -128,7 +129,7 @@ struct DileptonHadronMPC {
 
   o2::framework::ConfigurableAxis ConfPtHadronBins{"ConfPtHadronBins", {50, 0, 5}, "pT,h bins for output histograms"};
   o2::framework::ConfigurableAxis ConfYllBins{"ConfYllBins", {1, -1.f, 1.f}, "yll bins for output histograms"}; // pair rapidity
-  o2::framework::ConfigurableAxis ConfDEtaBins{"ConfDEtaBins", {120, -6, 6}, "deta bins for output histograms"};
+  o2::framework::ConfigurableAxis ConfDEtaBins{"ConfDEtaBins", {200, -10, 10}, "deta bins for output histograms"};
   o2::framework::Configurable<int> cfgNbinsDPhi{"cfgNbinsDPhi", 36, "nbins in dphi for output histograms"};
   o2::framework::Configurable<int> cfgNbinsCosNDPhi{"cfgNbinsCosNDPhi", 200, "nbins in cos(n(dphi)) for output histograms"};
   o2::framework::Configurable<int> cfgNmod{"cfgNmod", 2, "n-th harmonics"};
@@ -317,7 +318,6 @@ struct DileptonHadronMPC {
   Zorro zorro;
 
   o2::framework::HistogramRegistry fRegistry{"output", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject, false, false};
-  static constexpr std::string_view event_cut_types[2] = {"before/", "after/"};
   static constexpr std::string_view event_pair_types[2] = {"same/", "mix/"};
 
   std::vector<float> cent_bin_edges;
@@ -426,10 +426,10 @@ struct DileptonHadronMPC {
 
     if (doprocessTriggerAnalysis) {
       LOGF(info, "Trigger analysis is enabled. Desired trigger name = %s", zorroGroup.cfg_swt_name.value);
-      fRegistry.add("NormTrigger/hInspectedTVX", "inspected TVX;run number;N_{TVX}", o2::framework::kTProfile, {{80000, 520000.5, 600000.5}}, true);
-      fRegistry.add("NormTrigger/hScalers", "trigger counter before DS;run number;counter", o2::framework::kTProfile, {{80000, 520000.5, 600000.5}}, true);
-      fRegistry.add("NormTrigger/hSelections", "trigger counter after DS;run number;counter", o2::framework::kTProfile, {{80000, 520000.5, 600000.5}}, true);
-      auto hTriggerCounter = fRegistry.add<TH2>("NormTrigger/hTriggerCounter", Form("trigger counter of %s;run number;", zorroGroup.cfg_swt_name.value.data()), o2::framework::kTH2D, {{80000, 520000.5, 600000.5}, {2, -0.5, 1.5}}, false);
+      fRegistry.add("NormTrigger/hInspectedTVX", "inspected TVX;run number;N_{TVX}", o2::framework::HistType::kTProfile, {{80000, 520000.5, 600000.5}}, true);
+      fRegistry.add("NormTrigger/hScalers", "trigger counter before DS;run number;counter", o2::framework::HistType::kTProfile, {{80000, 520000.5, 600000.5}}, true);
+      fRegistry.add("NormTrigger/hSelections", "trigger counter after DS;run number;counter", o2::framework::HistType::kTProfile, {{80000, 520000.5, 600000.5}}, true);
+      auto hTriggerCounter = fRegistry.add<TH2>("NormTrigger/hTriggerCounter", Form("trigger counter of %s;run number;", zorroGroup.cfg_swt_name.value.data()), o2::framework::HistType::kTH2D, {{80000, 520000.5, 600000.5}, {2, -0.5, 1.5}}, false);
       hTriggerCounter->GetYaxis()->SetBinLabel(1, "Analyzed Trigger");
       hTriggerCounter->GetYaxis()->SetBinLabel(2, "Analyzed TOI");
     }
@@ -504,7 +504,7 @@ struct DileptonHadronMPC {
     static constexpr std::string_view qvec_det_names[7] = {"FT0M", "FT0A", "FT0C", "BTot", "BPos", "BNeg", "FV0A"};
     // event info
     o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms<-1>(&fRegistry);
-    fRegistry.add("Event/after/hMultNTracksPV_RefTracks", "Track mult. correlation;N_{track}^{PV};N_{track} for ref. flow", o2::framework::kTH2D, {{501, -0.5, 500.5}, {501, -0.5, 500.5}}, false);
+    fRegistry.add("Event/after/hMultNTracksPV_RefTracks", "Track mult. correlation;N_{track}^{PV};N_{track} for ref. flow", o2::framework::HistType::kTH2D, {{501, -0.5, 500.5}, {501, -0.5, 500.5}}, false);
 
     std::string mass_axis_title = "m_{ll} (GeV/c^{2})";
     std::string pair_pt_axis_title = "p_{T,ll} (GeV/c)";
@@ -552,10 +552,10 @@ struct DileptonHadronMPC {
     const o2::framework::AxisSpec axis_pt_trg{ConfPtHadronBins, "p_{T,h} (GeV/c)"};
     const o2::framework::AxisSpec axis_eta_trg{40, -2, +2, "#eta_{h}"};
     const o2::framework::AxisSpec axis_phi_trg{36, 0, 2 * M_PI, "#varphi_{h} (rad.)"};
-    fRegistry.add("Hadron/hs", "hadron", o2::framework::kTHnSparseD, {axis_pt_trg, axis_eta_trg, axis_phi_trg}, false);
-    fRegistry.add("Hadron/hTrackBit", "track bit", o2::framework::kTH1D, {{65536, -0.5, 65535.5}}, false);
+    fRegistry.add("Hadron/hs", "hadron", o2::framework::HistType::kTHnSparseD, {axis_pt_trg, axis_eta_trg, axis_phi_trg}, false);
+    fRegistry.add("Hadron/hTrackBit", "track bit", o2::framework::HistType::kTH1D, {{65536, -0.5, 65535.5}}, false);
 
-    fRegistry.add("Dilepton/same/uls/hs", "dilepton", o2::framework::kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_y}, true);
+    fRegistry.add("Dilepton/same/uls/hs", "dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_y}, true);
     fRegistry.addClone("Dilepton/same/uls/", "Dilepton/same/lspp/");
     fRegistry.addClone("Dilepton/same/uls/", "Dilepton/same/lsmm/");
     fRegistry.addClone("Dilepton/same/", "Dilepton/mix/");
@@ -563,34 +563,34 @@ struct DileptonHadronMPC {
     if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonHadronAnalysisType::kAzimuthalCorrelation)) {
       const o2::framework::AxisSpec axis_dphi{cfgNbinsDPhi, -M_PI / 2, 3 * M_PI / 2, dphi_axis_title};
       // dilepton-hadron
-      fRegistry.add("DileptonHadron/same/uls/hs", "dilepton-hadron 2PC", o2::framework::kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_y, axis_deta, axis_dphi}, true);
+      fRegistry.add("DileptonHadron/same/uls/hs", "dilepton-hadron 2PC", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_y, axis_deta, axis_dphi}, true);
       fRegistry.addClone("DileptonHadron/same/uls/", "DileptonHadron/same/lspp/");
       fRegistry.addClone("DileptonHadron/same/uls/", "DileptonHadron/same/lsmm/");
       fRegistry.addClone("DileptonHadron/same/", "DileptonHadron/mix/");
-      fRegistry.add("DileptonHadron/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", o2::framework::kTH1D, {{10001, -0.5, 10000.5}}, true);
+      fRegistry.add("DileptonHadron/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", o2::framework::HistType::kTH1D, {{10001, -0.5, 10000.5}}, true);
 
       // hadron-hadron
       const o2::framework::AxisSpec axis_dphi_hh{90, -M_PI / 2, 3 * M_PI / 2, "#Delta#varphi = #varphi_{h}^{ref1} - #varphi_{h}^{ref2} (rad.)"};
-      fRegistry.add("HadronHadron/same/hDEtaDPhi", "hadron-hadron 2PC", o2::framework::kTH2D, {axis_dphi_hh, axis_deta_hh}, true);
+      fRegistry.add("HadronHadron/same/hDEtaDPhi", "hadron-hadron 2PC", o2::framework::HistType::kTH2D, {axis_dphi_hh, axis_deta_hh}, true);
       fRegistry.addClone("HadronHadron/same/", "HadronHadron/mix/");
-      fRegistry.add("HadronHadron/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", o2::framework::kTH1D, {{10001, -0.5, 10000.5}}, true);
+      fRegistry.add("HadronHadron/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", o2::framework::HistType::kTH1D, {{10001, -0.5, 10000.5}}, true);
     } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonHadronAnalysisType::kCumulant)) {
       const o2::framework::AxisSpec axis_cos_ndphi{cfgNbinsCosNDPhi, -1, +1, cosndphi_axis_title};
 
       // dilepton-hadron
-      fRegistry.add("DileptonHadron/same/uls/hs", "dilepton-hadron 2PC", o2::framework::kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_y, axis_deta, axis_cos_ndphi}, true);
+      fRegistry.add("DileptonHadron/same/uls/hs", "dilepton-hadron 2PC", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_y, axis_deta, axis_cos_ndphi}, true);
       fRegistry.addClone("DileptonHadron/same/uls/", "DileptonHadron/same/lspp/");
       fRegistry.addClone("DileptonHadron/same/uls/", "DileptonHadron/same/lsmm/");
       fRegistry.addClone("DileptonHadron/same/", "DileptonHadron/mix/");
 
       // hadron-hadron
       const o2::framework::AxisSpec axis_cosndphi_hh{cfgNbinsCosNDPhi, -1, +1, std::format("cos({0:d}(#varphi_{{h}}^{{ref1}} - #varphi_{{h}}^{{ref2}}))", cfgNmod.value)};
-      fRegistry.add("HadronHadron/same/hDEtaCosNDPhi", "hadron-hadron 2PC", o2::framework::kTH2D, {axis_cosndphi_hh, axis_deta_hh}, true);
+      fRegistry.add("HadronHadron/same/hDEtaCosNDPhi", "hadron-hadron 2PC", o2::framework::HistType::kTH2D, {axis_cosndphi_hh, axis_deta_hh}, true);
     }
-    fRegistry.add("Dilepton/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", o2::framework::kTH1D, {{10001, -0.5, 10000.5}}, true);
+    fRegistry.add("Dilepton/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", o2::framework::HistType::kTH1D, {{10001, -0.5, 10000.5}}, true);
 
-    fRegistry.add("Event/before/hEP2_CentFT0C_forMix", Form("2nd harmonics event plane for mix;centrality FT0C (%%);#Psi_{2}^{%s} (rad.)", qvec_det_names[cfgEP2Estimator_for_Mix].data()), o2::framework::kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
-    fRegistry.add("Event/after/hEP2_CentFT0C_forMix", Form("2nd harmonics event plane for mix;centrality FT0C (%%);#Psi_{2}^{%s} (rad.)", qvec_det_names[cfgEP2Estimator_for_Mix].data()), o2::framework::kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
+    fRegistry.add("Event/before/hEP2_CentFT0C_forMix", Form("2nd harmonics event plane for mix;centrality FT0C (%%);#Psi_{2}^{%s} (rad.)", qvec_det_names[cfgEP2Estimator_for_Mix].data()), o2::framework::HistType::kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
+    fRegistry.add("Event/after/hEP2_CentFT0C_forMix", Form("2nd harmonics event plane for mix;centrality FT0C (%%);#Psi_{2}^{%s} (rad.)", qvec_det_names[cfgEP2Estimator_for_Mix].data()), o2::framework::HistType::kTH2F, {{110, 0, 110}, {180, -M_PI_2, +M_PI_2}}, false);
   }
 
   void DefineEMEventCut()
@@ -857,9 +857,6 @@ struct DileptonHadronMPC {
             return false;
           }
         }
-        // if (t1.trackId() == t3.trackId() || t2.trackId() == t3.trackId()) {
-        //   return false;
-        // }
       } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
         if (!cut.template IsSelectedTrack<false>(t1) || !cut.template IsSelectedTrack<false>(t2)) {
           return false;
@@ -953,41 +950,6 @@ struct DileptonHadronMPC {
       if (!fEMTrackCut.IsSelected(t1) || !fEMTrackCut.IsSelected(t2)) { // for charged track
         return false;
       }
-
-      // Leptons should not be in reference track sample.
-      if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-        if (trackcuts.cfg_reftrack_type == static_cast<int>(o2::aod::pwgem::dilepton::utils::emtrackutil::RefTrackType::kCB)) {
-          // for (const auto& pos : posLeptons) { // leptons per collision
-          //   if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
-          //     if (!cut.template IsSelectedTrack<false>(pos)) {
-          //       continue;
-          //     }
-          //   } else { // cut based
-          //     if (!cut.template IsSelectedTrack<false>(pos)) {
-          //       continue;
-          //     }
-          //   }
-          //   // if (t1.trackId() == pos.trackId() || t2.trackId() == pos.trackId()) {
-          //   //   return false;
-          //   // }
-          // } // end of pos lepton loop
-
-          // for (const auto& neg : negLeptons) { // leptons per collision
-          //   if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
-          //     if (!cut.template IsSelectedTrack<false>(neg)) {
-          //       continue;
-          //     }
-          //   } else { // cut based
-          //     if (!cut.template IsSelectedTrack<false>(neg)) {
-          //       continue;
-          //     }
-          //   }
-          //   // if (t1.trackId() == neg.trackId() || t2.trackId() == neg.trackId()) {
-          //   //   return false;
-          //   // }
-          // } // end of neg lepton lopp
-        }
-      } // end of if kDielectron
     } // end of if same event
 
     float weight = 1.f;
@@ -1115,31 +1077,38 @@ struct DileptonHadronMPC {
           }
         }
       }
-      for (const auto& [pos1, pos2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
-        bool is_pair_ok = fillDilepton<0>(collision, pos1, pos2, cut);
-        if (is_pair_ok) {
-          nlspp++;
-          for (const auto& refTrack : refTracks_per_coll) {
-            fillDileptonHadron<0>(pos1, pos2, cut, refTrack);
+
+      if (cfgDoLS) {
+        for (const auto& [pos1, pos2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
+          bool is_pair_ok = fillDilepton<0>(collision, pos1, pos2, cut);
+          if (is_pair_ok) {
+            nlspp++;
+            for (const auto& refTrack : refTracks_per_coll) {
+              fillDileptonHadron<0>(pos1, pos2, cut, refTrack);
+            }
+          }
+        }
+        for (const auto& [neg1, neg2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) { // LS--
+          bool is_pair_ok = fillDilepton<0>(collision, neg1, neg2, cut);
+          if (is_pair_ok) {
+            nlsmm++;
+            for (const auto& refTrack : refTracks_per_coll) {
+              fillDileptonHadron<0>(neg1, neg2, cut, refTrack);
+            }
           }
         }
       }
-      for (const auto& [neg1, neg2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) { // LS--
-        bool is_pair_ok = fillDilepton<0>(collision, neg1, neg2, cut);
-        if (is_pair_ok) {
-          nlsmm++;
-          for (const auto& refTrack : refTracks_per_coll) {
-            fillDileptonHadron<0>(neg1, neg2, cut, refTrack);
-          }
-        }
-      }
+
       used_trackIds_per_col.clear();
       used_trackIds_per_col.shrink_to_fit();
 
       std::pair<int, int> key_df_collision = std::make_pair(ndf, collision.globalIndex());
 
       if (nuls > 0 || nlspp > 0 || nlsmm > 0) { // at least 1 pair exists.
-        emh_ref->ReserveNTracksPerCollision(key_df_collision, refTracks_per_coll.size());
+        if (cfgDoMix) {
+          emh_ref->ReserveNTracksPerCollision(key_df_collision, refTracks_per_coll.size());
+        }
+
         for (const auto& track : refTracks_per_coll) {
           if (fEMTrackCut.IsSelected(track)) {
             fRegistry.fill(HIST("Hadron/hs"), track.pt(), track.eta(), track.phi());
@@ -1147,14 +1116,13 @@ struct DileptonHadronMPC {
 
             // store ref tracks for mixed event in case of kAzimuthalCorrelation
             if (cfgDoMix && cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonHadronAnalysisType::kAzimuthalCorrelation)) {
-              emh_ref->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMTrack(track.pt(), track.eta(), track.phi(), 0.139));
+              emh_ref->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMTrackUL(track.pt(), track.eta(), track.phi()));
             } // store ref tracks
           }
         }
         // LOGF(info, "collision.globalIndex() = %d, collision.centFT0M() = %f, refTracks_per_coll.size() = %d", collision.globalIndex(), collision.centFT0M(), refTracks_per_coll.size());
 
         for (const auto& [ref1, ref2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(refTracks_per_coll, refTracks_per_coll))) {
-          // TODO: remove lepton candidates from reference track sample in case of kCB.
           fillHadronHadron<0>(ref1, ref2, posTracks_per_coll, negTracks_per_coll, cut);
         }
       }
@@ -1242,15 +1210,17 @@ struct DileptonHadronMPC {
           }
         }
 
-        for (const auto& pos1 : selected_posTracks_in_this_event) { // LS++ mix
-          for (const auto& pos2 : posTracks_from_event_pool) {
-            fillDilepton<1>(collision, pos1, pos2, cut);
+        if (cfgDoLS) {
+          for (const auto& pos1 : selected_posTracks_in_this_event) { // LS++ mix
+            for (const auto& pos2 : posTracks_from_event_pool) {
+              fillDilepton<1>(collision, pos1, pos2, cut);
+            }
           }
-        }
 
-        for (const auto& neg1 : selected_negTracks_in_this_event) { // LS-- mix
-          for (const auto& neg2 : negTracks_from_event_pool) {
-            fillDilepton<1>(collision, neg1, neg2, cut);
+          for (const auto& neg1 : selected_negTracks_in_this_event) { // LS-- mix
+            for (const auto& neg2 : negTracks_from_event_pool) {
+              fillDilepton<1>(collision, neg1, neg2, cut);
+            }
           }
         }
       } // end of loop over mixed event pool for lepton-lepton
@@ -1285,60 +1255,62 @@ struct DileptonHadronMPC {
           }
         }
 
-        // for LS++ and hadron mix
-        for (size_t i1 = 0; i1 < selected_posTracks_in_this_event.size(); i1++) {
-          auto pos1 = selected_posTracks_in_this_event[i1];
-          for (size_t i2 = i1 + 1; i2 < selected_posTracks_in_this_event.size(); i2++) {
-            auto pos2 = selected_posTracks_in_this_event[i2];
+        if (cfgDoLS) {
+          // for LS++ and hadron mix
+          for (size_t i1 = 0; i1 < selected_posTracks_in_this_event.size(); i1++) {
+            auto pos1 = selected_posTracks_in_this_event[i1];
+            for (size_t i2 = i1 + 1; i2 < selected_posTracks_in_this_event.size(); i2++) {
+              auto pos2 = selected_posTracks_in_this_event[i2];
 
-            for (const auto& mix_dfId_collisionId : collisionIds_in_mixing_pool_hadron) {
-              int mix_dfId = mix_dfId_collisionId.first;
-              int mix_collisionId = mix_dfId_collisionId.second;
-              if (collision.globalIndex() == mix_collisionId && ndf == mix_dfId) { // this never happens. only protection.
-                continue;
-              }
+              for (const auto& mix_dfId_collisionId : collisionIds_in_mixing_pool_hadron) {
+                int mix_dfId = mix_dfId_collisionId.first;
+                int mix_collisionId = mix_dfId_collisionId.second;
+                if (collision.globalIndex() == mix_collisionId && ndf == mix_dfId) { // this never happens. only protection.
+                  continue;
+                }
 
-              auto globalBC_mix = map_mixed_eventId_to_globalBC[mix_dfId_collisionId];
-              uint64_t diffBC = std::max(collision.globalBC(), globalBC_mix) - std::min(collision.globalBC(), globalBC_mix);
-              fRegistry.fill(HIST("DileptonHadron/mix/hDiffBC"), diffBC);
-              if (diffBC < ndiff_bc_mix) {
-                continue;
-              }
+                auto globalBC_mix = map_mixed_eventId_to_globalBC[mix_dfId_collisionId];
+                uint64_t diffBC = std::max(collision.globalBC(), globalBC_mix) - std::min(collision.globalBC(), globalBC_mix);
+                fRegistry.fill(HIST("DileptonHadron/mix/hDiffBC"), diffBC);
+                if (diffBC < ndiff_bc_mix) {
+                  continue;
+                }
 
-              auto refTracks_from_event_pool = emh_ref->GetTracksPerCollision(mix_dfId_collisionId);
-              for (const auto& ref : refTracks_from_event_pool) {
-                fillDileptonHadron<1>(pos1, pos2, cut, ref);
-              }
+                auto refTracks_from_event_pool = emh_ref->GetTracksPerCollision(mix_dfId_collisionId);
+                for (const auto& ref : refTracks_from_event_pool) {
+                  fillDileptonHadron<1>(pos1, pos2, cut, ref);
+                }
 
-            } // end of loop over mixed event pool for dilepton-hadron
+              } // end of loop over mixed event pool for dilepton-hadron
+            }
           }
-        }
 
-        // for LS-- and hadron mix
-        for (size_t i1 = 0; i1 < selected_negTracks_in_this_event.size(); i1++) {
-          auto neg1 = selected_negTracks_in_this_event[i1];
-          for (size_t i2 = i1 + 1; i2 < selected_negTracks_in_this_event.size(); i2++) {
-            auto neg2 = selected_negTracks_in_this_event[i2];
+          // for LS-- and hadron mix
+          for (size_t i1 = 0; i1 < selected_negTracks_in_this_event.size(); i1++) {
+            auto neg1 = selected_negTracks_in_this_event[i1];
+            for (size_t i2 = i1 + 1; i2 < selected_negTracks_in_this_event.size(); i2++) {
+              auto neg2 = selected_negTracks_in_this_event[i2];
 
-            for (const auto& mix_dfId_collisionId : collisionIds_in_mixing_pool_hadron) {
-              int mix_dfId = mix_dfId_collisionId.first;
-              int mix_collisionId = mix_dfId_collisionId.second;
-              if (collision.globalIndex() == mix_collisionId && ndf == mix_dfId) { // this never happens. only protection.
-                continue;
-              }
-              auto globalBC_mix = map_mixed_eventId_to_globalBC[mix_dfId_collisionId];
-              uint64_t diffBC = std::max(collision.globalBC(), globalBC_mix) - std::min(collision.globalBC(), globalBC_mix);
-              fRegistry.fill(HIST("DileptonHadron/mix/hDiffBC"), diffBC);
-              if (diffBC < ndiff_bc_mix) {
-                continue;
-              }
+              for (const auto& mix_dfId_collisionId : collisionIds_in_mixing_pool_hadron) {
+                int mix_dfId = mix_dfId_collisionId.first;
+                int mix_collisionId = mix_dfId_collisionId.second;
+                if (collision.globalIndex() == mix_collisionId && ndf == mix_dfId) { // this never happens. only protection.
+                  continue;
+                }
+                auto globalBC_mix = map_mixed_eventId_to_globalBC[mix_dfId_collisionId];
+                uint64_t diffBC = std::max(collision.globalBC(), globalBC_mix) - std::min(collision.globalBC(), globalBC_mix);
+                fRegistry.fill(HIST("DileptonHadron/mix/hDiffBC"), diffBC);
+                if (diffBC < ndiff_bc_mix) {
+                  continue;
+                }
 
-              auto refTracks_from_event_pool = emh_ref->GetTracksPerCollision(mix_dfId_collisionId);
-              for (const auto& ref : refTracks_from_event_pool) {
-                fillDileptonHadron<1>(neg1, neg2, cut, ref);
-              }
+                auto refTracks_from_event_pool = emh_ref->GetTracksPerCollision(mix_dfId_collisionId);
+                for (const auto& ref : refTracks_from_event_pool) {
+                  fillDileptonHadron<1>(neg1, neg2, cut, ref);
+                }
 
-            } // end of loop over mixed event pool for dilepton-hadron
+              } // end of loop over mixed event pool for dilepton-hadron
+            }
           }
         }
 

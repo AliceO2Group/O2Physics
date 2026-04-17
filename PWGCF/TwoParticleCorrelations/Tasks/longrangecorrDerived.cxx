@@ -16,52 +16,27 @@
 /// \since November 05, 2025
 
 #include "PWGCF/Core/CorrelationContainer.h"
-#include "PWGCF/Core/PairCuts.h"
-#include "PWGCF/DataModel/CorrelationsDerived.h"
 #include "PWGCF/TwoParticleCorrelations/DataModel/LongRangeDerived.h"
-#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 #include "PWGUD/Core/SGSelector.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/FT0Corrected.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponseITS.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "CommonConstants/MathConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DetectorsCommonDataFormats/AlignParam.h"
-#include "FT0Base/Geometry.h"
-#include "FV0Base/Geometry.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/PID.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include <TComplex.h>
-#include <TH1F.h>
-#include <TMath.h>
-#include <TPDGCode.h>
-
-#include <chrono>
+#include <cstdint>
 #include <cstdio>
 #include <experimental/type_traits>
-#include <memory>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -85,6 +60,7 @@ struct LongrangecorrDerived {
   Configurable<int> cfgV0Mask{"cfgV0Mask", 0, "Selection bitmask for the V0 particle"};
   Configurable<float> cfgVtxCut{"cfgVtxCut", 10.0f, "Vertex Z range to consider"};
   Configurable<bool> isUseCentEst{"isUseCentEst", false, "Centrality based classification"};
+  Configurable<int> isUseDataLikeMult{"isUseDataLikeMult", 0, "Data like mult/cent classification"};
 
   Configurable<float> cfgFv0Cut{"cfgFv0Cut", 50.0f, "FV0A threshold"};
   Configurable<float> cfgFt0aCut{"cfgFt0aCut", 100.0f, "FT0A threshold"};
@@ -125,6 +101,12 @@ struct LongrangecorrDerived {
   using MftbestTrksTable = aod::LRMftBestTracks;
   using V0TrksTable = aod::LRV0Tracks;
 
+  using McCollsTable = aod::LRMcCollisions;
+  using McTrksTable = aod::LRMidMcTracks;
+  using McMftTrksTable = aod::LRMftMcTracks;
+  using McFt0aTrksTable = aod::LRFt0aMcTracks;
+  using McFt0cTrksTable = aod::LRFt0cMcTracks;
+
   using UpcCollsTable = soa::Join<aod::UpcLRCollisions, aod::UpcSgLRCollisions, aod::LRZdcs>;
   using TrksUpcTable = aod::UpcLRMidTracks;
   using MftTrksUpcTable = aod::UpcLRMftTracks;
@@ -146,6 +128,11 @@ struct LongrangecorrDerived {
   Preslice<Ft0aTrksUpcTable> perUpcColFt0a = aod::lrcorrtrktable::upcLRCollisionId;
   Preslice<Ft0cTrksUpcTable> perUpcColFt0c = aod::lrcorrtrktable::upcLRCollisionId;
   Preslice<V0TrksUpcTable> perUpcColV0 = aod::lrcorrtrktable::upcLRCollisionId;
+
+  Preslice<McTrksTable> perMcColTpc = aod::lrcorrmctrktable::lrMcCollisionId;
+  Preslice<McMftTrksTable> perMcColMft = aod::lrcorrmctrktable::lrMcCollisionId;
+  Preslice<McFt0aTrksTable> perMcColFt0a = aod::lrcorrmctrktable::lrMcCollisionId;
+  Preslice<McFt0cTrksTable> perMcColFt0c = aod::lrcorrmctrktable::lrMcCollisionId;
 
   void init(InitContext const&)
   {
@@ -195,7 +182,7 @@ struct LongrangecorrDerived {
     if constexpr (std::experimental::is_detected<HasCent, TCollision>::value) {
       histos.fill(HIST("hCentrality"), col.centrality());
     }
-    histos.fill(HIST("hVertexZ"), col.zvtx());
+    histos.fill(HIST("hVertexZ"), col.posZ());
   }
 
   template <typename TTrack>
@@ -298,7 +285,7 @@ struct LongrangecorrDerived {
   template <typename TCollision, typename TTriggers, typename TAssocs>
   void processSame(TCollision const& col, TTriggers const& triggers, TAssocs const& assocs)
   {
-    if (std::abs(col.zvtx()) >= cfgVtxCut) {
+    if (std::abs(col.posZ()) >= cfgVtxCut) {
       return;
     }
     fillCollQA(col);
@@ -311,7 +298,7 @@ struct LongrangecorrDerived {
     } else {
       multiplicity = col.multiplicity();
     }
-    fillCorrHist<CorrelationContainer::kCFStepReconstructed>(same, triggers, assocs, false, col.zvtx(), multiplicity, 1.0);
+    fillCorrHist<CorrelationContainer::kCFStepReconstructed>(same, triggers, assocs, false, col.posZ(), multiplicity, 1.0);
   } // process same
 
   template <typename TCollision, typename... TrackTypes>
@@ -336,7 +323,7 @@ struct LongrangecorrDerived {
       }
       return multiplicity;
     };
-    using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::lrcorrcolltable::Zvtx, decltype(getMultiplicity)>;
+    using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
     MixedBinning binningOnVtxAndMult{{getMultiplicity}, {axisVtxZME, axisMultME}, true};
     auto tracksTuple = std::make_tuple(std::forward<TrackTypes>(tracks)...);
     using TupleAtrack = std::tuple_element<0, decltype(tracksTuple)>::type;
@@ -350,18 +337,60 @@ struct LongrangecorrDerived {
         }
       }
       float eventweight = 1.0f / it.currentWindowNeighbours();
-      auto multiplicity = 1.0f;
-      if constexpr (std::experimental::is_detected<HasCent, TCollision>::value) {
-        if (isUseCentEst)
-          multiplicity = col1.centrality();
-        else
-          multiplicity = col1.multiplicity();
-      } else {
-        multiplicity = col1.multiplicity();
-      }
-      fillCorrHist<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, true, col1.zvtx(), multiplicity, eventweight);
+      auto multiplicity = getMultiplicity(col1);
+      fillCorrHist<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, true, col1.posZ(), multiplicity, eventweight);
     } // pair loop
   } // process mixed
+
+  template <typename TTriggers, typename TAssocs>
+  void processMcSame(McCollsTable::iterator const& mccollision, soa::SmallGroups<aod::LRCollisionsWithLabel> const& collisions, TTriggers const& triggers, TAssocs const& assocs)
+  {
+    if (std::abs(mccollision.posZ()) >= cfgVtxCut) {
+      return;
+    }
+    fillCollQA(mccollision);
+    auto multiplicity = mccollision.multiplicity();
+    if (isUseDataLikeMult > 0) {
+      for (const auto& collision : collisions) {
+        if (isUseCentEst)
+          multiplicity = collision.centrality();
+        else
+          multiplicity = collision.multiplicity();
+      }
+    }
+    fillCorrHist<CorrelationContainer::kCFStepAll>(same, triggers, assocs, false, mccollision.posZ(), multiplicity, 1.0);
+  } // process MC same
+
+  template <typename... TrackTypes>
+  void processMcMixed(McCollsTable const& mccollisions, aod::LRCollisionsWithLabel const& collisions, TrackTypes&&... tracks)
+  {
+    bool useMCMultiplicity = (isUseDataLikeMult == 0);
+    auto getMultiplicity =
+      [&collisions, &useMCMultiplicity, this](auto& col) {
+        if (useMCMultiplicity)
+          return col.multiplicity();
+        auto groupedCollisions = collisions.sliceByCached(aod::lrcorrcolltable::lrMcCollisionId, col.globalIndex(), this->cache);
+        if (groupedCollisions.size() == 0)
+          return -1.0f;
+        if (isUseCentEst)
+          return groupedCollisions.begin().centrality();
+        else
+          return groupedCollisions.begin().multiplicity();
+      };
+
+    using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::mccollision::PosZ, decltype(getMultiplicity)>;
+    MixedBinning binningOnVtxAndMult{{getMultiplicity}, {axisVtxZME, axisMultME}, true};
+    auto tracksTuple = std::make_tuple(std::forward<TrackTypes>(tracks)...);
+    using TupleAtrack = std::tuple_element<0, decltype(tracksTuple)>::type;
+    using TupleBtrack = std::tuple_element<std::tuple_size_v<decltype(tracksTuple)> - 1, decltype(tracksTuple)>::type;
+    Pair<McCollsTable, TupleAtrack, TupleBtrack, MixedBinning> pairs{binningOnVtxAndMult, cfgNmixedevent, -1, mccollisions, tracksTuple, &cache};
+    for (auto it = pairs.begin(); it != pairs.end(); it++) {
+      auto& [col1, tracks1, col2, tracks2] = *it;
+      float eventweight = 1.0f / it.currentWindowNeighbours();
+      auto multiplicity = getMultiplicity(col1);
+      fillCorrHist<CorrelationContainer::kCFStepAll>(mixed, tracks1, tracks2, true, col1.posZ(), multiplicity, eventweight);
+    } // pair loop
+  } // process MC mixed
 
   void processTpcft0aSE(CollsTable::iterator const& col, TrksTable const& tracks, Ft0aTrksTable const& ft0as)
   {
@@ -570,6 +599,46 @@ struct LongrangecorrDerived {
     processMixed(cols, tracks, mfts);
   }
 
+  void processMcTpcft0aSE(McCollsTable::iterator const& mccollision, soa::SmallGroups<aod::LRCollisionsWithLabel> const& collisions, McTrksTable const& tracks, McFt0aTrksTable const& ft0as)
+  {
+    processMcSame(mccollision, collisions, tracks, ft0as);
+  }
+
+  void processMcTpcft0cSE(McCollsTable::iterator const& mccollision, soa::SmallGroups<aod::LRCollisionsWithLabel> const& collisions, McTrksTable const& tracks, McFt0cTrksTable const& ft0cs)
+  {
+    processMcSame(mccollision, collisions, tracks, ft0cs);
+  }
+
+  void processMcTpcmftSE(McCollsTable::iterator const& mccollision, soa::SmallGroups<aod::LRCollisionsWithLabel> const& collisions, McTrksTable const& tracks, McMftTrksTable const& mfts)
+  {
+    processMcSame(mccollision, collisions, tracks, mfts);
+  }
+
+  void processMcMftft0aSE(McCollsTable::iterator const& mccollision, soa::SmallGroups<aod::LRCollisionsWithLabel> const& collisions, McMftTrksTable const& mfts, McFt0aTrksTable const& ft0as)
+  {
+    processMcSame(mccollision, collisions, mfts, ft0as);
+  }
+
+  void processMcTpcft0aME(McCollsTable const& mccollisions, aod::LRCollisionsWithLabel const& collisions, McTrksTable const& tracks, McFt0aTrksTable const& ft0as)
+  {
+    processMcMixed(mccollisions, collisions, tracks, ft0as);
+  }
+
+  void processMcTpcft0cME(McCollsTable const& mccollisions, aod::LRCollisionsWithLabel const& collisions, McTrksTable const& tracks, McFt0cTrksTable const& ft0cs)
+  {
+    processMcMixed(mccollisions, collisions, tracks, ft0cs);
+  }
+
+  void processMcTpcmftME(McCollsTable const& mccollisions, aod::LRCollisionsWithLabel const& collisions, McTrksTable const& tracks, McMftTrksTable const& mfts)
+  {
+    processMcMixed(mccollisions, collisions, tracks, mfts);
+  }
+
+  void processMcMftft0aME(McCollsTable const& mccollisions, aod::LRCollisionsWithLabel const& collisions, McMftTrksTable const& mfts, McFt0aTrksTable const& ft0as)
+  {
+    processMcMixed(mccollisions, collisions, mfts, ft0as);
+  }
+
   PROCESS_SWITCH(LongrangecorrDerived, processTpcft0aSE, "same event TPC vs FT0A", false);
   PROCESS_SWITCH(LongrangecorrDerived, processTpcft0aME, "mixed event TPC vs FT0A", false);
   PROCESS_SWITCH(LongrangecorrDerived, processTpcft0cSE, "same event TPC vs FT0C", false);
@@ -606,6 +675,14 @@ struct LongrangecorrDerived {
   PROCESS_SWITCH(LongrangecorrDerived, processUpcMftbestft0aME, "mixed UPC event best MFT vs FT0A", false);
   PROCESS_SWITCH(LongrangecorrDerived, processUpcV0mftbestSE, "same UPC event V0 vs best MFT", false);
   PROCESS_SWITCH(LongrangecorrDerived, processUpcV0mftbestME, "mixed UPC event V0 vs best MFT", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMcTpcft0aSE, "same MC event TPC vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMcTpcft0aME, "mixed MC event TPC vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMcTpcft0cSE, "same MC event TPC vs FT0C", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMcTpcft0cME, "mixed MC event TPC vs FT0C", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMcTpcmftSE, "same MC event TPC vs MFT", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMcTpcmftME, "mixed MC event TPC vs MFT", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMcMftft0aSE, "same MC event MFT vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMcMftft0aME, "mixed MC event MFT vs FT0A", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -19,28 +19,21 @@
 #ifndef PWGLF_DATAMODEL_SPECTRATOF_H_
 #define PWGLF_DATAMODEL_SPECTRATOF_H_
 
-#include "PWGLF/DataModel/LFParticleIdentification.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/FT0Corrected.h"
-#include "Common/DataModel/Multiplicity.h"
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StaticFor.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/DataTypes.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include "TPDGCode.h"
+#include <TH2.h>
+#include <TPDGCode.h>
 
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <memory>
+#include <string_view>
 
 static constexpr o2::track::PID::ID Np = 9;
 static constexpr int NCharges = 2;

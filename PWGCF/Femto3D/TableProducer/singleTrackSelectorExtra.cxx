@@ -15,13 +15,14 @@
 
 // this task produces a dummy "SingleCollExtras" table that is now required in the analysis tasks. Needed to have a compatibility with old der. data
 
-#include <fairlogger/Logger.h>
-#include <Framework/AnalysisDataModel.h>
-
 #include "PWGCF/Femto3D/DataModel/singletrackselector.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cstdint>
 
 using namespace o2;
 using namespace o2::framework;
