@@ -85,6 +85,10 @@ DECLARE_SOA_COLUMN(SoftPhi, softPhi, float);
 DECLARE_SOA_TABLE(MiniSplittings, "AOD", "MINISPL",
                   MiniJetId, SplitId, DeltaR, PtSoft, PtHard, SoftEta, SoftPhi, JetPt);
 
+// Inclusive splittings for all accepted jets (det or part), independent of matching
+DECLARE_SOA_TABLE(MiniSplittingsAll, "AOD", "MINISPLA",
+                  MiniJetId, SplitId, DeltaR, PtSoft, PtHard, SoftEta, SoftPhi, JetPt);
+
 // Jet-jet matching (MC)
 DECLARE_SOA_COLUMN(MatchDR, matchDR, float);
 DECLARE_SOA_COLUMN(MatchRelPt, matchRelPt, float);
@@ -293,6 +297,7 @@ struct JetLundPlaneUnfolding {
   Produces<aod::MiniCollisions> outMiniCollisions;
   Produces<aod::MiniJets> outMiniJets;
   Produces<aod::MiniSplittings> outMiniSplittings;
+  Produces<aod::MiniSplittingsAll> outMiniSplittingsAll;
   Produces<aod::MiniJetMatches> outMiniJetMatches;
 
   // FastJet reclustering setup (C/A)
@@ -542,6 +547,11 @@ struct JetLundPlaneUnfolding {
         for (auto const& s : spl) {
           outMiniSplittings(miniJetIdx, sid++, s.deltaR, s.ptSoft, s.ptHard, s.softEta, s.softPhi, jet.pt());
         }
+
+        uint16_t sidAll = 0;
+        for (auto const& s : spl) {
+          outMiniSplittingsAll(miniJetIdx, sidAll++, s.deltaR, s.ptSoft, s.ptHard, s.softEta, s.softPhi, jet.pt());
+        }
       }
     }
   }
@@ -606,6 +616,11 @@ struct JetLundPlaneUnfolding {
 
         outMiniJets(partMiniCollIdx, /*level*/ JetLevel::Part, partJet.r(), partJet.pt(), partJet.eta(), partJet.phi());
         partJetToMiniJetIdx[truthJetKey] = outMiniJets.lastIndex();
+
+        uint16_t sidAll = 0;
+        for (auto const& s : spl) {
+          outMiniSplittingsAll(partJetToMiniJetIdx[truthJetKey], sidAll++, s.deltaR, s.ptSoft, s.ptHard, s.softEta, s.softPhi, partJet.pt());
+        }
       }
 
       if (!partJet.has_matchedJetGeo()) {
@@ -674,6 +689,11 @@ struct JetLundPlaneUnfolding {
 
         outMiniJets(detMiniCollIdx, /*level*/ JetLevel::Det, detJet.r(), detJet.pt(), detJet.eta(), detJet.phi());
         detJetToMiniJetIdx[detJetKey] = outMiniJets.lastIndex();
+
+        uint16_t sidAll = 0;
+        for (auto const& s : detSpl) {
+          outMiniSplittingsAll(detJetToMiniJetIdx[detJetKey], sidAll++, s.deltaR, s.ptSoft, s.ptHard, s.softEta, s.softPhi, detJet.pt());
+        }
       }
 
       if (!detJet.has_matchedJetGeo()) {
