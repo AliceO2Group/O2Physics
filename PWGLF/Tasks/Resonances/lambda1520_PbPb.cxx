@@ -861,45 +861,45 @@ struct lambdaAnalysis_pb {
 
       std::array<float, 3> pvec = {part.px(), part.py(), part.pz()};
       float mass = RecoDecay::m(pvec, part.e());
-      auto mMassLambda1520 = o2::constants::physics::MassLambda1520;
+
       if (pdg == 2212) {
-        ptSq = (ptRef * ptRef) + (mass * mass) - (mMassLambda1520 * mMassLambda1520);
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
         if (ptSq > 0)
           histos.fill(HIST("SignalLoss/hGen_mT_scaled_Proton"), std::sqrt(ptSq), centrality);
       } else if (pdg == -2212) {
-        ptSq = (ptRef * ptRef) + (mass * mass) - (mMassLambda1520 * mMassLambda1520);
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
         if (ptSq > 0)
           histos.fill(HIST("SignalLoss/hGen_mT_scaled_AntiProton"), std::sqrt(ptSq), centrality);
       } else if (pdg == 3122) {
-        ptSq = (ptRef * ptRef) + (mass * mass) - (mMassLambda1520 * mMassLambda1520);
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
         if (ptSq > 0)
           histos.fill(HIST("SignalLoss/hGen_mT_scaled_Lambda0"), std::sqrt(ptSq), centrality);
       } else if (pdg == -3122) {
-        ptSq = (ptRef * ptRef) + (mass * mass) - (mMassLambda1520 * mMassLambda1520);
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
         if (ptSq > 0)
           histos.fill(HIST("SignalLoss/hGen_mT_scaled_AntiLambda0"), std::sqrt(ptSq), centrality);
       } else if (pdg == 3312) {
-        ptSq = (ptRef * ptRef) + (mass * mass) - (mMassLambda1520 * mMassLambda1520);
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
         if (ptSq > 0)
           histos.fill(HIST("SignalLoss/hGen_mT_scaled_XiMinus"), std::sqrt(ptSq), centrality);
       } else if (pdg == -3312) {
-        ptSq = (ptRef * ptRef) + (mass * mass) - (mMassLambda1520 * mMassLambda1520);
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
         if (ptSq > 0)
           histos.fill(HIST("SignalLoss/hGen_mT_scaled_XiPlus"), std::sqrt(ptSq), centrality);
       } else if (pdg == 3322) {
-        ptSq = (ptRef * ptRef) + (mass * mass) - (mMassLambda1520 * mMassLambda1520);
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
         if (ptSq > 0)
           histos.fill(HIST("SignalLoss/hGen_mT_scaled_Xi0"), std::sqrt(ptSq), centrality);
       } else if (pdg == -3322) {
-        ptSq = (ptRef * ptRef) + (mass * mass) - (mMassLambda1520 * mMassLambda1520);
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
         if (ptSq > 0)
           histos.fill(HIST("SignalLoss/hGen_mT_scaled_AntiXi0"), std::sqrt(ptSq), centrality);
       } else if (pdg == 3334) {
-        ptSq = (ptRef * ptRef) + (mass * mass) - (mMassLambda1520 * mMassLambda1520);
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
         if (ptSq > 0)
           histos.fill(HIST("SignalLoss/hGen_mT_scaled_OmegaMinus"), std::sqrt(ptSq), centrality);
       } else if (pdg == -3334) {
-        ptSq = (ptRef * ptRef) + (mass * mass) - (mMassLambda1520 * mMassLambda1520);
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
         if (ptSq > 0)
           histos.fill(HIST("SignalLoss/hGen_mT_scaled_OmegaPlus"), std::sqrt(ptSq), centrality);
       }
