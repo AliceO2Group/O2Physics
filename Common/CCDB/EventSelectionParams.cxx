@@ -16,7 +16,7 @@
 
 // o2-linter: disable=name/workflow-file
 
-#include "Common/CCDB/EventSelectionParams.h"
+#include "EventSelectionParams.h"
 
 #include <cstddef>
 #include <cstring>
