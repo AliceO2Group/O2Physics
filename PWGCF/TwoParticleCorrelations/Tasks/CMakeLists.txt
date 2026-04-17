@@ -98,6 +98,16 @@ o2physics_add_dpl_workflow(nuclei-balance
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(lambdacascadecorrelation
+                           SOURCES Lambdacascadecorrelation.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(particle-origin-analysis
+                           SOURCES particleOriginAnalysis.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(corr-ft0nch
                            SOURCES corrFT0Nch.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::AnalysisCCDB O2Physics::GFWCore
