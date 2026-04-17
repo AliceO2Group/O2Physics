@@ -104,7 +104,7 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
   try {
     mLUTData[ipdg] = FlatLutData::loadFromFile(lutFile, localFilename.c_str());
 
-    // // Validate header
+    // Validate header
     auto header = mLUTData[ipdg].getHeader();
     if (header.pdg != pdg && !checkSpecialCase(pdg, header)) {
       LOGF(error, "LUT header PDG mismatch: expected %d, got %d; not loading", pdg, header.pdg);
