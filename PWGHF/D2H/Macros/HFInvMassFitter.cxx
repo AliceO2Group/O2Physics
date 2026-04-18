@@ -19,6 +19,8 @@
 /// \author Oleksii Lubynets <oleksii.lubynets@cern.ch>
 /// \author Phil Stahlhut <phil.lennart.stahlhut@cern.ch>
 
+// o2-linter: disable=name/workflow-file (not an O2Physics workflow)
+
 #include "HFInvMassFitter.h"
 
 #include <RooAddPdf.h>
