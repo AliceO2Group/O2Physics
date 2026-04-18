@@ -39,6 +39,7 @@
 #include <TDatabasePDG.h>
 #include <TLine.h>
 #include <TPaveText.h>
+#include <TRandom3.h>
 #include <TString.h>
 #include <TStyle.h>
 #include <TVirtualPad.h>
@@ -129,12 +130,18 @@ HFInvMassFitter::HFInvMassFitter(TH1* histoToFit,
                                                    mIntegralSgn(0),
                                                    mHistoTemplateRefl(nullptr),
                                                    mDrawBgPrefit(false),
-                                                   mHighlightPeakRegion(false)
+                                                   mHighlightPeakRegion(false),
+                                                   mRandomSeed(-1),
+                                                   mRandomGen(nullptr)
 {
   // standard constructor
   mHistoInvMass = histoToFit;
   mHistoInvMass->SetName("mHistoInvMass");
   mHistoInvMass->SetDirectory(nullptr);
+  if (mRandomSeed >= 0) {
+    mRandomGen = new TRandom3();
+    mRandomGen->SetSeed(mRandomSeed);
+  }
 }
 
 HFInvMassFitter::~HFInvMassFitter()
@@ -990,4 +997,28 @@ void HFInvMassFitter::setTemplateReflections(TH1* histoRefl)
   }
   mHistoTemplateRefl = histoRefl;
   mHistoTemplateRefl->SetName("mHistoTemplateRefl");
+}
+
+double HFInvMassFitter::randomizeInitialParameter(const ParameterRanges& parameterRanges)
+{
+  constexpr double DefaultSigmaFraction{10.};
+  constexpr int MaximalNumberOfIterations{20};
+
+  if (mRandomSeed < 0) {
+    return parameterRanges.initial;
+  }
+  const auto sigma = parameterRanges.sigma < 0 ? (parameterRanges.upper - parameterRanges.lower) / DefaultSigmaFraction : parameterRanges.sigma;
+
+  double result;
+  int nIter{0};
+  do {
+    result = mRandomGen->Gaus(parameterRanges.initial, sigma);
+    ++nIter;
+    if (nIter > MaximalNumberOfIterations) {
+      printf("randomizeInitialFitParameter() - long while loop with lower = %f upper = %f initial = %f sigma = %f\n", parameterRanges.lower, parameterRanges.upper, parameterRanges.initial, sigma);
+      throw std::runtime_error("");
+    }
+  } while (result < parameterRanges.lower || result > parameterRanges.upper);
+
+  return result;
 }

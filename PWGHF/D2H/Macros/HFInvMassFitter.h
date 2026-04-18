@@ -28,6 +28,7 @@
 #include <TF1.h>
 #include <TH1.h>
 #include <TNamed.h>
+#include <TRandom3.h>
 #include <TVirtualPad.h>
 
 #include <Rtypes.h>
@@ -39,6 +40,14 @@
 
 class HFInvMassFitter : public TNamed
 {
+ private:
+  struct ParameterRanges {
+    double lower{};
+    double upper{};
+    double initial{};
+    double sigma{-999.};
+  };
+
  public:
   enum TypeOfBkgPdf {
     Expo = 0,
@@ -141,6 +150,7 @@ class HFInvMassFitter : public TNamed
   HFInvMassFitter& operator=(const HFInvMassFitter& source);
   void fillWorkspace(RooWorkspace& w) const;
   void highlightPeakRegion(const RooPlot* plot, Color_t color = kGray + 1, Width_t width = 1, Style_t style = 2) const;
+  double randomizeInitialParameter(const ParameterRanges& parameterRanges);
 
   TH1* mHistoInvMass; // histogram to fit
   std::string mFitOption;
@@ -212,6 +222,8 @@ class HFInvMassFitter : public TNamed
   TH1* mHistoTemplateRefl;   /// reflection histogram
   bool mDrawBgPrefit;        /// draw background after fitting the sidebands
   bool mHighlightPeakRegion; /// draw vertical lines showing the peak region (usually +- 3 sigma)
+  int mRandomSeed;           /// seed for random engine for fit's initial parameters randomization
+  TRandom3* mRandomGen;      /// engine for fit's initial parameters randomization
 
   ClassDefOverride(HFInvMassFitter, 1);
 };
