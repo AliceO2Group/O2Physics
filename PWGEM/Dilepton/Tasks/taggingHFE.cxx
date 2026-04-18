@@ -80,8 +80,10 @@ struct taggingHFE {
                              aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
   using MyTracksWithMCLabel = soa::Join<MyTracks, aod::McTrackLabels, aod::mcTPCTuneOnData>;
 
-  using MyV0s = soa::Join<aod::V0Datas, aod::V0Covs, aod::V0TOFNSigmas, aod::V0CoreMCLabels>;
-  using MyCascades = soa::Join<aod::CascDatas, aod::CascCovs, aod::CascTOFNSigmas, aod::CascCoreMCLabels>;
+  // using MyV0s = soa::Join<aod::V0Datas, aod::V0Covs, aod::V0TOFNSigmas, aod::V0CoreMCLabels>;
+  // using MyCascades = soa::Join<aod::CascDatas, aod::CascCovs, aod::CascTOFNSigmas, aod::CascCoreMCLabels>;
+  using MyV0s = soa::Join<aod::V0Datas, aod::V0Covs>;
+  using MyCascades = soa::Join<aod::CascDatas, aod::CascCovs>;
 
   struct EBPair { // electron-baryon pair
     float mass{-999.f};
