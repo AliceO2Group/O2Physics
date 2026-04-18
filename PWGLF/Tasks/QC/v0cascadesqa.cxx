@@ -1054,7 +1054,7 @@ struct v0cascadesQA {
   {
     if (!casc.isPhysicalPrimary())
       return false;
-  
+
     bool isBachelorPionPlus = casc.pdgCodeBachelor() == PDG_t::kPiPlus || (doTreatPiToMuon && casc.pdgCodeBachelor() == PDG_t::kMuonPlus);
     bool isBachelorKaonPlus = casc.pdgCodeBachelor() == PDG_t::kKPlus;
     bool isBachelorPionMinus = casc.pdgCodeBachelor() == PDG_t::kPiMinus || (doTreatPiToMuon && casc.pdgCodeBachelor() == PDG_t::kMuonMinus);
@@ -1064,16 +1064,16 @@ struct v0cascadesQA {
     bool isNegativeProton = casc.pdgCodeNegative() == PDG_t::kProtonBar;
     bool isNegativePion = casc.pdgCodeNegative() == PDG_t::kPiMinus || (doTreatPiToMuon && casc.pdgCodeNegative() == PDG_t::kMuonMinus);
 
-    if (cascType == kXiM && casc.pdgCode() != PDG_t::kXiMinus || isPositiveProton || isNegativePion || isBachelorPionMinus) {
+    if (cascType == kXiM && casc.pdgCode() == PDG_t::kXiMinus && isPositiveProton && isNegativePion && isBachelorPionMinus) {
       return true;
     }
-    if (cascType == kXiP && casc.pdgCode() != PDG_t::kXiPlusBar || isPositivePion || isNegativeProton || isBachelorPionPlus) {
+    if (cascType == kXiP && casc.pdgCode() == PDG_t::kXiPlusBar && isPositivePion && isNegativeProton && isBachelorPionPlus) {
       return true;
     }
-    if (cascType == kOmegaM && casc.pdgCode() != PDG_t::kOmegaMinus || isPositiveProton || isNegativePion || isBachelorKaonMinus) {
+    if (cascType == kOmegaM && casc.pdgCode() == PDG_t::kOmegaMinus && isPositiveProton && isNegativePion && isBachelorKaonMinus) {
       return true;
     }
-    if (cascType == kOmegaP && casc.pdgCode() != PDG_t::kOmegaPlusBar || isPositivePion || isNegativeProton || isBachelorKaonPlus) {
+    if (cascType == kOmegaP && casc.pdgCode() == PDG_t::kOmegaPlusBar && isPositivePion && isNegativeProton && isBachelorKaonPlus) {
       return true;
     }
     return false;
@@ -1259,7 +1259,7 @@ struct v0cascadesQA {
   ////////// QA - MC /////////////
   ////////////////////////////////
 
-  void processMonteCarlo(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels>::iterator const& collision, soa::Join<aod::McCollisions, aod::MultsExtraMC> const&, soa::Join<aod::V0Datas, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0CoreMCLabels> const& fullV0s, soa::Join<aod::V0MCDatas, aod::V0MCCollRefs> const&, soa::Join<aod::CascDatas, aod::CascTOFPIDs, aod::CascTOFNSigmas, aod::CascCoreMCLabels> const& fullCascades, soa::Join<aod::CascMCDatas, aod::CascMCCollRefs> const&, DaughterTracks&, aod::BCsWithTimestamps const&)
+    void processMonteCarlo(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels>::iterator const& collision, soa::Join<aod::McCollisions, aod::MultsExtraMC> const&, soa::Join<aod::V0Datas, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0CoreMCLabels> const& fullV0s, soa::Join<aod::V0MCDatas, aod::V0MCCollRefs> const&, soa::Join<aod::CascDatas, aod::CascTOFPIDs, aod::CascTOFNSigmas, aod::CascCoreMCLabels> const& fullCascades, soa::Join<aod::CascMCDatas, aod::CascMCCollRefs> const&, DaughterTracks const&, aod::BCsWithTimestamps const&)
   {
     if (!isEventAccepted(collision, false)) {
       return;
