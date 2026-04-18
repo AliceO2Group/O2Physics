@@ -1139,8 +1139,9 @@ double HFInvMassFitter::randomizeInitialParameter(const ParameterRanges& paramet
     result = mRandomGen->Gaus(parameterRanges.initial, sigma);
     ++nIter;
     if (nIter > MaximalNumberOfIterations) {
-      printf("randomizeInitialParameter() - long while loop with lower = %f upper = %f initial = %f sigma = %f\n", parameterRanges.lower, parameterRanges.upper, parameterRanges.initial, sigma);
-      throw;
+      char errorMessage[200];
+      std::snprintf(errorMessage, sizeof(errorMessage), "randomizeInitialParameter() - long while loop with lower = %f upper = %f initial = %f sigma = %f\n", parameterRanges.lower, parameterRanges.upper, parameterRanges.initial, sigma);
+      throw std::runtime_error(errorMessage);
     }
   } while (result < parameterRanges.lower || result > parameterRanges.upper);
 
