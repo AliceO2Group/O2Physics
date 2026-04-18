@@ -30,12 +30,12 @@
 using namespace o2;
 using namespace o2::framework;
 
-// using UDCollisionsFull = soa::Join<
-  // aod::UDCollisions,
-  // aod::UDCollisionsSels,
-  // aod::UDCollisionSelExtras>;
+using UDCollisionsFull = soa::Join<
+  aod::UDCollisions,
+  aod::UDCollisionsSels,
+  aod::UDCollisionSelExtras>;
 
-using UDCollisionsFull = aod::UDCollisions;
+// using UDCollisionsFull = aod::UDCollisions;
 
 struct UpcTestFITBitMapping {
 	
@@ -45,7 +45,7 @@ struct UpcTestFITBitMapping {
   Configurable<int>  maxEvents{"maxEvents", -1, "Process at most this many collisions (-1 = all)"};
   Configurable<int>  debugPrintEvery{"debugPrintEvery", 1000, "Print every N events (-1 disables)"};
   Configurable<int>  debugPrintFirst{"debugPrintFirst", 10, "Always print first N events"};
-  Configurable<bool> useRctFlag{"useRctFlag", false, "use RCT flags for event selection"};
+  Configurable<bool> useRctFlag{"useRctFlag", true, "use RCT flags for event selection"};
   Configurable<int>  cutRctFlag{"cutRctFlag", 0, "0 = off, 1 = CBT, 2 = CBT+ZDC, 3 = CBThadron, 4 = CBThadron+ZDC"};
 
   struct OffsetXYZ {
@@ -63,7 +63,7 @@ struct UpcTestFITBitMapping {
   HistogramRegistry registry{
     "registry",
     {
-      {"debug/hEventCounter", "Event counter;step;events", {HistType::kTH1F, {{6, -0.5, 5.5}}}},
+      {"debug/hEventCounter", "Event counter;step;events", {HistType::kTH1F, {{10, -0.5, 9.5}}}},
       {"debug/hFitBitsSize", "fitBits.size() per collision;fitBits.size();events", {HistType::kTH1F, {{10, -0.5, 9.5}}}},
       {"debug/hCollisionIndexMod", "Collision index mod 100;collision.globalIndex() % 100;events", {HistType::kTH1F, {{100, -0.5, 99.5}}}},
 
@@ -76,7 +76,7 @@ struct UpcTestFITBitMapping {
       {"map/hEtaPhiC", "FT0C #eta vs #varphi;#eta;#varphi", {HistType::kTH2F, {{8, -3.5, -2.0}, {18, 0.0, 2. * M_PI}}}},
 
       {"mult/hPnFT0A", "P(n): FT0A fired-channel multiplicity;N_{fired}^{FT0A};events", {HistType::kTH1F, {{97, -0.5, 96.5}}}},
-      {"mult/hPnFT0C", "P(n): FT0C fired-channel multiplicity;N_{fired}^{FT0C};events", {HistType::kTH1F, {{113, -0.5, 112.5}}}},
+      {"mult/hPnFT0C", "P(n): FT0C fired-channel multiplicity;N_{fired}^{FT0C};events", {HistType::kTH1F, {{50, -0.5, 49.5}}}},
       {"mult/hPnFT0", "P(n): FT0 fired-channel multiplicity;N_{fired}^{FT0};events", {HistType::kTH1F, {{209, -0.5, 208.5}}}},
       {"mult/hPnFV0A", "P(n): FV0A fired-channel multiplicity;N_{fired}^{FV0A};events", {HistType::kTH1F, {{49, -0.5, 48.5}}}},
       {"mult/hPnFIT", "P(n): FIT fired-channel multiplicity;N_{fired}^{FIT};events", {HistType::kTH1F, {{257, -0.5, 256.5}}}},
@@ -96,66 +96,66 @@ struct UpcTestFITBitMapping {
     return n;
   }
 	
-	// template <typename C>
-	// bool isGoodRctFlag(const C& collision)
-	// {
-		// switch (cutRctFlag) {
-			// case 1: // CBT
-				// return sgSelector.isCBTOk(collision);
-			// case 2: // CBT + ZDC
-				// return sgSelector.isCBTZdcOk(collision);
-			// case 3: // CBT hadron
-				// return sgSelector.isCBTHadronOk(collision);
-			// case 4: // CBT hadron + ZDC
-				// return sgSelector.isCBTHadronZdcOk(collision);
-			// default: // no RCT cut applied
-				// return true;
-		// }
-	// }
+	template <typename C>
+	bool isGoodRctFlag(const C& collision)
+	{
+		switch (cutRctFlag) {
+			case 1: // CBT
+				return sgSelector.isCBTOk(collision);
+			case 2: // CBT + ZDC
+				return sgSelector.isCBTZdcOk(collision);
+			case 3: // CBT hadron
+				return sgSelector.isCBTHadronOk(collision);
+			case 4: // CBT hadron + ZDC
+				return sgSelector.isCBTHadronZdcOk(collision);
+			default: // no RCT cut applied
+				return true;
+		}
+	}
 	
 	
-	// template <typename C>
-	// bool collisionPassesCuts(const C& collision)
-	// {
-		// /* good vertex */
-		// if (!collision.vtxITSTPC()) {
-			// return false;
-		// }
-		// registry.fill(HIST("debug/hEventCounter"), 4.);
+	template <typename C>
+	bool collisionPassesCuts(const C& collision)
+	{
+		/* good vertex */
+		if (!collision.vtxITSTPC()) {
+			return false;
+		}
+		registry.fill(HIST("debug/hEventCounter"), 4.);
 
-		// /* same bunch pile-up rejection */
-		// if (!collision.sbp()) {
-			// return false;
-		// }
-		// registry.fill(HIST("debug/hEventCounter"), 5.);
+		/* same bunch pile-up rejection */
+		if (!collision.sbp()) {
+			return false;
+		}
+		registry.fill(HIST("debug/hEventCounter"), 5.);
 
-		// /* ITS ROF rejection */
-		// if (!collision.itsROFb()) {
-			// return false;
-		// }
-		// registry.fill(HIST("debug/hEventCounter"), 6.);
+		/* ITS ROF rejection */
+		if (!collision.itsROFb()) {
+			return false;
+		}
+		registry.fill(HIST("debug/hEventCounter"), 6.);
 
-		// /* Timeframe border collision rejection */
-		// if (!collision.tfb()) {
-			// return false;
-		// }
-		// registry.fill(HIST("debug/hEventCounter"), 7.);
+		/* Timeframe border collision rejection */
+		if (!collision.tfb()) {
+			return false;
+		}
+		registry.fill(HIST("debug/hEventCounter"), 7.);
 
-		// /* z-vertex cut */
-		// if (std::abs(collision.posZ()) > 10.0) {
-			// return false;
-		// }
-		// registry.fill(HIST("debug/hEventCounter"), 8.);
+		/* z-vertex cut */
+		if (std::abs(collision.posZ()) > 10.0) {
+			return false;
+		}
+		registry.fill(HIST("debug/hEventCounter"), 8.);
 		
-		// /* RCT flag check*/
-		// if (useRctFlag) {
-			// if (!isGoodRctFlag(collision)) {
-				// return false;
-			// }
-			// registry.fill(HIST("debug/hEventCounter"), 9.); // passed RCT flag
-		// }
-		// return true;
-	// }
+		/* RCT flag check*/
+		if (useRctFlag) {
+			if (!isGoodRctFlag(collision)) {
+				return false;
+			}
+			registry.fill(HIST("debug/hEventCounter"), 9.); // passed RCT flag
+		}
+		return true;
+	}
 
   void init(InitContext&)
   {
@@ -195,12 +195,11 @@ struct UpcTestFITBitMapping {
     }
 
 		/* Checking collision level cuts */
-		// if (!collisionPassesCuts(collision)) {
-			// return;
-		// }
+		if (!collisionPassesCuts(collision)) {
+			return;
+		}
 
 		/* Only one row per collision is expected. */
-    // auto const& row = *fitBits.begin();
     auto row = fitBits.begin();
 
     udhelpers::Bits256 w{};
