@@ -1080,7 +1080,7 @@ struct v0cascadesQA {
     }
     histos.fill(HIST("histos_event/hEventCounter"), 1.5);
 
-    for (auto& v0 : fullV0s) {
+    for (const auto& v0 : fullV0s) {
       if (std::abs(v0.negativeeta()) > v0Selections.daughterEtaCut || 
           std::abs(v0.positiveeta()) > v0Selections.daughterEtaCut)
         continue; // remove acceptance that's badly reproduced by MC / superfluous in future
@@ -1186,7 +1186,7 @@ struct v0cascadesQA {
       }
     }
 
-    for (auto& casc : fullCascades) {
+    for (const auto& casc : fullCascades) {
       if (std::abs(casc.negativeeta()) > cascSelections.daughterEtaCut || 
           std::abs(casc.positiveeta()) > cascSelections.daughterEtaCut ||
           std::abs(casc.bacheloreta()) > cascSelections.daughterEtaCut)
@@ -1267,7 +1267,7 @@ struct v0cascadesQA {
       return;
     }
 
-    for (auto& v0 : fullV0s) {
+    for (const auto& v0 : fullV0s) {
       if (std::abs(v0.negativeeta()) > v0Selections.daughterEtaCut || 
           std::abs(v0.positiveeta()) > v0Selections.daughterEtaCut)
         continue; // remove acceptance that's badly reproduced by MC / superfluous in future
@@ -1294,7 +1294,7 @@ struct v0cascadesQA {
       }
     }
 
-    for (auto& casc : fullCascades) {
+    for (const auto& casc : fullCascades) {
       if (std::abs(casc.negativeeta()) > cascSelections.daughterEtaCut || 
           std::abs(casc.positiveeta()) > cascSelections.daughterEtaCut ||
           std::abs(casc.bacheloreta()) > cascSelections.daughterEtaCut)
@@ -1373,7 +1373,7 @@ struct v0cascadesQA {
 
     histos.fill(HIST("histos_event/hEventCounterMC"), 1.5);
 
-    for (auto& mcparticle : mcParticles) {
+    for (const auto& mcparticle : mcParticles) {
 
       if (!mcparticle.has_daughters()) {
         continue;
@@ -1381,7 +1381,7 @@ struct v0cascadesQA {
 
       double vx = 0;
       double vy = 0;
-      for (auto& mcparticleDaughter0 : mcparticle.daughters_as<aod::McParticles>()) {
+      for (const auto& mcparticleDaughter0 : mcparticle.daughters_as<aod::McParticles>()) {
         vx = mcparticleDaughter0.vx();
         vy = mcparticleDaughter0.vy();
         if (vx != 0 && vy != 0)
