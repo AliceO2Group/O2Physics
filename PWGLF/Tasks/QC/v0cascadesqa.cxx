@@ -9,7 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
+/// \file v0cascadesqa.cxx
 /// \brief QA task for V0s and Cascades
+///
 ///
 /// In case of questions please write to:
 /// \author Aimeric Landou (aimeric.landou@cern.ch)
