@@ -149,7 +149,8 @@ struct taggingHFE {
     Configurable<float> cfg_max_TPCNsigmaKa{"cfg_max_TPCNsigmaKa", +2, "max n sigma ka in TPC"};
     Configurable<float> cfg_min_TOFNsigmaKa{"cfg_min_TOFNsigmaKa", -2, "min n sigma ka in TOF"};
     Configurable<float> cfg_max_TOFNsigmaKa{"cfg_max_TOFNsigmaKa", +2, "max n sigma ka in TOF"};
-    Configurable<bool> requireTOF{"requireTOF", false, "require TOF hit"};
+    Configurable<bool> requireTOF{"requireTOF", true, "require TOF hit"};
+    Configurable<float> cfg_min_pin_TOFreq{"cfg_min_pin_TOFreq", 0.4, "min pin for TOFreq"};
   } kaonCut;
 
   struct : ConfigurableGroup {
@@ -450,9 +451,15 @@ struct taggingHFE {
     bool is_ka_included_TPC = kaonCut.cfg_min_TPCNsigmaKa < track.tpcNSigmaKa() && track.tpcNSigmaKa() < kaonCut.cfg_max_TPCNsigmaKa;
     bool is_ka_included_TOF = track.hasTOF() ? (kaonCut.cfg_min_TOFNsigmaKa < track.tofNSigmaKa() && track.tofNSigmaKa() < kaonCut.cfg_max_TOFNsigmaKa) : true;
     if (kaonCut.requireTOF) {
-      is_ka_included_TOF = kaonCut.cfg_min_TOFNsigmaKa < track.tofNSigmaKa() && track.tofNSigmaKa() < kaonCut.cfg_max_TOFNsigmaKa;
+      if (track.tpcInnerParam() < kaonCut.cfg_min_pin_TOFreq) {
+        return is_ka_included_TPC;
+      } else {
+        is_ka_included_TOF = kaonCut.cfg_min_TOFNsigmaKa < track.tofNSigmaKa() && track.tofNSigmaKa() < kaonCut.cfg_max_TOFNsigmaKa;
+        return is_ka_included_TPC && is_ka_included_TOF;
+      }
+    } else {
+      return is_ka_included_TPC && is_ka_included_TOF; // TOFif
     }
-    return is_ka_included_TPC && is_ka_included_TOF;
   }
 
   template <typename TTrack>
