@@ -1146,7 +1146,7 @@ struct v0cascadesQA {
           histos.fill(HIST("histos_V0/InvMassK0s_EtaDaughters"), posdau.eta(), negdau.eta(), v0.mK0Short());
           histos.fill(HIST("histos_V0/InvMassK0s_PhiDaughters"), posdau.phi(), negdau.phi(), v0.mK0Short());
           histos.fill(HIST("histos_V0/InvMassK0s_ITSMapDaughters"), posdau.itsNCls(), negdau.itsNCls(), v0.mK0Short());
-          histos.fill(HIST("histos_V0/InvMassK0sVsPtVsPA"), v0.pt(), TMath::ACos(v0.v0cosPA()), v0.mK0Short());
+          histos.fill(HIST("histos_V0/InvMassK0sVsPtVsPA"), v0.pt(), std::acos(v0.v0cosPA()), v0.mK0Short());
         }
       }
 
@@ -1170,7 +1170,7 @@ struct v0cascadesQA {
           histos.fill(HIST("histos_V0/InvMassLambda_EtaDaughters"), posdau.eta(), negdau.eta(), v0.mLambda());
           histos.fill(HIST("histos_V0/InvMassLambda_PhiDaughters"), posdau.phi(), negdau.phi(), v0.mLambda());
           histos.fill(HIST("histos_V0/InvMassLambda_ITSMapDaughters"), posdau.itsNCls(), negdau.itsNCls(), v0.mLambda());
-          histos.fill(HIST("histos_V0/InvMassLambdaVsPtVsPA"), v0.pt(), TMath::ACos(v0.v0cosPA()), v0.mLambda());
+          histos.fill(HIST("histos_V0/InvMassLambdaVsPtVsPA"), v0.pt(), std::acos(v0.v0cosPA()), v0.mLambda());
         }
       }
 
@@ -1194,7 +1194,7 @@ struct v0cascadesQA {
           histos.fill(HIST("histos_V0/InvMassAntiLambda_EtaDaughters"), posdau.eta(), negdau.eta(), v0.mAntiLambda());
           histos.fill(HIST("histos_V0/InvMassAntiLambda_PhiDaughters"), posdau.phi(), negdau.phi(), v0.mAntiLambda());
           histos.fill(HIST("histos_V0/InvMassAntiLambda_ITSMapDaughters"), posdau.itsNCls(), negdau.itsNCls(), v0.mAntiLambda());
-          histos.fill(HIST("histos_V0/InvMassAntiLambdaVsPtVsPA"), v0.pt(), TMath::ACos(v0.v0cosPA()), v0.mAntiLambda());
+          histos.fill(HIST("histos_V0/InvMassAntiLambdaVsPtVsPA"), v0.pt(), std::acos(v0.v0cosPA()), v0.mAntiLambda());
         }
       }
     }
