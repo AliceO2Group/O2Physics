@@ -68,7 +68,7 @@ enum ParticleType : uint8_t { kPhoton = 0,
                               kXiM,
                               kXiP,
                               kOmegaM,
-                              kOmegaP};
+                              kOmegaP };
 
 // using DaughterTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFPr, aod::pidTPCPr, aod::pidTOFKa, aod::pidTPCKa>;
 using DaughterTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa>;
@@ -292,7 +292,7 @@ struct v0cascadesQA {
     ConfigurableAxis axisCascDCABachToPV{"axisCascDCABachToPV", {100, -1.0f, 1.0f}, "DCA bach. to PV (cm)"};
     ConfigurableAxis axisInvMassXi{"axisInvMassXi", {80, 1.28f, 1.36f}, "Inv. mass (GeV/#it{c}%{2})"};
     ConfigurableAxis axisInvMassOmega{"axisInvMassOmega", {80, 1.63f, 1.71f}, "Inv. mass (GeV/#it{c}%{2})"};
-    
+
   } axisConfigurations;
 
   int dauEtaFlag = 0;
@@ -690,7 +690,7 @@ struct v0cascadesQA {
     if (negTrackExtra.itsChi2NCl() > v0Selections.maxITSchi2PerNcls)
       return false;
 
-      // ITS only tag
+    // ITS only tag
     if (v0Selections.requirePosITSonly) {
       if (posTrackExtra.tpcNClsCrossedRows() > 0)
         return false;
@@ -712,7 +712,7 @@ struct v0cascadesQA {
     if (negTrackExtra.tpcChi2NCl() > v0Selections.maxTPCchi2PerNcls)
       return false;
 
-    // check the maximum fraction of allowed shared TPC 
+    // check the maximum fraction of allowed shared TPC
     if (posTrackExtra.tpcFractionSharedCls() > v0Selections.maxFractionTPCSharedClusters)
       return false;
     if (negTrackExtra.tpcFractionSharedCls() > v0Selections.maxFractionTPCSharedClusters)
@@ -745,7 +745,7 @@ struct v0cascadesQA {
       if (std::fabs(negTrackExtra.tpcNSigmaPr()) > v0Selections.tpcPidNsigmaCutLaPr)
         return false;
     }
-    
+
     // TOF Requirement checks
     if (v0Selections.requirePosHasTOF && !v0.positiveHasTOF()) {
       return false;
@@ -808,7 +808,7 @@ struct v0cascadesQA {
     if (negTrackExtra.hasTRD() && negTRDhits < v0Selections.minTRDclusters) {
       return false;
     }
-    
+
     return true;
   }
 
@@ -1032,7 +1032,7 @@ struct v0cascadesQA {
   {
     if (!v0.isPhysicalPrimary())
       return false;
-  
+
     bool isPositiveProton = v0.pdgCodePositive() == PDG_t::kProton;
     bool isPositivePion = v0.pdgCodePositive() == PDG_t::kPiPlus || (doTreatPiToMuon && v0.pdgCodePositive() == PDG_t::kMuonPlus);
     bool isNegativeProton = v0.pdgCodeNegative() == PDG_t::kProtonBar;
@@ -1094,7 +1094,7 @@ struct v0cascadesQA {
     histos.fill(HIST("histos_event/hEventCounter"), 1.5);
 
     for (const auto& v0 : fullV0s) {
-      if (std::abs(v0.negativeeta()) > v0Selections.daughterEtaCut || 
+      if (std::abs(v0.negativeeta()) > v0Selections.daughterEtaCut ||
           std::abs(v0.positiveeta()) > v0Selections.daughterEtaCut)
         continue; // remove acceptance that's badly reproduced by MC / superfluous in future
 
@@ -1200,7 +1200,7 @@ struct v0cascadesQA {
     }
 
     for (const auto& casc : fullCascades) {
-      if (std::abs(casc.negativeeta()) > cascSelections.daughterEtaCut || 
+      if (std::abs(casc.negativeeta()) > cascSelections.daughterEtaCut ||
           std::abs(casc.positiveeta()) > cascSelections.daughterEtaCut ||
           std::abs(casc.bacheloreta()) > cascSelections.daughterEtaCut)
         continue; // remove acceptance that's badly reproduced by MC / superfluous in future
@@ -1255,13 +1255,12 @@ struct v0cascadesQA {
       }
     }
   }
-  
 
   ////////////////////////////////
   ////////// QA - MC /////////////
   ////////////////////////////////
 
-    void processMonteCarlo(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels>::iterator const& collision, soa::Join<aod::McCollisions, aod::MultsExtraMC> const&, soa::Join<aod::V0Datas, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0CoreMCLabels> const& fullV0s, soa::Join<aod::V0MCDatas, aod::V0MCCollRefs> const&, soa::Join<aod::CascDatas, aod::CascTOFPIDs, aod::CascTOFNSigmas, aod::CascCoreMCLabels> const& fullCascades, soa::Join<aod::CascMCDatas, aod::CascMCCollRefs> const&, DaughterTracks const&, aod::BCsWithTimestamps const&)
+  void processMonteCarlo(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels>::iterator const& collision, soa::Join<aod::McCollisions, aod::MultsExtraMC> const&, soa::Join<aod::V0Datas, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0CoreMCLabels> const& fullV0s, soa::Join<aod::V0MCDatas, aod::V0MCCollRefs> const&, soa::Join<aod::CascDatas, aod::CascTOFPIDs, aod::CascTOFNSigmas, aod::CascCoreMCLabels> const& fullCascades, soa::Join<aod::CascMCDatas, aod::CascMCCollRefs> const&, DaughterTracks const&, aod::BCsWithTimestamps const&)
   {
     if (!isEventAccepted(collision, false)) {
       return;
@@ -1281,7 +1280,7 @@ struct v0cascadesQA {
     }
 
     for (const auto& v0 : fullV0s) {
-      if (std::abs(v0.negativeeta()) > v0Selections.daughterEtaCut || 
+      if (std::abs(v0.negativeeta()) > v0Selections.daughterEtaCut ||
           std::abs(v0.positiveeta()) > v0Selections.daughterEtaCut)
         continue; // remove acceptance that's badly reproduced by MC / superfluous in future
 
@@ -1308,7 +1307,7 @@ struct v0cascadesQA {
     }
 
     for (const auto& casc : fullCascades) {
-      if (std::abs(casc.negativeeta()) > cascSelections.daughterEtaCut || 
+      if (std::abs(casc.negativeeta()) > cascSelections.daughterEtaCut ||
           std::abs(casc.positiveeta()) > cascSelections.daughterEtaCut ||
           std::abs(casc.bacheloreta()) > cascSelections.daughterEtaCut)
         continue; // remove acceptance that's badly reproduced by MC / superfluous in future
@@ -1424,7 +1423,6 @@ struct v0cascadesQA {
       }
     }
   }
-
 
   PROCESS_SWITCH(v0cascadesQA, processReconstructed, "Process reconstructed event and V0s+cascades in data", true);
   PROCESS_SWITCH(v0cascadesQA, processMonteCarlo, "Process reconstructed event and V0s+cascades in MC", false);
