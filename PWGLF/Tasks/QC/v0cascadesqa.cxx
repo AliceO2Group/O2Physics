@@ -76,10 +76,6 @@ using DaughterTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA
 struct v0cascadesQA {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry histos_event{"histos_event", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry histos_V0{"histos_V0", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry histos_Casc{"histos_Casc", {}, OutputObjHandlingPolicy::AnalysisObject};
-  
 
   // configurable event properties
   bool isMC = false;
