@@ -445,6 +445,8 @@ struct v0cascadesQA {
       histos.add("histos_Casc/InvMassOmegaPlusTrue", "InvMassOmegaPlusTrue", {HistType::kTH3F, {{100, 0.f, 10.f}, {100, 0.f, 50.f}, {80, 1.63f, 1.71f}}});
       histos.add("histos_Casc/InvMassOmegaMinusTrue", "InvMassOmegaMinusTrue", {HistType::kTH3F, {{100, 0.f, 10.f}, {100, 0.f, 50.f}, {80, 1.63f, 1.71f}}});
     }
+    // inspect histogram sizes, please
+    histos.print();
 
     // Initialise the RCTFlagsChecker
     rctFlagsChecker.init(rctConfigurations.cfgRCTLabel.value, rctConfigurations.cfgCheckZDC, rctConfigurations.cfgTreatLimitedAcceptanceAsBad);
@@ -1398,7 +1400,7 @@ struct v0cascadesQA {
         if (vx != 0 && vy != 0)
           break;
       }
-      double R_Decay = TMath::Sqrt(vx * vx + vy * vy);
+      double R_Decay = std::sqrt(vx * vx + vy * vy);
 
       if (mcparticle.isPhysicalPrimary() && std::abs(mcparticle.y()) < v0Selections.rapidityCut) {
         if (mcparticle.pdgCode() == PDG_t::kK0Short)
