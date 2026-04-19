@@ -155,7 +155,7 @@ struct FlowDecorrelation {
   SliceCache cache;
   ConfigurableAxis axisVertex{"axisVertex", {10, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 10, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260}, "multiplicity axis for histograms"};
-  ConfigurableAxis axisEta{"axisEta", {70, -5.0, 5.0}, "eta axis for histograms"};
+  ConfigurableAxis axisEta{"axisEta", {70, -6.0, 6.0}, "eta axis for histograms"};
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
   ConfigurableAxis axisDeltaEtaTpcFt0a{"axisDeltaEtaTpcFt0a", {32, -5.8, -2.6}, "delta eta axis, -5.8~-2.6 for TPC-FT0A,"};
   ConfigurableAxis axisDeltaEtaTpcFt0c{"axisDeltaEtaTpcFt0c", {32, 1.2, 4.2}, "delta eta axis, 1.2~4.2 for TPC-FT0C"};
@@ -261,7 +261,7 @@ struct FlowDecorrelation {
   std::array<float, 6> tpcNsigmaCut;
   struct Ft0cCConstants {
     double zFt0cDistance = -83.44;
-    double maxWidth = 24.;
+    double maxWidth = 12.;
     double minWidthX = 18.25;
     double minWidhtY = 18.175;
     double insideWidthX = 6.825;
@@ -284,7 +284,7 @@ struct FlowDecorrelation {
     }
     const AxisSpec axisPhi{72, 0.0, constants::math::TwoPI, "#varphi"};
     const AxisSpec axisEta{40, -1., 1., "#eta"};
-    const AxisSpec axisEtaFull{90, -4., 5., "#eta"};
+    const AxisSpec axisEtaFull{90, -6., 6., "#eta"};
     const AxisSpec axisCentrality{20, 0., 100., "cent"};
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
@@ -1072,10 +1072,6 @@ struct FlowDecorrelation {
     if (std::abs(x) < Ft0cLocations.maxWidth && (std::abs(y) > Ft0cLocations.insideWidthX && std::abs(y) < Ft0cLocations.minWidthX))
       return true;
     if (std::abs(y) < Ft0cLocations.maxWidth && (std::abs(x) > Ft0cLocations.insideWidthY && std::abs(x) < Ft0cLocations.minWidhtY))
-      return true;
-    if (std::abs(x) < Ft0cLocations.insideWidthX && (std::abs(y) < Ft0cLocations.maxWidth && std::abs(y) > Ft0cLocations.insideWidthY))
-      return true;
-    if (std::abs(y) < Ft0cLocations.insideWidthY && (std::abs(x) < Ft0cLocations.maxWidth && std::abs(x) > Ft0cLocations.insideWidthX))
       return true;
     return false;
   }
