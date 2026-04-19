@@ -22,6 +22,7 @@
 
 #include "Common/Core/RecoDecay.h"
 
+#include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
@@ -30,7 +31,6 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TMath.h>
 #include <TRandom3.h>
 
 #include <cmath>
@@ -119,37 +119,38 @@ struct JetBackgroundAnalysisTask {
   template <typename TCollisions, typename TJets, typename TTracks>
   void bkgFluctuationsRandomCone(TCollisions const& collision, TJets const& jets, TTracks const& tracks, float centrality)
   {
-    if (jets.size() > 0) { // Since the purpose of the fluctuation measurement is jet correction, events with zero accepted jets (from the jetfinder cuts) are excluded
-      float randomConeEta = randomNumber.Uniform(trackEtaMin + randomConeR, trackEtaMax - randomConeR);
-      float randomConePhi = randomNumber.Uniform(0.0, o2::constants::math::TwoPI);
-      float randomConePt = 0;
-      for (auto const& track : tracks) {
-        if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
-          float dPhi = RecoDecay::constrainAngle(track.phi() - randomConePhi, static_cast<float>(-o2::constants::math::PI));
-          float dEta = track.eta() - randomConeEta;
-          if (std::sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
-            randomConePt += track.pt();
-          }
+    float randomConeEta = randomNumber.Uniform(trackEtaMin + randomConeR, trackEtaMax - randomConeR);
+    float randomConePhi = randomNumber.Uniform(0.0, o2::constants::math::TwoPI);
+    float randomConePt = 0;
+    for (auto const& track : tracks) {
+      if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
+        float dPhi = RecoDecay::constrainAngle(track.phi() - randomConePhi, static_cast<float>(-o2::constants::math::PI));
+        float dEta = track.eta() - randomConeEta;
+        if (std::sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
+          randomConePt += track.pt();
         }
       }
-      registry.fill(HIST("h2_centrality_rhorandomcone"), centrality, randomConePt - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
+    }
+    registry.fill(HIST("h2_centrality_rhorandomcone"), centrality, randomConePt - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
 
-      // randomised eta,phi for tracks, to assess part of fluctuations coming from statistically independently emitted particles
-      {
-        float randomConePt = 0;
-        for (auto const& track : tracks) {
-          if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
-            float dPhi = RecoDecay::constrainAngle(randomNumber.Uniform(0.0, o2::constants::math::TwoPI) - randomConePhi, static_cast<float>(-o2::constants::math::PI)); // ignores actual phi of track
-            float dEta = randomNumber.Uniform(trackEtaMin, trackEtaMax) - randomConeEta;                                                                                 // ignores actual eta of track
-            if (std::sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
-              randomConePt += track.pt();
-            }
-          }
+    // randomised eta,phi for tracks, to assess part of fluctuations coming from statistically independently emitted particles
+    float randomConePtRandomTrackDirection = 0;
+    for (auto const& track : tracks) {
+      if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
+        float dPhi = RecoDecay::constrainAngle(randomNumber.Uniform(0.0, o2::constants::math::TwoPI) - randomConePhi, static_cast<float>(-o2::constants::math::PI)); // ignores actual phi of track
+        float dEta = randomNumber.Uniform(trackEtaMin, trackEtaMax) - randomConeEta;                                                                                 // ignores actual eta of track
+        if (std::sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
+          randomConePtRandomTrackDirection += track.pt();
         }
-        registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirection"), centrality, randomConePt - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
       }
+    }
+    registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirection"), centrality, randomConePtRandomTrackDirection - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
 
-      // removing the leading jet from the random cone
+    // removing the leading jet from the random cone
+    const bool hasLead = jets.size() >= 1;
+    const bool hasSub = jets.size() >= 2;
+    float randomConePtWithoutLeadingJet = randomConePt;
+    if (hasLead) {
       float dPhiLeadingJet = RecoDecay::constrainAngle(jets.iteratorAt(0).phi() - randomConePhi, static_cast<float>(-o2::constants::math::PI));
       float dEtaLeadingJet = jets.iteratorAt(0).eta() - randomConeEta;
 
@@ -162,41 +163,45 @@ struct JetBackgroundAnalysisTask {
         dEtaLeadingJet = jets.iteratorAt(0).eta() - randomConeEta;
       }
       if (jetWasInCone) {
-        randomConePt = 0.0;
+        randomConePtWithoutLeadingJet = 0.0;
         for (auto const& track : tracks) {
           if (jetderiveddatautilities::selectTrack(track, trackSelection)) { // if track selection is uniformTrack, dcaXY and dcaZ cuts need to be added as they aren't in the selection so that they can be studied here
             float dPhi = RecoDecay::constrainAngle(track.phi() - randomConePhi, static_cast<float>(-o2::constants::math::PI));
             float dEta = track.eta() - randomConeEta;
             if (std::sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
-              randomConePt += track.pt();
+              randomConePtWithoutLeadingJet += track.pt();
             }
           }
         }
       }
-      registry.fill(HIST("h2_centrality_rhorandomconewithoutleadingjet"), centrality, randomConePt - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
+    }
+    registry.fill(HIST("h2_centrality_rhorandomconewithoutleadingjet"), centrality, randomConePtWithoutLeadingJet - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
 
-      // randomised eta,phi for tracks, to assess part of fluctuations coming from statistically independently emitted particles, removing tracks from 2 leading jets
-      double randomConePtWithoutOneLeadJet = 0;
-      double randomConePtWithoutTwoLeadJet = 0;
+    // randomised eta,phi for tracks, to assess part of fluctuations coming from statistically independently emitted particles, removing tracks from 2 leading jets
+    double randomConePtWithoutOneLeadJet = randomConePtRandomTrackDirection;
+    double randomConePtWithoutTwoLeadJet = randomConePtRandomTrackDirection;
+    if (hasLead) {
+      randomConePtWithoutOneLeadJet = 0.0;
+      randomConePtWithoutTwoLeadJet = 0.0;
       for (auto const& track : tracks) {
         if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
           float dPhi = RecoDecay::constrainAngle(randomNumber.Uniform(0.0, o2::constants::math::TwoPI) - randomConePhi, static_cast<float>(-o2::constants::math::PI)); // ignores actual phi of track
           float dEta = randomNumber.Uniform(trackEtaMin, trackEtaMax) - randomConeEta;                                                                                 // ignores actual eta of track
           if (std::sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
-            if (!trackIsInJet(track, jets.iteratorAt(0))) {
+            const bool inLead = hasLead && trackIsInJet(track, jets.iteratorAt(0));
+            const bool inSub = hasSub && trackIsInJet(track, jets.iteratorAt(1));
+            if (!inLead) {
               randomConePtWithoutOneLeadJet += track.pt();
-              if (jets.size() > 1 && !trackIsInJet(track, jets.iteratorAt(1))) { // if there are jets in the acceptance (from the jetfinder cuts) less than two then one cannot find 2 leading jets
+              if (!hasSub || !inSub) {
                 randomConePtWithoutTwoLeadJet += track.pt();
               }
             }
           }
         }
       }
-      registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirectionwithoutoneleadingjets"), centrality, randomConePtWithoutOneLeadJet - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
-      if (jets.size() > 1) {
-        registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirectionwithouttwoleadingjets"), centrality, randomConePtWithoutTwoLeadJet - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
-      }
     }
+    registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirectionwithoutoneleadingjets"), centrality, randomConePtWithoutOneLeadJet - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
+    registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirectionwithouttwoleadingjets"), centrality, randomConePtWithoutTwoLeadJet - o2::constants::math::PI * randomConeR * randomConeR * collision.rho());
   }
 
   void processRho(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Filtered<aod::JetTracks> const& tracks)

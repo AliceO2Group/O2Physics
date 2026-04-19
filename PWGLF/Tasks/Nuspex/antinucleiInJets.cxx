@@ -16,63 +16,58 @@
 /// \since February 13, 2025
 
 #include "PWGJE/Core/JetBkgSubUtils.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 
-#include "Common/Core/TrackSelection.h"
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
-#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "Framework/ASoA.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/DataTypes.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/Logger.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
-#include "MathUtils/BetheBlochAleph.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/PID.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <MathUtils/BetheBlochAleph.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include "TGrid.h"
 #include <Math/GenVector/Boost.h>
-#include <Math/Vector3D.h>
-#include <Math/Vector4D.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TH1.h>
 #include <TList.h>
-#include <TMath.h>
 #include <TPDGCode.h>
 #include <TRandom3.h>
+#include <TString.h>
 #include <TVector2.h>
 #include <TVector3.h>
 
 #include <fastjet/AreaDefinition.hh>
-#include <fastjet/ClusterSequence.hh>
 #include <fastjet/ClusterSequenceArea.hh>
 #include <fastjet/GhostedAreaSpec.hh>
+#include <fastjet/JetDefinition.hh>
 #include <fastjet/PseudoJet.hh>
-#include <fastjet/Selector.hh>
-#include <fastjet/tools/JetMedianBackgroundEstimator.hh>
-#include <fastjet/tools/Subtractor.hh>
 
 #include <algorithm>
 #include <chrono>
 #include <cmath>
-#include <memory>
+#include <cstddef>
 #include <random>
 #include <string>
 #include <vector>
@@ -128,7 +123,18 @@ struct ReducedParticle {
   }
 };
 
+// Jet Matching
+struct JetMatching {
+  double distance;
+  double ptTrue;
+  double ptDiff;
+};
+
 struct AntinucleiInJets {
+
+  // Random engine
+  std::mt19937 rng;
+  std::uniform_int_distribution<int> generateRandomNr{0, 1};
 
   // Histogram registries for data, MC, quality control, multiplicity and correlations
   HistogramRegistry registryData{"registryData", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -139,6 +145,13 @@ struct AntinucleiInJets {
 
   // Random generator for subsample assignment
   TRandom3 mRand;
+
+  // Parameters for ppRef analysis
+  Configurable<bool> isppRefAnalysis{"isppRefAnalysis", false, "Is ppRef analysis"};
+  Configurable<double> cfgAreaFrac{"cfgAreaFrac", 0.6, "fraction of jet area"};
+  Configurable<double> cfgEtaJetMax{"cfgEtaJetMax", 0.5, "max jet eta"};
+  Configurable<double> cfgMinPtTrack{"cfgMinPtTrack", 0.1, "minimum pt of tracks for jet reconstruction"};
+  Configurable<double> alpha{"alpha", 0.3, "parameter to control jet matching"};
 
   // Event selection criteria
   Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "Reject events near the ITS ROF border"};
@@ -154,6 +167,7 @@ struct AntinucleiInJets {
 
   // Jet selection and event filtering parameters
   Configurable<double> minJetPt{"minJetPt", 10.0, "Minimum pt of the jet after bkg subtraction"};
+  Configurable<double> maxJetPt{"maxJetPt", 1e+06, "Maximum pt of the jet after bkg subtraction"};
   Configurable<double> ptLeadingMin{"ptLeadingMin", 5.0, "pt Leading Min"};
   Configurable<double> rJet{"rJet", 0.4, "Jet resolution parameter R"};
   Configurable<double> zVtx{"zVtx", 10.0, "Maximum zVertex"};
@@ -261,6 +275,9 @@ struct AntinucleiInJets {
     auto timeSeed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
     mRand.SetSeed(timeSeed);
 
+    // Set seed of random engine
+    rng.seed(12345);
+
     // Load reweighting histograms from CCDB if antinuclei efficiency processing is enabled
     if (doprocessAntinucleiEfficiency || doprocessJetsMCgen || doprocessJetsMCrec) {
       ccdb->setURL(urlToCcdb.value);
@@ -313,6 +330,7 @@ struct AntinucleiInJets {
 
       // Jet effective area over piR^2
       registryData.add("jetEffectiveAreaOverPiR2", "jet effective area / piR^2", HistType::kTH1F, {{2000, 0, 2, "Area/#piR^{2}"}});
+      registryData.add("jetArea", "jetArea", HistType::kTH1F, {{5000, 0, 5, "area"}});
 
       // angle between track and jet axis
       registryData.add("theta_track_jet", "theta_track_jet", HistType::kTH2F, {{100, 0, 100, "#it{p}^{jet}_{T} (GeV/#it{c})"}, {400, 0, 20.0, "#theta_{track-jet} (deg)"}});
@@ -373,6 +391,12 @@ struct AntinucleiInJets {
       registryMC.add("antiproton_gen_ue", "antiproton_gen_ue", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_gen_full", "antiproton_gen_full", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
 
+      // Generated spectra of antiprotons for closure test
+      registryMC.add("antiproton_gen_jet_data", "antiproton_gen_jet_data", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_gen_ue_data", "antiproton_gen_ue_data", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_gen_jet_mc", "antiproton_gen_jet_mc", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_gen_ue_mc", "antiproton_gen_ue_mc", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+
       // Normalization histogram
       registryMC.add("antiproton_deltay_deltaphi_jet", "antiproton_deltay_deltaphi_jet", HistType::kTH2F, {{2000, -1.0, 1.0, "#Delta#it{y}"}, {2000, 0.0, 2.0, "#Delta#phi"}});
       registryMC.add("antiproton_deltay_deltaphi_ue", "antiproton_deltay_deltaphi_ue", HistType::kTH2F, {{2000, -1.0, 1.0, "#Delta#it{y}"}, {2000, 0.0, 2.0, "#Delta#phi"}});
@@ -399,6 +423,16 @@ struct AntinucleiInJets {
       registryMC.add("antiproton_rec_tof_ue", "antiproton_rec_tof_ue", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_rec_tpc_full", "antiproton_rec_tpc_full", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_rec_tof_full", "antiproton_rec_tof_full", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+
+      // Reconstructed spectra of antiprotons for closure test
+      registryMC.add("antiproton_rec_tpc_jet_data", "antiproton_rec_tpc_jet_data", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_rec_tof_jet_data", "antiproton_rec_tof_jet_data", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_rec_tpc_ue_data", "antiproton_rec_tpc_ue_data", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_rec_tof_ue_data", "antiproton_rec_tof_ue_data", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_rec_tpc_jet_mc", "antiproton_rec_tpc_jet_mc", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_rec_tof_jet_mc", "antiproton_rec_tof_jet_mc", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_rec_tpc_ue_mc", "antiproton_rec_tpc_ue_mc", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_rec_tof_ue_mc", "antiproton_rec_tof_ue_mc", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
 
       // Fraction of primary antiprotons
       registryMC.add("antiproton_prim_jet", "antiproton_prim_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
@@ -491,6 +525,11 @@ struct AntinucleiInJets {
       registryMC.add("antiproton_coal_fullEvent", "antiproton_coal_fullEvent", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_coal_jet", "antiproton_coal_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_coal_ue", "antiproton_coal_ue", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+    }
+
+    // jet pt resolution
+    if (doprocessJetPtResolution) {
+      registryMC.add("jetPtResolution", "jet Pt Resolution", HistType::kTH2F, {{1000, 0, 100, "#it{p}^{jet}_{T,true} (GeV/#it{c})"}, {1000, -20, 20, "#Delta #it{p}^{jet}_{T} (GeV/#it{c})"}});
     }
 
     // Coalescence and Correlation analysis
@@ -871,7 +910,6 @@ struct AntinucleiInJets {
     static constexpr int MinTpcCr = 70;
     static constexpr double MaxChi2Tpc = 4.0;
     static constexpr double MaxChi2Its = 36.0;
-    static constexpr double MinPtTrack = 0.1;
     static constexpr double DcaxyMaxTrackPar0 = 0.0105;
     static constexpr double DcaxyMaxTrackPar1 = 0.035;
     static constexpr double DcaxyMaxTrackPar2 = 1.1;
@@ -891,7 +929,7 @@ struct AntinucleiInJets {
       return false;
     if (std::fabs(track.eta()) > maxEta)
       return false;
-    if (track.pt() < MinPtTrack)
+    if (track.pt() < cfgMinPtTrack)
       return false;
     if (std::fabs(track.dcaXY()) > (DcaxyMaxTrackPar0 + DcaxyMaxTrackPar1 / std::pow(track.pt(), DcaxyMaxTrackPar2)))
       return false;
@@ -1242,18 +1280,24 @@ struct AntinucleiInJets {
     for (const auto& jet : jets) {
 
       // Jet must be fully contained in the acceptance
-      if ((std::fabs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge))
+      if (!isppRefAnalysis && ((std::fabs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge)))
+        continue;
+      if (isppRefAnalysis && std::fabs(jet.eta()) > cfgEtaJetMax)
         continue;
 
       // Jet pt must be larger than threshold
       auto jetForSub = jet;
       fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-      if (jetMinusBkg.pt() < minJetPt)
+      if (isppRefAnalysis && (jet.pt() < minJetPt || jet.pt() > maxJetPt))
+        continue;
+      if (!isppRefAnalysis && (jetMinusBkg.pt() < minJetPt || jetMinusBkg.pt() > maxJetPt))
         continue;
 
       // Apply area cut if required
       double normalizedJetArea = jet.area() / (PI * rJet * rJet);
-      if (applyAreaCut && normalizedJetArea > maxNormalizedJetArea)
+      if (applyAreaCut && (!isppRefAnalysis) && normalizedJetArea > maxNormalizedJetArea)
+        continue;
+      if (isppRefAnalysis && (jet.area() < cfgAreaFrac * PI * rJet * rJet))
         continue;
       isAtLeastOneJetSelected = true;
 
@@ -1268,6 +1312,7 @@ struct AntinucleiInJets {
 
       // Fill histogram with jet effective area / piR^2
       registryData.fill(HIST("jetEffectiveAreaOverPiR2"), jet.area() / (PI * rJet * rJet));
+      registryData.fill(HIST("jetArea"), jet.area());
 
       // Get jet constituents
       std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
@@ -1529,7 +1574,7 @@ struct AntinucleiInJets {
       // Jet pt must be larger than threshold
       auto jetForSub = jet;
       fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-      if (jetMinusBkg.pt() < minJetPt)
+      if (jetMinusBkg.pt() < minJetPt || jetMinusBkg.pt() > maxJetPt)
         continue;
 
       // Apply area cut if required
@@ -1607,7 +1652,7 @@ struct AntinucleiInJets {
       registryQC.fill(HIST("ptDistributionJetCone"), ptJetBeforeSub);
       registryQC.fill(HIST("ptDistributionJet"), ptJetAfterSub);
 
-      if (jetMinusBkg.pt() < minJetPt)
+      if (jetMinusBkg.pt() < minJetPt || jetMinusBkg.pt() > maxJetPt)
         continue;
       njetsHighPt++;
       registryQC.fill(HIST("sumPtJet"), jet.pt());
@@ -2017,6 +2062,10 @@ struct AntinucleiInJets {
       // Get particles in this MC collision
       const auto mcParticlesThisMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, collision.globalIndex());
 
+      // Generate random number to decide if simulated event has to be considered as data or MC in the closure test
+      int sample = generateRandomNr(rng);
+      bool isPseudoData = (sample == 0);
+
       // Loop over MC particles
       for (const auto& particle : mcParticlesThisMcColl) {
 
@@ -2061,18 +2110,24 @@ struct AntinucleiInJets {
       for (const auto& jet : jets) {
 
         // Jet must be fully contained in the acceptance
-        if ((std::fabs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge))
+        if (!isppRefAnalysis && ((std::fabs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge)))
+          continue;
+        if (isppRefAnalysis && std::fabs(jet.eta()) > cfgEtaJetMax)
           continue;
 
         // Jet pt must be larger than threshold
         auto jetForSub = jet;
         fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-        if (jetMinusBkg.pt() < minJetPt)
+        if (isppRefAnalysis && (jet.pt() < minJetPt || jet.pt() > maxJetPt))
+          continue;
+        if (!isppRefAnalysis && (jetMinusBkg.pt() < minJetPt || jetMinusBkg.pt() > maxJetPt))
           continue;
 
         // Apply area cut if required
         double normalizedJetArea = jet.area() / (PI * rJet * rJet);
-        if (applyAreaCut && normalizedJetArea > maxNormalizedJetArea)
+        if (applyAreaCut && (!isppRefAnalysis) && normalizedJetArea > maxNormalizedJetArea)
+          continue;
+        if (isppRefAnalysis && (jet.area() < cfgAreaFrac * PI * rJet * rJet))
           continue;
         isAtLeastOneJetSelected = true;
 
@@ -2100,6 +2155,13 @@ struct AntinucleiInJets {
 
           // Fill histogram for generated antiprotons
           registryMC.fill(HIST("antiproton_gen_jet"), particle.pt(), weightJet);
+
+          // Fill histograms for generated antiprotons for closure test
+          if (isPseudoData) {
+            registryMC.fill(HIST("antiproton_gen_jet_data"), particle.pt());
+          } else {
+            registryMC.fill(HIST("antiproton_gen_jet_mc"), particle.pt());
+          }
 
           // Fill 2d (pt,eta) distribution of antiprotons
           registryMC.fill(HIST("antiproton_eta_pt_jet"), particle.pt(), particle.eta(), weightJet);
@@ -2149,12 +2211,24 @@ struct AntinucleiInJets {
           // Fill histogram for antiprotons in the UE
           registryMC.fill(HIST("antiproton_gen_ue"), protonVec.Pt(), weightUe);
 
+          // Fill histograms for generated antiprotons for closure test
+          if (sample == 0) {
+            registryMC.fill(HIST("antiproton_gen_ue_data"), protonVec.Pt());
+          } else {
+            registryMC.fill(HIST("antiproton_gen_ue_mc"), protonVec.Pt());
+          }
+
           // Fill 2d (pt,eta) distribution of antiprotons
           registryMC.fill(HIST("antiproton_eta_pt_ue"), protonVec.Pt(), protonVec.Eta(), weightUe);
         }
       }
       if (isAtLeastOneJetSelected) {
         registryMC.fill(HIST("genEvents"), 3.5);
+        if (isPseudoData) {
+          registryMC.fill(HIST("genEvents"), 4.5);
+        } else {
+          registryMC.fill(HIST("genEvents"), 5.5);
+        }
       }
 
       // Shrink large vectors
@@ -2236,6 +2310,10 @@ struct AntinucleiInJets {
       // Get tracks in this MC collision
       const auto mcTracksThisMcColl = mcTracks.sliceBy(mcTracksPerMcCollision, collision.globalIndex());
 
+      // Generate random number to decide if simulated event has to be considered as data or MC in the closure test
+      int sample = generateRandomNr(rng);
+      bool isPseudoData = (sample == 0);
+
       // Loop over reconstructed tracks
       int id(-1);
       for (auto const& track : mcTracksThisMcColl) {
@@ -2289,18 +2367,24 @@ struct AntinucleiInJets {
       for (const auto& jet : jets) {
 
         // Jet must be fully contained in the acceptance
-        if ((std::fabs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge))
+        if (!isppRefAnalysis && ((std::fabs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge)))
+          continue;
+        if (isppRefAnalysis && std::fabs(jet.eta()) > cfgEtaJetMax)
           continue;
 
         // Jet pt must be larger than threshold
         auto jetForSub = jet;
         fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-        if (jetMinusBkg.pt() < minJetPt)
+        if (isppRefAnalysis && (jet.pt() < minJetPt || jet.pt() > maxJetPt))
+          continue;
+        if (!isppRefAnalysis && (jetMinusBkg.pt() < minJetPt || jetMinusBkg.pt() > maxJetPt))
           continue;
 
         // Apply area cut if required
         double normalizedJetArea = jet.area() / (PI * rJet * rJet);
-        if (applyAreaCut && normalizedJetArea > maxNormalizedJetArea)
+        if (applyAreaCut && (!isppRefAnalysis) && normalizedJetArea > maxNormalizedJetArea)
+          continue;
+        if (isppRefAnalysis && (jet.area() < cfgAreaFrac * PI * rJet * rJet))
           continue;
         isAtLeastOneJetSelected = true;
 
@@ -2394,8 +2478,23 @@ struct AntinucleiInJets {
           // Fill histograms (TPC and TOF) only for selected candidates
           if (passedItsPidProt && nsigmaTPCPr > minNsigmaTpc && nsigmaTPCPr < maxNsigmaTpc) {
             registryMC.fill(HIST("antiproton_rec_tpc_jet"), pt, weightJet);
+
+            // Fill histograms for reconstructed antiprotons for closure test
+            if (isPseudoData) {
+              registryMC.fill(HIST("antiproton_rec_tpc_jet_data"), pt);
+            } else {
+              registryMC.fill(HIST("antiproton_rec_tpc_jet_mc"), pt);
+            }
+
             if (track.hasTOF() && nsigmaTOFPr > minNsigmaTof && nsigmaTOFPr < maxNsigmaTof) {
               registryMC.fill(HIST("antiproton_rec_tof_jet"), pt, weightJet);
+
+              // Fill histograms for reconstructed antiprotons for closure test
+              if (isPseudoData) {
+                registryMC.fill(HIST("antiproton_rec_tof_jet_data"), pt);
+              } else {
+                registryMC.fill(HIST("antiproton_rec_tof_jet_mc"), pt);
+              }
             }
           }
         }
@@ -2476,14 +2575,34 @@ struct AntinucleiInJets {
           // Fill histograms (TPC and TOF) only for selected candidates
           if (passedItsPidProt && nsigmaTPCPr > minNsigmaTpc && nsigmaTPCPr < maxNsigmaTpc) {
             registryMC.fill(HIST("antiproton_rec_tpc_ue"), pt, weightUe);
+
+            // Fill histograms for reconstructed antiprotons for closure test
+            if (isPseudoData) {
+              registryMC.fill(HIST("antiproton_rec_tpc_ue_data"), pt);
+            } else {
+              registryMC.fill(HIST("antiproton_rec_tpc_ue_mc"), pt);
+            }
+
             if (track.hasTOF() && nsigmaTOFPr > minNsigmaTof && nsigmaTOFPr < maxNsigmaTof) {
               registryMC.fill(HIST("antiproton_rec_tof_ue"), pt, weightUe);
+
+              // Fill histograms for reconstructed antiprotons for closure test
+              if (isPseudoData) {
+                registryMC.fill(HIST("antiproton_rec_tof_ue_data"), pt);
+              } else {
+                registryMC.fill(HIST("antiproton_rec_tof_ue_mc"), pt);
+              }
             }
           }
         }
       }
       if (isAtLeastOneJetSelected) {
         registryMC.fill(HIST("recEvents"), 9.5);
+        if (isPseudoData) {
+          registryMC.fill(HIST("recEvents"), 10.5);
+        } else {
+          registryMC.fill(HIST("recEvents"), 11.5);
+        }
       }
 
       // Shrink large vectors
@@ -3040,7 +3159,7 @@ struct AntinucleiInJets {
       // Jet pt must be larger than threshold
       auto jetForSub = jet;
       fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-      if (jetMinusBkg.pt() < minJetPt)
+      if (jetMinusBkg.pt() < minJetPt || jetMinusBkg.pt() > maxJetPt)
         continue;
 
       // Apply area cut if required
@@ -3618,7 +3737,7 @@ struct AntinucleiInJets {
         // Jet pt must be larger than threshold
         auto jetForSub = jet;
         fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-        if (jetMinusBkg.pt() < minJetPt)
+        if (jetMinusBkg.pt() < minJetPt || jetMinusBkg.pt() > maxJetPt)
           continue;
 
         // Apply area cut if required
@@ -3886,6 +4005,153 @@ struct AntinucleiInJets {
     }
   }
   PROCESS_SWITCH(AntinucleiInJets, processCoalescenceCorr, "process coalescence correlation", false);
+
+  // Jet Pt resolution
+  void processJetPtResolution(RecCollisionsMc const& collisions, AntiNucleiTracksMc const& mcTracks, aod::McParticles const& mcParticles)
+  {
+    // Define per-event particle containers
+    std::vector<fastjet::PseudoJet> fjParticles;
+    std::vector<fastjet::PseudoJet> fjTracks;
+
+    // Jet and area definitions
+    fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
+    fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
+
+    // Loop over all reconstructed collisions
+    for (const auto& collision : collisions) {
+
+      // Clear containers at the start of the event loop
+      fjParticles.clear();
+      fjTracks.clear();
+
+      // Reject reconstructed collisions with no simulated collision
+      if (!collision.has_mcCollision())
+        continue;
+
+      // Apply event selection: require sel8 and vertex position to be within the allowed z range
+      if (!collision.sel8() || std::fabs(collision.posZ()) > zVtx)
+        continue;
+
+      // Reject events near the ITS Read-Out Frame border
+      if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))
+        continue;
+
+      // Reject events at the Time Frame border
+      if (rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))
+        continue;
+
+      // Require at least one ITS-TPC matched track
+      if (requireVtxITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC))
+        continue;
+
+      // Reject events with same-bunch pileup
+      if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+        continue;
+
+      // Require consistent FT0 vs PV z-vertex
+      if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+        continue;
+
+      // Require TOF match for at least one vertex track
+      if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched))
+        continue;
+
+      // Get tracks and particles in this MC collision
+      const auto mcTracksThisMcColl = mcTracks.sliceBy(mcTracksPerMcCollision, collision.globalIndex());
+      const auto mcParticlesThisMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, collision.globalIndex());
+
+      // Loop over reconstructed tracks
+      for (auto const& track : mcTracksThisMcColl) {
+
+        // Apply track selection for jet reconstruction
+        if (!passedTrackSelectionForJetReconstruction(track))
+          continue;
+
+        // 4-momentum representation of a particle
+        fastjet::PseudoJet fourMomentum(track.px(), track.py(), track.pz(), track.energy(MassPionCharged));
+        fjTracks.emplace_back(fourMomentum);
+      }
+
+      // Loop over MC particles
+      for (const auto& particle : mcParticlesThisMcColl) {
+
+        // Select physical primary particles or HF decay products
+        if (!isPhysicalPrimaryOrFromHF(particle, mcParticles))
+          continue;
+
+        // Select particles within acceptance
+        if (particle.eta() < minEta || particle.eta() > maxEta || particle.pt() < cfgMinPtTrack)
+          continue;
+
+        // 4-momentum representation of a particle
+        double energy = std::sqrt(particle.p() * particle.p() + MassPionCharged * MassPionCharged);
+        fastjet::PseudoJet fourMomentum(particle.px(), particle.py(), particle.pz(), energy);
+        fjParticles.emplace_back(fourMomentum);
+      }
+
+      // Reject empty events
+      if (fjTracks.empty() || fjParticles.empty())
+        continue;
+
+      // Cluster particles using the anti-kt algorithm
+      fastjet::ClusterSequenceArea csRec(fjTracks, jetDef, areaDef);
+      std::vector<fastjet::PseudoJet> jetsRec = fastjet::sorted_by_pt(csRec.inclusive_jets());
+
+      fastjet::ClusterSequenceArea csGen(fjParticles, jetDef, areaDef);
+      std::vector<fastjet::PseudoJet> jetsGen = fastjet::sorted_by_pt(csGen.inclusive_jets());
+
+      // Loop over reconstructed jets
+      std::vector<JetMatching> jetGenRec;
+      for (const auto& jetRec : jetsRec) {
+
+        // Jet must be fully contained in the acceptance
+        if ((std::fabs(jetRec.eta()) + rJet) > (maxEta - deltaEtaEdge))
+          continue;
+
+        // Apply area cut if required
+        if (applyAreaCut && (jetRec.area() / (PI * rJet * rJet)) > maxNormalizedJetArea)
+          continue;
+
+        // Clear jet-pair container
+        jetGenRec.clear();
+
+        for (const auto& jetGen : jetsGen) {
+
+          // Jet must be fully contained in the acceptance
+          if ((std::fabs(jetGen.eta()) + rJet) > (maxEta - deltaEtaEdge))
+            continue;
+
+          // Apply area cut if required
+          if (applyAreaCut && (jetGen.area() / (PI * rJet * rJet)) > maxNormalizedJetArea)
+            continue;
+
+          double deltaEta = jetGen.eta() - jetRec.eta();
+          double deltaPhi = getDeltaPhi(jetGen.phi(), jetRec.phi());
+          double deltaR = std::sqrt(deltaEta * deltaEta + deltaPhi * deltaPhi);
+          if (deltaR < rJet)
+            jetGenRec.push_back({deltaR, jetGen.pt(), jetGen.pt() - jetRec.pt()});
+        }
+        if (jetGenRec.empty())
+          continue;
+
+        double distanceMin(1e+06);
+        double diffPt(0);
+        double ptJetTrue(0);
+        for (const auto& jetPair : jetGenRec) {
+          if (jetPair.distance < distanceMin) {
+            distanceMin = jetPair.distance;
+            diffPt = jetPair.ptDiff;
+            ptJetTrue = jetPair.ptTrue;
+          }
+        }
+
+        if (distanceMin < alpha * rJet) {
+          registryMC.fill(HIST("jetPtResolution"), ptJetTrue, diffPt);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(AntinucleiInJets, processJetPtResolution, "process jet pt resolution", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

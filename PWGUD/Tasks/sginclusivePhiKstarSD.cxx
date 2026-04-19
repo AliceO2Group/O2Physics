@@ -16,24 +16,35 @@
 
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/Core/SGTrackSelector.h"
-#include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/DataModel/UDTables.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Vertex.h"
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Math/GenVector/Boost.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "TPDGCode.h"
-#include <TMath.h>
+#include <Math/GenVector/Boost.h>
+#include <Math/Vector3Dfwd.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <TPDGCode.h>
 #include <TString.h>
 
+#include <cmath>
 #include <cstdlib>
 #include <memory>
 #include <string>
@@ -368,6 +379,7 @@ struct SginclusivePhiKstarSD {
           "All Events",
           "has_udMcCollision",
           Form("generatorsID = %d", generatedId.value),
+          Form("upcFlag = %d%s", upcflag.value, check(upcflag.value != -1)),
           Form("GapsideMC = %d", gapsideMC.value),
           Form("|Vz| < %.1f", vzCut.value),
           Form("Occupancy < %.0f%s", confgOccCut.value, check(useOccCut.value)),
@@ -381,7 +393,6 @@ struct SginclusivePhiKstarSD {
           std::string("kIsGoodZvtxFT0vsPV") + check(useZvtxftovpv.value),
           std::string("kIsVertexITSTPC") + check(useVtxItsTpc.value),
           Form("RCTFlag = %d%s", cutRCTflag.value, check(cutRCTflag.value > 0)),
-          Form("upcFlag = %d%s", upcflag.value, check(upcflag.value != -1)),
           Form("%d < numContrib < %d%s", mintrack.value, maxtrack.value, check(usenumContrib.value))};
 
         for (size_t i = 0; i < eveCutLabelsMC.size(); ++i) {
@@ -1421,71 +1432,70 @@ struct SginclusivePhiKstarSD {
     registry.get<TH1>(HIST("Reco/Stat"))->Fill(4.0, 1.);
     registry.get<TH1>(HIST("Reco/Stat"))->Fill(truegapSide, 1.);
 
-    if (upcflag != -1 && collision.flags() == upcflag) {
-      auto partSlice = McParts.sliceBy(partPerMcCollision, mccoll.globalIndex());
-      for (const auto& trk1 : partSlice) {
-        if (std::abs(trk1.pdgCode()) == o2::constants::physics::Pdg::kK0Star892) {
-          vkstar.SetCoordinates(trk1.px(), trk1.py(), trk1.pz(), o2::constants::physics::MassK0Star892);
-          auto kDaughters = trk1.daughters_as<aod::UDMcParticles>();
-          const size_t kExpectedNumberOfDaughters = 2;
-          if (kDaughters.size() != kExpectedNumberOfDaughters) {
+    auto partSlice = McParts.sliceBy(partPerMcCollision, mccoll.globalIndex());
+    for (const auto& trk1 : partSlice) {
+      if (std::abs(trk1.pdgCode()) == o2::constants::physics::Pdg::kK0Star892) {
+        vkstar.SetCoordinates(trk1.px(), trk1.py(), trk1.pz(), o2::constants::physics::MassK0Star892);
+        auto kDaughters = trk1.daughters_as<aod::UDMcParticles>();
+        const size_t kExpectedNumberOfDaughters = 2;
+        if (kDaughters.size() != kExpectedNumberOfDaughters) {
+          continue;
+        }
+        auto daughtp = false;
+        auto daughtm = false;
+        for (const auto& kCurrentDaughter : kDaughters) {
+          if (!kCurrentDaughter.isPhysicalPrimary()) {
             continue;
           }
-          auto daughtp = false;
-          auto daughtm = false;
-          for (const auto& kCurrentDaughter : kDaughters) {
-            if (!kCurrentDaughter.isPhysicalPrimary()) {
-              continue;
-            }
-            if (std::abs(kCurrentDaughter.pdgCode()) == PDG_t::kKPlus) {
-              daughtp = true;
-            } else if (std::abs(kCurrentDaughter.pdgCode()) == PDG_t::kPiPlus) {
-              daughtm = true;
-            }
+          if (std::abs(kCurrentDaughter.pdgCode()) == PDG_t::kKPlus) {
+            daughtp = true;
+          } else if (std::abs(kCurrentDaughter.pdgCode()) == PDG_t::kPiPlus) {
+            daughtm = true;
           }
-          if (daughtp && daughtm) {
-            if (std::abs(vkstar.Rapidity()) < 0.5) {
-              registry.get<TH3>(HIST("MC/accMPtRap_kstar_G1"))->Fill(vkstar.M(), vkstar.Pt(), vkstar.Rapidity(), 1.);
-              if (truegapSide == gapsideMC) {
-                registry.get<TH3>(HIST("MC/accMPtRap_kstar_G11"))->Fill(vkstar.M(), vkstar.Pt(), vkstar.Rapidity(), 1.);
-              }
+        }
+        if (daughtp && daughtm) {
+          if (std::abs(vkstar.Rapidity()) < 0.5) {
+            registry.get<TH3>(HIST("MC/accMPtRap_kstar_G1"))->Fill(vkstar.M(), vkstar.Pt(), vkstar.Rapidity(), 1.);
+            if (truegapSide == gapsideMC) {
+              registry.get<TH3>(HIST("MC/accMPtRap_kstar_G11"))->Fill(vkstar.M(), vkstar.Pt(), vkstar.Rapidity(), 1.);
             }
           }
         }
-        // phi
-        if (std::abs(trk1.pdgCode()) == o2::constants::physics::Pdg::kPhi) {
-          if (trk1.has_mothers()) {
+      }
+      // phi
+      if (std::abs(trk1.pdgCode()) == o2::constants::physics::Pdg::kPhi) {
+        if (trk1.has_mothers()) {
+          continue;
+        }
+        vphi.SetCoordinates(trk1.px(), trk1.py(), trk1.pz(), o2::constants::physics::MassPhi);
+        auto kDaughters = trk1.daughters_as<aod::UDMcParticles>();
+        const size_t kExpectedNumberOfDaughters1 = 2;
+        if (kDaughters.size() != kExpectedNumberOfDaughters1) {
+          continue;
+        }
+        auto daughtp1 = false;
+        auto daughtm1 = false;
+        for (const auto& kCurrentDaughter : kDaughters) {
+          if (!kCurrentDaughter.isPhysicalPrimary()) {
             continue;
           }
-          vphi.SetCoordinates(trk1.px(), trk1.py(), trk1.pz(), o2::constants::physics::MassPhi);
-          auto kDaughters = trk1.daughters_as<aod::UDMcParticles>();
-          const size_t kExpectedNumberOfDaughters1 = 2;
-          if (kDaughters.size() != kExpectedNumberOfDaughters1) {
-            continue;
+          if (kCurrentDaughter.pdgCode() == PDG_t::kKPlus) {
+            daughtp1 = true;
+          } else if (kCurrentDaughter.pdgCode() == PDG_t::kKMinus) {
+            daughtm1 = true;
           }
-          auto daughtp1 = false;
-          auto daughtm1 = false;
-          for (const auto& kCurrentDaughter : kDaughters) {
-            if (!kCurrentDaughter.isPhysicalPrimary()) {
-              continue;
-            }
-            if (kCurrentDaughter.pdgCode() == PDG_t::kKPlus) {
-              daughtp1 = true;
-            } else if (kCurrentDaughter.pdgCode() == PDG_t::kKMinus) {
-              daughtm1 = true;
-            }
-          }
-          if (daughtp1 && daughtm1) {
-            if (std::abs(vphi.Rapidity()) < 0.5) {
-              registry.get<TH3>(HIST("MC/accMPtRap_phi_G1"))->Fill(vphi.M(), vphi.Pt(), vphi.Rapidity(), 1.);
-              if (truegapSide == gapsideMC) {
-                registry.get<TH3>(HIST("MC/accMPtRap_phi_G11"))->Fill(vphi.M(), vphi.Pt(), vphi.Rapidity(), 1.);
-              }
+        }
+        if (daughtp1 && daughtm1) {
+          if (std::abs(vphi.Rapidity()) < 0.5) {
+            registry.get<TH3>(HIST("MC/accMPtRap_phi_G1"))->Fill(vphi.M(), vphi.Pt(), vphi.Rapidity(), 1.);
+            if (truegapSide == gapsideMC) {
+              registry.get<TH3>(HIST("MC/accMPtRap_phi_G11"))->Fill(vphi.M(), vphi.Pt(), vphi.Rapidity(), 1.);
             }
           }
         }
       }
     }
+
     if (truegapSide != gapsideMC)
       return;
     registry.fill(HIST("Reco/hEventCutFlowMC"), 4);
@@ -1516,7 +1526,7 @@ struct SginclusivePhiKstarSD {
 
     if (useTfb && collision.tfb() != 1)
       return;
-    registry.fill(HIST("Reco/hEventCutFlowMC"), 1);
+    registry.fill(HIST("Reco/hEventCutFlowMC"), 11);
 
     if (useItsrofb && collision.itsROFb() != 1)
       return;

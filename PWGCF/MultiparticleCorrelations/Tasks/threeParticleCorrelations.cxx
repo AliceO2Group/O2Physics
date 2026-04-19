@@ -13,23 +13,49 @@
 /// \brief Task for producing particle correlations
 /// \author Joey Staa <joey.staa@fysik.lu.se>
 
-#include "RecoDecay.h"
-
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TPDGCode.h"
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <TList.h>
+#include <TPDGCode.h>
+#include <TString.h>
 
 #include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -43,7 +69,6 @@ struct ThreeParticleCorrelations {
 
   // Analysis parameters
   float centMin = 0.0, centMax = 90.0;
-  float v0PtMin = 0.6, v0PtMax = 12.0;
   float v0EtaMax = 0.72;
   float trackPtMin = 0.2, trackPtMax = 3.0;
   float trackEtaMax = 0.8;
@@ -64,6 +89,8 @@ struct ThreeParticleCorrelations {
   // V0 filter parameters
   struct : ConfigurableGroup {
     std::string prefix = "V0Selection";
+    Configurable<float> v0PtMin{"v0PtMin", 0.6, "Minimum V0 transverse momentum"};
+    Configurable<float> v0PtMax{"v0PtMax", 12.0, "Maximum V0 transverse momentum"};
     Configurable<float> tpcNCrossedRows{"tpcNCrossedRows", 70.0, "Minimum number of TPC crossed rows"};
     Configurable<float> decayR{"decayR", 1.2, "Minimum V0 decay radius (cm)"};
     Configurable<float> ctau{"ctau", 30.0, "Maximum V0 proper lifetime (cm)"};
@@ -78,6 +105,9 @@ struct ThreeParticleCorrelations {
   float pionPtMid1 = 1.6, pionPtMid2 = 2.0, kaonPtMid1 = 1.5, kaonPtMid2 = 2.0, protonPtMid = 2.3;
   struct : ConfigurableGroup {
     std::string prefix = "TrackSelection";
+    Configurable<float> chi2PerClusterTPC{"chi2PerClusterTPC", 4.0, "Maximum TPC goodness-of-fit Chi2 per cluster"};
+    Configurable<float> chi2PerClusterITS{"chi2PerClusterITS", 36.0, "Maximum ITS goodness-of-fit Chi2 per cluster"};
+    Configurable<float> dcaZ{"dcaZ", 2.0, "Maximum longitudinal DCA (cm)"};
     Configurable<float> nSigmaTPCvar{"nSigmaTPCvar", 0.0, "Variation in the TPC nSigma"};
     Configurable<float> nSigmaTOFvar{"nSigmaTOFvar", 0.0, "Variation in the TOF nSigma"};
   } trackSelGroup;
@@ -116,7 +146,7 @@ struct ThreeParticleCorrelations {
   // Table aliases - Data
   using MyFilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>>;
   using MyFilteredCollision = MyFilteredCollisions::iterator;
-  using MyFilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
+  using MyFilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                                    aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
                                                    aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>>;
 
@@ -129,15 +159,15 @@ struct ThreeParticleCorrelations {
   using MCRecCollisions = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels, aod::McCollisionLabels>;
   using MyFilteredMCRecCollisions = soa::Filtered<MCRecCollisions>;
   using MyMCV0s = soa::Join<aod::V0Datas, aod::McV0Labels>;
-  using MyFilteredMCTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::McTrackLabels,
+  using MyFilteredMCTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels,
                                                      aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
                                                      aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>>;
 
   // Partitions
   Partition<MyFilteredMCParticles> mcTracks = aod::mcparticle::pt > trackPtMin&& aod::mcparticle::pt < trackPtMax;
-  Partition<MyFilteredMCParticles> mcV0s = aod::mcparticle::pt > v0PtMin&& aod::mcparticle::pt < v0PtMax&& nabs(aod::mcparticle::eta) < v0EtaMax;
+  Partition<MyFilteredMCParticles> mcV0s = aod::mcparticle::pt > v0SelGroup.v0PtMin&& aod::mcparticle::pt < v0SelGroup.v0PtMax&& nabs(aod::mcparticle::eta) < v0EtaMax;
   Partition<MyFilteredMCParticles> mcTriggers = ((aod::mcparticle::pdgCode == static_cast<int>(kLambda0) || aod::mcparticle::pdgCode == static_cast<int>(kLambda0Bar)) &&
-                                                 aod::mcparticle::pt > v0PtMin && aod::mcparticle::pt < v0PtMax && nabs(aod::mcparticle::eta) < v0EtaMax);
+                                                 aod::mcparticle::pt > v0SelGroup.v0PtMin && aod::mcparticle::pt < v0SelGroup.v0PtMax && nabs(aod::mcparticle::eta) < v0EtaMax);
   Partition<MyFilteredMCParticles> mcAssociates = (((aod::mcparticle::pdgCode == static_cast<int>(kPiPlus) || aod::mcparticle::pdgCode == static_cast<int>(kPiMinus)) && aod::mcparticle::pt > pionPtMin && aod::mcparticle::pt < pionPtMax) ||
                                                    ((aod::mcparticle::pdgCode == static_cast<int>(kKPlus) || aod::mcparticle::pdgCode == static_cast<int>(kKMinus)) && aod::mcparticle::pt > kaonPtMin && aod::mcparticle::pt < kaonPtMax) ||
                                                    ((aod::mcparticle::pdgCode == static_cast<int>(kProton) || aod::mcparticle::pdgCode == static_cast<int>(kProtonBar)) && aod::mcparticle::pt > protonPtMin));
@@ -1056,7 +1086,7 @@ struct ThreeParticleCorrelations {
   {
 
     // Kinematic cuts
-    if (v0.pt() <= v0PtMin || v0.pt() >= v0PtMax || std::abs(v0.eta()) >= v0EtaMax) {
+    if (v0.pt() <= v0SelGroup.v0PtMin || v0.pt() >= v0SelGroup.v0PtMax || std::abs(v0.eta()) >= v0EtaMax) {
       return false;
     }
 
@@ -1107,11 +1137,18 @@ struct ThreeParticleCorrelations {
   bool trackFilters(const TrackCand& track) // Track filter
   {
 
+    if (track.tpcChi2NCl() > trackSelGroup.chi2PerClusterTPC || track.itsChi2NCl() > trackSelGroup.chi2PerClusterITS) {
+      return false;
+    }
+    if (track.dcaZ() > trackSelGroup.dcaZ) {
+      return false;
+    }
+
     if (!track.hasTOF()) {
       return false;
     }
 
-    if (trackPID(track)[0] == pionID) { // Pions
+    if (trackPID(track)[0] == pionID) {                                            // Pions
       if (std::abs(track.tpcNSigmaPi()) >= nSigma4 + trackSelGroup.nSigmaTPCvar) { // TPC
         return false;
       }
@@ -1133,7 +1170,7 @@ struct ThreeParticleCorrelations {
         return false;
       }
 
-    } else if (trackPID(track)[0] == kaonID) { // Kaons
+    } else if (trackPID(track)[0] == kaonID) {                                     // Kaons
       if (std::abs(track.tpcNSigmaKa()) >= nSigma4 + trackSelGroup.nSigmaTPCvar) { // TPC
         return false;
       }
@@ -1155,7 +1192,7 @@ struct ThreeParticleCorrelations {
         return false;
       }
 
-    } else if (trackPID(track)[0] == protonID) { // Protons
+    } else if (trackPID(track)[0] == protonID) {                                   // Protons
       if (std::abs(track.tpcNSigmaPr()) >= nSigma4 + trackSelGroup.nSigmaTPCvar) { // TPC
         return false;
       }

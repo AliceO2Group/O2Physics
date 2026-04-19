@@ -11,11 +11,10 @@
 #ifndef PWGCF_DATAMODEL_CORRELATIONSDERIVED_H_
 #define PWGCF_DATAMODEL_CORRELATIONSDERIVED_H_
 
-#include "Common/DataModel/Centrality.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-
+#include <cstdint>
 #include <vector>
 
 namespace o2::aod
@@ -45,6 +44,14 @@ DECLARE_SOA_TABLE(CFMcParticles, "AOD", "CFMCPARTICLE", //! Reduced MC particle 
                   mcparticle::PdgCode, mcparticle::Flags,
                   mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
 using CFMcParticle = CFMcParticles::iterator;
+
+namespace cfmultiplicity
+{
+DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
+}
+DECLARE_SOA_TABLE(CFMultiplicities, "AOD", "CFMULTIPLICITY", cfmultiplicity::Multiplicity);
+
+using CFMultiplicity = CFMultiplicities::iterator;
 
 namespace cfcollision
 {
@@ -157,7 +164,8 @@ enum ParticleDecay {
   LambdaToPPiTight,
   AntiLambdaToPiPLoose,
   AntiLambdaToPiPTight,
-  D0barToKPiExclusive
+  D0barToKPiExclusive,
+  PhiToKKPID3Mixed
 };
 } // namespace cf2prongtrack
 DECLARE_SOA_TABLE(CF2ProngTracks, "AOD", "CF2PRONGTRACK", //! Reduced track table
@@ -186,9 +194,10 @@ namespace cf2prongmcpart
 DECLARE_SOA_INDEX_COLUMN_FULL(CFParticleDaugh0, cfParticleDaugh0, int, CFMcParticles, "_0");         //! Index to prong 1 CFMcParticle
 DECLARE_SOA_INDEX_COLUMN_FULL(CFParticleDaugh1, cfParticleDaugh1, int, CFMcParticles, "_1");         //! Index to prong 2 CFMcParticle
 DECLARE_SOA_COLUMN(Decay, decay, uint8_t);                                                           //! Particle decay and flags
-DECLARE_SOA_DYNAMIC_COLUMN(McDecay, mcDecay, [](uint8_t decay) -> uint8_t { return decay & 0x7f; }); //! MC particle decay
+DECLARE_SOA_DYNAMIC_COLUMN(McDecay, mcDecay, [](uint8_t decay) -> uint8_t { return decay & 0x3f; }); //! MC particle decay
 enum ParticleDecayFlags {
-  Prompt = 0x80
+  Prompt = 0x40,
+  NonPrompt = 0x80
 };
 } // namespace cf2prongmcpart
 DECLARE_SOA_TABLE(CF2ProngMcParts, "AOD", "CF2PRONGMCPART", //! Table for the daughter particles of a 2-prong particle, to be joined with CFMcParticles

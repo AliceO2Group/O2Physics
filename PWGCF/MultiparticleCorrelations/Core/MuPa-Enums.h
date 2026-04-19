@@ -107,6 +107,7 @@ enum eDiffWeightCategory {
   eDWPhi = 0, // corresponds to eDiffPhiWeights structure, here the fundamental 0-th axis never to be projected out is "phi"
   eDWPt,      // corresponds to eDiffPtWeights structure, here the fundamental 0-th axis never to be projected out is "pt"
   eDWEta,     // corresponds to eDiffEtaWeights structure, here the fundamental 0-th axis never to be projected out is "eta"
+  eDWCharge,  // corresponds to eDiffChargeWeights structure, here the fundamental 0-th axis never to be projected out is "charge"
   // ...
   eDiffWeightCategory_N
 };
@@ -121,8 +122,9 @@ enum eDiffPhiWeights {
   eDiffPhiWeights_N
 };
 
-enum eDiffPtWeights {
+enum eDiffPtWeights { // if i add new entry here, or in eDiffPhiWeights and eDiffEtaWeights, I need to update also GetParticleWeights() + FillQvectorFromSparse() + WeightFromSparse()
   wPtPtAxis = 0,
+  wPtEtaAxis,
   wPtChargeAxis,
   wPtCentralityAxis,
   eDiffPtWeights_N
@@ -130,9 +132,18 @@ enum eDiffPtWeights {
 
 enum eDiffEtaWeights {
   wEtaEtaAxis = 0,
+  wEtaPtAxis,
   wEtaChargeAxis,
   wEtaCentralityAxis,
   eDiffEtaWeights_N
+};
+
+enum eDiffChargeWeights {
+  wChargeChargeAxis = 0,
+  wChargePtAxis,
+  wChargeEtaAxis,
+  wChargeCentralityAxis,
+  eDiffChargeWeights_N
 };
 
 enum eVnPsin { eVn = 0,
@@ -359,6 +370,7 @@ enum eNUAPDF {
   ePhiNUAPDF = 0,
   ePtNUAPDF,
   eEtaNUAPDF,
+  eChargeNUAPDF,
   eNUAPDF_N
 };
 

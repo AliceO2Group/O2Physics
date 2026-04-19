@@ -15,21 +15,12 @@
 #ifndef PWGCF_JCORRAN_CORE_FLOWJHISTMANAGER_H_
 #define PWGCF_JCORRAN_CORE_FLOWJHISTMANAGER_H_
 
-/* Header files. */
-#include <vector>
-#include <array>
-#include <string>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/Logger.h>
+
+#include <Rtypes.h>
+
 #include <string_view>
-#include "TH1.h"
-#include "TH2.h"
-#include "TH3.h"
-#include "TProfile.h"
-#include "TProfile2D.h"
-
-// O2 headers. //
-#include "Framework/HistogramRegistry.h"
-
-// O2 Physics headers.
 
 /* Namespaces. */
 
@@ -239,7 +230,7 @@ class FlowJHistManager
 
     if (mode == 1) { // 'Weight' distributions are defined only for After/.
       mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST("After/histPtCorrected"),
-                            track.pt(), 1. / weightNUE);
+                            track.pt(), weightNUE); // extractEfficiency() from processMCEfficiency of correlations.cxx gives 1/eff
       mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST("After/histPhiCorrected"),
                             track.phi(), 1. / weightNUA);
 

@@ -15,12 +15,28 @@
 /// \brief  Task to produce QA output of the PID with ALICE3 RICH running on the MC.
 ///
 
-// O2 includes
 #include "ALICE3/DataModel/RICH.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 
-#include "Framework/AnalysisTask.h"
-#include "ReconstructionDataFormats/PID.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/Variant.h>
+#include <ReconstructionDataFormats/PID.h>
+
+#include <TH1.h>
+#include <TString.h>
+
+#include <cstdint>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::track;
@@ -36,7 +52,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
   std::swap(workflowOptions, options);
 }
 
-#include "Framework/runDataProcessing.h"
+#include <Framework/runDataProcessing.h>
 
 namespace o2::aod
 {

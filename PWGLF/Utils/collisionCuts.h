@@ -23,13 +23,22 @@
 
 #include "PWGLF/Utils/collisionCutsGroup.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/TriggerAliases.h" // IWYU pragma: keep (needed by EventSelectionFlagsMapping.def)
 #include "Common/DataModel/EventSelection.h"
 
-#include "Framework/HistogramRegistry.h"
-#include "Framework/Logger.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
+
+#include <TH1.h>
+
+#include <Rtypes.h>
 
 #include <map>
-#include <string>
+#include <utility>
 #include <vector>
 
 namespace o2::analysis
@@ -46,11 +55,11 @@ class CollisonCuts
     kFlagTrigerTVX,
     kFlagTimeFrameBorder,
     kFlagITSROFrameBorder,
-    kFlagSel8,
     kFlagVertexITSTPC,
-    kFlagBunchPileup,
     kFlagZvtxFT0vsPV,
-    kFlagOccupancy,
+    kFlagVertexTOFmatched,
+    kFlagVertexTRDmatched,
+    kFlagBunchPileup,
     kNoCollInTimeRangeStandard,
     kNoCollInTimeRangeNarrow,
     kNoCollInTimeRangeStrict,
@@ -60,9 +69,10 @@ class CollisonCuts
     kIsGoodITSLayersAll,
     kIsGoodITSLayer3,
     kIsGoodITSLayer0123,
-    kFlagVertexTRDmatched,
     kFlagBBT0A,
     kFlagBBT0C,
+    kFlagSel8,
+    kFlagOccupancy,
     kAllpassed
   };
 
@@ -108,19 +118,19 @@ class CollisonCuts
       bitList.push_back(1 << i); // BIT(i)
     }
     mHistogramRegistry = registry;
-    mHistogramRegistry->add("Event/posZ", "; vtx_{z} (cm); Entries", o2::framework::kTH1F, {{250, -12.5, 12.5}});       // z-vertex histogram after event selections
-    mHistogramRegistry->add("Event/posZ_noCut", "; vtx_{z} (cm); Entries", o2::framework::kTH1F, {{250, -12.5, 12.5}}); // z-vertex histogram before all selections
+    mHistogramRegistry->add("Event/posZ", "; vtx_{z} (cm); Entries", o2::framework::HistType::kTH1F, {{250, -12.5, 12.5}});       // z-vertex histogram after event selections
+    mHistogramRegistry->add("Event/posZ_noCut", "; vtx_{z} (cm); Entries", o2::framework::HistType::kTH1F, {{250, -12.5, 12.5}}); // z-vertex histogram before all selections
     if (mCheckIsRun3) {
-      mHistogramRegistry->add("Event/CentFT0M", "; vCentT0M; Entries", o2::framework::kTH1F, {{110, 0, 110}});
-      mHistogramRegistry->add("Event/CentFT0C", "; vCentT0C; Entries", o2::framework::kTH1F, {{110, 0, 110}});
-      mHistogramRegistry->add("Event/CentFT0A", "; vCentT0A; Entries", o2::framework::kTH1F, {{110, 0, 110}});
-      mHistogramRegistry->add("Event/posZ_ITSOnly", "; vtx_{z} (cm); Entries", o2::framework::kTH1F, {{250, -12.5, 12.5}});
-      mHistogramRegistry->add("Event/posZ_ITSTPC", "; vtx_{z} (cm); Entries", o2::framework::kTH1F, {{250, -12.5, 12.5}});
-      mHistogramRegistry->add("Event/trackOccupancyInTimeRange_noCut", "; Occupancy; Entries", o2::framework::kTH1F, {{500, 0., 20000.}});
+      mHistogramRegistry->add("Event/CentFT0M", "; FT0M Percentile; Entries", o2::framework::HistType::kTH1F, {{110, 0, 110}});
+      mHistogramRegistry->add("Event/CentFT0C", "; FT0C Percentile; Entries", o2::framework::HistType::kTH1F, {{110, 0, 110}});
+      mHistogramRegistry->add("Event/CentFT0A", "; FT0A Percentile; Entries", o2::framework::HistType::kTH1F, {{110, 0, 110}});
+      mHistogramRegistry->add("Event/posZ_ITSOnly", "; vtx_{z} (cm); Entries", o2::framework::HistType::kTH1F, {{250, -12.5, 12.5}});
+      mHistogramRegistry->add("Event/posZ_ITSTPC", "; vtx_{z} (cm); Entries", o2::framework::HistType::kTH1F, {{250, -12.5, 12.5}});
+      mHistogramRegistry->add("Event/trackOccupancyInTimeRange_noCut", "; Occupancy; Entries", o2::framework::HistType::kTH1F, {{500, 0., 20000.}});
     } else {
-      mHistogramRegistry->add("Event/CentRun2V0M", "; vCentV0M; Entries", o2::framework::kTH1F, {{110, 0, 110}});
+      mHistogramRegistry->add("Event/CentRun2V0M", "; vCentV0M; Entries", o2::framework::HistType::kTH1F, {{110, 0, 110}});
     }
-    mHistogramRegistry->add("CollCutCounts", "; ; Entries", o2::framework::kTH1F, {{kAllpassed + 1, 0, kAllpassed + 1}});
+    mHistogramRegistry->add("CollCutCounts", "; ; Entries", o2::framework::HistType::kTH1F, {{kAllpassed + 1, 0, kAllpassed + 1}});
     mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kAllEvent), "all");
     mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagZvertex), "Zvtx");
 
@@ -131,6 +141,7 @@ class CollisonCuts
 
     mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagSel8), "sel8");
     mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagOccupancy), "LowOccupancy");
+    mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kFlagVertexTOFmatched), "VertexTOFmatched");
     mHistogramRegistry->get<TH1>(HIST("CollCutCounts"))->GetXaxis()->SetBinLabel(binLabel(EvtSel::kAllpassed), "Allpassed");
   }
 
@@ -266,6 +277,13 @@ class CollisonCuts
   {
     mApplyHighMultCollInPrevRof = apply;
     setSelection(EvtSel::kNoHighMultCollInPrevRof, apply);
+  }
+
+  /// Set the VertexTOFmatched cut
+  void setApplyVertexTOFmatched(bool apply)
+  {
+    mApplyVertexTOFmatched = apply;
+    setSelection(EvtSel::kFlagVertexTOFmatched, apply);
   }
 
   /// Set the VertexTRDmatched cut
@@ -531,6 +549,7 @@ class CollisonCuts
   bool mApplyCollInRofStandard = false;       ///< Apply NoCollInRofStandard selection
   bool mApplyCollInRofStrict = false;         ///< Apply NoCollInRofStrict selection
   bool mApplyHighMultCollInPrevRof = false;   ///< Apply NoHighMultCollInPrevRof selection
+  bool mApplyVertexTOFmatched = false;        ///< Apply vertex TOF matched selection
   bool mApplyVertexTRDmatched = false;        ///< Apply vertex TRD matched selection
   bool mApplyBBT0A = false;                   ///< Apply T0A beam-beam timing selection
   bool mApplyBBT0C = false;                   ///< Apply T0C beam-beam timing selection

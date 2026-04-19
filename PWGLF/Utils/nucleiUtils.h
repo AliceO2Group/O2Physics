@@ -12,22 +12,40 @@
 #ifndef PWGLF_UTILS_NUCLEIUTILS_H_
 #define PWGLF_UTILS_NUCLEIUTILS_H_
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseITS.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/TableProducer/PID/pidTOFBase.h"
 
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/HistogramSpec.h"
-#include "MathUtils/BetheBlochAleph.h"
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <Framework/Array2D.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
+#include <MathUtils/BetheBlochAleph.h>
+#include <PID/PIDTOF.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include "TMCProcess.h"
+#include <TH1.h>
+#include <TMCProcess.h>
+#include <TPDGCode.h>
+
+#include <fmt/format.h>
+#include <sys/types.h>
+
+#include <Rtypes.h>
 
 #include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <memory>
+#include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 
 struct NucleusCandidate {
@@ -102,6 +120,8 @@ struct SlimCandidate {
   float phiGenerated = -999.f;
   float centrality = -1.f;
   uint64_t mcProcess = TMCProcess::kPNoProcess;
+  float nsigmaTpc = -999.f;
+  float nsigmaTof = -999.f;
 };
 
 enum Species {

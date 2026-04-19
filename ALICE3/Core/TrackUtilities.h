@@ -18,9 +18,9 @@
 #ifndef ALICE3_CORE_TRACKUTILITIES_H_
 #define ALICE3_CORE_TRACKUTILITIES_H_
 
-#include "ReconstructionDataFormats/Track.h"
+#include <ReconstructionDataFormats/Track.h>
 
-#include "TLorentzVector.h"
+#include <TLorentzVector.h>
 
 #include <vector>
 

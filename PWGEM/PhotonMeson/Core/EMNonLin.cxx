@@ -15,44 +15,41 @@
 
 #include "EMNonLin.h"
 
+#include <algorithm>
 #include <cmath>
 
 using namespace o2::pwgem::nonlin;
 
-float EMNonLin::getCorrectionFactor(float inputCalibValue, PhotonType photonType, float cent)
+float EMNonLin::getCorrectionFactor(float var, const Context& ctx)
 {
-
-  float param0 = 0, param1 = 0, param2 = 0, val = 1.f;
-  switch (photonType) {
-    case PhotonType::kEMC:
-      if (cent >= 30 && cent <= 40) {
-        param0 = -5.33426e-01f;
-        param1 = 1.40144e-02f;
-        param2 = -5.24434e-01f;
-      } else {
-        param0 = 0.f;
-        param1 = 0.f;
-        param2 = 0.f;
-      }
-      break;
-    case PhotonType::kPCM:
-      if (cent >= 0 && cent <= 100) {
-        param0 = 11.2144f;
-        param1 = 0.0986184f;
-        param2 = 10.9302f;
-      } else {
-        param0 = 0.f;
-        param1 = 0.f;
-        param2 = 0.f;
-      }
-      break;
-    case PhotonType::kPHOS:
-      param0 = 0.f;
-      param1 = 0.f;
-      param2 = 0.f;
-      break;
+  if (!ctx.params || var == 0.f) [[unlikely]] {
+    return 1.f;
   }
 
-  val = (1.f + param0 / inputCalibValue + param1 / std::pow(inputCalibValue, 2.f)) / (1.f + param2 / inputCalibValue);
-  return val;
+  int maxIter = std::min(ctx.nIter, MaxIter - 1);
+  float scale = 1.f;  // cumulative scale
+  float refVal = var; // reference value updated each iteration
+
+  for (int i = 0; i <= maxIter; ++i) {
+    if (refVal == 0.f) {
+      break;
+    }
+    const auto& p = ctx.params[i];
+
+    // evaluate pol1 for each parameter at this centrality
+    float a = p.a0 + p.a1 * ctx.cent;
+    float b = p.b0 + p.b1 * ctx.cent;
+    float c = p.c0 + p.c1 * ctx.cent;
+
+    // guard against c <= 0 which would make pow(x, -c) diverge
+    if (c <= 0.f) {
+      continue;
+    }
+
+    float iterScale = a + b * std::pow(refVal, -c);
+    scale *= iterScale;
+    refVal = var * scale; // next iteration uses scaled original input
+  }
+
+  return scale;
 }

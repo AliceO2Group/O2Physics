@@ -12,21 +12,46 @@
 // \brief Saves relevant information of DG candidates
 // \author Paul Buehler, paul.buehler@oeaw.ac.at
 
+#include "PWGUD/Core/DGCutparHolder.h"
 #include "PWGUD/Core/DGSelector.h"
+#include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/DataModel/UDTables.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Vertex.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonDataFormat/TimeStamp.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Vertex.h>
 
+#include <TH1.h>
+#include <TH2.h>
+
+#include <sys/types.h>
+
+#include <algorithm>
+#include <array>
+#include <cstdint>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -36,7 +61,7 @@ using namespace o2::framework::expressions;
 
 #define getHist(type, name) std::get<std::shared_ptr<type>>(histPointers[name])
 
-struct DGCandProducer {
+struct DgCandProducer {
   // data tables
   Produces<aod::UDCollisions> outputCollisions;
   Produces<aod::UDCollisionsSels> outputCollisionsSels;
@@ -449,7 +474,7 @@ struct DGCandProducer {
   {
     processReco(std::string("reco"), collision, bcs, tracks, fwdtracks, fv0as, ft0s, fdds);
   }
-  PROCESS_SWITCH(DGCandProducer, processData, "Produce UD table with data", true);
+  PROCESS_SWITCH(DgCandProducer, processData, "Produce UD table with data", true);
 
   // process function for reconstructed MC data
   void processMcData(MCCC const& collision, aod::McCollisions const& /*mccollisions*/, BCs const& bcs,
@@ -465,10 +490,10 @@ struct DGCandProducer {
       processReco(std::string("MCreco"), collision, bcs, tracks, fwdtracks, fv0as, ft0s, fdds);
     }
   }
-  PROCESS_SWITCH(DGCandProducer, processMcData, "Produce UD tables with MC data", false);
+  PROCESS_SWITCH(DgCandProducer, processMcData, "Produce UD tables with MC data", false);
 };
 
-struct McDGCandProducer {
+struct McDgCandProducer {
   // MC tables
   Produces<aod::UDMcCollisions> outputMcCollisions;
   Produces<aod::UDMcParticles> outputMcParticles;
@@ -886,21 +911,21 @@ struct McDGCandProducer {
       }
     }
   }
-  PROCESS_SWITCH(McDGCandProducer, processMCTruth, "Produce MC tables", false);
+  PROCESS_SWITCH(McDgCandProducer, processMCTruth, "Produce MC tables", false);
 
   void processDummy(aod::Collisions const& /*collisions*/)
   {
     // do nothing
     LOGF(info, "Running dummy process function!");
   }
-  PROCESS_SWITCH(McDGCandProducer, processDummy, "Dummy function", true);
+  PROCESS_SWITCH(McDgCandProducer, processDummy, "Dummy function", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<DGCandProducer>(cfgc, TaskName{"dgcandproducer"}),
-    adaptAnalysisTask<McDGCandProducer>(cfgc, TaskName{"mcdgcandproducer"})};
+    adaptAnalysisTask<DgCandProducer>(cfgc),
+    adaptAnalysisTask<McDgCandProducer>(cfgc)};
 
   return workflow;
 }

@@ -16,30 +16,37 @@
 #ifndef PWGLF_UTILS_STRANGENESSBUILDERMODULE_H_
 #define PWGLF_UTILS_STRANGENESSBUILDERMODULE_H_
 
-// simple checkers, but ensure 8 bit integers
-#define BITSET(var, nbit) ((var) |= (static_cast<uint8_t>(1) << static_cast<uint8_t>(nbit)))
-
-#include "TableHelper.h"
-
-#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h" // IWYU pragma: keep
 #include "PWGLF/Utils/strangenessBuilderHelper.h"
 
 #include "Common/Core/TPCVDriftManager.h"
 
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisHelpers.h"
-#include "Framework/Configurable.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/HistogramSpec.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/DeviceSpec.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
+#include <Framework/RunningWorkflowInfo.h>
+#include <ReconstructionDataFormats/PID.h>
+#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/TrackParametrization.h>
+
+#include <TH1.h>
+#include <TMCProcess.h>
+#include <TPDGCode.h>
+#include <TString.h>
 
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
-#include <memory>
 #include <string>
 #include <vector>
+
+// simple checkers, but ensure 8 bit integers
+#define BITSET(var, nbit) ((var) |= (static_cast<uint8_t>(1) << static_cast<uint8_t>(nbit)))
 
 //__________________________________________
 // strangeness builder module
@@ -569,18 +576,18 @@ class BuilderModule
     }
 
     // setup bookkeeping histogram
-    auto h = histos.template add<TH1>("hTableBuildingStatistics", "hTableBuildingStatistics", o2::framework::kTH1D, {{nTablesConst, -0.5f, static_cast<float>(nTablesConst)}});
-    auto h2 = histos.template add<TH1>("hInputStatistics", "hInputStatistics", o2::framework::kTH1D, {{nTablesConst, -0.5f, static_cast<float>(nTablesConst)}});
+    auto h = histos.template add<TH1>("hTableBuildingStatistics", "hTableBuildingStatistics", o2::framework::HistType::kTH1D, {{nTablesConst, -0.5f, static_cast<float>(nTablesConst)}});
+    auto h2 = histos.template add<TH1>("hInputStatistics", "hInputStatistics", o2::framework::HistType::kTH1D, {{nTablesConst, -0.5f, static_cast<float>(nTablesConst)}});
     h2->SetTitle("Input table sizes");
 
     if (v0BuilderOpts.generatePhotonCandidates.value == true) {
-      auto hDeduplicationStatistics = histos.template add<TH1>("hDeduplicationStatistics", "hDeduplicationStatistics", o2::framework::kTH1D, {{2, -0.5f, 1.5f}});
+      auto hDeduplicationStatistics = histos.template add<TH1>("hDeduplicationStatistics", "hDeduplicationStatistics", o2::framework::HistType::kTH1D, {{2, -0.5f, 1.5f}});
       hDeduplicationStatistics->GetXaxis()->SetBinLabel(1, "AO2D V0s");
       hDeduplicationStatistics->GetXaxis()->SetBinLabel(2, "Deduplicated V0s");
     }
 
     if (preSelectOpts.preselectOnlyDesiredV0s.value == true) {
-      auto hPreselectionV0s = histos.template add<TH1>("hPreselectionV0s", "hPreselectionV0s", o2::framework::kTH1D, {{16, -0.5f, 15.5f}});
+      auto hPreselectionV0s = histos.template add<TH1>("hPreselectionV0s", "hPreselectionV0s", o2::framework::HistType::kTH1D, {{16, -0.5f, 15.5f}});
       hPreselectionV0s->GetXaxis()->SetBinLabel(1, "Not preselected");
       hPreselectionV0s->GetXaxis()->SetBinLabel(2, "#gamma");
       hPreselectionV0s->GetXaxis()->SetBinLabel(3, "K^{0}_{S}");
@@ -600,7 +607,7 @@ class BuilderModule
     }
 
     if (preSelectOpts.preselectOnlyDesiredCascades.value == true) {
-      auto hPreselectionCascades = histos.template add<TH1>("hPreselectionCascades", "hPreselectionCascades", o2::framework::kTH1D, {{16, -0.5f, 15.5f}});
+      auto hPreselectionCascades = histos.template add<TH1>("hPreselectionCascades", "hPreselectionCascades", o2::framework::HistType::kTH1D, {{16, -0.5f, 15.5f}});
       hPreselectionCascades->GetXaxis()->SetBinLabel(1, "Not preselected");
       hPreselectionCascades->GetXaxis()->SetBinLabel(2, "#Xi^{-}");
       hPreselectionCascades->GetXaxis()->SetBinLabel(3, "#Xi^{+}");
@@ -621,7 +628,7 @@ class BuilderModule
 
     if (baseOpts.mc_findableMode.value > 0) {
       // save statistics of findable candidate processing
-      auto hFindable = histos.template add<TH1>("hFindableStatistics", "hFindableStatistics", o2::framework::kTH1D, {{6, -0.5f, 5.5f}});
+      auto hFindable = histos.template add<TH1>("hFindableStatistics", "hFindableStatistics", o2::framework::HistType::kTH1D, {{6, -0.5f, 5.5f}});
       hFindable->SetTitle(Form("Findable mode: %i", static_cast<int>(baseOpts.mc_findableMode.value)));
       hFindable->GetXaxis()->SetBinLabel(1, "AO2D V0s");
       hFindable->GetXaxis()->SetBinLabel(2, "V0s to be built");
@@ -631,7 +638,7 @@ class BuilderModule
       hFindable->GetXaxis()->SetBinLabel(6, "Cascades with collId -1");
     }
 
-    auto hPrimaryV0s = histos.template add<TH1>("hPrimaryV0s", "hPrimaryV0s", o2::framework::kTH1D, {{2, -0.5f, 1.5f}});
+    auto hPrimaryV0s = histos.template add<TH1>("hPrimaryV0s", "hPrimaryV0s", o2::framework::HistType::kTH1D, {{2, -0.5f, 1.5f}});
     hPrimaryV0s->GetXaxis()->SetBinLabel(1, "All V0s");
     hPrimaryV0s->GetXaxis()->SetBinLabel(2, "Primary V0s");
 
@@ -897,6 +904,9 @@ class BuilderModule
 
             // handle TPC-only tracks properly (photon conversions)
             if (v0BuilderOpts.moveTPCOnlyTracks) {
+              if (collision.has_bc()) {
+                mVDriftMgr.update(collision.template bc_as<aod::BCsWithTimestamps>().timestamp());
+              }
               if (isPosTPCOnly) {
                 // Nota bene: positive is TPC-only -> this entire V0 merits treatment as photon candidate
                 posTrackPar.setPID(o2::track::PID::Electron);
@@ -1368,6 +1378,9 @@ class BuilderModule
         pvX = collision.posX();
         pvY = collision.posY();
         pvZ = collision.posZ();
+        if (v0BuilderOpts.generatePhotonCandidates && v0BuilderOpts.moveTPCOnlyTracks && collision.has_bc()) {
+          mVDriftMgr.update(collision.template bc_as<aod::BCsWithTimestamps>().timestamp());
+        }
       }
       auto const& posTrack = tracks.rawIteratorAt(v0.posTrackId);
       auto const& negTrack = tracks.rawIteratorAt(v0.negTrackId);

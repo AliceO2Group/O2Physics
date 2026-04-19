@@ -17,11 +17,9 @@
 #include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
-#include "PWGJE/DataModel/JetSubtraction.h"
-
-#include "Common/Core/RecoDecay.h"
 
 #include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
@@ -29,17 +27,14 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TMath.h>
 #include <TMathBase.h>
-#include <TRandom3.h>
 
-#include <algorithm>
 #include <cmath>
-#include <cstddef>
+#include <cstdint>
+#include <iterator>
 #include <map>
 #include <set>
 #include <string>
-#include <type_traits>
 #include <vector>
 
 #include <math.h>
@@ -418,7 +413,7 @@ struct JetOutlierQATask {
   }
   PROCESS_SWITCH(JetOutlierQATask, processJetsAmbiguous, "jet finder QA mcd with weighted events", false);
 
-  void processCollisionsBC(soa::Join<aod::JetCollisions, aod::JMcCollisionLbs, aod::JCollisionBCs> const& collisions,
+  void processCollisionsBC(soa::Join<aod::JetCollisions, aod::JMcCollisionLbs> const& collisions,
                            aod::JetMcCollisions const&)
   {
     //
@@ -510,7 +505,7 @@ struct JetOutlierQATask {
   }
   PROCESS_SWITCH(JetOutlierQATask, processCollisionsBC, "jet finder QA outliers", false);
 
-  void processTracksBC(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs, aod::JCollisionBCs>> const& collisions,
+  void processTracksBC(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>> const& collisions,
                        soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const&,
                        aod::JetMcCollisions const& collisionsMC,
                        aod::JetTracksMCD const& tracks,

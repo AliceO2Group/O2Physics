@@ -27,6 +27,7 @@
 #include <DataFormatsCTP/Configuration.h>
 #include <DataFormatsCTP/Scalers.h>
 #include <DataFormatsFT0/Digit.h>
+#include <DataFormatsITSMFT/DPLAlpideParam.h>
 #include <DataFormatsITSMFT/TimeDeadMap.h>
 #include <DataFormatsParameters/AggregatedRunInfo.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
@@ -35,7 +36,6 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
-#include <ITSMFTBase/DPLAlpideParam.h>
 #include <ITSMFTReconstruction/ChipMappingITS.h>
 
 #include <TH1.h>
@@ -54,6 +54,7 @@
 #include <iterator>
 #include <limits>
 #include <map>
+#include <numeric>
 #include <string>
 #include <utility>
 #include <vector>
@@ -159,6 +160,7 @@ class BcSelectionModule
   int mTimeFrameStartBorderMargin = 300; // default value
   int mTimeFrameEndBorderMargin = 4000;  // default value
   std::string strLPMProductionTag = "";  // MC production tag to be retrieved from AO2D metadata
+  std::string strPassName = "";          // RecoPassName (for data) or AnchorPassName (for MC) from metadata
   bool isMC = false;
 
   TriggerAliases* aliases = nullptr;
@@ -180,8 +182,8 @@ class BcSelectionModule
     if (bcselOpts.amIneeded.value < 0) {
       int bcSelNeeded = -1, evSelNeeded = -1;
       bcselOpts.amIneeded.value = 0;
-      enableFlagIfTableRequired(context, "BcSels", bcSelNeeded);
-      enableFlagIfTableRequired(context, "EvSels", evSelNeeded);
+      o2::common::core::enableFlagIfTableRequired(context, "BcSels", bcSelNeeded);
+      o2::common::core::enableFlagIfTableRequired(context, "EvSels", evSelNeeded);
       if (bcSelNeeded == 1) {
         bcselOpts.amIneeded.value = 1;
         LOGF(info, "BC Selection / Autodetection for aod::BcSels: subscription present, will generate.");
@@ -195,11 +197,12 @@ class BcSelectionModule
         return;
       }
     }
-    strLPMProductionTag = metadataInfo.get("LPMProductionTag"); // to extract info from ccdb by the tag
     isMC = metadataInfo.isMC();
+    strLPMProductionTag = metadataInfo.get("LPMProductionTag"); // to extract info from ccdb by the tag
+    strPassName = metadataInfo.get(isMC ? "AnchorPassName" : "RecoPassName");
 
     // add counter
-    histos.add("bcselection/hCounterInvalidBCTimestamp", "", o2::framework::kTH1D, {{1, 0., 1.}});
+    histos.add("bcselection/hCounterInvalidBCTimestamp", "", o2::framework::HistType::kTH1D, {{1, 0., 1.}});
   }
 
   //__________________________________________________
@@ -279,8 +282,15 @@ class BcSelectionModule
       // QC info
       std::map<std::string, std::string> metadata;
       metadata["run"] = Form("%d", run);
+      metadata["passName"] = strPassName;
+      LOGP(info, "accessing pass-specific rct object for run={} and passName={} from ccdb", run, strPassName);
       ccdb->setFatalWhenNull(0);
       mapRCT = ccdb->template getSpecific<std::map<uint64_t, uint32_t>>("RCT/Flags/RunFlags", ts, metadata);
+      if (mapRCT == nullptr) {
+        LOGP(info, "pass-specific rct object missing... trying the latest");
+        metadata.erase("passName");
+        mapRCT = ccdb->template getSpecific<std::map<uint64_t, uint32_t>>("RCT/Flags/RunFlags", ts, metadata);
+      }
       ccdb->setFatalWhenNull(1);
       if (mapRCT == nullptr) {
         LOGP(info, "rct object missing... inserting dummy rct flags");
@@ -719,7 +729,7 @@ class EventSelectionModule
     evselOpts = external_evselopts;
 
     if (evselOpts.amIneeded.value < 0) {
-      enableFlagIfTableRequired(context, "EvSels", evselOpts.amIneeded.value);
+      o2::common::core::enableFlagIfTableRequired(context, "EvSels", evselOpts.amIneeded.value);
       if (evselOpts.amIneeded.value == 0) {
         LOGF(info, "Event Selection / Autodetecting for aod::EvSels: not required, won't generate.");
         return;
@@ -1505,10 +1515,14 @@ class EventSelectionModule
       // apply int7-like selections
       bool sel7 = 0;
 
-      // TODO apply other cuts for sel8
-      // TODO introduce sel1 etc?
+      // Combination of bits for Run 3 event selection decisions
+      // TODO apply other cuts for sel8?
       // TODO introduce array of sel[0]... sel[8] or similar?
-      bool sel8 = bitcheck64(bcselEntry.selection, aod::evsel::kIsTriggerTVX) && bitcheck64(bcselEntry.selection, aod::evsel::kNoTimeFrameBorder) && bitcheck64(bcselEntry.selection, aod::evsel::kNoITSROFrameBorder);
+      bool sel8 = false;
+      if (lastRun < 568873) // pre-2026 data & MC: require all three bits: TVX, TF and ROF border cuts
+        sel8 = bitcheck64(bcselEntry.selection, aod::evsel::kIsTriggerTVX) && bitcheck64(bcselEntry.selection, aod::evsel::kNoTimeFrameBorder) && bitcheck64(bcselEntry.selection, aod::evsel::kNoITSROFrameBorder);
+      else // for pp 2026: sel8 without kNoITSROFrameBorder bit, because the cross-ROF reconstruction for ITS will be On (the switch by a runNumber is a temporary solution)
+        sel8 = bitcheck64(bcselEntry.selection, aod::evsel::kIsTriggerTVX) && bitcheck64(bcselEntry.selection, aod::evsel::kNoTimeFrameBorder);
 
       // fill counters
       histos.template get<TH1>(HIST("eventselection/hColCounterAll"))->Fill(Form("%d", bc.runNumber()), 1);
@@ -1563,8 +1577,8 @@ class LumiModule
     if (lumiOpts.amIneeded.value < 0) {
       int bcSelNeeded = -1, evSelNeeded = -1;
       lumiOpts.amIneeded.value = 0;
-      enableFlagIfTableRequired(context, "BcSels", bcSelNeeded);
-      enableFlagIfTableRequired(context, "EvSels", evSelNeeded);
+      o2::common::core::enableFlagIfTableRequired(context, "BcSels", bcSelNeeded);
+      o2::common::core::enableFlagIfTableRequired(context, "EvSels", evSelNeeded);
       if (bcSelNeeded == 1) {
         lumiOpts.amIneeded.value = 1;
         LOGF(info, "Luminosity / Autodetection for aod::BcSels: subscription present, will generate.");

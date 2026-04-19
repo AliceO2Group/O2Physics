@@ -14,46 +14,31 @@
 
 #include "PWGLF/DataModel/ZDCCalTables.h"
 
-#include "Common/CCDB/ctpRateFetcher.h"
-#include "Common/Core/EventPlaneHelper.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/FT0Corrected.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Qvectors.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "Framework/Logger.h"
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
-#include <CommonConstants/PhysicsConstants.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <DataFormatsParameters/GRPObject.h>
-#include <DetectorsBase/GeometryManager.h>
-#include <DetectorsBase/Propagator.h>
-#include <DetectorsCommonDataFormats/AlignParam.h>
-#include <FT0Base/Geometry.h>
-#include <FV0Base/Geometry.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/StepTHn.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/Track.h>
 
-#include <Math/Vector4D.h>
-#include <TComplex.h>
 #include <TF1.h>
-#include <TH1F.h>
-#include <TMath.h>
-#include <TRandom3.h>
+#include <TH2.h>
+#include <THn.h>
+#include <TProfile.h>
+#include <TProfile3D.h>
+
+#include <RtypesCore.h>
 
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -61,7 +46,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
-using namespace o2::aod::rctsel;
 
 // using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
 
@@ -116,8 +100,8 @@ struct zdccalderived {
   Configurable<bool> useShift{"useShift", false, "shift histograms"};
   Configurable<bool> ispolarization{"ispolarization", false, "Flag to check polarization"};
   Configurable<bool> followpub{"followpub", true, "flag to use alphaZDC"};
-  Configurable<bool> useGainCallib{"useGainCallib", false, "use gain calibration"};
-  Configurable<bool> useCallibvertex{"useCallibvertex", false, "use calibration for vxy"};
+  // Configurable<bool> useGainCallib{"useGainCallib", false, "use gain calibration"};
+  // Configurable<bool> useCallibvertex{"useCallibvertex", false, "use calibration for vxy"};
   Configurable<bool> coarse1{"coarse1", false, "RE1"};
   Configurable<bool> fine1{"fine1", false, "REfine1"};
   Configurable<bool> coarse2{"coarse2", false, "RE2"};
@@ -133,8 +117,6 @@ struct zdccalderived {
   Configurable<bool> useRecentereSp{"useRecentereSp", false, "use Recentering with Sparse or THn"};
   Configurable<bool> useRecenterefineSp{"useRecenterefineSp", false, "use fine Recentering with THn"};
 
-  Configurable<std::string> confGainPath{"confGainPath", "Users/p/prottay/My/Object/NewPbPbpass4_10092024/gaincallib", "Path to gain calibration"};
-  Configurable<std::string> confGainPathVxy{"confGainPathVxy", "Users/p/prottay/My/Object/swapcoords/PbPbpass4_20112024/recentervert", "Path to gain calibration for vxy"};
   Configurable<std::string> confRecentereSp{"confRecentereSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for recentering"};
   Configurable<std::string> confRecentereSp2{"confRecentereSp2", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for recentering 2"};
   Configurable<std::string> confRecentereSp3{"confRecentereSp3", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for recentering 3"};
@@ -354,20 +336,20 @@ struct zdccalderived {
       auto vx = collision.vx();
       auto vy = collision.vy();
 
-      float psiZDCC = -99;
-      float psiZDCA = -99;
-      auto qxZDCA = 0.0;
-      auto qxZDCC = 0.0;
-      auto qyZDCA = 0.0;
-      auto qyZDCC = 0.0;
-      auto sumA = 0.0;
-      auto sumC = 0.0;
+      double psiZDCC = -99;
+      double psiZDCA = -99;
+      auto qxZDCA = collision.qxA();
+      auto qxZDCC = collision.qxC();
+      auto qyZDCA = collision.qyA();
+      auto qyZDCC = collision.qyC();
+      // auto sumA = 0.0;
+      // auto sumC = 0.0;
 
       auto timestamps = ccdb->getRunDuration(currentRunNumber, true); /// fatalise if timestamps are not found
       int64_t sorTimestamp = timestamps.first;                        // timestamp of the SOR/SOX/STF in ms
       int64_t eorTimestamp = timestamps.second;                       // timestamp of the EOR/EOX/ETF in ms
       int64_t ts = eorTimestamp / 2 + sorTimestamp / 2;               // timestamp of the middle of the run
-
+      /*
       std::array<float, 4> znaEnergy = {
         collision.znaE0(),
         collision.znaE1(),
@@ -442,14 +424,14 @@ struct zdccalderived {
         qyZDCC = 0.0;
         return;
       }
-
+      */
       histos.fill(HIST("hEvtSelInfo"), 8.5);
       histos.fill(HIST("hCentrality"), centrality);
       histos.fill(HIST("Vz"), vz);
 
       histos.fill(HIST("AvgVxy"), 0.5, vx);
       histos.fill(HIST("AvgVxy"), 1.5, vy);
-
+      /*
       if (useCallibvertex && (currentRunNumber != lastRunNumber)) {
         gainprofilevxy = ccdb->getForTimeStamp<TProfile>(confGainPathVxy.value, ts);
       }
@@ -458,7 +440,7 @@ struct zdccalderived {
         vx = vx - gainprofilevxy->GetBinContent(1);
         vy = vy - gainprofilevxy->GetBinContent(2);
       }
-
+      */
       bool res = 0;
       bool resfine = 0;
       int check = 1;

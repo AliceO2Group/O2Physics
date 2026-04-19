@@ -14,19 +14,26 @@
 #include "PWGDQ/Core/CutsLibrary.h"
 
 #include "AnalysisCompositeCut.h"
+#include "AnalysisCut.h"
 #include "VarManager.h"
 
+#include <Framework/Array2D.h>
+#include <Framework/Logger.h>
+
 #include <TF1.h>
+#include <TString.h>
+
+#include <rapidjson/document.h>
+#include <rapidjson/error/error.h>
 
 #include <RtypesCore.h>
 
+#include <cstddef>
 #include <iostream>
-#include <set>
+#include <numeric>
 #include <string>
+#include <utility>
 #include <vector>
-
-using std::cout;
-using std::endl;
 
 AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 {
@@ -2953,6 +2960,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("muonMinimalCuts10SigmaPDCA")) {
+    cut->AddCut(GetAnalysisCut("muonMinimalCuts10SigmaPDCA"));
+    return cut;
+  }
+
   if (!nameStr.compare("muonQualityCuts")) {
     cut->AddCut(GetAnalysisCut("muonQualityCuts"));
     return cut;
@@ -3529,6 +3541,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pairD0")) {
+    cut->AddCut(GetAnalysisCut("pairD0"));
+    return cut;
+  }
+
   if (!nameStr.compare("pairD0HighPt1")) {
     cut->AddCut(GetAnalysisCut("pairLxyzProjected3sigma"));
     cut->AddCut(GetAnalysisCut("pairPtLow5"));
@@ -3881,7 +3898,49 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   }
 
   if (!nameStr.compare("alice3DielectronPID")) {
-    cut->AddCut(GetAnalysisCut("alice3StandardKine"));
+    cut->AddCut(GetAnalysisCut("alice3JpsiKine"));
+    cut->AddCut(GetAnalysisCut("alice3TrackQuality"));
+    cut->AddCut(GetAnalysisCut("alice3iTOFPIDEl"));
+    cut->AddCut(GetAnalysisCut("alice3oTOFPIDEl"));
+    cut->AddCut(GetAnalysisCut("alice3RICHPIDEl"));
+    return cut;
+  }
+
+  if (!nameStr.compare("alice3DielectronPIDTOFOnly")) {
+    cut->AddCut(GetAnalysisCut("alice3JpsiKineTOFAcceptance"));
+    cut->AddCut(GetAnalysisCut("alice3TrackQuality"));
+    cut->AddCut(GetAnalysisCut("alice3iTOFPIDEl"));
+    cut->AddCut(GetAnalysisCut("alice3oTOFPIDEl"));
+    return cut;
+  }
+
+  if (!nameStr.compare("alice3DielectronPIDRICHOnly")) {
+    cut->AddCut(GetAnalysisCut("alice3JpsiKineTOFAcceptance"));
+    cut->AddCut(GetAnalysisCut("alice3TrackQuality"));
+    cut->AddCut(GetAnalysisCut("alice3iTOFPIDEl"));
+    cut->AddCut(GetAnalysisCut("alice3oTOFPIDEl"));
+    return cut;
+  }
+
+  if (!nameStr.compare("alice3DielectronPIDTOFOnly")) {
+    cut->AddCut(GetAnalysisCut("alice3JpsiKine"));
+    cut->AddCut(GetAnalysisCut("alice3TrackQuality"));
+    cut->AddCut(GetAnalysisCut("alice3iTOFPIDEl"));
+    cut->AddCut(GetAnalysisCut("alice3oTOFPIDEl"));
+    return cut;
+  }
+
+  if (!nameStr.compare("alice3DielectronPIDTOFAcceptance")) {
+    cut->AddCut(GetAnalysisCut("alice3JpsiKineTOFAcceptance"));
+    cut->AddCut(GetAnalysisCut("alice3TrackQuality"));
+    cut->AddCut(GetAnalysisCut("alice3iTOFPIDEl"));
+    cut->AddCut(GetAnalysisCut("alice3oTOFPIDEl"));
+    cut->AddCut(GetAnalysisCut("alice3RICHPIDEl"));
+    return cut;
+  }
+
+  if (!nameStr.compare("alice3DielectronPIDRICHAcceptance")) {
+    cut->AddCut(GetAnalysisCut("alice3JpsiKineRICHAcceptance"));
     cut->AddCut(GetAnalysisCut("alice3TrackQuality"));
     cut->AddCut(GetAnalysisCut("alice3iTOFPIDEl"));
     cut->AddCut(GetAnalysisCut("alice3oTOFPIDEl"));
@@ -6275,6 +6334,14 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("muonMinimalCuts10SigmaPDCA")) {
+    cut->AddCut(VarManager::kEta, -4.0, -2.5);
+    cut->AddCut(VarManager::kMuonRAtAbsorberEnd, 17.6, 89.5);
+    cut->AddCut(VarManager::kMuonPDca, 0.0, 990.0, false, VarManager::kMuonRAtAbsorberEnd, 17.6, 26.5);
+    cut->AddCut(VarManager::kMuonPDca, 0.0, 540.0, false, VarManager::kMuonRAtAbsorberEnd, 26.5, 89.5);
+    return cut;
+  }
+
   if (!nameStr.compare("muonQualityCuts")) {
     cut->AddCut(VarManager::kEta, -4.0, -2.5);
     cut->AddCut(VarManager::kMuonRAtAbsorberEnd, 17.6, 89.5);
@@ -6732,6 +6799,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pairD0")) {
+    cut->AddCut(VarManager::kMass, 1.814, 1.914);
+    return cut;
+  }
+
   if (!nameStr.compare("pairJpsi")) {
     cut->AddCut(VarManager::kMass, 2.8, 3.3);
     return cut;
@@ -6975,13 +7047,35 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("alice3JpsiKine")) {
+    cut->AddCut(VarManager::kPt, 1.0, 1000.0);
+    cut->AddCut(VarManager::kEta, -2.5, 2.5); // Total tracker acceptance in v3b geomety
+    return cut;
+  }
+
+  if (!nameStr.compare("alice3JpsiKineTOFAcceptance")) {
+    cut->AddCut(VarManager::kPt, 1.0, 1000.0);
+    cut->AddCut(VarManager::kEta, -2.0, 2.0); // TOF acceptance in v3b geomety
+    return cut;
+  }
+
+  if (!nameStr.compare("alice3JpsiKineRICHAcceptance")) {
+    cut->AddCut(VarManager::kPt, 1.0, 1000.0);
+    cut->AddCut(VarManager::kEta, -0.8, 0.8); // RICH acceptance in v3b geomety
+    return cut;
+  }
+
   if (!nameStr.compare("alice3TrackQuality")) {
+    cut->AddCut(VarManager::kIsReconstructed, 0.5, 1.5);
+    cut->AddCut(VarManager::kNSiliconHits, 6.0, 12.0);
     cut->AddCut(VarManager::kTrackDCAxy, -3.0, 3.0);
     cut->AddCut(VarManager::kTrackDCAz, -3.0, 3.0);
     return cut;
   }
 
   if (!nameStr.compare("alice3TrackQualityTightDCA")) {
+    cut->AddCut(VarManager::kIsReconstructed, 0.5, 1.5);
+    cut->AddCut(VarManager::kNSiliconHits, 6.0, 12.0);
     cut->AddCut(VarManager::kTrackDCAxy, -1.0, 1.0);
     cut->AddCut(VarManager::kTrackDCAz, -1.0, 1.0);
     return cut;

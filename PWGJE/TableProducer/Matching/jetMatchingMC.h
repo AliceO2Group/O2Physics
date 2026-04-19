@@ -28,6 +28,7 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
+#include <Framework/Logger.h>
 
 #include <vector>
 
@@ -37,7 +38,8 @@ struct JetMatchingMc {
   o2::framework::Configurable<bool> doMatchingGeo{"doMatchingGeo", true, "Enable geometric matching"};
   o2::framework::Configurable<bool> doMatchingPt{"doMatchingPt", true, "Enable pt matching"};
   o2::framework::Configurable<bool> doMatchingHf{"doMatchingHf", false, "Enable HF matching"};
-  o2::framework::Configurable<float> maxMatchingDistance{"maxMatchingDistance", 0.24f, "Max matching distance"};
+  o2::framework::Configurable<std::vector<double>> jetRadiiForMatchingDistance{"jetRadiiForMatchingDistance", {0.2, 0.3, 0.4, 0.5, 0.6}, "Jet R values for per-R matching distance"};
+  o2::framework::Configurable<std::vector<double>> maxMatchingDistancePerJetR{"maxMatchingDistancePerJetR", {0.12, 0.18, 0.24, 0.30, 0.36}, "Max matching distance (0.6*R, see ALICE-AN-852) for each R in jetRadiiForMatchingDistance"};
   o2::framework::Configurable<float> minPtFraction{"minPtFraction", 0.5f, "Minimum pt fraction for pt matching"};
 
   o2::framework::Produces<JetsBasetoTagMatchingTable> jetsBasetoTagMatchingTable;
@@ -54,6 +56,12 @@ struct JetMatchingMc {
 
   void init(o2::framework::InitContext const&)
   {
+    if (jetRadiiForMatchingDistance->empty() || maxMatchingDistancePerJetR->empty()) {
+      LOGP(fatal, "jetRadiiForMatchingDistance and maxMatchingDistancePerJetR must not be empty");
+    }
+    if (jetRadiiForMatchingDistance->size() != maxMatchingDistancePerJetR->size()) {
+      LOGP(fatal, "jetRadiiForMatchingDistance and maxMatchingDistancePerJetR must have the same number of entries");
+    }
   }
 
   void processJets(o2::aod::JetMcCollisions const& mcCollisions, o2::aod::JetCollisionsMCD const& collisions,
@@ -84,7 +92,7 @@ struct JetMatchingMc {
         const auto jetsBasePerColl = jetsBase.sliceBy(baseJetsPerCollision, jetsBaseIsMc ? mcCollision.globalIndex() : collision.globalIndex());
         const auto jetsTagPerColl = jetsTag.sliceBy(tagJetsPerCollision, jetsTagIsMc ? mcCollision.globalIndex() : collision.globalIndex());
 
-        jetmatchingutilities::doAllMatching<jetsBaseIsMc, jetsTagIsMc>(jetsBasePerColl, jetsTagPerColl, jetsBasetoTagMatchingGeo, jetsBasetoTagMatchingPt, jetsBasetoTagMatchingHF, jetsTagtoBaseMatchingGeo, jetsTagtoBaseMatchingPt, jetsTagtoBaseMatchingHF, candidatesBase, tracks, clusters, candidatesTag, particles, particles, doMatchingGeo, doMatchingHf, doMatchingPt, maxMatchingDistance, minPtFraction);
+        jetmatchingutilities::doAllMatching<jetsBaseIsMc, jetsTagIsMc>(jetsBasePerColl, jetsTagPerColl, jetsBasetoTagMatchingGeo, jetsBasetoTagMatchingPt, jetsBasetoTagMatchingHF, jetsTagtoBaseMatchingGeo, jetsTagtoBaseMatchingPt, jetsTagtoBaseMatchingHF, candidatesBase, tracks, clusters, candidatesTag, particles, particles, doMatchingGeo, doMatchingHf, doMatchingPt, minPtFraction, jetRadiiForMatchingDistance, maxMatchingDistancePerJetR);
       }
     }
     for (auto i = 0; i < jetsBase.size(); ++i) {

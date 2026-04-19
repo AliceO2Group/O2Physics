@@ -22,7 +22,7 @@
 
 #include "PWGLF/Utils/collisionCuts.h"
 
-#include "Framework/Logger.h"
+#include <Framework/Logger.h>
 
 CollisionCutsGroup::CollisionCutsGroup()
   : zvtxMax{10.0f},

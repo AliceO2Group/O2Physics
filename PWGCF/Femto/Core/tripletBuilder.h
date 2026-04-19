@@ -19,16 +19,17 @@
 #include "PWGCF/Femto/Core/closeTripletRejection.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
 #include "PWGCF/Femto/Core/modes.h"
+#include "PWGCF/Femto/Core/pairHistManager.h"
 #include "PWGCF/Femto/Core/trackHistManager.h"
 #include "PWGCF/Femto/Core/tripletCleaner.h"
 #include "PWGCF/Femto/Core/tripletHistManager.h"
 #include "PWGCF/Femto/Core/tripletProcessHelpers.h"
+#include "PWGCF/Femto/Core/v0HistManager.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
-#include "Framework/HistogramRegistry.h"
-#include "Framework/HistogramSpec.h"
-
-#include "fairlogger/Logger.h"
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
 
 #include <chrono>
 #include <cstdint>
@@ -178,7 +179,7 @@ class TripletTrackTrackTrackBuilder
       if (trackSlice1.size() < nLimitPartitionIdenticalParticles123) {
         return;
       }
-      mColHistManager.template fill<mode>(col, trackSlice1.size(), trackSlice1.size(), trackSlice1.size());
+      mColHistManager.template fill<mode>(col);
       mCtrSe.setMagField(col.magField());
       if (mMixIdenticalParticles) {
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
@@ -190,7 +191,7 @@ class TripletTrackTrackTrackBuilder
       if (trackSlice1.size() < nLimitPartitionIdenticalParticles12 || trackSlice3.size() < nLimitPartitionParticles) {
         return;
       }
-      mColHistManager.template fill<mode>(col, trackSlice1.size(), trackSlice1.size(), trackSlice3.size());
+      mColHistManager.template fill<mode>(col);
       mCtrSe.setMagField(col.magField());
       if (mMixIdenticalParticles) {
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
@@ -203,7 +204,7 @@ class TripletTrackTrackTrackBuilder
       if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles || trackSlice3.size() < nLimitPartitionParticles) {
         return;
       }
-      mColHistManager.template fill<mode>(col, trackSlice1.size(), trackSlice2.size(), trackSlice3.size());
+      mColHistManager.template fill<mode>(col);
       mCtrSe.setMagField(col.magField());
       tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, trackSlice3, trackTable, col, mTrackHistManager1, mTrackHistManager2, mTrackHistManager3, mTripletHistManagerSe, mCtrSe, mTc);
     }
@@ -219,7 +220,7 @@ class TripletTrackTrackTrackBuilder
       if (trackSlice1.size() < nLimitPartitionIdenticalParticles123) {
         return;
       }
-      mColHistManager.template fill<mode>(col, mcCols, trackSlice1.size(), trackSlice1.size(), trackSlice1.size());
+      mColHistManager.template fill<mode>(col, mcCols);
       mCtrSe.setMagField(col.magField());
       if (mMixIdenticalParticles) {
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
@@ -231,7 +232,7 @@ class TripletTrackTrackTrackBuilder
       if (trackSlice1.size() < nLimitPartitionIdenticalParticles12 || trackSlice3.size() < nLimitPartitionParticles) {
         return;
       }
-      mColHistManager.template fill<mode>(col, mcCols, trackSlice1.size(), trackSlice1.size(), trackSlice3.size());
+      mColHistManager.template fill<mode>(col, mcCols);
       mCtrSe.setMagField(col.magField());
       if (mMixIdenticalParticles) {
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
@@ -244,7 +245,7 @@ class TripletTrackTrackTrackBuilder
       if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles || trackSlice3.size() < nLimitPartitionParticles) {
         return;
       }
-      mColHistManager.template fill<mode>(col, mcCols, trackSlice1.size(), trackSlice2.size(), trackSlice3.size());
+      mColHistManager.template fill<mode>(col, mcCols);
       mCtrSe.setMagField(col.magField());
       tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, trackSlice3, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mTrackHistManager2, mTrackHistManager3, mTripletHistManagerSe, mCtrSe, mTc);
     }
@@ -486,7 +487,7 @@ class TripletTrackTrackV0Builder
       if (trackSlice1.size() < nLimitPartitionIdenticalParticles12 || v0Slice.size() < nLimitPartitionParticles) {
         return;
       }
-      mColHistManager.template fill<mode>(col, trackSlice1.size(), trackSlice1.size(), v0Slice.size());
+      mColHistManager.template fill<mode>(col);
       mCtrSe.setMagField(col.magField());
       if (mMixIdenticalParticles) {
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
@@ -499,7 +500,7 @@ class TripletTrackTrackV0Builder
       if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles || v0Slice.size() < nLimitPartitionParticles) {
         return;
       }
-      mColHistManager.template fill<mode>(col, trackSlice1.size(), trackSlice2.size(), v0Slice.size());
+      mColHistManager.template fill<mode>(col);
       mCtrSe.setMagField(col.magField());
       tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, v0Slice, trackTable, col, mTrackHistManager1, mTrackHistManager2, mV0HistManager, mTripletHistManagerSe, mCtrSe, mTc);
     }
@@ -516,7 +517,7 @@ class TripletTrackTrackV0Builder
       if (trackSlice1.size() < nLimitPartitionIdenticalParticles12 || v0Slice.size() < nLimitPartitionParticles) {
         return;
       }
-      mColHistManager.template fill<mode>(col, mcCols, trackSlice1.size(), trackSlice1.size(), v0Slice.size());
+      mColHistManager.template fill<mode>(col, mcCols);
       mCtrSe.setMagField(col.magField());
       if (mMixIdenticalParticles) {
         tripletOrder = static_cast<tripletprocesshelpers::TripletOrder>(mDist(mRng));
@@ -529,7 +530,7 @@ class TripletTrackTrackV0Builder
       if (trackSlice1.size() < nLimitPartitionParticles || trackSlice2.size() < nLimitPartitionParticles || v0Slice.size() < nLimitPartitionParticles) {
         return;
       }
-      mColHistManager.template fill<mode>(col, mcCols, trackSlice1.size(), trackSlice2.size(), v0Slice.size());
+      mColHistManager.template fill<mode>(col, mcCols);
       mCtrSe.setMagField(col.magField());
       tripletprocesshelpers::processSameEvent<mode>(trackSlice1, trackSlice2, v0Slice, trackTable, mcParticles, mcMothers, mcPartonicMothers, col, mcCols, mTrackHistManager1, mTrackHistManager2, mV0HistManager, mTripletHistManagerSe, mCtrSe, mTc);
     }

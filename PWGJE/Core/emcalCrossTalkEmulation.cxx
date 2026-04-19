@@ -20,12 +20,15 @@
 #include <DataFormatsEMCAL/Constants.h>
 #include <EMCALBase/Geometry.h>
 #include <Framework/Array2D.h>
-#include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
+
+#include <TRandom3.h>
 
 #include <algorithm> // std::find_if
 #include <array>
 #include <cstddef> // size_t
+#include <cstdint>
 #include <cstdlib> // std::abs
 #include <iomanip> // setw
 #include <ios>     // left and right
@@ -34,13 +37,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-// #include "Framework/OutputObjHeader.h"
-
-// #include "Common/CCDB/EventSelectionParams.h"
-#include <TH1.h>
-#include <TRandom3.h>
-
-#include <fairlogger/Logger.h>
 
 using namespace o2;
 using namespace o2::emccrosstalk;

@@ -19,17 +19,24 @@
 #include "PWGEM/PhotonMeson/Core/EMBitFlags.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
+#include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 
+#include <TH2.h>
 #include <TNamed.h>
+
+#include <sys/types.h>
 
 #include <Rtypes.h>
 
 #include <cmath>
 #include <concepts>
 #include <cstddef>
+#include <cstdint>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 template <typename T>
@@ -40,6 +47,20 @@ static constexpr bool HasPrimaries = !std::is_same_v<TPrimaries, std::nullptr_t>
 
 template <typename TSecondaries>
 static constexpr bool HasSecondaries = !std::is_same_v<TSecondaries, std::nullptr_t>;
+
+template <typename T>
+concept IsNonLinIterator = o2::soa::is_iterator<T> && requires(T t) {
+  // Check that the *elements* of the container have the required methods:
+  { t.corrE() } -> std::same_as<float>;
+  { t.corrPt() } -> std::same_as<float>;
+};
+
+template <typename T>
+concept IsNonLinContainer = o2::soa::is_table<T> && requires(T t) {
+  // Check that the *elements* of the container have the required methods:
+  { t.begin().corrE() } -> std::same_as<float>;
+  { t.begin().corrPt() } -> std::same_as<float>;
+};
 
 template <typename T>
 concept IsTrackIterator = o2::soa::is_iterator<T> && requires(T t) {
@@ -114,7 +135,7 @@ class EMCPhotonCut : public TNamed
 
   static const char* mCutNames[static_cast<int>(EMCPhotonCuts::kNCuts)];
 
-  constexpr auto getClusterId(o2::soa::is_iterator auto const& t) const
+  static constexpr auto getClusterId(o2::soa::is_iterator auto const& t)
   {
     if constexpr (requires { t.emEmcClusterId(); }) {
       return t.emEmcClusterId();
@@ -142,17 +163,17 @@ class EMCPhotonCut : public TNamed
       const o2::framework::AxisSpec thAxisTime{300, -150, +150, "#it{t}_{cls} (ns)"};
       const o2::framework::AxisSpec thAxisEoverP{400, 0, 10., "#it{E}_{cls}/#it{p}_{track} (#it{c})"};
 
-      fRegistry->add("QA/Cluster/before/hE", "E_{cluster};#it{E}_{cluster} (GeV);#it{N}_{cluster}", o2::framework::kTH1D, {thAxisClusterEnergy}, true);
-      fRegistry->add("QA/Cluster/before/hPt", "Transverse momenta of clusters;#it{p}_{T} (GeV/c);#it{N}_{cluster}", o2::framework::kTH1D, {thAxisClusterEnergy}, true);
-      fRegistry->add("QA/Cluster/before/hNgamma", "Number of #gamma candidates per collision;#it{N}_{#gamma} per collision;#it{N}_{collisions}", o2::framework::kTH1D, {{1001, -0.5f, 1000.5f}}, true);
-      fRegistry->add("QA/Cluster/before/hEtaPhi", "#eta vs #varphi;#eta;#varphi (rad.)", o2::framework::kTH2F, {thAxisEta, thAxisPhi}, true);
-      fRegistry->add("QA/Cluster/before/hNCell", "#it{N}_{cells};N_{cells} (GeV);#it{E}_{cluster} (GeV)", o2::framework::kTH2F, {thAxisNCell, thAxisClusterEnergy}, true);
-      fRegistry->add("QA/Cluster/before/hM02", "Long ellipse axis;#it{M}_{02} (cm);#it{E}_{cluster} (GeV)", o2::framework::kTH2F, {thAxisM02, thAxisClusterEnergy}, true);
-      fRegistry->add("QA/Cluster/before/hTime", "Cluster time;#it{t}_{cls} (ns);#it{E}_{cluster} (GeV)", o2::framework::kTH2F, {thAxisTime, thAxisClusterEnergy}, true);
+      fRegistry->add("QA/Cluster/before/hE", "E_{cluster};#it{E}_{cluster} (GeV);#it{N}_{cluster}", o2::framework::HistType::kTH1D, {thAxisClusterEnergy}, true);
+      fRegistry->add("QA/Cluster/before/hPt", "Transverse momenta of clusters;#it{p}_{T} (GeV/c);#it{N}_{cluster}", o2::framework::HistType::kTH1D, {thAxisClusterEnergy}, true);
+      fRegistry->add("QA/Cluster/before/hNgamma", "Number of #gamma candidates per collision;#it{N}_{#gamma} per collision;#it{N}_{collisions}", o2::framework::HistType::kTH1D, {{1001, -0.5f, 1000.5f}}, true);
+      fRegistry->add("QA/Cluster/before/hEtaPhi", "#eta vs #varphi;#eta;#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisEta, thAxisPhi}, true);
+      fRegistry->add("QA/Cluster/before/hNCell", "#it{N}_{cells};N_{cells} (GeV);#it{E}_{cluster} (GeV)", o2::framework::HistType::kTH2F, {thAxisNCell, thAxisClusterEnergy}, true);
+      fRegistry->add("QA/Cluster/before/hM02", "Long ellipse axis;#it{M}_{02} (cm);#it{E}_{cluster} (GeV)", o2::framework::HistType::kTH2F, {thAxisM02, thAxisClusterEnergy}, true);
+      fRegistry->add("QA/Cluster/before/hTime", "Cluster time;#it{t}_{cls} (ns);#it{E}_{cluster} (GeV)", o2::framework::HistType::kTH2F, {thAxisTime, thAxisClusterEnergy}, true);
 
       fRegistry->addClone("QA/Cluster/before/", "QA/Cluster/after/");
 
-      auto hClusterQualityCuts = fRegistry->add<TH2>("QA/Cluster/hClusterQualityCuts", "Energy at which clusters are removed by a given cut;;#it{E} (GeV)", o2::framework::kTH2F, {{static_cast<int>(EMCPhotonCut::EMCPhotonCuts::kNCuts) + 2, -0.5, static_cast<double>(EMCPhotonCut::EMCPhotonCuts::kNCuts) + 1.5}, thAxisClusterEnergy}, true);
+      auto hClusterQualityCuts = fRegistry->add<TH2>("QA/Cluster/hClusterQualityCuts", "Energy at which clusters are removed by a given cut;;#it{E} (GeV)", o2::framework::HistType::kTH2F, {{static_cast<int>(EMCPhotonCut::EMCPhotonCuts::kNCuts) + 2, -0.5, static_cast<double>(EMCPhotonCut::EMCPhotonCuts::kNCuts) + 1.5}, thAxisClusterEnergy}, true);
       hClusterQualityCuts->GetXaxis()->SetBinLabel(1, "In");
       hClusterQualityCuts->GetXaxis()->SetBinLabel(2, "Definition");
       hClusterQualityCuts->GetXaxis()->SetBinLabel(3, "Energy");
@@ -164,12 +185,12 @@ class EMCPhotonCut : public TNamed
       hClusterQualityCuts->GetXaxis()->SetBinLabel(9, "Exotic");
       hClusterQualityCuts->GetXaxis()->SetBinLabel(10, "Out");
 
-      fRegistry->add("QA/Cluster/hTrackdEtadPhi", "d#eta vs. d#varphi of matched tracks;d#eta;d#varphi (rad.)", o2::framework::kTH2F, {thAxisDEta, thAxisDPhi}, true);
-      fRegistry->add("QA/Cluster/hTrackdEtaPt", "d#eta vs. track pT of matched tracks;d#eta;d#varphi (rad.)", o2::framework::kTH2F, {thAxisDEta, thAxisMomentum}, true);
-      fRegistry->add("QA/Cluster/hTrackdPhiPt", "d#varphi vs. track pT of matched tracks;d#eta;d#varphi (rad.)", o2::framework::kTH2F, {thAxisDPhi, thAxisMomentum}, true);
-      fRegistry->add("QA/Cluster/hSecTrackdEtadPhi", "d#eta vs. d#varphi of matched secondary tracks;d#eta;d#varphi (rad.)", o2::framework::kTH2F, {thAxisDEta, thAxisDPhi}, true);
-      fRegistry->add("QA/Cluster/hSecTrackdEtaPt", "d#eta vs. track pT of matched secondary tracks;d#eta;d#varphi (rad.)", o2::framework::kTH2F, {thAxisDEta, thAxisMomentum}, true);
-      fRegistry->add("QA/Cluster/hSecTrackdPhiPt", "d#varphi vs. track pT of matched secondary tracks;d#eta;d#varphi (rad.)", o2::framework::kTH2F, {thAxisDPhi, thAxisMomentum}, true);
+      fRegistry->add("QA/Cluster/hTrackdEtadPhi", "d#eta vs. d#varphi of matched tracks;d#eta;d#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisDEta, thAxisDPhi}, true);
+      fRegistry->add("QA/Cluster/hTrackdEtaPt", "d#eta vs. track pT of matched tracks;d#eta;d#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisDEta, thAxisMomentum}, true);
+      fRegistry->add("QA/Cluster/hTrackdPhiPt", "d#varphi vs. track pT of matched tracks;d#eta;d#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisDPhi, thAxisMomentum}, true);
+      fRegistry->add("QA/Cluster/hSecTrackdEtadPhi", "d#eta vs. d#varphi of matched secondary tracks;d#eta;d#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisDEta, thAxisDPhi}, true);
+      fRegistry->add("QA/Cluster/hSecTrackdEtaPt", "d#eta vs. track pT of matched secondary tracks;d#eta;d#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisDEta, thAxisMomentum}, true);
+      fRegistry->add("QA/Cluster/hSecTrackdPhiPt", "d#varphi vs. track pT of matched secondary tracks;d#eta;d#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisDPhi, thAxisMomentum}, true);
     }
   }
 
@@ -266,7 +287,7 @@ class EMCPhotonCut : public TNamed
   /// \param cluster cluster table to check
   /// \param matchedTracks matched primary tracks table
   /// \param matchedSecondaries matched secondary tracks table
-  /// \param fRegistry HistogramRegistry pointer of the main task
+  /// \param fRegistry  o2::framework::HistogramRegistry pointer of the main task
   void AreSelectedRunning(EMBitFlags& flags, o2::soa::is_table auto const& clusters, IsTrackContainer auto const& emcmatchedtracks, IsTrackContainer auto const& secondaries, o2::framework::HistogramRegistry* fRegistry = nullptr) const
   {
     if (clusters.size() <= 0) {
@@ -281,9 +302,9 @@ class EMCPhotonCut : public TNamed
     const bool doQA = mDoQA && fRegistry != nullptr;
 
     nTotClusterPerColl = 0;
-    currentCollID = clusters.iteratorAt(0).emeventId();
+    currentCollID = clusters.iteratorAt(0).pmeventId();
     for (const auto& cluster : clusters) {
-      const auto collID = cluster.emeventId();
+      const auto collID = cluster.pmeventId();
       if (doQA) {
         fillBeforeClusterHistogram(cluster, fRegistry);
       }
@@ -362,7 +383,7 @@ class EMCPhotonCut : public TNamed
       }
       return false;
     }
-    if (currentCollID == cluster.emeventId()) {
+    if (currentCollID == cluster.pmeventId()) {
       ++nAccClusterPerColl;
     } else {
       if (doQA) {
@@ -384,7 +405,11 @@ class EMCPhotonCut : public TNamed
         return cluster.definition() == mDefinition;
 
       case EMCPhotonCuts::kEnergy:
-        return cluster.e() > mMinE;
+        if constexpr (IsNonLinIterator<std::decay_t<decltype(cluster)>>) {
+          return cluster.corrE() > mMinE;
+        } else {
+          return cluster.e() > mMinE;
+        }
 
       case EMCPhotonCuts::kNCell:
         return cluster.nCells() >= mMinNCell;
@@ -478,7 +503,11 @@ class EMCPhotonCut : public TNamed
         return cluster.definition() == mDefinition;
 
       case EMCPhotonCuts::kEnergy:
-        return cluster.e() > mMinE;
+        if constexpr (IsNonLinIterator<Cluster>) {
+          return cluster.corrE() > mMinE;
+        } else {
+          return cluster.e() > mMinE;
+        }
 
       case EMCPhotonCuts::kNCell:
         return cluster.nCells() >= mMinNCell;
@@ -496,7 +525,9 @@ class EMCPhotonCut : public TNamed
             auto dPhi = std::fabs(emcmatchedtrack.deltaPhi());
             auto trackpt = emcmatchedtrack.trackPt();
             auto trackp = emcmatchedtrack.trackP();
-            bool result = (dEta > GetTrackMatchingEta(trackpt)) || (dPhi > GetTrackMatchingPhi(trackpt)) || (cluster.e() / trackp >= mMinEoverP);
+            bool result = (dEta > GetTrackMatchingEta(trackpt)) ||
+                          (dPhi > GetTrackMatchingPhi(trackpt)) ||
+                          (cluster.e() / trackp >= mMinEoverP);
             if (!result) {
               return false;
             }
@@ -506,7 +537,7 @@ class EMCPhotonCut : public TNamed
           auto dPhis = cluster.deltaPhi();   // std:vector<float>
           auto trackspt = cluster.trackpt(); // std:vector<float>
           auto tracksp = cluster.trackp();   // std:vector<float>
-          int ntrack = tracksp.size();
+          int ntrack = trackspt.size();
           for (int itr = 0; itr < ntrack; itr++) {
             float dEta = std::fabs(dEtas[itr]);
             float dPhi = std::fabs(dPhis[itr]);
@@ -526,8 +557,8 @@ class EMCPhotonCut : public TNamed
             auto dEta = std::fabs(emcmatchedtrack.deltaEta());
             auto dPhi = std::fabs(emcmatchedtrack.deltaPhi());
             auto trackpt = emcmatchedtrack.trackPt();
-            auto trackp = emcmatchedtrack.trackP();
-            bool result = (dEta > GetSecTrackMatchingEta(trackpt)) || (dPhi > GetSecTrackMatchingPhi(trackpt)) || (cluster.e() / trackp >= mMinEoverP);
+            bool result = (dEta > GetSecTrackMatchingEta(trackpt)) ||
+                          (dPhi > GetSecTrackMatchingPhi(trackpt));
             if (!result) {
               return false;
             }
@@ -536,8 +567,7 @@ class EMCPhotonCut : public TNamed
           auto dEtas = cluster.deltaEtaSec();   // std:vector<float>
           auto dPhis = cluster.deltaPhiSec();   // std:vector<float>
           auto trackspt = cluster.trackptSec(); // std:vector<float>
-          auto tracksp = cluster.trackpSec();   // std:vector<float>
-          int ntrack = tracksp.size();
+          int ntrack = trackspt.size();
           for (int itr = 0; itr < ntrack; itr++) {
             float dEta = std::fabs(dEtas[itr]);
             float dPhi = std::fabs(dPhis[itr]);

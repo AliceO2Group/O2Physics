@@ -16,11 +16,14 @@
 #include "GeometryContainer.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <Framework/InitContext.h>
-#include <Framework/Logger.h>
 #include <ReconstructionDataFormats/Track.h>
 
-#include <map>
+#include <TString.h>
+
+#include <Rtypes.h>
+
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -92,7 +95,7 @@ class FastTracker
    * @param nch Charged particle multiplicity (used for hit density calculations).
    * @return int i.e. number of intercepts (implementation-defined).
    */
-  int FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackParCov& outputTrack, const float nch);
+  int FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackParCov& outputTrack, const float nch, const float maxRadius = 100.f);
 
   // For efficiency calculation
   float Dist(float z, float radius);

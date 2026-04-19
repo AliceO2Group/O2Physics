@@ -11,24 +11,37 @@
 
 #include "FastTracker.h"
 
-#include "Common/Core/TableHelper.h"
+#include "DetLayer.h"
+#include "GeometryContainer.h"
 
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <Framework/Logger.h>
+#include <MathUtils/Utils.h>
+#include <ReconstructionDataFormats/Track.h>
 #include <ReconstructionDataFormats/TrackParametrization.h>
 
-#include <TEnv.h>
-#include <THashList.h>
-#include <TMath.h>
-#include <TMatrixD.h>
+#include <TFile.h>
+#include <TGraph.h>
+#include <TMathBase.h>
+#include <TMatrixD.h> // IWYU pragma: keep (do not replace with TMatrixDfwd.h)
 #include <TMatrixDSymEigen.h>
+#include <TMatrixDSymfwd.h>
+#include <TMatrixDfwd.h>
 #include <TObject.h>
 #include <TRandom.h>
-#include <TSystem.h>
+#include <TString.h>
+#include <TVectorDfwd.h>
 
-#include <chrono>
-#include <fstream>
-#include <map>
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <string>
-#include <thread>
 #include <vector>
 
 namespace o2
@@ -288,7 +301,7 @@ float FastTracker::ProbGoodChiSqHit(float radius, float searchRadiusRPhi, float 
 
 // function to provide a reconstructed track from a perfect input track
 // returns number of intercepts (generic for now)
-int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackParCov& outputTrack, const float nch)
+int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackParCov& outputTrack, const float nch, const float maxRadius)
 {
   dNdEtaCent = nch; // set the number of charged particles per unit rapidity
   hits.clear();
@@ -335,6 +348,14 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
       continue; // this layer should not be attempted, but go ahead
     }
 
+    if (layers[il].getRadius() > maxRadius) {
+      if (lastLayerReached == -1) {
+        // This means that we didn't reach the first layer
+        return -9;
+      }
+      break; // could not reach
+    }
+
     // check if layer is reached
     float targetX = 1e+3;
     inputTrack.getXatLabR(layers[il].getRadius(), targetX, magneticField);
@@ -367,6 +388,7 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
         break;
       }
     }
+
     if (std::abs(inputTrack.getZ()) > layers[il].getZ() && mApplyZacceptance) {
       break; // out of acceptance bounds
     }
@@ -405,8 +427,9 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
   static constexpr float kLargeErr2Dir = 0.7 * 0.7;
   static constexpr float kLargeErr2PtI = 30.5 * 30.5;
   std::array<float, o2::track::kCovMatSize> largeCov = {0.};
-  for (int ic = o2::track::kCovMatSize; ic--;)
+  for (int ic = o2::track::kCovMatSize; ic--;) {
     largeCov[ic] = 0.;
+  }
   largeCov[o2::track::CovLabels::kSigY2] = largeCov[o2::track::CovLabels::kSigZ2] = kLargeErr2Coord;
   largeCov[o2::track::CovLabels::kSigSnp2] = largeCov[o2::track::CovLabels::kSigTgl2] = kLargeErr2Dir;
   largeCov[o2::track::CovLabels::kSigQ2Pt2] = kLargeErr2PtI * trPars[o2::track::ParLabels::kQ2Pt] * trPars[o2::track::ParLabels::kQ2Pt];
@@ -442,8 +465,10 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
       std::cos(alpha) * spacePoint[0] + std::sin(alpha) * spacePoint[1],
       -std::sin(alpha) * spacePoint[0] + std::cos(alpha) * spacePoint[1],
       spacePoint[2]};
-    if (!inwardTrack.propagateTo(xyz1[0], magneticField))
+
+    if (!inwardTrack.propagateTo(xyz1[0], magneticField)) {
       continue;
+    }
 
     if (!layers[il].isInert()) { // only update covm for tracker hits
       const o2::track::TrackParametrization<float>::dim2_t hitpoint = {
@@ -474,13 +499,14 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
       }
     }
 
-    if (layers[il].isSilicon())
+    if (layers[il].isSilicon()) {
       nSiliconPoints++; // count silicon hits
-    if (layers[il].isGas())
+    }
+    if (layers[il].isGas()) {
       nGasPoints++; // count TPC/gas hits
+    }
 
     hits.push_back(thisHit);
-
     if (!layers[il].isInert()) { // good hit probability calculation
       float sigYCmb = o2::math_utils::sqrt(inwardTrack.getSigmaY2() + layers[il].getResolutionRPhi() * layers[il].getResolutionRPhi());
       float sigZCmb = o2::math_utils::sqrt(inwardTrack.getSigmaZ2() + layers[il].getResolutionZ() * layers[il].getResolutionZ());
@@ -502,21 +528,24 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
   }
 
   // only attempt to continue if intercepts are at least four
-  if (nIntercepts < 4)
+  if (nIntercepts < 4) {
     return nIntercepts;
+  }
 
   // generate efficiency
   float eff = 1.;
   for (size_t i = 0; i < layers.size(); i++) {
     float iGoodHit = goodHitProbability[i];
-    if (iGoodHit <= 0)
+    if (iGoodHit <= 0) {
       continue;
+    }
 
     eff *= iGoodHit;
   }
   if (mApplyEffCorrection) {
-    if (gRandom->Uniform() > eff)
+    if (gRandom->Uniform() > eff) {
       return -8;
+    }
   }
 
   outputTrack.setCov(inwardTrack.getCov());
@@ -524,8 +553,9 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
 
   // Use covariance matrix based smearing
   std::array<float, o2::track::kCovMatSize> covMat = {0.};
-  for (int ii = 0; ii < o2::track::kCovMatSize; ii++)
+  for (int ii = 0; ii < o2::track::kCovMatSize; ii++) {
     covMat[ii] = outputTrack.getCov()[ii];
+  }
   TMatrixDSym m(5);
   double fcovm[5][5]; // double precision is needed for regularisation
 

@@ -9,24 +9,25 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <cmath>
-#include "Framework/Configurable.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RuntimeError.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-
-#include "ReconstructionDataFormats/GlobalTrackID.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "CommonConstants/MathConstants.h"
-#include "TDatabasePDG.h"
-#include "MathUtils/Utils.h"
 #include "Index.h"
+
+#include "Common/DataModel/EventSelection.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cmath>
+#include <cstdint>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -219,9 +220,9 @@ struct EffPtMFT {
             registry.fill(HIST("TracksPhiEtaGenDuplicates"), particle.phi(), particle.eta());
           }
         } // the particle has a track
-      }   // loop on particlesI
-    }     // loop on collisions
-  }       // end of processTrackEfficiencyIndexed
+      } // loop on particlesI
+    } // loop on collisions
+  } // end of processTrackEfficiencyIndexed
 
   PROCESS_SWITCH(EffPtMFT, processTrackEfficiencyIndexed, "Calculate tracking efficiency vs pt (indexed)", false);
 };

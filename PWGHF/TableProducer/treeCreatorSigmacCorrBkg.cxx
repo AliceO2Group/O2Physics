@@ -41,6 +41,7 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <numeric>
 
 using namespace o2;
 using namespace o2::framework; // for Produces, Configuable
@@ -55,8 +56,11 @@ enum Decays { Sigmac2455Pi = 0,
               LambdacPiPi };
 enum DecaysLambdac { PKPi = 0,
                      PiKP };
+enum Reflections { NotReflected = 0,
+                   Reflected };
 DECLARE_SOA_COLUMN(Y, y, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(PtLc, ptLc, float);
 DECLARE_SOA_COLUMN(Mass, mass, float);
 DECLARE_SOA_COLUMN(DeltaMass, deltaMass, float);
 DECLARE_SOA_COLUMN(Charge, charge, int8_t);
@@ -65,10 +69,13 @@ DECLARE_SOA_COLUMN(Decay, decay, int8_t);
 DECLARE_SOA_COLUMN(DecayLambdac, decayLambdac, int8_t);
 DECLARE_SOA_COLUMN(MlScoreFirstClass, mlScoreFirstClass, float); /// background score Λc
 DECLARE_SOA_COLUMN(MlScoreThirdClass, mlScoreThirdClass, float); /// non-prompt score Λc
+DECLARE_SOA_COLUMN(IsReflected, isReflected, int8_t);
+DECLARE_SOA_COLUMN(Origin, origin, int8_t);
 } // namespace hf_sigmac_bkg
 DECLARE_SOA_TABLE(HfCorrBkgSc, "AOD", "HFCORRBKGSC",
                   hf_sigmac_bkg::Y,
                   hf_sigmac_bkg::Pt,
+                  hf_sigmac_bkg::PtLc,
                   hf_sigmac_bkg::Mass,
                   hf_sigmac_bkg::DeltaMass,
                   hf_sigmac_bkg::Charge,
@@ -76,23 +83,37 @@ DECLARE_SOA_TABLE(HfCorrBkgSc, "AOD", "HFCORRBKGSC",
                   hf_sigmac_bkg::Decay,
                   hf_sigmac_bkg::DecayLambdac,
                   hf_sigmac_bkg::MlScoreFirstClass,
-                  hf_sigmac_bkg::MlScoreThirdClass);
+                  hf_sigmac_bkg::MlScoreThirdClass,
+                  hf_sigmac_bkg::IsReflected);
+DECLARE_SOA_TABLE(HfGenBkgSc, "AOD", "HFGENBKGSC",
+                  hf_sigmac_bkg::Y,
+                  hf_sigmac_bkg::Pt,
+                  hf_sigmac_bkg::MotherPdg,
+                  hf_sigmac_bkg::Origin);
 } // namespace o2::aod
 
 struct HfTreeCreatorSigmacCorrBkg {
 
   Produces<o2::aod::HfCorrBkgSc> rowCorrBkgSc;
+  Produces<o2::aod::HfGenBkgSc> rowGenBkgSc;
 
   /// Selection of candidates Λc+
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<float> yCandRecoMax{"yCandRecoMax", -1, "Maximum Sc candidate rapidity"};
+  Configurable<bool> keepReflectedSignals{"keepReflectedSignals", false, "Keep also the reflected signals (i.e. generated pKpi reco as piKp, and viceversa)"};
 
   using RecoLcMc = soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfMlLcToPKPi>;
   using RecoScMc = soa::Join<aod::HfCandSc, aod::HfCandScMcRec>;
   using ParticlesLcSigmac = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen, aod::HfCandScMcGen>;
 
   /// @brief init function
-  void init(InitContext&) {}
+  void init(InitContext&)
+  {
+    std::array<bool, 2> doprocesses{doprocessReco, doprocessGen};
+    if (std::accumulate(doprocesses.begin(), doprocesses.end(), 0) == 0) {
+      LOGP(fatal, "No process function enabled. Aborting...");
+    }
+  }
 
   ///
   void fillTable(RecoScMc::iterator candidateSc, RecoLcMc::iterator candLcDauSc, int motherPdg, int motherDecay = -1)
@@ -103,41 +124,66 @@ struct HfTreeCreatorSigmacCorrBkg {
     float massLc = -1.f;
     float deltaMass = -1.f;
     const int8_t isCandPKPiPiKP = hf_sigmac_utils::isDecayToPKPiToPiKP(candLcDauSc, candidateSc);
-    std::array<float, 2> outputMl{-1., -1.};
+    std::array<float, 2> outputMlLcPKPi{-1., -1.};
+    std::array<float, 2> outputMlLcPiKP{-1., -1.};
+    const float ptSc = candidateSc.pt();
+    const float ptLcDauSc = candLcDauSc.pt();
     /// rapidity selection on Σc0,++
     if (yCandRecoMax >= 0. && std::abs(rapidity) > yCandRecoMax) {
       return;
     }
 
     /// BDT scores
+    // reconstructed Λc± → pK-π+
+    if (!candLcDauSc.mlProbLcToPKPi().empty()) {
+      outputMlLcPKPi.at(0) = candLcDauSc.mlProbLcToPKPi()[0]; /// bkg score
+      outputMlLcPKPi.at(1) = candLcDauSc.mlProbLcToPKPi()[2]; /// non-prompt score
+    }
+    // reconstructed Λc± → π+K-p
     if (!candLcDauSc.mlProbLcToPiKP().empty()) {
-      outputMl.at(0) = candLcDauSc.mlProbLcToPiKP()[0]; /// bkg score
-      outputMl.at(1) = candLcDauSc.mlProbLcToPiKP()[2]; /// non-prompt score
+      outputMlLcPiKP.at(0) = candLcDauSc.mlProbLcToPiKP()[0]; /// bkg score
+      outputMlLcPiKP.at(1) = candLcDauSc.mlProbLcToPiKP()[2]; /// non-prompt score
     }
 
-    if ((TESTBIT(isCandPKPiPiKP, o2::aod::hf_cand_sigmac::Decays::PKPi)) && std::abs(candLcDauSc.template prong0_as<aod::TracksWMc>().template mcParticle_as<ParticlesLcSigmac>().pdgCode()) == kProton) {
+    int pdgCodeProng0Abs = std::abs(candLcDauSc.template prong0_as<aod::TracksWMc>().template mcParticle_as<ParticlesLcSigmac>().pdgCode());
+
+    /// candidates with Λc± reconstructed in the pK-π+ decay
+    if ((TESTBIT(isCandPKPiPiKP, o2::aod::hf_cand_sigmac::Decays::PKPi))) {
+
       massSc = HfHelper::invMassScRecoLcToPKPi(candidateSc, candLcDauSc);
       massLc = HfHelper::invMassLcToPKPi(candLcDauSc);
       deltaMass = massSc - massLc;
 
-      /// fill the tree
-      rowCorrBkgSc(rapidity, candidateSc.pt(), massSc, deltaMass, chargeSc, motherPdg, motherDecay, aod::hf_sigmac_bkg::DecaysLambdac::PKPi, outputMl.at(0), outputMl.at(1));
+      if (pdgCodeProng0Abs == kProton) {
+        /// candidates with reconstructed Λc± → pK-π+ decay that are generated Λc± → pK-π+ (not reflected)
+        rowCorrBkgSc(rapidity, ptSc, ptLcDauSc, massSc, deltaMass, chargeSc, motherPdg, motherDecay, aod::hf_sigmac_bkg::DecaysLambdac::PKPi, outputMlLcPKPi.at(0), outputMlLcPKPi.at(1), aod::hf_sigmac_bkg::Reflections::NotReflected);
+      } else if (keepReflectedSignals && pdgCodeProng0Abs == kPiPlus) {
+        /// candidates with reconstructed Λc± → pK-π+ decay that are actually generated Λc± → π+K-p (reflected)
+        rowCorrBkgSc(rapidity, ptSc, ptLcDauSc, massSc, deltaMass, chargeSc, motherPdg, motherDecay, aod::hf_sigmac_bkg::DecaysLambdac::PKPi, outputMlLcPKPi.at(0), outputMlLcPKPi.at(1), aod::hf_sigmac_bkg::Reflections::Reflected);
+      }
     }
-    if ((TESTBIT(isCandPKPiPiKP, o2::aod::hf_cand_sigmac::Decays::PiKP)) && std::abs(candLcDauSc.template prong0_as<aod::TracksWMc>().template mcParticle_as<ParticlesLcSigmac>().pdgCode()) == kPiPlus) {
+    /// candidates with Λc± reconstructed in the π+K-p decay
+    if ((TESTBIT(isCandPKPiPiKP, o2::aod::hf_cand_sigmac::Decays::PiKP))) {
+
       massSc = HfHelper::invMassScRecoLcToPiKP(candidateSc, candLcDauSc);
       massLc = HfHelper::invMassLcToPiKP(candLcDauSc);
       deltaMass = massSc - massLc;
 
-      /// fill the tree
-      rowCorrBkgSc(rapidity, candidateSc.pt(), massSc, deltaMass, chargeSc, motherPdg, motherDecay, aod::hf_sigmac_bkg::DecaysLambdac::PiKP, outputMl.at(0), outputMl.at(1));
+      if (pdgCodeProng0Abs == kPiPlus) {
+        /// candidates with reconstructed Λc± → π+K-p decay that are generated Λc± → π+K-p (not reflected)
+        rowCorrBkgSc(rapidity, ptSc, ptLcDauSc, massSc, deltaMass, chargeSc, motherPdg, motherDecay, aod::hf_sigmac_bkg::DecaysLambdac::PiKP, outputMlLcPiKP.at(0), outputMlLcPiKP.at(1), aod::hf_sigmac_bkg::Reflections::NotReflected);
+      } else if (keepReflectedSignals && pdgCodeProng0Abs == kProton) {
+        /// candidates with reconstructed Λc± → π+K-p decay that are actually generated Λc± → pK-π+ (reflected)
+        rowCorrBkgSc(rapidity, ptSc, ptLcDauSc, massSc, deltaMass, chargeSc, motherPdg, motherDecay, aod::hf_sigmac_bkg::DecaysLambdac::PiKP, outputMlLcPiKP.at(0), outputMlLcPiKP.at(1), aod::hf_sigmac_bkg::Reflections::Reflected);
+      }
     }
   }
 
   /// @brief process function to loop over the Σc reconstructed candidates and match them to corr. background sources in MC
-  void process(RecoScMc const& candidatesSc,
-               ParticlesLcSigmac const& particles,
-               RecoLcMc const&,
-               aod::TracksWMc const&)
+  void processReco(RecoScMc const& candidatesSc,
+                   ParticlesLcSigmac const& particles,
+                   RecoLcMc const&,
+                   aod::TracksWMc const&)
   {
     /// loop over reconstructed Σc candidates
     for (auto const& candidateSc : candidatesSc) {
@@ -303,6 +349,29 @@ struct HfTreeCreatorSigmacCorrBkg {
 
     } /// end loop over reconstructed Σc candidates
   }
+  PROCESS_SWITCH(HfTreeCreatorSigmacCorrBkg, processReco, "Process Reco MC", false);
+
+  /// @brief process function to look for generated Σc and Λc±(2595, 2625) (needed to properly normalize the bkg templates)
+  void processGen(aod::McParticles const& particles)
+  {
+    /// loop over particles
+    for (auto const& particle : particles) {
+      int pdgCodeAbs = std::abs(particle.pdgCode());
+
+      /// keep only Σc and Λc±(2595, 2625)
+      if (pdgCodeAbs != o2::constants::physics::Pdg::kSigmaC0 && pdgCodeAbs != o2::constants::physics::Pdg::kSigmaCPlusPlus && pdgCodeAbs != o2::constants::physics::Pdg::kSigmaCStar0 && pdgCodeAbs != o2::constants::physics::Pdg::kSigmaCStarPlusPlus && pdgCodeAbs != aod::hf_sigmac_bkg::pdgCodeLambdac2595 && pdgCodeAbs != aod::hf_sigmac_bkg::pdgCodeLambdac2625) {
+        continue;
+      }
+
+      /// if we arrive here, it means that the particle is either a Σc or Λc±(2595, 2625)
+      /// let's check the origin (prompt, non-prompt)
+      int8_t origin = static_cast<int8_t>(RecoDecay::getCharmHadronOrigin(particles, particle, false));
+
+      /// let's fill the table
+      rowGenBkgSc(particle.y(), particle.pt(), pdgCodeAbs, origin);
+    } /// end loop over particles
+  }
+  PROCESS_SWITCH(HfTreeCreatorSigmacCorrBkg, processGen, "Process generated MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -12,6 +12,11 @@
 /// \brief the pT spectra of k*0(892) resonance analysis in OO collisions
 /// \author Jimun Lee <jimun.lee@cern.ch>
 
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -19,38 +24,28 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-// jet
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/JetReducedData.h"
-#include "PWGJE/DataModel/TrackJetQa.h"
-
-#include <CCDB/BasicCCDBManager.h>
-
-#include <TLorentzVector.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TH1.h>
 #include <TMath.h>
-#include <TMathBase.h>
+#include <TString.h>
 #include <TVector2.h>
 
-#include <RtypesCore.h>
-
-#include <algorithm>
-#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
@@ -61,6 +56,7 @@
 #include <vector>
 
 #include <stdlib.h>
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -222,7 +218,11 @@ struct kstarInOO {
       histos.add("QA_track_pT_AC", "QA_track_pT_AC", kTH1F, {{13, 0.0, 13.0}});
     }
     if (cfgJetQAHistos) {
-      histos.add("nTriggerQA", "nTriggerQA", kTH1F, {{7, 0.0, 7.0}});
+      histos.add("nTriggerQA", "nTriggerQA", kTH1F, {{8, 0.0, 8.0}});
+      histos.add("nTriggerQA_GoodEv", "nTriggerQA_GoodEv", kTH1F, {{8, 0.0, 8.0}});
+      histos.add("nTriggerQA_GoodTrig", "nTriggerQA_GoodTrig", kTH1F, {{8, 0.0, 8.0}});
+      histos.add("nTriggerQA_GoodEvTrig", "nTriggerQA_GoodEvTrig", kTH1F, {{8, 0.0, 8.0}});
+
       histos.add("JetpT", "Jet pT (GeV/c)", kTH1F, {{4000, 0., 200.}});
       histos.add("JetEta", "Jet Eta", kTH1F, {{100, -1.0, 1.0}});
       histos.add("JetPhi", "Jet Phi", kTH1F, {{80, -1.0, 7.0}});
@@ -1149,12 +1149,10 @@ struct kstarInOO {
 
     if (!jetderiveddatautilities::selectTrigger(collision, RealTriggerMaskBits))
       return;
-
-    histos.fill(HIST("nEvents"), 1.5); // Before passing the condition
-
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
+    histos.fill(HIST("nEvents"), 1.5); // Before passing the condition
 
     bool INELgt0 = false;
     for (auto& jetTrack : jetTracks) {
@@ -1571,13 +1569,22 @@ struct kstarInOO {
           // check K* PID
           if (goodEv) {
             histos.fill(HIST("hGen_pT_GoodEv"), particle.pt());
-          }
+
+          } // goodEv
+
           if (goodTrig) {
             histos.fill(HIST("hGen_pT_GoodTrig"), particle.pt());
-          }
+
+          } // goodTrig
+
           if (goodEv && goodTrig) {
             histos.fill(HIST("hGen_pT_GoodEvTrig"), particle.pt());
-          }
+
+            if (cfgJetQAHistos) {
+              histos.fill(HIST("nTriggerQA"), 7.5);
+            }
+
+          } // goodEvTrig
         } // cfgJetMCHistos
       } // mcParticles
     } // recocolls (=reconstructed collisions)
@@ -1585,8 +1592,8 @@ struct kstarInOO {
     //=================
     //|| Efficiency
     //=================
-    if (fabs(collision.posZ()) > cfgEventVtxCut)
-      return;
+    // if (fabs(collision.posZ()) > cfgEventVtxCut)
+    //   return;
 
     for (auto& recocoll : recocolls) { // poorly reconstructed
       auto goodEv = jetderiveddatautilities::selectCollision(recocoll, eventSelectionBits);
