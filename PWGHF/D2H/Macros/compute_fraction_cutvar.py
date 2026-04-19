@@ -200,6 +200,10 @@ def main(config):
                 all_vectors_monotonous = MinimisationStatus.MonotonyViolation
                 print("\0\33[33mWARNING! main(): the raw yield uncertainties vector is not monotonous. Check the input for stability.\0\33[0m")
                 print(f"raw yield uncertainties vector elements = {unc_rawy}\n")
+            if not (np.all(effp[1:] > effp[:-1]) or np.all(effp[1:] < effp[:-1])):
+                sys.exit(f"\33[31mFatal error: the prompt efficiency vector is not monotonous. Check the input. Exit.\33[0m")
+            if not (np.all(effnp[1:] > effnp[:-1]) or np.all(effnp[1:] < effnp[:-1])):
+                sys.exit(f"\33[31mFatal error: the nonprompt efficiency vector is not monotonous. Check the input. Exit.\33[0m")
 
         minimiser = CutVarMinimiser(rawy, effp, effnp, unc_rawy, unc_effp, unc_effnp)
         status = minimiser.minimise_system(cfg["minimisation"]["correlated"])
