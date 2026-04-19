@@ -141,7 +141,7 @@ DECLARE_SOA_TABLE(HfCandD0Lites, "AOD", "HFCANDD0LITE",
                   full::FlagMc,
                   full::FlagMcDecayChanRec,
                   full::OriginMcRec,
-                  hf_cand::PdgBhadMotherPart)
+                  hf_cand_mc_flag::PdgBhadMotherPart)
 
 DECLARE_SOA_TABLE(HfCandD0Fulls, "AOD", "HFCANDD0FULL",
                   collision::PosX,
@@ -204,7 +204,7 @@ DECLARE_SOA_TABLE(HfCandD0Fulls, "AOD", "HFCANDD0FULL",
                   full::FlagMc,
                   full::FlagMcDecayChanRec,
                   full::OriginMcRec,
-                  hf_cand::PdgBhadMotherPart);
+                  hf_cand_mc_flag::PdgBhadMotherPart);
 
 DECLARE_SOA_TABLE(HfCandD0FullEvs, "AOD", "HFCANDD0FULLEV",
                   collision::NumContrib,
