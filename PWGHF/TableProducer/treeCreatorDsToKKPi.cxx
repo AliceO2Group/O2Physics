@@ -23,6 +23,7 @@
 #include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsAnalysis.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
@@ -149,6 +150,7 @@ DECLARE_SOA_TABLE(HfCandDsLites, "AOD", "HFCANDDSLITE",
                   hf_cand_3prong::FlagMcMatchRec,
                   hf_cand_3prong::OriginMcRec,
                   hf_cand_3prong::FlagMcDecayChanRec,
+                  hf_cand::PdgBhadMotherPart,
                   hf_cand_3prong::IsCandidateSwapped,
                   full::Sign);
 
@@ -222,6 +224,7 @@ DECLARE_SOA_TABLE(HfCandDsFulls, "AOD", "HFCANDDSFULL",
                   hf_cand_3prong::FlagMcMatchRec,
                   hf_cand_3prong::OriginMcRec,
                   hf_cand_3prong::FlagMcDecayChanRec,
+                  hf_cand::PdgBhadMotherPart,
                   hf_cand_3prong::IsCandidateSwapped,
                   full::Sign);
 
@@ -346,6 +349,7 @@ struct HfTreeCreatorDsToKKPi {
     int8_t flagMc{0};
     int8_t originMc{0};
     int8_t channelMc{0};
+    int8_t bMotherFlag{-1};
     int8_t isSwapped{MassHypo}; // 0 if KKPi, 1 if PiKK
     float eCand{0.f};
     float ctCand{0.f};
@@ -355,6 +359,7 @@ struct HfTreeCreatorDsToKKPi {
       originMc = candidate.originMcRec();
       channelMc = candidate.flagMcDecayChanRec();
       isSwapped = candidate.isCandidateSwapped();
+      bMotherFlag = o2::analysis::getBHadMotherFlag(candidate.pdgBhadMotherPart());
       if (fillDplusMc && candidate.flagMcDecayChanRec() == channelsResonant[Mother::Dplus][decayChannel]) {
         eCand = HfHelper::eDplus(candidate);
         ctCand = HfHelper::ctDplus(candidate);
@@ -420,6 +425,7 @@ struct HfTreeCreatorDsToKKPi {
         flagMc,
         originMc,
         channelMc,
+        bMotherFlag,
         isSwapped,
         prong0.sign() + prong1.sign() + prong2.sign());
     } else {
@@ -493,6 +499,7 @@ struct HfTreeCreatorDsToKKPi {
         flagMc,
         originMc,
         channelMc,
+        bMotherFlag,
         isSwapped,
         prong0.sign() + prong1.sign() + prong2.sign());
     }

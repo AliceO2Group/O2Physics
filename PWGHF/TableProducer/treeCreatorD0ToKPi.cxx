@@ -21,6 +21,7 @@
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsAnalysis.h"
 
 #include "Common/Core/RecoDecay.h"
 
@@ -139,7 +140,8 @@ DECLARE_SOA_TABLE(HfCandD0Lites, "AOD", "HFCANDD0LITE",
                   full::Y,
                   full::FlagMc,
                   full::FlagMcDecayChanRec,
-                  full::OriginMcRec)
+                  full::OriginMcRec,
+                  hf_cand::PdgBhadMotherPart)
 
 DECLARE_SOA_TABLE(HfCandD0Fulls, "AOD", "HFCANDD0FULL",
                   collision::PosX,
@@ -201,7 +203,8 @@ DECLARE_SOA_TABLE(HfCandD0Fulls, "AOD", "HFCANDD0FULL",
                   full::E,
                   full::FlagMc,
                   full::FlagMcDecayChanRec,
-                  full::OriginMcRec);
+                  full::OriginMcRec,
+                  hf_cand::PdgBhadMotherPart);
 
 DECLARE_SOA_TABLE(HfCandD0FullEvs, "AOD", "HFCANDD0FULLEV",
                   collision::NumContrib,
@@ -286,7 +289,7 @@ struct HfTreeCreatorD0ToKPi {
 
   template <bool ApplyMl, typename T>
   auto fillTable(const T& candidate, int candFlag, double invMass, double topoChi2,
-                 double ct, double y, double e, int8_t flagMc, int8_t flagMcDecay, int8_t origin)
+                 double ct, double y, double e, int8_t flagMc, int8_t flagMcDecay, int8_t origin, int8_t flagBmother)
   {
     if (fillCandidateLiteTable) {
       rowCandidateLite(
@@ -325,7 +328,8 @@ struct HfTreeCreatorD0ToKPi {
         y,
         flagMc,
         flagMcDecay,
-        origin);
+        origin,
+        flagBmother);
     } else {
       double cosThetaStar = candFlag == 0 ? HfHelper::cosThetaStarD0(candidate) : HfHelper::cosThetaStarD0bar(candidate);
       rowCandidateFull(
@@ -388,7 +392,8 @@ struct HfTreeCreatorD0ToKPi {
         e,
         flagMc,
         flagMcDecay,
-        origin);
+        origin,
+        flagBmother);
     }
     if constexpr (ApplyMl) {
       if (candFlag == 0) {
@@ -446,10 +451,10 @@ struct HfTreeCreatorD0ToKPi {
         massD0bar = HfHelper::invMassD0barToKPi(candidate);
       }
       if (candidate.isSelD0()) {
-        fillTable<ApplyMl>(candidate, 0, massD0, topolChi2PerNdf, ctD, yD, eD, 0, 0, 0);
+        fillTable<ApplyMl>(candidate, 0, massD0, topolChi2PerNdf, ctD, yD, eD, 0, 0, 0, -1);
       }
       if (candidate.isSelD0bar()) {
-        fillTable<ApplyMl>(candidate, 1, massD0bar, topolChi2PerNdf, ctD, yD, eD, 0, 0, 0);
+        fillTable<ApplyMl>(candidate, 1, massD0bar, topolChi2PerNdf, ctD, yD, eD, 0, 0, 0, -1);
       }
     }
   }
@@ -547,10 +552,10 @@ struct HfTreeCreatorD0ToKPi {
         massD0bar = HfHelper::invMassD0barToKPi(candidate);
       }
       if (candidate.isSelD0()) {
-        fillTable<ApplyMl>(candidate, 0, massD0, topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.flagMcDecayChanRec(), candidate.originMcRec());
+        fillTable<ApplyMl>(candidate, 0, massD0, topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.flagMcDecayChanRec(), candidate.originMcRec(), o2::analysis::getBHadMotherFlag(candidate.pdgBhadMotherPart()));
       }
       if (candidate.isSelD0bar()) {
-        fillTable<ApplyMl>(candidate, 1, massD0bar, topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.flagMcDecayChanRec(), candidate.originMcRec());
+        fillTable<ApplyMl>(candidate, 1, massD0bar, topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.flagMcDecayChanRec(), candidate.originMcRec(), o2::analysis::getBHadMotherFlag(candidate.pdgBhadMotherPart()));
       }
     }
 
