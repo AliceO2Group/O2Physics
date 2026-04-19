@@ -210,8 +210,6 @@ struct TableMaker {
   struct : ProducesGroup {
     Produces<ReducedEventsQvectorCentr> eventQvectorCentr;
     Produces<ReducedEventsQvectorCentrExtra> eventQvectorCentrExtra;
-    Produces<ReducedEventsQvectorExtra> eventQvectorExtra;
-    Produces<ReducedEventsRefFlow> eventRefFlow;
   } qvecGroup;
 
   OutputObj<THashList> fOutputList{"output"}; //! the histogram manager output list
@@ -296,7 +294,6 @@ struct TableMaker {
 
   //
   struct : ConfigurableGroup {
-    Configurable<bool> fConfigFT0CCumulant{"cfgFT0CCumulant", false, "If true, compute RefFlow cumulants from FT0C amplitudes (requires FT0s subscription)"};
     Configurable<bool> fConfigQvectCalibAvailable{"cfgQvectCalibAvailable", false, "If true, qvector calibration objects are available in CCDB for this run"};
   } fConfigQvector;
 
@@ -479,11 +476,7 @@ struct TableMaker {
     }
 
     // Check whether we have to define barrel or muon histograms
-<<<<<<< HEAD
     bool enableBarrelHistos = (context.mOptions.get<bool>("processPP") || context.mOptions.get<bool>("processPPWithFilter") || context.mOptions.get<bool>("processPPWithFilterBarrelOnly") || context.mOptions.get<bool>("processPPBarrelOnly") ||
-=======
-    bool enableBarrelHistos = (context.mOptions.get<bool>("processPPWithFilter") || context.mOptions.get<bool>("processPPWithFilterBarrelOnly") || context.mOptions.get<bool>("processPPBarrelOnly") ||
->>>>>>> daa02bd72 (Qvector-tables shall be filled for all PbPb processes (except for processPbPbWithFilterBarrelOnly). Added a configurable for Qvector calibration path. The tables shall only be filled if the calibrations are available)
                                context.mOptions.get<bool>("processPbPb") || context.mOptions.get<bool>("processPbPbBarrelOnly") || context.mOptions.get<bool>("processPbPbBarrelOnlyWithV0Bits") || context.mOptions.get<bool>("processPbPbBarrelOnlyWithV0BitsNoTOF")) ||
                               context.mOptions.get<bool>("processPbPbWithFilterBarrelOnly") || context.mOptions.get<bool>("processPPBarrelOnlyWithV0s") || context.mOptions.get<bool>("processPbPbBarrelOnlyNoTOF");
 
@@ -1198,33 +1191,6 @@ struct TableMaker {
           qvecGroup.eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
                                       collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
           qvecGroup.eventQvectorCentrExtra(collision.qvecTPCallRe(), collision.qvecTPCallIm(), collision.nTrkTPCall());
-
-          if (fConfigQvector.fConfigFT0CCumulant) {
-            // FT0C cumulants for RefFlow and QvectorExtra
-            float S11C = collision.sumAmplFT0C();
-            float S12C = 0.f;
-            if constexpr (!std::is_same_v<std::decay_t<TFt0s>, std::nullptr_t>) {
-              if (collision.has_foundFT0()) {
-                auto ft0 = collision.foundFT0();
-                for (auto amp : ft0.amplitudeC()) {
-                  if (amp > 0.f) {
-                    S12C += amp * amp;
-                  }
-                }
-              }
-            }
-            float S21C = S11C * S11C;
-            float M11REF = S21C - S12C;
-            std::complex<double> Q21C(collision.qvecFT0CRe() * S11C, collision.qvecFT0CIm() * S11C);
-            float CORR2REF = (std::norm(Q21C) - S12C) / M11REF;
-
-            if (std::isnan(M11REF) || std::isinf(M11REF) || std::isnan(CORR2REF) || std::isinf(CORR2REF)) {
-              M11REF = 0.f;
-              CORR2REF = 0.f;
-            }
-            qvecGroup.eventRefFlow(M11REF, -9999, -9999, CORR2REF, -9999, -9999, VarManager::fgValues[VarManager::kCentFT0C]);
-            qvecGroup.eventQvectorExtra(-9999, -9999, -9999, -9999, S11C, S12C, -9999, -9999);
-          }
         }
       }
       if constexpr ((TEventFillMap & VarManager::ObjTypes::Zdc) > 0) {
