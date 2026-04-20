@@ -71,15 +71,82 @@ using namespace o2::hf_occupancy;
 using namespace o2::hf_evsel;
 using namespace o2::analysis::hf_upc;
 
+namespace o2::aod
+{
+namespace full
+{
+DECLARE_SOA_COLUMN(M, m, float);
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(BkgScore, bkgScore, float);
+DECLARE_SOA_COLUMN(PromptScore, promptScore, float);
+DECLARE_SOA_COLUMN(FdScore, fdScore, float);
+DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);
+DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);
+DECLARE_SOA_COLUMN(PtProng2, ptProng2, float);
+DECLARE_SOA_COLUMN(Chi2PCA, chi2PCA, float);
+DECLARE_SOA_COLUMN(DecayLength, decayLength, float);
+DECLARE_SOA_COLUMN(Cpa, cpa, float);
+DECLARE_SOA_COLUMN(PvContributors, pvContributors, float);
+DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
+DECLARE_SOA_COLUMN(Vtz, vtz, float);
+DECLARE_SOA_COLUMN(AmpFV0A, ampFV0A, float);
+DECLARE_SOA_COLUMN(AmpFT0A, ampFT0A, float);
+DECLARE_SOA_COLUMN(AmpFT0C, ampFT0C, float);
+DECLARE_SOA_COLUMN(ZdcTimeZNA, zdcTimeZNA, float);
+DECLARE_SOA_COLUMN(ZdcTimeZNC, zdcTimeZNC, float);
+} // namespace full
+DECLARE_SOA_TABLE(HfUpcQa, "AOD", "HFUPCQA",
+                  full::PvContributors,
+                  full::Multiplicity,
+                  full::Vtz,
+                  full::AmpFV0A,
+                  full::AmpFT0A,
+                  full::AmpFT0C,
+                  full::ZdcTimeZNA,
+                  full::ZdcTimeZNC);
+
+DECLARE_SOA_TABLE(HfUpcLcBdtInfos, "AOD", "HFUPCLCBDTINFOS",
+                  full::M,
+                  full::Pt,
+                  full::BkgScore,
+                  full::PromptScore,
+                  full::FdScore,
+                  full::AmpFV0A,
+                  full::AmpFT0A,
+                  full::AmpFT0C,
+                  full::ZdcTimeZNA,
+                  full::ZdcTimeZNC);
+
+DECLARE_SOA_TABLE(HfUpcLcInfos, "AOD", "HFUPCLCINFOS",
+                  full::M,
+                  full::Pt,
+                  full::PtProng0,
+                  full::PtProng1,
+                  full::PtProng2,
+                  full::Chi2PCA,
+                  full::DecayLength,
+                  full::Cpa,
+                  full::AmpFV0A,
+                  full::AmpFT0A,
+                  full::AmpFT0C,
+                  full::ZdcTimeZNA,
+                  full::ZdcTimeZNC);
+} // namespace o2::aod
+
 /// Λc± → p± K∓ π± analysis task
 struct HfTaskLc {
+  Produces<o2::aod::HfUpcLcBdtInfos> rowCandUpcBdt;
+  Produces<o2::aod::HfUpcLcInfos> rowCandUpc;
+  Produces<o2::aod::HfUpcQa> rowCandUpcQa;
+
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
   Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
   // ThnSparse for ML outputScores and Vars
   Configurable<bool> fillTHn{"fillTHn", false, "fill THn"};
-  Configurable<bool> fillUPCTHnLite{"fillUPCTHnLite", false, "fill THn"};
+  Configurable<bool> fillTreeOnlySingleGap{"fillTreeOnlySingleGap", false, "fill THn"};
+  Configurable<bool> fillTreeUpcQa{"fillTreeUpcQa", false, "fill THn"};
   Configurable<bool> storeOccupancy{"storeOccupancy", true, "Flag to store occupancy information"};
   Configurable<int> occEstimator{"occEstimator", 2, "Occupancy estimation (None: 0, ITS: 1, FT0C: 2)"};
   Configurable<bool> storeProperLifetime{"storeProperLifetime", false, "Flag to store proper lifetime"};
@@ -128,10 +195,6 @@ struct HfTaskLc {
   ConfigurableAxis thnConfigAxisOccupancy{"thnConfigAxisOccupancy", {14, 0, 14000}, "axis for centrality"};
   ConfigurableAxis thnConfigAxisProperLifetime{"thnConfigAxisProperLifetime", {200, 0, 2}, "Proper lifetime, ps"};
   ConfigurableAxis thnConfigAxisGapType{"thnConfigAxisGapType", {7, -1.5, 5.5}, "axis for UPC gap type (see TrueGap enum in o2::aod::sgselector)"};
-  ConfigurableAxis thnConfigAxisFV0A{"thnConfigAxisFV0A", {1001, -1.5, 999.5}, "axis for FV0-A amplitude (a.u.)"};
-  ConfigurableAxis thnConfigAxisFT0{"thnConfigAxisFT0", {1001, -1.5, 999.5}, "axis for FT0 amplitude (a.u.)"};
-  ConfigurableAxis thnConfigAxisZN{"thnConfigAxisZN", {510, -1.5, 49.5}, "axis for ZN energy (a.u.)"};
-  ConfigurableAxis thnConfigAxisZNTime{"thnConfigAxisZNTime", {200, -10, 10}, "axis for ZN energy (a.u.)"};
   HistogramRegistry registry{"registry", {}};
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -293,26 +356,16 @@ struct HfTaskLc {
       const AxisSpec thnAxisTracklets{thnConfigAxisNumPvContr, "Number of PV contributors"};
       const AxisSpec thnAxisOccupancy{thnConfigAxisOccupancy, "Occupancy"};
       const AxisSpec thnAxisProperLifetime{thnConfigAxisProperLifetime, "T_{proper} (ps)"};
-      const AxisSpec thnAxisFV0A{thnConfigAxisFV0A, "FV0-A amplitude"};
-      const AxisSpec thnAxisFT0A{thnConfigAxisFT0, "FT0-A amplitude"};
-      const AxisSpec thnAxisFT0C{thnConfigAxisFT0, "FT0-C amplitude"};
-      const AxisSpec thnAxisZNA{thnConfigAxisZN, "ZNA energy"};
-      const AxisSpec thnAxisZNC{thnConfigAxisZN, "ZNC energy"};
-      const AxisSpec thnAxisZNATime{thnConfigAxisZNTime, "ZNA time"};
-      const AxisSpec thnAxisZNCTime{thnConfigAxisZNTime, "ZNC time"};
 
       bool const isDataWithMl = doprocessDataWithMl || doprocessDataWithMlWithFT0C || doprocessDataWithMlWithFT0M || doprocessDataWithMlWithUpc;
       bool const isMcWithMl = doprocessMcWithMl || doprocessMcWithMlWithFT0C || doprocessMcWithMlWithFT0M;
       bool const isDataStd = doprocessDataStd || doprocessDataStdWithFT0C || doprocessDataStdWithFT0M || doprocessDataStdWithUpc;
       bool const isMcStd = doprocessMcStd || doprocessMcStdWithFT0C || doprocessMcStdWithFT0M;
 
-      std::vector<AxisSpec> axesStd, axesWithBdt, axesGen, axesUpc, axesUpcWithBdt;
+      std::vector<AxisSpec> axesStd, axesWithBdt, axesGen;
 
       if (isDataStd && !isUpc) {
         axesStd = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisTracklets};
-      }
-      if (isDataStd && isUpc) {
-        axesUpc = {thnAxisMass, thnAxisPt, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisTracklets, thnAxisFV0A, thnAxisFT0A, thnAxisFT0C, thnAxisZNA, thnAxisZNC, thnAxisZNATime, thnAxisZNCTime};
       }
       if (isMcStd) {
         axesStd = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisTracklets, thnAxisPtB, thnAxisCanType};
@@ -322,9 +375,6 @@ struct HfTaskLc {
       }
       if (isDataWithMl && !isUpc) {
         axesWithBdt = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcPrompt, thnAxisBdtScoreLcNonPrompt, thnAxisTracklets};
-      }
-      if (isDataWithMl && isUpc) {
-        axesUpcWithBdt = {thnAxisMass, thnAxisPt, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcPrompt, thnAxisBdtScoreLcNonPrompt, thnAxisTracklets, thnAxisFV0A, thnAxisFT0A, thnAxisFT0C, thnAxisZNA, thnAxisZNC, thnAxisZNATime, thnAxisZNCTime};
       }
       if (isMcWithMl) {
         axesWithBdt = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcPrompt, thnAxisBdtScoreLcNonPrompt, thnAxisTracklets, thnAxisPtB, thnAxisCanType};
@@ -344,25 +394,20 @@ struct HfTaskLc {
           }
         }
       }
-      if (isUpc) {
-        if (isDataStd) {
-          registry.add("hnLcUpcVars", "THn for Lambdac candidates for Data in UPC", HistType::kTHnSparseF, axesUpc);
-        } else if (isDataWithMl) {
-          registry.add("hnLcUpcVarsWithBdt", "THn for Lambdac candidates with BDT scores for data in UPC", HistType::kTHnSparseF, axesUpcWithBdt);
+      if (!isUpc) {
+        if (isDataWithMl) {
+          registry.add("hnLcVarsWithBdt", "THn for Lambdac candidates with BDT scores for data with ML", HistType::kTHnSparseF, axesWithBdt);
+        } else if (isMcWithMl) {
+          registry.add("hnLcVarsWithBdt", "THn for Lambdac candidates with BDT scores for mc with ML", HistType::kTHnSparseF, axesWithBdt);
+          registry.add("hnLcVarsGen", "THn for Generated Lambdac", HistType::kTHnSparseF, axesGen);
+        } else if (isDataStd) {
+          registry.add("hnLcVars", "THn for Reconstructed Lambdac candidates for data without ML", HistType::kTHnSparseF, axesStd);
+        } else {
+          registry.add("hnLcVars", "THn for Reconstructed Lambdac candidates for mc without ML", HistType::kTHnSparseF, axesStd);
+          registry.add("hnLcVarsGen", "THn for Generated Lambdac", HistType::kTHnSparseF, axesGen);
         }
-      } else if (isDataWithMl) {
-        registry.add("hnLcVarsWithBdt", "THn for Lambdac candidates with BDT scores for data with ML", HistType::kTHnSparseF, axesWithBdt);
-      } else if (isMcWithMl) {
-        registry.add("hnLcVarsWithBdt", "THn for Lambdac candidates with BDT scores for mc with ML", HistType::kTHnSparseF, axesWithBdt);
-        registry.add("hnLcVarsGen", "THn for Generated Lambdac", HistType::kTHnSparseF, axesGen);
-      } else if (isDataStd) {
-        registry.add("hnLcVars", "THn for Reconstructed Lambdac candidates for data without ML", HistType::kTHnSparseF, axesStd);
-      } else {
-        registry.add("hnLcVars", "THn for Reconstructed Lambdac candidates for mc without ML", HistType::kTHnSparseF, axesStd);
-        registry.add("hnLcVarsGen", "THn for Generated Lambdac", HistType::kTHnSparseF, axesGen);
       }
     }
-
     if (isUpc) {
       hfEvSel.addHistograms(qaRegistry); // collision monitoring
     }
@@ -819,26 +864,26 @@ struct HfTaskLc {
                 outputFD = mlProb[MlClassNonPrompt];   /// non-prompt score
               }
               /// Fill the ML outputScores and variables of candidate
-              if (fillUPCTHnLite) {
+              if (fillTreeOnlySingleGap) {
                 if (gap == o2::aod::sgselector::TrueGap::SingleGapA || gap == o2::aod::sgselector::TrueGap::SingleGapC) {
-                  std::vector<double> valuesToFill{massLc, pt, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors), static_cast<double>(fitInfo.ampFV0A), static_cast<double>(fitInfo.ampFT0A), static_cast<double>(fitInfo.ampFT0C), static_cast<double>(zdcEnergyZNA), static_cast<double>(zdcEnergyZNC), static_cast<double>(zdcTimeZNA), static_cast<double>(zdcTimeZNC)};
-                  registry.get<THnSparse>(HIST("hnLcUpcVarsWithBdt"))->Fill(valuesToFill.data());
+                  rowCandUpcBdt(massLc, pt, outputBkg, outputPrompt, outputFD, static_cast<float>(fitInfo.ampFV0A), static_cast<float>(fitInfo.ampFT0A), static_cast<float>(fitInfo.ampFT0C), static_cast<float>(zdcTimeZNA), static_cast<float>(zdcTimeZNC));
                 }
               } else {
-                std::vector<double> valuesToFill{massLc, pt, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors), static_cast<double>(fitInfo.ampFV0A), static_cast<double>(fitInfo.ampFT0A), static_cast<double>(fitInfo.ampFT0C), static_cast<double>(zdcEnergyZNA), static_cast<double>(zdcEnergyZNC), static_cast<double>(zdcTimeZNA), static_cast<double>(zdcTimeZNC)};
-                registry.get<THnSparse>(HIST("hnLcUpcVarsWithBdt"))->Fill(valuesToFill.data());
+                rowCandUpcBdt(massLc, pt, outputBkg, outputPrompt, outputFD, static_cast<float>(fitInfo.ampFV0A), static_cast<float>(fitInfo.ampFT0A), static_cast<float>(fitInfo.ampFT0C), static_cast<float>(zdcTimeZNA), static_cast<float>(zdcTimeZNC));
               }
 
             } else {
-              if (fillUPCTHnLite) {
+              if (fillTreeOnlySingleGap) {
                 if (gap == o2::aod::sgselector::TrueGap::SingleGapA || gap == o2::aod::sgselector::TrueGap::SingleGapC) {
-                  std::vector<double> valuesToFill{massLc, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<double>(numPvContributors), static_cast<double>(fitInfo.ampFV0A), static_cast<double>(fitInfo.ampFT0A), static_cast<double>(fitInfo.ampFT0C), static_cast<double>(zdcEnergyZNA), static_cast<double>(zdcEnergyZNC), static_cast<double>(zdcTimeZNA), static_cast<double>(zdcTimeZNC)};
-                  registry.get<THnSparse>(HIST("hnLcUpcVars"))->Fill(valuesToFill.data());
+                  rowCandUpc(massLc, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<float>(fitInfo.ampFV0A), static_cast<float>(fitInfo.ampFT0A), static_cast<float>(fitInfo.ampFT0C), static_cast<float>(zdcTimeZNA), static_cast<float>(zdcTimeZNC));
                 }
               } else {
-                std::vector<double> valuesToFill{massLc, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<double>(numPvContributors), static_cast<double>(fitInfo.ampFV0A), static_cast<double>(fitInfo.ampFT0A), static_cast<double>(fitInfo.ampFT0C), static_cast<double>(zdcEnergyZNA), static_cast<double>(zdcEnergyZNC), static_cast<double>(zdcTimeZNA), static_cast<double>(zdcTimeZNC)};
-                registry.get<THnSparse>(HIST("hnLcUpcVars"))->Fill(valuesToFill.data());
+                rowCandUpc(massLc, pt, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<float>(fitInfo.ampFV0A), static_cast<float>(fitInfo.ampFT0A), static_cast<float>(fitInfo.ampFT0C), static_cast<float>(zdcTimeZNA), static_cast<float>(zdcTimeZNC));
               }
+            }
+
+            if (fillTreeUpcQa) {
+              rowCandUpcQa(static_cast<float>(numPvContributors), collision.multNTracksPV(), collision.posZ(), static_cast<float>(fitInfo.ampFV0A), static_cast<float>(fitInfo.ampFT0A), static_cast<float>(fitInfo.ampFT0C), static_cast<float>(zdcTimeZNA), static_cast<float>(zdcTimeZNC));
             }
           };
 
