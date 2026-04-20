@@ -268,6 +268,8 @@ struct cascadeFlow {
     Configurable<float> MaxXiMass{"MaxXiMass", 1.345, ""};
     Configurable<float> MinOmegaMass{"MinOmegaMass", 1.655, ""};
     Configurable<float> MaxOmegaMass{"MaxOmegaMass", 1.690, ""};
+    Configurable<float> CMRlowerLimitMassXi{"CMRlowerLimitMassXi", 999, "Lower limit of rejected Xi candidates"};   // for Omega identification
+    Configurable<float> CMRupperLimitMassXi{"CMRupperLimitMassXi", -999., "Upper limit of rejected Xi candidates"}; // for Omega identification
   } CandidateConfigs;
 
   struct : ConfigurableGroup {
@@ -297,6 +299,7 @@ struct cascadeFlow {
   Configurable<bool> doNTPCSigmaCut{"doNTPCSigmaCut", 1, "doNtpcSigmaCut"};
   Configurable<float> nsigmatpcPr{"nsigmatpcPr", 5, "nsigmatpcPr"};
   Configurable<float> nsigmatpcPi{"nsigmatpcPi", 5, "nsigmatpcPi"};
+  Configurable<float> nsigmatpcKa{"nsigmatpcKa", 100, "nsigmatpcKa"};
   Configurable<float> mintpccrrows{"mintpccrrows", 70, "mintpccrrows"};
 
   Configurable<bool> isStoreTrueCascOnly{"isStoreTrueCascOnly", 1, ""};
@@ -443,6 +446,8 @@ struct cascadeFlow {
         if (std::abs(posExtra.tpcNSigmaPi()) > nsigmatpcPi || std::abs(negExtra.tpcNSigmaPr()) > nsigmatpcPr)
           return false;
       }
+      if (std::abs(bachExtra.tpcNSigmaKa()) > nsigmatpcKa)
+        return false;
     }
     counter++;
 
@@ -450,6 +455,20 @@ struct cascadeFlow {
       return false;
 
     counter++;
+
+    double pTotPosExtra = std::sqrt(casc.pxpos() * casc.pxpos() + casc.pypos() * casc.pypos() + casc.pzpos() * casc.pzpos());
+    double pTotNegExtra = std::sqrt(casc.pxneg() * casc.pxneg() + casc.pyneg() * casc.pyneg() + casc.pzneg() * casc.pzneg());
+    double pTotBachExtra = std::sqrt(casc.pxbach() * casc.pxbach() + casc.pybach() * casc.pybach() + casc.pzbach() * casc.pzbach());
+    if (casc.sign() < 0) {
+      histos.fill(HIST("hNsigmaTPCPi"), posExtra.tpcNSigmaPr(), pTotPosExtra);
+      histos.fill(HIST("hNsigmaTPCPr"), negExtra.tpcNSigmaPi(), pTotNegExtra);
+    } else if (casc.sign() > 0) {
+      histos.fill(HIST("hNsigmaTPCPi"), posExtra.tpcNSigmaPi(), pTotPosExtra);
+      histos.fill(HIST("hNsigmaTPCPr"), negExtra.tpcNSigmaPr(), pTotNegExtra);
+    }
+    histos.fill(HIST("hNsigmaTPCBachKa"), bachExtra.tpcNSigmaKa(), pTotBachExtra);
+    histos.fill(HIST("hNsigmaTPCBachPi"), bachExtra.tpcNSigmaPi(), pTotBachExtra);
+
     return true;
   }
 
@@ -843,6 +862,7 @@ struct cascadeFlow {
     float maxMassLambda[2]{1.14, 1.14};
     const AxisSpec shiftAxis = {10, 0, 10, "shift"};
     const AxisSpec basisAxis = {2, 0, 2, "basis"};
+    const AxisSpec axisNTPC = {100, -10, 10};
     const AxisSpec massCascAxis[2]{{static_cast<int>((maxMass[0] - minMass[0]) / 0.001f), minMass[0], maxMass[0], "#Xi candidate mass (GeV/c^{2})"},
                                    {static_cast<int>((maxMass[1] - minMass[1]) / 0.001f), minMass[1], maxMass[1], "#Omega candidate mass (GeV/c^{2})"}};
     const AxisSpec massLambdaAxis[2]{{static_cast<int>((maxMassLambda[0] - minMassLambda[0]) / 0.001f), minMassLambda[0], maxMassLambda[0], "#Lambda candidate mass (GeV/c^{2})"},
@@ -900,6 +920,12 @@ struct cascadeFlow {
     histos.add("ShiftFT0A", "ShiftFT0A", kTProfile3D, {CentAxis, basisAxis, shiftAxis});
     histos.add("ShiftTPCL", "ShiftTPCL", kTProfile3D, {CentAxis, basisAxis, shiftAxis});
     histos.add("ShiftTPCR", "ShiftTPCR", kTProfile3D, {CentAxis, basisAxis, shiftAxis});
+
+    //PID TPC
+    histos.add("hNsigmaTPCBachPi", "hNsigmaTPCBachPi", HistType::kTH2F, {axisNTPC, {20, 0, 10}});
+    histos.add("hNsigmaTPCBachKa", "hNsigmaTPCBachKa", HistType::kTH2F, {axisNTPC, {20, 0, 10}});
+    histos.add("hNsigmaTPCPi", "hNsigmaTPCPi", HistType::kTH2F, {axisNTPC, {20, 0, 10}});
+    histos.add("hNsigmaTPCPr", "hNsigmaTPCPr", HistType::kTH2F, {axisNTPC, {20, 0, 10}});
 
     histos.add("hNEvents", "hNEvents", {HistType::kTH1D, {{10, 0.f, 10.f}}});
     for (Int_t n = 1; n <= histos.get<TH1>(HIST("hNEvents"))->GetNbinsX(); n++) {
@@ -1174,6 +1200,9 @@ struct cascadeFlow {
             continue;
           histos.fill(HIST("hCandidate"), ++counter);
         }
+        if (std::abs(bachExtra.tpcNSigmaKa()) > nsigmatpcKa)
+          continue;
+        histos.fill(HIST("hCandidate"), ++counter);
       } else {
         ++counter;
       }
@@ -1346,6 +1375,11 @@ struct cascadeFlow {
       cascadev2::hMassBeforeSelVsPt[0]->Fill(massCasc[0], casc.pt());
       cascadev2::hMassBeforeSelVsPt[1]->Fill(massCasc[1], casc.pt());
 
+      // competing mass rejection cut applied for Omegas
+      if (casc.mXi() > CandidateConfigs.CMRlowerLimitMassXi && casc.mXi() < CandidateConfigs.CMRupperLimitMassXi) {
+        continue;
+      }
+
       if (isApplyML) {
         // Retrieve model output and selection outcome
         isSelectedCasc[0] = mlResponseXi.isSelectedMl(inputFeaturesCasc, casc.pt(), bdtScore[0]);
@@ -1360,12 +1394,16 @@ struct cascadeFlow {
           if (isSelectedCasc[iS]) {
             cascadev2::hSignalScoreAfterSel[iS]->Fill(bdtScore[0][1]);
             cascadev2::hBkgScoreAfterSel[iS]->Fill(bdtScore[1][0]);
-            cascadev2::hMassAfterSelVsPt[iS]->Fill(massCasc[iS], casc.pt());
           }
         }
       } else {
         isSelectedCasc[0] = true;
         isSelectedCasc[1] = true;
+      }
+      for (int iS{0}; iS < nParticles; ++iS) {
+        if (isSelectedCasc[iS]) {
+          cascadev2::hMassAfterSelVsPt[iS]->Fill(massCasc[iS], casc.pt());
+        }
       }
 
       ROOT::Math::XYZVector cascQvec{std::cos(2 * casc.phi()), std::sin(2 * casc.phi()), 0};
@@ -1660,6 +1698,11 @@ struct cascadeFlow {
       cascadev2::hMassBeforeSelVsPt[0]->Fill(massCasc[0], casc.pt());
       cascadev2::hMassBeforeSelVsPt[1]->Fill(massCasc[1], casc.pt());
 
+      // competing mass rejection cut applied for Omegas
+      if (casc.mXi() > CandidateConfigs.CMRlowerLimitMassXi && casc.mXi() < CandidateConfigs.CMRupperLimitMassXi) {
+        continue;
+      }
+
       if (isApplyML) {
         // Retrieve model output and selection outcome
         isSelectedCasc[0] = mlResponseXi.isSelectedMl(inputFeaturesCasc, casc.pt(), bdtScore[0]);
@@ -1674,12 +1717,16 @@ struct cascadeFlow {
           if (isSelectedCasc[iS]) {
             cascadev2::hSignalScoreAfterSel[iS]->Fill(bdtScore[0][1]);
             cascadev2::hBkgScoreAfterSel[iS]->Fill(bdtScore[1][0]);
-            cascadev2::hMassAfterSelVsPt[iS]->Fill(massCasc[iS], casc.pt());
           }
         }
       } else {
         isSelectedCasc[0] = true;
         isSelectedCasc[1] = true;
+      }
+      for (int iS{0}; iS < nParticles; ++iS) {
+        if (isSelectedCasc[iS]) {
+          cascadev2::hMassAfterSelVsPt[iS]->Fill(massCasc[iS], casc.pt());
+        }
       }
 
       ROOT::Math::XYZVector cascQvec{std::cos(2 * casc.phi()), std::sin(2 * casc.phi()), 0};
@@ -2284,6 +2331,11 @@ struct cascadeFlow {
       cascadev2::hMassBeforeSelVsPt[0]->Fill(massCasc[0], casc.pt());
       cascadev2::hMassBeforeSelVsPt[1]->Fill(massCasc[1], casc.pt());
 
+      // competing mass rejection cut applied for Omegas
+      if (casc.mXi() > CandidateConfigs.CMRlowerLimitMassXi && casc.mXi() < CandidateConfigs.CMRupperLimitMassXi) {
+        continue;
+      }
+
       if (isApplyML) {
         // Retrieve model output and selection outcome
         isSelectedCasc[0] = mlResponseXi.isSelectedMl(inputFeaturesCasc, casc.pt(), bdtScore[0]);
@@ -2298,12 +2350,16 @@ struct cascadeFlow {
           if (isSelectedCasc[iS]) {
             cascadev2::hSignalScoreAfterSel[iS]->Fill(bdtScore[0][1]);
             cascadev2::hBkgScoreAfterSel[iS]->Fill(bdtScore[1][0]);
-            cascadev2::hMassAfterSelVsPt[iS]->Fill(massCasc[iS], casc.pt());
           }
         }
       } else {
         isSelectedCasc[0] = true;
         isSelectedCasc[1] = true;
+      }
+      for (int iS{0}; iS < nParticles; ++iS) {
+        if (isSelectedCasc[iS]) {
+          cascadev2::hMassAfterSelVsPt[iS]->Fill(massCasc[iS], casc.pt());
+        }
       }
 
       ROOT::Math::XYZVector cascQvec{std::cos(2 * casc.phi()), std::sin(2 * casc.phi()), 0};
@@ -2433,6 +2489,11 @@ struct cascadeFlow {
       cascadev2::hMassBeforeSelVsPt[0]->Fill(massCasc[0], casc.pt());
       cascadev2::hMassBeforeSelVsPt[1]->Fill(massCasc[1], casc.pt());
 
+      // competing mass rejection cut applied for Omegas
+      if (casc.mXi() > CandidateConfigs.CMRlowerLimitMassXi && casc.mXi() < CandidateConfigs.CMRupperLimitMassXi) {
+        continue;
+      }
+
       if (isApplyML) {
         // Retrieve model output and selection outcome
         isSelectedCasc[0] = mlResponseXi.isSelectedMl(inputFeaturesCasc, casc.pt(), bdtScore[0]);
@@ -2447,12 +2508,16 @@ struct cascadeFlow {
           if (isSelectedCasc[iS]) {
             cascadev2::hSignalScoreAfterSel[iS]->Fill(bdtScore[0][1]);
             cascadev2::hBkgScoreAfterSel[iS]->Fill(bdtScore[1][0]);
-            cascadev2::hMassAfterSelVsPt[iS]->Fill(massCasc[iS], casc.pt());
           }
         }
       } else {
         isSelectedCasc[0] = true;
         isSelectedCasc[1] = true;
+      }
+      for (int iS{0}; iS < nParticles; ++iS) {
+        if (isSelectedCasc[iS]) {
+          cascadev2::hMassAfterSelVsPt[iS]->Fill(massCasc[iS], casc.pt());
+        }
       }
 
       histos.fill(HIST("hCascadePhi"), casc.phi());
