@@ -589,11 +589,11 @@ struct HeavyionMultiplicity {
         continue;
       }
       auto centrality = 0;
-      if(isApplyGenMult)
+      if (isApplyGenMult)
         centrality = selColMultMC(mcCollision);
       else
         centrality = selColCent(RecCol);
-      
+
       histos.fill(HIST("VtxZHist"), RecCol.posZ());
       histos.fill(HIST("CentPercentileMCRecHist"), centrality);
       histos.fill(HIST("hmczvtxcent"), RecCol.posZ(), centrality, selColOccu(RecCol));
@@ -1027,7 +1027,7 @@ struct HeavyionMultiplicity {
       histos.fill(HIST("VtxZHistBC"), multbc.multFT0PosZ());
     }
     histos.fill(HIST("BcHist"), 5); // FT0PosZ
-    
+
     histos.fill(HIST("BcCentFT0CHist"), multbc.centFT0C());
     histos.fill(HIST("BcCentFT0MHist"), multbc.centFT0M());
   }
