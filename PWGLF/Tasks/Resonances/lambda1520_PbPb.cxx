@@ -14,7 +14,6 @@
 ///
 /// \author Yash Patley <yash.patley@cern.ch>
 /// \author Nasir Mehdi Malik
-/// \author Durgesh Bhatt <durgesh.bhatt@cern.ch>
 
 #include "PWGLF/DataModel/LFResonanceTables.h"
 
@@ -61,11 +60,10 @@ struct lambdaAnalysis_pb {
   // Tracks
   Configurable<float> cPtMin{"cPtMin", 0.15, "Minimum Track pT"};
   Configurable<float> cPMin{"cPMin", 0., "Minimum Track p"};
-  Configurable<float> cEtaMin{"cEtaMin", -0.8, "Minimum Pseudorapidity"};
-  Configurable<float> cEtaMax{"cEtaMax", 0.8, "Maximum Pseudorapidity"};
+  Configurable<float> cEtaCut{"cEtaCut", 0.8, "Pseudorapidity cut"};
   Configurable<float> cDcaz{"cDcazMin", 1., "Minimum DCAz"};
-  Configurable<float> cfgRapidityMin{"cfgRapidityMin", -0.5, "Minimum rapidity"};
-  Configurable<float> cfgRapidityMax{"cfgRapidityMax", 0.5, "Maximum rapidity"};
+  Configurable<float> cfgRapidityShift{"cfgRapidityShift", 0., " rapidity shift"};
+  Configurable<float> cfgRapidityCut{"cfgRapidityCut", 0.5, "Rapidity window"};
   // TPC crossed rows (absolute)
   Configurable<int> cfgMinCrossedRows{"cfgMinCrossedRows", 70, "min TPC crossed rows"};
   Configurable<bool> cfgUseCrossedRows{"cfgUseCrossedRows", false, "apply crossed rows cut"};
@@ -267,7 +265,7 @@ struct lambdaAnalysis_pb {
     if (track.pt() < cPtMin)
       return false;
 
-    if (track.eta() < cEtaMin || track.eta() > cEtaMax)
+    if (std::abs(track.eta()) > cEtaCut)
       return false;
 
     if (cPrimaryTrack && !track.isPrimaryTrack())
@@ -583,9 +581,11 @@ struct lambdaAnalysis_pb {
       float _M = RecoDecay::m(arrMomrec, std::array{MassProton, MassKaonCharged});
       float _pt = RecoDecay::pt(std::array{_pxPr + _pxKa, _pyPr + _pyKa});
 
-      float _y = RecoDecay::y(std::array{_pxPr + _pxKa, _pyPr + _pyKa, _pzPr + _pzKa}, _M);
+      float _y = std::abs(RecoDecay::y(std::array{_pxPr + _pxKa, _pyPr + _pyKa, _pzPr + _pzKa}, _M));
 
-      if (_y < cfgRapidityMin || _y > cfgRapidityMax)
+      float _yshift = _y - cfgRapidityShift;
+
+      if (std::abs(_yshift) > cfgRapidityCut)
         continue;
       // Apply kinematic cuts.
 
@@ -604,7 +604,7 @@ struct lambdaAnalysis_pb {
               float delta = o2::constants::math::PI / rotationalcut;
               float theta2;
               if (cNofRotations == 1) {
-                // Single rotation â just rotate by exactly PI
+                // Single rotation â just rotate by exactly PI
                 theta2 = o2::constants::math::PI;
               } else {
                 theta2 = (o2::constants::math::PI - delta) +
@@ -627,9 +627,11 @@ struct lambdaAnalysis_pb {
               float _Mrot = RecoDecay::m(arrMomRot, std::array{MassProton, MassKaonCharged});
               float _ptRot = RecoDecay::pt(std::array{_pxPr + _pxKaRot, _pyPr + _pyKaRot});
 
-              float _yrot = RecoDecay::y(std::array{_pxPr + _pxKaRot, _pyPr + _pyKaRot, _pzPr + _pzKa}, MassLambda1520);
+              float _yrot = std::abs(RecoDecay::y(std::array{_pxPr + _pxKaRot, _pyPr + _pyKaRot, _pzPr + _pzKa}, MassLambda1520));
 
-              if (_yrot < cfgRapidityMin || _yrot > cfgRapidityMax)
+              float _yshiftrot = _yrot - cfgRapidityShift;
+
+              if (std::abs(_yshiftrot) > cfgRapidityCut)
                 continue;
 
               if (trkPr.sign() * trkKa.sign() < 0) {
@@ -788,7 +790,9 @@ struct lambdaAnalysis_pb {
       if (std::abs(part.pdgCode()) != lambda1520id) // // L* pdg_code = 3124
         continue;
 
-      if (part.y() < cfgRapidityMin || part.y() > cfgRapidityMax)
+      float yshift = std::abs(part.y()) - cfgRapidityShift;
+
+      if (std::abs(yshift) > cfgRapidityCut)
         continue;
       bool pass1 = false;
       bool pass2 = false;
@@ -846,7 +850,9 @@ struct lambdaAnalysis_pb {
 
     for (auto const& part : resoParents) {
 
-      if (part.y() < cfgRapidityMin || part.y() > cfgRapidityMax)
+      float yshift = std::abs(part.y()) - cfgRapidityShift;
+
+      if (std::abs(yshift) > cfgRapidityCut)
         continue;
 
       int pdg = part.pdgCode();
