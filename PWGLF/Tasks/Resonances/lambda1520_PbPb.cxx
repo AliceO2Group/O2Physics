@@ -62,10 +62,10 @@ struct lambdaAnalysis_pb {
   Configurable<float> cPtMin{"cPtMin", 0.15, "Minimum Track pT"};
   Configurable<float> cPMin{"cPMin", 0., "Minimum Track p"};
   Configurable<float> cEtaMin{"cEtaMin", -0.8, "Minimum Pseudorapidity"};
-  Configurable<float> cEtaMax{"cEtaMax",  0.8, "Maximum Pseudorapidity"};
+  Configurable<float> cEtaMax{"cEtaMax", 0.8, "Maximum Pseudorapidity"};
   Configurable<float> cDcaz{"cDcazMin", 1., "Minimum DCAz"};
   Configurable<float> cfgRapidityMin{"cfgRapidityMin", -0.5, "Minimum rapidity"};
-  Configurable<float> cfgRapidityMax{"cfgRapidityMax",  0.5, "Maximum rapidity"};
+  Configurable<float> cfgRapidityMax{"cfgRapidityMax", 0.5, "Maximum rapidity"};
   // TPC crossed rows (absolute)
   Configurable<int> cfgMinCrossedRows{"cfgMinCrossedRows", 70, "min TPC crossed rows"};
   Configurable<bool> cfgUseCrossedRows{"cfgUseCrossedRows", false, "apply crossed rows cut"};
@@ -604,7 +604,7 @@ struct lambdaAnalysis_pb {
               float delta = o2::constants::math::PI / rotationalcut;
               float theta2;
               if (cNofRotations == 1) {
-                // Single rotation â just rotate by exactly PI
+                // Single rotation â just rotate by exactly PI
                 theta2 = o2::constants::math::PI;
               } else {
                 theta2 = (o2::constants::math::PI - delta) +
@@ -627,7 +627,7 @@ struct lambdaAnalysis_pb {
               float _Mrot = RecoDecay::m(arrMomRot, std::array{MassProton, MassKaonCharged});
               float _ptRot = RecoDecay::pt(std::array{_pxPr + _pxKaRot, _pyPr + _pyKaRot});
 
-              float _yrot =RecoDecay::y(std::array{_pxPr + _pxKaRot, _pyPr + _pyKaRot, _pzPr + _pzKa}, MassLambda1520);
+              float _yrot = RecoDecay::y(std::array{_pxPr + _pxKaRot, _pyPr + _pyKaRot, _pzPr + _pzKa}, MassLambda1520);
 
               if (_yrot < cfgRapidityMin || _yrot > cfgRapidityMax)
                 continue;
@@ -787,7 +787,6 @@ struct lambdaAnalysis_pb {
     for (auto const& part : resoParents) {
       if (std::abs(part.pdgCode()) != lambda1520id) // // L* pdg_code = 3124
         continue;
-
 
       if (part.y() < cfgRapidityMin || part.y() > cfgRapidityMax)
         continue;
