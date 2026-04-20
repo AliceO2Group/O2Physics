@@ -83,6 +83,7 @@ struct LongrangecorrDerived {
   ConfigurableAxis axisInvMass{"axisInvMass", {VARIABLE_WIDTH, 1.7, 1.75, 1.8, 1.85, 1.9, 1.95, 2.0}, "invariant mass axis"};
   ConfigurableAxis axisInvMassQA{"axisInvMassQA", {20, 0.45, 0.55}, "invariant mass axis for QA"};
   ConfigurableAxis axisAmplitude{"axisAmplitude", {5000, 0, 10000}, "FT0 amplitude"};
+  ConfigurableAxis axisChannel{"axisChannel", {208, 0, 208}, "FT0 channel"};
   ConfigurableAxis axisMultME{"axisMultME", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 1000}, "Mixing bins - multiplicity"};
   ConfigurableAxis axisVtxZME{"axisVtxZME", {VARIABLE_WIDTH, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10}, "Mixing bins - z-vertex"};
 
@@ -170,6 +171,9 @@ struct LongrangecorrDerived {
     histos.add("Assoc_etavsphi", "Assoc_etavsphi", kTH2D, {axisPhi, axisEtaAssoc});
     histos.add("Assoc_pt", "Assoc_pt", kTH1D, {axisPtAssoc});
     histos.add("Assoc_amp", "Assoc_amp", kTH1D, {axisAmplitude});
+    histos.add("Assoc_amp_gaincorrected", "Assoc_amp_gaincorrected", kTH1D, {axisAmplitude});
+    histos.add("Channel_vs_Assoc_amp", "Channel_vs_Assoc_amp", kTH2D, {axisChannel, axisAmplitude});
+    histos.add("Channel_vs_Assoc_amp_gaincorrected", "Channel_vs_Assoc_amp_gaincorrected", kTH2D, {axisChannel, axisAmplitude});
 
     histos.add("deltaEta_deltaPhi_same", "", kTH2D, {axisDeltaPhi, axisDeltaEta});
     histos.add("deltaEta_deltaPhi_mixed", "", kTH2D, {axisDeltaPhi, axisDeltaEta});
@@ -205,6 +209,9 @@ struct LongrangecorrDerived {
     histos.fill(HIST("Assoc_phi"), track.phi());
     if constexpr (std::experimental::is_detected<HasFt0, TTrack>::value) {
       histos.fill(HIST("Assoc_amp"), track.amplitude());
+      histos.fill(HIST("Channel_vs_Assoc_amp"), track.channelID(), track.amplitude());
+      histos.fill(HIST("Assoc_amp_gaincorrected"), track.gainAmplitude());
+      histos.fill(HIST("Channel_vs_Assoc_amp_gaincorrected"), track.channelID(), track.gainAmplitude());
     } else {
       histos.fill(HIST("Assoc_pt"), track.pt());
     }
@@ -260,23 +267,25 @@ struct LongrangecorrDerived {
           histos.fill(HIST("Trig_hist"), vz, multiplicity, triggerTrack.pt(), 1.0, eventWeight);
         }
       }
+      auto ampl = 1.0f;
       for (auto const& assoTrack : assocs) {
         if constexpr (std::experimental::is_detected<HasFt0, typename TAssocs::iterator>::value) {
           if (isApplyAmpCut && (assoTrack.amplitude() < cfgLowAmpCut))
             continue;
+          ampl *= assoTrack.gainAmplitude();
         }
         float deltaPhi = RecoDecay::constrainAngle(triggerTrack.phi() - assoTrack.phi(), -PIHalf);
         float deltaEta = triggerTrack.eta() - assoTrack.eta();
         if (!mixing) {
           fillAssocTrackQA(assoTrack);
-          histos.fill(HIST("deltaEta_deltaPhi_same"), deltaPhi, deltaEta);
+          histos.fill(HIST("deltaEta_deltaPhi_same"), deltaPhi, deltaEta, eventWeight * ampl);
         } else {
-          histos.fill(HIST("deltaEta_deltaPhi_mixed"), deltaPhi, deltaEta);
+          histos.fill(HIST("deltaEta_deltaPhi_mixed"), deltaPhi, deltaEta, eventWeight * ampl);
         }
         if constexpr (std::experimental::is_detected<HasInvMass, typename TTriggers::iterator>::value) {
-          target->getPairHist()->Fill(step, vz, multiplicity, triggerTrack.pt(), triggerTrack.pt(), deltaPhi, deltaEta, triggerTrack.invMass(), eventWeight);
+          target->getPairHist()->Fill(step, vz, multiplicity, triggerTrack.pt(), triggerTrack.pt(), deltaPhi, deltaEta, triggerTrack.invMass(), eventWeight * ampl);
         } else {
-          target->getPairHist()->Fill(step, vz, multiplicity, triggerTrack.pt(), triggerTrack.pt(), deltaPhi, deltaEta, 1.0, eventWeight);
+          target->getPairHist()->Fill(step, vz, multiplicity, triggerTrack.pt(), triggerTrack.pt(), deltaPhi, deltaEta, 1.0, eventWeight * ampl);
         }
       } // associated tracks
     } // trigger tracks
