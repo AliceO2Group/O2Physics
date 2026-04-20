@@ -15,26 +15,29 @@
 
 #include "PWGCF/Femto3D/Core/femto3dPairTask.h"
 
+#include "PWGCF/Femto3D/DataModel/PIDutils.h"
 #include "PWGCF/Femto3D/DataModel/singletrackselector.h"
 
-#include "Common/DataModel/Multiplicity.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/DataTypes.h"
-#include "Framework/Expressions.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StaticFor.h"
-#include "Framework/runDataProcessing.h"
-#include "MathUtils/Utils.h"
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <TString.h>
+#include <TVector3.h>
 
-#include "TLorentzVector.h"
-#include <TH1F.h>
-#include <TParameter.h>
-
-#include <algorithm> // std::random_shuffle
 #include <chrono>
+#include <cmath>
+#include <cstdint>
 #include <ctime>
 #include <map>
 #include <memory>
