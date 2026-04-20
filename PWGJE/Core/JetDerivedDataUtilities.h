@@ -68,6 +68,9 @@ bool selectCollision(T const& collision, const std::vector<int>& eventSelectionM
   if (skipMBGapEvents && collision.getSubGeneratorId() == JCollisionSubGeneratorId::mbGap) {
     return false;
   }
+  if (collision.weight() < -98.0) {
+    return false;
+  }
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
   rctChecker.init(rctLabel, requireZDCRct, rejectLimitedAcceptanceRct);
   if (rctSelection && !rctChecker.checkTable(collision)) { // CBT_hadronPID given as default so that TOF is included in RCT selection to benefit from better timing for tracks. Impact of this for inclusive jets should be studied
