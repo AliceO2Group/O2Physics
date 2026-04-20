@@ -11,20 +11,13 @@
 //
 /// \file jetDsSpecSubs.cxx
 /// \brief Ds-tagged jet analysis with substructure histogram outputs
-///
-/// This task reconstructs and analyses jets containing charged D_s mesons.
-///
 /// \author Monalisa Melo <monalisa.melo@cern.ch>, Universidade de São Paulo
 
-#include "PWGHF/Core/DecayChannels.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/JetReducedData.h"
-#include "PWGJE/DataModel/JetSubtraction.h"
-
-#include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+// #include "PWGJE/DataModel/JetReducedData.h"
+// #include "PWGJE/DataModel/JetSubtraction.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -43,7 +36,7 @@
 #include <string>
 #include <vector>
 
-using namespace o2;
+// using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
