@@ -16,52 +16,27 @@
 /// \since November 05, 2025
 
 #include "PWGCF/Core/CorrelationContainer.h"
-#include "PWGCF/Core/PairCuts.h"
-#include "PWGCF/DataModel/CorrelationsDerived.h"
 #include "PWGCF/TwoParticleCorrelations/DataModel/LongRangeDerived.h"
-#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 #include "PWGUD/Core/SGSelector.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/FT0Corrected.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponseITS.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "CommonConstants/MathConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DetectorsCommonDataFormats/AlignParam.h"
-#include "FT0Base/Geometry.h"
-#include "FV0Base/Geometry.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/PID.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include <TComplex.h>
-#include <TH1F.h>
-#include <TMath.h>
-#include <TPDGCode.h>
-
-#include <chrono>
+#include <cstdint>
 #include <cstdio>
 #include <experimental/type_traits>
-#include <memory>
 #include <string>
 #include <tuple>
 #include <utility>
