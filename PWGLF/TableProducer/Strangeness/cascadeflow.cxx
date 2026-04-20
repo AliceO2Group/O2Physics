@@ -921,7 +921,7 @@ struct cascadeFlow {
     histos.add("ShiftTPCL", "ShiftTPCL", kTProfile3D, {CentAxis, basisAxis, shiftAxis});
     histos.add("ShiftTPCR", "ShiftTPCR", kTProfile3D, {CentAxis, basisAxis, shiftAxis});
 
-    //PID TPC
+    // PID TPC
     histos.add("hNsigmaTPCBachPi", "hNsigmaTPCBachPi", HistType::kTH2F, {axisNTPC, {20, 0, 10}});
     histos.add("hNsigmaTPCBachKa", "hNsigmaTPCBachKa", HistType::kTH2F, {axisNTPC, {20, 0, 10}});
     histos.add("hNsigmaTPCPi", "hNsigmaTPCPi", HistType::kTH2F, {axisNTPC, {20, 0, 10}});
@@ -945,6 +945,11 @@ struct cascadeFlow {
     histos.add("Psi_EP_FT0A_shifted", "Psi_EP_FT0C_shifted", HistType::kTH2D, {CentAxis, {100, -o2::constants::math::PI, o2::constants::math::PI}});
     histos.add("Psi_EP_TPCA_shifted", "Psi_EP_FT0C_shifted", HistType::kTH2D, {CentAxis, {100, -o2::constants::math::PI, o2::constants::math::PI}});
     histos.add("Psi_EP_TPCC_shifted", "Psi_EP_FT0C_shifted", HistType::kTH2D, {CentAxis, {100, -o2::constants::math::PI, o2::constants::math::PI}});
+    histos.add("Psi_EP_FT0C_notshifted", "Psi_EP_FT0C_notshifted", HistType::kTH2D, {CentAxis, {100, -o2::constants::math::PI, o2::constants::math::PI}});
+    histos.add("Psi_EP_FV0A_notshifted", "Psi_EP_FT0C_notshifted", HistType::kTH2D, {CentAxis, {100, -o2::constants::math::PI, o2::constants::math::PI}});
+    histos.add("Psi_EP_FT0A_notshifted", "Psi_EP_FT0C_notshifted", HistType::kTH2D, {CentAxis, {100, -o2::constants::math::PI, o2::constants::math::PI}});
+    histos.add("Psi_EP_TPCA_notshifted", "Psi_EP_FT0C_notshifted", HistType::kTH2D, {CentAxis, {100, -o2::constants::math::PI, o2::constants::math::PI}});
+    histos.add("Psi_EP_TPCC_notshifted", "Psi_EP_FT0C_notshifted", HistType::kTH2D, {CentAxis, {100, -o2::constants::math::PI, o2::constants::math::PI}});
     histos.add("hPsiZDCA_vs_ZDCC", "hPsiZDCA_vs_ZDCC", HistType::kTH2D, {{100, -o2::constants::math::PI, o2::constants::math::PI}, {100, -o2::constants::math::PI, o2::constants::math::PI}});
     histos.add("hEventNchCorrelation", "hEventNchCorrelation", kTH2F, {{5000, 0, 5000}, {5000, 0, 2500}});
     histos.add("hEventPVcontributorsVsCentrality", "hEventPVcontributorsVsCentrality", kTH2F, {{100, 0, 100}, {5000, 0, 5000}});
@@ -1288,6 +1293,9 @@ struct cascadeFlow {
     const float psiTPCA = std::atan2(coll.qvecBPosIm(), coll.qvecBPosRe()) * 0.5f;
     const float psiTPCC = std::atan2(coll.qvecBNegIm(), coll.qvecBNegRe()) * 0.5f;
     float psiT0CCorr = psiT0C;
+    histos.fill(HIST("Psi_EP_FT0C_notshifted"), coll.centFT0C(), psiT0C);
+    histos.fill(HIST("Psi_EP_TPCA_notshifted"), coll.centFT0C(), psiTPCA);
+    histos.fill(HIST("Psi_EP_TPCC_notshifted"), coll.centFT0C(), psiTPCC);
 
     for (int ishift = 1; ishift <= 10; ishift++) {
       histos.fill(HIST("ShiftFT0C"), coll.centFT0C(), 0.5, ishift - 0.5, std::sin(ishift * 2 * psiT0C));
@@ -1321,7 +1329,6 @@ struct cascadeFlow {
     histos.fill(HIST("hPsiT0C"), psiT0CCorr);
     histos.fill(HIST("hPsiZDCA_vs_ZDCC"), coll.psiZDCC(), coll.psiZDCA());
     histos.fill(HIST("hPsiT0CvsCentFT0C"), coll.centFT0C(), psiT0CCorr);
-
     resolution.fill(HIST("QVectorsT0CTPCA"), eventplaneVecT0C.Dot(eventplaneVecTPCA), coll.centFT0C());
     resolution.fill(HIST("QVectorsT0CTPCC"), eventplaneVecT0C.Dot(eventplaneVecTPCC), coll.centFT0C());
     resolution.fill(HIST("QVectorsTPCAC"), eventplaneVecTPCA.Dot(eventplaneVecTPCC), coll.centFT0C());
@@ -1613,6 +1620,9 @@ struct cascadeFlow {
     const float psiT0C = std::atan2(coll.qvecFT0CIm(), coll.qvecFT0CRe()) * 0.5f;
     const float psiTPCA = std::atan2(coll.qvecBPosIm(), coll.qvecBPosRe()) * 0.5f;
     const float psiTPCC = std::atan2(coll.qvecBNegIm(), coll.qvecBNegRe()) * 0.5f;
+    histos.fill(HIST("Psi_EP_FT0C_notshifted"), coll.centFT0C(), psiT0C);
+    histos.fill(HIST("Psi_EP_TPCA_notshifted"), coll.centFT0C(), psiTPCA);
+    histos.fill(HIST("Psi_EP_TPCC_notshifted"), coll.centFT0C(), psiTPCC);
     float psiT0CCorr = psiT0C;
     for (int ishift = 1; ishift <= 10; ishift++) {
       histos.fill(HIST("ShiftFT0C"), coll.centFT0C(), 0.5, ishift - 0.5, std::sin(ishift * 2 * psiT0C));
@@ -1965,6 +1975,11 @@ struct cascadeFlow {
     const float psiT0A = std::atan2(qvecImT0A, qvecReT0A) * 0.5f;
     const float psiTPCA = std::atan2(coll.qvecBPosIm(), coll.qvecBPosRe()) * 0.5f;
     const float psiTPCC = std::atan2(coll.qvecBNegIm(), coll.qvecBNegRe()) * 0.5f;
+    histos.fill(HIST("Psi_EP_FT0C_notshifted"), coll.centFT0C(), psiT0C);
+    histos.fill(HIST("Psi_EP_FV0A_notshifted"), coll.centFT0C(), psiV0A);
+    histos.fill(HIST("Psi_EP_FT0A_notshifted"), coll.centFT0C(), psiT0A);
+    histos.fill(HIST("Psi_EP_TPCA_notshifted"), coll.centFT0C(), psiTPCA);
+    histos.fill(HIST("Psi_EP_TPCC_notshifted"), coll.centFT0C(), psiTPCC);
     float psiT0CCorr = psiT0C;
     for (int ishift = 1; ishift <= 10; ishift++) {
       histos.fill(HIST("ShiftFT0C"), collisionCentrality, 0.5, ishift - 0.5, std::sin(ishift * 2 * psiT0C));
@@ -2244,6 +2259,9 @@ struct cascadeFlow {
     const float psiT0C = std::atan2(coll.qvecFT0CIm(), coll.qvecFT0CRe()) * 0.5f;
     const float psiTPCA = std::atan2(coll.qvecBPosIm(), coll.qvecBPosRe()) * 0.5f;
     const float psiTPCC = std::atan2(coll.qvecBNegIm(), coll.qvecBNegRe()) * 0.5f;
+    histos.fill(HIST("Psi_EP_FT0C_notshifted"), coll.centFT0C(), psiT0C);
+    histos.fill(HIST("Psi_EP_TPCA_notshifted"), coll.centFT0C(), psiTPCA);
+    histos.fill(HIST("Psi_EP_TPCC_notshifted"), coll.centFT0C(), psiTPCC);
     float psiT0CCorr = psiT0C;
     for (int ishift = 1; ishift <= 10; ishift++) {
       histos.fill(HIST("ShiftFT0C"), coll.centFT0C(), 0.5, ishift - 0.5, std::sin(ishift * 2 * psiT0C));
