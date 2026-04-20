@@ -370,7 +370,6 @@ struct LongrangecorrDerived {
     fillCorrHist<CorrelationContainer::kCFStepAll>(same, triggers, assocs, false, mccollision.posZ(), multiplicity, 1.0);
   } // process MC same
 
-  // PresliceUnsorted<aod::LRCollisionsWithLabel> collPerMCColl = aod::lrcorrcolltable::lrMcCollisionId;
   template <typename... TrackTypes>
   void processMcMixed(McCollsTable const& mccollisions, aod::LRCollisionsWithLabel const& collisions, TrackTypes&&... tracks)
   {
