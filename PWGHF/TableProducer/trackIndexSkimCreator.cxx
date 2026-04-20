@@ -1456,6 +1456,9 @@ struct HfTrackIndexSkimCreator {
     Configurable<std::vector<double>> binsPtDstarToD0Pi{"binsPtDstarToD0Pi", std::vector<double>{hf_cuts_presel_dstar::vecBinsPt}, "pT bin limits for D*+->D0pi pT-dependent cuts"};
     Configurable<LabeledArray<double>> cutsDstarToD0Pi{"cutsDstarToD0Pi", {hf_cuts_presel_dstar::Cuts[0], hf_cuts_presel_dstar::NBinsPt, hf_cuts_presel_dstar::NCutVars, hf_cuts_presel_dstar::labelsPt, hf_cuts_presel_dstar::labelsCutVar}, "D*+->D0pi selections per pT bin"};
 
+    // Species-differential track min pT selection for 3-prong candidates
+    Configurable<LabeledArray<float>> cutsProngPtMin{"cutsProngPtMin", {hf_cuts_presel_3prong::cutsProngMinPt3Prong, hf_cuts_presel_3prong::NSpecies3Prong, 1, hf_cuts_presel_3prong::labelsSpecies3Prong, hf_cuts_presel_3prong::labelsMinPt}, "Min pT selection for prongs of 3-prong candidates in GeV/c"};
+
     // proton PID selections for Lc and Xic
     Configurable<bool> applyProtonPidForLcToPKPi{"applyProtonPidForLcToPKPi", false, "Apply proton PID for Lc->pKpi"};
     Configurable<bool> applyProtonPidForXicToPKPi{"applyProtonPidForXicToPKPi", false, "Apply proton PID for Xic->pKpi"};
@@ -1848,7 +1851,7 @@ struct HfTrackIndexSkimCreator {
   /// \param isIdentifiedPidTrack0 is the flag that tells if the track 0 has been tagged as a proton
   /// \param isIdentifiedPidTrack2 is the flag that tells if the track 2 has been tagged as a proton
   /// \param cutStatus is a 2D array with outcome of each selection (filled only in debug mode)
-  /// \param whichHypo information of the mass hypoteses that were selected
+  /// \param whichHypo information of the mass hypotheses that were selected
   /// \param isSelected is a bitmap with selection outcome
   template <typename T2, typename T3, typename T4>
   void applyPreselection3Prong(T2 const& pVecTrack0, T2 const& pVecTrack1, T2 const& pVecTrack2, const auto isIdentifiedPidTrack0, const auto isIdentifiedPidTrack2, T3& cutStatus, T4& whichHypo, auto& isSelected)
@@ -1999,8 +2002,8 @@ struct HfTrackIndexSkimCreator {
   /// \param primVtx is the primary vertex
   /// \param cutStatus is a 2D array with outcome of each selection (filled only in debug mode)
   /// \param isSelected ia s bitmap with selection outcome
-  template <typename T1, typename T2, typename T3, typename T4>
-  void applySelection3Prong(const T1& pVecCand, const T2& secVtx, const T3& primVtx, T4& cutStatus, auto& isSelected)
+  template <typename T1, typename T2, typename T3, typename T4, typename T5>
+  void applySelection3Prong(const T1& pVecCand, const T2& prongDaugsPt, const T3& secVtx, const T4& primVtx, T5& cutStatus, auto& isSelected)
   {
     if (config.debug || isSelected > 0) {
 
@@ -2035,6 +2038,17 @@ struct HfTrackIndexSkimCreator {
             CLRBIT(isSelected, iDecay3P);
             if (config.debug) {
               cutStatus[iDecay3P][3] = false;
+            }
+          }
+        }
+
+        // prong daughter pT
+        if ((config.debug || TESTBIT(isSelected, iDecay3P))) {
+          const auto minPtDaug = config.cutsProngPtMin->get(iDecay3P);
+          if (prongDaugsPt[0] < minPtDaug || prongDaugsPt[1] < minPtDaug || prongDaugsPt[2] < minPtDaug) {
+            CLRBIT(isSelected, iDecay3P);
+            if (config.debug) {
+              cutStatus[iDecay3P][4] = false;
             }
           }
         }
@@ -2643,6 +2657,7 @@ struct HfTrackIndexSkimCreator {
 
               auto trackParVarPos2 = getTrackParCov(trackPos2);
               std::array dcaInfoPos2{trackPos2.dcaXY(), trackPos2.dcaZ()};
+              std::array prongPtInfo{trackPos1.pt(), trackNeg1.pt(), trackPos2.pt()};
 
               // preselection of 3-prong candidates
               if (isSelected3ProngCand) {
@@ -2784,7 +2799,7 @@ struct HfTrackIndexSkimCreator {
               const auto pVecCandProng3Pos = RecoDecay::pVec(pvec0, pvec1, pvec2);
 
               // 3-prong selections after secondary vertex
-              applySelection3Prong(pVecCandProng3Pos, secondaryVertex3, pvRefitCoord3Prong2Pos1Neg, cutStatus3Prong, isSelected3ProngCand);
+              applySelection3Prong(pVecCandProng3Pos, prongPtInfo, secondaryVertex3, pvRefitCoord3Prong2Pos1Neg, cutStatus3Prong, isSelected3ProngCand);
 
               std::array<std::vector<float>, kN3ProngDecaysUsedMlForHfFilters> mlScores3Prongs;
               if (config.applyMlForHfFilters) {
@@ -2917,6 +2932,7 @@ struct HfTrackIndexSkimCreator {
               auto trackNeg2 = trackIndexNeg2.template track_as<TTracks>();
               auto trackParVarNeg2 = getTrackParCov(trackNeg2);
               std::array dcaInfoNeg2{trackNeg2.dcaXY(), trackNeg2.dcaZ()};
+              std::array prongPtInfo{trackPos1.pt(), trackNeg1.pt(), trackNeg2.pt()};
 
               // preselection of 3-prong candidates
               if (isSelected3ProngCand) {
@@ -3059,7 +3075,7 @@ struct HfTrackIndexSkimCreator {
               const auto pVecCandProng3Neg = RecoDecay::pVec(pvec0, pvec1, pvec2);
 
               // 3-prong selections after secondary vertex
-              applySelection3Prong(pVecCandProng3Neg, secondaryVertex3, pvRefitCoord3Prong1Pos2Neg, cutStatus3Prong, isSelected3ProngCand);
+              applySelection3Prong(pVecCandProng3Neg, prongPtInfo, secondaryVertex3, pvRefitCoord3Prong1Pos2Neg, cutStatus3Prong, isSelected3ProngCand);
 
               std::array<std::vector<float>, kN3ProngDecaysUsedMlForHfFilters> mlScores3Prongs{};
               if (config.applyMlForHfFilters) {
