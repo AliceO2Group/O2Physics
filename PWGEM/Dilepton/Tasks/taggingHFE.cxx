@@ -15,7 +15,6 @@
 
 #include "PWGEM/Dilepton/Utils/MCUtilities.h"
 #include "PWGEM/Dilepton/Utils/SemiCharmTag.h"
-#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/Core/RecoDecay.h"
@@ -51,12 +50,10 @@
 #include <Math/Vector4Dfwd.h>
 #include <TH1.h>
 
-#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
 #include <iostream>
-#include <iterator>
 #include <string>
 #include <string_view>
 #include <utility>

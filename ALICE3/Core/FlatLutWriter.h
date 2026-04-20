@@ -14,6 +14,13 @@
 
 #include "ALICE3/Core/FastTracker.h"
 #include "ALICE3/Core/FlatLutEntry.h"
+
+#include <ReconstructionDataFormats/PID.h>
+
+#include <TGraph.h>
+
+#include <cstddef>
+#include <string>
 namespace o2::fastsim
 {
 using lutEntry_t = o2::delphes::lutEntry_t;

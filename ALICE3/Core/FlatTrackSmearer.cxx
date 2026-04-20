@@ -11,11 +11,24 @@
 
 #include "FlatTrackSmearer.h"
 
+#include "FlatLutEntry.h"
+
 #include "ALICE3/Core/GeometryContainer.h"
 
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/RuntimeError.h>
 
 #include <TRandom.h>
+
+#include <fairlogger/Logger.h>
+
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <fstream>
+#include <span>
+#include <string>
 
 namespace o2::delphes
 {

@@ -20,14 +20,16 @@
 #include "Common/Core/trackUtilities.h"
 
 #include <CommonConstants/PhysicsConstants.h>
-#include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/PID.h>
 #include <ReconstructionDataFormats/Track.h>
-#include <ReconstructionDataFormats/TrackParametrization.h>
 #include <ReconstructionDataFormats/TrackParametrizationWithError.h>
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
+
+#include <fairlogger/Logger.h>
+
+#include <array>
 
 namespace o2::aod::pwgem::dilepton::utils
 {

@@ -11,6 +11,7 @@
 
 #include "ALICE3/Core/FlatLutWriter.h"
 
+#include "FlatLutEntry.h"
 #include "TrackUtilities.h"
 
 #include "ALICE3/Core/FlatTrackSmearer.h"
@@ -22,7 +23,6 @@
 #include <TDatabasePDG.h>
 #include <TGraph.h>
 #include <TLorentzVector.h>
-#include <TMatrixD.h>
 #include <TMatrixDSymEigen.h>
 #include <TMatrixDSymfwd.h>
 #include <TMatrixDfwd.h>
@@ -30,9 +30,10 @@
 #include <TString.h>
 #include <TVectorDfwd.h>
 
-#include <Rtypes.h>
-
+#include <cmath>
 #include <cstdlib>
+#include <fstream>
+#include <string>
 
 using namespace o2::delphes;
 

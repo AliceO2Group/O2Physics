@@ -13,6 +13,7 @@
 #define ALICE3_CORE_FLATLUTENTRY_H_
 
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <fstream>
 #include <span>

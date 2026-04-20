@@ -30,6 +30,7 @@
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
@@ -54,15 +55,20 @@
 #include <MathUtils/Utils.h>
 #include <ReconstructionDataFormats/PID.h>
 
+#include <TPDGCode.h>
+
 #include <sys/types.h>
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <iterator>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using namespace o2;
