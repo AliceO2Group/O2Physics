@@ -16,31 +16,36 @@
 /// \author sourav.kundu@cern.ch
 
 #include "PWGLF/DataModel/LFSpincorrelationTables.h"
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGMM/Mult/DataModel/Index.h" // for Particles2Tracks table
 
-#include "Common/CCDB/EventSelectionParams.h"
-#include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/FT0Corrected.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include <CCDB/BasicCCDBManager.h>
-#include <CommonConstants/PhysicsConstants.h>
-#include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
-#include <Framework/AnalysisTask.h>
-#include <Framework/Configurable.h>
-#include <Framework/HistogramRegistry.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
-#include <Framework/OutputObjHeader.h>
-#include <Framework/runDataProcessing.h>
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
 
-#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
-#include <Math/Vector4Dfwd.h>
+#include "Math/GenVector/Boost.h"
+#include "Math/Vector2D.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
 
-#include <iterator>
+#include <fairlogger/Logger.h>
+
 #include <string>
 #include <tuple>
 #include <vector>
@@ -48,6 +53,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using std::array;
 using namespace o2::aod::rctsel;
 
 struct lambdaspincorrelation {
@@ -60,7 +66,7 @@ struct lambdaspincorrelation {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   struct : ConfigurableGroup {
-    Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", true, "Check event quality in run condition table"};
+    Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", false, "Check event quality in run condition table"};
     Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT_hadronPID", "Evt sel: RCT flag checker label"};
     Configurable<bool> cfgEvtRCTFlagCheckerZDCCheck{"cfgEvtRCTFlagCheckerZDCCheck", false, "Evt sel: RCT flag checker ZDC check"};
     Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", true, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
@@ -69,18 +75,24 @@ struct lambdaspincorrelation {
   Configurable<bool> useGoodITSLayersAll{"useGoodITSLayersAll", true, "Apply kIsGoodITSLayersAll selection bit"};
   // mixing
   // Produce derived tables
-  Configurable<int> cfgCutOccupancy{"cfgCutOccupancy", 2000, "Occupancy cut"};
+  Configurable<int> cfgCutOccupancy{"cfgCutOccupancy", 200000, "Occupancy cut"};
   ConfigurableAxis axisVertex{"axisVertex", {5, -10, 10}, "vertex axis for bin"};
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {8, 0, 80}, "multiplicity percentile for bin"};
 
   // events
-  Configurable<float> cfgEventTypepp{"cfgEventTypepp", false, "Type of collisions"};
+  Configurable<float> cfgEventTypepp{"cfgEventTypepp", true, "Type of collisions"};
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
-  Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 80.0f, "Accepted maximum Centrality"};
+  Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 110.0f, "Accepted maximum Centrality"};
   Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 0.0f, "Accepted minimum Centrality"};
 
+  Configurable<bool> isNoSameBunchPileup{"isNoSameBunchPileup", 0, "isNoSameBunchPileup"};
+  Configurable<bool> isGoodZvtxFT0vsPV{"isGoodZvtxFT0vsPV", 0, "isGoodZvtxFT0vsPV"};
+  Configurable<bool> isNoTimeFrameBorder{"isNoTimeFrameBorder", 0, "TF border cut"};
+  Configurable<bool> isNoITSROFrameBorder{"isNoITSROFrameBorder", 0, "ITS ROF border cut"};
+  Configurable<bool> isEvSelAA{"isEvSelAA", 0, "Event selection for AA collisions"};
+
   // Configs for track
-  Configurable<float> cfgCutPt{"cfgCutPt", 0.2, "Pt cut on daughter track"};
+  Configurable<float> cfgCutPt{"cfgCutPt", 0.15, "Pt cut on daughter track"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta cut on daughter track"};
 
   // Configs for V0
@@ -88,20 +100,20 @@ struct lambdaspincorrelation {
   Configurable<float> confV0PtMax{"confV0PtMax", 1000.f, "Maximum transverse momentum of V0"};
   Configurable<float> confV0Rap{"confV0Rap", 0.8f, "Rapidity range of V0"};
   Configurable<float> confV0DCADaughMax{"confV0DCADaughMax", 1.0f, "Maximum DCA between the V0 daughters"};
-  Configurable<double> confV0CPAMin{"confV0CPAMin", 0.9998f, "Minimum CPA of V0"};
-  Configurable<float> confV0TranRadV0Min{"confV0TranRadV0Min", 1.5f, "Minimum transverse radius"};
-  Configurable<float> confV0TranRadV0Max{"confV0TranRadV0Max", 100.f, "Maximum transverse radius"};
+  Configurable<double> confV0CPAMin{"confV0CPAMin", 0.99f, "Minimum CPA of V0"};
+  Configurable<float> confV0TranRadV0Min{"confV0TranRadV0Min", 0.5f, "Minimum transverse radius"};
+  Configurable<float> confV0TranRadV0Max{"confV0TranRadV0Max", 50.f, "Maximum transverse radius"};
   Configurable<double> cMaxV0DCA{"cMaxV0DCA", 1.2, "Maximum V0 DCA to PV"};
   Configurable<float> cMinV0DCAPr{"cMinV0DCAPr", 0.05, "Minimum V0 daughters DCA to PV for Pr"};
   Configurable<float> cMinV0DCAPi{"cMinV0DCAPi", 0.05, "Minimum V0 daughters DCA to PV for Pi"};
-  Configurable<float> cMaxV0LifeTime{"cMaxV0LifeTime", 50, "Maximum V0 life time"};
+  Configurable<float> cMaxV0LifeTime{"cMaxV0LifeTime", 30, "Maximum V0 life time"};
 
   // config for V0 daughters
   Configurable<float> confDaughEta{"confDaughEta", 0.8f, "V0 Daugh sel: max eta"};
-  Configurable<float> cfgDaughPrPt{"cfgDaughPrPt", 0.2, "minimum daughter proton pt"};
-  Configurable<float> cfgDaughPiPt{"cfgDaughPiPt", 0.2, "minimum daughter pion pt"};
-  Configurable<float> confDaughTPCnclsMin{"confDaughTPCnclsMin", 50.f, "V0 Daugh sel: Min. nCls TPC"};
-  Configurable<float> confDaughPIDCuts{"confDaughPIDCuts", 3, "PID selections for Lambda daughters"};
+  Configurable<float> cfgDaughPrPt{"cfgDaughPrPt", 0.15, "minimum daughter proton pt"};
+  Configurable<float> cfgDaughPiPt{"cfgDaughPiPt", 0.15, "minimum daughter pion pt"};
+  Configurable<float> confDaughTPCnclsMin{"confDaughTPCnclsMin", 70.f, "V0 Daugh sel: Min. nCls TPC"};
+  Configurable<float> confDaughPIDCuts{"confDaughPIDCuts", 4, "PID selections for Lambda daughters"};
 
   Configurable<int> iMNbins{"iMNbins", 50, "Number of bins in invariant mass"};
   Configurable<float> lbinIM{"lbinIM", 1.09, "lower bin value in IM histograms"};
@@ -116,6 +128,67 @@ struct lambdaspincorrelation {
     histos.add("hEvtSelInfo", "hEvtSelInfo", kTH1F, {{5, 0, 5.0}});
     histos.add("hLambdaMass", "hLambdaMass", kTH1F, {thnAxisInvMass});
     histos.add("hV0Info", "hV0Info", kTH1F, {{5, 0, 5.0}});
+
+    histos.add("hNEvents", "hNEvents", {HistType::kTH1D, {{10, 0.f, 9.f}}});
+    histos.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "All");
+    histos.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "Sel8");
+    histos.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(3, "Zvertex");
+    histos.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(4, "NoSameBunchPileup");
+    histos.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(5, "IsGoodZvtxFT0vsPV");
+    histos.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(6, "NoTimeFrameBorder");
+    histos.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(7, "NoITSROFBorder");
+    histos.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(8, "Applied selected");
+  }
+
+  // Event selection
+  template <typename TCollision>
+  bool AcceptEvent(TCollision const& collision)
+  {
+    histos.fill(HIST("hNEvents"), 0.5);
+
+    if (!collision.sel8()) {
+      return false;
+    }
+    histos.fill(HIST("hNEvents"), 1.5);
+
+    if (TMath::Abs(collision.posZ()) > cfgCutVertex) {
+      return false;
+    }
+    histos.fill(HIST("hNEvents"), 2.5);
+
+    if (isEvSelAA) {
+
+      if (isNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+        return false;
+      }
+      histos.fill(HIST("hNEvents"), 3.5);
+
+      if (isGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
+        return false;
+      }
+      histos.fill(HIST("hNEvents"), 4.5);
+
+      if (isNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+        return false;
+      }
+
+      histos.fill(HIST("hNEvents"), 5.5);
+
+      if (isNoITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+        return false;
+      }
+      histos.fill(HIST("hNEvents"), 6.5);
+
+    } else {
+      histos.fill(HIST("hNEvents"), 3.5);
+      histos.fill(HIST("hNEvents"), 4.5);
+      histos.fill(HIST("hNEvents"), 5.5);
+      histos.fill(HIST("hNEvents"), 6.5);
+    }
+
+    histos.fill(HIST("hNEvents"), 7.5);
+
+    return true;
   }
 
   template <typename Collision, typename V0>
@@ -264,7 +337,9 @@ struct lambdaspincorrelation {
     int occupancy = collision.trackOccupancyInTimeRange();
     histos.fill(HIST("hEvtSelInfo"), 0.5);
     // if ((!rctCut.requireRCTFlagChecker || rctChecker(collision)) && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) && collision.sel8() && collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll) && occupancy < cfgCutOccupancy) {
-    if ((!rctCut.requireRCTFlagChecker || rctChecker(collision)) && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && (!useNoCollInTimeRangeStandard || collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) && collision.sel8() && (!useGoodITSLayersAll || collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) && occupancy < cfgCutOccupancy) {
+    // if ((!rctCut.requireRCTFlagChecker || rctChecker(collision)) && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && (!useNoCollInTimeRangeStandard || collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) && collision.sel8() && (!useGoodITSLayersAll || collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) && occupancy < cfgCutOccupancy) {
+    if ((!rctCut.requireRCTFlagChecker || rctChecker(collision)) && AcceptEvent(collision) && occupancy < cfgCutOccupancy) {
+
       histos.fill(HIST("hEvtSelInfo"), 1.5);
       for (const auto& v0 : V0s) {
         // LOGF(info, "v0 index 0 : (%d)", v0.index());
@@ -364,7 +439,9 @@ struct lambdaspincorrelation {
     auto vz = collision.posZ();
     int occupancy = collision.trackOccupancyInTimeRange();
     histos.fill(HIST("hEvtSelInfo"), 0.5);
-    if ((rctCut.requireRCTFlagChecker && rctChecker(collision)) && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) && collision.sel8() && collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll) && occupancy < cfgCutOccupancy) {
+    // if ((rctCut.requireRCTFlagChecker && rctChecker(collision)) && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) && collision.sel8() && collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll) && occupancy < cfgCutOccupancy) {
+    if ((!rctCut.requireRCTFlagChecker || rctChecker(collision)) && AcceptEvent(collision) && occupancy < cfgCutOccupancy) {
+
       histos.fill(HIST("hEvtSelInfo"), 1.5);
       for (const auto& v0 : V0s) {
         // LOGF(info, "v0 index 0 : (%d)", v0.index());
