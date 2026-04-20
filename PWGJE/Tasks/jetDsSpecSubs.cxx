@@ -16,8 +16,6 @@
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
-// #include "PWGJE/DataModel/JetReducedData.h"
-// #include "PWGJE/DataModel/JetSubtraction.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -36,7 +34,7 @@
 #include <string>
 #include <vector>
 
-// using namespace o2;
+using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
