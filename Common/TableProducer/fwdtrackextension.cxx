@@ -107,12 +107,12 @@ struct FwdTrackExtension {
           fwdtrack = o2::aod::fwdtrackutils::refitGlobalMuonCov(propmuon, mft);
         }
         if (!propInTheAbsorber && (trackType == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack || trackType == o2::aod::fwdtrack::ForwardTrackTypeEnum::MCHStandaloneTrack)) {
+          dcaX = track.pDca() / std::numbers::sqrt2 / track.p();
+          dcaY = dcaX;
+        } else {
           auto proptrack = o2::aod::fwdtrackutils::propagateTrackParCovFwd(fwdtrack, trackType, collision, o2::aod::fwdtrackutils::propagationPoint::kToDCA, 0.f, zField);
           dcaX = (proptrack.getX() - collision.posX());
           dcaY = (proptrack.getY() - collision.posY());
-        } else {
-          dcaX = track.pDca() / std::numbers::sqrt2 / track.p();
-          dcaY = dcaX;
         }
       }
       fwdDCA(dcaX, dcaY);
