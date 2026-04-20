@@ -569,7 +569,7 @@ struct LumiStabilityLightIons {
           fillHistograms<kFT0CE, kBCNSLFT0>(timeSinceSOF, localBC);
       }
 
-      if (cfgDoFDD && anyFDDTrigger) {
+      if (cfgDoFDD && ctpInputMask.test(15)) {
         if (cfgDoBCA && bcPatternA[localBCFDD])
           fillHistograms<kFDD, kBCA>(timeSinceSOF, localBCFDD);
         if (cfgDoBCB && bcPatternB[localBCFDD])
