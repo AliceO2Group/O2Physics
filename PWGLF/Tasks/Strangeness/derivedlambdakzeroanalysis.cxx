@@ -238,7 +238,7 @@ struct derivedlambdakzeroanalysis {
     // PID (TOF)
     Configurable<float> maxDeltaTimeProton{"maxDeltaTimeProton", 1e+9, "check maximum allowed time"};
     Configurable<float> maxDeltaTimePion{"maxDeltaTimePion", 1e+9, "check maximum allowed time"};
-    
+
     // Mass
     Configurable<bool> useUncheckedMass{"useUncheckedMass", false, "Use invariant mass hypothesis without v0 type check? (will include TPC only and potentially duplicates! use with care)"};
   } v0Selections;
