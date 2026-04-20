@@ -103,6 +103,7 @@ struct FlowMc {
   O2_DEFINE_CONFIGURABLE(cfgRecoEvRejectMC, bool, false, "reject both MC and Reco events when reco do not pass")
   O2_DEFINE_CONFIGURABLE(cfgRecoEvSel8, bool, false, "require sel8 for reconstruction events")
   O2_DEFINE_CONFIGURABLE(cfgRecoEvkIsGoodITSLayersAll, bool, false, "require kIsGoodITSLayersAll for reconstruction events")
+  O2_DEFINE_CONFIGURABLE(cfgRecoEvkIsGoodITSLayer0123, bool, false, "require kIsGoodITSLayer0123 for reconstruction events")
   O2_DEFINE_CONFIGURABLE(cfgRecoEvkNoSameBunchPileup, bool, false, "require kNoSameBunchPileup for reconstruction events")
   O2_DEFINE_CONFIGURABLE(cfgRecoEvSelkIsGoodZvtxFT0vsPV, bool, false, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference, use this cut at low multiplicities with caution")
   O2_DEFINE_CONFIGURABLE(cfgRecoEvSelkNoITSROFrameBorder, bool, false, "reject events at ITS ROF border")
@@ -428,6 +429,10 @@ struct FlowMc {
     }
     if (cfgRecoEvkIsGoodITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       // from Jan 9 2025 AOT meeting
+      // cut time intervals with dead ITS staves
+      return 0;
+    }
+    if (cfgRecoEvkIsGoodITSLayer0123 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
       // cut time intervals with dead ITS staves
       return 0;
     }
