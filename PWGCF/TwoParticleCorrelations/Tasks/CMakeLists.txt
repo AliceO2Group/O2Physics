@@ -108,3 +108,7 @@ o2physics_add_dpl_workflow(particle-origin-analysis
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(corr-ft0-nch
+                           SOURCES corrFt0Nch.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::AnalysisCCDB O2Physics::GFWCore
+                           COMPONENT_NAME Analysis)
