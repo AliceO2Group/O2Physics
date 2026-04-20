@@ -348,30 +348,35 @@ struct FactorialMomentsTask {
     fqEvent = {{{{{0, 0, 0, 0, 0, 0}}}}};
     binConEvent = {{{0, 0, 0, 0, 0}}};
     for (auto const& track : tracks) {
-      if (track.hasTPC()) {
-        histos.fill(HIST("mCollID"), track.collisionId());
-        histos.fill(HIST("mEta"), track.eta());
-        histos.fill(HIST("mPt"), track.pt());
-        histos.fill(HIST("mPhi"), track.phi());
-        histos.fill(HIST("mNFindableClsTPC"), track.tpcNClsFindable());
-        histos.fill(HIST("mNClsTPC"), track.tpcNClsFound());
-        histos.fill(HIST("mNClsITS"), track.itsNCls());
-        histos.fill(HIST("mChi2TPC"), track.tpcChi2NCl());
-        histos.fill(HIST("mChi2ITS"), track.itsChi2NCl());
-        histos.fill(HIST("mChi2TRD"), track.trdChi2());
-        histos.fill(HIST("mDCAxy"), track.dcaXY());
-        histos.fill(HIST("mDCAx"), track.dcaZ());
-        histos.fill(HIST("mDCAxyPt"), track.pt(), track.dcaXY());
-        histos.fill(HIST("mDCAzPt"), track.pt(), track.dcaZ());
-        histos.fill(HIST("mNSharedClsTPC"), track.tpcNClsShared());
-        histos.fill(HIST("mCrossedRowsTPC"), track.tpcNClsCrossedRows());
-        histos.fill(HIST("mNFinClsminusCRows"), track.tpcNClsFindableMinusCrossedRows());
-        histos.fill(HIST("mNFractionShClsTPC"), track.tpcFractionSharedCls());
-        histos.fill(HIST("mSharedClsvsPt"), track.pt(), track.tpcNClsShared());
-        histos.fill(HIST("mSharedClsProbvsPt"), track.pt(), track.tpcFractionSharedCls() / track.tpcNClsCrossedRows());
-        checkpT(track);
-      }
+      if (useITS && !track.hasITS())
+        continue;
+      if (useTPC && !track.hasTPC())
+        continue;
+      if (useGlobal && !track.isGlobalTrack())
+        continue;
+      histos.fill(HIST("mCollID"), track.collisionId());
+      histos.fill(HIST("mEta"), track.eta());
+      histos.fill(HIST("mPt"), track.pt());
+      histos.fill(HIST("mPhi"), track.phi());
+      histos.fill(HIST("mNFindableClsTPC"), track.tpcNClsFindable());
+      histos.fill(HIST("mNClsTPC"), track.tpcNClsFound());
+      histos.fill(HIST("mNClsITS"), track.itsNCls());
+      histos.fill(HIST("mChi2TPC"), track.tpcChi2NCl());
+      histos.fill(HIST("mChi2ITS"), track.itsChi2NCl());
+      histos.fill(HIST("mChi2TRD"), track.trdChi2());
+      histos.fill(HIST("mDCAxy"), track.dcaXY());
+      histos.fill(HIST("mDCAx"), track.dcaZ());
+      histos.fill(HIST("mDCAxyPt"), track.pt(), track.dcaXY());
+      histos.fill(HIST("mDCAzPt"), track.pt(), track.dcaZ());
+      histos.fill(HIST("mNSharedClsTPC"), track.tpcNClsShared());
+      histos.fill(HIST("mCrossedRowsTPC"), track.tpcNClsCrossedRows());
+      histos.fill(HIST("mNFinClsminusCRows"), track.tpcNClsFindableMinusCrossedRows());
+      histos.fill(HIST("mNFractionShClsTPC"), track.tpcFractionSharedCls());
+      histos.fill(HIST("mSharedClsvsPt"), track.pt(), track.tpcNClsShared());
+      histos.fill(HIST("mSharedClsProbvsPt"), track.pt(), track.tpcFractionSharedCls() / track.tpcNClsCrossedRows());
+      checkpT(track);
     }
+
     for (int iPt = 0; iPt < numPt; ++iPt) {
       if (countTracks[iPt] > 0) {
         mHistArrQA[iPt * 4 + 3]->Fill(countTracks[iPt]);
@@ -470,13 +475,11 @@ struct FactorialMomentsTask {
       }
     }
     for (auto iPt = 0; iPt < numPt; ++iPt) {
-      // if (countTracks[iPt] > 0)countTracks = {0, 0, 0, 0, 0};
       if (countTracks[iPt] > 0) {
         mHistArrQA[iPt * 4 + 3]->Fill(countTracks[iPt]);
       }
     }
     histos.fill(HIST("mEventSelected"), 6);
-    // Calculate the normalized factorial moments
     calculateMoments(mHistArrReset);
   }
   PROCESS_SWITCH(FactorialMomentsTask, processMCRec, "main process function", false);
