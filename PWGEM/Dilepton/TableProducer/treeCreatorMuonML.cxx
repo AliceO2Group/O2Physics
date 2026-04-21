@@ -367,7 +367,7 @@ struct TreeCreatorMuonML {
       yMCHMIDatMP = muonAtMP.getY();
       xErrMCHMIDatMP = std::sqrt(muonAtMP.getSigma2X());
       yErrMCHMIDatMP = std::sqrt(muonAtMP.getSigma2Y());
-      signed1PtMCHMIDatMP = mftsaAtMP.getInvQPt();
+      signed1PtMCHMIDatMP = muonAtMP.getInvQPt();
       etaMCHMIDatMP = muonAtMP.getEta();
       phiMCHMIDatMP = RecoDecay::constrainAngle(muonAtMP.getPhi(), 0, 1U);
     }
