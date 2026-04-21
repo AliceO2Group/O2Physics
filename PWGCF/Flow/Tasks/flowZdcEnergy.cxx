@@ -44,7 +44,7 @@ using namespace o2::framework::expressions;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-struct flowZdcEnergy {
+struct FlowZdcEnergy {
 
   O2_DEFINE_CONFIGURABLE(cfgVtxZ, float, 10.f, "Event cut: accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgEtaMax, float, 0.8f, "Maximum track #eta")
@@ -304,12 +304,12 @@ struct flowZdcEnergy {
   }
 
   // Process switches
-  PROCESS_SWITCH(flowZdcEnergy, processRun3, "Process Run 3 data", true);
-  PROCESS_SWITCH(flowZdcEnergy, processRun2, "Process Run 2 data", false);
+  PROCESS_SWITCH(FlowZdcEnergy, processRun3, "Process Run 3 data", true);
+  PROCESS_SWITCH(FlowZdcEnergy, processRun2, "Process Run 2 data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<flowZdcEnergy>(cfgc)};
+    adaptAnalysisTask<FlowZdcEnergy>(cfgc)};
 }
