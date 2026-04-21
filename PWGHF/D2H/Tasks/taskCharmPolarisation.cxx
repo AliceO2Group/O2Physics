@@ -357,7 +357,7 @@ struct HfTaskCharmPolarisation {
     const AxisSpec thnAxisCosThetaStarRandom{configThnAxisCosThetaStarRandom, "cos(#vartheta_{random})"};
     const AxisSpec thnAxisCosThetaStarBeam{configThnAxisCosThetaStarBeam, "cos(#vartheta_{beam})"};
     const AxisSpec thnAxisCosThetaStarEP{configThnAxisCosThetaStarEP, "cos(#vartheta_{EP})"}; // reaction plane
-    const AxisSpec thnAxisCosPhiStarEP{configThnAxisCosPhiStarEP, "cos(2#varphi_{EP})"}; // reaction plane
+    const AxisSpec thnAxisCosPhiStarEP{configThnAxisCosPhiStarEP, "cos(2#varphi_{EP})"};      // reaction plane
     const AxisSpec thnAxisCosSqThetaStarEP{configThnAxisCosSqThetaStarEP, "cos^{2}(#vartheta_{EP})"}; // reaction plane
     const AxisSpec thnAxisMlBkg{configThnAxisMlBkg, "ML bkg"};
     const AxisSpec thnAxisMlNonPrompt{configThnAxisMlNonPrompt, "ML non-prompt"};
@@ -901,16 +901,17 @@ struct HfTaskCharmPolarisation {
   }; // end init
 
   /// \param ptCharmHad is the pt of the candidate
-  double sampleDeltaPhi(float ptCharmHad) {
+  double sampleDeltaPhi(float ptCharmHad)
+  {
 
     double y0 = 6.49e-2;
-    double cons  = 8.42e-1;
-    double coef  = -3.78e-1;
+    double cons = 8.42e-1;
+    double coef = -3.78e-1;
     double x0 = -6.37e-1;
-    double norm  = -3.64e-1;
-    double mu  = 4.68e-2;
+    double norm = -3.64e-1;
+    double mu = 4.68e-2;
     double sigma = 1.513;
-    
+
     double sigmoid = y0 + (cons - y0) / (1 + std::exp(-coef * (ptCharmHad - x0)));
     double peak = norm * std::exp(-(ptCharmHad - mu) * (ptCharmHad - mu) / (2 * sigma * sigma));
 
@@ -923,12 +924,13 @@ struct HfTaskCharmPolarisation {
 
       double funcDeltaPhi = 1.0 + 2.0 * v2 * std::cos(2.0 * deltaPhi);
 
-      if (funcVal < funcDeltaPhi) return deltaPhi;
+      if (funcVal < funcDeltaPhi)
+        return deltaPhi;
     }
 
     return -1.;
   }
-  
+
   /// \param invMassCharmHad is the invariant-mass of the candidate
   /// \param ptCharmHad is the pt of the candidate
   /// \param numPvContributors is the number of PV contributors
@@ -1620,7 +1622,7 @@ struct HfTaskCharmPolarisation {
               if (nBkgRotations > 0) {
                 registry.fill(HIST("hEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, centrality);
                 if (activateTHnSparsePhiAndCosSqStarEP && ptCharmHad > ptMinCosPhiCosSqTheta) {
-                  registry.fill(HIST("hCosPhiCosSqThetaEP"), invMassCharmHad, ptCharmHad, std::abs(rapCharmHad), std::cos(2*phiEuler), cosThetaStar*cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], centrality);
+                  registry.fill(HIST("hCosPhiCosSqThetaEP"), invMassCharmHad, ptCharmHad, std::abs(rapCharmHad), std::cos(2 * phiEuler), cosThetaStar * cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], centrality);
                 }
               } else {
                 registry.fill(HIST("hEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, centrality);
@@ -1629,7 +1631,7 @@ struct HfTaskCharmPolarisation {
               if (nBkgRotations > 0) {
                 registry.fill(HIST("hEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], isRotatedCandidate, centrality);
                 if (activateTHnSparsePhiAndCosSqStarEP && ptCharmHad > ptMinCosPhiCosSqTheta) {
-                  registry.fill(HIST("hCosPhiCosSqThetaEP"), invMassCharmHad, ptCharmHad, std::abs(rapCharmHad), std::cos(2*phiEuler), cosThetaStar*cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], centrality);
+                  registry.fill(HIST("hCosPhiCosSqThetaEP"), invMassCharmHad, ptCharmHad, std::abs(rapCharmHad), std::cos(2 * phiEuler), cosThetaStar * cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], centrality);
                 }
               } else {
                 registry.fill(HIST("hEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], centrality);
@@ -1810,7 +1812,7 @@ struct HfTaskCharmPolarisation {
         }
       }
     } else if constexpr (CosThetaStarType == charm_polarisation::CosThetaStarType::EP) { // EP
-       // Dstar or Lc->pKpi
+                                                                                         // Dstar or Lc->pKpi
       if (origin == RecoDecay::OriginType::Prompt) {
         if (!isPartRecoDstar) {
           registry.fill(HIST("hGenPromptEP"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, areDausInAcc, resoChannelLc, charge, centrality);
