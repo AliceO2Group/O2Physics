@@ -13,20 +13,31 @@
 ///
 /// \brief This task produces the tracking performance
 ///
-/// \author Nicolò Jacazio, Universita del Piemonte Orientale (IT)
+/// \author Nicolò Jacazio, Università del Piemonte Orientale (IT)
 /// \since  May 27, 2025
 ///
 
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/ConfigParamRegistry.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <TProfile2D.h>
+#include <TString.h>
 
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -36,7 +47,9 @@ std::map<int, std::shared_ptr<TH1>> particlePtDistribution;
 std::map<int, std::shared_ptr<TH1>> particleEtaDistribution;
 std::map<int, std::shared_ptr<TH1>> ptDistribution;
 std::map<int, std::shared_ptr<TH2>> ptResolutionVsPt;
+std::map<int, std::shared_ptr<TProfile2D>> ptResolutionVsEta;
 std::map<int, std::shared_ptr<TH2>> invPtResolutionVsPt;
+std::map<int, std::shared_ptr<TProfile2D>> invPtResolutionVsEta;
 std::map<int, std::shared_ptr<TH2>> dcaXyResolutionVsPt;
 std::map<int, std::shared_ptr<TH2>> dcaZResolutionVsPt;
 
@@ -47,26 +60,30 @@ struct Alice3TrackingPerformance {
 
   void init(o2::framework::InitContext&)
   {
-    const AxisSpec axisPt{100, 0, 10, "p_{T} (GeV/c)"};
+    const AxisSpec axisPt{500, 0, 100, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisEta{100, etaRange.value.first, etaRange.value.second, "#eta"};
-    const AxisSpec axisPtDelta{100, -1, 1, "p_{T}^{gen} - p_{T}^{reco} (GeV/c)"};
-    const AxisSpec axisInvPtDelta{100, -1, 1, "1./p_{T}^{gen} - 1./p_{T}^{reco} (GeV/c)^{-1}"};
+    const AxisSpec axisPtDelta{100, -1, 1, "(#it{p}_{T}^{reco} - #it{p}_{T}^{gen}) / #it{p}_{T}^{gen}"};
+    const AxisSpec axisInvPtDelta{100, -1, 1, "1./#it{p}_{T}^{gen} - 1./#it{p}_{T}^{reco} (GeV/#it{c})^{-1}"};
     const AxisSpec axisDcaXy{100, -1, 1, "DCA_{xy} (cm)"};
     const AxisSpec axisDcaZ{100, -1, 1, "DCA_{z} (cm)"};
     particlePdgCodes = histos.add<TH1>("particlePdgCodes", "", kTH1D, {AxisSpec{100, -0.5, 99.5, "PDG Code"}});
     for (const int& pdg : pdgCodes.value) {
-      std::string tag = Form("_%d", pdg);
+      std::string prefix = Form("%i", pdg);
       if (pdg < 0) {
-        tag = Form("_m%d", -pdg);
+        prefix = Form("m%i", -pdg);
       }
-      particlePtDistribution[pdg] = histos.add<TH1>("particlePtDistribution" + tag, "", kTH1D, {axisPt});
-      particleEtaDistribution[pdg] = histos.add<TH1>("particleEtaDistribution" + tag, "", kTH1D, {axisEta});
+      const std::string tag = "_" + prefix;
+      prefix += "/";
+      particlePtDistribution[pdg] = histos.add<TH1>(prefix + "particlePtDistribution" + tag, "", kTH1D, {axisPt});
+      particleEtaDistribution[pdg] = histos.add<TH1>(prefix + "particleEtaDistribution" + tag, "", kTH1D, {axisEta});
 
-      ptDistribution[pdg] = histos.add<TH1>("ptDistribution" + tag, "", kTH1D, {axisPt});
-      ptResolutionVsPt[pdg] = histos.add<TH2>("ptResolutionVsPt" + tag, "", kTH2D, {axisPt, axisPtDelta});
-      invPtResolutionVsPt[pdg] = histos.add<TH2>("invPtResolutionVsPt" + tag, "", kTH2D, {axisPt, axisInvPtDelta});
-      dcaXyResolutionVsPt[pdg] = histos.add<TH2>("dcaXyResolutionVsPt" + tag, "", kTH2D, {axisPt, axisDcaXy});
-      dcaZResolutionVsPt[pdg] = histos.add<TH2>("dcaZResolutionVsPt" + tag, "", kTH2D, {axisPt, axisDcaZ});
+      ptDistribution[pdg] = histos.add<TH1>(prefix + "ptDistribution" + tag, "", kTH1D, {axisPt});
+      ptResolutionVsPt[pdg] = histos.add<TH2>(prefix + "ptResolutionVsPt" + tag, "", kTH2D, {axisPt, axisPtDelta});
+      ptResolutionVsEta[pdg] = histos.add<TProfile2D>(prefix + "ptResolutionVsEta" + tag, "", kTProfile2D, {axisPt, axisEta});
+      invPtResolutionVsPt[pdg] = histos.add<TH2>(prefix + "invPtResolutionVsPt" + tag, "", kTH2D, {axisPt, axisInvPtDelta});
+      invPtResolutionVsEta[pdg] = histos.add<TProfile2D>(prefix + "invPtResolutionVsEta" + tag, "", kTProfile2D, {axisPt, axisEta});
+      dcaXyResolutionVsPt[pdg] = histos.add<TH2>(prefix + "dcaXyResolutionVsPt" + tag, "", kTH2D, {axisPt, axisDcaXy});
+      dcaZResolutionVsPt[pdg] = histos.add<TH2>(prefix + "dcaZResolutionVsPt" + tag, "", kTH2D, {axisPt, axisDcaZ});
     }
   }
 
@@ -100,26 +117,32 @@ struct Alice3TrackingPerformance {
       particleEtaDistribution[mcParticle.pdgCode()]->Fill(mcParticle.eta());
     }
     for (const auto& track : tracks) {
-      ptDistribution[0]->Fill(track.pt());
       if (!track.has_mcParticle()) {
         continue;
       }
       const auto& mcParticle = track.mcParticle();
-      ptResolutionVsPt[0]->Fill(mcParticle.pt(), mcParticle.pt() - track.pt());
-      invPtResolutionVsPt[0]->Fill(mcParticle.pt(), 1.f / mcParticle.pt() - 1.f / track.pt());
-      dcaXyResolutionVsPt[0]->Fill(mcParticle.pt(), track.dcaXY());
-      dcaZResolutionVsPt[0]->Fill(mcParticle.pt(), track.dcaZ());
+      const float ptResolution = (track.pt() - mcParticle.pt()) / mcParticle.pt();
+      const float invptResolution = 1.f / track.pt() - 1.f / mcParticle.pt();
+
+      auto fillResolutionHistograms = [&](const int p) {
+        ptDistribution[p]->Fill(track.pt());
+        ptResolutionVsPt[p]->Fill(mcParticle.pt(), ptResolution);
+        ptResolutionVsEta[p]->Fill(mcParticle.pt(), mcParticle.eta(), ptResolution);
+        invPtResolutionVsPt[p]->Fill(mcParticle.pt(), invptResolution);
+        invPtResolutionVsEta[p]->Fill(mcParticle.pt(), mcParticle.eta(), invptResolution);
+        dcaXyResolutionVsPt[p]->Fill(mcParticle.pt(), track.dcaXY());
+        dcaZResolutionVsPt[p]->Fill(mcParticle.pt(), track.dcaZ());
+      };
+
+      fillResolutionHistograms(0);
+
       if (!isParticleSelected(mcParticle)) {
         continue;
       }
       if (ptResolutionVsPt.find(mcParticle.pdgCode()) == ptResolutionVsPt.end()) {
         continue;
       }
-      ptDistribution[mcParticle.pdgCode()]->Fill(mcParticle.pt());
-      ptResolutionVsPt[mcParticle.pdgCode()]->Fill(mcParticle.pt(), mcParticle.pt() - track.pt());
-      invPtResolutionVsPt[mcParticle.pdgCode()]->Fill(mcParticle.pt(), 1.f / mcParticle.pt() - 1.f / track.pt());
-      dcaXyResolutionVsPt[mcParticle.pdgCode()]->Fill(mcParticle.pt(), track.dcaXY());
-      dcaZResolutionVsPt[mcParticle.pdgCode()]->Fill(mcParticle.pt(), track.dcaZ());
+      fillResolutionHistograms(mcParticle.pdgCode());
     }
   }
 };

@@ -48,9 +48,15 @@ enum class Mode : uint32_t {
   kAnalysis = BIT(0),
   kQa = BIT(1),
   kMc = BIT(2),
+  kSe = BIT(3),
+  kMe = BIT(4),
   kAnalysis_Qa = kAnalysis | kQa,
   kAnalysis_Mc = kAnalysis | kMc,
   kAnalysis_Qa_Mc = kAnalysis | kQa | kMc,
+  kSe_Analysis = kAnalysis | kSe,
+  kMe_Analysis = kAnalysis | kMe,
+  kSe_Analysis_Mc = kAnalysis | kSe | kMc,
+  kMe_Analysis_Mc = kAnalysis | kMe | kMc,
 };
 
 enum class System : uint32_t {
@@ -115,20 +121,6 @@ constexpr const char* mcOriginToString(McOrigin origin)
       return "Missidentified";
     default:
       return "UnknownMcOrigin";
-  }
-}
-
-constexpr bool
-  hasMass(Particle p)
-{
-  switch (p) {
-    case Particle::kV0:
-    case Particle::kTwoTrackResonance:
-    case Particle::kKink:
-    case Particle::kCascade:
-      return true;
-    default:
-      return false;
   }
 }
 

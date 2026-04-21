@@ -22,22 +22,37 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseMath.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniversePairCleaner.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"
-#include "PWGCF/FemtoUniverse/Core/femtoUtils.h"
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
 
 #include <TFile.h>
 #include <TH1.h>
 
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 using namespace o2;
@@ -111,6 +126,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
     Configurable<int> confPDGCodeV0{"confPDGCodeV0", 3122, "V0 -- PDG code"};
     Configurable<int> confPDGCodePosChild{"confPDGCodePosChild", 2212, "Positive Child -- PDG code"};
     Configurable<int> confPDGCodeNegChild{"confPDGCodeNegChild", 211, "Negative Child -- PDG code"};
+    Configurable<bool> confSeparateInvMassCheck{"confSeparateInvMassCheck", false, "Apply additional cut separate for mLambda and mAntiLambda"};
   } V0configs;
 
   /// Partitioning for particle 2
@@ -159,12 +175,19 @@ struct FemtoUniversePairTaskTrackV0Helicity {
   ConfigurableAxis confmTBins3D{"confmTBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT binning for the 3D plot: k* vs multiplicity vs mT (set <confUse3D> to true in order to use)"};
   ConfigurableAxis confMultBins3D{"confMultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "multiplicity binning for the 3D plot: k* vs multiplicity vs mT (set <confUse3D> to true in order to use)"};
 
-  /// Helicity ranges (approximate)
+  struct : o2::framework::ConfigurableGroup {
+    ConfigurableAxis confDeltaEtaAxis{"confDeltaEtaAxis", {100, -0.15, 0.15}, "DeltaEta"};
+    ConfigurableAxis confDeltaPhiStarAxis{"confDeltaPhiStarAxis", {100, -0.15, 0.15}, "DeltaPhiStar"};
+  } twotracksconfigs;
+
+  /// Helicity ranges and configurables
   Configurable<bool> cfgProcessHel{"cfgProcessHel", true, "Process particle pairs from all helicity ranges"};
-  Configurable<bool> cfgProcessHel1{"cfgProcessHel1", false, "Process particle pairs from the helicity range 1"}; // 1.0 > cosineTheta >= 0.1
+  Configurable<bool> cfgProcessHel1{"cfgProcessHel1", false, "Process particle pairs from the helicity range 1"}; // 1.0 >= cosineTheta >= 0.1
   Configurable<bool> cfgProcessHel2{"cfgProcessHel2", false, "Process particle pairs from the helicity range 2"}; // 0.1 > cosineTheta >= -0.1
   Configurable<bool> cfgProcessHel3{"cfgProcessHel3", false, "Process particle pairs from the helicity range 3"}; // -0.1 > cosineTheta >= -0.5
   Configurable<bool> cfgProcessHel4{"cfgProcessHel4", false, "Process particle pairs from the helicity range 4"}; // -0.5 > cosineTheta >= -1.0
+  ConfigurableAxis confInvMassMotherpTBinsHel{"confInvMassMotherpTBinsHel", {5, 0, 5}, "pT binning in the pT vs. InvMassMother plot for helicity"};
+  ConfigurableAxis confInvMassMotherBinsHel{"confInvMassMotherBinsHel", {1000, 0.8, 1.4}, "InvMassMother binning in the pT vs. InvMassMother plot for helicity"};
 
   /// Efficiency
   Configurable<std::string> confLocalEfficiency{"confLocalEfficiency", "", "Local path to efficiency .root file"};
@@ -218,10 +241,17 @@ struct FemtoUniversePairTaskTrackV0Helicity {
     }
   }
 
-  bool invMLambda(float invMassLambda, float invMassAntiLambda)
+  bool invMLambda(float invMassLambda, float invMassAntiLambda, int V0Type)
   {
-    if ((invMassLambda < V0configs.confV0InvMassLowLimit || invMassLambda > V0configs.confV0InvMassUpLimit) && (invMassAntiLambda < V0configs.confV0InvMassLowLimit || invMassAntiLambda > V0configs.confV0InvMassUpLimit)) {
-      return false;
+    if (V0configs.confSeparateInvMassCheck) {
+      const float pMass = V0Type ? invMassAntiLambda : invMassLambda;
+      if (pMass < V0configs.confV0InvMassLowLimit || pMass > V0configs.confV0InvMassUpLimit) {
+        return false;
+      }
+    } else {
+      if ((invMassLambda < V0configs.confV0InvMassLowLimit || invMassLambda > V0configs.confV0InvMassUpLimit) && (invMassAntiLambda < V0configs.confV0InvMassLowLimit || invMassAntiLambda > V0configs.confV0InvMassUpLimit)) {
+        return false;
+      }
     }
     return true;
   }
@@ -287,6 +317,10 @@ struct FemtoUniversePairTaskTrackV0Helicity {
     thetaRegistry.add("Theta/NegativeChild/hThetaPt", " ; p_{T} (GeV/#it{c}); cos(#theta)", kTH2F, {{100, 0, 10}, {110, -1.1, 1.1}});
     thetaRegistry.add("Theta/NegativeChild/hThetaEta", " ; #eta; cos(#theta)", kTH2F, {{100, -1, 1}, {110, -1.1, 1.1}});
     thetaRegistry.add("Theta/NegativeChild/hThetaPhi", " ; #phi; cos(#theta)", kTH2F, {{100, -1, 7}, {110, -1.1, 1.1}});
+    thetaRegistry.add("Theta/Mother/hInvMassMotherHel1", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {confInvMassMotherpTBinsHel, confInvMassMotherBinsHel});
+    thetaRegistry.add("Theta/Mother/hInvMassMotherHel2", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {confInvMassMotherpTBinsHel, confInvMassMotherBinsHel});
+    thetaRegistry.add("Theta/Mother/hInvMassMotherHel3", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {confInvMassMotherpTBinsHel, confInvMassMotherBinsHel});
+    thetaRegistry.add("Theta/Mother/hInvMassMotherHel4", " ; p_{T} (GeV/#it{c}); M_{#Lambda};", kTH2F, {confInvMassMotherpTBinsHel, confInvMassMotherBinsHel});
 
     /// MC Truth
     registryMCtruth.add("plus/MCtruthLambda", "MC truth Lambdas;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
@@ -395,8 +429,8 @@ struct FemtoUniversePairTaskTrackV0Helicity {
     pairCleaner.init(&qaRegistry);
     pairCleanerV0.init(&qaRegistry);
     if (confIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, confCPRdeltaPhiCutMin.value, confCPRdeltaPhiCutMax.value, confCPRdeltaEtaCutMin.value, confCPRdeltaEtaCutMax.value, confCPRChosenRadii.value, confCPRPlotPerRadii.value);
-      pairCloseRejectionV0.init(&resultRegistry, &qaRegistry, confCPRdeltaPhiCutMin.value, confCPRdeltaPhiCutMax.value, confCPRdeltaEtaCutMin.value, confCPRdeltaEtaCutMax.value, confCPRChosenRadii.value, confCPRPlotPerRadii.value);
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, twotracksconfigs.confDeltaEtaAxis, twotracksconfigs.confDeltaPhiStarAxis, confCPRdeltaPhiCutMin.value, confCPRdeltaPhiCutMax.value, confCPRdeltaEtaCutMin.value, confCPRdeltaEtaCutMax.value, confCPRChosenRadii.value, confCPRPlotPerRadii.value);
+      pairCloseRejectionV0.init(&resultRegistry, &qaRegistry, twotracksconfigs.confDeltaEtaAxis, twotracksconfigs.confDeltaPhiStarAxis, confCPRdeltaPhiCutMin.value, confCPRdeltaPhiCutMax.value, confCPRdeltaEtaCutMin.value, confCPRdeltaEtaCutMax.value, confCPRChosenRadii.value, confCPRPlotPerRadii.value);
     }
 
     if (!confLocalEfficiency.value.empty()) {
@@ -427,7 +461,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
 
     /// Histogramming same event
     for (const auto& part : groupPartsTwo) {
-      if (!invMLambda(part.mLambda(), part.mAntiLambda()))
+      if (!invMLambda(part.mLambda(), part.mAntiLambda(), V0configs.confV0Type1))
         continue;
       const auto& posChild = parts.iteratorAt(part.index() - 2);
       const auto& negChild = parts.iteratorAt(part.index() - 1);
@@ -453,6 +487,15 @@ struct FemtoUniversePairTaskTrackV0Helicity {
       thetaRegistry.fill(HIST("Theta/NegativeChild/hThetaPt"), negChild.pt(), cosineTheta);
       thetaRegistry.fill(HIST("Theta/NegativeChild/hThetaEta"), negChild.eta(), cosineTheta);
       thetaRegistry.fill(HIST("Theta/NegativeChild/hThetaPhi"), negChild.phi(), cosineTheta);
+
+      if (cosineTheta <= 1.0 && cosineTheta >= 0.1)
+        thetaRegistry.fill(HIST("Theta/Mother/hInvMassMotherHel1"), part.pt(), part.mLambda());
+      else if (cosineTheta < 0.1 && cosineTheta >= -0.1)
+        thetaRegistry.fill(HIST("Theta/Mother/hInvMassMotherHel2"), part.pt(), part.mLambda());
+      else if (cosineTheta < -0.1 && cosineTheta >= -0.5)
+        thetaRegistry.fill(HIST("Theta/Mother/hInvMassMotherHel3"), part.pt(), part.mLambda());
+      else if (cosineTheta < -0.5 && cosineTheta >= -1)
+        thetaRegistry.fill(HIST("Theta/Mother/hInvMassMotherHel4"), part.pt(), part.mLambda());
     }
 
     for (const auto& part : groupPartsOne) {
@@ -476,7 +519,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
     /// Now build the combinations
     for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
       // Lambda invariant mass cut
-      if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
+      if (!invMLambda(p2.mLambda(), p2.mAntiLambda(), V0configs.confV0Type1))
         continue;
       /// PID using stored binned nsigma
       if (!isParticleCombined(p1, trackconfigs.confTrackChoicePartOne))
@@ -517,7 +560,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
         }
 
         case 1: {
-          if (cosineTheta < 1.0 && cosineTheta >= 0.1)
+          if (cosineTheta <= 1.0 && cosineTheta >= 0.1)
             sameEventContHel1.setPair<false>(p1, p2, multCol, confUse3D, weight);
 
           break;
@@ -592,7 +635,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
 
     /// Histogramming same event
     for (const auto& part : groupPartsTwo) {
-      if (!invMLambda(part.mLambda(), part.mAntiLambda()))
+      if (!invMLambda(part.mLambda(), part.mAntiLambda(), V0configs.confV0Type2))
         continue;
       const auto& posChild = parts.iteratorAt(part.index() - 2);
       const auto& negChild = parts.iteratorAt(part.index() - 1);
@@ -613,10 +656,10 @@ struct FemtoUniversePairTaskTrackV0Helicity {
 
     auto pairProcessFunc = [&](auto& p1, auto& p2) -> void {
       // Lambda invariant mass cut for p1
-      if (!invMLambda(p1.mLambda(), p1.mAntiLambda()))
+      if (!invMLambda(p1.mLambda(), p1.mAntiLambda(), V0configs.confV0Type2))
         return;
       // Lambda invariant mass cut for p2
-      if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
+      if (!invMLambda(p2.mLambda(), p2.mAntiLambda(), V0configs.confV0Type2))
         return;
       // track cleaning
       if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
@@ -773,7 +816,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
 
       for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
         // Lambda invariant mass cut
-        if (!invMLambda(p2.mLambda(), p2.mAntiLambda()))
+        if (!invMLambda(p2.mLambda(), p2.mAntiLambda(), V0configs.confV0Type1))
           continue;
         /// PID using stored binned nsigma
         if (!isParticleCombined(p1, trackconfigs.confTrackChoicePartOne))
@@ -815,7 +858,7 @@ struct FemtoUniversePairTaskTrackV0Helicity {
           }
 
           case 1: {
-            if (cosineTheta < 1.0 && cosineTheta >= 0.1)
+            if (cosineTheta <= 1.0 && cosineTheta >= 0.1)
               mixedEventContHel1.setPair<false>(p1, p2, multCol, confUse3D, weight);
 
             break;
@@ -907,11 +950,11 @@ struct FemtoUniversePairTaskTrackV0Helicity {
 
       for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
         // Lambda invariant mass cut for p1
-        if (!invMLambda(p1.mLambda(), p1.mAntiLambda())) {
+        if (!invMLambda(p1.mLambda(), p1.mAntiLambda(), V0configs.confV0Type2)) {
           continue;
         }
         // Lambda invariant mass cut for p2
-        if (!invMLambda(p2.mLambda(), p2.mAntiLambda())) {
+        if (!invMLambda(p2.mLambda(), p2.mAntiLambda(), V0configs.confV0Type2)) {
           continue;
         }
 

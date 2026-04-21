@@ -16,19 +16,9 @@
 #ifndef PWGLF_DATAMODEL_CASCQAANALYSIS_H_
 #define PWGLF_DATAMODEL_CASCQAANALYSIS_H_
 
-#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include <Framework/ASoA.h>
 
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Math/Boost.h"
-#include "Math/Vector4D.h"
-#include "TRandom.h"
+#include <cstdint>
 
 namespace o2::aod
 {
@@ -181,6 +171,15 @@ DECLARE_SOA_TABLE(CascTraining, "AOD", "CascTraining", o2::soa::Index<>,
 
 DECLARE_SOA_TABLE(CascAnalysis, "AOD", "CascAnalysis", o2::soa::Index<>,
                   cascadesflow::CentFT0C, cascadesflow::IsNoCollInTimeRange, cascadesflow::IsNoCollInRof, cascadesflow::HasEventPlane, cascadesflow::HasSpectatorPlane, cascadesflow::Sign, cascadesflow::Pt, cascadesflow::Eta, cascadesflow::Phi, cascadesflow::MassLambda, cascadesflow::MassXi, cascadesflow::MassOmega, cascadesflow::V2CSP, cascadesflow::V2CEP, cascadesflow::V1SPzdcA, cascadesflow::V1SPzdcC, cascadesflow::PsiT0C, cascadesflow::BDTResponseXi, cascadesflow::BDTResponseOmega, cascadesflow::CosThetaStarLambdaFromOmega, cascadesflow::CosThetaStarLambdaFromXi, cascadesflow::CosThetaStarProton, mycascades::McPdgCode);
+
+DECLARE_SOA_TABLE(CascAnalysisFull, "AOD", "CascAnalysisFull", o2::soa::Index<>,
+                  cascadesflow::CentFT0C, cascadesflow::HasEventPlane, cascadesflow::HasSpectatorPlane,
+                  cascadesflow::Sign, cascadesflow::Pt, cascadesflow::Eta, cascadesflow::Phi,
+                  cascadesflow::MassLambda, cascadesflow::MassXi, cascadesflow::MassOmega,
+                  mycascades::CascRadius, mycascades::V0Radius, mycascades::CascCosPA, mycascades::V0CosPA, mycascades::DCAPosToPV, mycascades::DCANegToPV, mycascades::DCABachToPV,
+                  mycascades::DCACascDaughters, mycascades::DCAV0Daughters, mycascades::DCAV0ToPV, mycascades::BachBaryonCosPA, mycascades::BachBaryonDCAxyToPV, mycascades::NTPCSigmaBachKa,
+                  cascadesflow::V2CSP, cascadesflow::V2CEP, cascadesflow::V1SPzdcA, cascadesflow::V1SPzdcC, cascadesflow::PsiT0C, cascadesflow::BDTResponseXi, cascadesflow::BDTResponseOmega,
+                  cascadesflow::CosThetaStarLambdaFromOmega, cascadesflow::CosThetaStarLambdaFromXi, cascadesflow::CosThetaStarProton, mycascades::McPdgCode);
 
 DECLARE_SOA_TABLE(LambdaAnalysis, "AOD", "LambdaAnalysis", o2::soa::Index<>,
                   cascadesflow::CentFT0C, cascadesflow::HasEventPlane, cascadesflow::HasSpectatorPlane, cascadesflow::Sign, cascadesflow::Pt, cascadesflow::Phi, cascadesflow::Eta, cascadesflow::MassLambda, cascadesflow::V0Radius, cascadesflow::DcaPosToPV, cascadesflow::DcaNegToPV, cascadesflow::V0CosPA, cascadesflow::DcaV0Daughters, cascadesflow::V2CEP, cascadesflow::PsiT0C, cascadesflow::Pzs2Lambda, cascadesflow::Cos2ThetaLambda, cascadesflow::CosThetaLambda);

@@ -16,7 +16,6 @@
 #ifndef PWGHF_CORE_HFMLRESPONSEOMEGACTOOMEGAPI_H_
 #define PWGHF_CORE_HFMLRESPONSEOMEGACTOOMEGAPI_H_
 
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponse.h"
 
 #include "Tools/ML/MlResponse.h"

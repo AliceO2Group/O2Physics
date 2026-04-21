@@ -14,35 +14,46 @@
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 
-#include "Common/Core/TableHelper.h"
 #include "Common/Core/fwdtrackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/Propagator.h"
-#include "Field/MagneticField.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/DataTypes.h"
-#include "Framework/runDataProcessing.h"
-#include "GlobalTracking/MatchGlobalFwd.h"
-#include "MCHTracking/TrackExtrap.h"
-#include "MCHTracking/TrackParam.h"
-#include "ReconstructionDataFormats/TrackFwd.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <DetectorsBase/Propagator.h>
+#include <Field/MagneticField.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <MCHTracking/TrackExtrap.h>
+#include <MathUtils/Utils.h>
+#include <ReconstructionDataFormats/GlobalFwdTrack.h>
+#include <ReconstructionDataFormats/TrackFwd.h>
 
-#include "Math/SMatrix.h"
-#include "Math/Vector4D.h"
-#include "TGeoGlobalMagField.h"
+#include <Math/SMatrix.h>
+#include <TGeoGlobalMagField.h>
+#include <TH1.h>
 
-#include <algorithm>
+#include <cmath>
+#include <cstdint>
 #include <map>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::soa;
@@ -193,8 +204,10 @@ struct skimmerPrimaryMuon {
     fRegistry.add("MFTMCHMID/hDCAxyinSigma", "DCAxy in sigma;DCA_{xy} (#sigma);", kTH1F, {{100, 0, 10}}, false);
     fRegistry.add("MFTMCHMID/hDCAx_PosZ", "DCAx vs. posZ;Z_{vtx} (cm);DCA_{x} (cm)", kTH2F, {{200, -10, +10}, {400, -0.2, +0.2}}, false);
     fRegistry.add("MFTMCHMID/hDCAy_PosZ", "DCAy vs. posZ;Z_{vtx} (cm);DCA_{y} (cm)", kTH2F, {{200, -10, +10}, {400, -0.2, +0.2}}, false);
-    fRegistry.add("MFTMCHMID/hDCAx_Phi", "DCAx vs. #varphi;#varphi (rad.);DCA_{x} (cm)", kTH2F, {{90, 0, 2 * M_PI}, {400, -0.2, +0.2}}, false);
-    fRegistry.add("MFTMCHMID/hDCAy_Phi", "DCAy vs. #varphi;#varphi (rad.);DCA_{y} (cm)", kTH2F, {{90, 0, 2 * M_PI}, {400, -0.2, +0.2}}, false);
+    fRegistry.add("MFTMCHMID/hDCAx_Phi", "DCAx vs. #varphi;#varphi (rad.);DCA_{x} (cm)", kTH2F, {{180, -M_PI, M_PI}, {400, -0.2, +0.2}}, false);
+    fRegistry.add("MFTMCHMID/hDCAy_Phi", "DCAy vs. #varphi;#varphi (rad.);DCA_{y} (cm)", kTH2F, {{180, -M_PI, M_PI}, {400, -0.2, +0.2}}, false);
+    fRegistry.add("MFTMCHMID/hMeanDCAx", "<DCAx>;X_{IU} (cm);Y_{IU} (cm);<DCA_{x}> (cm)", kTProfile2D, {{240, -12, +12}, {240, -12, +12}}, false);
+    fRegistry.add("MFTMCHMID/hMeanDCAy", "<DCAy>;X_{IU} (cm);Y_{IU} (cm);<DCA_{y}> (cm)", kTProfile2D, {{240, -12, +12}, {240, -12, +12}}, false);
     fRegistry.add("MFTMCHMID/hNmu", "#mu multiplicity;N_{#mu} per collision", kTH1F, {{21, -0.5, 20.5}}, false);
 
     fRegistry.addClone("MFTMCHMID/", "MCHMID/");
@@ -307,6 +320,8 @@ struct skimmerPrimaryMuon {
     float dphi = 999.f;
     bool isCorrectMatchMFTMCH = true; // by default, it is true. it is evaluated for global muons in MC.
 
+    float xMFT = 0.f, yMFT = 0.f;
+
     if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
       if (fwdtrack.chi2MatchMCHMFT() < 0.f || maxMatchingChi2MCHMFT < fwdtrack.chi2MatchMCHMFT()) {
         return false;
@@ -327,6 +342,9 @@ struct skimmerPrimaryMuon {
       if (mfttrack.chi2() < 0.f) {
         return false;
       }
+
+      xMFT = mfttrack.x();
+      yMFT = mfttrack.y();
 
       if constexpr (isMC) {
         if (!mfttrack.has_mcParticle() || !mchtrack.has_mcParticle() || !fwdtrack.has_mcParticle()) {
@@ -505,8 +523,10 @@ struct skimmerPrimaryMuon {
           fRegistry.fill(HIST("MFTMCHMID/hDCAxyResolutionvsPt"), pt, sigma_dcaXY * 1e+4);   // convert cm to um
           fRegistry.fill(HIST("MFTMCHMID/hDCAx_PosZ"), collision.posZ(), dcaX);
           fRegistry.fill(HIST("MFTMCHMID/hDCAy_PosZ"), collision.posZ(), dcaY);
-          fRegistry.fill(HIST("MFTMCHMID/hDCAx_Phi"), phi, dcaX);
-          fRegistry.fill(HIST("MFTMCHMID/hDCAy_Phi"), phi, dcaY);
+          fRegistry.fill(HIST("MFTMCHMID/hDCAx_Phi"), std::atan2(yMFT, xMFT), dcaX);
+          fRegistry.fill(HIST("MFTMCHMID/hDCAy_Phi"), std::atan2(yMFT, xMFT), dcaY);
+          fRegistry.fill(HIST("MFTMCHMID/hMeanDCAx"), fwdtrack.x(), fwdtrack.y(), dcaX);
+          fRegistry.fill(HIST("MFTMCHMID/hMeanDCAy"), fwdtrack.x(), fwdtrack.y(), dcaY);
         } else if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
           fRegistry.fill(HIST("MCHMID/hPt"), pt);
           fRegistry.fill(HIST("MCHMID/hEtaPhi"), phi, eta);

@@ -15,43 +15,30 @@
 // o2-analysis-trackselection -b --isRun3 0 | o2-analysis-mm-lumi -b
 // --configuration json://./config.json
 
-#include <array>
-#include <cmath>
-#include <iostream>
-#include <vector>
-
-#include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonUtils/NameConf.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonUtils/ConfigurableParam.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/Propagator.h>
+#include <DetectorsVertexing/PVertexer.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PrimaryVertex.h>
+#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/Vertex.h>
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
-
-#include "DetectorsVertexing/PVertexer.h"
-
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/PrimaryVertex.h"
-#include "ReconstructionDataFormats/Vertex.h"
-
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-
-#include "CommonConstants/GeomConstants.h"
-
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-
-#include "DataFormatsCalibration/MeanVertexObject.h"
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <vector>
 
 namespace o2::aod
 {

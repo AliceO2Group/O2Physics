@@ -18,11 +18,14 @@
 #ifndef PWGUD_CORE_UPCTAUCENTRALBARRELHELPERRL_H_
 #define PWGUD_CORE_UPCTAUCENTRALBARRELHELPERRL_H_
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TString.h>
 
 #include <algorithm>
+#include <cmath>
+#include <iterator>
 #include <string>
 
 enum MyParticle {

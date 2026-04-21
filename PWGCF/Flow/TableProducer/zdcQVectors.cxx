@@ -14,47 +14,43 @@
 /// \since  11/2024
 /// \brief  In this task the energy calibration and recentring of Q-vectors constructed in the ZDCs will be done
 
-#include <stdlib.h>
-#include <cmath>
-#include <algorithm>
-#include <numeric>
-#include <vector>
-#include <typeinfo>
-#include <memory>
-#include <string>
-
-#include "CCDB/BasicCCDBManager.h"
-#include "Common/CCDB/EventSelectionParams.h"
-#include "Common/CCDB/TriggerAliases.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/EventSelection.h"
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StaticFor.h"
-
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "ReconstructionDataFormats/GlobalTrackID.h"
-#include "ReconstructionDataFormats/Track.h"
 #include "PWGCF/DataModel/SPTableZDC.h"
 
-#include "TH1F.h"
-#include "TH2F.h"
-#include "TProfile.h"
-#include "TObjArray.h"
-#include "TF1.h"
-#include "TFitResult.h"
-#include "TCanvas.h"
-#include "TSystem.h"
-#include "TROOT.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TF1.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <THnSparse.h>
+#include <TProfile.h>
+#include <TProfile2D.h>
+#include <TProfile3D.h>
+#include <TString.h>
+
+#include <chrono>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <numeric>
+#include <string>
+#include <string_view>
+#include <vector>
+
+#include <stdlib.h>
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
@@ -83,7 +79,7 @@ std::vector<double> pyZDC = {-1.75, -1.75, 1.75, 1.75};
 double alphaZDC = 0.395;
 
 // q-vectors before (q) and after (qRec) recentering.
-std::vector<double> q(4); // start values of [QxA, QyA, QxC, QyC]
+std::vector<double> q(4);     // start values of [QxA, QyA, QxC, QyC]
 std::vector<double> qNoEq(4); // start values of [QxA, QyA, QxC, QyC]
 
 // for energy calibration
@@ -230,7 +226,9 @@ struct ZdcQVectors {
     std::vector<const char*> capCOORDS = {"X", "Y"};
 
     AxisSpec axisPsiA = {100, -PI, PI, "#Psi_{1} ZNA"};
+    AxisSpec axisPsiAShifted = {100, -PI, PI, "#Psi_{1} ZNA Shifted"};
     AxisSpec axisPsiC = {100, -PI, PI, "#Psi_{1} ZNC"};
+    AxisSpec axisPsiCShifted = {100, -PI, PI, "#Psi_{1} ZNC Shifted"};
 
     // This is the only histogram that is AL~WA~YS filled.
     registry.add("hEventCount", "Number of Event; Cut; #Events Passed Cut", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}});
@@ -306,12 +304,16 @@ struct ZdcQVectors {
         registry.add<TProfile>("QA/ZNA_Energy", "ZNA_Energy", kTProfile, {{8, 0, 8}});
         registry.add<TProfile>("QA/ZNC_Energy", "ZNC_Energy", kTProfile, {{8, 0, 8}});
 
-        registry.add<TH2>("QA/psiZDCA", "psiZDCA", kTH2D, {axisPsiA, {100, 0, 100}});
-        registry.add<TH2>("QA/psiZDCA_shift", "psiZDCA_shift", kTH2D, {axisPsiA, {100, 0, 100}});
-        registry.add<TH2>("QA/psiZDCC", "psiZDCC", kTH2D, {axisPsiC, {100, 0, 100}});
-        registry.add<TH2>("QA/psiZDCC_shift", "psiZDCC_shift", kTH2D, {axisPsiC, {100, 0, 100}});
-        registry.add<TH2>("QA/psiZDCAC", "psiZDCAC", kTH2D, {axisPsiA, axisPsiC});
-        registry.add<TH2>("QA/psiZDCAC_shift", "psiZDCAC_shift", kTH2D, {axisPsiA, axisPsiC});
+        registry.add<TH2>("QA/shift/psiZDCA", "psiZDCA", kTH2D, {axisPsiA, {100, 0, 100}});
+        registry.add<TH2>("QA/shift/psiZDCA_shift", "psiZDCA_shift", kTH2D, {axisPsiA, {100, 0, 100}});
+        registry.add<TH2>("QA/shift/psiZDCC", "psiZDCC", kTH2D, {axisPsiC, {100, 0, 100}});
+        registry.add<TH2>("QA/shift/psiZDCC_shift", "psiZDCC_shift", kTH2D, {axisPsiC, {100, 0, 100}});
+        registry.add<TH2>("QA/shift/psiZDCAC", "psiZDCAC", kTH2D, {axisPsiA, axisPsiC});
+        registry.add<TH2>("QA/shift/psiZDCAC_shift", "psiZDCAC_shift", kTH2D, {axisPsiA, axisPsiC});
+
+        registry.add<TH2>("QA/shift/DeltaPsiZDCA", "DeltaPsiZDCA", kTH2D, {axisPsiAShifted, axisPsiA});
+        registry.add<TH2>("QA/shift/DeltaPsiZDCC", "DeltaPsiZDCC", kTH2D, {axisPsiCShifted, axisPsiC});
+        registry.add<TH2>("QA/shift/DeltaPsiZDCAC", "DeltaPsiZDCAC", kTH2D, {axisPsiA, axisPsiC});
 
         registry.add<TProfile>("QA/before/ZNA_pmC", "ZNA_pmC", kTProfile, {{1, 0, 1.}});
         registry.add<TProfile>("QA/before/ZNA_pm1", "ZNA_pm1", kTProfile, {{1, 0, 1.}});
@@ -1162,12 +1164,15 @@ struct ZdcQVectors {
       psiZDCAshift = std::atan2(std::sin(psiZDCAshift), std::cos(psiZDCAshift));
 
       if (cfgFillHistRegistry && !cfgFillNothing) {
-        registry.fill(HIST("QA/psiZDCA"), psiZDCA, centrality);
-        registry.fill(HIST("QA/psiZDCC"), psiZDCC, centrality);
-        registry.fill(HIST("QA/psiZDCAC"), psiZDCA, psiZDCC);
-        registry.fill(HIST("QA/psiZDCA_shift"), psiZDCAshift, centrality);
-        registry.fill(HIST("QA/psiZDCC_shift"), psiZDCCshift, centrality);
-        registry.fill(HIST("QA/psiZDCAC_shift"), psiZDCAshift, psiZDCCshift);
+        registry.fill(HIST("QA/shift/psiZDCA"), psiZDCA, centrality);
+        registry.fill(HIST("QA/shift/psiZDCC"), psiZDCC, centrality);
+        registry.fill(HIST("QA/shift/psiZDCAC"), psiZDCA, psiZDCC);
+        registry.fill(HIST("QA/shift/psiZDCA_shift"), psiZDCAshift, centrality);
+        registry.fill(HIST("QA/shift/psiZDCC_shift"), psiZDCCshift, centrality);
+        registry.fill(HIST("QA/shift/psiZDCAC_shift"), psiZDCAshift, psiZDCCshift);
+        registry.fill(HIST("QA/shift/DeltaPsiZDCA"), psiZDCAshift, psiZDCA);
+        registry.fill(HIST("QA/shift/DeltaPsiZDCC"), psiZDCCshift, psiZDCC);
+        registry.fill(HIST("QA/shift/DeltaPsiZDCAC"), psiZDCAshift - psiZDCA, psiZDCCshift - psiZDCC);
       }
 
       double qXaShift = std::hypot(qRec[1], qRec[0]) * std::cos(psiZDCAshift);
@@ -1178,10 +1183,10 @@ struct ZdcQVectors {
       if (isSelected && cfgFillHistRegistry && !cfgFillNothing) {
         fillCommonRegistry<kAfter>(qRec[0], qRec[1], qRec[2], qRec[3], v, centrality, rsTimestamp);
         registry.fill(HIST("QA/centrality_after"), centrality);
-        registry.get<TProfile>(HIST("QA/after/ZNA_Qx"))->Fill(Form("%d", runnumber), qRec[0]);
-        registry.get<TProfile>(HIST("QA/after/ZNA_Qy"))->Fill(Form("%d", runnumber), qRec[1]);
-        registry.get<TProfile>(HIST("QA/after/ZNC_Qx"))->Fill(Form("%d", runnumber), qRec[2]);
-        registry.get<TProfile>(HIST("QA/after/ZNC_Qy"))->Fill(Form("%d", runnumber), qRec[3]);
+        registry.get<TProfile>(HIST("QA/after/ZNA_Qx"))->Fill(Form("%d", runnumber), qXaShift);
+        registry.get<TProfile>(HIST("QA/after/ZNA_Qy"))->Fill(Form("%d", runnumber), qYaShift);
+        registry.get<TProfile>(HIST("QA/after/ZNC_Qx"))->Fill(Form("%d", runnumber), qXcShift);
+        registry.get<TProfile>(HIST("QA/after/ZNC_Qy"))->Fill(Form("%d", runnumber), qYcShift);
       }
 
       spTableZDC(runnumber, cents, v, foundBC.timestamp(), qXaShift, qYaShift, qXcShift, qYcShift, isSelected, eventSelectionFlags);

@@ -13,19 +13,14 @@
 /// \brief Skeleton copy of flowGfwLightIons with empty function bodies
 /// \author Emil Gorm Nielsen, NBI, emil.gorm.nielsen@cern.ch
 
-#include "FlowContainer.h"
-#include "FlowPtContainer.h"
-#include "GFW.h"
-#include "GFWConfig.h"
-#include "GFWCumulant.h"
-#include "GFWPowerArray.h"
-#include "GFWWeights.h"
-#include "GFWWeightsList.h"
-
 #include "PWGCF/DataModel/CorrelationsDerived.h"
+#include "PWGCF/GenericFramework/Core/FlowContainer.h"
+#include "PWGCF/GenericFramework/Core/GFW.h"
+#include "PWGCF/GenericFramework/Core/GFWConfig.h"
+#include "PWGCF/GenericFramework/Core/GFWWeights.h"
 #include "PWGCF/JCorran/DataModel/JCatalyst.h"
 
-#include "Common/Core/TrackSelection.h"
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -34,38 +29,50 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/PID.h"
 #include <CCDB/BasicCCDBManager.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <DataFormatsParameters/GRPObject.h>
+#include <CommonConstants/MathConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
 #include <TF1.h>
-#include <TPDGCode.h>
+#include <TH1.h>
+#include <TNamed.h>
+#include <TObjArray.h>
 #include <TProfile.h>
 #include <TRandom3.h>
+#include <TString.h>
 
-#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/find.hpp>
+#include <sys/types.h>
+
+#include <RtypesCore.h>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <complex>
+#include <cstdint>
+#include <cstdlib>
 #include <ctime>
-#include <experimental/type_traits>
+#include <iterator>
 #include <map>
 #include <memory>
-#include <numeric>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
 using namespace o2;
 using namespace o2::framework;
+using namespace analysis::genericframework;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 static constexpr float LongArrayFloat[3][20] = {{1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}, {2.1, 2.2, 2.3, -2.1, -2.2, -2.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}, {3.1, 3.2, 3.3, -3.1, -3.2, -3.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}};
@@ -244,22 +251,22 @@ struct FlowGfwV02 {
     std::array<float, 6> tofNsigmaCut;
     std::array<float, 6> itsNsigmaCut;
     std::array<float, 6> tpcNsigmaCut;
-    TH1D* hPtMid[4] = {nullptr, nullptr, nullptr, nullptr};
+    std::array<std::unique_ptr<TH1D>, 4> hPtMid{};
   };
   PIDState pidStates;
 
   // Event selection cuts - Alex
-  TF1* fMultPVCutLow = nullptr;
-  TF1* fMultPVCutHigh = nullptr;
-  TF1* fMultCutLow = nullptr;
-  TF1* fMultCutHigh = nullptr;
-  TF1* fMultPVGlobalCutHigh = nullptr;
-  TF1* fMultGlobalV0ACutLow = nullptr;
-  TF1* fMultGlobalV0ACutHigh = nullptr;
-  TF1* fMultGlobalT0ACutLow = nullptr;
-  TF1* fMultGlobalT0ACutHigh = nullptr;
+  std::unique_ptr<TF1> fMultPVCutLow;
+  std::unique_ptr<TF1> fMultPVCutHigh;
+  std::unique_ptr<TF1> fMultCutLow;
+  std::unique_ptr<TF1> fMultCutHigh;
+  std::unique_ptr<TF1> fMultPVGlobalCutHigh;
+  std::unique_ptr<TF1> fMultGlobalV0ACutLow;
+  std::unique_ptr<TF1> fMultGlobalV0ACutHigh;
+  std::unique_ptr<TF1> fMultGlobalT0ACutLow;
+  std::unique_ptr<TF1> fMultGlobalT0ACutHigh;
 
-  TF1* fPtDepDCAxy = nullptr;
+  std::unique_ptr<TF1> fPtDepDCAxy;
 
   using GFWTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
 
@@ -361,10 +368,10 @@ struct FlowGfwV02 {
     o2::analysis::gfw::multGlobalPVCorrCutPars = cfgMultCorrCuts.cfgMultGlobalPVCutPars;
 
     // Initialise pt spectra histograms for different particles
-    pidStates.hPtMid[PidCharged] = new TH1D("hPtMid_charged", "hPtMid_charged", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
-    pidStates.hPtMid[PidPions] = new TH1D("hPtMid_pions", "hPtMid_pions", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
-    pidStates.hPtMid[PidKaons] = new TH1D("hPtMid_kaons", "hPtMid_kaons", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
-    pidStates.hPtMid[PidProtons] = new TH1D("hPtMid_protons", "hPtMid_protons", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
+    pidStates.hPtMid[PidCharged] = std::make_unique<TH1D>("hPtMid_charged", "hPtMid_charged", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
+    pidStates.hPtMid[PidPions] = std::make_unique<TH1D>("hPtMid_pions", "hPtMid_pions", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
+    pidStates.hPtMid[PidKaons] = std::make_unique<TH1D>("hPtMid_kaons", "hPtMid_kaons", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
+    pidStates.hPtMid[PidProtons] = std::make_unique<TH1D>("hPtMid_protons", "hPtMid_protons", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
     pidStates.hPtMid[PidCharged]->SetDirectory(nullptr);
     pidStates.hPtMid[PidPions]->SetDirectory(nullptr);
     pidStates.hPtMid[PidKaons]->SetDirectory(nullptr);
@@ -466,6 +473,7 @@ struct FlowGfwV02 {
       LOGF(error, "Configuration contains vectors of different size - check the GFWCorrConfig configurable");
     fGFW->CreateRegions();
     TObjArray* oba = new TObjArray();
+    oba->SetOwner(kTRUE);
     addConfigObjectsToObjArray(oba, corrconfigs);
     LOGF(info, "Number of correlators: %d", oba->GetEntries());
     fFC->SetName("FlowContainer");
@@ -501,19 +509,19 @@ struct FlowGfwV02 {
     }
 
     if (cfgUseAdditionalEventCut) {
-      fMultPVCutLow = new TF1("fMultPVCutLow", cfgMultCorrCuts.cfgMultCorrLowCutFunction->c_str(), 0, 100);
+      fMultPVCutLow = std::make_unique<TF1>("fMultPVCutLow", cfgMultCorrCuts.cfgMultCorrLowCutFunction->c_str(), 0, 100);
       fMultPVCutLow->SetParameters(&(o2::analysis::gfw::multPVCorrCutPars[0]));
-      fMultPVCutHigh = new TF1("fMultPVCutHigh", cfgMultCorrCuts.cfgMultCorrHighCutFunction->c_str(), 0, 100);
+      fMultPVCutHigh = std::make_unique<TF1>("fMultPVCutHigh", cfgMultCorrCuts.cfgMultCorrHighCutFunction->c_str(), 0, 100);
       fMultPVCutHigh->SetParameters(&(o2::analysis::gfw::multPVCorrCutPars[0]));
-      fMultCutLow = new TF1("fMultCutLow", cfgMultCorrCuts.cfgMultCorrLowCutFunction->c_str(), 0, 100);
+      fMultCutLow = std::make_unique<TF1>("fMultCutLow", cfgMultCorrCuts.cfgMultCorrLowCutFunction->c_str(), 0, 100);
       fMultCutLow->SetParameters(&(o2::analysis::gfw::multGlobalCorrCutPars[0]));
-      fMultCutHigh = new TF1("fMultCutHigh", cfgMultCorrCuts.cfgMultCorrHighCutFunction->c_str(), 0, 100);
+      fMultCutHigh = std::make_unique<TF1>("fMultCutHigh", cfgMultCorrCuts.cfgMultCorrHighCutFunction->c_str(), 0, 100);
       fMultCutHigh->SetParameters(&(o2::analysis::gfw::multGlobalCorrCutPars[0]));
-      fMultPVGlobalCutHigh = new TF1("fMultPVGlobalCutHigh", cfgMultCorrCuts.cfgMultGlobalPVCorrCutFunction->c_str(), 0, nchbinning.back());
+      fMultPVGlobalCutHigh = std::make_unique<TF1>("fMultPVGlobalCutHigh", cfgMultCorrCuts.cfgMultGlobalPVCorrCutFunction->c_str(), 0, nchbinning.back());
       fMultPVGlobalCutHigh->SetParameters(&(o2::analysis::gfw::multGlobalPVCorrCutPars[0]));
     }
     // Set DCAxy cut
-    fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", cfgTrackCuts.cfgDCAxy->c_str()), 0.001, 100);
+    fPtDepDCAxy = std::make_unique<TF1>("ptDepDCAxy", Form("[0]*%s", cfgTrackCuts.cfgDCAxy->c_str()), 0.001, 100);
     fPtDepDCAxy->SetParameter(0, cfgTrackCuts.cfgDCAxyNSigma);
   }
 
@@ -1007,7 +1015,7 @@ struct FlowGfwV02 {
 
     if (!withinPtPOI && !withinPtRef)
       return;
-    double weff = getJTrackEfficiency(track);
+    double weff = getEfficiency(track, PidCharged);
     if (weff < 0)
       return;
 
@@ -1016,13 +1024,13 @@ struct FlowGfwV02 {
     // Fill cumulants for different particles
     // ***Need to add proper weights for each particle!***
     if (withinPtRef)
-      fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 0);
+      fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 1);
     if (withinPtPOI && pidInd == PidPions)
-      fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, PidPions);
+      fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, PidPions + 1);
     if (withinPtPOI && pidInd == PidKaons)
-      fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, PidKaons);
+      fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, PidKaons + 1);
     if (withinPtPOI && pidInd == PidProtons)
-      fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, PidProtons);
+      fGFW->Fill(track.eta(), fSecondAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, PidProtons + 1);
     return;
   }
 

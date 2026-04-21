@@ -18,20 +18,28 @@
 #include <CCDB/CcdbApi.h>
 #include <Framework/ConfigContext.h>
 #include <Framework/ConfigParamRegistry.h>
+#include <Framework/ConfigParamSpec.h>
 #include <Framework/ConfigParamStore.h>
+#include <Framework/Logger.h>
+#include <Framework/ParamRetriever.h>
 #include <Framework/ServiceRegistry.h>
 #include <Framework/ServiceRegistryRef.h>
+#include <Framework/Variant.h>
 
 #include <TFile.h>
 #include <TMap.h>
 #include <TObjString.h>
+#include <TString.h>
 #include <TSystem.h>
 
+#include <fstream>
 #include <map>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
+
+#include <string.h>
 
 // Taken from O2/Framework/AnalysisSupport/src/Plugin.cxx
 auto readMetadata(std::unique_ptr<TFile>& currentFile) -> std::vector<o2::framework::ConfigParamSpec>
@@ -120,8 +128,9 @@ std::map<std::string, bool> buildMapForCommitHash(const std::string& hash)
   return results;
 }
 
-void populateCCDBWithCommitAvailability(std::map<string, bool> hasHashMap,
-                                        const std::string commitHash const std::string ccdbUrl = "http://ccdb-test.cern.ch:8080/")
+void populateCCDBWithCommitAvailability(std::map<std::string, bool> hasHashMap,
+                                        const std::string commitHash,
+                                        const std::string ccdbUrl = "http://ccdb-test.cern.ch:8080/")
 {
   // First, init the CCDB manager to test if the ccdb is already populated
   o2::ccdb::CcdbApi api;

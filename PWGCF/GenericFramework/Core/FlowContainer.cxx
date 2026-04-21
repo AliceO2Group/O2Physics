@@ -11,6 +11,25 @@
 
 #include "FlowContainer.h"
 
+#include "PWGCF/GenericFramework/Core/ProfileSubset.h"
+
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
+
+#include <TCollection.h>
+#include <TFile.h>
+#include <TH1.h>
+#include <TMath.h>
+#include <TNamed.h>
+#include <TObjArray.h>
+#include <TProfile.h>
+#include <TProfile2D.h>
+#include <TRandom.h>
+#include <TString.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
 #include <cstdio>
 #include <vector>
 
@@ -422,7 +441,7 @@ TH1D* FlowContainer::GetCorrXXVsPt(const char* order, double lminmulti, double l
     TProfile* profY = rhProfSub->ProfileY("profY", minm, maxm);
     TH1D* histY = ProfToHist(profY);
     TH1D* hist = new TH1D("temphist", "temphist", fNbinsPt, fbinsPt);
-    for (int ibin = 1; ibin < hist->GetNbinsX(); ibin++) {
+    for (int ibin = 1; ibin <= hist->GetNbinsX(); ibin++) {
       TString bLabel = rhProfSub->GetYaxis()->GetBinLabel(ibin + ybn1 - 1);
       hist->GetXaxis()->SetBinLabel(ibin, bLabel.Data());
       hist->SetBinContent(ibin, histY->GetBinContent(ibin + ybn1 - 1));

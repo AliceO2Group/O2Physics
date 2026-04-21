@@ -23,9 +23,11 @@
 /// \author Roberto Preghenella preghenella@bo.infn.it
 ///
 
-#include "ALICE3/Core/DelphesO2TrackSmearer.h"
+#include "GeometryContainer.h"
+
 #include "ALICE3/Core/DetLayer.h"
 #include "ALICE3/Core/FastTracker.h"
+#include "ALICE3/Core/FlatTrackSmearer.h"
 #include "ALICE3/Core/TrackUtilities.h"
 #include "ALICE3/DataModel/OTFCollision.h"
 #include "ALICE3/DataModel/OTFMCParticle.h"
@@ -35,36 +37,72 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
+#include <CommonDataFormat/InteractionRecord.h>
+#include <CommonDataFormat/TimeStamp.h>
+#include <CommonUtils/ConfigurableParam.h>
 #include <DCAFitter/DCAFitterN.h>
 #include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
 #include <DetectorsVertexing/PVertexer.h>
 #include <DetectorsVertexing/PVertexerHelpers.h>
 #include <DetectorsVertexing/PVertexerParams.h>
 #include <Field/MagneticField.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
-#include <Framework/StaticFor.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <MathUtils/Primitive2D.h>
+#include <MathUtils/Utils.h>
 #include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/GlobalTrackID.h>
 #include <ReconstructionDataFormats/PID.h>
+#include <ReconstructionDataFormats/PrimaryVertex.h>
+#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/TrackParametrization.h>
 #include <SimulationDataFormat/InteractionSampler.h>
+#include <SimulationDataFormat/MCCompLabel.h>
+#include <SimulationDataFormat/MCEventLabel.h>
 
 #include <TGenPhaseSpace.h>
 #include <TGeoGlobalMagField.h>
+#include <TH1.h>
+#include <TH2.h>
 #include <TLorentzVector.h>
+#include <TMCProcess.h>
+#include <TMath.h>
 #include <TPDGCode.h>
 #include <TRandom3.h>
+#include <TString.h>
 
+#include <sys/types.h>
+
+#include <RtypesCore.h>
+
+#include <algorithm>
 #include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <map>
+#include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -86,6 +124,7 @@ struct OnTheFlyTracker {
   Produces<aod::StoredTracksCov> tableStoredTracksCov;
   Produces<aod::TracksCovExtension> tableTracksCovExtension;
   Produces<aod::McTrackLabels> tableMcTrackLabels;
+  Produces<aod::McTrackWithDauLabels> tableMcTrackWithDauLabels;
   Produces<aod::TracksDCA> tableTracksDCA;
   Produces<aod::TracksDCACov> tableTracksDCACov;
   Produces<aod::CollisionsAlice3> tableCollisionsAlice3;
@@ -307,7 +346,7 @@ struct OnTheFlyTracker {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
   // Track smearer array, one per geometry
-  std::vector<std::unique_ptr<o2::delphes::DelphesO2TrackSmearer>> mSmearer;
+  std::vector<std::unique_ptr<o2::delphes::TrackSmearer>> mSmearer;
 
   // For processing and vertexing
   std::vector<TrackAlice3> tracksAlice3;
@@ -337,7 +376,7 @@ struct OnTheFlyTracker {
     mMagneticField = mGeoContainer.getFloatValue(0, "global", "magneticfield");
     for (int icfg = 0; icfg < nGeometries; ++icfg) {
       const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
-      mSmearer.emplace_back(std::make_unique<o2::delphes::DelphesO2TrackSmearer>());
+      mSmearer.emplace_back(std::make_unique<o2::delphes::TrackSmearer>());
       mSmearer[icfg]->setCcdbManager(ccdb.operator->());
       std::map<std::string, std::string> globalConfiguration = mGeoContainer.getConfiguration(icfg, "global");
       if (enablePrimarySmearing) {
@@ -1833,7 +1872,7 @@ struct OnTheFlyTracker {
     }
   }
 
-  void processConfigurationDev(aod::McCollision const& mcCollision, aod::McPartsWithDau const& mcParticles, const int icfg)
+  void processConfigurationDev(aod::McCollision const& mcCollision, aod::McPartWithDaus const& mcParticles, const int icfg)
   {
     // const int lastTrackIndex = tableStoredTracksCov.lastIndex() + 1; // bookkeep the last added track
     const std::string histPath = "Configuration_" + std::to_string(icfg) + "/";
@@ -2027,7 +2066,7 @@ struct OnTheFlyTracker {
                               trackParCov.getSigmaSnpZ(), trackParCov.getSigmaSnp2(), trackParCov.getSigmaTglY(), trackParCov.getSigmaTglZ(), trackParCov.getSigmaTglSnp(),
                               trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
                               trackParCov.getSigma1Pt2());
-      tableMcTrackLabels(trackParCov.mcLabel, 0);
+      tableMcTrackWithDauLabels(trackParCov.mcLabel, 0);
       tableTracksExtraA3(trackParCov.nSiliconHits, trackParCov.nTPCHits);
 
       // populate extra tables if required to do so
@@ -2073,7 +2112,7 @@ struct OnTheFlyTracker {
                               trackParCov.getSigmaSnpZ(), trackParCov.getSigmaSnp2(), trackParCov.getSigmaTglY(), trackParCov.getSigmaTglZ(), trackParCov.getSigmaTglSnp(),
                               trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
                               trackParCov.getSigma1Pt2());
-      tableMcTrackLabels(trackParCov.mcLabel, 0);
+      tableMcTrackWithDauLabels(trackParCov.mcLabel, 0);
       tableTracksExtraA3(trackParCov.nSiliconHits, trackParCov.nTPCHits);
 
       // populate extra tables if required to do so
@@ -2091,7 +2130,7 @@ struct OnTheFlyTracker {
     }
   }
 
-  void processDecayer(aod::McCollision const& mcCollision, aod::McPartsWithDau const& mcParticles)
+  void processDecayer(aod::McCollision const& mcCollision, aod::McPartWithDaus const& mcParticles)
   {
     for (size_t icfg = 0; icfg < mSmearer.size(); ++icfg) {
       processConfigurationDev(mcCollision, mcParticles, static_cast<int>(icfg));

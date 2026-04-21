@@ -18,10 +18,11 @@
 #define PWGJE_DATAMODEL_JETREDUCEDDATA_H_
 
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/DataModel/EMCALClusters.h" // IWYU pragma: keep
 
 #include <Framework/ASoA.h>
-#include <Framework/AnalysisDataModel.h> // IWYU pragma: keep
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/DataTypes.h>
+#include <SimulationDataFormat/MCGenProperties.h>
 
 #include <cmath>
 #include <cstdint>

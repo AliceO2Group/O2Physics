@@ -14,19 +14,26 @@
 #include "PWGDQ/Core/CutsLibrary.h"
 
 #include "AnalysisCompositeCut.h"
+#include "AnalysisCut.h"
 #include "VarManager.h"
 
+#include <Framework/Array2D.h>
+#include <Framework/Logger.h>
+
 #include <TF1.h>
+#include <TString.h>
+
+#include <rapidjson/document.h>
+#include <rapidjson/error/error.h>
 
 #include <RtypesCore.h>
 
+#include <cstddef>
 #include <iostream>
-#include <set>
+#include <numeric>
 #include <string>
+#include <utility>
 #include <vector>
-
-using std::cout;
-using std::endl;
 
 AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 {
@@ -2950,6 +2957,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
   if (!nameStr.compare("muonMinimalCuts")) {
     cut->AddCut(GetAnalysisCut("muonMinimalCuts"));
+    return cut;
+  }
+
+  if (!nameStr.compare("muonMinimalCuts10SigmaPDCA")) {
+    cut->AddCut(GetAnalysisCut("muonMinimalCuts10SigmaPDCA"));
     return cut;
   }
 
@@ -6319,6 +6331,14 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kMuonRAtAbsorberEnd, 17.6, 89.5);
     cut->AddCut(VarManager::kMuonPDca, 0.0, 594.0, false, VarManager::kMuonRAtAbsorberEnd, 17.6, 26.5);
     cut->AddCut(VarManager::kMuonPDca, 0.0, 324.0, false, VarManager::kMuonRAtAbsorberEnd, 26.5, 89.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("muonMinimalCuts10SigmaPDCA")) {
+    cut->AddCut(VarManager::kEta, -4.0, -2.5);
+    cut->AddCut(VarManager::kMuonRAtAbsorberEnd, 17.6, 89.5);
+    cut->AddCut(VarManager::kMuonPDca, 0.0, 990.0, false, VarManager::kMuonRAtAbsorberEnd, 17.6, 26.5);
+    cut->AddCut(VarManager::kMuonPDca, 0.0, 540.0, false, VarManager::kMuonRAtAbsorberEnd, 26.5, 89.5);
     return cut;
   }
 
