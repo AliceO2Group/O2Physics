@@ -43,11 +43,12 @@ using TrackSim = aod::McParticles::iterator;
 // ...
 
 // *) ROOT and C++ include's:
-#include <iostream>
-#include <cstring>
-#include <TH1D.h>
 #include <TGrid.h>
+#include <TH1D.h>
 #include <TSystem.h>
+
+#include <cstring>
+#include <iostream>
 // ...
 
 using namespace std;
@@ -64,7 +65,6 @@ enum eProcess {
   eProcessSim,     // Run 3, only simulated
   eProcess_N
 };
-
 
 enum eEventHistograms {
   eVertexZ = 0,
@@ -106,14 +106,14 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
   struct TaskConfiguration {
     bool fProcess[eProcess_N] = {false}; // Set what to process. See enum eProcess for full description. Set via implicit variables within a PROCESS_SWITCH clause.
     bool fDryRun = false;                // book all histos and run without filling and calculating anything
-  } tc;                                     // you have to prepend "tc." for all objects name in this group later in the code
+  } tc;                                  // you have to prepend "tc." for all objects name in this group later in the code
 
   // **) Particle histograms:
   struct ParticleHistograms {
     TList* fParticleHistogramsList = NULL; //!<! list to hold all control particle histograms
     TH1F* fHistPt[2] = {NULL};             // pt distribution of a particle [ 0 = rec, 1 = sim ]
     TH1F* fHistPhi[2] = {NULL};
-    TH1F* histWeights=NULL;
+    TH1F* histWeights = NULL;
   } pc; // you have to prepend "pc." for all objects name in this group later in the code
 
   struct EventHistograms {
@@ -129,45 +129,46 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
 
   TObject* GetObjectFromList(TList* list, const char* objectName)
   {
-  // Get TObject pointer from TList, even if it's in some nested TList. Foreseen
-  // to be used to fetch histograms or profiles from files directly. 
-  // Some ideas taken from TCollection::ls()
-  // If you have added histograms directly to files (without TList's), then you can fetch them directly with
-  // file->Get("hist-name").
+    // Get TObject pointer from TList, even if it's in some nested TList. Foreseen
+    // to be used to fetch histograms or profiles from files directly.
+    // Some ideas taken from TCollection::ls()
+    // If you have added histograms directly to files (without TList's), then you can fetch them directly with
+    // file->Get("hist-name").
 
-  // Usage: TH1D *hist = (TH1D*) GetObjectFromList("some-valid-TList-pointer","some-object-name");
+    // Usage: TH1D *hist = (TH1D*) GetObjectFromList("some-valid-TList-pointer","some-object-name");
 
-  // Insanity checks:
-  if (!list) {
-    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
-  }
-  if (!objectName) {
-    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
-  }
-  if (0 == list->GetEntries()) {
-    return NULL;
-  }
-
-  // The object is in the current base list:
-  TObject* objectFinal = list->FindObject(objectName); // the final object I am after
-  if (objectFinal ) { return objectFinal; }
-
-  //Otherwise, search for the object recursively in the nested lists:
-  TObject* objectIter; // iterator object in the loop below
-  TIter next(list);
-  while ((objectIter = next())) // double round braces are to silence the warnings
-  {
-    if (TString(objectIter->ClassName()).EqualTo("TList")) {
-      objectFinal = GetObjectFromList(reinterpret_cast<TList*>(objectIter), objectName);
-      if (objectFinal)
-        return objectFinal;
+    // Insanity checks:
+    if (!list) {
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
-  } // while(objectIter = next())
+    if (!objectName) {
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    }
+    if (0 == list->GetEntries()) {
+      return NULL;
+    }
 
-  return NULL;
+    // The object is in the current base list:
+    TObject* objectFinal = list->FindObject(objectName); // the final object I am after
+    if (objectFinal) {
+      return objectFinal;
+    }
+
+    // Otherwise, search for the object recursively in the nested lists:
+    TObject* objectIter; // iterator object in the loop below
+    TIter next(list);
+    while ((objectIter = next())) // double round braces are to silence the warnings
+    {
+      if (TString(objectIter->ClassName()).EqualTo("TList")) {
+        objectFinal = GetObjectFromList(reinterpret_cast<TList*>(objectIter), objectName);
+        if (objectFinal)
+          return objectFinal;
+      }
+    } // while(objectIter = next())
+
+    return NULL;
 
   } // TObject* GetObjectFromList(TList *list, char *objectName)
-
 
   TH1F* GetHistogramWithWeights(const char* filePath, const char* runNumber)
   {
@@ -183,14 +184,13 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     bool bFileIsInAliEn = false;
     bool bFileIsInCCDB = false;
 
-    string pathstr=filePath;
-    const string pathalien="/alice/cern.ch/";
-    const string pathccdb="/alice-ccdb.cern.ch/";
-    if(pathstr.find(pathalien)==0){
-      bFileIsInAliEn=true;
-    }
-    else if(pathstr.find(pathccdb)==0){
-      bFileIsInCCDB=true;
+    string pathstr = filePath;
+    const string pathalien = "/alice/cern.ch/";
+    const string pathccdb = "/alice-ccdb.cern.ch/";
+    if (pathstr.find(pathalien) == 0) {
+      bFileIsInAliEn = true;
+    } else if (pathstr.find(pathccdb) == 0) {
+      bFileIsInCCDB = true;
     }
 
     if (bFileIsInAliEn) {
@@ -220,17 +220,17 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
         }
       }
 
-     } else if (bFileIsInCCDB) {
-       // File you want to access is in your home dir in CCDB:
-       // Remember that here I do not access the file; instead, I directly access the object in that file.
-       ccdb->setURL("http://alice-ccdb.cern.ch"); // to be able to use "ccdb" this object in your analysis task, see 4b/ below
-       baseList = reinterpret_cast<TList*>(ccdb->get<TList>(TString(filePath).ReplaceAll("/alice-ccdb.cern.ch/", "").Data()));
-       if (!baseList) {
-         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
-       }
+    } else if (bFileIsInCCDB) {
+      // File you want to access is in your home dir in CCDB:
+      // Remember that here I do not access the file; instead, I directly access the object in that file.
+      ccdb->setURL("http://alice-ccdb.cern.ch"); // to be able to use "ccdb" this object in your analysis task, see 4b/ below
+      baseList = reinterpret_cast<TList*>(ccdb->get<TList>(TString(filePath).ReplaceAll("/alice-ccdb.cern.ch/", "").Data()));
+      if (!baseList) {
+        LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      }
 
-       listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumber));
-       if (!listWithRuns) {
+      listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumber));
+      if (!listWithRuns) {
         TString runNumberWithLeadingZeroes = "000";
         runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
         listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
@@ -241,25 +241,25 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
 
       // OK, we got the desired TList with efficiency corrections, after that we can use the common code for all 3 cases (local, AliEn, CCDB, that common code is below)
 
-     } else{
-       // this is the local case:
-       // Check if the external ROOT file exists at the specified path:
-       if (gSystem->AccessPathName(filePath, kFileExists)) {
-         LOGF(info, "\033[1;33m if(gSystem->AccessPathName(filePath,kFileExists)), filePath = %s \033[0m", filePath);
-         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
-       }
+    } else {
+      // this is the local case:
+      // Check if the external ROOT file exists at the specified path:
+      if (gSystem->AccessPathName(filePath, kFileExists)) {
+        LOGF(info, "\033[1;33m if(gSystem->AccessPathName(filePath,kFileExists)), filePath = %s \033[0m", filePath);
+        LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      }
 
-       TFile* weightsFile = TFile::Open(filePath, "READ");
-         if (!weightsFile) {
-           LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
-         }
+      TFile* weightsFile = TFile::Open(filePath, "READ");
+      if (!weightsFile) {
+        LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      }
 
-       weightsFile->GetObject("ccdb_object", baseList);
+      weightsFile->GetObject("ccdb_object", baseList);
 
-       if (!baseList) {
+      if (!baseList) {
         // weightsFile->ls();
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
-       }
+      }
 
       listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumber));
       if (!listWithRuns) {
@@ -268,28 +268,28 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
         listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
         if (!listWithRuns) {
           // baseList->ls();
-          LOGF(fatal, "\033[1;31m%s at line %d : this crash can happen if in the output file there is no list with weights for the current run number = %s\033[0m", __FUNCTION__, __LINE__ /*, tc.fRunNumber.Data()*/ );
+          LOGF(fatal, "\033[1;31m%s at line %d : this crash can happen if in the output file there is no list with weights for the current run number = %s\033[0m", __FUNCTION__, __LINE__ /*, tc.fRunNumber.Data()*/);
         }
       }
 
     } // end of  else
 
     // Here comes the common code for all three cases, where from "listWithRuns" you fetch the desired histogram with efficiency corrections:
-     listWithRuns->ls();
+    listWithRuns->ls();
 
-    hist= (TH1F*) listWithRuns->FindObject("histWithEfficiencyCorrections");
-    if(!hist){
+    hist = (TH1F*)listWithRuns->FindObject("histWithEfficiencyCorrections");
+    if (!hist) {
       LOGF(fatal, "no histweight");
     }
 
-   // Once you have a valid pointer to "hist", add these technical lines:
-   hist->SetDirectory(0); // remove ownerhip from an external file
-   TH1F* histClone = reinterpret_cast<TH1F*>(hist->Clone()); // yes, I have to clone here
-   delete baseList; // release back the memory
+    // Once you have a valid pointer to "hist", add these technical lines:
+    hist->SetDirectory(0);                                    // remove ownerhip from an external file
+    TH1F* histClone = reinterpret_cast<TH1F*>(hist->Clone()); // yes, I have to clone here
+    delete baseList;                                          // release back the memory
 
-   return histClone;
+    return histClone;
 
-} // end of TH1F* GetHistogramWithWeights(const char* filePath, const char* runNumber) {
+  } // end of TH1F* GetHistogramWithWeights(const char* filePath, const char* runNumber) {
 
   // ...
 
@@ -387,7 +387,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
 
       // Print track azimuthal angle:
       // LOGF(info, "Track azimuthal angle: %f", track.phi());
-      //pc.histWeights=GetHistogramWithWeights(cfFileWithWeights.value.c_str(), "000123456");
+      // pc.histWeights=GetHistogramWithWeights(cfFileWithWeights.value.c_str(), "000123456");
 
       // Fill reconstructed ...:
       float ptrec = 0., ptsim = 0.;
@@ -501,7 +501,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     pc.fHistPhi[eSim]->GetXaxis()->SetTitle("phi");
     pc.fParticleHistogramsList->Add(pc.fHistPhi[eSim]);
 
-    pc.histWeights=GetHistogramWithWeights(cfFileWithWeights.value.c_str(), "000123456");
+    pc.histWeights = GetHistogramWithWeights(cfFileWithWeights.value.c_str(), "000123456");
     pc.fParticleHistogramsList->Add(pc.histWeights);
 
     event.fHistCentr[eRec] = new TH1F("fHistCentr[eRec]", "centrality distribution for reconstructed particles", nBinscentr, mincentr, maxcentr);
