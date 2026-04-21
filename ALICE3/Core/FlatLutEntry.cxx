@@ -14,7 +14,13 @@
 #include <Framework/Logger.h>
 #include <Framework/RuntimeError.h>
 
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <cstring>
+#include <fstream>
+#include <ios>
+#include <span>
 
 namespace o2::delphes
 {

@@ -9,11 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "ALICE3/Core/FlatLutWriter.h"
+#include "FlatLutWriter.h"
 
-#include "TrackUtilities.h"
-
+#include "ALICE3/Core/FlatLutEntry.h"
 #include "ALICE3/Core/FlatTrackSmearer.h"
+#include "ALICE3/Core/TrackUtilities.h"
 
 #include <Framework/Logger.h>
 #include <ReconstructionDataFormats/Track.h>
@@ -22,7 +22,6 @@
 #include <TDatabasePDG.h>
 #include <TGraph.h>
 #include <TLorentzVector.h>
-#include <TMatrixD.h>
 #include <TMatrixDSymEigen.h>
 #include <TMatrixDSymfwd.h>
 #include <TMatrixDfwd.h>
@@ -30,9 +29,10 @@
 #include <TString.h>
 #include <TVectorDfwd.h>
 
-#include <Rtypes.h>
-
+#include <cmath>
 #include <cstdlib>
+#include <fstream>
+#include <string>
 
 using namespace o2::delphes;
 
