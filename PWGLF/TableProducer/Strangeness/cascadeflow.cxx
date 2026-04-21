@@ -197,6 +197,7 @@ struct cascadeFlow {
     Configurable<bool> isFillTHN_V2{"isFillTHN_V2", 1, ""};
     Configurable<bool> isFillTHN_Pz{"isFillTHN_Pz", 1, ""};
     Configurable<bool> isFillTHN_PzFromLambda{"isFillTHN_PzFromLambda", 1, ""};
+    Configurable<bool> isFillTHN_PzFromLambdaWLambdaMass{"isFillTHN_PzFromLambdaWLambdaMass", 1, ""};
     Configurable<bool> isFillTHN_Acc{"isFillTHN_Acc", 1, ""};
     Configurable<bool> isFillTHN_AccFromLambdaVsCasc{"isFillTHN_AccFromLambdaVsCasc", 1, ""};
     Configurable<bool> isFillTHN_AccFromLambdaVsLambda{"isFillTHN_AccFromLambdaVsLambda", 1, ""};
@@ -1065,6 +1066,8 @@ struct cascadeFlow {
         histos.add("hXiPzs2", "THn for Pzs2 of Xi", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassXi, thnAxisBDTScore, thnAxisPzs2Xi});
       if (fillingConfigs.isFillTHN_PzFromLambda)
         histos.add("hXiPzs2FromLambda", "THn for Pzs2 of Xi", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassXi, thnAxisBDTScore, thnAxisPzs2Lambda});
+      if (fillingConfigs.isFillTHN_PzFromLambdaWLambdaMass)
+        histos.add("hXiPzs2FromLambdaWLambdaMass", "THn for Pzs2 of Xi", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassXi, thnAxisMassLambda, thnAxisBDTScore, thnAxisPzs2Lambda});
       if (fillingConfigs.isFillTHN_Acc)
         histos.add("hXiCos2Theta", "THn for Cos2Theta of Xi", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisEta, thnAxisPt, thnAxisMassXi, thnAxisBDTScore, thnAxisCos2Theta});
       if (fillingConfigs.isFillTHN_AccFromLambdaVsCasc)
@@ -1091,6 +1094,8 @@ struct cascadeFlow {
         histos.add("hOmegaPzs2", "THn for Pzs2 of Omega", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega, thnAxisBDTScore, thnAxisPzs2Omega});
       if (fillingConfigs.isFillTHN_PzFromLambda)
         histos.add("hOmegaPzs2FromLambda", "THn for Pzs2 of Omega", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega, thnAxisBDTScore, thnAxisPzs2Lambda});
+      if (fillingConfigs.isFillTHN_PzFromLambdaWLambdaMass)
+        histos.add("hOmegaPzs2FromLambdaWLambdaMass", "THn for Pzs2 of Omega", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega, thnAxisMassLambda, thnAxisBDTScore, thnAxisPzs2Lambda});
       if (fillingConfigs.isFillTHN_Acc)
         histos.add("hOmegaCos2Theta", "THn for Cos2Theta of Omega", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisEta, thnAxisPt, thnAxisMassOmega, thnAxisBDTScore, thnAxisCos2Theta});
       if (fillingConfigs.isFillTHN_AccFromLambdaVsCasc)
@@ -1883,6 +1888,10 @@ struct cascadeFlow {
             histos.get<THn>(HIST("hXiV2"))->Fill(coll.centFT0C(), chargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], v2CEP);
           if (fillingConfigs.isFillTHN_Pz)
             histos.get<THn>(HIST("hXiPzs2"))->Fill(coll.centFT0C(), chargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], pzs2Xi);
+          if (casc.mXi() > CandidateConfigs.MinXiMass && casc.mXi() < CandidateConfigs.MaxXiMass) {
+            if (fillingConfigs.isFillTHN_PzFromLambdaWLambdaMass)
+              histos.get<THn>(HIST("hXiPzs2FromLambdaWLambdaMass"))->Fill(coll.centFT0C(), chargeIndex, casc.pt(), casc.mXi(), casc.mLambda(), BDTresponse[0], pzs2LambdaFromCasc);
+          }
           if (casc.mLambda() > CandidateConfigs.MinLambdaMass && casc.mLambda() < CandidateConfigs.MaxLambdaMass) {
             if (fillingConfigs.isFillTHN_PzFromLambda)
               histos.get<THn>(HIST("hXiPzs2FromLambda"))->Fill(coll.centFT0C(), chargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], pzs2LambdaFromCasc);
@@ -1919,6 +1928,10 @@ struct cascadeFlow {
             histos.get<THn>(HIST("hOmegaV2"))->Fill(coll.centFT0C(), chargeIndex, casc.pt(), casc.mOmega(), BDTresponse[1], v2CEP);
           if (fillingConfigs.isFillTHN_Pz)
             histos.get<THn>(HIST("hOmegaPzs2"))->Fill(coll.centFT0C(), chargeIndex, casc.pt(), casc.mOmega(), BDTresponse[1], pzs2Omega);
+          if (casc.mOmega() > CandidateConfigs.MinOmegaMass && casc.mOmega() < CandidateConfigs.MaxOmegaMass) {
+            if (fillingConfigs.isFillTHN_PzFromLambdaWLambdaMass)
+              histos.get<THn>(HIST("hOmegaPzs2FromLambdaWLambdaMass"))->Fill(coll.centFT0C(), chargeIndex, casc.pt(), casc.mOmega(), casc.mLambda(), BDTresponse[1], pzs2LambdaFromCasc);
+          }
           if (casc.mLambda() > CandidateConfigs.MinLambdaMass && casc.mLambda() < CandidateConfigs.MaxLambdaMass) {
             if (fillingConfigs.isFillTHN_PzFromLambda)
               histos.get<THn>(HIST("hOmegaPzs2FromLambda"))->Fill(coll.centFT0C(), chargeIndex, casc.pt(), casc.mOmega(), BDTresponse[1], pzs2LambdaFromCasc);
