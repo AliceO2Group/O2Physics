@@ -68,9 +68,6 @@ struct LongrangecorrDerived {
   Configurable<float> cfgZdcCut{"cfgZdcCut", 0.1f, "ZDC threshold"};
   Configurable<int> cfgGapSideCut{"cfgGapSideCut", 0, "Gap-side A=0, C=1, AC = 2, No Gap = -1, All events = 3"};
 
-  Configurable<bool> isApplyAmpCut{"isApplyAmpCut", false, "Enable FT0 amplitude cut"};
-  Configurable<float> cfgLowAmpCut{"cfgLowAmpCut", 2.0f, "Low FT0 amplitude cut"};
-
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 10, 15, 25, 50, 60, 1000}, "multiplicity axis"};
   ConfigurableAxis axisPhi{"axisPhi", {96, 0, TwoPI}, "#phi axis"};
   ConfigurableAxis axisEtaTrig{"axisEtaTrig", {40, -1., 1.}, "#eta trig axis"};
@@ -165,6 +162,10 @@ struct LongrangecorrDerived {
     histos.add("Trig_pt", "Trig_pt", kTH1D, {axisPtTrigger});
     histos.add("Trig_invMass", "Trig_invMass", kTH1D, {axisInvMassQA});
     histos.add("Trig_hist", "Trig_hist", kTHnSparseF, {axisVtxZ, axisMultiplicity, axisPtTrigger, axisInvMass});
+    histos.add("Trig_amp", "Trig_amp", kTH1D, {axisAmplitude});
+    histos.add("Trig_amp_gaincorrected", "Trig_amp_gaincorrected", kTH1D, {axisAmplitude});
+    histos.add("Channel_vs_Trig_amp", "Channel_vs_Trig_amp", kTH2D, {axisChannel, axisAmplitude});
+    histos.add("Channel_vs_Trig_amp_gaincorrected", "Channel_vs_Trig_amp_gaincorrected", kTH2D, {axisChannel, axisAmplitude});
 
     histos.add("Assoc_eta", "Assoc_eta", kTH1D, {axisEtaAssoc});
     histos.add("Assoc_phi", "Assoc_phi", kTH1D, {axisPhi});
@@ -195,7 +196,14 @@ struct LongrangecorrDerived {
     histos.fill(HIST("Trig_etavsphi"), track.phi(), track.eta());
     histos.fill(HIST("Trig_eta"), track.eta());
     histos.fill(HIST("Trig_phi"), track.phi());
-    histos.fill(HIST("Trig_pt"), track.pt());
+    if constexpr (std::experimental::is_detected<HasFt0, TTrack>::value) {
+      histos.fill(HIST("Trig_amp"), track.amplitude());
+      histos.fill(HIST("Channel_vs_Trig_amp"), track.channelID(), track.amplitude());
+      histos.fill(HIST("Trig_amp_gaincorrected"), track.gainAmplitude());
+      histos.fill(HIST("Channel_vs_Trig_amp_gaincorrected"), track.channelID(), track.gainAmplitude());
+    } else {
+      histos.fill(HIST("Trig_pt"), track.pt());
+    }
     if constexpr (std::experimental::is_detected<HasInvMass, TTrack>::value) {
       histos.fill(HIST("Trig_invMass"), track.invMass());
     }
@@ -251,6 +259,7 @@ struct LongrangecorrDerived {
   template <CorrelationContainer::CFStep step, typename TTarget, typename TTriggers, typename TAssocs>
   void fillCorrHist(TTarget target, TTriggers const& triggers, TAssocs const& assocs, bool mixing, float vz, float multiplicity, float eventWeight)
   {
+    auto trigAmpl = 1.0f;
     for (auto const& triggerTrack : triggers) {
       if constexpr (std::experimental::is_detected<HasTpcTrack, typename TTriggers::iterator>::value) {
         if (cfgPidMask != 0 && (cfgPidMask & (1u << static_cast<uint32_t>(triggerTrack.trackType()))) == 0u)
@@ -259,33 +268,39 @@ struct LongrangecorrDerived {
         if (cfgV0Mask != 0 && (cfgV0Mask & (1u << static_cast<uint32_t>(triggerTrack.v0Type()))) == 0u)
           continue;
       }
+      if constexpr (std::experimental::is_detected<HasFt0, typename TTriggers::iterator>::value) {
+        trigAmpl *= triggerTrack.gainAmplitude();
+      }
       if (!mixing) {
         fillTrigTrackQA(triggerTrack);
-        if constexpr (std::experimental::is_detected<HasInvMass, typename TTriggers::iterator>::value) {
-          histos.fill(HIST("Trig_hist"), vz, multiplicity, triggerTrack.pt(), triggerTrack.invMass(), eventWeight);
+        if constexpr (std::experimental::is_detected<HasFt0, typename TTriggers::iterator>::value) {
+          histos.fill(HIST("Trig_hist"), vz, multiplicity, 1.0, 1.0, eventWeight * trigAmpl);
+        } else if constexpr (std::experimental::is_detected<HasInvMass, typename TTriggers::iterator>::value) {
+          histos.fill(HIST("Trig_hist"), vz, multiplicity, triggerTrack.pt(), triggerTrack.invMass(), eventWeight * trigAmpl);
         } else {
-          histos.fill(HIST("Trig_hist"), vz, multiplicity, triggerTrack.pt(), 1.0, eventWeight);
+          histos.fill(HIST("Trig_hist"), vz, multiplicity, triggerTrack.pt(), 1.0, eventWeight * trigAmpl);
         }
       }
-      auto ampl = 1.0f;
+      auto assoAmpl = 1.0f;
       for (auto const& assoTrack : assocs) {
         if constexpr (std::experimental::is_detected<HasFt0, typename TAssocs::iterator>::value) {
-          if (isApplyAmpCut && (assoTrack.amplitude() < cfgLowAmpCut))
-            continue;
-          ampl *= assoTrack.gainAmplitude();
+          assoAmpl *= assoTrack.gainAmplitude();
         }
         float deltaPhi = RecoDecay::constrainAngle(triggerTrack.phi() - assoTrack.phi(), -PIHalf);
         float deltaEta = triggerTrack.eta() - assoTrack.eta();
         if (!mixing) {
           fillAssocTrackQA(assoTrack);
-          histos.fill(HIST("deltaEta_deltaPhi_same"), deltaPhi, deltaEta, eventWeight * ampl);
+          histos.fill(HIST("deltaEta_deltaPhi_same"), deltaPhi, deltaEta, eventWeight * trigAmpl * assoAmpl);
         } else {
-          histos.fill(HIST("deltaEta_deltaPhi_mixed"), deltaPhi, deltaEta, eventWeight * ampl);
+          histos.fill(HIST("deltaEta_deltaPhi_mixed"), deltaPhi, deltaEta, eventWeight * trigAmpl * assoAmpl);
         }
-        if constexpr (std::experimental::is_detected<HasInvMass, typename TTriggers::iterator>::value) {
-          target->getPairHist()->Fill(step, vz, multiplicity, triggerTrack.pt(), triggerTrack.pt(), deltaPhi, deltaEta, triggerTrack.invMass(), eventWeight * ampl);
+
+        if constexpr (std::experimental::is_detected<HasFt0, typename TTriggers::iterator>::value) {
+          target->getPairHist()->Fill(step, vz, multiplicity, 1.0, 1.0, deltaPhi, deltaEta, 1.0, eventWeight * trigAmpl * assoAmpl);
+        } else if constexpr (std::experimental::is_detected<HasInvMass, typename TTriggers::iterator>::value) {
+          target->getPairHist()->Fill(step, vz, multiplicity, triggerTrack.pt(), triggerTrack.pt(), deltaPhi, deltaEta, triggerTrack.invMass(), eventWeight * trigAmpl * assoAmpl);
         } else {
-          target->getPairHist()->Fill(step, vz, multiplicity, triggerTrack.pt(), triggerTrack.pt(), deltaPhi, deltaEta, 1.0, eventWeight * ampl);
+          target->getPairHist()->Fill(step, vz, multiplicity, triggerTrack.pt(), triggerTrack.pt(), deltaPhi, deltaEta, 1.0, eventWeight * trigAmpl * assoAmpl);
         }
       } // associated tracks
     } // trigger tracks
@@ -446,6 +461,11 @@ struct LongrangecorrDerived {
     processSame(col, tracks, mfts);
   }
 
+  void processFt0aft0cSE(CollsTable::iterator const& col, Ft0aTrksTable const& ft0as, Ft0cTrksTable const& ft0cs)
+  {
+    processSame(col, ft0as, ft0cs);
+  }
+
   void processTpcft0aME(CollsTable const& cols, TrksTable const& tracks, Ft0aTrksTable const& ft0as)
   {
     processMixed(cols, tracks, ft0as);
@@ -489,6 +509,11 @@ struct LongrangecorrDerived {
   void processV0mftbestME(CollsTable const& cols, V0TrksTable const& tracks, MftbestTrksTable const& mfts)
   {
     processMixed(cols, tracks, mfts);
+  }
+
+  void processFt0aft0cME(CollsTable const& cols, Ft0aTrksTable const& ft0as, Ft0cTrksTable const& ft0cs)
+  {
+    processMixed(cols, ft0as, ft0cs);
   }
 
   void processUpcTpcft0aSE(UpcCollsTable::iterator const& col, TrksUpcTable const& tracks, Ft0aTrksUpcTable const& ft0as)
@@ -628,6 +653,11 @@ struct LongrangecorrDerived {
     processMcSame(mccollision, collisions, mfts, ft0as);
   }
 
+  void processMcFt0aft0cSE(McCollsTable::iterator const& mccollision, soa::SmallGroups<aod::LRCollisionsWithLabel> const& collisions, McFt0aTrksTable const& ft0as, McFt0cTrksTable const& ft0cs)
+  {
+    processMcSame(mccollision, collisions, ft0as, ft0cs);
+  }
+
   void processMcTpcft0aME(McCollsTable const& mccollisions, aod::LRCollisionsWithLabel const& collisions, McTrksTable const& tracks, McFt0aTrksTable const& ft0as)
   {
     processMcMixed(mccollisions, collisions, tracks, ft0as);
@@ -648,6 +678,11 @@ struct LongrangecorrDerived {
     processMcMixed(mccollisions, collisions, mfts, ft0as);
   }
 
+  void processMcFt0aft0cME(McCollsTable const& mccollisions, aod::LRCollisionsWithLabel const& collisions, McFt0aTrksTable const& ft0as, McFt0cTrksTable const& ft0cs)
+  {
+    processMcMixed(mccollisions, collisions, ft0as, ft0cs);
+  }
+
   PROCESS_SWITCH(LongrangecorrDerived, processTpcft0aSE, "same event TPC vs FT0A", false);
   PROCESS_SWITCH(LongrangecorrDerived, processTpcft0aME, "mixed event TPC vs FT0A", false);
   PROCESS_SWITCH(LongrangecorrDerived, processTpcft0cSE, "same event TPC vs FT0C", false);
@@ -666,6 +701,8 @@ struct LongrangecorrDerived {
   PROCESS_SWITCH(LongrangecorrDerived, processMftbestft0aME, "mixed event best MFT vs FT0A", false);
   PROCESS_SWITCH(LongrangecorrDerived, processV0mftbestSE, "same event V0 vs best MFT", false);
   PROCESS_SWITCH(LongrangecorrDerived, processV0mftbestME, "mixed event V0 vs best MFT", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processFt0aft0cSE, "same event FT0A vs FT0C", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processFt0aft0cME, "mixed event FT0A vs FT0C", false);
   PROCESS_SWITCH(LongrangecorrDerived, processUpcTpcft0aSE, "same UPC event TPC vs FT0A", false);
   PROCESS_SWITCH(LongrangecorrDerived, processUpcTpcft0aME, "mixed UPC event TPC vs FT0A", false);
   PROCESS_SWITCH(LongrangecorrDerived, processUpcTpcft0cSE, "same UPC event TPC vs FT0C", false);
@@ -692,6 +729,8 @@ struct LongrangecorrDerived {
   PROCESS_SWITCH(LongrangecorrDerived, processMcTpcmftME, "mixed MC event TPC vs MFT", false);
   PROCESS_SWITCH(LongrangecorrDerived, processMcMftft0aSE, "same MC event MFT vs FT0A", false);
   PROCESS_SWITCH(LongrangecorrDerived, processMcMftft0aME, "mixed MC event MFT vs FT0A", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMcFt0aft0cSE, "same MC event FT0A vs FT0C", false);
+  PROCESS_SWITCH(LongrangecorrDerived, processMcFt0aft0cME, "mixed MC event FT0A vs FT0C", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
