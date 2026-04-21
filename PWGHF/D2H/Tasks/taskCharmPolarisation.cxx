@@ -175,7 +175,7 @@ struct HfTaskCharmPolarisation {
   Configurable<bool> activateTHnSparseCosThStarBeam{"activateTHnSparseCosThStarBeam", true, "Activate the THnSparse with cosThStar w.r.t. beam axis"};
   Configurable<bool> activateTHnSparseCosThStarRandom{"activateTHnSparseCosThStarRandom", true, "Activate the THnSparse with cosThStar w.r.t. random axis"};
   Configurable<bool> activateTHnSparseCosThStarEP{"activateTHnSparseCosThStarEP", false, "Activate the THnSparse with cosThStar w.r.t. reaction plane axis"};
-  Configurable<bool> activateTHnSparsePhiAndCosSqStarEP{"activateTHnSparsePhiAndCosSqStar", false, "Activate the THnSparse with cos(2PhiStar) and cosSq(ThStar) w.r.t. reaction plane axis"};
+  Configurable<bool> activateTHnSparsePhiAndCosSqStarEP{"activateTHnSparsePhiAndCosSqStarEP", false, "Activate the THnSparse with cos(2PhiStar) and cosSq(ThStar) w.r.t. reaction plane axis"};
 
   Configurable<bool> activatePartRecoDstar{"activatePartRecoDstar", false, "Activate the study of partly reconstructed D*+ -> D0 (-> KPiPi0) Pi decays"};
   float minInvMass{0.f};
