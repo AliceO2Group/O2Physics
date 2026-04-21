@@ -49,6 +49,8 @@ using TrackSim = aod::McParticles::iterator;
 
 #include <cstring>
 #include <iostream>
+#include <string>
+#include <vector>
 // ...
 
 using namespace std;
@@ -277,7 +279,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     // Here comes the common code for all three cases, where from "listWithRuns" you fetch the desired histogram with efficiency corrections:
     listWithRuns->ls();
 
-    hist = (TH1F*)listWithRuns->FindObject("histWithEfficiencyCorrections");
+    hist = reinterpret_cast<TH1F*>(listWithRuns->FindObject("histWithEfficiencyCorrections"));
     if (!hist) {
       LOGF(fatal, "no histweight");
     }
@@ -298,8 +300,8 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
   bool EventCuts(T1 const& collision)
   {
     vector<float> vertexZ = cfVertexZ.value;
-    float vertexZmin = (float)vertexZ[0];
-    float vertexZmax = (float)vertexZ[1];
+    float vertexZmin = static_cast<float>(vertexZ[0]);
+    float vertexZmax = static_cast<float>(vertexZ[1]);
     float posZ = collision.posZ();
     if (posZ < vertexZmin || posZ > vertexZmax)
       return false;
@@ -310,8 +312,8 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
   bool ParticleCuts(T const& track)
   {
     vector<float> Pt = cfPt.value;
-    float ptcutmin = (float)Pt[0];
-    float ptcutmax = (float)Pt[1];
+    float ptcutmin = static_cast<float>(Pt[0]);
+    float ptcutmax = static_cast<float>(Pt[1]);
     float pt = track.pt();
     if (pt < ptcutmin || pt > ptcutmax)
       return false;
