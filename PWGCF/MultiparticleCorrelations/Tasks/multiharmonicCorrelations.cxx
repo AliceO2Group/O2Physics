@@ -48,7 +48,6 @@ using TrackSim = aod::McParticles::iterator;
 #include <TSystem.h>
 
 #include <cstring>
-#include <iostream>
 #include <string>
 #include <vector>
 // ...
@@ -86,13 +85,13 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
 
   // *) Define configurables:
   Configurable<bool> cfDryRun{"cfDryRun", false, "book all histos and run without filling and calculating anything"}; // example for built-in type (float, string, etc.)
-  Configurable<vector<float>> cf_pt_bins{"cf_pt_bins", {1000, 0., 100.}, "nPtBins, ptMin, ptMax"};                    // example for an array
-  Configurable<vector<float>> cf_phi_bins{"cf_phi_bins", {100, 0., o2::constants::math::TwoPI}, "nPhiBins, phiMin, phiMax"};
-  Configurable<vector<float>> cf_centr_bins{"cf_centr_bins", {1000, 0., 100.}, "nCentrBins, centrMin, centrMax"};
-  Configurable<vector<float>> cf_x_bins{"cf_x_bins", {1000, -100., 100.}, "nXBins, xMin, xMax"};
-  Configurable<vector<float>> cf_y_bins{"cf_y_bins", {1000, -100., 100.}, "nYBins, yMin, yMax"};
-  Configurable<vector<float>> cf_z_bins{"cf_z_bins", {1000, -100., 100.}, "nZBins, zMin, zMax"};
-  Configurable<vector<float>> cf_mult_bins{"cf_mult_bins", {50, 0, 3e3}, "nMultBins, multMin, multMax"};
+  Configurable<std::vector<float>> cf_pt_bins{"cf_pt_bins", {1000, 0., 100.}, "nPtBins, ptMin, ptMax"};               // example for an array
+  Configurable<std::vector<float>> cf_phi_bins{"cf_phi_bins", {100, 0., o2::constants::math::TwoPI}, "nPhiBins, phiMin, phiMax"};
+  Configurable<std::vector<float>> cf_centr_bins{"cf_centr_bins", {1000, 0., 100.}, "nCentrBins, centrMin, centrMax"};
+  Configurable<std::vector<float>> cf_x_bins{"cf_x_bins", {1000, -100., 100.}, "nXBins, xMin, xMax"};
+  Configurable<std::vector<float>> cf_y_bins{"cf_y_bins", {1000, -100., 100.}, "nYBins, yMin, yMax"};
+  Configurable<std::vector<float>> cf_z_bins{"cf_z_bins", {1000, -100., 100.}, "nZBins, zMin, zMax"};
+  Configurable<std::vector<float>> cf_mult_bins{"cf_mult_bins", {50, 0, 3e3}, "nMultBins, multMin, multMax"};
 
   Configurable<int> cfCent{"cfCent", 1, "centrality estimator"};
   Configurable<int> cfMult{"cfMult", 1, "multiplicity"};
@@ -287,7 +286,6 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     // Once you have a valid pointer to "hist", add these technical lines:
     hist->SetDirectory(0);                                    // remove ownerhip from an external file
     TH1F* histClone = reinterpret_cast<TH1F*>(hist->Clone()); // yes, I have to clone here
-    delete baseList;                                          // release back the memory
 
     return histClone;
 
@@ -388,8 +386,6 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     for (int64_t i = 0; i < tracks.size(); i++) {
 
       // Print track azimuthal angle:
-      // LOGF(info, "Track azimuthal angle: %f", track.phi());
-      // pc.histWeights=GetHistogramWithWeights(cfFileWithWeights.value.c_str(), "000123456");
 
       // Fill reconstructed ...:
       float ptrec = 0., ptsim = 0.;
@@ -466,13 +462,13 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     vector<float> l_y_bins = cf_y_bins.value;
     vector<float> l_z_bins = cf_z_bins.value;
     vector<float> l_mult_bins = cf_mult_bins.value;
-    int nBins = (Int_t)l_pt_bins[0];
-    int nBinsphi = (Int_t)l_phi_bins[0];
-    int nBinscentr = (Int_t)l_centr_bins[0];
-    int nBinsx = (Int_t)l_x_bins[0];
-    int nBinsy = (Int_t)l_y_bins[0];
-    int nBinsz = (Int_t)l_z_bins[0];
-    int nBinsmult = (Int_t)l_mult_bins[0];
+    int nBins = (int)l_pt_bins[0];
+    int nBinsphi = (int)l_phi_bins[0];
+    int nBinscentr = (int)l_centr_bins[0];
+    int nBinsx = (int)l_x_bins[0];
+    int nBinsy = (int)l_y_bins[0];
+    int nBinsz = (int)l_z_bins[0];
+    int nBinsmult = (int)l_mult_bins[0];
 
     float min = l_pt_bins[1];
     float max = l_pt_bins[2];
