@@ -46,9 +46,7 @@ using namespace o2::framework::expressions;
 
 struct flowZdcEnergy {
 
-  struct : ConfigurableGroup{
-             O2_DEFINE_CONFIGURABLE(cfgVtxZ, float, 10.f, "Accepted z-vertex range")} evsel;
-
+  O2_DEFINE_CONFIGURABLE(cfgVtxZ, float, 10.f, "Event cut: accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgEtaMax, float, 0.8f, "Maximum track #eta")
   O2_DEFINE_CONFIGURABLE(cfgPtMin, float, 0.2f, "Minimum track #P_{t}")
   O2_DEFINE_CONFIGURABLE(cfgPtMax, float, 10.0f, "Maximum track #P_{t}")
@@ -155,7 +153,7 @@ struct flowZdcEnergy {
       return false;
     }
     registry.fill(HIST("QA/hEventCount"), kSeln);
-    if (std::abs(collision.posZ()) > evsel.cfgVtxZ) {
+    if (std::abs(collision.posZ()) > cfgVtxZ) {
       return false;
     }
     registry.fill(HIST("QA/hEventCount"), kZvtx);
@@ -171,7 +169,7 @@ struct flowZdcEnergy {
       return false;
     }
     registry.fill(HIST("QA/hEventCount"), kSeln);
-    if (std::abs(collision.posZ()) > evsel.cfgVtxZ) {
+    if (std::abs(collision.posZ()) > cfgVtxZ) {
       return false;
     }
     registry.fill(HIST("QA/hEventCount"), kZvtx);
