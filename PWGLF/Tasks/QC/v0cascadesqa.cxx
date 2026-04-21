@@ -1260,7 +1260,7 @@ struct v0cascadesQA {
   ////////// QA - MC /////////////
   ////////////////////////////////
 
-  void processMonteCarlo(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels>::iterator const& collision, soa::Join<aod::McCollisions, aod::MultsExtraMC> const&, soa::Join<aod::V0Datas, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0CoreMCLabels> const& fullV0s, soa::Join<aod::V0MCDatas, aod::V0MCCollRefs> const&, soa::Join<aod::CascDatas, aod::CascTOFPIDs, aod::CascTOFNSigmas, aod::CascCoreMCLabels> const& fullCascades, soa::Join<aod::CascMCDatas, aod::CascMCCollRefs> const&, DaughterTracks const&, aod::BCsWithTimestamps const&)
+  void processMonteCarlo(soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::McCollisionLabels>::iterator const& collision, soa::Join<aod::McCollisions, aod::MultsExtraMC> const&, soa::Join<aod::V0Datas, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0CoreMCLabels> const& fullV0s, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&, soa::Join<aod::CascDatas, aod::CascTOFPIDs, aod::CascTOFNSigmas, aod::CascCoreMCLabels> const& fullCascades, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&, DaughterTracks const&, aod::BCsWithTimestamps const&)
   {
     if (!isEventAccepted(collision, false)) {
       return;
@@ -1315,12 +1315,12 @@ struct v0cascadesQA {
       if (!casc.has_cascMCCore())
         continue;
 
-      auto cascMC = casc.template cascMCCore_as<soa::Join<aod::CascMCDatas, aod::CascMCCollRefs>>();
+      auto cascMC = casc.template cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
 
       histos.fill(HIST("histos_Casc/QA_CascadeCandidates"), 0.5);
 
       if (isCascadeSelected(casc, collision, cascMC.rapidityMC(0), kXiM)) {
-        histos.fill(HIST("histos_Casc/QA_CascCandidates"), 1.5);
+        histos.fill(HIST("histos_Casc/QA_CascadeCandidates"), 1.5);
         if (checkCascadeMCAssociation(cascMC, kXiM)) {
           histos.fill(HIST("histos_Casc/QA_CascadeCandidates"), 2.5);
           histos.fill(HIST("histos_Casc/InvMassXiMinusTrue"), cascMC.ptMC(), casc.cascradius(), casc.mXi());
@@ -1334,7 +1334,7 @@ struct v0cascadesQA {
         }
       }
       if (isCascadeSelected(casc, collision, cascMC.rapidityMC(2), kOmegaM)) {
-        histos.fill(HIST("histos_Casc/QA_CascCandidates"), 5.5);
+        histos.fill(HIST("histos_Casc/QA_CascadeCandidates"), 5.5);
         if (checkCascadeMCAssociation(cascMC, kOmegaM)) {
           histos.fill(HIST("histos_Casc/QA_CascadeCandidates"), 6.5);
           histos.fill(HIST("histos_Casc/InvMassOmegaMinusTrue"), cascMC.ptMC(), casc.cascradius(), casc.mOmega());
@@ -1354,7 +1354,7 @@ struct v0cascadesQA {
   ////////// Collision QA - MC //////////
   ///////////////////////////////////////
 
-  void processGenerated(soa::Join<aod::McCollisions, aod::MultsExtraMC>::iterator const& mcCollision, aod::McParticles const& mcParticles, soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels, aod::PVMults>> const& collisions)
+  void processGenerated(soa::Join<aod::McCollisions, aod::MultsExtraMC>::iterator const& mcCollision, aod::McParticles const& mcParticles, soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels, aod::PVMults>> const& collisions, aod::BCsWithTimestamps const&)
   {
     // Apply selections on MC collisions
     if (eventSelections.applyZVtxSelOnMCPV && std::abs(mcCollision.posZ()) > eventSelections.maxZVtxPosition) {
