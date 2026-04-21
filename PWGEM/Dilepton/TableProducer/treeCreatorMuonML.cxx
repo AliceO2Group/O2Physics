@@ -344,6 +344,9 @@ struct TreeCreatorMuonML {
 
     float xMFTatMP = 999.f, yMFTatMP = 999.f;
     float xMCHMIDatMP = 999.f, yMCHMIDatMP = 999.f;
+
+    float xErrMFTatMP = 999.f, yErrMFTatMP = 999.f;
+    float xErrMCHMIDatMP = 999.f, yErrMCHMIDatMP = 999.f;
     float signed1PtMFTatMP = 999.f, etaMFTatMP = 999.f, phiMFTatMP = 999.f;
     float signed1PtMCHMIDatMP = 999.f, etaMCHMIDatMP = 999.f, phiMCHMIDatMP = 999.f;
 
@@ -353,6 +356,8 @@ struct TreeCreatorMuonML {
       mftsaAtMP.propagateToZhelix(glMuonCutGroup.matchingZ, mBz);                                   // propagated to matching plane
       xMFTatMP = mftsaAtMP.getX();
       yMFTatMP = mftsaAtMP.getY();
+      xErrMFTatMP = std::sqrt(mftsaAtMP.getSigma2X());
+      yErrMFTatMP = std::sqrt(mftsaAtMP.getSigma2Y());
       signed1PtMFTatMP = mftsaAtMP.getInvQPt();
       etaMFTatMP = mftsaAtMP.getEta();
       phiMFTatMP = RecoDecay::constrainAngle(mftsaAtMP.getPhi(), 0, 1U);
@@ -360,7 +365,9 @@ struct TreeCreatorMuonML {
       auto muonAtMP = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToMatchingPlane, glMuonCutGroup.matchingZ, mBz, mZShift); // propagated to matching plane
       xMCHMIDatMP = muonAtMP.getX();
       yMCHMIDatMP = muonAtMP.getY();
-      signed1PtMCHMIDatMP = mftsaAtMP.getInvQPt();
+      xErrMCHMIDatMP = std::sqrt(muonAtMP.getSigma2X());
+      yErrMCHMIDatMP = std::sqrt(muonAtMP.getSigma2Y());
+      signed1PtMCHMIDatMP = muonAtMP.getInvQPt();
       etaMCHMIDatMP = muonAtMP.getEta();
       phiMCHMIDatMP = RecoDecay::constrainAngle(muonAtMP.getPhi(), 0, 1U);
     }
@@ -374,7 +381,9 @@ struct TreeCreatorMuonML {
             signed1PtMFTatMP, etaMFTatMP, phiMFTatMP,
             signed1PtMCHMIDatMP, etaMCHMIDatMP, phiMCHMIDatMP,
             xMCHMIDatMP, yMCHMIDatMP,
+            xErrMCHMIDatMP, yErrMCHMIDatMP,
             xMFTatMP, yMFTatMP,
+            xErrMFTatMP, yErrMFTatMP,
             dcaX, dcaY,
             fwdtrack.nClusters(), pDCA, rAtAbsorberEnd, fwdtrack.chi2MatchMCHMID(), fwdtrack.chi2MatchMCHMFT(),
             mfttrack.mftClusterSizesAndTrackFlags(), chi2, mchtrack.chi2(), chi2mft, mfttrack.nClusters(),
