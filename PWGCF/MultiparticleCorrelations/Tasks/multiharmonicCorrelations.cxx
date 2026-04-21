@@ -462,13 +462,13 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     vector<float> l_y_bins = cf_y_bins.value;
     vector<float> l_z_bins = cf_z_bins.value;
     vector<float> l_mult_bins = cf_mult_bins.value;
-    int nBins = (int)l_pt_bins[0];
-    int nBinsphi = (int)l_phi_bins[0];
-    int nBinscentr = (int)l_centr_bins[0];
-    int nBinsx = (int)l_x_bins[0];
-    int nBinsy = (int)l_y_bins[0];
-    int nBinsz = (int)l_z_bins[0];
-    int nBinsmult = (int)l_mult_bins[0];
+    int nBins = static_cast<int>(l_pt_bins[0]);
+    int nBinsphi = static_cast<int>(l_phi_bins[0]);
+    int nBinscentr = static_cast<int>(l_centr_bins[0]);
+    int nBinsx = static_cast<int>(l_x_bins[0]);
+    int nBinsy = static_cast<int>(l_y_bins[0]);
+    int nBinsz = static_cast<int>(l_z_bins[0]);
+    int nBinsmult = static_cast<int>(l_mult_bins[0]);
 
     float min = l_pt_bins[1];
     float max = l_pt_bins[2];
