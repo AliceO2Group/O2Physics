@@ -186,6 +186,7 @@ struct cascadeFlow {
   // Output filling criteria
   struct : ConfigurableGroup {
     Configurable<bool> isFillTree{"isFillTree", 1, ""};
+    Configurable<bool> isFillTreeFull{"isFillTreeFull", 0, ""};
     Configurable<bool> isFillTHNXi{"isFillTHNXi", 1, ""};
     Configurable<bool> isFillTHNXi_PzVsPsi{"isFillTHNXi_PzVsPsi", 1, ""};
     Configurable<bool> isFillTHNOmega{"isFillTHNOmega", 1, ""};
@@ -656,6 +657,7 @@ struct cascadeFlow {
   // Tables to produce
   Produces<aod::CascTraining> trainingSample;
   Produces<aod::CascAnalysis> analysisSample;
+  Produces<aod::CascAnalysisFull> analysisTopoSample;
   Produces<aod::LambdaAnalysis> analysisLambdaSample;
   Configurable<LabeledArray<double>> parSigmaMass{
     "parSigmaMass",
@@ -694,8 +696,8 @@ struct cascadeFlow {
                    pdgCode);
   }
 
-  template <class collision_t, class cascade_t>
-  void fillAnalysedTable(collision_t coll, bool hasEventPlane, bool hasSpectatorPlane, cascade_t casc, float v2CSP, float v2CEP, float v1SP_ZDCA, float v1SP_ZDCC, float PsiT0C, float BDTresponseXi, float BDTresponseOmega, int pdgCode)
+  template <class collision_t, class cascade_t, class bachExtra_t>
+  void fillAnalysedTable(collision_t coll, bool hasEventPlane, bool hasSpectatorPlane, cascade_t casc, float v2CSP, float v2CEP, float v1SP_ZDCA, float v1SP_ZDCC, float PsiT0C, float BDTresponseXi, float BDTresponseOmega, int pdgCode, bachExtra_t bachExtra)
   {
     double masses[nParticles]{o2::constants::physics::MassXiMinus, o2::constants::physics::MassOmegaMinus};
     ROOT::Math::PxPyPzMVector cascadeVector[nParticles], lambdaVector, protonVector;
@@ -730,29 +732,66 @@ struct cascadeFlow {
     // bool isTVXinTRD = 0;
     //    if (coll.alias_bit(kTVXinTRD)) isTVXinTRD = 1;
 
-    analysisSample(coll.centFT0C(),
-                   isNoCollInTimeRangeStd,
-                   isNoCollInRofStd,
-                   hasEventPlane,
-                   hasSpectatorPlane,
-                   casc.sign(),
-                   casc.pt(),
-                   casc.eta(),
-                   casc.phi(),
-                   casc.mLambda(),
-                   casc.mXi(),
-                   casc.mOmega(),
-                   v2CSP,
-                   v2CEP,
-                   v1SP_ZDCA,
-                   v1SP_ZDCC,
-                   PsiT0C,
-                   BDTresponseXi,
-                   BDTresponseOmega,
-                   cosThetaStarLambda[0],
-                   cosThetaStarLambda[1],
-                   cosThetaStarProton,
-                   pdgCode);
+    if (fillingConfigs.isFillTreeFull) {
+      analysisTopoSample(coll.centFT0C(),
+                         hasEventPlane,
+                         hasSpectatorPlane,
+                         casc.sign(),
+                         casc.pt(),
+                         casc.eta(),
+                         casc.phi(),
+                         casc.mLambda(),
+                         casc.mXi(),
+                         casc.mOmega(),
+                         casc.cascradius(),
+                         casc.v0radius(),
+                         casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()),
+                         casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()),
+                         casc.dcapostopv(),
+                         casc.dcanegtopv(),
+                         casc.dcabachtopv(),
+                         casc.dcacascdaughters(),
+                         casc.dcaV0daughters(),
+                         casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ()),
+                         casc.bachBaryonCosPA(),
+                         casc.bachBaryonDCAxyToPV(),
+                         bachExtra.tpcNSigmaKa(),
+                         v2CSP,
+                         v2CEP,
+                         v1SP_ZDCA,
+                         v1SP_ZDCC,
+                         PsiT0C,
+                         BDTresponseXi,
+                         BDTresponseOmega,
+                         cosThetaStarLambda[0],
+                         cosThetaStarLambda[1],
+                         cosThetaStarProton,
+                         pdgCode);
+    } else {
+      analysisSample(coll.centFT0C(),
+                     isNoCollInTimeRangeStd,
+                     isNoCollInRofStd,
+                     hasEventPlane,
+                     hasSpectatorPlane,
+                     casc.sign(),
+                     casc.pt(),
+                     casc.eta(),
+                     casc.phi(),
+                     casc.mLambda(),
+                     casc.mXi(),
+                     casc.mOmega(),
+                     v2CSP,
+                     v2CEP,
+                     v1SP_ZDCA,
+                     v1SP_ZDCC,
+                     PsiT0C,
+                     BDTresponseXi,
+                     BDTresponseOmega,
+                     cosThetaStarLambda[0],
+                     cosThetaStarLambda[1],
+                     cosThetaStarProton,
+                     pdgCode);
+    }
   }
 
   template <class collision_t, class v0_t>
@@ -1581,7 +1620,7 @@ struct cascadeFlow {
 
       if (isSelectedCasc[0] || isSelectedCasc[1]) {
         if (fillingConfigs.isFillTree)
-          fillAnalysedTable(coll, hasEventPlane, hasSpectatorPlane, casc, v2CSP, v2CEP, v1SP_ZDCA, v1SP_ZDCC, psiT0CCorr, BDTresponse[0], BDTresponse[1], 0);
+          fillAnalysedTable(coll, hasEventPlane, hasSpectatorPlane, casc, v2CSP, v2CEP, v1SP_ZDCA, v1SP_ZDCC, psiT0CCorr, BDTresponse[0], BDTresponse[1], 0, bachExtra);
       }
     }
   }
@@ -1899,7 +1938,7 @@ struct cascadeFlow {
 
       if (isSelectedCasc[0] || isSelectedCasc[1]) {
         if (fillingConfigs.isFillTree)
-          fillAnalysedTable(coll, hasEventPlane, 0, casc, v2CSP, v2CEP, 0, 0, psiT0CCorr, BDTresponse[0], BDTresponse[1], 0);
+          fillAnalysedTable(coll, hasEventPlane, 0, casc, v2CSP, v2CEP, 0, 0, psiT0CCorr, BDTresponse[0], BDTresponse[1], 0, bachExtra);
       }
     }
   }
@@ -2414,7 +2453,7 @@ struct cascadeFlow {
       }
       if (isSelectedCasc[0] || isSelectedCasc[1])
         if (fillingConfigs.isFillTree)
-          fillAnalysedTable(coll, hasEventPlane, hasSpectatorPlane, casc, v2CSP, v2CEP, v1SP_ZDCA, v1SP_ZDCC, psiT0CCorr, BDTresponse[0], BDTresponse[1], 0);
+          fillAnalysedTable(coll, hasEventPlane, hasSpectatorPlane, casc, v2CSP, v2CEP, v1SP_ZDCA, v1SP_ZDCC, psiT0CCorr, BDTresponse[0], BDTresponse[1], 0, bachExtra);
     }
   }
 
@@ -2556,7 +2595,7 @@ struct cascadeFlow {
           continue;
       }
       if (isSelectedCasc[0] || isSelectedCasc[1])
-        fillAnalysedTable(coll, hasEventPlane, hasSpectatorPlane, casc, v2CSP, v2CEP, v1SP_ZDCA, v1SP_ZDCC, psiT0C, BDTresponse[0], BDTresponse[1], pdgCode);
+        fillAnalysedTable(coll, hasEventPlane, hasSpectatorPlane, casc, v2CSP, v2CEP, v1SP_ZDCA, v1SP_ZDCC, psiT0C, BDTresponse[0], BDTresponse[1], pdgCode, bachExtra);
     }
   }
 
