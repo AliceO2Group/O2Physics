@@ -427,14 +427,14 @@ struct v0cascadesQA {
 
     if (isMC) {
       histos.add("histos_V0/GeneratedV0s", "GeneratedV0s", kTH3D, {{3, 0.0f, 3.0f}, axisConfigurations.axisPt, axisConfigurations.axisV0Radius});
-      histos.get<TH1>(HIST("histos_V0/GeneratedV0s"))->GetXaxis()->SetBinLabel(1, "K^{0}_{S}");
-      histos.get<TH1>(HIST("histos_V0/GeneratedV0s"))->GetXaxis()->SetBinLabel(2, "#Lambda");
-      histos.get<TH1>(HIST("histos_V0/GeneratedV0s"))->GetXaxis()->SetBinLabel(3, "#bar{#Lambda}");
+      histos.get<TH3>(HIST("histos_V0/GeneratedV0s"))->GetXaxis()->SetBinLabel(1, "K^{0}_{S}");
+      histos.get<TH3>(HIST("histos_V0/GeneratedV0s"))->GetXaxis()->SetBinLabel(2, "#Lambda");
+      histos.get<TH3>(HIST("histos_V0/GeneratedV0s"))->GetXaxis()->SetBinLabel(3, "#bar{#Lambda}");
       histos.add("histos_Casc/GeneratedCascades", "GeneratedCascades", kTH3D, {{4, 0.0f, 4.0f}, axisConfigurations.axisPtCasc, axisConfigurations.axisCascRadius});
-      histos.get<TH1>(HIST("histos_Casc/GeneratedCascades"))->GetXaxis()->SetBinLabel(1, "#Xi^{#minus}");
-      histos.get<TH1>(HIST("histos_Casc/GeneratedCascades"))->GetXaxis()->SetBinLabel(2, "#bar{#Xi}^{+}");
-      histos.get<TH1>(HIST("histos_Casc/GeneratedCascades"))->GetXaxis()->SetBinLabel(3, "#Omega^{#minus}");
-      histos.get<TH1>(HIST("histos_Casc/GeneratedCascades"))->GetXaxis()->SetBinLabel(4, "#bar{#Omega}^{+}");
+      histos.get<TH3>(HIST("histos_Casc/GeneratedCascades"))->GetXaxis()->SetBinLabel(1, "#Xi^{#minus}");
+      histos.get<TH3>(HIST("histos_Casc/GeneratedCascades"))->GetXaxis()->SetBinLabel(2, "#bar{#Xi}^{+}");
+      histos.get<TH3>(HIST("histos_Casc/GeneratedCascades"))->GetXaxis()->SetBinLabel(3, "#Omega^{#minus}");
+      histos.get<TH3>(HIST("histos_Casc/GeneratedCascades"))->GetXaxis()->SetBinLabel(4, "#bar{#Omega}^{+}");
 
       histos.add("histos_V0/InvMassK0sTrue", "InvMassK0sTrue", {HistType::kTH3F, {{100, 0.0f, 10.0f}, {100, 0.f, 50.f}, {200, 0.4f, 0.6f}}});
       histos.add("histos_V0/InvMassLambdaTrue", "InvMassLambdaTrue", {HistType::kTH3F, {{100, 0.0f, 10.0f}, {100, 0.f, 50.f}, {200, 1.07f, 1.17f}}});
