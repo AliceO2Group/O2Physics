@@ -1096,7 +1096,7 @@ struct taggingHFE {
           if (isXi(cascade) && isPion(bachelor)) {
             xiMinusIds.emplace_back(cascade.globalIndex());
           }
-          if (isOmega(cascade) && isKaon(bachelor)) {
+          if (isOmega(cascade) && isKaonBachelor(bachelor)) {
             omegaMinusIds.emplace_back(cascade.globalIndex());
           }
         } else { // Xi+ or Omega+
