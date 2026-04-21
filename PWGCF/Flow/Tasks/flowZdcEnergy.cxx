@@ -148,13 +148,26 @@ struct flowZdcEnergy {
 
   // Helper: event selection
   template <typename TCollision>
-  bool acceptEvent(TCollision const& collision, const int runmode)
+  bool acceptEventRun2(TCollision const& collision)
   {
     registry.fill(HIST("QA/hEventCount"), kAllEvents);
-    if (runmode == 2 && !collision.sel7()) {
+    if (!collision.sel7()) {
       return false;
     }
-    if (runmode == 3 && !collision.sel8()) {
+    registry.fill(HIST("QA/hEventCount"), kSeln);
+    if (std::abs(collision.posZ()) > evsel.cfgVtxZ) {
+      return false;
+    }
+    registry.fill(HIST("QA/hEventCount"), kZvtx);
+
+    return true;
+  }
+
+  template <typename TCollision>
+  bool acceptEventRun3(TCollision const& collision)
+  {
+    registry.fill(HIST("QA/hEventCount"), kAllEvents);
+    if (!collision.sel8()) {
       return false;
     }
     registry.fill(HIST("QA/hEventCount"), kSeln);
@@ -225,11 +238,12 @@ struct flowZdcEnergy {
     registry.fill(HIST("hEnergyWithMult_ZNA_SumSectors"), sumEnergyZNA, multiTPC);
     registry.fill(HIST("hEnergyWithMult_ZNC_SumSectors"), sumEnergyZNC, multiTPC);
 
-    if (commonDen > 1.e-6f) {
+    const float nonZero = 1.e-6f;
+    if (commonDen > nonZero) {
       registry.fill(HIST("hEnergyWithCent_RescaledDiff"), (energyCommonZNA - energyCommonZNC) / commonDen, centrality);
       registry.fill(HIST("hEnergyWithMult_RescaledDiff"), (energyCommonZNA - energyCommonZNC) / commonDen, multiTPC);
     }
-    if (sumDen > 1.e-6f) {
+    if (sumDen > nonZero) {
       registry.fill(HIST("hEnergyWithCent_RescaledSumDiff"), (sumEnergyZNA - sumEnergyZNC) / sumDen, centrality);
       registry.fill(HIST("hEnergyWithMult_RescaledSumDiff"), (sumEnergyZNA - sumEnergyZNC) / sumDen, multiTPC);
     }
@@ -249,7 +263,7 @@ struct flowZdcEnergy {
     registry.fill(HIST("QA/hMultiplicity_beforeCut"), multi);
     registry.fill(HIST("QA/hMultiplicity_TPC_beforeCut"), multiTPC);
 
-    if (!acceptEvent(collision, 3)) {
+    if (!acceptEventRun3(collision)) {
       return;
     }
     registry.fill(HIST("QA/hCentrality_afterCut"), centrality);
@@ -277,7 +291,7 @@ struct flowZdcEnergy {
     registry.fill(HIST("QA/hMultiplicity_beforeCut"), multi);
     registry.fill(HIST("QA/hMultiplicity_TPC_beforeCut"), multiTPC);
 
-    if (!acceptEvent(collision, 2)) {
+    if (!acceptEventRun2(collision)) {
       return;
     }
     registry.fill(HIST("QA/hCentrality_afterCut"), centrality);
