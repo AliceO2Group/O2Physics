@@ -185,6 +185,7 @@ struct cascadeFlow {
 
   // Output filling criteria
   struct : ConfigurableGroup {
+    Configurable<bool> isFillNominalMass{"isFillNominalMass", 1, ""};
     Configurable<bool> isFillTree{"isFillTree", 1, ""};
     Configurable<bool> isFillTreeFull{"isFillTreeFull", 0, ""};
     Configurable<bool> isFillTHNXi{"isFillTHNXi", 1, ""};
@@ -702,7 +703,12 @@ struct cascadeFlow {
     double masses[nParticles]{o2::constants::physics::MassXiMinus, o2::constants::physics::MassOmegaMinus};
     ROOT::Math::PxPyPzMVector cascadeVector[nParticles], lambdaVector, protonVector;
     float cosThetaStarLambda[nParticles], cosThetaStarProton;
-    lambdaVector.SetCoordinates(casc.pxlambda(), casc.pylambda(), casc.pzlambda(), o2::constants::physics::MassLambda);
+
+    double massLambda = casc.mLambda();
+    if (fillingConfigs.isFillNominalMass)
+      massLambda = o2::constants::physics::MassLambda;
+
+    lambdaVector.SetCoordinates(casc.pxlambda(), casc.pylambda(), casc.pzlambda(), massLambda);
     ROOT::Math::Boost lambdaBoost{lambdaVector.BoostToCM()};
     if (casc.sign() > 0) {
       protonVector.SetCoordinates(casc.pxneg(), casc.pyneg(), casc.pzneg(), o2::constants::physics::MassProton);
@@ -1468,7 +1474,12 @@ struct cascadeFlow {
       double masses[2]{o2::constants::physics::MassXiMinus, o2::constants::physics::MassOmegaMinus};
       ROOT::Math::PxPyPzMVector cascadeVector[2], lambdaVector, protonVector;
       float cosThetaStarLambda[2], cosThetaStarProton;
-      lambdaVector.SetCoordinates(casc.pxlambda(), casc.pylambda(), casc.pzlambda(), o2::constants::physics::MassLambda);
+
+      double massLambda = casc.mLambda();
+      if (fillingConfigs.isFillNominalMass)
+        massLambda = o2::constants::physics::MassLambda;
+
+      lambdaVector.SetCoordinates(casc.pxlambda(), casc.pylambda(), casc.pzlambda(), massLambda);
       ROOT::Math::Boost lambdaBoost{lambdaVector.BoostToCM()};
       if (casc.sign() > 0) {
         protonVector.SetCoordinates(casc.pxneg(), casc.pyneg(), casc.pzneg(), o2::constants::physics::MassProton);
@@ -1788,7 +1799,12 @@ struct cascadeFlow {
       double masses[nParticles]{o2::constants::physics::MassXiMinus, o2::constants::physics::MassOmegaMinus};
       ROOT::Math::PxPyPzMVector cascadeVector[nParticles], lambdaVector, protonVector;
       float cosThetaStarLambda[nParticles], cosThetaStarProton;
-      lambdaVector.SetCoordinates(casc.pxlambda(), casc.pylambda(), casc.pzlambda(), o2::constants::physics::MassLambda);
+
+      double massLambda = casc.mLambda();
+      if (fillingConfigs.isFillNominalMass)
+        massLambda = o2::constants::physics::MassLambda;
+
+      lambdaVector.SetCoordinates(casc.pxlambda(), casc.pylambda(), casc.pzlambda(), massLambda);
       ROOT::Math::Boost lambdaBoost{lambdaVector.BoostToCM()};
       if (casc.sign() > 0) {
         protonVector.SetCoordinates(casc.pxneg(), casc.pyneg(), casc.pzneg(), o2::constants::physics::MassProton);
@@ -2176,7 +2192,10 @@ struct cascadeFlow {
       ROOT::Math::XYZVector lambdaUvec{std::cos(v0.phi()), std::sin(v0.phi()), 0};
 
       // polarization variables
-      double massLambda = o2::constants::physics::MassLambda;
+      double massLambda = v0.mLambda();
+      if (fillingConfigs.isFillNominalMass)
+        massLambda = o2::constants::physics::MassLambda;
+
       float cosThetaStarProton[nCharges];
       ROOT::Math::PxPyPzMVector lambdaVector, protonVector[nCharges];
       lambdaVector.SetCoordinates(v0.px(), v0.py(), v0.pz(), massLambda);
