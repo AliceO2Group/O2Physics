@@ -163,9 +163,9 @@ DECLARE_SOA_TABLE_VERSIONED(EMFwdTracksForML_000, "AOD", "EMFWDTRKML", 0, //!
                             emmlfwdtrack::Signed1PtMCHMIDatMP, emmlfwdtrack::EtaMCHMIDatMP, emmlfwdtrack::PhiMCHMIDatMP,
                             emmlfwdtrack::Signed1PtMFTatMP, emmlfwdtrack::EtaMFTatMP, emmlfwdtrack::PhiMFTatMP,
                             emmlfwdtrack::XMCHMIDatMP, emmlfwdtrack::YMCHMIDatMP,
-                            // emmlfwdtrack::XErrMCHMIDatMP, emmlfwdtrack::YErrMCHMIDatMP,
+                            emmlfwdtrack::XErrMCHMIDatMP, emmlfwdtrack::YErrMCHMIDatMP,
                             emmlfwdtrack::XMFTatMP, emmlfwdtrack::YMFTatMP,
-                            // emmlfwdtrack::XErrMFTatMP, emmlfwdtrack::YErrMFTatMP,
+                            emmlfwdtrack::XErrMFTatMP, emmlfwdtrack::YErrMFTatMP,
 
                             fwdtrack::FwdDcaX, fwdtrack::FwdDcaY,
                             fwdtrack::NClusters, fwdtrack::PDca, fwdtrack::RAtAbsorberEnd,
