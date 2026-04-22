@@ -39,10 +39,11 @@ struct TrackToCollisionAssociation {
   Configurable<float> nSigmaForTimeCompat{"nSigmaForTimeCompat", 4.f, "number of sigmas for time compatibility"};
   Configurable<float> timeMargin{"timeMargin", 0.f, "time margin in ns added to uncertainty because of uncalibrated TPC"};
   Configurable<int> setTrackSelections{"setTrackSelections", 1, "flag to apply track selections: -1=minimal track selection for Run 2 (standard association); 0=none; 1=global track w/o DCA selection; 2=only ITS quality"};
-  Configurable<bool> usePVAssociation{"usePVAssociation", true, "if the track is a PV contributor, use the collision time for it"};
+  Configurable<int> usePVAssociation{"usePVAssociation", 1, "if the track is a PV contributor, use the collision time for it"};
   Configurable<bool> includeUnassigned{"includeUnassigned", false, "consider also tracks which are not assigned to any collision"};
   Configurable<bool> fillTableOfCollIdsPerTrack{"fillTableOfCollIdsPerTrack", false, "fill additional table with vector of collision ids per track"};
   Configurable<int> bcWindowForOneSigma{"bcWindowForOneSigma", 60, "BC window to be multiplied by the number of sigmas to define maximum window to be considered"};
+  Configurable<int> maxPvContributorsForLowMultReassoc{"maxPvContributorsForLowMultReassoc", 10, "Maximum number of PV contributors to consider a collision at low multiplicity and reassociate tracks even if PV contributors if enabled"};
 
   CollisionAssociation<true> collisionAssociator;
 
@@ -67,6 +68,7 @@ struct TrackToCollisionAssociation {
     collisionAssociator.setIncludeUnassigned(includeUnassigned);
     collisionAssociator.setFillTableOfCollIdsPerTrack(fillTableOfCollIdsPerTrack);
     collisionAssociator.setBcWindow(bcWindowForOneSigma);
+    collisionAssociator.setMaxPvContributorsForLowMultReassoc(maxPvContributorsForLowMultReassoc);
   }
 
   void processAssocWithTime(Collisions const& collisions, TracksWithSel const& tracksUnfiltered, TracksWithSelFilter const& tracks, AmbiguousTracks const& ambiguousTracks, BCs const& bcs)
