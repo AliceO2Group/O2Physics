@@ -98,15 +98,15 @@ def main(config):
     is_save_canvas_as_macro[PlotType.Unc] = cfg.get("is_save_canvas_as_macro", {}).get("unc", False)
 
     is_save_to_root_file = [False] * ObjectToSave.N
-    is_save_to_root_file[ObjectToSave.Canvas] = cfg.get("is_save_to_root_file", {}).get("canvas", False)
-    is_save_to_root_file[ObjectToSave.RawYield] = cfg.get("is_save_to_root_file", {}).get("raw_yield", False)
-    is_save_to_root_file[ObjectToSave.Uncertainty] = cfg.get("is_save_to_root_file", {}).get("uncertainty", False)
-    is_save_to_root_file[ObjectToSave.Efficiency] = cfg.get("is_save_to_root_file", {}).get("efficiency", False)
-    is_save_to_root_file[ObjectToSave.Fraction] = cfg.get("is_save_to_root_file", {}).get("fraction", False)
+    is_save_to_root_file[ObjectToSave.Canvas] = cfg.get("is_save_to_root_file", {}).get("canvas", True)
+    is_save_to_root_file[ObjectToSave.RawYield] = cfg.get("is_save_to_root_file", {}).get("raw_yield", True)
+    is_save_to_root_file[ObjectToSave.Uncertainty] = cfg.get("is_save_to_root_file", {}).get("uncertainty", True)
+    is_save_to_root_file[ObjectToSave.Efficiency] = cfg.get("is_save_to_root_file", {}).get("efficiency", True)
+    is_save_to_root_file[ObjectToSave.Fraction] = cfg.get("is_save_to_root_file", {}).get("fraction", True)
     is_save_to_root_file[ObjectToSave.CorrectedYield] = cfg.get("is_save_to_root_file", {}).get("corrected_yield", True)
-    is_save_to_root_file[ObjectToSave.CorrelationMatrix] = cfg.get("is_save_to_root_file", {}).get("correlation_matrix", False)
-    is_save_to_root_file[ObjectToSave.Covariance] = cfg.get("is_save_to_root_file", {}).get("covariance", False)
-    is_save_to_root_file[ObjectToSave.CorrectedFraction] = cfg.get("is_save_to_root_file", {}).get("corrected_fraction", False)
+    is_save_to_root_file[ObjectToSave.CorrelationMatrix] = cfg.get("is_save_to_root_file", {}).get("correlation_matrix", True)
+    is_save_to_root_file[ObjectToSave.Covariance] = cfg.get("is_save_to_root_file", {}).get("covariance", True)
+    is_save_to_root_file[ObjectToSave.CorrectedFraction] = cfg.get("is_save_to_root_file", {}).get("corrected_fraction", True)
     is_save_to_root_file[ObjectToSave.MinimisationStatus] = cfg.get("is_save_to_root_file", {}).get("minimisation_status", True)
 
     if cfg["central_efficiency"]["computerawfrac"]:
