@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file CorrFit.cxx
+/// \file corrFit.cxx
 /// \brief Ultra long range correlation using forward FIT detectors and TPC, with foxus on multiplicity dependence
 /// \author Thor Jensen (thor.kjaersgaard.jensen@cern.ch)
 
@@ -160,7 +160,7 @@ struct CorrFit {
   SliceCache cache;
 
   ConfigurableAxis axisVertex{"axisVertex", {10, -10, 10}, "vertex axis for histograms"};
-  ConfigurableAxis axisMult{"axisMultiplicity", {10, 0, 100}, "multiplicity axis for histograms"};
+  ConfigurableAxis axisMult{"axisMult", {10, 0, 100}, "multiplicity axis for histograms"};
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {72, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt axis for histograms"};
