@@ -13,11 +13,12 @@
 /// \brief Slim hypernuclei kink tables
 /// \author Yuanzhe Wang <yuanzhe.wang@cern.ch>
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-
 #ifndef PWGLF_DATAMODEL_LFHYPERNUCLEIKINKTABLES_H_
 #define PWGLF_DATAMODEL_LFHYPERNUCLEIKINKTABLES_H_
+
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 
 namespace o2::aod
 {

@@ -14,6 +14,7 @@
 /// \author daiki.sekihata@cern.ch
 
 #include "PWGEM/Dilepton/Utils/MCUtilities.h"
+#include "PWGEM/Dilepton/Utils/SemiCharmTag.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/Core/RecoDecay.h"
@@ -43,17 +44,16 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/PID.h>
+#include <ReconstructionDataFormats/Track.h>
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 #include <TH1.h>
 
-#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
 #include <iostream>
-#include <iterator>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -75,8 +75,10 @@ struct taggingHFE {
   using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU,
                              aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                              aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
-  using MyTracksWithMCLabel = soa::Join<MyTracks, aod::McTrackLabels>;
+  using MyTracksWithMCLabel = soa::Join<MyTracks, aod::McTrackLabels, aod::mcTPCTuneOnData>;
 
+  // using MyV0s = soa::Join<aod::V0Datas, aod::V0Covs, aod::V0TOFNSigmas, aod::V0CoreMCLabels>;
+  // using MyCascades = soa::Join<aod::CascDatas, aod::CascCovs, aod::CascTOFNSigmas, aod::CascCoreMCLabels>;
   using MyV0s = soa::Join<aod::V0Datas, aod::V0Covs>;
   using MyCascades = soa::Join<aod::CascDatas, aod::CascCovs>;
 
@@ -98,18 +100,35 @@ struct taggingHFE {
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
-  Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
-  Configurable<bool> d_UseWeightedPCA{"d_UseWeightedPCA", false, "Vertices use cov matrices"};
+  Configurable<int> cfgPdgLepton{"cfgPdgLepton", 11, "pdg code of desired lepton: 11 or 13"};
 
   struct : ConfigurableGroup {
-    std::string prefix = "electroncut";
-    Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.05, "min pT for single track"};
+    std::string prefix = "dcaFitterGroup_eK";
+    Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
+    Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
+  } dcaFitterGroup_eK;
+
+  struct : ConfigurableGroup {
+    std::string prefix = "dcaFitterGroup_eV0";
+    Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
+    Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
+  } dcaFitterGroup_eV0;
+
+  struct : ConfigurableGroup {
+    std::string prefix = "dcaFitterGroup_eCascade";
+    Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
+    Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
+  } dcaFitterGroup_eCascade;
+
+  struct : ConfigurableGroup {
+    std::string prefix = "electronCut";
+    Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.4, "min pT for single track"};
     Configurable<float> cfg_max_pt_track{"cfg_max_pt_track", 1e+10, "max pT for single track"};
-    Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -0.9, "min eta for single track"};
-    Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", +0.9, "max eta for single track"};
+    Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -0.5, "min eta for single track"};
+    Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", +0.5, "max eta for single track"};
     Configurable<float> cfg_min_cr2findable_ratio_tpc{"cfg_min_cr2findable_ratio_tpc", 0.8, "min. TPC Ncr/Nf ratio"};
     Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 0.7, "max fraction of shared clusters in TPC"};
-    Configurable<int> cfg_min_ncrossedrows_tpc{"cfg_min_ncrossedrows_tpc", 70, "min ncrossed rows"};
+    Configurable<int> cfg_min_ncrossedrows_tpc{"cfg_min_ncrossedrows_tpc", 80, "min ncrossed rows"};
     Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
     Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 5, "min ncluster its"};
     Configurable<int> cfg_min_ncluster_itsib{"cfg_min_ncluster_itsib", 3, "min ncluster itsib"};
@@ -117,47 +136,47 @@ struct taggingHFE {
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1.0, "max dca XY for single track in cm"};
     Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 1.0, "max dca Z for single track in cm"};
-    Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2, "min n sigma el in TPC"};
-    Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +3, "max n sigma el in TPC"};
-    Configurable<float> cfg_min_TOFNsigmaEl{"cfg_min_TOFNsigmaEl", -3, "min n sigma el in TOF"};
-    Configurable<float> cfg_max_TOFNsigmaEl{"cfg_max_TOFNsigmaEl", +3, "max n sigma el in TOF"};
-  } electroncut;
+    // Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2, "min n sigma el in TPC"};
+    // Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +3, "max n sigma el in TPC"};
+    // Configurable<float> cfg_min_TOFNsigmaEl{"cfg_min_TOFNsigmaEl", -3, "min n sigma el in TOF"};
+    // Configurable<float> cfg_max_TOFNsigmaEl{"cfg_max_TOFNsigmaEl", +3, "max n sigma el in TOF"};
+  } electronCut;
 
   struct : ConfigurableGroup {
-    std::string prefix = "loose_electroncut";
-    Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.05, "min pT for single track"};
+    std::string prefix = "kaonCut";
+    Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.01, "min pT for single track"};
     Configurable<float> cfg_max_pt_track{"cfg_max_pt_track", 1e+10, "max pT for single track"};
-    Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -1.2, "min eta for single track"};
-    Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", +1.2, "max eta for single track"};
+    Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -0.9, "min eta for single track"};
+    Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", +0.9, "max eta for single track"};
     Configurable<float> cfg_min_cr2findable_ratio_tpc{"cfg_min_cr2findable_ratio_tpc", 0.8, "min. TPC Ncr/Nf ratio"};
-    Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
-    Configurable<int> cfg_min_ncrossedrows_tpc{"cfg_min_ncrossedrows_tpc", 40, "min ncrossed rows"};
+    Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 0.7, "max fraction of shared clusters in TPC"};
+    Configurable<int> cfg_min_ncrossedrows_tpc{"cfg_min_ncrossedrows_tpc", 70, "min ncrossed rows"};
     Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
-    Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 2, "min ncluster its"};
-    Configurable<int> cfg_min_ncluster_itsib{"cfg_min_ncluster_itsib", 0, "min ncluster itsib"};
+    Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 4, "min ncluster its"};
+    Configurable<int> cfg_min_ncluster_itsib{"cfg_min_ncluster_itsib", 1, "min ncluster itsib"};
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 36.0, "max chi2/NclsITS"};
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1.0, "max dca XY for single track in cm"};
     Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 1.0, "max dca Z for single track in cm"};
-  } loose_electroncut;
+    Configurable<float> cfg_min_TPCNsigmaKa{"cfg_min_TPCNsigmaKa", -2, "min n sigma ka in TPC"};
+    Configurable<float> cfg_max_TPCNsigmaKa{"cfg_max_TPCNsigmaKa", +2, "max n sigma ka in TPC"};
+    Configurable<float> cfg_min_TOFNsigmaKa{"cfg_min_TOFNsigmaKa", -2, "min n sigma ka in TOF"};
+    Configurable<float> cfg_max_TOFNsigmaKa{"cfg_max_TOFNsigmaKa", +2, "max n sigma ka in TOF"};
+    Configurable<bool> requireTOF{"requireTOF", true, "require TOF hit"};
+    Configurable<float> cfg_min_pin_TOFreq{"cfg_min_pin_TOFreq", 0.4, "min pin for TOFreq"};
+  } kaonCut;
 
   struct : ConfigurableGroup {
-    std::string prefix = "kaoncut";
-    Configurable<float> cfg_min_TPCNsigmaKa{"cfg_min_TPCNsigmaKa", -3, "min n sigma ka in TPC"};
-    Configurable<float> cfg_max_TPCNsigmaKa{"cfg_max_TPCNsigmaKa", +3, "max n sigma ka in TPC"};
-    Configurable<float> cfg_min_TOFNsigmaKa{"cfg_min_TOFNsigmaKa", -3, "min n sigma ka in TOF"};
-    Configurable<float> cfg_max_TOFNsigmaKa{"cfg_max_TOFNsigmaKa", +3, "max n sigma ka in TOF"};
-  } kaoncut;
-
-  struct : ConfigurableGroup {
-    std::string prefix = "v0cut";
-    Configurable<float> cfg_min_mass_k0s_veto{"cfg_min_mass_k0s_veto", 0.47, "min mass for K0S veto"};
-    Configurable<float> cfg_max_mass_k0s_veto{"cfg_max_mass_k0s_veto", 0.52, "max mass for K0S veto"};
+    std::string prefix = "v0Cut";
+    Configurable<float> cfg_min_mass_k0s{"cfg_min_mass_k0s", 0.49, "min mass for K0S"};
+    Configurable<float> cfg_max_mass_k0s{"cfg_max_mass_k0s", 0.51, "max mass for K0S"};
+    Configurable<float> cfg_min_mass_k0s_veto{"cfg_min_mass_k0s_veto", 0.47, "min mass for K0S veto for Lambda"};
+    Configurable<float> cfg_max_mass_k0s_veto{"cfg_max_mass_k0s_veto", 0.52, "max mass for K0S veto for Lambda"};
     Configurable<float> cfg_min_mass_lambda{"cfg_min_mass_lambda", 1.113, "min mass for Lambda"};
     Configurable<float> cfg_max_mass_lambda{"cfg_max_mass_lambda", 1.118, "max mass for Lambda"};
-    Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.999, "min cospa for v0hadron"};
-    Configurable<float> cfg_max_dca2legs{"cfg_max_dca2legs", 0.1, "max distance between 2 legs for v0hadron"};
-    // Configurable<float> cfg_min_radius{"cfg_min_radius", 0.1, "min rxy for v0hadron"};
+    Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.9, "min cospa for v0"};
+    Configurable<float> cfg_max_dca2legs{"cfg_max_dca2legs", 0.1, "max distance between 2 legs for v0"};
+    // Configurable<float> cfg_min_radius{"cfg_min_radius", 0.1, "min rxy for v"};
     Configurable<float> cfg_min_cr2findable_ratio_tpc{"cfg_min_cr2findable_ratio_tpc", 0.8, "min. TPC Ncr/Nf ratio"};
     Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 0.7, "max fraction of shared clusters in TPC"};
     Configurable<int> cfg_min_ncrossedrows_tpc{"cfg_min_ncrossedrows_tpc", 70, "min ncrossed rows"};
@@ -176,10 +195,10 @@ struct taggingHFE {
     Configurable<float> cfg_max_TOFNsigmaPi{"cfg_max_TOFNsigmaPi", +2, "max n sigma pi in TOF"};
     Configurable<float> cfg_min_TOFNsigmaPr{"cfg_min_TOFNsigmaPr", -2, "min n sigma pr in TOF"};
     Configurable<float> cfg_max_TOFNsigmaPr{"cfg_max_TOFNsigmaPr", +2, "max n sigma pr in TOF"};
-  } v0cut;
+  } v0Cut;
 
   struct : ConfigurableGroup {
-    std::string prefix = "cascadecut";
+    std::string prefix = "cascadeCut";
     Configurable<float> cfg_min_mass_lambda{"cfg_min_mass_lambda", 1.11, "min mass for lambda in cascade"};
     Configurable<float> cfg_max_mass_lambda{"cfg_max_mass_lambda", 1.12, "max mass for lambda in cascade"};
     Configurable<float> cfg_min_mass_Xi{"cfg_min_mass_Xi", 1.316, "min mass for Xi"};
@@ -190,28 +209,53 @@ struct taggingHFE {
     Configurable<float> cfg_max_mass_Omega{"cfg_max_mass_Omega", 1.675, "max mass for Omega"};
     Configurable<float> cfg_min_mass_Omega_veto{"cfg_min_mass_Omega_veto", 1.66, "min mass for Omega veto"};
     Configurable<float> cfg_max_mass_Omega_veto{"cfg_max_mass_Omega_veto", 1.68, "max mass for Omega veto"};
-    Configurable<float> cfg_min_cospa_v0{"cfg_min_cospa_v0", 0.995, "minimum V0 CosPA in cascade"};
+    Configurable<float> cfg_min_cospa_v0{"cfg_min_cospa_v0", 0.9, "minimum V0 CosPA in cascade"};
     Configurable<float> cfg_max_dcadau_v0{"cfg_max_dcadau_v0", 0.1, "max distance between V0 Daughters in cascade"};
-    Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.9998, "minimum cascade CosPA"};
+    Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.9, "minimum cascade CosPA"};
     Configurable<float> cfg_max_dcadau{"cfg_max_dcadau", 0.1, "max distance between bachelor and V0"};
     Configurable<float> cfg_min_rxy_v0{"cfg_min_rxy_v0", 1.2, "minimum V0 rxy in cascade"};
     Configurable<float> cfg_min_rxy{"cfg_min_rxy", 0.5, "minimum V0 rxy in cascade"};
     Configurable<float> cfg_min_dcaxy_v0leg{"cfg_min_dcaxy_v0leg", 0.1, "min dca XY for v0 legs in cm"};
     Configurable<float> cfg_min_dcaxy_bachelor{"cfg_min_dcaxy_bachelor", 0.05, "min dca XY for bachelor in cm"};
     Configurable<float> cfg_min_dcaxy_v0{"cfg_min_dcaxy_v0", 0.05, "min dca XY for V0 in cm"};
-  } cascadecut;
+  } cascadeCut;
 
   struct : ConfigurableGroup {
-    std::string prefix = "eventcut";
+    std::string prefix = "eventCut";
     Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
     Configurable<float> cfgCentMin{"cfgCentMin", -1.f, "min. centrality"};
     Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
     Configurable<float> cfgZvtxMin{"cfgZvtxMin", -10.f, "min. Zvtx"};
     Configurable<float> cfgZvtxMax{"cfgZvtxMax", 10.f, "max. Zvtx"};
     Configurable<int> cfgEventGeneratorType{"cfgEventGeneratorType", -1, "if positive, select event generator type. i.e. gap or signal"};
-  } eventcut;
+  } eventCut;
 
-  Configurable<float> cfgMeeMaxPF{"cfgMeeMaxPF", 0.04, "max mee for prefilter to reject pi0->ee and gamma->ee in LMR"};
+  struct : ConfigurableGroup {
+    std::string prefix = "lKPairCut";
+    Configurable<float> cfg_min_mass{"cfg_min_mass", 0, "min mass at SV"};
+    Configurable<float> cfg_max_mass{"cfg_max_mass", 1e+10, "max mass at SV"};
+    Configurable<float> cfg_min_cospa{"cfg_min_cospa", -1e+10, "min cospa"};
+    Configurable<float> cfg_max_lxyz{"cfg_max_lxyz", 1e+10, "min rxy for v0hadron"};
+    Configurable<float> cfg_max_dca2legs{"cfg_max_dca2legs", 1e+10, "max distance between 2 legs"};
+  } lKPairCut;
+
+  struct : ConfigurableGroup {
+    std::string prefix = "lV0PairCut";
+    Configurable<float> cfg_min_mass{"cfg_min_mass", 0, "min mass at SV"};
+    Configurable<float> cfg_max_mass{"cfg_max_mass", 1e+10, "max mass at SV"};
+    Configurable<float> cfg_min_cospa{"cfg_min_cospa", -1e+10, "min cospa"};
+    Configurable<float> cfg_max_lxyz{"cfg_max_lxyz", 1e+10, "min rxy for v0hadron"};
+    Configurable<float> cfg_max_dca2legs{"cfg_max_dca2legs", 1e+10, "max distance between 2 legs"};
+  } lV0PairCut;
+
+  struct : ConfigurableGroup {
+    std::string prefix = "lCPairCut";
+    Configurable<float> cfg_min_mass{"cfg_min_mass", 0, "min mass at SV"};
+    Configurable<float> cfg_max_mass{"cfg_max_mass", 1e+10, "max mass at SV"};
+    Configurable<float> cfg_min_cospa{"cfg_min_cospa", -1e+10, "min cospa"};
+    Configurable<float> cfg_max_lxyz{"cfg_max_lxyz", 1e+10, "min rxy for v0hadron"};
+    Configurable<float> cfg_max_dca2legs{"cfg_max_dca2legs", 1e+10, "max distance between 2 legs"};
+  } lCPairCut;
 
   HistogramRegistry fRegistry{"fRegistry"};
   static constexpr std::string_view hadron_names[6] = {"LF/", "Jpsi/", "D0/", "Dpm/", "Ds/", "Lc/"};
@@ -230,15 +274,35 @@ struct taggingHFE {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
-    fitter.setPropagateToPCA(true);
-    fitter.setMaxR(10.f);
-    fitter.setMinParamChange(1e-3);
-    fitter.setMinRelChi2Change(0.9);
-    fitter.setMaxDZIni(1e9);
-    fitter.setMaxChi2(1e9);
-    fitter.setUseAbsDCA(d_UseAbsDCA);
-    fitter.setWeightedFinalPCA(d_UseWeightedPCA);
-    fitter.setMatCorrType(matCorr);
+    fitter_eK.setPropagateToPCA(true);
+    fitter_eK.setMaxR(20.f);
+    fitter_eK.setMinParamChange(1e-3);
+    fitter_eK.setMinRelChi2Change(0.9);
+    fitter_eK.setMaxDZIni(1e9);
+    fitter_eK.setMaxChi2(1e9);
+    fitter_eK.setUseAbsDCA(dcaFitterGroup_eK.useAbsDCA);
+    fitter_eK.setWeightedFinalPCA(dcaFitterGroup_eK.useWeightedFinalPCA);
+    fitter_eK.setMatCorrType(matCorr);
+
+    fitter_eV0.setPropagateToPCA(true);
+    fitter_eV0.setMaxR(20.f);
+    fitter_eV0.setMinParamChange(1e-3);
+    fitter_eV0.setMinRelChi2Change(0.9);
+    fitter_eV0.setMaxDZIni(1e9);
+    fitter_eV0.setMaxChi2(1e9);
+    fitter_eV0.setUseAbsDCA(dcaFitterGroup_eV0.useAbsDCA);
+    fitter_eV0.setWeightedFinalPCA(dcaFitterGroup_eV0.useWeightedFinalPCA);
+    fitter_eV0.setMatCorrType(matCorr);
+
+    fitter_eCascade.setPropagateToPCA(true);
+    fitter_eCascade.setMaxR(20.f);
+    fitter_eCascade.setMinParamChange(1e-3);
+    fitter_eCascade.setMinRelChi2Change(0.9);
+    fitter_eCascade.setMaxDZIni(1e9);
+    fitter_eCascade.setMaxChi2(1e9);
+    fitter_eCascade.setUseAbsDCA(dcaFitterGroup_eCascade.useAbsDCA);
+    fitter_eCascade.setWeightedFinalPCA(dcaFitterGroup_eCascade.useWeightedFinalPCA);
+    fitter_eCascade.setMatCorrType(matCorr);
 
     addHistograms();
   }
@@ -250,7 +314,9 @@ struct taggingHFE {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   const o2::dataformats::MeanVertexObject* mMeanVtx = nullptr;
   o2::base::MatLayerCylSet* lut = nullptr;
-  o2::vertexing::DCAFitterN<2> fitter;
+  o2::vertexing::DCAFitterN<2> fitter_eK;
+  o2::vertexing::DCAFitterN<2> fitter_eV0;
+  o2::vertexing::DCAFitterN<2> fitter_eCascade;
   o2::dataformats::DCA mDcaInfoCov;
   o2::dataformats::VertexBase mVtx;
 
@@ -309,7 +375,9 @@ struct taggingHFE {
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     }
     mRunNumber = bc.runNumber();
-    fitter.setBz(d_bz);
+    fitter_eK.setBz(d_bz);
+    fitter_eV0.setBz(d_bz);
+    fitter_eCascade.setBz(d_bz);
   }
 
   void addHistograms()
@@ -328,10 +396,14 @@ struct taggingHFE {
     fRegistry.add("Event/hCentFT0CvsMultNTracksPV", "hCentFT0CvsMultNTracksPV;centrality FT0C (%);N_{track} to PV", kTH2F, {{110, 0, 110}, {600, 0, 6000}}, false);
     fRegistry.add("Event/hMultFT0CvsMultNTracksPV", "hMultFT0CvsMultNTracksPV;mult. FT0C;N_{track} to PV", kTH2F, {{60, 0, 60000}, {600, 0, 6000}}, false);
 
-    fRegistry.add("Prefilter/before/uls/hMee", "hMee;m_{ee} (GeV/c^{2});", kTH1F, {{500, 0, 5}}, false);
-    fRegistry.addClone("Prefilter/before/uls/", "Prefilter/before/lspp/");
-    fRegistry.addClone("Prefilter/before/uls/", "Prefilter/before/lsmm/");
-    fRegistry.addClone("Prefilter/before/", "Prefilter/after/");
+    fRegistry.add("Generated/Dpm/hsAcc", "pT-#eta acc.;p_{T,l} (GeV/c);p_{T,K} (GeV/c);#eta_{l};#eta_{K};", kTHnSparseF, {{100, 0, 10}, {100, 0, 10}, {100, -5, +5}, {100, -5, +5}}, false);
+    fRegistry.add("Generated/D0/hsAcc", "pT-#eta acc.;p_{T,l} (GeV/c);p_{T,K} (GeV/c);#eta_{l};#eta_{K};", kTHnSparseF, {{100, 0, 10}, {100, 0, 10}, {100, -5, +5}, {100, -5, +5}}, false);
+    fRegistry.add("Generated/Lc/hsAcc", "pT-#eta acc.;p_{T,l} (GeV/c);p_{T,#Lambda} (GeV/c);#eta_{l};#eta_{#Lambda};", kTHnSparseF, {{100, 0, 10}, {100, 0, 10}, {100, -5, +5}, {100, -5, +5}}, false);
+
+    fRegistry.add("Track/Electron/hTPCdEdx", "TPC dE/dx vs. pin;p_{in} (GeV/c);TPC dE/dx", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
+    fRegistry.add("Track/Electron/hTOFbeta", "TOF #beta vs. p;p_{pv} (GeV/c);TOF #beta", kTH2F, {{1000, 0, 10}, {600, 0, 1.2}}, false);
+    fRegistry.add("Track/Kaon/hTPCdEdx", "TPC dE/dx vs. pin;p_{in} (GeV/c);TPC dE/dx", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
+    fRegistry.add("Track/Kaon/hTOFbeta", "TOF #beta vs. p;p_{pv} (GeV/c);TOF #beta", kTH2F, {{1000, 0, 10}, {600, 0, 1.2}}, false);
 
     // electron-related histograms
     fRegistry.add("Data/electron/hs", "hs;p_{T,e} (GeV/c);#eta_{e};#varphi_{e} (rad.);DCA_{e}^{3D} (#sigma);", kTHnSparseF, {{100, 0, 10}, {20, -1, +1}, {90, 0, 2 * M_PI}, {100, 0, 10}}, false);
@@ -339,95 +411,106 @@ struct taggingHFE {
     fRegistry.addClone("Data/electron/", "MC/eFromNonPromptLF/");
     fRegistry.addClone("Data/electron/", "MC/eFromPromptJpsi/");
     fRegistry.addClone("Data/electron/", "MC/eFromNonPromptJpsi/");
-    fRegistry.addClone("Data/electron/", "MC/eFromPromptD0/");
-    fRegistry.addClone("Data/electron/", "MC/eFromPromptDpm/");
-    fRegistry.addClone("Data/electron/", "MC/eFromPromptDs/");
-    fRegistry.addClone("Data/electron/", "MC/eFromPromptLcpm/");
-    fRegistry.addClone("Data/electron/", "MC/eFromPromptXic0/");
-    // fRegistry.addClone("Data/electron/", "MC/eFromPromptXicpm/"); // cannot be detected
-    fRegistry.addClone("Data/electron/", "MC/eFromPromptOmegac0/");
-    fRegistry.addClone("Data/electron/", "MC/eFromNonPromptD0/");
-    fRegistry.addClone("Data/electron/", "MC/eFromNonPromptDpm/");
-    fRegistry.addClone("Data/electron/", "MC/eFromNonPromptDs/");
-    fRegistry.addClone("Data/electron/", "MC/eFromNonPromptLcpm/");
-    fRegistry.addClone("Data/electron/", "MC/eFromNonPromptXic0/");
-    // fRegistry.addClone("Data/electron/", "MC/eFromNonPromptXicpm/"); // cannot be detected
-    fRegistry.addClone("Data/electron/", "MC/eFromNonPromptOmegac0/");
-    fRegistry.addClone("Data/electron/", "MC/eFromB0/");
-    fRegistry.addClone("Data/electron/", "MC/eFromBpm/");
-    fRegistry.addClone("Data/electron/", "MC/eFromBs/");
-    fRegistry.addClone("Data/electron/", "MC/eFromBc/");
-    fRegistry.addClone("Data/electron/", "MC/eFromLb0/");
+
+    fRegistry.addClone("Data/electron/", "MC/eFromD0/");
+    fRegistry.addClone("Data/electron/", "MC/eFromDpm/");
+    // fRegistry.addClone("Data/electron/", "MC/eFromDs/");
+    fRegistry.addClone("Data/electron/", "MC/eFromLcpm/");
+    fRegistry.addClone("Data/electron/", "MC/eFromXic0/");
+    // fRegistry.addClone("Data/electron/", "MC/eFromXicpm/"); // cannot be detected
+    fRegistry.addClone("Data/electron/", "MC/eFromOmegac0/");
+
+    // fRegistry.addClone("Data/electron/", "MC/eFromPromptD0/");
+    // fRegistry.addClone("Data/electron/", "MC/eFromPromptDpm/");
+    // fRegistry.addClone("Data/electron/", "MC/eFromPromptDs/");
+    // fRegistry.addClone("Data/electron/", "MC/eFromPromptLcpm/");
+    // fRegistry.addClone("Data/electron/", "MC/eFromPromptXic0/");
+    // // fRegistry.addClone("Data/electron/", "MC/eFromPromptXicpm/"); // cannot be detected
+    // fRegistry.addClone("Data/electron/", "MC/eFromPromptOmegac0/");
+    // fRegistry.addClone("Data/electron/", "MC/eFromNonPromptD0/");
+    // fRegistry.addClone("Data/electron/", "MC/eFromNonPromptDpm/");
+    // fRegistry.addClone("Data/electron/", "MC/eFromNonPromptDs/");
+    // fRegistry.addClone("Data/electron/", "MC/eFromNonPromptLcpm/");
+    // fRegistry.addClone("Data/electron/", "MC/eFromNonPromptXic0/");
+    // // fRegistry.addClone("Data/electron/", "MC/eFromNonPromptXicpm/"); // cannot be detected
+    // fRegistry.addClone("Data/electron/", "MC/eFromNonPromptOmegac0/");
+    // fRegistry.addClone("Data/electron/", "MC/eFromB0/");
+    // fRegistry.addClone("Data/electron/", "MC/eFromBpm/");
+    // fRegistry.addClone("Data/electron/", "MC/eFromBs/");
+    // fRegistry.addClone("Data/electron/", "MC/eFromBc/");
+    // fRegistry.addClone("Data/electron/", "MC/eFromLb0/");
 
     // for V0 (Lambda)
     fRegistry.add("Data/V0/hPt", "pT of V0;p_{T} (GeV/c)", kTH1F, {{100, 0, 10}}, false);
     fRegistry.add("Data/V0/hYPhi", "rapidity vs. #varphi of V0;#varphi (rad.);rapidity_{#Lambda}", kTH2F, {{90, 0, 2 * M_PI}, {80, -2, +2}}, false);
     fRegistry.add("Data/V0/hAP", "Ap plot;#alpha;q_{T} (GeV/c)", kTH2F, {{200, -1, 1}, {250, 0, 0.25}}, false);
     fRegistry.add("Data/V0/hLxy", "decay length from PV;L_{xy} (cm)", kTH1F, {{100, 0, 10}}, false);
-    fRegistry.add("Data/V0/hCosPA", "cosPA;cosine of pointing angle", kTH1F, {{200, -1, 1}}, false);
+    fRegistry.add("Data/V0/hCosPA", "cosPA;cosine of pointing angle", kTH1F, {{100, 0.9, 1}}, false);
     fRegistry.add("Data/V0/hDCA2Legs", "distance between 2 legs at PCA;distance between 2 legs (cm)", kTH1F, {{100, 0, 1}}, false);
     fRegistry.add("Data/V0/hMassK0S", "K0S mass;m_{#pi#pi} (GeV/c^{2})", kTH1F, {{100, 0.45, 0.55}}, false);
-    fRegistry.add("Data/V0/hMassLambda", "Lambda mass;m_{p#pi^{-}} (GeV/c^{2})", kTH1F, {{100, 1.08, 1.18}}, false);
+    fRegistry.add("Data/V0/hMassLambda", "Lambda mass;m_{p#pi^{#minus}} (GeV/c^{2})", kTH1F, {{100, 1.08, 1.18}}, false);
     fRegistry.add("Data/V0/hMassAntiLambda", "Anti-Lambda mass;m_{#bar{p}#pi^{+}} (GeV/c^{2})", kTH1F, {{100, 1.08, 1.18}}, false);
 
     // for cascade
     fRegistry.add("Data/Cascade/hPt", "pT of V0;p_{T} (GeV/c)", kTH1F, {{100, 0, 10}}, false);
     fRegistry.add("Data/Cascade/hYPhi", "rapidity vs. #varphi of V0;#varphi (rad.);rapidity_{#Lambda}", kTH2F, {{90, 0, 2 * M_PI}, {80, -2, +2}}, false);
-    fRegistry.add("Data/Cascade/hCosPA", "cosPA;cosine of pointing angle", kTH1F, {{200, -1, 1}}, false);
+    fRegistry.add("Data/Cascade/hCosPA", "cosPA;cosine of pointing angle", kTH1F, {{100, 0.9, 1}}, false);
     fRegistry.add("Data/Cascade/hDCA2Legs", "distance between 2 legs at PCA;distance between 2 legs (cm)", kTH1F, {{100, 0, 1}}, false);
-    fRegistry.add("Data/Cascade/hV0CosPA", "cosPA of V0 in cascade;cosine of pointing angle", kTH1F, {{100, 0.99, 1}}, false);
+    fRegistry.add("Data/Cascade/hV0CosPA", "cosPA of V0 in cascade;cosine of pointing angle", kTH1F, {{100, 0.9, 1}}, false);
     fRegistry.add("Data/Cascade/hV0DCA2Legs", "distance between 2 legs at PCA of V0 in cascade;distance between 2 legs (cm)", kTH1F, {{100, 0, 1}}, false);
 
     fRegistry.add("Data/Cascade/hMassLambda", "Lambda mass;m_{p#pi^{-}} (GeV/c^{2})", kTH1F, {{100, 1.08, 1.18}}, false);
     fRegistry.add("Data/Cascade/hMassXi", "#Xi mass;m_{#Lambda#pi} (GeV/c^{2})", kTH1F, {{100, 1.27, 1.37}}, false);
     fRegistry.add("Data/Cascade/hMassOmega", "#Omega mass;m_{#LambdaK} (GeV/c^{2})", kTH1F, {{100, 1.62, 1.72}}, false);
 
+    // for e-K pair
+    fRegistry.add("Data/eK/hs", "hs;p_{T,l} (GeV/c);DCA_{l}^{3D} (#sigma);p_{T,K} (GeV/c);DCA_{K}^{3D} (#sigma);m_{eK} (GeV/c^{2});L_{xyz} (#sigma);cosPA;DCA 2 legs (cm);", kTHnSparseF, {{100, 0, 10}, {100, 0, 10}, {100, 0, 10}, {100, 0, 10}, {90, 0.5, 5.0}, {100, 0, 10}, {200, -1, 1}, {500, 0.0, 0.5}}, false);
+    fRegistry.addClone("Data/eK/", "MC/eKfromD0/");
+    fRegistry.addClone("Data/eK/", "MC/eKfromDpm/");
+
+    // for e-K0 pair
+    fRegistry.add("Data/eK0/hs", "hs;p_{T,l} (GeV/c);DCA_{l}^{3D} (#sigma);p_{T,K0} (GeV/c);L_{xyz}^{K0} (cm);m_{eK0} (GeV/c^{2});L_{xyz} (#sigma);cosPA;DCA 2 legs (cm);", kTHnSparseF, {{100, 0, 10}, {100, 0, 10}, {100, 0, 10}, {100, 0, 10}, {90, 0.5, 5.0}, {100, 0, 10}, {200, -1, 1}, {500, 0.0, 0.5}}, false);
+    fRegistry.addClone("Data/eK0/", "MC/eK0fromD0/");
+    fRegistry.addClone("Data/eK0/", "MC/eK0fromDpm/");
+    // fRegistry.addClone("Data/eK0/", "MC/eK0fromDspm/");
+
     // for e-L pair
-    fRegistry.add("Data/eL/RS/hs", "hs;m_{e#Lambda} (GeV/c^{2});p_{T,e} (GeV/c);DCA_{e}^{3D} (#sigma);L_{xy} (cm);", kTHnSparseF, {{20, 1.1, 3.1}, {100, 0, 10}, {100, 0, 10}, {100, 0, 1.0}}, false);
-    fRegistry.add("Data/eL/RS/hCosPA", "cos PA;cosPA", kTH1F, {{200, -1, 1}}, false);
-    fRegistry.add("Data/eL/RS/hDCA2Legs", "distance between 2 legs at PCA;distance between 2 legs at PCA (cm)", kTH1F, {{500, 0.0, 0.5}}, false);
-    fRegistry.add("Data/eL/RS/hLxy", "distance between PV and SV in XY;L_{xy} (cm)", kTH1F, {{100, 0.0, 1}}, false);
-    fRegistry.add("Data/eL/RS/hLz", "distance between PV and SV in Z;L_{z} (cm)", kTH1F, {{100, 0.0, 1}}, false);
-    fRegistry.addClone("Data/eL/RS/", "Data/eL/WS/"); // right and wrong sign
-    fRegistry.addClone("Data/eL/RS/", "MC/eLfromPromptLcpm/");
-    fRegistry.addClone("Data/eL/RS/", "MC/eLfromNonPromptLcpm/");
+    fRegistry.add("Data/eL/hs", "hs;p_{T,l} (GeV/c);DCA_{l}^{3D} (#sigma);p_{T,#Lambda} (GeV/c);L_{xyz}^{#Lambda} (cm);m_{e#Lambda} (GeV/c^{2});L_{xyz} (#sigma);cosPA;DCA 2 legs (cm);", kTHnSparseF, {{100, 0, 10}, {100, 0, 10}, {100, 0, 10}, {100, 0, 10}, {90, 0.5, 5.0}, {100, 0, 10}, {200, -1, 1}, {500, 0.0, 0.5}}, false);
+    fRegistry.addClone("Data/eL/", "MC/eLfromLcpm/");
 
     // for e-Xi pair
-    fRegistry.add("Data/eXi/RS/hs", "hs;m_{e#Xi} (GeV/c^{2});p_{T,e} (GeV/c);DCA_{e}^{3D} (#sigma);L_{xy} (cm);", kTHnSparseF, {{20, 1.3, 3.3}, {100, 0, 10}, {100, 0, 10}, {100, 0, 1.0}}, false);
-    fRegistry.add("Data/eXi/RS/hCosPA", "cos PA;cosPA", kTH1F, {{200, -1, 1}}, false);
-    fRegistry.add("Data/eXi/RS/hDCA2Legs", "distance between 2 legs at PCA;distance between 2 legs at PCA (cm)", kTH1F, {{500, 0.0, 0.5}}, false);
-    fRegistry.add("Data/eXi/RS/hLxy", "distance between PV and SV in XY;L_{xy} (cm)", kTH1F, {{100, 0.0, 1}}, false);
-    fRegistry.add("Data/eXi/RS/hLz", "distance between PV and SV in Z;L_{z} (cm)", kTH1F, {{100, 0.0, 1}}, false);
-    fRegistry.addClone("Data/eXi/RS/", "Data/eXi/WS/"); // right and wrong sign
-    fRegistry.addClone("Data/eXi/RS/", "MC/eXifromPromptXic0/");
-    fRegistry.addClone("Data/eXi/RS/", "MC/eXifromNonPromptXic0/");
+    fRegistry.add("Data/eXi/hs", "hs;p_{T,l} (GeV/c);DCA_{l}^{3D} (#sigma);p_{T,#Xi} (GeV/c);L_{xyz}^{#Xi} (cm);m_{e#Xi} (GeV/c^{2});L_{xyz} (#sigma);cosPA;DCA 2 legs (cm);", kTHnSparseF, {{100, 0, 10}, {100, 0, 10}, {100, 0, 10}, {100, 0, 10}, {90, 0.5, 5.0}, {100, 0, 10}, {200, -1, 1}, {500, 0.0, 0.5}}, false);
+    fRegistry.addClone("Data/eXi/", "MC/eXifromXic0/");
 
     // for e-Omega pair
-    fRegistry.add("Data/eOmega/RS/hs", "hs;m_{e#Omega} (GeV/c^{2});p_{T,e} (GeV/c);DCA_{e}^{3D} (#sigma);L_{xy} (cm);", kTHnSparseF, {{20, 1.6, 3.6}, {100, 0, 10}, {100, 0, 10}, {100, 0, 1.0}}, false);
-    fRegistry.add("Data/eOmega/RS/hCosPA", "cos PA;cosPA", kTH1F, {{200, -1, 1}}, false);
-    fRegistry.add("Data/eOmega/RS/hDCA2Legs", "distance between 2 legs at PCA;distance between 2 legs at PCA (cm)", kTH1F, {{500, 0.0, 0.5}}, false);
-    fRegistry.add("Data/eOmega/RS/hLxy", "distance between PV and SV in XY;L_{xy} (cm)", kTH1F, {{100, 0.0, 1}}, false);
-    fRegistry.add("Data/eOmega/RS/hLz", "distance between PV and SV in Z;L_{z} (cm)", kTH1F, {{100, 0.0, 1}}, false);
-    fRegistry.addClone("Data/eOmega/RS/", "Data/eOmega/WS/"); // right and wrong sign
-    fRegistry.addClone("Data/eOmega/RS/", "MC/eOmegafromPromptOmegac0/");
-    fRegistry.addClone("Data/eOmega/RS/", "MC/eOmegafromNonPromptOmegac0/");
+    fRegistry.add("Data/eOmega/hs", "hs;p_{T,l} (GeV/c);DCA_{l}^{3D} (#sigma);p_{T,#Omega} (GeV/c);L_{xyz}^{#Omega} (cm);m_{e#Omega} (GeV/c^{2});L_{#sigma} (cm);cosPA;DCA 2 legs (cm);", kTHnSparseF, {{100, 0, 10}, {100, 0, 10}, {100, 0, 10}, {100, 0, 10}, {90, 0.5, 5.0}, {100, 0, 10}, {200, -1, 1}, {500, 0.0, 0.5}}, false);
+    fRegistry.addClone("Data/eOmega/", "MC/eOmegafromOmegac0/");
   }
 
   template <typename TTrack>
   bool isKaon(TTrack const& track)
   {
     // TOFif
-    bool is_ka_included_TPC = kaoncut.cfg_min_TPCNsigmaKa < track.tpcNSigmaKa() && track.tpcNSigmaKa() < kaoncut.cfg_max_TPCNsigmaKa;
-    bool is_ka_included_TOF = track.hasTOF() ? (kaoncut.cfg_min_TOFNsigmaKa < track.tofNSigmaKa() && track.tofNSigmaKa() < kaoncut.cfg_max_TOFNsigmaKa) : true;
-    return is_ka_included_TPC && is_ka_included_TOF;
+    bool is_ka_included_TPC = kaonCut.cfg_min_TPCNsigmaKa < track.tpcNSigmaKa() && track.tpcNSigmaKa() < kaonCut.cfg_max_TPCNsigmaKa;
+    bool is_ka_included_TOF = track.hasTOF() ? (kaonCut.cfg_min_TOFNsigmaKa < track.tofNSigmaKa() && track.tofNSigmaKa() < kaonCut.cfg_max_TOFNsigmaKa) : true;
+    if (kaonCut.requireTOF) {
+      if (track.tpcInnerParam() < kaonCut.cfg_min_pin_TOFreq) {
+        return is_ka_included_TPC;
+      } else {
+        is_ka_included_TOF = kaonCut.cfg_min_TOFNsigmaKa < track.tofNSigmaKa() && track.tofNSigmaKa() < kaonCut.cfg_max_TOFNsigmaKa;
+        return is_ka_included_TPC && is_ka_included_TOF;
+      }
+    } else {
+      return is_ka_included_TPC && is_ka_included_TOF; // TOFif
+    }
   }
 
   template <typename TTrack>
   bool isPion(TTrack const& track)
   {
     // TOFif
-    bool is_pi_included_TPC = v0cut.cfg_min_TPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < v0cut.cfg_max_TPCNsigmaPi;
-    bool is_pi_included_TOF = track.hasTOF() ? (v0cut.cfg_min_TOFNsigmaPi < track.tofNSigmaPi() && track.tofNSigmaPi() < v0cut.cfg_max_TOFNsigmaPi) : true;
+    bool is_pi_included_TPC = v0Cut.cfg_min_TPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < v0Cut.cfg_max_TPCNsigmaPi;
+    bool is_pi_included_TOF = track.hasTOF() ? (v0Cut.cfg_min_TOFNsigmaPi < track.tofNSigmaPi() && track.tofNSigmaPi() < v0Cut.cfg_max_TOFNsigmaPi) : true;
     return is_pi_included_TPC && is_pi_included_TOF;
   }
 
@@ -435,168 +518,181 @@ struct taggingHFE {
   bool isProton(TTrack const& track)
   {
     // TOFif
-    bool is_pr_included_TPC = v0cut.cfg_min_TPCNsigmaPr < track.tpcNSigmaPr() && track.tpcNSigmaPr() < v0cut.cfg_max_TPCNsigmaPr;
-    bool is_pr_included_TOF = track.hasTOF() ? (v0cut.cfg_min_TOFNsigmaPr < track.tofNSigmaPr() && track.tofNSigmaPr() < v0cut.cfg_max_TOFNsigmaPr) : true;
+    bool is_pr_included_TPC = v0Cut.cfg_min_TPCNsigmaPr < track.tpcNSigmaPr() && track.tpcNSigmaPr() < v0Cut.cfg_max_TPCNsigmaPr;
+    bool is_pr_included_TOF = track.hasTOF() ? (v0Cut.cfg_min_TOFNsigmaPr < track.tofNSigmaPr() && track.tofNSigmaPr() < v0Cut.cfg_max_TOFNsigmaPr) : true;
     return is_pr_included_TPC && is_pr_included_TOF;
   }
 
+  // template <typename TTrack>
+  // bool isElectron(TTrack const& track)
+  // {
+  //   // TOFif
+  //   bool is_el_included_TPC = electronCut.cfg_min_TPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < electronCut.cfg_max_TPCNsigmaEl;
+  //   bool is_el_included_TOF = track.hasTOF() ? (electronCut.cfg_min_TOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < electronCut.cfg_max_TOFNsigmaEl) : true;
+  //   return is_el_included_TPC && is_el_included_TOF;
+  // }
+
   template <typename TTrack>
-  bool isElectron(TTrack const& track)
+  bool isKaonBachelor(TTrack const& track)
   {
     // TOFif
-    bool is_el_included_TPC = electroncut.cfg_min_TPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < electroncut.cfg_max_TPCNsigmaEl;
-    bool is_el_included_TOF = track.hasTOF() ? (electroncut.cfg_min_TOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < electroncut.cfg_max_TOFNsigmaEl) : true;
-    return is_el_included_TPC && is_el_included_TOF;
+    bool is_ka_included_TPC = kaonCut.cfg_min_TPCNsigmaKa < track.tpcNSigmaKa() && track.tpcNSigmaKa() < kaonCut.cfg_max_TPCNsigmaKa;
+    bool is_ka_included_TOF = track.hasTOF() ? (kaonCut.cfg_min_TOFNsigmaKa < track.tofNSigmaKa() && track.tofNSigmaKa() < kaonCut.cfg_max_TOFNsigmaKa) : true;
+    return is_ka_included_TPC && is_ka_included_TOF;
   }
 
   template <typename TTrack, typename TTrackParCov>
-  bool isSelectedElectron(TTrack const& track, TTrackParCov const& trackParCov, const float dcaXY, const float dcaZ)
+  bool isSelectedTrack(TTrack const& track, TTrackParCov const& trackParCov, const float dcaXY, const float dcaZ)
   {
     if (!track.hasITS() || !track.hasTPC()) {
       return false;
     }
 
-    if (trackParCov.getPt() < electroncut.cfg_min_pt_track || electroncut.cfg_max_pt_track < trackParCov.getPt()) {
+    if (trackParCov.getPt() < electronCut.cfg_min_pt_track || electronCut.cfg_max_pt_track < trackParCov.getPt()) {
       return false;
     }
 
-    if (trackParCov.getEta() < electroncut.cfg_min_eta_track || electroncut.cfg_max_eta_track < trackParCov.getEta()) {
+    if (trackParCov.getEta() < electronCut.cfg_min_eta_track || electronCut.cfg_max_eta_track < trackParCov.getEta()) {
       return false;
     }
 
-    if (std::fabs(dcaXY) > electroncut.cfg_max_dcaxy) {
+    if (std::fabs(dcaXY) > electronCut.cfg_max_dcaxy) {
       return false;
     }
 
-    if (std::fabs(dcaZ) > electroncut.cfg_max_dcaz) {
+    if (std::fabs(dcaZ) > electronCut.cfg_max_dcaz) {
       return false;
     }
 
-    if (track.itsChi2NCl() < 0.f || electroncut.cfg_max_chi2its < track.itsChi2NCl()) {
+    if (track.itsChi2NCl() < 0.f || electronCut.cfg_max_chi2its < track.itsChi2NCl()) {
       return false;
     }
 
-    if (track.itsNCls() < electroncut.cfg_min_ncluster_its) {
+    if (track.itsNCls() < electronCut.cfg_min_ncluster_its) {
       return false;
     }
 
-    if (track.itsNClsInnerBarrel() < electroncut.cfg_min_ncluster_itsib) {
+    if (track.itsNClsInnerBarrel() < electronCut.cfg_min_ncluster_itsib) {
       return false;
     }
 
-    if (track.tpcChi2NCl() < 0.f || electroncut.cfg_max_chi2tpc < track.tpcChi2NCl()) {
+    if (track.tpcChi2NCl() < 0.f || electronCut.cfg_max_chi2tpc < track.tpcChi2NCl()) {
       return false;
     }
 
-    if (track.tpcNClsFound() < electroncut.cfg_min_ncluster_tpc) {
+    if (track.tpcNClsFound() < electronCut.cfg_min_ncluster_tpc) {
       return false;
     }
 
-    if (track.tpcNClsCrossedRows() < electroncut.cfg_min_ncrossedrows_tpc) {
+    if (track.tpcNClsCrossedRows() < electronCut.cfg_min_ncrossedrows_tpc) {
       return false;
     }
 
-    if (track.tpcCrossedRowsOverFindableCls() < electroncut.cfg_min_cr2findable_ratio_tpc) {
+    if (track.tpcCrossedRowsOverFindableCls() < electronCut.cfg_min_cr2findable_ratio_tpc) {
       return false;
     }
 
-    if (track.tpcFractionSharedCls() > electroncut.cfg_max_frac_shared_clusters_tpc) {
+    if (track.tpcFractionSharedCls() > electronCut.cfg_max_frac_shared_clusters_tpc) {
       return false;
     }
 
-    if (!isElectron(track)) {
-      return false;
-    }
+    // if (!isElectron(track)) {
+    //   return false;
+    // }
 
     return true;
   }
 
   template <typename TTrack, typename TTrackParCov>
-  bool isSelectedElectronLoose(TTrack const& track, TTrackParCov const& trackParCov, const float dcaXY, const float dcaZ)
+  bool isSelectedKaon(TTrack const& track, TTrackParCov const& trackParCov, const float dcaXY, const float dcaZ)
   {
-    if (!track.hasITS()) {
+    if (!track.hasITS() || !track.hasTPC()) {
       return false;
     }
 
-    if (trackParCov.getPt() < loose_electroncut.cfg_min_pt_track || loose_electroncut.cfg_max_pt_track < trackParCov.getPt()) {
+    if (trackParCov.getPt() < kaonCut.cfg_min_pt_track || kaonCut.cfg_max_pt_track < trackParCov.getPt()) {
       return false;
     }
 
-    if (trackParCov.getEta() < loose_electroncut.cfg_min_eta_track || loose_electroncut.cfg_max_eta_track < trackParCov.getEta()) {
+    if (trackParCov.getEta() < kaonCut.cfg_min_eta_track || kaonCut.cfg_max_eta_track < trackParCov.getEta()) {
       return false;
     }
 
-    if (std::fabs(dcaXY) > loose_electroncut.cfg_max_dcaxy) {
+    if (std::fabs(dcaXY) > kaonCut.cfg_max_dcaxy) {
       return false;
     }
 
-    if (std::fabs(dcaZ) > loose_electroncut.cfg_max_dcaz) {
+    if (std::fabs(dcaZ) > kaonCut.cfg_max_dcaz) {
       return false;
     }
 
-    if (loose_electroncut.cfg_max_chi2its < track.itsChi2NCl()) {
+    if (track.itsChi2NCl() < 0.f || kaonCut.cfg_max_chi2its < track.itsChi2NCl()) {
       return false;
     }
 
-    if (track.itsNCls() < loose_electroncut.cfg_min_ncluster_its) {
+    if (track.itsNCls() < kaonCut.cfg_min_ncluster_its) {
       return false;
     }
 
-    if (track.itsNClsInnerBarrel() < loose_electroncut.cfg_min_ncluster_itsib) {
+    if (track.itsNClsInnerBarrel() < kaonCut.cfg_min_ncluster_itsib) {
       return false;
     }
 
-    if (track.hasTPC()) {
-      if (loose_electroncut.cfg_max_chi2tpc < track.tpcChi2NCl()) {
-        return false;
-      }
+    if (track.tpcChi2NCl() < 0.f || kaonCut.cfg_max_chi2tpc < track.tpcChi2NCl()) {
+      return false;
+    }
 
-      if (track.tpcNClsFound() < loose_electroncut.cfg_min_ncluster_tpc) {
-        return false;
-      }
+    if (track.tpcNClsFound() < kaonCut.cfg_min_ncluster_tpc) {
+      return false;
+    }
 
-      if (track.tpcNClsCrossedRows() < loose_electroncut.cfg_min_ncrossedrows_tpc) {
-        return false;
-      }
+    if (track.tpcNClsCrossedRows() < kaonCut.cfg_min_ncrossedrows_tpc) {
+      return false;
+    }
 
-      if (track.tpcCrossedRowsOverFindableCls() < loose_electroncut.cfg_min_cr2findable_ratio_tpc) {
-        return false;
-      }
+    if (track.tpcCrossedRowsOverFindableCls() < kaonCut.cfg_min_cr2findable_ratio_tpc) {
+      return false;
+    }
 
-      if (track.tpcFractionSharedCls() > loose_electroncut.cfg_max_frac_shared_clusters_tpc) {
-        return false;
-      }
+    if (track.tpcFractionSharedCls() > kaonCut.cfg_max_frac_shared_clusters_tpc) {
+      return false;
+    }
 
-      if (!isElectron(track)) {
-        return false;
-      }
+    if (!isKaon(track)) {
+      return false;
     }
 
     return true;
   }
 
   template <typename TV0>
+  bool isK0S(TV0 const& v0)
+  {
+    return (v0Cut.cfg_min_mass_k0s < v0.mK0Short() && v0.mK0Short() < v0Cut.cfg_max_mass_k0s);
+  }
+
+  template <typename TV0>
   bool isLambda(TV0 const& v0)
   {
-    return (v0cut.cfg_min_mass_lambda < v0.mLambda() && v0.mLambda() < v0cut.cfg_max_mass_lambda) && (v0.mK0Short() < v0cut.cfg_min_mass_k0s_veto || v0cut.cfg_max_mass_k0s_veto < v0.mK0Short());
+    return (v0Cut.cfg_min_mass_lambda < v0.mLambda() && v0.mLambda() < v0Cut.cfg_max_mass_lambda) && (v0.mK0Short() < v0Cut.cfg_min_mass_k0s_veto || v0Cut.cfg_max_mass_k0s_veto < v0.mK0Short());
   }
 
   template <typename TV0>
   bool isAntiLambda(TV0 const& v0)
   {
-    return (v0cut.cfg_min_mass_lambda < v0.mAntiLambda() && v0.mAntiLambda() < v0cut.cfg_max_mass_lambda) && (v0.mK0Short() < v0cut.cfg_min_mass_k0s_veto || v0cut.cfg_max_mass_k0s_veto < v0.mK0Short());
+    return (v0Cut.cfg_min_mass_lambda < v0.mAntiLambda() && v0.mAntiLambda() < v0Cut.cfg_max_mass_lambda) && (v0.mK0Short() < v0Cut.cfg_min_mass_k0s_veto || v0Cut.cfg_max_mass_k0s_veto < v0.mK0Short());
   }
 
   template <typename TCascade>
   bool isXi(TCascade const& cascade)
   {
-    return (cascadecut.cfg_min_mass_Xi < cascade.mXi() && cascade.mXi() < cascadecut.cfg_max_mass_Xi) && (cascade.mOmega() < cascadecut.cfg_min_mass_Omega_veto || cascadecut.cfg_max_mass_Omega_veto < cascade.mOmega());
+    return (cascadeCut.cfg_min_mass_Xi < cascade.mXi() && cascade.mXi() < cascadeCut.cfg_max_mass_Xi) && (cascade.mOmega() < cascadeCut.cfg_min_mass_Omega_veto || cascadeCut.cfg_max_mass_Omega_veto < cascade.mOmega());
   }
 
   template <typename TCascade>
   bool isOmega(TCascade const& cascade)
   {
-    return (cascadecut.cfg_min_mass_Omega < cascade.mOmega() && cascade.mOmega() < cascadecut.cfg_max_mass_Omega) && (cascade.mXi() < cascadecut.cfg_min_mass_Xi || cascadecut.cfg_max_mass_Xi < cascade.mXi());
+    return (cascadeCut.cfg_min_mass_Omega < cascade.mOmega() && cascade.mOmega() < cascadeCut.cfg_max_mass_Omega) && (cascade.mXi() < cascadeCut.cfg_min_mass_Xi_veto || cascadeCut.cfg_max_mass_Xi_veto < cascade.mXi());
   }
 
   template <bool isMC, typename TTrack>
@@ -612,35 +708,35 @@ struct taggingHFE {
       return false;
     }
 
-    if (track.itsChi2NCl() > v0cut.cfg_max_chi2its) {
+    if (track.itsChi2NCl() > v0Cut.cfg_max_chi2its) {
       return false;
     }
 
-    if (track.itsNCls() < v0cut.cfg_min_ncluster_its) {
+    if (track.itsNCls() < v0Cut.cfg_min_ncluster_its) {
       return false;
     }
 
-    if (track.itsNClsInnerBarrel() < v0cut.cfg_min_ncluster_itsib) {
+    if (track.itsNClsInnerBarrel() < v0Cut.cfg_min_ncluster_itsib) {
       return false;
     }
 
-    if (track.tpcChi2NCl() > v0cut.cfg_max_chi2tpc) {
+    if (track.tpcChi2NCl() > v0Cut.cfg_max_chi2tpc) {
       return false;
     }
 
-    if (track.tpcNClsFound() < v0cut.cfg_min_ncluster_tpc) {
+    if (track.tpcNClsFound() < v0Cut.cfg_min_ncluster_tpc) {
       return false;
     }
 
-    if (track.tpcNClsCrossedRows() < v0cut.cfg_min_ncrossedrows_tpc) {
+    if (track.tpcNClsCrossedRows() < v0Cut.cfg_min_ncrossedrows_tpc) {
       return false;
     }
 
-    if (track.tpcCrossedRowsOverFindableCls() < v0cut.cfg_min_cr2findable_ratio_tpc) {
+    if (track.tpcCrossedRowsOverFindableCls() < v0Cut.cfg_min_cr2findable_ratio_tpc) {
       return false;
     }
 
-    if (track.tpcFractionSharedCls() > v0cut.cfg_max_frac_shared_clusters_tpc) {
+    if (track.tpcFractionSharedCls() > v0Cut.cfg_max_frac_shared_clusters_tpc) {
       return false;
     }
 
@@ -664,28 +760,43 @@ struct taggingHFE {
   template <typename TV0>
   void fillV0Histograms(TV0 const& v0)
   {
+    auto pos = v0.template posTrack_as<MyTracksWithMCLabel>();
+    auto neg = v0.template negTrack_as<MyTracksWithMCLabel>();
     fRegistry.fill(HIST("Data/V0/hPt"), v0.pt());
     fRegistry.fill(HIST("Data/V0/hYPhi"), v0.phi(), v0.yLambda());
     fRegistry.fill(HIST("Data/V0/hAP"), v0.alpha(), v0.qtarm());
     fRegistry.fill(HIST("Data/V0/hCosPA"), v0.v0cosPA());
     fRegistry.fill(HIST("Data/V0/hLxy"), v0.v0radius());
     fRegistry.fill(HIST("Data/V0/hDCA2Legs"), v0.dcaV0daughters());
-    fRegistry.fill(HIST("Data/V0/hMassK0S"), v0.mK0Short());
-    fRegistry.fill(HIST("Data/V0/hMassLambda"), v0.mLambda());
-    fRegistry.fill(HIST("Data/V0/hMassAntiLambda"), v0.mAntiLambda());
+
+    if (isPion(pos) && isPion(neg)) {
+      fRegistry.fill(HIST("Data/V0/hMassK0S"), v0.mK0Short());
+    }
+    if (isProton(pos) && isPion(neg)) {
+      fRegistry.fill(HIST("Data/V0/hMassLambda"), v0.mLambda());
+    }
+    if (isProton(neg) && isPion(pos)) {
+      fRegistry.fill(HIST("Data/V0/hMassAntiLambda"), v0.mAntiLambda());
+    }
   }
 
   template <typename TCollision, typename TCascade>
   void fillCascadeHistograms(TCollision const& collision, TCascade const& cascade)
   {
+    auto bachelor = cascade.template bachelor_as<MyTracksWithMCLabel>();
     fRegistry.fill(HIST("Data/Cascade/hPt"), cascade.pt());
     fRegistry.fill(HIST("Data/Cascade/hMassLambda"), cascade.mLambda());
     fRegistry.fill(HIST("Data/Cascade/hCosPA"), cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
     fRegistry.fill(HIST("Data/Cascade/hDCA2Legs"), cascade.dcacascdaughters());
     fRegistry.fill(HIST("Data/Cascade/hV0CosPA"), cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
     fRegistry.fill(HIST("Data/Cascade/hV0DCA2Legs"), cascade.dcaV0daughters());
-    fRegistry.fill(HIST("Data/Cascade/hMassXi"), cascade.mXi());
-    fRegistry.fill(HIST("Data/Cascade/hMassOmega"), cascade.mOmega());
+
+    if (isPion(bachelor)) {
+      fRegistry.fill(HIST("Data/Cascade/hMassXi"), cascade.mXi());
+    }
+    if (isKaonBachelor(bachelor)) {
+      fRegistry.fill(HIST("Data/Cascade/hMassOmega"), cascade.mOmega());
+    }
   }
 
   template <bool isMC, typename TTrack, typename TMCParticles>
@@ -699,7 +810,7 @@ struct taggingHFE {
     float dcaZ = mDcaInfoCov.getZ();
     float dca3DinSigma = dca3DinSigmaOTF(dcaXY, dcaZ, trackParCov.getSigmaY2(), trackParCov.getSigmaZ2(), trackParCov.getSigmaZY());
 
-    if (!isSelectedElectron(track, trackParCov, dcaXY, dcaZ)) {
+    if (!isSelectedTrack(track, trackParCov, dcaXY, dcaZ)) {
       return;
     }
     fRegistry.fill(HIST("Data/electron/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
@@ -728,52 +839,59 @@ struct taggingHFE {
           fRegistry.fill(HIST("MC/eFromNonPromptJpsi/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
         }
       } else if (pdg_mother == 411) { // D+/-
-        if (IsFromBeauty(mcmother, mcParticles) < 0) {
-          fRegistry.fill(HIST("MC/eFromPromptDpm/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
-        } else {
-          fRegistry.fill(HIST("MC/eFromNonPromptDpm/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
-        }
+        fRegistry.fill(HIST("MC/eFromDpm/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
+        // if (IsFromBeauty(mcmother, mcParticles) < 0) {
+        //   fRegistry.fill(HIST("MC/eFromPromptDpm/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
+        // } else {
+        //   fRegistry.fill(HIST("MC/eFromNonPromptDpm/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
+        // }
       } else if (pdg_mother == 421) { // D0
-        if (IsFromBeauty(mcmother, mcParticles) < 0) {
-          fRegistry.fill(HIST("MC/eFromPromptD0/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
-        } else {
-          fRegistry.fill(HIST("MC/eFromNonPromptD0/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
-        }
+        fRegistry.fill(HIST("MC/eFromD0/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
+        // if (IsFromBeauty(mcmother, mcParticles) < 0) {
+        //   fRegistry.fill(HIST("MC/eFromPromptD0/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
+        // } else {
+        //   fRegistry.fill(HIST("MC/eFromNonPromptD0/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
+        // }
       } else if (pdg_mother == 431) { // Ds+/-
-        if (IsFromBeauty(mcmother, mcParticles) < 0) {
-          fRegistry.fill(HIST("MC/eFromPromptDs/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
-        } else {
-          fRegistry.fill(HIST("MC/eFromNonPromptDs/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
-        }
+        // fRegistry.fill(HIST("MC/eFromDs/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
+        // if (IsFromBeauty(mcmother, mcParticles) < 0) {
+        //   fRegistry.fill(HIST("MC/eFromPromptDs/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
+        // } else {
+        //   fRegistry.fill(HIST("MC/eFromNonPromptDs/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
+        // }
       } else if (pdg_mother == 4122) { // Lc+/-
-        if (IsFromBeauty(mcmother, mcParticles) < 0) {
-          fRegistry.fill(HIST("MC/eFromPromptLcpm/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
-        } else {
-          fRegistry.fill(HIST("MC/eFromNonPromptLcpm/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
-        }
+        fRegistry.fill(HIST("MC/eFromLcpm/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
+        // if (IsFromBeauty(mcmother, mcParticles) < 0) {
+        //   fRegistry.fill(HIST("MC/eFromPromptLcpm/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
+        // } else {
+        //   fRegistry.fill(HIST("MC/eFromNonPromptLcpm/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
+        // }
       } else if (pdg_mother == 4132) { // Xic0
-        if (IsFromBeauty(mcmother, mcParticles) < 0) {
-          fRegistry.fill(HIST("MC/eFromPromptXic0/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
-        } else {
-          fRegistry.fill(HIST("MC/eFromNonPromptXic0/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
-        }
+        fRegistry.fill(HIST("MC/eFromXic0/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
+        // if (IsFromBeauty(mcmother, mcParticles) < 0) {
+        //   fRegistry.fill(HIST("MC/eFromPromptXic0/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
+        // } else {
+        //   fRegistry.fill(HIST("MC/eFromNonPromptXic0/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
+        // }
       } else if (pdg_mother == 4332) { // Omegac0
-        if (IsFromBeauty(mcmother, mcParticles) < 0) {
-          fRegistry.fill(HIST("MC/eFromPromptOmegac0/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
-        } else {
-          fRegistry.fill(HIST("MC/eFromNonPromptOmegac0/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
-        }
-      } else if (pdg_mother == 511) { // B0
-        fRegistry.fill(HIST("MC/eFromB0/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
-      } else if (pdg_mother == 521) { // B+/-
-        fRegistry.fill(HIST("MC/eFromBpm/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
-      } else if (pdg_mother == 531) { // Bs0
-        fRegistry.fill(HIST("MC/eFromBs/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
-      } else if (pdg_mother == 541) { // Bc+/-
-        fRegistry.fill(HIST("MC/eFromBc/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
-      } else if (pdg_mother == 5122) { // Lb0
-        fRegistry.fill(HIST("MC/eFromLb0/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
+        fRegistry.fill(HIST("MC/eFromOmegac0/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
+        // if (IsFromBeauty(mcmother, mcParticles) < 0) {
+        //   fRegistry.fill(HIST("MC/eFromPromptOmegac0/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
+        // } else {
+        //   fRegistry.fill(HIST("MC/eFromNonPromptOmegac0/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
+        // }
       }
+      // else if (pdg_mother == 511) { // B0
+      //   fRegistry.fill(HIST("MC/eFromB0/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
+      // } else if (pdg_mother == 521) { // B+/-
+      //   fRegistry.fill(HIST("MC/eFromBpm/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
+      // } else if (pdg_mother == 531) { // Bs0
+      //   fRegistry.fill(HIST("MC/eFromBs/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
+      // } else if (pdg_mother == 541) { // Bc+/-
+      //   fRegistry.fill(HIST("MC/eFromBc/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
+      // } else if (pdg_mother == 5122) { // Lb0
+      //   fRegistry.fill(HIST("MC/eFromLb0/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
+      // }
     }
   }
 
@@ -787,14 +905,15 @@ struct taggingHFE {
     }
   }
 
-  template <int pdgLepton, int pdgNeutrino, typename TMCParticle, typename TMCParticles>
-  bool isSemiLeptonic(TMCParticle const& mcParticle, TMCParticles const& mcParticles)
+  template <typename TMCParticle, typename TMCParticles>
+  bool isSemiLeptonic(TMCParticle const& mcParticle, TMCParticles const& mcParticles, const int pdgLepton, const int pdgNeutrino, const int pdgStrHad)
   {
     if (!mcParticle.has_daughters()) {
       return false;
     }
     bool is_lepton_involved = false;
     bool is_neutrino_involved = false;
+    bool is_strhad_involved = false;
     for (int d = mcParticle.daughtersIds()[0]; d <= mcParticle.daughtersIds()[1]; ++d) {
       if (d < mcParticles.size()) { // protect against bad daughter indices
         const auto& daughter = mcParticles.rawIteratorAt(d);
@@ -802,7 +921,10 @@ struct taggingHFE {
           is_lepton_involved = true;
         } else if (daughter.pdgCode() == pdgNeutrino) {
           is_neutrino_involved = true;
+        } else if (daughter.pdgCode() == pdgStrHad) {
+          is_strhad_involved = true;
         }
+
       } else {
         std::cout << "Daughter label (" << d << ") exceeds the McParticles size (" << mcParticles.size() << ")" << std::endl;
         std::cout << " Check the MC generator" << std::endl;
@@ -810,159 +932,11 @@ struct taggingHFE {
       }
     }
 
-    if (is_lepton_involved && is_neutrino_involved) {
+    if (is_lepton_involved && is_neutrino_involved && is_strhad_involved) {
       return true;
     } else {
       return false;
     }
-  }
-
-  template <typename TCollision, typename TTrack, typename TV0>
-  EBPair makeELPair(TCollision const& collision, TTrack const& track, TV0 const& v0)
-  {
-    mDcaInfoCov.set(999, 999, 999, 999, 999);
-    auto trackParCov = getTrackParCov(track);
-    trackParCov.setPID(o2::track::PID::Electron);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
-    float dcaXY = mDcaInfoCov.getY();
-    float dcaZ = mDcaInfoCov.getZ();
-    float dca3DinSigma = dca3DinSigmaOTF(dcaXY, dcaZ, trackParCov.getSigmaY2(), trackParCov.getSigmaZ2(), trackParCov.getSigmaZY());
-
-    EBPair eLpair;
-    eLpair.ptepv = trackParCov.getPt();
-    eLpair.dca3dinsigma = dca3DinSigma;
-
-    const std::array<float, 3> vertex = {collision.posX(), collision.posY(), collision.posZ()};
-    const std::array<float, 3> vertexV0 = {v0.x(), v0.y(), v0.z()};
-    const std::array<float, 3> momV0 = {v0.px(), v0.py(), v0.pz()};
-    std::array<float, 21> covV0 = {0.f};
-
-    constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-    for (int i = 0; i < 6; i++) {
-      covV0[MomInd[i]] = v0.momentumCovMat()[i];
-      covV0[i] = v0.positionCovMat()[i];
-    }
-
-    auto v0ParCov = o2::track::TrackParCov(vertexV0, momV0, covV0, 0, true);
-    v0ParCov.setAbsCharge(0);
-    v0ParCov.setPID(o2::track::PID::Lambda);
-
-    std::array<float, 3> svpos = {0.}; // secondary vertex position
-    std::array<float, 3> pvec0 = {0.};
-    std::array<float, 3> pvec1 = {0.};
-
-    int nCand = 0;
-    try {
-      nCand = fitter.process(trackParCov, v0ParCov);
-    } catch (...) {
-      LOG(error) << "Exception caught in DCA fitter process call!";
-      return eLpair;
-    }
-    if (nCand == 0) {
-      return eLpair;
-    }
-
-    fitter.propagateTracksToVertex(); // propagate e and K to D vertex
-    const auto& vtx = fitter.getPCACandidate();
-    for (int i = 0; i < 3; i++) {
-      svpos[i] = vtx[i];
-    }
-    fitter.getTrack(0).getPxPyPzGlo(pvec0); // electron
-    fitter.getTrack(1).getPxPyPzGlo(pvec1); // v0
-    std::array<float, 3> pvecSum = {pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]};
-
-    float cospa = RecoDecay::cpa(vertex, svpos, pvecSum);
-    float dca2legs = std::sqrt(fitter.getChi2AtPCACandidate());
-    float lxy = std::sqrt(std::pow(svpos[0] - collision.posX(), 2) + std::pow(svpos[1] - collision.posY(), 2));
-    float lz = std::fabs(svpos[2] - collision.posZ());
-    ROOT::Math::PxPyPzMVector v1(pvec0[0], pvec0[1], pvec0[2], o2::constants::physics::MassElectron);
-    ROOT::Math::PxPyPzMVector v2(pvec1[0], pvec1[1], pvec1[2], o2::constants::physics::MassLambda);
-    ROOT::Math::PxPyPzMVector v12 = v1 + v2;
-
-    eLpair.mass = v12.M();
-    eLpair.dca2legs = dca2legs;
-    eLpair.cospa = cospa;
-    eLpair.lxy = lxy;
-    eLpair.lz = lz;
-    return eLpair;
-  }
-
-  template <uint8_t cascType, typename TCollision, typename TTrack, typename TCascade>
-  EBPair makeECascadePair(TCollision const& collision, TTrack const& track, TCascade const& cascade)
-  {
-    mDcaInfoCov.set(999, 999, 999, 999, 999);
-    auto trackParCov = getTrackParCov(track);
-    trackParCov.setPID(o2::track::PID::Electron);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
-    float dcaXY = mDcaInfoCov.getY();
-    float dcaZ = mDcaInfoCov.getZ();
-    float dca3DinSigma = dca3DinSigmaOTF(dcaXY, dcaZ, trackParCov.getSigmaY2(), trackParCov.getSigmaZ2(), trackParCov.getSigmaZY());
-
-    EBPair eCascPair;
-    eCascPair.ptepv = trackParCov.getPt();
-    eCascPair.dca3dinsigma = dca3DinSigma;
-
-    const std::array<float, 3> vertex = {collision.posX(), collision.posY(), collision.posZ()};
-    const std::array<float, 3> vertexCasc = {cascade.x(), cascade.y(), cascade.z()};
-    const std::array<float, 3> momCasc = {cascade.px(), cascade.py(), cascade.pz()};
-
-    std::array<float, 21> covCasc = {0.};
-    constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-    for (int i = 0; i < 6; i++) {
-      covCasc[MomInd[i]] = cascade.momentumCovMat()[i];
-      covCasc[i] = cascade.positionCovMat()[i];
-    }
-
-    auto cascParCov = o2::track::TrackParCov(vertexCasc, momCasc, covCasc, cascade.sign(), true);
-    cascParCov.setAbsCharge(1);
-    if constexpr (cascType == 0) {
-      cascParCov.setPID(o2::track::PID::XiMinus);
-    } else if constexpr (cascType == 1) {
-      cascParCov.setPID(o2::track::PID::OmegaMinus);
-    }
-    std::array<float, 3> svpos = {0.}; // secondary vertex position
-    std::array<float, 3> pvec0 = {0.};
-    std::array<float, 3> pvec1 = {0.};
-
-    int nCand = 0;
-    try {
-      nCand = fitter.process(trackParCov, cascParCov);
-    } catch (...) {
-      LOG(error) << "Exception caught in DCA fitter process call!";
-      return eCascPair;
-    }
-    if (nCand == 0) {
-      return eCascPair;
-    }
-
-    fitter.propagateTracksToVertex(); // propagate e and Xi/Omega to decay vertex of charm baryon
-    const auto& vtx = fitter.getPCACandidate();
-    for (int i = 0; i < 3; i++) {
-      svpos[i] = vtx[i];
-    }
-    fitter.getTrack(0).getPxPyPzGlo(pvec0); // electron
-    fitter.getTrack(1).getPxPyPzGlo(pvec1); // v0
-    std::array<float, 3> pvecSum = {pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]};
-
-    float cospa = RecoDecay::cpa(vertex, svpos, pvecSum);
-    float dca2legs = std::sqrt(fitter.getChi2AtPCACandidate());
-    float lxy = std::sqrt(std::pow(svpos[0] - collision.posX(), 2) + std::pow(svpos[1] - collision.posY(), 2));
-    float lz = std::fabs(svpos[2] - collision.posZ());
-    ROOT::Math::PxPyPzMVector v1(pvec0[0], pvec0[1], pvec0[2], o2::constants::physics::MassElectron);
-    ROOT::Math::PxPyPzMVector v2(pvec1[0], pvec1[1], pvec1[2], o2::constants::physics::MassXiMinus);
-    if constexpr (cascType == 0) {
-      v2.SetM(o2::constants::physics::MassXiMinus);
-    } else if constexpr (cascType == 1) {
-      v2.SetM(o2::constants::physics::MassOmegaMinus);
-    }
-    ROOT::Math::PxPyPzMVector v12 = v1 + v2;
-
-    eCascPair.mass = v12.M();
-    eCascPair.dca2legs = dca2legs;
-    eCascPair.cospa = cospa;
-    eCascPair.lxy = lxy;
-    eCascPair.lz = lz;
-    return eCascPair;
   }
 
   template <bool isMC, typename TBCs, typename TCollisions, typename TTracks, typename TTrackAssoc, typename TV0s, typename TCascades, typename TMCCollisions, typename TMCParticles>
@@ -978,12 +952,12 @@ struct taggingHFE {
         continue;
       }
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
-      if (centralities[eventcut.cfgCentEstimator] < eventcut.cfgCentMin || eventcut.cfgCentMax < centralities[eventcut.cfgCentEstimator]) {
+      if (centralities[eventCut.cfgCentEstimator] < eventCut.cfgCentMin || eventCut.cfgCentMax < centralities[eventCut.cfgCentEstimator]) {
         continue;
       }
       fRegistry.fill(HIST("Event/hCollisionCounter"), 1);
       const auto& mcCollision = collision.template mcCollision_as<aod::McCollisions>();
-      if (eventcut.cfgEventGeneratorType < 0 || mcCollision.getSubGeneratorId() == eventcut.cfgEventGeneratorType) {
+      if (eventCut.cfgEventGeneratorType < 0 || mcCollision.getSubGeneratorId() == eventCut.cfgEventGeneratorType) {
         fillEventHistograms(collision);
       }
       mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
@@ -992,6 +966,8 @@ struct taggingHFE {
       const auto& trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
       electronIds.reserve(trackIdsThisCollision.size());
       positronIds.reserve(trackIdsThisCollision.size());
+      kaonPlusIds.reserve(trackIdsThisCollision.size());
+      kaonMinusIds.reserve(trackIdsThisCollision.size());
 
       for (const auto& trackId : trackIdsThisCollision) {
         const auto& track = trackId.template track_as<TTracks>();
@@ -999,30 +975,30 @@ struct taggingHFE {
           continue;
         }
 
-        if constexpr (isMC) {
-          if (!track.has_mcParticle()) {
-            continue;
-          }
-          const auto& mctrack = track.template mcParticle_as<aod::McParticles>();
-          const auto& mcCollision = mctrack.template mcCollision_as<aod::McCollisions>();
-          if (eventcut.cfgEventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventcut.cfgEventGeneratorType) {
-            continue;
-          }
-          if (!mctrack.has_mothers() || !(mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) {
-            continue;
-          }
-
-          fillElectronHistograms<isMC>(track, mcParticles);
+        if (!track.has_mcParticle()) {
+          continue;
+        }
+        const auto& mcParticle = track.template mcParticle_as<aod::McParticles>();
+        const auto& mcCollision = mcParticle.template mcCollision_as<aod::McCollisions>();
+        if (eventCut.cfgEventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventCut.cfgEventGeneratorType) {
+          continue;
+        }
+        if (!mcParticle.has_mothers() || !(mcParticle.isPhysicalPrimary() || mcParticle.producedByGenerator())) {
+          continue;
         }
 
-        mDcaInfoCov.set(999, 999, 999, 999, 999);
+        fillElectronHistograms<isMC>(track, mcParticles);
+
         auto trackParCov = getTrackParCov(track);
+        mDcaInfoCov.set(999, 999, 999, 999, 999);
         trackParCov.setPID(o2::track::PID::Electron);
         o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
         float dcaXY = mDcaInfoCov.getY();
         float dcaZ = mDcaInfoCov.getZ();
 
-        if (isSelectedElectron(track, trackParCov, dcaXY, dcaZ)) {
+        if (isSelectedTrack(track, trackParCov, dcaXY, dcaZ) && std::abs(mcParticle.pdgCode()) == cfgPdgLepton) {
+          fRegistry.fill(HIST("Track/Electron/hTPCdEdx"), track.tpcInnerParam(), track.mcTunedTPCSignal());
+          fRegistry.fill(HIST("Track/Electron/hTOFbeta"), track.p(), track.beta());
           if (track.sign() > 0) { // positron
             positronIds.emplace_back(trackId.trackId());
           } else { // electron
@@ -1030,153 +1006,27 @@ struct taggingHFE {
           }
         }
 
-        if (isSelectedElectronLoose(track, trackParCov, dcaXY, dcaZ)) {
-          if (track.sign() > 0) { // positron
-            positronIdsLoose.emplace_back(trackId.trackId());
-          } else { // electron
-            electronIdsLoose.emplace_back(trackId.trackId());
+        mDcaInfoCov.set(999, 999, 999, 999, 999);
+        trackParCov.setPID(o2::track::PID::Kaon);
+        o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+        dcaXY = mDcaInfoCov.getY();
+        dcaZ = mDcaInfoCov.getZ();
+
+        if (isSelectedKaon(track, trackParCov, dcaXY, dcaZ)) {
+          fRegistry.fill(HIST("Track/Kaon/hTPCdEdx"), track.tpcInnerParam(), track.mcTunedTPCSignal());
+          fRegistry.fill(HIST("Track/Kaon/hTOFbeta"), track.p(), track.beta());
+          if (track.sign() > 0) { // K+
+            kaonPlusIds.emplace_back(trackId.trackId());
+          } else { // K-
+            kaonMinusIds.emplace_back(trackId.trackId());
           }
         }
+
       } // end of track loop for electron selection
 
-      // First, apply pi0 prefilter to imporove S/B
-      std::vector<int> vec_eFromPi0;
-      vec_eFromPi0.reserve(electronIds.size() + positronIds.size());
-
-      for (const auto& positronId : positronIds) {
-        const auto& pos = tracks.rawIteratorAt(positronId);
-        mDcaInfoCov.set(999, 999, 999, 999, 999);
-        auto posParCov = getTrackParCov(pos);
-        posParCov.setPID(o2::track::PID::Electron);
-        o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, posParCov, 2.f, matCorr, &mDcaInfoCov);
-        ROOT::Math::PtEtaPhiMVector v1(posParCov.getPt(), posParCov.getEta(), posParCov.getPhi(), o2::constants::physics::MassElectron);
-
-        for (const auto& electronId : electronIdsLoose) {
-          const auto& ele = tracks.rawIteratorAt(electronId);
-          mDcaInfoCov.set(999, 999, 999, 999, 999);
-          auto eleParCov = getTrackParCov(ele);
-          eleParCov.setPID(o2::track::PID::Electron);
-          o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, eleParCov, 2.f, matCorr, &mDcaInfoCov);
-          ROOT::Math::PtEtaPhiMVector v2(eleParCov.getPt(), eleParCov.getEta(), eleParCov.getPhi(), o2::constants::physics::MassElectron);
-
-          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-          float mee = v12.M();
-          fRegistry.fill(HIST("Prefilter/before/uls/hMee"), mee);
-          if (mee < cfgMeeMaxPF) {
-            vec_eFromPi0.emplace_back(positronId);
-          }
-        } // end of loose electron sample
-      } // end of main positron sample
-
-      for (const auto& electronId : electronIds) {
-        const auto& ele = tracks.rawIteratorAt(electronId);
-        mDcaInfoCov.set(999, 999, 999, 999, 999);
-        auto eleParCov = getTrackParCov(ele);
-        eleParCov.setPID(o2::track::PID::Electron);
-        o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, eleParCov, 2.f, matCorr, &mDcaInfoCov);
-        ROOT::Math::PtEtaPhiMVector v1(eleParCov.getPt(), eleParCov.getEta(), eleParCov.getPhi(), o2::constants::physics::MassElectron);
-
-        for (const auto& positronId : positronIdsLoose) {
-          const auto& pos = tracks.rawIteratorAt(positronId);
-          mDcaInfoCov.set(999, 999, 999, 999, 999);
-          auto posParCov = getTrackParCov(pos);
-          posParCov.setPID(o2::track::PID::Electron);
-          o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, posParCov, 2.f, matCorr, &mDcaInfoCov);
-          ROOT::Math::PtEtaPhiMVector v2(posParCov.getPt(), posParCov.getEta(), posParCov.getPhi(), o2::constants::physics::MassElectron);
-
-          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-          float mee = v12.M();
-          fRegistry.fill(HIST("Prefilter/before/uls/hMee"), mee);
-          if (mee < cfgMeeMaxPF) {
-            vec_eFromPi0.emplace_back(electronId);
-          }
-        } // end of loose positron sample
-      } // end of main electron sample
-
-      for (const auto& positronId1 : positronIds) {
-        const auto& pos1 = tracks.rawIteratorAt(positronId1);
-        mDcaInfoCov.set(999, 999, 999, 999, 999);
-        auto pos1ParCov = getTrackParCov(pos1);
-        pos1ParCov.setPID(o2::track::PID::Electron);
-        o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, pos1ParCov, 2.f, matCorr, &mDcaInfoCov);
-        ROOT::Math::PtEtaPhiMVector v1(pos1ParCov.getPt(), pos1ParCov.getEta(), pos1ParCov.getPhi(), o2::constants::physics::MassElectron);
-
-        for (const auto& positronId2 : positronIdsLoose) {
-          const auto& pos2 = tracks.rawIteratorAt(positronId2);
-          if (positronId1 == positronId2) {
-            continue;
-          }
-          mDcaInfoCov.set(999, 999, 999, 999, 999);
-          auto pos2ParCov = getTrackParCov(pos2);
-          pos2ParCov.setPID(o2::track::PID::Electron);
-          o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, pos2ParCov, 2.f, matCorr, &mDcaInfoCov);
-          ROOT::Math::PtEtaPhiMVector v2(pos2ParCov.getPt(), pos2ParCov.getEta(), pos2ParCov.getPhi(), o2::constants::physics::MassElectron);
-
-          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-          float mee = v12.M();
-          fRegistry.fill(HIST("Prefilter/before/lspp/hMee"), mee);
-        } // end of loose positron sample
-      } // end of main positron sample
-
-      for (const auto& electronId1 : electronIds) {
-        const auto& ele1 = tracks.rawIteratorAt(electronId1);
-        mDcaInfoCov.set(999, 999, 999, 999, 999);
-        auto ele1ParCov = getTrackParCov(ele1);
-        ele1ParCov.setPID(o2::track::PID::Electron);
-        o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, ele1ParCov, 2.f, matCorr, &mDcaInfoCov);
-        ROOT::Math::PtEtaPhiMVector v1(ele1ParCov.getPt(), ele1ParCov.getEta(), ele1ParCov.getPhi(), o2::constants::physics::MassElectron);
-
-        for (const auto& electronId2 : electronIdsLoose) {
-          const auto& ele2 = tracks.rawIteratorAt(electronId2);
-          if (electronId1 == electronId2) {
-            continue;
-          }
-          mDcaInfoCov.set(999, 999, 999, 999, 999);
-          auto ele2ParCov = getTrackParCov(ele2);
-          ele2ParCov.setPID(o2::track::PID::Electron);
-          o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, ele2ParCov, 2.f, matCorr, &mDcaInfoCov);
-          ROOT::Math::PtEtaPhiMVector v2(ele2ParCov.getPt(), ele2ParCov.getEta(), ele2ParCov.getPhi(), o2::constants::physics::MassElectron);
-
-          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-          float mee = v12.M();
-          fRegistry.fill(HIST("Prefilter/before/lsmm/hMee"), mee);
-        } // end of loose electron sample
-      } // end of main electron sample
-
-      std::vector<int> vec_diff_pos;
-      std::set_difference(positronIds.begin(), positronIds.end(), vec_eFromPi0.begin(), vec_eFromPi0.end(), std::back_inserter(vec_diff_pos));
-      positronIds = vec_diff_pos;
-
-      std::vector<int> vec_diff_ele;
-      std::set_difference(electronIds.begin(), electronIds.end(), vec_eFromPi0.begin(), vec_eFromPi0.end(), std::back_inserter(vec_diff_ele));
-      electronIds = vec_diff_ele;
-
-      vec_eFromPi0.clear();
-      vec_eFromPi0.shrink_to_fit();
-
-      for (const auto& electronId : electronIds) {
-        const auto& ele = tracks.rawIteratorAt(electronId);
-        mDcaInfoCov.set(999, 999, 999, 999, 999);
-        auto eleParCov = getTrackParCov(ele);
-        eleParCov.setPID(o2::track::PID::Electron);
-        o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, eleParCov, 2.f, matCorr, &mDcaInfoCov);
-        ROOT::Math::PtEtaPhiMVector v1(eleParCov.getPt(), eleParCov.getEta(), eleParCov.getPhi(), o2::constants::physics::MassElectron);
-
-        for (const auto& positronId : positronIds) {
-          const auto& pos = tracks.rawIteratorAt(positronId);
-          mDcaInfoCov.set(999, 999, 999, 999, 999);
-          auto posParCov = getTrackParCov(pos);
-          posParCov.setPID(o2::track::PID::Electron);
-          o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, posParCov, 2.f, matCorr, &mDcaInfoCov);
-          ROOT::Math::PtEtaPhiMVector v2(posParCov.getPt(), posParCov.getEta(), posParCov.getPhi(), o2::constants::physics::MassElectron);
-
-          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-          float mee = v12.M();
-          fRegistry.fill(HIST("Prefilter/after/uls/hMee"), mee);
-        } // end of main positron sample
-      } // end of main electron sample
-
       const auto& v0s_per_coll = v0s.sliceBy(perCol_v0, collision.globalIndex());
+      k0Ids.reserve(v0s_per_coll.size());
+      k0Ids.reserve(v0s_per_coll.size());
       lambdaIds.reserve(v0s_per_coll.size());
       lambdaIds.reserve(v0s_per_coll.size());
       antilambdaIds.reserve(v0s_per_coll.size());
@@ -1187,7 +1037,12 @@ struct taggingHFE {
         if (!isSelectedV0Leg<isMC>(pos) || !isSelectedV0Leg<isMC>(neg)) {
           continue;
         }
-        fillV0Histograms(v0);
+        fillV0Histograms<>(v0);
+
+        if (isK0S(v0) && isPion(pos) && isPion(neg)) {
+          k0Ids.emplace_back(v0.globalIndex());
+        }
+
         if (isLambda(v0) && isProton(pos) && isPion(neg)) {
           lambdaIds.emplace_back(v0.globalIndex());
         } else if (isAntiLambda(v0) && isProton(neg) && isPion(pos)) {
@@ -1211,7 +1066,7 @@ struct taggingHFE {
         if (pos.sign() * neg.sign() > 0) {
           continue;
         }
-        if (cascade.mLambda() < cascadecut.cfg_min_mass_lambda || cascadecut.cfg_max_mass_lambda < cascade.mLambda()) {
+        if (cascade.mLambda() < cascadeCut.cfg_min_mass_lambda || cascadeCut.cfg_max_mass_lambda < cascade.mLambda()) {
           continue;
         }
 
@@ -1229,10 +1084,10 @@ struct taggingHFE {
           }
         }
 
-        if (cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < cascadecut.cfg_min_cospa) {
+        if (cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < cascadeCut.cfg_min_cospa) {
           continue;
         }
-        if (cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < cascadecut.cfg_min_cospa_v0) {
+        if (cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < cascadeCut.cfg_min_cospa_v0) {
           continue;
         }
 
@@ -1240,378 +1095,390 @@ struct taggingHFE {
         if (cascade.sign() < 0) { // Xi- or Omega-
           if (isXi(cascade) && isPion(bachelor)) {
             xiMinusIds.emplace_back(cascade.globalIndex());
-          } else if (isOmega(cascade) && isKaon(bachelor)) {
+          }
+          if (isOmega(cascade) && isKaonBachelor(bachelor)) {
             omegaMinusIds.emplace_back(cascade.globalIndex());
           }
         } else { // Xi+ or Omega+
           if (isXi(cascade) && isPion(bachelor)) {
             xiPlusIds.emplace_back(cascade.globalIndex());
-          } else if (isOmega(cascade) && isKaon(bachelor)) {
+          }
+          if (isOmega(cascade) && isKaonBachelor(bachelor)) {
             omegaPlusIds.emplace_back(cascade.globalIndex());
           }
         }
       } // end of cascade loop
 
-      // Lc+ -> e+ Lambda nu_e, br = 0.0356, ctau = 60.75 um, m = 2286 MeV/c2
+      // // if (electronIds.size() > 0 || positronIds.size() > 0) {
+      // if ((electronIds.size() > 0 || positronIds.size() > 0) && (xiMinusIds.size() > 0 || xiPlusIds.size() > 0)) {
+      // LOGF(info, "collision.globalIndex() = %d, electronIds.size() = %d, positronIds.size() = %d, kaonMinusIds.size() = %d, kaonPlusIds.size() = %d, k0Ids.size() = %d, lambdaIds.size() = %d, antilambdaIds.size() = %d, xiMinusIds.size() = %d, xiPlusIds.size() = %d, omegaMinusIds.size() = %d, omegaPlusIds.size() = %d",
+      //     collision.globalIndex(), electronIds.size(), positronIds.size(), kaonMinusIds.size(), kaonPlusIds.size(), k0Ids.size(), lambdaIds.size(), antilambdaIds.size(), xiMinusIds.size(), xiPlusIds.size(), omegaMinusIds.size(), omegaPlusIds.size());
+      // }
+
       for (const auto& positronId : positronIds) {
         const auto& pos = tracks.rawIteratorAt(positronId);
+        mDcaInfoCov.set(999, 999, 999, 999, 999);
+        auto leptonParCov = getTrackParCov(pos);
+        leptonParCov.setPID(o2::track::PID::Electron);
+        o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, leptonParCov, 2.f, matCorr, &mDcaInfoCov);
+        float dcaXY_lepton = mDcaInfoCov.getY();
+        float dcaZ_lepton = mDcaInfoCov.getZ();
+        float dca3DinSigma_lepton = dca3DinSigmaOTF(dcaXY_lepton, dcaZ_lepton, leptonParCov.getSigmaY2(), leptonParCov.getSigmaZ2(), leptonParCov.getSigmaZY());
+        const auto& mcpos = pos.template mcParticle_as<aod::McParticles>();
 
+        // D0 -> e+ nu_e K-, br = 0.03538, ctau = 123.01 um, m = 1864 MeV/c2
+        for (const auto& kaonId : kaonMinusIds) {
+          const auto& kaon = tracks.rawIteratorAt(kaonId);
+          mDcaInfoCov.set(999, 999, 999, 999, 999);
+          auto trackParCov = getTrackParCov(kaon);
+          trackParCov.setPID(o2::track::PID::Kaon);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+          float dcaXY_kaon = mDcaInfoCov.getY();
+          float dcaZ_kaon = mDcaInfoCov.getZ();
+          float dca3DinSigma_kaon = dca3DinSigmaOTF(dcaXY_kaon, dcaZ_kaon, trackParCov.getSigmaY2(), trackParCov.getSigmaZ2(), trackParCov.getSigmaZY());
+
+          if (positronId == kaonId) {
+            continue;
+          }
+
+          const auto& eKpair = o2::aod::pwgem::dilepton::utils::makePairLeptonTrack(fitter_eK, collision, pos, kaon, o2::track::PID::Electron, o2::track::PID::Kaon);
+          if (!eKpair.isOK) {
+            continue;
+          }
+
+          if (!(lKPairCut.cfg_min_mass < eKpair.mass && eKpair.mass < lKPairCut.cfg_max_mass) || eKpair.cospa < lKPairCut.cfg_min_cospa || lKPairCut.cfg_max_lxyz < eKpair.lxyz / eKpair.lxyzErr || lKPairCut.cfg_max_dca2legs < eKpair.dca2legs) {
+            continue;
+          }
+
+          fRegistry.fill(HIST("Data/eK/hs"), leptonParCov.getPt(), dca3DinSigma_lepton, trackParCov.getPt(), dca3DinSigma_kaon, eKpair.mass, eKpair.lxyz / eKpair.lxyzErr, eKpair.cospa, eKpair.dca2legs);
+
+          const auto& mckaon = kaon.template mcParticle_as<aod::McParticles>();
+          int mcD0Id = FindCommonMotherFrom2Prongs(mcpos, mckaon, -11, -321, 421, mcParticles);
+          int mcDpmId = FindCommonMotherFrom2Prongs(mcpos, mckaon, -11, -321, 411, mcParticles);
+          if (mcD0Id > 0) { // true D0
+            // const auto& mcD0 = mcParticles.rawIteratorAt(mcD0Id);
+            fRegistry.fill(HIST("MC/eKfromD0/hs"), leptonParCov.getPt(), dca3DinSigma_lepton, trackParCov.getPt(), dca3DinSigma_kaon, eKpair.mass, eKpair.lxyz / eKpair.lxyzErr, eKpair.cospa, eKpair.dca2legs);
+          } else if (mcDpmId > 0) { // true D+
+            // const auto& mcD0 = mcParticles.rawIteratorAt(mcD0Id);
+            fRegistry.fill(HIST("MC/eKfromDpm/hs"), leptonParCov.getPt(), dca3DinSigma_lepton, trackParCov.getPt(), dca3DinSigma_kaon, eKpair.mass, eKpair.lxyz / eKpair.lxyzErr, eKpair.cospa, eKpair.dca2legs);
+          }
+        } // end of kaon loop
+
+        // D+ -> e+ K0S nu_e
+        for (const auto& k0Id : k0Ids) {
+          const auto& v0 = v0s.rawIteratorAt(k0Id);
+          float lxyz_v0 = std::sqrt(std::pow(v0.x() - collision.posX(), 2) + std::pow(v0.y() - collision.posY(), 2) + std::pow(v0.z() - collision.posZ(), 2));
+          const auto& eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(fitter_eV0, collision, pos, v0, o2::track::PID::Electron, o2::track::PID::K0);
+
+          if (!eV0pair.isOK) {
+            continue;
+          }
+          if (!(lV0PairCut.cfg_min_mass < eV0pair.mass && eV0pair.mass < lV0PairCut.cfg_max_mass) || eV0pair.cospa < lV0PairCut.cfg_min_cospa || lV0PairCut.cfg_max_lxyz < eV0pair.lxyz / eV0pair.lxyzErr || lV0PairCut.cfg_max_dca2legs < eV0pair.dca2legs) {
+            continue;
+          }
+          fRegistry.fill(HIST("Data/eK0/hs"), leptonParCov.getPt(), dca3DinSigma_lepton, v0.pt(), lxyz_v0, eV0pair.mass, eV0pair.lxyz / eV0pair.lxyzErr, eV0pair.cospa, eV0pair.dca2legs);
+
+          auto posLeg = v0.template posTrack_as<TTracks>();
+          auto negLeg = v0.template negTrack_as<TTracks>();
+          const auto& mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
+          const auto& mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
+          int mcK0Id = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 211, -211, 310, mcParticles);
+          if (mcK0Id > 0) { // true K0S
+            const auto& mcK0 = mcParticles.rawIteratorAt(mcK0Id);
+            int mcDpmId = FindCommonMotherFrom2Prongs(mcpos, mcK0, -11, 310, 411, mcParticles);
+            if (mcDpmId > 0) { // true D+
+              // const auto& mcDpm = mcParticles.rawIteratorAt(mcDpmId);
+              fRegistry.fill(HIST("MC/eK0fromDpm/hs"), leptonParCov.getPt(), dca3DinSigma_lepton, v0.pt(), lxyz_v0, eV0pair.mass, eV0pair.lxyz / eV0pair.lxyzErr, eV0pair.cospa, eV0pair.dca2legs);
+            }
+          }
+        } // end of K0S loop
+
+        // Lc+ -> e+ Lambda nu_e, br = 0.0356, ctau = 60.75 um, m = 2286 MeV/c2
         for (const auto& lambdaId : lambdaIds) {
-          const auto& lambda = v0s.rawIteratorAt(lambdaId);
-          const auto& eLpair = makeELPair(collision, pos, lambda); // RS
-          fRegistry.fill(HIST("Data/eL/RS/hs"), eLpair.mass, eLpair.ptepv, eLpair.dca3dinsigma, eLpair.lxy);
-          fRegistry.fill(HIST("Data/eL/RS/hCosPA"), eLpair.cospa);
-          fRegistry.fill(HIST("Data/eL/RS/hDCA2Legs"), eLpair.dca2legs);
-          fRegistry.fill(HIST("Data/eL/RS/hLxy"), eLpair.lxy);
-          fRegistry.fill(HIST("Data/eL/RS/hLz"), eLpair.lz);
+          const auto& v0 = v0s.rawIteratorAt(lambdaId);
+          float lxyz_v0 = std::sqrt(std::pow(v0.x() - collision.posX(), 2) + std::pow(v0.y() - collision.posY(), 2) + std::pow(v0.z() - collision.posZ(), 2));
+          const auto& eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(fitter_eV0, collision, pos, v0, o2::track::PID::Electron, o2::track::PID::Lambda);
 
-          if constexpr (isMC) {
-            const auto& mcpos = pos.template mcParticle_as<aod::McParticles>();
-            auto posLeg = lambda.template posTrack_as<TTracks>();
-            auto negLeg = lambda.template negTrack_as<TTracks>();
-            const auto& mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
-            const auto& mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
-            int mcLambdaId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 2212, -211, 3122, mcParticles);
-            if (mcLambdaId > 0) { // true lambda
-              const auto& mcLambda = mcParticles.rawIteratorAt(mcLambdaId);
-              int mcLambdacId = FindCommonMotherFrom2Prongs(mcpos, mcLambda, -11, 3122, 4122, mcParticles);
-              if (mcLambdacId > 0) { // true Lc0
-                const auto& mcLambdac0 = mcParticles.rawIteratorAt(mcLambdacId);
-                if (IsFromBeauty(mcLambdac0, mcParticles) < 0) {
-                  fRegistry.fill(HIST("MC/eLfromPromptLcpm/hs"), eLpair.mass, eLpair.ptepv, eLpair.dca3dinsigma, eLpair.lxy);
-                  fRegistry.fill(HIST("MC/eLfromPromptLcpm/hCosPA"), eLpair.cospa);
-                  fRegistry.fill(HIST("MC/eLfromPromptLcpm/hDCA2Legs"), eLpair.dca2legs);
-                  fRegistry.fill(HIST("MC/eLfromPromptLcpm/hLxy"), eLpair.lxy);
-                  fRegistry.fill(HIST("MC/eLfromPromptLcpm/hLz"), eLpair.lz);
-                } else {
-                  fRegistry.fill(HIST("MC/eLfromNonPromptLcpm/hs"), eLpair.mass, eLpair.ptepv, eLpair.dca3dinsigma, eLpair.lxy);
-                  fRegistry.fill(HIST("MC/eLfromNonPromptLcpm/hCosPA"), eLpair.cospa);
-                  fRegistry.fill(HIST("MC/eLfromNonPromptLcpm/hDCA2Legs"), eLpair.dca2legs);
-                  fRegistry.fill(HIST("MC/eLfromNonPromptLcpm/hLxy"), eLpair.lxy);
-                  fRegistry.fill(HIST("MC/eLfromNonPromptLcpm/hLz"), eLpair.lz);
-                }
-              }
+          if (!eV0pair.isOK) {
+            continue;
+          }
+          if (!(lV0PairCut.cfg_min_mass < eV0pair.mass && eV0pair.mass < lV0PairCut.cfg_max_mass) || eV0pair.cospa < lV0PairCut.cfg_min_cospa || lV0PairCut.cfg_max_lxyz < eV0pair.lxyz / eV0pair.lxyzErr || lV0PairCut.cfg_max_dca2legs < eV0pair.dca2legs) {
+            continue;
+          }
+          fRegistry.fill(HIST("Data/eL/hs"), leptonParCov.getPt(), dca3DinSigma_lepton, v0.pt(), lxyz_v0, eV0pair.mass, eV0pair.lxyz / eV0pair.lxyzErr, eV0pair.cospa, eV0pair.dca2legs);
+
+          auto posLeg = v0.template posTrack_as<TTracks>();
+          auto negLeg = v0.template negTrack_as<TTracks>();
+          const auto& mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
+          const auto& mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
+          int mcLambdaId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 2212, -211, 3122, mcParticles);
+          if (mcLambdaId > 0) { // true v0
+            const auto& mcLambda = mcParticles.rawIteratorAt(mcLambdaId);
+            int mcLambdacId = FindCommonMotherFrom2Prongs(mcpos, mcLambda, -11, 3122, 4122, mcParticles);
+            if (mcLambdacId > 0) { // true Lc0
+              // const auto& mcLambdac0 = mcParticles.rawIteratorAt(mcLambdacId);
+              fRegistry.fill(HIST("MC/eLfromLcpm/hs"), leptonParCov.getPt(), dca3DinSigma_lepton, v0.pt(), lxyz_v0, eV0pair.mass, eV0pair.lxyz / eV0pair.lxyzErr, eV0pair.cospa, eV0pair.dca2legs);
             }
-          } // end of MC truth
+          }
         } // end of Lambda loop
 
-        for (const auto& antilambdaId : antilambdaIds) {
-          const auto& antilambda = v0s.rawIteratorAt(antilambdaId);
-          const auto& eLpair = makeELPair(collision, pos, antilambda); // WS
-          fRegistry.fill(HIST("Data/eL/WS/hs"), eLpair.mass, eLpair.ptepv, eLpair.dca3dinsigma, eLpair.lxy);
-          fRegistry.fill(HIST("Data/eL/WS/hCosPA"), eLpair.cospa);
-          fRegistry.fill(HIST("Data/eL/WS/hDCA2Legs"), eLpair.dca2legs);
-          fRegistry.fill(HIST("Data/eL/WS/hLxy"), eLpair.lxy);
-          fRegistry.fill(HIST("Data/eL/WS/hLz"), eLpair.lz);
-        } // end of AntiLambda loop
+        for (const auto& cascadeId : xiMinusIds) {
+          const auto& cascade = cascades.rawIteratorAt(cascadeId);
+          float lxyz_cascade = std::sqrt(std::pow(cascade.x() - collision.posX(), 2) + std::pow(cascade.y() - collision.posY(), 2) + std::pow(cascade.z() - collision.posZ(), 2));
+          const auto& eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(fitter_eCascade, collision, pos, cascade, o2::track::PID::Electron, o2::track::PID::XiMinus);
 
-      } // end of main positron sample
+          if (!eCpair.isOK) {
+            continue;
+          }
+          if (!(lCPairCut.cfg_min_mass < eCpair.mass && eCpair.mass < lCPairCut.cfg_max_mass) || eCpair.cospa < lCPairCut.cfg_min_cospa || lCPairCut.cfg_max_lxyz < eCpair.lxyz / eCpair.lxyzErr || lCPairCut.cfg_max_dca2legs < eCpair.dca2legs) {
+            continue;
+          }
+          fRegistry.fill(HIST("Data/eXi/hs"), leptonParCov.getPt(), dca3DinSigma_lepton, cascade.pt(), lxyz_cascade, eCpair.mass, eCpair.lxyz / eCpair.lxyzErr, eCpair.cospa, eCpair.dca2legs);
 
-      for (const auto& electronId : electronIds) {
-        const auto& ele = tracks.rawIteratorAt(electronId);
-
-        for (const auto& lambdaId : lambdaIds) {
-          const auto& lambda = v0s.rawIteratorAt(lambdaId);
-          const auto& eLpair = makeELPair(collision, ele, lambda); // WS
-          fRegistry.fill(HIST("Data/eL/WS/hs"), eLpair.mass, eLpair.ptepv, eLpair.dca3dinsigma, eLpair.lxy);
-          fRegistry.fill(HIST("Data/eL/WS/hCosPA"), eLpair.cospa);
-          fRegistry.fill(HIST("Data/eL/WS/hDCA2Legs"), eLpair.dca2legs);
-          fRegistry.fill(HIST("Data/eL/WS/hLxy"), eLpair.lxy);
-          fRegistry.fill(HIST("Data/eL/WS/hLz"), eLpair.lz);
-        } // end of Lambda loop
-
-        for (const auto& antilambdaId : antilambdaIds) {
-          const auto& antilambda = v0s.rawIteratorAt(antilambdaId);
-          const auto& eLpair = makeELPair(collision, ele, antilambda); // RS
-          fRegistry.fill(HIST("Data/eL/RS/hs"), eLpair.mass, eLpair.ptepv, eLpair.dca3dinsigma, eLpair.lxy);
-          fRegistry.fill(HIST("Data/eL/RS/hCosPA"), eLpair.cospa);
-          fRegistry.fill(HIST("Data/eL/RS/hDCA2Legs"), eLpair.dca2legs);
-          fRegistry.fill(HIST("Data/eL/RS/hLxy"), eLpair.lxy);
-          fRegistry.fill(HIST("Data/eL/RS/hLz"), eLpair.lz);
-
-          if constexpr (isMC) {
-            const auto& mcele = ele.template mcParticle_as<aod::McParticles>();
-            auto posLeg = antilambda.template posTrack_as<TTracks>();
-            auto negLeg = antilambda.template negTrack_as<TTracks>();
-            const auto& mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
-            const auto& mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
-            int mcLambdaId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 221, -2212, -3122, mcParticles);
-            if (mcLambdaId > 0) { // true lambda
-              const auto& mcLambda = mcParticles.rawIteratorAt(mcLambdaId);
-              int mcLambdacId = FindCommonMotherFrom2Prongs(mcele, mcLambda, 11, -3122, -4122, mcParticles);
-              if (mcLambdacId > 0) { // true Lc0
-                const auto& mcLambdac0 = mcParticles.rawIteratorAt(mcLambdacId);
-                if (IsFromBeauty(mcLambdac0, mcParticles) < 0) {
-                  fRegistry.fill(HIST("MC/eLfromPromptLcpm/hs"), eLpair.mass, eLpair.ptepv, eLpair.dca3dinsigma, eLpair.lxy);
-                  fRegistry.fill(HIST("MC/eLfromPromptLcpm/hCosPA"), eLpair.cospa);
-                  fRegistry.fill(HIST("MC/eLfromPromptLcpm/hDCA2Legs"), eLpair.dca2legs);
-                  fRegistry.fill(HIST("MC/eLfromPromptLcpm/hLxy"), eLpair.lxy);
-                  fRegistry.fill(HIST("MC/eLfromPromptLcpm/hLz"), eLpair.lz);
-                } else {
-                  fRegistry.fill(HIST("MC/eLfromNonPromptLcpm/hs"), eLpair.mass, eLpair.ptepv, eLpair.dca3dinsigma, eLpair.lxy);
-                  fRegistry.fill(HIST("MC/eLfromNonPromptLcpm/hCosPA"), eLpair.cospa);
-                  fRegistry.fill(HIST("MC/eLfromNonPromptLcpm/hDCA2Legs"), eLpair.dca2legs);
-                  fRegistry.fill(HIST("MC/eLfromNonPromptLcpm/hLxy"), eLpair.lxy);
-                  fRegistry.fill(HIST("MC/eLfromNonPromptLcpm/hLz"), eLpair.lz);
-                }
+          auto posLeg = cascade.template posTrack_as<TTracks>();
+          auto negLeg = cascade.template negTrack_as<TTracks>();
+          auto bachelor = cascade.template bachelor_as<TTracks>();
+          const auto& mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
+          const auto& mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
+          const auto& mcbachelor = bachelor.template mcParticle_as<aod::McParticles>();
+          int mcLambdaId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 2212, -211, 3122, mcParticles);
+          if (mcLambdaId > 0) { // true Lambda
+            const auto& mcLambda = mcParticles.rawIteratorAt(mcLambdaId);
+            int mcXiId = FindCommonMotherFrom2Prongs(mcLambda, mcbachelor, 3122, -211, 3312, mcParticles);
+            if (mcXiId > 0) { // true xiMinus
+              const auto& mcXi = mcParticles.rawIteratorAt(mcXiId);
+              int mcXic0Id = FindCommonMotherFrom2Prongs(mcpos, mcXi, -11, 3312, 4132, mcParticles);
+              if (mcXic0Id > 0) { // true Xic0
+                // const auto& mcXic0 = mcParticles.rawIteratorAt(mcXic0Id);
+                fRegistry.fill(HIST("MC/eXifromXic0/hs"), leptonParCov.getPt(), dca3DinSigma_lepton, cascade.pt(), lxyz_cascade, eCpair.mass, eCpair.lxyz / eCpair.lxyzErr, eCpair.cospa, eCpair.dca2legs);
               }
             }
-          } // end of MC truth
-
-        } // end of AntiLambda loop
-
-      } // end of main electron sample
-
-      // Xic0 -> e+ Xi- nu_e, br = 0.0105, ctau = 45.1 um, m = 2470 MeV/c2
-      for (const auto& positronId : positronIds) {
-        const auto& pos = tracks.rawIteratorAt(positronId);
-
-        for (const auto& xiMinusId : xiMinusIds) {
-          const auto& xiMinus = cascades.rawIteratorAt(xiMinusId);
-          const auto& eXipair = makeECascadePair<0>(collision, pos, xiMinus); // RS
-          fRegistry.fill(HIST("Data/eXi/RS/hs"), eXipair.mass, eXipair.ptepv, eXipair.dca3dinsigma, eXipair.lxy);
-          fRegistry.fill(HIST("Data/eXi/RS/hCosPA"), eXipair.cospa);
-          fRegistry.fill(HIST("Data/eXi/RS/hDCA2Legs"), eXipair.dca2legs);
-          fRegistry.fill(HIST("Data/eXi/RS/hLxy"), eXipair.lxy);
-          fRegistry.fill(HIST("Data/eXi/RS/hLz"), eXipair.lz);
-
-          if constexpr (isMC) {
-            const auto& mcpos = pos.template mcParticle_as<aod::McParticles>();
-            auto posLeg = xiMinus.template posTrack_as<TTracks>();
-            auto negLeg = xiMinus.template negTrack_as<TTracks>();
-            auto bachelor = xiMinus.template bachelor_as<TTracks>();
-            const auto& mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
-            const auto& mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
-            const auto& mcbachelor = bachelor.template mcParticle_as<aod::McParticles>();
-            int mcLambdaId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 2212, -211, 3122, mcParticles);
-            if (mcLambdaId > 0) { // true Lambda
-              const auto& mcLambda = mcParticles.rawIteratorAt(mcLambdaId);
-              int mcXiId = FindCommonMotherFrom2Prongs(mcLambda, mcbachelor, 3122, -211, 3312, mcParticles);
-              if (mcXiId > 0) { // true xiMinus
-                const auto& mcXi = mcParticles.rawIteratorAt(mcXiId);
-                int mcXic0Id = FindCommonMotherFrom2Prongs(mcpos, mcXi, -11, 3312, 4132, mcParticles);
-                if (mcXic0Id > 0) { // true Xic0
-                  const auto& mcXic0 = mcParticles.rawIteratorAt(mcXic0Id);
-                  if (IsFromBeauty(mcXic0, mcParticles) < 0) {
-                    fRegistry.fill(HIST("MC/eXifromPromptXic0/hs"), eXipair.mass, eXipair.ptepv, eXipair.dca3dinsigma, eXipair.lxy);
-                    fRegistry.fill(HIST("MC/eXifromPromptXic0/hCosPA"), eXipair.cospa);
-                    fRegistry.fill(HIST("MC/eXifromPromptXic0/hDCA2Legs"), eXipair.dca2legs);
-                    fRegistry.fill(HIST("MC/eXifromPromptXic0/hLxy"), eXipair.lxy);
-                    fRegistry.fill(HIST("MC/eXifromPromptXic0/hLz"), eXipair.lz);
-                  } else {
-                    fRegistry.fill(HIST("MC/eXifromNonPromptXic0/hs"), eXipair.mass, eXipair.ptepv, eXipair.dca3dinsigma, eXipair.lxy);
-                    fRegistry.fill(HIST("MC/eXifromNonPromptXic0/hCosPA"), eXipair.cospa);
-                    fRegistry.fill(HIST("MC/eXifromNonPromptXic0/hDCA2Legs"), eXipair.dca2legs);
-                    fRegistry.fill(HIST("MC/eXifromNonPromptXic0/hLxy"), eXipair.lxy);
-                    fRegistry.fill(HIST("MC/eXifromNonPromptXic0/hLz"), eXipair.lz);
-                  }
-                }
-              }
-            }
-          } // end of MC truth
-        } // end of Lambda loop
-
-        for (const auto& xiPlusId : xiPlusIds) {
-          const auto& xiPlus = cascades.rawIteratorAt(xiPlusId);
-          const auto& eXipair = makeECascadePair<0>(collision, pos, xiPlus); // WS
-          fRegistry.fill(HIST("Data/eXi/WS/hs"), eXipair.mass, eXipair.ptepv, eXipair.dca3dinsigma, eXipair.lxy);
-          fRegistry.fill(HIST("Data/eXi/WS/hCosPA"), eXipair.cospa);
-          fRegistry.fill(HIST("Data/eXi/WS/hDCA2Legs"), eXipair.dca2legs);
-          fRegistry.fill(HIST("Data/eXi/WS/hLxy"), eXipair.lxy);
-          fRegistry.fill(HIST("Data/eXi/WS/hLz"), eXipair.lz);
-        } // end of AntiLambda loop
-      } // end of main positron sample
-
-      for (const auto& electronId : electronIds) {
-        const auto& ele = tracks.rawIteratorAt(electronId);
-
-        for (const auto& xiMinusId : xiMinusIds) {
-          const auto& xiMinus = cascades.rawIteratorAt(xiMinusId);
-          const auto& eXipair = makeECascadePair<0>(collision, ele, xiMinus); // WS
-          fRegistry.fill(HIST("Data/eXi/WS/hs"), eXipair.mass, eXipair.ptepv, eXipair.dca3dinsigma, eXipair.lxy);
-          fRegistry.fill(HIST("Data/eXi/WS/hCosPA"), eXipair.cospa);
-          fRegistry.fill(HIST("Data/eXi/WS/hDCA2Legs"), eXipair.dca2legs);
-          fRegistry.fill(HIST("Data/eXi/WS/hLxy"), eXipair.lxy);
-          fRegistry.fill(HIST("Data/eXi/WS/hLz"), eXipair.lz);
-
+          }
         } // end of Xi- loop
 
-        for (const auto& xiPlusId : xiPlusIds) {
-          const auto& xiPlus = cascades.rawIteratorAt(xiPlusId);
-          const auto& eXipair = makeECascadePair<0>(collision, ele, xiPlus); // RS
-          fRegistry.fill(HIST("Data/eXi/RS/hs"), eXipair.mass, eXipair.ptepv, eXipair.dca3dinsigma, eXipair.lxy);
-          fRegistry.fill(HIST("Data/eXi/RS/hCosPA"), eXipair.cospa);
-          fRegistry.fill(HIST("Data/eXi/RS/hDCA2Legs"), eXipair.dca2legs);
-          fRegistry.fill(HIST("Data/eXi/RS/hLxy"), eXipair.lxy);
-          fRegistry.fill(HIST("Data/eXi/RS/hLz"), eXipair.lz);
+        for (const auto& cascadeId : omegaMinusIds) {
+          const auto& cascade = cascades.rawIteratorAt(cascadeId);
+          float lxyz_cascade = std::sqrt(std::pow(cascade.x() - collision.posX(), 2) + std::pow(cascade.y() - collision.posY(), 2) + std::pow(cascade.z() - collision.posZ(), 2));
+          const auto& eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(fitter_eCascade, collision, pos, cascade, o2::track::PID::Electron, o2::track::PID::OmegaMinus);
 
-          if constexpr (isMC) {
-            const auto& mcele = ele.template mcParticle_as<aod::McParticles>();
-            auto posLeg = xiPlus.template posTrack_as<TTracks>();
-            auto negLeg = xiPlus.template negTrack_as<TTracks>();
-            auto bachelor = xiPlus.template bachelor_as<TTracks>();
-            const auto& mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
-            const auto& mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
-            const auto& mcbachelor = bachelor.template mcParticle_as<aod::McParticles>();
-            int mcLambdaId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 211, -2212, -3122, mcParticles);
-            if (mcLambdaId > 0) { // true AntiLambda
-              const auto& mcLambda = mcParticles.rawIteratorAt(mcLambdaId);
-              int mcXiId = FindCommonMotherFrom2Prongs(mcLambda, mcbachelor, -3122, 211, -3312, mcParticles);
-              if (mcXiId > 0) { // true xiPlus
-                const auto& mcXi = mcParticles.rawIteratorAt(mcXiId);
-                int mcXic0Id = FindCommonMotherFrom2Prongs(mcele, mcXi, 11, -3312, 4132, mcParticles);
-                if (mcXic0Id > 0) { // true Xic0
-                  const auto& mcXic0 = mcParticles.rawIteratorAt(mcXic0Id);
-                  if (IsFromBeauty(mcXic0, mcParticles) < 0) {
-                    fRegistry.fill(HIST("MC/eXifromPromptXic0/hs"), eXipair.mass, eXipair.ptepv, eXipair.dca3dinsigma, eXipair.lxy);
-                    fRegistry.fill(HIST("MC/eXifromPromptXic0/hCosPA"), eXipair.cospa);
-                    fRegistry.fill(HIST("MC/eXifromPromptXic0/hDCA2Legs"), eXipair.dca2legs);
-                    fRegistry.fill(HIST("MC/eXifromPromptXic0/hLxy"), eXipair.lxy);
-                    fRegistry.fill(HIST("MC/eXifromPromptXic0/hLz"), eXipair.lz);
-                  } else {
-                    fRegistry.fill(HIST("MC/eXifromNonPromptXic0/hs"), eXipair.mass, eXipair.ptepv, eXipair.dca3dinsigma, eXipair.lxy);
-                    fRegistry.fill(HIST("MC/eXifromNonPromptXic0/hCosPA"), eXipair.cospa);
-                    fRegistry.fill(HIST("MC/eXifromNonPromptXic0/hDCA2Legs"), eXipair.dca2legs);
-                    fRegistry.fill(HIST("MC/eXifromNonPromptXic0/hLxy"), eXipair.lxy);
-                    fRegistry.fill(HIST("MC/eXifromNonPromptXic0/hLz"), eXipair.lz);
-                  }
-                }
+          if (!eCpair.isOK) {
+            continue;
+          }
+          if (!(lCPairCut.cfg_min_mass < eCpair.mass && eCpair.mass < lCPairCut.cfg_max_mass) || eCpair.cospa < lCPairCut.cfg_min_cospa || lCPairCut.cfg_max_lxyz < eCpair.lxyz / eCpair.lxyzErr || lCPairCut.cfg_max_dca2legs < eCpair.dca2legs) {
+            continue;
+          }
+          fRegistry.fill(HIST("Data/eOmega/hs"), leptonParCov.getPt(), dca3DinSigma_lepton, cascade.pt(), lxyz_cascade, eCpair.mass, eCpair.lxyz / eCpair.lxyzErr, eCpair.cospa, eCpair.dca2legs);
+
+          auto posLeg = cascade.template posTrack_as<TTracks>();
+          auto negLeg = cascade.template negTrack_as<TTracks>();
+          auto bachelor = cascade.template bachelor_as<TTracks>();
+          const auto& mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
+          const auto& mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
+          const auto& mcbachelor = bachelor.template mcParticle_as<aod::McParticles>();
+          int mcLambdaId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 2212, -211, 3122, mcParticles);
+          if (mcLambdaId > 0) { // true Lambda
+            const auto& mcLambda = mcParticles.rawIteratorAt(mcLambdaId);
+            int mcOmegaId = FindCommonMotherFrom2Prongs(mcLambda, mcbachelor, 3122, -321, 3334, mcParticles);
+            if (mcOmegaId > 0) { // true omegaMinus
+              const auto& mcOmega = mcParticles.rawIteratorAt(mcOmegaId);
+              int mcOmegac0Id = FindCommonMotherFrom2Prongs(mcpos, mcOmega, -11, 3334, 4332, mcParticles);
+              if (mcOmegac0Id > 0) { // true Omegac0
+                // const auto& mcOmegac0 = mcParticles.rawIteratorAt(mcOmegac0Id);
+                fRegistry.fill(HIST("MC/eOmegafromOmegac0/hs"), leptonParCov.getPt(), dca3DinSigma_lepton, cascade.pt(), lxyz_cascade, eCpair.mass, eCpair.lxyz / eCpair.lxyzErr, eCpair.cospa, eCpair.dca2legs);
               }
             }
-          } // end of MC truth
+          }
+        } // end of Omega- loop
 
-        } // end of Xi+ loop
-      } // end of main electron sample
-
-      // Omegac0 -> e+ Omega- nu_e, br(Omegac0 -> e+ Omega- nu_e) / br(Omegac0 -> Omega- pi+) = 1.98, ctau = 82 um, m = 2695 MeV/c2
-      for (const auto& positronId : positronIds) {
-        const auto& pos = tracks.rawIteratorAt(positronId);
-
-        for (const auto& omegaMinusId : omegaMinusIds) {
-          const auto& omegaMinus = cascades.rawIteratorAt(omegaMinusId);
-          const auto& eOmegapair = makeECascadePair<1>(collision, pos, omegaMinus); // RS
-          fRegistry.fill(HIST("Data/eOmega/RS/hs"), eOmegapair.mass, eOmegapair.ptepv, eOmegapair.dca3dinsigma, eOmegapair.lxy);
-          fRegistry.fill(HIST("Data/eOmega/RS/hCosPA"), eOmegapair.cospa);
-          fRegistry.fill(HIST("Data/eOmega/RS/hDCA2Legs"), eOmegapair.dca2legs);
-          fRegistry.fill(HIST("Data/eOmega/RS/hLxy"), eOmegapair.lxy);
-          fRegistry.fill(HIST("Data/eOmega/RS/hLz"), eOmegapair.lz);
-
-          if constexpr (isMC) {
-            const auto& mcpos = pos.template mcParticle_as<aod::McParticles>();
-            auto posLeg = omegaMinus.template posTrack_as<TTracks>();
-            auto negLeg = omegaMinus.template negTrack_as<TTracks>();
-            auto bachelor = omegaMinus.template bachelor_as<TTracks>();
-            const auto& mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
-            const auto& mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
-            const auto& mcbachelor = bachelor.template mcParticle_as<aod::McParticles>();
-            int mcLambdaId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 2212, -211, 3122, mcParticles);
-            if (mcLambdaId > 0) { // true Lambda
-              const auto& mcLambda = mcParticles.rawIteratorAt(mcLambdaId);
-              int mcOmegaId = FindCommonMotherFrom2Prongs(mcLambda, mcbachelor, 3122, -321, 3334, mcParticles);
-              if (mcOmegaId > 0) { // true omegaMinus
-                const auto& mcOmega = mcParticles.rawIteratorAt(mcOmegaId);
-                int mcOmegac0Id = FindCommonMotherFrom2Prongs(mcpos, mcOmega, -11, 3334, 4332, mcParticles);
-                if (mcOmegac0Id > 0) { // true Omegac0
-                  const auto& mcOmegac0 = mcParticles.rawIteratorAt(mcOmegac0Id);
-                  if (IsFromBeauty(mcOmegac0, mcParticles) < 0) {
-                    fRegistry.fill(HIST("MC/eOmegafromPromptOmegac0/hs"), eOmegapair.mass, eOmegapair.ptepv, eOmegapair.dca3dinsigma, eOmegapair.lxy);
-                    fRegistry.fill(HIST("MC/eOmegafromPromptOmegac0/hCosPA"), eOmegapair.cospa);
-                    fRegistry.fill(HIST("MC/eOmegafromPromptOmegac0/hDCA2Legs"), eOmegapair.dca2legs);
-                    fRegistry.fill(HIST("MC/eOmegafromPromptOmegac0/hLxy"), eOmegapair.lxy);
-                    fRegistry.fill(HIST("MC/eOmegafromPromptOmegac0/hLz"), eOmegapair.lz);
-                  } else {
-                    fRegistry.fill(HIST("MC/eOmegafromNonPromptOmegac0/hs"), eOmegapair.mass, eOmegapair.ptepv, eOmegapair.dca3dinsigma, eOmegapair.lxy);
-                    fRegistry.fill(HIST("MC/eOmegafromNonPromptOmegac0/hCosPA"), eOmegapair.cospa);
-                    fRegistry.fill(HIST("MC/eOmegafromNonPromptOmegac0/hDCA2Legs"), eOmegapair.dca2legs);
-                    fRegistry.fill(HIST("MC/eOmegafromNonPromptOmegac0/hLxy"), eOmegapair.lxy);
-                    fRegistry.fill(HIST("MC/eOmegafromNonPromptOmegac0/hLz"), eOmegapair.lz);
-                  }
-                }
-              }
-            }
-          } // end of MC truth
-        } // end of Lambda loop
-
-        for (const auto& omegaPlusId : omegaPlusIds) {
-          const auto& omegaPlus = cascades.rawIteratorAt(omegaPlusId);
-          const auto& eOmegapair = makeECascadePair<1>(collision, pos, omegaPlus); // WS
-          fRegistry.fill(HIST("Data/eOmega/WS/hs"), eOmegapair.mass, eOmegapair.ptepv, eOmegapair.dca3dinsigma, eOmegapair.lxy);
-          fRegistry.fill(HIST("Data/eOmega/WS/hCosPA"), eOmegapair.cospa);
-          fRegistry.fill(HIST("Data/eOmega/WS/hDCA2Legs"), eOmegapair.dca2legs);
-          fRegistry.fill(HIST("Data/eOmega/WS/hLxy"), eOmegapair.lxy);
-          fRegistry.fill(HIST("Data/eOmega/WS/hLz"), eOmegapair.lz);
-        } // end of AntiLambda loop
       } // end of main positron sample
 
       for (const auto& electronId : electronIds) {
         const auto& ele = tracks.rawIteratorAt(electronId);
+        mDcaInfoCov.set(999, 999, 999, 999, 999);
+        auto leptonParCov = getTrackParCov(ele);
+        leptonParCov.setPID(o2::track::PID::Electron);
+        o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, leptonParCov, 2.f, matCorr, &mDcaInfoCov);
+        float dcaXY_lepton = mDcaInfoCov.getY();
+        float dcaZ_lepton = mDcaInfoCov.getZ();
+        float dca3DinSigma_lepton = dca3DinSigmaOTF(dcaXY_lepton, dcaZ_lepton, leptonParCov.getSigmaY2(), leptonParCov.getSigmaZ2(), leptonParCov.getSigmaZY());
+        const auto& mcele = ele.template mcParticle_as<aod::McParticles>();
 
-        for (const auto& omegaMinusId : omegaMinusIds) {
-          const auto& omegaMinus = cascades.rawIteratorAt(omegaMinusId);
-          const auto& eOmegapair = makeECascadePair<1>(collision, ele, omegaMinus); // WS
-          fRegistry.fill(HIST("Data/eOmega/WS/hs"), eOmegapair.mass, eOmegapair.ptepv, eOmegapair.dca3dinsigma, eOmegapair.lxy);
-          fRegistry.fill(HIST("Data/eOmega/WS/hCosPA"), eOmegapair.cospa);
-          fRegistry.fill(HIST("Data/eOmega/WS/hDCA2Legs"), eOmegapair.dca2legs);
-          fRegistry.fill(HIST("Data/eOmega/WS/hLxy"), eOmegapair.lxy);
-          fRegistry.fill(HIST("Data/eOmega/WS/hLz"), eOmegapair.lz);
+        // D0bar -> e- anti-nu_e K+, br = 0.03538, ctau = 123.01 um, m = 1864 MeV/c2
+        for (const auto& kaonId : kaonPlusIds) {
+          const auto& kaon = tracks.rawIteratorAt(kaonId);
+          mDcaInfoCov.set(999, 999, 999, 999, 999);
+          auto trackParCov = getTrackParCov(kaon);
+          trackParCov.setPID(o2::track::PID::Kaon);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+          float dcaXY_kaon = mDcaInfoCov.getY();
+          float dcaZ_kaon = mDcaInfoCov.getZ();
+          float dca3DinSigma_kaon = dca3DinSigmaOTF(dcaXY_kaon, dcaZ_kaon, trackParCov.getSigmaY2(), trackParCov.getSigmaZ2(), trackParCov.getSigmaZY());
 
-        } // end of Omega- loop
+          if (electronId == kaonId) {
+            continue;
+          }
 
-        for (const auto& omegaPlusId : omegaPlusIds) {
-          const auto& omegaPlus = cascades.rawIteratorAt(omegaPlusId);
-          const auto& eOmegapair = makeECascadePair<1>(collision, ele, omegaPlus); // RS
-          fRegistry.fill(HIST("Data/eOmega/RS/hs"), eOmegapair.mass, eOmegapair.ptepv, eOmegapair.dca3dinsigma, eOmegapair.lxy);
-          fRegistry.fill(HIST("Data/eOmega/RS/hCosPA"), eOmegapair.cospa);
-          fRegistry.fill(HIST("Data/eOmega/RS/hDCA2Legs"), eOmegapair.dca2legs);
-          fRegistry.fill(HIST("Data/eOmega/RS/hLxy"), eOmegapair.lxy);
-          fRegistry.fill(HIST("Data/eOmega/RS/hLz"), eOmegapair.lz);
+          const auto& eKpair = o2::aod::pwgem::dilepton::utils::makePairLeptonTrack(fitter_eK, collision, ele, kaon, o2::track::PID::Electron, o2::track::PID::Kaon);
+          if (!eKpair.isOK) {
+            continue;
+          }
+          if (!(lKPairCut.cfg_min_mass < eKpair.mass && eKpair.mass < lKPairCut.cfg_max_mass) || eKpair.cospa < lKPairCut.cfg_min_cospa || lKPairCut.cfg_max_lxyz < eKpair.lxyz / eKpair.lxyzErr || lKPairCut.cfg_max_dca2legs < eKpair.dca2legs) {
+            continue;
+          }
+          fRegistry.fill(HIST("Data/eK/hs"), leptonParCov.getPt(), dca3DinSigma_lepton, trackParCov.getPt(), dca3DinSigma_kaon, eKpair.mass, eKpair.lxyz / eKpair.lxyzErr, eKpair.cospa, eKpair.dca2legs);
 
-          if constexpr (isMC) {
-            const auto& mcele = ele.template mcParticle_as<aod::McParticles>();
-            auto posLeg = omegaPlus.template posTrack_as<TTracks>();
-            auto negLeg = omegaPlus.template negTrack_as<TTracks>();
-            auto bachelor = omegaPlus.template bachelor_as<TTracks>();
-            const auto& mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
-            const auto& mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
-            const auto& mcbachelor = bachelor.template mcParticle_as<aod::McParticles>();
-            int mcLambdaId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 211, -2212, -3122, mcParticles);
-            if (mcLambdaId > 0) { // true AntiLambda
-              const auto& mcLambda = mcParticles.rawIteratorAt(mcLambdaId);
-              int mcOmegaId = FindCommonMotherFrom2Prongs(mcLambda, mcbachelor, -3122, 321, -3334, mcParticles);
-              if (mcOmegaId > 0) { // true omegaPlus
-                const auto& mcOmega = mcParticles.rawIteratorAt(mcOmegaId);
-                int mcOmegac0Id = FindCommonMotherFrom2Prongs(mcele, mcOmega, 11, -3334, 4332, mcParticles);
-                if (mcOmegac0Id > 0) { // true Omegac0
-                  const auto& mcOmegac0 = mcParticles.rawIteratorAt(mcOmegac0Id);
-                  if (IsFromBeauty(mcOmegac0, mcParticles) < 0) {
-                    fRegistry.fill(HIST("MC/eOmegafromPromptOmegac0/hs"), eOmegapair.mass, eOmegapair.ptepv, eOmegapair.dca3dinsigma, eOmegapair.lxy);
-                    fRegistry.fill(HIST("MC/eOmegafromPromptOmegac0/hCosPA"), eOmegapair.cospa);
-                    fRegistry.fill(HIST("MC/eOmegafromPromptOmegac0/hDCA2Legs"), eOmegapair.dca2legs);
-                    fRegistry.fill(HIST("MC/eOmegafromPromptOmegac0/hLxy"), eOmegapair.lxy);
-                    fRegistry.fill(HIST("MC/eOmegafromPromptOmegac0/hLz"), eOmegapair.lz);
-                  } else {
-                    fRegistry.fill(HIST("MC/eOmegafromNonPromptOmegac0/hs"), eOmegapair.mass, eOmegapair.ptepv, eOmegapair.dca3dinsigma, eOmegapair.lxy);
-                    fRegistry.fill(HIST("MC/eOmegafromNonPromptOmegac0/hCosPA"), eOmegapair.cospa);
-                    fRegistry.fill(HIST("MC/eOmegafromNonPromptOmegac0/hDCA2Legs"), eOmegapair.dca2legs);
-                    fRegistry.fill(HIST("MC/eOmegafromNonPromptOmegac0/hLxy"), eOmegapair.lxy);
-                    fRegistry.fill(HIST("MC/eOmegafromNonPromptOmegac0/hLz"), eOmegapair.lz);
-                  }
-                }
+          const auto& mckaon = kaon.template mcParticle_as<aod::McParticles>();
+          int mcD0Id = FindCommonMotherFrom2Prongs(mcele, mckaon, 11, 321, -421, mcParticles);
+          int mcDpmId = FindCommonMotherFrom2Prongs(mcele, mckaon, 11, 321, -411, mcParticles);
+          if (mcD0Id > 0) { // true D0
+            // const auto& mcD0 = mcParticles.rawIteratorAt(mcD0Id);
+            fRegistry.fill(HIST("MC/eKfromD0/hs"), leptonParCov.getPt(), dca3DinSigma_lepton, trackParCov.getPt(), dca3DinSigma_kaon, eKpair.mass, eKpair.lxyz / eKpair.lxyzErr, eKpair.cospa, eKpair.dca2legs);
+          } else if (mcDpmId > 0) { // true D-
+            // const auto& mcD0 = mcParticles.rawIteratorAt(mcD0Id);
+            fRegistry.fill(HIST("MC/eKfromDpm/hs"), leptonParCov.getPt(), dca3DinSigma_lepton, trackParCov.getPt(), dca3DinSigma_kaon, eKpair.mass, eKpair.lxyz / eKpair.lxyzErr, eKpair.cospa, eKpair.dca2legs);
+          }
+        } // end of kaon loop
+
+        // D- -> e0 anti-K0S anti-nu_e
+        for (const auto& k0Id : k0Ids) {
+          const auto& v0 = v0s.rawIteratorAt(k0Id);
+          float lxyz_v0 = std::sqrt(std::pow(v0.x() - collision.posX(), 2) + std::pow(v0.y() - collision.posY(), 2) + std::pow(v0.z() - collision.posZ(), 2));
+          const auto& eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(fitter_eV0, collision, ele, v0, o2::track::PID::Electron, o2::track::PID::K0);
+
+          if (!eV0pair.isOK) {
+            continue;
+          }
+          if (!(lV0PairCut.cfg_min_mass < eV0pair.mass && eV0pair.mass < lV0PairCut.cfg_max_mass) || eV0pair.cospa < lV0PairCut.cfg_min_cospa || lV0PairCut.cfg_max_lxyz < eV0pair.lxyz / eV0pair.lxyzErr || lV0PairCut.cfg_max_dca2legs < eV0pair.dca2legs) {
+            continue;
+          }
+          fRegistry.fill(HIST("Data/eK0/hs"), leptonParCov.getPt(), dca3DinSigma_lepton, v0.pt(), lxyz_v0, eV0pair.mass, eV0pair.lxyz / eV0pair.lxyzErr, eV0pair.cospa, eV0pair.dca2legs);
+
+          auto posLeg = v0.template posTrack_as<TTracks>();
+          auto negLeg = v0.template negTrack_as<TTracks>();
+          const auto& mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
+          const auto& mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
+          int mcK0Id = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 211, -211, 310, mcParticles);
+          if (mcK0Id > 0) { // true K0S
+            const auto& mcK0 = mcParticles.rawIteratorAt(mcK0Id);
+            int mcDpmId = FindCommonMotherFrom2Prongs(mcele, mcK0, 11, 310, -411, mcParticles);
+            if (mcDpmId > 0) { // true D+
+              // const auto& mcDpm = mcParticles.rawIteratorAt(mcDpmId);
+              fRegistry.fill(HIST("MC/eK0fromDpm/hs"), leptonParCov.getPt(), dca3DinSigma_lepton, v0.pt(), lxyz_v0, eV0pair.mass, eV0pair.lxyz / eV0pair.lxyzErr, eV0pair.cospa, eV0pair.dca2legs);
+            }
+          }
+        } // end of K0S loop
+
+        // Lc- -> e- anti-Lambda anti-nu_e, br = 0.0356, ctau = 60.75 um, m = 2286 MeV/c2
+        for (const auto& lambdaId : antilambdaIds) {
+          const auto& v0 = v0s.rawIteratorAt(lambdaId);
+          float lxyz_v0 = std::sqrt(std::pow(v0.x() - collision.posX(), 2) + std::pow(v0.y() - collision.posY(), 2) + std::pow(v0.z() - collision.posZ(), 2));
+          const auto& eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(fitter_eV0, collision, ele, v0, o2::track::PID::Electron, o2::track::PID::Lambda);
+
+          if (!eV0pair.isOK) {
+            continue;
+          }
+          if (!(lV0PairCut.cfg_min_mass < eV0pair.mass && eV0pair.mass < lV0PairCut.cfg_max_mass) || eV0pair.cospa < lV0PairCut.cfg_min_cospa || lV0PairCut.cfg_max_lxyz < eV0pair.lxyz / eV0pair.lxyzErr || lV0PairCut.cfg_max_dca2legs < eV0pair.dca2legs) {
+            continue;
+          }
+          fRegistry.fill(HIST("Data/eL/hs"), leptonParCov.getPt(), dca3DinSigma_lepton, v0.pt(), lxyz_v0, eV0pair.mass, eV0pair.lxyz / eV0pair.lxyzErr, eV0pair.cospa, eV0pair.dca2legs);
+
+          auto posLeg = v0.template posTrack_as<TTracks>();
+          auto negLeg = v0.template negTrack_as<TTracks>();
+          const auto& mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
+          const auto& mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
+          int mcLambdaId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 211, -2212, -3122, mcParticles);
+          if (mcLambdaId > 0) { // true v0
+            const auto& mcLambda = mcParticles.rawIteratorAt(mcLambdaId);
+            int mcLambdacId = FindCommonMotherFrom2Prongs(mcele, mcLambda, 11, -3122, -4122, mcParticles);
+            if (mcLambdacId > 0) { // true Lc0
+              // const auto& mcLambdac0 = mcParticles.rawIteratorAt(mcLambdacId);
+              fRegistry.fill(HIST("MC/eLfromLcpm/hs"), leptonParCov.getPt(), dca3DinSigma_lepton, v0.pt(), lxyz_v0, eV0pair.mass, eV0pair.lxyz / eV0pair.lxyzErr, eV0pair.cospa, eV0pair.dca2legs);
+            }
+          }
+        } // end of Anti-Lambda loop
+
+        for (const auto& cascadeId : xiPlusIds) {
+          const auto& cascade = cascades.rawIteratorAt(cascadeId);
+          float lxyz_cascade = std::sqrt(std::pow(cascade.x() - collision.posX(), 2) + std::pow(cascade.y() - collision.posY(), 2) + std::pow(cascade.z() - collision.posZ(), 2));
+          const auto& eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(fitter_eCascade, collision, ele, cascade, o2::track::PID::Electron, o2::track::PID::XiMinus);
+
+          if (!eCpair.isOK) {
+            continue;
+          }
+          if (!(lCPairCut.cfg_min_mass < eCpair.mass && eCpair.mass < lCPairCut.cfg_max_mass) || eCpair.cospa < lCPairCut.cfg_min_cospa || lCPairCut.cfg_max_lxyz < eCpair.lxyz / eCpair.lxyzErr || lCPairCut.cfg_max_dca2legs < eCpair.dca2legs) {
+            continue;
+          }
+          fRegistry.fill(HIST("Data/eXi/hs"), leptonParCov.getPt(), dca3DinSigma_lepton, cascade.pt(), lxyz_cascade, eCpair.mass, eCpair.lxyz / eCpair.lxyzErr, eCpair.cospa, eCpair.dca2legs);
+
+          auto posLeg = cascade.template posTrack_as<TTracks>();
+          auto negLeg = cascade.template negTrack_as<TTracks>();
+          auto bachelor = cascade.template bachelor_as<TTracks>();
+          const auto& mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
+          const auto& mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
+          const auto& mcbachelor = bachelor.template mcParticle_as<aod::McParticles>();
+          int mcLambdaId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 211, -2212, -3122, mcParticles);
+          if (mcLambdaId > 0) { // true Lambda
+            const auto& mcLambda = mcParticles.rawIteratorAt(mcLambdaId);
+            int mcXiId = FindCommonMotherFrom2Prongs(mcLambda, mcbachelor, -3122, 211, -3312, mcParticles);
+            if (mcXiId > 0) { // true xiMinus
+              const auto& mcXi = mcParticles.rawIteratorAt(mcXiId);
+              int mcXic0Id = FindCommonMotherFrom2Prongs(mcele, mcXi, 11, -3312, -4132, mcParticles);
+              if (mcXic0Id > 0) { // true Xic0
+                // const auto& mcXic0 = mcParticles.rawIteratorAt(mcXic0Id);
+                fRegistry.fill(HIST("MC/eXifromXic0/hs"), leptonParCov.getPt(), dca3DinSigma_lepton, cascade.pt(), lxyz_cascade, eCpair.mass, eCpair.lxyz / eCpair.lxyzErr, eCpair.cospa, eCpair.dca2legs);
               }
             }
-          } // end of MC truth
+          }
+        } // end of Xi+ loop
 
+        for (const auto& cascadeId : omegaPlusIds) {
+          const auto& cascade = cascades.rawIteratorAt(cascadeId);
+          float lxyz_cascade = std::sqrt(std::pow(cascade.x() - collision.posX(), 2) + std::pow(cascade.y() - collision.posY(), 2) + std::pow(cascade.z() - collision.posZ(), 2));
+          const auto& eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(fitter_eCascade, collision, ele, cascade, o2::track::PID::Electron, o2::track::PID::OmegaMinus);
+
+          if (!eCpair.isOK) {
+            continue;
+          }
+          if (!(lCPairCut.cfg_min_mass < eCpair.mass && eCpair.mass < lCPairCut.cfg_max_mass) || eCpair.cospa < lCPairCut.cfg_min_cospa || lCPairCut.cfg_max_lxyz < eCpair.lxyz / eCpair.lxyzErr || lCPairCut.cfg_max_dca2legs < eCpair.dca2legs) {
+            continue;
+          }
+          fRegistry.fill(HIST("Data/eOmega/hs"), leptonParCov.getPt(), dca3DinSigma_lepton, cascade.pt(), lxyz_cascade, eCpair.mass, eCpair.lxyz / eCpair.lxyzErr, eCpair.cospa, eCpair.dca2legs);
+
+          auto posLeg = cascade.template posTrack_as<TTracks>();
+          auto negLeg = cascade.template negTrack_as<TTracks>();
+          auto bachelor = cascade.template bachelor_as<TTracks>();
+          const auto& mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
+          const auto& mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
+          const auto& mcbachelor = bachelor.template mcParticle_as<aod::McParticles>();
+          int mcLambdaId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 211, -2212, -3122, mcParticles);
+          if (mcLambdaId > 0) { // true Lambda
+            const auto& mcLambda = mcParticles.rawIteratorAt(mcLambdaId);
+            int mcOmegaId = FindCommonMotherFrom2Prongs(mcLambda, mcbachelor, -3122, 321, -3334, mcParticles);
+            if (mcOmegaId > 0) { // true omegaMinus
+              const auto& mcOmega = mcParticles.rawIteratorAt(mcOmegaId);
+              int mcOmegac0Id = FindCommonMotherFrom2Prongs(mcele, mcOmega, 11, -3334, -4332, mcParticles);
+              if (mcOmegac0Id > 0) { // true Omegac0
+                // const auto& mcOmegac0 = mcParticles.rawIteratorAt(mcOmegac0Id);
+                fRegistry.fill(HIST("MC/eOmegafromOmegac0/hs"), leptonParCov.getPt(), dca3DinSigma_lepton, cascade.pt(), lxyz_cascade, eCpair.mass, eCpair.lxyz / eCpair.lxyzErr, eCpair.cospa, eCpair.dca2legs);
+              }
+            }
+          }
         } // end of Omega+ loop
+
       } // end of main electron sample
 
-      electronIdsLoose.clear();
-      electronIdsLoose.shrink_to_fit();
-      positronIdsLoose.clear();
-      positronIdsLoose.shrink_to_fit();
       electronIds.clear();
       electronIds.shrink_to_fit();
       positronIds.clear();
       positronIds.shrink_to_fit();
+
+      kaonPlusIds.clear();
+      kaonPlusIds.shrink_to_fit();
+      kaonMinusIds.clear();
+      kaonMinusIds.shrink_to_fit();
+
+      k0Ids.clear();
+      k0Ids.shrink_to_fit();
 
       lambdaIds.clear();
       lambdaIds.shrink_to_fit();
@@ -1633,37 +1500,124 @@ struct taggingHFE {
     used_electronIds.shrink_to_fit();
   }
 
+  template <typename TMCCollisions, typename TMCParticles>
+  void runGen(TMCCollisions const& mcCollisions, TMCParticles const& mcParticles)
+  {
+    for (const auto& mcCollision : mcCollisions) {
+
+      auto mcDpms_per_mccollision = mcDpms.sliceBy(perMcCollision, mcCollision.globalIndex());
+      for (const auto& mcParticle : mcDpms_per_mccollision) {
+        // for (int d = mcParticle.daughtersIds()[0]; d <= mcParticle.daughtersIds()[1]; ++d) {
+        //   auto daughter = mcParticles.rawIteratorAt(d);
+        //   LOGF(info, "daughter.pdgCode() = %d", daughter.pdgCode());
+        // }
+
+        if (isSemiLeptonic(mcParticle, mcParticles, -cfgPdgLepton, cfgPdgLepton + 1, -321) || isSemiLeptonic(mcParticle, mcParticles, cfgPdgLepton, -cfgPdgLepton - 1, 321)) { // D+ -> l+ nul K- pi+ or D- -> l- anti-nul K+ pi-
+          // LOGF(info, "semileptonic decay is found.");
+          float ptLepton = 0, ptHadron = 0, etaLepton = 999.f, etaHadron = 999.f;
+          for (int d = mcParticle.daughtersIds()[0]; d <= mcParticle.daughtersIds()[1]; ++d) {
+            auto daughter = mcParticles.rawIteratorAt(d);
+            if (std::abs(daughter.pdgCode()) == cfgPdgLepton) {
+              ptLepton = daughter.pt();
+              etaLepton = daughter.eta();
+            } else if (std::abs(daughter.pdgCode()) == 321) {
+              ptHadron = daughter.pt();
+              etaHadron = daughter.eta();
+            }
+          }
+          fRegistry.fill(HIST("Generated/Dpm/hsAcc"), ptLepton, ptHadron, etaLepton, etaHadron);
+        }
+
+      } // end of Dpm loop per mcCollision
+
+      auto mcD0s_per_mccollision = mcD0s.sliceBy(perMcCollision, mcCollision.globalIndex());
+      for (const auto& mcParticle : mcD0s_per_mccollision) {
+        // for (int d = mcParticle.daughtersIds()[0]; d <= mcParticle.daughtersIds()[1]; ++d) {
+        //   auto daughter = mcParticles.rawIteratorAt(d);
+        //   LOGF(info, "daughter.pdgCode() = %d", daughter.pdgCode());
+        // }
+
+        if (isSemiLeptonic(mcParticle, mcParticles, -cfgPdgLepton, cfgPdgLepton + 1, -321) || isSemiLeptonic(mcParticle, mcParticles, cfgPdgLepton, -cfgPdgLepton - 1, 321)) { // D0 -> l+ nul K- or D0bar -> l- anti-nul K+
+          // LOGF(info, "semileptonic decay is found.");
+          float ptLepton = 0, ptHadron = 0, etaLepton = 999.f, etaHadron = 999.f;
+          for (int d = mcParticle.daughtersIds()[0]; d <= mcParticle.daughtersIds()[1]; ++d) {
+            auto daughter = mcParticles.rawIteratorAt(d);
+            if (std::abs(daughter.pdgCode()) == cfgPdgLepton) {
+              ptLepton = daughter.pt();
+              etaLepton = daughter.eta();
+            } else if (std::abs(daughter.pdgCode()) == 321) {
+              ptHadron = daughter.pt();
+              etaHadron = daughter.eta();
+            }
+          }
+          fRegistry.fill(HIST("Generated/D0/hsAcc"), ptLepton, ptHadron, etaLepton, etaHadron);
+        }
+
+      } // end of D0 loop per mcCollision
+
+      auto mcLcs_per_mccollision = mcLcs.sliceBy(perMcCollision, mcCollision.globalIndex());
+      for (const auto& mcParticle : mcLcs_per_mccollision) {
+        // for (int d = mcParticle.daughtersIds()[0]; d <= mcParticle.daughtersIds()[1]; ++d) {
+        //   auto daughter = mcParticles.rawIteratorAt(d);
+        //   LOGF(info, "daughter.pdgCode() = %d", daughter.pdgCode());
+        // }
+
+        if (isSemiLeptonic(mcParticle, mcParticles, -std::abs(cfgPdgLepton), std::abs(cfgPdgLepton) + 1, 3122) || isSemiLeptonic(mcParticle, mcParticles, std::abs(cfgPdgLepton), -std::abs(cfgPdgLepton) - 1, -3122)) { // Lc+ -> l+ nul L or Lc- -> l- anti-nul anti-L
+          // LOGF(info, "semileptonic decay is found.");
+          float ptLepton = 0, ptHadron = 0, etaLepton = 999.f, etaHadron = 999.f;
+          for (int d = mcParticle.daughtersIds()[0]; d <= mcParticle.daughtersIds()[1]; ++d) {
+            auto daughter = mcParticles.rawIteratorAt(d);
+            if (std::abs(daughter.pdgCode()) == cfgPdgLepton) {
+              ptLepton = daughter.pt();
+              etaLepton = daughter.eta();
+            } else if (std::abs(daughter.pdgCode()) == 3122) {
+              ptHadron = daughter.pt();
+              etaHadron = daughter.eta();
+            }
+          }
+          fRegistry.fill(HIST("Generated/Lc/hsAcc"), ptLepton, ptHadron, etaLepton, etaHadron);
+        }
+
+      } // end of D0 loop per mcCollision
+    }
+  }
+
+  Partition<aod::McParticles> mcDpms = nabs(o2::aod::mcparticle::pdgCode) == 411;
+  Partition<aod::McParticles> mcD0s = nabs(o2::aod::mcparticle::pdgCode) == 421;
+  Partition<aod::McParticles> mcDspms = nabs(o2::aod::mcparticle::pdgCode) == 431;
+  Partition<aod::McParticles> mcLcs = nabs(o2::aod::mcparticle::pdgCode) == 4122;
+  Partition<aod::McParticles> mcXic0s = nabs(o2::aod::mcparticle::pdgCode) == 4232;
+  Partition<aod::McParticles> mcOmegac0s = nabs(o2::aod::mcparticle::pdgCode) == 4332;
+
   SliceCache cache;
   Preslice<aod::TracksIU> perCol = o2::aod::track::collisionId;
   Preslice<aod::V0Datas> perCol_v0 = o2::aod::v0data::collisionId;
   Preslice<aod::CascDatas> perCol_casc = o2::aod::cascdata::collisionId;
+  Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
 
-  Filter collisionFilter_evsel = o2::aod::evsel::sel8 == true && (eventcut.cfgZvtxMin < o2::aod::collision::posZ && o2::aod::collision::posZ < eventcut.cfgZvtxMax);
-  Filter collisionFilter_centrality = (eventcut.cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < eventcut.cfgCentMax) || (eventcut.cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < eventcut.cfgCentMax) || (eventcut.cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < eventcut.cfgCentMax);
+  Filter collisionFilter_evsel = o2::aod::evsel::sel8 == true && (eventCut.cfgZvtxMin < o2::aod::collision::posZ && o2::aod::collision::posZ < eventCut.cfgZvtxMax);
+  Filter collisionFilter_centrality = (eventCut.cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < eventCut.cfgCentMax) || (eventCut.cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < eventCut.cfgCentMax) || (eventCut.cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < eventCut.cfgCentMax);
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
   using FilteredMyCollisionsWithMCLabel = soa::Filtered<MyCollisionsWithMCLabel>;
 
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
-  std::vector<std::pair<int, int>> stored_trackIds;
-
-  // Filter trackFilter = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC) == true;
-  // using MyFilteredTracks = soa::Filtered<MyTracks>;
-  // using MyFilteredTracksWithMCLabel = soa::Filtered<MyTracksWithMCLabel>;
-  // Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
-  // Partition<MyFilteredTracks> negTracks = o2::aod::track::signed1Pt < 0.f;
+  // std::vector<std::pair<int, int>> stored_trackIds;
 
   //! type of V0. 0: built solely for cascades (does not pass standard V0 cut), 1: standard 2, 3: photon-like with TPC-only use. Regular analysis should always use type 1.
-  Filter v0Filter = o2::aod::v0data::v0Type == uint8_t(1) && o2::aod::v0data::v0cosPA > v0cut.cfg_min_cospa&& o2::aod::v0data::dcaV0daughters<v0cut.cfg_max_dca2legs && nabs(o2::aod::v0data::dcanegtopv)> v0cut.cfg_min_dcaxy&& nabs(o2::aod::v0data::dcanegtopv) > v0cut.cfg_min_dcaxy;
+  Filter v0Filter = o2::aod::v0data::v0Type == uint8_t(1) && o2::aod::v0data::v0cosPA > v0Cut.cfg_min_cospa&& o2::aod::v0data::dcaV0daughters<v0Cut.cfg_max_dca2legs && nabs(o2::aod::v0data::dcanegtopv)> v0Cut.cfg_min_dcaxy&& nabs(o2::aod::v0data::dcanegtopv) > v0Cut.cfg_min_dcaxy;
   using filteredV0s = soa::Filtered<MyV0s>;
 
-  Filter cascadeFilter = nabs(o2::aod::cascdata::dcanegtopv) > cascadecut.cfg_min_dcaxy_v0leg&& nabs(o2::aod::cascdata::dcanegtopv) > cascadecut.cfg_min_dcaxy_v0leg&& nabs(o2::aod::cascdata::dcabachtopv) > cascadecut.cfg_min_dcaxy_bachelor;
-  Filter cascadeFilter_dca = o2::aod::cascdata::dcacascdaughters < cascadecut.cfg_max_dcadau && o2::aod::cascdata::dcaV0daughters < cascadecut.cfg_max_dcadau_v0;
+  Filter cascadeFilter = nabs(o2::aod::cascdata::dcanegtopv) > cascadeCut.cfg_min_dcaxy_v0leg&& nabs(o2::aod::cascdata::dcanegtopv) > cascadeCut.cfg_min_dcaxy_v0leg&& nabs(o2::aod::cascdata::dcabachtopv) > cascadeCut.cfg_min_dcaxy_bachelor;
+  Filter cascadeFilter_dca = o2::aod::cascdata::dcacascdaughters < cascadeCut.cfg_max_dcadau && o2::aod::cascdata::dcaV0daughters < cascadeCut.cfg_max_dcadau_v0;
   using filteredMyCascades = soa::Filtered<MyCascades>;
 
-  std::vector<int> electronIdsLoose;
-  std::vector<int> positronIdsLoose;
   std::vector<int> electronIds;
   std::vector<int> positronIds;
+
+  std::vector<int> kaonPlusIds;
+  std::vector<int> kaonMinusIds;
+
+  std::vector<int> k0Ids;
 
   std::vector<int> lambdaIds;
   std::vector<int> antilambdaIds;
@@ -1678,8 +1632,12 @@ struct taggingHFE {
   void processMC(FilteredMyCollisionsWithMCLabel const& collisions, aod::BCsWithTimestamps const& bcs, MyTracksWithMCLabel const& tracks, aod::TrackAssoc const& trackIndices, filteredV0s const& v0s, filteredMyCascades const& cascades, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
     runPairing<true>(bcs, collisions, tracks, trackIndices, v0s, cascades, mcCollisions, mcParticles);
+    runGen(mcCollisions, mcParticles);
   }
   PROCESS_SWITCH(taggingHFE, processMC, "process with TTCA", true);
+
+  void processDummy(aod::Collisions const&) {}
+  PROCESS_SWITCH(taggingHFE, processDummy, "process dummy", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

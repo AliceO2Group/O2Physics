@@ -13,28 +13,34 @@
 /// \brief Task for jet Lund plane. Creates histograms for offline unfolding (including QA histos), and optionally tables.
 /// \author Zoltan Varga <zoltan.varga@cern.ch>
 
-#include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 
 #include "Common/Core/RecoDecay.h"
 
-#include "CommonConstants/MathConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
 #include <THnSparse.h>
 
+#include <fastjet/AreaDefinition.hh>
 #include <fastjet/ClusterSequenceArea.hh>
+#include <fastjet/JetDefinition.hh>
 #include <fastjet/PseudoJet.hh>
 
 #include <algorithm>
-#include <array>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -77,6 +83,10 @@ DECLARE_SOA_COLUMN(SoftEta, softEta, float);
 DECLARE_SOA_COLUMN(SoftPhi, softPhi, float);
 
 DECLARE_SOA_TABLE(MiniSplittings, "AOD", "MINISPL",
+                  MiniJetId, SplitId, DeltaR, PtSoft, PtHard, SoftEta, SoftPhi, JetPt);
+
+// Inclusive splittings for all accepted jets (det or part), independent of matching
+DECLARE_SOA_TABLE(MiniSplittingsAll, "AOD", "MINISPLA",
                   MiniJetId, SplitId, DeltaR, PtSoft, PtHard, SoftEta, SoftPhi, JetPt);
 
 // Jet-jet matching (MC)
@@ -287,6 +297,7 @@ struct JetLundPlaneUnfolding {
   Produces<aod::MiniCollisions> outMiniCollisions;
   Produces<aod::MiniJets> outMiniJets;
   Produces<aod::MiniSplittings> outMiniSplittings;
+  Produces<aod::MiniSplittingsAll> outMiniSplittingsAll;
   Produces<aod::MiniJetMatches> outMiniJetMatches;
 
   // FastJet reclustering setup (C/A)
@@ -536,6 +547,11 @@ struct JetLundPlaneUnfolding {
         for (auto const& s : spl) {
           outMiniSplittings(miniJetIdx, sid++, s.deltaR, s.ptSoft, s.ptHard, s.softEta, s.softPhi, jet.pt());
         }
+
+        uint16_t sidAll = 0;
+        for (auto const& s : spl) {
+          outMiniSplittingsAll(miniJetIdx, sidAll++, s.deltaR, s.ptSoft, s.ptHard, s.softEta, s.softPhi, jet.pt());
+        }
       }
     }
   }
@@ -600,6 +616,11 @@ struct JetLundPlaneUnfolding {
 
         outMiniJets(partMiniCollIdx, /*level*/ JetLevel::Part, partJet.r(), partJet.pt(), partJet.eta(), partJet.phi());
         partJetToMiniJetIdx[truthJetKey] = outMiniJets.lastIndex();
+
+        uint16_t sidAll = 0;
+        for (auto const& s : spl) {
+          outMiniSplittingsAll(partJetToMiniJetIdx[truthJetKey], sidAll++, s.deltaR, s.ptSoft, s.ptHard, s.softEta, s.softPhi, partJet.pt());
+        }
       }
 
       if (!partJet.has_matchedJetGeo()) {
@@ -668,6 +689,11 @@ struct JetLundPlaneUnfolding {
 
         outMiniJets(detMiniCollIdx, /*level*/ JetLevel::Det, detJet.r(), detJet.pt(), detJet.eta(), detJet.phi());
         detJetToMiniJetIdx[detJetKey] = outMiniJets.lastIndex();
+
+        uint16_t sidAll = 0;
+        for (auto const& s : detSpl) {
+          outMiniSplittingsAll(detJetToMiniJetIdx[detJetKey], sidAll++, s.deltaR, s.ptSoft, s.ptHard, s.softEta, s.softPhi, detJet.pt());
+        }
       }
 
       if (!detJet.has_matchedJetGeo()) {

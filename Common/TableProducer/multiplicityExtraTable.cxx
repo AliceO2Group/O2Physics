@@ -41,6 +41,7 @@ const int nBCsPerOrbit = o2::constants::lhc::LHCMaxBunches;
 
 struct MultiplicityExtraTable {
   Produces<aod::MultBCs> multBC;
+  Produces<aod::MultBcSel> multBcSel;
   Produces<aod::MultNeighs> multNeigh;
 
   Produces<aod::Mults2BC> mult2bc;
@@ -85,7 +86,7 @@ struct MultiplicityExtraTable {
 
   using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 
-  void processBCs(soa::Join<BCsWithRun3Matchings, aod::BCFlags> const& bcs, aod::FV0As const&, aod::FT0s const&, aod::FDDs const&, aod::Zdcs const&, soa::Join<aod::Collisions, aod::EvSels> const& collisions)
+  void processBCs(soa::Join<BCsWithRun3Matchings, aod::BCFlags, aod::BcSels> const& bcs, aod::FV0As const&, aod::FT0s const&, aod::FDDs const&, aod::Zdcs const&, soa::Join<aod::Collisions, aod::EvSels> const& collisions)
   {
     //+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+
     // determine saved BCs and corresponding new BC table index
@@ -260,6 +261,8 @@ struct MultiplicityExtraTable {
         multFV0TriggerBits, multFT0TriggerBits, multFDDTriggerBits, multBCTriggerMask, collidingBC,
         bc.timestamp(),
         bc.flags());
+
+      multBcSel(bc.selection_raw());
     }
   }
 

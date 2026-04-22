@@ -377,7 +377,7 @@ struct DileptonPolarization {
     fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
     fRegistry.addClone("Pair/same/", "Pair/mix/");
     fRegistry.add("Pair/same/uls/hEta", "#eta_{ll}", kTH1D, {{2000, -10, 10}}, true);
-    fRegistry.add("Pair/mix/uls/hBeta", "#beta for Lorentz boost;#beta^{same};(#beta^{mix} - #beta^{same})/#beta^{same}", kTH2D, {{100, 0, 1}, {400, -0.2, 0.2}}, true);
+    // fRegistry.add("Pair/mix/uls/hBeta", "#beta for Lorentz boost;#beta^{same};(#beta^{mix} - #beta^{same})/#beta^{same}", kTH2D, {{100, 0, 1}, {400, -0.2, 0.2}}, true);
   }
 
   template <typename TCollision, typename TDilepton, typename TMixingBin>
@@ -483,7 +483,7 @@ struct DileptonPolarization {
           phiPol = std::fabs(phiPol);
         }
         fRegistry.fill(HIST("Pair/mix/") + HIST(pair_sign_types[signType]) + HIST("hs"), empair1.mass(), empair1.pt(), empair1.getPairDCA(), empair1.rapidity(), cos_thetaPol, phiPol, quadmom, weight);
-        fRegistry.fill(HIST("Pair/mix/") + HIST(pair_sign_types[signType]) + HIST("hBeta"), empair1.p() / empair1.e(), (empair2.p() / empair2.e() - empair1.p() / empair1.e()) / (empair1.p() / empair1.e()));
+        // fRegistry.fill(HIST("Pair/mix/") + HIST(pair_sign_types[signType]) + HIST("hBeta"), empair1.p() / empair1.e(), (empair2.p() / empair2.e() - empair1.p() / empair1.e()) / (empair1.p() / empair1.e()));
 
       } // end of pair2 loop
     } // end of pair1 loop

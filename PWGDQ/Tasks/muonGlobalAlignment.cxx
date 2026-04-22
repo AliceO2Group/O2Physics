@@ -13,12 +13,14 @@
 /// \brief Task to compute and evaluate DCA quantities
 /// \author Nicolas Bizé <nicolas.bize@cern.ch>, SUBATECH
 //
+
 #include "PWGDQ/Core/VarManager.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
+// #include "PWGDQ/DataModel/ReducedInfoTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
@@ -58,7 +60,8 @@
 #include <THnSparse.h>
 #include <TMath.h>
 
-#include "rapidjson/document.h"
+#include <rapidjson/document.h>
+#include <rapidjson/error/error.h>
 
 #include <GPUROOTCartesianFwd.h>
 #include <RtypesCore.h>
@@ -87,9 +90,9 @@ using namespace o2::aod;
 
 using namespace o2::aod::rctsel;
 
-using MyReducedMuons = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsCov>;
-using MyReducedEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended>;
-using MyReducedEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov>;
+// using MyReducedMuons = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsCov>;
+// using MyReducedEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended>;
+// using MyReducedEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov>;
 
 using MyCollisions = aod::Collisions;
 using MyBCs = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
@@ -113,7 +116,22 @@ static o2::globaltracking::MatchGlobalFwd sExtrap;
 using o2::dataformats::GlobalFwdTrack;
 using o2::track::TrackParCovFwd;
 
+namespace o2::aod
+{
+DECLARE_SOA_TABLE(CompactMFTTracks, "AOD", "COMPACTMFT", //! standalone table for studying alignment
+                  collision::PosX, collision::PosY, collision::PosZ,
+                  fwdtrack::Signed1Pt, fwdtrack::Tgl, fwdtrack::Phi,
+                  fwdtrack::FwdDcaX, fwdtrack::FwdDcaY, o2::aod::fwdtrack::CXX, o2::aod::fwdtrack::CYY, o2::aod::fwdtrack::CXY,
+                  fwdtrack::NClusters, fwdtrack::Chi2,
+                  fwdtrack::X, fwdtrack::Y, fwdtrack::Z);
+using CompactMFTTrack = CompactMFTTracks;
+} // namespace o2::aod
+
 struct muonGlobalAlignment {
+
+  Produces<aod::CompactMFTTracks> mftTable;
+  Configurable<bool> cfgProduceMFTTable{"cfgProduceMFTTable", false, "flag to produce MFTsa table"};
+
   ////   Variables for selecting MCH and MFT tracks
   Configurable<float> fTrackChi2MchUp{"cfgTrackChi2MchUp", 5.f, ""};
   Configurable<float> fPtMchLow{"cfgPtMchLow", 0.7f, ""};
@@ -1450,6 +1468,14 @@ struct muonGlobalAlignment {
               registry.get<TH2>(HIST("DCA/MFT/DCA_y_vs_x"))->Fill(dcax, dcay);
               registry.get<THnSparse>(HIST("DCA/MFT/DCA_x"))->Fill(dcax, collision.posZ(), mftTrack.x(), mftTrack.y(), mftNclusters);
               registry.get<THnSparse>(HIST("DCA/MFT/DCA_y"))->Fill(dcay, collision.posZ(), mftTrack.x(), mftTrack.y(), mftNclusters);
+
+              if (cfgProduceMFTTable) {
+                mftTable(collision.posX(), collision.posY(), collision.posZ(),
+                         mftTrack.signed1Pt(), mftTrack.tgl(), mftTrack.phi(),
+                         dcax, dcay, mftTrackAtDCA.getSigma2X(), mftTrackAtDCA.getSigma2Y(), mftTrackAtDCA.getSigmaXY(),
+                         mftNclusters, mftTrack.chi2(),
+                         mftTrack.x(), mftTrack.y(), mftTrack.z());
+              }
 
               if (fEnableMftDcaExtraPlots) {
                 if (mftNclusters >= 6) {

@@ -16,27 +16,32 @@
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/CCDB/EventSelectionParams.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/StaticFor.h"
-#include "Framework/runDataProcessing.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TF1.h"
-#include "TF2.h"
-#include <Math/Vector4D.h>
+#include <TF1.h>
+#include <THn.h>
 #include <TPDGCode.h>
+#include <TString.h>
 
 #include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using namespace o2;
@@ -75,8 +80,8 @@ struct StrangeCascTrack {
 
   Configurable<bool> doApplyEventCuts{"doApplyEventCuts", true, "apply general event cuts"}; // event filter - PVz, sel8, INEL>0
   // Xi selections
-  Configurable<bool> doApplyPtCutsXi{"doApplyPtCutsXi", true, "apply pt cuts (Xi)"};           // ignore particles with extremely low efficiencies
-  Configurable<bool> doApplyGenCutsXi{"doApplyGenCutsXi", true, "apply general cuts (Xi)"};    // general cascade cuts - cosPA, TPC hits etc.
+  Configurable<bool> doApplyPtCutsXi{"doApplyPtCutsXi", true, "apply pt cuts (Xi)"};        // ignore particles with extremely low efficiencies
+  Configurable<bool> doApplyGenCutsXi{"doApplyGenCutsXi", true, "apply general cuts (Xi)"}; // general cascade cuts - cosPA, TPC hits etc.
   Configurable<bool> doApplyTPCPIDXi{"doApplyTPCPIDXi", true, "apply tpc pid to dau tracks (Xi)"};
   Configurable<bool> doApplyTOFPIDXi{"doApplyTOFPIDXi", true, "apply tof pid to dau tracks (Xi)"};
   // Omega selections
@@ -1137,7 +1142,7 @@ struct StrangeCascTrack {
           continue; // from this point on - only gen events (and cascades from such events) that were reconstructed
         int64_t genCollId = recColl.straMCCollisionId();
         if (genColl.index() != genCollId)
-          continue; // safety check for correct slicing
+          continue;         // safety check for correct slicing
         if (!recoCounter) { // fill counting histograms only once for each gen reco>=1 event
           histos.fill(HIST("MC/EvRec/EvCounter"), 0.5);
           histos.fill(HIST("MC/EvRec/Mult"), genMult);

@@ -17,6 +17,7 @@
 #include "PWGEM/Dilepton/DataModel/lmeeMLTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/CollisionTypeHelper.h"
 #include "Common/Core/RecoDecay.h"
@@ -66,7 +67,7 @@ using namespace o2::constants::physics;
 using namespace o2::aod::fwdtrackutils;
 
 struct TreeCreatorMuonML {
-  using MyCollisionsMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
+  using MyCollisionsMC = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::McCollisionLabels>;
   using MyCollisionMC = MyCollisionsMC::iterator;
 
   using MyFwdTracksMC = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::McFwdTrackLabels>;
@@ -81,7 +82,6 @@ struct TreeCreatorMuonML {
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-  // Configurable<std::string> irSource{"irSource", "ZNC hadronic", "Estimator of the interaction rate (Recommended: pp/OO --> T0VTX, Pb-Pb --> ZNC hadronic)"};
 
   // for z shift for propagation
   Configurable<bool> cfgApplyZShiftFromCCDB{"cfgApplyZShiftFromCCDB", false, "flag to apply z shift"};
@@ -98,6 +98,11 @@ struct TreeCreatorMuonML {
     Configurable<bool> cfgRequireNoITSROFB{"cfgRequireNoITSROFB", false, "require no ITS readout frame border"};
     Configurable<bool> cfgRequireNoSameBunchPileup{"cfgRequireNoSameBunchPileup", false, "require no same bunch pileup in event cut"};
     Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
+    // for RCT
+    o2::framework::Configurable<bool> cfgRequireGoodRCT{"cfgRequireGoodRCT", false, "require good detector flag in run condtion table"};
+    o2::framework::Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT_muon_glo", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
+    o2::framework::Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "set ZDC flag for AA"};
+    o2::framework::Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
   } eventCutGroup;
 
   struct : ConfigurableGroup {
@@ -115,6 +120,7 @@ struct TreeCreatorMuonML {
   std::mt19937 engine;
   std::uniform_real_distribution<float> dist01;
 
+  o2::aod::rctsel::RCTFlagsChecker rctChecker;
   ctpRateFetcher mRateFetcher;
   std::string irSourceForCptFetcher{""};
 
@@ -132,6 +138,7 @@ struct TreeCreatorMuonML {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
     ccdbApi.init(ccdburl);
+    rctChecker.init(eventCutGroup.cfgRCTLabel.value, eventCutGroup.cfgCheckZDC.value, eventCutGroup.cfgTreatLimitedAcceptanceAsBad.value);
 
     addHistograms();
 
@@ -319,7 +326,7 @@ struct TreeCreatorMuonML {
     float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
 
     o2::dataformats::GlobalFwdTrack propmuonAtPV_Matched = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToVertex, glMuonCutGroup.matchingZ, mBz, mZShift);
-    float ptMatchedMCHMID = propmuonAtPV_Matched.getPt();
+    // float ptMatchedMCHMID = propmuonAtPV_Matched.getPt();
     float etaMatchedMCHMID = propmuonAtPV_Matched.getEta();
     float phiMatchedMCHMID = propmuonAtPV_Matched.getPhi();
     // o2::math_utils::bringTo02Pi(phiMatchedMCHMID);
@@ -335,33 +342,52 @@ struct TreeCreatorMuonML {
     float pDCA = mchtrack.p() * dcaXY_Matched;
     float rAtAbsorberEnd = fwdtrack.rAtAbsorberEnd(); // this works only for GlobalMuonTrack
 
-    float xMatchedMFTatMP = 999.f;
-    float yMatchedMFTatMP = 999.f;
-    float xMatchedMCHMIDatMP = 999.f;
-    float yMatchedMCHMIDatMP = 999.f;
+    float xMFTatMP = 999.f, yMFTatMP = 999.f;
+    float xMCHMIDatMP = 999.f, yMCHMIDatMP = 999.f;
+
+    float xErrMFTatMP = 999.f, yErrMFTatMP = 999.f;
+    float xErrMCHMIDatMP = 999.f, yErrMCHMIDatMP = 999.f;
+    float signed1PtMFTatMP = 999.f, etaMFTatMP = 999.f, phiMFTatMP = 999.f;
+    float signed1PtMCHMIDatMP = 999.f, etaMCHMIDatMP = 999.f, phiMCHMIDatMP = 999.f;
 
     if constexpr (withMFTCov) {
       auto mfttrackcov = mftCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
       o2::track::TrackParCovFwd mftsaAtMP = getTrackParCovFwdShift(mfttrack, mZShift, mfttrackcov); // values at innermost update
       mftsaAtMP.propagateToZhelix(glMuonCutGroup.matchingZ, mBz);                                   // propagated to matching plane
-      xMatchedMFTatMP = mftsaAtMP.getX();
-      yMatchedMFTatMP = mftsaAtMP.getY();
+      xMFTatMP = mftsaAtMP.getX();
+      yMFTatMP = mftsaAtMP.getY();
+      xErrMFTatMP = std::sqrt(mftsaAtMP.getSigma2X());
+      yErrMFTatMP = std::sqrt(mftsaAtMP.getSigma2Y());
+      signed1PtMFTatMP = mftsaAtMP.getInvQPt();
+      etaMFTatMP = mftsaAtMP.getEta();
+      phiMFTatMP = RecoDecay::constrainAngle(mftsaAtMP.getPhi(), 0, 1U);
 
       auto muonAtMP = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToMatchingPlane, glMuonCutGroup.matchingZ, mBz, mZShift); // propagated to matching plane
-      xMatchedMCHMIDatMP = muonAtMP.getX();
-      yMatchedMCHMIDatMP = muonAtMP.getY();
+      xMCHMIDatMP = muonAtMP.getX();
+      yMCHMIDatMP = muonAtMP.getY();
+      xErrMCHMIDatMP = std::sqrt(muonAtMP.getSigma2X());
+      yErrMCHMIDatMP = std::sqrt(muonAtMP.getSigma2Y());
+      signed1PtMCHMIDatMP = muonAtMP.getInvQPt();
+      etaMCHMIDatMP = muonAtMP.getEta();
+      phiMCHMIDatMP = RecoDecay::constrainAngle(muonAtMP.getPhi(), 0, 1U);
     }
 
     float deta = etaMatchedMCHMID - eta;
     float dphi = phiMatchedMCHMID - phi;
     o2::math_utils::bringToPMPi(dphi);
 
-    mltable(collision.posZ(), collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(), hadronicRate,
-            fwdtrack.trackType(), pt, eta, phi, fwdtrack.sign(), dcaX, dcaY, ptMatchedMCHMID, etaMatchedMCHMID, phiMatchedMCHMID,
-            xMatchedMCHMIDatMP, yMatchedMCHMIDatMP, xMatchedMFTatMP, yMatchedMFTatMP,
-            fwdtrack.nClusters(), pDCA, rAtAbsorberEnd, chi2, fwdtrack.chi2MatchMCHMID(), fwdtrack.chi2MatchMCHMFT(),
-            // fwdtrack.mchBitMap(), fwdtrack.midBitMap(), fwdtrack.midBoards(),
-            mfttrack.mftClusterSizesAndTrackFlags(), chi2mft, mfttrack.nClusters(), pdgCode, isPrimary, isMatched,
+    mltable(collision.numContrib(), collision.multFT0C(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(), hadronicRate,
+            fwdtrack.trackType(),
+            signed1PtMFTatMP, etaMFTatMP, phiMFTatMP,
+            signed1PtMCHMIDatMP, etaMCHMIDatMP, phiMCHMIDatMP,
+            xMCHMIDatMP, yMCHMIDatMP,
+            xErrMCHMIDatMP, yErrMCHMIDatMP,
+            xMFTatMP, yMFTatMP,
+            xErrMFTatMP, yErrMFTatMP,
+            dcaX, dcaY,
+            fwdtrack.nClusters(), pDCA, rAtAbsorberEnd, fwdtrack.chi2MatchMCHMID(), fwdtrack.chi2MatchMCHMFT(),
+            mfttrack.mftClusterSizesAndTrackFlags(), chi2, mchtrack.chi2(), chi2mft, mfttrack.nClusters(),
+            pdgCode, isPrimary, isMatched,
             mcParticle_MCHMID.pt(), mcParticle_MCHMID.eta(), mcParticle_MCHMID.phi());
 
     fRegistry.fill(HIST("hMuonType"), fwdtrack.trackType());
@@ -409,6 +435,11 @@ struct TreeCreatorMuonML {
       if (!isSelectedCollision(collision)) {
         continue;
       }
+
+      if (eventCutGroup.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
+        continue;
+      }
+
       float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSourceForCptFetcher) * 1.e-3; // kHz
 
       auto fwdtracks_coll = fwdtracks.sliceBy(perCollision, collision.globalIndex());
@@ -442,6 +473,11 @@ struct TreeCreatorMuonML {
       if (!isSelectedCollision(collision)) {
         continue;
       }
+
+      if (eventCutGroup.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
+        continue;
+      }
+
       float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSourceForCptFetcher) * 1.e-3; // kHz
 
       auto fwdtracks_coll = fwdtracks.sliceBy(perCollision, collision.globalIndex());

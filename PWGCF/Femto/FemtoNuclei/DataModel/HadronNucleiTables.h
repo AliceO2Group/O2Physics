@@ -15,11 +15,12 @@
 /// \author CMY
 /// \date 2025-04-10
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-
 #ifndef PWGCF_FEMTO_FEMTONUCLEI_DATAMODEL_HADRONNUCLEITABLES_H_
 #define PWGCF_FEMTO_FEMTONUCLEI_DATAMODEL_HADRONNUCLEITABLES_H_
+
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 
 namespace o2::aod
 {
