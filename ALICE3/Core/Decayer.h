@@ -28,7 +28,6 @@
 #include <TDecayChannel.h> // IWYU pragma: keep
 #include <TGenPhaseSpace.h>
 #include <TLorentzVector.h>
-#include <TPDGCode.h>
 #include <TRandom3.h>
 
 #include <array>
