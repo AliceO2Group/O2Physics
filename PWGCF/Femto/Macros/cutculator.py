@@ -49,7 +49,7 @@ def ask_user_selection(group):
     Prompt user to select bin(s) for this selection group.
     - If minimal selections contain exactly 1 entry → auto-select it.
     - Optional selections remain user-selectable.
-    - Neither minimal nor optional selections are shown with a warning — useful for rejection masks.
+    - Neutral selections are neither minimal nor optional (useful for rejection masks or in pass through mode)
     """
     selection_name = group[0].get("SelectionName", "unknown")
 
@@ -124,7 +124,7 @@ def ask_user_selection(group):
 
     # ----- Neither minimal nor optional-----
     if neutral_bins:
-        print(f"\nSelection: {selection_name} (Neither minimal nor optional, 0 to skip)")
+        print(f"\nSelection: {selection_name} (neutral selection, 0 to skip)")
         for idx, b in enumerate(neutral_bins, start=1):
             print(f"  [{idx}] {format_value_with_comment(b)}")
 

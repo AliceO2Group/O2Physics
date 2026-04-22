@@ -20,6 +20,7 @@
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include <Framework/ASoAHelpers.h>
+#include <Framework/Logger.h>
 
 #include <cstdint>
 
@@ -306,27 +307,25 @@ void processMixedEvent(T1 const& Collisions,
   bool firstBin = true;
   int windowSize = 0;
   PairHistManager.resetTrackedParticlesPerEvent();
-  PairHistManager.resetTrackedParticlesPerMixingBin();
   auto pairGenerator = o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions);
   for (auto pairIterator = pairGenerator.begin(); pairIterator != pairGenerator.end(); pairIterator++) {
     auto const& [collision1, collision2] = *pairIterator;
     if (pairIterator.isNewWindow()) { // is true for the first bin, so we skip
       if (!firstBin) {
+        // we fill histograms after we finish processing one mixing bin
+        // the very first bin is considered a new window, so we skp it
         PairHistManager.fillMixingQaMePerMixingBin(windowSize);
-        PairHistManager.resetTrackedParticlesPerMixingBin();
       }
       windowSize = pairIterator.currentWindowNeighbours();
       firstBin = false;
     }
     if (collision1.magField() != collision2.magField()) {
+      LOG(warn) << "Tried to mixng to events with different magntic field. This should not happen...";
       continue;
     }
     CprManager.setMagField(collision1.magField());
     auto sliceParticle1 = Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache);
     auto sliceParticle2 = Partition2->sliceByCached(o2::aod::femtobase::stored::fColId, collision2.globalIndex(), cache);
-    if (sliceParticle1.size() == 0 || sliceParticle2.size() == 0) {
-      continue;
-    }
 
     PairHistManager.resetTrackedParticlesPerEvent();
     PairHistManager.fillMixingQaMe(collision1, collision2);
@@ -345,7 +344,6 @@ void processMixedEvent(T1 const& Collisions,
       if (PairHistManager.checkPairCuts()) {
         PairHistManager.template fill<mode>();
         PairHistManager.trackParticlesPerEvent(p1, p2);
-        PairHistManager.trackParticlesPerMixingBin(p1, p2);
       }
     }
     PairHistManager.fillMixingQaMePerEvent();
@@ -391,8 +389,6 @@ void processMixedEvent(T1 const& Collisions,
   bool firstBin = true;
   int windowSize = 0;
   PairHistManager.resetTrackedParticlesPerEvent();
-  PairHistManager.resetTrackedParticlesPerMixingBin();
-
   auto pairGenerator = o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions);
   for (auto pairIterator = pairGenerator.begin(); pairIterator != pairGenerator.end(); ++pairIterator) {
     auto const& [collision1, collision2] = *pairIterator;
@@ -400,12 +396,12 @@ void processMixedEvent(T1 const& Collisions,
     if (pairIterator.isNewWindow()) {
       if (!firstBin) {
         PairHistManager.fillMixingQaMePerMixingBin(windowSize);
-        PairHistManager.resetTrackedParticlesPerMixingBin();
       }
       windowSize = pairIterator.currentWindowNeighbours();
       firstBin = false;
     }
     if (collision1.magField() != collision2.magField()) {
+      LOG(warn) << "Tried to mixng to events with different magntic field. This should not happen...";
       continue;
     }
     CprManager.setMagField(collision1.magField());
@@ -418,10 +414,6 @@ void processMixedEvent(T1 const& Collisions,
       o2::aod::femtobase::stored::fColId,
       collision2.globalIndex(),
       cache);
-
-    if (sliceParticle1.size() == 0 || sliceParticle2.size() == 0) {
-      continue;
-    }
 
     PairHistManager.resetTrackedParticlesPerEvent();
     PairHistManager.fillMixingQaMe(collision1, collision2);
@@ -446,7 +438,6 @@ void processMixedEvent(T1 const& Collisions,
       if (PairHistManager.checkPairCuts()) {
         PairHistManager.template fill<mode>();
         PairHistManager.trackParticlesPerEvent(p1, p2);
-        PairHistManager.trackParticlesPerMixingBin(p1, p2);
       }
     }
     PairHistManager.fillMixingQaMePerEvent();
