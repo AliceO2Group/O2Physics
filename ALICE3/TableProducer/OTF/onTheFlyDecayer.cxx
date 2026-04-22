@@ -328,7 +328,7 @@ struct OnTheFlyDecayer {
           }
 
           std::vector<o2::upgrade::OTFParticle> daughters = decayer.decayParticle(pdgDB, otfParticle);
-          for (o2::upgrade::OTFParticle dau : daughters) {
+          for (const o2::upgrade::OTFParticle& dau : daughters) {
             decayStack.push_back(dau);
           }
         }
