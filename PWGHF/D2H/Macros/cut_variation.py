@@ -20,7 +20,6 @@ class MinimisationStatus(IntEnum):
     Success = auto()
     MonotonyViolation = auto()
     Fail = auto()
-    N = auto()
 
 # pylint: disable=too-many-instance-attributes
 class CutVarMinimiser:

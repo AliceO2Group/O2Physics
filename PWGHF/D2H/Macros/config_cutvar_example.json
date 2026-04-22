@@ -71,6 +71,18 @@
         "cov": false,
         "unc": false
     },
+    "is_save_to_root_file": {
+        "canvas": false,
+        "raw_yield": false,
+        "uncertainty": false,
+        "efficiency": false,
+        "fraction": false,
+        "corrected_yield": true,
+        "correlation_matrix": false,
+        "covariance": false,
+        "corrected_fraction": false,
+        "minimisation_status": true
+    },
     "central_efficiency": {
         "computerawfrac": true,
         "inputdir": "path/to/central/efficiency",

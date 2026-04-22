@@ -30,6 +30,19 @@ class PlotType(IntEnum):
     Unc = auto()
     N = auto()
 
+class ObjectToSave(IntEnum):
+    Canvas = 0
+    RawYield = auto()
+    Uncertainty = auto()
+    Efficiency = auto()
+    Fraction = auto()
+    CorrectedYield = auto()
+    CorrelationMatrix = auto()
+    Covariance = auto()
+    CorrectedFraction = auto()
+    MinimisationStatus = auto()
+    N = auto()
+
 def main(config):
     """
     Main function
@@ -83,6 +96,18 @@ def main(config):
     is_save_canvas_as_macro[PlotType.Frac] = cfg.get("is_save_canvas_as_macro", {}).get("frac", False)
     is_save_canvas_as_macro[PlotType.Cov] = cfg.get("is_save_canvas_as_macro", {}).get("cov", False)
     is_save_canvas_as_macro[PlotType.Unc] = cfg.get("is_save_canvas_as_macro", {}).get("unc", False)
+
+    is_save_to_root_file = [False] * ObjectToSave.N
+    is_save_to_root_file[ObjectToSave.Canvas] = cfg.get("is_save_to_root_file", {}).get("canvas", False)
+    is_save_to_root_file[ObjectToSave.RawYield] = cfg.get("is_save_to_root_file", {}).get("raw_yield", False)
+    is_save_to_root_file[ObjectToSave.Uncertainty] = cfg.get("is_save_to_root_file", {}).get("uncertainty", False)
+    is_save_to_root_file[ObjectToSave.Efficiency] = cfg.get("is_save_to_root_file", {}).get("efficiency", False)
+    is_save_to_root_file[ObjectToSave.Fraction] = cfg.get("is_save_to_root_file", {}).get("fraction", False)
+    is_save_to_root_file[ObjectToSave.CorrectedYield] = cfg.get("is_save_to_root_file", {}).get("corrected_yield", True)
+    is_save_to_root_file[ObjectToSave.CorrelationMatrix] = cfg.get("is_save_to_root_file", {}).get("correlation_matrix", False)
+    is_save_to_root_file[ObjectToSave.Covariance] = cfg.get("is_save_to_root_file", {}).get("covariance", False)
+    is_save_to_root_file[ObjectToSave.CorrectedFraction] = cfg.get("is_save_to_root_file", {}).get("corrected_fraction", False)
+    is_save_to_root_file[ObjectToSave.MinimisationStatus] = cfg.get("is_save_to_root_file", {}).get("minimisation_status", True)
 
     if cfg["central_efficiency"]["computerawfrac"]:
         infile_name = os.path.join(cfg["central_efficiency"]["inputdir"], cfg["central_efficiency"]["inputfile"])
@@ -253,44 +278,48 @@ def main(config):
             hist_bin_title_rawy = hist_bin_title if is_draw_title[PlotType.Rawy] else ""
             canv_rawy, histos_rawy, leg_r = minimiser.plot_result(f"_pt_{pt_min}_to_{pt_max}", hist_bin_title_rawy)
             output.cd()
-            canv_rawy.Write()
-            for _, hist in histos_rawy.items():
-                hist.Write()
+            if is_save_to_root_file[ObjectToSave.Canvas]: canv_rawy.Write()
+            if is_save_to_root_file[ObjectToSave.RawYield]:
+                for _, hist in histos_rawy.items():
+                    hist.Write()
             if (is_save_canvas_as_macro[PlotType.Rawy]):
                 canv_rawy.SaveAs(f"canv_rawy_{ipt+1}.C")
 
             hist_bin_title_unc = hist_bin_title if is_draw_title[PlotType.Unc] else ""
             canv_unc, histos_unc, leg_unc = minimiser.plot_uncertainties(f"_pt_{pt_min}_to_{pt_max}", hist_bin_title_unc)
             output.cd()
-            canv_unc.Write()
-            for _, hist in histos_unc.items():
-                hist.Write()
+            if is_save_to_root_file[ObjectToSave.Canvas]: canv_unc.Write()
+            if is_save_to_root_file[ObjectToSave.Uncertainty]:
+                for _, hist in histos_unc.items():
+                    hist.Write()
             if (is_save_canvas_as_macro[PlotType.Unc]):
                 canv_unc.SaveAs(f"canv_unc_{ipt+1}.C")
 
             hist_bin_title_eff = hist_bin_title if is_draw_title[PlotType.Eff] else ""
             canv_eff, histos_eff, leg_e = minimiser.plot_efficiencies(f"_pt_{pt_min}_to_{pt_max}", hist_bin_title_eff)
             output.cd()
-            canv_eff.Write()
-            for _, hist in histos_eff.items():
-                hist.Write()
+            if is_save_to_root_file[ObjectToSave.Canvas]: canv_eff.Write()
+            if is_save_to_root_file[ObjectToSave.Efficiency]:
+                for _, hist in histos_eff.items():
+                    hist.Write()
             if (is_save_canvas_as_macro[PlotType.Eff]):
                 canv_eff.SaveAs(f"canv_eff_{ipt+1}.C")
 
             hist_bin_title_frac = hist_bin_title if is_draw_title[PlotType.Frac] else ""
             canv_frac, histos_frac, leg_f = minimiser.plot_fractions(f"_pt_{pt_min}_to_{pt_max}", hist_bin_title_frac)
             output.cd()
-            canv_frac.Write()
-            for _, hist in histos_frac.items():
-                hist.Write()
+            if is_save_to_root_file[ObjectToSave.Canvas]: canv_frac.Write()
+            if is_save_to_root_file[ObjectToSave.Fraction]:
+                for _, hist in histos_frac.items():
+                    hist.Write()
             if (is_save_canvas_as_macro[PlotType.Frac]):
                 canv_frac.SaveAs(f"canv_frac_{ipt+1}.C")
 
             hist_bin_title_cov = hist_bin_title if is_draw_title[PlotType.Cov] else ""
             canv_cov, histo_cov = minimiser.plot_cov_matrix(True, f"_pt_{pt_min}_to_{pt_max}", hist_bin_title_cov)
             output.cd()
-            canv_cov.Write()
-            histo_cov.Write()
+            if is_save_to_root_file[ObjectToSave.Canvas]: canv_cov.Write()
+            if is_save_to_root_file[ObjectToSave.CorrelationMatrix]: histo_cov.Write()
             if (is_save_canvas_as_macro[PlotType.Cov]):
                 canv_cov.SaveAs(f"canv_cov_{ipt+1}.C")
         else:
@@ -338,14 +367,17 @@ def main(config):
         canv_unc.Print(f"{os.path.join(cfg['output']['directory'], output_name_unc_pdf)}{print_bracket}")
 
     output.cd()
-    hist_corry_prompt.Write()
-    hist_corry_nonprompt.Write()
-    hist_covariance_pnp.Write()
-    hist_covariance_pp.Write()
-    hist_covariance_npnp.Write()
-    hist_corrfrac_prompt.Write()
-    hist_corrfrac_nonprompt.Write()
-    hist_minimisation_status.Write()
+    if is_save_to_root_file[ObjectToSave.CorrectedYield]:
+        hist_corry_prompt.Write()
+        hist_corry_nonprompt.Write()
+    if is_save_to_root_file[ObjectToSave.Covariance]:
+        hist_covariance_pnp.Write()
+        hist_covariance_pp.Write()
+        hist_covariance_npnp.Write()
+    if is_save_to_root_file[ObjectToSave.CorrectedFraction]:
+        hist_corrfrac_prompt.Write()
+        hist_corrfrac_nonprompt.Write()
+    if is_save_to_root_file[ObjectToSave.MinimisationStatus]: hist_minimisation_status.Write()
     if cfg["central_efficiency"]["computerawfrac"]:
         hist_frac_raw_prompt.Write()
         hist_frac_raw_nonprompt.Write()
