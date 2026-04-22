@@ -364,9 +364,10 @@ struct HfTaskFlow {
   Preslice<HfCandidatesSelD0> perColD0s = aod::track::collisionId;
   Preslice<HfCandidatesSelLc> perColLcs = aod::track::collisionId;
   Preslice<FilteredMftTracks> perColMftTracks = o2::aod::fwdtrack::collisionId;
+  Preslice<FilteredTracksWDcaSel> perColTracks = aod::track::collisionId;
+
   PresliceUnsorted<soa::SmallGroups<aod::BestCollisionsFwd>> perColReassociated2dTracks = o2::aod::fwdtrack::collisionId;
   PresliceUnsorted<soa::SmallGroups<aod::BestCollisionsFwd3d>> perColReassociated3dTracks = o2::aod::fwdtrack::collisionId;
-  Preslice<FilteredTracksWDcaSel> perColTracks = aod::track::collisionId;
 
   //  configurables for containers
   //  TODO: flow of HF will need to be done vs. invariant mass, in the signal and side-band regions
