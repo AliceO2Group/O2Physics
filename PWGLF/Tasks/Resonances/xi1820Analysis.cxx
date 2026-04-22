@@ -180,8 +180,6 @@ struct Xi1820Analysis {
     AxisSpec armenterosQtAxis = {500, 0.0, 0.5, "Armenteros qt (GeV/c)"};
     AxisSpec axisPhi = {360, -o2::constants::math::PI, o2::constants::math::PI};
 
-
-
     // Event QA histograms
     histos.add("Event/posZ", "Event vertex Z position", kTH1F, {{200, -20., 20., "V_{z} (cm)"}});
     histos.add("Event/centrality", "Event centrality distribution", kTH1D, {centAxis});
@@ -256,25 +254,22 @@ struct Xi1820Analysis {
     // K+ Lambda
     if (doprocessDataWithTracks || doprocessDataWithMicroTracks || doprocessMixedEventWithTracks || doprocessMixedEventWithMicroTracks || doprocessMCWithTracks) {
 
-        histos.add("xi1820/kplus_lambda/hInvMassKplusLambda", "Invariant mass of K^{+} + #Lambda", kTH1F, {invMassAxis});
-        histos.add("xi1820/kplus_lambda/hInvMassKplusLambda_Mix", "Mixed event Invariant mass of K^{+} + #Lambda", kTH1F, {invMassAxis}); 
-      
+      histos.add("xi1820/kplus_lambda/hInvMassKplusLambda", "Invariant mass of K^{+} + #Lambda", kTH1F, {invMassAxis});
+      histos.add("xi1820/kplus_lambda/hInvMassKplusLambda_Mix", "Mixed event Invariant mass of K^{+} + #Lambda", kTH1F, {invMassAxis});
+
       // K+ Anti-Lambda
-        histos.add("xi1820/kplus_antilambda/hInvMassKplusAntiLambda", "Invariant mass of K^{+} + #bar{#Lambda}", kTH1F, {invMassAxis});
-        histos.add("xi1820/kplus_antilambda/hInvMassKplusAntiLambda_Mix", "Mixed event Invariant mass of K^{+} + #bar{#Lambda}", kTH1F, {invMassAxis});
+      histos.add("xi1820/kplus_antilambda/hInvMassKplusAntiLambda", "Invariant mass of K^{+} + #bar{#Lambda}", kTH1F, {invMassAxis});
+      histos.add("xi1820/kplus_antilambda/hInvMassKplusAntiLambda_Mix", "Mixed event Invariant mass of K^{+} + #bar{#Lambda}", kTH1F, {invMassAxis});
 
       // K- Lambda
-        histos.add("xi1820/kminus_lambda/hInvMassKminusLambda", "Invariant mass of K^{-} + #Lambda", kTH1F, {invMassAxis});
-        histos.add("xi1820/kminus_lambda/hInvMassKminusLambda_Mix", "Mixed event Invariant mass of K^{-} + #Lambda", kTH1F, {invMassAxis});
+      histos.add("xi1820/kminus_lambda/hInvMassKminusLambda", "Invariant mass of K^{-} + #Lambda", kTH1F, {invMassAxis});
+      histos.add("xi1820/kminus_lambda/hInvMassKminusLambda_Mix", "Mixed event Invariant mass of K^{-} + #Lambda", kTH1F, {invMassAxis});
 
-              // K- Anti-Lambda
-        histos.add("xi1820/kminus_antilambda/hInvMassKminusAntiLambda", "Invariant mass of K^{-} + #bar{#Lambda}", kTH1F, {invMassAxis});
-        histos.add("xi1820/kminus_antilambda/hInvMassKminusAntiLambda_Mix", "Mixed event Invariant mass of K^{-} + #bar{#Lambda}", kTH1F, {invMassAxis});
+      // K- Anti-Lambda
+      histos.add("xi1820/kminus_antilambda/hInvMassKminusAntiLambda", "Invariant mass of K^{-} + #bar{#Lambda}", kTH1F, {invMassAxis});
+      histos.add("xi1820/kminus_antilambda/hInvMassKminusAntiLambda_Mix", "Mixed event Invariant mass of K^{-} + #bar{#Lambda}", kTH1F, {invMassAxis});
 
-
-
-
-    if(!(additionalConfig.cfgPhiCheck)) {
+      if (!(additionalConfig.cfgPhiCheck)) {
         histos.add("xi1820/kplus_lambda/hMassPtCentKplusLambda", "K^{+} + #Lambda mass vs pT vs cent", kTH3D, {invMassAxis, ptAxis, centAxis});
         histos.add("xi1820/kplus_lambda/hMassPtCentKplusLambda_Mix", "Mixed event K^{+} + #Lambda mass vs pT vs cent", kTH3D, {invMassAxis, ptAxis, centAxis});
 
@@ -289,26 +284,23 @@ struct Xi1820Analysis {
         histos.add("xi1820/kminus_antilambda/hMassPtCentKminusAntiLambda", "K^{-} + #bar{#Lambda} mass vs pT vs cent", kTH3D, {invMassAxis, ptAxis, centAxis});
         histos.add("xi1820/kminus_antilambda/hMassPtCentKminusAntiLambda_Mix", "Mixed event K^{-} + #bar{#Lambda} mass vs pT vs cent", kTH3D, {invMassAxis, ptAxis, centAxis});
       } else {
-      histos.add("xi1820/kplus_lambda/hMassPtCentPhiKplusLambda", "K^{+} + #Lambda mass vs pT vs cent", kTHnSparseF, {invMassAxis, ptAxis, centAxis, axisPhi });
-      histos.add("xi1820/kplus_lambda/hMassPtCentPhiKplusLambda_Mix", "Mixed event K^{+} + #Lambda mass vs pT vs cent", kTHnSparseF, {invMassAxis, ptAxis, centAxis, axisPhi });
+        histos.add("xi1820/kplus_lambda/hMassPtCentPhiKplusLambda", "K^{+} + #Lambda mass vs pT vs cent", kTHnSparseF, {invMassAxis, ptAxis, centAxis, axisPhi});
+        histos.add("xi1820/kplus_lambda/hMassPtCentPhiKplusLambda_Mix", "Mixed event K^{+} + #Lambda mass vs pT vs cent", kTHnSparseF, {invMassAxis, ptAxis, centAxis, axisPhi});
 
-      // K+ Anti-Lambda
-      histos.add("xi1820/kplus_antilambda/hMassPtCentPhiKplusAntiLambda", "K^{+} + #bar{#Lambda} mass vs pT vs cent", kTHnSparseF, {invMassAxis, ptAxis, centAxis, axisPhi });
-      histos.add("xi1820/kplus_antilambda/hMassPtCentPhiKplusAntiLambda_Mix", "Mixed event K^{+} + #bar{#Lambda} mass vs pT vs cent", kTHnSparseF, {invMassAxis, ptAxis, centAxis, axisPhi });
-      histos.add("xi1820/kplus_antilambda/hMassPtCentPhiKplusAntiLambda_Rot", "Rotated background K^{+} + #bar{#Lambda} mass vs pT vs cent", kTHnSparseF, {invMassAxis, ptAxis, centAxis, axisPhi });
+        // K+ Anti-Lambda
+        histos.add("xi1820/kplus_antilambda/hMassPtCentPhiKplusAntiLambda", "K^{+} + #bar{#Lambda} mass vs pT vs cent", kTHnSparseF, {invMassAxis, ptAxis, centAxis, axisPhi});
+        histos.add("xi1820/kplus_antilambda/hMassPtCentPhiKplusAntiLambda_Mix", "Mixed event K^{+} + #bar{#Lambda} mass vs pT vs cent", kTHnSparseF, {invMassAxis, ptAxis, centAxis, axisPhi});
+        histos.add("xi1820/kplus_antilambda/hMassPtCentPhiKplusAntiLambda_Rot", "Rotated background K^{+} + #bar{#Lambda} mass vs pT vs cent", kTHnSparseF, {invMassAxis, ptAxis, centAxis, axisPhi});
 
-      // K- Lambda
-      histos.add("xi1820/kminus_lambda/hMassPtCentPhiKminusLambda", "K^{-} + #Lambda mass vs pT vs cent", kTHnSparseF, {invMassAxis, ptAxis, centAxis, axisPhi });
-      histos.add("xi1820/kminus_lambda/hMassPtCentPhiKminusLambda_Mix", "Mixed event K^{-} + #Lambda mass vs pT vs cent", kTHnSparseF, {invMassAxis, ptAxis, centAxis, axisPhi });
-      histos.add("xi1820/kminus_lambda/hMassPtCentPhiKminusLambda_Rot", "Rotated background K^{-} + #Lambda mass vs pT vs cent", kTHnSparseF, {invMassAxis, ptAxis, centAxis, axisPhi });
+        // K- Lambda
+        histos.add("xi1820/kminus_lambda/hMassPtCentPhiKminusLambda", "K^{-} + #Lambda mass vs pT vs cent", kTHnSparseF, {invMassAxis, ptAxis, centAxis, axisPhi});
+        histos.add("xi1820/kminus_lambda/hMassPtCentPhiKminusLambda_Mix", "Mixed event K^{-} + #Lambda mass vs pT vs cent", kTHnSparseF, {invMassAxis, ptAxis, centAxis, axisPhi});
+        histos.add("xi1820/kminus_lambda/hMassPtCentPhiKminusLambda_Rot", "Rotated background K^{-} + #Lambda mass vs pT vs cent", kTHnSparseF, {invMassAxis, ptAxis, centAxis, axisPhi});
 
-      // K- Anti-Lambda
-      histos.add("xi1820/kminus_antilambda/hMassPtCentPhiKminusAntiLambda", "K^{-} + #bar{#Lambda} mass vs pT vs cent", kTHnSparseF, {invMassAxis, ptAxis, centAxis, axisPhi });
-      histos.add("xi1820/kminus_antilambda/hMassPtCentPhiKminusAntiLambda_Mix", "Mixed event K^{-} + #bar{#Lambda} mass vs pT vs cent", kTHnSparseF, {invMassAxis, ptAxis, centAxis, axisPhi });
-
+        // K- Anti-Lambda
+        histos.add("xi1820/kminus_antilambda/hMassPtCentPhiKminusAntiLambda", "K^{-} + #bar{#Lambda} mass vs pT vs cent", kTHnSparseF, {invMassAxis, ptAxis, centAxis, axisPhi});
+        histos.add("xi1820/kminus_antilambda/hMassPtCentPhiKminusAntiLambda_Mix", "Mixed event K^{-} + #bar{#Lambda} mass vs pT vs cent", kTHnSparseF, {invMassAxis, ptAxis, centAxis, axisPhi});
       }
-
-
     }
 
     // MC Reco histograms for charged K + Lambda channel
@@ -353,12 +345,12 @@ struct Xi1820Analysis {
     // K0s + Lambda
     if (doprocessK0sLambda || doprocessK0sLambdaMixedEvent || doprocessMCK0sLambda) {
 
-        histos.add("xi1820/k0s_lambda/hInvMassK0sLambda", "Invariant mass of Xi(1820) to K^{0}_{S} + #Lambda", kTH1F, {invMassAxis});
-        histos.add("xi1820/k0s_lambda/hInvMassK0sLambda_Mix", "Mixed event Invariant mass of Xi(1820) to K^{0}_{S} + #Lambda", kTH1F, {invMassAxis});
-        histos.add("xi1820/k0s_antilambda/hInvMassK0sAntiLambda", "Invariant mass of Xi(1820) to K^{0}_{S} + #bar{#Lambda}", kTH1F, {invMassAxis});
-        histos.add("xi1820/k0s_antilambda/hInvMassK0sAntiLambda_Mix", "Mixed event Invariant mass of Xi(1820) to K^{0}_{S} + #bar{#Lambda}", kTH1F, {invMassAxis});
+      histos.add("xi1820/k0s_lambda/hInvMassK0sLambda", "Invariant mass of Xi(1820) to K^{0}_{S} + #Lambda", kTH1F, {invMassAxis});
+      histos.add("xi1820/k0s_lambda/hInvMassK0sLambda_Mix", "Mixed event Invariant mass of Xi(1820) to K^{0}_{S} + #Lambda", kTH1F, {invMassAxis});
+      histos.add("xi1820/k0s_antilambda/hInvMassK0sAntiLambda", "Invariant mass of Xi(1820) to K^{0}_{S} + #bar{#Lambda}", kTH1F, {invMassAxis});
+      histos.add("xi1820/k0s_antilambda/hInvMassK0sAntiLambda_Mix", "Mixed event Invariant mass of Xi(1820) to K^{0}_{S} + #bar{#Lambda}", kTH1F, {invMassAxis});
 
-      if(!(additionalConfig.cfgPhiCheck)){
+      if (!(additionalConfig.cfgPhiCheck)) {
         histos.add("xi1820/k0s_lambda/hMassPtCentK0sLambda", "Xi(1820) mass vs pT vs cent (K^{0}_{S}#Lambda)", kTH3D, {invMassAxis, ptAxis, centAxis});
         histos.add("xi1820/k0s_lambda/hMassPtCentK0sLambda_Mix", "Mixed event Xi(1820) mass vs pT vs cent (K^{0}_{S}#Lambda)", kTH3D, {invMassAxis, ptAxis, centAxis});
         histos.add("xi1820/k0s_lambda/hMassPtCentK0sLambda_Rot", "Rotated background Xi(1820) mass vs pT vs cent (K^{0}_{S}#Lambda)", kTH3D, {invMassAxis, ptAxis, centAxis});
@@ -368,16 +360,15 @@ struct Xi1820Analysis {
         histos.add("xi1820/k0s_antilambda/hMassPtCentK0sAntiLambda_Mix", "Mixed event Xi(1820) mass vs pT vs cent (K^{0}_{S}#bar{#Lambda})", kTH3D, {invMassAxis, ptAxis, centAxis});
         histos.add("xi1820/k0s_antilambda/hMassPtCentK0sAntiLambda_Rot", "Rotated background Xi(1820) mass vs pT vs cent (K^{0}_{S}#bar{#Lambda})", kTH3D, {invMassAxis, ptAxis, centAxis});
       } else {
-        histos.add("xi1820/k0s_lambda/hMassPtCentPhiK0sLambda", "Xi(1820) mass vs pT vs cent (K^{0}_{S}#Lambda)", kTHnSparseF, {{invMassAxis, ptAxis, centAxis,axisPhi }});
-        histos.add("xi1820/k0s_lambda/hMassPtCentPhiK0sLambda_Mix", "Mixed event Xi(1820) mass vs pT vs cent (K^{0}_{S}#Lambda)", kTHnSparseF, {{invMassAxis, ptAxis, centAxis,axisPhi }});
-        histos.add("xi1820/k0s_lambda/hMassPtCentPhiK0sLambda_Rot", "Rotated background Xi(1820) mass vs pT vs cent (K^{0}_{S}#Lambda)", kTHnSparseF, {{invMassAxis, ptAxis, centAxis,axisPhi }});
+        histos.add("xi1820/k0s_lambda/hMassPtCentPhiK0sLambda", "Xi(1820) mass vs pT vs cent (K^{0}_{S}#Lambda)", kTHnSparseF, {{invMassAxis, ptAxis, centAxis, axisPhi}});
+        histos.add("xi1820/k0s_lambda/hMassPtCentPhiK0sLambda_Mix", "Mixed event Xi(1820) mass vs pT vs cent (K^{0}_{S}#Lambda)", kTHnSparseF, {{invMassAxis, ptAxis, centAxis, axisPhi}});
+        histos.add("xi1820/k0s_lambda/hMassPtCentPhiK0sLambda_Rot", "Rotated background Xi(1820) mass vs pT vs cent (K^{0}_{S}#Lambda)", kTHnSparseF, {{invMassAxis, ptAxis, centAxis, axisPhi}});
 
         // K0s + Anti-Lambda
-        histos.add("xi1820/k0s_antilambda/hMassPtCentPhiK0sAntiLambda", "Xi(1820) mass vs pT vs cent (K^{0}_{S}#bar{#Lambda})", kTHnSparseF, {{invMassAxis, ptAxis, centAxis,axisPhi }});
-        histos.add("xi1820/k0s_antilambda/hMassPtCentPhiK0sAntiLambda_Mix", "Mixed event Xi(1820) mass vs pT vs cent (K^{0}_{S}#bar{#Lambda})", kTHnSparseF, {{invMassAxis, ptAxis, centAxis,axisPhi }});
-        histos.add("xi1820/k0s_antilambda/hMassPtCentPhiK0sAntiLambda_Rot", "Rotated background Xi(1820) mass vs pT vs cent (K^{0}_{S}#bar{#Lambda})", kTHnSparseF, {{invMassAxis, ptAxis, centAxis,axisPhi }});
+        histos.add("xi1820/k0s_antilambda/hMassPtCentPhiK0sAntiLambda", "Xi(1820) mass vs pT vs cent (K^{0}_{S}#bar{#Lambda})", kTHnSparseF, {{invMassAxis, ptAxis, centAxis, axisPhi}});
+        histos.add("xi1820/k0s_antilambda/hMassPtCentPhiK0sAntiLambda_Mix", "Mixed event Xi(1820) mass vs pT vs cent (K^{0}_{S}#bar{#Lambda})", kTHnSparseF, {{invMassAxis, ptAxis, centAxis, axisPhi}});
+        histos.add("xi1820/k0s_antilambda/hMassPtCentPhiK0sAntiLambda_Rot", "Rotated background Xi(1820) mass vs pT vs cent (K^{0}_{S}#bar{#Lambda})", kTHnSparseF, {{invMassAxis, ptAxis, centAxis, axisPhi}});
       }
-    
     }
 
     if (doprocessMCK0sLambda) {
@@ -461,7 +452,7 @@ struct Xi1820Analysis {
     if (isLambda) {
       if (std::abs(v0.mLambda() - MassLambda) > cV0MassWindow)
         return false;
-      // TPC Nsigma cuts for daughter tracks 
+      // TPC Nsigma cuts for daughter tracks
       if (std::abs(v0.daughterTPCNSigmaNegPi()) >= cLambdaDaughterPiTPCNSigmaMax)
         return false;
       if (std::abs(v0.daughterTPCNSigmaPosPr()) >= cLambdaDaughterPrTPCNSigmaMax)
@@ -482,9 +473,9 @@ struct Xi1820Analysis {
         return false;
     }
 
-    if(v0.nCrossedRowsPos() <= cLambdaPosDaughterMinCrossedRows)
+    if (v0.nCrossedRowsPos() <= cLambdaPosDaughterMinCrossedRows)
       return false;
-    if(v0.nCrossedRowsNeg() <= cLambdaNegDaughterMinCrossedRows)
+    if (v0.nCrossedRowsNeg() <= cLambdaNegDaughterMinCrossedRows)
       return false;
 
     if (v0.qtarm() > cK0sArmenterosAlphaCoeff * std::fabs(v0.alpha()))
@@ -545,15 +536,15 @@ struct Xi1820Analysis {
         return false;
     }
 
-    if(std::abs(v0.daughterTPCNSigmaPosPi()) >= cK0sDaughterPiTPCNSigmaMax)
+    if (std::abs(v0.daughterTPCNSigmaPosPi()) >= cK0sDaughterPiTPCNSigmaMax)
       return false;
-    if(std::abs(v0.daughterTPCNSigmaNegPi()) >= cK0sDaughterPiTPCNSigmaMax)
+    if (std::abs(v0.daughterTPCNSigmaNegPi()) >= cK0sDaughterPiTPCNSigmaMax)
       return false;
-     // Note: TOF beta cut that calibrated by primary vertex is not applied for V0 daughters in this moment
+    // Note: TOF beta cut that calibrated by primary vertex is not applied for V0 daughters in this moment
 
-    if(v0.nCrossedRowsPos() <= cK0sPosDaughterMinCrossedRows)
+    if (v0.nCrossedRowsPos() <= cK0sPosDaughterMinCrossedRows)
       return false;
-    if(v0.nCrossedRowsNeg() <= cK0sNegDaughterMinCrossedRows)
+    if (v0.nCrossedRowsNeg() <= cK0sNegDaughterMinCrossedRows)
       return false;
 
     if (v0.qtarm() < cK0sArmenterosAlphaCoeff * std::fabs(v0.alpha()))
@@ -738,7 +729,6 @@ struct Xi1820Analysis {
       return false;
     if (additionalConfig.cfgPrimaryTrack && !track.isPrimaryTrack())
       return false;
-
 
     return true;
   }
@@ -934,34 +924,33 @@ struct Xi1820Analysis {
             continue;
           if constexpr (!IsMix) {
             histos.fill(HIST("xi1820/kplus_antilambda/hInvMassKplusAntiLambda"), pRes.M());
-            if(!(additionalConfig.cfgPhiCheck))
+            if (!(additionalConfig.cfgPhiCheck))
               histos.fill(HIST("xi1820/kplus_antilambda/hMassPtCentKplusAntiLambda"), pRes.M(), pRes.Pt(), cent);
             else
               histos.fill(HIST("xi1820/kplus_antilambda/hMassPtCentPhiKplusAntiLambda"), pRes.M(), pRes.Pt(), cent, pRes.Phi());
-              if (additionalConfig.cfgFillRotBkg) {
-                for (int i = 0; i < additionalConfig.cfgNrotBkg; i++) {
-                  auto lRotAngle = additionalConfig.cfgMinRot + i * ((additionalConfig.cfgMaxRot - additionalConfig.cfgMinRot) / (additionalConfig.cfgNrotBkg - 1));
-                  histos.fill(HIST("Event/hRotBkg"), lRotAngle - o2::constants::math::PI);
-                  if (additionalConfig.cfgRotKaon) {
-                    lDaughterRot = pKaon;
-                    ROOT::Math::RotationZ rot(lRotAngle);
-                    auto p3 = rot * lDaughterRot.Vect();
-                    lDaughterRot = LorentzVectorSetXYZM(p3.X(), p3.Y(), p3.Z(), lDaughterRot.M());
-                    lResonanceRot = lDaughterRot + pLambda;
-                  } else {
-                    lDaughterRot = pLambda;
-                    ROOT::Math::RotationZ rot(lRotAngle);
-                    auto p3 = rot * lDaughterRot.Vect();
-                    lDaughterRot = LorentzVectorSetXYZM(p3.X(), p3.Y(), p3.Z(), lDaughterRot.M());
-                    lResonanceRot = pKaon + lDaughterRot;
-                  }
-                  if(!(additionalConfig.cfgPhiCheck))
-                   histos.fill(HIST("xi1820/kplus_antilambda/hMassPtCentKplusAntiLambda_Rot"), lResonanceRot.M(), lResonanceRot.Pt(), cent);
-                  else
-                   histos.fill(HIST("xi1820/kplus_antilambda/hMassPtCentPhiKplusAntiLambda_Rot"), lResonanceRot.M(), lResonanceRot.Pt(), cent, lResonanceRot.Phi());
+            if (additionalConfig.cfgFillRotBkg) {
+              for (int i = 0; i < additionalConfig.cfgNrotBkg; i++) {
+                auto lRotAngle = additionalConfig.cfgMinRot + i * ((additionalConfig.cfgMaxRot - additionalConfig.cfgMinRot) / (additionalConfig.cfgNrotBkg - 1));
+                histos.fill(HIST("Event/hRotBkg"), lRotAngle - o2::constants::math::PI);
+                if (additionalConfig.cfgRotKaon) {
+                  lDaughterRot = pKaon;
+                  ROOT::Math::RotationZ rot(lRotAngle);
+                  auto p3 = rot * lDaughterRot.Vect();
+                  lDaughterRot = LorentzVectorSetXYZM(p3.X(), p3.Y(), p3.Z(), lDaughterRot.M());
+                  lResonanceRot = lDaughterRot + pLambda;
+                } else {
+                  lDaughterRot = pLambda;
+                  ROOT::Math::RotationZ rot(lRotAngle);
+                  auto p3 = rot * lDaughterRot.Vect();
+                  lDaughterRot = LorentzVectorSetXYZM(p3.X(), p3.Y(), p3.Z(), lDaughterRot.M());
+                  lResonanceRot = pKaon + lDaughterRot;
                 }
+                if (!(additionalConfig.cfgPhiCheck))
+                  histos.fill(HIST("xi1820/kplus_antilambda/hMassPtCentKplusAntiLambda_Rot"), lResonanceRot.M(), lResonanceRot.Pt(), cent);
+                else
+                  histos.fill(HIST("xi1820/kplus_antilambda/hMassPtCentPhiKplusAntiLambda_Rot"), lResonanceRot.M(), lResonanceRot.Pt(), cent, lResonanceRot.Phi());
               }
-
+            }
 
             if constexpr (IsMC) { // Calculate Acceptance x efficiency for "the particle" channel
               if (std::abs(v0.motherPDG()) != kPdgChagedXi1820)
@@ -980,10 +969,10 @@ struct Xi1820Analysis {
             }
           } else {
             histos.fill(HIST("xi1820/kplus_antilambda/hInvMassKplusAntiLambda_Mix"), pRes.M());
-            if( !(additionalConfig.cfgPhiCheck))
-            histos.fill(HIST("xi1820/kplus_antilambda/hMassPtCentKplusAntiLambda_Mix"), pRes.M(), pRes.Pt(), cent);
+            if (!(additionalConfig.cfgPhiCheck))
+              histos.fill(HIST("xi1820/kplus_antilambda/hMassPtCentKplusAntiLambda_Mix"), pRes.M(), pRes.Pt(), cent);
             else
-            histos.fill(HIST("xi1820/kplus_antilambda/hMassPtCentPhiKplusAntiLambda_Mix"), pRes.M(), pRes.Pt(), cent, pRes.Phi());
+              histos.fill(HIST("xi1820/kplus_antilambda/hMassPtCentPhiKplusAntiLambda_Mix"), pRes.M(), pRes.Pt(), cent, pRes.Phi());
           }
         } // End of signal
 
@@ -996,34 +985,34 @@ struct Xi1820Analysis {
             continue;
           if constexpr (!IsMix) {
             histos.fill(HIST("xi1820/kminus_lambda/hInvMassKminusLambda"), pRes.M());
-            if(!(additionalConfig.cfgPhiCheck))
-            histos.fill(HIST("xi1820/kminus_lambda/hMassPtCentKminusLambda"), pRes.M(), pRes.Pt(), cent);
+            if (!(additionalConfig.cfgPhiCheck))
+              histos.fill(HIST("xi1820/kminus_lambda/hMassPtCentKminusLambda"), pRes.M(), pRes.Pt(), cent);
             else
-            histos.fill(HIST("xi1820/kminus_lambda/hMassPtCentPhiKminusLambda"), pRes.M(), pRes.Pt(), cent, pRes.Phi());
+              histos.fill(HIST("xi1820/kminus_lambda/hMassPtCentPhiKminusLambda"), pRes.M(), pRes.Pt(), cent, pRes.Phi());
 
-                if (additionalConfig.cfgFillRotBkg) {
-                for (int i = 0; i < additionalConfig.cfgNrotBkg; i++) {
-                  auto lRotAngle = additionalConfig.cfgMinRot + i * ((additionalConfig.cfgMaxRot - additionalConfig.cfgMinRot) / (additionalConfig.cfgNrotBkg - 1));
-                  histos.fill(HIST("Event/hRotBkg"), lRotAngle);
-                  if (additionalConfig.cfgRotKaon) {
-                    lDaughterRot = pKaon;
-                    ROOT::Math::RotationZ rot(lRotAngle);
-                    auto p3 = rot * lDaughterRot.Vect();
-                    lDaughterRot = LorentzVectorSetXYZM(p3.X(), p3.Y(), p3.Z(), lDaughterRot.M());
-                    lResonanceRot = lDaughterRot + pLambda;
-                  } else {
-                    lDaughterRot = pLambda;
-                    ROOT::Math::RotationZ rot(lRotAngle);
-                    auto p3 = rot * lDaughterRot.Vect();
-                    lDaughterRot = LorentzVectorSetXYZM(p3.X(), p3.Y(), p3.Z(), lDaughterRot.M());
-                    lResonanceRot = pKaon + lDaughterRot;
-                  }
-                  if(!(additionalConfig.cfgPhiCheck))
-                   histos.fill(HIST("xi1820/kminus_lambda/hMassPtCentKminusLambda_Rot"), lResonanceRot.M(), lResonanceRot.Pt(), cent);
-                  else
-                   histos.fill(HIST("xi1820/kminus_lambda/hMassPtCentPhiKminusLambda_Rot"), lResonanceRot.M(), lResonanceRot.Pt(), cent, lResonanceRot.Phi());
+            if (additionalConfig.cfgFillRotBkg) {
+              for (int i = 0; i < additionalConfig.cfgNrotBkg; i++) {
+                auto lRotAngle = additionalConfig.cfgMinRot + i * ((additionalConfig.cfgMaxRot - additionalConfig.cfgMinRot) / (additionalConfig.cfgNrotBkg - 1));
+                histos.fill(HIST("Event/hRotBkg"), lRotAngle);
+                if (additionalConfig.cfgRotKaon) {
+                  lDaughterRot = pKaon;
+                  ROOT::Math::RotationZ rot(lRotAngle);
+                  auto p3 = rot * lDaughterRot.Vect();
+                  lDaughterRot = LorentzVectorSetXYZM(p3.X(), p3.Y(), p3.Z(), lDaughterRot.M());
+                  lResonanceRot = lDaughterRot + pLambda;
+                } else {
+                  lDaughterRot = pLambda;
+                  ROOT::Math::RotationZ rot(lRotAngle);
+                  auto p3 = rot * lDaughterRot.Vect();
+                  lDaughterRot = LorentzVectorSetXYZM(p3.X(), p3.Y(), p3.Z(), lDaughterRot.M());
+                  lResonanceRot = pKaon + lDaughterRot;
                 }
+                if (!(additionalConfig.cfgPhiCheck))
+                  histos.fill(HIST("xi1820/kminus_lambda/hMassPtCentKminusLambda_Rot"), lResonanceRot.M(), lResonanceRot.Pt(), cent);
+                else
+                  histos.fill(HIST("xi1820/kminus_lambda/hMassPtCentPhiKminusLambda_Rot"), lResonanceRot.M(), lResonanceRot.Pt(), cent, lResonanceRot.Phi());
               }
+            }
             if constexpr (IsMC) { // Calculate Acceptance x efficiency for "the particle" channel
               if (std::abs(v0.motherPDG()) != kPdgChagedXi1820)
                 continue;
@@ -1041,7 +1030,7 @@ struct Xi1820Analysis {
             }
           } else {
             histos.fill(HIST("xi1820/kminus_lambda/hInvMassKminusLambda_Mix"), pRes.M());
-            if(!(additionalConfig.cfgPhiCheck))
+            if (!(additionalConfig.cfgPhiCheck))
               histos.fill(HIST("xi1820/kminus_lambda/hMassPtCentKminusLambda_Mix"), pRes.M(), pRes.Pt(), cent);
             else
               histos.fill(HIST("xi1820/kminus_lambda/hMassPtCentPhiKminusLambda_Mix"), pRes.M(), pRes.Pt(), cent, pRes.Phi());
@@ -1057,13 +1046,13 @@ struct Xi1820Analysis {
             continue;
           if constexpr (!IsMix) {
             histos.fill(HIST("xi1820/kminus_antilambda/hInvMassKminusAntiLambda"), pRes.M());
-          if(!(additionalConfig.cfgPhiCheck))
-            histos.fill(HIST("xi1820/kminus_antilambda/hMassPtCentKminusAntiLambda"), pRes.M(), pRes.Pt(), cent);
-          else
-            histos.fill(HIST("xi1820/kminus_antilambda/hMassPtCentPhiKminusAntiLambda"), pRes.M(), pRes.Pt(), cent, pRes.Phi());
+            if (!(additionalConfig.cfgPhiCheck))
+              histos.fill(HIST("xi1820/kminus_antilambda/hMassPtCentKminusAntiLambda"), pRes.M(), pRes.Pt(), cent);
+            else
+              histos.fill(HIST("xi1820/kminus_antilambda/hMassPtCentPhiKminusAntiLambda"), pRes.M(), pRes.Pt(), cent, pRes.Phi());
           } else {
             histos.fill(HIST("xi1820/kminus_antilambda/hInvMassKminusAntiLambda_Mix"), pRes.M());
-            if(!(additionalConfig.cfgPhiCheck))
+            if (!(additionalConfig.cfgPhiCheck))
               histos.fill(HIST("xi1820/kminus_antilambda/hMassPtCentKminusAntiLambda_Mix"), pRes.M(), pRes.Pt(), cent);
             else
               histos.fill(HIST("xi1820/kminus_antilambda/hMassPtCentPhiKminusAntiLambda_Mix"), pRes.M(), pRes.Pt(), cent, pRes.Phi());
@@ -1115,7 +1104,6 @@ struct Xi1820Analysis {
         histos.fill(HIST("QAbefore/k0sNCrossedRowsPos"), k0s.pt(), k0s.nCrossedRowsPos());
         histos.fill(HIST("QAbefore/k0sNCrossedRowsNeg"), k0s.pt(), k0s.nCrossedRowsNeg());
 
-
         float dx = k0s.decayVtxX() - collision.posX();
         float dy = k0s.decayVtxY() - collision.posY();
         float dz = k0s.decayVtxZ() - collision.posZ();
@@ -1143,8 +1131,6 @@ struct Xi1820Analysis {
         histos.fill(HIST("QAafter/k0sDauTPCNsigmaNegPi"), k0s.pt(), k0s.daughterTPCNSigmaNegPi());
         histos.fill(HIST("QAafter/k0sNCrossedRowsPos"), k0s.pt(), k0s.nCrossedRowsPos());
         histos.fill(HIST("QAafter/k0sNCrossedRowsNeg"), k0s.pt(), k0s.nCrossedRowsNeg());
-
-
 
         float dx = k0s.decayVtxX() - collision.posX();
         float dy = k0s.decayVtxY() - collision.posY();
@@ -1204,8 +1190,8 @@ struct Xi1820Analysis {
           // QA after cuts (fill for whichever passes)
           if (isLambda) {
             histos.fill(HIST("QAafter/lambdaMass"), lambda.mLambda());
-              histos.fill(HIST("QAafter/lambdaDaughterTPCNSigmaPosPr"), lambda.pt(), lambda.daughterTPCNSigmaPosPr());
-              histos.fill(HIST("QAafter/lambdaDaughterTPCNSigmaNegPi"), lambda.pt(), lambda.daughterTPCNSigmaNegPi());
+            histos.fill(HIST("QAafter/lambdaDaughterTPCNSigmaPosPr"), lambda.pt(), lambda.daughterTPCNSigmaPosPr());
+            histos.fill(HIST("QAafter/lambdaDaughterTPCNSigmaNegPi"), lambda.pt(), lambda.daughterTPCNSigmaNegPi());
           }
           if (isAntiLambda) {
             histos.fill(HIST("QAafter/lambdaMassAnti"), lambda.mAntiLambda());
@@ -1245,26 +1231,25 @@ struct Xi1820Analysis {
           if constexpr (!IsMix) {
             histos.fill(HIST("xi1820/k0s_lambda/hInvMassK0sLambda"), pRes.M());
             if (!(additionalConfig.cfgPhiCheck))
-             histos.fill(HIST("xi1820/k0s_lambda/hMassPtCentK0sLambda"), pRes.M(), pRes.Pt(), cent);
+              histos.fill(HIST("xi1820/k0s_lambda/hMassPtCentK0sLambda"), pRes.M(), pRes.Pt(), cent);
             else
-             histos.fill(HIST("xi1820/k0s_lambda/hMassPtCentPhiK0sLambda"), pRes.M(), pRes.Pt(), cent, pRes.Phi());
+              histos.fill(HIST("xi1820/k0s_lambda/hMassPtCentPhiK0sLambda"), pRes.M(), pRes.Pt(), cent, pRes.Phi());
 
-              if (additionalConfig.cfgFillRotBkg) {
-                for (int i = 0; i < additionalConfig.cfgNrotBkg; i++) {
-                  auto lRotAngle = additionalConfig.cfgMinRot + i * ((additionalConfig.cfgMaxRot - additionalConfig.cfgMinRot) / (additionalConfig.cfgNrotBkg - 1));
-                  histos.fill(HIST("Event/hRotBkg"), lRotAngle);
-                    lDaughterRot = pK0s;
-                    ROOT::Math::RotationZ rot(lRotAngle);
-                    auto p3 = rot * lDaughterRot.Vect();
-                    lDaughterRot = LorentzVectorSetXYZM(p3.X(), p3.Y(), p3.Z(), lDaughterRot.M());
-                    lResonanceRot = lDaughterRot + pLambda;
-                  if(!(additionalConfig.cfgPhiCheck))
-                   histos.fill(HIST("xi1820/k0s_lambda/hMassPtCentK0sLambda_Rot"), lResonanceRot.M(), lResonanceRot.Pt(), cent);
-                  else
-                   histos.fill(HIST("xi1820/k0s_lambda/hMassPtCentPhiK0sLambda_Rot"), lResonanceRot.M(), lResonanceRot.Pt(), cent, lResonanceRot.Phi());
-                }
+            if (additionalConfig.cfgFillRotBkg) {
+              for (int i = 0; i < additionalConfig.cfgNrotBkg; i++) {
+                auto lRotAngle = additionalConfig.cfgMinRot + i * ((additionalConfig.cfgMaxRot - additionalConfig.cfgMinRot) / (additionalConfig.cfgNrotBkg - 1));
+                histos.fill(HIST("Event/hRotBkg"), lRotAngle);
+                lDaughterRot = pK0s;
+                ROOT::Math::RotationZ rot(lRotAngle);
+                auto p3 = rot * lDaughterRot.Vect();
+                lDaughterRot = LorentzVectorSetXYZM(p3.X(), p3.Y(), p3.Z(), lDaughterRot.M());
+                lResonanceRot = lDaughterRot + pLambda;
+                if (!(additionalConfig.cfgPhiCheck))
+                  histos.fill(HIST("xi1820/k0s_lambda/hMassPtCentK0sLambda_Rot"), lResonanceRot.M(), lResonanceRot.Pt(), cent);
+                else
+                  histos.fill(HIST("xi1820/k0s_lambda/hMassPtCentPhiK0sLambda_Rot"), lResonanceRot.M(), lResonanceRot.Pt(), cent, lResonanceRot.Phi());
               }
-
+            }
 
             if constexpr (IsMC) { // Calculate Acceptance x efficiency
               if (std::abs(lambda.motherPDG()) != kPdgXi1820Zero)
@@ -1282,10 +1267,10 @@ struct Xi1820Analysis {
             }
           } else {
             histos.fill(HIST("xi1820/k0s_lambda/hInvMassK0sLambda_Mix"), pRes.M());
-            if(!(additionalConfig.cfgPhiCheck))
-             histos.fill(HIST("xi1820/k0s_lambda/hMassPtCentK0sLambda_Mix"), pRes.M(), pRes.Pt(), cent);
+            if (!(additionalConfig.cfgPhiCheck))
+              histos.fill(HIST("xi1820/k0s_lambda/hMassPtCentK0sLambda_Mix"), pRes.M(), pRes.Pt(), cent);
             else
-             histos.fill(HIST("xi1820/k0s_lambda/hMassPtCentPhiK0sLambda_Mix"), pRes.M(), pRes.Pt(), cent, pRes.Phi());
+              histos.fill(HIST("xi1820/k0s_lambda/hMassPtCentPhiK0sLambda_Mix"), pRes.M(), pRes.Pt(), cent, pRes.Phi());
           }
         } // End of Lambda
 
@@ -1297,26 +1282,26 @@ struct Xi1820Analysis {
             continue;
           if constexpr (!IsMix) {
             histos.fill(HIST("xi1820/k0s_antilambda/hInvMassK0sAntiLambda"), pRes.M());
-            if(!(additionalConfig.cfgPhiCheck))
+            if (!(additionalConfig.cfgPhiCheck))
               histos.fill(HIST("xi1820/k0s_antilambda/hMassPtCentK0sAntiLambda"), pRes.M(), pRes.Pt(), cent);
             else
               histos.fill(HIST("xi1820/k0s_antilambda/hMassPtCentPhiK0sAntiLambda"), pRes.M(), pRes.Pt(), cent, pRes.Phi());
 
-              if (additionalConfig.cfgFillRotBkg) {
-                for (int i = 0; i < additionalConfig.cfgNrotBkg; i++) {
-                  auto lRotAngle = additionalConfig.cfgMinRot + i * ((additionalConfig.cfgMaxRot - additionalConfig.cfgMinRot) / (additionalConfig.cfgNrotBkg - 1));
-                  histos.fill(HIST("Event/hRotBkg"), lRotAngle);
-                    lDaughterRot = pK0s;
-                    ROOT::Math::RotationZ rot(lRotAngle);
-                    auto p3 = rot * lDaughterRot.Vect();
-                    lDaughterRot = LorentzVectorSetXYZM(p3.X(), p3.Y(), p3.Z(), lDaughterRot.M());
-                    lResonanceRot = lDaughterRot + pLambda;
-                  if(!(additionalConfig.cfgPhiCheck))
-                    histos.fill(HIST("xi1820/k0s_antilambda/hMassPtCentK0sAntiLambda_Rot"), lResonanceRot.M(), lResonanceRot.Pt(), cent);
-                  else
-                    histos.fill(HIST("xi1820/k0s_antilambda/hMassPtCentPhiK0sAntiLambda_Rot"), lResonanceRot.M(), lResonanceRot.Pt(), cent, lResonanceRot.Phi());
-                }
+            if (additionalConfig.cfgFillRotBkg) {
+              for (int i = 0; i < additionalConfig.cfgNrotBkg; i++) {
+                auto lRotAngle = additionalConfig.cfgMinRot + i * ((additionalConfig.cfgMaxRot - additionalConfig.cfgMinRot) / (additionalConfig.cfgNrotBkg - 1));
+                histos.fill(HIST("Event/hRotBkg"), lRotAngle);
+                lDaughterRot = pK0s;
+                ROOT::Math::RotationZ rot(lRotAngle);
+                auto p3 = rot * lDaughterRot.Vect();
+                lDaughterRot = LorentzVectorSetXYZM(p3.X(), p3.Y(), p3.Z(), lDaughterRot.M());
+                lResonanceRot = lDaughterRot + pLambda;
+                if (!(additionalConfig.cfgPhiCheck))
+                  histos.fill(HIST("xi1820/k0s_antilambda/hMassPtCentK0sAntiLambda_Rot"), lResonanceRot.M(), lResonanceRot.Pt(), cent);
+                else
+                  histos.fill(HIST("xi1820/k0s_antilambda/hMassPtCentPhiK0sAntiLambda_Rot"), lResonanceRot.M(), lResonanceRot.Pt(), cent, lResonanceRot.Phi());
               }
+            }
 
             if constexpr (IsMC) { // Calculate Acceptance x efficiency
               if (std::abs(lambda.motherPDG()) != kPdgXi1820Zero)
@@ -1334,10 +1319,10 @@ struct Xi1820Analysis {
             }
           } else {
             histos.fill(HIST("xi1820/k0s_antilambda/hInvMassK0sAntiLambda_Mix"), pRes.M());
-            if(!(additionalConfig.cfgPhiCheck))
-             histos.fill(HIST("xi1820/k0s_antilambda/hMassPtCentK0sAntiLambda_Mix"), pRes.M(), pRes.Pt(), cent);
+            if (!(additionalConfig.cfgPhiCheck))
+              histos.fill(HIST("xi1820/k0s_antilambda/hMassPtCentK0sAntiLambda_Mix"), pRes.M(), pRes.Pt(), cent);
             else
-             histos.fill(HIST("xi1820/k0s_antilambda/hMassPtCentPhiK0sAntiLambda_Mix"), pRes.M(), pRes.Pt(), cent, pRes.Phi());
+              histos.fill(HIST("xi1820/k0s_antilambda/hMassPtCentPhiK0sAntiLambda_Mix"), pRes.M(), pRes.Pt(), cent, pRes.Phi());
           }
         }
       } // End of loop over Lambda candidates
