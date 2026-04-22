@@ -565,7 +565,9 @@ struct mftMchMatcher {
     auto const& mftTrack = muonTrack.template matchMFTTrack_as<TMFTS>();
 
     if (!muonTrack.has_mcParticle() || !mftTrack.has_mcParticle()) {
-      return result;
+      // if either the MCH or the MFT tracks are fakes (not associated to any MC particles)
+      // we consider the match as fake
+      return (isBestMatch ? kMatchTypeFakeLeading : kMatchTypeFakeNonLeading);
     }
 
     bool isPaired = isPairedMuon(mchTrack.globalIndex(), matchablePairs);
