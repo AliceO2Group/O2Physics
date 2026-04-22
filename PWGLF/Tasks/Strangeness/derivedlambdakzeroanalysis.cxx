@@ -422,9 +422,9 @@ struct derivedlambdakzeroanalysis {
                               selNegGoodITSTrack, // at least min # ITS clusters
                               selPosItsOnly,
                               selNegItsOnly,
-						      selPosTPCOnly,
-						      selNegTPCOnly,
-						      selPosDeepSec,
+                              selPosTPCOnly,
+                              selNegTPCOnly,
+                              selPosDeepSec,
                               selNegDeepSec,
                               selPosNotTPCOnly,
                               selNegNotTPCOnly,
@@ -835,7 +835,7 @@ struct derivedlambdakzeroanalysis {
     hSelectionV0s->GetXaxis()->SetBinLabel(selNegItsOnly + 2, "Neg. ITS-only");
     hSelectionV0s->GetXaxis()->SetBinLabel(selPosTPCOnly + 2, "Pos. TPC-only");
     hSelectionV0s->GetXaxis()->SetBinLabel(selNegTPCOnly + 2, "Neg. TPC-only");
-	hSelectionV0s->GetXaxis()->SetBinLabel(selPosDeepSec + 2, "Pos. deep sec.");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selPosDeepSec + 2, "Pos. deep sec.");
     hSelectionV0s->GetXaxis()->SetBinLabel(selNegDeepSec + 2, "Neg. deep sec.");
     hSelectionV0s->GetXaxis()->SetBinLabel(selPosNotTPCOnly + 2, "Pos. not TPC-only");
     hSelectionV0s->GetXaxis()->SetBinLabel(selNegNotTPCOnly + 2, "Neg. not TPC-only");
@@ -1558,32 +1558,32 @@ struct derivedlambdakzeroanalysis {
         !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::TPC | o2::aod::track::TRD | o2::aod::track::TOF)) &&
         !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::TPC | o2::aod::track::TOF)) &&
         !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::TPC | o2::aod::track::TRD)) &&
-	verifyMask(posTrackExtra.detectorMap(), (o2::aod::track::TPC)))
+        verifyMask(posTrackExtra.detectorMap(), (o2::aod::track::TPC)))
       BITSET(bitMap, selPosTPCOnly);
     if (!verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD | o2::aod::track::TOF)) &&
         !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TOF)) &&
         !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD)) &&
         !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC)) &&
         !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::ITS)) &&
-	!verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::TPC | o2::aod::track::TRD | o2::aod::track::TOF)) &&
+        !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::TPC | o2::aod::track::TRD | o2::aod::track::TOF)) &&
         !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::TPC | o2::aod::track::TOF)) &&
         !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::TPC | o2::aod::track::TRD)) &&
-	verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::TPC)))
+        verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::TPC)))
       BITSET(bitMap, selNegTPCOnly);
     // deep secondary : TPC-TRD, TPC-TOF, TPC-TRD-TOF
     if (!verifyMask(posTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD | o2::aod::track::TOF)) &&
-	!verifyMask(posTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TOF)) &&
-	!verifyMask(posTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD)) &&
-	!verifyMask(posTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC)) &&
-	!verifyMask(posTrackExtra.detectorMap(), (o2::aod::track::ITS)) &&
-	verifyMask(posTrackExtra.detectorMap(), (o2::aod::track::TPC)))
+        !verifyMask(posTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TOF)) &&
+        !verifyMask(posTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD)) &&
+        !verifyMask(posTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC)) &&
+        !verifyMask(posTrackExtra.detectorMap(), (o2::aod::track::ITS)) &&
+        verifyMask(posTrackExtra.detectorMap(), (o2::aod::track::TPC)))
       BITSET(bitMap, selPosDeepSec);
     if (!verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD | o2::aod::track::TOF)) &&
         !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TOF)) &&
         !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD)) &&
         !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC)) &&
-        !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::ITS)) && 
-	verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::TPC)))
+        !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::ITS)) &&
+        verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::TPC)))
       BITSET(bitMap, selNegDeepSec);
 
     // proper lifetime
