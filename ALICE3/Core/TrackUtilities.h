@@ -32,7 +32,7 @@ struct OTFParticle {
   OTFParticle() = default;
 
   template <typename TParticle>
-  OTFParticle(const TParticle& particle)
+  explicit OTFParticle(const TParticle& particle)
   {
     mPdgCode = particle.pdgCode();
     mPx = particle.px();
