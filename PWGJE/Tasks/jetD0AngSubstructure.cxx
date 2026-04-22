@@ -8,12 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
+///
 /// \file JetD0AngSubstructure.cxx
-//
-/// \brief Analysis task for the reconstruction and study of charged jets
-//        containing D_0 mesons in pp collisions.
-//        inherited from D0 fragmentation and Ds
+/// \brief Analysis task for the reconstruction and study of charged jets containing D_0 mesons in pp collisions. The code is partially inherited from hfFragmentationFunction.cxx.
+///
 /// \author P. Dhankher
 /// \author L.J. Huisman
 //
@@ -57,150 +55,150 @@ namespace o2::aod
 /*
 // Jet-related quantities
 */
-DECLARE_SOA_COLUMN(expJetHfDist, ExpJetHfDist, float);
-DECLARE_SOA_COLUMN(expJetPt, ExpJetPt, float);
-DECLARE_SOA_COLUMN(expJetEta, ExpJetEta, float);
-DECLARE_SOA_COLUMN(expJetPhi, ExpJetPhi, float);
-DECLARE_SOA_COLUMN(expJetNConst, ExpJetNConst, int);
-DECLARE_SOA_COLUMN(expJetAng, ExpJetAng, float);
+DECLARE_SOA_COLUMN(ExpJetHfDist, expJetHfDist, float);
+DECLARE_SOA_COLUMN(ExpJetPt, expJetPt, float);
+DECLARE_SOA_COLUMN(ExpJetEta, expJetEta, float);
+DECLARE_SOA_COLUMN(ExpJetPhi, expJetPhi, float);
+DECLARE_SOA_COLUMN(ExpJetNConst, expJetNConst, int);
+DECLARE_SOA_COLUMN(ExpJetAng, expJetAng, float);
 // D0 candidate quantities
-DECLARE_SOA_COLUMN(expHfPt, ExpHfPt, float);
-DECLARE_SOA_COLUMN(expHfEta, ExpHfEta, float);
-DECLARE_SOA_COLUMN(expHfPhi, ExpHfPhi, float);
-DECLARE_SOA_COLUMN(expHfMass, ExpHfMass, float);
-DECLARE_SOA_COLUMN(expHfY, ExpHfY, float);
+DECLARE_SOA_COLUMN(ExpHfPt, expHfPt, float);
+DECLARE_SOA_COLUMN(ExpHfEta, expHfEta, float);
+DECLARE_SOA_COLUMN(ExpHfPhi, expHfPhi, float);
+DECLARE_SOA_COLUMN(ExpHfMass, expHfMass, float);
+DECLARE_SOA_COLUMN(ExpHfY, expHfY, float);
 // ML scores
-DECLARE_SOA_COLUMN(expHfMlScore0, ExpHfMlScore0, float);
-DECLARE_SOA_COLUMN(expHfMlScore1, ExpHfMlScore1, float);
-DECLARE_SOA_COLUMN(expHfMlScore2, ExpHfMlScore2, float);
+DECLARE_SOA_COLUMN(ExpHfMlScore0, expHfMlScore0, float);
+DECLARE_SOA_COLUMN(ExpHfMlScore1, expHfMlScore1, float);
+DECLARE_SOA_COLUMN(ExpHfMlScore2, expHfMlScore2, float);
 
 /*
 // MCP quantities (Particle Level)
 */
 // Jets
-DECLARE_SOA_COLUMN(mcpJetHfDist, McpJetHfDist, float);
-DECLARE_SOA_COLUMN(mcpJetPt, McpJetPt, float);
-DECLARE_SOA_COLUMN(mcpJetEta, McpJetEta, float);
-DECLARE_SOA_COLUMN(mcpJetPhi, McpJetPhi, float);
-DECLARE_SOA_COLUMN(mcpJetNConst, McpJetNConst, float);
-DECLARE_SOA_COLUMN(mcpJetAng, McpJetAng, float);
+DECLARE_SOA_COLUMN(McpJetHfDist, mcpJetHfDist, float);
+DECLARE_SOA_COLUMN(McpJetPt, mcpJetPt, float);
+DECLARE_SOA_COLUMN(McpJetEta, mcpJetEta, float);
+DECLARE_SOA_COLUMN(McpJetPhi, mcpJetPhi, float);
+DECLARE_SOA_COLUMN(McpJetNConst, mcpJetNConst, float);
+DECLARE_SOA_COLUMN(McpJetAng, mcpJetAng, float);
 // D0 candidates (Heavy Flavour)
-DECLARE_SOA_COLUMN(mcpHfPt, McpHfPt, float);
-DECLARE_SOA_COLUMN(mcpHfEta, McpHfEta, float);
-DECLARE_SOA_COLUMN(mcpHfPhi, McpHfPhi, float);
-// DECLARE_SOA_COLUMN(HfMass, mcpHfMass, float);
-DECLARE_SOA_COLUMN(mcpHfY, McpHfY, float);
-DECLARE_SOA_COLUMN(mcpHfPrompt, McpHfPrompt, bool);
-DECLARE_SOA_COLUMN(mcpHfMatch, McpHfMatch, bool);
+DECLARE_SOA_COLUMN(McpHfPt, mcpHfPt, float);
+DECLARE_SOA_COLUMN(McpHfEta, mcpHfEta, float);
+DECLARE_SOA_COLUMN(McpHfPhi, mcpHfPhi, float);
+// DECLARE_SOA_COLUMN(HfMass,mcpHfMass, float);
+DECLARE_SOA_COLUMN(McpHfY, mcpHfY, float);
+DECLARE_SOA_COLUMN(McpHfPrompt, mcpHfPrompt, bool);
+DECLARE_SOA_COLUMN(McpHfMatch, mcpHfMatch, bool);
 
 /*
 // MCD quantities (Detector Level)
 */
 // Jets
-DECLARE_SOA_COLUMN(mcdJetHfDist, McdJetHfDist, float);
-DECLARE_SOA_COLUMN(mcdJetPt, McdJetPt, float);
-DECLARE_SOA_COLUMN(mcdJetEta, McdJetEta, float);
-DECLARE_SOA_COLUMN(mcdJetPhi, McdJetPhi, float);
-DECLARE_SOA_COLUMN(mcdJetNConst, McdJetNConst, float);
-DECLARE_SOA_COLUMN(mcdJetAng, McdJetAng, float);
+DECLARE_SOA_COLUMN(McdJetHfDist, mcdJetHfDist, float);
+DECLARE_SOA_COLUMN(McdJetPt, mcdJetPt, float);
+DECLARE_SOA_COLUMN(McdJetEta, mcdJetEta, float);
+DECLARE_SOA_COLUMN(McdJetPhi, mcdJetPhi, float);
+DECLARE_SOA_COLUMN(McdJetNConst, mcdJetNConst, float);
+DECLARE_SOA_COLUMN(McdJetAng, mcdJetAng, float);
 // D0 candidates (Heavy Flavour)
-DECLARE_SOA_COLUMN(mcdHfPt, McdHfPt, float);
-DECLARE_SOA_COLUMN(mcdHfEta, McdHfEta, float);
-DECLARE_SOA_COLUMN(mcdHfPhi, McdHfPhi, float);
-DECLARE_SOA_COLUMN(mcdHfMass, McdHfMass, float);
-DECLARE_SOA_COLUMN(mcdHfY, McdHfY, float);
-DECLARE_SOA_COLUMN(mcdHfPrompt, McdHfPrompt, bool);
-DECLARE_SOA_COLUMN(mcdHfMatch, McdHfMatch, bool);
+DECLARE_SOA_COLUMN(McdHfPt, mcdHfPt, float);
+DECLARE_SOA_COLUMN(McdHfEta, mcdHfEta, float);
+DECLARE_SOA_COLUMN(McdHfPhi, mcdHfPhi, float);
+DECLARE_SOA_COLUMN(McdHfMass, mcdHfMass, float);
+DECLARE_SOA_COLUMN(McdHfY, mcdHfY, float);
+DECLARE_SOA_COLUMN(McdHfPrompt, mcdHfPrompt, bool);
+DECLARE_SOA_COLUMN(McdHfMatch, mcdHfMatch, bool);
 // Other
-DECLARE_SOA_COLUMN(mcdHfMatchedFrom, McdHfMatchedFrom, int);
-DECLARE_SOA_COLUMN(mcdHfSelectedAs, McdHfSelectedAs, int);
+DECLARE_SOA_COLUMN(McdHfMatchedFrom, mcdHfMatchedFrom, int);
+DECLARE_SOA_COLUMN(McdHfSelectedAs, mcdHfSelectedAs, int);
 // ML scores
-DECLARE_SOA_COLUMN(mcdHfMlScore0, McdHfMlScore0, float);
-DECLARE_SOA_COLUMN(mcdHfMlScore1, McdHfMlScore1, float);
-DECLARE_SOA_COLUMN(mcdHfMlScore2, McdHfMlScore2, float);
+DECLARE_SOA_COLUMN(McdHfMlScore0, mcdHfMlScore0, float);
+DECLARE_SOA_COLUMN(McdHfMlScore1, mcdHfMlScore1, float);
+DECLARE_SOA_COLUMN(McdHfMlScore2, mcdHfMlScore2, float);
 
 /*
 // AOD table definition
 */
 DECLARE_SOA_TABLE(EXPJetObjTable, "AOD", "EXPJETOBJTABLE",
-                  expJetHfDist,
-                  expJetPt,
-                  expJetEta,
-                  expJetPhi,
-                  expJetNConst,
-                  expJetAng,
-                  expHfPt,
-                  expHfEta,
-                  expHfPhi,
-                  expHfMass,
-                  expHfY,
-                  expHfMlScore0,
-                  expHfMlScore1,
-                  expHfMlScore2);
+                  ExpJetHfDist,
+                  ExpJetPt,
+                  ExpJetEta,
+                  ExpJetPhi,
+                  ExpJetNConst,
+                  ExpJetAng,
+                  ExpHfPt,
+                  ExpHfEta,
+                  ExpHfPhi,
+                  ExpHfMass,
+                  ExpHfY,
+                  ExpHfMlScore0,
+                  ExpHfMlScore1,
+                  ExpHfMlScore2);
 
 DECLARE_SOA_TABLE(MCPJetObjTable, "AOD", "MCPJETOBJTABLE",
-                  mcpJetHfDist,
-                  mcpJetPt,
-                  mcpJetEta,
-                  mcpJetPhi,
-                  mcpJetNConst,
-                  mcpJetAng,
-                  mcpHfPt,
-                  mcpHfEta,
-                  mcpHfPhi,
-                  mcpHfY,
-                  mcpHfPrompt,
-                  mcpHfMatch);
+                  McpJetHfDist,
+                  McpJetPt,
+                  McpJetEta,
+                  McpJetPhi,
+                  McpJetNConst,
+                  McpJetAng,
+                  McpHfPt,
+                  McpHfEta,
+                  McpHfPhi,
+                  McpHfY,
+                  McpHfPrompt,
+                  McpHfMatch);
 
 DECLARE_SOA_TABLE(MCDJetObjTable, "AOD", "MCDJETOBJTABLE",
-                  mcdJetHfDist,
-                  mcdJetPt,
-                  mcdJetEta,
-                  mcdJetPhi,
-                  mcdJetNConst,
-                  mcdJetAng,
-                  mcdHfPt,
-                  mcdHfEta,
-                  mcdHfPhi,
-                  mcdHfMass,
-                  mcdHfY,
-                  mcdHfPrompt,
-                  mcdHfMatch,
-                  mcdHfMlScore0,
-                  mcdHfMlScore1,
-                  mcdHfMlScore2,
-                  mcdHfMatchedFrom,
-                  mcdHfSelectedAs);
+                  McdJetHfDist,
+                  McdJetPt,
+                  McdJetEta,
+                  McdJetPhi,
+                  McdJetNConst,
+                  McdJetAng,
+                  McdHfPt,
+                  McdHfEta,
+                  McdHfPhi,
+                  McdHfMass,
+                  McdHfY,
+                  McdHfPrompt,
+                  McdHfMatch,
+                  McdHfMlScore0,
+                  McdHfMlScore1,
+                  McdHfMlScore2,
+                  McdHfMatchedFrom,
+                  McdHfSelectedAs);
 
 DECLARE_SOA_TABLE(MatchJetDistanceTable, "AOD", "MATCHTABLE",
-                  mcpJetHfDist,
-                  mcpJetPt,
-                  mcpJetEta,
-                  mcpJetPhi,
-                  mcpJetNConst,
-                  mcpJetAng,
-                  mcpHfPt,
-                  mcpHfEta,
-                  mcpHfPhi,
-                  mcpHfY,
-                  mcpHfPrompt,
-                  mcdJetHfDist,
-                  mcdJetPt,
-                  mcdJetEta,
-                  mcdJetPhi,
-                  mcdJetNConst,
-                  mcdJetAng,
-                  mcdHfPt,
-                  mcdHfEta,
-                  mcdHfPhi,
-                  mcdHfMass,
-                  mcdHfY,
-                  mcdHfPrompt,
-                  mcdHfMlScore0,
-                  mcdHfMlScore1,
-                  mcdHfMlScore2,
-                  mcdHfMatchedFrom,
-                  mcdHfSelectedAs);
+                  McpJetHfDist,
+                  McpJetPt,
+                  McpJetEta,
+                  McpJetPhi,
+                  McpJetNConst,
+                  McpJetAng,
+                  McpHfPt,
+                  McpHfEta,
+                  McpHfPhi,
+                  McpHfY,
+                  McpHfPrompt,
+                  McdJetHfDist,
+                  McdJetPt,
+                  McdJetEta,
+                  McdJetPhi,
+                  McdJetNConst,
+                  McdJetAng,
+                  McdHfPt,
+                  McdHfEta,
+                  McdHfPhi,
+                  McdHfMass,
+                  McdHfY,
+                  McdHfPrompt,
+                  McdHfMlScore0,
+                  McdHfMlScore1,
+                  McdHfMlScore2,
+                  McdHfMatchedFrom,
+                  McdHfSelectedAs);
 
 } // namespace o2::aod
 
@@ -213,7 +211,7 @@ mcp: Monte Carlo data (particle level)
 */
 namespace histnames
 {
-#define HNAME(name) constexpr const char* name = #name;
+#define HNAME(Name) constexpr const char* Name = #Name;
 /*
 // Experimental Data (analyseDataChargedSubstructure)
 */
@@ -276,7 +274,7 @@ HNAME(mc_det_hfl_phi);  // Detector level HF candidate phi (matched)
 #undef HNAME
 } // namespace histnames
 
-consteval float get_val_from_bin(int bin)
+consteval float getValFromBin(int bin)
 {
   return static_cast<float>(bin) - 0.5f;
 }
@@ -306,7 +304,7 @@ enum BIN_MC_JETCNTR {
 struct JetD0AngSubstructure {
 
   // Output table producer
-  Produces<aod::EXPJetObjTable> ObjJetTable;
+  Produces<aod::EXPJetObjTable> objJetTable;
   Produces<aod::MCDJetObjTable> mcdJetTable;
   Produces<aod::MCPJetObjTable> mcpJetTable;
   Produces<aod::MatchJetDistanceTable> matchJetTable;
@@ -429,7 +427,7 @@ struct JetD0AngSubstructure {
   float jetCalculateAngularityEXP(T const& jet, U const& /*tracks*/)
   {
     float tAngularity = 0.0;
-    for (auto& constituent : jet.template tracks_as<U>()) {
+    for (const auto& constituent : jet.template tracks_as<U>()) {
       tAngularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent) / (jet.r() / 100.f), alpha);
     }
     tAngularity /= std::pow(jet.pt(), kappa);
@@ -442,8 +440,8 @@ struct JetD0AngSubstructure {
     aod::JetTracks const& tracks)
   {
     float a = 0.f;
-    for (auto id : jet.tracksIds()) {
-      auto trk = tracks.iteratorAt(id);
+    for (const auto& id : jet.tracksIds()) {
+      const auto trk = tracks.iteratorAt(id);
       a += std::pow(trk.pt(), kappa) *
            std::pow(jetutilities::deltaR(jet, trk) / (jet.r() / 100.f), alpha);
     }
@@ -456,8 +454,8 @@ struct JetD0AngSubstructure {
     aod::JetParticles const& particles)
   {
     float a = 0.f;
-    for (auto id : jet.tracksIds()) {
-      auto p = particles.iteratorAt(id);
+    for (const auto& id : jet.tracksIds()) {
+      const auto p = particles.iteratorAt(id);
       a += std::pow(p.pt(), kappa) *
            std::pow(jetutilities::deltaR(jet, p) / (jet.r() / 100.f), alpha);
     }
@@ -472,17 +470,17 @@ struct JetD0AngSubstructure {
                                       HistogramRegistry& registry)
   {
     // apply event selection and fill histograms for sanity check
-    registry.fill(HIST(histnames::ex_col), get_val_from_bin(BIN_EX_COLCNTR::AllCollisions));
+    registry.fill(HIST(histnames::ex_col), getValFromBin(BIN_EX_COLCNTR::AllCollisions));
 
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !(std::abs(collision.posZ()) < vertexZCut)) {
       return;
     }
-    registry.fill(HIST(histnames::ex_col), get_val_from_bin(BIN_EX_COLCNTR::Sel8ZCut));
+    registry.fill(HIST(histnames::ex_col), getValFromBin(BIN_EX_COLCNTR::Sel8ZCut));
 
     // Loop over jets containing D0 candidates
     for (const auto& jet : jets) {
       // number of charged jets with D0
-      registry.fill(HIST(histnames::ex_jet), get_val_from_bin(BIN_EX_JETCNTR::ChargedJets));
+      registry.fill(HIST(histnames::ex_jet), getValFromBin(BIN_EX_JETCNTR::ChargedJets));
       // obtaining jet 3-vector
       TVector3 jetVector(jet.px(), jet.py(), jet.pz());
 
@@ -513,7 +511,7 @@ struct JetD0AngSubstructure {
         registry.fill(HIST(histnames::ex_hfl_phi), d0Candidate.phi()); // add more axis
 
         // filling table
-        ObjJetTable(axisDistance,
+        objJetTable(axisDistance,
                     jet.pt(),
                     jet.eta(),
                     jet.phi(),
@@ -554,34 +552,34 @@ struct JetD0AngSubstructure {
   {
     for (const auto& mccollision : mccollisions) {
 
-      registry.fill(HIST(histnames::mc_eff_col), get_val_from_bin(BIN_MC_COLCNTR::All));
+      registry.fill(HIST(histnames::mc_eff_col), getValFromBin(BIN_MC_COLCNTR::All));
       // skip collisions outside of |z| < vertexZCut
       if (std::abs(mccollision.posZ()) > vertexZCut) {
         continue;
       }
-      registry.fill(HIST(histnames::mc_eff_col), get_val_from_bin(BIN_MC_COLCNTR::ZCut));
+      registry.fill(HIST(histnames::mc_eff_col), getValFromBin(BIN_MC_COLCNTR::ZCut));
 
       // reconstructed collisions associated to same mccollision
       const auto collisionsPerMCCollision = collisions.sliceBy(collisionsPerMCCollisionPreslice, mccollision.globalIndex());
       for (const auto& collision : collisionsPerMCCollision) {
 
-        registry.fill(HIST(histnames::mc_eff_col), get_val_from_bin(BIN_MC_COLCNTR::Matched));
+        registry.fill(HIST(histnames::mc_eff_col), getValFromBin(BIN_MC_COLCNTR::Matched));
         if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !(std::abs(collision.posZ()) < vertexZCut)) {
           continue;
         }
-        registry.fill(HIST(histnames::mc_eff_col), get_val_from_bin(BIN_MC_COLCNTR::MatchedSel8ZCut));
+        registry.fill(HIST(histnames::mc_eff_col), getValFromBin(BIN_MC_COLCNTR::MatchedSel8ZCut));
 
         // d0 detector level jets associated to the current same collision
         const auto d0mcdJetsPerCollision = mcdjets.sliceBy(jetmcdpreslice, collision.globalIndex());
         for (const auto& mcdjet : d0mcdJetsPerCollision) {
 
-          registry.fill(HIST(histnames::mc_eff_jet), get_val_from_bin(BIN_MC_JETCNTR::DetectorLevelJetInMCCollision));
+          registry.fill(HIST(histnames::mc_eff_jet), getValFromBin(BIN_MC_JETCNTR::DetectorLevelJetInMCCollision));
 
           // obtain leading HF candidate in jet
           auto mcdd0cand = mcdjet.template candidates_first_as<CandidatesMCD>();
 
           if (mcdjet.has_matchedJetCand()) {
-            registry.fill(HIST(histnames::mc_eff_jet), get_val_from_bin(BIN_MC_JETCNTR::DetectorLevelJetWithMatchedCandidate));
+            registry.fill(HIST(histnames::mc_eff_jet), getValFromBin(BIN_MC_JETCNTR::DetectorLevelJetWithMatchedCandidate));
           }
 
           // reflection information for storage: D0 = +1, D0bar = -1, neither = 0
@@ -636,13 +634,13 @@ struct JetD0AngSubstructure {
       const auto d0mcpJetsPerMCCollision = mcpjets.sliceBy(jetmcppreslice, mccollision.globalIndex());
       for (const auto& mcpjet : d0mcpJetsPerMCCollision) {
 
-        registry.fill(HIST(histnames::mc_eff_jet), get_val_from_bin(BIN_MC_JETCNTR::ParticleLevelJetInMCCollision));
+        registry.fill(HIST(histnames::mc_eff_jet), getValFromBin(BIN_MC_JETCNTR::ParticleLevelJetInMCCollision));
 
         // obtain leading HF particle in jet
         auto mcpd0cand = mcpjet.template candidates_first_as<CandidatesMCP>();
 
         if (mcpjet.has_matchedJetCand()) {
-          registry.fill(HIST(histnames::mc_eff_jet), get_val_from_bin(BIN_MC_JETCNTR::ParticleLevelJetWithMatchedCandidate));
+          registry.fill(HIST(histnames::mc_eff_jet), getValFromBin(BIN_MC_JETCNTR::ParticleLevelJetWithMatchedCandidate));
         }
         float angularity = jetCalculateAngularityMCP(mcpjet, particles);
 
@@ -690,36 +688,36 @@ struct JetD0AngSubstructure {
                          HistogramRegistry& registry)
   {
     for (const auto& mccollision : mccollisions) {
-      registry.fill(HIST(histnames::mc_col), get_val_from_bin(BIN_MC_COLCNTR::All));
+      registry.fill(HIST(histnames::mc_col), getValFromBin(BIN_MC_COLCNTR::All));
       // skip collisions outside of |z| < vertexZCut
       if (std::abs(mccollision.posZ()) > vertexZCut) {
         continue;
       }
-      registry.fill(HIST(histnames::mc_col), get_val_from_bin(BIN_MC_COLCNTR::ZCut));
+      registry.fill(HIST(histnames::mc_col), getValFromBin(BIN_MC_COLCNTR::ZCut));
 
       // hf particle level jets associated to same mccollision
       const JetD0MCPTable mcpJetsPerMCCollision = mcpjets.sliceBy(jetmcpreslice, mccollision.globalIndex());
       for (const auto& mcpjet : mcpJetsPerMCCollision) {
 
-        registry.fill(HIST(histnames::mc_jet), get_val_from_bin(BIN_MC_JETCNTR::ParticleLevelJetInMCCollision));
+        registry.fill(HIST(histnames::mc_jet), getValFromBin(BIN_MC_JETCNTR::ParticleLevelJetInMCCollision));
 
         // obtain leading HF particle in jet
         auto mcpcand = mcpjet.template candidates_first_as<CandidatesMCP>();
 
         if (mcpjet.has_matchedJetCand()) {
-          registry.fill(HIST(histnames::mc_jet), get_val_from_bin(BIN_MC_JETCNTR::ParticleLevelJetWithMatchedCandidate));
+          registry.fill(HIST(histnames::mc_jet), getValFromBin(BIN_MC_JETCNTR::ParticleLevelJetWithMatchedCandidate));
 
           // loop over detector level matched to current particle level
           for (const auto& mcdjet : mcpjet.template matchedJetCand_as<JetTableMCD>()) {
-            registry.fill(HIST(histnames::mc_jet), get_val_from_bin(BIN_MC_JETCNTR::DetectorLevelJetWithMatchedCandidate));
+            registry.fill(HIST(histnames::mc_jet), getValFromBin(BIN_MC_JETCNTR::DetectorLevelJetWithMatchedCandidate));
 
             // apply collision sel8 selection on detector level jet's collision
             const auto& collision = collisions.iteratorAt(mcdjet.collisionId());
-            registry.fill(HIST(histnames::mc_col), get_val_from_bin(BIN_MC_COLCNTR::Matched));
+            registry.fill(HIST(histnames::mc_col), getValFromBin(BIN_MC_COLCNTR::Matched));
             if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !(std::abs(collision.posZ()) < vertexZCut)) {
               continue;
             }
-            registry.fill(HIST(histnames::mc_col), get_val_from_bin(BIN_MC_COLCNTR::MatchedSel8ZCut));
+            registry.fill(HIST(histnames::mc_col), getValFromBin(BIN_MC_COLCNTR::MatchedSel8ZCut));
 
             // obtain leading HF candidate in jet
             auto mcdcand = mcdjet.template candidates_first_as<CandidatesMCD>();
@@ -880,6 +878,5 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<JetD0AngSubstructure>(
-      cfgc,
-      TaskName{"jet-d0-ang-substructure"})};
+      cfgc)};
 }
