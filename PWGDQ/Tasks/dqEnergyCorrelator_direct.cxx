@@ -104,6 +104,8 @@ struct AnalysisEnergyCorrelator {
     Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "electronSelection1_ionut", "Comma separated list of barrel track cuts for electrons"};
     Configurable<std::string> fConfigTrackCutsJSON{"cfgTrackCutsJSON", "", "Additional track cuts in JSON"};
     Configurable<std::string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Track histograms"};
+    Configurable<std::string> fConfigMCRecTrackSignals{"cfgMCRecTrackSignals", "", "Comma separated list of MC signals (reconstructed)"};
+    Configurable<std::string> fConfigMCRecTrackSignalsJSON{"cfgMCRecTrackSignalsJSON", "", "Additional list of MC signals (reconstructed) via JSON"};
     Configurable<bool> fConfigTrackQA{"cfgTrackQA", false, "If true, fill Track QA histograms"};
   } fConfigTrackOptions;
 
@@ -155,12 +157,14 @@ struct AnalysisEnergyCorrelator {
   std::vector<TString> fTrackCutNames;
   std::vector<TString> fHadronCutNames;
   std::vector<TString> fHistNamesReco;
+  std::vector<TString> fHistNamesMCMatched;
 
   std::map<int, std::vector<TString>> fTrackHistNames;
   std::map<int, std::vector<TString>> fBarrelHistNamesMCmatched;
   std::map<int64_t, bool> fSelMap;
 
-  std::vector<MCSignal*> fRecMCSignals; // MC signals for reconstructed pairs
+  std::vector<MCSignal*> fRecMCTrackSignals; // MC signals for reconstructed tracks
+  std::vector<MCSignal*> fRecMCSignals;      // MC signals for reconstructed pairs
   std::vector<MCSignal*> fGenMCSignals;
   std::vector<MCSignal*> fRecMCTripleSignals; // MC signals for reconstructed triples
 
@@ -175,8 +179,8 @@ struct AnalysisEnergyCorrelator {
 
   TH2F* hAcceptance_rec;
   TH2F* hAcceptance_gen;
-  TH1F* hEfficiency_dilepton;
-  TH1F* hEfficiency_hadron;
+  TH2F* hEfficiency_dilepton;
+  TH2F* hEfficiency_hadron;
   TH1F* hMasswindow;
 
   void init(o2::framework::InitContext& context)
@@ -332,6 +336,28 @@ struct AnalysisEnergyCorrelator {
       }
     }
 
+    // TODO: create a std::vector of hist classes to be used at Fill time, to avoid using Form in the process function
+    TString sigRecTrackNamesStr = fConfigTrackOptions.fConfigMCRecTrackSignals.value;
+    std::unique_ptr<TObjArray> objRecTrackSigArray(sigRecTrackNamesStr.Tokenize(","));
+    for (int isig = 0; isig < objRecTrackSigArray->GetEntries(); isig++) {
+      MCSignal* sig_RecTrack = o2::aod::dqmcsignals::GetMCSignal(objRecTrackSigArray->At(isig)->GetName());
+      if (sig_RecTrack) {
+        fRecMCTrackSignals.push_back(sig_RecTrack);
+      }
+    }
+
+    // Add the MCSignals from the JSON config
+    TString addRecTrackSignalsGenStr = fConfigTrackOptions.fConfigMCRecTrackSignalsJSON.value;
+    if (addRecTrackSignalsGenStr != "") {
+      std::vector<MCSignal*> addMCRecTrackSignals = dqmcsignals::GetMCSignalsFromJSON(addRecTrackSignalsGenStr.Data());
+      for (auto& mcIt : addMCRecTrackSignals) {
+        if (mcIt->GetNProngs() > 2) { // NOTE: only 2 prong signals
+          continue;
+        }
+        fRecMCTrackSignals.push_back(mcIt);
+      }
+    }
+
     VarManager::SetUseVars(AnalysisCut::fgUsedVars);
 
     fHistMan = new HistogramManager("analysisHistos", "", VarManager::kNVars);
@@ -352,6 +378,11 @@ struct AnalysisEnergyCorrelator {
         TString nameStr = Form("AssocsBarrel_%s", cut->GetName());
         fHistNamesReco.push_back(nameStr);
         histClasses += Form("%s;", nameStr.Data());
+        for (auto& sig : fRecMCTrackSignals) {
+          TString nameStr2 = Form("AssocsBarrelMatched_%s_%s", cut->GetName(), sig->GetName());
+          fHistNamesMCMatched.push_back(nameStr2);
+          histClasses += Form("%s;", nameStr2.Data());
+        }
       }
       DefineHistograms(fHistMan, histClasses.Data(), fConfigTrackOptions.fConfigAddTrackHistogram.value.data());
     }
@@ -435,8 +466,8 @@ struct AnalysisEnergyCorrelator {
     if (!listAccs) {
       LOG(fatal) << "Problem getting TList object with efficiencies!";
     }
-    hEfficiency_dilepton = static_cast<TH1F*>(listAccs->FindObject("hEfficiency_dilepton"));
-    hEfficiency_hadron = static_cast<TH1F*>(listAccs->FindObject("hEfficiency_hadron"));
+    hEfficiency_dilepton = static_cast<TH2F*>(listAccs->FindObject("hEfficiency_dilepton"));
+    hEfficiency_hadron = static_cast<TH2F*>(listAccs->FindObject("hEfficiency_hadron"));
     hAcceptance_rec = static_cast<TH2F*>(listAccs->FindObject("hAcceptance_rec"));
     hAcceptance_gen = static_cast<TH2F*>(listAccs->FindObject("hAcceptance_gen"));
     hMasswindow = static_cast<TH1F*>(listAccs->FindObject("hMasswindow"));
@@ -479,9 +510,9 @@ struct AnalysisEnergyCorrelator {
       float deltaphi = RecoDecay::constrainAngle(dilepton_phi - hadron_phi, -0.5 * o2::constants::math::PI);
       Effweight_rec = hAcceptance_rec->Interpolate(dilepton_eta - hadron_eta, deltaphi);
       Accweight_gen = hAcceptance_gen->Interpolate(dilepton_eta - hadron_eta, deltaphi);
-      float Effdilepton = hEfficiency_dilepton->Interpolate(VarManager::fgValues[VarManager::kPt]);
+      float Effdilepton = hEfficiency_dilepton->Interpolate(VarManager::fgValues[VarManager::kPt], dilepton_eta);
       float Masswindow = hMasswindow->Interpolate(VarManager::fgValues[VarManager::kPt]);
-      float Effhadron = hEfficiency_hadron->Interpolate(hadron.pt());
+      float Effhadron = hEfficiency_hadron->Interpolate(hadron.pt(), hadron.eta());
       Accweight_gen = Accweight_gen * Effdilepton * Effhadron;
       if (fConfigDileptonHadronOptions.fConfigApplyEfficiencyME) {
         Effweight_rec = Effdilepton * Effhadron * Masswindow; // for the moment, apply the efficiency correction also for the mixed event pairs, but this can be changed in case we want to apply it only for the same event pairs
@@ -647,6 +678,17 @@ struct AnalysisEnergyCorrelator {
           fHistMan->FillHistClass("AssocsBarrel_BeforeCuts", VarManager::fgValues);
         }
 
+        uint32_t mcDecision = static_cast<uint32_t>(0);
+        // run MC matching for this pair
+        int isig = 0;
+        mcDecision = 0;
+        for (auto sig = fRecMCTrackSignals.begin(); sig != fRecMCTrackSignals.end(); sig++, isig++) {
+          if (t1.has_mcParticle()) {
+            if ((*sig)->CheckSignal(true, t1.mcParticle())) {
+              mcDecision |= (static_cast<uint32_t>(1) << isig);
+            }
+          }
+        }
         // Apply electron cuts and fill histograms
         int iCut1 = 0;
         for (auto cut1 = fTrackCuts.begin(); cut1 != fTrackCuts.end(); cut1++, iCut1++) {
@@ -654,10 +696,14 @@ struct AnalysisEnergyCorrelator {
             filter1 |= (static_cast<uint32_t>(1) << iCut1);
             if (fConfigTrackOptions.fConfigTrackQA) {
               fHistMan->FillHistClass(fHistNamesReco[iCut1], VarManager::fgValues);
+              for (size_t isig = 0; isig < fRecMCTrackSignals.size(); isig++) { // loop over MC signals
+                if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
+                  fHistMan->FillHistClass(fHistNamesMCMatched[iCut1 * fRecMCTrackSignals.size() + isig], VarManager::fgValues); // matched signal
+                }
+              }
             }
           }
         }
-
         // Check opposite charge with t2
         for (auto& a2 : groupedAssocs) {
           auto t2 = a2.template track_as<MyBarrelTracksWithCov>();
