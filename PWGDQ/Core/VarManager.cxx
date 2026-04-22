@@ -2253,6 +2253,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMCCosChi"] = kMCCosChi;
   fgVarNamesMap["kMCHadronPt"] = kMCHadronPt;
   fgVarNamesMap["kMCWeight_before"] = kMCWeight_before;
+  fgVarNamesMap["kMCEWeight_before"] = kMCEWeight_before;
   fgVarNamesMap["kMCdeltaeta"] = kMCdeltaeta;
   fgVarNamesMap["kMCHadronPt"] = kMCHadronPt;
   fgVarNamesMap["kMCHadronEta"] = kMCHadronEta;
@@ -2267,6 +2268,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMCdeltaphi_randomPhi_toward"] = kMCdeltaphi_randomPhi_toward;
   fgVarNamesMap["kMCdeltaphi_randomPhi_away"] = kMCdeltaphi_randomPhi_away;
   fgVarNamesMap["kMCdeltaphi_randomPhi_trans"] = kMCdeltaphi_randomPhi_trans;
+  fgVarNamesMap["kMCHadronpt_randomPhi_trans"] = kMCHadronpt_randomPhi_trans;
   fgVarNamesMap["kMCCosChi_gen"] = kMCCosChi_gen;
   fgVarNamesMap["kMCWeight_gen"] = kMCWeight_gen;
   fgVarNamesMap["kMCdeltaeta_gen"] = kMCdeltaeta_gen;
@@ -2504,6 +2506,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kWeight"] = kWeight;
   fgVarNamesMap["kECWeight"] = kECWeight;
   fgVarNamesMap["kEWeight_before"] = kEWeight_before;
+  fgVarNamesMap["kWeight_before"] = kWeight_before;
   fgVarNamesMap["kPtDau"] = kPtDau;
   fgVarNamesMap["kEtaDau"] = kEtaDau;
   fgVarNamesMap["kPhiDau"] = kPhiDau;
@@ -2516,6 +2519,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kdeltaphi_randomPhi_trans"] = kdeltaphi_randomPhi_trans;
   fgVarNamesMap["kdeltaphi_randomPhi_toward"] = kdeltaphi_randomPhi_toward;
   fgVarNamesMap["kdeltaphi_randomPhi_away"] = kdeltaphi_randomPhi_away;
+  fgVarNamesMap["kPtDau_randomPhi_trans"] = kPtDau_randomPhi_trans;
   fgVarNamesMap["kdileptonmass"] = kdileptonmass;
   fgVarNamesMap["kNCorrelationVariables"] = kNCorrelationVariables;
   fgVarNamesMap["kQuadMass"] = kQuadMass;
