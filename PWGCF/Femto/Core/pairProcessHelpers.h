@@ -20,6 +20,7 @@
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include <Framework/ASoAHelpers.h>
+#include <Framework/Logger.h>
 
 #include <cstdint>
 
