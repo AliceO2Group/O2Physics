@@ -347,8 +347,11 @@ struct TreeCreatorMuonML {
 
     float xErrMFTatMP = 999.f, yErrMFTatMP = 999.f;
     float xErrMCHMIDatMP = 999.f, yErrMCHMIDatMP = 999.f;
-    float signed1PtMFTatMP = 999.f, etaMFTatMP = 999.f, phiMFTatMP = 999.f;
-    float signed1PtMCHMIDatMP = 999.f, etaMCHMIDatMP = 999.f, phiMCHMIDatMP = 999.f;
+    float signed1PtMFTatMP = 999.f, tglMFTatMP = 999.f, phiMFTatMP = 999.f;
+    float signed1PtMCHMIDatMP = 999.f, tglMCHMIDatMP = 999.f, phiMCHMIDatMP = 999.f;
+
+    float signed1PtErrMFTatMP = 999.f, tglErrMFTatMP = 999.f, phiErrMFTatMP = 999.f;
+    float signed1PtErrMCHMIDatMP = 999.f, tglErrMCHMIDatMP = 999.f, phiErrMCHMIDatMP = 999.f;
 
     if constexpr (withMFTCov) {
       auto mfttrackcov = mftCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
@@ -358,33 +361,46 @@ struct TreeCreatorMuonML {
       yMFTatMP = mftsaAtMP.getY();
       xErrMFTatMP = std::sqrt(mftsaAtMP.getSigma2X());
       yErrMFTatMP = std::sqrt(mftsaAtMP.getSigma2Y());
+
       signed1PtMFTatMP = mftsaAtMP.getInvQPt();
-      etaMFTatMP = mftsaAtMP.getEta();
+      tglMFTatMP = mftsaAtMP.getTanl();
       phiMFTatMP = RecoDecay::constrainAngle(mftsaAtMP.getPhi(), 0, 1U);
+      signed1PtErrMFTatMP = std::sqrt(mftsaAtMP.getSigma2InvQPt());
+      tglErrMFTatMP = std::sqrt(mftsaAtMP.getSigma2Tanl());
+      phiErrMFTatMP = std::sqrt(mftsaAtMP.getSigma2Phi());
 
       auto muonAtMP = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToMatchingPlane, glMuonCutGroup.matchingZ, mBz, mZShift); // propagated to matching plane
       xMCHMIDatMP = muonAtMP.getX();
       yMCHMIDatMP = muonAtMP.getY();
       xErrMCHMIDatMP = std::sqrt(muonAtMP.getSigma2X());
       yErrMCHMIDatMP = std::sqrt(muonAtMP.getSigma2Y());
+
       signed1PtMCHMIDatMP = muonAtMP.getInvQPt();
-      etaMCHMIDatMP = muonAtMP.getEta();
+      tglMCHMIDatMP = muonAtMP.getTanl();
       phiMCHMIDatMP = RecoDecay::constrainAngle(muonAtMP.getPhi(), 0, 1U);
+      signed1PtErrMCHMIDatMP = std::sqrt(muonAtMP.getSigma2InvQPt());
+      tglErrMCHMIDatMP = std::sqrt(muonAtMP.getSigma2Tanl());
+      phiErrMCHMIDatMP = std::sqrt(muonAtMP.getSigma2Phi());
     }
 
     float deta = etaMatchedMCHMID - eta;
     float dphi = phiMatchedMCHMID - phi;
     o2::math_utils::bringToPMPi(dphi);
 
-    mltable(collision.numContrib(), collision.multFT0C(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(), hadronicRate,
+    mltable(collision.posZ(), collision.numContrib(), collision.multFT0C(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(), hadronicRate,
             fwdtrack.trackType(),
-            signed1PtMFTatMP, etaMFTatMP, phiMFTatMP,
-            signed1PtMCHMIDatMP, etaMCHMIDatMP, phiMCHMIDatMP,
-            xMCHMIDatMP, yMCHMIDatMP,
-            xErrMCHMIDatMP, yErrMCHMIDatMP,
+
+            signed1PtMFTatMP, tglMFTatMP, phiMFTatMP,
+            signed1PtErrMFTatMP, tglErrMFTatMP, phiErrMFTatMP,
             xMFTatMP, yMFTatMP,
             xErrMFTatMP, yErrMFTatMP,
-            dcaX, dcaY,
+
+            signed1PtMCHMIDatMP, tglMCHMIDatMP, phiMCHMIDatMP,
+            signed1PtErrMCHMIDatMP, tglErrMCHMIDatMP, phiErrMCHMIDatMP,
+            xMCHMIDatMP, yMCHMIDatMP,
+            xErrMCHMIDatMP, yErrMCHMIDatMP,
+
+            // dcaX, dcaY,
             fwdtrack.nClusters(), pDCA, rAtAbsorberEnd, fwdtrack.chi2MatchMCHMID(), fwdtrack.chi2MatchMCHMFT(),
             mfttrack.mftClusterSizesAndTrackFlags(), chi2, mchtrack.chi2(), chi2mft, mfttrack.nClusters(),
             pdgCode, isPrimary, isMatched,
