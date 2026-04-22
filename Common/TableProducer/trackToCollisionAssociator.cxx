@@ -39,7 +39,7 @@ struct TrackToCollisionAssociation {
   Configurable<float> nSigmaForTimeCompat{"nSigmaForTimeCompat", 4.f, "number of sigmas for time compatibility"};
   Configurable<float> timeMargin{"timeMargin", 0.f, "time margin in ns added to uncertainty because of uncalibrated TPC"};
   Configurable<int> setTrackSelections{"setTrackSelections", 1, "flag to apply track selections: -1=minimal track selection for Run 2 (standard association); 0=none; 1=global track w/o DCA selection; 2=only ITS quality"};
-  Configurable<int> usePVAssociation{"usePVAssociation", 1, "if the track is a PV contributor, use the collision time for it"};
+  Configurable<int> usePVAssociation{"usePVAssociation", 1, "use information of PV contribution in reassociation; 0 -> off, 1 -> reassociate only with collisions in the same BC, 2 -> as 1 only for tracks associated to high multiplicity vertices"};
   Configurable<bool> includeUnassigned{"includeUnassigned", false, "consider also tracks which are not assigned to any collision"};
   Configurable<bool> fillTableOfCollIdsPerTrack{"fillTableOfCollIdsPerTrack", false, "fill additional table with vector of collision ids per track"};
   Configurable<int> bcWindowForOneSigma{"bcWindowForOneSigma", 60, "BC window to be multiplied by the number of sigmas to define maximum window to be considered"};
