@@ -134,6 +134,10 @@ enum MftTrackSelectionStep {
   Eta,
   Cluster,
   Pt,
+  DCAxy,
+  DCAz,
+  IsLTF,
+  IsCA,
   NMftTrackSelectionSteps
 };
 
@@ -267,6 +271,8 @@ struct HfTaskFlow {
   struct : ConfigurableGroup {
     std::string prefix = "ConfigMft_group";
     Configurable<int> cutBestCollisionId{"cutBestCollisionId", 0, "cut on the best collision Id used in a filter"};
+    Configurable<bool> cutOnDcaXY{"cutOnDcaXY", false, "if true, cut on DCA XY"};
+    Configurable<bool> cutOnDcaZ{"cutOnDcaZ", false, "if true, cut on DCA Z"};
     Configurable<float> etaMftTrackMax{"etaMftTrackMax", -2.4f, "Maximum value for the eta of MFT tracks when used in cut function"};
     Configurable<float> etaMftTrackMin{"etaMftTrackMin", -3.36f, "Minimum value for the eta of MFT tracks when used in cut function"};
     Configurable<float> etaMftTrackMaxFilter{"etaMftTrackMaxFilter", -2.0f, "Maximum value for the eta of MFT tracks when used in filter"};
@@ -277,6 +283,8 @@ struct HfTaskFlow {
     Configurable<float> ptMftTrackMax{"ptMftTrackMax", 10.0f, "max value of MFT tracks pT when used in cut function"};
     Configurable<float> ptMftTrackMin{"ptMftTrackMin", 0.f, "min value of MFT tracks pT when used in cut function"};
     Configurable<bool> useMftPtCut{"useMftPtCut", false, "if true, use the Mft pt function cut"};
+    Configurable<bool> useOnlyCATracks{"useOnlyCATracks", false, "if true, use strictly MFT tracks reconstructed with CA algo."};
+    Configurable<bool> useOnlyLTFTracks{"useOnlyLTFTracks", false, "if true, use strictly MFT tracks reconstructed with LTF algo."};
   } configMft;
 
   //   configurables for MFT tracks
@@ -298,7 +306,7 @@ struct HfTaskFlow {
   o2::fv0::Geometry* fv0Det{};
   std::vector<float> cstFT0RelGain{};
   RCTFlagsChecker rctChecker;
-  RCTFlagsChecker correlationAnalysisRctChecker{kFT0Bad, kITSBad, kTPCBadTracking, kMFTBad};
+  RCTFlagsChecker correlationAnalysisRctChecker{kFT0Bad, kITSBad, kTPCBadTracking, kTPCBadPID, kMFTBad};
 
   // =========================
   //      using declarations : DATA
@@ -346,7 +354,7 @@ struct HfTaskFlow {
 
   // Filters below will be used for uncertainties
   Filter mftTrackCollisionIdFilter = (aod::fwdtrack::bestCollisionId >= 0);
-  Filter mftTrackDcaXYFilter = (nabs(aod::fwdtrack::bestDCAXY) < configMft.mftMaxDCAxy);
+  // Filter mftTrackDcaXYFilter = (nabs(aod::fwdtrack::bestDCAXY) < configMft.mftMaxDCAxy);
   // Filter mftTrackDcaZFilter = (nabs(aod::fwdtrack::bestDCAZ) < configMft.mftMaxDCAz);
 
   // =========================
@@ -435,6 +443,10 @@ struct HfTaskFlow {
     labelsMftTracksSelection[MftTrackSelectionStep::Eta] = "MFT tracks after eta selection";
     labelsMftTracksSelection[MftTrackSelectionStep::Cluster] = "MFT tracks after clusters selection";
     labelsMftTracksSelection[MftTrackSelectionStep::Pt] = "MFT tracks after pT selection";
+    labelsMftTracksSelection[MftTrackSelectionStep::DCAxy] = "MFT tracks after DCAxy selection";
+    labelsMftTracksSelection[MftTrackSelectionStep::DCAz] = "MFT tracks after DCAz selection";
+    labelsMftTracksSelection[MftTrackSelectionStep::IsLTF] = "Linear Track Finder MFT tracks";
+    labelsMftTracksSelection[MftTrackSelectionStep::IsCA] = "Cellular Automaton MFT tracks";
     registry.get<TH1>(HIST("Data/Mft/hMftTracksSelection"))->SetMinimum(0);
 
     for (int iBin = 0; iBin < MftTrackSelectionStep::NMftTrackSelectionSteps; iBin++) {
@@ -479,8 +491,8 @@ struct HfTaskFlow {
     //      Event histograms
     //  =========================
 
-    rctChecker.init(configCollision.setRCTFlagCheckerLabel, configCollision.requireZDCCheck, configCollision.requireRCTFlagCheckerLimitAcceptanceAsBad);
-    correlationAnalysisRctChecker.init({kFT0Bad, kITSBad, kTPCBadTracking, kMFTBad}, configCollision.requireZDCCheck, configCollision.requireRCTFlagCheckerLimitAcceptanceAsBad);
+    rctChecker.init(configCollision.setRCTFlagCheckerLabel, configCollision.requireZDCCheck, configCollision.requireRCTFlagCheckerLimitAcceptanceAsBad, true);
+    correlationAnalysisRctChecker.init({kFT0Bad, kITSBad, kTPCBadTracking, kTPCBadPID, kMFTBad}, configCollision.requireZDCCheck, configCollision.requireRCTFlagCheckerLimitAcceptanceAsBad, true);
 
     registry.add("Data/hVtxZ", "v_{z} (cm)", {HistType::kTH1D, {configAxis.axisVertex}});
     registry.add("Data/hNTracks", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
@@ -1092,7 +1104,7 @@ struct HfTaskFlow {
   // I tried to put it as a filter, but filters for normal TPC tracks also apply to MFT tracks I think
   // and it seems that they are not compatible
   template <typename TTrack>
-  bool isAcceptedMftTrack(TTrack const& mftTrack, bool fillHistograms)
+  bool isAcceptedMftTrack(TTrack const& mftTrack, float dcaXY, float dcaZ, bool fillHistograms)
   {
     // cut on the eta of MFT tracks
     if (mftTrack.eta() > configMft.etaMftTrackMax || mftTrack.eta() < configMft.etaMftTrackMin) {
@@ -1119,6 +1131,41 @@ struct HfTaskFlow {
 
     if (fillHistograms) {
       registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::Pt);
+    }
+
+    if (configMft.cutOnDcaXY && std::abs(dcaXY) > configMft.mftMaxDCAxy) {
+      return false;
+    }
+
+    if (fillHistograms) {
+      registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::DCAxy);
+    }
+    if (configMft.cutOnDcaZ && std::abs(dcaZ) > configMft.mftMaxDCAz) {
+      return false;
+    }
+
+    if (fillHistograms) {
+      registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::DCAz);
+    }
+
+    // cut on the track algorithm of MFT tracks
+    if (mftTrack.isCA()) {
+      if (fillHistograms) {
+        registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::IsCA);
+      }
+
+      if (configMft.useOnlyLTFTracks) {
+        return false;
+      }
+
+    } else {
+      if (fillHistograms) {
+        registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::IsLTF);
+      }
+
+      if (configMft.useOnlyCATracks) {
+        return false;
+      }
     }
 
     return true;
@@ -1236,11 +1283,11 @@ struct HfTaskFlow {
           if (sameEvent && loopCounter == 1) { // To avoid double counting, we fill the plots only the first time
             registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::NoSelection);
 
-            if (!isAcceptedMftTrack(track2, true)) {
+            if (!isAcceptedMftTrack(track2, 0.f, 0.f, true)) {
               continue;
             }
           } else { // After the first loop, we don't fill the plots anymore but still do the selection
-            if (!isAcceptedMftTrack(track2, false)) {
+            if (!isAcceptedMftTrack(track2, 0.f, 0.f, false)) {
               continue;
             }
           }
@@ -1432,9 +1479,27 @@ struct HfTaskFlow {
         }
 
         auto reassociatedMftTrack = track2.template mfttrack_as<FilteredMftTracks>();
+        auto reassociatedMftTrackDcaXY = 0.f;
+        auto reassociatedMftTrackDcaZ = 0.f;
 
-        if (!isAcceptedMftTrack(reassociatedMftTrack, false)) {
-          continue;
+        if constexpr (std::is_same_v<soa::SmallGroups<aod::BestCollisionsFwd>, TTracksAssoc>) {
+          reassociatedMftTrackDcaXY = track2.bestDCAXY();
+        }
+        if constexpr (std::is_same_v<soa::SmallGroups<aod::BestCollisionsFwd3d>, TTracksAssoc>) {
+          reassociatedMftTrackDcaXY = track2.bestDCAXY();
+          reassociatedMftTrackDcaZ = track2.bestDCAZ();
+        }
+
+        if (sameEvent && loopCounter == 1) { // To avoid double counting, we fill the plots only the first time
+          registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::NoSelection);
+
+          if (!isAcceptedMftTrack(reassociatedMftTrack, reassociatedMftTrackDcaXY, reassociatedMftTrackDcaZ, true)) {
+            continue;
+          }
+        } else { // After the first loop, we don't fill the plots anymore but still do the selection
+          if (!isAcceptedMftTrack(reassociatedMftTrack, reassociatedMftTrackDcaXY, reassociatedMftTrackDcaZ, false)) {
+            continue;
+          }
         }
 
         // Fill QA plot for MFT tracks after physical selection (eta + clusters)
@@ -1543,8 +1608,16 @@ struct HfTaskFlow {
           continue;
         }
       } else if constexpr (std::is_same_v<FilteredMftTracks, TTracksTrig>) {
-        if (!isAcceptedMftTrack(track1, true)) {
-          continue;
+        if (sameEvent && loopCounter == 1) { // To avoid double counting, we fill the plots only the first time
+          registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::NoSelection);
+
+          if (!isAcceptedMftTrack(track1, 0.f, 0.f, true)) {
+            continue;
+          }
+        } else { // After the first loop, we don't fill the plots anymore but still do the selection
+          if (!isAcceptedMftTrack(track1, 0.f, 0.f, false)) {
+            continue;
+          }
         }
       }
 
@@ -1739,9 +1812,27 @@ struct HfTaskFlow {
       loopCounter++;
 
       auto reassociatedMftTrack = track1.template mfttrack_as<FilteredMftTracks>();
+      auto reassociatedMftTrackDcaXY = 0.f;
+      auto reassociatedMftTrackDcaZ = 0.f;
 
-      if (!isAcceptedMftTrack(reassociatedMftTrack, true)) {
-        continue;
+      if constexpr (std::is_same_v<soa::SmallGroups<aod::BestCollisionsFwd>, TTracksAssoc>) {
+        reassociatedMftTrackDcaXY = track1.bestDCAXY();
+      }
+      if constexpr (std::is_same_v<soa::SmallGroups<aod::BestCollisionsFwd3d>, TTracksAssoc>) {
+        reassociatedMftTrackDcaXY = track1.bestDCAXY();
+        reassociatedMftTrackDcaZ = track1.bestDCAZ();
+      }
+
+      if (sameEvent && loopCounter == 1) { // To avoid double counting, we fill the plots only the first time
+        registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::NoSelection);
+
+        if (!isAcceptedMftTrack(reassociatedMftTrack, reassociatedMftTrackDcaXY, reassociatedMftTrackDcaZ, true)) {
+          continue;
+        }
+      } else { // After the first loop, we don't fill the plots anymore but still do the selection
+        if (!isAcceptedMftTrack(reassociatedMftTrack, reassociatedMftTrackDcaXY, reassociatedMftTrackDcaZ, false)) {
+          continue;
+        }
       }
 
       if (isAmbiguousMftTrack(track1, false)) {
