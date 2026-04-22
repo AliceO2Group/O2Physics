@@ -422,9 +422,9 @@ struct derivedlambdakzeroanalysis {
                               selNegGoodITSTrack, // at least min # ITS clusters
                               selPosItsOnly,
                               selNegItsOnly,
-			      selPosTPCOnly,
-			      selNegTPCOnly,
-			      selPosDeepSec,
+						      selPosTPCOnly,
+						      selNegTPCOnly,
+						      selPosDeepSec,
                               selNegDeepSec,
                               selPosNotTPCOnly,
                               selNegNotTPCOnly,
@@ -835,10 +835,10 @@ struct derivedlambdakzeroanalysis {
     hSelectionV0s->GetXaxis()->SetBinLabel(selNegItsOnly + 2, "Neg. ITS-only");
     hSelectionV0s->GetXaxis()->SetBinLabel(selPosTPCOnly + 2, "Pos. TPC-only");
     hSelectionV0s->GetXaxis()->SetBinLabel(selNegTPCOnly + 2, "Neg. TPC-only");
+	hSelectionV0s->GetXaxis()->SetBinLabel(selPosDeepSec + 2, "Pos. deep sec.");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selNegDeepSec + 2, "Neg. deep sec.");
     hSelectionV0s->GetXaxis()->SetBinLabel(selPosNotTPCOnly + 2, "Pos. not TPC-only");
     hSelectionV0s->GetXaxis()->SetBinLabel(selNegNotTPCOnly + 2, "Neg. not TPC-only");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selPosDeepSec + 2, "Pos. deep sec.");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selNegDeepSec + 2, "Neg. deep sec.");
     hSelectionV0s->GetXaxis()->SetBinLabel(selConsiderK0Short + 2, "True K^{0}_{S}");
     hSelectionV0s->GetXaxis()->SetBinLabel(selConsiderLambda + 2, "True #Lambda");
     hSelectionV0s->GetXaxis()->SetBinLabel(selConsiderAntiLambda + 2, "True #bar{#Lambda}");
@@ -1854,8 +1854,6 @@ struct derivedlambdakzeroanalysis {
     double invMassK0Short = v0Selections.useUncheckedMass ? v0.mK0Short_unchecked() : v0.mK0Short();
     double invMassLambda = v0Selections.useUncheckedMass ? v0.mLambda_unchecked() : v0.mLambda();
     double invMassAntiLambda = v0Selections.useUncheckedMass ? v0.mAntiLambda_unchecked() : v0.mAntiLambda();
-
-    LOG(info) << int(v0.v0Type()) << " " << int(posTrackExtra.detectorMap()) << " " << int(negTrackExtra.detectorMap()) << " " << invMassK0Short << " " << invMassLambda << " " << invMassAntiLambda;
 
     // __________________________________________
     // fill with no selection if plain QA requested
