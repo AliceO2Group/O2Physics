@@ -106,6 +106,7 @@ struct skimmerPrimaryMuon {
   Configurable<float> maxDEta{"maxDEta", 1e+10f, "max. deta between MFT-MCH-MID and MCH-MID"};
   Configurable<float> maxDPhi{"maxDPhi", 1e+10f, "max. dphi between MFT-MCH-MID and MCH-MID"};
   Configurable<bool> cfgApplyPreselectionInBestMatch{"cfgApplyPreselectionInBestMatch", false, "flag to apply preselection in find best match function"};
+  Configurable<bool> cfgRequireSameSign{"cfgRequireSameSign", false, "flag to require same sign between MFT and MCH-MID"};
 
   // for z shift for propagation
   Configurable<bool> cfgApplyZShiftFromCCDB{"cfgApplyZShiftFromCCDB", false, "flag to apply z shift"};
@@ -340,6 +341,10 @@ struct skimmerPrimaryMuon {
       auto mchtrack = fwdtrack.template matchMCHTrack_as<TFwdTracks>(); // MCH-MID
       auto mfttrack = fwdtrack.template matchMFTTrack_as<TMFTTracks>(); // MFTsa
       if (mfttrack.chi2() < 0.f) {
+        return false;
+      }
+
+      if (cfgRequireSameSign && (mfttrack.sign() != mchtrack.sign())) {
         return false;
       }
 
@@ -627,6 +632,9 @@ struct skimmerPrimaryMuon {
             continue;
           }
           if (muon_tmp.chi2MatchMCHMFT() > maxMatchingChi2MCHMFT) {
+            continue;
+          }
+          if (cfgRequireSameSign && (mfttrack.sign() != mchtrack.sign())) {
             continue;
           }
         }

@@ -78,8 +78,8 @@ auto static constexpr KminFt0cCell = 96;
 auto static constexpr TotFt0Channels = 208;
 AxisSpec axisEvent{15, 0.5, 15.5, "#Event", "EventAxis"};
 auto static constexpr KminCharge = 3.0f;
-static constexpr std::string_view species[] = {"Pi", "Ka", "Pr", "K0s", "L0s"};
-static constexpr std::array<int, 5> speciesIds{kPiPlus, kKPlus, kProton, kK0Short, kLambda0};
+static constexpr std::string_view species[] = {"Pi", "Ka", "Pr"};
+static constexpr std::array<int, 3> speciesIds{kPiPlus, kKPlus, kProton};
 
 enum KindOfV0 {
   kLambda = 0,
@@ -178,13 +178,13 @@ struct LongrangeMaker {
   Configurable<std::vector<double>> tofNsigmaPidCut{"tofNsigmaPidCut", std::vector<double>{1.5, 1.5, 1.5, -1.5, -1.5, -1.5}, "TOF n-sigma cut for pions_posNsigma, kaons_posNsigma, protons_posNsigma, pions_negNsigma, kaons_negNsigma, protons_negNsigma"};
   Configurable<float> cfgTofPidPtCut{"cfgTofPidPtCut", 0.3f, "Minimum pt to use TOF N-sigma"};
   Configurable<bool> isUseItsPid{"isUseItsPid", false, "Use ITS PID for particle identification"};
-  Configurable<int> isUseDataLikeMult{"isUseDataLikeMult", 0, "Data like mult/cent classification"};
+  Configurable<bool> isUseCentEst{"isUseCentEst", false, "Centrality based classification"};
 
   ConfigurableAxis vtxHistBin{"vtxHistBin", {20, -10, 10}, ""};
   ConfigurableAxis multHistBin{"multHistBin", {100, 0, 100}, ""};
   ConfigurableAxis etaHistBin{"etaHistBin", {20, -1, 1}, ""};
   ConfigurableAxis ptHistBin{"ptHistBin", {10, 0, 10}, ""};
-  ConfigurableAxis speciesHistBin{"speciesHistBin", {6, 0.5, 6.5}, ""};
+  ConfigurableAxis speciesHistBin{"speciesHistBin", {4, 0.5, 4.5}, ""};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Service<o2::framework::O2DatabasePDG> pdg;
@@ -252,8 +252,8 @@ struct LongrangeMaker {
         axisGen->SetBinLabel(i + 1, species[i].data());
         axisRec->SetBinLabel(i + 1, species[i].data());
       }
-      axisGen->SetBinLabel(6, "Other");
-      axisRec->SetBinLabel(6, "Other");
+      axisGen->SetBinLabel(4, "Other");
+      axisRec->SetBinLabel(4, "Other");
     }
 
     myTrackFilter = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::Default);
@@ -735,43 +735,37 @@ struct LongrangeMaker {
       return;
     }
     auto multiplicity = 0;
-    for (const auto& particle : mcparticles) {
-      if (!isGenPartSelected(particle) || std::abs(particle.eta()) > cfgtrksel.cfgEtaCut || particle.pt() < cfgtrksel.cfgPtCutMin || particle.pt() > cfgtrksel.cfgPtCutMult)
-        continue;
-      multiplicity++;
-    }
-    if (isUseDataLikeMult > 0) {
-      for (const auto& RecCol : RecCols) {
-        if (!isEventSelected(RecCol)) {
-          continue;
-        }
-        if (std::abs(RecCol.posZ()) >= cfgevtsel.cfgVtxCut) {
-          continue;
-        }
-        if (cfgevtsel.isApplyBestCollIndex && RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
-          continue;
-        }
-        multiplicity = selColCent(RecCol);
-      }
-    }
-
-    for (const auto& particle : mcparticles) {
-      if (!isGenPartSelected(particle) || std::abs(particle.eta()) > cfgtrksel.cfgEtaCut || particle.pt() < cfgtrksel.cfgPtCutMin || particle.pt() > cfgtrksel.cfgPtCutMult)
-        continue;
-      auto pos = std::distance(speciesIds.begin(), std::find(speciesIds.begin(), speciesIds.end(), particle.pdgCode())) + 1;
-      histos.fill(HIST("hGenMCdndpt"), mcCollision.posZ(), multiplicity, particle.eta(), particle.pt(), pos);
-    }
-
+    bool atLeastOne = false;
     for (const auto& RecCol : RecCols) {
-      if (!isEventSelected(RecCol)) {
+      if (!isEventSelected(RecCol))
         continue;
-      }
-      if (std::abs(RecCol.posZ()) >= cfgevtsel.cfgVtxCut) {
+      if (std::abs(RecCol.posZ()) >= cfgevtsel.cfgVtxCut)
         continue;
-      }
-      if (cfgevtsel.isApplyBestCollIndex && RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
+      if (cfgevtsel.isApplyBestCollIndex && RecCol.globalIndex() != mcCollision.bestCollisionIndex())
         continue;
+      if (isUseCentEst) {
+        multiplicity = selColCent(RecCol);
+      } else {
+        auto recTracksPart = RecTracks.sliceBy(perColMidtrack, RecCol.globalIndex());
+        multiplicity = countNTracks(recTracksPart);
       }
+      atLeastOne = true;
+    }
+    for (const auto& particle : mcparticles) {
+      if (!isGenPartSelected(particle) || std::abs(particle.eta()) > cfgtrksel.cfgEtaCut || particle.pt() < cfgtrksel.cfgPtCutMin || particle.pt() > cfgtrksel.cfgPtCutMax)
+        continue;
+      if (atLeastOne) {
+        auto pos = std::distance(speciesIds.begin(), std::find(speciesIds.begin(), speciesIds.end(), particle.pdgCode())) + 1;
+        histos.fill(HIST("hGenMCdndpt"), mcCollision.posZ(), multiplicity, particle.eta(), particle.pt(), pos);
+      }
+    }
+    for (const auto& RecCol : RecCols) {
+      if (!isEventSelected(RecCol))
+        continue;
+      if (std::abs(RecCol.posZ()) >= cfgevtsel.cfgVtxCut)
+        continue;
+      if (cfgevtsel.isApplyBestCollIndex && RecCol.globalIndex() != mcCollision.bestCollisionIndex())
+        continue;
       auto recTracksPart = RecTracks.sliceBy(perColMidtrack, RecCol.globalIndex());
       for (const auto& track : recTracksPart) {
         if (!track.isGlobalTrack())
@@ -790,50 +784,43 @@ struct LongrangeMaker {
       }
     }
   }
-
   void processMFTtrackEff(ColMCTrueTable::iterator const& mcCollision, ColMCRecTable const& RecCols,
-                          MftTrkMCRecTable const& mfttracks, aod::McParticles const& mcparticles)
+                          TrksMCRecTable const& RecTracks, MftTrkMCRecTable const& mfttracks,
+                          aod::McParticles const& mcparticles)
   {
     if (std::abs(mcCollision.posZ()) >= cfgevtsel.cfgVtxCut) {
       return;
     }
     auto multiplicity = 0;
-    for (const auto& particle : mcparticles) {
-      if (!isGenPartSelected(particle) || std::abs(particle.eta()) > cfgtrksel.cfgEtaCut || particle.pt() < cfgtrksel.cfgPtCutMin || particle.pt() > cfgtrksel.cfgPtCutMult)
+    bool atLeastOne = false;
+    for (const auto& RecCol : RecCols) {
+      if (!isEventSelected(RecCol))
         continue;
-      multiplicity++;
-    }
-    if (isUseDataLikeMult > 0) {
-      for (const auto& RecCol : RecCols) {
-        if (!isEventSelected(RecCol)) {
-          continue;
-        }
-        if (std::abs(RecCol.posZ()) >= cfgevtsel.cfgVtxCut) {
-          continue;
-        }
-        if (cfgevtsel.isApplyBestCollIndex && RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
-          continue;
-        }
+      if (std::abs(RecCol.posZ()) >= cfgevtsel.cfgVtxCut)
+        continue;
+      if (cfgevtsel.isApplyBestCollIndex && RecCol.globalIndex() != mcCollision.bestCollisionIndex())
+        continue;
+      if (isUseCentEst) {
         multiplicity = selColCent(RecCol);
+      } else {
+        auto recTracksPart = RecTracks.sliceBy(perColMidtrack, RecCol.globalIndex());
+        multiplicity = countNTracks(recTracksPart);
       }
+      atLeastOne = true;
     }
-
     for (const auto& particle : mcparticles) {
       if (!isGenPartSelected(particle) || particle.eta() > cfgmfttrksel.cfigMftEtaMax || particle.eta() < cfgmfttrksel.cfigMftEtaMin || particle.pt() < cfgmfttrksel.cfgMftPtCutMin || particle.pt() > cfgmfttrksel.cfgMftPtCutMax)
         continue;
-      histos.fill(HIST("hGenMCdndpt"), mcCollision.posZ(), multiplicity, particle.eta(), particle.pt(), 1.0);
+      if (atLeastOne)
+        histos.fill(HIST("hGenMCdndpt"), mcCollision.posZ(), multiplicity, particle.eta(), particle.pt(), 1.0);
     }
-
     for (const auto& RecCol : RecCols) {
-      if (!isEventSelected(RecCol)) {
+      if (!isEventSelected(RecCol))
         continue;
-      }
-      if (std::abs(RecCol.posZ()) >= cfgevtsel.cfgVtxCut) {
+      if (std::abs(RecCol.posZ()) >= cfgevtsel.cfgVtxCut)
         continue;
-      }
-      if (cfgevtsel.isApplyBestCollIndex && RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
+      if (cfgevtsel.isApplyBestCollIndex && RecCol.globalIndex() != mcCollision.bestCollisionIndex())
         continue;
-      }
       auto recTracksPart = mfttracks.sliceBy(perColMfttrack, RecCol.globalIndex());
       for (const auto& track : recTracksPart) {
         if (!isMftTrackSelected(track))
