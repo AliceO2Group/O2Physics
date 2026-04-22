@@ -117,8 +117,9 @@ struct TreeCreatorMuonML {
 
   struct : ConfigurableGroup {
     std::string prefix = "MFTCutGroup";
-    Configurable<float> minEta{"minEta", -5.0f, "min. eta acceptance for MFTsa to reject crazy tracks"};
-    Configurable<float> maxEta{"maxEta", -1.5f, "max. eta acceptance for MFTsa to reject crazy tracks"};
+    Configurable<float> minPt{"minPt", 0.04f, "min. pT for MFTsa to reject crazy tracks"};
+    Configurable<float> minEta{"minEta", -4.1f, "min. eta acceptance for MFTsa to reject crazy tracks"};
+    Configurable<float> maxEta{"maxEta", -2.0f, "max. eta acceptance for MFTsa to reject crazy tracks"};
   } MFTCutGroup;
 
   o2::ccdb::CcdbApi ccdbApi;
@@ -290,7 +291,7 @@ struct TreeCreatorMuonML {
     float chi2 = fwdtrack.chi2() / (2.f * (mchtrack.nClusters() + mfttrack.nClusters()) - 5.f);
     float chi2mft = mfttrack.chi2() / (2.f * mfttrack.nClusters() - 5.f);
 
-    if (mfttrack.eta() < MFTCutGroup.minEta || MFTCutGroup.maxEta < mfttrack.eta()) {
+    if (mfttrack.eta() < MFTCutGroup.minEta || MFTCutGroup.maxEta < mfttrack.eta() || mfttrack.pt() < MFTCutGroup.minPt) {
       return false;
     }
 
