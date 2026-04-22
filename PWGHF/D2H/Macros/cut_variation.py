@@ -11,15 +11,16 @@ import sys
 
 import numpy as np  # pylint: disable=import-error
 import ROOT  # pylint: disable=import-error
+from enum import IntEnum, auto
 sys.path.insert(0, '..')
 from style_formatter import set_global_style, set_object_style
-from enum import IntEnum
 
 class MinimisationStatus(IntEnum):
     Undefined = 0
-    Success = 1
-    MonotonyViolation = 2
-    Fail = 3
+    Success = auto()
+    MonotonyViolation = auto()
+    Fail = auto()
+    N = auto()
 
 # pylint: disable=too-many-instance-attributes
 class CutVarMinimiser:
