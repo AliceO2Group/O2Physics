@@ -72,15 +72,15 @@
         "unc": false
     },
     "is_save_to_root_file": {
-        "canvas": false,
-        "raw_yield": false,
-        "uncertainty": false,
-        "efficiency": false,
-        "fraction": false,
+        "canvas": true,
+        "raw_yield": true,
+        "uncertainty": true,
+        "efficiency": true,
+        "fraction": true,
         "corrected_yield": true,
-        "correlation_matrix": false,
-        "covariance": false,
-        "corrected_fraction": false,
+        "correlation_matrix": true,
+        "covariance": true,
+        "corrected_fraction": true,
         "minimisation_status": true
     },
     "central_efficiency": {
