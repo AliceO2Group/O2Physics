@@ -18,6 +18,7 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGMM/Mult/DataModel/Index.h" // for Particles2Tracks table
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
@@ -68,7 +69,7 @@ using namespace o2::constants::physics;
 
 struct FlowEseTask {
   //  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>>;
-  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::Qvectors, aod::QvectorFT0CVecs>;
+  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::Qvectors, aod::QvectorFT0CVecs, aod::QvectorTPCposVecs, aod::QvectorTPCnegVecs, aod::QvectorTPCallVecs>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::TrackSelectionExtension>;
   using V0TrackCandidate = aod::V0Datas;
 
@@ -159,6 +160,8 @@ struct FlowEseTask {
   ConfigurableAxis qvec2Axis{"qvec2Axis", {600, 0, 600}, "range of Qvector Module"};
   ConfigurableAxis lowerQAxis = {"lowerQAxis", {900, 0.0, 900.0}, "range of lowerQ QAplots"};
   ConfigurableAxis upperQAxis = {"upperQAxis", {200, 0.0, 20.0}, "range of upperQ QAplots"};
+  ConfigurableAxis lowerQAxisTPC = {"lowerQAxisTPC", {150, 0.0, 150.0}, "range of lowerQTPC QAplots"};
+  ConfigurableAxis upperQAxisTPC = {"upperQAxisTPC", {100, 0.0, 10.0}, "range of upperQTPC QAplots"};
 
   static constexpr float MinAmplitudeThreshold = 1e-5f;
   static constexpr int ShiftLevel = 10;
@@ -237,6 +240,12 @@ struct FlowEseTask {
     histos.add(Form("histLowerQvecCentCor"), "", {HistType::kTH2F, {lowerQAxis, centQaAxis}});
     histos.add(Form("histLowerQvecCentUncor"), "", {HistType::kTH2F, {lowerQAxis, centQaAxis}});
     histos.add(Form("histUpperQvecCent"), "", {HistType::kTH2F, {upperQAxis, centQaAxis}});
+    histos.add(Form("histLowerQvecCentTPCpos"), "", {HistType::kTH2F, {lowerQAxisTPC, centQaAxis}});
+    histos.add(Form("histLowerQvecCentTPCneg"), "", {HistType::kTH2F, {lowerQAxisTPC, centQaAxis}});
+    histos.add(Form("histLowerQvecCentTPCall"), "", {HistType::kTH2F, {lowerQAxisTPC, centQaAxis}});
+    histos.add(Form("histUpperQvecCentTPCpos"), "", {HistType::kTH2F, {upperQAxisTPC, centQaAxis}});
+    histos.add(Form("histUpperQvecCentTPCneg"), "", {HistType::kTH2F, {upperQAxisTPC, centQaAxis}});
+    histos.add(Form("histUpperQvecCentTPCall"), "", {HistType::kTH2F, {upperQAxisTPC, centQaAxis}});
     histos.add(Form("histVertex"), "", {HistType::kTHnSparseF, {vertexAxis, vertexAxis, vertexAxis, centAxis}});
     histos.add(Form("histV2"), "", {HistType::kTHnSparseF, {centAxis, ptAxis, cosAxis, qvec2Axis}});
     histos.add(Form("histV2_lambda"), "", {HistType::kTHnSparseF, {centAxis, ptAxis, cosAxis, qvec2Axis, massAxis}});
@@ -732,6 +741,12 @@ struct FlowEseTask {
     histos.fill(HIST("histMultCor"), collision.multFT0C(), collision.centFT0C());
     histos.fill(HIST("histMultUncor"), collision.sumAmplFT0C(), collision.centFT0C());
     histos.fill(HIST("histVertex"), collision.posX(), collision.posY(), collision.posZ(), collision.centFT0C());
+    histos.fill(HIST("histLowerQvecCentTPCpos"), std::sqrt(collision.qvecTPCposReVec()[0] * collision.qvecTPCposReVec()[0] + collision.qvecTPCposImVec()[0] * collision.qvecTPCposImVec()[0]) * std::sqrt(collision.nTrkTPCpos()), centrality);
+    histos.fill(HIST("histLowerQvecCentTPCneg"), std::sqrt(collision.qvecTPCnegReVec()[0] * collision.qvecTPCnegReVec()[0] + collision.qvecTPCnegImVec()[0] * collision.qvecTPCnegImVec()[0]) * std::sqrt(collision.nTrkTPCneg()), centrality);
+    histos.fill(HIST("histLowerQvecCentTPCall"), std::sqrt(collision.qvecTPCallReVec()[0] * collision.qvecTPCallReVec()[0] + collision.qvecTPCallImVec()[0] * collision.qvecTPCallImVec()[0]) * std::sqrt(collision.nTrkTPCall()), centrality);
+    histos.fill(HIST("histUpperQvecCentTPCpos"), std::sqrt(collision.qvecTPCposReVec()[0] * collision.qvecTPCposReVec()[0] + collision.qvecTPCposImVec()[0] * collision.qvecTPCposImVec()[0]), centrality);
+    histos.fill(HIST("histUpperQvecCentTPCneg"), std::sqrt(collision.qvecTPCnegReVec()[0] * collision.qvecTPCnegReVec()[0] + collision.qvecTPCnegImVec()[0] * collision.qvecTPCnegImVec()[0]), centrality);
+    histos.fill(HIST("histUpperQvecCentTPCall"), std::sqrt(collision.qvecTPCallReVec()[0] * collision.qvecTPCallReVec()[0] + collision.qvecTPCallImVec()[0] * collision.qvecTPCallImVec()[0]), centrality);
 
     for (const auto& v0 : V0s) {
       auto postrack = v0.template posTrack_as<TrackCandidates>();
