@@ -8,26 +8,28 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-/// student-o2physics.cxx  <name of your task>
-/// \brief <some comment>
-/// Hu,Pengchong <hupch19@outlook.com>
 
-// O2:
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h" // needed for aod::TracksDCA table
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/DataTypes.h"
-#include "Framework/runDataProcessing.h"
 #include <CCDB/BasicCCDBManager.h>
-// ...
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/DataTypes.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TGrid.h>
+#include <TH1D.h>
+#include <TSystem.h>
+
+#include <cstring>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
-// ...
 
 // Definitions of join tables for Run 3 analysis:
 using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>;
@@ -40,20 +42,8 @@ using TracksRecSim = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, ao
 using TrackRecSim = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>::iterator;
 using TracksSim = aod::McParticles;
 using TrackSim = aod::McParticles::iterator;
-// ...
-
-// *) ROOT and C++ include's:
-#include <TGrid.h>
-#include <TH1D.h>
-#include <TSystem.h>
-
-#include <cstring>
-#include <string>
-#include <vector>
-// ...
 
 using namespace std;
-// ...
 
 // *) Define enums:
 enum eRecSim { eRec = 0,
