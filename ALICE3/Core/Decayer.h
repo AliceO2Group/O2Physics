@@ -28,6 +28,7 @@
 #include <TDecayChannel.h> // IWYU pragma: keep
 #include <TGenPhaseSpace.h>
 #include <TLorentzVector.h>
+#include <TPDGCode.h>
 #include <TRandom3.h>
 
 #include <array>
@@ -47,46 +48,49 @@ class Decayer
   Decayer() = default;
 
   template <typename TDatabase>
-  std::vector<o2::upgrade::OTFParticle> decayParticle(const TDatabase& pdgDB, const o2::track::TrackParCov& track, const int pdgCode)
+  std::vector<o2::upgrade::OTFParticle> decayParticle(const TDatabase& pdgDB, const OTFParticle& particle)
   {
-    const auto& particleInfo = pdgDB->GetParticle(pdgCode);
+    const auto& particleInfo = pdgDB->GetParticle(particle.pdgCode());
+    if (!particleInfo) {
+      return {};
+    }
+
     const int charge = particleInfo->Charge() / 3;
     const double mass = particleInfo->Mass();
-    std::array<float, 3> mom;
-    std::array<float, 3> pos;
-    track.getPxPyPzGlo(mom);
-    track.getXYZGlo(pos);
 
-    const double u = mRand3.Uniform(0, 1);
+    const double u = mRand3.Uniform(0.001, 0.999);
     const double ctau = o2::constants::physics::LightSpeedCm2S * particleInfo->Lifetime(); // cm
-    const double betaGamma = track.getP() / mass;
+    const double betaGamma = particle.p() / mass;
     const double rxyz = -betaGamma * ctau * std::log(1 - u);
     double vx, vy, vz;
     double px, py, e;
 
     if (!charge) {
-      vx = pos[0] + rxyz * (mom[0] / track.getP());
-      vy = pos[1] + rxyz * (mom[1] / track.getP());
-      vz = pos[2] + rxyz * (mom[2] / track.getP());
-      px = mom[0];
-      py = mom[1];
+      vx = particle.vx() + rxyz * (particle.px() / particle.p());
+      vy = particle.vy() + rxyz * (particle.py() / particle.p());
+      vz = particle.vz() + rxyz * (particle.pz() / particle.p());
+      px = particle.px();
+      py = particle.py();
     } else {
-      float sna, csa;
+      o2::track::TrackParCov track;
       o2::math_utils::CircleXYf_t circle;
+      o2::upgrade::convertOTFParticleToO2Track(particle, track, pdgDB);
+
+      float sna, csa;
       track.getCircleParams(mBz, circle, sna, csa);
       const double rxy = rxyz / std::sqrt(1. + track.getTgl() * track.getTgl());
       const double theta = rxy / circle.rC;
 
-      vx = ((pos[0] - circle.xC) * std::cos(theta) - (pos[1] - circle.yC) * std::sin(theta)) + circle.xC;
-      vy = ((pos[1] - circle.yC) * std::cos(theta) + (pos[0] - circle.xC) * std::sin(theta)) + circle.yC;
-      vz = mom[2] + rxyz * (mom[2] / track.getP());
+      vx = ((particle.vx() - circle.xC) * std::cos(theta) - (particle.vy() - circle.yC) * std::sin(theta)) + circle.xC;
+      vy = ((particle.vy() - circle.yC) * std::cos(theta) + (particle.vx() - circle.xC) * std::sin(theta)) + circle.yC;
+      vz = particle.vz() + rxyz * (particle.pz() / track.getP());
 
-      px = mom[0] * std::cos(theta) - mom[1] * std::sin(theta);
-      py = mom[1] * std::cos(theta) + mom[0] * std::sin(theta);
+      px = particle.px() * std::cos(theta) - particle.py() * std::sin(theta);
+      py = particle.py() * std::cos(theta) + particle.px() * std::sin(theta);
     }
 
     double brTotal = 0.;
-    e = std::sqrt(mass * mass + px * px + py * py + mom[2] * mom[2]);
+    e = std::sqrt(mass * mass + px * px + py * py + particle.pz() * particle.pz());
     for (int ch = 0; ch < particleInfo->NDecayChannels(); ++ch) {
       brTotal += particleInfo->DecayChannel(ch)->BranchingRatio();
     }
@@ -108,7 +112,11 @@ class Decayer
       }
     }
 
-    TLorentzVector tlv(px, py, mom[2], e);
+    if (dauMasses.empty()) {
+      return {};
+    }
+
+    TLorentzVector tlv(px, py, particle.pz(), e);
     TGenPhaseSpace decay;
     decay.SetDecay(tlv, dauMasses.size(), dauMasses.data());
     decay.Generate();
