@@ -1488,7 +1488,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
       return cut;
     }
   }
-  
+
   if (!nameStr.compare("electronPrimaryTag0")) {
     // with tight 3 sigma DCA cut for selecting primary electrons
     cut->AddCut(GetAnalysisCut("electronPID_TPCnsigma_loose")); // 3 sigma inclusion, 3sigma rejection
@@ -1496,7 +1496,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     return cut;
   }
-  
+
   if (!nameStr.compare("electronPrimaryTag1")) {
     // with 7 sigma DCA cut for selecting primary electrons
     cut->AddCut(GetAnalysisCut("electronPID_TPCnsigma_loose")); // 3 sigma inclusion, 3sigma rejection
@@ -1504,20 +1504,20 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     return cut;
   }
-  
+
   if (!nameStr.compare("electronPrimaryProbe_TPC")) {
     cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
     cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
     return cut;
   }
-  
+
   if (!nameStr.compare("electronPrimaryProbe_ITS")) {
     cut->AddCut(GetAnalysisCut("electronStandardQualitybAnyITSOnly"));
     cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCA"));
     cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
     return cut;
   }
-  
+
   if (!nameStr.compare("electronPrimaryProbe_ITSTPC")) {
     cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
     cut->AddCut(GetAnalysisCut("electronStandardQualitybAnyITSOnly"));
@@ -5095,36 +5095,36 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTrackDCAz, -1.0, 1.0);
     return cut;
   }
-  
+
   TF1* fDCAxyresLow = new TF1("fDCAxyresLow", "[0] + [1] * pow(x, -[2])", 0.1, 1000.);
   TF1* fDCAzresLow = new TF1("fDCAzresLow", "[0] + [1] * pow(x, -[2])", 0.1, 1000.);
   TF1* fDCAxyresUp = new TF1("fDCAxyresUp", "[0] + [1] * pow(x, -[2])", 0.1, 1000.);
   TF1* fDCAzresUp = new TF1("fDCAzresUp", "[0] + [1] * pow(x, -[2])", 0.1, 1000.);
-  
+
   if (!nameStr.compare("electronPrimary_dca3sigma")) {
     // DCAxy and DCAz 3 sigma cut. DCA resolution vs pt extracted from fits of Users/m/mfaggin/test/inputsTrackTuner/pp2024/pass1_minBias/vsPhi (used for the track tuner)
     // we add in addition a term for the misalignment of the mean of the distribution, which seems to be at most 20 mum for DCAxy and 10 mum for DCAz
     fDCAxyresLow->SetParameters(-3 * 8.7e-4 - 20e-4, -3 * 25.4e-4, 0.79); // res is 8.7 + 25.4/pt^0.79 mum
-    fDCAzresLow->SetParameters(-3 * 9.4e-4 - 10e-4, -3 * 26.5e-4, 0.79); // res is 9.4 + 26.5/pt^0.79 mum
-    fDCAxyresUp->SetParameters(3 * 8.7e-4 + 20e-4, 3 * 25.4e-4, 0.79); // res is 8.7 + 25.4/pt^0.79 mum
-    fDCAzresUp->SetParameters(3 * 9.4e-4 + 10e-4, 3 * 26.5e-4, 0.79); // res is 9.4 + 26.5/pt^0.79 mum
-    cut->AddCut(VarManager::kTrackDCAxy, fDCAxyresLow, fDCAxyresUp, false, VarManager::kPt, 0.2, 1000.); 
-    cut->AddCut(VarManager::kTrackDCAz, fDCAzresLow, fDCAzresUp, false, VarManager::kPt, 0.2, 1000.); 
+    fDCAzresLow->SetParameters(-3 * 9.4e-4 - 10e-4, -3 * 26.5e-4, 0.79);  // res is 9.4 + 26.5/pt^0.79 mum
+    fDCAxyresUp->SetParameters(3 * 8.7e-4 + 20e-4, 3 * 25.4e-4, 0.79);    // res is 8.7 + 25.4/pt^0.79 mum
+    fDCAzresUp->SetParameters(3 * 9.4e-4 + 10e-4, 3 * 26.5e-4, 0.79);     // res is 9.4 + 26.5/pt^0.79 mum
+    cut->AddCut(VarManager::kTrackDCAxy, fDCAxyresLow, fDCAxyresUp, false, VarManager::kPt, 0.2, 1000.);
+    cut->AddCut(VarManager::kTrackDCAz, fDCAzresLow, fDCAzresUp, false, VarManager::kPt, 0.2, 1000.);
     cut->AddCut(VarManager::kIsITSibFirst, 0.5, 1.5);
     cut->AddCut(VarManager::kITSchi2, 0.0, 5.0);
     cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
     cut->AddCut(VarManager::kTPCncls, 100, 161.);
     return cut;
   }
-  
+
   if (!nameStr.compare("electronPrimary_dca7sigma")) {
     // DCAxy and DCAz 7 sigma cut
     fDCAxyresLow->SetParameters(-7 * 8.7e-4 - 20e-4, -7 * 25.4e-4, 0.79);
     fDCAzresLow->SetParameters(-7 * 9.4e-4 - 10e-4, -7 * 26.5e-4, 0.79);
     fDCAxyresUp->SetParameters(7 * 8.7e-4 + 20e-4, 7 * 25.4e-4, 0.79);
     fDCAzresUp->SetParameters(7 * 9.4e-4 + 10e-4, 7 * 26.5e-4, 0.79);
-    cut->AddCut(VarManager::kTrackDCAxy, fDCAxyresLow, fDCAxyresUp, false, VarManager::kPt, 0.2, 1000.); 
-    cut->AddCut(VarManager::kTrackDCAz, fDCAzresLow, fDCAzresUp, false, VarManager::kPt, 0.2, 1000.); 
+    cut->AddCut(VarManager::kTrackDCAxy, fDCAxyresLow, fDCAxyresUp, false, VarManager::kPt, 0.2, 1000.);
+    cut->AddCut(VarManager::kTrackDCAz, fDCAzresLow, fDCAzresUp, false, VarManager::kPt, 0.2, 1000.);
     cut->AddCut(VarManager::kIsITSibFirst, 0.5, 1.5);
     cut->AddCut(VarManager::kITSchi2, 0.0, 5.0);
     cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);

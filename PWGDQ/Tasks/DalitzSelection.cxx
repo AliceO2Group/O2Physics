@@ -87,14 +87,14 @@ struct dalitzPairing {
     Configurable<float> fConfigTPCNSigLow{"cfgTPCNSigElLow", -3.f, "Low TPCNSigEl cut for Dalitz tracks in the barrel"};
     Configurable<float> fConfigTPCNSigHigh{"cfgTPCNSigElHigh", 3.f, "High TPCNsigEl cut for Dalitz tracks in the barrel"};
   } fConfigCuts;
-  
+
   // histograms
   struct : ConfigurableGroup {
     Configurable<std::string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
     Configurable<std::string> fConfigAddPairHistogram{"cfgAddPairHistogram", "", "Comma separated list of histograms"};
     Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format for tracks"};
   } fConfigHistograms;
-  
+
   // additional options
   struct : ConfigurableGroup {
     Configurable<bool> fConfigEnableLikeSign{"cfgEnableLikeSign", false, "Whether or not also add like-sign pairs (for studying combinatorial background which might contain misID or non-primary electrons)"};
@@ -118,16 +118,16 @@ struct dalitzPairing {
   OutputObj<THashList> fOutputList{"output"}; //! the histogram manager output list
   OutputObj<TList> fStatsList{"Statistics"};  //! skimming statistics
 
-  std::map<int, uint8_t> fTrackmap; // whether it is selected with symmetric or tag cut
-  std::map<int, uint8_t> fTrackmapProbe; // whether it is selected with probe cut
-  std::map<int, uint8_t> fDalitzmap; // whether it is selected as dalitz decay daughter with symmetric or tag cut
-  std::map<int, uint8_t> fDalitzmapProbe;  // whether it is selected as dalitz decay daughter with probe cut
+  std::map<int, uint8_t> fTrackmap;       // whether it is selected with symmetric or tag cut
+  std::map<int, uint8_t> fTrackmapProbe;  // whether it is selected with probe cut
+  std::map<int, uint8_t> fDalitzmap;      // whether it is selected as dalitz decay daughter with symmetric or tag cut
+  std::map<int, uint8_t> fDalitzmapProbe; // whether it is selected as dalitz decay daughter with probe cut
 
   AnalysisCompositeCut* fEventCut;
   std::vector<AnalysisCompositeCut> fTrackCuts;
   std::vector<AnalysisCompositeCut> fTrackCutsProbe;
   std::vector<AnalysisCompositeCut> fPairCuts;
-  
+
   bool fIsTagAndProbe; // whether we are doing tag and probe, or just symmetric cuts
 
   HistogramManager* fHistMan;
@@ -135,7 +135,7 @@ struct dalitzPairing {
   void init(o2::framework::InitContext&)
   {
     fIsTagAndProbe = false;
-    
+
     // Event cuts
     fEventCut = new AnalysisCompositeCut(true);
     TString eventCutStr = fConfigCuts.fConfigEventCuts.value;
@@ -158,7 +158,7 @@ struct dalitzPairing {
         fTrackCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
       }
     }
-    
+
     // Probe cuts
     TString cutNamesProbeStr = fConfigCuts.fConfigDalitzTrackCutsProbe.value;
     TString addTrackCutsProbeStr = fConfigCuts.fConfigTrackCutsProbeJSON.value;
@@ -228,8 +228,7 @@ struct dalitzPairing {
           if (fConfigOptions.fConfigEnableLikeSign) {
             histClasses += Form("Pair_LS_%s_%s_%s;", (*trackCut).GetName(), fTrackCutsProbe.at(iCut).GetName(), (*pairCut).GetName());
           }
-        }
-        else {
+        } else {
           histClasses += Form("TrackBarrel_%s_%s;", (*trackCut).GetName(), (*pairCut).GetName());
           histClasses += Form("Pair_%s_%s;", (*trackCut).GetName(), (*pairCut).GetName());
           if (fConfigOptions.fConfigEnableLikeSign) {
@@ -261,7 +260,7 @@ struct dalitzPairing {
         dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "pair", histPairName);
       }
     }
-    
+
     // Additional histogram via the JSON configurable
     TString addHistsStr = fConfigHistograms.fConfigAddJSONHistograms.value;
     if (addHistsStr != "") {
@@ -278,10 +277,9 @@ struct dalitzPairing {
     int icut = 1;
     for (auto pairCut = fPairCuts.begin(); pairCut != fPairCuts.end(); pairCut++, trackCut++, icut++) {
       if (fIsTagAndProbe) {
-        histTracks->GetXaxis()->SetBinLabel(2*icut, Form("%s_%s_%s tag", (*trackCut).GetName(), fTrackCutsProbe.at(icut-1).GetName(), (*pairCut).GetName()));
-        histTracks->GetXaxis()->SetBinLabel(2*icut + 1, Form("%s_%s_%s probe", (*trackCut).GetName(), fTrackCutsProbe.at(icut-1).GetName(), (*pairCut).GetName()));
-      }
-      else {
+        histTracks->GetXaxis()->SetBinLabel(2 * icut, Form("%s_%s_%s tag", (*trackCut).GetName(), fTrackCutsProbe.at(icut - 1).GetName(), (*pairCut).GetName()));
+        histTracks->GetXaxis()->SetBinLabel(2 * icut + 1, Form("%s_%s_%s probe", (*trackCut).GetName(), fTrackCutsProbe.at(icut - 1).GetName(), (*pairCut).GetName()));
+      } else {
         histTracks->GetXaxis()->SetBinLabel(icut + 1, Form("%s_%s", (*trackCut).GetName(), (*pairCut).GetName()));
       }
     }
@@ -312,7 +310,7 @@ struct dalitzPairing {
           if ((*cut).IsSelected(VarManager::fgValues)) {
             filterMapProbe |= (uint8_t(1) << i);
           }
-        }    
+        }
       }
       if (filterMap) {
         fTrackmap[track.globalIndex()] = filterMap;
@@ -360,15 +358,13 @@ struct dalitzPairing {
               if (fConfigOptions.fQA) {
                 fHistMan->FillHistClass(Form("Pair_%s_%s_%s", (*trackCut).GetName(), fTrackCutsProbe.at(icut).GetName(), (*pairCut).GetName()), VarManager::fgValues);
               }
-            }
-            else {
+            } else {
               fDalitzmap[track2.globalIndex()] |= (uint8_t(1) << icut);
               if (fConfigOptions.fQA) {
                 fHistMan->FillHistClass(Form("Pair_%s_%s", (*trackCut).GetName(), (*pairCut).GetName()), VarManager::fgValues);
               }
             }
-          }
-          else {
+          } else {
             if (fConfigOptions.fQA) {
               fHistMan->FillHistClass(fIsTagAndProbe ? Form("PairLS_%s_%s_%s", (*trackCut).GetName(), fTrackCutsProbe.at(icut).GetName(), (*pairCut).GetName()) : Form("PairLS_%s_%s", (*trackCut).GetName(), (*pairCut).GetName()), VarManager::fgValues);
             }
@@ -376,7 +372,6 @@ struct dalitzPairing {
         } // end if isSelected
       } // end cut loop
     } // end of tracksP,N loop
-
 
     // Fill Hists
     if (fConfigOptions.fQA) {
@@ -392,11 +387,11 @@ struct dalitzPairing {
         auto trackCut = fTrackCuts.begin();
         for (auto pairCut = fPairCuts.begin(); pairCut != fPairCuts.end(); pairCut++, trackCut++, icut++) {
           if (filterMap & (uint8_t(1) << icut)) {
-            reinterpret_cast<TH1I*>(fStatsList->At(0))->Fill(fIsTagAndProbe ? 2*icut + 1 : icut + 1);
+            reinterpret_cast<TH1I*>(fStatsList->At(0))->Fill(fIsTagAndProbe ? 2 * icut + 1 : icut + 1);
             fHistMan->FillHistClass(fIsTagAndProbe ? Form("TrackBarrelTag_%s_%s_%s", (*trackCut).GetName(), fTrackCutsProbe.at(icut).GetName(), (*pairCut).GetName()) : Form("TrackBarrel_%s_%s", (*trackCut).GetName(), (*pairCut).GetName()), VarManager::fgValues);
           }
           if (filterMapProbe & (uint8_t(1) << icut)) {
-            reinterpret_cast<TH1I*>(fStatsList->At(0))->Fill(2*icut + 2);
+            reinterpret_cast<TH1I*>(fStatsList->At(0))->Fill(2 * icut + 2);
             fHistMan->FillHistClass(Form("TrackBarrelProbe_%s_%s_%s", (*trackCut).GetName(), fTrackCutsProbe.at(icut).GetName(), (*pairCut).GetName()), VarManager::fgValues);
           }
         }
