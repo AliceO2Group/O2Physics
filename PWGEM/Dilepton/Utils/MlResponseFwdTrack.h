@@ -27,38 +27,37 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_TRACK(FEATURE)                                \
-  {                                                               \
-    #FEATURE, static_cast<uint8_t>(InputFeaturesFwdTrack::FEATURE) \
-  }
+#define FILL_MAP_TRACK(FEATURE) \
+  {                             \
+    #FEATURE, static_cast<uint8_t>(InputFeaturesFwdTrack::FEATURE)}
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the corresponding GETTER=FEATURE from track
-#define CHECK_AND_FILL_TRACK(GETTER)                      \
+#define CHECK_AND_FILL_TRACK(GETTER)                          \
   case static_cast<uint8_t>(InputFeaturesFwdTrack::GETTER): { \
-    inputFeature = track.GETTER;                             \
-    break;                                                   \
+    inputFeature = track.GETTER;                              \
+    break;                                                    \
   }
 
 namespace o2::analysis
 {
 // possible input features for ML
 enum class InputFeaturesFwdTrack : uint8_t {
-    multFT0C,
-    multMFT,
-    ptMCHMID,
-    rSigned1Pt,
-    dEta,
-    dPhi,
-    dX,
-    dY,
-    chi2MatchMCHMFT,
-    sigmaPhiMFT,
-    sigmaTglMFT,
-    sigmaPhiMCHMID,
-    sigmaTglMCHMID,
+  multFT0C,
+  multMFT,
+  ptMCHMID,
+  rSigned1Pt,
+  dEta,
+  dPhi,
+  dX,
+  dY,
+  chi2MatchMCHMFT,
+  sigmaPhiMFT,
+  sigmaTglMFT,
+  sigmaPhiMCHMID,
+  sigmaTglMCHMID,
 };
 
 template <typename TypeOutputScore = float>
