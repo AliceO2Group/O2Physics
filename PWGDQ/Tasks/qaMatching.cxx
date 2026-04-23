@@ -84,6 +84,77 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod;
 
+namespace qamatching
+{
+DECLARE_SOA_COLUMN(P, p, float);
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(Eta, eta, float);
+DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(MatchLabel, matchLabel, int8_t);
+DECLARE_SOA_COLUMN(TrackId, trackId, int64_t);
+DECLARE_SOA_COLUMN(MatchType, matchType, int8_t);
+DECLARE_SOA_COLUMN(MatchScore, matchScore, float);
+DECLARE_SOA_COLUMN(MatchRanking, matchRanking, int32_t);
+DECLARE_SOA_COLUMN(MftMultiplicity, mftMultiplicity, int32_t);
+DECLARE_SOA_COLUMN(TrackType, trackType, int8_t);
+DECLARE_SOA_COLUMN(MftMatchAttempts, mftMatchAttempts, int32_t);
+DECLARE_SOA_COLUMN(XAtVtx, xAtVtx, float);
+DECLARE_SOA_COLUMN(YAtVtx, yAtVtx, float);
+DECLARE_SOA_COLUMN(ZAtVtx, zAtVtx, float);
+DECLARE_SOA_COLUMN(PxAtVtx, pxAtVtx, float);
+DECLARE_SOA_COLUMN(PyAtVtx, pyAtVtx, float);
+DECLARE_SOA_COLUMN(PzAtVtx, pzAtVtx, float);
+DECLARE_SOA_COLUMN(ColX, colX, float);
+DECLARE_SOA_COLUMN(ColY, colY, float);
+DECLARE_SOA_COLUMN(ColZ, colZ, float);
+} // namespace qamatching
+
+namespace o2::aod
+{
+DECLARE_SOA_TABLE(QaMatchingEvents, "AOD", "QAMEVT",
+                  o2::soa::Index<>,
+                  qamatching::MftMultiplicity,
+                  qamatching::ColX,
+                  qamatching::ColY,
+                  qamatching::ColZ);
+} // namespace o2::aod
+
+namespace qamatching
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(ReducedEvent, reducedEvent, int32_t, o2::aod::QaMatchingEvents, "");
+} // namespace qamatching
+
+namespace o2::aod
+{
+DECLARE_SOA_TABLE(QaMatchingMCHTrack, "AOD", "QAMCHTRK",
+                  qamatching::ReducedEventId,
+                  qamatching::TrackId,
+                  qamatching::TrackType,
+                  qamatching::P,
+                  qamatching::Pt,
+                  qamatching::Eta,
+                  qamatching::Phi,
+                  qamatching::MftMatchAttempts,
+                  qamatching::XAtVtx,
+                  qamatching::YAtVtx,
+                  qamatching::ZAtVtx,
+                  qamatching::PxAtVtx,
+                  qamatching::PyAtVtx,
+                  qamatching::PzAtVtx);
+DECLARE_SOA_TABLE(QaMatchingCandidates, "AOD", "QAMCAND",
+                  qamatching::ReducedEventId,
+                  qamatching::MatchLabel,
+                  qamatching::TrackId,
+                  qamatching::P, qamatching::Pt, qamatching::Eta, qamatching::Phi,
+                  qamatching::MatchType, qamatching::MatchScore, qamatching::MatchRanking,
+                  qamatching::XAtVtx,
+                  qamatching::YAtVtx,
+                  qamatching::ZAtVtx,
+                  qamatching::PxAtVtx,
+                  qamatching::PyAtVtx,
+                  qamatching::PzAtVtx);
+} // namespace o2::aod
+
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
 using MyMuonsMC = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::McFwdTrackLabels>;
@@ -139,6 +210,7 @@ struct QaMatching {
   static constexpr int ExtrapolationMethodMftFirstPoint = 2;
   static constexpr int ExtrapolationMethodVertex = 3;
   static constexpr int ExtrapolationMethodMftDca = 4;
+  static constexpr int DecayRankingDirect = 2;
 
   struct MatchingCandidate {
     int64_t collisionId{-1};
@@ -209,6 +281,8 @@ struct QaMatching {
   ///    Variables for histograms configuration
   Configurable<int> cfgNCandidatesMax{"cfgNCandidatesMax", 5, "Number of matching candidates stored for each muon track"};
   Configurable<int> cfgMftTrackMultiplicityMax{"cfgMftTrackMultiplicityMax", 1000, "Maximum number of MFT tracks per collision"};
+
+  Configurable<int> cfgQaMatchingAodDebug{"cfgQaMatchingAodDebug", 0, "If >0, print AO2D filling debug (0=off, N=max collisions)"};
 
   double mBzAtMftCenter{0};
 
@@ -398,6 +472,10 @@ struct QaMatching {
 
   std::unordered_map<std::string, o2::framework::HistPtr> matchingHistos;
   Matrix<o2::framework::HistPtr, 4, 4> dimuonHistos;
+
+  Produces<o2::aod::QaMatchingEvents> qaMatchingEvents;
+  Produces<o2::aod::QaMatchingMCHTrack> qaMatchingMCHTrack;
+  Produces<o2::aod::QaMatchingCandidates> qaMatchingCandidates;
 
   struct EfficiencyPlotter {
     o2::framework::HistPtr pNum;
@@ -1696,7 +1774,7 @@ struct QaMatching {
       } else {
         result = (ranking == 1) ? kMatchTypeWrongLeading : kMatchTypeWrongNonLeading;
       }
-    } else if (decayRanking == 1) {
+    } else if (decayRanking == DecayRankingDirect) {
       result = (ranking == 1) ? kMatchTypeDecayLeading : kMatchTypeDecayNonLeading;
     } else {
       result = (ranking == 1) ? kMatchTypeFakeLeading : kMatchTypeFakeNonLeading;
@@ -2329,6 +2407,17 @@ struct QaMatching {
         }
       }
 
+      if (cfgQaMatchingAodDebug > 0 && goodMatchFound && isTrueMatch) {
+        LOGF(info,
+             "[good&true] mchId=%lld trackType=%d p=%.3f pt=%.3f eta=%.3f phi=%.3f",
+             static_cast<int64_t>(mchTrack.globalIndex()),
+             static_cast<int>(mchTrack.trackType()),
+             mchTrack.p(),
+             mchTrack.pt(),
+             mchTrack.eta(),
+             mchTrack.phi());
+      }
+
       // ---- MC ancestry ----
       auto motherParticles = getMotherParticles(mchTrack);
       int motherPDG = 0;
@@ -2790,6 +2879,110 @@ struct QaMatching {
     fillDimuonPlotsMc(collisionInfo, collisions, muonTracks, mftTracks);
   }
 
+  template <class TCOLLISION, class TMUON>
+  void fillQaMatchingAodTablesForCollision(TCOLLISION const& collision,
+                                           TMUON const& muonTracks,
+                                           const MatchingCandidates& matchingCandidates,
+                                           int8_t matchLabel,
+                                           int32_t reducedEventId)
+  {
+    for (const auto& [mchIndex, candidates] : matchingCandidates) {
+      if (candidates.empty()) {
+        continue;
+      }
+
+      const auto& mchTrack = muonTracks.rawIteratorAt(mchIndex);
+      if (!isGoodGlobalMuon(mchTrack, collision)) {
+        continue;
+      }
+
+      for (const auto& candidate : candidates) {
+        const auto& candidateTrack = muonTracks.rawIteratorAt(candidate.globalTrackId);
+        auto candidateTrackAtVertex = VarManager::PropagateMuon(candidateTrack, collision, VarManager::kToVertex);
+        qaMatchingCandidates(
+          reducedEventId,
+          matchLabel,
+          mchIndex,
+          static_cast<float>(candidateTrack.p()),
+          static_cast<float>(candidateTrack.pt()),
+          static_cast<float>(candidateTrack.eta()),
+          static_cast<float>(candidateTrack.phi()),
+          static_cast<int8_t>(candidate.matchType),
+          static_cast<float>(candidate.matchScore),
+          static_cast<int32_t>(candidate.matchRanking),
+          static_cast<float>(candidateTrackAtVertex.getX()),
+          static_cast<float>(candidateTrackAtVertex.getY()),
+          static_cast<float>(candidateTrackAtVertex.getZ()),
+          static_cast<float>(candidateTrackAtVertex.getPx()),
+          static_cast<float>(candidateTrackAtVertex.getPy()),
+          static_cast<float>(candidateTrackAtVertex.getPz()));
+      }
+    }
+  }
+
+  template <class TCOLLISION>
+  void fillQaMatchingAodEventForCollision(const CollisionInfo& collisionInfo,
+                                          TCOLLISION const& collision,
+                                          int32_t reducedEventId,
+                                          int& debugCounter)
+  {
+    int32_t mftMultiplicity = static_cast<int32_t>(collisionInfo.mftTracks.size());
+    qaMatchingEvents(
+      mftMultiplicity,
+      static_cast<float>(collision.posX()),
+      static_cast<float>(collision.posY()),
+      static_cast<float>(collision.posZ()));
+
+    if (cfgQaMatchingAodDebug > 0 && debugCounter < cfgQaMatchingAodDebug) {
+      LOGF(info, "[AO2D] reducedEvent=%", reducedEventId);
+      debugCounter += 1;
+    }
+  }
+
+  template <class TCOLLISIONS, class TCOLLISION, class TMUON, class TMFT, class TBC>
+  void fillQaMatchingMchTracksForCollision(const CollisionInfo& collisionInfo,
+                                           TCOLLISIONS const& collisions,
+                                           TCOLLISION const& collision,
+                                           TMUON const& muonTracks,
+                                           TMFT const& mftTracks,
+                                           TBC const& bcs,
+                                           int32_t reducedEventId)
+  {
+    std::vector<int64_t> mchIds;
+    for (const auto& mchIndex : collisionInfo.mchTracks) {
+      if (std::find(mchIds.begin(), mchIds.end(), mchIndex) == mchIds.end()) {
+        mchIds.emplace_back(mchIndex);
+      }
+    }
+    for (const auto& [mchIndex, candidates] : collisionInfo.matchingCandidates) {
+      (void)candidates;
+      if (std::find(mchIds.begin(), mchIds.end(), mchIndex) == mchIds.end()) {
+        mchIds.emplace_back(mchIndex);
+      }
+    }
+
+    for (const auto& mchIndex : mchIds) {
+      auto const& mchTrack = muonTracks.rawIteratorAt(mchIndex);
+      int mftMchMatchAttempts = getMftMchMatchAttempts(collisions, bcs, mchTrack, mftTracks);
+      auto mchTrackAtVertex = VarManager::PropagateMuon(mchTrack, collision, VarManager::kToVertex);
+      qaMatchingMCHTrack(
+        reducedEventId,
+        mchIndex,
+        static_cast<int8_t>(mchTrack.trackType()),
+        static_cast<float>(mchTrack.p()),
+        static_cast<float>(mchTrack.pt()),
+        static_cast<float>(mchTrack.eta()),
+        static_cast<float>(mchTrack.phi()),
+        static_cast<int32_t>(mftMchMatchAttempts),
+        static_cast<float>(mchTrackAtVertex.getX()),
+        static_cast<float>(mchTrackAtVertex.getY()),
+        static_cast<float>(mchTrackAtVertex.getZ()),
+        static_cast<float>(mchTrackAtVertex.getPx()),
+        static_cast<float>(mchTrackAtVertex.getPy()),
+        static_cast<float>(mchTrackAtVertex.getPz()));
+    }
+  }
+
   void processQAMC(MyEvents const& collisions,
                    aod::BCsWithTimestamps const& bcs,
                    MyMuonsMC const& muonTracks,
@@ -2809,6 +3002,49 @@ struct QaMatching {
     mftTrackCovs.clear();
     for (const auto& mftTrackCov : mftCovs) {
       mftTrackCovs[mftTrackCov.matchMFTTrackId()] = mftTrackCov.globalIndex();
+    }
+
+    std::unordered_map<int64_t, int32_t> reducedEventIds;
+    int32_t reducedEventCounter = 0;
+    for (auto const& [collisionIndex, collisionInfo] : fCollisionInfos) {
+      reducedEventIds.emplace(collisionInfo.index, reducedEventCounter);
+      reducedEventCounter += 1;
+    }
+
+    int debugCounter = 0;
+    for (auto const& [collisionIndex, collisionInfo] : fCollisionInfos) {
+      auto it = reducedEventIds.find(collisionInfo.index);
+      if (it == reducedEventIds.end()) {
+        continue;
+      }
+      int32_t reducedEventId = it->second;
+      auto collision = collisions.rawIteratorAt(collisionInfo.index);
+      fillQaMatchingAodEventForCollision(collisionInfo, collision, reducedEventId, debugCounter);
+      fillQaMatchingMchTracksForCollision(collisionInfo, collisions, collision, muonTracks, mftTracks, bcs, reducedEventId);
+    }
+
+    struct AodLabel {
+      const char* name;
+      int8_t id;
+    };
+    std::array<AodLabel, 3> aodLabels{{{"ProdAll", 0}, {"MatchXYPhiTanl", 1}, {"MatchXYPhiTanlMom", 2}}};
+    for (const auto& aodLabel : aodLabels) {
+      if (matchingChi2Functions.find(aodLabel.name) == matchingChi2Functions.end()) {
+        LOGF(warn, "[AO2D] Chi2 label not found: %s", aodLabel.name);
+        continue;
+      }
+      debugCounter = 0;
+      for (auto const& [collisionIndex, collisionInfo] : fCollisionInfos) {
+        auto it = reducedEventIds.find(collisionInfo.index);
+        if (it == reducedEventIds.end()) {
+          continue;
+        }
+        int32_t reducedEventId = it->second;
+        MatchingCandidates matchingCandidates;
+        runChi2Matching(collisions, bcs, muonTracks, mftTracks, mftCovs, aodLabel.name, collisionInfo.matchablePairs, collisionInfo.matchingCandidates, matchingCandidates);
+        auto collision = collisions.rawIteratorAt(collisionInfo.index);
+        fillQaMatchingAodTablesForCollision(collision, muonTracks, matchingCandidates, aodLabel.id, reducedEventId);
+      }
     }
 
     for (auto const& [collisionIndex, collisionInfo] : fCollisionInfos) {
