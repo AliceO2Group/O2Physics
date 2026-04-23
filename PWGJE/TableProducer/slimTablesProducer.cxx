@@ -41,7 +41,7 @@ namespace slimcollision
 {
 DECLARE_SOA_COLUMN(Weight, weight, float);
 }
-DECLARE_SOA_TABLE(SlimCollisions, "AOD", "SlimCollisions",
+DECLARE_SOA_TABLE(SlimCollisions, "AOD", "SLIMCOLLISION",
                   o2::soa::Index<>,
                   o2::aod::collision::PosZ,
                   o2::aod::collision::CollisionTime,
@@ -51,7 +51,7 @@ namespace slmccollision
 {
 DECLARE_SOA_COLUMN(McWeight, mcWeight, float);
 }
-DECLARE_SOA_TABLE(SlMcCollisions, "AOD", "SlMcCollisions",
+DECLARE_SOA_TABLE(SlMcCollisions, "AOD", "SLMCCOLLISION",
                   o2::soa::Index<>,
                   o2::aod::mccollision::PosZ,
                   slmccollision::McWeight);
@@ -64,7 +64,7 @@ DECLARE_SOA_COLUMN(Py, py, float);
 DECLARE_SOA_COLUMN(Pz, pz, float);
 DECLARE_SOA_COLUMN(E, e, float);
 } // namespace slimtracks
-DECLARE_SOA_TABLE(SlimTracks, "AOD", "SlimTracks",
+DECLARE_SOA_TABLE(SlimTracks, "AOD", "SLIMTRACK",
                   o2::soa::Index<>,
                   slimtracks::SlimCollisionId,
                   slimtracks::Px,
@@ -79,7 +79,7 @@ DECLARE_SOA_COLUMN(Py, py, float);
 DECLARE_SOA_COLUMN(Pz, pz, float);
 DECLARE_SOA_COLUMN(E, e, float);
 } // namespace slimparticles
-DECLARE_SOA_TABLE(SlimParticles, "AOD", "SlimParticles",
+DECLARE_SOA_TABLE(SlimParticles, "AOD", "SLIMPARTICLE",
                   o2::soa::Index<>,
                   slimparticles::SlMcCollisionId,
                   slimparticles::Px,
@@ -129,13 +129,17 @@ struct SlimTablesProducer {
     histos.add("h_mcCollMCD_counts_weight", "MC event status;event status;weighted entries", {HistType::kTH1F, {{5, 0.0, 5.0}}});
     auto hMCD = histos.get<TH1>(HIST("h_mcCollMCD_counts_weight"));
     hMCD->GetXaxis()->SetBinLabel(1, "All");
-    hMCD->GetXaxis()->SetBinLabel(2, "eventSelectionBits + skipMBGapEvents + applyRCTSelections ");
+    hMCD->GetXaxis()->SetBinLabel(2, "hasMcCollision");
+    hMCD->GetXaxis()->SetBinLabel(3, "selectCollision");
 
     histos.add("h_mcCollMCP_counts_weight", "MC event status;event status;weighted entries", {HistType::kTH1F, {{7, 0.0, 7.0}}});
     auto hMCP = histos.get<TH1>(HIST("h_mcCollMCP_counts_weight"));
     hMCP->GetXaxis()->SetBinLabel(1, "All");
-    hMCP->GetXaxis()->SetBinLabel(2, "mcColl + skipMBGapEvents + applyRCTSelections");
-    hMCP->GetXaxis()->SetBinLabel(3, "Zvertex");
+    hMCP->GetXaxis()->SetBinLabel(2, "Zvertex");
+    hMCP->GetXaxis()->SetBinLabel(3, "selectMcCollision");
+
+    histos.add("Ntracks_pT", "track pT distribution;#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{200, -0.5, 199.5}}}, doSumw2);
+    histos.add("Nparticles_pT", "particle pT distribution;#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{200, -0.5, 199.5}}}, doSumw2);
 
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
@@ -188,26 +192,32 @@ struct SlimTablesProducer {
       return;
     }
     histos.fill(HIST("h_mcCollMCP_counts_weight"), 0.5, eventWeightMC);
-    if (std::abs(mccollision.posZ()) > vertexZCut)
-      histos.fill(HIST("h_mcCollMCP_counts_weight"), 1.5, eventWeightMC);
+    if (std::abs(mccollision.posZ()) > vertexZCut) {
+      return;
+    }
+    histos.fill(HIST("h_mcCollMCP_counts_weight"), 1.5, eventWeightMC);
     if (!jetderiveddatautilities::selectCollision(mccollision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
     histos.fill(HIST("h_mcCollMCP_counts_weight"), 2.5, eventWeightMC);
     for (auto const& collision : collisions) {
       float eventWeight = collision.weight();
+      histos.fill(HIST("h_mcCollMCD_counts_weight"), 0.5, eventWeightMC);
       if (!collision.has_mcCollision()) {
         continue;
       }
+      histos.fill(HIST("h_mcCollMCD_counts_weight"), 1.5, eventWeightMC);
       if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
         continue;
       }
+      histos.fill(HIST("h_mcCollMCD_counts_weight"), 2.5, eventWeightMC);
       slimCollisions(collision.posZ(), collision.collisionTime(), eventWeight);
       auto slimCollIndex = slimCollisions.lastIndex();
       auto slicedTracks = tracks.sliceBy(perCollisionTracks, collision.globalIndex()); // tracks associated to the rec collision
       for (const auto& track : slicedTracks) {
         if (!jetderiveddatautilities::selectTrack(track, trackSelection))
           continue;
+        histos.fill(HIST("Ntracks_pT"), track.pt(), eventWeight);
         slimTracks(slimCollIndex, track.px(), track.py(), track.pz());
       }
       slimMcCollisions(mccollision.posZ(), eventWeightMC);
@@ -220,6 +230,7 @@ struct SlimTablesProducer {
           continue;
         if (pdgParticle->Charge() == 0) // keep charged particles, exclude neutrals
           continue;
+        histos.fill(HIST("Nparticles_pT"), particle.pt(), eventWeightMC);
         slimParticles(slimMcCollIndex, particle.px(), particle.py(), particle.pz(), particle.energy());
       }
     }

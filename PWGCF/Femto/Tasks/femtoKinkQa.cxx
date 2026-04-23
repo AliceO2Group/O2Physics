@@ -162,8 +162,11 @@ struct FemtoKinkQa {
 
   void processSigma(FilteredFemtoCollision const& col, FemtoSigmas const& /*sigmas*/, FemtoTracks const& tracks)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
     auto sigmaSlice = sigmaPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (sigmaSlice.size() == 0) {
+      return;
+    }
+    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
     for (auto const& sigma : sigmaSlice) {
       sigmaHistManager.fill<modes::Mode::kAnalysis_Qa>(sigma, tracks);
     }
@@ -172,8 +175,11 @@ struct FemtoKinkQa {
 
   void processSigmaMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoSigmasWithLabel const& /*sigmas*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
     auto sigmaSlice = sigmaWithLabelPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (sigmaSlice.size() == 0) {
+      return;
+    }
+    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
     for (auto const& sigma : sigmaSlice) {
       if (!sigmaCleaner.isClean(sigma, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
@@ -185,11 +191,12 @@ struct FemtoKinkQa {
 
   void processSigmaPlus(FilteredFemtoCollision const& col, FemtoSigmaPlus const& /*sigmaplus*/, FemtoTracks const& tracks)
   {
+    auto sigmaPlusSlice = sigmaPlusPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (sigmaPlusSlice.size() == 0) {
+      return;
+    }
     colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
-
-    auto sigmaplusSlice = sigmaPlusPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-
-    for (auto const& sp : sigmaplusSlice) {
+    for (auto const& sp : sigmaPlusSlice) {
       sigmaPlusHistManager.fill<modes::Mode::kAnalysis_Qa>(sp, tracks);
     }
   }
@@ -197,8 +204,11 @@ struct FemtoKinkQa {
 
   void processSigmaPlusMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoSigmaPlusWithLabel const& /*sigmaPlus*/, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
     auto sigmaPlusSlice = sigmaPlusWithLabelPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (sigmaPlusSlice.size() == 0) {
+      return;
+    }
+    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
     for (auto const& sigmaPlus : sigmaPlusSlice) {
       if (!sigmaPlusCleaner.isClean(sigmaPlus, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
