@@ -28,11 +28,12 @@ namespace o2::aod::pwgem::dilepton::utils
 class EMTrack
 {
  public:
-  EMTrack(float pt, float eta, float phi, float /*mass*/, int8_t charge = 0, float dcaXY = 0.f, float dcaZ = 0.f, float CYY = 0, float CZY = 0, float CZZ = 0)
+  EMTrack(float pt, float eta, float phi, float /*mass*/, int8_t sign = 0, float dcaXY = 0.f, float dcaZ = 0.f, float CYY = 0, float CZY = 0, float CZZ = 0)
   {
-    fSigned1Pt = static_cast<float>(charge) / pt;
+    fPt = pt;
     fEta = eta;
     fPhi = phi;
+    fSign = sign;
     fDCAxy = dcaXY;
     fDCAz = dcaZ;
     fCYY = CYY;
@@ -42,10 +43,10 @@ class EMTrack
 
   ~EMTrack() {}
 
-  float pt() const { return 1.f / std::fabs(fSigned1Pt); }
+  float pt() const { return fPt; }
   float eta() const { return fEta; }
   float phi() const { return fPhi; }
-  int8_t sign() const { return (fSigned1Pt > 0 ? +1 : -1); }
+  int8_t sign() const { return fSign; }
   float dcaXY() const { return fDCAxy; }
   float dcaZ() const { return fDCAz; }
 
@@ -53,17 +54,17 @@ class EMTrack
   float cZY() const { return fCZY; }
   float cZZ() const { return fCZZ; }
 
-  float p() const { return 1.f / std::fabs(fSigned1Pt) * std::cosh(fEta); }
-  float px() const { return 1.f / std::fabs(fSigned1Pt) * std::cos(fPhi); }
-  float py() const { return 1.f / std::fabs(fSigned1Pt) * std::sin(fPhi); }
-  float pz() const { return 1.f / std::fabs(fSigned1Pt) * std::sinh(fEta); }
-  // float e() const { return std::hypot(fPt * std::cosh(fEta), fMass); } // e2 = p2 + m2
-  float signed1Pt() const { return fSigned1Pt; }
+  float p() const { return fPt * std::cosh(fEta); }
+  float px() const { return fPt * std::cos(fPhi); }
+  float py() const { return fPt * std::sin(fPhi); }
+  float pz() const { return fPt * std::sinh(fEta); }
+  float signed1Pt() const { return fSign / fPt; }
 
  protected:
-  float fSigned1Pt;
+  float fPt;
   float fEta;
   float fPhi;
+  int8_t fSign;
   float fDCAxy;
   float fDCAz;
   float fCYY;
@@ -74,12 +75,12 @@ class EMTrack
 class EMTrackWithCov : public EMTrack
 {
  public:
-  EMTrackWithCov(float pt, float eta, float phi, float mass, int8_t charge = 0, float dcaXY = 0.f, float dcaZ = 0.f,
+  EMTrackWithCov(float pt, float eta, float phi, float mass, int8_t sign = 0, float dcaXY = 0.f, float dcaZ = 0.f,
                  float CYY = 0.f, float CZY = 0.f, float CZZ = 0.f,
                  float X = 0.f, float Y = 0.f, float Z = 0.f, float Alpha = 0.f, float Snp = 0.f, float Tgl = 0.f,
                  float CSnpY = 0.f, float CSnpZ = 0.f, float CSnpSnp = 0.f,
                  float CTglY = 0.f, float CTglZ = 0.f, float CTglSnp = 0.f, float CTglTgl = 0.f,
-                 float C1PtY = 0.f, float C1PtZ = 0.f, float C1PtSnp = 0.f, float C1PtTgl = 0.f, float C1Pt21Pt2 = 0.f) : EMTrack(pt, eta, phi, mass, charge, dcaXY, dcaZ, CYY, CZY, CZZ)
+                 float C1PtY = 0.f, float C1PtZ = 0.f, float C1PtSnp = 0.f, float C1PtTgl = 0.f, float C1Pt21Pt2 = 0.f) : EMTrack(pt, eta, phi, mass, sign, dcaXY, dcaZ, CYY, CZY, CZZ)
   {
     fX = X;
     fY = Y;
@@ -150,7 +151,7 @@ class EMTrackWithCov : public EMTrack
 class EMPair : public EMTrack
 {
  public:
-  EMPair(float pt, float eta, float phi, float mass, int8_t charge = 0) : EMTrack(pt, eta, phi, mass, charge, 0, 0, 0, 0, 0)
+  EMPair(float pt, float eta, float phi, float mass, int8_t sign = 0) : EMTrack(pt, eta, phi, mass, sign, 0, 0, 0, 0, 0)
   {
     fMass = mass;
     fPairDCA = 999.f;
@@ -163,7 +164,7 @@ class EMPair : public EMTrack
 
   ~EMPair() {}
   float mass() const { return fMass; }
-  float rapidity() const { return std::log((std::sqrt(std::pow(fMass, 2) + std::pow(1.f / std::fabs(fSigned1Pt) * std::cosh(fEta), 2)) + 1.f / std::fabs(fSigned1Pt) * std::sinh(fEta)) / std::sqrt(std::pow(fMass, 2) + std::pow(1.f / std::fabs(fSigned1Pt), 2))); }
+  float rapidity() const { return std::log((std::sqrt(std::pow(fMass, 2) + std::pow(fPt * std::cosh(fEta), 2)) + fPt * std::sinh(fEta)) / std::sqrt(std::pow(fMass, 2) + std::pow(fPt, 2))); }
 
   void setPairDCA(float dca) { fPairDCA = dca; }
   float getPairDCA() const { return fPairDCA; }
@@ -238,6 +239,35 @@ class EMPair : public EMTrack
   float fVx;
   float fVy;
   float fVz;
+};
+
+class EMTrackUL // ultra-light track. Use this when you don't care sign or DCA. e.g. dilepton-hadron correlation.
+{
+ public:
+  EMTrackUL(float pt, float eta, float phi)
+  {
+    fPt = pt;
+    fEta = eta;
+    fPhi = phi;
+  }
+
+  ~EMTrackUL() {}
+
+  float pt() const { return fPt; }
+  float eta() const { return fEta; }
+  float phi() const { return fPhi; }
+
+  float p() const { return fPt * std::cosh(fEta); }
+  float px() const { return fPt * std::cos(fPhi); }
+  float py() const { return fPt * std::sin(fPhi); }
+  float pz() const { return fPt * std::sinh(fEta); }
+  float e(const float mass) const { return std::hypot(fPt * std::cosh(fEta), mass); } // e2 = p2 + m2
+  float rapidity(const float mass) const { return std::log((std::sqrt(std::pow(mass, 2) + std::pow(fPt * std::cosh(fEta), 2)) + fPt * std::sinh(fEta)) / std::sqrt(std::pow(mass, 2) + std::pow(fPt, 2))); }
+
+ protected:
+  float fPt;
+  float fEta;
+  float fPhi;
 };
 
 } // namespace o2::aod::pwgem::dilepton::utils

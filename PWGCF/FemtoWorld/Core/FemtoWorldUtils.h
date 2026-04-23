@@ -15,13 +15,15 @@
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
-#ifndef FEMTOWORLD_UTILS_H_
-#define FEMTOWORLD_UTILS_H_
+#ifndef PWGCF_FEMTOWORLD_CORE_FEMTOWORLDUTILS_H_
+#define PWGCF_FEMTOWORLD_CORE_FEMTOWORLDUTILS_H_
 
-#include "Framework/ASoAHelpers.h"
 #include "PWGCF/FemtoWorld/DataModel/FemtoWorldDerived.h"
-#include <CCDB/BasicCCDBManager.h>
 
+#include <Framework/Logger.h>
+
+#include <cstdlib>
+#include <ostream>
 #include <vector>
 
 namespace o2::analysis::femtoWorld
@@ -100,4 +102,5 @@ bool isFullPIDSelected(aod::femtoworldparticle::cutContainerType const& pidCut, 
 };
 
 } // namespace o2::analysis::femtoWorld
-#endif
+
+#endif // PWGCF_FEMTOWORLD_CORE_FEMTOWORLDUTILS_H_

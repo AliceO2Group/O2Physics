@@ -25,6 +25,7 @@
 #include "PWGLF/DataModel/EPCalibrationTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
@@ -87,10 +88,10 @@ float nchlow = 0;
 float nchup = 3000;
 std::vector<double> centbinning(90);
 int nBootstrap = 10;
-GFWRegions regions;
-GFWCorrConfigs configs;
-GFWCorrConfigs configsV02;
-GFWCorrConfigs configsV0;
+genericframework::GFWRegions regions;
+genericframework::GFWCorrConfigs configs;
+genericframework::GFWCorrConfigs configsV02;
+genericframework::GFWCorrConfigs configsV0;
 std::vector<std::pair<double, double>> etagapsPtPt;
 std::vector<double> multGlobalCorrCutPars;
 std::vector<double> multPVCorrCutPars;
@@ -126,10 +127,10 @@ static constexpr int LongArrayInt[3][20] = {{1, 1, 1, -1, -1, -1, 1, 1, 1, -1, -
 static constexpr double LongArrayDouble[4][2] = {{-0.8, -0.5}, {0.5, 0.8}, {-2, -2}, {-2, -2}};
 
 struct FlowGenericFramework {
-
+  O2_DEFINE_CONFIGURABLE(cfgUseNewNpt, bool, true, "Use alternative filling for fractions")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgMpar, int, 8, "Highest order of pt-pt correlations")
-  O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FT0A")
+  O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FT0A, 4:NTPV, 5:NGlobal, 6:MFT")
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Do correlations as function of Nch")
   O2_DEFINE_CONFIGURABLE(cfgUseNchCorrection, int, 1, "Use correction for Nch; 0: Use size of tracks table, 1: Use efficiency-corrected Nch values, 2: Use uncorrected Nch values");
   O2_DEFINE_CONFIGURABLE(cfgFillWeights, bool, false, "Fill NUA weights")
@@ -144,10 +145,10 @@ struct FlowGenericFramework {
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgPtmin, float, 0.2, "minimum pt (GeV/c)");
   O2_DEFINE_CONFIGURABLE(cfgPtmax, float, 10, "maximum pt (GeV/c)");
-  O2_DEFINE_CONFIGURABLE(cfgEta, float, 0.8, "eta cut");
-  O2_DEFINE_CONFIGURABLE(cfgEtaPtPt, float, 0.4, "eta cut for pt-pt correlations");
-  O2_DEFINE_CONFIGURABLE(cfgEtaNch, float, 0.4, "eta cut for nch selection");
-  O2_DEFINE_CONFIGURABLE(cfgEtaV0Daughters, float, 0.5, "eta cut on V0 daughter particles");
+  Configurable<std::pair<float, float>> cfgEta{"cfgEta", {-0.8, 0.8}, "eta cut"};
+  Configurable<std::pair<float, float>> cfgEtaNch{"cfgEtaNch", {-0.5, 0.5}, "eta cut for nch selection"};
+  Configurable<std::pair<float, float>> cfgEtaPtPt{"cfgEtaPtPt", {-0.5, 0.5}, "eta for pt-pt correlation"};
+  Configurable<std::pair<float, float>> cfgEtaV0Daughters{"cfgEtaV0Daughters", {-0.5, 0.5}, "eta cut on V0 daughter particles"};
   Configurable<LabeledArray<double>> cfgPtPtGaps{"cfgPtPtGaps", {LongArrayDouble[0], 4, 2, {"subevent 1", "subevent 2", "subevent 3", "subevent 4"}, {"etamin", "etamax"}}, "{etamin,etamax} for all ptpt-subevents"};
   O2_DEFINE_CONFIGURABLE(cfgUsePIDTotal, bool, false, "use fraction of PID total");
   O2_DEFINE_CONFIGURABLE(cfgVtxZ, float, 10, "vertex cut (cm)");
@@ -186,8 +187,6 @@ struct FlowGenericFramework {
     O2_DEFINE_CONFIGURABLE(cfgMultCorrHighCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
     O2_DEFINE_CONFIGURABLE(cfgMultCorrLowCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x - 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
     O2_DEFINE_CONFIGURABLE(cfgMultGlobalPVCorrCutFunction, std::string, "[0] + [1]*x + 3*([2] + [3]*x + [4]*x*x + [5]*x*x*x)", "Functional for global vs pv multiplicity correlation cut");
-  } cfgMultCorrCuts;
-  struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgMultGlobalASideCorrCutFunction, std::string, "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + [10]*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", "Functional for global vs V0A multiplicity low correlation cut");
     Configurable<std::vector<double>> cfgMultGlobalV0ACutPars{"cfgMultGlobalV0ACutPars", std::vector<double>{567.785, 172.715, 0.77888, -0.00693466, 1.40564e-05, 679.853, 66.8068, -0.444332, 0.00115002, -4.92064e-07}, "Global vs FV0A multiplicity cut parameter values"};
     Configurable<std::vector<double>> cfgMultGlobalT0ACutPars{"cfgMultGlobalT0ACutPars", std::vector<double>{241.618, 61.8402, 0.348049, -0.00306078, 6.20357e-06, 315.235, 29.1491, -0.188639, 0.00044528, -9.08912e-08}, "Global vs FT0A multiplicity cut parameter values"};
@@ -195,7 +194,7 @@ struct FlowGenericFramework {
     O2_DEFINE_CONFIGURABLE(cfgGlobalV0AHighSigma, float, 4, "Number of sigma deviations above expected value in global vs V0A correlation");
     O2_DEFINE_CONFIGURABLE(cfgGlobalT0ALowSigma, float, -3., "Number of sigma deviations below expected value in global vs T0A correlation");
     O2_DEFINE_CONFIGURABLE(cfgGlobalT0AHighSigma, float, 4, "Number of sigma deviations above expected value in global vs T0A correlation");
-  } cfgGlobalAsideCorrCuts;
+  } cfgMultCorrCuts;
   struct : ConfigurableGroup {
     Configurable<LabeledArray<float>> nSigmas{"nSigmas", {LongArrayFloat[0], 3, 6, {"TPC", "TOF", "ITS"}, {"pos_pi", "pos_ka", "pos_pr", "neg_pi", "neg_ka", "neg_pr"}}, "Labeled array for n-sigma values for TPC, TOF, ITS for pions, kaons, protons (positive and negative)"};
     Configurable<LabeledArray<float>> resonanceCuts{"resonanceCuts", {LongArrayFloat[0], 3, 11, {"K0", "Lambda", "Phi"}, {"cos_PAs", "massMin", "massMax", "PosTrackPt", "NegTrackPt", "DCAPosToPVMin", "DCANegToPVMin", "Lifetime", "RadiusMin", "RadiusMax", "Rapidity"}}, "Labeled array (float) for various cuts on resonances"};
@@ -222,12 +221,12 @@ struct FlowGenericFramework {
     O2_DEFINE_CONFIGURABLE(cfgLambdaSideBand2Max, float, 1.6, "Maximum cut on Lambda side band 2");
   } cfgPIDCuts;
 
-  Configurable<GFWBinningCuts> cfgGFWBinning{"cfgGFWBinning", {40, 16, 72, 300, 0, 3000, 0.2, 10.0, 0.2, 3.0, {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75, 4, 4.5, 5, 5.5, 6, 7, 8, 9, 10}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90}}, "Configuration for binning"};
-  Configurable<GFWRegions> cfgRegions{"cfgRegions", {{"refN", "refP", "refFull"}, {-0.8, 0.4, -0.8}, {-0.4, 0.8, 0.8}, {0, 0, 0}, {1, 1, 1}}, "Configurations for GFW regions"};
+  Configurable<o2::analysis::genericframework::GFWBinningCuts> cfgGFWBinning{"cfgGFWBinning", {40, 16, 72, 300, 0, 3000, 0.2, 10.0, 0.2, 3.0, {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75, 4, 4.5, 5, 5.5, 6, 7, 8, 9, 10}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90}}, "Configuration for binning"};
+  Configurable<o2::analysis::genericframework::GFWRegions> cfgRegions{"cfgRegions", {{"refN", "refP", "refFull"}, {-0.8, 0.4, -0.8}, {-0.4, 0.8, 0.8}, {0, 0, 0}, {1, 1, 1}}, "Configurations for GFW regions"};
 
-  Configurable<GFWCorrConfigs> cfgCorrConfig{"cfgCorrConfig", {{"refP {2} refN {-2}", "refP {3} refN {-3}", "refP {4} refN {-4}", "refFull {2 -2}", "refFull {2 2 -2 -2}"}, {"ChGap22", "ChGap32", "ChGap42", "ChFull22", "ChFull24"}, {0, 0, 0, 0, 0}, {15, 1, 1, 0, 0}}, "Configurations for each correlation to calculate"};
-  Configurable<GFWCorrConfigs> cfgCorrConfigV02{"cfgCorrConfigV02", {{"refP {2} refN {-2}", "refP {3} refN {-3}", "refP {4} refN {-4}"}, {"ChGap22", "ChGap32", "ChGap42"}, {1, 1, 1}, {0, 0, 0}}, "Configurations for each radial flow correlation to calculate"};
-  Configurable<GFWCorrConfigs> cfgCorrConfigV0{"cfgCorrConfigV0", {{"refP {2} refN {-2}", "refP {3} refN {-3}", "refP {4} refN {-4}"}, {"ChGap22", "ChGap32", "ChGap42"}, {1, 1, 1}, {0, 0, 0}}, "Configurations for each radial flow correlation to calculate"};
+  Configurable<o2::analysis::genericframework::GFWCorrConfigs> cfgCorrConfig{"cfgCorrConfig", {{"refP {2} refN {-2}", "refP {3} refN {-3}", "refP {4} refN {-4}", "refFull {2 -2}", "refFull {2 2 -2 -2}"}, {"ChGap22", "ChGap32", "ChGap42", "ChFull22", "ChFull24"}, {0, 0, 0, 0, 0}, {15, 1, 1, 0, 0}}, "Configurations for each correlation to calculate"};
+  Configurable<o2::analysis::genericframework::GFWCorrConfigs> cfgCorrConfigV02{"cfgCorrConfigV02", {{"refP {2} refN {-2}", "refP {3} refN {-3}", "refP {4} refN {-4}"}, {"ChGap22", "ChGap32", "ChGap42"}, {1, 1, 1}, {0, 0, 0}}, "Configurations for each radial flow correlation to calculate"};
+  Configurable<o2::analysis::genericframework::GFWCorrConfigs> cfgCorrConfigV0{"cfgCorrConfigV0", {{"refP {2} refN {-2}", "refP {3} refN {-3}", "refP {4} refN {-4}"}, {"ChGap22", "ChGap32", "ChGap42"}, {1, 1, 1}, {0, 0, 0}}, "Configurations for each radial flow correlation to calculate"};
 
   ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {80, -5, 5}, "nsigmaTPC axis"};
   ConfigurableAxis axisNsigmaTOF{"axisNsigmaTOF", {80, -5, 5}, "nsigmaTOF axis"};
@@ -259,6 +258,8 @@ struct FlowGenericFramework {
   // QA outputs
   std::map<int, std::vector<std::shared_ptr<TH1>>> th1sList;
   std::map<int, std::vector<std::shared_ptr<TH3>>> th3sList;
+  std::vector<std::shared_ptr<TH1>> histosNpt;
+  std::vector<std::shared_ptr<TH1>> histosResoNpt;
   enum OutputTH1Names {
     hPhi = 0,
     hEta,
@@ -318,11 +319,20 @@ struct FlowGenericFramework {
     PROTONS
   };
   enum ParticleIDs {
-    CHARGEDID,
+    CHARGEDID = 0,
     PIONID,
     KAONID,
     PROTONID,
     SPECIESCOUNT
+  };
+  enum ResoIDs {
+    K0SIDEBAND1 = 0,
+    K0SIGNAL,
+    K0SIDEBAND2,
+    LAMBDASIDEBAND1,
+    LAMBDASIGNAL,
+    LAMBDASIDEBAND2,
+    RESOCOUNT
   };
   enum OutputSpecies {
     K0 = 0,
@@ -452,11 +462,12 @@ struct FlowGenericFramework {
     o2::analysis::gfw::nchup = cfgGFWBinning->GetNchMax();
     o2::analysis::gfw::centbinning = cfgGFWBinning->GetCentBinning();
     cfgGFWBinning->Print();
+    LOGF(info, "Eta cuts: Filter [%.1f,%.1f] | Nch [%.1f,%.1f] | Pt-Pt [%.1f, %.1f] | V0 daughters [%.1f, %.1f]", cfgEta->first, cfgEta->second, cfgEtaNch->first, cfgEtaNch->second, cfgEtaPtPt->first, cfgEtaPtPt->second, cfgEtaV0Daughters->first, cfgEtaV0Daughters->second);
     o2::analysis::gfw::multGlobalCorrCutPars = cfgMultCorrCuts.cfgMultGlobalCutPars;
     o2::analysis::gfw::multPVCorrCutPars = cfgMultCorrCuts.cfgMultPVCutPars;
     o2::analysis::gfw::multGlobalPVCorrCutPars = cfgMultCorrCuts.cfgMultGlobalPVCutPars;
-    o2::analysis::gfw::multGlobalV0ACutPars = cfgGlobalAsideCorrCuts.cfgMultGlobalV0ACutPars;
-    o2::analysis::gfw::multGlobalT0ACutPars = cfgGlobalAsideCorrCuts.cfgMultGlobalT0ACutPars;
+    o2::analysis::gfw::multGlobalV0ACutPars = cfgMultCorrCuts.cfgMultGlobalV0ACutPars;
+    o2::analysis::gfw::multGlobalT0ACutPars = cfgMultCorrCuts.cfgMultGlobalT0ACutPars;
 
     projectMatrix(cfgPIDCuts.nSigmas->getData(), tpcNsigmaCut, tofNsigmaCut, itsNsigmaCut);
     readMatrix(cfgPIDCuts.resonanceCuts->getData(), resoCutVals);
@@ -479,17 +490,17 @@ struct FlowGenericFramework {
     eventcutflags.push_back({cfgEventCutFlags.cfgNoCollInTimeRangeStandard, kNoCollInTimeRangeStandard, o2::aod::evsel::kNoCollInTimeRangeStandard});
     eventcutflags.push_back({cfgEventCutFlags.cfgNoCollInRofStandard, kNoCollInRofStandard, o2::aod::evsel::kNoCollInRofStandard});
     eventcutflags.push_back({cfgEventCutFlags.cfgNoHighMultCollInPrevRof, kNoHighMultCollInPrevRof, o2::aod::evsel::kNoHighMultCollInPrevRof});
-    eventcutflags.push_back({cfgEventCutFlags.cfgNoTimeFrameBorder, kNoTimeFrameBorder, o2::aod::evsel::kIsVertexITSTPC});
-    eventcutflags.push_back({cfgEventCutFlags.cfgNoITSROFrameBorder, kNoITSROFrameBorder, o2::aod::evsel::kIsGoodITSLayersAll});
-    eventcutflags.push_back({cfgEventCutFlags.cfgIsVertexITSTPC, kIsVertexITSTPC, o2::aod::evsel::kNoTimeFrameBorder});
-    eventcutflags.push_back({cfgEventCutFlags.cfgIsGoodITSLayersAll, kIsGoodITSLayersAll, o2::aod::evsel::kNoITSROFrameBorder});
+    eventcutflags.push_back({cfgEventCutFlags.cfgNoTimeFrameBorder, kNoTimeFrameBorder, o2::aod::evsel::kNoTimeFrameBorder});
+    eventcutflags.push_back({cfgEventCutFlags.cfgNoITSROFrameBorder, kNoITSROFrameBorder, o2::aod::evsel::kNoITSROFrameBorder});
+    eventcutflags.push_back({cfgEventCutFlags.cfgIsVertexITSTPC, kIsVertexITSTPC, o2::aod::evsel::kIsVertexITSTPC});
+    eventcutflags.push_back({cfgEventCutFlags.cfgIsGoodITSLayersAll, kIsGoodITSLayersAll, o2::aod::evsel::kIsGoodITSLayersAll});
     for (const auto& cut : eventcutflags) {
       LOGF(info, "Flag %d is %senabled", cut.histBin, (cut.enabled) ? "" : "not ");
     }
 
     AxisSpec phiAxis = {o2::analysis::gfw::phibins, o2::analysis::gfw::philow, o2::analysis::gfw::phiup, "#phi"};
     AxisSpec phiModAxis = {100, 0, constants::math::PI / 9, "fmod(#varphi,#pi/9)"};
-    AxisSpec etaAxis = {o2::analysis::gfw::etabins, -cfgEta, cfgEta, "#eta"};
+    AxisSpec etaAxis = {o2::analysis::gfw::etabins, cfgEta->first, cfgEta->second, "#eta"};
     AxisSpec vtxAxis = {o2::analysis::gfw::vtxZbins, -cfgVtxZ, cfgVtxZ, "Vtx_{z} (cm)"};
     AxisSpec ptAxis = {o2::analysis::gfw::ptbinning, "#it{p}_{T} GeV/#it{c}"};
     std::string sCentralityEstimator = centNamesMap[cfgCentEstimator] + " centrality (%)";
@@ -539,10 +550,27 @@ struct FlowGenericFramework {
       registry.add("trackQA/before/nTPCCrossedRows", "Number of crossed TPC Rows", {HistType::kTH1D, {{100, 40, 180}}});
 
       registry.addClone("trackQA/before/", "trackQA/after/");
-      registry.add("trackQA/after/pt_ref", "", {HistType::kTH1D, {{100, o2::analysis::gfw::ptreflow, o2::analysis::gfw::ptrefup}}});
-      registry.add("trackQA/after/pt_poi", "", {HistType::kTH1D, {{100, o2::analysis::gfw::ptpoilow, o2::analysis::gfw::ptpoiup}}});
-      registry.add<TH1>("trackQA/after/Nch_corrected", "", {HistType::kTH1D, {nchAxis}});
-      registry.add<TH1>("trackQA/after/Nch_uncorrected", "", {HistType::kTH1D, {nchAxis}});
+      registry.add("trackQA/after/pt_ref", "; #it{p}_{T}; Counts", {HistType::kTH1D, {{100, o2::analysis::gfw::ptreflow, o2::analysis::gfw::ptrefup}}});
+      registry.add("trackQA/after/pt_poi", "; #it{p}_{T}; Counts", {HistType::kTH1D, {{100, o2::analysis::gfw::ptpoilow, o2::analysis::gfw::ptpoiup}}});
+      registry.add("trackQA/after/Nch_corrected", "; N_{ch}; Counts", {HistType::kTH1D, {nchAxis}});
+      registry.add("trackQA/after/Nch_uncorrected", "; N_{ch}; Counts", {HistType::kTH1D, {nchAxis}});
+      registry.add("trackQA/after/etaNch", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
+      registry.add("trackQA/after/etaPtPt", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
+      registry.add("trackQA/after/etaV0Daughters", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
+
+      LOGF(info, "Using alternative filling for pt fractions: %d", static_cast<int>(cfgUseNewNpt));
+      histosNpt.reserve(SPECIESCOUNT);
+      histosNpt[CHARGEDID] = registry.add<TH1>("nptCh", "; #it{p}_{T} (GeV/#it{c}; Count)", {HistType::kTH1D, {ptAxis}});
+      histosNpt[PIONID] = registry.add<TH1>("nptPi", "; #it{p}_{T} (GeV/#it{c}; Count)", {HistType::kTH1D, {ptAxis}});
+      histosNpt[KAONID] = registry.add<TH1>("nptKa", "; #it{p}_{T} (GeV/#it{c}; Count)", {HistType::kTH1D, {ptAxis}});
+      histosNpt[PROTONID] = registry.add<TH1>("nptPr", "; #it{p}_{T} (GeV/#it{c}; Count)", {HistType::kTH1D, {ptAxis}});
+      histosResoNpt.reserve(RESOCOUNT);
+      histosResoNpt[K0SIDEBAND1] = registry.add<TH1>("nptK0SB1", "; #it{p}_{T} (GeV/#it{c}; Count", {HistType::kTH1D, {ptAxis}});
+      histosResoNpt[K0SIGNAL] = registry.add<TH1>("nptK0Sig", "; #it{p}_{T} (GeV/#it{c}; Count", {HistType::kTH1D, {ptAxis}});
+      histosResoNpt[K0SIDEBAND2] = registry.add<TH1>("nptK0SB2", "; #it{p}_{T} (GeV/#it{c}; Count", {HistType::kTH1D, {ptAxis}});
+      histosResoNpt[LAMBDASIDEBAND1] = registry.add<TH1>("nptLambdaSB1", "; #it{p}_{T} (GeV/#it{c}; Count", {HistType::kTH1D, {ptAxis}});
+      histosResoNpt[LAMBDASIGNAL] = registry.add<TH1>("nptLambdaSig", "; #it{p}_{T} (GeV/#it{c}; Count", {HistType::kTH1D, {ptAxis}});
+      histosResoNpt[LAMBDASIDEBAND2] = registry.add<TH1>("nptLambdaSB2", "; #it{p}_{T} (GeV/#it{c}; Count", {HistType::kTH1D, {ptAxis}});
 
       registry.add("eventQA/before/centrality", "; centrality (%); Counts", {HistType::kTH1D, {centAxis}});
       registry.add("eventQA/before/multiplicity", "; N_{ch}; Counts", {HistType::kTH1D, {nchAxis}});
@@ -714,33 +742,33 @@ struct FlowGenericFramework {
       fMultPVGlobalCutHigh = new TF1("fMultPVGlobalCutHigh", cfgMultCorrCuts.cfgMultGlobalPVCorrCutFunction->c_str(), 0, nchbinning.back());
       fMultPVGlobalCutHigh->SetParameters(&(o2::analysis::gfw::multGlobalPVCorrCutPars[0]));
 
-      LOGF(info, "Global V0A function: %s in range 0-%g", cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->c_str(), v0aAxis.binEdges.back());
-      fMultGlobalV0ACutLow = new TF1("fMultGlobalV0ACutLow", cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->c_str(), 0, v0aAxis.binEdges.back());
+      LOGF(info, "Global V0A function: %s in range 0-%g", cfgMultCorrCuts.cfgMultGlobalASideCorrCutFunction->c_str(), v0aAxis.binEdges.back());
+      fMultGlobalV0ACutLow = new TF1("fMultGlobalV0ACutLow", cfgMultCorrCuts.cfgMultGlobalASideCorrCutFunction->c_str(), 0, v0aAxis.binEdges.back());
       for (std::size_t i = 0; i < o2::analysis::gfw::multGlobalV0ACutPars.size(); ++i)
         fMultGlobalV0ACutLow->SetParameter(i, o2::analysis::gfw::multGlobalV0ACutPars[i]);
-      fMultGlobalV0ACutLow->SetParameter(o2::analysis::gfw::multGlobalV0ACutPars.size(), cfgGlobalAsideCorrCuts.cfgGlobalV0ALowSigma);
+      fMultGlobalV0ACutLow->SetParameter(o2::analysis::gfw::multGlobalV0ACutPars.size(), cfgMultCorrCuts.cfgGlobalV0ALowSigma);
       for (int i = 0; i < fMultGlobalV0ACutLow->GetNpar(); ++i)
         LOGF(info, "fMultGlobalV0ACutLow par %d = %g", i, fMultGlobalV0ACutLow->GetParameter(i));
 
-      fMultGlobalV0ACutHigh = new TF1("fMultGlobalV0ACutHigh", cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->c_str(), 0, v0aAxis.binEdges.back());
+      fMultGlobalV0ACutHigh = new TF1("fMultGlobalV0ACutHigh", cfgMultCorrCuts.cfgMultGlobalASideCorrCutFunction->c_str(), 0, v0aAxis.binEdges.back());
       for (std::size_t i = 0; i < o2::analysis::gfw::multGlobalV0ACutPars.size(); ++i)
         fMultGlobalV0ACutHigh->SetParameter(i, o2::analysis::gfw::multGlobalV0ACutPars[i]);
-      fMultGlobalV0ACutHigh->SetParameter(o2::analysis::gfw::multGlobalV0ACutPars.size(), cfgGlobalAsideCorrCuts.cfgGlobalV0AHighSigma);
+      fMultGlobalV0ACutHigh->SetParameter(o2::analysis::gfw::multGlobalV0ACutPars.size(), cfgMultCorrCuts.cfgGlobalV0AHighSigma);
       for (int i = 0; i < fMultGlobalV0ACutHigh->GetNpar(); ++i)
         LOGF(info, "fMultGlobalV0ACutHigh par %d = %g", i, fMultGlobalV0ACutHigh->GetParameter(i));
 
-      LOGF(info, "Global T0A function: %s", cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->c_str());
-      fMultGlobalT0ACutLow = new TF1("fMultGlobalT0ACutLow", cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->c_str(), 0, t0aAxis.binEdges.back());
+      LOGF(info, "Global T0A function: %s", cfgMultCorrCuts.cfgMultGlobalASideCorrCutFunction->c_str());
+      fMultGlobalT0ACutLow = new TF1("fMultGlobalT0ACutLow", cfgMultCorrCuts.cfgMultGlobalASideCorrCutFunction->c_str(), 0, t0aAxis.binEdges.back());
       for (std::size_t i = 0; i < o2::analysis::gfw::multGlobalT0ACutPars.size(); ++i)
         fMultGlobalT0ACutLow->SetParameter(i, o2::analysis::gfw::multGlobalT0ACutPars[i]);
-      fMultGlobalT0ACutLow->SetParameter(o2::analysis::gfw::multGlobalT0ACutPars.size(), cfgGlobalAsideCorrCuts.cfgGlobalT0ALowSigma);
+      fMultGlobalT0ACutLow->SetParameter(o2::analysis::gfw::multGlobalT0ACutPars.size(), cfgMultCorrCuts.cfgGlobalT0ALowSigma);
       for (int i = 0; i < fMultGlobalT0ACutLow->GetNpar(); ++i)
         LOGF(info, "fMultGlobalT0ACutLow par %d = %g", i, fMultGlobalT0ACutLow->GetParameter(i));
 
-      fMultGlobalT0ACutHigh = new TF1("fMultGlobalT0ACutHigh", cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->c_str(), 0, t0aAxis.binEdges.back());
+      fMultGlobalT0ACutHigh = new TF1("fMultGlobalT0ACutHigh", cfgMultCorrCuts.cfgMultGlobalASideCorrCutFunction->c_str(), 0, t0aAxis.binEdges.back());
       for (std::size_t i = 0; i < o2::analysis::gfw::multGlobalT0ACutPars.size(); ++i)
         fMultGlobalT0ACutHigh->SetParameter(i, o2::analysis::gfw::multGlobalT0ACutPars[i]);
-      fMultGlobalT0ACutHigh->SetParameter(o2::analysis::gfw::multGlobalT0ACutPars.size(), cfgGlobalAsideCorrCuts.cfgGlobalT0AHighSigma);
+      fMultGlobalT0ACutHigh->SetParameter(o2::analysis::gfw::multGlobalT0ACutPars.size(), cfgMultCorrCuts.cfgGlobalT0AHighSigma);
       for (int i = 0; i < fMultGlobalT0ACutHigh->GetNpar(); ++i)
         LOGF(info, "fMultGlobalT0ACutHigh par %d = %g", i, fMultGlobalT0ACutHigh->GetParameter(i));
     }
@@ -1086,13 +1114,13 @@ struct FlowGenericFramework {
     if (multTrk > fMultPVGlobalCutHigh->Eval(collision.multNTracksPV()))
       return false;
 
-    if (!(cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->empty()) && static_cast<double>(collision.multFV0A()) < fMultGlobalV0ACutLow->Eval(multTrk))
+    if (!(cfgMultCorrCuts.cfgMultGlobalASideCorrCutFunction->empty()) && static_cast<double>(collision.multFV0A()) < fMultGlobalV0ACutLow->Eval(multTrk))
       return false;
-    if (!(cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->empty()) && static_cast<double>(collision.multFV0A()) > fMultGlobalV0ACutHigh->Eval(multTrk))
+    if (!(cfgMultCorrCuts.cfgMultGlobalASideCorrCutFunction->empty()) && static_cast<double>(collision.multFV0A()) > fMultGlobalV0ACutHigh->Eval(multTrk))
       return false;
-    if (!(cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->empty()) && static_cast<double>(collision.multFT0A()) < fMultGlobalT0ACutLow->Eval(multTrk))
+    if (!(cfgMultCorrCuts.cfgMultGlobalASideCorrCutFunction->empty()) && static_cast<double>(collision.multFT0A()) < fMultGlobalT0ACutLow->Eval(multTrk))
       return false;
-    if (!(cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->empty()) && static_cast<double>(collision.multFT0A()) > fMultGlobalT0ACutHigh->Eval(multTrk))
+    if (!(cfgMultCorrCuts.cfgMultGlobalASideCorrCutFunction->empty()) && static_cast<double>(collision.multFT0A()) > fMultGlobalT0ACutHigh->Eval(multTrk))
       return false;
     registry.fill(HIST("eventQA/eventSel"), kMultCuts);
     if (cfgRunByRun)
@@ -1121,7 +1149,7 @@ struct FlowGenericFramework {
       if (cfgFillQA)
         registry.fill(HIST("trackQA/after/pt_phi"), track.pt(), phimodn);
     }
-    if (cfgTrackCuts.cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > cfgTrackCuts.cfgDCAxyNSigma / 7. * (0.0105f + 0.0035f / track.pt())))
+    if (cfgTrackCuts.cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > cfgTrackCuts.cfgDCAxyNSigma / 7. * (0.0105f + 0.0350f / std::pow(track.pt(), 1.1))))
       return false;
     return ((track.tpcNClsCrossedRows() >= cfgTrackCuts.cfgNTPCXrows) && (track.tpcNClsFound() >= cfgTrackCuts.cfgNTPCCls) && (track.itsNCls() >= cfgTrackCuts.cfgMinNITSCls));
   }
@@ -1129,7 +1157,7 @@ struct FlowGenericFramework {
   template <typename TTrack>
   bool nchSelected(TTrack track)
   {
-    if (std::fabs(track.dcaXY()) > (0.0105f + 0.0035f / track.pt()))
+    if (std::fabs(track.dcaXY()) > (0.0105f + 0.035f / std::pow(track.pt(), 1.1)))
       return false;
     return ((track.tpcNClsCrossedRows() >= 70) && (track.tpcNClsFound() >= 50) && (track.itsNCls() >= 5)); // o2-linter: disable=magic-number (hard coded default cuts)
   }
@@ -1185,7 +1213,7 @@ struct FlowGenericFramework {
   {
     AxisSpec phiAxis = {o2::analysis::gfw::phibins, o2::analysis::gfw::philow, o2::analysis::gfw::phiup, "#phi"};
     AxisSpec phiModAxis = {100, 0, constants::math::PI / 9, "fmod(#varphi,#pi/9)"};
-    AxisSpec etaAxis = {o2::analysis::gfw::etabins, -cfgEta, cfgEta, "#eta"};
+    AxisSpec etaAxis = {o2::analysis::gfw::etabins, cfgEta->first, cfgEta->second, "#eta"};
     AxisSpec vtxAxis = {o2::analysis::gfw::vtxZbins, -cfgVtxZ, cfgVtxZ, "Vtx_{z} (cm)"};
     AxisSpec nchAxis = {o2::analysis::gfw::nchbins, o2::analysis::gfw::nchlow, o2::analysis::gfw::nchup, "N_{ch}"};
     AxisSpec centAxis = {o2::analysis::gfw::centbinning, "Centrality (%)"};
@@ -1304,15 +1332,23 @@ struct FlowGenericFramework {
       ++pidcounter;
     }
 
-    for (std::size_t i = 0; i < fractions[0].size(); ++i)
-      registry.fill(HIST("npt_ch"), fPtAxis->GetBinCenter(i + 1), centmult, fractions[0][i]);
-    for (std::size_t i = 0; i < fractions[1].size(); ++i)
-      registry.fill(HIST("npt_pi"), fPtAxis->GetBinCenter(i + 1), centmult, fractions[1][i]);
-    for (std::size_t i = 0; i < fractions[2].size(); ++i)
-      registry.fill(HIST("npt_ka"), fPtAxis->GetBinCenter(i + 1), centmult, fractions[2][i]);
-    for (std::size_t i = 0; i < fractions[3].size(); ++i)
-      registry.fill(HIST("npt_pr"), fPtAxis->GetBinCenter(i + 1), centmult, fractions[3][i]);
-
+    if (cfgUseNewNpt) {
+      for (int i = 1; i <= fPtAxis->GetNbins(); ++i) {
+        registry.fill(HIST("npt_ch"), fPtAxis->GetBinCenter(i), centmult, histosNpt[CHARGEDID]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral());
+        registry.fill(HIST("npt_pi"), fPtAxis->GetBinCenter(i), centmult, histosNpt[PIONID]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral());
+        registry.fill(HIST("npt_ka"), fPtAxis->GetBinCenter(i), centmult, histosNpt[KAONID]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral());
+        registry.fill(HIST("npt_pr"), fPtAxis->GetBinCenter(i), centmult, histosNpt[PROTONID]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral());
+      }
+    } else {
+      for (std::size_t i = 0; i < fractions[0].size(); ++i)
+        registry.fill(HIST("npt_ch"), fPtAxis->GetBinCenter(i + 1), centmult, fractions[0][i]);
+      for (std::size_t i = 0; i < fractions[1].size(); ++i)
+        registry.fill(HIST("npt_pi"), fPtAxis->GetBinCenter(i + 1), centmult, fractions[1][i]);
+      for (std::size_t i = 0; i < fractions[2].size(); ++i)
+        registry.fill(HIST("npt_ka"), fPtAxis->GetBinCenter(i + 1), centmult, fractions[2][i]);
+      for (std::size_t i = 0; i < fractions[3].size(); ++i)
+        registry.fill(HIST("npt_pr"), fPtAxis->GetBinCenter(i + 1), centmult, fractions[3][i]);
+    }
     if (corrconfigsV02.size() < SPECIESCOUNT) //
       return;
 
@@ -1323,22 +1359,30 @@ struct FlowGenericFramework {
           continue;
         auto val = fGFW->Calculate(corrconfigsV02.at(l_ind), i - 1, kFALSE).real() / dnx;
         if (std::abs(val) < 1)
-          (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centmult, val * fractions[l_ind][i - 1], dnx, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centmult, val * fractions[l_ind][i - 1], dnx, rndm);
+          (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centmult, val * ((cfgUseNewNpt) ? histosNpt[l_ind]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral() : fractions[l_ind][i - 1]), dnx, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centmult, val * ((cfgUseNewNpt) ? histosNpt[l_ind]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral() : fractions[l_ind][i - 1]), dnx, rndm);
       }
     }
 
     if (corrconfigsV0.size() < SPECIESCOUNT)
       return;
-    if (fFCpt->corrDenSub[0][1] == 0. || fFCpt->corrDenSub[1][1] == 0.)
-      return;
-    double mpt_sub1 = fFCpt->corrNumSub[0][1] / fFCpt->corrDenSub[0][1];
-    double mpt_sub2 = fFCpt->corrNumSub[1][1] / fFCpt->corrDenSub[1][1];
-    double mpt = 0.5 * (mpt_sub1 + mpt_sub2);
+
+    double mpt = 0;
+    if (cfgEtaPtPt->first * cfgEtaPtPt->second >= 0) {
+      if (fFCpt->corrDen[1] == 0.)
+        return;
+      mpt = fFCpt->corrNum[1] / fFCpt->corrDen[1];
+    } else {
+      if (fFCpt->corrDenSub[0][1] == 0. || fFCpt->corrDenSub[1][1] == 0.)
+        return;
+      double mpt_sub1 = fFCpt->corrNumSub[0][1] / fFCpt->corrDenSub[0][1];
+      double mpt_sub2 = fFCpt->corrNumSub[1][1] / fFCpt->corrDenSub[1][1];
+      mpt = 0.5 * (mpt_sub1 + mpt_sub2);
+    }
     if (std::isnan(mpt))
       return;
     for (uint l_ind = 0; l_ind < SPECIESCOUNT; ++l_ind) {
       for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
-        (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * fractions[l_ind][i - 1], 1., rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * fractions[l_ind][i - 1], 1., rndm);
+        (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * ((cfgUseNewNpt) ? histosNpt[l_ind]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral() : fractions[l_ind][i - 1]), 1., rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * ((cfgUseNewNpt) ? histosNpt[l_ind]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral() : fractions[l_ind][i - 1]), 1., rndm);
       }
     }
     return;
@@ -1402,6 +1446,9 @@ struct FlowGenericFramework {
     }
     // process tracks
     AcceptedTracks acceptedTracks(o2::analysis::gfw::ptbinning.size() - 1);
+    // Reset fraction histograms per event
+    for (const auto& h : histosNpt)
+      h->Reset("ICESM");
     for (const auto& track : tracks) {
       processTrack(track, vtxz, field, run, densitycorrections, acceptedTracks);
     }
@@ -1424,8 +1471,14 @@ struct FlowGenericFramework {
         break;
     }
 
-    if (!cfgFillWeights)
-      fillOutputContainers<dt>((cfgUseNch) ? multiplicity : centrality, lRandom, acceptedTracks);
+    if (cfgFillWeights)
+      return;
+
+    fillOutputContainers<dt>((cfgUseNch) ? multiplicity : centrality, lRandom, acceptedTracks);
+
+    // Reset fraction histograms per event
+    for (const auto& h : histosResoNpt)
+      h->Reset("ICESM");
 
     std::vector<std::vector<float>> nptResonances(6, std::vector<float>(o2::analysis::gfw::ptbinning.size()));
     // Process V0s
@@ -1435,12 +1488,18 @@ struct FlowGenericFramework {
         if (selectK0(collision, v0, centrality, weff)) {
           int ptBinIndex = fPtAxis->FindBin(v0.pt()) - 1;
           if (!(ptBinIndex < 0 || ptBinIndex >= static_cast<int>(o2::analysis::gfw::ptbinning.size()))) {
-            if (v0.mK0Short() > cfgPIDCuts.cfgK0SideBand1Min && v0.mK0Short() < cfgPIDCuts.cfgK0SideBand1Max)
+            if (v0.mK0Short() > cfgPIDCuts.cfgK0SideBand1Min && v0.mK0Short() < cfgPIDCuts.cfgK0SideBand1Max) {
               nptResonances[0][ptBinIndex] += (cfgUseNchCorrection) ? weff : 1.0;
-            if (v0.mK0Short() > cfgPIDCuts.cfgK0SignalMin && v0.mK0Short() < cfgPIDCuts.cfgK0SignalMax)
+              histosResoNpt[K0SIDEBAND1]->Fill(v0.pt(), (cfgUseNchCorrection) ? weff : 1.0);
+            }
+            if (v0.mK0Short() > cfgPIDCuts.cfgK0SignalMin && v0.mK0Short() < cfgPIDCuts.cfgK0SignalMax) {
               nptResonances[1][ptBinIndex] += (cfgUseNchCorrection) ? weff : 1.0;
-            if (v0.mK0Short() > cfgPIDCuts.cfgK0SideBand2Min && v0.mK0Short() < cfgPIDCuts.cfgK0SideBand2Max)
+              histosResoNpt[K0SIGNAL]->Fill(v0.pt(), (cfgUseNchCorrection) ? weff : 1.0);
+            }
+            if (v0.mK0Short() > cfgPIDCuts.cfgK0SideBand2Min && v0.mK0Short() < cfgPIDCuts.cfgK0SideBand2Max) {
               nptResonances[2][ptBinIndex] += (cfgUseNchCorrection) ? weff : 1.0;
+              histosResoNpt[K0SIDEBAND2]->Fill(v0.pt(), (cfgUseNchCorrection) ? weff : 1.0);
+            }
           }
         }
       }
@@ -1450,12 +1509,18 @@ struct FlowGenericFramework {
         if (selectLambda(collision, v0, centrality, weff)) {
           int ptBinIndex = fPtAxis->FindBin(v0.pt()) - 1;
           if (!(ptBinIndex < 0 || ptBinIndex >= static_cast<int>(o2::analysis::gfw::ptbinning.size()))) {
-            if (v0.mLambda() > cfgPIDCuts.cfgLambdaSideBand1Min && v0.mLambda() < cfgPIDCuts.cfgLambdaSideBand1Max)
+            if (v0.mLambda() > cfgPIDCuts.cfgLambdaSideBand1Min && v0.mLambda() < cfgPIDCuts.cfgLambdaSideBand1Max) {
               nptResonances[3][ptBinIndex] += (cfgUseNchCorrection) ? weff : 1.0;
-            if (v0.mLambda() > cfgPIDCuts.cfgLambdaSignalMin && v0.mLambda() < cfgPIDCuts.cfgLambdaSignalMax)
+              histosResoNpt[LAMBDASIDEBAND1]->Fill(v0.pt(), (cfgUseNchCorrection) ? weff : 1.0);
+            }
+            if (v0.mLambda() > cfgPIDCuts.cfgLambdaSignalMin && v0.mLambda() < cfgPIDCuts.cfgLambdaSignalMax) {
               nptResonances[4][ptBinIndex] += (cfgUseNchCorrection) ? weff : 1.0;
-            if (v0.mLambda() > cfgPIDCuts.cfgLambdaSideBand2Min && v0.mLambda() < cfgPIDCuts.cfgLambdaSideBand2Max)
+              histosResoNpt[LAMBDASIGNAL]->Fill(v0.pt(), (cfgUseNchCorrection) ? weff : 1.0);
+            }
+            if (v0.mLambda() > cfgPIDCuts.cfgLambdaSideBand2Min && v0.mLambda() < cfgPIDCuts.cfgLambdaSideBand2Max) {
               nptResonances[5][ptBinIndex] += (cfgUseNchCorrection) ? weff : 1.0;
+              histosResoNpt[LAMBDASIDEBAND2]->Fill(v0.pt(), (cfgUseNchCorrection) ? weff : 1.0);
+            }
           }
         }
       }
@@ -1477,26 +1542,42 @@ struct FlowGenericFramework {
                      [&](float x) { return x / total; });
       ++pidcounter;
     }
-    for (std::size_t i = 0; i < fractions_resonances[0].size(); ++i)
-      registry.fill(HIST("npt_K0_sb1"), fPtAxis->GetBinCenter(i + 1), centrality, fractions_resonances[0][i]);
-    for (std::size_t i = 0; i < fractions_resonances[2].size(); ++i)
-      registry.fill(HIST("npt_K0_sb2"), fPtAxis->GetBinCenter(i + 1), centrality, fractions_resonances[2][i]);
-    for (std::size_t i = 0; i < fractions_resonances[1].size(); ++i)
-      registry.fill(HIST("npt_K0_sig"), fPtAxis->GetBinCenter(i + 1), centrality, fractions_resonances[1][i]);
-    for (std::size_t i = 0; i < fractions_resonances[3].size(); ++i)
-      registry.fill(HIST("npt_Lambda_sb1"), fPtAxis->GetBinCenter(i + 1), centrality, fractions_resonances[3][i]);
-    for (std::size_t i = 0; i < fractions_resonances[5].size(); ++i)
-      registry.fill(HIST("npt_Lambda_sb2"), fPtAxis->GetBinCenter(i + 1), centrality, fractions_resonances[5][i]);
-    for (std::size_t i = 0; i < fractions_resonances[4].size(); ++i)
-      registry.fill(HIST("npt_Lambda_sig"), fPtAxis->GetBinCenter(i + 1), centrality, fractions_resonances[4][i]);
+
+    if (cfgUseNewNpt) {
+      for (int i = 1; i <= fPtAxis->GetNbins(); ++i) {
+        if (histosNpt[CHARGEDID]->Integral() <= 0)
+          continue;
+        registry.fill(HIST("npt_K0_sb1"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[K0SIDEBAND1]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral());
+        registry.fill(HIST("npt_K0_sig"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[K0SIGNAL]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral());
+        registry.fill(HIST("npt_K0_sb2"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[K0SIDEBAND2]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral());
+        registry.fill(HIST("npt_Lambda_sb1"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[LAMBDASIDEBAND1]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral());
+        registry.fill(HIST("npt_Lambda_sig"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[LAMBDASIGNAL]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral());
+        registry.fill(HIST("npt_Lambda_sb2"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[LAMBDASIDEBAND2]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral());
+      }
+    } else {
+      for (std::size_t i = 0; i < fractions_resonances[0].size(); ++i)
+        registry.fill(HIST("npt_K0_sb1"), fPtAxis->GetBinCenter(i + 1), centrality, fractions_resonances[0][i]);
+      for (std::size_t i = 0; i < fractions_resonances[2].size(); ++i)
+        registry.fill(HIST("npt_K0_sb2"), fPtAxis->GetBinCenter(i + 1), centrality, fractions_resonances[2][i]);
+      for (std::size_t i = 0; i < fractions_resonances[1].size(); ++i)
+        registry.fill(HIST("npt_K0_sig"), fPtAxis->GetBinCenter(i + 1), centrality, fractions_resonances[1][i]);
+      for (std::size_t i = 0; i < fractions_resonances[3].size(); ++i)
+        registry.fill(HIST("npt_Lambda_sb1"), fPtAxis->GetBinCenter(i + 1), centrality, fractions_resonances[3][i]);
+      for (std::size_t i = 0; i < fractions_resonances[5].size(); ++i)
+        registry.fill(HIST("npt_Lambda_sb2"), fPtAxis->GetBinCenter(i + 1), centrality, fractions_resonances[5][i]);
+      for (std::size_t i = 0; i < fractions_resonances[4].size(); ++i)
+        registry.fill(HIST("npt_Lambda_sig"), fPtAxis->GetBinCenter(i + 1), centrality, fractions_resonances[4][i]);
+    }
     for (uint l_ind = 4; l_ind < corrconfigsV02.size(); ++l_ind) {
+      if (histosNpt[CHARGEDID]->Integral() <= 0 && cfgUseNewNpt)
+        continue;
       for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
         auto dnx = fGFW->Calculate(corrconfigsV02.at(l_ind), i - 1, kTRUE).real();
         if (dnx == 0)
           continue;
         auto val = fGFW->Calculate(corrconfigsV02.at(l_ind), i - 1, kFALSE).real() / dnx;
         if (std::abs(val) < 1)
-          (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centrality, val * fractions_resonances[l_ind - 4][i - 1], dnx, lRandom) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centrality, val * fractions_resonances[l_ind - 4][i - 1], dnx, lRandom);
+          (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centrality, val * ((cfgUseNewNpt) ? histosResoNpt[l_ind - 4]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral() : fractions_resonances[l_ind - 4][i - 1]), dnx, lRandom) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centrality, val * ((cfgUseNewNpt) ? histosResoNpt[l_ind - 4]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral() : fractions_resonances[l_ind - 4][i - 1]), dnx, lRandom);
       }
     }
 
@@ -1510,8 +1591,10 @@ struct FlowGenericFramework {
       return;
 
     for (uint l_ind = 4; l_ind < corrconfigsV0.size(); ++l_ind) {
+      if (histosNpt[CHARGEDID]->Integral() <= 0 && cfgUseNewNpt)
+        continue;
       for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
-        (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centrality, mpt * fractions_resonances[l_ind - 4][i - 1], 1.0, lRandom) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centrality, mpt * fractions_resonances[l_ind - 4][i - 1], 1.0, lRandom);
+        (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centrality, mpt * ((cfgUseNewNpt) ? histosResoNpt[l_ind - 4]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral() : fractions_resonances[l_ind - 4][i - 1]), 1.0, lRandom) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centrality, mpt * ((cfgUseNewNpt) ? histosResoNpt[l_ind - 4]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral() : fractions_resonances[l_ind - 4][i - 1]), 1.0, lRandom);
       }
     }
   }
@@ -1537,7 +1620,7 @@ struct FlowGenericFramework {
         return;
 
       double weffCh = getEfficiency(track, 0);
-      if (std::abs(track.eta()) < cfgEtaNch) {
+      if (track.eta() > cfgEtaNch->first && track.eta() < cfgEtaNch->second) {
         if (weffCh > 0)
           acceptedTracks.total += (cfgUseNchCorrection) ? weffCh : 1.0;
         ++acceptedTracks.totaluncorr;
@@ -1556,7 +1639,7 @@ struct FlowGenericFramework {
           pidIndex = PROTONID;
       }
 
-      if (std::abs(track.eta()) < cfgEtaNch) {
+      if (track.eta() > cfgEtaNch->first && track.eta() < cfgEtaNch->second) {
         double weff = getEfficiency(track, pidIndex);
 
         if (pidIndex && weff > 0)
@@ -1564,14 +1647,22 @@ struct FlowGenericFramework {
 
         int ptBinIndex = fPtAxis->FindBin(track.pt()) - 1;
         if (!(ptBinIndex < 0 || ptBinIndex >= static_cast<int>(o2::analysis::gfw::ptbinning.size()))) {
-          if (weffCh > 0)
+          if (weffCh > 0) {
             acceptedTracks.nch[ptBinIndex] += (cfgUseNchCorrection) ? weffCh : 1.0;
-          if (pidIndex == PIONID && weff > 0)
+            histosNpt[CHARGEDID]->Fill(track.pt(), (cfgUseNchCorrection) ? weffCh : 1.0);
+          }
+          if (pidIndex == PIONID && weff > 0) {
             acceptedTracks.npi[ptBinIndex] += (cfgUseNchCorrection) ? weff : 1.0;
-          if (pidIndex == KAONID && weff > 0)
+            histosNpt[PIONID]->Fill(track.pt(), (cfgUseNchCorrection) ? weff : 1.0);
+          }
+          if (pidIndex == KAONID && weff > 0) {
             acceptedTracks.nka[ptBinIndex] += (cfgUseNchCorrection) ? weff : 1.0;
-          if (pidIndex == PROTONID && weff > 0)
+            histosNpt[KAONID]->Fill(track.pt(), (cfgUseNchCorrection) ? weff : 1.0);
+          }
+          if (pidIndex == PROTONID && weff > 0) {
             acceptedTracks.npr[ptBinIndex] += (cfgUseNchCorrection) ? weff : 1.0;
+            histosNpt[PROTONID]->Fill(track.pt(), (cfgUseNchCorrection) ? weff : 1.0);
+          }
         }
       }
 
@@ -1609,7 +1700,7 @@ struct FlowGenericFramework {
           pidIndex = 3;
       }
 
-      if (std::abs(track.eta()) < cfgEtaNch) {
+      if (track.eta() > cfgEtaNch->first && track.eta() < cfgEtaNch->second) {
         ++acceptedTracks.total;
         ++acceptedTracks.totaluncorr;
 
@@ -1619,12 +1710,19 @@ struct FlowGenericFramework {
 
         if (!(ptBinIndex < 0 || ptBinIndex >= static_cast<int>(o2::analysis::gfw::ptbinning.size()))) {
           acceptedTracks.nch[ptBinIndex] += 1.0;
-          if (pidIndex == PIONID)
+          histosNpt[CHARGEDID]->Fill(track.pt());
+          if (pidIndex == PIONID) {
             acceptedTracks.npi[ptBinIndex] += 1.0;
-          if (pidIndex == KAONID)
+            histosNpt[PIONID]->Fill(track.pt());
+          }
+          if (pidIndex == KAONID) {
             acceptedTracks.nka[ptBinIndex] += 1.0;
-          if (pidIndex == PROTONID)
+            histosNpt[KAONID]->Fill(track.pt());
+          }
+          if (pidIndex == PROTONID) {
             acceptedTracks.npr[ptBinIndex] += 1.0;
+            histosNpt[PROTONID]->Fill(track.pt());
+          }
         }
       }
 
@@ -1641,7 +1739,7 @@ struct FlowGenericFramework {
         return;
 
       double weffCh = getEfficiency(track, 0);
-      if (std::abs(track.eta()) < cfgEtaNch) {
+      if (track.eta() > cfgEtaNch->first && track.eta() < cfgEtaNch->second) {
         if (weffCh > 0)
           acceptedTracks.total += (cfgUseNchCorrection) ? weffCh : 1.0;
         ++acceptedTracks.totaluncorr;
@@ -1653,7 +1751,7 @@ struct FlowGenericFramework {
       // if (cfgUsePID) Need PID for v02
       int pidIndex = getNsigmaPID(track);
 
-      if (std::abs(track.eta()) < cfgEtaNch) {
+      if (track.eta() > cfgEtaNch->first && track.eta() < cfgEtaNch->second) {
         double weff = getEfficiency(track, pidIndex);
         if (pidIndex && weff > 0)
           acceptedTracks.pidtotal[pidIndex - 1] += weff;
@@ -1661,16 +1759,21 @@ struct FlowGenericFramework {
         int ptBinIndex = fPtAxis->FindBin(track.pt()) - 1;
 
         if (!(ptBinIndex < 0 || ptBinIndex >= static_cast<int>(o2::analysis::gfw::ptbinning.size()))) {
-          if (weffCh > 0)
+          if (weffCh > 0) {
             acceptedTracks.nch[ptBinIndex] += (cfgUseNchCorrection) ? weffCh : 1.0;
+            histosNpt[CHARGEDID]->Fill(track.pt(), (cfgUseNchCorrection) ? weffCh : 1.0);
+          }
           if (pidIndex == PIONID && weff > 0) {
             acceptedTracks.npi[ptBinIndex] += (cfgUseNchCorrection) ? weff : 1.0;
+            histosNpt[PIONID]->Fill(track.pt(), (cfgUseNchCorrection) ? weff : 1.0);
           }
           if (pidIndex == KAONID && weff > 0) {
             acceptedTracks.nka[ptBinIndex] += (cfgUseNchCorrection) ? weff : 1.0;
+            histosNpt[KAONID]->Fill(track.pt(), (cfgUseNchCorrection) ? weff : 1.0);
           }
           if (pidIndex == PROTONID && weff > 0) {
             acceptedTracks.npr[ptBinIndex] += (cfgUseNchCorrection) ? weff : 1.0;
+            histosNpt[PROTONID]->Fill(track.pt(), (cfgUseNchCorrection) ? weff : 1.0);
           }
         }
       }
@@ -1718,9 +1821,9 @@ struct FlowGenericFramework {
     }
 
     // Eta cuts on daughter particles to remove self-correlations with correlated observables
-    if (std::abs(track.eta()) > cfgEtaV0Daughters)
+    if (track.eta() < cfgEtaV0Daughters->first || track.eta() > cfgEtaV0Daughters->second)
       return false;
-
+    registry.fill(HIST("trackQA/after/etaV0Daughters"), track.eta());
     return true;
   }
 
@@ -1902,7 +2005,7 @@ struct FlowGenericFramework {
       return;
 
     // Fill the nominal sums
-    if (std::abs(track.eta()) < cfgEtaPtPt)
+    if (track.eta() > cfgEtaPtPt->first && track.eta() < cfgEtaPtPt->second)
       fFCpt->fill(weff, track.pt());
 
     // Fill the subevent sums
@@ -1999,6 +2102,11 @@ struct FlowGenericFramework {
       if (ft == kAfter) {
         registry.fill(HIST("trackQA/") + HIST(FillTimeName[ft]) + HIST("pt_ref"), track.pt());
         registry.fill(HIST("trackQA/") + HIST(FillTimeName[ft]) + HIST("pt_poi"), track.pt());
+
+        if (track.eta() > cfgEtaNch->first && track.eta() < cfgEtaNch->second)
+          registry.fill(HIST("trackQA/after/etaNch"), track.eta());
+        if (track.eta() > cfgEtaPtPt->first && track.eta() < cfgEtaPtPt->second)
+          registry.fill(HIST("trackQA/after/etaPtPt"), track.eta());
       }
     }
   }
@@ -2040,7 +2148,7 @@ struct FlowGenericFramework {
   }
 
   o2::framework::expressions::Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
-  o2::framework::expressions::Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::itsChi2NCl < cfgTrackCuts.cfgChi2PrITSCls) && (aod::track::tpcChi2NCl < cfgTrackCuts.cfgChi2PrTPCCls) && nabs(aod::track::dcaZ) < cfgTrackCuts.cfgDCAz;
+  o2::framework::expressions::Filter trackFilter = (aod::track::eta > cfgEta->first) && (aod::track::eta < cfgEta->second) && (aod::track::pt > cfgPtmin) && (aod::track::pt < cfgPtmax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::itsChi2NCl < cfgTrackCuts.cfgChi2PrITSCls) && (aod::track::tpcChi2NCl < cfgTrackCuts.cfgChi2PrTPCCls) && nabs(aod::track::dcaZ) < cfgTrackCuts.cfgDCAz;
 
   using GFWCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs>>;
   // using GFWTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFKa, aod::pidTPCKa, aod::pidTOFPr, aod::pidTPCPr>>;

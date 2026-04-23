@@ -18,9 +18,9 @@
 
 #include "PWGCF/Femto/Core/dataTypes.h"
 
-#include <Common/DataModel/Centrality.h>
-#include <Common/DataModel/EventSelection.h>
-#include <Common/DataModel/Multiplicity.h>
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -331,7 +331,11 @@ using FTrackPids = soa::Join<FElectronPids, FPionPids, FKaonPids, FProtonPids, F
 namespace femtotwotrackresonances
 {
 // columns for resonance bit masks
-DECLARE_SOA_COLUMN(Mask, mask, femtodatatypes::TwoTrackResonanceMaskType); //! Bitmask for resonance selections
+// DECLARE_SOA_COLUMN(Mask, mask, femtodatatypes::TwoTrackResonanceMaskType); //! Bitmask for resonance selections
+DECLARE_SOA_COLUMN(MaskPosDau, maskPosDau, femtodatatypes::TrackMaskType); //! Bitmask for positive daughter
+DECLARE_SOA_COLUMN(PosDauHasHighMomentum, posDauHasHighMomentum, bool);    //! switch for pid threshold
+DECLARE_SOA_COLUMN(MaskNegDau, maskNegDau, femtodatatypes::TrackMaskType); //! Bitmask for negative daughter
+DECLARE_SOA_COLUMN(NegDauHasHighMomentum, negDauHasHighMomentum, bool);    //! switch for pid threshold
 
 // id columns for resonance daughter tracks
 DECLARE_SOA_INDEX_COLUMN_FULL(PosDau, posDau, int32_t, FTracks, "_PosDau"); //! index column for positive daughter track
@@ -354,7 +358,10 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FPhis_001, "FPHI", 1, //! femto phis
                                    femtobase::dynamic::Theta<femtobase::stored::Eta>);
 using FPhis = FPhis_001;
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FPhiMasks_001, "FPHIMASK", 1, //! mask for phis
-                                   femtotwotrackresonances::Mask);
+                                   femtotwotrackresonances::MaskPosDau,
+                                   femtotwotrackresonances::PosDauHasHighMomentum,
+                                   femtotwotrackresonances::MaskNegDau,
+                                   femtotwotrackresonances::NegDauHasHighMomentum);
 using FPhiMasks = FPhiMasks_001;
 
 // table for kstars
@@ -376,7 +383,10 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FKstar0s_001, "FKSTAR0", 1, //! femto k0star
                                    femtobase::dynamic::Theta<femtobase::stored::Eta>);
 using FKstar0s = FKstar0s_001;
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FKstar0Masks_001, "FKSTAR0MASK", 1, //! k0star masks
-                                   femtotwotrackresonances::Mask);
+                                   femtotwotrackresonances::MaskPosDau,
+                                   femtotwotrackresonances::PosDauHasHighMomentum,
+                                   femtotwotrackresonances::MaskNegDau,
+                                   femtotwotrackresonances::NegDauHasHighMomentum);
 using FKstar0Masks = FKstar0Masks_001;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FRho0s_001, "FRHO0", 1, //! femto rho0s
@@ -395,7 +405,10 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FRho0s_001, "FRHO0", 1, //! femto rho0s
                                    femtobase::dynamic::Theta<femtobase::stored::Eta>);
 using FRho0s = FRho0s_001;
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FRho0Masks_001, "FRHO0MASK", 1, //! rho0s masks
-                                   femtotwotrackresonances::Mask);
+                                   femtotwotrackresonances::MaskPosDau,
+                                   femtotwotrackresonances::PosDauHasHighMomentum,
+                                   femtotwotrackresonances::MaskNegDau,
+                                   femtotwotrackresonances::NegDauHasHighMomentum);
 using FRho0Masks = FRho0Masks_001;
 
 namespace femtov0s

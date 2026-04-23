@@ -24,6 +24,7 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsITSMFT/DPLAlpideParam.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>

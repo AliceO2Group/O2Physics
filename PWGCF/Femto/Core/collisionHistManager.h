@@ -24,8 +24,6 @@
 #include <Framework/HistogramSpec.h>
 
 #include <array>
-#include <cstddef>
-#include <cstdint>
 #include <map>
 #include <string>
 #include <string_view>
@@ -65,25 +63,25 @@ constexpr std::string_view McDir = "Collisions/MC/";
 
 constexpr std::array<histmanager::HistInfo<ColHist>, kColHistLast> HistTable = {
   {
-    {kPosZ, o2::framework::kTH1F, "hPosZ", "Vertex Z; V_{Z} (cm); Entries"},
-    {kMult, o2::framework::kTH1F, "hMult", "Multiplicity; Multiplicity; Entries"},
-    {kCent, o2::framework::kTH1F, "hCent", "Centrality; Centrality (%); Entries"},
-    {kMagField, o2::framework::kTH1F, "hMagField", "Magnetic Field; B (kG); Entries"},
+    {kPosZ, o2::framework::HistType::kTH1F, "hPosZ", "Vertex Z; V_{Z} (cm); Entries"},
+    {kMult, o2::framework::HistType::kTH1F, "hMult", "Multiplicity; Multiplicity; Entries"},
+    {kCent, o2::framework::HistType::kTH1F, "hCent", "Centrality; Centrality (%); Entries"},
+    {kMagField, o2::framework::HistType::kTH1F, "hMagField", "Magnetic Field; B (kG); Entries"},
     // qa
-    {kPosX, o2::framework::kTH1F, "hPosX", "Vertex X; V_{X} (cm); Entries"},
-    {kPosY, o2::framework::kTH1F, "hPosY", "Vertex Y; V_{Y} (cm); Entries"},
-    {kPos, o2::framework::kTH1F, "hPos", "Primary vertex; V_{pos} (cm); Entries"},
-    {kSphericity, o2::framework::kTH1F, "hSphericity", "Sphericity; Sphericity; Entries"},
-    {kOccupancy, o2::framework::kTH1F, "hOccupancy", "Occupancy; Occupancy; Entries"},
+    {kPosX, o2::framework::HistType::kTH1F, "hPosX", "Vertex X; V_{X} (cm); Entries"},
+    {kPosY, o2::framework::HistType::kTH1F, "hPosY", "Vertex Y; V_{Y} (cm); Entries"},
+    {kPos, o2::framework::HistType::kTH1F, "hPos", "Primary vertex; V_{pos} (cm); Entries"},
+    {kSphericity, o2::framework::HistType::kTH1F, "hSphericity", "Sphericity; Sphericity; Entries"},
+    {kOccupancy, o2::framework::HistType::kTH1F, "hOccupancy", "Occupancy; Occupancy; Entries"},
     // 2d
-    {kPoszVsMult, o2::framework::kTH2F, "hPoszVsMult", "Vertex Z vs Multiplicity; V_{Z} (cm); Multiplicity"},
-    {kPoszVsCent, o2::framework::kTH2F, "hPoszVsCent", "Vertex Z vs Centrality; V_{Z} (cm); Centrality (%)"},
-    {kCentVsMult, o2::framework::kTH2F, "hCentVsMult", "Centrality vs Multiplicity; Centrality (%); Multiplicity"},
-    {kMultVsSphericity, o2::framework::kTH2F, "hMultVsSphericity", "Multiplicity vs Sphericity; Multiplicity; Sphericity"},
-    {kCentVsSphericity, o2::framework::kTH2F, "hCentVsSphericity", "Centrality vs Sphericity; Centrality (%); Sphericity"},
+    {kPoszVsMult, o2::framework::HistType::kTH2F, "hPoszVsMult", "Vertex Z vs Multiplicity; V_{Z} (cm); Multiplicity"},
+    {kPoszVsCent, o2::framework::HistType::kTH2F, "hPoszVsCent", "Vertex Z vs Centrality; V_{Z} (cm); Centrality (%)"},
+    {kCentVsMult, o2::framework::HistType::kTH2F, "hCentVsMult", "Centrality vs Multiplicity; Centrality (%); Multiplicity"},
+    {kMultVsSphericity, o2::framework::HistType::kTH2F, "hMultVsSphericity", "Multiplicity vs Sphericity; Multiplicity; Sphericity"},
+    {kCentVsSphericity, o2::framework::HistType::kTH2F, "hCentVsSphericity", "Centrality vs Sphericity; Centrality (%); Sphericity"},
     // mc
-    {kTrueCentVsCent, o2::framework::kTH2F, "hTrueCentVsCent", "True centrality vs centrality; Centrality_{True} (%); Centrality (%)"},
-    {kTrueMultVsMult, o2::framework::kTH2F, "hTrueMultVsMult", "True multiplicity vs multiplicity; Multiplicity_{True}; Multiplicity"},
+    {kTrueCentVsCent, o2::framework::HistType::kTH2F, "hTrueCentVsCent", "True centrality vs centrality; Centrality_{True} (%); Centrality (%)"},
+    {kTrueMultVsMult, o2::framework::HistType::kTH2F, "hTrueMultVsMult", "True multiplicity vs multiplicity; Multiplicity_{True}; Multiplicity"},
   }};
 
 #define COL_HIST_ANALYSIS_MAP(conf) \

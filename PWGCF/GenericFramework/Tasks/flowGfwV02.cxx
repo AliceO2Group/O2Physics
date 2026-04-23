@@ -13,19 +13,14 @@
 /// \brief Skeleton copy of flowGfwLightIons with empty function bodies
 /// \author Emil Gorm Nielsen, NBI, emil.gorm.nielsen@cern.ch
 
-#include "FlowContainer.h"
-#include "FlowPtContainer.h"
-#include "GFW.h"
-#include "GFWConfig.h"
-#include "GFWCumulant.h"
-#include "GFWPowerArray.h"
-#include "GFWWeights.h"
-#include "GFWWeightsList.h"
-
 #include "PWGCF/DataModel/CorrelationsDerived.h"
+#include "PWGCF/GenericFramework/Core/FlowContainer.h"
+#include "PWGCF/GenericFramework/Core/GFW.h"
+#include "PWGCF/GenericFramework/Core/GFWConfig.h"
+#include "PWGCF/GenericFramework/Core/GFWWeights.h"
 #include "PWGCF/JCorran/DataModel/JCatalyst.h"
 
-#include "Common/Core/TrackSelection.h"
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -34,38 +29,50 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/PID.h"
 #include <CCDB/BasicCCDBManager.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <DataFormatsParameters/GRPObject.h>
+#include <CommonConstants/MathConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
 #include <TF1.h>
-#include <TPDGCode.h>
+#include <TH1.h>
+#include <TNamed.h>
+#include <TObjArray.h>
 #include <TProfile.h>
 #include <TRandom3.h>
+#include <TString.h>
 
-#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/find.hpp>
+#include <sys/types.h>
+
+#include <RtypesCore.h>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <complex>
+#include <cstdint>
+#include <cstdlib>
 #include <ctime>
-#include <experimental/type_traits>
+#include <iterator>
 #include <map>
 #include <memory>
-#include <numeric>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
 using namespace o2;
 using namespace o2::framework;
+using namespace analysis::genericframework;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 static constexpr float LongArrayFloat[3][20] = {{1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}, {2.1, 2.2, 2.3, -2.1, -2.2, -2.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}, {3.1, 3.2, 3.3, -3.1, -3.2, -3.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}};
