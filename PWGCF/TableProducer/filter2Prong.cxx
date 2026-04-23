@@ -800,7 +800,7 @@ struct Filter2Prong {
   PROCESS_SWITCH(Filter2Prong, processDataPhiV0, "Process data Phi and V0 candidates with invariant mass method", false);
 
   using DerivedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities>;
-  void processDataPhiMixed(DerivedCollisions const& collisions, Filter2Prong::PIDTrack const& tracksP, aod::CFTrackRefs const& cftracks)
+  void processDataPhiMixed(DerivedCollisions const& collisions, Filter2Prong::PIDTrack const& /*tracksP*/, aod::CFTrackRefs const& cftracks)
   {
     auto getMultiplicity = [](auto const& col) {
       return col.multiplicity();
@@ -833,8 +833,7 @@ struct Filter2Prong {
       }
 
       for (const auto& cftrack1 : tracks1) {
-        // const auto& p1 = cftrack1.track_as<Filter2Prong::PIDTrack>();
-        const auto& p1 = tracksP.iteratorAt(cftrack1.trackId() - tracksP.begin().globalIndex());
+        const auto& p1 = cftrack1.track_as<Filter2Prong::PIDTrack>();
 
         if (p1.sign() != 1) {
           continue;
@@ -853,8 +852,7 @@ struct Filter2Prong {
         }
 
         for (const auto& cftrack2 : tracks2) {
-          // const auto& p2 = cftrack2.track_as<Filter2Prong::PIDTrack>();
-          const auto& p2 = tracksP.iteratorAt(cftrack2.trackId() - tracksP.begin().globalIndex());
+          const auto& p2 = cftrack2.track_as<Filter2Prong::PIDTrack>();
 
           if (p2.sign() != -1) {
             continue;
