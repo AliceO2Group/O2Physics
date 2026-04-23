@@ -69,8 +69,17 @@ DECLARE_SOA_COLUMN(Pt, pt, float);                              //! Transverse m
 DECLARE_SOA_COLUMN(Eta, eta, float);                            //! eta of candidate (GeV/c)
 DECLARE_SOA_COLUMN(Phi, phi, float);                            //! phi of candidate (GeV/c)
 DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);                  //! Transverse momentum of prong 0 (GeV/c)
+DECLARE_SOA_COLUMN(PxProng0, pxProng0, float);                  //! Px of prong 0 (GeV/c)
+DECLARE_SOA_COLUMN(PyProng0, pyProng0, float);                  //! Py of prong 0 (GeV/c)
+DECLARE_SOA_COLUMN(PzProng0, pzProng0, float);                  //! Pz of prong 0 (GeV/c)
 DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);                  //! Transverse momentum of prong 1 (GeV/c)
+DECLARE_SOA_COLUMN(PxProng1, pxProng1, float);                  //! Px of prong 1 (GeV/c)
+DECLARE_SOA_COLUMN(PyProng1, pyProng1, float);                  //! Py of prong 1 (GeV/c)
+DECLARE_SOA_COLUMN(PzProng1, pzProng1, float);                  //! Pz of prong 1 (GeV/c)
 DECLARE_SOA_COLUMN(PtProng2, ptProng2, float);                  //! Transverse momentum of prong 2 (GeV/c)
+DECLARE_SOA_COLUMN(PxProng2, pxProng2, float);                  //! Px of prong 2 (GeV/c)
+DECLARE_SOA_COLUMN(PyProng2, pyProng2, float);                  //! Py of prong 2 (GeV/c)
+DECLARE_SOA_COLUMN(PzProng2, pzProng2, float);                  //! Pz of prong 2 (GeV/c)
 DECLARE_SOA_COLUMN(ImpactParameter0, impactParameter0, float);  //! Impact parameter (DCA to PV) of prong 0 (cm)
 DECLARE_SOA_COLUMN(ImpactParameter1, impactParameter1, float);  //! Impact parameter (DCA to PV) of prong 1 (cm)
 DECLARE_SOA_COLUMN(ImpactParameter2, impactParameter2, float);  //! Impact parameter (DCA to PV) of prong 2 (cm)
@@ -96,12 +105,13 @@ DECLARE_SOA_COLUMN(NTpcSignalsKa, nTpcSignalsKa, float);        //! Number of TP
 DECLARE_SOA_COLUMN(NItsSignalsDe, nItsSignalsDe, float);        //! Number of ITS signas
 DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t); //! Candidates falg
 DECLARE_SOA_COLUMN(Cent, cent, float);                          //! Centrality
+DECLARE_SOA_COLUMN(VtxZ, vtxZ, float);                          //! Vertex Z
 DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);                  //! Global index for the collisionAdd commentMore actions
 DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t);              //! Timestamp for the collision
 } // namespace full
 
-// Full table: include ALL columns declared above
-DECLARE_SOA_TABLE(HfCandCd, "AOD", "HFCANDCD",
+// Lite table
+DECLARE_SOA_TABLE(HfCandCdLite, "AOD", "HFCANDCDLITE",
                   full::MassCd,
                   full::MassLc,
                   full::Pt,
@@ -120,21 +130,51 @@ DECLARE_SOA_TABLE(HfCandCd, "AOD", "HFCANDCD",
                   full::NSigmaTpcPr,
                   full::NSigmaItsDe,
                   full::NSigmaTofDe,
-                  full::NItsNClusterSize,
-                  full::NTpcSignalsDe,
-                  full::NTpcSignalsPi,
-                  full::NTpcSignalsKa,
                   full::CandidateSelFlag,
                   full::Cent);
+
+// full table for local Rotation & Event Mixing
+DECLARE_SOA_TABLE(HfCandCdFull, "AOD", "HFCANDCDFULL",
+                  full::PxProng0,
+                  full::PyProng0,
+                  full::PzProng0,
+                  full::PxProng1,
+                  full::PyProng1,
+                  full::PzProng1,
+                  full::PxProng2,
+                  full::PyProng2,
+                  full::PzProng2,
+                  full::ImpactParameter0,
+                  full::ImpactParameter1,
+                  full::ImpactParameter2,
+                  full::DecayLength,
+                  full::Cpa,
+                  full::Chi2PCA,
+                  full::NSigmaTpcDe,
+                  full::NSigmaTpcPr,
+                  full::NSigmaItsDe,
+                  full::NSigmaTofDe,
+                  full::NSigmaTpcPi,
+                  full::NSigmaTofPi,
+                  full::NSigmaTpcKa,
+                  full::NSigmaTofKa,
+                  full::CandidateSelFlag,
+                  full::Cent,
+                  full::VtxZ,
+                  full::GIndexCol,
+                  full::TimeStamp);
 } // namespace o2::aod
 
 struct HfTaskCd {
 
-  Produces<o2::aod::HfCandCd> rowCandCd;
+  Produces<o2::aod::HfCandCdLite> rowCandCdLite;
+  Produces<o2::aod::HfCandCdFull> rowCandCdFull;
+
   Configurable<int> selectionFlagCd{"selectionFlagCd", 1, "Selection Flag for Cd"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_cd_to_de_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<bool> fillTHn{"fillTHn", false, "fill THn"};
-  Configurable<bool> fillTree{"fillTree", false, "Flag to fill candiates tree"};
+  Configurable<bool> fillCandLiteTree{"fillCandLiteTree", false, "Flag to fill candiates lite tree"};
+  Configurable<bool> fillCandFullTree{"fillCandFullTree", false, "Flag to fill candiates full tree"};
 
   SliceCache cache;
 
@@ -272,8 +312,8 @@ struct HfTaskCd {
     auto thisCollId = collision.globalIndex();
     auto groupedCdCandidates = candidates.sliceBy(candCdPerCollision, thisCollId);
     auto numPvContributors = collision.numContrib();
-    // auto bc = collision.template bc_as<BcType>();
-    // int64_t timeStamp = bc.timestamp();
+    auto bc = collision.template bc_as<BcType>();
+    int64_t timeStamp = bc.timestamp();
 
     for (const auto& candidate : groupedCdCandidates) {
       if (!TESTBIT(candidate.hfflag(), aod::hf_cand_3prong::DecayType::CdToDeKPi)) {
@@ -358,7 +398,8 @@ struct HfTaskCd {
         }
       }
 
-      if (fillTree) {
+      if (fillCandLiteTree || fillCandFullTree) {
+
         int candFlag = -999;
 
         float nSigmaTpcDe = 0.f, nSigmaTpcKa = 0.f, nSigmaTpcPi = 0.f, nSigmaTpcPr = 0.f;
@@ -435,31 +476,63 @@ struct HfTaskCd {
         registry.fill(HIST("Data/hNsigmaTPCKaVsP"), prong1.tpcInnerParam() * prong1.sign(), nSigmaTpcKa);
         registry.fill(HIST("Data/hNsigmaTOFKaVsP"), prong1.tpcInnerParam() * prong1.sign(), nSigmaTofKa);
 
-        rowCandCd(
-          invMassCd,
-          invMassLc,
-          pt,
-          eta,
-          phi,
-          ptProng0,
-          ptProng1,
-          ptProng2,
-          candidate.impactParameter0(),
-          candidate.impactParameter1(),
-          candidate.impactParameter2(),
-          decayLength,
-          cpa,
-          chi2PCA,
-          nSigmaTpcDe,
-          nSigmaTpcPr,
-          nSigmaItsDe,
-          nSigmaTofDe,
-          itsNClusterSizeDe,
-          tpcSignalsDe,
-          tpcSignalsPi,
-          tpcSignalsKa,
-          candFlag,
-          cent);
+        if (fillCandLiteTree) {
+
+          rowCandCdLite(
+            invMassCd,
+            invMassLc,
+            pt,
+            eta,
+            phi,
+            ptProng0,
+            ptProng1,
+            ptProng2,
+            candidate.impactParameter0(),
+            candidate.impactParameter1(),
+            candidate.impactParameter2(),
+            decayLength,
+            cpa,
+            chi2PCA,
+            nSigmaTpcDe,
+            nSigmaTpcPr,
+            nSigmaItsDe,
+            nSigmaTofDe,
+            candFlag,
+            cent);
+        }
+
+        if (fillCandFullTree) {
+
+          rowCandCdFull(
+            candidate.pxProng0(),
+            candidate.pyProng0(),
+            candidate.pzProng0(),
+            candidate.pxProng1(),
+            candidate.pyProng1(),
+            candidate.pzProng1(),
+            candidate.pxProng2(),
+            candidate.pyProng2(),
+            candidate.pzProng2(),
+            candidate.impactParameter0(),
+            candidate.impactParameter1(),
+            candidate.impactParameter2(),
+            decayLength,
+            cpa,
+            chi2PCA,
+            nSigmaTpcDe,
+            nSigmaTpcPr,
+            nSigmaItsDe,
+            nSigmaTofDe,
+            nSigmaTpcPi,
+            nSigmaTofPi,
+            nSigmaTpcKa,
+            nSigmaTofKa,
+            candFlag,
+            cent,
+            collision.posZ(),
+            collision.globalIndex(),
+            timeStamp);
+        }
       }
     }
   }
