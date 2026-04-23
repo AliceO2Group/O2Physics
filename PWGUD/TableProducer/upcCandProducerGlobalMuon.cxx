@@ -58,6 +58,7 @@
 #include <numeric>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 using namespace o2::framework;
@@ -116,9 +117,10 @@ struct UpcCandProducerGlobalMuon {
   o2::vertexing::FwdDCAFitterN<2> fFwdFitter;
 
   // Named constants (avoid magic numbers in expressions)
-  static constexpr double kBcTimeRoundingOffset = 1.;   // Offset used when rounding trackTime to BC units
-  static constexpr uint16_t kMinTracksForPair = 2;      // Minimum tracks required to compute a pair invariant mass
-  static constexpr uint16_t kMinTracksForCandidate = 1; // Minimum contributors required to save a candidate
+  static constexpr double kBcTimeRoundingOffset = 1.;     // Offset used when rounding trackTime to BC units
+  static constexpr uint16_t kMinTracksForPair = 2;        // Minimum tracks required to compute a pair invariant mass
+  static constexpr uint16_t kMinTracksForCandidate = 1;   // Minimum contributors required to save a candidate
+  static constexpr int kUpperBoundaryToTrackTypeEnum = 2; // Make sure you use MFT tracks
 
   void init(InitContext&)
   {
@@ -514,7 +516,7 @@ struct UpcCandProducerGlobalMuon {
     fBestMuonMatch.clear();
     std::unordered_map<int, std::pair<float, int>> mCandidates;
     for (const auto& muon : fwdTracks) {
-      if (static_cast<int>(muon.trackType()) < 2) {
+      if (static_cast<int>(muon.trackType()) < kUpperBoundaryToTrackTypeEnum) {
         auto muonID = muon.matchMCHTrackId();
         auto chi2 = muon.chi2MatchMCHMFT();
         if (mCandidates.find(muonID) == mCandidates.end()) {
@@ -526,7 +528,7 @@ struct UpcCandProducerGlobalMuon {
         }
       }
     }
-    for (auto& pairCand : mCandidates) {
+    for (const auto& pairCand : mCandidates) {
       fBestMuonMatch[pairCand.second.second] = true;
     }
   }
@@ -638,7 +640,7 @@ struct UpcCandProducerGlobalMuon {
         continue;
 
       // For global tracks, skip if not the best match for this MCH track
-      if (fKeepBestMuonMatch && static_cast<int>(trackType) < 2) {
+      if (fKeepBestMuonMatch && static_cast<int>(trackType) < kUpperBoundaryToTrackTypeEnum) {
         if (fBestMuonMatch.find(fwdTrack.globalIndex()) == fBestMuonMatch.end()) {
           continue;
         }
