@@ -1626,6 +1626,9 @@ struct HfTaskCharmPolarisation {
                 }
               } else {
                 registry.fill(HIST("hEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, centrality);
+                if (activateTHnSparsePhiAndCosSqStarEP && ptCharmHad > ptMinCosPhiCosSqTheta) {
+                  registry.fill(HIST("hCosPhiCosSqThetaEP"), invMassCharmHad, ptCharmHad, std::abs(rapCharmHad), std::cos(2 * phiEuler), cosThetaStar * cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], centrality);
+                }
               }
             } else {
               if (nBkgRotations > 0) {
@@ -1635,6 +1638,9 @@ struct HfTaskCharmPolarisation {
                 }
               } else {
                 registry.fill(HIST("hEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], centrality);
+                if (activateTHnSparsePhiAndCosSqStarEP && ptCharmHad > ptMinCosPhiCosSqTheta) {
+                  registry.fill(HIST("hCosPhiCosSqThetaEP"), invMassCharmHad, ptCharmHad, std::abs(rapCharmHad), std::cos(2 * phiEuler), cosThetaStar * cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], centrality);
+                }
               }
             }
           }
