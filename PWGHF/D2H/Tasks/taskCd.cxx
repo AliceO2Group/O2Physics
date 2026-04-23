@@ -406,7 +406,7 @@ struct HfTaskCd {
         float nSigmaItsDe = 0.f;
         float nSigmaTofDe = 0.f, nSigmaTofKa = 0.f, nSigmaTofPi = 0.f;
 
-        int itsNClusterSizeDe = 0;
+        // int itsNClusterSizeDe = 0;
 
         float tpcSignalsDe = 0.f;
         float tpcSignalsPi = 0.f;
@@ -442,7 +442,7 @@ struct HfTaskCd {
           nSigmaTpcPi = candidate.nSigTpcPi2();
           nSigmaTofPi = candidate.nSigTofPi2();
           nSigmaItsDe = prong0Its.itsNSigmaDe();
-          itsNClusterSizeDe = prong0.itsClusterSizes();
+          // itsNClusterSizeDe = prong0.itsClusterSizes();
           tpcSignalsDe = prong0.tpcSignal();
           tpcSignalsPi = prong2.tpcSignal();
           itsSignalsDe = itsSignal(prong0);
@@ -456,7 +456,7 @@ struct HfTaskCd {
           nSigmaTpcPi = candidate.nSigTpcPi0();
           nSigmaTofPi = candidate.nSigTofPi0();
           nSigmaItsDe = prong2Its.itsNSigmaDe();
-          itsNClusterSizeDe = prong2.itsClusterSizes();
+          // itsNClusterSizeDe = prong2.itsClusterSizes();
           tpcSignalsDe = prong2.tpcSignal();
           tpcSignalsPi = prong0.tpcSignal();
           itsSignalsDe = itsSignal(prong2);
