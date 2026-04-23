@@ -395,7 +395,6 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
             return;
           }
           auto mcparticle = track.mcParticle(); // corresponding MC truth simulated particle
-          auto mccollision = collision.mcCollision();
           pc.fHistPt[eSim]->Fill(mcparticle.pt());
           event.fEventHistograms[ePt][eSim][0]->Fill(mcparticle.pt());
           ptsim = mcparticle.pt();
