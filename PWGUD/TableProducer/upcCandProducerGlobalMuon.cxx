@@ -392,7 +392,7 @@ struct UpcCandProducerGlobalMuon {
   }
 
   bool addToFwdTable(int64_t candId, int64_t trackId, uint64_t gbc, float trackTime,
-                     ForwardTracks const& fwdTracks, o2::aod::MFTTracks const& mftTracks,
+                     ForwardTracks const& fwdTracks, o2::aod::MFTTracks const& /*mftTracks*/,
                      const o2::aod::McFwdTrackLabels* mcFwdTrackLabels)
   {
     const auto& track = fwdTracks.iteratorAt(trackId);
