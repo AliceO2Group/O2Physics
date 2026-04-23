@@ -160,11 +160,11 @@ DECLARE_SOA_COLUMN(NClustersMFT, nClustersMFT, uint8_t);  //!
 DECLARE_SOA_COLUMN(IsPrimary, isPrimary, bool);           //!
 DECLARE_SOA_COLUMN(IsCorrectMatch, isCorrectMatch, bool); //!
 
-DECLARE_SOA_COLUMN(NMFTs, nMFTs, uint16_t); //! number of MFTsa tracks per collision
+DECLARE_SOA_COLUMN(MultMFT, multMFT, uint16_t); //! number of MFTsa tracks per collision
 } // namespace emmlfwdtrack
 
 DECLARE_SOA_TABLE(EMFwdTracksForML, "AOD", "EMFWDTRKML", //!
-                  o2::soa::Index<>, collision::PosZ, /*collision::NumContrib,*/ mult::MultFT0C, /*evsel::NumTracksInTimeRange,*/ evsel::SumAmpFT0CInTimeRange, emmltrack::HadronicRate, emmlfwdtrack::NMFTs,
+                  o2::soa::Index<>, collision::PosZ, /*collision::NumContrib,*/ mult::MultFT0C, /*evsel::NumTracksInTimeRange,*/ evsel::SumAmpFT0CInTimeRange, emmltrack::HadronicRate, emmlfwdtrack::MultMFT,
                   // fwdtrack::TrackType,
 
                   emmlfwdtrack::Signed1PtMFTatMP, emmlfwdtrack::TglMFTatMP, emmlfwdtrack::PhiMFTatMP,
