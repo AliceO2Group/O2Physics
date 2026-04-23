@@ -417,15 +417,11 @@ struct HfTaskCharmHadronsV0FemtoDream {
         if (p1.childrenIds()[0] == p2.prong0Id() || p1.childrenIds()[0] == p2.prong1Id() || p1.childrenIds()[1] == p2.prong0Id() || p1.childrenIds()[1] == p2.prong1Id()) {
           continue;
         }
-      } else if constexpr (Channel == DecayChannel::LcToPKPi || Channel == DecayChannel::DplusToPiKPi) {
+      } else if constexpr (Channel == DecayChannel::LcToPKPi || Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::DstarToD0Pi) {
         if (p1.childrenIds()[0] == p2.prong0Id() || p1.childrenIds()[0] == p2.prong1Id() || p1.childrenIds()[0] == p2.prong2Id() || p1.childrenIds()[1] == p2.prong0Id() || p1.childrenIds()[1] == p2.prong1Id() || p1.childrenIds()[1] == p2.prong2Id()) {
           continue;
         }
-      } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
-        if (p1.childrenIds()[0] == p2.prong0Id() || p1.childrenIds()[0] == p2.prong1Id() || p1.childrenIds()[0] == p2.prong2Id() || p1.childrenIds()[1] == p2.prong0Id() || p1.childrenIds()[1] == p2.prong1Id() || p1.childrenIds()[1] == p2.prong2Id()) {
-          continue;
-        }
-      }
+      } 
       // v0 daughters selection
       const auto& posChild = femtoParts.iteratorAt(p1.index() - 2);
       const auto& negChild = femtoParts.iteratorAt(p1.index() - 1);
