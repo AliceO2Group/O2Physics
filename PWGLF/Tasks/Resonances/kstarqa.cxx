@@ -84,7 +84,7 @@ struct Kstarqa {
   struct : ConfigurableGroup {
     // Configurables for event selections
     Configurable<bool> isINELgt0{"isINELgt0", true, "INEL>0 selection"};
-    Configurable<bool> isINELgt0Gen{"IsINELgt0Gen", false, "Apply INEL>0 in Gen direclty from collisions in addition to already applied from pwglf::inelGt"};
+    Configurable<bool> isINELgt0Gen{"isINELgt0Gen", false, "Apply INEL>0 in Gen direclty from collisions in addition to already applied from pwglf::inelGt"};
     Configurable<bool> isSel8{"isSel8", false, "Event selection sel8"};
     Configurable<bool> isTriggerTVX{"isTriggerTVX", false, "TriggerTVX"};
     // Configurable<bool> isGoodZvtxFT0vsPV{"isGoodZvtxFT0vsPV", false, "IsGoodZvtxFT0vsPV"};
@@ -104,7 +104,7 @@ struct Kstarqa {
 
     Configurable<bool> isApplyDeepAngle{"isApplyDeepAngle", false, "Deep Angle cut"};
     // Configurable<float> deltaRCut{"deltaRCut", 0.0f, "Apply deltaR cut between two daughters"};
-    Configurable<bool> isApplyMCGenVz{"IsApplyMCGenVz", true, "Apply Vz cut on generated MC events"};
+    Configurable<bool> isApplyMCGenVz{"isApplyMCGenVz", true, "Apply Vz cut on generated MC events"};
 
     Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
     // Configurable<float> configOccCut{"configOccCut", 1000., "Occupancy cut"};
