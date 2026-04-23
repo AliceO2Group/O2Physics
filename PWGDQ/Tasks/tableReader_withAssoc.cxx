@@ -3770,6 +3770,22 @@ struct AnalysisDileptonTrack {
     }
   }
 
+  float GetSafeInterpolationWeight(TH2* hEff, float x, float y)
+  {
+    if (!hEff)
+      return 1.0;
+    float minX = hEff->GetXaxis()->GetBinCenter(1);
+    float maxX = hEff->GetXaxis()->GetBinCenter(hEff->GetXaxis()->GetNbins());
+
+    float minY = hEff->GetYaxis()->GetBinCenter(1);
+    float maxY = hEff->GetYaxis()->GetBinCenter(hEff->GetYaxis()->GetNbins());
+
+    float safeX = std::max(minX, std::min(x, maxX));
+    float safeY = std::max(minY, std::min(y, maxY));
+
+    return hEff->Interpolate(safeX, safeY);
+  }
+
   // Template function to run pair - hadron combinations
   template <int TCandidateType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks, typename TTrackAssocs, typename TDileptons>
   void runDileptonHadron(TEvent const& event, TTrackAssocs const& assocs, TTracks const& tracks, TDileptons const& dileptons)
@@ -3853,10 +3869,10 @@ struct AnalysisDileptonTrack {
             float hadron_eta = track.eta();
             float hadron_phi = track.phi();
             float deltaphi = RecoDecay::constrainAngle(dilepton_phi - hadron_phi, -0.5 * o2::constants::math::PI);
-            Effweight_rec = hAcceptance_rec->Interpolate(dilepton_eta - hadron_eta, deltaphi);
-            float Effdilepton = hEfficiency_dilepton->Interpolate(dilepton.pt(), dilepton_eta);
+            Effweight_rec = GetSafeInterpolationWeight(hAcceptance_rec, dilepton_eta - hadron_eta, deltaphi);
+            float Effdilepton = GetSafeInterpolationWeight(hEfficiency_dilepton, dilepton.rap(), dilepton.pt());
+            float Effhadron = GetSafeInterpolationWeight(hEfficiency_hadron, track.eta(), track.pt());
             float Masswindow = hMasswindow->Interpolate(dilepton.pt());
-            float Effhadron = hEfficiency_hadron->Interpolate(track.pt(), hadron_eta);
             Effweight_rec = Effweight_rec * Effdilepton * Effhadron * Masswindow;
           }
           std::vector<float> fTransRange = fConfigTransRange;
@@ -4087,10 +4103,10 @@ struct AnalysisDileptonTrack {
             float hadron_eta = track.eta();
             float hadron_phi = track.phi();
             float deltaphi = RecoDecay::constrainAngle(dilepton_phi - hadron_phi, -0.5 * o2::constants::math::PI);
-            Effweight_rec = hAcceptance_rec->Interpolate(dilepton_eta - hadron_eta, deltaphi);
-            float Effdilepton = hEfficiency_dilepton->Interpolate(dilepton.pt(), dilepton_eta);
+            Effweight_rec = GetSafeInterpolationWeight(hAcceptance_rec, dilepton_eta - hadron_eta, deltaphi);
+            float Effdilepton = GetSafeInterpolationWeight(hEfficiency_dilepton, dilepton.rap(), dilepton.pt());
+            float Effhadron = GetSafeInterpolationWeight(hEfficiency_hadron, track.eta(), track.pt());
             float Masswindow = hMasswindow->Interpolate(dilepton.pt());
-            float Effhadron = hEfficiency_hadron->Interpolate(track.pt(), hadron_eta);
             if (fConfigApplyEfficiencyME) {
               Effweight_rec = Effdilepton * Effhadron * Masswindow; // for the moment, apply the efficiency correction also for the mixed event pairs, but this can be changed in case we want to apply it only for the same event pairs
             } else {
