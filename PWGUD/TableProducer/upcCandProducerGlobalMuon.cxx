@@ -14,6 +14,7 @@
 /// \author Roman Lavicka, roman.lavicka@cern.ch
 /// \since  11.02.2026
 
+#include "Common/Core/fwdtrackUtilities.h"
 #include "PWGUD/Core/UPCCutparHolder.h"
 #include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/DataModel/UDTables.h"
@@ -55,6 +56,7 @@
 #include <map>
 #include <numeric>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 using namespace o2::framework;
@@ -64,6 +66,7 @@ struct UpcCandProducerGlobalMuon {
   bool fDoMC{false};
 
   std::map<int32_t, int32_t> fNewPartIDs;
+  std::map<uint32_t, bool> fBestMuonMatch;
 
   Produces<o2::aod::UDMcCollisions> udMCCollisions;
   Produces<o2::aod::UDMcParticles> udMCParticles;
@@ -97,6 +100,7 @@ struct UpcCandProducerGlobalMuon {
   Configurable<bool> fUseAbsDCA{"fUseAbsDCA", true, "Use absolute DCA in FwdDCAFitter"};
   Configurable<float> fMaxChi2MatchMCHMFT{"fMaxChi2MatchMCHMFT", 4.f, "Maximum chi2 for MCH-MFT matching quality filter"};
   Configurable<int> fBcWindowMCHMFT{"fBcWindowMCHMFT", 20, "BC window for searching MCH-MFT tracks around MCH-MID-MFT anchors"};
+  Configurable<bool> fKeepBestMuonMatch{"fKeepBestMuonMatch", true, "Keep only the best MCH-MFT match per MCH track (lowest chi2)"};
 
   using ForwardTracks = o2::soa::Join<o2::aod::FwdTracks, o2::aod::FwdTracksCov>;
 
@@ -384,13 +388,15 @@ struct UpcCandProducerGlobalMuon {
     return propmuon;
   }
 
-  bool addToFwdTable(int64_t candId, int64_t trackId, uint64_t gbc, float trackTime, ForwardTracks const& fwdTracks, const o2::aod::McFwdTrackLabels* mcFwdTrackLabels)
+  bool addToFwdTable(int64_t candId, int64_t trackId, uint64_t gbc, float trackTime,
+                     ForwardTracks const& fwdTracks, o2::aod::MFTTracks const& mftTracks,
+                     const o2::aod::McFwdTrackLabels* mcFwdTrackLabels)
   {
     const auto& track = fwdTracks.iteratorAt(trackId);
     float px, py, pz;
     int sign;
 
-    // NEW: Fill track type histogram
+    // Fill track type histogram
     histRegistry.fill(HIST("hTrackTypes"), track.trackType());
     if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack ||
         track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalForwardTrack) {
@@ -402,12 +408,16 @@ struct UpcCandProducerGlobalMuon {
                       track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalForwardTrack;
       o2::dataformats::GlobalFwdTrack pft;
       if (isGlobal && fEnableMFT) {
-        // For global tracks, use raw kinematics for cuts;
-        // the FwdDCAFitter handles proper vertex propagation
-        auto trackPar = fwdToTrackPar(track);
-        pft.setParameters(trackPar.getParameters());
-        pft.setZ(trackPar.getZ());
-        pft.setCovariances(trackPar.getCovariances());
+        // Refit global muon: propagate MCH component to vertex, combine with MFT spatial info
+        auto mchTrack = track.matchMCHTrack_as<ForwardTracks>();
+        auto propMuon = propagateToZero(mchTrack);
+        auto mfttrack = track.matchMFTTrack_as<o2::aod::MFTTracks>();
+        using SMatrix5 = ROOT::Math::SVector<double, 5>;
+        using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
+        SMatrix5 tpars(mfttrack.x(), mfttrack.y(), mfttrack.phi(), mfttrack.tgl(), mfttrack.signed1Pt());
+        SMatrix55 tcovs{};
+        o2::track::TrackParCovFwd mft{mfttrack.z(), tpars, tcovs, mfttrack.chi2()};
+        pft = o2::aod::fwdtrackutils::refitGlobalMuonCov(propMuon, mft);
       } else {
         pft = propagateToZero(track);
       }
@@ -495,7 +505,33 @@ struct UpcCandProducerGlobalMuon {
     return o2::track::TrackParCovFwd{track.z(), tpars, tcovs, track.chi2()};
   }
 
+  // Select the best MCH-MFT match per MCH track based on lowest chi2MatchMCHMFT.
+  // Multiple global tracks can share the same MCH track with different MFT matches;
+  // this function keeps only the best one to reduce combinatorial background.
+  void selectBestMuonMatches(ForwardTracks const& fwdTracks)
+  {
+    fBestMuonMatch.clear();
+    std::unordered_map<int, std::pair<float, int>> mCandidates;
+    for (const auto& muon : fwdTracks) {
+      if (static_cast<int>(muon.trackType()) < 2) {
+        auto muonID = muon.matchMCHTrackId();
+        auto chi2 = muon.chi2MatchMCHMFT();
+        if (mCandidates.find(muonID) == mCandidates.end()) {
+          mCandidates[muonID] = {chi2, muon.globalIndex()};
+        } else {
+          if (chi2 < mCandidates[muonID].first) {
+            mCandidates[muonID] = {chi2, muon.globalIndex()};
+          }
+        }
+      }
+    }
+    for (auto& pairCand : mCandidates) {
+      fBestMuonMatch[pairCand.second.second] = true;
+    }
+  }
+
   void createCandidates(ForwardTracks const& fwdTracks,
+                        o2::aod::MFTTracks const& mftTracks,
                         o2::aod::FwdTrkCls const& fwdTrkCls,
                         o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
                         o2::aod::BCs const& bcs,
@@ -580,6 +616,11 @@ struct UpcCandProducerGlobalMuon {
       vAmbFwdTrackIndexBCs[ambTr.globalIndex()] = ambTr.bcIds()[0];
     }
 
+    // Select best MCH-MFT match per MCH track before sorting into BC maps
+    if (fKeepBestMuonMatch) {
+      selectBestMuonMatches(fwdTracks);
+    }
+
     std::map<uint64_t, std::vector<int64_t>> mapGlobalBcsWithMCHMIDTrackIds;
     std::map<uint64_t, std::vector<int64_t>> mapGlobalBcsWithMCHTrackIds;
     std::map<uint64_t, std::vector<int64_t>> mapGlobalBcsWithGlobalMuonTrackIds; // MCH-MID-MFT (good timing from MID)
@@ -594,6 +635,13 @@ struct UpcCandProducerGlobalMuon {
           trackType != GlobalMuonTrack &&
           trackType != GlobalForwardTrack)
         continue;
+
+      // For global tracks, skip if not the best match for this MCH track
+      if (fKeepBestMuonMatch && static_cast<int>(trackType) < 2) {
+        if (fBestMuonMatch.find(fwdTrack.globalIndex()) == fBestMuonMatch.end()) {
+          continue;
+        }
+      }
 
       auto trackId = fwdTrack.globalIndex();
       int64_t indexBC = vAmbFwdTrackIndex[trackId] < 0 ? vColIndexBCs[fwdTrack.collisionId()] : vAmbFwdTrackIndexBCs[vAmbFwdTrackIndex[trackId]];
@@ -675,7 +723,7 @@ struct UpcCandProducerGlobalMuon {
         uint16_t numContrib = 0;
         double sumPx = 0., sumPy = 0., sumPz = 0., sumE = 0.;
         for (const auto& ianchor : vAnchorIds) {
-          if (!addToFwdTable(candId, ianchor, globalBcAnchor, 0., fwdTracks, mcFwdTrackLabels))
+          if (!addToFwdTable(candId, ianchor, globalBcAnchor, 0., fwdTracks, mftTracks, mcFwdTrackLabels))
             continue;
           const auto& trk = fwdTracks.iteratorAt(ianchor);
           double p2 = trk.px() * trk.px() + trk.py() * trk.py() + trk.pz() * trk.pz();
@@ -696,7 +744,7 @@ struct UpcCandProducerGlobalMuon {
 
         // Step 3: Write matched MCH-MFT tracks with adjusted track time
         for (const auto& [imchMft, gbc] : mapMchMftIdBc) {
-          if (!addToFwdTable(candId, imchMft, gbc, (gbc - globalBcAnchor) * o2::constants::lhc::LHCBunchSpacingNS, fwdTracks, mcFwdTrackLabels))
+          if (!addToFwdTable(candId, imchMft, gbc, (gbc - globalBcAnchor) * o2::constants::lhc::LHCBunchSpacingNS, fwdTracks, mftTracks, mcFwdTrackLabels))
             continue;
           const auto& trk = fwdTracks.iteratorAt(imchMft);
           double p2 = trk.px() * trk.px() + trk.py() * trk.py() + trk.pz() * trk.pz();
@@ -758,7 +806,7 @@ struct UpcCandProducerGlobalMuon {
       auto& vMuonIds = gbc_muids.second;
       // writing MCH-MID tracks
       for (const auto& imuon : vMuonIds) {
-        if (!addToFwdTable(candId, imuon, globalBcMid, 0., fwdTracks, mcFwdTrackLabels))
+        if (!addToFwdTable(candId, imuon, globalBcMid, 0., fwdTracks, mftTracks, mcFwdTrackLabels))
           continue;
         numContrib++;
         selTrackIds.push_back(imuon);
@@ -769,7 +817,7 @@ struct UpcCandProducerGlobalMuon {
       getMchTrackIds(globalBcMid, mapGlobalBcsWithMCHTrackIds, fBcWindowMCH, mapMchIdBc);
       // writing MCH-only tracks
       for (const auto& [imch, gbc] : mapMchIdBc) {
-        if (!addToFwdTable(candId, imch, gbc, (gbc - globalBcMid) * o2::constants::lhc::LHCBunchSpacingNS, fwdTracks, mcFwdTrackLabels))
+        if (!addToFwdTable(candId, imch, gbc, (gbc - globalBcMid) * o2::constants::lhc::LHCBunchSpacingNS, fwdTracks, mftTracks, mcFwdTrackLabels))
           continue;
         numContrib++;
         selTrackIds.push_back(imch);
@@ -816,6 +864,7 @@ struct UpcCandProducerGlobalMuon {
   }
 
   void processFwd(ForwardTracks const& fwdTracks,
+                  o2::aod::MFTTracks const& mftTracks,
                   o2::aod::FwdTrkCls const& fwdTrkCls,
                   o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
                   o2::aod::BCs const& bcs,
@@ -824,10 +873,11 @@ struct UpcCandProducerGlobalMuon {
                   o2::aod::Zdcs const& zdcs)
   {
     fDoMC = false;
-    createCandidates(fwdTracks, fwdTrkCls, ambFwdTracks, bcs, collisions, fv0s, zdcs, (o2::aod::McFwdTrackLabels*)nullptr);
+    createCandidates(fwdTracks, mftTracks, fwdTrkCls, ambFwdTracks, bcs, collisions, fv0s, zdcs, (o2::aod::McFwdTrackLabels*)nullptr);
   }
 
   void processFwdMC(ForwardTracks const& fwdTracks,
+                    o2::aod::MFTTracks const& mftTracks,
                     o2::aod::FwdTrkCls const& fwdTrkCls,
                     o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
                     o2::aod::BCs const& bcs,
@@ -840,7 +890,7 @@ struct UpcCandProducerGlobalMuon {
   {
     fDoMC = true;
     skimMCInfo(mcCollisions, mcParticles);
-    createCandidates(fwdTracks, fwdTrkCls, ambFwdTracks, bcs, collisions, fv0s, zdcs, &mcFwdTrackLabels);
+    createCandidates(fwdTracks, mftTracks, fwdTrkCls, ambFwdTracks, bcs, collisions, fv0s, zdcs, &mcFwdTrackLabels);
     fNewPartIDs.clear();
   }
 
