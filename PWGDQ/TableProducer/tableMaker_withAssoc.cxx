@@ -1480,9 +1480,9 @@ struct TableMaker {
         o2::track::TrackParCovFwd mftprop = VarManager::FwdToTrackPar(mfttrack, mfttrackcov);
         o2::dataformats::GlobalFwdTrack muonprop = VarManager::FwdToTrackPar(muontrack, muontrack);
         if (fConfigVariousOptions.fzMatching.value < 0.) {
-	  float bz = VarManager::GetMagneticField();
+          float bz = VarManager::GetMagneticField();
           mftprop = VarManager::PropagateFwd(mfttrack, mfttrackcov, fConfigVariousOptions.fzMatching.value);
-          muonprop =  o2::aod::fwdtrackutils::propagateMuon(muontrack, muontrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToMatchingPlane, fConfigVariousOptions.fzMatching.value, bz);
+          muonprop = o2::aod::fwdtrackutils::propagateMuon(muontrack, muontrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToMatchingPlane, fConfigVariousOptions.fzMatching.value, bz);
         }
         std::vector<float> output;
         std::vector<float> inputML = matchingMlResponse.getInputFeaturesGlob(muon, muonprop, mftprop, collision);
