@@ -2778,7 +2778,7 @@ struct tofSpectra {
             track.tpcChi2NCl() < minChi2PerClusterTPC ||
             track.itsChi2NCl() > maxChi2PerClusterITS ||
             !passesDCAxyCut(track) ||
-            std::abs(track.dcaZ()) >  maxDcaZ ||
+            std::abs(track.dcaZ()) > maxDcaZ ||
             std::abs(track.eta()) > trkselOptions.cfgCutEtaMax.value ||
             track.tpcCrossedRowsOverFindableCls() < minNCrossedRowsOverFindableClustersTPC ||
             track.tpcNClsFound() < minTPCNClsFound ||
