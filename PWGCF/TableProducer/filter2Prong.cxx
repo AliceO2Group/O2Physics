@@ -64,6 +64,7 @@ enum LambdaPid { kLambda = 0,
 
 struct Filter2Prong {
   SliceCache cache;
+  Preslice<aod::CFTrackRefs> perCollisionCFTrackRefs = aod::track::collisionId;
 
   O2_DEFINE_CONFIGURABLE(cfgVerbosity, int, 0, "Verbosity level (0 = major, 1 = per collision)")
   O2_DEFINE_CONFIGURABLE(cfgYMax, float, -1.0f, "Maximum candidate rapidity")
@@ -799,11 +800,12 @@ struct Filter2Prong {
   PROCESS_SWITCH(Filter2Prong, processDataPhiV0, "Process data Phi and V0 candidates with invariant mass method", false);
 
   using DerivedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities>;
-  void processDataPhiMixed(DerivedCollisions const& collisions, aod::CFTrackRefs const& cftracks)
+  void processDataPhiMixed(DerivedCollisions const& collisions, Filter2Prong::PIDTrack const& /*tracksP*/, aod::CFTrackRefs const& cftracks)
   {
     auto getMultiplicity = [](auto const& col) {
       return col.multiplicity();
     };
+
     using BinningTypeDerived = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
     BinningTypeDerived configurableBinningDerived{{getMultiplicity}, {axisVertexMix, axisMultiplicityMix}, true};
     auto tracksTuple = std::make_tuple(cftracks, cftracks);
