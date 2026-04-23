@@ -70,7 +70,7 @@ constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarMana
 
 struct dalitzPairing {
   Produces<o2::aod::DalitzBits> dalitzbits;
-  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
+  Preslice<MyBarrelTracks> perCollision = aod::track::collisionId;
 
   // Configurables
   // cuts
@@ -399,7 +399,7 @@ struct dalitzPairing {
     }
   }
 
-  void processFullTracks(MyEvents const& collisions, aod::BCsWithTimestamps const&, soa::Filtered<MyBarrelTracks> const& filteredTracks, aod::Tracks const& tracks)
+  void processFullTracks(MyEvents const& collisions, aod::BCsWithTimestamps const&, soa::Filtered<MyBarrelTracks> const& filteredTracks, MyBarrelTracks const& tracks)
   {
     const int pairType = VarManager::kDecayToEE;
     fDalitzmap.clear();
