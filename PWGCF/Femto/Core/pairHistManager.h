@@ -100,7 +100,8 @@ enum PairHist {
 
   // mixing qa
   kSeNpart1VsNpart2,                         // number of unique particles 1 vs unique number of particles 2 in each same event
-  kMeMixingWindow,                           // mixing window size
+  kMeMixingWindowRaw,                        // mixing window size
+  kMeMixingWindowEffective,                  // mixing window size, counting event pairs with particle pairs
   kMeNpart1VsNpart2,                         // number of unique particles 1 vs number of unique particles 2 in each mixed event
   kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, // correlation of event properties in each mixing bin
 
@@ -233,7 +234,8 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
       {kTrueMultVsMult, o2::framework::HistType::kTH2F, "hTrueMultVsMult", "Multiplicity_{True} vs Multiplicity; Multiplicity_{True} ;  Multiplicity"},
       {kTrueCentVsCent, o2::framework::HistType::kTH2F, "hTrueCentVsCent", "Centrality_{True} vs Centrality; Centrality_{True} (%); Centrality (%)"},
       {kSeNpart1VsNpart2, o2::framework::HistType::kTH2F, "hSeNpart1VsNpart2", "# unique particle 1 vs # unique particle 2 in each same event; # partilce 1; # particle 2"},
-      {kMeMixingWindow, o2::framework::HistType::kTH1F, "hMeMixingWindow", "Mixing Window; Mixing Windown ; Entries"},
+      {kMeMixingWindowRaw, o2::framework::HistType::kTH1F, "hMeMixingWindowRaw", "Raw Mixing Window; Raw Mixing Window ; Entries"},
+      {kMeMixingWindowEffective, o2::framework::HistType::kTH1F, "hMeMixingWindowEffective", "Effective Mixing Window; Effective Mixing Windown ; Entries"},
       {kMeNpart1VsNpart2, o2::framework::HistType::kTH2F, "hMeNpart1VsNpart2", "# unique particle 1 vs # unique partilce 2 in each mixing bin; # partilce 1; # particle 2"},
       {kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, o2::framework::HistType::kTHnSparseF, "hVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2", "Mixing bins; V_{z,1} (cm); multiplicity_{1}; centrality_{1} (%); V_{z,2} (cm); multiplicity_{2}; centrality_{2} (%)"},
     }};
@@ -276,7 +278,8 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
     {kKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent, {confAnalysis.kstar, confAnalysis.mt, confAnalysis.massInv, confAnalysis.pt1, confAnalysis.pt2, confAnalysis.multiplicity, confAnalysis.centrality}},                           \
     {kDalitz, {confAnalysis.kstar, confAnalysis.dalitzMtot, confAnalysis.dalitzM12, confAnalysis.dalitzM13}},                                                                                                                \
     {kSeNpart1VsNpart2, {confMixing.particleBinning, confMixing.particleBinning}},                                                                                                                                           \
-    {kMeMixingWindow, {confMixing.particleBinning}},                                                                                                                                                                         \
+    {kMeMixingWindowRaw, {confMixing.particleBinning}},                                                                                                                                                                      \
+    {kMeMixingWindowEffective, {confMixing.particleBinning}},                                                                                                                                                                \
     {kMeNpart1VsNpart2, {confMixing.particleBinning, confMixing.particleBinning}},                                                                                                                                           \
     {kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, {confMixing.vtxBins, confMixing.multBins, confMixing.centBins, confMixing.vtxBins, confMixing.multBins, confMixing.centBins}},
 
@@ -599,7 +602,9 @@ class PairHistManager
   void resetTrackedParticlesPerEvent()
   {
     mParticles1PerEvent.clear();
+    mParticles1PerEvent.reserve(100);
     mParticles2PerEvent.clear();
+    mParticles2PerEvent.reserve(100);
   }
 
   void fillMixingQaSe()
@@ -616,10 +621,11 @@ class PairHistManager
     }
   }
 
-  void fillMixingQaMePerMixingBin(int windowSize)
+  void fillMixingQaMePerMixingBin(int windowSizeRaw, int windowSizeEffective)
   {
-    if (mEventMixingQa) {
-      mHistogramRegistry->fill(HIST(prefix) + HIST(MixingQaDir) + HIST(getHistName(kMeMixingWindow, HistTable)), windowSize);
+    if (mPairCorrelationQa) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(MixingQaDir) + HIST(getHistName(kMeMixingWindowRaw, HistTable)), windowSizeRaw);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(MixingQaDir) + HIST(getHistName(kMeMixingWindowEffective, HistTable)), windowSizeEffective);
     }
   }
 
@@ -732,7 +738,8 @@ class PairHistManager
   {
     std::string mcDir = std::string(prefix) + std::string(MixingQaDir);
     if (mPairCorrelationQa) {
-      mHistogramRegistry->add(mcDir + getHistNameV2(kMeMixingWindow, HistTable), getHistDesc(kMeMixingWindow, HistTable), getHistType(kMeMixingWindow, HistTable), {Specs.at(kMeMixingWindow)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kMeMixingWindowRaw, HistTable), getHistDesc(kMeMixingWindowRaw, HistTable), getHistType(kMeMixingWindowRaw, HistTable), {Specs.at(kMeMixingWindowRaw)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kMeMixingWindowEffective, HistTable), getHistDesc(kMeMixingWindowEffective, HistTable), getHistType(kMeMixingWindowEffective, HistTable), {Specs.at(kMeMixingWindowEffective)});
       mHistogramRegistry->add(mcDir + getHistNameV2(kMeNpart1VsNpart2, HistTable), getHistDesc(kMeNpart1VsNpart2, HistTable), getHistType(kMeNpart1VsNpart2, HistTable), {Specs.at(kMeNpart1VsNpart2)});
     }
     if (mEventMixingQa) {
