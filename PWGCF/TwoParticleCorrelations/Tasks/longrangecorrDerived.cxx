@@ -61,6 +61,7 @@ struct LongrangecorrDerived {
   Configurable<float> cfgVtxCut{"cfgVtxCut", 10.0f, "Vertex Z range to consider"};
   Configurable<bool> isUseCentEst{"isUseCentEst", false, "Centrality based classification"};
   Configurable<int> isUseDataLikeMult{"isUseDataLikeMult", 0, "Data like mult/cent classification"};
+  Configurable<bool> useGainCorr{"useGainCorr", true, "use gain calibration"};
 
   Configurable<float> cfgFv0Cut{"cfgFv0Cut", 50.0f, "FV0A threshold"};
   Configurable<float> cfgFt0aCut{"cfgFt0aCut", 100.0f, "FT0A threshold"};
@@ -262,7 +263,10 @@ struct LongrangecorrDerived {
     for (auto const& triggerTrack : triggers) {
       auto trigAmpl = 1.0f;
       if constexpr (std::experimental::is_detected<HasFt0, typename TTriggers::iterator>::value) {
-        trigAmpl = triggerTrack.gainAmplitude();
+        if (useGainCorr)
+          trigAmpl = triggerTrack.gainAmplitude();
+        else
+          trigAmpl = triggerTrack.amplitude();
       } else {
         trigAmpl = 1.0;
       }
@@ -286,7 +290,10 @@ struct LongrangecorrDerived {
       for (auto const& assoTrack : assocs) {
         auto assoAmpl = 1.0f;
         if constexpr (std::experimental::is_detected<HasFt0, typename TAssocs::iterator>::value) {
-          assoAmpl = assoTrack.gainAmplitude();
+          if (useGainCorr)
+            assoAmpl = assoTrack.gainAmplitude();
+          else
+            assoAmpl = assoTrack.amplitude();
         } else {
           assoAmpl = 1.0f;
         }
