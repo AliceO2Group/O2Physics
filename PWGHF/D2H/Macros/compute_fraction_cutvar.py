@@ -137,7 +137,8 @@ def main(config):
     hist_corrfrac_prompt = hist_rawy[0].Clone("hCorrFracPrompt")
     hist_corrfrac_nonprompt = hist_rawy[0].Clone("hCorrFracNonPrompt")
     hist_minimisation_status = hist_rawy[0].Clone("hMinimizationStatus")
-    for histo in hist_corry_prompt, hist_corry_nonprompt, hist_covariance_pnp, hist_covariance_pp, hist_covariance_npnp, hist_corrfrac_prompt, hist_corrfrac_nonprompt, hist_minimisation_status:
+    hist_red_chi2  = hist_rawy[0].Clone("hChi2OverNdf")
+    for histo in hist_corry_prompt, hist_corry_nonprompt, hist_covariance_pnp, hist_covariance_pp, hist_covariance_npnp, hist_corrfrac_prompt, hist_corrfrac_nonprompt, hist_minimisation_status, hist_red_chi2:
         histo.Reset()
     hist_corry_prompt.GetYaxis().SetTitle("corrected yields prompt")
     hist_corry_nonprompt.GetYaxis().SetTitle("corrected yields non-prompt")
@@ -147,6 +148,7 @@ def main(config):
     hist_corrfrac_prompt.GetYaxis().SetTitle("corrected fraction prompt")
     hist_corrfrac_nonprompt.GetYaxis().SetTitle("corrected fraction non-prompt")
     hist_minimisation_status.GetYaxis().SetTitle("minimisation status")
+    hist_red_chi2.GetYaxis().SetTitle("#chi^{2}/ndf")
     hist_minimisation_status_title = ""
     for min_status in MinimisationStatus:
         hist_minimisation_status_title += (str(min_status.value) + " = " + min_status.name + ", ")
@@ -168,6 +170,7 @@ def main(config):
     set_object_style(hist_covariance_pp)
     set_object_style(hist_covariance_npnp)
     set_object_style(hist_minimisation_status)
+    set_object_style(hist_red_chi2)
     set_object_style(
         hist_corrfrac_prompt,
         color=ROOT.kRed + 1,
@@ -259,6 +262,7 @@ def main(config):
             hist_corrfrac_nonprompt.SetBinContent(ipt + 1, corr_frac_nonprompt[0])
             hist_corrfrac_nonprompt.SetBinError(ipt + 1, corr_frac_nonprompt[1])
             hist_minimisation_status.SetBinContent(ipt + 1, max(status, all_vectors_monotonous))
+            hist_red_chi2.SetBinContent(ipt + 1, minimiser.get_red_chi2())
             if cfg["central_efficiency"]["computerawfrac"]:
                 raw_frac_prompt = minimiser.get_raw_prompt_fraction(
                     hist_central_effp.GetBinContent(ipt + 1), hist_central_effnp.GetBinContent(ipt + 1)
@@ -370,7 +374,9 @@ def main(config):
     if is_save_to_root_file[ObjectToSave.CorrectedFraction]:
         hist_corrfrac_prompt.Write()
         hist_corrfrac_nonprompt.Write()
-    if is_save_to_root_file[ObjectToSave.MinimisationStatus]: hist_minimisation_status.Write()
+    if is_save_to_root_file[ObjectToSave.MinimisationStatus]:
+        hist_minimisation_status.Write()
+        hist_red_chi2.Write()
     if cfg["central_efficiency"]["computerawfrac"]:
         hist_frac_raw_prompt.Write()
         hist_frac_raw_nonprompt.Write()
