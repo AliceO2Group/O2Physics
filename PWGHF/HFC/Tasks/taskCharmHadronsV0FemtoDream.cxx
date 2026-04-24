@@ -417,11 +417,7 @@ struct HfTaskCharmHadronsV0FemtoDream {
         if (p1.childrenIds()[0] == p2.prong0Id() || p1.childrenIds()[0] == p2.prong1Id() || p1.childrenIds()[1] == p2.prong0Id() || p1.childrenIds()[1] == p2.prong1Id()) {
           continue;
         }
-      } else if constexpr (Channel == DecayChannel::LcToPKPi || Channel == DecayChannel::DplusToPiKPi) {
-        if (p1.childrenIds()[0] == p2.prong0Id() || p1.childrenIds()[0] == p2.prong1Id() || p1.childrenIds()[0] == p2.prong2Id() || p1.childrenIds()[1] == p2.prong0Id() || p1.childrenIds()[1] == p2.prong1Id() || p1.childrenIds()[1] == p2.prong2Id()) {
-          continue;
-        }
-      } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
+      } else if constexpr (Channel == DecayChannel::LcToPKPi || Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::DstarToD0Pi) {
         if (p1.childrenIds()[0] == p2.prong0Id() || p1.childrenIds()[0] == p2.prong1Id() || p1.childrenIds()[0] == p2.prong2Id() || p1.childrenIds()[1] == p2.prong0Id() || p1.childrenIds()[1] == p2.prong1Id() || p1.childrenIds()[1] == p2.prong2Id()) {
           continue;
         }
