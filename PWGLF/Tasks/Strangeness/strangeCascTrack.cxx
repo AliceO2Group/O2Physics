@@ -688,7 +688,7 @@ struct StrangeCascTrack {
 
     // statistics - compare gen and reco pt and rapidity
     int charmBeautyCodesLow = 4000;
-    int charmBeautyCodeHigh = 6000;
+    int charmBeautyCodesHigh = 6000;
     if constexpr (requires { collision.straMCCollisionId(); }) {
       if constexpr (requires { stdCasc.has_cascMCCore(); }) {
         auto cascmccore = stdCasc.template cascMCCore_as<DerMCGenCascades>();
