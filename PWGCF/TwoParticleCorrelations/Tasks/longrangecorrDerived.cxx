@@ -61,6 +61,7 @@ struct LongrangecorrDerived {
   Configurable<float> cfgVtxCut{"cfgVtxCut", 10.0f, "Vertex Z range to consider"};
   Configurable<bool> isUseCentEst{"isUseCentEst", false, "Centrality based classification"};
   Configurable<int> isUseDataLikeMult{"isUseDataLikeMult", 0, "Data like mult/cent classification"};
+  Configurable<bool> useGainCorr{"useGainCorr", true, "use gain calibration"};
 
   Configurable<float> cfgFv0Cut{"cfgFv0Cut", 50.0f, "FV0A threshold"};
   Configurable<float> cfgFt0aCut{"cfgFt0aCut", 100.0f, "FT0A threshold"};
@@ -259,17 +260,22 @@ struct LongrangecorrDerived {
   template <CorrelationContainer::CFStep step, typename TTarget, typename TTriggers, typename TAssocs>
   void fillCorrHist(TTarget target, TTriggers const& triggers, TAssocs const& assocs, bool mixing, float vz, float multiplicity, float eventWeight)
   {
-    auto trigAmpl = 1.0f;
     for (auto const& triggerTrack : triggers) {
+      auto trigAmpl = 1.0f;
+      if constexpr (std::experimental::is_detected<HasFt0, typename TTriggers::iterator>::value) {
+        if (useGainCorr)
+          trigAmpl = triggerTrack.gainAmplitude();
+        else
+          trigAmpl = triggerTrack.amplitude();
+      } else {
+        trigAmpl = 1.0;
+      }
       if constexpr (std::experimental::is_detected<HasTpcTrack, typename TTriggers::iterator>::value) {
         if (cfgPidMask != 0 && (cfgPidMask & (1u << static_cast<uint32_t>(triggerTrack.trackType()))) == 0u)
           continue;
       } else if constexpr (std::experimental::is_detected<HasV0Track, typename TTriggers::iterator>::value) {
         if (cfgV0Mask != 0 && (cfgV0Mask & (1u << static_cast<uint32_t>(triggerTrack.v0Type()))) == 0u)
           continue;
-      }
-      if constexpr (std::experimental::is_detected<HasFt0, typename TTriggers::iterator>::value) {
-        trigAmpl *= triggerTrack.gainAmplitude();
       }
       if (!mixing) {
         fillTrigTrackQA(triggerTrack);
@@ -281,10 +287,15 @@ struct LongrangecorrDerived {
           histos.fill(HIST("Trig_hist"), vz, multiplicity, triggerTrack.pt(), 1.0, eventWeight * trigAmpl);
         }
       }
-      auto assoAmpl = 1.0f;
       for (auto const& assoTrack : assocs) {
+        auto assoAmpl = 1.0f;
         if constexpr (std::experimental::is_detected<HasFt0, typename TAssocs::iterator>::value) {
-          assoAmpl *= assoTrack.gainAmplitude();
+          if (useGainCorr)
+            assoAmpl = assoTrack.gainAmplitude();
+          else
+            assoAmpl = assoTrack.amplitude();
+        } else {
+          assoAmpl = 1.0f;
         }
         float deltaPhi = RecoDecay::constrainAngle(triggerTrack.phi() - assoTrack.phi(), -PIHalf);
         float deltaEta = triggerTrack.eta() - assoTrack.eta();
@@ -294,7 +305,6 @@ struct LongrangecorrDerived {
         } else {
           histos.fill(HIST("deltaEta_deltaPhi_mixed"), deltaPhi, deltaEta, eventWeight * trigAmpl * assoAmpl);
         }
-
         if constexpr (std::experimental::is_detected<HasFt0, typename TTriggers::iterator>::value) {
           target->getPairHist()->Fill(step, vz, multiplicity, 1.0, 1.0, deltaPhi, deltaEta, 1.0, eventWeight * trigAmpl * assoAmpl);
         } else if constexpr (std::experimental::is_detected<HasInvMass, typename TTriggers::iterator>::value) {

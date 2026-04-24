@@ -19,7 +19,9 @@
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
@@ -29,7 +31,10 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/PID.h>
@@ -44,6 +49,7 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <experimental/type_traits>
 #include <iterator>
 #include <memory>
@@ -64,6 +70,7 @@ enum LambdaPid { kLambda = 0,
 
 struct Filter2Prong {
   SliceCache cache;
+  Preslice<aod::CFTrackRefs> perCollisionCFTrackRefs = aod::track::collisionId;
 
   O2_DEFINE_CONFIGURABLE(cfgVerbosity, int, 0, "Verbosity level (0 = major, 1 = per collision)")
   O2_DEFINE_CONFIGURABLE(cfgYMax, float, -1.0f, "Maximum candidate rapidity")
@@ -799,11 +806,12 @@ struct Filter2Prong {
   PROCESS_SWITCH(Filter2Prong, processDataPhiV0, "Process data Phi and V0 candidates with invariant mass method", false);
 
   using DerivedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities>;
-  void processDataPhiMixed(DerivedCollisions const& collisions, aod::CFTrackRefs const& cftracks)
+  void processDataPhiMixed(DerivedCollisions const& collisions, Filter2Prong::PIDTrack const& /*tracksP*/, aod::CFTrackRefs const& cftracks)
   {
     auto getMultiplicity = [](auto const& col) {
       return col.multiplicity();
     };
+
     using BinningTypeDerived = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
     BinningTypeDerived configurableBinningDerived{{getMultiplicity}, {axisVertexMix, axisMultiplicityMix}, true};
     auto tracksTuple = std::make_tuple(cftracks, cftracks);

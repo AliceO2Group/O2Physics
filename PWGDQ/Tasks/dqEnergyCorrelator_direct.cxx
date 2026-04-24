@@ -475,6 +475,23 @@ struct AnalysisEnergyCorrelator {
       LOG(fatal) << "Problem getting histograms from the TList object with efficiencies!";
     }
   }
+
+  float GetSafeInterpolationWeight(TH2* hEff, float x, float y)
+  {
+    if (!hEff)
+      return 1.0;
+    float minX = hEff->GetXaxis()->GetBinCenter(1);
+    float maxX = hEff->GetXaxis()->GetBinCenter(hEff->GetXaxis()->GetNbins());
+
+    float minY = hEff->GetYaxis()->GetBinCenter(1);
+    float maxY = hEff->GetYaxis()->GetBinCenter(hEff->GetYaxis()->GetNbins());
+
+    float safeX = std::max(minX, std::min(x, maxX));
+    float safeY = std::max(minY, std::min(y, maxY));
+
+    return hEff->Interpolate(safeX, safeY);
+  }
+
   template <bool MixedEvent, uint32_t TTrackFillMap, typename TTrack1, typename TTrack2, typename THadron, typename TEvent>
   void runDileptonHadron(TTrack1 const& track1, TTrack2 const& track2, int iEleCut,
                          THadron const& hadron, TEvent const& event, aod::McParticles const& /*mcParticles*/)
@@ -503,16 +520,18 @@ struct AnalysisEnergyCorrelator {
     float Effweight_rec = 1.0f;
     float Accweight_gen = 1.0f;
     if (fConfigDileptonHadronOptions.fConfigApplyEfficiency) {
+      float dilepton_pt = VarManager::fgValues[VarManager::kPt];
       float dilepton_eta = VarManager::fgValues[VarManager::kEta];
       float dilepton_phi = VarManager::fgValues[VarManager::kPhi];
+      float dilepton_rap = VarManager::fgValues[VarManager::kRap];
       float hadron_eta = hadron.eta();
       float hadron_phi = hadron.phi();
       float deltaphi = RecoDecay::constrainAngle(dilepton_phi - hadron_phi, -0.5 * o2::constants::math::PI);
-      Effweight_rec = hAcceptance_rec->Interpolate(dilepton_eta - hadron_eta, deltaphi);
-      Accweight_gen = hAcceptance_gen->Interpolate(dilepton_eta - hadron_eta, deltaphi);
-      float Effdilepton = hEfficiency_dilepton->Interpolate(VarManager::fgValues[VarManager::kPt], dilepton_eta);
-      float Masswindow = hMasswindow->Interpolate(VarManager::fgValues[VarManager::kPt]);
-      float Effhadron = hEfficiency_hadron->Interpolate(hadron.pt(), hadron.eta());
+      float Effweight_rec = GetSafeInterpolationWeight(hAcceptance_rec, dilepton_eta - hadron_eta, deltaphi);
+      float Accweight_gen = GetSafeInterpolationWeight(hAcceptance_gen, dilepton_eta - hadron_eta, deltaphi);
+      float Effdilepton = GetSafeInterpolationWeight(hEfficiency_dilepton, dilepton_rap, dilepton_pt);
+      float Effhadron = GetSafeInterpolationWeight(hEfficiency_hadron, hadron.pt(), hadron_eta);
+      float Masswindow = hMasswindow->Interpolate(dilepton_pt);
       Accweight_gen = Accweight_gen * Effdilepton * Effhadron;
       if (fConfigDileptonHadronOptions.fConfigApplyEfficiencyME) {
         Effweight_rec = Effdilepton * Effhadron * Masswindow; // for the moment, apply the efficiency correction also for the mixed event pairs, but this can be changed in case we want to apply it only for the same event pairs

@@ -153,36 +153,44 @@ DECLARE_SOA_COLUMN(YMFTatMP, yMFTatMP, float);       //! y of MFT track in MFT-M
 DECLARE_SOA_COLUMN(XErrMFTatMP, xErrMFTatMP, float); //! x error of MFT track in MFT-MCH-MID track at matching plane
 DECLARE_SOA_COLUMN(YErrMFTatMP, yErrMFTatMP, float); //! y error of MFT track in MFT-MCH-MID track at matching plane
 
-DECLARE_SOA_COLUMN(Chi2MFT, chi2MFT, float);              //! chi2/ndf of MFT track
-DECLARE_SOA_COLUMN(Chi2MCHMID, chi2MCHMID, float);        //! chi2/ndf of MCH-MID track
-DECLARE_SOA_COLUMN(Chi2MFTMCHMID, chi2MFTMCHMID, float);  //! chi2/ndf of MFT-MCH-MID track
-DECLARE_SOA_COLUMN(NClustersMFT, nClustersMFT, uint8_t);  //!
-DECLARE_SOA_COLUMN(IsPrimary, isPrimary, bool);           //!
-DECLARE_SOA_COLUMN(IsCorrectMatch, isCorrectMatch, bool); //!
+DECLARE_SOA_COLUMN(Chi2MFT, chi2MFT, float);                //! chi2/ndf of MFT track
+DECLARE_SOA_COLUMN(Chi2MCHMID, chi2MCHMID, float);          //! chi2/ndf of MCH-MID track
+DECLARE_SOA_COLUMN(Chi2MFTMCHMID, chi2MFTMCHMID, float);    //! chi2/ndf of MFT-MCH-MID track
+DECLARE_SOA_COLUMN(NClustersMFT, nClustersMFT, uint8_t);    //!
+DECLARE_SOA_COLUMN(IsPrimaryMFT, isPrimaryMFT, bool);       //!
+DECLARE_SOA_COLUMN(IsPrimaryMCHMID, isPrimaryMCHMID, bool); //!
+DECLARE_SOA_COLUMN(IsCorrectMatch, isCorrectMatch, bool);   //!
+DECLARE_SOA_COLUMN(PdgCodeMFT, pdgCodeMFT, int);            //!
+DECLARE_SOA_COLUMN(PdgCodeMCHMID, pdgCodeMCHMID, int);      //!
+
+DECLARE_SOA_COLUMN(MultMFT, multMFT, uint16_t); //! number of MFTsa tracks per collision
 } // namespace emmlfwdtrack
 
 DECLARE_SOA_TABLE(EMFwdTracksForML, "AOD", "EMFWDTRKML", //!
-                  o2::soa::Index<>, collision::PosZ, collision::NumContrib, mult::MultFT0C, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, emmltrack::HadronicRate,
-                  fwdtrack::TrackType,
+                  o2::soa::Index<>, collision::PosZ, /*collision::NumContrib,*/ mult::MultFT0C, /*evsel::NumTracksInTimeRange,*/ evsel::SumAmpFT0CInTimeRange, emmltrack::HadronicRate, emmlfwdtrack::MultMFT,
 
                   emmlfwdtrack::Signed1PtMFTatMP, emmlfwdtrack::TglMFTatMP, emmlfwdtrack::PhiMFTatMP,
-                  emmlfwdtrack::Signed1PtErrMFTatMP, emmlfwdtrack::TglErrMFTatMP, emmlfwdtrack::PhiErrMFTatMP,
                   emmlfwdtrack::XMFTatMP, emmlfwdtrack::YMFTatMP,
-                  emmlfwdtrack::XErrMFTatMP, emmlfwdtrack::YErrMFTatMP,
 
                   emmlfwdtrack::Signed1PtMCHMIDatMP, emmlfwdtrack::TglMCHMIDatMP, emmlfwdtrack::PhiMCHMIDatMP,
-                  emmlfwdtrack::Signed1PtErrMCHMIDatMP, emmlfwdtrack::TglErrMCHMIDatMP, emmlfwdtrack::PhiErrMCHMIDatMP,
                   emmlfwdtrack::XMCHMIDatMP, emmlfwdtrack::YMCHMIDatMP,
-                  emmlfwdtrack::XErrMCHMIDatMP, emmlfwdtrack::YErrMCHMIDatMP,
 
-                  // fwdtrack::FwdDcaX, fwdtrack::FwdDcaY,
-                  fwdtrack::NClusters, fwdtrack::PDca, fwdtrack::RAtAbsorberEnd,
-                  fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT,
-                  fwdtrack::MFTClusterSizesAndTrackFlags, emmlfwdtrack::Chi2MFTMCHMID, emmlfwdtrack::Chi2MCHMID, emmlfwdtrack::Chi2MFT, emmlfwdtrack::NClustersMFT,
-                  mcparticle::PdgCode, emmlfwdtrack::IsPrimary, emmlfwdtrack::IsCorrectMatch, mcparticle::Pt, mcparticle::Eta, mcparticle::Phi);
+                  fwdtrack::Chi2MatchMCHMFT,
+                  emmlfwdtrack::PdgCodeMFT, emmlfwdtrack::IsPrimaryMFT,
+                  emmlfwdtrack::PdgCodeMCHMID, emmlfwdtrack::IsPrimaryMCHMID,
+                  emmlfwdtrack::IsCorrectMatch);
 
 // iterators
 using EMFwdTrackForML = EMFwdTracksForML::iterator;
+
+DECLARE_SOA_TABLE(EMFwdTrackErrsForML, "AOD", "EMFWDTRKERRML", //! Joinable with EMFwdTracksForML
+                  /*emmlfwdtrack::Signed1PtErrMFTatMP,*/ emmlfwdtrack::TglErrMFTatMP, emmlfwdtrack::PhiErrMFTatMP,
+                  emmlfwdtrack::XErrMFTatMP, emmlfwdtrack::YErrMFTatMP,
+                  /*emmlfwdtrack::Signed1PtErrMCHMIDatMP,*/ emmlfwdtrack::TglErrMCHMIDatMP, emmlfwdtrack::PhiErrMCHMIDatMP,
+                  emmlfwdtrack::XErrMCHMIDatMP, emmlfwdtrack::YErrMCHMIDatMP);
+
+// iterators
+using EMFwdTrackErrForML = EMFwdTrackErrsForML::iterator;
 
 } // namespace o2::aod
 

@@ -102,7 +102,8 @@ struct FlowMc {
   O2_DEFINE_CONFIGURABLE(cfgTrackDensityCorrSlopeFactor, float, 1.0f, "A factor to scale the track density efficiency slope")
   O2_DEFINE_CONFIGURABLE(cfgRecoEvRejectMC, bool, false, "reject both MC and Reco events when reco do not pass")
   O2_DEFINE_CONFIGURABLE(cfgRecoEvSel8, bool, false, "require sel8 for reconstruction events")
-  O2_DEFINE_CONFIGURABLE(cfgRecoEvkIsGoodITSLayersAll, bool, false, "require kIsGoodITSLayersAll for reconstruction events")
+  O2_DEFINE_CONFIGURABLE(cfgRecoEvkIsGoodITSLayers, bool, true, "cut time intervals with dead ITS staves")
+  O2_DEFINE_CONFIGURABLE(cfgRecoEvkIsGoodITSLayersFlag, int, 0, "0: kIsGoodITSLayersAll; 1: kIsGoodITSLayer0123; 2: kIsGoodITSLayer3")
   O2_DEFINE_CONFIGURABLE(cfgRecoEvkNoSameBunchPileup, bool, false, "require kNoSameBunchPileup for reconstruction events")
   O2_DEFINE_CONFIGURABLE(cfgRecoEvSelkIsGoodZvtxFT0vsPV, bool, false, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference, use this cut at low multiplicities with caution")
   O2_DEFINE_CONFIGURABLE(cfgRecoEvSelkNoITSROFrameBorder, bool, false, "reject events at ITS ROF border")
@@ -151,6 +152,12 @@ struct FlowMc {
   TF1* funcV2;
   TF1* funcV3;
   TF1* funcV4;
+  enum GoodITSLayersFlag {
+    kITSLayersAll,
+    kITSLayer0123,
+    kITSLayer3,
+    kCount_ITSLayersFlag
+  };
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -426,10 +433,15 @@ struct FlowMc {
       // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
       return 0;
     }
-    if (cfgRecoEvkIsGoodITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    if (cfgRecoEvkIsGoodITSLayers) {
       // from Jan 9 2025 AOT meeting
       // cut time intervals with dead ITS staves
-      return 0;
+      if (cfgRecoEvkIsGoodITSLayersFlag == kITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
+        return 0;
+      if (cfgRecoEvkIsGoodITSLayersFlag == kITSLayer0123 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123))
+        return 0;
+      if (cfgRecoEvkIsGoodITSLayersFlag == kITSLayer3 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer3))
+        return 0;
     }
     if (cfgRecoEvSelkIsGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference

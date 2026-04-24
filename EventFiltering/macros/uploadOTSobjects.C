@@ -75,8 +75,11 @@ void uploadOTSobjects(std::string inputList, std::string passName, bool useAlien
     if (!hCounterTVX) {
       hCounterTVX = static_cast<TH1*>(scalersFile->Get("lumi-task/hCounterTVX"));
       if (!hCounterTVX) {
-        std::cout << "No hCounterTVX histogram found in the file, skipping upload for run " << runString << std::endl;
-        continue;
+        hCounterTVX = static_cast<TH1*>(scalersFile->Get("eventselection-run3/luminosity/hCounterTVX"));
+        if (!hCounterTVX) {
+          std::cout << "No hCounterTVX histogram found in the file, skipping upload for run " << runString << std::endl;
+          continue;
+        }
       }
     }
     api.storeAsTFile(hCounterTVX, baseCCDBpath + "InspectedTVX", metadata, duration.first, duration.second + 1);

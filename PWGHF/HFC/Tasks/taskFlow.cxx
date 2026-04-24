@@ -134,6 +134,10 @@ enum MftTrackSelectionStep {
   Eta,
   Cluster,
   Pt,
+  DCAxy,
+  DCAz,
+  IsLTF,
+  IsCA,
   NMftTrackSelectionSteps
 };
 
@@ -267,6 +271,8 @@ struct HfTaskFlow {
   struct : ConfigurableGroup {
     std::string prefix = "ConfigMft_group";
     Configurable<int> cutBestCollisionId{"cutBestCollisionId", 0, "cut on the best collision Id used in a filter"};
+    Configurable<bool> cutOnDcaXY{"cutOnDcaXY", false, "if true, cut on DCA XY"};
+    Configurable<bool> cutOnDcaZ{"cutOnDcaZ", false, "if true, cut on DCA Z"};
     Configurable<float> etaMftTrackMax{"etaMftTrackMax", -2.4f, "Maximum value for the eta of MFT tracks when used in cut function"};
     Configurable<float> etaMftTrackMin{"etaMftTrackMin", -3.36f, "Minimum value for the eta of MFT tracks when used in cut function"};
     Configurable<float> etaMftTrackMaxFilter{"etaMftTrackMaxFilter", -2.0f, "Maximum value for the eta of MFT tracks when used in filter"};
@@ -277,6 +283,8 @@ struct HfTaskFlow {
     Configurable<float> ptMftTrackMax{"ptMftTrackMax", 10.0f, "max value of MFT tracks pT when used in cut function"};
     Configurable<float> ptMftTrackMin{"ptMftTrackMin", 0.f, "min value of MFT tracks pT when used in cut function"};
     Configurable<bool> useMftPtCut{"useMftPtCut", false, "if true, use the Mft pt function cut"};
+    Configurable<bool> useOnlyCATracks{"useOnlyCATracks", false, "if true, use strictly MFT tracks reconstructed with CA algo."};
+    Configurable<bool> useOnlyLTFTracks{"useOnlyLTFTracks", false, "if true, use strictly MFT tracks reconstructed with LTF algo."};
   } configMft;
 
   //   configurables for MFT tracks
@@ -298,7 +306,7 @@ struct HfTaskFlow {
   o2::fv0::Geometry* fv0Det{};
   std::vector<float> cstFT0RelGain{};
   RCTFlagsChecker rctChecker;
-  RCTFlagsChecker correlationAnalysisRctChecker{kFT0Bad, kITSBad, kTPCBadTracking, kMFTBad};
+  RCTFlagsChecker correlationAnalysisRctChecker{kFT0Bad, kITSBad, kTPCBadTracking, kTPCBadPID, kMFTBad};
 
   // =========================
   //      using declarations : DATA
@@ -346,7 +354,7 @@ struct HfTaskFlow {
 
   // Filters below will be used for uncertainties
   Filter mftTrackCollisionIdFilter = (aod::fwdtrack::bestCollisionId >= 0);
-  Filter mftTrackDcaXYFilter = (nabs(aod::fwdtrack::bestDCAXY) < configMft.mftMaxDCAxy);
+  // Filter mftTrackDcaXYFilter = (nabs(aod::fwdtrack::bestDCAXY) < configMft.mftMaxDCAxy);
   // Filter mftTrackDcaZFilter = (nabs(aod::fwdtrack::bestDCAZ) < configMft.mftMaxDCAz);
 
   // =========================
@@ -357,6 +365,9 @@ struct HfTaskFlow {
   Preslice<HfCandidatesSelLc> perColLcs = aod::track::collisionId;
   Preslice<FilteredMftTracks> perColMftTracks = o2::aod::fwdtrack::collisionId;
   Preslice<FilteredTracksWDcaSel> perColTracks = aod::track::collisionId;
+
+  PresliceUnsorted<soa::SmallGroups<aod::BestCollisionsFwd>> perColReassociated2dTracks = o2::aod::fwdtrack::collisionId;
+  PresliceUnsorted<soa::SmallGroups<aod::BestCollisionsFwd3d>> perColReassociated3dTracks = o2::aod::fwdtrack::collisionId;
 
   //  configurables for containers
   //  TODO: flow of HF will need to be done vs. invariant mass, in the signal and side-band regions
@@ -433,6 +444,10 @@ struct HfTaskFlow {
     labelsMftTracksSelection[MftTrackSelectionStep::Eta] = "MFT tracks after eta selection";
     labelsMftTracksSelection[MftTrackSelectionStep::Cluster] = "MFT tracks after clusters selection";
     labelsMftTracksSelection[MftTrackSelectionStep::Pt] = "MFT tracks after pT selection";
+    labelsMftTracksSelection[MftTrackSelectionStep::DCAxy] = "MFT tracks after DCAxy selection";
+    labelsMftTracksSelection[MftTrackSelectionStep::DCAz] = "MFT tracks after DCAz selection";
+    labelsMftTracksSelection[MftTrackSelectionStep::IsLTF] = "Linear Track Finder MFT tracks";
+    labelsMftTracksSelection[MftTrackSelectionStep::IsCA] = "Cellular Automaton MFT tracks";
     registry.get<TH1>(HIST("Data/Mft/hMftTracksSelection"))->SetMinimum(0);
 
     for (int iBin = 0; iBin < MftTrackSelectionStep::NMftTrackSelectionSteps; iBin++) {
@@ -477,8 +492,8 @@ struct HfTaskFlow {
     //      Event histograms
     //  =========================
 
-    rctChecker.init(configCollision.setRCTFlagCheckerLabel, configCollision.requireZDCCheck, configCollision.requireRCTFlagCheckerLimitAcceptanceAsBad);
-    correlationAnalysisRctChecker.init({kFT0Bad, kITSBad, kTPCBadTracking, kMFTBad}, configCollision.requireZDCCheck, configCollision.requireRCTFlagCheckerLimitAcceptanceAsBad);
+    rctChecker.init(configCollision.setRCTFlagCheckerLabel, configCollision.requireZDCCheck, configCollision.requireRCTFlagCheckerLimitAcceptanceAsBad, true);
+    correlationAnalysisRctChecker.init({kFT0Bad, kITSBad, kTPCBadTracking, kTPCBadPID, kMFTBad}, configCollision.requireZDCCheck, configCollision.requireRCTFlagCheckerLimitAcceptanceAsBad, true);
 
     registry.add("Data/hVtxZ", "v_{z} (cm)", {HistType::kTH1D, {configAxis.axisVertex}});
     registry.add("Data/hNTracks", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
@@ -1090,7 +1105,7 @@ struct HfTaskFlow {
   // I tried to put it as a filter, but filters for normal TPC tracks also apply to MFT tracks I think
   // and it seems that they are not compatible
   template <typename TTrack>
-  bool isAcceptedMftTrack(TTrack const& mftTrack, bool fillHistograms)
+  bool isAcceptedMftTrack(TTrack const& mftTrack, float dcaXY, float dcaZ, bool fillHistograms)
   {
     // cut on the eta of MFT tracks
     if (mftTrack.eta() > configMft.etaMftTrackMax || mftTrack.eta() < configMft.etaMftTrackMin) {
@@ -1117,6 +1132,41 @@ struct HfTaskFlow {
 
     if (fillHistograms) {
       registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::Pt);
+    }
+
+    if (configMft.cutOnDcaXY && std::abs(dcaXY) > configMft.mftMaxDCAxy) {
+      return false;
+    }
+
+    if (fillHistograms) {
+      registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::DCAxy);
+    }
+    if (configMft.cutOnDcaZ && std::abs(dcaZ) > configMft.mftMaxDCAz) {
+      return false;
+    }
+
+    if (fillHistograms) {
+      registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::DCAz);
+    }
+
+    // cut on the track algorithm of MFT tracks
+    if (mftTrack.isCA()) {
+      if (fillHistograms) {
+        registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::IsCA);
+      }
+
+      if (configMft.useOnlyLTFTracks) {
+        return false;
+      }
+
+    } else {
+      if (fillHistograms) {
+        registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::IsLTF);
+      }
+
+      if (configMft.useOnlyCATracks) {
+        return false;
+      }
     }
 
     return true;
@@ -1234,11 +1284,11 @@ struct HfTaskFlow {
           if (sameEvent && loopCounter == 1) { // To avoid double counting, we fill the plots only the first time
             registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::NoSelection);
 
-            if (!isAcceptedMftTrack(track2, true)) {
+            if (!isAcceptedMftTrack(track2, 0.f, 0.f, true)) {
               continue;
             }
           } else { // After the first loop, we don't fill the plots anymore but still do the selection
-            if (!isAcceptedMftTrack(track2, false)) {
+            if (!isAcceptedMftTrack(track2, 0.f, 0.f, false)) {
               continue;
             }
           }
@@ -1420,9 +1470,27 @@ struct HfTaskFlow {
         }
 
         auto reassociatedMftTrack = track2.template mfttrack_as<FilteredMftTracks>();
+        auto reassociatedMftTrackDcaXY = 0.f;
+        auto reassociatedMftTrackDcaZ = 0.f;
 
-        if (!isAcceptedMftTrack(reassociatedMftTrack, false)) {
-          continue;
+        if constexpr (std::is_same_v<soa::SmallGroups<aod::BestCollisionsFwd>, TTracksAssoc>) {
+          reassociatedMftTrackDcaXY = track2.bestDCAXY();
+        }
+        if constexpr (std::is_same_v<soa::SmallGroups<aod::BestCollisionsFwd3d>, TTracksAssoc>) {
+          reassociatedMftTrackDcaXY = track2.bestDCAXY();
+          reassociatedMftTrackDcaZ = track2.bestDCAZ();
+        }
+
+        if (sameEvent && loopCounter == 1) { // To avoid double counting, we fill the plots only the first time
+          registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::NoSelection);
+
+          if (!isAcceptedMftTrack(reassociatedMftTrack, reassociatedMftTrackDcaXY, reassociatedMftTrackDcaZ, true)) {
+            continue;
+          }
+        } else { // After the first loop, we don't fill the plots anymore but still do the selection
+          if (!isAcceptedMftTrack(reassociatedMftTrack, reassociatedMftTrackDcaXY, reassociatedMftTrackDcaZ, false)) {
+            continue;
+          }
         }
 
         // Fill QA plot for MFT tracks after physical selection (eta + clusters)
@@ -1531,8 +1599,16 @@ struct HfTaskFlow {
           continue;
         }
       } else if constexpr (std::is_same_v<FilteredMftTracks, TTracksTrig>) {
-        if (!isAcceptedMftTrack(track1, true)) {
-          continue;
+        if (sameEvent && loopCounter == 1) { // To avoid double counting, we fill the plots only the first time
+          registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::NoSelection);
+
+          if (!isAcceptedMftTrack(track1, 0.f, 0.f, true)) {
+            continue;
+          }
+        } else { // After the first loop, we don't fill the plots anymore but still do the selection
+          if (!isAcceptedMftTrack(track1, 0.f, 0.f, false)) {
+            continue;
+          }
         }
       }
 
@@ -1727,9 +1803,27 @@ struct HfTaskFlow {
       loopCounter++;
 
       auto reassociatedMftTrack = track1.template mfttrack_as<FilteredMftTracks>();
+      auto reassociatedMftTrackDcaXY = 0.f;
+      auto reassociatedMftTrackDcaZ = 0.f;
 
-      if (!isAcceptedMftTrack(reassociatedMftTrack, true)) {
-        continue;
+      if constexpr (std::is_same_v<soa::SmallGroups<aod::BestCollisionsFwd>, TTracksAssoc>) {
+        reassociatedMftTrackDcaXY = track1.bestDCAXY();
+      }
+      if constexpr (std::is_same_v<soa::SmallGroups<aod::BestCollisionsFwd3d>, TTracksAssoc>) {
+        reassociatedMftTrackDcaXY = track1.bestDCAXY();
+        reassociatedMftTrackDcaZ = track1.bestDCAZ();
+      }
+
+      if (sameEvent && loopCounter == 1) { // To avoid double counting, we fill the plots only the first time
+        registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::NoSelection);
+
+        if (!isAcceptedMftTrack(reassociatedMftTrack, reassociatedMftTrackDcaXY, reassociatedMftTrackDcaZ, true)) {
+          continue;
+        }
+      } else { // After the first loop, we don't fill the plots anymore but still do the selection
+        if (!isAcceptedMftTrack(reassociatedMftTrack, reassociatedMftTrackDcaXY, reassociatedMftTrackDcaZ, false)) {
+          continue;
+        }
       }
 
       if (isAmbiguousMftTrack(track1, false)) {
@@ -1899,6 +1993,87 @@ struct HfTaskFlow {
       corrContainer->fillEvent(multiplicity, step);
       fillCorrelations(corrContainer, step, tracks1, tracks2, multiplicity, collision1.posZ(), false, getMagneticField(bc.timestamp()));
     }
+  }
+
+  template <typename TCollisions, typename TTracksTrig, typename TTracksAssoc, typename TPresliceTrigger, typename TPresliceAssociated>
+  void mixCollisionsBis(TCollisions const& collisions, CorrelationContainer::CFStep step,
+                        TTracksTrig const& tracks1, TTracksAssoc const& tracks2, TPresliceTrigger const& presliceTrigger, TPresliceAssociated const& presliceAssociated,
+                        OutputObj<CorrelationContainer>& corrContainer, aod::BCsWithTimestamps const&)
+  {
+    auto getMultiplicity = [this](FilteredCollisionsWSelMult::iterator const& collision) {
+      auto multiplicity = getMultiplicityEstimator(collision, false);
+      return multiplicity;
+    };
+
+    using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
+    MixedBinning const binningOnVtxAndMult{{getMultiplicity}, {configAxis.binsMixingVertex, configAxis.binsMixingMultiplicity}, true};
+
+    for (auto const& [collision1, collision2] : soa::selfCombinations(binningOnVtxAndMult, configTask.nMixedEvents, -1, collisions, collisions)) {
+
+      if (!(isAcceptedCollision(collision1, false))) {
+        continue;
+      }
+      if (!(isAcceptedCollision(collision2, false))) {
+        continue;
+      }
+      if (collision1.globalIndex() == collision2.globalIndex()) {
+        continue;
+      }
+      const auto multiplicity = getMultiplicityEstimator(collision1, false);
+      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+        return;
+      }
+
+      auto bc = collision1.template bc_as<aod::BCsWithTimestamps>();
+      auto slicedTriggerTracks = tracks1.sliceBy(presliceTrigger, collision1.globalIndex());
+      auto slicedAssociatedTracks = tracks2.sliceBy(presliceAssociated, collision2.globalIndex());
+
+      corrContainer->fillEvent(multiplicity, step);
+      fillCorrelations(corrContainer, step, slicedTriggerTracks, slicedAssociatedTracks, multiplicity, collision1.posZ(), false, getMagneticField(bc.timestamp()));
+    }
+  }
+
+  template <typename TCollisions, typename TTracksTrig, typename TTracksAssoc, typename TPresliceTrigger, typename TPresliceAssociated>
+  void mixCollisionsReassociatedMftTracks(TCollisions const& collisions, CorrelationContainer::CFStep step,
+                                          TTracksTrig const& tracks1, TTracksAssoc const& tracks2, TPresliceTrigger const& presliceTrigger, TPresliceAssociated const& presliceAssociated,
+                                          OutputObj<CorrelationContainer>& corrContainer, bool cutAmbiguousTracks)
+  {
+    auto getMultiplicity = [this](FilteredCollisionsWSelMult::iterator const& collision) {
+      auto multiplicity = getMultiplicityEstimator(collision, false);
+      return multiplicity;
+    };
+
+    using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
+    MixedBinning const binningOnVtxAndMult{{getMultiplicity}, {configAxis.binsMixingVertex, configAxis.binsMixingMultiplicity}, true};
+
+    for (auto const& [collision1, collision2] : soa::selfCombinations(binningOnVtxAndMult, configTask.nMixedEvents, -1, collisions, collisions)) {
+
+      if (!isAcceptedCollision(collision1) || !isAcceptedCollision(collision2)) {
+        continue;
+      }
+      if (collision1.globalIndex() == collision2.globalIndex()) {
+        continue;
+      }
+      const auto multiplicity = getMultiplicityEstimator(collision1, false);
+      if (multiplicity < configCollision.minMultiplicity || multiplicity > configCollision.maxMultiplicity) {
+        return;
+      }
+
+      // if TPC-MFT cases
+      if constexpr (std::is_same_v<FilteredTracksWDcaSel, TTracksTrig>) {
+        auto slicedTriggerTracks = tracks1.sliceBy(presliceTrigger, collision1.globalIndex());
+        auto slicedAssociatedTracks = tracks2.sliceBy(presliceAssociated, collision2.globalIndex());
+
+        corrContainer->fillEvent(multiplicity, step);
+        fillCorrelationsReassociatedMftTracks(corrContainer, step, slicedTriggerTracks, slicedAssociatedTracks, multiplicity, collision1.posZ(), false, cutAmbiguousTracks);
+      } else if ((collision1.has_foundFT0() && collision2.has_foundFT0())) { // if MFT-FT0A cases
+        auto slicedTriggerTracks = tracks1.sliceBy(presliceTrigger, collision1.globalIndex());
+        const auto& ft0 = collision2.foundFT0();
+
+        corrContainer->fillEvent(multiplicity, step);
+        fillCorrelationsFITReassociatedMftTracks(corrContainer, step, slicedTriggerTracks, ft0, tracks2, multiplicity, collision1.posZ(), false, cutAmbiguousTracks, isFT0A);
+      }
+    } // end of for loop
   }
 
   template <typename TCollisions, typename TTracksTrig, typename TTracksAssoc, typename TPreslice>
@@ -2857,6 +3032,42 @@ struct HfTaskFlow {
   }
   PROCESS_SWITCH(HfTaskFlow, processMixedTpcMftChCh, "DATA : Process mixed-event correlations for TPC-MFT h-h case", false);
 
+  void processMixedTpcMftChChBis(FilteredCollisionsWSelMult const& collisions,
+                                 FilteredTracksWDcaSel const& tracks,
+                                 FilteredMftTracks const& mftTracks,
+                                 aod::BCsWithTimestamps const& bcs)
+  {
+    mixCollisionsBis(collisions, CorrelationContainer::kCFStepReconstructed, tracks, mftTracks, perColTracks, perColMftTracks, mixedEvent, bcs);
+  }
+  PROCESS_SWITCH(HfTaskFlow, processMixedTpcMftChChBis, "DATA : Process mixed-event correlations for TPC-MFT h-h case", false);
+
+  void processMixedTpcMftChChReassociated2d(FilteredCollisionsWSelMult const& collisions,
+                                            FilteredTracksWDcaSel const& tracks,
+                                            FilteredMftTracks const& /*mftTracks*/,
+                                            soa::SmallGroups<aod::BestCollisionsFwd> const& reassociated2dMftTracks)
+  {
+    mixCollisionsReassociatedMftTracks(collisions, CorrelationContainer::kCFStepReconstructed, tracks, reassociated2dMftTracks, perColTracks, perColReassociated2dTracks, mixedEvent, false);
+  }
+  PROCESS_SWITCH(HfTaskFlow, processMixedTpcMftChChReassociated2d, "DATA : Process mixed-event correlations for TPC-MFT h-h case", false);
+
+  void processMixedTpcMftChChReassociated3d(FilteredCollisionsWSelMult const& collisions,
+                                            FilteredTracksWDcaSel const& tracks,
+                                            FilteredMftTracks const& /*mftTracks*/,
+                                            soa::SmallGroups<aod::BestCollisionsFwd3d> const& reassociated3dMftTracks)
+  {
+    mixCollisionsReassociatedMftTracks(collisions, CorrelationContainer::kCFStepReconstructed, tracks, reassociated3dMftTracks, perColTracks, perColReassociated3dTracks, mixedEvent, false);
+  }
+  PROCESS_SWITCH(HfTaskFlow, processMixedTpcMftChChReassociated3d, "DATA : Process mixed-event correlations for TPC-MFT h-h case", false);
+
+  void processMixedTpcMftChChNonAmbiguous(FilteredCollisionsWSelMult const& collisions,
+                                          FilteredTracksWDcaSel const& tracks,
+                                          FilteredMftTracks const& /*mftTracks*/,
+                                          soa::SmallGroups<aod::BestCollisionsFwd> const& reassociated2dMftTracks)
+  {
+    mixCollisionsReassociatedMftTracks(collisions, CorrelationContainer::kCFStepReconstructed, tracks, reassociated2dMftTracks, perColTracks, perColReassociated2dTracks, mixedEvent, true);
+  }
+  PROCESS_SWITCH(HfTaskFlow, processMixedTpcMftChChNonAmbiguous, "DATA : Process mixed-event correlations for TPC-MFT h-h case", false);
+
   // =====================================
   //    DATA : process mixed event correlations: TPC-MFT HF-h case for D0
   // =====================================
@@ -2979,6 +3190,33 @@ struct HfTaskFlow {
     mixCollisionsFIT(collisions, CorrelationContainer::kCFStepReconstructed, mftTracks, ft0s, perColMftTracks, mixedEvent, isFT0A);
   }
   PROCESS_SWITCH(HfTaskFlow, processMixedMftFt0aChCh, "DATA : Process mixed-event correlations for MFT-FT0-A h-h case", false);
+
+  void processMixedMftFt0aChChReassociated2d(FilteredCollisionsWSelMult const& collisions,
+                                             FilteredMftTracks const& /*mftTracks*/,
+                                             soa::SmallGroups<aod::BestCollisionsFwd> const& reassociated2dMftTracks,
+                                             aod::FT0s const& ft0s)
+  {
+    mixCollisionsReassociatedMftTracks(collisions, CorrelationContainer::kCFStepReconstructed, reassociated2dMftTracks, ft0s, perColReassociated2dTracks, perColReassociated2dTracks, mixedEvent, false);
+  }
+  PROCESS_SWITCH(HfTaskFlow, processMixedMftFt0aChChReassociated2d, "DATA : Process mixed-event correlations for MFT-FT0-A h-h case", false);
+
+  void processMixedMftFt0aChChReassociated3d(FilteredCollisionsWSelMult const& collisions,
+                                             FilteredMftTracks const& /*mftTracks*/,
+                                             soa::SmallGroups<aod::BestCollisionsFwd3d> const& reassociated3dMftTracks,
+                                             aod::FT0s const& ft0s)
+  {
+    mixCollisionsReassociatedMftTracks(collisions, CorrelationContainer::kCFStepReconstructed, reassociated3dMftTracks, ft0s, perColReassociated3dTracks, perColReassociated3dTracks, mixedEvent, false);
+  }
+  PROCESS_SWITCH(HfTaskFlow, processMixedMftFt0aChChReassociated3d, "DATA : Process mixed-event correlations for MFT-FT0-A h-h case", false);
+
+  void processMixedMftFt0aChChNonAmbiguous(FilteredCollisionsWSelMult const& collisions,
+                                           FilteredMftTracks const& /*mftTracks*/,
+                                           soa::SmallGroups<aod::BestCollisionsFwd> const& reassociated2dMftTracks,
+                                           aod::FT0s const& ft0s)
+  {
+    mixCollisionsReassociatedMftTracks(collisions, CorrelationContainer::kCFStepReconstructed, reassociated2dMftTracks, ft0s, perColReassociated2dTracks, perColReassociated2dTracks, mixedEvent, true);
+  }
+  PROCESS_SWITCH(HfTaskFlow, processMixedMftFt0aChChNonAmbiguous, "DATA : Process mixed-event correlations for MFT-FT0-A h-h case", false);
 
   // =====================================
   //    DATA : process mixed event correlations: TPC-FT0C ch part. - ch. part. case

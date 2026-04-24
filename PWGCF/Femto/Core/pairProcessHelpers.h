@@ -281,7 +281,7 @@ void processSameEvent(T1 const& SliceParticle1,
   PairHistManager.fillMixingQaSe();
 }
 
-// process mixed event
+// mixed event in data
 template <modes::Mode mode,
           typename T1,
           typename T2,
@@ -304,54 +304,79 @@ void processMixedEvent(T1 const& Collisions,
                        T9& CprManager,
                        T10& PcManager)
 {
-  bool firstBin = true;
-  int windowSize = 0;
-  PairHistManager.resetTrackedParticlesPerEvent();
-  auto pairGenerator = o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions);
-  for (auto pairIterator = pairGenerator.begin(); pairIterator != pairGenerator.end(); pairIterator++) {
-    auto const& [collision1, collision2] = *pairIterator;
-    if (pairIterator.isNewWindow()) { // is true for the first bin, so we skip
-      if (!firstBin) {
-        // we fill histograms after we finish processing one mixing bin
-        // the very first bin is considered a new window, so we skp it
-        PairHistManager.fillMixingQaMePerMixingBin(windowSize);
+  int64_t lastCollisionIndex = -1;
+  int windowSizeRaw = 0;
+  int windowSizeEffective = 0;
+
+  for (auto const& [collision1, collision2] : o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions)) {
+
+    // --- new window ---
+    if (collision1.globalIndex() != lastCollisionIndex) {
+      if (lastCollisionIndex != -1) {
+        PairHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
       }
-      windowSize = pairIterator.currentWindowNeighbours();
-      firstBin = false;
+      windowSizeRaw = 0;
+      windowSizeEffective = 0;
+      lastCollisionIndex = collision1.globalIndex();
     }
+
+    ++windowSizeRaw;
+
     if (collision1.magField() != collision2.magField()) {
-      LOG(warn) << "Tried to mixng to events with different magntic field. This should not happen...";
+      LOG(warn) << "Tried mixing events with different magnetic field.";
       continue;
     }
+
     CprManager.setMagField(collision1.magField());
+
     auto sliceParticle1 = Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache);
+
     auto sliceParticle2 = Partition2->sliceByCached(o2::aod::femtobase::stored::fColId, collision2.globalIndex(), cache);
 
     PairHistManager.resetTrackedParticlesPerEvent();
+
+    if (sliceParticle1.size() == 0 || sliceParticle2.size() == 0) {
+      PairHistManager.fillMixingQaMePerEvent();
+      continue;
+    }
+
+    bool hasValidPair = false;
     PairHistManager.fillMixingQaMe(collision1, collision2);
     for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(sliceParticle1, sliceParticle2))) {
-      // pair cleaning
+
       if (!PcManager.isCleanPair(p1, p2, TrackTable)) {
         continue;
       }
-      // Close pair rejection
+
       CprManager.setPair(p1, p2, TrackTable);
       if (CprManager.isClosePair()) {
         continue;
       }
+
       PairHistManager.setPair(p1, p2, TrackTable, collision1, collision2);
       CprManager.fill(PairHistManager.getKstar());
+
       if (PairHistManager.checkPairCuts()) {
-        PairHistManager.template fill<mode>();
+        hasValidPair = true;
         PairHistManager.trackParticlesPerEvent(p1, p2);
+        PairHistManager.template fill<mode>();
       }
     }
+
+    if (hasValidPair) {
+      ++windowSizeEffective;
+    }
+
     PairHistManager.fillMixingQaMePerEvent();
   }
-  PairHistManager.fillMixingQaMePerMixingBin(windowSize); // fill last window
+
+  // --- final window ---
+  if (windowSizeRaw > 0) {
+    PairHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
+  }
 }
 
-// process mixed event with mc information
+// process mixed event in mc
 template <modes::Mode mode,
           typename T1,
           typename T2,
@@ -386,64 +411,80 @@ void processMixedEvent(T1 const& Collisions,
                        T15& CprManager,
                        T16& PcManager)
 {
-  bool firstBin = true;
-  int windowSize = 0;
-  PairHistManager.resetTrackedParticlesPerEvent();
-  auto pairGenerator = o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions);
-  for (auto pairIterator = pairGenerator.begin(); pairIterator != pairGenerator.end(); ++pairIterator) {
-    auto const& [collision1, collision2] = *pairIterator;
-    //  handle mixing windows (same as data)
-    if (pairIterator.isNewWindow()) {
-      if (!firstBin) {
-        PairHistManager.fillMixingQaMePerMixingBin(windowSize);
+  int64_t lastCollisionIndex = -1;
+  int windowSizeRaw = 0;
+  int windowSizeEffective = 0;
+
+  for (auto const& [collision1, collision2] : o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions)) {
+    if (collision1.globalIndex() != lastCollisionIndex) {
+      if (lastCollisionIndex != -1) {
+        PairHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
       }
-      windowSize = pairIterator.currentWindowNeighbours();
-      firstBin = false;
+      windowSizeRaw = 0;
+      windowSizeEffective = 0;
+      lastCollisionIndex = collision1.globalIndex();
     }
+
+    ++windowSizeRaw;
+
     if (collision1.magField() != collision2.magField()) {
-      LOG(warn) << "Tried to mixng to events with different magntic field. This should not happen...";
+      LOG(warn) << "Tried mixing events with different magnetic field.";
       continue;
     }
+
     CprManager.setMagField(collision1.magField());
 
-    auto sliceParticle1 = Partition1->sliceByCached(
-      o2::aod::femtobase::stored::fColId,
-      collision1.globalIndex(),
-      cache);
-    auto sliceParticle2 = Partition2->sliceByCached(
-      o2::aod::femtobase::stored::fColId,
-      collision2.globalIndex(),
-      cache);
+    auto sliceParticle1 = Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache);
+
+    auto sliceParticle2 = Partition2->sliceByCached(o2::aod::femtobase::stored::fColId, collision2.globalIndex(), cache);
 
     PairHistManager.resetTrackedParticlesPerEvent();
+
+    if (sliceParticle1.size() == 0 || sliceParticle2.size() == 0) {
+      PairHistManager.fillMixingQaMePerEvent();
+      continue;
+    }
+
+    bool hasValidPair = false;
     PairHistManager.fillMixingQaMe(collision1, collision2);
-    for (auto const& [p1, p2] :
-         o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(sliceParticle1, sliceParticle2))) {
-      // particle cleaning (MC-specific)
+
+    for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(sliceParticle1, sliceParticle2))) {
+
       if (!ParticleCleaner1.isClean(p1, mcParticles, mcMothers, mcPartonicMothers) ||
           !ParticleCleaner2.isClean(p2, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
       }
-      // pair cleaning
+
       if (!PcManager.isCleanPair(p1, p2, TrackTable)) {
         continue;
       }
-      // close pair rejection
+
       CprManager.setPair(p1, p2, TrackTable);
       if (CprManager.isClosePair()) {
         continue;
       }
+
       PairHistManager.setPairMc(p1, p2, TrackTable, mcParticles, collision1, collision2, mcCollisions);
+
       CprManager.fill(PairHistManager.getKstar());
+
       if (PairHistManager.checkPairCuts()) {
-        PairHistManager.template fill<mode>();
+        hasValidPair = true;
         PairHistManager.trackParticlesPerEvent(p1, p2);
+        PairHistManager.template fill<mode>();
       }
     }
+
+    if (hasValidPair) {
+      ++windowSizeEffective;
+    }
+
     PairHistManager.fillMixingQaMePerEvent();
   }
-  //  final window
-  PairHistManager.fillMixingQaMePerMixingBin(windowSize);
+
+  if (windowSizeRaw > 0) {
+    PairHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
+  }
 }
 
 } // namespace pairprocesshelpers

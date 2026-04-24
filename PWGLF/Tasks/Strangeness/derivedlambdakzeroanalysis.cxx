@@ -218,6 +218,10 @@ struct derivedlambdakzeroanalysis {
     Configurable<bool> skipTPConly{"skipTPConly", false, "skip V0s comprised of at least one TPC only prong"};
     Configurable<bool> requirePosITSonly{"requirePosITSonly", false, "require that positive track is ITSonly (overrides TPC quality)"};
     Configurable<bool> requireNegITSonly{"requireNegITSonly", false, "require that negative track is ITSonly (overrides TPC quality)"};
+    Configurable<bool> requirePosTPConly{"requirePosTPConly", false, "require that positive track is TPConly (overrides ITS-TOF quality)"};
+    Configurable<bool> requireNegTPConly{"requireNegTPConly", false, "require that negative track is TPConly (overrides ITS-TOF quality)"};
+    Configurable<bool> requirePosDeepSec{"requirePosDeepSec", false, "require that positive track is a deep secondary (overrides ITS quality)"};
+    Configurable<bool> requireNegDeepSec{"requireNegDeepSec", false, "require that negative track is a deep secondary (overrides ITS quality)"};
     Configurable<bool> rejectPosITSafterburner{"rejectPosITSafterburner", false, "reject positive track formed out of afterburner ITS tracks"};
     Configurable<bool> rejectNegITSafterburner{"rejectNegITSafterburner", false, "reject negative track formed out of afterburner ITS tracks"};
     Configurable<bool> requirePosITSafterburnerOnly{"requirePosITSafterburnerOnly", false, "require positive track formed out of afterburner ITS tracks"};
@@ -418,6 +422,10 @@ struct derivedlambdakzeroanalysis {
                               selNegGoodITSTrack, // at least min # ITS clusters
                               selPosItsOnly,
                               selNegItsOnly,
+                              selPosTPCOnly,
+                              selNegTPCOnly,
+                              selPosDeepSec,
+                              selNegDeepSec,
                               selPosNotTPCOnly,
                               selNegNotTPCOnly,
                               selConsiderK0Short,    // for mc tagging
@@ -530,6 +538,31 @@ struct derivedlambdakzeroanalysis {
     if (v0Selections.requirePosITSonly) {
       BITSET(maskTrackProperties, selPosItsOnly);
       BITSET(maskTrackProperties, selPosGoodITSTrack);
+    } else if (v0Selections.requirePosTPConly) {
+      BITSET(maskTrackProperties, selPosTPCOnly);
+      BITSET(maskTrackProperties, selPosGoodTPCTrack);
+    } else if (v0Selections.requirePosDeepSec) {
+      BITSET(maskTrackProperties, selPosDeepSec);
+      BITSET(maskTrackProperties, selPosGoodTPCTrack);
+      // TPC signal is available: ask for positive track PID
+      if (v0Selections.tpcPidNsigmaCut < 1e+5) { // safeguard for no cut
+        BITSET(maskK0ShortSpecific, selTPCPIDPositivePion);
+        BITSET(maskLambdaSpecific, selTPCPIDPositiveProton);
+        BITSET(maskAntiLambdaSpecific, selTPCPIDPositivePion);
+      }
+      // TOF PID
+      if (v0Selections.requireAtLeastOneHasTOF || v0Selections.requirePosHasTOF || v0Selections.tofPidNsigmaCutK0Pi < 1e+5 || v0Selections.maxDeltaTimePion < 1e+6) { // safeguard for no cut
+        BITSET(maskK0ShortSpecific, selTOFNSigmaPositivePionK0Short);
+        BITSET(maskK0ShortSpecific, selTOFDeltaTPositivePionK0Short);
+      }
+      if (v0Selections.requireAtLeastOneHasTOF || v0Selections.requirePosHasTOF || v0Selections.tofPidNsigmaCutLaPr < 1e+5 || v0Selections.maxDeltaTimeProton < 1e+6) { // safeguard for no cut
+        BITSET(maskLambdaSpecific, selTOFNSigmaPositiveProtonLambda);
+        BITSET(maskLambdaSpecific, selTOFDeltaTPositiveProtonLambda);
+      }
+      if (v0Selections.requireAtLeastOneHasTOF || v0Selections.requirePosHasTOF || v0Selections.tofPidNsigmaCutLaPi < 1e+5 || v0Selections.maxDeltaTimePion < 1e+6) { // safeguard for no cut
+        BITSET(maskAntiLambdaSpecific, selTOFNSigmaPositivePionLambda);
+        BITSET(maskAntiLambdaSpecific, selTOFDeltaTPositivePionLambda);
+      }
     } else {
       BITSET(maskTrackProperties, selPosGoodTPCTrack);
       BITSET(maskTrackProperties, selPosGoodITSTrack);
@@ -556,6 +589,31 @@ struct derivedlambdakzeroanalysis {
     if (v0Selections.requireNegITSonly) {
       BITSET(maskTrackProperties, selNegItsOnly);
       BITSET(maskTrackProperties, selNegGoodITSTrack);
+    } else if (v0Selections.requireNegTPConly) {
+      BITSET(maskTrackProperties, selNegTPCOnly);
+      BITSET(maskTrackProperties, selNegGoodTPCTrack);
+    } else if (v0Selections.requireNegDeepSec) {
+      BITSET(maskTrackProperties, selNegDeepSec);
+      BITSET(maskTrackProperties, selNegGoodTPCTrack);
+      // TPC signal is available: ask for negative track PID
+      if (v0Selections.tpcPidNsigmaCut < 1e+5) { // safeguard for no cut
+        BITSET(maskK0ShortSpecific, selTPCPIDNegativePion);
+        BITSET(maskLambdaSpecific, selTPCPIDNegativePion);
+        BITSET(maskAntiLambdaSpecific, selTPCPIDNegativeProton);
+      }
+      // TOF PID
+      if (v0Selections.requireAtLeastOneHasTOF || v0Selections.requireNegHasTOF || v0Selections.tofPidNsigmaCutK0Pi < 1e+5 || v0Selections.maxDeltaTimePion < 1e+6) { // safeguard for no cut
+        BITSET(maskK0ShortSpecific, selTOFNSigmaNegativePionK0Short);
+        BITSET(maskK0ShortSpecific, selTOFDeltaTNegativePionK0Short);
+      }
+      if (v0Selections.requireAtLeastOneHasTOF || v0Selections.requireNegHasTOF || v0Selections.tofPidNsigmaCutLaPi < 1e+5 || v0Selections.maxDeltaTimePion < 1e+6) { // safeguard for no cut
+        BITSET(maskLambdaSpecific, selTOFNSigmaNegativePionLambda);
+        BITSET(maskLambdaSpecific, selTOFDeltaTNegativePionLambda);
+      }
+      if (v0Selections.requireAtLeastOneHasTOF || v0Selections.requireNegHasTOF || v0Selections.tofPidNsigmaCutLaPr < 1e+5 || v0Selections.maxDeltaTimeProton < 1e+6) { // safeguard for no cut
+        BITSET(maskAntiLambdaSpecific, selTOFNSigmaNegativeProtonLambda);
+        BITSET(maskAntiLambdaSpecific, selTOFDeltaTNegativeProtonLambda);
+      }
     } else {
       BITSET(maskTrackProperties, selNegGoodTPCTrack);
       BITSET(maskTrackProperties, selNegGoodITSTrack);
@@ -775,6 +833,10 @@ struct derivedlambdakzeroanalysis {
     hSelectionV0s->GetXaxis()->SetBinLabel(selNegGoodITSTrack + 2, "Neg. good ITS track");
     hSelectionV0s->GetXaxis()->SetBinLabel(selPosItsOnly + 2, "Pos. ITS-only");
     hSelectionV0s->GetXaxis()->SetBinLabel(selNegItsOnly + 2, "Neg. ITS-only");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selPosTPCOnly + 2, "Pos. TPC-only");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selNegTPCOnly + 2, "Neg. TPC-only");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selPosDeepSec + 2, "Pos. deep sec.");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selNegDeepSec + 2, "Neg. deep sec.");
     hSelectionV0s->GetXaxis()->SetBinLabel(selPosNotTPCOnly + 2, "Pos. not TPC-only");
     hSelectionV0s->GetXaxis()->SetBinLabel(selNegNotTPCOnly + 2, "Neg. not TPC-only");
     hSelectionV0s->GetXaxis()->SetBinLabel(selConsiderK0Short + 2, "True K^{0}_{S}");
@@ -1488,6 +1550,41 @@ struct derivedlambdakzeroanalysis {
       BITSET(bitMap, selPosNotTPCOnly);
     if (negTrackExtra.detectorMap() != o2::aod::track::TPC)
       BITSET(bitMap, selNegNotTPCOnly);
+    if (!verifyMask(posTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD | o2::aod::track::TOF)) &&
+        !verifyMask(posTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TOF)) &&
+        !verifyMask(posTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD)) &&
+        !verifyMask(posTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC)) &&
+        !verifyMask(posTrackExtra.detectorMap(), (o2::aod::track::ITS)) &&
+        !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::TPC | o2::aod::track::TRD | o2::aod::track::TOF)) &&
+        !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::TPC | o2::aod::track::TOF)) &&
+        !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::TPC | o2::aod::track::TRD)) &&
+        verifyMask(posTrackExtra.detectorMap(), (o2::aod::track::TPC)))
+      BITSET(bitMap, selPosTPCOnly);
+    if (!verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD | o2::aod::track::TOF)) &&
+        !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TOF)) &&
+        !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD)) &&
+        !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC)) &&
+        !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::ITS)) &&
+        !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::TPC | o2::aod::track::TRD | o2::aod::track::TOF)) &&
+        !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::TPC | o2::aod::track::TOF)) &&
+        !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::TPC | o2::aod::track::TRD)) &&
+        verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::TPC)))
+      BITSET(bitMap, selNegTPCOnly);
+    // deep secondary : TPC-TRD, TPC-TOF, TPC-TRD-TOF
+    if (!verifyMask(posTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD | o2::aod::track::TOF)) &&
+        !verifyMask(posTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TOF)) &&
+        !verifyMask(posTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD)) &&
+        !verifyMask(posTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC)) &&
+        !verifyMask(posTrackExtra.detectorMap(), (o2::aod::track::ITS)) &&
+        verifyMask(posTrackExtra.detectorMap(), (o2::aod::track::TPC)))
+      BITSET(bitMap, selPosDeepSec);
+    if (!verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD | o2::aod::track::TOF)) &&
+        !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TOF)) &&
+        !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD)) &&
+        !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::ITS | o2::aod::track::TPC)) &&
+        !verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::ITS)) &&
+        verifyMask(negTrackExtra.detectorMap(), (o2::aod::track::TPC)))
+      BITSET(bitMap, selNegDeepSec);
 
     // proper lifetime
     if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 < v0Selections.lifetimecut->get("lifetimecutLambda"))

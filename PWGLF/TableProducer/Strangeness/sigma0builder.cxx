@@ -121,6 +121,9 @@ struct sigma0builder {
   // Histogram registry
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  // Species selection
+  Configurable<bool> doLambdaStar{"doLambdaStar", false, "Build Lambda(1520) instead of Sigma0"};
+
   Configurable<bool> fFillV03DPositionHistos{"fFillV03DPositionHistos", false, "Fill XYZ histo for Photons and Lambdas."};
   Configurable<bool> fFillNoSelV0Histos{"fFillNoSelV0Histos", false, "Fill QA histos for input V0s."};
   Configurable<bool> fFillSelPhotonHistos{"fFillSelPhotonHistos", true, "Fill QA histos for sel photons."};
@@ -2293,14 +2296,15 @@ struct sigma0builder {
     auto arrMom = std::array{pVecPhotons, pVecLambda};
     float sigmaMass = RecoDecay::m(arrMom, std::array{o2::constants::physics::MassPhoton, o2::constants::physics::MassLambda0});
     float sigmaY = -999.f;
+    float TheoreticalMass = doLambdaStar ? o2::constants::physics::MassLambda1520 : o2::constants::physics::MassSigma0;
 
     if constexpr (requires { gamma.pxMC(); lambda.pxMC(); }) // If MC
-      sigmaY = RecoDecay::y(std::array{gamma.pxMC() + lambda.pxMC(), gamma.pyMC() + lambda.pyMC(), gamma.pzMC() + lambda.pzMC()}, o2::constants::physics::MassSigma0);
+      sigmaY = RecoDecay::y(std::array{gamma.pxMC() + lambda.pxMC(), gamma.pyMC() + lambda.pyMC(), gamma.pzMC() + lambda.pzMC()}, TheoreticalMass);
     else // If DATA
-      sigmaY = RecoDecay::y(std::array{gamma.px() + lambda.px(), gamma.py() + lambda.py(), gamma.pz() + lambda.pz()}, o2::constants::physics::MassSigma0);
+      sigmaY = RecoDecay::y(std::array{gamma.px() + lambda.px(), gamma.py() + lambda.py(), gamma.pz() + lambda.pz()}, TheoreticalMass);
 
     histos.fill(HIST("SigmaSel/hSelectionStatistics"), 1.);
-    if (TMath::Abs(sigmaMass - o2::constants::physics::MassSigma0) > Sigma0Window)
+    if (TMath::Abs(sigmaMass - TheoreticalMass) > Sigma0Window)
       return false;
 
     histos.fill(HIST("SigmaSel/hSelectionStatistics"), 2.);
@@ -2415,14 +2419,15 @@ struct sigma0builder {
 
     auto arrMom = std::array{pVecPhotons, pVecLambda};
     float sigmaMass = RecoDecay::m(arrMom, std::array{o2::constants::physics::MassPhoton, o2::constants::physics::MassLambda0});
+    float TheoreticalMass = doLambdaStar ? o2::constants::physics::MassLambda1520 : o2::constants::physics::MassSigma0;
 
     // N.B. At this stage, we are only using the reconstructed rapidity (ideally with a very loose cut)
     // A proper selection should be done in the sigmaanalysis
-    float sigmaY = RecoDecay::y(std::array{gammapx + lambda.px(), gammapy + lambda.py(), gammapz + lambda.pz()}, o2::constants::physics::MassSigma0);
+    float sigmaY = RecoDecay::y(std::array{gammapx + lambda.px(), gammapy + lambda.py(), gammapz + lambda.pz()}, TheoreticalMass);
 
     histos.fill(HIST("SigmaSel/hSelectionStatistics"), 1.);
     histos.fill(HIST("SigmaSel/hSigmaMassBeforeSel"), sigmaMass);
-    if (TMath::Abs(sigmaMass - o2::constants::physics::MassSigma0) > Sigma0Window)
+    if (TMath::Abs(sigmaMass - TheoreticalMass) > Sigma0Window)
       return false;
 
     histos.fill(HIST("SigmaSel/hSelectionStatistics"), 2.);

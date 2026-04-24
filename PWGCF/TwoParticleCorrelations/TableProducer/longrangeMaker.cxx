@@ -17,6 +17,7 @@
 
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/TwoParticleCorrelations/DataModel/LongRangeDerived.h"
+//
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 #include "PWGUD/Core/SGCutParHolder.h"
@@ -30,6 +31,7 @@
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
@@ -54,15 +56,20 @@
 #include <MathUtils/Utils.h>
 #include <ReconstructionDataFormats/PID.h>
 
+#include <TPDGCode.h>
+
 #include <sys/types.h>
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <iterator>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using namespace o2;
@@ -142,7 +149,8 @@ struct LongrangeMaker {
     Configurable<float> cfigFt0aEtaMin{"cfigFt0aEtaMin", 3.5f, "Minimum FT0A eta cut"};
     Configurable<float> cfigFt0cEtaMax{"cfigFt0cEtaMax", -2.1f, "Maximum FT0C eta cut"};
     Configurable<float> cfigFt0cEtaMin{"cfigFt0cEtaMin", -3.3f, "Minimum FT0C eta cut"};
-    Configurable<bool> useGainCallib{"useGainCallib", true, "use gain calibration"};
+    Configurable<int> cfigVerbosity{"cfigVerbosity", 0, "print statement"};
+    Configurable<bool> useGainCalib{"useGainCalib", true, "use gain calibration"};
     Configurable<std::string> ConfGainPath{"ConfGainPath", "Analysis/EventPlane/GainEq/FT0", "Path to gain calibration"};
   } cfgfittrksel;
 
@@ -306,8 +314,6 @@ struct LongrangeMaker {
   using MftTrkTable = aod::MFTTracks;
   using BCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
-  int currentRunNumber = -999;
-  int lastRunNumber = -999;
   std::vector<float> ft0gainvalues{};
   void processData(CollTable::iterator const& col, TrksTable const& tracks,
                    aod::FT0s const&, MftTrkTable const& mfttracks,
@@ -320,15 +326,20 @@ struct LongrangeMaker {
     auto multiplicity = countNTracks(tracks);
     auto centrality = selColCent(col);
     auto bc = col.bc_as<aod::BCsWithTimestamps>();
-    currentRunNumber = bc.runNumber();
-    if (cfgfittrksel.useGainCallib && (currentRunNumber != lastRunNumber)) {
-      const auto ft0GainObj = ccdb->getForTimeStamp<std::vector<float>>(cfgfittrksel.ConfGainPath.value, bc.timestamp());
+    ft0gainvalues.clear();
+    ft0gainvalues = {};
+    if (cfgfittrksel.useGainCalib) {
+      const auto ft0GainObj = ccdb->getForTimeStamp<std::vector<float>>(cfgfittrksel.ConfGainPath, bc.timestamp());
       if (!ft0GainObj) {
         for (auto i{0u}; i < TotFt0Channels; i++) {
           ft0gainvalues.push_back(1.);
         }
       } else {
         ft0gainvalues = *(ft0GainObj);
+      }
+    } else {
+      for (auto i{0u}; i < TotFt0Channels; i++) {
+        ft0gainvalues.push_back(1.);
       }
     }
     lrcollision(bc.runNumber(), col.posZ(), multiplicity, centrality, bc.timestamp());
@@ -354,9 +365,9 @@ struct LongrangeMaker {
         float ampl = ft0.amplitudeA()[iCh];
         auto phi = getPhiFT0(chanelid, 0);
         auto eta = getEtaFT0(chanelid, 0);
-        auto gainampl = 1.0;
-        if (cfgfittrksel.useGainCallib) {
-          gainampl = ampl / ft0gainvalues[chanelid];
+        auto gainampl = ampl / ft0gainvalues[chanelid];
+        if (cfgfittrksel.cfigVerbosity > 0) {
+          LOGF(info, "FT0A info: Channel = %d | indexchannel = %d | %f | %f", chanelid, iCh, ft0gainvalues[chanelid], ft0gainvalues[iCh]);
         }
         lrft0atracks(lrcollision.lastIndex(), chanelid, ampl, gainampl, eta, phi);
       }
@@ -365,9 +376,9 @@ struct LongrangeMaker {
         float ampl = ft0.amplitudeC()[iCh];
         auto phi = getPhiFT0(chanelid, 1);
         auto eta = getEtaFT0(chanelid, 1);
-        auto gainampl = 1.0;
-        if (cfgfittrksel.useGainCallib) {
-          gainampl = ampl / ft0gainvalues[chanelid];
+        auto gainampl = ampl / ft0gainvalues[chanelid];
+        if (cfgfittrksel.cfigVerbosity > 0) {
+          LOGF(info, "FT0C info: Channel = %d | indexchannel = %d | %f | %f", chanelid, iCh, ft0gainvalues[chanelid], ft0gainvalues[iCh]);
         }
         lrft0ctracks(lrcollision.lastIndex(), chanelid, ampl, gainampl, eta, phi);
       }
@@ -427,7 +438,6 @@ struct LongrangeMaker {
                    v0.pt(), v0.eta(), v0.phi(), massV0, aod::lrcorrtrktable::kSpALambda);
       } // end of Lambda and Anti-Lambda processing
     }
-    lastRunNumber = currentRunNumber;
   } // process function
 
   void processUpc(CollTable::iterator const& col, BCs const& bcs,
@@ -591,15 +601,20 @@ struct LongrangeMaker {
       auto multiplicity = countNTracks(recTracksPart);
       auto centrality = selColCent(RecCol);
       auto bc = RecCol.bc_as<aod::BCsWithTimestamps>();
-      currentRunNumber = bc.runNumber();
-      if (cfgfittrksel.useGainCallib && (currentRunNumber != lastRunNumber)) {
-        const auto ft0GainObj = ccdb->getForTimeStamp<std::vector<float>>(cfgfittrksel.ConfGainPath.value, bc.timestamp());
+      ft0gainvalues.clear();
+      ft0gainvalues = {};
+      if (cfgfittrksel.useGainCalib) {
+        const auto ft0GainObj = ccdb->getForTimeStamp<std::vector<float>>(cfgfittrksel.ConfGainPath, bc.timestamp());
         if (!ft0GainObj) {
           for (auto i{0u}; i < TotFt0Channels; i++) {
             ft0gainvalues.push_back(1.);
           }
         } else {
           ft0gainvalues = *(ft0GainObj);
+        }
+      } else {
+        for (auto i{0u}; i < TotFt0Channels; i++) {
+          ft0gainvalues.push_back(1.);
         }
       }
       lrcollision(bc.runNumber(), RecCol.posZ(), multiplicity, centrality, bc.timestamp());
@@ -631,10 +646,7 @@ struct LongrangeMaker {
           float ampl = ft0.amplitudeA()[iCh];
           auto phi = getPhiFT0(chanelid, 0);
           auto eta = getEtaFT0(chanelid, 0);
-          auto gainampl = 1.0;
-          if (cfgfittrksel.useGainCallib) {
-            gainampl = ampl / ft0gainvalues[chanelid];
-          }
+          auto gainampl = ampl / ft0gainvalues[chanelid];
           lrft0atracks(lrcollision.lastIndex(), chanelid, ampl, gainampl, eta, phi);
         }
         for (std::size_t iCh = 0; iCh < ft0.channelC().size(); iCh++) {
@@ -642,10 +654,7 @@ struct LongrangeMaker {
           float ampl = ft0.amplitudeC()[iCh];
           auto phi = getPhiFT0(chanelid, 1);
           auto eta = getEtaFT0(chanelid, 1);
-          auto gainampl = 1.0;
-          if (cfgfittrksel.useGainCallib) {
-            gainampl = ampl / ft0gainvalues[chanelid];
-          }
+          auto gainampl = ampl / ft0gainvalues[chanelid];
           lrft0ctracks(lrcollision.lastIndex(), chanelid, ampl, gainampl, eta, phi);
         }
       }
@@ -696,7 +705,6 @@ struct LongrangeMaker {
         if (cfgmfttrksel.cfigMftEtaMin < particle.eta() && particle.eta() < cfgmfttrksel.cfigMftEtaMax)
           lrmftmctracks(lrmccollision.lastIndex(), particle.pt(), particle.eta(), particle.phi());
       }
-      lastRunNumber = currentRunNumber;
     }
   }
 
