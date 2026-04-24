@@ -1696,6 +1696,40 @@ struct HfTaskCharmPolarisation {
               }
             }
           }
+        } else {
+          if (origin == RecoDecay::OriginType::Prompt) {                                 // prompt
+            if constexpr (Channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
+              if (!isPartRecoDstar) {
+                if (activateTrackingSys) {
+                  registry.fill(HIST("hRecoPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, nMuons, centrality);
+                } else {
+                  registry.fill(HIST("hRecoPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, nMuons, centrality);
+                }
+              } else {
+                if (activateTrackingSys) {
+                  registry.fill(HIST("hPartRecoPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, nMuons, centrality);
+                } else {
+                  registry.fill(HIST("hPartRecoPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, nMuons, centrality);
+                }
+              }
+            }
+          } else {                                                                       // non-prompt
+            if constexpr (Channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
+              if (!isPartRecoDstar) {
+                if (activateTrackingSys) {
+                  registry.fill(HIST("hRecoNonPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, nMuons, ptBhadMother, centrality);
+                } else {
+                  registry.fill(HIST("hRecoNonPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, absEtaMin, nMuons, ptBhadMother, centrality);
+                }
+              } else {
+                if (activateTrackingSys) {
+                  registry.fill(HIST("hPartRecoNonPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, nMuons, ptBhadMother, centrality);
+                } else {
+                  registry.fill(HIST("hPartRecoNonPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, nMuons, ptBhadMother, centrality);
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -1945,7 +1979,7 @@ struct HfTaskCharmPolarisation {
   template <charm_polarisation::DecayChannel Channel, bool WithMl, bool DoMc, bool StudyLcPkPiBkgMc = false, bool WithEp = false, typename Cand, typename Part, typename Trk, typename T, typename QVecs = void>
   bool runPolarisationAnalysis(Cand const& candidate, int bkgRotationId, T numPvContributors, Part const& particles, Trk const& /*tracks*/, float centrality = -999.f, QVecs const* qVecs = nullptr)
   {
-    if constexpr (WithEp) {
+    if constexpr (WithEp && !DoMc) {
       assert(qVecs && "EP analysis requested but qVecs == nullptr");
       assert(centrality && "EP analysis requested but centrality == nullptr");
     }
@@ -2303,23 +2337,21 @@ struct HfTaskCharmPolarisation {
           nMuons = 0;
         }
       }
-
-      if constexpr (WithEp) {
-        if (!DoMc) {
-          /// EP analysis
+ 
+      if (activateTHnSparseCosThStarEP) {
+        if constexpr (WithEp && !DoMc) {
+          // EP analysis for data
           float const xQvec = (*qVecs).at(0);
           float const yQvec = (*qVecs).at(1);
           ROOT::Math::XYZVector const qVecNorm = ROOT::Math::XYZVector(yQvec, -xQvec, 0.f);
           ROOT::Math::XYZVector const qVec = ROOT::Math::XYZVector(xQvec, yQvec, 0.);
-
-          if (activateTHnSparseCosThStarEP) {
-            // EP
-            ROOT::Math::XYZVector threeVecDauCMXY = ROOT::Math::XYZVector(threeVecDauCM.X(), threeVecDauCM.Y(), 0.);
-            float const phiEP = qVec.Dot(threeVecDauCMXY) / std::sqrt(threeVecDauCMXY.Mag2()) / std::sqrt(qVec.Mag2());
-            float const cosThetaStarEP = qVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(qVecNorm.Mag2());
-            fillRecoHistos<Channel, WithMl, DoMc, charm_polarisation::CosThetaStarType::EP>(invMassCharmHadForSparse, ptCharmHad, numPvContributors, rapidity, invMassD0, invMassKPiLc, cosThetaStarEP, phiEP, outputMl, isRotatedCandidate, origin, ptBhadMother, resoChannelLc, absEtaTrackMin, numItsClsMin, numTpcClsMin, charge, nMuons, partRecoDstar, centrality);
-          }
-        } else {
+          ROOT::Math::XYZVector threeVecDauCMXY = ROOT::Math::XYZVector(threeVecDauCM.X(), threeVecDauCM.Y(), 0.);
+          float const phiEP = qVec.Dot(threeVecDauCMXY) / std::sqrt(threeVecDauCMXY.Mag2()) / std::sqrt(qVec.Mag2());
+          float const cosThetaStarEP = qVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(qVecNorm.Mag2());
+          fillRecoHistos<Channel, WithMl, DoMc, charm_polarisation::CosThetaStarType::EP>(invMassCharmHadForSparse, ptCharmHad, numPvContributors, rapidity, invMassD0, invMassKPiLc, cosThetaStarEP, phiEP, outputMl, isRotatedCandidate, origin, ptBhadMother, resoChannelLc, absEtaTrackMin, numItsClsMin, numTpcClsMin, charge, nMuons, partRecoDstar, centrality);
+        }
+        if (DoMc) {
+          //EP analysis for MC
           double const deltaPhi = sampleDeltaPhi(ptCharmHad);
           double psi = candidate.phi() - deltaPhi;
           ROOT::Math::XYZVector qVecNorm = ROOT::Math::XYZVector(-std::sin(psi), std::cos(psi), 0.f);
@@ -2907,7 +2939,7 @@ struct HfTaskCharmPolarisation {
 
       for (const auto& dstarCandidate : groupedDstarCandidates) {
         nCands++;
-        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, true, false, true>(dstarCandidate, 0, (occEstimator > 0) ? occupancy : numPvContributors, -1 /*MC particles*/, tracks, centrality)) {
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, true>(dstarCandidate, 0, (occEstimator > 0) ? occupancy : numPvContributors, -1 /*MC particles*/, tracks, centrality)) {
           nCandsInSignalRegion++;
         }
       }
@@ -2949,7 +2981,7 @@ struct HfTaskCharmPolarisation {
 
       for (const auto& dstarCandidate : groupedDstarCandidates) {
         nCands++;
-        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, true, false, true>(dstarCandidate, 0, (occEstimator > 0) ? occupancy : numPvContributors, -1 /*MC particles*/, tracks, centrality)) {
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, true>(dstarCandidate, 0, (occEstimator > 0) ? occupancy : numPvContributors, -1 /*MC particles*/, tracks, centrality)) {
           nCandsInSignalRegion++;
         }
       }
