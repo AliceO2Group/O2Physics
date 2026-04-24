@@ -2337,7 +2337,7 @@ struct HfTaskCharmPolarisation {
           nMuons = 0;
         }
       }
- 
+
       if (activateTHnSparseCosThStarEP) {
         if constexpr (WithEp && !DoMc) {
           // EP analysis for data
@@ -2351,7 +2351,7 @@ struct HfTaskCharmPolarisation {
           fillRecoHistos<Channel, WithMl, DoMc, charm_polarisation::CosThetaStarType::EP>(invMassCharmHadForSparse, ptCharmHad, numPvContributors, rapidity, invMassD0, invMassKPiLc, cosThetaStarEP, phiEP, outputMl, isRotatedCandidate, origin, ptBhadMother, resoChannelLc, absEtaTrackMin, numItsClsMin, numTpcClsMin, charge, nMuons, partRecoDstar, centrality);
         }
         if (DoMc) {
-          //EP analysis for MC
+          // EP analysis for MC
           double const deltaPhi = sampleDeltaPhi(ptCharmHad);
           double psi = candidate.phi() - deltaPhi;
           ROOT::Math::XYZVector qVecNorm = ROOT::Math::XYZVector(-std::sin(psi), std::cos(psi), 0.f);
