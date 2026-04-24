@@ -737,7 +737,7 @@ struct StrangeCascTrack {
           histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/GenRecRapidityOmega"), genYOmega, cascade.yOmega());
           histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAxyPrimaryOmega"), cascade.dcaXYCascToPV(), pt, mult);
           histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAzPrimaryOmega"), cascade.dcaZCascToPV(), pt, mult);
-          if (std::abs(std::abs(cascmccore.pdgCodeMother()) > charmBeautyCodesLow && std::abs(cascmccore.pdgCodeMother()) < charmBeautyCodesHigh)) {
+          if (std::abs(cascmccore.pdgCodeMother()) > charmBeautyCodesLow && std::abs(cascmccore.pdgCodeMother()) < charmBeautyCodesHigh) {
             histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAxyDecayOmega"), cascade.dcaXYCascToPV(), pt, mult);
             histos.fill(HIST(TypeNames[Type]) + HIST("/NoSel-Truth/DCA/DCAzDecayOmega"), cascade.dcaZCascToPV(), pt, mult);
           } else if (cascmccore.pdgCodeMother() == -1) {
@@ -752,7 +752,7 @@ struct StrangeCascTrack {
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAxyPrimaryOmega"), cascade.dcaXYCascToPV(), pt, mult);
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAzPrimaryOmega"), cascade.dcaZCascToPV(), pt, mult);
             histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/Radius/PrimaryOmega"), cascade.cascradius(), pt);
-            if (std::abs(std::abs(cascmccore.pdgCodeMother()) > charmBeautyCodesLow && std::abs(cascmccore.pdgCodeMother()) < charmBeautyCodesHigh)) {
+            if (std::abs(cascmccore.pdgCodeMother()) > charmBeautyCodesLow && std::abs(cascmccore.pdgCodeMother()) < charmBeautyCodesHigh) {
               histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAxyDecayOmega"), cascade.dcaXYCascToPV(), pt, mult);
               histos.fill(HIST(TypeNames[Type]) + HIST("/Rec-Truth/DCA/DCAzDecayOmega"), cascade.dcaZCascToPV(), pt, mult);
             } else if (cascmccore.pdgCodeMother() == -1) {
