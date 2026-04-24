@@ -29,7 +29,6 @@
 #include <RtypesCore.h>
 
 #include <cstddef>
-#include <iostream>
 #include <numeric>
 #include <string>
 #include <utility>
@@ -7765,12 +7764,15 @@ o2::aod::dqmlcuts::BdtScoreConfig o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFro
         cutsMl.push_back(binCuts);
         labelsFlatBin.push_back(Form("%s_cent%.0f_%.0f_pt%.1f_%.1f", cent.c_str(), centMin, centMax, ptMin, ptMax));
         LOG(info) << "Added cut for " << Form("%s_cent%.0f_%.0f_pt%.1f_%.1f", cent.c_str(), centMin, centMax, ptMin, ptMax) << " with cuts: [";
+        std::string msg = "";
         for (size_t i = 0; i < binCuts.size(); ++i) {
-          std::cout << binCuts[i];
+          msg += std::to_string(binCuts[i]);
           if (i != binCuts.size() - 1)
-            std::cout << ", ";
+            msg += ", ";
         }
-        std::cout << "] and direction: " << (exclude ? "CutGreater" : "CutSmaller") << std::endl;
+        msg += "] and direction: ";
+        msg += (exclude ? "CutGreater" : "CutSmaller");
+        LOG(info) << msg;
       }
     }
 

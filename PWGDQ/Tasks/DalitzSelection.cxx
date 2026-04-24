@@ -9,9 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-//                Task to select electrons from dalitz decay
-//        It can produce track and pair histograms for selected tracks
-//      It creates a bitmap with selections to be stored during skimming
+//
+// \file   DalitzSelection.cxx
+// \author Gauthier Legras, glegras@uni-muenster.de, gauthier.legras@cern.ch
+// \brief  Task to select electrons from dalitz decay
+// It can produce track and pair histograms for selected tracks
+// It creates a bitmap with selections to be stored during skimming
 //
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
 #include "PWGDQ/Core/AnalysisCut.h"
@@ -65,10 +68,10 @@ using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelect
                                  aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullMu,
                                  aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
 
-constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::Collision;
-constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
+constexpr static uint32_t EventFillMap = VarManager::ObjTypes::Collision;
+constexpr static uint32_t TrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
 
-struct dalitzPairing {
+struct DalitzSelection {
   Produces<o2::aod::DalitzBits> dalitzbits;
   Preslice<MyBarrelTracks> perCollision = aod::track::collisionId;
 
@@ -154,7 +157,7 @@ struct dalitzPairing {
     TString addTrackCutsStr = fConfigCuts.fConfigTrackCutsJSON.value;
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
-      for (auto& t : addTrackCuts) {
+      for (const auto& t : addTrackCuts) {
         fTrackCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
       }
     }
@@ -172,7 +175,7 @@ struct dalitzPairing {
     // extra cuts via JSON
     if (addTrackCutsProbeStr != "" && (cutNamesProbeStr.CompareTo(cutNamesStr) != 0 || addTrackCutsProbeStr.CompareTo(addTrackCutsStr) != 0)) {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsProbeStr.Data());
-      for (auto& t : addTrackCuts) {
+      for (const auto& t : addTrackCuts) {
         fTrackCutsProbe.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
       }
       fIsTagAndProbe = true;
@@ -190,7 +193,7 @@ struct dalitzPairing {
     TString addPairCutsStr = fConfigCuts.fConfigPairCutsJSON.value;
     if (addPairCutsStr != "") {
       std::vector<AnalysisCut*> addPairCuts = dqcuts::GetCutsFromJSON(addPairCutsStr.Data());
-      for (auto& t : addPairCuts) {
+      for (const auto& t : addPairCuts) {
         fPairCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
       }
     }
@@ -294,7 +297,7 @@ struct dalitzPairing {
   template <uint32_t TTrackFillMap, typename TTracks>
   void runTrackSelection(TTracks const& tracksBarrel)
   {
-    for (auto& track : tracksBarrel) {
+    for (const auto& track : tracksBarrel) {
       uint8_t filterMap = uint8_t(0);
       uint8_t filterMapProbe = uint8_t(0);
       VarManager::FillTrack<TTrackFillMap>(track);
@@ -324,7 +327,7 @@ struct dalitzPairing {
   template <int TPairType, uint32_t TTrackFillMap, typename TTracks>
   void runDalitzPairing(TTracks const& tracks1, TTracks const& tracks2)
   {
-    for (auto& [track1, track2] : o2::soa::combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
+    for (const auto& [track1, track2] : o2::soa::combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
       if (track1.globalIndex() == track2.globalIndex()) {
         continue;
       }
@@ -375,7 +378,7 @@ struct dalitzPairing {
 
     // Fill Hists
     if (fConfigOptions.fQA) {
-      for (auto& track : tracks1) {
+      for (const auto& track : tracks1) {
         uint8_t filterMap = fDalitzmap[track.globalIndex()];
         uint8_t filterMapProbe = fDalitzmapProbe[track.globalIndex()];
         if (!filterMap && !filterMapProbe) {
@@ -405,11 +408,11 @@ struct dalitzPairing {
     fDalitzmap.clear();
     fDalitzmapProbe.clear();
 
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       fTrackmap.clear();
       fTrackmapProbe.clear();
       VarManager::ResetValues(VarManager::kNRunWiseVariables, VarManager::kNBarrelTrackVariables);
-      VarManager::FillEvent<gkEventFillMap>(collision);
+      VarManager::FillEvent<EventFillMap>(collision);
       bool isEventSelected = fEventCut->IsSelected(VarManager::fgValues);
 
       if (isEventSelected) {
@@ -452,26 +455,26 @@ struct dalitzPairing {
         }
 
         auto groupedFilteredTracks = filteredTracks.sliceBy(perCollision, collision.globalIndex());
-        runTrackSelection<gkTrackFillMap>(groupedFilteredTracks);
-        runDalitzPairing<pairType, gkTrackFillMap>(groupedFilteredTracks, groupedFilteredTracks);
+        runTrackSelection<TrackFillMap>(groupedFilteredTracks);
+        runDalitzPairing<pairType, TrackFillMap>(groupedFilteredTracks, groupedFilteredTracks);
       }
     }
 
-    for (auto& track : tracks) { // Fill dalitz bits
+    for (const auto& track : tracks) { // Fill dalitz bits
       dalitzbits(fDalitzmap[track.globalIndex()]);
     }
   }
 
-  void processDummy(MyEvents&)
+  void processDummy(MyEvents const&)
   {
   }
 
-  PROCESS_SWITCH(dalitzPairing, processFullTracks, "Run Dalitz selection on AO2D tables", false);
-  PROCESS_SWITCH(dalitzPairing, processDummy, "Do nothing", false);
+  PROCESS_SWITCH(DalitzSelection, processFullTracks, "Run Dalitz selection on AO2D tables", false);
+  PROCESS_SWITCH(DalitzSelection, processDummy, "Do nothing", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<dalitzPairing>(cfgc)};
+    adaptAnalysisTask<DalitzSelection>(cfgc)};
 }
