@@ -78,6 +78,7 @@
 #include <complex>
 #include <cstdint>
 #include <map>
+#include <numbers>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -149,7 +150,8 @@ class VarManager : public TObject
     MuonCovRealign = BIT(26),
     MFTCov = BIT(27),
     TrackTOFService = BIT(28),
-    ParticleMC = BIT(29)
+    ParticleMC = BIT(29),
+    MuonDca = BIT(30)
   };
 
   enum PairCandidateType {
@@ -3078,8 +3080,12 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kMuonChi2MatchMCHMFT] = track.chi2MatchMCHMFT();
     values[kMuonMatchScoreMCHMFT] = track.matchScoreMCHMFT();
     values[kMuonTrackType] = track.trackType();
-    values[kMuonDCAx] = track.fwdDcaX();
-    values[kMuonDCAy] = track.fwdDcaY();
+    values[kMuonDCAx] = track.sign() * (track.pDca() / std::numbers::sqrt2 / track.p());
+    values[kMuonDCAy] = values[kMuonDCAx];
+    if constexpr ((fillMap & MuonDca) > 0) {
+      values[kMuonDCAx] = track.fwdDcaX();
+      values[kMuonDCAy] = track.fwdDcaY();
+    }
     values[kMuonTime] = track.trackTime();
     values[kMuonTimeRes] = track.trackTimeRes();
   }
