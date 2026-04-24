@@ -304,7 +304,7 @@ void processMixedEvent(T1 const& Collisions,
                        T9& CprManager,
                        T10& PcManager)
 {
-  int lastCollisionIndex = -1;
+  int64_t lastCollisionIndex = -1;
   int windowSizeRaw = 0;
   int windowSizeEffective = 0;
 
@@ -411,7 +411,7 @@ void processMixedEvent(T1 const& Collisions,
                        T15& CprManager,
                        T16& PcManager)
 {
-  int lastCollisionIndex = -1;
+  int64_t lastCollisionIndex = -1;
   int windowSizeRaw = 0;
   int windowSizeEffective = 0;
 
