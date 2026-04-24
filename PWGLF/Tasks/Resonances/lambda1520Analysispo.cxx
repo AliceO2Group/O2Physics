@@ -1,6 +1,6 @@
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
-// See https://alice-o2.web.cern.ch/copyright for details of the copyright
-// holders. All rights not expressly granted are reserved.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
@@ -10,11 +10,9 @@
 // or submit itself to any jurisdiction.
 
 /// \file lambda1520Analysispo.cxx
-/// \brief Task for Lambda(1520) resonance reconstruction via proton-kaon
-/// invariant mass analysis
+/// \brief Task for Lambda(1520) resonance reconstruction via proton-kaon invariant mass analysis for pO system
 ///
-/// \author Yash Patley <yash.patley@cern.ch>
-/// \author Durgesh Bhatt <durgesh.bhatt@cern.ch>
+/// \author Yash Patley <yash.patley@cern.ch>, Durgesh Bhatt <durgesh.bhatt@cern.ch>
 
 #include "PWGLF/DataModel/LFResonanceTables.h"
 
