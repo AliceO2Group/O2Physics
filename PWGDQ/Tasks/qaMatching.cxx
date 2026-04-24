@@ -1753,7 +1753,7 @@ struct QaMatching {
 
   template <class TMUON, class TMUONS, class TMFTS>
   MuonMatchType getMatchType(const TMUON& muonTrack,
-                             TMUONS const& muonTracks,
+                             TMUONS const& /*muonTracks*/,
                              TMFTS const& mftTracks,
                              const std::vector<std::pair<int64_t, int64_t>>& matchablePairs,
                              int ranking)
@@ -1763,13 +1763,13 @@ struct QaMatching {
 
     auto const& mchTrack = muonTrack.template matchMCHTrack_as<TMUONS>();
 
-    bool isPaired = isMatchableMch(mchTrack.globalIndex(), matchablePairs);
-    bool isMuon = IsMuon(muonTrack, muonTracks, mftTracks);
+    bool isPairable = isMatchableMch(mchTrack.globalIndex(), matchablePairs);
+    bool isTrueMatch = isTrueGlobalMatching(muonTrack, matchablePairs);
     int decayRanking = getDecayRanking(mchTrack, mftTracks);
 
     MuonMatchType result{kMatchTypeUndefined};
-    if (isPaired) {
-      if (isMuon) {
+    if (isPairable) {
+      if (isTrueMatch) {
         result = (ranking == 1) ? kMatchTypeTrueLeading : kMatchTypeTrueNonLeading;
       } else {
         result = (ranking == 1) ? kMatchTypeWrongLeading : kMatchTypeWrongNonLeading;
