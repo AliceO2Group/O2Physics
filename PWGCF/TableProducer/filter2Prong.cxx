@@ -54,8 +54,8 @@
 #include <iterator>
 #include <memory>
 #include <string>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
