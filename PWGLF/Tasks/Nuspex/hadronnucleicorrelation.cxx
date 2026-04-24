@@ -17,7 +17,6 @@
 #include "PWGCF/Femto3D/DataModel/singletrackselector.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/Multiplicity.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
@@ -42,6 +41,7 @@
 #include <TH3.h>
 #include <TList.h>
 #include <TPDGCode.h>
+#include <TParticlePDG.h>
 #include <TString.h>
 
 #include <chrono>
