@@ -40,6 +40,7 @@
 
 #include <TH1.h>
 #include <THnSparse.h>
+#include <TMathBase.h>
 #include <TPDGCode.h>
 #include <TString.h>
 

@@ -51,7 +51,6 @@
 #include <THn.h>
 #include <TPDGCode.h>
 #include <TRandom.h>
-#include <TRandom3.h>
 
 #include <algorithm>
 #include <array>
