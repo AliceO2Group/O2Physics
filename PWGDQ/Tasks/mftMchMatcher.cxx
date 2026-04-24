@@ -565,7 +565,9 @@ struct mftMchMatcher {
     auto const& mftTrack = muonTrack.template matchMFTTrack_as<TMFTS>();
 
     if (!muonTrack.has_mcParticle() || !mftTrack.has_mcParticle()) {
-      return result;
+      // if either the MCH or the MFT tracks are fakes (not associated to any MC particles)
+      // we consider the match as fake
+      return (isBestMatch ? kMatchTypeFakeLeading : kMatchTypeFakeNonLeading);
     }
 
     bool isPaired = isPairedMuon(mchTrack.globalIndex(), matchablePairs);
@@ -692,8 +694,8 @@ struct mftMchMatcher {
         muonpropCov(3, 3),
         muonpropCov(4, 4),
         muonpropCov(1, 0),
-        muonpropCov(2, 0),
         muonpropCov(2, 1),
+        muonpropCov(2, 0),
         muonpropCov(3, 0),
         muonpropCov(3, 1),
         muonpropCov(3, 2),
@@ -717,8 +719,8 @@ struct mftMchMatcher {
         mftpropCov(3, 3),
         mftpropCov(4, 4),
         mftpropCov(1, 0),
-        mftpropCov(2, 0),
         mftpropCov(2, 1),
+        mftpropCov(2, 0),
         mftpropCov(3, 0),
         mftpropCov(3, 1),
         mftpropCov(3, 2),

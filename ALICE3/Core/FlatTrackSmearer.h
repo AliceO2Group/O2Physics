@@ -17,6 +17,10 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <ReconstructionDataFormats/Track.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <span>
+
 namespace o2::delphes
 {
 /**

@@ -20,8 +20,10 @@
 
 #include "Common/DataModel/Multiplicity.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 
 namespace o2::aod
 {
@@ -143,6 +145,7 @@ DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(ChannelID, channelID, int);
 DECLARE_SOA_COLUMN(Amplitude, amplitude, float);
+DECLARE_SOA_COLUMN(GainAmplitude, gainAmplitude, float);
 DECLARE_SOA_COLUMN(InvMass, invMass, float);
 DECLARE_SOA_COLUMN(IdPos, idPos, int64_t);
 DECLARE_SOA_COLUMN(IdNeg, idNeg, int64_t);
@@ -176,6 +179,7 @@ DECLARE_SOA_TABLE(LRFt0aTracks, "AOD", "LRFT0ATRACK",
                   lrcorrtrktable::LRCollisionId,
                   lrcorrtrktable::ChannelID,
                   lrcorrtrktable::Amplitude,
+                  lrcorrtrktable::GainAmplitude,
                   lrcorrtrktable::Eta,
                   lrcorrtrktable::Phi);
 using LRFt0aTrack = LRFt0aTracks::iterator;
@@ -185,6 +189,7 @@ DECLARE_SOA_TABLE(LRFt0cTracks, "AOD", "LRFT0CTRACK",
                   lrcorrtrktable::LRCollisionId,
                   lrcorrtrktable::ChannelID,
                   lrcorrtrktable::Amplitude,
+                  lrcorrtrktable::GainAmplitude,
                   lrcorrtrktable::Eta,
                   lrcorrtrktable::Phi);
 using LRFt0cTrack = LRFt0cTracks::iterator;
@@ -231,6 +236,7 @@ DECLARE_SOA_TABLE(UpcLRFt0aTracks, "AOD", "UPCLRFT0ATRACK",
                   lrcorrtrktable::UpcLRCollisionId,
                   lrcorrtrktable::ChannelID,
                   lrcorrtrktable::Amplitude,
+                  lrcorrtrktable::GainAmplitude,
                   lrcorrtrktable::Eta,
                   lrcorrtrktable::Phi);
 using UpcLRFt0aTrack = UpcLRFt0aTracks::iterator;
@@ -240,6 +246,7 @@ DECLARE_SOA_TABLE(UpcLRFt0cTracks, "AOD", "UPCLRFT0CTRACK",
                   lrcorrtrktable::UpcLRCollisionId,
                   lrcorrtrktable::ChannelID,
                   lrcorrtrktable::Amplitude,
+                  lrcorrtrktable::GainAmplitude,
                   lrcorrtrktable::Eta,
                   lrcorrtrktable::Phi);
 using UpcLRFt0cTrack = UpcLRFt0cTracks::iterator;

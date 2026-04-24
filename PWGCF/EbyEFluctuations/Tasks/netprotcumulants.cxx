@@ -53,6 +53,41 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+namespace o2::aod
+{
+
+// ===== Event columns =====
+DECLARE_SOA_COLUMN(EventId, eventId, int);
+DECLARE_SOA_COLUMN(MyCent, myCent, float);
+DECLARE_SOA_COLUMN(Vz, vz, float);
+DECLARE_SOA_COLUMN(Ntrk, ntrk, int);
+DECLARE_SOA_COLUMN(Np, np, int);
+DECLARE_SOA_COLUMN(Npbar, npbar, int);
+
+// ===== Track columns =====
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(Eta, eta, float);
+DECLARE_SOA_COLUMN(Pid, pid, int);
+DECLARE_SOA_COLUMN(Eff, eff, float);
+
+// ===== Tables =====
+DECLARE_SOA_TABLE(EventTable, "AOD", "MYEVENT",
+                  EventId,
+                  MyCent,
+                  Vz,
+                  Ntrk,
+                  Np,
+                  Npbar);
+
+DECLARE_SOA_TABLE(MYTrackTable, "AOD", "MYTRACK",
+                  EventId,
+                  Pt,
+                  Eta,
+                  Pid,
+                  Eff);
+
+} // namespace o2::aod
+
 struct NetProtCumulants {
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
@@ -109,6 +144,26 @@ struct NetProtCumulants {
   Configurable<std::string> ccdbPath{"ccdbPath", "Users/s/swati/EtavsPtEfficiency_LHC24f3b_PIDchoice0", "CCDB path to ccdb object containing eff(pt, eta) in 2D hist"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  Produces<aod::EventTable> eventTable;
+  Produces<aod::MYTrackTable> trackTable;
+
+  int eventCounter = 0;
+  int eventId = 0;
+
+  // event variables
+  int Ntrk_event = 0;
+  int Np_event = 0;
+  int Npbar_event = 0;
+
+  float cent_event = 0;
+  float vz_event = 0;
+
+  // track variables
+  float pt_track = 0;
+  float eta_track = 0;
+  int pid_track = 0;
+  float eff_track = 0;
 
   TRandom3* fRndm = new TRandom3(0);
 
@@ -855,6 +910,7 @@ struct NetProtCumulants {
     if (cfgUsePtDepDCAz) {
       fPtDepDCAz = new TF1("ptDepDCAz", cfgDCAzFunc->c_str(), 0.001, 10.0);
     }
+
   } // end init()
 
   template <typename T>
@@ -2134,6 +2190,18 @@ struct NetProtCumulants {
 
   void processDataRec(AodCollisions::iterator const& coll, aod::BCsWithTimestamps const&, AodTracks const& inputTracks)
   {
+
+    // reset per event
+    Ntrk_event = 0;
+    Np_event = 0;
+    Npbar_event = 0;
+
+    // assign event ID
+    eventId = eventCounter++;
+
+    // store event info
+    cent_event = coll.centFT0C();
+    vz_event = coll.posZ();
     if (!coll.sel8()) {
       return;
     }
@@ -2263,6 +2331,7 @@ struct NetProtCumulants {
       if (cfgIfMandatoryTOF && !track.hasTOF()) {
         continue;
       }
+      Ntrk_event++;
 
       bool trackSelected = false;
       if (cfgPIDchoice == 0)
@@ -2293,11 +2362,18 @@ struct NetProtCumulants {
 
           if (track.pt() < cfgCutPtUpper) {
             nProt = nProt + 1.0;
+            Np_event++;
             float pEff = getEfficiency(track); // get efficiency of track
             if (pEff != 0) {
               for (int i = 1; i < 7; i++) {
                 powerEffProt[i] += std::pow(1.0 / pEff, i);
               }
+              pt_track = track.pt();
+              eta_track = track.eta();
+              pid_track = +1;
+              eff_track = pEff;
+
+              trackTable(eventId, pt_track, eta_track, pid_track, eff_track);
             }
           }
         }
@@ -2311,17 +2387,26 @@ struct NetProtCumulants {
           histos.fill(HIST("hrecDcaZAntiproton"), track.dcaZ());
           if (track.pt() < cfgCutPtUpper) {
             nAntiprot = nAntiprot + 1.0;
+            Npbar_event++;
             float pEff = getEfficiency(track); // get efficiency of track
             if (pEff != 0) {
               for (int i = 1; i < 7; i++) {
                 powerEffAntiprot[i] += std::pow(1.0 / pEff, i);
               }
+              pt_track = track.pt();
+              eta_track = track.eta();
+              pid_track = -1;
+              eff_track = pEff;
+
+              trackTable(eventId, pt_track, eta_track, pid_track, eff_track);
             }
           }
         }
 
       } //! checking PID
     } //! end track loop
+
+    eventTable(eventId, cent_event, vz_event, Ntrk_event, Np_event, Npbar_event);
 
     float netProt = nProt - nAntiprot;
     float nTracks = nProt + nAntiprot;

@@ -3493,8 +3493,8 @@ struct AnalysisDileptonTrack {
 
   TH2F* hAcceptance_rec;
   TH2F* hAcceptance_gen;
-  TH1F* hEfficiency_dilepton;
-  TH1F* hEfficiency_hadron;
+  TH2F* hEfficiency_dilepton;
+  TH2F* hEfficiency_hadron;
   TH1F* hMasswindow;
 
   void init(o2::framework::InitContext& context)
@@ -3760,14 +3760,30 @@ struct AnalysisDileptonTrack {
     if (!listAccs) {
       LOG(fatal) << "Problem getting TList object with efficiencies!";
     }
-    hEfficiency_dilepton = static_cast<TH1F*>(listAccs->FindObject("hEfficiency_dilepton"));
-    hEfficiency_hadron = static_cast<TH1F*>(listAccs->FindObject("hEfficiency_hadron"));
+    hEfficiency_dilepton = static_cast<TH2F*>(listAccs->FindObject("hEfficiency_dilepton"));
+    hEfficiency_hadron = static_cast<TH2F*>(listAccs->FindObject("hEfficiency_hadron"));
     hAcceptance_rec = static_cast<TH2F*>(listAccs->FindObject("hAcceptance_rec"));
     hAcceptance_gen = static_cast<TH2F*>(listAccs->FindObject("hAcceptance_gen"));
     hMasswindow = static_cast<TH1F*>(listAccs->FindObject("hMasswindow"));
     if (!hAcceptance_rec || !hAcceptance_gen || !hEfficiency_dilepton || !hEfficiency_hadron || !hMasswindow) {
       LOG(fatal) << "Problem getting histograms from the TList object with efficiencies!";
     }
+  }
+
+  float GetSafeInterpolationWeight(TH2* hEff, float x, float y)
+  {
+    if (!hEff)
+      return 1.0;
+    float minX = hEff->GetXaxis()->GetBinCenter(1);
+    float maxX = hEff->GetXaxis()->GetBinCenter(hEff->GetXaxis()->GetNbins());
+
+    float minY = hEff->GetYaxis()->GetBinCenter(1);
+    float maxY = hEff->GetYaxis()->GetBinCenter(hEff->GetYaxis()->GetNbins());
+
+    float safeX = std::max(minX, std::min(x, maxX));
+    float safeY = std::max(minY, std::min(y, maxY));
+
+    return hEff->Interpolate(safeX, safeY);
   }
 
   // Template function to run pair - hadron combinations
@@ -3853,10 +3869,10 @@ struct AnalysisDileptonTrack {
             float hadron_eta = track.eta();
             float hadron_phi = track.phi();
             float deltaphi = RecoDecay::constrainAngle(dilepton_phi - hadron_phi, -0.5 * o2::constants::math::PI);
-            Effweight_rec = hAcceptance_rec->Interpolate(dilepton_eta - hadron_eta, deltaphi);
-            float Effdilepton = hEfficiency_dilepton->Interpolate(dilepton.pt());
+            Effweight_rec = GetSafeInterpolationWeight(hAcceptance_rec, dilepton_eta - hadron_eta, deltaphi);
+            float Effdilepton = GetSafeInterpolationWeight(hEfficiency_dilepton, dilepton.rap(), dilepton.pt());
+            float Effhadron = GetSafeInterpolationWeight(hEfficiency_hadron, track.eta(), track.pt());
             float Masswindow = hMasswindow->Interpolate(dilepton.pt());
-            float Effhadron = hEfficiency_hadron->Interpolate(track.pt());
             Effweight_rec = Effweight_rec * Effdilepton * Effhadron * Masswindow;
           }
           std::vector<float> fTransRange = fConfigTransRange;
@@ -4087,10 +4103,10 @@ struct AnalysisDileptonTrack {
             float hadron_eta = track.eta();
             float hadron_phi = track.phi();
             float deltaphi = RecoDecay::constrainAngle(dilepton_phi - hadron_phi, -0.5 * o2::constants::math::PI);
-            Effweight_rec = hAcceptance_rec->Interpolate(dilepton_eta - hadron_eta, deltaphi);
-            float Effdilepton = hEfficiency_dilepton->Interpolate(dilepton.pt());
+            Effweight_rec = GetSafeInterpolationWeight(hAcceptance_rec, dilepton_eta - hadron_eta, deltaphi);
+            float Effdilepton = GetSafeInterpolationWeight(hEfficiency_dilepton, dilepton.rap(), dilepton.pt());
+            float Effhadron = GetSafeInterpolationWeight(hEfficiency_hadron, track.eta(), track.pt());
             float Masswindow = hMasswindow->Interpolate(dilepton.pt());
-            float Effhadron = hEfficiency_hadron->Interpolate(track.pt());
             if (fConfigApplyEfficiencyME) {
               Effweight_rec = Effdilepton * Effhadron * Masswindow; // for the moment, apply the efficiency correction also for the mixed event pairs, but this can be changed in case we want to apply it only for the same event pairs
             } else {
@@ -4098,7 +4114,7 @@ struct AnalysisDileptonTrack {
             }
           }
           std::vector<float> fTransRange = fConfigTransRange;
-          VarManager::FillEnergyCorrelatorTriple(lepton1, lepton2, track, fValuesHadron, fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom(), 1. / Effweight_rec);
+          VarManager::FillEnergyCorrelatorTriple(lepton1, lepton2, track, VarManager::fgValues, fTransRange[0], fTransRange[1], fConfigApplyMassEC, fMassBkg->GetRandom(), 1. / Effweight_rec);
 
           // loop over dilepton leg cuts and track cuts and fill histograms separately for each combination
           for (int icut = 0; icut < fNCuts; icut++) {

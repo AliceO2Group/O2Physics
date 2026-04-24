@@ -17,6 +17,7 @@
 #include "PWGEM/Dilepton/DataModel/lmeeMLTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/CollisionTypeHelper.h"
 #include "Common/Core/RecoDecay.h"
@@ -66,7 +67,7 @@ using namespace o2::constants::physics;
 using namespace o2::aod::fwdtrackutils;
 
 struct TreeCreatorMuonML {
-  using MyCollisionsMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
+  using MyCollisionsMC = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::McCollisionLabels>;
   using MyCollisionMC = MyCollisionsMC::iterator;
 
   using MyFwdTracksMC = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::McFwdTrackLabels>;
@@ -75,19 +76,21 @@ struct TreeCreatorMuonML {
   using MyMFTTracksMC = soa::Join<o2::aod::MFTTracks, aod::McMFTTrackLabels>;
   using MyMFTTrackMC = MyMFTTracksMC::iterator;
 
-  Produces<aod::EMFwdTracksForML> mltable;
+  Produces<aod::EMFwdTracksForML> trackTable;
+  Produces<aod::EMFwdTrackErrsForML> trackErrTable;
 
   // Configurables
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-  // Configurable<std::string> irSource{"irSource", "ZNC hadronic", "Estimator of the interaction rate (Recommended: pp/OO --> T0VTX, Pb-Pb --> ZNC hadronic)"};
 
   // for z shift for propagation
   Configurable<bool> cfgApplyZShiftFromCCDB{"cfgApplyZShiftFromCCDB", false, "flag to apply z shift"};
   Configurable<std::string> cfgZShiftPath{"cfgZShiftPath", "Users/m/mcoquet/ZShift", "CCDB path for z shift to apply to forward tracks"};
   Configurable<float> cfgManualZShift{"cfgManualZShift", 0, "manual z-shift for propagation of global muon to PV"};
   Configurable<float> cfgDownSampling{"cfgDownSampling", 1.1, "down sampling for fake matches"};
+  Configurable<float> matchingZ{"matchingZ", -77.5, "z position where matching is performed"};
+  Configurable<float> maxMatchingChi2MCHMFT{"maxMatchingChi2MCHMFT", 100.f, "max. chi2 for MCH-MFT matching"};
 
   struct : ConfigurableGroup {
     std::string prefix = "eventCutGroup";
@@ -98,23 +101,34 @@ struct TreeCreatorMuonML {
     Configurable<bool> cfgRequireNoITSROFB{"cfgRequireNoITSROFB", false, "require no ITS readout frame border"};
     Configurable<bool> cfgRequireNoSameBunchPileup{"cfgRequireNoSameBunchPileup", false, "require no same bunch pileup in event cut"};
     Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
+    // for RCT
+    o2::framework::Configurable<bool> cfgRequireGoodRCT{"cfgRequireGoodRCT", false, "require good detector flag in run condtion table"};
+    o2::framework::Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT_muon_glo", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
+    o2::framework::Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "set ZDC flag for AA"};
+    o2::framework::Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
   } eventCutGroup;
 
   struct : ConfigurableGroup {
     std::string prefix = "glMuonCutGroup";
-    Configurable<float> minEta{"minEta", -3.6, "min. eta acceptance for MFT-MCH-MID"};
-    Configurable<float> maxEta{"maxEta", -2.5, "max. eta acceptance for MFT-MCH-MID"};
-    Configurable<float> maxMatchingChi2MCHMFT{"maxMatchingChi2MCHMFT", 100.f, "max. chi2 for MCH-MFT matching"};
-    Configurable<float> maxChi2{"maxChi2", 20.f, "max. chi2 for global muon"};
+    // Configurable<float> minEta{"minEta", -3.6, "min. eta acceptance for MFT-MCH-MID"};
+    // Configurable<float> maxEta{"maxEta", -2.5, "max. eta acceptance for MFT-MCH-MID"};
+    // Configurable<float> maxChi2{"maxChi2", 1e+10, "max. chi2 for global muon"};
     Configurable<bool> refitGlobalMuon{"refitGlobalMuon", true, "flag to refit global muon"};
-    Configurable<float> matchingZ{"matchingZ", -77.5, "z position where matching is performed"};
   } glMuonCutGroup;
+
+  struct : ConfigurableGroup {
+    std::string prefix = "MFTCutGroup";
+    Configurable<float> minPt{"minPt", 0.04f, "min. pT for MFTsa to reject crazy tracks"};
+    Configurable<float> minEta{"minEta", -4.1f, "min. eta acceptance for MFTsa to reject crazy tracks"};
+    Configurable<float> maxEta{"maxEta", -2.0f, "max. eta acceptance for MFTsa to reject crazy tracks"};
+  } MFTCutGroup;
 
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   std::mt19937 engine;
   std::uniform_real_distribution<float> dist01;
 
+  o2::aod::rctsel::RCTFlagsChecker rctChecker;
   ctpRateFetcher mRateFetcher;
   std::string irSourceForCptFetcher{""};
 
@@ -132,6 +146,7 @@ struct TreeCreatorMuonML {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
     ccdbApi.init(ccdburl);
+    rctChecker.init(eventCutGroup.cfgRCTLabel.value, eventCutGroup.cfgCheckZDC.value, eventCutGroup.cfgTreatLimitedAcceptanceAsBad.value);
 
     addHistograms();
 
@@ -191,6 +206,8 @@ struct TreeCreatorMuonML {
 
   void addHistograms()
   {
+    fRegistry.add("Event/hCorrFT0CvsMFT", "mult. corr. between FT0C and MFT;multFT0C;N_{MFTsa}", kTH2F, {{600, 0, 60000}, {100, 0, 10000}}, false);
+
     auto hMuonType = fRegistry.add<TH1>("hMuonType", "muon type", kTH1F, {{5, -0.5f, 4.5f}}, false);
     hMuonType->GetXaxis()->SetBinLabel(1, "MFT-MCH-MID (global muon)");
     hMuonType->GetXaxis()->SetBinLabel(2, "MFT-MCH-MID (global muon other match)");
@@ -263,7 +280,7 @@ struct TreeCreatorMuonML {
   }
 
   template <bool withMFTCov, typename TCollision, typename TFwdTrack, typename TFwdTracks, typename TMFTTracks, typename TMFTTracksCov>
-  bool fillFwdTrackTable(TCollision const& collision, TFwdTrack const& fwdtrack, TFwdTracks const&, TMFTTracks const&, TMFTTracksCov const& mftCovs, const float hadronicRate)
+  bool fillFwdTrackTable(TCollision const& collision, TFwdTrack const& fwdtrack, TFwdTracks const&, TMFTTracks const&, TMFTTracksCov const& mftCovs, const float hadronicRate, const uint16_t nmft)
   {
     if (fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
       return false;
@@ -276,6 +293,10 @@ struct TreeCreatorMuonML {
     }
     float chi2 = fwdtrack.chi2() / (2.f * (mchtrack.nClusters() + mfttrack.nClusters()) - 5.f);
     float chi2mft = mfttrack.chi2() / (2.f * mfttrack.nClusters() - 5.f);
+
+    if (mfttrack.eta() < MFTCutGroup.minEta || MFTCutGroup.maxEta < mfttrack.eta() || mfttrack.pt() < MFTCutGroup.minPt) {
+      return false;
+    }
 
     // auto mcParticle_MFTMCHMID = fwdtrack.template mcParticle_as<aod::McParticles>(); // this is identical to mcParticle_MCHMID
     auto mcParticle_MCHMID = mchtrack.template mcParticle_as<aod::McParticles>(); // this is identical to mcParticle_MFTMCHMID
@@ -292,34 +313,34 @@ struct TreeCreatorMuonML {
     if (fwdtrack.chi2MatchMCHMID() < 0.f) { // this should never happen. only for protection.
       return false;
     }
-    if (fwdtrack.chi2MatchMCHMFT() < 0.f || glMuonCutGroup.maxMatchingChi2MCHMFT < fwdtrack.chi2MatchMCHMFT()) { // this should never happen. only for protection.
+    if (fwdtrack.chi2MatchMCHMFT() < 0.f || maxMatchingChi2MCHMFT < fwdtrack.chi2MatchMCHMFT()) {
       return false;
     }
-    if (fwdtrack.chi2() < 0.f || glMuonCutGroup.maxChi2 < chi2) { // this should never happen. only for protection.
-      return false;
-    }
+    // if (fwdtrack.chi2() < 0.f || glMuonCutGroup.maxChi2 < chi2) {
+    //   return false;
+    // }
     if (mfttrack.chi2() < 0.f) { // this should never happen. only for protection.
       return false;
     }
 
-    o2::dataformats::GlobalFwdTrack propmuonAtPV = propagateMuon(fwdtrack, fwdtrack, collision, propagationPoint::kToVertex, glMuonCutGroup.matchingZ, mBz, mZShift);
+    o2::dataformats::GlobalFwdTrack propmuonAtPV = propagateMuon(fwdtrack, fwdtrack, collision, propagationPoint::kToVertex, matchingZ, mBz, mZShift);
     float pt = propmuonAtPV.getPt();
     float eta = propmuonAtPV.getEta();
     float phi = propmuonAtPV.getPhi();
     // o2::math_utils::bringTo02Pi(phi);
     phi = RecoDecay::constrainAngle(phi, 0, 1U);
 
-    if (eta < glMuonCutGroup.minEta || glMuonCutGroup.maxEta < eta) {
-      return false;
-    }
+    // if (eta < glMuonCutGroup.minEta || glMuonCutGroup.maxEta < eta) {
+    //   return false;
+    // }
 
     float dcaX = propmuonAtPV.getX() - collision.posX();
     float dcaY = propmuonAtPV.getY() - collision.posY();
     // float dcaZ = propmuonAtPV.getZ() - collision.posZ();
     float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
 
-    o2::dataformats::GlobalFwdTrack propmuonAtPV_Matched = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToVertex, glMuonCutGroup.matchingZ, mBz, mZShift);
-    float ptMatchedMCHMID = propmuonAtPV_Matched.getPt();
+    o2::dataformats::GlobalFwdTrack propmuonAtPV_Matched = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToVertex, matchingZ, mBz, mZShift);
+    // float ptMatchedMCHMID = propmuonAtPV_Matched.getPt();
     float etaMatchedMCHMID = propmuonAtPV_Matched.getEta();
     float phiMatchedMCHMID = propmuonAtPV_Matched.getPhi();
     // o2::math_utils::bringTo02Pi(phiMatchedMCHMID);
@@ -328,41 +349,76 @@ struct TreeCreatorMuonML {
       pt = propmuonAtPV_Matched.getP() * std::sin(2.f * std::atan(std::exp(-eta)));
     }
 
-    o2::dataformats::GlobalFwdTrack propmuonAtDCA_Matched = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToDCA, glMuonCutGroup.matchingZ, mBz, mZShift);
+    o2::dataformats::GlobalFwdTrack propmuonAtDCA_Matched = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToDCA, matchingZ, mBz, mZShift);
     float dcaX_Matched = propmuonAtDCA_Matched.getX() - collision.posX();
     float dcaY_Matched = propmuonAtDCA_Matched.getY() - collision.posY();
     float dcaXY_Matched = std::sqrt(dcaX_Matched * dcaX_Matched + dcaY_Matched * dcaY_Matched);
     float pDCA = mchtrack.p() * dcaXY_Matched;
     float rAtAbsorberEnd = fwdtrack.rAtAbsorberEnd(); // this works only for GlobalMuonTrack
 
-    float xMatchedMFTatMP = 999.f;
-    float yMatchedMFTatMP = 999.f;
-    float xMatchedMCHMIDatMP = 999.f;
-    float yMatchedMCHMIDatMP = 999.f;
+    float xMFTatMP = 999.f, yMFTatMP = 999.f;
+    float xMCHMIDatMP = 999.f, yMCHMIDatMP = 999.f;
+
+    float xErrMFTatMP = 999.f, yErrMFTatMP = 999.f;
+    float xErrMCHMIDatMP = 999.f, yErrMCHMIDatMP = 999.f;
+    float signed1PtMFTatMP = 999.f, tglMFTatMP = 999.f, phiMFTatMP = 999.f;
+    float signed1PtMCHMIDatMP = 999.f, tglMCHMIDatMP = 999.f, phiMCHMIDatMP = 999.f;
+
+    float signed1PtErrMFTatMP = 999.f, tglErrMFTatMP = 999.f, phiErrMFTatMP = 999.f;
+    float signed1PtErrMCHMIDatMP = 999.f, tglErrMCHMIDatMP = 999.f, phiErrMCHMIDatMP = 999.f;
 
     if constexpr (withMFTCov) {
       auto mfttrackcov = mftCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
       o2::track::TrackParCovFwd mftsaAtMP = getTrackParCovFwdShift(mfttrack, mZShift, mfttrackcov); // values at innermost update
-      mftsaAtMP.propagateToZhelix(glMuonCutGroup.matchingZ, mBz);                                   // propagated to matching plane
-      xMatchedMFTatMP = mftsaAtMP.getX();
-      yMatchedMFTatMP = mftsaAtMP.getY();
+      mftsaAtMP.propagateToZhelix(matchingZ, mBz);                                                  // propagated to matching plane
+      xMFTatMP = mftsaAtMP.getX();
+      yMFTatMP = mftsaAtMP.getY();
+      xErrMFTatMP = std::sqrt(mftsaAtMP.getSigma2X());
+      yErrMFTatMP = std::sqrt(mftsaAtMP.getSigma2Y());
 
-      auto muonAtMP = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToMatchingPlane, glMuonCutGroup.matchingZ, mBz, mZShift); // propagated to matching plane
-      xMatchedMCHMIDatMP = muonAtMP.getX();
-      yMatchedMCHMIDatMP = muonAtMP.getY();
+      signed1PtMFTatMP = mftsaAtMP.getInvQPt();
+      tglMFTatMP = mftsaAtMP.getTanl();
+      phiMFTatMP = RecoDecay::constrainAngle(mftsaAtMP.getPhi(), 0, 1U);
+      signed1PtErrMFTatMP = std::sqrt(mftsaAtMP.getSigma2InvQPt());
+      tglErrMFTatMP = std::sqrt(mftsaAtMP.getSigma2Tanl());
+      phiErrMFTatMP = std::sqrt(mftsaAtMP.getSigma2Phi());
+
+      auto muonAtMP = propagateMuon(mchtrack, mchtrack, collision, propagationPoint::kToMatchingPlane, matchingZ, mBz, mZShift); // propagated to matching plane
+      xMCHMIDatMP = muonAtMP.getX();
+      yMCHMIDatMP = muonAtMP.getY();
+      xErrMCHMIDatMP = std::sqrt(muonAtMP.getSigma2X());
+      yErrMCHMIDatMP = std::sqrt(muonAtMP.getSigma2Y());
+
+      signed1PtMCHMIDatMP = muonAtMP.getInvQPt();
+      tglMCHMIDatMP = muonAtMP.getTanl();
+      phiMCHMIDatMP = RecoDecay::constrainAngle(muonAtMP.getPhi(), 0, 1U);
+      signed1PtErrMCHMIDatMP = std::sqrt(muonAtMP.getSigma2InvQPt());
+      tglErrMCHMIDatMP = std::sqrt(muonAtMP.getSigma2Tanl());
+      phiErrMCHMIDatMP = std::sqrt(muonAtMP.getSigma2Phi());
     }
 
     float deta = etaMatchedMCHMID - eta;
     float dphi = phiMatchedMCHMID - phi;
     o2::math_utils::bringToPMPi(dphi);
 
-    mltable(collision.posZ(), collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(), hadronicRate,
-            fwdtrack.trackType(), pt, eta, phi, fwdtrack.sign(), dcaX, dcaY, ptMatchedMCHMID, etaMatchedMCHMID, phiMatchedMCHMID,
-            xMatchedMCHMIDatMP, yMatchedMCHMIDatMP, xMatchedMFTatMP, yMatchedMFTatMP,
-            fwdtrack.nClusters(), pDCA, rAtAbsorberEnd, chi2, fwdtrack.chi2MatchMCHMID(), fwdtrack.chi2MatchMCHMFT(),
-            // fwdtrack.mchBitMap(), fwdtrack.midBitMap(), fwdtrack.midBoards(),
-            mfttrack.mftClusterSizesAndTrackFlags(), chi2mft, mfttrack.nClusters(), pdgCode, isPrimary, isMatched,
-            mcParticle_MCHMID.pt(), mcParticle_MCHMID.eta(), mcParticle_MCHMID.phi());
+    trackTable(collision.posZ(), /*collision.numContrib(),*/ collision.multFT0C(), /*collision.trackOccupancyInTimeRange(),*/ collision.ft0cOccupancyInTimeRange(), hadronicRate, nmft,
+               // fwdtrack.trackType(),
+
+               signed1PtMFTatMP, tglMFTatMP, phiMFTatMP,
+               xMFTatMP, yMFTatMP,
+
+               signed1PtMCHMIDatMP, tglMCHMIDatMP, phiMCHMIDatMP,
+               xMCHMIDatMP, yMCHMIDatMP,
+
+               // fwdtrack.chi2MatchMCHMID(),
+               fwdtrack.chi2MatchMCHMFT(),
+               pdgCode, isPrimary, isMatched,
+               mcParticle_MCHMID.pt(), mcParticle_MCHMID.eta(), mcParticle_MCHMID.phi());
+
+    trackErrTable(signed1PtErrMFTatMP, tglErrMFTatMP, phiErrMFTatMP,
+                  xErrMFTatMP, yErrMFTatMP,
+                  signed1PtErrMCHMIDatMP, tglErrMCHMIDatMP, phiErrMCHMIDatMP,
+                  xErrMCHMIDatMP, yErrMCHMIDatMP);
 
     fRegistry.fill(HIST("hMuonType"), fwdtrack.trackType());
     fRegistry.fill(HIST("MFTMCHMID/hPt"), pt);
@@ -390,6 +446,7 @@ struct TreeCreatorMuonML {
 
   SliceCache cache;
   Preslice<aod::FwdTracks> perCollision = o2::aod::fwdtrack::collisionId;
+  Preslice<aod::MFTTracks> perCollision_MFT = o2::aod::fwdtrack::collisionId;
 
   std::unordered_map<int, int> map_mfttrackcovs;
   void processWithMFTCov(MyCollisionsMC const& collisions, aod::BCsWithTimestamps const&, MyFwdTracksMC const& fwdtracks, MyMFTTracksMC const& mfttracks, aod::MFTTracksCov const& mftCovs, aod::McParticles const&, aod::McCollisions const&)
@@ -409,7 +466,16 @@ struct TreeCreatorMuonML {
       if (!isSelectedCollision(collision)) {
         continue;
       }
+
+      if (eventCutGroup.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
+        continue;
+      }
+
       float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSourceForCptFetcher) * 1.e-3; // kHz
+
+      auto mfttracks_per_collision = mfttracks.sliceBy(perCollision_MFT, collision.globalIndex());
+      uint16_t nmft = mfttracks_per_collision.size();
+      fRegistry.fill(HIST("Event/hCorrFT0CvsMFT"), collision.multFT0C(), mfttracks_per_collision.size());
 
       auto fwdtracks_coll = fwdtracks.sliceBy(perCollision, collision.globalIndex());
       for (const auto& fwdtrack : fwdtracks_coll) {
@@ -420,7 +486,7 @@ struct TreeCreatorMuonML {
           continue;
         }
 
-        fillFwdTrackTable<true>(collision, fwdtrack, fwdtracks, mfttracks, mftCovs, hadronicRate);
+        fillFwdTrackTable<true>(collision, fwdtrack, fwdtracks, mfttracks, mftCovs, hadronicRate, nmft);
 
       } // end of fwdtrack loop
     } // end of collision loop
@@ -442,7 +508,16 @@ struct TreeCreatorMuonML {
       if (!isSelectedCollision(collision)) {
         continue;
       }
+
+      if (eventCutGroup.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
+        continue;
+      }
+
       float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSourceForCptFetcher) * 1.e-3; // kHz
+
+      auto mfttracks_per_collision = mfttracks.sliceBy(perCollision_MFT, collision.globalIndex());
+      uint16_t nmft = mfttracks_per_collision.size();
+      fRegistry.fill(HIST("Event/hCorrFT0CvsMFT"), collision.multFT0C(), mfttracks_per_collision.size());
 
       auto fwdtracks_coll = fwdtracks.sliceBy(perCollision, collision.globalIndex());
       for (const auto& fwdtrack : fwdtracks_coll) {
@@ -453,7 +528,7 @@ struct TreeCreatorMuonML {
           continue;
         }
 
-        fillFwdTrackTable<false>(collision, fwdtrack, fwdtracks, mfttracks, nullptr, hadronicRate);
+        fillFwdTrackTable<false>(collision, fwdtrack, fwdtracks, mfttracks, nullptr, hadronicRate, nmft);
 
       } // end of fwdtrack loop
     } // end of collision loop
