@@ -128,11 +128,11 @@ class CutCulatorApp(tk.Tk):
         top = tk.Frame(self, bg=BG, pady=10, padx=18)
         top.pack(fill="x")
 
-        tk.Label(top, text="✂  CutCulator", font=FONT_TITLE, bg=BG, fg=ACCENT).pack(side="left")
+        tk.Label(top, text="CutCulator", font=FONT_TITLE, bg=BG, fg=ACCENT).pack(side="left")
 
         btn_frame = tk.Frame(top, bg=BG)
         btn_frame.pack(side="right")
-        self._btn_open = self._make_button(btn_frame, "📂  Open ROOT file", self._open_file_dialog, ACCENT)
+        self._btn_open = self._make_button(btn_frame, "Open ROOT file", self._open_file_dialog, ACCENT)
         self._btn_open.pack(side="left", padx=4)
 
         # ── file + histogram selector bar ──
