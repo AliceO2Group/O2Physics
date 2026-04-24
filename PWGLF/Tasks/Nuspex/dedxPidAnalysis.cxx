@@ -68,6 +68,7 @@ using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedT
 static constexpr int NCentHists{10};
 std::array<std::shared_ptr<TH3>, NCentHists> hDedxVsMomentumVsCentPos{};
 std::array<std::shared_ptr<TH3>, NCentHists> hDedxVsMomentumVsCentNeg{};
+std::array<std::shared_ptr<TH3>, NCentHists + 1> hDedxVspTMomentumVsCent{};
 
 struct DedxPidAnalysis {
 
@@ -240,6 +241,7 @@ struct DedxPidAnalysis {
   static constexpr std::string_view DedxvsMomentumNeg[ParticlesType] = {"dEdx_vs_Momentum_all_Neg", "dEdx_vs_Momentum_Pi_v0_Neg", "dEdx_vs_Momentum_Pr_v0_Neg", "dEdx_vs_Momentum_El_v0_Neg"};
   static constexpr std::string_view DedxvsMomentumvsCentPos[CentralityClasses] = {"dEdx_vs_Momentum_Cent0_1_Pos", "dEdx_vs_Momentum_Cent1_5_Pos", "dEdx_vs_Momentum_Cent5_10_Pos", "dEdx_vs_Momentum_Cent10_15_Pos", "dEdx_vs_Momentum_Cent15_20_Pos", "dEdx_vs_Momentum_Cent20_30_Pos", "dEdx_vs_Momentum_Cent30_40_Pos", "dEdx_vs_Momentum_Cent40_50_Pos", "dEdx_vs_Momentum_Cent50_70_Pos", "dEdx_vs_Momentum_Cent70_100_Pos"};
   static constexpr std::string_view DedxvsMomentumvsCentNeg[CentralityClasses] = {"dEdx_vs_Momentum_Cent0_1_Neg", "dEdx_vs_Momentum_Cent1_5_Neg", "dEdx_vs_Momentum_Cent5_10_Neg", "dEdx_vs_Momentum_Cent10_15_Neg", "dEdx_vs_Momentum_Cent15_20_Neg", "dEdx_vs_Momentum_Cent20_30_Neg", "dEdx_vs_Momentum_Cent30_40_Neg", "dEdx_vs_Momentum_Cent40_50_Neg", "dEdx_vs_Momentum_Cent50_70_Neg", "dEdx_vs_Momentum_Cent70_100_Neg"};
+  static constexpr std::string_view DedxvspTMomentumvsCent[CentralityClasses + 1] = {"dEdx_vs_pTMomentum_Cent0_1", "dEdx_vs_pTMomentum_Cent1_5", "dEdx_vs_pTMomentum_Cent5_10", "dEdx_vs_pTMomentum_Cent10_15", "dEdx_vs_pTMomentum_Cent15_20", "dEdx_vs_pTMomentum_Cent20_30", "dEdx_vs_pTMomentum_Cent30_40", "dEdx_vs_pTMomentum_Cent40_50", "dEdx_vs_pTMomentum_Cent50_70", "dEdx_vs_pTMomentum_Cent70_100", "dEdx_vs_pTMomentum_all_Pos"};
   // Ncl TPC
   static constexpr std::string_view NclTPCDedxMomentumNegBefore[EtaIntervals] = {"Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_1_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_2_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_3_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_4_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_5_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_6_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_7_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Neg_8_Before"};
   static constexpr std::string_view NclTPCDedxMomentumPosBefore[EtaIntervals] = {"Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_1_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_2_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_3_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_4_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_5_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_6_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_7_Before", "Ncl_FoundTPC_vs_dEdx_vs_Momentum_Pos_8_Before"};
@@ -476,6 +478,10 @@ struct DedxPidAnalysis {
       for (int i = 0; i < CentralityClasses; ++i) {
         hDedxVsMomentumVsCentPos[i] = registryDeDx.add<TH3>(DedxvsMomentumvsCentPos[i].data(), "dE/dx", HistType::kTH3F, {{pAxisTrack}, {dedxAxis}, {etaAxis}});
         hDedxVsMomentumVsCentNeg[i] = registryDeDx.add<TH3>(DedxvsMomentumvsCentNeg[i].data(), "dE/dx", HistType::kTH3F, {{pAxisTrack}, {dedxAxis}, {etaAxis}});
+      }
+
+      for (int i = 0; i < CentralityClasses + 1; ++i) {
+        hDedxVspTMomentumVsCent[i] = registryDeDx.add<TH3>(DedxvspTMomentumvsCent[i].data(), "dE/dx", HistType::kTH3F, {{ptAxis}, {dedxAxis}, {etaAxis}});
       }
     }
 
@@ -1522,6 +1528,7 @@ struct DedxPidAnalysis {
       registryDeDx.fill(HIST("Tracks_vs_pT_all_cuts"), trk.pt());
 
       float signedP = trk.sign() * getMomentum(trk);
+      float signedpT = trk.sign() * trk.pt();
 
       // MIP calibration for pions
       if (getMomentum(trk) >= pionMin && getMomentum(trk) <= pionMax) {
@@ -1610,10 +1617,14 @@ struct DedxPidAnalysis {
               registryDeDx.fill(HIST(DedxvsMomentumPos[0]), signedP, trk.tpcSignal() * 50 / calibrationFactorPos->at(i), trk.eta());
               registryDeDx.fill(HIST("heta_vs_pt_vs_p_all_Pos"), trk.eta(), trk.pt(), trk.p());
               hDedxVsMomentumVsCentPos[centIndex]->Fill(signedP, trk.tpcSignal() * 50 / calibrationFactorPos->at(i), trk.eta());
+              hDedxVspTMomentumVsCent[centIndex]->Fill(signedpT, trk.tpcSignal() * 50 / calibrationFactorPos->at(i), trk.eta());
+              hDedxVspTMomentumVsCent[10]->Fill(signedpT, trk.tpcSignal() * 50 / calibrationFactorPos->at(i), trk.eta());
             } else {
               registryDeDx.fill(HIST(DedxvsMomentumNeg[0]), std::abs(signedP), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), trk.eta());
               registryDeDx.fill(HIST("heta_vs_pt_vs_p_all_Neg"), trk.eta(), trk.pt(), trk.p());
               hDedxVsMomentumVsCentNeg[centIndex]->Fill(std::abs(signedP), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), trk.eta());
+              hDedxVspTMomentumVsCent[centIndex]->Fill(std::abs(signedpT), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), trk.eta());
+              hDedxVspTMomentumVsCent[10]->Fill(std::abs(signedpT), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), trk.eta());
             }
           }
         }
