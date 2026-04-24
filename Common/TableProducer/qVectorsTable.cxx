@@ -73,7 +73,15 @@ struct qVectorsTable {
     kFV0A,
     kTPCpos,
     kTPCneg,
-    kTPCall
+    kTPCall,
+    kNDetectors
+  };
+  enum Corrections {
+    kNoCorr = 0,
+    kRecenter,
+    kTwist,
+    kRescale,
+    kNCorrections
   };
 
   // Configurables.
@@ -99,7 +107,8 @@ struct qVectorsTable {
 
   Configurable<bool> useCorrectionForRun{"useCorrectionForRun", true, "Get Qvector corrections based on run number instead of timestamp"};
   Configurable<std::string> cfgGainEqPath{"cfgGainEqPath", "Users/j/junlee/Qvector/GainEq", "CCDB path for gain equalization constants"};
-  Configurable<std::string> cfgQvecCalibPath{"cfgQvecCalibPath", "Analysis/EventPlane/QVecCorrections", "CCDB pasth for Q-vecteor calibration constants"};
+  Configurable<std::string> cfgQvecCalibPath{"cfgQvecCalibPath", "Analysis/EventPlane/QVecCorrections", "CCDB path for Q-vector calibration constants"};
+  Configurable<std::string> cfgQvecEseCalibPath{"cfgQvecEseCalibPath", "Analysis/EventPlane/QVecEseCorrections", "CCDB path for EsE Q-vector calibration constants"};
 
   Configurable<bool> cfgShiftCorr{"cfgShiftCorr", false, "configurable flag for shift correction"};
   Configurable<std::string> cfgShiftPath{"cfgShiftPath", "", "CCDB path for shift correction"};
@@ -133,7 +142,23 @@ struct qVectorsTable {
   Produces<aod::QvectorTPCnegVecs> qVectorTPCnegVec;
   Produces<aod::QvectorTPCallVecs> qVectorTPCallVec;
 
-  Produces<aod::QvectorsReds> qVectorRed;
+  Produces<aod::EseQvectors> eseQVector;
+  Produces<aod::EseQvecFT0Cs> eseQVectorFT0C;
+  Produces<aod::EseQvecFT0As> eseQVectorFT0A;
+  Produces<aod::EseQvecFT0Ms> eseQVectorFT0M;
+  Produces<aod::EseQvecFV0As> eseQVectorFV0A;
+  Produces<aod::EseQvecTPCposs> eseQVectorTPCpos;
+  Produces<aod::EseQvecTPCnegs> eseQVectorTPCneg;
+  Produces<aod::EseQvecTPCalls> eseQVectorTPCall;
+
+  Produces<aod::EseQvecFT0CVecs> eseQVectorFT0CVec;
+  Produces<aod::EseQvecFT0AVecs> eseQVectorFT0AVec;
+  Produces<aod::EseQvecFT0MVecs> eseQVectorFT0MVec;
+  Produces<aod::EseQvecFV0AVecs> eseQVectorFV0AVec;
+  Produces<aod::EseQvecTPCposVecs> eseQVectorTPCposVec;
+  Produces<aod::EseQvecTPCnegVecs> eseQVectorTPCnegVec;
+  Produces<aod::EseQvecTPCallVecs> eseQVectorTPCallVec;
+  Produces<aod::EseQvecPercs> eseQVectorPerc;
 
   std::vector<float> FT0RelGainConst{};
   std::vector<float> FV0RelGainConst{};
@@ -154,7 +179,8 @@ struct qVectorsTable {
   int runNumber{-1};
   float cent;
 
-  std::vector<TH3F*> objQvec{};
+  std::vector<TH3F*> corrsQvecSp{};
+  std::vector<TH3F*> corrsQvecEse{};
   std::vector<TProfile3D*> shiftprofile{};
 
   // Deprecated, will be removed in future after transition time //
@@ -261,19 +287,34 @@ struct qVectorsTable {
       LOGF(fatal, "Could not get the alignment parameters for FV0.");
     }
 
-    objQvec.clear();
+    corrsQvecSp.clear();
     for (std::size_t i = 0; i < cfgnMods->size(); i++) {
       int ind = cfgnMods->at(i);
       fullPath = cfgQvecCalibPath;
       fullPath += "/v";
       fullPath += std::to_string(ind);
-      auto objqvec = getForTsOrRun<TH3F>(fullPath, timestamp, runnumber);
-      if (!objqvec) {
+      auto modeCorrQvecSp = getForTsOrRun<TH3F>(fullPath, timestamp, runnumber);
+      if (!modeCorrQvecSp) {
         fullPath = cfgQvecCalibPath;
         fullPath += "/v2";
-        objqvec = getForTsOrRun<TH3F>(fullPath, timestamp, runnumber);
+        modeCorrQvecSp = getForTsOrRun<TH3F>(fullPath, timestamp, runnumber);
       }
-      objQvec.push_back(objqvec);
+      corrsQvecSp.push_back(modeCorrQvecSp);
+    }
+
+    corrsQvecEse.clear();
+    for (std::size_t i = 0; i < cfgnMods->size(); i++) {
+      int ind = cfgnMods->at(i);
+      fullPath = cfgQvecEseCalibPath;
+      fullPath += "/eseq";
+      fullPath += std::to_string(ind);
+      auto modeCorrQvecEse = getForTsOrRun<TH3F>(fullPath, timestamp, runnumber);
+      if (!modeCorrQvecEse) {
+        fullPath = cfgQvecCalibPath; // cfgQvecEseCalibPath;
+        fullPath += "/v2"; // "/eseq2";
+        modeCorrQvecEse = getForTsOrRun<TH3F>(fullPath, timestamp, runnumber);
+      }
+      corrsQvecEse.push_back(modeCorrQvecEse);
     }
 
     if (cfgShiftCorr) {
@@ -351,16 +392,139 @@ struct qVectorsTable {
     }
   }
 
+  void NormalizeQvec(std::vector<float>& QvecReNorm, std::vector<float>& QvecImNorm, std::vector<float> QvecReRaw, std::vector<float> QvecImRaw, std::vector<float>& QvecAmp, bool useSqrt = false) {
+
+    for (std::size_t i = 0; i < kNDetectors; i++) {
+      float qVecDetReNorm{999.}, qVecDetImNorm{999.};
+      if (QvecAmp[i] > 1e-8) {
+        if (useSqrt) {
+          qVecDetReNorm = QvecReRaw[i] / std::sqrt(QvecAmp[i]);
+          qVecDetImNorm = QvecImRaw[i] / std::sqrt(QvecAmp[i]);
+        } else {
+          qVecDetReNorm = QvecReRaw[i] / QvecAmp[i];
+          qVecDetImNorm = QvecImRaw[i] / QvecAmp[i];
+        }
+      }
+      for (int iCorr=0; iCorr < Corrections::kNCorrections; iCorr++) {
+        QvecReNorm.push_back(qVecDetReNorm);
+        QvecImNorm.push_back(qVecDetImNorm);
+      }
+    }
+  }
+
+  void CorrectQvec(float cent, std::vector<float>& qvecRe, std::vector<float>& qvecIm, TH3F* histsCorrs, int nMode) {
+    int nCorrections = static_cast<int>(Corrections::kNCorrections);
+    if (cent < cfgMaxCentrality) {
+      for (auto i{0u}; i < kTPCall + 1; i++) {
+        int idxDet = i * Corrections::kNCorrections;
+        helperEP.DoRecenter(qvecRe[idxDet + Corrections::kRecenter], qvecIm[idxDet + Corrections::kRecenter],
+                            histsCorrs->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), histsCorrs->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
+
+        helperEP.DoRecenter(qvecRe[idxDet + Corrections::kTwist], qvecIm[idxDet + Corrections::kTwist],
+                            histsCorrs->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), histsCorrs->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
+        helperEP.DoTwist(qvecRe[idxDet + Corrections::kTwist], qvecIm[idxDet + Corrections::kTwist],
+                         histsCorrs->GetBinContent(static_cast<int>(cent) + 1, 3, i + 1), histsCorrs->GetBinContent(static_cast<int>(cent) + 1, 4, i + 1));
+
+        helperEP.DoRecenter(qvecRe[idxDet + Corrections::kRescale], qvecIm[idxDet + Corrections::kRescale],
+                            histsCorrs->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), histsCorrs->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
+        helperEP.DoTwist(qvecRe[idxDet + Corrections::kRescale], qvecIm[idxDet + Corrections::kRescale],
+                         histsCorrs->GetBinContent(static_cast<int>(cent) + 1, 3, i + 1), histsCorrs->GetBinContent(static_cast<int>(cent) + 1, 4, i + 1));
+        helperEP.DoRescale(qvecRe[idxDet + Corrections::kRescale], qvecIm[idxDet + Corrections::kRescale],
+                           histsCorrs->GetBinContent(static_cast<int>(cent) + 1, 5, i + 1), histsCorrs->GetBinContent(static_cast<int>(cent) + 1, 6, i + 1));
+      }
+      if (cfgShiftCorr) {
+        auto deltapsiFT0C = 0.0;
+        auto deltapsiFT0A = 0.0;
+        auto deltapsiFT0M = 0.0;
+        auto deltapsiFV0A = 0.0;
+        auto deltapsiTPCpos = 0.0;
+        auto deltapsiTPCneg = 0.0;
+        auto deltapsiTPCall = 0.0;
+
+        auto psidefFT0C = TMath::ATan2(qvecIm[kFT0C * nCorrections + Corrections::kRescale], qvecRe[kFT0C * nCorrections + Corrections::kRescale]) / static_cast<float>(nMode);
+        auto psidefFT0A = TMath::ATan2(qvecIm[kFT0A * nCorrections + Corrections::kRescale], qvecRe[kFT0A * nCorrections + Corrections::kRescale]) / static_cast<float>(nMode);
+        auto psidefFT0M = TMath::ATan2(qvecIm[kFT0M * nCorrections + Corrections::kRescale], qvecRe[kFT0M * nCorrections + Corrections::kRescale]) / static_cast<float>(nMode);
+        auto psidefFV0A = TMath::ATan2(qvecIm[kFV0A * nCorrections + Corrections::kRescale], qvecRe[kFV0A * nCorrections + Corrections::kRescale]) / static_cast<float>(nMode);
+        auto psidefTPCpos = TMath::ATan2(qvecIm[kTPCpos * nCorrections + Corrections::kRescale], qvecRe[kTPCpos * nCorrections + Corrections::kRescale]) / static_cast<float>(nMode);
+        auto psidefTPCneg = TMath::ATan2(qvecIm[kTPCneg * nCorrections + Corrections::kRescale], qvecRe[kTPCneg * nCorrections + Corrections::kRescale]) / static_cast<float>(nMode);
+        auto psidefTPCall = TMath::ATan2(qvecIm[kTPCall * nCorrections + Corrections::kRescale], qvecRe[kTPCall * nCorrections + Corrections::kRescale]) / static_cast<float>(nMode);
+
+        for (int ishift = 1; ishift <= 10; ishift++) {
+          auto coeffshiftxFT0C = shiftprofile.at(nMode - 2)->GetBinContent(shiftprofile.at(nMode - 2)->FindBin(cent, 2 * kFT0C, ishift - 0.5));
+          auto coeffshiftyFT0C = shiftprofile.at(nMode - 2)->GetBinContent(shiftprofile.at(nMode - 2)->FindBin(cent, 2 * kFT0C + 1, ishift - 0.5));
+          auto coeffshiftxFT0A = shiftprofile.at(nMode - 2)->GetBinContent(shiftprofile.at(nMode - 2)->FindBin(cent, 2 * kFT0A, ishift - 0.5));
+          auto coeffshiftyFT0A = shiftprofile.at(nMode - 2)->GetBinContent(shiftprofile.at(nMode - 2)->FindBin(cent, 2 * kFT0A + 1, ishift - 0.5));
+          auto coeffshiftxFT0M = shiftprofile.at(nMode - 2)->GetBinContent(shiftprofile.at(nMode - 2)->FindBin(cent, 2 * kFT0M, ishift - 0.5));
+          auto coeffshiftyFT0M = shiftprofile.at(nMode - 2)->GetBinContent(shiftprofile.at(nMode - 2)->FindBin(cent, 2 * kFT0M + 1, ishift - 0.5));
+          auto coeffshiftxFV0A = shiftprofile.at(nMode - 2)->GetBinContent(shiftprofile.at(nMode - 2)->FindBin(cent, 2 * kFV0A, ishift - 0.5));
+          auto coeffshiftyFV0A = shiftprofile.at(nMode - 2)->GetBinContent(shiftprofile.at(nMode - 2)->FindBin(cent, 2 * kFV0A + 1, ishift - 0.5));
+          auto coeffshiftxTPCpos = shiftprofile.at(nMode - 2)->GetBinContent(shiftprofile.at(nMode - 2)->FindBin(cent, 2 * kTPCpos, ishift - 0.5));
+          auto coeffshiftyTPCpos = shiftprofile.at(nMode - 2)->GetBinContent(shiftprofile.at(nMode - 2)->FindBin(cent, 2 * kTPCpos + 1, ishift - 0.5));
+          auto coeffshiftxTPCneg = shiftprofile.at(nMode - 2)->GetBinContent(shiftprofile.at(nMode - 2)->FindBin(cent, 2 * kTPCneg, ishift - 0.5));
+          auto coeffshiftyTPCneg = shiftprofile.at(nMode - 2)->GetBinContent(shiftprofile.at(nMode - 2)->FindBin(cent, 2 * kTPCneg + 1, ishift - 0.5));
+          auto coeffshiftxTPCall = shiftprofile.at(nMode - 2)->GetBinContent(shiftprofile.at(nMode - 2)->FindBin(cent, 2 * kTPCall, ishift - 0.5));
+          auto coeffshiftyTPCall = shiftprofile.at(nMode - 2)->GetBinContent(shiftprofile.at(nMode - 2)->FindBin(cent, 2 * kTPCall + 1, ishift - 0.5));
+
+          deltapsiFT0C += ((2. / (1.0 * ishift)) * (-coeffshiftxFT0C * TMath::Cos(ishift * static_cast<float>(nMode) * psidefFT0C) + coeffshiftyFT0C * TMath::Sin(ishift * static_cast<float>(nMode) * psidefFT0C))) / static_cast<float>(nMode);
+          deltapsiFT0A += ((2. / (1.0 * ishift)) * (-coeffshiftxFT0A * TMath::Cos(ishift * static_cast<float>(nMode) * psidefFT0A) + coeffshiftyFT0A * TMath::Sin(ishift * static_cast<float>(nMode) * psidefFT0A))) / static_cast<float>(nMode);
+          deltapsiFT0M += ((2. / (1.0 * ishift)) * (-coeffshiftxFT0M * TMath::Cos(ishift * static_cast<float>(nMode) * psidefFT0M) + coeffshiftyFT0M * TMath::Sin(ishift * static_cast<float>(nMode) * psidefFT0M))) / static_cast<float>(nMode);
+          deltapsiFV0A += ((2. / (1.0 * ishift)) * (-coeffshiftxFV0A * TMath::Cos(ishift * static_cast<float>(nMode) * psidefFV0A) + coeffshiftyFV0A * TMath::Sin(ishift * static_cast<float>(nMode) * psidefFV0A))) / static_cast<float>(nMode);
+          deltapsiTPCpos += ((2. / (1.0 * ishift)) * (-coeffshiftxTPCpos * TMath::Cos(ishift * static_cast<float>(nMode) * psidefTPCpos) + coeffshiftyTPCpos * TMath::Sin(ishift * static_cast<float>(nMode) * psidefTPCpos))) / static_cast<float>(nMode);
+          deltapsiTPCneg += ((2. / (1.0 * ishift)) * (-coeffshiftxTPCneg * TMath::Cos(ishift * static_cast<float>(nMode) * psidefTPCneg) + coeffshiftyTPCneg * TMath::Sin(ishift * static_cast<float>(nMode) * psidefTPCneg))) / static_cast<float>(nMode);
+          deltapsiTPCall += ((2. / (1.0 * ishift)) * (-coeffshiftxTPCall * TMath::Cos(ishift * static_cast<float>(nMode) * psidefTPCall) + coeffshiftyTPCall * TMath::Sin(ishift * static_cast<float>(nMode) * psidefTPCall))) / static_cast<float>(nMode);
+        }
+
+        deltapsiFT0C *= static_cast<float>(nMode);
+        deltapsiFT0A *= static_cast<float>(nMode);
+        deltapsiFT0M *= static_cast<float>(nMode);
+        deltapsiFV0A *= static_cast<float>(nMode);
+        deltapsiTPCpos *= static_cast<float>(nMode);
+        deltapsiTPCneg *= static_cast<float>(nMode);
+        deltapsiTPCall *= static_cast<float>(nMode);
+
+        float qvecReShiftedFT0C = qvecRe[kFT0C * nCorrections + Corrections::kRescale] * TMath::Cos(deltapsiFT0C) - qvecIm[kFT0C * nCorrections + Corrections::kRescale] * TMath::Sin(deltapsiFT0C);
+        float qvecImShiftedFT0C = qvecRe[kFT0C * nCorrections + Corrections::kRescale] * TMath::Sin(deltapsiFT0C) + qvecIm[kFT0C * nCorrections + Corrections::kRescale] * TMath::Cos(deltapsiFT0C);
+        float qvecReShiftedFT0A = qvecRe[kFT0A * nCorrections + Corrections::kRescale] * TMath::Cos(deltapsiFT0A) - qvecIm[kFT0A * nCorrections + Corrections::kRescale] * TMath::Sin(deltapsiFT0A);
+        float qvecImShiftedFT0A = qvecRe[kFT0A * nCorrections + Corrections::kRescale] * TMath::Sin(deltapsiFT0A) + qvecIm[kFT0A * nCorrections + Corrections::kRescale] * TMath::Cos(deltapsiFT0A);
+        float qvecReShiftedFT0M = qvecRe[kFT0M * nCorrections + Corrections::kRescale] * TMath::Cos(deltapsiFT0M) - qvecIm[kFT0M * nCorrections + Corrections::kRescale] * TMath::Sin(deltapsiFT0M);
+        float qvecImShiftedFT0M = qvecRe[kFT0M * nCorrections + Corrections::kRescale] * TMath::Sin(deltapsiFT0M) + qvecIm[kFT0M * nCorrections + Corrections::kRescale] * TMath::Cos(deltapsiFT0M);
+        float qvecReShiftedFV0A = qvecRe[kFV0A * nCorrections + Corrections::kRescale] * TMath::Cos(deltapsiFV0A) - qvecIm[kFV0A * nCorrections + Corrections::kRescale] * TMath::Sin(deltapsiFV0A);
+        float qvecImShiftedFV0A = qvecRe[kFV0A * nCorrections + Corrections::kRescale] * TMath::Sin(deltapsiFV0A) + qvecIm[kFV0A * nCorrections + Corrections::kRescale] * TMath::Cos(deltapsiFV0A);
+        float qvecReShiftedTPCpos = qvecRe[kTPCpos * nCorrections + Corrections::kRescale] * TMath::Cos(deltapsiTPCpos) - qvecIm[kTPCpos * nCorrections + Corrections::kRescale] * TMath::Sin(deltapsiTPCpos);
+        float qvecImShiftedTPCpos = qvecRe[kTPCpos * nCorrections + Corrections::kRescale] * TMath::Sin(deltapsiTPCpos) + qvecIm[kTPCpos * nCorrections + Corrections::kRescale] * TMath::Cos(deltapsiTPCpos);
+        float qvecReShiftedTPCneg = qvecRe[kTPCneg * nCorrections + Corrections::kRescale] * TMath::Cos(deltapsiTPCneg) - qvecIm[kTPCneg * nCorrections + Corrections::kRescale] * TMath::Sin(deltapsiTPCneg);
+        float qvecImShiftedTPCneg = qvecRe[kTPCneg * nCorrections + Corrections::kRescale] * TMath::Sin(deltapsiTPCneg) + qvecIm[kTPCneg * nCorrections + Corrections::kRescale] * TMath::Cos(deltapsiTPCneg);
+        float qvecReShiftedTPCall = qvecRe[kTPCall * nCorrections + Corrections::kRescale] * TMath::Cos(deltapsiTPCall) - qvecIm[kTPCall * nCorrections + Corrections::kRescale] * TMath::Sin(deltapsiTPCall);
+        float qvecImShiftedTPCall = qvecRe[kTPCall * nCorrections + Corrections::kRescale] * TMath::Sin(deltapsiTPCall) + qvecIm[kTPCall * nCorrections + Corrections::kRescale] * TMath::Cos(deltapsiTPCall);
+
+        qvecRe[kFT0C * nCorrections + Corrections::kRescale] = qvecReShiftedFT0C;
+        qvecIm[kFT0C * nCorrections + Corrections::kRescale] = qvecImShiftedFT0C;
+        qvecRe[kFT0A * nCorrections + Corrections::kRescale] = qvecReShiftedFT0A;
+        qvecIm[kFT0A * nCorrections + Corrections::kRescale] = qvecImShiftedFT0A;
+        qvecRe[kFT0M * nCorrections + Corrections::kRescale] = qvecReShiftedFT0M;
+        qvecIm[kFT0M * nCorrections + Corrections::kRescale] = qvecImShiftedFT0M;
+        qvecRe[kFV0A * nCorrections + Corrections::kRescale] = qvecReShiftedFV0A;
+        qvecIm[kFV0A * nCorrections + Corrections::kRescale] = qvecImShiftedFV0A;
+        qvecRe[kTPCpos * nCorrections + Corrections::kRescale] = qvecReShiftedTPCpos;
+        qvecIm[kTPCpos * nCorrections + Corrections::kRescale] = qvecImShiftedTPCpos;
+        qvecRe[kTPCneg * nCorrections + Corrections::kRescale] = qvecReShiftedTPCneg;
+        qvecIm[kTPCneg * nCorrections + Corrections::kRescale] = qvecImShiftedTPCneg;
+        qvecRe[kTPCall * nCorrections + Corrections::kRescale] = qvecReShiftedTPCall;
+        qvecIm[kTPCall * nCorrections + Corrections::kRescale] = qvecImShiftedTPCall;
+      }
+    }
+  }
+
   template <typename Nmode, typename CollType, typename TrackType>
-  void CalQvec(const Nmode nmode, const CollType& coll, const TrackType& track, std::vector<float>& QvecRe, std::vector<float>& QvecIm, std::vector<float>& QvecAmp, std::vector<int>& TrkTPCposLabel, std::vector<int>& TrkTPCnegLabel, std::vector<int>& TrkTPCallLabel)
+  void CalQvec(const Nmode nMode, const CollType& coll, const TrackType& track, std::vector<float>& QvecRe, std::vector<float>& QvecIm, std::vector<float>& QvecAmp, std::vector<int>& TrkTPCposLabel, std::vector<int>& TrkTPCnegLabel, std::vector<int>& TrkTPCallLabel)
   {
-    float qVectFT0A[2] = {0.};
-    float qVectFT0C[2] = {0.};
-    float qVectFT0M[2] = {0.};
-    float qVectFV0A[2] = {0.};
-    float qVectTPCpos[2] = {0.};
-    float qVectTPCneg[2] = {0.};
-    float qVectTPCall[2] = {0.};
+    float qVectFT0A[2] = {-999., -999.};
+    float qVectFT0C[2] = {-999., -999.};
+    float qVectFT0M[2] = {-999., -999.};
+    float qVectFV0A[2] = {-999., -999.};
+    float qVectTPCpos[2] = {0., 0.};  // Always computed
+    float qVectTPCneg[2] = {0., 0.};  // Always computed
+    float qVectTPCall[2] = {0., 0.};  // Always computed
 
     TComplex QvecDet(0);
     TComplex QvecFT0M(0);
@@ -380,17 +544,14 @@ struct qVectorsTable {
           histosQA.fill(HIST("FT0Amp"), ampl, FT0AchId);
           histosQA.fill(HIST("FT0AmpCor"), ampl / FT0RelGainConst[FT0AchId], FT0AchId);
 
-          helperEP.SumQvectors(0, FT0AchId, ampl / FT0RelGainConst[FT0AchId], nmode, QvecDet, sumAmplFT0A, ft0geom, fv0geom);
-          helperEP.SumQvectors(0, FT0AchId, ampl / FT0RelGainConst[FT0AchId], nmode, QvecFT0M, sumAmplFT0M, ft0geom, fv0geom);
+          helperEP.SumQvectors(0, FT0AchId, ampl / FT0RelGainConst[FT0AchId], nMode, QvecDet, sumAmplFT0A, ft0geom, fv0geom);
+          helperEP.SumQvectors(0, FT0AchId, ampl / FT0RelGainConst[FT0AchId], nMode, QvecFT0M, sumAmplFT0M, ft0geom, fv0geom);
         }
         if (sumAmplFT0A > 1e-8) {
           QvecDet /= sumAmplFT0A;
           qVectFT0A[0] = QvecDet.Re();
           qVectFT0A[1] = QvecDet.Im();
         }
-      } else {
-        qVectFT0A[0] = 999.;
-        qVectFT0A[1] = 999.;
       }
 
       if (useDetector["QvectorFT0Cs"]) {
@@ -402,65 +563,42 @@ struct qVectorsTable {
           histosQA.fill(HIST("FT0Amp"), ampl, FT0CchId);
           histosQA.fill(HIST("FT0AmpCor"), ampl / FT0RelGainConst[FT0CchId], FT0CchId);
 
-          helperEP.SumQvectors(0, FT0CchId, ampl / FT0RelGainConst[FT0CchId], nmode, QvecDet, sumAmplFT0C, ft0geom, fv0geom);
-          helperEP.SumQvectors(0, FT0CchId, ampl / FT0RelGainConst[FT0CchId], nmode, QvecFT0M, sumAmplFT0M, ft0geom, fv0geom);
+          helperEP.SumQvectors(0, FT0CchId, ampl / FT0RelGainConst[FT0CchId], nMode, QvecDet, sumAmplFT0C, ft0geom, fv0geom);
+          helperEP.SumQvectors(0, FT0CchId, ampl / FT0RelGainConst[FT0CchId], nMode, QvecFT0M, sumAmplFT0M, ft0geom, fv0geom);
         }
 
         if (sumAmplFT0C > 1e-8) {
           QvecDet /= sumAmplFT0C;
           qVectFT0C[0] = QvecDet.Re();
           qVectFT0C[1] = QvecDet.Im();
-        } else {
-          qVectFT0C[0] = 999.;
-          qVectFT0C[1] = 999.;
         }
-      } else {
-        qVectFT0C[0] = -999.;
-        qVectFT0C[1] = -999.;
+        if (sumAmplFT0M > 1e-8 && useDetector["QvectorFT0Ms"]) {
+          QvecFT0M /= sumAmplFT0M;
+          qVectFT0M[0] = QvecFT0M.Re();
+          qVectFT0M[1] = QvecFT0M.Im();
+        }
       }
 
-      if (sumAmplFT0M > 1e-8 && useDetector["QvectorFT0Ms"]) {
-        QvecFT0M /= sumAmplFT0M;
-        qVectFT0M[0] = QvecFT0M.Re();
-        qVectFT0M[1] = QvecFT0M.Im();
-      } else {
-        qVectFT0M[0] = 999.;
-        qVectFT0M[1] = 999.;
+      QvecDet = TComplex(0., 0.);
+      sumAmplFV0A = 0;
+      if (coll.has_foundFV0() && useDetector["QvectorFV0As"]) {
+        auto fv0 = coll.foundFV0();
+
+        for (std::size_t iCh = 0; iCh < fv0.channel().size(); iCh++) {
+          float ampl = fv0.amplitude()[iCh];
+          int FV0AchId = fv0.channel()[iCh];
+          histosQA.fill(HIST("FV0Amp"), ampl, FV0AchId);
+          histosQA.fill(HIST("FV0AmpCor"), ampl / FV0RelGainConst[FV0AchId], FV0AchId);
+
+          helperEP.SumQvectors(1, FV0AchId, ampl / FV0RelGainConst[FV0AchId], nMode, QvecDet, sumAmplFV0A, ft0geom, fv0geom);
+        }
+
+        if (sumAmplFV0A > 1e-8) {
+          QvecDet /= sumAmplFV0A;
+          qVectFV0A[0] = QvecDet.Re();
+          qVectFV0A[1] = QvecDet.Im();
+        }
       }
-    } else {
-      qVectFT0A[0] = -999.;
-      qVectFT0A[1] = -999.;
-      qVectFT0C[0] = -999.;
-      qVectFT0C[1] = -999.;
-      qVectFT0M[0] = -999.;
-      qVectFT0M[1] = -999.;
-    }
-
-    QvecDet = TComplex(0., 0.);
-    sumAmplFV0A = 0;
-    if (coll.has_foundFV0() && useDetector["QvectorFV0As"]) {
-      auto fv0 = coll.foundFV0();
-
-      for (std::size_t iCh = 0; iCh < fv0.channel().size(); iCh++) {
-        float ampl = fv0.amplitude()[iCh];
-        int FV0AchId = fv0.channel()[iCh];
-        histosQA.fill(HIST("FV0Amp"), ampl, FV0AchId);
-        histosQA.fill(HIST("FV0AmpCor"), ampl / FV0RelGainConst[FV0AchId], FV0AchId);
-
-        helperEP.SumQvectors(1, FV0AchId, ampl / FV0RelGainConst[FV0AchId], nmode, QvecDet, sumAmplFV0A, ft0geom, fv0geom);
-      }
-
-      if (sumAmplFV0A > 1e-8) {
-        QvecDet /= sumAmplFV0A;
-        qVectFV0A[0] = QvecDet.Re();
-        qVectFV0A[1] = QvecDet.Im();
-      } else {
-        qVectFV0A[0] = 999.;
-        qVectFV0A[1] = 999.;
-      }
-    } else {
-      qVectFV0A[0] = -999.;
-      qVectFV0A[1] = -999.;
     }
 
     int nTrkTPCpos = 0;
@@ -478,77 +616,40 @@ struct qVectorsTable {
       if (trk.eta() < cfgEtaMin) {
         continue;
       }
-      qVectTPCall[0] += trk.pt() * std::cos(trk.phi() * nmode);
-      qVectTPCall[1] += trk.pt() * std::sin(trk.phi() * nmode);
+      qVectTPCall[0] += trk.pt() * std::cos(trk.phi() * nMode);
+      qVectTPCall[1] += trk.pt() * std::sin(trk.phi() * nMode);
       TrkTPCallLabel.push_back(trk.globalIndex());
       nTrkTPCall++;
       if (std::abs(trk.eta()) < 0.1) {
         continue;
       }
       if (trk.eta() > 0 && (useDetector["QvectorTPCposs"] || useDetector["QvectorBPoss"])) {
-        qVectTPCpos[0] += trk.pt() * std::cos(trk.phi() * nmode);
-        qVectTPCpos[1] += trk.pt() * std::sin(trk.phi() * nmode);
+        qVectTPCpos[0] += trk.pt() * std::cos(trk.phi() * nMode);
+        qVectTPCpos[1] += trk.pt() * std::sin(trk.phi() * nMode);
         TrkTPCposLabel.push_back(trk.globalIndex());
         nTrkTPCpos++;
       } else if (trk.eta() < 0 && (useDetector["QvectorTPCnegs"] || useDetector["QvectorBNegs"])) {
-        qVectTPCneg[0] += trk.pt() * std::cos(trk.phi() * nmode);
-        qVectTPCneg[1] += trk.pt() * std::sin(trk.phi() * nmode);
+        qVectTPCneg[0] += trk.pt() * std::cos(trk.phi() * nMode);
+        qVectTPCneg[1] += trk.pt() * std::sin(trk.phi() * nMode);
         TrkTPCnegLabel.push_back(trk.globalIndex());
         nTrkTPCneg++;
       }
     }
-    if (nTrkTPCpos > 0) {
-      qVectTPCpos[0] /= nTrkTPCpos;
-      qVectTPCpos[1] /= nTrkTPCpos;
-    } else {
-      qVectTPCpos[0] = 999.;
-      qVectTPCpos[1] = 999.;
-    }
 
-    if (nTrkTPCneg > 0) {
-      qVectTPCneg[0] /= nTrkTPCneg;
-      qVectTPCneg[1] /= nTrkTPCneg;
-    } else {
-      qVectTPCneg[0] = 999.;
-      qVectTPCneg[1] = 999.;
-    }
-
-    if (nTrkTPCall > 0) {
-      qVectTPCall[0] /= nTrkTPCall;
-      qVectTPCall[1] /= nTrkTPCall;
-    } else {
-      qVectTPCall[0] = 999.;
-      qVectTPCall[1] = 999.;
-    }
-
-    for (auto i{0u}; i < 4; i++) {
-      QvecRe.push_back(qVectFT0C[0]);
-      QvecIm.push_back(qVectFT0C[1]);
-    }
-    for (auto i{0u}; i < 4; i++) {
-      QvecRe.push_back(qVectFT0A[0]);
-      QvecIm.push_back(qVectFT0A[1]);
-    }
-    for (auto i{0u}; i < 4; i++) {
-      QvecRe.push_back(qVectFT0M[0]);
-      QvecIm.push_back(qVectFT0M[1]);
-    }
-    for (auto i{0u}; i < 4; i++) {
-      QvecRe.push_back(qVectFV0A[0]);
-      QvecIm.push_back(qVectFV0A[1]);
-    }
-    for (auto i{0u}; i < 4; i++) {
-      QvecRe.push_back(qVectTPCpos[0]);
-      QvecIm.push_back(qVectTPCpos[1]);
-    }
-    for (auto i{0u}; i < 4; i++) {
-      QvecRe.push_back(qVectTPCneg[0]);
-      QvecIm.push_back(qVectTPCneg[1]);
-    }
-    for (auto i{0u}; i < 4; i++) {
-      QvecRe.push_back(qVectTPCall[0]);
-      QvecIm.push_back(qVectTPCall[1]);
-    }
+    QvecRe.push_back(qVectFT0C[0]);
+    QvecIm.push_back(qVectFT0C[1]);
+    QvecRe.push_back(qVectFT0A[0]);
+    QvecIm.push_back(qVectFT0A[1]);
+    QvecRe.push_back(qVectFT0M[0]);
+    QvecIm.push_back(qVectFT0M[1]);
+    QvecRe.push_back(qVectFV0A[0]);
+    QvecIm.push_back(qVectFV0A[1]);
+    QvecRe.push_back(qVectTPCpos[0]);
+    QvecIm.push_back(qVectTPCpos[1]);
+    QvecRe.push_back(qVectTPCneg[0]);
+    QvecIm.push_back(qVectTPCneg[1]);
+    QvecRe.push_back(qVectTPCall[0]);
+    QvecIm.push_back(qVectTPCall[1]);
 
     QvecAmp.push_back(sumAmplFT0C);
     QvecAmp.push_back(sumAmplFT0A);
@@ -564,24 +665,41 @@ struct qVectorsTable {
     std::vector<int> TrkTPCposLabel{};
     std::vector<int> TrkTPCnegLabel{};
     std::vector<int> TrkTPCallLabel{};
-    std::vector<float> qvecRe{};
-    std::vector<float> qvecIm{};
     std::vector<float> qvecAmp{};
 
-    std::vector<float> qvecReFT0C{};
-    std::vector<float> qvecImFT0C{};
-    std::vector<float> qvecReFT0A{};
-    std::vector<float> qvecImFT0A{};
-    std::vector<float> qvecReFT0M{};
-    std::vector<float> qvecImFT0M{};
-    std::vector<float> qvecReFV0A{};
-    std::vector<float> qvecImFV0A{};
-    std::vector<float> qvecReTPCpos{};
-    std::vector<float> qvecImTPCpos{};
-    std::vector<float> qvecReTPCneg{};
-    std::vector<float> qvecImTPCneg{};
-    std::vector<float> qvecReTPCall{};
-    std::vector<float> qvecImTPCall{};
+    std::vector<float> qvecReSp{};
+    std::vector<float> qvecImSp{};
+    std::vector<float> qvecReFT0CSp{};
+    std::vector<float> qvecImFT0CSp{};
+    std::vector<float> qvecReFT0ASp{};
+    std::vector<float> qvecImFT0ASp{};
+    std::vector<float> qvecReFT0MSp{};
+    std::vector<float> qvecImFT0MSp{};
+    std::vector<float> qvecReFV0ASp{};
+    std::vector<float> qvecImFV0ASp{};
+    std::vector<float> qvecReTPCposSp{};
+    std::vector<float> qvecImTPCposSp{};
+    std::vector<float> qvecReTPCnegSp{};
+    std::vector<float> qvecImTPCnegSp{};
+    std::vector<float> qvecReTPCallSp{};
+    std::vector<float> qvecImTPCallSp{};
+
+    std::vector<float> qvecReEse{};
+    std::vector<float> qvecImEse{};
+    std::vector<float> qvecReFT0CEse{};
+    std::vector<float> qvecImFT0CEse{};
+    std::vector<float> qvecReFT0AEse{};
+    std::vector<float> qvecImFT0AEse{};
+    std::vector<float> qvecReFT0MEse{};
+    std::vector<float> qvecImFT0MEse{};
+    std::vector<float> qvecReFV0AEse{};
+    std::vector<float> qvecImFV0AEse{};
+    std::vector<float> qvecReTPCposEse{};
+    std::vector<float> qvecImTPCposEse{};
+    std::vector<float> qvecReTPCnegEse{};
+    std::vector<float> qvecImTPCnegEse{};
+    std::vector<float> qvecReTPCallEse{};
+    std::vector<float> qvecImTPCallEse{};
 
     auto bc = coll.bc_as<aod::BCsWithTimestamps>();
     int currentRun = bc.runNumber();
@@ -599,182 +717,132 @@ struct qVectorsTable {
       cent = 110.;
       IsCalibrated = false;
     }
+
     for (std::size_t id = 0; id < cfgnMods->size(); id++) {
-      int nmode = cfgnMods->at(id);
-      CalQvec(nmode, coll, tracks, qvecRe, qvecIm, qvecAmp, TrkTPCposLabel, TrkTPCnegLabel, TrkTPCallLabel);
-      if (cent < cfgMaxCentrality) {
-        for (auto i{0u}; i < kTPCall + 1; i++) {
-          helperEP.DoRecenter(qvecRe[(kTPCall + 1) * 4 * id + i * 4 + 1], qvecIm[(kTPCall + 1) * 4 * id + i * 4 + 1],
-                              objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
+      int nMode = cfgnMods->at(id);
 
-          helperEP.DoRecenter(qvecRe[(kTPCall + 1) * 4 * id + i * 4 + 2], qvecIm[(kTPCall + 1) * 4 * id + i * 4 + 2],
-                              objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
-          helperEP.DoTwist(qvecRe[(kTPCall + 1) * 4 * id + i * 4 + 2], qvecIm[(kTPCall + 1) * 4 * id + i * 4 + 2],
-                           objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 3, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 4, i + 1));
+      // Raw Q-vectors, no multiplicity normalization and no corrections
+      std::vector<float> qvecReRaw{};
+      std::vector<float> qvecImRaw{};
+      CalQvec(nMode, coll, tracks, qvecReRaw, qvecImRaw, qvecAmp, TrkTPCposLabel, TrkTPCnegLabel, TrkTPCallLabel);
 
-          helperEP.DoRecenter(qvecRe[(kTPCall + 1) * 4 * id + i * 4 + 3], qvecIm[(kTPCall + 1) * 4 * id + i * 4 + 3],
-                              objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
-          helperEP.DoTwist(qvecRe[(kTPCall + 1) * 4 * id + i * 4 + 3], qvecIm[(kTPCall + 1) * 4 * id + i * 4 + 3],
-                           objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 3, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 4, i + 1));
-          helperEP.DoRescale(qvecRe[(kTPCall + 1) * 4 * id + i * 4 + 3], qvecIm[(kTPCall + 1) * 4 * id + i * 4 + 3],
-                             objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 5, i + 1), objQvec.at(id)->GetBinContent(static_cast<int>(cent) + 1, 6, i + 1));
-        }
-        if (cfgShiftCorr) {
-          auto deltapsiFT0C = 0.0;
-          auto deltapsiFT0A = 0.0;
-          auto deltapsiFT0M = 0.0;
-          auto deltapsiFV0A = 0.0;
-          auto deltapsiTPCpos = 0.0;
-          auto deltapsiTPCneg = 0.0;
-          auto deltapsiTPCall = 0.0;
+      // Scalar Product Q-vectors, normalization by multiplicity/amplitude
+      std::vector<float> nModeQvecReSp{};
+      std::vector<float> nModeQvecImSp{};
+      NormalizeQvec(nModeQvecReSp, nModeQvecImSp, qvecReRaw, qvecImRaw, qvecAmp, false);
+      CorrectQvec(cent, nModeQvecReSp, nModeQvecImSp, corrsQvecSp[id], nMode);
 
-          auto psidefFT0C = TMath::ATan2(qvecIm[(kTPCall + 1) * 4 * id + kFT0C * 4 + 3], qvecRe[(kTPCall + 1) * 4 * id + kFT0C * 4 + 3]) / static_cast<float>(nmode);
-          auto psidefFT0A = TMath::ATan2(qvecIm[(kTPCall + 1) * 4 * id + kFT0A * 4 + 3], qvecRe[(kTPCall + 1) * 4 * id + kFT0A * 4 + 3]) / static_cast<float>(nmode);
-          auto psidefFT0M = TMath::ATan2(qvecIm[(kTPCall + 1) * 4 * id + kFT0M * 4 + 3], qvecRe[(kTPCall + 1) * 4 * id + kFT0M * 4 + 3]) / static_cast<float>(nmode);
-          auto psidefFV0A = TMath::ATan2(qvecIm[(kTPCall + 1) * 4 * id + kFV0A * 4 + 3], qvecRe[(kTPCall + 1) * 4 * id + kFV0A * 4 + 3]) / static_cast<float>(nmode);
-          auto psidefTPCpos = TMath::ATan2(qvecIm[(kTPCall + 1) * 4 * id + kTPCpos * 4 + 3], qvecRe[(kTPCall + 1) * 4 * id + kTPCpos * 4 + 3]) / static_cast<float>(nmode);
-          auto psidefTPCneg = TMath::ATan2(qvecIm[(kTPCall + 1) * 4 * id + kTPCneg * 4 + 3], qvecRe[(kTPCall + 1) * 4 * id + kTPCneg * 4 + 3]) / static_cast<float>(nmode);
-          auto psidefTPCall = TMath::ATan2(qvecIm[(kTPCall + 1) * 4 * id + kTPCall * 4 + 3], qvecRe[(kTPCall + 1) * 4 * id + kTPCall * 4 + 3]) / static_cast<float>(nmode);
+      // Add to summary vector
+      qvecReSp.insert(qvecReSp.end(), nModeQvecReSp.begin(), nModeQvecReSp.end());
+      qvecImSp.insert(qvecImSp.end(), nModeQvecImSp.begin(), nModeQvecImSp.end());
 
-          for (int ishift = 1; ishift <= 10; ishift++) {
-            auto coeffshiftxFT0C = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(cent, 2 * kFT0C, ishift - 0.5));
-            auto coeffshiftyFT0C = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(cent, 2 * kFT0C + 1, ishift - 0.5));
-            auto coeffshiftxFT0A = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(cent, 2 * kFT0A, ishift - 0.5));
-            auto coeffshiftyFT0A = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(cent, 2 * kFT0A + 1, ishift - 0.5));
-            auto coeffshiftxFT0M = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(cent, 2 * kFT0M, ishift - 0.5));
-            auto coeffshiftyFT0M = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(cent, 2 * kFT0M + 1, ishift - 0.5));
-            auto coeffshiftxFV0A = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(cent, 2 * kFV0A, ishift - 0.5));
-            auto coeffshiftyFV0A = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(cent, 2 * kFV0A + 1, ishift - 0.5));
-            auto coeffshiftxTPCpos = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(cent, 2 * kTPCpos, ishift - 0.5));
-            auto coeffshiftyTPCpos = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(cent, 2 * kTPCpos + 1, ishift - 0.5));
-            auto coeffshiftxTPCneg = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(cent, 2 * kTPCneg, ishift - 0.5));
-            auto coeffshiftyTPCneg = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(cent, 2 * kTPCneg + 1, ishift - 0.5));
-            auto coeffshiftxTPCall = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(cent, 2 * kTPCall, ishift - 0.5));
-            auto coeffshiftyTPCall = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(cent, 2 * kTPCall + 1, ishift - 0.5));
+      // Ese Q-vectors, normalization by sqrt(multiplicity/amplitude)
+      std::vector<float> nModeQvecReEse{};
+      std::vector<float> nModeQvecImEse{};
+      NormalizeQvec(nModeQvecReEse, nModeQvecImEse, qvecReRaw, qvecImRaw, qvecAmp, true);
+      CorrectQvec(cent, nModeQvecReEse, nModeQvecImEse, corrsQvecEse[id], nMode);
 
-            deltapsiFT0C += ((2. / (1.0 * ishift)) * (-coeffshiftxFT0C * TMath::Cos(ishift * static_cast<float>(nmode) * psidefFT0C) + coeffshiftyFT0C * TMath::Sin(ishift * static_cast<float>(nmode) * psidefFT0C))) / static_cast<float>(nmode);
-            deltapsiFT0A += ((2. / (1.0 * ishift)) * (-coeffshiftxFT0A * TMath::Cos(ishift * static_cast<float>(nmode) * psidefFT0A) + coeffshiftyFT0A * TMath::Sin(ishift * static_cast<float>(nmode) * psidefFT0A))) / static_cast<float>(nmode);
-            deltapsiFT0M += ((2. / (1.0 * ishift)) * (-coeffshiftxFT0M * TMath::Cos(ishift * static_cast<float>(nmode) * psidefFT0M) + coeffshiftyFT0M * TMath::Sin(ishift * static_cast<float>(nmode) * psidefFT0M))) / static_cast<float>(nmode);
-            deltapsiFV0A += ((2. / (1.0 * ishift)) * (-coeffshiftxFV0A * TMath::Cos(ishift * static_cast<float>(nmode) * psidefFV0A) + coeffshiftyFV0A * TMath::Sin(ishift * static_cast<float>(nmode) * psidefFV0A))) / static_cast<float>(nmode);
-            deltapsiTPCpos += ((2. / (1.0 * ishift)) * (-coeffshiftxTPCpos * TMath::Cos(ishift * static_cast<float>(nmode) * psidefTPCpos) + coeffshiftyTPCpos * TMath::Sin(ishift * static_cast<float>(nmode) * psidefTPCpos))) / static_cast<float>(nmode);
-            deltapsiTPCneg += ((2. / (1.0 * ishift)) * (-coeffshiftxTPCneg * TMath::Cos(ishift * static_cast<float>(nmode) * psidefTPCneg) + coeffshiftyTPCneg * TMath::Sin(ishift * static_cast<float>(nmode) * psidefTPCneg))) / static_cast<float>(nmode);
-            deltapsiTPCall += ((2. / (1.0 * ishift)) * (-coeffshiftxTPCall * TMath::Cos(ishift * static_cast<float>(nmode) * psidefTPCall) + coeffshiftyTPCall * TMath::Sin(ishift * static_cast<float>(nmode) * psidefTPCall))) / static_cast<float>(nmode);
-          }
+      // Add to summary vector
+      qvecReEse.insert(qvecReEse.end(), nModeQvecReEse.begin(), nModeQvecReEse.end());
+      qvecImEse.insert(qvecImEse.end(), nModeQvecImEse.begin(), nModeQvecImEse.end());
 
-          deltapsiFT0C *= static_cast<float>(nmode);
-          deltapsiFT0A *= static_cast<float>(nmode);
-          deltapsiFT0M *= static_cast<float>(nmode);
-          deltapsiFV0A *= static_cast<float>(nmode);
-          deltapsiTPCpos *= static_cast<float>(nmode);
-          deltapsiTPCneg *= static_cast<float>(nmode);
-          deltapsiTPCall *= static_cast<float>(nmode);
-
-          float qvecReShiftedFT0C = qvecRe[(kTPCall + 1) * 4 * id + kFT0C * 4 + 3] * TMath::Cos(deltapsiFT0C) - qvecIm[(kTPCall + 1) * 4 * id + kFT0C * 4 + 3] * TMath::Sin(deltapsiFT0C);
-          float qvecImShiftedFT0C = qvecRe[(kTPCall + 1) * 4 * id + kFT0C * 4 + 3] * TMath::Sin(deltapsiFT0C) + qvecIm[(kTPCall + 1) * 4 * id + kFT0C * 4 + 3] * TMath::Cos(deltapsiFT0C);
-          float qvecReShiftedFT0A = qvecRe[(kTPCall + 1) * 4 * id + kFT0A * 4 + 3] * TMath::Cos(deltapsiFT0A) - qvecIm[(kTPCall + 1) * 4 * id + kFT0A * 4 + 3] * TMath::Sin(deltapsiFT0A);
-          float qvecImShiftedFT0A = qvecRe[(kTPCall + 1) * 4 * id + kFT0A * 4 + 3] * TMath::Sin(deltapsiFT0A) + qvecIm[(kTPCall + 1) * 4 * id + kFT0A * 4 + 3] * TMath::Cos(deltapsiFT0A);
-          float qvecReShiftedFT0M = qvecRe[(kTPCall + 1) * 4 * id + kFT0M * 4 + 3] * TMath::Cos(deltapsiFT0M) - qvecIm[(kTPCall + 1) * 4 * id + kFT0M * 4 + 3] * TMath::Sin(deltapsiFT0M);
-          float qvecImShiftedFT0M = qvecRe[(kTPCall + 1) * 4 * id + kFT0M * 4 + 3] * TMath::Sin(deltapsiFT0M) + qvecIm[(kTPCall + 1) * 4 * id + kFT0M * 4 + 3] * TMath::Cos(deltapsiFT0M);
-          float qvecReShiftedFV0A = qvecRe[(kTPCall + 1) * 4 * id + kFV0A * 4 + 3] * TMath::Cos(deltapsiFV0A) - qvecIm[(kTPCall + 1) * 4 * id + kFV0A * 4 + 3] * TMath::Sin(deltapsiFV0A);
-          float qvecImShiftedFV0A = qvecRe[(kTPCall + 1) * 4 * id + kFV0A * 4 + 3] * TMath::Sin(deltapsiFV0A) + qvecIm[(kTPCall + 1) * 4 * id + kFV0A * 4 + 3] * TMath::Cos(deltapsiFV0A);
-          float qvecReShiftedTPCpos = qvecRe[(kTPCall + 1) * 4 * id + kTPCpos * 4 + 3] * TMath::Cos(deltapsiTPCpos) - qvecIm[(kTPCall + 1) * 4 * id + kTPCpos * 4 + 3] * TMath::Sin(deltapsiTPCpos);
-          float qvecImShiftedTPCpos = qvecRe[(kTPCall + 1) * 4 * id + kTPCpos * 4 + 3] * TMath::Sin(deltapsiTPCpos) + qvecIm[(kTPCall + 1) * 4 * id + kTPCpos * 4 + 3] * TMath::Cos(deltapsiTPCpos);
-          float qvecReShiftedTPCneg = qvecRe[(kTPCall + 1) * 4 * id + kTPCneg * 4 + 3] * TMath::Cos(deltapsiTPCneg) - qvecIm[(kTPCall + 1) * 4 * id + kTPCneg * 4 + 3] * TMath::Sin(deltapsiTPCneg);
-          float qvecImShiftedTPCneg = qvecRe[(kTPCall + 1) * 4 * id + kTPCneg * 4 + 3] * TMath::Sin(deltapsiTPCneg) + qvecIm[(kTPCall + 1) * 4 * id + kTPCneg * 4 + 3] * TMath::Cos(deltapsiTPCneg);
-          float qvecReShiftedTPCall = qvecRe[(kTPCall + 1) * 4 * id + kTPCall * 4 + 3] * TMath::Cos(deltapsiTPCall) - qvecIm[(kTPCall + 1) * 4 * id + kTPCall * 4 + 3] * TMath::Sin(deltapsiTPCall);
-          float qvecImShiftedTPCall = qvecRe[(kTPCall + 1) * 4 * id + kTPCall * 4 + 3] * TMath::Sin(deltapsiTPCall) + qvecIm[(kTPCall + 1) * 4 * id + kTPCall * 4 + 3] * TMath::Cos(deltapsiTPCall);
-
-          qvecRe[(kTPCall + 1) * 4 * id + kFT0C * 4 + 3] = qvecReShiftedFT0C;
-          qvecIm[(kTPCall + 1) * 4 * id + kFT0C * 4 + 3] = qvecImShiftedFT0C;
-          qvecRe[(kTPCall + 1) * 4 * id + kFT0A * 4 + 3] = qvecReShiftedFT0A;
-          qvecIm[(kTPCall + 1) * 4 * id + kFT0A * 4 + 3] = qvecImShiftedFT0A;
-          qvecRe[(kTPCall + 1) * 4 * id + kFT0M * 4 + 3] = qvecReShiftedFT0M;
-          qvecIm[(kTPCall + 1) * 4 * id + kFT0M * 4 + 3] = qvecImShiftedFT0M;
-          qvecRe[(kTPCall + 1) * 4 * id + kFV0A * 4 + 3] = qvecReShiftedFV0A;
-          qvecIm[(kTPCall + 1) * 4 * id + kFV0A * 4 + 3] = qvecImShiftedFV0A;
-          qvecRe[(kTPCall + 1) * 4 * id + kTPCpos * 4 + 3] = qvecReShiftedTPCpos;
-          qvecIm[(kTPCall + 1) * 4 * id + kTPCpos * 4 + 3] = qvecImShiftedTPCpos;
-          qvecRe[(kTPCall + 1) * 4 * id + kTPCneg * 4 + 3] = qvecReShiftedTPCneg;
-          qvecIm[(kTPCall + 1) * 4 * id + kTPCneg * 4 + 3] = qvecImShiftedTPCneg;
-          qvecRe[(kTPCall + 1) * 4 * id + kTPCall * 4 + 3] = qvecReShiftedTPCall;
-          qvecIm[(kTPCall + 1) * 4 * id + kTPCall * 4 + 3] = qvecImShiftedTPCall;
-        }
-      }
+      // Pick the desired correction level for the Q-vectors to be stored in the analysis table
       int CorrLevel = cfgCorrLevel == 0 ? 0 : cfgCorrLevel - 1;
-      qvecReFT0C.push_back(qvecRe[(kTPCall + 1) * 4 * id + kFT0C * 4 + CorrLevel]);
-      qvecImFT0C.push_back(qvecIm[(kTPCall + 1) * 4 * id + kFT0C * 4 + CorrLevel]);
-      qvecReFT0A.push_back(qvecRe[(kTPCall + 1) * 4 * id + kFT0A * 4 + CorrLevel]);
-      qvecImFT0A.push_back(qvecIm[(kTPCall + 1) * 4 * id + kFT0A * 4 + CorrLevel]);
-      qvecReFT0M.push_back(qvecRe[(kTPCall + 1) * 4 * id + kFT0M * 4 + CorrLevel]);
-      qvecImFT0M.push_back(qvecIm[(kTPCall + 1) * 4 * id + kFT0M * 4 + CorrLevel]);
-      qvecReFV0A.push_back(qvecRe[(kTPCall + 1) * 4 * id + kFV0A * 4 + CorrLevel]);
-      qvecImFV0A.push_back(qvecIm[(kTPCall + 1) * 4 * id + kFV0A * 4 + CorrLevel]);
-      qvecReTPCpos.push_back(qvecRe[(kTPCall + 1) * 4 * id + kTPCpos * 4 + CorrLevel]);
-      qvecImTPCpos.push_back(qvecIm[(kTPCall + 1) * 4 * id + kTPCpos * 4 + CorrLevel]);
-      qvecReTPCneg.push_back(qvecRe[(kTPCall + 1) * 4 * id + kTPCneg * 4 + CorrLevel]);
-      qvecImTPCneg.push_back(qvecIm[(kTPCall + 1) * 4 * id + kTPCneg * 4 + CorrLevel]);
-      qvecReTPCall.push_back(qvecRe[(kTPCall + 1) * 4 * id + kTPCall * 4 + CorrLevel]);
-      qvecImTPCall.push_back(qvecIm[(kTPCall + 1) * 4 * id + kTPCall * 4 + CorrLevel]);
+      int nCorrections = static_cast<int>(Corrections::kNCorrections);
+
+      qvecReFT0CSp.push_back(nModeQvecReSp[kFT0C * nCorrections + CorrLevel]);
+      qvecImFT0CSp.push_back(nModeQvecImSp[kFT0C * nCorrections + CorrLevel]);
+      qvecReFT0ASp.push_back(nModeQvecReSp[kFT0A * nCorrections + CorrLevel]);
+      qvecImFT0ASp.push_back(nModeQvecImSp[kFT0A * nCorrections + CorrLevel]);
+      qvecReFT0MSp.push_back(nModeQvecReSp[kFT0M * nCorrections + CorrLevel]);
+      qvecImFT0MSp.push_back(nModeQvecImSp[kFT0M * nCorrections + CorrLevel]);
+      qvecReFV0ASp.push_back(nModeQvecReSp[kFV0A * nCorrections + CorrLevel]);
+      qvecImFV0ASp.push_back(nModeQvecImSp[kFV0A * nCorrections + CorrLevel]);
+      qvecReTPCposSp.push_back(nModeQvecReSp[kTPCpos * nCorrections + CorrLevel]);
+      qvecImTPCposSp.push_back(nModeQvecImSp[kTPCpos * nCorrections + CorrLevel]);
+      qvecReTPCnegSp.push_back(nModeQvecReSp[kTPCneg * nCorrections + CorrLevel]);
+      qvecImTPCnegSp.push_back(nModeQvecImSp[kTPCneg * nCorrections + CorrLevel]);
+      qvecReTPCallSp.push_back(nModeQvecReSp[kTPCall * nCorrections + CorrLevel]);
+      qvecImTPCallSp.push_back(nModeQvecImSp[kTPCall * nCorrections + CorrLevel]);
+
+      qvecReFT0CEse.push_back(nModeQvecReEse[kFT0C * nCorrections + CorrLevel]);
+      qvecImFT0CEse.push_back(nModeQvecImEse[kFT0C * nCorrections + CorrLevel]);
+      qvecReFT0AEse.push_back(nModeQvecReEse[kFT0A * nCorrections + CorrLevel]);
+      qvecImFT0AEse.push_back(nModeQvecImEse[kFT0A * nCorrections + CorrLevel]);
+      qvecReFT0MEse.push_back(nModeQvecReEse[kFT0M * nCorrections + CorrLevel]);
+      qvecImFT0MEse.push_back(nModeQvecImEse[kFT0M * nCorrections + CorrLevel]);
+      qvecReFV0AEse.push_back(nModeQvecReEse[kFV0A * nCorrections + CorrLevel]);
+      qvecImFV0AEse.push_back(nModeQvecImEse[kFV0A * nCorrections + CorrLevel]);
+      qvecReTPCposEse.push_back(nModeQvecReEse[kTPCpos * nCorrections + CorrLevel]);
+      qvecImTPCposEse.push_back(nModeQvecImEse[kTPCpos * nCorrections + CorrLevel]);
+      qvecReTPCnegEse.push_back(nModeQvecReEse[kTPCneg * nCorrections + CorrLevel]);
+      qvecImTPCnegEse.push_back(nModeQvecImEse[kTPCneg * nCorrections + CorrLevel]);
+      qvecReTPCallEse.push_back(nModeQvecReEse[kTPCall * nCorrections + CorrLevel]);
+      qvecImTPCallEse.push_back(nModeQvecImEse[kTPCall * nCorrections + CorrLevel]);
     }
 
     // Fill the columns of the Qvectors table.
-    qVector(cent, IsCalibrated, qvecRe, qvecIm, qvecAmp);
+    qVector(cent, IsCalibrated, qvecReSp, qvecImSp, qvecAmp);
     if (useDetector["QvectorFT0Cs"])
-      qVectorFT0C(IsCalibrated, qvecReFT0C.at(0), qvecImFT0C.at(0), qvecAmp[kFT0C]);
+      qVectorFT0C(IsCalibrated, qvecReFT0CSp.at(0), qvecImFT0CSp.at(0), qvecAmp[kFT0C]);
     if (useDetector["QvectorFT0As"])
-      qVectorFT0A(IsCalibrated, qvecReFT0A.at(0), qvecImFT0A.at(0), qvecAmp[kFT0A]);
+      qVectorFT0A(IsCalibrated, qvecReFT0ASp.at(0), qvecImFT0ASp.at(0), qvecAmp[kFT0A]);
     if (useDetector["QvectorFT0Ms"])
-      qVectorFT0M(IsCalibrated, qvecReFT0M.at(0), qvecImFT0M.at(0), qvecAmp[kFT0M]);
+      qVectorFT0M(IsCalibrated, qvecReFT0MSp.at(0), qvecImFT0MSp.at(0), qvecAmp[kFT0M]);
     if (useDetector["QvectorFV0As"])
-      qVectorFV0A(IsCalibrated, qvecReFV0A.at(0), qvecImFV0A.at(0), qvecAmp[kFV0A]);
+      qVectorFV0A(IsCalibrated, qvecReFV0ASp.at(0), qvecImFV0ASp.at(0), qvecAmp[kFV0A]);
     if (useDetector["QvectorTPCposs"])
-      qVectorTPCpos(IsCalibrated, qvecReTPCpos.at(0), qvecImTPCpos.at(0), qvecAmp[kTPCpos], TrkTPCposLabel);
+      qVectorTPCpos(IsCalibrated, qvecReTPCposSp.at(0), qvecImTPCposSp.at(0), qvecAmp[kTPCpos], TrkTPCposLabel);
     if (useDetector["QvectorTPCnegs"])
-      qVectorTPCneg(IsCalibrated, qvecReTPCneg.at(0), qvecImTPCneg.at(0), qvecAmp[kTPCneg], TrkTPCnegLabel);
+      qVectorTPCneg(IsCalibrated, qvecReTPCnegSp.at(0), qvecImTPCnegSp.at(0), qvecAmp[kTPCneg], TrkTPCnegLabel);
     if (useDetector["QvectorTPCalls"])
-      qVectorTPCall(IsCalibrated, qvecReTPCall.at(0), qvecImTPCall.at(0), qvecAmp[kTPCall], TrkTPCallLabel);
+      qVectorTPCall(IsCalibrated, qvecReTPCallSp.at(0), qvecImTPCallSp.at(0), qvecAmp[kTPCall], TrkTPCallLabel);
 
-    double qVecRedFT0C{-999.}, qVecRedTpcPos{-999.}, qVecRedTpcNeg{-999.}, qVecRedTpcAll{-999.};
-    if (cfgProduceRedQVecs) {
-      // Correct normalization to remove multiplicity dependence,
-      // taking into account that the Q-vector is normalized by 1/M
-      // and the EsE reduced Q-vector must be normalized to 1/sqrt(M)
-      if (useDetector["QvectorFT0Cs"]) {
-        qVecRedFT0C = std::hypot(qvecReFT0C.at(0), qvecImFT0C.at(0)) * std::sqrt(qvecAmp[kFT0C]);
-      }
-      if (useDetector["QvectorTPCposs"]) {
-        qVecRedTpcPos = std::hypot(qvecReTPCpos.at(0), qvecImTPCpos.at(0)) * std::sqrt(qvecAmp[kTPCpos]);
-      }
-      if (useDetector["QvectorTPCnegs"]) {
-        qVecRedTpcNeg = std::hypot(qvecReTPCneg.at(0), qvecImTPCneg.at(0)) * std::sqrt(qvecAmp[kTPCneg]);
-      }
-      if (useDetector["QvectorTPCalls"]) {
-        qVecRedTpcAll = std::hypot(qvecReTPCall.at(0), qvecImTPCall.at(0)) * std::sqrt(qvecAmp[kTPCall]);
-      }
-    }
-    qVectorRed(qVecRedFT0C, qVecRedTpcPos, qVecRedTpcNeg, qVecRedTpcAll);
-
-    qVectorFT0CVec(IsCalibrated, qvecReFT0C, qvecImFT0C, qvecAmp[kFT0C]);
-    qVectorFT0AVec(IsCalibrated, qvecReFT0A, qvecImFT0A, qvecAmp[kFT0A]);
-    qVectorFT0MVec(IsCalibrated, qvecReFT0M, qvecImFT0M, qvecAmp[kFT0M]);
-    qVectorFV0AVec(IsCalibrated, qvecReFV0A, qvecImFV0A, qvecAmp[kFV0A]);
-    qVectorTPCposVec(IsCalibrated, qvecReTPCpos, qvecImTPCpos, qvecAmp[kTPCpos], TrkTPCposLabel);
-    qVectorTPCnegVec(IsCalibrated, qvecReTPCneg, qvecImTPCneg, qvecAmp[kTPCneg], TrkTPCnegLabel);
-    qVectorTPCallVec(IsCalibrated, qvecReTPCall, qvecImTPCall, qvecAmp[kTPCall], TrkTPCallLabel);
+    qVectorFT0CVec(IsCalibrated, qvecReFT0CSp, qvecImFT0CSp, qvecAmp[kFT0C]);
+    qVectorFT0AVec(IsCalibrated, qvecReFT0ASp, qvecImFT0ASp, qvecAmp[kFT0A]);
+    qVectorFT0MVec(IsCalibrated, qvecReFT0MSp, qvecImFT0MSp, qvecAmp[kFT0M]);
+    qVectorFV0AVec(IsCalibrated, qvecReFV0ASp, qvecImFV0ASp, qvecAmp[kFV0A]);
+    qVectorTPCposVec(IsCalibrated, qvecReTPCposSp, qvecImTPCposSp, qvecAmp[kTPCpos], TrkTPCposLabel);
+    qVectorTPCnegVec(IsCalibrated, qvecReTPCnegSp, qvecImTPCnegSp, qvecAmp[kTPCneg], TrkTPCnegLabel);
+    qVectorTPCallVec(IsCalibrated, qvecReTPCallSp, qvecImTPCallSp, qvecAmp[kTPCall], TrkTPCallLabel);
 
     // Deprecated, will be removed in future after transition time //
     if (useDetector["QvectorBPoss"])
-      qVectorBPos(IsCalibrated, qvecReTPCpos.at(0), qvecImTPCpos.at(0), qvecAmp[kTPCpos], TrkTPCposLabel);
+      qVectorBPos(IsCalibrated, qvecReTPCposSp.at(0), qvecImTPCposSp.at(0), qvecAmp[kTPCpos], TrkTPCposLabel);
     if (useDetector["QvectorBNegs"])
-      qVectorBNeg(IsCalibrated, qvecReTPCneg.at(0), qvecImTPCneg.at(0), qvecAmp[kTPCneg], TrkTPCnegLabel);
+      qVectorBNeg(IsCalibrated, qvecReTPCnegSp.at(0), qvecImTPCnegSp.at(0), qvecAmp[kTPCneg], TrkTPCnegLabel);
     if (useDetector["QvectorBTots"])
-      qVectorBTot(IsCalibrated, qvecReTPCall.at(0), qvecImTPCall.at(0), qvecAmp[kTPCall], TrkTPCallLabel);
+      qVectorBTot(IsCalibrated, qvecReTPCallSp.at(0), qvecImTPCallSp.at(0), qvecAmp[kTPCall], TrkTPCallLabel);
 
-    qVectorBPosVec(IsCalibrated, qvecReTPCpos, qvecImTPCpos, qvecAmp[kTPCpos], TrkTPCposLabel);
-    qVectorBNegVec(IsCalibrated, qvecReTPCneg, qvecImTPCneg, qvecAmp[kTPCneg], TrkTPCnegLabel);
-    qVectorBTotVec(IsCalibrated, qvecReTPCall, qvecImTPCall, qvecAmp[kTPCall], TrkTPCallLabel);
+    qVectorBPosVec(IsCalibrated, qvecReTPCposSp, qvecImTPCposSp, qvecAmp[kTPCpos], TrkTPCposLabel);
+    qVectorBNegVec(IsCalibrated, qvecReTPCnegSp, qvecImTPCnegSp, qvecAmp[kTPCneg], TrkTPCnegLabel);
+    qVectorBTotVec(IsCalibrated, qvecReTPCallSp, qvecImTPCallSp, qvecAmp[kTPCall], TrkTPCallLabel);
     /////////////////////////////////////////////////////////////////
 
+    if (cfgProduceRedQVecs) {
+      eseQVector(cent, IsCalibrated, qvecReEse, qvecImEse, qvecAmp);
+      eseQVectorFT0C(IsCalibrated, qvecReFT0CEse.at(0), qvecImFT0CEse.at(0), qvecAmp[kFT0C]);
+      eseQVectorFT0A(IsCalibrated, qvecReFT0AEse.at(0), qvecImFT0AEse.at(0), qvecAmp[kFT0A]);
+      eseQVectorFT0M(IsCalibrated, qvecReFT0MEse.at(0), qvecImFT0MEse.at(0), qvecAmp[kFT0M]);
+      eseQVectorFV0A(IsCalibrated, qvecReFV0AEse.at(0), qvecImFV0AEse.at(0), qvecAmp[kFV0A]);
+      eseQVectorTPCpos(IsCalibrated, qvecReTPCposEse.at(0), qvecImTPCposEse.at(0), qvecAmp[kTPCpos], TrkTPCposLabel);
+      eseQVectorTPCneg(IsCalibrated, qvecReTPCnegEse.at(0), qvecImTPCnegEse.at(0), qvecAmp[kTPCneg], TrkTPCnegLabel);
+      eseQVectorTPCall(IsCalibrated, qvecReTPCallEse.at(0), qvecImTPCallEse.at(0), qvecAmp[kTPCall], TrkTPCallLabel);
+      eseQVectorFT0CVec(IsCalibrated, qvecReFT0CEse, qvecImFT0CEse, qvecAmp[kFT0C]);
+      eseQVectorFT0AVec(IsCalibrated, qvecReFT0AEse, qvecImFT0AEse, qvecAmp[kFT0A]);
+      eseQVectorFT0MVec(IsCalibrated, qvecReFT0MEse, qvecImFT0MEse, qvecAmp[kFT0M]);
+      eseQVectorFV0AVec(IsCalibrated, qvecReFV0AEse, qvecImFV0AEse, qvecAmp[kFV0A]);
+      eseQVectorTPCposVec(IsCalibrated, qvecReTPCposEse, qvecImTPCposEse, qvecAmp[kTPCpos], TrkTPCposLabel);
+      eseQVectorTPCnegVec(IsCalibrated, qvecReTPCnegEse, qvecImTPCnegEse, qvecAmp[kTPCneg], TrkTPCnegLabel);
+      eseQVectorTPCallVec(IsCalibrated, qvecReTPCallEse, qvecImTPCallEse, qvecAmp[kTPCall], TrkTPCallLabel);
+      eseQVectorPerc(qvecReFT0CEse.at(0), qvecImFT0CEse.at(0), qvecAmp[kFT0C],
+                     qvecReFT0AEse.at(0), qvecImFT0AEse.at(0), qvecAmp[kFT0A],
+                     qvecReFT0MEse.at(0), qvecImFT0MEse.at(0), qvecAmp[kFT0M],
+                     qvecReFV0AEse.at(0), qvecImFV0AEse.at(0), qvecAmp[kFV0A],
+                     qvecReTPCposEse.at(0), qvecImTPCposEse.at(0), qvecAmp[kTPCpos],
+                     qvecReTPCnegEse.at(0), qvecImTPCnegEse.at(0), qvecAmp[kTPCneg],
+                     qvecReTPCallEse.at(0), qvecImTPCallEse.at(0), qvecAmp[kTPCall]);
+    }
   } // End process.
 };
 

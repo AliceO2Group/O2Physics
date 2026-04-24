@@ -201,6 +201,56 @@ std::array<float, 3> getQvec(TCollision const& collision, const int qvecEst)
   }
   return std::array<float, 3>{-999.f, -999.f, -999.f};
 }
+
+/// Get the Ese Q vector choosing your favourite estimator
+/// \param collision is the collision with the Q vector information
+/// \param qvecEst is the chosen Q-vector estimator
+template <typename TCollision>
+std::array<float, 3> getEseQvec(TCollision const& collision, const int qvecEst)
+{
+  switch (qvecEst) {
+    case QvecEstimator::FV0A:
+      if constexpr (HasQvecFV0A<TCollision>) {
+        return std::array<float, 3>{collision.eseQvecFV0ARe(), collision.eseQvecFV0AIm(), collision.sumAmplFV0A()};
+      }
+      break;
+    case QvecEstimator::FT0A:
+      if constexpr (HasQvecFT0A<TCollision>) {
+        return std::array<float, 3>{collision.eseQvecFT0ARe(), collision.eseQvecFT0AIm(), collision.sumAmplFT0A()};
+      }
+      break;
+    case QvecEstimator::FT0C:
+      if constexpr (HasQvecFT0C<TCollision>) {
+        return std::array<float, 3>{collision.eseQvecFT0CRe(), collision.eseQvecFT0CIm(), collision.sumAmplFT0C()};
+      }
+      break;
+    case QvecEstimator::FT0M:
+      if constexpr (HasQvecFT0M<TCollision>) {
+        return std::array<float, 3>{collision.eseQvecFT0MRe(), collision.eseQvecFT0MIm(), collision.sumAmplFT0M()};
+      }
+      break;
+    case QvecEstimator::TPCPos:
+      if constexpr (HasQvecTPCpos<TCollision>) {
+        return std::array<float, 3>{collision.eseQvecTPCposRe(), collision.eseQvecTPCposIm(), static_cast<float>(collision.nTrkTPCpos())};
+      }
+      break;
+    case QvecEstimator::TPCNeg:
+      if constexpr (HasQvecTPCneg<TCollision>) {
+        return std::array<float, 3>{collision.eseQvecTPCnegRe(), collision.eseQvecTPCnegIm(), static_cast<float>(collision.nTrkTPCneg())};
+      }
+      break;
+    case QvecEstimator::TPCTot:
+      if constexpr (HasQvecTPCtot<TCollision>) {
+        return std::array<float, 3>{collision.eseQvecTPCallRe(), collision.eseQvecTPCallIm(), static_cast<float>(collision.nTrkTPCall())};
+      }
+      break;
+    default:
+      LOGP(fatal, "Q-vector estimator not valid. Please choose between FV0A, FT0M, FT0A, FT0C, TPCPos, TPCNeg, TPCTot");
+      break;
+  }
+  return std::array<float, 3>{-999.f, -999.f, -999.f};
+}
+
 } // namespace hf_flow_utils
 } // namespace o2::analysis
 

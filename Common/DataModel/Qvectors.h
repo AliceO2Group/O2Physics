@@ -77,12 +77,6 @@ DECLARE_SOA_COLUMN(LabelsTPCpos, labelsTPCpos, std::vector<int>);
 DECLARE_SOA_COLUMN(LabelsTPCneg, labelsTPCneg, std::vector<int>);
 DECLARE_SOA_COLUMN(LabelsTPCall, labelsTPCall, std::vector<int>);
 
-// Normalized amplitudes for Event-shape Engineering
-DECLARE_SOA_COLUMN(QVecRedFT0C, qVecRedFT0C, float);
-DECLARE_SOA_COLUMN(QVecRedTpcPos, qVecRedTpcPos, float);
-DECLARE_SOA_COLUMN(QVecRedTpcNeg, qVecRedTpcNeg, float);
-DECLARE_SOA_COLUMN(QVecRedTpcAll, qVecRedTpcAll, float);
-
 // Deprecated, will be removed in future after transition time //
 DECLARE_SOA_COLUMN(QvecBPosReVec, qvecBPosReVec, std::vector<float>);
 DECLARE_SOA_COLUMN(QvecBPosImVec, qvecBPosImVec, std::vector<float>);
@@ -127,8 +121,6 @@ DECLARE_SOA_TABLE(QvectorTPCposVecs, "AOD", "QVECTORSTPCPVEC", qvec::IsCalibrate
 DECLARE_SOA_TABLE(QvectorTPCnegVecs, "AOD", "QVECTORSTPCNVEC", qvec::IsCalibrated, qvec::QvecTPCnegReVec, qvec::QvecTPCnegImVec, qvec::NTrkTPCneg, qvec::LabelsTPCneg);
 DECLARE_SOA_TABLE(QvectorTPCallVecs, "AOD", "QVECTORSTPCAVEC", qvec::IsCalibrated, qvec::QvecTPCallReVec, qvec::QvecTPCallImVec, qvec::NTrkTPCall, qvec::LabelsTPCall);
 
-DECLARE_SOA_TABLE(QvectorsReds, "AOD", "QVECTORSRED", qvec::QVecRedFT0C, qvec::QVecRedTpcPos, qvec::QVecRedTpcNeg, qvec::QVecRedTpcAll);
-
 using QvectorFT0C = QvectorFT0Cs::iterator;
 using QvectorFT0A = QvectorFT0As::iterator;
 using QvectorFT0M = QvectorFT0Ms::iterator;
@@ -144,8 +136,6 @@ using QvectorFV0AVec = QvectorFV0AVecs::iterator;
 using QvectorTPCposVec = QvectorTPCposVecs::iterator;
 using QvectorTPCnegVec = QvectorTPCnegVecs::iterator;
 using QvectorTPCallVec = QvectorTPCallVecs::iterator;
-
-using QvectorRed = QvectorsReds::iterator;
 
 // Deprecated, will be removed in future after transition time //
 DECLARE_SOA_TABLE(QvectorBPoss, "AOD", "QVECTORSBPOS", qvec::IsCalibrated, qvec::QvecBPosRe, qvec::QvecBPosIm, qvec::NTrkBPos, qvec::LabelsBPos);
@@ -165,6 +155,95 @@ using QvectorBNegVec = QvectorBNegVecs::iterator;
 using QvectorBTotVec = QvectorBTotVecs::iterator;
 /////////////////////////////////////////////////////////////////
 
+namespace ese_qvec
+{
+DECLARE_SOA_COLUMN(IsCalibrated, isCalibrated, bool);
+
+DECLARE_SOA_COLUMN(EseQvecRe, eseQvecRe, std::vector<float>);
+DECLARE_SOA_COLUMN(EseQvecIm, eseQvecIm, std::vector<float>);
+DECLARE_SOA_COLUMN(EseQvecAmp, eseQvecAmp, std::vector<float>);
+
+DECLARE_SOA_COLUMN(EseQvecFT0CReVec, eseQvecFT0CReVec, std::vector<float>);
+DECLARE_SOA_COLUMN(EseQvecFT0CImVec, eseQvecFT0CImVec, std::vector<float>);
+DECLARE_SOA_COLUMN(EseQvecFT0AReVec, eseQvecFT0AReVec, std::vector<float>);
+DECLARE_SOA_COLUMN(EseQvecFT0AImVec, eseQvecFT0AImVec, std::vector<float>);
+DECLARE_SOA_COLUMN(EseQvecFT0MReVec, eseQvecFT0MReVec, std::vector<float>);
+DECLARE_SOA_COLUMN(EseQvecFT0MImVec, eseQvecFT0MImVec, std::vector<float>);
+DECLARE_SOA_COLUMN(EseQvecFV0AReVec, eseQvecFV0AReVec, std::vector<float>);
+DECLARE_SOA_COLUMN(EseQvecFV0AImVec, eseQvecFV0AImVec, std::vector<float>);
+DECLARE_SOA_COLUMN(EseQvecTPCposReVec, eseQvecTPCposReVec, std::vector<float>);
+DECLARE_SOA_COLUMN(EseQvecTPCposImVec, eseQvecTPCposImVec, std::vector<float>);
+DECLARE_SOA_COLUMN(EseQvecTPCnegReVec, eseQvecTPCnegReVec, std::vector<float>);
+DECLARE_SOA_COLUMN(EseQvecTPCnegImVec, eseQvecTPCnegImVec, std::vector<float>);
+DECLARE_SOA_COLUMN(EseQvecTPCallReVec, eseQvecTPCallReVec, std::vector<float>);
+DECLARE_SOA_COLUMN(EseQvecTPCallImVec, eseQvecTPCallImVec, std::vector<float>);
+
+DECLARE_SOA_COLUMN(EseQvecFT0CRe, eseQvecFT0CRe, float);
+DECLARE_SOA_COLUMN(EseQvecFT0CIm, eseQvecFT0CIm, float);
+DECLARE_SOA_COLUMN(EseQvecFT0ARe, eseQvecFT0ARe, float);
+DECLARE_SOA_COLUMN(EseQvecFT0AIm, eseQvecFT0AIm, float);
+DECLARE_SOA_COLUMN(EseQvecFT0MRe, eseQvecFT0MRe, float);
+DECLARE_SOA_COLUMN(EseQvecFT0MIm, eseQvecFT0MIm, float);
+DECLARE_SOA_COLUMN(EseQvecFV0ARe, eseQvecFV0ARe, float);
+DECLARE_SOA_COLUMN(EseQvecFV0AIm, eseQvecFV0AIm, float);
+DECLARE_SOA_COLUMN(EseQvecTPCposRe, eseQvecTPCposRe, float);
+DECLARE_SOA_COLUMN(EseQvecTPCposIm, eseQvecTPCposIm, float);
+DECLARE_SOA_COLUMN(EseQvecTPCnegRe, eseQvecTPCnegRe, float);
+DECLARE_SOA_COLUMN(EseQvecTPCnegIm, eseQvecTPCnegIm, float);
+DECLARE_SOA_COLUMN(EseQvecTPCallRe, eseQvecTPCallRe, float);
+DECLARE_SOA_COLUMN(EseQvecTPCallIm, eseQvecTPCallIm, float);
+
+DECLARE_SOA_COLUMN(EseRedQFT0C, eseRedQFT0C, float);
+DECLARE_SOA_COLUMN(EseRedQFT0A, eseRedQFT0A, float);
+DECLARE_SOA_COLUMN(EseRedQFT0M, eseRedQFT0M, float);
+DECLARE_SOA_COLUMN(EseRedQFV0A, eseRedQFV0A, float);
+/////////////////////////////////////////////////////////////////
+} // namespace ese_qvec
+
+DECLARE_SOA_TABLE(EseQvectors, "AOD", "ESEQVECTORDEVS", //! Table with all Qvectors.
+                  qvec::Cent, ese_qvec::IsCalibrated, ese_qvec::EseQvecRe, ese_qvec::EseQvecIm, ese_qvec::EseQvecAmp);
+using Qvector = Qvectors::iterator;
+
+DECLARE_SOA_TABLE(EseQvecFT0Cs, "AOD", "ESEQVECFT0C", ese_qvec::IsCalibrated, ese_qvec::EseQvecFT0CRe, ese_qvec::EseQvecFT0CIm, qvec::SumAmplFT0C);
+DECLARE_SOA_TABLE(EseQvecFT0As, "AOD", "ESEQVECFT0A", ese_qvec::IsCalibrated, ese_qvec::EseQvecFT0ARe, ese_qvec::EseQvecFT0AIm, qvec::SumAmplFT0A);
+DECLARE_SOA_TABLE(EseQvecFT0Ms, "AOD", "ESEQVECFT0M", ese_qvec::IsCalibrated, ese_qvec::EseQvecFT0MRe, ese_qvec::EseQvecFT0MIm, qvec::SumAmplFT0M);
+DECLARE_SOA_TABLE(EseQvecFV0As, "AOD", "ESEQVECFV0A", ese_qvec::IsCalibrated, ese_qvec::EseQvecFV0ARe, ese_qvec::EseQvecFV0AIm, qvec::SumAmplFV0A);
+DECLARE_SOA_TABLE(EseQvecTPCposs, "AOD", "ESEQVECTPCPOS", ese_qvec::IsCalibrated, ese_qvec::EseQvecTPCposRe, ese_qvec::EseQvecTPCposIm, qvec::NTrkTPCpos, qvec::LabelsTPCpos);
+DECLARE_SOA_TABLE(EseQvecTPCnegs, "AOD", "ESEQVECTPCNEG", ese_qvec::IsCalibrated, ese_qvec::EseQvecTPCnegRe, ese_qvec::EseQvecTPCnegIm, qvec::NTrkTPCneg, qvec::LabelsTPCneg);
+DECLARE_SOA_TABLE(EseQvecTPCalls, "AOD", "ESEQVECTPCALL", ese_qvec::IsCalibrated, ese_qvec::EseQvecTPCallRe, ese_qvec::EseQvecTPCallIm, qvec::NTrkTPCall, qvec::LabelsTPCall);
+
+DECLARE_SOA_TABLE(EseQvecFT0CVecs, "AOD", "ESEQVECFT0CVEC", ese_qvec::IsCalibrated, ese_qvec::EseQvecFT0CReVec, ese_qvec::EseQvecFT0CImVec, qvec::SumAmplFT0C);
+DECLARE_SOA_TABLE(EseQvecFT0AVecs, "AOD", "ESEQVECFT0AVEC", ese_qvec::IsCalibrated, ese_qvec::EseQvecFT0AReVec, ese_qvec::EseQvecFT0AImVec, qvec::SumAmplFT0A);
+DECLARE_SOA_TABLE(EseQvecFT0MVecs, "AOD", "ESEQVECFT0MVEC", ese_qvec::IsCalibrated, ese_qvec::EseQvecFT0MReVec, ese_qvec::EseQvecFT0MImVec, qvec::SumAmplFT0M);
+DECLARE_SOA_TABLE(EseQvecFV0AVecs, "AOD", "ESEQVECFV0AVEC", ese_qvec::IsCalibrated, ese_qvec::EseQvecFV0AReVec, ese_qvec::EseQvecFV0AImVec, qvec::SumAmplFV0A);
+DECLARE_SOA_TABLE(EseQvecTPCposVecs, "AOD", "ESEQVECTPCPVEC", ese_qvec::IsCalibrated, ese_qvec::EseQvecTPCposReVec, ese_qvec::EseQvecTPCposImVec, qvec::NTrkTPCpos, qvec::LabelsTPCpos);
+DECLARE_SOA_TABLE(EseQvecTPCnegVecs, "AOD", "ESEQVECTPCNVEC", ese_qvec::IsCalibrated, ese_qvec::EseQvecTPCnegReVec, ese_qvec::EseQvecTPCnegImVec, qvec::NTrkTPCneg, qvec::LabelsTPCneg);
+DECLARE_SOA_TABLE(EseQvecTPCallVecs, "AOD", "ESEQVECTPCAVEC", ese_qvec::IsCalibrated, ese_qvec::EseQvecTPCallReVec, ese_qvec::EseQvecTPCallImVec, qvec::NTrkTPCall, qvec::LabelsTPCall);
+
+DECLARE_SOA_TABLE(EseQvecPercs, "AOD", "ESEQVECPERC", ese_qvec::EseQvecFT0CRe, ese_qvec::EseQvecFT0CIm, qvec::SumAmplFT0C,
+                                                      ese_qvec::EseQvecFT0ARe, ese_qvec::EseQvecFT0AIm, qvec::SumAmplFT0A,
+                                                      ese_qvec::EseQvecFT0MRe, ese_qvec::EseQvecFT0MIm, qvec::SumAmplFT0M,
+                                                      ese_qvec::EseQvecFV0ARe, ese_qvec::EseQvecFV0AIm, qvec::SumAmplFV0A,
+                                                      ese_qvec::EseQvecTPCposRe, ese_qvec::EseQvecTPCposIm, qvec::NTrkTPCpos,
+                                                      ese_qvec::EseQvecTPCnegRe, ese_qvec::EseQvecTPCnegIm, qvec::NTrkTPCneg,
+                                                      ese_qvec::EseQvecTPCallRe, ese_qvec::EseQvecTPCallIm, qvec::NTrkTPCall);
+
+using EseQvectorFT0C = EseQvecFT0Cs::iterator;
+using EseQvectorFT0A = EseQvecFT0As::iterator;
+using EseQvectorFT0M = EseQvecFT0Ms::iterator;
+using EseQvectorFV0A = EseQvecFV0As::iterator;
+using EseQvectorTPCpos = EseQvecTPCposs::iterator;
+using EseQvectorTPCneg = EseQvecTPCnegs::iterator;
+using EseQvectorTPCall = EseQvecTPCalls::iterator;
+
+using EseQvectorFT0CVec = EseQvecFT0CVecs::iterator;
+using EseQvectorFT0AVec = EseQvecFT0AVecs::iterator;
+using EseQvectorFT0MVec = EseQvecFT0MVecs::iterator;
+using EseQvectorFV0AVec = EseQvecFV0AVecs::iterator;
+using EseQvectorTPCposVec = EseQvecTPCposVecs::iterator;
+using EseQvectorTPCnegVec = EseQvecTPCnegVecs::iterator;
+using EseQvectorTPCallVec = EseQvecTPCallVecs::iterator;
+/////////////////////////////////////////////////////////////////
 } // namespace o2::aod
 
 #endif // COMMON_DATAMODEL_QVECTORS_H_

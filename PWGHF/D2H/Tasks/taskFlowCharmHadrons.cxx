@@ -153,7 +153,7 @@ struct HfTaskFlowCharmHadrons {
   using CandXic0DataWMl = soa::Filtered<soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfMlToXiPi>>;
   using CandD0DataWMl = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>>;
   using CandD0Data = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
-  using CollsWithQvecs = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorTPCposs, aod::QvectorTPCnegs, aod::QvectorTPCalls, aod::QvectorsReds, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0CVariant2s>;
+  using CollsWithQvecs = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorTPCposs, aod::QvectorTPCnegs, aod::QvectorTPCalls, aod::EseQvecPercs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0CVariant2s>;
   using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
 
   Filter filterSelectDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlag || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlag;
@@ -572,7 +572,7 @@ struct HfTaskFlowCharmHadrons {
     float redQVec{-999.f};
     std::array<float, 3> qVecRedComps{-999.f, -999.f, -999.f};
     if (storeRedQVec) {
-      qVecRedComps = getQvec(collision, qVecRedDetector.value);
+      qVecRedComps = getEseQvec(collision, qVecRedDetector.value);
     }
     float xRedQVec = qVecRedComps[0];
     float yRedQVec = qVecRedComps[1];
@@ -769,9 +769,9 @@ struct HfTaskFlowCharmHadrons {
 
         // IMPORTANT: use the amplitude of the reduced Q-vector to build this Q-vector
         if constexpr (std::is_same_v<T1, CandXic0Data> || std::is_same_v<T1, CandXic0DataWMl>) {
-          getQvecXic0Tracks(candidate, tracksRedQx, tracksRedQy, amplRedQVec, static_cast<QvecEstimator>(qVecRedDetector.value));
+          getQvecXic0Tracks(candidate, tracksRedQx, tracksRedQy, std::sqrt(amplRedQVec), static_cast<QvecEstimator>(qVecRedDetector.value));
         } else {
-          getQvecDtracks<Channel>(candidate, tracksRedQx, tracksRedQy, amplRedQVec, static_cast<QvecEstimator>(qVecRedDetector.value));
+          getQvecDtracks<Channel>(candidate, tracksRedQx, tracksRedQy, std::sqrt(amplRedQVec), static_cast<QvecEstimator>(qVecRedDetector.value));
         }
 
         // subtract daughters' contribution from the (normalized) Q-vector
@@ -779,9 +779,9 @@ struct HfTaskFlowCharmHadrons {
         const float redQVecYDaugSubtr = yRedQVec - std::accumulate(tracksRedQy.begin(), tracksRedQy.end(), 0.0);
         if (qVecRedDetector.value == QvecEstimator::TPCTot || qVecRedDetector.value == QvecEstimator::TPCPos || qVecRedDetector.value == QvecEstimator::TPCNeg) {
           // Correct for track multiplicity
-          redQVec = std::hypot(redQVecXDaugSubtr, redQVecYDaugSubtr) * amplRedQVec / std::sqrt(amplRedQVec - tracksRedQx.size());
+          redQVec = std::hypot(redQVecXDaugSubtr, redQVecYDaugSubtr) * std::sqrt(amplRedQVec) / std::sqrt(amplRedQVec - tracksRedQx.size());
         } else {
-          redQVec = std::hypot(redQVecXDaugSubtr, redQVecYDaugSubtr) * std::sqrt(amplRedQVec);
+          redQVec = std::hypot(xRedQVec, yRedQVec);
         }
       }
       if (storeRedQVec) {
@@ -971,7 +971,11 @@ struct HfTaskFlowCharmHadrons {
                     o2::hf_centrality::getCentralityColl(collision, centEstimatorsForSparse->at(2)), o2::hf_centrality::getCentralityColl(collision, centEstimatorsForSparse->at(3)));
     }
     if (storeRedQVec) {
-      registry.fill(HIST("redQVecs/hSparseRedQVecs"), centrality, collision.qVecRedFT0C(), collision.qVecRedTpcPos(), collision.qVecRedTpcNeg(), collision.qVecRedTpcAll());
+      registry.fill(HIST("redQVecs/hSparseRedQVecs"), centrality, 
+                                                      std::hypot(collision.eseQvecFT0CRe(), collision.eseQvecFT0CIm()),
+                                                      std::hypot(collision.eseQvecTPCposRe(), collision.eseQvecTPCposIm()),
+                                                      std::hypot(collision.eseQvecTPCnegRe(), collision.eseQvecTPCnegIm()),
+                                                      std::hypot(collision.eseQvecTPCallRe(), collision.eseQvecTPCallIm()));
     }
 
     if (!isCollSelected<o2::hf_centrality::CentralityEstimator::FT0C>(collision, bcs, centrality)) {
@@ -997,10 +1001,10 @@ struct HfTaskFlowCharmHadrons {
     registry.fill(HIST("spReso/hSpResoFV0aTPCtot"), centrality, xQVecFV0a * xQVecTPCAll + yQVecFV0a * yQVecTPCAll);
     registry.fill(HIST("spReso/hSpResoTPCposTPCneg"), centrality, xQVecTPCPos * xQVecTPCNeg + yQVecTPCPos * yQVecTPCNeg);
 
-    registry.fill(HIST("redQVecs/hRedQVecFT0C"), centrality, collision.qVecRedFT0C());
-    registry.fill(HIST("redQVecs/hRedQVecTpcPos"), centrality, collision.qVecRedTpcPos());
-    registry.fill(HIST("redQVecs/hRedQVecTpcNeg"), centrality, collision.qVecRedTpcNeg());
-    registry.fill(HIST("redQVecs/hRedQVecTpcAll"), centrality, collision.qVecRedTpcAll());
+    registry.fill(HIST("redQVecs/hRedQVecFT0C"), centrality, std::hypot(collision.eseQvecFT0CRe(), collision.eseQvecFT0CIm()));
+    registry.fill(HIST("redQVecs/hRedQVecTpcPos"), centrality, std::hypot(collision.eseQvecTPCposRe(), collision.eseQvecTPCposIm()));
+    registry.fill(HIST("redQVecs/hRedQVecTpcNeg"), centrality, std::hypot(collision.eseQvecTPCnegRe(), collision.eseQvecTPCnegIm()));
+    registry.fill(HIST("redQVecs/hRedQVecTpcAll"), centrality, std::hypot(collision.eseQvecTPCallRe(), collision.eseQvecTPCallIm()));
 
     if (saveEpResoHisto) {
       float const epFT0a = epHelper.GetEventPlane(xQVecFT0a, yQVecFT0a, harmonic);
