@@ -82,6 +82,8 @@ struct FlowMcUpc {
     histos.add<TH1>("mcEventCounter", "Monte Carlo Truth EventCounter", HistType::kTH1F, {{5, 0, 5}});
     histos.add<TH1>("RecoProcessEventCounter", "Reconstruction EventCounter", HistType::kTH1F, {{5, 0, 5}});
     histos.add<TH1>("hImpactParameter", "hImpactParameter", HistType::kTH1D, {axisB});
+    histos.add<TH1>("RecoProcessTrackCounter", "Reconstruction TrackCounter", HistType::kTH1F, {{5, 0, 5}});
+    histos.add<TH1>("numberOfRecoCollisions", "numberOfRecoCollisions", kTH1F, {{100, -0.5f, 99.5f}});
 
     histos.add<TH1>("hPtMCGen", "Monte Carlo Truth; pT (GeV/c);", {HistType::kTH1D, {axisPt}});
     histos.add<TH3>("hEtaPtVtxzMCGen", "Monte Carlo Truth; #eta; p_{T} (GeV/c); V_{z} (cm);", {HistType::kTH3D, {axisEta, axisPt, axisVertex}});
@@ -98,6 +100,10 @@ struct FlowMcUpc {
   template <typename TTrack>
   bool trackSelected(TTrack const& track)
   {
+    if (!track.hasTPC())
+      return false;
+    if (!track.isPVContributor())
+      return false;
     // auto momentum = std::array<double, 3>{track.px(), track.py(), track.pz()};
     auto pt = track.pt();
     if (pt < cfgPtCutMin || pt > cfgPtCutMax) {
@@ -152,30 +158,36 @@ struct FlowMcUpc {
   PROCESS_SWITCH(FlowMcUpc, processMCTrue, "process pure simulation information", true);
 
   using MCRecoTracks = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA, aod::UDMcTrackLabels>;
-  using MCRecoCollisions = soa::Join<aod::UDCollisions, aod::UDCollisionSelExtras, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::UDMcCollsLabels>;
+  using MCRecoCollisions = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDMcCollsLabels>;
 
   // PresliceUnsorted<MCRecoTracks> trackPerMcParticle = aod::udmctracklabel::udMcParticleId;
   Preslice<MCRecoTracks> trackPerCollision = aod::udtrack::udCollisionId; // sorted preslice used because the pair track-collision is already sorted in processDataSG function
 
-  void processReco(MCRecoCollisions const& collisions, MCRecoTracks const& tracks)
+  void processReco(MCRecoCollisions const& collisions, MCRecoTracks const& tracks, aod::UDMcParticles const& mcParticles)
   {
+    histos.fill(HIST("numberOfRecoCollisions"), mcParticles.size()); // number of times coll was reco-ed
+    // std::cout << "process reco" << std::endl;
     for (const auto& collision : collisions) {
+      Partition<MCRecoTracks> pvContributors = aod::udtrack::isPVContributor == true;
+      pvContributors.bindTable(tracks);
+      // std::cout << "collision loop" << std::endl;
       histos.fill(HIST("RecoProcessEventCounter"), 0.5);
       // if (!eventSelected(collision))
       //   return;
       histos.fill(HIST("RecoProcessEventCounter"), 1.5);
-      if (!collision.has_udMcCollision())
-        return;
+      // if (!collision.has_udMcCollision())
+      //   return;
       histos.fill(HIST("RecoProcessEventCounter"), 2.5);
-      if (tracks.size() < 1)
-        return;
       histos.fill(HIST("RecoProcessEventCounter"), 3.5);
 
       float vtxz = collision.posZ();
 
-      auto const& tempTracks = tracks.sliceBy(trackPerCollision, static_cast<int64_t>(collision.globalIndex()));
+      // auto const& tempTracks = tracks.sliceBy(trackPerCollision, static_cast<int64_t>(collision.globalIndex()));
+      // std::cout << "sliced" << std::endl;
 
-      for (const auto& track : tempTracks) {
+      for (const auto& track : tracks) {
+        histos.fill(HIST("RecoProcessTrackCounter"), 0.5);
+        // std::cout << "track loop" << std::endl;
         // focus on bulk: e, mu, pi, k, p
         auto momentum = std::array<double, 3>{track.px(), track.py(), track.pz()};
         double pt = RecoDecay::pt(momentum);
@@ -183,20 +195,34 @@ struct FlowMcUpc {
         // double phi = RecoDecay::phi(momentum);
         if (!trackSelected(track) || (!track.has_udMcParticle()))
           continue;
+        histos.fill(HIST("RecoProcessTrackCounter"), 1.5);
+        // std::cout << "track selected" << std::endl;
         auto mcParticle = track.udMcParticle();
+        // std::cout << "mc particle" << std::endl;
         int pdgCode = std::abs(mcParticle.pdgCode());
+        // std::cout <<  "pdg code" << std::endl;
 
         // double pt = recoMC.Pt();
         // double eta = recoMC.Eta();
-        if (pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != PDG_t::kKPlus && pdgCode != PDG_t::kProton)
+        if (pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != PDG_t::kKPlus && pdgCode != PDG_t::kProton) {
+          // std::cout << "pdg code not in list" << std::endl;
           continue;
-        if (std::fabs(eta) > cfgCutEta) // main acceptance
+        }
+        histos.fill(HIST("RecoProcessTrackCounter"), 2.5);
+        if (std::fabs(eta) > cfgCutEta) {
+          // std::cout << "cfgcuteta" << std::endl;
           continue;
-        if (!mcParticle.isPhysicalPrimary())
+        } // main acceptance
+        histos.fill(HIST("RecoProcessTrackCounter"), 3.5);
+        if (!mcParticle.isPhysicalPrimary()) {
+          // std::cout << "not physical primary" << std::endl;
           continue;
+        }
+        histos.fill(HIST("RecoProcessTrackCounter"), 4.5);
 
         histos.fill(HIST("hPtReco"), pt);
         histos.fill(HIST("hEtaPtVtxzMCReco"), eta, pt, vtxz);
+        // std::cout << "first loop end" << std::endl;
       }
     }
   }
