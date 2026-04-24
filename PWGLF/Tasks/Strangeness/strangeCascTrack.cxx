@@ -666,7 +666,6 @@ struct StrangeCascTrack {
     if (passedAllSelsOmega) {
       histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/FiltersOmega"), 5.5);
       histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/MassOmega"), massOmega);
-      histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/Xi"), massXi, pt, mult);
       histos.fill(HIST(TypeNames[Type]) + HIST("/Rec/Omega"), massOmega, pt, mult);
       // fill for particle-antiparticle type
       if (cascade.sign() < 0) {
