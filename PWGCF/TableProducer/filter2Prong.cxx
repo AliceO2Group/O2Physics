@@ -921,10 +921,10 @@ struct Filter2Prong {
               mixedPhiCandidates.push_back({cfColl1->second,
                                             cftrack1.globalIndex(),
                                             cftrack2.globalIndex(),
-                                            s.pt(),
-                                            s.eta(),
+                                            static_cast<float>(s.pt()),
+                                            static_cast<float>(s.eta()),
                                             phi,
-                                            s.M(),
+                                            static_cast<float>(s.M()),
                                             aod::cf2prongtrack::PhiToKKPID3Mixed});
             }
           }
