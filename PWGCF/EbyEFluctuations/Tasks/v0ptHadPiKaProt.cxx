@@ -73,6 +73,8 @@ struct V0ptHadPiKaProt {
   Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "https://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPath{"ccdbPath", "Users/s/swati/PhiWeight", "CCDB path to ccdb object containing phi weight in a 3D histogram"};
+  Configurable<int64_t> ccdbNoLaterThanPtEff{"ccdbNoLaterThanPtEff", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<std::string> ccdbPathPtEff{"ccdbPathPtEff", "Users/s/swati/EfficiencyWeight", "CCDB path to ccdb object containing pt-dependent efficiency"};
 
   enum Particles {
     PIONS = 0,
@@ -110,6 +112,10 @@ struct V0ptHadPiKaProt {
   Configurable<float> cfgnSigmaOtherParticles{"cfgnSigmaOtherParticles", 3.0f, "PID nSigma cut to remove other particles (default:3)"};
   Configurable<float> cfgnSigmaCutTPC{"cfgnSigmaCutTPC", 2.0f, "PID nSigma cut for TPC"};
   Configurable<float> cfgnSigmaCutTOF{"cfgnSigmaCutTOF", 2.0f, "PID nSigma cut for TOF"};
+  Configurable<bool> cfgUseNewSeperationPid{"cfgUseNewSeperationPid", true, "Use seperation based PID cuts (NEW)"};
+  Configurable<float> cfgnSigmaCutTPCHigherPt{"cfgnSigmaCutTPCHigherPt", 2.0f, "PID nSigma cut for TPC at higher pt"};
+  Configurable<float> cfgnSigmaCutTOFHigherPt{"cfgnSigmaCutTOFHigherPt", 2.0f, "PID nSigma cut for TOF at higher pt"};
+  Configurable<float> cfgnSigmaSeperationCut{"cfgnSigmaSeperationCut", 3.5f, "PID nSigma of other species must be greater than the vale"};
   Configurable<float> cfgnSigmaCutCombTPCTOF{"cfgnSigmaCutCombTPCTOF", 2.0f, "PID nSigma combined cut for TPC and TOF"};
   ConfigurableAxis nchAxis{"nchAxis", {5000, 0.5, 5000.5}, ""};
   ConfigurableAxis centAxis{"centAxis", {90, 0., 90.}, "Centrality/Multiplicity percentile bining"};
@@ -121,8 +127,8 @@ struct V0ptHadPiKaProt {
   Configurable<float> cfgCutPtUpper{"cfgCutPtUpper", 10.0f, "Higher pT cut for inclusive hadron analysis"};
   Configurable<float> cfgCutPtUpperPID{"cfgCutPtUpperPID", 6.0f, "Higher pT cut for identified particle analysis"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "absolute Eta cut"};
-  Configurable<float> cfgCutEtaLeft{"cfgCutEtaLeft", 0.8f, "Left end of eta gap"};
-  Configurable<float> cfgCutEtaRight{"cfgCutEtaRight", 0.8f, "Right end of eta gap"};
+  Configurable<float> cfgCutEtaLeft{"cfgCutEtaLeft", -0.4f, "Left end of eta gap"};
+  Configurable<float> cfgCutEtaRight{"cfgCutEtaRight", 0.4f, "Right end of eta gap"};
   Configurable<int> cfgNSubsample{"cfgNSubsample", 20, "Number of subsamples"};
   Configurable<int> cfgCentralityChoice{"cfgCentralityChoice", 0, "Which centrality estimator? 0-->FT0C, 1-->FT0A, 2-->FT0M, 3-->FV0A"};
   Configurable<bool> cfgEvSelkNoSameBunchPileup{"cfgEvSelkNoSameBunchPileup", true, "Pileup removal"};
@@ -130,6 +136,11 @@ struct V0ptHadPiKaProt {
   Configurable<bool> cfgEvSelkNoITSROFrameBorder{"cfgEvSelkNoITSROFrameBorder", true, "ITSROFrame border event selection cut"};
   Configurable<bool> cfgEvSelkNoTimeFrameBorder{"cfgEvSelkNoTimeFrameBorder", true, "TimeFrame border event selection cut"};
   Configurable<bool> cfgEvSelUseGoodZvtxFT0vsPV{"cfgEvSelUseGoodZvtxFT0vsPV", true, "GoodZvertex and FT0 vs PV cut"};
+  Configurable<bool> cfgEvSelUseOcuppancyTimeCut{"cfgEvSelUseOcuppancyTimeCut", true, "Occupancy Time pattern cut"};
+  Configurable<bool> cfgEvSelSetOcuppancyRange{"cfgEvSelSetOcuppancyRange", true, "Use cut on occupancy range"};
+  Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", 0, "min. value of occupancy"};
+  Configurable<int> cfgMaxOccupancy{"cfgMaxOccupancy", 3000, "max. value of occupancy"};
+
   Configurable<bool> cfgUseItsPID{"cfgUseItsPID", false, "Use ITS PID for particle identification"};
   Configurable<float> cfgPtCutTOF{"cfgPtCutTOF", 0.3f, "Minimum pt to use TOF N-sigma"};
   Configurable<LabeledArray<float>> nSigmas{"nSigmas", {LongArrayFloat[0], 3, 6, {"TPC", "TOF", "ITS"}, {"pos_pi", "pos_ka", "pos_pr", "neg_pi", "neg_ka", "neg_pr"}}, "Labeled array for n-sigma values for TPC, TOF, ITS for pions, kaons, protons (positive and negative)"};
@@ -138,6 +149,8 @@ struct V0ptHadPiKaProt {
   Configurable<float> cfgCutPtMaxForV02{"cfgCutPtMaxForV02", 3.0f, "Max. pT for v02(pT)"};
   Configurable<float> cfgCutEtaWindowB{"cfgCutEtaWindowB", 0.4f, "value of x in |eta|<x for window B"};
   Configurable<bool> cfgLoadPhiWeights{"cfgLoadPhiWeights", false, "Load phi weights from CCDB to take care of non-uniform acceptance"};
+  Configurable<bool> cfgLoadPtEffWeights{"cfgLoadPtEffWeights", false, "Load pt-dependent efficiency weights from CCDB to take care of detector inefficiency"};
+  Configurable<int> cfgMinNoOfParticles{"cfgMinNoOfParticles", 4, "Minimum no. of particles for calculating v02(pT)"};
 
   // pT dep DCAxy and DCAz cuts
   Configurable<bool> cfgUsePtDepDCAxy{"cfgUsePtDepDCAxy", true, "Use pt-dependent DCAxy cut"};
@@ -193,7 +206,12 @@ struct V0ptHadPiKaProt {
   TRandom3* funRndm = new TRandom3(0);
 
   // Phi weight histograms initialization
-  TH2F* hWeightPhiFunctionVzEtaPhi = nullptr;
+  TH3D* hWeightPhiFunctionVzEtaPhi = nullptr;
+  // Efficiency of diff. particle histograms initialization
+  TH1D* hEffAllCharged = nullptr;
+  TH1D* hEffPion = nullptr;
+  TH1D* hEffKaon = nullptr;
+  TH1D* hEffProton = nullptr;
 
   // Filter command***********
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -235,7 +253,7 @@ struct V0ptHadPiKaProt {
     // Loading phi weight histograms from CCDB
     if (cfgLoadPhiWeights) {
 
-      // Accessing eff histograms
+      // Accessing phi weight histograms
       ccdb->setURL(ccdbUrl.value);
       // Enabling object caching, otherwise each call goes to the CCDB server
       ccdb->setCaching(true);
@@ -245,9 +263,26 @@ struct V0ptHadPiKaProt {
       ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
       LOGF(info, "Getting object %s", ccdbPath.value.data());
       TList* lst = ccdb->getForTimeStamp<TList>(ccdbPath.value, ccdbNoLaterThan.value);
-      hWeightPhiFunctionVzEtaPhi = reinterpret_cast<TH2F*>(lst->FindObject("hWeightPhiFunctionVzEtaPhi"));
+      hWeightPhiFunctionVzEtaPhi = reinterpret_cast<TH3D*>(lst->FindObject("hWeightPhiFunctionVzEtaPhi"));
       if (!hWeightPhiFunctionVzEtaPhi)
         LOGF(info, "FATAL!! could not get phi weights---------> check");
+    }
+
+    // Loading pT-dependent efficiency histograms from CCDB
+    if (cfgLoadPtEffWeights) {
+
+      ccdb->setURL(ccdbUrl.value);
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      ccdb->setCreatedNotAfter(ccdbNoLaterThanPtEff.value);
+      LOGF(info, "Getting object %s", ccdbPathPtEff.value.data());
+      TList* lst = ccdb->getForTimeStamp<TList>(ccdbPathPtEff.value, ccdbNoLaterThanPtEff.value);
+      hEffAllCharged = reinterpret_cast<TH1D*>(lst->FindObject("hEffAllCharged"));
+      hEffPion = reinterpret_cast<TH1D*>(lst->FindObject("hEffPion"));
+      hEffKaon = reinterpret_cast<TH1D*>(lst->FindObject("hEffKaon"));
+      hEffProton = reinterpret_cast<TH1D*>(lst->FindObject("hEffProton"));
+      if (!hEffAllCharged || !hEffPion || !hEffKaon || !hEffProton)
+        LOGF(info, "FATAL!! could not get efficiency files---------> !!! check !!!");
     }
 
     // Define axes
@@ -458,9 +493,17 @@ struct V0ptHadPiKaProt {
         flag2 += 1;
       if (combNSigmaKa < cfgnSigmaOtherParticles)
         flag2 += 1;
-      if (!(flag2 > 1) && !(combNSigmaPr > combNSigmaPi) && !(combNSigmaPr > combNSigmaKa)) {
-        if (combNSigmaPr < cfgnSigmaCutCombTPCTOF) {
-          flag = 1;
+
+      if (cfgUseNewSeperationPid) {
+        if (std::abs(candidate.tpcNSigmaPr()) < cfgnSigmaCutTPCHigherPt && std::abs(candidate.tofNSigmaPr()) < cfgnSigmaCutTOFHigherPt) {
+          if (!(flag2 > 1) && std::abs(candidate.tpcNSigmaPi()) > cfgnSigmaSeperationCut && std::abs(candidate.tofNSigmaPi()) > cfgnSigmaSeperationCut && std::abs(candidate.tpcNSigmaKa()) > cfgnSigmaSeperationCut && std::abs(candidate.tofNSigmaKa()) > cfgnSigmaSeperationCut)
+            flag = 1;
+        }
+      } else {
+        if (!(flag2 > 1) && !(combNSigmaPr > combNSigmaPi) && !(combNSigmaPr > combNSigmaKa)) {
+          if (combNSigmaPr < cfgnSigmaCutCombTPCTOF) {
+            flag = 1;
+          }
         }
       }
     }
@@ -497,9 +540,17 @@ struct V0ptHadPiKaProt {
         flag2 += 1;
       if (combNSigmaKa < cfgnSigmaOtherParticles)
         flag2 += 1;
-      if (!(flag2 > 1) && !(combNSigmaPi > combNSigmaPr) && !(combNSigmaPi > combNSigmaKa)) {
-        if (combNSigmaPi < cfgnSigmaCutCombTPCTOF) {
-          flag = 1;
+
+      if (cfgUseNewSeperationPid) {
+        if (std::abs(candidate.tpcNSigmaPi()) < cfgnSigmaCutTPCHigherPt && std::abs(candidate.tofNSigmaPi()) < cfgnSigmaCutTOFHigherPt) {
+          if (!(flag2 > 1) && std::abs(candidate.tpcNSigmaKa()) > cfgnSigmaSeperationCut && std::abs(candidate.tofNSigmaKa()) > cfgnSigmaSeperationCut && std::abs(candidate.tpcNSigmaPr()) > cfgnSigmaSeperationCut && std::abs(candidate.tofNSigmaPr()) > cfgnSigmaSeperationCut)
+            flag = 1;
+        }
+      } else {
+        if (!(flag2 > 1) && !(combNSigmaPi > combNSigmaPr) && !(combNSigmaPi > combNSigmaKa)) {
+          if (combNSigmaPi < cfgnSigmaCutCombTPCTOF) {
+            flag = 1;
+          }
         }
       }
     }
@@ -536,9 +587,17 @@ struct V0ptHadPiKaProt {
         flag2 += 1;
       if (combNSigmaKa < cfgnSigmaOtherParticles)
         flag2 += 1;
-      if (!(flag2 > 1) && !(combNSigmaKa > combNSigmaPi) && !(combNSigmaKa > combNSigmaPr)) {
-        if (combNSigmaKa < cfgnSigmaCutCombTPCTOF) {
-          flag = 1;
+
+      if (cfgUseNewSeperationPid) {
+        if (std::abs(candidate.tpcNSigmaKa()) < cfgnSigmaCutTPCHigherPt && std::abs(candidate.tofNSigmaKa()) < cfgnSigmaCutTOFHigherPt) {
+          if (!(flag2 > 1) && std::abs(candidate.tpcNSigmaPi()) > cfgnSigmaSeperationCut && std::abs(candidate.tofNSigmaPi()) > cfgnSigmaSeperationCut && std::abs(candidate.tpcNSigmaPr()) > cfgnSigmaSeperationCut && std::abs(candidate.tofNSigmaPr()) > cfgnSigmaSeperationCut)
+            flag = 1;
+        }
+      } else {
+        if (!(flag2 > 1) && !(combNSigmaKa > combNSigmaPi) && !(combNSigmaKa > combNSigmaPr)) {
+          if (combNSigmaKa < cfgnSigmaCutCombTPCTOF) {
+            flag = 1;
+          }
         }
       }
     }
@@ -675,6 +734,18 @@ struct V0ptHadPiKaProt {
     }
 
     histos.fill(HIST("hEventStatData"), 6.5);
+    // events with selection bits based on occupancy time pattern
+    if (cfgEvSelUseOcuppancyTimeCut && !(coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
+      return 0;
+    }
+
+    histos.fill(HIST("hEventStatData"), 7.5);
+    int occupancy = coll.trackOccupancyInTimeRange();
+    if (cfgEvSelSetOcuppancyRange && (occupancy < cfgMinOccupancy || occupancy > cfgMaxOccupancy)) {
+      return 0;
+    }
+
+    histos.fill(HIST("hEventStatData"), 8.5);
     return 1;
   }
 
@@ -712,6 +783,66 @@ struct V0ptHadPiKaProt {
       return 1.0;
     }
     return weight;
+  }
+
+  template <typename T>
+  float getEffAllCharged(const T& candidate)
+  {
+    if (!cfgLoadPtEffWeights || !hEffAllCharged) {
+      return 1.0;
+    }
+    int bin = hEffAllCharged->FindBin(candidate.pt());
+    float eff = hEffAllCharged->GetBinContent(bin);
+    float ptweight = 1.0 / eff;
+    if (!std::isfinite(ptweight) || ptweight <= 0) {
+      return 1.0;
+    }
+    return ptweight;
+  }
+
+  template <typename T>
+  float getEffPion(const T& candidate)
+  {
+    if (!cfgLoadPtEffWeights || !hEffPion) {
+      return 1.0;
+    }
+    int bin = hEffPion->FindBin(candidate.pt());
+    float eff = hEffPion->GetBinContent(bin);
+    float ptweight = 1.0 / eff;
+    if (!std::isfinite(ptweight) || ptweight <= 0) {
+      return 1.0;
+    }
+    return ptweight;
+  }
+
+  template <typename T>
+  float getEffKaon(const T& candidate)
+  {
+    if (!cfgLoadPtEffWeights || !hEffKaon) {
+      return 1.0;
+    }
+    int bin = hEffKaon->FindBin(candidate.pt());
+    float eff = hEffKaon->GetBinContent(bin);
+    float ptweight = 1.0 / eff;
+    if (!std::isfinite(ptweight) || ptweight <= 0) {
+      return 1.0;
+    }
+    return ptweight;
+  }
+
+  template <typename T>
+  float getEffProton(const T& candidate)
+  {
+    if (!cfgLoadPtEffWeights || !hEffProton) {
+      return 1.0;
+    }
+    int bin = hEffProton->FindBin(candidate.pt());
+    float eff = hEffProton->GetBinContent(bin);
+    float ptweight = 1.0 / eff;
+    if (!std::isfinite(ptweight) || ptweight <= 0) {
+      return 1.0;
+    }
+    return ptweight;
   }
 
   // process Data
@@ -820,30 +951,37 @@ struct V0ptHadPiKaProt {
         }
       }
 
-      // fill subevent B for f(pT) in v02(pT)
-      if (track.sign() != 0 && trkPt < cfgCutPtMaxForV02) {
-        if (std::abs(trkEta) < cfgCutEtaWindowB) {
-          fPtProfileHadInWinB->Fill(trkPt);
-          nSumInWinB += 1.0;
-        }
-      }
       double phiweight = 1.0;
       if (cfgLoadPhiWeights) {
-        phiweight = getPhiWeight(track, coll.posZ());
+        phiweight = getPhiWeight(track, coll.posZ()); // NUA weight
       }
+      double effweight = 1.0;
+      if (cfgLoadPtEffWeights) {
+        effweight = 1.0 / getEffAllCharged(track); // NUE weight
+      }
+      double weight = phiweight * effweight;
+
       // fill subevent C for v2^2 in v02(pT)
       if (track.sign() != 0 && trkPt < cfgCutPtMaxForV02) {
         histos.fill(HIST("h3DVtxZetaPhi"), coll.posZ(), trkEta, trkPhi);
-        if (cfgCutEtaWindowB < trkEta && trkEta < 0.8) {
-          vecQInWinC += phiweight * TComplex(TMath::Cos(2. * trkPhi), TMath::Sin(2. * trkPhi));
-          nSumInWinC += phiweight;
+        if (cfgCutEtaWindowB < trkEta && trkEta < cfgCutEta) {
+          vecQInWinC += weight * TComplex(TMath::Cos(2. * trkPhi), TMath::Sin(2. * trkPhi));
+          nSumInWinC += weight;
         }
       }
       // fill subevent A for v2^2 in v02(pT)
       if (track.sign() != 0 && trkPt < cfgCutPtMaxForV02) {
-        if (-0.8 < trkEta && trkEta < -1.0 * cfgCutEtaWindowB) {
-          vecQInWinA += phiweight * TComplex(TMath::Cos(2. * trkPhi), TMath::Sin(2. * trkPhi));
-          nSumInWinA += phiweight;
+        if (-1.0 * cfgCutEta < trkEta && trkEta < -1.0 * cfgCutEtaWindowB) {
+          vecQInWinA += weight * TComplex(TMath::Cos(2. * trkPhi), TMath::Sin(2. * trkPhi));
+          nSumInWinA += weight;
+        }
+      }
+
+      // fill subevent B for f(pT) in v02(pT)
+      if (track.sign() != 0 && trkPt < cfgCutPtMaxForV02) {
+        if (std::abs(trkEta) < cfgCutEtaWindowB) {
+          fPtProfileHadInWinB->Fill(trkPt, effweight);
+          nSumInWinB += 1.0;
         }
       }
 
@@ -919,17 +1057,25 @@ struct V0ptHadPiKaProt {
         }
       }
 
+      double effweightPion = 1.0;
+      double effweightKaon = 1.0;
+      double effweightProton = 1.0;
+      if (cfgLoadPtEffWeights) {
+        effweightPion = 1.0 / getEffPion(track);     // NUE weight for pion
+        effweightKaon = 1.0 / getEffKaon(track);     // NUE weight for kaon
+        effweightProton = 1.0 / getEffProton(track); // NUE weight for proton
+      }
       // fill subevent B for ***identified particles'*** f(pT) in v02(pT)
       if (track.sign() != 0 && trkPt < cfgCutPtMaxForV02) {
         if (std::abs(trkEta) < cfgCutEtaWindowB) {
           if (isPion) {
-            fPtProfilePiInWinB->Fill(trkPt);
+            fPtProfilePiInWinB->Fill(trkPt, effweightPion);
           }
           if (isKaon) {
-            fPtProfileKaInWinB->Fill(trkPt);
+            fPtProfileKaInWinB->Fill(trkPt, effweightKaon);
           }
           if (isProton && trkPt > cfgCutPtLowerProt) {
-            fPtProfileProtInWinB->Fill(trkPt);
+            fPtProfileProtInWinB->Fill(trkPt, effweightProton);
           }
         }
       }
@@ -1003,7 +1149,7 @@ struct V0ptHadPiKaProt {
       }
     }
 
-    if (nSumInWinA > 4 && nSumInWinB > 4 && nSumInWinC > 4) {
+    if (nSumInWinA > cfgMinNoOfParticles && nSumInWinB > cfgMinNoOfParticles && nSumInWinC > cfgMinNoOfParticles) {
       double twoParCorr = (vecQInWinA * TComplex::Conjugate(vecQInWinC)).Re();
       twoParCorr *= 1.0 / (nSumInWinA * nSumInWinC);
       histos.get<TProfile2D>(HIST("Prof_XY"))->Fill(cent, 0.5, twoParCorr);
