@@ -649,7 +649,7 @@ struct Kstarqa {
   {
     if (PID == PIDParticle::kPion) {
       if (onlyTOF) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < configGp.nsigmaCutTOFPi) {
+        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi) < configGp.nsigmaCutTOFPi) {
           return true;
         }
       } else if (onlyTPC) {
@@ -666,7 +666,7 @@ struct Kstarqa {
       }
     } else if (PID == PIDParticle::kKaon) {
       if (onlyTOF) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < configGp.nsigmaCutTOFKa) {
+        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa) < configGp.nsigmaCutTOFKa) {
           return true;
         }
       } else if (onlyTPC) {
@@ -715,7 +715,7 @@ struct Kstarqa {
   {
     if (PID == PIDParticle::kPion) {
       if (onlyTOF) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < configGp.nsigmaCutTPCMID) {
+        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi) < configGp.nsigmaCutTPCMID) {
           return true;
         }
       } else if (onlyTPC) {
@@ -732,7 +732,7 @@ struct Kstarqa {
       }
     } else if (PID == PIDParticle::kKaon) {
       if (onlyTOF) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < configGp.nsigmaCutTPCMID) {
+        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa) < configGp.nsigmaCutTPCMID) {
           return true;
         }
       } else if (onlyTPC) {
@@ -887,7 +887,7 @@ struct Kstarqa {
         if (candidate.pt() < configGp.lowPtCutPID && std::abs(candidate.tpcNSigmaPi()) < configGp.nsigmaCutTPCPi) {
           return true;
         }
-        if (candidate.pt() >= configGp.lowPtCutPID && std::abs(candidate.tpcNSigmaPi()) < configGp.nsigmaCutTPCPi && candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < configGp.nsigmaCutTOFPi) {
+        if (candidate.pt() >= configGp.lowPtCutPID && std::abs(candidate.tpcNSigmaPi()) < configGp.nsigmaCutTPCPi && candidate.hasTOF() && std::abs(candidate.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi) < configGp.nsigmaCutTOFPi) {
           return true;
         }
         if (candidate.pt() >= configGp.lowPtCutPID && std::abs(candidate.tpcNSigmaPi()) < configGp.nsigmaCutTPCPi && !candidate.hasTOF()) {
@@ -903,7 +903,7 @@ struct Kstarqa {
         if (candidate.pt() < configGp.lowPtCutPID && std::abs(candidate.tpcNSigmaKa()) < configGp.nsigmaCutTPCKa) {
           return true;
         }
-        if (candidate.pt() >= configGp.lowPtCutPID && std::abs(candidate.tpcNSigmaKa()) < configGp.nsigmaCutTPCKa && candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < configGp.nsigmaCutTOFKa) {
+        if (candidate.pt() >= configGp.lowPtCutPID && std::abs(candidate.tpcNSigmaKa()) < configGp.nsigmaCutTPCKa && candidate.hasTOF() && std::abs(candidate.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa) < configGp.nsigmaCutTOFKa) {
           return true;
         }
         if (candidate.pt() >= configGp.lowPtCutPID && std::abs(candidate.tpcNSigmaKa()) < configGp.nsigmaCutTPCKa && !candidate.hasTOF()) {
@@ -1045,13 +1045,13 @@ struct Kstarqa {
         continue;
 
       if (cQAplots) {
-        hPID.fill(HIST("Before/hNsigma_TPC_TOF_Ka_before"), track1.tpcNSigmaKa(), track1.tofNSigmaKa(), track1.pt());
-        hPID.fill(HIST("Before/hNsigma_TPC_TOF_Pi_before"), track1.tpcNSigmaPi(), track1.tofNSigmaPi(), track1.pt());
+        hPID.fill(HIST("Before/hNsigma_TPC_TOF_Ka_before"), track1.tpcNSigmaKa(), track1.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, track1.pt());
+        hPID.fill(HIST("Before/hNsigma_TPC_TOF_Pi_before"), track1.tpcNSigmaPi(), track1.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, track1.pt());
 
         hPID.fill(HIST("Before/hTPCnsigKa_mult_pt"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
         hPID.fill(HIST("Before/hTPCnsigPi_mult_pt"), track1.tpcNSigmaPi(), multiplicity, track1.pt());
-        hPID.fill(HIST("Before/hTOFnsigKa_mult_pt"), track1.tofNSigmaKa(), multiplicity, track1.pt());
-        hPID.fill(HIST("Before/hTOFnsigPi_mult_pt"), track1.tofNSigmaPi(), multiplicity, track1.pt());
+        hPID.fill(HIST("Before/hTOFnsigKa_mult_pt"), track1.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, multiplicity, track1.pt());
+        hPID.fill(HIST("Before/hTOFnsigPi_mult_pt"), track1.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, multiplicity, track1.pt());
 
         hOthers.fill(HIST("hCRFC_before"), track1.tpcCrossedRowsOverFindableCls());
         // hOthers.fill(HIST("dE_by_dx_TPC"), track1.p(), track1.tpcSignal());
@@ -1133,12 +1133,12 @@ struct Kstarqa {
 
         hPID.fill(HIST("After/hTPCnsigKa_mult_pt"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
         hPID.fill(HIST("After/hTPCnsigPi_mult_pt"), track2.tpcNSigmaPi(), multiplicity, track2.pt());
-        hPID.fill(HIST("After/hTOFnsigKa_mult_pt"), track1.tofNSigmaKa(), multiplicity, track1.pt());
-        hPID.fill(HIST("After/hTOFnsigPi_mult_pt"), track2.tofNSigmaPi(), multiplicity, track2.pt());
+        hPID.fill(HIST("After/hTOFnsigKa_mult_pt"), track1.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, multiplicity, track1.pt());
+        hPID.fill(HIST("After/hTOFnsigPi_mult_pt"), track2.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, multiplicity, track2.pt());
         hOthers.fill(HIST("hEta_after"), track1.eta());
         hOthers.fill(HIST("hCRFC_after"), track1.tpcCrossedRowsOverFindableCls());
-        hPID.fill(HIST("After/hNsigma_TPC_TOF_Ka_after"), track1.tpcNSigmaKa(), track1.tofNSigmaKa(), track1.pt());
-        hPID.fill(HIST("After/hNsigma_TPC_TOF_Pi_after"), track2.tpcNSigmaPi(), track2.tofNSigmaPi(), track2.pt());
+        hPID.fill(HIST("After/hNsigma_TPC_TOF_Ka_after"), track1.tpcNSigmaKa(), track1.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, track1.pt());
+        hPID.fill(HIST("After/hNsigma_TPC_TOF_Pi_after"), track2.tpcNSigmaPi(), track2.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, track2.pt());
       }
 
       if (!selectionPair(track1, track2)) {
@@ -1445,13 +1445,13 @@ struct Kstarqa {
       rEventSelection.fill(HIST("tracksCheckData"), 2.5);
 
       if (cQAplots) {
-        hPID.fill(HIST("Before/hNsigma_TPC_TOF_Ka_before"), track1.tpcNSigmaKa(), track1.tofNSigmaKa(), track1.pt());
-        hPID.fill(HIST("Before/hNsigma_TPC_TOF_Pi_before"), track1.tpcNSigmaPi(), track1.tofNSigmaPi(), track1.pt());
+        hPID.fill(HIST("Before/hNsigma_TPC_TOF_Ka_before"), track1.tpcNSigmaKa(), track1.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, track1.pt());
+        hPID.fill(HIST("Before/hNsigma_TPC_TOF_Pi_before"), track1.tpcNSigmaPi(), track1.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, track1.pt());
 
         hPID.fill(HIST("Before/hTPCnsigKa_mult_pt"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
         hPID.fill(HIST("Before/hTPCnsigPi_mult_pt"), track1.tpcNSigmaPi(), multiplicity, track1.pt());
-        hPID.fill(HIST("Before/hTOFnsigKa_mult_pt"), track1.tofNSigmaKa(), multiplicity, track1.pt());
-        hPID.fill(HIST("Before/hTOFnsigPi_mult_pt"), track1.tofNSigmaPi(), multiplicity, track1.pt());
+        hPID.fill(HIST("Before/hTOFnsigKa_mult_pt"), track1.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, multiplicity, track1.pt());
+        hPID.fill(HIST("Before/hTOFnsigPi_mult_pt"), track1.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, multiplicity, track1.pt());
 
         hOthers.fill(HIST("hCRFC_before"), track1.tpcCrossedRowsOverFindableCls());
         hOthers.fill(HIST("hphi"), track1.phi());
@@ -1514,16 +1514,16 @@ struct Kstarqa {
 
         hPID.fill(HIST("After/hTPCnsigKa_mult_pt"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
         hPID.fill(HIST("After/hTPCnsigPi_mult_pt"), track2.tpcNSigmaPi(), multiplicity, track2.pt());
-        hPID.fill(HIST("After/hTOFnsigKa_mult_pt"), track1.tofNSigmaKa(), multiplicity, track1.pt());
-        hPID.fill(HIST("After/hTOFnsigPi_mult_pt"), track2.tofNSigmaPi(), multiplicity, track2.pt());
+        hPID.fill(HIST("After/hTOFnsigKa_mult_pt"), track1.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, multiplicity, track1.pt());
+        hPID.fill(HIST("After/hTOFnsigPi_mult_pt"), track2.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, multiplicity, track2.pt());
         hOthers.fill(HIST("hEta_after"), track1.eta());
         hOthers.fill(HIST("hCRFC_after"), track1.tpcCrossedRowsOverFindableCls());
         // hPID.fill(HIST("After/hNsigmaKaonTPC_after"), track1.pt(), track1.tpcNSigmaKa());
         // hPID.fill(HIST("After/hNsigmaKaonTOF_after"), track1.pt(), track1.tofNSigmaKa());
         // hPID.fill(HIST("After/hNsigmaPionTPC_after"), track2.pt(), track2.tpcNSigmaPi());
         // hPID.fill(HIST("After/hNsigmaPionTOF_after"), track2.pt(), track2.tofNSigmaPi());
-        hPID.fill(HIST("After/hNsigma_TPC_TOF_Ka_after"), track1.tpcNSigmaKa(), track1.tofNSigmaKa(), track1.pt());
-        hPID.fill(HIST("After/hNsigma_TPC_TOF_Pi_after"), track2.tpcNSigmaPi(), track2.tofNSigmaPi(), track2.pt());
+        hPID.fill(HIST("After/hNsigma_TPC_TOF_Ka_after"), track1.tpcNSigmaKa(), track1.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, track1.pt());
+        hPID.fill(HIST("After/hNsigma_TPC_TOF_Pi_after"), track2.tpcNSigmaPi(), track2.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, track2.pt());
       }
 
       // for (const auto& mothertrack1 : mctrack1.mothers_as<aod::McParticles>()) {
@@ -1987,12 +1987,12 @@ struct Kstarqa {
         int track2PDG = std::abs(mctrack2.pdgCode());
 
         if (cQAplots && (std::abs(mctrack1.pdgCode()) == PDG_t::kKPlus && std::abs(mctrack2.pdgCode()) == PDG_t::kPiPlus)) {
-          hPID.fill(HIST("Before/hNsigma_TPC_TOF_Ka_before"), track1.tpcNSigmaKa(), track1.tofNSigmaKa(), track1.pt());
-          hPID.fill(HIST("Before/hNsigma_TPC_TOF_Pi_before"), track1.tpcNSigmaPi(), track1.tofNSigmaPi(), track1.pt());
+          hPID.fill(HIST("Before/hNsigma_TPC_TOF_Ka_before"), track1.tpcNSigmaKa(), track1.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, track1.pt());
+          hPID.fill(HIST("Before/hNsigma_TPC_TOF_Pi_before"), track1.tpcNSigmaPi(), track1.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, track1.pt());
           hPID.fill(HIST("Before/hTPCnsigKa_mult_pt"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
           hPID.fill(HIST("Before/hTPCnsigPi_mult_pt"), track1.tpcNSigmaPi(), multiplicity, track1.pt());
-          hPID.fill(HIST("Before/hTOFnsigKa_mult_pt"), track1.tofNSigmaKa(), multiplicity, track1.pt());
-          hPID.fill(HIST("Before/hTOFnsigPi_mult_pt"), track1.tofNSigmaPi(), multiplicity, track1.pt());
+          hPID.fill(HIST("Before/hTOFnsigKa_mult_pt"), track1.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, multiplicity, track1.pt());
+          hPID.fill(HIST("Before/hTOFnsigPi_mult_pt"), track1.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, multiplicity, track1.pt());
         }
         rEventSelection.fill(HIST("recMCparticles"), 6.5);
 
@@ -2066,10 +2066,10 @@ struct Kstarqa {
               if (cQAplots) {
                 hPID.fill(HIST("After/hTPCnsigPi_mult_pt"), track1.tpcNSigmaPi(), multiplicity, track1.pt());
                 hPID.fill(HIST("After/hTPCnsigKa_mult_pt"), track2.tpcNSigmaKa(), multiplicity, track2.pt());
-                hPID.fill(HIST("After/hTOFnsigPi_mult_pt"), track1.tofNSigmaPi(), multiplicity, track1.pt());
-                hPID.fill(HIST("After/hTOFnsigKa_mult_pt"), track2.tofNSigmaKa(), multiplicity, track2.pt());
-                hPID.fill(HIST("After/hNsigma_TPC_TOF_Ka_after"), track2.tpcNSigmaKa(), track2.tofNSigmaKa(), track2.pt());
-                hPID.fill(HIST("After/hNsigma_TPC_TOF_Pi_after"), track1.tpcNSigmaPi(), track1.tofNSigmaPi(), track1.pt());
+                hPID.fill(HIST("After/hTOFnsigPi_mult_pt"), track1.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, multiplicity, track1.pt());
+                hPID.fill(HIST("After/hTOFnsigKa_mult_pt"), track2.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, multiplicity, track2.pt());
+                hPID.fill(HIST("After/hNsigma_TPC_TOF_Ka_after"), track2.tpcNSigmaKa(), track2.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, track2.pt());
+                hPID.fill(HIST("After/hNsigma_TPC_TOF_Pi_after"), track1.tpcNSigmaPi(), track1.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, track1.pt());
               }
 
             } else if (track1PDG == PDG_t::kKPlus) {
@@ -2110,10 +2110,10 @@ struct Kstarqa {
               if (cQAplots) {
                 hPID.fill(HIST("After/hTPCnsigKa_mult_pt"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
                 hPID.fill(HIST("After/hTPCnsigPi_mult_pt"), track2.tpcNSigmaPi(), multiplicity, track2.pt());
-                hPID.fill(HIST("After/hTOFnsigKa_mult_pt"), track1.tofNSigmaKa(), multiplicity, track1.pt());
-                hPID.fill(HIST("After/hTOFnsigPi_mult_pt"), track2.tofNSigmaPi(), multiplicity, track2.pt());
-                hPID.fill(HIST("After/hNsigma_TPC_TOF_Ka_after"), track1.tpcNSigmaKa(), track1.tofNSigmaKa(), track1.pt());
-                hPID.fill(HIST("After/hNsigma_TPC_TOF_Pi_after"), track2.tpcNSigmaPi(), track2.tofNSigmaPi(), track2.pt());
+                hPID.fill(HIST("After/hTOFnsigKa_mult_pt"), track1.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, multiplicity, track1.pt());
+                hPID.fill(HIST("After/hTOFnsigPi_mult_pt"), track2.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, multiplicity, track2.pt());
+                hPID.fill(HIST("After/hNsigma_TPC_TOF_Ka_after"), track1.tpcNSigmaKa(), track1.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, track1.pt());
+                hPID.fill(HIST("After/hNsigma_TPC_TOF_Pi_after"), track2.tpcNSigmaPi(), track2.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, track2.pt());
               }
             }
 
