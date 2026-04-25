@@ -1538,9 +1538,9 @@ struct LambdaSpinPolarization {
                              part_pair == kLambdaSBSBLambda ||
                              part_pair == kAntiLambdaSBSBAntiLambda);
 
-    constexpr int Idx = IsSigSB  ? (int)part_pair - 4
-                        : IsSBSB ? (int)part_pair - 8
-                                 : (int)part_pair;
+    constexpr int Idx = IsSigSB  ? static_cast<int>(part_pair) - 4
+                        : IsSBSB ? static_cast<int>(part_pair) - 8
+                                 : static_cast<int>(part_pair);
 
     float drap = p1.rap() - p2.rap();
     float dphi = RecoDecay::constrainAngle(p1.phi() - p2.phi(), -PI);
@@ -1634,9 +1634,9 @@ struct LambdaSpinPolarization {
                              part_pair == kLambdaSBSBLambda ||
                              part_pair == kAntiLambdaSBSBAntiLambda);
 
-    constexpr int Idx = IsSigSB  ? (int)part_pair - 4
-                        : IsSBSB ? (int)part_pair - 8
-                                 : (int)part_pair;
+    constexpr int Idx = IsSigSB  ? static_cast<int>(part_pair) - 4
+                        : IsSBSB ? static_cast<int>(part_pair) - 8
+                                 : static_cast<int>(part_pair);
 
     float drap = p1.rap() - p2.rap();
     float dphi = RecoDecay::constrainAngle(p1.phi() - p2.phi(), -PI);
