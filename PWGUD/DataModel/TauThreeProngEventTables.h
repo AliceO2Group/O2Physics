@@ -37,7 +37,7 @@ DECLARE_SOA_COLUMN(RctOk, rctOk, int);
 // DECLARE_SOA_COLUMN(PosX, posX, float);
 // DECLARE_SOA_COLUMN(PosY, posY, float);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
-DECLARE_SOA_COLUMN(FlagUPC, flagUPC, int8_t);
+DECLARE_SOA_COLUMN(FlagUPC, flagUPC, int16_t);
 DECLARE_SOA_COLUMN(OccupancyInTime, occupancyInTime, int);
 DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, double);
 DECLARE_SOA_COLUMN(Trs, trs, int8_t);
