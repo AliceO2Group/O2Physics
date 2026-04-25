@@ -13,6 +13,7 @@
 /// \brief a task to study tagging e from charm hadron decays in MC
 /// \author daiki.sekihata@cern.ch
 
+#include "PWGEM/Dilepton/DataModel/lmeeMLTables.h"
 #include "PWGEM/Dilepton/Utils/MCUtilities.h"
 #include "PWGEM/Dilepton/Utils/SemiCharmTag.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -82,15 +83,7 @@ struct taggingHFE {
   using MyV0s = soa::Join<aod::V0Datas, aod::V0Covs>;
   using MyCascades = soa::Join<aod::CascDatas, aod::CascCovs>;
 
-  struct EBPair { // electron-baryon pair
-    float mass{-999.f};
-    float dca2legs{-999.f};
-    float cospa{-999.f};
-    float lxy{-999.f};
-    float lz{-999.f};
-    float ptepv{-999.f};
-    float dca3dinsigma{-999.f};
-  };
+  Produces<aod::EMMLLHPairs> emmllhpair;
 
   // Configurables
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -124,8 +117,8 @@ struct taggingHFE {
     std::string prefix = "electronCut";
     Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.4, "min pT for single track"};
     Configurable<float> cfg_max_pt_track{"cfg_max_pt_track", 1e+10, "max pT for single track"};
-    Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -0.5, "min eta for single track"};
-    Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", +0.5, "max eta for single track"};
+    Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -0.8, "min eta for single track"};
+    Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", +0.8, "max eta for single track"};
     Configurable<float> cfg_min_cr2findable_ratio_tpc{"cfg_min_cr2findable_ratio_tpc", 0.8, "min. TPC Ncr/Nf ratio"};
     Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 0.7, "max fraction of shared clusters in TPC"};
     Configurable<int> cfg_min_ncrossedrows_tpc{"cfg_min_ncrossedrows_tpc", 80, "min ncrossed rows"};
@@ -658,9 +651,9 @@ struct taggingHFE {
       return false;
     }
 
-    if (!isKaon(track)) {
-      return false;
-    }
+    // if (!isKaon(track)) {
+    //   return false;
+    // }
 
     return true;
   }
@@ -905,6 +898,20 @@ struct taggingHFE {
     }
   }
 
+  template <typename TTrack>
+  float combinedNSigmaKa(TTrack const& track)
+  {
+    if (track.hasTOF()) {
+      if (track.tpcNSigmaKa() > 0.f) {
+        return std::sqrt((std::pow(track.tpcNSigmaKa(), 2) + std::pow(track.tofNSigmaKa(), 2)) / 2.);
+      } else {
+        return -1 * std::sqrt((std::pow(track.tpcNSigmaKa(), 2) + std::pow(track.tofNSigmaKa(), 2)) / 2.);
+      }
+    } else {
+      return track.tpcNSigmaKa();
+    }
+  }
+
   template <typename TMCParticle, typename TMCParticles>
   bool isSemiLeptonic(TMCParticle const& mcParticle, TMCParticles const& mcParticles, const int pdgLepton, const int pdgNeutrino, const int pdgStrHad)
   {
@@ -1123,7 +1130,10 @@ struct taggingHFE {
         o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, leptonParCov, 2.f, matCorr, &mDcaInfoCov);
         float dcaXY_lepton = mDcaInfoCov.getY();
         float dcaZ_lepton = mDcaInfoCov.getZ();
+        float dca3D_lepton = std::hypot(dcaXY_lepton, dcaZ_lepton);
         float dca3DinSigma_lepton = dca3DinSigmaOTF(dcaXY_lepton, dcaZ_lepton, leptonParCov.getSigmaY2(), leptonParCov.getSigmaZ2(), leptonParCov.getSigmaZY());
+        float sigma3D_lepton = dca3D_lepton / dca3DinSigma_lepton;
+
         const auto& mcpos = pos.template mcParticle_as<aod::McParticles>();
 
         // D0 -> e+ nu_e K-, br = 0.03538, ctau = 123.01 um, m = 1864 MeV/c2
@@ -1135,7 +1145,9 @@ struct taggingHFE {
           o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
           float dcaXY_kaon = mDcaInfoCov.getY();
           float dcaZ_kaon = mDcaInfoCov.getZ();
+          float dca3D_kaon = std::hypot(dcaXY_kaon, dcaZ_kaon);
           float dca3DinSigma_kaon = dca3DinSigmaOTF(dcaXY_kaon, dcaZ_kaon, trackParCov.getSigmaY2(), trackParCov.getSigmaZ2(), trackParCov.getSigmaZY());
+          float sigma3D_kaon = dca3D_kaon / dca3DinSigma_kaon;
 
           if (positronId == kaonId) {
             continue;
@@ -1162,6 +1174,20 @@ struct taggingHFE {
             // const auto& mcD0 = mcParticles.rawIteratorAt(mcD0Id);
             fRegistry.fill(HIST("MC/eKfromDpm/hs"), leptonParCov.getPt(), dca3DinSigma_lepton, trackParCov.getPt(), dca3DinSigma_kaon, eKpair.mass, eKpair.lxyz / eKpair.lxyzErr, eKpair.cospa, eKpair.dca2legs);
           }
+
+          int mcMotherId = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mckaon);
+          int pdgCodeMother = 0;
+          if (mcMotherId > -1) {
+            auto mcMother = mcParticles.rawIteratorAt(mcMotherId);
+            pdgCodeMother = mcMother.pdgCode();
+          } else {
+            pdgCodeMother = 0;
+          }
+          emmllhpair(collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
+                     leptonParCov.getQ2Pt(), leptonParCov.getEta(), dca3D_lepton, sigma3D_lepton,
+                     trackParCov.getQ2Pt(), trackParCov.getEta(), dca3D_kaon, sigma3D_kaon, combinedNSigmaKa(kaon),
+                     eKpair.mass, eKpair.dca2legs, eKpair.cospa, eKpair.lxyz, eKpair.lxyzErr, mckaon.pdgCode(), pdgCodeMother);
+
         } // end of kaon loop
 
         // D+ -> e+ K0S nu_e
@@ -1300,7 +1326,10 @@ struct taggingHFE {
         o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, leptonParCov, 2.f, matCorr, &mDcaInfoCov);
         float dcaXY_lepton = mDcaInfoCov.getY();
         float dcaZ_lepton = mDcaInfoCov.getZ();
+        float dca3D_lepton = std::hypot(dcaXY_lepton, dcaZ_lepton);
         float dca3DinSigma_lepton = dca3DinSigmaOTF(dcaXY_lepton, dcaZ_lepton, leptonParCov.getSigmaY2(), leptonParCov.getSigmaZ2(), leptonParCov.getSigmaZY());
+        float sigma3D_lepton = dca3D_lepton / dca3DinSigma_lepton;
+
         const auto& mcele = ele.template mcParticle_as<aod::McParticles>();
 
         // D0bar -> e- anti-nu_e K+, br = 0.03538, ctau = 123.01 um, m = 1864 MeV/c2
@@ -1312,7 +1341,9 @@ struct taggingHFE {
           o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
           float dcaXY_kaon = mDcaInfoCov.getY();
           float dcaZ_kaon = mDcaInfoCov.getZ();
+          float dca3D_kaon = std::hypot(dcaXY_kaon, dcaZ_kaon);
           float dca3DinSigma_kaon = dca3DinSigmaOTF(dcaXY_kaon, dcaZ_kaon, trackParCov.getSigmaY2(), trackParCov.getSigmaZ2(), trackParCov.getSigmaZY());
+          float sigma3D_kaon = dca3D_kaon / dca3DinSigma_kaon;
 
           if (electronId == kaonId) {
             continue;
@@ -1337,6 +1368,20 @@ struct taggingHFE {
             // const auto& mcD0 = mcParticles.rawIteratorAt(mcD0Id);
             fRegistry.fill(HIST("MC/eKfromDpm/hs"), leptonParCov.getPt(), dca3DinSigma_lepton, trackParCov.getPt(), dca3DinSigma_kaon, eKpair.mass, eKpair.lxyz / eKpair.lxyzErr, eKpair.cospa, eKpair.dca2legs);
           }
+
+          int mcMotherId = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mckaon);
+          int pdgCodeMother = 0;
+          if (mcMotherId > -1) {
+            auto mcMother = mcParticles.rawIteratorAt(mcMotherId);
+            pdgCodeMother = mcMother.pdgCode();
+          } else {
+            pdgCodeMother = 0;
+          }
+          emmllhpair(collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
+                     leptonParCov.getQ2Pt(), leptonParCov.getEta(), dca3D_lepton, sigma3D_lepton,
+                     trackParCov.getQ2Pt(), trackParCov.getEta(), dca3D_kaon, sigma3D_kaon, combinedNSigmaKa(kaon),
+                     eKpair.mass, eKpair.dca2legs, eKpair.cospa, eKpair.lxyz, eKpair.lxyzErr, mckaon.pdgCode(), pdgCodeMother);
+
         } // end of kaon loop
 
         // D- -> e0 anti-K0S anti-nu_e
