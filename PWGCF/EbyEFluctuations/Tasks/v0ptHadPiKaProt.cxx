@@ -36,6 +36,7 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/PID.h>
 
+#include "TDatabasePDG.h"
 #include <TComplex.h>
 #include <TF1.h>
 #include <TH2.h>
@@ -928,8 +929,7 @@ struct V0ptHadPiKaProt {
         continue;
 
       // charged check
-      Service<o2::framework::O2DatabasePDG> pdgDB;
-      auto pdgEntry = pdgDB->getParticle(mcParticle.pdgCode());
+      auto pdgEntry = TDatabasePDG::Instance()->GetParticle(mcParticle.pdgCode());
       if (!pdgEntry)
         continue;
       if (pdgEntry->Charge() == 0)
