@@ -5095,40 +5095,42 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  TF1* fDCAxyresLow = new TF1("fDCAxyresLow", "[0] + [1] * pow(x, -[2])", 0.1, 1000.);
-  TF1* fDCAzresLow = new TF1("fDCAzresLow", "[0] + [1] * pow(x, -[2])", 0.1, 1000.);
-  TF1* fDCAxyresUp = new TF1("fDCAxyresUp", "[0] + [1] * pow(x, -[2])", 0.1, 1000.);
-  TF1* fDCAzresUp = new TF1("fDCAzresUp", "[0] + [1] * pow(x, -[2])", 0.1, 1000.);
+  if (!nameStr.compare("electronPrimary_dca3sigma") || !nameStr.compare("electronPrimary_dca7sigma")) {
+    TF1* fDCAxyresLow = new TF1("fDCAxyresLow", "[0] + [1] * pow(x, -[2])", 0.1, 1000.);
+    TF1* fDCAzresLow = new TF1("fDCAzresLow", "[0] + [1] * pow(x, -[2])", 0.1, 1000.);
+    TF1* fDCAxyresUp = new TF1("fDCAxyresUp", "[0] + [1] * pow(x, -[2])", 0.1, 1000.);
+    TF1* fDCAzresUp = new TF1("fDCAzresUp", "[0] + [1] * pow(x, -[2])", 0.1, 1000.);
 
-  if (!nameStr.compare("electronPrimary_dca3sigma")) {
-    // DCAxy and DCAz 3 sigma cut. DCA resolution vs pt extracted from fits of Users/m/mfaggin/test/inputsTrackTuner/pp2024/pass1_minBias/vsPhi (used for the track tuner)
-    // we add in addition a term for the misalignment of the mean of the distribution, which seems to be at most 20 mum for DCAxy and 10 mum for DCAz
-    fDCAxyresLow->SetParameters(-3 * 8.7e-4 - 20e-4, -3 * 25.4e-4, 0.79); // res is 8.7 + 25.4/pt^0.79 mum
-    fDCAzresLow->SetParameters(-3 * 9.4e-4 - 10e-4, -3 * 26.5e-4, 0.79);  // res is 9.4 + 26.5/pt^0.79 mum
-    fDCAxyresUp->SetParameters(3 * 8.7e-4 + 20e-4, 3 * 25.4e-4, 0.79);    // res is 8.7 + 25.4/pt^0.79 mum
-    fDCAzresUp->SetParameters(3 * 9.4e-4 + 10e-4, 3 * 26.5e-4, 0.79);     // res is 9.4 + 26.5/pt^0.79 mum
-    cut->AddCut(VarManager::kTrackDCAxy, fDCAxyresLow, fDCAxyresUp, false, VarManager::kPt, 0.2, 1000.);
-    cut->AddCut(VarManager::kTrackDCAz, fDCAzresLow, fDCAzresUp, false, VarManager::kPt, 0.2, 1000.);
-    cut->AddCut(VarManager::kIsITSibFirst, 0.5, 1.5);
-    cut->AddCut(VarManager::kITSchi2, 0.0, 5.0);
-    cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
-    cut->AddCut(VarManager::kTPCncls, 100, 161.);
-    return cut;
-  }
+    if (!nameStr.compare("electronPrimary_dca3sigma")) {
+      // DCAxy and DCAz 3 sigma cut. DCA resolution vs pt extracted from fits of Users/m/mfaggin/test/inputsTrackTuner/pp2024/pass1_minBias/vsPhi (used for the track tuner)
+      // we add in addition a term for the misalignment of the mean of the distribution, which seems to be at most 20 mum for DCAxy and 10 mum for DCAz
+      fDCAxyresLow->SetParameters(-3 * 8.7e-4 - 20e-4, -3 * 25.4e-4, 0.79); // res is 8.7 + 25.4/pt^0.79 mum
+      fDCAzresLow->SetParameters(-3 * 9.4e-4 - 10e-4, -3 * 26.5e-4, 0.79);  // res is 9.4 + 26.5/pt^0.79 mum
+      fDCAxyresUp->SetParameters(3 * 8.7e-4 + 20e-4, 3 * 25.4e-4, 0.79);    // res is 8.7 + 25.4/pt^0.79 mum
+      fDCAzresUp->SetParameters(3 * 9.4e-4 + 10e-4, 3 * 26.5e-4, 0.79);     // res is 9.4 + 26.5/pt^0.79 mum
+      cut->AddCut(VarManager::kTrackDCAxy, fDCAxyresLow, fDCAxyresUp, false, VarManager::kPt, 0.2, 1000.);
+      cut->AddCut(VarManager::kTrackDCAz, fDCAzresLow, fDCAzresUp, false, VarManager::kPt, 0.2, 1000.);
+      cut->AddCut(VarManager::kIsITSibFirst, 0.5, 1.5);
+      cut->AddCut(VarManager::kITSchi2, 0.0, 5.0);
+      cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+      cut->AddCut(VarManager::kTPCncls, 100, 161.);
+      return cut;
+    }
 
-  if (!nameStr.compare("electronPrimary_dca7sigma")) {
-    // DCAxy and DCAz 7 sigma cut
-    fDCAxyresLow->SetParameters(-7 * 8.7e-4 - 20e-4, -7 * 25.4e-4, 0.79);
-    fDCAzresLow->SetParameters(-7 * 9.4e-4 - 10e-4, -7 * 26.5e-4, 0.79);
-    fDCAxyresUp->SetParameters(7 * 8.7e-4 + 20e-4, 7 * 25.4e-4, 0.79);
-    fDCAzresUp->SetParameters(7 * 9.4e-4 + 10e-4, 7 * 26.5e-4, 0.79);
-    cut->AddCut(VarManager::kTrackDCAxy, fDCAxyresLow, fDCAxyresUp, false, VarManager::kPt, 0.2, 1000.);
-    cut->AddCut(VarManager::kTrackDCAz, fDCAzresLow, fDCAzresUp, false, VarManager::kPt, 0.2, 1000.);
-    cut->AddCut(VarManager::kIsITSibFirst, 0.5, 1.5);
-    cut->AddCut(VarManager::kITSchi2, 0.0, 5.0);
-    cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
-    cut->AddCut(VarManager::kTPCncls, 100, 161.);
-    return cut;
+    if (!nameStr.compare("electronPrimary_dca7sigma")) {
+      // DCAxy and DCAz 7 sigma cut
+      fDCAxyresLow->SetParameters(-7 * 8.7e-4 - 20e-4, -7 * 25.4e-4, 0.79);
+      fDCAzresLow->SetParameters(-7 * 9.4e-4 - 10e-4, -7 * 26.5e-4, 0.79);
+      fDCAxyresUp->SetParameters(7 * 8.7e-4 + 20e-4, 7 * 25.4e-4, 0.79);
+      fDCAzresUp->SetParameters(7 * 9.4e-4 + 10e-4, 7 * 26.5e-4, 0.79);
+      cut->AddCut(VarManager::kTrackDCAxy, fDCAxyresLow, fDCAxyresUp, false, VarManager::kPt, 0.2, 1000.);
+      cut->AddCut(VarManager::kTrackDCAz, fDCAzresLow, fDCAzresUp, false, VarManager::kPt, 0.2, 1000.);
+      cut->AddCut(VarManager::kIsITSibFirst, 0.5, 1.5);
+      cut->AddCut(VarManager::kITSchi2, 0.0, 5.0);
+      cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+      cut->AddCut(VarManager::kTPCncls, 100, 161.);
+      return cut;
+    }
   }
 
   if (!nameStr.compare("dcaCut1_ionut")) {
@@ -5487,40 +5489,42 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  TF1* cutLow1 = new TF1("cutLow1", "pol1", 0., 10.);
-  if (!nameStr.compare("electronPID1")) {
-    cutLow1->SetParameters(130., -40.0);
-    cut->AddCut(VarManager::kTPCsignal, 70., 100.);
-    cut->AddCut(VarManager::kTPCsignal, cutLow1, 100.0, false, VarManager::kPin, 0.5, 3.0);
-    return cut;
-  }
+  if (!nameStr.compare("electronPID1") || !nameStr.compare("electronPID1shiftUp") || !nameStr.compare("electronPID1shiftDown") || !nameStr.compare("electronPID2") || !nameStr.compare("electronPID3")) {
+    TF1* cutLow1 = new TF1("cutLow1", "pol1", 0., 10.);
+    if (!nameStr.compare("electronPID1")) {
+      cutLow1->SetParameters(130., -40.0);
+      cut->AddCut(VarManager::kTPCsignal, 70., 100.);
+      cut->AddCut(VarManager::kTPCsignal, cutLow1, 100.0, false, VarManager::kPin, 0.5, 3.0);
+      return cut;
+    }
 
-  if (!nameStr.compare("electronPID1shiftUp")) {
-    cut->AddCut(VarManager::kTPCsignal, 70. - 0.85, 100. - 0.85);
-    cutLow1->SetParameters(130. - 0.85, -40.0);
-    cut->AddCut(VarManager::kTPCsignal, cutLow1, 100.0 - 0.85, false, VarManager::kPin, 0.5, 3.0);
-    return cut;
-  }
+    if (!nameStr.compare("electronPID1shiftUp")) {
+      cut->AddCut(VarManager::kTPCsignal, 70. - 0.85, 100. - 0.85);
+      cutLow1->SetParameters(130. - 0.85, -40.0);
+      cut->AddCut(VarManager::kTPCsignal, cutLow1, 100.0 - 0.85, false, VarManager::kPin, 0.5, 3.0);
+      return cut;
+    }
 
-  if (!nameStr.compare("electronPID1shiftDown")) {
-    cut->AddCut(VarManager::kTPCsignal, 70.0 + 0.85, 100.0 + 0.85);
-    cutLow1->SetParameters(130. + 0.85, -40.0);
-    cut->AddCut(VarManager::kTPCsignal, cutLow1, 100.0 + 0.85, false, VarManager::kPin, 0.5, 3.0);
-    return cut;
-  }
+    if (!nameStr.compare("electronPID1shiftDown")) {
+      cut->AddCut(VarManager::kTPCsignal, 70.0 + 0.85, 100.0 + 0.85);
+      cutLow1->SetParameters(130. + 0.85, -40.0);
+      cut->AddCut(VarManager::kTPCsignal, cutLow1, 100.0 + 0.85, false, VarManager::kPin, 0.5, 3.0);
+      return cut;
+    }
 
-  if (!nameStr.compare("electronPID2")) {
-    cutLow1->SetParameters(130., -40.0);
-    cut->AddCut(VarManager::kTPCsignal, 73., 100.);
-    cut->AddCut(VarManager::kTPCsignal, cutLow1, 100.0, false, VarManager::kPin, 0.5, 3.0);
-    return cut;
-  }
+    if (!nameStr.compare("electronPID2")) {
+      cutLow1->SetParameters(130., -40.0);
+      cut->AddCut(VarManager::kTPCsignal, 73., 100.);
+      cut->AddCut(VarManager::kTPCsignal, cutLow1, 100.0, false, VarManager::kPin, 0.5, 3.0);
+      return cut;
+    }
 
-  if (!nameStr.compare("electronPID3")) {
-    cutLow1->SetParameters(130., -40.0);
-    cut->AddCut(VarManager::kTPCsignal, 60., 110.);
-    cut->AddCut(VarManager::kTPCsignal, cutLow1, 100.0, false, VarManager::kPin, 0.5, 3.0);
-    return cut;
+    if (!nameStr.compare("electronPID3")) {
+      cutLow1->SetParameters(130., -40.0);
+      cut->AddCut(VarManager::kTPCsignal, 60., 110.);
+      cut->AddCut(VarManager::kTPCsignal, cutLow1, 100.0, false, VarManager::kPin, 0.5, 3.0);
+      return cut;
+    }
   }
 
   if (!nameStr.compare("electronPIDnsigma")) {
