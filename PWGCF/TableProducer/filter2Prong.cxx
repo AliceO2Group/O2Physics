@@ -54,6 +54,7 @@
 #include <iterator>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 using namespace o2;
@@ -71,6 +72,7 @@ enum LambdaPid { kLambda = 0,
 struct Filter2Prong {
   SliceCache cache;
   Preslice<aod::CFTrackRefs> perCollisionCFTrackRefs = aod::track::collisionId;
+  Preslice<aod::CFCollRefs> perCollisionCFCollRefs = aod::track::collisionId;
 
   O2_DEFINE_CONFIGURABLE(cfgVerbosity, int, 0, "Verbosity level (0 = major, 1 = per collision)")
   O2_DEFINE_CONFIGURABLE(cfgYMax, float, -1.0f, "Maximum candidate rapidity")
@@ -806,8 +808,23 @@ struct Filter2Prong {
   PROCESS_SWITCH(Filter2Prong, processDataPhiV0, "Process data Phi and V0 candidates with invariant mass method", false);
 
   using DerivedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities>;
-  void processDataPhiMixed(DerivedCollisions const& collisions, Filter2Prong::PIDTrack const& /*tracksP*/, aod::CFTrackRefs const& cftracks)
+  void processDataPhiMixed(DerivedCollisions const& collisions, Filter2Prong::PIDTrack const& /*tracksP*/, aod::CFCollRefs const& cfcollrefs, aod::CFTrackRefs const& cftracks)
   {
+    struct MixedPhiCandidate {
+      int64_t cfCollisionId;
+      int64_t cfTrackProng0Id;
+      int64_t cfTrackProng1Id;
+      float pt;
+      float eta;
+      float phi;
+      float invMass;
+      uint8_t decay;
+    };
+
+    if (cfcollrefs.size() <= 0 || cftracks.size() <= 0) {
+      return;
+    }
+
     auto getMultiplicity = [](auto const& col) {
       return col.multiplicity();
     };
@@ -819,10 +836,22 @@ struct Filter2Prong {
     using TB = std::tuple_element<std::tuple_size_v<decltype(tracksTuple)> - 1, decltype(tracksTuple)>::type;
     Pair<DerivedCollisions, TA, TB, BinningTypeDerived> pairs{configurableBinningDerived, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
+    std::unordered_map<int64_t, int64_t> collToCF;
+    collToCF.reserve(cfcollrefs.size());
+    for (const auto& cfcollref : cfcollrefs) {
+      collToCF.emplace(cfcollref.collisionId(), cfcollref.globalIndex());
+    }
+
+    std::vector<MixedPhiCandidate> mixedPhiCandidates;
     o2::aod::ITSResponse itsResponse;
 
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [collision1, tracks1, collision2, tracks2] = *it;
+
+      auto cfColl1 = collToCF.find(collision1.globalIndex());
+      if (cfColl1 == collToCF.end() || collToCF.find(collision2.globalIndex()) == collToCF.end()) {
+        continue;
+      }
 
       if (!(collision1.sel8() &&
             collision1.selection_bit(aod::evsel::kNoSameBunchPileup) &&
@@ -890,15 +919,39 @@ struct Filter2Prong {
               }
 
               float phi = RecoDecay::constrainAngle(s.Phi(), 0.0f);
-
-              output2ProngTracks(collision1.globalIndex(),
-                                 cftrack1.globalIndex(), cftrack2.globalIndex(),
-                                 s.pt(), s.eta(), phi, s.M(),
-                                 aod::cf2prongtrack::PhiToKKPID3Mixed);
+              mixedPhiCandidates.push_back({cfColl1->second,
+                                            cftrack1.globalIndex(),
+                                            cftrack2.globalIndex(),
+                                            static_cast<float>(s.pt()),
+                                            static_cast<float>(s.eta()),
+                                            phi,
+                                            static_cast<float>(s.M()),
+                                            aod::cf2prongtrack::PhiToKKPID3Mixed});
             }
           }
         }
       }
+    }
+
+    std::sort(mixedPhiCandidates.begin(), mixedPhiCandidates.end(), [](const auto& lhs, const auto& rhs) {
+      if (lhs.cfCollisionId != rhs.cfCollisionId) {
+        return lhs.cfCollisionId < rhs.cfCollisionId;
+      }
+      if (lhs.cfTrackProng0Id != rhs.cfTrackProng0Id) {
+        return lhs.cfTrackProng0Id < rhs.cfTrackProng0Id;
+      }
+      return lhs.cfTrackProng1Id < rhs.cfTrackProng1Id;
+    });
+
+    for (const auto& candidate : mixedPhiCandidates) {
+      output2ProngTracks(candidate.cfCollisionId,
+                         candidate.cfTrackProng0Id,
+                         candidate.cfTrackProng1Id,
+                         candidate.pt,
+                         candidate.eta,
+                         candidate.phi,
+                         candidate.invMass,
+                         candidate.decay);
     }
   }
 
