@@ -42,6 +42,7 @@
 #include <THn.h>
 #include <TList.h>
 #include <TMath.h>
+#include <TPDGCode.h>
 #include <TProfile.h>
 #include <TProfile2D.h>
 #include <TRandom3.h>
@@ -892,8 +893,6 @@ struct V0ptHadPiKaProt {
     fillMultCorrPlotsBeforeSel(collision, tracks);
 
     const auto centralityFT0C = collision.centFT0C();
-    if (cfgUse22sEventCut && !eventSelected(collision, tracks.size(), centralityFT0C))
-      return;
     if (cfgUseSmallIonAdditionalEventCut && !eventSelectedSmallion(collision, tracks.size(), centralityFT0C))
       return;
 
@@ -906,13 +905,13 @@ struct V0ptHadPiKaProt {
     // Centrality
     double cent = 0.0;
     if (cfgCentralityChoice == kFT0C)
-      cent = coll.centFT0C();
+      cent = collision.centFT0C();
     else if (cfgCentralityChoice == kFT0A)
-      cent = coll.centFT0A();
+      cent = collision.centFT0A();
     else if (cfgCentralityChoice == kFT0M)
-      cent = coll.centFT0M();
+      cent = collision.centFT0M();
     else if (cfgCentralityChoice == kFV0A)
-      cent = coll.centFV0A();
+      cent = collision.centFV0A();
 
     histos.fill(HIST("hZvtx_after_sel"), collision.posZ());
     histos.fill(HIST("hCentrality"), cent);
@@ -983,7 +982,7 @@ struct V0ptHadPiKaProt {
         continue;
       }
 
-      if (track.sign == 0)
+      if (track.sign() == 0)
         continue;
 
       if (particle.isPhysicalPrimary()) {
@@ -1030,18 +1029,18 @@ struct V0ptHadPiKaProt {
 
           // PID QAs after selection
           if (isPion) {
-            histos.fill(HIST("h2DnsigmaPionTpcVsPtAfterCut"), trkPt, nSigmaTpcPi);
-            histos.fill(HIST("h2DnsigmaPionTofVsPtAfterCut"), trkPt, nSigmaTofPi);
+            histos.fill(HIST("h2DnsigmaPionTpcVsPtAfterCut"), track.pt(), nSigmaTpcPi);
+            histos.fill(HIST("h2DnsigmaPionTofVsPtAfterCut"), track.pt(), nSigmaTofPi);
             histos.fill(HIST("h2DnsigmaPionTpcVsTofAfterCut"), nSigmaTpcPi, nSigmaTofPi);
           }
           if (isKaon) {
-            histos.fill(HIST("h2DnsigmaKaonTpcVsPtAfterCut"), trkPt, nSigmaTpcKa);
-            histos.fill(HIST("h2DnsigmaKaonTofVsPtAfterCut"), trkPt, nSigmaTofKa);
+            histos.fill(HIST("h2DnsigmaKaonTpcVsPtAfterCut"), track.pt(), nSigmaTpcKa);
+            histos.fill(HIST("h2DnsigmaKaonTofVsPtAfterCut"), track.pt(), nSigmaTofKa);
             histos.fill(HIST("h2DnsigmaKaonTpcVsTofAfterCut"), nSigmaTpcKa, nSigmaTofKa);
           }
           if (isProton) {
-            histos.fill(HIST("h2DnsigmaProtonTpcVsPtAfterCut"), trkPt, nSigmaTpcProt);
-            histos.fill(HIST("h2DnsigmaProtonTofVsPtAfterCut"), trkPt, nSigmaTofProt);
+            histos.fill(HIST("h2DnsigmaProtonTpcVsPtAfterCut"), track.pt(), nSigmaTpcProt);
+            histos.fill(HIST("h2DnsigmaProtonTofVsPtAfterCut"), track.pt(), nSigmaTofProt);
             histos.fill(HIST("h2DnsigmaProtonTpcVsTofAfterCut"), nSigmaTpcProt, nSigmaTofProt);
           }
 
