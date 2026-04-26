@@ -55,6 +55,7 @@
 #include <cmath>
 #include <cstdint>
 #include <iostream>
+#include <random>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -94,6 +95,7 @@ struct taggingHFE {
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
   Configurable<int> cfgPdgLepton{"cfgPdgLepton", 11, "pdg code of desired lepton: 11 or 13"};
+  Configurable<float> cfgDownSampling{"cfgDownSampling", 1.1, "down sampling for fake matches"};
 
   struct : ConfigurableGroup {
     std::string prefix = "dcaFitterGroup_eK";
@@ -267,6 +269,10 @@ struct taggingHFE {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
+    std::random_device seed_gen;
+    engine = std::mt19937(seed_gen());
+    dist01 = std::uniform_real_distribution<float>(0.0f, 1.0f);
+
     fitter_eK.setPropagateToPCA(true);
     fitter_eK.setMaxR(20.f);
     fitter_eK.setMinParamChange(1e-3);
@@ -303,6 +309,9 @@ struct taggingHFE {
   int mRunNumber;
   float d_bz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  std::mt19937 engine;
+  std::uniform_real_distribution<float> dist01;
+
   // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   const o2::dataformats::MeanVertexObject* mMeanVtx = nullptr;
@@ -969,6 +978,10 @@ struct taggingHFE {
       }
       mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
       mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+
+      if (dist01(engine) > cfgDownSampling) { // random sampling, if necessary
+        continue;
+      }
 
       const auto& trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
       electronIds.reserve(trackIdsThisCollision.size());

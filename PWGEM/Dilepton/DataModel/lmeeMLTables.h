@@ -162,6 +162,8 @@ DECLARE_SOA_COLUMN(IsPrimaryMCHMID, isPrimaryMCHMID, bool); //!
 DECLARE_SOA_COLUMN(IsCorrectMatch, isCorrectMatch, bool);   //!
 DECLARE_SOA_COLUMN(PdgCodeMFT, pdgCodeMFT, int);            //!
 DECLARE_SOA_COLUMN(PdgCodeMCHMID, pdgCodeMCHMID, int);      //!
+DECLARE_SOA_COLUMN(MatchMCHTrackId, mchTrackId, int);       //!
+DECLARE_SOA_COLUMN(DFId, dfId, uint64_t);                   //!
 
 DECLARE_SOA_COLUMN(MultMFT, multMFT, uint16_t); //! number of MFTsa tracks per collision
 } // namespace emmlfwdtrack
@@ -178,7 +180,7 @@ DECLARE_SOA_TABLE(EMFwdTracksForML, "AOD", "EMFWDTRKML", //!
                   fwdtrack::Chi2MatchMCHMFT,
                   emmlfwdtrack::PdgCodeMFT, emmlfwdtrack::IsPrimaryMFT,
                   emmlfwdtrack::PdgCodeMCHMID, emmlfwdtrack::IsPrimaryMCHMID,
-                  emmlfwdtrack::IsCorrectMatch);
+                  emmlfwdtrack::IsCorrectMatch, emmlfwdtrack::MatchMCHTrackId, emmlfwdtrack::DFId);
 
 // iterators
 using EMFwdTrackForML = EMFwdTracksForML::iterator;
