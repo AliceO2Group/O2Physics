@@ -20,6 +20,9 @@
 #include "PWGCF/Femto/Core/histManager.h"
 #include "PWGCF/Femto/Core/modes.h"
 
+#include <Common/Core/RecoDecay.h>
+
+#include <CommonConstants/MathConstants.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -105,6 +108,9 @@ enum PairHist {
   kMeNpart1VsNpart2,                         // number of unique particles 1 vs number of unique particles 2 in each mixed event
   kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, // correlation of event properties in each mixing bin
 
+  // angular
+  kDeltaEtaDeltaPhi,
+
   kPairHistogramLast
 };
 
@@ -150,6 +156,7 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> plotKstarVsMtVsMinv1VsPt1VsPt2VsMult{"plotKstarVsMtVsMinv1VsPt1VsPt2VsMult", false, "Enable 6D histogram (Kstar Vs Mt Vs Minv Vs Pt1 Vs Pt2 Vs Mult)"};
   o2::framework::Configurable<bool> plotKstarVsMtVsMinv1VsPt1VsPt2VsMultVsCent{"plotKstarVsMtVsMinv1VsPt1VsPt2VsMultVsCent", false, "Enable 7D histogram (Kstar Vs Mt Vs Minv Vs Pt1 Vs Pt2 Vs Mult Vs Cent)"};
   o2::framework::Configurable<bool> plotDalitz{"plotDalitz", false, "Enable dalitz plot"};
+  o2::framework::Configurable<bool> plotDeltaEtaDeltaPhi{"plotDeltaEtaDeltaPhi", false, "Plot #Delta#phi vs #Delta#eta"};
   o2::framework::ConfigurableAxis kstar{"kstar", {{600, 0, 6}}, "kstar"};
   o2::framework::ConfigurableAxis kt{"kt", {{600, 0, 6}}, "kt"};
   o2::framework::ConfigurableAxis mt{"mt", {{500, 0.8, 5.8}}, "mt"};
@@ -164,6 +171,8 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis dalitzM12{"dalitzM12", {{100, 0, 10}}, "Mass12 binning of darlitz plot"};
   o2::framework::ConfigurableAxis dalitzM13{"dalitzM13", {{100, 0, 10}}, "Mass13 binning of darlitz plot"};
   o2::framework::Configurable<int> transverseMassType{"transverseMassType", static_cast<int>(modes::TransverseMassType::kAveragePdgMass), "Type of transverse mass (0-> Average Pdg Mass, 1-> Reduced Pdg Mass, 2-> Mt from combined 4 vector)"};
+  o2::framework::ConfigurableAxis binningDeltaEta{"binningDeltaEta", {{35, -1.6, 1.6}}, "Delta eta"};
+  o2::framework::ConfigurableAxis binningDeltaPhi{"binningDeltaPhi", {{35, -o2::constants::math::PI / 2, 3 * o2::constants::math::PI / 2}}, "Delta phi"};
 };
 
 struct ConfPairCuts : o2::framework::ConfigurableGroup {
@@ -238,6 +247,8 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
       {kMeMixingWindowEffective, o2::framework::HistType::kTH1F, "hMeMixingWindowEffective", "Effective Mixing Window; Effective Mixing Windown ; Entries"},
       {kMeNpart1VsNpart2, o2::framework::HistType::kTH2F, "hMeNpart1VsNpart2", "# unique particle 1 vs # unique partilce 2 in each mixing bin; # partilce 1; # particle 2"},
       {kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2, o2::framework::HistType::kTHnSparseF, "hVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2", "Mixing bins; V_{z,1} (cm); multiplicity_{1}; centrality_{1} (%); V_{z,2} (cm); multiplicity_{2}; centrality_{2} (%)"},
+      // angular
+      {kDeltaEtaDeltaPhi, o2::framework::HistType::kTH2F, "hDeltaEtaDeltaPhi", "#Delta#phi vs #Delta#eta; #Delta#phi; #Delta#eta"},
     }};
 
 #define PAIR_HIST_ANALYSIS_MAP(confAnalysis, confMixing)                                                                                                                                                                     \
@@ -277,6 +288,7 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
     {kKstarVsMtVsMinvVsPt1VsPt2VsMult, {confAnalysis.kstar, confAnalysis.mt, confAnalysis.massInv, confAnalysis.pt1, confAnalysis.pt2, confAnalysis.multiplicity}},                                                          \
     {kKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent, {confAnalysis.kstar, confAnalysis.mt, confAnalysis.massInv, confAnalysis.pt1, confAnalysis.pt2, confAnalysis.multiplicity, confAnalysis.centrality}},                           \
     {kDalitz, {confAnalysis.kstar, confAnalysis.dalitzMtot, confAnalysis.dalitzM12, confAnalysis.dalitzM13}},                                                                                                                \
+    {kDeltaEtaDeltaPhi, {confAnalysis.binningDeltaPhi, confAnalysis.binningDeltaEta}},                                                                                                                                        \
     {kSeNpart1VsNpart2, {confMixing.particleBinning, confMixing.particleBinning}},                                                                                                                                           \
     {kMeMixingWindowRaw, {confMixing.particleBinning}},                                                                                                                                                                      \
     {kMeMixingWindowEffective, {confMixing.particleBinning}},                                                                                                                                                                \
@@ -374,6 +386,7 @@ class PairHistManager
     mPlotKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent = ConfPairBinning.plotKstarVsMtVsMinv1VsPt1VsPt2VsMultVsCent.value;
 
     mPlotDalitz = ConfPairBinning.plotDalitz.value;
+    mPlotDeltaEtaDeltaPhi = ConfPairBinning.plotDeltaEtaDeltaPhi.value;
 
     // transverse mass type
     mMtType = static_cast<modes::TransverseMassType>(ConfPairBinning.transverseMassType.value);
@@ -473,6 +486,11 @@ class PairHistManager
 
     // set kstar
     mKstar = getKstar(mParticle1, mParticle2);
+
+    if (mPlotDeltaEtaDeltaPhi) {
+      mDeltaEta = particle1.eta() - particle2.eta();
+      mDeltaPhi = RecoDecay::constrainAngle(particle1.phi() - particle2.phi(), -o2::constants::math::PI / 2);
+    }
 
     if (mPlotDalitz) {
       if constexpr (modes::isEqual(particleType1, modes::Particle::kTrack) && modes::isEqual(particleType2, modes::Particle::kV0)) {
@@ -713,6 +731,9 @@ class PairHistManager
     if (mPlotDalitz) {
       mHistogramRegistry->add(analysisDir + getHistNameV2(kDalitz, HistTable), getHistDesc(kDalitz, HistTable), getHistType(kDalitz, HistTable), {Specs.at(kDalitz)});
     }
+    if (mPlotDeltaEtaDeltaPhi) {
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kDeltaEtaDeltaPhi, HistTable), getHistDesc(kDeltaEtaDeltaPhi, HistTable), getHistType(kDeltaEtaDeltaPhi, HistTable), {Specs.at(kDeltaEtaDeltaPhi)});
+    }
   }
 
   void initMc(std::map<PairHist, std::vector<o2::framework::AxisSpec>> const& Specs)
@@ -824,6 +845,9 @@ class PairHistManager
     }
     if (mPlotDalitz) {
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kDalitz, HistTable)), mKstar, mMassTot2, mMass12, mMass13);
+    }
+    if (mPlotDeltaEtaDeltaPhi) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kDeltaEtaDeltaPhi, HistTable)), mDeltaPhi, mDeltaEta);
     }
   }
 
@@ -963,6 +987,10 @@ class PairHistManager
   bool mPlotKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent = false;
 
   bool mPlotDalitz = false;
+  bool mPlotDeltaEtaDeltaPhi = false;
+
+  float mDeltaEta = 0.f;
+  float mDeltaPhi = 0.f;
 
   // qa
   bool mPairCorrelationQa = false;
