@@ -411,7 +411,7 @@ struct V0ptHadPiKaProt {
       subSample[i][8] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_Bone_pi", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
       subSample[i][9] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_Btwo_pi", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
 
-      subSample[i][10] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/ProfA_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+      subSample[i][10] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_A_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
       subSample[i][11] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_C_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
       subSample[i][12] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_D_ka", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
       subSample[i][13] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_Bone_ka", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
