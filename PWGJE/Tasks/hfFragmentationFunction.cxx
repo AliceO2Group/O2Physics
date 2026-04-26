@@ -443,7 +443,7 @@ struct HfFragmentationFunction {
             } else if (mcdcand.candidateSelFlag() & BIT(1)) { // CandidateSelFlag == BIT(1) -> selected as HFbar
               selectedAs = -1;
             }
-            
+
             // store matched particle and detector level data in one single table (calculate angular distance in eta-phi plane on the fly)
             matchJetTable(jetutilities::deltaR(mcpjet, mcpcand), mcpjet.pt(), mcpjet.eta(), mcpjet.phi(), mcpjet.template tracks_as<aod::JetParticles>().size() + mcpjet.template candidates_as<TCandidatesMCP>().size(), // particle level jet
                           mcpcand.pt(), mcpcand.eta(), mcpcand.phi(), mcpcand.y(), (mcpcand.originMcGen() == RecoDecay::OriginType::Prompt),                                                                              // particle level HF
@@ -455,11 +455,11 @@ struct HfFragmentationFunction {
         } else {
           // store matched particle and detector level data in one single table (calculate angular distance in eta-phi plane on the fly)
           matchJetTable(jetutilities::deltaR(mcpjet, mcpcand), mcpjet.pt(), mcpjet.eta(), mcpjet.phi(), mcpjet.template tracks_as<aod::JetParticles>().size() + mcpjet.template candidates_as<TCandidatesMCP>().size(), // particle level jet
-                        mcpcand.pt(), mcpcand.eta(), mcpcand.phi(), mcpcand.y(), (mcpcand.originMcGen() == RecoDecay::OriginType::Prompt),                                                                               // particle level HF
-                        -2, -2, -2, -2, -2,                                                                                                                                                                              // no detector-level jet found
-                        -2, -2, -2, -2, -2, -2,                                                                                                                                                                          // no detector-level jet found
-                        -2, -2, -2,                                                                                                                                                                                      // no detector-level jet found
-                        -2, -2);                                                                                                                                                                                         // no detector-level jet found
+                        mcpcand.pt(), mcpcand.eta(), mcpcand.phi(), mcpcand.y(), (mcpcand.originMcGen() == RecoDecay::OriginType::Prompt),                                                                              // particle level HF
+                        -2, -2, -2, -2, -2,                                                                                                                                                                             // no detector-level jet found
+                        -2, -2, -2, -2, -2, -2,                                                                                                                                                                         // no detector-level jet found
+                        -2, -2, -2,                                                                                                                                                                                     // no detector-level jet found
+                        -2, -2);                                                                                                                                                                                        // no detector-level jet found
         }
       } // end of mcpjets loop
     } // end of mccollisions loop
