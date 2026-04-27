@@ -168,6 +168,7 @@ struct CorrFit {
   ConfigurableAxis axisDeltaEtaTpcFt0a{"axisDeltaEtaTpcFt0a", {32, -5.8, -2.6}, "delta eta axis, -5.8~-2.6 for TPC-FT0A,"};
   ConfigurableAxis axisDeltaEtaTpcFt0c{"axisDeltaEtaTpcFt0c", {32, 1.2, 4.2}, "delta eta axis, 1.2~4.2 for TPC-FT0C"};
   ConfigurableAxis axisDeltaEtaFt0aFt0c{"axisDeltaEtaFt0aFt0c", {32, -1.5, 3.0}, "delta eta axis"};
+  ConfigurableAxis axisDeltaEtaTpcTpc{"axisDeltaEtaTpcTpc", {32, -0.8, 0.8}, "delta eta axis for TPC-TPC"};
   ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.2, 0.5, 1, 1.5, 2, 3, 4, 6, 10}, "pt trigger axis for histograms"};
   ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.2, 0.5, 1, 1.5, 2, 3, 4, 6, 10}, "pt associated axis for histograms"};
   ConfigurableAxis axisVtxMix{"axisVtxMix", {VARIABLE_WIDTH, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "vertex axis for mixed event histograms"};
@@ -291,7 +292,8 @@ struct CorrFit {
       registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(12, "MultCorrelation");
       registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(13, "cfgEvSelV0AT0ACut");
     }
-    if (doprocessSameFt0aFt0c || doprocessSameTpcFt0c || doprocessSameTPC) {
+
+    if ((doprocessSameFt0aFt0c || doprocessSameTpcFt0a || doprocessSameTpcFt0c || doprocessSameTPC) && cfgQaCheck) {
       registry.add("hPassedEventSelection", "Number of Event;; Count", {HistType::kTH1D, {{13, 0, 13}}});
       registry.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(1, "all tracks");
       registry.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(2, "after sel8");
@@ -342,8 +344,8 @@ struct CorrFit {
       registry.add("Trig_hist_FT0A_FT0C", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
     }
     if (doprocessSameTPC) {
-      registry.add("deltaEta_deltaPhi_same_TPC", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFt0a}}); // check to see the delta eta and delta phi distribution
-      registry.add("deltaEta_deltaPhi_mixed_TPC", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFt0a}});
+      registry.add("deltaEta_deltaPhi_same_TPC", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcTpc}}); // check to see the delta eta and delta phi distribution
+      registry.add("deltaEta_deltaPhi_mixed_TPC", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcTpc}});
       registry.add("Trig_hist_TPC", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
     }
 
@@ -511,55 +513,44 @@ struct CorrFit {
 
     registry.fill(HIST("hPassedEventSelection"), 0.5);
 
-    if (!collision.sel8()) {
+    if (collision.sel8()) {
       registry.fill(HIST("hPassedEventSelection"), 1.5);
     }
 
-    if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+    if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       registry.fill(HIST("hPassedEventSelection"), 2.5);
     }
 
-    if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+    if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       registry.fill(HIST("hPassedEventSelection"), 3.5);
     }
 
-    if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+    if (collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       registry.fill(HIST("hPassedEventSelection"), 4.5);
     }
 
-    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       registry.fill(HIST("hPassedEventSelection"), 5.5);
     }
 
-    if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+    if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       registry.fill(HIST("hPassedEventSelection"), 6.5);
     }
 
-    if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
+    if (collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
       registry.fill(HIST("hPassedEventSelection"), 7.5);
     }
 
-    if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    if (collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       registry.fill(HIST("hPassedEventSelection"), 8.5);
     }
 
-    if (!collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+    if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       registry.fill(HIST("hPassedEventSelection"), 9.5);
     }
 
-    if (!collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+    if (collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
       registry.fill(HIST("hPassedEventSelection"), 10.5);
-    }
-
-    auto occupancy = collision.trackOccupancyInTimeRange();
-    if ((occupancy < cfgEventSelection.cfgCutOccupancyLow || occupancy > cfgEventSelection.cfgCutOccupancyHigh)) {
-      registry.fill(HIST("hPassedEventSelection"), 11.5);
-    }
-
-    // V0A T0A 5 sigma cut
-    float sigma = 5.0;
-    if ((std::fabs(collision.multFV0A() - cfgFuncParas.fT0AV0AMean->Eval(collision.multFT0A())) > sigma * cfgFuncParas.fT0AV0ASigma->Eval(collision.multFT0A()))) {
-      registry.fill(HIST("hPassedEventSelection"), 12.5);
     }
   }
 
@@ -755,6 +746,7 @@ struct CorrFit {
   {
     int mult = 0;
     for (auto const& track : tracks) {
+
       if (!trackSelected(track))
         continue;
       mult++;
@@ -776,8 +768,14 @@ struct CorrFit {
     // loop over all tracks
     for (auto const& track1 : tracks1) {
 
-      if (!trackSelected(track1))
-        continue;
+      if (cfgSystematics.cfgSystematicsVariation) {
+        if (!trackSelectedSystematics(track1))
+          continue;
+      } else {
+        if (!trackSelected(track1))
+          continue;
+      }
+
       if (!getEfficiencyCorrection(triggerWeight, track1.eta(), track1.pt(), posZ))
         continue;
 
@@ -810,22 +808,30 @@ struct CorrFit {
         // fill the right sparse and histograms
         if (system == SameEvent) {
           if (corType == kFT0A) {
-            registry.fill(HIST("Assoc_amp_same_TPC_FT0A"), chanelid, ampl);
-            registry.fill(HIST("deltaEta_deltaPhi_same_TPC_FT0A"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
+            if (cfgQaCheck) {
+              registry.fill(HIST("Assoc_amp_same_TPC_FT0A"), chanelid, ampl);
+              registry.fill(HIST("deltaEta_deltaPhi_same_TPC_FT0A"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
+            }
             sameTpcFt0a->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), multiplicity, deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
           } else if (corType == kFT0C) {
-            registry.fill(HIST("Assoc_amp_same_TPC_FT0C"), chanelid, ampl);
-            registry.fill(HIST("deltaEta_deltaPhi_same_TPC_FT0C"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
+            if (cfgQaCheck) {
+              registry.fill(HIST("Assoc_amp_same_TPC_FT0C"), chanelid, ampl);
+              registry.fill(HIST("deltaEta_deltaPhi_same_TPC_FT0C"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
+            }
             sameTpcFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), multiplicity, deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
           }
         } else if (system == MixedEvent) {
           if (corType == kFT0A) {
-            registry.fill(HIST("Assoc_amp_mixed_TPC_FT0A"), chanelid, ampl);
-            registry.fill(HIST("deltaEta_deltaPhi_mixed_TPC_FT0A"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
+            if (cfgQaCheck) {
+              registry.fill(HIST("Assoc_amp_mixed_TPC_FT0A"), chanelid, ampl);
+              registry.fill(HIST("deltaEta_deltaPhi_mixed_TPC_FT0A"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
+            }
             mixedTpcFt0a->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), multiplicity, deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
           } else if (corType == kFT0C) {
-            registry.fill(HIST("Assoc_amp_mixed_TPC_FT0C"), chanelid, ampl);
-            registry.fill(HIST("deltaEta_deltaPhi_mixed_TPC_FT0C"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
+            if (cfgQaCheck) {
+              registry.fill(HIST("Assoc_amp_mixed_TPC_FT0C"), chanelid, ampl);
+              registry.fill(HIST("deltaEta_deltaPhi_mixed_TPC_FT0C"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
+            }
             mixedTpcFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), multiplicity, deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
           }
         }
@@ -889,10 +895,14 @@ struct CorrFit {
 
         // fill the right sparse and histograms
         if (system == SameEvent) {
-          registry.fill(HIST("deltaEta_deltaPhi_same_FT0A_FT0C"), deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
+          if (cfgQaCheck) {
+            registry.fill(HIST("deltaEta_deltaPhi_same_FT0A_FT0C"), deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
+          }
           sameFt0aFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, 0.5, multiplicity, deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
         } else if (system == MixedEvent) {
-          registry.fill(HIST("deltaEta_deltaPhi_mixed_FT0A_FT0C"), deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
+          if (cfgQaCheck) {
+            registry.fill(HIST("deltaEta_deltaPhi_mixed_FT0A_FT0C"), deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
+          }
           mixedFt0aFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, 0.5, multiplicity, deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
         }
       }
@@ -910,14 +920,19 @@ struct CorrFit {
     // loop over all tracks
     for (auto const& track1 : tracks1) {
 
-      if (!trackSelected(track1))
-        continue;
+      if (cfgSystematics.cfgSystematicsVariation) {
+        if (!trackSelectedSystematics(track1))
+          continue;
+      } else {
+        if (!trackSelected(track1))
+          continue;
+      }
 
       if (!getEfficiencyCorrection(triggerWeight, track1.eta(), track1.pt(), posZ))
         continue;
 
       if (system == SameEvent) {
-        registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, track1.pt(), triggerWeight);
+        registry.fill(HIST("Trig_hist_TPC"), fSampleIndex, posZ, track1.pt(), triggerWeight);
       }
 
       for (auto const& track2 : tracks2) {
@@ -957,12 +972,16 @@ struct CorrFit {
         if (system == SameEvent) {
 
           sameTPC->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), multiplicity, deltaPhi, deltaEta);
-          registry.fill(HIST("deltaEta_deltaPhi_same_TPC"), deltaPhi, deltaEta);
-
+          if (cfgQaCheck) {
+            registry.fill(HIST("deltaEta_deltaPhi_same_TPC"), deltaPhi, deltaEta);
+          }
         } else if (system == MixedEvent) {
 
           mixedTPC->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), multiplicity, deltaPhi, deltaEta);
-          registry.fill(HIST("deltaEta_deltaPhi_mixed_TPC"), deltaPhi, deltaEta);
+
+          if (cfgQaCheck) {
+            registry.fill(HIST("deltaEta_deltaPhi_mixed_TPC"), deltaPhi, deltaEta);
+          }
         }
       }
     }
@@ -1018,6 +1037,7 @@ struct CorrFit {
     Pair<FilteredCollisions, FilteredTracks, FilteredTracks, MixedBinning> pairs{binningOnVtxAndMult, cfgMinMixEventNum, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [collision1, tracks1, collision2, tracks2] = *it;
+
       if (!collision1.sel8() || !collision2.sel8())
         continue;
 
@@ -1030,6 +1050,7 @@ struct CorrFit {
         continue;
 
       registry.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
+
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
       loadAlignParam(bc.timestamp());
       loadCorrection(bc.timestamp());
