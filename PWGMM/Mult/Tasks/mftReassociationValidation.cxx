@@ -813,26 +813,19 @@ struct MftReassociationValidation {
   {
 
     grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(configTask.grpmagPath, bc.timestamp());
-    LOG(info) << "Setting magnetic field to current " << grpmag->getL3Current()
-              << " A for run " << bc.runNumber()
-              << " from its GRPMagField CCDB object";
     o2::base::Propagator::initFieldFromGRP(grpmag);
 
     o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
     bZ = field->getBz(CcenterMFT);
-    LOG(info) << "The field at the center of the MFT is bZ = " << bZ;
 
     if (configTask.cfgApplyZShiftFromCCDB) {
       auto* zShift = ccdb->getForTimeStamp<std::vector<float>>(configTask.cfgZShiftPath, bc.timestamp());
       if (zShift != nullptr && !zShift->empty()) {
-        LOGF(info, "reading z shift %f from %s", (*zShift)[0], configTask.cfgZShiftPath.value);
         mZShift = (*zShift)[0];
       } else {
-        LOGF(info, "z shift is not found in ccdb path %s. set to 0 cm", configTask.cfgZShiftPath.value);
         mZShift = 0;
       }
     } else {
-      LOGF(info, "z shift is manually set to %f cm", configTask.cfgManualZShift.value);
       mZShift = configTask.cfgManualZShift;
     }
   }
