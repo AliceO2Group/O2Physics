@@ -216,9 +216,11 @@ struct lnnRecoTask {
   Configurable<float> ptMinTOF{"ptMinTOF", 0.8, "minimum pt for TOF cut"};
   Configurable<float> trTOFMass2Cut{"trTOFMass2Cut", 5.5, "minimum Triton mass square to TOF"};
   Configurable<float> betaTrTOF{"betaTrTOF", 0.4, "minimum beta TOF cut"};
+  Configurable<float> vtxZCut{"vtxZCut", 10., "vxt Z cut for event selection"};
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
   Configurable<bool> doTrackQA{"doTrackQA", true, "if true, compute the QA studies beased on detectors (ITS-TPC-TOF) signals"};
   Configurable<bool> useNoSameBunchPileup{"useNoSameBunchPileup", false, "reject collisions in case of pileup with another collision in the same foundBC"};
+  
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
@@ -232,7 +234,7 @@ struct lnnRecoTask {
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
 
   // CCDB options
-  Configurable<double> d_bz_input{"d_bz_input", -999., "bz field, -999 is automatic"};
+  Configurable<double> dBzInput{"dBzInput", -999., "bz field, -999 is automatic"};
   Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
@@ -259,7 +261,7 @@ struct lnnRecoTask {
   ConfigurableAxis betaBins{"betaBins", {550, 0.f, 1.1f}, "Binning for Beta"};
   ConfigurableAxis dcaXYBins{"dcaXYBins", {550, -5.f, 5.f}, "Binning for dcaXY triton"};
   ConfigurableAxis tpcNClusBins{"tpcNClusBins", {260, 30, 165}, "Binning for nClusTPC"};
-  ConfigurableAxis tpcNClsCrossedRowsBins{"TPCNClsCrossedRowsBins", {260, 30, 165}, "Binning for TPCNClsCrossedRows"};
+  ConfigurableAxis tpcNClsCrossedRowsBins{"tpcNClsCrossedRowsBins", {260, 30, 165}, "Binning for TPCNClsCrossedRows"};
   ConfigurableAxis tpcChi2NClusBins{"tpcChi2NClusBins", {20, 0.5, 10}, "Binning for chi2NClusTPC"};
   ConfigurableAxis itsChi2NClusBins{"itsChi2NClusBins", {72, 0, 36}, "Binning for chi2NClusTPC"};
   ConfigurableAxis candPtBins{"candPtBins", {160, 0, 8}, "Binning for lnn cand pt"};
@@ -281,6 +283,11 @@ struct lnnRecoTask {
   int mRunNumber;
   float d_bz;
   std::array<float, 6> mBBparams3H;
+
+  static constexpr float KallEvents = 0.;
+  static constexpr float KevAfterSel8 = 1.;
+  static constexpr float KevZVertexCut = 2.;
+  static constexpr float KevPileupCut = 3.;
 
   // Definiton of histograms to real data [hNsigma3HSelected, hdEdx3HSelected, dEdxtotal, hEVents, hCentFT0(A/C/M) and hCentFV0A] and MC [hDecayChannel, hIsMatterGen, hIsMatterGenTwoBody]
   void init(InitContext const&)
@@ -313,7 +320,6 @@ struct lnnRecoTask {
     const AxisSpec tPosRigidityAxis{tPPosBins, "#it{p}^{TPC}/#it{z}"};
     const AxisSpec tPNegRigidityAxis{tPNegBins, "#it{p}^{TPC}/#it{z}"};
     const AxisSpec betaAxis{betaBins, "#beta_{TOF}"};
-    const AxisSpec dcaXYAxis(dcaXYBins, "DCA_{xy} ({}^{3}H (cm)");
     const AxisSpec tpcNClusAxis(tpcNClusBins, "N_{clus}^{TPC}");
     const AxisSpec tpcNClsCrossedRowsAxis(tpcNClsCrossedRowsBins, "N_{TPC} crossed rows");
     const AxisSpec tpcChi2NClusAxis(tpcChi2NClusBins, "{#Chi}^{2}/N_{clus}^{TPC}");
@@ -401,12 +407,12 @@ struct lnnRecoTask {
     o2::parameters::GRPMagField* grpmag = 0x0;
     if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
-      if (d_bz_input < kBzAutoThreshold) {
+      if (dBzInput < kBzAutoThreshold) {
         // Fetch magnetic field from ccdb for current collision
         d_bz = grpo->getNominalL3Field();
         LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
       } else {
-        d_bz = d_bz_input;
+        d_bz = dBzInput;
       }
     } else {
       grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
@@ -414,22 +420,24 @@ struct lnnRecoTask {
         LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
-      if (d_bz_input < kBzAutoThreshold) {
+      if (dBzInput < kBzAutoThreshold) {
         // Fetch magnetic field from ccdb for current collision
         d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
         LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
       } else {
-        d_bz = d_bz_input;
+        d_bz = dBzInput;
       }
     }
     if (!pidPath.value.empty()) {
       auto h3pid = ccdb->getForTimeStamp<std::array<float, 6>>(pidPath.value + "_3H", run3grp_timestamp);
       std::copy(h3pid->begin(), h3pid->end(), mBBparams3H.begin());
     } else {
-      for (int i = 0; i < 5; i++) {
+      int kNBetheBlochParams = 5;
+      int kResolutionIndex = 5;
+      for (int i = 0; i < kNBetheBlochParams; i++) {
         mBBparams3H[i] = cfgBetheBlochParams->get("3H", Form("p%i", i));
       }
-      mBBparams3H[5] = cfgBetheBlochParams->get("3H", "resolution");
+      mBBparams3H[kResolutionIndex] = cfgBetheBlochParams->get("3H", "resolution");
     }
     fitter.setBz(d_bz);
     mRunNumber = bc.runNumber();
@@ -586,11 +594,13 @@ struct lnnRecoTask {
       float h3lE = h3E + piE;
 
       // Building the mother particle: lnn
-      constexpr std::size_t kMomDim = 3;
-      std::array<float, kMomDim> lnnMom;
+      constexpr std::size_t KMomDim= 3;
+      std::array<float, KMomDim> lnnMom;
 
       const auto& vtx = fitter.getPCACandidate();
-      for (int i = 0; i < 3; i++) {
+
+      int kNDim = 3;
+      for (int i = 0; i < kNDim; i++) {
         lnnCand.decVtx[i] = vtx[i];
         lnnMom[i] = lnnCand.mom3H[i] + lnnCand.momPi[i];
       }
@@ -619,8 +629,8 @@ struct lnnRecoTask {
         continue;
       }
 
-      constexpr std::size_t kprimVtxDim = 3;
-      std::array<float, kprimVtxDim> primVtx = {collision.posX(), collision.posY(), collision.posZ()};
+      constexpr std::size_t KPrimVtxDim = 3;
+      std::array<float, KPrimVtxDim> primVtx = {collision.posX(), collision.posY(), collision.posZ()};
 
       double cosPA = RecoDecay::cpa(primVtx, lnnCand.decVtx, lnnMom);
       if (cosPA < v0cospa) {
@@ -628,7 +638,7 @@ struct lnnRecoTask {
         continue;
       }
 
-      for (int i = 0; i < 3; i++) {
+      for (int i = 0; i < kNDim; i++) {
         lnnCand.decVtx[i] = lnnCand.decVtx[i] - primVtx[i];
       }
 
@@ -675,8 +685,8 @@ struct lnnRecoTask {
         auto mcTrackNeg = mcLabNeg.mcParticle_as<aod::McParticles>();
 
         if (mcTrackPos.has_mothers() && mcTrackNeg.has_mothers()) {
-          for (auto& negMother : mcTrackNeg.mothers_as<aod::McParticles>()) {
-            for (auto& posMother : mcTrackPos.mothers_as<aod::McParticles>()) {
+          for (auto const& negMother : mcTrackNeg.mothers_as<aod::McParticles>()) {
+            for (auto const& posMother : mcTrackPos.mothers_as<aod::McParticles>()) {
               if (posMother.globalIndex() != negMother.globalIndex())
                 continue;
               if (!((mcTrackPos.pdgCode() == h3DauPdg && mcTrackNeg.pdgCode() == -1 * piDauPdg) || (mcTrackPos.pdgCode() == piDauPdg && mcTrackNeg.pdgCode() == -1 * h3DauPdg)))
@@ -685,10 +695,10 @@ struct lnnRecoTask {
                 continue;
 
               // Checking primary and second vertex with MC simulations
-              constexpr std::size_t kposVtxDim = 3;
-              std::array<float, kposVtxDim> posPrimVtx = {posMother.vx(), posMother.vy(), posMother.vz()};
-              constexpr std::size_t ksecVtxDim = 3;
-              std::array<float, ksecVtxDim> secVtx = {mcTrackPos.vx(), mcTrackPos.vy(), mcTrackPos.vz()};
+              constexpr std::size_t KPosVtxDim = 3;
+              std::array<float, KPosVtxDim> posPrimVtx = {posMother.vx(), posMother.vy(), posMother.vz()};
+              constexpr std::size_t KSecVtxDim = 3;
+              std::array<float, KSecVtxDim> secVtx = {mcTrackPos.vx(), mcTrackPos.vy(), mcTrackPos.vz()};
 
               lnnCand.gMom = posMother.pVector();
 
@@ -697,8 +707,9 @@ struct lnnRecoTask {
               lnnCand.gMom3H = isTrTrack ? mcTrackPos.pVector() : mcTrackNeg.pVector();
 
               lnnCand.gMomPi = isTrTrack ? mcTrackNeg.pVector() : mcTrackPos.pVector();
-
-              for (int i = 0; i < 3; i++) {
+              
+              int kNDimGen = 3; 
+              for (int i = 0; i < kNDimGen; i++) {
                 lnnCand.gDecVtx[i] = secVtx[i] - posPrimVtx[i];
               }
 
@@ -718,8 +729,9 @@ struct lnnRecoTask {
   {
     if (!mcPart.has_mothers())
       return false;
-
-    if (mcPart.getProcess() != 4)
+    
+    int decayProcess = 4;
+    if (mcPart.getProcess() != decayProcess)
       return false;
 
     bool motherIsAccepted = false;
@@ -773,19 +785,19 @@ struct lnnRecoTask {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
-      hEvents->Fill(0.);
+      hEvents->Fill(KallEvents);
       if ((!collision.sel8())) {
         continue;
       }
-      hEvents->Fill(1.);
-      if (std::abs(collision.posZ()) > 10) {
+      hEvents->Fill(KevAfterSel8);
+      if (std::abs(collision.posZ()) > vtxZCut) {
         continue;
       }
-      hEvents->Fill(2.);
+      hEvents->Fill(KevZVertexCut);
       if (useNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
         continue;
       }
-      hEvents->Fill(3.);
+      hEvents->Fill(KevPileupCut);
 
       hZvtx->Fill(collision.posZ());
       hCentFT0A->Fill(collision.centFT0A());
@@ -794,10 +806,10 @@ struct lnnRecoTask {
       hCentFV0A->Fill(collision.centFV0A());
 
       const uint64_t collIdx = collision.globalIndex();
-      auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
-      V0Table_thisCollision.bindExternalIndices(&tracks);
+      auto v0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
+      v0Table_thisCollision.bindExternalIndices(&tracks);
 
-      fillCandidateData(collision, V0Table_thisCollision);
+      fillCandidateData(collision, v0Table_thisCollision);
 
       for (const auto& lnnCand : lnnCandidates) {
         outputDataTable(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
@@ -845,7 +857,7 @@ struct lnnRecoTask {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
-      hEvents->Fill(0.);
+      hEvents->Fill(KallEvents);
       if (collision.has_mcCollision()) {
         recoCollisionIds[collision.mcCollisionId()] = collision.globalIndex();
       }
@@ -853,15 +865,15 @@ struct lnnRecoTask {
       if ((!collision.sel8())) {
         continue;
       }
-      hEvents->Fill(1.);
-      if (std::abs(collision.posZ()) > 10) {
+      hEvents->Fill(KevAfterSel8);
+      if (std::abs(collision.posZ()) > vtxZCut) {
         continue;
       }
-      hEvents->Fill(2.);
+      hEvents->Fill(KevZVertexCut);
       if (useNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
         continue;
       }
-      hEvents->Fill(3.);
+      hEvents->Fill(KevPileupCut);
 
       hZvtx->Fill(collision.posZ());
       hCentFT0A->Fill(collision.centFT0A());
@@ -875,10 +887,10 @@ struct lnnRecoTask {
       }
 
       const uint64_t collIdx = collision.globalIndex();
-      auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
-      V0Table_thisCollision.bindExternalIndices(&tracks);
+      auto v0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
+      v0Table_thisCollision.bindExternalIndices(&tracks);
 
-      fillCandidateData(collision, V0Table_thisCollision);
+      fillCandidateData(collision, v0Table_thisCollision);
       fillMCinfo(trackLabelsMC, particlesMC);
 
       for (const auto& lnnCand : lnnCandidates) {
@@ -905,93 +917,95 @@ struct lnnRecoTask {
                       chargeFactor * lnnCand.genPt(), lnnCand.genPhi(), lnnCand.genEta(), chargeFactor * lnnCand.genPt3H(),
                       lnnCand.gDecVtx[0], lnnCand.gDecVtx[1], lnnCand.gDecVtx[2], lnnCand.isReco, lnnCand.isSignal, lnnCand.recoMcColl, lnnCand.survEvSelection);
       }
+    }
 
-      // now we fill only the signal candidates that were not reconstructed
-      for (const auto& mcPart : particlesMC) {
+    // now we fill only the signal candidates that were not reconstructed
+    for (const auto& mcPart : particlesMC) {
 
-        if (std::abs(mcPart.pdgCode()) != lnnPdg) {
-          continue;
-        }
-        float cent = collisionFT0Ccent[mcPart.mcCollisionId()];
-
-        h2FT0CPtGenColGenCandMC->Fill(cent, mcPart.pt());
-
-        constexpr std::size_t kVtxDim = 3;
-        std::array<float, kVtxDim> secVtx;
-        std::array<float, kVtxDim> primVtx = {mcPart.vx(), mcPart.vy(), mcPart.vz()};
-
-        constexpr std::size_t kArrayDim = 3;
-        std::array<float, kArrayDim> momMother = mcPart.pVector();
-
-        std::array<float, kArrayDim> mom3H;
-        std::array<float, kArrayDim> momPi;
-        bool is3HFound = false;
-
-        for (const auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
-          int pdg = std::abs(mcDaught.pdgCode());
-
-          if (pdg == h3DauPdg) {
-            secVtx = {mcDaught.vx(), mcDaught.vy(), mcDaught.vz()};
-            mom3H = mcDaught.pVector();
-            h2FT0CPtGenColGenTrStrMC->Fill(cent, mcDaught.pt());
-            is3HFound = true;
-          }
-          if (pdg == piDauPdg) {
-            momPi = mcDaught.pVector();
-            h2FT0CPtGenColGenPiStrMC->Fill(cent, mcDaught.pt());
-          }
-        }
-
-        if (mcPart.pdgCode() > 0) {
-          hIsMatterGen->Fill(0.);
-        } else {
-          hIsMatterGen->Fill(1.);
-        }
-
-        if (!is3HFound) {
-          hDecayChannel->Fill(1.);
-        }
-        hDecayChannel->Fill(0.);
-        if (std::find(filledMothers.begin(), filledMothers.end(), mcPart.globalIndex()) != std::end(filledMothers)) {
-          continue;
-        }
-
-        LnnCandidate lnnCand;
-        lnnCand.pdgCode = mcPart.pdgCode();
-        lnnCand.survEvSelection = isGoodCollision[mcPart.mcCollisionId()];
-        int chargeFactor = -1 + 2 * (lnnCand.pdgCode > 0);
-        for (int i = 0; i < 3; i++) {
-          lnnCand.gDecVtx[i] = secVtx[i] - primVtx[i];
-          lnnCand.gMom[i] = momMother[i];
-          lnnCand.gMom3H[i] = mom3H[i];
-          lnnCand.gMomPi[i] = momPi[i];
-        }
-
-        lnnCand.posTrackID = -1;
-        lnnCand.negTrackID = -1;
-        lnnCand.isSignal = true;
-
-        float centFT0A = -1, centFT0C = -1, centFT0M = -1;
-        if (lnnCand.recoMcColl) {
-          auto recoCollision = collisions.rawIteratorAt(recoCollisionIds[mcPart.mcCollisionId()]);
-          centFT0A = recoCollision.centFT0A();
-          centFT0C = recoCollision.centFT0C();
-          centFT0M = recoCollision.centFT0M();
-        }
-        outputMCTable(centFT0A, centFT0C, centFT0M,
-                      -1, -1, -1,
-                      0,
-                      -1, -1, -1,
-                      -1, -1, -1,
-                      -1, -1, -1,
-                      -1, -1, -1,
-                      -1, -1, -1, -1, -1,
-                      -1, -1, -1, -1,
-                      -1, -1,
-                      -1, -1, -1,
-                      chargeFactor * lnnCand.genPt(), lnnCand.genPhi(), lnnCand.genEta(), lnnCand.genPt3H(),
-                      lnnCand.gDecVtx[0], lnnCand.gDecVtx[1], lnnCand.gDecVtx[2], lnnCand.isReco, lnnCand.isSignal, lnnCand.recoMcColl, lnnCand.survEvSelection);
+      if (std::abs(mcPart.pdgCode()) != lnnPdg) {
+        continue;
       }
+      float cent = collisionFT0Ccent[mcPart.mcCollisionId()];
+
+      h2FT0CPtGenColGenCandMC->Fill(cent, mcPart.pt());
+
+      constexpr std::size_t KVtxDim = 3;
+      std::array<float, KVtxDim> secVtx;
+      std::array<float, KVtxDim> primVtx = {mcPart.vx(), mcPart.vy(), mcPart.vz()};
+
+      constexpr std::size_t kArrayDim = 3;
+      std::array<float, kArrayDim> momMother = mcPart.pVector();
+
+      std::array<float, kArrayDim> mom3H;
+      std::array<float, kArrayDim> momPi;
+      bool is3HFound = false;
+
+      for (const auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
+        int pdg = std::abs(mcDaught.pdgCode());
+
+        if (pdg == h3DauPdg) {
+          secVtx = {mcDaught.vx(), mcDaught.vy(), mcDaught.vz()};
+          mom3H = mcDaught.pVector();
+          h2FT0CPtGenColGenTrStrMC->Fill(cent, mcDaught.pt());
+          is3HFound = true;
+          break;
+        }
+        if (pdg == piDauPdg) {
+          momPi = mcDaught.pVector();
+          h2FT0CPtGenColGenPiStrMC->Fill(cent, mcDaught.pt());
+        }
+      }
+
+      if (mcPart.pdgCode() > 0) {
+        hIsMatterGen->Fill(0.);
+      } else {
+        hIsMatterGen->Fill(1.);
+      }
+
+      if (!is3HFound) {
+        hDecayChannel->Fill(1.);
+        continue;
+      }
+      hDecayChannel->Fill(0.);
+      if (std::find(filledMothers.begin(), filledMothers.end(), mcPart.globalIndex()) != std::end(filledMothers)) {
+        continue;
+      }
+
+      LnnCandidate lnnCand;
+      lnnCand.pdgCode = mcPart.pdgCode();
+      lnnCand.survEvSelection = isGoodCollision[mcPart.mcCollisionId()];
+      int chargeFactor = -1 + 2 * (lnnCand.pdgCode > 0);
+
+      int kDimGen = 3; 
+      for (int i = 0; i < kDimGen; i++) {
+        lnnCand.gDecVtx[i] = secVtx[i] - primVtx[i];
+        lnnCand.gMom[i] = momMother[i];
+        lnnCand.gMom3H[i] = mom3H[i];
+        lnnCand.gMomPi[i] = momPi[i];
+      }
+
+      lnnCand.posTrackID = -1;
+      lnnCand.negTrackID = -1;
+      lnnCand.isSignal = true;
+
+      float centFT0C = -1;
+      if (lnnCand.recoMcColl) {
+        auto recoCollision = collisions.rawIteratorAt(recoCollisionIds[mcPart.mcCollisionId()]);
+        centFT0C = recoCollision.centFT0C();
+      }
+      outputMCTable(-1, centFT0C, -1,
+                    -1, -1, -1,
+                    0,
+                    -1, -1, -1,
+                    -1, -1, -1,
+                    -1, -1, -1,
+                    -1, -1, -1,
+                    -1, -1, -1, -1, -1,
+                    -1, -1, -1, -1,
+                    -1, -1,
+                    -1, -1, -1,
+                    chargeFactor * lnnCand.genPt(), lnnCand.genPhi(), lnnCand.genEta(), lnnCand.genPt3H(),
+                    lnnCand.gDecVtx[0], lnnCand.gDecVtx[1], lnnCand.gDecVtx[2], lnnCand.isReco, lnnCand.isSignal, lnnCand.recoMcColl, lnnCand.survEvSelection);
     }
   }
   PROCESS_SWITCH(lnnRecoTask, processMC, "MC analysis", false);
