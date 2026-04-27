@@ -45,6 +45,57 @@
 #include <unordered_map>
 #include <vector>
 
+// table for saving tree with info on data
+namespace jpsirl
+{
+// dimuon
+DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
+DECLARE_SOA_COLUMN(M, m, float);
+DECLARE_SOA_COLUMN(Energy, energy, float);
+DECLARE_SOA_COLUMN(Px, px, float);
+DECLARE_SOA_COLUMN(Py, py, float);
+DECLARE_SOA_COLUMN(Pz, pz, float);
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(Rap, rap, float);
+DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(PhiAv, phiAv, float);
+DECLARE_SOA_COLUMN(PhiCh, phiCh, float);
+// tracks positive (p) and negative (n)
+DECLARE_SOA_COLUMN(EnergyP, energyP, float);
+DECLARE_SOA_COLUMN(Pxp, pxp, float);
+DECLARE_SOA_COLUMN(Pyp, pyp, float);
+DECLARE_SOA_COLUMN(Pzp, pzp, float);
+DECLARE_SOA_COLUMN(Ptp, ptp, float);
+DECLARE_SOA_COLUMN(Etap, etap, float);
+DECLARE_SOA_COLUMN(Phip, phip, float);
+DECLARE_SOA_COLUMN(TrackTypep, trackTypep, int);
+DECLARE_SOA_COLUMN(EnergyN, energyN, float);
+DECLARE_SOA_COLUMN(Pxn, pxn, float);
+DECLARE_SOA_COLUMN(Pyn, pyn, float);
+DECLARE_SOA_COLUMN(Pzn, pzn, float);
+DECLARE_SOA_COLUMN(Ptn, ptn, float);
+DECLARE_SOA_COLUMN(Etan, etan, float);
+DECLARE_SOA_COLUMN(Phin, phin, float);
+DECLARE_SOA_COLUMN(TrackTypen, trackTypen, int);
+// zn
+DECLARE_SOA_COLUMN(Tzna, tzna, float);
+DECLARE_SOA_COLUMN(Ezna, ezna, float);
+DECLARE_SOA_COLUMN(Tznc, tznc, float);
+DECLARE_SOA_COLUMN(Eznc, eznc, float);
+DECLARE_SOA_COLUMN(Nclass, nclass, int);
+} // namespace jpsirl
+
+namespace o2::aod
+{
+DECLARE_SOA_TABLE(JpsiRL, "AOD", "JPSI_RL",
+                  jpsirl::RunNumber,
+                  jpsirl::M, jpsirl::Energy, jpsirl::Px, jpsirl::Py, jpsirl::Pz, jpsirl::Pt, jpsirl::Rap, jpsirl::Phi,
+                  jpsirl::PhiAv, jpsirl::PhiCh,
+                  jpsirl::EnergyP, jpsirl::Pxp, jpsirl::Pyp, jpsirl::Pzp, jpsirl::Ptp, jpsirl::Etap, jpsirl::Phip, jpsirl::TrackTypep,
+                  jpsirl::EnergyN, jpsirl::Pxn, jpsirl::Pyn, jpsirl::Pzn, jpsirl::Ptn, jpsirl::Etan, jpsirl::Phin, jpsirl::TrackTypen,
+                  jpsirl::Tzna, jpsirl::Ezna, jpsirl::Tznc, jpsirl::Eznc, jpsirl::Nclass);
+} // namespace o2::aod
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -70,6 +121,8 @@ struct UpcFwdJpsiRL {
 
   using CandidatesFwd = soa::Join<o2::aod::UDCollisions, o2::aod::UDCollisionsSelsFwd>;
   using ForwardTracks = soa::Join<o2::aod::UDFwdTracks, o2::aod::UDFwdTracksExtra>;
+
+  Produces<o2::aod::JpsiRL> dimuSel;
 
   // defining histograms using histogram registry
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -409,20 +462,24 @@ struct UpcFwdJpsiRL {
     // neutron classes
     bool neutronA = std::abs(zdc.timeA) < kMaxZDCTime && !std::isinf(zdc.timeA);
     bool neutronC = std::abs(zdc.timeC) < kMaxZDCTime && !std::isinf(zdc.timeC);
+    int znClass = -1;
 
     if (!neutronC && !neutronA) {
+      znClass = 1;
       reg0n0n.fill(HIST("hMass"), p.M());
       reg0n0n.fill(HIST("hPt"), p.Pt());
       reg0n0n.fill(HIST("hPtFit"), p.Pt());
       reg0n0n.fill(HIST("hEta"), p.Eta());
       reg0n0n.fill(HIST("hRapidity"), p.Rapidity());
     } else if (neutronA ^ neutronC) {
+      znClass = neutronA ? 2 : 3;
       regXn0n.fill(HIST("hMass"), p.M());
       regXn0n.fill(HIST("hPt"), p.Pt());
       regXn0n.fill(HIST("hPtFit"), p.Pt());
       regXn0n.fill(HIST("hEta"), p.Eta());
       regXn0n.fill(HIST("hRapidity"), p.Rapidity());
     } else if (neutronA && neutronC) {
+      znClass = 4;
       regXnXn.fill(HIST("hMass"), p.M());
       regXnXn.fill(HIST("hPt"), p.Pt());
       regXnXn.fill(HIST("hPtFit"), p.Pt());
@@ -450,6 +507,24 @@ struct UpcFwdJpsiRL {
     registry.fill(HIST("hCharge"), tr2.sign());
     registry.fill(HIST("hPhiAverage"), phiAverage);
     registry.fill(HIST("hPhiCharge"), phiCharge);
+
+    // store the event to save it into a tree
+    // order tracks so that positive is first
+    if (tr1.sign() > 0) {
+      dimuSel(cand.runNumber(),
+              p.M(), p.E(), p.Px(), p.Py(), p.Pz(), p.Pt(), p.Rapidity(), p.Phi(),
+              phiAverage, phiCharge,
+              p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.PseudoRapidity(), p1.Phi(), static_cast<int>(tr1.trackType()),
+              p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.PseudoRapidity(), p2.Phi(), static_cast<int>(tr2.trackType()),
+              zdc.timeA, zdc.enA, zdc.timeC, zdc.enC, znClass);
+    } else {
+      dimuSel(cand.runNumber(),
+              p.M(), p.E(), p.Px(), p.Py(), p.Pz(), p.Pt(), p.Rapidity(), p.Phi(),
+              phiAverage, phiCharge,
+              p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.PseudoRapidity(), p2.Phi(), static_cast<int>(tr2.trackType()),
+              p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.PseudoRapidity(), p1.Phi(), static_cast<int>(tr1.trackType()),
+              zdc.timeA, zdc.enA, zdc.timeC, zdc.enC, znClass);
+    }
   }
 
   // PROCESS FUNCTION
