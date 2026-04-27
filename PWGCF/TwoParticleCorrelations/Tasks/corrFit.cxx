@@ -210,7 +210,7 @@ struct CorrFit {
   OutputObj<CorrelationContainer> sameTpcFt0c{"sameEvent_TPC_FT0C"};
   OutputObj<CorrelationContainer> mixedTpcFt0c{"mixedEvent_TPC_FT0C"};
   OutputObj<CorrelationContainer> sameFt0aFt0c{"sameEvent_FT0A_FT0C"};
-  OutputObj<CorrelationContainer> mixedFt0aFt0c{"mixedEvent_FA_FT0C"};
+  OutputObj<CorrelationContainer> mixedFt0aFt0c{"mixedEvent_FT0A_FT0C"};
   OutputObj<CorrelationContainer> sameTPC{"sameEvent_TPC"};
   OutputObj<CorrelationContainer> mixedTPC{"mixedEvent_TPC"};
 
