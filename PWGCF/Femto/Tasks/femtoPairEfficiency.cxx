@@ -638,7 +638,7 @@ struct FemtoPairEfficiency {
     histos.fill(HIST("NPVtracks_vs_FT0C"), collision.multNTracksPV(), collision.multFT0C());
   }
 
-  void processStrangeYield(CollisionDataTable::iterator const& collision, V0TrackCandidates const&, aod::V0Datas const& v0data, FilTrackDataTable const& tracks)
+  void processStrangeYield(CollisionDataTable::iterator const& collision, FilTrackDataTable const& tracks, V0TrackCandidates const&, aod::V0Datas const& v0data)
   {
     if (!isEventSelected(collision, tracks)) {
       return;
