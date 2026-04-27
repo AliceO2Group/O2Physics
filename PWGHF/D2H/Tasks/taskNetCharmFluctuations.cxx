@@ -61,7 +61,6 @@ DECLARE_SOA_COLUMN(MassD0, massD0, float);
 DECLARE_SOA_COLUMN(MassD0bar, massD0bar, float);
 DECLARE_SOA_COLUMN(MassDplus, massDplus, float);
 DECLARE_SOA_COLUMN(Centrality, centrality, float);
-DECLARE_SOA_COLUMN(FitBinId, fitBinId, int16_t);
 DECLARE_SOA_COLUMN(OmegaCharm, omegaCharm, float);
 DECLARE_SOA_COLUMN(OmegaAntiCharm, omegaAntiCharm, float);
 DECLARE_SOA_COLUMN(OmegaBkg, omegaBkg, float);
@@ -79,7 +78,6 @@ DECLARE_SOA_TABLE(EyeFlucCharmD0Cands, "AOD", "EYEFCD0CAND",
                   eyefluc::Rapidity,
                   eyefluc::MassD0,
                   eyefluc::MassD0bar,
-                  eyefluc::FitBinId,
                   eyefluc::OmegaCharm,
                   eyefluc::OmegaAntiCharm,
                   eyefluc::OmegaBkg);
@@ -100,7 +98,6 @@ DECLARE_SOA_TABLE(EyeFlucCharmDplusCands, "AOD", "EYEFCDPCAND",
                   eyefluc::Pt,
                   eyefluc::Rapidity,
                   eyefluc::MassDplus,
-                  eyefluc::FitBinId,
                   eyefluc::OmegaCharm,
                   eyefluc::OmegaAntiCharm,
                   eyefluc::OmegaBkg);
@@ -128,28 +125,9 @@ enum EventQa : uint8_t {
   NEventQa
 };
 
-using CandD0Data = soa::Filtered<soa::Join<aod::HfCand2Prong,
-                                           aod::HfCand2Prong0PidPi,
-                                           aod::HfCand2Prong1PidPi,
-                                           aod::HfCand2Prong0PidKa,
-                                           aod::HfCand2Prong1PidKa,
-                                           aod::HfCand2ProngKF,
-                                           aod::HfSelD0>>;
-
-using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong,
-                                              aod::HfCand3Prong0PidPi,
-                                              aod::HfCand3Prong1PidPi,
-                                              aod::HfCand3Prong2PidPi,
-                                              aod::HfCand3Prong0PidKa,
-                                              aod::HfCand3Prong1PidKa,
-                                              aod::HfCand3Prong2PidKa,
-                                              aod::HfSelDplusToPiKPi>>;
-
-using CollData = soa::Join<aod::Collisions,
-                           aod::EvSels,
-                           aod::CentFT0Cs,
-                           aod::CentFT0Ms,
-                           aod::CentFT0As>;
+using CandD0Data = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfCand2Prong0PidPi, aod::HfCand2Prong1PidPi, aod::HfCand2Prong0PidKa, aod::HfCand2Prong1PidKa, aod::HfCand2ProngKF, aod::HfSelD0>>;
+using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3Prong0PidPi, aod::HfCand3Prong1PidPi, aod::HfCand3Prong2PidPi, aod::HfCand3Prong0PidKa, aod::HfCand3Prong1PidKa, aod::HfCand3Prong2PidKa, aod::HfSelDplusToPiKPi>>;
+using CollData = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0As>;
 
 struct HfTaskNetCharmFluctuations {
   Produces<aod::EyeFlucCharmD0Cands> outD0Cand;
@@ -161,7 +139,6 @@ struct HfTaskNetCharmFluctuations {
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Minimum D0bar selection flag"};
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 1, "Minimum Dplus selection flag"};
   Configurable<int> centralityEstimator{"centralityEstimator", static_cast<int>(CentralityEstimator::FT0C), "Centrality estimator used for output tables"};
-  Configurable<std::vector<float>> ptFitBins{"ptFitBins", std::vector<float>{1.f, 2.f, 3.f, 4.f, 6.f, 8.f, 12.f, 24.f}, "pT bins used to assign fitBinId"};
   Configurable<bool> fillOmegaRaw{"fillOmegaRaw", true, "Fill omega sums with raw charm/anti-charm candidate counts"};
 
   SliceCache cache;
@@ -242,21 +219,6 @@ struct HfTaskNetCharmFluctuations {
     return (static_cast<uint64_t>(family) << 62) | (signBit << 61) | static_cast<uint64_t>(globalIndex);
   }
 
-  int16_t getFitBin(float pt) const
-  {
-    auto const& bins = ptFitBins.value;
-    static constexpr size_t MinFitBinEdges = 2;
-    if (bins.size() < MinFitBinEdges) {
-      return -1;
-    }
-    for (size_t iBin = 0; iBin + 1 < bins.size(); ++iBin) {
-      if (pt >= bins[iBin] && pt < bins[iBin + 1]) {
-        return static_cast<int16_t>(iBin);
-      }
-    }
-    return -1;
-  }
-
   void setOmegaRaw(HfCandInfo& cand) const
   {
     if (!fillOmegaRaw.value) {
@@ -314,7 +276,6 @@ struct HfTaskNetCharmFluctuations {
                 cand.rapidity,
                 cand.massD0,
                 cand.massD0bar,
-                getFitBin(cand.pt),
                 cand.omegaCharm,
                 cand.omegaAntiCharm,
                 cand.omegaBkg);
@@ -354,7 +315,6 @@ struct HfTaskNetCharmFluctuations {
                    cand.pt,
                    cand.rapidity,
                    cand.massDplus,
-                   getFitBin(cand.pt),
                    cand.omegaCharm,
                    cand.omegaAntiCharm,
                    cand.omegaBkg);
