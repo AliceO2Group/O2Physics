@@ -104,7 +104,7 @@ struct PhotonDeuteron {
 
   // V0 photon selection
   template <typename TV0, typename TTracks>
-  bool selectPhoton(TV0 const& v0, TTracks const& tracks)
+  bool selectPhoton(TV0 const& v0, TTracks const& /*tracks*/)
   {
     // Basic V0 quality cuts
     if (v0.v0cosPA() < cfgV0CosPA) {
@@ -194,7 +194,7 @@ struct PhotonDeuteron {
   }
 
   // Process function for V0s and tracks
-  void process(aod::Collision const& collision,
+  void process(aod::Collision const& /*collision*/,
                soa::Join<aod::V0Indices, aod::V0CoresBase, aod::V0TrackXs> const& V0s,
                soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
                          aod::pidTPCFullDe, aod::pidTOFFullDe,
