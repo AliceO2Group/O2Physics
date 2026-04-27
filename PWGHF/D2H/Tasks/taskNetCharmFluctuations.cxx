@@ -55,9 +55,12 @@ DECLARE_SOA_COLUMN(EventId, eventId, uint64_t);
 DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t);
 DECLARE_SOA_COLUMN(CandUid, candUid, uint64_t);
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(Rapidity, rapidity, float);
 DECLARE_SOA_COLUMN(MassD0, massD0, float);
 DECLARE_SOA_COLUMN(MassD0bar, massD0bar, float);
 DECLARE_SOA_COLUMN(MassDplus, massDplus, float);
+DECLARE_SOA_COLUMN(Centrality, centrality, float);
 DECLARE_SOA_COLUMN(FitBinId, fitBinId, int16_t);
 DECLARE_SOA_COLUMN(OmegaCharm, omegaCharm, float);
 DECLARE_SOA_COLUMN(OmegaAntiCharm, omegaAntiCharm, float);
@@ -72,6 +75,8 @@ DECLARE_SOA_TABLE(EyeFlucCharmD0Cands, "AOD", "EYEFCD0CAND",
                   eyefluc::TimeStamp,
                   eyefluc::CandUid,
                   eyefluc::Sign,
+                  eyefluc::Pt,
+                  eyefluc::Rapidity,
                   eyefluc::MassD0,
                   eyefluc::MassD0bar,
                   eyefluc::FitBinId,
@@ -82,6 +87,7 @@ DECLARE_SOA_TABLE(EyeFlucCharmD0Cands, "AOD", "EYEFCD0CAND",
 DECLARE_SOA_TABLE(EyeFlucCharmD0Events, "AOD", "EYEFCD0EVT",
                   eyefluc::EventId,
                   eyefluc::TimeStamp,
+                  eyefluc::Centrality,
                   eyefluc::WCharm,
                   eyefluc::WAntiCharm,
                   eyefluc::WBkg);
@@ -91,6 +97,8 @@ DECLARE_SOA_TABLE(EyeFlucCharmDplusCands, "AOD", "EYEFCDPCAND",
                   eyefluc::TimeStamp,
                   eyefluc::CandUid,
                   eyefluc::Sign,
+                  eyefluc::Pt,
+                  eyefluc::Rapidity,
                   eyefluc::MassDplus,
                   eyefluc::FitBinId,
                   eyefluc::OmegaCharm,
@@ -100,6 +108,7 @@ DECLARE_SOA_TABLE(EyeFlucCharmDplusCands, "AOD", "EYEFCDPCAND",
 DECLARE_SOA_TABLE(EyeFlucCharmDplusEvents, "AOD", "EYEFCDPEVT",
                   eyefluc::EventId,
                   eyefluc::TimeStamp,
+                  eyefluc::Centrality,
                   eyefluc::WCharm,
                   eyefluc::WAntiCharm,
                   eyefluc::WBkg);
@@ -151,6 +160,7 @@ struct HfTaskNetCharmFluctuations {
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Minimum D0 selection flag"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Minimum D0bar selection flag"};
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 1, "Minimum Dplus selection flag"};
+  Configurable<int> centralityEstimator{"centralityEstimator", static_cast<int>(CentralityEstimator::FT0C), "Centrality estimator used for output tables"};
   Configurable<std::vector<float>> ptFitBins{"ptFitBins", std::vector<float>{1.f, 2.f, 3.f, 4.f, 6.f, 8.f, 12.f, 24.f}, "pT bins used to assign fitBinId"};
   Configurable<bool> fillOmegaRaw{"fillOmegaRaw", true, "Fill omega sums with raw charm/anti-charm candidate counts"};
 
@@ -173,6 +183,7 @@ struct HfTaskNetCharmFluctuations {
     float massD0bar = -1.f;
     float massDplus = -1.f;
     float pt = -1.f;
+    float rapidity = -999.f;
     float omegaCharm = 0.f;
     float omegaAntiCharm = 0.f;
     float omegaBkg = 1.f;
@@ -218,6 +229,11 @@ struct HfTaskNetCharmFluctuations {
   {
     const auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     return bc.timestamp();
+  }
+
+  float getCentrality(CollData::iterator const& collision) const
+  {
+    return getCentralityColl(collision, centralityEstimator.value);
   }
 
   uint64_t makeCandUid(CharmFamily family, int8_t sign, int64_t globalIndex) const
@@ -271,9 +287,10 @@ struct HfTaskNetCharmFluctuations {
   {
     const uint64_t eventId = makeEventId(collision);
     const int64_t timeStamp = getTimeStamp(collision);
+    const float centrality = getCentrality(collision);
 
     if (acceptedCands.empty()) {
-      outD0Evt(eventId, timeStamp, 0., 0., 0.);
+      outD0Evt(eventId, timeStamp, centrality, 0., 0., 0.);
       registry.fill(HIST("hEventQa"), 1 + EventQa::RejNoCharmCandidate);
       registry.fill(HIST("hEventQa"), 1 + EventQa::EventWritten);
       return;
@@ -293,6 +310,8 @@ struct HfTaskNetCharmFluctuations {
                 timeStamp,
                 cand.uid,
                 cand.sign,
+                cand.pt,
+                cand.rapidity,
                 cand.massD0,
                 cand.massD0bar,
                 getFitBin(cand.pt),
@@ -301,7 +320,7 @@ struct HfTaskNetCharmFluctuations {
                 cand.omegaBkg);
     }
 
-    outD0Evt(eventId, timeStamp, wCharm, wAntiCharm, wBkg);
+    outD0Evt(eventId, timeStamp, centrality, wCharm, wAntiCharm, wBkg);
     registry.fill(HIST("hEventQa"), 1 + EventQa::EventWritten);
   }
 
@@ -309,9 +328,10 @@ struct HfTaskNetCharmFluctuations {
   {
     const uint64_t eventId = makeEventId(collision);
     const int64_t timeStamp = getTimeStamp(collision);
+    const float centrality = getCentrality(collision);
 
     if (acceptedCands.empty()) {
-      outDplusEvt(eventId, timeStamp, 0., 0., 0.);
+      outDplusEvt(eventId, timeStamp, centrality, 0., 0., 0.);
       registry.fill(HIST("hEventQa"), 1 + EventQa::RejNoCharmCandidate);
       registry.fill(HIST("hEventQa"), 1 + EventQa::EventWritten);
       return;
@@ -331,6 +351,8 @@ struct HfTaskNetCharmFluctuations {
                    timeStamp,
                    cand.uid,
                    cand.sign,
+                   cand.pt,
+                   cand.rapidity,
                    cand.massDplus,
                    getFitBin(cand.pt),
                    cand.omegaCharm,
@@ -338,7 +360,7 @@ struct HfTaskNetCharmFluctuations {
                    cand.omegaBkg);
     }
 
-    outDplusEvt(eventId, timeStamp, wCharm, wAntiCharm, wBkg);
+    outDplusEvt(eventId, timeStamp, centrality, wCharm, wAntiCharm, wBkg);
     registry.fill(HIST("hEventQa"), 1 + EventQa::EventWritten);
   }
 
@@ -356,6 +378,7 @@ struct HfTaskNetCharmFluctuations {
       info.massD0 = massD0;
       info.massD0bar = massD0bar;
       info.pt = cand.pt();
+      info.rapidity = HfHelper::yD0(cand);
       setOmegaRaw(info);
       acceptedCands.push_back(info);
 
@@ -408,6 +431,7 @@ struct HfTaskNetCharmFluctuations {
       info.sign = sign;
       info.massDplus = massDplus;
       info.pt = cand.pt();
+      info.rapidity = HfHelper::yDplus(cand);
       setOmegaRaw(info);
       acceptedCands.push_back(info);
       registry.fill(HIST("hMassVsPtDplus"), massDplus, cand.pt());
