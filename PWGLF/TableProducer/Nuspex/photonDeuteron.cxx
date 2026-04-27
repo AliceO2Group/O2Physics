@@ -16,15 +16,16 @@
 #include "PWGLF/DataModel/LFPhotonDeuteronTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
 
 #include <vector>
 
@@ -62,8 +63,8 @@ struct PhotonDeuteron {
     const AxisSpec axisPhotonMass{200, 0.0, 0.2, "M_{ee} (GeV/c^{2})"};
     const AxisSpec axisPt{100, 0.0, 10.0, "p_{T} (GeV/c)"};
     const AxisSpec axisEta{100, -1.0, 1.0, "#eta"};
-    const AxisSpec axisPhi{64, 0.0, 2.0 * M_PI, "#phi (rad)"};
-    const AxisSpec axisDeltaPhi{64, -0.5 * M_PI, 1.5 * M_PI, "#Delta#phi (rad)"};
+    const AxisSpec axisPhi{64, 0.0, 2.0 * o2::constants::math::PI, "#phi (rad)"};
+    const AxisSpec axisDeltaPhi{64, -0.5 * o2::constants::math::PI, 1.5 * o2::constants::math::PI, "#Delta#phi (rad)"};
     const AxisSpec axisDeltaEta{100, -2.0, 2.0, "#Delta#eta"};
     const AxisSpec axisNSigma{200, -10.0, 10.0, "n#sigma"};
     const AxisSpec axisV0CosPA{100, 0.9, 1.0, "cos(PA)"};
@@ -260,7 +261,7 @@ struct PhotonDeuteron {
         const auto& deuteron = tracks.iteratorAt(deuteronIdx);
 
         // Calculate angular correlations
-        float deltaPhi = RecoDecay::constrainAngle(photon.phi() - deuteron.phi(), -0.5 * M_PI);
+        float deltaPhi = RecoDecay::constrainAngle(photon.phi() - deuteron.phi(), -0.5 * o2::constants::math::PI);
         float deltaEta = photon.eta() - deuteron.eta();
 
         // Fill correlation histograms
