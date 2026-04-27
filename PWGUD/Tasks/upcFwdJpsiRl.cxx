@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file upcFwdJpsiRL.cxx
+/// \file upcFwdJpsiRl.cxx
 /// \brief UPC forward J/psi analysis with configurable track-type candidate selection
 ///
 /// Candidate types (configured via candidateType):
