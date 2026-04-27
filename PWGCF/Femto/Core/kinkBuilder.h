@@ -24,7 +24,7 @@
 #include "PWGCF/Femto/Core/selectionContainer.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
-#include <Common/Core/RecoDecay.h>
+#include "Common/Core/RecoDecay.h"
 
 #include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisHelpers.h>

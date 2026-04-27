@@ -16,16 +16,26 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPAIRSHCENTMULTKT_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPAIRSHCENTMULTKT_H_
 
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseMath.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseSHContainer.h"
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseSpherHarMath.h"
 
-#include "Framework/HistogramRegistry.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 
+#include <TH1.h>
+#include <TH3.h>
+#include <TString.h>
+
+#include <array>
+#include <cmath>
 #include <complex>
+#include <cstdint>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
-
-// using namespace o2::constants::physics;
 
 namespace o2::analysis::femto_universe
 {
@@ -50,11 +60,11 @@ class PairSHCentMultKt
   /// \param ktbins Number of kT bins
   /// \param maxl Maximum valie of L component of the spherical harmonics
   template <typename t1>
-  void init(HistogramRegistry* registry, t1& kstarbins, t1& centmultbins,
+  void init(framework::HistogramRegistry* registry, t1& kstarbins, t1& centmultbins,
             t1& ktbins, bool isqinvfill, int /*maxl*/)
   {
     pairSHCentMultKtRegistry = registry;
-    AxisSpec kstarAxis = {kstarbins, "#it{k*} (GeV/#it{c})"};
+    framework::AxisSpec kstarAxis = {kstarbins, "#it{k*} (GeV/#it{c})"};
     kStarBins = kstarbins;
 
     centMultBins = centmultbins;
@@ -124,23 +134,23 @@ class PairSHCentMultKt
           if (FolderSuffix[EventType] == FolderSuffix[0]) {
             fnumsreal[i][j][ihist] = pairSHCentMultKtRegistry->add<TH1>(
               (histFolderMult + "/" + histFolderkT + "/" + "NumRe" + suffix).c_str(),
-              ("; " + femtoObs1D + "; Entries").c_str(), kTH1D, {femtoObsAxis1D});
+              ("; " + femtoObs1D + "; Entries").c_str(), framework::kTH1D, {femtoObsAxis1D});
             fnumsimag[i][j][ihist] = pairSHCentMultKtRegistry->add<TH1>(
               (histFolderMult + "/" + histFolderkT + "/" + "NumIm" + suffix).c_str(),
-              ("; " + femtoObs1D + "; Entries").c_str(), kTH1D, {femtoObsAxis1D});
+              ("; " + femtoObs1D + "; Entries").c_str(), framework::kTH1D, {femtoObsAxis1D});
           } else {
             fdensreal[i][j][ihist] = pairSHCentMultKtRegistry->add<TH1>(
               (histFolderMult + "/" + histFolderkT + "/" + "DenRe" + suffix).c_str(),
-              ("; " + femtoObs1D + "; Entries").c_str(), kTH1D, {femtoObsAxis1D});
+              ("; " + femtoObs1D + "; Entries").c_str(), framework::kTH1D, {femtoObsAxis1D});
             fdensimag[i][j][ihist] = pairSHCentMultKtRegistry->add<TH1>(
               (histFolderMult + "/" + histFolderkT + "/" + "DenIm" + suffix).c_str(),
-              ("; " + femtoObs1D + "; Entries").c_str(), kTH1D, {femtoObsAxis1D});
+              ("; " + femtoObs1D + "; Entries").c_str(), framework::kTH1D, {femtoObsAxis1D});
           }
         }
 
         if (FolderSuffix[EventType] == FolderSuffix[0]) {
           std::string bufnameNum = "CovNum";
-          fcovnum[i][j] = pairSHCentMultKtRegistry->add<TH3>((histFolderMult + "/" + histFolderkT + "/" + bufnameNum).c_str(), "; x; y; z", kTH3D,
+          fcovnum[i][j] = pairSHCentMultKtRegistry->add<TH3>((histFolderMult + "/" + histFolderkT + "/" + bufnameNum).c_str(), "; x; y; z", framework::kTH3D,
                                                              {{kstarbins},
                                                               {(kMaxJM * 2), -0.5, ((static_cast<float>(kMaxJM) * 2.0 - 0.5))},
                                                               {(kMaxJM * 2), -0.5,
@@ -148,7 +158,7 @@ class PairSHCentMultKt
           fcovnum[i][j]->Sumw2();
         } else if (FolderSuffix[EventType] == FolderSuffix[1]) {
           std::string bufnameDen = "CovDen";
-          fcovden[i][j] = pairSHCentMultKtRegistry->add<TH3>((histFolderMult + "/" + histFolderkT + "/" + bufnameDen).c_str(), "; x; y; z", kTH3D,
+          fcovden[i][j] = pairSHCentMultKtRegistry->add<TH3>((histFolderMult + "/" + histFolderkT + "/" + bufnameDen).c_str(), "; x; y; z", framework::kTH3D,
                                                              {{kstarbins},
                                                               {(kMaxJM * 2), -0.5, ((static_cast<float>(kMaxJM) * 2.0 - 0.5))},
                                                               {(kMaxJM * 2), -0.5,
@@ -159,13 +169,13 @@ class PairSHCentMultKt
             std::string bufnameNum = "h1DNum";
             fnums1D[i][j] = pairSHCentMultKtRegistry->add<TH1>(
               (histFolderMult + "/" + histFolderkT + "/" + bufnameNum).c_str(),
-              ("; " + femtoObs1D + "; Entries").c_str(), kTH1D, {femtoObsAxis1D});
+              ("; " + femtoObs1D + "; Entries").c_str(), framework::kTH1D, {femtoObsAxis1D});
             fnums1D[i][j]->Sumw2();
           } else if (FolderSuffix[EventType] == FolderSuffix[1]) {
             std::string bufnameNum = "h1DDen";
             fdens1D[i][j] = pairSHCentMultKtRegistry->add<TH1>(
               (histFolderMult + "/" + histFolderkT + "/" + bufnameNum).c_str(),
-              ("; " + femtoObs1D + "; Entries").c_str(), kTH1D, {femtoObsAxis1D});
+              ("; " + femtoObs1D + "; Entries").c_str(), framework::kTH1D, {femtoObsAxis1D});
             fdens1D[i][j]->Sumw2();
           }
         }
@@ -412,7 +422,7 @@ class PairSHCentMultKt
   std::array<std::array<std::shared_ptr<TH3>, 7>, 4> fcovden{};
 
  protected:
-  HistogramRegistry* pairSHCentMultKtRegistry = nullptr;
+  framework::HistogramRegistry* pairSHCentMultKtRegistry = nullptr;
   static constexpr std::string_view FolderSuffix[2] = {"SameEvent", "MixedEvent"}; ///< Folder naming for the output according to EventType
   static constexpr int EventType = eventType;                                      ///< Type of the event (same/mixed, according to FEMTOUNIVERSESHCONTAINER::EventType)
   float mMassOne = 0.f;                                                            ///< PDG mass of particle 1

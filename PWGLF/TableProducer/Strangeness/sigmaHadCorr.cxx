@@ -16,20 +16,32 @@
 #include "PWGLF/DataModel/LFKinkDecayTables.h"
 #include "PWGLF/DataModel/LFSigmaHadTables.h"
 
-#include "Common/Core/PID/PIDTOF.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/PID.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
 
 #include <Math/GenVector/Boost.h>
-#include <Math/Vector4D.h>
 #include <TLorentzVector.h>
-#include <TMath.h>
 
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <numeric>
 #include <vector>
 
 using namespace o2;
@@ -145,6 +157,7 @@ struct sigmaHadCorrTask {
     // qa histograms
     rEventSelection.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
     // Dedicated QA folder
+    rSigmaHad.add("QA/hHadronPt", "Hadron #it{p}_{T}", {HistType::kTH1F, {ptHadAxis}});
     rSigmaHad.add("QA/h2TPCNSigmaHadVsPtHad", "TPC n#sigma_{had} vs #it{p}_{T,had}", {HistType::kTH2F, {ptHadAxis, nSigmaHadAxis}});
     rSigmaHad.add("QA/h2TOFNSigmaHadVsPtHad", "TOF n#sigma_{had} vs #it{p}_{T,had}", {HistType::kTH2F, {ptHadAxis, nSigmaHadAxis}});
     rSigmaHad.add("QA/hSigmaPt", "#Sigma #it{p}_{T}", {HistType::kTH1F, {sigmaPtAxis}});
@@ -317,11 +330,13 @@ struct sigmaHadCorrTask {
       return false;
     }
 
-    if (!candidate.hasTOF()) {
-      return false;
-    }
-    if (std::abs(getTOFNSigmaHad(candidate)) > cutNSigmaTOF) {
-      return false;
+    if (candidate.pt() >= ptMinTOFHad) {
+      if (!candidate.hasTOF()) {
+        return false;
+      }
+      if (std::abs(getTOFNSigmaHad(candidate)) > cutNSigmaTOF) {
+        return false;
+      }
     }
     return true; // Track is selected
   }
@@ -446,6 +461,7 @@ struct sigmaHadCorrTask {
           continue;
         }
 
+        rSigmaHad.fill(HIST("QA/hHadronPt"), candidate.ptHad());
         rSigmaHad.fill(HIST("QA/h2TPCNSigmaHadVsPtHad"), candidate.ptHad(), candidate.nSigmaTPCHad);
         if (hadTrack.hasTOF()) {
           rSigmaHad.fill(HIST("QA/h2TOFNSigmaHadVsPtHad"), candidate.ptHad(), candidate.nSigmaTOFHad);

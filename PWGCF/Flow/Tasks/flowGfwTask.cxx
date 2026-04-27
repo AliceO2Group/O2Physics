@@ -14,12 +14,11 @@
 /// \since  Mar 28, 2024
 /// \brief  Multiparticle flow measurements with FT0
 
-#include "FlowContainer.h"
-#include "GFW.h"
-#include "GFWCumulant.h"
-#include "GFWPowerArray.h"
-#include "GFWWeights.h"
+#include "PWGCF/GenericFramework/Core/FlowContainer.h"
+#include "PWGCF/GenericFramework/Core/GFW.h"
+#include "PWGCF/GenericFramework/Core/GFWWeights.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
@@ -27,25 +26,35 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/GlobalTrackID.h"
-#include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/StringHelpers.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TList.h"
-#include "TPDGCode.h"
 #include <TF1.h>
+#include <TH1.h>
+#include <TObjArray.h>
+#include <TPDGCode.h>
 #include <TProfile.h>
 #include <TRandom3.h>
+#include <TString.h>
 
+#include <sys/types.h>
+
+#include <RtypesCore.h>
+
+#include <chrono>
 #include <cmath>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -976,11 +985,11 @@ struct FlowGfwTask {
       ft0aAmp = ft0cAmp = -999;
     }
 
-      registry.fill(HIST("FT0AAmp"), ft0aAmp);
-      registry.fill(HIST("FT0CAmp"), ft0cAmp);
+    registry.fill(HIST("FT0AAmp"), ft0aAmp);
+    registry.fill(HIST("FT0CAmp"), ft0cAmp);
 
-      ft0mAmp = ft0aAmp + ft0cAmp;
-      registry.fill(HIST("FT0MAmp"), ft0mAmp);
+    ft0mAmp = ft0aAmp + ft0cAmp;
+    registry.fill(HIST("FT0MAmp"), ft0mAmp);
 
     float vtxz = collision.posZ();
     float lRandom = fRndm->Rndm();

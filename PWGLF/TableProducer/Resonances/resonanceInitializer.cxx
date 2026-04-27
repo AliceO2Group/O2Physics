@@ -19,29 +19,38 @@
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/collisionCuts.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/EventPlaneHelper.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/McCollisionExtra.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/MathConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
+#include <TH1.h>
+#include <TString.h>
+
+#include <chrono>
+#include <cmath>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -97,7 +106,6 @@ struct ResonanceInitializer {
   Configurable<double> dBzInput{"dBzInput", -999, "bz field, -999 is automatic"};
   Configurable<bool> cfgFillQA{"cfgFillQA", false, "Fill QA histograms"};
   Configurable<bool> cfgBypassCCDB{"cfgBypassCCDB", true, "Bypass loading CCDB part to save CPU time and memory"}; // will be affected to b_z value.
-
   // Track filter from tpcSkimsTableCreator
   Configurable<int> trackSelection{"trackSelection", 0, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
   Configurable<int> trackSphDef{"trackSphDef", 0, "Spherocity Definition: |pT| = 1 -> 0, otherwise -> 1"};
@@ -228,6 +236,7 @@ struct ResonanceInitializer {
     Configurable<int> pdgTruthMother{"pdgTruthMother", 3324, "pdgcode for the truth mother e.g. Xi(1530) (3324)"};
     Configurable<int> pdgTruthDaughter1{"pdgTruthDaughter1", 3312, "pdgcode for the daughter 1, e.g. Xi- 3312"};
     Configurable<int> pdgTruthDaughter2{"pdgTruthDaughter2", 211, "pdgcode for the daughter 2, e.g. pi+ 211"};
+    Configurable<bool> cfgDoSignalLoss{"cfgDoSignalLoss", false, "Save reference particles for mT scaling signal loss"};
   } GenCuts;
   Configurable<bool> checkIsRecINELgt0{"checkIsRecINELgt0", true, "Check rec INEL>0 for the Rec. Collision"};
 
@@ -268,8 +277,13 @@ struct ResonanceInitializer {
                                                     || (nabs(aod::mcparticle::pdgCode) == 3324)    // Xi(1530)0
                                                     || (nabs(aod::mcparticle::pdgCode) == 10323)   // K1(1270)+
                                                     || (nabs(aod::mcparticle::pdgCode) == 123314)  // Xi(1820)0
-                                                    || (nabs(aod::mcparticle::pdgCode) == 123324); // Xi(1820)-0
-
+                                                    || (nabs(aod::mcparticle::pdgCode) == 123324)  // Xi(1820)-0
+                                                    || (nabs(aod::mcparticle::pdgCode) == 2212)    // Proton
+                                                    || (nabs(aod::mcparticle::pdgCode) == 3122)    // Lambda0
+                                                    || (nabs(aod::mcparticle::pdgCode) == 3312)    // Xi-
+                                                    || (nabs(aod::mcparticle::pdgCode) == 3322)    // Xi0
+                                                    || (nabs(aod::mcparticle::pdgCode) == 3334);   // Omega-
+                                                                                                   //
   using ResoEvents = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As, aod::Mults>;
   using ResoEvents001 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As, aod::Mults, aod::MultsExtra, aod::PVMults>;
   using ResoRun2Events = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
@@ -750,7 +764,7 @@ struct ResonanceInitializer {
                 static_cast<int8_t>(std::round(track.tofNSigmaPi() * 10)),
                 static_cast<int8_t>(std::round(track.tofNSigmaKa() * 10)),
                 static_cast<int8_t>(std::round(track.tofNSigmaPr() * 10)),
-                static_cast<int8_t>(std::round(track.tpcSignal() * 10)),
+                static_cast<int16_t>(std::round(track.tpcSignal() * 100)),
                 trackFlags);
       if (!cfgBypassTrackIndexFill) {
         resoTrackTracks(track.globalIndex());
@@ -1173,6 +1187,12 @@ struct ResonanceInitializer {
   void fillMCParticles(SelectedMCPartType const& mcParts, TotalMCParts const& mcParticles)
   {
     for (auto const& mcPart : mcParts) {
+      if (!GenCuts.cfgDoSignalLoss) {
+        int absPdg = std::abs(mcPart.pdgCode());
+        if (absPdg == 2212 || absPdg == 3122 || absPdg == 3312 || absPdg == 3322 || absPdg == 3334) {
+          continue;
+        }
+      }
       std::vector<int> daughterPDGs;
       if (mcPart.has_daughters()) {
         auto daughter01 = mcParticles.rawIteratorAt(mcPart.daughtersIds()[0] - mcParticles.offset());
@@ -1350,7 +1370,7 @@ struct ResonanceInitializer {
       AxisSpec idxMCAxis = {26, -0.5, 25.5, "Index"};
       qaRegistry.add("Event/hMCEventIndices", "hMCEventIndices", kTH2D, {centAxis, idxMCAxis});
     }
-    qaRegistry.add("Event/CentFV0A", "; FV0A Percentile; Entries", o2::framework::kTH1F, {{110, 0, 110}});
+    qaRegistry.add("Event/CentFV0A", "; FV0A Percentile; Entries", o2::framework::HistType::kTH1F, {{110, 0, 110}});
     AxisSpec idxAxis = {8, 0, 8, "Index"};
     if (cfgFillQA) {
       qaRegistry.add("hGoodTrackIndices", "hGoodTrackIndices", kTH1F, {idxAxis});

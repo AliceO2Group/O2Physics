@@ -17,16 +17,29 @@
 
 #include "PWGLF/DataModel/LFResonanceTables.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include "Common/Core/RecoDecay.h"
+
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include <fairlogger/Logger.h>
+#include <TMath.h>
+
+#include <cmath>
+#include <cstdlib>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -225,6 +238,24 @@ struct lambdaAnalysis_pb {
       histos.add("Analysis/h3d_rec_lstar_MP", "Reconstructed #bar{#Lambda}(1520) p_{T}", kTHnSparseF, {axisInvM, axisPt, axisCent});
       histos.add("Analysis/h3d_reso_lstar_PM", "Resolution #Lambda(1520) p_{T}", kTHnSparseF, {{200, -0.05, 0.05}, axisPt, axisCent});
       histos.add("Analysis/h3d_reso_lstar_MP", "Resolution #bar{#Lambda}(1520) p_{T}", kTHnSparseF, {{200, -0.05, 0.05}, axisPt, axisCent});
+    }
+
+    if (doprocessMCGen) {
+      histos.add("SignalLoss/hMCEventCutflow", "MC Event Cutflow", kTH1F, {{7, 0, 7}});
+      histos.add("SignalLoss/hGen_mT_scaled_Proton", "mT Scaled #Lambda(1520) from Proton", kTHnSparseF, {axisPt, axisCent});
+      histos.add("SignalLoss/hGen_mT_scaled_AntiProton", "mT Scaled #bar{#Lambda}(1520) from AntiProton", kTHnSparseF, {axisPt, axisCent});
+
+      histos.add("SignalLoss/hGen_mT_scaled_Lambda0", "mT Scaled #Lambda(1520) from Lambda0", kTHnSparseF, {axisPt, axisCent});
+      histos.add("SignalLoss/hGen_mT_scaled_AntiLambda0", "mT Scaled #bar{#Lambda}(1520) from AntiLambda0", kTHnSparseF, {axisPt, axisCent});
+
+      histos.add("SignalLoss/hGen_mT_scaled_XiMinus", "mT Scaled #Lambda(1520) from Xi-", kTHnSparseF, {axisPt, axisCent});
+      histos.add("SignalLoss/hGen_mT_scaled_XiPlus", "mT Scaled #bar{#Lambda}(1520) from Xi+", kTHnSparseF, {axisPt, axisCent});
+
+      histos.add("SignalLoss/hGen_mT_scaled_Xi0", "mT Scaled #Lambda(1520) from Xi0", kTHnSparseF, {axisPt, axisCent});
+      histos.add("SignalLoss/hGen_mT_scaled_AntiXi0", "mT Scaled #bar{#Lambda}(1520) from AntiXi0", kTHnSparseF, {axisPt, axisCent});
+
+      histos.add("SignalLoss/hGen_mT_scaled_OmegaMinus", "mT Scaled #Lambda(1520) from Omega-", kTHnSparseF, {axisPt, axisCent});
+      histos.add("SignalLoss/hGen_mT_scaled_OmegaPlus", "mT Scaled #bar{#Lambda}(1520) from Omega+", kTHnSparseF, {axisPt, axisCent});
     }
   }
 
@@ -758,10 +789,11 @@ struct lambdaAnalysis_pb {
     for (auto const& part : resoParents) {
       if (std::abs(part.pdgCode()) != lambda1520id) // // L* pdg_code = 3124
         continue;
-      //  if (std::abs(part.y()) > 0.5) { // rapidity cut
-      //    continue;
-      //  }
 
+      float yshift = std::abs(part.y()) - cfgRapidityShift;
+
+      if (std::abs(yshift) > cfgRapidityCut)
+        continue;
       bool pass1 = false;
       bool pass2 = false;
 
@@ -783,6 +815,98 @@ struct lambdaAnalysis_pb {
     }
   }
   PROCESS_SWITCH(lambdaAnalysis_pb, processMC, "Process Event for MC", false);
+
+  void processMCGen(resoMCCols::iterator const& collision,
+                    aod::ResoMCParents const& resoParents)
+  {
+
+    float centrality = collision.cent();
+
+    histos.fill(HIST("SignalLoss/hMCEventCutflow"), 0); // All collisions
+
+    if (cEvtMCTriggerTVX && !collision.isTriggerTVX())
+      return;
+    histos.fill(HIST("SignalLoss/hMCEventCutflow"), 1); // After TriggerTVX
+
+    if (cEvtMCVtxIn10 && !collision.isVtxIn10())
+      return;
+    histos.fill(HIST("SignalLoss/hMCEventCutflow"), 2); // After VtxIn10
+
+    if (cEvtMCINELgt0 && !collision.isINELgt0())
+      return;
+    histos.fill(HIST("SignalLoss/hMCEventCutflow"), 3); // After INELgt0
+
+    if (cEvtMCSel8 && !collision.isInSel8())
+      return;
+    histos.fill(HIST("SignalLoss/hMCEventCutflow"), 4); // After Sel8
+
+    if (cEvtMCRecINELgt0 && !collision.isRecINELgt0())
+      return;
+    histos.fill(HIST("SignalLoss/hMCEventCutflow"), 5); // After RecINELgt0
+
+    if (cEvtMCAfterAllCuts && !collision.isInAfterAllCuts())
+      return;
+    histos.fill(HIST("SignalLoss/hMCEventCutflow"), 6); // After AfterAllCuts
+
+    for (auto const& part : resoParents) {
+
+      float yshift = std::abs(part.y()) - cfgRapidityShift;
+
+      if (std::abs(yshift) > cfgRapidityCut)
+        continue;
+
+      int pdg = part.pdgCode();
+      float ptRef = part.pt();
+      double ptSq = -1.0;
+
+      std::array<float, 3> pvec = {part.px(), part.py(), part.pz()};
+      float mass = RecoDecay::m(pvec, part.e());
+
+      if (pdg == 2212) {
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
+        if (ptSq > 0)
+          histos.fill(HIST("SignalLoss/hGen_mT_scaled_Proton"), std::sqrt(ptSq), centrality);
+      } else if (pdg == -2212) {
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
+        if (ptSq > 0)
+          histos.fill(HIST("SignalLoss/hGen_mT_scaled_AntiProton"), std::sqrt(ptSq), centrality);
+      } else if (pdg == 3122) {
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
+        if (ptSq > 0)
+          histos.fill(HIST("SignalLoss/hGen_mT_scaled_Lambda0"), std::sqrt(ptSq), centrality);
+      } else if (pdg == -3122) {
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
+        if (ptSq > 0)
+          histos.fill(HIST("SignalLoss/hGen_mT_scaled_AntiLambda0"), std::sqrt(ptSq), centrality);
+      } else if (pdg == 3312) {
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
+        if (ptSq > 0)
+          histos.fill(HIST("SignalLoss/hGen_mT_scaled_XiMinus"), std::sqrt(ptSq), centrality);
+      } else if (pdg == -3312) {
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
+        if (ptSq > 0)
+          histos.fill(HIST("SignalLoss/hGen_mT_scaled_XiPlus"), std::sqrt(ptSq), centrality);
+      } else if (pdg == 3322) {
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
+        if (ptSq > 0)
+          histos.fill(HIST("SignalLoss/hGen_mT_scaled_Xi0"), std::sqrt(ptSq), centrality);
+      } else if (pdg == -3322) {
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
+        if (ptSq > 0)
+          histos.fill(HIST("SignalLoss/hGen_mT_scaled_AntiXi0"), std::sqrt(ptSq), centrality);
+      } else if (pdg == 3334) {
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
+        if (ptSq > 0)
+          histos.fill(HIST("SignalLoss/hGen_mT_scaled_OmegaMinus"), std::sqrt(ptSq), centrality);
+      } else if (pdg == -3334) {
+        ptSq = (ptRef * ptRef) + (mass * mass) - (o2::constants::physics::MassLambda1520 * o2::constants::physics::MassLambda1520);
+        if (ptSq > 0)
+          histos.fill(HIST("SignalLoss/hGen_mT_scaled_OmegaPlus"), std::sqrt(ptSq), centrality);
+      }
+    }
+  }
+
+  PROCESS_SWITCH(lambdaAnalysis_pb, processMCGen, "Process Event for MC", false);
 
   using BinningType2 = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent>;
 

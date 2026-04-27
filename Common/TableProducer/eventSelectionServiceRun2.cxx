@@ -36,7 +36,6 @@
 #include <Framework/runDataProcessing.h>
 
 #include <cstdint>
-#include <stdexcept>
 #include <string>
 #include <vector>
 

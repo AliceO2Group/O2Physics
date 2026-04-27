@@ -165,7 +165,7 @@ struct JetTaggerHFQA {
       }
     }
     if (doprocessTracksInJetsData) {
-      registry.add("h2_track_pt_impact_parameter_xy", "", {HistType::kTH2F, {{axisTrackPt}, {axisImpactParameterXY}}});
+      registry.add("h3_jet_pt_track_pt_impact_parameter_xy", "", {HistType::kTH3F, {{axisJetPt}, {axisTrackPt}, {axisImpactParameterXY}}});
     }
     if (doprocessSecondaryContaminationMCD) {
       registry.add("hn_jet_pt_track_pt_impact_parameter_xy_physical_primary_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisTrackPt}, {axisImpactParameterXY}, {axisJetFlavour}}});
@@ -1158,7 +1158,7 @@ struct JetTaggerHFQA {
       }
       for (auto const& track : jet.template tracks_as<JetTagTracksData>()) {
         float varImpXY = track.dcaXY() * jettaggingutilities::cmTomum;
-        registry.fill(HIST("h2_track_pt_impact_parameter_xy"), track.pt(), varImpXY);
+        registry.fill(HIST("h3_jet_pt_track_pt_impact_parameter_xy"), jet.pt(), track.pt(), varImpXY);
       }
     }
   }
@@ -1179,7 +1179,7 @@ struct JetTaggerHFQA {
       if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
         continue;
       }
-      auto eventWeight = collision.mcCollision_as<soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>>().weight();
+      auto eventWeight = collision.weight();
       float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
       if (mcdjet.pt() > pTHatMaxMCD * pTHat) {
         continue;
@@ -1224,8 +1224,7 @@ struct JetTaggerHFQA {
       if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
         continue;
       }
-      auto eventWeight = collision.mcCollision_as<soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>>().weight();
-      fillValidationFlavourDefMCD<soa::Join<JetTableMCP, JetTableMCPMCD>>(mcdjet, tracks, particles, particlesPerColl, eventWeight);
+      fillValidationFlavourDefMCD<soa::Join<JetTableMCP, JetTableMCPMCD>>(mcdjet, tracks, particles, particlesPerColl, collision.weight());
     }
   }
   PROCESS_SWITCH(JetTaggerHFQA, processValFlavourDefMCD, "to check the validation of jet-flavour definition when compared to distance for mcd jets", false);

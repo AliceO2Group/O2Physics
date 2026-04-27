@@ -19,21 +19,24 @@
 
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamObjectSelection.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamSelection.h"
 
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/PIDResponseITS.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 
-#include "Framework/HistogramRegistry.h"
-#include "ReconstructionDataFormats/PID.h"
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
+#include <ReconstructionDataFormats/PID.h>
 
+#include <array>
 #include <cmath>
+#include <cstddef>
 #include <string>
+#include <string_view>
 #include <vector>
 
-using namespace o2::framework;
-using namespace o2::analysis::femtoDream::femtoDreamSelection;
+#include <math.h>
 
 namespace o2::analysis::femtoDream
 {
@@ -100,9 +103,9 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
   /// \tparam part Type of the particle for proper naming of the folders for QA
   /// \tparam tracktype Type of track (track, positive child, negative child) for proper naming of the folders for QA
   /// \tparam cutContainerType Data type of the bit-wise container for the selections
-  /// \param registry HistogramRegistry for QA output
+  /// \param registry o2::framework::HistogramRegistry for QA output
   template <o2::aod::femtodreamparticle::ParticleType part, o2::aod::femtodreamparticle::TrackType tracktype, typename cutContainerType>
-  void init(HistogramRegistry* QAregistry, HistogramRegistry* Registry);
+  void init(o2::framework::HistogramRegistry* QAregistry, o2::framework::HistogramRegistry* Registry);
 
   /// Passes the species to the task for which PID needs to be stored
   /// \tparam T Data type of the configurable passed to the functions
@@ -305,7 +308,7 @@ class FemtoDreamTrackSelection : public FemtoDreamObjectSelection<float, femtoDr
 }; // namespace femtoDream
 
 template <o2::aod::femtodreamparticle::ParticleType part, o2::aod::femtodreamparticle::TrackType tracktype, typename cutContainerType>
-void FemtoDreamTrackSelection::init(HistogramRegistry* QAregistry, HistogramRegistry* Registry)
+void FemtoDreamTrackSelection::init(o2::framework::HistogramRegistry* QAregistry, o2::framework::HistogramRegistry* Registry)
 {
   if (QAregistry && Registry) {
     mHistogramRegistry = Registry;
@@ -318,37 +321,37 @@ void FemtoDreamTrackSelection::init(HistogramRegistry* QAregistry, HistogramRegi
       LOG(fatal) << "FemtoDreamTrackCuts: Number of selections too large for your container - quitting!";
     }
 
-    for (int istage = 0; istage < kNcutStages; istage++) {
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/hPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F, {{240, 0, 6}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/hEta").c_str(), "; #eta; Entries", kTH1F, {{200, -1.5, 1.5}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/hPhi").c_str(), "; #phi; Entries", kTH1F, {{200, 0, 2. * M_PI}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/hTPCfindable").c_str(), "; TPC findable clusters; Entries", kTH1F, {{163, -0.5, 162.5}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/hTPCfound").c_str(), "; TPC found clusters; Entries", kTH1F, {{163, -0.5, 162.5}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/hTPCcrossedOverFindalbe").c_str(), "; TPC ratio findable; Entries", kTH1F, {{100, 0.5, 1.5}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/hTPCcrossedRows").c_str(), "; TPC crossed rows; Entries", kTH1F, {{163, 0, 163}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/hTPCfindableVsCrossed").c_str(), ";TPC findable clusters ; TPC crossed rows;", kTH2F, {{163, 0, 163}, {163, 0, 163}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/hTPCshared").c_str(), "; TPC shared clusters; Entries", kTH1F, {{163, -0.5, 162.5}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/hITSclusters").c_str(), "; ITS clusters; Entries", kTH1F, {{10, -0.5, 9.5}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/hITSclustersIB").c_str(), "; ITS clusters in IB; Entries", kTH1F, {{10, -0.5, 9.5}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/hDCAxy").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/hDCAz").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{z} (cm)", kTH2F, {{100, 0, 10}, {500, -5, 5}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/hDCA").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA (cm)", kTH2F, {{100, 0, 10}, {301, 0., 1.5}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/hTPCdEdX").c_str(), "; #it{p} (GeV/#it{c}); TPC Signal", kTH2F, {{100, 0, 10}, {1000, 0, 1000}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/nSigmaTPC_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{e}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/nSigmaTPC_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{#pi}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/nSigmaTPC_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{K}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/nSigmaTPC_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{p}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/nSigmaTPC_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{d}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/nSigmaTOF_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{e}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/nSigmaTOF_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{#pi}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/nSigmaTOF_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{K}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/nSigmaTOF_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{p}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/nSigmaTOF_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{d}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/nSigmaComb_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{e}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/nSigmaComb_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{#pi}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/nSigmaComb_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{K}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/nSigmaComb_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{p}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(mCutStage[istage]) + "/nSigmaComb_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{d}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    for (int istage = 0; istage < femtoDreamSelection::kNcutStages; istage++) {
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/hPt").c_str(), "; #it{p}_{T} (GeV/#it{c}); Entries", o2::framework::HistType::kTH1F, {{240, 0, 6}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/hEta").c_str(), "; #eta; Entries", o2::framework::HistType::kTH1F, {{200, -1.5, 1.5}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/hPhi").c_str(), "; #phi; Entries", o2::framework::HistType::kTH1F, {{200, 0, 2. * M_PI}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/hTPCfindable").c_str(), "; TPC findable clusters; Entries", o2::framework::HistType::kTH1F, {{163, -0.5, 162.5}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/hTPCfound").c_str(), "; TPC found clusters; Entries", o2::framework::HistType::kTH1F, {{163, -0.5, 162.5}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/hTPCcrossedOverFindalbe").c_str(), "; TPC ratio findable; Entries", o2::framework::HistType::kTH1F, {{100, 0.5, 1.5}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/hTPCcrossedRows").c_str(), "; TPC crossed rows; Entries", o2::framework::HistType::kTH1F, {{163, 0, 163}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/hTPCfindableVsCrossed").c_str(), ";TPC findable clusters ; TPC crossed rows;", o2::framework::HistType::kTH2F, {{163, 0, 163}, {163, 0, 163}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/hTPCshared").c_str(), "; TPC shared clusters; Entries", o2::framework::HistType::kTH1F, {{163, -0.5, 162.5}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/hITSclusters").c_str(), "; ITS clusters; Entries", o2::framework::HistType::kTH1F, {{10, -0.5, 9.5}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/hITSclustersIB").c_str(), "; ITS clusters in IB; Entries", o2::framework::HistType::kTH1F, {{10, -0.5, 9.5}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/hDCAxy").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", o2::framework::HistType::kTH2F, {{100, 0, 10}, {500, -5, 5}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/hDCAz").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA_{z} (cm)", o2::framework::HistType::kTH2F, {{100, 0, 10}, {500, -5, 5}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/hDCA").c_str(), "; #it{p}_{T} (GeV/#it{c}); DCA (cm)", o2::framework::HistType::kTH2F, {{100, 0, 10}, {301, 0., 1.5}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/hTPCdEdX").c_str(), "; #it{p} (GeV/#it{c}); TPC Signal", o2::framework::HistType::kTH2F, {{100, 0, 10}, {1000, 0, 1000}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/nSigmaTPC_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{e}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/nSigmaTPC_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{#pi}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/nSigmaTPC_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{K}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/nSigmaTPC_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{p}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/nSigmaTPC_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TPC}^{d}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/nSigmaTOF_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{e}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/nSigmaTOF_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{#pi}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/nSigmaTOF_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{K}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/nSigmaTOF_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{p}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/nSigmaTOF_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{TOF}^{d}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/nSigmaComb_el").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{e}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/nSigmaComb_pi").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{#pi}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/nSigmaComb_K").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{K}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/nSigmaComb_p").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{p}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
+      mQAHistogramRegistry->add((folderName + "/" + static_cast<std::string>(femtoDreamSelection::mCutStage[istage]) + "/nSigmaComb_d").c_str(), "; #it{p} (GeV/#it{c}); n#sigma_{comb}^{d}", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, -5, 5}});
     }
   }
 
@@ -594,38 +597,38 @@ template <o2::aod::femtodreamparticle::ParticleType part, o2::aod::femtodreampar
 void FemtoDreamTrackSelection::fillQA(T const& track)
 {
   if (mQAHistogramRegistry) {
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/hPt"), track.pt());
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/hEta"), track.eta());
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/hPhi"), track.phi());
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/hTPCfindable"), track.tpcNClsFindable());
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/hTPCfound"), track.tpcNClsFound());
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/hTPCcrossedOverFindalbe"), track.tpcCrossedRowsOverFindableCls());
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/hTPCcrossedRows"), track.tpcNClsCrossedRows());
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/hTPCfindableVsCrossed"), track.tpcNClsFindable(), track.tpcNClsCrossedRows());
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/hTPCshared"), track.tpcNClsShared());
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/hITSclusters"), track.itsNCls());
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/hITSclustersIB"), track.itsNClsInnerBarrel());
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/hDCAxy"), track.pt(), track.dcaXY());
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/hDCAz"), track.pt(), track.dcaZ());
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/hDCA"), track.pt(), std::sqrt(pow(track.dcaXY(), 2.) + pow(track.dcaZ(), 2.)));
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/hTPCdEdX"), track.p(), track.tpcSignal());
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/nSigmaTPC_pi"), track.p(), track.tpcNSigmaPi());
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/nSigmaTPC_K"), track.p(), track.tpcNSigmaKa());
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/nSigmaTPC_p"), track.p(), track.tpcNSigmaPr());
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/nSigmaTOF_pi"), track.p(), track.tofNSigmaPi());
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/nSigmaTOF_K"), track.p(), track.tofNSigmaKa());
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/nSigmaTOF_p"), track.p(), track.tofNSigmaPr());
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/nSigmaComb_pi"), track.p(), std::sqrt(track.tpcNSigmaPi() * track.tpcNSigmaPi() + track.tofNSigmaPi() * track.tofNSigmaPi()));
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/nSigmaComb_K"), track.p(), std::sqrt(track.tpcNSigmaKa() * track.tpcNSigmaKa() + track.tofNSigmaKa() * track.tofNSigmaKa()));
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/nSigmaComb_p"), track.p(), std::sqrt(track.tpcNSigmaPr() * track.tpcNSigmaPr() + track.tofNSigmaPr() * track.tofNSigmaPr()));
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/nSigmaTPC_d"), track.p(), track.tpcNSigmaDe());
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/nSigmaComb_d"), track.p(), std::sqrt(track.tpcNSigmaDe() * track.tpcNSigmaDe() + track.tofNSigmaDe() * track.tofNSigmaDe()));
-    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/nSigmaTOF_d"), track.p(), track.tofNSigmaDe());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/hPt"), track.pt());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/hEta"), track.eta());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/hPhi"), track.phi());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/hTPCfindable"), track.tpcNClsFindable());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/hTPCfound"), track.tpcNClsFound());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/hTPCcrossedOverFindalbe"), track.tpcCrossedRowsOverFindableCls());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/hTPCcrossedRows"), track.tpcNClsCrossedRows());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/hTPCfindableVsCrossed"), track.tpcNClsFindable(), track.tpcNClsCrossedRows());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/hTPCshared"), track.tpcNClsShared());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/hITSclusters"), track.itsNCls());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/hITSclustersIB"), track.itsNClsInnerBarrel());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/hDCAxy"), track.pt(), track.dcaXY());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/hDCAz"), track.pt(), track.dcaZ());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/hDCA"), track.pt(), std::sqrt(pow(track.dcaXY(), 2.) + pow(track.dcaZ(), 2.)));
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/hTPCdEdX"), track.p(), track.tpcSignal());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/nSigmaTPC_pi"), track.p(), track.tpcNSigmaPi());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/nSigmaTPC_K"), track.p(), track.tpcNSigmaKa());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/nSigmaTPC_p"), track.p(), track.tpcNSigmaPr());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/nSigmaTOF_pi"), track.p(), track.tofNSigmaPi());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/nSigmaTOF_K"), track.p(), track.tofNSigmaKa());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/nSigmaTOF_p"), track.p(), track.tofNSigmaPr());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/nSigmaComb_pi"), track.p(), std::sqrt(track.tpcNSigmaPi() * track.tpcNSigmaPi() + track.tofNSigmaPi() * track.tofNSigmaPi()));
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/nSigmaComb_K"), track.p(), std::sqrt(track.tpcNSigmaKa() * track.tpcNSigmaKa() + track.tofNSigmaKa() * track.tofNSigmaKa()));
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/nSigmaComb_p"), track.p(), std::sqrt(track.tpcNSigmaPr() * track.tpcNSigmaPr() + track.tofNSigmaPr() * track.tofNSigmaPr()));
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/nSigmaTPC_d"), track.p(), track.tpcNSigmaDe());
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/nSigmaComb_d"), track.p(), std::sqrt(track.tpcNSigmaDe() * track.tpcNSigmaDe() + track.tofNSigmaDe() * track.tofNSigmaDe()));
+    mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/nSigmaTOF_d"), track.p(), track.tofNSigmaDe());
 
     if constexpr (!isHF) {
-      mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/nSigmaComb_el"), track.p(), std::sqrt(track.tpcNSigmaEl() * track.tpcNSigmaEl() + track.tofNSigmaEl() * track.tofNSigmaEl()));
-      mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/nSigmaTOF_el"), track.p(), track.tofNSigmaEl());
-      mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(mCutStage[cutstage]) + HIST("/nSigmaTPC_el"), track.p(), track.tpcNSigmaEl());
+      mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/nSigmaComb_el"), track.p(), std::sqrt(track.tpcNSigmaEl() * track.tpcNSigmaEl() + track.tofNSigmaEl() * track.tofNSigmaEl()));
+      mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/nSigmaTOF_el"), track.p(), track.tofNSigmaEl());
+      mQAHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) + HIST("/") + HIST(o2::aod::femtodreamparticle::TrackTypeName[tracktype]) + HIST("/") + HIST(femtoDreamSelection::mCutStage[cutstage]) + HIST("/nSigmaTPC_el"), track.p(), track.tpcNSigmaEl());
     }
   }
 }

@@ -14,46 +14,43 @@
 
 #include "PWGLF/DataModel/SPCalibrationTables.h"
 
-#include "Common/CCDB/ctpRateFetcher.h"
-#include "Common/Core/EventPlaneHelper.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
-#include <CommonConstants/PhysicsConstants.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <DataFormatsParameters/GRPObject.h>
-#include <DetectorsBase/GeometryManager.h>
-#include <DetectorsBase/Propagator.h>
-#include <DetectorsCommonDataFormats/AlignParam.h>
-#include <FT0Base/Geometry.h>
-#include <FV0Base/Geometry.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/StepTHn.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/Track.h>
 
-#include <Math/Vector4D.h>
-#include <TComplex.h>
 #include <TF1.h>
-#include <TH1F.h>
+#include <TH2.h>
+#include <THn.h>
 #include <TMath.h>
+#include <TMathBase.h>
+#include <TProfile.h>
+#include <TProfile3D.h>
 #include <TRandom3.h>
+
+#include <RtypesCore.h>
 
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -86,6 +83,7 @@ struct spvector {
   Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 0.0f, "Centrality cut Min"};
   Configurable<bool> additionalEvSel{"additionalEvSel", false, "additionalEvSel"};
   Configurable<bool> usemem{"usemem", true, "usemem"};
+  Configurable<bool> usecfactor{"usecfactor", false, "use c factor"};
 
   struct : ConfigurableGroup {
     Configurable<int> QxyNbins{"QxyNbins", 100, "Number of bins in QxQy histograms"};
@@ -293,11 +291,6 @@ struct spvector {
   int lastRunNumber = -999;
   TH2D* gainprofile;
   TProfile* gainprofilevxy;
-  /*THnF* hrecentereSp;
-  TH2F* hrecenterecentSp;
-  TH2F* hrecenterevxSp;
-  TH2F* hrecenterevySp;
-  TH2F* hrecenterevzSp;*/
   std::array<THnF*, 6> hrecentereSpA;     // Array of 6 histograms
   std::array<TH2F*, 6> hrecenterecentSpA; // Array of 5 histograms
   std::array<TH2F*, 6> hrecenterevxSpA;   // Array of 5 histograms
@@ -306,15 +299,8 @@ struct spvector {
   TProfile3D* shiftprofileA;
   TProfile3D* shiftprofileC;
 
-  // Bool_t Correctcoarse(int64_t ts, Configurable<std::string>& ConfRecentereSpp, bool useRecentereSp, int currentRunNumber, int lastRunNumber, auto centrality, auto vx, auto vy, auto vz, auto& qxZDCA, auto& qyZDCA, auto& qxZDCC, auto& qyZDCC)
-  //{
   Bool_t Correctcoarse(const THnF* hrecentereSp, auto centrality, auto vx, auto vy, auto vz, auto& qxZDCA, auto& qyZDCA, auto& qxZDCC, auto& qyZDCC)
   {
-
-    /*
-    if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
-      hrecentereSp = ccdb->getForTimeStamp<THnF>(ConfRecentereSpp.value, ts);
-      }*/
 
     int binCoords[5];
 
@@ -357,8 +343,6 @@ struct spvector {
     return kTRUE;
   }
 
-  // Bool_t Correctfine(int64_t ts, Configurable<std::string>& ConfRecenterecentSpp, Configurable<std::string>& ConfRecenterevxSpp, Configurable<std::string>& ConfRecenterevySpp, Configurable<std::string>& ConfRecenterevzSpp, bool useRecenterefineSp, int currentRunNumber, int lastRunNumber, auto centrality, auto vx, auto vy, auto vz, auto& qxZDCA, auto& qyZDCA, auto& qxZDCC, auto& qyZDCC)
-  //{
   Bool_t Correctfine(TH2F* hrecenterecentSp, TH2F* hrecenterevxSp, TH2F* hrecenterevySp, TH2F* hrecenterevzSp, auto centrality, auto vx, auto vy, auto vz, auto& qxZDCA, auto& qyZDCA, auto& qxZDCC, auto& qyZDCC)
   {
 
@@ -366,13 +350,6 @@ struct spvector {
       std::cerr << "Error: One or more histograms are null." << std::endl;
       return false;
     }
-    /*
-    if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
-      hrecenterecentSp = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSpp.value, ts);
-      hrecenterevxSp = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSpp.value, ts);
-      hrecenterevySp = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySpp.value, ts);
-      hrecenterevzSp = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSpp.value, ts);
-      }*/
 
     double meanxAcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality + 0.00001, 0.5));
     double meanyAcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality + 0.00001, 1.5));
@@ -452,6 +429,7 @@ struct spvector {
     auto znaEnergy = zdc.energySectorZNA();
     auto zncEnergycommon = zdc.energyCommonZNC();
     auto znaEnergycommon = zdc.energyCommonZNA();
+    auto beamEne = 5.36 * 0.5;
 
     if (znaEnergycommon <= 0.0 || zncEnergycommon <= 0.0) {
       triggerevent = false;
@@ -504,6 +482,8 @@ struct spvector {
       auto alphaZDC = 0.395;
       constexpr double x[4] = {-1.75, 1.75, -1.75, 1.75};
       constexpr double y[4] = {-1.75, -1.75, 1.75, 1.75};
+      double zncEnergycommonsum = 0.0;
+      double znaEnergycommonsum = 0.0;
 
       histos.fill(HIST("ZDCAmpCommon"), 0.5, vz, znaEnergycommon);
       histos.fill(HIST("ZDCAmpCommon"), 1.5, vz, zncEnergycommon);
@@ -522,6 +502,7 @@ struct spvector {
             return;
           } else {
             double ampl = gainequal * znaEnergy[iChA];
+            znaEnergycommonsum += ampl;
             if (followpub) {
               ampl = TMath::Power(ampl, alphaZDC);
             }
@@ -537,6 +518,7 @@ struct spvector {
             return;
           } else {
             double ampl = gainequal * zncEnergy[iChA - 4];
+            zncEnergycommonsum += ampl;
             if (followpub) {
               ampl = TMath::Power(ampl, alphaZDC);
             }
@@ -548,13 +530,26 @@ struct spvector {
         }
       }
 
+      auto cZNC = 1.0;
+      auto cZNA = 1.0;
+
       if (sumA > 0) {
-        qxZDCA = qxZDCA / sumA;
-        qyZDCA = qyZDCA / sumA;
+        float nSpecnA = znaEnergycommonsum / beamEne;
+        if (usecfactor)
+          cZNA = 1.89358 - 0.71262 / (nSpecnA + 0.71789);
+        else
+          cZNA = 1.0;
+        qxZDCA = cZNA * (qxZDCA / sumA);
+        qyZDCA = cZNA * (qyZDCA / sumA);
       }
       if (sumC > 0) {
-        qxZDCC = qxZDCC / sumC;
-        qyZDCC = qyZDCC / sumC;
+        float nSpecnC = zncEnergycommonsum / beamEne;
+        if (usecfactor)
+          cZNC = 1.89358 - 0.71262 / (nSpecnC + 0.71789);
+        else
+          cZNC = 1.0;
+        qxZDCC = cZNC * (qxZDCC / sumC);
+        qyZDCC = cZNC * (qyZDCC / sumC);
       }
 
       if (sumA <= 1e-4 || sumC <= 1e-4) {

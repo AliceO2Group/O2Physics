@@ -11,11 +11,10 @@
 #ifndef PWGCF_DATAMODEL_CORRELATIONSDERIVED_H_
 #define PWGCF_DATAMODEL_CORRELATIONSDERIVED_H_
 
-#include "Common/DataModel/Centrality.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-
+#include <cstdint>
 #include <vector>
 
 namespace o2::aod
