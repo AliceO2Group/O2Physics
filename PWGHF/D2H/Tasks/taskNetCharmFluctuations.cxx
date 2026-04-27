@@ -154,18 +154,18 @@ struct HfTaskNetCharmFluctuations {
   Configurable<std::vector<float>> ptFitBins{"ptFitBins", std::vector<float>{1.f, 2.f, 3.f, 4.f, 6.f, 8.f, 12.f, 24.f}, "pT bins used to assign fitBinId"};
   Configurable<bool> fillOmegaRaw{"fillOmegaRaw", true, "Fill omega sums with raw charm/anti-charm candidate counts"};
 
+  SliceCache cache;
+  HfEventSelection hfEvSel;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
   Filter filterSelectD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
   Filter filterSelectDplusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
   Partition<CandD0Data> selectedD0ToPiK = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0;
   Partition<CandD0Data> selectedD0ToKPi = aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
 
-  SliceCache cache;
-  HfEventSelection hfEvSel;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-
   HistogramRegistry registry{"registry"};
 
-  struct CandInfo {
+  struct HfCandInfo {
     uint64_t uid = 0;
     uint8_t family = 0;
     int8_t sign = 0;
@@ -188,15 +188,17 @@ struct HfTaskNetCharmFluctuations {
       LOGP(fatal, "No process function enabled");
     }
 
-    static constexpr std::array<std::string_view, EventQa::NEventQa> eventLabels = {
+    static constexpr std::array<std::string_view, EventQa::NEventQa> EventLabels = {
       "All events",
       "rejected by HF event selection",
       "without charm candidates",
       "with charm candidates",
       "written events"};
-    registry.add("hEventQa", "Event QA;;entries", {HistType::kTH1F, {{static_cast<int>(EventQa::NEventQa), 0.5, static_cast<double>(EventQa::NEventQa) + 0.5}}});
+    static constexpr double EventQaAxisMin = 0.5;
+    static constexpr double EventQaAxisMax = static_cast<double>(EventQa::NEventQa) + EventQaAxisMin;
+    registry.add("hEventQa", "Event QA;;entries", {HistType::kTH1F, {{static_cast<int>(EventQa::NEventQa), EventQaAxisMin, EventQaAxisMax}}});
     for (int iBin = 0; iBin < EventQa::NEventQa; ++iBin) {
-      registry.get<TH1>(HIST("hEventQa"))->GetXaxis()->SetBinLabel(iBin + 1, eventLabels[iBin].data());
+      registry.get<TH1>(HIST("hEventQa"))->GetXaxis()->SetBinLabel(iBin + 1, EventLabels[iBin].data());
     }
     registry.add("hMassVsPtD0", "D0 candidates;#it{M}_{#pi K} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{500, 1.65, 2.15}, {200, 0., 50.}}});
     registry.add("hMassVsPtD0bar", "D0bar candidates;#it{M}_{K#pi} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{500, 1.65, 2.15}, {200, 0., 50.}}});
@@ -227,7 +229,8 @@ struct HfTaskNetCharmFluctuations {
   int16_t getFitBin(float pt) const
   {
     auto const& bins = ptFitBins.value;
-    if (bins.size() < 2) {
+    static constexpr size_t MinFitBinEdges = 2;
+    if (bins.size() < MinFitBinEdges) {
       return -1;
     }
     for (size_t iBin = 0; iBin + 1 < bins.size(); ++iBin) {
@@ -238,7 +241,7 @@ struct HfTaskNetCharmFluctuations {
     return -1;
   }
 
-  void setOmegaRaw(CandInfo& cand) const
+  void setOmegaRaw(HfCandInfo& cand) const
   {
     if (!fillOmegaRaw.value) {
       return;
@@ -264,7 +267,7 @@ struct HfTaskNetCharmFluctuations {
     return true;
   }
 
-  void fillD0OutputTables(CollData::iterator const& collision, std::vector<CandInfo>& acceptedCands)
+  void fillD0OutputTables(CollData::iterator const& collision, std::vector<HfCandInfo>& acceptedCands)
   {
     const uint64_t eventId = makeEventId(collision);
     const int64_t timeStamp = getTimeStamp(collision);
@@ -302,7 +305,7 @@ struct HfTaskNetCharmFluctuations {
     registry.fill(HIST("hEventQa"), 1 + EventQa::EventWritten);
   }
 
-  void fillDplusOutputTables(CollData::iterator const& collision, std::vector<CandInfo>& acceptedCands)
+  void fillDplusOutputTables(CollData::iterator const& collision, std::vector<HfCandInfo>& acceptedCands)
   {
     const uint64_t eventId = makeEventId(collision);
     const int64_t timeStamp = getTimeStamp(collision);
@@ -340,13 +343,13 @@ struct HfTaskNetCharmFluctuations {
   }
 
   template <int8_t Sign, typename TCandidates>
-  void addD0Candidates(TCandidates const& candidates, std::vector<CandInfo>& acceptedCands)
+  void addD0Candidates(TCandidates const& candidates, std::vector<HfCandInfo>& acceptedCands)
   {
     for (const auto& cand : candidates) {
       const float massD0 = HfHelper::invMassD0ToPiK(cand);
       const float massD0bar = HfHelper::invMassD0barToKPi(cand);
 
-      CandInfo info;
+      HfCandInfo info;
       info.uid = makeCandUid(CharmFamily::D0, Sign, cand.globalIndex());
       info.family = static_cast<uint8_t>(CharmFamily::D0);
       info.sign = Sign;
@@ -377,7 +380,7 @@ struct HfTaskNetCharmFluctuations {
     auto candsD0ToPiK = selectedD0ToPiK->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     auto candsD0ToKPi = selectedD0ToKPi->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
 
-    std::vector<CandInfo> acceptedCands;
+    std::vector<HfCandInfo> acceptedCands;
     addD0Candidates<+1>(candsD0ToPiK, acceptedCands);
     addD0Candidates<-1>(candsD0ToKPi, acceptedCands);
     fillD0OutputTables(collision, acceptedCands);
@@ -393,13 +396,13 @@ struct HfTaskNetCharmFluctuations {
       return;
     }
 
-    std::vector<CandInfo> acceptedCands;
+    std::vector<HfCandInfo> acceptedCands;
     for (const auto& cand : candidatesDplus) {
       const auto trackProng0 = cand.template prong0_as<aod::Tracks>();
       const int8_t sign = trackProng0.sign() > 0 ? +1 : -1;
       const float massDplus = HfHelper::invMassDplusToPiKPi(cand);
 
-      CandInfo info;
+      HfCandInfo info;
       info.uid = makeCandUid(CharmFamily::Dplus, sign, cand.globalIndex());
       info.family = static_cast<uint8_t>(CharmFamily::Dplus);
       info.sign = sign;
