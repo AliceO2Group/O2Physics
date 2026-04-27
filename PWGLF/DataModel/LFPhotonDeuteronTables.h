@@ -17,7 +17,7 @@
 #ifndef PWGLF_DATAMODEL_LFPHOTONDEUTERONTABLES_H_
 #define PWGLF_DATAMODEL_LFPHOTONDEUTERONTABLES_H_
 
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/ASoA.h>
 
 namespace o2::aod
 {
