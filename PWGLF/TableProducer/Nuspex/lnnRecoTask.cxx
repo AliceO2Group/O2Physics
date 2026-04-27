@@ -220,7 +220,6 @@ struct lnnRecoTask {
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
   Configurable<bool> doTrackQA{"doTrackQA", true, "if true, compute the QA studies beased on detectors (ITS-TPC-TOF) signals"};
   Configurable<bool> useNoSameBunchPileup{"useNoSameBunchPileup", false, "reject collisions in case of pileup with another collision in the same foundBC"};
-  
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
@@ -594,7 +593,7 @@ struct lnnRecoTask {
       float h3lE = h3E + piE;
 
       // Building the mother particle: lnn
-      constexpr std::size_t KMomDim= 3;
+      constexpr std::size_t KMomDim = 3;
       std::array<float, KMomDim> lnnMom;
 
       const auto& vtx = fitter.getPCACandidate();
@@ -707,8 +706,8 @@ struct lnnRecoTask {
               lnnCand.gMom3H = isTrTrack ? mcTrackPos.pVector() : mcTrackNeg.pVector();
 
               lnnCand.gMomPi = isTrTrack ? mcTrackNeg.pVector() : mcTrackPos.pVector();
-              
-              int kNDimGen = 3; 
+
+              int kNDimGen = 3;
               for (int i = 0; i < kNDimGen; i++) {
                 lnnCand.gDecVtx[i] = secVtx[i] - posPrimVtx[i];
               }
@@ -729,7 +728,7 @@ struct lnnRecoTask {
   {
     if (!mcPart.has_mothers())
       return false;
-    
+
     int decayProcess = 4;
     if (mcPart.getProcess() != decayProcess)
       return false;
@@ -976,7 +975,7 @@ struct lnnRecoTask {
       lnnCand.survEvSelection = isGoodCollision[mcPart.mcCollisionId()];
       int chargeFactor = -1 + 2 * (lnnCand.pdgCode > 0);
 
-      int kDimGen = 3; 
+      int kDimGen = 3;
       for (int i = 0; i < kDimGen; i++) {
         lnnCand.gDecVtx[i] = secVtx[i] - primVtx[i];
         lnnCand.gMom[i] = momMother[i];
