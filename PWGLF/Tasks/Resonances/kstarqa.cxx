@@ -82,6 +82,7 @@ struct Kstarqa {
 
   struct : ConfigurableGroup {
     // Configurables for event selections
+    Configurable<bool> isSquarePIDcut{"isSquarePIDcut", false, "Apply square PID cut"};
     Configurable<bool> isINELgt0{"isINELgt0", true, "INEL>0 selection"};
     Configurable<bool> isINELgt0Gen{"isINELgt0Gen", false, "Apply INEL>0 in Gen direclty from collisions in addition to already applied from pwglf::inelGt"};
     Configurable<bool> isSel8{"isSel8", false, "Event selection sel8"};
@@ -657,8 +658,14 @@ struct Kstarqa {
           return true;
         }
       } else {
-        if (candidate.hasTOF() && (std::pow(candidate.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, 2) + std::pow(candidate.tpcNSigmaPi(), 2)) < (std::pow(configGp.nsigmaCutCombinedPi, 2))) {
-          return true;
+        if (!isSquarePIDcut) {
+          if (candidate.hasTOF() && (std::pow(candidate.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, 2) + std::pow(candidate.tpcNSigmaPi(), 2)) < (std::pow(configGp.nsigmaCutCombinedPi, 2))) {
+            return true;
+          }
+        } else {
+          if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi) < configGp.nsigmaCutCombinedPi && std::abs(candidate.tpcNSigmaPi()) < configGp.nsigmaCutCombinedPi) {
+            return true;
+          }
         }
         if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < configGp.nsigmaCutTPCPi) {
           return true;
@@ -674,8 +681,14 @@ struct Kstarqa {
           return true;
         }
       } else {
-        if (candidate.hasTOF() && (std::pow(candidate.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, 2) + std::pow(candidate.tpcNSigmaKa(), 2)) < (std::pow(configGp.nsigmaCutCombinedKa, 2))) {
-          return true;
+        if (!isSquarePIDcut) {
+          if (candidate.hasTOF() && (std::pow(candidate.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, 2) + std::pow(candidate.tpcNSigmaKa(), 2)) < (std::pow(configGp.nsigmaCutCombinedKa, 2))) {
+            return true;
+          }
+        } else {
+          if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa) < configGp.nsigmaCutCombinedKa && std::abs(candidate.tpcNSigmaKa()) < configGp.nsigmaCutCombinedKa) {
+            return true;
+          }
         }
         if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < configGp.nsigmaCutTPCKa) {
           return true;
@@ -723,8 +736,14 @@ struct Kstarqa {
           return true;
         }
       } else {
-        if (candidate.hasTOF() && (std::pow(candidate.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, 2) + std::pow(candidate.tpcNSigmaPi(), 2)) < (std::pow(configGp.nsigmaCutCombinedMID, 2))) {
-          return true;
+        if (!isSquarePIDcut) {
+          if (candidate.hasTOF() && (std::pow(candidate.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, 2) + std::pow(candidate.tpcNSigmaPi(), 2)) < (std::pow(configGp.nsigmaCutCombinedMID, 2))) {
+            return true;
+          }
+        } else {
+          if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi) < configGp.nsigmaCutCombinedMID && std::abs(candidate.tpcNSigmaPi()) < configGp.nsigmaCutCombinedMID) {
+            return true;
+          }
         }
         if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < configGp.nsigmaCutTPCMID) {
           return true;
@@ -740,8 +759,14 @@ struct Kstarqa {
           return true;
         }
       } else {
-        if (candidate.hasTOF() && (std::pow(candidate.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, 2) + std::pow(candidate.tpcNSigmaKa(), 2)) < (std::pow(configGp.nsigmaCutCombinedMID, 2))) {
-          return true;
+        if (!isSquarePIDcut) {
+          if (candidate.hasTOF() && (std::pow(candidate.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, 2) + std::pow(candidate.tpcNSigmaKa(), 2)) < (std::pow(configGp.nsigmaCutCombinedMID, 2))) {
+            return true;
+          }
+        } else {
+          if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa) < configGp.nsigmaCutCombinedMID && std::abs(candidate.tpcNSigmaKa()) < configGp.nsigmaCutCombinedMID) {
+            return true;
+          }
         }
         if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < configGp.nsigmaCutTPCMID) {
           return true;
@@ -833,8 +858,14 @@ struct Kstarqa {
           return true;
         }
       }
-      if (candidate.pt() >= configGp.lowPtCutPID && std::abs(candidate.tpcNSigmaPi()) < configGp.nsigmaCutTPCPi && candidate.hasTOF() && (std::pow(candidate.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, 2) + std::pow(candidate.tpcNSigmaPi(), 2)) < (std::pow(configGp.nsigmaCutCombinedPi, 2))) {
-        return true;
+      if (!isSquarePIDcut) {
+        if (candidate.pt() >= configGp.lowPtCutPID && std::abs(candidate.tpcNSigmaPi()) < configGp.nsigmaCutTPCPi && candidate.hasTOF() && (std::pow(candidate.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, 2) + std::pow(candidate.tpcNSigmaPi(), 2)) < (std::pow(configGp.nsigmaCutCombinedPi, 2))) {
+          return true;
+        }
+      } else {
+        if (candidate.pt() >= configGp.lowPtCutPID && std::abs(candidate.tpcNSigmaPi()) < configGp.nsigmaCutTPCPi && candidate.hasTOF() && std::abs(candidate.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi) < configGp.nsigmaCutCombinedPi) {
+          return true;
+        }
       }
     } else if (PID == PIDParticle::kKaon) {
       if (candidate.pt() < configGp.lowPtCutPID && candidate.tpcNSigmaKa() > sigmaNeg2 && candidate.tpcNSigmaKa() < configGp.nsigmaCutTPCKa) {
@@ -863,12 +894,23 @@ struct Kstarqa {
           return true;
         }
       }
-      if (candidate.pt() >= configGp.lowPtCutPID && candidate.hasTOF()) {
-        if (candidate.pt() < ptCut2 && std::abs(candidate.tpcNSigmaKa()) < configGp.nsigmaCutTPCKa && (std::pow(candidate.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, 2) + std::pow(candidate.tpcNSigmaKa(), 2)) < (std::pow(configGp.nsigmaCutCombinedKa, 2))) {
-          return true;
+      if (!isSquarePIDcut) {
+        if (candidate.pt() >= configGp.lowPtCutPID && candidate.hasTOF()) {
+          if (candidate.pt() < ptCut2 && std::abs(candidate.tpcNSigmaKa()) < configGp.nsigmaCutTPCKa && (std::pow(candidate.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, 2) + std::pow(candidate.tpcNSigmaKa(), 2)) < (std::pow(configGp.nsigmaCutCombinedKa, 2))) {
+            return true;
+          }
+          if (candidate.pt() >= ptCut2 && std::abs(candidate.tpcNSigmaKa()) < configGp.nsigmaCutTPCKa && (std::pow(candidate.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, 2) + std::pow(candidate.tpcNSigmaKa(), 2)) < (std::pow(sigmaThreshold1, 2))) {
+            return true;
+          }
         }
-        if (candidate.pt() >= ptCut2 && std::abs(candidate.tpcNSigmaKa()) < configGp.nsigmaCutTPCKa && (std::pow(candidate.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, 2) + std::pow(candidate.tpcNSigmaKa(), 2)) < (std::pow(sigmaThreshold1, 2))) {
-          return true;
+      } else {
+        if (candidate.pt() >= configGp.lowPtCutPID && candidate.hasTOF()) {
+          if (candidate.pt() < ptCut2 && std::abs(candidate.tpcNSigmaKa()) < configGp.nsigmaCutTPCKa && std::abs(candidate.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa) < configGp.nsigmaCutCombinedKa) {
+            return true;
+          }
+          if (candidate.pt() >= ptCut2 && std::abs(candidate.tpcNSigmaKa()) < configGp.nsigmaCutTPCKa && std::abs(candidate.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa) < sigmaThreshold1) {
+            return true;
+          }
         }
       }
     }
@@ -894,8 +936,14 @@ struct Kstarqa {
           return true;
         }
       } else {
-        if (candidate.hasTOF() && (std::pow(candidate.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, 2) + std::pow(candidate.tpcNSigmaPi(), 2)) < (configGp.nsigmaCutCombinedPi * configGp.nsigmaCutCombinedPi)) {
-          return true;
+        if (!isSquarePIDcut) {
+          if (candidate.hasTOF() && (std::pow(candidate.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi, 2) + std::pow(candidate.tpcNSigmaPi(), 2)) < (configGp.nsigmaCutCombinedPi * configGp.nsigmaCutCombinedPi)) {
+            return true;
+          }
+        } else {
+          if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi() - configGp.shiftInNsigmaTOFPi) < configGp.nsigmaCutCombinedPi && std::abs(candidate.tpcNSigmaPi()) < configGp.nsigmaCutCombinedPi) {
+            return true;
+          }
         }
       }
     } else if (PID == PIDParticle::kKaon) {
@@ -910,8 +958,14 @@ struct Kstarqa {
           return true;
         }
       } else {
-        if (candidate.hasTOF() && (std::pow(candidate.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, 2) + std::pow(candidate.tpcNSigmaKa(), 2)) < (std::pow(configGp.nsigmaCutCombinedKa, 2))) {
-          return true;
+        if (!isSquarePIDcut) {
+          if (candidate.hasTOF() && (std::pow(candidate.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa, 2) + std::pow(candidate.tpcNSigmaKa(), 2)) < (std::pow(configGp.nsigmaCutCombinedKa, 2))) {
+            return true;
+          }
+        } else {
+          if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa() - configGp.shiftInNsigmaTOFKa) < configGp.nsigmaCutCombinedKa && std::abs(candidate.tpcNSigmaKa()) < configGp.nsigmaCutCombinedKa) {
+            return true;
+          }
         }
       }
     }
