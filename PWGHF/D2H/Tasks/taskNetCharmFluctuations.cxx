@@ -14,8 +14,8 @@
 /// \author Biao Zhang <biao.zhang@cern.ch>, Heidelberg University
 /// \author Fan Si <fsi@physi.uni-heidelberg.de>, Heidelberg University
 
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
@@ -120,21 +120,21 @@ enum EventQa : uint8_t {
 };
 
 using CandD0Data = soa::Filtered<soa::Join<aod::HfCand2Prong,
-                                            aod::HfCand2Prong0PidPi,
-                                            aod::HfCand2Prong1PidPi,
-                                            aod::HfCand2Prong0PidKa,
-                                            aod::HfCand2Prong1PidKa,
-                                            aod::HfCand2ProngKF,
-                                            aod::HfSelD0>>;
+                                           aod::HfCand2Prong0PidPi,
+                                           aod::HfCand2Prong1PidPi,
+                                           aod::HfCand2Prong0PidKa,
+                                           aod::HfCand2Prong1PidKa,
+                                           aod::HfCand2ProngKF,
+                                           aod::HfSelD0>>;
 
 using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong,
-                                               aod::HfCand3Prong0PidPi,
-                                               aod::HfCand3Prong1PidPi,
-                                               aod::HfCand3Prong2PidPi,
-                                               aod::HfCand3Prong0PidKa,
-                                               aod::HfCand3Prong1PidKa,
-                                               aod::HfCand3Prong2PidKa,
-                                               aod::HfSelDplusToPiKPi>>;
+                                              aod::HfCand3Prong0PidPi,
+                                              aod::HfCand3Prong1PidPi,
+                                              aod::HfCand3Prong2PidPi,
+                                              aod::HfCand3Prong0PidKa,
+                                              aod::HfCand3Prong1PidKa,
+                                              aod::HfCand3Prong2PidKa,
+                                              aod::HfSelDplusToPiKPi>>;
 
 using CollData = soa::Join<aod::Collisions,
                            aod::EvSels,
