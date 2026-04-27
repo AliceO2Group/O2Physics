@@ -87,7 +87,7 @@ DECLARE_SOA_COLUMN(Nclass, nclass, int);
 
 namespace o2::aod
 {
-DECLARE_SOA_TABLE(JpsiRL, "AOD", "JPSI_RL",
+DECLARE_SOA_TABLE(JpsiRL, "AOD", "JPSI",
                   jpsirl::RunNumber,
                   jpsirl::M, jpsirl::Energy, jpsirl::Px, jpsirl::Py, jpsirl::Pz, jpsirl::Pt, jpsirl::Rap, jpsirl::Phi,
                   jpsirl::PhiAv, jpsirl::PhiCh,
