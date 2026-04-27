@@ -508,6 +508,7 @@ struct PhotonResoTask {
           int32_t mcConvLegMotherId = -1;
           bool hasBothLegs = false;
           if (mcPhoton1MotherId == -1) {
+            // mother was not a photon so skip this cluster
             continue;
           }
           // mcPhoton1 now points to a photon that produced the e+/e- that was the largest contributor in the cluster
