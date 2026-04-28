@@ -773,7 +773,7 @@ struct QaMatching {
       //-
       AxisSpec chi2Axis = {100, 0, 100, "matching #chi^{2}/NDF"};
       AxisSpec scoreAxis = {100, 0, 1, "matching score"};
-      int matchTypeMax = static_cast<int>(kMatchTypeUndefined);
+      int matchTypeMax = static_cast<int>(kMatchTypeUndefined) + 1;
       AxisSpec matchTypeAxis = {matchTypeMax, 0, static_cast<double>(matchTypeMax), "match type"};
       histName = path + "matchType";
       histTitle = "Match type";
@@ -786,6 +786,7 @@ struct QaMatching {
       std::get<std::shared_ptr<TH1>>(fMatchType)->GetXaxis()->SetBinLabel(6, "wrong (non leading)");
       std::get<std::shared_ptr<TH1>>(fMatchType)->GetXaxis()->SetBinLabel(7, "decay (non leading)");
       std::get<std::shared_ptr<TH1>>(fMatchType)->GetXaxis()->SetBinLabel(8, "fake (non leading)");
+      std::get<std::shared_ptr<TH1>>(fMatchType)->GetXaxis()->SetBinLabel(9, "undefined");
       histName = path + "matchTypeVsP";
       histTitle = "Match type vs. p";
       fMatchTypeVsP = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {pAxis, matchTypeAxis}});
@@ -797,6 +798,7 @@ struct QaMatching {
       std::get<std::shared_ptr<TH2>>(fMatchTypeVsP)->GetYaxis()->SetBinLabel(6, "wrong (non leading)");
       std::get<std::shared_ptr<TH2>>(fMatchTypeVsP)->GetYaxis()->SetBinLabel(7, "decay (non leading)");
       std::get<std::shared_ptr<TH2>>(fMatchTypeVsP)->GetYaxis()->SetBinLabel(8, "fake (non leading)");
+      std::get<std::shared_ptr<TH2>>(fMatchTypeVsP)->GetYaxis()->SetBinLabel(9, "undefined");
       histName = path + "matchTypeVsPt";
       histTitle = "Match type vs. p_{T}";
       fMatchTypeVsPt = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH2F, {ptAxis, matchTypeAxis}});
@@ -808,6 +810,7 @@ struct QaMatching {
       std::get<std::shared_ptr<TH2>>(fMatchTypeVsPt)->GetYaxis()->SetBinLabel(6, "wrong (non leading)");
       std::get<std::shared_ptr<TH2>>(fMatchTypeVsPt)->GetYaxis()->SetBinLabel(7, "decay (non leading)");
       std::get<std::shared_ptr<TH2>>(fMatchTypeVsPt)->GetYaxis()->SetBinLabel(8, "fake (non leading)");
+      std::get<std::shared_ptr<TH2>>(fMatchTypeVsPt)->GetYaxis()->SetBinLabel(9, "undefined");
 
       histName = path + "matchChi2VsType";
       histTitle = "Match #chi^{2} vs. match type";
@@ -820,6 +823,7 @@ struct QaMatching {
       std::get<std::shared_ptr<TH2>>(fMatchChi2VsType)->GetXaxis()->SetBinLabel(6, "wrong (non leading)");
       std::get<std::shared_ptr<TH2>>(fMatchChi2VsType)->GetXaxis()->SetBinLabel(7, "decay (non leading)");
       std::get<std::shared_ptr<TH2>>(fMatchChi2VsType)->GetXaxis()->SetBinLabel(8, "fake (non leading)");
+      std::get<std::shared_ptr<TH2>>(fMatchChi2VsType)->GetXaxis()->SetBinLabel(9, "undefined");
       histName = path + "matchChi2VsTypeVsP";
       histTitle = "Match #chi^{2} vs. match type vs. p";
       fMatchChi2VsTypeVsP = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH3F, {pAxis, matchTypeAxis, chi2Axis}});
@@ -831,6 +835,7 @@ struct QaMatching {
       std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsP)->GetYaxis()->SetBinLabel(6, "wrong (non leading)");
       std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsP)->GetYaxis()->SetBinLabel(7, "decay (non leading)");
       std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsP)->GetYaxis()->SetBinLabel(8, "fake (non leading)");
+      std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsP)->GetYaxis()->SetBinLabel(9, "undefined");
       histName = path + "matchChi2VsTypeVsPt";
       histTitle = "Match #chi^{2} vs. match type vs. p_{T}";
       fMatchChi2VsTypeVsPt = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH3F, {ptAxis, matchTypeAxis, chi2Axis}});
@@ -842,6 +847,7 @@ struct QaMatching {
       std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsPt)->GetYaxis()->SetBinLabel(6, "wrong (non leading)");
       std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsPt)->GetYaxis()->SetBinLabel(7, "decay (non leading)");
       std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsPt)->GetYaxis()->SetBinLabel(8, "fake (non leading)");
+      std::get<std::shared_ptr<TH3>>(fMatchChi2VsTypeVsPt)->GetYaxis()->SetBinLabel(9, "undefined");
       //-
       histName = path + "matchScoreVsType";
       histTitle = "Match score vs. match type";
@@ -854,6 +860,7 @@ struct QaMatching {
       std::get<std::shared_ptr<TH2>>(fMatchScoreVsType)->GetXaxis()->SetBinLabel(6, "wrong (non leading)");
       std::get<std::shared_ptr<TH2>>(fMatchScoreVsType)->GetXaxis()->SetBinLabel(7, "decay (non leading)");
       std::get<std::shared_ptr<TH2>>(fMatchScoreVsType)->GetXaxis()->SetBinLabel(8, "fake (non leading)");
+      std::get<std::shared_ptr<TH2>>(fMatchScoreVsType)->GetXaxis()->SetBinLabel(9, "undefined");
       histName = path + "matchScoreVsTypeVsP";
       histTitle = "Match score vs. match type vs. p";
       fMatchScoreVsTypeVsP = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH3F, {pAxis, matchTypeAxis, scoreAxis}});
@@ -865,6 +872,7 @@ struct QaMatching {
       std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsP)->GetYaxis()->SetBinLabel(6, "wrong (non leading)");
       std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsP)->GetYaxis()->SetBinLabel(7, "decay (non leading)");
       std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsP)->GetYaxis()->SetBinLabel(8, "fake (non leading)");
+      std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsP)->GetYaxis()->SetBinLabel(9, "undefined");
       histName = path + "matchScoreVsTypeVsPt";
       histTitle = "Match score vs. match type vs. p_{T}";
       fMatchScoreVsTypeVsPt = registry->add(histName.c_str(), histTitle.c_str(), {HistType::kTH3F, {ptAxis, matchTypeAxis, scoreAxis}});
@@ -876,6 +884,7 @@ struct QaMatching {
       std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsPt)->GetYaxis()->SetBinLabel(6, "wrong (non leading)");
       std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsPt)->GetYaxis()->SetBinLabel(7, "decay (non leading)");
       std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsPt)->GetYaxis()->SetBinLabel(8, "fake (non leading)");
+      std::get<std::shared_ptr<TH3>>(fMatchScoreVsTypeVsPt)->GetYaxis()->SetBinLabel(9, "undefined");
 
       AxisSpec prodScoreAxis = {100, 0, 1, "matching score (prod)"};
       histName = path + "matchScoreVsProd";
@@ -1673,8 +1682,6 @@ struct QaMatching {
         continue;
       // get the index associated to the MC particle
       auto muonMcParticle = muonTrack.mcParticle();
-      if (std::abs(muonMcParticle.pdgCode()) != kMuonMinus)
-        continue;
 
       int64_t muonMcTrackIndex = muonMcParticle.globalIndex();
 
@@ -1741,8 +1748,7 @@ struct QaMatching {
               TMUONS const& /*muonTracks*/,
               TMFTS const& /*mftTracks*/)
   {
-    static constexpr int maxGlobalFwdTrackType = 2;
-    if (static_cast<int>(muonTrack.trackType()) >= maxGlobalFwdTrackType)
+    if (static_cast<int>(muonTrack.trackType()) >= GlobalTrackTypeMax)
       return false;
 
     auto const& mchTrack = muonTrack.template matchMCHTrack_as<TMUONS>();
@@ -1995,7 +2001,7 @@ struct QaMatching {
     if (collisionIds.empty())
       return;
 
-    for (size_t cid = 1; cid < collisionIds.size() - 1; cid++) {
+    for (size_t cid = 0; cid < collisionIds.size(); cid++) {
       const auto& collision = collisions.rawIteratorAt(collisionIds[cid]);
       int64_t collisionIndex = collision.globalIndex();
       auto bc = bcs.rawIteratorAt(collision.bcId());
@@ -2088,9 +2094,9 @@ struct QaMatching {
       }
     }
 
-    // sort the vectors of matching candidates in ascending order based on the matching score value
-    auto compareMatchingScore = [](const MatchingCandidate& track1, const MatchingCandidate& track2) -> bool {
-      return (track1.matchScore > track2.matchScore);
+    // sort the vectors of matching candidates in ascending order based on the matching chi2 value
+    auto compareMatchingChi2 = [](const MatchingCandidate& track1, const MatchingCandidate& track2) -> bool {
+      return (track1.matchChi2 < track2.matchChi2);
     };
 
     for (auto collisionInfoIt = collisionInfos.begin(); collisionInfoIt != collisionInfos.end(); ++collisionInfoIt) {
@@ -2098,7 +2104,7 @@ struct QaMatching {
       for (auto matchingCandidatesIt = collisionInfo.matchingCandidates.begin(); matchingCandidatesIt != collisionInfo.matchingCandidates.end(); ++matchingCandidatesIt) {
         auto& mchIndex = matchingCandidatesIt->first;
         auto& globalTracksVector = matchingCandidatesIt->second;
-        std::sort(globalTracksVector.begin(), globalTracksVector.end(), compareMatchingScore);
+        std::sort(globalTracksVector.begin(), globalTracksVector.end(), compareMatchingChi2);
 
         const auto& mchTrack = muonTracks.rawIteratorAt(mchIndex);
         auto mftMchMatchAttempts = getMftMchMatchAttempts(collisions, bcs, mchTrack, mftTracks);
@@ -2620,15 +2626,15 @@ struct QaMatching {
       }
     }
 
-    // sort the vectors of matching candidates in ascending order based on the matching score value
-    auto compareMatchingScore = [](const MatchingCandidate& track1, const MatchingCandidate& track2) -> bool {
-      return (track1.matchScore > track2.matchScore);
+    // sort the vectors of matching candidates in ascending order based on the matching chi2 value
+    auto compareMatchingChi2 = [](const MatchingCandidate& track1, const MatchingCandidate& track2) -> bool {
+      return (track1.matchChi2 < track2.matchChi2);
     };
 
     for (auto matchingCandidatesIt = newMatchingCandidates.begin(); matchingCandidatesIt != newMatchingCandidates.end(); ++matchingCandidatesIt) {
       auto& mchIndex = matchingCandidatesIt->first;
       auto& globalTracksVector = matchingCandidatesIt->second;
-      std::sort(globalTracksVector.begin(), globalTracksVector.end(), compareMatchingScore);
+      std::sort(globalTracksVector.begin(), globalTracksVector.end(), compareMatchingChi2);
 
       const auto& mchTrack = muonTracks.rawIteratorAt(mchIndex);
       auto mftMchMatchAttempts = getMftMchMatchAttempts(collisions, bcs, mchTrack, mftTracks);
