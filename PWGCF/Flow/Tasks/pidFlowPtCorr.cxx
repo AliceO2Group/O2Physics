@@ -58,10 +58,11 @@
 
 #include <sys/types.h>
 
+#include <RtypesCore.h>
+
 #include <algorithm>
 #include <chrono>
 #include <cmath>
-#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <memory>
@@ -556,6 +557,8 @@ struct PidFlowPtCorr {
     TObjArray* oba4PID = reinterpret_cast<TObjArray*>(oba4Ch->Clone());
     oba4PID->Add(new TNamed("c22pure", "c22pure"));
     oba4PID->Add(new TNamed("c32pure", "c32pure"));
+    oba4PID->Add(new TNamed("covV2PtPID", "covV2PtPID"));
+    oba4PID->Add(new TNamed("c22TrackWeightPID", "c22TrackWeightPID"));
 
     fFCPi->SetName("FlowContainerPi");
     fFCPi->Initialize(oba4PID, axisMultiplicity, cfgFlowNbootstrap);
@@ -889,7 +892,6 @@ struct PidFlowPtCorr {
       const float ptMax = pidPtRangeOpts.cfgPtMax4TOFPiKa.value;
 
       if (pt > ptMin && pt < ptMax) {
-
         isPionBool = std::hypot(tpcNsigma, tofNsigma) < circleCutOpts.cfgCircleCutSigmaPi.value;
       } else {
         // Fallback: TPC only cut
@@ -2241,14 +2243,23 @@ struct PidFlowPtCorr {
 
       fFCCh->FillProfile("hMeanPt", cent, (ptSum / nch), nch, rndm);
 
-      if (nPionWeighted > 0)
+      if (nPionWeighted > 0) {
         fFCPi->FillProfile("hMeanPt", cent, (pionPtSum / nPionWeighted), nPionWeighted, rndm);
+        fillFCvnpt(MyParticleType::kPion, corrconfigs.at(29), cent, rndm, pionPtSum, nPionWeighted, "covV2PtPID");
+        fillFCvnpt(MyParticleType::kPion, corrconfigs.at(29), cent, rndm, nPionWeighted, nPionWeighted, "c22TrackWeightPID");
+      }
 
-      if (nKaonWeighted > 0)
+      if (nKaonWeighted > 0) {
         fFCKa->FillProfile("hMeanPt", cent, (kaonPtSum / nKaonWeighted), nKaonWeighted, rndm);
+        fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(30), cent, rndm, kaonPtSum, nKaonWeighted, "covV2PtPID");
+        fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(30), cent, rndm, nKaonWeighted, nKaonWeighted, "c22TrackWeightPID");
+      }
 
-      if (nProtonWeighted > 0)
+      if (nProtonWeighted > 0) {
         fFCPr->FillProfile("hMeanPt", cent, (protonPtSum / nProtonWeighted), nProtonWeighted, rndm);
+        fillFCvnpt(MyParticleType::kProton, corrconfigs.at(31), cent, rndm, protonPtSum, nProtonWeighted, "covV2PtPID");
+        fillFCvnpt(MyParticleType::kProton, corrconfigs.at(31), cent, rndm, nProtonWeighted, nProtonWeighted, "c22TrackWeightPID");
+      }
 
       double nchDiff = nch * nch - nchSquare;
       if (nchDiff > minVal4Float) {
