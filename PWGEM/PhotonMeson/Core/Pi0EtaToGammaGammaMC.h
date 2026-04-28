@@ -480,13 +480,13 @@ struct Pi0EtaToGammaGammaMC {
 
     static auto& perClusterMT()
     {
-      static auto slice{o2::aod::trackmatching::emEmcClusterId};
+      static auto slice{o2::aod::mintm::minClusterId};
       return slice;
     }
 
     static auto& perClusterMS()
     {
-      static auto slice{o2::aod::trackmatching::emEmcClusterId};
+      static auto slice{o2::aod::mintm::minClusterId};
       return slice;
     }
 
