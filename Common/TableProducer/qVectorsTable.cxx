@@ -590,15 +590,15 @@ struct qVectorsTable {
     float sumAmplFT0C = 0.;
     float sumAmplFT0M = 0.;
     float sumAmplFV0A = 0.;
-
+    
     if (coll.has_foundFT0() && (useDetector["QvectorFT0As"] || useDetector["QvectorFT0Cs"] || useDetector["QvectorFT0Ms"])) {
       auto ft0 = coll.foundFT0();
-
+      
       if (useDetector["QvectorFT0As"]) {
         for (std::size_t iChA = 0; iChA < ft0.channelA().size(); iChA++) {
           float ampl = ft0.amplitudeA()[iChA];
           int FT0AchId = ft0.channelA()[iChA];
-
+          
           histosQA.fill(HIST("FT0Amp"), ampl, FT0AchId);
           histosQA.fill(HIST("FT0AmpCor"), ampl / FT0RelGainConst[FT0AchId], FT0AchId);
 

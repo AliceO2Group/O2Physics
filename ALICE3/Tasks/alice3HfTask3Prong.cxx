@@ -64,8 +64,8 @@ struct Alice3HfTask3Prong {
 
   int selectedPdg{-1};
 
-  using Cands3PReco = soa::Filtered<soa::Join<aod::Alice3Cand3Ps, aod::Alice3Sel3Ps, aod::Alice3McRecFlags>>;
-  using Cands3PRecoWMl = soa::Filtered<soa::Join<aod::Alice3Cand3Ps, aod::Alice3Sel3Ps, aod::Alice3Ml3Ps, aod::Alice3McRecFlags>>;
+  using Cands3PReco = soa::Filtered<soa::Join<aod::Alice3Cand3Ps, aod::Alice3Sel3Ps, aod::Alice3McRecFlags, aod::Alice3SVResos>>;
+  using Cands3PRecoWMl = soa::Filtered<soa::Join<aod::Alice3Cand3Ps, aod::Alice3Sel3Ps, aod::Alice3Ml3Ps, aod::Alice3McRecFlags, aod::Alice3SVResos>>;
   using Cands3PGen = soa::Join<aod::McParticles, aod::Alice3McGenFlags>;
 
   Filter filterSelectCandidates = (aod::a3_hf_sel_3prong::isSelMassHypo0 == true || aod::a3_hf_sel_3prong::isSelMassHypo1 == true);
@@ -79,6 +79,7 @@ struct Alice3HfTask3Prong {
   ConfigurableAxis thnConfigAxisCanType{"thnConfigAxisCanType", {5, 0., 5.}, ""};
   ConfigurableAxis thnAxisRapidity{"thnAxisRapidity", {20, -1, 1}, "Cand. rapidity bins"};
   ConfigurableAxis thnConfigAxisGenPtB{"thnConfigAxisGenPtB", {1000, 0, 100}, "Gen Pt B"};
+  ConfigurableAxis thnConfigAxisDeltaSecVtxCoord{"thnConfigAxisDeltaSecVtxCoord", {1000, -10, 10}, ""};
 
   HistogramRegistry registry{"registry", {}};
 
@@ -142,6 +143,9 @@ struct Alice3HfTask3Prong {
     addHistogramsRec("hCPAxy", "cosine of pointing angle xy", "entries", {HistType::kTH1F, {{110, -1.1, 1.1}}});
     addHistogramsRec("hDca2", "prong Chi2PCA to sec. vertex (cm)", "entries", {HistType::kTH1F, {{400, 0., 20.}}});
     addHistogramsRec("hEta", "#it{#eta}", "entries", {HistType::kTH1F, {{100, -2., 2.}}});
+    addHistogramsRec("hDeltaXRecoGenSecVtx", "p_{T} (GeV/#it{c})", "#Delta X Sec. Vtx. (cm)", {HistType::kTH2F, {thnConfigAxisPt, thnConfigAxisDeltaSecVtxCoord}});
+    addHistogramsRec("hDeltaYRecoGenSecVtx", "p_{T} (GeV/#it{c})", "#Delta Y Sec. Vtx. (cm)", {HistType::kTH2F, {thnConfigAxisPt, thnConfigAxisDeltaSecVtxCoord}});
+    addHistogramsRec("hDeltaZRecoGenSecVtx", "p_{T} (GeV/#it{c})", "#Delta Z Sec. Vtx. (cm)", {HistType::kTH2F, {thnConfigAxisPt, thnConfigAxisDeltaSecVtxCoord}});
     addHistogramsRec("hd0VsPtProng0", "prong 0 DCAxy to prim. vertex (cm)", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins}}});
     addHistogramsRec("hd0VsPtProng1", "prong 1 DCAxy to prim. vertex (cm)", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins}}});
     addHistogramsRec("hd0VsPtProng2", "prong 2 DCAxy to prim. vertex (cm)", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins}}});
@@ -257,6 +261,9 @@ struct Alice3HfTask3Prong {
     registry.fill(histoPrefix + HIST("hImpParErrProng1VsPt") + histoSuffix, candidate.errorImpactParameterY1(), candidate.pt());
     registry.fill(histoPrefix + HIST("hImpParErrProng2VsPt") + histoSuffix, candidate.errorImpactParameterY2(), candidate.pt());
     registry.fill(histoPrefix + HIST("hDecLenErrVsPt") + histoSuffix, candidate.errorDecayLength(), candidate.pt());
+    registry.fill(histoPrefix + HIST("hDeltaXRecoGenSecVtx") + histoSuffix, candidate.pt(), candidate.deltaXSecVtx());
+    registry.fill(histoPrefix + HIST("hDeltaYRecoGenSecVtx") + histoSuffix, candidate.pt(), candidate.deltaYSecVtx());
+    registry.fill(histoPrefix + HIST("hDeltaZRecoGenSecVtx") + histoSuffix, candidate.pt(), candidate.deltaZSecVtx());
   }
 
   /// Fill MC histograms at reconstruction level
@@ -264,8 +271,8 @@ struct Alice3HfTask3Prong {
   /// \tparam SaveMl indicates whether ML scores are saved in the THnSparse
   /// \tparam CandsRec is the type of the reconstructed candidates collection
   /// \param candidates is the collection of reconstructed candidates
-  template <CharmHadAlice3 CharmHad, bool SaveMl, typename CandsRec, typename AllParticles>
-  void fillHistosMcRec(CandsRec const& candidates, AllParticles const& allParticles)
+  template <CharmHadAlice3 CharmHad, bool SaveMl, typename CandsRec, typename GenParticles>
+  void fillHistosMcRec(CandsRec const& candidates, GenParticles const& genParticles)
   {
     registry.fill(HIST("MC/rec/hCandidateCounter"), 0.);
     for (const auto& candidate : candidates) {
@@ -277,13 +284,13 @@ struct Alice3HfTask3Prong {
       registry.fill(HIST("MC/rec/hCandidateCounter"), 2.);
       if (candidate.particleMcRec() >= 0) {
         registry.fill(HIST("MC/rec/hCandidateCounter"), 3.);
-        auto mcParticle = allParticles.iteratorAt(candidate.particleMcRec());
+        auto mcParticle = genParticles.iteratorAt(candidate.particleMcRec());
         if (mcParticle.has_daughters()) {
           auto daughters = mcParticle.daughtersIds();
           LOG(debug) << "Reco candidate matched to MC particle with PDG " << mcParticle.pdgCode() << " daughters: " << daughters.size();
           int prongIdx = 0;
           for (int dauId = daughters[0]; dauId <= daughters[1]; dauId++) {
-            auto dau = allParticles.iteratorAt(dauId);
+            auto dau = genParticles.iteratorAt(dauId);
             LOG(debug) << "  dauId: " << dauId << " PDG: " << dau.pdgCode() << " with pT: " << dau.pt();
             switch (prongIdx) {
               case 0:
@@ -376,9 +383,9 @@ struct Alice3HfTask3Prong {
   /// \tparam ParticleType is the type of the generated particle
   /// \tparam TableType is the type of the full table (non-Partition)
   /// \param particle is a generated particle
-  /// \param allParticles is the full table of particles for iteratorAt access
+  /// \param genParticles is the full table of particles for iteratorAt access
   template <CharmHadAlice3 CharmHad, int SignalType, typename ParticleType, typename TableType>
-  void fillHistogramsGen(ParticleType const& particle, TableType const& allParticles)
+  void fillHistogramsGen(ParticleType const& particle, TableType const& genParticles)
   {
     LOG(debug) << "Filling generated histograms for signal type " << SignalType;
     static constexpr auto histoPrefix = HIST("MC/gen/") + HIST(SignalFolders[SignalType]) + HIST("/");
@@ -400,7 +407,7 @@ struct Alice3HfTask3Prong {
       float pz = 0.f;
       float e = 0.f;
       for (int iDau = firstDauIdx; iDau <= lastDauIdx && iDau > 0; iDau++) {
-        const auto& dau = allParticles.iteratorAt(iDau);
+        const auto& dau = genParticles.iteratorAt(iDau);
         e += dau.e();
         px += dau.px();
         py += dau.py();
@@ -415,11 +422,11 @@ struct Alice3HfTask3Prong {
   /// Fill MC histograms at generated level
   /// \tparam CharmHad is the charm hadron species
   /// \tparam CandsGen is the type of the generated candidates collection
-  /// \tparam AllParticles is the type of the full particle table
+  /// \tparam GenParticles is the type of the full particle table
   /// \param mcParticles is the collection of generated particles (can be a Partition)
-  /// \param allParticles is the full table of particles
-  template <CharmHadAlice3 CharmHad, typename CandsGen, typename AllParticles>
-  void fillHistosMcGen(CandsGen const& mcParticles, AllParticles const& allParticles)
+  /// \param genParticles is the full table of particles
+  template <CharmHadAlice3 CharmHad, typename CandsGen, typename GenParticles>
+  void fillHistosMcGen(CandsGen const& mcParticles, GenParticles const& genParticles)
   {
     // MC gen.
     for (const auto& particle : mcParticles) {
@@ -431,14 +438,14 @@ struct Alice3HfTask3Prong {
         const auto ptGen = particle.pt();
         const auto originType = particle.originMcGen();
 
-        fillHistogramsGen<CharmHad, Signal>(particle, allParticles);
+        fillHistogramsGen<CharmHad, Signal>(particle, genParticles);
 
         float ptGenB = -1.f;
         if (originType == RecoDecay::OriginType::Prompt) {
-          fillHistogramsGen<CharmHad, Prompt>(particle, allParticles);
+          fillHistogramsGen<CharmHad, Prompt>(particle, genParticles);
         } else if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
           ptGenB = particle.bHadMotherPtGen();
-          fillHistogramsGen<CharmHad, NonPrompt>(particle, allParticles);
+          fillHistogramsGen<CharmHad, NonPrompt>(particle, genParticles);
         }
 
         if (fillThn) {

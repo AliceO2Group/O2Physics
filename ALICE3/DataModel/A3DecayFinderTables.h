@@ -202,6 +202,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterXY, impactParameterXY, //!
 DECLARE_SOA_COLUMN(MlScore0, mlScore0, float); //!
 DECLARE_SOA_COLUMN(MlScore1, mlScore1, float); //!
 DECLARE_SOA_COLUMN(MlScore2, mlScore2, float); //!
+
+// Secondary vertex gen-reco position
+DECLARE_SOA_COLUMN(DeltaXSecVtx, deltaXSecVtx, float); //!
+DECLARE_SOA_COLUMN(DeltaYSecVtx, deltaYSecVtx, float); //!
+DECLARE_SOA_COLUMN(DeltaZSecVtx, deltaZSecVtx, float); //!
 } // namespace a3_hf_cand
 
 #define HFCAND_COLUMNS                                                                                                                                                                                            \
@@ -234,6 +239,11 @@ DECLARE_SOA_COLUMN(MlScore2, mlScore2, float); //!
     a3_hf_cand::PtProng2<a3_hf_cand::PxProng2, a3_hf_cand::PyProng2>,                                        \
     a3_hf_cand::Pt2Prong2<a3_hf_cand::PxProng2, a3_hf_cand::PyProng2>,                                       \
     a3_hf_cand::PVectorProng2<a3_hf_cand::PxProng2, a3_hf_cand::PyProng2, a3_hf_cand::PzProng2>
+
+DECLARE_SOA_TABLE(Alice3SVResos, "AOD", "ALICE3SVRESO", //!
+                  a3_hf_cand::DeltaXSecVtx,
+                  a3_hf_cand::DeltaYSecVtx,
+                  a3_hf_cand::DeltaZSecVtx);
 
 namespace a3DecayMap
 {

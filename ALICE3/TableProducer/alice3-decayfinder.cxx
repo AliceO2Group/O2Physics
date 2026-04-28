@@ -79,6 +79,7 @@ struct alice3decayFinder {
   Produces<aod::Alice3McRecFlags> mcRecFlags;    // contains MC truth info (is true Lc, or bkg)
   Produces<aod::Alice3PidLcs> pidInfoLcDaugs;    // contains PID info for Lc candidates
   Produces<aod::Alice3McGenFlags> mcGenFlags;    // contains MC gen info for 3-prong candidates
+  Produces<aod::Alice3SVResos> coordsSVResos;    // contains MC gen and reco coordinates of the secondary vertex info for 3-prong candidates
 
   // Vertexing
   struct : ConfigurableGroup {
@@ -231,6 +232,7 @@ struct alice3decayFinder {
     std::array<float, 3> Pdaug2;           // pion track
     std::array<float, 3> primaryVertex;    // primary vertex coordinates
     std::array<double, 3> secondaryVertex; // secondary vertex coordinates
+    std::array<double, 3> deltaRecoGenSV;  // difference between reconstructed and generated secondary vertex coordinates
     float impactParameterY0;               // impact parameters
     float errorImpactParameterY0;          // impact parameters error
     float impactParameterY1;               // impact parameters
@@ -434,6 +436,9 @@ struct alice3decayFinder {
     mCandidate3Prong.origin = 0; // Default: unknown origin
     if (mCandidate3Prong.particleMcRec > -1) {
       const auto& motherParticle = mcParticles.rawIteratorAt(mCandidate3Prong.particleMcRec);
+      mCandidate3Prong.deltaRecoGenSV[0] = mCandidate3Prong.secondaryVertex[0] - motherParticle.vx();
+      mCandidate3Prong.deltaRecoGenSV[1] = mCandidate3Prong.secondaryVertex[1] - motherParticle.vy();
+      mCandidate3Prong.deltaRecoGenSV[2] = mCandidate3Prong.secondaryVertex[2] - motherParticle.vz();
       mCandidate3Prong.flagMc = motherParticle.pdgCode() > 0 ? charmHadFlag : -charmHadFlag; // Particle
       std::vector<int> idxBhadMothers{};
       mCandidate3Prong.origin = RecoDecay::getCharmHadronOrigin(mcParticles, motherParticle, false, &idxBhadMothers);
@@ -1054,8 +1059,9 @@ struct alice3decayFinder {
                           std::sqrt(mCandidate3Prong.errorImpactParameterZ1),
                           std::sqrt(mCandidate3Prong.errorImpactParameterZ2),
                           candPx, candPy, candPz);
-          mcRecFlags(mCandidate3Prong.origin, mCandidate3Prong.ptBMotherRec, mCandidate3Prong.flagMc, mCandidate3Prong.particleMcRec); // placeholder for prompt/non-prompt
+          mcRecFlags(mCandidate3Prong.origin, mCandidate3Prong.ptBMotherRec, mCandidate3Prong.flagMc, mCandidate3Prong.particleMcRec);
           fillPidTable(prong0, prong1, prong2);
+          coordsSVResos(mCandidate3Prong.deltaRecoGenSV[0], mCandidate3Prong.deltaRecoGenSV[1], mCandidate3Prong.deltaRecoGenSV[2]);
         }
       }
     }
