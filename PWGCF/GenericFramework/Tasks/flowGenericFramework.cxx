@@ -118,10 +118,10 @@ std::vector<double> multGlobalT0ACutPars;
 template <typename T>
 auto projectMatrix(Array2D<T> const& mat, std::array<float, 6>& array1, std::array<float, 6>& array2, std::array<float, 6>& array3)
 {
-  for (auto j = 0; j < static_cast<int>(mat.cols); ++j) {
-    array1[j] = mat(0, j);
-    array2[j] = mat(1, j);
-    array3[j] = mat(2, j);
+  for (auto j = 0; j < static_cast<int>(mat.rows); ++j) {
+    array1[j] = mat(j, 0);
+    array2[j] = mat(j, 1);
+    array3[j] = mat(j, 2);
   }
   return;
 }
@@ -137,12 +137,13 @@ auto readMatrix(Array2D<T> const& mat, P& array)
   return;
 }
 
-static constexpr float LongArrayFloat[3][20] = {{1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}, {2.1, 2.2, 2.3, -2.1, -2.2, -2.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}, {3.1, 3.2, 3.3, -3.1, -3.2, -3.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}};
-static constexpr int LongArrayInt[3][20] = {{1, 1, 1, -1, -1, -1, 1, 1, 1, -1, -1, -1, 1, 1, 1, -1, -1, -1, 1, 1}, {2, 2, 2, -2, -2, -2, 1, 1, 1, -1, -1, -1, 1, 1, 1, -1, -1, -1, 1, 1}, {3, 3, 3, -3, -3, -3, 1, 1, 1, -1, -1, -1, 1, 1, 1, -1, -1, -1, 1, 1}};
+// static constexpr float LongArrayFloat[3][20] = {{1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}, {2.1, 2.2, 2.3, -2.1, -2.2, -2.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}, {3.1, 3.2, 3.3, -3.1, -3.2, -3.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}};
+// static constexpr int LongArrayInt[3][20] = {{1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1}, {2, 2, 2, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1}, {3, 3, 3, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1}};
+static constexpr float LongArrayFloat[20][3] = {{1.1, 2.1, 3.1}, {1.2, 2.2, 3.2}, {1.3, 2.3, 3.3}, {-1.1, -2.1, -3.1}, {-1.2, -2.2, -3.2}, {-1.3, -2.3, -3.3}, {1.1, 1.1, 1.1}, {1.2, 1.2, 1.2}, {1.3, 1.3, 1.3}, {-1.1, -1.1, -1.1}, {-1.2, -1.2, -1.2}, {-1.3, -1.3, -1.3}, {1.1, 1.1, 1.1}, {1.2, 1.2, 1.2}, {1.3, 1.3, 1.3}, {-1.1, -1.1, -1.1}, {-1.2, -1.2, -1.2}, {-1.3, -1.3, -1.3}, {1.1, 1.1, 1.1}, {1.2, 1.2, 1.2}};
+static constexpr int LongArrayInt[20][3] = {{1, 2, 3}, {1, 2, 3}, {1, 2, 3}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {1, 1, 1}, {1, 1, 1}, {1, 1, 1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {1, 1, 1}, {1, 1, 1}, {1, 1, 1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {1, 1, 1}, {1, 1, 1}};
 static constexpr double LongArrayDouble[4][2] = {{-0.8, -0.5}, {0.5, 0.8}, {-2, -2}, {-2, -2}};
 
 struct FlowGenericFramework {
-  O2_DEFINE_CONFIGURABLE(cfgUseNewNpt, bool, true, "Use alternative filling for fractions")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgMpar, int, 8, "Highest order of pt-pt correlations")
   O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FT0A, 4:NTPV, 5:NGlobal, 6:MFT")
@@ -211,9 +212,9 @@ struct FlowGenericFramework {
     O2_DEFINE_CONFIGURABLE(cfgGlobalT0AHighSigma, float, 4, "Number of sigma deviations above expected value in global vs T0A correlation");
   } cfgMultCorrCuts;
   struct : ConfigurableGroup {
-    Configurable<LabeledArray<float>> nSigmas{"nSigmas", {LongArrayFloat[0], 3, 6, {"TPC", "TOF", "ITS"}, {"pos_pi", "pos_ka", "pos_pr", "neg_pi", "neg_ka", "neg_pr"}}, "Labeled array for n-sigma values for TPC, TOF, ITS for pions, kaons, protons (positive and negative)"};
-    Configurable<LabeledArray<float>> resonanceCuts{"resonanceCuts", {LongArrayFloat[0], 3, 11, {"K0", "Lambda", "Phi"}, {"cos_PAs", "massMin", "massMax", "PosTrackPt", "NegTrackPt", "DCAPosToPVMin", "DCANegToPVMin", "Lifetime", "RadiusMin", "RadiusMax", "Rapidity"}}, "Labeled array (float) for various cuts on resonances"};
-    Configurable<LabeledArray<int>> resonanceSwitches{"resonanceSwitches", {LongArrayInt[0], 3, 6, {"K0", "Lambda", "Phi"}, {"UseParticle", "UseCosPA", "NMassBins", "DCABetDaug", "UseProperLifetime", "UseV0Radius"}}, "Labeled array (int) for various cuts on resonances"};
+    Configurable<LabeledArray<float>> nSigmas{"nSigmas", {LongArrayFloat[0], 6, 3, {"pos_pi", "pos_ka", "pos_pr", "neg_pi", "neg_ka", "neg_pr"}, {"TPC", "TOF", "ITS"}}, "Labeled array for n-sigma values for TPC, TOF, ITS for pions, kaons, protons (positive and negative)"};
+    Configurable<LabeledArray<float>> resonanceCuts{"resonanceCuts", {LongArrayFloat[0], 13, 3, {"cos_PAs", "massMin", "massMax", "PosTrackPt", "NegTrackPt", "DCAPosToPVMin", "DCANegToPVMin", "Lifetime", "RadiusMin", "RadiusMax", "Rapidity", "ArmPodMin", "MassRejection"}, {"K0", "Lambda", "Phi"}}, "Labeled array (float) for various cuts on resonances"};
+    Configurable<LabeledArray<int>> resonanceSwitches{"resonanceSwitches", {LongArrayInt[0], 8, 3, {"UseParticle", "UseCosPA", "NMassBins", "DCABetDaug", "UseProperLifetime", "UseV0Radius", "UseArmPodCut", "UseCompetingMassRejection"}, {"K0", "Lambda", "Phi"}}, "Labeled array (int) for various cuts on resonances"};
     O2_DEFINE_CONFIGURABLE(cfgUseLsPhi, bool, true, "Use LikeSign for Phi v2")
     O2_DEFINE_CONFIGURABLE(cfgUseOnlyTPC, bool, true, "Use only TPC PID for daughter selection")
     O2_DEFINE_CONFIGURABLE(cfgFakeKaonCut, float, 0.1f, "Maximum difference in measured momentum and TPC inner ring momentum of particle")
@@ -265,8 +266,8 @@ struct FlowGenericFramework {
   HistogramRegistry registry{"registry"};
   HistogramRegistry registryQA{"registryQA"};
 
-  std::array<std::array<float, 11>, 3> resoCutVals;
-  std::array<std::array<int, 6>, 3> resoSwitchVals;
+  std::array<std::array<float, 3>, 13> resoCutVals;
+  std::array<std::array<int, 3>, 8> resoSwitchVals;
   std::array<float, 6> tofNsigmaCut;
   std::array<float, 6> itsNsigmaCut;
   std::array<float, 6> tpcNsigmaCut;
@@ -369,7 +370,9 @@ struct FlowGenericFramework {
     kLifeTime,
     kRadiusMin,
     kRadiusMax,
-    kRapidity
+    kRapidity,
+    kArmPodMin,
+    kMassRejection
   };
   enum ParticleSwitches {
     kUseParticle = 0,
@@ -377,7 +380,9 @@ struct FlowGenericFramework {
     kMassBins,
     kDCABetDaug,
     kUseProperLifetime,
-    kUseV0Radius
+    kUseV0Radius,
+    kUseArmPodCut,
+    kUseCompetingMassRejection
   };
   enum V0Selection {
     kFillCandidate = 1,
@@ -389,6 +394,8 @@ struct FlowGenericFramework {
     kFillV0Radius,
     kFillCosPA,
     kFillProperLifetime,
+    kFillArmPodCut,
+    kFillCompetingMass,
     kFillDaughterTrackSelection
   };
 
@@ -574,7 +581,6 @@ struct FlowGenericFramework {
       registryQA.add("trackQA/after/etaPtPt", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
       registryQA.add("trackQA/after/etaV0Daughters", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
 
-      LOGF(info, "Using alternative filling for pt fractions: %d", static_cast<int>(cfgUseNewNpt));
       histosNpt.resize(SPECIESCOUNT);
       histosNpt[CHARGEDID] = registry.add<TH1>("nptCh", "; #it{p}_{T} (GeV/#it{c}; Count)", {HistType::kTH1D, {ptAxis}});
       histosNpt[PIONID] = registry.add<TH1>("nptPi", "; #it{p}_{T} (GeV/#it{c}; Count)", {HistType::kTH1D, {ptAxis}});
@@ -639,11 +645,11 @@ struct FlowGenericFramework {
         }
       }
 
-      AxisSpec axisK0Mass = {resoSwitchVals[K0][kMassBins], resoCutVals[K0][kMassMin], resoCutVals[K0][kMassMax]};
-      AxisSpec axisLambdaMass = {resoSwitchVals[LAMBDA][kMassBins], resoCutVals[LAMBDA][kMassMin], resoCutVals[LAMBDA][kMassMax]};
+      AxisSpec axisK0Mass = {resoSwitchVals[kMassBins][K0], resoCutVals[kMassMin][K0], resoCutVals[kMassMax][K0]};
+      AxisSpec axisLambdaMass = {resoSwitchVals[kMassBins][LAMBDA], resoCutVals[kMassMin][LAMBDA], resoCutVals[kMassMax][LAMBDA]};
 
       // QA histograms for V0s
-      if (resoSwitchVals[K0][kUseParticle]) {
+      if (resoSwitchVals[kUseParticle][K0]) {
         registryQA.add("K0/PiPlusTPC_K0", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
         registryQA.add("K0/PiMinusTPC_K0", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
         registryQA.add("K0/PiPlusTOF_K0", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
@@ -654,7 +660,7 @@ struct FlowGenericFramework {
         registryQA.add("K0/hK0s", "", {HistType::kTH1D, {singleCount}});
         registryQA.add("K0/hK0s_corrected", "", {HistType::kTH1D, {singleCount}});
 
-        registryQA.add("K0/hK0Count", "Number of K0;; Count", {HistType::kTH1D, {{10, 0.5, 10.5}}});
+        registryQA.add("K0/hK0Count", "Number of K0;; Count", {HistType::kTH1D, {{12, 0.5, 12.5}}});
         registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(kFillCandidate, "K0 candidates");
         registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(kFillDaughterPt, "Daughter pt");
         registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(kFillMassCut, "Mass cut");
@@ -664,10 +670,12 @@ struct FlowGenericFramework {
         registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(kFillV0Radius, "V0radius");
         registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(kFillCosPA, "CosPA");
         registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(kFillProperLifetime, "Proper lifetime");
+        registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(kFillArmPodCut, "Armenteros-Podolanski cut");
+        registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(kFillCompetingMass, "Competing mass rejection");
         registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(kFillDaughterTrackSelection, "Daughter track selection");
       }
 
-      if (resoSwitchVals[LAMBDA][kUseParticle]) {
+      if (resoSwitchVals[kUseParticle][LAMBDA]) {
         registryQA.add("Lambda/PrPlusTPC_L", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
         registryQA.add("Lambda/PiMinusTPC_L", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
         registryQA.add("Lambda/PrPlusTOF_L", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
@@ -685,7 +693,7 @@ struct FlowGenericFramework {
         registryQA.add("Lambda/hLambdas", "", {HistType::kTH1D, {singleCount}});
         registryQA.add("Lambda/hLambdas_corrected", "", {HistType::kTH1D, {singleCount}});
 
-        registryQA.add("Lambda/hLambdaCount", "Number of Lambda;; Count", {HistType::kTH1D, {{10, 0.5, 10.5}}});
+        registryQA.add("Lambda/hLambdaCount", "Number of Lambda;; Count", {HistType::kTH1D, {{12, 0.5, 12.5}}});
         registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(kFillCandidate, "Lambda candidates");
         registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(kFillDaughterPt, "Daughter pt");
         registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(kFillMassCut, "Mass cut");
@@ -695,6 +703,8 @@ struct FlowGenericFramework {
         registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(kFillV0Radius, "V0radius");
         registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(kFillCosPA, "CosPA");
         registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(kFillProperLifetime, "Proper lifetime");
+        registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(kFillArmPodCut, "Armenteros-Podolanski cut");
+        registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(kFillCompetingMass, "Competing mass rejection");
         registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(kFillDaughterTrackSelection, "Daughter track selection");
       }
     }
@@ -830,7 +840,7 @@ struct FlowGenericFramework {
         size_t maxValLen = 0;
         for (size_t r = 0; r < nRows; ++r) {
           std::ostringstream oss;
-          oss << std::fixed << std::setprecision(2) << valuesMatrix[r][c];
+          oss << std::fixed << std::setprecision(3) << valuesMatrix[r][c];
           maxValLen = std::max(maxValLen, oss.str().length());
         }
         colWidths[c] = std::max(lbl.labels_cols[c].size(), maxValLen);
@@ -854,7 +864,7 @@ struct FlowGenericFramework {
         std::ostringstream line;
         line << std::setw(rowLabelWidth) << (lbl.labels_rows[r] + ":");
         for (size_t c = 0; c < nCols; ++c) {
-          line << std::setw(colWidths[c]) << std::fixed << std::setprecision(2) << valuesMatrix[r][c] << "  ";
+          line << std::setw(colWidths[c]) << std::fixed << std::setprecision(3) << valuesMatrix[r][c] << "  ";
         }
         LOGF(info, "%s", line.str().c_str());
       }
@@ -862,10 +872,12 @@ struct FlowGenericFramework {
 
     // ----- nSigma PID -----
     // Map arrays into a 2D vector
-    std::vector<std::vector<float>> nSigmaVals = {
-      std::vector<float>(tpcNsigmaCut.begin(), tpcNsigmaCut.end()),
-      std::vector<float>(tofNsigmaCut.begin(), tofNsigmaCut.end()),
-      std::vector<float>(itsNsigmaCut.begin(), itsNsigmaCut.end())};
+    std::vector<std::vector<float>> nSigmaVals(6, std::vector<float>(3));
+    for (size_t i = 0; i < 6; i++) {
+      nSigmaVals[i][0] = tpcNsigmaCut[i]; // TPC
+      nSigmaVals[i][1] = tofNsigmaCut[i]; // TOF
+      nSigmaVals[i][2] = itsNsigmaCut[i]; // ITS
+    }
     printTable(cfgPIDCuts.nSigmas.value, nSigmaVals, "nSigma PID Cuts");
 
     // ----- Resonance Cuts -----
@@ -1269,27 +1281,12 @@ struct FlowGenericFramework {
   }
 
   struct AcceptedTracks {
-    explicit AcceptedTracks(std::size_t nptbins)
-      : pidtotal{0, 0, 0},
-        nch(nptbins, 0.f),
-        npi(nptbins, 0.f),
-        nka(nptbins, 0.f),
-        npr(nptbins, 0.f)
-    {
-    }
-
     float total = 0;
     unsigned int totaluncorr = 0;
-
-    std::vector<float> pidtotal;
-    std::vector<double> nch;
-    std::vector<double> npi;
-    std::vector<double> nka;
-    std::vector<double> npr;
   };
 
   template <DataType dt>
-  void fillOutputContainers(const float& centmult, const double& rndm, AcceptedTracks acceptedtracks)
+  void fillOutputContainers(const float& centmult, const double& rndm)
   {
     fFCpt->calculateCorrelations();
     fFCpt->calculateSubeventCorrelations();
@@ -1324,49 +1321,34 @@ struct FlowGenericFramework {
       }
     }
 
-    double chtotal = (cfgUseNchCorrection) ? acceptedtracks.total : acceptedtracks.totaluncorr;
-    // calculate fractions
-    std::vector<std::vector<double>> inputs = {acceptedtracks.nch, acceptedtracks.npi, acceptedtracks.nka, acceptedtracks.npr};
-    std::vector<std::vector<double>> fractions;
-    fractions.reserve(inputs.size());
-    int pidcounter = 0;
-    for (auto& vec : inputs) { // o2-linter: disable=const-ref-in-for-loop (modified through transform)
-      fractions.emplace_back();
-      fractions.back().reserve(vec.size());
-
-      double total = chtotal;
-      if (cfgUsePIDTotal)
-        total = (pidcounter) ? acceptedtracks.pidtotal[pidcounter - 1] : chtotal;
-
-      if (total == 0.) {
-        ++pidcounter;
-        continue;
-      }
-      std::transform(vec.begin(), vec.end(),
-                     std::back_inserter(fractions.back()),
-                     [&](double x) { return x / total; });
-      ++pidcounter;
-    }
-
-    if (cfgUseNewNpt) {
-      for (int i = 1; i <= fPtAxis->GetNbins(); ++i) {
-        registry.fill(HIST("npt_ch"), fPtAxis->GetBinCenter(i), centmult, histosNpt[CHARGEDID]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral());
-        registry.fill(HIST("npt_pi"), fPtAxis->GetBinCenter(i), centmult, histosNpt[PIONID]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral());
-        registry.fill(HIST("npt_ka"), fPtAxis->GetBinCenter(i), centmult, histosNpt[KAONID]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral());
-        registry.fill(HIST("npt_pr"), fPtAxis->GetBinCenter(i), centmult, histosNpt[PROTONID]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral());
-      }
-    } else {
-      for (std::size_t i = 0; i < fractions[0].size(); ++i)
-        registry.fill(HIST("npt_ch"), fPtAxis->GetBinCenter(i + 1), centmult, fractions[0][i]);
-      for (std::size_t i = 0; i < fractions[1].size(); ++i)
-        registry.fill(HIST("npt_pi"), fPtAxis->GetBinCenter(i + 1), centmult, fractions[1][i]);
-      for (std::size_t i = 0; i < fractions[2].size(); ++i)
-        registry.fill(HIST("npt_ka"), fPtAxis->GetBinCenter(i + 1), centmult, fractions[2][i]);
-      for (std::size_t i = 0; i < fractions[3].size(); ++i)
-        registry.fill(HIST("npt_pr"), fPtAxis->GetBinCenter(i + 1), centmult, fractions[3][i]);
-    }
-    if (corrconfigsV02.size() < SPECIESCOUNT) //
+    if (histosNpt[CHARGEDID]->Integral() <= 0)
       return;
+
+    double dnPi = histosNpt[CHARGEDID]->Integral();
+    double dnKa = histosNpt[CHARGEDID]->Integral();
+    double dnPr = histosNpt[CHARGEDID]->Integral();
+
+    if (cfgUsePIDTotal) {
+      dnPi = histosNpt[PIONID]->Integral();
+      dnKa = histosNpt[KAONID]->Integral();
+      dnPr = histosNpt[PROTONID]->Integral();
+    }
+
+    for (int i = 1; i <= fPtAxis->GetNbins(); ++i) {
+      registry.fill(HIST("npt_ch"), fPtAxis->GetBinCenter(i), centmult, histosNpt[CHARGEDID]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral());
+      if (dnPi > 0)
+        registry.fill(HIST("npt_pi"), fPtAxis->GetBinCenter(i), centmult, histosNpt[PIONID]->GetBinContent(i) / dnPi);
+      if (dnKa > 0)
+        registry.fill(HIST("npt_ka"), fPtAxis->GetBinCenter(i), centmult, histosNpt[KAONID]->GetBinContent(i) / dnKa);
+      if (dnPr > 0)
+        registry.fill(HIST("npt_pr"), fPtAxis->GetBinCenter(i), centmult, histosNpt[PROTONID]->GetBinContent(i) / dnPr);
+    }
+
+    if (corrconfigsV02.size() < SPECIESCOUNT)
+      return;
+
+    // For alternative normalisation with integrated pid spectra
+    std::vector<double> dns = {histosNpt[CHARGEDID]->Integral(), dnPi, dnKa, dnPr};
 
     for (uint l_ind = 0; l_ind < SPECIESCOUNT; ++l_ind) {
       for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
@@ -1374,8 +1356,8 @@ struct FlowGenericFramework {
         if (dnx == 0)
           continue;
         auto val = fGFW->Calculate(corrconfigsV02.at(l_ind), i - 1, kFALSE).real() / dnx;
-        if (std::abs(val) < 1)
-          (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centmult, val * ((cfgUseNewNpt) ? histosNpt[l_ind]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral() : fractions[l_ind][i - 1]), dnx, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centmult, val * ((cfgUseNewNpt) ? histosNpt[l_ind]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral() : fractions[l_ind][i - 1]), dnx, rndm);
+        if (std::abs(val) < 1 && dns[l_ind] > 0)
+          (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centmult, val * histosNpt[l_ind]->GetBinContent(i) / dns[l_ind], dnx, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centmult, val * histosNpt[l_ind]->GetBinContent(i) / dns[l_ind], dnx, rndm);
       }
     }
 
@@ -1398,7 +1380,8 @@ struct FlowGenericFramework {
       return;
     for (uint l_ind = 0; l_ind < SPECIESCOUNT; ++l_ind) {
       for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
-        (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * ((cfgUseNewNpt) ? histosNpt[l_ind]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral() : fractions[l_ind][i - 1]), 1., rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * ((cfgUseNewNpt) ? histosNpt[l_ind]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral() : fractions[l_ind][i - 1]), 1., rndm);
+        if (dns[l_ind] > 0)
+          (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * histosNpt[l_ind]->GetBinContent(i) / dns[l_ind], 1., rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * histosNpt[l_ind]->GetBinContent(i) / dns[l_ind], 1., rndm);
       }
     }
     return;
@@ -1461,7 +1444,7 @@ struct FlowGenericFramework {
       densitycorrections.density = tracks.size();
     }
     // process tracks
-    AcceptedTracks acceptedTracks(o2::analysis::gfw::ptbinning.size() - 1);
+    AcceptedTracks acceptedTracks;
     // Reset fraction histograms per event
     for (const auto& h : histosNpt)
       h->Reset("ICESM");
@@ -1490,108 +1473,82 @@ struct FlowGenericFramework {
     if (cfgFillWeights)
       return;
 
-    fillOutputContainers<dt>((cfgUseNch) ? multiplicity : centrality, lRandom, acceptedTracks);
+    fillOutputContainers<dt>((cfgUseNch) ? multiplicity : centrality, lRandom);
+
     // Reset fraction histograms per event
     for (const auto& h : histosResoNpt)
       h->Reset("ICESM");
-    std::vector<std::vector<float>> nptResonances(6, std::vector<float>(o2::analysis::gfw::ptbinning.size()));
+
     // Process V0s
     for (const auto& v0 : v0s) {
-      if (resoSwitchVals[K0][kUseParticle]) {
+      if (resoSwitchVals[kUseParticle][K0]) {
         double weff = 1;
         if (selectK0(collision, v0, centrality, weff)) {
-          int ptBinIndex = fPtAxis->FindBin(v0.pt()) - 1;
-          if (!(ptBinIndex < 0 || ptBinIndex >= static_cast<int>(o2::analysis::gfw::ptbinning.size()))) {
-            if (v0.mK0Short() > cfgPIDCuts.cfgK0SideBand1Min && v0.mK0Short() < cfgPIDCuts.cfgK0SideBand1Max) {
-              nptResonances[0][ptBinIndex] += (cfgUseNchCorrection) ? weff : 1.0;
-              histosResoNpt[K0SIDEBAND1]->Fill(v0.pt(), (cfgUseNchCorrection) ? weff : 1.0);
-            }
-            if (v0.mK0Short() > cfgPIDCuts.cfgK0SignalMin && v0.mK0Short() < cfgPIDCuts.cfgK0SignalMax) {
-              nptResonances[1][ptBinIndex] += (cfgUseNchCorrection) ? weff : 1.0;
-              histosResoNpt[K0SIGNAL]->Fill(v0.pt(), (cfgUseNchCorrection) ? weff : 1.0);
-            }
-            if (v0.mK0Short() > cfgPIDCuts.cfgK0SideBand2Min && v0.mK0Short() < cfgPIDCuts.cfgK0SideBand2Max) {
-              nptResonances[2][ptBinIndex] += (cfgUseNchCorrection) ? weff : 1.0;
-              histosResoNpt[K0SIDEBAND2]->Fill(v0.pt(), (cfgUseNchCorrection) ? weff : 1.0);
-            }
-          }
+          if (v0.mK0Short() > cfgPIDCuts.cfgK0SideBand1Min && v0.mK0Short() < cfgPIDCuts.cfgK0SideBand1Max)
+            histosResoNpt[K0SIDEBAND1]->Fill(v0.pt(), (cfgUseNchCorrection) ? weff : 1.0);
+          if (v0.mK0Short() > cfgPIDCuts.cfgK0SignalMin && v0.mK0Short() < cfgPIDCuts.cfgK0SignalMax)
+            histosResoNpt[K0SIGNAL]->Fill(v0.pt(), (cfgUseNchCorrection) ? weff : 1.0);
+          if (v0.mK0Short() > cfgPIDCuts.cfgK0SideBand2Min && v0.mK0Short() < cfgPIDCuts.cfgK0SideBand2Max)
+            histosResoNpt[K0SIDEBAND2]->Fill(v0.pt(), (cfgUseNchCorrection) ? weff : 1.0);
         }
       }
-      // Add lambdabar
-      if (resoSwitchVals[LAMBDA][kUseParticle]) {
+      if (resoSwitchVals[kUseParticle][LAMBDA]) {
         double weff = 1.;
         if (selectLambda(collision, v0, centrality, weff)) {
-          int ptBinIndex = fPtAxis->FindBin(v0.pt()) - 1;
-          if (!(ptBinIndex < 0 || ptBinIndex >= static_cast<int>(o2::analysis::gfw::ptbinning.size()))) {
-            if (v0.mLambda() > cfgPIDCuts.cfgLambdaSideBand1Min && v0.mLambda() < cfgPIDCuts.cfgLambdaSideBand1Max) {
-              nptResonances[3][ptBinIndex] += (cfgUseNchCorrection) ? weff : 1.0;
-              histosResoNpt[LAMBDASIDEBAND1]->Fill(v0.pt(), (cfgUseNchCorrection) ? weff : 1.0);
-            }
-            if (v0.mLambda() > cfgPIDCuts.cfgLambdaSignalMin && v0.mLambda() < cfgPIDCuts.cfgLambdaSignalMax) {
-              nptResonances[4][ptBinIndex] += (cfgUseNchCorrection) ? weff : 1.0;
-              histosResoNpt[LAMBDASIGNAL]->Fill(v0.pt(), (cfgUseNchCorrection) ? weff : 1.0);
-            }
-            if (v0.mLambda() > cfgPIDCuts.cfgLambdaSideBand2Min && v0.mLambda() < cfgPIDCuts.cfgLambdaSideBand2Max) {
-              nptResonances[5][ptBinIndex] += (cfgUseNchCorrection) ? weff : 1.0;
-              histosResoNpt[LAMBDASIDEBAND2]->Fill(v0.pt(), (cfgUseNchCorrection) ? weff : 1.0);
-            }
-          }
+          if (v0.mLambda() > cfgPIDCuts.cfgLambdaSideBand1Min && v0.mLambda() < cfgPIDCuts.cfgLambdaSideBand1Max)
+            histosResoNpt[LAMBDASIDEBAND1]->Fill(v0.pt(), (cfgUseNchCorrection) ? weff : 1.0);
+          if (v0.mLambda() > cfgPIDCuts.cfgLambdaSignalMin && v0.mLambda() < cfgPIDCuts.cfgLambdaSignalMax)
+            histosResoNpt[LAMBDASIGNAL]->Fill(v0.pt(), (cfgUseNchCorrection) ? weff : 1.0);
+          if (v0.mLambda() > cfgPIDCuts.cfgLambdaSideBand2Min && v0.mLambda() < cfgPIDCuts.cfgLambdaSideBand2Max)
+            histosResoNpt[LAMBDASIDEBAND2]->Fill(v0.pt(), (cfgUseNchCorrection) ? weff : 1.0);
         }
       }
     }
-    double chtotal = (cfgUseNchCorrection) ? acceptedTracks.total : acceptedTracks.totaluncorr;
-    // calculate fractions
-    std::vector<std::vector<float>> fractions_resonances = nptResonances;
-    int pidcounter = 0;
-    for (auto& vec : fractions_resonances) { // o2-linter: disable=const-ref-in-for-loop (modified through transform)
-      double total = chtotal;
-      if (cfgUsePIDTotal)
-        total = (pidcounter) ? std::accumulate(vec.begin(), vec.end(), 0.f) : chtotal;
 
-      if (total == 0.) {
-        ++pidcounter;
-        continue;
-      }
-      std::transform(vec.begin(), vec.end(), vec.begin(),
-                     [&](float x) { return x / total; });
-      ++pidcounter;
+    if (histosNpt[CHARGEDID]->Integral() <= 0)
+      return;
+
+    double dnK0SB1 = histosNpt[CHARGEDID]->Integral();
+    double dnK0Sig = histosNpt[CHARGEDID]->Integral();
+    double dnK0SB2 = histosNpt[CHARGEDID]->Integral();
+    double dnLambdaSB1 = histosNpt[CHARGEDID]->Integral();
+    double dnLambdaSig = histosNpt[CHARGEDID]->Integral();
+    double dnLambdaSB2 = histosNpt[CHARGEDID]->Integral();
+
+    if (cfgUsePIDTotal) {
+      dnK0SB1 = histosResoNpt[K0SIDEBAND1]->Integral();
+      dnK0Sig = histosResoNpt[K0SIGNAL]->Integral();
+      dnK0SB2 = histosResoNpt[K0SIDEBAND2]->Integral();
+      dnLambdaSB1 = histosResoNpt[LAMBDASIDEBAND1]->Integral();
+      dnLambdaSig = histosResoNpt[LAMBDASIGNAL]->Integral();
+      dnLambdaSB2 = histosResoNpt[LAMBDASIDEBAND2]->Integral();
     }
 
-    if (cfgUseNewNpt) {
-      for (int i = 1; i <= fPtAxis->GetNbins(); ++i) {
-        if (histosNpt[CHARGEDID]->Integral() <= 0)
-          continue;
-        registry.fill(HIST("npt_K0_sb1"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[K0SIDEBAND1]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral());
-        registry.fill(HIST("npt_K0_sig"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[K0SIGNAL]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral());
-        registry.fill(HIST("npt_K0_sb2"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[K0SIDEBAND2]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral());
-        registry.fill(HIST("npt_Lambda_sb1"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[LAMBDASIDEBAND1]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral());
-        registry.fill(HIST("npt_Lambda_sig"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[LAMBDASIGNAL]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral());
-        registry.fill(HIST("npt_Lambda_sb2"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[LAMBDASIDEBAND2]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral());
-      }
-    } else {
-      for (std::size_t i = 0; i < fractions_resonances[0].size(); ++i)
-        registry.fill(HIST("npt_K0_sb1"), fPtAxis->GetBinCenter(i + 1), centrality, fractions_resonances[0][i]);
-      for (std::size_t i = 0; i < fractions_resonances[2].size(); ++i)
-        registry.fill(HIST("npt_K0_sb2"), fPtAxis->GetBinCenter(i + 1), centrality, fractions_resonances[2][i]);
-      for (std::size_t i = 0; i < fractions_resonances[1].size(); ++i)
-        registry.fill(HIST("npt_K0_sig"), fPtAxis->GetBinCenter(i + 1), centrality, fractions_resonances[1][i]);
-      for (std::size_t i = 0; i < fractions_resonances[3].size(); ++i)
-        registry.fill(HIST("npt_Lambda_sb1"), fPtAxis->GetBinCenter(i + 1), centrality, fractions_resonances[3][i]);
-      for (std::size_t i = 0; i < fractions_resonances[5].size(); ++i)
-        registry.fill(HIST("npt_Lambda_sb2"), fPtAxis->GetBinCenter(i + 1), centrality, fractions_resonances[5][i]);
-      for (std::size_t i = 0; i < fractions_resonances[4].size(); ++i)
-        registry.fill(HIST("npt_Lambda_sig"), fPtAxis->GetBinCenter(i + 1), centrality, fractions_resonances[4][i]);
+    for (int i = 1; i <= fPtAxis->GetNbins(); ++i) {
+      if (dnK0SB1 > 0)
+        registry.fill(HIST("npt_K0_sb1"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[K0SIDEBAND1]->GetBinContent(i) / dnK0SB1);
+      if (dnK0Sig > 0)
+        registry.fill(HIST("npt_K0_sig"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[K0SIGNAL]->GetBinContent(i) / dnK0Sig);
+      if (dnK0SB2 > 0)
+        registry.fill(HIST("npt_K0_sb2"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[K0SIDEBAND2]->GetBinContent(i) / dnK0SB2);
+      if (dnLambdaSB1 > 0)
+        registry.fill(HIST("npt_Lambda_sb1"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[LAMBDASIDEBAND1]->GetBinContent(i) / dnLambdaSB1);
+      if (dnLambdaSig > 0)
+        registry.fill(HIST("npt_Lambda_sig"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[LAMBDASIGNAL]->GetBinContent(i) / dnLambdaSig);
+      if (dnLambdaSB2 > 0)
+        registry.fill(HIST("npt_Lambda_sb2"), fPtAxis->GetBinCenter(i), centrality, histosResoNpt[LAMBDASIDEBAND2]->GetBinContent(i) / dnLambdaSB2);
     }
+
+    std::vector<double> dns = {dnK0SB1, dnK0Sig, dnK0SB2, dnLambdaSB1, dnLambdaSig, dnLambdaSB2};
+
     for (uint l_ind = 4; l_ind < corrconfigsV02.size(); ++l_ind) {
-      if (histosNpt[CHARGEDID]->Integral() <= 0 && cfgUseNewNpt)
-        continue;
       for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
         auto dnx = fGFW->Calculate(corrconfigsV02.at(l_ind), i - 1, kTRUE).real();
         if (dnx == 0)
           continue;
         auto val = fGFW->Calculate(corrconfigsV02.at(l_ind), i - 1, kFALSE).real() / dnx;
-        if (std::abs(val) < 1)
-          (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centrality, val * ((cfgUseNewNpt) ? histosResoNpt[l_ind - 4]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral() : fractions_resonances[l_ind - 4][i - 1]), dnx, lRandom) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centrality, val * ((cfgUseNewNpt) ? histosResoNpt[l_ind - 4]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral() : fractions_resonances[l_ind - 4][i - 1]), dnx, lRandom);
+        if (std::abs(val) < 1 && dns[l_ind - 4] > 0)
+          (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centrality, val * histosResoNpt[l_ind - 4]->GetBinContent(i) / dns[l_ind - 4], dnx, lRandom) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centrality, val * histosResoNpt[l_ind - 4]->GetBinContent(i) / dns[l_ind - 4], dnx, lRandom);
       }
     }
 
@@ -1605,10 +1562,9 @@ struct FlowGenericFramework {
       return;
 
     for (uint l_ind = 4; l_ind < corrconfigsV0.size(); ++l_ind) {
-      if (histosNpt[CHARGEDID]->Integral() <= 0 && cfgUseNewNpt)
-        continue;
       for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
-        (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centrality, mpt * ((cfgUseNewNpt) ? histosResoNpt[l_ind - 4]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral() : fractions_resonances[l_ind - 4][i - 1]), 1.0, lRandom) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centrality, mpt * ((cfgUseNewNpt) ? histosResoNpt[l_ind - 4]->GetBinContent(i) / histosNpt[CHARGEDID]->Integral() : fractions_resonances[l_ind - 4][i - 1]), 1.0, lRandom);
+        if (dns[l_ind] > 0)
+          (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centrality, mpt * histosResoNpt[l_ind - 4]->GetBinContent(i) / dns[l_ind - 4], 1.0, lRandom) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centrality, mpt * histosResoNpt[l_ind - 4]->GetBinContent(i) / dns[l_ind - 4], 1.0, lRandom);
       }
     }
   }
@@ -1656,28 +1612,14 @@ struct FlowGenericFramework {
       if (track.eta() > cfgEtaNch->first && track.eta() < cfgEtaNch->second) {
         double weff = getEfficiency(track, pidIndex);
 
-        if (pidIndex && weff > 0)
-          acceptedTracks.pidtotal[pidIndex - 1] += weff;
-
-        int ptBinIndex = fPtAxis->FindBin(track.pt()) - 1;
-        if (!(ptBinIndex < 0 || ptBinIndex >= static_cast<int>(o2::analysis::gfw::ptbinning.size()))) {
-          if (weffCh > 0) {
-            acceptedTracks.nch[ptBinIndex] += (cfgUseNchCorrection) ? weffCh : 1.0;
-            histosNpt[CHARGEDID]->Fill(track.pt(), (cfgUseNchCorrection) ? weffCh : 1.0);
-          }
-          if (pidIndex == PIONID && weff > 0) {
-            acceptedTracks.npi[ptBinIndex] += (cfgUseNchCorrection) ? weff : 1.0;
-            histosNpt[PIONID]->Fill(track.pt(), (cfgUseNchCorrection) ? weff : 1.0);
-          }
-          if (pidIndex == KAONID && weff > 0) {
-            acceptedTracks.nka[ptBinIndex] += (cfgUseNchCorrection) ? weff : 1.0;
-            histosNpt[KAONID]->Fill(track.pt(), (cfgUseNchCorrection) ? weff : 1.0);
-          }
-          if (pidIndex == PROTONID && weff > 0) {
-            acceptedTracks.npr[ptBinIndex] += (cfgUseNchCorrection) ? weff : 1.0;
-            histosNpt[PROTONID]->Fill(track.pt(), (cfgUseNchCorrection) ? weff : 1.0);
-          }
-        }
+        if (weffCh > 0)
+          histosNpt[CHARGEDID]->Fill(track.pt(), (cfgUseNchCorrection) ? weffCh : 1.0);
+        if (pidIndex == PIONID && weff > 0)
+          histosNpt[PIONID]->Fill(track.pt(), (cfgUseNchCorrection) ? weff : 1.0);
+        if (pidIndex == KAONID && weff > 0)
+          histosNpt[KAONID]->Fill(track.pt(), (cfgUseNchCorrection) ? weff : 1.0);
+        if (pidIndex == PROTONID && weff > 0)
+          histosNpt[PROTONID]->Fill(track.pt(), (cfgUseNchCorrection) ? weff : 1.0);
       }
 
       if (cfgFillWeights) {
@@ -1718,26 +1660,13 @@ struct FlowGenericFramework {
         ++acceptedTracks.total;
         ++acceptedTracks.totaluncorr;
 
-        if (pidIndex)
-          acceptedTracks.pidtotal[pidIndex - 1] += 1;
-        int ptBinIndex = fPtAxis->FindBin(track.pt()) - 1;
-
-        if (!(ptBinIndex < 0 || ptBinIndex >= static_cast<int>(o2::analysis::gfw::ptbinning.size()))) {
-          acceptedTracks.nch[ptBinIndex] += 1.0;
-          histosNpt[CHARGEDID]->Fill(track.pt());
-          if (pidIndex == PIONID) {
-            acceptedTracks.npi[ptBinIndex] += 1.0;
-            histosNpt[PIONID]->Fill(track.pt());
-          }
-          if (pidIndex == KAONID) {
-            acceptedTracks.nka[ptBinIndex] += 1.0;
-            histosNpt[KAONID]->Fill(track.pt());
-          }
-          if (pidIndex == PROTONID) {
-            acceptedTracks.npr[ptBinIndex] += 1.0;
-            histosNpt[PROTONID]->Fill(track.pt());
-          }
-        }
+        histosNpt[CHARGEDID]->Fill(track.pt());
+        if (pidIndex == PIONID)
+          histosNpt[PIONID]->Fill(track.pt());
+        if (pidIndex == KAONID)
+          histosNpt[KAONID]->Fill(track.pt());
+        if (pidIndex == PROTONID)
+          histosNpt[PROTONID]->Fill(track.pt());
       }
 
       fillPtSums<kGen>(track, vtxz);
@@ -1767,29 +1696,15 @@ struct FlowGenericFramework {
 
       if (track.eta() > cfgEtaNch->first && track.eta() < cfgEtaNch->second) {
         double weff = getEfficiency(track, pidIndex);
-        if (pidIndex && weff > 0)
-          acceptedTracks.pidtotal[pidIndex - 1] += weff;
 
-        int ptBinIndex = fPtAxis->FindBin(track.pt()) - 1;
-
-        if (!(ptBinIndex < 0 || ptBinIndex >= static_cast<int>(o2::analysis::gfw::ptbinning.size()))) {
-          if (weffCh > 0) {
-            acceptedTracks.nch[ptBinIndex] += (cfgUseNchCorrection) ? weffCh : 1.0;
-            histosNpt[CHARGEDID]->Fill(track.pt(), (cfgUseNchCorrection) ? weffCh : 1.0);
-          }
-          if (pidIndex == PIONID && weff > 0) {
-            acceptedTracks.npi[ptBinIndex] += (cfgUseNchCorrection) ? weff : 1.0;
-            histosNpt[PIONID]->Fill(track.pt(), (cfgUseNchCorrection) ? weff : 1.0);
-          }
-          if (pidIndex == KAONID && weff > 0) {
-            acceptedTracks.nka[ptBinIndex] += (cfgUseNchCorrection) ? weff : 1.0;
-            histosNpt[KAONID]->Fill(track.pt(), (cfgUseNchCorrection) ? weff : 1.0);
-          }
-          if (pidIndex == PROTONID && weff > 0) {
-            acceptedTracks.npr[ptBinIndex] += (cfgUseNchCorrection) ? weff : 1.0;
-            histosNpt[PROTONID]->Fill(track.pt(), (cfgUseNchCorrection) ? weff : 1.0);
-          }
-        }
+        if (weffCh > 0)
+          histosNpt[CHARGEDID]->Fill(track.pt(), (cfgUseNchCorrection) ? weffCh : 1.0);
+        if (pidIndex == PIONID && weff > 0)
+          histosNpt[PIONID]->Fill(track.pt(), (cfgUseNchCorrection) ? weff : 1.0);
+        if (pidIndex == KAONID && weff > 0)
+          histosNpt[KAONID]->Fill(track.pt(), (cfgUseNchCorrection) ? weff : 1.0);
+        if (pidIndex == PROTONID && weff > 0)
+          histosNpt[PROTONID]->Fill(track.pt(), (cfgUseNchCorrection) ? weff : 1.0);
       }
 
       if (cfgFillWeights) {
@@ -1851,35 +1766,46 @@ struct FlowGenericFramework {
     auto negtrack = v0.template negTrack_as<GFWTracks>();
 
     registryQA.fill(HIST("K0/hK0Count"), kFillCandidate);
-    if (postrack.pt() < resoCutVals[K0][kPosTrackPt] || negtrack.pt() < resoCutVals[K0][kNegTrackPt])
+    if (postrack.pt() < resoCutVals[kPosTrackPt][K0] || negtrack.pt() < resoCutVals[kNegTrackPt][K0])
       return false;
     registryQA.fill(HIST("K0/hK0Count"), kFillDaughterPt);
-    if (massK0s < resoCutVals[K0][kMassMin] && massK0s > resoCutVals[K0][kMassMax])
+    if (massK0s < resoCutVals[kMassMin][K0] && massK0s > resoCutVals[kMassMax][K0])
       return false;
     registryQA.fill(HIST("K0/hK0Count"), kFillMassCut);
     // Rapidity correction
-    if (v0.yK0Short() > resoCutVals[K0][kRapidity])
+    if (v0.yK0Short() > resoCutVals[kRapidity][K0])
       return false;
     registryQA.fill(HIST("K0/hK0Count"), kFillRapidityCut);
     // DCA cuts for K0short
-    if (std::abs(v0.dcapostopv()) < resoCutVals[K0][kDCAPosToPVMin] || std::abs(v0.dcanegtopv()) < resoCutVals[K0][kDCANegToPVMin])
+    if (std::abs(v0.dcapostopv()) < resoCutVals[kDCAPosToPVMin][K0] || std::abs(v0.dcanegtopv()) < resoCutVals[kDCANegToPVMin][K0])
       return false;
     registryQA.fill(HIST("K0/hK0Count"), kFillDCAtoPV);
-    if (std::abs(v0.dcaV0daughters()) > resoSwitchVals[K0][kDCABetDaug])
+    if (std::abs(v0.dcaV0daughters()) > resoSwitchVals[kDCABetDaug][K0])
       return false;
     registryQA.fill(HIST("K0/hK0Count"), kFillDCAxDaughters);
     // v0 radius cuts
-    if (resoSwitchVals[K0][kUseV0Radius] && (v0.v0radius() < resoCutVals[K0][kRadiusMin] || v0.v0radius() > resoCutVals[K0][kRadiusMax]))
+    if (resoSwitchVals[kUseV0Radius][K0] && (v0.v0radius() < resoCutVals[kRadiusMin][K0] || v0.v0radius() > resoCutVals[kRadiusMax][K0]))
       return false;
     registryQA.fill(HIST("K0/hK0Count"), kFillV0Radius);
     // cosine pointing angle cuts
-    if (v0.v0cosPA() < resoCutVals[K0][kCosPA])
+    if (v0.v0cosPA() < resoCutVals[kCosPA][K0])
       return false;
     registryQA.fill(HIST("K0/hK0Count"), kFillCosPA);
     // Proper lifetime
-    if (resoSwitchVals[K0][kUseProperLifetime] && v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massK0Short > resoCutVals[K0][kLifeTime])
+    if (resoSwitchVals[kUseProperLifetime][K0] && v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massK0Short > resoCutVals[kLifeTime][K0])
       return false;
     registryQA.fill(HIST("K0/hK0Count"), kFillProperLifetime);
+    // ArmenterosPodolanskiCut
+    if (resoSwitchVals[kUseArmPodCut][K0] && (v0.qtarm() / std::abs(v0.alpha())) < resoCutVals[kArmPodMin][K0])
+      return false;
+    registryQA.fill(HIST("K0/hK0Count"), kFillArmPodCut);
+    if (resoSwitchVals[kUseCompetingMassRejection][K0]) {
+      if (std::abs(v0.mLambda() - o2::constants::physics::MassLambda0) < resoCutVals[kMassRejection][K0])
+        return false;
+      if (std::abs(v0.mAntiLambda() - o2::constants::physics::MassLambda0) < resoCutVals[kMassRejection][K0])
+        return false;
+    }
+    registryQA.fill(HIST("K0/hK0Count"), kFillCompetingMass);
     if (!selectionV0Daughter(postrack, PIONS) || !selectionV0Daughter(negtrack, PIONS))
       return false;
     registryQA.fill(HIST("K0/hK0Count"), kFillDaughterTrackSelection);
@@ -1918,13 +1844,13 @@ struct FlowGenericFramework {
     auto negtrack = v0.template negTrack_as<GFWTracks>();
 
     registryQA.fill(HIST("Lambda/hLambdaCount"), kFillCandidate);
-    if (postrack.pt() < resoCutVals[LAMBDA][kPosTrackPt] || negtrack.pt() < resoCutVals[LAMBDA][kNegTrackPt])
+    if (postrack.pt() < resoCutVals[kPosTrackPt][LAMBDA] || negtrack.pt() < resoCutVals[kNegTrackPt][LAMBDA])
       return false;
 
     registryQA.fill(HIST("Lambda/hLambdaCount"), kFillDaughterPt);
-    if (mlambda > resoCutVals[LAMBDA][kMassMin] && mlambda < resoCutVals[LAMBDA][kMassMax])
+    if (mlambda > resoCutVals[kMassMin][LAMBDA] && mlambda < resoCutVals[kMassMax][LAMBDA])
       isL = true;
-    if (mantilambda > resoCutVals[LAMBDA][kMassMin] && mantilambda < resoCutVals[LAMBDA][kMassMax])
+    if (mantilambda > resoCutVals[kMassMin][LAMBDA] && mantilambda < resoCutVals[kMassMax][LAMBDA])
       isAL = true;
 
     if (!isL && !isAL) {
@@ -1933,34 +1859,43 @@ struct FlowGenericFramework {
     registryQA.fill(HIST("Lambda/hLambdaCount"), kFillMassCut);
 
     // Rapidity correction
-    if (v0.yLambda() > resoCutVals[LAMBDA][kRapidity])
+    if (v0.yLambda() > resoCutVals[kRapidity][LAMBDA])
       return false;
     registryQA.fill(HIST("Lambda/hLambdaCount"), kFillRapidityCut);
     // DCA cuts for lambda and antilambda
     if (isL) {
-      if (std::abs(v0.dcapostopv()) < resoCutVals[LAMBDA][kDCAPosToPVMin] || std::abs(v0.dcanegtopv()) < resoCutVals[LAMBDA][kDCANegToPVMin])
+      if (std::abs(v0.dcapostopv()) < resoCutVals[kDCAPosToPVMin][LAMBDA] || std::abs(v0.dcanegtopv()) < resoCutVals[kDCANegToPVMin][LAMBDA])
         return false;
     }
     if (isAL) {
-      if (std::abs(v0.dcapostopv()) < resoCutVals[LAMBDA][kDCANegToPVMin] || std::abs(v0.dcanegtopv()) < resoCutVals[LAMBDA][kDCAPosToPVMin])
+      if (std::abs(v0.dcapostopv()) < resoCutVals[kDCANegToPVMin][LAMBDA] || std::abs(v0.dcanegtopv()) < resoCutVals[kDCAPosToPVMin][LAMBDA])
         return false;
     }
     registryQA.fill(HIST("Lambda/hLambdaCount"), kFillDCAtoPV);
-    if (std::abs(v0.dcaV0daughters()) > resoSwitchVals[LAMBDA][kDCABetDaug])
+    if (std::abs(v0.dcaV0daughters()) > resoSwitchVals[kDCABetDaug][LAMBDA])
       return false;
     registryQA.fill(HIST("Lambda/hLambdaCount"), kFillDCAxDaughters);
     // v0 radius cuts
-    if (resoSwitchVals[LAMBDA][kUseV0Radius] && (v0.v0radius() < resoCutVals[LAMBDA][kRadiusMin] || v0.v0radius() > resoCutVals[LAMBDA][kRadiusMax]))
+    if (resoSwitchVals[kUseV0Radius][LAMBDA] && (v0.v0radius() < resoCutVals[kRadiusMin][LAMBDA] || v0.v0radius() > resoCutVals[kRadiusMax][LAMBDA]))
       return false;
     registryQA.fill(HIST("Lambda/hLambdaCount"), kFillV0Radius);
     // cosine pointing angle cuts
-    if (v0.v0cosPA() < resoCutVals[LAMBDA][kCosPA])
+    if (v0.v0cosPA() < resoCutVals[kCosPA][LAMBDA])
       return false;
     registryQA.fill(HIST("Lambda/hLambdaCount"), kFillCosPA);
     // Proper lifetime
-    if (resoSwitchVals[LAMBDA][kUseProperLifetime] && v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massLambda > resoCutVals[LAMBDA][kLifeTime])
+    if (resoSwitchVals[kUseProperLifetime][LAMBDA] && v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massLambda > resoCutVals[kLifeTime][LAMBDA])
       return false;
     registryQA.fill(HIST("Lambda/hLambdaCount"), kFillProperLifetime);
+    // ArmenterosPodolanskiCut
+    if (resoSwitchVals[kUseArmPodCut][LAMBDA] && (v0.qtarm() / std::abs(v0.alpha())) < resoCutVals[kArmPodMin][LAMBDA])
+      return false;
+    registryQA.fill(HIST("Lambda/hLambdaCount"), kFillArmPodCut);
+    if (resoSwitchVals[kUseCompetingMassRejection][LAMBDA]) {
+      if (std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < resoCutVals[kMassRejection][LAMBDA])
+        return false;
+    }
+    registryQA.fill(HIST("Lambda/hLambdaCount"), kFillCompetingMass);
     if (isL) {
       if (!selectionV0Daughter(postrack, PROTONS) || !selectionV0Daughter(negtrack, PIONS))
         return false;
