@@ -81,6 +81,7 @@ struct UpcTestFITBitMapping {
       {"debug/hEventCounter", "Event counter;step;events", {HistType::kTH1F, {{20, -0.5, 19.5}}}},
       {"debug/hFitBitsSize", "fitBits.size() per collision;fitBits.size();events", {HistType::kTH1F, {{10, -0.5, 9.5}}}},
       {"debug/hCollisionIndexMod", "Collision index mod 100;collision.globalIndex() % 100;events", {HistType::kTH1F, {{100, -0.5, 99.5}}}},
+			{"debug/hFT0AChannelOccupancy", "FT0A fired channel occupancy;FT0A channel;counts",{HistType::kTH1F, {{97, -0.5, 96.5}}}},
 			{"debug/hFT0CChannelOccupancy", "FT0C fired channel occupancy;FT0C channel;counts",{HistType::kTH1F, {{112, 95.5, 207.5}}}},
 
       {"map/hPhiA", "FT0A #varphi;#varphi;counts", {HistType::kTH1F, {{9, 0, 2*M_PI}}}},
@@ -93,38 +94,32 @@ struct UpcTestFITBitMapping {
 
       {"mult/hPnFT0A", "P(n): FT0A fired-channel multiplicity;N_{fired}^{FT0A};events", {HistType::kTH1F, {{97, -0.5, 96.5}}}},
       {"mult/hPnFT0C", "P(n): FT0C fired-channel multiplicity;N_{fired}^{FT0C};events", {HistType::kTH1F, {{50, -0.5, 49.5}}}},
-      {"mult/hPnFT0", "P(n): FT0 fired-channel multiplicity;N_{fired}^{FT0};events", {HistType::kTH1F, {{209, -0.5, 208.5}}}},
       {"mult/hPnFV0A", "P(n): FV0A fired-channel multiplicity;N_{fired}^{FV0A};events", {HistType::kTH1F, {{49, -0.5, 48.5}}}},
-      {"mult/hPnFIT", "P(n): FIT fired-channel multiplicity;N_{fired}^{FIT};events", {HistType::kTH1F, {{257, -0.5, 256.5}}}},
-      // {"mult/hPnFT0A_sel", "Selected P(n): FT0A ;N_{fired}^{FT0A};events", {HistType::kTH1F, {{97, -0.5, 96.5}}}},
-      // {"mult/hPnFT0C_sel", "Selected P(n): FT0C ;N_{fired}^{FT0C};events", {HistType::kTH1F, {{50, -0.5, 49.5}}}},
-      // {"mult/hPnFT0_sel", "Selected P(n): FT0 ;N_{fired}^{FT0};events", {HistType::kTH1F, {{209, -0.5, 208.5}}}},
-      // {"mult/hPnFV0A_sel", "Selected P(n): FV0A ;N_{fired}^{FV0A};events", {HistType::kTH1F, {{49, -0.5, 48.5}}}},
-      // {"mult/hPnFIT_sel", "Selected P(n): FIT ;N_{fired}^{FIT};events", {HistType::kTH1F, {{257, -0.5, 256.5}}}},
-
+			
       {"mult/hNfiredA_vs_C", "FT0A vs FT0C fired channels;N_{fired}^{FT0A};N_{fired}^{FT0C}", {HistType::kTH2F, {{97, -0.5, 96.5}, {113, -0.5, 112.5}}}},
-		  // {"mult/hNfiredA_vs_C_sel", "Selected FT0A vs FT0C fired channels;N_{fired}^{FT0A};N_{fired}^{FT0C}",
-       // {HistType::kTH2F, {{97, -0.5, 96.5}, {113, -0.5, 112.5}}}}
 			 
 			{"qaBeforeCuts/hFT0AAmplitudeVsTime","FT0A amplitude vs time before cuts;FT0A time (ns);FT0A total amplitude", {HistType::kTH2F, {{200, -40., 40.}, {300, 0., 3000.}}}},
 			{"qaBeforeCuts/hFT0CAmplitudeVsTime","FT0C amplitude vs time before cuts;FT0C time (ns);FT0C total amplitude", {HistType::kTH2F, {{200, -40., 40.}, {300, 0., 3000.}}}},
-			
-			{"qaBeforeCuts/hZNEnergy","ZNA vs ZNC energy before cuts;ZNA energy;ZNC energy", {HistType::kTH2F, {{250, -5.0, 20.}, {250, -5.0, 20.}}}},
 			
 			{"map/hXYA", "FT0A fired channels in x-y;x [cm];y [cm]", {HistType::kTH2F, {{12, -18., 18.}, {12, -18., 18.}}}},
 			{"map/hXYC", "FT0C fired channels in x-y;x [cm];y [cm]", {HistType::kTH2F, {{12, -18., 18.}, {12, -18., 18.}}}}
     }};
 
-  int countBitsInRange(udhelpers::Bits256 const& bits, int first, int last) const
-  {
-    int n = 0;
-    for (int i = first; i <= last; ++i) {
-      if (udhelpers::testBit(bits, i)) {
-        ++n;
-				}
-    }
-    return n;
-  }
+  int countParticlesInRange(udhelpers::Bits256 const& thr1, udhelpers::Bits256 const& thr2, int first, int last)
+	{
+		int n = 0;
+		for (int bit = first; bit <= last; ++bit) {
+			const bool aboveThr1 = udhelpers::testBit(thr1, bit);
+			const bool aboveThr2 = udhelpers::testBit(thr2, bit);
+
+			if (aboveThr2) {
+				n += 2;
+			} else if (aboveThr1) {
+				n += 1;
+			}
+		}
+		return n;
+	}
 	
 	template <typename C>
 	bool isGoodRctFlag(const C& collision)
@@ -231,7 +226,7 @@ struct UpcTestFITBitMapping {
 			registry.fill(HIST("debug/hEventCounter"), 12.);
 		}
 		
-		
+		/*
 		int gapSide = 0 ; // Veto on A-side for now.
 		if (applyGapSideZDCVeto) {
 			if (gapSide == 0) { // gap-A
@@ -245,15 +240,15 @@ struct UpcTestFITBitMapping {
 			}
 			registry.fill(HIST("debug/hEventCounter"), 13.);
 		}
+		*/
 		
-		/*
 		if (applyGapSideZDCVeto) {
 			if (!isZeroNeutronA(collision) || !isZeroNeutronC(collision)) {
 				return false;
 			}
 			registry.fill(HIST("debug/hEventCounter"), 13.);
 		}
-		*/
+		
 		return true;
 	}
 
@@ -330,15 +325,6 @@ struct UpcTestFITBitMapping {
 			registry.fill(HIST("debug/hEventCounter"), 3.);
 			return;
     }
-		
-		const float ft0TimeA = collision.timeFT0A();
-		const float ft0TimeC = collision.timeFT0C();
-		const float ft0AmpA  = collision.totalFT0AmplitudeA();
-		const float ft0AmpC  = collision.totalFT0AmplitudeC();
-
-		registry.fill(HIST("qaBeforeCuts/hFT0AAmplitudeVsTime"), ft0TimeA, ft0AmpA);
-		registry.fill(HIST("qaBeforeCuts/hFT0CAmplitudeVsTime"), ft0TimeC, ft0AmpC);
-		registry.fill(HIST("qaBeforeCuts/hZNEnergy"), collision.energyCommonZNA(), collision.energyCommonZNC());
 
 		/* Checking collision level cuts */
 		if (!collisionPassesCuts(collision)) {
@@ -348,66 +334,38 @@ struct UpcTestFITBitMapping {
 		/* Only one row per collision is expected. */
     auto row = fitBits.begin();
 
-    udhelpers::Bits256 w{};
-    if (whichThr == 2) {
-      w = udhelpers::makeBits256(row.thr2W0(), row.thr2W1(), row.thr2W2(), row.thr2W3());
-    } else {
-      w = udhelpers::makeBits256(row.thr1W0(), row.thr1W1(), row.thr1W2(), row.thr1W3());
-    }
-
-    const int nFT0A = countBitsInRange(w, 0, udhelpers::kFT0AChannels - 1);
-    const int nFT0C = countBitsInRange(w, udhelpers::kFT0AChannels, udhelpers::kFT0Bits - 1);
-    const int nFT0 = nFT0A + nFT0C;
-    const int nFV0A = countBitsInRange(w, udhelpers::kFT0Bits, udhelpers::kTotalBits - 1);
-    const int nFIT = nFT0 + nFV0A;
+		const auto w1 = udhelpers::makeBits256(row.thr1W0(), row.thr1W1(), row.thr1W2(), row.thr1W3());
+    const auto w2 = udhelpers::makeBits256(row.thr2W0(), row.thr2W1(), row.thr2W2(), row.thr2W3());
+    
+    const int nFT0A = countParticlesInRange(w1, w2, 0, udhelpers::kFT0AChannels - 1);
+		const int nFT0C = countParticlesInRange(w1, w2, udhelpers::kFT0AChannels, udhelpers::kFT0Bits - 1);
+		const int nFV0A = countParticlesInRange(w1, w2, udhelpers::kFT0Bits, udhelpers::kTotalBits - 1);
 		
 		registry.fill(HIST("mult/hPnFT0A"), nFT0A);
     registry.fill(HIST("mult/hPnFT0C"), nFT0C);
-    registry.fill(HIST("mult/hPnFT0"), nFT0);
     registry.fill(HIST("mult/hPnFV0A"), nFV0A);
-    registry.fill(HIST("mult/hPnFIT"), nFIT);
     registry.fill(HIST("mult/hNfiredA_vs_C"), nFT0A, nFT0C);
 		
-		// /* A-side veto using detector-level multiplicity proxy */
-		// if (applyFT0Aveto) {
-			// if (nFT0A > maxFT0AforVeto) {
-				// return;
-			// }
-			// registry.fill(HIST("debug/hEventCounter"), 13.);
-		// }
-		
-		// /* Optional stronger veto with FV0A */
-		// if (applyFV0Aveto) {
-			// if (nFV0A > maxFV0AforVeto) {
-				// return;
-			// }
-			// registry.fill(HIST("debug/hEventCounter"), 14.);
-		// }
-		
-    // registry.fill(HIST("mult/hPnFT0A_sel"), nFT0A);
-    // registry.fill(HIST("mult/hPnFT0C_sel"), nFT0C);
-    // registry.fill(HIST("mult/hPnFT0_sel"), nFT0);
-    // registry.fill(HIST("mult/hPnFV0A_sel"), nFV0A);
-    // registry.fill(HIST("mult/hPnFIT_sel"), nFIT);
-    // registry.fill(HIST("mult/hNfiredA_vs_C_sel"), nFT0A, nFT0C);
-
     if (collision.globalIndex() < debugPrintFirst ||
         (debugPrintEvery > 0 && collision.globalIndex() % debugPrintEvery == 0)) {
       LOGF(info,
-           "collision %d: fitBits.size=%d  nFT0A=%d nFT0C=%d nFT0=%d nFV0A=%d nFIT=%d",
-           collision.globalIndex(), fitBits.size(), nFT0A, nFT0C, nFT0, nFV0A, nFIT);
+           "collision %d: fitBits.size=%d  nFT0A=%d nFT0C=%d nFV0A=%d",
+           collision.globalIndex(), fitBits.size(), nFT0A, nFT0C, nFV0A);
     }
 		if (collision.globalIndex() < 5) {
 			for (int bit = 96; bit < 208; ++bit) {
-				if (udhelpers::testBit(w, bit)) {
-					LOGF(info, "ANALYSIS sees fired bit %d", bit);
+				if (udhelpers::testBit(w1, bit)) {
+					LOGF(info, "ANALYSIS sees one fired bit %d", bit);
+				}
+				if (udhelpers::testBit(w2, bit)) {
+					LOGF(info, "ANALYSIS sees two fired bits %d", bit);
 				}
 			}
 		}
 
-
+		/* Mapping for at least 1 fired channel only */
     for (int bit = 0; bit < udhelpers::kFT0Bits; ++bit) {
-      if (!udhelpers::testBit(w, bit)) {
+      if (!udhelpers::testBit(w1, bit)) {
         continue;
       }
 
@@ -424,6 +382,7 @@ struct UpcTestFITBitMapping {
 
       if (bit < udhelpers::kFT0AChannels) {
 				// LOGF(info,"phi = %.4f, phiBin = %i",phi,phiBin);
+				registry.fill(HIST("debug/hFT0AChannelOccupancy"), bit);
 				registry.fill(HIST("map/hPhiA"), phi);
         registry.fill(HIST("map/hEtaA"), eta);
         registry.fill(HIST("map/hEtaPhiA"), eta, phi);
