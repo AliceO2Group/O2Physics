@@ -1,6 +1,21 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+
+/// \file jetHadronsPID.cxx
+/// \brief Analysis of hadrons in jets 
+/// \author Aleksandra Mulewicz, WUT Warsaw, aleksandra.mulewicz@cern.ch
+/// \author Leonard Lorenc, WUT Warsaw, leonard.lorenc@cern.ch
+/// \author Hubert Zalewski, WUT Warsaw, hubert.zalewski@cern.ch
+/// \author Małgorzata Janik malgorzata.janik@cern.ch
+/// \author Daniela Ruggiano daniela.ruggiano@cern.ch
 
 #include "Framework/runDataProcessing.h"
 #include "PWGJE/Core/JetBkgSubUtils.h"
@@ -29,7 +44,7 @@
 
 #include <cmath>
 #include <vector>
-#include <set> 
+#include <set>
 
 using namespace o2;
 using namespace o2::framework;
@@ -39,16 +54,15 @@ using namespace o2::constants::math;
 
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
 
-using HadronTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, 
-                               aod::pidTPCFullPi, aod::pidTOFFullPi, 
-                               aod::pidTPCFullKa, aod::pidTOFFullKa, 
+using HadronTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA,
+                               aod::pidTPCFullPi, aod::pidTOFFullPi,
+                               aod::pidTPCFullKa, aod::pidTOFFullKa,
                                aod::pidTPCFullPr, aod::pidTOFFullPr>;
 
-
-using HadronTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, 
-                                 aod::pidTPCFullPi, aod::pidTOFFullPi, 
-                                 aod::pidTPCFullKa, aod::pidTOFFullKa, 
-                                 aod::pidTPCFullPr, aod::pidTOFFullPr, 
+using HadronTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA,
+                                 aod::pidTPCFullPi, aod::pidTOFFullPi,
+                                 aod::pidTPCFullKa, aod::pidTOFFullKa,
+                                 aod::pidTPCFullPr, aod::pidTOFFullPr,
                                  aod::McTrackLabels>;
 
 struct PIDHadronsInJets {
@@ -82,12 +96,12 @@ struct PIDHadronsInJets {
   Configurable<double> maxChiSquareTpc{"maxChiSquareTpc", 4.0, "maximum TPC chi^2/Ncls"};
   Configurable<double> maxChiSquareIts{"maxChiSquareIts", 36.0, "maximum ITS chi^2/Ncls"};
   Configurable<double> minPt{"minPt", 0.3, "minimum pt of the tracks"};
-  Configurable<double> maxPt{"maxPt", 4.0, "maximum pt of the tracks for PID analysis"}; // more ?
+  Configurable<double> maxPt{"maxPt", 4.0, "maximum pt of the tracks for PID analysis"};
   Configurable<double> minEta{"minEta", -0.8, "minimum eta"};
   Configurable<double> maxEta{"maxEta", +0.8, "maximum eta"};
-  Configurable<double> maxDcaxy{"maxDcaxy", 0.05, "Maximum DCAxy"}; // more ?
-  Configurable<double> maxDcaz{"maxDcaz", 0.05, "Maximum DCAz"};//
-  
+  Configurable<double> maxDcaxy{"maxDcaxy", 0.2, "Maximum DCAxy"};
+  Configurable<double> maxDcaz{"maxDcaz", 0.1, "Maximum DCAz"};
+
   Configurable<bool> setMCDefaultItsParams{"setMCDefaultItsParams", true, "set MC default parameters"};
 
   JetBkgSubUtils backgroundSub;
@@ -98,6 +112,7 @@ struct PIDHadronsInJets {
     if (setMCDefaultItsParams) {
       itsResponse.setMCDefaultParameters();
     }
+    
     registryData.add("n_events", "Event counter", HistType::kTH1F, {{1, 0.5, 1.5, "N_{events}"}});
     registryData.add("n_events_raw", "All events", HistType::kTH1F, {{1, 0.5, 1.5, ""}});
 
@@ -141,38 +156,49 @@ struct PIDHadronsInJets {
     registryData.add("proton_jet_tpc", "TPC Proton PID in Jets", HistType::kTH2F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -3.0, 3.0, "n#sigma_{TPC}"}});
     registryData.add("proton_jet_tof", "TOF Proton PID in Jets", HistType::kTH2F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -3.0, 3.0, "n#sigma_{TOF}"}});
 
+    registryData.add("pion_jet_pt", "Pion pT in Jets", HistType::kTH1F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})" }});
+    registryData.add("pion_jet_eta", "Pion Eta in Jets", HistType::kTH1F, {{100, -1.0, 1.0, "#eta" }});
+    registryData.add("pion_jet_dcaxy", "Pion DCAxy in Jets", HistType::kTH1F, {{100, -0.1, 0.1, "DCA_{xy} (cm)" }});
+    registryData.add("pion_jet_dcaz", "Pion DCAz in Jets", HistType::kTH1F, {{100, -0.1, 0.1, "DCA_{z} (cm)" }});
+
+    registryData.add("kaon_jet_pt", "Kaon pT in Jets", HistType::kTH1F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})" }});
+    registryData.add("kaon_jet_eta", "Kaon Eta in Jets", HistType::kTH1F, {{100, -1.0, 1.0, "#eta" }});
+    registryData.add("kaon_jet_dcaxy", "Kaon DCAxy in Jets", HistType::kTH1F, {{100, -0.1, 0.1, "DCA_{xy} (cm)" }});
+    registryData.add("kaon_jet_dcaz", "Kaon DCAz in Jets", HistType::kTH1F, {{100, -0.1, 0.1, "DCA_{z} (cm)" }});
+
+    registryData.add("proton_jet_pt", "Proton pT in Jets", HistType::kTH1F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})" }});
+    registryData.add("proton_jet_eta", "Proton Eta in Jets", HistType::kTH1F, {{100, -1.0, 1.0, "#eta" }});
+    registryData.add("proton_jet_dcaxy", "Proton DCAxy in Jets", HistType::kTH1F, {{100, -0.1, 0.1, "DCA_{xy} (cm)" }});
+    registryData.add("proton_jet_dcaz", "Proton DCAz in Jets", HistType::kTH1F, {{100, -0.1, 0.1, "DCA_{z} (cm)" }});
+
     registryData.add("pion_ue_tpc", "TPC Pion PID in UE", HistType::kTH2F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -3.0, 3.0, "n#sigma_{TPC}"}});
     registryData.add("pion_ue_tof", "TOF Pion PID in UE", HistType::kTH2F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -3.0, 3.0, "n#sigma_{TOF}"}});
+    registryData.add("pion_ue_pt", "Pion pT in UE", HistType::kTH1F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})" }});
+    registryData.add("pion_ue_eta", "Pion Eta in UE", HistType::kTH1F, {{100, -1.0, 1.0, "#eta" }});
+    registryData.add("pion_ue_dcaxy", "Pion DCAxy in UE", HistType::kTH1F, {{100, -0.1, 0.1, "DCA_{xy} (cm)" }});
+    registryData.add("pion_ue_dcaz", "Pion DCAz in UE", HistType::kTH1F, {{100, -0.1, 0.1, "DCA_{z} (cm)" }});
+
     registryData.add("kaon_ue_tpc", "TPC Kaon PID in UE", HistType::kTH2F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -3.0, 3.0, "n#sigma_{TPC}"}});
     registryData.add("kaon_ue_tof", "TOF Kaon PID in UE", HistType::kTH2F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -3.0, 3.0, "n#sigma_{TOF}"}});
+    registryData.add("kaon_ue_pt", "Kaon pT in UE", HistType::kTH1F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})" }});
+    registryData.add("kaon_ue_eta", "Kaon Eta in UE", HistType::kTH1F, {{100, -1.0, 1.0, "#eta" }});
+    registryData.add("kaon_ue_dcaxy", "Kaon DCAxy in UE", HistType::kTH1F, {{100, -0.1, 0.1, "DCA_{xy} (cm)" }});
+    registryData.add("kaon_ue_dcaz", "Kaon DCAz in UE", HistType::kTH1F, {{100, -0.1, 0.1, "DCA_{z} (cm)" }});
+
     registryData.add("proton_ue_tpc", "TPC Proton PID in UE", HistType::kTH2F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -3.0, 3.0, "n#sigma_{TPC}"}});
     registryData.add("proton_ue_tof", "TOF Proton PID in UE", HistType::kTH2F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -3.0, 3.0, "n#sigma_{TOF}"}});
-
-    registryData.add("pion_jet_pt", "Pion pT", HistType::kTH1F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})" }});
-    registryData.add("pion_jet_eta", "Pion Eta", HistType::kTH1F, {{100, -1.0, 1.0, "#eta" }});
-    registryData.add("pion_jet_dcaxy", "Pion DCAxy", HistType::kTH1F, {{100, -0.1, 0.1, "DCA_{xy} (cm)" }});
-    registryData.add("pion_jet_dcaz", "Pion DCAz", HistType::kTH1F, {{100, -0.1, 0.1, "DCA_{z} (cm)" }});
-
-    registryData.add("kaon_jet_pt", "Kaon pT", HistType::kTH1F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})" }});
-    registryData.add("kaon_jet_eta", "Kaon Eta", HistType::kTH1F, {{100, -1.0, 1.0, "#eta" }});
-    registryData.add("kaon_jet_dcaxy", "Kaon DCAxy", HistType::kTH1F, {{100, -0.1, 0.1, "DCA_{xy} (cm)" }});
-    registryData.add("kaon_jet_dcaz", "Kaon DCAz", HistType::kTH1F, {{100, -0.1, 0.1, "DCA_{z} (cm)" }});
-
-    registryData.add("proton_jet_pt", "Proton pT", HistType::kTH1F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})" }});
-    registryData.add("proton_jet_eta", "Proton Eta", HistType::kTH1F, {{100, -1.0, 1.0, "#eta" }});
-    registryData.add("proton_jet_dcaxy", "Proton DCAxy", HistType::kTH1F, {{100, -0.1, 0.1, "DCA_{xy} (cm)" }});
-    registryData.add("proton_jet_dcaz", "Proton DCAz", HistType::kTH1F, {{100, -0.1, 0.1, "DCA_{z} (cm)" }});
-
+    registryData.add("proton_ue_pt", "Proton pT in UE", HistType::kTH1F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})" }});
+    registryData.add("proton_ue_eta", "Proton Eta in UE", HistType::kTH1F, {{100, -1.0, 1.0, "#eta" }});
+    registryData.add("proton_ue_dcaxy", "Proton DCAxy in UE", HistType::kTH1F, {{100, -0.1, 0.1, "DCA_{xy} (cm)" }});
+    registryData.add("proton_ue_dcaz", "Proton DCAz in UE", HistType::kTH1F, {{100, -0.1, 0.1, "DCA_{z} (cm)" }});
 
     registryData.add("mc_gen_pion_pt", "Generated Pion pT", HistType::kTH1F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})" }});
     registryData.add("mc_rec_pion_pt", "Reconstructed Pion pT", HistType::kTH1F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})" }});
-
     registryData.add("mc_gen_kaon_pt", "Generated Kaon pT", HistType::kTH1F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})" }});
     registryData.add("mc_rec_kaon_pt", "Reconstructed Kaon pT", HistType::kTH1F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})" }});
-
     registryData.add("mc_gen_proton_pt", "Generated Proton pT", HistType::kTH1F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})" }});
     registryData.add("mc_rec_proton_pt", "Reconstructed Proton pT", HistType::kTH1F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})" }});
-    
+
     registryData.add("rec_pion_all", "All identified pions", HistType::kTH1F, {{120, 0.0, 4.0, "#it{p}_{T}"}});
     registryData.add("rec_kaon_all", "All identified kaons", HistType::kTH1F, {{120, 0.0, 4.0, "#it{p}_{T}"}});
     registryData.add("rec_proton_all", "All identified protons", HistType::kTH1F, {{120, 0.0, 4.0, "#it{p}_{T}"}});
@@ -220,7 +246,7 @@ struct PIDHadronsInJets {
     double deltaPhi(0);
     double phi1 = TVector2::Phi_0_2pi(a1);
     double phi2 = TVector2::Phi_0_2pi(a2);
-    double diff = std::fabs(phi1 - phi2);
+    double diff = std::abs(phi1 - phi2);
 
     if (diff <= PI) deltaPhi = diff;
     if (diff > PI) deltaPhi = TwoPI - diff;
@@ -250,10 +276,10 @@ struct PIDHadronsInJets {
     if (track.tpcNClsCrossedRows() < MinTpcCr) return false;
     if (track.tpcChi2NCl() > MaxChi2Tpc) return false;
     if (track.itsChi2NCl() > MaxChi2Its) return false;
-    if (std::fabs(track.eta()) > maxEta) return false;
+    if (std::abs(track.eta()) > maxEta) return false;
     if (track.pt() < cfgMinPtTrack) return false;
-    if (std::fabs(track.dcaXY()) > (DcaxyMaxTrackPar0 + DcaxyMaxTrackPar1 / std::pow(track.pt(), DcaxyMaxTrackPar2))) return false;
-    if (std::fabs(track.dcaZ()) > DcazMaxTrack) return false;
+    if (std::abs(track.dcaXY()) > (DcaxyMaxTrackPar0 + DcaxyMaxTrackPar1 / std::pow(track.pt(), DcaxyMaxTrackPar2))) return false;
+    if (std::abs(track.dcaZ()) > DcazMaxTrack) return false;
     return true;
   }
 
@@ -276,8 +302,8 @@ struct PIDHadronsInJets {
   void processForJets(SelectedCollisions::iterator const& collision, HadronTracks const& tracks)
   {
     registryData.fill(HIST("n_events_raw"), 1);
-    
-    if (!collision.sel8() || std::fabs(collision.posZ()) > zVtx) return;
+
+    if (!collision.sel8() || std::abs(collision.posZ()) > zVtx) return;
     if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) return;
     if (rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) return;
     if (requireVtxITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) return;
@@ -285,74 +311,72 @@ struct PIDHadronsInJets {
     if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) return;
     if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) return;
 
-    //pure histograms 
     registryData.fill(HIST("n_events"), 1);
     registryData.fill(HIST("z_vtx"), collision.posZ());
 
     for (auto const& track : tracks) {
-        if (!passedTrackSelection(track)) continue;
-        if (std::fabs(track.dcaXY()) > maxDcaxy || std::fabs(track.dcaZ()) > maxDcaz) continue;
+      if (!passedTrackSelection(track)) continue;
+      if (std::abs(track.dcaXY()) > maxDcaxy || std::abs(track.dcaZ()) > maxDcaz) continue;
 
-        double pt = track.pt();
-        double eta = track.eta();
-        double dcaxy = track.dcaXY();
-        double dcaz = track.dcaZ();
+      double pt = track.pt();
+      double eta = track.eta();
+      double dcaxy = track.dcaXY();
+      double dcaz = track.dcaZ();
 
-        bool passTpcPi = (std::abs(track.tpcNSigmaPi()) <= 3.0);
-        bool passTpcKa = (std::abs(track.tpcNSigmaKa()) <= 3.0);
-        bool passTpcPr = (std::abs(track.tpcNSigmaPr()) <= 3.0);
+      bool passTpcPi = (std::abs(track.tpcNSigmaPi()) <= 3.0);
+      bool passTpcKa = (std::abs(track.tpcNSigmaKa()) <= 3.0);
+      bool passTpcPr = (std::abs(track.tpcNSigmaPr()) <= 3.0);
 
-        bool passTofPi = track.hasTOF() && (std::abs(track.tofNSigmaPi()) <= 3.0);
-        bool passTofKa = track.hasTOF() && (std::abs(track.tofNSigmaKa()) <= 3.0);
-        bool passTofPr = track.hasTOF() && (std::abs(track.tofNSigmaPr()) <= 3.0);
+      bool passTofPi = track.hasTOF() && (std::abs(track.tofNSigmaPi()) <= 3.0);
+      bool passTofKa = track.hasTOF() && (std::abs(track.tofNSigmaKa()) <= 3.0);
+      bool passTofPr = track.hasTOF() && (std::abs(track.tofNSigmaPr()) <= 3.0);
 
-        const double ptThreshold = 0.8; 
+      const double ptThreshold = 0.8;
 
-        if (passTpcPi) {
-            registryData.fill(HIST("pion_pure_tpc"), pt, track.tpcNSigmaPi());
+      if (passTpcPi) {
+        registryData.fill(HIST("pion_pure_tpc"), pt, track.tpcNSigmaPi());
 
-            if (passTofPi) {
-                registryData.fill(HIST("pion_pure_tof"), pt, track.tofNSigmaPi());
-            }
-
-            if (pt < ptThreshold || passTofPi) {
-              registryData.fill(HIST("pion_pure_pt"), pt);
-              registryData.fill(HIST("pion_pure_eta"), eta);
-              registryData.fill(HIST("pion_pure_dcaxy"), dcaxy);
-              registryData.fill(HIST("pion_pure_dcaz"), dcaz);
-            }
+        if (passTofPi) {
+          registryData.fill(HIST("pion_pure_tof"), pt, track.tofNSigmaPi());
         }
 
-        if (passTpcKa) {
-            registryData.fill(HIST("kaon_pure_tpc"), pt, track.tpcNSigmaKa());
+        if (pt < ptThreshold || passTofPi) {
+          registryData.fill(HIST("pion_pure_pt"), pt);
+          registryData.fill(HIST("pion_pure_eta"), eta);
+          registryData.fill(HIST("pion_pure_dcaxy"), dcaxy);
+          registryData.fill(HIST("pion_pure_dcaz"), dcaz);
+        }
+      }
 
-            if (passTofKa) {
-                registryData.fill(HIST("kaon_pure_tof"), pt, track.tofNSigmaKa());
-            }
+      if (passTpcKa) {
+        registryData.fill(HIST("kaon_pure_tpc"), pt, track.tpcNSigmaKa());
 
-            if (pt < ptThreshold || passTofKa) {
-              registryData.fill(HIST("kaon_pure_pt"), pt);
-              registryData.fill(HIST("kaon_pure_eta"), eta);
-              registryData.fill(HIST("kaon_pure_dcaxy"), dcaxy);
-              registryData.fill(HIST("kaon_pure_dcaz"), dcaz);
-            }
+        if (passTofKa) {
+          registryData.fill(HIST("kaon_pure_tof"), pt, track.tofNSigmaKa());
         }
 
-        if (passTpcPr) {
-            registryData.fill(HIST("proton_pure_tpc"), pt, track.tpcNSigmaPr());
+        if (pt < ptThreshold || passTofKa) {
+          registryData.fill(HIST("kaon_pure_pt"), pt);
+          registryData.fill(HIST("kaon_pure_eta"), eta);
+          registryData.fill(HIST("kaon_pure_dcaxy"), dcaxy);
+          registryData.fill(HIST("kaon_pure_dcaz"), dcaz);
+        }
+      }
 
-            if (passTofPr) {
-                registryData.fill(HIST("proton_pure_tof"), pt, track.tofNSigmaPr());
-            }
+      if (passTpcPr) {
+        registryData.fill(HIST("proton_pure_tpc"), pt, track.tpcNSigmaPr());
 
-            if (pt < ptThreshold || passTofPr) {
-              registryData.fill(HIST("proton_pure_pt"), pt);
-              registryData.fill(HIST("proton_pure_eta"), eta);
-              registryData.fill(HIST("proton_pure_dcaxy"), dcaxy);
-              registryData.fill(HIST("proton_pure_dcaz"), dcaz);
-            }
+        if (passTofPr) {
+          registryData.fill(HIST("proton_pure_tof"), pt, track.tofNSigmaPr());
         }
 
+        if (pt < ptThreshold || passTofPr) {
+          registryData.fill(HIST("proton_pure_pt"), pt);
+          registryData.fill(HIST("proton_pure_eta"), eta);
+          registryData.fill(HIST("proton_pure_dcaxy"), dcaxy);
+          registryData.fill(HIST("proton_pure_dcaz"), dcaz);
+        }
+      }
     }
 
     int id(-1);
@@ -372,11 +396,10 @@ struct PIDHadronsInJets {
     fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
     fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
     std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
-    
+
     if (jets.empty()) return;
 
     auto [rhoPerp, rhoMPerp] = jetutilities::estimateRhoPerpCone(fjParticles, jets[0], rJet);
-
 
     std::set<int> tracksInJetsSet;
 
@@ -387,14 +410,14 @@ struct PIDHadronsInJets {
       registryData.fill(HIST("jet_area"), jet.area());
       registryData.fill(HIST("jet_n_constituents"), jet.constituents().size());
 
-      if (!isppRefAnalysis && ((std::fabs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge))) continue;
-      if (isppRefAnalysis && std::fabs(jet.eta()) > cfgEtaJetMax) continue;
+      if (!isppRefAnalysis && ((std::abs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge))) continue;
+      if (isppRefAnalysis && std::abs(jet.eta()) > cfgEtaJetMax) continue;
 
       auto jetForSub = jet;
       fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
       registryData.fill(HIST("jet_pt_subtracted"), jetMinusBkg.pt());
       registryData.fill(HIST("jet_pt_raw_vs_sub"), jet.pt(), jetMinusBkg.pt());
-      
+
       if (isppRefAnalysis && (jet.pt() < minJetPt || jet.pt() > maxJetPt)) continue;
       if (!isppRefAnalysis && (jetMinusBkg.pt() < minJetPt || jetMinusBkg.pt() > maxJetPt)) continue;
 
@@ -406,7 +429,7 @@ struct PIDHadronsInJets {
       TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
       TVector3 ueAxis1(0, 0, 0), ueAxis2(0, 0, 0);
       getPerpendicularDirections(jetAxis, ueAxis1, ueAxis2);
-      
+
       if (ueAxis1.Mag() == 0 || ueAxis2.Mag() == 0) continue;
 
       std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
@@ -415,11 +438,11 @@ struct PIDHadronsInJets {
 
         int trackIdx = particle.user_index();
         auto const& track = tracks.iteratorAt(trackIdx);
-        
+
         tracksInJetsSet.insert(trackIdx);
 
         if (!passedTrackSelection(track)) continue;
-        if (std::fabs(track.dcaXY()) > maxDcaxy || std::fabs(track.dcaZ()) > maxDcaz) continue;
+        if (std::abs(track.dcaXY()) > maxDcaxy || std::abs(track.dcaZ()) > maxDcaz) continue;
 
         double pt = track.pt();
         double eta = track.eta();
@@ -434,64 +457,63 @@ struct PIDHadronsInJets {
         bool passTofKa = track.hasTOF() && (std::abs(track.tofNSigmaKa()) <= 3.0);
         bool passTofPr = track.hasTOF() && (std::abs(track.tofNSigmaPr()) <= 3.0);
 
-        const double ptThreshold = 0.8; 
+        const double ptThreshold = 0.8;
 
         if (passTpcPi) {
-            registryData.fill(HIST("pion_jet_tpc"), pt, track.tpcNSigmaPi());
+          registryData.fill(HIST("pion_jet_tpc"), pt, track.tpcNSigmaPi());
 
-            if (passTofPi) {
-                registryData.fill(HIST("pion_jet_tof"), pt, track.tofNSigmaPi());
-            }
+          if (passTofPi) {
+            registryData.fill(HIST("pion_jet_tof"), pt, track.tofNSigmaPi());
+          }
 
-            if (pt < ptThreshold || passTofPi) {
-              registryData.fill(HIST("pion_jet_pt"), pt);
-              registryData.fill(HIST("pion_jet_eta"), eta);
-              registryData.fill(HIST("pion_jet_dcaxy"), dcaxy);
-              registryData.fill(HIST("pion_jet_dcaz"), dcaz);
-            }
+          if (pt < ptThreshold || passTofPi) {
+            registryData.fill(HIST("pion_jet_pt"), pt);
+            registryData.fill(HIST("pion_jet_eta"), eta);
+            registryData.fill(HIST("pion_jet_dcaxy"), dcaxy);
+            registryData.fill(HIST("pion_jet_dcaz"), dcaz);
+          }
         }
 
         if (passTpcKa) {
-            registryData.fill(HIST("kaon_jet_tpc"), pt, track.tpcNSigmaKa());
+          registryData.fill(HIST("kaon_jet_tpc"), pt, track.tpcNSigmaKa());
 
-            if (passTofKa) {
-                registryData.fill(HIST("kaon_jet_tof"), pt, track.tofNSigmaKa());
-            }
+          if (passTofKa) {
+            registryData.fill(HIST("kaon_jet_tof"), pt, track.tofNSigmaKa());
+          }
 
-            if (pt < ptThreshold || passTofKa) {
-              registryData.fill(HIST("kaon_jet_pt"), pt);
-              registryData.fill(HIST("kaon_jet_eta"), eta);
-              registryData.fill(HIST("kaon_jet_dcaxy"), dcaxy);
-              registryData.fill(HIST("kaon_jet_dcaz"), dcaz);
-            }
+          if (pt < ptThreshold || passTofKa) {
+            registryData.fill(HIST("kaon_jet_pt"), pt);
+            registryData.fill(HIST("kaon_jet_eta"), eta);
+            registryData.fill(HIST("kaon_jet_dcaxy"), dcaxy);
+            registryData.fill(HIST("kaon_jet_dcaz"), dcaz);
+          }
         }
 
         if (passTpcPr) {
-            registryData.fill(HIST("proton_jet_tpc"), pt, track.tpcNSigmaPr());
+          registryData.fill(HIST("proton_jet_tpc"), pt, track.tpcNSigmaPr());
 
-            if (passTofPr) {
-                registryData.fill(HIST("proton_jet_tof"), pt, track.tofNSigmaPr());
-            }
+          if (passTofPr) {
+            registryData.fill(HIST("proton_jet_tof"), pt, track.tofNSigmaPr());
+          }
 
-            if (pt < ptThreshold || passTofPr) {
-              registryData.fill(HIST("proton_jet_pt"), pt);
-              registryData.fill(HIST("proton_jet_eta"), eta);
-              registryData.fill(HIST("proton_jet_dcaxy"), dcaxy);
-              registryData.fill(HIST("proton_jet_dcaz"), dcaz);
-            }
+          if (pt < ptThreshold || passTofPr) {
+            registryData.fill(HIST("proton_jet_pt"), pt);
+            registryData.fill(HIST("proton_jet_eta"), eta);
+            registryData.fill(HIST("proton_jet_dcaxy"), dcaxy);
+            registryData.fill(HIST("proton_jet_dcaz"), dcaz);
+          }
         }
-
       }
 
       for (auto const& track : tracks) {
 
         if (!passedTrackSelection(track)) continue;
-        if (std::fabs(track.dcaXY()) > maxDcaxy || std::fabs(track.dcaZ()) > maxDcaz) continue;
+        if (std::abs(track.dcaXY()) > maxDcaxy || std::abs(track.dcaZ()) > maxDcaz) continue;
 
         double deltaEtaUe1 = track.eta() - ueAxis1.Eta();
         double deltaPhiUe1 = getDeltaPhi(track.phi(), ueAxis1.Phi());
         double deltaRUe1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
-        
+
         double deltaEtaUe2 = track.eta() - ueAxis2.Eta();
         double deltaPhiUe2 = getDeltaPhi(track.phi(), ueAxis2.Phi());
         double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
@@ -504,6 +526,9 @@ struct PIDHadronsInJets {
         if (deltaRUe1 > maxConeRadius && deltaRUe2 > maxConeRadius) continue;
 
         double pt = track.pt();
+        double eta = track.eta();
+        double dcaxy = track.dcaXY();
+        double dcaz = track.dcaZ();
 
         bool passTpcPi = (std::abs(track.tpcNSigmaPi()) <= 3.0);
         bool passTpcKa = (std::abs(track.tpcNSigmaKa()) <= 3.0);
@@ -513,58 +538,46 @@ struct PIDHadronsInJets {
         bool passTofKa = track.hasTOF() && (std::abs(track.tofNSigmaKa()) <= 3.0);
         bool passTofPr = track.hasTOF() && (std::abs(track.tofNSigmaPr()) <= 3.0);
 
-        const double ptThreshold = 0.8; 
+        const double ptThreshold = 0.8;
 
         if (passTpcPi) {
-            registryData.fill(HIST("pion_ue_tpc"), pt, track.tpcNSigmaPi());
-            if (passTofPi) {
-                registryData.fill(HIST("pion_ue_tof"), pt, track.tofNSigmaPi());
-            }
-            /*
-            if (pt < ptThreshold || passTofPi) {
-                registryData.fill(HIST("pion_ue_pt"), pt);
-                registryData.fill(HIST("pion_ue_eta"), eta);
-                registryData.fill(HIST("pion_ue_dcaxy"), dcaxy);
-                registryData.fill(HIST("pion_ue_dcaz"), dcaz);
-            }
-            */
+          registryData.fill(HIST("pion_ue_tpc"), pt, track.tpcNSigmaPi());
+          if (passTofPi) {
+            registryData.fill(HIST("pion_ue_tof"), pt, track.tofNSigmaPi());
+          }
+          if (pt < ptThreshold || passTofPi) {
+            registryData.fill(HIST("pion_ue_pt"), pt);
+            registryData.fill(HIST("pion_ue_eta"), eta);
+            registryData.fill(HIST("pion_ue_dcaxy"), dcaxy);
+            registryData.fill(HIST("pion_ue_dcaz"), dcaz);
+          }
         }
 
         if (passTpcKa) {
-            registryData.fill(HIST("kaon_ue_tpc"), pt, track.tpcNSigmaKa());
-
-            if (passTofKa) {
-                registryData.fill(HIST("kaon_ue_tof"), pt, track.tofNSigmaKa());
-            }
-
-            /*
-            if (pt < ptThreshold || passTofKa) {
-                registryData.fill(HIST("kaon_ue_pt"), pt);
-                registryData.fill(HIST("kaon_ue_eta"), eta);
-                registryData.fill(HIST("kaon_ue_dcaxy"), dcaxy);
-                registryData.fill(HIST("kaon_ue_dcaz"), dcaz);
-            }
-            */
+          registryData.fill(HIST("kaon_ue_tpc"), pt, track.tpcNSigmaKa());
+          if (passTofKa) {
+            registryData.fill(HIST("kaon_ue_tof"), pt, track.tofNSigmaKa());
+          }
+          if (pt < ptThreshold || passTofKa) {
+            registryData.fill(HIST("kaon_ue_pt"), pt);
+            registryData.fill(HIST("kaon_ue_eta"), eta);
+            registryData.fill(HIST("kaon_ue_dcaxy"), dcaxy);
+            registryData.fill(HIST("kaon_ue_dcaz"), dcaz);
+          }
         }
-
 
         if (passTpcPr) {
-            registryData.fill(HIST("proton_ue_tpc"), pt, track.tpcNSigmaPr());
-
-            if (passTofPr) {
-                registryData.fill(HIST("proton_ue_tof"), pt, track.tofNSigmaPr());
-            }
-
-            /*
-            if (pt < ptThreshold || passTofPr) {
-                registryData.fill(HIST("proton_ue_pt"), pt);
-                registryData.fill(HIST("proton_ue_eta"), eta);
-                registryData.fill(HIST("proton_ue_dcaxy"), dcaxy);
-                registryData.fill(HIST("proton_ue_dcaz"), dcaz);
-            }
-            */
+          registryData.fill(HIST("proton_ue_tpc"), pt, track.tpcNSigmaPr());
+          if (passTofPr) {
+            registryData.fill(HIST("proton_ue_tof"), pt, track.tofNSigmaPr());
+          }
+          if (pt < ptThreshold || passTofPr) {
+            registryData.fill(HIST("proton_ue_pt"), pt);
+            registryData.fill(HIST("proton_ue_eta"), eta);
+            registryData.fill(HIST("proton_ue_dcaxy"), dcaxy);
+            registryData.fill(HIST("proton_ue_dcaz"), dcaz);
+          }
         }
-        
       }
     }
 
@@ -573,19 +586,19 @@ struct PIDHadronsInJets {
     int nTracksOut = 0;
     int trackIteratorIdx = 0;
     for (auto const& track : tracks) {
-        if (passedTrackSelection(track) && tracksInJetsSet.find(trackIteratorIdx) == tracksInJetsSet.end()) {
-            nTracksOut++;
-        }
-        trackIteratorIdx++;
+      if (passedTrackSelection(track) && tracksInJetsSet.find(trackIteratorIdx) == tracksInJetsSet.end()) {
+        nTracksOut++;
+      }
+      trackIteratorIdx++;
     }
     registryData.fill(HIST("tracks_outside_jets"), nTracksOut);
   }
 
-  PROCESS_SWITCH(PIDHadronsInJets, processForJets, "Process jets", true);
+  PROCESS_SWITCH(PIDHadronsInJets, processForJets, "Pid Analysis in and outside jets", true);
 
   void processMC(SelectedCollisions::iterator const& collision, aod::McParticles const& mcParticles, HadronTracksMC const& tracks)
   {
-    if (!collision.sel8() || std::fabs(collision.posZ()) > zVtx) return;
+    if (!collision.sel8() || std::abs(collision.posZ()) > zVtx) return;
     if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) return;
     if (rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) return;
     if (requireVtxITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) return;
@@ -609,11 +622,11 @@ struct PIDHadronsInJets {
       }
     }
 
-    const double ptThreshold = 0.8; 
+    const double ptThreshold = 0.8;
 
     for (auto const& track : tracks) {
       if (!passedTrackSelection(track)) continue;
-      if (std::fabs(track.dcaXY()) > maxDcaxy || std::fabs(track.dcaZ()) > maxDcaz) continue;
+      if (std::abs(track.dcaXY()) > maxDcaxy || std::abs(track.dcaZ()) > maxDcaz) continue;
 
       double pt = track.pt();
 
@@ -626,23 +639,22 @@ struct PIDHadronsInJets {
       bool passTpcPr = (std::abs(track.tpcNSigmaPr()) <= 3.0);
       bool passTofPr = track.hasTOF() && (std::abs(track.tofNSigmaPr()) <= 3.0);
 
-      if (!track.has_mcParticle()) continue; 
+      if (!track.has_mcParticle()) continue;
       auto const& trueParticle = track.mcParticle();
-      
+
       int pdg = std::abs(trueParticle.pdgCode());
       bool isPrimary = trueParticle.isPhysicalPrimary();
 
       if (passTpcPi && (pt < ptThreshold || passTofPi)) {
-        registryData.fill(HIST("rec_pion_all"), pt); //reconstructed after cuts
+        registryData.fill(HIST("rec_pion_all"), pt); 
         registryData.fill(HIST("contamination_matrix_pion"), pdg, pt);
-
         if (isPrimary) {
-          if (pdg == 211) registryData.fill(HIST("mc_rec_pion_pt"), pt); // Efficiency 
+          if (pdg == 211) registryData.fill(HIST("mc_rec_pion_pt"), pt); 
         } else {
           registryData.fill(HIST("mc_sec_pion_pt"), pt);
         }
       }
-      
+
       if (passTpcKa && (pt < ptThreshold || passTofKa)) {
         registryData.fill(HIST("rec_kaon_all"), pt);
         registryData.fill(HIST("contamination_matrix_kaon"), pdg, pt);
@@ -665,7 +677,6 @@ struct PIDHadronsInJets {
     }
   }
   PROCESS_SWITCH(PIDHadronsInJets, processMC, "Run on Monte Carlo", false);
-
 
 };
 
