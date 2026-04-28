@@ -553,7 +553,7 @@ struct PidFlowPtCorr {
 
     // init fFCPID
     // note that need to add c22pure and c32pure
-    TObjArray* oba4PID = reinterpret_cast<TObjArray*>(oba4Ch->Clone());
+    TObjArray* oba4PID = dynamic_cast<TObjArray*>(oba4Ch->Clone());
     oba4PID->Add(new TNamed("c22pure", "c22pure"));
     oba4PID->Add(new TNamed("c32pure", "c32pure"));
     oba4PID->Add(new TNamed("covV2PtPID", "covV2PtPID"));
