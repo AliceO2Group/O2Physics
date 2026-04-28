@@ -460,8 +460,6 @@ struct mftMchMatcher {
                           TMFT const& mftTracks,
                           std::vector<std::pair<int64_t, int64_t>>& matchablePairs)
   {
-    static constexpr int muonPdgCode = 13;
-
     // outer loop on muon tracks
     for (const auto& muonTrack : muonTracks) {
       // only consider MCH standalone or MCH-MID matches
@@ -473,7 +471,6 @@ struct mftMchMatcher {
       if (!muonTrack.has_collision()) {
         continue;
       }
-      auto muonCollisionId = muonTrack.collisionId();
 
       // skip tracks that do not have an associated MC particle
       if (!muonTrack.has_mcParticle()) {
