@@ -260,7 +260,7 @@ static const float ptProngMin[NSpecies] = {0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.
 static const std::vector<std::string> labelsPtProngMin = {"Dplus", "Lc", "Ds", "Xic", "Cd", "Ct", "Ch", "Ca"};
 
 // column label
-static const std::vector<std::string> labelsMinPt = {"Minimum track transverse momentum (GeV/c)"};
+static const std::vector<std::string> labelsMinPt = {"Minimum prong transverse momentum (GeV/c)"};
 
 } // namespace hf_cuts_presel_3prong
 
