@@ -89,7 +89,12 @@ struct statPromptPhoton {
   Configurable<bool> cfgGenReqRec{"cfgGenReqRec", false, "Only consider generated events which are successfully reconstructed"};
   Configurable<bool> cfgReqRecPS_REC{"cfgReqRecPS_REC", false, "Only consider reconstructed photons within the EMCAl acceptence"};
   Configurable<bool> cfgReqRecPS_GEN{"cfgReqRecPS_GEN", false, "Only consider generated photons within the EMCAl acceptence"};
-  Configurable<double> cfgMCptNbins{"cfgMCptNbins", 200, "number of ptbins in MC QA plots"};
+  Configurable<float> cfgEMClowPSphi{"cfgEMClowPSphi", 1.42, "lower limit of the EMC acceptance if Rec PS is required"};
+  Configurable<float> cfgEMChighPSphi{"cfgEMChighPSphi", 3.26, "higher limit of the EMC acceptance if Rec PS is required"};
+  Configurable<float> cfgEMChighPSeta{"cfgEMChighPSeta", 0.62, "symmetric eta cut if Rec PS is required"};
+  Configurable<float> cfgDClowPSphi{"cfgDClowPSphi", 4.56, "lower limit of the DCal acceptance if Rec PS is required"};
+  Configurable<float> cfgDChighPSphi{"cfgDChighPSphi", 5.70, "higher limit of the DCal acceptance if Rec PS is required"};  
+  Configurable<int> cfgMCptNbins{"cfgMCptNbins", 200, "number of ptbins in MC QA plots"};
   Configurable<double> cfgMCptbinLow{"cfgMCptbinLow", 5, "lower limit of ptbins in MC QA plots"};
   Configurable<double> cfgMCptbinHigh{"cfgMCptbinHigh", 200, "upper limit of ptbins in MC QA plots"};
   Configurable<bool> cfgRecHistograms{"cfgRecHistograms", false, "Enables Reconstructed histograms"};
@@ -1522,10 +1527,10 @@ struct statPromptPhoton {
         if (std::fabs(mcParticle.getGenStatusCode()) >= 81 || !mcParticle.isPhysicalPrimary())
           continue;
 	if(cfgReqRecPS_GEN){
-	  if(std::fabs(mcParticle.eta())>0.62)
+	  if(std::fabs(mcParticle.eta())>cfgEMChighPSeta)
 	    continue;
 	  bool insideCalPhi = false;
-	  if((mcParticle.phi()> 1.42 && mcParticle.phi()<3.26) || (mcParticle.phi()> 4.56 && mcParticle.phi()<5.70))
+	  if((mcParticle.phi()> cfgEMClowPSphi && mcParticle.phi()<cfgEMChighPSphi) || (mcParticle.phi()> cfgDClowPSphi && mcParticle.phi()<cfgDChighPSphi))
 	    insideCalPhi=true;
 	  if(!insideCalPhi)
 	    continue;
@@ -1648,10 +1653,10 @@ struct statPromptPhoton {
         if (std::fabs(clusterparticle.getGenStatusCode()) >= 81)
           continue;	
 	if(cfgReqRecPS_REC){
-	  if(std::fabs(clusterparticle.eta())>0.62)
+	  if(std::fabs(clusterparticle.eta())>cfgEMChighPSeta)
 	    continue;
 	  bool insideCalPhi = false;
-	  if((clusterparticle.phi()> 1.42 && clusterparticle.phi()<3.26) || (clusterparticle.phi()> 4.56 && clusterparticle.phi()<5.70))
+	  if((clusterparticle.phi()> cfgEMClowPSphi && clusterparticle.phi()<cfgEMChighPSphi) || (clusterparticle.phi()> cfgDClowPSphi && clusterparticle.phi()<cfgDChighPSphi))
 	    insideCalPhi=true;
 	  if(!insideCalPhi)
 	    continue;
