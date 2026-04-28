@@ -83,6 +83,12 @@ struct qVectorsTable {
     kRescale,
     kNCorrections
   };
+  enum MultNorms {
+    kNoNorm = 0,
+    kScalarProd,
+    kEsE,
+    kMultNormTypes
+  };
 
   // Configurables.
   struct : ConfigurableGroup {
@@ -392,18 +398,30 @@ struct qVectorsTable {
     }
   }
 
-  void NormalizeQvec(std::vector<float>& QvecReNorm, std::vector<float>& QvecImNorm, std::vector<float> QvecReRaw, std::vector<float> QvecImRaw, std::vector<float>& QvecAmp, bool useSqrt = false) {
-
+  void NormalizeQvec(std::vector<float>& QvecReNorm, 
+                     std::vector<float>& QvecImNorm, 
+                     std::vector<float> QvecReRaw, 
+                     std::vector<float> QvecImRaw, 
+                     std::vector<float>& QvecAmp, 
+                     MultNorms normType) 
+  {
     for (std::size_t i = 0; i < kNDetectors; i++) {
       float qVecDetReNorm{999.}, qVecDetImNorm{999.};
       if (QvecAmp[i] > 1e-8) {
-        if (useSqrt) {
-          qVecDetReNorm = QvecReRaw[i] / std::sqrt(QvecAmp[i]);
-          qVecDetImNorm = QvecImRaw[i] / std::sqrt(QvecAmp[i]);
-        } else {
-          qVecDetReNorm = QvecReRaw[i] / QvecAmp[i];
-          qVecDetImNorm = QvecImRaw[i] / QvecAmp[i];
+        switch (normType) {
+          case MultNorms::kScalarProd:
+            qVecDetReNorm = QvecReRaw[i] / QvecAmp[i];
+            qVecDetImNorm = QvecImRaw[i] / QvecAmp[i];
+            break;
+          case MultNorms::kEsE:
+            qVecDetReNorm = QvecReRaw[i] / std::sqrt(QvecAmp[i]);
+            qVecDetImNorm = QvecImRaw[i] / std::sqrt(QvecAmp[i]);
+            break;
+          default:
+            LOGP(fatal, "Undefined normalization type for Q-vector amplitude. Check the configuration.");
+            break;
         }
+        std::cout << "[NORMALIZED] " << i << " Re: " << qVecDetReNorm << ", Im: " << qVecDetImNorm << ", amp: " << QvecAmp[i] << std::endl;
       }
       for (int iCorr=0; iCorr < Corrections::kNCorrections; iCorr++) {
         QvecReNorm.push_back(qVecDetReNorm);
@@ -548,7 +566,6 @@ struct qVectorsTable {
           helperEP.SumQvectors(0, FT0AchId, ampl / FT0RelGainConst[FT0AchId], nMode, QvecFT0M, sumAmplFT0M, ft0geom, fv0geom);
         }
         if (sumAmplFT0A > 1e-8) {
-          QvecDet /= sumAmplFT0A;
           qVectFT0A[0] = QvecDet.Re();
           qVectFT0A[1] = QvecDet.Im();
         }
@@ -568,12 +585,10 @@ struct qVectorsTable {
         }
 
         if (sumAmplFT0C > 1e-8) {
-          QvecDet /= sumAmplFT0C;
           qVectFT0C[0] = QvecDet.Re();
           qVectFT0C[1] = QvecDet.Im();
         }
         if (sumAmplFT0M > 1e-8 && useDetector["QvectorFT0Ms"]) {
-          QvecFT0M /= sumAmplFT0M;
           qVectFT0M[0] = QvecFT0M.Re();
           qVectFT0M[1] = QvecFT0M.Im();
         }
@@ -594,7 +609,6 @@ struct qVectorsTable {
         }
 
         if (sumAmplFV0A > 1e-8) {
-          QvecDet /= sumAmplFV0A;
           qVectFV0A[0] = QvecDet.Re();
           qVectFV0A[1] = QvecDet.Im();
         }
@@ -658,10 +672,20 @@ struct qVectorsTable {
     QvecAmp.push_back(static_cast<float>(nTrkTPCpos));
     QvecAmp.push_back(static_cast<float>(nTrkTPCneg));
     QvecAmp.push_back(static_cast<float>(nTrkTPCall));
+
+    LOG(info) << "[RAW] qVectFT0A: " << qVectFT0A[0] << ", " << qVectFT0A[1] << ", ampl: " << sumAmplFT0A;
+    LOG(info) << "[RAW] qVectFT0C: " << qVectFT0C[0] << ", " << qVectFT0C[1] << ", ampl: " << sumAmplFT0C;
+    LOG(info) << "[RAW] qVectFT0M: " << qVectFT0M[0] << ", " << qVectFT0M[1] << ", ampl: " << sumAmplFT0M;
+    LOG(info) << "[RAW] qVectFV0A: " << qVectFV0A[0] << ", " << qVectFV0A[1] << ", ampl: " << sumAmplFV0A;
+    LOG(info) << "[RAW] qVectTPCpos: " << qVectTPCpos[0] << ", " << qVectTPCpos[1] << ", nTrk: " << nTrkTPCpos;
+    LOG(info) << "[RAW] qVectTPCneg: " << qVectTPCneg[0] << ", " << qVectTPCneg[1] << ", nTrk: " << nTrkTPCneg;
+    LOG(info) << "[RAW] qVectTPCall: " << qVectTPCall[0] << ", " << qVectTPCall[1] << ", nTrk: " << nTrkTPCall;
+
   }
 
   void process(MyCollisions::iterator const& coll, aod::BCsWithTimestamps const&, aod::FT0s const&, aod::FV0As const&, MyTracks const& tracks)
   {
+    LOG(info) << "---------------------------- Processing Event ---------------------------";
     std::vector<int> TrkTPCposLabel{};
     std::vector<int> TrkTPCnegLabel{};
     std::vector<int> TrkTPCallLabel{};
@@ -729,9 +753,8 @@ struct qVectorsTable {
       // Scalar Product Q-vectors, normalization by multiplicity/amplitude
       std::vector<float> nModeQvecReSp{};
       std::vector<float> nModeQvecImSp{};
-      NormalizeQvec(nModeQvecReSp, nModeQvecImSp, qvecReRaw, qvecImRaw, qvecAmp, false);
+      NormalizeQvec(nModeQvecReSp, nModeQvecImSp, qvecReRaw, qvecImRaw, qvecAmp, MultNorms::kScalarProd);
       CorrectQvec(cent, nModeQvecReSp, nModeQvecImSp, corrsQvecSp[id], nMode);
-
       // Add to summary vector
       qvecReSp.insert(qvecReSp.end(), nModeQvecReSp.begin(), nModeQvecReSp.end());
       qvecImSp.insert(qvecImSp.end(), nModeQvecImSp.begin(), nModeQvecImSp.end());
@@ -739,9 +762,8 @@ struct qVectorsTable {
       // Ese Q-vectors, normalization by sqrt(multiplicity/amplitude)
       std::vector<float> nModeQvecReEse{};
       std::vector<float> nModeQvecImEse{};
-      NormalizeQvec(nModeQvecReEse, nModeQvecImEse, qvecReRaw, qvecImRaw, qvecAmp, true);
+      NormalizeQvec(nModeQvecReEse, nModeQvecImEse, qvecReRaw, qvecImRaw, qvecAmp, MultNorms::kEsE);
       CorrectQvec(cent, nModeQvecReEse, nModeQvecImEse, corrsQvecEse[id], nMode);
-
       // Add to summary vector
       qvecReEse.insert(qvecReEse.end(), nModeQvecReEse.begin(), nModeQvecReEse.end());
       qvecImEse.insert(qvecImEse.end(), nModeQvecImEse.begin(), nModeQvecImEse.end());
@@ -797,6 +819,16 @@ struct qVectorsTable {
       qVectorTPCneg(IsCalibrated, qvecReTPCnegSp.at(0), qvecImTPCnegSp.at(0), qvecAmp[kTPCneg], TrkTPCnegLabel);
     if (useDetector["QvectorTPCalls"])
       qVectorTPCall(IsCalibrated, qvecReTPCallSp.at(0), qvecImTPCallSp.at(0), qvecAmp[kTPCall], TrkTPCallLabel);
+
+    // Debug prints of values after corrections
+    std::cout << "[CORRECTED] FT0C, Re: " << qvecReFT0CSp.at(0) << ", Im: " << qvecImFT0CSp.at(0) << std::endl;
+    std::cout << "[CORRECTED] FT0A, Re: " << qvecReFT0ASp.at(0) << ", Im: " << qvecImFT0ASp.at(0) << std::endl;
+    std::cout << "[CORRECTED] FT0M, Re: " << qvecReFT0MSp.at(0) << ", Im: " << qvecImFT0MSp.at(0) << std::endl;
+    std::cout << "[CORRECTED] FV0A, Re: " << qvecReFV0ASp.at(0) << ", Im: " << qvecImFV0ASp.at(0) << std::endl;
+    std::cout << "[CORRECTED] TPCpos, Re: " << qvecReTPCposSp.at(0) << ", Im: " << qvecImTPCposSp.at(0) << std::endl;
+    std::cout << "[CORRECTED] TPCneg, Re: " << qvecReTPCnegSp.at(0) << ", Im: " << qvecImTPCnegSp.at(0) << std::endl;
+    std::cout << "[CORRECTED] TPCall, Re: " << qvecReTPCallSp.at(0) << ", Im: " << qvecImTPCallSp.at(0) << std::endl;
+
 
     qVectorFT0CVec(IsCalibrated, qvecReFT0CSp, qvecImFT0CSp, qvecAmp[kFT0C]);
     qVectorFT0AVec(IsCalibrated, qvecReFT0ASp, qvecImFT0ASp, qvecAmp[kFT0A]);
