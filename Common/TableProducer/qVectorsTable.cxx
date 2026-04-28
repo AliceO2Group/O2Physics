@@ -317,7 +317,7 @@ struct qVectorsTable {
       auto modeCorrQvecEse = getForTsOrRun<TH3F>(fullPath, timestamp, runnumber);
       if (!modeCorrQvecEse) {
         fullPath = cfgQvecCalibPath; // cfgQvecEseCalibPath;
-        fullPath += "/v2"; // "/eseq2";
+        fullPath += "/v2";           // "/eseq2";
         modeCorrQvecEse = getForTsOrRun<TH3F>(fullPath, timestamp, runnumber);
       }
       corrsQvecEse.push_back(modeCorrQvecEse);
@@ -405,12 +405,12 @@ struct qVectorsTable {
   /// \param QvecImRaw is the vector with the raw imaginary part of the q-vector for each detector and correction step
   /// \param QvecAmp is the vector with the amplitude of the q-vector for each detector and correction step
   /// \param normType is the type of normalization to apply to the q-vectors
-  void NormalizeQvec(std::vector<float>& QvecReNorm, 
-                     std::vector<float>& QvecImNorm, 
-                     std::vector<float> QvecReRaw, 
-                     std::vector<float> QvecImRaw, 
-                     std::vector<float>& QvecAmp, 
-                     MultNorms normType) 
+  void NormalizeQvec(std::vector<float>& QvecReNorm,
+                     std::vector<float>& QvecImNorm,
+                     std::vector<float> QvecReRaw,
+                     std::vector<float> QvecImRaw,
+                     std::vector<float>& QvecAmp,
+                     MultNorms normType)
   {
     for (std::size_t i = 0; i < kNDetectors; i++) {
       float qVecDetReNorm{999.}, qVecDetImNorm{999.};
@@ -430,7 +430,7 @@ struct qVectorsTable {
         }
         std::cout << "[NORMALIZED] " << i << " Re: " << qVecDetReNorm << ", Im: " << qVecDetImNorm << ", amp: " << QvecAmp[i] << std::endl;
       }
-      for (int iCorr=0; iCorr < Corrections::kNCorrections; iCorr++) {
+      for (int iCorr = 0; iCorr < Corrections::kNCorrections; iCorr++) {
         QvecReNorm.push_back(qVecDetReNorm);
         QvecImNorm.push_back(qVecDetImNorm);
       }
@@ -443,7 +443,8 @@ struct qVectorsTable {
   /// \param qvecIm is the vector with the imaginary part of the q-vector for each detector and correction step
   /// \param histsCorrs is the vector with the histograms with the correction constants for each detector and correction step
   /// \param nMode is the modulation of interest
-  void CorrectQvec(float cent, std::vector<float>& qvecRe, std::vector<float>& qvecIm, TH3F* histsCorrs, int nMode) {
+  void CorrectQvec(float cent, std::vector<float>& qvecRe, std::vector<float>& qvecIm, TH3F* histsCorrs, int nMode)
+  {
     int nCorrections = static_cast<int>(Corrections::kNCorrections);
     if (cent < cfgMaxCentrality) {
       for (auto i{0u}; i < kTPCall + 1; i++) {
@@ -563,9 +564,9 @@ struct qVectorsTable {
     float qVectFT0C[2] = {-999., -999.};
     float qVectFT0M[2] = {-999., -999.};
     float qVectFV0A[2] = {-999., -999.};
-    float qVectTPCpos[2] = {0., 0.};  // Always computed
-    float qVectTPCneg[2] = {0., 0.};  // Always computed
-    float qVectTPCall[2] = {0., 0.};  // Always computed
+    float qVectTPCpos[2] = {0., 0.}; // Always computed
+    float qVectTPCneg[2] = {0., 0.}; // Always computed
+    float qVectTPCall[2] = {0., 0.}; // Always computed
 
     TComplex QvecDet(0);
     TComplex QvecFT0M(0);
@@ -703,7 +704,6 @@ struct qVectorsTable {
     LOG(info) << "[RAW] qVectTPCpos: " << qVectTPCpos[0] << ", " << qVectTPCpos[1] << ", nTrk: " << nTrkTPCpos;
     LOG(info) << "[RAW] qVectTPCneg: " << qVectTPCneg[0] << ", " << qVectTPCneg[1] << ", nTrk: " << nTrkTPCneg;
     LOG(info) << "[RAW] qVectTPCall: " << qVectTPCall[0] << ", " << qVectTPCall[1] << ", nTrk: " << nTrkTPCall;
-
   }
 
   void process(MyCollisions::iterator const& coll, aod::BCsWithTimestamps const&, aod::FT0s const&, aod::FV0As const&, MyTracks const& tracks)
@@ -851,7 +851,6 @@ struct qVectorsTable {
     std::cout << "[CORRECTED] TPCpos, Re: " << qvecReTPCposSp.at(0) << ", Im: " << qvecImTPCposSp.at(0) << std::endl;
     std::cout << "[CORRECTED] TPCneg, Re: " << qvecReTPCnegSp.at(0) << ", Im: " << qvecImTPCnegSp.at(0) << std::endl;
     std::cout << "[CORRECTED] TPCall, Re: " << qvecReTPCallSp.at(0) << ", Im: " << qvecImTPCallSp.at(0) << std::endl;
-
 
     qVectorFT0CVec(IsCalibrated, qvecReFT0CSp, qvecImFT0CSp, qvecAmp[kFT0C]);
     qVectorFT0AVec(IsCalibrated, qvecReFT0ASp, qvecImFT0ASp, qvecAmp[kFT0A]);

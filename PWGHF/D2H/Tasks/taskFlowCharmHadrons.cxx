@@ -971,11 +971,11 @@ struct HfTaskFlowCharmHadrons {
                     o2::hf_centrality::getCentralityColl(collision, centEstimatorsForSparse->at(2)), o2::hf_centrality::getCentralityColl(collision, centEstimatorsForSparse->at(3)));
     }
     if (storeRedQVec) {
-      registry.fill(HIST("redQVecs/hSparseRedQVecs"), centrality, 
-                                                      std::hypot(collision.eseQvecFT0CRe(), collision.eseQvecFT0CIm()),
-                                                      std::hypot(collision.eseQvecTPCposRe(), collision.eseQvecTPCposIm()),
-                                                      std::hypot(collision.eseQvecTPCnegRe(), collision.eseQvecTPCnegIm()),
-                                                      std::hypot(collision.eseQvecTPCallRe(), collision.eseQvecTPCallIm()));
+      registry.fill(HIST("redQVecs/hSparseRedQVecs"), centrality,
+                    std::hypot(collision.eseQvecFT0CRe(), collision.eseQvecFT0CIm()),
+                    std::hypot(collision.eseQvecTPCposRe(), collision.eseQvecTPCposIm()),
+                    std::hypot(collision.eseQvecTPCnegRe(), collision.eseQvecTPCnegIm()),
+                    std::hypot(collision.eseQvecTPCallRe(), collision.eseQvecTPCallIm()));
     }
 
     if (!isCollSelected<o2::hf_centrality::CentralityEstimator::FT0C>(collision, bcs, centrality)) {
