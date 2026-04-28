@@ -146,7 +146,6 @@ constexpr int ProcIdSD2 = 104;
 constexpr int ProcIdDD1 = 105;
 constexpr int ProcIdDD2 = 106;
 
-
 // Linear pT-extrapolation weights applied when pt < CutPt: weight = slope * pt + intercept
 constexpr float PtWeightSlopeUp = -10.0f;
 constexpr float PtWeightInterceptUp = 2.0f;
@@ -221,14 +220,14 @@ struct DndetaHi {
   AxisSpec etaAxis = {80, -4.0, 4.0, "#eta", "eta axis"};
   AxisSpec v0EtaAxis = {20, -1.0, 1.0, "#etav0", "eta axis"};
   AxisSpec phiAxis = {629, 0, 2 * o2::constants::math::PI, "Rad", "phi axis"};
-  AxisSpec ptVarAxis = {PtVarEnd - 1, PtVarBegin + 0.5, PtVarEnd - 0.5, "", "ptvar axis"};
-  AxisSpec evtClassAxis = {EvtEnd - 1, EvtBegin + 0.5, EvtEnd - 0.5, "", "event class"};
-  AxisSpec trigClassAxis = {TrigEnd - 1, TrigBegin + 0.5, TrigEnd - 0.5, "", "trigger class"};
-  AxisSpec particleTypeAxis = {PartEnd - 1, PartBegin + 0.5, PartEnd - 0.5, "", "Particle type"};
-  AxisSpec speciesAxis = {SpecEnd - 1, SpecBegin + 0.5, SpecEnd - 0.5, "", "species class"};
+  AxisSpec ptVarAxis = {static_cast<int>(PtVarEnd) - 1, static_cast<int>(PtVarBegin) + 0.5f, static_cast<int>(PtVarEnd) - 0.5f, "", "ptvar axis"};
+  AxisSpec evtClassAxis = {static_cast<int>(EvtEnd) - 1, static_cast<int>(EvtBegin) + 0.5f, static_cast<int>(EvtEnd) - 0.5f, "", "event class"};
+  AxisSpec trigClassAxis = {static_cast<int>(TrigEnd) - 1, static_cast<int>(TrigBegin) + 0.5f, static_cast<int>(TrigEnd) - 0.5f, "", "trigger class"};
+  AxisSpec particleTypeAxis = {static_cast<int>(PartEnd) - 1, static_cast<int>(PartBegin) + 0.5f, static_cast<int>(PartEnd) - 0.5f, "", "Particle type"};
+  AxisSpec speciesAxis = {static_cast<int>(SpecEnd) - 1, static_cast<int>(SpecBegin) + 0.5f, static_cast<int>(SpecEnd) - 0.5f, "", "species class"};
   AxisSpec massAxis = {600, 0.3f, 1.3f, "Mass (GeV/c^{2})", "Inv. Mass (GeV/c^{2})"};
-  AxisSpec signAxis = {SignEnd - 1, SignBegin + 0.5, SignEnd - 0.5, "", "sign"};
-  AxisSpec stepAxis = {StepEnd - 1, StepBegin + 0.5, StepEnd - 0.5, "", "step"};
+  AxisSpec signAxis = {static_cast<int>(SignEnd) - 1, static_cast<int>(SignBegin) + 0.5f, static_cast<int>(SignEnd) - 0.5f, "", "sign"};
+  AxisSpec stepAxis = {static_cast<int>(StepEnd) - 1, static_cast<int>(StepBegin) + 0.5f, static_cast<int>(StepEnd) - 0.5f, "", "step"};
   AxisSpec testAxis = {101, -0.5, 100.5, "", "test"};
   AxisSpec multAxis = {1001, -0.5, 1000.5, "", "Ntrks"};
   AxisSpec statusCodeAxis = {3, -1.5, 2.5, "", "StatusCode"};
@@ -243,9 +242,9 @@ struct DndetaHi {
     ncheckbit(aod::track::trackCutFlag, TrackSelectionDCA);
 
   expressions::Filter preFilterV0 =
-    nabs(aod::v0data::dcapostopv) > dcaPosToPV &&
-    nabs(aod::v0data::dcanegtopv) > dcaNegToPV &&
-    aod::v0data::dcaV0daughters < dcaV0Dau;
+    nabs(aod::v0data::dcapostopv) > dcaPosToPV
+    && nabs(aod::v0data::dcanegtopv) > dcaNegToPV
+    && aod::v0data::dcaV0daughters < dcaV0Dau;
 
   Partition<Particles> mcSample = nabs(aod::mcparticle::eta) < estimatorEta;
   Partition<aod::Tracks> tSample = nabs(aod::track::eta) < estimatorEta;
@@ -258,23 +257,14 @@ struct DndetaHi {
     registry.add({"hetaresponse", ";etaresponse", {HistType::kTH2D, {{80, -4, 4}, {80, -4, 4}}}});
     registry.add({"hft0multiplicity", ";multiplicity", {HistType::kTH1D, {{10000, 0, 100000}}}});
     registry.add({"hcentrality", isPbPb ? " ; centrality_FT0C (%) " : "; centrality_FT0M", {HistType::kTH1F, {{10000, 0, 100}}}});
-    registry.add({"hcentralityvscentraldndeta",
-                  isPbPb ? " ; centrality_FT0C (%) " : "; centrality_FT0M",
-                  {HistType::kTH2F, {{100, 0, 100}, {100, 0, 100}}}});
-    registry.add({"hrecdndeta", "evntclass; triggerclass; zvtex, eta",
-                  {HistType::kTHnSparseD, {evtClassAxis, trigClassAxis, zAxis, etaAxis, isPbPb ? centAxisPbPb : centAxis, particleTypeAxis, phiBin}}});
-    registry.add({"hreczvtx", "evntclass; triggerclass;  zvtex",
-                  {HistType::kTHnSparseD, {evtClassAxis, trigClassAxis, zAxis, isPbPb ? centAxisPbPb : centAxis}}});
-    registry.add({"hphieta", "; #varphi; #eta; tracks",
-                  {HistType::kTHnSparseD, {evtClassAxis, trigClassAxis, phiAxis, etaAxis, isPbPb ? centAxisPbPb : centAxis}}});
-    registry.add({"hrecdndetamissing", "evntclass; triggerclass; zvtex, eta",
-                  {HistType::kTHnSparseD, {evtClassAxis, trigClassAxis, zAxis, etaAxis, isPbPb ? centAxisPbPb : centAxis}}});
-    registry.add({"hgendndeta", "evntclass;  zvtex, eta",
-                  {HistType::kTHnSparseD, {evtClassAxis, zAxis, etaAxis, isPbPb ? centAxisPbPb : centAxis, particleTypeAxis, ptVarAxis, phiBin}}});
-    registry.add({"hgenzvtx", "evntclass; zvtex",
-                  {HistType::kTHnSparseD, {evtClassAxis, zAxis, isPbPb ? centAxisPbPb : centAxis}}});
-    registry.add({"hv0mass", "etaaxis; invmass",
-                  {HistType::kTHnSparseD, {isPbPb ? centAxisPbPb : centAxis, speciesAxis, v0EtaAxis, massAxis}}});
+    registry.add({"hcentralityvscentraldndeta", isPbPb ? " ; centrality_FT0C (%) " : "; centrality_FT0M", {HistType::kTH2F, {{100, 0, 100}, {100, 0, 100}}}});
+    registry.add({"hrecdndeta", "evntclass; triggerclass; zvtex, eta", {HistType::kTHnSparseD, {evtClassAxis, trigClassAxis, zAxis, etaAxis, isPbPb ? centAxisPbPb : centAxis, particleTypeAxis, phiBin}}});
+    registry.add({"hreczvtx", "evntclass; triggerclass;  zvtex", {HistType::kTHnSparseD, {evtClassAxis, trigClassAxis, zAxis, isPbPb ? centAxisPbPb : centAxis}}});
+    registry.add({"hphieta", "; #varphi; #eta; tracks", {HistType::kTHnSparseD, {evtClassAxis, trigClassAxis, phiAxis, etaAxis, isPbPb ? centAxisPbPb : centAxis}}});
+    registry.add({"hrecdndetamissing", "evntclass; triggerclass; zvtex, eta", {HistType::kTHnSparseD, {evtClassAxis, trigClassAxis, zAxis, etaAxis, isPbPb ? centAxisPbPb : centAxis}}});
+    registry.add({"hgendndeta", "evntclass;  zvtex, eta", {HistType::kTHnSparseD, {evtClassAxis, zAxis, etaAxis, isPbPb ? centAxisPbPb : centAxis, particleTypeAxis, ptVarAxis, phiBin}}});
+    registry.add({"hgenzvtx", "evntclass; zvtex", {HistType::kTHnSparseD, {evtClassAxis, zAxis, isPbPb ? centAxisPbPb : centAxis}}});
+    registry.add({"hv0mass", "etaaxis; invmass", {HistType::kTHnSparseD, {isPbPb ? centAxisPbPb : centAxis, speciesAxis, v0EtaAxis, massAxis}}});
     registry.add({"hv0k0s", "invmass", {HistType::kTH1D, {{100, 0.4, 0.6}}}});
 
     registry.add({"recetaINELg0Sel8recz10", ";etaresponse", {HistType::kTH2D, {etaAxis, zAxis}}});
@@ -611,6 +601,7 @@ struct DndetaHi {
         }
         if (bevtc[EvtInel] && btrigc[TrigSel8] && std::abs(z) < CutZ) {
           registry.fill(HIST("hft0multiplicity"), collision.multFT0C());
+          registry.fill(HIST("Selection"), SelInelSel8Mcz10);
         }
         if (collisionsample.size() == 1 && bevtc[EvtInelg0] && btrigc[TrigSel8]) {
           for (const auto& eta : particleetas) {
