@@ -93,7 +93,7 @@ struct statPromptPhoton {
   Configurable<float> cfgEMChighPSphi{"cfgEMChighPSphi", 3.26, "higher limit of the EMC acceptance if Rec PS is required"};
   Configurable<float> cfgEMChighPSeta{"cfgEMChighPSeta", 0.62, "symmetric eta cut if Rec PS is required"};
   Configurable<float> cfgDClowPSphi{"cfgDClowPSphi", 4.56, "lower limit of the DCal acceptance if Rec PS is required"};
-  Configurable<float> cfgDChighPSphi{"cfgDChighPSphi", 5.70, "higher limit of the DCal acceptance if Rec PS is required"};  
+  Configurable<float> cfgDChighPSphi{"cfgDChighPSphi", 5.70, "higher limit of the DCal acceptance if Rec PS is required"};
   Configurable<int> cfgMCptNbins{"cfgMCptNbins", 200, "number of ptbins in MC QA plots"};
   Configurable<double> cfgMCptbinLow{"cfgMCptbinLow", 5, "lower limit of ptbins in MC QA plots"};
   Configurable<double> cfgMCptbinHigh{"cfgMCptbinHigh", 200, "upper limit of ptbins in MC QA plots"};
@@ -112,7 +112,6 @@ struct statPromptPhoton {
     AxisSpec pthadAxis = {ptBinning, "#it{p}_{T}^{had sum} [GeV/c]"};
 
     const AxisSpec MCptAxis = {cfgMCptNbins, cfgMCptbinLow, cfgMCptbinHigh};
-
 
     triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(cfgTriggerMasks);
     if (cfgJETracks) {
@@ -1526,16 +1525,15 @@ struct statPromptPhoton {
           continue;
         if (std::fabs(mcParticle.getGenStatusCode()) >= 81 || !mcParticle.isPhysicalPrimary())
           continue;
-	if(cfgReqRecPS_GEN){
-	  if(std::fabs(mcParticle.eta())>cfgEMChighPSeta)
-	    continue;
-	  bool insideCalPhi = false;
-	  if((mcParticle.phi()> cfgEMClowPSphi && mcParticle.phi()<cfgEMChighPSphi) || (mcParticle.phi()> cfgDClowPSphi && mcParticle.phi()<cfgDChighPSphi))
-	    insideCalPhi=true;
-	  if(!insideCalPhi)
-	    continue;
-	}
-       
+        if (cfgReqRecPS_GEN) {
+          if (std::fabs(mcParticle.eta()) > cfgEMChighPSeta)
+            continue;
+          bool insideCalPhi = false;
+          if ((mcParticle.phi() > cfgEMClowPSphi && mcParticle.phi() < cfgEMChighPSphi) || (mcParticle.phi() > cfgDClowPSphi && mcParticle.phi() < cfgDChighPSphi))
+            insideCalPhi = true;
+          if (!insideCalPhi)
+            continue;
+        }
 
         // Chase this final-state photon upward
         int chaseindex = -1;
@@ -1651,17 +1649,17 @@ struct statPromptPhoton {
         if (clusterparticle.getGenStatusCode() < 0)
           continue;
         if (std::fabs(clusterparticle.getGenStatusCode()) >= 81)
-          continue;	
-	if(cfgReqRecPS_REC){
-	  if(std::fabs(clusterparticle.eta())>cfgEMChighPSeta)
-	    continue;
-	  bool insideCalPhi = false;
-	  if((clusterparticle.phi()> cfgEMClowPSphi && clusterparticle.phi()<cfgEMChighPSphi) || (clusterparticle.phi()> cfgDClowPSphi && clusterparticle.phi()<cfgDChighPSphi))
-	    insideCalPhi=true;
-	  if(!insideCalPhi)
-	    continue;
-	}
-	
+          continue;
+        if (cfgReqRecPS_REC) {
+          if (std::fabs(clusterparticle.eta()) > cfgEMChighPSeta)
+            continue;
+          bool insideCalPhi = false;
+          if ((clusterparticle.phi() > cfgEMClowPSphi && clusterparticle.phi() < cfgEMChighPSphi) || (clusterparticle.phi() > cfgDClowPSphi && clusterparticle.phi() < cfgDChighPSphi))
+            insideCalPhi = true;
+          if (!insideCalPhi)
+            continue;
+        }
+
         int chaseindex = -1;
         for (auto& mom : clusterparticle.mothers_as<aod::JMcParticles>()) {
           chaseindex = mom.globalIndex();
