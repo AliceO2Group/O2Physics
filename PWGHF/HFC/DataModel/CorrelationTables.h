@@ -158,8 +158,8 @@ DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int);                       //! T
 DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                                 //! Pool Bin for the MixedEvent
 DECLARE_SOA_COLUMN(TrackDcaXY, trackDcaXY, float);                         //! DCA xy of the track
 DECLARE_SOA_COLUMN(TrackDcaZ, trackDcaZ, float);                           //! DCA z of the track
-DECLARE_SOA_COLUMN(SoftPiDcaXY, softPiDcaXY, float);                         //! DCA xy of the soft pion
-DECLARE_SOA_COLUMN(SoftPiDcaZ, softPiDcaZ, float);                           //! DCA z of the soft pion
+DECLARE_SOA_COLUMN(SoftPiDcaXY, softPiDcaXY, float);                       //! DCA xy of the soft pion
+DECLARE_SOA_COLUMN(SoftPiDcaZ, softPiDcaZ, float);                         //! DCA z of the soft pion
 DECLARE_SOA_COLUMN(TrackTPCNClsCrossedRows, trackTPCNClsCrossedRows, int); //! Number of crossed TPC Rows
 DECLARE_SOA_COLUMN(TrackOrigin, trackOrigin, int);                         //! Number of crossed TPC Rows
 DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);                              //! Used in MC-Rec, Lc Signal
@@ -182,15 +182,13 @@ DECLARE_SOA_TABLE(ScRecoInfo, "AOD", "SCRECOINFO", //! Sc reco info
                   aod::hf_correlation_lc_hadron::MLc,
                   aod::hf_correlation_lc_hadron::PtSoftPi,
                   aod::hf_correlation_lc_hadron::SoftPiDcaXY,
-                  aod::hf_correlation_lc_hadron::SoftPiDcaZ
-                );
+                  aod::hf_correlation_lc_hadron::SoftPiDcaZ);
 
 DECLARE_SOA_TABLE(ScHadronRecoInfo, "AOD", "SCHADRECOINFO", //! Sc reco info
                   aod::hf_correlation_lc_hadron::MLc,
                   aod::hf_correlation_lc_hadron::PtSoftPi,
                   aod::hf_correlation_lc_hadron::SoftPiDcaXY,
-                  aod::hf_correlation_lc_hadron::SoftPiDcaZ
-                );
+                  aod::hf_correlation_lc_hadron::SoftPiDcaZ);
 
 DECLARE_SOA_TABLE(PtLcFromSc, "AOD", "PTLCSC", //! Sc-->Lc pT
                   aod::hf_correlation_lc_hadron::PtLc);
