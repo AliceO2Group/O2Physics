@@ -358,7 +358,7 @@ struct StudyPnch {
         mcRecIDs.push_back(particle.globalIndex());
         if (particle.has_mothers()) {
           auto mcMother = particle.template mothers_as<aod::McParticles>().front();
-          if (mcMother.pdgCode() == PDG_t::kK0Short || std::abs(mcMother.pdgCode() == PDG_t::kLambda0)) {
+          if (mcMother.pdgCode() == PDG_t::kK0Short || std::abs(mcMother.pdgCode()) == PDG_t::kLambda0) {
             nTrk_strange++;
           }
         }
