@@ -80,7 +80,9 @@ DECLARE_SOA_TABLE(EyeFlucCharmD0Cands, "AOD", "EYEFCD0CAND",
                   eyefluc::MassD0bar,
                   eyefluc::OmegaCharm,
                   eyefluc::OmegaAntiCharm,
-                  eyefluc::OmegaBkg);
+                  eyefluc::OmegaBkg,
+                  aod::hf_cand_mc_flag::FlagMcMatchRec,
+                  aod::hf_cand_mc_flag::OriginMcRec);
 
 DECLARE_SOA_TABLE(EyeFlucCharmD0Events, "AOD", "EYEFCD0EVT",
                   eyefluc::EventId,
@@ -100,7 +102,9 @@ DECLARE_SOA_TABLE(EyeFlucCharmDplusCands, "AOD", "EYEFCDPCAND",
                   eyefluc::MassDplus,
                   eyefluc::OmegaCharm,
                   eyefluc::OmegaAntiCharm,
-                  eyefluc::OmegaBkg);
+                  eyefluc::OmegaBkg,
+                  aod::hf_cand_mc_flag::FlagMcMatchRec,
+                  aod::hf_cand_mc_flag::OriginMcRec);
 
 DECLARE_SOA_TABLE(EyeFlucCharmDplusEvents, "AOD", "EYEFCDPEVT",
                   eyefluc::EventId,
@@ -126,7 +130,9 @@ enum EventQa : uint8_t {
 };
 
 using CandD0Data = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfCand2Prong0PidPi, aod::HfCand2Prong1PidPi, aod::HfCand2Prong0PidKa, aod::HfCand2Prong1PidKa, aod::HfCand2ProngKF, aod::HfSelD0>>;
+using CandD0McRec = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfCand2Prong0PidPi, aod::HfCand2Prong1PidPi, aod::HfCand2Prong0PidKa, aod::HfCand2Prong1PidKa, aod::HfCand2ProngKF, aod::HfSelD0, aod::HfCand2ProngMcRec>>;
 using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3Prong0PidPi, aod::HfCand3Prong1PidPi, aod::HfCand3Prong2PidPi, aod::HfCand3Prong0PidKa, aod::HfCand3Prong1PidKa, aod::HfCand3Prong2PidKa, aod::HfSelDplusToPiKPi>>;
+using CandDplusMcRec = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3Prong0PidPi, aod::HfCand3Prong1PidPi, aod::HfCand3Prong2PidPi, aod::HfCand3Prong0PidKa, aod::HfCand3Prong1PidKa, aod::HfCand3Prong2PidKa, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec>>;
 using CollData = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0As>;
 
 struct HfTaskNetCharmFluctuations {
@@ -149,6 +155,8 @@ struct HfTaskNetCharmFluctuations {
   Filter filterSelectDplusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
   Partition<CandD0Data> selectedD0ToPiK = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0;
   Partition<CandD0Data> selectedD0ToKPi = aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+  Partition<CandD0McRec> selectedD0McToPiK = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0;
+  Partition<CandD0McRec> selectedD0McToKPi = aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
 
   HistogramRegistry registry{"registry"};
 
@@ -164,11 +172,13 @@ struct HfTaskNetCharmFluctuations {
     float omegaCharm = 0.f;
     float omegaAntiCharm = 0.f;
     float omegaBkg = 1.f;
+    int8_t flagMcMatchRec = -1;
+    int8_t originMcRec = -1;
   };
 
   void init(InitContext const&)
   {
-    std::array<int, 2> processes = {doprocessD0, doprocessDplus};
+    std::array<int, 4> processes = {doprocessD0, doprocessMcD0, doprocessDplus, doprocessMcDplus};
     const int nProcesses = std::accumulate(processes.begin(), processes.end(), 0);
     if (nProcesses > 1) {
       LOGP(fatal, "Only one process function should be enabled at a time, please check your configuration");
@@ -232,6 +242,15 @@ struct HfTaskNetCharmFluctuations {
     }
   }
 
+  template <bool IsMc, typename TCandidate>
+  void setMcInfo(HfCandInfo& info, TCandidate const& cand) const
+  {
+    if constexpr (IsMc) {
+      info.flagMcMatchRec = cand.flagMcMatchRec();
+      info.originMcRec = cand.originMcRec();
+    }
+  }
+
   bool passEventSelection(CollData::iterator const& collision)
   {
     registry.fill(HIST("hEventQa"), 1 + EventQa::All);
@@ -278,7 +297,9 @@ struct HfTaskNetCharmFluctuations {
                 cand.massD0bar,
                 cand.omegaCharm,
                 cand.omegaAntiCharm,
-                cand.omegaBkg);
+                cand.omegaBkg,
+                cand.flagMcMatchRec,
+                cand.originMcRec);
     }
 
     outD0Evt(eventId, timeStamp, centrality, wCharm, wAntiCharm, wBkg);
@@ -317,14 +338,16 @@ struct HfTaskNetCharmFluctuations {
                    cand.massDplus,
                    cand.omegaCharm,
                    cand.omegaAntiCharm,
-                   cand.omegaBkg);
+                   cand.omegaBkg,
+                   cand.flagMcMatchRec,
+                   cand.originMcRec);
     }
 
     outDplusEvt(eventId, timeStamp, centrality, wCharm, wAntiCharm, wBkg);
     registry.fill(HIST("hEventQa"), 1 + EventQa::EventWritten);
   }
 
-  template <int8_t Sign, typename TCandidates>
+  template <int8_t Sign, bool IsMc = false, typename TCandidates>
   void addD0Candidates(TCandidates const& candidates, std::vector<HfCandInfo>& acceptedCands)
   {
     for (const auto& cand : candidates) {
@@ -339,6 +362,7 @@ struct HfTaskNetCharmFluctuations {
       info.massD0bar = massD0bar;
       info.pt = cand.pt();
       info.rapidity = HfHelper::yD0(cand);
+      setMcInfo<IsMc>(info, cand);
       setOmegaRaw(info);
       acceptedCands.push_back(info);
 
@@ -370,10 +394,26 @@ struct HfTaskNetCharmFluctuations {
   }
   PROCESS_SWITCH(HfTaskNetCharmFluctuations, processD0, "Process D0 and D0bar candidates", false);
 
-  void processDplus(CollData::iterator const& collision,
-                    aod::BCsWithTimestamps const&,
-                    CandDplusData const& candidatesDplus,
-                    aod::Tracks const&)
+  void processMcD0(CollData::iterator const& collision,
+                   aod::BCsWithTimestamps const&,
+                   CandD0McRec const&)
+  {
+    if (!passEventSelection(collision)) {
+      return;
+    }
+
+    auto candsD0ToPiK = selectedD0McToPiK->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+    auto candsD0ToKPi = selectedD0McToKPi->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+
+    std::vector<HfCandInfo> acceptedCands;
+    addD0Candidates<+1, true>(candsD0ToPiK, acceptedCands);
+    addD0Candidates<-1, true>(candsD0ToKPi, acceptedCands);
+    fillD0OutputTables(collision, acceptedCands);
+  }
+  PROCESS_SWITCH(HfTaskNetCharmFluctuations, processMcD0, "Process MC D0 and D0bar candidates", false);
+
+  template <bool IsMc, typename TCandidates>
+  void runDplus(CollData::iterator const& collision, TCandidates const& candidatesDplus)
   {
     if (!passEventSelection(collision)) {
       return;
@@ -392,6 +432,7 @@ struct HfTaskNetCharmFluctuations {
       info.massDplus = massDplus;
       info.pt = cand.pt();
       info.rapidity = HfHelper::yDplus(cand);
+      setMcInfo<IsMc>(info, cand);
       setOmegaRaw(info);
       acceptedCands.push_back(info);
       registry.fill(HIST("hMassVsPtDplus"), massDplus, cand.pt());
@@ -400,7 +441,24 @@ struct HfTaskNetCharmFluctuations {
 
     fillDplusOutputTables(collision, acceptedCands);
   }
+
+  void processDplus(CollData::iterator const& collision,
+                    aod::BCsWithTimestamps const&,
+                    CandDplusData const& candidatesDplus,
+                    aod::Tracks const&)
+  {
+    runDplus<false>(collision, candidatesDplus);
+  }
   PROCESS_SWITCH(HfTaskNetCharmFluctuations, processDplus, "Process Dplus and Dminus candidates", true);
+
+  void processMcDplus(CollData::iterator const& collision,
+                      aod::BCsWithTimestamps const&,
+                      CandDplusMcRec const& candidatesDplus,
+                      aod::Tracks const&)
+  {
+    runDplus<true>(collision, candidatesDplus);
+  }
+  PROCESS_SWITCH(HfTaskNetCharmFluctuations, processMcDplus, "Process MC Dplus and Dminus candidates", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
