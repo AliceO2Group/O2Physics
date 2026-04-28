@@ -174,7 +174,7 @@ enum SelectionStep {
   SelInelg0Sel8g0,
   SelInelSel8Recz10,
   SelInelg0Sel8g0Recz10,
-  SelK0sz10Eta05        
+  SelK0sz10Eta05
 };
 
 static constexpr TrackSelectionFlags::flagtype TrackSelectionITS =
