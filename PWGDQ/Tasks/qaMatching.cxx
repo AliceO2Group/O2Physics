@@ -1673,8 +1673,6 @@ struct QaMatching {
         continue;
       // get the index associated to the MC particle
       auto muonMcParticle = muonTrack.mcParticle();
-      if (std::abs(muonMcParticle.pdgCode()) != kMuonMinus)
-        continue;
 
       int64_t muonMcTrackIndex = muonMcParticle.globalIndex();
 
