@@ -202,7 +202,7 @@ struct HfTaskCorrelationDplusHadrons {
     registry.add("hMassDplusVsPt", "D+ candidates massVsPt", {HistType::kTH2F, {{axisMassD}, {axisPtD}}});
     registry.add("hMassDplusVsPtWoEff", "D+ candidates massVsPt without efficiency", {HistType::kTH2F, {{axisMassD}, {axisPtD}}});
     if (fillHistoData) {
-      if(storeMassAxis){
+      if (storeMassAxis) {
         registry.add("hCorrel2DVsPtVsMass", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + "entries", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtCorr}, {axisPtHadron}, {axisPoolBin}, {axisMassD}}});
         registry.get<THnSparse>(HIST("hCorrel2DVsPtVsMass"))->Sumw2();
       } else {
@@ -402,7 +402,7 @@ struct HfTaskCorrelationDplusHadrons {
           efficiencyWeight = 1. / (effD->GetBinContent(effD->FindBin(ptD)) * mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(ptHadron)));
         }
       }
-      if(storeMassAxis){
+      if (storeMassAxis) {
         registry.fill(HIST("hCorrel2DVsPtVsMass"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, massD, efficiencyWeight);
         continue;
       }
