@@ -64,6 +64,11 @@ o2physics_add_dpl_workflow(femto-pair-v0-v0
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(femto-pair-efficiency
+	  SOURCES femtoPairEfficiency.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(femto-triplet-track-track-track
 	  SOURCES femtoTripletTrackTrackTrack.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore

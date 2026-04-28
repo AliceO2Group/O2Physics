@@ -25,7 +25,6 @@
 
 #include "Common/Core/TableHelper.h"
 
-#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/HistogramRegistry.h>
@@ -37,7 +36,6 @@
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
-#include <TPDGCode.h>
 #include <TString.h>
 
 #include <sys/types.h>
