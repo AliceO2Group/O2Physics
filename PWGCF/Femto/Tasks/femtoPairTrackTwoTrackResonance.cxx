@@ -177,21 +177,21 @@ struct FemtoPairTrackTwoTrackResonance {
     if (doprocessPhiSameEvent || doprocessPhiMixedEvent) {
       auto phiHistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceHistSpecMap(confPhiBinning);
       auto pairTrackPhiHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
-      pairTrackPhiBuilder.init<modes::Mode::kAnalysis>(&hRegistry, trackSelection, phiSelection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, phiHistSpec, posDauSpec, negDauSpec, pairTrackPhiHistSpec, cprHistSpec);
+      pairTrackPhiBuilder.init<modes::Mode::kAnalysis>(&hRegistry, confCollisionBinning, trackSelection, phiSelection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, phiHistSpec, posDauSpec, negDauSpec, pairTrackPhiHistSpec, cprHistSpec);
     }
 
     // setup for kstar0
     if (doprocessKstar0SameEvent || doprocessKstar0MixedEvent) {
       auto kstar0HistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceHistSpecMap(confKstar0Binning);
       auto pairTrackKstar0HistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
-      pairTrackKstar0Builder.init<modes::Mode::kAnalysis>(&hRegistry, trackSelection, kstar0Selection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, kstar0HistSpec, posDauSpec, negDauSpec, pairTrackKstar0HistSpec, cprHistSpec);
+      pairTrackKstar0Builder.init<modes::Mode::kAnalysis>(&hRegistry, confCollisionBinning, trackSelection, kstar0Selection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, kstar0HistSpec, posDauSpec, negDauSpec, pairTrackKstar0HistSpec, cprHistSpec);
     }
 
     // setup for kstar0
     if (doprocessRho0SameEvent || doprocessRho0MixedEvent) {
       auto rho0HistSpec = twotrackresonancehistmanager::makeTwoTrackResonanceHistSpecMap(confRho0Binning);
       auto pairTrackRho0HistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning);
-      pairTrackRho0Builder.init<modes::Mode::kAnalysis>(&hRegistry, trackSelection, rho0Selection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, rho0HistSpec, posDauSpec, negDauSpec, pairTrackRho0HistSpec, cprHistSpec);
+      pairTrackRho0Builder.init<modes::Mode::kAnalysis>(&hRegistry, confCollisionBinning, trackSelection, rho0Selection, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec, rho0HistSpec, posDauSpec, negDauSpec, pairTrackRho0HistSpec, cprHistSpec);
     }
   };
 

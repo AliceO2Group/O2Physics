@@ -16,7 +16,10 @@
 #ifndef PWGHF_D2H_UTILS_UTILSSIGMAC_H_
 #define PWGHF_D2H_UTILS_UTILSSIGMAC_H_
 
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
+
+#include <CommonConstants/PhysicsConstants.h>
 
 #include <Rtypes.h>
 
@@ -44,6 +47,25 @@ int8_t isDecayToPKPiToPiKP(L& candidateLc, S& candSc)
   }
   return channel; /// 0: none; 1: pK-π+ only; 2: π+K-p only; 3: both possible
 }
+
+/// @brief Function to calculate the difference between the measured PKPi invariant mass and the Λc one from PDG
+/// @tparam L template for the Λc candidate
+/// @param candLc the Λc candidate
+template <typename L>
+double massDiffFromPdgLcToPKPi(L& candLc)
+{
+  return HfHelper::invMassLcToPKPi(candLc) - o2::constants::physics::MassLambdaCPlus;
+}
+
+/// @brief Function to calculate the difference between the measured PiKP invariant mass and the Λc one from PDG
+/// @tparam L template for the Λc candidate
+/// @param candLc the Λc candidate
+template <typename L>
+double massDiffFromPdgLcToPiKP(L& candLc)
+{
+  return HfHelper::invMassLcToPiKP(candLc) - o2::constants::physics::MassLambdaCPlus;
+}
+
 } // namespace o2::hf_sigmac_utils
 
 #endif // PWGHF_D2H_UTILS_UTILSSIGMAC_H_

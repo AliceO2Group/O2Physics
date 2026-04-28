@@ -180,7 +180,7 @@ class PairSHCentMultKt
   /// \param ktval kT value
   template <typename T>
   void fillMultNumDen(T const& part1, T const& part2, uint8_t ChosenEventType,
-                      int maxl, int multval, float ktval, bool isiden, bool isqinvfill)
+                      int maxl, int multval, float ktval, bool isIdenLCMS, bool isqinvfill, bool isWeight, bool isIdenPRF)
   {
     int multbinval;
     int absmultval = multval;
@@ -197,7 +197,7 @@ class PairSHCentMultKt
       return;
     }
     // std::cout<<"multbinval "<<multbinval<<std::endl;
-    fillkTNumDen(part1, part2, ChosenEventType, maxl, multbinval, ktval, isiden, isqinvfill);
+    fillkTNumDen(part1, part2, ChosenEventType, maxl, multbinval, ktval, isIdenLCMS, isqinvfill, isWeight, isIdenPRF);
   }
 
   /// Templated function to access different kT directory and call addEventPair
@@ -209,7 +209,7 @@ class PairSHCentMultKt
   /// \param ktval kT value
   template <typename T>
   void fillkTNumDen(T const& part1, T const& part2, uint8_t ChosenEventType,
-                    int maxl, int multval, float ktval, bool isiden, bool isqinvfill)
+                    int maxl, int multval, float ktval, bool isIdenLCMS, bool isqinvfill, bool isWeight, bool isIdenPRF)
   {
     int ktbinval = -1;
     if (ktval >= ktBins[0] && ktval < ktBins[1]) {
@@ -229,7 +229,7 @@ class PairSHCentMultKt
     } else {
       return;
     }
-    addEventPair(part1, part2, ChosenEventType, maxl, multval, ktbinval, isiden, isqinvfill);
+    addEventPair(part1, part2, ChosenEventType, maxl, multval, ktbinval, isIdenLCMS, isqinvfill, isWeight, isIdenPRF);
   }
 
   /// Set the PDG codes of the two particles involved
@@ -262,20 +262,33 @@ class PairSHCentMultKt
   /// \param ktval kT value
   template <typename T>
   void addEventPair(T const& part1, T const& part2, uint8_t ChosenEventType,
-                    int /*maxl*/, int multval, int ktval, bool isiden, bool isqinvfill)
+                    int /*maxl*/, int multval, int ktval, bool isIdenLCMS, bool isqinvfill, bool isWeight, bool isIdenPRF)
   {
     int fMultBin = multval;
     int fKtBin = ktval;
     std::vector<std::complex<double>> fYlmBuffer(kMaxJM);
     std::vector<double> f3d;
     setPionPairMass();
+
     f3d = FemtoUniverseMath::newpairfunc(part1, mMassOne, part2, mMassTwo,
-                                         isiden);
+                                         isIdenLCMS, isWeight, isIdenPRF);
+    double varout = 0.0;
+    double varside = 0.0;
+    double varlong = 0.0;
 
-    const float qout = f3d[1];
-    const float qside = f3d[2];
-    const float qlong = f3d[3];
+    if (isIdenLCMS) {
+      varout = f3d[1];
+      varside = f3d[2];
+      varlong = f3d[3];
+    } else if (isIdenPRF) {
+      varout = f3d[6];
+      varside = f3d[7];
+      varlong = f3d[8];
+    }
 
+    const double qout = varout;
+    const double qside = varside;
+    const double qlong = varlong;
     double kv = std::sqrt(qout * qout + qside * qside + qlong * qlong);
 
     // int nqbin = fbinctn[0][0]->GetXaxis()->FindFixBin(kv);

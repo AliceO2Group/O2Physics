@@ -24,13 +24,10 @@
 #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 #include "PWGEM/Dilepton/Utils/EventHistograms.h"
 #include "PWGEM/Dilepton/Utils/MCUtilities.h"
-#include "PWGEM/Dilepton/Utils/MlResponseDielectronSingleTrack.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "Tools/ML/MlResponse.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/LHCConstants.h"
@@ -52,6 +49,7 @@
 #include <format>
 #include <map>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -75,7 +73,7 @@ using MyMCElectron = MyMCElectrons::iterator;
 using FilteredMyMCElectrons = soa::Filtered<MyMCElectrons>;
 using FilteredMyMCElectron = FilteredMyMCElectrons::iterator;
 
-using MyMCMuons = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMEventIds, aod::EMAmbiguousMuonSelfIds, aod::EMGlobalMuonSelfIds, aod::EMPrimaryMuonMCLabels, aod::EMMFTMCLabels>;
+using MyMCMuons = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMEventIds, aod::EMAmbiguousMuonSelfIds, aod::EMGlobalMuonSelfIds, aod::EMPrimaryElectronsPrefilterBitDerived, aod::EMPrimaryMuonMCLabels, aod::EMMFTMCLabels>;
 using MyMCMuon = MyMCMuons::iterator;
 using FilteredMyMCMuons = soa::Filtered<MyMCMuons>;
 using FilteredMyMCMuon = FilteredMyMCMuons::iterator;
@@ -99,10 +97,6 @@ struct DileptonMC {
 
   Configurable<int> cfgEventGeneratorType{"cfgEventGeneratorType", -1, "if positive, select event generator type. i.e. gap or signal"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
-  Configurable<float> cfgCentMin{"cfgCentMin", -1, "min. centrality"};
-  Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
-  Configurable<uint16_t> cfgNumContribMin{"cfgNumContribMin", 0, "min. numContrib"};
-  Configurable<uint16_t> cfgNumContribMax{"cfgNumContribMax", 65000, "max. numContrib"};
   Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", false, "flag to apply weighting by 1/N"};
   Configurable<uint> cfgDCAType{"cfgDCAType", 0, "type of DCA for output. 0:3D, 1:XY, 2:Z, else:3D"};
   Configurable<bool> cfgFillUnfolding{"cfgFillUnfolding", false, "flag to fill histograms for unfolding"};
@@ -158,11 +152,17 @@ struct DileptonMC {
     Configurable<bool> cfgRequireGoodITSLayer3{"cfgRequireGoodITSLayer3", false, "number of inactive chips on ITS layer 3 are below threshold "};
     Configurable<bool> cfgRequireGoodITSLayer0123{"cfgRequireGoodITSLayer0123", false, "number of inactive chips on ITS layers 0-3 are below threshold "};
     Configurable<bool> cfgRequireGoodITSLayersAll{"cfgRequireGoodITSLayersAll", false, "number of inactive chips on all ITS layers are below threshold "};
+
     // for RCT
     Configurable<bool> cfgRequireGoodRCT{"cfgRequireGoodRCT", false, "require good detector flag in run condtion table"};
     Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
     Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "set ZDC flag for PbPb"};
     Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
+
+    Configurable<float> cfgCentMin{"cfgCentMin", -1, "min. centrality"};
+    Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
+    Configurable<uint16_t> cfgNumContribMin{"cfgNumContribMin", 0, "min. numContrib"};
+    Configurable<uint16_t> cfgNumContribMax{"cfgNumContribMax", 65000, "max. numContrib"};
   } eventcuts;
 
   DielectronCut fDielectronCut;
@@ -186,7 +186,7 @@ struct DileptonMC {
     Configurable<float> cfg_min_dphi{"cfg_min_dphi", 0.2, "min dphi between 2 electrons (elliptic cut)"};
     Configurable<float> cfg_min_opang{"cfg_min_opang", 0.0, "min opening angle"};
     Configurable<float> cfg_max_opang{"cfg_max_opang", 6.4, "max opening angle"};
-    Configurable<bool> cfg_require_diff_sides{"cfg_require_diff_sides", false, "flag to require 2 tracks are from different sides."};
+    // Configurable<bool> cfg_require_diff_sides{"cfg_require_diff_sides", false, "flag to require 2 tracks are from different sides."};
 
     Configurable<bool> cfg_apply_cuts_from_prefilter{"cfg_apply_cuts_from_prefilter", false, "flag to apply prefilter set when producing derived data"};
     Configurable<uint16_t> cfg_prefilter_bits{"cfg_prefilter_bits", 0, "prefilter bits [kNone : 0, kElFromPC : 1, kElFromPi0_20MeV : 2, kElFromPi0_40MeV : 4, kElFromPi0_60MeV : 8, kElFromPi0_80MeV : 16, kElFromPi0_100MeV : 32, kElFromPi0_120MeV : 64, kElFromPi0_140MeV : 128] Please consider logical-OR among them."}; // see PairUtilities.h
@@ -209,14 +209,14 @@ struct DileptonMC {
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
     Configurable<float> cfg_max_chi2tof{"cfg_max_chi2tof", 1e+10, "max chi2 TOF"};
-    Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 0.2, "max dca XY for single track in cm"};
-    Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 0.2, "max dca Z for single track in cm"};
+    Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1.0, "max dca XY for single track in cm"};
+    Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 1.0, "max dca Z for single track in cm"};
     Configurable<bool> cfg_require_itsib_any{"cfg_require_itsib_any", false, "flag to require ITS ib any hits"};
     Configurable<bool> cfg_require_itsib_1st{"cfg_require_itsib_1st", true, "flag to require ITS ib 1st hit"};
     Configurable<float> cfg_min_its_cluster_size{"cfg_min_its_cluster_size", 0.f, "min ITS cluster size"};
     Configurable<float> cfg_max_its_cluster_size{"cfg_max_its_cluster_size", 16.f, "max ITS cluster size"};
-    Configurable<float> cfg_min_rel_diff_pin{"cfg_min_rel_diff_pin", -1e+10, "min rel. diff. between pin and ppv"};
-    Configurable<float> cfg_max_rel_diff_pin{"cfg_max_rel_diff_pin", +1e+10, "max rel. diff. between pin and ppv"};
+    // Configurable<float> cfg_min_rel_diff_pin{"cfg_min_rel_diff_pin", -1e+10, "min rel. diff. between pin and ppv"};
+    // Configurable<float> cfg_max_rel_diff_pin{"cfg_max_rel_diff_pin", +1e+10, "max rel. diff. between pin and ppv"};
     Configurable<float> cfgRefR{"cfgRefR", 0.50, "ref. radius (m) for calculating phi position"}; // 0.50 +/- 0.06 can be syst. unc.
     Configurable<float> cfg_min_phiposition_track{"cfg_min_phiposition_track", 0.f, "min phi position for single track at certain radius"};
     Configurable<float> cfg_max_phiposition_track{"cfg_max_phiposition_track", 6.3, "max phi position for single track at certain radius"};
@@ -237,14 +237,12 @@ struct DileptonMC {
     Configurable<float> cfg_min_pin_pirejTPC{"cfg_min_pin_pirejTPC", 0.f, "min. pin for pion rejection in TPC"};
     Configurable<float> cfg_max_pin_pirejTPC{"cfg_max_pin_pirejTPC", 1e+10, "max. pin for pion rejection in TPC"};
     Configurable<bool> enableTTCA{"enableTTCA", true, "Flag to enable or disable TTCA"};
-    Configurable<bool> includeITSsa{"includeITSsa", false, "Flag to enable ITSsa tracks"};
-    Configurable<float> cfg_max_pt_track_ITSsa{"cfg_max_pt_track_ITSsa", 0.15, "max pt for ITSsa tracks"};
 
     // configuration for PID ML
     Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"filename"}, "ONNX file names for each bin (if not from CCDB full path)"};
     Configurable<std::vector<std::string>> onnxPathsCCDB{"onnxPathsCCDB", std::vector<std::string>{"path"}, "Paths of models on CCDB"};
-    Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{-999999., 999999.}, "Bin limits for ML application"};
-    Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.95}, "ML cuts per bin"};
+    Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{0.1, 0.15, 0.2, 0.25, 0.4, 0.8, 1.6, 2.0, 20.f}, "Bin limits for ML application"};
+    Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.98, 0.98, 0.9, 0.9, 0.95, 0.95, 0.8, 0.8}, "ML cuts per bin"};
     Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature"}, "Names of ML model input features"};
     Configurable<std::string> nameBinningFeature{"nameBinningFeature", "pt", "Names of ML model binning feature"};
     Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB.  Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
@@ -267,6 +265,9 @@ struct DileptonMC {
     Configurable<float> cfg_min_deta{"cfg_min_deta", 0.02, "min deta between 2 muons (elliptic cut)"};
     Configurable<float> cfg_min_dphi{"cfg_min_dphi", 0.02, "min dphi between 2 muons (elliptic cut)"};
 
+    Configurable<bool> cfg_apply_cuts_from_prefilter_derived{"cfg_apply_cuts_from_prefilter_derived", false, "flag to apply prefilter set in derived data"};
+    Configurable<uint16_t> cfg_prefilter_bits_derived{"cfg_prefilter_bits_derived", 0, "prefilter bits [kNone : 0, kSplitOrMergedTrackLS : 4, kSplitOrMergedTrackULS : 8] Please consider logical-OR among them."}; // see PairUtilities.h
+
     Configurable<uint8_t> cfg_track_type{"cfg_track_type", 3, "muon track type [0: MFT-MCH-MID, 3: MCH-MID]"};
     Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.2, "min pT for single track"};
     Configurable<float> cfg_max_pt_track{"cfg_max_pt_track", 1e+10, "max pT for single track"};
@@ -278,7 +279,10 @@ struct DileptonMC {
     Configurable<int> cfg_min_ncluster_mch{"cfg_min_ncluster_mch", 5, "min ncluster MCH"};
     Configurable<float> cfg_max_chi2{"cfg_max_chi2", 1e+6, "max chi2/ndf"};
     Configurable<float> cfg_max_chi2mft{"cfg_max_chi2mft", 1e+6, "max chi2/ndf"};
-    Configurable<float> cfg_max_matching_chi2_mftmch{"cfg_max_matching_chi2_mftmch", 40, "max chi2 for MFT-MCH matching"};
+    // Configurable<float> cfg_max_matching_chi2_mftmch{"cfg_max_matching_chi2_mftmch", 40, "max chi2 for MFT-MCH matching"};
+    Configurable<float> cfg_border_pt_for_chi2mchmft{"cfg_border_pt_for_chi2mchmft", 0, "border pt for different max chi2 for MFT-MCH matching"};
+    Configurable<float> cfg_max_matching_chi2_mftmch_lowPt{"cfg_max_matching_chi2_mftmch_lowPt", 8, "max chi2 for MFT-MCH matching for low pT"};
+    Configurable<float> cfg_max_matching_chi2_mftmch_highPt{"cfg_max_matching_chi2_mftmch_highPt", 40, "max chi2 for MFT-MCH matching for high pT"};
     Configurable<float> cfg_max_matching_chi2_mchmid{"cfg_max_matching_chi2_mchmid", 1e+10, "max chi2 for MCH-MID matching"};
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1e+10, "max dca XY for single track in cm"};
     Configurable<float> cfg_min_rabs{"cfg_min_rabs", 17.6, "min Radius at the absorber end"};
@@ -289,7 +293,8 @@ struct DileptonMC {
     Configurable<float> cfg_max_DPhi_wrt_matchedMCHMID{"cfg_max_DPhi_wrt_matchedMCHMID", 1e+10f, "max. dphi between MFT-MCH-MID and MCH-MID"};
     Configurable<bool> requireMFTHitMap{"requireMFTHitMap", false, "flag to apply MFT hit map"};
     Configurable<std::vector<int>> requiredMFTDisks{"requiredMFTDisks", std::vector<int>{0}, "hit map on MFT disks [0,1,2,3,4]. logical-OR of each double-sided disk"};
-    Configurable<bool> rejectWrongMatch{"rejectWrongMatch", false, "flag to reject wrong match between MFT and MCH-MID"}; // this is only for MC study, as we don't know correct match in data.
+    Configurable<bool> acceptOnlyCorrectMatch{"acceptOnlyCorrectMatch", false, "flag to accept only correct match between MFT and MCH-MID"}; // this is only for MC study, as we don't know correct match in data.
+    Configurable<bool> acceptOnlyWrongMatch{"acceptOnlyWrongMatch", false, "flag to accept only wrong match between MFT and MCH-MID"};       // this is only for MC study, as we don't know correct match in data.
   } dimuoncuts;
 
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
@@ -701,7 +706,6 @@ struct DileptonMC {
     fEMEventCut.SetRequireGoodITSLayersAll(eventcuts.cfgRequireGoodITSLayersAll);
   }
 
-  o2::analysis::MlResponseDielectronSingleTrack<float> mlResponseSingleTrack;
   void DefineDielectronCut()
   {
     fDielectronCut = DielectronCut("fDielectronCut", "fDielectronCut");
@@ -715,7 +719,7 @@ struct DileptonMC {
     fDielectronCut.ApplyPhiV(dielectroncuts.cfg_apply_phiv);
     fDielectronCut.SetMindEtadPhi(dielectroncuts.cfg_apply_detadphi, false, dielectroncuts.cfg_min_deta, dielectroncuts.cfg_min_dphi);
     fDielectronCut.SetPairOpAng(dielectroncuts.cfg_min_opang, dielectroncuts.cfg_max_opang);
-    fDielectronCut.SetRequireDifferentSides(dielectroncuts.cfg_require_diff_sides);
+    // fDielectronCut.SetRequireDifferentSides(dielectroncuts.cfg_require_diff_sides);
 
     // for track
     fDielectronCut.SetTrackPtRange(dielectroncuts.cfg_min_pt_track, dielectroncuts.cfg_max_pt_track);
@@ -734,8 +738,8 @@ struct DileptonMC {
     fDielectronCut.RequireITSibAny(dielectroncuts.cfg_require_itsib_any);
     fDielectronCut.RequireITSib1st(dielectroncuts.cfg_require_itsib_1st);
     fDielectronCut.SetChi2TOF(0.0, dielectroncuts.cfg_max_chi2tof);
-    fDielectronCut.SetRelDiffPin(dielectroncuts.cfg_min_rel_diff_pin, dielectroncuts.cfg_max_rel_diff_pin);
-    fDielectronCut.IncludeITSsa(dielectroncuts.includeITSsa, dielectroncuts.cfg_max_pt_track_ITSsa);
+    // fDielectronCut.SetRelDiffPin(dielectroncuts.cfg_min_rel_diff_pin, dielectroncuts.cfg_max_rel_diff_pin);
+    fDielectronCut.EnableTTCA(dielectroncuts.enableTTCA);
 
     // for eID
     fDielectronCut.SetPIDScheme(dielectroncuts.cfg_pid_scheme);
@@ -759,31 +763,6 @@ struct DileptonMC {
         thresholdsML.emplace_back(dielectroncuts.cutsMl.value[i]);
       }
       fDielectronCut.SetMLThresholds(binsML, thresholdsML);
-
-      // static constexpr int nClassesMl = 2;
-      // const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutSmaller};
-      // const std::vector<std::string> labelsClasses = {"Background", "Signal"};
-      // const uint32_t nBinsMl = dielectroncuts.binsMl.value.size() - 1;
-      // const std::vector<std::string> labelsBins(nBinsMl, "bin");
-      // double cutsMlArr[nBinsMl][nClassesMl];
-      // for (uint32_t i = 0; i < nBinsMl; i++) {
-      //   cutsMlArr[i][0] = 0.;
-      //   cutsMlArr[i][1] = dielectroncuts.cutsMl.value[i];
-      // }
-      // o2::framework::LabeledArray<double> cutsMl = {cutsMlArr[0], nBinsMl, nClassesMl, labelsBins, labelsClasses};
-
-      // mlResponseSingleTrack.configure(dielectroncuts.binsMl.value, cutsMl, cutDirMl, nClassesMl);
-      // if (dielectroncuts.loadModelsFromCCDB) {
-      //   ccdbApi.init(ccdburl);
-      //   mlResponseSingleTrack.setModelPathsCCDB(dielectroncuts.onnxFileNames.value, ccdbApi, dielectroncuts.onnxPathsCCDB.value, dielectroncuts.timestampCCDB.value);
-      // } else {
-      //   mlResponseSingleTrack.setModelPathsLocal(dielectroncuts.onnxFileNames.value);
-      // }
-      // mlResponseSingleTrack.cacheInputFeaturesIndices(dielectroncuts.namesInputFeatures);
-      // mlResponseSingleTrack.cacheBinningIndex(dielectroncuts.nameBinningFeature);
-      // mlResponseSingleTrack.init(dielectroncuts.enableOptimizations.value);
-
-      // fDielectronCut.SetPIDMlResponse(&mlResponseSingleTrack);
     } // end of PID ML
   }
 
@@ -807,13 +786,15 @@ struct DileptonMC {
     fDimuonCut.SetNClustersMCHMID(dimuoncuts.cfg_min_ncluster_mch, 20);
     fDimuonCut.SetChi2(0.f, dimuoncuts.cfg_max_chi2);
     fDimuonCut.SetChi2MFT(0.f, dimuoncuts.cfg_max_chi2mft);
-    fDimuonCut.SetMatchingChi2MCHMFT(0.f, dimuoncuts.cfg_max_matching_chi2_mftmch);
+    // fDimuonCut.SetMatchingChi2MCHMFT(0.f, dimuoncuts.cfg_max_matching_chi2_mftmch);
+    fDimuonCut.SetMaxMatchingChi2MCHMFTPtDep([&](float pt) { return (pt < dimuoncuts.cfg_border_pt_for_chi2mchmft ? dimuoncuts.cfg_max_matching_chi2_mftmch_lowPt : dimuoncuts.cfg_max_matching_chi2_mftmch_highPt); });
     fDimuonCut.SetMatchingChi2MCHMID(0.f, dimuoncuts.cfg_max_matching_chi2_mchmid);
     fDimuonCut.SetDCAxy(0.f, dimuoncuts.cfg_max_dcaxy);
     fDimuonCut.SetRabs(dimuoncuts.cfg_min_rabs, dimuoncuts.cfg_max_rabs);
     fDimuonCut.SetMaxPDCARabsDep([&](float rabs) { return (rabs < 26.5 ? 594.f : 324.f); });
     fDimuonCut.SetMaxdPtdEtadPhiwrtMCHMID(dimuoncuts.cfg_max_relDPt_wrt_matchedMCHMID, dimuoncuts.cfg_max_DEta_wrt_matchedMCHMID, dimuoncuts.cfg_max_DPhi_wrt_matchedMCHMID); // this is relevant for global muons
     fDimuonCut.SetMFTHitMap(dimuoncuts.requireMFTHitMap, dimuoncuts.requiredMFTDisks);
+    fDimuonCut.EnableTTCA(dimuoncuts.enableTTCA);
   }
 
   template <typename TTrack, typename TMCParticles>
@@ -1392,7 +1373,7 @@ struct DileptonMC {
   }
 
   template <bool isSmeared, typename TCollision, typename TMCCollisions, typename TTrack1, typename TTrack2, typename TCut, typename TAllTracks, typename TMCParticles>
-  bool fillTruePairInfo(TCollision const& collision, TMCCollisions const&, TTrack1 const& t1, TTrack2 const& t2, TCut const& cut, TAllTracks const& tracks, TMCParticles const& mcparticles)
+  bool fillTruePairInfo(TCollision const& collision, TMCCollisions const&, TTrack1 const& t1, TTrack2 const& t2, TCut const& cut, TAllTracks const&, TMCParticles const& mcparticles)
   {
     auto t1mc = mcparticles.iteratorAt(t1.emmcparticleId());
     auto t2mc = mcparticles.iteratorAt(t2.emmcparticleId());
@@ -1427,18 +1408,29 @@ struct DileptonMC {
       if (!cut.template IsSelectedTrack<false>(t1) || !cut.template IsSelectedTrack<false>(t2)) {
         return false;
       }
+      if (!map_best_match_globalmuon[t1.globalIndex()] || !map_best_match_globalmuon[t2.globalIndex()]) {
+        return false;
+      }
 
-      if (!o2::aod::pwgem::dilepton::utils::emtrackutil::isBestMatch<false>(t1, cut, tracks)) {
-        return false;
-      }
-      if (!o2::aod::pwgem::dilepton::utils::emtrackutil::isBestMatch<false>(t2, cut, tracks)) {
-        return false;
-      }
-      if (dimuoncuts.rejectWrongMatch) {
+      // if (!o2::aod::pwgem::dilepton::utils::emtrackutil::isBestMatch<false>(t1, cut, tracks)) {
+      //   return false;
+      // }
+      // if (!o2::aod::pwgem::dilepton::utils::emtrackutil::isBestMatch<false>(t2, cut, tracks)) {
+      //   return false;
+      // }
+      if (dimuoncuts.acceptOnlyCorrectMatch) {
         if (t1.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && t1.emmcparticleId() != t1.emmftmcparticleId()) {
           return false;
         }
         if (t2.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && t2.emmcparticleId() != t2.emmftmcparticleId()) {
+          return false;
+        }
+      }
+      if (dimuoncuts.acceptOnlyWrongMatch) { // reject correctly matched MFT-MCH-MID for bkg estimation
+        if (t1.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && t1.emmcparticleId() == t1.emmftmcparticleId()) {
+          return false;
+        }
+        if (t2.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && t2.emmcparticleId() == t2.emmftmcparticleId()) {
           return false;
         }
       }
@@ -2043,7 +2035,7 @@ struct DileptonMC {
     for (const auto& collision : collisions) {
       initCCDB(collision);
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
-      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+      if (centralities[cfgCentEstimator] < eventcuts.cfgCentMin || eventcuts.cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
 
@@ -2091,7 +2083,7 @@ struct DileptonMC {
       auto collision = collisions.rawIteratorAt(mccollision.mpemeventId());
 
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
-      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+      if (centralities[cfgCentEstimator] < eventcuts.cfgCentMin || eventcuts.cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
       fRegistry.fill(HIST("MCEvent/before/hZvtx_rec"), mccollision.posZ());
@@ -2133,7 +2125,7 @@ struct DileptonMC {
   }
 
   template <bool is_wo_acc = false, typename TTrack1, typename TTrack2, typename TCut, typename TAllTracks>
-  bool isPairOK(TTrack1 const& t1, TTrack2 const& t2, TCut const& cut, TAllTracks const& tracks)
+  bool isPairOK(TTrack1 const& t1, TTrack2 const& t2, TCut const& cut, TAllTracks const&)
   {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
@@ -2149,12 +2141,15 @@ struct DileptonMC {
       if (!cut.template IsSelectedTrack<is_wo_acc>(t1) || !cut.template IsSelectedTrack<is_wo_acc>(t2)) {
         return false;
       }
-      if (!o2::aod::pwgem::dilepton::utils::emtrackutil::isBestMatch<is_wo_acc>(t1, cut, tracks)) {
+      if (!map_best_match_globalmuon[t1.globalIndex()] || !map_best_match_globalmuon[t2.globalIndex()]) {
         return false;
       }
-      if (!o2::aod::pwgem::dilepton::utils::emtrackutil::isBestMatch<is_wo_acc>(t2, cut, tracks)) {
-        return false;
-      }
+      // if (!o2::aod::pwgem::dilepton::utils::emtrackutil::isBestMatch<is_wo_acc>(t1, cut, tracks)) {
+      //   return false;
+      // }
+      // if (!o2::aod::pwgem::dilepton::utils::emtrackutil::isBestMatch<is_wo_acc>(t2, cut, tracks)) {
+      //   return false;
+      // }
     }
 
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
@@ -2179,7 +2174,7 @@ struct DileptonMC {
     for (const auto& collision : collisions) {
       initCCDB(collision);
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
-      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+      if (centralities[cfgCentEstimator] < eventcuts.cfgCentMin || eventcuts.cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
 
@@ -2454,7 +2449,7 @@ struct DileptonMC {
     for (const auto& collision : collisions) {
       initCCDB(collision);
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
-      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+      if (centralities[cfgCentEstimator] < eventcuts.cfgCentMin || eventcuts.cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
 
@@ -2480,10 +2475,13 @@ struct DileptonMC {
     } // end of collision loop
   }
 
+  std::unordered_map<int, bool> map_best_match_globalmuon;
+
   SliceCache cache;
   Preslice<MyMCElectrons> perCollision_electron = aod::emprimaryelectron::emeventId;
-  Filter trackFilter_electron = nabs(o2::aod::track::dcaXY) < dielectroncuts.cfg_max_dcaxy && nabs(o2::aod::track::dcaZ) < dielectroncuts.cfg_max_dcaz;
-  Filter ttcaFilter_electron = ifnode(dielectroncuts.enableTTCA.node(), o2::aod::emprimaryelectron::isAssociatedToMPC == true || o2::aod::emprimaryelectron::isAssociatedToMPC == false, o2::aod::emprimaryelectron::isAssociatedToMPC == true);
+  Filter trackFilter_electron = nabs(o2::aod::track::dcaXY) < dielectroncuts.cfg_max_dcaxy && nabs(o2::aod::track::dcaZ) < dielectroncuts.cfg_max_dcaz && o2::aod::track::itsChi2NCl < dielectroncuts.cfg_max_chi2its && o2::aod::track::tpcChi2NCl < dielectroncuts.cfg_max_chi2tpc;
+  Filter pidFilter_electron = dielectroncuts.cfg_min_TPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < dielectroncuts.cfg_max_TPCNsigmaEl;
+  Filter ttcaFilter_electron = ifnode(dielectroncuts.enableTTCA.node(), true, o2::aod::emprimaryelectron::isAssociatedToMPC == true);
   Filter prefilter_derived_electron = ifnode(dielectroncuts.cfg_apply_cuts_from_prefilter_derived.node() && dielectroncuts.cfg_prefilter_bits_derived.node() >= static_cast<uint16_t>(1),
                                              ifnode((dielectroncuts.cfg_prefilter_bits_derived.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kMee))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfbderived & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kMee))) <= static_cast<uint16_t>(0), true) &&
                                                ifnode((dielectroncuts.cfg_prefilter_bits_derived.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kPhiV))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfbderived & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kPhiV))) <= static_cast<uint16_t>(0), true) &&
@@ -2504,10 +2502,14 @@ struct DileptonMC {
 
   Preslice<MyMCMuons> perCollision_muon = aod::emprimarymuon::emeventId;
   Filter trackFilter_muon = o2::aod::fwdtrack::trackType == dimuoncuts.cfg_track_type;
-  Filter ttcaFilter_muon = ifnode(dimuoncuts.enableTTCA.node(), o2::aod::emprimarymuon::isAssociatedToMPC == true || o2::aod::emprimarymuon::isAssociatedToMPC == false, o2::aod::emprimarymuon::isAssociatedToMPC == true);
+  Filter ttcaFilter_muon = ifnode(dimuoncuts.enableTTCA.node(), true, o2::aod::emprimarymuon::isAssociatedToMPC == true);
+  Filter prefilter_derived_muon = ifnode(dimuoncuts.cfg_apply_cuts_from_prefilter_derived.node() && dimuoncuts.cfg_prefilter_bits_derived.node() >= static_cast<uint16_t>(1),
+                                         ifnode((dimuoncuts.cfg_prefilter_bits_derived.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS))) > static_cast<uint16_t>(0), (o2::aod::emprimarymuon::pfbderived & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS))) <= static_cast<uint16_t>(0), true) &&
+                                           ifnode((dimuoncuts.cfg_prefilter_bits_derived.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackULS))) > static_cast<uint16_t>(0), (o2::aod::emprimarymuon::pfbderived & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackULS))) <= static_cast<uint16_t>(0), true),
+                                         o2::aod::emprimarymuon::pfbderived >= static_cast<uint16_t>(0));
 
-  Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
-  Filter collisionFilter_numContrib = cfgNumContribMin <= o2::aod::collision::numContrib && o2::aod::collision::numContrib < cfgNumContribMax;
+  Filter collisionFilter_centrality = (eventcuts.cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < eventcuts.cfgCentMax) || (eventcuts.cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < eventcuts.cfgCentMax) || (eventcuts.cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < eventcuts.cfgCentMax);
+  Filter collisionFilter_numContrib = eventcuts.cfgNumContribMin <= o2::aod::collision::numContrib && o2::aod::collision::numContrib < eventcuts.cfgNumContribMax;
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
@@ -2538,6 +2540,7 @@ struct DileptonMC {
         fillUnfolding(collisions, positive_electrons, negative_electrons, o2::aod::emprimaryelectron::emeventId, fDielectronCut, leptons, mccollisions, mcparticles);
       }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
+      map_best_match_globalmuon = findBestMatchMap(leptons, fDimuonCut);
       if (cfgApplyWeightTTCA) {
         fillPairWeightMap(collisions, positive_muons, negative_muons, o2::aod::emprimarymuon::emeventId, fDimuonCut, leptons, mccollisions, mcparticles);
       }
@@ -2548,6 +2551,7 @@ struct DileptonMC {
       }
     }
     map_weight.clear();
+    map_best_match_globalmuon.clear();
   }
   PROCESS_SWITCH(DileptonMC, processAnalysis, "run dilepton mc analysis", true);
 
@@ -2569,6 +2573,7 @@ struct DileptonMC {
         fillUnfolding(collisions, positive_electrons, negative_electrons, o2::aod::emprimaryelectron::emeventId, fDielectronCut, leptons, mccollisions, mcparticles_smeared);
       }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
+      map_best_match_globalmuon = findBestMatchMap(leptons, fDimuonCut);
       if (cfgApplyWeightTTCA) {
         fillPairWeightMap(collisions, positive_muons, negative_muons, o2::aod::emprimarymuon::emeventId, fDimuonCut, leptons, mccollisions, mcparticles_smeared);
       }
@@ -2579,6 +2584,7 @@ struct DileptonMC {
       }
     }
     map_weight.clear();
+    map_best_match_globalmuon.clear();
   }
   PROCESS_SWITCH(DileptonMC, processAnalysis_Smeared, "run dilepton mc analysis with smearing", false);
 
@@ -2587,7 +2593,7 @@ struct DileptonMC {
     // for oemga, phi efficiency
     for (const auto& collision : collisions) {
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
-      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+      if (centralities[cfgCentEstimator] < eventcuts.cfgCentMin || eventcuts.cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
 
@@ -2638,28 +2644,28 @@ struct DileptonMC {
   {
     for (const auto& collision : collisions) {
       fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 1.0);
-      if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+      if (collision.selection_bit(o2::aod::emevsel::kIsTriggerTVX)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 2.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      if (collision.selection_bit(o2::aod::emevsel::kNoTimeFrameBorder)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 3.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      if (collision.selection_bit(o2::aod::emevsel::kNoITSROFrameBorder)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 4.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      if (collision.selection_bit(o2::aod::emevsel::kNoSameBunchPileup)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 5.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      if (collision.selection_bit(o2::aod::emevsel::kIsGoodZvtxFT0vsPV)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 6.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+      if (collision.selection_bit(o2::aod::emevsel::kIsVertexITSTPC)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 7.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+      if (collision.selection_bit(o2::aod::emevsel::kIsVertexTRDmatched)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 8.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+      if (collision.selection_bit(o2::aod::emevsel::kIsVertexTOFmatched)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 9.0);
       }
       if (collision.sel8()) {
@@ -2668,28 +2674,28 @@ struct DileptonMC {
       if (std::fabs(collision.posZ()) < 10.0) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 11.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      if (collision.selection_bit(o2::aod::emevsel::kNoCollInTimeRangeStandard)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 12.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+      if (collision.selection_bit(o2::aod::emevsel::kNoCollInTimeRangeStrict)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 13.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+      if (collision.selection_bit(o2::aod::emevsel::kNoCollInRofStandard)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 14.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+      if (collision.selection_bit(o2::aod::emevsel::kNoCollInRofStrict)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 15.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+      if (collision.selection_bit(o2::aod::emevsel::kNoHighMultCollInPrevRof)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 16.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer3)) {
+      if (collision.selection_bit(o2::aod::emevsel::kIsGoodITSLayer3)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 17.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
+      if (collision.selection_bit(o2::aod::emevsel::kIsGoodITSLayer0123)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 18.0);
       }
-      if (collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      if (collision.selection_bit(o2::aod::emevsel::kIsGoodITSLayersAll)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 19.0);
       }
       if (!fEMEventCut.IsSelected(collision)) {
@@ -2706,22 +2712,22 @@ struct DileptonMC {
   void processBC(aod::EMBCs const& bcs)
   {
     for (const auto& bc : bcs) {
-      if (bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+      if (bc.selection_bit(o2::aod::emevsel::kIsTriggerTVX)) {
         fRegistry.fill(HIST("BC/hTVXCounter"), 0.f);
 
-        if (bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+        if (bc.selection_bit(o2::aod::emevsel::kNoTimeFrameBorder)) {
           fRegistry.fill(HIST("BC/hTVXCounter"), 1.f);
         }
-        if (bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+        if (bc.selection_bit(o2::aod::emevsel::kNoITSROFrameBorder)) {
           fRegistry.fill(HIST("BC/hTVXCounter"), 2.f);
         }
         if (rctChecker(bc)) {
           fRegistry.fill(HIST("BC/hTVXCounter"), 3.f);
         }
-        if (bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+        if (bc.selection_bit(o2::aod::emevsel::kNoTimeFrameBorder) && bc.selection_bit(o2::aod::emevsel::kNoITSROFrameBorder)) {
           fRegistry.fill(HIST("BC/hTVXCounter"), 4.f);
         }
-        if (bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) && rctChecker(bc)) {
+        if (bc.selection_bit(o2::aod::emevsel::kNoTimeFrameBorder) && bc.selection_bit(o2::aod::emevsel::kNoITSROFrameBorder) && rctChecker(bc)) {
           fRegistry.fill(HIST("BC/hTVXCounter"), 5.f);
         }
       }

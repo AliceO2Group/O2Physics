@@ -699,8 +699,9 @@ void FlowPtContainer::fillSubeventPtProfiles(const double& centmult, const doubl
       }
       ++subIndex;
     }
-    if (valid)
+    if (valid) {
       dynamic_cast<BootstrapProfile*>(fSubList->At(histCounter))->FillProfile(centmult, val, (fEventWeight == EventWeight::UnityWeight) ? 1.0 : dn, rn);
+    }
     ++histCounter;
   }
   return;
@@ -907,16 +908,18 @@ void FlowPtContainer::fillCMSubeventProfiles(const double& centmult, const doubl
   for (int im = 1; im <= mpar; im++) {
     indOffset += im;
   }
+
+  std::vector<int> validMpar = {0, 0, 0};
   // 0th order correlation
   cmDenSub[0].push_back(1.);
   cmValSub[0].push_back(1.);
   cmDenSub[nSubevents - 1].push_back(1.);
   cmValSub[nSubevents - 1].push_back(1.);
 
-  cmDenSub[0].push_back(insub[0][getVectorIndex(1, 0)]);
-  cmDenSub[0].push_back(insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 0)] - insub[0][getVectorIndex(2, 0)]);
-  cmDenSub[0].push_back(insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 0)] - 3 * insub[0][getVectorIndex(2, 0)] * insub[0][getVectorIndex(1, 0)] + 2 * insub[0][getVectorIndex(3, 0)]);
-  cmDenSub[0].push_back(insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 0)] - 6 * insub[0][getVectorIndex(2, 0)] * insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 0)] + 8 * insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(3, 0)] + 3 * insub[0][getVectorIndex(2, 0)] * insub[0][getVectorIndex(2, 0)] - 6 * insub[0][getVectorIndex(4, 0)]);
+  cmDenSub[0].push_back(insub[0][getVectorIndex(1, 0)]);                                                                                                                                                                                                                                                                                                                                                                                            // cmDensub[0][1] = sum w
+  cmDenSub[0].push_back(insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 0)] - insub[0][getVectorIndex(2, 0)]);                                                                                                                                                                                                                                                                                                                          // cmDensub[0][2] = sum wi wj
+  cmDenSub[0].push_back(insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 0)] - 3 * insub[0][getVectorIndex(2, 0)] * insub[0][getVectorIndex(1, 0)] + 2 * insub[0][getVectorIndex(3, 0)]);                                                                                                                                                                                                               // cmDensub[0][3] = sum wi wj wk
+  cmDenSub[0].push_back(insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 0)] - 6 * insub[0][getVectorIndex(2, 0)] * insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 0)] + 8 * insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(3, 0)] + 3 * insub[0][getVectorIndex(2, 0)] * insub[0][getVectorIndex(2, 0)] - 6 * insub[0][getVectorIndex(4, 0)]); // cmDensub[0][4] = sum wi wj wk wl
 
   cmDenSub[nSubevents - 1].push_back(insub[nSubevents - 1][getVectorIndex(1, 0)]);
   cmDenSub[nSubevents - 1].push_back(insub[nSubevents - 1][getVectorIndex(1, 0)] * insub[nSubevents - 1][getVectorIndex(1, 0)] - insub[nSubevents - 1][getVectorIndex(2, 0)]);
@@ -932,65 +935,68 @@ void FlowPtContainer::fillCMSubeventProfiles(const double& centmult, const doubl
     dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 0))->FillProfile(centmult, cmValSub[nSubevents - 1][1], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[nSubevents - 1][1], rn);
   }
 
-  if (mpar < 2)
-    return;
-  if (insub[0][getVectorIndex(2, 0)] != 0 && cmDenSub[0][2] != 0) {
-    cmValSub[0].push_back(1 / cmDenSub[0][2] * (insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] - insub[0][getVectorIndex(2, 2)]));
-    dynamic_cast<BootstrapProfile*>(fSubCMList->At(1))->FillProfile(centmult, cmValSub[0][2], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[0][2], rn);
-    cmValSub[0].push_back(1 / cmDenSub[0][2] * (insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 1)] - insub[0][getVectorIndex(2, 1)]));
-    dynamic_cast<BootstrapProfile*>(fSubCMList->At(2))->FillProfile(centmult, cmValSub[0][3], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[0][2], rn);
-  }
-  if (insub[nSubevents - 1][getVectorIndex(2, 0)] != 0 && cmDenSub[nSubevents - 1][2] != 0) {
-    cmValSub[nSubevents - 1].push_back(1 / cmDenSub[nSubevents - 1][2] * (insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] - insub[nSubevents - 1][getVectorIndex(2, 2)]));
-    dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 1))->FillProfile(centmult, cmValSub[nSubevents - 1][2], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[nSubevents - 1][2], rn);
-    cmValSub[nSubevents - 1].push_back(1 / cmDenSub[nSubevents - 1][2] * (insub[nSubevents - 1][getVectorIndex(1, 0)] * insub[nSubevents - 1][getVectorIndex(1, 1)] - insub[nSubevents - 1][getVectorIndex(2, 1)]));
-    dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 2))->FillProfile(centmult, cmValSub[nSubevents - 1][3], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[nSubevents - 1][2], rn);
-  }
-
-  if (mpar < 3)
-    return;
-  if (insub[0][getVectorIndex(3, 0)] != 0 && cmDenSub[0][3] != 0) {
-    cmValSub[0].push_back(1 / cmDenSub[0][3] * (insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] - 3 * insub[0][getVectorIndex(2, 2)] * insub[0][getVectorIndex(1, 1)] + 2 * insub[0][getVectorIndex(3, 3)]));
-    dynamic_cast<BootstrapProfile*>(fSubCMList->At(3))->FillProfile(centmult, cmValSub[0][4], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[0][3], rn);
-    cmValSub[0].push_back(1 / cmDenSub[0][3] * (insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 0)] - 2 * insub[0][getVectorIndex(2, 1)] * insub[0][getVectorIndex(1, 1)] + 2 * insub[0][getVectorIndex(3, 2)] - insub[0][getVectorIndex(2, 2)] * insub[0][getVectorIndex(1, 0)]));
-    dynamic_cast<BootstrapProfile*>(fSubCMList->At(4))->FillProfile(centmult, cmValSub[0][5], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[0][3], rn);
-    cmValSub[0].push_back(1 / cmDenSub[0][3] * (insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 0)] - 2 * insub[0][getVectorIndex(2, 1)] * insub[0][getVectorIndex(1, 0)] + 2 * insub[0][getVectorIndex(3, 1)] - insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(2, 0)]));
-    dynamic_cast<BootstrapProfile*>(fSubCMList->At(5))->FillProfile(centmult, cmValSub[0][6], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[0][3], rn);
-  }
-  if (insub[nSubevents - 1][getVectorIndex(3, 0)] != 0 && cmDenSub[nSubevents - 1][3] != 0) {
-    cmValSub[nSubevents - 1].push_back(1 / cmDenSub[nSubevents - 1][3] * (insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] - 3 * insub[nSubevents - 1][getVectorIndex(2, 2)] * insub[nSubevents - 1][getVectorIndex(1, 1)] + 2 * insub[nSubevents - 1][getVectorIndex(3, 3)]));
-    dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 3))->FillProfile(centmult, cmValSub[nSubevents - 1][4], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[nSubevents - 1][3], rn);
-    cmValSub[nSubevents - 1].push_back(1 / cmDenSub[nSubevents - 1][3] * (insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 0)] - 2 * insub[nSubevents - 1][getVectorIndex(2, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] + 2 * insub[nSubevents - 1][getVectorIndex(3, 2)] - insub[nSubevents - 1][getVectorIndex(2, 2)] * insub[nSubevents - 1][getVectorIndex(1, 0)]));
-    dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 4))->FillProfile(centmult, cmValSub[nSubevents - 1][5], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[nSubevents - 1][3], rn);
-    cmValSub[nSubevents - 1].push_back(1 / cmDenSub[nSubevents - 1][3] * (insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 0)] * insub[nSubevents - 1][getVectorIndex(1, 0)] - 2 * insub[nSubevents - 1][getVectorIndex(2, 1)] * insub[nSubevents - 1][getVectorIndex(1, 0)] + 2 * insub[nSubevents - 1][getVectorIndex(3, 1)] - insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(2, 0)]));
-    dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 5))->FillProfile(centmult, cmValSub[nSubevents - 1][6], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[nSubevents - 1][3], rn);
+  if (mpar >= 2) {
+    if (insub[0][getVectorIndex(2, 0)] != 0 && cmDenSub[0][2] != 0) {
+      cmValSub[0].push_back(1 / cmDenSub[0][2] * (insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] - insub[0][getVectorIndex(2, 2)]));
+      dynamic_cast<BootstrapProfile*>(fSubCMList->At(1))->FillProfile(centmult, cmValSub[0][2], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[0][2], rn);
+      cmValSub[0].push_back(1 / cmDenSub[0][2] * (insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 1)] - insub[0][getVectorIndex(2, 1)]));
+      dynamic_cast<BootstrapProfile*>(fSubCMList->At(2))->FillProfile(centmult, cmValSub[0][3], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[0][2], rn);
+    }
+    if (insub[nSubevents - 1][getVectorIndex(2, 0)] != 0 && cmDenSub[nSubevents - 1][2] != 0) {
+      cmValSub[nSubevents - 1].push_back(1 / cmDenSub[nSubevents - 1][2] * (insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] - insub[nSubevents - 1][getVectorIndex(2, 2)]));
+      dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 1))->FillProfile(centmult, cmValSub[nSubevents - 1][2], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[nSubevents - 1][2], rn);
+      cmValSub[nSubevents - 1].push_back(1 / cmDenSub[nSubevents - 1][2] * (insub[nSubevents - 1][getVectorIndex(1, 0)] * insub[nSubevents - 1][getVectorIndex(1, 1)] - insub[nSubevents - 1][getVectorIndex(2, 1)]));
+      dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 2))->FillProfile(centmult, cmValSub[nSubevents - 1][3], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[nSubevents - 1][2], rn);
+    }
+    validMpar[0] = true;
   }
 
-  if (mpar < 4)
-    return;
-  if (insub[0][getVectorIndex(4, 0)] != 0 && cmDenSub[0][4] != 0) {
-    cmValSub[0].push_back(1 / cmDenSub[0][4] * (insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] - 6 * insub[0][getVectorIndex(2, 2)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] + 3 * insub[0][getVectorIndex(2, 2)] * insub[0][getVectorIndex(2, 2)] + 8 * insub[0][getVectorIndex(3, 3)] * insub[0][getVectorIndex(1, 1)] - 6 * insub[0][getVectorIndex(4, 4)]));
-    dynamic_cast<BootstrapProfile*>(fSubCMList->At(6))->FillProfile(centmult, cmValSub[0][7], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[0][4], rn);
-    cmValSub[0].push_back(1 / cmDenSub[0][4] * (insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 0)] - 3 * insub[0][getVectorIndex(2, 2)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 0)] - 3 * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(2, 1)] + 3 * insub[0][getVectorIndex(2, 2)] * insub[0][getVectorIndex(2, 1)] + 6 * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(3, 2)] - 6 * insub[0][getVectorIndex(4, 3)]));
-    dynamic_cast<BootstrapProfile*>(fSubCMList->At(7))->FillProfile(centmult, cmValSub[0][8], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[0][4], rn);
-    cmValSub[0].push_back(1 / cmDenSub[0][4] * (insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 0)] - insub[0][getVectorIndex(2, 2)] * insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 0)] - insub[0][getVectorIndex(2, 0)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] + insub[0][getVectorIndex(2, 0)] * insub[0][getVectorIndex(2, 2)] - 4 * insub[0][getVectorIndex(2, 1)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 0)] + 4 * insub[0][getVectorIndex(3, 2)] * insub[0][getVectorIndex(1, 0)] + 4 * insub[0][getVectorIndex(3, 1)] * insub[0][getVectorIndex(1, 1)] + 2 * insub[0][getVectorIndex(2, 1)] * insub[0][getVectorIndex(2, 1)] - 6 * insub[0][getVectorIndex(4, 2)]));
-    dynamic_cast<BootstrapProfile*>(fSubCMList->At(8))->FillProfile(centmult, cmValSub[0][9], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[0][4], rn);
-    cmValSub[0].push_back(1 / cmDenSub[0][4] * (insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 0)] - 3 * insub[0][getVectorIndex(2, 1)] * insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 0)] - 3 * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(2, 0)] * insub[0][getVectorIndex(1, 0)] + 3 * insub[0][getVectorIndex(2, 1)] * insub[0][getVectorIndex(2, 0)] + 2 * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(3, 0)] + 6 * insub[0][getVectorIndex(3, 1)] * insub[0][getVectorIndex(1, 0)] - 6 * insub[0][getVectorIndex(4, 1)]));
-    dynamic_cast<BootstrapProfile*>(fSubCMList->At(9))->FillProfile(centmult, cmValSub[0][10], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[0][4], rn);
+  if (mpar >= 3) {
+    if (insub[0][getVectorIndex(3, 0)] != 0 && cmDenSub[0][3] != 0) {
+      cmValSub[0].push_back(1 / cmDenSub[0][3] * (insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] - 3 * insub[0][getVectorIndex(2, 2)] * insub[0][getVectorIndex(1, 1)] + 2 * insub[0][getVectorIndex(3, 3)]));
+      dynamic_cast<BootstrapProfile*>(fSubCMList->At(3))->FillProfile(centmult, cmValSub[0][4], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[0][3], rn);
+      cmValSub[0].push_back(1 / cmDenSub[0][3] * (insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 0)] - 2 * insub[0][getVectorIndex(2, 1)] * insub[0][getVectorIndex(1, 1)] + 2 * insub[0][getVectorIndex(3, 2)] - insub[0][getVectorIndex(2, 2)] * insub[0][getVectorIndex(1, 0)]));
+      dynamic_cast<BootstrapProfile*>(fSubCMList->At(4))->FillProfile(centmult, cmValSub[0][5], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[0][3], rn);
+      cmValSub[0].push_back(1 / cmDenSub[0][3] * (insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 0)] - 2 * insub[0][getVectorIndex(2, 1)] * insub[0][getVectorIndex(1, 0)] + 2 * insub[0][getVectorIndex(3, 1)] - insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(2, 0)]));
+      dynamic_cast<BootstrapProfile*>(fSubCMList->At(5))->FillProfile(centmult, cmValSub[0][6], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[0][3], rn);
+    }
+    if (insub[nSubevents - 1][getVectorIndex(3, 0)] != 0 && cmDenSub[nSubevents - 1][3] != 0) {
+      cmValSub[nSubevents - 1].push_back(1 / cmDenSub[nSubevents - 1][3] * (insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] - 3 * insub[nSubevents - 1][getVectorIndex(2, 2)] * insub[nSubevents - 1][getVectorIndex(1, 1)] + 2 * insub[nSubevents - 1][getVectorIndex(3, 3)]));
+      dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 3))->FillProfile(centmult, cmValSub[nSubevents - 1][4], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[nSubevents - 1][3], rn);
+      cmValSub[nSubevents - 1].push_back(1 / cmDenSub[nSubevents - 1][3] * (insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 0)] - 2 * insub[nSubevents - 1][getVectorIndex(2, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] + 2 * insub[nSubevents - 1][getVectorIndex(3, 2)] - insub[nSubevents - 1][getVectorIndex(2, 2)] * insub[nSubevents - 1][getVectorIndex(1, 0)]));
+      dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 4))->FillProfile(centmult, cmValSub[nSubevents - 1][5], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[nSubevents - 1][3], rn);
+      cmValSub[nSubevents - 1].push_back(1 / cmDenSub[nSubevents - 1][3] * (insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 0)] * insub[nSubevents - 1][getVectorIndex(1, 0)] - 2 * insub[nSubevents - 1][getVectorIndex(2, 1)] * insub[nSubevents - 1][getVectorIndex(1, 0)] + 2 * insub[nSubevents - 1][getVectorIndex(3, 1)] - insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(2, 0)]));
+      dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 5))->FillProfile(centmult, cmValSub[nSubevents - 1][6], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[nSubevents - 1][3], rn);
+    }
+    validMpar[1] = true;
   }
-  if (insub[nSubevents - 1][getVectorIndex(4, 0)] != 0 && cmDenSub[nSubevents - 1][4] != 0) {
-    cmValSub[nSubevents - 1].push_back(1 / cmDenSub[nSubevents - 1][4] * (insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] - 6 * insub[nSubevents - 1][getVectorIndex(2, 2)] * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] + 3 * insub[nSubevents - 1][getVectorIndex(2, 2)] * insub[nSubevents - 1][getVectorIndex(2, 2)] + 8 * insub[nSubevents - 1][getVectorIndex(3, 3)] * insub[nSubevents - 1][getVectorIndex(1, 1)] - 6 * insub[nSubevents - 1][getVectorIndex(4, 4)]));
-    dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 6))->FillProfile(centmult, cmValSub[nSubevents - 1][7], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[nSubevents - 1][4], rn);
-    cmValSub[nSubevents - 1].push_back(1 / cmDenSub[nSubevents - 1][4] * (insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 0)] - 3 * insub[nSubevents - 1][getVectorIndex(2, 2)] * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 0)] - 3 * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(2, 1)] + 3 * insub[nSubevents - 1][getVectorIndex(2, 2)] * insub[nSubevents - 1][getVectorIndex(2, 1)] + 6 * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(3, 2)] - 6 * insub[nSubevents - 1][getVectorIndex(4, 3)]));
-    dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 7))->FillProfile(centmult, cmValSub[nSubevents - 1][8], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[nSubevents - 1][4], rn);
-    cmValSub[nSubevents - 1].push_back(1 / cmDenSub[nSubevents - 1][4] * (insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 0)] * insub[nSubevents - 1][getVectorIndex(1, 0)] - insub[nSubevents - 1][getVectorIndex(2, 2)] * insub[nSubevents - 1][getVectorIndex(1, 0)] * insub[nSubevents - 1][getVectorIndex(1, 0)] - insub[nSubevents - 1][getVectorIndex(2, 0)] * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] + insub[nSubevents - 1][getVectorIndex(2, 0)] * insub[nSubevents - 1][getVectorIndex(2, 2)] - 4 * insub[nSubevents - 1][getVectorIndex(2, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 0)] + 4 * insub[nSubevents - 1][getVectorIndex(3, 2)] * insub[nSubevents - 1][getVectorIndex(1, 0)] + 4 * insub[nSubevents - 1][getVectorIndex(3, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] + 2 * insub[nSubevents - 1][getVectorIndex(2, 1)] * insub[nSubevents - 1][getVectorIndex(2, 1)] - 6 * insub[nSubevents - 1][getVectorIndex(4, 2)]));
-    dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 8))->FillProfile(centmult, cmValSub[nSubevents - 1][9], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[nSubevents - 1][4], rn);
-    cmValSub[nSubevents - 1].push_back(1 / cmDenSub[nSubevents - 1][4] * (insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 0)] * insub[nSubevents - 1][getVectorIndex(1, 0)] * insub[nSubevents - 1][getVectorIndex(1, 0)] - 3 * insub[nSubevents - 1][getVectorIndex(2, 1)] * insub[nSubevents - 1][getVectorIndex(1, 0)] * insub[nSubevents - 1][getVectorIndex(1, 0)] - 3 * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(2, 0)] * insub[nSubevents - 1][getVectorIndex(1, 0)] + 3 * insub[nSubevents - 1][getVectorIndex(2, 1)] * insub[nSubevents - 1][getVectorIndex(2, 0)] + 2 * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(3, 0)] + 6 * insub[nSubevents - 1][getVectorIndex(3, 1)] * insub[nSubevents - 1][getVectorIndex(1, 0)] - 6 * insub[nSubevents - 1][getVectorIndex(4, 1)]));
-    dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 9))->FillProfile(centmult, cmValSub[nSubevents - 1][10], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[nSubevents - 1][4], rn);
+  if (mpar >= 4) {
+    if (insub[0][getVectorIndex(4, 0)] != 0 && cmDenSub[0][4] != 0) {
+      cmValSub[0].push_back(1 / cmDenSub[0][4] * (insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] - 6 * insub[0][getVectorIndex(2, 2)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] + 3 * insub[0][getVectorIndex(2, 2)] * insub[0][getVectorIndex(2, 2)] + 8 * insub[0][getVectorIndex(3, 3)] * insub[0][getVectorIndex(1, 1)] - 6 * insub[0][getVectorIndex(4, 4)]));
+      dynamic_cast<BootstrapProfile*>(fSubCMList->At(6))->FillProfile(centmult, cmValSub[0][7], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[0][4], rn);
+      cmValSub[0].push_back(1 / cmDenSub[0][4] * (insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 0)] - 3 * insub[0][getVectorIndex(2, 2)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 0)] - 3 * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(2, 1)] + 3 * insub[0][getVectorIndex(2, 2)] * insub[0][getVectorIndex(2, 1)] + 6 * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(3, 2)] - 6 * insub[0][getVectorIndex(4, 3)]));
+      dynamic_cast<BootstrapProfile*>(fSubCMList->At(7))->FillProfile(centmult, cmValSub[0][8], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[0][4], rn);
+      cmValSub[0].push_back(1 / cmDenSub[0][4] * (insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 0)] - insub[0][getVectorIndex(2, 2)] * insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 0)] - insub[0][getVectorIndex(2, 0)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 1)] + insub[0][getVectorIndex(2, 0)] * insub[0][getVectorIndex(2, 2)] - 4 * insub[0][getVectorIndex(2, 1)] * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 0)] + 4 * insub[0][getVectorIndex(3, 2)] * insub[0][getVectorIndex(1, 0)] + 4 * insub[0][getVectorIndex(3, 1)] * insub[0][getVectorIndex(1, 1)] + 2 * insub[0][getVectorIndex(2, 1)] * insub[0][getVectorIndex(2, 1)] - 6 * insub[0][getVectorIndex(4, 2)]));
+      dynamic_cast<BootstrapProfile*>(fSubCMList->At(8))->FillProfile(centmult, cmValSub[0][9], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[0][4], rn);
+      cmValSub[0].push_back(1 / cmDenSub[0][4] * (insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 0)] - 3 * insub[0][getVectorIndex(2, 1)] * insub[0][getVectorIndex(1, 0)] * insub[0][getVectorIndex(1, 0)] - 3 * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(2, 0)] * insub[0][getVectorIndex(1, 0)] + 3 * insub[0][getVectorIndex(2, 1)] * insub[0][getVectorIndex(2, 0)] + 2 * insub[0][getVectorIndex(1, 1)] * insub[0][getVectorIndex(3, 0)] + 6 * insub[0][getVectorIndex(3, 1)] * insub[0][getVectorIndex(1, 0)] - 6 * insub[0][getVectorIndex(4, 1)]));
+      dynamic_cast<BootstrapProfile*>(fSubCMList->At(9))->FillProfile(centmult, cmValSub[0][10], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[0][4], rn);
+    }
+    if (insub[nSubevents - 1][getVectorIndex(4, 0)] != 0 && cmDenSub[nSubevents - 1][4] != 0) {
+      cmValSub[nSubevents - 1].push_back(1 / cmDenSub[nSubevents - 1][4] * (insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] - 6 * insub[nSubevents - 1][getVectorIndex(2, 2)] * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] + 3 * insub[nSubevents - 1][getVectorIndex(2, 2)] * insub[nSubevents - 1][getVectorIndex(2, 2)] + 8 * insub[nSubevents - 1][getVectorIndex(3, 3)] * insub[nSubevents - 1][getVectorIndex(1, 1)] - 6 * insub[nSubevents - 1][getVectorIndex(4, 4)]));
+      dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 6))->FillProfile(centmult, cmValSub[nSubevents - 1][7], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[nSubevents - 1][4], rn);
+      cmValSub[nSubevents - 1].push_back(1 / cmDenSub[nSubevents - 1][4] * (insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 0)] - 3 * insub[nSubevents - 1][getVectorIndex(2, 2)] * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 0)] - 3 * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(2, 1)] + 3 * insub[nSubevents - 1][getVectorIndex(2, 2)] * insub[nSubevents - 1][getVectorIndex(2, 1)] + 6 * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(3, 2)] - 6 * insub[nSubevents - 1][getVectorIndex(4, 3)]));
+      dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 7))->FillProfile(centmult, cmValSub[nSubevents - 1][8], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[nSubevents - 1][4], rn);
+      cmValSub[nSubevents - 1].push_back(1 / cmDenSub[nSubevents - 1][4] * (insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 0)] * insub[nSubevents - 1][getVectorIndex(1, 0)] - insub[nSubevents - 1][getVectorIndex(2, 2)] * insub[nSubevents - 1][getVectorIndex(1, 0)] * insub[nSubevents - 1][getVectorIndex(1, 0)] - insub[nSubevents - 1][getVectorIndex(2, 0)] * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] + insub[nSubevents - 1][getVectorIndex(2, 0)] * insub[nSubevents - 1][getVectorIndex(2, 2)] - 4 * insub[nSubevents - 1][getVectorIndex(2, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 0)] + 4 * insub[nSubevents - 1][getVectorIndex(3, 2)] * insub[nSubevents - 1][getVectorIndex(1, 0)] + 4 * insub[nSubevents - 1][getVectorIndex(3, 1)] * insub[nSubevents - 1][getVectorIndex(1, 1)] + 2 * insub[nSubevents - 1][getVectorIndex(2, 1)] * insub[nSubevents - 1][getVectorIndex(2, 1)] - 6 * insub[nSubevents - 1][getVectorIndex(4, 2)]));
+      dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 8))->FillProfile(centmult, cmValSub[nSubevents - 1][9], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[nSubevents - 1][4], rn);
+      cmValSub[nSubevents - 1].push_back(1 / cmDenSub[nSubevents - 1][4] * (insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(1, 0)] * insub[nSubevents - 1][getVectorIndex(1, 0)] * insub[nSubevents - 1][getVectorIndex(1, 0)] - 3 * insub[nSubevents - 1][getVectorIndex(2, 1)] * insub[nSubevents - 1][getVectorIndex(1, 0)] * insub[nSubevents - 1][getVectorIndex(1, 0)] - 3 * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(2, 0)] * insub[nSubevents - 1][getVectorIndex(1, 0)] + 3 * insub[nSubevents - 1][getVectorIndex(2, 1)] * insub[nSubevents - 1][getVectorIndex(2, 0)] + 2 * insub[nSubevents - 1][getVectorIndex(1, 1)] * insub[nSubevents - 1][getVectorIndex(3, 0)] + 6 * insub[nSubevents - 1][getVectorIndex(3, 1)] * insub[nSubevents - 1][getVectorIndex(1, 0)] - 6 * insub[nSubevents - 1][getVectorIndex(4, 1)]));
+      dynamic_cast<BootstrapProfile*>(fSubCMList->At(indOffset + 9))->FillProfile(centmult, cmValSub[nSubevents - 1][10], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[nSubevents - 1][4], rn);
+    }
+    validMpar[2] = true;
   }
-
   // Fill cross terms
   for (int m = 2; m <= 4; ++m) {
+    if (!validMpar[m - 2])
+      continue;
     for (int first = 1; first < m; ++first) {
       for (int second = first; second < m; ++second) {
         if (first > second)
@@ -999,8 +1005,9 @@ void FlowPtContainer::fillCMSubeventProfiles(const double& centmult, const doubl
         for (int third = 1; third < m; ++third) {
           if (third > fourth)
             continue;
-          if (insub[0][getVectorIndex(m, 0)] != 0 && insub[nSubevents - 1][getVectorIndex(m, 0)] != 0 && cmDenSub[0][m] * cmDenSub[nSubevents - 1][m] != 0)
+          if (insub[0][getVectorIndex(m, 0)] != 0 && insub[nSubevents - 1][getVectorIndex(m, 0)] != 0 && cmDenSub[0][m] * cmDenSub[nSubevents - 1][m] != 0) {
             dynamic_cast<BootstrapProfile*>(fSubCMList->FindObject(Form("cm%i_%i%isub1_%i%isub2", m, first, second, third, fourth)))->FillProfile(centmult, cmValSub[0][second * (second - 1) / 2 + second - first + 1] * cmValSub[nSubevents - 1][fourth * (fourth - 1) / 2 + fourth - third + 1], (fEventWeight == EventWeight::UnityWeight) ? 1.0 : cmDenSub[0][m] * cmDenSub[nSubevents - 1][m], rn);
+          }
         }
       }
     }

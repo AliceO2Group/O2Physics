@@ -307,9 +307,10 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
 DECLARE_TABLES_2P(D0, "D0", d0, 2);
 DECLARE_TABLES_3P(Lc, "LC", lc, 3);
 DECLARE_TABLES_3P(Dplus, "DP", dplus, 4);
-DECLARE_TABLES_3P(Ds, "DS", ds, 9);
 DECLARE_TABLES_3P(Bplus, "BP", bplus, 5);
 DECLARE_TABLES_3P(Dstar, "DST", dstar, 6);
+DECLARE_TABLES_3P(Ds, "DS", ds, 9);
+DECLARE_TABLES_3P(LcToK0sP, "LCC", lc_to_k0s_p, 10);
 // Workaround for the existing B0 macro in termios.h
 #pragma push_macro("B0")
 #undef B0
@@ -355,6 +356,20 @@ DECLARE_SOA_COLUMN(PtProngXi, ptProngXi, float);                                
 DECLARE_SOA_COLUMN(PtProngPi0, ptProngPi0, float);                                     //! transverse momentum of the first pion prong
 DECLARE_SOA_COLUMN(PtProngPi1, ptProngPi1, float);                                     //! transverse momentum of the second pion prong
 DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float);                         //! distance of the secondary vertex from the z axis
+// Lc± → K0s p±
+DECLARE_SOA_COLUMN(V0CosPA, v0cosPA, float);               //! cosine of the V0 pointing angle
+DECLARE_SOA_COLUMN(CtV0, ctV0, float);                     //! V0 proper lifetime times c
+DECLARE_SOA_COLUMN(DecayLengthV0, decayLengthV0, float);   //! V0 decay length
+DECLARE_SOA_COLUMN(PtV0Pos, ptV0Pos, float);               //! transverse momentum of V0 pos prong
+DECLARE_SOA_COLUMN(PtV0Neg, ptV0Neg, float);               //! transverse momentum of V0 neg prong
+DECLARE_SOA_COLUMN(DCAPosToPV, dcapostopv, float);         //! V0 pos prong impact param wrt prim vtx in xy
+DECLARE_SOA_COLUMN(DCANegToPV, dcanegtopv, float);         //! V0 neg prong impact param wrt prim vtx in xy
+DECLARE_SOA_COLUMN(DCAV0Daughters, dcaV0daughters, float); //! V0 daughters dca
+DECLARE_SOA_COLUMN(V0Radius, v0radius, float);             //! transverse distance of the V0 decay vertex from the beam line
+DECLARE_SOA_COLUMN(MLambda, mLambda, float);
+DECLARE_SOA_COLUMN(MAntiLambda, mAntiLambda, float);
+DECLARE_SOA_COLUMN(MK0Short, mK0Short, float);
+DECLARE_SOA_COLUMN(MGamma, mGamma, float);
 // D*± → D0(bar) π±
 DECLARE_SOA_COLUMN(SignProng1, signProng1, int8_t);
 // TOF
@@ -612,6 +627,25 @@ DECLARE_SOA_TABLE_STAGED(HfBplusParD0s, "HFBPPARD0", //! Table with D0 candidate
                          hf_cand_par_charm::NSigTofKaExpKaCharm,
                          hf_cand_par_charm::NSigTpcTofKaExpKaCharm);
 
+DECLARE_SOA_TABLE_STAGED(HfBplusParD0Es, "HFBPPARD0E", //! Table with additional D0 candidate properties used for selection of B+
+                         hf_cand_par_charm::Chi2PCACharm,
+                         hf_cand_par_charm::NProngsContributorsPVCharm,
+                         hf_cand_par_charm::InvMassCharm,
+                         hf_cand_par_charm::MaxNormalisedDeltaIPCharm,
+                         hf_cand_par_charm::DecayLengthXYCharm,
+                         hf_cand_par_charm::DecayLengthNormalisedCharm,
+                         hf_cand_par_charm::DecayLengthXYNormalisedCharm,
+                         hf_cand_par_charm::ImpactParameterNormalised0Charm,
+                         hf_cand_par_charm::ImpactParameterNormalised1Charm,
+                         hf_cand_par_charm::PxProng0Charm,
+                         hf_cand_par_charm::PyProng0Charm,
+                         hf_cand_par_charm::PzProng0Charm,
+                         hf_cand_par_charm::PxProng1Charm,
+                         hf_cand_par_charm::PyProng1Charm,
+                         hf_cand_par_charm::PzProng1Charm,
+                         hf_cand_par_charm::PtProng0Charm,
+                         hf_cand_par_charm::PtProng1Charm);
+
 DECLARE_SOA_TABLE_STAGED(HfBplusParEs, "HFBPPARE", //! Table with additional candidate properties used for selection
                          hf_cand::XSecondaryVertex,
                          hf_cand::YSecondaryVertex,
@@ -623,6 +657,10 @@ DECLARE_SOA_TABLE_STAGED(HfBplusParEs, "HFBPPARE", //! Table with additional can
                          hf_cand::PxProng1,
                          hf_cand::PyProng1,
                          hf_cand::PzProng1,
+                         hf_cand_par::PProng0,
+                         hf_cand::PxProng0,
+                         hf_cand::PyProng0,
+                         hf_cand::PzProng0,
                          hf_cand::ErrorImpactParameter1,
                          hf_cand_par::CosThetaStar,
                          hf_cand_par::Ct,
@@ -800,6 +838,72 @@ DECLARE_SOA_TABLE_STAGED(HfLcMcs, "HFLCMC", //! Table with MC candidate info
                          hf_cand_mc::OriginMcRec,
                          hf_cand_mc::IsCandidateSwapped,
                          o2::soa::Marker<MarkerLc>);
+
+// ----------------
+// Lc to K0sP
+// ----------------
+
+DECLARE_SOA_TABLE_STAGED(HfLcToK0sPPars, "HFLCTOK0SPPAR", //! Table with candidate properties used for selection
+                         hf_cand::Chi2PCA,
+                         hf_cand_par::Cpa,
+                         hf_cand_par::CpaXY,
+                         hf_cand_par::DecayLength,
+                         hf_cand_par::DecayLengthXY,
+                         hf_cand_par::PtProng0,
+                         hf_cand_par::PtProng1,
+                         hf_cand::ImpactParameter0,
+                         hf_cand::ImpactParameter1,
+                         hf_cand_par::V0Radius,
+                         hf_cand_par::V0CosPA,
+                         hf_cand_par::MLambda,
+                         hf_cand_par::MAntiLambda,
+                         hf_cand_par::MK0Short,
+                         hf_cand_par::MGamma,
+                         hf_cand_par::DCAV0Daughters,
+                         hf_cand_par::PtV0Pos,
+                         hf_cand_par::PtV0Neg,
+                         hf_cand_par::DecayLengthV0,
+                         hf_cand_par::DCAPosToPV,
+                         hf_cand_par::DCANegToPV,
+                         hf_cand_par::NSigTpcPr0,
+                         hf_cand_par::NSigTofPr0,
+                         hf_cand_par::CtV0,
+                         o2::soa::Marker<MarkerLcToK0sP>);
+
+DECLARE_SOA_TABLE_STAGED(HfLcToK0sPParEs, "HFLCTOK0SPPARE", //! Table with additional candidate properties used for selection
+                         hf_cand::XSecondaryVertex,
+                         hf_cand::YSecondaryVertex,
+                         hf_cand::ZSecondaryVertex,
+                         hf_cand::ErrorDecayLength,
+                         hf_cand::ErrorDecayLengthXY,
+                         hf_cand_par::RSecondaryVertex,
+                         hf_cand_par::PProng0,
+                         hf_cand_par::PProng1,
+                         hf_cand::PxProng0,
+                         hf_cand::PyProng0,
+                         hf_cand::PzProng0,
+                         hf_cand::PxProng1,
+                         hf_cand::PyProng1,
+                         hf_cand::PzProng1,
+                         v0data::PxPos,
+                         v0data::PyPos,
+                         v0data::PzPos,
+                         v0data::PxNeg,
+                         v0data::PyNeg,
+                         v0data::PzNeg,
+                         hf_cand::ErrorImpactParameter0,
+                         hf_cand::ErrorImpactParameter1,
+                         hf_cand_par::Ct,
+                         o2::soa::Marker<MarkerLcToK0sP>);
+
+DECLARE_SOA_TABLE_STAGED(HfLcToK0sPMls, "HFLCTOK0SPML", //! Table with candidate selection ML scores
+                         hf_cand_mc::MlScores,
+                         o2::soa::Marker<MarkerLcToK0sP>);
+
+DECLARE_SOA_TABLE_STAGED(HfLcToK0sPMcs, "HFLCTOK0SPMC", //! Table with MC candidate info
+                         hf_cand_mc::FlagMcMatchRec,
+                         hf_cand_mc::OriginMcRec,
+                         o2::soa::Marker<MarkerLcToK0sP>);
 
 // ----------------
 // D+
@@ -1025,9 +1129,9 @@ DECLARE_SOA_TABLE_STAGED(HfDstarMcs, "HFDSTMC", //! Table with MC candidate info
                          hf_cand_mc::FlagMcMatchRec,
                          hf_cand_mc_charm::FlagMcMatchRecCharm,
                          hf_cand_mc::OriginMcRec,
-                         hf_cand::PtBhadMotherPart,
-                         hf_cand::PdgBhadMotherPart,
-                         hf_cand::NTracksDecayed,
+                         hf_cand_mc_flag::PtBhadMotherPart,
+                         hf_cand_mc_flag::PdgBhadMotherPart,
+                         hf_cand_mc_flag::NTracksDecayed,
                          o2::soa::Marker<MarkerDstar>);
 
 // ----------------

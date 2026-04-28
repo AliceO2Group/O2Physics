@@ -16,6 +16,8 @@
 #ifndef PWGEM_PHOTONMESON_UTILS_MCUTILITIES_H_
 #define PWGEM_PHOTONMESON_UTILS_MCUTILITIES_H_
 
+#include <Framework/ASoA.h>
+
 #include <TPDGCode.h>
 
 #include <algorithm>
@@ -26,7 +28,7 @@
 //_______________________________________________________________________
 namespace o2::aod::pwgem::photonmeson::utils::mcutil
 {
-template <typename TTrack>
+template <o2::soa::is_iterator TTrack>
 bool IsPhysicalPrimary(TTrack const& mctrack)
 {
   // This is to check mctrack is ALICE physical primary.
@@ -37,7 +39,7 @@ bool IsPhysicalPrimary(TTrack const& mctrack)
   }
 }
 //_______________________________________________________________________
-template <typename TCollision, typename T, typename TMCs>
+template <o2::soa::is_iterator TCollision, o2::soa::is_iterator T, o2::soa::is_table TMCs>
 int IsFromWD(TCollision const&, T const& mctrack, TMCs const& mcTracks)
 {
   // is this particle from weak decay?
@@ -69,7 +71,7 @@ int IsFromWD(TCollision const&, T const& mctrack, TMCs const& mcTracks)
   return -1;
 }
 //_______________________________________________________________________
-template <typename T, typename TMCs>
+template <o2::soa::is_iterator T, o2::soa::is_table TMCs>
 int IsXFromY(T const& mctrack, TMCs const& mcTracks, const int pdgX, const int pdgY)
 {
   // is photon from pi0? returns index of mother photon
@@ -91,7 +93,7 @@ int IsXFromY(T const& mctrack, TMCs const& mcTracks, const int pdgX, const int p
 //_______________________________________________________________________
 // Go up the decay chain of a mcparticle looking for a mother with the given pdg codes, if found return this mothers daughter
 // E.g. Find the gamma that was created in a pi0 or eta decay
-template <typename T, typename TMCs, typename TTargetPDGs>
+template <o2::soa::is_iterator T, o2::soa::is_table TMCs, typename TTargetPDGs>
 int FindMotherInChain(T const& mcparticle, TMCs const& mcparticles, TTargetPDGs const& motherpdgs, const int Depth = 50) // o2-linter: disable=pdg/explicit-code (false positive)
 {
   if (!mcparticle.has_mothers() || Depth < 1) {
@@ -107,7 +109,7 @@ int FindMotherInChain(T const& mcparticle, TMCs const& mcparticles, TTargetPDGs 
   }
 }
 //_______________________________________________________________________
-template <typename T, typename TMCs>
+template <o2::soa::is_iterator T, o2::soa::is_table TMCs>
 int IsEleFromPC(T const& mctrack, TMCs const& mcTracks)
 {
   // is election from photon conversion? returns index of mother photon
@@ -130,7 +132,7 @@ int IsEleFromPC(T const& mctrack, TMCs const& mcTracks)
   return -1;
 }
 //_______________________________________________________________________
-template <typename TMCParticle, typename TMCParticles, typename TTargetPDGs>
+template <o2::soa::is_iterator TMCParticle, o2::soa::is_table TMCParticles, typename TTargetPDGs>
 bool IsInAcceptanceNonDerived(TMCParticle const& mcparticle, TMCParticles const& mcparticles, TTargetPDGs target_pdgs, const float ymin, const float ymax, const float phimin, const float phimax)
 {
   // contents in vector of daughter ID is different.
@@ -181,7 +183,7 @@ bool IsInAcceptanceNonDerived(TMCParticle const& mcparticle, TMCParticles const&
   return true;
 }
 //_______________________________________________________________________
-template <typename TMCParticle, typename TMCParticles, typename TTargetPDGs>
+template <o2::soa::is_iterator TMCParticle, o2::soa::is_table TMCParticles, typename TTargetPDGs>
 bool IsInAcceptance(TMCParticle const& mcparticle, TMCParticles const& mcparticles, TTargetPDGs target_pdgs, const float ymin, const float ymax, const float phimin, const float phimax)
 {
   if (mcparticle.y() < ymin || ymax < mcparticle.y()) {
@@ -229,7 +231,7 @@ bool IsInAcceptance(TMCParticle const& mcparticle, TMCParticles const& mcparticl
   return true;
 }
 //_______________________________________________________________________
-template <typename TMCPhoton, typename TMCParticles>
+template <o2::soa::is_iterator TMCPhoton, o2::soa::is_table TMCParticles>
 bool IsConversionPointInAcceptance(TMCPhoton const& mcphoton, const float max_r_gen, const float max_eta_gen, const float margin_z_mc, TMCParticles const& mcparticles)
 {
   if (std::abs(mcphoton.pdgCode()) != kGamma) {
@@ -264,8 +266,8 @@ bool IsConversionPointInAcceptance(TMCPhoton const& mcphoton, const float max_r_
   return true;
 }
 //_______________________________________________________________________
-template <typename TMCParticle, typename TMCParticles>
-bool isGammaGammaDecay(TMCParticle mcParticle, TMCParticles mcParticles)
+template <o2::soa::is_iterator TMCParticle, o2::soa::is_table TMCParticles>
+bool isGammaGammaDecay(TMCParticle const& mcParticle, TMCParticles const& mcParticles)
 {
   auto daughtersIds = mcParticle.daughtersIds();
   if (daughtersIds.size() != 2) { // o2-linter: disable=magic-number (2 is not that magic in this context)
@@ -278,6 +280,26 @@ bool isGammaGammaDecay(TMCParticle mcParticle, TMCParticles mcParticles)
   }
   return true;
 }
+
+//_______________________________________________________________________
+// Go up the decay chain of a mcparticle looking for a mother with the given pdg codes, if found return true else false
+// E.g. if electron cluster is coming from a photon return true, if primary electron return false
+template <o2::soa::is_iterator T>
+bool isMotherPDG(T& mcparticle, const int motherPDG, const int Depth = 10) // o2-linter: disable=pdg/explicit-code (false positive)
+{
+  if (!mcparticle.has_mothers() || Depth < 1) {
+    return false;
+  }
+
+  int motherid = mcparticle.mothersIds()[0];
+  mcparticle.setCursor(motherid);
+  if (mcparticle.pdgCode() != motherPDG) {
+    return true; // The mother has the required pdg code, so return its daughters global mc particle code.
+  } else {
+    return isMotherPDG(mcparticle, motherPDG, Depth - 1);
+  }
+}
+
 //_______________________________________________________________________
 } // namespace o2::aod::pwgem::photonmeson::utils::mcutil
 //_______________________________________________________________________

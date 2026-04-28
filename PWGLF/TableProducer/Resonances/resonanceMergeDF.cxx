@@ -63,6 +63,7 @@ using namespace o2::soa;
 struct ResonanceMergeDF {
   //  SliceCache cache;
   Configurable<int> nDF{"nDF", 1, "no of combination of collision"};
+  Configurable<bool> isLoggingEnabled{"isLoggingEnabled", 0, "print log"};
   Configurable<bool> cpidCut{"cpidCut", 0, "pid cut"};
   Configurable<bool> crejtpc{"crejtpc", 0, "reject electron pion"};
   Configurable<bool> crejtof{"crejtof", 0, "reject electron pion tof"};
@@ -175,7 +176,8 @@ struct ResonanceMergeDF {
     vecOfVecOfTuples.push_back(innerVector);
     innerVector.clear();
     df++;
-    LOGF(info, "collisions: df = %i", df);
+    if (isLoggingEnabled)
+      LOGF(info, "collisions: df = %i", df);
     if (df < nCollisions)
       return;
     df = 0;

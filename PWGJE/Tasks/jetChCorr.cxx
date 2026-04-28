@@ -419,7 +419,7 @@ struct JetChCorr {
   {
     jetConstituents.clear();
     for (auto& jetConstituent : jet.template tracks_as<aod::JetParticles>()) {
-      fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex(), static_cast<int>(JetConstituentStatus::track), pdg->Mass(jetConstituent.pdgCode()));
+      fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex(), JetConstituentStatus::track, pdg->Mass(jetConstituent.pdgCode()));
     }
     jetReclustering<true, false>(jet);
   }

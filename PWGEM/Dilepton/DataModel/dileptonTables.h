@@ -66,9 +66,93 @@ const std::unordered_map<std::string, int> aliasLabels = {
 };
 } // namespace pwgem::dilepton::swt
 
-DECLARE_SOA_TABLE(EMBCs, "AOD", "EMBC", //! bc information for normalization
-                  o2::soa::Index<>, evsel::Selection, evsel::Rct);
-using EMBC = EMBCs::iterator;
+namespace emevsel
+{
+// Event selection criteria. See O2Physics/Common/CCDB/EventSelectionParams.h
+enum EventSelectionFlags {
+  kIsTriggerTVX = 0,          // FT0 vertex (acceptable FT0C-FT0A time difference) at trigger level
+  kNoITSROFrameBorder,        // bunch crossing is far from ITS RO Frame border
+  kNoTimeFrameBorder,         // bunch crossing is far from Time Frame borders
+  kNoSameBunchPileup,         // reject collisions in case of pileup with another collision in the same foundBC
+  kIsGoodZvtxFT0vsPV,         // small difference between z-vertex from PV and from FT0
+  kIsVertexITSTPC,            // at least one ITS-TPC track (reject vertices built from ITS-only tracks)
+  kIsVertexTOFmatched,        // at least one of vertex contributors is matched to TOF
+  kIsVertexTRDmatched,        // at least one of vertex contributors is matched to TRD
+  kNoCollInTimeRangeNarrow,   // no other collisions in specified time range (narrower than Strict)
+  kNoCollInTimeRangeStrict,   // no other collisions in specified time range
+  kNoCollInTimeRangeStandard, // no other collisions in specified time range with per-collision multiplicity above threshold
+  kNoCollInRofStrict,         // no other collisions in this Readout Frame
+  kNoCollInRofStandard,       // no other collisions in this Readout Frame with per-collision multiplicity above threshold
+  kNoHighMultCollInPrevRof,   // veto an event if FT0C amplitude in previous ITS ROF is above threshold
+  kIsGoodITSLayer3,           // number of inactive chips on ITS layer 3 is below maximum allowed value
+  kIsGoodITSLayer0123,        // numbers of inactive chips on ITS layers 0-3 are below maximum allowed values
+  kIsGoodITSLayersAll,        // numbers of inactive chips on all ITS layers are below maximum allowed values
+  kNsel                       // counter
+};
+
+DECLARE_SOA_BITMAP_COLUMN(Selection, selection, 32); //! Bitmask of selection flags
+DECLARE_SOA_DYNAMIC_COLUMN(Sel8, sel8, [](uint32_t selection_bit) -> bool { return (selection_bit & BIT(o2::aod::emevsel::kIsTriggerTVX)) && (selection_bit & BIT(o2::aod::emevsel::kNoTimeFrameBorder)) && (selection_bit & BIT(o2::aod::emevsel::kNoITSROFrameBorder)); });
+
+template <typename TBC>
+uint32_t reduceSelectionBit(TBC const& bc)
+{
+  // input should be aod::BcSels or aod::EvSels.
+  uint32_t bitMap = 0;
+  if (bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+    SETBIT(bitMap, o2::aod::emevsel::kIsTriggerTVX);
+  }
+  if (bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+    SETBIT(bitMap, o2::aod::emevsel::kNoTimeFrameBorder);
+  }
+  if (bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+    SETBIT(bitMap, o2::aod::emevsel::kNoITSROFrameBorder);
+  }
+  if (bc.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+    SETBIT(bitMap, o2::aod::emevsel::kNoSameBunchPileup);
+  }
+  if (bc.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    SETBIT(bitMap, o2::aod::emevsel::kIsGoodZvtxFT0vsPV);
+  }
+  if (bc.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+    SETBIT(bitMap, o2::aod::emevsel::kIsVertexITSTPC);
+  }
+  if (bc.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+    SETBIT(bitMap, o2::aod::emevsel::kIsVertexTRDmatched);
+  }
+  if (bc.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+    SETBIT(bitMap, o2::aod::emevsel::kIsVertexTOFmatched);
+  }
+  if (bc.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+    SETBIT(bitMap, o2::aod::emevsel::kNoCollInTimeRangeStandard);
+  }
+  if (bc.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+    SETBIT(bitMap, o2::aod::emevsel::kNoCollInTimeRangeStrict);
+  }
+  if (bc.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
+    SETBIT(bitMap, o2::aod::emevsel::kNoCollInTimeRangeNarrow);
+  }
+  if (bc.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+    SETBIT(bitMap, o2::aod::emevsel::kNoCollInRofStandard);
+  }
+  if (bc.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+    SETBIT(bitMap, o2::aod::emevsel::kNoCollInRofStrict);
+  }
+  if (bc.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+    SETBIT(bitMap, o2::aod::emevsel::kNoHighMultCollInPrevRof);
+  }
+  if (bc.selection_bit(o2::aod::evsel::kIsGoodITSLayer3)) {
+    SETBIT(bitMap, o2::aod::emevsel::kIsGoodITSLayer3);
+  }
+  if (bc.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
+    SETBIT(bitMap, o2::aod::emevsel::kIsGoodITSLayer0123);
+  }
+  if (bc.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    SETBIT(bitMap, o2::aod::emevsel::kIsGoodITSLayersAll);
+  }
+  return bitMap;
+}
+
+} // namespace emevsel
 
 namespace emevent
 {
@@ -129,12 +213,21 @@ DECLARE_SOA_COLUMN(Q4yBTot, q4ybtot, float);                                //! 
 DECLARE_SOA_COLUMN(SpherocityPtWeighted, spherocity_ptweighted, float);     //! transverse spherocity
 DECLARE_SOA_COLUMN(SpherocityPtUnWeighted, spherocity_ptunweighted, float); //! transverse spherocity
 DECLARE_SOA_COLUMN(NtrackSpherocity, ntspherocity, int);
-DECLARE_SOA_COLUMN(IsSelected, isSelected, bool);             //! MB event selection info
-DECLARE_SOA_COLUMN(IsEoI, isEoI, bool);                       //! lepton or photon exists in MB event (not for CEFP)
-DECLARE_SOA_COLUMN(PosX, posX, float);                        //! only for treeCreatetorML.cxx
-DECLARE_SOA_COLUMN(PosY, posY, float);                        //! only for treeCreatetorML.cxx
-DECLARE_SOA_COLUMN(PosZint16, posZint16, int16_t);            //! this is only to reduce data size
-DECLARE_SOA_COLUMN(CentFT0Cuint16, centFT0Cuint16, uint16_t); //! this is only to reduce data size
+DECLARE_SOA_COLUMN(IsSelected, isSelected, bool);                //! MB event selection info
+DECLARE_SOA_COLUMN(IsEoI, isEoI, bool);                          //! lepton or photon exists in MB event (not for CEFP)
+DECLARE_SOA_COLUMN(PosX, posX, float);                           //! only for treeCreatetorML.cxx
+DECLARE_SOA_COLUMN(PosY, posY, float);                           //! only for treeCreatetorML.cxx
+DECLARE_SOA_COLUMN(PosZint16, posZint16, int16_t);               //! this is only to reduce data size
+DECLARE_SOA_COLUMN(CentFT0Cuint16, centFT0Cuint16, uint16_t);    //! this is only to reduce data size
+DECLARE_SOA_COLUMN(PosZint8, posZint8, int8_t);                  //! this is only to reduce data size
+DECLARE_SOA_COLUMN(CentFT0Cuint8, centFT0Cuint8, uint8_t);       //! this is only to reduce data size
+DECLARE_SOA_COLUMN(CentNTPVuint8, centNTPVuint8, uint8_t);       //! this is only to reduce data size
+DECLARE_SOA_COLUMN(CentNGlobaluint8, centNGlobaluint8, uint8_t); //! this is only to reduce data size
+DECLARE_SOA_COLUMN(CentFT0Muint8, centFT0Muint8, uint8_t);       //! this is only to reduce data size
+DECLARE_SOA_COLUMN(CentFT0Auint8, centFT0Auint8, uint8_t);       //! this is only to reduce data size
+// DECLARE_SOA_COLUMN(CentFT0Cuint8, centFT0Cuint8, uint8_t);       //! this is only to reduce data size
+// DECLARE_SOA_COLUMN(CentNTPVuint8, centNTPVuint8, uint8_t);       //! this is only to reduce data size
+// DECLARE_SOA_COLUMN(CentNGlobaluint8, centNGlobaluint8, uint8_t); //! this is only to reduce data size
 
 DECLARE_SOA_DYNAMIC_COLUMN(PosZ, posZ, [](int16_t posZint16) -> float { return (posZint16 < 0 ? std::nextafter(posZint16 * 0.01f, -std::numeric_limits<float>::infinity()) : std::nextafter(posZint16 * 0.01f, std::numeric_limits<float>::infinity())); }); //! poZ is multiplied by 100 in createEMEventDileton.cxx
 DECLARE_SOA_DYNAMIC_COLUMN(CentFT0C, centFT0C, [](uint16_t centuint16) -> float { return std::nextafter(centuint16 * 0.002f, std::numeric_limits<float>::infinity()); });                                                                                    //! centrality is multiplied by 500 in createEMEventDilepton.cxx
@@ -162,6 +255,47 @@ DECLARE_SOA_DYNAMIC_COLUMN(EP4BNeg, ep4bneg, [](float q4x, float q4y) -> float {
 DECLARE_SOA_DYNAMIC_COLUMN(EP4BTot, ep4btot, [](float q4x, float q4y) -> float { return std::atan2(q4y, q4x) / 4.0; });
 } // namespace emevent
 
+namespace emeventnorm
+{
+DECLARE_SOA_DYNAMIC_COLUMN(PosZ, posZ, [](int8_t posZint8) -> float { return (posZint8 < 0 ? std::nextafter(posZint8 * 0.5f, -std::numeric_limits<float>::infinity()) : std::nextafter(posZint8 * 0.5f, std::numeric_limits<float>::infinity())); });                     //! posZ is multiplied by 2 in createEMEventDileton.cxx
+DECLARE_SOA_DYNAMIC_COLUMN(CentFT0M, centFT0M, [](uint8_t centuint8) -> float { return centuint8 < 100 ? std::nextafter(centuint8 * 0.01f, std::numeric_limits<float>::infinity()) : std::nextafter(centuint8 - 110.f, std::numeric_limits<float>::infinity()); });       //! centrality is multiplied by 100 in createEMEventDilepton.cxx
+DECLARE_SOA_DYNAMIC_COLUMN(CentFT0A, centFT0A, [](uint8_t centuint8) -> float { return centuint8 < 100 ? std::nextafter(centuint8 * 0.01f, std::numeric_limits<float>::infinity()) : std::nextafter(centuint8 - 110.f, std::numeric_limits<float>::infinity()); });       //! centrality is multiplied by 100 in createEMEventDilepton.cxx
+DECLARE_SOA_DYNAMIC_COLUMN(CentFT0C, centFT0C, [](uint8_t centuint8) -> float { return centuint8 < 100 ? std::nextafter(centuint8 * 0.01f, std::numeric_limits<float>::infinity()) : std::nextafter(centuint8 - 110.f, std::numeric_limits<float>::infinity()); });       //! centrality is multiplied by 100 in createEMEventDilepton.cxx
+DECLARE_SOA_DYNAMIC_COLUMN(CentNTPV, centNTPV, [](uint8_t centuint8) -> float { return centuint8 < 100 ? std::nextafter(centuint8 * 0.01f, std::numeric_limits<float>::infinity()) : std::nextafter(centuint8 - 110.f, std::numeric_limits<float>::infinity()); });       //! centrality is multiplied by 100 in createEMEventDilepton.cxx
+DECLARE_SOA_DYNAMIC_COLUMN(CentNGlobal, centNGlobal, [](uint8_t centuint8) -> float { return centuint8 < 100 ? std::nextafter(centuint8 * 0.01f, std::numeric_limits<float>::infinity()) : std::nextafter(centuint8 - 110.f, std::numeric_limits<float>::infinity()); }); //! centrality is multiplied by 100 in createEMEventDilepton.cxx
+} // namespace emeventnorm
+
+// namespace emcent
+// {
+// DECLARE_SOA_COLUMN(CentFT0Muint8, centFT0Muint8, uint8_t);       //! this is only to reduce data size
+// DECLARE_SOA_COLUMN(CentFT0Auint8, centFT0Auint8, uint8_t);       //! this is only to reduce data size
+// DECLARE_SOA_COLUMN(CentFT0Cuint8, centFT0Cuint8, uint8_t);       //! this is only to reduce data size
+// DECLARE_SOA_COLUMN(CentNTPVuint8, centNTPVuint8, uint8_t);       //! this is only to reduce data size
+// DECLARE_SOA_COLUMN(CentNGlobaluint8, centNGlobaluint8, uint8_t); //! this is only to reduce data size
+//
+// DECLARE_SOA_EXPRESSION_COLUMN(CentFT0A, centFT0A, float, 1.f * centFT0Auint8);          // this must be inverse of calculation in createEMEventDilepton.cxx
+// DECLARE_SOA_EXPRESSION_COLUMN(CentFT0M, centFT0M, float, 1.f * centFT0Muint8);          // this must be inverse of calculation in createEMEventDilepton.cxx
+// DECLARE_SOA_EXPRESSION_COLUMN(CentFT0C, centFT0C, float, 1.f * centFT0Cuint8);          // this must be inverse of calculation in createEMEventDilepton.cxx
+// DECLARE_SOA_EXPRESSION_COLUMN(CentNTPV, centNTPV, float, 1.f * centNTPVuint8);          // this must be inverse of calculation in createEMEventDilepton.cxx
+// DECLARE_SOA_EXPRESSION_COLUMN(CentNGlobal, centNGlobal, float, 1.f * centNGlobaluint8); // this must be inverse of calculation in createEMEventDilepton.cxx
+//
+// // DECLARE_SOA_EXPRESSION_COLUMN(CentFT0A, centFT0A, float, (centFT0Auint8 < 100) ? std::nextafter((1.f * centFT0Auint8) / 100.f, std::numeric_limits<float>::infinity()) : std::nextafter((1.f * centFT0Auint8) - 110.f, std::numeric_limits<float>::infinity())); // this must be inverse of calculation in createEMEventDilepton.cxx
+// // DECLARE_SOA_EXPRESSION_COLUMN(CentFT0M, centFT0M, float, (centFT0Muint8 < 100) ? std::nextafter((1.f * centFT0Muint8) / 100.f, std::numeric_limits<float>::infinity()) : std::nextafter((1.f * centFT0Muint8) - 110.f, std::numeric_limits<float>::infinity())); // this must be inverse of calculation in createEMEventDilepton.cxx
+// // DECLARE_SOA_EXPRESSION_COLUMN(CentFT0C, centFT0C, float, (centFT0Cuint8 < 100) ? std::nextafter((1.f * centFT0Cuint8) / 100.f, std::numeric_limits<float>::infinity()) : std::nextafter((1.f * centFT0Cuint8) - 110.f, std::numeric_limits<float>::infinity())); // this must be inverse of calculation in createEMEventDilepton.cxx
+// // DECLARE_SOA_EXPRESSION_COLUMN(CentNTPV, centNTPV, float, (centNTPVuint8 < 100) ? std::nextafter((1.f * centNTPVuint8) / 100.f, std::numeric_limits<float>::infinity()) : std::nextafter((1.f * centNTPVuint8) - 110.f, std::numeric_limits<float>::infinity())); // this must be inverse of calculation in createEMEventDilepton.cxx
+// // DECLARE_SOA_EXPRESSION_COLUMN(CentNGlobal, centNGlobal, float, (centNGlobaluint8 < 100) ? std::nextafter((1.f * centNGlobaluint8) / 100.f, std::numeric_limits<float>::infinity()) : std::nextafter((1.f * centNGlobaluint8) - 110.f, std::numeric_limits<float>::infinity())); // this must be inverse of calculation in createEMEventDilepton.cxx
+//
+// } // namespace emcent
+
+DECLARE_SOA_TABLE(EMBCs_000, "AOD", "EMBC", //! bc information for normalization
+                  o2::soa::Index<>, evsel::Selection, evsel::Rct);
+
+DECLARE_SOA_TABLE_VERSIONED(EMBCs_001, "AOD", "EMBC", 1, //! bc information for normalization
+                            o2::soa::Index<>, emevsel::Selection, evsel::Rct);
+
+using EMBCs = EMBCs_001;
+using EMBC = EMBCs::iterator;
+
 DECLARE_SOA_TABLE_VERSIONED(EMEvents_001, "AOD", "EMEVENT", 1, //!   Main event information table
                             o2::soa::Index<>, emevent::CollisionId, bc::RunNumber, bc::GlobalBC, evsel::Alias, evsel::Selection, timestamp::Timestamp,
                             collision::PosX, collision::PosY, collision::PosZ,
@@ -182,14 +316,19 @@ DECLARE_SOA_TABLE_VERSIONED(EMEvents_004, "AOD", "EMEVENT", 4, //!   Main event 
                             collision::PosZ,
                             collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, emevent::Sel8<evsel::Selection>);
 
-using EMEvents = EMEvents_004;
+DECLARE_SOA_TABLE_VERSIONED(EMEvents_005, "AOD", "EMEVENT", 5, //!   Main event information table
+                            o2::soa::Index<>, emevent::CollisionId, bc::RunNumber, bc::GlobalBC, emevsel::Selection, evsel::Rct, timestamp::Timestamp,
+                            collision::PosZ,
+                            collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, emevsel::Sel8<emevsel::Selection>);
+
+using EMEvents = EMEvents_005;
 using EMEvent = EMEvents::iterator;
 
 DECLARE_SOA_TABLE_VERSIONED(EMEventsAlias_000, "AOD", "EMEVENTALIAS", 0, evsel::Alias) //! joinable to EMEvents
 using EMEventsAlias = EMEventsAlias_000;
 using EMEventAlias = EMEventsAlias::iterator;
 
-DECLARE_SOA_TABLE(EMEventsXY, "AOD", "EMEVENTXY", emevent::PosX, emevent::PosY); // joinable to EMEvents, only for treeCreatetorML.cxx
+DECLARE_SOA_TABLE(EMEventsXY, "AOD", "EMEVENTXY", collision::PosX, collision::PosY); // joinable to EMEvents
 using EMEventXY = EMEventsXY::iterator;
 
 DECLARE_SOA_TABLE(EMEventsCov, "AOD", "EMEVENTCOV", //! joinable to EMEvents
@@ -199,14 +338,37 @@ using EMEventCov = EMEventsCov::iterator;
 DECLARE_SOA_TABLE(EMEventsBz, "AOD", "EMEVENTBZ", emevent::Bz); // joinable to EMEvents
 using EMEventBz = EMEventsBz::iterator;
 
-DECLARE_SOA_TABLE(EMEventsMult, "AOD", "EMEVENTMULT", //!   event multiplicity table, joinable to EMEvents
+DECLARE_SOA_TABLE(EMEventsMult_000, "AOD", "EMEVENTMULT", //!   event multiplicity table, joinable to EMEvents
                   mult::MultFT0A, mult::MultFT0C, mult::MultNTracksPV, mult::MultNTracksPVeta1, mult::MultNTracksPVetaHalf,
                   mult::IsInelGt0<mult::MultNTracksPVeta1>, mult::IsInelGt1<mult::MultNTracksPVeta1>, mult::MultFT0M<mult::MultFT0A, mult::MultFT0C>);
+
+DECLARE_SOA_TABLE_VERSIONED(EMEventsMult_001, "AOD", "EMEVENTMULT", 1,           //!   event multiplicity table, joinable to EMEvents
+                            mult::MultFT0A, mult::MultFT0C, mult::MultNTracksPV, /*mult::MultNTracksGlobal,*/
+                            mult::MultFT0M<mult::MultFT0A, mult::MultFT0C>);
+
+using EMEventsMult = EMEventsMult_001;
 using EMEventMult = EMEventsMult::iterator;
 
-DECLARE_SOA_TABLE(EMEventsCent, "AOD", "EMEVENTCENT", //!   event centrality table, joinable to EMEvents
+DECLARE_SOA_TABLE(EMEventsCent_000, "AOD", "EMEVENTCENT", //!   event centrality table, joinable to EMEvents
                   cent::CentFT0M, cent::CentFT0A, cent::CentFT0C);
+
+DECLARE_SOA_TABLE_VERSIONED(EMEventsCent_001, "AOD", "EMEVENTCENT", 1, //! event centrality table stored in AO2D
+                            cent::CentFT0M, cent::CentFT0A, cent::CentFT0C, cent::CentNTPV /*, cent::CentNGlobal*/);
+
+using EMEventsCent = EMEventsCent_001;
 using EMEventCent = EMEventsCent::iterator;
+
+// DECLARE_SOA_TABLE_VERSIONED(EMEventsCentBase_001, "AOD", "EMEVENTCENT", 1,  //! event centrality table stored in AO2D
+//     emcent::CentFT0Muint8, emcent::CentFT0Auint8, emcent::CentFT0Cuint8, emcent::CentNTPVuint8, emcent::CentNGlobaluint8);
+//
+// using EMEventsCentBase = EMEventsCentBase_001;
+// using EMEventCentBase = EMEventsCentBase::iterator;
+//
+// // Extended table with expression columns that can be used for Filter.
+// DECLARE_SOA_EXTENDED_TABLE_USER(EMEventsCent, EMEventsCentBase, "EMCENTEXT",
+//     emcent::CentFT0M, emcent::CentFT0A, emcent::CentFT0C, emcent::CentNTPV, emcent::CentNGlobal);
+//
+// using EMEventCent = EMEventsCent::iterator;
 
 DECLARE_SOA_TABLE_VERSIONED(EMEventsQvec_000, "AOD", "EMEVENTQVEC", 0, //!   event q vector table, joinable to EMEvents
                             emevent::Q2xFT0M, emevent::Q2yFT0M, emevent::Q2xFT0A, emevent::Q2yFT0A, emevent::Q2xFT0C, emevent::Q2yFT0C,
@@ -255,6 +417,38 @@ DECLARE_SOA_TABLE_VERSIONED(EMEventsQvec_001, "AOD", "EMEVENTQVEC", 1, //!   Mai
 using EMEventsQvec = EMEventsQvec_001;
 using EMEventQvec = EMEventsQvec::iterator;
 
+DECLARE_SOA_TABLE_VERSIONED(EMEventsQvec2_000, "AOD", "EMEVENTQVEC2", 0, //!   Main event information table
+                            emevent::Q2xFT0M, emevent::Q2yFT0M, emevent::Q2xFT0A, emevent::Q2yFT0A, emevent::Q2xFT0C, emevent::Q2yFT0C,
+                            emevent::Q2xFV0A, emevent::Q2yFV0A,
+                            emevent::Q2xBPos, emevent::Q2yBPos, emevent::Q2xBNeg, emevent::Q2yBNeg, emevent::Q2xBTot, emevent::Q2yBTot,
+                            // Dynamic columns
+                            emevent::EP2FT0M<emevent::Q2xFT0M, emevent::Q2yFT0M>,
+                            emevent::EP2FT0A<emevent::Q2xFT0A, emevent::Q2yFT0A>,
+                            emevent::EP2FT0C<emevent::Q2xFT0C, emevent::Q2yFT0C>,
+                            emevent::EP2FV0A<emevent::Q2xFV0A, emevent::Q2yFV0A>,
+                            emevent::EP2BPos<emevent::Q2xBPos, emevent::Q2yBPos>,
+                            emevent::EP2BNeg<emevent::Q2xBNeg, emevent::Q2yBNeg>,
+                            emevent::EP2BTot<emevent::Q2xBTot, emevent::Q2yBTot>);
+
+using EMEventsQvec2 = EMEventsQvec2_000;
+using EMEventQvec2 = EMEventsQvec2::iterator;
+
+DECLARE_SOA_TABLE_VERSIONED(EMEventsQvec3_000, "AOD", "EMEVENTQVEC3", 0, //!   Main event information table
+                            emevent::Q3xFT0M, emevent::Q3yFT0M, emevent::Q3xFT0A, emevent::Q3yFT0A, emevent::Q3xFT0C, emevent::Q3yFT0C,
+                            emevent::Q3xFV0A, emevent::Q3yFV0A,
+                            emevent::Q3xBPos, emevent::Q3yBPos, emevent::Q3xBNeg, emevent::Q3yBNeg, emevent::Q3xBTot, emevent::Q3yBTot,
+                            // Dynamic columns
+                            emevent::EP3FT0M<emevent::Q3xFT0M, emevent::Q3yFT0M>,
+                            emevent::EP3FT0A<emevent::Q3xFT0A, emevent::Q3yFT0A>,
+                            emevent::EP3FT0C<emevent::Q3xFT0C, emevent::Q3yFT0C>,
+                            emevent::EP3FV0A<emevent::Q3xFV0A, emevent::Q3yFV0A>,
+                            emevent::EP3BPos<emevent::Q3xBPos, emevent::Q3yBPos>,
+                            emevent::EP3BNeg<emevent::Q3xBNeg, emevent::Q3yBNeg>,
+                            emevent::EP3BTot<emevent::Q3xBTot, emevent::Q3yBTot>);
+
+using EMEventsQvec3 = EMEventsQvec3_000;
+using EMEventQvec3 = EMEventsQvec3::iterator;
+
 DECLARE_SOA_TABLE(EMSWTriggerBits, "AOD", "EMSWTBIT", emevent::SWTAlias, o2::soa::Marker<1>); //! joinable to EMEvents
 using EMSWTriggerBit = EMSWTriggerBits::iterator;
 
@@ -301,7 +495,12 @@ DECLARE_SOA_TABLE_VERSIONED(EMEventNormInfos_000, "AOD", "EMEVENTNORMINFO", 0, /
 DECLARE_SOA_TABLE_VERSIONED(EMEventNormInfos_001, "AOD", "EMEVENTNORMINFO", 1, //! event information for normalization
                             o2::soa::Index<>, evsel::Selection, evsel::Rct, emevent::PosZint16, emevent::CentFT0Cuint16,
                             emevent::Sel8<evsel::Selection>, emevent::PosZ<emevent::PosZint16>, emevent::CentFT0C<emevent::CentFT0Cuint16>, o2::soa::Marker<1>);
-using EMEventNormInfos = EMEventNormInfos_001;
+
+DECLARE_SOA_TABLE_VERSIONED(EMEventNormInfos_002, "AOD", "EMEVENTNORMINFO", 2,                                                                         //! event information for normalization
+                            emevsel::Selection, evsel::Rct, emevent::PosZint8, emevent::CentFT0Muint8, emevent::CentFT0Cuint8, emevent::CentNTPVuint8, /*emevent::CentNGlobaluint8,*/
+                            emevsel::Sel8<emevsel::Selection>, emeventnorm::PosZ<emevent::PosZint8>, emeventnorm::CentFT0M<emevent::CentFT0Muint8>, emeventnorm::CentFT0C<emevent::CentFT0Cuint8>, emeventnorm::CentNTPV<emevent::CentNTPVuint8>, /*emeventnorm::CentNTPV<emevent::CentNGlobaluint8>,*/ o2::soa::Marker<1>);
+
+using EMEventNormInfos = EMEventNormInfos_002;
 using EMEventNormInfo = EMEventNormInfos::iterator;
 
 namespace emmcevent
@@ -711,7 +910,42 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryElectrons_005, "AOD", "EMPRIMARYEL", 5, //!
                             emprimaryelectron::MeanClusterSizeITSib<track::ITSClusterSizes>,
                             emprimaryelectron::MeanClusterSizeITSob<track::ITSClusterSizes>);
 
-using EMPrimaryElectrons = EMPrimaryElectrons_005;
+DECLARE_SOA_TABLE_VERSIONED(EMPrimaryElectrons_006, "AOD", "EMPRIMARYEL", 6, //!
+                            o2::soa::Index<>, emprimaryelectron::CollisionId,
+                            emprimaryelectron::TrackId, emprimaryelectron::Sign,
+                            track::Pt, track::Eta, track::Phi,
+                            track::DcaXY, track::DcaZ, aod::track::CYY, aod::track::CZY, aod::track::CZZ,
+                            track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusPID, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared,
+                            track::TPCChi2NCl, track::TPCInnerParam,
+                            track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
+                            pidtofbeta::Beta, pidtof::TOFNSigmaEl,                                         /*pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr,*/
+                            track::ITSClusterSizes, track::ITSChi2NCl, track::TOFChi2, track::DetectorMap, /*track::Tgl,*/
+                            emprimaryelectron::IsAssociatedToMPC, emprimaryelectron::IsAmbiguous, emprimaryelectron::ProbElBDT, track::Flags,
+                            mcpidtpc::DeDxTunedMc,
+
+                            // dynamic column
+                            track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::TPCNClsPID<track::TPCNClsFindable, track::TPCNClsFindableMinusPID>,
+                            track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
+                            track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>, track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
+                            track::PIDForTracking<track::Flags>, // see numbering in O2/DataFormats/Reconstruction/include/ReconstructionDataFormats/PID.h
+                            track::IsPVContributor<track::Flags>,
+
+                            emprimaryelectron::Signed1Pt<track::Pt, emprimaryelectron::Sign>,
+                            emprimaryelectron::P<track::Pt, track::Eta>,
+                            emprimaryelectron::Px<track::Pt, track::Phi>,
+                            emprimaryelectron::Py<track::Pt, track::Phi>,
+                            emprimaryelectron::Pz<track::Pt, track::Eta>,
+                            emprimaryelectron::Tgl<track::Eta>,
+                            emprimaryelectron::MeanClusterSizeITS<track::ITSClusterSizes>,
+                            emprimaryelectron::MeanClusterSizeITSib<track::ITSClusterSizes>,
+                            emprimaryelectron::MeanClusterSizeITSob<track::ITSClusterSizes>);
+
+using EMPrimaryElectrons = EMPrimaryElectrons_006;
 // iterators
 using EMPrimaryElectron = EMPrimaryElectrons::iterator;
 
@@ -772,7 +1006,7 @@ DECLARE_SOA_TABLE(EMAmbiguousElectronSelfIds, "AOD", "EMAMBELSELFID", emprimarye
 // iterators
 using EMAmbiguousElectronSelfId = EMAmbiguousElectronSelfIds::iterator;
 
-DECLARE_SOA_TABLE(EMPrimaryElectronsPrefilterBitDerived, "AOD", "PRMELPFBPI0", emprimaryelectron::PrefilterBitDerived); // To be joined with EMPrimaryElectrons table at analysis level.
+DECLARE_SOA_TABLE(EMPrimaryElectronsPrefilterBitDerived, "AOD", "PRMELPFBDERIVED", emprimaryelectron::PrefilterBitDerived); // To be joined with EMPrimaryElectrons table at analysis level.
 // iterators
 using EMPrimaryElectronPrefilterBitDerived = EMPrimaryElectronsPrefilterBitDerived::iterator;
 
@@ -783,6 +1017,7 @@ DECLARE_SOA_COLUMN(CollisionId, collisionId, int);                              
 DECLARE_SOA_COLUMN(FwdTrackId, fwdtrackId, int);                                     //!
 DECLARE_SOA_COLUMN(MFTTrackId, mfttrackId, int);                                     //!
 DECLARE_SOA_COLUMN(MCHTrackId, mchtrackId, int);                                     //!
+DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(GlobalMuonsWithSameMCHMID, globalMuonsWithSameMCHMID); //! self indices to global muons that have the same MCHTrackId
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(GlobalMuonsWithSameMFT, globalMuonsWithSameMFT); //! self indices to global muons that have the same MFTTrackId
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(AmbiguousMuons, ambiguousMuons);
 DECLARE_SOA_COLUMN(CXXatDCA, cXXatDCA, float);                         //! DCAx resolution squared at DCA
@@ -795,11 +1030,13 @@ DECLARE_SOA_COLUMN(EtaMatchedMCHMIDatMP, etaMatchedMCHMIDatMP, float); //! eta o
 DECLARE_SOA_COLUMN(PhiMatchedMCHMIDatMP, phiMatchedMCHMIDatMP, float); //! phi of MCH-MID track in MFT-MCH-MID track at matching plane
 DECLARE_SOA_COLUMN(EtaMatchedMFTatMP, etaMatchedMFTatMP, float);       //! eta of MFT track in MFT-MCH-MID track at matching plane
 DECLARE_SOA_COLUMN(PhiMatchedMFTatMP, phiMatchedMFTatMP, float);       //! phi of MFT track in MFT-MCH-MID track at matching plane
-
-DECLARE_SOA_COLUMN(IsAssociatedToMPC, isAssociatedToMPC, bool); //! is associated to most probable collision
-DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, bool);             //! is ambiguous
-DECLARE_SOA_COLUMN(Sign, sign, int8_t);                         //!
-DECLARE_SOA_COLUMN(Chi2MFT, chi2MFT, float);                    //! chi2 of MFT standalone track
+DECLARE_SOA_COLUMN(IsAssociatedToMPC, isAssociatedToMPC, bool);        //! is associated to most probable collision
+DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, bool);                    //! is ambiguous
+DECLARE_SOA_COLUMN(IsCorrectMatchMFTMCH, isCorrectMatchMFTMCH, bool);  //! is correct match between MFT and MCH, only for MC
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                //!
+DECLARE_SOA_COLUMN(Chi2MFT, chi2MFT, float);                           //! chi2 of MFT standalone track
+DECLARE_SOA_COLUMN(PrefilterBitDerived, pfbderived, uint16_t);         //!
+DECLARE_SOA_DYNAMIC_COLUMN(Tgl, tgl, [](float eta) -> float { return std::tan(o2::constants::math::PIHalf - 2 * std::atan(std::exp(-eta))); });
 DECLARE_SOA_DYNAMIC_COLUMN(Signed1Pt, signed1Pt, [](float pt, int8_t sign) -> float { return sign * 1. / pt; });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
@@ -865,32 +1102,60 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryMuons_001, "AOD", "EMPRIMARYMU", 1, //!
                             // dynamic column
                             emprimarymuon::Signed1Pt<fwdtrack::Pt, emprimarymuon::Sign>,
                             emprimarymuon::NClustersMFT<fwdtrack::MFTClusterSizesAndTrackFlags>,
+                            fwdtrack::IsCA<fwdtrack::MFTClusterSizesAndTrackFlags>,
                             emprimarymuon::MFTClusterMap<fwdtrack::MFTClusterSizesAndTrackFlags>,
                             emprimarymuon::P<fwdtrack::Pt, fwdtrack::Eta>,
                             emprimarymuon::Px<fwdtrack::Pt, fwdtrack::Phi>,
                             emprimarymuon::Py<fwdtrack::Pt, fwdtrack::Phi>,
                             emprimarymuon::Pz<fwdtrack::Pt, fwdtrack::Eta>);
 
-using EMPrimaryMuons = EMPrimaryMuons_001;
+DECLARE_SOA_TABLE_VERSIONED(EMPrimaryMuons_002, "AOD", "EMPRIMARYMU", 2, //!
+                            o2::soa::Index<>, emprimarymuon::CollisionId,
+                            emprimarymuon::FwdTrackId, emprimarymuon::MFTTrackId, emprimarymuon::MCHTrackId, fwdtrack::TrackType,
+                            fwdtrack::Pt, fwdtrack::Eta, fwdtrack::Phi, emprimarymuon::Sign,
+                            fwdtrack::FwdDcaX, fwdtrack::FwdDcaY, aod::fwdtrack::CXX, aod::fwdtrack::CYY, aod::fwdtrack::CXY,
+                            emprimarymuon::PtMatchedMCHMID, emprimarymuon::EtaMatchedMCHMID, emprimarymuon::PhiMatchedMCHMID,
+                            // emprimarymuon::EtaMatchedMCHMIDatMP, emprimarymuon::PhiMatchedMCHMIDatMP,
+                            // emprimarymuon::EtaMatchedMFTatMP, emprimarymuon::PhiMatchedMFTatMP,
+
+                            fwdtrack::NClusters, fwdtrack::PDca, fwdtrack::RAtAbsorberEnd,
+                            fwdtrack::Chi2, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT,
+                            fwdtrack::MCHBitMap, fwdtrack::MIDBitMap, fwdtrack::MIDBoards,
+                            fwdtrack::MFTClusterSizesAndTrackFlags, emprimarymuon::Chi2MFT, emprimarymuon::IsAssociatedToMPC, emprimarymuon::IsAmbiguous,
+
+                            // dynamic column
+                            emprimarymuon::Signed1Pt<fwdtrack::Pt, emprimarymuon::Sign>,
+                            emprimarymuon::Tgl<fwdtrack::Eta>,
+                            emprimarymuon::NClustersMFT<fwdtrack::MFTClusterSizesAndTrackFlags>,
+                            fwdtrack::IsCA<fwdtrack::MFTClusterSizesAndTrackFlags>,
+                            emprimarymuon::MFTClusterMap<fwdtrack::MFTClusterSizesAndTrackFlags>,
+                            emprimarymuon::P<fwdtrack::Pt, fwdtrack::Eta>,
+                            emprimarymuon::Px<fwdtrack::Pt, fwdtrack::Phi>,
+                            emprimarymuon::Py<fwdtrack::Pt, fwdtrack::Phi>,
+                            emprimarymuon::Pz<fwdtrack::Pt, fwdtrack::Eta>);
+
+using EMPrimaryMuons = EMPrimaryMuons_002;
 // iterators
 using EMPrimaryMuon = EMPrimaryMuons::iterator;
 
-DECLARE_SOA_TABLE(EMPrimaryMuonsCov, "AOD", "EMPRIMARYMUCOV", //!
-                  aod::fwdtrack::CXX,
-                  aod::fwdtrack::CXY,
-                  aod::fwdtrack::CYY,
-                  aod::fwdtrack::CPhiX,
-                  aod::fwdtrack::CPhiY,
-                  aod::fwdtrack::CPhiPhi,
-                  aod::fwdtrack::CTglX,
-                  aod::fwdtrack::CTglY,
-                  aod::fwdtrack::CTglPhi,
-                  aod::fwdtrack::CTglTgl,
-                  aod::fwdtrack::C1PtX,
-                  aod::fwdtrack::C1PtY,
-                  aod::fwdtrack::C1PtPhi,
-                  aod::fwdtrack::C1PtTgl,
-                  aod::fwdtrack::C1Pt21Pt2);
+DECLARE_SOA_TABLE_VERSIONED(EMPrimaryMuonsCov_002, "AOD", "EMPRIMARYMUCOV", 2, //!
+                            fwdtrack::X, fwdtrack::Y, fwdtrack::Z,             // at PV. Signed1Pt, Tgl and Phi are in EMPrimaryMuons table.
+                            // aod::fwdtrack::CXX,
+                            // aod::fwdtrack::CXY,
+                            // aod::fwdtrack::CYY,
+                            aod::fwdtrack::CPhiX,
+                            aod::fwdtrack::CPhiY,
+                            aod::fwdtrack::CPhiPhi,
+                            aod::fwdtrack::CTglX,
+                            aod::fwdtrack::CTglY,
+                            aod::fwdtrack::CTglPhi,
+                            aod::fwdtrack::CTglTgl,
+                            aod::fwdtrack::C1PtX,
+                            aod::fwdtrack::C1PtY,
+                            aod::fwdtrack::C1PtPhi,
+                            aod::fwdtrack::C1PtTgl,
+                            aod::fwdtrack::C1Pt21Pt2);
+using EMPrimaryMuonsCov = EMPrimaryMuonsCov_002;
 // iterators
 using EMPrimaryMuonCov = EMPrimaryMuonsCov::iterator;
 
@@ -902,9 +1167,19 @@ DECLARE_SOA_TABLE(EMAmbiguousMuonSelfIds, "AOD", "EMAMBMUSELFID", emprimarymuon:
 // iterators
 using EMAmbiguousMuonSelfId = EMAmbiguousMuonSelfIds::iterator;
 
-DECLARE_SOA_TABLE(EMGlobalMuonSelfIds, "AOD", "EMGLMUSELFID", emprimarymuon::GlobalMuonsWithSameMFTIds); // To be joined with EMPrimaryMuons table at analysis level.
+DECLARE_SOA_TABLE(EMGlobalMuonSelfIds_000, "AOD", "EMGLMUSELFID", emprimarymuon::GlobalMuonsWithSameMFTIds);                                                           // To be joined with EMPrimaryMuons table at analysis level.
+DECLARE_SOA_TABLE_VERSIONED(EMGlobalMuonSelfIds_001, "AOD", "EMGLMUSELFID", 1, emprimarymuon::GlobalMuonsWithSameMCHMIDIds, emprimarymuon::GlobalMuonsWithSameMFTIds); // To be joined with EMPrimaryMuons table at analysis level.
+using EMGlobalMuonSelfIds = EMGlobalMuonSelfIds_001;
 // iterators
 using EMGlobalMuonSelfId = EMGlobalMuonSelfIds::iterator;
+
+DECLARE_SOA_TABLE(EMPrimaryMuonsPrefilterBitDerived, "AOD", "PRMMUPFBDERIVED", emprimarymuon::PrefilterBitDerived); // To be joined with EMPrimaryMuons table at analysis level.
+// iterators
+using EMPrimaryMuonPrefilterBitDerived = EMPrimaryMuonsPrefilterBitDerived::iterator;
+
+DECLARE_SOA_TABLE(EMPrimaryMuonsMatchMC, "AOD", "EMMUONMATCHMC", emprimarymuon::IsCorrectMatchMFTMCH); // To be joined with EMPrimaryMuons table at analysis level. only for MC.
+// iterators
+using EMPrimaryMuonMatchMC = EMPrimaryMuonsMatchMC::iterator;
 
 namespace oldemprimarytrack
 {
@@ -927,8 +1202,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(Sign, sign, [](float signed1Pt) -> short { return (si
 DECLARE_SOA_TABLE_VERSIONED(EMPrimaryTracks_000, "AOD", "EMPRIMARYTRACK", 0, //! primary charged track table for 2PC
                             o2::soa::Index<>, emprimarytrack::CollisionId, emprimarytrack::TrackId, oldemprimarytrack::Sign, track::Pt, track::Eta, track::Phi, emprimarytrack::TrackBit);
 
-DECLARE_SOA_TABLE_VERSIONED(EMPrimaryTracks_001, "AOD", "EMPRIMARYTRACK", 1, //! primary charged track table for 2PC
-                            o2::soa::Index<>, emprimarytrack::CollisionId, emprimarytrack::TrackId,
+DECLARE_SOA_TABLE_VERSIONED(EMPrimaryTracks_001, "AOD", "EMPRIMARYTRACK", 1,   //! primary charged track table for 2PC
+                            o2::soa::Index<>, /*emprimarytrack::CollisionId,*/ /*emprimarytrack::TrackId,*/
                             emprimarytrack::Signed1Pt, emprimarytrack::Eta, emprimarytrack::Phi, emprimarytrack::TrackBit,
                             // dynamic column
                             emprimarytrack::Sign<emprimarytrack::Signed1Pt>, emprimarytrack::Pt<emprimarytrack::Signed1Pt>);
@@ -955,9 +1230,9 @@ DECLARE_SOA_TABLE_VERSIONED(EMThinEvents_000, "AOD", "EMTHINEVENT", 0, //! Thin 
 using EMThinEvents = EMThinEvents_000;
 using EMThinEvent = EMThinEvents::iterator;
 
-DECLARE_SOA_TABLE_VERSIONED(EMThinEventNormInfos_000, "AOD", "EMTHINEVENTNORM", 0, //! event information for normalization
-                            o2::soa::Index<>, evsel::Selection, evsel::Rct, emevent::PosZint16, emevent::CentFT0Cuint16,
-                            emevent::Sel8<evsel::Selection>, emevent::PosZ<emevent::PosZint16>, emevent::CentFT0C<emevent::CentFT0Cuint16>, o2::soa::Marker<2>);
+DECLARE_SOA_TABLE_VERSIONED(EMThinEventNormInfos_000, "AOD", "EMTHINEVENTNORM", 0,                                                                                       //! event information for normalization
+                            o2::soa::Index<>, emevsel::Selection, evsel::Rct, emevent::PosZint8, emevent::CentFT0Muint8, emevent::CentFT0Cuint8, emevent::CentNTPVuint8, /*emevent::CentNGlobaluint8,*/
+                            emevsel::Sel8<emevsel::Selection>, emeventnorm::PosZ<emevent::PosZint8>, emeventnorm::CentFT0M<emevent::CentFT0Muint8>, emeventnorm::CentFT0C<emevent::CentFT0Cuint8>, emeventnorm::CentNTPV<emevent::CentNTPVuint8>, /*emeventnorm::CentNGlobal<emevent::CentNGlobaluint8>,*/ o2::soa::Marker<2>);
 using EMThinEventNormInfos = EMThinEventNormInfos_000;
 using EMThinEventNormInfo = EMThinEventNormInfos::iterator;
 

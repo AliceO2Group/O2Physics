@@ -20,6 +20,7 @@
 #ifndef DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_
 #define DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_
 
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/OccupancyTables.h"
 
 #include <Framework/AnalysisDataModel.h>

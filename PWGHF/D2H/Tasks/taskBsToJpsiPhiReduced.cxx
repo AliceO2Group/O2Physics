@@ -189,14 +189,14 @@ DECLARE_SOA_TABLE(HfRedCandBsLites, "AOD", "HFREDCANDBSLITE", //! Table with som
                   hf_cand_bstojpsiphi_lite::NSigTofKaBachelor1,
                   hf_cand_bstojpsiphi_lite::NSigTpcTofKaBachelor1,
                   // MC truth
-                  hf_cand_bs::FlagMcMatchRec,
-                  hf_cand_bs::FlagMcDecayChanRec,
-                  hf_cand_bs::OriginMcRec,
+                  hf_cand_mc_flag::FlagMcMatchRec,
+                  hf_cand_mc_flag::FlagMcDecayChanRec,
+                  hf_cand_mc_flag::OriginMcRec,
                   hf_cand_bstojpsiphi_lite::FlagWrongCollision,
                   hf_cand_bstojpsiphi_lite::PtGen);
 
 // DECLARE_SOA_TABLE(HfRedBsMcCheck, "AOD", "HFREDBPMCCHECK", //! Table with MC decay type check
-//                   hf_cand_2prong::FlagMcMatchRec,
+//                   hf_cand_mc_flag::FlagMcMatchRec,
 //                   hf_cand_bstojpsiphi_lite::FlagWrongCollision,
 //                   hf_cand_bstojpsiphi_lite::MJpsi,
 //                   hf_cand_bstojpsiphi_lite::PtJpsi,

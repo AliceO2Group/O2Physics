@@ -242,7 +242,7 @@ struct HfCorrelatorLcHadrons {
   Configurable<bool> useCentrality{"useCentrality", false, "Flag for centrality dependent analyses"};
 
   SliceCache cache;
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg{};
   int leadingIndex = 0;
   bool correlationStatus = false;
   static constexpr std::size_t NDaughters{3u};

@@ -1601,7 +1601,7 @@ struct nucleiInJets {
     ////////////////////////////////////////
   }
 
-  void processJetTracksData(soa::Join<aod::JetCollisions, aod::JCollisionBCs, aod::BkgChargedRhos>::iterator const& collision,
+  void processJetTracksData(soa::Join<aod::JetCollisions, aod::BkgChargedRhos>::iterator const& collision,
                             chargedJetstrack const& chargedjets, soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks, TrackCandidates const&, aod::JBCs const&)
   {
     auto bc = collision.bc_as<aod::JBCs>();
@@ -1665,7 +1665,7 @@ struct nucleiInJets {
     }
   }
 
-  void processJetTracksDataLfPid(soa::Join<aod::JetCollisions, aod::JCollisionBCs, aod::BkgChargedRhos>::iterator const& collision,
+  void processJetTracksDataLfPid(soa::Join<aod::JetCollisions, aod::BkgChargedRhos>::iterator const& collision,
                                  chargedJetstrack const& chargedjets, soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks, TrackCandidatesLfPid const&, aod::JBCs const&)
   {
     auto bc = collision.bc_as<aod::JBCs>();

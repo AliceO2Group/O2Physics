@@ -19,18 +19,18 @@
 #define TOOLS_KFPARTICLE_KFUTILITIES_H_
 
 #ifndef HomogeneousField
-#define HomogeneousField
+#define HomogeneousField // o2-linter: disable=name/macro (required by KFParticle)
 #endif
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/Logger.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <ReconstructionDataFormats/PID.h>
 #include <ReconstructionDataFormats/Track.h>
 #include <ReconstructionDataFormats/TrackParametrizationWithError.h>
-
-#include <TDatabasePDG.h> // FIXME
 
 #include <KFPTrack.h>
 #include <KFPVertex.h>
@@ -42,6 +42,12 @@
 #include <cstdint>
 #include <stdexcept>
 #include <utility>
+
+constexpr float ArbitrarySmallNumber{1e-8f};
+constexpr float ArbitraryHugeNumber{1e8f};
+constexpr float UndefLdLValue{9999.f};
+constexpr int NumberOfMomentumComponents{3};
+constexpr int NumberOfCovMatrixComponents{21};
 
 /// @brief Function to create a KFPVertex from the collision table in the AO2Ds.
 /// The Multiplicity table is required to set the number of real PV Contributors
@@ -70,24 +76,20 @@ KFPTrack createKFPTrack(const o2::track::TrackParametrizationWithError<float>& t
                         int16_t tpcNClsFound,
                         float tpcChi2NCl)
 {
-  std::array<float, 3> trkpos_par;
-  std::array<float, 3> trkmom_par;
-  std::array<float, 21> trk_cov;
-  trackparCov.getXYZGlo(trkpos_par);
-  trackparCov.getPxPyPzGlo(trkmom_par);
-  trackparCov.getCovXYZPxPyPzGlo(trk_cov);
-  float trkpar_KF[6] = {trkpos_par[0], trkpos_par[1], trkpos_par[2],
-                        trkmom_par[0], trkmom_par[1], trkmom_par[2]};
-  float trkcov_KF[21];
-  for (int i = 0; i < 21; i++) {
-    trkcov_KF[i] = trk_cov[i];
-  }
+  std::array<float, 3> trkPositionPar{};
+  std::array<float, 3> trkMomentumPar{};
+  std::array<float, NumberOfCovMatrixComponents> trkCovMatrix{};
+  trackparCov.getXYZGlo(trkPositionPar);
+  trackparCov.getPxPyPzGlo(trkMomentumPar);
+  trackparCov.getCovXYZPxPyPzGlo(trkCovMatrix);
+  const float trkParKf[6] = {trkPositionPar[0], trkPositionPar[1], trkPositionPar[2],
+                             trkMomentumPar[0], trkMomentumPar[1], trkMomentumPar[2]};
   KFPTrack kfpTrack;
-  kfpTrack.SetParameters(trkpar_KF);
-  kfpTrack.SetCovarianceMatrix(trkcov_KF);
+  kfpTrack.SetParameters(trkParKf);
+  kfpTrack.SetCovarianceMatrix(trkCovMatrix.data());
   kfpTrack.SetCharge(trackSign);
   kfpTrack.SetNDF(tpcNClsFound - 5);
-  kfpTrack.SetChi2(tpcNClsFound * tpcChi2NCl);
+  kfpTrack.SetChi2(static_cast<float>(tpcNClsFound) * tpcChi2NCl);
   return kfpTrack;
 }
 
@@ -130,12 +132,12 @@ KFParticle createKFParticleFromTrackParCov(const o2::track::TrackParametrization
   float xyzpxpypz[6];
   trackparCov.getPxPyPzGlo(pxpypz);
   trackparCov.getXYZGlo(xyz);
-  for (int i{0}; i < 3; ++i) {
+  for (int i{0}; i < NumberOfMomentumComponents; ++i) {
     xyzpxpypz[i] = xyz[i];
     xyzpxpypz[i + 3] = pxpypz[i];
   }
 
-  std::array<float, 21> cv;
+  std::array<float, NumberOfCovMatrixComponents> cv{};
   try {
     trackparCov.getCovXYZPxPyPzGlo(cv);
   } catch (std::runtime_error& e) {
@@ -143,9 +145,9 @@ KFParticle createKFParticleFromTrackParCov(const o2::track::TrackParametrization
   }
 
   KFParticle kfPart;
-  float Mini, SigmaMini, M, SigmaM;
-  kfPart.GetMass(Mini, SigmaMini);
-  LOG(debug) << "Daughter KFParticle mass before creation: " << Mini << " +- " << SigmaMini;
+  float mInit{}, sigmaMInit{}, m{}, sigmaM{};
+  kfPart.GetMass(mInit, sigmaMInit);
+  LOG(debug) << "Daughter KFParticle mass before creation: " << mInit << " +- " << sigmaMInit;
 
   try {
     kfPart.Create(xyzpxpypz, cv.data(), charge, mass);
@@ -153,8 +155,8 @@ KFParticle createKFParticleFromTrackParCov(const o2::track::TrackParametrization
     LOG(debug) << "Failed to create KFParticle from daughter TrackParCov" << e.what();
   }
 
-  kfPart.GetMass(M, SigmaM);
-  LOG(debug) << "Daughter KFParticle mass after creation: " << M << " +- " << SigmaM;
+  kfPart.GetMass(m, sigmaM);
+  LOG(debug) << "Daughter KFParticle mass after creation: " << m << " +- " << sigmaM;
   return kfPart;
 }
 
@@ -165,8 +167,8 @@ KFParticle createKFParticleFromTrackParCov(const o2::track::TrackParametrization
 /// @return o2::track::TrackParametrizationWithError track
 o2::track::TrackParCov getTrackParCovFromKFP(const KFParticle& kfParticle, const o2::track::PID pid, const int sign)
 {
-  std::array<float, 3> xyz, pxpypz;
-  std::array<float, 21> cv;
+  std::array<float, 3> xyz{}, pxpypz{};
+  std::array<float, NumberOfCovMatrixComponents> cv{};
 
   // get parameters from kfParticle
   xyz[0] = kfParticle.GetX();
@@ -177,7 +179,7 @@ o2::track::TrackParCov getTrackParCovFromKFP(const KFParticle& kfParticle, const
   pxpypz[2] = kfParticle.GetPz();
 
   // set covariance matrix elements (lower triangle)
-  for (int i = 0; i < 21; i++) {
+  for (int i = 0; i < NumberOfCovMatrixComponents; i++) {
     cv[i] = kfParticle.GetCovariance(i);
   }
 
@@ -192,7 +194,7 @@ o2::track::TrackParCov getTrackParCovFromKFP(const KFParticle& kfParticle, const
 /// @return cpa
 float cpaFromKF(KFParticle kfp, KFParticle PV)
 {
-  float xVtxP, yVtxP, zVtxP, xVtxS, yVtxS, zVtxS, px, py, pz = 0.;
+  float xVtxP{}, yVtxP{}, zVtxP{}, xVtxS{}, yVtxS{}, zVtxS{}, px{}, py{}, pz{};
 
   xVtxP = PV.GetX();
   yVtxP = PV.GetY();
@@ -206,7 +208,7 @@ float cpaFromKF(KFParticle kfp, KFParticle PV)
   py = kfp.GetPy();
   pz = kfp.GetPz();
 
-  float cpa = RecoDecay::cpa(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, std::array{px, py, pz});
+  const float cpa = static_cast<float>(RecoDecay::cpa(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, std::array{px, py, pz}));
   return cpa;
 }
 
@@ -216,7 +218,7 @@ float cpaFromKF(KFParticle kfp, KFParticle PV)
 /// @return cpa in xy
 float cpaXYFromKF(KFParticle kfp, KFParticle PV)
 {
-  float xVtxP, yVtxP, xVtxS, yVtxS, px, py = 0.;
+  float xVtxP{}, yVtxP{}, xVtxS{}, yVtxS{}, px{}, py{};
 
   xVtxP = PV.GetX();
   yVtxP = PV.GetY();
@@ -227,7 +229,7 @@ float cpaXYFromKF(KFParticle kfp, KFParticle PV)
   px = kfp.GetPx();
   py = kfp.GetPy();
 
-  float cpaXY = RecoDecay::cpaXY(std::array{xVtxP, yVtxP}, std::array{xVtxS, yVtxS}, std::array{px, py});
+  const float cpaXY = static_cast<float>(RecoDecay::cpaXY(std::array{xVtxP, yVtxP}, std::array{xVtxS, yVtxS}, std::array{px, py}));
   return cpaXY;
 }
 
@@ -239,10 +241,11 @@ float cpaXYFromKF(KFParticle kfp, KFParticle PV)
 /// @param kfpvtx KFPartice mother
 /// @param kfpprong0 KFParticle Prong 0
 /// @param kfpprong1 KFParticele Prong 1
+/// @param pdgdb Service PDG data base
 /// @return cos theta star
-float cosThetaStarFromKF(int ip, int pdgvtx, int pdgprong0, int pdgprong1, KFParticle kfpprong0, KFParticle kfpprong1)
+float cosThetaStarFromKF(int iProng, int pdgvtx, int pdgprong0, int pdgprong1, KFParticle kfpprong0, KFParticle kfpprong1, const o2::framework::Service<o2::framework::O2DatabasePDG>& pdgdb)
 {
-  float px0, py0, pz0, px1, py1, pz1 = 0.;
+  float px0{}, py0{}, pz0{}, px1{}, py1{}, pz1{};
 
   px0 = kfpprong0.GetPx();
   py0 = kfpprong0.GetPy();
@@ -252,12 +255,11 @@ float cosThetaStarFromKF(int ip, int pdgvtx, int pdgprong0, int pdgprong1, KFPar
   py1 = kfpprong1.GetPy();
   pz1 = kfpprong1.GetPz();
   std::array<double, 2> m = {0., 0.};
-  m[0] = TDatabasePDG::Instance()->GetParticle(pdgprong0)->Mass();     // FIXME: Get from the PDG service of the common header
-  m[1] = TDatabasePDG::Instance()->GetParticle(pdgprong1)->Mass();     // FIXME: Get from the PDG service of the common header
-  double mTot = TDatabasePDG::Instance()->GetParticle(pdgvtx)->Mass(); // FIXME: Get from the PDG service of the common header
-  int iProng = ip;
+  m[0] = pdgdb->Mass(pdgprong0);
+  m[1] = pdgdb->Mass(pdgprong1);
+  const double mTot = pdgdb->Mass(pdgvtx);
 
-  float cosThetastar = RecoDecay::cosThetaStar(std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}}, m, mTot, iProng);
+  const float cosThetastar = static_cast<float>(RecoDecay::cosThetaStar(std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}}, m, mTot, iProng));
   return cosThetastar;
 }
 
@@ -269,7 +271,7 @@ float cosThetaStarFromKF(int ip, int pdgvtx, int pdgprong0, int pdgprong1, KFPar
 /// @return impact parameter
 float impParXYFromKF(KFParticle kfpParticle, KFParticle Vertex)
 {
-  float xVtxP, yVtxP, zVtxP, xVtxS, yVtxS, zVtxS, px, py, pz = 0.;
+  float xVtxP{}, yVtxP{}, zVtxP{}, xVtxS{}, yVtxS{}, zVtxS{}, px{}, py{}, pz{};
 
   xVtxP = Vertex.GetX();
   yVtxP = Vertex.GetY();
@@ -283,7 +285,7 @@ float impParXYFromKF(KFParticle kfpParticle, KFParticle Vertex)
   py = kfpParticle.GetPy();
   pz = kfpParticle.GetPz();
 
-  float impParXY = RecoDecay::impParXY(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, std::array{px, py, pz});
+  const float impParXY = static_cast<float>(RecoDecay::impParXY(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, std::array{px, py, pz}));
   return impParXY;
 }
 
@@ -293,17 +295,17 @@ float impParXYFromKF(KFParticle kfpParticle, KFParticle Vertex)
 /// @return l/delta l
 float ldlFromKF(KFParticle kfpParticle, KFParticle PV)
 {
-  float dx_particle = PV.GetX() - kfpParticle.GetX();
-  float dy_particle = PV.GetY() - kfpParticle.GetY();
-  float dz_particle = PV.GetZ() - kfpParticle.GetZ();
-  float l_particle = sqrt(dx_particle * dx_particle + dy_particle * dy_particle + dz_particle * dz_particle);
-  float dl_particle = (PV.GetCovariance(0) + kfpParticle.GetCovariance(0)) * dx_particle * dx_particle + (PV.GetCovariance(2) + kfpParticle.GetCovariance(2)) * dy_particle * dy_particle + (PV.GetCovariance(5) + kfpParticle.GetCovariance(5)) * dz_particle * dz_particle + 2 * ((PV.GetCovariance(1) + kfpParticle.GetCovariance(1)) * dx_particle * dy_particle + (PV.GetCovariance(3) + kfpParticle.GetCovariance(3)) * dx_particle * dz_particle + (PV.GetCovariance(4) + kfpParticle.GetCovariance(4)) * dy_particle * dz_particle);
-  if (fabs(l_particle) < 1.e-8f)
-    l_particle = 1.e-8f;
-  dl_particle = dl_particle < 0. ? 1.e8f : sqrt(dl_particle) / l_particle;
-  if (dl_particle == 0.)
-    return 9999.;
-  return l_particle / dl_particle;
+  const float dxParticle = PV.GetX() - kfpParticle.GetX();
+  const float dyParticle = PV.GetY() - kfpParticle.GetY();
+  const float dzParticle = PV.GetZ() - kfpParticle.GetZ();
+  float lParticle = std::hypot(dxParticle, dyParticle, dzParticle);
+  float dlParticle = (PV.GetCovariance(0) + kfpParticle.GetCovariance(0)) * dxParticle * dxParticle + (PV.GetCovariance(2) + kfpParticle.GetCovariance(2)) * dyParticle * dyParticle + (PV.GetCovariance(5) + kfpParticle.GetCovariance(5)) * dzParticle * dzParticle + 2 * ((PV.GetCovariance(1) + kfpParticle.GetCovariance(1)) * dxParticle * dyParticle + (PV.GetCovariance(3) + kfpParticle.GetCovariance(3)) * dxParticle * dzParticle + (PV.GetCovariance(4) + kfpParticle.GetCovariance(4)) * dyParticle * dzParticle);
+  if (std::fabs(lParticle) < ArbitrarySmallNumber)
+    lParticle = ArbitrarySmallNumber;
+  dlParticle = dlParticle < 0.f ? ArbitraryHugeNumber : std::sqrt(dlParticle) / lParticle;
+  if (dlParticle == 0.)
+    return UndefLdLValue;
+  return lParticle / dlParticle;
 }
 
 /// @brief distance between production vertex and decay vertex normalised by the uncertainty in xy plane
@@ -312,16 +314,16 @@ float ldlFromKF(KFParticle kfpParticle, KFParticle PV)
 /// @return l/delta l in xy plane
 float ldlXYFromKF(KFParticle kfpParticle, KFParticle PV)
 {
-  float dx_particle = PV.GetX() - kfpParticle.GetX();
-  float dy_particle = PV.GetY() - kfpParticle.GetY();
-  float l_particle = sqrt(dx_particle * dx_particle + dy_particle * dy_particle);
-  float dl_particle = (PV.GetCovariance(0) + kfpParticle.GetCovariance(0)) * dx_particle * dx_particle + (PV.GetCovariance(2) + kfpParticle.GetCovariance(2)) * dy_particle * dy_particle + 2 * ((PV.GetCovariance(1) + kfpParticle.GetCovariance(1)) * dx_particle * dy_particle);
-  if (fabs(l_particle) < 1.e-8f)
-    l_particle = 1.e-8f;
-  dl_particle = dl_particle < 0. ? 1.e8f : sqrt(dl_particle) / l_particle;
-  if (dl_particle == 0.)
-    return 9999.;
-  return l_particle / dl_particle;
+  const float dxParticle = PV.GetX() - kfpParticle.GetX();
+  const float dyParticle = PV.GetY() - kfpParticle.GetY();
+  float lParticle = std::hypot(dxParticle, dyParticle);
+  float dlParticle = (PV.GetCovariance(0) + kfpParticle.GetCovariance(0)) * dxParticle * dxParticle + (PV.GetCovariance(2) + kfpParticle.GetCovariance(2)) * dyParticle * dyParticle + 2 * ((PV.GetCovariance(1) + kfpParticle.GetCovariance(1)) * dxParticle * dyParticle);
+  if (std::fabs(lParticle) < ArbitrarySmallNumber)
+    lParticle = ArbitrarySmallNumber;
+  dlParticle = dlParticle < 0.f ? ArbitraryHugeNumber : std::sqrt(dlParticle) / lParticle;
+  if (dlParticle == 0.)
+    return UndefLdLValue;
+  return lParticle / dlParticle;
 }
 
 /// @brief squared distance between track and primary vertex normalised by its uncertainty evaluated in matrix form
@@ -330,9 +332,9 @@ float ldlXYFromKF(KFParticle kfpParticle, KFParticle PV)
 /// @return chi2 to primary vertex
 float kfCalculateChi2ToPrimaryVertex(KFParticle track, const KFParticle& vtx)
 {
-  const float PvPoint[3] = {vtx.X(), vtx.Y(), vtx.Z()};
+  const float pvPoint[3] = {vtx.X(), vtx.Y(), vtx.Z()};
 
-  track.TransportToPoint(PvPoint);
+  track.TransportToPoint(pvPoint);
   return track.GetDeviationFromVertex(vtx);
 }
 
@@ -342,9 +344,9 @@ float kfCalculateChi2ToPrimaryVertex(KFParticle track, const KFParticle& vtx)
 /// @return array with components of prong's momentum in the secondary (decay) vertex
 std::array<float, 3> kfCalculateProngMomentumInSecondaryVertex(KFParticle track, const KFParticle& vtx)
 {
-  const float SvPoint[3] = {vtx.X(), vtx.Y(), vtx.Z()};
+  const float svPoint[3] = {vtx.X(), vtx.Y(), vtx.Z()};
 
-  track.TransportToPoint(SvPoint);
+  track.TransportToPoint(svPoint);
   return {track.GetPx(), track.GetPy(), track.GetPz()};
 }
 
@@ -364,7 +366,7 @@ float kfCalculateDistanceBetweenParticles(KFParticle track1, KFParticle track2)
   const float dx = params1[0] - params2[0];
   const float dy = params1[1] - params2[1];
   const float dz = params1[2] - params2[2];
-  return std::sqrt(dx * dx + dy * dy + dz * dz);
+  return std::hypot(dx, dy, dz);
 }
 
 /// @brief squared distance between two tracks normalised by its uncertainty evaluated in matrix form
@@ -374,11 +376,11 @@ float kfCalculateDistanceBetweenParticles(KFParticle track1, KFParticle track2)
 float kfCalculateChi2geoBetweenParticles(KFParticle track1, KFParticle track2)
 {
   KFParticle kfPair;
-  const KFParticle* kfDaughters[3] = {&track1, &track2};
+  const KFParticle* kfDaughters[2] = {&track1, &track2};
   kfPair.SetConstructMethod(2);
   kfPair.Construct(kfDaughters, 2);
 
-  return kfPair.Chi2() / kfPair.NDF();
+  return kfPair.Chi2() / static_cast<float>(kfPair.NDF());
 }
 
 /// @brief signed distance between primary and secondary vertex and its uncertainty, cm
@@ -387,7 +389,7 @@ float kfCalculateChi2geoBetweenParticles(KFParticle track1, KFParticle track2)
 /// @return pair of l and delta l
 std::pair<float, float> kfCalculateLdL(KFParticle candidate, const KFParticle& vtx)
 {
-  float l, dl;
+  float l{}, dl{};
   candidate.SetProductionVertex(vtx);
   candidate.KFParticleBase::GetDecayLength(l, dl);
 
@@ -400,7 +402,7 @@ std::pair<float, float> kfCalculateLdL(KFParticle candidate, const KFParticle& v
 /// @return pair of impact parameter and its error
 std::pair<float, float> kfCalculateImpactParameterZ(const KFParticle& candidate, const KFParticle& vtx)
 {
-  float distanceToVertexXY, errDistanceToVertexXY;
+  float distanceToVertexXY{}, errDistanceToVertexXY{};
   candidate.GetDistanceFromVertexXY(vtx, distanceToVertexXY, errDistanceToVertexXY);
   const float distanceToVertex = candidate.GetDistanceFromVertex(vtx);
   const float chi2ToVertex = candidate.GetDeviationFromVertex(vtx);

@@ -270,6 +270,7 @@ struct Alice3HfTreeCreator3Prong {
     Configurable<bool> fillPid{"fillPid", false, "fill PID info"};
   } fillTables;
   // parameters for production of training samples
+  Configurable<bool> fillSwapMassHypo{"fillSwapMassHypo", false, "Flag to fill derived tables with swapped mass hypothesis"};
   Configurable<bool> fillOnlySignal{"fillOnlySignal", true, "Flag to fill derived tables with signal"};
   Configurable<bool> fillOnlyBackground{"fillOnlyBackground", false, "Flag to fill derived tables with background"};
   Configurable<float> downSampleFactor{"downSampleFactor", 1., "Fraction of cands to keep"};
@@ -475,8 +476,10 @@ struct Alice3HfTreeCreator3Prong {
       if (cand.isSelMassHypo0()) {
         fillRecoTables<CharmHad, false>(cand);
       }
-      if (cand.isSelMassHypo1()) {
-        fillRecoTables<CharmHad, true>(cand);
+      if (fillSwapMassHypo) {
+        if (cand.isSelMassHypo1()) {
+          fillRecoTables<CharmHad, true>(cand);
+        }
       }
     }
     fillGenTables<CharmHad>(candsGen);

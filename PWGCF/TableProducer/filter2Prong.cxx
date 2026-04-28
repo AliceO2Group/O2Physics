@@ -236,7 +236,8 @@ struct Filter2Prong {
 
       if (c.isSelD0bar() > 0) {
         output2ProngTracks(cfcollisions.begin().globalIndex(),
-                           prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), hfHelper.invMassD0barToKPi(c), aod::cf2prongtrack::D0barToKPi);
+                           prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), hfHelper.invMassD0barToKPi(c),
+                           c.isSelD0() > 0 ? aod::cf2prongtrack::D0barToKPi : aod::cf2prongtrack::D0barToKPiExclusive);
         if constexpr (std::experimental::is_detected<HasMLProb, typename HFCandidatesType::iterator>::value) {
           mlvecd.clear();
           for (const float val : c.mlProbD0())
@@ -288,7 +289,7 @@ struct Filter2Prong {
         }
       }
       output2ProngMcParts(prongCFId[0], prongCFId[1],
-                          (mcParticle.pdgCode() >= 0 ? aod::cf2prongtrack::D0ToPiK : aod::cf2prongtrack::D0barToKPi) | ((mcParticle.originMcGen() == RecoDecay::OriginType::Prompt) ? aod::cf2prongmcpart::Prompt : 0));
+                          (mcParticle.pdgCode() >= 0 ? aod::cf2prongtrack::D0ToPiK : aod::cf2prongtrack::D0barToKPiExclusive) | ((mcParticle.originMcGen() == RecoDecay::OriginType::Prompt) ? aod::cf2prongmcpart::Prompt : 0));
     }
   }
   PROCESS_SWITCH(Filter2Prong, processMC, "Process MC 2-prong daughters", false);

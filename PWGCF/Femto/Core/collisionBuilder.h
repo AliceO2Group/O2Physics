@@ -395,6 +395,27 @@ class CollisionBuilder
   void init(o2::framework::HistogramRegistry* registry, T1& confFilter, T2& confBits, T3& confRct, T4& confCcdb, T5& confTable, T6& initContext)
   {
     LOG(info) << "Initialize femto collision builder...";
+
+    mMagFieldForced = confCcdb.magFieldForced.value;
+    mGrpPath = confCcdb.grpPath.value;
+    mSubGeneratorId = confFilter.subGeneratorId.value;
+
+    if (!confBits.triggers.value.empty()) {
+      mUseTrigger = true;
+      for (size_t i = 0; i < confBits.triggers.value.size(); ++i) {
+        mTriggerNames += confBits.triggers.value[i];
+        if (i != confBits.triggers.value.size() - 1) {
+          mTriggerNames += ",";
+        }
+      }
+      mZorro.setBaseCCDBPath(confCcdb.triggerPath.value);
+    }
+    if (confRct.useRctFlags.value) {
+      mUseRctFlags = true;
+      LOG(info) << "Init RCT flag checker with label: " << confRct.label.value << "; use ZDC: " << confRct.useZdc.value << "; Limimted acceptance is bad: " << confRct.treatLimitedAcceptanceAsBad.value;
+      mRctFlagsChecker.init(confRct.label.value, confRct.useZdc.value, confRct.treatLimitedAcceptanceAsBad.value);
+    }
+
     mProducedCollisions = utils::enableTable("FCols_001", confTable.produceCollisions.value, initContext);
     mProducedCollisionMasks = utils::enableTable("FColMasks_001", confTable.produceCollisionMasks.value, initContext);
     mProducedPositions = utils::enableTable("FColPos_001", confTable.producePositions.value, initContext);
@@ -410,24 +431,6 @@ class CollisionBuilder
       return;
     }
 
-    if (!confBits.triggers.value.empty()) {
-      mUseTrigger = true;
-      for (size_t i = 0; i < confBits.triggers.value.size(); ++i) {
-        mTriggerNames += confBits.triggers.value[i];
-        if (i != confBits.triggers.value.size() - 1) {
-          mTriggerNames += ",";
-        }
-      }
-      mZorro.setBaseCCDBPath(confCcdb.triggerPath.value);
-    }
-    if (confRct.useRctFlags.value) {
-      mUseRctFlags = true;
-      mRctFlagsChecker.init(confRct.label.value, confRct.useZdc.value, confRct.treatLimitedAcceptanceAsBad.value);
-    }
-    mMagFieldForced = confCcdb.magFieldForced.value;
-    mGrpPath = confCcdb.grpPath.value;
-    mSubGeneratorId = confFilter.subGeneratorId.value;
-
     mCollisionSelection.configure(registry, confFilter, confBits);
     mCollisionSelection.printSelections(colSelsName);
     LOG(info) << "Initialization done...";
@@ -440,16 +443,19 @@ class CollisionBuilder
       mRunNumber = bc.runNumber();
       if (mMagFieldForced == 0) {
         static o2::parameters::GRPMagField* grpo = nullptr;
+        LOG(info) << "Get magentic field with Path: " << mGrpPath << "; Run number: " << mRunNumber;
         grpo = ccdb->template getForRun<o2::parameters::GRPMagField>(mGrpPath, mRunNumber);
         if (grpo == nullptr) {
           LOG(fatal) << "GRP object not found for Run " << mRunNumber;
         }
         mMagField = static_cast<int>(grpo->getNominalL3Field()); // get magnetic field in kG
       } else {
+        LOG(info) << "Force magentic field to " << mMagFieldForced << "kG";
         mMagField = mMagFieldForced;
       }
 
       if (mUseTrigger) {
+        LOG(info) << "Init Zorro with Run Number: " << mRunNumber << "; timestamp: " << bc.timestamp() << "; Trigger Names: " << mTriggerNames;
         mZorro.initCCDB(ccdb.service, mRunNumber, bc.timestamp(), mTriggerNames);
         mZorro.populateHistRegistry(histRegistry, mRunNumber);
       }
@@ -472,8 +478,10 @@ class CollisionBuilder
   bool checkCollision(T1 const& col)
   {
     // check RCT flags first
-    if (mUseRctFlags && !mRctFlagsChecker(col)) {
-      return false;
+    if (mUseRctFlags) {
+      if (!mRctFlagsChecker(col)) {
+        return false;
+      }
     }
     // make other checks
     return mCollisionSelection.checkFilters(col) &&

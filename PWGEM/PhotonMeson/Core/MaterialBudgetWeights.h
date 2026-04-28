@@ -1,0 +1,108 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+
+/// \file MaterialBudgetWeights.h
+/// \brief This code produces a table to retrieve material budget weights. The table is to be join with V0PhotonKF
+/// \author Youssef El Mard (youssef.el.mard.bouziani@cern.ch)
+
+#ifndef PWGEM_PHOTONMESON_CORE_MATERIALBUDGETWEIGHTS_H_
+#define PWGEM_PHOTONMESON_CORE_MATERIALBUDGETWEIGHTS_H_
+
+#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+
+#include <map>
+#include <string>
+
+using MyV0PhotonsMB = o2::soa::Join<o2::aod::V0PhotonsKF, o2::aod::V0KFEMEventIds>;
+using MyV0PhotonMB = MyV0PhotonsMB::iterator;
+
+struct MaterialBudgetWeights {
+  o2::framework::Produces<o2::aod::V0PhotonOmegaMBWeights> omegaMBWeight;
+
+  o2::framework::Configurable<std::string> ccdbUrl{"ccdbUrl", "http://ccdb-test.cern.ch:8080", "CCDB url"};
+  o2::framework::Configurable<std::string> mbWeightsPath{"mbWeightsPath", "Users/y/yelmard/MaterialBudget/OmegaMBWeights", "Path of the mb weights"};
+
+  o2::ccdb::CcdbApi ccdbApi;
+  TH1F* hOmegaMBFromCCDB = nullptr;
+
+  void init(o2::framework::InitContext&)
+  {
+    // Load CCDB object only when the real process is enabled
+    if (!doprocessMC) {
+      LOG(info) << "MaterialBudgetWeights: dummy mode enabled -> no CCDB query, will write weight=1";
+      return;
+    }
+
+    ccdbApi.init(ccdbUrl.value);
+    std::map<std::string, std::string> metadata;
+    LOG(info) << "MaterialBudgetWeights: loading Omega MB histogram from CCDB at path: " << mbWeightsPath.value;
+
+    hOmegaMBFromCCDB = ccdbApi.retrieveFromTFileAny<TH1F>(mbWeightsPath, metadata, -1);
+
+    if (!hOmegaMBFromCCDB) {
+      LOG(fatal) << "MaterialBudgetWeights: CCDB object is missing. Path=" << mbWeightsPath.value;
+    }
+  }
+
+  float computeMBWeight(float v0Rxy)
+  {
+    if (!hOmegaMBFromCCDB) {
+      return 1.f;
+    }
+
+    int binMBWeight = hOmegaMBFromCCDB->FindBin(v0Rxy);
+    if (binMBWeight < 1 || binMBWeight > hOmegaMBFromCCDB->GetNbinsX()) {
+      LOG(debug) << "MaterialBudgetWeights: v0Rxy out of histogram range, returning 1";
+      return 1.f;
+    }
+
+    return hOmegaMBFromCCDB->GetBinContent(binMBWeight);
+  }
+
+  // real process (weights from CCDB)
+  void processMC(MyV0PhotonMB const& v0)
+  {
+    static bool once = false;
+    if (!once) {
+      LOG(info) << "MaterialBudgetWeights: standard process running";
+      once = true;
+    }
+    if (!hOmegaMBFromCCDB) { // histogram not loaded => behave like dummy
+      omegaMBWeight(1.f);
+      return;
+    }
+    omegaMBWeight(computeMBWeight(v0.v0radius()));
+  }
+
+  // dummy process (always weight = 1)
+  void processDummy(MyV0PhotonMB const&)
+  {
+    static bool once = false;
+    if (!once) {
+      LOG(info) << "MaterialBudgetWeights: processDummy running";
+      once = true;
+    }
+    omegaMBWeight(1.f);
+  }
+
+  PROCESS_SWITCH(MaterialBudgetWeights, processMC, "Fill MB weights from CCDB", false);
+  PROCESS_SWITCH(MaterialBudgetWeights, processDummy, "Fill dummy MB weights (=1)", true);
+};
+
+#endif // PWGEM_PHOTONMESON_CORE_MATERIALBUDGETWEIGHTS_H_

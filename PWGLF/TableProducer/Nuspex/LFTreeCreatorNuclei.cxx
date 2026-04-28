@@ -247,6 +247,7 @@ struct LfTreeCreatorNuclei {
         track.hasTRD(),
         track.tpcInnerParam(),
         track.beta(),
+        track.pidForTracking(),
         track.tpcSignal(),
         track.pt(), track.eta(), track.phi(),
         track.sign(),

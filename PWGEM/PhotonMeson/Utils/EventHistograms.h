@@ -66,7 +66,7 @@ inline void addEventHistograms(o2::framework::HistogramRegistry* fRegistry)
                                                 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110},
                                                "centrality FT0C (%)"};
 
-  fRegistry->add("Event/before/hZvtx", "vertex z; Z_{vtx} (cm)", o2::framework::kTH1F, {{100, -50, +50}}, false);
+  fRegistry->add("Event/before/hZvtx", "vertex z; Z_{vtx} (cm)", o2::framework::kTH1D, {{100, -50, +50}}, false);
   fRegistry->add("Event/before/hMultNTracksPV", "hMultNTracksPV; N_{track} to PV", o2::framework::kTH1F, {{6001, -0.5, 6000.5}}, false);
   fRegistry->add("Event/before/hMultNTracksPVeta1", "hMultNTracksPVeta1; N_{track} to PV", o2::framework::kTH1F, {{6001, -0.5, 6000.5}}, false);
   fRegistry->add("Event/before/hMultFT0", "hMultFT0;mult. FT0A;mult. FT0C", o2::framework::kTH2F, {{200, 0, 200000}, {60, 0, 60000}}, false);
@@ -79,7 +79,7 @@ inline void addEventHistograms(o2::framework::HistogramRegistry* fRegistry)
   fRegistry->addClone("Event/before/", "Event/after/");
 }
 
-template <const int ev_id, typename TCollision>
+template <const int ev_id, o2::soa::is_iterator TCollision>
 void fillEventInfo(o2::framework::HistogramRegistry* fRegistry, TCollision const& collision, float weight = 1.)
 {
   const float maxZ = 10.f;

@@ -55,15 +55,15 @@ DECLARE_SOA_COLUMN(Pz, pz, float);                           //! track pz
 // DECLARE_SOA_COLUMN(Z, z, float);                          //! track z position at the DCA to the primary vertex
 // DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);                          //! track distance of closest approach at the primary vertex: in xy plane
 // DECLARE_SOA_COLUMN(DcaZ, dcaz, float);               //! track distance of closest approach at the primary vertex: along z (beam line) direction
-DECLARE_SOA_COLUMN(Charge, charge, int);             //! track sign, not really charge
-DECLARE_SOA_COLUMN(NsigmaTPCpi, nsigmaTPCpi, float); //! TPC nsigma w.r.t. pion mass hypothesis
-DECLARE_SOA_COLUMN(NsigmaTPCka, nsigmaTPCka, float); //! TPC nsigma w.r.t. kaon mass hypothesis
-DECLARE_SOA_COLUMN(NsigmaTPCpr, nsigmaTPCpr, float); //! TPC nsigma w.r.t. proton mass hypothesis
-DECLARE_SOA_COLUMN(NsigmaTOFpi, nsigmaTOFpi, float); //! TOF nsigma w.r.t. pion mass hypothesis
-DECLARE_SOA_COLUMN(NsigmaTOFka, nsigmaTOFka, float); //! TOF nsigma w.r.t. kaon mass hypothesis
-DECLARE_SOA_COLUMN(NsigmaTOFpr, nsigmaTOFpr, float); //! TOF nsigma w.r.t. proton mass hypothesis
-DECLARE_SOA_COLUMN(TpcNCluster, tpcNCluster, int);   //! TOF nsigma w.r.t. proton mass hypothesis
-
+DECLARE_SOA_COLUMN(Charge, charge, int);                            //! track sign, not really charge
+DECLARE_SOA_COLUMN(NsigmaTPCpi, nsigmaTPCpi, float);                //! TPC nsigma w.r.t. pion mass hypothesis
+DECLARE_SOA_COLUMN(NsigmaTPCka, nsigmaTPCka, float);                //! TPC nsigma w.r.t. kaon mass hypothesis
+DECLARE_SOA_COLUMN(NsigmaTPCpr, nsigmaTPCpr, float);                //! TPC nsigma w.r.t. proton mass hypothesis
+DECLARE_SOA_COLUMN(NsigmaTOFpi, nsigmaTOFpi, float);                //! TOF nsigma w.r.t. pion mass hypothesis
+DECLARE_SOA_COLUMN(NsigmaTOFka, nsigmaTOFka, float);                //! TOF nsigma w.r.t. kaon mass hypothesis
+DECLARE_SOA_COLUMN(NsigmaTOFpr, nsigmaTOFpr, float);                //! TOF nsigma w.r.t. proton mass hypothesis
+DECLARE_SOA_COLUMN(TpcNCluster, tpcNCluster, int);                  //! TOF nsigma w.r.t. proton mass hypothesis
+DECLARE_SOA_COLUMN(EventIsGoodITS123, eventIsGoodITS0123, uint8_t); //! flag to store bit of o2::aod::evsel::kIsGoodITSLayer0123
 ///// MC INFO
 DECLARE_SOA_COLUMN(MainHfMotherPdgCode, mainHfMotherPdgCode, int);                 //! mother pdg code for particles coming from HF, skipping intermediate resonance states. Not trustable when mother is not HF. Not suited for Sc->Lc decays, since Sc are never pointed to
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);                    //! is phyiscal primary according to ALICE definition
@@ -92,7 +92,8 @@ DECLARE_SOA_TABLE(FilterColl, "AOD", "FILTERCOLL",
                   o2::aod::collision::Chi2,
                   o2::aod::collision::NumContrib,
                   o2::aod::collision::CollisionTime,
-                  o2::aod::collision::CollisionTimeRes);
+                  o2::aod::collision::CollisionTimeRes,
+                  aod::filtertracks::EventIsGoodITS123);
 DECLARE_SOA_TABLE(FilterCollLite, "AOD", "FILTERCOLLLITE",
                   o2::aod::collision::PosX,
                   o2::aod::collision::PosY,
@@ -105,14 +106,16 @@ DECLARE_SOA_TABLE(FilterCollLite, "AOD", "FILTERCOLLLITE",
                   o2::aod::collision::CovZZ,
                   o2::aod::collision::Chi2,
                   o2::aod::collision::NumContrib,
-                  o2::aod::collision::CollisionTime);
+                  o2::aod::collision::CollisionTime,
+                  aod::filtertracks::EventIsGoodITS123);
 DECLARE_SOA_TABLE(FilterCollPos, "AOD", "FILTERCOLLPOS",
                   o2::aod::collision::PosX,
                   o2::aod::collision::PosY,
                   o2::aod::collision::PosZ,
                   o2::aod::collision::Chi2,
                   o2::aod::collision::NumContrib,
-                  o2::aod::collision::CollisionTime);
+                  o2::aod::collision::CollisionTime,
+                  aod::filtertracks::EventIsGoodITS123);
 DECLARE_SOA_TABLE(FiltTrackColIdx, "AOD", "FILTTRACKCOLIDX",
                   o2::aod::track::CollisionId);
 DECLARE_SOA_TABLE(FilterTrack, "AOD", "FILTERTRACK",
@@ -166,7 +169,7 @@ DECLARE_SOA_TABLE(GenParticles, "AOD", "GENPARTICLES",
 } // namespace o2::aod
 
 struct FilterTracks {
-  const static int nStudiedParticlesMc = 3;
+  static const int nStudiedParticlesMc = 3;
 
   Produces<aod::FiltTrackColIdx> filteredTracksCollIdx;
   Produces<aod::FilterTrackExtr> filteredTracksTableExtra;
@@ -307,30 +310,30 @@ struct FilterTracks {
       for (auto const& track : tracks) {
         fillTableData(track);
         if (produceCollTableExtraLite == 2) {
-          filterCollPosTable(collision.posX(), collision.posY(), collision.posZ(), collision.chi2(), collision.numContrib(), collision.collisionTime());
-        };
+          filterCollPosTable(collision.posX(), collision.posY(), collision.posZ(), collision.chi2(), collision.numContrib(), collision.collisionTime(), collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123));
+        }
       }
     } else {
       auto lowPtTracksThisColl = lowPtTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       for (auto const& track : lowPtTracksThisColl) {
         fillTableData(track);
         if (produceCollTableExtraLite == 2) {
-          filterCollPosTable(collision.posX(), collision.posY(), collision.posZ(), collision.chi2(), collision.numContrib(), collision.collisionTime());
-        };
+          filterCollPosTable(collision.posX(), collision.posY(), collision.posZ(), collision.chi2(), collision.numContrib(), collision.collisionTime(), collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123));
+        }
       }
       auto midPtTracksThisColl = midPtTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       for (auto const& track : midPtTracksThisColl) {
         fillTableData(track);
         if (produceCollTableExtraLite == 2) {
-          filterCollPosTable(collision.posX(), collision.posY(), collision.posZ(), collision.chi2(), collision.numContrib(), collision.collisionTime());
-        };
+          filterCollPosTable(collision.posX(), collision.posY(), collision.posZ(), collision.chi2(), collision.numContrib(), collision.collisionTime(), collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123));
+        }
       }
       auto highPtTracksThisColl = highPtTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       for (auto const& track : highPtTracksThisColl) {
         fillTableData(track);
         if (produceCollTableExtraLite == 2) {
-          filterCollPosTable(collision.posX(), collision.posY(), collision.posZ(), collision.chi2(), collision.numContrib(), collision.collisionTime());
-        };
+          filterCollPosTable(collision.posX(), collision.posY(), collision.posZ(), collision.chi2(), collision.numContrib(), collision.collisionTime(), collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123));
+        }
       }
     }
   }
@@ -338,11 +341,11 @@ struct FilterTracks {
   void processCollisions(FilterCollisionsWithEvSel::iterator const& collision)
   {
     if (produceCollTableFull)
-      filterCollTable(collision.bcId(), collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ(), collision.flags(), collision.chi2(), collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
+      filterCollTable(collision.bcId(), collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ(), collision.flags(), collision.chi2(), collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes(), collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123));
     if (produceCollTableLite)
-      filterCollLiteTable(collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ(), collision.chi2(), collision.numContrib(), collision.collisionTime());
+      filterCollLiteTable(collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ(), collision.chi2(), collision.numContrib(), collision.collisionTime(), collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123));
     if (produceCollTableExtraLite == 1)
-      filterCollPosTable(collision.posX(), collision.posY(), collision.posZ(), collision.chi2(), collision.numContrib(), collision.collisionTime());
+      filterCollPosTable(collision.posX(), collision.posY(), collision.posZ(), collision.chi2(), collision.numContrib(), collision.collisionTime(), collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123));
   }
   PROCESS_SWITCH(FilterTracks, processCollisions, "process collisions", true);
 

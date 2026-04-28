@@ -28,7 +28,7 @@ using namespace o2::aod::pwgem::photonmeson::photonpair;
 
 using MyV0Photons = soa::Filtered<soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds, aod::V0PhotonsKFPrefilterBitDerived>>;
 using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
-using MyMCElectrons = soa::Filtered<soa::Join<aod::EMPrimaryElectronsFromDalitz, aod::EMPrimaryElectronEMEventIds, aod::EMPrimaryElectronsPrefilterBitDerived, aod::EMPrimaryElectronMCLabels>>;
+using MyMCElectrons = soa::Filtered<soa::Join<aod::EMPrimaryElectronsFromDalitz, aod::EMPrimaryElectronDaEMEventIds, aod::EMPrimaryElectronsPrefilterBitDerived, aod::EMPrimaryElectronMCLabels>>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

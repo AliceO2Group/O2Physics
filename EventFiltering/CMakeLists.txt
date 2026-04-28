@@ -69,7 +69,7 @@ o2physics_add_dpl_workflow(je-hf-filter
 
 o2physics_add_dpl_workflow(fje-filter
     SOURCES PWGJE/fullJetFilter.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib Boost::system
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(lf-strangeness-filter
@@ -107,7 +107,12 @@ o2physics_add_dpl_workflow(lf-f1proton-filter
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore KFParticle::KFParticle O2::DetectorsBase
     COMPONENT_NAME Analysis)
 
- o2physics_add_dpl_workflow(lf-doublephi-filter
+o2physics_add_dpl_workflow(lf-doublephi-filter
     SOURCES PWGLF/filterdoublephi.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(h2-from-beauty-filter
+    SOURCES PWGHF/H2fromLbFilter.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
     COMPONENT_NAME Analysis)

@@ -83,9 +83,6 @@ struct JetSubstructureHFTask {
   o2::framework::Configurable<bool> doPairBkg{"doPairBkg", true, "save bkg pairs"};
   o2::framework::Configurable<float> pairConstituentPtMin{"pairConstituentPtMin", 1.0, "pt cut off for constituents going into pairs"};
   o2::framework::Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
-  o2::framework::Configurable<bool> applyTrackingEfficiency{"applyTrackingEfficiency", {false}, "configurable to decide whether to apply artificial tracking efficiency (discarding tracks) in jet finding"};
-  o2::framework::Configurable<std::vector<double>> trackingEfficiencyPtBinning{"trackingEfficiencyPtBinning", {0., 10, 999.}, "pt binning of tracking efficiency array if applyTrackingEfficiency is true"};
-  o2::framework::Configurable<std::vector<double>> trackingEfficiency{"trackingEfficiency", {1.0, 1.0}, "tracking efficiency array applied to jet finding if applyTrackingEfficiency is true"};
   o2::framework::Configurable<float> recoilRegion{"recoilRegion", 0.6, "recoil acceptance in phi"};
 
   o2::framework::Service<o2::framework::O2DatabasePDG> pdg;
@@ -141,15 +138,6 @@ struct JetSubstructureHFTask {
     candMass = jetcandidateutilities::getTablePDGMass<CandidateTable>();
 
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
-
-    if (applyTrackingEfficiency) {
-      if (trackingEfficiencyPtBinning->size() < 2) {
-        LOGP(fatal, "jetFinder workflow: trackingEfficiencyPtBinning configurable should have at least two bin edges");
-      }
-      if (trackingEfficiency->size() + 1 != trackingEfficiencyPtBinning->size()) {
-        LOGP(fatal, "jetFinder workflow: trackingEfficiency configurable should have exactly one less entry than the number of bin edges set in trackingEfficiencyPtBinning configurable");
-      }
-    }
   }
 
   o2::framework::Preslice<o2::aod::JetTracks> TracksPerCollision = o2::aod::jtrack::collisionId;
@@ -209,7 +197,7 @@ struct JetSubstructureHFTask {
 
       int nHFInSubjet1 = 0;
       for (auto& subjet1Constituent : parentSubJet1.constituents()) {
-        if (subjet1Constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::candidate)) {
+        if (subjet1Constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == JetConstituentStatus::candidate) {
           nHFInSubjet1++;
         }
       }
@@ -231,10 +219,10 @@ struct JetSubstructureHFTask {
       std::vector<int32_t> candidates;
       std::vector<int32_t> clusters;
       for (const auto& constituent : sorted_by_pt(parentSubJet2.constituents())) {
-        if (constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::track)) {
+        if (constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == JetConstituentStatus::track) {
           tracks.push_back(constituent.template user_info<fastjetutilities::fastjet_user_info>().getIndex());
         }
-        if (constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::candidate)) {
+        if (constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == JetConstituentStatus::candidate) {
           candidates.push_back(constituent.template user_info<fastjetutilities::fastjet_user_info>().getIndex());
         }
       }
@@ -369,7 +357,7 @@ struct JetSubstructureHFTask {
       }
 
       if constexpr (!std::is_same_v<std::decay_t<U>, o2::aod::JetParticles>) {
-        if (!jetfindingutilities::isTrackSelected<typename U::iterator, typename U::iterator>(track, trackSelection, applyTrackingEfficiency, trackingEfficiency, trackingEfficiencyPtBinning)) {
+        if (!jetfindingutilities::isTrackSelected<typename U::iterator, typename U::iterator>(track, trackSelection)) {
           continue;
         }
       }
@@ -470,7 +458,7 @@ struct JetSubstructureHFTask {
       }
       angularity += std::pow(constituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, constituent), alpha);
     }
-    angularity /= (jet.pt() * (jet.r() / 100.f));
+    angularity /= (std::pow(jet.pt(), kappa) * std::pow((jet.r() / 100.f), alpha));
   }
 
   template <bool isSubtracted, typename T, typename U, typename V, typename M, typename N, typename O, typename P>
@@ -482,7 +470,7 @@ struct JetSubstructureHFTask {
     }
     int nHFCandidates = 0;
     for (auto& jetHFCandidate : jet.template candidates_as<V>()) {
-      fastjetutilities::fillTracks(jetHFCandidate, jetConstituents, jetHFCandidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidate), candMass);
+      fastjetutilities::fillTracks(jetHFCandidate, jetConstituents, jetHFCandidate.globalIndex(), JetConstituentStatus::candidate, candMass);
       nHFCandidates++;
     }
     nSub = jetsubstructureutilities::getNSubjettiness(jet, tracks, tracks, candidates, 2, fastjet::contrib::CA_Axes(), true, zCut, beta);
@@ -535,11 +523,11 @@ struct JetSubstructureHFTask {
   {
     jetConstituents.clear();
     for (auto& jetConstituent : jet.template tracks_as<o2::aod::JetParticles>()) {
-      fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex(), static_cast<int>(JetConstituentStatus::track), pdg->Mass(jetConstituent.pdgCode()));
+      fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex(), JetConstituentStatus::track, pdg->Mass(jetConstituent.pdgCode()));
     }
     int nHFCandidates = 0;
     for (auto& jetHFCandidate : jet.template candidates_as<CandidateTableMCP>()) {
-      fastjetutilities::fillTracks(jetHFCandidate, jetConstituents, jetHFCandidate.globalIndex(), static_cast<int>(JetConstituentStatus::candidate), candMass);
+      fastjetutilities::fillTracks(jetHFCandidate, jetConstituents, jetHFCandidate.globalIndex(), JetConstituentStatus::candidate, candMass);
       nHFCandidates++;
     }
     nSub = jetsubstructureutilities::getNSubjettiness(jet, particles, particles, candidates, 2, fastjet::contrib::CA_Axes(), true, zCut, beta);

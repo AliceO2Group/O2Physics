@@ -249,17 +249,17 @@ struct HfTreeCreatorD0ToKPi {
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_d0::isSelD0 >= 1 || aod::hf_sel_candidate_d0::isSelD0bar >= 1;
-  Filter filterMcGenMatching = nabs(aod::hf_cand_2prong::flagMcMatchGen) == static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) || (fillCorrBkgs && (nabs(aod::hf_cand_2prong::flagMcMatchGen) != 0));
+  Filter filterMcGenMatching = nabs(aod::hf_cand_mc_flag::flagMcMatchGen) == static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) || (fillCorrBkgs && (nabs(aod::hf_cand_mc_flag::flagMcMatchGen) != 0));
 
-  Partition<SelectedCandidatesMc> reconstructedCandSig = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) || (fillCorrBkgs && nabs(aod::hf_cand_2prong::flagMcMatchRec) != 0);
-  Partition<SelectedCandidatesMc> reconstructedCandBkg = nabs(aod::hf_cand_2prong::flagMcMatchRec) != static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
-  Partition<SelectedCandidatesMcKf> reconstructedCandSigKF = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) || (fillCorrBkgs && nabs(aod::hf_cand_2prong::flagMcMatchRec) != 0);
-  Partition<SelectedCandidatesMcKf> reconstructedCandBkgKF = nabs(aod::hf_cand_2prong::flagMcMatchRec) != static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
+  Partition<SelectedCandidatesMc> reconstructedCandSig = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) || (fillCorrBkgs && nabs(aod::hf_cand_mc_flag::flagMcMatchRec) != 0);
+  Partition<SelectedCandidatesMc> reconstructedCandBkg = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) != static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
+  Partition<SelectedCandidatesMcKf> reconstructedCandSigKF = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) || (fillCorrBkgs && nabs(aod::hf_cand_mc_flag::flagMcMatchRec) != 0);
+  Partition<SelectedCandidatesMcKf> reconstructedCandBkgKF = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) != static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
 
-  Partition<SelectedCandidatesMcMl> reconstructedCandSigMl = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) || (fillCorrBkgs && nabs(aod::hf_cand_2prong::flagMcMatchRec) != 0);
-  Partition<SelectedCandidatesMcMl> reconstructedCandBkgMl = nabs(aod::hf_cand_2prong::flagMcMatchRec) != static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
-  Partition<SelectedCandidatesMcKfMl> reconstructedCandSigKFMl = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) || (fillCorrBkgs && nabs(aod::hf_cand_2prong::flagMcMatchRec) != 0);
-  Partition<SelectedCandidatesMcKfMl> reconstructedCandBkgKFMl = nabs(aod::hf_cand_2prong::flagMcMatchRec) != static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
+  Partition<SelectedCandidatesMcMl> reconstructedCandSigMl = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) || (fillCorrBkgs && nabs(aod::hf_cand_mc_flag::flagMcMatchRec) != 0);
+  Partition<SelectedCandidatesMcMl> reconstructedCandBkgMl = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) != static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
+  Partition<SelectedCandidatesMcKfMl> reconstructedCandSigKFMl = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) == static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) || (fillCorrBkgs && nabs(aod::hf_cand_mc_flag::flagMcMatchRec) != 0);
+  Partition<SelectedCandidatesMcKfMl> reconstructedCandBkgKFMl = nabs(aod::hf_cand_mc_flag::flagMcMatchRec) != static_cast<int8_t>(o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
 
   void init(InitContext const&)
   {
@@ -435,7 +435,7 @@ struct HfTreeCreatorD0ToKPi {
       double const yD = HfHelper::yD0(candidate);
       double const eD = HfHelper::eD0(candidate);
       double const ctD = HfHelper::ctD0(candidate);
-      float massD0, massD0bar;
+      float massD0{}, massD0bar{};
       float topolChi2PerNdf = -999.;
       if constexpr (ReconstructionType == aod::hf_cand::VertexerType::KfParticle) {
         massD0 = candidate.kfGeoMassD0();
@@ -536,7 +536,7 @@ struct HfTreeCreatorD0ToKPi {
       double const yD = HfHelper::yD0(candidate);
       double const eD = HfHelper::eD0(candidate);
       double const ctD = HfHelper::ctD0(candidate);
-      float massD0, massD0bar;
+      float massD0{}, massD0bar{};
       float topolChi2PerNdf = -999.;
       if constexpr (ReconstructionType == aod::hf_cand::VertexerType::KfParticle) {
         massD0 = candidate.kfGeoMassD0();

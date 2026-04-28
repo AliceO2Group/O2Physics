@@ -1634,16 +1634,33 @@ struct LambdaSpinPolarization {
     float dphi = RecoDecay::constrainAngle(p1.phi() - p2.phi(), -PI);
     float dR = std::sqrt(drap * drap + dphi * dphi);
 
-    // Get Lambda-Proton four-momentum
     std::array<float, 4> l1 = {p1.px(), p1.py(), p1.pz(), MassLambda0};
     std::array<float, 4> l2 = {p2.px(), p2.py(), p2.pz(), MassLambda0};
+
+    std::array<float, 4> llpair = {
+      l1[0] + l2[0],
+      l1[1] + l2[1],
+      l1[2] + l2[2],
+      l1[3] + l2[3]};
+
     std::array<float, 4> pr1 = {p1.prPx(), p1.prPy(), p1.prPz(), MassProton};
     std::array<float, 4> pr2 = {p2.prPx(), p2.prPy(), p2.prPz(), MassProton};
-    std::array<float, 3> v1, v2;
-    getBoostVector(l1, v1, cInvBoostFlag);
-    getBoostVector(l2, v2, cInvBoostFlag);
-    boost(pr1, v1);
-    boost(pr2, v2);
+
+    std::array<float, 3> vPair;
+    getBoostVector(llpair, vPair, cInvBoostFlag);
+
+    boost(l1, vPair);
+    boost(l2, vPair);
+
+    boost(pr1, vPair);
+    boost(pr2, vPair);
+
+    std::array<float, 3> v1_pair, v2_pair;
+    getBoostVector(l1, v1_pair, cInvBoostFlag);
+    getBoostVector(l2, v2_pair, cInvBoostFlag);
+
+    boost(pr1, v1_pair);
+    boost(pr2, v2_pair);
 
     std::array<float, 3> pr1tv = {pr1[0], pr1[1], pr1[2]};
     std::array<float, 3> pr2tv = {pr2[0], pr2[1], pr2[2]};
@@ -1676,7 +1693,7 @@ struct LambdaSpinPolarization {
           continue;
         }
 
-        // Kinematic matching with named constants
+        // Kinematic matching
         float deltaPt = std::abs(trk_1.pt() - trk_2.pt());
         float deltaPhi = std::abs(RecoDecay::constrainAngle(trk_1.phi() - trk_2.phi(), -PI));
         float deltaRap = std::abs(trk_1.rap() - trk_2.rap());
@@ -1718,7 +1735,7 @@ struct LambdaSpinPolarization {
     analyzePairs<kAntiLambdaAntiLambda, true>(antiLambdaTracks, antiLambdaTracks);
   }
 
-  PROCESS_SWITCH(LambdaSpinPolarization, processDataReco, "Process for Data and MCReco", false);
+  PROCESS_SWITCH(LambdaSpinPolarization, processDataReco, "Process for Data and MCReco", true);
 
   struct GetMultiplicity {
     float operator()(auto const& col) const
@@ -1766,7 +1783,7 @@ struct LambdaSpinPolarization {
     }
   }
 
-  PROCESS_SWITCH(LambdaSpinPolarization, processDataRecoMixed, "Process for Data and MCReco for Mixed events", true);
+  PROCESS_SWITCH(LambdaSpinPolarization, processDataRecoMixed, "Process for Data and MCReco for Mixed events", false);
 
   void processDataRecoMixEvent(LambdaCollisions::iterator const& collision, LambdaTracks const& tracks)
   {

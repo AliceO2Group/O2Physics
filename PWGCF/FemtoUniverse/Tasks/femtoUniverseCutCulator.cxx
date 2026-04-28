@@ -14,13 +14,16 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
-#include <filesystem>
-#include <iostream>
-#include <random>
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseCutculator.h"
+
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseSelection.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
+
+#include <fstream>
+#include <iostream>
+#include <random>
+#include <string>
 
 using namespace o2::analysis::femto_universe;
 
@@ -30,9 +33,8 @@ using namespace o2::analysis::femto_universe;
 int main(int /*argc*/, char* argv[])
 {
   std::string configFileName(argv[1]);
-  std::filesystem::path configFile{configFileName};
-
-  if (std::filesystem::exists(configFile)) {
+  std::ifstream configFile(configFileName);
+  if (configFile.good()) {
     FemtoUniverseCutculator cut;
     cut.init(argv[1]);
 

@@ -45,12 +45,6 @@ struct EmcalClusterHadronicCorrectionTask {
   PresliceUnsorted<aod::JEMCTracks> perTrackMatchedTrack = aod::jemctrack::trackId;
 
   // define configurables here
-  Configurable<std::string> clusterDefinitionS{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
-
-  Configurable<float> minTime{"minTime", -25., "Minimum cluster time for time cut"};
-  Configurable<float> maxTime{"maxTime", 20., "Maximum cluster time for time cut"};
-  Configurable<float> minM02{"minM02", 0.1, "Minimum M02 for M02 cut"};
-  Configurable<float> maxM02{"maxM02", 0.9, "Maximum M02 for M02 cut"};
   Configurable<float> minTrackPt{"minTrackPt", 0.15, "Minimum pT for tracks"};
   Configurable<double> hadCorr1{"hadCorr1", 1., "hadronic correction fraction for complete cluster energy subtraction for one matched track"};                // 100% - default
   Configurable<double> hadCorr2{"hadCorr2", 0.7, "hadronic correction fraction for systematic studies for one matched track"};                                // 70%
@@ -99,13 +93,10 @@ struct EmcalClusterHadronicCorrectionTask {
     registry.add("h_matchedtracks", "Total matched tracks; track status;entries", {HistType::kTH1F, {{1, 0.5, 1.5}}});
   }
 
-  aod::EMCALClusterDefinition clusterDefinition = aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS.value);
-  Filter clusterDefinitionSelection = (aod::jcluster::definition == static_cast<int>(clusterDefinition));
-
   // The matching of clusters and tracks is already centralised in the EMCAL framework.
   // One only needs to apply a filter on matched clusters
   // Here looping over all collisions matched to EMCAL clusters
-  void processMatchedCollisions(aod::JetCollision const&, soa::Filtered<soa::Join<aod::JClusters, aod::JClusterTracks>> const& clusters, aod::JEMCTracks const& emcTracks, aod::JetTracks const&)
+  void processMatchedCollisions(aod::JetCollision const&, soa::Join<aod::JClusters, aod::JClusterTracks> const& clusters, aod::JEMCTracks const& emcTracks, aod::JetTracks const&)
   {
     registry.fill(HIST("h_allcollisions"), 1);
 
@@ -116,6 +107,7 @@ struct EmcalClusterHadronicCorrectionTask {
 
     // Looping over all clusters matched to the collision
     for (const auto& cluster : clusters) {
+
       registry.fill(HIST("h_matchedclusters"), 1);
 
       double clusterE1;
@@ -137,7 +129,7 @@ struct EmcalClusterHadronicCorrectionTask {
       TF1 funcPtDepEta("func", "[1] + 1 / pow(x + pow(1 / ([0] - [1]), 1 / [2]), [2])");
       funcPtDepEta.SetParameters(eta0, eta1, eta2);
       TF1 funcPtDepPhi("func", "[1] + 1 / pow(x + pow(1 / ([0] - [1]), 1 / [2]), [2])");
-      funcPtDepEta.SetParameters(phi0, phi1, phi2);
+      funcPtDepPhi.SetParameters(phi0, phi1, phi2);
 
       // No matched tracks (trackless case)
       if (cluster.matchedTracks().size() == 0) {
@@ -245,7 +237,6 @@ struct EmcalClusterHadronicCorrectionTask {
 
       // Fill the table with all four corrected energies
       clusterEnergyCorrectedTable(clusterE1, clusterE2, clusterEAll1, clusterEAll2);
-
     } // End of cluster loop
   } // process function ends
   PROCESS_SWITCH(EmcalClusterHadronicCorrectionTask, processMatchedCollisions, "hadronic correction", true);

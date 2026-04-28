@@ -63,7 +63,7 @@ using namespace o2::constants::physics;
 
 struct lambdapolarization {
   //  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>>;
-  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::Qvectors>;
+  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::Qvectors, aod::CentFT0CVariant2s>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
   using V0TrackCandidate = aod::V0Datas;
 
@@ -84,6 +84,7 @@ struct lambdapolarization {
 
   Configurable<float> cfgCentSel{"cfgCentSel", 80., "Centrality selection"};
   Configurable<int> cfgCentEst{"cfgCentEst", 1, "Centrality estimator, 1: FT0C, 2: FT0M"};
+  Configurable<bool> cfgCentEstFT0CVariant2{"cfgCentEstFT0CVariant2", false, "flag to replace the estimator with centFT0CVariant2"};
 
   Configurable<bool> cfgPVSel{"cfgPVSel", false, "Additional PV selection flag for syst"};
   Configurable<float> cfgPV{"cfgPV", 8.0, "Additional PV selection range for syst"};
@@ -918,6 +919,9 @@ struct lambdapolarization {
   {
     if (cfgCentEst == 1) {
       centrality = collision.centFT0C();
+      if (cfgCentEstFT0CVariant2) {
+        centrality = collision.centFT0CVariant2();
+      }
     } else if (cfgCentEst == 2) {
       centrality = collision.centFT0M();
     }

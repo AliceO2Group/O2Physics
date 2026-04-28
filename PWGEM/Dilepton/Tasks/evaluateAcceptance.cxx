@@ -19,24 +19,10 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TableHelper.h"
 
-// #include "Common/Core/trackUtilities.h"
-// #include "Common/DataModel/Centrality.h"
-// #include "Common/DataModel/CollisionAssociationTables.h"
-// #include "Common/DataModel/EventSelection.h"
-// #include "Common/DataModel/Multiplicity.h"
-// #include "Common/DataModel/TrackSelectionTables.h"
-
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/LHCConstants.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
-
-// #include "DataFormatsCalibration/MeanVertexObject.h"
-// #include "DataFormatsParameters/GRPMagField.h"
-// #include "DataFormatsParameters/GRPObject.h"
-// #include "DetectorsBase/GeometryManager.h"
-// #include "DetectorsBase/Propagator.h"
-
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
