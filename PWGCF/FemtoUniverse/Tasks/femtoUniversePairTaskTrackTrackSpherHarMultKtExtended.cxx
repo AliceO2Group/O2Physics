@@ -630,7 +630,7 @@ struct FemtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
           double rand;
           rand = randgen->Rndm();
 
-          if (rand > 0.5) {
+          if (rand > twotracksconfigs.confRandValue) {
             part1 = p2;
             part2 = p1;
           }
