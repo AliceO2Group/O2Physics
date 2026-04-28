@@ -398,6 +398,13 @@ struct qVectorsTable {
     }
   }
 
+  /// Function to normalize the q-vectors
+  /// \param QvecReNorm is the vector with the normalized real part of the q-vector for each detector and correction step
+  /// \param QvecImNorm is the vector with the normalized imaginary part of the q-vector for each detector and correction step
+  /// \param QvecReRaw is the vector with the raw real part of the q-vector for each detector and correction step
+  /// \param QvecImRaw is the vector with the raw imaginary part of the q-vector for each detector and correction step
+  /// \param QvecAmp is the vector with the amplitude of the q-vector for each detector and correction step
+  /// \param normType is the type of normalization to apply to the q-vectors
   void NormalizeQvec(std::vector<float>& QvecReNorm, 
                      std::vector<float>& QvecImNorm, 
                      std::vector<float> QvecReRaw, 
@@ -430,6 +437,12 @@ struct qVectorsTable {
     }
   }
 
+  /// Function to calculate the un-normalized q-vectors
+  /// \param cent is the collision centrality
+  /// \param qvecRe is the vector with the real part of the q-vector for each detector and correction step
+  /// \param qvecIm is the vector with the imaginary part of the q-vector for each detector and correction step
+  /// \param histsCorrs is the vector with the histograms with the correction constants for each detector and correction step
+  /// \param nMode is the modulation of interest
   void CorrectQvec(float cent, std::vector<float>& qvecRe, std::vector<float>& qvecIm, TH3F* histsCorrs, int nMode) {
     int nCorrections = static_cast<int>(Corrections::kNCorrections);
     if (cent < cfgMaxCentrality) {
@@ -533,6 +546,16 @@ struct qVectorsTable {
     }
   }
 
+  /// Function to calculate the un-normalized q-vectors
+  /// \param nMode is the harmonic number of the q-vector
+  /// \param coll is the collision object
+  /// \param track are the tracks associated to the collision
+  /// \param QvecRe is the vector with the real part of the q-vector for each detector
+  /// \param QvecIm is the vector with the imaginary part of the q-vector for each detector
+  /// \param QvecAmp is the vector with the amplitude of the signal in each detector
+  /// \param TrkTPCposLabel is the vector with the number of TPC tracks with positive eta
+  /// \param TrkTPCnegLabel is the vector with the number of TPC tracks with negative eta
+  /// \param TrkTPCallLabel is the vector with the number of TPC tracks with any eta
   template <typename Nmode, typename CollType, typename TrackType>
   void CalQvec(const Nmode nMode, const CollType& coll, const TrackType& track, std::vector<float>& QvecRe, std::vector<float>& QvecIm, std::vector<float>& QvecAmp, std::vector<int>& TrkTPCposLabel, std::vector<int>& TrkTPCnegLabel, std::vector<int>& TrkTPCallLabel)
   {
