@@ -119,14 +119,14 @@ o2physics_add_dpl_workflow(task-lc-to-k0s-p
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(task-net-charm-fluctuations
+                    SOURCES taskNetCharmFluctuations.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(task-omegac0-to-omega-pi
                     SOURCES taskOmegac0ToOmegaPi.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(task-pt-fluc-charm-hadrons
-                    SOURCES taskPtFlucCharmHadrons.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-pt-fluc-charm-hadrons
