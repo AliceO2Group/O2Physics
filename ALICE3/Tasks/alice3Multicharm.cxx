@@ -69,7 +69,7 @@ struct Alice3Multicharm {
     Configurable<int64_t> timestampCCDB{"timestampCCDB", 1695750420200, "timestamp of the ONNX file for ML model used to query in CCDB. Please use 1695750420200"};
     Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
     Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
-    Configurable<bool> enableML{"enableML", false, "Enables bdt model"};
+    Configurable<bool> enableML{"enableML", true, "Enables bdt model"};
   } bdt;
 
   ConfigurableAxis axisEta{"axisEta", {80, -4.0f, +4.0f}, "#eta"};
@@ -222,10 +222,6 @@ struct Alice3Multicharm {
       histos.add("BDT/hPi1cPt", "hPi1cPt", kTH2D, {{axisBDTScore, axisPt}});
       histos.add("BDT/hPi2cPt", "hPi2cPt", kTH2D, {{axisBDTScore, axisPt}});
       histos.add("BDT/hPiccPt", "hPiccPt", kTH2D, {{axisBDTScore, axisPt}});
-      histos.add("BDT/hXiccMass", "hXiccMass", kTH2D, {{axisBDTScore, axisXiccMass}});
-      histos.add("BDT/hXicMass", "hXicMass", kTH2D, {{axisBDTScore, axisXicMass}});
-      histos.add("BDT/hXiccPt", "hXiccPt", kTH2D, {{axisBDTScore, axisPt}});
-      histos.add("BDT/hXicPt", "hXicPt", kTH2D, {{axisBDTScore, axisPt}});
     }
   }
 
@@ -264,33 +260,29 @@ struct Alice3Multicharm {
         histos.fill(HIST("BDT/hBDTScoreVsXiccMass"), xiccCand.xiccMass(), bdtScore);
         histos.fill(HIST("BDT/hBDTScoreVsXiccPt"), xiccCand.xiccPt(), bdtScore);
         histos.fill(HIST("BDT/h3dBDTScore"), xiccCand.xiccPt(), xiccCand.xiccMass(), bdtScore);
-        histos.fill(HIST("BDT/hDCAXicDaughters"), xiccCand.xiccPt(), bdtScore);
-        histos.fill(HIST("BDT/hDCAXiccDaughters"), xiccCand.xiccPt(), bdtScore);
-        histos.fill(HIST("BDT/hDCAxyXi"), xiccCand.xiccPt(), bdtScore);
-        histos.fill(HIST("BDT/hDCAzXi"), xiccCand.xiccPt(), bdtScore);
-        histos.fill(HIST("BDT/hDCAxyXic"), xiccCand.xiccPt(), bdtScore);
-        histos.fill(HIST("BDT/hDCAzXic"), xiccCand.xiccPt(), bdtScore);
-        histos.fill(HIST("BDT/hDCAxyXicc"), xiccCand.xiccPt(), bdtScore);
-        histos.fill(HIST("BDT/hDCAzXicc"), xiccCand.xiccPt(), bdtScore);
-        histos.fill(HIST("BDT/hDecayRadiusXic"), xiccCand.xiccPt(), bdtScore);
-        histos.fill(HIST("BDT/hDecayRadiusXicc"), xiccCand.xiccPt(), bdtScore);
-        histos.fill(HIST("BDT/hDecayDistanceFromPVXic"), xiccCand.xiccPt(), bdtScore);
-        histos.fill(HIST("BDT/hProperLengthXic"), xiccCand.xiccPt(), bdtScore);
-        histos.fill(HIST("BDT/hProperLengthXicc"), xiccCand.xiccPt(), bdtScore);
-        histos.fill(HIST("BDT/hPi1cDCAxy"), xiccCand.xiccPt(), bdtScore);
-        histos.fill(HIST("BDT/hPi1cDCAz"), xiccCand.xiccPt(), bdtScore);
-        histos.fill(HIST("BDT/hPi2cDCAxy"), xiccCand.xiccPt(), bdtScore);
-        histos.fill(HIST("BDT/hPi2cDCAz"), xiccCand.xiccPt(), bdtScore);
-        histos.fill(HIST("BDT/hPiccDCAxy"), xiccCand.xiccPt(), bdtScore);
-        histos.fill(HIST("BDT/hPiccDCAz"), xiccCand.xiccPt(), bdtScore);
-        histos.fill(HIST("BDT/hPi1cPt"), xiccCand.xiccPt(), bdtScore);
-        histos.fill(HIST("BDT/hPi2cPt"), xiccCand.xiccPt(), bdtScore);
-        histos.fill(HIST("BDT/hPiccPt"), xiccCand.xiccPt(), bdtScore);
-        histos.fill(HIST("BDT/hXiccMass"), xiccCand.xiccPt(), bdtScore);
-        histos.fill(HIST("BDT/hXicMass"), xiccCand.xiccPt(), bdtScore);
-        histos.fill(HIST("BDT/hXicPt"), xiccCand.xiccPt(), bdtScore);
-        histos.fill(HIST("BDT/hXiccPt"), xiccCand.xiccPt(), bdtScore);
-        histos.fill(HIST("BDT/h3dXicc"), xiccCand.xiccPt(), bdtScore);
+
+        histos.fill(HIST("BDT/hDCAXicDaughters"), bdtScore, xiccCand.xicDauDCA() * 1e+4);
+        histos.fill(HIST("BDT/hDCAXiccDaughters"), bdtScore, xiccCand.xiccDauDCA() * 1e+4);
+        histos.fill(HIST("BDT/hDCAxyXi"), bdtScore, std::fabs(xiccCand.xiDCAxy() * 1e+4));
+        histos.fill(HIST("BDT/hDCAzXi"), bdtScore, std::fabs(xiccCand.xiDCAz() * 1e+4));
+        histos.fill(HIST("BDT/hDCAxyXic"), bdtScore, std::fabs(xiccCand.xicDCAxy() * 1e+4));
+        histos.fill(HIST("BDT/hDCAzXic"), bdtScore, std::fabs(xiccCand.xicDCAz() * 1e+4));
+        histos.fill(HIST("BDT/hDCAxyXicc"), bdtScore, std::fabs(xiccCand.xiccDCAxy() * 1e+4));
+        histos.fill(HIST("BDT/hDCAzXicc"), bdtScore, std::fabs(xiccCand.xiccDCAz() * 1e+4));
+        histos.fill(HIST("BDT/hDecayRadiusXic"), bdtScore, xiccCand.xicDecayRadius2D() * 1e+4);
+        histos.fill(HIST("BDT/hDecayRadiusXicc"), bdtScore, xiccCand.xiccDecayRadius2D() * 1e+4);
+        histos.fill(HIST("BDT/hDecayDistanceFromPVXic"), bdtScore, xiccCand.xicDistanceFromPV() * 1e+4);
+        histos.fill(HIST("BDT/hProperLengthXic"), bdtScore, xiccCand.xicProperLength() * 1e+4);
+        histos.fill(HIST("BDT/hProperLengthXicc"), bdtScore, xiccCand.xiccProperLength() * 1e+4);
+        histos.fill(HIST("BDT/hPi1cDCAxy"), bdtScore, xiccCand.pi1cDCAxy() * 1e+4);
+        histos.fill(HIST("BDT/hPi1cDCAz"), bdtScore, xiccCand.pi1cDCAz() * 1e+4);
+        histos.fill(HIST("BDT/hPi2cDCAxy"), bdtScore, xiccCand.pi2cDCAxy() * 1e+4);
+        histos.fill(HIST("BDT/hPi2cDCAz"), bdtScore, xiccCand.pi2cDCAz() * 1e+4);
+        histos.fill(HIST("BDT/hPiccDCAxy"), bdtScore, xiccCand.piccDCAxy() * 1e+4);
+        histos.fill(HIST("BDT/hPiccDCAz"), bdtScore, xiccCand.piccDCAz() * 1e+4);
+        histos.fill(HIST("BDT/hPi1cPt"), bdtScore, xiccCand.pi1cPt());
+        histos.fill(HIST("BDT/hPi2cPt"), bdtScore, xiccCand.pi2cPt());
+        histos.fill(HIST("BDT/hPiccPt"), bdtScore, xiccCand.piccPt());
       }
 
       histos.fill(HIST("hMCharmBuilding"), 0);
