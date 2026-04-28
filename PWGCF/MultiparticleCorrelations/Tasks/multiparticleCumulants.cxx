@@ -11,17 +11,17 @@
 
 /// \file multiparticleCumulants.cxx
 /// \brief ...
-/// \author Pei-Ying Kuan, TU München, go52dab@mytum.de
+/// \author Pei-Ying Kuan, TU München, pei-ying.kuan@cern.ch
 
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h" // needed for aod::TracksDCA table
+#include <Common/DataModel/Centrality.h>
+#include <Common/DataModel/EventSelection.h>
+#include <Common/DataModel/Multiplicity.h>
+#include <Common/DataModel/TrackSelectionTables.h> // needed for aod::TracksDCA table
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/DataTypes.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/DataTypes.h>
+#include <Framework/runDataProcessing.h>
 #include <CCDB/BasicCCDBManager.h>
 
 #include <TGrid.h>
@@ -644,7 +644,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     qa.fQAHistogramsList->Add(qa.fQAHistograms[eQACent][0]);
 
     wt.fWeightHistograms = getHistogramsWithWeights(tc.fFileWithWeights.c_str(), tc.fRunNumber.c_str());
-    for (auto* hist : wt.fWeightHistograms) {
+    for (THIF* const& hist : wt.fWeightHistograms) {
       wt.fWeightHistogramsList->Add(hist);
     }
 
