@@ -2086,9 +2086,9 @@ struct QaMatching {
       }
     }
 
-    // sort the vectors of matching candidates in ascending order based on the matching score value
-    auto compareMatchingScore = [](const MatchingCandidate& track1, const MatchingCandidate& track2) -> bool {
-      return (track1.matchScore > track2.matchScore);
+    // sort the vectors of matching candidates in ascending order based on the matching chi2 value
+    auto compareMatchingChi2 = [](const MatchingCandidate& track1, const MatchingCandidate& track2) -> bool {
+      return (track1.matchChi2 < track2.matchChi2);
     };
 
     for (auto collisionInfoIt = collisionInfos.begin(); collisionInfoIt != collisionInfos.end(); ++collisionInfoIt) {
@@ -2096,7 +2096,7 @@ struct QaMatching {
       for (auto matchingCandidatesIt = collisionInfo.matchingCandidates.begin(); matchingCandidatesIt != collisionInfo.matchingCandidates.end(); ++matchingCandidatesIt) {
         auto& mchIndex = matchingCandidatesIt->first;
         auto& globalTracksVector = matchingCandidatesIt->second;
-        std::sort(globalTracksVector.begin(), globalTracksVector.end(), compareMatchingScore);
+        std::sort(globalTracksVector.begin(), globalTracksVector.end(), compareMatchingChi2);
 
         const auto& mchTrack = muonTracks.rawIteratorAt(mchIndex);
         auto mftMchMatchAttempts = getMftMchMatchAttempts(collisions, bcs, mchTrack, mftTracks);
@@ -2618,15 +2618,15 @@ struct QaMatching {
       }
     }
 
-    // sort the vectors of matching candidates in ascending order based on the matching score value
-    auto compareMatchingScore = [](const MatchingCandidate& track1, const MatchingCandidate& track2) -> bool {
-      return (track1.matchScore > track2.matchScore);
+    // sort the vectors of matching candidates in ascending order based on the matching chi2 value
+    auto compareMatchingChi2 = [](const MatchingCandidate& track1, const MatchingCandidate& track2) -> bool {
+      return (track1.matchChi2 < track2.matchChi2);
     };
 
     for (auto matchingCandidatesIt = newMatchingCandidates.begin(); matchingCandidatesIt != newMatchingCandidates.end(); ++matchingCandidatesIt) {
       auto& mchIndex = matchingCandidatesIt->first;
       auto& globalTracksVector = matchingCandidatesIt->second;
-      std::sort(globalTracksVector.begin(), globalTracksVector.end(), compareMatchingScore);
+      std::sort(globalTracksVector.begin(), globalTracksVector.end(), compareMatchingChi2);
 
       const auto& mchTrack = muonTracks.rawIteratorAt(mchIndex);
       auto mftMchMatchAttempts = getMftMchMatchAttempts(collisions, bcs, mchTrack, mftTracks);
