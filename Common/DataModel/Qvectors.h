@@ -221,12 +221,12 @@ DECLARE_SOA_TABLE(EseQvecTPCnegVecs, "AOD", "ESEQVECTPCNVEC", ese_qvec::IsCalibr
 DECLARE_SOA_TABLE(EseQvecTPCallVecs, "AOD", "ESEQVECTPCAVEC", ese_qvec::IsCalibrated, ese_qvec::EseQvecTPCallReVec, ese_qvec::EseQvecTPCallImVec, qvec::NTrkTPCall, qvec::LabelsTPCall);
 
 DECLARE_SOA_TABLE(EseQvecPercs, "AOD", "ESEQVECPERC", ese_qvec::EseQvecFT0CRe, ese_qvec::EseQvecFT0CIm, qvec::SumAmplFT0C,
-                                                      ese_qvec::EseQvecFT0ARe, ese_qvec::EseQvecFT0AIm, qvec::SumAmplFT0A,
-                                                      ese_qvec::EseQvecFT0MRe, ese_qvec::EseQvecFT0MIm, qvec::SumAmplFT0M,
-                                                      ese_qvec::EseQvecFV0ARe, ese_qvec::EseQvecFV0AIm, qvec::SumAmplFV0A,
-                                                      ese_qvec::EseQvecTPCposRe, ese_qvec::EseQvecTPCposIm, qvec::NTrkTPCpos,
-                                                      ese_qvec::EseQvecTPCnegRe, ese_qvec::EseQvecTPCnegIm, qvec::NTrkTPCneg,
-                                                      ese_qvec::EseQvecTPCallRe, ese_qvec::EseQvecTPCallIm, qvec::NTrkTPCall);
+                  ese_qvec::EseQvecFT0ARe, ese_qvec::EseQvecFT0AIm, qvec::SumAmplFT0A,
+                  ese_qvec::EseQvecFT0MRe, ese_qvec::EseQvecFT0MIm, qvec::SumAmplFT0M,
+                  ese_qvec::EseQvecFV0ARe, ese_qvec::EseQvecFV0AIm, qvec::SumAmplFV0A,
+                  ese_qvec::EseQvecTPCposRe, ese_qvec::EseQvecTPCposIm, qvec::NTrkTPCpos,
+                  ese_qvec::EseQvecTPCnegRe, ese_qvec::EseQvecTPCnegIm, qvec::NTrkTPCneg,
+                  ese_qvec::EseQvecTPCallRe, ese_qvec::EseQvecTPCallIm, qvec::NTrkTPCall);
 
 using EseQvectorFT0C = EseQvecFT0Cs::iterator;
 using EseQvectorFT0A = EseQvecFT0As::iterator;
