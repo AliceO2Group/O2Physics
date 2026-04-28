@@ -107,6 +107,7 @@ struct HfTaskPtFlucCharmHadrons {
 
   Filter filterSelectDplusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlag;
   Filter filterSelectD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
+  Filter filterSelectTracks = (nabs(aod::track::eta) < 0.8f) && (aod::track::pt > ptTrkMin) && (aod::track::pt < ptTrkMax) && (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (aod::track::itsNCls >= cfgITScluster) && (aod::track::itsNClsInnerBarrel >= cfgITSbarrel) && (aod::track::tpcNClsFound >= cfgTPCcluster);
 
   Partition<CandD0DataWMl> selectedD0ToPiKWMl = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag;
   Partition<CandD0DataWMl> selectedD0ToKPiWMl = aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
@@ -191,9 +192,9 @@ struct HfTaskPtFlucCharmHadrons {
   }
 
   template <typename T>
-  bool selectionTrack(const T& candidate) const
+  bool selectionTrack(const T& track) const
   {
-    if (!(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster.value && candidate.tpcNClsFound() > cfgTPCcluster.value && candidate.itsNClsInnerBarrel() >= cfgITSbarrel.value && std::abs(candidate.dcaXY()) < cfgCutDCAxy.value && std::abs(candidate.dcaZ()) < cfgCutDCAz.value)) {
+    if (!(track.isGlobalTrack() && track.isPVContributor())) {
       return false;
     }
     return true;
