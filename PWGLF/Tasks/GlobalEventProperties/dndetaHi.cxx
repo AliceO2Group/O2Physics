@@ -242,9 +242,7 @@ struct DndetaHi {
     ncheckbit(aod::track::trackCutFlag, TrackSelectionDCA);
 
   expressions::Filter preFilterV0 =
-    nabs(aod::v0data::dcapostopv) > dcaPosToPV
-    && nabs(aod::v0data::dcanegtopv) > dcaNegToPV
-    && aod::v0data::dcaV0daughters < dcaV0Dau;
+    nabs(aod::v0data::dcapostopv) > dcaPosToPV&& nabs(aod::v0data::dcanegtopv) > dcaNegToPV&& aod::v0data::dcaV0daughters < dcaV0Dau;
 
   Partition<Particles> mcSample = nabs(aod::mcparticle::eta) < estimatorEta;
   Partition<aod::Tracks> tSample = nabs(aod::track::eta) < estimatorEta;
