@@ -632,6 +632,8 @@ struct tofSpectra {
       hh->GetXaxis()->SetBinLabel(4, "INEL>1");
       hh->GetXaxis()->SetBinLabel(5, "hasParticleInFT0C && hasParticleInFT0A");
       histos.add("MC/MultiplicityRecoEv", "MC multiplicity", kTH1D, {multAxis});
+      histos.add("MC/CentFT0CVsTrueMult", "MC Centrality vs True Multiplicity", kTH2D, {multAxis, {150, 0, 150, "Track multiplicity"}});
+
       histos.add("MC/Multiplicity", "MC multiplicity", kTH1D, {multAxis});
       histos.add("MC/MultiplicityMCINELgt0", "MC multiplicity", kTH1D, {multAxis});
       histos.add("MC/MultiplicityMCINELgt1", "MC multiplicity", kTH1D, {multAxis});
@@ -645,7 +647,7 @@ struct tofSpectra {
       }
     }
 
-    hMultiplicityvsPercentile = histos.add<TH2>("Mult/vsPercentile", "Multiplicity vs percentile", HistType::kTH2D, {{150, 0, 150}, {100, 0, 100, "Track multiplicity"}});
+    hMultiplicityvsPercentile = histos.add<TH2>("Mult/vsPercentile", "Multiplicity vs percentile", HistType::kTH2D, {{multAxis}, {150, 0, 150, "Track multiplicity"}});
 
     for (int i = 0; i < NpCharge; i++) {
       switch (i) {
@@ -2487,10 +2489,14 @@ struct tofSpectra {
     }
   }
 
+  // ==============================================================================
+  // HELPER 1: For Reconstructed Events
+  // Accepts 'eventMultiplicity' (which will be the actual Reco Centrality)
+  // ==============================================================================
   template <std::size_t i, typename ParticleType>
-  void fillParticleHistogramsMCRecoEvs(ParticleType const& mcParticle, RecoMCCollisions::iterator const& collision)
+  void fillParticleHistogramsMCRecoEvs(ParticleType const& mcParticle, RecoMCCollisions::iterator const& collision, float eventMultiplicity)
   {
-    if (!isParticleEnabled<i>()) { // Check if the particle is enabled
+    if (!isParticleEnabled<i>()) {
       return;
     }
 
@@ -2498,15 +2504,12 @@ struct tofSpectra {
       return;
     }
 
-    const auto& mcCollision = collision.mcCollision_as<GenMCCollisions>();
-    const float multiplicity = getMultiplicityMC(mcCollision);
-
     if (mcParticle.isPhysicalPrimary()) {
       if (isEventSelected<false, false>(collision)) {
         if (includeCentralityMC) {
-          histos.fill(HIST(hpt_den_prm_goodev[i]), mcParticle.pt(), multiplicity, mcParticle.eta());
+          histos.fill(HIST(hpt_den_prm_goodev[i]), mcParticle.pt(), eventMultiplicity, mcParticle.eta());
         } else {
-          histos.fill(HIST(hpt_den_prm_goodev[i]), mcParticle.pt(), multiplicity);
+          histos.fill(HIST(hpt_den_prm_goodev[i]), mcParticle.pt(), eventMultiplicity);
         }
       } else {
         bool isSelected = collision.sel8();
@@ -2529,27 +2532,30 @@ struct tofSpectra {
           }
           if (isSelected) {
             if (includeCentralityMC) {
-              histos.fill(HIST(hpt_den_prm_evsel[i]), mcParticle.pt(), multiplicity, mcParticle.eta());
+              histos.fill(HIST(hpt_den_prm_evsel[i]), mcParticle.pt(), eventMultiplicity, mcParticle.eta());
             } else {
-              histos.fill(HIST(hpt_den_prm_evsel[i]), mcParticle.pt(), multiplicity);
+              histos.fill(HIST(hpt_den_prm_evsel[i]), mcParticle.pt(), eventMultiplicity);
             }
           }
         } else {
           if (includeCentralityMC) {
-            histos.fill(HIST(hpt_den_prm_recoev[i]), mcParticle.pt(), multiplicity, mcParticle.eta());
+            histos.fill(HIST(hpt_den_prm_recoev[i]), mcParticle.pt(), eventMultiplicity, mcParticle.eta());
           } else {
-            histos.fill(HIST(hpt_den_prm_recoev[i]), mcParticle.pt(), multiplicity);
+            histos.fill(HIST(hpt_den_prm_recoev[i]), mcParticle.pt(), eventMultiplicity);
           }
         }
       }
     }
   }
 
+  // ==============================================================================
+  // HELPER 2: For All Generated Events (Signal Loss Denominator)
+  // Accepts 'eventMultiplicity' (which will be the True Multiplicity |eta| < 0.5)
+  // ==============================================================================
   template <std::size_t i, typename ParticleType>
-  void fillParticleHistogramsMCGenEvs(ParticleType const& mcParticle, GenMCCollisions::iterator const& mcCollision)
+  void fillParticleHistogramsMCGenEvs(ParticleType const& mcParticle, float eventMultiplicity)
   {
-
-    if (!isParticleEnabled<i>()) { // Check if the particle is enabled
+    if (!isParticleEnabled<i>()) {
       return;
     }
 
@@ -2557,12 +2563,12 @@ struct tofSpectra {
       return;
     }
 
-    const float multiplicity = getMultiplicityMC(mcCollision);
     if (mcParticle.isPhysicalPrimary()) {
-      if (std::abs(mcCollision.posZ()) < evselOptions.cfgCutVertex) {
-        histos.fill(HIST(hpt_den_prm_mcgoodev[i]), mcParticle.pt(), multiplicity);
+      // Ensure this matches the array name for your generated denominator histograms!
+      if (includeCentralityMC) {
+        histos.fill(HIST(hpt_den_prm_mcgoodev[i]), mcParticle.pt(), eventMultiplicity);
       } else {
-        histos.fill(HIST(hpt_den_prm_mcbadev[i]), mcParticle.pt(), multiplicity);
+        histos.fill(HIST(hpt_den_prm_mcbadev[i]), mcParticle.pt(), eventMultiplicity);
       }
     }
   }
@@ -2584,6 +2590,9 @@ struct tofSpectra {
     histos.fill(HIST("MC/GenRecoCollisions"), 1.f, mcCollisions.size());
     histos.fill(HIST("MC/GenRecoCollisions"), 2.f, collisions.size());
 
+    // ==============================================================================
+    // 1. RECONSTRUCTED TRACKS LOOP
+    // ==============================================================================
     for (const auto& track : tracks) {
       if (!track.has_collision()) {
         if (track.sign() > 0) {
@@ -2613,106 +2622,122 @@ struct tofSpectra {
         fillTrackHistogramsMC<i>(track, mcParticle, track.collision_as<RecoMCCollisions>(), mcParticles);
       });
     }
+
+    // (Keeping your original includeCentralityMC legacy block intact to avoid breaking other parts of your code)
     if (includeCentralityMC) {
       for (const auto& collision : collisions) {
-        if (!collision.has_mcCollision()) {
-          continue;
-        }
+        if (!collision.has_mcCollision()) continue;
         const auto& mcCollision = collision.mcCollision_as<GenMCCollisions>();
         const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
         const float multiplicity = getMultiplicity(collision);
         for (const auto& mcParticle : particlesInCollision) {
-
-          if (std::abs(mcParticle.y()) > trkselOptions.cfgCutY) {
-            continue;
-          }
-          static_for<0, 17>([&](auto i) {
-            fillParticleHistogramsMC<i>(multiplicity, mcParticle);
-          });
+          if (std::abs(mcParticle.y()) > trkselOptions.cfgCutY) continue;
+          static_for<0, 17>([&](auto i) { fillParticleHistogramsMC<i>(multiplicity, mcParticle); });
         }
       }
     } else {
       for (const auto& mcParticle : mcParticles) {
-        if (std::abs(mcParticle.y()) > trkselOptions.cfgCutY) {
-          continue;
-        }
-
+        if (std::abs(mcParticle.y()) > trkselOptions.cfgCutY) continue;
         const auto& mcCollision = mcParticle.mcCollision_as<GenMCCollisions>();
         const float multiplicity = getMultiplicityMC(mcCollision);
-
-        static_for<0, 17>([&](auto i) {
-          fillParticleHistogramsMC<i>(multiplicity, mcParticle);
-        });
+        static_for<0, 17>([&](auto i) { fillParticleHistogramsMC<i>(multiplicity, mcParticle); });
       }
     }
-    // Loop on reconstructed collisions
+
+    // ==============================================================================
+    // 2. RECONSTRUCTED COLLISIONS LOOP (Builds the 2D Calibration Map)
+    // ==============================================================================
     for (const auto& collision : collisions) {
       if (!collision.has_mcCollision()) {
         continue;
       }
       const auto& mcCollision = collision.mcCollision_as<GenMCCollisions>();
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+
       if (evselOptions.cfgINELCut.value == 1) {
-        if (!o2::pwglf::isINELgt0mc(particlesInCollision, pdgDB)) {
-          continue;
-        }
+        if (!o2::pwglf::isINELgt0mc(particlesInCollision, pdgDB)) continue;
       }
       if (evselOptions.cfgINELCut.value == 2) {
-        if (!o2::pwglf::isINELgt1mc(particlesInCollision, pdgDB)) {
-          continue;
+        if (!o2::pwglf::isINELgt1mc(particlesInCollision, pdgDB)) continue;
+      }
+
+      // -- Get Actual Reconstructed Centrality --
+      float recoCentrality = collision.centFT0C();
+
+      // -- Calculate True Multiplicity in |eta| < 0.5 --
+      int trueMultEta05 = 0;
+      for (const auto& mcParticle : particlesInCollision) {
+        if (!mcParticle.isPhysicalPrimary()) continue;
+        auto* pdgParticle = pdgDB->GetParticle(mcParticle.pdgCode());
+        if (pdgParticle != nullptr && std::abs(pdgParticle->Charge()) > 0.01) {
+          if (std::abs(mcParticle.eta()) < 0.5f) {
+            trueMultEta05++;
+          }
         }
       }
 
       if (isEventSelected<false, false>(collision)) {
-        histos.fill(HIST("MC/MultiplicityRecoEv"), getMultiplicityMC(mcCollision));
+        histos.fill(HIST("MC/MultiplicityRecoEv"), recoCentrality);
+        // -- Fill the 2D map to extract the 1D calibration profile later! --
+        histos.fill(HIST("MC/CentFT0CVsTrueMult"), recoCentrality, trueMultEta05);
       }
+
       for (const auto& mcParticle : particlesInCollision) {
-        if (std::abs(mcParticle.y()) > trkselOptions.cfgCutY) {
-          continue;
-        }
+        if (std::abs(mcParticle.y()) > trkselOptions.cfgCutY) continue;
         static_for<0, 17>([&](auto i) {
-          fillParticleHistogramsMCRecoEvs<i>(mcParticle, collision);
+          // Pass the actual Reco Centrality to the helper function
+          fillParticleHistogramsMCRecoEvs<i>(mcParticle, collision, recoCentrality);
         });
       }
     }
 
-    // Loop on generated collisions
+    // ==============================================================================
+    // 3. GENERATED COLLISIONS LOOP (Builds the Signal Loss Denominator)
+    // ==============================================================================
     for (const auto& mcCollision : mcCollisions) {
       if (std::abs(mcCollision.posZ()) > evselOptions.cfgCutVertex) {
         continue;
       }
-      histos.fill(HIST("MC/Multiplicity"), getMultiplicityMC(mcCollision));
+
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
-      bool hasParticleInFT0C = false;
-      bool hasParticleInFT0A = false;
-      if (evselOptions.cfgINELCut.value == EvSelInelGt0Cut) {
-        if (!o2::pwglf::isINELgt0mc(particlesInCollision, pdgDB)) {
-          continue;
-        }
-      }
-      histos.fill(HIST("MC/MultiplicityMCINELgt0"), getMultiplicityMC(mcCollision));
-      if (evselOptions.cfgINELCut.value == EvSelInelGt1Cut) {
-        if (!o2::pwglf::isINELgt1mc(particlesInCollision, pdgDB)) {
-          continue;
-        }
-      }
-      histos.fill(HIST("MC/MultiplicityMCINELgt1"), getMultiplicityMC(mcCollision));
+
+      // -- Calculate True Multiplicity in |eta| < 0.5 --
+      int trueMultEta05 = 0;
       for (const auto& mcParticle : particlesInCollision) {
-        if (std::abs(mcParticle.y()) > trkselOptions.cfgCutY) {
-          continue;
+        if (!mcParticle.isPhysicalPrimary()) continue;
+        auto* pdgParticle = pdgDB->GetParticle(mcParticle.pdgCode());
+        if (pdgParticle != nullptr && std::abs(pdgParticle->Charge()) > 0.01) {
+          if (std::abs(mcParticle.eta()) < 0.5f) {
+            trueMultEta05++;
+          }
         }
+      }
+
+      histos.fill(HIST("MC/Multiplicity"), trueMultEta05);
+
+      if (evselOptions.cfgINELCut.value == EvSelInelGt0Cut) {
+        if (!o2::pwglf::isINELgt0mc(particlesInCollision, pdgDB)) continue;
+      }
+      histos.fill(HIST("MC/MultiplicityMCINELgt0"), trueMultEta05);
+
+      if (evselOptions.cfgINELCut.value == EvSelInelGt1Cut) {
+        if (!o2::pwglf::isINELgt1mc(particlesInCollision, pdgDB)) continue;
+      }
+      histos.fill(HIST("MC/MultiplicityMCINELgt1"), trueMultEta05);
+
+      for (const auto& mcParticle : particlesInCollision) {
+        if (std::abs(mcParticle.y()) > trkselOptions.cfgCutY) continue;
         static_for<0, 17>([&](auto i) {
-          fillParticleHistogramsMCGenEvs<i>(mcParticle, mcCollision);
+          // Pass True Multiplicity directly so it plots generated particles against it
+          fillParticleHistogramsMCGenEvs<i>(mcParticle, trueMultEta05);
         });
       }
+
       if (mcCollision.isInelGt0()) {
         histos.fill(HIST("MC/GenRecoCollisions"), 3.f);
       }
       if (mcCollision.isInelGt1()) {
         histos.fill(HIST("MC/GenRecoCollisions"), 4.f);
-      }
-      if (hasParticleInFT0C && hasParticleInFT0A) {
-        histos.fill(HIST("MC/GenRecoCollisions"), 5.f);
       }
     }
   }
