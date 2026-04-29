@@ -3516,24 +3516,20 @@ struct HfTrackIndexSkimCreatorCascades {
           double mass2K0sHe = RecoDecay::m(std::array{pVecBach, pVecV0}, std::array{MassHelium3, MassK0Short});
           double mass2K0sAl = RecoDecay::m(std::array{pVecBach, pVecV0}, std::array{MassAlpha, MassK0Short});
 
+          const auto isIdentifiedPid = bachIdx.isIdentifiedPid();
           const bool applyAnyBachelorPid = config.applyProtonPid || config.applyDeuteronPid || config.applyTritonPid || config.applyHelium3Pid || config.applyAlphaPid;
-          bool keepMassHypothesis = false;
-          if (!applyAnyBachelorPid || config.applyProtonPid) {
-            keepMassHypothesis |= (config.cutInvMassCascLc < 0.) || (std::abs(mass2K0sP - MassLambdaCPlus) <= config.cutInvMassCascLc);
-          }
-          if (config.applyDeuteronPid) {
-            keepMassHypothesis |= (config.cutInvMassCascCharmNuclei < 0.) || (mass2K0sDe - MassDeuteron - MassLambdaCPlus <= config.cutInvMassCascCharmNuclei);
-          }
-          if (config.applyTritonPid) {
-            keepMassHypothesis |= (config.cutInvMassCascCharmNuclei < 0.) || (mass2K0sTr - MassTriton - MassLambdaCPlus <= config.cutInvMassCascCharmNuclei);
-          }
-          if (config.applyHelium3Pid) {
-            keepMassHypothesis |= (config.cutInvMassCascCharmNuclei < 0.) || (mass2K0sHe - MassHelium3 - MassLambdaCPlus <= config.cutInvMassCascCharmNuclei);
-          }
-          if (config.applyAlphaPid) {
-            keepMassHypothesis |= (config.cutInvMassCascCharmNuclei < 0.) || (mass2K0sAl - MassAlpha - MassLambdaCPlus <= config.cutInvMassCascCharmNuclei);
-          }
-          if (!keepMassHypothesis) {
+          const bool isChannelLc = !applyAnyBachelorPid || (config.applyProtonPid && TESTBIT(isIdentifiedPid, ChannelsProtonPid::LcToPK0S));
+          const bool isChannelCd = config.applyDeuteronPid && TESTBIT(isIdentifiedPid, ChannelsDeuteronPid);
+          const bool isChannelCt = config.applyTritonPid && TESTBIT(isIdentifiedPid, ChannelsTritonPid);
+          const bool isChannelCh = config.applyHelium3Pid && TESTBIT(isIdentifiedPid, ChannelsHeliumPid);
+          const bool isChannelCa = config.applyAlphaPid && TESTBIT(isIdentifiedPid, ChannelsAlphaPid);
+
+          bool isSelectedLc = isChannelLc && ((config.cutInvMassCascLc < 0.) || (std::abs(mass2K0sP - MassLambdaCPlus) <= config.cutInvMassCascLc));
+          bool isSelectedCd = isChannelCd && ((config.cutInvMassCascCharmNuclei < 0.) || (mass2K0sDe - MassDeuteron - MassLambdaCPlus <= config.cutInvMassCascCharmNuclei));
+          bool isSelectedCt = isChannelCt && ((config.cutInvMassCascCharmNuclei < 0.) || (mass2K0sTr - MassTriton - MassLambdaCPlus <= config.cutInvMassCascCharmNuclei));
+          bool isSelectedCh = isChannelCh && ((config.cutInvMassCascCharmNuclei < 0.) || (mass2K0sHe - MassHelium3 - MassLambdaCPlus <= config.cutInvMassCascCharmNuclei));
+          bool isSelectedCa = isChannelCa && ((config.cutInvMassCascCharmNuclei < 0.) || (mass2K0sAl - MassAlpha - MassLambdaCPlus <= config.cutInvMassCascCharmNuclei));
+          if (!isSelectedLc && !isSelectedCd && !isSelectedCt && !isSelectedCh && !isSelectedCa) {
             continue;
           }
 
@@ -3581,6 +3577,12 @@ struct HfTrackIndexSkimCreatorCascades {
           mass2K0sHe = RecoDecay::m(std::array{pVecBach, pVecV0}, std::array{MassHelium3, MassK0Short});
           mass2K0sAl = RecoDecay::m(std::array{pVecBach, pVecV0}, std::array{MassAlpha, MassK0Short});
 
+          isSelectedLc = isChannelLc && ((config.cutInvMassCascLc < 0.) || (std::abs(mass2K0sP - MassLambdaCPlus) <= config.cutInvMassCascLc));
+          isSelectedCd = isChannelCd && ((config.cutInvMassCascCharmNuclei < 0.) || (mass2K0sDe - MassDeuteron - MassLambdaCPlus <= config.cutInvMassCascCharmNuclei));
+          isSelectedCt = isChannelCt && ((config.cutInvMassCascCharmNuclei < 0.) || (mass2K0sTr - MassTriton - MassLambdaCPlus <= config.cutInvMassCascCharmNuclei));
+          isSelectedCh = isChannelCh && ((config.cutInvMassCascCharmNuclei < 0.) || (mass2K0sHe - MassHelium3 - MassLambdaCPlus <= config.cutInvMassCascCharmNuclei));
+          isSelectedCa = isChannelCa && ((config.cutInvMassCascCharmNuclei < 0.) || (mass2K0sAl - MassAlpha - MassLambdaCPlus <= config.cutInvMassCascCharmNuclei));
+
           std::array posCasc{0., 0., 0.};
           if (config.useDCAFitter) {
             const auto& cascVtx = df2.getPCACandidate();
@@ -3596,11 +3598,21 @@ struct HfTrackIndexSkimCreatorCascades {
             registry.fill(HIST("hVtx2ProngX"), posCasc[0]);
             registry.fill(HIST("hVtx2ProngY"), posCasc[1]);
             registry.fill(HIST("hVtx2ProngZ"), posCasc[2]);
-            registry.fill(HIST("hMassLcToPK0S"), mass2K0sP);
-            registry.fill(HIST("hMassCdToDeK0S"), mass2K0sDe);
-            registry.fill(HIST("hMassCtToTrK0S"), mass2K0sTr);
-            registry.fill(HIST("hMassChToHeK0S"), mass2K0sHe);
-            registry.fill(HIST("hMassCaToAlK0S"), mass2K0sAl);
+            if (isSelectedLc) {
+              registry.fill(HIST("hMassLcToPK0S"), mass2K0sP);
+            }
+            if (isSelectedCd) {
+              registry.fill(HIST("hMassCdToDeK0S"), mass2K0sDe);
+            }
+            if (isSelectedCt) {
+              registry.fill(HIST("hMassCtToTrK0S"), mass2K0sTr);
+            }
+            if (isSelectedCh) {
+              registry.fill(HIST("hMassChToHeK0S"), mass2K0sHe);
+            }
+            if (isSelectedCa) {
+              registry.fill(HIST("hMassCaToAlK0S"), mass2K0sAl);
+            }
           }
         } // loop over V0s
       } // loop over tracks
