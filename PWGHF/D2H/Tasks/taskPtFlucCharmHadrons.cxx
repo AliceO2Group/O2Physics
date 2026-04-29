@@ -198,26 +198,21 @@ struct HfTaskPtFlucCharmHadrons {
   template <typename Coll>
   bool isSelectedHfCollision(Coll const& collision, float& cent)
   {
-      o2::hf_evsel::HfCollisionRejectionMask collRejMask{};
-      if (centEstimator == CentralityEstimator::FT0A)
-      {
-          collRejMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0A, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
-      } else if (centEstimator == CentralityEstimator::FT0C)
-      {
-          collRejMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
-      } else if (centEstimator == CentralityEstimator::FT0M)
-      {
-          collRejMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
-      } else if (centEstimator == CentralityEstimator::FV0A)
-      {
-          collRejMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FV0A, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
-      } else 
-      {
-          LOG(fatal) << "Centrality estimator not recognized for collision selection";
-          std::abort();
-      }
-          hfEvSel.fillHistograms(collision, collRejMask, cent);
-      return collRejMask == 0;
+    o2::hf_evsel::HfCollisionRejectionMask collRejMask{};
+    if (centEstimator == CentralityEstimator::FT0A) {
+      collRejMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0A, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
+    } else if (centEstimator == CentralityEstimator::FT0C) {
+      collRejMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
+    } else if (centEstimator == CentralityEstimator::FT0M) {
+      collRejMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
+    } else if (centEstimator == CentralityEstimator::FV0A) {
+      collRejMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FV0A, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
+    } else {
+      LOG(fatal) << "Centrality estimator not recognized for collision selection";
+      std::abort();
+    }
+    hfEvSel.fillHistograms(collision, collRejMask, cent);
+    return collRejMask == 0;
   }
 
   /// Get candidate mass
@@ -394,12 +389,10 @@ struct HfTaskPtFlucCharmHadrons {
         }
       }
 
-      for (const auto& cand : candidates) 
-      {
+      for (const auto& cand : candidates) {
         // apply ML selection
         auto [ml1, ml2] = getMlScores<Channel, decltype(cand), T1>(cand);
-        if (!passMlCut(ml1, ml2)) 
-        {
+        if (!passMlCut(ml1, ml2)) {
           continue;
         }
 
@@ -426,8 +419,7 @@ struct HfTaskPtFlucCharmHadrons {
         // fill charm-bulk correlation thnsparse
         registry.fill(HIST("hCharmBulkCorrelations"), invMass, cent, pt, sign, ml1, ml2, eta, meanPtA, meanPtB, candPtProduct);
       }
-    } else 
-    {
+    } else {
       int nDcandTotA = 0;
       for (const auto& cand : candidates) {
         if (!passCandInA(cand)) {
