@@ -873,7 +873,7 @@ struct FlowGenericFramework {
     // ----- nSigma PID -----
     // Map arrays into a 2D vector
     std::vector<std::vector<float>> nSigmaVals(6, std::vector<float>(3));
-    for (size_t i = 0; i < 6; i++) {
+    for (size_t i = 0; i < nSigmaVals.size(); i++) {
       nSigmaVals[i][0] = tpcNsigmaCut[i]; // TPC
       nSigmaVals[i][1] = tofNsigmaCut[i]; // TOF
       nSigmaVals[i][2] = itsNsigmaCut[i]; // ITS
