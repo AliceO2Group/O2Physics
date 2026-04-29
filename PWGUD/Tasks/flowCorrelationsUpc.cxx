@@ -375,7 +375,7 @@ struct FlowCorrelationsUpc {
     return true;
   }
 
-  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua)
+  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, float pt)
   {
     float eff = 1.;
     if (mEfficiency)
@@ -446,7 +446,7 @@ struct FlowCorrelationsUpc {
 
       // 计算track1的权重
       float weff1 = 1., wacc1 = 1.;
-      if (!setCurrentParticleWeights(weff1, wacc1, phi1, eta1, pt1, vtxz))
+      if (!setCurrentParticleWeights(weff1, wacc1, pt1))
         continue;
 
       if (system == SameEvent) {
@@ -556,7 +556,7 @@ struct FlowCorrelationsUpc {
       independent = nTracksCorrected;
     }
 
-    fillYield(collision, tracks, currentRunNumber, vtxz);
+    fillYield(collision, tracks, vtxz);
 
     fillCorrelations<CorrelationContainer::kCFStepReconstructed>(
       tracks, tracks, collision.posZ(), SameEvent,
