@@ -913,7 +913,7 @@ struct k892hadronphoton {
     histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h3dMass"), centrality, kstar.pt(), kstar.kstarMass());
     histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h3dOPAngleVsMass"), kstar.opAngle(), kstar.pt(), kstar.kstarMass());
     histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h2dOPAngleVsPt"), kstar.opAngle(), kstar.pt());
-    
+
     //_______________________________________
     // MC specific
     if (doprocessMonteCarlo) {
@@ -1132,7 +1132,7 @@ struct k892hadronphoton {
 
     // Separating kshort selections:
     fillSelHistos<8>(cand, PDG_t::kK0Short);
-    
+
     // TPC Selection
     if (kshortSelections.fselKShortTPCPID && (TMath::Abs(cand.kshortPosPiTPCNSigma()) > kshortSelections.KShortMaxTPCNSigmas))
       return false;
@@ -1156,7 +1156,7 @@ struct k892hadronphoton {
       return false;
 
     fillSelHistos<11>(cand, PDG_t::kK0Short);
-    
+
     return true;
   }
 
