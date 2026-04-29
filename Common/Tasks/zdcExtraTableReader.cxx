@@ -181,10 +181,10 @@ double getMeanQFromMap(THn* h, double cent, double vx, double vy, double vz)
     return 0.0;
   }
 
-  int binCent = axCent->FindBin(cent);
-  int binVx = axVx->FindBin(vx);
-  int binVy = axVy->FindBin(vy);
-  int binVz = axVz->FindBin(vz);
+  int binCent = axCent->FindFixBin(cent);
+  int binVx = axVx->FindFixBin(vx);
+  int binVy = axVy->FindFixBin(vy);
+  int binVz = axVz->FindFixBin(vz);
 
   int idx[4] = {binCent, binVx, binVy, binVz};
   double meanQ = h->GetBinContent(idx);
@@ -199,7 +199,7 @@ double getMeanQ1D(TH1* h, double x)
   if (!h) {
     return 0.0;
   }
-  int bin = h->FindBin(x);
+  int bin = h->FindFixBin(x);
   if (bin < 1 || bin > h->GetNbinsX()) {
     return 0.0;
   }
@@ -236,6 +236,8 @@ struct ZdcExtraTableReader {
   Configurable<float> centMax{"centMax", 80.0f, "Centrality upper edge"};
 
   Configurable<int> phiNbins{"phiNbins", 60, "Bins in phi"};
+
+  Configurable<int> nTowersFired{"nTowersFired", 2, "Minimum number of towers fired for Q-vector determination"};
 
   Configurable<int> qNbins5D{"qNbins5D", 4, "Bins in each dimension for 5D histograms"};
   Configurable<bool> plot5D{"plot5D", false, "Flag to plot 5D histograms"};
@@ -301,8 +303,8 @@ struct ZdcExtraTableReader {
   TH1* hMeanVy{nullptr};
 
   // Phase shift correction cache
-  TProfile3D* hShiftZNA{nullptr};
-  TProfile3D* hShiftZNC{nullptr};
+  TProfile3D* mShiftProfileZNA{nullptr};
+  TProfile3D* mShiftProfileZNC{nullptr};
 
   HistogramRegistry histos{
     "histos",
@@ -377,13 +379,13 @@ struct ZdcExtraTableReader {
       delete step.hMeanQxVyZNC;
       delete step.hMeanQyVyZNC;
 
-      if (hShiftZNA) {
-        delete hShiftZNA;
-        hShiftZNA = nullptr;
+      if (mShiftProfileZNA) {
+        delete mShiftProfileZNA;
+        mShiftProfileZNA = nullptr;
       }
-      if (hShiftZNC) {
-        delete hShiftZNC;
-        hShiftZNC = nullptr;
+      if (mShiftProfileZNC) {
+        delete mShiftProfileZNC;
+        mShiftProfileZNC = nullptr;
       }
     }
     mCalibCache.clear();
@@ -611,21 +613,21 @@ struct ZdcExtraTableReader {
 
       if (lst) {
         // Important: Object names must match exactly what was saved
-        hShiftZNA = safeClone<TProfile3D>(lst->FindObject("hShiftZNA"));
-        hShiftZNC = safeClone<TProfile3D>(lst->FindObject("hShiftZNC"));
+        mShiftProfileZNA = safeClone<TProfile3D>(lst->FindObject("ShiftProfileZNA"));
+        mShiftProfileZNC = safeClone<TProfile3D>(lst->FindObject("ShiftProfileZNC"));
 
-        if (hShiftZNA) {
-          hShiftZNA->SetDirectory(nullptr); // Detach from file
+        if (mShiftProfileZNA) {
+          mShiftProfileZNA->SetDirectory(nullptr); // Detach from file
           LOGF(info, "  >> ShiftProfileZNA found! Entries: %.0f, Mean: %f",
-               hShiftZNA->GetEntries(), hShiftZNA->GetMean());
+               mShiftProfileZNA->GetEntries(), mShiftProfileZNA->GetMean());
         } else {
           LOGF(error, "  >> ShiftProfileZNA NOT found in TList! Content follows:");
           lst->Print();
         }
 
-        if (hShiftZNC) {
-          hShiftZNC->SetDirectory(nullptr);
-          LOGF(info, "  >> ShiftProfileZNC found! Entries: %.0f", hShiftZNC->GetEntries());
+        if (mShiftProfileZNC) {
+          mShiftProfileZNC->SetDirectory(nullptr);
+          LOGF(info, "  >> ShiftProfileZNC found! Entries: %.0f", mShiftProfileZNC->GetEntries());
         } else {
           LOGF(error, "  >> ShiftProfileZNC NOT found in TList!");
         }
@@ -744,6 +746,22 @@ struct ZdcExtraTableReader {
     }
     //
 
+
+    bool isZNASpDeterminable = false;
+    bool isZNCSpDeterminable = false;
+
+    if (isZNAhit) {
+      int activeTowersZNA = (zdc.znaTow1() > 0.) + (zdc.znaTow2() > 0.) + (zdc.znaTow3() > 0.) + (zdc.znaTow4() > 0.);
+      float znaSum = zdc.znaTow1() + zdc.znaTow2() + zdc.znaTow3() + zdc.znaTow4();
+      if (activeTowersZNA >= nTowersFired && znaSum > 0 && zdc.znaQx() < 990.0f) isZNASpDeterminable = true;
+    }
+
+    if (isZNChit) {
+      int activeTowersZNC = (zdc.zncTow1() > 0.) + (zdc.zncTow2() > 0.) + (zdc.zncTow3() > 0.) + (zdc.zncTow4() > 0.);
+      float zncSum = zdc.zncTow1() + zdc.zncTow2() + zdc.zncTow3() + zdc.zncTow4();
+      if (activeTowersZNC >= nTowersFired && zncSum > 0 && zdc.zncQx() < 990.0f) isZNCSpDeterminable = true;
+    }
+
     if (plotPMs) {
       if (isZNAhit) {
         gCurrentPmcZNA->Fill(zdc.znaTowC());
@@ -789,7 +807,7 @@ struct ZdcExtraTableReader {
     }
 
     // -------- ZNA --------
-    if (isZNAhit) {
+    if (isZNASpDeterminable) {
       double qx = zdc.znaQx();
       double qy = zdc.znaQy();
 
@@ -856,7 +874,7 @@ struct ZdcExtraTableReader {
 
       // Apply Correction (Read Mode)
       // Checks if correction is enabled AND if the map from CCDB was loaded successfully
-      if (ifShiftCorrection && hShiftZNA) {
+      if (ifShiftCorrection && mShiftProfileZNA) {
         double deltaPsi = 0.0;
 
         // Loop over harmonics (usually 1 to 10)
@@ -867,11 +885,11 @@ struct ZdcExtraTableReader {
           // Y: Type (0.5 for Sin, 1.5 for Cos)
           // Z: Harmonic index (ishift - 0.5 maps to bin 1, 2, etc.)
 
-          int binSin = hShiftZNA->FindBin(cent, 0.5, static_cast<double>(ishift) - 0.5);
-          int binCos = hShiftZNA->FindBin(cent, 1.5, static_cast<double>(ishift) - 0.5);
+          int binSin = mShiftProfileZNA->FindFixBin(cent, 0.5, static_cast<double>(ishift) - 0.5);
+          int binCos = mShiftProfileZNA->FindFixBin(cent, 1.5, static_cast<double>(ishift) - 0.5);
 
-          double coeffSin = hShiftZNA->GetBinContent(binSin);
-          double coeffCos = hShiftZNA->GetBinContent(binCos);
+          double coeffSin = mShiftProfileZNA->GetBinContent(binSin);
+          double coeffCos = mShiftProfileZNA->GetBinContent(binCos);
 
           // Fourier flattening formula:
           // DeltaPsi = sum( (2/k) * ( <cos>*sin(k*psi) - <sin>*cos(k*psi) ) )
@@ -912,7 +930,7 @@ struct ZdcExtraTableReader {
     }
 
     // -------- ZNC --------
-    if (isZNChit) {
+    if (isZNCSpDeterminable) {
       double qx = zdc.zncQx();
       double qy = zdc.zncQy();
 
@@ -990,7 +1008,7 @@ struct ZdcExtraTableReader {
 
       // Apply Correction (Read Mode)
       // Checks if correction is enabled AND if the map from CCDB was loaded successfully
-      if (ifShiftCorrection && hShiftZNC) {
+      if (ifShiftCorrection && mShiftProfileZNC) {
         double deltaPsi = 0.0;
 
         // Loop over harmonics (usually 1 to 10)
@@ -1001,11 +1019,11 @@ struct ZdcExtraTableReader {
           // Y: Type (0.5 for Sin, 1.5 for Cos)
           // Z: Harmonic index (ishift - 0.5 maps to bin 1, 2, etc.)
 
-          int binSin = hShiftZNC->FindBin(cent, 0.5, static_cast<double>(ishift) - 0.5);
-          int binCos = hShiftZNC->FindBin(cent, 1.5, static_cast<double>(ishift) - 0.5);
+          int binSin = mShiftProfileZNC->FindFixBin(cent, 0.5, static_cast<double>(ishift) - 0.5);
+          int binCos = mShiftProfileZNC->FindFixBin(cent, 1.5, static_cast<double>(ishift) - 0.5);
 
-          double coeffSin = hShiftZNC->GetBinContent(binSin);
-          double coeffCos = hShiftZNC->GetBinContent(binCos);
+          double coeffSin = mShiftProfileZNC->GetBinContent(binSin);
+          double coeffCos = mShiftProfileZNC->GetBinContent(binCos);
 
           // Fourier flattening formula:
           // DeltaPsi = sum( (2/k) * ( <cos>*sin(k*psi) - <sin>*cos(k*psi) ) )
@@ -1035,7 +1053,7 @@ struct ZdcExtraTableReader {
       gCurrentPsiZNC->Fill(psiZNC);
     }
 
-    if (isZNAhit && isZNChit) {
+    if (isZNASpDeterminable && isZNCSpDeterminable) {
       gCurrentQxQyVsCent->Fill(cent, qxZNArec * qyZNCrec);
       gCurrentQyQxVsCent->Fill(cent, qyZNArec * qxZNCrec);
       gCurrentQxQxVsCent->Fill(cent, qxZNArec * qxZNCrec);
