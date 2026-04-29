@@ -254,7 +254,7 @@ static const std::vector<std::string> labelsCutVar = {"massMin", "massMax", "cos
 
 // Single prong min pt selection
 static constexpr int NSpecies = 8; // number of species for 3-prong candidates
-static const float ptProngMin[NSpecies] = {0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4};
+static const float ptProngMin[NSpecies][1] = {{0.4}, {0.4}, {0.4}, {0.4}, {0.4}, {0.4}, {0.4}, {0.4}};
 
 // 3-prong species labels
 static const std::vector<std::string> labelsPtProngMin = {"Dplus", "Lc", "Ds", "Xic", "Cd", "Ct", "Ch", "Ca"};
