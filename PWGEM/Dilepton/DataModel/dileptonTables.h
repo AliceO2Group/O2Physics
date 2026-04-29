@@ -37,33 +37,33 @@
 namespace o2::aod
 {
 
-namespace pwgem::dilepton::swt
-{
-enum class swtAliases : int { // software trigger aliases for EM
-  kHighTrackMult = 0,
-  kHighFt0cFv0Mult,
-  kSingleE,
-  kLMeeIMR,
-  kLMeeHMR,
-  kDiElectron,
-  kSingleMuLow,
-  kSingleMuHigh,
-  kDiMuon,
-  kNaliases
-};
-
-const std::unordered_map<std::string, int> aliasLabels = {
-  {"fHighTrackMult", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kHighTrackMult)},
-  {"fHighFt0cFv0Mult", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kHighFt0cFv0Mult)},
-  {"fSingleE", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleE)},
-  {"fLMeeIMR", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kLMeeIMR)},
-  {"fLMeeHMR", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kLMeeHMR)},
-  {"fDiElectron", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kDiElectron)},
-  {"fSingleMuLow", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleMuLow)},
-  {"fSingleMuHigh", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleMuHigh)},
-  {"fDiMuon", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kDiMuon)},
-};
-} // namespace pwgem::dilepton::swt
+// namespace pwgem::dilepton::swt
+// {
+// enum class swtAliases : int { // software trigger aliases for EM
+//   kHighTrackMult = 0,
+//   kHighFt0cFv0Mult,
+//   kSingleE,
+//   kLMeeIMR,
+//   kLMeeHMR,
+//   kDiElectron,
+//   kSingleMuLow,
+//   kSingleMuHigh,
+//   kDiMuon,
+//   kNaliases
+// };
+//
+// const std::unordered_map<std::string, int> aliasLabels = {
+//   {"fHighTrackMult", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kHighTrackMult)},
+//   {"fHighFt0cFv0Mult", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kHighFt0cFv0Mult)},
+//   {"fSingleE", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleE)},
+//   {"fLMeeIMR", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kLMeeIMR)},
+//   {"fLMeeHMR", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kLMeeHMR)},
+//   {"fDiElectron", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kDiElectron)},
+//   {"fSingleMuLow", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleMuLow)},
+//   {"fSingleMuHigh", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleMuHigh)},
+//   {"fDiMuon", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kDiMuon)},
+// };
+// } // namespace pwgem::dilepton::swt
 
 namespace emevsel
 {
@@ -1221,7 +1221,7 @@ using EMPrimaryTrackEMEventIdTMP = EMPrimaryTrackEMEventIdsTMP::iterator;
 
 namespace emthinevent
 {
-DECLARE_SOA_COLUMN(EP2, ep2, float); //!
+DECLARE_SOA_COLUMN(EP2, ep2, float);               //!
 DECLARE_SOA_COLUMN(Centrality, centrality, float); //!
 } // namespace emthinevent
 DECLARE_SOA_TABLE_VERSIONED(EMThinEvents_000, "AOD", "EMTHINEVENT", 0, //! Thin event information table
