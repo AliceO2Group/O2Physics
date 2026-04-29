@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file multiparticleCumulants.cxx
-/// \brief ...
+/// \brief Task for producing multiparticle cumulants
 /// \author Pei-Ying Kuan, TU München, pei-ying.kuan@cern.ch
 
 #include <Common/DataModel/Centrality.h>
@@ -644,7 +644,7 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     qa.fQAHistogramsList->Add(qa.fQAHistograms[eQACent][0]);
 
     wt.fWeightHistograms = getHistogramsWithWeights(tc.fFileWithWeights.c_str(), tc.fRunNumber.c_str());
-    for (THIF* const& hist : wt.fWeightHistograms) {
+    for (auto* hist : wt.fWeightHistograms) {
       wt.fWeightHistogramsList->Add(hist);
     }
 
