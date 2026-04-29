@@ -40,7 +40,6 @@
 #include <TMath.h>
 #include <TProfile3D.h>
 
-#include <iostream>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -168,8 +167,7 @@ TProfile3D* gCurrentShiftProfileZNC;
 double getMeanQFromMap(THn* h, double cent, double vx, double vy, double vz)
 {
   if (!h) {
-    // Commented out to reduce log spam in case of missing maps, enable for debugging
-    // std::cerr << "[MeanQ] Null THn pointer (cent=" << cent << ", vx=" << vx << ", vy=" << vy << ", vz=" << vz << ")" << std::endl;
+    // LOGF(error, "[MeanQ] Null THn pointer");
     return 0.0;
   }
 
@@ -179,7 +177,7 @@ double getMeanQFromMap(THn* h, double cent, double vx, double vy, double vz)
   TAxis* axVz = h->GetAxis(3);
 
   if (!axCent || !axVx || !axVy || !axVz) {
-    std::cerr << "[MeanQ] One of THn axes is null" << std::endl;
+    LOGF(error, "[MeanQ] One of THn axes is null");
     return 0.0;
   }
 
@@ -883,10 +881,10 @@ struct ZdcExtraTableReader {
 
         // DEBUG: Print only if shift is actually happening for first few events
         static int debugPrintCount = 0;
-        constexpr int maxDebugPrints = 10;
-        constexpr double psiTolerance = 1e-6;
+        constexpr int MaxDebugPrints = 10;
+        constexpr double PsiTolerance = 1e-6;
 
-        if (debugPrintCount < maxDebugPrints && std::abs(deltaPsi) > psiTolerance) {
+        if (debugPrintCount < MaxDebugPrints && std::abs(deltaPsi) > PsiTolerance) {
           LOGF(info, "ZNA Shift: Cent %.1f, Raw %.3f (Delta %.4f)", cent, psiZNA, deltaPsi);
           debugPrintCount++;
         }
