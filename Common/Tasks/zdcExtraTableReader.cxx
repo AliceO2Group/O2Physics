@@ -1,6 +1,6 @@
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
-// See https://alice-o2.web.cern.ch/copyright for details of the copyright
-// holders. All rights not expressly granted are reserved.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
@@ -14,9 +14,12 @@
 /// \author Uliana Dmitrieva <uliana.dmitrieva@cern.ch>, INFN Torino
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/ZDCExtra.h"
+
+#include <CommonConstants/MathConstants.h>      
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
@@ -218,7 +221,7 @@ struct ZdcExtraTableReader {
 
   Configurable<int> vxNbins{"vxNbins", 50, "Bins in Vx"};
   Configurable<float> vxMin{"vxMin", -0.1f, "Vx lower edge"};
-  Configurable<float> VxMax{"VxMax", 0.1f, "Vx upper edge"};
+  Configurable<float> vxMax{"vxMax", 0.1f, "Vx upper edge"};
 
   Configurable<int> vyNbins{"vyNbins", 50, "Bins in Vy"};
   Configurable<float> vyMin{"vyMin", -0.1f, "Vy lower edge"};
@@ -242,20 +245,20 @@ struct ZdcExtraTableReader {
 
   Configurable<bool> ifBeamSpotCorrection{"ifBeamSpotCorrection", true, "Beam spot correction"};
 
-  Configurable<bool> ifkSel8{"ifSel8", true, "Event selection: sel8"};
-  Configurable<bool> ifkVtxZle10{"ifVtxZle10", true, "Event selection: zVtx < 10 cm"};
-  Configurable<bool> ifkOccupancyCut{"ifOccupancyCut", false, "Event selection: occupancy cut"};
-  Configurable<bool> ifkNoSameBunchPileup{"ifNoSameBunchPileup", false, "Event selection: no same bunch pileup"};
-  Configurable<bool> ifkIsGoodZvtxFT0vsPV{"ifIsGoodZvtxFT0vsPV", false, "Event selection: good Zvtx FT0 vs PV"};
-  Configurable<bool> ifkNoCollInTimeRangeStandard{"ifNoCollInTimeRangeStandard", false, "Event selection: no collision in time range standard"};
-  Configurable<bool> ifkIsVertexITSTPC{"ifIsVertexITSTPC", false, "Event selection: vertex ITS TPC"};
-  Configurable<bool> ifkIsGoodITSLayersAll{"ifIsGoodITSLayersAll", false, "Event selection: good ITS layers all"};
+  Configurable<bool> ifSel8{"ifSel8", true, "Event selection: sel8"};
+  Configurable<bool> ifVtxZle10{"ifVtxZle10", true, "Event selection: zVtx < 10 cm"};
+  Configurable<bool> ifOccupancyCut{"ifOccupancyCut", false, "Event selection: occupancy cut"};
+  Configurable<bool> ifNoSameBunchPileup{"ifNoSameBunchPileup", false, "Event selection: no same bunch pileup"};
+  Configurable<bool> ifIsGoodZvtxFT0vsPV{"ifIsGoodZvtxFT0vsPV", false, "Event selection: good Zvtx FT0 vs PV"};
+  Configurable<bool> ifNoCollInTimeRangeStandard{"ifNoCollInTimeRangeStandard", false, "Event selection: no collision in time range standard"};
+  Configurable<bool> ifIsVertexITSTPC{"ifIsVertexITSTPC", false, "Event selection: vertex ITS TPC"};
+  Configurable<bool> ifIsGoodITSLayersAll{"ifIsGoodITSLayersAll", false, "Event selection: good ITS layers all"};
 
   Configurable<bool> ifShiftCorrection{"ifShiftCorrection", false, "Apply shift correction (Read from CCDB)"};
   Configurable<bool> fillShiftHistos{"fillShiftHistos", true, "Fill shift profiles (Write to output)"};
   Configurable<int> nShift{"nShift", 10, "Number of harmonics"};
 
-  Configurable<std::string> QrecenteringCCDB{"QrecenteringCCDB", "Users/u/udmitrie/ZDC/LHC24ar_apass2", "Recentering maps containing step folder"};
+  Configurable<std::string> qRecenteringCcdb{"qRecenteringCcdb", "Users/u/udmitrie/ZDC/LHC24ar_apass2", "Recentering maps containing step folder"};
 
   // CCDB
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -399,12 +402,12 @@ struct ZdcExtraTableReader {
       const AxisSpec axisCounter{1, 0, +1, ""};
       const AxisSpec axisZN{nBinsZN, -0.5, maxZN, "(a.u.)"};
       const AxisSpec axisCent = {centNbins, centMin, centMax, "Centrality (\%)"};
-      const AxisSpec axisVx = {vxNbins, vxMin, VxMax, "V_{x} (cm)"};
+      const AxisSpec axisVx = {vxNbins, vxMin, vxMax, "V_{x} (cm)"};
       const AxisSpec axisVy = {vyNbins, vyMin, vyMax, "V_{y} (cm)"};
       const AxisSpec axisVz = {vzNbins, vzMin, vzMax, "V_{z} (cm)"};
 
       const AxisSpec axisCent5D = {qNbins5D, centMin, centMax, "Centrality (\%)"};
-      const AxisSpec axisVx5D = {qNbins5D, vxMin, VxMax, "V_{x} (cm)"};
+      const AxisSpec axisVx5D = {qNbins5D, vxMin, vxMax, "V_{x} (cm)"};
       const AxisSpec axisVy5D = {qNbins5D, vyMin, vyMax, "V_{y} (cm)"};
       const AxisSpec axisVz5D = {qNbins5D, vzMin, vzMax, "V_{z} (cm)"};
 
@@ -412,7 +415,7 @@ struct ZdcExtraTableReader {
       const AxisSpec axisQy = {qxyNbins, qxyMin, qxyMax, "Q_{y}"};
 
       const AxisSpec axisQxQy = {qxyNbins, qxyMin, qxyMax, ""};
-      const AxisSpec axisPhi = {phiNbins, -1.0f * TMath::Pi(), 1.0f * TMath::Pi(), "#phi"};
+      const AxisSpec axisPhi = {phiNbins, -1.0f * o2::constants::math::PI, 1.0f * o2::constants::math::PI, "#phi"};
 
       const AxisSpec axisTime = {90, 0, 90, "Time (minutes)"}; // 90 minutes
 
@@ -545,7 +548,7 @@ struct ZdcExtraTableReader {
 
     // Vertex Calibration
     if (ifBeamSpotCorrection) {
-      std::string folder = Form("%s/step0", QrecenteringCCDB.value.c_str());
+      std::string folder = Form("%s/step0", qRecenteringCcdb.value.c_str());
       TList* lst = ccdb->getForRun<TList>(folder, run);
       if (lst) {
         hMeanVx = safeClone<TH1>(lst->FindObject("hMeanVx"));
@@ -561,7 +564,7 @@ struct ZdcExtraTableReader {
       int step = static_cast<int>(stepIdx + 1);
 
       // Load 5D (Base)
-      std::string folderBase = Form("%s/step%d_base", QrecenteringCCDB.value.c_str(), step);
+      std::string folderBase = Form("%s/step%d_base", qRecenteringCcdb.value.c_str(), step);
       TList* lstBase = ccdb->getForRun<TList>(folderBase, run);
       if (lstBase) {
         mCalibCache[stepIdx].hMeanQxZNA = safeClone<THn>(lstBase->FindObject("hMeanQxZNA"));
@@ -572,7 +575,7 @@ struct ZdcExtraTableReader {
 
       // Load 1D (Refine)
       if ((step != calibrationStep) || ifFineCalibration) {
-        std::string folderRefine = Form("%s/step%d_refine", QrecenteringCCDB.value.c_str(), step);
+        std::string folderRefine = Form("%s/step%d_refine", qRecenteringCcdb.value.c_str(), step);
         TList* lstRefine = ccdb->getForRun<TList>(folderRefine, run);
         if (lstRefine) {
           mCalibCache[stepIdx].hMeanQxCentZNA = safeClone<TH1>(lstRefine->FindObject("hMeanQxCentZNA"));
@@ -599,7 +602,7 @@ struct ZdcExtraTableReader {
     } // end of step loop
 
     if (ifShiftCorrection) {
-      std::string folder = Form("%s/psiShift", QrecenteringCCDB.value.c_str());
+      std::string folder = Form("%s/psiShift", qRecenteringCcdb.value.c_str());
 
       LOGF(info, "ZDC Analysis: Loading Shift Correction from %s for run %d", folder.c_str(), run);
 
@@ -887,10 +890,8 @@ struct ZdcExtraTableReader {
         psiZNA += deltaPsi;
 
         // Wrap angle to [-pi, pi] range
-        if (psiZNA > TMath::Pi())
-          psiZNA -= 2 * TMath::Pi();
-        if (psiZNA < -TMath::Pi())
-          psiZNA += 2 * TMath::Pi();
+        psiZNA = RecoDecay::constrainAngle(psiZNA, -o2::constants::math::PI);
+
       }
 
       // Fill Shift Profiles (Write Mode)
@@ -1014,10 +1015,7 @@ struct ZdcExtraTableReader {
         psiZNC += deltaPsi;
 
         // Wrap angle to [-pi, pi] range
-        if (psiZNC > TMath::Pi())
-          psiZNC -= 2 * TMath::Pi();
-        if (psiZNC < -TMath::Pi())
-          psiZNC += 2 * TMath::Pi();
+        psiZNC = RecoDecay::constrainAngle(psiZNC, -o2::constants::math::PI);
       }
 
       // Fill Shift Profiles (Write Mode)
