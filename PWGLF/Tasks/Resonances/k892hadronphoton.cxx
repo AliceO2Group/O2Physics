@@ -895,26 +895,25 @@ struct k892hadronphoton {
     histos.fill(HIST(MainDir[mode]) + HIST("/h2dArmenteros"), kstar.photonAlpha(), kstar.photonQt());
     histos.fill(HIST(MainDir[mode]) + HIST("/h2dArmenteros"), kstar.kshortAlpha(), kstar.kshortQt());
 
-    if (kstar.kshortAlpha() < 1) {
-      histos.fill(HIST(MainDir[mode]) + HIST("/KShort/h2dTPCvsTOFNSigma_KShortPi"), kstar.kshortPosPiTPCNSigma(), kstar.kshortPiTOFNSigma());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KShort/h2dTPCvsTOFNSigma_KShortPi"), kstar.kshortNegPiTPCNSigma(), kstar.kshortPiTOFNSigma());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KShort/hKShortDCANegToPV"), kstar.kshortDCANegPV());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KShort/hKShortDCAPosToPV"), kstar.kshortDCAPosPV());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KShort/hKShortpT"), kstar.kshortPt());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KShort/hKShortMass"), kstar.kshortMass());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KShort/h3dKShortMass"), centrality, kstar.kshortPt(), kstar.kshortMass());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KShort/h2dTPCvsTOFNSigma_KShortPi"), kstar.kshortPosPiTPCNSigma(), kstar.kshortPiTOFNSigma());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KShort/h2dTPCvsTOFNSigma_KShortPi"), kstar.kshortNegPiTPCNSigma(), kstar.kshortPiTOFNSigma());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KShort/hKShortDCANegToPV"), kstar.kshortDCANegPV());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KShort/hKShortDCAPosToPV"), kstar.kshortDCAPosPV());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KShort/hKShortpT"), kstar.kshortPt());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KShort/hKShortMass"), kstar.kshortMass());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KShort/h3dKShortMass"), centrality, kstar.kshortPt(), kstar.kshortMass());
 
-      histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hMass"), kstar.kstarMass());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hPt"), kstar.pt());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hY"), kstar.kstarY());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hRadius"), kstar.radius());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h2dRadiusVspT"), kstar.radius(), kstar.pt());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hDCAPairDau"), kstar.dcadaughters());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hDCAPairDauVsPt"), kstar.dcadaughters(), kstar.pt());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h3dMass"), centrality, kstar.pt(), kstar.kstarMass());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h3dOPAngleVsMass"), kstar.opAngle(), kstar.pt(), kstar.kstarMass());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h2dOPAngleVsPt"), kstar.opAngle(), kstar.pt());
-    }
+    histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hMass"), kstar.kstarMass());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hPt"), kstar.pt());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hY"), kstar.kstarY());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hRadius"), kstar.radius());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h2dRadiusVspT"), kstar.radius(), kstar.pt());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hDCAPairDau"), kstar.dcadaughters());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hDCAPairDauVsPt"), kstar.dcadaughters(), kstar.pt());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h3dMass"), centrality, kstar.pt(), kstar.kstarMass());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h3dOPAngleVsMass"), kstar.opAngle(), kstar.pt(), kstar.kstarMass());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h2dOPAngleVsPt"), kstar.opAngle(), kstar.pt());
+    
     //_______________________________________
     // MC specific
     if (doprocessMonteCarlo) {
@@ -1133,31 +1132,31 @@ struct k892hadronphoton {
 
     // Separating kshort selections:
     fillSelHistos<8>(cand, PDG_t::kK0Short);
-    if (cand.kshortAlpha() < 1) { // KShort selection
-      // TPC Selection
-      if (kshortSelections.fselKShortTPCPID && (TMath::Abs(cand.kshortPosPiTPCNSigma()) > kshortSelections.KShortMaxTPCNSigmas))
-        return false;
-      if (kshortSelections.fselKShortTPCPID && (TMath::Abs(cand.kshortNegPiTPCNSigma()) > kshortSelections.KShortMaxTPCNSigmas))
-        return false;
+    
+    // TPC Selection
+    if (kshortSelections.fselKShortTPCPID && (TMath::Abs(cand.kshortPosPiTPCNSigma()) > kshortSelections.KShortMaxTPCNSigmas))
+      return false;
+    if (kshortSelections.fselKShortTPCPID && (TMath::Abs(cand.kshortNegPiTPCNSigma()) > kshortSelections.KShortMaxTPCNSigmas))
+      return false;
 
-      // // TOF Selection
-      // if (kshortSelections.fselKShortTOFPID && (TMath::Abs(cand.kshortPiTOFNSigma()) > kshortSelections.KShortPiMaxTOFNSigmas))
-      //   return false;
-      // if (kshortSelections.fselKShortTOFPID && (TMath::Abs(cand.lambdaPiTOFNSigma()) > kshortSelections.KShortPiMaxTOFNSigmas))
-      //   return false;
+    // // TOF Selection
+    // if (kshortSelections.fselKShortTOFPID && (TMath::Abs(cand.kshortPiTOFNSigma()) > kshortSelections.KShortPiMaxTOFNSigmas))
+    //   return false;
+    // if (kshortSelections.fselKShortTOFPID && (TMath::Abs(cand.lambdaPiTOFNSigma()) > kshortSelections.KShortPiMaxTOFNSigmas))
+    //   return false;
 
-      // DCA Selection
-      fillSelHistos<9>(cand, PDG_t::kK0Short);
-      if ((TMath::Abs(cand.kshortDCAPosPV()) < kshortSelections.KShortMinDCAPosToPv) || (TMath::Abs(cand.kshortDCANegPV()) < kshortSelections.KShortMinDCANegToPv))
-        return false;
+    // DCA Selection
+    fillSelHistos<9>(cand, PDG_t::kK0Short);
+    if ((TMath::Abs(cand.kshortDCAPosPV()) < kshortSelections.KShortMinDCAPosToPv) || (TMath::Abs(cand.kshortDCANegPV()) < kshortSelections.KShortMinDCANegToPv))
+      return false;
 
-      // Mass Selection
-      fillSelHistos<10>(cand, PDG_t::kK0Short);
-      if (TMath::Abs(cand.kshortMass() - o2::constants::physics::MassK0Short) > kshortSelections.KShortWindow)
-        return false;
+    // Mass Selection
+    fillSelHistos<10>(cand, PDG_t::kK0Short);
+    if (TMath::Abs(cand.kshortMass() - o2::constants::physics::MassK0Short) > kshortSelections.KShortWindow)
+      return false;
 
-      fillSelHistos<11>(cand, PDG_t::kK0Short);
-    }
+    fillSelHistos<11>(cand, PDG_t::kK0Short);
+    
     return true;
   }
 
