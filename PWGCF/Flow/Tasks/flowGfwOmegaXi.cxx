@@ -634,7 +634,10 @@ struct FlowGfwOmegaXi {
     int nLambdaptMassBins = nLambdaPtBins * cfgmassbins[1];
     int nXiptMassBins = nXiPtBins * cfgmassbins[2];
     int nOmegaptMassBins = nXiPtBins * cfgmassbins[3];
-    if (cfgEtagap == 8) {
+    int etagap08 = 8;
+    int etagap10 = 10;
+    int etagap12 = 12;
+    if (cfgEtagap == etagap08) {
       fGFW->AddRegion("refN10", -0.8, -0.4, 1, 1);
       fGFW->AddRegion("refP10", 0.4, 0.8, 1, 1);
 
@@ -659,7 +662,7 @@ struct FlowGfwOmegaXi {
       fGFW->AddRegion("poiLambdaNdpt", -0.8, -0.4, nLambdaptMassBins, 16);
       fGFW->AddRegion("poiLambdafulldpt", -0.8, 0.8, nLambdaptMassBins, 16);
     }
-    if (cfgEtagap == 10) {
+    if (cfgEtagap == etagap10) {
       fGFW->AddRegion("refN10", -0.8, -0.5, 1, 1);
       fGFW->AddRegion("refP10", 0.5, 0.8, 1, 1);
 
@@ -684,7 +687,7 @@ struct FlowGfwOmegaXi {
       fGFW->AddRegion("poiLambdaNdpt", -0.8, -0.5, nLambdaptMassBins, 16);
       fGFW->AddRegion("poiLambdafulldpt", -0.8, 0.8, nLambdaptMassBins, 16);
     }
-    if (cfgEtagap == 12) {
+    if (cfgEtagap == etagap12) {
       fGFW->AddRegion("refN10", -0.8, -0.6, 1, 1);
       fGFW->AddRegion("refP10", 0.6, 0.8, 1, 1);
 
