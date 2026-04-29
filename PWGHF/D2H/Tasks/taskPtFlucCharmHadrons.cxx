@@ -209,7 +209,6 @@ struct HfTaskPtFlucCharmHadrons {
       collRejMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FV0A, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
     } else {
       LOG(fatal) << "Centrality estimator not recognized for collision selection";
-      std::abort();
     }
     hfEvSel.fillHistograms(collision, collRejMask, cent);
     return collRejMask == 0;
@@ -221,10 +220,12 @@ struct HfTaskPtFlucCharmHadrons {
   {
     if constexpr (std::is_same_v<CandT, CandDplusDataWMl>) {
       return {HfHelper::invMassDplusToPiKPi(cand), cand.template prong0_as<Trk>().sign()};
-    } else if constexpr (std::is_same_v<CandT, CandD0DataWMl>) {
+    }  
+    if constexpr (std::is_same_v<CandT, CandD0DataWMl>) {
       if (channel == DecayChannel::D0ToPiK) {
         return {HfHelper::invMassD0ToPiK(cand), cand.isSelD0bar() ? 3 : 1}; // 3: reflected D0bar, 1: pure D0 excluding reflected D0bar
-      } else if (channel == DecayChannel::D0ToKPi) {
+      }
+      if (channel == DecayChannel::D0ToKPi) {
         return {HfHelper::invMassD0barToKPi(cand), cand.isSelD0() ? 3 : 2}; // 3: reflected D0, 2: pure D0bar excluding reflected D0
       }
     }
@@ -242,14 +243,14 @@ struct HfTaskPtFlucCharmHadrons {
 
   /// remove candidate daughters from the mean pT of tracks in A and B (if they are in the respective subevent)
   template <DecayChannel Channel, typename CandT>
-  float removeDaughtersFromMeanPt(const CandT& cand, const float& rawMeanPt, const int& n, const std::vector<int>& trkIDs)
+  float removeDaughtersFromMeanPt(const CandT& cand, float rawMeanPt, int n, const std::vector<int>& trkIDs)
   {
     float meanPt{0.f};
     if constexpr (Channel == DecayChannel::DplusToPiKPi) {
       std::array<int, 3> daugIDs = {cand.prong0Id(), cand.prong1Id(), cand.prong2Id()};
       std::array<float, 3> daugPts = {cand.ptProng0(), cand.ptProng1(), cand.ptProng2()};
       for (int iProng = 0; iProng < 3; ++iProng) { // o2-linter: disable=magic-number (for 3-prong)
-        if (std::find(trkIDs.begin(), trkIDs.end(), daugIDs[iProng]) != trkIDs.end()) {
+        if (std::binary_search(trkIDs.begin(), trkIDs.end(), daugIDs[iProng])) {
           meanPt = (rawMeanPt * n - daugPts[iProng]) / (n - 1);
         }
       }
@@ -257,7 +258,7 @@ struct HfTaskPtFlucCharmHadrons {
       std::array<int, 2> daugIDs = {cand.prong0Id(), cand.prong1Id()};
       std::array<float, 2> daugPts = {cand.ptProng0(), cand.ptProng1()};
       for (int iProng = 0; iProng < 2; ++iProng) { // o2-linter: disable=magic-number (for 2-prong)
-        if (std::find(trkIDs.begin(), trkIDs.end(), daugIDs[iProng]) != trkIDs.end()) {
+        if (std::binary_search(trkIDs.begin(), trkIDs.end(), daugIDs[iProng])) {
           meanPt = (rawMeanPt * n - daugPts[iProng]) / (n - 1);
         }
       }
@@ -376,6 +377,10 @@ struct HfTaskPtFlucCharmHadrons {
 
       std::vector<int> trkIDA;
       std::vector<int> trkIDB;
+
+      trkIDA.reserve(tracks.size() / 2); 
+      trkIDB.reserve(tracks.size() / 2);
+
       // collect track IDs in A and B
       for (const auto& trk : tracks) {
         if (!selectionTrack(trk)) {
@@ -388,6 +393,9 @@ struct HfTaskPtFlucCharmHadrons {
           trkIDB.push_back(trk.globalIndex());
         }
       }
+
+      std::sort(trkIDA.begin(), trkIDA.end());
+      std::sort(trkIDB.begin(), trkIDB.end());
 
       for (const auto& cand : candidates) {
         // apply ML selection
@@ -441,7 +449,7 @@ struct HfTaskPtFlucCharmHadrons {
         ++nDcandTotA;
       }
 
-      if (nDcandTotA <= 0) {
+      if (nDcandTotA == 0) {
         return; // cannot build fraction
       }
 
