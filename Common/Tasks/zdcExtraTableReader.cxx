@@ -746,7 +746,6 @@ struct ZdcExtraTableReader {
     }
     //
 
-
     bool isZNASpDeterminable = false;
     bool isZNCSpDeterminable = false;
 
@@ -755,13 +754,15 @@ struct ZdcExtraTableReader {
     if (isZNAhit) {
       int activeTowersZNA = (zdc.znaTow1() > 0.) + (zdc.znaTow2() > 0.) + (zdc.znaTow3() > 0.) + (zdc.znaTow4() > 0.);
       float znaSum = zdc.znaTow1() + zdc.znaTow2() + zdc.znaTow3() + zdc.znaTow4();
-      if (activeTowersZNA >= nTowersFired && znaSum > 0 && zdc.znaQx() < QvectorMaxValue) isZNASpDeterminable = true;
+      if (activeTowersZNA >= nTowersFired && znaSum > 0 && zdc.znaQx() < QvectorMaxValue)
+        isZNASpDeterminable = true;
     }
 
     if (isZNChit) {
       int activeTowersZNC = (zdc.zncTow1() > 0.) + (zdc.zncTow2() > 0.) + (zdc.zncTow3() > 0.) + (zdc.zncTow4() > 0.);
       float zncSum = zdc.zncTow1() + zdc.zncTow2() + zdc.zncTow3() + zdc.zncTow4();
-      if (activeTowersZNC >= nTowersFired && zncSum > 0 && zdc.zncQx() < QvectorMaxValue) isZNCSpDeterminable = true;
+      if (activeTowersZNC >= nTowersFired && zncSum > 0 && zdc.zncQx() < QvectorMaxValue)
+        isZNCSpDeterminable = true;
     }
 
     if (plotPMs) {
