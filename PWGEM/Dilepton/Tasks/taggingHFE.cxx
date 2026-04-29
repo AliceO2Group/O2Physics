@@ -1258,7 +1258,11 @@ struct taggingHFE {
           emmllhpair(leptonTable.lastIndex(),
                      trackParCov.getQ2Pt(), trackParCov.getEta(), dcaXY_kaon, dcaZ_kaon, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
                      kaon.tpcNSigmaKa(), kaon.tofNSigmaKa(),
-                     eKpair.mass, eKpair.dca2legs, eKpair.cospa, eKpair.lxyz, eKpair.lxyzErr, mckaon.pdgCode(), foundCommonMother);
+                     eKpair.mass, eKpair.dca2legs, eKpair.cospa,
+                     eKpair.lxyz, eKpair.lxyzErr,
+                     eKpair.lxy, eKpair.lxyErr,
+                     eKpair.lz, eKpair.lzErr,
+                     mckaon.pdgCode(), foundCommonMother);
 
         } // end of kaon loop
 
@@ -1463,7 +1467,11 @@ struct taggingHFE {
           emmllhpair(leptonTable.lastIndex(),
                      trackParCov.getQ2Pt(), trackParCov.getEta(), dcaXY_kaon, dcaZ_kaon, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
                      kaon.tpcNSigmaKa(), kaon.tofNSigmaKa(),
-                     eKpair.mass, eKpair.dca2legs, eKpair.cospa, eKpair.lxyz, eKpair.lxyzErr, mckaon.pdgCode(), foundCommonMother);
+                     eKpair.mass, eKpair.dca2legs, eKpair.cospa,
+                     eKpair.lxyz, eKpair.lxyzErr,
+                     eKpair.lxy, eKpair.lxyErr,
+                     eKpair.lz, eKpair.lzErr,
+                     mckaon.pdgCode(), foundCommonMother);
 
         } // end of kaon loop
 
