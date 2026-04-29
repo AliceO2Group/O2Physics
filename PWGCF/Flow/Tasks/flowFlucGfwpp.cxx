@@ -19,16 +19,15 @@
 #include "PWGCF/GenericFramework/Core/GFWConfig.h"
 #include "PWGCF/GenericFramework/Core/GFWWeights.h"
 
-#include "Common/Core/TrackSelection.h"
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
+#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EseTable.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-
 
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisTask.h"
@@ -150,67 +149,55 @@ struct FlowFlucGfwPP {
     O2_DEFINE_CONFIGURABLE(cfgGlobalT0AHighSigma, float, 4, "Number of sigma deviations above expected value in global vs T0A correlation");
   } cfgGlobalAsideCorrCuts;
 
-
   Configurable<GFWBinningCuts> cfgGFWBinning{
     "cfgGFWBinning",
-    {40, 16, 72, 300, 0, 3000, 0.2, 10.0, 0.2, 3.0,
-      {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75, 4, 4.5, 5, 5.5, 6, 7, 8, 9, 10},
-      {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90}
-    },
-    "Configuration for binning"
-  };
+    {40, 16, 72, 300, 0, 3000, 0.2, 10.0, 0.2, 3.0, {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75, 4, 4.5, 5, 5.5, 6, 7, 8, 9, 10}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90}},
+    "Configuration for binning"};
 
   Configurable<GFWRegions> cfgRegions{
     "cfgRegions",
-    {{"refN", "refP", "refFull"},
-     {-0.8,   0.4,    -0.8},
-     {-0.4,   0.8,    0.8},
-     {0,      0,      0}, // pT bins
-     {1,      1,      1}  // bitmask
+    {
+      {"refN", "refP", "refFull"},
+      {-0.8, 0.4, -0.8},
+      {-0.4, 0.8, 0.8},
+      {0, 0, 0}, // pT bins
+      {1, 1, 1}  // bitmask
     },
-    "Configurations for GFW regions"
-  };
+    "Configurations for GFW regions"};
 
   Configurable<GFWCorrConfigs> cfgCorrConfig{
     "cfgCorrConfig",
-    {
-      {
-        "refN {2 -2}",
-        "refN {2 2 -2 -2}",
-        "refN {2 2 2 -2 -2 -2}",
-        "refN {2 2 2 2 -2 -2 -2 -2}",
-        "refP {2 -2}",
-        "refP {2 2 -2 -2}",
-        "refP {2 2 2 -2 -2 -2}",
-        "refP {2 2 2 2 -2 -2 -2 -2}",
-        "refN {2} refP {-2}",
-        "refN {2 2} refP {-2 -2}",
-        "refFull {2 -2}",
-        "refFull {2 2 -2 -2}",
-        "refFull {2 2 2 -2 -2 -2}",
-        "refFull {2 2 2 2 -2 -2 -2 -2}"
-      },
-      {
-        "ChNeg22",
-        "ChNeg24",
-        "ChNeg26",
-        "ChNeg28",
-        "ChPos22",
-        "ChPos24",
-        "ChPos26",
-        "ChPos28",
-        "ChGap22",
-        "ChGap24",
-        "ChFull22",
-        "ChFull24",
-        "ChFull26",
-        "ChFull28"
-      },
-      {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-      {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-    },
-    "Configurations for pp ESE v2 cumulants"
-  };
+    {{"refN {2 -2}",
+      "refN {2 2 -2 -2}",
+      "refN {2 2 2 -2 -2 -2}",
+      "refN {2 2 2 2 -2 -2 -2 -2}",
+      "refP {2 -2}",
+      "refP {2 2 -2 -2}",
+      "refP {2 2 2 -2 -2 -2}",
+      "refP {2 2 2 2 -2 -2 -2 -2}",
+      "refN {2} refP {-2}",
+      "refN {2 2} refP {-2 -2}",
+      "refFull {2 -2}",
+      "refFull {2 2 -2 -2}",
+      "refFull {2 2 2 -2 -2 -2}",
+      "refFull {2 2 2 2 -2 -2 -2 -2}"},
+     {"ChNeg22",
+      "ChNeg24",
+      "ChNeg26",
+      "ChNeg28",
+      "ChPos22",
+      "ChPos24",
+      "ChPos26",
+      "ChPos28",
+      "ChGap22",
+      "ChGap24",
+      "ChFull22",
+      "ChFull24",
+      "ChFull26",
+      "ChFull28"},
+     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+    "Configurations for pp ESE v2 cumulants"};
 
   //  Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -373,8 +360,7 @@ struct FlowFlucGfwPP {
       {kCentFV0A, "FV0A"},
       {kCentNTPV, "NTPV"},
       {kCentNGlobal, "NGlobals"},
-      {kCentMFT, "MFT"}
-    };
+      {kCentMFT, "MFT"}};
     sCentralityEstimator = centEstimatorMap.at(cfgCentEstimator);
     sCentralityEstimator += " centrality (%)";
     AxisSpec centAxis = {o2::analysis::gfwflowflucpp::centbinning, sCentralityEstimator.c_str()};
@@ -422,7 +408,6 @@ struct FlowFlucGfwPP {
       registry.add("mq2/h2_cent_q2_etaneg", ";Centrality;#it{q}_{2}^{#eta neg};", HistType::kTH2D, {{100, 0, 100}, {600, 0, 6}});
       registry.add("mq2/h2_mult_q2_etapos", ";Multiplicity;#it{q}_{2}^{#eta pos};", HistType::kTH2D, {{150, 0, 150}, {600, 0, 6}});
       registry.add("mq2/h2_mult_q2_etaneg", ";Multiplicity;#it{q}_{2}^{#eta neg};", HistType::kTH2D, {{150, 0, 150}, {600, 0, 6}});
-
     }
 
     if (doprocessData) {
@@ -464,7 +449,7 @@ struct FlowFlucGfwPP {
         registry.add("eventQA/before/centNTPV_centT0C", "", {HistType::kTH2D, {centAxis, centAxis}});
         registry.add("eventQA/before/centMFT_centT0C", "", {HistType::kTH2D, {centAxis, centAxis}});
 
-        if (cfgIsMC){
+        if (cfgIsMC) {
           registry.add("MCGen/trackQA/phi_eta_vtxZ", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
           registry.add("MCGen/trackQA/nch_pt", "#it{p}_{T} vs multiplicity; N_{ch}; #it{p}_{T}", {HistType::kTH2D, {nchAxis, ptAxis}});
           registry.add("MCGen/trackQA/pt_ref", "", {HistType::kTH1D, {{100, o2::analysis::gfwflowflucpp::ptreflow, o2::analysis::gfwflowflucpp::ptrefup}}});
@@ -952,7 +937,6 @@ struct FlowFlucGfwPP {
     return qnBin;
   }
 
-
   template <DataType dt, typename TCollision, typename TTracks>
   void processCollision(TCollision collision, TTracks tracks, const XAxis& xaxis, const int& run, const int& qPtmp)
   {
@@ -1216,11 +1200,11 @@ struct FlowFlucGfwPP {
   }
 
   void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults,
-                                        aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms,
-                                        aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals,
-                                        aod::CentMFTs, aod::Qvectors,
-                                        aod::QvectorTPCposVecs, aod::QvectorTPCnegVecs>>::iterator const& collision,
-                                        aod::BCsWithTimestamps const&, GFWTracks const& tracks)
+                                           aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms,
+                                           aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals,
+                                           aod::CentMFTs, aod::Qvectors,
+                                           aod::QvectorTPCposVecs, aod::QvectorTPCnegVecs>>::iterator const& collision,
+                   aod::BCsWithTimestamps const&, GFWTracks const& tracks)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int run = bc.runNumber();
@@ -1264,8 +1248,7 @@ struct FlowFlucGfwPP {
     const XAxis xaxis{
       getCentrality(collision),
       tracks.size(),
-      (cfgTimeDependent) ? getTimeSinceStartOfFill(bc.timestamp(), *firstRunOfCurrentFill) : -1.0
-    };
+      (cfgTimeDependent) ? getTimeSinceStartOfFill(bc.timestamp(), *firstRunOfCurrentFill) : -1.0};
 
     if (cfgTimeDependent && run == *firstRunOfCurrentFill &&
         firstRunOfCurrentFill != o2::analysis::gfwflowflucpp::firstRunsOfFill.end() - 1)
@@ -1287,7 +1270,7 @@ struct FlowFlucGfwPP {
     if (qn < 0)
       return;
 
-    int qPtmp = myqnBin(cfgEvtSelCent? xaxis.centrality : xaxis.multiplicity,
+    int qPtmp = myqnBin(cfgEvtSelCent ? xaxis.centrality : xaxis.multiplicity,
                         cfgCentMax, qn, qnBinSeparator, cfgNumQnBins);
     if (qPtmp < 0)
       return;
@@ -1330,7 +1313,6 @@ struct FlowFlucGfwPP {
     registry.fill(HIST("mq2/h2_cent_q2_etaneg"), centr, qvecNeg);
     registry.fill(HIST("mq2/h2_mult_q2_etapos"), multi, qvecPos);
     registry.fill(HIST("mq2/h2_mult_q2_etaneg"), multi, qvecNeg);
-
   }
   PROCESS_SWITCH(FlowFlucGfwPP, processq2, "Process analysis for filling q-vectors", true);
 };
