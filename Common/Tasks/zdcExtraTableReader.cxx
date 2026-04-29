@@ -351,7 +351,7 @@ struct ZdcExtraTableReader {
       hMeanVy = nullptr;
     }
 
-    for (auto& step : mCalibCache) {
+    for (const auto& step : mCalibCache) {
       delete step.hMeanQxZNA;
       delete step.hMeanQyZNA;
       delete step.hMeanQxZNC;
@@ -881,7 +881,10 @@ struct ZdcExtraTableReader {
 
         // DEBUG: Print only if shift is actually happening for first few events
         static int debugPrintCount = 0;
-        if (debugPrintCount < 10 && std::abs(deltaPsi) > 1e-6) {
+        constexpr int maxDebugPrints = 10;
+        constexpr double psiTolerance = 1e-6;
+
+        if (debugPrintCount < maxDebugPrints && std::abs(deltaPsi) > psiTolerance) {
           LOGF(info, "ZNA Shift: Cent %.1f, Raw %.3f (Delta %.4f)", cent, psiZNA, deltaPsi);
           debugPrintCount++;
         }
