@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file jetHadronsPid.cxx
+/// \file jetHadronsPida.cxx
 /// \brief Analysis of hadrons in jets
 /// \author Aleksandra Mulewicz, WUT Warsaw, aleksandra.mulewicz@cern.ch
 /// \author Leonard Lorenc, WUT Warsaw, leonard.lorenc@cern.ch
@@ -21,6 +21,7 @@
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseITS.h"
@@ -70,7 +71,6 @@ struct jetHadronsPid {
   HistogramRegistry registryData{"registryData", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   Configurable<bool> isppRefAnalysis{"isppRefAnalysis", false, "Is ppRef analysis"};
-  Configurable<double> cfgAreaFrac{"cfgAreaFrac", 0.6, "fraction of jet area"};
   Configurable<double> cfgEtaJetMax{"cfgEtaJetMax", 0.5, "max jet eta"};
   Configurable<double> cfgMinPtTrack{"cfgMinPtTrack", 0.1, "minimum pt of tracks for jet reconstruction"};
 
@@ -86,7 +86,7 @@ struct jetHadronsPid {
   Configurable<double> rJet{"rJet", 0.4, "Jet resolution parameter R"};
   Configurable<double> zVtx{"zVtx", 10.0, "Maximum zVertex"};
   Configurable<bool> applyAreaCut{"applyAreaCut", true, "apply area cut"};
-  Configurable<double> maxNormalizedJetArea{"maxNormalizedJetArea", 1.0, "area cut"};
+  Configurable<double> minNormalizedJetArea{"minNormalizedJetArea", 0.6, "Minimum normalized area cut to reject fake jets"};
   Configurable<double> deltaEtaEdge{"deltaEtaEdge", 0.05, "eta gap from the edge"};
 
   Configurable<bool> requirePvContributor{"requirePvContributor", false, "require that the track is a PV contributor"};
@@ -101,6 +101,7 @@ struct jetHadronsPid {
   Configurable<double> maxEta{"maxEta", +0.8, "maximum eta"};
   Configurable<double> maxDcaxy{"maxDcaxy", 0.2, "Maximum DCAxy"};
   Configurable<double> maxDcaz{"maxDcaz", 0.1, "Maximum DCAz"};
+  Configurable<double> maxNSigmaPid{"maxNSigmaPid", 3.0, "Maximum nSigma for TPC and TOF PID"};
 
   Configurable<bool> setMCDefaultItsParams{"setMCDefaultItsParams", true, "set MC default parameters"};
 
@@ -211,67 +212,64 @@ struct jetHadronsPid {
     registryData.add("mc_sec_proton_pt", "Reconstructed Proton Secondaries", HistType::kTH1F, {{120, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})"}});
   }
 
+  // void getPerpendicularDirections(const TVector3& p, TVector3& u1, TVector3& u2)
+  // {
+  //   double px = p.X(), py = p.Y(), pz = p.Z();
+  //   double px2 = px * px, py2 = py * py, pz2 = pz * pz;
+  //   double pz4 = pz2 * pz2;
+
+  //   if (px == 0 && py == 0) {
+  //     u1.SetXYZ(0, 0, 0);
+  //     u2.SetXYZ(0, 0, 0);
+  //     return;
+  //   }
+  //   if (px == 0 && py != 0) {
+  //     double ux = std::sqrt(py2 - pz4 / py2);
+  //     double uy = -pz2 / py;
+  //     u1.SetXYZ(ux, uy, pz);
+  //     u2.SetXYZ(-ux, uy, pz);
+  //     return;
+  //   }
+  //   if (py == 0 && px != 0) {
+  //     double ux = -pz2 / px;
+  //     double uy = std::sqrt(px2 - pz4 / px2);
+  //     u1.SetXYZ(ux, uy, pz);
+  //     u2.SetXYZ(ux, -uy, pz);
+  //     return;
+  //   }
+
+  //   double a = px2 + py2;
+  //   double b = 2.0 * px * pz2;
+  //   double c = pz4 - py2 * py2 - px2 * py2;
+  //   double delta = b * b - 4.0 * a * c;
+
+  //   if (delta < 0 || a == 0) {
+  //     u1.SetXYZ(0, 0, 0);
+  //     u2.SetXYZ(0, 0, 0);
+  //     return;
+  //   }
+  //   double u1x = (-b + std::sqrt(delta)) / (2.0 * a);
+  //   u1.SetXYZ(u1x, (-pz2 - px * u1x) / py, pz);
+  //   double u2x = (-b - std::sqrt(delta)) / (2.0 * a);
+  //   u2.SetXYZ(u2x, (-pz2 - px * u2x) / py, pz);
+  // }
+
   void getPerpendicularDirections(const TVector3& p, TVector3& u1, TVector3& u2)
   {
-    double px = p.X(), py = p.Y(), pz = p.Z();
-    double px2 = px * px, py2 = py * py, pz2 = pz * pz;
-    double pz4 = pz2 * pz2;
-
-    if (px == 0 && py == 0) {
+    if (p.Mag2() < 1e-9) {
       u1.SetXYZ(0, 0, 0);
       u2.SetXYZ(0, 0, 0);
       return;
     }
-    if (px == 0 && py != 0) {
-      double ux = std::sqrt(py2 - pz4 / py2);
-      double uy = -pz2 / py;
-      u1.SetXYZ(ux, uy, pz);
-      u2.SetXYZ(-ux, uy, pz);
-      return;
-    }
-    if (py == 0 && px != 0) {
-      double ux = -pz2 / px;
-      double uy = std::sqrt(px2 - pz4 / px2);
-      u1.SetXYZ(ux, uy, pz);
-      u2.SetXYZ(ux, -uy, pz);
-      return;
-    }
-
-    double a = px2 + py2;
-    double b = 2.0 * px * pz2;
-    double c = pz4 - py2 * py2 - px2 * py2;
-    double delta = b * b - 4.0 * a * c;
-
-    if (delta < 0 || a == 0) {
-      u1.SetXYZ(0, 0, 0);
-      u2.SetXYZ(0, 0, 0);
-      return;
-    }
-    double u1x = (-b + std::sqrt(delta)) / (2.0 * a);
-    u1.SetXYZ(u1x, (-pz2 - px * u1x) / py, pz);
-    double u2x = (-b - std::sqrt(delta)) / (2.0 * a);
-    u2.SetXYZ(u2x, (-pz2 - px * u2x) / py, pz);
-  }
-
-  double getDeltaPhi(double a1, double a2)
-  {
-    double deltaPhi(0);
-    double phi1 = TVector2::Phi_0_2pi(a1);
-    double phi2 = TVector2::Phi_0_2pi(a2);
-    double diff = std::abs(phi1 - phi2);
-
-    if (diff <= PI)
-      deltaPhi = diff;
-    if (diff > PI)
-      deltaPhi = TwoPI - diff;
-    return deltaPhi;
+    u1 = p.Orthogonal();
+    u2 = p.Cross(u1);
   }
 
   template <typename TrackIts>
-  bool hasITSHit(const TrackIts& track, int layer)
+  bool hasITSLayerHit(const TrackIts& track, int layer)
   {
     int ibit = layer - 1;
-    return (track.itsClusterMap() & (1 << ibit));
+    return (track.itsClusterMap() & (1 << ibit)) != 0;
   }
 
   template <typename JetTrack>
@@ -287,7 +285,7 @@ struct jetHadronsPid {
 
     if (!track.hasITS() || !track.hasTPC())
       return false;
-    if ((!hasITSHit(track, 1)) && (!hasITSHit(track, 2)) && (!hasITSHit(track, 3)))
+    if ((!hasITSLayerHit(track, 1)) && (!hasITSLayerHit(track, 2)) && (!hasITSLayerHit(track, 3)))
       return false;
     if (track.tpcNClsCrossedRows() < MinTpcCr)
       return false;
@@ -313,7 +311,7 @@ struct jetHadronsPid {
       return false;
     if (!track.hasITS() || !track.hasTPC())
       return false;
-    if ((!hasITSHit(track, 1)) && (!hasITSHit(track, 2)) && (!hasITSHit(track, 3)))
+    if ((!hasITSLayerHit(track, 1)) && (!hasITSLayerHit(track, 2)) && (!hasITSLayerHit(track, 3)))
       return false;
     if (track.itsNCls() < minItsNclusters)
       return false;
@@ -363,13 +361,13 @@ struct jetHadronsPid {
       double dcaxy = track.dcaXY();
       double dcaz = track.dcaZ();
 
-      bool passTpcPi = (std::abs(track.tpcNSigmaPi()) <= 3.0);
-      bool passTpcKa = (std::abs(track.tpcNSigmaKa()) <= 3.0);
-      bool passTpcPr = (std::abs(track.tpcNSigmaPr()) <= 3.0);
+      bool passTpcPi = (std::abs(track.tpcNSigmaPi()) <= maxNSigmaPid);
+      bool passTpcKa = (std::abs(track.tpcNSigmaKa()) <= maxNSigmaPid);
+      bool passTpcPr = (std::abs(track.tpcNSigmaPr()) <= maxNSigmaPid);
 
-      bool passTofPi = track.hasTOF() && (std::abs(track.tofNSigmaPi()) <= 3.0);
-      bool passTofKa = track.hasTOF() && (std::abs(track.tofNSigmaKa()) <= 3.0);
-      bool passTofPr = track.hasTOF() && (std::abs(track.tofNSigmaPr()) <= 3.0);
+      bool passTofPi = track.hasTOF() && (std::abs(track.tofNSigmaPi()) <= maxNSigmaPid);
+      bool passTofKa = track.hasTOF() && (std::abs(track.tofNSigmaKa()) <= maxNSigmaPid);
+      bool passTofPr = track.hasTOF() && (std::abs(track.tofNSigmaPr()) <= maxNSigmaPid);
 
       const double ptThreshold = 0.8;
 
@@ -419,15 +417,15 @@ struct jetHadronsPid {
       }
     }
 
-    int id(-1);
+    // int id(-1);
     std::vector<fastjet::PseudoJet> fjParticles;
     for (auto const& track : tracks) {
-      id++;
+      // id++;
       if (!passedTrackSelectionForJetReconstruction(track))
         continue;
 
       fastjet::PseudoJet fourMomentum(track.px(), track.py(), track.pz(), track.energy(MassPionCharged));
-      fourMomentum.set_user_index(id);
+      fourMomentum.set_user_index(track.index());
       fjParticles.emplace_back(fourMomentum);
     }
 
@@ -469,10 +467,9 @@ struct jetHadronsPid {
         continue;
 
       double normalizedJetArea = jet.area() / (PI * rJet * rJet);
-      if (applyAreaCut && (!isppRefAnalysis) && normalizedJetArea > maxNormalizedJetArea)
+      if (applyAreaCut && normalizedJetArea < minNormalizedJetArea) {
         continue;
-      if (isppRefAnalysis && (jet.area() < cfgAreaFrac * PI * rJet * rJet))
-        continue;
+      }
 
       double coneRadius = std::sqrt(jet.area() / PI);
       TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
@@ -501,13 +498,13 @@ struct jetHadronsPid {
         double dcaxy = track.dcaXY();
         double dcaz = track.dcaZ();
 
-        bool passTpcPi = (std::abs(track.tpcNSigmaPi()) <= 3.0);
-        bool passTpcKa = (std::abs(track.tpcNSigmaKa()) <= 3.0);
-        bool passTpcPr = (std::abs(track.tpcNSigmaPr()) <= 3.0);
+        bool passTpcPi = (std::abs(track.tpcNSigmaPi()) <= maxNSigmaPid);
+        bool passTpcKa = (std::abs(track.tpcNSigmaKa()) <= maxNSigmaPid);
+        bool passTpcPr = (std::abs(track.tpcNSigmaPr()) <= maxNSigmaPid);
 
-        bool passTofPi = track.hasTOF() && (std::abs(track.tofNSigmaPi()) <= 3.0);
-        bool passTofKa = track.hasTOF() && (std::abs(track.tofNSigmaKa()) <= 3.0);
-        bool passTofPr = track.hasTOF() && (std::abs(track.tofNSigmaPr()) <= 3.0);
+        bool passTofPi = track.hasTOF() && (std::abs(track.tofNSigmaPi()) <= maxNSigmaPid);
+        bool passTofKa = track.hasTOF() && (std::abs(track.tofNSigmaKa()) <= maxNSigmaPid);
+        bool passTofPr = track.hasTOF() && (std::abs(track.tofNSigmaPr()) <= maxNSigmaPid);
 
         const double ptThreshold = 0.8;
 
@@ -565,17 +562,14 @@ struct jetHadronsPid {
           continue;
 
         double deltaEtaUe1 = track.eta() - ueAxis1.Eta();
-        double deltaPhiUe1 = getDeltaPhi(track.phi(), ueAxis1.Phi());
+        double deltaPhiUe1 = std::abs(RecoDecay::constrainAngle(track.phi() - ueAxis1.Phi()));
         double deltaRUe1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
 
         double deltaEtaUe2 = track.eta() - ueAxis2.Eta();
-        double deltaPhiUe2 = getDeltaPhi(track.phi(), ueAxis2.Phi());
+        double deltaPhiUe2 = std::abs(RecoDecay::constrainAngle(track.phi() - ueAxis2.Phi()));
         double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
-        double maxConeRadius = coneRadius;
-        if (applyAreaCut) {
-          maxConeRadius = std::sqrt(maxNormalizedJetArea) * rJet;
-        }
+        double maxConeRadius = rJet;
 
         if (deltaRUe1 > maxConeRadius && deltaRUe2 > maxConeRadius)
           continue;
@@ -585,13 +579,13 @@ struct jetHadronsPid {
         double dcaxy = track.dcaXY();
         double dcaz = track.dcaZ();
 
-        bool passTpcPi = (std::abs(track.tpcNSigmaPi()) <= 3.0);
-        bool passTpcKa = (std::abs(track.tpcNSigmaKa()) <= 3.0);
-        bool passTpcPr = (std::abs(track.tpcNSigmaPr()) <= 3.0);
+        bool passTpcPi = (std::abs(track.tpcNSigmaPi()) <= maxNSigmaPid);
+        bool passTpcKa = (std::abs(track.tpcNSigmaKa()) <= maxNSigmaPid);
+        bool passTpcPr = (std::abs(track.tpcNSigmaPr()) <= maxNSigmaPid);
 
-        bool passTofPi = track.hasTOF() && (std::abs(track.tofNSigmaPi()) <= 3.0);
-        bool passTofKa = track.hasTOF() && (std::abs(track.tofNSigmaKa()) <= 3.0);
-        bool passTofPr = track.hasTOF() && (std::abs(track.tofNSigmaPr()) <= 3.0);
+        bool passTofPi = track.hasTOF() && (std::abs(track.tofNSigmaPi()) <= maxNSigmaPid);
+        bool passTofKa = track.hasTOF() && (std::abs(track.tofNSigmaKa()) <= maxNSigmaPid);
+        bool passTofPr = track.hasTOF() && (std::abs(track.tofNSigmaPr()) <= maxNSigmaPid);
 
         const double ptThreshold = 0.8;
 
@@ -651,7 +645,7 @@ struct jetHadronsPid {
 
   PROCESS_SWITCH(jetHadronsPid, processForJets, "Pid Analysis in and outside jets", true);
 
-  void processMC(SelectedCollisions::iterator const& collision, aod::McParticles const& mcParticles, HadronTracksMC const& tracks)
+  void processMC(SelectedCollisions::iterator const& collision, HadronTracksMC const& tracks)
   {
     if (!collision.sel8() || std::abs(collision.posZ()) > zVtx)
       return;
@@ -668,24 +662,6 @@ struct jetHadronsPid {
     if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched))
       return;
 
-    for (auto const& mcpart : mcParticles) {
-      if (!mcpart.isPhysicalPrimary())
-        continue;
-      if (std::abs(mcpart.eta()) > 0.8)
-        continue;
-
-      int pdg = std::abs(mcpart.pdgCode());
-      double pt = mcpart.pt();
-
-      if (pdg == 211) {
-        registryData.fill(HIST("mc_gen_pion_pt"), pt);
-      } else if (pdg == 321) {
-        registryData.fill(HIST("mc_gen_kaon_pt"), pt);
-      } else if (pdg == 2212) {
-        registryData.fill(HIST("mc_gen_proton_pt"), pt);
-      }
-    }
-
     const double ptThreshold = 0.8;
 
     for (auto const& track : tracks) {
@@ -696,14 +672,14 @@ struct jetHadronsPid {
 
       double pt = track.pt();
 
-      bool passTpcPi = (std::abs(track.tpcNSigmaPi()) <= 3.0);
-      bool passTofPi = track.hasTOF() && (std::abs(track.tofNSigmaPi()) <= 3.0);
+      bool passTpcPi = (std::abs(track.tpcNSigmaPi()) <= maxNSigmaPid);
+      bool passTofPi = track.hasTOF() && (std::abs(track.tofNSigmaPi()) <= maxNSigmaPid);
 
-      bool passTpcKa = (std::abs(track.tpcNSigmaKa()) <= 3.0);
-      bool passTofKa = track.hasTOF() && (std::abs(track.tofNSigmaKa()) <= 3.0);
+      bool passTpcKa = (std::abs(track.tpcNSigmaKa()) <= maxNSigmaPid);
+      bool passTofKa = track.hasTOF() && (std::abs(track.tofNSigmaKa()) <= maxNSigmaPid);
 
-      bool passTpcPr = (std::abs(track.tpcNSigmaPr()) <= 3.0);
-      bool passTofPr = track.hasTOF() && (std::abs(track.tofNSigmaPr()) <= 3.0);
+      bool passTpcPr = (std::abs(track.tpcNSigmaPr()) <= maxNSigmaPid);
+      bool passTofPr = track.hasTOF() && (std::abs(track.tofNSigmaPr()) <= maxNSigmaPid);
 
       if (!track.has_mcParticle())
         continue;
@@ -747,6 +723,30 @@ struct jetHadronsPid {
     }
   }
   PROCESS_SWITCH(jetHadronsPid, processMC, "Run on Monte Carlo", false);
+  void processMCTruth(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles)
+  {
+    if (std::abs(mcCollision.posZ()) > zVtx)
+      return;
+
+    for (auto const& mcpart : mcParticles) {
+      if (!mcpart.isPhysicalPrimary())
+        continue;
+      if (std::abs(mcpart.eta()) > maxEta)
+        continue;
+
+      int pdg = std::abs(mcpart.pdgCode());
+      double pt = mcpart.pt();
+
+      if (pdg == 211) {
+        registryData.fill(HIST("mc_gen_pion_pt"), pt);
+      } else if (pdg == 321) {
+        registryData.fill(HIST("mc_gen_kaon_pt"), pt);
+      } else if (pdg == 2212) {
+        registryData.fill(HIST("mc_gen_proton_pt"), pt);
+      }
+    }
+  }
+  PROCESS_SWITCH(jetHadronsPid, processMCTruth, "Run on Monte Carlo (Pure Truth)", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
