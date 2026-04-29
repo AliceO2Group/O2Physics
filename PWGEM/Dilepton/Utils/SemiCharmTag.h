@@ -110,14 +110,14 @@ LHPair makePairLeptonTrack(TFitter& fitter, TCollision const& collision, TLepton
     return pair;
   }
 
-  ROOT::Math::PxPyPzMVector v2(pvec1[0], pvec1[1], pvec1[2], o2::constants::physics::MassKaonCharged);
-  if (strHadId == o2::track::PID::Kaon) {
-    v2.SetM(o2::constants::physics::MassKaonCharged);
-  } else {
-    LOGF(info, "strHadId supports only Kaon.");
-    pair.isOK = false;
-    return pair;
-  }
+  ROOT::Math::PxPyPzMVector v2(pvec1[0], pvec1[1], pvec1[2], o2::constants::physics::MassPionCharged);
+  // if (strHadId == o2::track::PID::Kaon) {
+  //   v2.SetM(o2::constants::physics::MassPionCharged);
+  // } else {
+  //   LOGF(info, "strHadId supports only Kaon.");
+  //   pair.isOK = false;
+  //   return pair;
+  // }
 
   ROOT::Math::PxPyPzMVector v12 = v1 + v2;
 
