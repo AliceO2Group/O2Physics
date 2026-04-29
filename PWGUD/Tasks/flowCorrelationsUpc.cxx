@@ -375,7 +375,7 @@ struct FlowCorrelationsUpc {
     return true;
   }
 
-  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, float phi, float eta, float pt, float vtxz)
+  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua)
   {
     float eff = 1.;
     if (mEfficiency)
@@ -391,7 +391,7 @@ struct FlowCorrelationsUpc {
 
   // fill multiple histograms
   template <typename TCollision, typename TTracks>
-  void fillYield(TCollision collision, TTracks tracks, int runNumber, float vtxz) // function to fill the yield and etaphi histograms.
+  void fillYield(TCollision collision, TTracks tracks, float vtxz) // function to fill the yield and etaphi histograms.
   {
     registry.fill(HIST("Nch"), tracks.size());
     registry.fill(HIST("zVtx"), collision.posZ());
