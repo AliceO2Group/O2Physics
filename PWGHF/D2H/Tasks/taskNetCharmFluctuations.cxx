@@ -392,7 +392,7 @@ struct HfTaskNetCharmFluctuations {
     addD0Candidates<-1>(candsD0ToKPi, acceptedCands);
     fillD0OutputTables(collision, acceptedCands);
   }
-  PROCESS_SWITCH(HfTaskNetCharmFluctuations, processD0, "Process D0 and D0bar candidates", false);
+  PROCESS_SWITCH(HfTaskNetCharmFluctuations, processD0, "Process D0 candidates", true);
 
   void processMcD0(CollData::iterator const& collision,
                    aod::BCsWithTimestamps const&,
@@ -410,7 +410,7 @@ struct HfTaskNetCharmFluctuations {
     addD0Candidates<-1, true>(candsD0ToKPi, acceptedCands);
     fillD0OutputTables(collision, acceptedCands);
   }
-  PROCESS_SWITCH(HfTaskNetCharmFluctuations, processMcD0, "Process MC D0 and D0bar candidates", false);
+  PROCESS_SWITCH(HfTaskNetCharmFluctuations, processMcD0, "Process MC D0 candidates", false);
 
   template <bool IsMc, typename TCandidates>
   void runDplus(CollData::iterator const& collision, TCandidates const& candidatesDplus)
@@ -449,7 +449,7 @@ struct HfTaskNetCharmFluctuations {
   {
     runDplus<false>(collision, candidatesDplus);
   }
-  PROCESS_SWITCH(HfTaskNetCharmFluctuations, processDplus, "Process Dplus and Dminus candidates", true);
+  PROCESS_SWITCH(HfTaskNetCharmFluctuations, processDplus, "Process Dplus candidates", false);
 
   void processMcDplus(CollData::iterator const& collision,
                       aod::BCsWithTimestamps const&,
@@ -458,7 +458,7 @@ struct HfTaskNetCharmFluctuations {
   {
     runDplus<true>(collision, candidatesDplus);
   }
-  PROCESS_SWITCH(HfTaskNetCharmFluctuations, processMcDplus, "Process MC Dplus and Dminus candidates", false);
+  PROCESS_SWITCH(HfTaskNetCharmFluctuations, processMcDplus, "Process MC Dplus candidates", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
