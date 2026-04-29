@@ -1047,7 +1047,7 @@ struct taggingHFE {
           continue;
         }
         const auto& mcParticle = track.template mcParticle_as<aod::McParticles>();
-        const auto& mcCollision = mcParticle.template mcCollision_as<aod::McCollisions>();
+        // const auto& mcCollision = mcParticle.template mcCollision_as<aod::McCollisions>();
         // if (eventCut.cfgEventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventCut.cfgEventGeneratorType) {
         //   continue;
         // }
