@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file flowFlucGfwpp.cxx
-/// \brief Dedicated GFW task to analyse angular correlations using ESE primarily in light ions
+/// \file flowFlucGfwPp.cxx
+/// \brief GFW task for Event Shape Engineering studies in pp collisions
 /// \author Emil Gorm Nielsen, NBI, emil.gorm.nielsen@cern.ch, Wenya Wu, TUM, wenya.wu@cern.ch
 
 #include "PWGCF/GenericFramework/Core/FlowContainer.h"
@@ -29,14 +29,14 @@
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
 #include <CCDB/BasicCCDBManager.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DataFormatsParameters/GRPObject.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/runDataProcessing.h>
 
 #include <TF1.h>
 #include <TPDGCode.h>
@@ -86,7 +86,18 @@ std::vector<double> multGlobalT0ACutPars;
 std::vector<int> firstRunsOfFill;
 } // namespace o2::analysis::gfwflowflucpp
 
-struct FlowFlucGfwPP {
+struct FlowFlucGfwPp {
+  static constexpr int kInvalidQnBin = -999;
+  static constexpr float kInvalidQnSeparator = -999.f;
+
+  static constexpr int kRequireBothEtaSides = 1;
+  static constexpr int kRequireFullFourParticleTracks = 2;
+  static constexpr int kRequireTwoTracksInBothEtaSides = 4;
+  static constexpr int kRequireTwoTracksInThreeEtaRegions = 8;
+
+  static constexpr int kMinTracksForFourParticleCorrelation = 4;
+  static constexpr int kMinTracksPerEtaSideForGapCorrelation = 2;
+  static constexpr int kMinTracksPerEtaRegionForThreeSubevents = 2;
 
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgIsMC, bool, false, "Is MC event")
@@ -149,55 +160,52 @@ struct FlowFlucGfwPP {
     O2_DEFINE_CONFIGURABLE(cfgGlobalT0AHighSigma, float, 4, "Number of sigma deviations above expected value in global vs T0A correlation");
   } cfgGlobalAsideCorrCuts;
 
-  Configurable<GFWBinningCuts> cfgGFWBinning{
-    "cfgGFWBinning",
-    {40, 16, 72, 300, 0, 3000, 0.2, 10.0, 0.2, 3.0, {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75, 4, 4.5, 5, 5.5, 6, 7, 8, 9, 10}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90}},
-    "Configuration for binning"};
+  Configurable<GFWBinningCuts> cfgGfwBinning{"cfgGfwBinning",
+                                             {40, 16, 72, 300, 0, 3000, 0.2, 10.0, 0.2, 3.0, {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75, 4, 4.5, 5, 5.5, 6, 7, 8, 9, 10}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90}},
+                                             "Configuration for binning"};
 
-  Configurable<GFWRegions> cfgRegions{
-    "cfgRegions",
-    {
-      {"refN", "refP", "refFull"},
-      {-0.8, 0.4, -0.8},
-      {-0.4, 0.8, 0.8},
-      {0, 0, 0}, // pT bins
-      {1, 1, 1}  // bitmask
-    },
-    "Configurations for GFW regions"};
+  Configurable<GFWRegions> cfgRegions{"cfgRegions",
+                                      {
+                                        {"refN", "refP", "refFull"},
+                                        {-0.8, 0.4, -0.8},
+                                        {-0.4, 0.8, 0.8},
+                                        {0, 0, 0}, // pT bins
+                                        {1, 1, 1}  // bitmask
+                                      },
+                                      "Configurations for GFW regions"};
 
-  Configurable<GFWCorrConfigs> cfgCorrConfig{
-    "cfgCorrConfig",
-    {{"refN {2 -2}",
-      "refN {2 2 -2 -2}",
-      "refN {2 2 2 -2 -2 -2}",
-      "refN {2 2 2 2 -2 -2 -2 -2}",
-      "refP {2 -2}",
-      "refP {2 2 -2 -2}",
-      "refP {2 2 2 -2 -2 -2}",
-      "refP {2 2 2 2 -2 -2 -2 -2}",
-      "refN {2} refP {-2}",
-      "refN {2 2} refP {-2 -2}",
-      "refFull {2 -2}",
-      "refFull {2 2 -2 -2}",
-      "refFull {2 2 2 -2 -2 -2}",
-      "refFull {2 2 2 2 -2 -2 -2 -2}"},
-     {"ChNeg22",
-      "ChNeg24",
-      "ChNeg26",
-      "ChNeg28",
-      "ChPos22",
-      "ChPos24",
-      "ChPos26",
-      "ChPos28",
-      "ChGap22",
-      "ChGap24",
-      "ChFull22",
-      "ChFull24",
-      "ChFull26",
-      "ChFull28"},
-     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
-    "Configurations for pp ESE v2 cumulants"};
+  Configurable<GFWCorrConfigs> cfgCorrConfig{"cfgCorrConfig",
+                                             {{"refN {2 -2}",
+                                               "refN {2 2 -2 -2}",
+                                               "refN {2 2 2 -2 -2 -2}",
+                                               "refN {2 2 2 2 -2 -2 -2 -2}",
+                                               "refP {2 -2}",
+                                               "refP {2 2 -2 -2}",
+                                               "refP {2 2 2 -2 -2 -2}",
+                                               "refP {2 2 2 2 -2 -2 -2 -2}",
+                                               "refN {2} refP {-2}",
+                                               "refN {2 2} refP {-2 -2}",
+                                               "refFull {2 -2}",
+                                               "refFull {2 2 -2 -2}",
+                                               "refFull {2 2 2 -2 -2 -2}",
+                                               "refFull {2 2 2 2 -2 -2 -2 -2}"},
+                                              {"ChNeg22",
+                                               "ChNeg24",
+                                               "ChNeg26",
+                                               "ChNeg28",
+                                               "ChPos22",
+                                               "ChPos24",
+                                               "ChPos26",
+                                               "ChPos28",
+                                               "ChGap22",
+                                               "ChGap24",
+                                               "ChFull22",
+                                               "ChFull24",
+                                               "ChFull26",
+                                               "ChFull28"},
+                                              {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                                              {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+                                             "Configurations for pp ESE v2 cumulants"};
 
   //  Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -304,7 +312,7 @@ struct FlowFlucGfwPP {
 
   void init(InitContext const&)
   {
-    LOGF(info, "FlowFlucGfwPP::init()");
+    LOGF(info, "FlowFlucGfwPp::init()");
     o2::analysis::gfwflowflucpp::regions.SetNames(cfgRegions->GetNames());
     o2::analysis::gfwflowflucpp::regions.SetEtaMin(cfgRegions->GetEtaMin());
     o2::analysis::gfwflowflucpp::regions.SetEtaMax(cfgRegions->GetEtaMax());
@@ -318,23 +326,23 @@ struct FlowFlucGfwPP {
     o2::analysis::gfwflowflucpp::regions.Print();
     o2::analysis::gfwflowflucpp::configs.Print();
 
-    o2::analysis::gfwflowflucpp::ptbinning = cfgGFWBinning->GetPtBinning();
-    // o2::analysis::gfwflowflucpp::ptpoilow = cfgGFWBinning->GetPtPOImin();
-    // o2::analysis::gfwflowflucpp::ptpoiup = cfgGFWBinning->GetPtPOImax();
-    o2::analysis::gfwflowflucpp::ptreflow = cfgGFWBinning->GetPtRefMin();
-    o2::analysis::gfwflowflucpp::ptrefup = cfgGFWBinning->GetPtRefMax();
+    o2::analysis::gfwflowflucpp::ptbinning = cfgGfwBinning->GetPtBinning();
+    // o2::analysis::gfwflowflucpp::ptpoilow = cfgGfwBinning->GetPtPOImin();
+    // o2::analysis::gfwflowflucpp::ptpoiup = cfgGfwBinning->GetPtPOImax();
+    o2::analysis::gfwflowflucpp::ptreflow = cfgGfwBinning->GetPtRefMin();
+    o2::analysis::gfwflowflucpp::ptrefup = cfgGfwBinning->GetPtRefMax();
     o2::analysis::gfwflowflucpp::ptlow = cfgPtmin;
     o2::analysis::gfwflowflucpp::ptup = cfgPtmax;
-    o2::analysis::gfwflowflucpp::etabins = cfgGFWBinning->GetEtaBins();
-    o2::analysis::gfwflowflucpp::vtxZbins = cfgGFWBinning->GetVtxZbins();
-    o2::analysis::gfwflowflucpp::phibins = cfgGFWBinning->GetPhiBins();
+    o2::analysis::gfwflowflucpp::etabins = cfgGfwBinning->GetEtaBins();
+    o2::analysis::gfwflowflucpp::vtxZbins = cfgGfwBinning->GetVtxZbins();
+    o2::analysis::gfwflowflucpp::phibins = cfgGfwBinning->GetPhiBins();
     o2::analysis::gfwflowflucpp::philow = 0.0f;
     o2::analysis::gfwflowflucpp::phiup = o2::constants::math::TwoPI;
-    o2::analysis::gfwflowflucpp::nchbins = cfgGFWBinning->GetNchBins();
-    o2::analysis::gfwflowflucpp::nchlow = cfgGFWBinning->GetNchMin();
-    o2::analysis::gfwflowflucpp::nchup = cfgGFWBinning->GetNchMax();
-    o2::analysis::gfwflowflucpp::centbinning = cfgGFWBinning->GetCentBinning();
-    cfgGFWBinning->Print();
+    o2::analysis::gfwflowflucpp::nchbins = cfgGfwBinning->GetNchBins();
+    o2::analysis::gfwflowflucpp::nchlow = cfgGfwBinning->GetNchMin();
+    o2::analysis::gfwflowflucpp::nchup = cfgGfwBinning->GetNchMax();
+    o2::analysis::gfwflowflucpp::centbinning = cfgGfwBinning->GetCentBinning();
+    cfgGfwBinning->Print();
 
     o2::analysis::gfwflowflucpp::multGlobalCorrCutPars = cfgMultGlobalCutPars;
     o2::analysis::gfwflowflucpp::multPVCorrCutPars = cfgMultPVCutPars;
@@ -891,7 +899,7 @@ struct FlowFlucGfwPP {
     if (flat.empty() || flat.size() % nBins != 0) {
       LOGP(error, "ConfQnBinSeparator size = {} is not divisible by {}",
            flat.size(), nBins);
-      return {{-999, -999}};
+      return {{kInvalidQnSeparator, kInvalidQnSeparator}};
     }
 
     size_t nCent = flat.size() / nBins;
@@ -912,12 +920,12 @@ struct FlowFlucGfwPP {
   int myqnBin(float centrality, float centMax, float qn, std::vector<float> qnBinSprt, const int numQnBins, float centBinWidth = 1.f)
   {
     auto twoDSeparator = getQnBinSeparator2D(qnBinSprt, numQnBins);
-    if (twoDSeparator.empty() || twoDSeparator[0][0] == -999.) {
+    if (twoDSeparator.empty() || twoDSeparator[0][0] == kInvalidQnSeparator) {
       LOGP(warning, "ConfQnBinSeparator not set, using default fallback!");
-      return -999; // safe fallback
+      return kInvalidQnBin; // safe fallback
     }
 
-    int qnBin = -999;
+    int qnBin = kInvalidQnBin;
     int mycentBin = static_cast<int>(centrality / centBinWidth);
     if (mycentBin >= static_cast<int>(centMax / centBinWidth))
       return qnBin;
@@ -978,17 +986,20 @@ struct FlowFlucGfwPP {
       processTrack(track, vtxz, xaxis.multiplicity, run, acceptedTracks);
     }
 
-    if (cfgConsistentEventFlag & 1)
+    if (cfgConsistentEventFlag & kRequireBothEtaSides)
       if (!acceptedTracks.nPos || !acceptedTracks.nNeg)
         return;
-    if (cfgConsistentEventFlag & 2)
-      if (acceptedTracks.nFull < 4)
+    if (cfgConsistentEventFlag & kRequireFullFourParticleTracks)
+      if (acceptedTracks.nFull < kMinTracksForFourParticleCorrelation)
         return;
-    if (cfgConsistentEventFlag & 4)
-      if (acceptedTracks.nPos < 2 || acceptedTracks.nNeg < 2)
+    if (cfgConsistentEventFlag & kRequireTwoTracksInBothEtaSides)
+      if (acceptedTracks.nPos < kMinTracksPerEtaSideForGapCorrelation ||
+          acceptedTracks.nNeg < kMinTracksPerEtaSideForGapCorrelation)
         return;
-    if (cfgConsistentEventFlag & 8)
-      if (acceptedTracks.nPos < 2 || acceptedTracks.nMid < 2 || acceptedTracks.nNeg < 2)
+    if (cfgConsistentEventFlag & kRequireTwoTracksInThreeEtaRegions)
+      if (acceptedTracks.nPos < kMinTracksPerEtaRegionForThreeSubevents ||
+          acceptedTracks.nMid < kMinTracksPerEtaRegionForThreeSubevents ||
+          acceptedTracks.nNeg < kMinTracksPerEtaRegionForThreeSubevents)
         return;
 
     fillOutputContainers<dt>(cfgUseNch ? static_cast<float>(xaxis.multiplicity) : xaxis.centrality,
@@ -1277,7 +1288,7 @@ struct FlowFlucGfwPP {
 
     processCollision<kReco>(collision, tracks, xaxis, run, qPtmp);
   }
-  PROCESS_SWITCH(FlowFlucGfwPP, processData, "Process analysis for non-derived data", false);
+  PROCESS_SWITCH(FlowFlucGfwPp, processData, "Process analysis for non-derived data", false);
 
   void processq2(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs, aod::Qvectors, aod::QvectorTPCposVecs, aod::QvectorTPCnegVecs>>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
   {
@@ -1314,12 +1325,12 @@ struct FlowFlucGfwPP {
     registry.fill(HIST("mq2/h2_mult_q2_etapos"), multi, qvecPos);
     registry.fill(HIST("mq2/h2_mult_q2_etaneg"), multi, qvecNeg);
   }
-  PROCESS_SWITCH(FlowFlucGfwPP, processq2, "Process analysis for filling q-vectors", true);
+  PROCESS_SWITCH(FlowFlucGfwPp, processq2, "Process analysis for filling q-vectors", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<FlowFlucGfwPP>(cfgc),
+    adaptAnalysisTask<FlowFlucGfwPp>(cfgc),
   };
 }
