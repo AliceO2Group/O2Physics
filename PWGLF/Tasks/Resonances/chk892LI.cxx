@@ -16,7 +16,7 @@
 /// \author Su-Jeong Ji <su-jeong.ji@cern.ch>, Bong-Hwi Lim <Bong-Hwi.Lim@cern.ch>
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-//#include "PWGLF/DataModel/mcCentrality.h"
+// #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/collisionCuts.h"
 #include "PWGLF/Utils/inelGt.h"
 
@@ -116,13 +116,13 @@ struct Chk892LI {
   using MCTrackCandidates = soa::Join<TrackCandidates, aod::McTrackLabels>; //, aod::McParticles>;
   using MCV0Candidates = soa::Join<V0Candidates, aod::McV0Labels>;
 
-	Preslice<TrackCandidates> perCollision = aod::track::collisionId;
-	Preslice<V0Candidates> perCollisionV0 = aod::v0data::collisionId;
-	Preslice<MCTrackCandidates> perCollisionMC = aod::track::collisionId;
-	PresliceUnsorted<MCEventCandidates> perMcRecoCollision = aod::mccollisionlabel::mcCollisionId;
+  Preslice<TrackCandidates> perCollision = aod::track::collisionId;
+  Preslice<V0Candidates> perCollisionV0 = aod::v0data::collisionId;
+  Preslice<MCTrackCandidates> perCollisionMC = aod::track::collisionId;
+  PresliceUnsorted<MCEventCandidates> perMcRecoCollision = aod::mccollisionlabel::mcCollisionId;
 
   // for MC truth
-	using MCTrueEventCandidates = aod::McCollisions;
+  using MCTrueEventCandidates = aod::McCollisions;
   using MCTrueTrackCandidates = aod::McParticles;
 
   using LorentzVectorSetXYZM = ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<float>>;
@@ -177,7 +177,7 @@ struct Chk892LI {
 
   /// PID Selections, pion
   struct : ConfigurableGroup {
-    Configurable<bool> cfgTPConly{"cfgTPConly", true, "Use only TPC for PID"};                                     // bool
+    Configurable<bool> cfgTPConly{"cfgTPConly", true, "Use only TPC for PID"};                                      // bool
     Configurable<float> cfgMaxTPCnSigmaPion{"cfgMaxTPCnSigmaPion", 5.0, "TPC nSigma cut for Pion"};                 // TPC
     Configurable<float> cfgMaxTOFnSigmaPion{"cfgMaxTOFnSigmaPion", 5.0, "TOF nSigma cut for Pion"};                 // TOF
     Configurable<float> cfgNsigmaCutCombinedPion{"cfgNsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"}; // Combined
@@ -261,7 +261,7 @@ struct Chk892LI {
   int kPDGK0 = kK0;
   int kKstarPlus = o2::constants::physics::Pdg::kKPlusStar892;
   // int kPiPlus = 211;
-	double fMaxPosPV = 1e-2;
+  double fMaxPosPV = 1e-2;
 
   void init(o2::framework::InitContext&)
   {
@@ -488,8 +488,8 @@ struct Chk892LI {
       return collision.centFT0C();
     } else if (cfgCentEst == kCentFT0M) {
       return collision.centFT0M();
-		} else if (cfgCentEst == kCentFV0A) {
-			return collision.centFV0A();
+    } else if (cfgCentEst == kCentFV0A) {
+      return collision.centFV0A();
     } else {
       return kInvalidCentrality;
     }
@@ -540,8 +540,8 @@ struct Chk892LI {
       if (std::abs(track.dcaXY()) > TrackCuts.cfgMaxbDCArToPVcut)
         return false;
     }
-		if (TrackCuts.cfgpTdepDCAzCut) {
-			// Tuned on the LHC22f anchored MC LHC23d1d on primary pions. 7 Sigmas of the resolution
+    if (TrackCuts.cfgpTdepDCAzCut) {
+      // Tuned on the LHC22f anchored MC LHC23d1d on primary pions. 7 Sigmas of the resolution
       if (std::abs(track.dcaZ()) > (0.004 + (0.013 / track.pt())))
         return false;
     } else {
@@ -559,8 +559,8 @@ struct Chk892LI {
       return false;
     if (PIDCuts.cfgTPConly)
       return true;
-  //  if (candidate.pt() <= PIDCuts.cfgTOFMinPt)
-  //    return true;
+    //  if (candidate.pt() <= PIDCuts.cfgTOFMinPt)
+    //    return true;
 
     if (candidate.hasTOF()) {
       const bool tofPIDPassed = std::abs(candidate.tofNSigmaPi()) < PIDCuts.cfgMaxTOFnSigmaPion;
@@ -721,85 +721,84 @@ struct Chk892LI {
   std::unordered_map<int64_t, float> refCentByMcId;
 
   template <typename McCollsT>
- // void buildAllowedMcIds(McCollsT const& mcCollisions, RecoEventsT const& events)
+  // void buildAllowedMcIds(McCollsT const& mcCollisions, RecoEventsT const& events)
   void buildAllowedMcIds(McCollsT const& mcCollisions, MCEventCandidates const& events)
   {
     allowedMcIds.clear();
     centTruthByAllowed.clear();
 
-		for (const auto& mcColl : mcCollisions) {
+    for (const auto& mcColl : mcCollisions) {
       const auto mcid = mcColl.globalIndex();
 
-			if (doprocessMC) {
+      if (doprocessMC) {
         histos.fill(HIST("QAvtxz_woCut"), mcColl.posZ());
-			}
-			if (cfgTruthIncludeZvtx && std::abs(mcColl.posZ()) >= EventCuts.cfgEvtZvtx) {
+      }
+      if (cfgTruthIncludeZvtx && std::abs(mcColl.posZ()) >= EventCuts.cfgEvtZvtx) {
         continue;
-			}
-			if (doprocessMC) {
+      }
+      if (doprocessMC) {
         histos.fill(HIST("QAvtxz_wVtxzCut"), mcColl.posZ());
-			}
+      }
 
-			auto groupedCollisions = events.sliceBy(perMcRecoCollision, mcid);
+      auto groupedCollisions = events.sliceBy(perMcRecoCollision, mcid);
 
-			bool atLeastOneMatch = false;
-			int biggestNContribs = -1;
-			float bestCent = kInvalidCentrality;
+      bool atLeastOneMatch = false;
+      int biggestNContribs = -1;
+      float bestCent = kInvalidCentrality;
 
-			for (auto const& coll : groupedCollisions) {
-				const float lCentrality = getCentrality(coll);
-				if (lCentrality == kInvalidCentrality)
-					continue;
+      for (auto const& coll : groupedCollisions) {
+        const float lCentrality = getCentrality(coll);
+        if (lCentrality == kInvalidCentrality)
+          continue;
 
-				if (doprocessMC) {
-					histos.fill(HIST("QACent_woCut"), lCentrality);
-				}
+        if (doprocessMC) {
+          histos.fill(HIST("QACent_woCut"), lCentrality);
+        }
 
-				if (!colCuts.isSelected(coll)) {
-					continue;
-				}
-				if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(coll)) {
-					continue;
-				}
-				if (!coll.isInelGt0()) {
-					continue;
-				}
+        if (!colCuts.isSelected(coll)) {
+          continue;
+        }
+        if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(coll)) {
+          continue;
+        }
+        if (!coll.isInelGt0()) {
+          continue;
+        }
 
-				if (doprocessMC) {
-					histos.fill(HIST("QACent_woCentCut"), lCentrality);
-				}
+        if (doprocessMC) {
+          histos.fill(HIST("QACent_woCentCut"), lCentrality);
+        }
 
-				if (lCentrality < EventCuts.cfgEventCentralityMin || lCentrality > EventCuts.cfgEventCentralityMax) {
-					continue;
-				}
+        if (lCentrality < EventCuts.cfgEventCentralityMin || lCentrality > EventCuts.cfgEventCentralityMax) {
+          continue;
+        }
 
-				if (doprocessMC) {
-					histos.fill(HIST("QACent_wCentCut"), lCentrality);
-				}
+        if (doprocessMC) {
+          histos.fill(HIST("QACent_wCentCut"), lCentrality);
+        }
 
-				atLeastOneMatch = true;
+        atLeastOneMatch = true;
 
-				// choose best collision by largest number of PV contributors
-				const int nContrib = coll.multPVTotalContributors();
-				if (nContrib > biggestNContribs) {
-					biggestNContribs = nContrib;
-					bestCent = lCentrality;
-				}
-			}
+        // choose best collision by largest number of PV contributors
+        const int nContrib = coll.multPVTotalContributors();
+        if (nContrib > biggestNContribs) {
+          biggestNContribs = nContrib;
+          bestCent = lCentrality;
+        }
+      }
 
-			if (!atLeastOneMatch || bestCent == kInvalidCentrality) {
-				continue;
-			}
+      if (!atLeastOneMatch || bestCent == kInvalidCentrality) {
+        continue;
+      }
 
-			allowedMcIds.insert(mcid);
-			centTruthByAllowed.emplace(mcid, bestCent);
+      allowedMcIds.insert(mcid);
+      centTruthByAllowed.emplace(mcid, bestCent);
 
-			if (doprocessMC) {
-				histos.fill(HIST("QAMCCent_allowed"), bestCent);
-			}
-		}
-	}//buildAllowedMcIds
-
+      if (doprocessMC) {
+        histos.fill(HIST("QAMCCent_allowed"), bestCent);
+      }
+    }
+  } // buildAllowedMcIds
 
   template <typename McCollsT, typename McPartsT>
   void buildReferenceMcIds(McCollsT const& mccolls, McPartsT const& mcparts)
@@ -824,18 +823,18 @@ struct Chk892LI {
 
       const auto mcid = coll.globalIndex();
 
-			auto it = centTruthByAllowed.find(mcid);
-			if (it == centTruthByAllowed.end()) {
+      auto it = centTruthByAllowed.find(mcid);
+      if (it == centTruthByAllowed.end()) {
         continue;
-			}
+      }
 
-			refClassIds.insert(mcid);
+      refClassIds.insert(mcid);
 
-			const float lCentrality = it->second;
-			refCentByMcId.emplace(mcid, lCentrality);
+      const float lCentrality = it->second;
+      refCentByMcId.emplace(mcid, lCentrality);
 
-    }//for
-  }//buildReferenceMcIds
+    } // for
+  } // buildReferenceMcIds
 
   void effK0sProcessGen(MCTrueTrackCandidates const& mcparts)
   {
@@ -876,11 +875,11 @@ struct Chk892LI {
       if (allowedMcIds.count(mcid) == 0)
         continue;
 
-			auto iter = centTruthByAllowed.find(mcid);
-			if (iter == centTruthByAllowed.end()) {
+      auto iter = centTruthByAllowed.find(mcid);
+      if (iter == centTruthByAllowed.end()) {
         continue;
-			}
-			const float lCentrality = iter->second;
+      }
+      const float lCentrality = iter->second;
 
       const double ptreco = v0.pt();
       const double yreco = v0.yK0Short();
@@ -956,7 +955,6 @@ struct Chk892LI {
     return true;
   } // matchRecoToTruthKstar
 
-
   void effKstarProcessGen(MCTrueEventCandidates const&, MCTrueTrackCandidates const& mcparts)
   {
     for (const auto& part : mcparts) {
@@ -967,44 +965,37 @@ struct Chk892LI {
       if (std::abs(part.y()) > KstarCuts.cfgKstarMaxRap)
         continue;
 
+      const int pionWanted = (part.pdgCode() > 0) ? +kPiPlus : -kPiPlus;
+      bool hasRightPion = false;
+      bool hasK0sToPipi = false;
 
-			const int pionWanted = (part.pdgCode() > 0) ? +kPiPlus : -kPiPlus;
-			bool hasRightPion = false;
-			bool hasK0sToPipi = false;
+      for (const auto& d1 : part.template daughters_as<MCTrueTrackCandidates>()) {
+        const int pdg1 = d1.pdgCode();
+        if (pdg1 == pionWanted) {
+          hasRightPion = true;
+        } else if (std::abs(pdg1) == kPDGK0) {
+          for (const auto& d2 : d1.template daughters_as<MCTrueTrackCandidates>()) {
+            if (std::abs(d2.pdgCode()) == kPDGK0s) {
+              bool seenPip = false, seenPim = false;
+              for (const auto& d3 : d2.template daughters_as<MCTrueTrackCandidates>()) {
+                if (d3.pdgCode() == +kPiPlus)
+                  seenPip = true;
+                else if (d3.pdgCode() == -kPiPlus)
+                  seenPim = true;
+              }
+              if (seenPip && seenPim) {
+                hasK0sToPipi = true;
+                break;
+              }
+            }
+          }
+        }
+        if (hasRightPion && hasK0sToPipi)
+          break;
+      }
 
-			for (const auto& d1 : part.template daughters_as<MCTrueTrackCandidates>()) {
-				const int pdg1 = d1.pdgCode();
-				if (pdg1 == pionWanted)
-				{
-					hasRightPion = true;
-				} else if (std::abs(pdg1) == kPDGK0) 
-				{
-					for (const auto& d2 : d1.template daughters_as<MCTrueTrackCandidates>()) 
-					{
-						if (std::abs(d2.pdgCode()) == kPDGK0s) 
-						{
-							bool seenPip = false, seenPim = false;
-							for (const auto& d3 : d2.template daughters_as<MCTrueTrackCandidates>()) 
-							{
-								if (d3.pdgCode() == +kPiPlus)
-									seenPip = true;
-								else if (d3.pdgCode() == -kPiPlus)
-									seenPim = true;
-							}
-							if (seenPip && seenPim) 
-							{
-								hasK0sToPipi = true;
-								break;
-							}
-						}
-					}
-				}
-				if (hasRightPion && hasK0sToPipi) break;
-			}
-
-			if (!(hasRightPion && hasK0sToPipi))
-				continue;
-
+      if (!(hasRightPion && hasK0sToPipi))
+        continue;
 
       const auto mcid = part.mcCollisionId();
       if (allowedMcIds.count(mcid) == 0)
@@ -1015,28 +1006,26 @@ struct Chk892LI {
         continue;
 
       const float lCentrality = iter->second;
-		
+
       histos.fill(HIST("EffKstar/genKstar"), part.pt(), lCentrality);
 
-			if (part.vt() == 0)
-			{
-			  histos.fill(HIST("EffKstar/genKstar_pri"), part.pt(), lCentrality);
-			}
+      if (part.vt() == 0) {
+        histos.fill(HIST("EffKstar/genKstar_pri"), part.pt(), lCentrality);
+      }
 
-			const auto mcc = part.mcCollision_as<MCTrueEventCandidates>();
+      const auto mcc = part.mcCollision_as<MCTrueEventCandidates>();
 
-			const float dx = part.vx() - mcc.posX();
-			const float dy = part.vy() - mcc.posY();
-			const float dz = part.vz() - mcc.posZ();
+      const float dx = part.vx() - mcc.posX();
+      const float dy = part.vy() - mcc.posY();
+      const float dz = part.vz() - mcc.posZ();
 
-			const float distanceFromPV = std::sqrt(dx*dx + dy*dy + dz*dz);
+      const float distanceFromPV = std::sqrt(dx * dx + dy * dy + dz * dz);
 
-			if (distanceFromPV < fMaxPosPV)
-			{
-				histos.fill(HIST("EffKstar/genKstar_pri_pos"), part.pt(), lCentrality);
-			}
+      if (distanceFromPV < fMaxPosPV) {
+        histos.fill(HIST("EffKstar/genKstar_pri_pos"), part.pt(), lCentrality);
+      }
     }
-  } //effKstarProcessGen
+  } // effKstarProcessGen
 
   template <typename V0RangeT, typename TrkRangeT>
   void effKstarProcessReco(V0RangeT const& v0s, TrkRangeT const& tracks)
@@ -1053,12 +1042,12 @@ struct Chk892LI {
       if (allowedMcIds.count(mcid) == 0)
         continue;
 
-			auto iter = centTruthByAllowed.find(mcid);
-			if (iter == centTruthByAllowed.end()) {
+      auto iter = centTruthByAllowed.find(mcid);
+      if (iter == centTruthByAllowed.end()) {
         continue;
-			}
+      }
 
-			const float lCentrality = iter->second;
+      const float lCentrality = iter->second;
 
       if (!SecondaryCuts.cfgByPassDauPIDSelection) {
         auto posDauTrack = v0.template posTrack_as<MCTrackCandidates>();
@@ -1071,13 +1060,12 @@ struct Chk892LI {
       if (!selectionK0s(coll, v0))
         continue;
 
-
       auto trks = tracks.sliceBy(perCollisionMC, v0.collisionId());
       for (const auto& bTrack : trks) {
 
         if (bTrack.collisionId() != v0.collisionId())
           continue;
-				if (!trackCut(bTrack))
+        if (!trackCut(bTrack))
           continue;
         if (!selectionPIDPion(bTrack))
           continue;
@@ -1104,7 +1092,7 @@ struct Chk892LI {
         }
       }
     }
-	} // effKstarProcessReco
+  } // effKstarProcessReco
 
   void fillSigLossNum(MCTrueEventCandidates const&, MCTrueTrackCandidates const& mcparts)
   {
@@ -1127,23 +1115,21 @@ struct Chk892LI {
       const float lCentrality = iter->second;
 
       histos.fill(HIST("Correction/sigLoss_num"), part.pt(), lCentrality);
-			if (part.vt() == 0)
-			{
-			  histos.fill(HIST("Correction/sigLoss_num_pri"), part.pt(), lCentrality);
-			}
+      if (part.vt() == 0) {
+        histos.fill(HIST("Correction/sigLoss_num_pri"), part.pt(), lCentrality);
+      }
 
-			const auto mcc = part.mcCollision_as<MCTrueEventCandidates>();
+      const auto mcc = part.mcCollision_as<MCTrueEventCandidates>();
 
-			const float dx = part.vx() - mcc.posX();
-			const float dy = part.vy() - mcc.posY();
-			const float dz = part.vz() - mcc.posZ();
+      const float dx = part.vx() - mcc.posX();
+      const float dy = part.vy() - mcc.posY();
+      const float dz = part.vz() - mcc.posZ();
 
-			const float distanceFromPV = std::sqrt(dx*dx + dy*dy + dz*dz);
+      const float distanceFromPV = std::sqrt(dx * dx + dy * dy + dz * dz);
 
-			if (distanceFromPV < fMaxPosPV)
-			{
-				histos.fill(HIST("Correction/sigLoss_num_pri_pos"), part.pt(), lCentrality);
-			}
+      if (distanceFromPV < fMaxPosPV) {
+        histos.fill(HIST("Correction/sigLoss_num_pri_pos"), part.pt(), lCentrality);
+      }
     }
   } // fillSigLossNum
 
@@ -1168,23 +1154,21 @@ struct Chk892LI {
       const float lCentrality = iter->second;
 
       histos.fill(HIST("Correction/sigLoss_den"), part.pt(), lCentrality);
-			if (part.vt() == 0)
-			{
-			  histos.fill(HIST("Correction/sigLoss_den_pri"), part.pt(), lCentrality);
-			}
+      if (part.vt() == 0) {
+        histos.fill(HIST("Correction/sigLoss_den_pri"), part.pt(), lCentrality);
+      }
 
-			const auto mcc = part.mcCollision_as<MCTrueEventCandidates>();
+      const auto mcc = part.mcCollision_as<MCTrueEventCandidates>();
 
-			const float dx = part.vx() - mcc.posX();
-			const float dy = part.vy() - mcc.posY();
-			const float dz = part.vz() - mcc.posZ();
+      const float dx = part.vx() - mcc.posX();
+      const float dy = part.vy() - mcc.posY();
+      const float dz = part.vz() - mcc.posZ();
 
-			const float distanceFromPV = std::sqrt(dx*dx + dy*dy + dz*dz);
+      const float distanceFromPV = std::sqrt(dx * dx + dy * dy + dz * dz);
 
-			if (distanceFromPV < fMaxPosPV)
-			{
-				histos.fill(HIST("Correction/sigLoss_den_pri_pos"), part.pt(), lCentrality);
-			}
+      if (distanceFromPV < fMaxPosPV) {
+        histos.fill(HIST("Correction/sigLoss_den_pri_pos"), part.pt(), lCentrality);
+      }
     }
   } // fillSigLossDen
 
@@ -1442,8 +1426,8 @@ struct Chk892LI {
                  MCV0Candidates const& v0s,
                  MCEventCandidates const& events,
                  MCTrueEventCandidates const& mccolls)
-	{
-		buildAllowedMcIds(mccolls, events);
+  {
+    buildAllowedMcIds(mccolls, events);
     buildReferenceMcIds(mccolls, mcpart);
     effK0sProcessGen(mcpart);
     effK0sProcessReco(v0s);
@@ -1453,11 +1437,11 @@ struct Chk892LI {
     fillSigLossDen(mccolls, mcpart);
 
     for (const auto& mcid : refClassIds) {
-			auto iter = refCentByMcId.find(mcid);
-			if (iter == refCentByMcId.end())
-				continue;
+      auto iter = refCentByMcId.find(mcid);
+      if (iter == refCentByMcId.end())
+        continue;
 
-			const float lCentrality = iter->second;
+      const float lCentrality = iter->second;
       histos.fill(HIST("Correction/EF_den"), lCentrality);
     }
     for (const auto& mcid : allowedMcIds) {
@@ -1478,9 +1462,9 @@ struct Chk892LI {
     histos.fill(HIST("Correction/setSizes"), 2.0, nIntersect);
     histos.fill(HIST("Correction/setSizes"), 3.0, allowedMcIds.size() - nIntersect);
 
-		for (auto const& [mcid, lCentrality] : centTruthByAllowed) {
-			histos.fill(HIST("Correction/MCTruthCent_all"), lCentrality);
-		}
+    for (auto const& [mcid, lCentrality] : centTruthByAllowed) {
+      histos.fill(HIST("Correction/MCTruthCent_all"), lCentrality);
+    }
 
     for (const auto& mcid : refClassIds) {
       auto iter = refCentByMcId.find(mcid);
@@ -1526,16 +1510,16 @@ struct Chk892LI {
       return;
     if (!collision.isInelGt0())
       return;
-		if (!collision.has_mcCollision())
-			return;
+    if (!collision.has_mcCollision())
+      return;
 
-		const auto mcid = collision.mcCollisionId();
+    const auto mcid = collision.mcCollisionId();
 
-		auto it = centTruthByAllowed.find(mcid);
-		if (it == centTruthByAllowed.end()) {
-			return;
-		}
-		lCentrality = it->second;
+    auto it = centTruthByAllowed.find(mcid);
+    if (it == centTruthByAllowed.end()) {
+      return;
+    }
+    lCentrality = it->second;
 
     if (lCentrality < EventCuts.cfgEventCentralityMin || lCentrality > EventCuts.cfgEventCentralityMax)
       return;
