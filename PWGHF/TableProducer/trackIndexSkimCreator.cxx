@@ -3424,9 +3424,9 @@ struct HfTrackIndexSkimCreatorCascades {
       registry.add("hVtx2ProngY", "2-prong candidates;#it{y}_{sec. vtx.} (cm);entries", {HistType::kTH1D, {{1000, -2., 2.}}});
       registry.add("hVtx2ProngZ", "2-prong candidates;#it{z}_{sec. vtx.} (cm);entries", {HistType::kTH1D, {{1000, -2., 2.}}});
       registry.add("hMassLcToPK0S", " #Lambda_{c}^ candidates;inv. mass (p K_{S}^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
-      registry.add("hMassCdToDeK0S", "Cd candidates;inv. mass (d K_{S}^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
-      registry.add("hMassCtToTrK0S", "Ct candidates;inv. mass (tr K_{S}^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
-      registry.add("hMassChToHeK0S", "Ch candidates;inv. mass (he3 K_{S}^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
+      registry.add("hMassCdToDeK0S", "Cd candidates;inv. mass (d K_{S}^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 2., 7.}}});
+      registry.add("hMassCtToTrK0S", "Ct candidates;inv. mass (tr K_{S}^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 2., 7.}}});
+      registry.add("hMassChToHeK0S", "Ch candidates;inv. mass (he3 K_{S}^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 2., 7.}}});
       registry.add("hMassCaToAlK0S", "Ca candidates;inv. mass (alpha K_{S}^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 2., 7.}}});
     }
   }
