@@ -39,8 +39,8 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <array>
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdlib>
 #include <limits>
