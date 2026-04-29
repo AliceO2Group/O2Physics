@@ -40,6 +40,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <array>
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <limits>
