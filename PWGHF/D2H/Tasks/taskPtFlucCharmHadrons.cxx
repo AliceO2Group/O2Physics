@@ -60,6 +60,12 @@ enum DecayChannel { DplusToPiKPi = 0,
                     D0ToPiK,
                     D0ToKPi };
 
+enum CandD0Type { PureD0 = 0,
+                  PureD0bar,
+                  ReflectedD0,
+                  ReflectedD0bar
+};
+
 struct HfTaskPtFlucCharmHadrons {
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3, FV0A: 4)"};
   Configurable<int> selectionFlag{"selectionFlag", 1, "Selection Flag for hadron (e.g. 1 for skimming, 3 for topo. and kine., 7 for PID)"};
@@ -224,10 +230,10 @@ struct HfTaskPtFlucCharmHadrons {
     }
     if constexpr (std::is_same_v<CandT, CandD0DataWMl>) {
       if (channel == DecayChannel::D0ToPiK) {
-        return {HfHelper::invMassD0ToPiK(cand), cand.isSelD0bar() ? 3 : 1}; // 3: reflected D0bar, 1: pure D0 excluding reflected D0bar
+        return {HfHelper::invMassD0ToPiK(cand), cand.isSelD0bar() ? CandD0Type::ReflectedD0bar : CandD0Type::PureD0};
       }
       if (channel == DecayChannel::D0ToKPi) {
-        return {HfHelper::invMassD0barToKPi(cand), cand.isSelD0() ? 3 : 2}; // 3: reflected D0, 2: pure D0bar excluding reflected D0
+        return {HfHelper::invMassD0barToKPi(cand), cand.isSelD0() ? CandD0Type::ReflectedD0 : CandD0Type::PureD0bar};
       }
     }
     return {0., 0.}; // default return value for unsupported types
