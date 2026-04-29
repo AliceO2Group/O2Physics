@@ -19,10 +19,9 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/ZDCExtra.h"
 
-#include <CommonConstants/MathConstants.h>      
-
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
+#include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -894,7 +893,6 @@ struct ZdcExtraTableReader {
 
         // Wrap angle to [-pi, pi] range
         psiZNA = RecoDecay::constrainAngle(psiZNA, -o2::constants::math::PI);
-
       }
 
       // Fill Shift Profiles (Write Mode)
