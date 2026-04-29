@@ -13,6 +13,8 @@
 /// \brief Analysis task for charm hadron pt fluctuation
 ///
 /// \author Prottay Das, prottay.das@cern.ch
+/// \author Wu Chuntai, UNIPD, CCNU, and INFN Padova
+/// \author Andrea Rossi, INFN Padova
 
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/HfHelper.h"
@@ -251,7 +253,7 @@ struct HfTaskPtFlucCharmHadrons {
     if constexpr (Channel == DecayChannel::DplusToPiKPi) {
       std::array<int, 3> daugIDs = {cand.prong0Id(), cand.prong1Id(), cand.prong2Id()};
       std::array<float, 3> daugPts = {cand.ptProng0(), cand.ptProng1(), cand.ptProng2()};
-      for (int iProng = 0; iProng < 3; ++iProng) { // for 3-prong
+      for (int iProng = 0; iProng < 3; ++iProng) { // o2-linter: disable=magic-number (for 3-prong)
         if (std::find(trkIDs.begin(), trkIDs.end(), daugIDs[iProng]) != trkIDs.end()) {
           meanPt = (rawMeanPt * n - daugPts[iProng]) / (n - 1);
         }
@@ -259,7 +261,7 @@ struct HfTaskPtFlucCharmHadrons {
     } else if constexpr (Channel == DecayChannel::D0ToPiK || Channel == DecayChannel::D0ToKPi) {
       std::array<int, 2> daugIDs = {cand.prong0Id(), cand.prong1Id()};
       std::array<float, 2> daugPts = {cand.ptProng0(), cand.ptProng1()};
-      for (int iProng = 0; iProng < 2; ++iProng) { // for 2-prong
+      for (int iProng = 0; iProng < 2; ++iProng) { // o2-linter: disable=magic-number (for 2-prong)
         if (std::find(trkIDs.begin(), trkIDs.end(), daugIDs[iProng]) != trkIDs.end()) {
           meanPt = (rawMeanPt * n - daugPts[iProng]) / (n - 1);
         }
