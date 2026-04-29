@@ -502,7 +502,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
     selectorKaon.setRangeNSigmaTof(-config.selectionsPid->get(ChannelKaonPid, 5u), config.selectionsPid->get(ChannelKaonPid, 5u)); // 5u == "nSigmaMaxTof"
   }
 
-  /// Apply track-quality (ITS/TPC) + optional ITS-PID preselection for light-nucleus daughters used in charm-nuclei 3-prong channels (Cd/Ct/Ch).
+  /// Apply track-quality (ITS/TPC) + optional ITS-PID preselection for light-nucleus daughters used in charm-nuclei 3-prong channels (Cd/Ct/Ch/Ca).
   /// \tparam TrackType   Track  providing ITS/TPC quality accessors.
   /// \param track        Daughter track to be tested (either prong0 or prong2).
   /// \param lightnuclei  Species selector: 0=Deuteron, 1=Triton, 2=Helium3.
@@ -3348,9 +3348,15 @@ struct HfTrackIndexSkimCreatorCascades {
     // cascade cuts
     Configurable<double> ptCascCandMin{"ptCascCandMin", -1., "min. pT of the cascade candidate"};                    // PbPb 2018: use 1
     Configurable<double> cutInvMassCascLc{"cutInvMassCascLc", 1., "Lc candidate invariant mass difference wrt PDG"}; // for PbPb 2018: use 0.2
+    Configurable<double> cutInvMassCascCharmNuclei{"cutInvMassCascCharmNuclei", 1., "charm nuclei candidate invariant mass difference wrt mass threshold"};
+
     // Configurable<double> cutCascDCADaughters{"cutCascDCADaughters", .1, "DCA between V0 and bachelor in cascade"};
     // proton PID
     Configurable<bool> applyProtonPid{"applyProtonPid", false, "Apply proton PID for Lc->pK0S"};
+    Configurable<bool> applyDeuteronPid{"applyDeuteronPid", false, "Apply Deuteron PID for Cd->dK0S"};
+    Configurable<bool> applyTritonPid{"applyTritonPid", false, "Apply Triton PID for Ct->trK0S"};
+    Configurable<bool> applyHelium3Pid{"applyHelium3Pid", false, "Apply Helium3 PID for Ch->HeK0S"};
+    Configurable<bool> applyAlphaPid{"applyAlphaPid", false, "Apply Alpha PID for Ca->AlK0S"};
 
     // CCDB
     Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -3371,7 +3377,16 @@ struct HfTrackIndexSkimCreatorCascades {
   using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
 
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == static_cast<o2::hf_evsel::HfCollisionRejectionMask>(0));
-  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandV0bachelor))) != 0u && (!config.applyProtonPid || (aod::hf_sel_track::isIdentifiedPid & static_cast<uint32_t>(BIT(ChannelsProtonPid::LcToPK0S))) != 0u);
+
+  Filter filterSelectTrackIds =
+    ((aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandV0bachelor))) != 0u) &&
+
+    ((config.applyProtonPid && (aod::hf_sel_track::isIdentifiedPid & static_cast<uint32_t>(BIT(ChannelsProtonPid::LcToPK0S))) != 0u) ||
+     (config.applyDeuteronPid && (aod::hf_sel_track::isIdentifiedPid & static_cast<uint32_t>(BIT(ChannelsDeuteronPid))) != 0u) ||
+     (config.applyTritonPid && (aod::hf_sel_track::isIdentifiedPid & static_cast<uint32_t>(BIT(ChannelsTritonPid))) != 0u) ||
+     (config.applyHelium3Pid && (aod::hf_sel_track::isIdentifiedPid & static_cast<uint32_t>(BIT(ChannelsHeliumPid))) != 0u) ||
+     (config.applyAlphaPid && (aod::hf_sel_track::isIdentifiedPid & static_cast<uint32_t>(BIT(ChannelsAlphaPid))) != 0u) ||
+     (!config.applyProtonPid && !config.applyDeuteronPid && !config.applyTritonPid && !config.applyHelium3Pid && !config.applyAlphaPid));
 
   Preslice<FilteredTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::V0Datas> v0sPerCollision = aod::v0data::collisionId;
@@ -3408,7 +3423,11 @@ struct HfTrackIndexSkimCreatorCascades {
       registry.add("hVtx2ProngX", "2-prong candidates;#it{x}_{sec. vtx.} (cm);entries", {HistType::kTH1D, {{1000, -2., 2.}}});
       registry.add("hVtx2ProngY", "2-prong candidates;#it{y}_{sec. vtx.} (cm);entries", {HistType::kTH1D, {{1000, -2., 2.}}});
       registry.add("hVtx2ProngZ", "2-prong candidates;#it{z}_{sec. vtx.} (cm);entries", {HistType::kTH1D, {{1000, -2., 2.}}});
-      registry.add("hMassLcToPK0S", "#Lambda_{c}^ candidates;inv. mass (p K_{S}^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
+      registry.add("hMassLcToPK0S", " #Lambda_{c}^ candidates;inv. mass (p K_{S}^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
+      registry.add("hMassCdToDeK0S", "Cd candidates;inv. mass (d K_{S}^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
+      registry.add("hMassCtToTrK0S", "Ct candidates;inv. mass (tr K_{S}^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
+      registry.add("hMassChToHeK0S", "Ch candidates;inv. mass (he3 K_{S}^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
+      registry.add("hMassCaToAlK0S", "Ca candidates;inv. mass (alpha K_{S}^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 2., 7.}}});
     }
   }
 
@@ -3492,7 +3511,29 @@ struct HfTrackIndexSkimCreatorCascades {
           // invariant-mass cut: we do it here, before updating the momenta of bach and V0 during the fitting to save CPU
           // TODO: but one should better check that the value here and after the fitter do not change significantly!!!
           double mass2K0sP = RecoDecay::m(std::array{pVecBach, pVecV0}, std::array{MassProton, MassK0Short});
-          if ((config.cutInvMassCascLc >= 0.) && (std::abs(mass2K0sP - MassLambdaCPlus) > config.cutInvMassCascLc)) {
+          double mass2K0sDe = RecoDecay::m(std::array{pVecBach, pVecV0}, std::array{MassDeuteron, MassK0Short});
+          double mass2K0sTr = RecoDecay::m(std::array{pVecBach, pVecV0}, std::array{MassTriton, MassK0Short});
+          double mass2K0sHe = RecoDecay::m(std::array{pVecBach, pVecV0}, std::array{MassHelium3, MassK0Short});
+          double mass2K0sAl = RecoDecay::m(std::array{pVecBach, pVecV0}, std::array{MassAlpha, MassK0Short});
+
+          const bool applyAnyBachelorPid = config.applyProtonPid || config.applyDeuteronPid || config.applyTritonPid || config.applyHelium3Pid || config.applyAlphaPid;
+          bool keepMassHypothesis = false;
+          if (!applyAnyBachelorPid || config.applyProtonPid) {
+            keepMassHypothesis |= (config.cutInvMassCascLc < 0.) || (std::abs(mass2K0sP - MassLambdaCPlus) <= config.cutInvMassCascLc);
+          }
+          if (config.applyDeuteronPid) {
+            keepMassHypothesis |= (config.cutInvMassCascCharmNuclei < 0.) || (mass2K0sDe - MassDeuteron - MassLambdaCPlus <= config.cutInvMassCascCharmNuclei);
+          }
+          if (config.applyTritonPid) {
+            keepMassHypothesis |= (config.cutInvMassCascCharmNuclei < 0.) || (mass2K0sTr - MassTriton - MassLambdaCPlus <= config.cutInvMassCascCharmNuclei);
+          }
+          if (config.applyHelium3Pid) {
+            keepMassHypothesis |= (config.cutInvMassCascCharmNuclei < 0.) || (mass2K0sHe - MassHelium3 - MassLambdaCPlus <= config.cutInvMassCascCharmNuclei);
+          }
+          if (config.applyAlphaPid) {
+            keepMassHypothesis |= (config.cutInvMassCascCharmNuclei < 0.) || (mass2K0sAl - MassAlpha - MassLambdaCPlus <= config.cutInvMassCascCharmNuclei);
+          }
+          if (!keepMassHypothesis) {
             continue;
           }
 
@@ -3535,6 +3576,11 @@ struct HfTrackIndexSkimCreatorCascades {
           // invariant mass
           // re-calculate invariant masses with updated momenta, to fill the histogram
           mass2K0sP = RecoDecay::m(std::array{pVecBach, pVecV0}, std::array{MassProton, MassK0Short});
+          mass2K0sDe = RecoDecay::m(std::array{pVecBach, pVecV0}, std::array{MassDeuteron, MassK0Short});
+          mass2K0sTr = RecoDecay::m(std::array{pVecBach, pVecV0}, std::array{MassTriton, MassK0Short});
+          mass2K0sHe = RecoDecay::m(std::array{pVecBach, pVecV0}, std::array{MassHelium3, MassK0Short});
+          mass2K0sAl = RecoDecay::m(std::array{pVecBach, pVecV0}, std::array{MassAlpha, MassK0Short});
+
           std::array posCasc{0., 0., 0.};
           if (config.useDCAFitter) {
             const auto& cascVtx = df2.getPCACandidate();
@@ -3551,6 +3597,10 @@ struct HfTrackIndexSkimCreatorCascades {
             registry.fill(HIST("hVtx2ProngY"), posCasc[1]);
             registry.fill(HIST("hVtx2ProngZ"), posCasc[2]);
             registry.fill(HIST("hMassLcToPK0S"), mass2K0sP);
+            registry.fill(HIST("hMassCdToDeK0S"), mass2K0sDe);
+            registry.fill(HIST("hMassCtToTrK0S"), mass2K0sTr);
+            registry.fill(HIST("hMassChToHeK0S"), mass2K0sHe);
+            registry.fill(HIST("hMassCaToAlK0S"), mass2K0sAl);
           }
         } // loop over V0s
       } // loop over tracks
