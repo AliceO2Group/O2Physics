@@ -220,7 +220,7 @@ struct HfTaskPtFlucCharmHadrons {
   {
     if constexpr (std::is_same_v<CandT, CandDplusDataWMl>) {
       return {HfHelper::invMassDplusToPiKPi(cand), cand.template prong0_as<Trk>().sign()};
-    }  
+    }
     if constexpr (std::is_same_v<CandT, CandD0DataWMl>) {
       if (channel == DecayChannel::D0ToPiK) {
         return {HfHelper::invMassD0ToPiK(cand), cand.isSelD0bar() ? 3 : 1}; // 3: reflected D0bar, 1: pure D0 excluding reflected D0bar
@@ -378,7 +378,7 @@ struct HfTaskPtFlucCharmHadrons {
       std::vector<int> trkIDA;
       std::vector<int> trkIDB;
 
-      trkIDA.reserve(tracks.size() / 2); 
+      trkIDA.reserve(tracks.size() / 2);
       trkIDB.reserve(tracks.size() / 2);
 
       // collect track IDs in A and B
