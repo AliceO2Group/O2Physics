@@ -51,9 +51,9 @@ namespace o2::aod
 {
 namespace eyefluc
 {
-DECLARE_SOA_COLUMN(EventId, eventId, uint64_t);
+DECLARE_SOA_COLUMN(EventId, eventId, int);
 DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t);
-DECLARE_SOA_COLUMN(CandUid, candUid, uint64_t);
+DECLARE_SOA_COLUMN(CandId, candId, int);
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Rapidity, rapidity, float);
@@ -72,7 +72,7 @@ DECLARE_SOA_COLUMN(WBkg, wBkg, double);
 DECLARE_SOA_TABLE(EyeFlucCharmD0Cands, "AOD", "EYEFCD0CAND",
                   eyefluc::EventId,
                   eyefluc::TimeStamp,
-                  eyefluc::CandUid,
+                  eyefluc::CandId,
                   eyefluc::Sign,
                   eyefluc::Pt,
                   eyefluc::Rapidity,
@@ -95,7 +95,7 @@ DECLARE_SOA_TABLE(EyeFlucCharmD0Events, "AOD", "EYEFCD0EVT",
 DECLARE_SOA_TABLE(EyeFlucCharmDplusCands, "AOD", "EYEFCDPCAND",
                   eyefluc::EventId,
                   eyefluc::TimeStamp,
-                  eyefluc::CandUid,
+                  eyefluc::CandId,
                   eyefluc::Sign,
                   eyefluc::Pt,
                   eyefluc::Rapidity,
@@ -114,11 +114,6 @@ DECLARE_SOA_TABLE(EyeFlucCharmDplusEvents, "AOD", "EYEFCDPEVT",
                   eyefluc::WAntiCharm,
                   eyefluc::WBkg);
 } // namespace o2::aod
-
-enum class CharmFamily : uint8_t {
-  D0 = 0,
-  Dplus = 1
-};
 
 enum EventQa : uint8_t {
   All = 0,
@@ -161,8 +156,7 @@ struct HfTaskNetCharmFluctuations {
   HistogramRegistry registry{"registry"};
 
   struct HfCandInfo {
-    uint64_t uid = 0;
-    uint8_t family = 0;
+    int id = -1;
     int8_t sign = 0;
     float massD0 = -1.f;
     float massD0bar = -1.f;
@@ -201,15 +195,10 @@ struct HfTaskNetCharmFluctuations {
     registry.add("hMassVsPtD0", "D0 candidates;#it{M}_{#pi K} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{500, 1.65, 2.15}, {200, 0., 50.}}});
     registry.add("hMassVsPtD0bar", "D0bar candidates;#it{M}_{K#pi} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{500, 1.65, 2.15}, {200, 0., 50.}}});
     registry.add("hMassVsPtDplus", "Dplus candidates;#it{M}_{#pi K#pi} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{500, 1.65, 2.15}, {200, 0., 50.}}});
-    registry.add("hCandidateCounter", "Candidate counter;family/sign;entries", {HistType::kTH1F, {{4, 0.5, 4.5}}});
+    registry.add("hCandidateCounter", "Candidate counter;candidate type;entries", {HistType::kTH1F, {{4, 0.5, 4.5}}});
     hfEvSel.init(registry);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
-  }
-
-  uint64_t makeEventId(CollData::iterator const& collision) const
-  {
-    return static_cast<uint64_t>(collision.globalIndex());
   }
 
   int64_t getTimeStamp(CollData::iterator const& collision) const
@@ -221,12 +210,6 @@ struct HfTaskNetCharmFluctuations {
   float getCentrality(CollData::iterator const& collision) const
   {
     return getCentralityColl(collision, centralityEstimator.value);
-  }
-
-  uint64_t makeCandUid(CharmFamily family, int8_t sign, int64_t globalIndex) const
-  {
-    const uint64_t signBit = sign > 0 ? 0ull : 1ull;
-    return (static_cast<uint64_t>(family) << 62) | (signBit << 61) | static_cast<uint64_t>(globalIndex);
   }
 
   void setOmegaRaw(HfCandInfo& cand) const
@@ -266,7 +249,7 @@ struct HfTaskNetCharmFluctuations {
 
   void fillD0OutputTables(CollData::iterator const& collision, std::vector<HfCandInfo>& acceptedCands)
   {
-    const uint64_t eventId = makeEventId(collision);
+    const int eventId = collision.globalIndex();
     const int64_t timeStamp = getTimeStamp(collision);
     const float centrality = getCentrality(collision);
 
@@ -289,7 +272,7 @@ struct HfTaskNetCharmFluctuations {
 
       outD0Cand(eventId,
                 timeStamp,
-                cand.uid,
+                cand.id,
                 cand.sign,
                 cand.pt,
                 cand.rapidity,
@@ -308,7 +291,7 @@ struct HfTaskNetCharmFluctuations {
 
   void fillDplusOutputTables(CollData::iterator const& collision, std::vector<HfCandInfo>& acceptedCands)
   {
-    const uint64_t eventId = makeEventId(collision);
+    const int eventId = collision.globalIndex();
     const int64_t timeStamp = getTimeStamp(collision);
     const float centrality = getCentrality(collision);
 
@@ -331,7 +314,7 @@ struct HfTaskNetCharmFluctuations {
 
       outDplusCand(eventId,
                    timeStamp,
-                   cand.uid,
+                   cand.id,
                    cand.sign,
                    cand.pt,
                    cand.rapidity,
@@ -355,8 +338,7 @@ struct HfTaskNetCharmFluctuations {
       const float massD0bar = HfHelper::invMassD0barToKPi(cand);
 
       HfCandInfo info;
-      info.uid = makeCandUid(CharmFamily::D0, Sign, cand.globalIndex());
-      info.family = static_cast<uint8_t>(CharmFamily::D0);
+      info.id = cand.globalIndex();
       info.sign = Sign;
       info.massD0 = massD0;
       info.massD0bar = massD0bar;
@@ -426,8 +408,7 @@ struct HfTaskNetCharmFluctuations {
       const float massDplus = HfHelper::invMassDplusToPiKPi(cand);
 
       HfCandInfo info;
-      info.uid = makeCandUid(CharmFamily::Dplus, sign, cand.globalIndex());
-      info.family = static_cast<uint8_t>(CharmFamily::Dplus);
+      info.id = cand.globalIndex();
       info.sign = sign;
       info.massDplus = massDplus;
       info.pt = cand.pt();
