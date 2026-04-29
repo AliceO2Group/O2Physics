@@ -106,8 +106,11 @@ struct FemtoTrackQa {
 
   void processData(FilteredFemtoCollision const& col, FemtoTracks const& tracks)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col, 0, 0, 0);
     auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (trackSlice.size() == 0) {
+      return;
+    }
+    colHistManager.fill<modes::Mode::kAnalysis_Qa>(col);
     for (auto const& track : trackSlice) {
       trackHistManager.fill<modes::Mode::kAnalysis_Qa>(track, tracks);
     }
@@ -116,8 +119,11 @@ struct FemtoTrackQa {
 
   void processMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, o2::aod::FMcParticles const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols, 0, 0, 0);
     auto trackSlice = trackWithLabelPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (trackSlice.size() == 0) {
+      return;
+    }
+    colHistManager.fill<modes::Mode::kAnalysis_Qa_Mc>(col, mcCols);
     for (auto const& track : trackSlice) {
       if (!trackCleaner.isClean(track, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;

@@ -16,33 +16,32 @@
 /// \since September 10, 2025
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGMM/Mult/DataModel/Index.h"
-#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/MathConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/Configurable.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/GlobalTrackID.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
+#include <TH1.h>
 #include <TPDGCode.h>
 
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
-#include <unordered_map>
 #include <vector>
 
 using namespace o2;
@@ -78,6 +77,7 @@ AxisSpec axisEta{40, -2, 2, "#eta", "EtaAxis"};
 AxisSpec axisPhi{629, 0, o2::constants::math::TwoPI, "#phi"};
 AxisSpec axisCollSel{5, 0.5, 5.5, "#Event", "CollSelAxis"};
 auto static constexpr kMinCharge = 3.f;
+auto static constexpr kMinPtCut = 0.1f;
 
 struct StudyPnch {
 
@@ -109,6 +109,12 @@ struct StudyPnch {
   Configurable<bool> isApplyTVX{"isApplyTVX", false, "Enable TVX trigger sel"};
   Configurable<bool> isApplyCheckID{"isApplyCheckID", true, "Select Tracks evaluating Collision ID"};
   Configurable<bool> isApplyDuplicatedTrack{"isApplyDuplicatedTrack", true, "Select tracks that are not duplicated"};
+  Configurable<bool> isApplyPhiSelection{"isApplyPhiSelection", false, "Select tracks in specific phi range"};
+  Configurable<float> minPhi{"minPhi", 0.f, "Minimum phi value for track selection"};
+  Configurable<float> maxPhi{"maxPhi", 6.283185f, "Maximum phi value for track selection"};
+  Configurable<bool> ispTincrease{"ispTincrease", false, "Varies low pT particles by a conservative amount of +100%"};
+  Configurable<bool> ispTdecrease{"ispTdecrease", false, "Varies low pT particles by a conservative amount of -50%"};
+  Configurable<bool> isApplyStrangenessSysUncert{"isApplyStrangenessSysUncert", false, "Enable the evaluation of systematics due to strange particle contribution"};
 
   void init(InitContext const&)
   {
@@ -166,6 +172,16 @@ struct StudyPnch {
       histos.add("hMultiplicityMCgen", "hMultiplicityMCgen", kTH1F, {axisMult}, true);
       histos.add("hResponseMatrix", "hResponseMatrix", kTH2F, {axisMult, axisMult}, true);
       histos.add("hCountNTracks", "hCountNTracks", kTH1F, {axisCountNumberTracks}, true);
+    }
+    if (ispTincrease || ispTdecrease) {
+      histos.add("hMultiplicityMCgenPtCut", "hMultiplicityMCgenPtCut", kTH1F, {axisMult}, true);
+      histos.add("hResponseMatrixPtCut", "hResponseMatrixPtCut", kTH2F, {axisMult, axisMult}, true);
+    }
+    if (isApplyStrangenessSysUncert) {
+      histos.add("hMultiplicityMCStangeDecay", "hMultiplicityMCStangeDecay", kTH1F, {axisMult}, true);
+      histos.add("hMultiplicityMCSubtractionSDecay", "hMultiplicityMCSubtractionSDecay", kTH1F, {axisMult}, true);
+      histos.add("hResponseMatrixStrangeDecay", "hResponseMatrixStrangeDecay", kTH2F, {axisMult, axisMult}, true);
+      histos.add("hResponseMatrixSubtractionSDecay", "hResponseMatrixSubtractionSDecay", kTH2F, {axisMult, axisMult}, true);
     }
     if (doprocessEvtLossSigLossMC) {
       histos.add("MCEventHist", "MCEventHist", kTH1F, {axisEvent}, false);
@@ -255,6 +271,9 @@ struct StudyPnch {
       if (!isTrackSelected(track)) {
         continue;
       }
+      if (isApplyPhiSelection && (track.phi() < minPhi || track.phi() > maxPhi)) {
+        continue;
+      }
       histos.fill(HIST("hdcaxy"), track.dcaXY());
       histos.fill(HIST("hdcaz"), track.dcaZ());
       histos.fill(HIST("EtaHist"), track.eta());
@@ -274,6 +293,9 @@ struct StudyPnch {
         continue;
       }
       if (track.mcCollisionId() != McCol.mcCollisionId()) {
+        continue;
+      }
+      if (isApplyPhiSelection && (track.phi() < minPhi || track.phi() > maxPhi)) {
         continue;
       }
       histos.fill(HIST("EtaGenHist"), track.eta());
@@ -302,6 +324,9 @@ struct StudyPnch {
           continue;
         }
         mcRecIDs.push_back(particle.globalIndex());
+        if (isApplyPhiSelection && (track.phi() < minPhi || track.phi() > maxPhi)) {
+          continue;
+        }
         nTrk++;
       }
       histos.fill(HIST("hdcaxy"), track.dcaXY());
@@ -310,6 +335,65 @@ struct StudyPnch {
       histos.fill(HIST("PhiHist"), track.phi());
       histos.fill(HIST("PhiVsEtaHist"), track.phi(), track.eta());
     }
+    return nTrk;
+  }
+
+  template <typename countTrk, typename McColType>
+  int countStrangeTracksMcCol(countTrk const& tracks, McColType const& McCol)
+  {
+    auto nTrk_strange = 0;
+    std::vector<int> mcRecIDs;
+    for (const auto& track : tracks) {
+      if (!isTrackSelected(track)) {
+        continue;
+      }
+      if (track.has_mcParticle()) {
+        auto particle = track.mcParticle();
+        if (isApplyCheckID && particle.mcCollisionId() != McCol.mcCollisionId()) {
+          continue;
+        }
+        if (isApplyDuplicatedTrack && find(mcRecIDs.begin(), mcRecIDs.end(), particle.globalIndex()) != mcRecIDs.end()) {
+          continue;
+        }
+        mcRecIDs.push_back(particle.globalIndex());
+        if (particle.has_mothers()) {
+          auto mcMother = particle.template mothers_as<aod::McParticles>().front();
+          if (mcMother.pdgCode() == PDG_t::kK0Short || std::abs(mcMother.pdgCode()) == PDG_t::kLambda0) {
+            nTrk_strange++;
+          }
+        }
+      }
+    }
+    return nTrk_strange;
+  }
+
+  template <typename countTrk, typename McColType>
+  int countTracksPtCut(countTrk const& tracks, McColType const& McCol)
+  {
+    auto nTrk_lowpT = 0;
+    auto nTrk_highpT = 0;
+    auto nTrk = 0;
+    for (const auto& track : tracks) {
+      if (!isGenTrackSelected(track)) {
+        continue;
+      }
+      if (track.mcCollisionId() != McCol.mcCollisionId()) {
+        continue;
+      }
+      // Evaluate low pT extrapolation
+      if (track.pt() < kMinPtCut) {
+        // nTrk_lowpT++;
+        if (ispTincrease) {
+          nTrk_lowpT += 2 - 10 * track.pt();
+        }
+        if (ispTdecrease) {
+          nTrk_lowpT += 0.5 + 5 * track.pt();
+        }
+      } else {
+        nTrk_highpT++;
+      }
+    }
+    nTrk = nTrk_lowpT + nTrk_highpT;
     return nTrk;
   }
 
@@ -369,6 +453,23 @@ struct StudyPnch {
       if (multgen > 0 && multrec > 0) {
         histos.fill(HIST("hMultiplicityMCgen"), multgen);
         histos.fill(HIST("hResponseMatrix"), multrec, multgen);
+      }
+      if (ispTincrease || ispTdecrease) {
+        auto nTrkPtCut = countTracksPtCut(GenParticles, RecCol);
+        if (nTrkPtCut > 0) {
+          histos.fill(HIST("hMultiplicityMCgenPtCut"), nTrkPtCut);
+          histos.fill(HIST("hResponseMatrixPtCut"), multrec, nTrkPtCut);
+        }
+      }
+      if (isApplyStrangenessSysUncert) {
+        auto nTrk_strange = countStrangeTracksMcCol(recTracksPart, RecCol);
+        auto nSubtract_strange = multrec - nTrk_strange;
+        if (multrec > 0) {
+          histos.fill(HIST("hMultiplicityMCStangeDecay"), nTrk_strange);
+          histos.fill(HIST("hMultiplicityMCSubtractionSDecay"), nSubtract_strange);
+          histos.fill(HIST("hResponseMatrixStrangeDecay"), nTrk_strange, multgen);
+          histos.fill(HIST("hResponseMatrixSubtractionSDecay"), nSubtract_strange, multgen);
+        }
       }
     }
   }

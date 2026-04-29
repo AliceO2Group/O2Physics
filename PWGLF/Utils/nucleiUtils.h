@@ -12,23 +12,40 @@
 #ifndef PWGLF_UTILS_NUCLEIUTILS_H_
 #define PWGLF_UTILS_NUCLEIUTILS_H_
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseITS.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/TableProducer/PID/pidTOFBase.h"
 
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/HistogramSpec.h"
-#include "MathUtils/BetheBlochAleph.h"
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <Framework/Array2D.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
+#include <MathUtils/BetheBlochAleph.h>
+#include <PID/PIDTOF.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include "TMCProcess.h"
+#include <TH1.h>
+#include <TMCProcess.h>
+#include <TPDGCode.h>
+
+#include <fmt/format.h>
+#include <sys/types.h>
+
+#include <Rtypes.h>
 
 #include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <memory>
+#include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 
 struct NucleusCandidate {
@@ -129,6 +146,21 @@ enum Flags {
   kIsPhysicalPrimary = BIT(9), /// MC flags starting from the second half of the short
   kIsSecondaryFromMaterial = BIT(10),
   kIsSecondaryFromWeakDecay = BIT(11) /// the last 4 bits are reserved for the PID in tracking
+};
+
+enum QcFlags {
+  kQcHasReconstructedCollision = BIT(0),
+  kQcPlaceholder0 = BIT(1), /// placeholdedrs
+  kQcPlaceholder1 = BIT(2), /// placeholdedrs
+  kQcPlaceholder2 = BIT(3), /// placeholdedrs
+  kQcPlaceholder3 = BIT(4), /// placeholdedrs
+  kQcHasTOF = BIT(5),
+  kQcHasTRD = BIT(6),
+  kQcIsAmbiguous = BIT(7), /// just a placeholder now
+  kQcITSrof = BIT(8),
+  kQcIsPhysicalPrimary = BIT(9), /// MC flags starting from the second half of the short
+  kQcIsSecondaryFromMaterial = BIT(10),
+  kQcIsSecondaryFromWeakDecay = BIT(11) /// the last 4 bits are reserved for the PID in tracking
 };
 
 constexpr int getSpeciesFromPdg(int pdg)
@@ -402,7 +434,7 @@ void createHistogramRegistryNucleus(o2::framework::HistogramRegistry& registry)
 
   constexpr int index = iSpecies;
   if (!checkSpeciesValidity(index)) {
-    std::runtime_error("species contains invalid nucleus index");
+    throw std::runtime_error("species contains invalid nucleus index");
   }
 
   registry.add(fmt::format("{}/hTrackSelections", cNames[index]).c_str(), (fmt::format("{} track selections;", cNames[index]) + std::string("Selection step; Counts")).c_str(), o2::framework::HistType::kTH1D, {{trackSelection::kNtrackSelections, -0.5f, static_cast<float>(trackSelection::kNtrackSelections) - 0.5f}});
@@ -440,7 +472,7 @@ class PidManager
     : mSpecies(species)
   {
     if (!checkSpeciesValidity(species)) {
-      std::runtime_error("species contains invalid nucleus index");
+      throw std::runtime_error("species contains invalid nucleus index");
     }
 
     if (!tpcBetheBlochParams) {

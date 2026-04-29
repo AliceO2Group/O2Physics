@@ -13,47 +13,38 @@
 /// \brief Task for analyzing efficiency of proton, and net-proton distributions in MC reconstructed and generated, and calculating net-proton cumulants
 /// \author Yash Parakh
 
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include <TDirectory.h>
-#include <TF1.h>
-#include <TFile.h>
-#include <TH1F.h>
-#include <TH2F.h>
-#include <THn.h>
+#include <TH2.h>
 #include <TList.h>
-#include <TLorentzVector.h>
-#include <TMath.h>
-#include <TObjArray.h>
 #include <TPDGCode.h>
 #include <TProfile.h>
 #include <TProfile2D.h>
 #include <TRandom3.h>
 
+#include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <string>
 #include <vector>
@@ -61,6 +52,41 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+
+namespace o2::aod
+{
+
+// ===== Event columns =====
+DECLARE_SOA_COLUMN(EventId, eventId, int);
+DECLARE_SOA_COLUMN(MyCent, myCent, float);
+DECLARE_SOA_COLUMN(Vz, vz, float);
+DECLARE_SOA_COLUMN(Ntrk, ntrk, int);
+DECLARE_SOA_COLUMN(Np, np, int);
+DECLARE_SOA_COLUMN(Npbar, npbar, int);
+
+// ===== Track columns =====
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(Eta, eta, float);
+DECLARE_SOA_COLUMN(Pid, pid, int);
+DECLARE_SOA_COLUMN(Eff, eff, float);
+
+// ===== Tables =====
+DECLARE_SOA_TABLE(EventTable, "AOD", "MYEVENT",
+                  EventId,
+                  MyCent,
+                  Vz,
+                  Ntrk,
+                  Np,
+                  Npbar);
+
+DECLARE_SOA_TABLE(MYTrackTable, "AOD", "MYTRACK",
+                  EventId,
+                  Pt,
+                  Eta,
+                  Pid,
+                  Eff);
+
+} // namespace o2::aod
 
 struct NetProtCumulants {
   // events
@@ -82,7 +108,11 @@ struct NetProtCumulants {
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
   Configurable<int> cfgITScluster{"cfgITScluster", 1, "Minimum Number of ITS cluster"};
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 80, "Minimum Number of TPC cluster"};
+  Configurable<float> cfgTPCcrossedRowsOverFindable{"cfgTPCcrossedRowsOverFindable", 0.8, "Min crossedRows/findable ratio"};
+  Configurable<bool> cfgUseTPCratioCut{"cfgUseTPCratioCut", true, "Apply crossedRows/findable cut"};
   Configurable<int> cfgTPCnCrossedRows{"cfgTPCnCrossedRows", 70, "Minimum Number of TPC crossed-rows"};
+  Configurable<bool> cfgUseTPCcrossedRowsCut{"cfgUseTPCcrossedRowsCut", true, "Apply crossed rows cut"};
+  Configurable<bool> cfgUseTPCclusterCut{"cfgUseTPCclusterCut", true, "Apply TPC cluster cut"};
   Configurable<bool> cfgUseItsPid{"cfgUseItsPid", true, "Use ITS nSigma Cut"};
 
   // Calculation of cumulants central/error
@@ -103,7 +133,10 @@ struct NetProtCumulants {
   Configurable<bool> cfgEvSelkIsVertexTOFmatched{"cfgEvSelkIsVertexTOFmatched", true, "If matched with TOF, for pileup"};
   Configurable<bool> cfgEvSelkIsGoodZvtxFT0vsPV{"cfgEvSelkIsGoodZvtxFT0vsPV", false, "Apply kIsGoodZvtxFT0vsPV event selection"};
   ConfigurableAxis cfgCentralityBins{"cfgCentralityBins", {90, 0., 90.}, "Centrality/Multiplicity percentile bining"};
-
+  Configurable<bool> cfgUsePtDepDCAxy{"cfgUsePtDepDCAxy", true, "Use pt-dependent DCAxy cut"};
+  Configurable<bool> cfgUsePtDepDCAz{"cfgUsePtDepDCAz", true, "Use pt-dependent DCAz cut"};
+  Configurable<std::string> cfgDCAxyFunc{"cfgDCAxyFunc", "(0.0010+0.0080/(x^0.73))", "DCAxy function"};
+  Configurable<std::string> cfgDCAzFunc{"cfgDCAzFunc", "(0.0020+0.0100/(x^0.70))", "DCAz function"};
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
@@ -112,11 +145,33 @@ struct NetProtCumulants {
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  Produces<aod::EventTable> eventTable;
+  Produces<aod::MYTrackTable> trackTable;
+
+  int eventCounter = 0;
+  int eventId = 0;
+
+  // event variables
+  int Ntrk_event = 0;
+  int Np_event = 0;
+  int Npbar_event = 0;
+
+  float cent_event = 0;
+  float vz_event = 0;
+
+  // track variables
+  float pt_track = 0;
+  float eta_track = 0;
+  int pid_track = 0;
+  float eff_track = 0;
+
   TRandom3* fRndm = new TRandom3(0);
 
   // Eff histograms 2d: eff(pT, eta)
   TH2F* hRatio2DEtaVsPtProton = nullptr;
   TH2F* hRatio2DEtaVsPtAntiproton = nullptr;
+  TF1* fPtDepDCAxy = nullptr;
+  TF1* fPtDepDCAz = nullptr;
 
   // Filter command for rec (data)***********
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -223,7 +278,60 @@ struct NetProtCumulants {
     histos.add("hrec2DEtaVsPtAntiproton", "2D hist of Reconstructed Anti-proton y: eta vs. x: pT", kTH2F, {ptAxis, etaAxis});
     histos.add("hgen2DEtaVsPtProton", "2D hist of Generated Proton y: eta vs. x: pT", kTH2F, {ptAxis, etaAxis});
     histos.add("hgen2DEtaVsPtAntiproton", "2D hist of Generated Anti-proton y: eta vs. x: pT", kTH2F, {ptAxis, etaAxis});
+    histos.add("hNTracksVsCent", "N_{p+#bar{p}} vs FT0C centrality;Centrality (%);N tracks", kTH2F, {centAxis, {200, 0, 200}});
+    histos.add("hDCAxyVsPt_before",
+               "DCAxy vs pT (before cut);pT;DCAxy",
+               kTH2F,
+               {{100, 0.5, 1.5}, {200, -0.3, 0.3}});
 
+    histos.add("hDCAzVsPt_before",
+               "DCAz vs pT (before cut);pT;DCAz",
+               kTH2F,
+               {{100, 0.5, 1.5}, {200, -0.3, 0.3}});
+
+    histos.add("hDCAxyVsPt_after",
+               "DCAxy vs pT (after cut);pT;DCAxy",
+               kTH2F,
+               {{100, 0.5, 1.5}, {200, -0.3, 0.3}});
+
+    histos.add("hDCAzVsPt_after",
+               "DCAz vs pT (after cut);pT;DCAz",
+               kTH2F,
+               {{100, 0.5, 1.5}, {200, -0.3, 0.3}});
+
+    histos.add("hDCAxyVsPt_afterPID",
+               "DCAxy vs pT after DCA+PID;pT;DCAxy",
+               kTH2F,
+               {{100, 0.5, 1.5}, {200, -0.3, 0.3}});
+
+    histos.add("hDCAzVsPt_afterPID",
+               "DCAz vs pT after DCA+PID;pT;DCAz",
+               kTH2F,
+               {{100, 0.5, 1.5}, {200, -0.3, 0.3}});
+
+    histos.add("hTPCcrossedRows",
+               "TPC crossed rows;N crossed rows;Counts",
+               kTH1F,
+               {{160, 0, 160}});
+
+    histos.add("hTPCclusters",
+               "TPC clusters;N clusters;Counts",
+               kTH1F,
+               {{160, 0, 160}});
+
+    histos.add("hTPCclusters_afterCrossedRows",
+               "TPC clusters after crossed rows cut;N clusters;Counts",
+               kTH1F,
+               {{160, 0, 160}});
+    histos.add("h2_dEdxTPC_vs_pT",
+               "TPC dE/dx vs pT;#it{p}_{T} (GeV/#it{c});TPC dE/dx",
+               kTH2F,
+               {ptAxis, {600, 0, 5000}});
+
+    histos.add("h2_dEdxTPC_vs_pT_proton",
+               "TPC dE/dx vs pT (protons);#it{p}_{T} (GeV/#it{c});TPC dE/dx",
+               kTH2F,
+               {ptAxis, {600, 0, 5000}});
     // 2D histograms of nSigma
     histos.add("h2DnsigmaTpcVsPt", "2D hist of nSigmaTPC vs. pT", kTH2F, {ptAxis, nSigmaAxis});
     histos.add("h2DnsigmaTofVsPt", "2D hist of nSigmaTOF vs. pT", kTH2F, {ptAxis, nSigmaAxis});
@@ -795,6 +903,14 @@ struct NetProtCumulants {
         histos.add("GenProf2D_mu8_netproton", "", {HistType::kTProfile2D, {centAxis, subsampleAxis}});
       }
     }
+    if (cfgUsePtDepDCAxy) {
+      fPtDepDCAxy = new TF1("ptDepDCAxy", cfgDCAxyFunc->c_str(), 0.001, 10.0);
+    }
+
+    if (cfgUsePtDepDCAz) {
+      fPtDepDCAz = new TF1("ptDepDCAz", cfgDCAzFunc->c_str(), 0.001, 10.0);
+    }
+
   } // end init()
 
   template <typename T>
@@ -1138,18 +1254,54 @@ struct NetProtCumulants {
       if ((particle.pt() < cfgCutPtLower) || (particle.pt() > 5.0f) || (std::abs(particle.eta()) > cfgCutEta)) {
         continue;
       }
-      if (!(track.itsNCls() > cfgITScluster) || !(track.tpcNClsFound() >= cfgTPCcluster) || !(track.tpcNClsCrossedRows() >= cfgTPCnCrossedRows)) {
+
+      histos.fill(HIST("hTPCcrossedRows"), track.tpcNClsCrossedRows());
+      histos.fill(HIST("hTPCclusters"), track.tpcNClsFound());
+      // Cluster cut
+
+      // Crossed rows cut
+      if (cfgUseTPCcrossedRowsCut && track.tpcNClsCrossedRows() < cfgTPCnCrossedRows) {
         continue;
       }
 
+      histos.fill(HIST("hTPCclusters_afterCrossedRows"), track.tpcNClsFound());
+
+      if (cfgUseTPCclusterCut && track.tpcNClsFound() < cfgTPCcluster) {
+        continue;
+      }
+      // Ratio cut
+      if (cfgUseTPCratioCut) {
+        float crossedRows = track.tpcNClsCrossedRows();
+        float findable = track.tpcNClsFindable();
+
+        if (findable > 0) {
+          if ((crossedRows / findable) < cfgTPCcrossedRowsOverFindable) {
+            continue;
+          }
+        }
+      }
+
       if (particle.isPhysicalPrimary()) {
+        histos.fill(HIST("h2_dEdxTPC_vs_pT"), track.pt(), track.tpcSignal());
         histos.fill(HIST("hrecPartPtAll"), particle.pt());
         histos.fill(HIST("hrecPtAll"), track.pt());
         histos.fill(HIST("hrecEtaAll"), particle.eta());
         histos.fill(HIST("hrecPhiAll"), particle.phi());
         histos.fill(HIST("hrecDcaXYAll"), track.dcaXY());
         histos.fill(HIST("hrecDcaZAll"), track.dcaZ());
+        histos.fill(HIST("hDCAxyVsPt_before"), track.pt(), track.dcaXY());
+        histos.fill(HIST("hDCAzVsPt_before"), track.pt(), track.dcaZ());
 
+        if (cfgUsePtDepDCAxy && !(std::abs(track.dcaXY()) < fPtDepDCAxy->Eval(track.pt()))) {
+          continue;
+        }
+
+        if (cfgUsePtDepDCAz && !(std::abs(track.dcaZ()) < fPtDepDCAz->Eval(track.pt()))) {
+          continue;
+        }
+
+        histos.fill(HIST("hDCAxyVsPt_after"), track.pt(), track.dcaXY());
+        histos.fill(HIST("hDCAzVsPt_after"), track.pt(), track.dcaZ());
         // rejecting electron
         if (cfgIfRejectElectron && isElectron(track)) {
           continue;
@@ -1173,10 +1325,13 @@ struct NetProtCumulants {
 
         if (trackSelected) {
           // filling nSigma distribution
+          histos.fill(HIST("h2_dEdxTPC_vs_pT_proton"), track.pt(), track.tpcSignal());
           histos.fill(HIST("h2DnsigmaTpcVsPt"), track.pt(), track.tpcNSigmaPr());
           histos.fill(HIST("h2DnsigmaTofVsPt"), track.pt(), track.tofNSigmaPr());
           histos.fill(HIST("h2DnsigmaItsVsPt"), track.pt(), itsResponse.nSigmaITS<o2::track::PID::Proton>(track));
 
+          histos.fill(HIST("hDCAxyVsPt_afterPID"), track.pt(), track.dcaXY());
+          histos.fill(HIST("hDCAzVsPt_afterPID"), track.pt(), track.dcaZ());
           if (track.sign() > 0) {
             histos.fill(HIST("hrecPartPtProton"), particle.pt()); //! hist for p rec
             histos.fill(HIST("hrecPtProton"), track.pt());        //! hist for p rec
@@ -1226,6 +1381,8 @@ struct NetProtCumulants {
     } //! end track loop
 
     float netProt = nProt - nAntiprot;
+    float nTracks = nProt + nAntiprot;
+    histos.fill(HIST("hNTracksVsCent"), cent, nTracks);
     histos.fill(HIST("hrecNetProtonVsCentrality"), netProt, cent);
     histos.fill(HIST("hrecProtonVsCentrality"), nProt, cent);
     histos.fill(HIST("hrecAntiprotonVsCentrality"), nAntiprot, cent);
@@ -2033,6 +2190,18 @@ struct NetProtCumulants {
 
   void processDataRec(AodCollisions::iterator const& coll, aod::BCsWithTimestamps const&, AodTracks const& inputTracks)
   {
+
+    // reset per event
+    Ntrk_event = 0;
+    Np_event = 0;
+    Npbar_event = 0;
+
+    // assign event ID
+    eventId = eventCounter++;
+
+    // store event info
+    cent_event = coll.centFT0C();
+    vz_event = coll.posZ();
     if (!coll.sel8()) {
       return;
     }
@@ -2080,9 +2249,35 @@ struct NetProtCumulants {
       if ((track.pt() < cfgCutPtLower) || (track.pt() > 5.0f) || (std::abs(track.eta()) > cfgCutEta)) {
         continue;
       }
-      if (!(track.itsNCls() > cfgITScluster) || !(track.tpcNClsFound() >= cfgTPCcluster) || !(track.tpcNClsCrossedRows() >= cfgTPCnCrossedRows)) {
+
+      histos.fill(HIST("hTPCcrossedRows"), track.tpcNClsCrossedRows());
+      histos.fill(HIST("hTPCclusters"), track.tpcNClsFound());
+      // Cluster cut
+
+      // Crossed rows cut
+      if (cfgUseTPCcrossedRowsCut && track.tpcNClsCrossedRows() < cfgTPCnCrossedRows) {
         continue;
       }
+
+      histos.fill(HIST("hTPCclusters_afterCrossedRows"), track.tpcNClsFound());
+
+      if (cfgUseTPCclusterCut && track.tpcNClsFound() < cfgTPCcluster) {
+        continue;
+      }
+
+      // Ratio cut
+      if (cfgUseTPCratioCut) {
+        float crossedRows = track.tpcNClsCrossedRows();
+        float findable = track.tpcNClsFindable();
+
+        if (findable > 0) {
+          if ((crossedRows / findable) < cfgTPCcrossedRowsOverFindable) {
+            continue;
+          }
+        }
+      }
+      histos.fill(HIST("h2_dEdxTPC_vs_pT"), track.pt(), track.tpcSignal());
+
       // for purity calculation
       float nsTPC = track.tpcNSigmaPr();
       float nsTOF = track.tofNSigmaPr();
@@ -2110,6 +2305,19 @@ struct NetProtCumulants {
       histos.fill(HIST("hrecPhiAll"), track.phi());
       histos.fill(HIST("hrecDcaXYAll"), track.dcaXY());
       histos.fill(HIST("hrecDcaZAll"), track.dcaZ());
+      histos.fill(HIST("hDCAxyVsPt_before"), track.pt(), track.dcaXY());
+      histos.fill(HIST("hDCAzVsPt_before"), track.pt(), track.dcaZ());
+
+      if (cfgUsePtDepDCAxy && !(std::abs(track.dcaXY()) < fPtDepDCAxy->Eval(track.pt()))) {
+        continue;
+      }
+
+      if (cfgUsePtDepDCAz && !(std::abs(track.dcaZ()) < fPtDepDCAz->Eval(track.pt()))) {
+        continue;
+      }
+
+      histos.fill(HIST("hDCAxyVsPt_after"), track.pt(), track.dcaXY());
+      histos.fill(HIST("hDCAzVsPt_after"), track.pt(), track.dcaZ());
 
       // rejecting electron
       if (cfgIfRejectElectron && isElectron(track)) {
@@ -2123,6 +2331,7 @@ struct NetProtCumulants {
       if (cfgIfMandatoryTOF && !track.hasTOF()) {
         continue;
       }
+      Ntrk_event++;
 
       bool trackSelected = false;
       if (cfgPIDchoice == 0)
@@ -2135,10 +2344,13 @@ struct NetProtCumulants {
       if (trackSelected) {
 
         // filling nSigma distribution
+        histos.fill(HIST("h2_dEdxTPC_vs_pT_proton"), track.pt(), track.tpcSignal());
         histos.fill(HIST("h2DnsigmaTpcVsPt"), track.pt(), track.tpcNSigmaPr());
         histos.fill(HIST("h2DnsigmaTofVsPt"), track.pt(), track.tofNSigmaPr());
         histos.fill(HIST("h2DnsigmaItsVsPt"), track.pt(), itsResponse.nSigmaITS<o2::track::PID::Proton>(track));
 
+        histos.fill(HIST("hDCAxyVsPt_afterPID"), track.pt(), track.dcaXY());
+        histos.fill(HIST("hDCAzVsPt_afterPID"), track.pt(), track.dcaZ());
         // for protons
         if (track.sign() > 0) {
           histos.fill(HIST("hrecPtProton"), track.pt()); //! hist for p rec
@@ -2150,11 +2362,18 @@ struct NetProtCumulants {
 
           if (track.pt() < cfgCutPtUpper) {
             nProt = nProt + 1.0;
+            Np_event++;
             float pEff = getEfficiency(track); // get efficiency of track
             if (pEff != 0) {
               for (int i = 1; i < 7; i++) {
                 powerEffProt[i] += std::pow(1.0 / pEff, i);
               }
+              pt_track = track.pt();
+              eta_track = track.eta();
+              pid_track = +1;
+              eff_track = pEff;
+
+              trackTable(eventId, pt_track, eta_track, pid_track, eff_track);
             }
           }
         }
@@ -2168,11 +2387,18 @@ struct NetProtCumulants {
           histos.fill(HIST("hrecDcaZAntiproton"), track.dcaZ());
           if (track.pt() < cfgCutPtUpper) {
             nAntiprot = nAntiprot + 1.0;
+            Npbar_event++;
             float pEff = getEfficiency(track); // get efficiency of track
             if (pEff != 0) {
               for (int i = 1; i < 7; i++) {
                 powerEffAntiprot[i] += std::pow(1.0 / pEff, i);
               }
+              pt_track = track.pt();
+              eta_track = track.eta();
+              pid_track = -1;
+              eff_track = pEff;
+
+              trackTable(eventId, pt_track, eta_track, pid_track, eff_track);
             }
           }
         }
@@ -2180,7 +2406,11 @@ struct NetProtCumulants {
       } //! checking PID
     } //! end track loop
 
+    eventTable(eventId, cent_event, vz_event, Ntrk_event, Np_event, Npbar_event);
+
     float netProt = nProt - nAntiprot;
+    float nTracks = nProt + nAntiprot;
+    histos.fill(HIST("hNTracksVsCent"), cent, nTracks);
     histos.fill(HIST("hrecNetProtonVsCentrality"), netProt, cent);
     histos.fill(HIST("hrecProtonVsCentrality"), nProt, cent);
     histos.fill(HIST("hrecAntiprotonVsCentrality"), nAntiprot, cent);

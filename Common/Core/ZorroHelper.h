@@ -10,8 +10,8 @@
 // or submit itself to any jurisdiction.
 //
 
-#ifndef EVENTFILTERING_ZORROHELPER_H_
-#define EVENTFILTERING_ZORROHELPER_H_
+#ifndef COMMON_CORE_ZORROHELPER_H_
+#define COMMON_CORE_ZORROHELPER_H_
 
 #include <Rtypes.h>
 #include <RtypesCore.h>
@@ -21,4 +21,4 @@ struct ZorroHelper {
   ClassDefNV(ZorroHelper, 1);
 };
 
-#endif // EVENTFILTERING_ZORROHELPER_H_
+#endif // COMMON_CORE_ZORROHELPER_H_

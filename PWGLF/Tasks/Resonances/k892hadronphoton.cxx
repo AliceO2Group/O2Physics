@@ -21,44 +21,42 @@
 //
 
 #include "PWGLF/DataModel/LFSigmaTables.h"
-#include "PWGLF/DataModel/LFStrangenessMLTables.h"
-#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/ctpRateFetcher.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/ASoA.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
-#include <TDatabasePDG.h>
-#include <TFile.h>
-#include <TH2F.h>
-#include <TLorentzVector.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TMath.h>
 #include <TPDGCode.h>
-#include <TProfile.h>
+#include <TString.h>
 
 #include <array>
 #include <cmath>
 #include <cstdlib>
 #include <string>
+#include <string_view>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using std::array;
 using KStars = soa::Join<aod::KStarCores, aod::KStarPhotonExtras, aod::KShortExtras, aod::KStarCollRef>;
 using MCKStars = soa::Join<aod::KStarCores, aod::KStarPhotonExtras, aod::KShortExtras, aod::KStarMCCores, aod::KStarCollRef>;
 
@@ -897,26 +895,25 @@ struct k892hadronphoton {
     histos.fill(HIST(MainDir[mode]) + HIST("/h2dArmenteros"), kstar.photonAlpha(), kstar.photonQt());
     histos.fill(HIST(MainDir[mode]) + HIST("/h2dArmenteros"), kstar.kshortAlpha(), kstar.kshortQt());
 
-    if (kstar.kshortAlpha() < 1) {
-      histos.fill(HIST(MainDir[mode]) + HIST("/KShort/h2dTPCvsTOFNSigma_KShortPi"), kstar.kshortPosPiTPCNSigma(), kstar.kshortPiTOFNSigma());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KShort/h2dTPCvsTOFNSigma_KShortPi"), kstar.kshortNegPiTPCNSigma(), kstar.kshortPiTOFNSigma());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KShort/hKShortDCANegToPV"), kstar.kshortDCANegPV());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KShort/hKShortDCAPosToPV"), kstar.kshortDCAPosPV());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KShort/hKShortpT"), kstar.kshortPt());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KShort/hKShortMass"), kstar.kshortMass());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KShort/h3dKShortMass"), centrality, kstar.kshortPt(), kstar.kshortMass());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KShort/h2dTPCvsTOFNSigma_KShortPi"), kstar.kshortPosPiTPCNSigma(), kstar.kshortPiTOFNSigma());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KShort/h2dTPCvsTOFNSigma_KShortPi"), kstar.kshortNegPiTPCNSigma(), kstar.kshortPiTOFNSigma());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KShort/hKShortDCANegToPV"), kstar.kshortDCANegPV());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KShort/hKShortDCAPosToPV"), kstar.kshortDCAPosPV());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KShort/hKShortpT"), kstar.kshortPt());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KShort/hKShortMass"), kstar.kshortMass());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KShort/h3dKShortMass"), centrality, kstar.kshortPt(), kstar.kshortMass());
 
-      histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hMass"), kstar.kstarMass());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hPt"), kstar.pt());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hY"), kstar.kstarY());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hRadius"), kstar.radius());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h2dRadiusVspT"), kstar.radius(), kstar.pt());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hDCAPairDau"), kstar.dcadaughters());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hDCAPairDauVsPt"), kstar.dcadaughters(), kstar.pt());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h3dMass"), centrality, kstar.pt(), kstar.kstarMass());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h3dOPAngleVsMass"), kstar.opAngle(), kstar.pt(), kstar.kstarMass());
-      histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h2dOPAngleVsPt"), kstar.opAngle(), kstar.pt());
-    }
+    histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hMass"), kstar.kstarMass());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hPt"), kstar.pt());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hY"), kstar.kstarY());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hRadius"), kstar.radius());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h2dRadiusVspT"), kstar.radius(), kstar.pt());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hDCAPairDau"), kstar.dcadaughters());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KStar/hDCAPairDauVsPt"), kstar.dcadaughters(), kstar.pt());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h3dMass"), centrality, kstar.pt(), kstar.kstarMass());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h3dOPAngleVsMass"), kstar.opAngle(), kstar.pt(), kstar.kstarMass());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h2dOPAngleVsPt"), kstar.opAngle(), kstar.pt());
+
     //_______________________________________
     // MC specific
     if (doprocessMonteCarlo) {
@@ -1135,31 +1132,31 @@ struct k892hadronphoton {
 
     // Separating kshort selections:
     fillSelHistos<8>(cand, PDG_t::kK0Short);
-    if (cand.kshortAlpha() < 1) { // KShort selection
-      // TPC Selection
-      if (kshortSelections.fselKShortTPCPID && (TMath::Abs(cand.kshortPosPiTPCNSigma()) > kshortSelections.KShortMaxTPCNSigmas))
-        return false;
-      if (kshortSelections.fselKShortTPCPID && (TMath::Abs(cand.kshortNegPiTPCNSigma()) > kshortSelections.KShortMaxTPCNSigmas))
-        return false;
 
-      // // TOF Selection
-      // if (kshortSelections.fselKShortTOFPID && (TMath::Abs(cand.kshortPiTOFNSigma()) > kshortSelections.KShortPiMaxTOFNSigmas))
-      //   return false;
-      // if (kshortSelections.fselKShortTOFPID && (TMath::Abs(cand.lambdaPiTOFNSigma()) > kshortSelections.KShortPiMaxTOFNSigmas))
-      //   return false;
+    // TPC Selection
+    if (kshortSelections.fselKShortTPCPID && (TMath::Abs(cand.kshortPosPiTPCNSigma()) > kshortSelections.KShortMaxTPCNSigmas))
+      return false;
+    if (kshortSelections.fselKShortTPCPID && (TMath::Abs(cand.kshortNegPiTPCNSigma()) > kshortSelections.KShortMaxTPCNSigmas))
+      return false;
 
-      // DCA Selection
-      fillSelHistos<9>(cand, PDG_t::kK0Short);
-      if ((TMath::Abs(cand.kshortDCAPosPV()) < kshortSelections.KShortMinDCAPosToPv) || (TMath::Abs(cand.kshortDCANegPV()) < kshortSelections.KShortMinDCANegToPv))
-        return false;
+    // // TOF Selection
+    // if (kshortSelections.fselKShortTOFPID && (TMath::Abs(cand.kshortPiTOFNSigma()) > kshortSelections.KShortPiMaxTOFNSigmas))
+    //   return false;
+    // if (kshortSelections.fselKShortTOFPID && (TMath::Abs(cand.lambdaPiTOFNSigma()) > kshortSelections.KShortPiMaxTOFNSigmas))
+    //   return false;
 
-      // Mass Selection
-      fillSelHistos<10>(cand, PDG_t::kK0Short);
-      if (TMath::Abs(cand.kshortMass() - o2::constants::physics::MassK0Short) > kshortSelections.KShortWindow)
-        return false;
+    // DCA Selection
+    fillSelHistos<9>(cand, PDG_t::kK0Short);
+    if ((TMath::Abs(cand.kshortDCAPosPV()) < kshortSelections.KShortMinDCAPosToPv) || (TMath::Abs(cand.kshortDCANegPV()) < kshortSelections.KShortMinDCANegToPv))
+      return false;
 
-      fillSelHistos<11>(cand, PDG_t::kK0Short);
-    }
+    // Mass Selection
+    fillSelHistos<10>(cand, PDG_t::kK0Short);
+    if (TMath::Abs(cand.kshortMass() - o2::constants::physics::MassK0Short) > kshortSelections.KShortWindow)
+      return false;
+
+    fillSelHistos<11>(cand, PDG_t::kK0Short);
+
     return true;
   }
 

@@ -20,11 +20,11 @@
 ///
 /// \author Minjae Kim (minjae.kim@cern.ch)
 
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/cascqaanalysis.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/inelGt.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -32,14 +32,26 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TRandom2.h"
-#include <TPDGCode.h>
+#include <TH1.h>
+#include <TString.h>
 
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
 #include <vector>
 
 using namespace o2;
@@ -71,6 +83,7 @@ struct Initializereventqa {
   ConfigurableAxis signalFT0MAxis{"signalFT0MAxis", {4000, 0, 40000}, "FT0M amplitude"};
   ConfigurableAxis signalFV0AAxis{"signalFV0AAxis", {4000, 0, 40000}, "FV0A amplitude"};
   ConfigurableAxis nCandidates{"nCandidates", {30, -0.5, 29.5}, "N_{cand.}"};
+  ConfigurableAxis massAxis{"massAxis", {400, 1.4f, 1.8f}, "#it{M} (GeV/#it{c}^{2})"};
 
   // Event selection criteria
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
@@ -146,8 +159,8 @@ struct Initializereventqa {
       registry.add("hFT0MsignalPVContr", "hFT0MsignalPVContr", {HistType::kTH3D, {signalFT0MAxis, multNTracksAxis, eventTypeAxis}});
     }
 
-    registry.add("h3ResonanceTruth", "pT distribution of True Resonance", kTHnSparseF, {eventTypeAxis, ptAxis, centFT0MAxis});
-    registry.add("h3ResonanceTruthAnti", "pT distribution of True Resonance Anti", kTHnSparseF, {eventTypeAxis, ptAxis, centFT0MAxis});
+    registry.add("h4ResonanceTruthMass", "pT-mass distribution of True Resonance", kTHnSparseF, {eventTypeAxis, ptAxis, massAxis, centFT0MAxis});
+    registry.add("h4ResonanceTruthAntiMass", "pT-mass distribution of True Resonance Anti", kTHnSparseF, {eventTypeAxis, ptAxis, massAxis, centFT0MAxis});
   }
   float pvEta1 = 1.0f;
   float globalEta05 = 0.5f;
@@ -272,14 +285,13 @@ struct Initializereventqa {
 
       if (std::abs(mcPart.pdgCode()) != pdgTruthMother || std::abs(mcPart.y()) >= cfgRapidityCut)
         continue;
-      std::vector<int> daughterPDGs;
-      if (mcPart.has_daughters()) {
-        auto daughter01 = mcParticles.rawIteratorAt(mcPart.daughtersIds()[0] - mcParticles.offset());
-        auto daughter02 = mcParticles.rawIteratorAt(mcPart.daughtersIds()[1] - mcParticles.offset());
-        daughterPDGs = {daughter01.pdgCode(), daughter02.pdgCode()};
-      } else {
-        daughterPDGs = {-1, -1};
+      if (!mcPart.has_daughters()) {
+        continue;
       }
+
+      auto daughter01 = mcParticles.rawIteratorAt(mcPart.daughtersIds()[0] - mcParticles.offset());
+      auto daughter02 = mcParticles.rawIteratorAt(mcPart.daughtersIds()[1] - mcParticles.offset());
+      std::vector<int> daughterPDGs = {daughter01.pdgCode(), daughter02.pdgCode()};
 
       if (isDaughterCheck) {
         bool pass1 = std::abs(daughterPDGs[0]) == pdgTruthDaughter1 || std::abs(daughterPDGs[1]) == pdgTruthDaughter1;
@@ -287,10 +299,18 @@ struct Initializereventqa {
         if (!pass1 || !pass2)
           continue;
       }
-      if (mcPart.pdgCode() > 0) // Consider INELt0 or INEL
-        registry.fill(HIST("h3ResonanceTruth"), eventType, mcPart.pt(), multiplicity);
-      else
-        registry.fill(HIST("h3ResonanceTruthAnti"), eventType, mcPart.pt(), multiplicity);
+      const float daughterPx = daughter01.px() + daughter02.px();
+      const float daughterPy = daughter01.py() + daughter02.py();
+      const float daughterPz = daughter01.pz() + daughter02.pz();
+      const float daughterEnergy = daughter01.e() + daughter02.e();
+      const float daughterP2 = daughterPx * daughterPx + daughterPy * daughterPy + daughterPz * daughterPz;
+      const float mcMass = std::sqrt(std::max(0.f, daughterEnergy * daughterEnergy - daughterP2));
+
+      if (mcPart.pdgCode() > 0) { // Consider INELt0 or INEL
+        registry.fill(HIST("h4ResonanceTruthMass"), eventType, mcPart.pt(), mcMass, multiplicity);
+      } else {
+        registry.fill(HIST("h4ResonanceTruthAntiMass"), eventType, mcPart.pt(), mcMass, multiplicity);
+      }
 
       daughterPDGs.clear();
     }

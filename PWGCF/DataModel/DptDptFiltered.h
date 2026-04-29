@@ -11,8 +11,10 @@
 #ifndef PWGCF_DATAMODEL_DPTDPTFILTERED_H_
 #define PWGCF_DATAMODEL_DPTDPTFILTERED_H_
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 
 namespace o2
 {

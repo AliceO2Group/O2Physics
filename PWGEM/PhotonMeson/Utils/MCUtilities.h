@@ -282,21 +282,46 @@ bool isGammaGammaDecay(TMCParticle const& mcParticle, TMCParticles const& mcPart
 }
 
 //_______________________________________________________________________
-// Go up the decay chain of a mcparticle looking for a mother with the given pdg codes, if found return true else false
-// E.g. if electron cluster is coming from a photon return true, if primary electron return false
+/// \brief Go up the decay chain of a mcparticle looking for a mother with the given pdg codes, if found return true else false
+/// E.g. if electron cluster is coming from a photon return true, if primary electron return false
+/// \param mcparticle iterator of mxparticle, WILL BE CHANGED by this function!
+/// \param motherPDG target mother PDG value
+/// \param depth how many steps in the chain this check should go maximum before failing
 template <o2::soa::is_iterator T>
-bool isMotherPDG(T& mcparticle, const int motherPDG, const int Depth = 10) // o2-linter: disable=pdg/explicit-code (false positive)
+bool isMotherPDG(T& mcparticle, const int motherPDG, const int depth = 10) // o2-linter: disable=pdg/explicit-code (false positive)
 {
-  if (!mcparticle.has_mothers() || Depth < 1) {
+  if (!mcparticle.has_mothers() || depth < 1) {
     return false;
   }
 
   int motherid = mcparticle.mothersIds()[0];
   mcparticle.setCursor(motherid);
-  if (mcparticle.pdgCode() != motherPDG) {
+  if (mcparticle.pdgCode() == motherPDG) {
     return true; // The mother has the required pdg code, so return its daughters global mc particle code.
   } else {
-    return isMotherPDG(mcparticle, motherPDG, Depth - 1);
+    return isMotherPDG(mcparticle, motherPDG, depth - 1);
+  }
+}
+
+//_______________________________________________________________________
+/// \brief Go up the decay chain of a mcparticle looking for a mother with the given pdg codes, if found return id else -1
+/// E.g. if electron cluster is coming from a photon return true, if primary electron return false
+/// \param mcparticle iterator of mxparticle, WILL BE CHANGED by this function!
+/// \param motherPDG target mother PDG value
+/// \param depth how many steps in the chain this check should go maximum before failing
+template <o2::soa::is_iterator T>
+int32_t getMotherIndexFromChain(T& mcparticle, const int motherPDG, const int depth = 10) // o2-linter: disable=pdg/explicit-code (false positive)
+{
+  if (!mcparticle.has_mothers() || depth < 1) {
+    return -1;
+  }
+
+  int32_t motherid = mcparticle.mothersIds()[0];
+  mcparticle.setCursor(motherid);
+  if (mcparticle.pdgCode() == motherPDG) {
+    return motherid; // The mother has the required pdg code, so return its daughters global mc particle code.
+  } else {
+    return getMotherIndexFromChain(mcparticle, motherPDG, depth - 1);
   }
 }
 

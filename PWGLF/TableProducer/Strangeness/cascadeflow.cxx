@@ -19,21 +19,43 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/cascqaanalysis.h"
 
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/RecoDecay.h"
 #include "Tools/ML/MlResponse.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Math/Vector3D.h"
-#include "TRandom3.h"
+#include <Math/GenVector/Boost.h>
+#include <Math/Vector3Dfwd.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <THn.h>
+#include <TList.h>
+#include <TMath.h>
+#include <TPDGCode.h>
+#include <TProfile3D.h>
+#include <TRandom3.h>
+#include <TString.h>
 
+#include <RtypesCore.h>
+
+#include <cmath>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -163,7 +185,9 @@ struct cascadeFlow {
 
   // Output filling criteria
   struct : ConfigurableGroup {
+    Configurable<bool> isFillNominalMass{"isFillNominalMass", 1, ""};
     Configurable<bool> isFillTree{"isFillTree", 1, ""};
+    Configurable<bool> isFillTreeFull{"isFillTreeFull", 0, ""};
     Configurable<bool> isFillTHNXi{"isFillTHNXi", 1, ""};
     Configurable<bool> isFillTHNXi_PzVsPsi{"isFillTHNXi_PzVsPsi", 1, ""};
     Configurable<bool> isFillTHNOmega{"isFillTHNOmega", 1, ""};
@@ -173,6 +197,7 @@ struct cascadeFlow {
     Configurable<bool> isFillTHN_V2{"isFillTHN_V2", 1, ""};
     Configurable<bool> isFillTHN_Pz{"isFillTHN_Pz", 1, ""};
     Configurable<bool> isFillTHN_PzFromLambda{"isFillTHN_PzFromLambda", 1, ""};
+    Configurable<bool> isFillTHN_PzFromLambdaWLambdaMass{"isFillTHN_PzFromLambdaWLambdaMass", 1, ""};
     Configurable<bool> isFillTHN_Acc{"isFillTHN_Acc", 1, ""};
     Configurable<bool> isFillTHN_AccFromLambdaVsCasc{"isFillTHN_AccFromLambdaVsCasc", 1, ""};
     Configurable<bool> isFillTHN_AccFromLambdaVsLambda{"isFillTHN_AccFromLambdaVsLambda", 1, ""};
@@ -246,6 +271,8 @@ struct cascadeFlow {
     Configurable<float> MaxXiMass{"MaxXiMass", 1.345, ""};
     Configurable<float> MinOmegaMass{"MinOmegaMass", 1.655, ""};
     Configurable<float> MaxOmegaMass{"MaxOmegaMass", 1.690, ""};
+    Configurable<float> CMRlowerLimitMassXi{"CMRlowerLimitMassXi", 999, "Lower limit of rejected Xi candidates"};   // for Omega identification
+    Configurable<float> CMRupperLimitMassXi{"CMRupperLimitMassXi", -999., "Upper limit of rejected Xi candidates"}; // for Omega identification
   } CandidateConfigs;
 
   struct : ConfigurableGroup {
@@ -275,6 +302,7 @@ struct cascadeFlow {
   Configurable<bool> doNTPCSigmaCut{"doNTPCSigmaCut", 1, "doNtpcSigmaCut"};
   Configurable<float> nsigmatpcPr{"nsigmatpcPr", 5, "nsigmatpcPr"};
   Configurable<float> nsigmatpcPi{"nsigmatpcPi", 5, "nsigmatpcPi"};
+  Configurable<float> nsigmatpcKa{"nsigmatpcKa", 100, "nsigmatpcKa"};
   Configurable<float> mintpccrrows{"mintpccrrows", 70, "mintpccrrows"};
 
   Configurable<bool> isStoreTrueCascOnly{"isStoreTrueCascOnly", 1, ""};
@@ -421,6 +449,8 @@ struct cascadeFlow {
         if (std::abs(posExtra.tpcNSigmaPi()) > nsigmatpcPi || std::abs(negExtra.tpcNSigmaPr()) > nsigmatpcPr)
           return false;
       }
+      if (std::abs(bachExtra.tpcNSigmaKa()) > nsigmatpcKa)
+        return false;
     }
     counter++;
 
@@ -428,6 +458,20 @@ struct cascadeFlow {
       return false;
 
     counter++;
+
+    double pTotPosExtra = std::sqrt(casc.pxpos() * casc.pxpos() + casc.pypos() * casc.pypos() + casc.pzpos() * casc.pzpos());
+    double pTotNegExtra = std::sqrt(casc.pxneg() * casc.pxneg() + casc.pyneg() * casc.pyneg() + casc.pzneg() * casc.pzneg());
+    double pTotBachExtra = std::sqrt(casc.pxbach() * casc.pxbach() + casc.pybach() * casc.pybach() + casc.pzbach() * casc.pzbach());
+    if (casc.sign() < 0) {
+      histos.fill(HIST("hNsigmaTPCPi"), posExtra.tpcNSigmaPr(), pTotPosExtra);
+      histos.fill(HIST("hNsigmaTPCPr"), negExtra.tpcNSigmaPi(), pTotNegExtra);
+    } else if (casc.sign() > 0) {
+      histos.fill(HIST("hNsigmaTPCPi"), posExtra.tpcNSigmaPi(), pTotPosExtra);
+      histos.fill(HIST("hNsigmaTPCPr"), negExtra.tpcNSigmaPr(), pTotNegExtra);
+    }
+    histos.fill(HIST("hNsigmaTPCBachKa"), bachExtra.tpcNSigmaKa(), pTotBachExtra);
+    histos.fill(HIST("hNsigmaTPCBachPi"), bachExtra.tpcNSigmaPi(), pTotBachExtra);
+
     return true;
   }
 
@@ -615,6 +659,7 @@ struct cascadeFlow {
   // Tables to produce
   Produces<aod::CascTraining> trainingSample;
   Produces<aod::CascAnalysis> analysisSample;
+  Produces<aod::CascAnalysisFull> analysisTopoSample;
   Produces<aod::LambdaAnalysis> analysisLambdaSample;
   Configurable<LabeledArray<double>> parSigmaMass{
     "parSigmaMass",
@@ -653,13 +698,18 @@ struct cascadeFlow {
                    pdgCode);
   }
 
-  template <class collision_t, class cascade_t>
-  void fillAnalysedTable(collision_t coll, bool hasEventPlane, bool hasSpectatorPlane, cascade_t casc, float v2CSP, float v2CEP, float v1SP_ZDCA, float v1SP_ZDCC, float PsiT0C, float BDTresponseXi, float BDTresponseOmega, int pdgCode)
+  template <class collision_t, class cascade_t, class bachExtra_t>
+  void fillAnalysedTable(collision_t coll, bool hasEventPlane, bool hasSpectatorPlane, cascade_t casc, float v2CSP, float v2CEP, float v1SP_ZDCA, float v1SP_ZDCC, float PsiT0C, float BDTresponseXi, float BDTresponseOmega, int pdgCode, bachExtra_t bachExtra)
   {
     double masses[nParticles]{o2::constants::physics::MassXiMinus, o2::constants::physics::MassOmegaMinus};
     ROOT::Math::PxPyPzMVector cascadeVector[nParticles], lambdaVector, protonVector;
     float cosThetaStarLambda[nParticles], cosThetaStarProton;
-    lambdaVector.SetCoordinates(casc.pxlambda(), casc.pylambda(), casc.pzlambda(), o2::constants::physics::MassLambda);
+
+    double massLambda = casc.mLambda();
+    if (fillingConfigs.isFillNominalMass)
+      massLambda = o2::constants::physics::MassLambda;
+
+    lambdaVector.SetCoordinates(casc.pxlambda(), casc.pylambda(), casc.pzlambda(), massLambda);
     ROOT::Math::Boost lambdaBoost{lambdaVector.BoostToCM()};
     if (casc.sign() > 0) {
       protonVector.SetCoordinates(casc.pxneg(), casc.pyneg(), casc.pzneg(), o2::constants::physics::MassProton);
@@ -689,29 +739,66 @@ struct cascadeFlow {
     // bool isTVXinTRD = 0;
     //    if (coll.alias_bit(kTVXinTRD)) isTVXinTRD = 1;
 
-    analysisSample(coll.centFT0C(),
-                   isNoCollInTimeRangeStd,
-                   isNoCollInRofStd,
-                   hasEventPlane,
-                   hasSpectatorPlane,
-                   casc.sign(),
-                   casc.pt(),
-                   casc.eta(),
-                   casc.phi(),
-                   casc.mLambda(),
-                   casc.mXi(),
-                   casc.mOmega(),
-                   v2CSP,
-                   v2CEP,
-                   v1SP_ZDCA,
-                   v1SP_ZDCC,
-                   PsiT0C,
-                   BDTresponseXi,
-                   BDTresponseOmega,
-                   cosThetaStarLambda[0],
-                   cosThetaStarLambda[1],
-                   cosThetaStarProton,
-                   pdgCode);
+    if (fillingConfigs.isFillTreeFull) {
+      analysisTopoSample(coll.centFT0C(),
+                         hasEventPlane,
+                         hasSpectatorPlane,
+                         casc.sign(),
+                         casc.pt(),
+                         casc.eta(),
+                         casc.phi(),
+                         casc.mLambda(),
+                         casc.mXi(),
+                         casc.mOmega(),
+                         casc.cascradius(),
+                         casc.v0radius(),
+                         casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()),
+                         casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()),
+                         casc.dcapostopv(),
+                         casc.dcanegtopv(),
+                         casc.dcabachtopv(),
+                         casc.dcacascdaughters(),
+                         casc.dcaV0daughters(),
+                         casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ()),
+                         casc.bachBaryonCosPA(),
+                         casc.bachBaryonDCAxyToPV(),
+                         bachExtra.tpcNSigmaKa(),
+                         v2CSP,
+                         v2CEP,
+                         v1SP_ZDCA,
+                         v1SP_ZDCC,
+                         PsiT0C,
+                         BDTresponseXi,
+                         BDTresponseOmega,
+                         cosThetaStarLambda[0],
+                         cosThetaStarLambda[1],
+                         cosThetaStarProton,
+                         pdgCode);
+    } else {
+      analysisSample(coll.centFT0C(),
+                     isNoCollInTimeRangeStd,
+                     isNoCollInRofStd,
+                     hasEventPlane,
+                     hasSpectatorPlane,
+                     casc.sign(),
+                     casc.pt(),
+                     casc.eta(),
+                     casc.phi(),
+                     casc.mLambda(),
+                     casc.mXi(),
+                     casc.mOmega(),
+                     v2CSP,
+                     v2CEP,
+                     v1SP_ZDCA,
+                     v1SP_ZDCC,
+                     PsiT0C,
+                     BDTresponseXi,
+                     BDTresponseOmega,
+                     cosThetaStarLambda[0],
+                     cosThetaStarLambda[1],
+                     cosThetaStarProton,
+                     pdgCode);
+    }
   }
 
   template <class collision_t, class v0_t>
@@ -821,6 +908,7 @@ struct cascadeFlow {
     float maxMassLambda[2]{1.14, 1.14};
     const AxisSpec shiftAxis = {10, 0, 10, "shift"};
     const AxisSpec basisAxis = {2, 0, 2, "basis"};
+    const AxisSpec axisNTPC = {100, -10, 10};
     const AxisSpec massCascAxis[2]{{static_cast<int>((maxMass[0] - minMass[0]) / 0.001f), minMass[0], maxMass[0], "#Xi candidate mass (GeV/c^{2})"},
                                    {static_cast<int>((maxMass[1] - minMass[1]) / 0.001f), minMass[1], maxMass[1], "#Omega candidate mass (GeV/c^{2})"}};
     const AxisSpec massLambdaAxis[2]{{static_cast<int>((maxMassLambda[0] - minMassLambda[0]) / 0.001f), minMassLambda[0], maxMassLambda[0], "#Lambda candidate mass (GeV/c^{2})"},
@@ -879,6 +967,12 @@ struct cascadeFlow {
     histos.add("ShiftTPCL", "ShiftTPCL", kTProfile3D, {CentAxis, basisAxis, shiftAxis});
     histos.add("ShiftTPCR", "ShiftTPCR", kTProfile3D, {CentAxis, basisAxis, shiftAxis});
 
+    // PID TPC
+    histos.add("hNsigmaTPCBachPi", "hNsigmaTPCBachPi", HistType::kTH2F, {axisNTPC, {20, 0, 10}});
+    histos.add("hNsigmaTPCBachKa", "hNsigmaTPCBachKa", HistType::kTH2F, {axisNTPC, {20, 0, 10}});
+    histos.add("hNsigmaTPCPi", "hNsigmaTPCPi", HistType::kTH2F, {axisNTPC, {20, 0, 10}});
+    histos.add("hNsigmaTPCPr", "hNsigmaTPCPr", HistType::kTH2F, {axisNTPC, {20, 0, 10}});
+
     histos.add("hNEvents", "hNEvents", {HistType::kTH1D, {{10, 0.f, 10.f}}});
     for (Int_t n = 1; n <= histos.get<TH1>(HIST("hNEvents"))->GetNbinsX(); n++) {
       histos.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(n, hNEventsLabels[n - 1]);
@@ -897,6 +991,11 @@ struct cascadeFlow {
     histos.add("Psi_EP_FT0A_shifted", "Psi_EP_FT0C_shifted", HistType::kTH2D, {CentAxis, {100, -o2::constants::math::PI, o2::constants::math::PI}});
     histos.add("Psi_EP_TPCA_shifted", "Psi_EP_FT0C_shifted", HistType::kTH2D, {CentAxis, {100, -o2::constants::math::PI, o2::constants::math::PI}});
     histos.add("Psi_EP_TPCC_shifted", "Psi_EP_FT0C_shifted", HistType::kTH2D, {CentAxis, {100, -o2::constants::math::PI, o2::constants::math::PI}});
+    histos.add("Psi_EP_FT0C_notshifted", "Psi_EP_FT0C_notshifted", HistType::kTH2D, {CentAxis, {100, -o2::constants::math::PI, o2::constants::math::PI}});
+    histos.add("Psi_EP_FV0A_notshifted", "Psi_EP_FT0C_notshifted", HistType::kTH2D, {CentAxis, {100, -o2::constants::math::PI, o2::constants::math::PI}});
+    histos.add("Psi_EP_FT0A_notshifted", "Psi_EP_FT0C_notshifted", HistType::kTH2D, {CentAxis, {100, -o2::constants::math::PI, o2::constants::math::PI}});
+    histos.add("Psi_EP_TPCA_notshifted", "Psi_EP_FT0C_notshifted", HistType::kTH2D, {CentAxis, {100, -o2::constants::math::PI, o2::constants::math::PI}});
+    histos.add("Psi_EP_TPCC_notshifted", "Psi_EP_FT0C_notshifted", HistType::kTH2D, {CentAxis, {100, -o2::constants::math::PI, o2::constants::math::PI}});
     histos.add("hPsiZDCA_vs_ZDCC", "hPsiZDCA_vs_ZDCC", HistType::kTH2D, {{100, -o2::constants::math::PI, o2::constants::math::PI}, {100, -o2::constants::math::PI, o2::constants::math::PI}});
     histos.add("hEventNchCorrelation", "hEventNchCorrelation", kTH2F, {{5000, 0, 5000}, {5000, 0, 2500}});
     histos.add("hEventPVcontributorsVsCentrality", "hEventPVcontributorsVsCentrality", kTH2F, {{100, 0, 100}, {5000, 0, 5000}});
@@ -967,6 +1066,8 @@ struct cascadeFlow {
         histos.add("hXiPzs2", "THn for Pzs2 of Xi", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassXi, thnAxisBDTScore, thnAxisPzs2Xi});
       if (fillingConfigs.isFillTHN_PzFromLambda)
         histos.add("hXiPzs2FromLambda", "THn for Pzs2 of Xi", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassXi, thnAxisBDTScore, thnAxisPzs2Lambda});
+      if (fillingConfigs.isFillTHN_PzFromLambdaWLambdaMass)
+        histos.add("hXiPzs2FromLambdaWLambdaMass", "THn for Pzs2 of Xi", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassXi, thnAxisMassLambda, thnAxisBDTScore, thnAxisPzs2Lambda});
       if (fillingConfigs.isFillTHN_Acc)
         histos.add("hXiCos2Theta", "THn for Cos2Theta of Xi", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisEta, thnAxisPt, thnAxisMassXi, thnAxisBDTScore, thnAxisCos2Theta});
       if (fillingConfigs.isFillTHN_AccFromLambdaVsCasc)
@@ -993,6 +1094,8 @@ struct cascadeFlow {
         histos.add("hOmegaPzs2", "THn for Pzs2 of Omega", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega, thnAxisBDTScore, thnAxisPzs2Omega});
       if (fillingConfigs.isFillTHN_PzFromLambda)
         histos.add("hOmegaPzs2FromLambda", "THn for Pzs2 of Omega", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega, thnAxisBDTScore, thnAxisPzs2Lambda});
+      if (fillingConfigs.isFillTHN_PzFromLambdaWLambdaMass)
+        histos.add("hOmegaPzs2FromLambdaWLambdaMass", "THn for Pzs2 of Omega", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisPt, thnAxisMassOmega, thnAxisMassLambda, thnAxisBDTScore, thnAxisPzs2Lambda});
       if (fillingConfigs.isFillTHN_Acc)
         histos.add("hOmegaCos2Theta", "THn for Cos2Theta of Omega", HistType::kTHnF, {thnAxisFT0C, thnAxisCharge, thnAxisEta, thnAxisPt, thnAxisMassOmega, thnAxisBDTScore, thnAxisCos2Theta});
       if (fillingConfigs.isFillTHN_AccFromLambdaVsCasc)
@@ -1152,6 +1255,9 @@ struct cascadeFlow {
             continue;
           histos.fill(HIST("hCandidate"), ++counter);
         }
+        if (std::abs(bachExtra.tpcNSigmaKa()) > nsigmatpcKa)
+          continue;
+        histos.fill(HIST("hCandidate"), ++counter);
       } else {
         ++counter;
       }
@@ -1237,6 +1343,9 @@ struct cascadeFlow {
     const float psiTPCA = std::atan2(coll.qvecBPosIm(), coll.qvecBPosRe()) * 0.5f;
     const float psiTPCC = std::atan2(coll.qvecBNegIm(), coll.qvecBNegRe()) * 0.5f;
     float psiT0CCorr = psiT0C;
+    histos.fill(HIST("Psi_EP_FT0C_notshifted"), coll.centFT0C(), psiT0C);
+    histos.fill(HIST("Psi_EP_TPCA_notshifted"), coll.centFT0C(), psiTPCA);
+    histos.fill(HIST("Psi_EP_TPCC_notshifted"), coll.centFT0C(), psiTPCC);
 
     for (int ishift = 1; ishift <= 10; ishift++) {
       histos.fill(HIST("ShiftFT0C"), coll.centFT0C(), 0.5, ishift - 0.5, std::sin(ishift * 2 * psiT0C));
@@ -1270,7 +1379,6 @@ struct cascadeFlow {
     histos.fill(HIST("hPsiT0C"), psiT0CCorr);
     histos.fill(HIST("hPsiZDCA_vs_ZDCC"), coll.psiZDCC(), coll.psiZDCA());
     histos.fill(HIST("hPsiT0CvsCentFT0C"), coll.centFT0C(), psiT0CCorr);
-
     resolution.fill(HIST("QVectorsT0CTPCA"), eventplaneVecT0C.Dot(eventplaneVecTPCA), coll.centFT0C());
     resolution.fill(HIST("QVectorsT0CTPCC"), eventplaneVecT0C.Dot(eventplaneVecTPCC), coll.centFT0C());
     resolution.fill(HIST("QVectorsTPCAC"), eventplaneVecTPCA.Dot(eventplaneVecTPCC), coll.centFT0C());
@@ -1324,6 +1432,11 @@ struct cascadeFlow {
       cascadev2::hMassBeforeSelVsPt[0]->Fill(massCasc[0], casc.pt());
       cascadev2::hMassBeforeSelVsPt[1]->Fill(massCasc[1], casc.pt());
 
+      // competing mass rejection cut applied for Omegas
+      if (casc.mXi() > CandidateConfigs.CMRlowerLimitMassXi && casc.mXi() < CandidateConfigs.CMRupperLimitMassXi) {
+        continue;
+      }
+
       if (isApplyML) {
         // Retrieve model output and selection outcome
         isSelectedCasc[0] = mlResponseXi.isSelectedMl(inputFeaturesCasc, casc.pt(), bdtScore[0]);
@@ -1338,12 +1451,16 @@ struct cascadeFlow {
           if (isSelectedCasc[iS]) {
             cascadev2::hSignalScoreAfterSel[iS]->Fill(bdtScore[0][1]);
             cascadev2::hBkgScoreAfterSel[iS]->Fill(bdtScore[1][0]);
-            cascadev2::hMassAfterSelVsPt[iS]->Fill(massCasc[iS], casc.pt());
           }
         }
       } else {
         isSelectedCasc[0] = true;
         isSelectedCasc[1] = true;
+      }
+      for (int iS{0}; iS < nParticles; ++iS) {
+        if (isSelectedCasc[iS]) {
+          cascadev2::hMassAfterSelVsPt[iS]->Fill(massCasc[iS], casc.pt());
+        }
       }
 
       ROOT::Math::XYZVector cascQvec{std::cos(2 * casc.phi()), std::sin(2 * casc.phi()), 0};
@@ -1362,7 +1479,12 @@ struct cascadeFlow {
       double masses[2]{o2::constants::physics::MassXiMinus, o2::constants::physics::MassOmegaMinus};
       ROOT::Math::PxPyPzMVector cascadeVector[2], lambdaVector, protonVector;
       float cosThetaStarLambda[2], cosThetaStarProton;
-      lambdaVector.SetCoordinates(casc.pxlambda(), casc.pylambda(), casc.pzlambda(), o2::constants::physics::MassLambda);
+
+      double massLambda = casc.mLambda();
+      if (fillingConfigs.isFillNominalMass)
+        massLambda = o2::constants::physics::MassLambda;
+
+      lambdaVector.SetCoordinates(casc.pxlambda(), casc.pylambda(), casc.pzlambda(), massLambda);
       ROOT::Math::Boost lambdaBoost{lambdaVector.BoostToCM()};
       if (casc.sign() > 0) {
         protonVector.SetCoordinates(casc.pxneg(), casc.pyneg(), casc.pzneg(), o2::constants::physics::MassProton);
@@ -1514,7 +1636,7 @@ struct cascadeFlow {
 
       if (isSelectedCasc[0] || isSelectedCasc[1]) {
         if (fillingConfigs.isFillTree)
-          fillAnalysedTable(coll, hasEventPlane, hasSpectatorPlane, casc, v2CSP, v2CEP, v1SP_ZDCA, v1SP_ZDCC, psiT0CCorr, BDTresponse[0], BDTresponse[1], 0);
+          fillAnalysedTable(coll, hasEventPlane, hasSpectatorPlane, casc, v2CSP, v2CEP, v1SP_ZDCA, v1SP_ZDCC, psiT0CCorr, BDTresponse[0], BDTresponse[1], 0, bachExtra);
       }
     }
   }
@@ -1553,6 +1675,9 @@ struct cascadeFlow {
     const float psiT0C = std::atan2(coll.qvecFT0CIm(), coll.qvecFT0CRe()) * 0.5f;
     const float psiTPCA = std::atan2(coll.qvecBPosIm(), coll.qvecBPosRe()) * 0.5f;
     const float psiTPCC = std::atan2(coll.qvecBNegIm(), coll.qvecBNegRe()) * 0.5f;
+    histos.fill(HIST("Psi_EP_FT0C_notshifted"), coll.centFT0C(), psiT0C);
+    histos.fill(HIST("Psi_EP_TPCA_notshifted"), coll.centFT0C(), psiTPCA);
+    histos.fill(HIST("Psi_EP_TPCC_notshifted"), coll.centFT0C(), psiTPCC);
     float psiT0CCorr = psiT0C;
     for (int ishift = 1; ishift <= 10; ishift++) {
       histos.fill(HIST("ShiftFT0C"), coll.centFT0C(), 0.5, ishift - 0.5, std::sin(ishift * 2 * psiT0C));
@@ -1638,6 +1763,11 @@ struct cascadeFlow {
       cascadev2::hMassBeforeSelVsPt[0]->Fill(massCasc[0], casc.pt());
       cascadev2::hMassBeforeSelVsPt[1]->Fill(massCasc[1], casc.pt());
 
+      // competing mass rejection cut applied for Omegas
+      if (casc.mXi() > CandidateConfigs.CMRlowerLimitMassXi && casc.mXi() < CandidateConfigs.CMRupperLimitMassXi) {
+        continue;
+      }
+
       if (isApplyML) {
         // Retrieve model output and selection outcome
         isSelectedCasc[0] = mlResponseXi.isSelectedMl(inputFeaturesCasc, casc.pt(), bdtScore[0]);
@@ -1652,12 +1782,16 @@ struct cascadeFlow {
           if (isSelectedCasc[iS]) {
             cascadev2::hSignalScoreAfterSel[iS]->Fill(bdtScore[0][1]);
             cascadev2::hBkgScoreAfterSel[iS]->Fill(bdtScore[1][0]);
-            cascadev2::hMassAfterSelVsPt[iS]->Fill(massCasc[iS], casc.pt());
           }
         }
       } else {
         isSelectedCasc[0] = true;
         isSelectedCasc[1] = true;
+      }
+      for (int iS{0}; iS < nParticles; ++iS) {
+        if (isSelectedCasc[iS]) {
+          cascadev2::hMassAfterSelVsPt[iS]->Fill(massCasc[iS], casc.pt());
+        }
       }
 
       ROOT::Math::XYZVector cascQvec{std::cos(2 * casc.phi()), std::sin(2 * casc.phi()), 0};
@@ -1670,7 +1804,12 @@ struct cascadeFlow {
       double masses[nParticles]{o2::constants::physics::MassXiMinus, o2::constants::physics::MassOmegaMinus};
       ROOT::Math::PxPyPzMVector cascadeVector[nParticles], lambdaVector, protonVector;
       float cosThetaStarLambda[nParticles], cosThetaStarProton;
-      lambdaVector.SetCoordinates(casc.pxlambda(), casc.pylambda(), casc.pzlambda(), o2::constants::physics::MassLambda);
+
+      double massLambda = casc.mLambda();
+      if (fillingConfigs.isFillNominalMass)
+        massLambda = o2::constants::physics::MassLambda;
+
+      lambdaVector.SetCoordinates(casc.pxlambda(), casc.pylambda(), casc.pzlambda(), massLambda);
       ROOT::Math::Boost lambdaBoost{lambdaVector.BoostToCM()};
       if (casc.sign() > 0) {
         protonVector.SetCoordinates(casc.pxneg(), casc.pyneg(), casc.pzneg(), o2::constants::physics::MassProton);
@@ -1749,6 +1888,10 @@ struct cascadeFlow {
             histos.get<THn>(HIST("hXiV2"))->Fill(coll.centFT0C(), chargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], v2CEP);
           if (fillingConfigs.isFillTHN_Pz)
             histos.get<THn>(HIST("hXiPzs2"))->Fill(coll.centFT0C(), chargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], pzs2Xi);
+          if (casc.mXi() > CandidateConfigs.MinXiMass && casc.mXi() < CandidateConfigs.MaxXiMass) {
+            if (fillingConfigs.isFillTHN_PzFromLambdaWLambdaMass)
+              histos.get<THn>(HIST("hXiPzs2FromLambdaWLambdaMass"))->Fill(coll.centFT0C(), chargeIndex, casc.pt(), casc.mXi(), casc.mLambda(), BDTresponse[0], pzs2LambdaFromCasc);
+          }
           if (casc.mLambda() > CandidateConfigs.MinLambdaMass && casc.mLambda() < CandidateConfigs.MaxLambdaMass) {
             if (fillingConfigs.isFillTHN_PzFromLambda)
               histos.get<THn>(HIST("hXiPzs2FromLambda"))->Fill(coll.centFT0C(), chargeIndex, casc.pt(), casc.mXi(), BDTresponse[0], pzs2LambdaFromCasc);
@@ -1785,6 +1928,10 @@ struct cascadeFlow {
             histos.get<THn>(HIST("hOmegaV2"))->Fill(coll.centFT0C(), chargeIndex, casc.pt(), casc.mOmega(), BDTresponse[1], v2CEP);
           if (fillingConfigs.isFillTHN_Pz)
             histos.get<THn>(HIST("hOmegaPzs2"))->Fill(coll.centFT0C(), chargeIndex, casc.pt(), casc.mOmega(), BDTresponse[1], pzs2Omega);
+          if (casc.mOmega() > CandidateConfigs.MinOmegaMass && casc.mOmega() < CandidateConfigs.MaxOmegaMass) {
+            if (fillingConfigs.isFillTHN_PzFromLambdaWLambdaMass)
+              histos.get<THn>(HIST("hOmegaPzs2FromLambdaWLambdaMass"))->Fill(coll.centFT0C(), chargeIndex, casc.pt(), casc.mOmega(), casc.mLambda(), BDTresponse[1], pzs2LambdaFromCasc);
+          }
           if (casc.mLambda() > CandidateConfigs.MinLambdaMass && casc.mLambda() < CandidateConfigs.MaxLambdaMass) {
             if (fillingConfigs.isFillTHN_PzFromLambda)
               histos.get<THn>(HIST("hOmegaPzs2FromLambda"))->Fill(coll.centFT0C(), chargeIndex, casc.pt(), casc.mOmega(), BDTresponse[1], pzs2LambdaFromCasc);
@@ -1820,7 +1967,7 @@ struct cascadeFlow {
 
       if (isSelectedCasc[0] || isSelectedCasc[1]) {
         if (fillingConfigs.isFillTree)
-          fillAnalysedTable(coll, hasEventPlane, 0, casc, v2CSP, v2CEP, 0, 0, psiT0CCorr, BDTresponse[0], BDTresponse[1], 0);
+          fillAnalysedTable(coll, hasEventPlane, 0, casc, v2CSP, v2CEP, 0, 0, psiT0CCorr, BDTresponse[0], BDTresponse[1], 0, bachExtra);
       }
     }
   }
@@ -1896,6 +2043,11 @@ struct cascadeFlow {
     const float psiT0A = std::atan2(qvecImT0A, qvecReT0A) * 0.5f;
     const float psiTPCA = std::atan2(coll.qvecBPosIm(), coll.qvecBPosRe()) * 0.5f;
     const float psiTPCC = std::atan2(coll.qvecBNegIm(), coll.qvecBNegRe()) * 0.5f;
+    histos.fill(HIST("Psi_EP_FT0C_notshifted"), coll.centFT0C(), psiT0C);
+    histos.fill(HIST("Psi_EP_FV0A_notshifted"), coll.centFT0C(), psiV0A);
+    histos.fill(HIST("Psi_EP_FT0A_notshifted"), coll.centFT0C(), psiT0A);
+    histos.fill(HIST("Psi_EP_TPCA_notshifted"), coll.centFT0C(), psiTPCA);
+    histos.fill(HIST("Psi_EP_TPCC_notshifted"), coll.centFT0C(), psiTPCC);
     float psiT0CCorr = psiT0C;
     for (int ishift = 1; ishift <= 10; ishift++) {
       histos.fill(HIST("ShiftFT0C"), collisionCentrality, 0.5, ishift - 0.5, std::sin(ishift * 2 * psiT0C));
@@ -2053,7 +2205,10 @@ struct cascadeFlow {
       ROOT::Math::XYZVector lambdaUvec{std::cos(v0.phi()), std::sin(v0.phi()), 0};
 
       // polarization variables
-      double massLambda = o2::constants::physics::MassLambda;
+      double massLambda = v0.mLambda();
+      if (fillingConfigs.isFillNominalMass)
+        massLambda = o2::constants::physics::MassLambda;
+
       float cosThetaStarProton[nCharges];
       ROOT::Math::PxPyPzMVector lambdaVector, protonVector[nCharges];
       lambdaVector.SetCoordinates(v0.px(), v0.py(), v0.pz(), massLambda);
@@ -2175,6 +2330,9 @@ struct cascadeFlow {
     const float psiT0C = std::atan2(coll.qvecFT0CIm(), coll.qvecFT0CRe()) * 0.5f;
     const float psiTPCA = std::atan2(coll.qvecBPosIm(), coll.qvecBPosRe()) * 0.5f;
     const float psiTPCC = std::atan2(coll.qvecBNegIm(), coll.qvecBNegRe()) * 0.5f;
+    histos.fill(HIST("Psi_EP_FT0C_notshifted"), coll.centFT0C(), psiT0C);
+    histos.fill(HIST("Psi_EP_TPCA_notshifted"), coll.centFT0C(), psiTPCA);
+    histos.fill(HIST("Psi_EP_TPCC_notshifted"), coll.centFT0C(), psiTPCC);
     float psiT0CCorr = psiT0C;
     for (int ishift = 1; ishift <= 10; ishift++) {
       histos.fill(HIST("ShiftFT0C"), coll.centFT0C(), 0.5, ishift - 0.5, std::sin(ishift * 2 * psiT0C));
@@ -2262,6 +2420,11 @@ struct cascadeFlow {
       cascadev2::hMassBeforeSelVsPt[0]->Fill(massCasc[0], casc.pt());
       cascadev2::hMassBeforeSelVsPt[1]->Fill(massCasc[1], casc.pt());
 
+      // competing mass rejection cut applied for Omegas
+      if (casc.mXi() > CandidateConfigs.CMRlowerLimitMassXi && casc.mXi() < CandidateConfigs.CMRupperLimitMassXi) {
+        continue;
+      }
+
       if (isApplyML) {
         // Retrieve model output and selection outcome
         isSelectedCasc[0] = mlResponseXi.isSelectedMl(inputFeaturesCasc, casc.pt(), bdtScore[0]);
@@ -2276,12 +2439,16 @@ struct cascadeFlow {
           if (isSelectedCasc[iS]) {
             cascadev2::hSignalScoreAfterSel[iS]->Fill(bdtScore[0][1]);
             cascadev2::hBkgScoreAfterSel[iS]->Fill(bdtScore[1][0]);
-            cascadev2::hMassAfterSelVsPt[iS]->Fill(massCasc[iS], casc.pt());
           }
         }
       } else {
         isSelectedCasc[0] = true;
         isSelectedCasc[1] = true;
+      }
+      for (int iS{0}; iS < nParticles; ++iS) {
+        if (isSelectedCasc[iS]) {
+          cascadev2::hMassAfterSelVsPt[iS]->Fill(massCasc[iS], casc.pt());
+        }
       }
 
       ROOT::Math::XYZVector cascQvec{std::cos(2 * casc.phi()), std::sin(2 * casc.phi()), 0};
@@ -2318,7 +2485,7 @@ struct cascadeFlow {
       }
       if (isSelectedCasc[0] || isSelectedCasc[1])
         if (fillingConfigs.isFillTree)
-          fillAnalysedTable(coll, hasEventPlane, hasSpectatorPlane, casc, v2CSP, v2CEP, v1SP_ZDCA, v1SP_ZDCC, psiT0CCorr, BDTresponse[0], BDTresponse[1], 0);
+          fillAnalysedTable(coll, hasEventPlane, hasSpectatorPlane, casc, v2CSP, v2CEP, v1SP_ZDCA, v1SP_ZDCC, psiT0CCorr, BDTresponse[0], BDTresponse[1], 0, bachExtra);
     }
   }
 
@@ -2411,6 +2578,11 @@ struct cascadeFlow {
       cascadev2::hMassBeforeSelVsPt[0]->Fill(massCasc[0], casc.pt());
       cascadev2::hMassBeforeSelVsPt[1]->Fill(massCasc[1], casc.pt());
 
+      // competing mass rejection cut applied for Omegas
+      if (casc.mXi() > CandidateConfigs.CMRlowerLimitMassXi && casc.mXi() < CandidateConfigs.CMRupperLimitMassXi) {
+        continue;
+      }
+
       if (isApplyML) {
         // Retrieve model output and selection outcome
         isSelectedCasc[0] = mlResponseXi.isSelectedMl(inputFeaturesCasc, casc.pt(), bdtScore[0]);
@@ -2425,12 +2597,16 @@ struct cascadeFlow {
           if (isSelectedCasc[iS]) {
             cascadev2::hSignalScoreAfterSel[iS]->Fill(bdtScore[0][1]);
             cascadev2::hBkgScoreAfterSel[iS]->Fill(bdtScore[1][0]);
-            cascadev2::hMassAfterSelVsPt[iS]->Fill(massCasc[iS], casc.pt());
           }
         }
       } else {
         isSelectedCasc[0] = true;
         isSelectedCasc[1] = true;
+      }
+      for (int iS{0}; iS < nParticles; ++iS) {
+        if (isSelectedCasc[iS]) {
+          cascadev2::hMassAfterSelVsPt[iS]->Fill(massCasc[iS], casc.pt());
+        }
       }
 
       histos.fill(HIST("hCascadePhi"), casc.phi());
@@ -2451,7 +2627,7 @@ struct cascadeFlow {
           continue;
       }
       if (isSelectedCasc[0] || isSelectedCasc[1])
-        fillAnalysedTable(coll, hasEventPlane, hasSpectatorPlane, casc, v2CSP, v2CEP, v1SP_ZDCA, v1SP_ZDCC, psiT0C, BDTresponse[0], BDTresponse[1], pdgCode);
+        fillAnalysedTable(coll, hasEventPlane, hasSpectatorPlane, casc, v2CSP, v2CEP, v1SP_ZDCA, v1SP_ZDCC, psiT0C, BDTresponse[0], BDTresponse[1], pdgCode, bachExtra);
     }
   }
 

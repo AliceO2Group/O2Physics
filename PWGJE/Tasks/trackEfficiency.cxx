@@ -122,8 +122,8 @@ struct TrackEfficiency {
       }
     } else {
       const auto& aodTrack = jetTrack.template track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>>();
-      if (effSystMinNCrossedRowsTPCUseAlternateCut) {
-        customTrackSelection.SetMinNCrossedRowsTPC(120 - 5. / jetTrack.pt());
+      if (effSystMinNCrossedRowsTPCUseAlternateCut && (aodTrack.tpcNClsCrossedRows() < 120 - 5. / aodTrack.pt())) {
+        return false;
       }
       if (customTrackSelection.IsSelected(aodTrack)) {
         return true;
@@ -223,7 +223,11 @@ struct TrackEfficiency {
       customTrackSelection.SetEtaRange(-999, 999);
       customTrackSelection.SetPtRange(0, 1e10f);
 
-      customTrackSelection.SetMinNCrossedRowsTPC(effSystMinNCrossedRowsTPC.value);
+      if (effSystMinNCrossedRowsTPCUseAlternateCut) {
+        customTrackSelection.SetMinNCrossedRowsTPC(0.);
+      } else {
+        customTrackSelection.SetMinNCrossedRowsTPC(effSystMinNCrossedRowsTPC.value);
+      }
       customTrackSelection.SetMinNCrossedRowsOverFindableClustersTPC(effSystMinNCrossedRowsOverFindableClustersTPC.value);
       customTrackSelection.SetMaxChi2PerClusterTPC(effSystMaxChi2PerClusterTPC.value);
       customTrackSelection.SetMaxChi2PerClusterITS(effSystMaxChi2PerClusterITS.value);
@@ -239,6 +243,17 @@ struct TrackEfficiency {
     } else {
       LOGP(info, "Using standard track selection: %s", trackSelections.value);
     }
+
+    AxisSpec ptAxisEff = {nBinsLowPt, 0., 10., "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec ptAxisHighEff = {18, 10., 100., "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec etaAxisEff = {etaEffNBins, -1.0, 1.0, "#eta"};
+    AxisSpec phiAxisEff = {phiEffNBins, -1.0, 7., "#phi"};
+    AxisSpec centAxis = {centralityBinning, "centrality (%)"};
+    AxisSpec intRateAxis = {intRateNBins, 0., intRateMax, "int. rate (kHz)"};
+    AxisSpec occupancyAxis = {140, -0.5, 13999.5, "occupancy"};
+    AxisSpec nTracksAxis = {16001, -1., 16000, "n tracks"};
+    AxisSpec dcaxyAxis = {1000, -1.0, 1.0, "dca_{xy}"};
+    AxisSpec dcazAxis = {4000, -4.0, 4.0, "dca_{z}"};
 
     if (doprocessEFficiencyPurity || doprocessEFficiencyPurityWeighted) {
 
@@ -275,11 +290,6 @@ struct TrackEfficiency {
         registry.get<TH1>(HIST("hTrackCutsCounts"))->GetXaxis()->SetBinLabel(6, "etaAcc"); // not actually applied here but it will give an idea of what will be done in the post processing
       }
 
-      AxisSpec ptAxisEff = {nBinsLowPt, 0., 10., "#it{p}_{T} (GeV/#it{c})"};
-      AxisSpec ptAxisHighEff = {18, 10., 100., "#it{p}_{T} (GeV/#it{c})"};
-      AxisSpec etaAxisEff = {etaEffNBins, -1.0, 1.0, "#eta"};
-      AxisSpec phiAxisEff = {phiEffNBins, -1.0, 7., "#phi"};
-
       // ptAxisLow
       registry.add("h3_particle_pt_particle_eta_particle_phi_mcpartofinterest", "#it{p}_{T, mcpart} (GeV/#it{c}); #eta_{mcpart}; #phi_{mcpart}", {HistType::kTH3F, {ptAxisEff, etaAxisEff, phiAxisEff}});
       registry.add("h3_particle_pt_particle_eta_particle_phi_mcpart_nonprimary", "#it{p}_{T, mcpart} (GeV/#it{c}); #eta_{mcpart}; #phi_{mcpart}", {HistType::kTH3F, {ptAxisEff, etaAxisEff, phiAxisEff}});
@@ -315,8 +325,6 @@ struct TrackEfficiency {
     }
 
     if (doprocessTracksFromData || doprocessTracksFromMc || doprocessTracksFromMcWeighted) {
-      AxisSpec centAxis = {centralityBinning, "centrality (%)"};
-      AxisSpec intRateAxis = {intRateNBins, 0., intRateMax, "int. rate (kHz)"};
       registry.add("h2_centrality_track_pt", "centrality vs track pT; centrality; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {centAxis, {200, 0., 200.}}});
       registry.add("h2_centrality_track_eta", "centrality vs track #eta; centrality; #eta_{track}", {HistType::kTH2F, {centAxis, {100, -1.0, 1.0}}});
       registry.add("h2_centrality_track_phi", "centrality vs track #varphi; centrality; #varphi_{track}", {HistType::kTH2F, {centAxis, {160, -1.0, 7.}}});
@@ -329,8 +337,6 @@ struct TrackEfficiency {
     }
 
     if (doprocessParticles || doprocessParticlesWeighted) {
-      AxisSpec centAxis = {centralityBinning, "centrality (%)"};
-      AxisSpec intRateAxis = {intRateNBins, 0., intRateMax, "int. rate (kHz)"};
       registry.add("h2_centrality_particle_pt", "centrality vs particle pT; centrality; #it{p}_{T,part} (GeV/#it{c})", {HistType::kTH2F, {centAxis, {200, 0., 200.}}});
       registry.add("h2_centrality_particle_eta", "centrality vs particle #eta; centrality; #eta_{part}", {HistType::kTH2F, {centAxis, {100, -1.0, 1.0}}});
       registry.add("h2_centrality_particle_phi", "centrality vs particle #varphi; centrality; #varphi_{part}", {HistType::kTH2F, {centAxis, {160, -1.0, 7.}}});
@@ -342,12 +348,10 @@ struct TrackEfficiency {
     }
 
     if (doprocessCollisionsFromData || doprocessCollisionsFromMc || doprocessCollisionsFromMcWeighted) {
-      AxisSpec centAxis = {centralityBinning, "centrality (%)"};
       registry.add("h_collisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
       registry.add("h2_centrality_collisions", "centrality vs collisions; centrality; collisions", {HistType::kTH2F, {centAxis, {4, 0.0, 4.0}}});
     }
     if (doprocessMcCollisions || doprocessMcCollisionsWeighted) {
-      AxisSpec centAxis = {centralityBinning, "centrality (%)"};
       registry.add("h_mccollisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
       registry.add("h2_centrality_mccollisions", "centrality vs mccollisions; centrality; collisions", {HistType::kTH2F, {centAxis, {4, 0.0, 4.0}}});
       registry.add("h2_mccollision_pthardfromweight_pthardfromhepmcxsection", "ptHard from weight vs ptHard from HepMCXSections; ptHard_weight; ptHard_hepmcxsections", {HistType::kTH2F, {{200, 0.0, 200.0}, {200, 0.0, 200.0}}});
@@ -357,12 +361,10 @@ struct TrackEfficiency {
       registry.add("h_fakecollisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
     }
     if (doprocessCollisionsFromMcWeighted) {
-      AxisSpec centAxis = {centralityBinning, "centrality (%)"};
       registry.add("h_collisions_weighted", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
       registry.add("h2_centrality_collisions_weighted", "centrality vs mccollisions; centrality; collisions", {HistType::kTH2F, {centAxis, {4, 0.0, 4.0}}});
     }
     if (doprocessMcCollisionsWeighted) {
-      AxisSpec centAxis = {centralityBinning, "centrality (%)"};
       registry.add("h_mccollisions_weighted", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
       registry.add("h2_centrality_mccollisions_weighted", "centrality vs mccollisions; centrality; collisions", {HistType::kTH2F, {centAxis, {4, 0.0, 4.0}}});
       registry.add("h2_mccollision_pthardfromweight_pthardfromhepmcxsection_weighted", "ptHard from weight vs ptHard from HepMCXSections; ptHard_weight; ptHard_hepmcxsections", {HistType::kTH2F, {{200, 0.0, 200.0}, {200, 0.0, 200.0}}});
@@ -373,19 +375,16 @@ struct TrackEfficiency {
       registry.add("h_trackselplot_tpccrossedrowsoverfindable", "track selection variable: ratio of of tpc crossed rows over number of findable clusters", {HistType::kTH1F, {{120, 0.0, 1.2}}});
       registry.add("h_trackselplot_chi2ncls_tpc", "track selection variable: Chi2 / cluster for the TPC track segment", {HistType::kTH1F, {{100, 0.0, 10.0}}});
       registry.add("h_trackselplot_chi2ncls_its", "track selection variable: Chi2 / cluster for the ITS track segment", {HistType::kTH1F, {{200, 0.0, 40.0}}});
-      registry.add("h_trackselplot_dcaxy", "track selection variable: dca XY", {HistType::kTH1F, {{1000, -1.0, 1.0}}});
-      registry.add("h_trackselplot_dcaz", "track selection variable: dca Z", {HistType::kTH1F, {{4000, -4.0, 4.0}}});
+      registry.add("h_trackselplot_dcaxy", "track selection variable: dca XY", {HistType::kTH1F, {dcaxyAxis}});
+      registry.add("h_trackselplot_dcaz", "track selection variable: dca Z", {HistType::kTH1F, {dcazAxis}});
 
       registry.add("h2_trackselplot_pt_tpccrossedrows", "track selection variable: pt vs number of tpc crossed rows", {HistType::kTH2F, {{200, 0., 200.}, {165, -0.5, 164.5}}});
       registry.add("h2_trackselplot_pt_tpccrossedrowsoverfindable", "track selection variable: pt vs ratio of of tpc crossed rows over number of findable clusters", {HistType::kTH2F, {{200, 0., 200.}, {120, 0.0, 1.2}}});
       registry.add("h2_trackselplot_pt_chi2ncls_tpc", "track selection variable: pt vs Chi2 / cluster for the TPC track segment", {HistType::kTH2F, {{200, 0., 200.}, {100, 0.0, 10.0}}});
       registry.add("h2_trackselplot_pt_chi2ncls_its", "track selection variable: pt vs Chi2 / cluster for the ITS track segment", {HistType::kTH2F, {{200, 0., 200.}, {200, 0.0, 40.0}}});
-      registry.add("h2_trackselplot_pt_dcaxy", "track selection variable: pt vs dca XY", {HistType::kTH2F, {{200, 0., 200.}, {1000, -1.0, 1.0}}});
-      registry.add("h2_trackselplot_pt_dcaz", "track selection variable: pt vs dca Z", {HistType::kTH2F, {{200, 0., 200.}, {4000, -4.0, 4.0}}});
+      registry.add("h2_trackselplot_pt_dcaxy", "track selection variable: pt vs dca XY", {HistType::kTH2F, {{200, 0., 200.}, dcaxyAxis}});
+      registry.add("h2_trackselplot_pt_dcaz", "track selection variable: pt vs dca Z", {HistType::kTH2F, {{200, 0., 200.}, dcazAxis}});
     }
-
-    AxisSpec occupancyAxis = {140, -0.5, 13999.5, "occupancy"};
-    AxisSpec nTracksAxis = {16001, -1., 16000, "n tracks"};
 
     if (doprocessOccupancyQA) {
       registry.add("h2_occupancy_ntracksall_presel", "occupancy vs N_{tracks}; occupancy; N_{tracks}", {HistType::kTH2I, {occupancyAxis, nTracksAxis}});
@@ -394,6 +393,44 @@ struct TrackEfficiency {
       registry.add("h2_occupancy_ntrackssel_postsel", "occupancy vs N_{tracks}; occupancy; N_{tracks}", {HistType::kTH2I, {occupancyAxis, nTracksAxis}});
       registry.add("h2_occupancy_ntracksselptetacuts_presel", "occupancy vs N_{tracks}; occupancy; N_{tracks}", {HistType::kTH2I, {occupancyAxis, nTracksAxis}});
       registry.add("h2_occupancy_ntracksselptetacuts_postsel", "occupancy vs N_{tracks}; occupancy; N_{tracks}", {HistType::kTH2I, {occupancyAxis, nTracksAxis}});
+    }
+
+    if (doprocessItsTpcMatchingData) {
+      registry.add("h2_track_pt_track_eta_datainclusive_ITS", "#it{p}_{T, track} (GeV/#it{c}); #eta_{track}", {HistType::kTH2F, {ptAxisEff, etaAxisEff}});
+      registry.add("h2_track_pt_track_eta_datainclusive_TPC", "#it{p}_{T, track} (GeV/#it{c}); #eta_{track}", {HistType::kTH2F, {ptAxisEff, etaAxisEff}});
+      registry.add("h2_track_pt_track_eta_datainclusive_ITSTPC", "#it{p}_{T, track} (GeV/#it{c}); #eta_{track}", {HistType::kTH2F, {ptAxisEff, etaAxisEff}});
+      registry.add("h2_track_pt_high_track_eta_datainclusive_ITS", "#it{p}_{T, track} (GeV/#it{c}); #eta_{track}", {HistType::kTH2F, {ptAxisHighEff, etaAxisEff}});
+      registry.add("h2_track_pt_high_track_eta_datainclusive_TPC", "#it{p}_{T, track} (GeV/#it{c}); #eta_{track}", {HistType::kTH2F, {ptAxisHighEff, etaAxisEff}});
+      registry.add("h2_track_pt_high_track_eta_datainclusive_ITSTPC", "#it{p}_{T, track} (GeV/#it{c}); #eta_{track}", {HistType::kTH2F, {ptAxisHighEff, etaAxisEff}});
+
+      registry.add("h_track_pt_track_dcaxy_datainclusive", "#it{p}_{T, track} (GeV/#it{c}); dca_{xy}", {HistType::kTH2F, {ptAxisEff, dcaxyAxis}});
+      registry.add("h_track_pt_track_dcaz_datainclusive", "#it{p}_{T, track} (GeV/#it{c}); dca_{z}", {HistType::kTH2F, {ptAxisEff, dcazAxis}});
+      registry.add("h_track_pt_high_track_dcaxy_datainclusive", "#it{p}_{T, track} (GeV/#it{c}); dca_{xy}", {HistType::kTH2F, {ptAxisHighEff, dcaxyAxis}});
+      registry.add("h_track_pt_high_track_dcaz_datainclusive", "#it{p}_{T, track} (GeV/#it{c}); dca_{z}", {HistType::kTH2F, {ptAxisHighEff, dcazAxis}});
+    }
+    if (doprocessItsTpcMatchingMC) {
+      registry.add("h2_track_pt_track_eta_mcprimary_ITS", "#it{p}_{T, track} (GeV/#it{c}); #eta_{track}", {HistType::kTH2F, {ptAxisEff, etaAxisEff}});
+      registry.add("h2_track_pt_track_eta_mcprimary_TPC", "#it{p}_{T, track} (GeV/#it{c}); #eta_{track}", {HistType::kTH2F, {ptAxisEff, etaAxisEff}});
+      registry.add("h2_track_pt_track_eta_mcprimary_ITSTPC", "#it{p}_{T, track} (GeV/#it{c}); #eta_{track}", {HistType::kTH2F, {ptAxisEff, etaAxisEff}});
+      registry.add("h2_track_pt_high_track_eta_mcprimary_ITS", "#it{p}_{T, track} (GeV/#it{c}); #eta_{track}", {HistType::kTH2F, {ptAxisHighEff, etaAxisEff}});
+      registry.add("h2_track_pt_high_track_eta_mcprimary_TPC", "#it{p}_{T, track} (GeV/#it{c}); #eta_{track}", {HistType::kTH2F, {ptAxisHighEff, etaAxisEff}});
+      registry.add("h2_track_pt_high_track_eta_mcprimary_ITSTPC", "#it{p}_{T, track} (GeV/#it{c}); #eta_{track}", {HistType::kTH2F, {ptAxisHighEff, etaAxisEff}});
+
+      registry.add("h2_track_pt_track_eta_mcsecondary_ITS", "#it{p}_{T, track} (GeV/#it{c}); #eta_{track}", {HistType::kTH2F, {ptAxisEff, etaAxisEff}});
+      registry.add("h2_track_pt_track_eta_mcsecondary_TPC", "#it{p}_{T, track} (GeV/#it{c}); #eta_{track}", {HistType::kTH2F, {ptAxisEff, etaAxisEff}});
+      registry.add("h2_track_pt_track_eta_mcsecondary_ITSTPC", "#it{p}_{T, track} (GeV/#it{c}); #eta_{track}", {HistType::kTH2F, {ptAxisEff, etaAxisEff}});
+      registry.add("h2_track_pt_high_track_eta_mcsecondary_ITS", "#it{p}_{T, track} (GeV/#it{c}); #eta_{track}", {HistType::kTH2F, {ptAxisHighEff, etaAxisEff}});
+      registry.add("h2_track_pt_high_track_eta_mcsecondary_TPC", "#it{p}_{T, track} (GeV/#it{c}); #eta_{track}", {HistType::kTH2F, {ptAxisHighEff, etaAxisEff}});
+      registry.add("h2_track_pt_high_track_eta_mcsecondary_ITSTPC", "#it{p}_{T, track} (GeV/#it{c}); #eta_{track}", {HistType::kTH2F, {ptAxisHighEff, etaAxisEff}});
+
+      registry.add("h_track_pt_track_dcaxy_mcprimary", "#it{p}_{T, track} (GeV/#it{c}); primaries dca_{xy}", {HistType::kTH2F, {ptAxisEff, dcaxyAxis}});
+      registry.add("h_track_pt_track_dcaz_mcprimary", "#it{p}_{T, track} (GeV/#it{c}); primaries dca_{z}", {HistType::kTH2F, {ptAxisEff, dcazAxis}});
+      registry.add("h_track_pt_track_dcaxy_mcsecondary", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{xy}", {HistType::kTH2F, {ptAxisEff, dcaxyAxis}});
+      registry.add("h_track_pt_track_dcaz_mcsecondary", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{z}", {HistType::kTH2F, {ptAxisEff, dcazAxis}});
+      registry.add("h_track_pt_high_track_dcaxy_mcprimary", "#it{p}_{T, track} (GeV/#it{c}); primaries dca_{xy}", {HistType::kTH2F, {ptAxisHighEff, dcaxyAxis}});
+      registry.add("h_track_pt_high_track_dcaz_mcprimary", "#it{p}_{T, track} (GeV/#it{c}); primaries dca_{z}", {HistType::kTH2F, {ptAxisHighEff, dcazAxis}});
+      registry.add("h_track_pt_high_track_dcaxy_mcsecondary", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{xy}", {HistType::kTH2F, {ptAxisHighEff, dcaxyAxis}});
+      registry.add("h_track_pt_high_track_dcaz_mcsecondary", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{z}", {HistType::kTH2F, {ptAxisHighEff, dcazAxis}});
     }
   }
 
@@ -1286,6 +1323,166 @@ struct TrackEfficiency {
     registry.fill(HIST("h2_occupancy_ntracksselptetacuts_postsel"), occupancy, nTracksInAcceptanceAndSelected);
   }
   PROCESS_SWITCH(TrackEfficiency, processOccupancyQA, "occupancy QA on jet derived data", false);
+
+  void processItsTpcMatchingData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<aod::JetTracks, aod::JTrackPIs> const& jetTracks, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension> const&)
+  {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
+      return;
+    }
+    float centrality = checkCentFT0M ? collision.centFT0M() : collision.centFT0C();
+    if (cutCentrality && (centrality < centralityMin || centralityMax < centrality)) {
+      return;
+    }
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
+    for (auto const& jetTrack : jetTracks) {
+      const auto& aodTrack = jetTrack.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension>>(); // remove , aod::TrackSelectionExtension after debug
+
+      if (!aodTrack.isPrimaryTrack()) { // dcaXY and dcaZ cuts
+        continue;
+      }
+      double minPtTrack = 0.15;
+      if (aodTrack.pt() < minPtTrack) {
+        continue;
+      }
+
+      if (aodTrack.hasITS() && aodTrack.passedITSHits()) {
+        registry.fill(HIST("h2_track_pt_track_eta_datainclusive_ITS"), aodTrack.pt(), aodTrack.eta());
+        registry.fill(HIST("h2_track_pt_high_track_eta_datainclusive_ITS"), aodTrack.pt(), aodTrack.eta());
+      }
+
+      if (aodTrack.hasTPC() && aodTrack.passedTPCCrossedRowsOverNCls()) {
+        registry.fill(HIST("h2_track_pt_track_eta_datainclusive_TPC"), aodTrack.pt(), aodTrack.eta());
+        registry.fill(HIST("h2_track_pt_high_track_eta_datainclusive_TPC"), aodTrack.pt(), aodTrack.eta());
+      }
+
+      if (aodTrack.hasITS() && aodTrack.passedITSHits() && aodTrack.hasTPC() && aodTrack.passedTPCCrossedRowsOverNCls()) {
+        registry.fill(HIST("h2_track_pt_track_eta_datainclusive_TPC"), aodTrack.pt(), aodTrack.eta());
+        registry.fill(HIST("h2_track_pt_track_eta_datainclusive_ITSTPC"), aodTrack.pt(), aodTrack.eta());
+        registry.fill(HIST("h2_track_pt_high_track_eta_datainclusive_ITSTPC"), aodTrack.pt(), aodTrack.eta());
+      }
+    }
+
+    // dca distribution in data for fit with MC templates
+    for (auto const& jetTrack : jetTracks) {
+      const auto& aodTrack = jetTrack.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension>>();
+
+      if (!aodTrack.isPrimaryTrack()) { // dcaXY and dcaZ cuts
+        continue;
+      }
+      if (aodTrack.eta() < trackQAEtaMin || trackQAEtaMax < aodTrack.eta()) {
+        continue;
+      }
+      if (!(aodTrack.hasITS() && aodTrack.passedITSHits())) { // run 2 asks for spd:kAny hit
+        continue;
+      }
+
+      registry.fill(HIST("h_track_pt_track_dcaxy_datainclusive"), aodTrack.pt(), aodTrack.dcaXY());
+      registry.fill(HIST("h_track_pt_track_dcaz_datainclusive"), aodTrack.pt(), aodTrack.dcaZ());
+      registry.fill(HIST("h_track_pt_high_track_dcaxy_datainclusive"), aodTrack.pt(), aodTrack.dcaXY());
+      registry.fill(HIST("h_track_pt_high_track_dcaz_datainclusive"), aodTrack.pt(), aodTrack.dcaZ());
+    }
+  }
+  PROCESS_SWITCH(TrackEfficiency, processItsTpcMatchingData, "fills histograms for ITS-TPC matching analysis - data study, true primary and true secondary not distinguished", false);
+
+  void processItsTpcMatchingMC(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<aod::JetTracks, aod::JTrackPIs> const& jetTracks, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels, aod::TrackSelectionExtension> const&, aod::McParticles const&)
+  {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
+      return;
+    }
+    float centrality = checkCentFT0M ? collision.centFT0M() : collision.centFT0C();
+    if (cutCentrality && (centrality < centralityMin || centralityMax < centrality)) {
+      return;
+    }
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
+
+    for (auto const& jetTrack : jetTracks) {
+      const auto& aodTrack = jetTrack.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels, aod::TrackSelectionExtension>>();
+      if (!aodTrack.has_mcParticle()) {
+        continue;
+      }
+      auto aodMcParticleFromTrack = aodTrack.mcParticle_as<aod::McParticles>();
+
+      if (!aodTrack.isPrimaryTrack()) { // dcaXY and dcaZ cuts
+        continue;
+      }
+      double minPtTrack = 0.15;
+      if (aodTrack.pt() < minPtTrack) {
+        continue;
+      }
+
+      if (aodMcParticleFromTrack.isPhysicalPrimary()) {
+        if (aodTrack.hasITS() && aodTrack.passedITSHits()) {
+          registry.fill(HIST("h2_track_pt_track_eta_mcprimary_ITS"), aodTrack.pt(), aodTrack.eta());
+          registry.fill(HIST("h2_track_pt_high_track_eta_mcprimary_ITS"), aodTrack.pt(), aodTrack.eta());
+        }
+
+        if (aodTrack.hasTPC() && aodTrack.passedTPCCrossedRowsOverNCls()) {
+          registry.fill(HIST("h2_track_pt_track_eta_mcprimary_TPC"), aodTrack.pt(), aodTrack.eta());
+          registry.fill(HIST("h2_track_pt_high_track_eta_mcprimary_TPC"), aodTrack.pt(), aodTrack.eta());
+        }
+
+        if (aodTrack.hasITS() && aodTrack.passedITSHits() && aodTrack.hasTPC() && aodTrack.passedTPCCrossedRowsOverNCls()) {
+          registry.fill(HIST("h2_track_pt_track_eta_mcprimary_ITSTPC"), aodTrack.pt(), aodTrack.eta());
+          registry.fill(HIST("h2_track_pt_high_track_eta_mcprimary_ITSTPC"), aodTrack.pt(), aodTrack.eta());
+        }
+      }
+
+      if (!aodMcParticleFromTrack.isPhysicalPrimary()) {
+        if (aodTrack.hasITS() && aodTrack.passedITSHits()) {
+          registry.fill(HIST("h2_track_pt_track_eta_mcsecondary_ITS"), aodTrack.pt(), aodTrack.eta());
+          registry.fill(HIST("h2_track_pt_high_track_eta_mcsecondary_ITS"), aodTrack.pt(), aodTrack.eta());
+        }
+
+        if (aodTrack.hasTPC() && aodTrack.passedTPCCrossedRowsOverNCls()) {
+          registry.fill(HIST("h2_track_pt_track_eta_mcsecondary_TPC"), aodTrack.pt(), aodTrack.eta());
+          registry.fill(HIST("h2_track_pt_high_track_eta_mcsecondary_TPC"), aodTrack.pt(), aodTrack.eta());
+        }
+
+        if (aodTrack.hasITS() && aodTrack.passedITSHits() && aodTrack.hasTPC() && aodTrack.passedTPCCrossedRowsOverNCls()) {
+          registry.fill(HIST("h2_track_pt_track_eta_mcsecondary_ITSTPC"), aodTrack.pt(), aodTrack.eta());
+          registry.fill(HIST("h2_track_pt_high_track_eta_mcsecondary_ITSTPC"), aodTrack.pt(), aodTrack.eta());
+        }
+      }
+    }
+
+    // dca distribution in MC for template fit to Data
+    for (auto const& jetTrack : jetTracks) {
+      const auto& aodTrack = jetTrack.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels, aod::TrackSelectionExtension>>();
+      if (!aodTrack.has_mcParticle()) {
+        continue;
+      }
+      auto aodMcParticleFromTrack = aodTrack.mcParticle_as<aod::McParticles>();
+
+      if (!aodTrack.isPrimaryTrack()) { // dcaXY and dcaZ cuts
+        continue;
+      }
+      if (aodTrack.eta() < trackQAEtaMin || trackQAEtaMax < aodTrack.eta()) {
+        continue;
+      }
+      if (!(aodTrack.hasITS() && aodTrack.passedITSHits())) { // run 2 asks for spd:kAny hit
+        continue;
+      }
+
+      if (aodMcParticleFromTrack.isPhysicalPrimary()) {
+        registry.fill(HIST("h_track_pt_track_dcaxy_mcprimary"), aodTrack.pt(), aodTrack.dcaXY());
+        registry.fill(HIST("h_track_pt_track_dcaz_mcprimary"), aodTrack.pt(), aodTrack.dcaZ());
+        registry.fill(HIST("h_track_pt_high_track_dcaxy_mcprimary"), aodTrack.pt(), aodTrack.dcaXY());
+        registry.fill(HIST("h_track_pt_high_track_dcaz_mcprimary"), aodTrack.pt(), aodTrack.dcaZ());
+      }
+
+      if (!aodMcParticleFromTrack.isPhysicalPrimary()) {
+        registry.fill(HIST("h_track_pt_track_dcaxy_mcsecondary"), aodTrack.pt(), aodTrack.dcaXY());
+        registry.fill(HIST("h_track_pt_track_dcaz_mcsecondary"), aodTrack.pt(), aodTrack.dcaZ());
+        registry.fill(HIST("h_track_pt_high_track_dcaxy_mcsecondary"), aodTrack.pt(), aodTrack.dcaXY());
+        registry.fill(HIST("h_track_pt_high_track_dcaz_mcsecondary"), aodTrack.pt(), aodTrack.dcaZ());
+      }
+    }
+  }
+  PROCESS_SWITCH(TrackEfficiency, processItsTpcMatchingMC, "fills histograms for ITS-TPC matching analysis - MC study, true primary and true secondary separated", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

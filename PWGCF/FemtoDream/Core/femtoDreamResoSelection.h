@@ -22,17 +22,21 @@
 #include "PWGCF/FemtoDream/Core/femtoDreamSelection.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamTrackSelection.h"
 
-#include "Common/Core/RecoDecay.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include "Framework/HistogramRegistry.h"
-#include "ReconstructionDataFormats/PID.h"
-
-#include "Math/Vector4D.h"
-#include "TMath.h"
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 
 #include <array>
-#include <cstdint>
+#include <cmath>
+#include <cstddef>
+#include <cstdlib>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -78,7 +82,7 @@ class FemtoDreamResoSelection
   size_t numBitsUsed(V const& origvalue);
 
   template <aod::femtodreamparticle::ParticleType part, aod::femtodreamparticle::ParticleType PartDaugh>
-  void init(HistogramRegistry* QAregistry, HistogramRegistry* Registry);
+  void init(o2::framework::HistogramRegistry* QAregistry, o2::framework::HistogramRegistry* Registry);
 
   template <aod::femtodreamparticle::ParticleType part,
             aod::femtodreamparticle::TrackType trackType1,
@@ -275,7 +279,7 @@ size_t FemtoDreamResoSelection::numBitsUsed(V const& origvalue)
 
 template <aod::femtodreamparticle::ParticleType part,
           aod::femtodreamparticle::ParticleType PartDaugh>
-void FemtoDreamResoSelection::init(HistogramRegistry* QAregistry, HistogramRegistry* Registry)
+void FemtoDreamResoSelection::init(o2::framework::HistogramRegistry* QAregistry, o2::framework::HistogramRegistry* Registry)
 {
   if (QAregistry && Registry) {
     mHistogramRegistry = Registry;
@@ -283,9 +287,9 @@ void FemtoDreamResoSelection::init(HistogramRegistry* QAregistry, HistogramRegis
     fillSelectionHistogram<part>();
     fillSelectionHistogram<PartDaugh>();
 
-    AxisSpec massAxisReso = {3000, 0.0f, 3.0f, "m_{#Reso} (GeV/#it{c}^{2})"};
-    AxisSpec massAxisAntiReso = {3000, 0.0f, 3.0f,
-                                 "m_{#bar{#Reso}} (GeV/#it{c}^{2})"};
+    o2::framework::AxisSpec massAxisReso = {3000, 0.0f, 3.0f, "m_{#Reso} (GeV/#it{c}^{2})"};
+    o2::framework::AxisSpec massAxisAntiReso = {3000, 0.0f, 3.0f,
+                                                "m_{#bar{#Reso}} (GeV/#it{c}^{2})"};
 
     // initialize Histograms
     std::string folderName = static_cast<std::string>(
@@ -293,61 +297,61 @@ void FemtoDreamResoSelection::init(HistogramRegistry* QAregistry, HistogramRegis
 
     /*
     int cutBits = 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType);
-    mQAHistogramRegistry->add((folderName + "/CutCounter"), "; Bit; Counter", kTH1F, {{cutBits + 1, -0.5, cutBits + 0.5}});
+    mQAHistogramRegistry->add((folderName + "/CutCounter"), "; Bit; Counter", o2::framework::HistType::kTH1F, {{cutBits + 1, -0.5, cutBits + 0.5}});
     */
 
     // mass histos
-    mQAHistogramRegistry->add((folderName + "/InvMass"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso});
-    mQAHistogramRegistry->add((folderName + "/InvMassAnti"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso});
-    mQAHistogramRegistry->add((folderName + "/InvMass_phi_selected"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso});
-    mQAHistogramRegistry->add((folderName + "/InvMassAnti_phi_selected"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso});
+    mQAHistogramRegistry->add((folderName + "/InvMass"), "Invariant mass V0s;M_{KK};Entries", o2::framework::HistType::kTH1F, {massAxisReso});
+    mQAHistogramRegistry->add((folderName + "/InvMassAnti"), "Invariant mass V0s;M_{KK};Entries", o2::framework::HistType::kTH1F, {massAxisReso});
+    mQAHistogramRegistry->add((folderName + "/InvMass_phi_selected"), "Invariant mass V0s;M_{KK};Entries", o2::framework::HistType::kTH1F, {massAxisReso});
+    mQAHistogramRegistry->add((folderName + "/InvMassAnti_phi_selected"), "Invariant mass V0s;M_{KK};Entries", o2::framework::HistType::kTH1F, {massAxisReso});
 
     // ResoQA
     // Histos for PosDaughter
-    mQAHistogramRegistry->add((folderName + "/ResoQA/PosDaughter/Pt"), "Transverse momentum of all tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
-    mQAHistogramRegistry->add((folderName + "/ResoQA/PosDaughter/Eta"), "Pseudorapidity of all  tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
-    mQAHistogramRegistry->add((folderName + "/ResoQA/PosDaughter/Phi"), "Azimuthal angle of all  tracks;#phi;Entries", HistType::kTH1F, {{720, 0, o2::constants::math::TwoPI}});
-    mQAHistogramRegistry->add((folderName + "/ResoQA/PosDaughter/DcaXY"), "dcaXY of all  tracks;d_{XY} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}}); // check if cm is correct here
-    mQAHistogramRegistry->add((folderName + "/ResoQA/PosDaughter/DcaZ"), "dcaZ of all  tracks;d_{Z} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}});    // check if cm is correct here
+    mQAHistogramRegistry->add((folderName + "/ResoQA/PosDaughter/Pt"), "Transverse momentum of all tracks;p_{T} (GeV/c);Entries", o2::framework::HistType::kTH1F, {{1000, 0, 10}});
+    mQAHistogramRegistry->add((folderName + "/ResoQA/PosDaughter/Eta"), "Pseudorapidity of all  tracks;#eta;Entries", o2::framework::HistType::kTH1F, {{1000, -2, 2}});
+    mQAHistogramRegistry->add((folderName + "/ResoQA/PosDaughter/Phi"), "Azimuthal angle of all  tracks;#phi;Entries", o2::framework::HistType::kTH1F, {{720, 0, o2::constants::math::TwoPI}});
+    mQAHistogramRegistry->add((folderName + "/ResoQA/PosDaughter/DcaXY"), "dcaXY of all  tracks;d_{XY} (cm);Entries", o2::framework::HistType::kTH1F, {{1000, 0, 1}}); // check if cm is correct here
+    mQAHistogramRegistry->add((folderName + "/ResoQA/PosDaughter/DcaZ"), "dcaZ of all  tracks;d_{Z} (cm);Entries", o2::framework::HistType::kTH1F, {{1000, 0, 1}});    // check if cm is correct here
     // Histos for NegDaughter
-    mQAHistogramRegistry->add((folderName + "/ResoQA/NegDaughter/Pt"), "Transverse momentum of all tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
-    mQAHistogramRegistry->add((folderName + "/ResoQA/NegDaughter/Eta"), "Pseudorapidity of all  tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
-    mQAHistogramRegistry->add((folderName + "/ResoQA/NegDaughter/Phi"), "Azimuthal angle of all  tracks;#phi;Entries", HistType::kTH1F, {{720, 0, o2::constants::math::TwoPI}});
-    mQAHistogramRegistry->add((folderName + "/ResoQA/NegDaughter/DcaXY"), "dcaXY of all  tracks;d_{XY} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}}); // check if cm is correct here
-    mQAHistogramRegistry->add((folderName + "/ResoQA/NegDaughter/DcaZ"), "dcaZ of all  tracks;d_{Z} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}});    // check if cm is correct here
+    mQAHistogramRegistry->add((folderName + "/ResoQA/NegDaughter/Pt"), "Transverse momentum of all tracks;p_{T} (GeV/c);Entries", o2::framework::HistType::kTH1F, {{1000, 0, 10}});
+    mQAHistogramRegistry->add((folderName + "/ResoQA/NegDaughter/Eta"), "Pseudorapidity of all  tracks;#eta;Entries", o2::framework::HistType::kTH1F, {{1000, -2, 2}});
+    mQAHistogramRegistry->add((folderName + "/ResoQA/NegDaughter/Phi"), "Azimuthal angle of all  tracks;#phi;Entries", o2::framework::HistType::kTH1F, {{720, 0, o2::constants::math::TwoPI}});
+    mQAHistogramRegistry->add((folderName + "/ResoQA/NegDaughter/DcaXY"), "dcaXY of all  tracks;d_{XY} (cm);Entries", o2::framework::HistType::kTH1F, {{1000, 0, 1}}); // check if cm is correct here
+    mQAHistogramRegistry->add((folderName + "/ResoQA/NegDaughter/DcaZ"), "dcaZ of all  tracks;d_{Z} (cm);Entries", o2::framework::HistType::kTH1F, {{1000, 0, 1}});    // check if cm is correct here
     // Histos for massQA
-    mQAHistogramRegistry->add((folderName + "/ResoQA/InvMassSwitched"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso}); // for opposite mass hypothesis (Reso is anti)
-    mQAHistogramRegistry->add((folderName + "/ResoQA/InvMassBothPID1"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso}); // both particles are of type confDaughterPIDspecies[0]
-    mQAHistogramRegistry->add((folderName + "/ResoQA/InvMassBothPID2"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso}); // both particles are of type confDaughterPIDspecies[1]
+    mQAHistogramRegistry->add((folderName + "/ResoQA/InvMassSwitched"), "Invariant mass V0s;M_{KK};Entries", o2::framework::HistType::kTH1F, {massAxisReso}); // for opposite mass hypothesis (Reso is anti)
+    mQAHistogramRegistry->add((folderName + "/ResoQA/InvMassBothPID1"), "Invariant mass V0s;M_{KK};Entries", o2::framework::HistType::kTH1F, {massAxisReso}); // both particles are of type confDaughterPIDspecies[0]
+    mQAHistogramRegistry->add((folderName + "/ResoQA/InvMassBothPID2"), "Invariant mass V0s;M_{KK};Entries", o2::framework::HistType::kTH1F, {massAxisReso}); // both particles are of type confDaughterPIDspecies[1]
 
     // AntiResoQA
     // Histos for PosDaughter
-    mQAHistogramRegistry->add((folderName + "/AntiResoQA/PosDaughter/Pt"), "Transverse momentum of all tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
-    mQAHistogramRegistry->add((folderName + "/AntiResoQA/PosDaughter/Eta"), "Pseudorapidity of all  tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
-    mQAHistogramRegistry->add((folderName + "/AntiResoQA/PosDaughter/Phi"), "Azimuthal angle of all  tracks;#phi;Entries", HistType::kTH1F, {{720, 0, o2::constants::math::TwoPI}});
-    mQAHistogramRegistry->add((folderName + "/AntiResoQA/PosDaughter/DcaXY"), "dcaXY of all  tracks;d_{XY} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}}); // check if cm is correct here
-    mQAHistogramRegistry->add((folderName + "/AntiResoQA/PosDaughter/DcaZ"), "dcaZ of all  tracks;d_{Z} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}});    // check if cm is correct here
+    mQAHistogramRegistry->add((folderName + "/AntiResoQA/PosDaughter/Pt"), "Transverse momentum of all tracks;p_{T} (GeV/c);Entries", o2::framework::HistType::kTH1F, {{1000, 0, 10}});
+    mQAHistogramRegistry->add((folderName + "/AntiResoQA/PosDaughter/Eta"), "Pseudorapidity of all  tracks;#eta;Entries", o2::framework::HistType::kTH1F, {{1000, -2, 2}});
+    mQAHistogramRegistry->add((folderName + "/AntiResoQA/PosDaughter/Phi"), "Azimuthal angle of all  tracks;#phi;Entries", o2::framework::HistType::kTH1F, {{720, 0, o2::constants::math::TwoPI}});
+    mQAHistogramRegistry->add((folderName + "/AntiResoQA/PosDaughter/DcaXY"), "dcaXY of all  tracks;d_{XY} (cm);Entries", o2::framework::HistType::kTH1F, {{1000, 0, 1}}); // check if cm is correct here
+    mQAHistogramRegistry->add((folderName + "/AntiResoQA/PosDaughter/DcaZ"), "dcaZ of all  tracks;d_{Z} (cm);Entries", o2::framework::HistType::kTH1F, {{1000, 0, 1}});    // check if cm is correct here
     // Histos for NegDaughter
-    mQAHistogramRegistry->add((folderName + "/AntiResoQA/NegDaughter/Pt"), "Transverse momentum of all tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
-    mQAHistogramRegistry->add((folderName + "/AntiResoQA/NegDaughter/Eta"), "Pseudorapidity of all  tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
-    mQAHistogramRegistry->add((folderName + "/AntiResoQA/NegDaughter/Phi"), "Azimuthal angle of all  tracks;#phi;Entries", HistType::kTH1F, {{720, 0, o2::constants::math::TwoPI}});
-    mQAHistogramRegistry->add((folderName + "/AntiResoQA/NegDaughter/DcaXY"), "dcaXY of all  tracks;d_{XY} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}}); // check if cm is correct here
-    mQAHistogramRegistry->add((folderName + "/AntiResoQA/NegDaughter/DcaZ"), "dcaZ of all  tracks;d_{Z} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}});    // check if cm is correct here
+    mQAHistogramRegistry->add((folderName + "/AntiResoQA/NegDaughter/Pt"), "Transverse momentum of all tracks;p_{T} (GeV/c);Entries", o2::framework::HistType::kTH1F, {{1000, 0, 10}});
+    mQAHistogramRegistry->add((folderName + "/AntiResoQA/NegDaughter/Eta"), "Pseudorapidity of all  tracks;#eta;Entries", o2::framework::HistType::kTH1F, {{1000, -2, 2}});
+    mQAHistogramRegistry->add((folderName + "/AntiResoQA/NegDaughter/Phi"), "Azimuthal angle of all  tracks;#phi;Entries", o2::framework::HistType::kTH1F, {{720, 0, o2::constants::math::TwoPI}});
+    mQAHistogramRegistry->add((folderName + "/AntiResoQA/NegDaughter/DcaXY"), "dcaXY of all  tracks;d_{XY} (cm);Entries", o2::framework::HistType::kTH1F, {{1000, 0, 1}}); // check if cm is correct here
+    mQAHistogramRegistry->add((folderName + "/AntiResoQA/NegDaughter/DcaZ"), "dcaZ of all  tracks;d_{Z} (cm);Entries", o2::framework::HistType::kTH1F, {{1000, 0, 1}});    // check if cm is correct here
     // Histos for massQA
-    mQAHistogramRegistry->add((folderName + "/AntiResoQA/InvMassSwitched"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso}); // for opposite mass hypothesis (Reso is anti)
-    mQAHistogramRegistry->add((folderName + "/AntiResoQA/InvMassBothPID1"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso}); // both particles are of type confDaughterPIDspecies[0]
-    mQAHistogramRegistry->add((folderName + "/AntiResoQA/InvMassBothPID2"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso}); // both particles are of type confDaughterPIDspecies[1]
+    mQAHistogramRegistry->add((folderName + "/AntiResoQA/InvMassSwitched"), "Invariant mass V0s;M_{KK};Entries", o2::framework::HistType::kTH1F, {massAxisReso}); // for opposite mass hypothesis (Reso is anti)
+    mQAHistogramRegistry->add((folderName + "/AntiResoQA/InvMassBothPID1"), "Invariant mass V0s;M_{KK};Entries", o2::framework::HistType::kTH1F, {massAxisReso}); // both particles are of type confDaughterPIDspecies[0]
+    mQAHistogramRegistry->add((folderName + "/AntiResoQA/InvMassBothPID2"), "Invariant mass V0s;M_{KK};Entries", o2::framework::HistType::kTH1F, {massAxisReso}); // both particles are of type confDaughterPIDspecies[1]
 
     // likeSign MassHistos
-    mQAHistogramRegistry->add((folderName + "/ResoLikeSign/ResoQA/InvMass"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso});
-    mQAHistogramRegistry->add((folderName + "/ResoLikeSign/ResoQA/InvMassSwitched"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso}); // for opposite mass hypothesis (Reso is anti)
-    mQAHistogramRegistry->add((folderName + "/ResoLikeSign/ResoQA/InvMassBothPID1"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso}); // both particles are of type confDaughterPIDspecies[0]
-    mQAHistogramRegistry->add((folderName + "/ResoLikeSign/ResoQA/InvMassBothPID2"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso}); // both particles are of type confDaughterPIDspecies[1]
+    mQAHistogramRegistry->add((folderName + "/ResoLikeSign/ResoQA/InvMass"), "Invariant mass V0s;M_{KK};Entries", o2::framework::HistType::kTH1F, {massAxisReso});
+    mQAHistogramRegistry->add((folderName + "/ResoLikeSign/ResoQA/InvMassSwitched"), "Invariant mass V0s;M_{KK};Entries", o2::framework::HistType::kTH1F, {massAxisReso}); // for opposite mass hypothesis (Reso is anti)
+    mQAHistogramRegistry->add((folderName + "/ResoLikeSign/ResoQA/InvMassBothPID1"), "Invariant mass V0s;M_{KK};Entries", o2::framework::HistType::kTH1F, {massAxisReso}); // both particles are of type confDaughterPIDspecies[0]
+    mQAHistogramRegistry->add((folderName + "/ResoLikeSign/ResoQA/InvMassBothPID2"), "Invariant mass V0s;M_{KK};Entries", o2::framework::HistType::kTH1F, {massAxisReso}); // both particles are of type confDaughterPIDspecies[1]
 
-    mQAHistogramRegistry->add((folderName + "/ResoLikeSign/AntiResoQA/InvMass"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso});
-    mQAHistogramRegistry->add((folderName + "/ResoLikeSign/AntiResoQA/InvMassSwitched"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso}); // for opposite mass hypothesis (Reso is anti)
-    mQAHistogramRegistry->add((folderName + "/ResoLikeSign/AntiResoQA/InvMassBothPID1"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso}); // both particles are of type confDaughterPIDspecies[0]
-    mQAHistogramRegistry->add((folderName + "/ResoLikeSign/AntiResoQA/InvMassBothPID2"), "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {massAxisReso}); // both particles are of type confDaughterPIDspecies[1]
+    mQAHistogramRegistry->add((folderName + "/ResoLikeSign/AntiResoQA/InvMass"), "Invariant mass V0s;M_{KK};Entries", o2::framework::HistType::kTH1F, {massAxisReso});
+    mQAHistogramRegistry->add((folderName + "/ResoLikeSign/AntiResoQA/InvMassSwitched"), "Invariant mass V0s;M_{KK};Entries", o2::framework::HistType::kTH1F, {massAxisReso}); // for opposite mass hypothesis (Reso is anti)
+    mQAHistogramRegistry->add((folderName + "/ResoLikeSign/AntiResoQA/InvMassBothPID1"), "Invariant mass V0s;M_{KK};Entries", o2::framework::HistType::kTH1F, {massAxisReso}); // both particles are of type confDaughterPIDspecies[0]
+    mQAHistogramRegistry->add((folderName + "/ResoLikeSign/AntiResoQA/InvMassBothPID2"), "Invariant mass V0s;M_{KK};Entries", o2::framework::HistType::kTH1F, {massAxisReso}); // both particles are of type confDaughterPIDspecies[1]
 
     posDaughTrack.init<PartDaugh,
                        aod::femtodreamparticle::kPosChild,

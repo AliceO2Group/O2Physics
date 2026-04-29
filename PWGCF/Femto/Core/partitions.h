@@ -27,7 +27,7 @@
 
 // macro for track momentum, i.e. ||q|*pT/q| * cosh(eta)
 // there is no ncosh function, so we have to make our own, i.e. cosh(x) = (exp(x)+exp(-x))/2
-#define TRACK_MOMENTUM(chargeAbs, signedPt, eta) nabs((chargeAbs) * (signedPt)) * (nexp(eta) + nexp(-1.f * (eta))) / 2.f
+#define TRACK_MOMENTUM(chargeAbs, signedPt, eta) (nabs((chargeAbs) * (signedPt)) * (nexp(eta) + nexp(-1.f * (eta))) / 2.f)
 
 // standard track partition
 #define MAKE_TRACK_PARTITION(selection)                                                                                                                                              \
@@ -51,21 +51,21 @@
     (o2::aod::femtobase::stored::mass < selection.massMax)
 
 // partition for phis and rhos, i.e. resonance that are their own antiparticle
-#define MAKE_RESONANCE_0_PARTITON(selection)                                                     \
-  (o2::aod::femtobase::stored::pt > selection.ptMin) &&                                          \
-    (o2::aod::femtobase::stored::pt < selection.ptMax) &&                                        \
-    (o2::aod::femtobase::stored::eta > selection.etaMin) &&                                      \
-    (o2::aod::femtobase::stored::eta < selection.etaMax) &&                                      \
-    (o2::aod::femtobase::stored::phi > selection.phiMin) &&                                      \
-    (o2::aod::femtobase::stored::phi < selection.phiMax) &&                                      \
-    (o2::aod::femtobase::stored::mass > selection.massMin) &&                                    \
-    (o2::aod::femtobase::stored::mass < selection.massMax) &&                                    \
-    ifnode(ncheckbit(o2::aod::femtotwotrackresonances::mask, selection.posDauBitForThres),       \
-           ncheckbit(o2::aod::femtotwotrackresonances::mask, selection.posDauMaskAboveThres),    \
-           ncheckbit(o2::aod::femtotwotrackresonances::mask, selection.posDauMaskBelowThres)) && \
-    ifnode(ncheckbit(o2::aod::femtotwotrackresonances::mask, selection.negDauBitForThres),       \
-           ncheckbit(o2::aod::femtotwotrackresonances::mask, selection.negDauMaskAboveThres),    \
-           ncheckbit(o2::aod::femtotwotrackresonances::mask, selection.negDauMaskBelowThres))
+#define MAKE_RESONANCE_0_PARTITON(selection)                                                           \
+  (o2::aod::femtobase::stored::pt > selection.ptMin) &&                                                \
+    (o2::aod::femtobase::stored::pt < selection.ptMax) &&                                              \
+    (o2::aod::femtobase::stored::eta > selection.etaMin) &&                                            \
+    (o2::aod::femtobase::stored::eta < selection.etaMax) &&                                            \
+    (o2::aod::femtobase::stored::phi > selection.phiMin) &&                                            \
+    (o2::aod::femtobase::stored::phi < selection.phiMax) &&                                            \
+    (o2::aod::femtobase::stored::mass > selection.massMin) &&                                          \
+    (o2::aod::femtobase::stored::mass < selection.massMax) &&                                          \
+    ifnode(o2::aod::femtotwotrackresonances::posDauHasHighMomentum,                                    \
+           ncheckbit(o2::aod::femtotwotrackresonances::maskPosDau, selection.posDauMaskAboveThres),    \
+           ncheckbit(o2::aod::femtotwotrackresonances::maskPosDau, selection.posDauMaskBelowThres)) && \
+    ifnode(o2::aod::femtotwotrackresonances::negDauHasHighMomentum,                                    \
+           ncheckbit(o2::aod::femtotwotrackresonances::maskNegDau, selection.negDauMaskAboveThres),    \
+           ncheckbit(o2::aod::femtotwotrackresonances::maskNegDau, selection.negDauMaskBelowThres))
 
 // partition for kstars, they have distinct antiparticle
 #define MAKE_RESONANCE_1_PARTITON(selection)                                                                                                 \
@@ -79,12 +79,12 @@
     (o2::aod::femtobase::stored::phi < selection.phiMax) &&                                                                                  \
     (o2::aod::femtobase::stored::mass > selection.massMin) &&                                                                                \
     (o2::aod::femtobase::stored::mass < selection.massMax) &&                                                                                \
-    ifnode(ncheckbit(o2::aod::femtotwotrackresonances::mask, selection.posDauBitForThres),                                                   \
-           ncheckbit(o2::aod::femtotwotrackresonances::mask, selection.posDauMaskAboveThres),                                                \
-           ncheckbit(o2::aod::femtotwotrackresonances::mask, selection.posDauMaskBelowThres)) &&                                             \
-    ifnode(ncheckbit(o2::aod::femtotwotrackresonances::mask, selection.negDauBitForThres),                                                   \
-           ncheckbit(o2::aod::femtotwotrackresonances::mask, selection.negDauMaskAboveThres),                                                \
-           ncheckbit(o2::aod::femtotwotrackresonances::mask, selection.negDauMaskBelowThres))
+    ifnode(o2::aod::femtotwotrackresonances::posDauHasHighMomentum,                                                                          \
+           ncheckbit(o2::aod::femtotwotrackresonances::maskPosDau, selection.posDauMaskAboveThres),                                          \
+           ncheckbit(o2::aod::femtotwotrackresonances::maskPosDau, selection.posDauMaskBelowThres)) &&                                       \
+    ifnode(o2::aod::femtotwotrackresonances::negDauHasHighMomentum,                                                                          \
+           ncheckbit(o2::aod::femtotwotrackresonances::maskNegDau, selection.negDauMaskAboveThres),                                          \
+           ncheckbit(o2::aod::femtotwotrackresonances::maskNegDau, selection.negDauMaskBelowThres))
 
 // partition for lambdas
 #define MAKE_LAMBDA_PARTITION(selection)                                                                                                     \

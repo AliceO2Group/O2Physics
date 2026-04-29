@@ -48,7 +48,7 @@ struct skimmerOTS {
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> cfg_swt_names{"cfg_swt_names", "fLMeeIMR,fLMeeHMR", "comma-separated software trigger names"}; // !trigger names have to be pre-registered in dileptonTable.h for bit operation!
+  Configurable<std::string> cfg_swt_names{"cfg_swt_names", "fLMeeIMR,fLMeeHMR", "comma-separated software trigger names"};
   o2::framework::Configurable<std::string> ccdbPathSoftwareTrigger{"ccdbPathSoftwareTrigger", "EventFiltering/Zorro/", "ccdb path for ZORRO objects"};
   Configurable<uint64_t> bcMarginForSoftwareTrigger{"bcMarginForSoftwareTrigger", 100, "Number of BCs of margin for software triggers"};
 
@@ -58,10 +58,10 @@ struct skimmerOTS {
   Zorro zorro;
   std::vector<int> mTOIidx;
   uint64_t mNinspectedTVX{0};
-  std::vector<uint64_t> mScalers;
-  std::vector<uint64_t> mSelections;
-  std::vector<int> mTOICounters;
-  std::vector<int> mATCounters;
+  // std::vector<uint64_t> mScalers;
+  // std::vector<uint64_t> mSelections;
+  // std::vector<int> mTOICounters;
+  // std::vector<int> mATCounters;
 
   HistogramRegistry registry{"registry"};
 
@@ -87,28 +87,28 @@ struct skimmerOTS {
       hCollisionCounter->GetXaxis()->SetBinLabel(idx + 2, swt_names[idx].data());
     }
 
-    const int ntrg = static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kNaliases);
+    // const int ntrg = static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kNaliases);
     mNinspectedTVX = 0;
-    mScalers.resize(ntrg);
-    mSelections.resize(ntrg);
-    mTOICounters.resize(ntrg);
-    mATCounters.resize(ntrg);
-    for (int idx = 0; idx < ntrg; idx++) {
-      mTOICounters[idx] = 0;
-      mATCounters[idx] = 0;
-      mScalers[idx] = 0;
-      mSelections[idx] = 0;
-    }
+    // mScalers.resize(ntrg);
+    // mSelections.resize(ntrg);
+    // mTOICounters.resize(ntrg);
+    // mATCounters.resize(ntrg);
+    // for (int idx = 0; idx < ntrg; idx++) {
+    //   // mTOICounters[idx] = 0;
+    //   // mATCounters[idx] = 0;
+    //   // mScalers[idx] = 0;
+    //   // mSelections[idx] = 0;
+    // }
   }
 
   ~skimmerOTS()
   {
     swt_names.clear();
     swt_names.shrink_to_fit();
-    mTOICounters.clear();
-    mTOICounters.shrink_to_fit();
-    mATCounters.clear();
-    mATCounters.shrink_to_fit();
+    // mTOICounters.clear();
+    // mTOICounters.shrink_to_fit();
+    // mATCounters.clear();
+    // mATCounters.shrink_to_fit();
   }
 
   template <typename TBC>
@@ -128,10 +128,10 @@ struct skimmerOTS {
 
     for (size_t idx = 0; idx < mTOIidx.size(); idx++) {
       auto swtname = swt_names[idx];
-      int emswtId = o2::aod::pwgem::dilepton::swt::aliasLabels.at(swtname);
-      mScalers[emswtId] = zorro.getScalers()->GetBinContent(mTOIidx[idx] + 2);
-      mSelections[emswtId] = zorro.getSelections()->GetBinContent(mTOIidx[idx] + 2);
-      LOGF(info, "Trigger of Interest : index = %d in Zorro, %d in EM, scaler = %llu, selection = %llu", mTOIidx[idx], emswtId, mScalers[emswtId], mSelections[emswtId]);
+      // int emswtId = o2::aod::pwgem::dilepton::swt::aliasLabels.at(swtname);
+      uint64_t nScalers = zorro.getScalers()->GetBinContent(mTOIidx[idx] + 2);
+      uint64_t nSelections = zorro.getSelections()->GetBinContent(mTOIidx[idx] + 2);
+      LOGF(info, "Trigger of Interest : index = %d in Zorro, scaler = %llu, selection = %llu", mTOIidx[idx], nScalers, nSelections);
     }
     mRunNumber = bc.runNumber();
   }

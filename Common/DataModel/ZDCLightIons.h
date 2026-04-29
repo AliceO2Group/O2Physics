@@ -16,10 +16,9 @@
 #ifndef COMMON_DATAMODEL_ZDCLIGHTIONS_H_
 #define COMMON_DATAMODEL_ZDCLIGHTIONS_H_
 
-#include "Common/DataModel/Centrality.h"
+#include <Framework/AnalysisDataModel.h>
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
+#include <cstdint>
 
 namespace o2::aod
 {

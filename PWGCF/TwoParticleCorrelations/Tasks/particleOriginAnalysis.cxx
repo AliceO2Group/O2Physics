@@ -25,20 +25,25 @@
 
 #include "Common/Core/TableHelper.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include <TH2D.h>
-#include <TH3D.h>
-#include <TPDGCode.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <TString.h>
+
+#include <sys/types.h>
 
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -47,6 +52,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::soa;
 using namespace o2::framework::expressions;
+using namespace o2::common::core;
 
 #define FORMATSTRING(theformat, theparams...) TString::Format(theformat, theparams).Data()
 
