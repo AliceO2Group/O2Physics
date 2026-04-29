@@ -118,6 +118,8 @@ struct FlowGfwOmegaXi {
     O2_DEFINE_CONFIGURABLE(cfgv0_ArmPodocut, float, 0.2f, "Armenteros Podolski cut for K0")
     O2_DEFINE_CONFIGURABLE(cfgv0_compmassrejLambda, float, 0.01f, "competing mass rejection of lambda")
     O2_DEFINE_CONFIGURABLE(cfgv0_compmassrejK0s, float, 0.005f, "competing mass rejection of K0s")
+    O2_DEFINE_CONFIGURABLE(cfgv0_ctauK0s, float, 20, "Max ctau cut of K0s")
+    O2_DEFINE_CONFIGURABLE(cfgv0_ctauLambda, float, 30, "Max ctau cut of Lambda")
   } v0BuilderOpts;
 
   struct : ConfigurableGroup {
@@ -158,7 +160,8 @@ struct FlowGfwOmegaXi {
     O2_DEFINE_CONFIGURABLE(cfgCutPtPIDbachMin, float, 0.15f, "Minimal pT for daughter PID")
     O2_DEFINE_CONFIGURABLE(cfgCutPtPIDdauLaPrMin, float, 0.15f, "Minimal pT for daughter PID")
     O2_DEFINE_CONFIGURABLE(cfgCutPtPIDdauLaPiMin, float, 0.15f, "Minimal pT for daughter PID")
-    O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "Minimal pT for daughter PID")
+    O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "Maximal DCAz for tracks")
+    O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 0.1f, "Maximal DCAxy for tracks")
     // track quality selections for daughter track
     O2_DEFINE_CONFIGURABLE(cfgITSNCls, int, 3, "check minimum number of ITS clusters")
     O2_DEFINE_CONFIGURABLE(cfgChITSNCls, int, 5, "check minimum number of ITS clusters")
@@ -205,6 +208,7 @@ struct FlowGfwOmegaXi {
   O2_DEFINE_CONFIGURABLE(cfgOutputLocDenWeights, bool, false, "Fill and output local density weights")
   O2_DEFINE_CONFIGURABLE(cfgOutputQA, bool, false, "do QA")
   O2_DEFINE_CONFIGURABLE(cfgUseT0MCent, bool, false, "Use T0M cent")
+  O2_DEFINE_CONFIGURABLE(cfgEtagap, int, 8, "use 0.1 * cfgEtagap as etagap (>0.8, 1.0, 1.2)")
 
   ConfigurableAxis cfgaxisVertex{"cfgaxisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis cfgaxisPhi{"cfgaxisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -225,7 +229,7 @@ struct FlowGfwOmegaXi {
   AxisSpec axisMultiplicity{{0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "Centrality (%)"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < trkQualityOpts.cfgCutEta.value) && (aod::track::pt > trkQualityOpts.cfgCutPtPOIMin.value) && (aod::track::pt < trkQualityOpts.cfgCutPtPOIMax.value) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < trkQualityOpts.cfgCutDCAz.value);
+  Filter trackFilter = (nabs(aod::track::eta) < trkQualityOpts.cfgCutEta.value) && (aod::track::pt > trkQualityOpts.cfgCutPtPOIMin.value) && (aod::track::pt < trkQualityOpts.cfgCutPtPOIMax.value) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < trkQualityOpts.cfgCutDCAz.value) && (nabs(aod::track::dcaXY) < trkQualityOpts.cfgCutDCAxy.value);
 
   using TracksPID = soa::Join<aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::TracksExtra, TracksPID, aod::TracksIU, aod::TracksDCA>>; // tracks filter
@@ -541,7 +545,7 @@ struct FlowGfwOmegaXi {
       registry.add("K0sc22dpt", ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtK0s, cfgaxisK0sMassforflow, axisMultiplicity}});
       registry.add("Lambdac22dpt", ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtLambda, cfgaxisLambdaMassforflow, axisMultiplicity}});
       registry.add("K0sc24dpt", ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtK0s, cfgaxisK0sMassforflow, axisMultiplicity}});
-      registry.add("Lambdac24dpt", ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtK0s, cfgaxisLambdaMassforflow, axisMultiplicity}});
+      registry.add("Lambdac24dpt", ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtLambda, cfgaxisLambdaMassforflow, axisMultiplicity}});
       registry.add("K0sc22Fulldpt", ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtK0s, cfgaxisK0sMassforflow, axisMultiplicity}});
       registry.add("Lambdac22Fulldpt", ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtLambda, cfgaxisLambdaMassforflow, axisMultiplicity}});
       // v3
@@ -626,30 +630,85 @@ struct FlowGfwOmegaXi {
 
     // Data
     fGFW->AddRegion("reffull", -0.8, 0.8, 1, 1); // ("name", etamin, etamax, ptbinnum, bitmask)eta region -0.8 to 0.8
-    fGFW->AddRegion("refN10", -0.8, -0.4, 1, 1);
-    fGFW->AddRegion("refP10", 0.4, 0.8, 1, 1);
-    // POI
-    fGFW->AddRegion("poiN10dpt", -0.8, -0.4, nPtBins, 32);
-    fGFW->AddRegion("poiP10dpt", 0.4, 0.8, nPtBins, 32);
-    fGFW->AddRegion("poifulldpt", -0.8, 0.8, nPtBins, 32);
-    fGFW->AddRegion("poioldpt", -0.8, 0.8, nPtBins, 1);
-
-    int nXiptMassBins = nXiPtBins * cfgmassbins[2];
-    fGFW->AddRegion("poiXiPdpt", 0.4, 0.8, nXiptMassBins, 2);
-    fGFW->AddRegion("poiXiNdpt", -0.8, -0.4, nXiptMassBins, 2);
-    fGFW->AddRegion("poiXifulldpt", -0.8, 0.8, nXiptMassBins, 2);
-    int nOmegaptMassBins = nXiPtBins * cfgmassbins[3];
-    fGFW->AddRegion("poiOmegaPdpt", 0.4, 0.8, nOmegaptMassBins, 4);
-    fGFW->AddRegion("poiOmegaNdpt", -0.8, -0.4, nOmegaptMassBins, 4);
-    fGFW->AddRegion("poiOmegafulldpt", -0.8, 0.8, nOmegaptMassBins, 4);
     int nK0sptMassBins = nK0sPtBins * cfgmassbins[0];
-    fGFW->AddRegion("poiK0sPdpt", 0.4, 0.8, nK0sptMassBins, 8);
-    fGFW->AddRegion("poiK0sNdpt", -0.8, -0.4, nK0sptMassBins, 8);
-    fGFW->AddRegion("poiK0sfulldpt", -0.8, 0.8, nK0sptMassBins, 8);
     int nLambdaptMassBins = nLambdaPtBins * cfgmassbins[1];
-    fGFW->AddRegion("poiLambdaPdpt", 0.4, 0.8, nLambdaptMassBins, 16);
-    fGFW->AddRegion("poiLambdaNdpt", -0.8, -0.4, nLambdaptMassBins, 16);
-    fGFW->AddRegion("poiLambdafulldpt", -0.8, 0.8, nLambdaptMassBins, 16);
+    int nXiptMassBins = nXiPtBins * cfgmassbins[2];
+    int nOmegaptMassBins = nXiPtBins * cfgmassbins[3];
+    if (cfgEtagap == 8) {
+      fGFW->AddRegion("refN10", -0.8, -0.4, 1, 1);
+      fGFW->AddRegion("refP10", 0.4, 0.8, 1, 1);
+
+      fGFW->AddRegion("poiN10dpt", -0.8, -0.4, nPtBins, 32);
+      fGFW->AddRegion("poiP10dpt", 0.4, 0.8, nPtBins, 32);
+      fGFW->AddRegion("poifulldpt", -0.8, 0.8, nPtBins, 32);
+      fGFW->AddRegion("poioldpt", -0.8, 0.8, nPtBins, 1);
+
+      fGFW->AddRegion("poiXiPdpt", 0.4, 0.8, nXiptMassBins, 2);
+      fGFW->AddRegion("poiXiNdpt", -0.8, -0.4, nXiptMassBins, 2);
+      fGFW->AddRegion("poiXifulldpt", -0.8, 0.8, nXiptMassBins, 2);
+
+      fGFW->AddRegion("poiOmegaPdpt", 0.4, 0.8, nOmegaptMassBins, 4);
+      fGFW->AddRegion("poiOmegaNdpt", -0.8, -0.4, nOmegaptMassBins, 4);
+      fGFW->AddRegion("poiOmegafulldpt", -0.8, 0.8, nOmegaptMassBins, 4);
+
+      fGFW->AddRegion("poiK0sPdpt", 0.4, 0.8, nK0sptMassBins, 8);
+      fGFW->AddRegion("poiK0sNdpt", -0.8, -0.4, nK0sptMassBins, 8);
+      fGFW->AddRegion("poiK0sfulldpt", -0.8, 0.8, nK0sptMassBins, 8);
+
+      fGFW->AddRegion("poiLambdaPdpt", 0.4, 0.8, nLambdaptMassBins, 16);
+      fGFW->AddRegion("poiLambdaNdpt", -0.8, -0.4, nLambdaptMassBins, 16);
+      fGFW->AddRegion("poiLambdafulldpt", -0.8, 0.8, nLambdaptMassBins, 16);
+    }
+    if (cfgEtagap == 10) {
+      fGFW->AddRegion("refN10", -0.8, -0.5, 1, 1);
+      fGFW->AddRegion("refP10", 0.5, 0.8, 1, 1);
+
+      fGFW->AddRegion("poiN10dpt", -0.8, -0.5, nPtBins, 32);
+      fGFW->AddRegion("poiP10dpt", 0.5, 0.8, nPtBins, 32);
+      fGFW->AddRegion("poifulldpt", -0.8, 0.8, nPtBins, 32);
+      fGFW->AddRegion("poioldpt", -0.8, 0.8, nPtBins, 1);
+
+      fGFW->AddRegion("poiXiPdpt", 0.5, 0.8, nXiptMassBins, 2);
+      fGFW->AddRegion("poiXiNdpt", -0.8, -0.5, nXiptMassBins, 2);
+      fGFW->AddRegion("poiXifulldpt", -0.8, 0.8, nXiptMassBins, 2);
+
+      fGFW->AddRegion("poiOmegaPdpt", 0.5, 0.8, nOmegaptMassBins, 4);
+      fGFW->AddRegion("poiOmegaNdpt", -0.8, -0.5, nOmegaptMassBins, 4);
+      fGFW->AddRegion("poiOmegafulldpt", -0.8, 0.8, nOmegaptMassBins, 4);
+
+      fGFW->AddRegion("poiK0sPdpt", 0.5, 0.8, nK0sptMassBins, 8);
+      fGFW->AddRegion("poiK0sNdpt", -0.8, -0.5, nK0sptMassBins, 8);
+      fGFW->AddRegion("poiK0sfulldpt", -0.8, 0.8, nK0sptMassBins, 8);
+
+      fGFW->AddRegion("poiLambdaPdpt", 0.5, 0.8, nLambdaptMassBins, 16);
+      fGFW->AddRegion("poiLambdaNdpt", -0.8, -0.5, nLambdaptMassBins, 16);
+      fGFW->AddRegion("poiLambdafulldpt", -0.8, 0.8, nLambdaptMassBins, 16);
+    }
+    if (cfgEtagap == 12) {
+      fGFW->AddRegion("refN10", -0.8, -0.6, 1, 1);
+      fGFW->AddRegion("refP10", 0.6, 0.8, 1, 1);
+
+      fGFW->AddRegion("poiN10dpt", -0.8, -0.6, nPtBins, 32);
+      fGFW->AddRegion("poiP10dpt", 0.6, 0.8, nPtBins, 32);
+      fGFW->AddRegion("poifulldpt", -0.8, 0.8, nPtBins, 32);
+      fGFW->AddRegion("poioldpt", -0.8, 0.8, nPtBins, 1);
+
+      fGFW->AddRegion("poiXiPdpt", 0.6, 0.8, nXiptMassBins, 2);
+      fGFW->AddRegion("poiXiNdpt", -0.8, -0.6, nXiptMassBins, 2);
+      fGFW->AddRegion("poiXifulldpt", -0.8, 0.8, nXiptMassBins, 2);
+
+      fGFW->AddRegion("poiOmegaPdpt", 0.6, 0.8, nOmegaptMassBins, 4);
+      fGFW->AddRegion("poiOmegaNdpt", -0.8, -0.6, nOmegaptMassBins, 4);
+      fGFW->AddRegion("poiOmegafulldpt", -0.8, 0.8, nOmegaptMassBins, 4);
+
+      fGFW->AddRegion("poiK0sPdpt", 0.6, 0.8, nK0sptMassBins, 8);
+      fGFW->AddRegion("poiK0sNdpt", -0.8, -0.6, nK0sptMassBins, 8);
+      fGFW->AddRegion("poiK0sfulldpt", -0.8, 0.8, nK0sptMassBins, 8);
+
+      fGFW->AddRegion("poiLambdaPdpt", 0.6, 0.8, nLambdaptMassBins, 16);
+      fGFW->AddRegion("poiLambdaNdpt", -0.8, -0.6, nLambdaptMassBins, 16);
+      fGFW->AddRegion("poiLambdafulldpt", -0.8, 0.8, nLambdaptMassBins, 16);
+    }
     // MC
     fGFW->AddRegion("refN10MC", -0.8, -0.4, 1, 64);
     fGFW->AddRegion("refP10MC", 0.4, 0.8, 1, 64);
@@ -1156,6 +1215,10 @@ struct FlowGfwOmegaXi {
           continue;
         if (v0negdau.pt() < trkQualityOpts.cfgCutPtDauMin.value || v0negdau.pt() > trkQualityOpts.cfgCutPtDauMax.value)
           continue;
+        if (v0posdau.eta() < trkQualityOpts.cfgCutEta.value || v0posdau.eta() > trkQualityOpts.cfgCutEta.value)
+          continue;
+        if (v0negdau.eta() < trkQualityOpts.cfgCutEta.value || v0negdau.eta() > trkQualityOpts.cfgCutEta.value)
+          continue;
 
         // fill QA
         if (cfgOutputQA) {
@@ -1237,6 +1300,19 @@ struct FlowGfwOmegaXi {
             continue;
           if (!v0negdau.hasTPC() || !v0negdau.hasITS())
             continue;
+        }
+        float ctau = 0;
+        if (isK0s) {
+          ctau = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
+          if (ctau < v0BuilderOpts.cfgv0_ctauK0s.value)
+            isK0s = false;
+        }
+        if (isLambda || isALambda) {
+          ctau = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
+          if (ctau < v0BuilderOpts.cfgv0_ctauLambda.value) {
+            isLambda = false;
+            isALambda = false;
+          }
         }
         // // topological cut
         if (v0.v0radius() < v0BuilderOpts.cfgv0_radius.value)
@@ -1366,6 +1442,12 @@ struct FlowGfwOmegaXi {
         if (posdau.pt() < trkQualityOpts.cfgCutPtDauMin.value || posdau.pt() > trkQualityOpts.cfgCutPtDauMax.value)
           continue;
         if (negdau.pt() < trkQualityOpts.cfgCutPtDauMin.value || negdau.pt() > trkQualityOpts.cfgCutPtDauMax.value)
+          continue;
+        if (std::fabs(bachelor.eta()) < trkQualityOpts.cfgCutEta.value)
+          continue;
+        if (std::fabs(posdau.eta()) < trkQualityOpts.cfgCutEta.value)
+          continue;
+        if (std::fabs(negdau.eta()) < trkQualityOpts.cfgCutEta.value)
           continue;
 
         // Omega and antiOmega
