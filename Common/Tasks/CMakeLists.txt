@@ -98,3 +98,8 @@ o2physics_add_dpl_workflow(zdc-table-reader
                     SOURCES zdcTableReader.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(zdc-extra-table-reader
+                    SOURCES zdcExtraTableReader.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
