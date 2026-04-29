@@ -254,13 +254,13 @@ static const std::vector<std::string> labelsCutVar = {"massMin", "massMax", "cos
 
 // Single prong min pt selection
 static constexpr int NSpecies = 8; // number of species for 3-prong candidates
-static const float ptProngMin[NSpecies][1] = {{0.4}, {0.4}, {0.4}, {0.4}, {0.4}, {0.4}, {0.4}, {0.4}};
+constexpr float ptProngMin[NSpecies][1] = {{0.4f}, {0.4f}, {0.4f}, {0.4f}, {0.4f}, {0.4f}, {0.4f}, {0.4f}};
 
 // 3-prong species labels
-static const std::vector<std::string> labelsPtProngMin = {"Dplus", "Lc", "Ds", "Xic", "Cd", "Ct", "Ch", "Ca"};
+static const std::vector<std::string> labelsSpecies = {"Dplus", "Lc", "Ds", "Xic", "Cd", "Ct", "Ch", "Ca"};
 
 // column label
-static const std::vector<std::string> labelsMinPt = {"Minimum prong transverse momentum (GeV/c)"};
+static const std::vector<std::string> labelsPtProngMin = {"Minimum pT (GeV/c)"};
 
 } // namespace hf_cuts_presel_3prong
 

@@ -1457,7 +1457,7 @@ struct HfTrackIndexSkimCreator {
     Configurable<LabeledArray<double>> cutsDstarToD0Pi{"cutsDstarToD0Pi", {hf_cuts_presel_dstar::Cuts[0], hf_cuts_presel_dstar::NBinsPt, hf_cuts_presel_dstar::NCutVars, hf_cuts_presel_dstar::labelsPt, hf_cuts_presel_dstar::labelsCutVar}, "D*+->D0pi selections per pT bin"};
 
     // Species-differential track min pT selection for 3-prong candidates
-    Configurable<LabeledArray<float>> ptProngMin3Prong{"ptProngMin3Prong", {hf_cuts_presel_3prong::ptProngMin[0], hf_cuts_presel_3prong::NSpecies, 1, hf_cuts_presel_3prong::labelsPtProngMin, hf_cuts_presel_3prong::labelsMinPt}, "Min pT selection for prongs of 3-prong candidates in GeV/c"};
+    Configurable<LabeledArray<float>> ptProngMin3Prong{"ptProngMin3Prong", {hf_cuts_presel_3prong::ptProngMin[0], hf_cuts_presel_3prong::NSpecies, 1, hf_cuts_presel_3prong::labelsSpecies, hf_cuts_presel_3prong::labelsPtProngMin}, "Min pT selection for prongs of 3-prong candidates in GeV/c"};
 
     // proton PID selections for Lc and Xic
     Configurable<bool> applyProtonPidForLcToPKPi{"applyProtonPidForLcToPKPi", false, "Apply proton PID for Lc->pKpi"};
@@ -1892,7 +1892,7 @@ struct HfTrackIndexSkimCreator {
       }
 
       // invariant mass
-      if ((config.debug || TESTBIT(isSelected, iDecay3P))) {
+      if (config.debug || TESTBIT(isSelected, iDecay3P)) {
         const double minMass = cut3Prong[iDecay3P].get(binPt, 0u);
         const double maxMass = cut3Prong[iDecay3P].get(binPt, 1u);
         if (minMass >= 0. && maxMass > 0.) { // no need to check isSelected but to avoid mistakes
@@ -2032,7 +2032,7 @@ struct HfTrackIndexSkimCreator {
         }
 
         // decay length
-        if ((config.debug || TESTBIT(isSelected, iDecay3P))) {
+        if (config.debug || TESTBIT(isSelected, iDecay3P)) {
           const auto decayLength = RecoDecay::distance(primVtx, secVtx);
           if (decayLength < cut3Prong[iDecay3P].get(binPt, 3u)) { // 3u == decLenIndex[iDecay3P]
             CLRBIT(isSelected, iDecay3P);
@@ -2043,7 +2043,7 @@ struct HfTrackIndexSkimCreator {
         }
 
         // prong daughter pT
-        if ((config.debug || TESTBIT(isSelected, iDecay3P))) {
+        if (config.debug || TESTBIT(isSelected, iDecay3P)) {
           const auto ptProngMin = config.ptProngMin3Prong->get(iDecay3P);
           if (ptProngs[0] < ptProngMin || ptProngs[1] < ptProngMin || ptProngs[2] < ptProngMin) {
             CLRBIT(isSelected, iDecay3P);
