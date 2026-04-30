@@ -125,6 +125,7 @@ struct V0ptHadPiKaProt {
   ConfigurableAxis nchAxis1{"nchAxis1", {500, 0.5, 500.5}, "Axis for multiplicity of GlobalTracks/PVTracks"};
   ConfigurableAxis nchAxis2{"nchAxis2", {1000, 0.5, 30000.5}, "Axis for multiplicity of FT0A/FT0C/FV0A"};
   ConfigurableAxis nchAxis3{"nchAxis3", {1000, 0.5, 100000.5}, "Axis for multiplicity of FT0A/FT0C/FV0A"};
+  ConfigurableAxis occuAxis{"occuAxis", {1000, 0.5, 50000.5}, "Axis for occupancy of events"};
   Configurable<float> cfgCutPtLower{"cfgCutPtLower", 0.2f, "Lower pT cut"};
   Configurable<float> cfgCutPtLowerProt{"cfgCutPtLowerProt", 0.2f, "Lower pT cut"};
   Configurable<float> cfgCutPtUpper{"cfgCutPtUpper", 10.0f, "Higher pT cut for inclusive hadron analysis"};
@@ -155,6 +156,7 @@ struct V0ptHadPiKaProt {
   Configurable<bool> cfgLoadPtEffWeights{"cfgLoadPtEffWeights", false, "Load pt-dependent efficiency weights from CCDB to take care of detector inefficiency"};
   Configurable<int> cfgMinNoOfParticles{"cfgMinNoOfParticles", 4, "Minimum no. of particles for calculating v02(pT)"};
   Configurable<int> cfgV02WeightedFill{"cfgV02WeightedFill", false, "Fill profiles related to v2 with multiplicity-based weights?"};
+  Configurable<bool> cfgUseDominanceCut{"cfgUseDominanceCut", true, "Require particle selecting species' nSigma to be smallest among other two"};
 
   // pT dep DCAxy and DCAz cuts
   Configurable<bool> cfgUsePtDepDCAxy{"cfgUsePtDepDCAxy", true, "Use pt-dependent DCAxy cut"};
@@ -306,6 +308,7 @@ struct V0ptHadPiKaProt {
     histos.add("hEventStatData", "Data Event statistics", kTH1F, {{10, 0.0f, 10.0f}});
     histos.add("hZvtx_after_sel", ";Z (cm)", kTH1F, {{240, -12, 12}});
     histos.add("hCentrality", ";centrality (%)", kTH1F, {{90, 0, 90}});
+    histos.add("hOccupancyVsCentrality", "", kTH2F, {{90, 0, 90}, occuAxis});
     // before selection
     histos.add("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_PVTracks_beforeSel", "", {HistType::kTH2D, {nchAxis1, nchAxis1}});
     histos.add("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_centFT0C_beforeSel", "", {HistType::kTH2D, {centAxis, nchAxis1}});
@@ -554,7 +557,14 @@ struct V0ptHadPiKaProt {
             flag = 1;
         }
       } else {
-        if (!(flag2 > 1) && !(combNSigmaPr > combNSigmaPi) && !(combNSigmaPr > combNSigmaKa)) {
+
+        bool passDominance = true;
+        // Apply condition only if enabled
+        if (cfgUseDominanceCut) {
+          passDominance = !(combNSigmaPr > combNSigmaPi) && !(combNSigmaPr > combNSigmaKa);
+        }
+
+        if (!(flag2 > 1) && passDominance) {
           if (combNSigmaPr < cfgnSigmaCutCombTPCTOF) {
             flag = 1;
           }
@@ -601,7 +611,14 @@ struct V0ptHadPiKaProt {
             flag = 1;
         }
       } else {
-        if (!(flag2 > 1) && !(combNSigmaPi > combNSigmaPr) && !(combNSigmaPi > combNSigmaKa)) {
+
+        bool passDominance = true;
+        // Apply condition only if enabled
+        if (cfgUseDominanceCut) {
+          passDominance = !(combNSigmaPi > combNSigmaPr) && !(combNSigmaPi > combNSigmaKa);
+        }
+
+        if (!(flag2 > 1) && passDominance) {
           if (combNSigmaPi < cfgnSigmaCutCombTPCTOF) {
             flag = 1;
           }
@@ -648,7 +665,14 @@ struct V0ptHadPiKaProt {
             flag = 1;
         }
       } else {
-        if (!(flag2 > 1) && !(combNSigmaKa > combNSigmaPi) && !(combNSigmaKa > combNSigmaPr)) {
+
+        bool passDominance = true;
+        // Apply condition only if enabled
+        if (cfgUseDominanceCut) {
+          passDominance = !(combNSigmaKa > combNSigmaPi) && !(combNSigmaKa > combNSigmaPr);
+        }
+
+        if (!(flag2 > 1) && passDominance) {
           if (combNSigmaKa < cfgnSigmaCutCombTPCTOF) {
             flag = 1;
           }
@@ -787,6 +811,9 @@ struct V0ptHadPiKaProt {
       return 0;
     }
 
+    int occupancy = coll.trackOccupancyInTimeRange();
+    histos.fill(HIST("hOccupancyVsCentrality"), occupancy);
+
     histos.fill(HIST("hEventStatData"), 6.5);
     // events with selection bits based on occupancy time pattern
     if (cfgEvSelUseOcuppancyTimeCut && !(coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
@@ -794,7 +821,6 @@ struct V0ptHadPiKaProt {
     }
 
     histos.fill(HIST("hEventStatData"), 7.5);
-    int occupancy = coll.trackOccupancyInTimeRange();
     if (cfgEvSelSetOcuppancyRange && (occupancy < cfgMinOccupancy || occupancy > cfgMaxOccupancy)) {
       return 0;
     }
@@ -1458,8 +1484,8 @@ struct V0ptHadPiKaProt {
         if (cfgV02WeightedFill) {
           histos.get<TProfile2D>(HIST("Prof_XYZ_weighted_ka"))->Fill(cent, fPtProfileKaInWinB->GetBinCenter(i + 1), threeParCorrKa, (nSumInWinA * nSumInWinC));
           histos.get<TProfile2D>(HIST("Prof_Z_weighted_ka"))->Fill(cent, fPtProfileKaInWinB->GetBinCenter(i + 1), (fPtProfileKaInWinB->GetBinContent(i + 1) / nSumInWinB));
-          subSampleV02_weighted[sampleIndex][3]->Fill(cent, fPtProfileKaInWinB->GetBinCenter(i + 1), threeParCorrKa, (nSumInWinA * nSumInWinC));
-          subSampleV02_weighted[sampleIndex][4]->Fill(cent, fPtProfileKaInWinB->GetBinCenter(i + 1), (fPtProfileKaInWinB->GetBinContent(i + 1) / nSumInWinB));
+          subSampleV02_weighted[sampleIndex][5]->Fill(cent, fPtProfileKaInWinB->GetBinCenter(i + 1), threeParCorrKa, (nSumInWinA * nSumInWinC));
+          subSampleV02_weighted[sampleIndex][6]->Fill(cent, fPtProfileKaInWinB->GetBinCenter(i + 1), (fPtProfileKaInWinB->GetBinContent(i + 1) / nSumInWinB));
         }
       }
 
@@ -1476,8 +1502,8 @@ struct V0ptHadPiKaProt {
         if (cfgV02WeightedFill) {
           histos.get<TProfile2D>(HIST("Prof_XYZ_weighted_prot"))->Fill(cent, fPtProfileProtInWinB->GetBinCenter(i + 1), threeParCorrProt, (nSumInWinA * nSumInWinC));
           histos.get<TProfile2D>(HIST("Prof_Z_weighted_prot"))->Fill(cent, fPtProfileProtInWinB->GetBinCenter(i + 1), (fPtProfileProtInWinB->GetBinContent(i + 1) / nSumInWinB));
-          subSampleV02_weighted[sampleIndex][3]->Fill(cent, fPtProfileProtInWinB->GetBinCenter(i + 1), threeParCorrProt, (nSumInWinA * nSumInWinC));
-          subSampleV02_weighted[sampleIndex][4]->Fill(cent, fPtProfileProtInWinB->GetBinCenter(i + 1), (fPtProfileProtInWinB->GetBinContent(i + 1) / nSumInWinB));
+          subSampleV02_weighted[sampleIndex][7]->Fill(cent, fPtProfileProtInWinB->GetBinCenter(i + 1), threeParCorrProt, (nSumInWinA * nSumInWinC));
+          subSampleV02_weighted[sampleIndex][8]->Fill(cent, fPtProfileProtInWinB->GetBinCenter(i + 1), (fPtProfileProtInWinB->GetBinContent(i + 1) / nSumInWinB));
         }
       }
     }
