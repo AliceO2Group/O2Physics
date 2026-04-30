@@ -57,7 +57,7 @@ struct JetDsSpecSubs {
       {"h_ds_jet_pt", ";p_{T,D_{S} jet};dN/dp_{T,D_{S} jet}", {HistType::kTH1F, {{1000, 0., 100.}}}},
       {"h_ds_jet_eta", ";#eta_{D_{S} jet};entries", {HistType::kTH1F, {{250, -1., 1.}}}},
       {"h_ds_jet_phi", ";#phi_{D_{S} jet};entries", {HistType::kTH1F, {{250, -1., 7.}}}},
-      {"hSparse_ds", ";m_{D_{S}};p_{T,D_{S}};z^{D_{S},jet}_{||};#DeltaR_{D_{S},jet}", {HistType::kTHnSparseF, {{60, 1.7, 2.1}, {60, 0., 100.}, {60, 0., 2.}, {60, 0., 1.0}}}},
+      {"hSparse_ds", ";m_{D_{S}};p_{T,D_{S}};z^{D_{S},jet}_{||};#DeltaR_{D_{S},jet}", {HistType::kTHnSparseF, {{200, 1.7, 2.1}, {200, 0., 100.}, {200, 0., 2.}, {200, 0., 1.0}}}},
       {"h_ds_mass", ";m_{D_{S}} (GeV/c^{2});entries", {HistType::kTH1F, {{1000, 0., 6.}}}},
       {"h_ds_eta", ";#eta_{D_{S}};entries", {HistType::kTH1F, {{250, -1., 1.}}}},
       {"h_ds_phi", ";#phi_{D_{S}};entries", {HistType::kTH1F, {{250, -1., 7.}}}},
