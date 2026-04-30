@@ -1457,7 +1457,7 @@ struct HfTrackIndexSkimCreator {
     Configurable<LabeledArray<double>> cutsDstarToD0Pi{"cutsDstarToD0Pi", {hf_cuts_presel_dstar::Cuts[0], hf_cuts_presel_dstar::NBinsPt, hf_cuts_presel_dstar::NCutVars, hf_cuts_presel_dstar::labelsPt, hf_cuts_presel_dstar::labelsCutVar}, "D*+->D0pi selections per pT bin"};
 
     // Species-differential track min pT selection for 3-prong candidates
-    Configurable<LabeledArray<float>> ptProngMin3Prong{"ptProngMin3Prong", {hf_cuts_presel_3prong::ptProngMin[0], hf_cuts_presel_3prong::NSpecies, 1, hf_cuts_presel_3prong::labelsSpecies, hf_cuts_presel_3prong::labelsPtProngMin}, "Min pT selection for prongs of 3-prong candidates in GeV/c"};
+    Configurable<LabeledArray<float>> ptProngMin3Prong{"ptProngMin3Prong", {hf_cuts_presel_3prong::PtProngMin[0], hf_cuts_presel_3prong::NSpecies, 1, hf_cuts_presel_3prong::labelsSpecies, hf_cuts_presel_3prong::labelsPtProngMin}, "Min pT selection for prongs of 3-prong candidates in GeV/c"};
 
     // proton PID selections for Lc and Xic
     Configurable<bool> applyProtonPidForLcToPKPi{"applyProtonPidForLcToPKPi", false, "Apply proton PID for Lc->pKpi"};
