@@ -127,6 +127,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterXY, impactParameterXY, [](float xVtxP,
 
 JETSV_TABLES_DEF(Charged, SecondaryVertex3Prong, "3PRONG");
 JETSV_TABLES_DEF(Charged, SecondaryVertex2Prong, "2PRONG");
+JETSV_TABLES_DEF(Charged, SecondaryVertexNProng, "NPRONG");
 
 // Defines the jet tagging table definition
 namespace jettagging
