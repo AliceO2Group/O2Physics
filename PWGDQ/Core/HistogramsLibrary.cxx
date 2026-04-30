@@ -1296,7 +1296,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         ptBins[50 + i] = 0.5 + i * 0.5;
       }
       hm->AddHistogram(histClass, "Mass_PtFine", "", false, 75, massBins, VarManager::kMass, 69, ptBins, VarManager::kPt);
-      hm->AddHistogram(histClass, "Eta_Pt", "", false, 40, -2.0, 2.0, VarManager::kEta, 40, 0.0, 20.0, VarManager::kPt);
+      hm->AddHistogram(histClass, "Eta_Pt", "", false, 320, -2.0, 2.0, VarManager::kEta, 400, 0.0, 40.0, VarManager::kPt);
       hm->AddHistogram(histClass, "Y_Pt", "", false, 40, -2.0, 2.0, VarManager::kRap, 40, 0.0, 20.0, VarManager::kPt);
       hm->AddHistogram(histClass, "Mass_VtxZ", "", true, 30, -15.0, 15.0, VarManager::kVtxZ, 500, 0.0, 5.0, VarManager::kMass);
       if (subGroupStr.Contains("energy-correlator")) {
@@ -2311,7 +2311,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "PhiMC", "MC #phi", false, 50, -6.3, 6.3, VarManager::kMCPhi);
     hm->AddHistogram(histClass, "YMC", "MC y", false, 50, -5.0, 5.0, VarManager::kMCY);
     hm->AddHistogram(histClass, "PtMC_YMC", "MC pT vs MC y", false, 120, 0.0, 30.0, VarManager::kMCPt, 1000, -5.0, 5.0, VarManager::kMCY);
-    hm->AddHistogram(histClass, "EtaMC_PtMC", "", false, 40, -2.0, 2.0, VarManager::kMCEta, 200, 0.0, 20.0, VarManager::kMCPt);
+    hm->AddHistogram(histClass, "EtaMC_PtMC", "", false, 320, -2.0, 2.0, VarManager::kMCEta, 400, 0.0, 40.0, VarManager::kMCPt);
     hm->AddHistogram(histClass, "VzMC", "MC vz", false, 100, -15.0, 15.0, VarManager::kMCVz);
     hm->AddHistogram(histClass, "VzMC_VtxZMC", "MC vz vs MC vtxZ", false, 50, -15.0, 15.0, VarManager::kMCVz, 50, -15.0, 15.0, VarManager::kMCVtxZ);
     hm->AddHistogram(histClass, "LzMC", "", false, 1000, 0.0, 2.0, VarManager::kMCVertexingLz);
