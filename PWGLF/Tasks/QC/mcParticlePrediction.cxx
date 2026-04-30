@@ -41,6 +41,7 @@
 
 #include <TH1.h>
 #include <TH2.h>
+#include <TPDGCode.h>
 #include <TParticlePDG.h>
 #include <TString.h>
 
@@ -446,6 +447,9 @@ struct mcParticlePrediction {
     return nMult;
   }
 
+  int noOfDaughters = 2;
+  float rapidityMother = 0.5;
+
   void process(aod::McCollision const& mcCollision,
                aod::McParticles const& mcParticles)
   {
@@ -493,9 +497,9 @@ struct mcParticlePrediction {
         continue;
       }
 
-      if (!particle.isPhysicalPrimary()) {
-        continue;
-      }
+      // if (!particle.isPhysicalPrimary()) {
+      //   continue;
+      // }
 
       TParticlePDG* p = pdgDB->GetParticle(particle.pdgCode());
       if (p) {
@@ -506,21 +510,92 @@ struct mcParticlePrediction {
         }
       }
 
-      if (std::abs(particle.y()) > 0.5) {
+      if (std::abs(particle.y()) >= rapidityMother) {
         continue;
       }
 
-      histos.fill(HIST("particles/vtx/x"), particle.vx());
-      histos.fill(HIST("particles/vtx/y"), particle.vy());
-      histos.fill(HIST("particles/vtx/z"), particle.vz() - mcCollision.posZ());
-
-      histos.fill(HIST("particles/yields"), id);
-      for (int i = 0; i < Estimators::nEstimators; i++) {
-        if (!enabledEstimatorsArray[i]) {
+      if (particle.pdgCode() == o2::constants::physics::kK0Star892) {
+        auto kDaughters = particle.daughters_as<aod::McParticles>();
+        if (kDaughters.size() != noOfDaughters) {
           continue;
         }
-        hpt[i][id]->Fill(particle.pt(), nMult[i]);
-        hyield[i][id]->Fill(nMult[i]);
+
+        auto passkaon = false;
+        auto passpion = false;
+        for (const auto& kCurrentDaughter : kDaughters) {
+          if (!kCurrentDaughter.isPhysicalPrimary()) {
+            continue;
+          }
+
+          if (std::abs(kCurrentDaughter.pdgCode()) == PDG_t::kKPlus) {
+            passkaon = true;
+          } else if (std::abs(kCurrentDaughter.pdgCode()) == PDG_t::kPiPlus) {
+            passpion = true;
+          }
+        }
+        if (passkaon && passpion) {
+          histos.fill(HIST("particles/vtx/x"), particle.vx());
+          histos.fill(HIST("particles/vtx/y"), particle.vy());
+          histos.fill(HIST("particles/vtx/z"), particle.vz() - mcCollision.posZ());
+
+          histos.fill(HIST("particles/yields"), id);
+          for (int i = 0; i < Estimators::nEstimators; i++) {
+            if (!enabledEstimatorsArray[i]) {
+              continue;
+            }
+            hpt[i][id]->Fill(particle.pt(), nMult[i]);
+            hyield[i][id]->Fill(nMult[i]);
+          }
+        }
+      } else if (particle.pdgCode() == o2::constants::physics::kPhi) {
+        auto kDaughters = particle.daughters_as<aod::McParticles>();
+        if (kDaughters.size() != noOfDaughters) {
+          continue;
+        }
+
+        auto passkaonPos = false;
+        auto passkaonNeg = false;
+        for (const auto& kCurrentDaughter : kDaughters) {
+          if (!kCurrentDaughter.isPhysicalPrimary()) {
+            continue;
+          }
+
+          if (kCurrentDaughter.pdgCode() == PDG_t::kKPlus) {
+            passkaonPos = true;
+          } else if (kCurrentDaughter.pdgCode() == PDG_t::kKMinus) {
+            passkaonNeg = true;
+          }
+        }
+        if (passkaonPos && passkaonNeg) {
+          histos.fill(HIST("particles/vtx/x"), particle.vx());
+          histos.fill(HIST("particles/vtx/y"), particle.vy());
+          histos.fill(HIST("particles/vtx/z"), particle.vz() - mcCollision.posZ());
+
+          histos.fill(HIST("particles/yields"), id);
+          for (int i = 0; i < Estimators::nEstimators; i++) {
+            if (!enabledEstimatorsArray[i]) {
+              continue;
+            }
+            hpt[i][id]->Fill(particle.pt(), nMult[i]);
+            hyield[i][id]->Fill(nMult[i]);
+          }
+        }
+      } else {
+        if (!particle.isPhysicalPrimary()) {
+          continue;
+        }
+        histos.fill(HIST("particles/vtx/x"), particle.vx());
+        histos.fill(HIST("particles/vtx/y"), particle.vy());
+        histos.fill(HIST("particles/vtx/z"), particle.vz() - mcCollision.posZ());
+
+        histos.fill(HIST("particles/yields"), id);
+        for (int i = 0; i < Estimators::nEstimators; i++) {
+          if (!enabledEstimatorsArray[i]) {
+            continue;
+          }
+          hpt[i][id]->Fill(particle.pt(), nMult[i]);
+          hyield[i][id]->Fill(nMult[i]);
+        }
       }
     }
   }
