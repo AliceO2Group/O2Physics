@@ -492,7 +492,7 @@ struct HfTaskPtFlucCharmHadrons {
   // D0 with ML
   void processD0Ml(Colls::iterator const& collision,
                    CandD0DataWMl const& /*candidatesD0*/,
-                   TracksWithExtra const& tracks)
+                   soa::Filtered<TracksWithExtra> const& tracks)
   {
     auto candsD0ToPiKWMl = selectedD0ToPiKWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     auto candsD0ToKPiWMl = selectedD0ToKPiWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
@@ -504,7 +504,7 @@ struct HfTaskPtFlucCharmHadrons {
   // Dplus with ML
   void processDplusMl(Colls::iterator const& collision,
                       CandDplusDataWMl const& candidatesDplus,
-                      TracksWithExtra const& tracks)
+                      soa::Filtered<TracksWithExtra> const& tracks)
   {
     runPtFlucAnalysis<DecayChannel::DplusToPiKPi>(collision, candidatesDplus, tracks);
   }
