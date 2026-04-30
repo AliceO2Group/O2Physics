@@ -1166,9 +1166,9 @@ struct FlowGfwOmegaXi {
           continue;
         if (v0negdau.pt() < trkQualityOpts.cfgCutPtDauMin.value || v0negdau.pt() > trkQualityOpts.cfgCutPtDauMax.value)
           continue;
-        if (std::fabs(v0posdau.eta()) < trkQualityOpts.cfgCutEta.value)
+        if (std::fabs(v0posdau.eta()) > trkQualityOpts.cfgCutEta.value)
           continue;
-        if (std::fabs(v0negdau.eta()) < trkQualityOpts.cfgCutEta.value)
+        if (std::fabs(v0negdau.eta()) > trkQualityOpts.cfgCutEta.value)
           continue;
 
         // fill QA
@@ -1394,11 +1394,11 @@ struct FlowGfwOmegaXi {
           continue;
         if (negdau.pt() < trkQualityOpts.cfgCutPtDauMin.value || negdau.pt() > trkQualityOpts.cfgCutPtDauMax.value)
           continue;
-        if (std::fabs(bachelor.eta()) < trkQualityOpts.cfgCutEta.value)
+        if (std::fabs(bachelor.eta()) > trkQualityOpts.cfgCutEta.value)
           continue;
-        if (std::fabs(posdau.eta()) < trkQualityOpts.cfgCutEta.value)
+        if (std::fabs(posdau.eta()) > trkQualityOpts.cfgCutEta.value)
           continue;
-        if (std::fabs(negdau.eta()) < trkQualityOpts.cfgCutEta.value)
+        if (std::fabs(negdau.eta()) > trkQualityOpts.cfgCutEta.value)
           continue;
 
         // Omega and antiOmega
