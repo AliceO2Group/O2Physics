@@ -64,14 +64,14 @@ class AnalysisCut : public TNamed
     float fDep2High;   // upper limit for the second dependent var
     bool fDep2Exclude; // if true, then use the dependent variable range as exclusion
 
-    TF1* fFuncLow;  // function for the lower limit cut
-    TF1* fFuncHigh; // function for the upper limit cut
+    std::shared_ptr<TF1> fFuncLow;  // function for the lower limit cut
+    std::shared_ptr<TF1> fFuncHigh; // function for the upper limit cut
   };
 
  protected:
   std::vector<CutContainer> fCuts;
 
-  ClassDef(AnalysisCut, 1);
+  ClassDef(AnalysisCut, 2);
 };
 
 //____________________________________________________________________________
@@ -85,7 +85,7 @@ void AnalysisCut::AddCut(int var, T1 cutLow, T2 cutHigh, bool exclude,
   //
   CutContainer cut = {};
 
-  if constexpr (std::is_same_v<T1, TF1*>) {
+  if constexpr (std::is_same_v<T1, std::shared_ptr<TF1>>) {
     if (dependentVar < 0) {
       return;
     }
@@ -95,7 +95,7 @@ void AnalysisCut::AddCut(int var, T1 cutLow, T2 cutHigh, bool exclude,
     cut.fFuncLow = nullptr;
     cut.fLow = cutLow;
   }
-  if constexpr (std::is_same_v<T2, TF1*>) {
+  if constexpr (std::is_same_v<T2, std::shared_ptr<TF1>>) {
     if (dependentVar < 0) {
       return;
     }

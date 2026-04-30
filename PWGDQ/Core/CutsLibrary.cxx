@@ -4263,14 +4263,14 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (!nameStr.compare("eventStandardSel8PbPbMultCorr")) {
-    TF1* fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
+    std::shared_ptr<TF1> fMultPVCutLow = std::make_shared<TF1>("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
     fMultPVCutLow->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
-    TF1* fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
+    std::shared_ptr<TF1> fMultPVCutHigh = std::make_shared<TF1>("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
     fMultPVCutHigh->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
 
-    TF1* fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
+    std::shared_ptr<TF1> fMultCutLow = std::make_shared<TF1>("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
     fMultCutLow->SetParameters(1654.46, -47.2379, 0.449833, -0.0014125, 150.773, -3.67334, 0.0530503, -0.000614061, 3.15956e-06);
-    TF1* fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
+    std::shared_ptr<TF1> fMultCutHigh = std::make_shared<TF1>("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
     fMultCutHigh->SetParameters(1654.46, -47.2379, 0.449833, -0.0014125, 150.773, -3.67334, 0.0530503, -0.000614061, 3.15956e-06);
     cut->AddCut(VarManager::kVtxNcontribReal, fMultPVCutLow, fMultPVCutHigh, false, VarManager::kCentFT0C, 0.0, 100.0, false);
     cut->AddCut(VarManager::kMultA, fMultCutLow, fMultCutHigh, false, VarManager::kCentFT0C, 0.0, 100.0, false);
@@ -5096,10 +5096,10 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (!nameStr.compare("electronPrimary_dca3sigma") || !nameStr.compare("electronPrimary_dca7sigma")) {
-    TF1* fDCAxyresLow = new TF1("fDCAxyresLow", "[0] + [1] * pow(x, -[2])", 0.1, 1000.);
-    TF1* fDCAzresLow = new TF1("fDCAzresLow", "[0] + [1] * pow(x, -[2])", 0.1, 1000.);
-    TF1* fDCAxyresUp = new TF1("fDCAxyresUp", "[0] + [1] * pow(x, -[2])", 0.1, 1000.);
-    TF1* fDCAzresUp = new TF1("fDCAzresUp", "[0] + [1] * pow(x, -[2])", 0.1, 1000.);
+    std::shared_ptr<TF1> fDCAxyresLow = std::make_shared<TF1>("fDCAxyresLow", "[0] + [1] * pow(x, -[2])", 0.1, 1000.);
+    std::shared_ptr<TF1> fDCAzresLow = std::make_shared<TF1>("fDCAzresLow", "[0] + [1] * pow(x, -[2])", 0.1, 1000.);
+    std::shared_ptr<TF1> fDCAxyresUp = std::make_shared<TF1>("fDCAxyresUp", "[0] + [1] * pow(x, -[2])", 0.1, 1000.);
+    std::shared_ptr<TF1> fDCAzresUp = std::make_shared<TF1>("fDCAzresUp", "[0] + [1] * pow(x, -[2])", 0.1, 1000.);
 
     if (!nameStr.compare("electronPrimary_dca3sigma")) {
       // DCAxy and DCAz 3 sigma cut. DCA resolution vs pt extracted from fits of Users/m/mfaggin/test/inputsTrackTuner/pp2024/pass1_minBias/vsPhi (used for the track tuner)
@@ -5490,7 +5490,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (!nameStr.compare("electronPID1") || !nameStr.compare("electronPID1shiftUp") || !nameStr.compare("electronPID1shiftDown") || !nameStr.compare("electronPID2") || !nameStr.compare("electronPID3")) {
-    TF1* cutLow1 = new TF1("cutLow1", "pol1", 0., 10.);
+    std::shared_ptr<TF1> cutLow1 = std::make_shared<TF1>("cutLow1", "pol1", 0., 10.);
     if (!nameStr.compare("electronPID1")) {
       cutLow1->SetParameters(130., -40.0);
       cut->AddCut(VarManager::kTPCsignal, 70., 100.);
@@ -6045,50 +6045,50 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (!nameStr.compare("tpc_pion_rejection")) {
-    TF1* f1maxPi = new TF1("f1maxPi", "[0]+[1]*x", 0, 10);
+    std::shared_ptr<TF1> f1maxPi = std::make_shared<TF1>("f1maxPi", "[0]+[1]*x", 0, 10);
     f1maxPi->SetParameters(85, -50);
     cut->AddCut(VarManager::kTPCsignal, 70, f1maxPi, true, VarManager::kPin, 0.0, 0.4, false);
     return cut;
   }
 
   if (!nameStr.compare("tpc_pion_band_rejection")) {
-    TF1* f1minPi = new TF1("f1minPi", "[0]+[1]*log(x)", 0, 10);
+    std::shared_ptr<TF1> f1minPi = std::make_shared<TF1>("f1minPi", "[0]+[1]*log(x)", 0, 10);
     f1minPi->SetParameters(-115, -90);
-    TF1* f1maxPi = new TF1("f1maxPi", "[0]+[1]*log(x)", 0, 10);
+    std::shared_ptr<TF1> f1maxPi = std::make_shared<TF1>("f1maxPi", "[0]+[1]*log(x)", 0, 10);
     f1maxPi->SetParameters(-70, -90);
     cut->AddCut(VarManager::kTPCsignal, f1minPi, f1maxPi, true, VarManager::kPin, 0.05, 0.3, false);
     return cut;
   }
 
   if (!nameStr.compare("tpc_pion_muon_band_rejection")) {
-    TF1* f1minPi = new TF1("f1minPi", "[0]+exp([1]*x+[2])", 0, 10);
+    std::shared_ptr<TF1> f1minPi = std::make_shared<TF1>("f1minPi", "[0]+exp([1]*x+[2])", 0, 10);
     f1minPi->SetParameters(37, -18, 5.5);
-    TF1* f1maxPi = new TF1("f1maxPi", "[0]+exp([1]*x+[2])", 0, 10);
+    std::shared_ptr<TF1> f1maxPi = std::make_shared<TF1>("f1maxPi", "[0]+exp([1]*x+[2])", 0, 10);
     f1maxPi->SetParameters(67, -17, 5.9);
     cut->AddCut(VarManager::kTPCsignal, f1minPi, f1maxPi, true, VarManager::kPin, 0.0, 10, false);
     return cut;
   }
 
   if (!nameStr.compare("tpc_pion_rejection_highp")) {
-    TF1* f1minPi = new TF1("f1minPi", "[0]+[1]*x", 0, 10);
+    std::shared_ptr<TF1> f1minPi = std::make_shared<TF1>("f1minPi", "[0]+[1]*x", 0, 10);
     f1minPi->SetParameters(65, 4.);
     cut->AddCut(VarManager::kTPCsignal, f1minPi, 110., false, VarManager::kPin, 0.0, 10, false);
     return cut;
   }
 
   if (!nameStr.compare("tpc_kaon_rejection")) {
-    TF1* f1minKa = new TF1("f1minKa", "[0]+exp([1]*x+[2])", 0, 10);
+    std::shared_ptr<TF1> f1minKa = std::make_shared<TF1>("f1minKa", "[0]+exp([1]*x+[2])", 0, 10);
     f1minKa->SetParameters(37, -4, 5.6);
-    TF1* f1maxKa = new TF1("f1maxKa", "[0]+exp([1]*x+[2])", 0, 10);
+    std::shared_ptr<TF1> f1maxKa = std::make_shared<TF1>("f1maxKa", "[0]+exp([1]*x+[2])", 0, 10);
     f1maxKa->SetParameters(60, -4.1, 6.);
     cut->AddCut(VarManager::kTPCsignal, f1minKa, f1maxKa, true, VarManager::kPin, 0.0, 10.0, false);
     return cut;
   }
 
   if (!nameStr.compare("tpc_proton_rejection")) {
-    TF1* f1minPr = new TF1("f1minPr", "[0]+exp([1]*x+[2])", 0, 10);
+    std::shared_ptr<TF1> f1minPr = std::make_shared<TF1>("f1minPr", "[0]+exp([1]*x+[2])", 0, 10);
     f1minPr->SetParameters(37, -2.6, 6.1);
-    TF1* f1maxPr = new TF1("f1maxPr", "[0]+exp([1]*x+[2])", 0, 10);
+    std::shared_ptr<TF1> f1maxPr = std::make_shared<TF1>("f1maxPr", "[0]+exp([1]*x+[2])", 0, 10);
     f1maxPr->SetParameters(60, -2.4, 6.2);
     cut->AddCut(VarManager::kTPCsignal, f1minPr, f1maxPr, true, VarManager::kPin, 0.0, 10, false);
     return cut;
@@ -6578,9 +6578,9 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   if (!nameStr.compare("pairDalitz1")) {
     cut->AddCut(VarManager::kMass, 0.0, 0.015, false, VarManager::kPt, 0., 1.);
     cut->AddCut(VarManager::kMass, 0.0, 0.035, false, VarManager::kPt, 0., 1., true);
-    TF1* fcutHigh = new TF1("f1", "[0] - [0]/[1]*x", -1.5, 1.5);
+    std::shared_ptr<TF1> fcutHigh = std::make_shared<TF1>("f1", "[0] - [0]/[1]*x", -1.5, 1.5);
     fcutHigh->SetParameters(0.6, 0.12);
-    TF1* fcutLow = new TF1("f2", "-[0] + [0]/[1]*x", -1.5, 1.5);
+    std::shared_ptr<TF1> fcutLow = std::make_shared<TF1>("f2", "-[0] + [0]/[1]*x", -1.5, 1.5);
     fcutLow->SetParameters(0.6, 0.12);
     cut->AddCut(VarManager::kPsiPair, fcutLow, fcutHigh, true, VarManager::kDeltaPhiPair, 0, 0.12);
     return cut;
@@ -6989,7 +6989,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (!nameStr.compare("pairLxyProjected3sigmaLambdacCand")) {
-    TF1* f1minLxyProjected = new TF1("f1minLxyProjected", "[0]+[1]*x", 0., 20.);
+    std::shared_ptr<TF1> f1minLxyProjected = std::make_shared<TF1>("f1minLxyProjected", "[0]+[1]*x", 0., 20.);
     f1minLxyProjected->SetParameters(0.0065, -0.00023);
     cut->AddCut(VarManager::kVertexingLxyProjected, f1minLxyProjected, 1., false, VarManager::kPt, 0., 20.);
     return cut;
@@ -7488,8 +7488,8 @@ AnalysisCut* o2::aod::dqcuts::ParseJSONAnalysisCut(T cut, const char* cutName)
       bool depCut2Exclude = (addcut.HasMember("depCut2Exclude") ? addcut.FindMember("depCut2Exclude")->value.GetBool() : false);
       LOG(info) << "depCut2Exclude " << depCut2Exclude;
 
-      TF1* cutLowFunc = nullptr;
-      TF1* cutHighFunc = nullptr;
+      std::shared_ptr<TF1> cutLowFunc = nullptr;
+      std::shared_ptr<TF1> cutHighFunc = nullptr;
       double cutLowNumber = 0.0;
       double cutHighNumber = 0.0;
       if (cutLow_isNumber) {
@@ -7497,7 +7497,7 @@ AnalysisCut* o2::aod::dqcuts::ParseJSONAnalysisCut(T cut, const char* cutName)
         LOG(info) << "cutLowNumber " << cutLowNumber;
       } else {
         auto& cutLow = addcut.FindMember("cutLow")->value;
-        cutLowFunc = new TF1(cutLow.FindMember("funcName")->value.GetString(), cutLow.FindMember("funcBody")->value.GetString(),
+        cutLowFunc = std::make_shared<TF1>(cutLow.FindMember("funcName")->value.GetString(), cutLow.FindMember("funcBody")->value.GetString(),
                              cutLow.FindMember("xLow")->value.GetDouble(), cutLow.FindMember("xHigh")->value.GetDouble());
         LOG(info) << "cutLowFunc " << cutLow.FindMember("funcName")->value.GetString() << ", " << cutLow.FindMember("funcBody")->value.GetString()
                   << ", " << cutLow.FindMember("xLow")->value.GetDouble() << ", " << cutLow.FindMember("xHigh")->value.GetDouble();
@@ -7507,7 +7507,7 @@ AnalysisCut* o2::aod::dqcuts::ParseJSONAnalysisCut(T cut, const char* cutName)
         LOG(info) << "cutHighNumber " << cutHighNumber;
       } else {
         auto& cutHigh = addcut.FindMember("cutHigh")->value;
-        cutHighFunc = new TF1(cutHigh.FindMember("funcName")->value.GetString(), cutHigh.FindMember("funcBody")->value.GetString(),
+        cutHighFunc = std::make_shared<TF1>(cutHigh.FindMember("funcName")->value.GetString(), cutHigh.FindMember("funcBody")->value.GetString(),
                               cutHigh.FindMember("xLow")->value.GetDouble(), cutHigh.FindMember("xHigh")->value.GetDouble());
         LOG(info) << "cutHighFunc " << cutHigh.FindMember("funcName")->value.GetString() << ", " << cutHigh.FindMember("funcBody")->value.GetString()
                   << ", " << cutHigh.FindMember("xLow")->value.GetDouble() << ", " << cutHigh.FindMember("xHigh")->value.GetDouble();
