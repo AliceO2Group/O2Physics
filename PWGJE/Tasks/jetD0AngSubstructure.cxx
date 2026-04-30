@@ -58,6 +58,7 @@ namespace o2::aod
 /*
 // Jet-related quantities
 */
+
 DECLARE_SOA_COLUMN(ExpJetHfDist, expJetHfDist, float);
 DECLARE_SOA_COLUMN(ExpJetPt, expJetPt, float);
 DECLARE_SOA_COLUMN(ExpJetEta, expJetEta, float);
@@ -65,6 +66,8 @@ DECLARE_SOA_COLUMN(ExpJetPhi, expJetPhi, float);
 DECLARE_SOA_COLUMN(ExpJetNConst, expJetNConst, int);
 DECLARE_SOA_COLUMN(ExpJetAng, expJetAng, float);
 // D0 candidate quantities
+DECLARE_SOA_COLUMN(ExpHfZParallel, expHfZParallel, float);
+
 DECLARE_SOA_COLUMN(ExpHfPt, expHfPt, float);
 DECLARE_SOA_COLUMN(ExpHfEta, expHfEta, float);
 DECLARE_SOA_COLUMN(ExpHfPhi, expHfPhi, float);
@@ -86,6 +89,8 @@ DECLARE_SOA_COLUMN(McpJetPhi, mcpJetPhi, float);
 DECLARE_SOA_COLUMN(McpJetNConst, mcpJetNConst, float);
 DECLARE_SOA_COLUMN(McpJetAng, mcpJetAng, float);
 // D0 candidates (Heavy Flavour)
+DECLARE_SOA_COLUMN(McpHfZParallel, mcpHfZParallel, float);
+
 DECLARE_SOA_COLUMN(McpHfPt, mcpHfPt, float);
 DECLARE_SOA_COLUMN(McpHfEta, mcpHfEta, float);
 DECLARE_SOA_COLUMN(McpHfPhi, mcpHfPhi, float);
@@ -105,6 +110,8 @@ DECLARE_SOA_COLUMN(McdJetPhi, mcdJetPhi, float);
 DECLARE_SOA_COLUMN(McdJetNConst, mcdJetNConst, float);
 DECLARE_SOA_COLUMN(McdJetAng, mcdJetAng, float);
 // D0 candidates (Heavy Flavour)
+DECLARE_SOA_COLUMN(McdHfZParallel, mcdHfZParallel, float);
+
 DECLARE_SOA_COLUMN(McdHfPt, mcdHfPt, float);
 DECLARE_SOA_COLUMN(McdHfEta, mcdHfEta, float);
 DECLARE_SOA_COLUMN(McdHfPhi, mcdHfPhi, float);
@@ -130,6 +137,7 @@ DECLARE_SOA_TABLE(EXPJetObjTable, "AOD", "EXPJETOBJTABLE",
                   ExpJetPhi,
                   ExpJetNConst,
                   ExpJetAng,
+                  ExpHfZParallel,
                   ExpHfPt,
                   ExpHfEta,
                   ExpHfPhi,
@@ -145,6 +153,7 @@ DECLARE_SOA_TABLE(MCPJetObjTable, "AOD", "MCPJETOBJTABLE",
                   McpJetPhi,
                   McpJetNConst,
                   McpJetAng,
+                  McpHfZParallel,
                   McpHfPt,
                   McpHfEta,
                   McpHfPhi,
@@ -158,6 +167,7 @@ DECLARE_SOA_TABLE(MCDJetObjTable, "AOD", "MCDJETOBJTABLE",
                   McdJetPhi,
                   McdJetNConst,
                   McdJetAng,
+                  McdHfZParallel,
                   McdHfPt,
                   McdHfEta,
                   McdHfPhi,
@@ -177,6 +187,7 @@ DECLARE_SOA_TABLE(MatchJetDistanceTable, "AOD", "MATCHTABLE",
                   McpJetPhi,
                   McpJetNConst,
                   McpJetAng,
+                  McpHfZParallel,
                   McpHfPt,
                   McpHfEta,
                   McpHfPhi,
@@ -188,6 +199,7 @@ DECLARE_SOA_TABLE(MatchJetDistanceTable, "AOD", "MATCHTABLE",
                   McdJetPhi,
                   McdJetNConst,
                   McdJetAng,
+                  McdHfZParallel,
                   McdHfPt,
                   McdHfEta,
                   McdHfPhi,
@@ -500,11 +512,21 @@ struct JetD0AngSubstructure {
         registry.fill(HIST(histnames::ex_hfl_phi), d0Candidate.phi()); // add more axis
 
         // filling table
-        objJetTable(axisDistance, jet.pt(), jet.eta(), jet.phi(),
-                    jet.template tracks_as<aod::JetTracks>().size(), angularity,
-                    d0Candidate.pt(), d0Candidate.eta(), d0Candidate.phi(),
-                    d0Candidate.m(), d0Candidate.y(), d0Candidate.mlScores()[0],
-                    d0Candidate.mlScores()[1], d0Candidate.mlScores()[2]);
+        objJetTable(axisDistance,
+                    jet.pt(),
+                    jet.eta(),
+                    jet.phi(),
+                    jet.template tracks_as<aod::JetTracks>().size(),
+                    angularity,
+                    zParallel,
+                    d0Candidate.pt(),
+                    d0Candidate.eta(),
+                    d0Candidate.phi(),
+                    d0Candidate.m(),
+                    d0Candidate.y(),
+                    d0Candidate.mlScores()[0],
+                    d0Candidate.mlScores()[1],
+                    d0Candidate.mlScores()[2]);
 
         break; // get out of candidates' loop after first HF particle is found
                // in jet
@@ -585,6 +607,11 @@ struct JetD0AngSubstructure {
             selectedAs = -1;
           }
 
+          TVector3 mcdjetvector(mcdjet.px(), mcdjet.py(), mcdjet.pz());
+          TVector3 mcdcandvector(mcdd0cand.px(), mcdd0cand.py(), mcdd0cand.pz());
+
+          float mcdzparallel = (mcdjetvector * mcdcandvector) / (mcdjetvector * mcdjetvector);
+
           float angularity = jetCalculateAngularityMCD(mcdjet, tracks);
           registry.fill(HIST(histnames::mc_eff_det_jet_pt), mcdjet.pt());
           registry.fill(HIST(histnames::mc_eff_det_jet_eta), mcdjet.eta());
@@ -603,6 +630,7 @@ struct JetD0AngSubstructure {
             mcdjet.phi(),
             mcdjet.template tracks_as<aod::JetTracks>().size(), // detector level jet
             angularity,
+            mcdzparallel,
             mcdd0cand.pt(),
             mcdd0cand.eta(), mcdd0cand.phi(),
             mcdd0cand.m(), mcdd0cand.y(),
@@ -630,6 +658,11 @@ struct JetD0AngSubstructure {
         if (mcpjet.has_matchedJetCand()) {
           registry.fill(HIST(histnames::mc_eff_jet), getValFromBin(BIN_MC_JETCNTR::ParticleLevelJetWithMatchedCandidate));
         }
+        TVector3 mcpjetvector(mcpjet.px(), mcpjet.py(), mcpjet.pz());
+        TVector3 mcpcandvector(mcpd0cand.px(), mcpd0cand.py(), mcpd0cand.pz());
+
+        float mcpzparallel = (mcpjetvector * mcpcandvector) / (mcpjetvector * mcpjetvector);
+
         float angularity = jetCalculateAngularityMCP(mcpjet, particles);
 
         registry.fill(HIST(histnames::mc_eff_par_jet_pt), mcpjet.pt());
@@ -649,6 +682,7 @@ struct JetD0AngSubstructure {
                     mcpjet.phi(),
                     mcpjet.template tracks_as<aod::JetParticles>().size(), // particle level jet
                     angularity,
+                    mcpzparallel,
                     mcpd0cand.pt(),
                     mcpd0cand.eta(),
                     mcpd0cand.phi(),
@@ -693,6 +727,10 @@ struct JetD0AngSubstructure {
         // obtain leading HF particle in jet
         auto mcpcand = mcpjet.template candidates_first_as<CandidatesMCP>();
 
+        TVector3 mcpjetvector(mcpjet.px(), mcpjet.py(), mcpjet.pz());
+        TVector3 mcpcandvector(mcpcand.px(), mcpcand.py(), mcpcand.pz());
+        float mcpzparallel = (mcpjetvector * mcpcandvector) / (mcpjetvector * mcpjetvector);
+
         if (mcpjet.has_matchedJetCand()) {
           registry.fill(HIST(histnames::mc_jet), getValFromBin(BIN_MC_JETCNTR::ParticleLevelJetWithMatchedCandidate));
 
@@ -736,6 +774,11 @@ struct JetD0AngSubstructure {
               selectedAs = -1;
             }
 
+            TVector3 mcdjetvector(mcdjet.px(), mcdjet.py(), mcdjet.pz());
+            TVector3 mcdcandvector(mcdcand.px(), mcdcand.py(), mcdcand.pz());
+
+            float mcdzparallel = (mcdjetvector * mcdcandvector) / (mcdjetvector * mcdjetvector);
+
             float mcpAngularity = jetCalculateAngularityMCP(mcpjet, jetparticles);
             float mcdAngularity = jetCalculateAngularityMCD(mcdjet, jettracks);
 
@@ -769,6 +812,7 @@ struct JetD0AngSubstructure {
                           mcpjet.phi(),
                           mcpjet.template tracks_as<aod::JetParticles>().size(), // particle level jet
                           mcpAngularity,
+                          mcpzparallel,
                           mcpcand.pt(),
                           mcpcand.eta(),
                           mcpcand.phi(),
@@ -780,6 +824,7 @@ struct JetD0AngSubstructure {
                           mcdjet.phi(),
                           mcdjet.template tracks_as<aod::JetTracks>().size(), // detector level jet
                           mcdAngularity,
+                          mcdzparallel,
                           mcdcand.pt(),
                           mcdcand.eta(),
                           mcdcand.phi(),
@@ -803,11 +848,13 @@ struct JetD0AngSubstructure {
                         mcpjet.phi(),
                         mcpjet.template tracks_as<aod::JetParticles>().size(), // particle level jet
                         mcpAngularity,
+                        mcpzparallel,
                         mcpcand.pt(),
                         mcpcand.eta(),
                         mcpcand.phi(),
                         mcpcand.y(),
                         (mcpcand.originMcGen() == RecoDecay::OriginType::Prompt), // particle level HF
+                        -2,
                         -2,
                         -2,
                         -2,
