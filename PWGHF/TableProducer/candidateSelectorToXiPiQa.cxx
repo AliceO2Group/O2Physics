@@ -699,20 +699,6 @@ struct HfCandidateSelectorToXiPiQa {
         statusInvMassCharmBaryon = true;
       }
 
-      // ML BDT selection
-      if (applyMl) {
-        bool isSelectedMlXic0 = false;
-        std::vector<float> inputFeaturesXic0 = {};
-        if constexpr (svReco == doDcaFitter) {
-          inputFeaturesXic0 = hfMlResponseDca.getInputFeatures(candidate, trackPiFromLam, trackPiFromCasc, trackPiFromCharm);
-          isSelectedMlXic0 = hfMlResponseDca.isSelectedMl(inputFeaturesXic0, ptCandXic0, outputMlXic0ToXiPi);
-        } else {
-          inputFeaturesXic0 = hfMlResponseKf.getInputFeatures(candidate, trackPiFromLam, trackPiFromCasc, trackPiFromCharm);
-          isSelectedMlXic0 = hfMlResponseKf.isSelectedMl(inputFeaturesXic0, ptCandXic0, outputMlXic0ToXiPi);
-        }
-        hfMlToXiPi(outputMlXic0ToXiPi);
-      }
-
       // Fill in selection result
       if constexpr (svReco == doDcaFitter) {
         hfSelToXiPi(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda, statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored,
@@ -727,6 +713,25 @@ struct HfCandidateSelectorToXiPiQa {
         hfSelToXiPiKf(resultSelections,
                       trackPiFromCharm.tpcNSigmaPi(), trackPiFromCasc.tpcNSigmaPi(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
                       trackPiFromCharm.tofNSigmaPi(), trackPiFromCasc.tofNSigmaPi(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
+      }
+
+      // ML BDT selection if required
+      if (applyMl) {
+        bool isSelectedMlXic0 = false;
+        std::vector<float> inputFeaturesXic0 = {};
+        if constexpr (svReco == doDcaFitter) {
+          inputFeaturesXic0 = hfMlResponseDca.getInputFeatures(candidate, trackPiFromLam, trackPiFromCasc, trackPiFromCharm);
+          isSelectedMlXic0 = hfMlResponseDca.isSelectedMl(inputFeaturesXic0, ptCandXic0, outputMlXic0ToXiPi);
+        } else {
+          inputFeaturesXic0 = hfMlResponseKf.getInputFeatures(candidate, trackPiFromLam, trackPiFromCasc, trackPiFromCharm);
+          isSelectedMlXic0 = hfMlResponseKf.isSelectedMl(inputFeaturesXic0, ptCandXic0, outputMlXic0ToXiPi);
+        }
+
+        hfMlToXiPi(outputMlXic0ToXiPi);
+
+        if (!isSelectedMlXic0) {
+          continue;    
+        }
       }
 
       // Fill in invariant mass histogram
