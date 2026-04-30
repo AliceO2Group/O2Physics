@@ -1705,12 +1705,12 @@ struct Kstarqa {
   // void processGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
   {
     rEventSelection.fill(HIST("eventsCheckGen"), 0.5);
-    
+
     if (configGp.isApplyMCGenVz && std::abs(mcCollision.posZ()) > configGp.cutzvertex) {
       return;
     }
     rEventSelection.fill(HIST("eventsCheckGen"), 1.5);
-    
+
     if (configGp.isINELgt0Gen && !mcCollision.isInelGt0()) {
       return;
     }
@@ -2022,23 +2022,23 @@ struct Kstarqa {
   void processRec(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const&, EventMCGenerated const&)
   {
     rEventSelection.fill(HIST("eventsCheckRec"), 0.5);
-    
+
     if (!collision.has_mcCollision()) {
       return;
     }
     rEventSelection.fill(HIST("eventsCheckRec"), 1.5);
-    
+
     double multiplicityRec = -1.0;
     // multiplicityRec = collision.mcCollision_as<EventMCGenerated>().centFT0M();
     const auto& mcCollisionRec = collision.mcCollision_as<EventMCGenerated>();
     multiplicityRec = mcCollisionRec.centFT0M();
-    
+
     if (configGp.isINELgt0 && !collision.isInelGt0()) {
       return;
     }
     rEventSelection.fill(HIST("eventsCheckRec"), 2.5);
     // multiplicity = collision.centFT0M();
-    
+
     if (cSelectMultEstimator == kFT0M) {
       multiplicity = collision.centFT0M();
     } else if (cSelectMultEstimator == kFT0A) {
@@ -2050,10 +2050,10 @@ struct Kstarqa {
     } else {
       multiplicity = collision.centFT0M(); // default
     }
-    
+
     hInvMass.fill(HIST("hAllRecCollisions"), multiplicity);
     hInvMass.fill(HIST("hAllRecCollisionsCalib"), multiplicityRec);
-    
+
     if (!selectionEvent(collision, true)) { // fill MC event cut histogram
       return;
     }
