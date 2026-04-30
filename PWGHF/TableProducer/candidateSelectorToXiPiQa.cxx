@@ -710,9 +710,6 @@ struct HfCandidateSelectorToXiPiQa {
           inputFeaturesXic0 = hfMlResponseKf.getInputFeatures(candidate, trackPiFromLam, trackPiFromCasc, trackPiFromCharm);
           isSelectedMlXic0 = hfMlResponseKf.isSelectedMl(inputFeaturesXic0, ptCandXic0, outputMlXic0ToXiPi);
         }
-        if (!isSelectedMlXic0) {
-          continue;
-        }
         hfMlToXiPi(outputMlXic0ToXiPi);
       }
 

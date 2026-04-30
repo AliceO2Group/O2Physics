@@ -512,12 +512,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
 
   } // end of initialization
 
-  ////////////////////////////////////////////////////////////
-  //                                                        //
-  //         Candidate reconstruction with DCAFitter        //
-  //                                                        //
-  ////////////////////////////////////////////////////////////
-
   // template function for running charm baryon reconstruction with DCAFitter
   /// \brief centEstimator is for different centrality estimators
   /// \brief decayChannel is for different decay channels. 0 for XiczeroOmegaczeroToXiPi, 1 for OmegaczeroToOmegaPi, 2 for OmegaczeroToOmeagaK
@@ -962,10 +956,10 @@ struct HfCandidateCreatorXic0Omegac0Qa {
 
       bool isAnti = (bachTrack.signed1Pt() > 0 ? true : false);
 
-      KFParticle kfPos(kfTrack0, (isAnti ? pdgIdOfAntiV0DauPos : pdgIdOfV0DauPos));
-      KFParticle kfNeg(kfTrack1, (isAnti ? pdgIdOfAntiV0DauNeg : pdgIdOfV0DauNeg));
-      KFParticle kfBach(kfTrackBach, (isAnti ? pdgIdOfAntiBach : pdgIdOfBach));
-      KFParticle kfBachRej(kfTrackBach, (isAnti ? pdgIdOfAntiBach : pdgIdOfBach)); // Rej -> Used for Omegac0->OmegaPi only
+      KFParticle kfPos(kfTrack0, (isAnti ? -pdgIdOfV0DauNeg : pdgIdOfV0DauPos));
+      KFParticle kfNeg(kfTrack1, (isAnti ? -pdgIdOfV0DauPos : pdgIdOfV0DauNeg));
+      KFParticle kfBach(kfTrackBach, (isAnti ? -pdgIdOfBach : pdgIdOfBach));
+      KFParticle kfBachRej(kfTrackBach, (isAnti ? -pdgIdOfBach : pdgIdOfBach)); // Rej -> Used for Omegac0->OmegaPi only
 
       // ~~~~~~~Construct V0 with KF~~~~~~~
       const KFParticle* v0Daughters[2] = {&kfPos, &kfNeg};
@@ -1049,7 +1043,7 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       //~~~~~~~Construct Charm Baryon with KF~~~~~~~
       auto trackCharmBachelor = tracks.rawIteratorAt(cand.prong0Id());
       const KFPTrack kfTrackCharmBach = createKFPTrackFromTrack(trackCharmBachelor);
-      const KFParticle kfCharmBach(kfTrackCharmBach, (isAnti ? pdgIdOfAntiCharmBach : pdgIdOfCharmBach));
+      const KFParticle kfCharmBach(kfTrackCharmBach, (isAnti ? -pdgIdOfCharmBach : pdgIdOfCharmBach));
       const KFParticle* charmBaryonDaughters[2] = {&kfCharmBach, &kfCasc};
 
       KFParticle kfCharmBaryon;
