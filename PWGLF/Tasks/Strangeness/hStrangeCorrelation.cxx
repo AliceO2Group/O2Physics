@@ -23,6 +23,8 @@
 
 #include "PWGLF/DataModel/LFHStrangeCorrelationTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+#include "PWGLF/Utils/inelGt.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
@@ -121,6 +123,7 @@ struct HStrangeCorrelation {
     Configurable<bool> doMCassociation{"doMCassociation", false, "fill everything only for MC associated"};
     Configurable<bool> doTriggPhysicalPrimary{"doTriggPhysicalPrimary", false, "require physical primary for trigger particles"};
     Configurable<bool> applyNewMCSelection{"applyNewMCSelection", false, "apply new MC Generated selection"};
+    Configurable<bool> doSeparateFT0Prediction{"doSeparateFT0Prediction", false, "separate FT0M to FT0A and FT0C in prediction process"};
   } masterConfigurations;
 
   // master analysis switches
@@ -154,7 +157,8 @@ struct HStrangeCorrelation {
     ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt associated axis for histograms"};
     ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.0, 1.0, 2.0, 3.0, 100}, "pt associated axis for histograms"};
     ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
-    ConfigurableAxis axisMultCount{"axisMultCount", {VARIABLE_WIDTH, 0, 200, 400, 600, 800, 1000, 1400, 1800, 2300, 2800, 3300, 4000, 5000, 6000}, "Mixing bins - multiplicity"};
+    ConfigurableAxis axisMultCount{"axisMultCount", {300, -0.5, 299.5}, "Binning of the Multiplicity axis"};
+    ConfigurableAxis binsMultiplicity{"binsMultiplicity", {300, -0.5, 299.5}, "Binning of the Multiplicity axis"};
     ConfigurableAxis axisMassNSigma{"axisMassNSigma", {40, -2, 2}, "Axis for mass Nsigma"};
   } axesConfigurations;
 
@@ -253,7 +257,7 @@ struct HStrangeCorrelation {
   } cascadeSelections;
 
   struct : ConfigurableGroup {
-    std::string prefix = "`";
+    std::string prefix = "checks";
     // cascade selections
     // more cascade selections in PbPb
     // Configurable<float> bachBaryonCosPA{"bachBaryonCosPA", 0.9999, "Bachelor baryon CosPA"};
@@ -378,6 +382,7 @@ struct HStrangeCorrelation {
 
   static constexpr int AssocParticleTypes = 9;         // K0S, Lambda, AntiLambda, Xi-, Xi+, Omega-, Omega+, Pion, Hadron
   static constexpr int AssocParticleTypesNoHadron = 8; // K0S, Lambda, AntiLambda, Xi-, Xi+, Omega-, Omega+, Pion
+  static constexpr int EstimatorsTypes = 3;            // FTOA, TF0C, FT0M
 
   /// Function to aid in calculating delta-phi
   /// \param phi1 first phi value
@@ -1882,7 +1887,24 @@ struct HStrangeCorrelation {
       histos.add("GeneratedWithPV/hAntiLambdaFromXiZero", "", kTH2F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta});
       histos.add("GeneratedWithPV/hAntiLambdaFromXiPlus", "", kTH2F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta});
     }
-
+    if (doprocessPrediction) {
+      histos.add("Prediction/hEventSelection", "hEventSelection", kTH1F, {{3, 0, 3}});
+      TString eventSelLabel[] = {"Read", "INELgt0", "|Z|<10"};
+      for (int i = 1; i <= histos.get<TH1>(HIST("Prediction/hEventSelection"))->GetNbinsX(); i++) {
+        histos.get<TH1>(HIST("Prediction/hEventSelection"))->GetXaxis()->SetBinLabel(i, eventSelLabel[i - 1]);
+      }
+      for (int i = 0; i < AssocParticleTypes; i++) {
+        if (TESTBIT(doCorrelation, i))
+          histos.add(fmt::format("Prediction/sameEvent/{}", Particlenames[i]).c_str(), "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+        if (TESTBIT(doCorrelation, i))
+          histos.add(fmt::format("Prediction/h{}", Particlenames[i]).c_str(), "", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
+      }
+      histos.add("Prediction/hTrigger", "Trigger Tracks", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
+      if (masterConfigurations.doSeparateFT0Prediction) {
+        histos.addClone("Prediction/sameEvent/", "Prediction/sameEventFT0A/");
+        histos.addClone("Prediction/sameEvent/", "Prediction/sameEventFT0C/");
+      }
+    }
     // visual inspection of sizes
     histos.print();
 
@@ -3226,6 +3248,139 @@ struct HStrangeCorrelation {
     if (masterConfigurations.doFullCorrelationStudy)
       fillCorrelationsCascade(triggerTracks, associatedCascades, true, true, collision.posX(), collision.posY(), collision.posZ(), cent, bField);
   }
+  void processPrediction(soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs, aod::McCentFT0As>::iterator const& mcCollision, aod::McParticles const& mcParticles)
+  {
+    std::vector<uint32_t> triggerIndices;
+    std::vector<std::vector<uint32_t>> associatedIndices;
+    std::vector<uint32_t> assocHadronIndices;
+    std::vector<uint32_t> piIndices;
+    std::vector<uint32_t> k0ShortIndices;
+    std::vector<uint32_t> lambdaIndices;
+    std::vector<uint32_t> antiLambdaIndices;
+    std::vector<uint32_t> xiMinusIndices;
+    std::vector<uint32_t> xiPlusIndices;
+    std::vector<uint32_t> omegaMinusIndices;
+    std::vector<uint32_t> omegaPlusIndices;
+
+    histos.fill(HIST("Prediction/hEventSelection"), 0.5);
+    if (masterConfigurations.selectINELgtZERO && !o2::pwglf::isINELgt0mc(mcParticles, pdgDB)) {
+      return;
+    }
+    histos.fill(HIST("Prediction/hEventSelection"), 1.5);
+    if (std::abs(mcCollision.posZ()) > masterConfigurations.zVertexCut) {
+      return;
+    }
+    histos.fill(HIST("Prediction/hEventSelection"), 2.5);
+    const float centMultFT0M = mcCollision.centFT0M();
+    const float centMultFT0A = mcCollision.centFT0A();
+    const float centMultFT0C = mcCollision.centFT0C();
+
+    int iteratorNum = -1;
+    for (auto const& mcParticle : mcParticles) {
+      iteratorNum = iteratorNum + 1;
+      double geta = mcParticle.eta();
+      double gpt = mcParticle.pt();
+      double gphi = mcParticle.phi();
+      if (std::abs(geta) > etaSel) {
+        continue;
+      }
+      if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus || std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus || std::abs(mcParticle.pdgCode()) == PDG_t::kProton || std::abs(mcParticle.pdgCode()) == PDG_t::kElectron || std::abs(mcParticle.pdgCode()) == PDG_t::kMuonMinus) {
+        if (!masterConfigurations.doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
+          triggerIndices.emplace_back(iteratorNum);
+          histos.fill(HIST("Prediction/hTrigger"), gpt, geta, gphi);
+        }
+        if (masterConfigurations.doCorrelationHadron) {
+          if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
+            assocHadronIndices.emplace_back(iteratorNum);
+            histos.fill(HIST("Prediction/hHadron"), gpt, geta, gphi);
+          }
+        }
+      }
+      if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
+        if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus && masterConfigurations.doCorrelationPion) {
+          piIndices.emplace_back(iteratorNum);
+          histos.fill(HIST("Prediction/hPion"), gpt, geta, gphi);
+        }
+        if (mcParticle.pdgCode() == PDG_t::kK0Short && masterConfigurations.doCorrelationK0Short) {
+          k0ShortIndices.emplace_back(iteratorNum);
+          histos.fill(HIST("Prediction/hK0Short"), gpt, geta, gphi);
+        }
+        if (mcParticle.pdgCode() == PDG_t::kLambda0 && masterConfigurations.doCorrelationLambda) {
+          lambdaIndices.emplace_back(iteratorNum);
+          histos.fill(HIST("Prediction/hLambda"), gpt, geta, gphi);
+        }
+        if (mcParticle.pdgCode() == PDG_t::kLambda0Bar && masterConfigurations.doCorrelationAntiLambda) {
+          antiLambdaIndices.emplace_back(iteratorNum);
+          histos.fill(HIST("Prediction/hAntiLambda"), gpt, geta, gphi);
+        }
+        if (mcParticle.pdgCode() == PDG_t::kXiMinus && masterConfigurations.doCorrelationXiMinus) {
+          xiMinusIndices.emplace_back(iteratorNum);
+          histos.fill(HIST("Prediction/hXiMinus"), gpt, geta, gphi);
+        }
+        if (mcParticle.pdgCode() == PDG_t::kXiPlusBar && masterConfigurations.doCorrelationXiPlus) {
+          xiPlusIndices.emplace_back(iteratorNum);
+          histos.fill(HIST("Prediction/hXiPlus"), gpt, geta, gphi);
+        }
+        if (mcParticle.pdgCode() == PDG_t::kOmegaMinus && masterConfigurations.doCorrelationOmegaMinus) {
+          omegaMinusIndices.emplace_back(iteratorNum);
+          histos.fill(HIST("Prediction/hOmegaMinus"), gpt, geta, gphi);
+        }
+        if (mcParticle.pdgCode() == PDG_t::kOmegaPlusBar && masterConfigurations.doCorrelationOmegaPlus) {
+          omegaPlusIndices.emplace_back(iteratorNum);
+          histos.fill(HIST("Prediction/hOmegaPlus"), gpt, geta, gphi);
+        }
+      }
+    }
+
+    associatedIndices.emplace_back(k0ShortIndices);
+    associatedIndices.emplace_back(lambdaIndices);
+    associatedIndices.emplace_back(antiLambdaIndices);
+    associatedIndices.emplace_back(xiMinusIndices);
+    associatedIndices.emplace_back(xiPlusIndices);
+    associatedIndices.emplace_back(omegaMinusIndices);
+    associatedIndices.emplace_back(omegaPlusIndices);
+    associatedIndices.emplace_back(piIndices);
+    associatedIndices.emplace_back(assocHadronIndices);
+    for (std::size_t iTrigger = 0; iTrigger < triggerIndices.size(); iTrigger++) {
+      auto triggerParticle = mcParticles.iteratorAt(triggerIndices[iTrigger]);
+      // check range of trigger particle
+      if (triggerParticle.pt() > axisRanges[3][1] || triggerParticle.pt() < axisRanges[3][0]) {
+        continue;
+      }
+      double getatrigger = triggerParticle.eta();
+      double gphitrigger = triggerParticle.phi();
+      double pttrigger = triggerParticle.pt();
+      auto const& mother = triggerParticle.mothers_first_as<aod::McParticles>();
+      auto globalIndex = mother.globalIndex();
+      static_for<0, 8>([&](auto i) { // associated loop
+        constexpr int Index = i.value;
+        for (std::size_t iassoc = 0; iassoc < associatedIndices[Index].size(); iassoc++) {
+          auto assocParticle = mcParticles.iteratorAt(associatedIndices[Index][iassoc]);
+          if (triggerIndices[iTrigger] != associatedIndices[Index][iassoc] && globalIndex != assocParticle.globalIndex()) { // avoid self
+            double getaassoc = assocParticle.eta();
+            double gphiassoc = assocParticle.phi();
+            double ptassoc = assocParticle.pt();
+            double deltaphi = computeDeltaPhi(gphitrigger, gphiassoc);
+            double deltaeta = getatrigger - getaassoc;
+
+            // skip if basic ranges not met
+            if (deltaphi < axisRanges[0][0] || deltaphi > axisRanges[0][1])
+              continue;
+            if (deltaeta < axisRanges[1][0] || deltaeta > axisRanges[1][1])
+              continue;
+            if (ptassoc < axisRanges[2][0] || ptassoc > axisRanges[2][1])
+              continue;
+            if (TESTBIT(doCorrelation, i)) {
+              histos.fill(HIST("Prediction/sameEvent/") + HIST(Particlenames[Index]), computeDeltaPhi(gphitrigger, gphiassoc), deltaeta, ptassoc, pttrigger, mcCollision.posZ(), centMultFT0M);
+              if (masterConfigurations.doSeparateFT0Prediction)
+                histos.fill(HIST("Prediction/sameEventFT0A/") + HIST(Particlenames[Index]), computeDeltaPhi(gphitrigger, gphiassoc), deltaeta, ptassoc, pttrigger, mcCollision.posZ(), centMultFT0A);
+              histos.fill(HIST("Prediction/sameEventFT0C/") + HIST(Particlenames[Index]), computeDeltaPhi(gphitrigger, gphiassoc), deltaeta, ptassoc, pttrigger, mcCollision.posZ(), centMultFT0C);
+            }
+          }
+        }
+      });
+    }
+  }
   PROCESS_SWITCH(HStrangeCorrelation, processSelectEventWithTrigger, "Select events with trigger only", true);
   PROCESS_SWITCH(HStrangeCorrelation, processSameEventHV0s, "Process same events, h-V0s", true);
   PROCESS_SWITCH(HStrangeCorrelation, processSameEventHCascades, "Process same events, h-Cascades", true);
@@ -3242,6 +3397,7 @@ struct HStrangeCorrelation {
   PROCESS_SWITCH(HStrangeCorrelation, processMCGenerated, "Process MC generated", false);
   PROCESS_SWITCH(HStrangeCorrelation, processClosureTest, "Process Closure Test", false);
   PROCESS_SWITCH(HStrangeCorrelation, processFeedDown, "process Feed Down", false);
+  PROCESS_SWITCH(HStrangeCorrelation, processPrediction, "process model prediction", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
