@@ -258,15 +258,15 @@ struct HfCandidateCreatorXic0Omegac0Qa {
   HfEventSelection hfEvSel;
 
   // PDG Id of daughter tracks & V0s & cascades & charm baryons - Used in KFParticle
-  int pdgIdOfV0DauPos, pdgIdOfV0DauNeg, pdgIdOfBach, pdgIdOfCharmBach;
-  int pdgIdOfV0, pdgIdOfCascade, pdgIdOfCharmBaryon;
+  int pdgIdOfV0DauPos{}, pdgIdOfV0DauNeg{}, pdgIdOfBach{}, pdgIdOfCharmBach{};
+  int pdgIdOfV0{}, pdgIdOfCascade{}, pdgIdOfCharmBaryon{};
 
   // Track PID - Used in DCAFitter
-  int trackPidOfCascade;
+  int trackPidOfCascade{};
 
   // Mass of daughter tracks & V0s & cascades & charm baryons;
-  float massOfV0DauPos, massOfV0DauNeg, massOfCharmBach;
-  float massOfV0, massOfCascade;
+  float massOfV0DauPos{}, massOfV0DauNeg{}, massOfCharmBach{};
+  float massOfV0{}, massOfCascade{};
 
   // Pointer of histograms for QA
   std::shared_ptr<TH1> hInvMassCharmBaryonToXiPi, hInvMassCharmBaryonToOmegaPi, hInvMassCharmBaryonToOmegaKa;
