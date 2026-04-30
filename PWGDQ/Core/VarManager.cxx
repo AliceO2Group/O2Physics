@@ -672,6 +672,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableNames[kMCEventTime] = "MC event time";
   fgVariableNames[kMCEventWeight] = "MC event weight";
   fgVariableNames[kMCEventImpParam] = "MC impact parameter";
+  fgVariableNames[kMCEventPlaneAngle] = "MC event plane angle";
   fgVariableNames[kMCEventCentrFT0C] = "MC Centrality FT0C";
   fgVariableNames[kMultMCNParticlesEta05] = "MC Multiplicity Central Barrel for |eta| < 0.5";
   fgVariableNames[kMultMCNParticlesEta08] = "MC Multiplicity Central Barrel for |eta| < 0.8";
@@ -684,6 +685,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMCEventTime] = ""; // TODO: add proper unit
   fgVariableUnits[kMCEventWeight] = "";
   fgVariableUnits[kMCEventImpParam] = "b";
+  fgVariableUnits[kMCEventPlaneAngle] = "";
   fgVariableUnits[kMCEventCentrFT0C] = "%";
   fgVariableUnits[kMultMCNParticlesEta05] = "Multiplicity_eta05";
   fgVariableUnits[kMultMCNParticlesEta08] = "Multiplicity_eta08";
@@ -1531,6 +1533,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kCosThetaStarRandom] = "";
   fgVariableNames[kCos2ThetaStarRandom] = "cos^{2}#it{#theta}^{*}_{Random}";
   fgVariableUnits[kCos2ThetaStarRandom] = "";
+  fgVariableNames[kMCCosThetaStar] = "cos#it{#theta}^{*}_{MC}";
+  fgVariableUnits[kMCCosThetaStar] = "";
   fgVariableNames[kCosPhiVP] = "cos#it{#varphi}_{VP}";
   fgVariableUnits[kCosPhiVP] = "";
   fgVariableNames[kPhiVP] = "#varphi_{VP} - #Psi_{2}";
@@ -1948,6 +1952,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMCEventTime"] = kMCEventTime;
   fgVarNamesMap["kMCEventWeight"] = kMCEventWeight;
   fgVarNamesMap["kMCEventImpParam"] = kMCEventImpParam;
+  fgVarNamesMap["kMCEventPlaneAngle"] = kMCEventPlaneAngle;
   fgVarNamesMap["kQ1ZNAX"] = kQ1ZNAX;
   fgVarNamesMap["kQ1ZNAY"] = kQ1ZNAY;
   fgVarNamesMap["kQ1ZNCX"] = kQ1ZNCX;
@@ -2357,6 +2362,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kCos2ThetaStarFT0C"] = kCos2ThetaStarFT0C;
   fgVarNamesMap["kCosThetaStarRandom"] = kCosThetaStarRandom;
   fgVarNamesMap["kCos2ThetaStarRandom"] = kCos2ThetaStarRandom;
+  fgVarNamesMap["kMCCosThetaStar"] = kMCCosThetaStar;
   fgVarNamesMap["kCosPhiVP"] = kCosPhiVP;
   fgVarNamesMap["kPhiVP"] = kPhiVP;
   fgVarNamesMap["kDeltaPhiPair2"] = kDeltaPhiPair2;
