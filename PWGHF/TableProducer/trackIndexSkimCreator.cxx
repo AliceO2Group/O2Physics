@@ -2657,7 +2657,6 @@ struct HfTrackIndexSkimCreator {
 
               auto trackParVarPos2 = getTrackParCov(trackPos2);
               std::array dcaInfoPos2{trackPos2.dcaXY(), trackPos2.dcaZ()};
-              std::array ptProngs{trackPos1.pt(), trackNeg1.pt(), trackPos2.pt()};
 
               // preselection of 3-prong candidates
               if (isSelected3ProngCand) {
@@ -2799,6 +2798,7 @@ struct HfTrackIndexSkimCreator {
               const auto pVecCandProng3Pos = RecoDecay::pVec(pvec0, pvec1, pvec2);
 
               // 3-prong selections after secondary vertex
+              std::array ptProngs{trackPos1.pt(), trackNeg1.pt(), trackPos2.pt()};
               applySelection3Prong(pVecCandProng3Pos, ptProngs, secondaryVertex3, pvRefitCoord3Prong2Pos1Neg, cutStatus3Prong, isSelected3ProngCand);
 
               std::array<std::vector<float>, kN3ProngDecaysUsedMlForHfFilters> mlScores3Prongs;
@@ -2932,7 +2932,6 @@ struct HfTrackIndexSkimCreator {
               auto trackNeg2 = trackIndexNeg2.template track_as<TTracks>();
               auto trackParVarNeg2 = getTrackParCov(trackNeg2);
               std::array dcaInfoNeg2{trackNeg2.dcaXY(), trackNeg2.dcaZ()};
-              std::array ptProngs{trackPos1.pt(), trackNeg1.pt(), trackNeg2.pt()};
 
               // preselection of 3-prong candidates
               if (isSelected3ProngCand) {
@@ -3075,6 +3074,7 @@ struct HfTrackIndexSkimCreator {
               const auto pVecCandProng3Neg = RecoDecay::pVec(pvec0, pvec1, pvec2);
 
               // 3-prong selections after secondary vertex
+              std::array ptProngs{trackPos1.pt(), trackNeg1.pt(), trackNeg2.pt()};
               applySelection3Prong(pVecCandProng3Neg, ptProngs, secondaryVertex3, pvRefitCoord3Prong1Pos2Neg, cutStatus3Prong, isSelected3ProngCand);
 
               std::array<std::vector<float>, kN3ProngDecaysUsedMlForHfFilters> mlScores3Prongs{};
