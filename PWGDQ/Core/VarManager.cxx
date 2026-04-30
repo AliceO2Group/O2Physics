@@ -60,6 +60,10 @@ int VarManager::fgITSROFbias = 0;
 int VarManager::fgITSROFlength = 100;
 int VarManager::fgITSROFBorderMarginLow = 0;
 int VarManager::fgITSROFBorderMarginHigh = 0;
+int64_t VarManager::fgBCSOR = -1;
+int64_t VarManager::fgNBCsPerTF = -1;
+int VarManager::fgTFBorderMarginLow = 300;
+int VarManager::fgTFBorderMarginHigh = 4000;
 uint64_t VarManager::fgSOR = 0;
 uint64_t VarManager::fgEOR = 0;
 ROOT::Math::PxPyPzEVector VarManager::fgBeamA(0, 0, 6799.99, 6800);  // GeV, beam from A-side 4-momentum vector
@@ -718,6 +722,14 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMultDimuonsME] = "";
   fgVariableNames[kCentFT0C] = "Centrality FT0C";
   fgVariableUnits[kCentFT0C] = "%";
+  fgVariableNames[kIsNoTFBorder] = "Is not TF border";
+  fgVariableUnits[kIsNoTFBorder] = "";
+  fgVariableNames[kIsNoTFBorderRecomputed] = "Is not TF border";
+  fgVariableUnits[kIsNoTFBorderRecomputed] = "";
+  fgVariableNames[kIsNoITSROFBorder] = "Is not ITS ROF border";
+  fgVariableUnits[kIsNoITSROFBorder] = "";
+  fgVariableNames[kIsNoITSROFBorderRecomputed] = "Is not ITS ROF border";
+  fgVariableUnits[kIsNoITSROFBorderRecomputed] = "";
   fgVariableNames[kMCEventGeneratorId] = "MC Generator ID";
   fgVariableNames[kMCEventSubGeneratorId] = "MC SubGenerator ID";
   fgVariableNames[kMCVtxX] = "MC Vtx X";
@@ -1912,6 +1924,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kIsPhysicsSelection"] = kIsPhysicsSelection;
   fgVarNamesMap["kIsTVXTriggered"] = kIsTVXTriggered;
   fgVarNamesMap["kIsNoTFBorder"] = kIsNoTFBorder;
+  fgVarNamesMap["kIsNoTFBorderRecomputed"] = kIsNoTFBorderRecomputed;
   fgVarNamesMap["kIsNoITSROFBorder"] = kIsNoITSROFBorder;
   fgVarNamesMap["kIsNoITSROFBorderRecomputed"] = kIsNoITSROFBorderRecomputed;
   fgVarNamesMap["kIsNoSameBunch"] = kIsNoSameBunch;
