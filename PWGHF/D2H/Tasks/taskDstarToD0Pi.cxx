@@ -63,6 +63,7 @@ struct HfTaskDstarToD0Pi {
   Configurable<bool> studyD0ToPiKPi0{"studyD0ToPiKPi0", false, "Flag to study D*->D0(piKpi0)pi channel"};
   Configurable<bool> ptShapeStudy{"ptShapeStudy", false, "Flag to enable pT shape study"};
   Configurable<bool> useWeightOnline{"useWeightOnline", false, "Flag to enable use of weights for pT shape study online"};
+  Configurable<bool> studySoftPiFraction{"studySoftPiFraction", false, "Flag to enable study of soft pion fraction, currently implemented for ML-based analysis only"};
 
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -397,6 +398,10 @@ struct HfTaskDstarToD0Pi {
         return;
       }
     }
+
+    if (studySoftPiFraction && doprocessDataWML) {
+      registry.add("SoftPiFraction/hPtSoftPiVsPtDtstarVsCentVsBDTScore", "Pt of Soft Pi vs Pt of D* vs Centrality vs BDT Score", {HistType::kTHnSparseF, {{100, 0.1, 1.0}, {vecPtBins, "#it{p}_{T} of Soft Pi (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}}, true);
+    }
   }
 
   // Comparator function to sort based on the second argument of a tuple
@@ -475,6 +480,9 @@ struct HfTaskDstarToD0Pi {
           if constexpr (ApplyMl) {
             auto mlBdtScore = candDstar.mlProbDstarToD0Pi();
             registry.fill(HIST("Yield/hDeltaInvMassVsPtVsCentVsBDTScore"), deltaMDstar, candDstar.pt(), centrality, mlBdtScore[0], mlBdtScore[1], mlBdtScore[2], invD0);
+            if (studySoftPiFraction) {
+              registry.fill(HIST("SoftPiFraction/hPtSoftPiVsPtDtstarVsCentVsBDTScore"), candDstar.ptSoftPi(), candDstar.pt(), centrality, mlBdtScore[0], mlBdtScore[1], mlBdtScore[2]);
+            }
           }
 
           if (doprocessDataWoML) {
