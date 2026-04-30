@@ -8,11 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+/// \file jetD0AngSubstructure.cxx
 ///
-/// \file JetD0AngSubstructure.cxx
-/// \brief Analysis task for the reconstruction and study of charged jets
-/// containing D_0 mesons in pp collisions. The code is partially inherited from
-/// hfFragmentationFunction.cxx.
+/// \brief Analysis task for the reconstruction and study of charged jets containing D_0 mesons in pp collisions. The code is partially inherited from hfFragmentationFunction.cxx.
 ///
 /// \author P. Dhankher
 /// \author L.J. Huisman
@@ -291,19 +290,19 @@ consteval float getValFromBin(int bin)
   return static_cast<float>(bin) - 0.5f;
 }
 
-enum BIN_EX_COLCNTR { AllCollisions = 1,
-                      Sel8ZCut = 2 };
+enum BinExpColCntr { AllCollisions = 1,
+                     Sel8ZCut = 2 };
 
-enum BIN_EX_JETCNTR { ChargedJets = 1 };
-enum BIN_MC_COLCNTR { All = 1,
-                      ZCut = 2,
-                      Matched = 3,
-                      MatchedSel8ZCut = 4 };
+enum BinExpJetCntr { ChargedJets = 1 };
+enum BinMCColCntr { All = 1,
+                    ZCut = 2,
+                    Matched = 3,
+                    MatchedSel8ZCut = 4 };
 
-enum BIN_MC_JETCNTR { DetectorLevelJetInMCCollision = 1,
-                      ParticleLevelJetInMCCollision = 2,
-                      DetectorLevelJetWithMatchedCandidate = 3,
-                      ParticleLevelJetWithMatchedCandidate = 4
+enum BinMCJetCntr { DetectorLevelJetInMCCollision = 1,
+                    ParticleLevelJetInMCCollision = 2,
+                    DetectorLevelJetWithMatchedCandidate = 3,
+                    ParticleLevelJetWithMatchedCandidate = 4
 };
 
 struct JetD0AngSubstructure {
@@ -372,11 +371,11 @@ struct JetD0AngSubstructure {
     registry.add(histnames::ex_hfl_phi, ";#phi_{D^{0}};dN/d#phi_{D^{0}}", {HistType::kTH1F, {{250, -10., 10.}}});
     // Labels
     auto expCollisionCounter = registry.get<TH1>(HIST(histnames::ex_col));
-    expCollisionCounter->GetXaxis()->SetBinLabel(BIN_EX_COLCNTR::AllCollisions, "all");
-    expCollisionCounter->GetXaxis()->SetBinLabel(BIN_EX_COLCNTR::Sel8ZCut, "sel8 + zcut");
+    expCollisionCounter->GetXaxis()->SetBinLabel(BinExpColCntr::AllCollisions, "all");
+    expCollisionCounter->GetXaxis()->SetBinLabel(BinExpColCntr::Sel8ZCut, "sel8 + zcut");
 
     auto expJetCounter = registry.get<TH1>(HIST(histnames::ex_jet));
-    expJetCounter->GetXaxis()->SetBinLabel(BIN_EX_JETCNTR::ChargedJets, "Charged jets with D0");
+    expJetCounter->GetXaxis()->SetBinLabel(BinExpJetCntr::ChargedJets, "Charged jets with D0");
     /*
     // Monte Carlo Data Efficiency Histograms
     */
@@ -393,16 +392,16 @@ struct JetD0AngSubstructure {
     registry.add(histnames::mc_eff_det_hfl_phi, ";#phi_{det D^{0}};dN/d#phi_{det D^{0}}", {HistType::kTH1F, {{250, -10., 10.}}});
     // Labels
     auto mcCollisionCounter = registry.get<TH1>(HIST(histnames::mc_eff_col));
-    mcCollisionCounter->GetXaxis()->SetBinLabel(BIN_MC_COLCNTR::All, "mccollisions");
-    mcCollisionCounter->GetXaxis()->SetBinLabel(BIN_MC_COLCNTR::ZCut, "z_cut");
-    mcCollisionCounter->GetXaxis()->SetBinLabel(BIN_MC_COLCNTR::Matched, "collisions");
-    mcCollisionCounter->GetXaxis()->SetBinLabel(BIN_MC_COLCNTR::MatchedSel8ZCut, "sel8");
+    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::All, "mccollisions");
+    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::ZCut, "z_cut");
+    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::Matched, "collisions");
+    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::MatchedSel8ZCut, "sel8");
 
     auto jetCounter = registry.get<TH1>(HIST(histnames::mc_eff_jet));
-    jetCounter->GetXaxis()->SetBinLabel(BIN_MC_JETCNTR::ParticleLevelJetInMCCollision, "particle level");
-    jetCounter->GetXaxis()->SetBinLabel(BIN_MC_JETCNTR::DetectorLevelJetInMCCollision, "detector level");
-    jetCounter->GetXaxis()->SetBinLabel(BIN_MC_JETCNTR::DetectorLevelJetWithMatchedCandidate, "particle matched jets");
-    jetCounter->GetXaxis()->SetBinLabel(BIN_MC_JETCNTR::ParticleLevelJetWithMatchedCandidate, "detector matched jets");
+    jetCounter->GetXaxis()->SetBinLabel(BinMCJetCntr::ParticleLevelJetInMCCollision, "particle level");
+    jetCounter->GetXaxis()->SetBinLabel(BinMCJetCntr::DetectorLevelJetInMCCollision, "detector level");
+    jetCounter->GetXaxis()->SetBinLabel(BinMCJetCntr::DetectorLevelJetWithMatchedCandidate, "particle matched jets");
+    jetCounter->GetXaxis()->SetBinLabel(BinMCJetCntr::ParticleLevelJetWithMatchedCandidate, "detector matched jets");
     /*
     // Monte Carlo Data Histograms
     */
@@ -418,16 +417,16 @@ struct JetD0AngSubstructure {
     registry.add(histnames::mc_det_hfl_phi, ";#phi_{det D^{0}};dN/d#phi_{det D^{0}}", {HistType::kTH1F, {{250, -10., 10.}}});
     // Labels
     auto mcCollisionCounter2 = registry.get<TH1>(HIST(histnames::mc_col));
-    mcCollisionCounter2->GetXaxis()->SetBinLabel(BIN_MC_COLCNTR::All, "mccollisions");
-    mcCollisionCounter2->GetXaxis()->SetBinLabel(BIN_MC_COLCNTR::ZCut, "z_cut");
-    mcCollisionCounter2->GetXaxis()->SetBinLabel(BIN_MC_COLCNTR::Matched, "collisions");
-    mcCollisionCounter2->GetXaxis()->SetBinLabel(BIN_MC_COLCNTR::MatchedSel8ZCut, "sel8");
+    mcCollisionCounter2->GetXaxis()->SetBinLabel(BinMCColCntr::All, "mccollisions");
+    mcCollisionCounter2->GetXaxis()->SetBinLabel(BinMCColCntr::ZCut, "z_cut");
+    mcCollisionCounter2->GetXaxis()->SetBinLabel(BinMCColCntr::Matched, "collisions");
+    mcCollisionCounter2->GetXaxis()->SetBinLabel(BinMCColCntr::MatchedSel8ZCut, "sel8");
 
     auto jetCounter2 = registry.get<TH1>(HIST(histnames::mc_jet));
-    jetCounter2->GetXaxis()->SetBinLabel(BIN_MC_JETCNTR::DetectorLevelJetInMCCollision, "detector level");
-    jetCounter2->GetXaxis()->SetBinLabel(BIN_MC_JETCNTR::ParticleLevelJetInMCCollision, "particle level");
-    jetCounter2->GetXaxis()->SetBinLabel(BIN_MC_JETCNTR::DetectorLevelJetWithMatchedCandidate, "particle matched jets");
-    jetCounter2->GetXaxis()->SetBinLabel(BIN_MC_JETCNTR::ParticleLevelJetWithMatchedCandidate, "detector matched jets");
+    jetCounter2->GetXaxis()->SetBinLabel(BinMCJetCntr::DetectorLevelJetInMCCollision, "detector level");
+    jetCounter2->GetXaxis()->SetBinLabel(BinMCJetCntr::ParticleLevelJetInMCCollision, "particle level");
+    jetCounter2->GetXaxis()->SetBinLabel(BinMCJetCntr::DetectorLevelJetWithMatchedCandidate, "particle matched jets");
+    jetCounter2->GetXaxis()->SetBinLabel(BinMCJetCntr::ParticleLevelJetWithMatchedCandidate, "detector matched jets");
   };
 
   template <typename T, typename U>
@@ -471,16 +470,16 @@ struct JetD0AngSubstructure {
                                       aod::JetTracks const& tracks)
   {
     // apply event selection and fill histograms for sanity check
-    registry.fill(HIST(histnames::ex_col), getValFromBin(BIN_EX_COLCNTR::AllCollisions));
+    registry.fill(HIST(histnames::ex_col), getValFromBin(BinExpColCntr::AllCollisions));
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !(std::abs(collision.posZ()) < vertexZCut)) {
       return;
     }
-    registry.fill(HIST(histnames::ex_col), getValFromBin(BIN_EX_COLCNTR::Sel8ZCut));
+    registry.fill(HIST(histnames::ex_col), getValFromBin(BinExpColCntr::Sel8ZCut));
 
     // Loop over jets containing D0 candidates
     for (const auto& jet : jets) {
       // number of charged jets with D0
-      registry.fill(HIST(histnames::ex_jet), getValFromBin(BIN_EX_JETCNTR::ChargedJets));
+      registry.fill(HIST(histnames::ex_jet), getValFromBin(BinExpJetCntr::ChargedJets));
       // obtaining jet 3-vector
       TVector3 jetVector(jet.px(), jet.py(), jet.pz());
 
@@ -555,37 +554,37 @@ struct JetD0AngSubstructure {
   {
     for (const auto& mccollision : mccollisions) {
 
-      registry.fill(HIST(histnames::mc_eff_col), getValFromBin(BIN_MC_COLCNTR::All));
+      registry.fill(HIST(histnames::mc_eff_col), getValFromBin(BinMCColCntr::All));
       // skip collisions outside of |z| < vertexZCut
       if (std::abs(mccollision.posZ()) > vertexZCut) {
         continue;
       }
-      registry.fill(HIST(histnames::mc_eff_col), getValFromBin(BIN_MC_COLCNTR::ZCut));
+      registry.fill(HIST(histnames::mc_eff_col), getValFromBin(BinMCColCntr::ZCut));
 
       // reconstructed collisions associated to same mccollision
       const auto collisionsPerMCCollision = collisions.sliceBy(collisionsPerMCCollisionPreslice, mccollision.globalIndex());
       for (const auto& collision : collisionsPerMCCollision) {
 
-        registry.fill(HIST(histnames::mc_eff_col), getValFromBin(BIN_MC_COLCNTR::Matched));
+        registry.fill(HIST(histnames::mc_eff_col), getValFromBin(BinMCColCntr::Matched));
         if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) ||
             !(std::abs(collision.posZ()) < vertexZCut)) {
           continue;
         }
-        registry.fill(HIST(histnames::mc_eff_col), getValFromBin(BIN_MC_COLCNTR::MatchedSel8ZCut));
+        registry.fill(HIST(histnames::mc_eff_col), getValFromBin(BinMCColCntr::MatchedSel8ZCut));
 
         // d0 detector level jets associated to the current same collision
         const auto d0mcdJetsPerCollision = mcdjets.sliceBy(jetmcdpreslice, collision.globalIndex());
         for (const auto& mcdjet : d0mcdJetsPerCollision) {
 
           registry.fill(
-            HIST(histnames::mc_eff_jet), getValFromBin(BIN_MC_JETCNTR::DetectorLevelJetInMCCollision));
+            HIST(histnames::mc_eff_jet), getValFromBin(BinMCJetCntr::DetectorLevelJetInMCCollision));
 
           // obtain leading HF candidate in jet
           auto mcdd0cand = mcdjet.template candidates_first_as<CandidatesMCD>();
 
           if (mcdjet.has_matchedJetCand()) {
             registry.fill(
-              HIST(histnames::mc_eff_jet), getValFromBin(BIN_MC_JETCNTR::DetectorLevelJetWithMatchedCandidate));
+              HIST(histnames::mc_eff_jet), getValFromBin(BinMCJetCntr::DetectorLevelJetWithMatchedCandidate));
           }
 
           // reflection information for storage: D0 = +1, D0bar = -1, neither =
@@ -650,13 +649,13 @@ struct JetD0AngSubstructure {
       const auto d0mcpJetsPerMCCollision = mcpjets.sliceBy(jetmcppreslice, mccollision.globalIndex());
       for (const auto& mcpjet : d0mcpJetsPerMCCollision) {
 
-        registry.fill(HIST(histnames::mc_eff_jet), getValFromBin(BIN_MC_JETCNTR::ParticleLevelJetInMCCollision));
+        registry.fill(HIST(histnames::mc_eff_jet), getValFromBin(BinMCJetCntr::ParticleLevelJetInMCCollision));
 
         // obtain leading HF particle in jet
         auto mcpd0cand = mcpjet.template candidates_first_as<CandidatesMCP>();
 
         if (mcpjet.has_matchedJetCand()) {
-          registry.fill(HIST(histnames::mc_eff_jet), getValFromBin(BIN_MC_JETCNTR::ParticleLevelJetWithMatchedCandidate));
+          registry.fill(HIST(histnames::mc_eff_jet), getValFromBin(BinMCJetCntr::ParticleLevelJetWithMatchedCandidate));
         }
         TVector3 mcpjetvector(mcpjet.px(), mcpjet.py(), mcpjet.pz());
         TVector3 mcpcandvector(mcpd0cand.px(), mcpd0cand.py(), mcpd0cand.pz());
@@ -711,18 +710,18 @@ struct JetD0AngSubstructure {
                          aod::JetParticles const& jetparticles)
   {
     for (const auto& mccollision : mccollisions) {
-      registry.fill(HIST(histnames::mc_col), getValFromBin(BIN_MC_COLCNTR::All));
+      registry.fill(HIST(histnames::mc_col), getValFromBin(BinMCColCntr::All));
       // skip collisions outside of |z| < vertexZCut
       if (std::abs(mccollision.posZ()) > vertexZCut) {
         continue;
       }
-      registry.fill(HIST(histnames::mc_col), getValFromBin(BIN_MC_COLCNTR::ZCut));
+      registry.fill(HIST(histnames::mc_col), getValFromBin(BinMCColCntr::ZCut));
 
       // hf particle level jets associated to same mccollision
       const JetD0MCPTable mcpJetsPerMCCollision = mcpjets.sliceBy(jetmcpreslice, mccollision.globalIndex());
       for (const auto& mcpjet : mcpJetsPerMCCollision) {
 
-        registry.fill(HIST(histnames::mc_jet), getValFromBin(BIN_MC_JETCNTR::ParticleLevelJetInMCCollision));
+        registry.fill(HIST(histnames::mc_jet), getValFromBin(BinMCJetCntr::ParticleLevelJetInMCCollision));
 
         // obtain leading HF particle in jet
         auto mcpcand = mcpjet.template candidates_first_as<CandidatesMCP>();
@@ -732,19 +731,19 @@ struct JetD0AngSubstructure {
         float mcpzparallel = (mcpjetvector * mcpcandvector) / (mcpjetvector * mcpjetvector);
 
         if (mcpjet.has_matchedJetCand()) {
-          registry.fill(HIST(histnames::mc_jet), getValFromBin(BIN_MC_JETCNTR::ParticleLevelJetWithMatchedCandidate));
+          registry.fill(HIST(histnames::mc_jet), getValFromBin(BinMCJetCntr::ParticleLevelJetWithMatchedCandidate));
 
           // loop over detector level matched to current particle level
           for (const auto& mcdjet : mcpjet.template matchedJetCand_as<JetTableMCD>()) {
-            registry.fill(HIST(histnames::mc_jet), getValFromBin(BIN_MC_JETCNTR::DetectorLevelJetWithMatchedCandidate));
+            registry.fill(HIST(histnames::mc_jet), getValFromBin(BinMCJetCntr::DetectorLevelJetWithMatchedCandidate));
 
             // apply collision sel8 selection on detector level jet's collision
             const auto& collision = collisions.iteratorAt(mcdjet.collisionId());
-            registry.fill(HIST(histnames::mc_col), getValFromBin(BIN_MC_COLCNTR::Matched));
+            registry.fill(HIST(histnames::mc_col), getValFromBin(BinMCColCntr::Matched));
             if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !(std::abs(collision.posZ()) < vertexZCut)) {
               continue;
             }
-            registry.fill(HIST(histnames::mc_col), getValFromBin(BIN_MC_COLCNTR::MatchedSel8ZCut));
+            registry.fill(HIST(histnames::mc_col), getValFromBin(BinMCColCntr::MatchedSel8ZCut));
 
             // obtain leading HF candidate in jet
             auto mcdcand = mcdjet.template candidates_first_as<CandidatesMCD>();
