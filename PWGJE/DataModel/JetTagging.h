@@ -49,9 +49,9 @@ using JTrackTag = JTracksTag::iterator;
 
 namespace secondary_vertex_params
 {
-DECLARE_SOA_COLUMN(XPrimaryVertex, xPVertex, float); // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(YPrimaryVertex, yPVertex, float); // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(ZPrimaryVertex, zPVertex, float); // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(XPrimaryVertex, xPrimaryVertex, float);
+DECLARE_SOA_COLUMN(YPrimaryVertex, yPrimaryVertex, float);
+DECLARE_SOA_COLUMN(ZPrimaryVertex, zPrimaryVertex, float);
 DECLARE_SOA_COLUMN(XSecondaryVertex, xSecondaryVertex, float);
 DECLARE_SOA_COLUMN(YSecondaryVertex, ySecondaryVertex, float);
 DECLARE_SOA_COLUMN(ZSecondaryVertex, zSecondaryVertex, float);
@@ -75,7 +75,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(DecayLength, decayLength, [](float xVtxP, float yVtxP
 DECLARE_SOA_DYNAMIC_COLUMN(DecayLengthXY, decayLengthXY, [](float xVtxP, float yVtxP, float xVtxS, float yVtxS) -> float { return RecoDecay::distanceXY(std::array{xVtxP, yVtxP}, std::array{xVtxS, yVtxS}); });
 DECLARE_SOA_DYNAMIC_COLUMN(DecayLengthNormalised, decayLengthNormalised, [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float err) -> float { return RecoDecay::distance(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}) / err; });
 DECLARE_SOA_DYNAMIC_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, [](float xVtxP, float yVtxP, float xVtxS, float yVtxS, float err) -> float { return RecoDecay::distanceXY(std::array{xVtxP, yVtxP}, std::array{xVtxS, yVtxS}) / err; });
-DECLARE_SOA_DYNAMIC_COLUMN(CPA, cpa, [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::cpa(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, std::array{px, py, pz}); }); // o2-linter: disable=name/o2-column
+DECLARE_SOA_DYNAMIC_COLUMN(Cpa, cpa, [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::cpa(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, std::array{px, py, pz}); });
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterXY, impactParameterXY, [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::impParXY(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, std::array{px, py, pz}); });
 } // namespace secondary_vertex_params
 
@@ -113,7 +113,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterXY, impactParameterXY, [](float xVtxP,
                     secondary_vertex_params::DecayLengthXY<secondary_vertex_params::XPrimaryVertex, secondary_vertex_params::YPrimaryVertex, secondary_vertex_params::XSecondaryVertex, secondary_vertex_params::YSecondaryVertex>,                                                                                                                                                                                 \
                     secondary_vertex_params::DecayLengthNormalised<secondary_vertex_params::XPrimaryVertex, secondary_vertex_params::YPrimaryVertex, secondary_vertex_params::ZPrimaryVertex, secondary_vertex_params::XSecondaryVertex, secondary_vertex_params::YSecondaryVertex, secondary_vertex_params::ZSecondaryVertex, secondary_vertex_params::ErrorDecayLength>,                                          \
                     secondary_vertex_params::DecayLengthXYNormalised<secondary_vertex_params::XPrimaryVertex, secondary_vertex_params::YPrimaryVertex, secondary_vertex_params::XSecondaryVertex, secondary_vertex_params::YSecondaryVertex, secondary_vertex_params::ErrorDecayLengthXY>,                                                                                                                          \
-                    secondary_vertex_params::CPA<secondary_vertex_params::XPrimaryVertex, secondary_vertex_params::YPrimaryVertex, secondary_vertex_params::ZPrimaryVertex, secondary_vertex_params::XSecondaryVertex, secondary_vertex_params::YSecondaryVertex, secondary_vertex_params::ZSecondaryVertex, secondary_vertex_params::Px, secondary_vertex_params::Py, secondary_vertex_params::Pz>,                \
+                    secondary_vertex_params::Cpa<secondary_vertex_params::XPrimaryVertex, secondary_vertex_params::YPrimaryVertex, secondary_vertex_params::ZPrimaryVertex, secondary_vertex_params::XSecondaryVertex, secondary_vertex_params::YSecondaryVertex, secondary_vertex_params::ZSecondaryVertex, secondary_vertex_params::Px, secondary_vertex_params::Py, secondary_vertex_params::Pz>,                \
                     secondary_vertex_params::ImpactParameterXY<secondary_vertex_params::XPrimaryVertex, secondary_vertex_params::YPrimaryVertex, secondary_vertex_params::ZPrimaryVertex, secondary_vertex_params::XSecondaryVertex, secondary_vertex_params::YSecondaryVertex, secondary_vertex_params::ZSecondaryVertex, secondary_vertex_params::Px, secondary_vertex_params::Py, secondary_vertex_params::Pz>); \
   namespace _name_##indices                                                                                                                                                                                                                                                                                                                                                                                         \
   {                                                                                                                                                                                                                                                                                                                                                                                                                 \
