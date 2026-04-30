@@ -730,7 +730,7 @@ struct HfCandidateSelectorToXiPiQa {
         hfMlToXiPi(outputMlXic0ToXiPi);
 
         if (!isSelectedMlXic0) {
-          continue;    
+          continue;
         }
       }
 
