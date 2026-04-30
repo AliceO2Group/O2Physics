@@ -308,7 +308,8 @@ struct V0ptHadPiKaProt {
     histos.add("hEventStatData", "Data Event statistics", kTH1F, {{10, 0.0f, 10.0f}});
     histos.add("hZvtx_after_sel", ";Z (cm)", kTH1F, {{240, -12, 12}});
     histos.add("hCentrality", ";centrality (%)", kTH1F, {{90, 0, 90}});
-    histos.add("hOccupancyVsCentrality", "", kTH2F, {{90, 0, 90}, occuAxis});
+    histos.add("hOccupancyVsCentrality_before", "", kTH2F, {{90, 0, 90}, occuAxis});
+    histos.add("hOccupancyVsCentrality_after", "", kTH2F, {{90, 0, 90}, occuAxis});
     // before selection
     histos.add("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_PVTracks_beforeSel", "", {HistType::kTH2D, {nchAxis1, nchAxis1}});
     histos.add("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_centFT0C_beforeSel", "", {HistType::kTH2D, {centAxis, nchAxis1}});
@@ -812,13 +813,15 @@ struct V0ptHadPiKaProt {
     }
 
     int occupancy = coll.trackOccupancyInTimeRange();
-    histos.fill(HIST("hOccupancyVsCentrality"), occupancy);
+    histos.fill(HIST("hOccupancyVsCentrality_before"), occupancy);
 
     histos.fill(HIST("hEventStatData"), 6.5);
     // events with selection bits based on occupancy time pattern
     if (cfgEvSelUseOcuppancyTimeCut && !(coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
       return 0;
     }
+
+    histos.fill(HIST("hOccupancyVsCentrality_after"), occupancy);
 
     histos.fill(HIST("hEventStatData"), 7.5);
     if (cfgEvSelSetOcuppancyRange && (occupancy < cfgMinOccupancy || occupancy > cfgMaxOccupancy)) {
