@@ -435,8 +435,8 @@ class KinkBuilder
     LOG(info) << "Initialization done...";
   }
 
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
-  void fillKinks(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts, T5& kinkProducts, T6 const& kinks, T7 const& tracks, T8 const& tracksWithItsPid, T9& trackBuilder)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
+  void fillKinks(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts, T5& kinkProducts, T6 const& kinks, T7 const& tracks, T8& trackBuilder)
   {
     if (!mFillAnyTable) {
       return;
@@ -457,13 +457,8 @@ class KinkBuilder
       }
 
       collisionBuilder.template fillCollision<system>(collisionProducts, col);
-      // cleaner, but without ITS pid: auto daughter = kink.template trackDaug_as<T7>();
-      int64_t idx = kink.trackDaugId() - tracksWithItsPid.offset();
-      // check for valid index
-      if (idx < 0 || idx >= static_cast<int64_t>(tracksWithItsPid.size())) {
-        return;
-      }
-      auto daughter = tracksWithItsPid.iteratorAt(idx);
+
+      auto daughter = kink.template trackDaug_as<T7>();
       daughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kKinkDaughter>(daughter, trackProducts, collisionProducts);
       if constexpr (modes::isEqual(kinkType, modes::Kink::kSigma)) {
         fillSigma(collisionProducts, kinkProducts, kink, daughterIndex);
@@ -474,8 +469,8 @@ class KinkBuilder
     }
   }
 
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12, typename T13>
-  void fillMcKinks(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4 const& mcCols, T5& trackProducts, T6& kinkProducts, T7 const& kinks, T8 const& tracks, T9 const& tracksWithItsPid, T10& trackBuilder, T11 const& mcParticles, T12& mcBuilder, T13& mcProducts)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12>
+  void fillMcKinks(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4 const& mcCols, T5& trackProducts, T6& kinkProducts, T7 const& kinks, T8 const& tracks, T9& trackBuilder, T10 const& mcParticles, T11& mcBuilder, T12& mcProducts)
   {
 
     if (!mFillAnyTable) {
@@ -497,14 +492,8 @@ class KinkBuilder
 
       collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
 
-      int64_t idx = kink.trackDaugId() - tracks.offset();
-      // check for valid index
-      if (idx < 0 || idx >= static_cast<int64_t>(tracks.size())) {
-        return;
-      }
-      auto daughter = tracks.iteratorAt(idx);
-      auto daughterWithItsPid = tracksWithItsPid.iteratorAt(idx);
-      daughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kKinkDaughter>(col, collisionProducts, mcCols, daughter, daughterWithItsPid, trackProducts, mcParticles, mcBuilder, mcProducts);
+      auto daughter = kink.template trackDaug_as<T8>();
+      daughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kKinkDaughter>(col, collisionProducts, mcCols, daughter, trackProducts, mcParticles, mcBuilder, mcProducts);
 
       if constexpr (modes::isEqual(kinkType, modes::Kink::kSigma)) {
         fillSigma(collisionProducts, kinkProducts, kink, daughterIndex);
