@@ -156,6 +156,7 @@ struct FlowGenericFramework {
   O2_DEFINE_CONFIGURABLE(cfgUseCentralMoments, bool, true, "Use central moments in vn-pt calculations")
   O2_DEFINE_CONFIGURABLE(cfgUsePID, bool, true, "Enable PID information")
   O2_DEFINE_CONFIGURABLE(cfgUseGapMethod, bool, false, "Use gap method in vn-pt calculations")
+  O2_DEFINE_CONFIGURABLE(cfgUseMultiplicityFlowWeights, bool, true, "Enable or disable the use of multiplicity-based event weighting");
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgUsePIDEfficiencies, bool, false, "Use species dependent efficiencies")
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
@@ -1304,7 +1305,7 @@ struct FlowGenericFramework {
           continue;
         auto val = fGFW->Calculate(corrconfigs.at(l_ind), 0, kFALSE).real() / dnx;
         if (std::abs(val) < 1) {
-          (dt == kGen) ? fFCgen->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, dnx, rndm) : fFC->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, dnx, rndm);
+          (dt == kGen) ? fFCgen->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm) : fFC->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm);
           if (cfgUseGapMethod) {
             fFCpt->fillVnPtProfiles(centmult, val, dnx, rndm, o2::analysis::gfw::configs.GetpTCorrMasks()[l_ind]);
           }
@@ -1317,7 +1318,7 @@ struct FlowGenericFramework {
           continue;
         auto val = fGFW->Calculate(corrconfigs.at(l_ind), i - 1, kFALSE).real() / dnx;
         if (std::abs(val) < 1)
-          (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val, dnx, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val, dnx, rndm);
+          (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val, cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val, cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm);
       }
     }
 
@@ -1357,7 +1358,7 @@ struct FlowGenericFramework {
           continue;
         auto val = fGFW->Calculate(corrconfigsV02.at(l_ind), i - 1, kFALSE).real() / dnx;
         if (std::abs(val) < 1 && dns[l_ind] > 0)
-          (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centmult, val * histosNpt[l_ind]->GetBinContent(i) / dns[l_ind], dnx, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centmult, val * histosNpt[l_ind]->GetBinContent(i) / dns[l_ind], dnx, rndm);
+          (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centmult, val * histosNpt[l_ind]->GetBinContent(i) / dns[l_ind], cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centmult, val * histosNpt[l_ind]->GetBinContent(i) / dns[l_ind], cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm);
       }
     }
 
@@ -1548,7 +1549,7 @@ struct FlowGenericFramework {
           continue;
         auto val = fGFW->Calculate(corrconfigsV02.at(l_ind), i - 1, kFALSE).real() / dnx;
         if (std::abs(val) < 1 && dns[l_ind - 4] > 0)
-          (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centrality, val * histosResoNpt[l_ind - 4]->GetBinContent(i) / dns[l_ind - 4], dnx, lRandom) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centrality, val * histosResoNpt[l_ind - 4]->GetBinContent(i) / dns[l_ind - 4], dnx, lRandom);
+          (dt == kGen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centrality, val * histosResoNpt[l_ind - 4]->GetBinContent(i) / dns[l_ind - 4], cfgUseMultiplicityFlowWeights ? dnx : 1.0, lRandom) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV02.at(l_ind).Head.c_str(), i), centrality, val * histosResoNpt[l_ind - 4]->GetBinContent(i) / dns[l_ind - 4], cfgUseMultiplicityFlowWeights ? dnx : 1.0, lRandom);
       }
     }
 
