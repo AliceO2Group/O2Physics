@@ -1166,9 +1166,9 @@ struct FlowGfwOmegaXi {
           continue;
         if (v0negdau.pt() < trkQualityOpts.cfgCutPtDauMin.value || v0negdau.pt() > trkQualityOpts.cfgCutPtDauMax.value)
           continue;
-        if (v0posdau.eta() < trkQualityOpts.cfgCutEta.value || v0posdau.eta() > trkQualityOpts.cfgCutEta.value)
+        if (std::fabs(v0posdau.eta()) > trkQualityOpts.cfgCutEta.value)
           continue;
-        if (v0negdau.eta() < trkQualityOpts.cfgCutEta.value || v0negdau.eta() > trkQualityOpts.cfgCutEta.value)
+        if (std::fabs(v0negdau.eta()) > trkQualityOpts.cfgCutEta.value)
           continue;
 
         // fill QA
@@ -1278,6 +1278,8 @@ struct FlowGfwOmegaXi {
           continue;
         if (isK0s && std::fabs(v0.mLambda() - o2::constants::physics::MassLambda0) < v0BuilderOpts.cfgv0_compmassrejLambda.value)
           isK0s = false;
+        if (isK0s && std::fabs(v0.mAntiLambda() - o2::constants::physics::MassLambda0) < v0BuilderOpts.cfgv0_compmassrejLambda.value)
+          isK0s = false;
         if (isLambda && std::fabs(v0.mK0Short() - o2::constants::physics::MassK0Short) < v0BuilderOpts.cfgv0_compmassrejK0s.value)
           isLambda = false;
         if (isALambda && std::fabs(v0.mK0Short() - o2::constants::physics::MassK0Short) < v0BuilderOpts.cfgv0_compmassrejK0s.value)
@@ -1330,8 +1332,6 @@ struct FlowGfwOmegaXi {
           registry.fill(HIST("hPhiK0s"), v0.phi());
           registry.fill(HIST("hPhiK0scorr"), v0.phi(), wacc);
           fGFW->Fill(v0.eta(), fK0sPtAxis->FindBin(v0.pt()) - 1 + ((fK0sMass->FindBin(v0.mK0Short()) - 1) * nK0sPtBins), v0.phi(), wacc * weff * wloc, 8);
-          if (fK0sPtAxis->FindBin(v0.pt()) - 1 == 6)
-            fGFW->Fill(v0.eta(), (fK0sMass->FindBin(v0.mK0Short()) - 1), v0.phi(), wacc * weff * wloc, 2048);
           if (cfgOutputNUAWeights)
             fWeightsK0s->fill(v0.phi(), v0.eta(), vtxz, v0.pt(), cent, 0);
           if (cfgOutputrunbyrun) {
@@ -1394,11 +1394,11 @@ struct FlowGfwOmegaXi {
           continue;
         if (negdau.pt() < trkQualityOpts.cfgCutPtDauMin.value || negdau.pt() > trkQualityOpts.cfgCutPtDauMax.value)
           continue;
-        if (std::fabs(bachelor.eta()) < trkQualityOpts.cfgCutEta.value)
+        if (std::fabs(bachelor.eta()) > trkQualityOpts.cfgCutEta.value)
           continue;
-        if (std::fabs(posdau.eta()) < trkQualityOpts.cfgCutEta.value)
+        if (std::fabs(posdau.eta()) > trkQualityOpts.cfgCutEta.value)
           continue;
-        if (std::fabs(negdau.eta()) < trkQualityOpts.cfgCutEta.value)
+        if (std::fabs(negdau.eta()) > trkQualityOpts.cfgCutEta.value)
           continue;
 
         // Omega and antiOmega
