@@ -387,8 +387,6 @@ struct FlowGfwOmegaXi {
     registry.add("hmultFV0AvsmultFT0A", "", {HistType::kTH2D, {{5000, 0, 5000}, {5000, 0, 5000}}});
     registry.add("hPt", "", {HistType::kTH1D, {cfgaxisPt}});
 
-    registry.add("hNTracksREFvsCentrality", "", {HistType::kTH2D, {{5000, 0, 5000}, {100, 0, 100}}});
-
     runNumbers = cfgRunNumbers;
     if (cfgOutputrunbyrun) {
       for (const auto& runNumber : runNumbers) {
@@ -1115,8 +1113,6 @@ struct FlowGfwOmegaXi {
     float wacc = 1;
     float wloc = 1;
     double nch = 0;
-
-    double NtkREF = 0;
     // fill GFW ref flow
     for (const auto& track : tracks) {
       if (cfgDoAccEffCorr) {
@@ -1132,8 +1128,6 @@ struct FlowGfwOmegaXi {
       int ptbin = fPtAxis->FindBin(track.pt()) - 1;
       if ((track.pt() > trkQualityOpts.cfgCutPtMin.value) && (track.pt() < trkQualityOpts.cfgCutPtMax.value)) {
         fGFW->Fill(track.eta(), ptbin, track.phi(), wacc * weff, 1); //(eta, ptbin, phi, wacc*weff, bitmask)
-        if (track.eta() > 0.4 && track.eta() < 0.8)
-          NtkREF += 1;
       }
       if ((track.pt() > trkQualityOpts.cfgCutPtPOIMin.value) && (track.pt() < trkQualityOpts.cfgCutPtPOIMax.value)) {
         fGFW->Fill(track.eta(), ptbin, track.phi(), wacc * weff, 32);
@@ -1154,8 +1148,6 @@ struct FlowGfwOmegaXi {
         registry.fill(HIST("correction/hRunNumberPhiEtaVertex"), matchedPosition, track.phi(), track.eta(), vtxz);
       }
     }
-
-    registry.fill(HIST("hNTracksREFvsCentrality"), NtkREF, cent);
     // fill GFW of V0 flow
     double lowpt = trkQualityOpts.cfgCutPtPIDDauMin.value;
     double bachPtcut = trkQualityOpts.cfgCutPtPIDbachMin.value;
