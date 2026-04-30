@@ -268,7 +268,7 @@ struct FemtoProducer {
                                       cascades, tracks, trackBuilder);
   }
   template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
-  void processMcCascades(T1 const& col, T2 const& mcCols, T3 const& tracks,  T4 const& cascades, T5 const& mcParticles)
+  void processMcCascades(T1 const& col, T2 const& mcCols, T3 const& tracks, T4 const& cascades, T5 const& mcParticles)
   {
     xiBuilder.fillMcCascades<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, cascadeBuilderProducts, cascades, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
     omegaBuilder.fillMcCascades<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, cascadeBuilderProducts, cascades, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
