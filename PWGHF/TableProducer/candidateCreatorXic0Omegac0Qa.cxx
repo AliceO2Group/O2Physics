@@ -259,15 +259,14 @@ struct HfCandidateCreatorXic0Omegac0Qa {
 
   // PDG Id of daughter tracks & V0s & cascades & charm baryons - Used in KFParticle
   int pdgIdOfV0DauPos, pdgIdOfV0DauNeg, pdgIdOfBach, pdgIdOfCharmBach;
-  int pdgIdOfAntiV0DauPos, pdgIdOfAntiV0DauNeg, pdgIdOfAntiBach, pdgIdOfAntiCharmBach;
   int pdgIdOfV0, pdgIdOfCascade, pdgIdOfCharmBaryon;
 
   // Track PID - Used in DCAFitter
   int trackPidOfCascade;
 
   // Mass of daughter tracks & V0s & cascades & charm baryons;
-  float massOfV0DauPos, massOfV0DauNeg, massOfBach, massOfCharmBach;
-  float massOfV0, massOfCascade, massOfCharmBaryon;
+  float massOfV0DauPos, massOfV0DauNeg, massOfCharmBach;
+  float massOfV0, massOfCascade;
 
   // Pointer of histograms for QA
   std::shared_ptr<TH1> hInvMassCharmBaryonToXiPi, hInvMassCharmBaryonToOmegaPi, hInvMassCharmBaryonToOmegaKa;
@@ -317,11 +316,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       pdgIdOfBach = kPiMinus;
       pdgIdOfCharmBach = kPiPlus;
 
-      pdgIdOfAntiV0DauPos = kPiPlus;
-      pdgIdOfAntiV0DauNeg = kProton;
-      pdgIdOfAntiBach = kPiPlus;
-      pdgIdOfAntiCharmBach = kPiMinus;
-
       pdgIdOfV0 = kLambda0;
       pdgIdOfCascade = kXiMinus;
       pdgIdOfCharmBaryon = kXiC0;
@@ -338,11 +332,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       pdgIdOfV0DauNeg = kPiMinus;
       pdgIdOfBach = kKMinus;
       pdgIdOfCharmBach = kPiPlus;
-
-      pdgIdOfAntiV0DauPos = kPiPlus;
-      pdgIdOfAntiV0DauNeg = kProton;
-      pdgIdOfAntiBach = kKPlus;
-      pdgIdOfAntiCharmBach = kPiMinus;
 
       pdgIdOfV0 = kLambda0;
       pdgIdOfCascade = kOmegaMinus;
@@ -361,11 +350,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
       pdgIdOfBach = kKMinus;
       pdgIdOfCharmBach = kKPlus;
 
-      pdgIdOfAntiV0DauPos = kPiPlus;
-      pdgIdOfAntiV0DauNeg = kProton;
-      pdgIdOfAntiBach = kKPlus;
-      pdgIdOfAntiCharmBach = kKMinus;
-
       pdgIdOfV0 = kLambda0;
       pdgIdOfCascade = kOmegaMinus;
       pdgIdOfCharmBaryon = kOmegaC0;
@@ -383,11 +367,6 @@ struct HfCandidateCreatorXic0Omegac0Qa {
     LOGF(info, "PDG ID of V0 negative daughter: %d", pdgIdOfV0DauNeg);
     LOGF(info, "PDG ID of Bachelor: %d", pdgIdOfBach);
     LOGF(info, "PDG ID of Charm Bachelor: %d", pdgIdOfCharmBach);
-    LOGF(info, "-------------------------------------------");
-    LOGF(info, "PDG ID of anti V0 positive daughter: %d", pdgIdOfAntiV0DauPos);
-    LOGF(info, "PDG ID of anti V0 negative daughter: %d", pdgIdOfAntiV0DauNeg);
-    LOGF(info, "PDG ID of anti Bachelor: %d", pdgIdOfAntiBach);
-    LOGF(info, "PDG ID of anti Charm Bachelor: %d", pdgIdOfAntiCharmBach);
     LOGF(info, "-------------------------------------------");
     LOGF(info, "PDG ID of V0: %d", pdgIdOfV0);
     LOGF(info, "PDG ID of Cascade: %d", pdgIdOfCascade);
