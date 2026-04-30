@@ -385,8 +385,8 @@ class V0Builder
     LOG(info) << "Initialization done...";
   }
 
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
-  void fillV0s(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts, T5& v0Products, T6 const& v0s, T7 const& tracks, T8 const& tracksWithItsPid, T9& trackBuilder)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
+  void fillV0s(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts, T5& v0Products, T6 const& v0s, T7 const& tracks, T8& trackBuilder)
   {
     if (!mFillAnyTable) {
       return;
@@ -404,10 +404,8 @@ class V0Builder
 
       collisionBuilder.template fillCollision<system>(collisionProducts, col);
 
-      // cleaner, but without ITS pid: auto posDaughter = v0.template posTrack_as<T7>();
-      auto posDaughter = tracksWithItsPid.iteratorAt(v0.posTrackId() - tracksWithItsPid.offset());
-      // cleaner, but without ITS pid: auto negDaughter = v0.template negTrack_as<T7>();
-      auto negDaughter = tracksWithItsPid.iteratorAt(v0.negTrackId() - tracksWithItsPid.offset());
+      auto posDaughter = v0.template posTrack_as<T7>();
+      auto negDaughter = v0.template negTrack_as<T7>();
 
       posDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(posDaughter, trackProducts, collisionProducts);
       negDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(negDaughter, trackProducts, collisionProducts);
@@ -424,8 +422,8 @@ class V0Builder
     }
   }
 
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12, typename T13>
-  void fillMcV0s(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4 const& mcCols, T5& trackProducts, T6& v0Products, T7 const& v0s, T8 const& tracks, T9 const& tracksWithItsPid, T10& trackBuilder, T11 const& mcParticles, T12& mcBuilder, T13& mcProducts)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12>
+  void fillMcV0s(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4 const& mcCols, T5& trackProducts, T6& v0Products, T7 const& v0s, T8 const& tracks, T9& trackBuilder, T10 const& mcParticles, T11& mcBuilder, T12& mcProducts)
   {
 
     if (!mFillAnyTable) {
@@ -444,13 +442,11 @@ class V0Builder
 
       collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
 
-      auto posDaughter = tracks.iteratorAt(v0.posTrackId() - tracksWithItsPid.offset());
-      auto posDaughterWithItsPid = tracksWithItsPid.iteratorAt(v0.posTrackId() - tracksWithItsPid.offset());
-      posDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionProducts, mcCols, posDaughter, posDaughterWithItsPid, trackProducts, mcParticles, mcBuilder, mcProducts);
+      auto posDaughter = v0.template posTrack_as<T8>();
+      posDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionProducts, mcCols, posDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
 
-      auto negDaughter = tracks.iteratorAt(v0.negTrackId() - tracksWithItsPid.offset());
-      auto negDaughterWithItsPid = tracksWithItsPid.iteratorAt(v0.negTrackId() - tracksWithItsPid.offset());
-      negDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionProducts, mcCols, negDaughter, negDaughterWithItsPid, trackProducts, mcParticles, mcBuilder, mcProducts);
+      auto negDaughter = v0.template negTrack_as<T8>();
+      negDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionProducts, mcCols, negDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
 
       if constexpr (modes::isEqual(v0Type, modes::V0::kLambda)) {
         fillLambda(collisionProducts, v0Products, v0, 1.f, posDaughterIndex, negDaughterIndex);

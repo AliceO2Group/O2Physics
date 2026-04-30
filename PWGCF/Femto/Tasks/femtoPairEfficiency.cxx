@@ -17,16 +17,18 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 
-#include "Common/CCDB/EventSelectionParams.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/McCollisionExtra.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include <Common/CCDB/EventSelectionParams.h>
+#include <Common/Core/RecoDecay.h>
+#include <Common/DataModel/Centrality.h>
+#include <Common/DataModel/EventSelection.h>
+#include <Common/DataModel/McCollisionExtra.h>
+#include <Common/DataModel/Multiplicity.h>
+#include <Common/DataModel/PIDResponseTOF.h>
+#include <Common/DataModel/PIDResponseTPC.h>
+#include <Common/DataModel/TrackSelectionTables.h>
 
 #include <CommonConstants/MathConstants.h>
+#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -194,6 +196,9 @@ struct FemtoPairEfficiency {
 
   struct : ConfigurableGroup {
     string prefix = string("TrackSel1");
+    Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT of track"};
+    Configurable<float> ptMax{"ptMax", 999.f, "Maximum pT of track"};
+    Configurable<float> etaMax{"etaMax", 0.8f, "Maximum |eta| of track"};
     Configurable<float> tpcClustersMin{"tpcClustersMin", {90.f}, "Minimum number of clusters in TPC"};
     Configurable<float> tpcCrossedRowsMin{"tpcCrossedRowsMin", {80.f}, "Minimum number of crossed rows in TPC"};
     Configurable<float> tpcClustersOverCrossedRows{"tpcClustersOverCrossedRows", {0.83f}, "Minimum fraction of clusters over crossed rows in TPC"};
@@ -211,6 +216,9 @@ struct FemtoPairEfficiency {
 
   struct : ConfigurableGroup {
     string prefix = string("TrackSel2");
+    Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT of track"};
+    Configurable<float> ptMax{"ptMax", 999.f, "Maximum pT of track"};
+    Configurable<float> etaMax{"etaMax", 0.8f, "Maximum |eta| of track"};
     Configurable<float> tpcClustersMin{"tpcClustersMin", {90.f}, "Minimum number of clusters in TPC"};
     Configurable<float> tpcCrossedRowsMin{"tpcCrossedRowsMin", {80.f}, "Minimum number of crossed rows in TPC"};
     Configurable<float> tpcClustersOverCrossedRows{"tpcClustersOverCrossedRows", {0.83f}, "Minimum fraction of clusters over crossed rows in TPC"};
@@ -335,6 +343,10 @@ struct FemtoPairEfficiency {
   template <typename T, typename S>
   bool checkTrack(T const& track, S const& sel)
   {
+    if (track.pt() < sel.ptMin.value || track.pt() > sel.ptMax.value)
+      return false;
+    if (std::fabs(track.eta()) > sel.etaMax.value)
+      return false;
     if (track.tpcNClsFound() < sel.tpcClustersMin.value)
       return false;
     if (track.tpcNClsCrossedRows() < sel.tpcCrossedRowsMin.value)
@@ -401,21 +413,17 @@ struct FemtoPairEfficiency {
 
   float getKstar(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2)
   {
-    // compute pair momentum
-    auto sum = part1 + part2;
-    // Boost particle 1 to the pair rest frame (Prf) and calculate k* (would be equivalent using particle 2)
-    // make a copy of particle 1
-    auto particle1Prf = ROOT::Math::PtEtaPhiMVector(part1);
-    // get lorentz boost into pair rest frame
+    ROOT::Math::PxPyPzEVector p1(part1);
+    ROOT::Math::PxPyPzEVector p2(part2);
+    auto sum = p1 + p2;
     ROOT::Math::Boost boostPrf(sum.BoostToCM());
-    // boost particle 1 into pair rest frame and calculate its momentum, which has the same value as k*
-    return static_cast<float>(boostPrf(particle1Prf).P());
+    return static_cast<float>(boostPrf(p1).P());
   }
 
   template <typename T>
   bool hasPair(const T& tracks)
   {
-    bool hasPair = false;
+    bool foundPair = false;
     float mass1 = o2::analysis::femto::utils::getPdgMass(TrackSel1.pdgCode.value);
     float mass2 = o2::analysis::femto::utils::getPdgMass(TrackSel2.pdgCode.value);
     float kstar;
@@ -456,9 +464,21 @@ struct FemtoPairEfficiency {
       histos.fill(HIST("hTrack2Phi"), RecoDecay::constrainAngle(particle2.Phi()));
       histos.fill(HIST("hPairKstar"), kstar);
 
-      hasPair = true;
+      foundPair = true;
     }
-    return hasPair;
+    return foundPair;
+  }
+
+  template <typename T, typename S>
+  bool checkTrackMC(T const& particle, S const& sel)
+  {
+    if (!particle.isPhysicalPrimary()) // add this
+      return false;
+    if (particle.pt() < sel.ptMin.value || particle.pt() > sel.ptMax.value)
+      return false;
+    if (std::abs(particle.eta()) > sel.etaMax.value)
+      return false;
+    return true;
   }
 
   template <typename T>
@@ -469,9 +489,11 @@ struct FemtoPairEfficiency {
 
     for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsUpperIndexPolicy(tracks, tracks))) {
 
-      bool order1 = std::abs(p1.pdgCode()) == std::abs(TrackSel1.pdgCode.value) &&
+      bool order1 = checkTrackMC(p1, TrackSel1) && checkTrackMC(p2, TrackSel2) &&
+                    std::abs(p1.pdgCode()) == std::abs(TrackSel1.pdgCode.value) &&
                     std::abs(p2.pdgCode()) == std::abs(TrackSel2.pdgCode.value);
-      bool order2 = std::abs(p1.pdgCode()) == std::abs(TrackSel2.pdgCode.value) &&
+      bool order2 = checkTrackMC(p2, TrackSel1) && checkTrackMC(p1, TrackSel2) &&
+                    std::abs(p1.pdgCode()) == std::abs(TrackSel2.pdgCode.value) &&
                     std::abs(p2.pdgCode()) == std::abs(TrackSel1.pdgCode.value);
 
       if (!order1 && !order2) {

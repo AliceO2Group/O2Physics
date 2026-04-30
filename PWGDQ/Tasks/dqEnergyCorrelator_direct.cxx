@@ -527,10 +527,10 @@ struct AnalysisEnergyCorrelator {
       float hadron_eta = hadron.eta();
       float hadron_phi = hadron.phi();
       float deltaphi = RecoDecay::constrainAngle(dilepton_phi - hadron_phi, -0.5 * o2::constants::math::PI);
-      float Effweight_rec = GetSafeInterpolationWeight(hAcceptance_rec, dilepton_eta - hadron_eta, deltaphi);
-      float Accweight_gen = GetSafeInterpolationWeight(hAcceptance_gen, dilepton_eta - hadron_eta, deltaphi);
+      Effweight_rec = GetSafeInterpolationWeight(hAcceptance_rec, dilepton_eta - hadron_eta, deltaphi);
+      Accweight_gen = GetSafeInterpolationWeight(hAcceptance_gen, dilepton_eta - hadron_eta, deltaphi);
       float Effdilepton = GetSafeInterpolationWeight(hEfficiency_dilepton, dilepton_rap, dilepton_pt);
-      float Effhadron = GetSafeInterpolationWeight(hEfficiency_hadron, hadron.pt(), hadron_eta);
+      float Effhadron = GetSafeInterpolationWeight(hEfficiency_hadron, hadron_eta, hadron.pt());
       float Masswindow = hMasswindow->Interpolate(dilepton_pt);
       Accweight_gen = Accweight_gen * Effdilepton * Effhadron;
       if (fConfigDileptonHadronOptions.fConfigApplyEfficiencyME) {

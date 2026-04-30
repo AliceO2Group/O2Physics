@@ -195,35 +195,58 @@ DECLARE_SOA_TABLE(EMFwdTrackErrsForML, "AOD", "EMFWDTRKERRML", //! Joinable with
 using EMFwdTrackErrForML = EMFwdTrackErrsForML::iterator;
 
 // for SemiCharmTag at midrapidity, only electrons
+namespace emmlevent
+{
+DECLARE_SOA_COLUMN(SubGeneratorId, subGeneratorId, int); //! sub generator Id of mc collision
+} // namespace emmlevent
+namespace emmltrack
+{
+DECLARE_SOA_COLUMN(IsMotherFromHF, isMotherFromHF, bool); //! is HF included in decay history
+DECLARE_SOA_COLUMN(PdgCodeMother, pdgCodeMother, int);    //! pdg code of mother of lepton
+} // namespace emmltrack
+
+DECLARE_SOA_TABLE(EMMLLeptons, "AOD", "EMMLLEPTON", //!
+                  o2::soa::Index<>, collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, emmlevent::SubGeneratorId,
+                  track::Signed1Pt, track::Eta,
+                  track::DcaXY, track::DcaZ, o2::aod::track::CYY, o2::aod::track::CZY, o2::aod::track::CZZ,
+                  emmltrack::IsMotherFromHF, emmltrack::PdgCodeMother);
+// iterators
+using EMMLLepton = EMMLLeptons::iterator;
+
 namespace emmllhpair
 {
-DECLARE_SOA_COLUMN(Signed1PtL, signed1PtL, float); //! signed1Pt of lepton
-DECLARE_SOA_COLUMN(EtaL, etaL, float);             //! eta of lepton
-DECLARE_SOA_COLUMN(DcaL, dcaL, float);             //! dca of lepton
-DECLARE_SOA_COLUMN(DcaLSigma, dcaLsigma, float);   //! dca of lepton
-
+DECLARE_SOA_INDEX_COLUMN(EMMLLepton, emmllepton);  //! most propable emeventId
 DECLARE_SOA_COLUMN(Signed1PtH, signed1PtH, float); //! signed1Pt of hadron
 DECLARE_SOA_COLUMN(EtaH, etaH, float);             //! eta of hadron
 DECLARE_SOA_COLUMN(DcaH, dcaH, float);             //! dca of hadron
 DECLARE_SOA_COLUMN(DcaHSigma, dcaHsigma, float);   //! dca resolution of hadron
 DECLARE_SOA_COLUMN(NSigmaKa, nSigmaKa, float);     //! PID n sigma with respect to charged Kaon
 
-DECLARE_SOA_COLUMN(Mass, mass, float);           //! invariant mass of LH assuming kaon
-DECLARE_SOA_COLUMN(DcaLH, dcalh, float);         //! DCA between lepton and hadron
-DECLARE_SOA_COLUMN(CosPA, cospa, float);         //! flight direction of LH pair
+DECLARE_SOA_COLUMN(Mass, mass, float);   //! invariant mass of LH assuming kaon
+DECLARE_SOA_COLUMN(DcaLH, dcalh, float); //! DCA between lepton and hadron
+DECLARE_SOA_COLUMN(CosPA, cospa, float); //! flight direction of LH pair
+
 DECLARE_SOA_COLUMN(Lxyz, lxyz, float);           //! decay length of LH pair
 DECLARE_SOA_COLUMN(LxyzSigma, lxyzSigma, float); //! decay length resolution of LH pair
+DECLARE_SOA_COLUMN(Lxy, lxy, float);             //! decay length of LH pair
+DECLARE_SOA_COLUMN(LxySigma, lxySigma, float);   //! decay length resolution of LH pair
+DECLARE_SOA_COLUMN(Lz, lz, float);               //! decay length of LH pair
+DECLARE_SOA_COLUMN(LzSigma, lzSigma, float);     //! decay length resolution of LH pair
 
-DECLARE_SOA_COLUMN(PdgCodeH, pdgCodeH, int);     //! pdg code of associated hadron
-DECLARE_SOA_COLUMN(PdgCodeHFH, pdgCodeHFH, int); //! pdg code of HF hadron
+DECLARE_SOA_COLUMN(PdgCodeH, pdgCodeH, int);                    //! pdg code of associated hadron
+DECLARE_SOA_COLUMN(PdgCodeHFH, pdgCodeHFH, int);                //! pdg code of HF hadron
+DECLARE_SOA_COLUMN(FoundCommonMother, foundCommonMother, bool); //! decay length resolution of LH pair
 } // namespace emmllhpair
 
 DECLARE_SOA_TABLE(EMMLLHPairs, "AOD", "EMMLLHPAIR", //!
-                  o2::soa::Index<>, collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange,
-                  emmllhpair::Signed1PtL, emmllhpair::EtaL, emmllhpair::DcaL, emmllhpair::DcaLSigma,
-                  emmllhpair::Signed1PtH, emmllhpair::EtaH, emmllhpair::DcaH, emmllhpair::DcaHSigma, emmllhpair::NSigmaKa,
-                  emmllhpair::Mass, emmllhpair::DcaLH, emmllhpair::CosPA, emmllhpair::Lxyz, emmllhpair::LxyzSigma,
-                  emmllhpair::PdgCodeH, emmllhpair::PdgCodeHFH);
+                  emmllhpair::EMMLLeptonId,
+                  track::Signed1Pt, track::Eta,
+                  track::DcaXY, track::DcaZ, o2::aod::track::CYY, o2::aod::track::CZY, o2::aod::track::CZZ, pidtpc::TPCNSigmaKa, pidtof::TOFNSigmaKa,
+                  emmllhpair::Mass, emmllhpair::DcaLH, emmllhpair::CosPA,
+                  emmllhpair::Lxyz, emmllhpair::LxyzSigma,
+                  emmllhpair::Lxy, emmllhpair::LxySigma,
+                  emmllhpair::Lz, emmllhpair::LzSigma,
+                  emmllhpair::PdgCodeH, emmllhpair::FoundCommonMother);
 
 // iterators
 using EMMLLHPair = EMMLLHPairs::iterator;
