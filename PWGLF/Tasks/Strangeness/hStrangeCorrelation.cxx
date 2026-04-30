@@ -157,8 +157,6 @@ struct HStrangeCorrelation {
     ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt associated axis for histograms"};
     ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.0, 1.0, 2.0, 3.0, 100}, "pt associated axis for histograms"};
     ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
-    ConfigurableAxis axisMultCount{"axisMultCount", {300, -0.5, 299.5}, "Binning of the Multiplicity axis"};
-    ConfigurableAxis binsMultiplicity{"binsMultiplicity", {300, -0.5, 299.5}, "Binning of the Multiplicity axis"};
     ConfigurableAxis axisMassNSigma{"axisMassNSigma", {40, -2, 2}, "Axis for mass Nsigma"};
   } axesConfigurations;
 
@@ -382,7 +380,6 @@ struct HStrangeCorrelation {
 
   static constexpr int AssocParticleTypes = 9;         // K0S, Lambda, AntiLambda, Xi-, Xi+, Omega-, Omega+, Pion, Hadron
   static constexpr int AssocParticleTypesNoHadron = 8; // K0S, Lambda, AntiLambda, Xi-, Xi+, Omega-, Omega+, Pion
-  static constexpr int EstimatorsTypes = 3;            // FTOA, TF0C, FT0M
 
   /// Function to aid in calculating delta-phi
   /// \param phi1 first phi value
