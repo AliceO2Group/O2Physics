@@ -214,8 +214,8 @@ struct FlowGenericFramework {
   } cfgMultCorrCuts;
   struct : ConfigurableGroup {
     Configurable<LabeledArray<float>> nSigmas{"nSigmas", {LongArrayFloat[0], 6, 3, {"pos_pi", "pos_ka", "pos_pr", "neg_pi", "neg_ka", "neg_pr"}, {"TPC", "TOF", "ITS"}}, "Labeled array for n-sigma values for TPC, TOF, ITS for pions, kaons, protons (positive and negative)"};
-    Configurable<LabeledArray<float>> resonanceCuts{"resonanceCuts", {LongArrayFloat[0], 13, 3, {"cos_PAs", "massMin", "massMax", "PosTrackPt", "NegTrackPt", "DCAPosToPVMin", "DCANegToPVMin", "Lifetime", "RadiusMin", "RadiusMax", "Rapidity", "ArmPodMin", "MassRejection"}, {"K0", "Lambda", "Phi"}}, "Labeled array (float) for various cuts on resonances"};
-    Configurable<LabeledArray<int>> resonanceSwitches{"resonanceSwitches", {LongArrayInt[0], 8, 3, {"UseParticle", "UseCosPA", "NMassBins", "DCABetDaug", "UseProperLifetime", "UseV0Radius", "UseArmPodCut", "UseCompetingMassRejection"}, {"K0", "Lambda", "Phi"}}, "Labeled array (int) for various cuts on resonances"};
+    Configurable<LabeledArray<float>> resonanceCuts{"resonanceCuts", {LongArrayFloat[0], 14, 3, {"cos_PAs", "massMin", "massMax", "PosTrackPt", "NegTrackPt", "DCAPosToPVMin", "DCANegToPVMin", "DCAxDaughters", "Lifetime", "RadiusMin", "RadiusMax", "Rapidity", "ArmPodMin", "MassRejection"}, {"K0", "Lambda", "Phi"}}, "Labeled array (float) for various cuts on resonances"};
+    Configurable<LabeledArray<int>> resonanceSwitches{"resonanceSwitches", {LongArrayInt[0], 8, 3, {"UseParticle", "UseCosPA", "NMassBins", "UseDCAxDaughters", "UseProperLifetime", "UseV0Radius", "UseArmPodCut", "UseCompetingMassRejection"}, {"K0", "Lambda", "Phi"}}, "Labeled array (int) for various cuts on resonances"};
     O2_DEFINE_CONFIGURABLE(cfgUseLsPhi, bool, true, "Use LikeSign for Phi v2")
     O2_DEFINE_CONFIGURABLE(cfgUseOnlyTPC, bool, true, "Use only TPC PID for daughter selection")
     O2_DEFINE_CONFIGURABLE(cfgFakeKaonCut, float, 0.1f, "Maximum difference in measured momentum and TPC inner ring momentum of particle")
@@ -267,7 +267,7 @@ struct FlowGenericFramework {
   HistogramRegistry registry{"registry"};
   HistogramRegistry registryQA{"registryQA"};
 
-  std::array<std::array<float, 3>, 13> resoCutVals;
+  std::array<std::array<float, 3>, 14> resoCutVals;
   std::array<std::array<int, 3>, 8> resoSwitchVals;
   std::array<float, 6> tofNsigmaCut;
   std::array<float, 6> itsNsigmaCut;
@@ -368,6 +368,7 @@ struct FlowGenericFramework {
     kNegTrackPt,
     kDCAPosToPVMin,
     kDCANegToPVMin,
+    kDCAxDaughters,
     kLifeTime,
     kRadiusMin,
     kRadiusMax,
@@ -379,7 +380,7 @@ struct FlowGenericFramework {
     kUseParticle = 0,
     kUseCosPA,
     kMassBins,
-    kDCABetDaug,
+    kUseDCAxDaughters,
     kUseProperLifetime,
     kUseV0Radius,
     kUseArmPodCut,
@@ -1781,7 +1782,7 @@ struct FlowGenericFramework {
     if (std::abs(v0.dcapostopv()) < resoCutVals[kDCAPosToPVMin][K0] || std::abs(v0.dcanegtopv()) < resoCutVals[kDCANegToPVMin][K0])
       return false;
     registryQA.fill(HIST("K0/hK0Count"), kFillDCAtoPV);
-    if (std::abs(v0.dcaV0daughters()) > resoSwitchVals[kDCABetDaug][K0])
+    if (resoSwitchVals[kUseDCAxDaughters][K0] && std::abs(v0.dcaV0daughters()) > resoCutVals[kDCAxDaughters][K0])
       return false;
     registryQA.fill(HIST("K0/hK0Count"), kFillDCAxDaughters);
     // v0 radius cuts
@@ -1873,7 +1874,7 @@ struct FlowGenericFramework {
         return false;
     }
     registryQA.fill(HIST("Lambda/hLambdaCount"), kFillDCAtoPV);
-    if (std::abs(v0.dcaV0daughters()) > resoSwitchVals[kDCABetDaug][LAMBDA])
+    if (resoSwitchVals[kUseDCAxDaughters][LAMBDA] && std::abs(v0.dcaV0daughters()) > resoCutVals[kDCAxDaughters][LAMBDA])
       return false;
     registryQA.fill(HIST("Lambda/hLambdaCount"), kFillDCAxDaughters);
     // v0 radius cuts
