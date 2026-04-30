@@ -17,7 +17,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 set(O2PHYSICS_WARNINGS_COMMON_NO_ERROR "")
 
 # Enabled warnings supported by Clang only, not treated as errors
-set(O2PHYSICS_WARNINGS_CLANG_NO_ERROR "")
+set(O2PHYSICS_WARNINGS_CLANG_NO_ERROR "vla-cxx-extension")
 
 # Enabled warnings supported by GCC only, not treated as errors
 set(O2PHYSICS_WARNINGS_GCC_NO_ERROR "")
