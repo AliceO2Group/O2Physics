@@ -64,10 +64,10 @@ struct ConfKinkFilters : o2::framework::ConfigurableGroup {
 // selections bits for all kinks
 #define KINK_DEFAULT_BITS                                                                                                                     \
   o2::framework::Configurable<std::vector<float>> kinkTopoDcaMax{"kinkTopoDcaMax", {2.0f}, "Maximum kink topological DCA"};                   \
-  o2::framework::Configurable<std::vector<float>> transRadMin{"transRadMin", {0.2f}, "Minimum transverse radius (cm)"};                       \
+  o2::framework::Configurable<std::vector<float>> transRadMin{"transRadMin", {20.f}, "Minimum transverse radius (cm)"};                       \
   o2::framework::Configurable<std::vector<float>> transRadMax{"transRadMax", {100.f}, "Maximum transverse radius (cm)"};                      \
-  o2::framework::Configurable<std::vector<float>> dauAbsEtaMax{"dauAbsEtaMax", {0.8f}, "Maximum absolute pseudorapidity for daughter track"}; \
-  o2::framework::Configurable<std::vector<float>> dauDcaPvMin{"dauDcaPvMin", {0.0f}, "Minimum DCA of daughter from primary vertex (cm)"};     \
+  o2::framework::Configurable<std::vector<float>> dauAbsEtaMax{"dauAbsEtaMax", {1.0f}, "Maximum absolute pseudorapidity for daughter track"}; \
+  o2::framework::Configurable<std::vector<float>> dauDcaPvMin{"dauDcaPvMin", {0.1f}, "Minimum DCA of daughter from primary vertex (cm)"};     \
   o2::framework::Configurable<std::vector<float>> mothDcaPvMax{"mothDcaPvMax", {1.0f}, "Maximum DCA of mother from primary vertex (cm)"};     \
   o2::framework::Configurable<std::vector<float>> alphaAPMin{"alphaAPMin", {-1.0f}, "Minimum Alpha_AP for Sigma candidates"};                 \
   o2::framework::Configurable<std::vector<float>> alphaAPMax{"alphaAPMax", {0.0f}, "Maximum Alpha_AP for Sigma candidates"};                  \
@@ -224,8 +224,8 @@ class KinkSelection : public BaseSelection<float, o2::aod::femtodatatypes::KinkM
     this->setupContainers<HistName>(registry);
   };
 
-  template <typename T1, typename T2>
-  void computeQaVariables(T1 const& kinkCand, T2 const& /*tracks*/)
+  template <typename T1, typename T2, typename T3>
+  void computeKinkKinematics(T1 const& kinkCand, T2 const& /*tracks*/, T3 const& col)
   {
     std::array<float, 3> momMother = {kinkCand.pxMoth(), kinkCand.pyMoth(), kinkCand.pzMoth()};
     float kinkMomP = RecoDecay::p(momMother);
@@ -244,7 +244,7 @@ class KinkSelection : public BaseSelection<float, o2::aod::femtodatatypes::KinkM
     float p2A = kinkDauP * kinkDauP;
     mQtAp = std::sqrt(std::max(0.f, p2A - dp * dp / p2V0));
 
-    std::array<float, 3> vMother = {kinkCand.xDecVtx(), kinkCand.yDecVtx(), kinkCand.zDecVtx()};
+    std::array<float, 3> vMother = {kinkCand.xDecVtx() - col.posX(), kinkCand.yDecVtx() - col.posY(), kinkCand.zDecVtx() - col.posZ()};
     float vMotherNorm = std::sqrt(std::inner_product(vMother.begin(), vMother.end(), vMother.begin(), 0.f));
     mCosPointingAngle = (vMotherNorm > 0.f && kinkMomP > 0.f) ? (std::inner_product(momMother.begin(), momMother.end(), vMother.begin(), 0.f)) / (kinkMomP * vMotherNorm) : 0.f;
     mTransRadius = std::hypot(kinkCand.xDecVtx(), kinkCand.yDecVtx());
@@ -313,13 +313,8 @@ class KinkSelection : public BaseSelection<float, o2::aod::femtodatatypes::KinkM
     mKinkMotherPhi = RecoDecay::phi(momMother);
 
     // Recalculate pT using kinematic constraints
-    float ptRecalc = utils::calcPtnew(momMother[0], momMother[1], momMother[2],
-                                      momDaughter[0], momDaughter[1], momDaughter[2]);
-    if (ptRecalc > 0.f) {
-      mKinkMotherPt = ptRecalc;
-    } else {
-      mKinkMotherPt = -1.f;
-    }
+    float ptRecalc = utils::calcPtnew(momMother[0], momMother[1], momMother[2], momDaughter[0], momDaughter[1], momDaughter[2]);
+    mKinkMotherPt = (ptRecalc > 0.f) ? ptRecalc : std::hypot(momMother[0], momMother[1]);
   }
 
   template <typename T>
@@ -450,7 +445,7 @@ class KinkBuilder
         continue;
       }
       // compute qa variables before applying selections
-      mKinkSelection.computeQaVariables(kink, tracks);
+      mKinkSelection.computeKinkKinematics(kink, tracks, col);
       mKinkSelection.applySelections(kink, tracks);
       if (!mKinkSelection.passesAllRequiredSelections()) {
         continue;
@@ -484,7 +479,7 @@ class KinkBuilder
         continue;
       }
       // compute qa variables before applying selections
-      mKinkSelection.computeQaVariables(kink, tracks);
+      mKinkSelection.computeKinkKinematics(kink, tracks, col);
       mKinkSelection.applySelections(kink, tracks);
       if (!mKinkSelection.passesAllRequiredSelections()) {
         continue;
