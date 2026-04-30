@@ -220,7 +220,7 @@ struct taggingHFE {
 
   struct : ConfigurableGroup {
     std::string prefix = "eventCut";
-    // Configurable<int> cfgEventGeneratorType{"cfgEventGeneratorType", -1, "if positive, select event generator type. i.e. gap or signal"};
+    Configurable<int> cfgRejectEventGenerator{"cfgRejectEventGenerator", 999, "reject event generator. e.g. reject tracks from gap events"};
     Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
     Configurable<float> cfgCentMin{"cfgCentMin", -1.f, "min. centrality"};
     Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
@@ -1047,10 +1047,6 @@ struct taggingHFE {
           continue;
         }
         const auto& mcParticle = track.template mcParticle_as<aod::McParticles>();
-        // const auto& mcCollision = mcParticle.template mcCollision_as<aod::McCollisions>();
-        // if (eventCut.cfgEventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventCut.cfgEventGeneratorType) {
-        //   continue;
-        // }
         if (!mcParticle.has_mothers()) {
           continue;
         }
@@ -1066,6 +1062,11 @@ struct taggingHFE {
         float dcaZ = mDcaInfoCov.getZ();
 
         if (isSelectedTrack(track, trackParCov, dcaXY, dcaZ) && std::abs(mcParticle.pdgCode()) == cfgPdgLepton && isPrimary) { // keep truely primary electrons
+          auto mcCollision_ele = mcParticle.template mcCollision_as<aod::McCollisions>();
+          if (mcCollision_ele.getSubGeneratorId() == eventCut.cfgRejectEventGenerator) {
+            continue;
+          }
+
           fRegistry.fill(HIST("Track/Electron/hTPCdEdx"), track.tpcInnerParam(), track.mcTunedTPCSignal());
           fRegistry.fill(HIST("Track/Electron/hTOFbeta"), track.p(), track.beta());
           if (track.sign() > 0) { // positron
