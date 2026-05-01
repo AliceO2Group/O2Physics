@@ -1871,7 +1871,6 @@ struct HfTrackIndexSkimCreator {
         if (whichHypo[iDecay3P] == 0) {
           CLRBIT(isSelected, iDecay3P);
           if (config.debug) {
-            LOG(info) << "Candidate rejected by PID for decay " << iDecay3P << ", setting " << hf_cuts_presel_3prong::NCutVars << "th bit of cutStatus to false";
             cutStatus[iDecay3P][hf_cuts_presel_3prong::NCutVars] = false; // PID
           }
           continue; // no need to check further for this particle hypothesis
