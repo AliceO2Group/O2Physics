@@ -856,8 +856,7 @@ struct lambdaspincorrderived {
         continue;
       }
 
-      // auto poolA = V0s.sliceBy(tracksPerCollisionV0, collision1.index());
-      auto poolA = V0s.sliceBy(tracksPerCollisionV0, collision1.globalIndex());
+      auto poolA = V0s.sliceBy(tracksPerCollisionV0, collision1.index());
 
       // if pool empty, push and continue
       if (eventPools[bin].empty()) {
@@ -1008,8 +1007,7 @@ struct lambdaspincorrderived {
       }
 
       // push current event into pool
-      // auto sliced = V0s.sliceBy(tracksPerCollisionV0, collision1.index());
-      auto sliced = V0s.sliceBy(tracksPerCollisionV0, collision1.globalIndex());
+      auto sliced = V0s.sliceBy(tracksPerCollisionV0, collision1.index());
       eventPools[bin].emplace_back(collision1.index(), std::move(sliced));
       if ((int)eventPools[bin].size() > nEvtMixing) {
         eventPools[bin].pop_front();
@@ -1441,8 +1439,7 @@ struct lambdaspincorrderived {
         continue;
       }
 
-      // auto slice = V0s.sliceBy(tracksPerCollisionV0, col.index());
-      auto slice = V0s.sliceBy(tracksPerCollisionV0, col.globalIndex());
+      auto slice = V0s.sliceBy(tracksPerCollisionV0, col.index());
 
       for (auto const& t : slice) {
         if (!selectionV0(t)) {
@@ -1645,8 +1642,7 @@ struct lambdaspincorrderived {
       }
 
       const int64_t curColIdx = static_cast<int64_t>(col1.index());
-      // auto poolA = V0s.sliceBy(tracksPerCollisionV0, col1.index());
-      auto poolA = V0s.sliceBy(tracksPerCollisionV0, col1.globalIndex());
+      auto poolA = V0s.sliceBy(tracksPerCollisionV0, col1.index());
 
       for (auto const& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(poolA, poolA))) {
         if (!selectionV0(t1) || !selectionV0(t2)) {
@@ -1854,8 +1850,7 @@ struct lambdaspincorrderived {
         continue;
       }
 
-      // auto slice = V0sMC.sliceBy(tracksPerCollisionV0mc, col.index());
-      auto slice = V0sMC.sliceBy(tracksPerCollisionV0mc, col.globalIndex());
+      auto slice = V0sMC.sliceBy(tracksPerCollisionV0mc, col.index());
 
       for (auto const& t : slice) {
         if (!selectionV0MC(t)) {
@@ -2064,8 +2059,7 @@ struct lambdaspincorrderived {
       }
 
       const int64_t curColIdx = static_cast<int64_t>(col1.index());
-      // auto poolA = V0sMC.sliceBy(tracksPerCollisionV0mc, col1.index());
-      auto poolA = V0sMC.sliceBy(tracksPerCollisionV0mc, col1.globalIndex());
+      auto poolA = V0sMC.sliceBy(tracksPerCollisionV0mc, col1.index());
 
       for (auto const& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(poolA, poolA))) {
         if (!selectionV0MC(t1) || !selectionV0MC(t2)) {
