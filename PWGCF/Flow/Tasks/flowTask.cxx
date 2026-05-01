@@ -111,6 +111,12 @@ struct FlowTask {
     kTrCutNch = 0,
     kTrCutObs = 1
   };
+  enum GoodITSLayersFlag {
+    kITSLayersAll,
+    kITSLayer0123,
+    kITSLayer3,
+    kCount_ITSLayersFlag
+  };
   // Additional events selection flags
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoSameBunchPileup, bool, false, "rejects collisions which are associated with the same found-by-T0 bunch crossing")
@@ -118,7 +124,8 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoTimeFrameBorder, bool, false, "reject events at TF border")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkIsGoodZvtxFT0vsPV, bool, false, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference, use this cut at low multiplicities with caution")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoCollInTimeRangeStandard, bool, false, "no collisions in specified time range")
-  O2_DEFINE_CONFIGURABLE(cfgEvSelkIsGoodITSLayersAll, bool, true, "cut time intervals with dead ITS staves")
+  O2_DEFINE_CONFIGURABLE(cfgEvSelkIsGoodITSLayers, bool, true, "cut time intervals with dead ITS staves")
+  O2_DEFINE_CONFIGURABLE(cfgEvSelkIsGoodITSLayersFlag, int, 0, "0: kIsGoodITSLayersAll; 1: kIsGoodITSLayer0123; 2: kIsGoodITSLayer3")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoCollInRofStandard, bool, false, "no other collisions in this Readout Frame with per-collision multiplicity above threshold")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoHighMultCollInPrevRof, bool, false, "veto an event if FT0C amplitude in previous ITS ROF is above threshold")
   O2_DEFINE_CONFIGURABLE(cfgEvSelMultCorrelation, bool, true, "Multiplicity correlation cut")
@@ -346,7 +353,8 @@ struct FlowTask {
     registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(4, "kNoTimeFrameBorder");
     registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(5, "kIsGoodZvtxFT0vsPV");
     registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(6, "kNoCollInTimeRangeStandard");
-    registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(7, "kIsGoodITSLayersAll");
+    std::string itsLayersFlag[kCount_ITSLayersFlag] = {"ITSLayersAll", "ITSLayers0123", "ITSLayer3"};
+    registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(7, Form("kIsGood%s", itsLayersFlag[cfgEvSelkIsGoodITSLayersFlag].c_str()));
     registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(8, "kNoCollInRofStandard");
     registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(9, "kNoHighMultCollInPrevRof");
     registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(10, "occupancy");
@@ -396,8 +404,8 @@ struct FlowTask {
     registry.add("hnTPCClu", "Number of found TPC clusters", {HistType::kTH1D, {{100, 40, 180}}});
     registry.add("hnITSClu", "Number of found ITS clusters", {HistType::kTH1D, {{100, 0, 20}}});
     registry.add("hnTPCCrossedRow", "Number of crossed TPC Rows", {HistType::kTH1D, {{100, 40, 180}}});
-    registry.add("hDCAz", "DCAz after cuts; DCAz (cm); Pt", {HistType::kTH2D, {{200, -0.5, 0.5}, {200, 0, 5}}});
-    registry.add("hDCAxy", "DCAxy after cuts; DCAxy (cm); Pt", {HistType::kTH2D, {{200, -0.5, 0.5}, {200, 0, 5}}});
+    registry.add("hDCAz", "DCAz after cuts; DCAz (cm); Pt", {HistType::kTH2D, {{200, -1., 1.}, {200, 0, 5}}});
+    registry.add("hDCAxy", "DCAxy after cuts; DCAxy (cm); Pt", {HistType::kTH2D, {{200, -1., 1.}, {200, 0, 5}}});
     registry.add("hTrackCorrection2d", "Correlation table for number of tracks table; uncorrected track; corrected track", {HistType::kTH2D, {axisNch, axisNch}});
     registry.add("hMeanPt", "", {HistType::kTProfile, {axisIndependent}});
     registry.add("hMeanPtWithinGap08", "", {HistType::kTProfile, {axisIndependent}});
@@ -979,12 +987,17 @@ struct FlowTask {
     }
     if (cfgEvSelkNoCollInTimeRangeStandard)
       registry.fill(HIST("hEventCountSpecific"), 5.5);
-    if (cfgEvSelkIsGoodITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    if (cfgEvSelkIsGoodITSLayers) {
       // from Jan 9 2025 AOT meeting
       // cut time intervals with dead ITS staves
-      return 0;
+      if (cfgEvSelkIsGoodITSLayersFlag == kITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
+        return 0;
+      if (cfgEvSelkIsGoodITSLayersFlag == kITSLayer0123 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123))
+        return 0;
+      if (cfgEvSelkIsGoodITSLayersFlag == kITSLayer3 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer3))
+        return 0;
     }
-    if (cfgEvSelkIsGoodITSLayersAll)
+    if (cfgEvSelkIsGoodITSLayers)
       registry.fill(HIST("hEventCountSpecific"), 6.5);
     if (cfgEvSelkNoCollInRofStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       // no other collisions in this Readout Frame with per-collision multiplicity above threshold
@@ -1406,7 +1419,7 @@ struct FlowTask {
       }
       registry.fill(HIST("hNormDeltaPt_X_afterCut"), normDeltaPt, independent, weffEvent);
       if (ptEtaVec.size() > 0) {
-        for (auto trptEta : ptEtaVec) {
+        for (auto const& trptEta : ptEtaVec) {
           registry.fill(HIST("hPt_afterDptCut"), trptEta.first);
           if (trptEta.second < -1. * cfgAdditionObs.cfgDptDisEtaGapQA)
             registry.fill(HIST("hPtA_afterDptCut"), trptEta.first);

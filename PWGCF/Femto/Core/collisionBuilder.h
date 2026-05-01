@@ -64,6 +64,7 @@ struct ConfCollisionFilters : o2::framework::ConfigurableGroup {
 
 struct ConfCollisionBits : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("CollisionBits");
+  o2::framework::Configurable<bool> passThrough{"passThrough", false, "If true, all tracks are passed through. Bits for all selections are stored."};
   o2::framework::Configurable<int> sel8{"sel8", 1, "Use sel8 (-1: stored in bitmaks; 0 off; 1 on)"};
   o2::framework::Configurable<int> noSameBunchPileup{"noSameBunchPileup", 0, "Reject collisions in case of pileup with another collision in the same foundBC (-1: stored in bitmaks; 0 off; 1 on)"};
   o2::framework::Configurable<int> isVertexItsTpc{"isVertexItsTpc", 0, "At least one ITS-TPC track found for the vertex (-1: stored in bitmaks; 0 off; 1 on)"};
@@ -175,7 +176,7 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
   template <typename T1, typename T2>
   void configure(o2::framework::HistogramRegistry* registry, T1 const& filter, T2 const& config)
   {
-    // cuts
+    // filters
     mVtxZMin = filter.vtxZMin.value;
     mVtxZMax = filter.vtxZMax.value;
     mMagFieldMin = filter.magFieldMin.value;
@@ -187,26 +188,48 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
     mSphericityMin = filter.sphericityMin.value;
     mSphericityMax = filter.sphericityMax.value;
 
-    // flags
-    this->addSelection(kSel8, collisionSelectionNames.at(kSel8), config.sel8.value);
-    this->addSelection(kNoSameBunchPileUp, collisionSelectionNames.at(kNoSameBunchPileUp), config.noSameBunchPileup.value);
-    this->addSelection(kIsGoodZvtxFt0VsPv, collisionSelectionNames.at(kIsGoodZvtxFt0VsPv), config.isGoodZvtxFt0VsPv.value);
-    this->addSelection(kNoCollInTimeRangeNarrow, collisionSelectionNames.at(kNoCollInTimeRangeNarrow), config.noCollInTimeRangeNarrow.value);
-    this->addSelection(kNoCollInTimeRangeStrict, collisionSelectionNames.at(kNoCollInTimeRangeStrict), config.noCollInTimeRangeStrict.value);
-    this->addSelection(kNoCollInTimeRangeStandard, collisionSelectionNames.at(kNoCollInTimeRangeStandard), config.noCollInTimeRangeStandard.value);
-    this->addSelection(kNoCollInRofStrict, collisionSelectionNames.at(kNoCollInRofStrict), config.noCollInRofStrict.value);
-    this->addSelection(kNoCollInRofStandard, collisionSelectionNames.at(kNoCollInRofStandard), config.noCollInRofStandard.value);
-    this->addSelection(kNoHighMultCollInPrevRof, collisionSelectionNames.at(kNoHighMultCollInPrevRof), config.noHighMultCollInPrevRof.value);
-    this->addSelection(kIsGoodItsLayer3, collisionSelectionNames.at(kIsGoodItsLayer3), config.isGoodItsLayer3.value);
-    this->addSelection(kIsGoodItsLayer0123, collisionSelectionNames.at(kIsGoodItsLayer0123), config.isGoodItsLayer0123.value);
-    this->addSelection(kIsGoodItsLayersAll, collisionSelectionNames.at(kIsGoodItsLayersAll), config.isGoodItsLayersAll.value);
-    this->addSelection(kOccupancyMin, collisionSelectionNames.at(kOccupancyMin), config.occupancyMin.value, limits::kLowerLimit, true, true, false);
-    this->addSelection(kOccupancyMax, collisionSelectionNames.at(kOccupancyMax), config.occupancyMax.value, limits::kUpperLimit, true, true, false);
-    this->addSelection(kSphericityMin, collisionSelectionNames.at(kSphericityMin), config.sphericityMin.value, limits::kLowerLimit, true, true, false);
-    this->addSelection(kSphericityMax, collisionSelectionNames.at(kSphericityMax), config.sphericityMax.value, limits::kUpperLimit, true, true, false);
+    // if pass through mode is activated, each cut is neutral (i.e. neither minimal nor optional and we do store all bits, so the most permissive bit is not skipped for minimal selections)
+    mPassThrough = config.passThrough.value;
+
+    if (mPassThrough) {
+      this->addSelection(kSel8, collisionSelectionNames.at(kSel8), 2);
+      this->addSelection(kNoSameBunchPileUp, collisionSelectionNames.at(kNoSameBunchPileUp), 2);
+      this->addSelection(kIsGoodZvtxFt0VsPv, collisionSelectionNames.at(kIsGoodZvtxFt0VsPv), 2);
+      this->addSelection(kNoCollInTimeRangeNarrow, collisionSelectionNames.at(kNoCollInTimeRangeNarrow), 2);
+      this->addSelection(kNoCollInTimeRangeStrict, collisionSelectionNames.at(kNoCollInTimeRangeStrict), 2);
+      this->addSelection(kNoCollInTimeRangeStandard, collisionSelectionNames.at(kNoCollInTimeRangeStandard), 2);
+      this->addSelection(kNoCollInRofStrict, collisionSelectionNames.at(kNoCollInRofStrict), 2);
+      this->addSelection(kNoCollInRofStandard, collisionSelectionNames.at(kNoCollInRofStandard), 2);
+      this->addSelection(kNoHighMultCollInPrevRof, collisionSelectionNames.at(kNoHighMultCollInPrevRof), 2);
+      this->addSelection(kIsGoodItsLayer3, collisionSelectionNames.at(kIsGoodItsLayer3), 2);
+      this->addSelection(kIsGoodItsLayer0123, collisionSelectionNames.at(kIsGoodItsLayer0123), 2);
+      this->addSelection(kIsGoodItsLayersAll, collisionSelectionNames.at(kIsGoodItsLayersAll), 2);
+    } else {
+      this->addSelection(kSel8, collisionSelectionNames.at(kSel8), config.sel8.value);
+      this->addSelection(kNoSameBunchPileUp, collisionSelectionNames.at(kNoSameBunchPileUp), config.noSameBunchPileup.value);
+      this->addSelection(kIsGoodZvtxFt0VsPv, collisionSelectionNames.at(kIsGoodZvtxFt0VsPv), config.isGoodZvtxFt0VsPv.value);
+      this->addSelection(kNoCollInTimeRangeNarrow, collisionSelectionNames.at(kNoCollInTimeRangeNarrow), config.noCollInTimeRangeNarrow.value);
+      this->addSelection(kNoCollInTimeRangeStrict, collisionSelectionNames.at(kNoCollInTimeRangeStrict), config.noCollInTimeRangeStrict.value);
+      this->addSelection(kNoCollInTimeRangeStandard, collisionSelectionNames.at(kNoCollInTimeRangeStandard), config.noCollInTimeRangeStandard.value);
+      this->addSelection(kNoCollInRofStrict, collisionSelectionNames.at(kNoCollInRofStrict), config.noCollInRofStrict.value);
+      this->addSelection(kNoCollInRofStandard, collisionSelectionNames.at(kNoCollInRofStandard), config.noCollInRofStandard.value);
+      this->addSelection(kNoHighMultCollInPrevRof, collisionSelectionNames.at(kNoHighMultCollInPrevRof), config.noHighMultCollInPrevRof.value);
+      this->addSelection(kIsGoodItsLayer3, collisionSelectionNames.at(kIsGoodItsLayer3), config.isGoodItsLayer3.value);
+      this->addSelection(kIsGoodItsLayer0123, collisionSelectionNames.at(kIsGoodItsLayer0123), config.isGoodItsLayer0123.value);
+      this->addSelection(kIsGoodItsLayersAll, collisionSelectionNames.at(kIsGoodItsLayersAll), config.isGoodItsLayersAll.value);
+    }
+
+    const bool isMinimalCut = mPassThrough ? false : true;
+    const bool isOptionalCut = mPassThrough ? false : true;
+    const bool skipMostPermissiveBit = mPassThrough ? false : true;
+
+    this->addSelection(kOccupancyMin, collisionSelectionNames.at(kOccupancyMin), config.occupancyMin.value, limits::kLowerLimit, skipMostPermissiveBit, isMinimalCut, false);
+    this->addSelection(kOccupancyMax, collisionSelectionNames.at(kOccupancyMax), config.occupancyMax.value, limits::kUpperLimit, skipMostPermissiveBit, isMinimalCut, false);
+    this->addSelection(kSphericityMin, collisionSelectionNames.at(kSphericityMin), config.sphericityMin.value, limits::kLowerLimit, skipMostPermissiveBit, isMinimalCut, false);
+    this->addSelection(kSphericityMax, collisionSelectionNames.at(kSphericityMax), config.sphericityMax.value, limits::kUpperLimit, skipMostPermissiveBit, isMinimalCut, false);
 
     std::vector<float> triggerValues(config.triggers.value.size(), 1.f);
-    this->addSelection(kTriggers, collisionSelectionNames.at(kTriggers), triggerValues, limits::kEqualArray, false, false, true);
+    this->addSelection(kTriggers, collisionSelectionNames.at(kTriggers), triggerValues, limits::kEqualArray, false, false, isOptionalCut);
     this->addComments(kTriggers, config.triggers.value);
 
     this->setupContainers<HistName>(registry);
@@ -311,6 +334,8 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
     this->assembleBitmask<HistName>();
   };
 
+  bool passThroughAllCollisions() const { return mPassThrough; }
+
  protected:
   template <typename T>
   float computeSphericity(T const& tracks)
@@ -361,6 +386,8 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
   float mSphericity = 0.f;
   float mCentrality = 0.f;
   float mMultiplicity = 0.f;
+
+  bool mPassThrough = false;
 };
 
 struct CollisionBuilderProducts : o2::framework::ProducesGroup {
@@ -477,6 +504,11 @@ class CollisionBuilder
   template <typename T1>
   bool checkCollision(T1 const& col)
   {
+
+    if (mCollisionSelection.passThroughAllCollisions()) {
+      return true;
+    }
+
     // check RCT flags first
     if (mUseRctFlags) {
       if (!mRctFlagsChecker(col)) {

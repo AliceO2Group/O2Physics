@@ -89,6 +89,9 @@ struct sigmaanalysis {
   //__________________________________________________
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  // Species
+  Configurable<bool> doLambdaStar{"doLambdaStar", false, "Build Lambda(1520) instead of Sigma0"};
+
   // Event level
   Configurable<bool> doPPAnalysis{"doPPAnalysis", true, "if in pp, set to true"};
   Configurable<int> centralityEstimator{"centralityEstimator", kCentFT0C, "Run 3 centrality estimator (0:CentFT0C, 1:CentFT0M, 2:CentFT0CVariant1, 3:CentMFT, 4:CentNGlobal, 5:CentFV0A)"};
@@ -1616,13 +1619,13 @@ struct sigmaanalysis {
       return false;
 
     // Sigma0 specific selections
-    float sigma0Y = cand.sigma0Y();
+    float rapidity = doLambdaStar ? cand.lambdaStarY() : cand.sigma0Y();
     if constexpr (requires { cand.sigma0MCY(); }) { // If MC
-      sigma0Y = cand.sigma0MCY();
+      rapidity = cand.sigma0MCY();
     }
 
     // Rapidity
-    if ((sigma0Y < sigma0Selections.Sigma0MinRapidity) || (sigma0Y > sigma0Selections.Sigma0MaxRapidity))
+    if ((rapidity < sigma0Selections.Sigma0MinRapidity) || (rapidity > sigma0Selections.Sigma0MaxRapidity))
       return false;
 
     // V0Pair Radius

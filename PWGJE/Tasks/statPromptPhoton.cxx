@@ -87,6 +87,16 @@ struct statPromptPhoton {
   Configurable<bool> cfgJETracks{"cfgJETracks", false, "Enables running on derived JE data"};
   Configurable<bool> cfgGenHistograms{"cfgGenHistograms", false, "Enables Generated histograms"};
   Configurable<bool> cfgGenReqRec{"cfgGenReqRec", false, "Only consider generated events which are successfully reconstructed"};
+  Configurable<bool> cfgReqRecPS_REC{"cfgReqRecPS_REC", false, "Only consider reconstructed photons within the EMCAl acceptence"};
+  Configurable<bool> cfgReqRecPS_GEN{"cfgReqRecPS_GEN", false, "Only consider generated photons within the EMCAl acceptence"};
+  Configurable<float> cfgEMClowPSphi{"cfgEMClowPSphi", 1.42, "lower limit of the EMC acceptance if Rec PS is required"};
+  Configurable<float> cfgEMChighPSphi{"cfgEMChighPSphi", 3.26, "higher limit of the EMC acceptance if Rec PS is required"};
+  Configurable<float> cfgEMChighPSeta{"cfgEMChighPSeta", 0.62, "symmetric eta cut if Rec PS is required"};
+  Configurable<float> cfgDClowPSphi{"cfgDClowPSphi", 4.56, "lower limit of the DCal acceptance if Rec PS is required"};
+  Configurable<float> cfgDChighPSphi{"cfgDChighPSphi", 5.70, "higher limit of the DCal acceptance if Rec PS is required"};
+  Configurable<int> cfgMCptNbins{"cfgMCptNbins", 200, "number of ptbins in MC QA plots"};
+  Configurable<double> cfgMCptbinLow{"cfgMCptbinLow", 5, "lower limit of ptbins in MC QA plots"};
+  Configurable<double> cfgMCptbinHigh{"cfgMCptbinHigh", 200, "upper limit of ptbins in MC QA plots"};
   Configurable<bool> cfgRecHistograms{"cfgRecHistograms", false, "Enables Reconstructed histograms"};
   Configurable<bool> cfgDataHistograms{"cfgDataHistograms", false, "Enables Data histograms"};
   Configurable<std::string> cfgTriggerMasks{"cfgTriggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
@@ -100,6 +110,8 @@ struct statPromptPhoton {
   {
     std::vector<double> ptBinning = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 12.0, 16.0, 20.0, 25.0, 30.0, 40.0, 50.0, 75.0, 100.0, 150.0, 200.0, 300.0, 500.0};
     AxisSpec pthadAxis = {ptBinning, "#it{p}_{T}^{had sum} [GeV/c]"};
+
+    const AxisSpec MCptAxis = {cfgMCptNbins, cfgMCptbinLow, cfgMCptbinHigh};
 
     triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(cfgTriggerMasks);
     if (cfgJETracks) {
@@ -184,48 +196,48 @@ struct statPromptPhoton {
       histos.add("REC_dR_Stern", "REC_dR_Stern", kTH1F, {{628, 0.0, 2 * TMath::Pi()}});
       histos.add("REC_prompt_phiQA", "REC_prompt_phiQA", kTH1F, {{640 * 2, 0, 2 * TMath::Pi()}});
       histos.add("REC_prompt_etaQA", "REC_prompt_etaQA", kTH1F, {{100, -1, 1}});
-      histos.add("REC_prompt_ptQA", "REC_prompt_ptQA", kTH1F, {{82, -1.0, 40.0}});
+      histos.add("REC_prompt_ptQA", "REC_prompt_ptQA", kTH1F, {MCptAxis});
       histos.add("REC_decay_phiQA", "REC_decay_phiQA", kTH1F, {{640 * 2, 0, 2 * TMath::Pi()}});
       histos.add("REC_decay_etaQA", "REC_decay_etaQA", kTH1F, {{100, -1, 1}});
-      histos.add("REC_decay_ptQA", "REC_decay_ptQA", kTH1F, {{82, -1.0, 40.0}});
+      histos.add("REC_decay_ptQA", "REC_decay_ptQA", kTH1F, {MCptAxis});
       histos.add("REC_frag_phiQA", "REC_frag_phiQA", kTH1F, {{640 * 2, 0, 2 * TMath::Pi()}});
       histos.add("REC_frag_etaQA", "REC_frag_etaQA", kTH1F, {{100, -1, 1}});
-      histos.add("REC_frag_ptQA", "REC_frag_ptQA", kTH1F, {{82, -1.0, 40.0}});
+      histos.add("REC_frag_ptQA", "REC_frag_ptQA", kTH1F, {MCptAxis});
       histos.add("REC_direct_phiQA", "REC_direct_phiQA", kTH1F, {{640 * 2, 0, 2 * TMath::Pi()}});
       histos.add("REC_direct_etaQA", "REC_direct_etaQA", kTH1F, {{100, -1, 1}});
-      histos.add("REC_direct_ptQA", "REC_direct_ptQA", kTH1F, {{82, -1.0, 40.0}});
+      histos.add("REC_direct_ptQA", "REC_direct_ptQA", kTH1F, {MCptAxis});
       histos.add("REC_cluster_phiQA", "REC_cluster_phiQA", kTH1F, {{640 * 2, 0, 2 * TMath::Pi()}});
       histos.add("REC_cluster_etaQA", "REC_cluster_etaQA", kTH1F, {{100, -1, 1}});
-      histos.add("REC_cluster_energyQA", "REC_cluster_energyQA", kTH1F, {{82, -1.0, 40.0}});
+      histos.add("REC_cluster_energyQA", "REC_cluster_energyQA", kTH1F, {MCptAxis});
       histos.add("REC_clusteriso_phiQA", "REC_clusteriso_phiQA", kTH1F, {{640 * 2, 0, 2 * TMath::Pi()}});
       histos.add("REC_clusteriso_etaQA", "REC_clusteriso_etaQA", kTH1F, {{100, -1, 1}});
-      histos.add("REC_clusteriso_energyQA", "REC_clusteriso_energyQA", kTH1F, {{82, -1.0, 40.0}});
+      histos.add("REC_clusteriso_energyQA", "REC_clusteriso_energyQA", kTH1F, {MCptAxis});
       histos.add("REC_track_phiQA", "REC_track_phiQA", kTH1F, {{640 * 2, 0, 2 * TMath::Pi()}});
       histos.add("REC_track_etaQA", "REC_track_etaQA", kTH1F, {{100, -1, 1}});
-      histos.add("REC_track_ptQA", "REC_track_ptQA", kTH1F, {{82, -1.0, 40.0}});
+      histos.add("REC_track_ptQA", "REC_track_ptQA", kTH1F, {MCptAxis});
       histos.add("REC_cluster_direct_phiQA", "REC_cluster_direct_phiQA", kTH1F, {{640 * 2, 0, 2 * TMath::Pi()}});
       histos.add("REC_cluster_direct_etaQA", "REC_cluster_direct_etaQA", kTH1F, {{100, -1, 1}});
-      histos.add("REC_cluster_direct_energyQA", "REC_cluster_direct_energyQA", kTH1F, {{82, -1.0, 40.0}});
+      histos.add("REC_cluster_direct_energyQA", "REC_cluster_direct_energyQA", kTH1F, {MCptAxis});
       histos.add("REC_cluster_frag_phiQA", "REC_cluster_frag_phiQA", kTH1F, {{640 * 2, 0, 2 * TMath::Pi()}});
       histos.add("REC_cluster_frag_etaQA", "REC_cluster_frag_etaQA", kTH1F, {{100, -1, 1}});
-      histos.add("REC_cluster_frag_energyQA", "REC_cluster_frag_energyQA", kTH1F, {{82, -1.0, 40.0}});
+      histos.add("REC_cluster_frag_energyQA", "REC_cluster_frag_energyQA", kTH1F, {MCptAxis});
       histos.add("REC_cluster_both_phiQA", "REC_cluster_both_phiQA", kTH1F, {{640 * 2, 0, 2 * TMath::Pi()}});
       histos.add("REC_cluster_both_etaQA", "REC_cluster_both_etaQA", kTH1F, {{100, -1, 1}});
-      histos.add("REC_cluster_both_energyQA", "REC_cluster_both_energyQA", kTH1F, {{82, -1.0, 40.0}});
+      histos.add("REC_cluster_both_energyQA", "REC_cluster_both_energyQA", kTH1F, {MCptAxis});
     }
     if (cfgGenHistograms) {
       histos.add("GEN_prompt_phiQA", "GEN_prompt_phiQA", kTH1F, {{640 * 2, 0, 2 * TMath::Pi()}});
       histos.add("GEN_prompt_etaQA", "GEN_prompt_etaQA", kTH1F, {{100, -1, 1}});
-      histos.add("GEN_prompt_ptQA", "GEN_prompt_ptQA", kTH1F, {{82, -1.0, 40.0}});
+      histos.add("GEN_prompt_ptQA", "GEN_prompt_ptQA", kTH1F, {MCptAxis});
       histos.add("GEN_decay_phiQA", "GEN_decay_phiQA", kTH1F, {{640 * 2, 0, 2 * TMath::Pi()}});
       histos.add("GEN_decay_etaQA", "GEN_decay_etaQA", kTH1F, {{100, -1, 1}});
-      histos.add("GEN_decay_ptQA", "GEN_decay_ptQA", kTH1F, {{82, -1.0, 40.0}});
+      histos.add("GEN_decay_ptQA", "GEN_decay_ptQA", kTH1F, {MCptAxis});
       histos.add("GEN_frag_phiQA", "GEN_frag_phiQA", kTH1F, {{640 * 2, 0, 2 * TMath::Pi()}});
       histos.add("GEN_frag_etaQA", "GEN_frag_etaQA", kTH1F, {{100, -1, 1}});
-      histos.add("GEN_frag_ptQA", "GEN_frag_ptQA", kTH1F, {{82, -1.0, 40.0}});
+      histos.add("GEN_frag_ptQA", "GEN_frag_ptQA", kTH1F, {MCptAxis});
       histos.add("GEN_direct_phiQA", "GEN_direct_phiQA", kTH1F, {{640 * 2, 0, 2 * TMath::Pi()}});
       histos.add("GEN_direct_etaQA", "GEN_direct_etaQA", kTH1F, {{100, -1, 1}});
-      histos.add("GEN_direct_ptQA", "GEN_direct_ptQA", kTH1F, {{82, -1.0, 40.0}});
+      histos.add("GEN_direct_ptQA", "GEN_direct_ptQA", kTH1F, {MCptAxis});
       histos.add("GEN_nEvents", "GEN_nEvents", kTH1F, {{4, 0.0, 4.0}});
       histos.add("GEN_nEvents_simple", "GEN_nEvents", kTH1F, {{4, 0.0, 4.0}});
       histos.add("GEN_True_Trigger_Energy", "GEN_True_Trigger_Energy", kTH1F, {{82, -1.0, 40.0}});
@@ -1513,6 +1525,15 @@ struct statPromptPhoton {
           continue;
         if (std::fabs(mcParticle.getGenStatusCode()) >= 81 || !mcParticle.isPhysicalPrimary())
           continue;
+        if (cfgReqRecPS_GEN) {
+          if (std::fabs(mcParticle.eta()) > cfgEMChighPSeta)
+            continue;
+          bool insideCalPhi = false;
+          if ((mcParticle.phi() > cfgEMClowPSphi && mcParticle.phi() < cfgEMChighPSphi) || (mcParticle.phi() > cfgDClowPSphi && mcParticle.phi() < cfgDChighPSphi))
+            insideCalPhi = true;
+          if (!insideCalPhi)
+            continue;
+        }
 
         // Chase this final-state photon upward
         int chaseindex = -1;
@@ -1629,6 +1650,15 @@ struct statPromptPhoton {
           continue;
         if (std::fabs(clusterparticle.getGenStatusCode()) >= 81)
           continue;
+        if (cfgReqRecPS_REC) {
+          if (std::fabs(clusterparticle.eta()) > cfgEMChighPSeta)
+            continue;
+          bool insideCalPhi = false;
+          if ((clusterparticle.phi() > cfgEMClowPSphi && clusterparticle.phi() < cfgEMChighPSphi) || (clusterparticle.phi() > cfgDClowPSphi && clusterparticle.phi() < cfgDChighPSphi))
+            insideCalPhi = true;
+          if (!insideCalPhi)
+            continue;
+        }
 
         int chaseindex = -1;
         for (auto& mom : clusterparticle.mothers_as<aod::JMcParticles>()) {

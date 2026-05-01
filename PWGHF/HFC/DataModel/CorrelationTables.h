@@ -149,6 +149,7 @@ DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                             //! D
 DECLARE_SOA_COLUMN(DeltaY, deltaY, float);                                 //! DeltaY between Lc and Hadrons
 DECLARE_SOA_COLUMN(PtLc, ptLc, float);                                     //! Transverse momentum of Lc
 DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);                             //! Transverse momentum of Hadron
+DECLARE_SOA_COLUMN(PtSoftPi, ptSoftPi, float);                             //! Transverse momentum of Soft Pion
 DECLARE_SOA_COLUMN(ChargeCand, chargeCand, int);                           //! store charge of Lc and Sc
 DECLARE_SOA_COLUMN(MLc, mLc, float);                                       //! Invariant mass of Lc
 DECLARE_SOA_COLUMN(MlScoreBkg, mlScoreBkg, float);                         //! ML background score for Lc selection
@@ -157,6 +158,8 @@ DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int);                       //! T
 DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                                 //! Pool Bin for the MixedEvent
 DECLARE_SOA_COLUMN(TrackDcaXY, trackDcaXY, float);                         //! DCA xy of the track
 DECLARE_SOA_COLUMN(TrackDcaZ, trackDcaZ, float);                           //! DCA z of the track
+DECLARE_SOA_COLUMN(SoftPiDcaXY, softPiDcaXY, float);                       //! DCA xy of the soft pion
+DECLARE_SOA_COLUMN(SoftPiDcaZ, softPiDcaZ, float);                         //! DCA z of the soft pion
 DECLARE_SOA_COLUMN(TrackTPCNClsCrossedRows, trackTPCNClsCrossedRows, int); //! Number of crossed TPC Rows
 DECLARE_SOA_COLUMN(TrackOrigin, trackOrigin, int);                         //! Number of crossed TPC Rows
 DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);                              //! Used in MC-Rec, Lc Signal
@@ -174,6 +177,18 @@ DECLARE_SOA_COLUMN(PiNsigmTOF, piNsigmTOF, float);                         //! A
 
 DECLARE_SOA_TABLE(PtLcFromScHPair, "AOD", "PTLCSCHPAIR", //! Sc-->Lc pT for paired Sc-proton
                   aod::hf_correlation_lc_hadron::PtLc);
+
+DECLARE_SOA_TABLE(ScRecoInfo, "AOD", "SCRECOINFO", //! Sc reco info
+                  aod::hf_correlation_lc_hadron::MLc,
+                  aod::hf_correlation_lc_hadron::PtSoftPi,
+                  aod::hf_correlation_lc_hadron::SoftPiDcaXY,
+                  aod::hf_correlation_lc_hadron::SoftPiDcaZ);
+
+DECLARE_SOA_TABLE(ScHadronRecoInfo, "AOD", "SCHADRECOINFO", //! Sc reco info
+                  aod::hf_correlation_lc_hadron::MLc,
+                  aod::hf_correlation_lc_hadron::PtSoftPi,
+                  aod::hf_correlation_lc_hadron::SoftPiDcaXY,
+                  aod::hf_correlation_lc_hadron::SoftPiDcaZ);
 
 DECLARE_SOA_TABLE(PtLcFromSc, "AOD", "PTLCSC", //! Sc-->Lc pT
                   aod::hf_correlation_lc_hadron::PtLc);

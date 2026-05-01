@@ -22,6 +22,7 @@
 #include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsAnalysis.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
@@ -149,7 +150,8 @@ DECLARE_SOA_TABLE(HfCandDpLites, "AOD", "HFCANDDPLITE",
                   collision::NumContrib,
                   hf_cand_mc_flag::FlagMcMatchRec,
                   hf_cand_mc_flag::OriginMcRec,
-                  hf_cand_mc_flag::FlagMcDecayChanRec)
+                  hf_cand_mc_flag::FlagMcDecayChanRec,
+                  hf_cand_mc_flag::PdgBhadMotherPart)
 
 DECLARE_SOA_TABLE(HfCandDpFulls, "AOD", "HFCANDDPFULL",
                   collision::NumContrib,
@@ -230,7 +232,8 @@ DECLARE_SOA_TABLE(HfCandDpFulls, "AOD", "HFCANDDPFULL",
                   full::Centrality,
                   hf_cand_mc_flag::FlagMcMatchRec,
                   hf_cand_mc_flag::OriginMcRec,
-                  hf_cand_mc_flag::FlagMcDecayChanRec);
+                  hf_cand_mc_flag::FlagMcDecayChanRec,
+                  hf_cand_mc_flag::PdgBhadMotherPart);
 
 DECLARE_SOA_TABLE(HfCandDpFullEvs, "AOD", "HFCANDDPFULLEV",
                   collision::NumContrib,
@@ -305,10 +308,12 @@ struct HfTreeCreatorDplusToPiKPi {
     int8_t flagMc = 0;
     int8_t originMc = 0;
     int8_t channelMc = 0;
+    int8_t bMotherFlag = -1;
     if constexpr (DoMc) {
       flagMc = candidate.flagMcMatchRec();
       originMc = candidate.originMcRec();
       channelMc = candidate.flagMcDecayChanRec();
+      bMotherFlag = o2::analysis::getBHadMotherFlag(candidate.pdgBhadMotherPart());
     }
 
     std::vector<float> outputMl = {-999., -999.};
@@ -374,7 +379,8 @@ struct HfTreeCreatorDplusToPiKPi {
         coll.numContrib(),
         flagMc,
         originMc,
-        channelMc);
+        channelMc,
+        bMotherFlag);
     } else {
       rowCandidateFull(
         coll.numContrib(),
@@ -455,7 +461,8 @@ struct HfTreeCreatorDplusToPiKPi {
         cent,
         flagMc,
         originMc,
-        channelMc);
+        channelMc,
+        bMotherFlag);
     }
   }
 

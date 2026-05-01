@@ -24,8 +24,6 @@
 #include <Framework/HistogramSpec.h>
 
 #include <array>
-#include <cstddef>
-#include <cstdint>
 #include <map>
 #include <string>
 #include <string_view>

@@ -19,7 +19,7 @@
 
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "PWGHF/DataModel/DerivedTables.h"
-#include "PWGJE/DataModel/Jet.h" // IWYU pragma: keep
+#include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetReducedDataDQ.h"
 

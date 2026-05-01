@@ -20,7 +20,7 @@
 #include "PWGJE/DataModel/JetReducedData.h"
 
 #include <Framework/ASoA.h>
-#include <Framework/AnalysisDataModel.h> // IWYU pragma: keep
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/DataTypes.h>
 #include <SimulationDataFormat/MCGenProperties.h>
 

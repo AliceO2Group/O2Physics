@@ -165,6 +165,7 @@ struct FemtoCorrelations {
   std::shared_ptr<TH2> TOFhisto_second;
 
   std::vector<std::shared_ptr<TH1>> MultHistos;
+  std::vector<std::shared_ptr<TH1>> MultHistos_pair;
   std::vector<std::vector<std::shared_ptr<TH1>>> kThistos;
   std::vector<std::vector<std::shared_ptr<TH1>>> mThistos; // test
   std::vector<std::vector<std::shared_ptr<TH1>>> SEhistos_1D;
@@ -209,6 +210,11 @@ struct FemtoCorrelations {
 
       auto hMult = registry.add<TH1>(Form("Cent%i/TPCMult_cent%i", i, i), Form("TPCMult_cent%i", i), kTH1F, {{5001, -0.5, 5000.5, "Mult."}});
       MultHistos.push_back(std::move(hMult));
+
+      if (IsIdentical) {
+        auto hMult_pair = registry.add<TH1>(Form("Cent%i/TPCMult_pair_cond_cent%i", i, i), Form("TPCMult_pair_cond_cent%i", i), kTH1F, {{5001, -0.5, 5000.5, "Mult."}});
+        MultHistos_pair.push_back(std::move(hMult_pair));
+      }
 
       for (unsigned int j = 0; j < _kTbins.value.size() - 1; j++) {
         auto hSE_1D = registry.add<TH1>(Form("Cent%i/SE_1D_cent%i_kT%i", i, i, j), Form("SE_1D_cent%i_kT%i", i, j), kTH1F, {{CFkStarBinning, "k* (GeV/c)"}});
@@ -512,6 +518,10 @@ struct FemtoCorrelations {
 
           unsigned int centBin = std::floor((i->first).second);
           MultHistos[centBin]->Fill(col1->mult());
+
+          if (selectedtracks_1[col1->index()].size() > 1) {
+            MultHistos_pair[centBin]->Fill(col1->mult());
+          }
 
           mixTracks(selectedtracks_1[col1->index()], centBin); // mixing SE identical
 

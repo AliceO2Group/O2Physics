@@ -17,7 +17,6 @@
 #include "PWGCF/Femto3D/DataModel/singletrackselector.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/Multiplicity.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
@@ -42,6 +41,7 @@
 #include <TH3.h>
 #include <TList.h>
 #include <TPDGCode.h>
+#include <TParticlePDG.h>
 #include <TString.h>
 
 #include <chrono>
@@ -87,7 +87,7 @@ struct HadronNucleiCorrelation {
 
   Configurable<std::string> fCorrectionPath{"fCorrectionPath", "", "Correction path to file"};
   Configurable<std::string> fCorrectionHisto{"fCorrectionHisto", "", "Correction histogram"};
-  Configurable<std::string> cfgUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> cfgUrl{"cfgUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
   // Event selection
   Configurable<float> cutzVertex{"cutzVertex", 10.0, "|vertexZ| value limit"};
@@ -125,7 +125,6 @@ struct HadronNucleiCorrelation {
   ConfigurableAxis confMultBins{"confMultBins", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 50.0f, 100.0f, 99999.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis confVtxBins{"confVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   ColumnBinningPolicy<aod::singletrackselector::PosZ, aod::singletrackselector::Mult> colBinning{{confVtxBins, confMultBins}, true};
-  ColumnBinningPolicy<aod::mccollision::PosZ, o2::aod::mult::MultMCNParticlesEta10> colBinningGen{{confVtxBins, confMultBins}, true};
 
   // pT/A bins
   Configurable<std::vector<double>> pTBins{"pTBins", {0.6f, 1.0f, 1.2f, 2.f}, "p_{T} bins"};
@@ -134,7 +133,7 @@ struct HadronNucleiCorrelation {
   ConfigurableAxis DeltaPhiAxis = {"DeltaPhiAxis", {46, -1 * o2::constants::math::PIHalf, 3 * o2::constants::math::PIHalf}, "#Delta#phi (rad)"};
 
   using FilteredCollisions = soa::Filtered<aod::SingleCollSels>;
-  using SimCollisions = soa::Filtered<soa::Join<aod::McCollisions, aod::MultsExtraMC>>;
+  using SimCollisions = soa::Filtered<aod::McCollisions>;
   using SimParticles = aod::McParticles;
   using FilteredTracks = soa::Filtered<soa::Join<aod::SingleTrackSels, aod::SingleTrkExtras, aod::SinglePIDEls, aod::SinglePIDPrs, aod::SinglePIDDes>>;                      // new tables (v3)
   using FilteredTracksMC = soa::Filtered<soa::Join<aod::SingleTrackSels, aod::SingleTrkMCs, aod::SingleTrkExtras, aod::SinglePIDEls, aod::SinglePIDPrs, aod::SinglePIDDes>>; // new tables (v3)
@@ -679,6 +678,30 @@ struct HadronNucleiCorrelation {
     LOGP(info, "Opened histogram {}", Form("%s_antideuteron", histname.Data()));
   }
 
+  template <typename TParticles>
+  float getMCMultiplicity(TParticles const& particles)
+  {
+    float Ncharged = 0.;
+    for (auto& mcParticle : particles) {
+
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
+
+      if (std::abs(mcParticle.eta()) > 1.0f) {
+        continue;
+      }
+
+      TParticlePDG* p = pdgDB->GetParticle(mcParticle.pdgCode());
+      if (std::abs(p->Charge()) > 1E-3) {
+        Ncharged++;
+      }
+    }
+
+    registry.fill(HIST("hMult"), Ncharged);
+    return Ncharged;
+  }
+
   void processSameEvent(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks)
   {
 
@@ -721,28 +744,28 @@ struct HadronNucleiCorrelation {
         QA.fill(HIST("QA/hnSigmaITSVsPt_Pr"), track.pt() * track.sign(), track.itsNSigmaPr());
         QA.fill(HIST("QA/hnSigmaITSVsPt_De"), track.pt() * track.sign(), track.itsNSigmaDe());
 
-        if (IsProton(track, +1)) {
+        if (IsProton(track, -1)) {
           QA.fill(HIST("QA/hEtaAntiPr"), track.eta());
           QA.fill(HIST("QA/hPhiAntiPr"), track.phi());
           QA.fill(HIST("QA/hnSigmaTOFVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tofNSigmaPr());
           QA.fill(HIST("QA/hnSigmaTPCVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tpcNSigmaPr());
           QA.fill(HIST("QA/hnSigmaITSVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.itsNSigmaPr());
         }
-        if (IsProton(track, -1)) {
+        if (IsProton(track, +1)) {
           QA.fill(HIST("QA/hEtaPr"), track.eta());
           QA.fill(HIST("QA/hPhiPr"), track.phi());
           QA.fill(HIST("QA/hnSigmaTOFVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tofNSigmaPr());
           QA.fill(HIST("QA/hnSigmaTPCVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.tpcNSigmaPr());
           QA.fill(HIST("QA/hnSigmaITSVsPt_Pr_AfterSel"), track.pt() * track.sign(), track.itsNSigmaPr());
         }
-        if (IsDeuteron(track, +1)) {
+        if (IsDeuteron(track, -1)) {
           QA.fill(HIST("QA/hEtaAntiDe"), track.eta());
           QA.fill(HIST("QA/hPhiAntiDe"), track.phi());
           QA.fill(HIST("QA/hnSigmaTOFVsPt_De_AfterSel"), track.pt() * track.sign(), track.tofNSigmaDe());
           QA.fill(HIST("QA/hnSigmaTPCVsPt_De_AfterSel"), track.pt() * track.sign(), track.tpcNSigmaDe());
           QA.fill(HIST("QA/hnSigmaITSVsPt_De_AfterSel"), track.pt() * track.sign(), track.itsNSigmaDe());
         }
-        if (IsDeuteron(track, -1)) {
+        if (IsDeuteron(track, +1)) {
           QA.fill(HIST("QA/hEtaDe"), track.eta());
           QA.fill(HIST("QA/hPhiDe"), track.phi());
           QA.fill(HIST("QA/hnSigmaTOFVsPt_De_AfterSel"), track.pt() * track.sign(), track.tofNSigmaDe());
@@ -771,6 +794,12 @@ struct HadronNucleiCorrelation {
         if (!applyDCAcut(part0))
           continue;
         if (!applyDCAcut(part1))
+          continue;
+
+        // remove tracks outside pt bins
+        if (part0.pt() < pTBins.value.at(0) || part0.pt() >= pTBins.value.at(nBinspT))
+          continue;
+        if (part1.pt() < pTBins.value.at(0) || part1.pt() >= pTBins.value.at(nBinspT))
           continue;
 
         // mode 6
@@ -807,6 +836,12 @@ struct HadronNucleiCorrelation {
         if (!applyDCAcut(part0))
           continue;
         if (!applyDCAcut(part1))
+          continue;
+
+        // remove tracks outside pt bins
+        if (part0.pt() < pTBins.value.at(0) || part0.pt() >= pTBins.value.at(nBinspT))
+          continue;
+        if (part1.pt() < pTBins.value.at(0) || part1.pt() >= pTBins.value.at(nBinspT))
           continue;
 
         // modes 0,1,2,3,4,7
@@ -866,7 +901,7 @@ struct HadronNucleiCorrelation {
       const auto& magFieldTesla1 = collision1.magField();
       const auto& magFieldTesla2 = collision2.magField();
 
-      if (magFieldTesla1 != magFieldTesla2) {
+      if (std::abs(magFieldTesla1 - magFieldTesla2) > 1e-4) {
         continue;
       }
 
@@ -887,6 +922,12 @@ struct HadronNucleiCorrelation {
         if (!applyDCAcut(part0))
           continue;
         if (!applyDCAcut(part1))
+          continue;
+
+        // remove tracks outside pt bins
+        if (part0.pt() < pTBins.value.at(0) || part0.pt() >= pTBins.value.at(nBinspT))
+          continue;
+        if (part1.pt() < pTBins.value.at(0) || part1.pt() >= pTBins.value.at(nBinspT))
           continue;
 
         //{"mode", 0, "0: antid-antip, 1: d-p, 2: antid-p, 3: d-antip, 4: antip-p, 5: antip-antip, 6: p-p, 7: p-antip"};
@@ -1470,14 +1511,21 @@ struct HadronNucleiCorrelation {
   void processMixedEventGen(SimCollisions const& mcCollisions, SimParticles const& mcParticles)
   {
 
-    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinningGen, 5, -1, mcCollisions, mcCollisions)) {
+    auto getMultiplicity = [this, &mcParticles](SimCollisions::iterator const& collision) {
+      auto particlesPerCol = mcParticles.sliceBy(perMcCollision, collision.globalIndex());
+      auto multiplicity = getMCMultiplicity(particlesPerCol);
+      return multiplicity;
+    };
 
-      // LOGF(info, "Mixed event collisions: (%d, %d) zvtx (%.1f, %.1f) mult (%d, %d)", collision1.globalIndex(), collision2.globalIndex(), collision1.posZ(), collision2.posZ(), collision1.multMCNParticlesEta10(), collision2.multMCNParticlesEta10());
+    using BinningTypeMC = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::mccollision::PosZ, decltype(getMultiplicity)>;
+    BinningTypeMC colBinningGen{{getMultiplicity}, {confVtxBins, confMultBins}, true};
+
+    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinningGen, 5, -1, mcCollisions, mcCollisions)) {
 
       auto groupPartsOne = mcParticles.sliceBy(perMcCollision, collision1.globalIndex());
       auto groupPartsTwo = mcParticles.sliceBy(perMcCollision, collision2.globalIndex());
 
-      registry.fill(HIST("hMult"), collision1.multMCNParticlesEta10());
+      // LOGF(info, "Mixed event collisions: (%d, %d) zvtx (%.1f, %.1f) mult (%.1f, %.1f)", collision1.globalIndex(), collision2.globalIndex(), collision1.posZ(), collision2.posZ(), getMCMultiplicity(groupPartsOne), getMCMultiplicity(groupPartsTwo));
 
       for (const auto& [part0, part1] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
 

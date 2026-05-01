@@ -332,6 +332,8 @@ struct NucleitpcPbPb {
       // NEW: Add DCAxy vs pT histograms for MC
       histomc.add("DCAxy_vs_pT_transport", "DCA_{xy} vs p_{T} (Transport);p_{T} (GeV/c);DCA_{xy} (cm)",
                   {HistType::kTH3F, {ptAxis, axisDCA, axisCent}});
+      histomc.add("DCAxy_vs_pT_primary", "DCA_{xy} vs p_{T} (primary);p_{T} (GeV/c);DCA_{xy} (cm)",
+                  {HistType::kTH3F, {ptAxis, axisDCA, axisCent}});
       histomc.add("DCAxy_vs_pT_weakdecay", "DCA_{xy} vs p_{T}  (Weak Decay);p_{T} (GeV/c);DCA_{xy} (cm)",
                   {HistType::kTH3F, {ptAxis, axisDCA, axisCent}});
       histomc.add("DCAxy_vs_pT_total", "DCA_{xy} vs p_{T} (Total);p_{T} (GeV/c);DCA_{xy} (cm)",
@@ -1117,6 +1119,9 @@ struct NucleitpcPbPb {
 
               if (pdg == particlePdgCodes.at(i)) { // He3
                 histomc.fill(HIST("DCAxy_vs_pT_total"), ptDCA, track.dcaXY(), collision.centFT0C());
+                if (matchedMCParticle.isPhysicalPrimary()) {
+                  histomc.fill(HIST("DCAxy_vs_pT_primary"), ptDCA, track.dcaXY(), collision.centFT0C());
+                }
                 if (decayType == 2) { // Transport/Material
                   histomc.fill(HIST("DCAxy_vs_pT_transport"), ptDCA, track.dcaXY(), collision.centFT0C());
                 } else if (decayType == 1) { // Weak decay (including HF)

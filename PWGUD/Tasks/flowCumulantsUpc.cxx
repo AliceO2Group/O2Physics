@@ -20,10 +20,7 @@
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/DataModel/UDTables.h"
 
-#include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
@@ -36,17 +33,15 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
-#include <Framework/StringHelpers.h>
 #include <Framework/runDataProcessing.h>
 
 #include <Math/GenVector/LorentzVector.h>
 #include <Math/GenVector/PxPyPzE4D.h>
 #include <TF1.h>
 #include <TH1.h>
-#include <TH2.h>
+#include <TH3.h>
 #include <TNamed.h>
 #include <TObjArray.h>
-#include <TProfile.h>
 #include <TRandom3.h>
 #include <TString.h>
 
@@ -54,6 +49,7 @@
 
 #include <RtypesCore.h>
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cmath>
@@ -61,7 +57,6 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 

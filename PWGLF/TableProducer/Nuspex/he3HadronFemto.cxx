@@ -192,9 +192,11 @@ struct He3HadCandidate {
   float chi2TPCHe3 = -10.f;
   float chi2TPCHad = -10.f;
   float nSigmaHe3 = -10.f;
+  float nSigmaTPCHad = -10.f;
   float nSigmaTPCHadPi = -10.f;
   float nSigmaTPCHadKa = -10.f;
   float nSigmaTPCHadPr = -10.f;
+  float nSigmaTOFHad = -10.f;
   float nSigmaTOFHadPi = -10.f;
   float nSigmaTOFHadKa = -10.f;
   float nSigmaTOFHadPr = -10.f;
@@ -239,6 +241,7 @@ struct he3HadronFemto {
   Produces<aod::he3HadronTableMC> outputMcTable;
   Produces<aod::he3HadronMult> outputMultiplicityTable;
   Produces<aod::he3HadronQa> outputQaTable;
+  Produces<aod::he3HadronPid> outputPidTable;
 
   // Selections
   Configurable<int> settingHadPDGCode{"settingHadPDGCode", 211, "Hadron - PDG code"};
@@ -755,9 +758,11 @@ struct he3HadronFemto {
 
     he3Hadcand.nTPCClustersHe3 = trackHe3.tpcNClsFound();
     he3Hadcand.nSigmaHe3 = computeNSigmaHe3(trackHe3);
+    he3Hadcand.nSigmaTPCHad = computeTPCNSigmaHadron(trackHad);
     he3Hadcand.nSigmaTPCHadPi = trackHad.tpcNSigmaPi();
     he3Hadcand.nSigmaTPCHadKa = trackHad.tpcNSigmaKa();
     he3Hadcand.nSigmaTPCHadPr = trackHad.tpcNSigmaPr();
+    he3Hadcand.nSigmaTOFHad = computeTOFNSigmaHadron(trackHad);
     he3Hadcand.nSigmaTOFHadPi = trackHad.tofNSigmaPi();
     he3Hadcand.nSigmaTOFHadKa = trackHad.tofNSigmaKa();
     he3Hadcand.nSigmaTOFHadPr = trackHad.tofNSigmaPr();
@@ -906,29 +911,21 @@ struct he3HadronFemto {
       he3Hadcand.dcazHe3,
       he3Hadcand.dcaxyHad,
       he3Hadcand.dcazHad,
-      he3Hadcand.dcaPair,
       he3Hadcand.tpcSignalHe3,
       he3Hadcand.momHe3TPC,
       he3Hadcand.tpcSignalHad,
       he3Hadcand.momHadTPC,
       he3Hadcand.nTPCClustersHe3,
       he3Hadcand.nSigmaHe3,
-      he3Hadcand.nSigmaTPCHadPi,
-      he3Hadcand.nSigmaTPCHadKa,
-      he3Hadcand.nSigmaTPCHadPr,
-      he3Hadcand.nSigmaTOFHadPi,
-      he3Hadcand.nSigmaTOFHadKa,
-      he3Hadcand.nSigmaTOFHadPr,
+      he3Hadcand.nSigmaTPCHad,
+      he3Hadcand.nSigmaTOFHad,
       he3Hadcand.chi2TPCHe3,
       he3Hadcand.chi2TPCHad,
-      he3Hadcand.massTOFHe3,
       he3Hadcand.massTOFHad,
       he3Hadcand.pidtrkHe3,
-      he3Hadcand.pidtrkHad,
       he3Hadcand.itsClSizeHe3,
       he3Hadcand.itsClSizeHad,
-      he3Hadcand.sharedClustersHe3,
-      he3Hadcand.sharedClustersHad);
+      he3Hadcand.sharedClustersHe3);
     if (isMC) {
       outputMcTable(
         he3Hadcand.momHe3MC,
@@ -941,19 +938,25 @@ struct he3HadronFemto {
         he3Hadcand.l4MassMC,
         he3Hadcand.flags);
     }
-    if (settingFillMultiplicity) {
-      outputMultiplicityTable(
-        collision.globalIndex(),
-        collision.posZ(),
-        collision.numContrib(),
-        collision.centFT0C(),
-        collision.multFT0C());
-    }
-    if (settingFillQa) {
-      outputQaTable(
-        he3Hadcand.trackIDHe3,
-        he3Hadcand.trackIDHad);
-    }
+    outputMultiplicityTable(
+      collision.globalIndex(),
+      collision.posZ(),
+      collision.numContrib(),
+      collision.centFT0C(),
+      collision.multFT0C());
+    outputQaTable(
+      he3Hadcand.trackIDHe3,
+      he3Hadcand.trackIDHad,
+      he3Hadcand.massTOFHe3,
+      he3Hadcand.pidtrkHad,
+      he3Hadcand.sharedClustersHad);
+    outputPidTable(
+      he3Hadcand.nSigmaTPCHadPi,
+      he3Hadcand.nSigmaTPCHadKa,
+      he3Hadcand.nSigmaTPCHadPr,
+      he3Hadcand.nSigmaTOFHadPi,
+      he3Hadcand.nSigmaTOFHadKa,
+      he3Hadcand.nSigmaTOFHadPr);
   }
 
   void fillHistograms(const He3HadCandidate& he3Hadcand, bool isMc = false)

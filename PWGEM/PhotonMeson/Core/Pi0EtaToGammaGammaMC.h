@@ -23,6 +23,7 @@
 #include "PWGEM/PhotonMeson/Core/V0PhotonCandidate.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 #include "PWGEM/PhotonMeson/DataModel/EventTables.h"
+#include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
@@ -440,8 +441,8 @@ struct Pi0EtaToGammaGammaMC {
   o2::framework::PresliceOptional<o2::soa::Join<o2::aod::PHOSClusters, o2::aod::PHOSEMEventIds>> perCollision_phos = o2::aod::phoscluster::pmeventId;
   o2::framework::PresliceOptional<o2::soa::Filtered<o2::soa::Join<o2::aod::EMPrimaryElectronsFromDalitz, o2::aod::EMPrimaryElectronDaEMEventIds, o2::aod::EMPrimaryElectronsPrefilterBitDerived, o2::aod::EMPrimaryElectronMCLabels>>> perCollision_electron = o2::aod::emprimaryelectronda::pmeventId;
 
-  o2::framework::PresliceOptional<o2::aod::EmEmcMTracks> perEMCClusterMT = o2::aod::trackmatching::emEmcClusterId;
-  o2::framework::PresliceOptional<o2::aod::EmEmcMSTracks> perEMCClusterMS = o2::aod::trackmatching::emEmcClusterId;
+  o2::framework::PresliceOptional<o2::aod::MinMTracks> perEMCClusterMT = o2::aod::mintm::minClusterId;
+  o2::framework::PresliceOptional<o2::aod::MinMSTracks> perEMCClusterMS = o2::aod::mintm::minClusterId;
 
   o2::framework::Partition<o2::soa::Filtered<o2::soa::Join<o2::aod::EMPrimaryElectronsFromDalitz, o2::aod::EMPrimaryElectronDaEMEventIds, o2::aod::EMPrimaryElectronsPrefilterBitDerived, o2::aod::EMPrimaryElectronMCLabels>>> positrons = o2::aod::emprimaryelectron::sign > int8_t(0) && dileptoncuts.cfg_min_pt_track < o2::aod::track::pt&& nabs(o2::aod::track::eta) < dileptoncuts.cfg_max_eta_track;
   o2::framework::Partition<o2::soa::Filtered<o2::soa::Join<o2::aod::EMPrimaryElectronsFromDalitz, o2::aod::EMPrimaryElectronDaEMEventIds, o2::aod::EMPrimaryElectronsPrefilterBitDerived, o2::aod::EMPrimaryElectronMCLabels>>> electrons = o2::aod::emprimaryelectron::sign < int8_t(0) && dileptoncuts.cfg_min_pt_track < o2::aod::track::pt && nabs(o2::aod::track::eta) < dileptoncuts.cfg_max_eta_track;
@@ -479,13 +480,13 @@ struct Pi0EtaToGammaGammaMC {
 
     static auto& perClusterMT()
     {
-      static auto slice{o2::aod::trackmatching::emEmcClusterId};
+      static auto slice{o2::aod::mintm::minClusterId};
       return slice;
     }
 
     static auto& perClusterMS()
     {
-      static auto slice{o2::aod::trackmatching::emEmcClusterId};
+      static auto slice{o2::aod::mintm::minClusterId};
       return slice;
     }
 

@@ -186,7 +186,7 @@ struct FemtoUniverseProducerTask {
     Configurable<bool> confNoHighMultCollInPrevRof{"confNoHighMultCollInPrevRof", true, "Require NoHighMultCollInPrevRof selection on Events."};
     Configurable<bool> confNoCollInTimeRangeStandard{"confNoCollInTimeRangeStandard", true, "Require NoCollInTimeRangeStandard selection on Events."};
     Configurable<int> confTPCOccupancyMin{"confTPCOccupancyMin", 0, "Minimum value for TPC Occupancy selection"};
-    Configurable<int> confTPCOccupancyMax{"confTPCOccupancyMax", 500, "Maximum value for TPC Occupancy selection"};
+    Configurable<int> confTPCOccupancyMax{"confTPCOccupancyMax", 5000, "Maximum value for TPC Occupancy selection"};
     Configurable<bool> confIsCent{"confIsCent", true, "Centrality or multiplicity selection"};
   } ConfGeneral;
   Filter customCollCentFilter = (aod::cent::centFT0C > ConfGeneral.confCentFT0Min) &&

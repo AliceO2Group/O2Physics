@@ -55,6 +55,7 @@ struct JetBackgroundAnalysisTask {
   Configurable<int> trackOccupancyInTimeRangeMin{"trackOccupancyInTimeRangeMin", -999999, "minimum track occupancy of collisions in neighbouring collisions in a given time range; only applied to reconstructed collisions (data and mcd jets), not mc collisions (mcp jets)"};
   Configurable<bool> skipMBGapEvents{"skipMBGapEvents", false, "flag to choose to reject min. bias gap events"};
   Configurable<int> nBinsFluct{"nBinsFluct", 1000, "number of bins for flucuations axes"};
+  Configurable<double> deltaPtMinMaxFluct{"deltaPtMinMaxFluct", 200, "maximum and minimum delta pt value for fluctuation axes"};
 
   Configurable<float> trackEtaMin{"trackEtaMin", -0.9, "minimum eta acceptance for tracks"};
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum eta acceptance for tracks"};
@@ -81,7 +82,7 @@ struct JetBackgroundAnalysisTask {
     randomNumber.SetSeed(0);
 
     // Axes definitions
-    AxisSpec bkgFluctuationsAxis = {nBinsFluct, -100.0, 100.0, "#delta #it{p}_{T} (GeV/#it{c})"};
+    AxisSpec bkgFluctuationsAxis = {nBinsFluct, -deltaPtMinMaxFluct, deltaPtMinMaxFluct, "#delta #it{p}_{T} (GeV/#it{c})"};
 
     // histogram definitions
 
