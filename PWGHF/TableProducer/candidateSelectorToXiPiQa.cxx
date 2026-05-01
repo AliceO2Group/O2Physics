@@ -295,7 +295,7 @@ struct HfCandidateSelectorToXiPiQa {
   // Selection on LF related informations
   // returns true if all cuts are passed
   template <int svReco, typename T>
-  bool SelectOnLF(const T& candidate, const int& inputPtBin)
+  bool selectOnLf(const T& candidate, const int& inputPtBin)
   {
 
     registry.fill(HIST("hSelStatusLf"), 0.0);
@@ -442,7 +442,7 @@ struct HfCandidateSelectorToXiPiQa {
   // Apply cuts with charm baryon & charm bachelor related informations
   // returns true if all cuts are passed
   template <int svReco, typename T>
-  bool SelectOnHF(const T& candidate, const int& inputPtBin)
+  bool selectOnHf(const T& candidate, const int& inputPtBin)
   {
 
     registry.fill(HIST("hSelStatusHf"), 0.0);
@@ -561,8 +561,8 @@ struct HfCandidateSelectorToXiPiQa {
       }
 
       // Topological selection
-      const bool selectionResOnLF = SelectOnLF<svReco>(candidate, pTBin);
-      const bool selectionResOnHF = SelectOnHF<svReco>(candidate, pTBin);
+      const bool selectionResOnLF = selectOnLf<svReco>(candidate, pTBin);
+      const bool selectionResOnHF = selectOnHf<svReco>(candidate, pTBin);
       if (!selectionResOnLF || !selectionResOnHF) {
         resultSelections = false;
       }
