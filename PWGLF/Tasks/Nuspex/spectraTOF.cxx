@@ -265,7 +265,7 @@ struct tofSpectra {
       LOG(info) << "\tminITSnClusters=" << minITSnClusters.value;
       LOG(info) << "\tminTPCNClsFound=" << minTPCNClsFound.value;
       LOG(info) << "\tmaxChi2PerClusterITS=" << maxChi2PerClusterITS.value;
-      LOG(info) << "\tmaxDcaZ=" << maxDcaZ;
+      LOG(info) << "\tmaxDcaZ=" << maxDcaZ.value;
       LOG(info) << "\tmakeTHnSparseChoice=" << makeTHnSparseChoice.value;
 
       customTrackCuts = getGlobalTrackSelectionRun3ITSMatch(itsPattern.value);
@@ -280,7 +280,7 @@ struct tofSpectra {
       customTrackCuts.SetMinNClustersTPC(minTPCNClsFound.value);
       customTrackCuts.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
       customTrackCuts.SetMaxDcaXYPtDep([](float /*pt*/) { return 10000.f; }); // No DCAxy cut will be used, this is done via the member function of the task
-      customTrackCuts.SetMaxDcaZ(maxDcaZ);
+      customTrackCuts.SetMaxDcaZ(maxDcaZ.value);
       customTrackCuts.print();
     }
     // Histograms
@@ -1888,11 +1888,7 @@ struct tofSpectra {
         }
         break;
       case MultCodes::kCentralityFT0C: // Centrality FT0C
-        if constexpr (!isMC) {
-          return collision.centFT0C();
-        } else {
-          return 50.f; // Not implemented yet
-        }
+        return collision.centFT0C();
         break;
       case MultCodes::kCentralityFT0M: // Centrality FT0M
         return collision.centFT0M();
@@ -1903,7 +1899,7 @@ struct tofSpectra {
     }
   }
 
-  using GenMCCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::MultsExtraMC>;
+  using GenMCCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs, aod::MultsExtraMC>;
   float getMultiplicityMC(const GenMCCollisions::iterator& collision) { return getMultiplicity<GenMCCollisions::iterator, true>(collision); }
 
   template <std::size_t id>
