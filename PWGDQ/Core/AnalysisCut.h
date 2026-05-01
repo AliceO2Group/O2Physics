@@ -9,9 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
-//
-// Class for analysis cuts applied on the variables defined in the VarManager
+/// \author Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
+/// \file AnalysisCut.h
+/// \brief Class for analysis cuts applied on the variables defined in the VarManager
 //
 
 #ifndef PWGDQ_CORE_ANALYSISCUT_H_
@@ -23,6 +23,7 @@
 #include <Rtypes.h>
 
 #include <vector>
+#include <memory>
 
 //_________________________________________________________________________
 class AnalysisCut : public TNamed
@@ -49,17 +50,17 @@ class AnalysisCut : public TNamed
   void PrintCuts();
 
   struct CutContainer {
-    short fVar;    // variable to be cut upon
+    int16_t fVar;    // variable to be cut upon
     float fLow;    // lower limit for the var
     float fHigh;   // upper limit for the var
     bool fExclude; // if true, use the selection range for exclusion
 
-    short fDepVar;    // first (optional) variable on which the cut depends
+    int16_t fDepVar;    // first (optional) variable on which the cut depends
     float fDepLow;    // lower limit for the first dependent var
     float fDepHigh;   // upper limit for the first dependent var
     bool fDepExclude; // if true, then use the dependent variable range as exclusion
 
-    short fDepVar2;    // second (optional) variable on which the cut depends
+    int16_t fDepVar2;    // second (optional) variable on which the cut depends
     float fDep2Low;    // lower limit for the second dependent var
     float fDep2High;   // upper limit for the second dependent var
     bool fDep2Exclude; // if true, then use the dependent variable range as exclusion

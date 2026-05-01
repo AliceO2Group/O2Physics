@@ -10,11 +10,11 @@
 // or submit itself to any jurisdiction.
 //
 //
-// \file   DalitzSelection.cxx
-// \author Gauthier Legras, glegras@uni-muenster.de, gauthier.legras@cern.ch
-// \brief  Task to select electrons from dalitz decay
-// It can produce track and pair histograms for selected tracks
-// It creates a bitmap with selections to be stored during skimming
+/// \file   DalitzSelection.cxx
+/// \author Gauthier Legras, glegras@uni-muenster.de, gauthier.legras@cern.ch
+/// \brief  Task to select electrons from dalitz decay
+/// It can produce track and pair histograms for selected tracks
+/// It creates a bitmap with selections to be stored during skimming
 //
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
 #include "PWGDQ/Core/AnalysisCut.h"
