@@ -759,7 +759,8 @@ struct lambdaspincorrderived {
           continue;
         proton2 = ROOT::Math::PtEtaPhiMVector(v02.protonPt(), v02.protonEta(), v02.protonPhi(), o2::constants::physics::MassProton);
         lambda2 = ROOT::Math::PtEtaPhiMVector(v02.lambdaPt(), v02.lambdaEta(), v02.lambdaPhi(), v02.lambdaMass());
-        histos.fill(HIST("deltaPhiSame"), RecoDecay::constrainAngle(v0.lambdaPhi() - v02.lambdaPhi(), -TMath::Pi(), harmonicDphi));
+        if ((v0.v0Status() == 0 && v02.v0Status() == 1) || (v0.v0Status() == 1 && v02.v0Status() == 0))
+          histos.fill(HIST("deltaPhiSame"), RecoDecay::constrainAngle(v0.lambdaPhi() - v02.lambdaPhi(), -TMath::Pi(), harmonicDphi));
         // const int ptype = pairTypeCode(v0.v0Status(), v02.v0Status());
         if (v0.v0Status() == 0 && v02.v0Status() == 0) {
           fillHistograms(0, 0, lambda, lambda2, proton, proton2, 0, 1.0);
@@ -768,7 +769,7 @@ struct lambdaspincorrderived {
           fillHistograms(0, 1, lambda, lambda2, proton, proton2, 0, 1.0);
         }
         if (v0.v0Status() == 1 && v02.v0Status() == 0) {
-          fillHistograms(1, 0, lambda, lambda2, proton, proton2, 0, 1.0);
+          fillHistograms(0, 1, lambda2, lambda, proton2, proton, 0, 1.0);
         }
         if (v0.v0Status() == 1 && v02.v0Status() == 1) {
           fillHistograms(1, 1, lambda, lambda2, proton, proton2, 0, 1.0);
@@ -855,7 +856,8 @@ struct lambdaspincorrderived {
         continue;
       }
 
-      auto poolA = V0s.sliceBy(tracksPerCollisionV0, collision1.index());
+      // auto poolA = V0s.sliceBy(tracksPerCollisionV0, collision1.index());
+      auto poolA = V0s.sliceBy(tracksPerCollisionV0, collision1.globalIndex());
 
       // if pool empty, push and continue
       if (eventPools[bin].empty()) {
@@ -1006,7 +1008,8 @@ struct lambdaspincorrderived {
       }
 
       // push current event into pool
-      auto sliced = V0s.sliceBy(tracksPerCollisionV0, collision1.index());
+      // auto sliced = V0s.sliceBy(tracksPerCollisionV0, collision1.index());
+      auto sliced = V0s.sliceBy(tracksPerCollisionV0, collision1.globalIndex());
       eventPools[bin].emplace_back(collision1.index(), std::move(sliced));
       if ((int)eventPools[bin].size() > nEvtMixing) {
         eventPools[bin].pop_front();
@@ -1301,11 +1304,18 @@ struct lambdaspincorrderived {
                     RecoDecay::constrainAngle(mcacc::lamPhi(v0) - mcacc::lamPhi(v02),
                                               -TMath::Pi(), harmonicDphi));
 
-        // const int ptype = pairTypeCode(mcacc::v0Status(v0), mcacc::v0Status(v02));
-        // datatype=0 (same event)
-        fillHistograms(mcacc::v0Status(v0), mcacc::v0Status(v02),
-                       lambda, lambda2, proton, proton2,
-                       /*datatype=*/0, /*mixpairweight=*/1.0f);
+        const int s1 = mcacc::v0Status(v0);
+        const int s2 = mcacc::v0Status(v02);
+
+        if (s1 == 0 && s2 == 0) {
+          fillHistograms(0, 0, lambda, lambda2, proton, proton2, 0, 1.0f);
+        } else if (s1 == 0 && s2 == 1) {
+          fillHistograms(0, 1, lambda, lambda2, proton, proton2, 0, 1.0f);
+        } else if (s1 == 1 && s2 == 0) {
+          fillHistograms(0, 1, lambda2, lambda, proton2, proton, 0, 1.0f);
+        } else if (s1 == 1 && s2 == 1) {
+          fillHistograms(1, 1, lambda, lambda2, proton, proton2, 0, 1.0f);
+        }
       }
     }
   }
@@ -1431,7 +1441,8 @@ struct lambdaspincorrderived {
         continue;
       }
 
-      auto slice = V0s.sliceBy(tracksPerCollisionV0, col.index());
+      // auto slice = V0s.sliceBy(tracksPerCollisionV0, col.index());
+      auto slice = V0s.sliceBy(tracksPerCollisionV0, col.globalIndex());
 
       for (auto const& t : slice) {
         if (!selectionV0(t)) {
@@ -1634,7 +1645,8 @@ struct lambdaspincorrderived {
       }
 
       const int64_t curColIdx = static_cast<int64_t>(col1.index());
-      auto poolA = V0s.sliceBy(tracksPerCollisionV0, col1.index());
+      // auto poolA = V0s.sliceBy(tracksPerCollisionV0, col1.index());
+      auto poolA = V0s.sliceBy(tracksPerCollisionV0, col1.globalIndex());
 
       for (auto const& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(poolA, poolA))) {
         if (!selectionV0(t1) || !selectionV0(t2)) {
@@ -1752,8 +1764,18 @@ struct lambdaspincorrderived {
 
             const float meWeight = wSE;
             const float dPhi = deltaPhiMinusPiToPi((float)lambda.Phi(), (float)lambda2.Phi());
-            histos.fill(HIST("deltaPhiMix"), dPhi, wSE);
-            fillHistograms(tX.v0Status(), t2.v0Status(), lambda, lambda2, proton, proton2, 1, meWeight, 1);
+            if ((tX.v0Status() == 0 && t2.v0Status() == 1) || (tX.v0Status() == 1 && t2.v0Status() == 0))
+              histos.fill(HIST("deltaPhiMix"), dPhi, wSE);
+            const int s1 = tX.v0Status();
+            const int s2 = t2.v0Status();
+
+            if (s1 == 0 && s2 == 1) {
+              fillHistograms(0, 1, lambda, lambda2, proton, proton2, 1, meWeight, 1);
+            } else if (s1 == 1 && s2 == 0) {
+              fillHistograms(0, 1, lambda2, lambda, proton2, proton, 1, meWeight, 2);
+            } else {
+              fillHistograms(s1, s2, lambda, lambda2, proton, proton2, 1, meWeight, 1);
+            }
           }
         }
 
@@ -1785,7 +1807,15 @@ struct lambdaspincorrderived {
             const float meWeight = wSE;
             const float dPhi = deltaPhiMinusPiToPi((float)lambda.Phi(), (float)lambda2.Phi());
             histos.fill(HIST("deltaPhiMix"), dPhi, wSE);
-            fillHistograms(t1.v0Status(), tY.v0Status(), lambda, lambda2, proton, proton2, 1, meWeight, 2);
+            const int s1 = t1.v0Status();
+            const int s2 = tY.v0Status();
+            if (s1 == 0 && s2 == 1) {
+              fillHistograms(0, 1, lambda, lambda2, proton, proton2, 1, meWeight, 2);
+            } else if (s1 == 1 && s2 == 0) {
+              fillHistograms(0, 1, lambda2, lambda, proton2, proton, 1, meWeight, 1);
+            } else {
+              fillHistograms(s1, s2, lambda, lambda2, proton, proton2, 1, meWeight, 2);
+            }
           }
         }
       }
@@ -1824,7 +1854,8 @@ struct lambdaspincorrderived {
         continue;
       }
 
-      auto slice = V0sMC.sliceBy(tracksPerCollisionV0mc, col.index());
+      // auto slice = V0sMC.sliceBy(tracksPerCollisionV0mc, col.index());
+      auto slice = V0sMC.sliceBy(tracksPerCollisionV0mc, col.globalIndex());
 
       for (auto const& t : slice) {
         if (!selectionV0MC(t)) {
@@ -1948,26 +1979,59 @@ struct lambdaspincorrderived {
 
       collectFromBins(ptBins, etaBins, phiBins);
 
-      // 2) if exact bin does not give enough, top up from neighbors
+      // 2) if exact bin gives fewer than required matches, also search neighbors
       const int targetMatches = (cfgV5MaxMatches.value > 0) ? cfgV5MaxMatches.value : 1;
 
       if ((int)matches.size() < targetMatches) {
-        collectNeighborBinsClamp(ptB, nPt, nN_pt, ptBins);
-        collectNeighborBinsClamp(etaB, nEta, nN_eta, etaBins);
-        collectNeighborBinsPhi(phiB, nPhi, nN_phi, phiBins);
+        std::vector<int> ptBinsN, etaBinsN, phiBinsN;
+        collectNeighborBinsClamp(ptB, nPt, nN_pt, ptBinsN);
+        collectNeighborBinsClamp(etaB, nEta, nN_eta, etaBinsN);
+        collectNeighborBinsPhi(phiB, nPhi, nN_phi, phiBinsN);
 
-        collectFromBins(ptBins, etaBins, phiBins);
+        for (int ptUse : ptBinsN) {
+          for (int etaUse : etaBinsN) {
+            for (int phiUse : phiBinsN) {
+              if (ptUse == ptB && etaUse == etaB && phiUse == phiB) {
+                continue;
+              }
+
+              const auto& vec = buffer[linearKeyR(colBin, status, ptUse, etaUse, phiUse, mB, rB,
+                                                  nStat, nPt, nEta, nPhi, nM, nR)];
+
+              for (auto const& bc : vec) {
+                if (bc.collisionIdx == curColIdx) {
+                  continue;
+                }
+
+                auto tX = V0sMC.iteratorAt(static_cast<uint64_t>(bc.rowIndex));
+
+                if (!selectionV0MC(tX)) {
+                  continue;
+                }
+                if (!checkKinematicsMC(tRep, tX)) {
+                  continue;
+                }
+
+                if (tX.globalIndex() == tRep.globalIndex()) {
+                  continue;
+                }
+                if (tX.globalIndex() == tKeep.globalIndex()) {
+                  continue;
+                }
+
+                if (hasSharedDaughtersMC(tX, tKeep)) {
+                  continue;
+                }
+                if (hasSharedDaughtersMC(tX, tRep)) {
+                  continue;
+                }
+
+                matches.push_back(MatchRef{bc.collisionIdx, bc.rowIndex});
+              }
+            }
+          }
+        }
       }
-
-      // if nothing found, then try neighboring bins
-      if (matches.empty()) {
-        collectNeighborBinsClamp(ptB, nPt, nN_pt, ptBins);
-        collectNeighborBinsClamp(etaB, nEta, nN_eta, etaBins);
-        collectNeighborBinsPhi(phiB, nPhi, nN_phi, phiBins);
-
-        collectFromBins(ptBins, etaBins, phiBins);
-      }
-
       std::sort(matches.begin(), matches.end(),
                 [](auto const& a, auto const& b) {
                   return std::tie(a.collisionIdx, a.rowIndex) < std::tie(b.collisionIdx, b.rowIndex);
@@ -2000,7 +2064,8 @@ struct lambdaspincorrderived {
       }
 
       const int64_t curColIdx = static_cast<int64_t>(col1.index());
-      auto poolA = V0sMC.sliceBy(tracksPerCollisionV0mc, col1.index());
+      // auto poolA = V0sMC.sliceBy(tracksPerCollisionV0mc, col1.index());
+      auto poolA = V0sMC.sliceBy(tracksPerCollisionV0mc, col1.globalIndex());
 
       for (auto const& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(poolA, poolA))) {
         if (!selectionV0MC(t1) || !selectionV0MC(t2)) {
@@ -2124,9 +2189,16 @@ struct lambdaspincorrderived {
             const float meWeight = wSE;
             const float dPhi = deltaPhiMinusPiToPi((float)lX.Phi(), (float)l2.Phi());
             histos.fill(HIST("deltaPhiMix"), dPhi, wSE);
-            fillHistograms(mcacc::v0Status(tX), mcacc::v0Status(t2),
-                           lX, l2, pX, p2,
-                           1, meWeight, 1);
+            const int s1 = mcacc::v0Status(tX);
+            const int s2 = mcacc::v0Status(t2);
+
+            if (s1 == 0 && s2 == 1) {
+              fillHistograms(0, 1, lX, l2, pX, p2, 1, meWeight, 1);
+            } else if (s1 == 1 && s2 == 0) {
+              fillHistograms(0, 1, l2, lX, p2, pX, 1, meWeight, 2);
+            } else {
+              fillHistograms(s1, s2, lX, l2, pX, p2, 1, meWeight, 1);
+            }
           }
         }
         if (doMixLeg2 && nFill2 > 0) {
@@ -2162,9 +2234,16 @@ struct lambdaspincorrderived {
             const float meWeight = wSE;
             const float dPhi = deltaPhiMinusPiToPi((float)l1.Phi(), (float)lY.Phi());
             histos.fill(HIST("deltaPhiMix"), dPhi, wSE);
-            fillHistograms(mcacc::v0Status(t1), mcacc::v0Status(tY),
-                           l1, lY, p1, pY,
-                           1, meWeight, 2);
+            const int s1 = mcacc::v0Status(t1);
+            const int s2 = mcacc::v0Status(tY);
+
+            if (s1 == 0 && s2 == 1) {
+              fillHistograms(0, 1, l1, lY, p1, pY, 1, meWeight, 2);
+            } else if (s1 == 1 && s2 == 0) {
+              fillHistograms(0, 1, lY, l1, pY, p1, 1, meWeight, 1);
+            } else {
+              fillHistograms(s1, s2, l1, lY, p1, pY, 1, meWeight, 2);
+            }
           }
         }
       }
