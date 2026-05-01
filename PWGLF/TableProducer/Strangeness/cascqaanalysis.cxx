@@ -89,8 +89,8 @@ struct Cascqaanalysis {
   ConfigurableAxis nChargedFT0MGenAxis{"nChargedFT0MGenAxis", {300, 0, 300}, "N_{FT0M, gen.}"};
   ConfigurableAxis nChargedFV0AGenAxis{"nChargedFV0AGenAxis", {300, 0, 300}, "N_{FV0A, gen.}"};
   ConfigurableAxis multNTracksAxis{"multNTracksAxis", {500, 0, 500}, "N_{tracks}"};
-  ConfigurableAxis signalFT0MAxis{"signalFT0MAxis", {10000, 0, 40000}, "FT0M amplitude"};
-  ConfigurableAxis signalFV0AAxis{"signalFV0AAxis", {10000, 0, 40000}, "FV0A amplitude"};
+  Configurable<int> signalFT0MNBins{"signalFT0MNBins", 1000, "Number of bins for FT0M amplitude QA axis"};
+  Configurable<int> signalFV0ANBins{"signalFV0ANBins", 1000, "Number of bins for FV0A amplitude QA axis"};
   ConfigurableAxis nCandidates{"nCandidates", {30, -0.5, 29.5}, "N_{cand.}"};
 
   // Event selection criteria
@@ -225,6 +225,8 @@ struct Cascqaanalysis {
     }
 
     if (multQA) {
+      AxisSpec signalFT0MAxis = {std::max(1, static_cast<int>(signalFT0MNBins)), 0.f, 40000.f, "FT0M amplitude"};
+      AxisSpec signalFV0AAxis = {std::max(1, static_cast<int>(signalFV0ANBins)), 0.f, 40000.f, "FV0A amplitude"};
       if (isMC) {
         // Rec. lvl
         registry.add("hNchFT0Mglobal", "hNchFT0Mglobal", {HistType::kTH3D, {nChargedFT0MGenAxis, multNTracksAxis, eventTypeAxis}});
