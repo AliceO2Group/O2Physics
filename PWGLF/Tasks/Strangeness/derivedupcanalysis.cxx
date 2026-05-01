@@ -242,7 +242,7 @@ struct Derivedupcanalysis {
   Configurable<bool> calculateFeeddownMatrix{"calculateFeeddownMatrix", true, "fill feeddown matrix if MC"};
   ConfigurableAxis axisGeneratorIds{"axisGeneratorIds", {256, -0.5f, 255.5f}, "axis for generatorIds"};
   Configurable<bool> checkNeutronsInMC{"checkNeutronsInMC", true, "require no neutrons for single-gap in MC"};
-  Configurable<bool> requireGeneratedZDCNeutrons{"requireGeneratedZDCNeutrons", false, "require generated ZDC neutron topology matching genGapSide in processGenerated"};
+  Configurable<bool> requireGeneratedZDCNeutrons{"requireGeneratedZDCNeutrons", false, "require generated ZDC neutron topology in processGenerated"};
   Configurable<float> neutronEtaCut{"neutronEtaCut", 8.8, "ZN acceptance"};
 
   // Occupancy cut

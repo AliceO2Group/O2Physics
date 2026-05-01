@@ -22,15 +22,17 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include <CommonConstants/PhysicsConstants.h>
 #include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
+
+#include <TPDGCode.h>
 
 #include <cmath>
 
 // constants
-const float ctauxiPDG = 4.91;     // from PDG
-const float ctauomegaPDG = 2.461; // from PDG
+const float kCtauXi = 4.91;     // from PDG
+const float kCtauOmega = 2.461; // from PDG
 
 using namespace o2;
 using namespace o2::framework;
@@ -81,9 +83,6 @@ struct cascpostprocessing {
   Configurable<int> evSelFlag{"evSelFlag", 2, "1 - INEL; 2 - INEL>0; 3 - INEL>1"};
 
   HistogramRegistry registry{"registryts"};
-
-  // Necessary for particle charges
-  Service<o2::framework::O2DatabasePDG> pdgDB;
 
   void init(InitContext const&)
   {
@@ -294,14 +293,14 @@ struct cascpostprocessing {
       }
 
       if (isXi) {
-        if (TMath::Abs(candidate.massxi() - pdgDB->Mass(3312)) > masswin)
+        if (TMath::Abs(candidate.massxi() - o2::constants::physics::MassXiMinus) > masswin)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
         if (TMath::Abs(candidate.rapxi()) > rap)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
       } else {
-        if (TMath::Abs(candidate.massomega() - pdgDB->Mass(3334)) > masswin)
+        if (TMath::Abs(candidate.massomega() - o2::constants::physics::MassOmegaMinus) > masswin)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
         if (TMath::Abs(candidate.rapomega()) > rap)
@@ -343,7 +342,7 @@ struct cascpostprocessing {
       if (TMath::Abs(candidate.dcav0topv()) < dcav0topv)
         continue;
       registry.fill(HIST("hCandidate"), ++counter);
-      if (TMath::Abs(candidate.masslambdadau() - pdgDB->Mass(3122)) > lambdamasswin)
+      if (TMath::Abs(candidate.masslambdadau() - o2::constants::physics::MassLambda0) > lambdamasswin)
         continue;
       registry.fill(HIST("hCandidate"), ++counter);
       if (candidate.sign() < 0) {
@@ -388,10 +387,10 @@ struct cascpostprocessing {
         if (hastof && TMath::Abs(candidate.ntofsigmabachpi()) > nsigmatofPi && candidate.bachpt() > ptthrtof && candidate.bachhastof())
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
-        if (candidate.ctauxi() > proplifetime * ctauxiPDG)
+        if (candidate.ctauxi() > proplifetime * kCtauXi)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
-        if (TMath::Abs(candidate.massomega() - pdgDB->Mass(3334)) < rejcomp)
+        if (TMath::Abs(candidate.massomega() - o2::constants::physics::MassOmegaMinus) < rejcomp)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
         rapidity = candidate.rapxi();
@@ -404,10 +403,10 @@ struct cascpostprocessing {
         if (hastof && TMath::Abs(candidate.ntofsigmabachka()) > nsigmatofKa && candidate.bachpt() > ptthrtof && candidate.bachhastof())
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
-        if (candidate.ctauomega() > proplifetime * ctauomegaPDG)
+        if (candidate.ctauomega() > proplifetime * kCtauOmega)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
-        if (TMath::Abs(candidate.massxi() - pdgDB->Mass(3312)) < rejcomp)
+        if (TMath::Abs(candidate.massxi() - o2::constants::physics::MassXiMinus) < rejcomp)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
         rapidity = candidate.rapomega();
@@ -468,16 +467,16 @@ struct cascpostprocessing {
 
       if (isXi) {
         if (isMC) {
-          isCorrectlyRec = ((TMath::Abs(candidate.mcPdgCode()) == 3312) && (candidate.isPrimary() == 1)) ? 1 : 0;
+          isCorrectlyRec = ((TMath::Abs(candidate.mcPdgCode()) == PDG_t::kXiMinus) && (candidate.isPrimary() == 1)) ? 1 : 0;
         }
-        if (TMath::Abs(candidate.massxi() - pdgDB->Mass(3312)) < masswintpc) {
+        if (TMath::Abs(candidate.massxi() - o2::constants::physics::MassXiMinus) < masswintpc) {
           isCandidate = 1;
         }
       } else if (!isXi) {
         if (isMC) {
-          isCorrectlyRec = ((TMath::Abs(candidate.mcPdgCode()) == 3334) && (candidate.isPrimary() == 1)) ? 1 : 0;
+          isCorrectlyRec = ((TMath::Abs(candidate.mcPdgCode()) == PDG_t::kOmegaMinus) && (candidate.isPrimary() == 1)) ? 1 : 0;
         }
-        if (TMath::Abs(candidate.massomega() - pdgDB->Mass(3334)) < masswintpc) {
+        if (TMath::Abs(candidate.massomega() - o2::constants::physics::MassOmegaMinus) < masswintpc) {
           isCandidate = 1;
         }
       }
@@ -574,16 +573,16 @@ struct cascpostprocessing {
         continue;
 
       // Histos of generated cascades from generated events with accepted z vrtx + chosen event type (evSelFlag) (for signal loss correction)
-      if (genCascade.pdgCode() == -3312) {
+      if (genCascade.pdgCode() == PDG_t::kXiPlusBar) {
         registry.fill(HIST("hPtXiPlusTrue"), genCascade.pt(), genCascade.y(), genCascade.centFT0M());
       }
-      if (genCascade.pdgCode() == 3312) {
+      if (genCascade.pdgCode() == PDG_t::kXiMinus) {
         registry.fill(HIST("hPtXiMinusTrue"), genCascade.pt(), genCascade.y(), genCascade.centFT0M());
       }
-      if (genCascade.pdgCode() == -3334) {
+      if (genCascade.pdgCode() == PDG_t::kOmegaPlusBar) {
         registry.fill(HIST("hPtOmegaPlusTrue"), genCascade.pt(), genCascade.y(), genCascade.centFT0M());
       }
-      if (genCascade.pdgCode() == 3334) {
+      if (genCascade.pdgCode() == PDG_t::kOmegaMinus) {
         registry.fill(HIST("hPtOmegaMinusTrue"), genCascade.pt(), genCascade.y(), genCascade.centFT0M());
       }
 
@@ -609,16 +608,16 @@ struct cascpostprocessing {
           break;
       }
 
-      if (genCascade.pdgCode() == -3312) {
+      if (genCascade.pdgCode() == PDG_t::kXiPlusBar) {
         registry.fill(HIST("hPtXiPlusTrueAssocWithSelColl"), genCascade.pt(), genCascade.y(), genCascade.centFT0M());
       }
-      if (genCascade.pdgCode() == 3312) {
+      if (genCascade.pdgCode() == PDG_t::kXiMinus) {
         registry.fill(HIST("hPtXiMinusTrueAssocWithSelColl"), genCascade.pt(), genCascade.y(), genCascade.centFT0M());
       }
-      if (genCascade.pdgCode() == -3334) {
+      if (genCascade.pdgCode() == PDG_t::kOmegaPlusBar) {
         registry.fill(HIST("hPtOmegaPlusTrueAssocWithSelColl"), genCascade.pt(), genCascade.y(), genCascade.centFT0M());
       }
-      if (genCascade.pdgCode() == 3334) {
+      if (genCascade.pdgCode() == PDG_t::kOmegaMinus) {
         registry.fill(HIST("hPtOmegaMinusTrueAssocWithSelColl"), genCascade.pt(), genCascade.y(), genCascade.centFT0M());
       }
     }
