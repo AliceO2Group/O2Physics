@@ -3411,14 +3411,16 @@ struct HStrangeCorrelation {
             if (TESTBIT(doCorrelation, i)) {
               if (masterConfigurations.useCentralityinPrediction) {
                 histos.fill(HIST("Prediction/sameEvent/") + HIST(Particlenames[Index]), computeDeltaPhi(gphitrigger, gphiassoc), deltaeta, ptassoc, pttrigger, mcCollision.posZ(), centMultFT0M);
-                if (masterConfigurations.doSeparateFT0Prediction)
+                if (masterConfigurations.doSeparateFT0Prediction) {
                   histos.fill(HIST("Prediction/sameEventFT0A/") + HIST(Particlenames[Index]), computeDeltaPhi(gphitrigger, gphiassoc), deltaeta, ptassoc, pttrigger, mcCollision.posZ(), centMultFT0A);
-                histos.fill(HIST("Prediction/sameEventFT0C/") + HIST(Particlenames[Index]), computeDeltaPhi(gphitrigger, gphiassoc), deltaeta, ptassoc, pttrigger, mcCollision.posZ(), centMultFT0C);
+                  histos.fill(HIST("Prediction/sameEventFT0C/") + HIST(Particlenames[Index]), computeDeltaPhi(gphitrigger, gphiassoc), deltaeta, ptassoc, pttrigger, mcCollision.posZ(), centMultFT0C);
+                }
               } else {
                 histos.fill(HIST("Prediction/sameEvent/") + HIST(Particlenames[Index]), computeDeltaPhi(gphitrigger, gphiassoc), deltaeta, ptassoc, pttrigger, mcCollision.posZ(), multFT0M);
-                if (masterConfigurations.doSeparateFT0Prediction)
+                if (masterConfigurations.doSeparateFT0Prediction) {
                   histos.fill(HIST("Prediction/sameEventFT0A/") + HIST(Particlenames[Index]), computeDeltaPhi(gphitrigger, gphiassoc), deltaeta, ptassoc, pttrigger, mcCollision.posZ(), multFT0A);
-                histos.fill(HIST("Prediction/sameEventFT0C/") + HIST(Particlenames[Index]), computeDeltaPhi(gphitrigger, gphiassoc), deltaeta, ptassoc, pttrigger, mcCollision.posZ(), multFT0C);
+                  histos.fill(HIST("Prediction/sameEventFT0C/") + HIST(Particlenames[Index]), computeDeltaPhi(gphitrigger, gphiassoc), deltaeta, ptassoc, pttrigger, mcCollision.posZ(), multFT0C);
+                }
               }
             }
           }
