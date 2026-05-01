@@ -739,6 +739,8 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
 
   return WorkflowSpec{
-    adaptAnalysisTask<JetTaggerhfDataCharged>(cfgc, SetDefaultProcesses{}),
-    adaptAnalysisTask<JetTaggerhfMcdCharged>(cfgc, SetDefaultProcesses{})};
+    adaptAnalysisTask<JetTaggerhfDataCharged>(
+      cfgc, SetDefaultProcesses{}, TaskName{"jet-taggerhf-data-charged"}), // o2-linter: disable=name/o2-task (custom device name for templated task alias)
+    adaptAnalysisTask<JetTaggerhfMcdCharged>(
+      cfgc, SetDefaultProcesses{}, TaskName{"jet-taggerhf-mcd-charged"})}; // o2-linter: disable=name/o2-task (custom device name for templated task alias)
 }
