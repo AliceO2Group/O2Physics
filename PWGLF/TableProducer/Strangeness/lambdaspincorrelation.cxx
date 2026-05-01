@@ -74,7 +74,7 @@ struct lambdaspincorrelation {
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {8, 0, 80}, "multiplicity percentile for bin"};
 
   // events
-  Configurable<float> cfgEventTypepp{"cfgEventTypepp", true, "Type of collisions"};
+  Configurable<bool> cfgEventTypepp{"cfgEventTypepp", false, "Type of collisions"};
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 80.0f, "Accepted maximum Centrality"};
   Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 0.0f, "Accepted minimum Centrality"};
@@ -151,9 +151,9 @@ struct lambdaspincorrelation {
     if (std::abs(ctauLambda) > cMaxV0LifeTime) {
       return false;
     }
-    if (std::abs(candidate.yLambda()) > confV0Rap) {
-      return false;
-    }
+    // if (std::abs(candidate.yLambda()) > confV0Rap) {
+    // return false;
+    // }
     return true;
   }
 
@@ -237,7 +237,7 @@ struct lambdaspincorrelation {
   ROOT::Math::PxPyPzMVector lambdaDummy, pionDummy, protonDummy;
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter centralityFilter = (nabs(aod::cent::centFT0C) < cfgCutCentralityMax && nabs(aod::cent::centFT0C) > cfgCutCentralityMin);
+  // Filter centralityFilter = (nabs(aod::cent::centFT0C) < cfgCutCentralityMax && nabs(aod::cent::centFT0C) > cfgCutCentralityMin);
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms>>;
   using AllTrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
@@ -290,7 +290,7 @@ struct lambdaspincorrelation {
           }
           if (lambdaTag && aLambdaTag) {
             doubleStatus.push_back(true);
-            if (std::abs(v0.mLambda() - 1.1154) < std::abs(v0.mAntiLambda() - 1.1154)) {
+            if (std::abs(v0.mLambda() - o2::constants::physics::MassLambda) < std::abs(v0.mAntiLambda() - o2::constants::physics::MassLambda)) {
               lambdaTag = true;
               aLambdaTag = false;
             } else {
