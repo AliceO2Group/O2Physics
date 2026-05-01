@@ -36,7 +36,6 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/PID.h>
 
-#include "TDatabasePDG.h"
 #include <TComplex.h>
 #include <TF1.h>
 #include <TH2.h>
@@ -67,6 +66,8 @@ static constexpr float LongArrayFloat[3][20] = {{1.1, 1.2, 1.3, -1.1, -1.2, -1.3
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
 struct V0ptHadPiKaProt {
+
+  Service<o2::framework::O2DatabasePDG> pdgDB;
 
   // ITS response
   o2::aod::ITSResponse itsResponse;
@@ -981,7 +982,7 @@ struct V0ptHadPiKaProt {
         continue;
 
       // charged check
-      auto pdgEntry = TDatabasePDG::Instance()->GetParticle(mcParticle.pdgCode());
+      auto pdgEntry = pdgDB->getParticle(mcParticle.pdgCode());
       if (!pdgEntry)
         continue;
       if (pdgEntry->Charge() == 0)
