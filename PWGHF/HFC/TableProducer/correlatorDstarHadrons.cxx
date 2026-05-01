@@ -145,6 +145,7 @@ struct HfCorrelatorDstarHadrons {
   Configurable<float> dcazAssoTrackMax{"dcazAssoTrackMax", 10.0, "max DCAz of Associated Track"};
   Configurable<float> ptAssoTrackMin{"ptAssoTrackMin", 0.5, "min Pt of Associated Track"};
   Configurable<float> ptAssoTrackMax{"ptAssoTrackMax", 50.0, "max pT of Associated Track"};
+  Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "number of events to mix"};
 
   Configurable<std::vector<double>> binsPtCorrelations{"binsPtCorrelations", std::vector<double>{vecBinsPtCorrelationsDefault}, "pT bin limits for correlation plots"};
   Configurable<std::vector<double>> signalRegionLefBound{"signalRegionLefBound", std::vector<double>{vecSignalRegionLefBoundDefault}, "left boundary of signal region vs pT"};
@@ -196,7 +197,6 @@ struct HfCorrelatorDstarHadrons {
 
   ConfigurableAxis binsMultiplicity{"binsMultiplicity", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 100000.0f}, "Mixing bins - multiplicity"};
   ConfigurableAxis binsZVtx{"binsZVtx", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
-  Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "number of events to mix"};
   BinningType binningScheme{{binsZVtx, binsMultiplicity}, true};
   // Eta Phi Axes
   ConfigurableAxis axisEta{"axisEta", {16, -1.0, 1.0}, "Eta Axis"};
