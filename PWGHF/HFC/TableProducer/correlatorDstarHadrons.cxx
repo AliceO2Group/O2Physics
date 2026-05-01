@@ -15,14 +15,18 @@
 
 /// \brief Correlator for D* and hadrons. This task is used to produce table for D* and hadron pairs.
 
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+
+#include <TPDGCode.h>
 
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
@@ -49,6 +53,8 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+
+using BinningTypeMcGen = ColumnBinningPolicy<aod::mccollision::PosZ, o2::aod::mult::MultMCFT0A>;
 
 const int nBinsPtCorrelation = 8;
 
@@ -118,6 +124,8 @@ struct HfCorrelatorDstarHadrons {
   Produces<aod::DstarHadronPair> rowsDstarHadronPair;
   Produces<aod::Dstar> rowsDstar;
   Produces<aod::Hadron> rowsAssoTrack;
+  Produces<aod::DstarHadronMcGenPair> rowsDstarHadronMcGenPair;
+  Produces<aod::DstarHadronGenInfo> rowsDstarHadronGenInfo;
 
   // Enable separate tables for Dstar and Track for offline Event mixing
   Configurable<bool> enableSeparateTables{"enableSeparateTables", false, "Enable separate tables for Dstar and Track for offline Event mixing"};
@@ -163,6 +171,11 @@ struct HfCorrelatorDstarHadrons {
 
   using FilteredTracks = soa::Filtered<aod::TracksWDca>;
 
+  // MC Gen type aliases
+  using CandDstarMcGen = soa::Join<aod::McParticles, aod::HfCandDstarMcGen>;
+  using McCollisionsWithMult = soa::Join<aod::McCollisions, aod::MultsExtraMC>;
+  using RecoCollisionsForMcGen = soa::Join<aod::Collisions, aod::McCollisionLabels>;
+
   // collision table filter
   Filter collisionFilter = aod::hf_selection_dmeson_collision::dmesonSel == selectOnlyCollisionWDstar;
   // candidate filter
@@ -176,6 +189,10 @@ struct HfCorrelatorDstarHadrons {
   Preslice<FilteredCandidates> perColCandidates = aod::hf_cand::collisionId;
   // Preslice<aod::TracksWDca> perColTracks = aod::track::collisionId;
   Preslice<FilteredTracks> perColTracks = aod::track::collisionId;
+
+  // MC Gen preslices
+  Preslice<CandDstarMcGen> perCollisionCandMcGen = o2::aod::mcparticle::mcCollisionId;
+  PresliceUnsorted<RecoCollisionsForMcGen> collPerMcCollision = o2::aod::mccollisionlabel::mcCollisionId;
 
   ConfigurableAxis binsMultiplicity{"binsMultiplicity", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 100000.0f}, "Mixing bins - multiplicity"};
   ConfigurableAxis binsZVtx{"binsZVtx", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
@@ -192,7 +209,7 @@ struct HfCorrelatorDstarHadrons {
 
   void init(InitContext&)
   {
-    std::array<bool, 2> processes = {doprocessDataSameEvent, doprocessDataWithMixedEvent};
+    std::array<bool, 3> processes = {doprocessDataSameEvent, doprocessDataWithMixedEvent, doprocessSeMcGen};
     if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
@@ -406,6 +423,87 @@ struct HfCorrelatorDstarHadrons {
 
   } // processDataWithMixedEvent
   PROCESS_SWITCH(HfCorrelatorDstarHadrons, processDataWithMixedEvent, "process only mixed events data", false);
+
+  /// D*-Hadron correlation pair builder at MC Gen same-event level (true signal only, no mass selection)
+  void processSeMcGen(McCollisionsWithMult const& mcCollisions,
+                    RecoCollisionsForMcGen const& collisions,
+                    CandDstarMcGen const& mcParticles)
+  {
+    BinningTypeMcGen const corrBinningMcGen{{binsZVtx, binsMultiplicity}, true};
+
+    for (const auto& mcCollision : mcCollisions) {
+      int const poolBin = corrBinningMcGen.getBin(std::make_tuple(mcCollision.posZ(), mcCollision.multMCFT0A()));
+
+      const auto groupedMcParticles = mcParticles.sliceBy(perCollisionCandMcGen, mcCollision.globalIndex());
+      const auto groupedCollisions = collisions.sliceBy(collPerMcCollision, mcCollision.globalIndex());
+
+      if (groupedCollisions.size() < 1) {
+        continue; // skip MC events with no reconstructed collision
+      }
+
+      // loop over gen-level D* candidates
+      for (const auto& particle : groupedMcParticles) {
+        if (std::abs(particle.flagMcMatchGen()) != hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) {
+          continue;
+        }
+        auto yDstar = RecoDecay::y(particle.pVector(), constants::physics::MassDStar);
+        if (std::abs(yDstar) > yAbsDstarMax) {
+          continue;
+        }
+        bool const isDstarPrompt = particle.originMcGen() == RecoDecay::OriginType::Prompt;
+
+        // find D* daughters (K, pi from D0, soft pi) to exclude from associated particles
+        std::vector<int> listDaughters{};
+        std::array<int, 3> const arrDaughDstarPDG = {kKPlus, kPiPlus, kPiPlus};
+        RecoDecay::getDaughters(particle, &listDaughters, arrDaughDstarPDG, 2);
+
+        // loop over associated particles (charged hadrons at gen level)
+        for (const auto& particleAssoc : groupedMcParticles) {
+          if (std::abs(particleAssoc.eta()) > etaAbsAssoTrackMax ||
+              particleAssoc.pt() < ptAssoTrackMin ||
+              particleAssoc.pt() > ptAssoTrackMax) {
+            continue;
+          }
+          if (!particleAssoc.isPhysicalPrimary()) {
+            continue;
+          }
+          // select only charged hadrons: e, mu, pi, K, p
+          if ((std::abs(particleAssoc.pdgCode()) != kElectron) &&
+              (std::abs(particleAssoc.pdgCode()) != kMuonMinus) &&
+              (std::abs(particleAssoc.pdgCode()) != kPiPlus) &&
+              (std::abs(particleAssoc.pdgCode()) != kKPlus) &&
+              (std::abs(particleAssoc.pdgCode()) != kProton)) {
+            continue;
+          }
+          // skip D* daughter particles
+          bool isDaughter = false;
+          for (const auto& dauIdx : listDaughters) {
+            if (particleAssoc.globalIndex() == dauIdx) {
+              isDaughter = true;
+              break;
+            }
+          }
+          if (isDaughter) {
+            continue;
+          }
+
+          int const trackOrigin = RecoDecay::getCharmHadronOrigin(groupedMcParticles, particleAssoc, true);
+
+          rowsDstarHadronMcGenPair(particle.phi(),
+                                   particle.eta(),
+                                   particle.pt(),
+                                   particleAssoc.phi(),
+                                   particleAssoc.eta(),
+                                   particleAssoc.pt(),
+                                   poolBin);
+          rowsDstarHadronGenInfo(isDstarPrompt,
+                                 particleAssoc.isPhysicalPrimary(),
+                                 trackOrigin);
+        } // associated particle loop
+      } // D* gen particle loop
+    } // McCollision loop
+  } // processSeMcGen
+  PROCESS_SWITCH(HfCorrelatorDstarHadrons, processSeMcGen, "Process MC Gen same-event mode", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

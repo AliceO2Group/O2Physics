@@ -457,6 +457,10 @@ DECLARE_SOA_COLUMN(PoolBin, poolBin, int);
 DECLARE_SOA_DYNAMIC_COLUMN(DeltaEta, deltaEta, [](float etaTrack, float etaCandidate) -> float { return (etaTrack - etaCandidate); });
 DECLARE_SOA_DYNAMIC_COLUMN(DeltaPhi, deltaPhi, [](float phiCandidate, float phiTrack) -> float { return RecoDecay::constrainAngle(phiTrack - phiCandidate, -o2::constants::math::PIHalf); });
 DECLARE_SOA_DYNAMIC_COLUMN(DeltaM, deltaM, [](float massDstar, float massD0) -> float { return (massDstar - massD0); });
+// MC Gen info columns
+DECLARE_SOA_COLUMN(IsPrompt, isPrompt, bool);                   //! Used in MC-Gen, D* Prompt or Non-Prompt
+DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool); //! Used in MC-Gen, primary associated particle flag
+DECLARE_SOA_COLUMN(TrackOrigin, trackOrigin, int);              //! Used in MC-Gen, associated particle charm hadron origin
 } // namespace hf_correlation_dstar_hadron
 
 DECLARE_SOA_TABLE(DstarHadronPair, "AOD", "DSTRHPAIR", // D* Hadrons pairs Informations
@@ -492,6 +496,22 @@ DECLARE_SOA_TABLE(Dstar, "AOD", "DSTAR", // Only Dstar properties
                   hf_correlation_dstar_hadron::MD0,
                   hf_correlation_dstar_hadron::TimeStamp,
                   hf_correlation_dstar_hadron::PoolBin);
+
+DECLARE_SOA_TABLE(DstarHadronMcGenPair, "AOD", "DSTRHGENP", //! D*-Hadron MC Gen pairs
+                  hf_correlation_dstar_hadron::PhiDstar,
+                  hf_correlation_dstar_hadron::EtaDstar,
+                  hf_correlation_dstar_hadron::PtDstar,
+                  hf_correlation_dstar_hadron::PhiTrack,
+                  hf_correlation_dstar_hadron::EtaTrack,
+                  hf_correlation_dstar_hadron::PtTrack,
+                  hf_correlation_dstar_hadron::PoolBin,
+                  hf_correlation_dstar_hadron::DeltaPhi<hf_correlation_dstar_hadron::PhiDstar, hf_correlation_dstar_hadron::PhiTrack>,
+                  hf_correlation_dstar_hadron::DeltaEta<hf_correlation_dstar_hadron::EtaDstar, hf_correlation_dstar_hadron::EtaTrack>);
+
+DECLARE_SOA_TABLE(DstarHadronGenInfo, "AOD", "DSTRHGENINFO", //! D*-Hadron MC Gen information
+                  hf_correlation_dstar_hadron::IsPrompt,
+                  hf_correlation_dstar_hadron::IsPhysicalPrimary,
+                  hf_correlation_dstar_hadron::TrackOrigin);
 
 // Note: Table for selection of Lc in a collision
 namespace hf_selection_lc_collision
