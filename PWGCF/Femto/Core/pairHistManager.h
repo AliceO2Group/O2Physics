@@ -903,15 +903,20 @@ class PairHistManager
 
   float getKstar(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2)
   {
-    // compute pair momentum
-    auto sum = part1 + part2;
-    // Boost particle 1 to the pair rest frame (Prf) and calculate k* (would be equivalent using particle 2)
-    // make a copy of particle 1
-    auto particle1Prf = ROOT::Math::PtEtaPhiMVector(part1);
-    // get lorentz boost into pair rest frame
-    ROOT::Math::Boost boostPrf(sum.BoostToCM());
-    // boost particle 1 into pair rest frame and calculate its momentum, which has the same value as k*
-    return static_cast<float>(boostPrf(particle1Prf).P());
+    // Use Cartesian 4-vectors: addition/M2() become pure arithmetic
+    const ROOT::Math::PxPyPzEVector p1(part1);
+    const ROOT::Math::PxPyPzEVector p2(part2);
+
+    // Mandelstam s = (p1 + p2)^2
+    const double s = (p1 + p2).M2();
+    const double m1sq = p1.M2();
+    const double m2sq = p2.M2();
+
+    // Källen function λ(s, m1^2, m2^2) = (s - m1^2 - m2^2)² - 4*m1^2*m2^2
+    const double kallen = (s - m1sq - m2sq) * (s - m1sq - m2sq) - 4.0 * m1sq * m2sq;
+
+    // k* = 0.5 * sqrt(λ/s)
+    return static_cast<float>(0.5 * std::sqrt(std::max(0.0, kallen) / s));
   }
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;

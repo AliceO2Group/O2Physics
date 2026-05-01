@@ -383,23 +383,24 @@ class TripletHistManager
   float getQ3() const { return mQ3; }
 
  private:
-  ROOT::Math::PxPyPzEVector getqij(ROOT::Math::PtEtaPhiMVector const& pi, ROOT::Math::PtEtaPhiMVector const& pj)
+  ROOT::Math::PxPyPzEVector getqij(ROOT::Math::PxPyPzEVector const& vi, ROOT::Math::PxPyPzEVector const& vj)
   {
-    // Convert to PxPyPzEVector to get proper Lorentz dot product
-    ROOT::Math::PxPyPzEVector vi(pi);
-    ROOT::Math::PxPyPzEVector vj(pj);
-
     auto trackSum = vi + vj;
     auto trackDifference = vi - vj;
-    double scaling = trackDifference.Dot(trackSum) / trackSum.Dot(trackSum);
+    const double s = trackSum.M2();
+    const double scaling = (s != 0.0) ? (vi.M2() - vj.M2()) / s : 0.0;
     return trackDifference - scaling * trackSum;
   }
 
   float getQ3(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2, ROOT::Math::PtEtaPhiMVector const& part3)
   {
-    auto q12 = getqij(part1, part2);
-    auto q23 = getqij(part2, part3);
-    auto q31 = getqij(part3, part1);
+    // upfront conversion to PxPyPzEVector
+    const ROOT::Math::PxPyPzEVector p1(part1);
+    const ROOT::Math::PxPyPzEVector p2(part2);
+    const ROOT::Math::PxPyPzEVector p3(part3);
+    auto q12 = getqij(p1, p2);
+    auto q23 = getqij(p2, p3);
+    auto q31 = getqij(p3, p1);
     double q = q12.M2() + q23.M2() + q31.M2();
     return static_cast<float>(std::sqrt(-q));
   }
