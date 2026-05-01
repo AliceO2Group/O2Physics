@@ -166,6 +166,7 @@ struct Derivedupcanalysis {
   } casccuts;
   Configurable<bool> doBachelorBaryonCut{"doBachelorBaryonCut", false, "Enable Bachelor-Baryon cut "};
   static constexpr float kNCtauCutsCasc[1][2] = {{6., 6.}};
+  static constexpr int kFirstCascadePartID = 3;
   Configurable<LabeledArray<float>> nCtauCutCasc{"nCtauCutCasc", {kNCtauCutsCasc[0], 2, {"lifetimecutXi", "lifetimecutOmega"}}, "nCtauCutCasc"};
 
   // UPC selections
@@ -330,7 +331,7 @@ struct Derivedupcanalysis {
   template <int partID>
   void addTopoHistograms(HistogramRegistry& histos)
   {
-    const bool isCascade = (partID > 2.5) ? true : false;
+    const bool isCascade = partID >= kFirstCascadePartID;
     if (isCascade) {
       histos.add(Form("%s/hCascCosPA", kParticlenames[partID].data()), "hCascCosPA", kTH2F, {axisPtCoarse, {100, 0.9f, 1.0f}});
       histos.add(Form("%s/hDCACascDaughters", kParticlenames[partID].data()), "hDCACascDaughters", kTH2F, {axisPtCoarse, {44, 0.0f, 2.2f}});
@@ -364,7 +365,7 @@ struct Derivedupcanalysis {
   template <int partID>
   void addTPCQAHistograms(HistogramRegistry& histos)
   {
-    const bool isCascade = (partID > 2.5) ? true : false;
+    const bool isCascade = partID >= kFirstCascadePartID;
     histos.add(Form("%s/h3dPosNsigmaTPC", kParticlenames[partID].data()), "h3dPosNsigmaTPC", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisNsigmaTPC});
     histos.add(Form("%s/h3dNegNsigmaTPC", kParticlenames[partID].data()), "h3dNegNsigmaTPC", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisNsigmaTPC});
     histos.add(Form("%s/h3dPosTPCsignal", kParticlenames[partID].data()), "h3dPosTPCsignal", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTPCsignal});
@@ -395,7 +396,7 @@ struct Derivedupcanalysis {
   template <int partID>
   void addTOFQAHistograms(HistogramRegistry& histos)
   {
-    const bool isCascade = (partID > 2.5) ? true : false;
+    const bool isCascade = partID >= kFirstCascadePartID;
     histos.add(Form("%s/h3dPosTOFdeltaT", kParticlenames[partID].data()), "h3dPosTOFdeltaT", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTOFdeltaT});
     histos.add(Form("%s/h3dNegTOFdeltaT", kParticlenames[partID].data()), "h3dNegTOFdeltaT", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTOFdeltaT});
     histos.add(Form("%s/h3dPosTOFdeltaTvsTrackPtot", kParticlenames[partID].data()), "h3dPosTOFdeltaTvsTrackPtot", kTH3F, {axisDetectors.axisFT0ampl, axisPtCoarse, axisTOFdeltaT});
@@ -412,7 +413,7 @@ struct Derivedupcanalysis {
   template <int partID>
   void addKinematicQAHistograms(HistogramRegistry& histos)
   {
-    const bool isCascade = (partID > 2.5) ? true : false;
+    const bool isCascade = partID >= kFirstCascadePartID;
     histos.add(Form("%s/h3dPosEtaPt", kParticlenames[partID].data()), "h3dPosEtaPt", kTH3F, {axisPtCoarse, axisEta, axisSelGap});
     histos.add(Form("%s/h3dNegEtaPt", kParticlenames[partID].data()), "h3dNegEtaPt", kTH3F, {axisPtCoarse, axisEta, axisSelGap});
     histos.add(Form("%s/h3dRapPt", kParticlenames[partID].data()), "h3dRapPt", kTH3F, {axisPtCoarse, axisRap, axisSelGap});
@@ -424,7 +425,7 @@ struct Derivedupcanalysis {
   template <int partID>
   void addDetectorPropHistograms(HistogramRegistry& histos)
   {
-    const bool isCascade = (partID > 2.5) ? true : false;
+    const bool isCascade = partID >= kFirstCascadePartID;
     if (doDetectPropQA == 1) {
       if (isCascade) {
         histos.add(Form("%s/h8dDetectPropVsCentrality", kParticlenames[partID].data()), "h8dDetectPropVsCentrality", kTHnSparseF, {axisDetectors.axisFT0ampl, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse});

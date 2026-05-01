@@ -38,7 +38,9 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct cascpostprocessing {
+struct LfCascpostprocessing {
+  static constexpr int OobRejTofOnly = 2;
+
   // Xi or Omega
   Configurable<bool> isXi{"isXi", 1, "Apply cuts for Xi identification"};
   Configurable<bool> hastof{"hastof", 0, "Apply nsigmaTOF to daughter tracks of cascade"};
@@ -100,10 +102,10 @@ struct cascpostprocessing {
     AxisSpec ptAxisPID = {50, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     ConfigurableAxis etaAxis{"etaAxis", {40, -2.0f, 2.0f}, "#eta"};
 
-    ConfigurableAxis centFT0MAxis{"FT0M",
+    ConfigurableAxis centFT0MAxis{"centFT0MAxis",
                                   {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 101, 105.5},
                                   "FT0M (%)"};
-    ConfigurableAxis centFV0AAxis{"FV0A",
+    ConfigurableAxis centFV0AAxis{"centFV0AAxis",
                                   {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 101, 105.5},
                                   "FV0A (%)"};
 
@@ -251,7 +253,7 @@ struct cascpostprocessing {
     int counter = -1;
     bool isCorrectlyRec = 0;
 
-    for (auto& candidate : mycascades) {
+    for (auto const& candidate : mycascades) {
       isCandidate = false;
       isCorrectlyRec = false;
 
@@ -426,7 +428,7 @@ struct cascpostprocessing {
         if (!kHasTOF && !kHasITS)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
-      } else if (dooobrej == 2) {
+      } else if (dooobrej == OobRejTofOnly) {
         if (!kHasTOF && (candidate.pt() > ptthrtof))
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
@@ -540,11 +542,11 @@ struct cascpostprocessing {
     }
   }
 
-  PROCESS_SWITCH(cascpostprocessing, processRec, "Process Run 3 reconstructed data", true);
+  PROCESS_SWITCH(LfCascpostprocessing, processRec, "Process Run 3 reconstructed data", true);
 
   void processGen(aod::MyMCCascades const& myMCcascades)
   {
-    for (auto& genCascade : myMCcascades) {
+    for (auto const& genCascade : myMCcascades) {
       if (genCascade.isPrimary() == 0)
         continue; // Consider only primaries
 
@@ -622,11 +624,11 @@ struct cascpostprocessing {
       }
     }
   }
-  PROCESS_SWITCH(cascpostprocessing, processGen, "Process Run 3 MC generated data", false);
+  PROCESS_SWITCH(LfCascpostprocessing, processGen, "Process Run 3 MC generated data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<cascpostprocessing>(cfgc, TaskName{"lf-cascpostprocessing"})};
+    adaptAnalysisTask<LfCascpostprocessing>(cfgc)};
 }
