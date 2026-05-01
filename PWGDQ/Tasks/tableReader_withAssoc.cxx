@@ -284,6 +284,7 @@ struct AnalysisEventSelection {
 
   Produces<aod::EventCuts> eventSel;
   Produces<aod::MixingHashes> hash;
+  Produces<aod::StoredReducedEvents> JetEvents;
   OutputObj<THashList> fOutputList{"output"};
 
   // TODO: Provide the mixing variables and binning directly via configurables (e.g. vectors of float)
@@ -577,6 +578,19 @@ struct AnalysisEventSelection {
     runEventSelection<gkEventFillMapWithQvectorCentr>(events);
     publishSelections<gkEventFillMapWithQvectorCentr>(events);
   }
+  void processFillEvents(MyEventsBasic const& events)
+  {
+    for (auto& event : events) {
+      JetEvents(event.tag_raw(),
+                event.runNumber(),
+                event.posX(),
+                event.posY(),
+                event.posZ(),
+                event.numContrib(),
+                event.collisionTime(),
+                event.collisionTimeRes());
+    }
+  }
   void processDummy(MyEventsBasic&)
   {
     // do nothing
@@ -589,6 +603,7 @@ struct AnalysisEventSelection {
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtraZdc, "Run event selection on DQ skimmed events, with mult extra and ZDC", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtraZdcFit, "Run event selection on DQ skimmed events, with mult extra, ZDC and FIT", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithQvectorCentr, "Run event selection on DQ skimmed events, with Q-vector", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processFillEvents, "Fill storedReducedEvents table for use in JE framework", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy function", true);
 };
 
