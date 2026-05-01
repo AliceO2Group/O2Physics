@@ -131,18 +131,22 @@ struct HfTaskCorrelationDstarHadrons {
     AxisSpec const axisSpecPtHadron = {ptHadronBinsEdges};
     AxisSpec const axisSpecPoolBin = {9, 0., 9.};
 
-    registry.add("hCorrel2DVsPtSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + stringPoolBin + "entries", {HistType::kTHnSparseD, {axisSpecDeltaPhi, axisSpecDeltaEta, axisSpecPtDstar, axisSpecPtHadron, axisSpecPoolBin}}, true);
-    registry.add("hCorrel2DPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2D, {axisSpecDeltaPhi, axisSpecDeltaEta}}, true);
-    registry.add("hDeltaEtaPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaEta + "entries", {HistType::kTH1D, {axisSpecDeltaEta}}, true);
-    registry.add("hDeltaPhiPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + "entries", {HistType::kTH1D, {axisSpecDeltaPhi}}, true);
-    registry.add("hCorrel2DVsPtSidebands", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + stringPoolBin + "entries", {HistType::kTHnSparseD, {axisSpecDeltaPhi, axisSpecDeltaEta, axisSpecPtDstar, axisSpecPtHadron, axisSpecPoolBin}}, true);
-    registry.add("hCorrel2DPtIntSidebands", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2D, {axisSpecDeltaPhi, axisSpecDeltaEta}}, true);
-    registry.add("hDeltaEtaPtIntSidebands", stringDHadron + stringSideband + stringDeltaEta + "entries", {HistType::kTH1D, {axisSpecDeltaEta}}, true);
-    registry.add("hDeltaPhiPtIntSidebands", stringDHadron + stringSideband + stringDeltaPhi + "entries", {HistType::kTH1D, {axisSpecDeltaPhi}}, true);
+    if (doprocessData) {
+      registry.add("hCorrel2DVsPtSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + stringPoolBin + "entries", {HistType::kTHnSparseD, {axisSpecDeltaPhi, axisSpecDeltaEta, axisSpecPtDstar, axisSpecPtHadron, axisSpecPoolBin}}, true);
+      registry.add("hCorrel2DPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2D, {axisSpecDeltaPhi, axisSpecDeltaEta}}, true);
+      registry.add("hDeltaEtaPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaEta + "entries", {HistType::kTH1D, {axisSpecDeltaEta}}, true);
+      registry.add("hDeltaPhiPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + "entries", {HistType::kTH1D, {axisSpecDeltaPhi}}, true);
+      registry.add("hCorrel2DVsPtSidebands", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + stringPoolBin + "entries", {HistType::kTHnSparseD, {axisSpecDeltaPhi, axisSpecDeltaEta, axisSpecPtDstar, axisSpecPtHadron, axisSpecPoolBin}}, true);
+      registry.add("hCorrel2DPtIntSidebands", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2D, {axisSpecDeltaPhi, axisSpecDeltaEta}}, true);
+      registry.add("hDeltaEtaPtIntSidebands", stringDHadron + stringSideband + stringDeltaEta + "entries", {HistType::kTH1D, {axisSpecDeltaEta}}, true);
+      registry.add("hDeltaPhiPtIntSidebands", stringDHadron + stringSideband + stringDeltaPhi + "entries", {HistType::kTH1D, {axisSpecDeltaPhi}}, true);
+    }
     // MC Gen histograms
-    registry.add("hCorrel2DVsPtMcGen", stringDHadron + "MC Gen;" + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + stringPoolBin + "entries", {HistType::kTHnSparseD, {axisSpecDeltaPhi, axisSpecDeltaEta, axisSpecPtDstar, axisSpecPtHadron, axisSpecPoolBin}}, true);
-    registry.add("hCorrel2DVsPtMcGenPrompt", stringDHadron + "MC Gen Prompt;" + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + stringPoolBin + "entries", {HistType::kTHnSparseD, {axisSpecDeltaPhi, axisSpecDeltaEta, axisSpecPtDstar, axisSpecPtHadron, axisSpecPoolBin}}, true);
-    registry.add("hCorrel2DVsPtMcGenNonPrompt", stringDHadron + "MC Gen NonPrompt;" + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + stringPoolBin + "entries", {HistType::kTHnSparseD, {axisSpecDeltaPhi, axisSpecDeltaEta, axisSpecPtDstar, axisSpecPtHadron, axisSpecPoolBin}}, true);
+    if (doprocessMcGen) {
+      registry.add("hCorrel2DVsPtMcGen", stringDHadron + "MC Gen;" + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + stringPoolBin + "entries", {HistType::kTHnSparseD, {axisSpecDeltaPhi, axisSpecDeltaEta, axisSpecPtDstar, axisSpecPtHadron, axisSpecPoolBin}}, true);
+      registry.add("hCorrel2DVsPtMcGenPrompt", stringDHadron + "MC Gen Prompt;" + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + stringPoolBin + "entries", {HistType::kTHnSparseD, {axisSpecDeltaPhi, axisSpecDeltaEta, axisSpecPtDstar, axisSpecPtHadron, axisSpecPoolBin}}, true);
+      registry.add("hCorrel2DVsPtMcGenNonPrompt", stringDHadron + "MC Gen NonPrompt;" + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + stringPoolBin + "entries", {HistType::kTHnSparseD, {axisSpecDeltaPhi, axisSpecDeltaEta, axisSpecPtDstar, axisSpecPtHadron, axisSpecPoolBin}}, true);
+    }
 
     if (applyEfficiency && useCcdbEfficiency) {
       ccdbApi.init(ccdbUrl);
@@ -264,8 +268,8 @@ struct HfTaskCorrelationDstarHadrons {
   }
   PROCESS_SWITCH(HfTaskCorrelationDstarHadrons, processData, " process data only", true);
 
-  /// Fill THnSparse histograms with D*-hadron pairs at MC Gen same-event level
-  void processSeMcGen(soa::Join<aod::DstarHadronMcGenPair, aod::DstarHadronGenInfo> const& pairsMcGen)
+  /// Fill THnSparse histograms with D*-hadron pairs at MC Gen level (both SE and ME)
+  void processMcGen(soa::Join<aod::DstarHadronMcGenPair, aod::DstarHadronGenInfo> const& pairsMcGen)
   {
     for (const auto& pair : pairsMcGen) {
       float const deltaPhi = pair.deltaPhi();
@@ -283,7 +287,7 @@ struct HfTaskCorrelationDstarHadrons {
       }
     }
   }
-  PROCESS_SWITCH(HfTaskCorrelationDstarHadrons, processSeMcGen, "Process MC Gen same-event", false);
+  PROCESS_SWITCH(HfTaskCorrelationDstarHadrons, processMcGen, "Process MC Gen", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

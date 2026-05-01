@@ -196,6 +196,7 @@ struct HfCorrelatorDstarHadrons {
 
   ConfigurableAxis binsMultiplicity{"binsMultiplicity", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 100000.0f}, "Mixing bins - multiplicity"};
   ConfigurableAxis binsZVtx{"binsZVtx", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
+  Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "number of events to mix"};
   BinningType binningScheme{{binsZVtx, binsMultiplicity}, true};
   // Eta Phi Axes
   ConfigurableAxis axisEta{"axisEta", {16, -1.0, 1.0}, "Eta Axis"};
@@ -209,7 +210,7 @@ struct HfCorrelatorDstarHadrons {
 
   void init(InitContext&)
   {
-    std::array<bool, 3> processes = {doprocessDataSameEvent, doprocessDataWithMixedEvent, doprocessSeMcGen};
+    std::array<bool, 4> processes = {doprocessDataSameEvent, doprocessDataWithMixedEvent, doprocessSeMcGen, doprocessMcGenME};
     if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
@@ -504,6 +505,59 @@ struct HfCorrelatorDstarHadrons {
     } // McCollision loop
   } // processSeMcGen
   PROCESS_SWITCH(HfCorrelatorDstarHadrons, processSeMcGen, "Process MC Gen same-event mode", false);
+
+  /// D*-Hadron correlation pair builder at MC Gen mixed-event level
+  void processMcGenME(McCollisionsWithMult const& collisions,
+                      CandDstarMcGen const& mcParticles)
+  {
+    BinningTypeMcGen const corrBinningMcGen{{binsZVtx, binsMultiplicity}, true};
+    auto tracksTuple = std::make_tuple(mcParticles, mcParticles);
+    Pair<McCollisionsWithMult, CandDstarMcGen, CandDstarMcGen, BinningTypeMcGen> const pairMcGen{corrBinningMcGen, numberEventsMixed, -1, collisions, tracksTuple, &cache};
+
+    for (const auto& [c1, tracks1, c2, tracks2] : pairMcGen) {
+      int const poolBin = corrBinningMcGen.getBin(std::make_tuple(c1.posZ(), c1.multMCFT0A()));
+      for (const auto& [particle, particleAssoc] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+        if (std::abs(particle.flagMcMatchGen()) != hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) {
+          continue;
+        }
+        auto yDstar = RecoDecay::y(particle.pVector(), constants::physics::MassDStar);
+        if (std::abs(yDstar) > yAbsDstarMax) {
+          continue;
+        }
+        if (std::abs(particleAssoc.eta()) > etaAbsAssoTrackMax ||
+            particleAssoc.pt() < ptAssoTrackMin ||
+            particleAssoc.pt() > ptAssoTrackMax) {
+          continue;
+        }
+        if (!particleAssoc.isPhysicalPrimary()) {
+          continue;
+        }
+        // select only charged hadrons: e, mu, pi, K, p
+        if ((std::abs(particleAssoc.pdgCode()) != kElectron) &&
+            (std::abs(particleAssoc.pdgCode()) != kMuonMinus) &&
+            (std::abs(particleAssoc.pdgCode()) != kPiPlus) &&
+            (std::abs(particleAssoc.pdgCode()) != kKPlus) &&
+            (std::abs(particleAssoc.pdgCode()) != kProton)) {
+          continue;
+        }
+        bool const isDstarPrompt = particle.originMcGen() == RecoDecay::OriginType::Prompt;
+        // use full mcParticles (not sliced) since particles come from different collisions in ME
+        int const trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);
+
+        rowsDstarHadronMcGenPair(particle.phi(),
+                                 particle.eta(),
+                                 particle.pt(),
+                                 particleAssoc.phi(),
+                                 particleAssoc.eta(),
+                                 particleAssoc.pt(),
+                                 poolBin);
+        rowsDstarHadronGenInfo(isDstarPrompt,
+                               particleAssoc.isPhysicalPrimary(),
+                               trackOrigin);
+      } // associated particle loop
+    } // ME pair loop
+  } // processMcGenME
+  PROCESS_SWITCH(HfCorrelatorDstarHadrons, processMcGenME, "Process MC Gen mixed-event mode", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
