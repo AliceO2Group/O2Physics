@@ -733,7 +733,7 @@ struct JetTaggerHFTask {
 };
 
 using JetTaggerhfDataCharged = JetTaggerHFTask<false, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>, aod::DataSecondaryVertexNProngIndices, aod::DataSecondaryVertexNProngs, aod::ChargedJetTags>;
-using JetTaggerhfMCDCharged = JetTaggerHFTask<true, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, aod::MCDSecondaryVertexNProngIndices, aod::MCDSecondaryVertexNProngs, aod::ChargedMCDetectorLevelJetTags>;
+using JetTaggerhfMcdCharged = JetTaggerHFTask<true, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, aod::MCDSecondaryVertexNProngIndices, aod::MCDSecondaryVertexNProngs, aod::ChargedMCDetectorLevelJetTags>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

@@ -105,6 +105,7 @@ struct JetTaggerHFQA {
   ConfigurableAxis binMass{"binMass", {50, 0, 10.f}, ""};
   ConfigurableAxis binSigmaLxy{"binSigmaLxy", {100, 0., 0.1}, ""};
   ConfigurableAxis binSigmaLxyz{"binSigmaLxyz", {100, 0., 0.1}, ""};
+  ConfigurableAxis binDispersion{"binDispersion", {200, 0., 1}, ""};
 
   int numberOfJetFlavourSpecies = 6;
   std::vector<int> eventSelectionBits;
@@ -145,6 +146,7 @@ struct JetTaggerHFQA {
     AxisSpec axisMass = {binMass, "#it{m}_{SV}"};
     AxisSpec axisSigmaLxy = {binSigmaLxy, "#sigma_{L_{XY}} [cm]"};
     AxisSpec axisSigmaLxyz = {binSigmaLxyz, "#sigma_{L_{XYZ}} [cm]"};
+    AxisSpec axisDispersion = {binDispersion, "#sigma_{SV}"};
     AxisSpec axisFracSecPt = {100, 0, 1, "#frac{#Sigma#it{p}_{T}^{secondary track}}{#it{p}_{T, jet}}"};
 
     registry.add("h_collision_events", "data;mcd;mcp evnets", {HistType::kTH1F, {{4, 0.0, 4.0}}});
@@ -357,6 +359,7 @@ struct JetTaggerHFQA {
         registry.add("h2_jet_pt_Lxyz", "", {HistType::kTH2F, {{axisJetPt}, {axisLxyz}}});
         registry.add("h2_jet_pt_sigmaLxyz", "", {HistType::kTH2F, {{axisJetPt}, {axisSigmaLxyz}}});
         registry.add("h2_jet_pt_Sxyz", "", {HistType::kTH2F, {{axisJetPt}, {axisSxyz}}});
+        registry.add("hn_jet_pt_Lxy_sigmaLxy_Sxy_dispersion", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxy}, {axisSigmaLxy}, {axisSxy}, {axisDispersion}}});
       }
       registry.add("h2_jet_pt_Sxy_N1", "", {HistType::kTH2F, {{axisJetPt}, {axisSxy}}});
       registry.add("h2_jet_pt_Sxyz_N1", "", {HistType::kTH2F, {{axisJetPt}, {axisSxyz}}});
@@ -381,6 +384,7 @@ struct JetTaggerHFQA {
         registry.add("h3_jet_pt_Lxyz_flavour", "", {HistType::kTH3F, {{axisJetPt}, {axisLxyz}, {axisJetFlavour}}});
         registry.add("h3_jet_pt_sigmaLxyz_flavour", "", {HistType::kTH3F, {{axisJetPt}, {axisSigmaLxyz}, {axisJetFlavour}}});
         registry.add("h3_jet_pt_Sxyz_flavour", "", {HistType::kTH3F, {{axisJetPt}, {axisSxyz}, {axisJetFlavour}}});
+        registry.add("hn_jet_pt_Lxy_sigmaLxy_Sxy_dispersion_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisLxy}, {axisSigmaLxy}, {axisSxy}, {axisDispersion}, {axisJetFlavour}}});
       }
       registry.add("h3_jet_pt_Sxy_N1_flavour", "", {HistType::kTH3F, {{axisJetPt}, {axisSxy}, {axisJetFlavour}}});
       registry.add("h3_jet_pt_Sxyz_N1_flavour", "", {HistType::kTH3F, {{axisJetPt}, {axisSxyz}, {axisJetFlavour}}});
@@ -856,6 +860,7 @@ struct JetTaggerHFQA {
         registry.fill(HIST("h2_jet_pt_Lxy"), jet.pt(), prong.decayLengthXY());
         registry.fill(HIST("h2_jet_pt_sigmaLxy"), jet.pt(), prong.errorDecayLengthXY());
         registry.fill(HIST("h2_jet_pt_Sxy"), jet.pt(), prong.decayLengthXY() / prong.errorDecayLengthXY());
+        registry.fill(HIST("hn_jet_pt_Lxy_sigmaLxy_Sxy_dispersion"), jet.pt(), prong.decayLengthXY(), prong.errorDecayLengthXY(), prong.decayLengthXY() / prong.errorDecayLengthXY(), prong.dispersion());
         if (fillSVxyz) {
           registry.fill(HIST("h2_jet_pt_Lxyz"), jet.pt(), prong.decayLength());
           registry.fill(HIST("h2_jet_pt_sigmaLxyz"), jet.pt(), prong.errorDecayLength());
@@ -911,6 +916,7 @@ struct JetTaggerHFQA {
         registry.fill(HIST("h3_jet_pt_Lxy_flavour"), mcdjet.pt(), prong.decayLengthXY(), origin, eventWeight);
         registry.fill(HIST("h3_jet_pt_sigmaLxy_flavour"), mcdjet.pt(), prong.errorDecayLengthXY(), origin, eventWeight);
         registry.fill(HIST("h3_jet_pt_Sxy_flavour"), mcdjet.pt(), prong.decayLengthXY() / prong.errorDecayLengthXY(), origin, eventWeight);
+        registry.fill(HIST("hn_jet_pt_Lxy_sigmaLxy_Sxy_dispersion"), mcdjet.pt(), prong.decayLengthXY(), prong.errorDecayLengthXY(), prong.decayLengthXY() / prong.errorDecayLengthXY(), prong.dispersion(), origin, eventWeight);
         if (fillSVxyz) {
           registry.fill(HIST("h3_jet_pt_Lxyz_flavour"), mcdjet.pt(), prong.decayLength(), origin, eventWeight);
           registry.fill(HIST("h3_jet_pt_Sxyz_flavour"), mcdjet.pt(), prong.decayLength() / prong.errorDecayLength(), origin, eventWeight);
