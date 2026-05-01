@@ -235,13 +235,13 @@ struct lambdajetpolarizationions {
 
     // Standard 5 topological criteria -- Closed a bit more for the Lambda analysis
     Configurable<float> v0cospa{"v0cospa", 0.995, "min V0 CosPA"};              // Default is 0.97
-    Configurable<float> dcav0dau{"dcav0dau", 1.0, "max DCA V0 Daughters (cm)"}; // Default is 1.0
+    Configurable<float> dcav0dau{"dcav0dau", 1.2, "max DCA V0 Daughters (cm)"}; // Default is 1.0
     // Configurable<float> dcanegtopv{"dcanegtopv", .2, "min DCA Neg To PV (cm)"}; // Default is .05
     // Configurable<float> dcapostopv{"dcapostopv", .05, "min DCA Pos To PV (cm)"}; // Default is .05
     // Renamed for better consistency of candidate selection (the cut is not determined by charge, but by mass and how deflected the daughter is):
-    Configurable<float> dcaPionToPV{"dcaPionToPV", .2, "min DCA pion-like daughter To PV (cm)"};        // Default is .05. Suppresses pion background.
+    Configurable<float> dcaPionToPV{"dcaPionToPV", .05, "min DCA pion-like daughter To PV (cm)"}; // .2 would suppress primary pion background, but we need to reduce fake-polarization signals enhanced by DCA-to-PV cuts
     Configurable<float> dcaProtonToPV{"dcaProtonToPV", .05, "min DCA proton-like daughter To PV (cm)"}; // Default is .05
-    Configurable<float> v0radius{"v0radius", 1.2, "minimum V0 radius (cm)"};                            // Default is  1.2
+    Configurable<float> v0radius{"v0radius", 1.0, "minimum V0 radius (cm)"};                            // Default is  1.2
     Configurable<float> v0radiusMax{"v0radiusMax", 1E5, "maximum V0 radius (cm)"};
     Configurable<float> lambdaLifetimeCut{"lambdaLifetimeCut", 30., "lifetime cut (c*tau) for Lambda (cm)"};
 
