@@ -1456,9 +1456,6 @@ struct HfTrackIndexSkimCreator {
     Configurable<std::vector<double>> binsPtDstarToD0Pi{"binsPtDstarToD0Pi", std::vector<double>{hf_cuts_presel_dstar::vecBinsPt}, "pT bin limits for D*+->D0pi pT-dependent cuts"};
     Configurable<LabeledArray<double>> cutsDstarToD0Pi{"cutsDstarToD0Pi", {hf_cuts_presel_dstar::Cuts[0], hf_cuts_presel_dstar::NBinsPt, hf_cuts_presel_dstar::NCutVars, hf_cuts_presel_dstar::labelsPt, hf_cuts_presel_dstar::labelsCutVar}, "D*+->D0pi selections per pT bin"};
 
-    // Species-differential track min pT selection for 3-prong candidates
-    Configurable<LabeledArray<float>> ptProngMin3Prong{"ptProngMin3Prong", {hf_cuts_presel_3prong::PtProngMin[0], hf_cuts_presel_3prong::NSpecies, 1, hf_cuts_presel_3prong::labelsSpecies, hf_cuts_presel_3prong::labelsPtProngMin}, "Min pT selection for prongs of 3-prong candidates in GeV/c"};
-
     // proton PID selections for Lc and Xic
     Configurable<bool> applyProtonPidForLcToPKPi{"applyProtonPidForLcToPKPi", false, "Apply proton PID for Lc->pKpi"};
     Configurable<bool> applyProtonPidForXicToPKPi{"applyProtonPidForXicToPKPi", false, "Apply proton PID for Xic->pKpi"};
@@ -1823,7 +1820,7 @@ struct HfTrackIndexSkimCreator {
   template <typename T1, typename T2, typename T3>
   void applyPreselectionPhiDecay(const int binPt, T1 const& pVecTrack0, T1 const& pVecTrack1, T1 const& pVecTrack2, T2& cutStatus, T3& whichHypo, auto& isSelected)
   {
-    const double deltaMassMax = cut3Prong[hf_cand_3prong::DecayType::DsToKKPi].get(binPt, 4u);
+    const double deltaMassMax = cut3Prong[hf_cand_3prong::DecayType::DsToKKPi].get(binPt, 5u);
     if (TESTBIT(whichHypo[hf_cand_3prong::DecayType::DsToKKPi], 0)) {
       const double mass2PhiKKPi = RecoDecay::m2(std::array{pVecTrack0, pVecTrack1}, std::array{arrMass3Prong[hf_cand_3prong::DecayType::DsToKKPi][0][0], arrMass3Prong[hf_cand_3prong::DecayType::DsToKKPi][0][1]});
       if (mass2PhiKKPi > (MassPhi + deltaMassMax) * (MassPhi + deltaMassMax) || mass2PhiKKPi < (MassPhi - deltaMassMax) * (MassPhi - deltaMassMax)) {
@@ -1839,7 +1836,7 @@ struct HfTrackIndexSkimCreator {
     if (whichHypo[hf_cand_3prong::DecayType::DsToKKPi] == 0) {
       CLRBIT(isSelected, hf_cand_3prong::DecayType::DsToKKPi);
       if (config.debug) {
-        cutStatus[hf_cand_3prong::DecayType::DsToKKPi][4] = false;
+        cutStatus[hf_cand_3prong::DecayType::DsToKKPi][5] = false;
       }
     }
   }
@@ -1874,6 +1871,7 @@ struct HfTrackIndexSkimCreator {
         if (whichHypo[iDecay3P] == 0) {
           CLRBIT(isSelected, iDecay3P);
           if (config.debug) {
+            LOG(info) << "Candidate rejected by PID for decay " << iDecay3P << ", setting " << hf_cuts_presel_3prong::NCutVars << "th bit of cutStatus to false";
             cutStatus[iDecay3P][hf_cuts_presel_3prong::NCutVars] = false; // PID
           }
           continue; // no need to check further for this particle hypothesis
@@ -2044,7 +2042,7 @@ struct HfTrackIndexSkimCreator {
 
         // prong daughter pT
         if (config.debug || TESTBIT(isSelected, iDecay3P)) {
-          const auto ptProngMin = config.ptProngMin3Prong->get(iDecay3P);
+          const auto ptProngMin = cut3Prong[iDecay3P].get(binPt, 4u); // 4u == ptProngMinIndex[iDecay3P]
           if (ptProngs[0] < ptProngMin || ptProngs[1] < ptProngMin || ptProngs[2] < ptProngMin) {
             CLRBIT(isSelected, iDecay3P);
             if (config.debug) {

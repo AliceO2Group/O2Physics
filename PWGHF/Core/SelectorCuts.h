@@ -232,7 +232,7 @@ static const std::vector<std::string> labelsCutVar = {"massMin", "massMax", "cos
 namespace hf_cuts_presel_3prong
 {
 static constexpr int NBinsPt = 2;
-static constexpr int NCutVars = 4;
+static constexpr int NCutVars = 5;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // common for any 3-prong candidate
 // offset by 1 from the bin numbers in cuts array
@@ -243,31 +243,21 @@ constexpr double BinsPt[NBinsPt + 1] = {
 const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
-constexpr double Cuts[NBinsPt][NCutVars] = {{1.75, 2.05, 0.7, 0.02},  /* 1 < pt < 5 */
-                                            {1.75, 2.05, 0.5, 0.02}}; /* 5 < pt < 1000 */
+constexpr double Cuts[NBinsPt][NCutVars] = {{1.75, 2.05, 0.7, 0.02, 0.3},  /* 1 < pt < 5 */
+                                            {1.75, 2.05, 0.5, 0.02, 0.3}}; /* 5 < pt < 1000 */
 
 // row labels
 static const std::vector<std::string> labelsPt{};
 
 // column labels
-static const std::vector<std::string> labelsCutVar = {"massMin", "massMax", "cosp", "decL"};
-
-// Single prong min pt selection
-static constexpr int NSpecies = 8; // number of species for 3-prong candidates
-constexpr float PtProngMin[NSpecies][1] = {{0.4f}, {0.4f}, {0.4f}, {0.4f}, {0.4f}, {0.4f}, {0.4f}, {0.4f}};
-
-// 3-prong species labels
-static const std::vector<std::string> labelsSpecies = {"Dplus", "Lc", "Ds", "Xic", "Cd", "Ct", "Ch", "Ca"};
-
-// column label
-static const std::vector<std::string> labelsPtProngMin = {"Minimum pT (GeV/c)"};
+static const std::vector<std::string> labelsCutVar = {"massMin", "massMax", "cosp", "decL", "ptProngMin"};
 
 } // namespace hf_cuts_presel_3prong
 
 namespace hf_cuts_presel_ds
 {
 static constexpr int NBinsPt = 2;
-static constexpr int NCutVars = 5;
+static constexpr int NCutVars = 6;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // offset by 1 from the bin numbers in cuts array
 constexpr double BinsPt[NBinsPt + 1] = {
@@ -277,14 +267,14 @@ constexpr double BinsPt[NBinsPt + 1] = {
 const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
-constexpr double Cuts[NBinsPt][NCutVars] = {{1.70, 2.15, 0.7, 0.02, 0.02},  /* 1 < pt < 5 */
-                                            {1.70, 2.15, 0.5, 0.02, 0.02}}; /* 5 < pt < 1000 */
+constexpr double Cuts[NBinsPt][NCutVars] = {{1.70, 2.15, 0.7, 0.02, 0.3, 0.02},  /* 1 < pt < 5 */
+                                            {1.70, 2.15, 0.5, 0.02, 0.3, 0.02}}; /* 5 < pt < 1000 */
 
 // row labels
 static const std::vector<std::string> labelsPt{};
 
 // column labels
-static const std::vector<std::string> labelsCutVar = {"massMin", "massMax", "cosp", "decL", "deltaMassKK"};
+static const std::vector<std::string> labelsCutVar = {"massMin", "massMax", "cosp", "decL", "ptProngMin", "deltaMassKK"};
 } // namespace hf_cuts_presel_ds
 
 namespace hf_cuts_presel_dstar
