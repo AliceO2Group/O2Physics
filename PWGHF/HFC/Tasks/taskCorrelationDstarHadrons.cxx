@@ -14,7 +14,7 @@
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 /// \author Shyam Kumar <shyam.kumar@cern.ch>
 
-/// \brief Task to strore correlations between D* and hadrons. 
+/// \brief Task to strore correlations between D* and hadrons.
 
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
