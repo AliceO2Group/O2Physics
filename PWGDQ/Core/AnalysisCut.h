@@ -22,8 +22,8 @@
 
 #include <Rtypes.h>
 
-#include <vector>
 #include <memory>
+#include <vector>
 
 //_________________________________________________________________________
 class AnalysisCut : public TNamed
@@ -50,17 +50,17 @@ class AnalysisCut : public TNamed
   void PrintCuts();
 
   struct CutContainer {
-    int16_t fVar;    // variable to be cut upon
+    int16_t fVar;  // variable to be cut upon
     float fLow;    // lower limit for the var
     float fHigh;   // upper limit for the var
     bool fExclude; // if true, use the selection range for exclusion
 
-    int16_t fDepVar;    // first (optional) variable on which the cut depends
+    int16_t fDepVar;  // first (optional) variable on which the cut depends
     float fDepLow;    // lower limit for the first dependent var
     float fDepHigh;   // upper limit for the first dependent var
     bool fDepExclude; // if true, then use the dependent variable range as exclusion
 
-    int16_t fDepVar2;    // second (optional) variable on which the cut depends
+    int16_t fDepVar2;  // second (optional) variable on which the cut depends
     float fDep2Low;    // lower limit for the second dependent var
     float fDep2High;   // upper limit for the second dependent var
     bool fDep2Exclude; // if true, then use the dependent variable range as exclusion
