@@ -10,47 +10,41 @@
 // or submit itself to any jurisdiction.
 
 #include "Index.h"
-#include "bestCollisionTable.h"
 
-#include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/MathConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/Configurable.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/RuntimeError.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/GlobalTrackID.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
-#include <TDatabasePDG.h>
-#include <TFile.h>
-#include <TH2F.h>
-#include <TPDGCode.h>
-#include <TProfile.h>
+#include <TH1.h>
+#include <TMath.h>
 
-#include <array>
-#include <chrono>
+#include <RtypesCore.h>
+
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
-#include <iostream>
+#include <type_traits>
+#include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -58,7 +52,6 @@ using namespace o2::framework::expressions;
 using namespace o2::aod::track;
 
 using namespace o2::aod;
-using namespace o2::analysis;
 
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;

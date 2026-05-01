@@ -17,28 +17,37 @@
 //
 // \since 2024
 
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonUtils/NameConf.h>
+#include <DataFormatsFIT/Triggers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <MathUtils/Utils.h>
+
+#include <TH1.h>
+
+#include <RtypesCore.h>
+
+#include <bitset>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <string>
-#include <string_view>
 #include <vector>
 
-#include "EventFiltering/filterTables.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StaticFor.h"
-#include "Framework/runDataProcessing.h"
-
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "DataFormatsFT0/Digit.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <math.h>
 
 using namespace o2;
 using namespace o2::framework;

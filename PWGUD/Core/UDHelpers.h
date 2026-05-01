@@ -19,19 +19,25 @@
 #include "PWGUD/Core/DGCutparHolder.h"
 #include "PWGUD/Core/UPCHelpers.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/LHCConstants.h"
-#include "DataFormatsFIT/Triggers.h"
-#include "DataFormatsFT0/Digit.h"
-#include "Framework/Logger.h"
+#include <CommonConstants/LHCConstants.h>
+#include <DataFormatsFIT/Triggers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/Logger.h>
+#include <Framework/SliceCache.h>
 
-#include "TLorentzVector.h"
+#include <TLorentzVector.h>
+
+#include <Rtypes.h>
 
 #include <algorithm>
-#include <bitset>
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <numeric>
+#include <type_traits>
 #include <vector>
 
 // namespace with helpers for UD framework

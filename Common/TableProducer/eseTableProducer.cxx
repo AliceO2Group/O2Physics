@@ -16,7 +16,8 @@
 
 #include "FFitWeights.h"
 
-#include "Common/Core/TrackSelection.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EseTable.h"
 #include "Common/DataModel/EventSelection.h"
@@ -37,9 +38,11 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TF1.h>
-#include <TMath.h>
+#include <TH1.h>
+#include <TString.h>
 
 #include <chrono>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <string>

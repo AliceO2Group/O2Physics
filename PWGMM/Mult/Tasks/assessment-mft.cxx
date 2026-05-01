@@ -15,11 +15,15 @@
 // \brief This code loops over MFT tracks and fills basic histograms
 //        close to the QC ones
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
+#include <CommonConstants/LHCConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/runDataProcessing.h>
+#include <MathUtils/Utils.h>
 
-#include "MathUtils/Utils.h"
-#include "CommonConstants/LHCConstants.h"
+#include <math.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -35,7 +39,7 @@ struct AssessmentMFT {
       {"TracksChi2", "; #chi^{2}; tracks", {HistType::kTH1F, {{600, 0, 20}}}},                             //
       {"TracksNclustersEta", "; nClusters; #eta; tracks", {HistType::kTH2F, {{7, 4, 10}, {100, -8, 8}}}},  //
       {"TracksTime", "; time; #count", {HistType::kTH1D, {{6000000, 0, 60000}}}},                          //
-    }                                                                                                      //
+    } //
   };
 
   void process(aod::Collisions::iterator const& collision, aod::MFTTracks const& tracks, aod::BCs const& bcs)

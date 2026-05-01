@@ -14,16 +14,26 @@ o2-analysis-timestamp| o2-analysis-upc-forward | o2-analysis-event-selection  --
 for now AO2D.root I am using is
 alien:///alice/data/2015/LHC15o/000246392/pass5_lowIR/PWGZZ/Run3_Conversion/148_20210304-0829_child_1/AOD/001/AO2D.root
 */
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/EventSelection.h"
-#include <iostream>
-#include <TH1D.h>
-#include <TH2D.h>
-#include <TString.h>
-#include "TLorentzVector.h"
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TLorentzVector.h>
+#include <TString.h>
+
+#include <RtypesCore.h>
+
+#include <iostream>
 
 using namespace std;
 using namespace o2;

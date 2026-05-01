@@ -9,15 +9,23 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <map>
-#include <vector>
-
-#include "CommonConstants/LHCConstants.h"
-#include "DataFormatsCTP/Configuration.h"
-#include "DataFormatsCTP/Scalers.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "CCDB/BasicCCDBManager.h"
 #include "Common/CCDB/ctpRateFetcher.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
+#include <DataFormatsCTP/Configuration.h>
+#include <DataFormatsCTP/Scalers.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
+#include <Framework/Logger.h>
+
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <iostream>
+#include <map>
+#include <ostream>
+#include <string>
+#include <vector>
 
 struct ctpRateFetcher {
   ctpRateFetcher() = default;
@@ -52,7 +60,7 @@ void ctpRateFetcher::getCTPconfig(o2::ccdb::BasicCCDBManager* ccdb, uint64_t tim
   if (runNumber == mRunNumber && mConfig != nullptr) {
     return;
   }
-  std::map<string, string> metadata;
+  std::map<std::string, std::string> metadata;
   metadata["runNumber"] = std::to_string(runNumber);
   mConfig = ccdb->getSpecific<o2::ctp::CTPConfiguration>("CTP/Config/Config", timeStamp, metadata);
   if (mConfig == nullptr) {
@@ -64,7 +72,7 @@ void ctpRateFetcher::getLHCIFdata(o2::ccdb::BasicCCDBManager* ccdb, uint64_t tim
   if (runNumber == mRunNumber && mLHCIFdata != nullptr) {
     return;
   }
-  std::map<string, string> metadata;
+  std::map<std::string, std::string> metadata;
   mLHCIFdata = ccdb->getSpecific<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", timeStamp, metadata);
   if (mLHCIFdata == nullptr) {
     LOG(fatal) << "GRPLHCIFData not in database, timestamp:" << timeStamp;
@@ -75,7 +83,7 @@ void ctpRateFetcher::getCTPscalers(o2::ccdb::BasicCCDBManager* ccdb, uint64_t ti
   if (runNumber == mRunNumber && mScalers != nullptr) {
     return;
   }
-  std::map<string, string> metadata;
+  std::map<std::string, std::string> metadata;
   metadata["runNumber"] = std::to_string(runNumber);
   mScalers = ccdb->getSpecific<o2::ctp::CTPRunScalers>("CTP/Calib/Scalers", timeStamp, metadata);
   if (mScalers == nullptr) {

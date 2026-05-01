@@ -20,17 +20,27 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/Configurable.h>
-#include <Framework/ConfigurableKinds.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
-#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/Logger.h>
 
 #include <TH1.h>
 #include <TH2.h>
+#include <TH3.h>
+
+#include <fmt/format.h>
 
 #include <algorithm>
+#include <array>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <format>
+#include <iterator>
 #include <ranges>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace o2::analysis::femto_universe::efficiency_correction

@@ -24,7 +24,6 @@
 #include "Common/Tools/PID/pidTPCModule.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <CCDB/CcdbApi.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>

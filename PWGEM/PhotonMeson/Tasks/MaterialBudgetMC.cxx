@@ -22,6 +22,8 @@
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
+
+#include "Common/Core/RecoDecay.h"
 //
 #include "PWGEM/Dilepton/Utils/MCUtilities.h"
 
@@ -35,10 +37,9 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h> // IWYU pragma: keep
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 #include <THashList.h>
-#include <TMath.h>
 #include <TString.h>
 
 #include <cmath>

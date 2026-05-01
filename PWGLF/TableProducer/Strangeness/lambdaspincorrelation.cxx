@@ -16,36 +16,31 @@
 /// \author sourav.kundu@cern.ch
 
 #include "PWGLF/DataModel/LFSpincorrelationTables.h"
-#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGMM/Mult/DataModel/Index.h" // for Particles2Tracks table
 
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/FT0Corrected.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Math/GenVector/Boost.h"
-#include "Math/Vector2D.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 
-#include <fairlogger/Logger.h>
-
+#include <iterator>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -53,7 +48,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using std::array;
 using namespace o2::aod::rctsel;
 
 struct lambdaspincorrelation {
@@ -80,7 +74,7 @@ struct lambdaspincorrelation {
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {8, 0, 80}, "multiplicity percentile for bin"};
 
   // events
-  Configurable<float> cfgEventTypepp{"cfgEventTypepp", false, "Type of collisions"};
+  Configurable<float> cfgEventTypepp{"cfgEventTypepp", true, "Type of collisions"};
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 80.0f, "Accepted maximum Centrality"};
   Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 0.0f, "Accepted minimum Centrality"};
@@ -270,7 +264,18 @@ struct lambdaspincorrelation {
     int occupancy = collision.trackOccupancyInTimeRange();
     histos.fill(HIST("hEvtSelInfo"), 0.5);
     // if ((!rctCut.requireRCTFlagChecker || rctChecker(collision)) && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) && collision.sel8() && collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll) && occupancy < cfgCutOccupancy) {
-    if ((!rctCut.requireRCTFlagChecker || rctChecker(collision)) && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && (!useNoCollInTimeRangeStandard || collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) && collision.sel8() && (!useGoodITSLayersAll || collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) && occupancy < cfgCutOccupancy) {
+    if (
+      // RCT check only if requested
+      (!rctCut.requireRCTFlagChecker || rctChecker(collision)) &&
+
+      // pp event-selection bits only if cfgEventTypepp is true
+      (!cfgEventTypepp || (collision.selection_bit(aod::evsel::kNoSameBunchPileup) &&
+                           collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
+                           collision.selection_bit(aod::evsel::kNoTimeFrameBorder) &&
+                           collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) &&
+      (!useNoCollInTimeRangeStandard || collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) && collision.sel8() &&
+      (!useGoodITSLayersAll || collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) &&
+      occupancy < cfgCutOccupancy) {
       histos.fill(HIST("hEvtSelInfo"), 1.5);
       for (const auto& v0 : V0s) {
         // LOGF(info, "v0 index 0 : (%d)", v0.index());
@@ -370,7 +375,18 @@ struct lambdaspincorrelation {
     auto vz = collision.posZ();
     int occupancy = collision.trackOccupancyInTimeRange();
     histos.fill(HIST("hEvtSelInfo"), 0.5);
-    if ((rctCut.requireRCTFlagChecker && rctChecker(collision)) && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) && collision.sel8() && collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll) && occupancy < cfgCutOccupancy) {
+    if (
+      // RCT check only if requested
+      (!rctCut.requireRCTFlagChecker || rctChecker(collision)) &&
+
+      // pp event-selection bits only if cfgEventTypepp is true
+      (!cfgEventTypepp || (collision.selection_bit(aod::evsel::kNoSameBunchPileup) &&
+                           collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
+                           collision.selection_bit(aod::evsel::kNoTimeFrameBorder) &&
+                           collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) &&
+      (!useNoCollInTimeRangeStandard || collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) && collision.sel8() &&
+      (!useGoodITSLayersAll || collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) &&
+      occupancy < cfgCutOccupancy) {
       histos.fill(HIST("hEvtSelInfo"), 1.5);
       for (const auto& v0 : V0s) {
         // LOGF(info, "v0 index 0 : (%d)", v0.index());

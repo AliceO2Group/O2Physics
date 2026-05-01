@@ -16,9 +16,11 @@
 #ifndef PWGEM_DILEPTON_CORE_EMTRACKCUT_H_
 #define PWGEM_DILEPTON_CORE_EMTRACKCUT_H_
 
-#include "Framework/Logger.h"
+#include <TNamed.h>
 
-#include "TNamed.h"
+#include <Rtypes.h>
+
+#include <cstdint>
 
 class EMTrackCut : public TNamed
 {

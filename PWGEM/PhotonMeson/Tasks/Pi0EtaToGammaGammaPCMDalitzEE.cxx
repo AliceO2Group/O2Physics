@@ -18,7 +18,6 @@
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 
 #include <Framework/ASoA.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/runDataProcessing.h>
 

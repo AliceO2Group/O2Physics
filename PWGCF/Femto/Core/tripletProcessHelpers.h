@@ -19,7 +19,9 @@
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
-#include "Framework/ASoAHelpers.h"
+#include <Framework/ASoAHelpers.h>
+
+#include <cstdint>
 
 namespace o2::analysis::femto
 {

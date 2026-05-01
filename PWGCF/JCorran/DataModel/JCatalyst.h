@@ -11,8 +11,14 @@
 /// \author Jasper Parkkila (jparkkil@cern.ch)
 /// \author Dong Jo Kim (djkim@jyu.fi)
 /// \since Sep 2022
+
 #ifndef PWGCF_JCORRAN_DATAMODEL_JCATALYST_H_
 #define PWGCF_JCORRAN_DATAMODEL_JCATALYST_H_
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 
 namespace o2::aod
 {

@@ -12,6 +12,21 @@
 /// \since November 2021
 // code for fitting the luminous region for each step
 
+#include <TFile.h>
+#include <TH1.h>
+#include <TMath.h>
+#include <TMathBase.h>
+#include <TMatrixD.h> // IWYU pragma: keep (do not replace with TMatrixDfwd.h)
+#include <TMatrixDfwd.h>
+#include <TMinuit.h>
+#include <TString.h>
+#include <TTree.h>
+
+#include <RtypesCore.h>
+
+#include <cmath>
+#include <iostream>
+
 TFile* fin = new TFile("mergedOutput.root", "read");
 TTree* tin;
 
@@ -193,7 +208,7 @@ void non_fac()
     FunMinuit[i]->mnexcm("MIGRAD", arglist, 2, ierflg);
     for (int p = 0; p < 10; p++) {
       FunMinuit[i]->GetParameter(p, FitRes_cntl[i][p], FitRes_stat[i][p]);
-      cout << FitRes_cntl[i][p] << ", " << FitRes_stat[i][p] << endl;
+      std::cout << FitRes_cntl[i][p] << ", " << FitRes_stat[i][p] << std::endl;
     }
     hResults[i] = new TH1D(Form("hResults%d", i), "", 12, 0, 12);
     for (int p = 0; p < 10; p++) {

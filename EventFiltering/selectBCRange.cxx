@@ -9,15 +9,28 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "Common/DataModel/EventSelection.h"
-#include "CommonConstants/LHCConstants.h"
-#include "CommonDataFormat/InteractionRecord.h"
-#include "CommonDataFormat/IRFrame.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/Logger.h"
-#include "Framework/runDataProcessing.h"
-
 #include "filterTables.h"
+
+#include "Common/DataModel/EventSelection.h"
+
+#include <CommonConstants/LHCConstants.h>
+#include <CommonDataFormat/IRFrame.h>
+#include <CommonDataFormat/InteractionRecord.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataProcessorSpec.h>
+#include <Framework/Logger.h>
+#include <Framework/ProcessingContext.h>
+#include <Framework/TableConsumer.h>
+#include <Framework/runDataProcessing.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <stdexcept>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

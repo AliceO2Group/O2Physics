@@ -26,6 +26,7 @@
 #include <TH2.h>
 
 #include <cstddef>
+#include <string_view>
 
 namespace o2::aod::pwgem::photonmeson::utils::clusterhistogram
 {
@@ -38,37 +39,37 @@ inline void addClusterHistograms(o2::framework::HistogramRegistry* fRegistry, bo
   const o2::framework::AxisSpec thAxisEta{320, -0.8, 0.8, "#eta"};
   const o2::framework::AxisSpec thAxisPhi{500, 0, o2::constants::math::TwoPI, "#varphi (rad)"};
 
-  fRegistry->add("Cluster/before/hE", "E_{cluster};#it{E}_{cluster} (GeV);#it{N}_{cluster}", o2::framework::kTH1F, {{500, 0.0f, 50}}, true);
-  fRegistry->add("Cluster/before/hPt", "Transverse momenta of clusters;#it{p}_{T} (GeV/c);#it{N}_{cluster}", o2::framework::kTH1F, {{500, 0.0f, 50}}, true);
-  fRegistry->add("Cluster/before/hNgamma", "Number of #gamma candidates per collision;#it{N}_{#gamma} per collision;#it{N}_{collisions}", o2::framework::kTH1F, {{1001, -0.5f, 1000.5f}}, true);
-  fRegistry->add("Cluster/before/hEtaPhi", "#eta vs #varphi;#eta;#varphi (rad.)", o2::framework::kTH2F, {thAxisEta, thAxisPhi}, true);
-  fRegistry->add("Cluster/before/hNTracks", "Number of tracks considered for TM;#it{N}_{tracks};#it{N}_{cluster}", o2::framework::kTH1F, {{20, -0.5f, 19.5}}, true);
-  fRegistry->add("Cluster/before/hNSecTracks", "Number of secondary tracks considered for TM;#it{N}_{tracks};#it{N}_{cluster}", o2::framework::kTH1F, {{20, -0.5f, 19.5}}, true);
-  fRegistry->add("Cluster/before/hTrackdEtadPhi", "d#eta vs. d#varphi of matched tracks;d#eta;d#varphi (rad.)", o2::framework::kTH2F, {thAxisDEta, thAxisDPhi}, true);
-  fRegistry->add("Cluster/before/hTrackdEtaPt", "d#eta vs. track pT of matched tracks;d#eta;d#varphi (rad.)", o2::framework::kTH2F, {thAxisDEta, thAxisMomentum}, true);
-  fRegistry->add("Cluster/before/hTrackdPhiPt", "d#varphi vs. track pT of matched tracks;d#eta;d#varphi (rad.)", o2::framework::kTH2F, {thAxisDPhi, thAxisMomentum}, true);
-  fRegistry->add("Cluster/before/hSecTrackdEtadPhi", "d#eta vs. d#varphi of matched secondary tracks;d#eta;d#varphi (rad.)", o2::framework::kTH2F, {thAxisDEta, thAxisDPhi}, true);
-  fRegistry->add("Cluster/before/hSecTrackdEtaPt", "d#eta vs. track pT of matched secondary tracks;d#eta;d#varphi (rad.)", o2::framework::kTH2F, {thAxisDEta, thAxisMomentum}, true);
-  fRegistry->add("Cluster/before/hSecTrackdPhiPt", "d#varphi vs. track pT of matched secondary tracks;d#eta;d#varphi (rad.)", o2::framework::kTH2F, {thAxisDPhi, thAxisMomentum}, true);
+  fRegistry->add("Cluster/before/hE", "E_{cluster};#it{E}_{cluster} (GeV);#it{N}_{cluster}", o2::framework::HistType::kTH1F, {{500, 0.0f, 50}}, true);
+  fRegistry->add("Cluster/before/hPt", "Transverse momenta of clusters;#it{p}_{T} (GeV/c);#it{N}_{cluster}", o2::framework::HistType::kTH1F, {{500, 0.0f, 50}}, true);
+  fRegistry->add("Cluster/before/hNgamma", "Number of #gamma candidates per collision;#it{N}_{#gamma} per collision;#it{N}_{collisions}", o2::framework::HistType::kTH1F, {{1001, -0.5f, 1000.5f}}, true);
+  fRegistry->add("Cluster/before/hEtaPhi", "#eta vs #varphi;#eta;#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisEta, thAxisPhi}, true);
+  fRegistry->add("Cluster/before/hNTracks", "Number of tracks considered for TM;#it{N}_{tracks};#it{N}_{cluster}", o2::framework::HistType::kTH1F, {{20, -0.5f, 19.5}}, true);
+  fRegistry->add("Cluster/before/hNSecTracks", "Number of secondary tracks considered for TM;#it{N}_{tracks};#it{N}_{cluster}", o2::framework::HistType::kTH1F, {{20, -0.5f, 19.5}}, true);
+  fRegistry->add("Cluster/before/hTrackdEtadPhi", "d#eta vs. d#varphi of matched tracks;d#eta;d#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisDEta, thAxisDPhi}, true);
+  fRegistry->add("Cluster/before/hTrackdEtaPt", "d#eta vs. track pT of matched tracks;d#eta;d#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisDEta, thAxisMomentum}, true);
+  fRegistry->add("Cluster/before/hTrackdPhiPt", "d#varphi vs. track pT of matched tracks;d#eta;d#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisDPhi, thAxisMomentum}, true);
+  fRegistry->add("Cluster/before/hSecTrackdEtadPhi", "d#eta vs. d#varphi of matched secondary tracks;d#eta;d#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisDEta, thAxisDPhi}, true);
+  fRegistry->add("Cluster/before/hSecTrackdEtaPt", "d#eta vs. track pT of matched secondary tracks;d#eta;d#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisDEta, thAxisMomentum}, true);
+  fRegistry->add("Cluster/before/hSecTrackdPhiPt", "d#varphi vs. track pT of matched secondary tracks;d#eta;d#varphi (rad.)", o2::framework::HistType::kTH2F, {thAxisDPhi, thAxisMomentum}, true);
 
   if (do2DQA) { // Check if 2D QA histograms were selected in em-qc task
-    fRegistry->add("Cluster/before/hNCell", "#it{N}_{cells};N_{cells} (GeV);#it{E}_{cluster} (GeV)", o2::framework::kTH2F, {{26, -0.5, 25.5}, {200, 0, 20}}, true);
-    fRegistry->add("Cluster/before/hM02", "Long ellipse axis;#it{M}_{02} (cm);#it{E}_{cluster} (GeV)", o2::framework::kTH2F, {{200, 0, 2}, {200, 0, 20}}, true);
-    fRegistry->add("Cluster/before/hTime", "Cluster time;#it{t}_{cls} (ns);#it{E}_{cluster} (GeV)", o2::framework::kTH2F, {{300, -150, 150}, {200, 0, 20}}, true);
-    fRegistry->add("Cluster/before/hTrackdEta", "d#eta vs. E of matched tracks;d#eta;#it{E}_{cluster} (GeV)", o2::framework::kTH2F, {thAxisDEta, {200, 0, 20}}, true);
-    fRegistry->add("Cluster/before/hTrackdPhi", "d#phi vs. E of matched tracks;d#varphi (rad.);#it{E}_{cluster} (GeV)", o2::framework::kTH2F, {thAxisDPhi, {200, 0, 20}}, true);
-    fRegistry->add("Cluster/before/hTrackEOverP", "Energy of cluster divided by momentum of matched tracks;#it{E}_{cluster}/#it{p}_{track} (#it{c});#it{E}_{cluster} (GeV)", o2::framework::kTH2F, {{200, 0., 5.}, {200, 0, 20}}, true);
-    fRegistry->add("Cluster/before/hSecTrackdEta", "d#eta vs. E of matched tracks;d#eta;#it{E}_{cluster} (GeV)", o2::framework::kTH2F, {thAxisDEta, {200, 0, 20}}, true);
-    fRegistry->add("Cluster/before/hSecTrackdPhi", "d#phi vs. E of matched tracks;d#varphi (rad.);#it{E}_{cluster} (GeV)", o2::framework::kTH2F, {thAxisDPhi, {200, 0, 20}}, true);
-    fRegistry->add("Cluster/before/hSecTrackEOverP", "Energy of cluster divided by momentum of matched tracks;#it{E}_{cluster}/#it{p}_{track} (#it{c});#it{E}_{cluster} (GeV)", o2::framework::kTH2F, {{200, 0., 5.}, {200, 0, 20}}, true);
+    fRegistry->add("Cluster/before/hNCell", "#it{N}_{cells};N_{cells} (GeV);#it{E}_{cluster} (GeV)", o2::framework::HistType::kTH2F, {{26, -0.5, 25.5}, {200, 0, 20}}, true);
+    fRegistry->add("Cluster/before/hM02", "Long ellipse axis;#it{M}_{02} (cm);#it{E}_{cluster} (GeV)", o2::framework::HistType::kTH2F, {{200, 0, 2}, {200, 0, 20}}, true);
+    fRegistry->add("Cluster/before/hTime", "Cluster time;#it{t}_{cls} (ns);#it{E}_{cluster} (GeV)", o2::framework::HistType::kTH2F, {{300, -150, 150}, {200, 0, 20}}, true);
+    fRegistry->add("Cluster/before/hTrackdEta", "d#eta vs. E of matched tracks;d#eta;#it{E}_{cluster} (GeV)", o2::framework::HistType::kTH2F, {thAxisDEta, {200, 0, 20}}, true);
+    fRegistry->add("Cluster/before/hTrackdPhi", "d#phi vs. E of matched tracks;d#varphi (rad.);#it{E}_{cluster} (GeV)", o2::framework::HistType::kTH2F, {thAxisDPhi, {200, 0, 20}}, true);
+    fRegistry->add("Cluster/before/hTrackEOverP", "Energy of cluster divided by momentum of matched tracks;#it{E}_{cluster}/#it{p}_{track} (#it{c});#it{E}_{cluster} (GeV)", o2::framework::HistType::kTH2F, {{200, 0., 5.}, {200, 0, 20}}, true);
+    fRegistry->add("Cluster/before/hSecTrackdEta", "d#eta vs. E of matched tracks;d#eta;#it{E}_{cluster} (GeV)", o2::framework::HistType::kTH2F, {thAxisDEta, {200, 0, 20}}, true);
+    fRegistry->add("Cluster/before/hSecTrackdPhi", "d#phi vs. E of matched tracks;d#varphi (rad.);#it{E}_{cluster} (GeV)", o2::framework::HistType::kTH2F, {thAxisDPhi, {200, 0, 20}}, true);
+    fRegistry->add("Cluster/before/hSecTrackEOverP", "Energy of cluster divided by momentum of matched tracks;#it{E}_{cluster}/#it{p}_{track} (#it{c});#it{E}_{cluster} (GeV)", o2::framework::HistType::kTH2F, {{200, 0., 5.}, {200, 0, 20}}, true);
   } else {
-    fRegistry->add("Cluster/before/hNCell", "#it{N}_{cells};N_{cells} (GeV);#it{N}_{cluster}", o2::framework::kTH1F, {{26, -0.5, 25.5}}, true);
-    fRegistry->add("Cluster/before/hM02", "Long ellipse axis;#it{M}_{02} (cm);#it{N}_{cluster}", o2::framework::kTH1F, {{400, 0, 2}}, true);
-    fRegistry->add("Cluster/before/hTime", "Cluster time;#it{t}_{cls} (ns);#it{N}_{cluster}", o2::framework::kTH1F, {{600, -150, 150}}, true);
-    fRegistry->add("Cluster/before/hTrackEOverP", "Energy of cluster divided by momentum of matched tracks;#it{E}_{cluster}/#it{p}_{track} (#it{c})", o2::framework::kTH1F, {{200, 0., 5.}}, true);
+    fRegistry->add("Cluster/before/hNCell", "#it{N}_{cells};N_{cells} (GeV);#it{N}_{cluster}", o2::framework::HistType::kTH1F, {{26, -0.5, 25.5}}, true);
+    fRegistry->add("Cluster/before/hM02", "Long ellipse axis;#it{M}_{02} (cm);#it{N}_{cluster}", o2::framework::HistType::kTH1F, {{400, 0, 2}}, true);
+    fRegistry->add("Cluster/before/hTime", "Cluster time;#it{t}_{cls} (ns);#it{N}_{cluster}", o2::framework::HistType::kTH1F, {{600, -150, 150}}, true);
+    fRegistry->add("Cluster/before/hTrackEOverP", "Energy of cluster divided by momentum of matched tracks;#it{E}_{cluster}/#it{p}_{track} (#it{c})", o2::framework::HistType::kTH1F, {{200, 0., 5.}}, true);
   }
 
-  auto hClusterQualityCuts = fRegistry->add<TH2>("Cluster/hClusterQualityCuts", "Energy at which clusters are removed by a given cut;;#it{E} (GeV)", o2::framework::kTH2F, {{static_cast<int>(EMCPhotonCut::EMCPhotonCuts::kNCuts) + 2, -0.5, static_cast<double>(EMCPhotonCut::EMCPhotonCuts::kNCuts) + 1.5}, {500, 0, 50}}, true);
+  auto hClusterQualityCuts = fRegistry->add<TH2>("Cluster/hClusterQualityCuts", "Energy at which clusters are removed by a given cut;;#it{E} (GeV)", o2::framework::HistType::kTH2F, {{static_cast<int>(EMCPhotonCut::EMCPhotonCuts::kNCuts) + 2, -0.5, static_cast<double>(EMCPhotonCut::EMCPhotonCuts::kNCuts) + 1.5}, {500, 0, 50}}, true);
   hClusterQualityCuts->GetXaxis()->SetBinLabel(1, "In");
   hClusterQualityCuts->GetXaxis()->SetBinLabel(2, "Definition");
   hClusterQualityCuts->GetXaxis()->SetBinLabel(3, "Energy");

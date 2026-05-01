@@ -68,8 +68,8 @@ struct TrackSelectionTask {
   void init(InitContext& initContext)
   {
     // Check which tables are used
-    enableFlagIfTableRequired(initContext, "TrackSelection", produceTable);
-    enableFlagIfTableRequired(initContext, "TrackSelectionExtension", produceFBextendedTable);
+    o2::common::core::enableFlagIfTableRequired(initContext, "TrackSelection", produceTable);
+    o2::common::core::enableFlagIfTableRequired(initContext, "TrackSelectionExtension", produceFBextendedTable);
 
     // Set up the track cuts
     switch (itsMatching) {

@@ -19,6 +19,7 @@
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, INFN Bari
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "EventFiltering/PWGHF/HFFilterHelpers.h"
 #include "EventFiltering/filterTables.h"
 //
@@ -301,7 +302,7 @@ struct HfFilter { // Main struct for HF triggers
     helper.setPtRangeSoftPiSigmaC(ptCuts->get(0u, 4u), ptCuts->get(1u, 4u));
     helper.setPtDeltaMassRangeSigmaC(cutsPtDeltaMassCharmReso->get(0u, 6u), cutsPtDeltaMassCharmReso->get(1u, 6u), cutsPtDeltaMassCharmReso->get(0u, 7u), cutsPtDeltaMassCharmReso->get(1u, 7u), cutsPtDeltaMassCharmReso->get(0u, 8u), cutsPtDeltaMassCharmReso->get(1u, 8u), cutsPtDeltaMassCharmReso->get(0u, 9u), cutsPtDeltaMassCharmReso->get(1u, 9u), cutsPtDeltaMassCharmReso->get(2u, 6u), cutsPtDeltaMassCharmReso->get(2u, 7u), cutsPtDeltaMassCharmReso->get(2u, 8u), cutsPtDeltaMassCharmReso->get(2u, 9u));
     helper.setPtRangeSoftKaonXicResoToSigmaC(ptCuts->get(0u, 5u), ptCuts->get(1u, 5u));
-    helper.setVtxConfiguration(dfStrangeness, true); // (DCAFitterN, useAbsDCA)
+    helper.setVtxConfiguration(dfStrangeness, true);  // (DCAFitterN, useAbsDCA)
     helper.setVtxConfiguration(dfStrangeness3, true); // (DCAFitterN, useAbsDCA)
     helper.setParSigmaCPr(
       cutsPtDeltaMassCharmReso->get(0u, 13u), // min ΔM
@@ -491,6 +492,7 @@ struct HfFilter { // Main struct for HF triggers
       bool isSelectedPvZ = (std::fabs(collision.posZ()) < evSel.maxPvZ);
       if (!isSelectedTVX || !isSelectedTFBorder || !isSelectedITSROFBorder || !isSelectedPvZ) {
         tags(keepEvent[kHighPt2P], keepEvent[kHighPt3P], keepEvent[kBeauty3P], keepEvent[kBeauty4P], keepEvent[kFemto2P], keepEvent[kFemto3P], keepEvent[kDoubleCharm2P], keepEvent[kDoubleCharm3P], keepEvent[kDoubleCharmMix], keepEvent[kV0Charm2P], keepEvent[kV0Charm3P], keepEvent[kCharmBarToXiBach], keepEvent[kSigmaCPPK], keepEvent[kSigmaC0K0], keepEvent[kPhotonCharm2P], keepEvent[kPhotonCharm3P], keepEvent[kSingleCharm2P], keepEvent[kSingleCharm3P], keepEvent[kSingleNonPromptCharm2P], keepEvent[kSingleNonPromptCharm3P], keepEvent[kCharmBarToXi2Bach], keepEvent[kPrCharm2P], keepEvent[kBtoJPsiKa], keepEvent[kBtoJPsiKstar], keepEvent[kBtoJPsiPhi], keepEvent[kBtoJPsiPrKa], keepEvent[kBtoJPsiPi], keepEvent[kSigmaCPr]);
+        hProcessedEvents->Fill(1); // rejected
         continue;
       }
 

@@ -9,14 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <cmath>
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/Core/RecoDecay.h"
-#include "CommonConstants/PhysicsConstants.h"
-
 #ifndef PWGLF_DATAMODEL_LFSTRANGENESSMLTABLES_H_
 #define PWGLF_DATAMODEL_LFSTRANGENESSMLTABLES_H_
+
+#include <Framework/AnalysisDataModel.h>
+
+#include <cmath>
+#include <cstdint>
 
 // Creating output TTree for ML analysis
 namespace o2::aod

@@ -16,7 +16,7 @@
 #ifndef PWGCF_FEMTO_CORE_TRIPLETCLEANER_H_
 #define PWGCF_FEMTO_CORE_TRIPLETCLEANER_H_
 
-#include "PWGCF/Femto/Core/pairBuilder.h"
+#include "PWGCF/Femto/Core/pairCleaner.h"
 
 namespace o2::analysis::femto
 {

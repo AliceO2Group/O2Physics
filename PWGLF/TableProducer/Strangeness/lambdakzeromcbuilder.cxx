@@ -18,22 +18,29 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include <map>
-#include <iterator>
-#include <utility>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TMathBase.h>
+
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -42,8 +49,8 @@ using std::array;
 
 //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 struct lambdakzeromcbuilder {
-  Produces<aod::McV0Labels> v0labels; // MC labels for V0s
-  Produces<aod::V0MCCores> v0mccores; // optionally aggregate information from MC side for posterior analysis (derived data)
+  Produces<aod::McV0Labels> v0labels;           // MC labels for V0s
+  Produces<aod::V0MCCores> v0mccores;           // optionally aggregate information from MC side for posterior analysis (derived data)
   Produces<aod::V0CoreMCLabels> v0CoreMCLabels; // interlink V0Cores -> V0MCCores in asymmetric mode
   Produces<aod::V0MCCollRefs> v0mccollref;      // references collisions from V0MCCores
 
@@ -152,7 +159,7 @@ struct lambdakzeromcbuilder {
   void process(aod::V0Datas const& v0table, aod::McTrackLabels const&, aod::McParticles const& mcParticles)
   {
     // to be used if using the populateV0MCCoresAsymmetric mode, kept empty otherwise
-    std::vector<mcV0info> mcV0infos; // V0MCCore information
+    std::vector<mcV0info> mcV0infos;                               // V0MCCore information
     std::vector<bool> mcParticleIsReco(mcParticles.size(), false); // mc Particle not recoed by V0s
 
     for (auto& v0 : v0table) {

@@ -15,47 +15,42 @@
 /// \brief  Task to test the performance of the KFParticle package
 ///
 
-#include "Tools/KFparticle/qaKFEventTrack.h"
-#include <CCDB/BasicCCDBManager.h>
-#include <string>
-#include "TableHelper.h"
-#include <iostream>
-using namespace std;
-
-/// includes O2
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-
-/// includes O2Physics
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Tools/KFparticle/KFUtilities.h"
-
-/// includes KFParticle
-#include "KFParticle.h"
-#include "KFPTrack.h"
-#include "KFPVertex.h"
-#include "KFParticleBase.h"
-#include "KFVertex.h"
-
 #ifndef HomogeneousField
-
 #define HomogeneousField
-
 #endif
 
+#include "Tools/KFparticle/qaKFEventTrack.h"
+
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Tools/KFparticle/KFUtilities.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+
+#include <KFPTrack.h>
+#include <KFPVertex.h>
+#include <KFParticle.h>
+
+#include <cstdint>
+#include <string>
+
+using namespace std;
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;

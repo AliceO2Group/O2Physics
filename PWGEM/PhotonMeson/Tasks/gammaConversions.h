@@ -127,9 +127,9 @@ struct tV0Kind {
 
       // todo ugly: remove
       if (theSuffix) {
-        if (tHisto.m.config.type == o2::framework::kTH1F) {
+        if (tHisto.m.config.type == o2::framework::HistType::kTH1F) {
           appendSuffixToTitleI<TH1>(lHistPtr, theSuffix);
-        } else if (tHisto.m.config.type == o2::framework::kTH2F) {
+        } else if (tHisto.m.config.type == o2::framework::HistType::kTH2F) {
           appendSuffixToTitleI<TH2>(lHistPtr, theSuffix);
         }
       }

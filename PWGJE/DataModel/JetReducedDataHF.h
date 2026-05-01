@@ -17,11 +17,10 @@
 #ifndef PWGJE_DATAMODEL_JETREDUCEDDATAHF_H_
 #define PWGJE_DATAMODEL_JETREDUCEDDATAHF_H_
 
-#include "PWGJE/DataModel/EMCALClusters.h" // IWYU pragma: keep
 #include "PWGJE/DataModel/JetReducedData.h"
 
 #include <Framework/ASoA.h>
-#include <Framework/AnalysisDataModel.h> // IWYU pragma: keep
+#include <Framework/AnalysisDataModel.h>
 
 #include <sys/types.h>
 

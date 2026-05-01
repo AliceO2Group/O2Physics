@@ -12,40 +12,30 @@
 /// \author Dong Jo Kim (djkim@jyu.fi)
 /// \since Sep 2022
 
-#include <CCDB/BasicCCDBManager.h>
-#include <Math/Vector4D.h>
-#include <Math/LorentzVector.h>
-#include <TRandom.h>
+#include "PWGCF/JCorran/DataModel/JCatalyst.h"
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/ASoAHelpers.h"
-
-// centrality
-#include "Common/DataModel/Multiplicity.h"
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
 
-////TODO: remove redundant:
-#include "Framework/HistogramRegistry.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/Expressions.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
-#include "DCAFitter/DCAFitterN.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "Common/Core/trackUtilities.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/V0.h"
-////
-
-#include "PWGCF/JCorran/DataModel/JCatalyst.h"
+#include <cstdint>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 using namespace ROOT;
-using namespace ROOT::Math;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 

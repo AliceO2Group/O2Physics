@@ -10,7 +10,19 @@
 // or submit itself to any jurisdiction.
 
 #include "ProfileSubset.h"
-#include "TProfile2D.h"
+
+#include <TArrayD.h>
+#include <TAxis.h>
+#include <TError.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TProfile.h>
+#include <TProfile2D.h>
+#include <TString.h>
+
+#include <RtypesCore.h>
+
+#include <cstdio>
 
 TProfile* ProfileSubset::GetSubset(bool onX, const char* name, int firstbin, int lastbin, int l_nbins, double* l_binarray)
 {

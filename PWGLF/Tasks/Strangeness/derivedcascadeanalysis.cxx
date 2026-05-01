@@ -13,8 +13,6 @@
 /// \brief Tasks processing derived data for Cascade analysis in PbPb collisions
 /// \author Lucia Anna Tarasovicova (lucia.anna.husova@cern.ch)
 
-#include "MetadataHelper.h"
-
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
@@ -22,36 +20,34 @@
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/LHCConstants.h"
-#include "DataFormatsFT0/Digit.h"
-#include "DataFormatsParameters/AggregatedRunInfo.h"
-#include "DataFormatsParameters/GRPECSObject.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ConfigParamSpec.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/StaticFor.h"
-#include "Framework/runDataProcessing.h"
-#include "ITSMFTBase/DPLAlpideParam.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
 
-#include <TFile.h>
-#include <TH2F.h>
-#include <TLorentzVector.h>
+#include <TH1.h>
+#include <TH2.h>
 #include <TPDGCode.h>
-#include <TProfile.h>
+#include <TString.h>
 
+#include <Rtypes.h>
+
+#include <array>
+#include <cmath>
+#include <cstdint>
 #include <string>
+#include <string_view>
 #include <vector>
 
 // constants

@@ -317,6 +317,10 @@ if(FastJet_FOUND)
                         SOURCES jetLundReclustering.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore FastJet::FastJet FastJet::Contrib
                         COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-lund-plane
+                        SOURCES jetLundPlane.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore FastJet::FastJet FastJet::Contrib
+                        COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(hf-fragmentation-function
                         SOURCES hfFragmentationFunction.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
@@ -391,8 +395,8 @@ if(FastJet_FOUND)
                         SOURCES substructureDebug.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
-    o2physics_add_dpl_workflow(jet-ds-spectrum-subs
-                        SOURCES jetDsSpectrumAndSubstructure.cxx
+    o2physics_add_dpl_workflow(jet-ds-spec-subs
+                        SOURCES jetDsSpecSubs.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-d0-ang-substructure

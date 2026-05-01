@@ -17,12 +17,11 @@
 #ifndef PWGCF_FEMTOWORLD_CORE_FEMTOWORLDMATH_H_
 #define PWGCF_FEMTOWORLD_CORE_FEMTOWORLDMATH_H_
 
-#include "Math/Vector4D.h"
-#include "Math/Boost.h"
-#include "TLorentzVector.h"
-#include "TMath.h"
+#include <Math/GenVector/Boost.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 
-#include <iostream>
+#include <cmath>
 
 namespace o2::analysis::femtoWorld
 {

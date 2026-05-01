@@ -45,6 +45,8 @@
 
 #include <TComplex.h>
 #include <TH3.h>
+#include <TMath.h>
+#include <TProfile3D.h>
 #include <TString.h>
 
 #include <chrono>

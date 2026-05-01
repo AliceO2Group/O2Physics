@@ -23,21 +23,34 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniversePairWithCentMultKt.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
-#include "PWGCF/FemtoUniverse/Core/femtoUtils.h"
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/PID.h"
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include "TRandom2.h"
+#include <TRandom2.h>
 
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 using namespace o2;
@@ -78,6 +91,8 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
     Configurable<bool> confisIdenLCMS{"confisIdenLCMS", true, "Choosing identical or non-identical pairs in LCMS"};
     Configurable<bool> confIsWeight{"confIsWeight", false, "Fill quantum weight"};
     Configurable<bool> confisIdenPRF{"confisIdenPRF", false, "Choosing identical or non-identical pairs in PRF"};
+    ConfigurableAxis confDeltaEtaAxis{"confDeltaEtaAxis", {100, -0.15, 0.15}, "DeltaEta"};
+    ConfigurableAxis confDeltaPhiStarAxis{"confDeltaPhiStarAxis", {100, -0.15, 0.15}, "DeltaPhiStar"};
   } twotracksconfigs;
 
   SliceCache cache;
@@ -426,7 +441,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
 
     pairCleaner.init(&qaRegistry);
     if (confIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, confCPRdeltaPhiCutMin.value, confCPRdeltaPhiCutMax.value, confCPRdeltaEtaCutMin.value, confCPRdeltaEtaCutMax.value, confCPRChosenRadii.value, confCPRPlotPerRadii.value);
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, twotracksconfigs.confDeltaEtaAxis, twotracksconfigs.confDeltaPhiStarAxis, confCPRdeltaPhiCutMin.value, confCPRdeltaPhiCutMax.value, confCPRdeltaEtaCutMin.value, confCPRdeltaEtaCutMax.value, confCPRChosenRadii.value, confCPRPlotPerRadii.value);
     }
 
     vPIDPartOne = trackonefilter.confPIDPartOne.value;

@@ -13,13 +13,11 @@
 /// \brief Executable that encodes physical selection criteria in a bit-wise
 /// selection \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 
-#include <iostream>
-#include <random>
-#include <string>
 #include "PWGCF/FemtoDream/Utils/femtoDreamCutCulator.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamSelection.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamTrackSelection.h"
-#include "PWGCF/DataModel/FemtoDerived.h"
+
+#include <fstream>
+#include <iostream>
+#include <string>
 
 using namespace o2::analysis::femtoDream;
 

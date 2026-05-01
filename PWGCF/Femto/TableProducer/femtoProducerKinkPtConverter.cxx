@@ -16,11 +16,20 @@
 #include "PWGCF/Femto/Core/femtoUtils.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+
+#include <cmath>
 
 using namespace o2::analysis::femto;
 
@@ -37,12 +46,12 @@ struct FemtoProducerKinkPtConverter {
   void init(o2::framework::InitContext&)
   {
     if (confFill1DHistos) {
-      mHistogramRegistry.add("hPtOriginal", "Original pT;p_{T} (GeV/c);Counts", o2::framework::kTH1F, {{100, 0, 10}});
-      mHistogramRegistry.add("hPtRecalculated", "Recalculated pT;p_{T} (GeV/c);Counts", o2::framework::kTH1F, {{100, 0, 10}});
-      mHistogramRegistry.add("hRecalcSuccess", "Recalculation Success;Success (0=fail, 1=success);Counts", o2::framework::kTH1I, {{2, -0.5, 1.5}});
+      mHistogramRegistry.add("hPtOriginal", "Original pT;p_{T} (GeV/c);Counts", o2::framework::HistType::kTH1F, {{100, 0, 10}});
+      mHistogramRegistry.add("hPtRecalculated", "Recalculated pT;p_{T} (GeV/c);Counts", o2::framework::HistType::kTH1F, {{100, 0, 10}});
+      mHistogramRegistry.add("hRecalcSuccess", "Recalculation Success;Success (0=fail, 1=success);Counts", o2::framework::HistType::kTH1I, {{2, -0.5, 1.5}});
     }
     if (confFill2DHistos) {
-      mHistogramRegistry.add("hPtOriginalVsRecalculated", "Original vs Recalculated pT;p_{T,orig} (GeV/c);p_{T,recalc} (GeV/c)", o2::framework::kTH2F, {{100, 0, 10}, {100, 0, 10}});
+      mHistogramRegistry.add("hPtOriginalVsRecalculated", "Original vs Recalculated pT;p_{T,orig} (GeV/c);p_{T,recalc} (GeV/c)", o2::framework::HistType::kTH2F, {{100, 0, 10}, {100, 0, 10}});
     }
   }
 

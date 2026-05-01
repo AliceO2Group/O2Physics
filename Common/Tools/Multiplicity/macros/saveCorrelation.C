@@ -15,6 +15,12 @@
 /// that performs Glauber + NBD fits.
 /// \author ALICE
 
+#include <TCanvas.h>
+#include <TFile.h>
+#include <TH2.h>
+#include <TNtuple.h>
+#include <TString.h>
+
 #include <iostream>
 
 /// @brief function to save Npart x Ncoll correlation to file for glauber fits
@@ -43,11 +49,11 @@ void saveCorrelation(TString filename = "gmc-PbPb-snn68.21-md0.40-nd-1.0-rc1-sma
   }
 
   if (!ntup) {
-    cout << "No tree found!" << endl;
+    std::cout << "No tree found!" << std::endl;
     return;
   }
 
-  cout << "Glauber tree entries: " << ntup->GetEntries() << endl;
+  std::cout << "Glauber tree entries: " << ntup->GetEntries() << std::endl;
 
   TFile* fout = new TFile(outputFile.Data(), "RECREATE");
 

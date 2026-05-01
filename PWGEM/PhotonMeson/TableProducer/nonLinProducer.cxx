@@ -30,7 +30,8 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TMatrixD.h>
+#include <TMatrixD.h> // IWYU pragma: keep (do not replace with TMatrixDfwd.h)
+#include <TMatrixDfwd.h>
 
 #include <cstdint>
 #include <string>

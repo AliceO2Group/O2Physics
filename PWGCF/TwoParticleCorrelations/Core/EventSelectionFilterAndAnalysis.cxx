@@ -9,11 +9,30 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <boost/regex.hpp>
-#include <TObjArray.h>
-
-#include "Framework/AnalysisTask.h"
 #include "EventSelectionFilterAndAnalysis.h"
+
+#include "PWGCF/TwoParticleCorrelations/Core/SelectionFilterAndAnalysis.h"
+#include "PWGCF/TwoParticleCorrelations/Core/SkimmingConfigurableCuts.h"
+
+#include <Framework/Logger.h>
+
+#include <TList.h>
+#include <TObjArray.h>
+#include <TString.h>
+
+#include <boost/regex/v5/regbase.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_fwd.hpp>
+#include <boost/regex/v5/regex_search.hpp>
+#include <sys/types.h>
+
+#include <Rtypes.h>
+
+#include <cstdint>
+#include <cstring>
+#include <set>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis::PWGCF;

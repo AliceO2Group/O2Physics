@@ -16,20 +16,39 @@
 /// \brief Task to build the predictions from the models based on the generated particles
 ///
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StaticFor.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Common/DataModel/FT0Corrected.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "PWGLF/Utils/mcParticle.h"
 #include "PWGLF/Utils/inelGt.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "CommonConstants/LHCConstants.h"
+#include "PWGLF/Utils/mcParticle.h"
 
-#include "TPDGCode.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/FT0Corrected.h"
+#include "Common/DataModel/Multiplicity.h"
+
+#include <CommonConstants/LHCConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <TParticlePDG.h>
+#include <TString.h>
+
+#include <array>
+#include <cstdlib>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -38,7 +57,7 @@ using namespace o2::pwglf;
 // Particles
 static const std::vector<std::string> parameterNames{"Enable"};
 static constexpr int nParameters = 1;
-static const int defaultParticles[PIDExtended::NIDsTot][nParameters]{{0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {1}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}};
+static const int defaultParticles[PIDExtended::NIDsTot][nParameters]{{0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {1}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}};
 bool enabledParticlesArray[PIDExtended::NIDsTot];
 
 // Estimators
@@ -60,9 +79,9 @@ struct Estimators {
   static constexpr estID ITSIB = 13;
   static constexpr estID ETA05 = 14;
   static constexpr estID ETA08 = 15;
-  static constexpr estID V0A = 16;  // (Run2)
-  static constexpr estID V0C = 17;  // (Run2)
-  static constexpr estID V0AC = 18; // (Run2 V0M)
+  static constexpr estID V0A = 16;             // (Run2)
+  static constexpr estID V0C = 17;             // (Run2)
+  static constexpr estID V0AC = 18;            // (Run2 V0M)
   static constexpr estID ImpactParameter = 19; // (Run2 V0M)
   static constexpr estID nEstimators = 20;
 

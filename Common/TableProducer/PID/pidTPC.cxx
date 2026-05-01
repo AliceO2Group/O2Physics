@@ -175,7 +175,7 @@ struct tpcPid {
     response = new o2::pid::tpc::Response();
     // Checking the tables are requested in the workflow and enabling them
     auto enableFlag = [&](const std::string& particle, Configurable<int>& flag) {
-      enableFlagIfTableRequired(initContext, "pidTPC" + particle, flag);
+      o2::common::core::enableFlagIfTableRequired(initContext, "pidTPC" + particle, flag);
     };
     enableFlag("FullEl", pidFullEl);
     enableFlag("FullMu", pidFullMu);
@@ -198,7 +198,7 @@ struct tpcPid {
     enableFlag("Al", pidTinyAl);
 
     if (doprocessMcTuneOnData) {
-      enableFlagIfTableRequired(initContext, "mcTPCTuneOnData", enableTuneOnDataTable);
+      o2::common::core::enableFlagIfTableRequired(initContext, "mcTPCTuneOnData", enableTuneOnDataTable);
     }
 
     speciesNetworkFlags[0] = useNetworkEl;

@@ -45,6 +45,7 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/PID.h>
 
+#include <TObject.h>
 #include <TRandom3.h>
 
 #include <array>

@@ -11,13 +11,16 @@
 
 /// \author Luca Micheletti <luca.micheletti@cern.ch>, CERN
 
-#include "Riostream.h"
-
 #include "Pol4ExpPdf.h"
-#include "RooAbsReal.h"
-#include "RooAbsCategory.h"
+
+#include <RooAbsPdf.h>
+#include <RooAbsReal.h>
+#include <TMath.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
 #include <math.h>
-#include "TMath.h"
 
 ClassImp(Pol4ExpPdf);
 

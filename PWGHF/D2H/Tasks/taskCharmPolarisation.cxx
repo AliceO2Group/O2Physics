@@ -67,6 +67,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 using namespace o2::hf_centrality;
+using namespace o2::hf_occupancy;
 using namespace o2::hf_evsel;
 using namespace o2::analysis::hf_flow_utils;
 
@@ -151,12 +152,14 @@ struct HfTaskCharmPolarisation {
 
   Configurable<bool> selectionFlagDstarToD0Pi{"selectionFlagDstarToD0Pi", true, "Selection Flag for D* decay to D0 Pi"};
   Configurable<int> selectionFlagLcToPKPi{"selectionFlagLcToPKPi", 1, "Selection Flag for Lc decay to P K Pi"};
+  Configurable<int> selectionFlagLcToPK0S{"selectionFlagLcToPK0S", 1, "Selection Flag for Lc decay to P K0S"};
 
   // Configurable<int> harmonic{"harmonic", 2, "harmonic number"};
   Configurable<int> qVecDetector{"qVecDetector", 2, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0C: 2)"};
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimator ((None: 0, FT0C: 2, FT0M: 3))"};
   Configurable<int> centralityMin{"centralityMin", 30, "Minimum centrality (0-100) to be considered in the analysis"};
   Configurable<int> centralityMax{"centralityMax", 50, "Maximum centrality (0-100) to be considered in the analysis"};
+  Configurable<int> occEstimator{"occEstimator", 0, "If enabled, replace number of PV contributors with occupancy estimation (0: don't use, 1: ITS, 2: FT0C)"};
 
   /// activate rotational background
   Configurable<int> nBkgRotations{"nBkgRotations", 0, "Number of rotated copies (background) per each original candidate"};
@@ -172,9 +175,12 @@ struct HfTaskCharmPolarisation {
   Configurable<bool> activateTHnSparseCosThStarBeam{"activateTHnSparseCosThStarBeam", true, "Activate the THnSparse with cosThStar w.r.t. beam axis"};
   Configurable<bool> activateTHnSparseCosThStarRandom{"activateTHnSparseCosThStarRandom", true, "Activate the THnSparse with cosThStar w.r.t. random axis"};
   Configurable<bool> activateTHnSparseCosThStarEP{"activateTHnSparseCosThStarEP", false, "Activate the THnSparse with cosThStar w.r.t. reaction plane axis"};
+  Configurable<bool> activateTHnSparsePhiAndCosSqStarEP{"activateTHnSparsePhiAndCosSqStarEP", false, "Activate the THnSparse with cos(2PhiStar) and cosSq(ThStar) w.r.t. reaction plane axis"};
+
   Configurable<bool> activatePartRecoDstar{"activatePartRecoDstar", false, "Activate the study of partly reconstructed D*+ -> D0 (-> KPiPi0) Pi decays"};
   float minInvMass{0.f};
   float maxInvMass{1000.f};
+  Configurable<float> ptMinCosPhiCosSqTheta{"ptMinCosPhiCosSqTheta", 10., "Minimum pt to fill the hCosPhiCosSqThetaEP ThnSparse"};
 
   /// table for Lc->pKpi background studies in MC
   Configurable<int> cosThStarAxisLcPKPiBkgMc{"cosThStarAxisLcPKPiBkgMc", 1, "cos(Theta*) axis for background studies (1 = helicity; 2 = production; 3 = beam; 4 = random)"};
@@ -220,17 +226,19 @@ struct HfTaskCharmPolarisation {
   HfEventSelection hfEvSel;  // event selection and monitoring
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
-  using CollisionsWithMcLabels = soa::SmallGroups<soa::Join<aod::Collisions, aod::McCollisionLabels>>;
-  using CollisionsWithMcLabelsAndCent = soa::SmallGroups<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFT0Ms, aod::CentFT0Cs>>;
+  using CollisionsWithMcLabels = soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>>;
+  using CollisionsWithMcLabelsAndCent = soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms, aod::CentFT0Cs>>;
   using CollsWithQVecs = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::QvectorBTots, aod::CentFT0Ms, aod::CentFT0Cs>;
   using TracksWithMcLabels = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels>;
   using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
 
   using McParticlesDstarMatched = soa::Join<aod::McParticles, aod::HfCandDstarMcGen>;
   using McParticles3ProngMatched = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
+  using McParticlesCascadeMatched = soa::Join<aod::McParticles, aod::HfCandCascadeMcGen>;
 
   using CandDstarWSelFlag = soa::Join<aod::HfCandDstars, aod::HfSelDstarToD0Pi>;
   using CandLcToPKPiWSelFlag = soa::Join<aod::HfCand3Prong, aod::HfSelLc>;
+  using CandLcToPK0SWSelFlag = soa::Join<aod::HfCandCascade, aod::HfSelLcToK0sP>;
 
   using FilteredCandDstarWSelFlag = soa::Filtered<CandDstarWSelFlag>;
   using FilteredCandDstarWSelFlagAndMl = soa::Filtered<soa::Join<CandDstarWSelFlag, aod::HfMlDstarToD0Pi>>;
@@ -242,8 +250,14 @@ struct HfTaskCharmPolarisation {
   using FilteredCandLcToPKPiWSelFlagAndMc = soa::Filtered<soa::Join<CandLcToPKPiWSelFlag, aod::HfCand3ProngMcRec>>;
   using FilteredCandLcToPKPiWSelFlagAndMcAndMl = soa::Filtered<soa::Join<CandLcToPKPiWSelFlag, aod::HfCand3ProngMcRec, aod::HfMlLcToPKPi>>;
 
+  using FilteredCandLcToPK0SWSelFlag = soa::Filtered<CandLcToPK0SWSelFlag>;
+  using FilteredCandLcToPK0SWSelFlagAndMl = soa::Filtered<soa::Join<CandLcToPK0SWSelFlag, aod::HfMlLcToK0sP>>;
+  using FilteredCandLcToPK0SWSelFlagAndMc = soa::Filtered<soa::Join<CandLcToPK0SWSelFlag, aod::HfCandCascadeMcRec>>;
+  using FilteredCandLcToPK0SWSelFlagAndMcAndMl = soa::Filtered<soa::Join<CandLcToPK0SWSelFlag, aod::HfCandCascadeMcRec, aod::HfMlLcToK0sP>>;
+
   Filter filterSelectDstarCandidates = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi;
   Filter filterSelectLcToPKPiCandidates = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLcToPKPi) || (aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLcToPKPi);
+  Filter filterSelectLcToPK0SCandidates = aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcToPK0S;
 
   Preslice<FilteredCandDstarWSelFlag> dstarPerCollision = aod::hf_cand::collisionId;
   Preslice<FilteredCandDstarWSelFlagAndMl> dstarWithMlPerCollision = aod::hf_cand::collisionId;
@@ -254,6 +268,11 @@ struct HfTaskCharmPolarisation {
   Preslice<FilteredCandLcToPKPiWSelFlagAndMl> lcToPKPiWithMlPerCollision = aod::hf_cand::collisionId;
   Preslice<FilteredCandLcToPKPiWSelFlagAndMc> lcToPKPiWithMcPerCollision = aod::hf_cand::collisionId;
   Preslice<FilteredCandLcToPKPiWSelFlagAndMcAndMl> lcToPKPiWithMcAndMlPerCollision = aod::hf_cand::collisionId;
+
+  Preslice<FilteredCandLcToPK0SWSelFlag> lcToPK0SPerCollision = aod::hf_cand::collisionId;
+  Preslice<FilteredCandLcToPK0SWSelFlagAndMl> lcToPK0SWithMlPerCollision = aod::hf_cand::collisionId;
+  Preslice<FilteredCandLcToPK0SWSelFlagAndMc> lcToPK0SWithMcPerCollision = aod::hf_cand::collisionId;
+  Preslice<FilteredCandLcToPK0SWSelFlagAndMcAndMl> lcToPK0SWithMcAndMlPerCollision = aod::hf_cand::collisionId;
 
   PresliceUnsorted<aod::McCollisionLabels> colPerMcCollision = aod::mcparticle::mcCollisionId;
 
@@ -266,6 +285,8 @@ struct HfTaskCharmPolarisation {
   ConfigurableAxis configThnAxisCosThetaStarRandom{"configThnAxisCosThetaStarRandom", {20, -1.f, 1.f}, "cos(#vartheta_{random})"};
   ConfigurableAxis configThnAxisCosThetaStarBeam{"configThnAxisCosThetaStarBeam", {20, -1.f, 1.f}, "cos(#vartheta_{beam})"};
   ConfigurableAxis configThnAxisCosThetaStarEP{"configThnAxisCosThetaStarEP", {20, -1.f, 1.f}, "cos(#vartheta_{EP})"};
+  ConfigurableAxis configThnAxisCosPhiStarEP{"configThnAxisCosPhiStarEP", {100, -1.f, 1.f}, "cos(2#varphi_{EP})"};
+  ConfigurableAxis configThnAxisCosSqThetaStarEP{"configThnAxisCosSqThetaStarEP", {100, 0., 1.f}, "cos^{2}(#vartheta_{EP})"};
   ConfigurableAxis configThnAxisMlBkg{"configThnAxisMlBkg", {100, 0.f, 1.f}, "ML bkg"};
   ConfigurableAxis configThnAxisInvMassD0{"configThnAxisInvMassD0", {250, 1.65f, 2.15f}, "#it{M}(D^{0}) (GeV/#it{c}^{2})"};                           // only for D*+
   ConfigurableAxis configThnAxisInvMassKPiLc{"configThnAxisInvMassKPiLc", {120, 0.65f, 1.25f}, "#it{M}(K#pi) from #Lambda_{c}^{+} (GeV/#it{c}^{2})"}; // only for Lc+->pKpi
@@ -285,7 +306,7 @@ struct HfTaskCharmPolarisation {
   void init(InitContext&)
   {
     /// check process functions
-    std::array<int, 13> processes = {doprocessDstar, doprocessDstarWithMl, doprocessLcToPKPi, doprocessLcToPKPiWithMl, doprocessDstarMc, doprocessDstarMcWithMl, doprocessLcToPKPiMc, doprocessLcToPKPiMcWithMl, doprocessLcToPKPiBackgroundMcWithMl, doprocessDstarInPbPb, doprocessDstarWithMlInPbPb, doprocessDstarMcInPbPb, doprocessDstarMcWithMlInPbPb};
+    std::array<int, 17> processes = {doprocessDstar, doprocessDstarWithMl, doprocessLcToPKPi, doprocessLcToPKPiWithMl, doprocessDstarMc, doprocessDstarMcWithMl, doprocessLcToPKPiMc, doprocessLcToPKPiMcWithMl, doprocessLcToPKPiBackgroundMcWithMl, doprocessDstarInPbPb, doprocessDstarWithMlInPbPb, doprocessDstarMcInPbPb, doprocessDstarMcWithMlInPbPb, doprocessLcToPK0S, doprocessLcToPK0SWithMl, doprocessLcToPK0SMc, doprocessLcToPK0SMcWithMl};
     const int nProcesses = std::accumulate(processes.begin(), processes.end(), 0);
     if (nProcesses > 1) {
       LOGP(fatal, "Only one process function should be enabled at a time, please check your configuration");
@@ -336,10 +357,12 @@ struct HfTaskCharmPolarisation {
     const AxisSpec thnAxisCosThetaStarRandom{configThnAxisCosThetaStarRandom, "cos(#vartheta_{random})"};
     const AxisSpec thnAxisCosThetaStarBeam{configThnAxisCosThetaStarBeam, "cos(#vartheta_{beam})"};
     const AxisSpec thnAxisCosThetaStarEP{configThnAxisCosThetaStarEP, "cos(#vartheta_{EP})"}; // reaction plane
+    const AxisSpec thnAxisCosPhiStarEP{configThnAxisCosPhiStarEP, "cos(2#varphi_{EP})"};      // reaction plane
+    const AxisSpec thnAxisCosSqThetaStarEP{configThnAxisCosSqThetaStarEP, "cos^{2}(#vartheta_{EP})"}; // reaction plane
     const AxisSpec thnAxisMlBkg{configThnAxisMlBkg, "ML bkg"};
     const AxisSpec thnAxisMlNonPrompt{configThnAxisMlNonPrompt, "ML non-prompt"};
     const AxisSpec thnAxisIsRotatedCandidate{2, -0.5f, 1.5f, "rotated bkg"};
-    const AxisSpec thnAxisNumPvContributors{configThnAxisNumPvContributors, "num PV contributors"};
+    const AxisSpec thnAxisNumPvContributors{configThnAxisNumPvContributors, (occEstimator > 0) ? "occupancy" : "num PV contributors"};
     const AxisSpec thnAxisPtB{configThnAxisPtB, "#it{p}_{T}(B mother) (GeV/#it{c})"};
     const AxisSpec thnAxisDausAcc{2, -0.5f, 1.5f, "daughters in acceptance"};
     const AxisSpec thnAxisDauToMuons{4, -0.5f, 3.5f, "daughters decayed to muons"};
@@ -426,6 +449,32 @@ struct HfTaskCharmPolarisation {
             registry.add("hEulerPhiHelicity", "THn for polarisation studies with Euler phi w.r.t. helicity axis", HistType::kTHnSparseF, hEulerPhiAxes);
           }
         }
+      } else if (doprocessLcToPK0S || doprocessLcToPK0SMc || doprocessLcToPK0SWithMl || doprocessLcToPK0SMcWithMl) {
+        hHelicityaxes.insert(hHelicityaxes.end(), {thnAxisCosThetaStarHelicity});
+        if (doprocessLcToPK0SWithMl || doprocessLcToPK0SMcWithMl) {
+          hHelicityaxes.insert(hHelicityaxes.end(), {thnAxisMlBkg, thnAxisMlNonPrompt});
+        }
+        if (doprocessLcToPK0SMc || doprocessLcToPK0SMcWithMl) {
+          std::vector<AxisSpec> hRecoHelicityAxes(hHelicityaxes);
+          hRecoHelicityAxes.insert(hRecoHelicityAxes.end(), {thnAxisAbsEtaTrackMin, thnAxisNumItsClsMin, thnAxisNumTpcClsMin, thnAxisCharge});
+          registry.add("hRecoPromptHelicity", "THn for Lc->pK0S prompt", HistType::kTHnSparseF, hRecoHelicityAxes);
+          registry.add("hRecoNonPromptHelicity", "THn for Lc->pK0S non-prompt", HistType::kTHnSparseF, hRecoHelicityAxes);
+        }
+        hHelicityaxes.insert(hHelicityaxes.end(), {thnAxisAbsEtaTrackMin, thnAxisNumItsClsMin, thnAxisNumTpcClsMin, thnAxisCharge});
+        registry.add("hHelicity", "THn for Lc->pK0S polarisation studies", HistType::kTHnSparseF, hHelicityaxes);
+        if (activateTHnEulerPhiMonitor) {
+          std::vector<AxisSpec> hEulerPhiAxes = {thnAxisInvMass, thnAxisPt, thnAxisTHnAxisEulerPhi};
+          if (doprocessLcToPK0SWithMl || doprocessLcToPK0SMcWithMl) {
+            hEulerPhiAxes.insert(hEulerPhiAxes.end(), {thnAxisMlBkg, thnAxisMlNonPrompt});
+          }
+          hEulerPhiAxes.push_back(thnAxisCharge);
+          if (doprocessLcToPK0SMcWithMl || doprocessLcToPK0SMc) {
+            registry.add("hRecPromptEulerPhiHelicity", "THn for Lc->pK0S Euler phi (prompt)", HistType::kTHnSparseF, hEulerPhiAxes);
+            registry.add("hRecNonPromptEulerPhiHelicity", "THn for Lc->pK0S Euler phi (non-prompt)", HistType::kTHnSparseF, hEulerPhiAxes);
+          } else {
+            registry.add("hEulerPhiHelicity", "THn for Lc->pK0S Euler phi", HistType::kTHnSparseF, hEulerPhiAxes);
+          }
+        }
       }
       if (doprocessDstarMc || doprocessDstarMcWithMl || doprocessDstarMcInPbPb || doprocessDstarMcWithMlInPbPb || doprocessLcToPKPiMc || doprocessLcToPKPiMcWithMl || doprocessLcToPKPiBackgroundMcWithMl) {
         std::vector<AxisSpec> const hgenPromptAxes = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarHelicity, thnAxisDausAcc, thnAxisResoChannelLc, thnAxisCharge};
@@ -436,6 +485,12 @@ struct HfTaskCharmPolarisation {
           registry.add("hGenPartRecoPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis and BDT scores for partially reconstructed generated prompt D*+ candidates", HistType::kTHnSparseF, hgenPromptAxes);
           registry.add("hGenPartRecoNonPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis and BDT scores for partially reconstructed generated non-prompt D*+ candidates", HistType::kTHnSparseF, hgenNonPromptAxes);
         }
+      }
+      if (doprocessLcToPK0SMc || doprocessLcToPK0SMcWithMl) {
+        std::vector<AxisSpec> const hgenPromptAxesLcToPK0S = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarHelicity, thnAxisDausAcc, thnAxisCharge};
+        std::vector<AxisSpec> const hgenNonPromptAxesLcToPK0S = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarHelicity, thnAxisPtB, thnAxisDausAcc, thnAxisCharge};
+        registry.add("hGenPromptHelicity", "Generated prompt Lc->pK0S, helicity axis", HistType::kTHnSparseF, hgenPromptAxesLcToPK0S);
+        registry.add("hGenNonPromptHelicity", "Generated non-prompt Lc->pK0S, helicity axis", HistType::kTHnSparseF, hgenNonPromptAxesLcToPK0S);
       }
     }
 
@@ -500,6 +555,32 @@ struct HfTaskCharmPolarisation {
             registry.add("hEulerPhiProduction", "THn for polarisation studies with Euler phi w.r.t. production axis", HistType::kTHnSparseF, hEulerPhiAxes);
           }
         }
+      } else if (doprocessLcToPK0SWithMl || doprocessLcToPK0SMcWithMl || doprocessLcToPK0S || doprocessLcToPK0SMc) {
+        hProductionaxes.insert(hProductionaxes.end(), {thnAxisCosThetaStarProduction});
+        if (doprocessLcToPK0SWithMl || doprocessLcToPK0SMcWithMl) {
+          hProductionaxes.insert(hProductionaxes.end(), {thnAxisMlBkg, thnAxisMlNonPrompt});
+        }
+        if (doprocessLcToPK0SMc || doprocessLcToPK0SMcWithMl) {
+          std::vector<AxisSpec> hRecoProductionAxes(hProductionaxes);
+          hRecoProductionAxes.insert(hRecoProductionAxes.end(), {thnAxisAbsEtaTrackMin, thnAxisNumItsClsMin, thnAxisNumTpcClsMin, thnAxisCharge});
+          registry.add("hRecoPromptProduction", "THn for polarisation studies with cosThStar w.r.t. production axis and BDT scores for reconstructed prompt Lc+ candidates", HistType::kTHnSparseF, hRecoProductionAxes);
+          registry.add("hRecoNonPromptProduction", "THn for polarisation studies with cosThStar w.r.t. production axis and BDT scores for reconstructed non-prompt Lc+ candidates", HistType::kTHnSparseF, hRecoProductionAxes);
+        }
+        hProductionaxes.insert(hProductionaxes.end(), {thnAxisAbsEtaTrackMin, thnAxisNumItsClsMin, thnAxisNumTpcClsMin, thnAxisCharge});
+        registry.add("hProduction", "THn for polarisation studies with cosThStar w.r.t. production axis and BDT scores", HistType::kTHnSparseF, hProductionaxes);
+        if (activateTHnEulerPhiMonitor) {
+          std::vector<AxisSpec> hEulerPhiAxes = {thnAxisInvMass, thnAxisPt, thnAxisTHnAxisEulerPhi};
+          if (doprocessLcToPK0SWithMl || doprocessLcToPK0SMcWithMl) {
+            hEulerPhiAxes.insert(hEulerPhiAxes.end(), {thnAxisMlBkg, thnAxisMlNonPrompt});
+          }
+          hEulerPhiAxes.push_back(thnAxisCharge);
+          if (doprocessLcToPK0SMcWithMl || doprocessLcToPK0SMc) {
+            registry.add("hRecPromptEulerPhiProduction", "THn for polarisation studies with Euler phi w.r.t. production axis and BDT scores -- reco prompt signal", HistType::kTHnSparseF, hEulerPhiAxes);
+            registry.add("hRecNonPromptEulerPhiProduction", "THn for polarisation studies with Euler phi w.r.t. production axis and BDT scores -- reco non-prompt signal", HistType::kTHnSparseF, hEulerPhiAxes);
+          } else {
+            registry.add("hEulerPhiProduction", "THn for polarisation studies with Euler phi w.r.t. production axis", HistType::kTHnSparseF, hEulerPhiAxes);
+          }
+        }
       }
       if (doprocessDstarMc || doprocessDstarMcWithMl || doprocessDstarMcInPbPb || doprocessDstarMcWithMlInPbPb || doprocessLcToPKPiMc || doprocessLcToPKPiMcWithMl || doprocessLcToPKPiBackgroundMcWithMl) {
         std::vector<AxisSpec> const hgenPromptAxes = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarProduction, thnAxisDausAcc, thnAxisResoChannelLc, thnAxisCharge};
@@ -510,6 +591,12 @@ struct HfTaskCharmPolarisation {
           registry.add("hGenPartRecoPromptProduction", "THn for polarisation studies with cosThStar w.r.t. production axis and BDT scores for partially reconstructed generated prompt D*+ candidates", HistType::kTHnSparseF, hgenPromptAxes);
           registry.add("hGenPartRecoNonPromptProduction", "THn for polarisation studies with cosThStar w.r.t. production axis and BDT scores for partially reconstructed generated non-prompt D*+ candidates", HistType::kTHnSparseF, hgenNonPromptAxes);
         }
+      }
+      if (doprocessLcToPK0SMc || doprocessLcToPK0SMcWithMl) {
+        std::vector<AxisSpec> const hgenPromptAxesLcToPK0S = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarProduction, thnAxisDausAcc, thnAxisCharge};
+        std::vector<AxisSpec> const hgenNonPromptAxesLcToPK0S = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarProduction, thnAxisPtB, thnAxisDausAcc, thnAxisCharge};
+        registry.add("hGenPromptProduction", "Generated prompt Lc->pK0S, production axis", HistType::kTHnSparseF, hgenPromptAxesLcToPK0S);
+        registry.add("hGenNonPromptProduction", "Generated non-prompt Lc->pK0S, production axis", HistType::kTHnSparseF, hgenNonPromptAxesLcToPK0S);
       }
     }
 
@@ -573,6 +660,32 @@ struct HfTaskCharmPolarisation {
             registry.add("hEulerPhiBeam", "THn for polarisation studies with Euler phi w.r.t. beam axis", HistType::kTHnSparseF, hEulerPhiAxes);
           }
         }
+      } else if (doprocessLcToPK0SWithMl || doprocessLcToPK0SMcWithMl || doprocessLcToPK0S || doprocessLcToPK0SMc) {
+        hBeamaxes.insert(hBeamaxes.end(), {thnAxisCosThetaStarBeam});
+        if (doprocessLcToPK0SWithMl || doprocessLcToPK0SMcWithMl) {
+          hBeamaxes.insert(hBeamaxes.end(), {thnAxisMlBkg, thnAxisMlNonPrompt});
+        }
+        if (doprocessLcToPK0SMc || doprocessLcToPK0SMcWithMl) {
+          std::vector<AxisSpec> hRecoBeamAxes(hBeamaxes);
+          hRecoBeamAxes.insert(hRecoBeamAxes.end(), {thnAxisAbsEtaTrackMin, thnAxisNumItsClsMin, thnAxisNumTpcClsMin, thnAxisCharge});
+          registry.add("hRecoPromptBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis for Lc -> pK0S", HistType::kTHnSparseF, hRecoBeamAxes);
+          registry.add("hRecoNonPromptBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis for Lc -> pK0S", HistType::kTHnSparseF, hRecoBeamAxes);
+        }
+        hBeamaxes.insert(hBeamaxes.end(), {thnAxisAbsEtaTrackMin, thnAxisNumItsClsMin, thnAxisNumTpcClsMin, thnAxisCharge});
+        registry.add("hBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis for Lc -> pK0S", HistType::kTHnSparseF, hBeamaxes);
+        if (activateTHnEulerPhiMonitor) {
+          std::vector<AxisSpec> hEulerPhiAxes = {thnAxisInvMass, thnAxisPt, thnAxisTHnAxisEulerPhi};
+          if (doprocessLcToPK0SWithMl || doprocessLcToPK0SMcWithMl) {
+            hEulerPhiAxes.insert(hEulerPhiAxes.end(), {thnAxisMlBkg, thnAxisMlNonPrompt});
+          }
+          hEulerPhiAxes.push_back(thnAxisCharge);
+          if (doprocessLcToPK0SMcWithMl || doprocessLcToPK0SMc) {
+            registry.add("hRecPromptEulerPhiBeam", "THn for Euler phi w.r.t. beam axis -- reco prompt signal (Lc->pK0S)", HistType::kTHnSparseF, hEulerPhiAxes);
+            registry.add("hRecNonPromptEulerPhiBeam", "THn for Euler phi w.r.t. beam axis -- reco non-prompt signal (Lc->pK0S)", HistType::kTHnSparseF, hEulerPhiAxes);
+          } else {
+            registry.add("hEulerPhiBeam", "THn for Euler phi w.r.t. beam axis (Lc->pK0S)", HistType::kTHnSparseF, hEulerPhiAxes);
+          }
+        }
       }
       if (doprocessDstarMc || doprocessDstarMcWithMl || doprocessDstarMcInPbPb || doprocessDstarMcWithMlInPbPb || doprocessLcToPKPiMc || doprocessLcToPKPiMcWithMl || doprocessLcToPKPiBackgroundMcWithMl) {
         std::vector<AxisSpec> const hgenPromptAxes = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarBeam, thnAxisDausAcc, thnAxisResoChannelLc, thnAxisCharge};
@@ -583,6 +696,12 @@ struct HfTaskCharmPolarisation {
           registry.add("hGenPartRecoPromptBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis and BDT scores for partially reconstructed generated prompt D*+ candidates", HistType::kTHnSparseF, hgenPromptAxes);
           registry.add("hGenPartRecoNonPromptBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis and BDT scores for partially reconstructed generated non-prompt D*+ candidates", HistType::kTHnSparseF, hgenNonPromptAxes);
         }
+      }
+      if (doprocessLcToPK0SMc || doprocessLcToPK0SMcWithMl) {
+        std::vector<AxisSpec> const hgenPromptAxesLcToPK0S = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarBeam, thnAxisDausAcc, thnAxisCharge};
+        std::vector<AxisSpec> const hgenNonPromptAxesLcToPK0S = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarBeam, thnAxisPtB, thnAxisDausAcc, thnAxisCharge};
+        registry.add("hGenPromptBeam", "Generated prompt Lc->pK0S, beam axis", HistType::kTHnSparseF, hgenPromptAxesLcToPK0S);
+        registry.add("hGenNonPromptBeam", "Generated non-prompt Lc->pK0S, beam axis", HistType::kTHnSparseF, hgenNonPromptAxesLcToPK0S);
       }
     }
 
@@ -635,6 +754,19 @@ struct HfTaskCharmPolarisation {
         }
         hRandomaxes.insert(hRandomaxes.end(), {thnAxisAbsEtaTrackMin, thnAxisNumItsClsMin, thnAxisNumTpcClsMin, thnAxisIsRotatedCandidate, thnAxisCharge});
         registry.add("hRandom", "THn for polarisation studies with cosThStar w.r.t. random axis and BDT scores", HistType::kTHnSparseF, hRandomaxes);
+      } else if (doprocessLcToPK0SWithMl || doprocessLcToPK0SMcWithMl || doprocessLcToPK0S || doprocessLcToPK0SMc) {
+        hRandomaxes.insert(hRandomaxes.end(), {thnAxisCosThetaStarRandom});
+        if (doprocessLcToPK0SWithMl || doprocessLcToPK0SMcWithMl) {
+          hRandomaxes.insert(hRandomaxes.end(), {thnAxisMlBkg, thnAxisMlNonPrompt});
+        }
+        if (doprocessLcToPK0SMc || doprocessLcToPK0SMcWithMl) {
+          std::vector<AxisSpec> hRecoRandomAxes(hRandomaxes);
+          hRecoRandomAxes.insert(hRecoRandomAxes.end(), {thnAxisAbsEtaTrackMin, thnAxisNumItsClsMin, thnAxisNumTpcClsMin, thnAxisCharge});
+          registry.add("hRecoPromptRandom", "THn for Lc->pK0S prompt, random axis", HistType::kTHnSparseF, hRecoRandomAxes);
+          registry.add("hRecoNonPromptRandom", "THn for Lc->pK0S non-prompt, random axis", HistType::kTHnSparseF, hRecoRandomAxes);
+        }
+        hRandomaxes.insert(hRandomaxes.end(), {thnAxisAbsEtaTrackMin, thnAxisNumItsClsMin, thnAxisNumTpcClsMin, thnAxisCharge});
+        registry.add("hRandom", "THn for Lc->pK0S polarisation studies with random axis", HistType::kTHnSparseF, hRandomaxes);
       }
       if (doprocessDstarMc || doprocessDstarMcWithMl || doprocessDstarMcInPbPb || doprocessDstarMcWithMlInPbPb || doprocessLcToPKPiMc || doprocessLcToPKPiMcWithMl || doprocessLcToPKPiBackgroundMcWithMl) {
         std::vector<AxisSpec> hgenPromptAxes = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarRandom, thnAxisDausAcc, thnAxisResoChannelLc, thnAxisCharge};
@@ -650,14 +782,20 @@ struct HfTaskCharmPolarisation {
           registry.add("hGenPartRecoNonPromptRandom", "THn for polarisation studies with cosThStar w.r.t. random axis and BDT scores for partially reconstructed generated non-prompt D*+ candidates", HistType::kTHnSparseF, hgenNonPromptAxes);
         }
       }
+      if (doprocessLcToPK0SMc || doprocessLcToPK0SMcWithMl) {
+        std::vector<AxisSpec> hgenPromptAxesLcToPK0S = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarRandom, thnAxisDausAcc, thnAxisCharge};
+        std::vector<AxisSpec> hgenNonPromptAxesLcToPK0S = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarRandom, thnAxisPtB, thnAxisDausAcc, thnAxisCharge};
+        registry.add("hGenPromptRandom", "Generated prompt Lc->pK0S, random axis", HistType::kTHnSparseF, hgenPromptAxesLcToPK0S);
+        registry.add("hGenNonPromptRandom", "Generated non-prompt Lc->pK0S, random axis", HistType::kTHnSparseF, hgenNonPromptAxesLcToPK0S);
+      }
     }
 
-    if (activateTHnSparseCosThStarEP && !(doprocessDstarInPbPb || doprocessDstarWithMlInPbPb)) {
+    if (activateTHnSparseCosThStarEP && !(doprocessDstarInPbPb || doprocessDstarWithMlInPbPb || doprocessDstarMcInPbPb || doprocessDstarMcWithMlInPbPb)) {
       LOGP(fatal, "THnSparse with cosThStar w.r.t. event plane axis is not supported for pp analysis, please check the configuration!");
     } else if (activateTHnSparseCosThStarEP) {
       std::vector<AxisSpec> hEPaxes = {thnAxisInvMass, thnAxisPt, thnAxisNumPvContributors, thnAxisY};
+      hEPaxes.insert(hEPaxes.end(), {thnAxisInvMassD0, thnAxisCosThetaStarEP});
       if (doprocessDstarInPbPb || doprocessDstarWithMlInPbPb) {
-        hEPaxes.insert(hEPaxes.end(), {thnAxisInvMassD0, thnAxisCosThetaStarEP});
         if (doprocessDstarWithMlInPbPb) {
           hEPaxes.insert(hEPaxes.end(), {thnAxisMlBkg, thnAxisMlNonPrompt});
         }
@@ -669,6 +807,42 @@ struct HfTaskCharmPolarisation {
         }
         hEPaxes.push_back(thnAxisCentrality);
         registry.add("hEP", "THn for polarisation studies with cosThStar w.r.t. event plane axis and BDT scores", HistType::kTHnSparseF, hEPaxes);
+        if (activateTHnSparsePhiAndCosSqStarEP) {
+          std::vector<AxisSpec> phiStarAxes = {thnAxisInvMass, thnAxisPt, thnAxisY, thnAxisCosPhiStarEP, thnAxisCosSqThetaStarEP};
+          if (doprocessDstarWithMlInPbPb) {
+            phiStarAxes.insert(phiStarAxes.end(), {thnAxisMlBkg, thnAxisMlNonPrompt});
+          }
+          phiStarAxes.push_back(thnAxisCentrality);
+          registry.add("hCosPhiCosSqThetaEP", "THn for cos(2PhiStar) and cosSqThStar studies w.r.t. event plane axis and BDT scores", HistType::kTHnSparseF, phiStarAxes);
+        }
+      } else {
+        std::vector<AxisSpec> hRecoPromptEPAxes(hEPaxes);
+        std::vector<AxisSpec> hRecoNonPromptEPAxes(hEPaxes);
+        if (doprocessDstarMcWithMlInPbPb) {
+          hRecoPromptEPAxes.insert(hRecoPromptEPAxes.end(), {thnAxisMlBkg, thnAxisMlNonPrompt});
+          hRecoNonPromptEPAxes.insert(hRecoNonPromptEPAxes.end(), {thnAxisMlBkg, thnAxisMlNonPrompt});
+        }
+        if (activateTrackingSys) {
+          hRecoPromptEPAxes.insert(hRecoPromptEPAxes.end(), {thnAxisAbsEtaTrackMin, thnAxisNumItsClsMin, thnAxisNumTpcClsMin});
+          hRecoNonPromptEPAxes.insert(hRecoNonPromptEPAxes.end(), {thnAxisAbsEtaTrackMin, thnAxisNumItsClsMin, thnAxisNumTpcClsMin});
+        }
+        hRecoPromptEPAxes.insert(hRecoPromptEPAxes.end(), {thnAxisDauToMuons, thnAxisCentrality});
+        hRecoNonPromptEPAxes.insert(hRecoNonPromptEPAxes.end(), {thnAxisDauToMuons, thnAxisPtB, thnAxisCentrality});
+        registry.add("hRecoPromptEP", "THn for polarisation studies with cosThStar w.r.t. event plane axis and BDT scores for reconstructed prompt D*+ candidates", HistType::kTHnSparseF, hRecoPromptEPAxes);
+        registry.add("hRecoNonPromptEP", "THn for polarisation studies with cosThStar w.r.t. event plane axis and BDT scores for reconstructed non-prompt D*+ candidates", HistType::kTHnSparseF, hRecoNonPromptEPAxes);
+        if (activatePartRecoDstar) {
+          registry.add("hPartRecoPromptEP", "THn for polarisation studies with cosThStar w.r.t. event plane axis and BDT scores for partially reconstructed prompt D*+ candidates", HistType::kTHnSparseF, hRecoPromptEPAxes);
+          registry.add("hPartRecoNonPromptEP", "THn for polarisation studies with cosThStar w.r.t. event plane axis and BDT scores for partially reconstructed non-prompt D*+ candidates", HistType::kTHnSparseF, hRecoNonPromptEPAxes);
+        }
+
+        std::vector<AxisSpec> hgenPromptAxes = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarEP, thnAxisDausAcc, thnAxisResoChannelLc, thnAxisCharge, thnAxisCentrality};
+        std::vector<AxisSpec> hgenNonPromptAxes = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarEP, thnAxisPtB, thnAxisDausAcc, thnAxisResoChannelLc, thnAxisCharge, thnAxisCentrality};
+        registry.add("hGenPromptEP", "THn for polarisation studies with cosThStar w.r.t. event plane axis and BDT scores for generated prompt D*+ candidates", HistType::kTHnSparseF, hgenPromptAxes);
+        registry.add("hGenNonPromptEP", "THn for polarisation studies with cosThStar w.r.t. event plane axis and BDT scores for generated non-prompt D*+ candidates", HistType::kTHnSparseF, hgenNonPromptAxes);
+        if (activatePartRecoDstar) {
+          registry.add("hGenPartRecoPromptEP", "THn for polarisation studies with cosThStar w.r.t. event plane axis and BDT scores for partially reconstructed generated prompt D*+ candidates", HistType::kTHnSparseF, hgenPromptAxes);
+          registry.add("hGenPartRecoNonPromptEP", "THn for polarisation studies with cosThStar w.r.t. event plane axis and BDT scores for partially reconstructed generated non-prompt D*+ candidates", HistType::kTHnSparseF, hgenNonPromptAxes);
+        }
       }
     }
 
@@ -726,6 +900,37 @@ struct HfTaskCharmPolarisation {
     }
   }; // end init
 
+  /// \param ptCharmHad is the pt of the candidate
+  double sampleDeltaPhi(float ptCharmHad)
+  {
+
+    double y0 = 6.49e-2;
+    double cons = 8.42e-1;
+    double coef = -3.78e-1;
+    double x0 = -6.37e-1;
+    double norm = -3.64e-1;
+    double mu = 4.68e-2;
+    double sigma = 1.513;
+
+    double sigmoid = y0 + (cons - y0) / (1 + std::exp(-coef * (ptCharmHad - x0)));
+    double peak = norm * std::exp(-(ptCharmHad - mu) * (ptCharmHad - mu) / (2 * sigma * sigma));
+
+    double v2 = sigmoid + peak;
+    const double funcMax = 1.0 + 2.0 * std::abs(v2);
+
+    while (true) {
+      double deltaPhi = gRandom->Uniform(0, constants::math::TwoPI);
+      double funcVal = gRandom->Uniform(0, funcMax);
+
+      double funcDeltaPhi = 1.0 + 2.0 * v2 * std::cos(2.0 * deltaPhi);
+
+      if (funcVal < funcDeltaPhi)
+        return deltaPhi;
+    }
+
+    return -1.;
+  }
+
   /// \param invMassCharmHad is the invariant-mass of the candidate
   /// \param ptCharmHad is the pt of the candidate
   /// \param numPvContributors is the number of PV contributors
@@ -746,8 +951,8 @@ struct HfTaskCharmPolarisation {
   /// \param charge is the charge of the hadron
   /// \param nMuons is the number of muons from daughter decays
   /// \param isPartRecoDstar is a flag indicating if it is a partly reconstructed Dstar meson (MC only)
-  template <charm_polarisation::DecayChannel Channel, bool WithMl, bool DoMc, charm_polarisation::CosThetaStarType CosThetaStarType>
-  void fillRecoHistos(float invMassCharmHad, float ptCharmHad, int numPvContributors, float rapCharmHad, float invMassD0, float invMassKPiLc, float cosThetaStar, float phiEuler, std::array<float, 3> outputMl, int isRotatedCandidate, int8_t origin, float ptBhadMother, int8_t resoChannelLc, float absEtaMin, int numItsClsMin, int numTpcClsMin, int8_t charge, int8_t nMuons, bool isPartRecoDstar, float centrality = -999.f)
+  template <charm_polarisation::DecayChannel Channel, bool WithMl, bool DoMc, charm_polarisation::CosThetaStarType CosThetaStarType, typename T>
+  void fillRecoHistos(float invMassCharmHad, float ptCharmHad, T numPvContributors, float rapCharmHad, float invMassD0, float invMassKPiLc, float cosThetaStar, float phiEuler, std::array<float, 3> outputMl, int isRotatedCandidate, int8_t origin, float ptBhadMother, int8_t resoChannelLc, float absEtaMin, int numItsClsMin, int numTpcClsMin, int8_t charge, int8_t nMuons, bool isPartRecoDstar, float centrality = -999.f)
   {
     if constexpr (CosThetaStarType == charm_polarisation::CosThetaStarType::Helicity) { // Helicity
       if constexpr (!DoMc) {                                                            // data
@@ -771,6 +976,11 @@ struct HfTaskCharmPolarisation {
             if (activateTHnEulerPhiMonitor) {
               registry.fill(HIST("hEulerPhiHelicity"), invMassCharmHad, ptCharmHad, invMassKPiLc, phiEuler, outputMl[0], /*outputMl[1],*/ outputMl[2], charge);
             }
+          } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) { // Lc+ -> pK0s
+            registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, charge);
+            if (activateTHnEulerPhiMonitor) {
+              registry.fill(HIST("hEulerPhiHelicity"), invMassCharmHad, ptCharmHad, phiEuler, outputMl[0], /*outputMl[1],*/ outputMl[2], charge);
+            }
           }
         } else {                                                                       // without ML
           if constexpr (Channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
@@ -791,6 +1001,11 @@ struct HfTaskCharmPolarisation {
             registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassKPiLc, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, charge);
             if (activateTHnEulerPhiMonitor) {
               registry.fill(HIST("hEulerPhiHelicity"), invMassCharmHad, ptCharmHad, invMassKPiLc, phiEuler, charge);
+            }
+          } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) { // Lc+ -> pK0s
+            registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, charge);
+            if (activateTHnEulerPhiMonitor) {
+              registry.fill(HIST("hEulerPhiHelicity"), invMassCharmHad, ptCharmHad, phiEuler, charge);
             }
           }
         }
@@ -816,6 +1031,11 @@ struct HfTaskCharmPolarisation {
               if (activateTHnEulerPhiMonitor) {
                 registry.fill(HIST("hRecPromptEulerPhiHelicity"), invMassCharmHad, ptCharmHad, invMassKPiLc, phiEuler, outputMl[0], /*outputMl[1],*/ outputMl[2], resoChannelLc, charge);
               }
+            } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) { // Lc+ -> pK0s
+              registry.fill(HIST("hRecoPromptHelicity"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, charge);
+              if (activateTHnEulerPhiMonitor) {
+                registry.fill(HIST("hRecPromptEulerPhiHelicity"), invMassCharmHad, ptCharmHad, phiEuler, outputMl[0], /*outputMl[1],*/ outputMl[2], charge);
+              }
             }
           } else {                                                                       // non-prompt
             if constexpr (Channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
@@ -836,6 +1056,11 @@ struct HfTaskCharmPolarisation {
               registry.fill(HIST("hRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassKPiLc, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], resoChannelLc, absEtaMin, numItsClsMin, numTpcClsMin, charge);
               if (activateTHnEulerPhiMonitor) {
                 registry.fill(HIST("hRecNonPromptEulerPhiHelicity"), invMassCharmHad, ptCharmHad, invMassKPiLc, phiEuler, outputMl[0], /*outputMl[1],*/ outputMl[2], resoChannelLc, charge);
+              }
+            } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) { // Lc+ -> pK0s
+              registry.fill(HIST("hRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, charge);
+              if (activateTHnEulerPhiMonitor) {
+                registry.fill(HIST("hRecNonPromptEulerPhiHelicity"), invMassCharmHad, ptCharmHad, phiEuler, outputMl[0], /*outputMl[1],*/ outputMl[2], charge);
               }
             }
           }
@@ -860,6 +1085,11 @@ struct HfTaskCharmPolarisation {
               if (activateTHnEulerPhiMonitor) {
                 registry.fill(HIST("hRecPromptEulerPhiHelicity"), invMassCharmHad, ptCharmHad, invMassKPiLc, phiEuler, resoChannelLc, charge);
               }
+            } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) { // Lc+ -> pK0s
+              registry.fill(HIST("hRecoPromptHelicity"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, charge);
+              if (activateTHnEulerPhiMonitor) {
+                registry.fill(HIST("hRecPromptEulerPhiHelicity"), invMassCharmHad, ptCharmHad, phiEuler, charge);
+              }
             }
           } else {                                                                       // non-prompt
             if constexpr (Channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
@@ -880,6 +1110,11 @@ struct HfTaskCharmPolarisation {
               registry.fill(HIST("hRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassKPiLc, cosThetaStar, resoChannelLc, absEtaMin, numItsClsMin, numTpcClsMin, charge);
               if (activateTHnEulerPhiMonitor) {
                 registry.fill(HIST("hRecNonPromptEulerPhiHelicity"), invMassCharmHad, ptCharmHad, invMassKPiLc, phiEuler, resoChannelLc, charge);
+              }
+            } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) { // Lc+ -> pK0s
+              registry.fill(HIST("hRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, charge);
+              if (activateTHnEulerPhiMonitor) {
+                registry.fill(HIST("hRecNonPromptEulerPhiHelicity"), invMassCharmHad, ptCharmHad, phiEuler, charge);
               }
             }
           }
@@ -907,6 +1142,11 @@ struct HfTaskCharmPolarisation {
             if (activateTHnEulerPhiMonitor) {
               registry.fill(HIST("hEulerPhiProduction"), invMassCharmHad, ptCharmHad, invMassKPiLc, phiEuler, outputMl[0], /*outputMl[1],*/ outputMl[2], charge);
             }
+          } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) { // Lc+ -> pK0s
+            registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, charge);
+            if (activateTHnEulerPhiMonitor) {
+              registry.fill(HIST("hEulerPhiProduction"), invMassCharmHad, ptCharmHad, phiEuler, outputMl[0], /*outputMl[1],*/ outputMl[2], charge);
+            }
           }
         } else {                                                                       // without ML
           if constexpr (Channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
@@ -927,6 +1167,11 @@ struct HfTaskCharmPolarisation {
             registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassKPiLc, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, charge);
             if (activateTHnEulerPhiMonitor) {
               registry.fill(HIST("hEulerPhiProduction"), invMassCharmHad, ptCharmHad, invMassKPiLc, phiEuler, charge);
+            }
+          } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) { // Lc+ -> pK0s
+            registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, charge);
+            if (activateTHnEulerPhiMonitor) {
+              registry.fill(HIST("hEulerPhiProduction"), invMassCharmHad, ptCharmHad, phiEuler, charge);
             }
           }
         }
@@ -952,6 +1197,11 @@ struct HfTaskCharmPolarisation {
               if (activateTHnEulerPhiMonitor) {
                 registry.fill(HIST("hRecPromptEulerPhiProduction"), invMassCharmHad, ptCharmHad, invMassKPiLc, phiEuler, outputMl[0], /*outputMl[1],*/ outputMl[2], resoChannelLc, charge);
               }
+            } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) { // Lc+ -> pK0s
+              registry.fill(HIST("hRecoPromptProduction"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, charge);
+              if (activateTHnEulerPhiMonitor) {
+                registry.fill(HIST("hRecPromptEulerPhiProduction"), invMassCharmHad, ptCharmHad, phiEuler, outputMl[0], /*outputMl[1],*/ outputMl[2], charge);
+              }
             }
           } else {                                                                       // non-prompt
             if constexpr (Channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
@@ -972,6 +1222,11 @@ struct HfTaskCharmPolarisation {
               registry.fill(HIST("hRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassKPiLc, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], resoChannelLc, absEtaMin, numItsClsMin, numTpcClsMin, charge);
               if (activateTHnEulerPhiMonitor) {
                 registry.fill(HIST("hRecNonPromptEulerPhiProduction"), invMassCharmHad, ptCharmHad, invMassKPiLc, phiEuler, outputMl[0], /*outputMl[1],*/ outputMl[2], resoChannelLc, charge);
+              }
+            } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) { // Lc+ -> pK0s
+              registry.fill(HIST("hRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, charge);
+              if (activateTHnEulerPhiMonitor) {
+                registry.fill(HIST("hRecNonPromptEulerPhiProduction"), invMassCharmHad, ptCharmHad, phiEuler, outputMl[0], /*outputMl[1],*/ outputMl[2], charge);
               }
             }
           }
@@ -996,6 +1251,11 @@ struct HfTaskCharmPolarisation {
               if (activateTHnEulerPhiMonitor) {
                 registry.fill(HIST("hRecPromptEulerPhiProduction"), invMassCharmHad, ptCharmHad, invMassKPiLc, phiEuler, resoChannelLc, charge);
               }
+            } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) { // Lc+ -> pK0s
+              registry.fill(HIST("hRecoPromptProduction"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, charge);
+              if (activateTHnEulerPhiMonitor) {
+                registry.fill(HIST("hRecPromptEulerPhiProduction"), invMassCharmHad, ptCharmHad, phiEuler, charge);
+              }
             }
           } else {                                                                       // non-prompt
             if constexpr (Channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
@@ -1016,6 +1276,11 @@ struct HfTaskCharmPolarisation {
               registry.fill(HIST("hRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassKPiLc, cosThetaStar, resoChannelLc, absEtaMin, numItsClsMin, numTpcClsMin, charge);
               if (activateTHnEulerPhiMonitor) {
                 registry.fill(HIST("hRecNonPromptEulerPhiProduction"), invMassCharmHad, ptCharmHad, invMassKPiLc, phiEuler, resoChannelLc, charge);
+              }
+            } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) { // Lc+ -> pK0s
+              registry.fill(HIST("hRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, charge);
+              if (activateTHnEulerPhiMonitor) {
+                registry.fill(HIST("hRecNonPromptEulerPhiProduction"), invMassCharmHad, ptCharmHad, phiEuler, charge);
               }
             }
           }
@@ -1043,6 +1308,11 @@ struct HfTaskCharmPolarisation {
             if (activateTHnEulerPhiMonitor) {
               registry.fill(HIST("hEulerPhiBeam"), invMassCharmHad, ptCharmHad, invMassKPiLc, phiEuler, outputMl[0], /*outputMl[1],*/ outputMl[2], charge);
             }
+          } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) { // Lc+ -> pK0s
+            registry.fill(HIST("hBeam"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, charge);
+            if (activateTHnEulerPhiMonitor) {
+              registry.fill(HIST("hEulerPhiBeam"), invMassCharmHad, ptCharmHad, phiEuler, outputMl[0], /*outputMl[1],*/ outputMl[2], charge);
+            }
           }
         } else {                                                                       // without ML
           if constexpr (Channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
@@ -1063,6 +1333,11 @@ struct HfTaskCharmPolarisation {
             registry.fill(HIST("hBeam"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassKPiLc, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, charge);
             if (activateTHnEulerPhiMonitor) {
               registry.fill(HIST("hEulerPhiBeam"), invMassCharmHad, ptCharmHad, invMassKPiLc, phiEuler, charge);
+            }
+          } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) { // Lc+ -> pK0s
+            registry.fill(HIST("hBeam"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, charge);
+            if (activateTHnEulerPhiMonitor) {
+              registry.fill(HIST("hEulerPhiBeam"), invMassCharmHad, ptCharmHad, phiEuler, charge);
             }
           }
         }
@@ -1088,6 +1363,11 @@ struct HfTaskCharmPolarisation {
               if (activateTHnEulerPhiMonitor) {
                 registry.fill(HIST("hRecPromptEulerPhiBeam"), invMassCharmHad, ptCharmHad, invMassKPiLc, phiEuler, outputMl[0], /*outputMl[1],*/ outputMl[2], resoChannelLc, charge);
               }
+            } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) { // Lc+ -> pK0s
+              registry.fill(HIST("hRecoPromptBeam"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, charge);
+              if (activateTHnEulerPhiMonitor) {
+                registry.fill(HIST("hRecPromptEulerPhiBeam"), invMassCharmHad, ptCharmHad, phiEuler, outputMl[0], /*outputMl[1],*/ outputMl[2], charge);
+              }
             }
           } else {                                                                       // non-prompt
             if constexpr (Channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
@@ -1108,6 +1388,11 @@ struct HfTaskCharmPolarisation {
               registry.fill(HIST("hRecoNonPromptBeam"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassKPiLc, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], resoChannelLc, absEtaMin, numItsClsMin, numTpcClsMin, charge);
               if (activateTHnEulerPhiMonitor) {
                 registry.fill(HIST("hRecNonPromptEulerPhiBeam"), invMassCharmHad, ptCharmHad, invMassKPiLc, phiEuler, outputMl[0], /*outputMl[1],*/ outputMl[2], resoChannelLc, charge);
+              }
+            } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) { // Lc+ -> pK0s
+              registry.fill(HIST("hRecoNonPromptBeam"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, charge);
+              if (activateTHnEulerPhiMonitor) {
+                registry.fill(HIST("hRecNonPromptEulerPhiBeam"), invMassCharmHad, ptCharmHad, phiEuler, outputMl[0], /*outputMl[1],*/ outputMl[2], charge);
               }
             }
           }
@@ -1132,6 +1417,11 @@ struct HfTaskCharmPolarisation {
               if (activateTHnEulerPhiMonitor) {
                 registry.fill(HIST("hRecPromptEulerPhiBeam"), invMassCharmHad, ptCharmHad, invMassKPiLc, phiEuler, resoChannelLc, charge);
               }
+            } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) { // Lc+ -> pK0s
+              registry.fill(HIST("hRecoPromptBeam"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, charge);
+              if (activateTHnEulerPhiMonitor) {
+                registry.fill(HIST("hRecPromptEulerPhiBeam"), invMassCharmHad, ptCharmHad, phiEuler, charge);
+              }
             }
           } else {                                                                       // non-prompt
             if constexpr (Channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
@@ -1152,6 +1442,11 @@ struct HfTaskCharmPolarisation {
               registry.fill(HIST("hRecoNonPromptBeam"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassKPiLc, cosThetaStar, resoChannelLc, absEtaMin, numItsClsMin, numTpcClsMin, charge);
               if (activateTHnEulerPhiMonitor) {
                 registry.fill(HIST("hRecNonPromptEulerPhiBeam"), invMassCharmHad, ptCharmHad, invMassKPiLc, phiEuler, resoChannelLc, charge);
+              }
+            } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) { // Lc+ -> pK0s
+              registry.fill(HIST("hRecoNonPromptBeam"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, charge);
+              if (activateTHnEulerPhiMonitor) {
+                registry.fill(HIST("hRecNonPromptEulerPhiBeam"), invMassCharmHad, ptCharmHad, phiEuler, charge);
               }
             }
           }
@@ -1176,6 +1471,8 @@ struct HfTaskCharmPolarisation {
             }
           } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
             registry.fill(HIST("hRandom"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassKPiLc, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, charge);
+          } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) { // Lc+ -> pK0s
+            registry.fill(HIST("hRandom"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, charge);
           }
         } else {                                                                       // without ML
           if constexpr (Channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
@@ -1194,6 +1491,8 @@ struct HfTaskCharmPolarisation {
             }
           } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
             registry.fill(HIST("hRandom"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassKPiLc, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, charge);
+          } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) { // Lc+ -> pK0s
+            registry.fill(HIST("hRandom"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, charge);
           }
         }
       } else {                                                                           // MC --> no distinction among channels, since rotational bkg not supported
@@ -1231,6 +1530,8 @@ struct HfTaskCharmPolarisation {
               }
             } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
               registry.fill(HIST("hRecoPromptRandom"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassKPiLc, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], resoChannelLc, absEtaMin, numItsClsMin, numTpcClsMin, charge);
+            } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) { // Lc+ -> pK0s
+              registry.fill(HIST("hRecoPromptRandom"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, charge);
             }
           } else {                                                                       // non-prompt
             if constexpr (Channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
@@ -1265,6 +1566,8 @@ struct HfTaskCharmPolarisation {
               }
             } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
               registry.fill(HIST("hRecoNonPromptRandom"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassKPiLc, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], resoChannelLc, absEtaMin, numItsClsMin, numTpcClsMin, charge);
+            } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) { // Lc+ -> pK0s
+              registry.fill(HIST("hRecoNonPromptRandom"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, charge);
             }
           }
         } else {                                                                         // without ML
@@ -1285,6 +1588,8 @@ struct HfTaskCharmPolarisation {
               }
             } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
               registry.fill(HIST("hRecoPromptRandom"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassKPiLc, cosThetaStar, resoChannelLc, absEtaMin, numItsClsMin, numTpcClsMin, charge);
+            } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) { //  Lc+ -> pK0s
+              registry.fill(HIST("hRecoPromptRandom"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, charge);
             }
           } else {                                                                       // non-prompt
             if constexpr (Channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
@@ -1303,6 +1608,8 @@ struct HfTaskCharmPolarisation {
               }
             } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
               registry.fill(HIST("hRecoNonPromptRandom"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassKPiLc, cosThetaStar, resoChannelLc, absEtaMin, numItsClsMin, numTpcClsMin, charge);
+            } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) { // Lc+ -> pK0s
+              registry.fill(HIST("hRecoNonPromptRandom"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, charge);
             }
           }
         }
@@ -1314,14 +1621,26 @@ struct HfTaskCharmPolarisation {
             if (activateTrackingSys) {
               if (nBkgRotations > 0) {
                 registry.fill(HIST("hEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, centrality);
+                if (activateTHnSparsePhiAndCosSqStarEP && ptCharmHad > ptMinCosPhiCosSqTheta) {
+                  registry.fill(HIST("hCosPhiCosSqThetaEP"), invMassCharmHad, ptCharmHad, std::abs(rapCharmHad), std::cos(2 * phiEuler), cosThetaStar * cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], centrality);
+                }
               } else {
                 registry.fill(HIST("hEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, centrality);
+                if (activateTHnSparsePhiAndCosSqStarEP && ptCharmHad > ptMinCosPhiCosSqTheta) {
+                  registry.fill(HIST("hCosPhiCosSqThetaEP"), invMassCharmHad, ptCharmHad, std::abs(rapCharmHad), std::cos(2 * phiEuler), cosThetaStar * cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], centrality);
+                }
               }
             } else {
               if (nBkgRotations > 0) {
                 registry.fill(HIST("hEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], isRotatedCandidate, centrality);
+                if (activateTHnSparsePhiAndCosSqStarEP && ptCharmHad > ptMinCosPhiCosSqTheta) {
+                  registry.fill(HIST("hCosPhiCosSqThetaEP"), invMassCharmHad, ptCharmHad, std::abs(rapCharmHad), std::cos(2 * phiEuler), cosThetaStar * cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], centrality);
+                }
               } else {
                 registry.fill(HIST("hEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], centrality);
+                if (activateTHnSparsePhiAndCosSqStarEP && ptCharmHad > ptMinCosPhiCosSqTheta) {
+                  registry.fill(HIST("hCosPhiCosSqThetaEP"), invMassCharmHad, ptCharmHad, std::abs(rapCharmHad), std::cos(2 * phiEuler), cosThetaStar * cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], centrality);
+                }
               }
             }
           }
@@ -1348,15 +1667,15 @@ struct HfTaskCharmPolarisation {
             if constexpr (Channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
               if (activateTrackingSys) {
                 if (!isPartRecoDstar) {
-                  registry.fill(HIST("hRecoPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, nMuons);
+                  registry.fill(HIST("hRecoPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, nMuons, centrality);
                 } else {
-                  registry.fill(HIST("hPartRecoPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, nMuons);
+                  registry.fill(HIST("hPartRecoPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, nMuons, centrality);
                 }
               } else {
                 if (!isPartRecoDstar) {
-                  registry.fill(HIST("hRecoPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons);
+                  registry.fill(HIST("hRecoPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons, centrality);
                 } else {
-                  registry.fill(HIST("hPartRecoPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons);
+                  registry.fill(HIST("hPartRecoPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons, centrality);
                 }
               }
             }
@@ -1364,15 +1683,49 @@ struct HfTaskCharmPolarisation {
             if constexpr (Channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
               if (activateTrackingSys) {
                 if (!isPartRecoDstar) {
-                  registry.fill(HIST("hRecoNonPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, nMuons, ptBhadMother);
+                  registry.fill(HIST("hRecoNonPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, nMuons, ptBhadMother, centrality);
                 } else {
-                  registry.fill(HIST("hPartRecoNonPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, nMuons, ptBhadMother);
+                  registry.fill(HIST("hPartRecoNonPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, nMuons, ptBhadMother, centrality);
                 }
               } else {
                 if (!isPartRecoDstar) {
-                  registry.fill(HIST("hRecoNonPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons, ptBhadMother);
+                  registry.fill(HIST("hRecoNonPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons, ptBhadMother, centrality);
                 } else {
-                  registry.fill(HIST("hPartRecoNonPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons, ptBhadMother);
+                  registry.fill(HIST("hPartRecoNonPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons, ptBhadMother, centrality);
+                }
+              }
+            }
+          }
+        } else {
+          if (origin == RecoDecay::OriginType::Prompt) {                                 // prompt
+            if constexpr (Channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
+              if (!isPartRecoDstar) {
+                if (activateTrackingSys) {
+                  registry.fill(HIST("hRecoPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, nMuons, centrality);
+                } else {
+                  registry.fill(HIST("hRecoPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, nMuons, centrality);
+                }
+              } else {
+                if (activateTrackingSys) {
+                  registry.fill(HIST("hPartRecoPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, nMuons, centrality);
+                } else {
+                  registry.fill(HIST("hPartRecoPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, nMuons, centrality);
+                }
+              }
+            }
+          } else {                                                                       // non-prompt
+            if constexpr (Channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
+              if (!isPartRecoDstar) {
+                if (activateTrackingSys) {
+                  registry.fill(HIST("hRecoNonPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, nMuons, ptBhadMother, centrality);
+                } else {
+                  registry.fill(HIST("hRecoNonPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, absEtaMin, nMuons, ptBhadMother, centrality);
+                }
+              } else {
+                if (activateTrackingSys) {
+                  registry.fill(HIST("hPartRecoNonPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, nMuons, ptBhadMother, centrality);
+                } else {
+                  registry.fill(HIST("hPartRecoNonPromptEP"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, nMuons, ptBhadMother, centrality);
                 }
               }
             }
@@ -1391,79 +1744,126 @@ struct HfTaskCharmPolarisation {
   /// \param areDausInAcc is a flag indicating whether the daughters are in acceptance or not
   /// \param resoChannelLc indicates the Lc decay channel (direct, resonant)
   /// \param isPartRecoDstar is a flag indicating if it is a partly reconstructed Dstar->D0pi->Kpipipi0 meson (MC only)
-  template <charm_polarisation::CosThetaStarType CosThetaStarType>
-  void fillGenHistos(float ptCharmHad, int numPvContributors, float rapCharmHad, float cosThetaStar, int8_t origin, float ptBhadMother, bool areDausInAcc, uint8_t resoChannelLc, int8_t charge, bool isPartRecoDstar, float centrality = -999.f)
+  template <charm_polarisation::CosThetaStarType CosThetaStarType, charm_polarisation::DecayChannel Channel, typename T>
+  void fillGenHistos(float ptCharmHad, T numPvContributors, float rapCharmHad, float cosThetaStar, int8_t origin, float ptBhadMother, bool areDausInAcc, uint8_t resoChannelLc, int8_t charge, bool isPartRecoDstar, float centrality = -999.f)
   {
     if constexpr (CosThetaStarType == charm_polarisation::CosThetaStarType::Helicity) { // Helicity
-      if (origin == RecoDecay::OriginType::Prompt) {                                    // prompt
-        if (!isPartRecoDstar) {
-          registry.fill(HIST("hGenPromptHelicity"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, areDausInAcc, resoChannelLc, charge);
-        } else {
-          registry.fill(HIST("hGenPartRecoPromptHelicity"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, areDausInAcc, resoChannelLc, charge);
+      if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) {            // Lc+ -> pK0s remove the axis of resochannel
+        if (origin == RecoDecay::OriginType::Prompt) {
+          registry.fill(HIST("hGenPromptHelicity"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, areDausInAcc, charge);
+        } else { // non-prompt
+          registry.fill(HIST("hGenNonPromptHelicity"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, ptBhadMother, areDausInAcc, charge);
         }
-      } else { // non-prompt
-        if (!isPartRecoDstar) {
-          registry.fill(HIST("hGenNonPromptHelicity"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, ptBhadMother, areDausInAcc, resoChannelLc, charge);
-        } else {
-          registry.fill(HIST("hGenPartRecoNonPromptHelicity"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, ptBhadMother, areDausInAcc, resoChannelLc, charge);
+      } else { // Dstar or Lc->pKpi
+        if (origin == RecoDecay::OriginType::Prompt) {
+          if (!isPartRecoDstar) {
+            registry.fill(HIST("hGenPromptHelicity"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, areDausInAcc, resoChannelLc, charge);
+          } else {
+            registry.fill(HIST("hGenPartRecoPromptHelicity"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, areDausInAcc, resoChannelLc, charge);
+          }
+        } else { // non-prompt
+          if (!isPartRecoDstar) {
+            registry.fill(HIST("hGenNonPromptHelicity"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, ptBhadMother, areDausInAcc, resoChannelLc, charge);
+          } else {
+            registry.fill(HIST("hGenPartRecoNonPromptHelicity"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, ptBhadMother, areDausInAcc, resoChannelLc, charge);
+          }
         }
       }
     } else if constexpr (CosThetaStarType == charm_polarisation::CosThetaStarType::Production) { // Production
-      if (origin == RecoDecay::OriginType::Prompt) {                                             // prompt
-        if (!isPartRecoDstar) {
-          registry.fill(HIST("hGenPromptProduction"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, areDausInAcc, resoChannelLc, charge);
-        } else {
-          registry.fill(HIST("hGenPartRecoPromptProduction"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, areDausInAcc, resoChannelLc, charge);
+      if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) {                     // Lc+ -> pK0s remove the axis of resochannel
+        if (origin == RecoDecay::OriginType::Prompt) {
+          registry.fill(HIST("hGenPromptProduction"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, areDausInAcc, charge);
+        } else { // non-prompt
+          registry.fill(HIST("hGenNonPromptProduction"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, ptBhadMother, areDausInAcc, charge);
         }
-      } else { // non-prompt
-        if (!isPartRecoDstar) {
-          registry.fill(HIST("hGenNonPromptProduction"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, ptBhadMother, areDausInAcc, resoChannelLc, charge);
-        } else {
-          registry.fill(HIST("hGenPartRecoNonPromptProduction"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, ptBhadMother, areDausInAcc, resoChannelLc, charge);
+      } else { // Dstar or Lc->pKpi
+        if (origin == RecoDecay::OriginType::Prompt) {
+          if (!isPartRecoDstar) {
+            registry.fill(HIST("hGenPromptProduction"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, areDausInAcc, resoChannelLc, charge);
+          } else {
+            registry.fill(HIST("hGenPartRecoPromptProduction"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, areDausInAcc, resoChannelLc, charge);
+          }
+        } else { // non-prompt
+          if (!isPartRecoDstar) {
+            registry.fill(HIST("hGenNonPromptProduction"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, ptBhadMother, areDausInAcc, resoChannelLc, charge);
+          } else {
+            registry.fill(HIST("hGenPartRecoNonPromptProduction"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, ptBhadMother, areDausInAcc, resoChannelLc, charge);
+          }
         }
       }
     } else if constexpr (CosThetaStarType == charm_polarisation::CosThetaStarType::Beam) { // Beam
-      if (origin == RecoDecay::OriginType::Prompt) {                                       // prompt
-        if (!isPartRecoDstar) {
-          registry.fill(HIST("hGenPromptBeam"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, areDausInAcc, resoChannelLc, charge);
-        } else {
-          registry.fill(HIST("hGenPartRecoPromptBeam"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, areDausInAcc, resoChannelLc, charge);
+      if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) {               // Lc+ -> pK0s remove the axis of resochannel
+        if (origin == RecoDecay::OriginType::Prompt) {                                     // prompt
+          registry.fill(HIST("hGenPromptBeam"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, areDausInAcc, charge);
+        } else { // non-prompt
+          registry.fill(HIST("hGenNonPromptBeam"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, ptBhadMother, areDausInAcc, charge);
         }
-      } else { // non-prompt
-        if (!isPartRecoDstar) {
-          registry.fill(HIST("hGenNonPromptBeam"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, ptBhadMother, areDausInAcc, resoChannelLc, charge);
-        } else {
-          registry.fill(HIST("hGenPartRecoNonPromptBeam"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, ptBhadMother, areDausInAcc, resoChannelLc, charge);
+      } else { // Dstar or Lc->pKpi
+        if (origin == RecoDecay::OriginType::Prompt) {
+          if (!isPartRecoDstar) {
+            registry.fill(HIST("hGenPromptBeam"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, areDausInAcc, resoChannelLc, charge);
+          } else {
+            registry.fill(HIST("hGenPartRecoPromptBeam"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, areDausInAcc, resoChannelLc, charge);
+          }
+        } else { // non-prompt
+          if (!isPartRecoDstar) {
+            registry.fill(HIST("hGenNonPromptBeam"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, ptBhadMother, areDausInAcc, resoChannelLc, charge);
+          } else {
+            registry.fill(HIST("hGenPartRecoNonPromptBeam"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, ptBhadMother, areDausInAcc, resoChannelLc, charge);
+          }
         }
       }
     } else if constexpr (CosThetaStarType == charm_polarisation::CosThetaStarType::Random) { // Random
+      if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) {                 // Lc+ -> pK0s remove the axis of resochannel
+        if (origin == RecoDecay::OriginType::Prompt) {
+          registry.fill(HIST("hGenPromptRandom"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, areDausInAcc, charge);
+        } else { // non-prompt
+          registry.fill(HIST("hGenNonPromptRandom"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, ptBhadMother, areDausInAcc, charge);
+        }
+      } else { // Dstar or Lc->pKpi
+        if (origin == RecoDecay::OriginType::Prompt) {
+          if (!isPartRecoDstar) {
+            if (doprocessDstarMcInPbPb || doprocessDstarMcWithMlInPbPb) {
+              registry.fill(HIST("hGenPromptRandom"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, areDausInAcc, resoChannelLc, charge, centrality);
+            } else {
+              registry.fill(HIST("hGenPromptRandom"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, areDausInAcc, resoChannelLc, charge);
+            }
+          } else {
+            if (doprocessDstarMcInPbPb || doprocessDstarMcWithMlInPbPb) {
+              registry.fill(HIST("hGenPartRecoPromptRandom"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, areDausInAcc, resoChannelLc, charge, centrality);
+            } else {
+              registry.fill(HIST("hGenPartRecoPromptRandom"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, areDausInAcc, resoChannelLc, charge);
+            }
+          }
+        } else { // non-prompt
+          if (!isPartRecoDstar) {
+            if (doprocessDstarMcInPbPb || doprocessDstarMcWithMlInPbPb) {
+              registry.fill(HIST("hGenNonPromptRandom"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, ptBhadMother, areDausInAcc, resoChannelLc, charge, centrality);
+            } else {
+              registry.fill(HIST("hGenNonPromptRandom"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, ptBhadMother, areDausInAcc, resoChannelLc, charge);
+            }
+          } else {
+            if (doprocessDstarMcInPbPb || doprocessDstarMcWithMlInPbPb) {
+              registry.fill(HIST("hGenPartRecoNonPromptRandom"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, ptBhadMother, areDausInAcc, resoChannelLc, charge, centrality);
+            } else {
+              registry.fill(HIST("hGenPartRecoNonPromptRandom"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, ptBhadMother, areDausInAcc, resoChannelLc, charge);
+            }
+          }
+        }
+      }
+    } else if constexpr (CosThetaStarType == charm_polarisation::CosThetaStarType::EP) { // EP
+                                                                                         // Dstar or Lc->pKpi
       if (origin == RecoDecay::OriginType::Prompt) {
         if (!isPartRecoDstar) {
-          if (doprocessDstarMcInPbPb || doprocessDstarMcWithMlInPbPb) {
-            registry.fill(HIST("hGenPromptRandom"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, areDausInAcc, resoChannelLc, charge, centrality);
-          } else {
-            registry.fill(HIST("hGenPromptRandom"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, areDausInAcc, resoChannelLc, charge);
-          }
+          registry.fill(HIST("hGenPromptEP"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, areDausInAcc, resoChannelLc, charge, centrality);
         } else {
-          if (doprocessDstarMcInPbPb || doprocessDstarMcWithMlInPbPb) {
-            registry.fill(HIST("hGenPartRecoPromptRandom"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, areDausInAcc, resoChannelLc, charge, centrality);
-          } else {
-            registry.fill(HIST("hGenPartRecoPromptRandom"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, areDausInAcc, resoChannelLc, charge);
-          }
+          registry.fill(HIST("hGenPartRecoPromptEP"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, areDausInAcc, resoChannelLc, charge, centrality);
         }
       } else { // non-prompt
         if (!isPartRecoDstar) {
-          if (doprocessDstarMcInPbPb || doprocessDstarMcWithMlInPbPb) {
-            registry.fill(HIST("hGenNonPromptRandom"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, ptBhadMother, areDausInAcc, resoChannelLc, charge, centrality);
-          } else {
-            registry.fill(HIST("hGenNonPromptRandom"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, ptBhadMother, areDausInAcc, resoChannelLc, charge);
-          }
+          registry.fill(HIST("hGenNonPromptEP"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, ptBhadMother, areDausInAcc, resoChannelLc, charge, centrality);
         } else {
-          if (doprocessDstarMcInPbPb || doprocessDstarMcWithMlInPbPb) {
-            registry.fill(HIST("hGenPartRecoNonPromptRandom"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, ptBhadMother, areDausInAcc, resoChannelLc, charge, centrality);
-          } else {
-            registry.fill(HIST("hGenPartRecoNonPromptRandom"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, ptBhadMother, areDausInAcc, resoChannelLc, charge);
-          }
+          registry.fill(HIST("hGenPartRecoNonPromptEP"), ptCharmHad, numPvContributors, std::abs(rapCharmHad), cosThetaStar, ptBhadMother, areDausInAcc, resoChannelLc, charge, centrality);
         }
       }
     }
@@ -1496,7 +1896,7 @@ struct HfTaskCharmPolarisation {
       if (invMassMin < invMass && invMass < invMassMax) {
         return true;
       }
-    } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+ (to be tuned!)
+    } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPKPi || Channel == charm_polarisation::DecayChannel::LcToPK0S) { // Lc+ (to be tuned!)
       invMassMin = 2.25f;
       invMassMax = 2.35f;
       if (invMassMin < invMass && invMass < invMassMax) {
@@ -1576,10 +1976,10 @@ struct HfTaskCharmPolarisation {
   /// \param particles are the generated particles
   /// \param tracks are the reconstructed tracks
   /// \return true if candidate in signal region
-  template <charm_polarisation::DecayChannel Channel, bool WithMl, bool DoMc, bool StudyLcPkPiBkgMc = false, bool WithEp = false, typename Cand, typename Part, typename Trk, typename QVecs = void>
-  bool runPolarisationAnalysis(Cand const& candidate, int bkgRotationId, int numPvContributors, Part const& particles, Trk const& /*tracks*/, float centrality = -999.f, QVecs const* qVecs = nullptr)
+  template <charm_polarisation::DecayChannel Channel, bool WithMl, bool DoMc, bool StudyLcPkPiBkgMc = false, bool WithEp = false, typename Cand, typename Part, typename Trk, typename T, typename QVecs = void>
+  bool runPolarisationAnalysis(Cand const& candidate, int bkgRotationId, T numPvContributors, Part const& particles, Trk const& /*tracks*/, float centrality = -999.f, QVecs const* qVecs = nullptr)
   {
-    if constexpr (WithEp) {
+    if constexpr (WithEp && !DoMc) {
       assert(qVecs && "EP analysis requested but qVecs == nullptr");
       assert(centrality && "EP analysis requested but centrality == nullptr");
     }
@@ -1625,10 +2025,17 @@ struct HfTaskCharmPolarisation {
         /// This is checked when the reconstructed 3-prong candidate is matched to MC with RecoDecay::getMatchedMCRec
         int8_t const flagMc = candidate.flagMcMatchRec();
         charge = std::abs(flagMc) > 0 ? flagMc / std::abs(flagMc) : 0; /// 0 should never happen, debug protection
+      } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) {
+        int8_t const flagMc = candidate.flagMcMatchRec();
+        if (std::abs(flagMc) != 1) {
+          return isCandidateInSignalRegion;
+        }
+        origin = candidate.originMcRec();
+        charge = (flagMc > 0) ? 1 : -1;
       }
     } else {
       /// data
-      if constexpr (Channel == charm_polarisation::DecayChannel::LcToPKPi) {
+      if constexpr (Channel == charm_polarisation::DecayChannel::LcToPKPi || Channel == charm_polarisation::DecayChannel::LcToPK0S) {
         /// Calculate the electric charge from reconstructed daughter tracks
         /// Lc charge == first daughter charge
         auto trackProng0 = candidate.template prong0_as<Trk>();
@@ -1835,7 +2242,31 @@ struct HfTaskCharmPolarisation {
           continue;
         }
 
-      } // Lc->pKpi
+      } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) {
+        if (bkgRotationId > 0) {
+          continue;
+        }
+        if constexpr (WithMl) {
+          if (candidate.mlProbLcToK0sP().size() == NScores) {
+            outputMl[0] = candidate.mlProbLcToK0sP()[0];
+            outputMl[1] = candidate.mlProbLcToK0sP()[1];
+            outputMl[2] = candidate.mlProbLcToK0sP()[2];
+          }
+        }
+        isRotatedCandidate = 0;
+        std::array<float, 3> threeVecProton = candidate.pVectorProng0();
+        std::array<float, 3> threeVecK0s = candidate.pVectorProng1();
+        pxCharmHad = threeVecProton[0] + threeVecK0s[0];
+        pyCharmHad = threeVecProton[1] + threeVecK0s[1];
+        pzCharmHad = threeVecProton[2] + threeVecK0s[2];
+        pxDau = threeVecProton[0];
+        pyDau = threeVecProton[1];
+        pzDau = threeVecProton[2];
+        massDau = MassProton;
+        invMassCharmHad = HfHelper::invMassLcToK0sP(candidate);
+        invMassCharmHadForSparse = invMassCharmHad;
+        rapidity = RecoDecay::y(std::array{pxCharmHad, pyCharmHad, pzCharmHad}, MassLambdaCPlus);
+      }
 
       if (invMassCharmHadForSparse < minInvMass || invMassCharmHadForSparse > maxInvMass) {
         continue;
@@ -1864,14 +2295,21 @@ struct HfTaskCharmPolarisation {
       int numItsClsMin{-1}, numTpcClsMin{-1};
 
       if (activateTrackingSys) {
-        auto trackProng0 = candidate.template prong0_as<Trk>();
-        auto trackProng1 = candidate.template prong1_as<Trk>();
         if constexpr (Channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {
+          auto trackProng0 = candidate.template prong0_as<Trk>();
+          auto trackProng1 = candidate.template prong1_as<Trk>();
           auto trackProng2 = candidate.template prongPi_as<Trk>();
           getTrackingInfos(std::vector{trackProng0, trackProng1, trackProng2}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
-        } else if (Channel == charm_polarisation::DecayChannel::LcToPKPi) {
+        } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPKPi) {
+          auto trackProng0 = candidate.template prong0_as<Trk>();
+          auto trackProng1 = candidate.template prong1_as<Trk>();
           auto trackProng2 = candidate.template prong2_as<Trk>();
           getTrackingInfos(std::vector{trackProng0, trackProng1, trackProng2}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
+        } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) {
+          auto trackProton = candidate.template prong0_as<Trk>();
+          auto trackPiPlus = candidate.template posTrack_as<Trk>();
+          auto trackPiMinus = candidate.template negTrack_as<Trk>();
+          getTrackingInfos(std::vector{trackProton, trackPiPlus, trackPiMinus}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
         }
       }
 
@@ -1892,20 +2330,33 @@ struct HfTaskCharmPolarisation {
 
       int8_t nMuons{0u};
       if constexpr (DoMc) {
-        nMuons = candidate.nTracksDecayed();
+        if constexpr (Channel != charm_polarisation::DecayChannel::LcToPK0S) {
+          nMuons = candidate.nTracksDecayed();
+        } else {
+          /// TODO: add π → μ in the data model for Λc → pK0s
+          nMuons = 0;
+        }
       }
 
-      if constexpr (WithEp && !DoMc) {
-        /// EP analysis
-        float const xQvec = (*qVecs).at(0);
-        float const yQvec = (*qVecs).at(1);
-        ROOT::Math::XYZVector const qVecNorm = ROOT::Math::XYZVector(yQvec, -xQvec, 0.f);
-        float const phiEP = -99.f;
-
-        if (activateTHnSparseCosThStarEP) {
-          // EP
-          float cosThetaStarEP = qVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(qVecNorm.Mag2());
+      if (activateTHnSparseCosThStarEP) {
+        if constexpr (WithEp && !DoMc) {
+          // EP analysis for data
+          float const xQvec = (*qVecs).at(0);
+          float const yQvec = (*qVecs).at(1);
+          ROOT::Math::XYZVector const qVecNorm = ROOT::Math::XYZVector(yQvec, -xQvec, 0.f);
+          ROOT::Math::XYZVector const qVec = ROOT::Math::XYZVector(xQvec, yQvec, 0.);
+          ROOT::Math::XYZVector threeVecDauCMXY = ROOT::Math::XYZVector(threeVecDauCM.X(), threeVecDauCM.Y(), 0.);
+          float const phiEP = qVec.Dot(threeVecDauCMXY) / std::sqrt(threeVecDauCMXY.Mag2()) / std::sqrt(qVec.Mag2());
+          float const cosThetaStarEP = qVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(qVecNorm.Mag2());
           fillRecoHistos<Channel, WithMl, DoMc, charm_polarisation::CosThetaStarType::EP>(invMassCharmHadForSparse, ptCharmHad, numPvContributors, rapidity, invMassD0, invMassKPiLc, cosThetaStarEP, phiEP, outputMl, isRotatedCandidate, origin, ptBhadMother, resoChannelLc, absEtaTrackMin, numItsClsMin, numTpcClsMin, charge, nMuons, partRecoDstar, centrality);
+        }
+        if (DoMc) {
+          // EP analysis for MC
+          double const deltaPhi = sampleDeltaPhi(ptCharmHad);
+          double psi = candidate.phi() - deltaPhi;
+          ROOT::Math::XYZVector qVecNorm = ROOT::Math::XYZVector(-std::sin(psi), std::cos(psi), 0.f);
+          float const cosThetaStarEP = qVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
+          fillRecoHistos<Channel, WithMl, DoMc, charm_polarisation::CosThetaStarType::EP>(invMassCharmHadForSparse, ptCharmHad, numPvContributors, rapidity, invMassD0, invMassKPiLc, cosThetaStarEP, -99.f, outputMl, isRotatedCandidate, origin, ptBhadMother, resoChannelLc, absEtaTrackMin, numItsClsMin, numTpcClsMin, charge, nMuons, partRecoDstar, centrality);
         }
       }
 
@@ -2122,8 +2573,8 @@ struct HfTaskCharmPolarisation {
   /// \param mcParticle is the Mc particle
   /// \param mcParticles is the table of Mc particles
   /// \param numPvContributors is the number of PV contributors in the associated reco collision
-  template <charm_polarisation::DecayChannel Channel, bool WithCent = false, typename Part, typename Particles, typename Cent = void>
-  void runMcGenPolarisationAnalysis(Part const& mcParticle, Particles const& mcParticles, int numPvContributors, Cent const* centrality = nullptr)
+  template <charm_polarisation::DecayChannel Channel, bool WithCent = false, typename Part, typename Particles, typename T, typename Cent = void>
+  void runMcGenPolarisationAnalysis(Part const& mcParticle, Particles const& mcParticles, T numPvContributors, Cent const* centrality = nullptr)
   {
     if constexpr (WithCent) {
       assert(qVecs && "Centrality analysis requested but Cent == nullptr");
@@ -2178,6 +2629,17 @@ struct HfTaskCharmPolarisation {
       /// electric charge from PDG code
       int const pdgCode = mcParticle.pdgCode();
       charge = static_cast<int8_t>(pdgCode / std::abs(pdgCode));
+    } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPK0S) {
+      if (std::abs(mcParticle.flagMcMatchGen()) != 1) {
+        return;
+      }
+      origin = mcParticle.originMcGen();
+      std::array<int, 2> const dauPdgs = {kProton, kK0Short};
+      RecoDecay::getDaughters(mcParticle, &listDaughters, dauPdgs, 2);
+      massDau = MassProton;
+      massCharmHad = MassLambdaCPlus;
+      int const pdgCode = mcParticle.pdgCode();
+      charge = static_cast<int8_t>(pdgCode / std::abs(pdgCode));
     }
 
     float const rapidity = mcParticle.y();
@@ -2210,7 +2672,7 @@ struct HfTaskCharmPolarisation {
             areDauInAcc = isDaughterInAcceptance(dauPartD0, 0.3, 0.8);
           }
         }
-      } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPKPi) {
+      } else if constexpr (Channel == charm_polarisation::DecayChannel::LcToPKPi || Channel == charm_polarisation::DecayChannel::LcToPK0S) {
         if (std::abs(dauPart.pdgCode()) == kProton) {
           pxDau = dauPart.px();
           pyDau = dauPart.py();
@@ -2233,25 +2695,36 @@ struct HfTaskCharmPolarisation {
     if (activateTHnSparseCosThStarHelicity) {
       ROOT::Math::XYZVector const helicityVec = fourVecMother.Vect();
       float const cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(helicityVec.Mag2());
-      fillGenHistos<charm_polarisation::CosThetaStarType::Helicity>(ptCharmHad, numPvContributors, rapidity, cosThetaStarHelicity, origin, ptBhadMother, areDauInAcc, resoChannelLc, charge, partRecoDstar);
+      fillGenHistos<charm_polarisation::CosThetaStarType::Helicity, Channel>(ptCharmHad, numPvContributors, rapidity, cosThetaStarHelicity, origin, ptBhadMother, areDauInAcc, resoChannelLc, charge, partRecoDstar);
     }
     if (activateTHnSparseCosThStarProduction) {
       ROOT::Math::XYZVector const normalVec = ROOT::Math::XYZVector(pyCharmHad, -pxCharmHad, 0.f);
       float const cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(normalVec.Mag2());
-      fillGenHistos<charm_polarisation::CosThetaStarType::Production>(ptCharmHad, numPvContributors, rapidity, cosThetaStarProduction, origin, ptBhadMother, areDauInAcc, resoChannelLc, charge, partRecoDstar);
+      fillGenHistos<charm_polarisation::CosThetaStarType::Production, Channel>(ptCharmHad, numPvContributors, rapidity, cosThetaStarProduction, origin, ptBhadMother, areDauInAcc, resoChannelLc, charge, partRecoDstar);
     }
     if (activateTHnSparseCosThStarBeam) {
       ROOT::Math::XYZVector const beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
       float const cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
-      fillGenHistos<charm_polarisation::CosThetaStarType::Beam>(ptCharmHad, numPvContributors, rapidity, cosThetaStarBeam, origin, ptBhadMother, areDauInAcc, resoChannelLc, charge, partRecoDstar);
+      fillGenHistos<charm_polarisation::CosThetaStarType::Beam, Channel>(ptCharmHad, numPvContributors, rapidity, cosThetaStarBeam, origin, ptBhadMother, areDauInAcc, resoChannelLc, charge, partRecoDstar);
     }
     if (activateTHnSparseCosThStarRandom) {
       ROOT::Math::XYZVector const randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
       float const cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
       if constexpr (WithCent) {
-        fillGenHistos<charm_polarisation::CosThetaStarType::Random>(ptCharmHad, numPvContributors, rapidity, cosThetaStarRandom, origin, ptBhadMother, areDauInAcc, resoChannelLc, charge, partRecoDstar, *centrality);
+        fillGenHistos<charm_polarisation::CosThetaStarType::Random, Channel>(ptCharmHad, numPvContributors, rapidity, cosThetaStarRandom, origin, ptBhadMother, areDauInAcc, resoChannelLc, charge, partRecoDstar, *centrality);
       } else {
-        fillGenHistos<charm_polarisation::CosThetaStarType::Random>(ptCharmHad, numPvContributors, rapidity, cosThetaStarRandom, origin, ptBhadMother, areDauInAcc, resoChannelLc, charge, partRecoDstar);
+        fillGenHistos<charm_polarisation::CosThetaStarType::Random, Channel>(ptCharmHad, numPvContributors, rapidity, cosThetaStarRandom, origin, ptBhadMother, areDauInAcc, resoChannelLc, charge, partRecoDstar);
+      }
+    }
+    if (activateTHnSparseCosThStarEP) {
+      double const deltaPhi = sampleDeltaPhi(ptCharmHad);
+      double psi = mcParticle.phi() - deltaPhi;
+      ROOT::Math::XYZVector qVecNorm = ROOT::Math::XYZVector(-std::sin(psi), std::cos(psi), 0.f);
+      float const cosThetaStarEP = qVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
+      if constexpr (WithCent) {
+        fillGenHistos<charm_polarisation::CosThetaStarType::EP, Channel>(ptCharmHad, numPvContributors, rapidity, cosThetaStarEP, origin, ptBhadMother, areDauInAcc, resoChannelLc, charge, partRecoDstar, *centrality);
+      } else {
+        fillGenHistos<charm_polarisation::CosThetaStarType::EP, Channel>(ptCharmHad, numPvContributors, rapidity, cosThetaStarEP, origin, ptBhadMother, areDauInAcc, resoChannelLc, charge, partRecoDstar);
       }
     }
   }
@@ -2268,6 +2741,7 @@ struct HfTaskCharmPolarisation {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
       int const numPvContributors = collision.numContrib();
+
       auto groupedDstarCandidates = dstarCandidates.sliceBy(dstarPerCollision, thisCollId);
       int nCands{0}, nCandsInSignalRegion{0};
 
@@ -2391,6 +2865,7 @@ struct HfTaskCharmPolarisation {
 
       auto thisCollId = collision.globalIndex();
       int const numPvContributors = collision.numContrib();
+      auto const occupancy = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
       auto groupedDstarCandidates = dstarCandidates.sliceBy(dstarPerCollision, thisCollId);
       int nCands{0}, nCandsInSignalRegion{0};
 
@@ -2398,7 +2873,7 @@ struct HfTaskCharmPolarisation {
 
       for (const auto& dstarCandidate : groupedDstarCandidates) {
         nCands++;
-        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, false, false, true>(dstarCandidate, 0, numPvContributors, -1 /*MC particles*/, tracks, centrality, &qVecs)) {
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, false, false, true>(dstarCandidate, 0, (occEstimator > 0) ? occupancy : numPvContributors, -1 /*MC particles*/, tracks, centrality, &qVecs)) {
           nCandsInSignalRegion++;
         }
       }
@@ -2420,6 +2895,7 @@ struct HfTaskCharmPolarisation {
 
       auto thisCollId = collision.globalIndex();
       int const numPvContributors = collision.numContrib();
+      auto const occupancy = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
       auto groupedDstarCandidates = dstarCandidates.sliceBy(dstarWithMlPerCollision, thisCollId);
       int nCands{0}, nCandsInSignalRegion{0};
 
@@ -2427,7 +2903,7 @@ struct HfTaskCharmPolarisation {
 
       for (const auto& dstarCandidate : groupedDstarCandidates) {
         nCands++;
-        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, false, false, true>(dstarCandidate, 0, numPvContributors, -1 /*MC particles*/, tracks, centrality, &qVecs)) {
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, false, false, true>(dstarCandidate, 0, (occEstimator > 0) ? occupancy : numPvContributors, -1 /*MC particles*/, tracks, centrality, &qVecs)) {
           nCandsInSignalRegion++;
         }
       }
@@ -2453,6 +2929,7 @@ struct HfTaskCharmPolarisation {
 
       auto thisCollId = collision.globalIndex();
       int const numPvContributors = collision.numContrib();
+      auto const occupancy = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
       auto groupedDstarCandidates = dstarCandidates.sliceBy(dstarWithMcPerCollision, thisCollId);
       int nCands{0}, nCandsInSignalRegion{0};
 
@@ -2462,7 +2939,7 @@ struct HfTaskCharmPolarisation {
 
       for (const auto& dstarCandidate : groupedDstarCandidates) {
         nCands++;
-        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, true>(dstarCandidate, 0, numPvContributors, -1 /*MC particles*/, tracks, centrality)) {
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, true>(dstarCandidate, 0, (occEstimator > 0) ? occupancy : numPvContributors, -1 /*MC particles*/, tracks, centrality)) {
           nCandsInSignalRegion++;
         }
       }
@@ -2471,7 +2948,8 @@ struct HfTaskCharmPolarisation {
     for (const auto& mcParticle : mcParticles) {
       const auto& recoCollsPerMcColl = collisions.sliceBy(colPerMcCollision, mcParticle.mcCollision().globalIndex());
       const auto cent = getCentralityGenColl(recoCollsPerMcColl, centEstimator);
-      runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true>(mcParticle, mcParticles, numPvContributorsGen, &cent);
+      const auto occupancy = o2::hf_occupancy::getOccupancyGenColl(recoCollsPerMcColl, occEstimator);
+      runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true>(mcParticle, mcParticles, (occEstimator > 0) ? occupancy : numPvContributorsGen, &cent);
     }
   }
   PROCESS_SWITCH(HfTaskCharmPolarisation, processDstarMcInPbPb, "Process Dstar candidates in PbPb MC without ML", false);
@@ -2493,6 +2971,7 @@ struct HfTaskCharmPolarisation {
 
       auto thisCollId = collision.globalIndex();
       int const numPvContributors = collision.numContrib();
+      auto const occupancy = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
       auto groupedDstarCandidates = dstarCandidates.sliceBy(dstarWithMcAndMlPerCollision, thisCollId);
       int nCands{0}, nCandsInSignalRegion{0};
 
@@ -2502,7 +2981,7 @@ struct HfTaskCharmPolarisation {
 
       for (const auto& dstarCandidate : groupedDstarCandidates) {
         nCands++;
-        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, true>(dstarCandidate, 0, numPvContributors, -1 /*MC particles*/, tracks, centrality)) {
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, true>(dstarCandidate, 0, (occEstimator > 0) ? occupancy : numPvContributors, -1 /*MC particles*/, tracks, centrality)) {
           nCandsInSignalRegion++;
         }
       }
@@ -2511,14 +2990,15 @@ struct HfTaskCharmPolarisation {
     for (const auto& mcParticle : mcParticles) {
       const auto& recoCollsPerMcColl = collisions.sliceBy(colPerMcCollision, mcParticle.mcCollision().globalIndex());
       const auto cent = getCentralityGenColl(recoCollsPerMcColl, centEstimator);
-      runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true>(mcParticle, mcParticles, numPvContributorsGen, &cent);
+      const auto occupancy = o2::hf_occupancy::getOccupancyGenColl(recoCollsPerMcColl, occEstimator);
+      runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true>(mcParticle, mcParticles, (occEstimator > 0) ? occupancy : numPvContributorsGen, &cent);
     }
   }
   PROCESS_SWITCH(HfTaskCharmPolarisation, processDstarMcWithMlInPbPb, "Process Dstar candidates in PbPb MC with ML", false);
 
-  ////////////////////////////
-  //   Lc->pKpi analysis   ///
-  ////////////////////////////
+  /////////////////////////////////////////
+  //   Lc->pKpi and Lc->pK0s analysis   ///
+  /////////////////////////////////////////
 
   // Lc->pKpi with rectangular cuts
   void processLcToPKPi(aod::Collisions const& collisions,
@@ -2546,6 +3026,27 @@ struct HfTaskCharmPolarisation {
     }
   }
   PROCESS_SWITCH(HfTaskCharmPolarisation, processLcToPKPi, "Process Lc candidates without ML", false);
+  // Lc->pK0s with rectangular cuts
+  void processLcToPK0S(aod::Collisions const& collisions,
+                       FilteredCandLcToPK0SWSelFlag const& lcCandidates,
+                       TracksWithExtra const& tracks)
+  {
+    for (const auto& collision : collisions) {
+      auto thisCollId = collision.globalIndex();
+      int const numPvContributors = collision.numContrib();
+      auto groupedLcCandidates = lcCandidates.sliceBy(lcToPK0SPerCollision, thisCollId);
+      int nCands{0}, nCandsInSignalRegion{0};
+      for (const auto& lcCandidate : groupedLcCandidates) {
+        nCands++;
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPK0S, false, false>(lcCandidate, 0, numPvContributors, -1 /*MC particles*/, tracks)) {
+          nCandsInSignalRegion++;
+        }
+      }
+      fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
+    }
+  }
+
+  PROCESS_SWITCH(HfTaskCharmPolarisation, processLcToPK0S, "Process Lc PK0s candidates without ML", false);
 
   // Lc->pKpi with ML cuts
   void processLcToPKPiWithMl(aod::Collisions const& collisions,
@@ -2573,6 +3074,27 @@ struct HfTaskCharmPolarisation {
     }
   }
   PROCESS_SWITCH(HfTaskCharmPolarisation, processLcToPKPiWithMl, "Process Lc candidates with ML", false);
+  // Lc->pK0s with ML cuts
+  void processLcToPK0SWithMl(aod::Collisions const& collisions,
+                             FilteredCandLcToPK0SWSelFlagAndMl const& lcCandidates,
+                             TracksWithExtra const& tracks)
+  {
+    for (const auto& collision : collisions) {
+      auto thisCollId = collision.globalIndex();
+      int const numPvContributors = collision.numContrib();
+      auto groupedLcCandidates = lcCandidates.sliceBy(lcToPK0SWithMlPerCollision, thisCollId);
+      int nCands{0}, nCandsInSignalRegion{0};
+
+      for (const auto& lcCandidate : groupedLcCandidates) {
+        nCands++;
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPK0S, true, false>(lcCandidate, 0, numPvContributors, -1 /*MC particles*/, tracks)) {
+          nCandsInSignalRegion++;
+        }
+      }
+      fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
+    }
+  }
+  PROCESS_SWITCH(HfTaskCharmPolarisation, processLcToPK0SWithMl, "Process Lc PK0S candidates with ML", false);
 
   // Lc->pKpi in MC with rectangular cuts
   void processLcToPKPiMc(aod::McCollisions::iterator const&,
@@ -2606,6 +3128,37 @@ struct HfTaskCharmPolarisation {
     }
   }
   PROCESS_SWITCH(HfTaskCharmPolarisation, processLcToPKPiMc, "Process Lc candidates in MC without ML", false);
+  // Lc->pK0s in MC with rectangular cuts
+  void processLcToPK0SMc(aod::McCollisions::iterator const&,
+                         McParticlesCascadeMatched const& mcParticles,
+                         CollisionsWithMcLabels const& collisions, // this is grouped with SmallGroupsCollisionsWithMcLabels const& collisions,
+                         FilteredCandLcToPK0SWSelFlagAndMc const& lcCandidates,
+                         TracksWithExtra const& tracks)
+  {
+    int numPvContributorsGen{0};
+    for (const auto& collision : collisions) { // loop over reco collisions associated to this gen collision
+      auto thisCollId = collision.globalIndex();
+      int const numPvContributors = collision.numContrib();
+      auto groupedLcCandidates = lcCandidates.sliceBy(lcToPK0SWithMcAndMlPerCollision, thisCollId);
+      int nCands{0}, nCandsInSignalRegion{0};
+
+      if (numPvContributors > numPvContributorsGen) { // we take the associated reconstructed collision with higher number of PV contributors
+        numPvContributorsGen = numPvContributors;
+      }
+      for (const auto& lcCandidate : groupedLcCandidates) {
+        nCands++;
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPK0S, false, true>(lcCandidate, 0, numPvContributors, -1 /*MC particles*/, tracks)) {
+          nCandsInSignalRegion++;
+        }
+      }
+      fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
+    }
+
+    for (const auto& mcParticle : mcParticles) {
+      runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPK0S>(mcParticle, mcParticles, numPvContributorsGen);
+    }
+  }
+  PROCESS_SWITCH(HfTaskCharmPolarisation, processLcToPK0SMc, "Process Lc PK0s candidates in MC without ML", false);
 
   // Lc->pKpi in MC with ML cuts
   void processLcToPKPiMcWithMl(aod::McCollisions::iterator const&,
@@ -2639,6 +3192,36 @@ struct HfTaskCharmPolarisation {
     }
   }
   PROCESS_SWITCH(HfTaskCharmPolarisation, processLcToPKPiMcWithMl, "Process Lc candidates in MC with ML", false);
+  // Lc->pK0s in MC with ML cuts
+  void processLcToPK0SMcWithMl(aod::McCollisions::iterator const&,
+                               McParticlesCascadeMatched const& mcParticles,
+                               CollisionsWithMcLabels const& collisions, // this is grouped with SmallGroups
+                               FilteredCandLcToPK0SWSelFlagAndMcAndMl const& lcCandidates,
+                               TracksWithExtra const& tracks)
+  {
+    int numPvContributorsGen{0};
+    for (const auto& collision : collisions) { // loop over reco collisions associated to this gen collision
+      auto thisCollId = collision.globalIndex();
+      int const numPvContributors = collision.numContrib();
+      auto groupedLcCandidates = lcCandidates.sliceBy(lcToPK0SWithMcAndMlPerCollision, thisCollId);
+      int nCands{0}, nCandsInSignalRegion{0};
+
+      if (numPvContributors > numPvContributorsGen) { // we take the associated reconstructed collision with higher number of PV contributors
+        numPvContributorsGen = numPvContributors;
+      }
+      for (const auto& lcCandidate : groupedLcCandidates) {
+        nCands++;
+        if (runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPK0S, true, true>(lcCandidate, 0, numPvContributors, -1 /*MC particles*/, tracks)) {
+          nCandsInSignalRegion++;
+        }
+      }
+      fillMultHistos(numPvContributors, nCands, nCandsInSignalRegion);
+    }
+    for (const auto& mcParticle : mcParticles) {
+      runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPK0S>(mcParticle, mcParticles, numPvContributorsGen);
+    }
+  }
+  PROCESS_SWITCH(HfTaskCharmPolarisation, processLcToPK0SMcWithMl, "Process Lc PK0s candidates in MC with ML", false);
 
   // Lc->pKpi in MC with ML cuts w/o mcCollision grouping (to study Lc background)
   void processLcToPKPiBackgroundMcWithMl(McParticles3ProngMatched const& mcParticles,

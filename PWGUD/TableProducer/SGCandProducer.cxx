@@ -19,32 +19,42 @@
 //
 
 #include "PWGUD/Core/FITCutParHolder.h"
+#include "PWGUD/Core/SGCutParHolder.h"
 #include "PWGUD/Core/SGSelector.h"
+#include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/LHCConstants.h"
-#include "DataFormatsFIT/Triggers.h"
-#include "DataFormatsParameters/AggregatedRunInfo.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/ASoA.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Vertex.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonDataFormat/TimeStamp.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Vertex.h>
+
+#include <TH1.h>
+
+#include <sys/types.h>
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 

@@ -13,9 +13,32 @@
 /// \author Paul Buehler, paul.buehler@oeaw.ac.at
 /// \since  01.10.2021
 
-#include "Framework/AnalysisTask.h"
-#include "PWGUD/DataModel/McPIDTable.h"
 #include "PWGUD/Core/UDHelpers.h"
+#include "PWGUD/DataModel/McPIDTable.h"
+
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Variant.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <TMath.h>
+
+#include <RtypesCore.h>
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -25,7 +48,7 @@ void customize(std::vector<ConfigParamSpec>& workflowOptions)
   workflowOptions.push_back(ConfigParamSpec{"runCase", VariantType::Int, 0, {"runCase: 0 - histos,  1 - mcTruth, 2 - mc only, else - tree"}});
 }
 
-#include "Framework/runDataProcessing.h"
+#include <Framework/runDataProcessing.h>
 
 using namespace o2::framework::expressions;
 

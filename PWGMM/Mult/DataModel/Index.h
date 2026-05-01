@@ -9,10 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_ANALYSIS_INDEX_H_
-#define O2_ANALYSIS_INDEX_H_
+#ifndef PWGMM_MULT_DATAMODEL_INDEX_H_
+#define PWGMM_MULT_DATAMODEL_INDEX_H_
 
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
+
 namespace o2::aod
 {
 namespace idx
@@ -23,4 +24,5 @@ DECLARE_SOA_ARRAY_INDEX_COLUMN(MFTTrack, mfttracks);
 DECLARE_SOA_TABLE(ParticlesToTracks, "AOD", "P2T", idx::TrackIds);
 DECLARE_SOA_TABLE(ParticlesToMftTracks, "AOD", "P2MFTT", idx::MFTTrackIds);
 } // namespace o2::aod
-#endif // O2_ANALYSIS_INDEX_H_
+
+#endif // PWGMM_MULT_DATAMODEL_INDEX_H_

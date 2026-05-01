@@ -979,8 +979,11 @@ DECLARE_SOA_TABLE_STAGED(HfDplusDaugs, "HFDPDAUG", //! Table to study daughter p
                          hf_cand::PyProng2,
                          hf_cand::PzProng2,
                          hf_cand_par::NSigTpcTofPi0,
-                         hf_cand_par::NSigTpcTofKa1,
+                         hf_cand_par::NSigTpcTofPi1,
                          hf_cand_par::NSigTpcTofPi2,
+                         hf_cand_par::NSigTpcTofKa0,
+                         hf_cand_par::NSigTpcTofKa1,
+                         hf_cand_par::NSigTpcTofKa2,
                          o2::soa::Marker<MarkerDplus>);
 
 DECLARE_SOA_TABLE_STAGED(HfDplusMls, "HFDPML", //! Table with candidate selection ML scores

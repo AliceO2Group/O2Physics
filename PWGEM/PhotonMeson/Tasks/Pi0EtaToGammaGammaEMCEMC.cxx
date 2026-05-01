@@ -14,6 +14,7 @@
 /// \author D. Sekihata, daiki.sekihata@cern.ch
 
 #include "PWGEM/PhotonMeson/Core/Pi0EtaToGammaGamma.h"
+#include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 
@@ -26,11 +27,11 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::aod::pwgem::photonmeson::photonpair;
 
-using MyEMCClusters = soa::Join<aod::EmEmcClusters, aod::EMCEMEventIds>;
+using MyEMCClusters = soa::Join<aod::EMCEMEventIds, aod::MinClusters>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<Pi0EtaToGammaGamma<PairType::kEMCEMC, MyEMCClusters, EmEmcMTracks, EmEmcMSTracks>>(cfgc, TaskName{"pi0eta-to-gammagamma-emcemc"}),
+    adaptAnalysisTask<Pi0EtaToGammaGamma<PairType::kEMCEMC, MyEMCClusters, MinMTracks, MinMSTracks>>(cfgc, TaskName{"pi0eta-to-gammagamma-emcemc"}),
   };
 }

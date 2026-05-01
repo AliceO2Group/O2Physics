@@ -16,13 +16,8 @@
 
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseCutculator.h"
 
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseSelection.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
-#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
-
 #include <fstream>
 #include <iostream>
-#include <random>
 #include <string>
 
 using namespace o2::analysis::femto_universe;

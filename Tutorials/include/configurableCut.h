@@ -9,13 +9,16 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef CONFIGURABLECUT_H
-#define CONFIGURABLECUT_H
+#ifndef TUTORIALS_INCLUDE_CONFIGURABLECUT_H_
+#define TUTORIALS_INCLUDE_CONFIGURABLECUT_H_
 
-#include "Framework/Array2D.h"
-#include <iosfwd>
+#include <Framework/Array2D.h>
+
 #include <Rtypes.h>
-#include <TMath.h>
+
+#include <iosfwd>
+#include <string>
+#include <vector>
 
 static constexpr double default_matrix[3][3] = {{1.1, 1.2, 1.3}, {2.1, 2.2, 2.3}, {3.1, 3.2, 3.3}};
 
@@ -63,4 +66,4 @@ class configurableCut
 
 std::ostream& operator<<(std::ostream& os, configurableCut const& c);
 
-#endif // CONFIGURABLECUT_H
+#endif // TUTORIALS_INCLUDE_CONFIGURABLECUT_H_

@@ -21,47 +21,34 @@
 //
 
 #include "PWGLF/DataModel/LFStrangenessMLTables.h"
-#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Tools/ML/MlResponse.h"
 #include "Tools/ML/model.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/ASoA.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
-#include <TDatabasePDG.h>
-#include <TFile.h>
-#include <TH2F.h>
-#include <TLorentzVector.h>
-#include <TPDGCode.h>
-#include <TProfile.h>
-
-#include <array>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
+#include <map>
+#include <string>
+#include <vector>
 
 using namespace o2;
-using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::ml;
-using std::array;
-using std::cout;
-using std::endl;
 
 // For original data loops
 using CascOriginalDatas = soa::Join<aod::CascIndices, aod::CascCores>;

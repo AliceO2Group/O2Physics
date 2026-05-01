@@ -10,7 +10,13 @@
 // or submit itself to any jurisdiction.
 
 #include "configurableCut.h"
+
+#include <Framework/Array2D.h>
+
 #include <iostream>
+#include <string>
+#include <utility>
+#include <vector>
 
 std::ostream& operator<<(std::ostream& os, configurableCut const& c)
 {

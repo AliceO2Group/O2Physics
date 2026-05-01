@@ -16,7 +16,7 @@
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 
-#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/runDataProcessing.h>
 

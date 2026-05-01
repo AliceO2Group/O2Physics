@@ -16,9 +16,7 @@
 #ifndef PWGCF_CORE_ANALYSISCONFIGURABLECUTS_H_
 #define PWGCF_CORE_ANALYSISCONFIGURABLECUTS_H_
 
-#include <TMath.h>
 #include <TNamed.h>
-#include <TObject.h>
 
 #include <Rtypes.h>
 

@@ -25,20 +25,32 @@
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/GeomConstants.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/Propagator.h"
-#include "Field/MagneticField.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/TrackFwd.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/GeomConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/Propagator.h>
+#include <Field/MagneticField.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/TrackFwd.h>
+#include <ReconstructionDataFormats/TrackParametrization.h>
 
-#include "Math/MatrixFunctions.h"
-#include "Math/SMatrix.h"
-#include "TGeoGlobalMagField.h"
+#include <TGeoGlobalMagField.h>
+#include <TH1.h>
 
+#include <sys/types.h>
+
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <string>
 #include <vector>
 

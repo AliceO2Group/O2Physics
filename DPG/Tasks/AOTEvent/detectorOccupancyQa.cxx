@@ -16,27 +16,32 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/ctpRateFetcher.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonDataFormat/BunchFilling.h"
-#include "DataFormatsParameters/AggregatedRunInfo.h"
-#include "DataFormatsParameters/GRPECSObject.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
+#include <DataFormatsParameters/AggregatedRunInfo.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include "TH1F.h"
-#include "TH2F.h"
-#include "TH3.h"
+#include <TAxis.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TMath.h>
 
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <map>
 #include <vector>
 

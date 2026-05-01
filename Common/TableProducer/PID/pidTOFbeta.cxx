@@ -69,10 +69,10 @@ struct tofPidBeta {
   bool enableTableMass = false;
   void init(o2::framework::InitContext& initContext)
   {
-    if (isTableRequiredInWorkflow(initContext, "pidTOFbeta")) {
+    if (o2::common::core::isTableRequiredInWorkflow(initContext, "pidTOFbeta")) {
       enableTableBeta = true;
     }
-    if (isTableRequiredInWorkflow(initContext, "pidTOFmass")) {
+    if (o2::common::core::isTableRequiredInWorkflow(initContext, "pidTOFmass")) {
       enableTableMass = true;
     }
     responseBeta.mExpectedResolution = expreso.value;

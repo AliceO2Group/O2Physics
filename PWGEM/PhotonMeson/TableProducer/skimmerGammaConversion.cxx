@@ -22,38 +22,48 @@
 // **************************
 
 // runme like: o2-analysis-trackselection -b --aod-file ${sourceFile} --aod-writer-json ${writerFile} | o2-analysis-timestamp -b | o2-analysis-trackextension -b | o2-analysis-lf-lambdakzerobuilder -b | o2-analysis-pid-tpc -b | o2-analysis-em-skimmermc -b
-
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
-
 // todo: remove reduantant information in GammaConversionsInfoTrue
+
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/gammaConvDefinitions.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
-// includes for the R recalculation
-#include "Common/Core/trackUtilities.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "ReconstructionDataFormats/HelixHelper.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "ReconstructionDataFormats/TrackFwd.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Math/Vector4D.h"
-#include <TMath.h>
-#include <TVector2.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TAxis.h>
+#include <TH1.h>
+
+#include <KFPTrack.h>
+#include <KFPVertex.h>
+#include <KFParticle.h>
+
+#include <cmath>
+#include <cstddef>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

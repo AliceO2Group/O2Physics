@@ -28,32 +28,32 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGLF/DataModel/LFStrangenessFinderTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "DCAFitter/DCAFitterN.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Track.h>
 
-#include <Math/Vector4D.h>
-#include <TDatabasePDG.h>
-#include <TFile.h>
-#include <TH1F.h>
-#include <TH2F.h>
-#include <TLorentzVector.h>
-#include <TPDGCode.h>
-#include <TProfile.h>
+#include <TH1.h>
+#include <TH3.h>
+#include <TMathBase.h>
+
+#include <RtypesCore.h>
 
 #include <array>
 #include <cmath>

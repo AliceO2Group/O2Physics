@@ -38,6 +38,7 @@
 
 using namespace o2;
 using namespace o2::framework;
+using namespace o2::framework::expressions;
 
 namespace o2::aod
 {
@@ -145,7 +146,9 @@ struct HfTreeCreatorXic0ToXiPiKf {
   using MyEventTableWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
   using MyEventTableWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
   using MyEventTableWithNTracksPV = soa::Join<aod::Collisions, aod::EvSels, aod::CentNTPVs>;
+  using MyMcCandidates = soa::Filtered<soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec>>;
 
+  Filter mcFilter = (aod::hf_cand_mc_flag::originMcRec == static_cast<int>(RecoDecay::OriginType::NonPrompt)) || (aod::hf_cand_mc_flag::originMcRec == static_cast<int>(RecoDecay::OriginType::Prompt));
   HistogramRegistry registry{"registry"}; // for QA of selections
 
   void init(InitContext const&)
@@ -276,7 +279,7 @@ struct HfTreeCreatorXic0ToXiPiKf {
   PROCESS_SWITCH(HfTreeCreatorXic0ToXiPiKf, processDataLiteWithNTracksPV, "Process KF data with Ntracks", false);
 
   void processKfMcXic0(MyTrackTable const&,
-                       soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec> const& candidates)
+                       MyMcCandidates const& candidates)
   {
     rowKfCandidate.reserve(candidates.size());
     for (const auto& candidate : candidates) {
@@ -286,7 +289,7 @@ struct HfTreeCreatorXic0ToXiPiKf {
   PROCESS_SWITCH(HfTreeCreatorXic0ToXiPiKf, processKfMcXic0, "Process MC with information for xic0", false);
 
   void processKfMCWithFT0C(MyTrackTable const&,
-                           soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec> const& candidates)
+                           MyMcCandidates const& candidates)
   {
     rowKfCandidate.reserve(candidates.size());
     for (const auto& candidate : candidates) {
@@ -296,7 +299,7 @@ struct HfTreeCreatorXic0ToXiPiKf {
   PROCESS_SWITCH(HfTreeCreatorXic0ToXiPiKf, processKfMCWithFT0C, "Process MC with information for xic0 at FT0C", false);
 
   void processKfMCWithFT0M(MyTrackTable const&,
-                           soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec> const& candidates)
+                           MyMcCandidates const& candidates)
   {
     rowKfCandidate.reserve(candidates.size());
     for (const auto& candidate : candidates) {
@@ -306,7 +309,7 @@ struct HfTreeCreatorXic0ToXiPiKf {
   PROCESS_SWITCH(HfTreeCreatorXic0ToXiPiKf, processKfMCWithFT0M, "Process MC with information for xic0 at FT0M", false);
 
   void processMCLiteWithNTracksPV(MyTrackTable const&,
-                                  soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec> const& candidates)
+                                  MyMcCandidates const& candidates)
   {
     rowKfCandidate.reserve(candidates.size());
     for (const auto& candidate : candidates) {

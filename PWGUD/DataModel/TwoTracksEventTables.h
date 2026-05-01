@@ -21,7 +21,9 @@
 #ifndef PWGUD_DATAMODEL_TWOTRACKSEVENTTABLES_H_
 #define PWGUD_DATAMODEL_TWOTRACKSEVENTTABLES_H_
 
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 
 namespace o2::aod
 {

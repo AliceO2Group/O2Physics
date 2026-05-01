@@ -14,16 +14,19 @@
 /// \author victor.gonzalez.sebastian@gmail.com
 
 #include "PWGCF/DataModel/DptDptFiltered.h"
-#include "PWGCF/TableProducer/dptDptFilter.h"
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
-#include <array>
+#include <TProfile3D.h>
+
 #include <cmath>
+#include <cstdint>
 #include <unordered_map>
 
 using namespace o2;
@@ -82,8 +85,6 @@ struct DptDptPerRunExtraQc {
 
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const& collision, soa::Filtered<soa::Join<aod::FullTracks, aod::DptDptCFTracksInfo>> const& tracks, aod::BCsWithTimestamps const&)
   {
-    using namespace analysis::dptdptfilter;
-
     if (!collision.collisionaccepted()) {
       return;
     }

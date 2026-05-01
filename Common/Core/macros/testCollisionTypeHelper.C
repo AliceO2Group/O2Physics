@@ -15,8 +15,8 @@
 
 #include "Common/Core/CollisionTypeHelper.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
 
 void testCollisionTypeHelper(int runNumber = 544124)
 {

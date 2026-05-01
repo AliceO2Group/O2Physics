@@ -20,14 +20,14 @@
 #include "PWGCF/Femto/Core/histManager.h"
 #include "PWGCF/Femto/Core/modes.h"
 
-#include "Framework/Configurable.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/HistogramSpec.h"
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
 
-#include <Math/GenVector/Boost.h>
-#include <Math/Vector4D.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 
-#include <algorithm>
 #include <array>
 #include <cmath>
 #include <map>
@@ -109,9 +109,9 @@ struct ConfTripletBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis pt1{"pt1", {{100, 0, 6}}, "Pt binning for particle 1"};
   o2::framework::ConfigurableAxis pt2{"pt2", {{100, 0, 6}}, "Pt binning for particle 2"};
   o2::framework::ConfigurableAxis pt3{"pt3", {{100, 0, 6}}, "Pt binning for particle 3"};
-  o2::framework::ConfigurableAxis mass1{"mass1", {{100, 0, 2}}, "Mass binning for particle 1 (if particle has mass getter)"};
-  o2::framework::ConfigurableAxis mass2{"mass2", {{100, 0, 2}}, "Mass binning for particle 2 (if particle has mass getter)"};
-  o2::framework::ConfigurableAxis mass3{"mass3", {{100, 0, 2}}, "Mass binning for particle 3 (if particle has mass getter)"};
+  o2::framework::ConfigurableAxis mass1{"mass1", {{100, 0, 2}}, "Mass binning for particle 1 (if particle has mass getter, otherwise PDG mass)"};
+  o2::framework::ConfigurableAxis mass2{"mass2", {{100, 0, 2}}, "Mass binning for particle 2 (if particle has mass getter, otherwise PDG mass)"};
+  o2::framework::ConfigurableAxis mass3{"mass3", {{100, 0, 2}}, "Mass binning for particle 3 (if particle has mass getter, otherwise PDG mass)"};
   o2::framework::Configurable<int> transverseMassType{"transverseMassType", static_cast<int>(modes::TransverseMassType::kAveragePdgMass), "Type of transverse mass (0-> Average Pdg Mass, 1-> Reduced Pdg Mass, 2-> Mt from combined 4 vector)"};
 };
 
@@ -130,27 +130,27 @@ constexpr std::array<histmanager::HistInfo<TripletHist>, kTripletHistogramLast>
   HistTable = {
     {
       // 1D
-      {kQ3, o2::framework::kTH1F, "hQ3", "Q_{3}; Q_{3} (GeV/#it{c}); Entries"},
-      {kMt, o2::framework::kTH1F, "hMt", "transverse mass; m_{T} (GeV/#it{c}^{2}); Entries"},
+      {kQ3, o2::framework::HistType::kTH1F, "hQ3", "Q_{3}; Q_{3} (GeV/#it{c}); Entries"},
+      {kMt, o2::framework::HistType::kTH1F, "hMt", "transverse mass; m_{T} (GeV/#it{c}^{2}); Entries"},
       // 2D
-      {kPt1VsQ3, o2::framework::kTH2F, "hPt1VsQ3", " p_{T,1} vs Q_{3}; p_{T,1} (GeV/#it{c}); Q_{3} (GeV/#it{c})"},
-      {kPt2VsQ3, o2::framework::kTH2F, "hPt2VsQ3", "p_{T,2} vs Q_{3}; p_{T,2} (GeV/#it{c}); Q_{3} (GeV/#it{c})"},
-      {kPt3VsQ3, o2::framework::kTH2F, "hPt3VsQ3", "p_{T,3} vs Q_{3}; p_{T,2} (GeV/#it{c}); Q_{3} (GeV/#it{c})"},
-      {kQ3VsMt, o2::framework::kTH2F, "hQ3VsMt", "Q_{3} vs m_{T}; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2})"},
-      {kQ3VsMult, o2::framework::kTH2F, "hQ3VsMult", "Q_{3} vs Multiplicity; Q_{3} (GeV/#it{c}); Multiplicity"},
-      {kQ3VsCent, o2::framework::kTH2F, "hQ3VsCent", "Q_{3} vs Centrality; Q_{3} (GeV/#it{c}); Centrality"},
+      {kPt1VsQ3, o2::framework::HistType::kTH2F, "hPt1VsQ3", " p_{T,1} vs Q_{3}; p_{T,1} (GeV/#it{c}); Q_{3} (GeV/#it{c})"},
+      {kPt2VsQ3, o2::framework::HistType::kTH2F, "hPt2VsQ3", "p_{T,2} vs Q_{3}; p_{T,2} (GeV/#it{c}); Q_{3} (GeV/#it{c})"},
+      {kPt3VsQ3, o2::framework::HistType::kTH2F, "hPt3VsQ3", "p_{T,3} vs Q_{3}; p_{T,2} (GeV/#it{c}); Q_{3} (GeV/#it{c})"},
+      {kQ3VsMt, o2::framework::HistType::kTH2F, "hQ3VsMt", "Q_{3} vs m_{T}; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2})"},
+      {kQ3VsMult, o2::framework::HistType::kTH2F, "hQ3VsMult", "Q_{3} vs Multiplicity; Q_{3} (GeV/#it{c}); Multiplicity"},
+      {kQ3VsCent, o2::framework::HistType::kTH2F, "hQ3VsCent", "Q_{3} vs Centrality; Q_{3} (GeV/#it{c}); Centrality"},
       // n-D
-      {kPt1VsPt2VsPt3, o2::framework::kTHnSparseF, "hPt1VsPt2VsPt3", "k* vs m_{T} vs multiplicity; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); Multiplicity"},
-      {kQ3VsPt1VsPt2VsPt3, o2::framework::kTHnSparseF, "hQ3VsPt1VsPt2VsPt3", "Q_{3} vs p_{T,1} vs p_{T,2} vs p_{T,3}; Q_{3} (GeV/#it{c}); p_{T,1} (GeV/#it{c}) ; p_{T,2} (GeV/#it{c}); p_{T,3} (GeV/#it{c})"},
-      {kQ3VsMtVsMult, o2::framework::kTHnSparseF, "hQ3VsMtVsMult", "Q_{3} vs m_{T} vs multiplicity; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); Multiplicity"},
-      {kQ3VsMtVsMultVsCent, o2::framework::kTHnSparseF, "hQ3VsMtVsMultVsCent", "Q_{3} vs m_{T} vs multiplicity vs centrality; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); Multiplicity; Centrality"},
+      {kPt1VsPt2VsPt3, o2::framework::HistType::kTHnSparseF, "hPt1VsPt2VsPt3", "k* vs m_{T} vs multiplicity; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); Multiplicity"},
+      {kQ3VsPt1VsPt2VsPt3, o2::framework::HistType::kTHnSparseF, "hQ3VsPt1VsPt2VsPt3", "Q_{3} vs p_{T,1} vs p_{T,2} vs p_{T,3}; Q_{3} (GeV/#it{c}); p_{T,1} (GeV/#it{c}) ; p_{T,2} (GeV/#it{c}); p_{T,3} (GeV/#it{c})"},
+      {kQ3VsMtVsMult, o2::framework::HistType::kTHnSparseF, "hQ3VsMtVsMult", "Q_{3} vs m_{T} vs multiplicity; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); Multiplicity"},
+      {kQ3VsMtVsMultVsCent, o2::framework::HistType::kTHnSparseF, "hQ3VsMtVsMultVsCent", "Q_{3} vs m_{T} vs multiplicity vs centrality; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); Multiplicity; Centrality"},
       // n-D with mass
-      {kQ3VsMtVsPt1VsPt2VsPt3VsMult, o2::framework::kTHnSparseF, "hQ3VsMtVsPt1VsPt2VsPt3VsMult", "Q_{3} vs m_{T} vs p_{T,1} vs p_{T,2} vs p_{T,3} vs multiplicity; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}) ; p_{T,2} (GeV/#it{c}); p_{T,3} (GeV/#it{c}) ; Multiplicity"},
-      {kQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent, o2::framework::kTHnSparseF, "hQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent", "Q_{3} vs m_{T} vs p_{T,1} vs p_{T,2} vs p_{T,3} vs multiplicity vs centrality; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}) ; p_{T,2} (GeV/#it{c}); p_{T,3} (GeV/#it{c}) vs multiplicity vs centrality"},
-      {kTrueQ3VsQ3, o2::framework::kTH2F, "hTrueQ3VsQ3", "Q_{3,True} vs Q_{3}; Q_{3,true} (GeV/#it{c});  Q_{3} (GeV/#it{c})"},
-      {kTrueMtVsMt, o2::framework::kTH2F, "hTrueMtVsMt", "m_{T,True} vs m_{T}; m_{T,True} (GeV/#it{c}^{2}); m_{T} (GeV/#it{c}^{2})"},
-      {kTrueMultVsMult, o2::framework::kTH2F, "hTrueMultVsMult", "Multiplicity_{True} vs Multiplicity; Multiplicity_{True} ;  Multiplicity"},
-      {kTrueCentVsCent, o2::framework::kTH2F, "hTrueCentVsCent", "Centrality_{True} vs Centrality; Centrality_{True} (%); Centrality (%)"},
+      {kQ3VsMtVsPt1VsPt2VsPt3VsMult, o2::framework::HistType::kTHnSparseF, "hQ3VsMtVsPt1VsPt2VsPt3VsMult", "Q_{3} vs m_{T} vs p_{T,1} vs p_{T,2} vs p_{T,3} vs multiplicity; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}) ; p_{T,2} (GeV/#it{c}); p_{T,3} (GeV/#it{c}) ; Multiplicity"},
+      {kQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent, o2::framework::HistType::kTHnSparseF, "hQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent", "Q_{3} vs m_{T} vs p_{T,1} vs p_{T,2} vs p_{T,3} vs multiplicity vs centrality; Q_{3} (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}) ; p_{T,2} (GeV/#it{c}); p_{T,3} (GeV/#it{c}) vs multiplicity vs centrality"},
+      {kTrueQ3VsQ3, o2::framework::HistType::kTH2F, "hTrueQ3VsQ3", "Q_{3,True} vs Q_{3}; Q_{3,true} (GeV/#it{c});  Q_{3} (GeV/#it{c})"},
+      {kTrueMtVsMt, o2::framework::HistType::kTH2F, "hTrueMtVsMt", "m_{T,True} vs m_{T}; m_{T,True} (GeV/#it{c}^{2}); m_{T} (GeV/#it{c}^{2})"},
+      {kTrueMultVsMult, o2::framework::HistType::kTH2F, "hTrueMultVsMult", "Multiplicity_{True} vs Multiplicity; Multiplicity_{True} ;  Multiplicity"},
+      {kTrueCentVsCent, o2::framework::HistType::kTH2F, "hTrueCentVsCent", "Centrality_{True} vs Centrality; Centrality_{True} (%); Centrality (%)"},
     }};
 
 #define TRIPLET_HIST_ANALYSIS_MAP(conf)                                                                  \
@@ -252,9 +252,9 @@ class TripletHistManager
 
   void setMass(int PdgParticle1, int PdgParticle2, int PdgParticle3)
   {
-    mPdgMass1 = o2::analysis::femto::utils::getMass(PdgParticle1);
-    mPdgMass2 = o2::analysis::femto::utils::getMass(PdgParticle2);
-    mPdgMass3 = o2::analysis::femto::utils::getMass(PdgParticle3);
+    mPdgMass1 = utils::getPdgMass(PdgParticle1);
+    mPdgMass2 = utils::getPdgMass(PdgParticle2);
+    mPdgMass3 = utils::getPdgMass(PdgParticle3);
   }
   void setCharge(int chargeAbsParticle1, int chargeAbsParticle2, int chargeAbsParticle3)
   {
@@ -279,13 +279,13 @@ class TripletHistManager
     mQ3 = getQ3(mParticle1, mParticle2, mParticle3);
 
     // if one of the particles has a mass getter, we cache the value for the filling later
-    if constexpr (modes::hasMass(particleType1)) {
+    if constexpr (utils::HasMass<T1>) {
       mMass1 = particle1.mass();
     }
-    if constexpr (modes::hasMass(particleType2)) {
+    if constexpr (utils::HasMass<T2>) {
       mMass2 = particle2.mass();
     }
-    if constexpr (modes::hasMass(particleType3)) {
+    if constexpr (utils::HasMass<T3>) {
       mMass3 = particle3.mass();
     }
   }
@@ -349,7 +349,7 @@ class TripletHistManager
   {
     setTriplet(particle1, particle2, particle3, col1, col2, col3);
     setTripletMc(particle1, particle2, particle3, mcParticles);
-    if (!col1.has_fMcCol() || !col2.has_fMcCol() || !col2.has_fMcCol()) {
+    if (!col1.has_fMcCol() || !col2.has_fMcCol() || !col3.has_fMcCol()) {
       mHasMcCol = false;
       return;
     }

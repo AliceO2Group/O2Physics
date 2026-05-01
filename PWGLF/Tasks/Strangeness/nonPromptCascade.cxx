@@ -12,6 +12,7 @@
 #include "PWGLF/DataModel/LFNonPromptCascadeTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
@@ -23,34 +24,43 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsVertexing/PVertexer.h"
-#include "Framework/ASoA.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-#include "MathUtils/BetheBlochAleph.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "ReconstructionDataFormats/Vertex.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <CommonUtils/StringUtils.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <DetectorsVertexing/PVertexer.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/Vertex.h>
 
-#include "Math/Vector4D.h"
-#include "TDatabasePDG.h"
-#include "THnSparse.h"
-#include "TParticlePDG.h"
-#include "TTree.h"
+#include <Math/GenVector/LorentzVector.h>
+#include <Math/GenVector/PtEtaPhiM4D.h>
+#include <TH2.h>
+#include <TParticlePDG.h>
+
+#include <GPUROOTSMatrixFwd.h>
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <map>
 #include <memory>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -182,17 +192,21 @@ struct NonPromptCascadeTask {
   Produces<o2::aod::NPCascTableNT> NPCTableNT;
   Produces<o2::aod::NPCascTableMCNT> NPCTableMCNT;
   Produces<o2::aod::NPCascTableGen> NPCTableGen;
-  Produces<o2::aod::NPPileUpTable> NPPUTable;
-  Produces<o2::aod::NPMCNegativesTable> NPMCNTable;
+  //
+  Produces<o2::aod::NPCollisionTable> NPCollsTable;
+  Produces<o2::aod::NPMCChargedTable> NPMCNTable;
+  Produces<o2::aod::NPRecoChargedCand> NPRecoCandTable;
 
   using TracksExtData = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>;
   using TracksExtMC = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>;
   using CollisionCandidatesRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0Ms, aod::MultsGlobal>;
   using CollisionCandidatesRun3MC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0Ms, aod::MultsGlobal>;
   using TracksWithLabel = soa::Join<aod::Tracks, aod::McTrackLabels>;
+  using TracksWithSel = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
 
   Preslice<TracksExtData> perCollision = aod::track::collisionId;
   Preslice<TracksExtMC> perCollisionMC = aod::track::collisionId;
+  Preslice<TracksWithSel> perCollisionSel = aod::track::collisionId;
 
   HistogramRegistry mRegistry;
 
@@ -219,6 +233,7 @@ struct NonPromptCascadeTask {
   Configurable<float> cfgMaxMultFV0{"cfgMaxMultFV0", 10000.f, "Upper range of multiplicty FV0 histo"};
   Configurable<std::string> cfgPtEdgesdNdeta{"ptEdges", "0,0.2,0.4,0.6,0.8,1,1.2,1.6,2.0,2.4,2.8,3.2,3.6,4,4.5,5,5.5,6,7,8,10", "Pt bin edges (comma-separated)"};
   Configurable<int> cfgDownscaleMB{"cfgDownscaleMB", 1, "Downscaling for pile up study sample"};
+  Configurable<double> cfgEtaCutdNdeta{"cfgEtaCutdNdeta", 0.8, "Eta cut for charged tracks"};
 
   Zorro mZorro;
   OutputObj<ZorroSummary> mZorroSummary{"ZorroSummary"};
@@ -328,8 +343,9 @@ struct NonPromptCascadeTask {
     // dN/deta
     //
     bool runMCdNdeta = context.options().get<bool>("processdNdetaMC");
+    bool rundNdeta = context.options().get<bool>("processdNdeta");
     // std::cout << "runMCdNdeta: " << runMCdNdeta << std::endl;
-    if (runMCdNdeta) {
+    if (runMCdNdeta || rundNdeta) {
       std::vector<double> ptBins;
       std::vector<std::string> tokens = o2::utils::Str::tokenize(cfgPtEdgesdNdeta, ',');
       for (auto const& pts : tokens) {
@@ -341,13 +357,14 @@ struct NonPromptCascadeTask {
         }
         ptBins.push_back(pt);
       }
-      AxisSpec ptAxisMC{ptBins, "pT MC"};
       AxisSpec ptAxisReco{ptBins, "pT Reco"};
+      AxisSpec ptAxisMC{ptBins, "pT MC"};
 
       // multMeasured, multMC, ptMeasured, ptMC
       mRegistrydNdeta.add("hdNdetaRM/hdNdetaRM", "hdNdetaRM", HistType::kTHnSparseF, {nTracksAxisMC, nTracksAxis, ptAxisMC, ptAxisReco});
       mRegistrydNdeta.add("hdNdetaRM/hdNdetaRMNotInRecoCol", "hdNdetaRMNotInRecoCol", HistType::kTHnSparseF, {nTracksAxisMC, ptAxisMC});
       mRegistrydNdeta.add("hdNdetaRM/hdNdetaRMNotInRecoTrk", "hdNdetaRMNotInRecoTrk", HistType::kTHnSparseF, {nTracksAxisMC, ptAxisMC});
+      mRegistrydNdeta.add("hdNdetaData", "hdNdetaData", HistType::kTH1F, {nTracksAxis});
     }
   }
 
@@ -417,12 +434,10 @@ struct NonPromptCascadeTask {
     for (const auto& coll : collisions) {
       float centFT0M = coll.centFT0M();
       float multFT0M = coll.multFT0M();
-      // float centFV0A = coll.centFV0A();
-      // float multFV0A = coll.multFV0A();
       float multNTracks = coll.multNTracksGlobal();
-      float run = mRunNumber;
+      float runNumber = mRunNumber;
       float numContrib = coll.numContrib();
-      mRegistryMults.fill(HIST("hCentMultsRuns"), centFT0M, multFT0M, numContrib, multNTracks, run);
+      mRegistryMults.fill(HIST("hCentMultsRuns"), centFT0M, multFT0M, numContrib, multNTracks, runNumber);
     }
   };
 
@@ -809,6 +824,10 @@ struct NonPromptCascadeTask {
                        aod::McParticles const& mcParticles,
                        TracksWithLabel const& tracks)
   {
+    //------------------------------------------------------------
+    // Downscaling output table by BC as there is no pileup in MC
+    //------------------------------------------------------------
+    int ds = 1;
     //-------------------------------------------------------------
     // MC mult for all MC coll
     //--------------------------------------------------------------
@@ -821,7 +840,7 @@ struct NonPromptCascadeTask {
       // apply your primary/eta/charge definition here
       if (!mcp.isPhysicalPrimary())
         continue;
-      if (std::abs(mcp.eta()) > 0.5f)
+      if (std::abs(mcp.eta()) > cfgEtaCutdNdeta)
         continue;
       int q = 0;
       if (auto pdg = pdgDB->GetParticle(mcp.pdgCode())) {
@@ -858,7 +877,7 @@ struct NonPromptCascadeTask {
     // ------------------------------------------------------------
     std::vector<int> recoMultDense(colls.size(), 0);
     for (auto const& trk : tracks) {
-      if (std::abs(trk.eta()) > 0.5f) {
+      if (std::abs(trk.eta()) > cfgEtaCutdNdeta) {
         continue;
       }
       const int collRowId = trk.collisionId();
@@ -886,7 +905,7 @@ struct NonPromptCascadeTask {
     // ------------------------------------------------------------
     for (auto const& trk : tracks) {
       // Accept reco track
-      if (std::abs(trk.eta()) > 0.5f) {
+      if (std::abs(trk.eta()) > cfgEtaCutdNdeta) {
         continue;
       }
 
@@ -930,7 +949,7 @@ struct NonPromptCascadeTask {
       if (!mcPar.isPhysicalPrimary()) {
         continue;
       }
-      if (std::abs(mcPar.eta()) > 0.5f) {
+      if (std::abs(mcPar.eta()) > cfgEtaCutdNdeta) {
         continue;
       }
 
@@ -951,7 +970,10 @@ struct NonPromptCascadeTask {
       const float ptMC = mcPar.pt();
 
       mRegistrydNdeta.fill(HIST("hdNdetaRM/hdNdetaRM"), mult, multReco, ptMC, ptReco);
-      NPMCNTable(ptMC, ptReco, mult, multReco);
+      if (ds % cfgDownscaleMB == 0) {
+        NPMCNTable(ptMC, ptReco, mult, multReco);
+      }
+      ds++;
     }
 
     // ------------------------------------------------------------
@@ -981,6 +1003,54 @@ struct NonPromptCascadeTask {
   }
 
   PROCESS_SWITCH(NonPromptCascadeTask, processdNdetaMC, "process mc dN/deta", false);
+  //
+  void processdNdeta(CollisionCandidatesRun3 const& collisions, TracksWithSel const& tracks, aod::BCsWithTimestamps const&)
+  {
+    int ds = 1;
+    uint32_t orbitO = 0;
+    bool writeFlag = 0;
+    for (const auto& coll : collisions) {
+      auto bc = coll.template bc_as<aod::BCsWithTimestamps>();
+      uint64_t globalBC = bc.globalBC();
+      uint32_t orbit = globalBC / 3564;
+      if (orbitO != orbit) {
+        orbitO = orbit;
+        if ((ds % cfgDownscaleMB) == 0) {
+          writeFlag = 1;
+        } else {
+          writeFlag = 0;
+        }
+        ds++;
+      }
+      if (writeFlag) {
+        if (mRunNumber != bc.runNumber()) {
+          mRunNumber = bc.runNumber();
+        }
+        NPCollsTable(mRunNumber,
+                     globalBC,
+                     coll.numContrib(),
+                     coll.multNTracksGlobal(),
+                     coll.centFT0M(),
+                     coll.multFT0M());
+
+        auto collIdx = NPCollsTable.lastIndex();
+        auto tracksThisColl = tracks.sliceBy(perCollisionSel, coll.globalIndex());
+        float multreco = 0.;
+        // std::cout << "tracks:" << tracksThisColl.size() << std::endl;
+        for (auto const& track : tracksThisColl) {
+          // std::cout << track.pt() << " tracks " << track.isGlobalTrack() << std::endl;
+          if (std::fabs(track.eta()) < cfgEtaCutdNdeta && track.tpcNClsFound() >= 80 && track.tpcNClsCrossedRows() >= 100) {
+            if (track.isGlobalTrack()) {
+              multreco++;
+              NPRecoCandTable(collIdx, track.pt());
+            }
+          }
+        }
+        mRegistrydNdeta.fill(HIST("hdNdetaData"), multreco);
+      }
+    }
+  }
+  PROCESS_SWITCH(NonPromptCascadeTask, processdNdeta, "process dN/deta", false);
 
   void processPileUp(CollisionCandidatesRun3 const& collisions, aod::BCsWithTimestamps const&)
   {
@@ -1007,7 +1077,7 @@ struct NonPromptCascadeTask {
         }
         float centFT0M = coll.centFT0M();
         float multFT0M = coll.multFT0M();
-        NPPUTable(mRunNumber, globalBC, coll.numContrib(), coll.multNTracksGlobal(), centFT0M, multFT0M);
+        NPCollsTable(mRunNumber, globalBC, coll.numContrib(), coll.multNTracksGlobal(), centFT0M, multFT0M);
       }
     }
   };
