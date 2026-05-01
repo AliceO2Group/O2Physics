@@ -125,6 +125,7 @@ struct V0ptHadPiKaProt {
   ConfigurableAxis nchAxis1{"nchAxis1", {500, 0.5, 500.5}, "Axis for multiplicity of GlobalTracks/PVTracks"};
   ConfigurableAxis nchAxis2{"nchAxis2", {1000, 0.5, 30000.5}, "Axis for multiplicity of FT0A/FT0C/FV0A"};
   ConfigurableAxis nchAxis3{"nchAxis3", {1000, 0.5, 100000.5}, "Axis for multiplicity of FT0A/FT0C/FV0A"};
+  ConfigurableAxis occuAxis{"occuAxis", {1000, 0.5, 50000.5}, "Axis for occupancy of events"};
   Configurable<float> cfgCutPtLower{"cfgCutPtLower", 0.2f, "Lower pT cut"};
   Configurable<float> cfgCutPtLowerProt{"cfgCutPtLowerProt", 0.2f, "Lower pT cut"};
   Configurable<float> cfgCutPtUpper{"cfgCutPtUpper", 10.0f, "Higher pT cut for inclusive hadron analysis"};
@@ -154,6 +155,8 @@ struct V0ptHadPiKaProt {
   Configurable<bool> cfgLoadPhiWeights{"cfgLoadPhiWeights", false, "Load phi weights from CCDB to take care of non-uniform acceptance"};
   Configurable<bool> cfgLoadPtEffWeights{"cfgLoadPtEffWeights", false, "Load pt-dependent efficiency weights from CCDB to take care of detector inefficiency"};
   Configurable<int> cfgMinNoOfParticles{"cfgMinNoOfParticles", 4, "Minimum no. of particles for calculating v02(pT)"};
+  Configurable<int> cfgV02WeightedFill{"cfgV02WeightedFill", false, "Fill profiles related to v2 with multiplicity-based weights?"};
+  Configurable<bool> cfgUseDominanceCut{"cfgUseDominanceCut", true, "Require particle selecting species' nSigma to be smallest among other two"};
 
   // pT dep DCAxy and DCAz cuts
   Configurable<bool> cfgUsePtDepDCAxy{"cfgUsePtDepDCAxy", true, "Use pt-dependent DCAxy cut"};
@@ -206,6 +209,7 @@ struct V0ptHadPiKaProt {
   HistogramRegistry histosAnalysis{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   std::vector<std::vector<std::shared_ptr<TProfile2D>>> subSample;
   std::vector<std::vector<std::shared_ptr<TProfile2D>>> subSampleV02;
+  std::vector<std::vector<std::shared_ptr<TProfile2D>>> subSampleV02_weighted;
   TRandom3* funRndm = new TRandom3(0);
 
   // Phi weight histograms initialization
@@ -304,6 +308,8 @@ struct V0ptHadPiKaProt {
     histos.add("hEventStatData", "Data Event statistics", kTH1F, {{10, 0.0f, 10.0f}});
     histos.add("hZvtx_after_sel", ";Z (cm)", kTH1F, {{240, -12, 12}});
     histos.add("hCentrality", ";centrality (%)", kTH1F, {{90, 0, 90}});
+    histos.add("hOccupancyVsCentrality_before", "", kTH2F, {{90, 0, 90}, occuAxis});
+    histos.add("hOccupancyVsCentrality_after", "", kTH2F, {{90, 0, 90}, occuAxis});
     // before selection
     histos.add("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_PVTracks_beforeSel", "", {HistType::kTH2D, {nchAxis1, nchAxis1}});
     histos.add("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_centFT0C_beforeSel", "", {HistType::kTH2D, {centAxis, nchAxis1}});
@@ -393,12 +399,21 @@ struct V0ptHadPiKaProt {
     histos.add("Prof_XYZ_prot", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
     histos.add("Prof_Z_prot", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
 
+    // check with different normalization for event averaging
+    if (cfgV02WeightedFill) {
+      histos.add("Prof_XY_weighted", "", {HistType::kTProfile2D, {centAxis, noAxis}});
+      histos.add("Prof_XYZ_weighted_had", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("Prof_Z_weighted_had", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+    }
+
     // initial array
     subSample.resize(cfgNSubsample);
     subSampleV02.resize(cfgNSubsample);
+    subSampleV02_weighted.resize(cfgNSubsample);
     for (int i = 0; i < cfgNSubsample; i++) {
       subSample[i].resize(20);
       subSampleV02[i].resize(9);
+      subSampleV02_weighted[i].resize(9);
     }
     for (int i = 0; i < cfgNSubsample; i++) {
       subSample[i][0] = std::get<std::shared_ptr<TProfile2D>>(histos.add(Form("subSample_%d/Prof_A_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
@@ -434,6 +449,18 @@ struct V0ptHadPiKaProt {
       subSampleV02[i][6] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_Z_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
       subSampleV02[i][7] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_XYZ_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
       subSampleV02[i][8] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_%d/Prof_Z_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+
+      if (cfgV02WeightedFill) {
+        subSampleV02_weighted[i][0] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_weighted_%d/Prof_XY_weighted", i), "", {HistType::kTProfile2D, {centAxis, noAxis}}));
+        subSampleV02_weighted[i][1] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_weighted_%d/Prof_XYZ_weighted_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleV02_weighted[i][2] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_weighted_%d/Prof_Z_weighted_had", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleV02_weighted[i][3] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_weighted_%d/Prof_XYZ_weighted_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleV02_weighted[i][4] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_weighted_%d/Prof_Z_weighted_pi", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleV02_weighted[i][5] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_weighted_%d/Prof_XYZ_weighted_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleV02_weighted[i][6] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_weighted_%d/Prof_Z_weighted_ka", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleV02_weighted[i][7] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_weighted_%d/Prof_XYZ_weighted_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+        subSampleV02_weighted[i][8] = std::get<std::shared_ptr<TProfile2D>>(histosAnalysis.add(Form("subSampleV02_weighted_%d/Prof_Z_weighted_prot", i), "", {HistType::kTProfile2D, {centAxis, ptAxis}}));
+      }
     }
 
     if (cfgEvSelMultCorrelation) {
@@ -531,7 +558,14 @@ struct V0ptHadPiKaProt {
             flag = 1;
         }
       } else {
-        if (!(flag2 > 1) && !(combNSigmaPr > combNSigmaPi) && !(combNSigmaPr > combNSigmaKa)) {
+
+        bool passDominance = true;
+        // Apply condition only if enabled
+        if (cfgUseDominanceCut) {
+          passDominance = !(combNSigmaPr > combNSigmaPi) && !(combNSigmaPr > combNSigmaKa);
+        }
+
+        if (!(flag2 > 1) && passDominance) {
           if (combNSigmaPr < cfgnSigmaCutCombTPCTOF) {
             flag = 1;
           }
@@ -578,7 +612,14 @@ struct V0ptHadPiKaProt {
             flag = 1;
         }
       } else {
-        if (!(flag2 > 1) && !(combNSigmaPi > combNSigmaPr) && !(combNSigmaPi > combNSigmaKa)) {
+
+        bool passDominance = true;
+        // Apply condition only if enabled
+        if (cfgUseDominanceCut) {
+          passDominance = !(combNSigmaPi > combNSigmaPr) && !(combNSigmaPi > combNSigmaKa);
+        }
+
+        if (!(flag2 > 1) && passDominance) {
           if (combNSigmaPi < cfgnSigmaCutCombTPCTOF) {
             flag = 1;
           }
@@ -625,7 +666,14 @@ struct V0ptHadPiKaProt {
             flag = 1;
         }
       } else {
-        if (!(flag2 > 1) && !(combNSigmaKa > combNSigmaPi) && !(combNSigmaKa > combNSigmaPr)) {
+
+        bool passDominance = true;
+        // Apply condition only if enabled
+        if (cfgUseDominanceCut) {
+          passDominance = !(combNSigmaKa > combNSigmaPi) && !(combNSigmaKa > combNSigmaPr);
+        }
+
+        if (!(flag2 > 1) && passDominance) {
           if (combNSigmaKa < cfgnSigmaCutCombTPCTOF) {
             flag = 1;
           }
@@ -764,14 +812,18 @@ struct V0ptHadPiKaProt {
       return 0;
     }
 
+    int occupancy = coll.trackOccupancyInTimeRange();
+    histos.fill(HIST("hOccupancyVsCentrality_before"), occupancy);
+
     histos.fill(HIST("hEventStatData"), 6.5);
     // events with selection bits based on occupancy time pattern
     if (cfgEvSelUseOcuppancyTimeCut && !(coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
       return 0;
     }
 
+    histos.fill(HIST("hOccupancyVsCentrality_after"), occupancy);
+
     histos.fill(HIST("hEventStatData"), 7.5);
-    int occupancy = coll.trackOccupancyInTimeRange();
     if (cfgEvSelSetOcuppancyRange && (occupancy < cfgMinOccupancy || occupancy > cfgMaxOccupancy)) {
       return 0;
     }
@@ -1188,27 +1240,25 @@ struct V0ptHadPiKaProt {
       }
       double weight = phiweight * effweight;
 
-      // fill subevent C for v2^2 in v02(pT)
       if (track.sign() != 0 && trkPt < cfgCutPtMaxForV02) {
         histos.fill(HIST("h3DVtxZetaPhi"), coll.posZ(), trkEta, trkPhi);
+
+        // fill subevent C for v2^2 in v02(pT)
         if (cfgCutEtaWindowB < trkEta && trkEta < cfgCutEta) {
           vecQInWinC += weight * TComplex(TMath::Cos(2. * trkPhi), TMath::Sin(2. * trkPhi));
           nSumInWinC += weight;
         }
-      }
-      // fill subevent A for v2^2 in v02(pT)
-      if (track.sign() != 0 && trkPt < cfgCutPtMaxForV02) {
+
+        // fill subevent A for v2^2 in v02(pT)
         if (-1.0 * cfgCutEta < trkEta && trkEta < -1.0 * cfgCutEtaWindowB) {
           vecQInWinA += weight * TComplex(TMath::Cos(2. * trkPhi), TMath::Sin(2. * trkPhi));
           nSumInWinA += weight;
         }
-      }
 
-      // fill subevent B for f(pT) in v02(pT)
-      if (track.sign() != 0 && trkPt < cfgCutPtMaxForV02) {
+        // fill subevent B for f(pT) in v02(pT)
         if (std::abs(trkEta) < cfgCutEtaWindowB) {
           fPtProfileHadInWinB->Fill(trkPt, effweight);
-          nSumInWinB += 1.0;
+          nSumInWinB += effweight;
         }
       }
 
@@ -1292,6 +1342,7 @@ struct V0ptHadPiKaProt {
         effweightKaon = 1.0 / getEffKaon(track);     // NUE weight for kaon
         effweightProton = 1.0 / getEffProton(track); // NUE weight for proton
       }
+
       // fill subevent B for ***identified particles'*** f(pT) in v02(pT)
       if (track.sign() != 0 && trkPt < cfgCutPtMaxForV02) {
         if (std::abs(trkEta) < cfgCutEtaWindowB) {
@@ -1379,30 +1430,48 @@ struct V0ptHadPiKaProt {
     if (nSumInWinA > cfgMinNoOfParticles && nSumInWinB > cfgMinNoOfParticles && nSumInWinC > cfgMinNoOfParticles) {
       double twoParCorr = (vecQInWinA * TComplex::Conjugate(vecQInWinC)).Re();
       twoParCorr *= 1.0 / (nSumInWinA * nSumInWinC);
-      histos.get<TProfile2D>(HIST("Prof_XY"))->Fill(cent, 0.5, twoParCorr);
 
+      histos.get<TProfile2D>(HIST("Prof_XY"))->Fill(cent, 0.5, twoParCorr);
       subSampleV02[sampleIndex][0]->Fill(cent, 0.5, twoParCorr);
 
+      if (cfgV02WeightedFill) {
+        histos.get<TProfile2D>(HIST("Prof_XY_weighted"))->Fill(cent, 0.5, twoParCorr, (nSumInWinA * nSumInWinC));
+        subSampleV02_weighted[sampleIndex][0]->Fill(cent, 0.5, twoParCorr, (nSumInWinA * nSumInWinC));
+      }
       // hadrons
       for (int i = 0; i < cfgNbinsV02pt; i++) {
         double threeParCorrHad = (vecQInWinA * TComplex::Conjugate(vecQInWinC) * fPtProfileHadInWinB->GetBinContent(i + 1)).Re();
         threeParCorrHad *= 1.0 / (nSumInWinA * nSumInWinC * nSumInWinB);
+
         histos.get<TProfile2D>(HIST("Prof_XYZ_had"))->Fill(cent, fPtProfileHadInWinB->GetBinCenter(i + 1), threeParCorrHad);
         histos.get<TProfile2D>(HIST("Prof_Z_had"))->Fill(cent, fPtProfileHadInWinB->GetBinCenter(i + 1), (fPtProfileHadInWinB->GetBinContent(i + 1) / nSumInWinB));
-
         subSampleV02[sampleIndex][1]->Fill(cent, fPtProfileHadInWinB->GetBinCenter(i + 1), threeParCorrHad);
         subSampleV02[sampleIndex][2]->Fill(cent, fPtProfileHadInWinB->GetBinCenter(i + 1), (fPtProfileHadInWinB->GetBinContent(i + 1) / nSumInWinB));
+
+        if (cfgV02WeightedFill) {
+          histos.get<TProfile2D>(HIST("Prof_XYZ_weighted_had"))->Fill(cent, fPtProfileHadInWinB->GetBinCenter(i + 1), threeParCorrHad, (nSumInWinA * nSumInWinC));
+          histos.get<TProfile2D>(HIST("Prof_Z_weighted_had"))->Fill(cent, fPtProfileHadInWinB->GetBinCenter(i + 1), (fPtProfileHadInWinB->GetBinContent(i + 1) / nSumInWinB));
+          subSampleV02_weighted[sampleIndex][1]->Fill(cent, fPtProfileHadInWinB->GetBinCenter(i + 1), threeParCorrHad, (nSumInWinA * nSumInWinC));
+          subSampleV02_weighted[sampleIndex][2]->Fill(cent, fPtProfileHadInWinB->GetBinCenter(i + 1), (fPtProfileHadInWinB->GetBinContent(i + 1) / nSumInWinB));
+        }
       }
 
       // pions
       for (int i = 0; i < cfgNbinsV02pt; i++) {
         double threeParCorrPi = (vecQInWinA * TComplex::Conjugate(vecQInWinC) * fPtProfilePiInWinB->GetBinContent(i + 1)).Re();
         threeParCorrPi *= 1.0 / (nSumInWinA * nSumInWinC * nSumInWinB);
+
         histos.get<TProfile2D>(HIST("Prof_XYZ_pi"))->Fill(cent, fPtProfilePiInWinB->GetBinCenter(i + 1), threeParCorrPi);
         histos.get<TProfile2D>(HIST("Prof_Z_pi"))->Fill(cent, fPtProfilePiInWinB->GetBinCenter(i + 1), (fPtProfilePiInWinB->GetBinContent(i + 1) / nSumInWinB));
-
         subSampleV02[sampleIndex][3]->Fill(cent, fPtProfilePiInWinB->GetBinCenter(i + 1), threeParCorrPi);
         subSampleV02[sampleIndex][4]->Fill(cent, fPtProfilePiInWinB->GetBinCenter(i + 1), (fPtProfilePiInWinB->GetBinContent(i + 1) / nSumInWinB));
+
+        if (cfgV02WeightedFill) {
+          histos.get<TProfile2D>(HIST("Prof_XYZ_weighted_pi"))->Fill(cent, fPtProfilePiInWinB->GetBinCenter(i + 1), threeParCorrPi, (nSumInWinA * nSumInWinC));
+          histos.get<TProfile2D>(HIST("Prof_Z_weighted_pi"))->Fill(cent, fPtProfilePiInWinB->GetBinCenter(i + 1), (fPtProfilePiInWinB->GetBinContent(i + 1) / nSumInWinB));
+          subSampleV02_weighted[sampleIndex][3]->Fill(cent, fPtProfilePiInWinB->GetBinCenter(i + 1), threeParCorrPi, (nSumInWinA * nSumInWinC));
+          subSampleV02_weighted[sampleIndex][4]->Fill(cent, fPtProfilePiInWinB->GetBinCenter(i + 1), (fPtProfilePiInWinB->GetBinContent(i + 1) / nSumInWinB));
+        }
       }
 
       // kaons
@@ -1414,6 +1483,13 @@ struct V0ptHadPiKaProt {
 
         subSampleV02[sampleIndex][5]->Fill(cent, fPtProfileKaInWinB->GetBinCenter(i + 1), threeParCorrKa);
         subSampleV02[sampleIndex][6]->Fill(cent, fPtProfileKaInWinB->GetBinCenter(i + 1), (fPtProfileKaInWinB->GetBinContent(i + 1) / nSumInWinB));
+
+        if (cfgV02WeightedFill) {
+          histos.get<TProfile2D>(HIST("Prof_XYZ_weighted_ka"))->Fill(cent, fPtProfileKaInWinB->GetBinCenter(i + 1), threeParCorrKa, (nSumInWinA * nSumInWinC));
+          histos.get<TProfile2D>(HIST("Prof_Z_weighted_ka"))->Fill(cent, fPtProfileKaInWinB->GetBinCenter(i + 1), (fPtProfileKaInWinB->GetBinContent(i + 1) / nSumInWinB));
+          subSampleV02_weighted[sampleIndex][5]->Fill(cent, fPtProfileKaInWinB->GetBinCenter(i + 1), threeParCorrKa, (nSumInWinA * nSumInWinC));
+          subSampleV02_weighted[sampleIndex][6]->Fill(cent, fPtProfileKaInWinB->GetBinCenter(i + 1), (fPtProfileKaInWinB->GetBinContent(i + 1) / nSumInWinB));
+        }
       }
 
       // protons
@@ -1425,6 +1501,13 @@ struct V0ptHadPiKaProt {
 
         subSampleV02[sampleIndex][7]->Fill(cent, fPtProfileProtInWinB->GetBinCenter(i + 1), threeParCorrProt);
         subSampleV02[sampleIndex][8]->Fill(cent, fPtProfileProtInWinB->GetBinCenter(i + 1), (fPtProfileProtInWinB->GetBinContent(i + 1) / nSumInWinB));
+
+        if (cfgV02WeightedFill) {
+          histos.get<TProfile2D>(HIST("Prof_XYZ_weighted_prot"))->Fill(cent, fPtProfileProtInWinB->GetBinCenter(i + 1), threeParCorrProt, (nSumInWinA * nSumInWinC));
+          histos.get<TProfile2D>(HIST("Prof_Z_weighted_prot"))->Fill(cent, fPtProfileProtInWinB->GetBinCenter(i + 1), (fPtProfileProtInWinB->GetBinContent(i + 1) / nSumInWinB));
+          subSampleV02_weighted[sampleIndex][7]->Fill(cent, fPtProfileProtInWinB->GetBinCenter(i + 1), threeParCorrProt, (nSumInWinA * nSumInWinC));
+          subSampleV02_weighted[sampleIndex][8]->Fill(cent, fPtProfileProtInWinB->GetBinCenter(i + 1), (fPtProfileProtInWinB->GetBinContent(i + 1) / nSumInWinB));
+        }
       }
     }
 
