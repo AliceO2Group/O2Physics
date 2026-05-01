@@ -26,8 +26,6 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include <TPDGCode.h>
-
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
@@ -43,6 +41,8 @@
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
+
+#include <TPDGCode.h>
 
 #include <array>
 #include <cstdlib>
@@ -427,8 +427,8 @@ struct HfCorrelatorDstarHadrons {
 
   /// D*-Hadron correlation pair builder at MC Gen same-event level (true signal only, no mass selection)
   void processSeMcGen(McCollisionsWithMult const& mcCollisions,
-                    RecoCollisionsForMcGen const& collisions,
-                    CandDstarMcGen const& mcParticles)
+                      RecoCollisionsForMcGen const& collisions,
+                      CandDstarMcGen const& mcParticles)
   {
     BinningTypeMcGen const corrBinningMcGen{{binsZVtx, binsMultiplicity}, true};
 

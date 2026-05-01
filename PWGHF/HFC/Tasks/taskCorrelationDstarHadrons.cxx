@@ -14,6 +14,8 @@
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 /// \author Shyam Kumar <shyam.kumar@cern.ch>
 
+/// \brief Task to strore correlations between D* and hadrons. 
+
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
@@ -232,7 +234,7 @@ struct HfTaskCorrelationDstarHadrons {
           efficiencyWeightDstar = vecHistEfficiencyDstar[0]->GetBinContent(1);
         } else {
           efficiencyWeightDstar = vecHistEfficiencyDstar[0]->GetBinContent(vecHistEfficiencyDstar[0]->GetXaxis()->FindBin(ptDstar));
-          if (!efficiencyWeightDstar) {
+          if (efficiencyWeightDstar == 0.0) {
             LOGF(fatal, "Dstar efficiency weight can't be zero.");
           }
         }
@@ -241,7 +243,7 @@ struct HfTaskCorrelationDstarHadrons {
           efficiencyWeightTracks = vecHistEfficiencyTracks[0]->GetBinContent(1);
         } else {
           efficiencyWeightTracks = vecHistEfficiencyTracks[0]->GetBinContent(vecHistEfficiencyTracks[0]->GetXaxis()->FindBin(ptTrack));
-          if (!efficiencyWeightTracks) {
+          if (efficiencyWeightTracks == 0.0) {
             LOGF(fatal, "track efficiency weight can't be zero");
           }
         }
