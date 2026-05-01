@@ -67,7 +67,6 @@ static constexpr float LongArrayFloat[3][20] = {{1.1, 1.2, 1.3, -1.1, -1.2, -1.3
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
 struct V0ptHadPiKaProt {
-
   // ITS response
   o2::aod::ITSResponse itsResponse;
   // Connect to ccdb
@@ -812,20 +811,20 @@ struct V0ptHadPiKaProt {
       return 0;
     }
 
-    int occupancy = coll.trackOccupancyInTimeRange();
-    histos.fill(HIST("hOccupancyVsCentrality_before"), occupancy);
-
     histos.fill(HIST("hEventStatData"), 6.5);
     // events with selection bits based on occupancy time pattern
-    if (cfgEvSelUseOcuppancyTimeCut && !(coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
-      return 0;
-    }
+    if (cfgEvSelUseOcuppancyTimeCut) {
+      int occupancy = coll.trackOccupancyInTimeRange();
+      histos.fill(HIST("hOccupancyVsCentrality_before"), coll.centFT0C(), occupancy);
+      if (!(coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)))
+        return 0;
+      else
+        histos.fill(HIST("hOccupancyVsCentrality_after"), coll.centFT0C(), occupancy);
 
-    histos.fill(HIST("hOccupancyVsCentrality_after"), occupancy);
-
-    histos.fill(HIST("hEventStatData"), 7.5);
-    if (cfgEvSelSetOcuppancyRange && (occupancy < cfgMinOccupancy || occupancy > cfgMaxOccupancy)) {
-      return 0;
+      histos.fill(HIST("hEventStatData"), 7.5);
+      if (cfgEvSelSetOcuppancyRange && (occupancy < cfgMinOccupancy || occupancy > cfgMaxOccupancy)) {
+        return 0;
+      }
     }
 
     histos.fill(HIST("hEventStatData"), 8.5);
