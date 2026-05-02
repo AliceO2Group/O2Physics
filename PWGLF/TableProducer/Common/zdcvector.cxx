@@ -100,7 +100,6 @@ struct zdcvector {
   } rctCut;
 
   Configurable<bool> storeZdcEnergy{"storeZdcEnergy", true, "Store ZDC tower/common energies in a linked extra table"};
-  int32_t zdcCalTableRow = 0;
 
   RCTFlagsChecker rctChecker;
 
@@ -141,8 +140,8 @@ struct zdcvector {
 
   int currentRunNumber = -999;
   int lastRunNumber = -999;
-  TH2D* gainprofile;
-  TProfile* gainprofilevxy;
+  TH2D* gainprofile = nullptr;
+  TProfile* gainprofilevxy = nullptr;
 
   // int lastRunNumberTimeRec = -999;
   //  for time since start of run
@@ -214,9 +213,8 @@ struct zdcvector {
                   qyA,
                   qyC);
 
-      LOG(info) << "values are:" << trigger << " " << znaEnergycommon << " " << zna0;
       if (storeZdcEnergy) {
-        zdcenergytable(zdcCalTableRow,
+        zdcenergytable(zdccaltable.lastIndex(),
                        znaEnergycommon,
                        zncEnergycommon,
                        zna0,
@@ -228,8 +226,6 @@ struct zdcvector {
                        znc2,
                        znc3);
       }
-
-      ++zdcCalTableRow;
     };
 
     if (!bc.has_zdc()) {
