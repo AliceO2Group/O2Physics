@@ -34,6 +34,7 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
@@ -86,6 +87,7 @@ using namespace o2::analysis::femto_universe;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
+using namespace o2::aod::rctsel;
 
 namespace o2::aod
 {
@@ -136,6 +138,8 @@ struct FemtoUniverseProducerTask {
   Produces<aod::FDMCLabels> outputPartsMCLabels;
   Produces<aod::FDExtMCParticles> outputDebugPartsMC;
   Produces<aod::FDCascParticles> outputCascParts;
+
+  RCTFlagsChecker rctChecker;
 
   Configurable<bool> confIsDebug{"confIsDebug", true, "Enable Debug tables"};
   Configurable<bool> confFillITSPid{"confFillITSPid", false, "Fill ITSPid information"};
@@ -188,6 +192,7 @@ struct FemtoUniverseProducerTask {
     Configurable<int> confTPCOccupancyMin{"confTPCOccupancyMin", 0, "Minimum value for TPC Occupancy selection"};
     Configurable<int> confTPCOccupancyMax{"confTPCOccupancyMax", 5000, "Maximum value for TPC Occupancy selection"};
     Configurable<bool> confIsCent{"confIsCent", true, "Centrality or multiplicity selection"};
+    Configurable<bool> confIsCheckRCTFlags{"confIsCheckRCTFlags", true, "Use RCTFlags"};
   } ConfGeneral;
   Filter customCollCentFilter = (aod::cent::centFT0C > ConfGeneral.confCentFT0Min) &&
                                 (aod::cent::centFT0C < ConfGeneral.confCentFT0Max);
@@ -595,6 +600,7 @@ struct FemtoUniverseProducerTask {
     }
 
     zorroSummary.setObject(zorro.getZorroSummary());
+    rctChecker.init("CBT_hadronPID", false, true);
 
     colCuts.setCuts(ConfGeneral.confEvtZvtx, ConfGeneral.confEvtTriggerCheck, ConfGeneral.confEvtTriggerSel, ConfGeneral.confEvtOfflineCheck, confIsRun3, ConfGeneral.confCentFT0Min, ConfGeneral.confCentFT0Max);
     colCuts.init(&qaRegistry);
@@ -1053,6 +1059,9 @@ struct FemtoUniverseProducerTask {
   template <bool isMC, typename CollisionType, typename TrackType>
   bool fillCollisions(CollisionType const& col, TrackType const& tracks)
   {
+    if (ConfGeneral.confIsCheckRCTFlags && !rctChecker(col)) {
+      return false;
+    }
     const auto vtxZ = col.posZ();
     float mult = 0;
     int multNtr = 0;
