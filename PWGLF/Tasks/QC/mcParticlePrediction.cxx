@@ -180,6 +180,7 @@ struct mcParticlePrediction {
                                                     "Estimators enabled"};
   Configurable<bool> selectInelGt0{"selectInelGt0", true, "Select only inelastic events"};
   Configurable<bool> selectPrimaries{"selectPrimaries", true, "Select only primary particles"};
+  Configurable<float> rapidityCut{"rapidityCut", 0.5, "Select only particles within |y| < cut"};
   Configurable<bool> requireCoincidenceEstimators{"requireCoincidenceEstimators", false, "Asks for a coincidence when two estimators are used"};
   Configurable<bool> discardkIsGoodZvtxFT0vsPV{"discardkIsGoodZvtxFT0vsPV", false, "Select only collisions with matching BC and MC BC"};
   Configurable<bool> discardMismatchedBCs{"discardMismatchedBCs", false, "Select only collisions with matching BC and MC BC"};
@@ -194,7 +195,6 @@ struct mcParticlePrediction {
   Configurable<bool> enableVsEta05Histograms{"enableVsEta05Histograms", true, "Enables the correlation between ETA05 and other estimators"};
   Configurable<bool> enableVsEta08Histograms{"enableVsEta08Histograms", true, "Enables the correlation between ETA08 and other estimators"};
   Configurable<bool> enableVsImpactParameterHistograms{"enableVsImpactParameterHistograms", true, "Enables the correlation between impact parameter and other estimators"};
-  Configurable<float> rapidityMother{"rapidityMother", 0.5, "Mother particle rapidity"};
 
   Service<o2::framework::O2DatabasePDG> pdgDB;
   o2::pwglf::ParticleCounter<o2::framework::O2DatabasePDG> mCounter;
@@ -507,7 +507,7 @@ struct mcParticlePrediction {
         }
       }
 
-      if (std::abs(particle.y()) >= rapidityMother) {
+      if (std::abs(particle.y()) >= rapidityCut) {
         continue;
       }
 
@@ -694,10 +694,10 @@ struct mcParticlePrediction {
     float nMultRecoMCBC[Estimators::nEstimators] = {0};
     if (mcBC.has_ft0()) {
       const auto& ft0 = mcBC.ft0();
-      for (auto amplitude : ft0.amplitudeA()) {
+      for (const auto amplitude : ft0.amplitudeA()) {
         nMultRecoMCBC[Estimators::FT0A] += amplitude;
       }
-      for (auto amplitude : ft0.amplitudeC()) {
+      for (const auto amplitude : ft0.amplitudeC()) {
         nMultRecoMCBC[Estimators::FT0C] += amplitude;
       }
       nMultRecoMCBC[Estimators::FT0AC] = nMultRecoMCBC[Estimators::FT0A] + nMultRecoMCBC[Estimators::FT0C];
