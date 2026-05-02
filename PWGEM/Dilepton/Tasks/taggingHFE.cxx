@@ -167,6 +167,7 @@ struct taggingHFE {
     Configurable<float> cfg_min_TOFNsigmaKa{"cfg_min_TOFNsigmaKa", -3, "min n sigma ka in TOF"};
     Configurable<float> cfg_max_TOFNsigmaKa{"cfg_max_TOFNsigmaKa", +3, "max n sigma ka in TOF"};
     Configurable<bool> requirePiKa{"requirePiKa", false, "require hadron to be pion or kaon"}; // proton is not involved in semileptonic decay of HF hadrons often.
+    Configurable<bool> requireKa{"requireKa", false, "require hadron to be kaon"};             // Mostly, kaon is involved in semileptonic decay of charm hadrons.
   } hadronCut;
 
   struct : ConfigurableGroup {
@@ -452,6 +453,14 @@ struct taggingHFE {
   }
 
   template <typename TTrack>
+  bool isKaon(TTrack const& track)
+  {
+    bool is_ka_included_TPC = hadronCut.cfg_min_TPCNsigmaKa < track.tpcNSigmaKa() && track.tpcNSigmaKa() < hadronCut.cfg_max_TPCNsigmaKa;
+    bool is_ka_included_TOF = track.hasTOF() ? (hadronCut.cfg_min_TOFNsigmaKa < track.tofNSigmaKa() && track.tofNSigmaKa() < hadronCut.cfg_max_TOFNsigmaKa) : true;
+    return is_ka_included_TPC && is_ka_included_TOF;
+  }
+
+  template <typename TTrack>
   bool isKaon_or_isPion(TTrack const& track)
   {
     bool is_ka_included_TPC = hadronCut.cfg_min_TPCNsigmaKa < track.tpcNSigmaKa() && track.tpcNSigmaKa() < hadronCut.cfg_max_TPCNsigmaKa;
@@ -615,6 +624,10 @@ struct taggingHFE {
     }
 
     if (hadronCut.requirePiKa && !isKaon_or_isPion(track)) {
+      return false;
+    }
+
+    if (hadronCut.requireKa && !isKaon(track)) {
       return false;
     }
 
@@ -1023,7 +1036,7 @@ struct taggingHFE {
 
         auto mcpos = pos.template mcParticle_as<aod::McParticles>();
         auto mcmother = mcpos.template mothers_as<aod::McParticles>()[0];
-        bool isMotherFromHF = (IsFromCharm(mcmother, mcParticles) > -1) || (IsFromBeauty(mcmother, mcParticles) > -1);
+        bool isMotherFromHF = (IsFromCharm(mcmother, mcParticles) > 0) || (IsFromBeauty(mcmother, mcParticles) > 0);
         auto mcCollision = mcpos.template mcCollision_as<aod::McCollisions>();
 
         leptonTable(collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(), mcCollision.getSubGeneratorId(),
@@ -1054,7 +1067,18 @@ struct taggingHFE {
           }
 
           auto mckaon = kaon.template mcParticle_as<aod::McParticles>();
-          bool foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mckaon) > -1;
+          bool foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mckaon) > 0;
+          if (mckaon.has_mothers() && !foundCommonMother) {
+            auto mcMother_of_kaon = mckaon.template mothers_first_as<aod::McParticles>();
+            if (mcMother_of_kaon.pdgCode() == -323 || mcMother_of_kaon.pdgCode() == -313 || mcMother_of_kaon.pdgCode() == 333) { // accept short-lived resonances such as phi->KK, K*(892)->Kpi for D+ -> anti-K*0(892) e+ nu_e -> (K- pi+) e+ nu_e and Ds+ -> phi e+ nu_e
+              int commonMotherId = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mcMother_of_kaon);
+              if (commonMotherId > 0 && std::abs(mcParticles.rawIteratorAt(commonMotherId).pdgCode()) != 2212) {
+                foundCommonMother = true;
+                // LOGF(info, "eK: e+ and K*(892) or phi is found. mother is %d", mcParticles.rawIteratorAt(commonMotherId).pdgCode());
+              }
+            }
+          }
+
           emmllhpair(leptonTable.lastIndex(),
                      trackParCov.getQ2Pt(), trackParCov.getEta(), dcaXY_kaon, dcaZ_kaon, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
                      kaon.tpcNSigmaKa(), kaon.tofNSigmaKa(),
@@ -1069,6 +1093,9 @@ struct taggingHFE {
         // D+ -> e+ K0S nu_e
         for (const auto& k0Id : k0Ids) {
           auto v0 = v0s.rawIteratorAt(k0Id);
+          if (v0.posTrackId() == positronId || v0.negTrackId() == positronId) {
+            continue;
+          }
 
           const std::array<float, 3> vertexV0 = {v0.x(), v0.y(), v0.z()};
           const std::array<float, 3> momV0 = {v0.px(), v0.py(), v0.pz()};
@@ -1100,7 +1127,7 @@ struct taggingHFE {
           int mcK0SId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 211, -211, 310, mcParticles);
           int pdgCodeV0 = 0;
           bool foundCommonMother = false;
-          if (mcK0SId > -1) { // true K0S
+          if (mcK0SId > 0) { // true K0S
             pdgCodeV0 = 310;
             auto mcK0S = mcParticles.rawIteratorAt(mcK0SId);
             auto mcK0 = mcK0S.template mothers_first_as<aod::McParticles>(); // mother of K0S is K0 in simulation.
@@ -1108,7 +1135,18 @@ struct taggingHFE {
             if (std::abs(mcK0.pdgCode()) == 311) {
               mcK0S = mcK0;
             }
-            foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mcK0S) > -1;
+            foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mcK0S) > 0;
+
+            if (mcK0S.has_mothers() && !foundCommonMother) {
+              auto mcMother_of_k0s = mcK0S.template mothers_first_as<aod::McParticles>();
+              if (mcMother_of_k0s.pdgCode() == -323 || mcMother_of_k0s.pdgCode() == -313 || mcMother_of_k0s.pdgCode() == 333) { // accept short-lived resonances such as phi->KK, K*(892)->Kpi for D+ -> anti-K*0(892) e+ nu_e -> (K- pi+) e+ nu_e and Ds+ -> phi e+ nu_e
+                int commonMotherId = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mcMother_of_k0s);
+                if (commonMotherId > 0 && std::abs(mcParticles.rawIteratorAt(commonMotherId).pdgCode()) != 2212) { // proton decay is implemented. reject it.
+                  foundCommonMother = true;
+                  // LOGF(info, "eK0S: e+ and K*(892) or phi is found. mother is %d", mcParticles.rawIteratorAt(commonMotherId).pdgCode());
+                }
+              }
+            }
           }
 
           emmllv0pair(leptonTable.lastIndex(),
@@ -1127,6 +1165,9 @@ struct taggingHFE {
         // Lc+ -> e+ Lambda nu_e, br = 0.0356, ctau = 60.75 um, m = 2286 MeV/c2
         for (const auto& lambdaId : lambdaIds) {
           auto v0 = v0s.rawIteratorAt(lambdaId);
+          if (v0.posTrackId() == positronId || v0.negTrackId() == positronId) {
+            continue;
+          }
 
           const std::array<float, 3> vertexV0 = {v0.x(), v0.y(), v0.z()};
           const std::array<float, 3> momV0 = {v0.px(), v0.py(), v0.pz()};
@@ -1158,10 +1199,10 @@ struct taggingHFE {
           int mcLambdaId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 2212, -211, 3122, mcParticles);
           int pdgCodeV0 = 0;
           bool foundCommonMother = false;
-          if (mcLambdaId > -1) { // true v0
+          if (mcLambdaId > 0) { // true v0
             auto mcLambda = mcParticles.rawIteratorAt(mcLambdaId);
             pdgCodeV0 = mcLambda.pdgCode();
-            foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mcLambda) > -1;
+            foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mcLambda) > 0;
           }
 
           emmllv0pair(leptonTable.lastIndex(),
@@ -1179,6 +1220,9 @@ struct taggingHFE {
 
         for (const auto& cascadeId : xiMinusIds) {
           auto cascade = cascades.rawIteratorAt(cascadeId);
+          if (cascade.posTrackId() == positronId || cascade.negTrackId() == positronId || cascade.bachelorId() == positronId) {
+            continue;
+          }
 
           const std::array<float, 3> vertexCasc = {cascade.x(), cascade.y(), cascade.z()};
           const std::array<float, 3> momCasc = {cascade.px(), cascade.py(), cascade.pz()};
@@ -1212,13 +1256,13 @@ struct taggingHFE {
           int mcLambdaId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 2212, -211, 3122, mcParticles);
           int pdgCodeCascade = 0;
           bool foundCommonMother = false;
-          if (mcLambdaId > -1) { // true Lambda
+          if (mcLambdaId > 0) { // true Lambda
             auto mcLambda = mcParticles.rawIteratorAt(mcLambdaId);
             int mcXiId = FindCommonMotherFrom2Prongs(mcLambda, mcbachelor, 3122, -211, 3312, mcParticles);
-            if (mcXiId > -1) { // true xiMinus
+            if (mcXiId > 0) { // true xiMinus
               auto mcXi = mcParticles.rawIteratorAt(mcXiId);
               pdgCodeCascade = mcXi.pdgCode();
-              foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mcXi) > -1;
+              foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mcXi) > 0;
             }
           }
 
@@ -1237,6 +1281,9 @@ struct taggingHFE {
 
         for (const auto& cascadeId : omegaMinusIds) {
           auto cascade = cascades.rawIteratorAt(cascadeId);
+          if (cascade.posTrackId() == positronId || cascade.negTrackId() == positronId || cascade.bachelorId() == positronId) {
+            continue;
+          }
 
           const std::array<float, 3> vertexCasc = {cascade.x(), cascade.y(), cascade.z()};
           const std::array<float, 3> momCasc = {cascade.px(), cascade.py(), cascade.pz()};
@@ -1270,13 +1317,13 @@ struct taggingHFE {
           int mcLambdaId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 2212, -211, 3122, mcParticles);
           int pdgCodeCascade = 0;
           bool foundCommonMother = false;
-          if (mcLambdaId > -1) { // true Lambda
+          if (mcLambdaId > 0) { // true Lambda
             auto mcLambda = mcParticles.rawIteratorAt(mcLambdaId);
             int mcOmegaId = FindCommonMotherFrom2Prongs(mcLambda, mcbachelor, 3122, -321, 3334, mcParticles);
-            if (mcOmegaId > -1) { // true omegaMinus
+            if (mcOmegaId > 0) { // true omegaMinus
               auto mcOmega = mcParticles.rawIteratorAt(mcOmegaId);
               pdgCodeCascade = mcOmega.pdgCode();
-              foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mcOmega) > -1;
+              foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcpos, mcOmega) > 0;
             }
           }
 
@@ -1306,7 +1353,7 @@ struct taggingHFE {
 
         auto mcele = ele.template mcParticle_as<aod::McParticles>();
         auto mcmother = mcele.template mothers_as<aod::McParticles>()[0];
-        bool isMotherFromHF = (IsFromCharm(mcmother, mcParticles) > -1) || (IsFromBeauty(mcmother, mcParticles) > -1);
+        bool isMotherFromHF = (IsFromCharm(mcmother, mcParticles) > 0) || (IsFromBeauty(mcmother, mcParticles) > 0);
         auto mcCollision = mcele.template mcCollision_as<aod::McCollisions>();
 
         leptonTable(collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(), mcCollision.getSubGeneratorId(),
@@ -1336,7 +1383,17 @@ struct taggingHFE {
           }
 
           auto mckaon = kaon.template mcParticle_as<aod::McParticles>();
-          bool foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mckaon) > -1;
+          bool foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mckaon) > 0;
+          if (mckaon.has_mothers() && !foundCommonMother) {
+            auto mcMother_of_kaon = mckaon.template mothers_first_as<aod::McParticles>();
+            if (mcMother_of_kaon.pdgCode() == 323 || mcMother_of_kaon.pdgCode() == 313 || mcMother_of_kaon.pdgCode() == 333) { // accept short-lived resonances such as phi->KK, K*(892)->Kpi for D+ -> anti-K*0(892) e+ nu_e -> (K- pi+) e+ nu_e and Ds+ -> phi e+ nu_e
+              int commonMotherId = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mcMother_of_kaon);
+              if (commonMotherId > 0 && std::abs(mcParticles.rawIteratorAt(commonMotherId).pdgCode()) != 2212) {
+                foundCommonMother = true;
+                // LOGF(info, "eK: e- and K*(892) or phi is found. mother is %d", mcParticles.rawIteratorAt(commonMotherId).pdgCode());
+              }
+            }
+          }
 
           emmllhpair(leptonTable.lastIndex(),
                      trackParCov.getQ2Pt(), trackParCov.getEta(), dcaXY_kaon, dcaZ_kaon, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
@@ -1349,9 +1406,12 @@ struct taggingHFE {
 
         } // end of kaon loop
 
-        // D- -> e0 anti-K0S anti-nu_e
+        // D- -> e- anti-K0S anti-nu_e
         for (const auto& k0Id : k0Ids) {
           auto v0 = v0s.rawIteratorAt(k0Id);
+          if (v0.posTrackId() == electronId || v0.negTrackId() == electronId) {
+            continue;
+          }
 
           const std::array<float, 3> vertexV0 = {v0.x(), v0.y(), v0.z()};
           const std::array<float, 3> momV0 = {v0.px(), v0.py(), v0.pz()};
@@ -1383,7 +1443,7 @@ struct taggingHFE {
           int mcK0SId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 211, -211, 310, mcParticles);
           int pdgCodeV0 = 0;
           bool foundCommonMother = false;
-          if (mcK0SId > -1) { // true K0S
+          if (mcK0SId > 0) { // true K0S
             pdgCodeV0 = 310;
             auto mcK0S = mcParticles.rawIteratorAt(mcK0SId);
             auto mcK0 = mcK0S.template mothers_first_as<aod::McParticles>(); // mother of K0S is K0 in simulation.
@@ -1391,7 +1451,17 @@ struct taggingHFE {
             if (std::abs(mcK0.pdgCode()) == 311) {
               mcK0S = mcK0;
             }
-            foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mcK0S) > -1;
+            foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mcK0S) > 0;
+            if (mcK0S.has_mothers() && !foundCommonMother) {
+              auto mcMother_of_k0s = mcK0S.template mothers_first_as<aod::McParticles>();
+              if (mcMother_of_k0s.pdgCode() == 323 || mcMother_of_k0s.pdgCode() == 313 || mcMother_of_k0s.pdgCode() == 333) { // accept short-lived resonances such as phi->KK, K*(892)->Kpi for D+ -> anti-K*0(892) e+ nu_e -> (K- pi+) e+ nu_e and Ds+ -> phi e+ nu_e
+                int commonMotherId = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mcMother_of_k0s);
+                if (commonMotherId > 0 && std::abs(mcParticles.rawIteratorAt(commonMotherId).pdgCode()) != 2212) { // proton decay is implemented. reject it.
+                  foundCommonMother = true;
+                  // LOGF(info, "eK0S: e- and K*(892) or phi is found. mother is %d", mcParticles.rawIteratorAt(commonMotherId).pdgCode());
+                }
+              }
+            }
           }
 
           emmllv0pair(leptonTable.lastIndex(),
@@ -1410,6 +1480,9 @@ struct taggingHFE {
         // Lc- -> e- anti-Lambda anti-nu_e, br = 0.0356, ctau = 60.75 um, m = 2286 MeV/c2
         for (const auto& lambdaId : antilambdaIds) {
           auto v0 = v0s.rawIteratorAt(lambdaId);
+          if (v0.posTrackId() == electronId || v0.negTrackId() == electronId) {
+            continue;
+          }
 
           const std::array<float, 3> vertexV0 = {v0.x(), v0.y(), v0.z()};
           const std::array<float, 3> momV0 = {v0.px(), v0.py(), v0.pz()};
@@ -1441,10 +1514,10 @@ struct taggingHFE {
           int mcLambdaId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 211, -2212, -3122, mcParticles);
           int pdgCodeV0 = 0;
           bool foundCommonMother = false;
-          if (mcLambdaId > -1) { // true v0
+          if (mcLambdaId > 0) { // true v0
             auto mcLambda = mcParticles.rawIteratorAt(mcLambdaId);
             pdgCodeV0 = mcLambda.pdgCode();
-            foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mcLambda) > -1;
+            foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mcLambda) > 0;
           }
 
           emmllv0pair(leptonTable.lastIndex(),
@@ -1462,6 +1535,9 @@ struct taggingHFE {
 
         for (const auto& cascadeId : xiPlusIds) {
           auto cascade = cascades.rawIteratorAt(cascadeId);
+          if (cascade.posTrackId() == electronId || cascade.negTrackId() == electronId || cascade.bachelorId() == electronId) {
+            continue;
+          }
 
           const std::array<float, 3> vertexCasc = {cascade.x(), cascade.y(), cascade.z()};
           const std::array<float, 3> momCasc = {cascade.px(), cascade.py(), cascade.pz()};
@@ -1495,13 +1571,13 @@ struct taggingHFE {
           int mcLambdaId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 211, -2212, -3122, mcParticles);
           int pdgCodeCascade = 0;
           bool foundCommonMother = false;
-          if (mcLambdaId > -1) { // true Lambda
+          if (mcLambdaId > 0) { // true Lambda
             auto mcLambda = mcParticles.rawIteratorAt(mcLambdaId);
             int mcXiId = FindCommonMotherFrom2Prongs(mcLambda, mcbachelor, -3122, 211, -3312, mcParticles);
-            if (mcXiId > -1) { // true xiMinus
+            if (mcXiId > 0) { // true xiMinus
               auto mcXi = mcParticles.rawIteratorAt(mcXiId);
               pdgCodeCascade = mcXi.pdgCode();
-              foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mcXi) > -1;
+              foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mcXi) > 0;
             }
           }
 
@@ -1520,6 +1596,9 @@ struct taggingHFE {
 
         for (const auto& cascadeId : omegaPlusIds) {
           auto cascade = cascades.rawIteratorAt(cascadeId);
+          if (cascade.posTrackId() == electronId || cascade.negTrackId() == electronId || cascade.bachelorId() == electronId) {
+            continue;
+          }
 
           const std::array<float, 3> vertexCasc = {cascade.x(), cascade.y(), cascade.z()};
           const std::array<float, 3> momCasc = {cascade.px(), cascade.py(), cascade.pz()};
@@ -1553,13 +1632,13 @@ struct taggingHFE {
           int mcLambdaId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 211, -2212, -3122, mcParticles);
           int pdgCodeCascade = 0;
           bool foundCommonMother = false;
-          if (mcLambdaId > -1) { // true Lambda
+          if (mcLambdaId > 0) { // true Lambda
             auto mcLambda = mcParticles.rawIteratorAt(mcLambdaId);
             int mcOmegaId = FindCommonMotherFrom2Prongs(mcLambda, mcbachelor, -3122, 321, -3334, mcParticles);
-            if (mcOmegaId > -1) { // true omegaMinus
+            if (mcOmegaId > 0) { // true omegaMinus
               auto mcOmega = mcParticles.rawIteratorAt(mcOmegaId);
               pdgCodeCascade = mcOmega.pdgCode();
-              foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mcOmega) > -1;
+              foundCommonMother = FindCommonMotherFrom2ProngsWithoutPDG(mcele, mcOmega) > 0;
             }
           }
 
@@ -1618,12 +1697,14 @@ struct taggingHFE {
 
       auto mcDpms_per_mccollision = mcDpms.sliceBy(perMcCollision, mcCollision.globalIndex());
       for (const auto& mcParticle : mcDpms_per_mccollision) {
+        // LOGF(info, "Dpm: mcParticle.pdgCode() = %d", mcParticle.pdgCode());
         // for (int d = mcParticle.daughtersIds()[0]; d <= mcParticle.daughtersIds()[1]; ++d) {
         //   auto daughter = mcParticles.rawIteratorAt(d);
         //   LOGF(info, "daughter.pdgCode() = %d", daughter.pdgCode());
         // }
 
-        if (isSemiLeptonic(mcParticle, mcParticles, -cfgPdgLepton, cfgPdgLepton + 1, -321) || isSemiLeptonic(mcParticle, mcParticles, cfgPdgLepton, -cfgPdgLepton - 1, 321)) { // D+ -> l+ nul K- pi+ or D- -> l- anti-nul K+ pi-
+        // if (isSemiLeptonic(mcParticle, mcParticles, -cfgPdgLepton, cfgPdgLepton + 1, -321) || isSemiLeptonic(mcParticle, mcParticles, cfgPdgLepton, -cfgPdgLepton - 1, 321)) { // D+ -> l+ nul K- pi+ or D- -> l- anti-nul K+ pi-
+        if (isSemiLeptonic(mcParticle, mcParticles, -cfgPdgLepton, cfgPdgLepton + 1, 311) || isSemiLeptonic(mcParticle, mcParticles, cfgPdgLepton, -cfgPdgLepton - 1, 311)) { // D+ -> l+ nul K- pi+ or D- -> l- anti-nul K+ pi-
           // LOGF(info, "semileptonic decay is found.");
           float ptLepton = 0, ptHadron = 0, etaLepton = 999.f, etaHadron = 999.f;
           for (int d = mcParticle.daughtersIds()[0]; d <= mcParticle.daughtersIds()[1]; ++d) {
@@ -1631,7 +1712,7 @@ struct taggingHFE {
             if (std::abs(daughter.pdgCode()) == cfgPdgLepton) {
               ptLepton = daughter.pt();
               etaLepton = daughter.eta();
-            } else if (std::abs(daughter.pdgCode()) == 321) {
+            } else if (std::abs(daughter.pdgCode()) == 311) {
               ptHadron = daughter.pt();
               etaHadron = daughter.eta();
             }
@@ -1697,8 +1778,8 @@ struct taggingHFE {
   Partition<aod::McParticles> mcD0s = nabs(o2::aod::mcparticle::pdgCode) == 421;
   Partition<aod::McParticles> mcDspms = nabs(o2::aod::mcparticle::pdgCode) == 431;
   Partition<aod::McParticles> mcLcs = nabs(o2::aod::mcparticle::pdgCode) == 4122;
-  Partition<aod::McParticles> mcXic0s = nabs(o2::aod::mcparticle::pdgCode) == 4232;
-  Partition<aod::McParticles> mcOmegac0s = nabs(o2::aod::mcparticle::pdgCode) == 4332;
+  // Partition<aod::McParticles> mcXic0s = nabs(o2::aod::mcparticle::pdgCode) == 4232;
+  // Partition<aod::McParticles> mcOmegac0s = nabs(o2::aod::mcparticle::pdgCode) == 4332;
 
   SliceCache cache;
   Preslice<aod::TracksIU> perCol = o2::aod::track::collisionId;
