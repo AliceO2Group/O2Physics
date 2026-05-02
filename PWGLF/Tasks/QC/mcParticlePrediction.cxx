@@ -694,10 +694,10 @@ struct mcParticlePrediction {
     float nMultRecoMCBC[Estimators::nEstimators] = {0};
     if (mcBC.has_ft0()) {
       const auto& ft0 = mcBC.ft0();
-      for (const auto amplitude : ft0.amplitudeA()) {
+      for (const auto& amplitude : ft0.amplitudeA()) {
         nMultRecoMCBC[Estimators::FT0A] += amplitude;
       }
-      for (const auto amplitude : ft0.amplitudeC()) {
+      for (const auto& amplitude : ft0.amplitudeC()) {
         nMultRecoMCBC[Estimators::FT0C] += amplitude;
       }
       nMultRecoMCBC[Estimators::FT0AC] = nMultRecoMCBC[Estimators::FT0A] + nMultRecoMCBC[Estimators::FT0C];
