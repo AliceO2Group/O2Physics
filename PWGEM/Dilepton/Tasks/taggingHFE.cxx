@@ -148,8 +148,8 @@ struct taggingHFE {
     Configurable<float> cfg_max_pt_track{"cfg_max_pt_track", 1e+10, "max pT for single track"};
     Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -0.9, "min eta for single track"};
     Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", +0.9, "max eta for single track"};
-    Configurable<float> cfg_min_cr2findable_ratio_tpc{"cfg_min_cr2findable_ratio_tpc", 0.8, "min. TPC Ncr/Nf ratio"};
-    Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 0.7, "max fraction of shared clusters in TPC"};
+    Configurable<float> cfg_min_cr2findable_ratio_tpc{"cfg_min_cr2findable_ratio_tpc", 0.f, "min. TPC Ncr/Nf ratio"};
+    Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
     Configurable<int> cfg_min_ncrossedrows_tpc{"cfg_min_ncrossedrows_tpc", 70, "min ncrossed rows"};
     Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
     Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 4, "min ncluster its"};
@@ -181,8 +181,8 @@ struct taggingHFE {
     Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.95, "min cospa for v0"};
     Configurable<float> cfg_max_dca2legs{"cfg_max_dca2legs", 0.1, "max distance between 2 legs for v0"};
     // Configurable<float> cfg_min_radius{"cfg_min_radius", 0.1, "min rxy for v"};
-    Configurable<float> cfg_min_cr2findable_ratio_tpc{"cfg_min_cr2findable_ratio_tpc", 0.8, "min. TPC Ncr/Nf ratio"};
-    Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 0.7, "max fraction of shared clusters in TPC"};
+    Configurable<float> cfg_min_cr2findable_ratio_tpc{"cfg_min_cr2findable_ratio_tpc", 0.f, "min. TPC Ncr/Nf ratio"};
+    Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
     Configurable<int> cfg_min_ncrossedrows_tpc{"cfg_min_ncrossedrows_tpc", 70, "min ncrossed rows"};
     Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
@@ -191,14 +191,14 @@ struct taggingHFE {
     Configurable<int> cfg_min_ncluster_itsib{"cfg_min_ncluster_itsib", 0, "min ncluster itsib"};
     Configurable<float> cfg_min_dcaxy{"cfg_min_dcaxy", 0.1, "min dca XY for v0 legs in cm"};
 
-    Configurable<float> cfg_min_TPCNsigmaPi{"cfg_min_TPCNsigmaPi", -2, "min n sigma pi in TPC"};
-    Configurable<float> cfg_max_TPCNsigmaPi{"cfg_max_TPCNsigmaPi", +2, "max n sigma pi in TPC"};
-    Configurable<float> cfg_min_TPCNsigmaPr{"cfg_min_TPCNsigmaPr", -2, "min n sigma pr in TPC"};
-    Configurable<float> cfg_max_TPCNsigmaPr{"cfg_max_TPCNsigmaPr", +2, "max n sigma pr in TPC"};
-    Configurable<float> cfg_min_TOFNsigmaPi{"cfg_min_TOFNsigmaPi", -2, "min n sigma pi in TOF"};
-    Configurable<float> cfg_max_TOFNsigmaPi{"cfg_max_TOFNsigmaPi", +2, "max n sigma pi in TOF"};
-    Configurable<float> cfg_min_TOFNsigmaPr{"cfg_min_TOFNsigmaPr", -2, "min n sigma pr in TOF"};
-    Configurable<float> cfg_max_TOFNsigmaPr{"cfg_max_TOFNsigmaPr", +2, "max n sigma pr in TOF"};
+    Configurable<float> cfg_min_TPCNsigmaPi{"cfg_min_TPCNsigmaPi", -3, "min n sigma pi in TPC"};
+    Configurable<float> cfg_max_TPCNsigmaPi{"cfg_max_TPCNsigmaPi", +3, "max n sigma pi in TPC"};
+    Configurable<float> cfg_min_TPCNsigmaPr{"cfg_min_TPCNsigmaPr", -3, "min n sigma pr in TPC"};
+    Configurable<float> cfg_max_TPCNsigmaPr{"cfg_max_TPCNsigmaPr", +3, "max n sigma pr in TPC"};
+    Configurable<float> cfg_min_TOFNsigmaPi{"cfg_min_TOFNsigmaPi", -3, "min n sigma pi in TOF"};
+    Configurable<float> cfg_max_TOFNsigmaPi{"cfg_max_TOFNsigmaPi", +3, "max n sigma pi in TOF"};
+    Configurable<float> cfg_min_TOFNsigmaPr{"cfg_min_TOFNsigmaPr", -3, "min n sigma pr in TOF"};
+    Configurable<float> cfg_max_TOFNsigmaPr{"cfg_max_TOFNsigmaPr", +3, "max n sigma pr in TOF"};
   } v0Cut;
 
   struct : ConfigurableGroup {
@@ -497,15 +497,6 @@ struct taggingHFE {
   //   return is_el_included_TPC && is_el_included_TOF;
   // }
 
-  template <typename TTrack>
-  bool isKaonBachelor(TTrack const& track)
-  {
-    // TOFif
-    bool is_ka_included_TPC = hadronCut.cfg_min_TPCNsigmaKa < track.tpcNSigmaKa() && track.tpcNSigmaKa() < hadronCut.cfg_max_TPCNsigmaKa;
-    bool is_ka_included_TOF = track.hasTOF() ? (hadronCut.cfg_min_TOFNsigmaKa < track.tofNSigmaKa() && track.tofNSigmaKa() < hadronCut.cfg_max_TOFNsigmaKa) : true;
-    return is_ka_included_TPC && is_ka_included_TOF;
-  }
-
   template <typename TTrack, typename TTrackParCov>
   bool isSelectedTrack(TTrack const& track, TTrackParCov const& trackParCov, const float dcaXY, const float dcaZ)
   {
@@ -569,7 +560,7 @@ struct taggingHFE {
   }
 
   template <typename TTrack, typename TTrackParCov>
-  bool isSelectedKaon(TTrack const& track, TTrackParCov const& trackParCov, const float dcaXY, const float dcaZ)
+  bool isSelectedHadron(TTrack const& track, TTrackParCov const& trackParCov, const float dcaXY, const float dcaZ)
   {
     if (!track.hasITS() || !track.hasTPC()) {
       return false;
@@ -763,7 +754,7 @@ struct taggingHFE {
     if (isPion(bachelor)) {
       fRegistry.fill(HIST("Cascade/hMassXi"), cascade.mXi());
     }
-    if (isKaonBachelor(bachelor)) {
+    if (isKaon(bachelor)) {
       fRegistry.fill(HIST("Cascade/hMassOmega"), cascade.mOmega());
     }
   }
@@ -789,7 +780,7 @@ struct taggingHFE {
     bool is_strhad_involved = false;
     for (int d = mcParticle.daughtersIds()[0]; d <= mcParticle.daughtersIds()[1]; ++d) {
       if (d < mcParticles.size()) { // protect against bad daughter indices
-        const auto& daughter = mcParticles.rawIteratorAt(d);
+        auto daughter = mcParticles.rawIteratorAt(d);
         if (daughter.pdgCode() == pdgLepton) {
           is_lepton_involved = true;
         } else if (daughter.pdgCode() == pdgNeutrino) {
@@ -842,7 +833,7 @@ struct taggingHFE {
     used_electronIds.reserve(tracks.size());
 
     for (const auto& collision : collisions) {
-      const auto& bc = collision.template foundBC_as<TBCs>();
+      auto bc = collision.template foundBC_as<TBCs>();
       initCCDB(bc);
       if (!collision.has_mcCollision()) {
         continue;
@@ -871,14 +862,14 @@ struct taggingHFE {
       mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
       mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
 
-      const auto& trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
+      auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
       electronIds.reserve(trackIdsThisCollision.size());
       positronIds.reserve(trackIdsThisCollision.size());
       kaonPlusIds.reserve(trackIdsThisCollision.size());
       kaonMinusIds.reserve(trackIdsThisCollision.size());
 
       for (const auto& trackId : trackIdsThisCollision) {
-        const auto& track = trackId.template track_as<TTracks>();
+        auto track = trackId.template track_as<TTracks>();
         if (!track.hasITS() || !track.hasTPC()) {
           continue;
         }
@@ -886,7 +877,7 @@ struct taggingHFE {
         if (!track.has_mcParticle()) {
           continue;
         }
-        const auto& mcParticle = track.template mcParticle_as<aod::McParticles>();
+        auto mcParticle = track.template mcParticle_as<aod::McParticles>();
         if (!mcParticle.has_mothers()) {
           continue;
         }
@@ -921,7 +912,7 @@ struct taggingHFE {
         dcaXY = mDcaInfoCov.getY();
         dcaZ = mDcaInfoCov.getZ();
 
-        if (isSelectedKaon(track, trackParCov, dcaXY, dcaZ)) {
+        if (isSelectedHadron(track, trackParCov, dcaXY, dcaZ)) { // electrons can be included in hadron sample.
           fRegistry.fill(HIST("Hadron/hs"), trackParCov.getPt(), trackParCov.getEta(), RecoDecay::constrainAngle(trackParCov.getPhi(), 0, 1U));
           fRegistry.fill(HIST("Hadron/hTPCdEdx"), track.tpcInnerParam(), track.mcTunedTPCSignal());
           fRegistry.fill(HIST("Hadron/hTOFbeta"), track.p(), track.beta());
@@ -934,7 +925,7 @@ struct taggingHFE {
 
       } // end of track loop for electron selection
 
-      const auto& v0s_per_coll = v0s.sliceBy(perCol_v0, collision.globalIndex());
+      auto v0s_per_coll = v0s.sliceBy(perCol_v0, collision.globalIndex());
       k0Ids.reserve(v0s_per_coll.size());
       k0Ids.reserve(v0s_per_coll.size());
       lambdaIds.reserve(v0s_per_coll.size());
@@ -960,7 +951,7 @@ struct taggingHFE {
         }
       } // end of V0 loop
 
-      const auto& cascades_per_coll = cascades.sliceBy(perCol_casc, collision.globalIndex());
+      auto cascades_per_coll = cascades.sliceBy(perCol_casc, collision.globalIndex());
       xiPlusIds.reserve(cascades_per_coll.size());
       xiPlusIds.reserve(cascades_per_coll.size());
       xiMinusIds.reserve(cascades_per_coll.size());
@@ -1006,14 +997,14 @@ struct taggingHFE {
           if (isXi(cascade) && isPion(bachelor)) {
             xiMinusIds.emplace_back(cascade.globalIndex());
           }
-          if (isOmega(cascade) && isKaonBachelor(bachelor)) {
+          if (isOmega(cascade) && isKaon(bachelor)) {
             omegaMinusIds.emplace_back(cascade.globalIndex());
           }
         } else { // Xi+ or Omega+
           if (isXi(cascade) && isPion(bachelor)) {
             xiPlusIds.emplace_back(cascade.globalIndex());
           }
-          if (isOmega(cascade) && isKaonBachelor(bachelor)) {
+          if (isOmega(cascade) && isKaon(bachelor)) {
             omegaPlusIds.emplace_back(cascade.globalIndex());
           }
         }
@@ -1026,7 +1017,7 @@ struct taggingHFE {
       // }
 
       for (const auto& positronId : positronIds) {
-        const auto& pos = tracks.rawIteratorAt(positronId);
+        auto pos = tracks.rawIteratorAt(positronId);
         mDcaInfoCov.set(999, 999, 999, 999, 999);
         auto leptonParCov = getTrackParCov(pos);
         leptonParCov.setPID(o2::track::PID::Electron);
@@ -1045,7 +1036,7 @@ struct taggingHFE {
 
         // D0 -> e+ nu_e K-, br = 0.03538, ctau = 123.01 um, m = 1864 MeV/c2
         for (const auto& kaonId : kaonMinusIds) {
-          const auto& kaon = tracks.rawIteratorAt(kaonId);
+          auto kaon = tracks.rawIteratorAt(kaonId);
           mDcaInfoCov.set(999, 999, 999, 999, 999);
           auto trackParCov = getTrackParCov(kaon);
           trackParCov.setPID(kaon.pidForTracking());
@@ -1057,7 +1048,7 @@ struct taggingHFE {
             continue;
           }
 
-          const auto& eKpair = o2::aod::pwgem::dilepton::utils::makePairLeptonTrack(fitter_eK, collision, pos, kaon, o2::track::PID::Electron, kaon.pidForTracking());
+          auto eKpair = o2::aod::pwgem::dilepton::utils::makePairLeptonTrack(fitter_eK, collision, pos, kaon, o2::track::PID::Electron, kaon.pidForTracking());
           if (!eKpair.isOK) {
             continue;
           }
@@ -1111,7 +1102,7 @@ struct taggingHFE {
           o2::dataformats::DCA impactParameterV0;
           o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackV0, 2.f, matCorr, &impactParameterV0); // trackV0 is TrackParCov object
 
-          const auto& eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(fitter_eV0, collision, pos, v0, o2::track::PID::Electron, o2::track::PID::K0);
+          auto eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(fitter_eV0, collision, pos, v0, o2::track::PID::Electron, o2::track::PID::K0);
 
           if (!eV0pair.isOK) {
             continue;
@@ -1122,8 +1113,8 @@ struct taggingHFE {
 
           auto posLeg = v0.template posTrack_as<TTracks>();
           auto negLeg = v0.template negTrack_as<TTracks>();
-          const auto& mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
-          const auto& mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
+          auto mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
+          auto mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
           int mcK0SId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 211, -211, 310, mcParticles);
           int pdgCodeV0 = 0;
           bool foundCommonMother = false;
@@ -1183,7 +1174,7 @@ struct taggingHFE {
           o2::dataformats::DCA impactParameterV0;
           o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackV0, 2.f, matCorr, &impactParameterV0); // trackV0 is TrackParCov object
 
-          const auto& eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(fitter_eV0, collision, pos, v0, o2::track::PID::Electron, o2::track::PID::Lambda);
+          auto eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(fitter_eV0, collision, pos, v0, o2::track::PID::Electron, o2::track::PID::Lambda);
 
           if (!eV0pair.isOK) {
             continue;
@@ -1194,8 +1185,8 @@ struct taggingHFE {
 
           auto posLeg = v0.template posTrack_as<TTracks>();
           auto negLeg = v0.template negTrack_as<TTracks>();
-          const auto& mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
-          const auto& mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
+          auto mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
+          auto mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
           int mcLambdaId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 2212, -211, 3122, mcParticles);
           int pdgCodeV0 = 0;
           bool foundCommonMother = false;
@@ -1238,7 +1229,7 @@ struct taggingHFE {
           o2::dataformats::DCA impactParameterCasc;
           o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackCasc, 2.f, matCorr, &impactParameterCasc); // trackCasc is TrackParCov object
 
-          const auto& eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(fitter_eCascade, collision, pos, cascade, o2::track::PID::Electron, o2::track::PID::XiMinus);
+          auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(fitter_eCascade, collision, pos, cascade, o2::track::PID::Electron, o2::track::PID::XiMinus);
 
           if (!eCpair.isOK) {
             continue;
@@ -1250,9 +1241,9 @@ struct taggingHFE {
           auto posLeg = cascade.template posTrack_as<TTracks>();
           auto negLeg = cascade.template negTrack_as<TTracks>();
           auto bachelor = cascade.template bachelor_as<TTracks>();
-          const auto& mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
-          const auto& mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
-          const auto& mcbachelor = bachelor.template mcParticle_as<aod::McParticles>();
+          auto mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
+          auto mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
+          auto mcbachelor = bachelor.template mcParticle_as<aod::McParticles>();
           int mcLambdaId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 2212, -211, 3122, mcParticles);
           int pdgCodeCascade = 0;
           bool foundCommonMother = false;
@@ -1299,7 +1290,7 @@ struct taggingHFE {
           o2::dataformats::DCA impactParameterCasc;
           o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackCasc, 2.f, matCorr, &impactParameterCasc); // trackCasc is TrackParCov object
 
-          const auto& eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(fitter_eCascade, collision, pos, cascade, o2::track::PID::Electron, o2::track::PID::OmegaMinus);
+          auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(fitter_eCascade, collision, pos, cascade, o2::track::PID::Electron, o2::track::PID::OmegaMinus);
 
           if (!eCpair.isOK) {
             continue;
@@ -1311,9 +1302,9 @@ struct taggingHFE {
           auto posLeg = cascade.template posTrack_as<TTracks>();
           auto negLeg = cascade.template negTrack_as<TTracks>();
           auto bachelor = cascade.template bachelor_as<TTracks>();
-          const auto& mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
-          const auto& mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
-          const auto& mcbachelor = bachelor.template mcParticle_as<aod::McParticles>();
+          auto mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
+          auto mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
+          auto mcbachelor = bachelor.template mcParticle_as<aod::McParticles>();
           int mcLambdaId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 2212, -211, 3122, mcParticles);
           int pdgCodeCascade = 0;
           bool foundCommonMother = false;
@@ -1343,7 +1334,7 @@ struct taggingHFE {
       } // end of main positron sample
 
       for (const auto& electronId : electronIds) {
-        const auto& ele = tracks.rawIteratorAt(electronId);
+        auto ele = tracks.rawIteratorAt(electronId);
         mDcaInfoCov.set(999, 999, 999, 999, 999);
         auto leptonParCov = getTrackParCov(ele);
         leptonParCov.setPID(o2::track::PID::Electron);
@@ -1362,7 +1353,7 @@ struct taggingHFE {
 
         // D0bar -> e- anti-nu_e K+, br = 0.03538, ctau = 123.01 um, m = 1864 MeV/c2
         for (const auto& kaonId : kaonPlusIds) {
-          const auto& kaon = tracks.rawIteratorAt(kaonId);
+          auto kaon = tracks.rawIteratorAt(kaonId);
           mDcaInfoCov.set(999, 999, 999, 999, 999);
           auto trackParCov = getTrackParCov(kaon);
           trackParCov.setPID(kaon.pidForTracking());
@@ -1374,7 +1365,7 @@ struct taggingHFE {
             continue;
           }
 
-          const auto& eKpair = o2::aod::pwgem::dilepton::utils::makePairLeptonTrack(fitter_eK, collision, ele, kaon, o2::track::PID::Electron, kaon.pidForTracking());
+          auto eKpair = o2::aod::pwgem::dilepton::utils::makePairLeptonTrack(fitter_eK, collision, ele, kaon, o2::track::PID::Electron, kaon.pidForTracking());
           if (!eKpair.isOK) {
             continue;
           }
@@ -1427,7 +1418,7 @@ struct taggingHFE {
           o2::dataformats::DCA impactParameterV0;
           o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackV0, 2.f, matCorr, &impactParameterV0); // trackV0 is TrackParCov object
 
-          const auto& eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(fitter_eV0, collision, ele, v0, o2::track::PID::Electron, o2::track::PID::K0);
+          auto eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(fitter_eV0, collision, ele, v0, o2::track::PID::Electron, o2::track::PID::K0);
 
           if (!eV0pair.isOK) {
             continue;
@@ -1438,8 +1429,8 @@ struct taggingHFE {
 
           auto posLeg = v0.template posTrack_as<TTracks>();
           auto negLeg = v0.template negTrack_as<TTracks>();
-          const auto& mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
-          const auto& mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
+          auto mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
+          auto mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
           int mcK0SId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 211, -211, 310, mcParticles);
           int pdgCodeV0 = 0;
           bool foundCommonMother = false;
@@ -1498,7 +1489,7 @@ struct taggingHFE {
           o2::dataformats::DCA impactParameterV0;
           o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackV0, 2.f, matCorr, &impactParameterV0); // trackV0 is TrackParCov object
 
-          const auto& eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(fitter_eV0, collision, ele, v0, o2::track::PID::Electron, o2::track::PID::Lambda);
+          auto eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(fitter_eV0, collision, ele, v0, o2::track::PID::Electron, o2::track::PID::Lambda);
 
           if (!eV0pair.isOK) {
             continue;
@@ -1509,8 +1500,8 @@ struct taggingHFE {
 
           auto posLeg = v0.template posTrack_as<TTracks>();
           auto negLeg = v0.template negTrack_as<TTracks>();
-          const auto& mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
-          const auto& mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
+          auto mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
+          auto mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
           int mcLambdaId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 211, -2212, -3122, mcParticles);
           int pdgCodeV0 = 0;
           bool foundCommonMother = false;
@@ -1553,7 +1544,7 @@ struct taggingHFE {
           o2::dataformats::DCA impactParameterCasc;
           o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackCasc, 2.f, matCorr, &impactParameterCasc); // trackCasc is TrackParCov object
 
-          const auto& eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(fitter_eCascade, collision, ele, cascade, o2::track::PID::Electron, o2::track::PID::XiMinus);
+          auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(fitter_eCascade, collision, ele, cascade, o2::track::PID::Electron, o2::track::PID::XiMinus);
 
           if (!eCpair.isOK) {
             continue;
@@ -1565,9 +1556,9 @@ struct taggingHFE {
           auto posLeg = cascade.template posTrack_as<TTracks>();
           auto negLeg = cascade.template negTrack_as<TTracks>();
           auto bachelor = cascade.template bachelor_as<TTracks>();
-          const auto& mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
-          const auto& mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
-          const auto& mcbachelor = bachelor.template mcParticle_as<aod::McParticles>();
+          auto mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
+          auto mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
+          auto mcbachelor = bachelor.template mcParticle_as<aod::McParticles>();
           int mcLambdaId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 211, -2212, -3122, mcParticles);
           int pdgCodeCascade = 0;
           bool foundCommonMother = false;
@@ -1614,7 +1605,7 @@ struct taggingHFE {
           o2::dataformats::DCA impactParameterCasc;
           o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackCasc, 2.f, matCorr, &impactParameterCasc); // trackCasc is TrackParCov object
 
-          const auto& eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(fitter_eCascade, collision, ele, cascade, o2::track::PID::Electron, o2::track::PID::OmegaMinus);
+          auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(fitter_eCascade, collision, ele, cascade, o2::track::PID::Electron, o2::track::PID::OmegaMinus);
 
           if (!eCpair.isOK) {
             continue;
@@ -1626,9 +1617,9 @@ struct taggingHFE {
           auto posLeg = cascade.template posTrack_as<TTracks>();
           auto negLeg = cascade.template negTrack_as<TTracks>();
           auto bachelor = cascade.template bachelor_as<TTracks>();
-          const auto& mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
-          const auto& mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
-          const auto& mcbachelor = bachelor.template mcParticle_as<aod::McParticles>();
+          auto mcposLeg = posLeg.template mcParticle_as<aod::McParticles>();
+          auto mcnegLeg = negLeg.template mcParticle_as<aod::McParticles>();
+          auto mcbachelor = bachelor.template mcParticle_as<aod::McParticles>();
           int mcLambdaId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 211, -2212, -3122, mcParticles);
           int pdgCodeCascade = 0;
           bool foundCommonMother = false;
