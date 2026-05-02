@@ -41,7 +41,6 @@
 
 #include <TH1.h>
 #include <TH2.h>
-#include <TPDGCode.h>
 #include <TParticlePDG.h>
 #include <TString.h>
 
@@ -195,6 +194,7 @@ struct mcParticlePrediction {
   Configurable<bool> enableVsEta05Histograms{"enableVsEta05Histograms", true, "Enables the correlation between ETA05 and other estimators"};
   Configurable<bool> enableVsEta08Histograms{"enableVsEta08Histograms", true, "Enables the correlation between ETA08 and other estimators"};
   Configurable<bool> enableVsImpactParameterHistograms{"enableVsImpactParameterHistograms", true, "Enables the correlation between impact parameter and other estimators"};
+  Configurable<float> rapidityMother{"rapidityMother", 0.5, "Mother particle rapidity"};
 
   Service<o2::framework::O2DatabasePDG> pdgDB;
   o2::pwglf::ParticleCounter<o2::framework::O2DatabasePDG> mCounter;
@@ -447,9 +447,6 @@ struct mcParticlePrediction {
     return nMult;
   }
 
-  int noOfDaughters = 2;
-  float rapidityMother = 0.5;
-
   void process(aod::McCollision const& mcCollision,
                aod::McParticles const& mcParticles)
   {
@@ -514,88 +511,38 @@ struct mcParticlePrediction {
         continue;
       }
 
-      if (particle.pdgCode() == o2::constants::physics::kK0Star892) {
-        auto kDaughters = particle.daughters_as<aod::McParticles>();
-        if (kDaughters.size() != noOfDaughters) {
-          continue;
-        }
+      // Check if particle has daughters (not a final state particle)
+      auto daughters = particle.daughters_as<aod::McParticles>();
+      bool isValid = false;
 
-        auto passkaon = false;
-        auto passpion = false;
-        for (const auto& kCurrentDaughter : kDaughters) {
-          if (!kCurrentDaughter.isPhysicalPrimary()) {
-            continue;
-          }
-
-          if (std::abs(kCurrentDaughter.pdgCode()) == PDG_t::kKPlus) {
-            passkaon = true;
-          } else if (std::abs(kCurrentDaughter.pdgCode()) == PDG_t::kPiPlus) {
-            passpion = true;
-          }
-        }
-        if (passkaon && passpion) {
-          histos.fill(HIST("particles/vtx/x"), particle.vx());
-          histos.fill(HIST("particles/vtx/y"), particle.vy());
-          histos.fill(HIST("particles/vtx/z"), particle.vz() - mcCollision.posZ());
-
-          histos.fill(HIST("particles/yields"), id);
-          for (int i = 0; i < Estimators::nEstimators; i++) {
-            if (!enabledEstimatorsArray[i]) {
-              continue;
-            }
-            hpt[i][id]->Fill(particle.pt(), nMult[i]);
-            hyield[i][id]->Fill(nMult[i]);
-          }
-        }
-      } else if (particle.pdgCode() == o2::constants::physics::kPhi) {
-        auto kDaughters = particle.daughters_as<aod::McParticles>();
-        if (kDaughters.size() != noOfDaughters) {
-          continue;
-        }
-
-        auto passkaonPos = false;
-        auto passkaonNeg = false;
-        for (const auto& kCurrentDaughter : kDaughters) {
-          if (!kCurrentDaughter.isPhysicalPrimary()) {
-            continue;
-          }
-
-          if (kCurrentDaughter.pdgCode() == PDG_t::kKPlus) {
-            passkaonPos = true;
-          } else if (kCurrentDaughter.pdgCode() == PDG_t::kKMinus) {
-            passkaonNeg = true;
-          }
-        }
-        if (passkaonPos && passkaonNeg) {
-          histos.fill(HIST("particles/vtx/x"), particle.vx());
-          histos.fill(HIST("particles/vtx/y"), particle.vy());
-          histos.fill(HIST("particles/vtx/z"), particle.vz() - mcCollision.posZ());
-
-          histos.fill(HIST("particles/yields"), id);
-          for (int i = 0; i < Estimators::nEstimators; i++) {
-            if (!enabledEstimatorsArray[i]) {
-              continue;
-            }
-            hpt[i][id]->Fill(particle.pt(), nMult[i]);
-            hyield[i][id]->Fill(nMult[i]);
+      if (daughters.size() > 0) {
+        isValid = true;
+        for (const auto& daughter : daughters) {
+          if (!daughter.isPhysicalPrimary()) {
+            isValid = false;
+            break;
           }
         }
       } else {
-        if (!particle.isPhysicalPrimary()) {
+        // Final state particle - check if particle itself is physical primary
+        isValid = particle.isPhysicalPrimary();
+      }
+
+      if (!isValid) {
+        continue;
+      }
+
+      histos.fill(HIST("particles/vtx/x"), particle.vx());
+      histos.fill(HIST("particles/vtx/y"), particle.vy());
+      histos.fill(HIST("particles/vtx/z"), particle.vz() - mcCollision.posZ());
+
+      histos.fill(HIST("particles/yields"), id);
+      for (int i = 0; i < Estimators::nEstimators; i++) {
+        if (!enabledEstimatorsArray[i]) {
           continue;
         }
-        histos.fill(HIST("particles/vtx/x"), particle.vx());
-        histos.fill(HIST("particles/vtx/y"), particle.vy());
-        histos.fill(HIST("particles/vtx/z"), particle.vz() - mcCollision.posZ());
-
-        histos.fill(HIST("particles/yields"), id);
-        for (int i = 0; i < Estimators::nEstimators; i++) {
-          if (!enabledEstimatorsArray[i]) {
-            continue;
-          }
-          hpt[i][id]->Fill(particle.pt(), nMult[i]);
-          hyield[i][id]->Fill(nMult[i]);
-        }
+        hpt[i][id]->Fill(particle.pt(), nMult[i]);
+        hyield[i][id]->Fill(nMult[i]);
       }
     }
   }
