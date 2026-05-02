@@ -830,8 +830,6 @@ struct taggingHFE {
   template <bool isMC, typename TBCs, typename TCollisions, typename TTracks, typename TTrackAssoc, typename TV0s, typename TCascades, typename TMCCollisions, typename TMCParticles>
   void runPairing(TBCs const&, TCollisions const& collisions, TTracks const& tracks, TTrackAssoc const& trackIndices, TV0s const& v0s, TCascades const& cascades, TMCCollisions const&, TMCParticles const& mcParticles)
   {
-    used_electronIds.reserve(tracks.size());
-
     for (const auto& collision : collisions) {
       auto bc = collision.template foundBC_as<TBCs>();
       initCCDB(bc);
@@ -906,11 +904,32 @@ struct taggingHFE {
           }
         }
 
+      } // end of track loop for electron selection
+
+      for (const auto& trackId : trackIdsThisCollision) {
+        auto track = trackId.template track_as<TTracks>();
+        if (!track.hasITS() || !track.hasTPC()) {
+          continue;
+        }
+
+        if (!track.has_mcParticle()) {
+          continue;
+        }
+        auto mcParticle = track.template mcParticle_as<aod::McParticles>();
+        if (!mcParticle.has_mothers()) {
+          continue;
+        }
+
+        auto trackParCov = getTrackParCov(track);
         mDcaInfoCov.set(999, 999, 999, 999, 999);
         trackParCov.setPID(track.pidForTracking());
         o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
-        dcaXY = mDcaInfoCov.getY();
-        dcaZ = mDcaInfoCov.getZ();
+        float dcaXY = mDcaInfoCov.getY();
+        float dcaZ = mDcaInfoCov.getZ();
+
+        if (std::find(electronIds.begin(), electronIds.end(), track.globalIndex()) != electronIds.end() || std::find(positronIds.begin(), positronIds.end(), track.globalIndex()) != positronIds.end()) {
+          continue;
+        }
 
         if (isSelectedHadron(track, trackParCov, dcaXY, dcaZ)) { // electrons can be included in hadron sample.
           fRegistry.fill(HIST("Hadron/hs"), trackParCov.getPt(), trackParCov.getEta(), RecoDecay::constrainAngle(trackParCov.getPhi(), 0, 1U));
@@ -923,7 +942,7 @@ struct taggingHFE {
           }
         }
 
-      } // end of track loop for electron selection
+      } // end of track loop for hadron selection
 
       auto v0s_per_coll = v0s.sliceBy(perCol_v0, collision.globalIndex());
       k0Ids.reserve(v0s_per_coll.size());
@@ -1675,10 +1694,8 @@ struct taggingHFE {
       omegaPlusIds.shrink_to_fit();
       omegaMinusIds.clear();
       omegaMinusIds.shrink_to_fit();
-    } // end of collision loop
 
-    used_electronIds.clear();
-    used_electronIds.shrink_to_fit();
+    } // end of collision loop
   }
 
   template <typename TMCCollisions, typename TMCParticles>
@@ -1809,8 +1826,6 @@ struct taggingHFE {
   std::vector<int> xiMinusIds;
   std::vector<int> omegaPlusIds;
   std::vector<int> omegaMinusIds;
-
-  std::vector<std::pair<int, int>> used_electronIds; // pair of hTypeId and electronId
 
   void processMC(FilteredMyCollisionsWithMCLabel const& collisions, aod::BCsWithTimestamps const& bcs, MyTracksWithMCLabel const& tracks, aod::TrackAssoc const& trackIndices, filteredV0s const& v0s, filteredMyCascades const& cascades, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
