@@ -276,6 +276,7 @@ struct UpcRhoAnalysis {
       rQC.add("QC/collisions/all/hTimeFDDA", ";FDDA time (ns);counts", kTH1D, {{400, -5.0, 35.0}});
       rQC.add("QC/collisions/all/hTimeFDDC", ";FDDC time (ns);counts", kTH1D, {{400, -5.0, 35.0}});
       rQC.add("QC/collisions/all/hOccupancyInTime", ";occupancy in time;counts", kTH1D, {{1100, 0.0, 1100.0}});
+      rQC.add("QC/collisions/hNumContribVsPVTracks", ";number of track.isPVContributor() per collision;collision.numContrib();counts", kTH2D, {{101, -0.5, 100.5}, {101, -0.5, 100.5}});
       // events with selected rho candidates
       rQC.addClone("QC/collisions/all/", "QC/collisions/trackSelections/");
       rQC.addClone("QC/collisions/all/", "QC/collisions/systemSelections/");
@@ -816,6 +817,14 @@ struct UpcRhoAnalysis {
     // check if the collision run number is contained within the selectedRuns vector
     if (selectRuns && getRunIndex(collision.runNumber(), selectedRuns) == 0)
       return;
+
+    // check the number of PV tracks and the number of PV contrubutors
+    int nPVTracks = 0;
+    for (const auto& track : tracks) {
+      if (track.isPVContributor())
+        nPVTracks++;
+    }
+    rQC.fill(HIST("QC/collisions/hNumContribVsPVTracks"), nPVTracks, collision.numContrib());
 
     fillCollisionQcHistos<0>(collision);           // fill QC histograms before cuts
     if (!collisionPassesCuts(collision, runIndex)) // apply collision cuts
