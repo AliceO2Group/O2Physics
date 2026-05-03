@@ -72,6 +72,7 @@
 #include <string>
 #include <type_traits>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
@@ -1265,7 +1266,6 @@ struct DndetaMFTPbPb {
       hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocBad)] = registry.add<THnSparse>("ReAssocMC/hVtxResAssocBad", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
       hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocBadIsCompTrue)] = registry.add<THnSparse>("ReAssocMC/hVtxResAssocBadIsCompTrue", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
       hReAssocVtxRes[static_cast<int>(HistStatusReAssocVtx::kAssocBadIsCompFalse)] = registry.add<THnSparse>("ReAssocMC/hVtxResAssocBadIsCompFalse", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};#it{X}_{vtx}^{reco}#minus#it{X}_{vtx}^{gen} (cm);#it{Y}_{vtx}^{reco}#minus#it{Y}_{vtx}^{gen} (cm);#it{Z}_{vtx}^{reco}#minus#it{Z}_{vtx}^{gen} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, deltaZAxis, deltaZAxis, deltaZAxis});
-
 
       // DCA
       hReAssocDCA[static_cast<int>(HistStatusReAssocVtx::kTrkIdGt0)] = registry.add<THnSparse>("ReAssocMC/hDCAIdGt0", ";#it{p}_{T}^{reco} (GeV/#it{c});#it{#eta}^{reco};DCA_{XY} (cm)^{reco};  DCA_{Z} (cm)^{reco}; DCA_{XY} (cm);  DCA_{Z} (cm)", HistType::kTHnSparseF, {ptAxis, etaAxis, dcaxyAxis, dcazAxis, dcaxyAxis, dcazAxis});
@@ -3865,7 +3865,6 @@ struct DndetaMFTPbPb {
         if (setRecCollSel.find(trkCollId) == setRecCollSel.end()) {
           continue;
         }
-
         registry.fill(HIST("TimeAssocMC/hAmbTrackType"), static_cast<int>(AmbTrkType::kAll));
         if (ids.empty()) {
           registry.fill(HIST("TimeAssocMC/hAmbTrackType"), static_cast<int>(AmbTrkType::kOrphan));
@@ -4016,7 +4015,7 @@ struct DndetaMFTPbPb {
               registry.fill(HIST("TimeAssocMC/hVTXkSelNonAmb"), deltaXv2, deltaYv2, deltaZv2);
               registry.fill(HIST("TimeAssocMC/hAmbTrkTypeAssocFlag"), static_cast<int>(AmbTrkTypeAssocFlag::kSelNonAmb));
               if (vtxFlag == static_cast<int>(VertexStatusMC::kGood)) {
-                  registry.fill(HIST("TimeAssocMC/hVTXkSelNonAmbGoodVtx"), deltaXv2, deltaYv2, deltaZv2);
+                registry.fill(HIST("TimeAssocMC/hVTXkSelNonAmbGoodVtx"), deltaXv2, deltaYv2, deltaZv2);
                 registry.fill(HIST("TimeAssocMC/hAmbTrkTypeAssocFlag"), static_cast<int>(AmbTrkTypeAssocFlag::kSelNonAmbGoodVtx));
                 if (isTrueVtx) {
                   registry.fill(HIST("TimeAssocMC/hVTXkSelNonAmbGoodVtxTrue"), deltaXv2, deltaYv2, deltaZv2);
