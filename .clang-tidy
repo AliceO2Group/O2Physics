@@ -39,7 +39,7 @@ Checks:
   - cppcoreguidelines-slicing
   - cppcoreguidelines-virtual-class-destructor
   - google-default-arguments
-  - google-explicit-constructor
+  # - google-explicit-constructor # triggered for O2 columns
   - google-global-names-in-headers
   - misc-const-correctness # to be checked
   - misc-header-include-cycle
@@ -110,6 +110,8 @@ CheckOptions:
   bugprone-narrowing-conversions.WarnOnFloatingPointNarrowingConversion: false
   bugprone-narrowing-conversions.WarnOnIntegerNarrowingConversion: false
   bugprone-narrowing-conversions.WarnOnIntegerToFloatingPointNarrowingConversion: false
+  readability-implicit-bool-conversion.AllowLogicalOperatorConversion: true
+  readability-implicit-bool-conversion.AllowPointerConditions: true
   # Some data model structs are missing some special functions by design.
   cppcoreguidelines-special-member-functions.AllowMissingMoveFunctions: true
   # Naming conventions
