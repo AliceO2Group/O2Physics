@@ -166,6 +166,7 @@ struct V0ptHadPiKaProt {
   TF1* fPtDepDCAz = nullptr;
 
   O2_DEFINE_CONFIGURABLE(cfgUseSmallIonAdditionalEventCut, bool, true, "Use additional event cut on mult correlations for small ions")
+  O2_DEFINE_CONFIGURABLE(cfgUseSmallIonAdditionalEventCutInMC, bool, false, "Use additional event cut on mult correlations for small ions while using MC generated")
   O2_DEFINE_CONFIGURABLE(cfgEvSelMultCorrelation, bool, true, "Multiplicity correlation cut")
   O2_DEFINE_CONFIGURABLE(cfgEvSelV0AT0ACut, bool, true, "V0A T0A 5 sigma cut")
   struct : ConfigurableGroup {
@@ -229,6 +230,9 @@ struct V0ptHadPiKaProt {
 
   using MyMCRecCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::Mults, aod::McCollisionLabels>>;
   using MyMCTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullEl, aod::pidTOFFullEl>>;
+  using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFV0As, aod::Mults>;
+
+  Preslice<MyMCTracks> perCollision = aod::track::collisionId;
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
 
   std::array<float, 6> tofNsigmaCut;
@@ -357,9 +361,9 @@ struct V0ptHadPiKaProt {
     histos.add("h2DnsigmaPionTofVsPtAfterCut", "2D hist of nSigmaTOF vs. pT (pion)", kTH2F, {ptAxis, nSigmaAxis});
     histos.add("h2DnsigmaKaonTofVsPtAfterCut", "2D hist of nSigmaTOF vs. pT (kaon)", kTH2F, {ptAxis, nSigmaAxis});
     histos.add("h2DnsigmaProtonTofVsPtAfterCut", "2D hist of nSigmaTOF vs. pT (proton)", kTH2F, {ptAxis, nSigmaAxis});
-    histos.add("h2DnsigmaPionTpcVsTofAfterCut", "2D hist of nSigmaTPC vs. nSigmaTOF (pion)", kTH2F, {nSigmaAxis, nSigmaAxis});
-    histos.add("h2DnsigmaKaonTpcVsTofAfterCut", "2D hist of nSigmaTPC vs. nSigmaTOF (kaon)", kTH2F, {nSigmaAxis, nSigmaAxis});
-    histos.add("h2DnsigmaProtonTpcVsTofAfterCut", "2D hist of nSigmaTPC vs. nSigmaTOF (proton)", kTH2F, {nSigmaAxis, nSigmaAxis});
+    histos.add("h2DnsigmaPionTpcVsTofAfterCut", "3D hist of nSigmaTPC vs. nSigmaTOF (pion)", kTH3F, {ptAxis, nSigmaAxis, nSigmaAxis});
+    histos.add("h2DnsigmaKaonTpcVsTofAfterCut", "3D hist of nSigmaTPC vs. nSigmaTOF (kaon)", kTH3F, {ptAxis, nSigmaAxis, nSigmaAxis});
+    histos.add("h2DnsigmaProtonTpcVsTofAfterCut", "3D hist of nSigmaTPC vs. nSigmaTOF (proton)", kTH3F, {ptAxis, nSigmaAxis, nSigmaAxis});
 
     // Analysis profiles
 
@@ -403,6 +407,12 @@ struct V0ptHadPiKaProt {
       histos.add("Prof_XY_weighted", "", {HistType::kTProfile2D, {centAxis, noAxis}});
       histos.add("Prof_XYZ_weighted_had", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
       histos.add("Prof_Z_weighted_had", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("Prof_XYZ_weighted_pi", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("Prof_Z_weighted_pi", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("Prof_XYZ_weighted_ka", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("Prof_Z_weighted_ka", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("Prof_XYZ_weighted_prot", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
+      histos.add("Prof_Z_weighted_prot", "", {HistType::kTProfile2D, {centAxis, ptAxis}});
     }
 
     // initial array
@@ -503,6 +513,10 @@ struct V0ptHadPiKaProt {
       histos.add("MCGenerated/hPtEtaPhiPion", "MC charged pions' pt, eta, phi", kTH3D, {ptAxis, {100, 0., o2::constants::math::TwoPI}, {100, -2.01, 2.01}});
       histos.add("MCGenerated/hPtEtaPhiKaon", "MC charged kaons' pt, eta, phi", kTH3D, {ptAxis, {100, 0., o2::constants::math::TwoPI}, {100, -2.01, 2.01}});
       histos.add("MCGenerated/hPtEtaPhiProton", "MC charged protons' pt, eta, phi", kTH3D, {ptAxis, {100, 0., o2::constants::math::TwoPI}, {100, -2.01, 2.01}});
+      histos.add("MCGenerated/hPtEtaPhiCharged_gen", "MC charged particles' pt, eta, phi in the generated process", kTH3D, {ptAxis, {100, 0., o2::constants::math::TwoPI}, {100, -2.01, 2.01}});
+      histos.add("MCGenerated/hPtEtaPhiPion_gen", "MC charged pions' pt, eta, phi in the generated process", kTH3D, {ptAxis, {100, 0., o2::constants::math::TwoPI}, {100, -2.01, 2.01}});
+      histos.add("MCGenerated/hPtEtaPhiKaon_gen", "MC charged kaons' pt, eta, phi in the generated process", kTH3D, {ptAxis, {100, 0., o2::constants::math::TwoPI}, {100, -2.01, 2.01}});
+      histos.add("MCGenerated/hPtEtaPhiProton_gen", "MC charged protons' pt, eta, phi in the generated process", kTH3D, {ptAxis, {100, 0., o2::constants::math::TwoPI}, {100, -2.01, 2.01}});
 
       histos.add("MCReconstructed/hPtEtaPhiChargedParticle", "MC reconstructed charged particles' pt, eta, phi", kTH3D, {ptAxis, {100, 0., o2::constants::math::TwoPI}, {100, -2.01, 2.01}});
       histos.add("MCReconstructed/hPtEtaPhiChargedTrack", "MC reconstructed charged tracks' pt, eta, phi", kTH3D, {ptAxis, {100, 0., o2::constants::math::TwoPI}, {100, -2.01, 2.01}});
@@ -927,6 +941,109 @@ struct V0ptHadPiKaProt {
     return ptweight;
   }
 
+  void processMCGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions, MyMCTracks const& tracks)
+  {
+    histos.fill(HIST("MCGenerated/hMC"), 0.5);
+    if (std::abs(mcCollision.posZ()) < cfgCutVertex) {
+      histos.fill(HIST("MCGenerated/hMC"), 1.5);
+    }
+    auto cent = 0;
+
+    int nchInel = 0;
+    for (const auto& mcParticle : mcParticles) {
+      auto pdgcode = std::abs(mcParticle.pdgCode());
+      if (mcParticle.isPhysicalPrimary() && (pdgcode == PDG_t::kPiPlus || pdgcode == PDG_t::kKPlus || pdgcode == PDG_t::kProton || pdgcode == PDG_t::kElectron || pdgcode == PDG_t::kMuonMinus)) {
+        if (std::abs(mcParticle.eta()) < 1.0) {
+          nchInel = nchInel + 1;
+        }
+      }
+    }
+    if (nchInel > 0 && std::abs(mcCollision.posZ()) < cfgCutVertex)
+      histos.fill(HIST("MCGenerated/hMC"), 2.5);
+    std::vector<int64_t> selectedEvents(collisions.size());
+    int nevts = 0;
+
+    for (const auto& collision : collisions) {
+      if (!collision.sel8() || std::abs(collision.mcCollision().posZ()) > cfgCutVertex) {
+        continue;
+      }
+      if (cfgUseGoodITSLayerAllCut && !(collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))) {
+        continue;
+      }
+      if (cfgEvSelkNoSameBunchPileup && !(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))) {
+        continue;
+      }
+      if (cfgEvSelkNoITSROFrameBorder && !(collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (cfgEvSelkNoTimeFrameBorder && !(collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))) {
+        continue;
+      }
+      if (cfgEvSelUseGoodZvtxFT0vsPV && !(collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))) {
+        continue;
+      }
+
+      // events with selection bits based on occupancy time pattern
+      if (cfgEvSelUseOcuppancyTimeCut && !(collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
+        continue;
+      }
+
+      int occupancy = collision.trackOccupancyInTimeRange();
+      if (cfgEvSelSetOcuppancyRange && (occupancy < cfgMinOccupancy || occupancy > cfgMaxOccupancy)) {
+        continue;
+      }
+
+      auto rectrackspart = tracks.sliceBy(perCollision, collision.globalIndex());
+      cent = collision.centFT0C();
+      if (cfgUseSmallIonAdditionalEventCutInMC && !eventSelectedSmallion(collision, rectrackspart.size(), cent)) {
+        continue;
+      }
+
+      selectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
+    }
+    selectedEvents.resize(nevts);
+    const auto evtReconstructedAndSelected = std::find(selectedEvents.begin(), selectedEvents.end(), mcCollision.globalIndex()) != selectedEvents.end();
+    histos.fill(HIST("MCGenerated/hMC"), 3.5);
+    if (!evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
+      return;
+    }
+    histos.fill(HIST("MCGenerated/hMC"), 4.5);
+    histos.fill(HIST("MCGenerated/hCentgen"), cent);
+
+    // creating phi, pt, eta dstribution of generted MC particles
+
+    // Generated track variables
+    for (const auto& mcParticle : mcParticles) {
+      if (!mcParticle.has_mcCollision())
+        continue;
+
+      // charged check
+      auto pdgEntry = TDatabasePDG::Instance()->GetParticle(mcParticle.pdgCode());
+      if (!pdgEntry)
+        continue;
+      if (pdgEntry->Charge() == 0)
+        continue;
+
+      if (mcParticle.isPhysicalPrimary()) {
+        if ((mcParticle.pt() > cfgCutPtLower) && (mcParticle.pt() < cfgCutPtUpper) && (std::abs(mcParticle.eta()) < cfgCutEta)) {
+          histos.fill(HIST("MCGenerated/hPtEtaPhiCharged_gen"), mcParticle.pt(), mcParticle.eta(), mcParticle.phi());
+
+          auto pdgcode = std::abs(mcParticle.pdgCode());
+
+          if (pdgcode == PDG_t::kPiPlus)
+            histos.fill(HIST("MCGenerated/hPtEtaPhiPion_gen"), mcParticle.pt(), mcParticle.eta(), mcParticle.phi());
+
+          if (pdgcode == PDG_t::kKPlus)
+            histos.fill(HIST("MCGenerated/hPtEtaPhiKaon_gen"), mcParticle.pt(), mcParticle.eta(), mcParticle.phi());
+
+          if (pdgcode == PDG_t::kProton)
+            histos.fill(HIST("MCGenerated/hPtEtaPhiProton_gen"), mcParticle.pt(), mcParticle.eta(), mcParticle.phi());
+        }
+      }
+    } //! end particle loop
+  }
+  PROCESS_SWITCH(V0ptHadPiKaProt, processMCGen, "Process Monte-carlo generated data", false);
+
   // process MC recosnstructed data
   void processMCRec(MyMCRecCollisions::iterator const& collision, MyMCTracks const& tracks, aod::McCollisions const&, aod::McParticles const& mcParticles)
   {
@@ -1082,17 +1199,17 @@ struct V0ptHadPiKaProt {
           if (isPion) {
             histos.fill(HIST("h2DnsigmaPionTpcVsPtAfterCut"), track.pt(), nSigmaTpcPi);
             histos.fill(HIST("h2DnsigmaPionTofVsPtAfterCut"), track.pt(), nSigmaTofPi);
-            histos.fill(HIST("h2DnsigmaPionTpcVsTofAfterCut"), nSigmaTpcPi, nSigmaTofPi);
+            histos.fill(HIST("h2DnsigmaPionTpcVsTofAfterCut"), track.pt(), nSigmaTpcPi, nSigmaTofPi);
           }
           if (isKaon) {
             histos.fill(HIST("h2DnsigmaKaonTpcVsPtAfterCut"), track.pt(), nSigmaTpcKa);
             histos.fill(HIST("h2DnsigmaKaonTofVsPtAfterCut"), track.pt(), nSigmaTofKa);
-            histos.fill(HIST("h2DnsigmaKaonTpcVsTofAfterCut"), nSigmaTpcKa, nSigmaTofKa);
+            histos.fill(HIST("h2DnsigmaKaonTpcVsTofAfterCut"), track.pt(), nSigmaTpcKa, nSigmaTofKa);
           }
           if (isProton) {
             histos.fill(HIST("h2DnsigmaProtonTpcVsPtAfterCut"), track.pt(), nSigmaTpcProt);
             histos.fill(HIST("h2DnsigmaProtonTofVsPtAfterCut"), track.pt(), nSigmaTofProt);
-            histos.fill(HIST("h2DnsigmaProtonTpcVsTofAfterCut"), nSigmaTpcProt, nSigmaTofProt);
+            histos.fill(HIST("h2DnsigmaProtonTpcVsTofAfterCut"), track.pt(), nSigmaTpcProt, nSigmaTofProt);
           }
 
           auto pdgcodeRec = std::abs(particle.pdgCode());
@@ -1121,7 +1238,7 @@ struct V0ptHadPiKaProt {
       }
     } // end track loop
   }
-  PROCESS_SWITCH(V0ptHadPiKaProt, processMCRec, "Process Monte-carlo data", false);
+  PROCESS_SWITCH(V0ptHadPiKaProt, processMCRec, "Process Monte-carlo reconstructed data", false);
 
   // process Data
   void processData(AodCollisions::iterator const& coll, aod::BCsWithTimestamps const&, AodTracks const& inputTracks)
@@ -1301,17 +1418,17 @@ struct V0ptHadPiKaProt {
       if (isPion) {
         histos.fill(HIST("h2DnsigmaPionTpcVsPtAfterCut"), trkPt, nSigmaTpcPi);
         histos.fill(HIST("h2DnsigmaPionTofVsPtAfterCut"), trkPt, nSigmaTofPi);
-        histos.fill(HIST("h2DnsigmaPionTpcVsTofAfterCut"), nSigmaTpcPi, nSigmaTofPi);
+        histos.fill(HIST("h2DnsigmaPionTpcVsTofAfterCut"), trkPt, nSigmaTpcPi, nSigmaTofPi);
       }
       if (isKaon) {
         histos.fill(HIST("h2DnsigmaKaonTpcVsPtAfterCut"), trkPt, nSigmaTpcKa);
         histos.fill(HIST("h2DnsigmaKaonTofVsPtAfterCut"), trkPt, nSigmaTofKa);
-        histos.fill(HIST("h2DnsigmaKaonTpcVsTofAfterCut"), nSigmaTpcKa, nSigmaTofKa);
+        histos.fill(HIST("h2DnsigmaKaonTpcVsTofAfterCut"), trkPt, nSigmaTpcKa, nSigmaTofKa);
       }
       if (isProton) {
         histos.fill(HIST("h2DnsigmaProtonTpcVsPtAfterCut"), trkPt, nSigmaTpcProt);
         histos.fill(HIST("h2DnsigmaProtonTofVsPtAfterCut"), trkPt, nSigmaTofProt);
-        histos.fill(HIST("h2DnsigmaProtonTpcVsTofAfterCut"), nSigmaTpcProt, nSigmaTofProt);
+        histos.fill(HIST("h2DnsigmaProtonTpcVsTofAfterCut"), trkPt, nSigmaTpcProt, nSigmaTofProt);
       }
 
       if (track.sign() != 0) {
