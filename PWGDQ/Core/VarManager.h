@@ -1182,6 +1182,11 @@ class VarManager : public TObject
     fgMagField = magField;
   }
 
+  static float GetMagneticField()
+  {
+    return fgMagField;
+  }
+
   // Setup plane position for MFT-MCH matching
   static void SetMatchingPlane(float z)
   {
@@ -1197,6 +1202,11 @@ class VarManager : public TObject
   static void SetZShift(float z)
   {
     fgzShiftFwd = z;
+  }
+
+  static float GetZShift()
+  {
+    return fgzShiftFwd;
   }
 
   // Setup the 2 prong KFParticle
@@ -1738,8 +1748,7 @@ void VarManager::FillMuonPDca(const T& muon, const C& collision, float* values)
 
   if constexpr ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0) {
 
-    o2::dataformats::GlobalFwdTrack propmuon = PropagateMuon(muon, collision);
-    o2::dataformats::GlobalFwdTrack propmuonAtDCA = PropagateMuon(muon, collision, kToDCA);
+    o2::dataformats::GlobalFwdTrack propmuonAtDCA = o2::aod::fwdtrackutils::propagateMuon(muon, muon, collision, o2::aod::fwdtrackutils::propagationPoint::kToDCA, fgzShiftFwd, fgMagField);
 
     float dcaX = (propmuonAtDCA.getX() - collision.posX());
     float dcaY = (propmuonAtDCA.getY() - collision.posY());
@@ -1762,7 +1771,7 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
   }
 
   if constexpr ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0 || (fillMap & MuonCovRealign) > 0) {
-    o2::dataformats::GlobalFwdTrack propmuon = PropagateMuon(muon, collision);
+    o2::dataformats::GlobalFwdTrack propmuon = o2::aod::fwdtrackutils::propagateMuon(muon, muon, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, fgzShiftFwd, fgMagField);
     values[kPt] = propmuon.getPt();
     values[kX] = propmuon.getX();
     values[kY] = propmuon.getY();
@@ -1774,8 +1783,8 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
     // Redo propagation only for muon tracks
     // propagation of MFT tracks alredy done in fwdtrack-extention task
     if (static_cast<int>(muon.trackType()) > 2) {
-      o2::dataformats::GlobalFwdTrack propmuonAtDCA = PropagateMuon(muon, collision, kToDCA);
-      o2::dataformats::GlobalFwdTrack propmuonAtRabs = PropagateMuon(muon, collision, kToRabs);
+      o2::dataformats::GlobalFwdTrack propmuonAtDCA = o2::aod::fwdtrackutils::propagateMuon(muon, muon, collision, o2::aod::fwdtrackutils::propagationPoint::kToDCA, fgzShiftFwd, fgMagField);
+      o2::dataformats::GlobalFwdTrack propmuonAtRabs = o2::aod::fwdtrackutils::propagateMuon(muon, muon, collision, o2::aod::fwdtrackutils::propagationPoint::kToRabs, 0, fgMagField);
       float dcaX = (propmuonAtDCA.getX() - collision.posX());
       float dcaY = (propmuonAtDCA.getY() - collision.posY());
       values[kMuonDCAx] = dcaX;
@@ -1811,7 +1820,7 @@ void VarManager::FillGlobalMuonRefit(T1 const& muontrack, T2 const& mfttrack, co
     values = fgValues;
   }
   if constexpr ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0) {
-    o2::dataformats::GlobalFwdTrack propmuon = PropagateMuon(muontrack, collision);
+    o2::dataformats::GlobalFwdTrack propmuon = o2::aod::fwdtrackutils::propagateMuon(muontrack, muontrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, fgzShiftFwd, fgMagField);
     double px = propmuon.getP() * sin(M_PI / 2 - atan(mfttrack.tgl())) * cos(mfttrack.phi());
     double py = propmuon.getP() * sin(M_PI / 2 - atan(mfttrack.tgl())) * sin(mfttrack.phi());
     double pz = propmuon.getP() * cos(M_PI / 2 - atan(mfttrack.tgl()));
@@ -1836,7 +1845,7 @@ void VarManager::FillGlobalMuonRefitCov(T1 const& muontrack, T2 const& mfttrack,
   }
   if constexpr ((MuonfillMap & MuonCov) > 0) {
     if constexpr ((MFTfillMap & MFTCov) > 0) {
-      o2::dataformats::GlobalFwdTrack propmuon = PropagateMuon(muontrack, collision);
+      o2::dataformats::GlobalFwdTrack propmuon = o2::aod::fwdtrackutils::propagateMuon(muontrack, muontrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, fgzShiftFwd, fgMagField);
       auto mft = o2::aod::fwdtrackutils::getTrackParCovFwdShift(mfttrack, fgzShiftFwd, mftcov);
 
       o2::dataformats::GlobalFwdTrack globalRefit = o2::aod::fwdtrackutils::refitGlobalMuonCov(propmuon, mft);
@@ -3178,7 +3187,7 @@ void VarManager::FillTrackCollision(T const& track, C const& collision, float* v
   }
   if constexpr ((fillMap & MuonCov) > 0 || (fillMap & MuonCovRealign) > 0 || (fillMap & ReducedMuonCov) > 0) {
 
-    o2::dataformats::GlobalFwdTrack propmuonAtDCA = PropagateMuon(track, collision, kToDCA);
+    o2::dataformats::GlobalFwdTrack propmuonAtDCA = o2::aod::fwdtrackutils::propagateMuon(track, track, collision, o2::aod::fwdtrackutils::propagationPoint::kToDCA, fgzShiftFwd, fgMagField);
 
     float dcaX = (propmuonAtDCA.getX() - collision.posX());
     float dcaY = (propmuonAtDCA.getY() - collision.posY());
@@ -3439,8 +3448,8 @@ void VarManager::FillPairPropagateMuon(T1 const& muon1, T2 const& muon2, const C
   if (!values) {
     values = fgValues;
   }
-  o2::dataformats::GlobalFwdTrack propmuon1 = PropagateMuon(muon1, collision);
-  o2::dataformats::GlobalFwdTrack propmuon2 = PropagateMuon(muon2, collision);
+  o2::dataformats::GlobalFwdTrack propmuon1 = o2::aod::fwdtrackutils::propagateMuon(muon1, muon1, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, fgzShiftFwd, fgMagField);
+  o2::dataformats::GlobalFwdTrack propmuon2 = o2::aod::fwdtrackutils::propagateMuon(muon2, muon2, collision, o2::aod::fwdtrackutils::propagationPoint::kToVertex, fgzShiftFwd, fgMagField);
 
   float m = o2::constants::physics::MassMuon;
 

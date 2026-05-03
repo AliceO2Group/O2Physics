@@ -14,6 +14,7 @@
 
 #include "PWGDQ/Core/VarManager.h"
 
+#include "Common/Core/fwdtrackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -638,9 +639,11 @@ struct mftMchMatcher {
       o2::track::TrackParCovFwd mftprop = VarManager::FwdToTrackPar(mfttrack, mfttrackcov);
       o2::track::TrackParCovFwd muonprop = VarManager::FwdToTrackPar(muontrack, muontrack);
       if (fzMatching.value < 0.) {
+        float bz = VarManager::GetMagneticField();
         mftprop = VarManager::PropagateFwd(mfttrack, mfttrackcov, fzMatching.value);
-        muonprop = VarManager::PropagateMuon(muontrack, collision, VarManager::kToMatching);
+        muonprop = o2::aod::fwdtrackutils::propagateMuon(muontrack, muontrack, collision, o2::aod::fwdtrackutils::propagationPoint::kToMatchingPlane, fzMatching.value, bz);
       }
+
       auto muonpropCov = muonprop.getCovariances();
       auto mftpropCov = mftprop.getCovariances();
 
