@@ -36,7 +36,6 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/PID.h>
 
-#include "TDatabasePDG.h"
 #include <TComplex.h>
 #include <TF1.h>
 #include <TH2.h>
@@ -71,6 +70,7 @@ struct V0ptHadPiKaProt {
   o2::aod::ITSResponse itsResponse;
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
+
   Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "https://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPath{"ccdbPath", "Users/s/swati/PhiWeight", "CCDB path to ccdb object containing phi weight in a 3D histogram"};
@@ -509,6 +509,7 @@ struct V0ptHadPiKaProt {
     if (cfgIsMC) {
       // MC event counts
       histos.add("MCGenerated/hMC", "MC Event statistics", kTH1F, {{10, 0.0f, 10.0f}});
+      histos.add("MCGenerated/hCentgen", "MC generated centrality", kTH1F, {centAxis});
       histos.add("MCGenerated/hPtEtaPhiCharged", "MC charged particles' pt, eta, phi", kTH3D, {ptAxis, {100, 0., o2::constants::math::TwoPI}, {100, -2.01, 2.01}});
       histos.add("MCGenerated/hPtEtaPhiPion", "MC charged pions' pt, eta, phi", kTH3D, {ptAxis, {100, 0., o2::constants::math::TwoPI}, {100, -2.01, 2.01}});
       histos.add("MCGenerated/hPtEtaPhiKaon", "MC charged kaons' pt, eta, phi", kTH3D, {ptAxis, {100, 0., o2::constants::math::TwoPI}, {100, -2.01, 2.01}});
@@ -1017,18 +1018,18 @@ struct V0ptHadPiKaProt {
       if (!mcParticle.has_mcCollision())
         continue;
 
-      // charged check
-      auto pdgEntry = TDatabasePDG::Instance()->GetParticle(mcParticle.pdgCode());
-      if (!pdgEntry)
-        continue;
-      if (pdgEntry->Charge() == 0)
-        continue;
+      auto pdgcode = std::abs(mcParticle.pdgCode());
+      if (!(pdgcode == PDG_t::kPiPlus ||
+            pdgcode == PDG_t::kKPlus ||
+            pdgcode == PDG_t::kProton ||
+            pdgcode == PDG_t::kElectron ||
+            pdgcode == PDG_t::kMuonMinus)) {
+        continue; // skip this track
+      }
 
       if (mcParticle.isPhysicalPrimary()) {
         if ((mcParticle.pt() > cfgCutPtLower) && (mcParticle.pt() < cfgCutPtUpper) && (std::abs(mcParticle.eta()) < cfgCutEta)) {
           histos.fill(HIST("MCGenerated/hPtEtaPhiCharged_gen"), mcParticle.pt(), mcParticle.eta(), mcParticle.phi());
-
-          auto pdgcode = std::abs(mcParticle.pdgCode());
 
           if (pdgcode == PDG_t::kPiPlus)
             histos.fill(HIST("MCGenerated/hPtEtaPhiPion_gen"), mcParticle.pt(), mcParticle.eta(), mcParticle.phi());
@@ -1096,18 +1097,18 @@ struct V0ptHadPiKaProt {
       if (!mcParticle.has_mcCollision())
         continue;
 
-      // charged check
-      auto pdgEntry = TDatabasePDG::Instance()->GetParticle(mcParticle.pdgCode());
-      if (!pdgEntry)
-        continue;
-      if (pdgEntry->Charge() == 0)
-        continue;
+      auto pdgcode = std::abs(mcParticle.pdgCode());
+      if (!(pdgcode == PDG_t::kPiPlus ||
+            pdgcode == PDG_t::kKPlus ||
+            pdgcode == PDG_t::kProton ||
+            pdgcode == PDG_t::kElectron ||
+            pdgcode == PDG_t::kMuonMinus)) {
+        continue; // skip this track
+      }
 
       if (mcParticle.isPhysicalPrimary()) {
         if ((mcParticle.pt() > cfgCutPtLower) && (mcParticle.pt() < cfgCutPtUpper) && (std::abs(mcParticle.eta()) < cfgCutEta)) {
           histos.fill(HIST("MCGenerated/hPtEtaPhiCharged"), mcParticle.pt(), mcParticle.eta(), mcParticle.phi());
-
-          auto pdgcode = std::abs(mcParticle.pdgCode());
 
           if (pdgcode == PDG_t::kPiPlus)
             histos.fill(HIST("MCGenerated/hPtEtaPhiPion"), mcParticle.pt(), mcParticle.eta(), mcParticle.phi());
