@@ -168,6 +168,7 @@ struct taggingHFE {
     Configurable<float> cfg_min_TOFNsigmaKa{"cfg_min_TOFNsigmaKa", -3, "min n sigma ka in TOF"};
     Configurable<float> cfg_max_TOFNsigmaKa{"cfg_max_TOFNsigmaKa", +3, "max n sigma ka in TOF"};
     Configurable<bool> requirePiKa{"requirePiKa", false, "require hadron to be pion or kaon"}; // proton is not involved in semileptonic decay of HF hadrons often.
+    Configurable<bool> applyTOFif{"applyTOFif", false, "apply TOFif for pion or kaon"};        // proton is not involved in semileptonic decay of HF hadrons often.
   } hadronCut;
 
   struct : ConfigurableGroup {
@@ -465,6 +466,10 @@ struct taggingHFE {
     bool is_ka_included_TOF = track.hasTOF() ? (hadronCut.cfg_min_TOFNsigmaKa < tofNSigmaKa && tofNSigmaKa < hadronCut.cfg_max_TOFNsigmaKa) : true;
     bool is_pi_included_TPC = hadronCut.cfg_min_TPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < hadronCut.cfg_max_TPCNsigmaPi;
     bool is_pi_included_TOF = track.hasTOF() ? (hadronCut.cfg_min_TOFNsigmaPi < tofNSigmaPi && tofNSigmaPi < hadronCut.cfg_max_TOFNsigmaPi) : true;
+    if (!hadronCut.applyTOFif) {
+      is_ka_included_TOF = true;
+      is_pi_included_TOF = true;
+    }
     return (is_ka_included_TPC && is_ka_included_TOF) || (is_pi_included_TPC && is_pi_included_TOF);
   }
 
