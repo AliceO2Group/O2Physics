@@ -37,6 +37,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
+#include <Framework/StringHelpers.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TFormula.h>
@@ -54,6 +55,7 @@
 #include <chrono>
 #include <cmath>
 #include <concepts>
+#include <cstddef>
 #include <cstdint>
 #include <initializer_list>
 #include <limits>
