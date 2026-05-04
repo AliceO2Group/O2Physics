@@ -15,41 +15,21 @@
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "Common/CCDB/EventSelectionParams.h"
-#include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
-#include <CCDB/BasicCCDBManager.h>
-#include <CommonConstants/MathConstants.h>
-#include <CommonConstants/PhysicsConstants.h>
-#include <Framework/ASoA.h>
-#include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
-#include <Framework/AnalysisTask.h>
-#include <Framework/Configurable.h>
-#include <Framework/HistogramRegistry.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
-#include <Framework/OutputObjHeader.h>
-#include <Framework/SliceCache.h>
-#include <Framework/runDataProcessing.h>
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
-#include <TH1.h>
-#include <TList.h>
-#include <TObject.h>
-#include <TPDGCode.h>
-#include <TString.h>
-
-#include <cmath>
-#include <cstdint>
+#include <array>
 #include <string>
-#include <string_view>
 #include <vector>
 
 using namespace o2;
@@ -199,11 +179,6 @@ enum CentEstType {
   kCentFT0C
 };
 
-enum RunType {
-  kRun3 = 0,
-  kRun2
-};
-
 enum ParticleType {
   kLambda = 0,
   kAntiLambda
@@ -265,8 +240,6 @@ struct LambdaTableProducer {
   Configurable<float> cMinCent{"cMinCent", 0., "Minumum Centrality"};
   Configurable<float> cMaxCent{"cMaxCent", 100.0, "Maximum Centrality"};
   Configurable<bool> cSel8Trig{"cSel8Trig", true, "Sel8 (T0A + T0C) Selection Run3"};
-  Configurable<bool> cInt7Trig{"cInt7Trig", false, "kINT7 MB Trigger"};
-  Configurable<bool> cSel7Trig{"cSel7Trig", false, "Sel7 (V0A + V0C) Selection Run2"};
   Configurable<bool> cTriggerTvxSel{"cTriggerTvxSel", false, "Trigger Time and Vertex Selection"};
   Configurable<bool> cTFBorder{"cTFBorder", false, "Timeframe Border Selection"};
   Configurable<bool> cNoItsROBorder{"cNoItsROBorder", false, "No ITSRO Border Cut"};
@@ -308,7 +281,6 @@ struct LambdaTableProducer {
   Configurable<int> cV0TypeSelection{"cV0TypeSelection", 1, "V0 Type Selection"};
 
   // V0s MC
-  Configurable<bool> cHasMcFlag{"cHasMcFlag", true, "Has Mc Tag"};
   Configurable<bool> cSelectTrueLambda{"cSelectTrueLambda", false, "Select True Lambda"};
   Configurable<bool> cSelMCPSV0{"cSelMCPSV0", false, "Select Primary/Secondary V0"};
   Configurable<bool> cCheckRecoDauFlag{"cCheckRecoDauFlag", true, "Check for reco daughter PID"};
@@ -345,6 +317,7 @@ struct LambdaTableProducer {
 
   // Initialize Global Variables
   float cent = 0., mult = 0.;
+  TList *ccdbObjRecoEff, *ccdbObjMatchEff;
 
   void init(InitContext const&)
   {
@@ -442,7 +415,7 @@ struct LambdaTableProducer {
     histos.addClone("McRec/Lambda/", "McRec/AntiLambda/");
 
     // MC Generated Histograms
-    if (doprocessMCRun3 || doprocessMCRun2 || doprocessMCRecoRun3 || doprocessMCRecoRun2) {
+    if (doprocessMCRecoGen || doprocessMCReco) {
       // McReco Histos
       histos.add("Tracks/h2f_tracks_pid_before_sel", "PIDs", kTH2F, {axisPID, axisV0Pt});
       histos.add("Tracks/h2f_tracks_pid_after_sel", "PIDs", kTH2F, {axisPID, axisV0Pt});
@@ -505,32 +478,22 @@ struct LambdaTableProducer {
     histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kNoPFCorr, "kNoPFCorr");
   }
 
-  template <RunType run, typename C>
+  template <typename C>
   bool selCollision(C const& col)
   {
-    // VtxZ Selection
+    // Vz Selection
     if (col.posZ() <= cMinZVtx || col.posZ() >= cMaxZVtx) {
       return false;
     }
 
-    if constexpr (run == kRun3) { // Run3 Min-Bias Trigger
-      // select centrality estimator
-      if (cCentEstimator == kCentFT0M) {
-        cent = col.centFT0M();
-      } else if (cCentEstimator == kCentFT0C) {
-        cent = col.centFT0C();
-      }
-      if (cSel8Trig && !col.sel8()) {
-        return false;
-      }
-    } else { // Run2 Min-Bias Trigger
-      cent = col.centRun2V0M();
-      if (cInt7Trig && !col.alias_bit(kINT7)) {
-        return false;
-      }
-      if (cSel7Trig && !col.sel7()) {
-        return false;
-      }
+    // Run 3 Min-Bias Trigger
+    if (cSel8Trig && !col.sel8()) {
+      return false;
+    }
+    if (cCentEstimator == kCentFT0M) {
+      cent = col.centFT0M();
+    } else if (cCentEstimator == kCentFT0C) {
+      cent = col.centFT0C();
     }
 
     if (cent <= cMinCent || cent >= cMaxCent) { // select centrality percentile class
@@ -851,27 +814,13 @@ struct LambdaTableProducer {
   template <ParticleType part, typename V, typename T>
   float getCorrectionFactors(V const& v0, T const&)
   {
-    // Check for efficiency correction flag
-    if (!cCorrectionFlag) {
-      return 1.;
-    }
-
-    // Get  from CCDB
-    auto ccdbObj = ccdb->getForTimeStamp<TList>(cPathCCDB.value, -1);
-
-    // Check CCDB Object
-    if (!ccdbObj) {
-      LOGF(warning, "CCDB OBJECT NOT FOUND");
-      return 1.;
-    }
-
     // initialize efficiency factor and primary fraction values
     float effCorrFact = 1., primFrac = 1., matchEffFact = 1.;
     float rap = (cDoEtaAnalysis) ? v0.eta() : v0.yLambda();
 
     // Get Efficiency Factor
     if (cGetEffFact) {
-      TObject* objEff = reinterpret_cast<TObject*>(ccdbObj->FindObject(Form("%s", vCorrFactStrings[cCorrFactHist][part].c_str())));
+      TObject* objEff = reinterpret_cast<TObject*>(ccdbObjRecoEff->FindObject(Form("%s", vCorrFactStrings[cCorrFactHist][part].c_str())));
       TH1F* histEff = reinterpret_cast<TH1F*>(objEff->Clone());
       if (histEff->GetDimension() == TwoDimCorr) {
         histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPtCent);
@@ -888,9 +837,8 @@ struct LambdaTableProducer {
     }
 
     // Get Primary Fraction
-    // (The dimension of this could be different than efficiency because of large errors !!!)
     if (cGetPrimFrac) {
-      TObject* objPrm = reinterpret_cast<TObject*>(ccdbObj->FindObject(Form("%s", vPrimFracStrings[cPrimFracHist][part].c_str())));
+      TObject* objPrm = reinterpret_cast<TObject*>(ccdbObjRecoEff->FindObject(Form("%s", vPrimFracStrings[cPrimFracHist][part].c_str())));
       TH1F* histPrm = reinterpret_cast<TH1F*>(objPrm->Clone());
       if (histPrm->GetDimension() == TwoDimCorr) {
         histos.fill(HIST("Tracks/h1f_tracks_info"), kPFCorrPtCent);
@@ -910,7 +858,6 @@ struct LambdaTableProducer {
     if (cGetMatchEff) {
       auto posTrack = v0.template posTrack_as<T>();
       auto negTrack = v0.template negTrack_as<T>();
-      auto ccdbObjMatchEff = ccdb->getForTimeStamp<TList>(cPathCCDBMatchEff.value, -1);
       TObject* objMatchEff = reinterpret_cast<TObject*>(ccdbObjMatchEff->FindObject("hITSTPCMatchingEfficiency"));
       TH1F* histMatchEff = reinterpret_cast<TH1F*>(objMatchEff->Clone());
       float posTrackMatchEff = histMatchEff->GetBinContent(histMatchEff->FindBin(cent, posTrack.pt()));
@@ -1021,15 +968,15 @@ struct LambdaTableProducer {
   }
 
   // Reconstructed Level Tables
-  template <RunType run, DMCType dmc, typename C, typename V, typename T>
-  void fillLambdaRecoTables(C const& collision, V const& v0tracks, T const& tracks)
+  template <DMCType dmc, typename C, typename B, typename V, typename T>
+  void fillLambdaRecoTables(C const& collision, B const&, V const& v0tracks, T const& tracks)
   {
     // Total Collisions
     histos.fill(HIST("Events/h1f_collisions_info"), kTotCol);
 
     // Select Collision (Only for Data... McRec has been selected already !!!)
     if constexpr (dmc == kData) {
-      if (!selCollision<run>(collision)) {
+      if (!selCollision(collision)) {
         return;
       }
     }
@@ -1038,6 +985,13 @@ struct LambdaTableProducer {
     histos.fill(HIST("Events/h1f_collisions_info"), kPassSelCol);
     histos.fill(HIST("Events/h1f_collision_posZ"), collision.posZ());
     histos.fill(HIST("Events/h2f_pvmult_vs_cent"), cent, collision.multNTracksPV());
+
+    // Get correction object from CCDB
+    if (cCorrectionFlag) {
+      auto bc = collision.template foundBC_as<B>();
+      ccdbObjRecoEff = ccdb->getForTimeStamp<TList>(cPathCCDB.value, bc.timestamp());
+      ccdbObjMatchEff = ccdb->getForTimeStamp<TList>(cPathCCDBMatchEff.value, bc.timestamp());
+    }
 
     // Fill Collision Table
     lambdaCollisionTable(cent, mult, collision.posX(), collision.posY(), collision.posZ());
@@ -1077,11 +1031,9 @@ struct LambdaTableProducer {
       // We have v0 as lambda
       histos.fill(HIST("Tracks/h1f_tracks_info"), kAllSelPassed);
 
-      // Remove lambda with ambiguous daughters (Only for run3)
-      if constexpr (run == kRun3) {
-        if (cRemoveAmbiguousTracks && hasAmbiguousDaughters(v0, tracks)) {
-          continue;
-        }
+      // Remove lambda with ambiguous daughters
+      if (cRemoveAmbiguousTracks && hasAmbiguousDaughters(v0, tracks)) {
+        continue;
       }
 
       // Get Lambda mass and kinematic variables
@@ -1133,7 +1085,7 @@ struct LambdaTableProducer {
   }
 
   // MC Generater Level Tables
-  template <RunType run, typename C, typename M>
+  template <typename C, typename M>
   void fillLambdaMcGenTables(C const& mcCollision, M const& mcParticles)
   {
     // Fill McGen Collision Table
@@ -1241,8 +1193,8 @@ struct LambdaTableProducer {
     }
   }
 
-  template <RunType run, DMCType dmc, typename M, typename C, typename V, typename T, typename P>
-  void analyzeMcRecoGen(M const& mcCollision, C const& collisions, V const& V0s, T const& tracks, P const& mcParticles)
+  template <DMCType dmc, typename M, typename C, typename B, typename V, typename T, typename P>
+  void analyzeMcRecoGen(M const& mcCollision, C const& collisions, B const& bc, V const& V0s, T const& tracks, P const& mcParticles)
   {
     // Number of Rec Collisions Associated to the McGen Collision
     int nRecCols = collisions.size();
@@ -1255,50 +1207,41 @@ struct LambdaTableProducer {
     }
     histos.fill(HIST("McGen/h1f_collisions_info"), kTotCol);
     // Check the reco collision
-    if (!collisions.begin().has_mcCollision() || !selCollision<run>(collisions.begin()) || collisions.begin().mcCollisionId() != mcCollision.globalIndex()) {
+    if (!collisions.begin().has_mcCollision() || !selCollision(collisions.begin()) || collisions.begin().mcCollisionId() != mcCollision.globalIndex()) {
       return;
     }
     histos.fill(HIST("McGen/h1f_collisions_info"), kPassSelCol);
     histos.fill(HIST("McGen/h2f_collision_posZ"), mcCollision.posZ(), collisions.begin().posZ());
     auto v0Tracks = V0s.sliceBy(perCollision, collisions.begin().globalIndex());
-    fillLambdaRecoTables<run, dmc>(collisions.begin(), v0Tracks, tracks);
-    fillLambdaMcGenTables<run>(mcCollision, mcParticles);
+    fillLambdaRecoTables<dmc>(collisions.begin(), bc, v0Tracks, tracks);
+    fillLambdaMcGenTables(mcCollision, mcParticles);
   }
 
-  // Collision, tracks and V0s
-  using CollisionsRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::TPCMults, aod::PVMults, aod::MultsGlobal>;
-  using CollisionsRun2 = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::TPCMults, aod::PVMults, aod::MultsGlobal>;
+  // BC, Collision, tracks and V0s
+  using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
+  using Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::TPCMults, aod::PVMults, aod::MultsGlobal>;
   using Tracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr, aod::TrackCompColls>;
-  using TracksRun2 = soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr>;
   using TracksMC = soa::Join<Tracks, aod::McTrackLabels>;
-  using TracksMCRun2 = soa::Join<TracksRun2, aod::McTrackLabels>;
   using McV0Tracks = soa::Join<aod::V0Datas, aod::McV0Labels>;
 
   SliceCache cache;
   Preslice<soa::Join<aod::V0Datas, aod::McV0Labels>> perCollision = aod::v0data::collisionId;
 
-  void processDummy(CollisionsRun3::iterator const&) {}
+  void processDummy(Collisions::iterator const&) {}
 
   PROCESS_SWITCH(LambdaTableProducer, processDummy, "Dummy Process", true);
 
-  void processDataRun3(CollisionsRun3::iterator const& collision, aod::V0Datas const& V0s, Tracks const& tracks)
+  void processData(Collisions::iterator const& collision, BCsRun3 const& bc, aod::V0Datas const& V0s, Tracks const& tracks)
   {
-    fillLambdaRecoTables<kRun3, kData>(collision, V0s, tracks);
+    fillLambdaRecoTables<kData>(collision, bc, V0s, tracks);
   }
 
-  PROCESS_SWITCH(LambdaTableProducer, processDataRun3, "Process for Run3 DATA", false);
+  PROCESS_SWITCH(LambdaTableProducer, processData, "Process for DATA", false);
 
-  void processDataRun2(CollisionsRun2::iterator const& collision, aod::V0Datas const& V0s, TracksRun2 const& tracks)
-  {
-    fillLambdaRecoTables<kRun2, kData>(collision, V0s, tracks);
-  }
-
-  PROCESS_SWITCH(LambdaTableProducer, processDataRun2, "Process for Run2 DATA", false);
-
-  void processMatchEffData(CollisionsRun3::iterator const& collision, Tracks const& tracks)
+  void processMatchEffData(Collisions::iterator const& collision, Tracks const& tracks)
   {
     // check collision
-    if (!selCollision<kRun3>(collision)) {
+    if (!selCollision(collision)) {
       return;
     }
     // Get Matching Efficiency
@@ -1307,34 +1250,22 @@ struct LambdaTableProducer {
 
   PROCESS_SWITCH(LambdaTableProducer, processMatchEffData, "Process for Matching Efficieny Calculation", false);
 
-  void processMCRecoRun3(soa::Join<CollisionsRun3, aod::McCollisionLabels>::iterator const& collision, aod::McCollisions const&,
-                         McV0Tracks const& V0s, TracksMC const& tracks, aod::McParticles const&)
+  void processMCReco(soa::Join<Collisions, aod::McCollisionLabels>::iterator const& collision, aod::McCollisions const&, BCsRun3 const& bc,
+                     McV0Tracks const& V0s, TracksMC const& tracks, aod::McParticles const&)
   {
     // check collision
-    if (!selCollision<kRun3>(collision)) {
+    if (!selCollision(collision)) {
       return;
     }
-    fillLambdaRecoTables<kRun3, kMC>(collision, V0s, tracks);
+    fillLambdaRecoTables<kMC>(collision, bc, V0s, tracks);
   }
 
-  PROCESS_SWITCH(LambdaTableProducer, processMCRecoRun3, "Process for Run3 McReco DATA", false);
+  PROCESS_SWITCH(LambdaTableProducer, processMCReco, "Process for McReco DATA", false);
 
-  void processMCRecoRun2(soa::Join<CollisionsRun2, aod::McCollisionLabels>::iterator const& collision, aod::McCollisions const&,
-                         McV0Tracks const& V0s, TracksMCRun2 const& tracks, aod::McParticles const&)
+  void processMatchEffMCReco(soa::Join<Collisions, aod::McCollisionLabels>::iterator const& collision, aod::McCollisions const&, TracksMC const& tracks, aod::McParticles const&)
   {
     // check collision
-    if (!selCollision<kRun2>(collision)) {
-      return;
-    }
-    fillLambdaRecoTables<kRun2, kMC>(collision, V0s, tracks);
-  }
-
-  PROCESS_SWITCH(LambdaTableProducer, processMCRecoRun2, "Process for Run2 McReco DATA", false);
-
-  void processMatchEffMCReco(soa::Join<CollisionsRun3, aod::McCollisionLabels>::iterator const& collision, aod::McCollisions const&, TracksMC const& tracks, aod::McParticles const&)
-  {
-    // check collision
-    if (!selCollision<kRun3>(collision)) {
+    if (!selCollision(collision)) {
       return;
     }
     // Get Matching Efficiency
@@ -1343,25 +1274,15 @@ struct LambdaTableProducer {
 
   PROCESS_SWITCH(LambdaTableProducer, processMatchEffMCReco, "Process for Matching Efficieny Calculation at MC Reconstructed Level", false);
 
-  void processMCRun3(aod::McCollisions::iterator const& mcCollision,
-                     soa::SmallGroups<soa::Join<CollisionsRun3, aod::McCollisionLabels>> const& collisions,
-                     McV0Tracks const& V0s, TracksMC const& tracks,
-                     aod::McParticles const& mcParticles)
+  void processMCRecoGen(aod::McCollisions::iterator const& mcCollision,
+                        soa::SmallGroups<soa::Join<Collisions, aod::McCollisionLabels>> const& collisions, BCsRun3 const& bc,
+                        McV0Tracks const& V0s, TracksMC const& tracks,
+                        aod::McParticles const& mcParticles)
   {
-    analyzeMcRecoGen<kRun3, kMC>(mcCollision, collisions, V0s, tracks, mcParticles);
+    analyzeMcRecoGen<kMC>(mcCollision, collisions, bc, V0s, tracks, mcParticles);
   }
 
-  PROCESS_SWITCH(LambdaTableProducer, processMCRun3, "Process for Run3 MC RecoGen", false);
-
-  void processMCRun2(aod::McCollisions::iterator const& mcCollision,
-                     soa::SmallGroups<soa::Join<CollisionsRun2, aod::McCollisionLabels>> const& collisions,
-                     McV0Tracks const& V0s, TracksMCRun2 const& tracks,
-                     aod::McParticles const& mcParticles)
-  {
-    analyzeMcRecoGen<kRun2, kMC>(mcCollision, collisions, V0s, tracks, mcParticles);
-  }
-
-  PROCESS_SWITCH(LambdaTableProducer, processMCRun2, "Process for Run2 MC RecoGen", false);
+  PROCESS_SWITCH(LambdaTableProducer, processMCRecoGen, "Process for MC RecoGen", false);
 };
 
 struct LambdaTracksExtProducer {
