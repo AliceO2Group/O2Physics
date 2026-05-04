@@ -114,7 +114,7 @@ struct V0ptHadPiKaProt {
   Configurable<float> cfgnSigmaOtherParticles{"cfgnSigmaOtherParticles", 3.0f, "PID nSigma cut to remove other particles (default:3)"};
   Configurable<float> cfgnSigmaCutTPC{"cfgnSigmaCutTPC", 2.0f, "PID nSigma cut for TPC"};
   Configurable<float> cfgnSigmaCutTOF{"cfgnSigmaCutTOF", 2.0f, "PID nSigma cut for TOF"};
-  Configurable<bool> cfgUseNewSeperationPid{"cfgUseNewSeperationPid", true, "Use seperation based PID cuts (NEW)"};
+  Configurable<bool> cfgUseNewSeperationPid{"cfgUseNewSeperationPid", false, "Use seperation based PID cuts (NEW)"};
   Configurable<float> cfgnSigmaCutTPCHigherPt{"cfgnSigmaCutTPCHigherPt", 2.0f, "PID nSigma cut for TPC at higher pt"};
   Configurable<float> cfgnSigmaCutTOFHigherPt{"cfgnSigmaCutTOFHigherPt", 2.0f, "PID nSigma cut for TOF at higher pt"};
   Configurable<float> cfgnSigmaSeperationCut{"cfgnSigmaSeperationCut", 3.5f, "PID nSigma of other species must be greater than the vale"};
