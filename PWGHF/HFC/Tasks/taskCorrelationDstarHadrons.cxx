@@ -14,6 +14,8 @@
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 /// \author Shyam Kumar <shyam.kumar@cern.ch>
 
+/// \brief Task to strore correlations between D* and hadrons.
+
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
@@ -131,14 +133,22 @@ struct HfTaskCorrelationDstarHadrons {
     AxisSpec const axisSpecPtHadron = {ptHadronBinsEdges};
     AxisSpec const axisSpecPoolBin = {9, 0., 9.};
 
-    registry.add("hCorrel2DVsPtSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + stringPoolBin + "entries", {HistType::kTHnSparseD, {axisSpecDeltaPhi, axisSpecDeltaEta, axisSpecPtDstar, axisSpecPtHadron, axisSpecPoolBin}}, true);
-    registry.add("hCorrel2DPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2D, {axisSpecDeltaPhi, axisSpecDeltaEta}}, true);
-    registry.add("hDeltaEtaPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaEta + "entries", {HistType::kTH1D, {axisSpecDeltaEta}}, true);
-    registry.add("hDeltaPhiPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + "entries", {HistType::kTH1D, {axisSpecDeltaPhi}}, true);
-    registry.add("hCorrel2DVsPtSidebands", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + stringPoolBin + "entries", {HistType::kTHnSparseD, {axisSpecDeltaPhi, axisSpecDeltaEta, axisSpecPtDstar, axisSpecPtHadron, axisSpecPoolBin}}, true);
-    registry.add("hCorrel2DPtIntSidebands", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2D, {axisSpecDeltaPhi, axisSpecDeltaEta}}, true);
-    registry.add("hDeltaEtaPtIntSidebands", stringDHadron + stringSideband + stringDeltaEta + "entries", {HistType::kTH1D, {axisSpecDeltaEta}}, true);
-    registry.add("hDeltaPhiPtIntSidebands", stringDHadron + stringSideband + stringDeltaPhi + "entries", {HistType::kTH1D, {axisSpecDeltaPhi}}, true);
+    if (doprocessData) {
+      registry.add("hCorrel2DVsPtSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + stringPoolBin + "entries", {HistType::kTHnSparseD, {axisSpecDeltaPhi, axisSpecDeltaEta, axisSpecPtDstar, axisSpecPtHadron, axisSpecPoolBin}}, true);
+      registry.add("hCorrel2DPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2D, {axisSpecDeltaPhi, axisSpecDeltaEta}}, true);
+      registry.add("hDeltaEtaPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaEta + "entries", {HistType::kTH1D, {axisSpecDeltaEta}}, true);
+      registry.add("hDeltaPhiPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + "entries", {HistType::kTH1D, {axisSpecDeltaPhi}}, true);
+      registry.add("hCorrel2DVsPtSidebands", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + stringPoolBin + "entries", {HistType::kTHnSparseD, {axisSpecDeltaPhi, axisSpecDeltaEta, axisSpecPtDstar, axisSpecPtHadron, axisSpecPoolBin}}, true);
+      registry.add("hCorrel2DPtIntSidebands", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2D, {axisSpecDeltaPhi, axisSpecDeltaEta}}, true);
+      registry.add("hDeltaEtaPtIntSidebands", stringDHadron + stringSideband + stringDeltaEta + "entries", {HistType::kTH1D, {axisSpecDeltaEta}}, true);
+      registry.add("hDeltaPhiPtIntSidebands", stringDHadron + stringSideband + stringDeltaPhi + "entries", {HistType::kTH1D, {axisSpecDeltaPhi}}, true);
+    }
+    // MC Gen histograms
+    if (doprocessMcGen) {
+      registry.add("hCorrel2DVsPtMcGen", stringDHadron + "MC Gen;" + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + stringPoolBin + "entries", {HistType::kTHnSparseD, {axisSpecDeltaPhi, axisSpecDeltaEta, axisSpecPtDstar, axisSpecPtHadron, axisSpecPoolBin}}, true);
+      registry.add("hCorrel2DVsPtMcGenPrompt", stringDHadron + "MC Gen Prompt;" + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + stringPoolBin + "entries", {HistType::kTHnSparseD, {axisSpecDeltaPhi, axisSpecDeltaEta, axisSpecPtDstar, axisSpecPtHadron, axisSpecPoolBin}}, true);
+      registry.add("hCorrel2DVsPtMcGenNonPrompt", stringDHadron + "MC Gen NonPrompt;" + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + stringPoolBin + "entries", {HistType::kTHnSparseD, {axisSpecDeltaPhi, axisSpecDeltaEta, axisSpecPtDstar, axisSpecPtHadron, axisSpecPoolBin}}, true);
+    }
 
     if (applyEfficiency && useCcdbEfficiency) {
       ccdbApi.init(ccdbUrl);
@@ -224,7 +234,7 @@ struct HfTaskCorrelationDstarHadrons {
           efficiencyWeightDstar = vecHistEfficiencyDstar[0]->GetBinContent(1);
         } else {
           efficiencyWeightDstar = vecHistEfficiencyDstar[0]->GetBinContent(vecHistEfficiencyDstar[0]->GetXaxis()->FindBin(ptDstar));
-          if (!efficiencyWeightDstar) {
+          if (efficiencyWeightDstar == 0.0) {
             LOGF(fatal, "Dstar efficiency weight can't be zero.");
           }
         }
@@ -233,7 +243,7 @@ struct HfTaskCorrelationDstarHadrons {
           efficiencyWeightTracks = vecHistEfficiencyTracks[0]->GetBinContent(1);
         } else {
           efficiencyWeightTracks = vecHistEfficiencyTracks[0]->GetBinContent(vecHistEfficiencyTracks[0]->GetXaxis()->FindBin(ptTrack));
-          if (!efficiencyWeightTracks) {
+          if (efficiencyWeightTracks == 0.0) {
             LOGF(fatal, "track efficiency weight can't be zero");
           }
         }
@@ -259,6 +269,27 @@ struct HfTaskCorrelationDstarHadrons {
     }
   }
   PROCESS_SWITCH(HfTaskCorrelationDstarHadrons, processData, " process data only", true);
+
+  /// Fill THnSparse histograms with D*-hadron pairs at MC Gen level (both SE and ME)
+  void processMcGen(soa::Join<aod::DstarHadronMcGenPair, aod::DstarHadronGenInfo> const& pairsMcGen)
+  {
+    for (const auto& pair : pairsMcGen) {
+      float const deltaPhi = pair.deltaPhi();
+      float const deltaEta = pair.deltaEta();
+      float const ptDstar = pair.ptDstar();
+      float const ptTrack = pair.ptTrack();
+      int const poolBin = pair.poolBin();
+      bool const isPrompt = pair.isPrompt();
+
+      registry.fill(HIST("hCorrel2DVsPtMcGen"), deltaPhi, deltaEta, ptDstar, ptTrack, poolBin);
+      if (isPrompt) {
+        registry.fill(HIST("hCorrel2DVsPtMcGenPrompt"), deltaPhi, deltaEta, ptDstar, ptTrack, poolBin);
+      } else {
+        registry.fill(HIST("hCorrel2DVsPtMcGenNonPrompt"), deltaPhi, deltaEta, ptDstar, ptTrack, poolBin);
+      }
+    }
+  }
+  PROCESS_SWITCH(HfTaskCorrelationDstarHadrons, processMcGen, "Process MC Gen", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
