@@ -248,7 +248,9 @@ DECLARE_SOA_COLUMN(FoundCommonMother, foundCommonMother, bool); //! decay length
 DECLARE_SOA_TABLE(EMMLLHPairs, "AOD", "EMMLLHPAIR", //!
                   emmllhpair::EMMLLeptonId,
                   track::Signed1Pt, track::Eta,
-                  track::DcaXY, track::DcaZ, o2::aod::track::CYY, o2::aod::track::CZY, o2::aod::track::CZZ, pidtpc::TPCNSigmaKa, pidtof::TOFNSigmaKa,
+                  track::DcaXY, track::DcaZ, o2::aod::track::CYY, o2::aod::track::CZY, o2::aod::track::CZZ,
+                  pidtpc::TPCNSigmaPi, pidtof::TOFNSigmaPi,
+                  pidtpc::TPCNSigmaKa, pidtof::TOFNSigmaKa,
                   emmllhpair::Mass, emmllhpair::DcaLH, emmllhpair::CosPA, emmllhpair::CosPAXY,
                   emmllhpair::Lxyz, emmllhpair::LxyzSigma,
                   emmllhpair::Lxy, emmllhpair::LxySigma,

@@ -45,12 +45,11 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
+#include <PID/PIDTOFParamService.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/PID.h>
 #include <ReconstructionDataFormats/Track.h>
 
-// #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
-// #include <Math/Vector4Dfwd.h>
 #include <TH1.h>
 
 #include <array>
@@ -60,6 +59,7 @@
 #include <random>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -78,7 +78,7 @@ struct taggingHFE {
 
   using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU,
                              aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                             aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
+                             aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta, aod::TOFSignal, aod::TOFEvTime>;
   using MyTracksWithMCLabel = soa::Join<MyTracks, aod::McTrackLabels, aod::mcTPCTuneOnData>;
 
   // using MyV0s = soa::Join<aod::V0Datas, aod::V0Covs, aod::V0TOFNSigmas, aod::V0CoreMCLabels>;
@@ -101,6 +101,7 @@ struct taggingHFE {
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
   Configurable<int> cfgPdgLepton{"cfgPdgLepton", 11, "pdg code of desired lepton: 11 or 13"};
   Configurable<float> cfgDownSampling{"cfgDownSampling", 1.1, "down sampling for fake matches"};
+  Configurable<bool> useTOFNSigmaDeltaBC{"useTOFNSigmaDeltaBC", true, "Flag to shift delta BC for TOF n sigma (only with TTCA)"};
 
   struct : ConfigurableGroup {
     std::string prefix = "dcaFitterGroup_eK";
@@ -122,7 +123,7 @@ struct taggingHFE {
 
   struct : ConfigurableGroup {
     std::string prefix = "electronCut";
-    Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.4, "min pT for single track"};
+    Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.1, "min pT for single track"};
     Configurable<float> cfg_max_pt_track{"cfg_max_pt_track", 1e+10, "max pT for single track"};
     Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -0.8, "min eta for single track"};
     Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", +0.8, "max eta for single track"};
@@ -167,7 +168,6 @@ struct taggingHFE {
     Configurable<float> cfg_min_TOFNsigmaKa{"cfg_min_TOFNsigmaKa", -3, "min n sigma ka in TOF"};
     Configurable<float> cfg_max_TOFNsigmaKa{"cfg_max_TOFNsigmaKa", +3, "max n sigma ka in TOF"};
     Configurable<bool> requirePiKa{"requirePiKa", false, "require hadron to be pion or kaon"}; // proton is not involved in semileptonic decay of HF hadrons often.
-    Configurable<bool> requireKa{"requireKa", false, "require hadron to be kaon"};             // Mostly, kaon is involved in semileptonic decay of charm hadrons.
   } hadronCut;
 
   struct : ConfigurableGroup {
@@ -272,6 +272,7 @@ struct taggingHFE {
   } lCPairCut;
 
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
+  Service<o2::pid::tof::TOFResponse> mTOFResponse;
 
   HistogramRegistry fRegistry{"fRegistry"};
   static constexpr std::string_view hadron_names[6] = {"LF/", "Jpsi/", "D0/", "Dpm/", "Ds/", "Lc/"};
@@ -279,7 +280,7 @@ struct taggingHFE {
   static constexpr std::string_view hTypes[4] = {"findable/", "correct/", "fake/", "miss/"};
   static constexpr std::string_view promptTypes[2] = {"prompt/", "nonprompt/"};
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& initContext)
   {
     // if (doprocessSA && doprocessTTCA) {
     //   LOGF(fatal, "Cannot enable doprocessWithoutFTTCA and doprocessWithFTTCA at the same time. Please choose one.");
@@ -290,6 +291,9 @@ struct taggingHFE {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
     rctChecker.init(eventCut.cfgRCTLabel.value, eventCut.cfgCheckZDC.value, eventCut.cfgTreatLimitedAcceptanceAsBad.value);
+
+    LOGF(info, "intializing TOFResponse");
+    mTOFResponse->initSetup(ccdb, initContext);
 
     std::random_device seed_gen;
     engine = std::mt19937(seed_gen());
@@ -452,21 +456,15 @@ struct taggingHFE {
     fRegistry.add("Cascade/hMassOmega", "#Omega mass;m_{#LambdaK} (GeV/c^{2})", kTH1F, {{100, 1.62, 1.72}}, false);
   }
 
-  template <typename TTrack>
-  bool isKaon(TTrack const& track)
+  template <typename TCollision, typename TTrack>
+  bool isKaon_or_isPion(TCollision const& collision, TTrack const& track)
   {
+    float tofNSigmaPi = mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
+    float tofNSigmaKa = mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())];
     bool is_ka_included_TPC = hadronCut.cfg_min_TPCNsigmaKa < track.tpcNSigmaKa() && track.tpcNSigmaKa() < hadronCut.cfg_max_TPCNsigmaKa;
-    bool is_ka_included_TOF = track.hasTOF() ? (hadronCut.cfg_min_TOFNsigmaKa < track.tofNSigmaKa() && track.tofNSigmaKa() < hadronCut.cfg_max_TOFNsigmaKa) : true;
-    return is_ka_included_TPC && is_ka_included_TOF;
-  }
-
-  template <typename TTrack>
-  bool isKaon_or_isPion(TTrack const& track)
-  {
-    bool is_ka_included_TPC = hadronCut.cfg_min_TPCNsigmaKa < track.tpcNSigmaKa() && track.tpcNSigmaKa() < hadronCut.cfg_max_TPCNsigmaKa;
-    bool is_ka_included_TOF = track.hasTOF() ? (hadronCut.cfg_min_TOFNsigmaKa < track.tofNSigmaKa() && track.tofNSigmaKa() < hadronCut.cfg_max_TOFNsigmaKa) : true;
+    bool is_ka_included_TOF = track.hasTOF() ? (hadronCut.cfg_min_TOFNsigmaKa < tofNSigmaKa && tofNSigmaKa < hadronCut.cfg_max_TOFNsigmaKa) : true;
     bool is_pi_included_TPC = hadronCut.cfg_min_TPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < hadronCut.cfg_max_TPCNsigmaPi;
-    bool is_pi_included_TOF = track.hasTOF() ? (hadronCut.cfg_min_TOFNsigmaPi < track.tofNSigmaPi() && track.tofNSigmaPi() < hadronCut.cfg_max_TOFNsigmaPi) : true;
+    bool is_pi_included_TOF = track.hasTOF() ? (hadronCut.cfg_min_TOFNsigmaPi < tofNSigmaPi && tofNSigmaPi < hadronCut.cfg_max_TOFNsigmaPi) : true;
     return (is_ka_included_TPC && is_ka_included_TOF) || (is_pi_included_TPC && is_pi_included_TOF);
   }
 
@@ -477,6 +475,14 @@ struct taggingHFE {
     bool is_pi_included_TPC = v0Cut.cfg_min_TPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < v0Cut.cfg_max_TPCNsigmaPi;
     bool is_pi_included_TOF = track.hasTOF() ? (v0Cut.cfg_min_TOFNsigmaPi < track.tofNSigmaPi() && track.tofNSigmaPi() < v0Cut.cfg_max_TOFNsigmaPi) : true;
     return is_pi_included_TPC && is_pi_included_TOF;
+  }
+
+  template <typename TTrack>
+  bool isKaon(TTrack const& track)
+  {
+    bool is_ka_included_TPC = hadronCut.cfg_min_TPCNsigmaKa < track.tpcNSigmaKa() && track.tpcNSigmaKa() < hadronCut.cfg_max_TPCNsigmaKa;
+    bool is_ka_included_TOF = track.hasTOF() ? (hadronCut.cfg_min_TOFNsigmaKa < track.tofNSigmaKa() && track.tofNSigmaKa() < hadronCut.cfg_max_TOFNsigmaKa) : true;
+    return is_ka_included_TPC && is_ka_included_TOF;
   }
 
   template <typename TTrack>
@@ -559,8 +565,8 @@ struct taggingHFE {
     return true;
   }
 
-  template <typename TTrack, typename TTrackParCov>
-  bool isSelectedHadron(TTrack const& track, TTrackParCov const& trackParCov, const float dcaXY, const float dcaZ)
+  template <typename TCollision, typename TTrack, typename TTrackParCov>
+  bool isSelectedHadron(TCollision const& collision, TTrack const& track, TTrackParCov const& trackParCov, const float dcaXY, const float dcaZ)
   {
     if (!track.hasITS() || !track.hasTPC()) {
       return false;
@@ -614,11 +620,7 @@ struct taggingHFE {
       return false;
     }
 
-    if (hadronCut.requirePiKa && !isKaon_or_isPion(track)) {
-      return false;
-    }
-
-    if (hadronCut.requireKa && !isKaon(track)) {
+    if (hadronCut.requirePiKa && !isKaon_or_isPion(collision, track)) {
       return false;
     }
 
@@ -827,6 +829,87 @@ struct taggingHFE {
     return true;
   }
 
+  std::map<std::pair<int, int>, float> mapTOFNsigmaPiReassociated; // map pair(collisionId, trackId) -> tof n sigma pi
+  std::map<std::pair<int, int>, float> mapTOFNsigmaKaReassociated; // map pair(collisionId, trackId) -> tof n sigma ka
+  std::map<std::pair<int, int>, float> mapTOFBetaReassociated;     // map pair(collisionId, trackId) -> tof beta
+  std::unordered_map<int, double> mapCollisionTime;
+  std::unordered_map<int, double> mapCollisionTimeError;
+
+  template <bool withTTCA, typename TCollisions, typename TBCs, typename TTracks, typename TTrackAssoc>
+  void calculateTOFNSigmaWithReassociation(TCollisions const& collisions, TBCs const&, TTracks const& tracks, TTrackAssoc const& trackIndices)
+  {
+    if (useTOFNSigmaDeltaBC) {
+      if constexpr (withTTCA) {
+        for (const auto& collision : collisions) {
+          if (mapCollisionTime.find(collision.globalIndex()) == mapCollisionTime.end()) {
+            continue;
+          }
+          auto bcCollision = collision.template bc_as<TBCs>();
+          auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
+          for (const auto& trackId : trackIdsThisCollision) {
+            auto track = trackId.template track_as<TTracks>();
+            if (!track.hasITS() || !track.hasTPC()) { // apply only minimal cut
+              continue;
+            }
+
+            if (track.hasTOF() && track.has_collision()) { // TTCA may use orphan tracks.
+              auto bcTrack = track.template collision_as<TCollisions>().template bc_as<TBCs>();
+              float tofNSigmaPi = mTOFResponse->nSigma<o2::track::PID::Pion>(track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()), track.tofExpMom(), track.length(), track.p(), track.eta(), mapCollisionTime[collision.globalIndex()], mapCollisionTimeError[collision.globalIndex()]);
+              float tofNSigmaKa = mTOFResponse->nSigma<o2::track::PID::Kaon>(track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()), track.tofExpMom(), track.length(), track.p(), track.eta(), mapCollisionTime[collision.globalIndex()], mapCollisionTimeError[collision.globalIndex()]);
+              float beta = track.length() / (track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()) - mapCollisionTime[collision.globalIndex()]) / (TMath::C() * 1e+2 * 1e-12);
+              mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = tofNSigmaPi;
+              mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = tofNSigmaKa;
+              mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = beta;
+            } else {
+              mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPi();
+              mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaKa();
+              mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.beta();
+            }
+          } // end of track loop
+        } // end of collision loop
+      } else {
+        for (const auto& collision : collisions) {
+          auto tracks_per_coll = tracks.sliceBy(perCol, collision.globalIndex());
+          for (const auto& track : tracks_per_coll) {
+            if (!track.hasITS() || !track.hasTPC()) { // apply only minimal cut
+              continue;
+            }
+            mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPi();
+            mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaKa();
+            mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.beta();
+          }
+        } // end of track loop
+      } // end of collision loop
+    } else {
+      if constexpr (withTTCA) {
+        for (const auto& collision : collisions) {
+          auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
+          for (const auto& trackId : trackIdsThisCollision) {
+            auto track = trackId.template track_as<TTracks>();
+            if (!track.hasITS() || !track.hasTPC()) { // apply only minimal cut
+              continue;
+            }
+            mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPi();
+            mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaKa();
+            mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.beta();
+          } // end of track loop
+        } // end of collision loop
+      } else {
+        for (const auto& collision : collisions) {
+          auto tracks_per_coll = tracks.sliceBy(perCol, collision.globalIndex());
+          for (const auto& track : tracks_per_coll) {
+            if (!track.hasITS() || !track.hasTPC()) { // apply only minimal cut
+              continue;
+            }
+            mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaPi();
+            mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.tofNSigmaKa();
+            mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = track.beta();
+          }
+        } // end of track loop
+      } // end of collision loop
+    }
+  }
+
   template <bool isMC, typename TBCs, typename TCollisions, typename TTracks, typename TTrackAssoc, typename TV0s, typename TCascades, typename TMCCollisions, typename TMCParticles>
   void runPairing(TBCs const&, TCollisions const& collisions, TTracks const& tracks, TTrackAssoc const& trackIndices, TV0s const& v0s, TCascades const& cascades, TMCCollisions const&, TMCParticles const& mcParticles)
   {
@@ -898,7 +981,7 @@ struct taggingHFE {
 
           fRegistry.fill(HIST("Electron/hs"), trackParCov.getPt(), trackParCov.getEta(), RecoDecay::constrainAngle(trackParCov.getPhi(), 0, 1U));
           fRegistry.fill(HIST("Electron/hTPCdEdx"), track.tpcInnerParam(), track.mcTunedTPCSignal());
-          fRegistry.fill(HIST("Electron/hTOFbeta"), track.p(), track.beta());
+          fRegistry.fill(HIST("Electron/hTOFbeta"), track.p(), mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())]);
           if (track.sign() > 0) { // positron
             positronIds.emplace_back(trackId.trackId());
           } else { // electron
@@ -912,10 +995,10 @@ struct taggingHFE {
         dcaXY = mDcaInfoCov.getY();
         dcaZ = mDcaInfoCov.getZ();
 
-        if (isSelectedHadron(track, trackParCov, dcaXY, dcaZ)) { // electrons can be included in hadron sample.
+        if (isSelectedHadron(collision, track, trackParCov, dcaXY, dcaZ)) { // electrons can be included in hadron sample.
           fRegistry.fill(HIST("Hadron/hs"), trackParCov.getPt(), trackParCov.getEta(), RecoDecay::constrainAngle(trackParCov.getPhi(), 0, 1U));
           fRegistry.fill(HIST("Hadron/hTPCdEdx"), track.tpcInnerParam(), track.mcTunedTPCSignal());
-          fRegistry.fill(HIST("Hadron/hTOFbeta"), track.p(), track.beta());
+          fRegistry.fill(HIST("Hadron/hTOFbeta"), track.p(), mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())]);
           if (track.sign() > 0) { // K+
             kaonPlusIds.emplace_back(trackId.trackId());
           } else { // K-
@@ -1070,9 +1153,13 @@ struct taggingHFE {
             }
           }
 
+          float tofNSigmaPi = mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
+          float tofNSigmaKa = mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
+
           emmllhpair(leptonTable.lastIndex(),
                      trackParCov.getQ2Pt(), trackParCov.getEta(), dcaXY_kaon, dcaZ_kaon, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
-                     kaon.tpcNSigmaKa(), kaon.tofNSigmaKa(),
+                     kaon.tpcNSigmaPi(), tofNSigmaPi,
+                     kaon.tpcNSigmaKa(), tofNSigmaKa,
                      eKpair.mass, eKpair.dca2legs, eKpair.cospa, eKpair.cospaXY,
                      eKpair.lxyz, eKpair.lxyzErr,
                      eKpair.lxy, eKpair.lxyErr,
@@ -1386,9 +1473,13 @@ struct taggingHFE {
             }
           }
 
+          float tofNSigmaPi = mapTOFNsigmaPiReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
+          float tofNSigmaKa = mapTOFNsigmaKaReassociated[std::make_pair(collision.globalIndex(), kaon.globalIndex())];
+
           emmllhpair(leptonTable.lastIndex(),
                      trackParCov.getQ2Pt(), trackParCov.getEta(), dcaXY_kaon, dcaZ_kaon, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
-                     kaon.tpcNSigmaKa(), kaon.tofNSigmaKa(),
+                     kaon.tpcNSigmaPi(), tofNSigmaPi,
+                     kaon.tpcNSigmaKa(), tofNSigmaKa,
                      eKpair.mass, eKpair.dca2legs, eKpair.cospa, eKpair.cospaXY,
                      eKpair.lxyz, eKpair.lxyzErr,
                      eKpair.lxy, eKpair.lxyErr,
@@ -1814,8 +1905,26 @@ struct taggingHFE {
 
   void processMC(FilteredMyCollisionsWithMCLabel const& collisions, aod::BCsWithTimestamps const& bcs, MyTracksWithMCLabel const& tracks, aod::TrackAssoc const& trackIndices, filteredV0s const& v0s, filteredMyCascades const& cascades, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
+    initCCDB(bcs.iteratorAt(0));
+    mTOFResponse->processSetup(bcs.iteratorAt(0));
+
+    for (const auto& track : tracks) {
+      if (mapCollisionTime.find(track.collisionId()) == mapCollisionTime.end()) {
+        // LOGF(info, "track.collisionId() = %d, track.tofEvTime() = %f, track.tofEvTimeErr() = %f", track.collisionId(), track.tofEvTime(), track.tofEvTimeErr());
+        mapCollisionTime[track.collisionId()] = track.tofEvTime();
+        mapCollisionTimeError[track.collisionId()] = track.tofEvTimeErr();
+      }
+    }
+    calculateTOFNSigmaWithReassociation<true>(collisions, bcs, tracks, trackIndices);
+
     runPairing<true>(bcs, collisions, tracks, trackIndices, v0s, cascades, mcCollisions, mcParticles);
     runGen(mcCollisions, mcParticles);
+
+    mapCollisionTime.clear();
+    mapCollisionTimeError.clear();
+    mapTOFNsigmaPiReassociated.clear();
+    mapTOFNsigmaKaReassociated.clear();
+    mapTOFBetaReassociated.clear();
   }
   PROCESS_SWITCH(taggingHFE, processMC, "process with TTCA", true);
 
@@ -1824,5 +1933,6 @@ struct taggingHFE {
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
+  o2::pid::tof::TOFResponseImpl::metadataInfo.initMetadata(cfgc);
   return WorkflowSpec{adaptAnalysisTask<taggingHFE>(cfgc, TaskName{"tagging-hfe"})};
 }
