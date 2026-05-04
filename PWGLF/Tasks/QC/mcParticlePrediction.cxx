@@ -180,6 +180,7 @@ struct mcParticlePrediction {
                                                     "Estimators enabled"};
   Configurable<bool> selectInelGt0{"selectInelGt0", true, "Select only inelastic events"};
   Configurable<bool> selectPrimaries{"selectPrimaries", true, "Select only primary particles"};
+  Configurable<float> rapidityCut{"rapidityCut", 0.5, "Select only particles within |y| < cut"};
   Configurable<bool> requireCoincidenceEstimators{"requireCoincidenceEstimators", false, "Asks for a coincidence when two estimators are used"};
   Configurable<bool> discardkIsGoodZvtxFT0vsPV{"discardkIsGoodZvtxFT0vsPV", false, "Select only collisions with matching BC and MC BC"};
   Configurable<bool> discardMismatchedBCs{"discardMismatchedBCs", false, "Select only collisions with matching BC and MC BC"};
@@ -493,9 +494,9 @@ struct mcParticlePrediction {
         continue;
       }
 
-      if (!particle.isPhysicalPrimary()) {
-        continue;
-      }
+      // if (!particle.isPhysicalPrimary()) {
+      //   continue;
+      // }
 
       TParticlePDG* p = pdgDB->GetParticle(particle.pdgCode());
       if (p) {
@@ -506,7 +507,28 @@ struct mcParticlePrediction {
         }
       }
 
-      if (std::abs(particle.y()) > 0.5) {
+      if (std::abs(particle.y()) >= rapidityCut) {
+        continue;
+      }
+
+      // Check if particle has daughters (not a final state particle)
+      auto daughters = particle.daughters_as<aod::McParticles>();
+      bool isValid = false;
+
+      if (daughters.size() > 0) {
+        isValid = true;
+        for (const auto& daughter : daughters) {
+          if (!daughter.isPhysicalPrimary()) {
+            isValid = false;
+            break;
+          }
+        }
+      } else {
+        // Final state particle - check if particle itself is physical primary
+        isValid = particle.isPhysicalPrimary();
+      }
+
+      if (!isValid) {
         continue;
       }
 
@@ -672,10 +694,10 @@ struct mcParticlePrediction {
     float nMultRecoMCBC[Estimators::nEstimators] = {0};
     if (mcBC.has_ft0()) {
       const auto& ft0 = mcBC.ft0();
-      for (auto amplitude : ft0.amplitudeA()) {
+      for (const auto& amplitude : ft0.amplitudeA()) {
         nMultRecoMCBC[Estimators::FT0A] += amplitude;
       }
-      for (auto amplitude : ft0.amplitudeC()) {
+      for (const auto& amplitude : ft0.amplitudeC()) {
         nMultRecoMCBC[Estimators::FT0C] += amplitude;
       }
       nMultRecoMCBC[Estimators::FT0AC] = nMultRecoMCBC[Estimators::FT0A] + nMultRecoMCBC[Estimators::FT0C];

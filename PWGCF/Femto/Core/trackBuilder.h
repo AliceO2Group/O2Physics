@@ -605,7 +605,7 @@ class TrackBuilder
       }
     }
     if (mProduceTrackMass) {
-      trackProducts.producedTrackMass(track.mass());
+      trackProducts.producedTrackMass(track.mass()); // default value if track has no TOF signal is -999
     }
     if (mProduceTrackDcas) {
       trackProducts.producedTrackDcas(track.dcaXY(), track.dcaZ());
@@ -624,25 +624,53 @@ class TrackBuilder
                                         track.beta());
     }
     if (mProduceElectronPids) {
-      trackProducts.producedElectronPids(track.itsNSigmaEl(), track.tpcNSigmaEl(), track.tofNSigmaEl());
+      float itsEl = 0.f;
+      if constexpr (requires(T1 t) { t.itsNSigmaEl(); }) {
+        itsEl = track.itsNSigmaEl();
+      }
+      trackProducts.producedElectronPids(itsEl, track.tpcNSigmaEl(), track.tofNSigmaEl());
     }
     if (mProducePionPids) {
-      trackProducts.producedPionPids(track.itsNSigmaPi(), track.tpcNSigmaPi(), track.tofNSigmaPi());
+      float itsPi = 0.f;
+      if constexpr (requires(T1 t) { t.itsNSigmaPi(); }) {
+        itsPi = track.itsNSigmaPi();
+      }
+      trackProducts.producedPionPids(itsPi, track.tpcNSigmaPi(), track.tofNSigmaPi());
     }
     if (mProduceKaonPids) {
-      trackProducts.producedKaonPids(track.itsNSigmaKa(), track.tpcNSigmaKa(), track.tofNSigmaKa());
+      float itsKa = 0.f;
+      if constexpr (requires(T1 t) { t.itsNSigmaKa(); }) {
+        itsKa = track.itsNSigmaKa();
+      }
+      trackProducts.producedKaonPids(itsKa, track.tpcNSigmaKa(), track.tofNSigmaKa());
     }
     if (mProduceProtonPids) {
-      trackProducts.producedProtonPids(track.itsNSigmaPr(), track.tpcNSigmaPr(), track.tofNSigmaPr());
+      float itsPr = 0.f;
+      if constexpr (requires(T1 t) { t.itsNSigmaPr(); }) {
+        itsPr = track.itsNSigmaPr();
+      }
+      trackProducts.producedProtonPids(itsPr, track.tpcNSigmaPr(), track.tofNSigmaPr());
     }
     if (mProduceDeuteronPids) {
-      trackProducts.producedDeuteronPids(track.itsNSigmaDe(), track.tpcNSigmaDe(), track.tofNSigmaDe());
+      float itsDe = 0.f;
+      if constexpr (requires(T1 t) { t.itsNSigmaDe(); }) {
+        itsDe = track.itsNSigmaDe();
+      }
+      trackProducts.producedDeuteronPids(itsDe, track.tpcNSigmaDe(), track.tofNSigmaDe());
     }
     if (mProduceTritonPids) {
-      trackProducts.producedTritonPids(track.itsNSigmaTr(), track.tpcNSigmaTr(), track.tofNSigmaTr());
+      float itsTr = 0.f;
+      if constexpr (requires(T1 t) { t.itsNSigmaTr(); }) {
+        itsTr = track.itsNSigmaTr();
+      }
+      trackProducts.producedTritonPids(itsTr, track.tpcNSigmaTr(), track.tofNSigmaTr());
     }
     if (mProduceHeliumPids) {
-      trackProducts.producedHeliumPids(track.itsNSigmaHe(), track.tpcNSigmaHe(), track.tofNSigmaHe());
+      float itsHe = 0.f;
+      if constexpr (requires(T1 t) { t.itsNSigmaHe(); }) {
+        itsHe = track.itsNSigmaHe();
+      }
+      trackProducts.producedHeliumPids(itsHe, track.tpcNSigmaHe(), track.tofNSigmaHe());
     }
   }
 
@@ -690,15 +718,15 @@ class TrackBuilder
     }
   }
 
-  template <modes::System system, modes::Track type, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
-  int64_t getDaughterIndex(const T1& col, T2& collisionProducts, T3 const& mcCols, const T4& daughter, T5& daughterWithItsPid, T6& trackProducts, T7 const& mcParticles, T8& mcBuilder, T9& mcProducts)
+  template <modes::System system, modes::Track type, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
+  int64_t getDaughterIndex(const T1& col, T2& collisionProducts, T3 const& mcCols, const T4& daughter, T5& trackProducts, T6 const& mcParticles, T7& mcBuilder, T8& mcProducts)
   {
     auto result = utils::getIndex(daughter.globalIndex(), indexMap);
     if (result) {
       // daugher already in track table
       return result.value();
     } else {
-      this->fillMcTrack<system, type>(col, collisionProducts, mcCols, daughter, daughterWithItsPid, trackProducts, mcParticles, mcBuilder, mcProducts);
+      this->fillMcTrack<system, type>(col, collisionProducts, mcCols, daughter, daughter, trackProducts, mcParticles, mcBuilder, mcProducts);
       // daughter is last track which was added added
       return trackProducts.producedTracks.lastIndex();
     }

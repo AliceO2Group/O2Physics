@@ -582,7 +582,7 @@ struct JetDerivedDataProducerTask {
       auto collisionTrackIndices = assocCollisions.sliceBy(preslices.perCollisionTrackIndices, collision.globalIndex());
       for (auto const& collisionTrackIndex : collisionTrackIndices) {
         auto track = collisionTrackIndex.track_as<soa::Join<aod::Tracks, aod::McTrackLabels>>();
-        if (track.collisionId() == collision.globalIndex() && track.has_mcParticle()) {
+        if (track.has_mcParticle()) {
           products.jMcTracksLabelTable(track.mcParticleId());
         } else {
           products.jMcTracksLabelTable(-1);

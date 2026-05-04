@@ -229,49 +229,49 @@ struct FemtoProducer {
   }
 
   // processing v0s
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4>
-  void processV0s(T1 const& col, T2 const& tracks, T3 const& tracksWithItsPid, T4 const& v0s)
+  template <modes::System system, typename T1, typename T2, typename T3>
+  void processV0s(T1 const& col, T2 const& tracks, T3 const& v0s)
   {
-    lambdaBuilder.fillV0s<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, v0builderProducts, v0s, tracks, tracksWithItsPid, trackBuilder);
-    antilambdaBuilder.fillV0s<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, v0builderProducts, v0s, tracks, tracksWithItsPid, trackBuilder);
-    k0shortBuilder.fillV0s<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, v0builderProducts, v0s, tracks, tracksWithItsPid, trackBuilder);
+    lambdaBuilder.fillV0s<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, v0builderProducts, v0s, tracks, trackBuilder);
+    antilambdaBuilder.fillV0s<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, v0builderProducts, v0s, tracks, trackBuilder);
+    k0shortBuilder.fillV0s<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, v0builderProducts, v0s, tracks, trackBuilder);
   }
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-  void processMcV0s(T1 const& col, T2 const& mcCols, T3 const& tracks, T4 const& tracksWithItsPid, T5 const& v0s, T6 const& mcParticles)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void processMcV0s(T1 const& col, T2 const& mcCols, T3 const& tracks, T4 const& v0s, T5 const& mcParticles)
   {
-    lambdaBuilder.fillMcV0s<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, v0builderProducts, v0s, tracks, tracksWithItsPid, trackBuilder, mcParticles, mcBuilder, mcProducts);
-    antilambdaBuilder.fillMcV0s<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, v0builderProducts, v0s, tracks, tracksWithItsPid, trackBuilder, mcParticles, mcBuilder, mcProducts);
-    k0shortBuilder.fillMcV0s<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, v0builderProducts, v0s, tracks, tracksWithItsPid, trackBuilder, mcParticles, mcBuilder, mcProducts);
+    lambdaBuilder.fillMcV0s<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, v0builderProducts, v0s, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
+    antilambdaBuilder.fillMcV0s<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, v0builderProducts, v0s, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
+    k0shortBuilder.fillMcV0s<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, v0builderProducts, v0s, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
   }
 
   // processing kinks
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4>
-  void processKinks(T1 const& col, T2 const& tracks, T3 const& tracksWithItsPid, T4 const& kinks)
+  template <modes::System system, typename T1, typename T2, typename T3>
+  void processKinks(T1 const& col, T2 const& tracks, T3 const& kinks)
   {
-    sigmaBuilder.fillKinks<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, tracksWithItsPid, trackBuilder);
-    sigmaPlusBuilder.fillKinks<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, tracksWithItsPid, trackBuilder);
+    sigmaBuilder.fillKinks<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, trackBuilder);
+    sigmaPlusBuilder.fillKinks<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, trackBuilder);
   }
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-  void processMcKinks(T1 const& col, T2 const& mcCols, T3 const& tracks, T4 const& tracksWithItsPid, T5 const& kinks, T6 const& mcParticles)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void processMcKinks(T1 const& col, T2 const& mcCols, T3 const& tracks, T4 const& kinks, T5 const& mcParticles)
   {
-    sigmaBuilder.fillMcKinks<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, tracksWithItsPid, trackBuilder, mcParticles, mcBuilder, mcProducts);
-    sigmaPlusBuilder.fillMcKinks<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, tracksWithItsPid, trackBuilder, mcParticles, mcBuilder, mcProducts);
+    sigmaBuilder.fillMcKinks<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
+    sigmaPlusBuilder.fillMcKinks<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, kinkBuilderProducts, kinks, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
   }
 
   // processing cascades
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4>
-  void processCascades(T1 const& col, T2 const& tracks, T3 const& tracksWithItsPid, T4 const& cascades)
+  template <modes::System system, typename T1, typename T2, typename T3>
+  void processCascades(T1 const& col, T2 const& tracks, T3 const& cascades)
   {
     xiBuilder.fillCascades<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, cascadeBuilderProducts,
-                                   cascades, tracks, tracksWithItsPid, trackBuilder);
+                                   cascades, tracks, trackBuilder);
     omegaBuilder.fillCascades<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, cascadeBuilderProducts,
-                                      cascades, tracks, tracksWithItsPid, trackBuilder);
+                                      cascades, tracks, trackBuilder);
   }
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-  void processMcCascades(T1 const& col, T2 const& mcCols, T3 const& tracks, T4 const& tracksWithItsPid, T5 const& cascades, T6 const& mcParticles)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void processMcCascades(T1 const& col, T2 const& mcCols, T3 const& tracks, T4 const& cascades, T5 const& mcParticles)
   {
-    xiBuilder.fillMcCascades<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, cascadeBuilderProducts, cascades, tracks, tracksWithItsPid, trackBuilder, mcParticles, mcBuilder, mcProducts);
-    omegaBuilder.fillMcCascades<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, cascadeBuilderProducts, cascades, tracks, tracksWithItsPid, trackBuilder, mcParticles, mcBuilder, mcProducts);
+    xiBuilder.fillMcCascades<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, cascadeBuilderProducts, cascades, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
+    omegaBuilder.fillMcCascades<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, cascadeBuilderProducts, cascades, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
   }
 
   // proccess functions
@@ -300,7 +300,7 @@ struct FemtoProducer {
     auto tracksWithItsPid = o2::soa::Attach<consumeddata::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
                                             o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
     processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
-    processV0s<modes::System::kPP_Run3>(col, tracks, tracksWithItsPid, v0s);
+    processV0s<modes::System::kPP_Run3>(col, tracks, v0s);
   };
   PROCESS_SWITCH(FemtoProducer, processTracksV0sRun3pp, "Process tracks and v0s", false);
 
@@ -316,7 +316,7 @@ struct FemtoProducer {
     auto tracksWithItsPid = o2::soa::Attach<consumeddata::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
                                             o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
     processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
-    processKinks<modes::System::kPP_Run3>(col, tracks, tracksWithItsPid, kinks);
+    processKinks<modes::System::kPP_Run3>(col, tracks, kinks);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksKinksRun3pp, "Process tracks and kinks", false);
 
@@ -333,8 +333,8 @@ struct FemtoProducer {
     auto tracksWithItsPid = o2::soa::Attach<consumeddata::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
                                             o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
     processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
-    processV0s<modes::System::kPP_Run3>(col, tracks, tracksWithItsPid, v0s);
-    processCascades<modes::System::kPP_Run3>(col, tracks, tracksWithItsPid, cascades);
+    processV0s<modes::System::kPP_Run3>(col, tracks, v0s);
+    processCascades<modes::System::kPP_Run3>(col, tracks, cascades);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksV0sCascadesRun3pp, "Provide Tracks, V0s and Cascades for Run3", false);
 
@@ -352,9 +352,9 @@ struct FemtoProducer {
     auto tracksWithItsPid = o2::soa::Attach<consumeddata::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
                                             o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
     processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
-    processV0s<modes::System::kPP_Run3>(col, tracks, tracksWithItsPid, v0s);
-    processKinks<modes::System::kPP_Run3>(col, tracks, tracksWithItsPid, kinks);
-    processCascades<modes::System::kPP_Run3>(col, tracks, tracksWithItsPid, cascades);
+    processV0s<modes::System::kPP_Run3>(col, tracks, v0s);
+    processKinks<modes::System::kPP_Run3>(col, tracks, kinks);
+    processCascades<modes::System::kPP_Run3>(col, tracks, cascades);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksV0sCascadesKinksRun3pp, "Provide Tracks, V0s and Cascades for Run3", false);
 
@@ -388,7 +388,7 @@ struct FemtoProducer {
     auto tracksWithItsPid = o2::soa::Attach<consumeddata::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
                                             o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
     processMcTracks<modes::System::kPP_Run3_MC>(col, mcCols, tracks, tracksWithItsPid, mcParticles);
-    processMcV0s<modes::System::kPP_Run3_MC>(col, mcCols, tracks, tracksWithItsPid, v0s, mcParticles);
+    processMcV0s<modes::System::kPP_Run3_MC>(col, mcCols, tracks, v0s, mcParticles);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksV0sRun3ppMc, "Provide reconstructed and generated tracks and v0s", false);
 
@@ -406,7 +406,7 @@ struct FemtoProducer {
     auto tracksWithItsPid = o2::soa::Attach<consumeddata::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
                                             o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
     processMcTracks<modes::System::kPP_Run3_MC>(col, mcCols, tracks, tracksWithItsPid, mcParticles);
-    processMcKinks<modes::System::kPP_Run3_MC>(col, mcCols, tracks, tracksWithItsPid, kinks, mcParticles);
+    processMcKinks<modes::System::kPP_Run3_MC>(col, mcCols, tracks, kinks, mcParticles);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksKinksRun3ppMc, "Provide reconstructed and generated tracks and kinks", false);
 
@@ -425,8 +425,8 @@ struct FemtoProducer {
     auto tracksWithItsPid = o2::soa::Attach<consumeddata::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
                                             o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
     processMcTracks<modes::System::kPP_Run3_MC>(col, mcCols, tracks, tracksWithItsPid, mcParticles);
-    processMcV0s<modes::System::kPP_Run3_MC>(col, mcCols, tracks, tracksWithItsPid, v0s, mcParticles);
-    processMcKinks<modes::System::kPP_Run3_MC>(col, mcCols, tracks, tracksWithItsPid, kinks, mcParticles);
+    processMcV0s<modes::System::kPP_Run3_MC>(col, mcCols, tracks, v0s, mcParticles);
+    processMcKinks<modes::System::kPP_Run3_MC>(col, mcCols, tracks, kinks, mcParticles);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksV0sKinksRun3ppMc, "Provide reconstructed and generated tracks and v0s and kinks", false);
 
@@ -445,8 +445,8 @@ struct FemtoProducer {
     auto tracksWithItsPid = o2::soa::Attach<consumeddata::Run3McRecoTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
                                             o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
     processMcTracks<modes::System::kPP_Run3_MC>(col, mcCols, tracks, tracksWithItsPid, mcParticles);
-    processMcV0s<modes::System::kPP_Run3_MC>(col, mcCols, tracks, tracksWithItsPid, v0s, mcParticles);
-    processMcCascades<modes::System::kPP_Run3_MC>(col, mcCols, tracks, tracksWithItsPid, cascades, mcParticles);
+    processMcV0s<modes::System::kPP_Run3_MC>(col, mcCols, tracks, v0s, mcParticles);
+    processMcCascades<modes::System::kPP_Run3_MC>(col, mcCols, tracks, cascades, mcParticles);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksV0sCascadesRun3ppMc, "Provide reconstructed and generated tracks and v0s", false);
 };

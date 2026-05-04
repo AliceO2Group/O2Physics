@@ -16,35 +16,31 @@
 /// \modified by Roman Nepeivoda (roman.nepeivoda@cern.ch)
 /// \since June 1, 2023
 
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/cascqaanalysis.h"
 
-#include <Framework/AnalysisHelpers.h>
-#include <Framework/AnalysisTask.h>
-#include <Framework/Configurable.h>
-#include <Framework/HistogramRegistry.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
-#include <Framework/O2DatabasePDGPlugin.h>
-#include <Framework/runDataProcessing.h>
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
-#include <TH1.h>
-#include <TMath.h>
-#include <TMathBase.h>
-#include <TString.h>
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include <CommonConstants/PhysicsConstants.h>
 
-#include <RtypesCore.h>
+#include <TPDGCode.h>
 
 #include <cmath>
 
 // constants
-const float ctauxiPDG = 4.91;     // from PDG
-const float ctauomegaPDG = 2.461; // from PDG
+const float kCtauXi = 4.91;     // from PDG
+const float kCtauOmega = 2.461; // from PDG
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct cascpostprocessing {
+struct LfCascpostprocessing {
+  static constexpr int OobRejTofOnly = 2;
+
   // Xi or Omega
   Configurable<bool> isXi{"isXi", 1, "Apply cuts for Xi identification"};
   Configurable<bool> hastof{"hastof", 0, "Apply nsigmaTOF to daughter tracks of cascade"};
@@ -84,17 +80,15 @@ struct cascpostprocessing {
   Configurable<float> bachBaryonCosPA{"bachBaryonCosPA", 0.9999, "Bachelor baryon CosPA"};
   Configurable<float> bachBaryonDCAxyToPV{"bachBaryonDCAxyToPV", 0.05, "DCA bachelor baryon to PV"};
 
-  Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
+  bool isMC = false;
 
   Configurable<int> evSelFlag{"evSelFlag", 2, "1 - INEL; 2 - INEL>0; 3 - INEL>1"};
 
   HistogramRegistry registry{"registryts"};
 
-  // Necessary for particle charges
-  Service<o2::framework::O2DatabasePDG> pdgDB;
-
   void init(InitContext const&)
   {
+    isMC = doprocessGen;
 
     AxisSpec ximassAxis = {200, 1.28f, 1.36f};
     AxisSpec omegamassAxis = {200, 1.59f, 1.75f};
@@ -102,21 +96,22 @@ struct cascpostprocessing {
     if (!isXi)
       massAxis = omegamassAxis;
     AxisSpec ptAxis = {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec ptRecAxis = {200, 0.0f, 10.0f, "#it{p}_{T}^{rec} (GeV/#it{c})"};
+    AxisSpec ptGenAxis = {200, 0.0f, 10.0f, "#it{p}_{T}^{gen} (GeV/#it{c})"};
     AxisSpec ptAxisTopoVar = {50, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec ptAxisPID = {50, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     ConfigurableAxis etaAxis{"etaAxis", {40, -2.0f, 2.0f}, "#eta"};
 
-    ConfigurableAxis centFT0MAxis{"FT0M",
+    ConfigurableAxis centFT0MAxis{"centFT0MAxis",
                                   {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 101, 105.5},
                                   "FT0M (%)"};
-    ConfigurableAxis centFV0AAxis{"FV0A",
+    ConfigurableAxis centFV0AAxis{"centFV0AAxis",
                                   {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 101, 105.5},
                                   "FV0A (%)"};
 
     ConfigurableAxis nChargedFT0MGenAxis{"nChargedFT0MGenAxis", {300, 0, 300}, "N_{FT0M, gen.}"};
 
     AxisSpec rapidityAxis = {200, -2.0f, 2.0f, "y"};
-    AxisSpec phiAxis = {100, -TMath::Pi() / 2, 3. * TMath::Pi() / 2, "#varphi"};
 
     TString CutLabel[26] = {"All", "MassWin", "y", "EtaDau", "DCADauToPV", "CascCosPA", "V0CosPA", "DCACascDau", "DCAV0Dau", "rCasc", "rCascMax", "rV0", "rV0Max", "DCAV0ToPV", "LambdaMass", "TPCPr", "TPCPi", "TOFPr", "TOFPi", "TPCBach", "TOFBach", "ctau", "CompDecayMass", "Bach-baryon", "NTPCrows", "OOBRej"};
     TString CutLabelSummary[29] = {"MassWin", "y", "EtaDau", "dcapostopv", "dcanegtopv", "dcabachtopv", "CascCosPA", "V0CosPA", "DCACascDau", "DCAV0Dau", "rCasc", "rV0", "DCAV0ToPV", "LambdaMass", "TPCPr", "TPCPi", "TOFPr", "TOFPi", "TPCBach", "TOFBach", "proplifetime", "rejcomp", "ptthrtof", "bachBaryonCosPA", "bachBaryonDCAxyToPV", "NTPCrows", "OOBRej", "rCascMax", "rV0Max"};
@@ -167,6 +162,10 @@ struct cascpostprocessing {
     registry.get<TH1>(HIST("CascadeSelectionSummary"))->SetBinContent(29, v0radiusMax);
 
     registry.add("hPt", "hPt", {HistType::kTH1F, {ptAxis}});
+    registry.add("hBachPtMinus", "hBachPtMinus", {HistType::kTH1F, {ptAxis}});
+    registry.add("hBachPtPlus", "hBachPtPlus", {HistType::kTH1F, {ptAxis}});
+    registry.add("hBachPtVsCascPtMinus", "hBachPtVsCascPtMinus", {HistType::kTH2F, {ptAxis, ptAxis}});
+    registry.add("hBachPtVsCascPtPlus", "hBachPtVsCascPtPlus", {HistType::kTH2F, {ptAxis, ptAxis}});
     registry.add("hCascMinusInvMassvsPt", "hCascMinusInvMassvsPt", HistType::kTH2F, {ptAxis, massAxis});
     registry.add("hCascPlusInvMassvsPt", "hCascPlusInvMassvsPt", HistType::kTH2F, {ptAxis, massAxis});
     registry.add("hCascMinusInvMassvsPt_FT0M", "hCascMinusInvMassvsPt_FT0M", HistType::kTH3F, {centFT0MAxis, ptAxis, massAxis});
@@ -201,8 +200,6 @@ struct cascpostprocessing {
     registry.add("hRapMinus1D", "hRapMinus1D", {HistType::kTH1F, {rapidityAxis}});
     registry.add("hRapPlus", "hRapPlus", {HistType::kTH2F, {ptAxis, rapidityAxis}});
     registry.add("hRapPlus1D", "hRapPlus1D", {HistType::kTH1F, {rapidityAxis}});
-    registry.add("hPhiMinus", "hPhiMinus", {HistType::kTH2F, {ptAxis, phiAxis}});
-    registry.add("hPhiPlus", "hPhiPlus", {HistType::kTH2F, {ptAxis, phiAxis}});
     registry.add("hCtauMinus", "hCtauMinus", {HistType::kTH1F, {{100, 0.0f, 40.0f}}});
     registry.add("hCtauPlus", "hCtauPlus", {HistType::kTH1F, {{100, 0.0f, 40.0f}}});
 
@@ -223,15 +220,19 @@ struct cascpostprocessing {
     registry.add("hCascMinusEtaNeg", "hCascMinusEtaNeg", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
     registry.add("hCascMinusEtaBach", "hCascMinusEtaBach", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
 
-    // Info for eff x acc from MC
-    registry.add("hPtCascPlusTrueRec", "hPtCascPlusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
-    registry.add("hPtCascMinusTrueRec", "hPtCascMinusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
-
-    registry.add("hCascMinusMassvsPtTrueRec", "hCascMinusMassvsPtTrueRec", {HistType::kTH3F, {ptAxis, massAxis, centFT0MAxis}});
-    registry.add("hCascPlusMassvsPtTrueRec", "hCascPlusMassvsPtTrueRec", {HistType::kTH3F, {ptAxis, massAxis, centFT0MAxis}});
-    registry.add("hCascMinusMassvsPtBG", "hCascMinusMassvsPtBG", {HistType::kTH2F, {ptAxis, massAxis}});
-    registry.add("hCascPlusMassvsPtBG", "hCascPlusMassvsPtBG", {HistType::kTH2F, {ptAxis, massAxis}});
     if (isMC) {
+      // Info for eff x acc from MC
+      registry.add("hPtCascPlusTrueRec", "hPtCascPlusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
+      registry.add("hPtCascMinusTrueRec", "hPtCascMinusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
+      registry.add("hPtCascPlusTrueRecVsGen", "hPtCascPlusTrueRecVsGen", {HistType::kTH2F, {ptRecAxis, ptGenAxis}});
+      registry.add("hPtCascMinusTrueRecVsGen", "hPtCascMinusTrueRecVsGen", {HistType::kTH2F, {ptRecAxis, ptGenAxis}});
+
+      registry.add("hCascMinusMassvsPtTrueRec", "hCascMinusMassvsPtTrueRec", {HistType::kTH3F, {ptAxis, massAxis, centFT0MAxis}});
+      registry.add("hCascPlusMassvsPtTrueRec", "hCascPlusMassvsPtTrueRec", {HistType::kTH3F, {ptAxis, massAxis, centFT0MAxis}});
+      registry.add("hCascMinusMassvsPtBG", "hCascMinusMassvsPtBG", {HistType::kTH2F, {ptAxis, massAxis}});
+      registry.add("hCascPlusMassvsPtBG", "hCascPlusMassvsPtBG", {HistType::kTH2F, {ptAxis, massAxis}});
+      registry.add("hCascMinusMassvsPtBG_FT0M", "hCascMinusMassvsPtBG_FT0M", {HistType::kTH3F, {ptAxis, massAxis, centFT0MAxis}});
+      registry.add("hCascPlusMassvsPtBG_FT0M", "hCascPlusMassvsPtBG_FT0M", {HistType::kTH3F, {ptAxis, massAxis, centFT0MAxis}});
       registry.add("hPtXiPlusTrue", "hPtXiPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
       registry.add("hPtXiMinusTrue", "hPtXiMinusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
       registry.add("hPtOmegaPlusTrue", "hPtOmegaPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
@@ -252,7 +253,7 @@ struct cascpostprocessing {
     int counter = -1;
     bool isCorrectlyRec = 0;
 
-    for (auto& candidate : mycascades) {
+    for (auto const& candidate : mycascades) {
       isCandidate = false;
       isCorrectlyRec = false;
 
@@ -280,6 +281,9 @@ struct cascpostprocessing {
       counter = -1;
       registry.fill(HIST("hCandidate"), ++counter);
 
+      if (candidate.pt() < minpt)
+        continue;
+
       // To have trace of how it was before selections
       if (candidate.sign() < 0) {
         registry.fill(HIST("hXiMinusInvMassvsPt_BefSels"), candidate.pt(), candidate.massxi());
@@ -291,14 +295,14 @@ struct cascpostprocessing {
       }
 
       if (isXi) {
-        if (TMath::Abs(candidate.massxi() - pdgDB->Mass(3312)) > masswin)
+        if (TMath::Abs(candidate.massxi() - o2::constants::physics::MassXiMinus) > masswin)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
         if (TMath::Abs(candidate.rapxi()) > rap)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
       } else {
-        if (TMath::Abs(candidate.massomega() - pdgDB->Mass(3334)) > masswin)
+        if (TMath::Abs(candidate.massomega() - o2::constants::physics::MassOmegaMinus) > masswin)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
         if (TMath::Abs(candidate.rapomega()) > rap)
@@ -340,7 +344,7 @@ struct cascpostprocessing {
       if (TMath::Abs(candidate.dcav0topv()) < dcav0topv)
         continue;
       registry.fill(HIST("hCandidate"), ++counter);
-      if (TMath::Abs(candidate.masslambdadau() - pdgDB->Mass(3122)) > lambdamasswin)
+      if (TMath::Abs(candidate.masslambdadau() - o2::constants::physics::MassLambda0) > lambdamasswin)
         continue;
       registry.fill(HIST("hCandidate"), ++counter);
       if (candidate.sign() < 0) {
@@ -385,10 +389,10 @@ struct cascpostprocessing {
         if (hastof && TMath::Abs(candidate.ntofsigmabachpi()) > nsigmatofPi && candidate.bachpt() > ptthrtof && candidate.bachhastof())
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
-        if (candidate.ctauxi() > proplifetime * ctauxiPDG)
+        if (candidate.ctauxi() > proplifetime * kCtauXi)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
-        if (TMath::Abs(candidate.massomega() - pdgDB->Mass(3334)) < rejcomp)
+        if (TMath::Abs(candidate.massomega() - o2::constants::physics::MassOmegaMinus) < rejcomp)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
         rapidity = candidate.rapxi();
@@ -401,17 +405,17 @@ struct cascpostprocessing {
         if (hastof && TMath::Abs(candidate.ntofsigmabachka()) > nsigmatofKa && candidate.bachpt() > ptthrtof && candidate.bachhastof())
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
-        if (candidate.ctauomega() > proplifetime * ctauomegaPDG)
+        if (candidate.ctauomega() > proplifetime * kCtauOmega)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
-        if (TMath::Abs(candidate.massxi() - pdgDB->Mass(3312)) < rejcomp)
+        if (TMath::Abs(candidate.massxi() - o2::constants::physics::MassXiMinus) < rejcomp)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
         rapidity = candidate.rapomega();
         ctau = candidate.ctauomega();
         invmass = candidate.massomega();
       }
-      if (isSelectBachBaryon && (candidate.bachBaryonCosPA() > bachBaryonCosPA || fabs(candidate.bachBaryonDCAxyToPV()) < bachBaryonDCAxyToPV)) { // Bach-baryon selection if required
+      if (isSelectBachBaryon && (candidate.bachBaryonCosPA() > bachBaryonCosPA || std::fabs(candidate.bachBaryonDCAxyToPV()) < bachBaryonDCAxyToPV)) { // Bach-baryon selection if required
         continue;
       }
       registry.fill(HIST("hCandidate"), ++counter);
@@ -424,7 +428,7 @@ struct cascpostprocessing {
         if (!kHasTOF && !kHasITS)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
-      } else if (dooobrej == 2) {
+      } else if (dooobrej == OobRejTofOnly) {
         if (!kHasTOF && (candidate.pt() > ptthrtof))
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
@@ -448,27 +452,33 @@ struct cascpostprocessing {
       registry.fill(HIST("hBachBaryonCosPA"), candidate.pt(), candidate.bachBaryonCosPA());
       registry.fill(HIST("hBachBaryonDCAxyToPV"), candidate.pt(), candidate.bachBaryonDCAxyToPV());
       if (candidate.sign() > 0) {
+        registry.fill(HIST("hBachPtPlus"), candidate.bachpt());
+        registry.fill(HIST("hBachPtVsCascPtPlus"), candidate.pt(), candidate.bachpt());
         registry.fill(HIST("hCtauPlus"), ctau);
         registry.fill(HIST("hEtaPlus"), candidate.pt(), candidate.eta());
         registry.fill(HIST("hRapPlus"), candidate.pt(), rapidity);
         registry.fill(HIST("hRapPlus1D"), rapidity);
-        // registry.fill(HIST("hPhiPlus"), candidate.pt(), candidate.phi());
       } else {
+        registry.fill(HIST("hBachPtMinus"), candidate.bachpt());
+        registry.fill(HIST("hBachPtVsCascPtMinus"), candidate.pt(), candidate.bachpt());
         registry.fill(HIST("hCtauMinus"), ctau);
         registry.fill(HIST("hEtaMinus"), candidate.pt(), candidate.eta());
         registry.fill(HIST("hRapMinus"), candidate.pt(), rapidity);
         registry.fill(HIST("hRapMinus1D"), rapidity);
-        // registry.fill(HIST("hPhiMinus"), candidate.pt(), candidate.phi());
       }
 
       if (isXi) {
-        isCorrectlyRec = ((TMath::Abs(candidate.mcPdgCode()) == 3312) && (candidate.isPrimary() == 1)) ? 1 : 0;
-        if (TMath::Abs(candidate.massxi() - pdgDB->Mass(3312)) < masswintpc) {
+        if (isMC) {
+          isCorrectlyRec = ((TMath::Abs(candidate.mcPdgCode()) == PDG_t::kXiMinus) && (candidate.isPrimary() == 1)) ? 1 : 0;
+        }
+        if (TMath::Abs(candidate.massxi() - o2::constants::physics::MassXiMinus) < masswintpc) {
           isCandidate = 1;
         }
       } else if (!isXi) {
-        isCorrectlyRec = ((TMath::Abs(candidate.mcPdgCode()) == 3334) && (candidate.isPrimary() == 1)) ? 1 : 0;
-        if (TMath::Abs(candidate.massomega() - pdgDB->Mass(3334)) < masswintpc) {
+        if (isMC) {
+          isCorrectlyRec = ((TMath::Abs(candidate.mcPdgCode()) == PDG_t::kOmegaMinus) && (candidate.isPrimary() == 1)) ? 1 : 0;
+        }
+        if (TMath::Abs(candidate.massomega() - o2::constants::physics::MassOmegaMinus) < masswintpc) {
           isCandidate = 1;
         }
       }
@@ -500,22 +510,30 @@ struct cascpostprocessing {
       // registry.fill(HIST("hBachITSHits"), candidate.bachitshits());
 
       if (candidate.sign() < 0) {
-        if (isCorrectlyRec) {
-          registry.fill(HIST("hPtCascMinusTrueRec"), candidate.pt(), rapidity, candidate.centFT0M()); // 3rd axis is from MC calibration
-          registry.fill(HIST("hCascMinusMassvsPtTrueRec"), candidate.pt(), invmass, candidate.centFT0M());
-        } else {
-          registry.fill(HIST("hCascMinusMassvsPtBG"), candidate.pt(), invmass);
+        if (isMC) {
+          if (isCorrectlyRec) {
+            registry.fill(HIST("hPtCascMinusTrueRec"), candidate.pt(), rapidity, candidate.centFT0M()); // 3rd axis is from MC calibration
+            registry.fill(HIST("hPtCascMinusTrueRecVsGen"), candidate.pt(), candidate.genPt());
+            registry.fill(HIST("hCascMinusMassvsPtTrueRec"), candidate.pt(), invmass, candidate.centFT0M());
+          } else {
+            registry.fill(HIST("hCascMinusMassvsPtBG"), candidate.pt(), invmass);
+            registry.fill(HIST("hCascMinusMassvsPtBG_FT0M"), candidate.pt(), invmass, candidate.centFT0M());
+          }
         }
         registry.fill(HIST("hCascMinusInvMassvsPt"), candidate.pt(), invmass);
         registry.fill(HIST("hCascMinusInvMassvsPt_FT0M"), candidate.centFT0M(), candidate.pt(), invmass);
         registry.fill(HIST("hCascMinusInvMassvsPt_FV0A"), candidate.centFV0A(), candidate.pt(), invmass);
       }
       if (candidate.sign() > 0) {
-        if (isCorrectlyRec) {
-          registry.fill(HIST("hPtCascPlusTrueRec"), candidate.pt(), rapidity, candidate.centFT0M()); // 3rd axis is from MC calibration
-          registry.fill(HIST("hCascPlusMassvsPtTrueRec"), candidate.pt(), invmass, candidate.centFT0M());
-        } else {
-          registry.fill(HIST("hCascPlusMassvsPtBG"), candidate.pt(), invmass);
+        if (isMC) {
+          if (isCorrectlyRec) {
+            registry.fill(HIST("hPtCascPlusTrueRec"), candidate.pt(), rapidity, candidate.centFT0M()); // 3rd axis is from MC calibration
+            registry.fill(HIST("hPtCascPlusTrueRecVsGen"), candidate.pt(), candidate.genPt());
+            registry.fill(HIST("hCascPlusMassvsPtTrueRec"), candidate.pt(), invmass, candidate.centFT0M());
+          } else {
+            registry.fill(HIST("hCascPlusMassvsPtBG"), candidate.pt(), invmass);
+            registry.fill(HIST("hCascPlusMassvsPtBG_FT0M"), candidate.pt(), invmass, candidate.centFT0M());
+          }
         }
         registry.fill(HIST("hCascPlusInvMassvsPt"), candidate.pt(), invmass);
         registry.fill(HIST("hCascPlusInvMassvsPt_FT0M"), candidate.centFT0M(), candidate.pt(), invmass);
@@ -524,11 +542,11 @@ struct cascpostprocessing {
     }
   }
 
-  PROCESS_SWITCH(cascpostprocessing, processRec, "Process Run 3 reconstructed data", true);
+  PROCESS_SWITCH(LfCascpostprocessing, processRec, "Process Run 3 reconstructed data", true);
 
   void processGen(aod::MyMCCascades const& myMCcascades)
   {
-    for (auto& genCascade : myMCcascades) {
+    for (auto const& genCascade : myMCcascades) {
       if (genCascade.isPrimary() == 0)
         continue; // Consider only primaries
 
@@ -557,16 +575,16 @@ struct cascpostprocessing {
         continue;
 
       // Histos of generated cascades from generated events with accepted z vrtx + chosen event type (evSelFlag) (for signal loss correction)
-      if (genCascade.pdgCode() == -3312) {
+      if (genCascade.pdgCode() == PDG_t::kXiPlusBar) {
         registry.fill(HIST("hPtXiPlusTrue"), genCascade.pt(), genCascade.y(), genCascade.centFT0M());
       }
-      if (genCascade.pdgCode() == 3312) {
+      if (genCascade.pdgCode() == PDG_t::kXiMinus) {
         registry.fill(HIST("hPtXiMinusTrue"), genCascade.pt(), genCascade.y(), genCascade.centFT0M());
       }
-      if (genCascade.pdgCode() == -3334) {
+      if (genCascade.pdgCode() == PDG_t::kOmegaPlusBar) {
         registry.fill(HIST("hPtOmegaPlusTrue"), genCascade.pt(), genCascade.y(), genCascade.centFT0M());
       }
-      if (genCascade.pdgCode() == 3334) {
+      if (genCascade.pdgCode() == PDG_t::kOmegaMinus) {
         registry.fill(HIST("hPtOmegaMinusTrue"), genCascade.pt(), genCascade.y(), genCascade.centFT0M());
       }
 
@@ -592,25 +610,25 @@ struct cascpostprocessing {
           break;
       }
 
-      if (genCascade.pdgCode() == -3312) {
+      if (genCascade.pdgCode() == PDG_t::kXiPlusBar) {
         registry.fill(HIST("hPtXiPlusTrueAssocWithSelColl"), genCascade.pt(), genCascade.y(), genCascade.centFT0M());
       }
-      if (genCascade.pdgCode() == 3312) {
+      if (genCascade.pdgCode() == PDG_t::kXiMinus) {
         registry.fill(HIST("hPtXiMinusTrueAssocWithSelColl"), genCascade.pt(), genCascade.y(), genCascade.centFT0M());
       }
-      if (genCascade.pdgCode() == -3334) {
+      if (genCascade.pdgCode() == PDG_t::kOmegaPlusBar) {
         registry.fill(HIST("hPtOmegaPlusTrueAssocWithSelColl"), genCascade.pt(), genCascade.y(), genCascade.centFT0M());
       }
-      if (genCascade.pdgCode() == 3334) {
+      if (genCascade.pdgCode() == PDG_t::kOmegaMinus) {
         registry.fill(HIST("hPtOmegaMinusTrueAssocWithSelColl"), genCascade.pt(), genCascade.y(), genCascade.centFT0M());
       }
     }
   }
-  PROCESS_SWITCH(cascpostprocessing, processGen, "Process Run 3 MC generated data", false);
+  PROCESS_SWITCH(LfCascpostprocessing, processGen, "Process Run 3 MC generated data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<cascpostprocessing>(cfgc, TaskName{"lf-cascpostprocessing"})};
+    adaptAnalysisTask<LfCascpostprocessing>(cfgc)};
 }

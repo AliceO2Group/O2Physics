@@ -26,6 +26,7 @@
 #include "PWGLF/DataModel/mcCentrality.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
 #include "Common/DataModel/Centrality.h"
@@ -128,6 +129,7 @@ struct StrangenessInJetsIons {
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Enable processing of skimmed data"};
   Configurable<std::string> triggerName{"triggerName", "fOmega", "Software trigger name"};
   Configurable<int> centrEstimator{"centrEstimator", 1, "Select centrality estimator. Options: 0 = FT0C, 1 = FT0M. CCDB objects available only for FT0M."};
+  Configurable<bool> calculateFeeddownMatrix{"calculateFeeddownMatrix", true, "Fill feeddown matrix for Lambda if MC"};
 
   // Event selection
   Configurable<bool> requireNoSameBunchPileup{"requireNoSameBunchPileup", true, "Require kNoSameBunchPileup selection"};
@@ -239,8 +241,8 @@ struct StrangenessInJetsIons {
     }
     AxisSpec multAxis = {multBinning, multAxTitle};
 
-    const AxisSpec ptAxis{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec ptJetAxis{101, 0.0, 100.0, "#it{p}_{T,jet} (GeV/#it{c})"};
+    const AxisSpec ptAxis{500, 0.0, 50.0, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec ptJetAxis{100, 0.0, 100.0, "#it{p}_{T,jet} (GeV/#it{c})"};
     const AxisSpec numJets{21, -0.5, 20.5, "Number of jets per collision"};
     const AxisSpec invMassK0sAxis{200, 0.44, 0.56, "m_{#pi#pi} (GeV/#it{c}^{2})"};
     const AxisSpec invMassLambdaAxis{200, 1.09, 1.14, "m_{p#pi} (GeV/#it{c}^{2})"};
@@ -372,6 +374,12 @@ struct StrangenessInJetsIons {
         registryMC.add("AntiLambda_generated_w_reco_MB", "AntiLambda_generated_w_reco_MB", HistType::kTH2F, {multAxis, ptAxis});
         // -----
       }
+
+      if (particleOfInterestDict[ParticleOfInterest::kCascades] || calculateFeeddownMatrix) {
+        registryMC.add("XiPos_generated_MB", "XiPos_generated_MB", HistType::kTH2F, {multAxis, ptAxis});
+        registryMC.add("XiNeg_generated_MB", "XiNeg_generated_MB", HistType::kTH2F, {multAxis, ptAxis});
+      }
+
       if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
         registryMC.add("XiPos_generated_jet", "XiPos_generated_jet", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("XiPos_generated_ue", "XiPos_generated_ue", HistType::kTH2F, {multAxis, ptAxis});
@@ -383,8 +391,6 @@ struct StrangenessInJetsIons {
         registryMC.add("OmegaNeg_generated_ue", "OmegaNeg_generated_ue", HistType::kTH2F, {multAxis, ptAxis});
 
         // Histograms for the full event (without jets)
-        registryMC.add("XiPos_generated_MB", "XiPos_generated_MB", HistType::kTH2F, {multAxis, ptAxis});
-        registryMC.add("XiNeg_generated_MB", "XiNeg_generated_MB", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("OmegaPos_generated_MB", "OmegaPos_generated_MB", HistType::kTH2F, {multAxis, ptAxis});
         registryMC.add("OmegaNeg_generated_MB", "OmegaNeg_generated_MB", HistType::kTH2F, {multAxis, ptAxis});
       }
@@ -525,6 +531,13 @@ struct StrangenessInJetsIons {
         // Histograms for the full event (without jets)
         registryMC.add("ProtonPos_reconstructed_MB", "ProtonPos_reconstructed_MB", HistType::kTH2F, {multAxis, ptAxisLongLived});
         registryMC.add("ProtonNeg_reconstructed_MB", "ProtonNeg_reconstructed_MB", HistType::kTH2F, {multAxis, ptAxisLongLived});
+      }
+
+      if (calculateFeeddownMatrix) {
+        registryMC.add("h3dLambdaFeeddown", "h3dLambdaFeeddown", kTH3D, {multAxis, ptAxis, ptAxis});
+        registryMC.add("h3dLambdaFeeddownFromXi0", "h3dLambdaFeeddownFromXi0", kTH3D, {multAxis, ptAxis, ptAxis});
+        registryMC.add("h3dAntiLambdaFeeddown", "h3dAntiLambdaFeeddown", kTH3D, {multAxis, ptAxis, ptAxis});
+        registryMC.add("h3dAntiLambdaFeeddownFromXi0", "h3dAntiLambdaFeeddownFromXi0", kTH3D, {multAxis, ptAxis, ptAxis});
       }
     }
   }
@@ -1205,12 +1218,12 @@ struct StrangenessInJetsIons {
           }
           break;
         case kXiMinus:
-          if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+          if (particleOfInterestDict[ParticleOfInterest::kCascades] || calculateFeeddownMatrix) {
             registryMC.fill(HIST("XiNeg_generated_MB"), genMultiplicity, particle.pt());
           }
           break;
         case kXiPlusBar:
-          if (particleOfInterestDict[ParticleOfInterest::kCascades]) {
+          if (particleOfInterestDict[ParticleOfInterest::kCascades] || calculateFeeddownMatrix) {
             registryMC.fill(HIST("XiPos_generated_MB"), genMultiplicity, particle.pt());
           }
           break;
@@ -1296,6 +1309,9 @@ struct StrangenessInJetsIons {
         // Vertex position vector
         TVector3 vtxPos(collision.posX(), collision.posY(), collision.posZ());
 
+        bool passedLambda = false;     // true if Lambda selections are passed
+        bool passedAntiLambda = false; // true if AntiLambda selections are passed
+
         // K0s
         if (passedK0ShortSelection(v0, pos, neg, vtxPos) &&
             motherPos.pdgCode() == kK0Short &&
@@ -1307,12 +1323,19 @@ struct StrangenessInJetsIons {
             motherPos.pdgCode() == kLambda0 &&
             passedRapidityCut(v0.yLambda(), configV0.rapidityMax)) {
           registryMC.fill(HIST("Lambda_reconstructed_MB_incl"), multiplicity, v0.pt());
+          passedLambda = true;
         }
         // AntiLambda
         if (passedAntiLambdaSelection(v0, pos, neg, vtxPos) &&
             motherPos.pdgCode() == kLambda0Bar &&
             passedRapidityCut(v0.yLambda(), configV0.rapidityMax)) {
           registryMC.fill(HIST("AntiLambda_reconstructed_MB_incl"), multiplicity, v0.pt());
+          passedAntiLambda = true;
+        }
+
+        if (calculateFeeddownMatrix) {
+          double ptGen = motherPos.pt();
+          fillFeeddownMatrix(v0, ptGen, multiplicity, passedLambda, passedAntiLambda);
         }
 
         if (!motherPos.isPhysicalPrimary())
@@ -1454,6 +1477,48 @@ struct StrangenessInJetsIons {
             break;
           default:
             break;
+        }
+      }
+    }
+  }
+
+  template <typename TV0>
+  void fillFeeddownMatrix(TV0 v0, float pt, float centrality, bool passedLambda, bool passedAntiLambda)
+  // Fill feeddown matrix for Lambdas or AntiLambdas
+  // Adapted from: PWGLF/Tasks/Strangeness/derivedlambdakzeroanalysis.cxx
+  {
+    if (!v0.has_mcMotherParticle())
+      return; // does not have mother particle in record, skip
+
+    auto v0mother = v0.mcMotherParticle();
+    float rapidityXi = 999.;
+    if (std::abs(v0mother.pdgCode()) == PDG_t::kXiMinus)
+      rapidityXi = RecoDecay::y(std::array{v0mother.px(), v0mother.py(), v0mother.pz()}, o2::constants::physics::MassXiMinus);
+    if (std::abs(v0mother.pdgCode()) == o2::constants::physics::Pdg::kXi0)
+      rapidityXi = RecoDecay::y(std::array{v0mother.px(), v0mother.py(), v0mother.pz()}, o2::constants::physics::MassXi0);
+
+    if (std::fabs(rapidityXi) > 0.5f)
+      return; // not a valid mother rapidity (PDG selection is later)
+
+    // __________________________________________
+    if (passedLambda) {
+      if (v0mother.isPhysicalPrimary()) {
+        if (v0mother.pdgCode() == PDG_t::kXiMinus) {
+          registryMC.fill(HIST("h3dLambdaFeeddown"), centrality, pt, std::hypot(v0mother.px(), v0mother.py()));
+        }
+        if (v0mother.pdgCode() == PDG_t::kXiMinus || v0mother.pdgCode() == o2::constants::physics::Pdg::kXi0) {
+          registryMC.fill(HIST("h3dLambdaFeeddownFromXi0"), centrality, pt, std::hypot(v0mother.px(), v0mother.py()));
+        }
+      }
+    }
+
+    if (passedAntiLambda) {
+      if (v0mother.isPhysicalPrimary()) {
+        if (v0mother.pdgCode() == PDG_t::kXiPlusBar) {
+          registryMC.fill(HIST("h3dAntiLambdaFeeddown"), centrality, pt, std::hypot(v0mother.px(), v0mother.py()));
+        }
+        if (v0mother.pdgCode() == PDG_t::kXiPlusBar || v0mother.pdgCode() == -o2::constants::physics::Pdg::kXi0) {
+          registryMC.fill(HIST("h3dAntiLambdaFeeddownFromXi0"), centrality, pt, std::hypot(v0mother.px(), v0mother.py()));
         }
       }
     }
@@ -2095,7 +2160,7 @@ struct StrangenessInJetsIons {
   // Reconstructed MC events
   void processMCreconstructed(SimCollisions const& collisions,
                               soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs> const&,
-                              DaughterTracksMC const& mcTracks, aod::V0Datas const& fullV0s,
+                              DaughterTracksMC const& mcTracks, soa::Join<aod::V0Datas, aod::McV0Labels> const& fullV0s,
                               aod::CascDataExt const& Cascades, aod::McParticles const& mcParticles)
   {
     // Define per-event containers

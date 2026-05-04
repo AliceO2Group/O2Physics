@@ -53,6 +53,7 @@
 #include <cstdint>
 #include <iostream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 using namespace o2;
@@ -114,6 +115,9 @@ struct spvector {
     Configurable<int> CentfineNbins{"CentfineNbins", 16, "Number of bins in cent fine histograms"};
     Configurable<float> lfinebinCent{"lfinebinCent", 0.0, "lower bin value in cent fine histograms"};
     Configurable<float> hfinebinCent{"hfinebinCent", 80.0, "higher bin value in cent fine histograms"};
+    Configurable<int> TimefineNbins{"TimefineNbins", 120, "Number of bins in Time fine histograms"};
+    Configurable<float> lfinebinTime{"lfinebinTime", 0, "lower bin value in Time fine histograms"};
+    Configurable<float> hfinebinTime{"hfinebinTime", 120, "higher bin value in Time fine histograms"};
   } configbins;
 
   Configurable<bool> useShift{"useShift", false, "shift histograms"};
@@ -217,6 +221,7 @@ struct spvector {
     AxisSpec vxfineAxis = {configbins.VxfineNbins, configbins.lfinebinVx, configbins.hfinebinVx, "vxfine"};
     AxisSpec vyfineAxis = {configbins.VyfineNbins, configbins.lfinebinVy, configbins.hfinebinVy, "vyfine"};
     AxisSpec centfineAxis = {configbins.CentfineNbins, configbins.lfinebinCent, configbins.hfinebinCent, "V0M (%) fine"};
+    AxisSpec timefineAxis = {configbins.TimefineNbins, configbins.lfinebinTime, configbins.hfinebinTime, "timefine"};
     AxisSpec shiftAxis = {10, 0, 10, "shift"};
     AxisSpec basisAxis = {2, 0, 2, "basis"};
     AxisSpec VxyAxis = {2, 0, 2, "Vxy"};
@@ -255,6 +260,11 @@ struct spvector {
       histos.add("hvzQyZDCA", "hvzQyZDCA", kTH2F, {{vzfineAxis}, {qxZDCAxis}});
       histos.add("hvzQxZDCC", "hvzQxZDCC", kTH2F, {{vzfineAxis}, {qxZDCAxis}});
       histos.add("hvzQyZDCC", "hvzQyZDCC", kTH2F, {{vzfineAxis}, {qxZDCAxis}});
+
+      histos.add("htimeQxZDCA", "htimeQxZDCA", kTH2F, {{timefineAxis}, {qxZDCAxis}});
+      histos.add("htimeQyZDCA", "htimeQyZDCA", kTH2F, {{timefineAxis}, {qxZDCAxis}});
+      histos.add("htimeQxZDCC", "htimeQxZDCC", kTH2F, {{timefineAxis}, {qxZDCAxis}});
+      histos.add("htimeQyZDCC", "htimeQyZDCC", kTH2F, {{timefineAxis}, {qxZDCAxis}});
     }
 
     histos.add("PsiZDCC", "PsiZDCC", kTH2F, {centfineAxis, phiAxis});
@@ -423,6 +433,17 @@ struct spvector {
     }
 
     histos.fill(HIST("hEvtSelInfo"), 1.5);
+
+    const uint64_t timestampzdc = bc.timestamp(); // in milliseconds
+
+    // Convert timestamp to hours from run start (approximate)
+    // Store first timestamp of run to calculate relative time
+    static std::unordered_map<int, uint64_t> runStartTime;
+    if (runStartTime.find(currentRunNumber) == runStartTime.end()) {
+      runStartTime[currentRunNumber] = timestampzdc;
+    }
+
+    double timeInMinutes = (timestampzdc - runStartTime[currentRunNumber]) / 60000.0; // ms -> minutes
 
     auto zdc = bc.zdc();
     auto zncEnergy = zdc.energySectorZNC();
@@ -750,6 +771,11 @@ struct spvector {
         histos.fill(HIST("hvzQyZDCA"), vz, qyZDCA);
         histos.fill(HIST("hvzQxZDCC"), vz, qxZDCC);
         histos.fill(HIST("hvzQyZDCC"), vz, qyZDCC);
+
+        histos.fill(HIST("htimeQxZDCA"), timeInMinutes, qxZDCA);
+        histos.fill(HIST("htimeQyZDCA"), timeInMinutes, qyZDCA);
+        histos.fill(HIST("htimeQxZDCC"), timeInMinutes, qxZDCC);
+        histos.fill(HIST("htimeQyZDCC"), timeInMinutes, qyZDCC);
       }
 
       histos.fill(HIST("hpCosPsiAPsiC"), centrality, (TMath::Cos(psiZDCA - psiZDCC)));

@@ -37,6 +37,7 @@ struct LHPair { // struct to store electron-hadron pair information
   float mass{-999.f};
   float dca2legs{-999.f};
   float cospa{-999.f};
+  float cospaXY{-999.f};
   float lxy{-999.f};
   float lxyErr{-999.f};
   float lz{-999.f};
@@ -86,9 +87,10 @@ LHPair makePairLeptonTrack(TFitter& fitter, TCollision const& collision, TLepton
   std::array<float, 3> pvecSum = {pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]};
 
   pair.cospa = RecoDecay::cpa(vertex, svpos, pvecSum);
+  pair.cospaXY = RecoDecay::cpaXY(vertex, svpos, pvecSum);
   pair.dca2legs = std::sqrt(fitter.getChi2AtPCACandidate());
   pair.lxy = std::sqrt(std::pow(svpos[0] - collision.posX(), 2) + std::pow(svpos[1] - collision.posY(), 2));
-  pair.lz = std::fabs(svpos[2] - collision.posZ());
+  pair.lz = svpos[2] - collision.posZ();
   pair.lxyz = std::sqrt(std::pow(svpos[0] - collision.posX(), 2) + std::pow(svpos[1] - collision.posY(), 2) + std::pow(svpos[2] - collision.posZ(), 2));
 
   auto primaryVertex = getPrimaryVertex(collision);
@@ -181,9 +183,10 @@ LHPair makePairLeptonV0(TFitter& fitter, TCollision const& collision, TLepton co
   std::array<float, 3> pvecSum = {pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]};
 
   pair.cospa = RecoDecay::cpa(vertex, svpos, pvecSum);
+  pair.cospaXY = RecoDecay::cpaXY(vertex, svpos, pvecSum);
   pair.dca2legs = std::sqrt(fitter.getChi2AtPCACandidate());
   pair.lxy = std::sqrt(std::pow(svpos[0] - collision.posX(), 2) + std::pow(svpos[1] - collision.posY(), 2));
-  pair.lz = std::fabs(svpos[2] - collision.posZ());
+  pair.lz = svpos[2] - collision.posZ();
   pair.lxyz = std::sqrt(std::pow(svpos[0] - collision.posX(), 2) + std::pow(svpos[1] - collision.posY(), 2) + std::pow(svpos[2] - collision.posZ(), 2));
 
   auto primaryVertex = getPrimaryVertex(collision);
@@ -282,9 +285,10 @@ LHPair makePairLeptonCascade(TFitter& fitter, TCollision const& collision, TLept
   std::array<float, 3> pvecSum = {pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]};
 
   pair.cospa = RecoDecay::cpa(vertex, svpos, pvecSum);
+  pair.cospaXY = RecoDecay::cpaXY(vertex, svpos, pvecSum);
   pair.dca2legs = std::sqrt(fitter.getChi2AtPCACandidate());
   pair.lxy = std::sqrt(std::pow(svpos[0] - collision.posX(), 2) + std::pow(svpos[1] - collision.posY(), 2));
-  pair.lz = std::fabs(svpos[2] - collision.posZ());
+  pair.lz = svpos[2] - collision.posZ();
   pair.lxyz = std::sqrt(std::pow(svpos[0] - collision.posX(), 2) + std::pow(svpos[1] - collision.posY(), 2) + std::pow(svpos[2] - collision.posZ(), 2));
 
   auto primaryVertex = getPrimaryVertex(collision);
