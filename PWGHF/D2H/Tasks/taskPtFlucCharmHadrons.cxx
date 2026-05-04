@@ -13,6 +13,8 @@
 /// \brief Analysis task for charm hadron pt fluctuation
 ///
 /// \author Prottay Das, prottay.das@cern.ch
+/// \author Wu Chuntai, UNIPD, CCNU, and INFN Padova
+/// \author Andrea Rossi, INFN Padova
 
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/HfHelper.h"
@@ -37,6 +39,7 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdlib>
@@ -57,6 +60,12 @@ enum DecayChannel { DplusToPiKPi = 0,
                     D0ToPiK,
                     D0ToKPi };
 
+enum CandD0Type { PureD0 = 0,
+                  PureD0bar,
+                  ReflectedD0,
+                  ReflectedD0bar
+};
+
 struct HfTaskPtFlucCharmHadrons {
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3, FV0A: 4)"};
   Configurable<int> selectionFlag{"selectionFlag", 1, "Selection Flag for hadron (e.g. 1 for skimming, 3 for topo. and kine., 7 for PID)"};
@@ -64,6 +73,7 @@ struct HfTaskPtFlucCharmHadrons {
   Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality accepted in SP computation"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 2}, "Indices of BDT scores to be stored. Two indexes max."};
+  Configurable<bool> saveCharmBulkCorrelations{"saveCharmBulkCorrelations", false, "Flag to save charm-bulk correlations in THnSparse"};
 
   Configurable<int> cfgITScluster{"cfgITScluster", 5, "Number of ITS cluster"};
   Configurable<int> cfgITSbarrel{"cfgITSbarrel", 1, "Number of ITS inner barrel"};
@@ -77,6 +87,7 @@ struct HfTaskPtFlucCharmHadrons {
   Configurable<float> etaAMax{"etaAMax", 0.0f, "A: negative eta max (0)"};
   Configurable<float> etaBMin{"etaBMin", 0.4f, "B: positive eta min (eta_min)"}; // or set from etaMinGap in code
   Configurable<float> etaBMax{"etaBMax", 0.8f, "B: positive eta max"};
+  Configurable<float> etaTrkMax{"etaTrkMax", 0.8f, "Track eta max"};
 
   Configurable<float> ptTrkMin{"ptTrkMin", 0.2f, "Track pT min for <pT> (charged hadrons)"};
   Configurable<float> ptTrkMax{"ptTrkMax", 2.0f, "Track pT max for <pT> (charged hadrons)"};
@@ -107,7 +118,7 @@ struct HfTaskPtFlucCharmHadrons {
 
   Filter filterSelectDplusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlag;
   Filter filterSelectD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
-
+  Filter filterSelectTracks = (nabs(aod::track::eta) < etaTrkMax) && (aod::track::pt > ptTrkMin) && (aod::track::pt < ptTrkMax) && (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
   Partition<CandD0DataWMl> selectedD0ToPiKWMl = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag;
   Partition<CandD0DataWMl> selectedD0ToKPiWMl = aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
 
@@ -118,8 +129,15 @@ struct HfTaskPtFlucCharmHadrons {
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0}, "Candidate pT axis"};
   ConfigurableAxis axisCent{"axisCent", {VARIABLE_WIDTH, 0.0, 10.0, 40.0, 80.0}, "Centrality axis"};
   ConfigurableAxis axisSign{"axisSign", {VARIABLE_WIDTH, -1.0, 1.0}, "Sign axis"};
-  ConfigurableAxis thnConfigAxisMlOne{"thnConfigAxisMlOne", {1000, 0., 1.}, ""};
-  ConfigurableAxis thnConfigAxisMlTwo{"thnConfigAxisMlTwo", {1000, 0., 1.}, ""};
+  ConfigurableAxis axisMlOne{"axisMlOne", {1000, 0., 1.}, ""};
+  ConfigurableAxis axisMlTwo{"axisMlTwo", {100, 0., 1.}, ""};
+  ConfigurableAxis axisCandEta{"axisCandEta", {20, -1., 1.}, ""};
+  ConfigurableAxis axisMPtTrkA{"axisMPtTrkA", {50, 0., 5.}, ""};
+  ConfigurableAxis axisMPtTrkB{"axisMPtTrkB", {50, 0., 5.}, ""};
+  ConfigurableAxis axisPtCandProduct{"axisPtCandProduct", {50, 0., 50.}, ""};
+  ConfigurableAxis axisPtTrkProduct{"axisPtTrkProduct", {50, 0., 25.}, ""};
+  ConfigurableAxis axisNTrkA{"axisNTrkA", {2000, 0., 2000.}, ""};
+  ConfigurableAxis axisNTrkB{"axisNTrkB", {2000, 0., 2000.}, ""};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -139,8 +157,15 @@ struct HfTaskPtFlucCharmHadrons {
     const AxisSpec aPt{axisPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec aCent{axisCent, "Centrality"};
     const AxisSpec aSign{axisSign, "Sign"};
-    const AxisSpec thnAxisMlOne{thnConfigAxisMlOne, "Bkg score"};
-    const AxisSpec thnAxisMlTwo{thnConfigAxisMlTwo, "FD score"};
+    const AxisSpec aMlOne{axisMlOne, "Bkg score"};
+    const AxisSpec aMlTwo{axisMlTwo, "FD score"};
+    const AxisSpec aCandEta{axisCandEta, "Eta"};
+    const AxisSpec aMPtTrkA{axisMPtTrkA, "Mean pT of tracks in subevent A (GeV/#it{c})"};
+    const AxisSpec aMPtTrkB{axisMPtTrkB, "Mean pT of tracks in subevent B (GeV/#it{c})"};
+    const AxisSpec aPtCandProduct{axisPtCandProduct, "#it{p}_{T}^{cand} * <#it{p}_{T}>^{trks} (GeV^{2}/#it{c}^{2})"};
+    const AxisSpec aPtTrkProduct{axisPtTrkProduct, "#it{p}_{T}^{trks}(A) * #it{p}_{T}^{trks}(B) (GeV^{2}/#it{c}^{2})"};
+    const AxisSpec aNTrkA{axisNTrkA, "N_{tracks} in subevent A"};
+    const AxisSpec aNTrkB{axisNTrkB, "N_{tracks} in subevent B"};
 
     // Event-level accumulators (charged hadrons only!)
     registry.add("hEvents", "events vs cent", HistType::kTH1F, {aCent}, true);
@@ -155,53 +180,102 @@ struct HfTaskPtFlucCharmHadrons {
     registry.add("pNB", "<N_B> vs cent (charged hadrons)", HistType::kTProfile, {aCent}, true);
 
     // Candidate mass distributions
-    registry.add("hD_mass", "D candidate mass (weight=1)", HistType::kTHnSparseF, {aInvMass, aCent, aPt, aSign, thnAxisMlOne, thnAxisMlTwo}, true);
-    registry.add("hD_f", "hD_f", HistType::kTHnSparseF, {aInvMass, aCent, aPt, aSign, thnAxisMlOne, thnAxisMlTwo}, true);
-    registry.add("hD_f_wPtB", "hD_f_wPtB", HistType::kTHnSparseF, {aInvMass, aCent, aPt, aSign, thnAxisMlOne, thnAxisMlTwo}, true);
+    registry.add("hD_mass", "D candidate mass (weight=1)", HistType::kTHnSparseF, {aInvMass, aCent, aPt, aSign, aMlOne, aMlTwo}, true);
+    registry.add("hD_f", "hD_f", HistType::kTHnSparseF, {aInvMass, aCent, aPt, aSign, aMlOne, aMlTwo}, true);
+    registry.add("hD_f_wPtB", "hD_f_wPtB", HistType::kTHnSparseF, {aInvMass, aCent, aPt, aSign, aMlOne, aMlTwo}, true);
+
+    // charm-bulk correlations (optional)
+    if (saveCharmBulkCorrelations) {
+      registry.add("hCharmBulkCorrelations", "Charm-bulk correlations", HistType::kTHnSparseF, {aInvMass, aCent, aPt, aSign, aMlOne, aMlTwo, aCandEta, aMPtTrkA, aMPtTrkB, aPtCandProduct}, true);
+      registry.add("hMeanPtTrkAllColls", "Mean pT of charged hadrons for all collisions", HistType::kTHnSparseF, {aCent, aMPtTrkA, aMPtTrkB, aPtTrkProduct, aNTrkA, aNTrkB}, true);
+    }
+
+    hfEvSel.addHistograms(registry); // collision monitoring
 
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
   }; // end init
 
-  /// Get the centrality
-  /// \param collision is the collision with the centrality information
-  double getCentrality(Colls::iterator const& collision)
+  // ---------------------------------------------------------------------------
+  // Helper functions
+  // ---------------------------------------------------------------------------
+  /// Check event selections for collision and fill event selection histograms, and revalculate centrality
+  /// \param collision is the collision
+  template <typename Coll>
+  bool isSelectedHfCollision(Coll const& collision, float& cent)
   {
-    double cent = -999.;
-    switch (centEstimator) {
-      case CentralityEstimator::FV0A:
-        cent = collision.centFV0A();
-        break;
-      case CentralityEstimator::FT0M:
-        cent = collision.centFT0M();
-        break;
-      case CentralityEstimator::FT0A:
-        cent = collision.centFT0A();
-        break;
-      case CentralityEstimator::FT0C:
-        cent = collision.centFT0C();
-        break;
-      default:
-        LOG(warning) << "Centrality estimator not valid. Possible values are V0A, T0M, T0A, T0C. Fallback to V0A";
-        cent = collision.centFV0A();
-        break;
+    o2::hf_evsel::HfCollisionRejectionMask collRejMask{};
+    if (centEstimator == CentralityEstimator::FT0A) {
+      collRejMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0A, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
+    } else if (centEstimator == CentralityEstimator::FT0C) {
+      collRejMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
+    } else if (centEstimator == CentralityEstimator::FT0M) {
+      collRejMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
+    } else if (centEstimator == CentralityEstimator::FV0A) {
+      collRejMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FV0A, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
+    } else {
+      LOG(fatal) << "Centrality estimator not recognized for collision selection";
     }
-    return cent;
+    hfEvSel.fillHistograms(collision, collRejMask, cent);
+    return collRejMask == 0;
+  }
+
+  /// Get candidate mass
+  template <typename CandT, typename Trk>
+  std::pair<float, float> getCandMassAndSign(const CandT& cand, DecayChannel channel, Trk const& /*tracks*/)
+  {
+    if constexpr (std::is_same_v<CandT, CandDplusDataWMl>) {
+      return {HfHelper::invMassDplusToPiKPi(cand), cand.template prong0_as<Trk>().sign()};
+    }
+    if constexpr (std::is_same_v<CandT, CandD0DataWMl>) {
+      if (channel == DecayChannel::D0ToPiK) {
+        return {HfHelper::invMassD0ToPiK(cand), cand.isSelD0bar() ? CandD0Type::ReflectedD0bar : CandD0Type::PureD0};
+      }
+      if (channel == DecayChannel::D0ToKPi) {
+        return {HfHelper::invMassD0barToKPi(cand), cand.isSelD0() ? CandD0Type::ReflectedD0 : CandD0Type::PureD0bar};
+      }
+    }
+    return {0., 0.}; // default return value for unsupported types
   }
 
   template <typename T>
-  bool selectionTrack(const T& candidate) const
+  bool selectionTrack(const T& track) const
   {
-    if (!(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster.value && candidate.tpcNClsFound() > cfgTPCcluster.value && candidate.itsNClsInnerBarrel() >= cfgITSbarrel.value && std::abs(candidate.dcaXY()) < cfgCutDCAxy.value && std::abs(candidate.dcaZ()) < cfgCutDCAz.value)) {
+    if (!(track.isGlobalTrack() && track.isPVContributor() && track.itsNCls() > cfgITScluster.value && track.tpcNClsFound() > cfgTPCcluster.value && track.itsNClsInnerBarrel() >= cfgITSbarrel.value)) {
       return false;
     }
     return true;
   }
 
-  // -------------------------
+  /// remove candidate daughters from the mean pT of tracks in A and B (if they are in the respective subevent)
+  template <DecayChannel Channel, typename CandT>
+  float removeDaughtersFromMeanPt(const CandT& cand, float rawMeanPt, int n, const std::vector<int>& trkIDs)
+  {
+    float meanPt{0.f};
+    if constexpr (Channel == DecayChannel::DplusToPiKPi) {
+      std::array<int, 3> daugIDs = {cand.prong0Id(), cand.prong1Id(), cand.prong2Id()};
+      std::array<float, 3> daugPts = {cand.ptProng0(), cand.ptProng1(), cand.ptProng2()};
+      for (int iProng = 0; iProng < 3; ++iProng) { // o2-linter: disable=magic-number (for 3-prong)
+        if (std::binary_search(trkIDs.begin(), trkIDs.end(), daugIDs[iProng])) {
+          meanPt = (rawMeanPt * n - daugPts[iProng]) / (n - 1);
+        }
+      }
+    } else if constexpr (Channel == DecayChannel::D0ToPiK || Channel == DecayChannel::D0ToKPi) {
+      std::array<int, 2> daugIDs = {cand.prong0Id(), cand.prong1Id()};
+      std::array<float, 2> daugPts = {cand.ptProng0(), cand.ptProng1()};
+      for (int iProng = 0; iProng < 2; ++iProng) { // o2-linter: disable=magic-number (for 2-prong)
+        if (std::binary_search(trkIDs.begin(), trkIDs.end(), daugIDs[iProng])) {
+          meanPt = (rawMeanPt * n - daugPts[iProng]) / (n - 1);
+        }
+      }
+    }
+    return meanPt;
+  }
+
+  // ---------------------------------------------------------------------------
   // Event-wise mean pT from charged hadron tracks
-  // -------------------------
+  // ---------------------------------------------------------------------------
   template <typename Trk>
   std::pair<float, int> computeMeanPtCharged(Trk const& tracks, float etaMin, float etaMax) const
   {
@@ -217,9 +291,6 @@ struct HfTaskPtFlucCharmHadrons {
         continue;
       }
       float pt = trk.pt();
-      if (pt < ptTrkMin.value || pt >= ptTrkMax.value) {
-        continue;
-      }
       sumPt += pt;
       ++n;
     }
@@ -277,109 +348,151 @@ struct HfTaskPtFlucCharmHadrons {
             ml2 >= mlTwoMin.value && ml2 < mlTwoMax.value);
   }
 
-  /// Compute the scalar product
-  /// \param collision is the collision with the Q vector information and event plane
-  /// \param candidates are the selected candidates
+  /// Compute the mean pT of the event using charged tracks in two eta-separated subevents, and correlate with D candidates
+  /// \param collision is the collision with centrality and event selection
+  /// \param candidates are the D candidates to correlate with the mean pT of the event
+  /// \param tracks are the tracks used to compute the mean pT of the event
   template <DecayChannel Channel, typename T1, typename Trk>
   void runPtFlucAnalysis(Colls::iterator const& collision,
                          T1 const& candidates,
                          Trk const& tracks)
   {
-    float cent = getCentrality(collision);
-    if (cent < centralityMin || cent > centralityMax) {
+    float cent{0.f};
+    if (!isSelectedHfCollision(collision, cent)) {
       return;
     }
 
     // Compute <pT> in two eta-separated subevents using CHARGED tracks only
-    auto [meanPtA, nA] = computeMeanPtCharged(tracks, etaAMin.value, etaAMax.value);
-    auto [meanPtB, nB] = computeMeanPtCharged(tracks, etaBMin.value, etaBMax.value);
+    auto [RawMeanPtA, nA] = computeMeanPtCharged(tracks, etaAMin.value, etaAMax.value);
+    auto [RawMeanPtB, nB] = computeMeanPtCharged(tracks, etaBMin.value, etaBMax.value);
 
     // QA
     registry.fill(HIST("pNA"), cent, static_cast<float>(nA));
     registry.fill(HIST("pNB"), cent, static_cast<float>(nB));
 
-    if (!std::isfinite(meanPtA) || !std::isfinite(meanPtB)) {
+    if (!std::isfinite(RawMeanPtA) || !std::isfinite(RawMeanPtB)) {
       return;
     }
 
     registry.fill(HIST("hEvents"), cent, 1.f);
 
-    registry.fill(HIST("pMeanPtA"), cent, meanPtA);
-    registry.fill(HIST("pMeanPtB"), cent, meanPtB);
-    registry.fill(HIST("pMeanPtAmeanPtB"), cent, meanPtA * meanPtB);
+    registry.fill(HIST("pMeanPtA"), cent, RawMeanPtA);
+    registry.fill(HIST("pMeanPtB"), cent, RawMeanPtB);
+    registry.fill(HIST("pMeanPtAmeanPtB"), cent, RawMeanPtA * RawMeanPtB);
+    if (saveCharmBulkCorrelations) {
+      registry.fill(HIST("hMeanPtTrkAllColls"), cent, RawMeanPtA, RawMeanPtB, RawMeanPtA * RawMeanPtB, nA, nB);
 
-    int nDcandTotA = 0;
+      std::vector<int> trkIDA;
+      std::vector<int> trkIDB;
 
-    for (const auto& cand : candidates) {
-      if (!passCandInA(cand)) {
-        continue;
-      }
+      trkIDA.reserve(tracks.size() / 2);
+      trkIDB.reserve(tracks.size() / 2);
 
-      // compute ML exactly like numerator
-      const auto [ml1, ml2] = getMlScores<Channel, decltype(cand), T1>(cand);
-
-      // apply same ML cut
-      if (!passMlCut(ml1, ml2)) {
-        continue;
-      }
-      float pt = cand.pt();
-      if (pt < ptTrkMinD.value || pt >= ptTrkMaxD.value) {
-        continue;
-      }
-
-      ++nDcandTotA;
-    }
-
-    if (nDcandTotA <= 0) {
-      return; // cannot build fraction
-    }
-
-    registry.fill(HIST("hEventsD"), cent, 1.f);
-    const float invND = 1.f / static_cast<float>(nDcandTotA);
-
-    for (const auto& candidate : candidates) {
-      if (!passCandInA(candidate)) {
-        continue;
-      }
-
-      // ML first (same definition)
-      const auto [ml1, ml2] = getMlScores<Channel, decltype(candidate), T1>(candidate);
-      if (!passMlCut(ml1, ml2)) {
-        continue;
-      }
-
-      // compute mass
-      float massCand = 0.;
-      float signCand = 0.;
-      if constexpr (std::is_same_v<T1, CandDplusDataWMl>) {
-        massCand = HfHelper::invMassDplusToPiKPi(candidate);
-        auto trackprong0 = candidate.template prong0_as<Trk>();
-        signCand = trackprong0.sign();
-      } else {
-        if constexpr (Channel == DecayChannel::D0ToPiK) {
-          massCand = HfHelper::invMassD0ToPiK(candidate);
-          signCand = candidate.isSelD0bar() ? 3 : 1; // 3: reflected D0bar, 1: pure D0 excluding reflected D0bar
-        } else if constexpr (Channel == DecayChannel::D0ToKPi) {
-          massCand = HfHelper::invMassD0barToKPi(candidate);
-          signCand = candidate.isSelD0() ? 3 : 2; // 3: reflected D0, 2: pure D0bar excluding reflected D0
+      // collect track IDs in A and B
+      for (const auto& trk : tracks) {
+        if (!selectionTrack(trk)) {
+          continue;
+        }
+        float eta = trk.eta();
+        if (eta > etaAMin.value && eta < etaAMax.value) {
+          trkIDA.push_back(trk.globalIndex());
+        } else if (eta > etaBMin.value && eta < etaBMax.value) {
+          trkIDB.push_back(trk.globalIndex());
         }
       }
 
-      const double ptCand = candidate.pt();
-      if (ptCand < ptTrkMinD.value || ptCand >= ptTrkMaxD.value) {
-        continue;
+      std::sort(trkIDA.begin(), trkIDA.end());
+      std::sort(trkIDB.begin(), trkIDB.end());
+
+      for (const auto& cand : candidates) {
+        // apply ML selection
+        auto [ml1, ml2] = getMlScores<Channel, decltype(cand), T1>(cand);
+        if (!passMlCut(ml1, ml2)) {
+          continue;
+        }
+
+        // remove the daughters from the mean pT of tracks and calculate pt product
+        float eta = cand.eta();
+        float pt = cand.pt();
+
+        float candPtProduct{0.f};
+        float meanPtA{0.f};
+        float meanPtB{0.f};
+        if (eta > etaAMin.value && eta < etaAMax.value) {
+          meanPtB = removeDaughtersFromMeanPt<Channel, decltype(cand)>(cand, RawMeanPtB, nB, trkIDB);
+          meanPtA = RawMeanPtA; // no need to remove daughters from A if candidate is in A
+          candPtProduct = pt * meanPtB;
+        } else if (eta > etaBMin.value && eta < etaBMax.value) {
+          meanPtA = removeDaughtersFromMeanPt<Channel, decltype(cand)>(cand, RawMeanPtA, nA, trkIDA);
+          meanPtB = RawMeanPtB; // no need to remove daughters from B if candidate is in B
+          candPtProduct = pt * meanPtA;
+        }
+
+        // get candidate mass and sign
+        auto [invMass, sign] = getCandMassAndSign(cand, Channel, tracks);
+
+        // fill charm-bulk correlation thnsparse
+        registry.fill(HIST("hCharmBulkCorrelations"), invMass, cent, pt, sign, ml1, ml2, eta, meanPtA, meanPtB, candPtProduct);
+      }
+    } else {
+      int nDcandTotA = 0;
+      for (const auto& cand : candidates) {
+        if (!passCandInA(cand)) {
+          continue;
+        }
+
+        // compute ML exactly like numerator
+        const auto [ml1, ml2] = getMlScores<Channel, decltype(cand), T1>(cand);
+
+        // apply same ML cut
+        if (!passMlCut(ml1, ml2)) {
+          continue;
+        }
+        float pt = cand.pt();
+        if (pt < ptTrkMinD.value || pt >= ptTrkMaxD.value) {
+          continue;
+        }
+
+        ++nDcandTotA;
       }
 
-      registry.fill(HIST("hD_mass"), massCand, cent, ptCand, signCand, ml1, ml2, 1.f);
-      registry.fill(HIST("hD_f"), massCand, cent, ptCand, signCand, ml1, ml2, invND);
-      registry.fill(HIST("hD_f_wPtB"), massCand, cent, ptCand, signCand, ml1, ml2, meanPtB * invND);
+      if (nDcandTotA == 0) {
+        return; // cannot build fraction
+      }
+
+      registry.fill(HIST("hEventsD"), cent, 1.f);
+      const float invND = 1.f / static_cast<float>(nDcandTotA);
+
+      for (const auto& candidate : candidates) {
+        if (!passCandInA(candidate)) {
+          continue;
+        }
+
+        // ML first (same definition)
+        const auto [ml1, ml2] = getMlScores<Channel, decltype(candidate), T1>(candidate);
+        if (!passMlCut(ml1, ml2)) {
+          continue;
+        }
+
+        // compute mass
+        auto [massCand, signCand] = getCandMassAndSign(candidate, Channel, tracks);
+
+        const double ptCand = candidate.pt();
+        if (ptCand < ptTrkMinD.value || ptCand >= ptTrkMaxD.value) {
+          continue;
+        }
+
+        registry.fill(HIST("hD_mass"), massCand, cent, ptCand, signCand, ml1, ml2, 1.f);
+        registry.fill(HIST("hD_f"), massCand, cent, ptCand, signCand, ml1, ml2, invND);
+        registry.fill(HIST("hD_f_wPtB"), massCand, cent, ptCand, signCand, ml1, ml2, RawMeanPtB * invND);
+      }
     }
-  }
+  } // end runPtFlucAnalysis
 
   // D0 with ML
   void processD0Ml(Colls::iterator const& collision,
                    CandD0DataWMl const& /*candidatesD0*/,
-                   TracksWithExtra const& tracks)
+                   soa::Filtered<TracksWithExtra> const& tracks)
   {
     auto candsD0ToPiKWMl = selectedD0ToPiKWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     auto candsD0ToKPiWMl = selectedD0ToKPiWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
@@ -391,7 +504,7 @@ struct HfTaskPtFlucCharmHadrons {
   // Dplus with ML
   void processDplusMl(Colls::iterator const& collision,
                       CandDplusDataWMl const& candidatesDplus,
-                      TracksWithExtra const& tracks)
+                      soa::Filtered<TracksWithExtra> const& tracks)
   {
     runPtFlucAnalysis<DecayChannel::DplusToPiKPi>(collision, candidatesDplus, tracks);
   }
