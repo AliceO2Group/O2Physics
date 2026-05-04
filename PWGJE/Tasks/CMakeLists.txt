@@ -407,4 +407,8 @@ if(FastJet_FOUND)
                         SOURCES bjetCentMult.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-hadrons-pid
+                        SOURCES jetHadronsPid.cxx
+                        PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib O2Physics::EventFilteringUtils
+                        COMPONENT_NAME Analysis)
 endif()
