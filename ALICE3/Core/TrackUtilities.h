@@ -22,6 +22,7 @@
 
 #include <TLorentzVector.h>
 
+#include <cmath>
 #include <vector>
 
 namespace o2::upgrade
