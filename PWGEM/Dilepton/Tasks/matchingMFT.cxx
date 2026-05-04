@@ -26,6 +26,7 @@
 #include "Tools/ML/MlResponse.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/Propagator.h>
@@ -34,6 +35,7 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
 #include <Framework/DataTypes.h>
 #include <Framework/Expressions.h>
@@ -50,6 +52,7 @@
 #include <TGeoGlobalMagField.h>
 #include <TH1.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
