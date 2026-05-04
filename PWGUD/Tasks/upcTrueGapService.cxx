@@ -30,6 +30,8 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
+#include <vector>
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -43,7 +45,6 @@ struct UpcTrueGapService {
   Configurable<float> cfgCutFT0C{"cfgCutFT0C", 50., "FT0C threshold"};
   Configurable<float> cfgCutZDC{"cfgCutZDC", 10., "ZDC threshold"};
 
-  using UdTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::UDCollisionSelExtras>;
 
   Produces<aod::Truegapside> truegapside;
@@ -56,7 +57,7 @@ struct UpcTrueGapService {
     registry.add("truegap", "truegap", {HistType::kTH1D, {axisgap}});
   }
 
-  void process(UDCollisionsFull::iterator const& collision, UdTracksFull const& tracks)
+  void process(UDCollisionsFull::iterator const& collision)
   {
     auto truegap = sgSelector.trueGap(collision, cfgCutFV0, cfgCutFT0A, cfgCutFT0C, cfgCutZDC);
     truegapside(truegap);
