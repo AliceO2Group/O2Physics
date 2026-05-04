@@ -932,7 +932,7 @@ struct EventSelectionProducer {
   bool eventHasPhi(const T1& collision, const T2& phiCandidates)
   {
     if (withTrueGenPhi) {
-      if (phiCandidates.empty())
+      if (phiCandidates.size() < 1)
         return false;
     } else {
       uint16_t nPhi{0};
