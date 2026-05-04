@@ -15,15 +15,26 @@
 #include "Common/DataModel/TrackSelectionTables.h" // needed for aod::TracksDCA table
 
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/DataTypes.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TCollection.h>
+#include <TFile.h>
 #include <TGrid.h>
-#include <TH1D.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TList.h>
+#include <TObject.h>
+#include <TString.h>
 #include <TSystem.h>
 
+#include <cstdint>
 #include <cstring>
 #include <string>
 #include <vector>
