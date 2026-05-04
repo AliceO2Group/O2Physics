@@ -15,8 +15,8 @@
 /// \brief task for TPC-FT0 correlations in UPC
 
 #include "PWGCF/Core/CorrelationContainer.h"
+#include "PWGUD/Core/UDHelpers.h" // udhelpers::Bits256, makeBits256, testBit, getPhiEtaFromFitBit
 #include "PWGUD/Core/UpcService.h"
-#include "PWGUD/Core/UDHelpers.h"     // udhelpers::Bits256, makeBits256, testBit, getPhiEtaFromFitBit
 #include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/Core/RecoDecay.h"
@@ -112,10 +112,10 @@ struct FlowLongRangeCorrUpc {
   // make the filters and cuts.
   Filter trackFilter = (aod::udtrack::isPVContributor == true);
   Filter collisionFilter = (cfgGapSideMerge == true)
-  ? ((aod::udcollision::gapSide == (uint8_t)0 || aod::udcollision::gapSide == (uint8_t)1) &&
-     (aod::upcservice::truegapside == 0 || aod::upcservice::truegapside == 1))
-  : ((aod::udcollision::gapSide == (uint8_t)cfgGapSide) &&
-     (aod::upcservice::truegapside == cfgGapSide));
+                             ? ((aod::udcollision::gapSide == (uint8_t)0 || aod::udcollision::gapSide == (uint8_t)1) &&
+                                (aod::upcservice::truegapside == 0 || aod::upcservice::truegapside == 1))
+                             : ((aod::udcollision::gapSide == (uint8_t)cfgGapSide) &&
+                                (aod::upcservice::truegapside == cfgGapSide));
 
   using UDTracksFull = soa::Filtered<soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>>;
   using UDCollisionsFull = soa::Filtered<soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::Truegapside, aod::UDCollisionSelExtras>>;
@@ -175,13 +175,13 @@ struct FlowLongRangeCorrUpc {
     AxisSpec axisgap = {binEdges, "true gap side"};
     if (doprocessSameTpcFt0a || doprocessSameTpcFt0c || doprocessSameFt0aFt0c) {
       registry.add("truegap_inused", "truegap_inused", {HistType::kTH1D, {axisgap}});
-      registry.add("trackSign", "trackSign", {HistType::kTH1D, {{10,-5,5}}});
+      registry.add("trackSign", "trackSign", {HistType::kTH1D, {{10, -5, 5}}});
       registry.add("Phi", "Phi", {HistType::kTH1D, {axisPhi}});
       registry.add("Phi_FT0A", "Phi_FT0A", {HistType::kTH1D, {axisPhi}});
       registry.add("Phi_FT0C", "Phi_FT0C", {HistType::kTH1D, {axisPhi}});
       registry.add("Eta", "Eta", {HistType::kTH1D, {axisEta}});
-      registry.add("Eta_FT0A", "Eta_FT0A", {HistType::kTH1D, {{20,3.,5.}}});
-      registry.add("Eta_FT0C", "Eta_FT0C", {HistType::kTH1D, {{20,-4.0,-2.0}}});
+      registry.add("Eta_FT0A", "Eta_FT0A", {HistType::kTH1D, {{20, 3., 5.}}});
+      registry.add("Eta_FT0C", "Eta_FT0C", {HistType::kTH1D, {{20, -4.0, -2.0}}});
       registry.add("EtaCorrected", "EtaCorrected", {HistType::kTH1D, {axisEta}});
       registry.add("pT", "pT", {HistType::kTH1D, {axisPtTrigger}});
       registry.add("pTCorrected", "pTCorrected", {HistType::kTH1D, {axisPtTrigger}});
@@ -197,7 +197,6 @@ struct FlowLongRangeCorrUpc {
         registry.add("EtaPhi", "", {HistType::kTH2F, {axisEtaFull, axisPhi}});
       }
     }
-    
 
     if (doprocessSameTpcFt0a) {
       registry.add("deltaEta_deltaPhi_same_TPC_FT0A", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaTpcFt0a}}); // check to see the delta eta and delta phi distribution
@@ -215,8 +214,8 @@ struct FlowLongRangeCorrUpc {
       registry.add("Trig_hist_FT0A_FT0C", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
     }
 
-    registry.add("eventcount_TPCFT0A", "bin", {HistType::kTH1F, {{4, 0, 4, "bin"}}}); // histogram to see how many events are in the same and mixed event
-    registry.add("eventcount_TPCFT0C", "bin", {HistType::kTH1F, {{4, 0, 4, "bin"}}}); // histogram to see how many events are in the same and mixed event
+    registry.add("eventcount_TPCFT0A", "bin", {HistType::kTH1F, {{4, 0, 4, "bin"}}});  // histogram to see how many events are in the same and mixed event
+    registry.add("eventcount_TPCFT0C", "bin", {HistType::kTH1F, {{4, 0, 4, "bin"}}});  // histogram to see how many events are in the same and mixed event
     registry.add("eventcount_FT0AFT0C", "bin", {HistType::kTH1F, {{4, 0, 4, "bin"}}}); // histogram to see how many events are in the same and mixed event
 
     LOGF(info, "Initializing correlation container");
@@ -350,9 +349,9 @@ struct FlowLongRangeCorrUpc {
       nTracksCorrected += weff1;
     }
     if (cfgUseNchCorrected)
-     return nTracksCorrected;
+      return nTracksCorrected;
     else
-     return nTracksRaw;
+      return nTracksRaw;
   }
 
   template <typename TCollision, typename TTracks>
@@ -381,7 +380,6 @@ struct FlowLongRangeCorrUpc {
       registry.fill(HIST("hDCAxy"), track1.dcaXY(), pt);
       registry.fill(HIST("trackSign"), track1.sign());
     }
-    
   }
 
   template <CorrelationContainer::CFStep step, typename TTracks>
@@ -395,7 +393,7 @@ struct FlowLongRangeCorrUpc {
       // no TPC-FT0 correlations for this collision
       return;
     }
-    
+
     int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
 
     float triggerWeight = 1.0f;
@@ -443,7 +441,7 @@ struct FlowLongRangeCorrUpc {
         float thr = 1.;
         if (udhelpers::testBit(w2, chanelid))
           thr = 2.;
-        
+
         if (system == SameEvent) {
           if (corType == kFT0C) {
             registry.fill(HIST("Phi_FT0C"), RecoDecay::constrainAngle(fitCh_phi, 0.0));
@@ -455,7 +453,7 @@ struct FlowLongRangeCorrUpc {
           if (cfgDrawEtaPhiDis) {
             registry.fill(HIST("EtaPhi"), fitCh_eta, fitCh_phi, thr);
           }
-          registry.fill(HIST("FT0Amp"), chanelid, thr); 
+          registry.fill(HIST("FT0Amp"), chanelid, thr);
         }
 
         float deltaPhi = RecoDecay::constrainAngle(tr_phi - fitCh_phi, -PIHalf);
@@ -480,7 +478,6 @@ struct FlowLongRangeCorrUpc {
         }
       }
     }
-
   }
 
   template <CorrelationContainer::CFStep step>
@@ -517,7 +514,7 @@ struct FlowLongRangeCorrUpc {
       float thrA = 1.;
       if (udhelpers::testBit(w2A, chanelidA))
         thrA = 2.;
-      
+
       if (system == SameEvent) {
         registry.fill(HIST("Trig_hist_FT0A_FT0C"), fSampleIndex, posZ, 0.5, thrA);
       }
@@ -547,7 +544,6 @@ struct FlowLongRangeCorrUpc {
         }
       }
     }
-
   }
 
   void processSameTpcFt0a(UDCollisionsFull::iterator const& collision, UDTracksFull const& tracks, aod::UDCollisionFITBits const& fitBits)
@@ -754,7 +750,6 @@ struct FlowLongRangeCorrUpc {
     }
   }
   PROCESS_SWITCH(FlowLongRangeCorrUpc, processMixedFt0aFt0c, "Process mixed events for FT0A-FT0C correlation", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
