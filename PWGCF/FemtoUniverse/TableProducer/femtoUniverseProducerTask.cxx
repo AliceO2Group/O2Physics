@@ -1313,7 +1313,10 @@ struct FemtoUniverseProducerTask {
       if (track.itsChi2NCl() > ConfTrkSelection.confTrkMaxChi2PerClusterITS) {
         continue;
       }
-      if ((ConfTrkSelection.confTrkTPCRefit && !track.hasTPC()) || (ConfTrkSelection.confTrkITSRefit && !track.hasITS())) {
+      if (ConfTrkSelection.confTrkTPCRefit && !track.hasTPC()) {
+        continue;
+      }
+      if (ConfTrkSelection.confTrkITSRefit && track.pt() < confTOFpTmin && !track.hasITS()) {
         continue;
       }
 
